@@ -2,7 +2,7 @@
 
 This file format describes a rectangular portion of a MegaZeux board or
 layer. This version of the MZM format was introduced in MegaZeux 2.84
-and is the most current MZX image format as of MegaZeux 2.91h.
+and is the current MZX image format.
 
 | data type | description  |
 |-----------|--------------|
@@ -86,7 +86,7 @@ or the save robot format from MegaZeux 2.84.
 ### MegaZeux 2.90+
 
 The robot data block is a ZIP archive containing MegaZeux 2.90 robot
-info files named in the format `r##`, where `##` is a hexadecimal number
-between 1 and 255 (ex: `r01`, `r02`, ... `rFF`). The robot info file
+property files named in the format `r##`, where `##` is a hexadecimal number
+between 1 and 255 (ex: `r01`, `r02`, ... `rFF`). The robot property file
 with a given number corresponds to the robot in the board data with the
 same number as its param.
