@@ -498,7 +498,7 @@ static enum val_result __validate_legacy_world_file(const char *file,
     if(fseek(f, WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET))
       goto err_invalid;
 
-    fseek(f, BOARD_NAME_SIZE, SEEK_SET);
+    fseek(f, LEGACY_BOARD_NAME_SIZE, SEEK_SET);
 
     /* TEST 4:  If we think it's locked, try to decrypt it. */
     protection_method = fgetc(f);
@@ -558,10 +558,15 @@ static enum val_result __validate_legacy_world_file(const char *file,
   {
     int sfx_size = fgetw(f);
     int sfx_off = ftell(f);
+    int cur_sfx_size;
 
     for(i = 0; i < NUM_SFX; i++)
     {
-      if(fseek(f, fgetc(f), SEEK_CUR))
+      cur_sfx_size = fgetc(f);
+      if(cur_sfx_size > LEGACY_SFX_SIZE)
+        goto err_invalid;
+
+      if(fseek(f, cur_sfx_size, SEEK_CUR))
         break;
     }
 
@@ -577,9 +582,9 @@ static enum val_result __validate_legacy_world_file(const char *file,
 
   //Make sure board name and pointer data exists
   if(
-   fseek(f, num_boards * BOARD_NAME_SIZE, SEEK_CUR) ||
+   fseek(f, num_boards * LEGACY_BOARD_NAME_SIZE, SEEK_CUR) ||
    fseek(f, num_boards * 8, SEEK_CUR) ||
-   ((ftell(f) - board_name_offset) != num_boards * (BOARD_NAME_SIZE + 8)))
+   ((ftell(f) - board_name_offset) != num_boards * (LEGACY_BOARD_NAME_SIZE + 8)))
     goto err_invalid;
 
   //todo: maybe have a complete fail when N number of pointers fail?
@@ -680,6 +685,10 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   if(fread((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE,
    NUM_STATUS_COUNTERS, fp) != NUM_STATUS_COUNTERS)
     goto err_close;
+
+  // Don't trust legacy null termination...
+  for(i = 0; i < NUM_STATUS_COUNTERS; i++)
+    mzx_world->status_counters_shown[i][COUNTER_NAME_SIZE - 1] = '\0';
 
   if(savegame)
   {
@@ -938,6 +947,8 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       sfx_size = fgetc(fp);
       if(sfx_size && !fread(sfx_offset, sfx_size, 1, fp))
         goto err_close;
+
+      sfx_offset[LEGACY_SFX_SIZE - 1] = '\0';
     }
     num_boards = fgetc(fp);
   }
@@ -955,7 +966,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   // Skip the names for now
   board_names_pos = ftell(fp);
-  fseek(fp, num_boards * BOARD_NAME_SIZE, SEEK_CUR);
+  fseek(fp, num_boards * LEGACY_BOARD_NAME_SIZE, SEEK_CUR);
 
   // Read the board offsets/sizes preemptively to reduce the amount of seeking.
   board_offsets = cmalloc(sizeof(int) * num_boards);
@@ -1002,14 +1013,16 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   fseek(fp, board_names_pos, SEEK_SET);
   for(i = 0; i < num_boards; i++)
   {
-    char ignore[BOARD_NAME_SIZE];
+    char ignore[LEGACY_BOARD_NAME_SIZE];
     char *board_name = ignore;
 
     if(mzx_world->board_list[i])
       board_name = mzx_world->board_list[i]->board_name;
 
-    if(!fread(board_name, BOARD_NAME_SIZE, 1, fp))
+    if(!fread(board_name, LEGACY_BOARD_NAME_SIZE, 1, fp))
       board_name[0] = 0;
+
+    board_name[LEGACY_BOARD_NAME_SIZE - 1] = '\0';
   }
 
   meter_update_screen(&meter_curr, meter_target);

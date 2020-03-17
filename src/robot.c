@@ -144,7 +144,9 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         break;
 
       case RPROP_ROBOT_NAME:
-        mfread(cur_robot->robot_name, ROBOT_NAME_SIZE, 1, &prop);
+        size = MIN(size, ROBOT_NAME_SIZE - 1);
+        mfread(cur_robot->robot_name, size, 1, &prop);
+        cur_robot->robot_name[size] = '\0';
         break;
 
       case RPROP_ROBOT_CHAR:
@@ -508,6 +510,8 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
         cur_scroll->mesg_size = size;
         cur_scroll->mesg = cmalloc(size);
         mfread(cur_scroll->mesg, size, 1, &prop);
+        if(size > 0)
+          cur_scroll->mesg[size - 1] = '\0';
         break;
 
       default:
@@ -515,9 +519,9 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
     }
   }
 
-  if(!cur_scroll->mesg_size)
+  if(cur_scroll->mesg_size < 3)
   {
-    // We have an incomplete sensor, so slip in an empty scroll.
+    // We have an incomplete scroll, so slip in an empty scroll.
     cur_scroll->num_lines = 1;
     cur_scroll->mesg_size = 3;
 
@@ -560,8 +564,9 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
         break;
 
       case SENPROP_SENSOR_NAME:
-        size = MIN(size, ROBOT_NAME_SIZE);
+        size = MIN(size, ROBOT_NAME_SIZE - 1);
         mfread(cur_sensor->sensor_name, size, 1, &prop);
+        cur_sensor->sensor_name[size] = '\0';
         break;
 
       case SENPROP_SENSOR_CHAR:
@@ -569,8 +574,9 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
         break;
 
       case SENPROP_ROBOT_TO_MESG:
-        size = MIN(size, ROBOT_NAME_SIZE);
+        size = MIN(size, ROBOT_NAME_SIZE - 1);
         mfread(cur_sensor->robot_to_mesg, size, 1, &prop);
+        cur_sensor->robot_to_mesg[size] = '\0';
         break;
 
       default:

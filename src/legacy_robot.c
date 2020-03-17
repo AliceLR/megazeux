@@ -34,7 +34,6 @@
 #include "world.h"
 #include "world_struct.h"
 
-
 struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
  int savegame, int file_version, boolean *truncated)
 {
@@ -84,8 +83,9 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   cur_robot->commands_caught = 0;
 #endif
 
-  memcpy(cur_robot->robot_name, bufferPtr, 15);
-  bufferPtr += 15;
+  memcpy(cur_robot->robot_name, bufferPtr, LEGACY_ROBOT_NAME_SIZE);
+  cur_robot->robot_name[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
+  bufferPtr += LEGACY_ROBOT_NAME_SIZE;
 
   cur_robot->robot_char = mem_getc(&bufferPtr);
   cur_robot->cur_prog_line = mem_getw(&bufferPtr);
@@ -366,6 +366,10 @@ static void legacy_load_scroll(struct scroll *cur_scroll, FILE *fp)
   if(!fread(cur_scroll->mesg, scroll_size, 1, fp))
     goto scroll_err;
 
+  if(scroll_size < 3)
+    goto scroll_err;
+
+  cur_scroll->mesg[scroll_size - 1] = '\0';
   return;
 
 scroll_err:
@@ -388,14 +392,16 @@ struct scroll *legacy_load_scroll_allocate(FILE *fp)
 
 static void legacy_load_sensor(struct sensor *cur_sensor, FILE *fp)
 {
-  if(!fread(cur_sensor->sensor_name, 15, 1, fp))
+  if(!fread(cur_sensor->sensor_name, LEGACY_ROBOT_NAME_SIZE, 1, fp))
     goto sensor_err;
 
   cur_sensor->sensor_char = fgetc(fp);
 
-  if(!fread(cur_sensor->robot_to_mesg, 15, 1, fp))
+  if(!fread(cur_sensor->robot_to_mesg, LEGACY_ROBOT_NAME_SIZE, 1, fp))
     goto sensor_err;
 
+  cur_sensor->sensor_name[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
+  cur_sensor->robot_to_mesg[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
   cur_sensor->used = fgetc(fp);
 
   return;

@@ -17,6 +17,9 @@ USERS
 + Added optional CRC-32 output to checkres. Currently this flag
   only works for files in ZIP archives and no CRC-32 validation
   is performed.
++ Fixed potential null termination issues in both world loaders
+  that could be triggered with invalid board name, robot name,
+  scroll, sensor, sfx, and status counter strings.
 
 DEVELOPERS
 

@@ -87,6 +87,10 @@ enum
 #define COUNTER_NAME_SIZE     15 // This is legacy, for status counters only
 #define NUM_KEYS              16
 
+// Safe duplicates of the above strings in case those limits are lifted.
+#define LEGACY_BOARD_NAME_SIZE 25
+#define LEGACY_ROBOT_NAME_SIZE 15
+
 // Attribute flags
 #define A_PUSHNS              (1 << 0)
 #define A_PUSHEW              (1 << 1)

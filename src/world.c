@@ -592,7 +592,9 @@ static inline void load_world_info(struct world *mzx_world,
 
       // Header redundant properties
       case WPROP_WORLD_NAME:
+        size = MIN(size, BOARD_NAME_SIZE - 1);
         mfread(mzx_world->name, size, 1, prop);
+        mzx_world->name[size] = '\0';
         break;
 
       case WPROP_WORLD_VERSION:
@@ -662,6 +664,7 @@ static inline void load_world_info(struct world *mzx_world,
         for(i = 0; i < NUM_STATUS_COUNTERS; i++)
         {
           mfread(mzx_world->status_counters_shown[i], COUNTER_NAME_SIZE, 1, prop);
+          mzx_world->status_counters_shown[i][COUNTER_NAME_SIZE - 1] = '\0';
         }
         break;
 
@@ -1027,8 +1030,17 @@ static inline int load_world_sfx(struct world *mzx_world,
   // No custom SFX loaded yet
   if(!mzx_world->custom_sfx_on)
   {
+    int ret;
+    int i;
+
     mzx_world->custom_sfx_on = 1;
-    return zip_read_file(zp, mzx_world->custom_sfx, NUM_SFX * SFX_SIZE, NULL);
+    ret = zip_read_file(zp, mzx_world->custom_sfx, NUM_SFX * SFX_SIZE, NULL);
+
+    // Don't trust input file null termination...
+    for(i = 0; i < NUM_SFX; i++)
+      mzx_world->custom_sfx[i * SFX_SIZE + SFX_SIZE - 1] = '\0';
+
+    return ret;
   }
 
   // Already loaded custom SFX; skip
