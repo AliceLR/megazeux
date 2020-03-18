@@ -127,15 +127,15 @@ World data immediately follows the header.
 
 Total block length is 4129 bytes.
 
-| pos  | size    | description |
-|------|---------|-------------|
-| 0    |   s3584 | Character set (see CHR.md)
-| 3584 |    s128 | ID Chars block 1 (thing chars)
-| 3712 |    s195 | ID Chars block 2 (animations and colors)
-| 3907 |      s1 | ID Chars missile color
-| 3908 |      s3 | ID Chars bullet colors
-| 3911 |    s128 | ID Chars block 3 (damage)
-| 4039 | s15 * 6 | Status counter names (null terminated)
+| pos  | size     | description |
+|------|----------|-------------|
+| 0    | b * 3584 | Character set (see CHR.md)
+| 3584 | b * 128  | ID Chars block 1 (thing chars)
+| 3712 | b * 195  | ID Chars block 2 (animations and colors)
+| 3907 | b        | ID Chars missile color
+| 3908 | b * 3    | ID Chars bullet colors
+| 3911 | b * 128  | ID Chars block 3 (damage)
+| 4039 | s15 * 6  | Status counter names (null terminated)
 
 ### Save Block 1
 
@@ -179,25 +179,25 @@ Notes:
 
 Total block length is 72.
 
-| pos  | size    | description |
-|------|---------|-------------|
-| 0    | b       | Viewport edge color
-| 1    | b       | First board number
-| 2    | b       | Endgame board number (255: no endgame board)
-| 3    | b       | Death board number (254: same position, 255: restart board)
-| 4    | w       | Endgame board teleport X
-| 6    | w       | Endgame board teleport Y
-| 8    | b       | Game over SFX enabled (1) or disabled (0)
-| 9    | w       | Death board teleport X
-| 11   | w       | Death board teleport Y
-| 13   | ws      | Starting lives
-| 15   | ws      | Lives limit
-| 17   | ws      | Starting health
-| 19   | ws      | Health limit
-| 21   | b       | Enemies' bullets hurt other enemies
-| 22   | b       | Clear messages and projectiles on exit
-| 23   | b       | Can only play world from a 'SWAP WORLD'
-| 24   | s3 * 16 | Palette (see PAL.md)
+| pos  | size       | description |
+|------|------------|-------------|
+| 0    | b          | Viewport edge color
+| 1    | b          | First board number
+| 2    | b          | Endgame board number (255: no endgame board)
+| 3    | b          | Death board number (254: same position, 255: restart board)
+| 4    | w          | Endgame board teleport X
+| 6    | w          | Endgame board teleport Y
+| 8    | b          | Game over SFX enabled (1) or disabled (0)
+| 9    | w          | Death board teleport X
+| 11   | w          | Death board teleport Y
+| 13   | ws         | Starting lives
+| 15   | ws         | Lives limit
+| 17   | ws         | Starting health
+| 19   | ws         | Health limit
+| 21   | b          | Enemies' bullets hurt other enemies
+| 22   | b          | Clear messages and projectiles on exit
+| 23   | b          | Can only play world from a 'SWAP WORLD'
+| 24   | b * 3 * 16 | Palette (see PAL.md)
 
 ### Save Block 2
 
@@ -455,18 +455,18 @@ The final block is only present in save files.
 | pos | size | description |
 |-----|------|-------------|
 | 0   | b    | Volume
-| 1   | bs   | Volume increment
+| 1   | b    | Volume increment
 | 2   | b    | Volume target
 
 ### Board Robots, Scrolls, and Sensors
 
 The board robot list, scroll list, and sensor lists follow the board parameters.
 Each list is stored as a single byte `N` indicating the number of robots, scrolls,
-or sensors on the board. This byte is followed by `N - 1` stored robots/scrolls/sensors
-(as ID 0 is the global robot or is invalid for scrolls/sensors). Each robot,
-scroll, or sensor in the list immediately follows the prior, and the next list
-starts immediately after the last object in the previous list. The board data
-ends after all three lists have been read.
+or sensors on the board. This byte is followed by `N` stored robots/scrolls/sensors
+counting from ID 1 (as ID 0 is the global robot or is invalid for scrolls/sensors).
+Each robot, scroll, or sensor in the list immediately follows the prior, and the
+next list starts immediately after the last object in the previous list. The board
+data ends after all three lists have been read.
 
 ## Robots
 
@@ -582,7 +582,7 @@ MZB header:
 | pos | size | description |
 |-----|------|-------------|
 | 0   | b    | Always hex `FF`
-| 0   | m3   | Magic (`MB2` for 2.00 through 2.51s1, same as world magic after)
+| 1   | m3   | Magic (`MB2` for 2.00 through 2.51s1, same as world magic after)
 
 The header is immediately followed by a single board (including robots,
 scrolls, and sensors as-needed) as described above.
