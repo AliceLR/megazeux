@@ -327,14 +327,14 @@
         <li><a href="#scroll290">Scroll Properties</a></li>
         <li><a href="#sensor290">Sensor Properties</a></li>
       </ol>
-      <li><a href="#mzb">Board Format (.MZB)</a></li>
+      <li><a href="#mzb">Board File (.MZB)</a></li>
       <li><a href="#mzm">Image File (.MZM)</a></li>
       <ol type="i">
         <li><a href="#mzm3">MZM3 (current)</a></li>
         <li><a href="#mzm2">MZM2</a></li>
         <li><a href="#mzmx">MZMX</a></li>
       </ol>
-      <li><a href="#counters">Counters File (.COUNTERS)</a></li>
+      <li><a href="#counters">Counters File</a></li>
       <li><a href="#bytecode">Robotic Bytecode (.BC)</a></li>
     </ol>
   </section>
@@ -1341,9 +1341,9 @@ while(i < width * height)
         </li>
         <li id="scroll200note2">
           The scroll text must begin with a <code>01</code> hex byte, must
-          contain at least one (<code>0A</code> hex), and must be null terminated
-          (i.e. the smallest valid scroll is <code>01 0A 00</code> with
-          number of lines=1 and length=3).
+          contain at least one line break (<code>0A</code> hex), and must be
+          null terminated (i.e. the smallest valid scroll is
+          <code>01 0A 00</code> with number of lines=1 and length=3).
         </li>
       </ol>
     </section>
@@ -1378,7 +1378,7 @@ while(i < width * height)
 | Pos. | Size | Description |
 |------|------|-------------|
 | 0    | b    | Always hex <code>FF</code>
-| 1    | m3   | Magic (<code>MB2</code> for 2.00 through 2.51s1, same as <a href="#worldheader">world magic</a> after)
+| 1    | s3   | Magic (<code>MB2</code> for 2.00 through 2.51s1, same as <a href="#worldheader">world magic</a> after)
     </div>
 
     <section id="mzb200" class="inner">
@@ -1463,7 +1463,7 @@ while(i < width * height)
         data block depending on the storage mode value indicated in the header.
       </p>
 
-      <h4>Storage Mode 0 (Board)</h4>
+      <h4 id="mzmstorage0">Storage Mode 0 (Board)</h4>
       <p>
         The MZM data is stored in the following format if the "board" storage
         mode is selected. The data is composed of <code>(width * height)</code>
@@ -1535,20 +1535,80 @@ while(i < width * height)
 
     <section id="mzm2" class="inner">
       <h3>MZM2</h3>
-      <p>FIXME</p>
+      <p>
+        MZM2 was introduced in MegaZeux 2.80 and is essentially the same as MZM3
+        without the version field in the header. The MZM2 header is 16 bytes
+        long:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s4   | `MZM2`
+| 4    | w    | Width
+| 6    | h    | Height
+| 8    | d    | Location in file of robot table (0 for no robots)
+| 12   | b    | Number of robots (0 for no robots)
+| 13   | b    | Storage mode (0: board, 1: layer)
+| 14   | b    | "Savegame" MZM? (includes runtime robot data) (0 if false, 1 if true)
+| 15   | b    | unused
+      </div>
+
+      <p>
+        The board data and robot data follows exactly as MZM3 with the
+        exception that robots are always use the MZX 2.80 through 2.83 robot
+        format rather than newer formats.
+      </p>
     </section>
 
     <section id="mzmx" class="inner">
       <h3>MZMX</h3>
-      <p>FIXME</p>
+      <p>
+        MZMX is the original MZM format that was introduced in MZX 2.68. It is
+        much more limited than newer MZM formats and is generally only supported
+        for compatibility. MZMX only supports blocks with dimensions of 255 or
+        smaller, does not save robots, and only supports storage mode 0. The
+        MZMX header is 16 bytes long:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size   | Description |
+|------|--------|-------------|
+| 0    | s4     | `MZMX`
+| 4    | b      | Width
+| 5    | b      | Height
+| 6    | b * 10 | unused
+      </div>
+
+      <p>
+        The board data follows as described by
+        <a href="#mzmstorage0">MZM3's Storage Mode 0</a>.
+      </p>
     </section>
   </section>
 
   <hr>
 
   <section id="counters" class="main">
-    <h2>Counters File (.COUNTERS)</h2>
-    <p>FIXME</p>
+    <h2>Counters File</h2>
+    <p>
+      The counters file format is a light wrapper around the MZX 2.90+ save
+      format <a href="#counter290">counter list and string list files</a>.
+      Counters files are created and loaded by the <code>SAVE_COUNTERS</code>
+      and <code>LOAD_COUNTERS</code> pseudo-commands and currently have no
+      standard filename extension. A counters file beings with this header:
+    </p>
+
+    <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s8   | Magic (<code>COUNTERS</code>)
+    </div>
+
+    <p>
+      This header is followed by a ZIP archive containing only the
+      <code>counter</code> and <code>string</code> files.
+    </p>
   </section>
 
   <hr>
