@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<!--
+  MegaZeux File Format Reference
+
+  Copyright (C) 2020 Lachesis - https://github.com/AliceLR/megazeux/
+
+  Permission to use, copy, modify, and distribute this document for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE DOCUMENT IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS DOCUMENT INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS DOCUMENT.
+-->
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MegaZeux File Formats</title>
+<style>
+  #container
+  {
+    width: 800px;
+    margin: auto;
+    padding: 0px 24px;
+  }
+
+  header, section
+  {
+    margin: 8px;
+    margin-bottom: 16px;
+  }
+
+  header, section.contents
+  {
+    padding: 16px;
+  }
+
+  section.main
+  {
+    padding: 16px;
+    padding-bottom: 96px;
+  }
+
+  section.inner
+  {
+    background-color: #F4F4F4;
+    border-radius: 5px;
+    padding: 4px 24px 16px;
+  }
+
+  code
+  {
+    background-color: #CCC;
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-weight: bold;
+  }
+
+  code.block
+  {
+    display: inline-block;
+  }
+
+  code.example
+  {
+    display: block;
+    background-color: #555;
+    font-size: .95em;
+    color: #fff;
+    margin: 24px;
+    padding: 0px 32px 16px;
+    white-space: pre;
+  }
+
+  div.image-wrapper
+  {
+    margin: 16px;
+  }
+
+  table
+  {
+    width: 100%;
+    margin: 24px 2px 40px;
+    border: 1px solid #aaa;
+  }
+
+  tr:hover
+  {
+    background-color: rgba(127, 127, 255, .15);
+  }
+
+  td
+  {
+    padding: 1px 10px;
+    border: 4px solid transparent;
+  }
+
+  td.type
+  {
+    background-color: #ddd;
+    font-weight: bold;
+    white-space: pre-line;
+  }
+
+  thead td, thead th
+  {
+    border-bottom: 2px solid #aaa;
+    font-weight: bold;
+  }
+
+  th
+  {
+    border-right: 2px solid #aaa;
+    border-radius: 3px;
+    font-weight: bold;
+  }
+
+  .markdown
+  {
+    font-family: monospace;
+    white-space: pre;
+  }
+</style>
+<script type="text/javascript">
+  function thead(contents)
+  {
+    return "<thead>" + contents + "</thead>";
+  }
+
+  function tr(contents)
+  {
+    return "<tr>" + contents + "</tr>";
+  }
+
+  function th(contents)
+  {
+    return "<th>" + contents + "</th>";
+  }
+
+  function td(contents, cls=undefined)
+  {
+    if(typeof(cls) === "string")
+      return '<td class="' + cls + '">' + contents + "</td>";
+    return "<td>" + contents + "</td>";
+  }
+
+  /**
+    * Also support this specific case of Markdown code quotes because it's
+    * nicer than having to put <code></code> everywhere.
+    */
+  function mdtocode(text)
+  {
+    if(text[0] == '`' && text[text.length - 1] == '`')
+      return "<code>" + text.substr(1, text.length - 2) + "</code>";
+    return text;
+  }
+
+  /**
+    * Convert an inline Markdown table into an HTML table.
+    * This is only guaranteed to support the Markdown tables in this file...
+    */
+  function mdtotable(element)
+  {
+    var hasvertheader = element.classList.contains("vert");
+    var rows = element.innerHTML.split(/\r?\n/);
+    var table = "";
+    var hasfirstrow = false;
+    var hasseparator = false;
+    var numcolumns = 0;
+    var sizecolumn = -1;
+
+    rows.forEach(function (row)
+    {
+      var columns = row.split('|');
+      var hasfirstcolumn = false;
+      var contents = "";
+
+      if(!hasfirstrow)
+      {
+        numcolumns = columns.length - 2;
+        if(numcolumns <= 0)
+          return;
+
+        var hashorizheader = false;
+        for(var i = 1; i <= numcolumns; i++)
+        {
+          var t = columns[i].trim();
+          if(t.length)
+          {
+            hashorizheader = true;
+            if(t == "Size" || t == "Data Type")
+              sizecolumn = i;
+          }
+
+          if(hasvertheader && !hasfirstcolumn)
+          {
+            contents += th(t);
+            hasfirstcolumn = true;
+          }
+          else
+            contents += td(t);
+        }
+        if(hashorizheader)
+          table += thead(contents);
+        hasfirstrow = true;
+      }
+      else
+
+      if(!hasseparator)
+      {
+        if(columns.length - 2 != numcolumns)
+          return;
+
+        /**
+          * Assuming on good faith that this line is formatted properly
+          * otherwise because I really don't care...
+          */
+        hasseparator = true;
+      }
+      else
+
+      if(columns.length > 1)
+      {
+        var columns_present = columns.length - 1;
+        var columns_iter = columns_present < numcolumns ? columns_present : numcolumns;
+
+        for(var i = 1; i <= columns_iter; i++)
+        {
+          var t = columns[i].trim();
+          t = mdtocode(t);
+
+          if(hasvertheader && !hasfirstcolumn)
+          {
+            contents += th(t);
+            hasfirstcolumn = true;
+          }
+          else
+            contents += td(t, (i == sizecolumn) ? "type" : undefined);
+        }
+        for(var i = 0; i < numcolumns - columns_present; i++)
+          contents += td("");
+
+        table += tr(contents);
+      }
+    });
+
+    element.innerHTML = "<table>" + table + "</table>";
+  }
+
+  window.onload = function()
+  {
+    if(document.getElementsByClassName !== "undefined")
+    {
+      var elements = document.getElementsByClassName("markdown");
+      var length = elements.length;
+      for(var i = 0; i < length; i++)
+      {
+        if(elements[i].classList !== "undefined")
+          mdtotable(elements[i]);
+      }
+    }
+  };
+</script>
+</head>
+<body>
+<div id="container">
+  <header>
+    <h1>MegaZeux File Format Reference</h1>
+    <h3>MegaZeux GIT &mdash; March 20th, 2020</h3>
+    <p>
+      This guide contains specifications for most MegaZeux file formats.
+    </p>
+  </header>
+
+  <hr>
+
+  <section class="contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#license">License</a></li>
+      <li><a href="#key">Key for data types</a></li>
+      <li><a href="#chr">Character Set (.CHR)</a></li>
+      <li><a href="#pals">Palette Formats</a></li>
+      <ol type="i">
+        <li><a href="#pal">Palette (.PAL)</a></li>
+        <li><a href="#palidx">Palette Indices (.PALIDX)</a></li>
+      </ol>
+      <li><a href="#world">World and Save Format (all versions)</a></li>
+      <ol type="i">
+        <li><a href="#worldheader">World Format Header and Magic</a></li>
+        <li><a href="#saveheader">Save Format Header and Magic</a></li>
+      </ol>
+      <li><a href="#world200">World and Save Format (2.00 through 2.84X)</a></li>
+      <ol type="i">
+        <li><a href="#encryption200">Encryption</a></li>
+        <li><a href="#global200">Global Data</a></li>
+        <li><a href="#sfx200">Custom SFX Table</a></li>
+        <li><a href="#boardlist200">Board Names, Sizes, and Offsets</a></li>
+        <li><a href="#board200">Boards</a></li>
+        <li><a href="#boardplanes200">Board RLE Planes</a></li>
+        <li><a href="#boardparams200">Board Parameters (2.00 through 2.82X)</a></li>
+        <li><a href="#boardparams283">Board Parameters (2.83 and 2.84X)</a></li>
+        <li><a href="#boardobjs200">Board Objects</a></li>
+        <li><a href="#robot200">Robots</a></li>
+        <li><a href="#scroll200">Scrolls</a></li>
+        <li><a href="#sensor200">Sensors</a></li>
+      </ol>
+      <li><a href="#world290">World and Save Format (2.90 onward)</a></li>
+      <ol type="i">
+        <li><a href="#fileprop290">Files List</a></li>
+        <li><a href="#properties">Properties Format</a></li>
+        <li><a href="#worldprop290">World Properties</a></li>
+        <li><a href="#sfx290">Custom SFX Table</a></li>
+        <li><a href="#chars290">Character Sets</a></li>
+        <li><a href="#pal290">Palette, Palette Indices, and Palette Intensities</a></li>
+        <li><a href="#vlayer290">Vlayer Planes</a></li>
+        <li><a href="#spriteprop290">Sprite Properties (.SAV only)</a></li>
+        <li><a href="#counter290">Counter and String Lists (.SAV only)</a></li>
+
+        <li><a href="#board290">Board Properties</a></li>
+        <li><a href="#boardplanes290">Board Planes</a></li>
+        <li><a href="#robot290">Robot Properties</a></li>
+        <li><a href="#scroll290">Scroll Properties</a></li>
+        <li><a href="#sensor290">Sensor Properties</a></li>
+      </ol>
+      <li><a href="#mzb">Board Format (.MZB)</a></li>
+      <li><a href="#mzm">Image File (.MZM)</a></li>
+      <ol type="i">
+        <li><a href="#mzm3">MZM3 (current)</a></li>
+        <li><a href="#mzm2">MZM2</a></li>
+        <li><a href="#mzmx">MZMX</a></li>
+      </ol>
+      <li><a href="#counters">Counters File (.COUNTERS)</a></li>
+      <li><a href="#bytecode">Robotic Bytecode (.BC)</a></li>
+    </ol>
+  </section>
+
+  <hr>
+
+  <section id="license" class="main">
+    <h2>License</h2>
+    <section class="inner">
+      <p>
+        Copyright &copy; 2020 Lachesis &mdash;
+        <a href="https://github.com/AliceLR/megazeux/">
+          https://github.com/AliceLR/megazeux/
+        </a>
+      </p>
+
+      <p>
+        Permission to use, copy, modify, and distribute this document for any
+        purpose with or without fee is hereby granted, provided that the above
+        copyright notice and this permission notice appear in all copies.
+      </p>
+
+      <p>
+        THE DOCUMENT IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+        WITH REGARD TO THIS DOCUMENT INCLUDING ALL IMPLIED WARRANTIES OF
+        MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+        ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+        WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+        ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+        OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS DOCUMENT.
+      </p>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="key" class="main">
+    <h2>Key for data types</h2>
+    <p>
+      The data types used to describe the MZX file formats are as follows:
+    </p>
+    <div class="markdown">
+| Data Type | Description                             | Min.        | Max. |
+|-----------|-----------------------------------------|-------------|------|
+| b         | byte (8-bit)                            | 0           | 255
+| bs        | byte (8-bit, signed)                    | -128        | 127
+| w         | word (16-bit, little endian)            | 0           | 65535
+| ws        | word (16-bit, little endian, signed)    | -32768      | 32767
+| d         | dword (32-bit, little endian)           | 0           | 4294967295
+| ds        | dword (32-bit, little endian, signed)   | -2147483648 | 2147483647
+| s#        | string of fixed length # (i.e. # bytes) |
+| s...      | string of variable length               |
+    </div>
+  </section>
+
+  <hr>
+
+  <section id="chr" class="main">
+    <h2>Character Set (.CHR)</h2>
+    <p>
+      This file format describes one or more MZX graphical characters. A CHR
+      file contains raw graphical data only. Each character in the CHR file
+      consists of 14 bytes representing each graphical row of the character.
+    </p>
+
+    <p>
+      Within the byte, each pixel of the row is encoded either as a
+      single bit (MZX) or as two bits (SMZX). The first byte of the next
+      character immediately follows the 14th byte of the previous character.
+    </p>
+
+    <p>
+      A typical character set file contains 256 chars (for a total size of 3584).
+      However, partial character sets are possible, as are character sets with
+      more than 256 chars. Complete and partial character sets can be loaded
+      from files or from MZX strings with the <code>load char set</code> command.
+      The bytes representing a character in a character set are also the same
+      as the values provided to the <code>char edit</code> command or to the
+      <code>CHAR_BYTE</code> counter.
+    </p>
+
+    <section id="chr-mzx" class="inner">
+      <h3>MZX</h3>
+      <p>
+        The most significant bit of the byte represents the leftmost pixel in
+        the row and the least significant bit of the byte represents the
+        rightmost pixel.
+      </p>
+
+      <p>
+        Example: setting the third, fifth, and seventh pixels.
+      </p>
+
+      <div class="markdown">
+| 128 |  64 |  32 |  16 |   8 |   4 |   2 |   1 |
+|-----|-----|-----|-----|-----|-----|-----|-----|
+|   0 |   0 |   1 |   0 |   1 |   0 |   1 |   0 |
+      </div>
+
+      <div class="markdown vert">
+|         |     |
+|---------|-----|
+| Binary  | `00101010`
+| Hex     | `2A`
+| Decimal | <code class="block">(128 * 0) + (64 * 0) + (32 * 1) + (16 * 0) +<br>(8 * 1) + (4 * 0) + (2 * 1) + (1 * 0) = 42.</code>
+      </div>
+    </section>
+
+    <section id="chr-smzx" class="inner">
+      <h3>SMZX</h3>
+      <p>
+        The most significant two bits of the byte represent the leftmost pixel
+        in the row and the least significant two bits represent the rightmost
+        pixel. The four colors are encoded as the following bit pairs and
+        quaternary digits:
+      </p>
+
+      <div class="markdown">
+| Color | Binary | Quaternary |
+|-------|--------|------------|
+| 1     | `00`   | `0`
+| 2     | `01`   | `1`
+| 3     | `10`   | `2`
+| 4     | `11`   | `3`
+      </div>
+
+      <p>
+        Example: setting the first and second pixels to color 2, third to
+        color 4, and fourth to color 1.
+      </p>
+
+      <div class="markdown">
+|  64 |  16 |   4 |   1 |
+|-----|-----|-----|-----|
+| `1` | `1` | `3` | `0` |
+      </div>
+
+      <div class="markdown vert">
+|            |      |
+|------------|------|
+| Quaternary | `1130`
+| Binary     | `01011100`
+| Hex        | `5C`
+| Decimal    | <code class="block">(64 * 1) + (16 * 1) + (4 * 3) + (1 * 0) = 92</code>
+      </div>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="pals" class="main">
+    <h2>Palette Formats</h2>
+    <p>
+    </p>
+    <section id="pal" class="inner">
+      <h3>Palette (.PAL)</h3>
+      <p>
+        This file format describes an MZX palette. A PAL file contains raw
+        palette data only. Each color in the PAL file consists of 3 bytes
+        representing the red, green, and blue components of the color. Each RGB
+        component of a color is a value from 0 to 63 (inclusive).
+      </p>
+      <p>
+        A typical MZX or SMZX mode 1 PAL file contains 16 colors (48 bytes) and
+        a typical SMZX mode 2 or mode 3 pal file contains 256 colors (768 bytes).
+      </p>
+      <p>
+        The PAL file does not encode any SMZX 3 color index information (see PALIDX).
+      </p>
+
+      <h4>Examples</h4>
+      <div class="markdown">
+| Color         | R   | G   | B   | Hex representation in-file: |
+|---------------|-----|-----|-----|-----------------------------|
+| Black         | 0   | 0   | 0   | `00 00 00`
+| Dark Blue     | 0   | 0   | 42  | `00 00 2A`
+| Dark Green    | 0   | 42  | 0   | `00 2A 00`
+| Dark Cyan     | 0   | 42  | 42  | `00 2A 2A`
+| Dark Red      | 42  | 0   | 0   | `2A 00 00`
+| Dark Magenta  | 42  | 0   | 42  | `2A 00 2A`
+| Brown         | 42  | 21  | 0   | `2A 15 00`
+| Light Grey    | 42  | 42  | 42  | `2A 2A 2A`
+| Dark Grey     | 21  | 21  | 21  | `15 15 15`
+| Light Blue    | 21  | 21  | 63  | `15 15 3F`
+| Light Green   | 21  | 63  | 21  | `15 3F 15`
+| Light Cyan    | 21  | 63  | 63  | `15 3F 3F`
+| Light Red     | 63  | 21  | 21  | `3F 15 15`
+| Light Magenta | 63  | 21  | 63  | `3F 15 3F`
+| Yellow        | 63  | 63  | 21  | `3F 3F 15`
+| White         | 63  | 63  | 63  | `3F 3F 3F`
+      </div>
+    </section>
+
+    <section id="palidx" class="inner">
+      <h3>Palette Indices (.PALIDX)</h3>
+      <p>
+        This file format describes SMZX mode 3 subpalette indices. A PALIDX file
+        contains 256 sets of indices (one for each subpalette). Each set of
+        indices is a sequence of four bytes (for a total of 1024 bytes per file);
+        the first indicates color 1 of the subpalette, the second color 2, and so on.
+      </p>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="world" class="main">
+    <h2>World and Save Format (all versions)</h2>
+    <p>
+      This section documents the portions of the world and save formats that
+      are consistent between all MZX versions.
+    </p>
+
+    <section id="worldheader" class="inner">
+      <h3>World Format Header and Magic</h3>
+      <p>
+        Most world files begin with a 29-byte header. The only exceptions are
+        encrypted worlds from MegaZeux versions prior to 2.6 (see <a href="#encryption200">Encryption</a>)
+        and rearchived MegaZeux 2.90 worlds (see <a href="#world290">the 2.90+ world format</a>).
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s25  | World title <a href="#worldheadernote1">(1)</a> <a href="#worldheadernote2">(2)</a>
+| 25   | b    | Protection method (always zero)
+| 26   | s3   | Magic
+      </div>
+
+      <p>
+        The following magic values are valid:
+      </p>
+
+      <div class="markdown">
+| Magic       | World/File format version |
+|-------------|---------------------------|
+| `MZX`       | 1.00
+| `MZ2`       | 2.00 through 2.51
+| `MZA`       | 2.51s1
+| `M\x02\x09` | 2.51s2 through 2.61 (including MZXAk, SMZX 1.00a)
+| `M\x02\x11` | Used for decrypted worlds by newer MZX versions.<br>Likely derived from misreading 2.51s2 magic <code>M\002\011</code> (octal) as hex.
+| `M\x02\x32` | 2.62 and 2.62b (from octal <code>M\002\062</code>)
+| `M\x02\x41` | 2.65 (from decimal <code>65</code>)
+| `M\x02\x44` | 2.68 (from decimal <code>68</code>) <a href="#worldheadernote3">(3)</a>
+| `M\x02\x45` | 2.69 (from decimal <code>69</code>)
+| `M\x02\x46` | 2.69b
+| `M\x02\x48` | 2.69c
+| `M\x02\x49` | 2.70
+| `M\x02\x50` | 2.80X (from decimal <code>80</code>) (first port releases)
+| `M\x02\x51` | 2.81X (and so on...)
+| `M\x02\x52` | 2.82X
+| `M\x02\x53` | 2.83
+| `M\x02\x54` | 2.84X
+| `M\x02\x5A` | 2.90X
+| `M\x02\x5B` | 2.91X
+| `M\x02\x5C` | 2.92X
+      </div>
+
+      <p>
+        The internal MZX version value is derived from the world magic by 1)
+        treating the last two bytes as a big-endian word if the magic is from
+        2.51s2 or later or 2) using <code>0x0100</code>, <code>0x0205</code>,
+        and <code>0x0208</code> for 1.00, 2.00, and 2.51s1 worlds (respectively).
+      </p>
+
+      <h4>Notes:</h4>
+      <ol>
+        <li id="worldheadernote1">
+          The world title is a duplicate of the name of the title board.
+        </li>
+        <li id="worldheadernote2">
+          The world title is null terminated within its fixed buffer.
+        </li>
+        <li id="worldheadernote3">
+          The MZX 2.68 magic was erroneously never saved with world files,
+          meaning worlds from MZX 2.68 relying on MZX 2.68 features won't work
+          (as they are versioned for MZX 2.65). Resaving these worlds in a
+          newer version (such as MZX 2.69) usually fixes this issue.
+        </li>
+      </ol>
+    </section>
+
+    <section id="saveheader" class="inner">
+      <h3>Save Format Header and Magic</h3>
+      <p>
+        Save files use a different header from world files, but the idea is
+        generally the same.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s5   | Magic
+| 5    | w    | World version (separate from file format version)
+| 7    | b    | Current board number
+      </div>
+
+      <div class="markdown">
+| Magic         | File Format Version |
+|---------------|---------------------|
+| `MZSV2`       | 2.00 through 2.51
+| `MZXSA`       | 2.51s1
+| `MZS\x02\x09` | 2.51s2 through 2.61 (including MZXAk, SMZX 1.00a)
+| `MZS\x02\x32` | 2.62 and 2.62b
+| `MZS\x02\x41` | 2.65
+| `MZS\x02\x44` | 2.68
+| `MZS\x02\x45` | 2.69
+| `MZS\x02\x46` | 2.69b
+| `MZS\x02\x48` | 2.69c
+| `MZS\x02\x49` | 2.70
+| `MZS\x02\x50` | 2.80X (first port releases)
+| `MZS\x02\x51` | 2.81X
+| `MZS\x02\x52` | 2.82X
+| `MZS\x02\x53` | 2.83
+| `MZS\x02\x54` | 2.84X
+| `MZS\x02\x5A` | 2.90X
+| `MZS\x02\x5B` | 2.91X
+| `MZS\x02\x5C` | 2.92X
+      </div>
+
+      <p>
+        The internal MZX file format version is derived from the save magic the
+        same way it is derived from the world magic, and is always the same as
+        the MZX version that produced the save file.
+      </p>
+      <p>
+        The world version field (saved separately here) is always the same as
+        the world version derived from the world magic when the world was
+        initially loaded. Notably, this value is saved as a <i>little endian</i>
+        word (whereas it is represented as a <i>big endian</i> word in the world
+        magic string).
+      </p>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="world200" class="main">
+    <h2>World and Save Format (2.00 through 2.84X)</h2>
+    <p>
+      MegaZeux 2.00 world (.MZX) and save (.SAV) files share very similar formats,
+      so they are documented together here. This section also tries to note changes
+      in these formats and when they occurred, but save format modifications between
+      versions are somewhat of a mess, so please report any inaccuracies in this
+      document.
+    </p>
+
+    <section id="encryption200" class="inner">
+      <h3>Encryption</h3>
+      <p>
+        Encrypted worlds (from versions that supported them) begin with a
+        44-byte header similar to the regular header:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s25  | World title
+| 25   | b    | Protection method (always non-zero)
+| 26   | s15  | Password (encrypted) <a href="#encryption200note1">(1)</a>
+| 41   | s3   | Magic (not encrypted)
+      </div>
+
+      <p>
+        The password can be decrypted with the following algorithm:
+      </p>
+
+      <code class="example">
+/**
+ * This code is copied from the MZX source code, which is GPL 2+ licensed.
+ */
+char magic_code[16] = "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
+
+for(i = 0; i < 15; i++)
+{
+  password[i] ^= magic_code[i];
+  password[i] -= 0x12 - protection_method;
+  password[i] ^= 0x8D;
+}
+      </code>
+
+      <p>
+        The rest of the MZX file follows XORed with a byte calculated from the
+        password. In practice, this byte can be determined by using the character
+        set starting at the 44th byte of the encrypted world, the ID chars space
+        damage value at the 3955th byte of the encrypted world (which is almost
+        always 0 unencrypted) or by using recognizable colors in the palette
+        (offsets 4197 through 4244).
+      </p>
+
+      <h4>Notes</h4>
+      <ol>
+        <li id="encryption200note1">
+          The password field is null terminated if it is 14 or fewer characters
+          long. If the password is 15 characters long, it is NOT null terminated,
+          and the null terminator must be added by the decryption algorithm.
+        </li>
+      </ol>
+    </section>
+
+    <section id="global200" class="inner">
+      <h3>Global Data</h3>
+      <p>
+        World data immediately follows the header. For ease of readability, it
+        has been broken down into several blocks. Each block starts immediately
+        after the previous block ends.
+      </p>
+
+      <h4>World Block 1</h4>
+      <p>
+        Total block length is 4129 bytes.
+      </p>
+      <div class="markdown">
+| Pos.  | Size     | Description |
+|-------|----------|-------------|
+| 0     | b * 3584 | Character set (see <a href="#chr">Character Sets</a>)
+| 3584  | b * 128  | ID Chars block 1 (thing chars)
+| 3712  | b * 195  | ID Chars block 2 (animations and colors)
+| 3907  | b        | ID Chars missile color
+| 3908  | b * 3    | ID Chars bullet colors
+| 3911  | b * 128  | ID Chars block 3 (damage)
+| 4039  | s15 * 6  | Status counter names (null terminated)
+      </div>
+
+      <h4>Save Block 1</h4>
+      <p>
+        This block is only present in save files. Total block length is 73 bytes
+        plus the length of the current playing mod name.
+      </p>
+      <div class="markdown">
+| Pos.  | Size  | Description |
+|-------|-------|-------------|
+| 0     | b * 16| Keys
+| 16    | b     | Blind timer
+| 17    | b     | Firewalker timer
+| 18    | b     | Freeze time timer
+| 19    | b     | Slow time timer
+| 20    | b     | Wind timer
+| 21    | w * 8 | Saved player X positions
+| 37    | w * 8 | Saved player Y positions
+| 53    | b * 8 | Saved player board numbers
+| 61    | b     | Player color
+| 62    | b * 3 | Under player ID/color/param
+| 65    | b     | Message edges enabled (1) or disabled (0)
+| 66    | b     | Scroll base color
+| 67    | b     | Scroll corner color
+| 68    | b     | Scroll pointer color
+| 69    | b     | Scroll title color
+| 70    | b     | Scroll arrow color
+| 71    | w     | Mod playing length
+| 73    | s...  | Mod playing (NOT null terminated)
+      </div>
+
+      <p>FIXME
+
+Notes:
+* The under player fields are used as an extra "layer" beneath where the player
+  is standing. This is so e.g. the player can be placed on top of something that
+  is on top of a floor and the floor won't be erased when the thing immediately
+  beneath the player is pushed to the under layer.
+* Prior to MZX 2.83, the mod playing length and mod playing fields were a single
+  13 byte null terminated buffer. Prior to MZX 2.51s2, the current playing mod
+  was not saved at all (as it was always the same as the current board mod).
+      </p>
+
+      <h4>World Block 2</h4>
+      <p>
+        Total block length is 72.
+      </p>
+      <div class="markdown">
+| Pos.  | Size       | Description |
+|-------|------------|-------------|
+| 0     | b          | Viewport edge color
+| 1     | b          | First board number
+| 2     | b          | Endgame board number (255: no endgame board)
+| 3     | b          | Death board number (254: same position, 255: restart board)
+| 4     | w          | Endgame board teleport X
+| 6     | w          | Endgame board teleport Y
+| 8     | b          | Game over SFX enabled (1) or disabled (0)
+| 9     | w          | Death board teleport X
+| 11    | w          | Death board teleport Y
+| 13    | ws         | Starting lives
+| 15    | ws         | Lives limit
+| 17    | ws         | Starting health
+| 19    | ws         | Health limit
+| 21    | b          | Enemies' bullets hurt other enemies
+| 22    | b          | Clear messages and projectiles on exit
+| 23    | b          | Can only play world from a <code>SWAP WORLD</code>
+| 24    | b * 3 * 16 | Palette (see <a href="#pal">Palettes</a>)
+      </div>
+
+      <h4>Save Block 2</h4>
+      <p>FIXME</p>
+
+      <h4>Global Robot Offset and Board Count</h4>
+      <p>
+        In an unencrypted world file this will always be at offset 4230.
+      </p>
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | d    | Offset of global robot within the file
+| 4    | b    | Number of boards (1-250) or 0 for SFX table
+      </div>
+    </section>
+
+    <section id="sfx200" class="inner">
+      <h3>Custom SFX Table</h3>
+
+      <p>
+        If the board count byte is 0, a custom SFX table is present. If there
+        is not a custom SFX table in the world file, the world will use the MZX
+        default SFX instead. The SFX table begins with:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | w    | Length of the SFX table in bytes
+      </div>
+
+      <p>
+        Then, for each SFX (50 total):
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | b    | Length of SFX string, including null terminator (69 max)
+| 1    | s... | SFX string
+      </div>
+
+      <p>
+        Finally:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | b    | Number of boards in the world (1-250)
+      </div>
+    </section>
+
+    <section id="boardlist200" class="inner">
+      <h3>Board Names, Sizes, and Offsets</h3>
+
+      <p>
+        Following the board count byte is the board names list and the board sizes and
+        offsets table.
+      </p>
+
+      <p>
+        For each board:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s25  | Board names (null terminated)
+      </div>
+
+      <p>
+        For each board:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | d    | Size of board data within the file
+| 4    | d    | Offset of board data within the file
+      </div>
+
+      <p>
+        Typically, board data immediately follows these tables, and the global robot
+        is placed at the very end of the world file.
+      </p>
+    </section>
+
+    <section id="board200" class="inner">
+      <h3>Boards</h3>
+      <p>
+        Each board begins with the following fields:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | b    | Board mode <a href="#board200note1">(1)</a>
+| 1    | b    | Varies <a href="#board200note2">(2)</a>
+      </div>
+
+      <h4>Notes</h4>
+      <ol>
+        <li id="board200note1">
+          Boards in DOS MZX had a fixed buffer size of <code>10000</code> for
+          each board plane. DOS MZX used the board mode field to determine what
+          the maximum dimensions of the board were within the available space.
+          MegaZeux 2.80+ ignores this field and uses the plane dimensions to
+          to determine the board size.
+          <div class="markdown">
+| Board Mode | Max. Width | Max. Height |
+|------------|------------|-------------|
+| `0`        | 60         | 166         |
+| `1`        | 80         | 125         |
+| `2`        | 100        | 100         |
+| `3`        | 200        | 50          |
+| `4`        | 400        | 25          |
+          </div>
+        </li>
+        <li id="board200note2">
+          If the second byte of the board non-zero, it is the lower byte of the
+          level_id plane's width field. If this byte is <code>00</code>, the
+          board has an overlay and has the following extra field. As a
+          consequence of this, the board width in these versions is not allowed
+          to be a multiple of 256 (which would have a lower byte of
+          <code>00</code>).
+        </li>
+      </ol>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 2    | b    | Overlay mode (1: enabled, 2: static, 3: transparent)
+      </div>
+
+    </section>
+
+    <section id="boardplanes200" class="inner">
+      <h3>Board RLE Planes</h3>
+      <p>
+        Board and overlay contents are compressed with run length encoding. Each board
+        has either 6 or 8 planes (depending on whether the overlay is enabled), which
+        immediately follow the mode fields and are stored in the following order:
+      </p>
+
+      <div class="markdown">
+| name              | description |
+|-------------------|-------------|
+| overlay_char      | Overlay char data (only if overlay is enabled)
+| overlay_color     | Overlay color data (only if overlay is enabled)
+| level_id          | Board thing IDs
+| level_color       | Board thing colors
+| level_param       | Board thing parameters
+| level_under_id    | Board thing IDs for floors beneath non-floor things
+| level_under_color | Board thing colors for floors beneath non-floor things
+| level_under_param | Board thing parameters for floors beneath non-floor things
+      </div>
+
+      <p>
+        Each compressed plane starts with the following fields:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | w    | Width
+| 2    | w    | Height
+      </div>
+
+      <p>
+        The RLE data follows after. Values 0 through 127 represent a single
+        literal value in the uncompressed data. If bit 7 is set, instead a run
+        of length <code>(byte & 127)</code> should be filled with the next byte
+        in the stream. The RLE plane can be decompressed with the following
+        algorithm:
+      </p>
+
+      <code class="example">
+/**
+ * This code fragment is a simplified version of the RLE2 unpacking code from
+ * MegaZeux's source code, and is therefore GPL 2+ licensed.
+ */
+
+int i = 0;
+while(i < width * height)
+{
+  current_char = *(stream++);
+  if(!(current_char & 0x80))
+  {
+    plane[i++] = current_char;
+  }
+  else
+  {
+    int runsize = current_char & 0x7F;
+    current_char = *(stream++);
+
+    for(int j = 0; j < runsize; j++)
+      plane[i++] = current_char;
+  }
+}
+      </code>
+
+      <p>
+        The RLE stream ends when <code>(board width * board height)</code>
+        bytes have been expanded from the stream, and the next compressed plane
+        or the board parameters block immediately follows.
+      </p>
+    </section>
+
+    <section id="boardparams200" class="inner">
+      <h3>Board Parameters (2.00 through 2.82X)</h3>
+      <p>
+        The board parameters block follows the board RLE planes.
+        The following is the board parameters format for MZX versions prior to
+        2.83.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s13  | Mod playing (null terminated)
+| 13   | b    | Viewport X
+| 14   | b    | Viewport Y
+| 15   | b    | Viewport width
+| 16   | b    | Viewport height
+| 17   | b    | Can shoot?
+| 18   | b    | Can bomb?
+| 19   | b    | Fire burns brown?
+| 20   | b    | Fire burns space?
+| 21   | b    | Fire burns fakes?
+| 22   | b    | Fire burns trees?
+| 23   | b    | Explosions leave (0: space, 1: ash, 2: fire)
+| 24   | b    | Save mode (0: enabled, 1: disabled, 2: sensor only)
+| 25   | b    | Forest to floor?
+| 26   | b    | Collect bombs?
+| 27   | b    | Fire burns forever?
+| 28   | b    | Board # to north
+| 29   | b    | Board # to south
+| 30   | b    | Board # to east
+| 31   | b    | Board # to west
+| 32   | b    | Restart if zapped?
+| 33   | w    | Time limit
+| 35   | b    | Last key pressed
+| 36   | ws   | Input (numeric value)
+| 38   | b    | Input length
+| 39   | s81  | Input (string value) (null terminated)
+| 120  | b    | Last player direction
+| 121  | s81  | Bottom message (null terminated)
+| 202  | b    | Bottom message timer
+| 203  | b    | Lazerwall timer
+| 204  | b    | Bottom message row
+| 205  | b    | Bottom message column
+| 206  | w    | Scroll X
+| 208  | w    | Scroll Y
+| 210  | w    | Scroll locked X
+| 212  | w    | Scroll locked Y
+| 214  | b    | Player locked NS?
+| 215  | b    | Player locked EW?
+| 216  | b    | Player attack locked?
+| 217  | b    | Volume
+| 218  | b    | Volume increment
+| 219  | b    | Volume target
+      </div>
+    </section>
+
+    <section id="boardparams283" class="inner">
+      <h3>Board Parameters (2.83 and 2.84X)</h3>
+      <p>
+        The board parameters block follows the board RLE planes.
+        The following is the board format for MZX versions 2.83 and 2.84X.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | w    | Mod playing length
+| 2    | s... | Mod playing (NOT null terminated)
+      </div>
+
+      <p>
+        This block immediately follows the playing mod:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | b    | Viewport X
+| 1    | b    | Viewport Y
+| 2    | b    | Viewport width
+| 3    | b    | Viewport height
+| 4    | b    | Can shoot?
+| 5    | b    | Can bomb?
+| 6    | b    | Fire burns brown?
+| 7    | b    | Fire burns space?
+| 8    | b    | Fire burns fakes?
+| 9    | b    | Fire burns trees?
+| 10   | b    | Explosions leave (0: space, 1: ash, 2: fire)
+| 11   | b    | Save mode (0: enabled, 1: disabled, 2: sensor only)
+| 12   | b    | Forest to floor?
+| 13   | b    | Collect bombs?
+| 14   | b    | Fire burns forever?
+| 15   | b    | Board # to north
+| 16   | b    | Board # to south
+| 17   | b    | Board # to east
+| 18   | b    | Board # to west
+| 19   | b    | Restart if zapped?
+| 20   | w    | Time limit
+      </div>
+
+      <p>
+        The following block is only present in save files.
+      </p>
+
+      <div class="markdown">
+| pos     | size | description |
+|---------|------|-------------|
+| 0       | b    | Last key pressed
+| 1       | ws   | Input (numeric value)
+| 3       | w    | Input length = x
+| 5       | s... | Input (string value) (NOT null terminated)
+| 5+x     | b    | Last player direction
+| 6+x     | w    | Bottom message length = y
+| 8+x     | s... | Bottom message (NOT null terminated)
+| 10+x+y  | b    | Bottom message timer
+| 11+x+y  | b    | Lazerwall timer
+| 12+x+y  | b    | Bottom message row
+| 13+x+y  | b    | Bottom message column
+| 14+x+y  | w    | Scroll X
+| 16+x+y  | w    | Scroll Y
+| 18+x+y  | w    | Scroll locked X
+| 20+x+y  | w    | Scroll locked Y
+      </div>
+
+      <p>
+        The following block is in both world files and save files.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | b    | Player locked NS?
+| 1    | b    | Player locked EW?
+| 2    | b    | Player attack locked?
+      </div>
+
+      <p>
+        The final block is only present in save files.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | b    | Volume
+| 1    | b    | Volume increment
+| 2    | b    | Volume target
+      </div>
+
+      <h4>Notes</h4>
+      <ol>
+        <li>
+          Some MZX worlds created with an early alpha version of MZX 2.83 have
+          boards parameters in the older format. Since these were saved with the
+          MZX 2.83 <a href="#worldheader">world magic</a>, they can't be loaded
+          in newer versions of MZX, but they can be fixed by hex editing the
+          magic from <code>M\x02\x53</code> to <code>M\x02\x52</code>.
+        </li>
+      </ol>
+    </section>
+
+    <section id="boardobjs200" class="inner">
+      <h3>Board Objects</h3>
+      <p>
+        Following the board parameters are the robot, scroll, and sensor lists.
+        Each list is stored as a single byte <code>N</code> indicating the
+        number of robots, scrolls, or sensors on the board (0 to 255), followed
+        by <code>N</code> stored objects of that type. Each object in its
+        respective list immediately follows the prior, and the next list starts
+        immediately following the last object in the previous list. The board
+        data ends after all three lists and their objects have been read.
+      </p>
+      <p>
+        The board robots/scrolls/sensors in the list count from ID 1 upward, as
+        ID 0 is the global robot and is invalid for scrolls and sensors. Since
+        objects in the file are sequential, robot/scroll/sensor IDs may have to
+        be reassigned when saving worlds or saves in these versions to optimize
+        out gaps in the list.
+      </p>
+    </section>
+
+    <section id="robot200" class="inner">
+      <h3>Robots</h3>
+      <p>
+        Robots are stored in world/save files in the following format. Several
+        of these fields are only used during runtime and thus initial values
+        used when saving worlds are also listed.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Default | Description |
+|------|------|---------|-------------|
+| 0    | w    |         | Program length in bytes
+| 2    | w    |         | unused <a href="#robot200note1">(1)</a>
+| 4    | s15  |         | Robot name (null-terminated)
+| 19   | b    | 2       | Robot char
+| 20   | w    | 1       | Current position in program
+| 22   | b    | 0       | Position within current line (for <code>WAIT</code>/<code>GO</code>/etc)
+| 23   | b    | 1       | Robot cycle
+| 24   | b    | 0       | Cycle counter
+| 25   | b    | 1       | Bullet type
+| 26   | b    | 0       | Locked status (0: unlocked, 1: locked) <a href="#robot200note2">(2)</a>
+| 27   | b    | 0       | Can lavawalk (0: no, 1: yes)
+| 28   | b    | 0       | Walk direction (0: idle) <a href="#robot200note2">(2)</a>
+| 29   | b    | 0       | Last touch direction <a href="#robot200note3">(3)</a>
+| 30   | b    | 0       | Last shot direction <a href="#robot200note3">(3)</a>
+| 31   | w    | <a href="#robot200note4">note 4</a> | X position
+| 33   | w    | <a href="#robot200note4">note 4</a> | Y position
+| 35   | b    | 0       | Status for the current board cycle<br>(0: not run, 1: has run, 2: not run, has been sent a label)
+| 36   | ws   | 0       | Local <a href="#robot200note5">(5)</a>
+| 38   | b    | 1       | Used (1) or unused (0)
+| 39   | ws   | 0       | Loopcount <a href="#robot200note6">(6)</a>
+      </div>
+
+      <h4>Notes</h4>
+      <ol>
+        <li id="robot200note1">
+          DOS MZX versions wrote robot, scroll, and sensor structs directly to
+          world or save files. The unused 2-byte field at offset 2 corresponds
+          to the program memory pointer in these versions.
+        </li>
+        <li id="robot200note2">
+          In DOS MZX versions from 2.69b to 2.70, the <code>LOCAL2</code> counter
+          was stored by using the robot walk direction as the upper byte and the
+          robot locked status as the lower byte.
+        </li>
+        <li id="robot200note3">
+          In DOS MZX versions from 2.69b to 2.70, the <code>LOCAL3</code> counter
+          was stored by using the robot last touch direction as the upper byte and
+          the robot last shot direction as the lower byte.
+        </li>
+        <li id="robot200note4">
+          The X/Y position variables are generally initialized to 0 in world files
+          from DOS versions. Versions 2.80+ typically save the actual X and Y position
+          in these variables in world files.
+        </li>
+        <li id="robot200note5">
+          The local field in this block is completely ignored in versions 2.80+ and
+          is saved in the robot save block instead. In versions prior to 2.51s1,
+          this field existed but was not used.
+        </li>
+        <li id="robot200note6">
+          The loopcount field in this block is completely ignored in 2.84X save files
+          and is saved in the robot save block instead.
+        </li>
+      </ol>
+
+      <p>
+        In save files from MegaZeux 2.80 and onward, an extra data block follows:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size    | Description |
+|------|---------|-------------|
+| 41   | ds      | Loopcount <a href="#robot200note7">(7)</a>
+| 45   | ds * 32 | Local#
+| 173  | d       | Stack length = X
+| 177  | d       | Current position in stack
+| 181  | d * X   | Robot stack
+      </div>
+
+      <h4>Notes</h4>
+      <ol>
+        <li id="robot200note7" value="7">
+          The loopcount field in this block was not present prior to 2.84 (i.e. the
+          block started with the local counters instead and was 4 bytes shorter).
+        </li>
+      </ol>
+
+      <p>
+        In both world and save files, the <a href="#bytecode">robot program</a>
+        immediately follows the above block(s). The size of the program in file
+        is the same as the program length field in the robot data.
+      </p>
+
+      <p>
+        In older worlds, robots marked unused may have uninitialized memory
+        saved where their program would usually go (the global robot from
+        <i>Slave Pit</i> is an example). In this situation, the Robotic program
+        should not be validated and should instead be ignored or replaced with
+        <code>FF 00</code>.
+      </p>
+    </section>
+
+    <section id="scroll200" class="inner">
+      <h3>Scrolls</h3>
+      <p>
+        Each scroll block is 7 bytes plus the length of the scroll text long.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | w    | Number of lines
+| 2    | w    | unused <a href="#scroll200note1">(1)</a>
+| 4    | w    | Scroll text length in bytes
+| 6    | b    | Used (1) or unused (0)
+| 7    | s... | Scroll text <a href="#scroll200note2">(2)</a>
+      </div>
+
+      <h4>Notes</h4>
+      <ol>
+        <li id="scroll200note1">
+          The unused 2-byte field corresponds to the scroll text memory pointer
+          in DOS versions of MZX.
+        </li>
+        <li id="scroll200note2">
+          The scroll text must begin with a <code>01</code> hex byte, must
+          contain at least one (<code>0A</code> hex), and must be null terminated
+          (i.e. the smallest valid scroll is <code>01 0A 00</code> with
+          number of lines=1 and length=3).
+        </li>
+      </ol>
+    </section>
+
+    <section id="sensor200" class="inner">
+      <h3>Sensors</h3>
+      <p>
+        Each sensor block is 32 bytes long. The sensor name and robot to message
+        fields must also be null terminated within their fixed-length buffer.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s15  | Sensor name
+| 15   | b    | Sensor char
+| 16   | s15  | Robot to message
+| 31   | b    | Used (1) or unused (0)
+      </div>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="mzb" class="main">
+    <h2>Board File (.MZB)</h2>
+    <p>
+      A MegaZeux board file begins with a 4-byte header:
+    </p>
+
+    <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | b    | Always hex <code>FF</code>
+| 1    | m3   | Magic (<code>MB2</code> for 2.00 through 2.51s1, same as <a href="#worldheader">world magic</a> after)
+    </div>
+
+    <section id="mzb200" class="inner">
+      <h3>Board Files for 2.00 through 2.84X</h3>
+      <p>
+        The header is immediately followed by the raw data for a single board
+        in the world format (including robots, scrolls, and sensors as-needed).
+        See the <a href="#board200">world format documentation for boards</a>
+        for more info.
+      </p>
+    </section>
+
+    <section id="mzb290" class="inner">
+      <h3>Board Files for 2.90 onward</h3>
+      <p>
+        The header is immediately followed by a ZIP archive containing the
+        board properties, board planes, and object properties files for a single
+        board. The following filenames are used:
+      </p>
+
+      <div class="markdown">
+| Filename  | Description |
+|-----------|-------------|
+| `b00`     | <a href="#board290">Board properties</a>
+| `b00bid`  | <a href="#boardplanes290">Board level_id plane</a>
+| `b00bpr`  | <a href="#boardplanes290">Board level_param plane</a>
+| `b00bco`  | <a href="#boardplanes290">Board level_color plane</a>
+| `b00uid`  | <a href="#boardplanes290">Board level_under_id plane</a>
+| `b00upr`  | <a href="#boardplanes290">Board level_under_param plane</a>
+| `b00uco`  | <a href="#boardplanes290">Board level_under_color plane</a>
+| `b00och`  | <a href="#boardplanes290">Board overlay_char plane</a> (if overlay is enabled)
+| `b00oco`  | <a href="#boardplanes290">Board overlay_color plane</a> (if overlay is enabled)
+| `b00r##`  | <a href="#robot290">Robot properties</a> (up to 255)
+| `b00sc##` | <a href="#scroll290">Scroll properties</a> (up to 255)
+| `b00se##` | <a href="#sensor290">Sensor properties</a> (up to 255)
+      </div>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="mzm" class="main">
+    <h2>Image File (.MZM)</h2>
+    <p>
+      Raw blocks of board and overlay/vlayer data can be saved to and loaded
+      from MZMs (or MZX image files). Three variants of the MZM format exist.
+      The current MZM format is MZM3, which was introduced in MegaZeux 2.84.
+    </p>
+    <section id="mzm3" class="inner">
+      <h3>MZM3</h3>
+      <p>
+        An MZM3 file begins with the following 20-byte header:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description                                   | Values |
+|------|------|-----------------------------------------------|--------|
+| 0    | s4   | Magic                                         | <code>MZM3</code>
+| 4    | w    | Width
+| 6    | w    | Height
+| 8    | d    | Location in file of robot data                | 0 if not present
+| 12   | b    | Number of robots in data                      | 0 if not present
+| 13   | b    | Storage mode                                  | 0: board, 1: layer
+| 14   | b    | "Savegame" MZM? (includes runtime robot data) | 0 if false, 1 if true
+| 15   | w    | World version                                 | See below.
+| 17   | b    | reserved
+| 18   | b    | reserved
+| 19   | b    | reserved
+      </div>
+
+      <p>
+        The world version is stored as a 2-byte little endian value where the
+        upper byte is the major version number and the lower byte is the minor
+        version number (like the world version field in the
+        <a href="#saveheader">save format header</a>). MZM3 files are forward
+        compatible unless they contain robot information, in which case the
+        robots in the MZM are replaced with customblocks.
+      </p>
+
+      <p>
+        The header is immediately followed by a board data block or a layer
+        data block depending on the storage mode value indicated in the header.
+      </p>
+
+      <h4>Storage Mode 0 (Board)</h4>
+      <p>
+        The MZM data is stored in the following format if the "board" storage
+        mode is selected. The data is composed of <code>(width * height)</code>
+        blocks, where each block is 6 bytes and contains the following:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | b    | ID
+| 1    | b    | Param
+| 2    | b    | Color
+| 3    | b    | Under ID
+| 4    | b    | Under param
+| 5    | b    | Under color
+      </div>
+
+      <p>
+        Signs, scrolls, sensors, players, and IDs >=128 will be replaced with
+        spaces when an MZM is loaded. Robots in a board MZM require extra
+        storage information.
+      </p>
+
+      <p>
+        When a board MZM is created from the overlay or vlayer, the ID is
+        typically set to 5, the param to the char, the color to the color, and
+        all other values are set to 0.
+      </p>
+
+      <h4>Storage Mode 1 (Layer)</h4>
+      <p>
+        The MZM data is stored in the following format if the "layer" storage
+        mode is selected. The data is composed of <code>(width * height)</code>
+        blocks, where each block is 2 bytes and contains the following:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | b    | Char
+| 1    | b    | Color
+      </div>
+
+      <h4>Robot Data</h4>
+      <p>
+        MZMs using the "board" storage mode may additionally include a robot
+        data block if the MZM board data contains robots. This block will always
+        be located after the board data, and the format of this block is based
+        on the MZX world format corresponding to the world version indicated in
+        the header.
+      </p>
+
+      <p>
+        MZMs created in MZX 2.84X will contain <code>N</code> robot blocks as
+        described in the <a href="#robot200">2.00 through 2.84X world format
+        documentation</a>. If this is a savegame MZM, the robots will be in the
+        save format instead of the world format.
+      </p>
+
+      <p>
+        MZMs created in MZX 2.90 and onward will contain a ZIP archive after
+        the board data containing <code>N</code> <a href="#robot290">robot
+        properties files</a> named in the format <code>r##</code>, where
+        <code>##</code> is a hexadecimal number between 1 and 255 corresponding
+        to a robot ID in the board data. If this is a savegame MZM, the robots
+        will contain savegame properties.
+      </p>
+    </section>
+
+    <section id="mzm2" class="inner">
+      <h3>MZM2</h3>
+      <p>FIXME</p>
+    </section>
+
+    <section id="mzmx" class="inner">
+      <h3>MZMX</h3>
+      <p>FIXME</p>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="counters" class="main">
+    <h2>Counters File (.COUNTERS)</h2>
+    <p>FIXME</p>
+  </section>
+
+  <hr>
+
+  <section id="bytecode" class="main">
+    <h2>Robotic Bytecode (.BC)</h2>
+    <p>
+      This section describes the general structure of Robotic bytecode. The
+      specifics are out of the scope of this document. More info can be found
+      in the file <code>info_mzx.txt</code> distributed with MegaZeux source
+      packages.
+    </p>
+
+    <ul>
+      <li>
+        Valid Robotic programs begin with the byte <code>FF</code>.
+      </li>
+      <li>
+        A sequence of commands in the following format follows:
+        <code>LL XX ... LL</code>, where <code>LL</code> is the length of the
+        bytecode command (0-255) and <code>XX</code> is the command number. The
+        length does not include the length bytes themselves, only the command
+        and parameters between them.
+      </li>
+      <li>
+        Between the command number and terminating length byte, a number of
+        parameters follow in one of two formats: <code>00 XX XX</code>, where
+        <code>XX XX</code> is a little-endian word, or
+        <code>LL [string] 00</code>, where <code>LL</code> is the length of the
+        null-terminated param string that follows (including the null
+        terminator). The number of required params varies between commands.
+      </li>
+      <li>
+        The next command's prefixed length byte immediately follows the previous
+        command's trailing length byte.
+      </li>
+      <li>
+        A final byte of <code>00</code> (indicating a command of length zero)
+        terminates the program.
+      </li>
+      <li>
+        The shortest valid Robotic program is <code>FF 00</code> with a length of 2.
+      </li>
+    </ul>
+  </section>
+</div>
+</body>
+</html>
