@@ -1106,7 +1106,7 @@ for(i = 0; i < 15; i++)
 | 9          | s... | Input filename (NOT null terminated)
 | 9 + X      | d    | Input file position
 | 13 + X     | w    | Output filename length = Y
-| 15 + X     | s... | Output filename (null terminated)
+| 15 + X     | s... | Output filename (NOT null terminated)
 | 15 + X + Y | d    | Output file position
       </div>
 
@@ -1127,7 +1127,7 @@ for(i = 0; i < 15; i++)
 | 14         | s... | Input filename (NOT null terminated)
 | 14 + X     | d    | Input file position
 | 18 + X     | w    | Output filename length = Y
-| 20 + X     | s... | Output filename (null terminated)
+| 20 + X     | s... | Output filename (NOT null terminated)
 | 20 + X + Y | d    | Output file position
       </div>
 
