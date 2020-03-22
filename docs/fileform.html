@@ -270,7 +270,7 @@
 <div id="container">
   <header>
     <h1>MegaZeux File Format Reference</h1>
-    <h3>MegaZeux GIT &mdash; March 20th, 2020</h3>
+    <h3>MegaZeux GIT &mdash; March 22th, 2020</h3>
     <p>
       This guide contains specifications for most MegaZeux file formats.
     </p>
@@ -298,6 +298,19 @@
       <ol type="i">
         <li><a href="#encryption200">Encryption</a></li>
         <li><a href="#global200">Global Data</a></li>
+        <ol type="a">
+          <li><a href="#global200world1">World Block 1</a></li>
+          <li><a href="#global200save1">Save Block 1 (.SAV only)</a></li>
+          <li><a href="#global200world2">World Block 2</a></li>
+          <li><a href="#global200save2">Save Block 2 (.SAV only)</a></li>
+          <li><a href="#global200counters">Counters List (.SAV only)</a></li>
+          <li><a href="#global200strings">Strings List (2.80X through 2.84X) (.SAV only)</a></li>
+          <li><a href="#global200sprites">Sprites List (2.65 through 2.84X) (.SAV only)</a></li>
+          <li><a href="#global200stringsDOS">Strings List (2.68 through 2.70) (.SAV only)</a></li>
+          <li><a href="#global200mathfile">Math and File IO (2.68 through 2.84X) (.SAV only)</a></li>
+          <li><a href="#global200smzx">SMZX Data and Commands (2.69 through 2.84X) (.SAV only)</a></li>
+          <li><a href="#global200vlayer">Vlayer (2.69c through 2.84X) (.SAV only)</a></li>
+        </ol>
         <li><a href="#sfx200">Custom SFX Table</a></li>
         <li><a href="#boardlist200">Board Names, Sizes, and Offsets</a></li>
         <li><a href="#board200">Boards</a></li>
@@ -743,7 +756,7 @@ for(i = 0; i < 15; i++)
         after the previous block ends.
       </p>
 
-      <h4>World Block 1</h4>
+      <h4 id="global200world1">World Block 1</h4>
       <p>
         Total block length is 4129 bytes.
       </p>
@@ -759,7 +772,7 @@ for(i = 0; i < 15; i++)
 | 4039  | s15 * 6  | Status counter names (null terminated)
       </div>
 
-      <h4>Save Block 1</h4>
+      <h4 id="global200save1">Save Block 1 (.SAV only)</h4>
       <p>
         This block is only present in save files. Total block length is 73 bytes
         plus the length of the current playing mod name.
@@ -777,30 +790,38 @@ for(i = 0; i < 15; i++)
 | 37    | w * 8 | Saved player Y positions
 | 53    | b * 8 | Saved player board numbers
 | 61    | b     | Player color
-| 62    | b * 3 | Under player ID/color/param
+| 62    | b * 3 | Under player ID/color/param <a href="#global200save1note1">(1)</a>
 | 65    | b     | Message edges enabled (1) or disabled (0)
 | 66    | b     | Scroll base color
 | 67    | b     | Scroll corner color
 | 68    | b     | Scroll pointer color
 | 69    | b     | Scroll title color
 | 70    | b     | Scroll arrow color
-| 71    | w     | Mod playing length
-| 73    | s...  | Mod playing (NOT null terminated)
+| 71    | w     | Mod playing length <a href="#global200save1note2">(2)</a>
+| 73    | s...  | Mod playing (NOT null terminated) <a href="#global200save1note2">(2)</a>
       </div>
 
-      <p>FIXME
+      <h5>Notes</h5>
+      <ol>
+        <li id="global200save1note1">
+          The under player fields are used as an extra "layer" beneath where
+          the player is standing. This is so e.g. the player can be placed on
+          top of something that is on top of a floor and the floor won't be
+          erased when the thing immediately beneath the player is pushed to the
+          under layer. These fields are effectively unused though, because there
+          is a duplicate in <a href="#global200save2">the second save block</a>
+          that is always loaded over these.
+        </li>
+        <li id="global200save1note2">
+          Prior to MZX 2.83, the mod playing length and mod playing fields were
+          a single 13 byte null terminated buffer (total block length 84 bytes).
+          Prior to MZX 2.51s2, the current playing mod was not saved at all
+          (as it was always the same as the current board mod) (total block
+          length 71 bytes).
+        </li>
+      </ol>
 
-Notes:
-* The under player fields are used as an extra "layer" beneath where the player
-  is standing. This is so e.g. the player can be placed on top of something that
-  is on top of a floor and the floor won't be erased when the thing immediately
-  beneath the player is pushed to the under layer.
-* Prior to MZX 2.83, the mod playing length and mod playing fields were a single
-  13 byte null terminated buffer. Prior to MZX 2.51s2, the current playing mod
-  was not saved at all (as it was always the same as the current board mod).
-      </p>
-
-      <h4>World Block 2</h4>
+      <h4 id="global200world2">World Block 2</h4>
       <p>
         Total block length is 72.
       </p>
@@ -826,8 +847,376 @@ Notes:
 | 24    | b * 3 * 16 | Palette (see <a href="#pal">Palettes</a>)
       </div>
 
-      <h4>Save Block 2</h4>
-      <p>FIXME</p>
+      <h4 id="global200save2">Save Block 2 (.SAV only)</h4>
+      <p>
+        This block is only present in save files has a length of 24 bytes.
+      </p>
+      <div class="markdown">
+| Pos. | Size    | Description |
+|------|---------|-------------|
+| 0    | b * 16  | Palette intensities <a href="#global200save2note1">(1)</a>
+| 16   | b       | Faded state (1: faded out, 0: faded in)
+| 17   | w       | Player restart X
+| 19   | w       | Player restart Y
+| 21   | b * 3   | Under player ID/color/param <a href="#global200save2note2">(2)</a>
+      </div>
+
+      <h5>Notes</h5>
+      <ol>
+        <li id="global200save2note1">
+          Only the first 16 palette intensities were ever saved for SMZX modes
+          2 and 3.
+        </li>
+        <li id="global200save2note2">
+          Yes, this is duplicate info from the first save block, and no, I
+          don't know why MZX saved this info twice. This copy is always loaded
+          over the copy in save block 1.
+        </li>
+      </ol>
+
+      <h4 id="global200counters">Counters List (.SAV only)</h4>
+      <p>
+        WARNING: The format of the save blocks following this frequently changed
+        from version to version. If there are any inaccuracies in the legacy
+        world format documentation, they're probably below. MZX versions prior
+        to 2.90 regularly dropped support for saves from older MZX versions due
+        to the format changes in this part of the format being too messy to support.
+        Difficulty in supporting changes to the world/save format are one of the main
+        reasons <a href="#world290">the world format was replaced in MZX 2.90.</a>
+      </p>
+
+      <p>
+        This block is only present in save files and has an variable length.
+        The counters list begins with the number of counters.
+      </p>
+      <div class="markdown">
+| Pos. | Size    | Description |
+|------|---------|-------------|
+| 0    | <a href="#global200countersnote1">(1)</a>     | Number of counters = N
+      </div>
+      <p>
+        A list of <code>N</code> counters follows, each in the following format
+        in MZX versions 2.00 through 2.80X:
+      </p>
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s15  | Counter name (null terminated)
+| 15   | ws   | Counter value (2.80X saves this as a <code>ds</code> instead)
+      </div>
+      <p>
+        In MZX versions 2.81X and up, the counters are instead stored in the
+        following format:
+      </p>
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | ds   | Counter value
+| 4    | d    | Name length
+| 8    | s... | Counter name (NOT null terminated)
+      </div>
+
+      <h5>Notes</h5>
+      <ol>
+        <li id="global200countersnote1">
+          In MZX 2.51 and below, the maximum number of counters saved was 59,
+          and the number of counters was saved as a byte.
+          In DOS versions afterward, the maximum was 1020, and the number of
+          counters was saved as a word (2 bytes).
+          In MZX 2.80 to 2.84X, the maximum number of counters was lifted, and
+          the number of counters was saved as a dword (4 bytes).
+        </li>
+      </ol>
+
+      <h4 id="global200strings">Strings List (2.80X through 2.84X) (.SAV only)</h4>
+      <p>
+        The strings block in versions 2.80X through 2.84X follows the counters
+        block and is stored in a similar way.
+      </p>
+      <div class="markdown">
+| Pos. | Size    | Description |
+|------|---------|-------------|
+| 0    | d       | Number of strings = N
+      </div>
+
+      <p>
+        A list of <code>N</code> string definitions follows. In 2.80X the strings
+        were saved in the following format:
+      </p>
+      <div class="markdown">
+| Pos. | Size    | Description |
+|------|---------|-------------|
+| 0    | s15     | String name (null terminated)
+| 15   | s64     | String value (null terminated)
+      </div>
+
+      <p>
+        In versions 2.81b and onward <a href="#global200stringsnote1">(1)</a>,
+        the following structure is used instead:
+      </p>
+      <div class="markdown">
+| Pos.  | Size    | Description |
+|-------|---------|-------------|
+| 0     | d       | String name length = X
+| 4     | d       | String value length = Y
+| 8     | b * X   | String name (NOT null terminated)
+| 8 + X | b * Y   | String value (NOT null terminated)
+      </div>
+
+      <h5>Notes</h5>
+      <ol>
+        <li id="global200stringsnote1">
+          MegaZeux 2.81 tries to load strings in the format provided above but
+          saves them in a different format unique to this release. Combined with
+          no format validation at the time, the result was that 2.81 saves with
+          strings always crashed on load.
+        </li>
+      </ol>
+
+      <h4 id="global200sprites">Sprites List (2.65 through 2.84X) (.SAV only)</h4>
+      <p>
+        In versions that support sprites, the sprites list begins with
+        <code>N</code> sprite definitions, where <code>N</code> = 64 for MZX
+        2.65 through 2.69b and <code>N</code> = 256 for MZX 2.69c and all releases
+        afterward.
+      </p>
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | w    | Sprite X
+| 2    | w    | Sprite Y
+| 4    | w    | Sprite reference X
+| 6    | w    | Sprite reference Y
+| 8    | b    | Sprite color
+| 9    | b    | Sprite flags <a href="#global200spritesnote1">(1)</a>
+| 10   | b    | Sprite width
+| 11   | b    | Sprite height
+| 12   | bs   | Sprite collision X
+| 13   | bs   | Sprite collision Y
+| 14   | b    | Sprite collision width
+| 15   | b    | Sprite collision height
+      </div>
+
+      <p>
+        The sprite data is followed by the following global sprite variables:
+      </p>
+      <div class="markdown">
+| Pos. | Size     | Description |
+|------|----------|-------------|
+| 0    | b        | Total number of active sprites
+| 1    | b        | Sprite Y order enabled (1) or disabled (0)
+| 2    | w        | Current number of sprite collisions
+      </div>
+
+      <p>
+        The sprite collision list follows. In MZX 2.65 through 2.69b it is
+        stored as follows:
+      </p>
+      <div class="markdown">
+| Pos. | Size     | Description |
+|------|----------|-------------|
+| 4    | bs * N   | Sprite collision list (2.65: N=32, 2.68 through 2.69b: N=64)
+      </div>
+
+      <p>
+        From MZX 2.69c onward, the sprite collision list is saved as words and
+        is always 256 in length:
+      </p>
+      <div class="markdown">
+| Pos. | Size     | Description |
+|------|----------|-------------|
+| 4    | ws * 256 | Sprite collision list
+      </div>
+
+      <h5>Notes</h5>
+      <ol>
+        <li id="global200spritesnote1">
+          Sprite flags:
+          <div class="markdown">
+| Flag   | Description |
+|--------|-------------|
+| `0x01` | Sprite is initialized
+| `0x02` | Sprite ccheck 1 is enabled
+| `0x04` | Sprite is drawn over the overlay
+| `0x08` | Sprite uses reference colors
+| `0x10` | Sprite is static relative to the viewport
+| `0x20` | Sprite ccheck 2 is enabled
+| `0x40` | Sprite references the vlayer
+          </div>
+        </li>
+      </ol>
+
+      <h4 id="global200stringsDOS">Strings List (2.68 through 2.70) (.SAV only)</h4>
+      <p>
+        Strings in DOS MZX versions do not have names and are instead numbered
+        from 1 to 16. They are saved as fixed length buffers after the sprites
+        list (rather than before it as in port versions). The length of this
+        block is always 16*64=1024 (these weren't saved in versions with 16 char
+        strings).
+      </p>
+      <div class="markdown">
+| Pos. | Size        | Description |
+|------|-------------|-------------|
+| 0    | b * 16 * 64 | Strings data (16 strings, fixed length null terminated values)
+      </div>
+
+      <h4 id="global200mathfile">Math and File IO (2.68 through 2.84X) (.SAV only)</h4>
+      <p>
+        MZX versions 2.68 through 2.70 save the math and file IO vars as follows:
+      </p>
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | ws   | Multiplier
+| 2    | ws   | Divider
+| 4    | ws   | Circle divisions
+| 6    | s12  | Input filename (null terminated)
+| 18   | d    | Input file position
+| 22   | s12  | Output filename (null terminated)
+| 24   | d    | Output file position
+      </div>
+
+      <p>
+        MZX versions 2.80X through 2.82X save the following:
+      </p>
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | w<a href="#global200mathnote1">(1)</a> | Multiplier
+| 2    | w<a href="#global200mathnote1">(1)</a> | Divider
+| 4    | w<a href="#global200mathnote1">(1)</a> | Circle divisions
+| 6    | b    | Built-in message status (0: disabled, 1: enabled)
+| 7    | s12  | Input filename (null terminated)
+| 19   | d    | Input file position
+| 21   | s12  | Output filename (null terminated)
+| 25   | d    | Output file position
+      </div>
+
+      <p>
+        MZX 2.83 saves the following:
+      </p>
+      <div class="markdown">
+| Pos.       | Size | Description |
+|------------|------|-------------|
+| 0          | w<a href="#global200mathnote1">(1)</a> | Multiplier
+| 2          | w<a href="#global200mathnote1">(1)</a> | Divider
+| 4          | w<a href="#global200mathnote1">(1)</a> | Circle divisions
+| 6          | b    | Built-in message status (0: disabled, 1: enabled)
+| 7          | w    | Input filename length = X
+| 9          | s... | Input filename (NOT null terminated)
+| 9 + X      | d    | Input file position
+| 13 + X     | w    | Output filename length = Y
+| 15 + X     | s... | Output filename (null terminated)
+| 15 + X + Y | d    | Output file position
+      </div>
+
+      <p>
+        MZX 2.84X saves the following:
+      </p>
+      <div class="markdown">
+| Pos.       | Size | Description |
+|------------|------|-------------|
+| 0          | w<a href="#global200mathnote1">(1)</a> | Multiplier
+| 2          | w<a href="#global200mathnote1">(1)</a> | Divider
+| 4          | w<a href="#global200mathnote1">(1)</a> | Circle divisions
+| 6          | ws   | Input file delimiter
+| 8          | ws   | Output file delimiter
+| 10         | b    | Built-in shooting status (<code>SPACELOCK</code>) (0: disabled, 1: enabled)
+| 11         | b    | Built-in message status (0: disabled, 1: enabled)
+| 12         | w    | Input filename length = X
+| 14         | s... | Input filename (NOT null terminated)
+| 14 + X     | d    | Input file position
+| 18 + X     | w    | Output filename length = Y
+| 20 + X     | s... | Output filename (null terminated)
+| 20 + X + Y | d    | Output file position
+      </div>
+
+      <h5>Notes</h5>
+      <ol>
+        <li id="global200mathnote1">
+          These variables were still saved as a word from 2.80X through 2.84X
+          despite the internal variable being expanded to a signed dword, meaning
+          these were truncated and then loaded as unsigned words. This wasn't
+          corrected until MZX 2.90. OOPS!
+        </li>
+      </ol>
+
+      <h4 id="global200smzx">SMZX Data and Commands (2.69 through 2.84X) (.SAV only)</h4>
+      <p>
+        MZX versions 2.69 and up save the SMZX mode here.
+      </p>
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | w    | SMZX mode (0: disabled)
+      </div>
+
+      <p>
+        If SMZX mode is 2 or 3 (2.81+), the SMZX palette (but NOT intensities,
+        which were unsaved prior to 2.90) follows:
+      </p>
+      <div class="markdown">
+| Pos. | Size        | Description |
+|------|-------------|-------------|
+| 0    | b * 3 * 768 | SMZX palette (see <a href="#pal">Palettes</a>)
+      </div>
+
+      <p>
+        The commands value follows. MZX 2.69 through MZX 2.83 saved it as a word
+        (despite the internal value being expanded to a dword in 2.80):
+      </p>
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | w    | Commands
+      </div>
+
+      <p>
+        MZX 2.84X finally corrected this to a dword:
+      </p>
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | d    | Commands
+      </div>
+
+      <h4 id="global200vlayer">Vlayer (2.69c through 2.84X) (.SAV only)</h4>
+      <p>
+        The vlayer is saved as follows in 2.69c and 2.70:
+      </p>
+      <div class="markdown">
+| Pos.  | Size      | Description |
+|-------|-----------|-------------|
+| 0     | w         | Vlayer width
+| 2     | w         | Vlayer height
+| 4     | b * 32768 | Vlayer chars
+| 32772 | b * 32768 | Vlayer colors
+      </div>
+
+      <p>
+        MegaZeux 2.80X saves this instead:
+      </p>
+      <div class="markdown">
+| Pos.        | Size      | Description |
+|-------------|-----------|-------------|
+| 0           | w         | Vlayer width = X
+| 2           | w         | Vlayer height = Y
+| 4           | b * X * Y | Vlayer chars
+| 4 + (X * Y) | b * X * Y | Vlayer colors
+      </div>
+
+      <p>
+        This was changed to the following in 2.81X:
+      </p>
+      <div class="markdown">
+| Pos.  | Size  | Description |
+|-------|-------|-------------|
+| 0     | d     | Vlayer size = X
+| 4     | w     | Vlayer width
+| 6     | w     | Vlayer height
+| 8     | b * X | Vlayer chars
+| 8 + X | b * X | Vlayer colors
+      </div>
 
       <h4>Global Robot Offset and Board Count</h4>
       <p>
