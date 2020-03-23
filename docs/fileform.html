@@ -1868,10 +1868,10 @@ while(i < width * height)
 |-----------|-------------------------------|-----------------------------|------------|
 | `world`   | <a href="#worldprop290"  >World Properties</a>              |                             | Never
 | `gr`      | <a href="#robot290"      >Global Robot</a>                  |
-| `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled  |
+| `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled | Since 2.91c
 | `chars`   | <a href="#chars290"      >Character Sets</a>                |                             | Always
 | `pal`     | <a href="#pal290"        >Palette</a>                       |
-| `palidx`  | <a href="#pal290"        >Palette Indices</a>               |
+| `palidx`  | <a href="#pal290"        >Palette Indices</a>               | Save-only in 2.90X, SMZX 3 only
 | `palint`  | <a href="#pal290"        >Palette Intensities</a>           | Save-only
 | `vco`     | <a href="#vlayer290"     >Vlayer Chars Plane</a>            | Save-only in 2.90X          | Always
 | `vch`     | <a href="#vlayer290"     >Vlayer Colors Plane</a>           | Save-only in 2.90X          | Always
@@ -1934,7 +1934,7 @@ while(i < width * height)
       <p>
         Property data contents vary between different properties, so in the
         property list specifications the expected contents are explicitly
-        defined. Most properties store an <code>int</code> value that accepts
+        defined. Most properties expect an <code>int</code> value and accept
         either 1 byte (equivalent to <code>b</code>), 2 bytes (<code>w</code>),
         or 4 bytes (<code>ds</code>) (expected size and signedness are explicitly
         noted). The next most common stored type is a variable length
