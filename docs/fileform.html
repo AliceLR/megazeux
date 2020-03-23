@@ -124,6 +124,16 @@
     font-family: monospace;
     white-space: pre;
   }
+
+  li
+  {
+    padding-bottom: .9em;
+  }
+
+  .contents li
+  {
+    padding-bottom: .05em;
+  }
 </style>
 <script type="text/javascript">
   function thead(contents)
@@ -149,9 +159,9 @@
   }
 
   /**
-    * Also support this specific case of Markdown code quotes because it's
-    * nicer than having to put <code></code> everywhere.
-    */
+   * Also support this specific case of Markdown code quotes because it's
+   * nicer than having to put <code></code> everywhere.
+   */
   function mdtocode(text)
   {
     if(text[0] == '`' && text[text.length - 1] == '`')
@@ -160,9 +170,9 @@
   }
 
   /**
-    * Convert an inline Markdown table into an HTML table.
-    * This is only guaranteed to support the Markdown tables in this file...
-    */
+   * Convert an inline Markdown table into an HTML table.
+   * This is only guaranteed to support the Markdown tables in this file...
+   */
   function mdtotable(element)
   {
     var hasvertheader = element.classList.contains("vert");
@@ -216,9 +226,9 @@
           return;
 
         /**
-          * Assuming on good faith that this line is formatted properly
-          * otherwise because I really don't care...
-          */
+         * Assuming on good faith that this line is formatted properly
+         * otherwise because I really don't care...
+         */
         hasseparator = true;
       }
       else
@@ -262,6 +272,13 @@
         if(elements[i].classList !== "undefined")
           mdtotable(elements[i]);
       }
+
+      /**
+       * This probably changed the size of the file, so if there's an anchor in
+       * the URL, try to jump to it...
+       */
+      if(window.location.href.indexOf('#') >= 0)
+        window.location.href = "" + window.location.href;
     }
   };
 </script>
@@ -324,7 +341,7 @@
       </ol>
       <li><a href="#world290">World and Save Format (2.90 onward)</a></li>
       <ol type="i">
-        <li><a href="#fileprop290">Files List</a></li>
+        <li><a href="#files290">Files List</a></li>
         <li><a href="#properties">Properties Format</a></li>
         <li><a href="#worldprop290">World Properties</a></li>
         <li><a href="#sfx290">Custom SFX Table</a></li>
@@ -332,7 +349,7 @@
         <li><a href="#pal290">Palette, Palette Indices, and Palette Intensities</a></li>
         <li><a href="#vlayer290">Vlayer Planes</a></li>
         <li><a href="#spriteprop290">Sprite Properties (.SAV only)</a></li>
-        <li><a href="#counter290">Counter and String Lists (.SAV only)</a></li>
+        <li><a href="#counters290">Counter and String Lists (.SAV only)</a></li>
 
         <li><a href="#board290">Board Properties</a></li>
         <li><a href="#boardplanes290">Board Planes</a></li>
@@ -1628,8 +1645,8 @@ while(i < width * height)
 | 28   | b    | 0       | Walk direction (0: idle) <a href="#robot200note2">(2)</a>
 | 29   | b    | 0       | Last touch direction <a href="#robot200note3">(3)</a>
 | 30   | b    | 0       | Last shot direction <a href="#robot200note3">(3)</a>
-| 31   | w    | <a href="#robot200note4">note 4</a> | X position
-| 33   | w    | <a href="#robot200note4">note 4</a> | Y position
+| 31   | w    | <a href="#robot200note4">note 4</a>  | X position
+| 33   | w    | <a href="#robot200note4">note 4</a>  | Y position
 | 35   | b    | 0       | Status for the current board cycle<br>(0: not run, 1: has run, 2: not run, has been sent a label)
 | 36   | ws   | 0       | Local <a href="#robot200note5">(5)</a>
 | 38   | b    | 1       | Used (1) or unused (0)
@@ -1752,6 +1769,271 @@ while(i < width * height)
 | 16   | s15  | Robot to message
 | 31   | b    | Used (1) or unused (0)
       </div>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="world290" class="main">
+    <h2>World and Save Format (2.90 onward)</h2>
+    <p>
+      The legacy world format was replaced starting from MegaZeux 2.90 with a
+      ZIP-based format. The old world format was replaced for the following
+      reasons:
+    </p>
+    <ul>
+      <li>
+        A large number of problems with the save format were already documented,
+        such as <a href="#global200smzx">a lack of SMZX intensities in the save
+        file</a>, <a href="#global200mathfile">the math variables being saved
+        with the wrong datatype</a>, an awkward counter list hack being used to
+        save <code>MZX_SPEED</code>, and others, so the format needed to be
+        changed anyway. There were also numerous MZX features queued for
+        addition that required world format changes, including improved SMZX
+        support and vlayer editing.
+      </li>
+      <li>
+        The legacy format was hard to maintain and modify. The logic required
+        to support even simple changes to the binary world format (such as the
+        changes to the board parameters format in MZX 2.83) tended to get ugly
+        fast.<br><br>The ZIP-based format addresses this problem in two ways: first,
+        it allows for cleanly partitioning the world format into
+        palatable chunks, and second, it replaces the proprietary binary blobs
+        of data with slightly-less proprietary extensible fields lists in the
+        <a href="#properties">properties format</a>. These changes make it much
+        easier to, for a few examples, add new data structures or fields or
+        change the size of a field or to move formerly save-only data to world
+        files without breaking the world format.
+      </li>
+      <li>
+        The legacy format mostly lacked anything resembling internal consistency
+        checks, famously leading to broken games like <i>Brotherhood: The Legacy
+        of Drake</i> outwardly appearing to be fine but causing MZX instability
+        and crashes at certain points in the game. The ZIP format provides a
+        much more strict file structure, internal redundancy in its headers, and
+        CRC-32 checksums out of the box. While these aren't foolproof, they're
+        better than nothing, and combined with the increased internal
+        modularization of world files, means corruption at the very least may
+        corrupt less world data.
+      </li>
+      <li>
+        The increased consistency and extensibility of the world format means
+        it's possible to support older version saves with
+        <a href="#global200mathfile">much fewer headaches</a>.
+      </li>
+      <li>
+        Creating a new format provided an opportunity to clean up some
+        <a href="#robot200">artifacts of DOS MZX's saving code</a> and other
+        <a href="#global200save2">confusing relics</a> that had managed to
+        survive from the days of MZX 2.51.
+      </li>
+      <li>
+        The old format notably was lacking compression for certain things that
+        could <a href="#global200vlayer">generate very large .SAV files</a>, and
+        adding compression to these things would have added additional loader
+        compatibility checks. Furthermore, the board plane RLE compression was
+        very bad at handling values >=128 and could easily be manipulated to
+        produce planes larger in file than they were in memory. With the ZIP
+        format, however, any compression is an aspect of the container and not
+        the data itself, meaning data structures can be compressed with
+        little-to-no consequences for the handling of the data structures.
+        DEFLATE also tends to compress board planes much better than the RLE did,
+        and MZX was already pulling zlib in as a dependency for PNG support and
+        networking.
+      </li>
+    </ul>
+
+    <h4>World and Save Headers</h4>
+    <p>
+      ZIP-based worlds begin with the same <a href="#worldheader">29-byte header</a>
+      that unencrypted legacy worlds do, and ZIP-based saves begin with the same
+      <a href="#saveheader">8-byte header</a> that legacy save files do. This is
+      possible as ZIP archives parse starting from the end of the file, so ZIP
+      archives with prefixed data are still valid ZIP archives. The header data
+      is stored redundantly in the <a href="#worldprop290">world properties</a>
+      file so ZIP worlds can be extracted and rearchived by an external program
+      and still work even without the header.
+    </p>
+
+    <section id="files290" class="inner">
+      <h3>Files List</h3>
+      <p>
+        World and save files split their data into multiple internal files for
+        modularization and to allow for compression of specific parts of the
+        world data. The files supported by the world format and the order they
+        are loaded in are as follows:
+      </p>
+      <div class="markdown">
+| Filename  | Description                   | Notes                       | Compressed |
+|-----------|-------------------------------|-----------------------------|------------|
+| `world`   | <a href="#worldprop290"  >World Properties</a>              |                             | Never
+| `gr`      | <a href="#robot290"      >Global Robot</a>                  |
+| `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled  |
+| `chars`   | <a href="#chars290"      >Character Sets</a>                |                             | Always
+| `pal`     | <a href="#pal290"        >Palette</a>                       |
+| `palidx`  | <a href="#pal290"        >Palette Indices</a>               |
+| `palint`  | <a href="#pal290"        >Palette Intensities</a>           | Save-only
+| `vco`     | <a href="#vlayer290"     >Vlayer Chars Plane</a>            | Save-only in 2.90X          | Always
+| `vch`     | <a href="#vlayer290"     >Vlayer Colors Plane</a>           | Save-only in 2.90X          | Always
+| `spr`     | <a href="#spriteprop290" >Sprite Properties</a>             | Save-only                   | Always
+| `counter` | <a href="#counters290"   >Counters List</a>                 | Save-only
+| `string`  | <a href="#counters290"   >Strings List</a>                  | Save-only
+| `b##`     | <a href="#boardprop290"  >Board Properties</a>              | See below.
+| `b##bid`  | <a href="#boardplanes290">Board level_id Plane</a>          |                             | Always
+| `b##bpr`  | <a href="#boardplanes290">Board level_param Plane</a>       |                             | Always
+| `b##bco`  | <a href="#boardplanes290">Board level_color Plane</a>       |                             | Always
+| `b##uid`  | <a href="#boardplanes290">Board level_under_id Plane</a>    |                             | Always
+| `b##upr`  | <a href="#boardplanes290">Board level_under_param Plane</a> |                             | Always
+| `b##uco`  | <a href="#boardplanes290">Board level_under_color Plane</a> |                             | Always
+| `b##och`  | <a href="#boardplanes290">Board overlay_char Plane</a>      | Only if overlay enabled     | Always
+| `b##oco`  | <a href="#boardplanes290">Board overlay_color Plane</a>     | Only if overlay enabled     | Always
+| `b##r##`  | <a href="#robot290"      >Board Robot Properties</a>        | Only if robot exists
+| `b##sc##` | <a href="#scroll290"     >Board Scroll Properties</a>       | Only if scroll exists
+| `b##se##` | <a href="#sensor290"     >Board Sensor Properties</a>       | Only if sensor exists
+      </div>
+
+      <p>
+        The board files (prefixed with <code>b##</code>) corresponding to a
+        single board are all loaded before loading any files corresponding to
+        the next board. The first <code>##</code> in the names of these files
+        is the board number in hex. Examples: <code>b00</code> for the title
+        board, <code>b0A</code> for board 10, <code>bF9</code> for
+        board 249 (the highest possible regular board number), and
+        <code>bFF</code> for the special temporary board that may sometimes
+        exist in save files.
+      </p>
+      <p>
+        Extra storage data for robots, scrolls, and sensors is stored in separate
+        files. The file <code>bXXrYY</code> corresponds to the robot on board
+        <code>XX</code> (hex) with the robot ID <code>YY</code> (also hex). Values
+        from <code>01</code> (for robot 1) to <code>FF</code> (for robot 255) are
+        valid. The same applies for scrolls and sensors. The robot/scroll/sensor
+        must exist on the board for its corresponding properties file to be valid.
+      </p>
+    </section>
+
+    <section id="properties" class="inner">
+      <h3>Properties Format</h3>
+      <p>
+        World, board, sprite, and object data are all stored in a simple
+        extensible format created for MZX files similar to RIFF or a (very)
+        simplified EBML. All internal files labeled "properties" use this format.
+      </p>
+      <p>
+        These files consist of an unspecified number of blocks of "properties"
+        in the format:
+      </p>
+      <div class="markdown">
+| Pos. | Size  | Description |
+|------|-------|-------------|
+| 0    | w     | Property ID
+| 2    | d     | Property length = X
+| 6    | b * X | Property data
+      </div>
+
+      <p>
+        Property data contents vary between different properties, so in the
+        property list specifications the expected contents are explicitly
+        defined. Most properties store an <code>int</code> value that accepts
+        either 1 byte (equivalent to <code>b</code>), 2 bytes (<code>w</code>),
+        or 4 bytes (<code>ds</code>) (expected size and signedness are explicitly
+        noted). The next most common stored type is a variable length
+        <code>string</code> with no null terminator (equivalent to <code>s...</code>).
+      </p>
+
+      <p>
+        The file ends immediately when a property ID of <code>0x0000</code> is
+        encountered indicating the end of the file. This value is the same for
+        all different properties files.
+      </p>
+      <p>
+        It is possible to nest properties files to create a file with a more
+        complex structure (though MZX currently does not do this).
+      </p>
+    </section>
+
+    <section id="worldprop290" class="inner">
+      <h3>World Properties</h3>
+      <p>
+        FIXME
+      </p>
+    </section>
+
+    <section id="sfx290" class="inner">
+      <h3>Custom SFX Table</h3>
+      <p>
+        FIXME
+      </p>
+    </section>
+
+    <section id="chars290" class="inner">
+      <h3>Character Sets</h3>
+      <p>
+        FIXME
+      </p>
+    </section>
+
+    <section id="pal290" class="inner">
+      <h3>Palette, Palette Indices, and Palette Intensities</h3>
+      <p>
+        FIXME
+      </p>
+    </section>
+
+    <section id="vlayer290" class="inner">
+      <h3>Vlayer Planes</h3>
+      <p>
+        FIXME
+      </p>
+    </section>
+
+    <section id="spriteprop290" class="inner">
+      <h3>Sprite Properties (.SAV only)</h3>
+      <p>
+        FIXME
+      </p>
+    </section>
+
+    <section id="counters290" class="inner">
+      <h3>Counter and String Lists (.SAV only)</h3>
+      <p>
+        FIXME
+      </p>
+    </section>
+
+    <section id="board290" class="inner">
+      <h3>Board Properties</h3>
+      <p>
+        FIXME
+      </p>
+    </section>
+
+    <section id="boardplanes290" class="inner">
+      <h3>Board Planes</h3>
+      <p>
+        FIXME
+      </p>
+    </section>
+
+    <section id="robot290" class="inner">
+      <h3>Robot Properties</h3>
+      <p>
+        FIXME
+      </p>
+    </section>
+
+    <section id="scroll290" class="inner">
+      <h3>Scroll Properties</h3>
+      <p>
+        FIXME
+      </p>
+    </section>
+
+    <section id="sensor290" class="inner">
+      <h3>Sensor Properties</h3>
+      <p>
+        FIXME
+      </p>
     </section>
   </section>
 
