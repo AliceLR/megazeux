@@ -349,7 +349,7 @@
         <li><a href="#chars290">Character Sets</a></li>
         <li><a href="#pal290">Palette, Palette Indices, and Palette Intensities</a></li>
         <li><a href="#vlayer290">Vlayer Planes</a></li>
-        <li><a href="#spriteprop290">Sprite Properties (.SAV only)</a></li>
+        <li><a href="#sprites290">Sprite Properties (.SAV only)</a></li>
         <li><a href="#counters290">Counter and String Lists (.SAV only)</a></li>
 
         <li><a href="#board290">Board Properties</a></li>
@@ -943,6 +943,12 @@ for(i = 0; i < 15; i++)
           counters was saved as a word (2 bytes).
           In MZX 2.80 to 2.84X, the maximum number of counters was lifted, and
           the number of counters was saved as a dword (4 bytes).
+        </li>
+        <li>
+          Save files created by MZX 2.84c will save two additional "counters"
+          for <code>MZX_SPEED</code> and the <code>MZX_SPEED</code> locked
+          status. These are named "mzx_speed" and "_____lock_speed". This vile
+          hack was made unnecessary in MZX 2.90 by the new world format.
         </li>
       </ol>
 
@@ -1711,8 +1717,8 @@ while(i < width * height)
       <div class="markdown">
 | Pos. | Size    | Description |
 |------|---------|-------------|
-| 41   | ds      | Loopcount <a href="#robot200note7">(7)</a>
-| 45   | ds * 32 | Local#
+| 41   | ds      | Loopcount <a href="#robot200note8">(8)</a>
+| 45   | ds * 32 | Locals
 | 173  | d       | Stack length = X
 | 177  | d       | Current position in stack
 | 181  | d * X   | Robot stack
@@ -1720,7 +1726,7 @@ while(i < width * height)
 
       <h4>Notes</h4>
       <ol>
-        <li id="robot200note7" value="7">
+        <li id="robot200note8" value="8">
           The loopcount field in this block was not present prior to 2.84 (i.e. the
           block started with the local counters instead and was 4 bytes shorter).
         </li>
@@ -1982,43 +1988,168 @@ while(i < width * height)
     <section id="sfx290" class="inner">
       <h3>Custom SFX Table</h3>
       <p>
-        FIXME
+        The custom SFX table is saved as a raw data file of
+        <code>(NUM_SFX * LEGACY_SFX_SIZE</code> bytes, where
+        <code>NUM_SFX = 50</code> and <code>LEGACY_SFX_SIZE = 69</code> (for a
+        total of <code>3450</code> bytes prior to compression). If this file
+        is present, custom SFX will be enabled for the world. If this file is
+        absent, custom SFX will be disabled.
+      </p>
+      <p>
+        This data block is loaded directly over the custom SFX string data and
+        each SFX string is expected to be null terminated within the block.
+        This was a bad idea and will likely be replaced with a properties file
+        in the near future.
       </p>
     </section>
 
     <section id="chars290" class="inner">
       <h3>Character Sets</h3>
       <p>
-        FIXME
+        The world character sets are saved as a single raw
+        <a href="#chr">charset file</a>. In 2.90+ saves and 2.91+ worlds, all
+        15 user charsets will be saved for a total size of <code>14*15*256 = 53760</code>
+        bytes prior to compression. Worlds from MZX 2.90 will only save the
+        main charset (for a total size of <code>3840</code> bytes).
       </p>
     </section>
 
     <section id="pal290" class="inner">
       <h3>Palette, Palette Indices, and Palette Intensities</h3>
       <p>
-        FIXME
+        The world palette is saved as a raw <a href="#pal">palette file</a>
+        containing 256 colors (regardless of the current SMZX mode). If SMZX
+        mode 3 is enabled, the palette indicies will also be saved as a raw
+        <a href="#palidx">palette indicies file</a> in 2.90+ save files and
+        2.91+ world files.
+      </p>
+      <p>
+        In save files, the palette intensities are saved as a third file. All
+        256 palette intensities are saved regardless of the current SMZX mode
+        in an array of 256 bytes (note: this will truncate extreme intensity
+        values and was probably a bad idea).
       </p>
     </section>
 
     <section id="vlayer290" class="inner">
       <h3>Vlayer Planes</h3>
       <p>
-        FIXME
+        The vlayer chars and colors planes are saved as raw data in two separate
+        files in saves (2.90 and up) and world files (2.91 and up). These files
+        are expected to be <code>(vlayer_size)</code> bytes long, where
+        <code>vlayer_size</code> is specified in the world properties. If one
+        of these files is missing, an error will be displayed and the plane will
+        be zero-initialized.
       </p>
     </section>
 
-    <section id="spriteprop290" class="inner">
+    <section id="sprites290" class="inner">
       <h3>Sprite Properties (.SAV only)</h3>
       <p>
-        FIXME
+        Sprite data is stored in a single properties file for all sprites with
+        the following properties:
       </p>
+      <div class="markdown">
+| ID       | Property                   | Data Type     | Notes |
+|----------|----------------------------|---------------|-------|
+| `0x0001` | Set current sprite ID      | int(b)        | Each sprite<a href="#sprites290note1">(1)</a>
+| `0x0002` | Sprite X                   | int(ds)       | Each sprite
+| `0x0003` | Sprite Y                   | int(ds)       | Each sprite
+| `0x0004` | Sprite reference X         | int(ds)       | Each sprite
+| `0x0005` | Sprite reference Y         | int(ds)       | Each sprite
+| `0x0006` | Sprite color               | int(b)        | Each sprite
+| `0x0007` | Sprite flags               | int(b)        | Each sprite<a href="#sprites290note1">(2)</a>
+| `0x0008` | Sprite width               | int(d)        | Each sprite
+| `0x0009` | Sprite height              | int(d)        | Each sprite
+| `0x000A` | Sprite collision X         | int(ds)       | Each sprite
+| `0x000B` | Sprite collision Y         | int(ds)       | Each sprite
+| `0x000C` | Sprite collision width     | int(d)        | Each sprite
+| `0x000D` | Sprite collision height    | int(d)        | Each sprite
+| `0x000E` | Sprite transparent color   | int(ds)       | Each sprite
+| `0x000F` | Sprite character offset    | int(ds)       | Each sprite
+| `0x0010` | Sprite Z                   | int(ds)       | Each sprite, 2.92+
+| `0x8000` | Number of active sprites   | int(d)        | Only once
+| `0x8001` | Sprite Y order enabled     | int(ds)       | Only once
+| `0x8002` | Sprite collision count = N | int(d)        | Only once
+| `0x8003` | Sprite collision list      | array(ds * N) | Only once
+| `0x8004` | `SPR_NUM`                  | int(ds)       | Only once
+      </div>
+      <ol>
+        <li id="sprites290note1">
+          This property sets the sprite ID that all following individual sprite
+          properties will be loaded to. This must be present before the properties
+          of a given sprite for the sprite to be correctly loaded. All 256 sprites
+          and their properties will typically be saved regardless of whether they
+          have been used or not, which is why this file is compressed.
+        </li>
+        <li id="sprites290note2">
+          Sprite flags:
+          <div class="markdown">
+| Flag   | Description |
+|--------|-------------|
+| `0x01` | Sprite is initialized
+| `0x02` | Sprite ccheck 1 is enabled
+| `0x04` | Sprite is drawn over the overlay
+| `0x08` | Sprite uses reference colors
+| `0x10` | Sprite is static relative to the viewport
+| `0x20` | Sprite ccheck 2 is enabled
+| `0x40` | Sprite references the vlayer
+| `0x80` | Sprite is unbound
+          </div>
+          For unbound sprites, if both the ccheck 1 and ccheck 2 flags are set,
+          sprite ccheck 3 is enabled instead.
+        </li>
+      </ol>
     </section>
 
     <section id="counters290" class="inner">
       <h3>Counter and String Lists (.SAV only)</h3>
       <p>
-        FIXME
+        The counter and string lists are packed in the same binary format they
+        were in prior versions, each in their own file.
       </p>
+
+      <h4>Counters List</h4>
+      <p>
+        The counter list file starts with the number of counters:
+      </p>
+      <div class="markdown">
+| Pos. | Size    | Description |
+|------|---------|-------------|
+| 0    | d       | Number of counters = N
+      </div>
+      <p>
+        A list of <code>N</code> counter definitions follows:
+      </p>
+      <div class="markdown">
+| Pos. | Size  | Description |
+|------|-------|-------------|
+| 0    | ds    | Counter value
+| 4    | d     | Name length = X
+| 8    | b * X | Counter name (NOT null terminated)
+      </div>
+
+      <h4>Strings List</h4>
+      <p>
+        The string list file starts with the number of strings:
+      </p>
+      <div class="markdown">
+| Pos. | Size    | Description |
+|------|---------|-------------|
+| 0    | d       | Number of strings = N
+      </div>
+      <p>
+        A list of <code>N</code> string definitions follows:
+      </p>
+      <div class="markdown">
+| Pos.  | Size    | Description |
+|-------|---------|-------------|
+| 0     | d       | String name length = X
+| 4     | d       | String value length = Y
+| 8     | b * X   | String name (NOT null terminated)
+| 8 + X | b * Y   | String value (NOT null terminated)
+      </div>
+
     </section>
 
     <section id="board290" class="inner">
@@ -2136,7 +2267,7 @@ while(i < width * height)
 | `0x010B` | Loopcount                    | int(ds)               | Save-only
 | `0x010C` | Locals                       | array(ds * 32)        | Save-only
 | `0x0110` | Current position in stack    | int(d)                | Save-only
-| `0x0111` | Robot stack                  | array(ds * N)         | Save-only
+| `0x0111` | Robot stack                  | array(d * N)          | Save-only
 | `0x0120` | Can goopwalk                 | int(b)                | Save-only
       </div>
       <ol>
