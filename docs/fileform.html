@@ -1647,10 +1647,10 @@ while(i < width * height)
 | 30   | b    | 0       | Last shot direction <a href="#robot200note3">(3)</a>
 | 31   | w    | <a href="#robot200note4">note 4</a>  | X position
 | 33   | w    | <a href="#robot200note4">note 4</a>  | Y position
-| 35   | b    | 0       | Status for the current board cycle<br>(0: not run, 1: has run, 2: not run, has been sent a label)
-| 36   | ws   | 0       | Local <a href="#robot200note5">(5)</a>
+| 35   | b    | 0       | Status for the current board cycle <a href="#robot200note5">(5)</a>
+| 36   | ws   | 0       | Local <a href="#robot200note6">(6)</a>
 | 38   | b    | 1       | Used (1) or unused (0)
-| 39   | ws   | 0       | Loopcount <a href="#robot200note6">(6)</a>
+| 39   | ws   | 0       | Loopcount <a href="#robot200note7">(7)</a>
       </div>
 
       <h4>Notes</h4>
@@ -1663,12 +1663,14 @@ while(i < width * height)
         <li id="robot200note2">
           In DOS MZX versions from 2.69b to 2.70, the <code>LOCAL2</code> counter
           was stored by using the robot walk direction as the upper byte and the
-          robot locked status as the lower byte.
+          robot locked status as the lower byte. Setting <code>LOCAL2</code> had
+          the side effects you would expect from modifying those variables.
         </li>
         <li id="robot200note3">
           In DOS MZX versions from 2.69b to 2.70, the <code>LOCAL3</code> counter
           was stored by using the robot last touch direction as the upper byte and
-          the robot last shot direction as the lower byte.
+          the robot last shot direction as the lower byte. Setting <code>LOCAL3</code>
+          had the side effects you would expect from modifying those variables.
         </li>
         <li id="robot200note4">
           The X/Y position variables are generally initialized to 0 in world files
@@ -1676,11 +1678,24 @@ while(i < width * height)
           in these variables in world files.
         </li>
         <li id="robot200note5">
+          Robot statuses:
+          <div class="markdown">
+| Status | Description |
+|--------|-------------|
+| 0      | Normal
+| 1      | Did not execute this cycle or only executed <code>end</code>, <code>wait</code>
+| 2      | Same as 1 but has also been sent a label
+          </div>
+          When a robot's status is equal to 2, it will execute the label it was
+          sent on reverse board scan. Every robot's status is reset to 0 at the
+          start of each board cycle.
+        </li>
+        <li id="robot200note6">
           The local field in this block is completely ignored in versions 2.80+ and
           is saved in the robot save block instead. In versions prior to 2.51s1,
           this field existed but was not used.
         </li>
-        <li id="robot200note6">
+        <li id="robot200note7">
           The loopcount field in this block is completely ignored in 2.84X save files
           and is saved in the robot save block instead.
         </li>
