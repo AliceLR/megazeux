@@ -96,7 +96,7 @@
 
   td
   {
-    padding: 1px 10px;
+    padding: 1px 8px;
     border: 4px solid transparent;
   }
 
@@ -1970,7 +1970,8 @@ while(i < width * height)
       <p>
         The file ends immediately when a property ID of <code>0x0000</code> is
         encountered indicating the end of the file. This value is the same for
-        all different properties files.
+        all different properties files. Unrecognized properties IDs are usually
+        skipped unless noted otherwise.
       </p>
       <p>
         It is possible to nest properties files to create a file with a more
@@ -1981,8 +1982,103 @@ while(i < width * height)
     <section id="worldprop290" class="inner">
       <h3>World Properties</h3>
       <p>
-        FIXME
+        Global data is stored in a properties file for both world and save files.
+        This is a common pattern in the new world format; save data is typically
+        implemented as either extra properties only present in save files or
+        (occasionally) as save-exclusive raw data files.
       </p>
+      <p>
+        Unlike every other properties file in the format, the world properties
+        file is very strict: every property expected for a particular file
+        version <b>must</b> exist and <b>must</b> be in the order listed below.
+        Also unlike other properties files in the world format, unrecognized
+        properties in this file will usually generate an error.
+        An integrity check is performed to enforce this early in the load
+        process to determine whether or not the provided file is actually a
+        world/save.
+      </p>
+      <p>
+        Additionally, compressing this file should be avoided, as it may be
+        useful in the future for MZX to be able to peek at the contents of this
+        file prior to initializing ZIP archive data structures.
+      </p>
+      <div class="markdown">
+| ID       | Property                             | Data Type               | Notes |
+|----------|--------------------------------------|-------------------------|-------|
+| `0x0001` | World name                           | string(25) (with \0)    |
+| `0x0002` | World version                        | int(w)                  |
+| `0x0003` | File version                         | int(w)                  |
+| `0x0004` | Save start board #                   | int(b)                  | 255: temporary board
+| `0x0005` | Save has temporary board?            | int(b)                  |
+| `0x0008` | Number of boards in world            | int(b)                  |
+
+| `0x0010` | ID Chars blocks 1 and 2              | array(b * 323)          |
+| `0x0011` | ID Chars missile color               | int(b)                  |
+| `0x0012` | ID Chars bullet colors               | array(b * 3)            |
+| `0x0013` | ID Chars block 3 (damage)            | array(b * 128)          |
+
+| `0x0018` | Status counters                      | array(s15 with \0 * 6)  |
+
+| `0x0020` | Edge color                           | int(b)
+| `0x0021` | First board #                        | int(b)
+| `0x0022` | Endgame board #                      | int(b)  | 255: no endgame board
+| `0x0023` | Death board #                        | int(b)  | 254: same position<br>255: restart board
+| `0x0024` | Endgame board teleport X             | int(w)
+| `0x0025` | Endgame board teleport Y             | int(w)
+| `0x0026` | Game over SFX enabled?               | int(b)
+| `0x0027` | Death board teleport X               | int(w)
+| `0x0028` | Death board teleport Y               | int(w)
+| `0x0029` | Starting lives                       | int(w)
+| `0x002A` | Lives limit                          | int(w)
+| `0x002B` | Starting health                      | int(w)
+| `0x002C` | Health limit                         | int(w)
+| `0x002D` | Enemies' bullets hurt other enemies  | int(b)
+| `0x002E` | Clear messages/projectiles on exit   | int(b)
+| `0x002F` | Can only play world from a <code>SWAP WORLD</code>| int(b)
+
+| `0x8030` | SMZX mode (0: disabled)              | int(b)                  | Save-only before 2.91
+| `0x8031` | Vlayer width                         | int(w)                  | Save-only before 2.91
+| `0x8032` | Vlayer height                        | int(w)                  | Save-only before 2.91
+| `0x8033` | Vlayer size                          | int(d)                  | Save-only before 2.91
+
+| `0x8040` | Mod playing                          | string                  | Save-only
+| `0x8041` | MZX speed                            | int(b)                  | Save-only
+| `0x8042` | MZX speed is locked?                 | int(b)                  | Save-only
+| `0x8043` | Commands per cycle                   | int(ds)                 | Save-only
+| `0x8044` | Commands per cycle breakpoint limit  | int(ds)                 | Save-only
+| `0x8048` | Saved positions                      | array((w + w + b) * 8)  | Save-only
+| `0x8049` | Under player ID/param/color          | array(b * 3)            | Save-only
+| `0x804A` | Player restart X                     | int(w)                  | Save-only
+| `0x804B` | Player restart Y                     | int(w)                  | Save-only
+| `0x804C` | Player color                         | int(b)                  | Save-only
+| `0x804D` | Keys                                 | array(b * 16)           | Save-only
+| `0x8050` | Blind timer                          | int(b)                  | Save-only
+| `0x8051` | Firewalker timer                     | int(b)                  | Save-only
+| `0x8052` | Freeze time timer                    | int(b)                  | Save-only
+| `0x8053` | Slow time timer                      | int(b)                  | Save-only
+| `0x8054` | Wind timer                           | int(b)                  | Save-only
+| `0x8058` | Scroll base color                    | int(b)                  | Save-only
+| `0x8059` | Scroll corner color                  | int(b)                  | Save-only
+| `0x805A` | Scroll pointer color                 | int(b)                  | Save-only
+| `0x805B` | Scroll title color                   | int(b)                  | Save-only
+| `0x805C` | Scroll arrow color                   | int(b)                  | Save-only
+| `0x8060` | Message edges enabled?               | int(b)                  | Save-only
+| `0x8061` | Built-in shooting enabled?           | int(b)                  | Save-only
+| `0x8062` | Built-in messages enabled?           | int(b)                  | Save-only
+| `0x8063` | Faded state (1: faded out)           | int(b)                  | Save-only
+| `0x8070` | Input filename                       | string                  | Save-only
+| `0x8074` | Input file position                  | int(d)                  | Save-only
+| `0x8075` | Input file delimiter                 | int(ds)                 | Save-only
+| `0x8078` | Output filename                      | string                  | Save-only
+| `0x807C` | Output file position                 | int(d)                  | Save-only
+| `0x807D` | Output file delimiter                | int(ds)                 | Save-only
+| `0x8080` | Multiplier                           | int(ds)                 | Save-only
+| `0x8081` | Divider                              | int(ds)                 | Save-only
+| `0x8082` | Circle divisions                     | int(ds)                 | Save-only
+| `0x8090` | Maximum simultaneous sound effects   | int(ds)                 | Save-only, 2.91+
+| `0x8091` | SMZX message enabled in SMZX mode?   | int(b)                  | Save-only, 2.91+
+| `0x8092` | Joystick presses simulate keypresses?| int(b)                  | Save-only, 2.92+
+      </div>
     </section>
 
     <section id="sfx290" class="inner">
@@ -2058,7 +2154,7 @@ while(i < width * height)
 | `0x0004` | Sprite reference X         | int(ds)       | Each sprite
 | `0x0005` | Sprite reference Y         | int(ds)       | Each sprite
 | `0x0006` | Sprite color               | int(b)        | Each sprite
-| `0x0007` | Sprite flags               | int(b)        | Each sprite<a href="#sprites290note1">(2)</a>
+| `0x0007` | Sprite flags               | int(b)        | Each sprite<a href="#sprites290note2">(2)</a>
 | `0x0008` | Sprite width               | int(d)        | Each sprite
 | `0x0009` | Sprite height              | int(d)        | Each sprite
 | `0x000A` | Sprite collision X         | int(ds)       | Each sprite
