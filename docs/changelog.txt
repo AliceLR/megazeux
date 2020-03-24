@@ -4,6 +4,8 @@ USERS
 
 + Added robot editor shortcuts CTRL+Home and CTRL+End to jump to
   the start and the end of the current program.
++ Added docs/fileform.html, a document describing all currently
+  supported MZX file formats in excessive detail.
 + Fixed a bug where input text with no corresponding internal
   key would be ignored by the robot editor.
 + Fixed a bug where some AltGr key combinations would not work
