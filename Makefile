@@ -457,6 +457,7 @@ ${build}/docs: ${build}
 	${MKDIR} -p ${build}/docs
 	${CP} docs/macro.txt docs/keycodes.html docs/mzxhelp.html ${build}/docs
 	${CP} docs/joystick.html docs/cycles_and_commands.txt ${build}/docs
+	${CP} docs/fileform.html ${build}/docs
 	${CP} docs/changelog.txt docs/platform_matrix.html ${build}/docs
 
 ${build}/assets: ${build}
