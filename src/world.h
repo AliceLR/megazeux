@@ -57,6 +57,7 @@ __M_BEGIN_DECLS
  *  M\x02\x54 - MZX 2.84
  *  M\x02\x5A - MZX 2.90
  *  M\x02\x5B - MZX 2.91
+ *  M\x02\x5C - MZX 2.92
  *
  * Save files:
  *
@@ -77,6 +78,7 @@ __M_BEGIN_DECLS
  *  MZS\x02\x54 - MZX 2.84
  *  MZS\x02\x5A - MZX 2.90
  *  MZS\x02\x5B - MZX 2.91
+ *  MZS\x02\x5C - MZX 2.92
  *
  * Board files follow a similar pattern to world files. Versions prior to
  * 2.51S1 are "MB2". For versions greater than 2.51S1, they match the
