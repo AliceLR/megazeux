@@ -1361,9 +1361,11 @@ for(i = 0; i < 15; i++)
           If the second byte of the board non-zero, it is the lower byte of the
           level_id plane's width field. If this byte is <code>00</code>, the
           board has an overlay and has the following extra field. As a
-          consequence of this, the board width in these versions is not allowed
-          to be a multiple of 256 (which would have a lower byte of
-          <code>00</code>).
+          consequence of this, saving a world with overlay disabled and a board
+          width of 256 (which results in a lower byte of <code>00</code>) in
+          DOS MZX versions will generate a corrupt world and crash MZX. Port
+          versions avoid this by incrementing the board width to a non-multiple
+          of 256 when setting the board size in the editor.
         </li>
       </ol>
 
