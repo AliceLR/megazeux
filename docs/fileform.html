@@ -351,7 +351,6 @@
         <li><a href="#vlayer290">Vlayer Planes</a></li>
         <li><a href="#sprites290">Sprite Properties (.SAV only)</a></li>
         <li><a href="#counters290">Counter and String Lists (.SAV only)</a></li>
-
         <li><a href="#board290">Board Properties</a></li>
         <li><a href="#boardplanes290">Board Planes</a></li>
         <li><a href="#robot290">Robot Properties</a></li>
@@ -1783,16 +1782,15 @@ while(i < width * height)
     <section id="sensor200" class="inner">
       <h3>Sensors</h3>
       <p>
-        Each sensor block is 32 bytes long. The sensor name and robot to message
-        fields must also be null terminated within their fixed-length buffer.
+        Each sensor block is 32 bytes long.
       </p>
 
       <div class="markdown">
 | Pos. | Size | Description |
 |------|------|-------------|
-| 0    | s15  | Sensor name
+| 0    | s15  | Sensor name (null-terminated)
 | 15   | b    | Sensor char
-| 16   | s15  | Robot to message
+| 16   | s15  | Robot to message (null-terminated)
 | 31   | b    | Used (1) or unused (0)
       </div>
     </section>
@@ -1812,7 +1810,7 @@ while(i < width * height)
         A large number of problems with the save format were already documented,
         such as <a href="#global200smzx">a lack of SMZX intensities in the save
         file</a>, <a href="#global200mathfile">the math variables being saved
-        with the wrong datatype</a>, an awkward counter list hack being used to
+        with the wrong data type</a>, an awkward counter list hack being used to
         save <code>MZX_SPEED</code>, and others, so the format needed to be
         changed anyway. There were also numerous MZX features queued for
         addition that required world format changes, including improved SMZX
@@ -1829,11 +1827,12 @@ while(i < width * height)
         <a href="#properties">properties format</a>. These changes make it much
         easier to, for a few examples, add new data structures or fields or
         change the size of a field or to move formerly save-only data to world
-        files without breaking the world format.
+        files without breaking the world format. ZIP-based save files from older
+        versions can also be supported with <a href="#global200mathfile">fewer headaches</a>.
       </li>
       <li>
         The legacy format mostly lacked anything resembling internal consistency
-        checks, famously leading to broken games like <i>Brotherhood: The Legacy
+        checks, infamously leading to broken games like <i>Brotherhood: The Legacy
         of Drake</i> outwardly appearing to be fine but causing MZX instability
         and crashes at certain points in the game. The ZIP format provides a
         much more strict file structure, internal redundancy in its headers, and
@@ -1841,11 +1840,6 @@ while(i < width * height)
         better than nothing, and combined with the increased internal
         modularization of world files, means corruption at the very least may
         corrupt less world data.
-      </li>
-      <li>
-        The increased consistency and extensibility of the world format means
-        it's possible to support older version saves with
-        <a href="#global200mathfile">much fewer headaches</a>.
       </li>
       <li>
         Creating a new format provided an opportunity to clean up some
@@ -1861,11 +1855,9 @@ while(i < width * height)
         very bad at handling values >=128 and could easily be manipulated to
         produce planes larger in file than they were in memory. With the ZIP
         format, however, any compression is an aspect of the container and not
-        the data itself, meaning data structures can be compressed with
-        little-to-no consequences for the handling of the data structures.
-        DEFLATE also tends to compress board planes much better than the RLE did,
-        and MZX was already pulling zlib in as a dependency for PNG support and
-        networking.
+        the data itself, meaning a data structure can be compressed with
+        little-to-no consequence for the parsing of the data structure.
+        DEFLATE also tends to compress board planes much better than the RLE did.
       </li>
     </ul>
 
@@ -1894,13 +1886,13 @@ while(i < width * height)
 |-----------|-------------------------------|-----------------------------|------------|
 | `world`   | <a href="#worldprop290"  >World Properties</a>              |                             | Never
 | `gr`      | <a href="#robot290"      >Global Robot</a>                  |
-| `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled | Since 2.91c
+| `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled | As of 2.91c
 | `chars`   | <a href="#chars290"      >Character Sets</a>                |                             | Always
 | `pal`     | <a href="#pal290"        >Palette</a>                       |
-| `palidx`  | <a href="#pal290"        >Palette Indices</a>               | Save-only in 2.90X, SMZX 3 only
+| `palidx`  | <a href="#pal290"        >Palette Indices</a>               | Save-only before 2.91, SMZX 3 only
 | `palint`  | <a href="#pal290"        >Palette Intensities</a>           | Save-only
-| `vco`     | <a href="#vlayer290"     >Vlayer Chars Plane</a>            | Save-only in 2.90X          | Always
-| `vch`     | <a href="#vlayer290"     >Vlayer Colors Plane</a>           | Save-only in 2.90X          | Always
+| `vco`     | <a href="#vlayer290"     >Vlayer Chars Plane</a>            | Save-only before 2.91       | Always
+| `vch`     | <a href="#vlayer290"     >Vlayer Colors Plane</a>           | Save-only before 2.91       | Always
 | `spr`     | <a href="#spriteprop290" >Sprite Properties</a>             | Save-only                   | Always
 | `counter` | <a href="#counters290"   >Counters List</a>                 | Save-only
 | `string`  | <a href="#counters290"   >Strings List</a>                  | Save-only
@@ -2117,8 +2109,8 @@ while(i < width * height)
       <p>
         The world palette is saved as a raw <a href="#pal">palette file</a>
         containing 256 colors (regardless of the current SMZX mode). If SMZX
-        mode 3 is enabled, the palette indicies will also be saved as a raw
-        <a href="#palidx">palette indicies file</a> in 2.90+ save files and
+        mode 3 is enabled, the palette indices will also be saved as a raw
+        <a href="#palidx">palette indices file</a> in 2.90+ save files and
         2.91+ world files.
       </p>
       <p>
