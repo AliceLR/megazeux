@@ -27,9 +27,9 @@ __M_BEGIN_DECLS
 
 struct counter
 {
-  unsigned char gateway_write;
   int value;
   int name_length;
+  unsigned char gateway_write;
   char name[1];
 };
 
@@ -42,9 +42,6 @@ struct counter_list
   void *hash_table;
 #endif
 };
-
-// TODO - Give strings a dynamic length. It would expand
-// set ends up being larger than the current size.
 
 // Name and storage share space. It's messy, but fast and
 // space efficient.
