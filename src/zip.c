@@ -378,6 +378,28 @@ static inline void precalculate_write_errors(struct zip_archive *zp)
   zp->write_stream_error = zip_write_stream_mode_check(zp);
 }
 
+/**
+ * Allocate a zip file header struct, including any necessary extra data.
+ */
+static struct zip_file_header *zip_allocate_file_header(uint16_t filename_len)
+{
+  // Attempt to reclaim any alignment padding to fit the filename...
+  size_t size = MAX(sizeof(struct zip_file_header),
+   offsetof(struct zip_file_header, file_name) + filename_len + 1);
+
+  return cmalloc(size);
+}
+
+/**
+ * Free a zip file header struct, including any necessary extra data.
+ * If the provided file header pointer is NULL, this function does nothing.
+ */
+static void zip_free_file_header(struct zip_file_header *fh)
+{
+  // Filename is now allocated as part of the base struct, so no need to
+  // explicitly free it...
+  free(fh);
+}
 
 static char file_sig_local[] =
 {
@@ -434,19 +456,22 @@ static enum zip_error zip_read_file_header_signature(struct zip_archive *zp,
   return ZIP_SUCCESS;
 }
 
+/**
+ * Read a zip file header from the central directory. This function will
+ * allocate a new zip_file_header struct at the provided destination.
+ */
 static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
- struct zip_file_header *central_fh)
+ struct zip_file_header **_central_fh)
 {
+  struct zip_file_header *central_fh;
   enum zip_error result;
   char buffer[CENTRAL_FILE_HEADER_LEN];
   struct memfile mf;
 
+  int file_name_length;
   int skip_length;
   int method;
   int flags;
-  int n;
-
-  central_fh->file_name = NULL;
 
   result = zip_read_file_header_signature(zp, true);
   if(result)
@@ -457,6 +482,15 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
     return ZIP_READ_ERROR;
 
   mfopen(buffer, CENTRAL_FILE_HEADER_LEN - 4, &mf);
+
+  // Jump ahead to get the file name length since it's needed to allocate the
+  // file header struct now.
+  mfseek(&mf, 24, SEEK_SET);
+  file_name_length = mfgetw(&mf);
+  mfseek(&mf, 0, SEEK_SET);
+
+  central_fh = zip_allocate_file_header(file_name_length);
+  *_central_fh = central_fh;
 
   // Version made by              2
   // Version needed to extract    2
@@ -511,8 +545,8 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   // Extra field length           2
   // File comment length          2
 
-  n = mfgetw(&mf);
-  central_fh->file_name_length = n;
+  file_name_length = mfgetw(&mf);
+  central_fh->file_name_length = file_name_length;
   skip_length = mfgetw(&mf) + mfgetw(&mf);
 
   // Disk number of file start    2
@@ -520,24 +554,27 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   // External file attributes     4
   mf.current += 8;
 
-  // Offset to local header       4 (from start of archive)
+  // Offset to local header       4 (from start of file)
   central_fh->offset = mfgetd(&mf);
 
   // File name (n)
-  central_fh->file_name = cmalloc(n + 1);
-  vfread(central_fh->file_name, n, 1, zp->vf);
-  central_fh->file_name[n] = 0;
+  vfread(central_fh->file_name, file_name_length, 1, zp->vf);
+  central_fh->file_name[file_name_length] = 0;
 
   // Done. Skip to the position where the next header should be.
   if(skip_length && vfseek(zp->vf, skip_length, SEEK_CUR))
     return ZIP_SEEK_ERROR;
 
-  if(zip_is_ignore_file(central_fh->file_name, n))
+  if(zip_is_ignore_file(central_fh->file_name, file_name_length))
     return ZIP_IGNORE_FILE;
 
   return ZIP_SUCCESS;
 }
 
+/**
+ * Verify a local zip file header against the header read from the central
+ * directory. Any serious discrepancies mean this file may be invalid.
+ */
 static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
  struct zip_file_header *central_fh)
 {
@@ -644,6 +681,10 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
   return ZIP_SUCCESS;
 }
 
+/**
+ * Write a local or central zip file header to the output file.
+ * The provided zip file header struct's data should be fully initialized.
+ */
 static enum zip_error zip_write_file_header(struct zip_archive *zp,
  struct zip_file_header *fh, int is_central)
 {
@@ -1468,7 +1509,6 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
  const char *name, int method, uint8_t mode)
 {
   struct zip_file_header *fh;
-  char *file_name;
   uint16_t file_name_len;
 
   enum zip_error result;
@@ -1498,9 +1538,8 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
   if(result)
     return result;
 
-  fh = cmalloc(sizeof(struct zip_file_header));
   file_name_len = strlen(name);
-  file_name = cmalloc(file_name_len + 1);
+  fh = zip_allocate_file_header(file_name_len);
 
   // Set up the header
 #ifdef ZIP_WRITE_DATA_DESCRIPTOR
@@ -1514,15 +1553,13 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
   fh->uncompressed_size = 0;
   fh->offset = vftell(zp->vf);
   fh->file_name_length = file_name_len;
-  fh->file_name = file_name;
-  memcpy(file_name, name, file_name_len + 1);
+  memcpy(fh->file_name, name, file_name_len + 1);
 
   // Write the header
   result = zip_write_file_header(zp, fh, 0);
   if(result)
   {
-    free(fh);
-    free(file_name);
+    zip_free_file_header(fh);
     zp->streaming_file = NULL;
     return result;
   }
@@ -1846,14 +1883,10 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
 
     for(i = 0, j = 0; i < n; i++)
     {
-      f[j] = cmalloc(sizeof(struct zip_file_header));
-      f[j]->file_name = NULL;
-
-      result = zip_read_central_file_header(zp, f[j]);
+      result = zip_read_central_file_header(zp, &(f[j]));
       if(result)
       {
-        free(f[j]->file_name);
-        free(f[j]);
+        zip_free_file_header(f[j]);
         f[j] = NULL;
         if(result == ZIP_IGNORE_FILE)
         {
@@ -2030,9 +2063,7 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
           mode = ZIP_S_ERROR;
         }
       }
-
-      free(fh->file_name);
-      free(fh);
+      zip_free_file_header(fh);
     }
   }
 

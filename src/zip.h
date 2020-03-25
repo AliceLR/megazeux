@@ -144,17 +144,18 @@ enum zip_error
 
 struct zip_file_header
 {
-  uint32_t mzx_prop_id;
-  uint8_t mzx_board_id;
-  uint8_t mzx_robot_id;
   uint16_t flags;
   uint16_t method;
   uint32_t crc32;
   uint32_t compressed_size;
   uint32_t uncompressed_size;
-  uint16_t file_name_length;
   uint32_t offset;
-  char *file_name;
+  uint32_t mzx_prop_id;
+  uint8_t mzx_board_id;
+  uint8_t mzx_robot_id;
+  uint16_t file_name_length;
+  // This struct is allocated with an extended area for the filename.
+  char file_name[1];
 };
 
 struct zip_archive
