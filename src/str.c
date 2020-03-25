@@ -127,12 +127,20 @@ static struct string *find_string(struct string_list *string_list,
 #endif
 }
 
+static size_t get_string_alloc_size(unsigned int name_length,
+ unsigned int value_length)
+{
+  // Attempt to reclaim any padding bytes at the end of the struct...
+  return MAX(sizeof(struct string),
+   offsetof(struct string, name) + name_length + value_length + 1);
+}
+
 static struct string *allocate_new_string(const char *name, int name_length,
  size_t length)
 {
   // Allocate a string with room for the name and initial value.
   // Does not initialize the value or the list index.
-  struct string *dest = cmalloc(sizeof(struct string) + name_length + length);
+  struct string *dest = cmalloc(get_string_alloc_size(name_length, length));
 
   memcpy(dest->name, name, name_length);
   dest->name[name_length] = 0;
@@ -145,10 +153,10 @@ static struct string *allocate_new_string(const char *name, int name_length,
 }
 
 static struct string *add_string_preallocate(struct string_list *string_list,
- const char *name, size_t length, int position)
+ const char *name, size_t length, unsigned int position)
 {
-  int count = string_list->num_strings;
-  int allocated = string_list->num_strings_allocated;
+  unsigned int count = string_list->num_strings;
+  unsigned int allocated = string_list->num_strings_allocated;
   size_t name_length = strlen(name);
   struct string **base = string_list->strings;
   struct string *dest;
@@ -157,7 +165,16 @@ static struct string *add_string_preallocate(struct string_list *string_list,
   if(count == allocated)
   {
     if(allocated)
+    {
+      // Gracefully fail if this tries to go over 2b...
+      // TODO: The string code is pretty complicated and it looks like a bit
+      // of work to make it safely fail, so show a helpful error instead.
+      if(allocated >= (size_t)(INT32_MAX))
+        error("Congrats, you have a lot of RAM!",
+         ERROR_T_FATAL, ERROR_OPT_EXIT,  0x8008);
+
       allocated *= 2;
+    }
     else
       allocated = MIN_STRING_ALLOCATE;
 
@@ -203,7 +220,7 @@ static struct string *reallocate_string(struct string_list *string_list,
   KHASH_DELETE(STRING, string_list->hash_table, src);
 #endif
 
-  src = crealloc(src, base_length + length);
+  src = crealloc(src, MAX(sizeof(struct string), base_length + length));
   src->value = (char *)src + base_length;
 
   // any new bits of the string should be space filled
@@ -620,12 +637,13 @@ void string_write_as_counter(struct world *mzx_world,
 }
 
 static void add_string(struct string_list *string_list, const char *name,
- struct string *src, int position)
+ struct string *src, unsigned int position)
 {
   struct string *dest = add_string_preallocate(string_list, name,
    src->length, position);
 
-  memcpy(dest->value, src->value, src->length);
+  if(dest)
+    memcpy(dest->value, src->value, src->length);
 }
 
 static boolean get_string_size_offset(const char *name, size_t *ssize,
@@ -1695,7 +1713,7 @@ static int string_sort_fcn(const void *a, const void *b)
 
 void sort_string_list(struct string_list *string_list)
 {
-  int i;
+  unsigned int i;
 
   qsort(string_list->strings, (size_t)string_list->num_strings,
    sizeof(struct string *), string_sort_fcn);
@@ -1708,7 +1726,7 @@ void sort_string_list(struct string_list *string_list)
 
 void clear_string_list(struct string_list *string_list)
 {
-  int i;
+  unsigned int i;
 
 #ifdef CONFIG_KHASH
   KHASH_CLEAR(STRING, string_list->hash_table);

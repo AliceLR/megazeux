@@ -28,15 +28,15 @@ __M_BEGIN_DECLS
 struct counter
 {
   int value;
-  int name_length;
+  unsigned short name_length;
   unsigned char gateway_write;
   char name[1];
 };
 
 struct counter_list
 {
-  int num_counters;
-  int num_counters_allocated;
+  unsigned int num_counters;
+  unsigned int num_counters_allocated;
   struct counter **counters;
 #ifdef CONFIG_KHASH
   void *hash_table;
@@ -78,11 +78,11 @@ struct string
   // because we're not using a search to find it with the hash table. We'll
   // add it for both though so there doesn't have to be a hash table ifdef
   // in world.c
-  int list_ind;
+  unsigned int list_ind;
 
-  int name_length;
-  size_t length;
-  size_t allocated_length;
+  unsigned int name_length;
+  unsigned int length;
+  unsigned int allocated_length;
   char *value;
 
   char name[1];
@@ -90,8 +90,8 @@ struct string
 
 struct string_list
 {
-  int num_strings;
-  int num_strings_allocated;
+  unsigned int num_strings;
+  unsigned int num_strings_allocated;
   struct string **strings;
 #ifdef CONFIG_KHASH
   void *hash_table;
