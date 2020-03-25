@@ -912,7 +912,7 @@ static void core_update(core_context *root)
         key_handled = true;
       }
 
-      if(stack->removed || root->context_changed || root->full_exit)
+      if(root->context_changed || root->full_exit || stack->removed)
         break;
     }
 
@@ -931,7 +931,7 @@ static void core_update(core_context *root)
          cur_data->functions.click(cur, &key, mouse_press, mouse_x, mouse_y);
       }
 
-      if(stack->removed || root->context_changed || root->full_exit)
+      if(root->context_changed || root->full_exit || stack->removed)
         break;
     }
 
@@ -940,7 +940,7 @@ static void core_update(core_context *root)
       if(joystick && cur_data->functions.joystick)
         joystick_handled |= cur_data->functions.joystick(cur, &key, joystick);
 
-      if(stack->removed || root->context_changed || root->full_exit)
+      if(root->context_changed || root->full_exit || stack->removed)
         break;
     }
 
@@ -949,7 +949,7 @@ static void core_update(core_context *root)
       if((key || exit_status) && cur_data->functions.key)
         key_handled |= cur_data->functions.key(cur, &key);
 
-      if(stack->removed || root->context_changed || root->full_exit)
+      if(root->context_changed || root->full_exit || stack->removed)
         break;
     }
   }
