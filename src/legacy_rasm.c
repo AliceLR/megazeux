@@ -1387,22 +1387,22 @@ static int rasm_parse_argument(char *cmd_line, char **next,
   return UNDEFINED;
 }
 
-static int get_word(char *str, char *source, char t)
+static int get_word(char *dest, size_t left, char *source, char t)
 {
-  int i = 0;
+  size_t i = 0;
   char current;
 
   current = *source;
 
-  while((current != t) && (current != 0) && (current != '\n') && (i < 256))
+  while((current != t) && (current != 0) && (current != '\n') && (i + 1 < left))
   {
-    source += escape_chars(str + i, source);
+    source += escape_chars(dest + i, source);
     current = *source;
 
     i++;
   }
 
-  str[i] = 0;
+  dest[i] = 0;
 
   return i;
 }
@@ -1808,14 +1808,14 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
   int error;
   char command_name[256];
   int command_params[32];
-  char temp[256];
+  char temp[ROBOT_MAX_TR];
   char *first_non_space = NULL;
   void *param_list[32];
   int advance;
   int dir_modifier_buffer = 0;
   int words = 0;
-  int bytes_assembled;
-  int i;
+  char *temp_pos = temp;
+  size_t temp_left = sizeof(temp);
 
   struct mzx_command_rw current_command;
 
@@ -1850,10 +1850,15 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
     current_command.parameters = 1;
 
     str_size = strlen(first_non_space) + 1;
-    param_list[0] = cmalloc(str_size);
-    memcpy((char *)param_list[0], first_non_space, str_size);
+    if(temp_left < str_size)
+      goto err_buffer;
+
+    memcpy(temp_pos, first_non_space, str_size);
     current_command.param_types[0] = STRING;
 
+    param_list[0] = temp_pos;
+    temp_pos += str_size;
+    temp_left -= str_size;
     arg_count = 1;
 
     if(param_listing)
@@ -1869,7 +1874,7 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
     current_line_position = cpos;
 
     current_line_position +=
-     get_word(command_name, current_line_position, ' ');
+     get_word(command_name, 256, current_line_position, ' ');
     words++;
     last_arg_type = 0;
 
@@ -1900,11 +1905,15 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
         if(current_arg_type == UNDEFINED)
         {
           // Grab the string off the command list.
-          int str_size =
-           get_word(temp, current_line_position, ' ');
+          size_t str_size =
+           get_word(temp_pos, temp_left, current_line_position, ' ');
 
-          param_list[arg_count] = cmalloc(str_size + 1);
-          memcpy((char *)param_list[arg_count], temp, str_size + 1);
+          if(temp_left < str_size + 1)
+            goto err_buffer;
+
+          param_list[arg_count] = temp_pos;
+          temp_pos += str_size + 1;
+          temp_left -= str_size + 1;
           advance = 1;
           dir_modifier_buffer = 0;
         }
@@ -1913,11 +1922,15 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
         if(current_arg_type == STRING)
         {
           // Grab the string off the command list.
-          int str_size =
-           get_word(temp, current_line_position + 1, '"');
+          size_t str_size =
+           get_word(temp_pos, temp_left, current_line_position + 1, '"');
 
-          param_list[arg_count] = cmalloc(str_size + 1);
-          memcpy((char *)param_list[arg_count], temp, str_size + 1);
+          if(temp_left < str_size + 1)
+            goto err_buffer;
+
+          param_list[arg_count] = temp_pos;
+          temp_pos += str_size + 1;
+          temp_left -= str_size + 1;
           advance = 1;
           dir_modifier_buffer = 0;
         }
@@ -1943,22 +1956,32 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
           }
           else
           {
-            // Store the translation into the command list.
-            param_list[arg_count] = cmalloc(2);
-            ((char *)param_list[arg_count])[0] =
-             current_arg_translation | dir_modifier_buffer;
-            ((char *)param_list[arg_count])[1] = 0;
+            if(temp_left < 2)
+              goto err_buffer;
 
+            // Store the translation into the command list.
+            temp_pos[0] = current_arg_translation | dir_modifier_buffer;
+            temp_pos[1] = 0;
+
+            param_list[arg_count] = temp_pos;
+            temp_pos += 2;
+            temp_left -= 2;
             advance = 1;
             dir_modifier_buffer = 0;
           }
         }
         else
         {
+          if(temp_left < 2)
+            goto err_buffer;
+
           // Store the translation into the command list.
-          param_list[arg_count] = cmalloc(2);
-          ((char *)param_list[arg_count])[0] = current_arg_translation;
-          ((char *)param_list[arg_count])[1] = current_arg_translation >> 8;
+          temp_pos[0] = current_arg_translation;
+          temp_pos[1] = current_arg_translation >> 8;
+
+          param_list[arg_count] = temp_pos;
+          temp_pos += 2;
+          temp_left -= 2;
           advance = 1;
           dir_modifier_buffer = 0;
         }
@@ -1994,15 +2017,12 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
   if(param_listing)
     *arg_count_ext = words;
 
-  bytes_assembled = assemble_command(translated_command,
+  return assemble_command(translated_command,
    &current_command, param_list, output_buffer, &next);
 
-  for(i = 0; i < arg_count; i++)
-  {
-    free(param_list[i]);
-  }
-
-  return bytes_assembled;
+err_buffer:
+  sprintf(error_buffer, "Token %d exceeded command buffer.", arg_count);
+  return -1;
 }
 
 #ifndef CONFIG_DEBYTECODE
