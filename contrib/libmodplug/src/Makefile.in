@@ -13,6 +13,13 @@ libmodplug_cflags = -DHAVE_INTTYPES_H -I${libmodplug_src} \
                     -I${libmodplug_src}/libmodplug \
                     -include src/platform_endian.h
 
+#
+# Rather than bloat the patches to fix these warnings, just disable them.
+#
+ifneq (${HAS_W_NO_IMPLICIT_FALLTHROUGH},)
+libmodplug_cflags += -Wno-implicit-fallthrough
+endif
+
 libmodplug_objs = \
     ${libmodplug_obj}/fastmix.o ${libmodplug_obj}/load_669.o \
     ${libmodplug_obj}/load_amf.o ${libmodplug_obj}/load_dsm.o \
@@ -26,7 +33,7 @@ libmodplug_objs = \
     ${libmodplug_obj}/sndfile.o ${libmodplug_obj}/snd_flt.o \
     ${libmodplug_obj}/snd_fx.o ${libmodplug_obj}/sndmix.o
 
-${libmodplug_obj}/%.o: ${libmodplug_src}/%.cpp
+${libmodplug_obj}/%.o: ${libmodplug_src}/%.cpp src/config.h
 	$(if ${V},,@echo "  CXX     " $<)
 	${CXX} -MD ${CXXFLAGS} ${libmodplug_cflags} -c $< -o $@
 

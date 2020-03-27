@@ -32,6 +32,8 @@ DEVELOPERS
   the buffer is returned on subsequent calls. intake and editor
   text entry can now accept multiple text chars per frame.
 + Added SDL 1.2 implementation for __peek_exit_input.
++ Contributed sound engines (libxmp, libmodplug) should now
+  properly rebuild after config.sh is run.
 
 
 March 8th, 2020 - MZX 2.92c

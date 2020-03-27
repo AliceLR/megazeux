@@ -48,11 +48,11 @@ LOADERS_OBJ	= $(LOADERS_PATH)/.build
 libxmp_objs += $(addprefix $(LOADERS_OBJ)/,$(LOADERS_OBJS))
 
 
-${SRC_OBJ}/%.o: ${SRC_PATH}/%.c
+${SRC_OBJ}/%.o: ${SRC_PATH}/%.c src/config.h
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 
-${LOADERS_OBJ}/%.o: ${LOADERS_PATH}/%.c
+${LOADERS_OBJ}/%.o: ${LOADERS_PATH}/%.c src/config.h
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 
