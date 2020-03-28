@@ -25,11 +25,13 @@
 
 __M_BEGIN_DECLS
 
+#include <inttypes.h>
+
 struct counter
 {
-  int value;
-  unsigned short name_length;
-  unsigned char gateway_write;
+  int32_t value;
+  uint16_t name_length;
+  uint8_t gateway_write;
   char name[1];
 };
 
@@ -74,17 +76,15 @@ struct counter_list
 
 struct string
 {
-  // Back reference to the string's position in the list, mandatory
-  // because we're not using a search to find it with the hash table. We'll
-  // add it for both though so there doesn't have to be a hash table ifdef
-  // in world.c
-  unsigned int list_ind;
-
-  unsigned int name_length;
-  unsigned int length;
-  unsigned int allocated_length;
   char *value;
+  uint32_t length;
+  uint32_t allocated_length;
 
+  // Back reference to the string's position in the main list, mandatory as
+  // a hash table search needs to be able to determine this value.
+  uint32_t list_ind;
+
+  uint16_t name_length;
   char name[1];
 };
 

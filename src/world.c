@@ -1690,6 +1690,8 @@ static inline int load_world_strings_mem(struct world *mzx_world,
     {
       name_buffer[name_length] = 0;
       src_string = new_string(mzx_world, name_buffer, str_length, -1);
+      if(!src_string)
+        break;
     }
 
     // Otherwise, put them in the list manually.
@@ -1781,6 +1783,8 @@ static inline int load_world_strings(struct world *mzx_world,
     {
       name_buffer[name_length] = 0;
       src_string = new_string(mzx_world, name_buffer, str_length, -1);
+      if(!src_string)
+        break;
     }
 
     // Otherwise, put them in the list manually.
