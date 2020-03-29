@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <math.h>
 #include <ctype.h>
+#include <limits.h>
 #include <time.h>
 #include <sys/stat.h>
 
@@ -3670,7 +3671,11 @@ void initialize_gateway_functions(struct world *mzx_world)
 static struct counter *allocate_new_counter(const char *name, int name_length,
  int value)
 {
-  struct counter *dest = cmalloc(sizeof(struct counter) + name_length);
+  // Attempt to reclaim any padding bytes at the end of the struct...
+  size_t size = MAX(sizeof(struct counter),
+   offsetof(struct counter, name) + name_length + 1);
+
+  struct counter *dest = cmalloc(size);
 
   memcpy(dest->name, name, name_length);
   dest->name[name_length] = 0;
@@ -3682,19 +3687,25 @@ static struct counter *allocate_new_counter(const char *name, int name_length,
 }
 
 static void add_counter(struct counter_list *counter_list, const char *name,
- int value, int position)
+ int value, unsigned int position)
 {
-  int count = counter_list->num_counters;
-  int allocated = counter_list->num_counters_allocated;
+  unsigned int count = counter_list->num_counters;
+  unsigned int allocated = counter_list->num_counters_allocated;
   struct counter **base = counter_list->counters;
   struct counter *dest;
-  int name_length = strlen(name);
+  unsigned int name_length = strlen(name);
 
   // Need a reallocation?
   if(count == allocated)
   {
     if(allocated)
+    {
+      // Gracefully fail if this tries to go over 2b...
+      if(allocated >= (size_t)(INT32_MAX))
+        return;
+
       allocated *= 2;
+    }
     else
       allocated = MIN_COUNTER_ALLOCATE;
 
@@ -4036,7 +4047,7 @@ void sort_counter_list(struct counter_list *counter_list)
 
 void clear_counter_list(struct counter_list *counter_list)
 {
-  int i;
+  size_t i;
 
 #ifdef CONFIG_KHASH
   KHASH_CLEAR(COUNTER, counter_list->hash_table);

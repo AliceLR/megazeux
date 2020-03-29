@@ -1463,15 +1463,15 @@ static inline int save_world_counters(struct world *mzx_world,
   struct counter_list *counter_list = &(mzx_world->counter_list);
   struct counter *src_counter;
   size_t name_length;
+  size_t i;
   int result;
-  int i;
 
   result = zip_write_open_file_stream(zp, name, ZIP_M_NONE);
   if(result != ZIP_SUCCESS)
     return result;
 
   mfopen(buffer, 8, &mf);
-  mfputd(counter_list->num_counters, &mf);
+  mfputud(counter_list->num_counters, &mf);
   zwrite(buffer, 4, zp);
 
   for(i = 0; i < counter_list->num_counters; i++)
@@ -1481,7 +1481,7 @@ static inline int save_world_counters(struct world *mzx_world,
 
     mf.current = buffer;
     mfputd(src_counter->value, &mf);
-    mfputd(name_length, &mf);
+    mfputud(name_length, &mf);
     zwrite(buffer, 8, zp);
     zwrite(src_counter->name, name_length, zp);
   }
@@ -1500,9 +1500,9 @@ static inline int load_world_counters(struct world *mzx_world,
   int value;
 
   struct counter_list *counter_list = &(mzx_world->counter_list);
-  int num_prev_allocated;
-  int num_counters;
-  int i;
+  size_t num_prev_allocated;
+  size_t num_counters;
+  size_t i;
 
   enum zip_error result;
   unsigned int method;
@@ -1530,7 +1530,7 @@ static inline int load_world_counters(struct world *mzx_world,
     mfopen(buffer, actual_size, &mf);
   }
 
-  num_counters = mfgetd(&mf);
+  num_counters = mfgetud(&mf);
 
   num_prev_allocated = counter_list->num_counters_allocated;
 
@@ -1545,7 +1545,7 @@ static inline int load_world_counters(struct world *mzx_world,
   for(i = 0; i < num_counters; i++)
   {
     value = mfgetd(&mf);
-    name_length = mfgetd(&mf);
+    name_length = mfgetud(&mf);
 
     if(name_length >= ROBOT_MAX_TR)
       break;
@@ -1596,15 +1596,15 @@ static inline int save_world_strings(struct world *mzx_world,
   struct string *src_string;
   size_t name_length;
   size_t str_length;
+  size_t i;
   int result;
-  int i;
 
   result = zip_write_open_file_stream(zp, name, ZIP_M_NONE);
   if(result != ZIP_SUCCESS)
     return result;
 
   mfopen(buffer, 8, &mf);
-  mfputd(string_list->num_strings, &mf);
+  mfputud(string_list->num_strings, &mf);
   zwrite(buffer, 4, zp);
 
   for(i = 0; i < string_list->num_strings; i++)
@@ -1614,8 +1614,8 @@ static inline int save_world_strings(struct world *mzx_world,
     str_length = src_string->length;
 
     mf.current = buffer;
-    mfputd(name_length, &mf);
-    mfputd(str_length, &mf);
+    mfputud(name_length, &mf);
+    mfputud(str_length, &mf);
     zwrite(buffer, 8, zp);
     zwrite(src_string->name, name_length, zp);
     zwrite(src_string->value, str_length, zp);
@@ -1639,9 +1639,9 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   size_t name_length;
   size_t str_length;
 
-  int num_prev_allocated;
-  int num_strings;
-  int i;
+  size_t num_prev_allocated;
+  size_t num_strings;
+  size_t i;
 
   // If this is an uncompressed memory zip, we can read the memory directly.
   if(zp->is_memory && method == ZIP_M_NONE)
@@ -1661,7 +1661,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
     mfopen(buffer, actual_size, &mf);
   }
 
-  num_strings = mfgetd(&mf);
+  num_strings = mfgetud(&mf);
 
   num_prev_allocated = string_list->num_strings_allocated;
 
@@ -1675,8 +1675,8 @@ static inline int load_world_strings_mem(struct world *mzx_world,
 
   for(i = 0; i < num_strings; i++)
   {
-    name_length = mfgetd(&mf);
-    str_length = mfgetd(&mf);
+    name_length = mfgetud(&mf);
+    str_length = mfgetud(&mf);
 
     if(name_length >= ROBOT_MAX_TR || str_length > MAX_STRING_LEN)
       break;
@@ -1690,6 +1690,8 @@ static inline int load_world_strings_mem(struct world *mzx_world,
     {
       name_buffer[name_length] = 0;
       src_string = new_string(mzx_world, name_buffer, str_length, -1);
+      if(!src_string)
+        break;
     }
 
     // Otherwise, put them in the list manually.
@@ -1731,9 +1733,9 @@ static inline int load_world_strings(struct world *mzx_world,
   size_t name_length;
   size_t str_length;
 
-  int num_prev_allocated;
-  int num_strings;
-  int i;
+  size_t num_prev_allocated;
+  size_t num_strings;
+  size_t i;
 
   enum zip_error result;
   unsigned int method;
@@ -1751,7 +1753,7 @@ static inline int load_world_strings(struct world *mzx_world,
   mfopen(buffer, 8, &mf);
   zread(buffer, 4, zp);
 
-  num_strings = mfgetd(&mf);
+  num_strings = mfgetud(&mf);
   num_prev_allocated = string_list->num_strings_allocated;
 
   // If there aren't already any strings, allocate manually.
@@ -1766,8 +1768,8 @@ static inline int load_world_strings(struct world *mzx_world,
   {
     zread(buffer, 8, zp);
     mf.current = buffer;
-    name_length = mfgetd(&mf);
-    str_length = mfgetd(&mf);
+    name_length = mfgetud(&mf);
+    str_length = mfgetud(&mf);
 
     if(name_length >= ROBOT_MAX_TR || str_length > MAX_STRING_LEN)
       break;
@@ -1781,6 +1783,8 @@ static inline int load_world_strings(struct world *mzx_world,
     {
       name_buffer[name_length] = 0;
       src_string = new_string(mzx_world, name_buffer, str_length, -1);
+      if(!src_string)
+        break;
     }
 
     // Otherwise, put them in the list manually.

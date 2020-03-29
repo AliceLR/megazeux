@@ -153,6 +153,11 @@ static inline int mfgetd(struct memfile *mf)
   return v;
 }
 
+static inline unsigned int mfgetud(struct memfile *mf)
+{
+  return (unsigned int)mfgetd(mf);
+}
+
 static inline int mfputc(int ch, struct memfile *mf)
 {
   mf->current[0] = ch & 0xFF;
@@ -174,6 +179,11 @@ static inline void mfputd(int ch, struct memfile *mf)
   mf->current[2] = (ch >> 16) & 0xFF;
   mf->current[3] = (ch >> 24) & 0xFF;
   mf->current += 4;
+}
+
+static inline void mfputud(size_t ch, struct memfile *mf)
+{
+  mfputd((unsigned int)ch, mf);
 }
 
 static inline size_t mfread(void *dest, size_t len, size_t count,

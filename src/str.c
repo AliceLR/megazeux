@@ -127,12 +127,25 @@ static struct string *find_string(struct string_list *string_list,
 #endif
 }
 
+static size_t get_string_alloc_size(unsigned int name_length,
+ unsigned int value_length)
+{
+  // Attempt to reclaim any padding bytes at the end of the struct...
+  return MAX(sizeof(struct string),
+   offsetof(struct string, name) + name_length + value_length + 1);
+}
+
+/**
+ * Allocate a new string and initialize its name, length, and pointer fields.
+ * This function does not add the new string to the string list or initialize
+ * its value.
+ */
 static struct string *allocate_new_string(const char *name, int name_length,
  size_t length)
 {
   // Allocate a string with room for the name and initial value.
   // Does not initialize the value or the list index.
-  struct string *dest = cmalloc(sizeof(struct string) + name_length + length);
+  struct string *dest = cmalloc(get_string_alloc_size(name_length, length));
 
   memcpy(dest->name, name, name_length);
   dest->name[name_length] = 0;
@@ -144,11 +157,15 @@ static struct string *allocate_new_string(const char *name, int name_length,
   return dest;
 }
 
+/**
+ * Create a named string in the string list and preallocate it to the given
+ * length. Returns NULL if the strings list is full.
+ */
 static struct string *add_string_preallocate(struct string_list *string_list,
- const char *name, size_t length, int position)
+ const char *name, size_t length, unsigned int position)
 {
-  int count = string_list->num_strings;
-  int allocated = string_list->num_strings_allocated;
+  unsigned int count = string_list->num_strings;
+  unsigned int allocated = string_list->num_strings_allocated;
   size_t name_length = strlen(name);
   struct string **base = string_list->strings;
   struct string *dest;
@@ -157,7 +174,13 @@ static struct string *add_string_preallocate(struct string_list *string_list,
   if(count == allocated)
   {
     if(allocated)
+    {
+      // Gracefully fail if this tries to go over 2b...
+      if(allocated >= (size_t)(INT32_MAX))
+        return NULL;
+
       allocated *= 2;
+    }
     else
       allocated = MIN_STRING_ALLOCATE;
 
@@ -192,6 +215,9 @@ static struct string *add_string_preallocate(struct string_list *string_list,
   return dest;
 }
 
+/**
+ * Reallocate an existing string.
+ */
 static struct string *reallocate_string(struct string_list *string_list,
  struct string *src, int pos, size_t length)
 {
@@ -203,7 +229,7 @@ static struct string *reallocate_string(struct string_list *string_list,
   KHASH_DELETE(STRING, string_list->hash_table, src);
 #endif
 
-  src = crealloc(src, base_length + length);
+  src = crealloc(src, MAX(sizeof(struct string), base_length + length));
   src->value = (char *)src + base_length;
 
   // any new bits of the string should be space filled
@@ -225,28 +251,46 @@ static struct string *reallocate_string(struct string_list *string_list,
   return src;
 }
 
-static void force_string_length(struct string_list *string_list,
+/**
+ * Set a string's length and reallocate it if necessary.
+ * If the string does not exist, it will be created.
+ * Returns false if a string could not be created, otherwise true.
+ */
+static boolean force_string_length(struct string_list *string_list,
  const char *name, int next, struct string **str, size_t *length)
 {
   if(*length > MAX_STRING_LEN)
     *length = MAX_STRING_LEN;
 
   if(!*str)
+  {
     *str = add_string_preallocate(string_list, name, *length, next);
+    if(!*str)
+      return false;
+  }
+  else
 
-  else if(*length > (*str)->allocated_length)
+  if(*length > (*str)->allocated_length)
     *str = reallocate_string(string_list, *str, next, *length);
 
   /* Wipe string if the length has increased but not the allocated memory */
   if(*length > (*str)->length)
     memset(&((*str)->value[(*str)->length]), ' ', (*length) - (*str)->length);
+
+  return true;
 }
 
-static void force_string_splice(struct string_list *string_list,
+/**
+ * Bound a splice of a string and/or truncate a string.
+ * If the string does not exist, it will be created.
+ * Returns false if a string could not be created, otherwise true.
+ */
+static boolean force_string_splice(struct string_list *string_list,
  const char *name, int next, struct string **str, size_t s_length,
  size_t offset, boolean offset_specified, size_t *size, boolean size_specified)
 {
-  force_string_length(string_list, name, next, str, &s_length);
+  if(!force_string_length(string_list, name, next, str, &s_length))
+    return false;
 
   if((*size == 0 && !size_specified) || *size > s_length)
     *size = s_length;
@@ -262,21 +306,39 @@ static void force_string_splice(struct string_list *string_list,
     else
       (*str)->length = offset + *size;
   }
+  return true;
 }
 
-static void force_string_copy(struct string_list *string_list,
+/**
+ * Copy an external char buffer over a string or string splice (memcpy).
+ * If the source of the copy is another string, use force_string_move instead.
+ * If the string does not exist, it will be created.
+ * Returns false if a string could not be created, otherwise true.
+ */
+static boolean force_string_copy(struct string_list *string_list,
  const char *name, int next, struct string **str, size_t s_length,
  size_t offset, boolean offset_specified, size_t *size, boolean size_specified,
  char *src)
 {
-  force_string_splice(string_list, name, next, str, s_length,
-   offset, offset_specified, size, size_specified);
+  if(!force_string_splice(string_list, name, next, str, s_length,
+   offset, offset_specified, size, size_specified))
+    return false;
 
   if(offset <= (*str)->length - *size)
     memcpy((*str)->value + offset, src, *size);
+
+  return true;
 }
 
-static void force_string_move(struct string_list *string_list,
+/**
+ * Copy a char buffer over a string or string splice safely (memmove). This
+ * function is guaranteed to work if the source is a substring of or overlaps
+ * the destination. Otherwise, it is equivalent to force_string_copy.
+ *
+ * If the string does not exist, it will be created.
+ * Returns false if a string could not be created, otherwise true.
+ */
+static boolean force_string_move(struct string_list *string_list,
  const char *name, int next, struct string **str, size_t s_length,
  size_t offset, boolean offset_specified, size_t *size, boolean size_specified,
  char *src)
@@ -291,14 +353,17 @@ static void force_string_move(struct string_list *string_list,
       src_dest_match = true;
   }
 
-  force_string_splice(string_list, name, next, str, s_length,
-   offset, offset_specified, size, size_specified);
+  if(!force_string_splice(string_list, name, next, str, s_length,
+   offset, offset_specified, size, size_specified))
+    return false;
 
   if(src_dest_match)
     src = (*str)->value + off;
 
   if(offset <= (*str)->length - *size)
     memmove((*str)->value + offset, src, *size);
+
+  return true;
 }
 
 static void get_string_dot_value(char *dot_ptr, int *index,
@@ -583,7 +648,8 @@ void string_write_as_counter(struct world *mzx_world,
       }
     }
 
-    force_string_length(string_list, name, next, &src, &alloc_length);
+    if(!force_string_length(string_list, name, next, &src, &alloc_length))
+      return;
 
     if(index_specified)
     {
@@ -620,12 +686,13 @@ void string_write_as_counter(struct world *mzx_world,
 }
 
 static void add_string(struct string_list *string_list, const char *name,
- struct string *src, int position)
+ struct string *src, unsigned int position)
 {
   struct string *dest = add_string_preallocate(string_list, name,
    src->length, position);
 
-  memcpy(dest->value, src->value, src->length);
+  if(dest)
+    memcpy(dest->value, src->value, src->length);
 }
 
 static boolean get_string_size_offset(const char *name, size_t *ssize,
@@ -800,8 +867,9 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
       if(current_pos + read_count > (unsigned int)file_size)
         read_count = file_size - current_pos;
 
-      force_string_splice(string_list, name, next, &dest,
-       read_count, offset, offset_specified, &size, size_specified);
+      if(!force_string_splice(string_list, name, next, &dest,
+       read_count, offset, offset_specified, &size, size_specified))
+        return 0;
 
       actual_read = fread(dest->value + offset, 1, read_count, input_file);
       if(offset == 0 && !offset_specified)
@@ -817,8 +885,10 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
       unsigned int allocated = 32;
       unsigned int new_allocated = allocated;
 
-      force_string_splice(string_list, name, next, &dest,
-       allocated, offset, offset_specified, &size, size_specified);
+      if(!force_string_splice(string_list, name, next, &dest,
+       allocated, offset, offset_specified, &size, size_specified))
+        return 0;
+
       dest_value = dest->value;
 
       while(1)
@@ -924,7 +994,8 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
     board_size = board_width * src_board->board_height;
     board_pos = get_board_x_board_y_offset(mzx_world, id);
 
-    force_string_length(string_list, name, next, &dest, &read_length);
+    if(!force_string_length(string_list, name, next, &dest, &read_length))
+      return 0;
 
     if(board_pos < board_size)
     {
@@ -1174,8 +1245,11 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   return 0;
 }
 
-// Creates a new string if it doesn't already exist; otherwise, resizes
-// the string to the provided length
+/**
+ * Creates a new string and adds it to the strings list if it doesn't already
+ * exist; otherwise, resizes the string to exactly the provided length. Returns
+ * NULL if the new string could not be added to the string list.
+ */
 struct string *new_string(struct world *mzx_world, const char *name,
  size_t length, int id)
 {
@@ -1184,7 +1258,9 @@ struct string *new_string(struct world *mzx_world, const char *name,
   int next = 0;
 
   str = find_string(string_list, name, &next);
-  force_string_length(string_list, name, next, &str, &length);
+  if(!force_string_length(string_list, name, next, &str, &length))
+    return NULL;
+
   str->length = length;
   return str;
 }
@@ -1695,7 +1771,7 @@ static int string_sort_fcn(const void *a, const void *b)
 
 void sort_string_list(struct string_list *string_list)
 {
-  int i;
+  unsigned int i;
 
   qsort(string_list->strings, (size_t)string_list->num_strings,
    sizeof(struct string *), string_sort_fcn);
@@ -1708,7 +1784,7 @@ void sort_string_list(struct string_list *string_list)
 
 void clear_string_list(struct string_list *string_list)
 {
-  int i;
+  unsigned int i;
 
 #ifdef CONFIG_KHASH
   KHASH_CLEAR(STRING, string_list->hash_table);

@@ -104,6 +104,9 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
   }
 
   buffer = alloc(mzm_size, storage);
+  if(!buffer)
+    return;
+
   bufferPtr = buffer;
   memcpy(bufferPtr, "MZM3", 4);
   bufferPtr += 4;
@@ -304,7 +307,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
 static void *mem_allocate(size_t length, void **dest)
 {
   size_t *dataPtr;
-  *dest = malloc(length + sizeof(size_t));
+  *dest = cmalloc(length + sizeof(size_t));
   dataPtr = *dest;
   dataPtr[0] = length;
   return &dataPtr[1];
@@ -342,7 +345,7 @@ static void *str_allocate(size_t length, void **dest)
 
   data->str = new_string(data->mzx_world, data->name, length, data->id);
 
-  return data->str->value;
+  return data->str ? data->str->value : NULL;
 }
 
 void save_mzm_string(struct world *mzx_world, const char *name, int start_x,
