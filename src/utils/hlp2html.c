@@ -99,13 +99,13 @@ struct help_link
   int name_length;
 };
 
-KHASH_SET_INIT(FILES, struct help_file *, name, name_length)
-KHASH_SET_INIT(ANCHORS, struct help_anchor *, name, name_length)
-KHASH_SET_INIT(LINKS, struct help_link *, name, name_length)
+HASH_SET_INIT(FILES, struct help_file *, name, name_length)
+HASH_SET_INIT(ANCHORS, struct help_anchor *, name, name_length)
+HASH_SET_INIT(LINKS, struct help_link *, name, name_length)
 
-static khash_t(FILES) *files_table = NULL;
-static khash_t(ANCHORS) *anchors_table = NULL;
-static khash_t(LINKS) *links_table = NULL;
+static hash_t(FILES) *files_table = NULL;
+static hash_t(ANCHORS) *anchors_table = NULL;
+static hash_t(LINKS) *links_table = NULL;
 
 static struct help_file *help_file_list[MAX_FILES];
 static int num_help_files = 0;
@@ -185,7 +185,7 @@ static struct help_file *new_help_file(const char *title)
   snprintf(current->name, MAX_FILE_NAME, "%s", title);
   current->name_length = strlen(current->name);
 
-  KHASH_FIND(FILES, files_table, current->name, current->name_length, check);
+  HASH_FIND(FILES, files_table, current->name, current->name_length, check);
   if(check)
   {
     fprintf(stderr, "WARNING: Duplicate file '%s' found. Please debug with "
@@ -196,7 +196,7 @@ static struct help_file *new_help_file(const char *title)
   }
   else
   {
-    KHASH_ADD(FILES, files_table, current);
+    HASH_ADD(FILES, files_table, current);
     help_file_list[num_help_files] = current;
     num_help_files++;
     return current;
@@ -207,12 +207,12 @@ static void free_help_files(void)
 {
   struct help_file *current;
 
-  KHASH_ITER(FILES, files_table, current, {
+  HASH_ITER(FILES, files_table, current, {
     free(current->html.data);
     free(current);
   });
 
-  KHASH_CLEAR(FILES, files_table);
+  HASH_CLEAR(FILES, files_table);
 }
 
 /**
@@ -227,7 +227,7 @@ static void new_anchor(struct help_file *parent, const char *name)
   anchor->name_length = strlen(anchor->name);
   anchor->parent = parent;
 
-  KHASH_FIND(ANCHORS, anchors_table, anchor->name, anchor->name_length, check);
+  HASH_FIND(ANCHORS, anchors_table, anchor->name, anchor->name_length, check);
   if(check)
   {
     fprintf(stderr, "WARNING: Duplicate anchor '%s' found. Please debug with "
@@ -237,7 +237,7 @@ static void new_anchor(struct help_file *parent, const char *name)
   }
   else
   {
-    KHASH_ADD(ANCHORS, anchors_table, anchor);
+    HASH_ADD(ANCHORS, anchors_table, anchor);
   }
 }
 
@@ -245,11 +245,11 @@ static void free_anchors(void)
 {
   struct help_anchor *current;
 
-  KHASH_ITER(ANCHORS, anchors_table, current, {
+  HASH_ITER(ANCHORS, anchors_table, current, {
     free(current);
   });
 
-  KHASH_CLEAR(ANCHORS, anchors_table);
+  HASH_CLEAR(ANCHORS, anchors_table);
 }
 
 /**
@@ -268,7 +268,7 @@ static void new_link(struct help_file *parent, const char *name,
   snprintf(link->target_anchor, MAX_ANCHOR_NAME, "%s", target_anchor);
 
   // The name is generated with a unique number; don't bother checking.
-  KHASH_ADD(LINKS, links_table, link);
+  HASH_ADD(LINKS, links_table, link);
 }
 
 static void validate_links(void)
@@ -280,11 +280,11 @@ static void free_links(void)
 {
   struct help_link *current;
 
-  KHASH_ITER(LINKS, links_table, current, {
+  HASH_ITER(LINKS, links_table, current, {
     free(current);
   });
 
-  KHASH_CLEAR(LINKS, links_table);
+  HASH_CLEAR(LINKS, links_table);
 }
 
 /**

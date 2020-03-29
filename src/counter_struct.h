@@ -30,6 +30,9 @@ __M_BEGIN_DECLS
 struct counter
 {
   int32_t value;
+#ifdef CONFIG_COUNTER_HASH_TABLES
+  //uint32_t hash;
+#endif
   uint16_t name_length;
   uint8_t gateway_write;
   char name[1];
@@ -40,7 +43,7 @@ struct counter_list
   unsigned int num_counters;
   unsigned int num_counters_allocated;
   struct counter **counters;
-#ifdef CONFIG_KHASH
+#ifdef CONFIG_COUNTER_HASH_TABLES
   void *hash_table;
 #endif
 };
@@ -84,6 +87,10 @@ struct string
   // a hash table search needs to be able to determine this value.
   uint32_t list_ind;
 
+#ifdef CONFIG_COUNTER_HASH_TABLES
+  //uint32_t hash;
+#endif
+
   uint16_t name_length;
   char name[1];
 };
@@ -93,7 +100,7 @@ struct string_list
   unsigned int num_strings;
   unsigned int num_strings_allocated;
   struct string **strings;
-#ifdef CONFIG_KHASH
+#ifdef CONFIG_COUNTER_HASH_TABLES
   void *hash_table;
 #endif
 };

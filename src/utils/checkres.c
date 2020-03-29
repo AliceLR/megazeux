@@ -909,14 +909,14 @@ struct base_path_file
   boolean used_wildcard;
 };
 
-KHASH_SET_INIT(BASE_PATH_FILE, struct base_path_file *, file_path, file_path_len)
+HASH_SET_INIT(BASE_PATH_FILE, struct base_path_file *, file_path, file_path_len)
 
 struct base_path
 {
   char actual_path[MAX_PATH];
   char relative_path[MAX_PATH];
   struct zip_archive *zp;
-  khash_t(BASE_PATH_FILE) *file_list_table;
+  hash_t(BASE_PATH_FILE) *file_list_table;
 };
 
 struct base_file
@@ -938,11 +938,11 @@ struct resource
   struct base_file *parent;
 };
 
-KHASH_SET_INIT(RESOURCE, struct resource *, path, key_len)
+HASH_SET_INIT(RESOURCE, struct resource *, path, key_len)
 
 // NULL is important
-static khash_t(RESOURCE) *requirement_table = NULL;
-static khash_t(RESOURCE) *resource_table = NULL;
+static hash_t(RESOURCE) *requirement_table = NULL;
+static hash_t(RESOURCE) *resource_table = NULL;
 
 static struct resource *add_requirement_ext(const char *src,
  struct base_file *file, int board_num, int robot_num, int line_num,
@@ -979,7 +979,7 @@ static struct resource *add_requirement_ext(const char *src,
     fsafe_len += 1 + strlen(fsafe_buffer + fsafe_len + 1);
   }
 
-  KHASH_FIND(RESOURCE, requirement_table, fsafe_buffer, fsafe_len, req);
+  HASH_FIND(RESOURCE, requirement_table, fsafe_buffer, fsafe_len, req);
 
   if(!req)
   {
@@ -1003,7 +1003,7 @@ static struct resource *add_requirement_ext(const char *src,
       resource_max_len = MAX(resource_max_len, req->path_len);
       parent_max_len = MAX(parent_max_len, (int)strlen(file->file_name));
     }
-    KHASH_ADD(RESOURCE, requirement_table, req);
+    HASH_ADD(RESOURCE, requirement_table, req);
   }
   return req;
 }
@@ -1056,7 +1056,7 @@ static struct resource *add_resource(const char *src, struct base_file *file)
   strcpy_fsafe(fsafe_buffer, temporary_buffer);
   fsafe_len = strlen(fsafe_buffer);
 
-  KHASH_FIND(RESOURCE, resource_table, fsafe_buffer, fsafe_len, res);
+  HASH_FIND(RESOURCE, resource_table, fsafe_buffer, fsafe_len, res);
 
   if(!res)
   {
@@ -1078,7 +1078,7 @@ static struct resource *add_resource(const char *src, struct base_file *file)
       resource_max_len = MAX(resource_max_len, fsafe_len);
       parent_max_len = MAX(parent_max_len, (int)strlen(file->file_name));
     }*/
-    KHASH_ADD(RESOURCE, resource_table, res);
+    HASH_ADD(RESOURCE, resource_table, res);
   }
 
   return res;
@@ -1093,7 +1093,7 @@ static void add_base_path_file(struct base_path *path,
   if(file_name_length >= MAX_PATH)
     file_name_length = MAX_PATH - 1;
 
-  KHASH_FIND(BASE_PATH_FILE, path->file_list_table, file_name, file_name_length,
+  HASH_FIND(BASE_PATH_FILE, path->file_list_table, file_name, file_name_length,
     entry);
 
   if(!entry)
@@ -1108,7 +1108,7 @@ static void add_base_path_file(struct base_path *path,
     entry->used = false;
     entry->used_wildcard = false;
 
-    KHASH_ADD(BASE_PATH_FILE, path->file_list_table, entry);
+    HASH_ADD(BASE_PATH_FILE, path->file_list_table, entry);
 
     if(display_unused || display_wildcard)
       resource_max_len = MAX(resource_max_len, (int)file_name_length);
@@ -1356,7 +1356,7 @@ static void process_requirements(struct base_path **path_list,
   // Build a list of the requirements from the hash table and sort it.
   // This is entirely for the purpose of having more useful output.
   i = 0;
-  KHASH_ITER(RESOURCE, requirement_table, req,
+  HASH_ITER(RESOURCE, requirement_table, req,
   {
     req_sorted[i++] = req;
   });
@@ -1385,7 +1385,7 @@ static void process_requirements(struct base_path **path_list,
       {
         if(req->is_wildcard)
         {
-          KHASH_ITER(BASE_PATH_FILE, current_path->file_list_table, bpf,
+          HASH_ITER(BASE_PATH_FILE, current_path->file_list_table, bpf,
           {
             if(check_wildcard_path(bpf->file_path, translated_path))
             {
@@ -1407,7 +1407,7 @@ static void process_requirements(struct base_path **path_list,
         }
 
         // Normal resource: try to find the file in the base path's hash table
-        KHASH_FIND(BASE_PATH_FILE, current_path->file_list_table,
+        HASH_FIND(BASE_PATH_FILE, current_path->file_list_table,
          translated_path, strlen(translated_path), bpf);
 
         if(bpf)
@@ -1452,12 +1452,12 @@ static void process_requirements(struct base_path **path_list,
     else
     {
       // Try to find in the created resources table
-      KHASH_FIND(RESOURCE, resource_table, req->path, req->path_len, res);
+      HASH_FIND(RESOURCE, resource_table, req->path, req->path_len, res);
 
       if(!res && resource_table)
       {
         // There might be wildcard created resources...
-        KHASH_ITER(RESOURCE, resource_table, res,
+        HASH_ITER(RESOURCE, resource_table, res,
         {
           if(check_wildcard_path(req->path, res->path))
             break;
@@ -1507,7 +1507,7 @@ static void process_requirements(struct base_path **path_list,
         {
           size_t k;
           i = 0;
-          KHASH_ITER(BASE_PATH_FILE, current_path->file_list_table, bpf,
+          HASH_ITER(BASE_PATH_FILE, current_path->file_list_table, bpf,
           {
             if(!bpf->used)
               bpf_sorted[i++] = bpf;
@@ -1572,30 +1572,30 @@ static void clear_data(struct base_path **path_list,
   struct base_path_file *fp;
   int i;
 
-  KHASH_ITER(RESOURCE, requirement_table, res,
+  HASH_ITER(RESOURCE, requirement_table, res,
   {
-    KHASH_DELETE(RESOURCE, requirement_table, res);
+    HASH_DELETE(RESOURCE, requirement_table, res);
     free(res);
   });
-  KHASH_CLEAR(RESOURCE, requirement_table);
+  HASH_CLEAR(RESOURCE, requirement_table);
 
-  KHASH_ITER(RESOURCE, resource_table, res,
+  HASH_ITER(RESOURCE, resource_table, res,
   {
-    KHASH_DELETE(RESOURCE, resource_table, res);
+    HASH_DELETE(RESOURCE, resource_table, res);
     free(res);
   });
-  KHASH_CLEAR(RESOURCE, resource_table);
+  HASH_CLEAR(RESOURCE, resource_table);
 
   for(i = 0; i < path_list_size; i++)
   {
     bp = path_list[i];
 
-    KHASH_ITER(BASE_PATH_FILE, bp->file_list_table, fp,
+    HASH_ITER(BASE_PATH_FILE, bp->file_list_table, fp,
     {
-      KHASH_DELETE(BASE_PATH_FILE, bp->file_list_table, fp);
+      HASH_DELETE(BASE_PATH_FILE, bp->file_list_table, fp);
       free(fp);
     });
-    KHASH_CLEAR(BASE_PATH_FILE, bp->file_list_table);
+    HASH_CLEAR(BASE_PATH_FILE, bp->file_list_table);
 
     if(bp->zp)
       zip_close(bp->zp, NULL);

@@ -61,9 +61,9 @@
  * all counter names.
  */
 
-#ifdef CONFIG_KHASH
+#ifdef CONFIG_COUNTER_HASH_TABLES
 #include <khashmzx.h>
-KHASH_SET_INIT(COUNTER, struct counter *, name, name_length)
+HASH_SET_INIT(COUNTER, struct counter *, name, name_length)
 #endif
 
 #ifndef M_PI
@@ -3457,9 +3457,9 @@ static struct counter *find_counter(struct counter_list *counter_list,
 {
   struct counter *current = NULL;
 
-#if defined(CONFIG_KHASH)
+#ifdef CONFIG_COUNTER_HASH_TABLES
   size_t name_length = strlen(name);
-  KHASH_FIND(COUNTER, counter_list->hash_table, name, name_length, current);
+  HASH_FIND(COUNTER, counter_list->hash_table, name, name_length, current);
   *next = counter_list->num_counters;
   return current;
 
@@ -3728,8 +3728,8 @@ static void add_counter(struct counter_list *counter_list, const char *name,
   counter_list->counters[position] = dest;
   counter_list->num_counters = count + 1;
 
-#ifdef CONFIG_KHASH
-  KHASH_ADD(COUNTER, counter_list->hash_table, dest);
+#ifdef CONFIG_COUNTER_HASH_TABLES
+  HASH_ADD(COUNTER, counter_list->hash_table, dest);
 #endif
 }
 
@@ -4027,8 +4027,8 @@ void load_new_counter(struct counter_list *counter_list, int index,
 
   counter_list->counters[index] = dest;
 
-#ifdef CONFIG_KHASH
-  KHASH_ADD(COUNTER, counter_list->hash_table, dest);
+#ifdef CONFIG_COUNTER_HASH_TABLES
+  HASH_ADD(COUNTER, counter_list->hash_table, dest);
 #endif
 }
 
@@ -4049,8 +4049,8 @@ void clear_counter_list(struct counter_list *counter_list)
 {
   size_t i;
 
-#ifdef CONFIG_KHASH
-  KHASH_CLEAR(COUNTER, counter_list->hash_table);
+#ifdef CONFIG_COUNTER_HASH_TABLES
+  HASH_CLEAR(COUNTER, counter_list->hash_table);
   counter_list->hash_table = NULL;
 #endif
 

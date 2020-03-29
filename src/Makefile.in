@@ -289,7 +289,7 @@ core_ldflags := $(LIBPNG_LDFLAGS) ${core_ldflags}
 core_cobjs += ${core_obj}/pngops.o
 endif
 
-ifeq (${BUILD_KHASH},1)
+ifeq (${BUILD_COUNTER_HASH_TABLES},1)
 core_flags += -Icontrib/khash/
 endif
 
