@@ -24,7 +24,7 @@
 */
 
 /**
- * NOTE: this is a significantly altered of khash specifically for MegaZeux.
+ * NOTE: this is a significantly altered khash specifically for MegaZeux.
  *
  * Changes from the original khash:
  * - Tab removal and style update to more closely match MZX style.
@@ -33,7 +33,8 @@
  * - The allocator macros have been replaced with MZX's check alloc functions.
  * - The default key types have been replaced with a single struct-based key
  *   type expected to contain a key field and a key length field. The names of
- *   these fields can be specified.
+ *   these fields can be specified. A uint32_t field named "hash" is also
+ *   expected to exist in this struct for the full hash value to be stored.
  * - The kh_get function has also been altered to optionally take a separate
  *   key pointer and key length parameters instead of a key struct.
  * - Alternate macros have been added to provide a uthash-like interface.
@@ -100,7 +101,6 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
     khval_t *vals;      \
   } kh_##name##_t;
 
-/* FIXME cached hash field */
 #define __KHASH_IMPL(name, khkey_t, khval_t, kh_is_map, ptr_field, len_field, \
  __hash_func, __hash_equal) \
   \
@@ -129,19 +129,20 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
     }                                                                     \
   } \
   \
-  /* FIXME cached hash as param, only hash if 0 */ \
   static inline size_t kh_get_no_obj_##name(const kh_##name##_t *h, \
-   const void *key_ptr, uint32_t key_len) \
+   const void *key_ptr, uint32_t key_len, uint32_t hash, int has_hash) \
   { \
     if(h->n_buckets)                                                      \
     {                                                                     \
-      size_t k, i, last, mask, step = 0;                                  \
+      size_t i, last, mask, step = 0;                                     \
       mask = h->n_buckets - 1;                                            \
-      k = __hash_func(key_ptr, key_len);                                  \
-      i = k & mask;                                                       \
+      if(!has_hash)                                                       \
+        hash = __hash_func(key_ptr, key_len);                             \
+      i = hash & mask;                                                    \
       last = i;                                                           \
       while(!__ac_isempty(h->flags, i) &&                                 \
        (__ac_isdel(h->flags, i) ||                                        \
+        hash != h->keys[i]->hash || \
         !__hash_equal(h->keys[i]->ptr_field, key_ptr,                     \
          h->keys[i]->len_field, key_len)))                                \
       {                                                                   \
@@ -157,8 +158,8 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
   \
   static inline size_t kh_get_##name(const kh_##name##_t *h, khkey_t key) \
   { \
-    /* FIXME cached hash too */ \
-    return kh_get_no_obj_##name(h, key->ptr_field, key->len_field);       \
+    return kh_get_no_obj_##name(h, key->ptr_field, key->len_field,        \
+     key->hash, 1);                                                       \
   } \
   \
   static inline int kh_resize_##name(kh_##name##_t *h, size_t new_n_buckets) \
@@ -217,23 +218,25 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
     if(j) \
     { \
       /* rehashing is needed */                                           \
+      size_t new_mask = new_n_buckets - 1;                                \
       for(j = 0; j != h->n_buckets; ++j)                                  \
       {                                                                   \
         if(__ac_iseither(h->flags, j) == 0)                               \
         {                                                                 \
           khkey_t key = h->keys[j];                                       \
           khval_t val;                                                    \
-          size_t new_mask;                                                \
-          new_mask = new_n_buckets - 1;                                   \
+          h->keys[j] = 0;                                                 \
           if(kh_is_map)                                                   \
+          {                                                               \
             val = h->vals[j];                                             \
+            h->vals[j] = 0;                                               \
+          }                                                               \
           __ac_set_isdel_true(h->flags, j);                               \
           while(1)                                                        \
           {                                                               \
             /* kick-out process; sort of like in Cuckoo hashing */        \
-            size_t k, i, step = 0;                                        \
-            /* FIXME cache these */ \
-            k = __hash_func(key->ptr_field, key->len_field);              \
+            size_t k = key->hash;                                         \
+            size_t i, step = 0;                                           \
             i = k & new_mask;                                             \
             while(!__ac_isempty(new_flags, i))                            \
               i = (i + (++step)) & new_mask;                              \
@@ -305,11 +308,11 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
     /* TODO: to implement automatically shrinking;                        \
      * resize() already support shrinking */                              \
     {                                                                     \
-      size_t k, i, site, last, mask = h->n_buckets - 1, step = 0;         \
+      size_t i, site, last, mask = h->n_buckets - 1, step = 0;            \
+      uint32_t hash = __hash_func(key->ptr_field, key->len_field);        \
+      key->hash = hash;                                                   \
       x = site = h->n_buckets;                                            \
-      /* FIXME cache this in the new key */ \
-      k = __hash_func(key->ptr_field, key->len_field);                    \
-      i = k & mask;                                                       \
+      i = hash & mask;                                                    \
       if(__ac_isempty(h->flags, i))                                       \
       {                                                                   \
         /* for speed up */                                                \
@@ -320,6 +323,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
         last = i;                                                         \
         while(!__ac_isempty(h->flags, i) &&                               \
          (__ac_isdel(h->flags, i) ||                                      \
+          hash != h->keys[i]->hash || \
           !__hash_equal(h->keys[i]->ptr_field, key->ptr_field,            \
            h->keys[i]->len_field, key->len_field)))                       \
         {                                                                 \
@@ -366,7 +370,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
     return x;                                                             \
   }                                                                       \
   \
-  static inline void kh_del_##name(kh_##name##_t *h, uint32_t x) \
+  static inline void kh_del_##name(kh_##name##_t *h, size_t x) \
   { \
     if(x != h->n_buckets && !__ac_iseither(h->flags, x))                  \
     {                                                                     \
@@ -422,7 +426,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
   @abstract     Resize a hash table.
   @param  name  Name of the hash table [symbol]
   @param  h     Pointer to the hash table [khash_t(name)*]
-  @param  s     New size [uint32_t]
+  @param  s     New size [size_t]
  */
 #define kh_resize(name, h, s) kh_resize_##name(h, s)
 
@@ -435,7 +439,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
                 0 if the key is present in the hash table;
                 1 if the bucket is empty (never used); 2 if the element in
         the bucket has been deleted [int*]
-  @return       Iterator to the inserted element [uint32_t]
+  @return       Iterator to the inserted element [size_t]
  */
 #define kh_put(name, h, k, r) kh_put_##name(h, k, r)
 
@@ -444,23 +448,24 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
   @param  name  Name of the hash table [symbol]
   @param  h     Pointer to the hash table [khash_t(name)*]
   @param  k     Key [type of keys]
-  @return       Iterator to the found element, or kh_end(h) if the element is absent [uint32_t]
+  @return       Iterator to the found element, or kh_end(h) if the element is
+                absent [size_t]
  */
 #define kh_get(name, h, k) kh_get_##name(h, k)
-#define kh_get_no_obj(name, h, kp, kl) kh_get_no_obj_##name(h, kp, kl)
+#define kh_get_no_obj(name, h, kp, kl) kh_get_no_obj_##name(h, kp, kl, 0, 0)
 
 /*! @function
   @abstract     Remove a key from the hash table.
   @param  name  Name of the hash table [symbol]
   @param  h     Pointer to the hash table [khash_t(name)*]
-  @param  k     Iterator to the element to be deleted [uint32_t]
+  @param  k     Iterator to the element to be deleted [size_t]
  */
 #define kh_del(name, h, k) kh_del_##name(h, k)
 
 /*! @function
   @abstract     Test whether a bucket contains data.
   @param  h     Pointer to the hash table [khash_t(name)*]
-  @param  x     Iterator to the bucket [uint32_t]
+  @param  x     Iterator to the bucket [size_t]
   @return       1 if containing data; 0 otherwise [int]
  */
 #define kh_exist(h, x) (!__ac_iseither((h)->flags, (x)))
@@ -468,7 +473,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
 /*! @function
   @abstract     Get key given an iterator
   @param  h     Pointer to the hash table [khash_t(name)*]
-  @param  x     Iterator to the bucket [uint32_t]
+  @param  x     Iterator to the bucket [size_t]
   @return       Key [type of keys]
  */
 #define kh_key(h, x) ((h)->keys[x])
@@ -476,7 +481,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
 /*! @function
   @abstract     Get value given an iterator
   @param  h     Pointer to the hash table [khash_t(name)*]
-  @param  x     Iterator to the bucket [uint32_t]
+  @param  x     Iterator to the bucket [size_t]
   @return       Value [type of values]
   @discussion   For hash sets, calling this results in segfault.
  */
@@ -490,28 +495,28 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
 /*! @function
   @abstract     Get the start iterator
   @param  h     Pointer to the hash table [khash_t(name)*]
-  @return       The start iterator [uint32_t]
+  @return       The start iterator [size_t]
  */
-#define kh_begin(h) (uint32_t)(0)
+#define kh_begin(h) (size_t)(0)
 
 /*! @function
   @abstract     Get the end iterator
   @param  h     Pointer to the hash table [khash_t(name)*]
-  @return       The end iterator [uint32_t]
+  @return       The end iterator [size_t]
  */
 #define kh_end(h) ((h)->n_buckets)
 
 /*! @function
   @abstract     Get the number of elements in the hash table
   @param  h     Pointer to the hash table [khash_t(name)*]
-  @return       Number of elements in the hash table [uint32_t]
+  @return       Number of elements in the hash table [size_t]
  */
 #define kh_size(h) ((h)->size)
 
 /*! @function
   @abstract     Get the number of buckets in the hash table
   @param  h     Pointer to the hash table [khash_t(name)*]
-  @return       Number of buckets in the hash table [uint32_t]
+  @return       Number of buckets in the hash table [size_t]
  */
 #define kh_n_buckets(h) ((h)->n_buckets)
 
@@ -522,7 +527,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
   @param  vvar  Variable to which value will be assigned
   @param  code  Block of code to execute
  */
-#define kh_foreach(h, kvar, vvar, code) { uint32_t __i;    \
+#define kh_foreach(h, kvar, vvar, code) { size_t __i;    \
   for (__i = kh_begin(h); __i != kh_end(h); ++__i) {    \
     if (!kh_exist(h,__i)) continue;            \
     (kvar) = kh_key(h,__i);                \
@@ -536,7 +541,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
   @param  vvar  Variable to which value will be assigned
   @param  code  Block of code to execute
  */
-#define kh_foreach_value(h, vvar, code) { uint32_t __i;    \
+#define kh_foreach_value(h, vvar, code) { size_t __i;    \
   for (__i = kh_begin(h); __i != kh_end(h); ++__i) {    \
     if (!kh_exist(h,__i)) continue;            \
     (vvar) = kh_val(h,__i);                \
@@ -545,14 +550,14 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
 
 /* --- BEGIN OF HASH FUNCTIONS --- */
 
+// TODO make case sensitive versions?
+
 /**
  * This hash function results in far better distribution than the default X31
  * function and isn't significantly more expensive.
  *
  * http://isthe.com/chongo/tech/comp/fnv/#FNV-1a
  */
-
-// TODO make case sensitive version?
 static inline uint32_t fnv_1a_hash_string_len(const void *_str, uint32_t len)
 {
   const char *str = _str;
@@ -565,7 +570,6 @@ static inline uint32_t fnv_1a_hash_string_len(const void *_str, uint32_t len)
 #define kh_mem_hash_func(keyptr, keylen) \
   fnv_1a_hash_string_len(keyptr, keylen)
 
-// TODO make case sensitive version?
 #define kh_mem_hash_equal(aptr, bptr, alen, blen) \
   (((uint32_t)alen == (uint32_t)blen) && !memcasecmp(aptr, bptr, blen))
 
@@ -583,6 +587,18 @@ static inline uint32_t fnv_1a_hash_string_len(const void *_str, uint32_t len)
 #define hash_t(n) khash_t(n)
 
 // uthash-like macros.
+
+/**
+ * Add an object to the hash table.
+ * If the hash table hasn't been initialized, this function will initialize it.
+ *
+ * @param name    The unique identifier of the hash table type (e.g. COUNTER).
+ * @param h       Variable containing hash table pointer. If this variable is
+ *                set to null, the hash table is considered uninitialized.
+ * @param keyobj  A new key struct to add to the table. Its key and key length
+ *                fields must be initialized. Its hash field will be
+ *                initialized during this operation.
+ */
 #define HASH_ADD(n, h, keyobj) do                                 \
 {                                                                 \
   int _res;                                                       \
@@ -590,29 +606,59 @@ static inline uint32_t fnv_1a_hash_string_len(const void *_str, uint32_t len)
   kh_put(n, (khash_t(n) *)h, keyobj, &_res);                      \
 } while(0)
 
+/**
+ * Find an object in the hash table.
+ * If the hash table hasn't been initialized, this function will do nothing.
+ *
+ * @param name    The unique identifier of the hash table type (e.g. COUNTER).
+ * @param h       Variable containing the hash table pointer.
+ * @param keyptr  Pointer to the key variable (usually a string).
+ * @param keylen  Length of the key variable in bytes.
+ * @param destobj Pointer variable that will be set to the object if found
+ *                or NULL if not found.
+ */
 #define HASH_FIND(n, _h, keyptr, keylen, destobj) do              \
 {                                                                 \
   destobj = NULL;                                                 \
   if(_h)                                                          \
   {                                                               \
     khash_t(n) *h = _h;                                           \
-    uint32_t iter = kh_get_no_obj(n, h, keyptr, (uint32_t)keylen);\
+    size_t iter = kh_get_no_obj(n, h, keyptr, (uint32_t)keylen);  \
                                                                   \
     if(iter < kh_end(h)) destobj = h->keys[iter];                 \
   }                                                               \
 } while(0)
 
+/**
+ * Delete an object from the hash table.
+ * If the hash table hasn't been initialized, this function will do nothing.
+ *
+ * @param name    The unique identifier of the hash table type (e.g. COUNTER).
+ * @param h       Variable containing the hash table pointer.
+ * @param keyobj  Object to remove from the hash table. Its key, key length,
+ *                and hash fields should be initialized (which will be the
+ *                case if this object was passed to HASH_ADD and/or was
+ *                returned from HASH_FIND).
+ */
 #define HASH_DELETE(n, _h, keyobj) do                             \
 {                                                                 \
   if(_h)                                                          \
   {                                                               \
     khash_t(n) *h = _h;                                           \
-    uint32_t iter = kh_get(n, h, keyobj);                         \
+    size_t iter = kh_get(n, h, keyobj);                           \
                                                                   \
     if(iter < kh_end(h)) kh_del(n, h, iter);                      \
   }                                                               \
 } while(0)
 
+/**
+ * Destroy the hash table.
+ * If the hash table hasn't been initialized, this function will do nothing.
+ *
+ * @param name    The unique identifier of the hash table type (e.g. COUNTER)
+ * @param h       Variable containing the hash table pointer. This function
+ *                will set it to NULL after destroying the hash table.
+ */
 #define HASH_CLEAR(n, _h) do                                      \
 {                                                                 \
   if(_h)                                                          \
@@ -623,10 +669,19 @@ static inline uint32_t fnv_1a_hash_string_len(const void *_str, uint32_t len)
   }                                                               \
 } while(0)
 
+/**
+ * Iterate the hash table.
+ * If the hash table hasn't been initialized, this function will do nothing.
+ *
+ * @param name    The unique identifier of the hash table type (e.g. COUNTER)
+ * @param h       Variable containing the hash table pointer.
+ * @param element The variable the current element will be stored to.
+ * @param code    A block of code to execute for every element.
+ */
 #define HASH_ITER(n, _h, element, code) do                        \
 {                                                                 \
   khash_t(n) *__h = _h;                                           \
-  uint32_t __i;                                                   \
+  size_t __i;                                                     \
   if(_h) for(__i = kh_begin(__h); __i != kh_end(__h); __i++)      \
   {                                                               \
     if(!kh_exist(__h, __i)) continue;                             \

@@ -72,6 +72,7 @@ struct help_file
   // HTML ID- needs to be unique. Use the real internal file name.
   char name[MAX_FILE_NAME];
   int name_length;
+  uint32_t hash;
 
   struct html_buffer html;
 };
@@ -83,6 +84,7 @@ struct help_anchor
   // HTML ID- needs to be unique. Use the real link name.
   char name[MAX_ANCHOR_NAME];
   int name_length;
+  uint32_t hash;
 };
 
 struct help_link
@@ -97,6 +99,7 @@ struct help_link
   // used for anything right now.
   char name[MAX_ANCHOR_NAME];
   int name_length;
+  uint32_t hash;
 };
 
 HASH_SET_INIT(FILES, struct help_file *, name, name_length)

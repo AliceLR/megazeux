@@ -903,6 +903,7 @@ struct base_path_file
 {
   char file_path[MAX_PATH];
   int file_path_len;
+  uint32_t hash;
   uint32_t crc32;
   boolean has_crc32;
   boolean used;
@@ -934,6 +935,7 @@ struct resource
   int board_num;
   int robot_num;
   int line_num;
+  uint32_t hash;
   boolean is_wildcard;
   struct base_file *parent;
 };

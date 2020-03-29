@@ -31,7 +31,7 @@ struct counter
 {
   int32_t value;
 #ifdef CONFIG_COUNTER_HASH_TABLES
-  //uint32_t hash;
+  uint32_t hash;
 #endif
   uint16_t name_length;
   uint8_t gateway_write;
@@ -88,7 +88,7 @@ struct string
   uint32_t list_ind;
 
 #ifdef CONFIG_COUNTER_HASH_TABLES
-  //uint32_t hash;
+  uint32_t hash;
 #endif
 
   uint16_t name_length;
