@@ -80,7 +80,7 @@ usage() {
 	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
 	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
 	echo "  --disable-check-alloc   Disables memory allocator error handling."
-	echo "  --disable-khash         Disables using khash for counter/string lookups."
+	echo "  --disable-counter-hash  Disables hash tables for counter/string lookups."
 	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
 	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
 	echo "  --enable-stdio-redirect Redirect console output to stdout.txt/stderr.txt."
@@ -152,7 +152,7 @@ SDL="true"
 EGL="false"
 GLES="false"
 CHECK_ALLOC="true"
-KHASH="true"
+COUNTER_HASH="true"
 DEBYTECODE="false"
 LIBSDL2="true"
 STDIO_REDIRECT="false"
@@ -352,8 +352,8 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-check-alloc" ] && CHECK_ALLOC="false"
 	[ "$1" = "--enable-check-alloc" ]  && CHECK_ALLOC="true"
 
-	[ "$1" = "--enable-khash" ]  && KHASH="true"
-	[ "$1" = "--disable-khash" ] && KHASH="false"
+	[ "$1" = "--enable-counter-hash" ]  && COUNTER_HASH="true"
+	[ "$1" = "--disable-counter-hash" ] && COUNTER_HASH="false"
 
 	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
 	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
@@ -679,7 +679,7 @@ if [ "$PLATFORM" = "nds" ]; then
 	SOFTWARE="false"
 
 	echo "Force-disabling hash tables on NDS."
-	KHASH="false"
+	COUNTER_HASH="false"
 fi
 
 #
@@ -1327,12 +1327,12 @@ fi
 #
 # Allow use of hash table counter/string lookups, if enabled
 #
-if [ "$KHASH" = "true" ]; then
-	echo "khash counter/string lookup enabled."
-	echo "#define CONFIG_KHASH" >> src/config.h
-	echo "BUILD_KHASH=1" >> platform.inc
+if [ "$COUNTER_HASH" = "true" ]; then
+	echo "Hash table counter/string lookups enabled."
+	echo "#define CONFIG_COUNTER_HASH_TABLES" >> src/config.h
+	echo "BUILD_COUNTER_HASH_TABLES=1" >> platform.inc
 else
-	echo "khash counter/string lookup disabled (using binary search)."
+	echo "Hash table counter/string lookups disabled (using binary search)."
 fi
 
 #

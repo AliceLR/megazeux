@@ -41,9 +41,9 @@
  * all string names.
  */
 
-#ifdef CONFIG_KHASH
+#ifdef CONFIG_COUNTER_HASH_TABLES
 #include <khashmzx.h>
-KHASH_SET_INIT(STRING, struct string *, name, name_length)
+HASH_SET_INIT(STRING, struct string *, name, name_length)
 #endif
 
 // Please only use string literals with this, thanks.
@@ -81,9 +81,9 @@ static struct string *find_string(struct string_list *string_list,
 {
   struct string *current = NULL;
 
-#if defined(CONFIG_KHASH)
+#if defined(CONFIG_COUNTER_HASH_TABLES)
   size_t name_length = strlen(name);
-  KHASH_FIND(STRING, string_list->hash_table, name, name_length, current);
+  HASH_FIND(STRING, string_list->hash_table, name, name_length, current);
 
   // When reallocing we need to replace the old pointer at
   // its original list index.
@@ -208,8 +208,8 @@ static struct string *add_string_preallocate(struct string_list *string_list,
   string_list->strings[position] = dest;
   string_list->num_strings = count + 1;
 
-#ifdef CONFIG_KHASH
-  KHASH_ADD(STRING, string_list->hash_table, dest);
+#ifdef CONFIG_COUNTER_HASH_TABLES
+  HASH_ADD(STRING, string_list->hash_table, dest);
 #endif
 
   return dest;
@@ -224,9 +224,9 @@ static struct string *reallocate_string(struct string_list *string_list,
   // Find the base length (take out the current length)
   int base_length = (int)(src->value - (char *)src);
 
-#ifdef CONFIG_KHASH
+#ifdef CONFIG_COUNTER_HASH_TABLES
   // Delete the string with the same name as src if it exists in the table.
-  KHASH_DELETE(STRING, string_list->hash_table, src);
+  HASH_DELETE(STRING, string_list->hash_table, src);
 #endif
 
   src = crealloc(src, MAX(sizeof(struct string), base_length + length));
@@ -244,8 +244,8 @@ static struct string *reallocate_string(struct string_list *string_list,
 
   string_list->strings[pos] = src;
 
-#ifdef CONFIG_KHASH
-  KHASH_ADD(STRING, string_list->hash_table, src);
+#ifdef CONFIG_COUNTER_HASH_TABLES
+  HASH_ADD(STRING, string_list->hash_table, src);
 #endif
 
   return src;
@@ -1755,8 +1755,8 @@ struct string *load_new_string(struct string_list *string_list, int index,
   dest->list_ind = index;
   string_list->strings[index] = dest;
 
-#ifdef CONFIG_KHASH
-  KHASH_ADD(STRING, string_list->hash_table, dest);
+#ifdef CONFIG_COUNTER_HASH_TABLES
+  HASH_ADD(STRING, string_list->hash_table, dest);
 #endif
 
   return dest;
@@ -1786,8 +1786,8 @@ void clear_string_list(struct string_list *string_list)
 {
   unsigned int i;
 
-#ifdef CONFIG_KHASH
-  KHASH_CLEAR(STRING, string_list->hash_table);
+#ifdef CONFIG_COUNTER_HASH_TABLES
+  HASH_CLEAR(STRING, string_list->hash_table);
   string_list->hash_table = NULL;
 #endif
 

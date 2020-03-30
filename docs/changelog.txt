@@ -39,6 +39,9 @@ DEVELOPERS
 + Added SDL 1.2 implementation for __peek_exit_input.
 + Contributed sound engines (libxmp, libmodplug) should now
   properly rebuild after config.sh is run.
++ Fixed a bug where khash tables couldn't expand beyond 2^31,
+  added hash caching, made the MZX copy of khash use MZX style,
+  and better documented the changes made to it.
 
 
 March 8th, 2020 - MZX 2.92c
