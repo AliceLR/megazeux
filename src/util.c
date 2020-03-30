@@ -851,53 +851,6 @@ void mem_putd(int src, unsigned char **ptr)
 }
 
 
-// like fsafegets, except from memory.
-int memsafegets(char *dest, int size, char **src, char *end)
-{
-  char *pos = dest;
-  char *next = *src;
-  char *stop = MIN(end, next+size);
-  char ch;
-
-  // Return 0 if this is the end of the memory block
-  if(next == NULL)
-    return 0;
-
-  // Copy the memory until the end, the bound, or a newline
-  while(next<stop && (ch = *next)!='\n')
-  {
-    *pos = ch;
-    pos++;
-    next++;
-  }
-  *pos = 0;
-
-  // Place the counter where the next line begins
-  if(next < end)
-  {
-    *src = next + 1;
-  }
-
-  // Mark that this is the end
-  else
-  {
-    *src = NULL;
-  }
-
-  // Length at least 1 -- get rid of \r and \n
-  if(pos > dest)
-    if(pos[-1] == '\r' || pos[-1] == '\n')
-      pos[-1] = 0;
-
-  // Length at least 2 -- get rid of \r and \n
-  if(pos - 1 > dest)
-    if(pos[-2] == '\r' || pos[-2] == '\n')
-      pos[-2] = 0;
-
-  return 1;
-}
-
-
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 
 /* On WIN32 with C99 defining __STRICT_ANSI__ these POSIX.1-2001 functions

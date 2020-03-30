@@ -55,6 +55,7 @@ int vfputw(int character, vfile *vf);
 int vfputd(int character, vfile *vf);
 int vfread(void *dest, size_t size, size_t count, vfile *vf);
 int vfwrite(const void *src, size_t size, size_t count, vfile *vf);
+char *vfsafegets(char *dest, int size, vfile *vf);
 int vfseek(vfile *vf, long int offset, int whence);
 long int vftell(vfile *vf);
 void vrewind(vfile *vf);

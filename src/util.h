@@ -152,8 +152,6 @@ void mem_putc(int src, unsigned char **ptr);
 void mem_putd(int src, unsigned char **ptr);
 void mem_putw(int src, unsigned char **ptr);
 
-CORE_LIBSPEC int memsafegets(char *dest, int size, char **src, char *end);
-
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 CORE_LIBSPEC int strcasecmp(const char *s1, const char *s2);
 CORE_LIBSPEC int strncasecmp(const char *s1, const char *s2, size_t n);

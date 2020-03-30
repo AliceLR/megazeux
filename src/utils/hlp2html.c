@@ -26,6 +26,7 @@
 #define SKIP_SDL
 #define CORE_LIBSPEC
 #include "../compat.h"
+#include "../memfile.h"
 #include "../util.h"
 #include "../../contrib/khash/khashmzx.h"
 
@@ -573,11 +574,11 @@ static void parse_file(char *file_buffer, size_t file_length)
 {
   struct help_file *current = new_help_file("MAIN.HLP");
   char line_buffer[MAX_LINE];
-  char *src = file_buffer;
-  char *end = file_buffer + file_length;
+  struct memfile mf;
 
-  // No need to worry about \r at the end of the line-- memsafegets removes it.
-  while(memsafegets(line_buffer, MAX_LINE, &src, end))
+  mfopen(file_buffer, file_length, &mf);
+
+  while(mfsafegets(line_buffer, MAX_LINE, &mf))
     current = parse_line(current, line_buffer);
 
   // Make sure all links connect to a valid anchor.

@@ -27,6 +27,7 @@
 #include "rasm.h"
 #include "data.h"
 #include "fsafeopen.h"
+#include "memfile.h"
 #include "util.h"
 
 #define IMM_U16            (1 << 0)
@@ -2089,9 +2090,7 @@ char *assemble_program(char *src, int len, int *size)
   int line_bytecode_length;
   int allocated_size = 1024;
   char *buffer;
-
-  char *input_pos = src;
-  char *input_end = src + len;
+  struct memfile mf;
 
   int output_position = 1;
   int current_size = 1;
@@ -2099,8 +2098,10 @@ char *assemble_program(char *src, int len, int *size)
   buffer = cmalloc(1024);
   buffer[0] = 0xFF;
 
+  mfopen(src, len, &mf);
+
   // It's wasteful to copy each line, but the alternative is worse...
-  while(memsafegets(line_buffer, 255, &input_pos, input_end))
+  while(mfsafegets(line_buffer, 256, &mf))
   {
     line_bytecode_length =
      legacy_assemble_line(line_buffer, bytecode_buffer, error_buffer, NULL, NULL);

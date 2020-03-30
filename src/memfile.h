@@ -222,6 +222,46 @@ static inline size_t mfwrite(const void *src, size_t len, size_t count,
   return i;
 }
 
+/**
+ * Read a line from memory, safely trimming platform-specific EOL chars
+ * as-needed.
+ */
+static inline char *mfsafegets(char *dest, int len, struct memfile *mf)
+{
+  unsigned char *stop = mf->current + len - 1;
+  unsigned char *in = mf->current;
+  unsigned char ch;
+  char *out = dest;
+
+  if(mf->end < stop)
+    stop = mf->end;
+
+  // Return NULL if this is the end of the file.
+  if(in >= stop)
+    return NULL;
+
+  // Copy until the end/bound or a newline.
+  while(in < stop && (ch = *(in++)) != '\n')
+    *(out++) = ch;
+
+  *out = 0;
+
+  // Seek to the next line (or the end of the file).
+  mf->current = in;
+
+  // Length at least 1 -- get rid of \r and \n
+  if(out > dest)
+    if(out[-1] == '\r' || out[-1] == '\n')
+      out[-1] = 0;
+
+  // Length at least 2 -- get rid of \r and \n
+  if(out - 1 > dest)
+    if(out[-2] == '\r' || out[-2] == '\n')
+      out[-2] = 0;
+
+  return dest;
+}
+
 static inline int mfseek(struct memfile *mf, long int offs, int code)
 {
   unsigned char *ptr;

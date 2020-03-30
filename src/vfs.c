@@ -488,6 +488,26 @@ int vfwrite(const void *src, size_t size, size_t count, vfile *vf)
 }
 
 /**
+ * Read a line from a file, safely trimming platform-specific line end chars
+ * as-needed.
+ */
+char *vfsafegets(char *dest, int size, vfile *vf)
+{
+  assert(vf && dest && (vf->flags & VF_READ));
+
+  if(vf->flags & VF_MEMORY)
+    return mfsafegets(dest, size, &(vf->mf));
+
+/* FIXME commenting this so utils don't need to link fsafeopen.o right now.
+  Eventually, the contents of fsafegets will probably end up here.
+  if(vf->flags & VF_FILE)
+    return fsafegets(dest, size, vf->fp);
+*/
+  assert(0);
+  return NULL;
+}
+
+/**
  * Seek to a position in a file.
  */
 int vfseek(vfile *vf, long int offset, int whence)
