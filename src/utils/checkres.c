@@ -2034,14 +2034,27 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 
         if(src[0] == '+')
         {
-          char tempc = src[3];
+          if(src[1] == '&')
+          {
+            rest = skip_interpolation(src + 1);
+          }
+          else
 
-          src[3] = 0;
-          strtol(src + 1, (char **)(&rest), 16);
-          src[3] = tempc;
+          if(src[1] == '(')
+          {
+            rest = skip_expression(src + 1);
+          }
+          else
+          {
+            char tempc = src[3];
+            src[3] = 0;
+            strtol(src + 1, (char **)(&rest), 16);
+            src[3] = tempc;
+          }
         }
+        else
 
-        else if(src[0] == '@')
+        if(src[0] == '@')
         {
           char tempc;
           int maxlen;
