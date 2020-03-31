@@ -23,7 +23,8 @@ USERS
 + Fixed memory leaks in legacy_assemble_line.
 + Fixed potential null termination issues in both world loaders
   that could be triggered with invalid board name, robot name,
-  scroll, sensor, sfx, and status counter strings.
+  scroll, sensor, sfx, and status counter strings. Also improved
+  loaded robot stack bounds checks.
 + Decreased the sizes of the counter and string structs and
   fixed a crash that would occur when attempting to expand the
   counters or strings lists beyond 1 billion. Checks have been
