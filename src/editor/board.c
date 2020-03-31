@@ -27,7 +27,7 @@
 #include "../world.h"
 #include "../world_format.h"
 #include "../util.h"
-#include "../zip.h"
+#include "../io/zip.h"
 
 #include "world.h"
 #include "configure.h"

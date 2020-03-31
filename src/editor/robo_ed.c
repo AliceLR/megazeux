@@ -34,7 +34,6 @@
 #include "../core.h"
 #include "../error.h"
 #include "../event.h"
-#include "../fsafeopen.h"
 #include "../graphics.h"
 #include "../helpsys.h"
 #include "../intake.h"
@@ -43,6 +42,7 @@
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+#include "../io/fsafeopen.h"
 
 #include "char_ed.h"
 #include "clipboard.h"

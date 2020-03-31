@@ -24,10 +24,10 @@
 
 #include "data.h"
 #include "rasm.h"
-#include "fsafeopen.h"
-#include "memfile.h"
 #include "util.h"
 #include "counter.h"
+#include "io/fsafeopen.h"
+#include "io/memfile.h"
 
 #ifdef CONFIG_DEBYTECODE
 

@@ -17,13 +17,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __MEMCASECMP_H
-#define __MEMCASECMP_H
+#ifndef __IO_MEMCASECMP_H
+#define __IO_MEMCASECMP_H
+
+#include "../compat.h"
+
+__M_BEGIN_DECLS
 
 #include <inttypes.h>
-#include "platform_endian.h"
+#include "../platform_endian.h"
 
-static unsigned char memtolower_table[256] =
+static const unsigned char memtolower_table[256] =
 {
    0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,
   16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,
@@ -142,4 +146,6 @@ static inline int memcasecmp(const void *A, const void *B, size_t cmp_length)
   return 0;
 }
 
-#endif // __MEMCASECMP_H
+__M_END_DECLS
+
+#endif // __IO_MEMCASECMP_H

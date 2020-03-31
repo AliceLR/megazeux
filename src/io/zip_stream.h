@@ -25,39 +25,9 @@
 __M_BEGIN_DECLS
 
 #include <inttypes.h>
-#include "../zip.h"
+#include "zip.h"
 
-/**
- * Data for an active ZIP (de)compression stream.
- */
-struct zip_stream_data
-{
-  // Current position and remaining size of the input buffer.
-  const uint8_t *input_buffer;
-  size_t input_length;
-
-  // Current position and remaining size of the output buffer.
-  uint8_t *output_buffer;
-  size_t output_length;
-
-  size_t final_input_length;
-  size_t final_output_length;
-
-  // Has this stream been initialized?
-  boolean is_initialized;
-
-  // Is this stream finished?
-  boolean finished;
-
-  // Is this a compression stream? (false for a decompression stream)
-  boolean is_compression_stream;
-};
-
-// zip_stream_data structs should be allocated with at least this much extra
-// space for specific compression method data.
-#define ZIP_STREAM_DATA_PADDING 128
-#define ZIP_STREAM_DATA_ALLOC_SIZE \
- (sizeof(struct zip_stream_data) + ZIP_STREAM_DATA_PADDING)
+#define MAX_SUPPORTED_METHOD ZIP_M_DEFLATE64
 
 /**
  * Describes ZIP stream functions for a particular (de)compresson method.
@@ -96,8 +66,6 @@ struct zip_method_handler
   // Can be called multiple times.
   enum zip_error (*compress_block)(struct zip_stream_data *);
 };
-
-#define MAX_SUPPORTED_METHOD ZIP_M_DEFLATE64
 
 /**
  * ZIP stream function registry for supported (de)compression methods.

@@ -26,9 +26,9 @@
 #define SKIP_SDL
 #define CORE_LIBSPEC
 #include "../compat.h"
-#include "../memfile.h"
 #include "../util.h"
-#include "../../contrib/khash/khashmzx.h"
+#include "../io/hashtable.h"
+#include "../io/memfile.h"
 
 #ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>

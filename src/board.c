@@ -25,14 +25,14 @@
 #include "board.h"
 #include "const.h"
 #include "error.h"
-#include "memfile.h"
 #include "legacy_board.h"
 #include "robot.h"
 #include "world.h"
 #include "world_format.h"
 #include "util.h"
 #include "world_struct.h"
-#include "zip.h"
+#include "io/memfile.h"
+#include "io/zip.h"
 
 
 static int save_board_info(struct board *cur_board, struct zip_archive *zp,

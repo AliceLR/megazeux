@@ -1,6 +1,7 @@
 /* MegaZeux
  *
- * Copyright (C) 2004 Alistair Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,32 +18,43 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __FSAFEOPEN_H
-#define __FSAFEOPEN_H
+#ifndef __IO_DIR_H
+#define __IO_DIR_H
 
-#include "compat.h"
-
-#include <stdio.h>
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
-enum
+#include <stdio.h>
+
+#define PATH_BUF_LEN MAX_PATH
+
+enum mzx_dir_type
 {
-  FSAFE_SUCCESS = 0,
-  FSAFE_MATCHED_DIRECTORY,
-  FSAFE_MATCH_FAILED,
-  FSAFE_BRUTE_FORCE_FAILED,
-  FSAFE_INVALID_ARGUMENT,
-  FSAFE_ABSOLUTE_PATH_ERROR,
-  FSAFE_WINDOWS_DRIVE_LETTER_ERROR,
-  FSAFE_PARENT_DIRECTORY_ERROR
+  DIR_TYPE_UNKNOWN,
+  DIR_TYPE_FILE,
+  DIR_TYPE_DIR
 };
 
-CORE_LIBSPEC char *fsafegets(char *s, int size, FILE *stream);
+struct mzx_dir
+{
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+  char path[PATH_BUF_LEN];
+#endif
+  void *opaque;
+  long entries;
+  long pos;
+#ifdef __WIN32__
+  boolean is_wdirent;
+#endif
+};
 
-int fsafetranslate(const char *path, char *newpath);
-FILE *fsafeopen(const char *path, const char *mode);
+boolean dir_open(struct mzx_dir *dir, const char *path);
+void dir_close(struct mzx_dir *dir);
+void dir_seek(struct mzx_dir *dir, long offset);
+long dir_tell(struct mzx_dir *dir);
+boolean dir_get_next_entry(struct mzx_dir *dir, char *entry, int *type);
 
 __M_END_DECLS
 
-#endif // __FSAFEOPEN_H
+#endif /* __IO_DIR_H */

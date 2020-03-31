@@ -32,6 +32,7 @@ __M_BEGIN_DECLS
 #include <inttypes.h>
 
 #include "bitstream.h"
+#include "zip.h"
 
 #include "../util.h"
 

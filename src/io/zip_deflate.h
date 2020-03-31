@@ -31,7 +31,7 @@ __M_BEGIN_DECLS
 #include <assert.h>
 #include <zlib.h>
 
-#include "zip_stream.h"
+#include "zip.h"
 
 struct deflate_stream_data
 {

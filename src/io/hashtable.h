@@ -47,10 +47,10 @@
  * See contrib/khash.h for the original example and changelog from this file.
  */
 
-#ifndef KHASHMZX_H
-#define KHASHMZX_H
+#ifndef __IO_HASHTABLE_H
+#define __IO_HASHTABLE_H
 
-#include "../../src/compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
@@ -60,8 +60,8 @@ __M_BEGIN_DECLS
 #include <string.h>
 #include <limits.h>
 
-#include "../../src/memcasecmp.h"
-#include "../../src/platform_endian.h"
+#include "memcasecmp.h"
+#include "../platform_endian.h"
 
 #define __ac_isempty(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&2)
 #define __ac_isdel(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&1)
@@ -693,4 +693,4 @@ static inline uint32_t fnv_1a_hash_string_len(const void *_str, uint32_t len)
 
 __M_END_DECLS
 
-#endif // KHASHMZX_H
+#endif // __IO_HASHTABLE_H

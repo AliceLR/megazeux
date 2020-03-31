@@ -34,7 +34,6 @@
 #include "counter.h"
 #include "error.h"
 #include "extmem.h"
-#include "fsafeopen.h"
 #include "graphics.h"
 #include "idput.h"
 #include "robot.h"
@@ -43,6 +42,7 @@
 #include "window.h"
 #include "world.h"
 #include "util.h"
+#include "io/fsafeopen.h"
 
 #include "audio/sfx.h"
 

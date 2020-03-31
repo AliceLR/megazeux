@@ -36,7 +36,7 @@
 
 #include "const.h" // for MAX_PATH
 #include "error.h"
-#include "memcasecmp.h" // memtolower
+#include "io/memcasecmp.h" // memtolower
 
 struct mzx_resource
 {

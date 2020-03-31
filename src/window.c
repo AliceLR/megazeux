@@ -45,7 +45,6 @@
 #include "core.h"
 #include "counter.h"
 #include "data.h"
-#include "dir.h"
 #include "error.h"
 #include "event.h"
 #include "game_menu.h"
@@ -57,6 +56,7 @@
 #include "window.h"
 #include "world.h"
 #include "util.h"
+#include "io/dir.h"
 
 #include "audio/sfx.h"
 

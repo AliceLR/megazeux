@@ -23,20 +23,20 @@
  * MZX dirent wrapper with several platform-specific hacks.
  *
  * These are a bit more involved than the stdio wrappers and require fields in
- * the mzx_dir struct, so the platform hacks are here instead of in the vfs
+ * the mzx_dir struct, so the platform hacks are here instead of in the vfile
  * platform function headers.
  */
 
 #include <dirent.h>
 
 #include "dir.h"
-#include "util.h"
+#include "../util.h"
 
 #ifdef __WIN32__
 // utf8_to_utf16, utf16_to_utf8
 // FIXME util.h defines over mkdir and breaks this...
 #undef mkdir
-#include "vfs_win32.h"
+#include "vfile_win32.h"
 #endif
 
 static inline boolean platform_opendir(struct mzx_dir *dir, const char *path)

@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __ZIP_BITSTREAM_H
-#define __ZIP_BITSTREAM_H
+#ifndef __IO_BITSTREAM_H
+#define __IO_BITSTREAM_H
 
 #include "../compat.h"
 
@@ -117,4 +117,4 @@ static inline int bs_read(struct bitstream *b, BS_BUFTYPE mask, BS_BUFTYPE bits)
 
 __M_END_DECLS
 
-#endif /* __ZIP_BITSTREAM_H */
+#endif /* __IO_BITSTREAM_H */

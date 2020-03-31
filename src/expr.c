@@ -25,12 +25,12 @@
 #include "expr.h"
 
 #include "counter.h"
-#include "memcasecmp.h"
 #include "rasm.h"
 #include "robot.h"
 #include "str.h"
 #include "world.h"
 #include "world_struct.h"
+#include "io/memcasecmp.h"
 
 enum op
 {

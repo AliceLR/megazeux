@@ -34,7 +34,6 @@
 #include "event.h"
 #include "expr.h"
 #include "extmem.h"
-#include "fsafeopen.h"
 #include "game.h"
 #include "game_ops.h"
 #include "game_player.h"
@@ -50,6 +49,7 @@
 #include "util.h"
 #include "window.h"
 #include "world.h"
+#include "io/fsafeopen.h"
 
 #include "audio/audio.h"
 #include "audio/sfx.h"

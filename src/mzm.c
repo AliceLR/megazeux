@@ -36,7 +36,7 @@
 #include "world.h"
 #include "world_format.h"
 #include "world_struct.h"
-#include "zip.h"
+#include "io/zip.h"
 
 
 /* The MZM format hasn't changed a whole lot with zips; only the robots

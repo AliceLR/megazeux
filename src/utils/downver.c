@@ -52,11 +52,11 @@
 #endif
 
 #include "../const.h"
-#include "../memfile.h"
 #include "../util.h"
 #include "../world.h"
 #include "../world_format.h"
-#include "../zip.h"
+#include "../io/memfile.h"
+#include "../io/zip.h"
 
 #define DOWNVER_VERSION "2.92"
 #define DOWNVER_EXT ".291"

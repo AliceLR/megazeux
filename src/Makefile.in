@@ -17,6 +17,9 @@ core_obj = src/.build
 audio_src = src/audio
 audio_obj = src/audio/.build
 
+io_src = src/io
+io_obj = src/io/.build
+
 network_src = src/network
 network_obj = src/network/.build
 
@@ -55,6 +58,10 @@ ${audio_obj}/%.o: ${audio_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
 	${CC} -MD ${core_cxxflags} ${core_flags} ${core_spec} -c $< -o $@
 
+${io_obj}/%.o: ${io_src}/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@
+
 ${network_obj}/%.o: ${network_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@
@@ -79,11 +86,9 @@ core_cobjs := \
   ${core_obj}/core.o              \
   ${core_obj}/counter.o           \
   ${core_obj}/data.o              \
-  ${core_obj}/dir.o               \
   ${core_obj}/error.o             \
   ${core_obj}/event.o             \
   ${core_obj}/expr.o              \
-  ${core_obj}/fsafeopen.o         \
   ${core_obj}/game.o              \
   ${core_obj}/game_menu.o         \
   ${core_obj}/game_ops.o          \
@@ -108,10 +113,13 @@ core_cobjs := \
   ${core_obj}/sprite.o            \
   ${core_obj}/str.o               \
   ${core_obj}/util.o              \
-  ${core_obj}/vfs.o               \
   ${core_obj}/window.o            \
   ${core_obj}/world.o             \
-  ${core_obj}/zip.o
+  ${io_obj}/dir.o                 \
+  ${io_obj}/fsafeopen.o           \
+  ${io_obj}/vfile.o               \
+  ${io_obj}/zip.o                 \
+  ${io_obj}/zip_stream.o
 
 #
 # Lists mandatory C++ language sources (mangled to object names) required
@@ -289,10 +297,6 @@ core_ldflags := $(LIBPNG_LDFLAGS) ${core_ldflags}
 core_cobjs += ${core_obj}/pngops.o
 endif
 
-ifeq (${BUILD_COUNTER_HASH_TABLES},1)
-core_flags += -Icontrib/khash/
-endif
-
 ifeq (${BUILD_AUDIO},1)
 audio_cobjs := \
  ${audio_obj}/audio.o          \
@@ -381,6 +385,7 @@ core_objs := ${core_cobjs} ${core_cxxobjs}
 
 ${core_objs}: | $(filter-out $(wildcard ${core_obj}), ${core_obj})
 ${core_objs}: | $(filter-out $(wildcard ${audio_obj}), ${audio_obj})
+${core_objs}: | $(filter-out $(wildcard ${io_obj}), ${io_obj})
 ${core_objs}: | $(filter-out $(wildcard ${network_obj}), ${network_obj})
 
 ifeq (${BUILD_MODULAR},1)
@@ -475,8 +480,8 @@ ${mzxrun}.debug:
 endif
 
 mzx_clean: core_target_clean gdm2s3m_clean icons_clean libmodplug_clean libxmp_clean
-	$(if ${V},,@echo "  RM      " ${core_obj} ${audio_obj} ${network_obj})
-	${RM} -r ${core_obj} ${audio_obj} ${network_obj}
+	$(if ${V},,@echo "  RM      " ${core_obj} ${audio_obj} ${io_obj} ${network_obj})
+	${RM} -r ${core_obj} ${audio_obj} ${io_obj} ${network_obj}
 	$(if ${V},,@echo "  RM      " ${mzxrun} ${mzxrun}.debug)
 	${RM} ${mzxrun} ${mzxrun}.debug
 	$(if ${V},,@echo "  RM      " ${mzx} ${mzx}.debug)

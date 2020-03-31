@@ -40,7 +40,6 @@
 #include "data.h"
 #include "error.h"
 #include "event.h"
-#include "fsafeopen.h"
 #include "game_ops.h"
 #include "graphics.h"
 #include "idarray.h"
@@ -52,6 +51,8 @@
 #include "util.h"
 #include "world.h"
 #include "world_struct.h"
+#include "io/dir.h"
+#include "io/fsafeopen.h"
 
 #include "audio/audio.h"
 
@@ -62,7 +63,7 @@
  */
 
 #ifdef CONFIG_COUNTER_HASH_TABLES
-#include <khashmzx.h>
+#include "io/hashtable.h"
 HASH_SET_INIT(COUNTER, struct counter *, name, name_length)
 #endif
 

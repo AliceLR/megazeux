@@ -31,13 +31,13 @@
 #include "../event.h"
 #include "../graphics.h"
 #include "../intake.h"
-#include "../memcasecmp.h"
 #include "../scrdisp.h"
 #include "../sprite.h"
 #include "../str.h"
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+#include "../io/memcasecmp.h"
 
 #include "../audio/audio.h"
 

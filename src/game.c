@@ -36,7 +36,6 @@
 #include "data.h"
 #include "error.h"
 #include "event.h"
-#include "fsafeopen.h"
 #include "game.h"
 #include "game_menu.h"
 #include "game_player.h"
@@ -48,6 +47,7 @@
 #include "window.h"
 #include "world.h"
 #include "world_struct.h"
+#include "io/fsafeopen.h"
 
 #include "audio/audio.h"
 #include "audio/sfx.h"
