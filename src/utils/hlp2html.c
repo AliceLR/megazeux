@@ -370,8 +370,13 @@ static void apply_color_codes(struct help_file *current)
   {
     buffer[0] = 'f';
     buffer[1] = current_fg_color_char;
-    buffer[2] = ' ';
-    buffer[3] = 0;
+    buffer[2] = 0;
+
+    if(current_bg_color_char > 0)
+    {
+      buffer[2] = ' ';
+      buffer[3] = 0;
+    }
     append_html(current, buffer);
   }
 
@@ -379,8 +384,7 @@ static void apply_color_codes(struct help_file *current)
   {
     buffer[0] = 'b';
     buffer[1] = current_bg_color_char;
-    buffer[2] = ' ';
-    buffer[3] = 0;
+    buffer[2] = 0;
     append_html(current, buffer);
   }
 
@@ -435,7 +439,7 @@ static struct help_file *parse_line(struct help_file *current, char *line)
 
       snprintf(buffer, MAX_ANCHOR_NAME, "%s__%s", current->name, label);
       new_anchor(current, buffer);
-      append_html(current, "<a class=\"helpanchor\" name=\"");
+      append_html(current, "<a class=\"hA\" name=\"");
       append_html(current, buffer);
       append_html(current, "\">");
       is_anchor = true;
@@ -475,7 +479,7 @@ static struct help_file *parse_line(struct help_file *current, char *line)
       snprintf(target_anchor, MAX_ANCHOR_NAME, "%s__%s", target_file, label);
       snprintf(buffer, MAX_ANCHOR_NAME, "%d__%s", (++link_count), label);
       new_link(current, buffer, target_file, target_anchor);
-      append_html(current, "<a class=\"helplink\" href=\"#");
+      append_html(current, "<a class=\"hL\" href=\"#");
       append_html(current, target_anchor);
       append_html(current, "\">");
       is_anchor = true;
@@ -485,7 +489,7 @@ static struct help_file *parse_line(struct help_file *current, char *line)
     case '$':
     {
       // Centered line.
-      append_html(current, "<p class=\"helpcentered\">");
+      append_html(current, "<p class=\"hC\">");
       is_centered = true;
       line++;
       break;
@@ -545,9 +549,27 @@ static struct help_file *parse_line(struct help_file *current, char *line)
       }
       else
       {
-        buffer[0] = cur;
-        buffer[1] = 0;
-        append_html(current, buffer);
+        // Certain chars need to be escaped to entities to display reliably.
+        switch(cur)
+        {
+          case '&':
+            append_html(current, "&amp;");
+            break;
+
+          case '<':
+            append_html(current, "&lt;");
+            break;
+
+          case '>':
+            append_html(current, "&gt;");
+            break;
+
+          default:
+            buffer[0] = cur;
+            buffer[1] = 0;
+            append_html(current, buffer);
+            break;
+        }
       }
     }
   }
@@ -606,6 +628,7 @@ static void write_html(const char *output)
 
   memset(&root, 0, sizeof(struct help_file));
 
+  append_html(&root, "<!DOCTYPE html>" EOL);
   append_html(&root, "<html>" EOL "<head>" EOL);
   append_html(&root, "<title>" TITLE "</title>" EOL);
 
@@ -637,15 +660,6 @@ static void write_html(const char *output)
     append_nav_url(&root, "COMMANDR.HLP", "1st", "Commands");
     append_nav_url(&root, "COUNTERS.HLP", "1st", "Counters");
     append_nav_url(&root, "NEWINVER.HLP", "1st", "Changelog");
-
-/*
-    // Since this will likely be embedded in an iframe, the printable version
-    // should open to a new page instead of attempting to open in the frame.
-    append_html(&root, " <li>"
-     "<a href=\"mzx_help_printable.html\" target=\"_blank\">"
-     "Printable Version</a></li>");
-*/
-
     append_html(&root, "</ul></div>" EOL "</div>" EOL EOL);
   }
   else
@@ -658,11 +672,11 @@ static void write_html(const char *output)
   for(i = 0; i < num_help_files; i++)
   {
     current = help_file_list[i];
-    append_html(&root, "<div class=\"helpfile\" id=\"");
+    append_html(&root, "<div class=\"hF\" id=\"");
     append_html(&root, current->name);
     append_html(&root, "\">" EOL);
     append_html(&root, current->html.data);
-    append_html(&root, EOL "<hr />" "</div>" EOL EOL);
+    append_html(&root, EOL "<hr>" "</div>" EOL EOL);
   }
 
   append_html(&root, "</div>" EOL "</body>" EOL "</html>" EOL);

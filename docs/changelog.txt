@@ -29,6 +29,8 @@ USERS
   counters or strings lists beyond 1 billion. Checks have been
   added to prevent them from expanding beyond 2^31 (please don't
   actually use this many counters/strings).
++ Fixed hlp2html bug where certain chars wouldn't be escaped and
+  decreased the size of the output HTML files somewhat.
 
 DEVELOPERS
 
