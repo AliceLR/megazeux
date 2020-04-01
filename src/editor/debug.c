@@ -38,6 +38,7 @@
 #include "../window.h"
 #include "../world.h"
 #include "../io/memcasecmp.h"
+#include "../io/stringsearch.h"
 
 #include "../audio/audio.h"
 
@@ -1240,8 +1241,8 @@ static boolean select_debug_var(struct debug_node *node, char *var_name,
 /******************/
 
 static boolean search_match(const char *var_text, const size_t var_text_length,
- const char *match_text, const int *match_text_index, const size_t match_length,
- int search_flags)
+ const char *match_text, const struct string_search_data *match_text_index,
+ const size_t match_length, int search_flags)
 {
   boolean ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
 
@@ -1262,7 +1263,7 @@ static boolean search_match(const char *var_text, const size_t var_text_length,
   }
   else
   {
-    if(boyer_moore_search(var_text, var_text_length, match_text, match_length,
+    if(string_search(var_text, var_text_length, match_text, match_length,
      match_text_index, ignore_case))
       return true;
   }
@@ -1272,8 +1273,8 @@ static boolean search_match(const char *var_text, const size_t var_text_length,
 
 static boolean search_vars(struct world *mzx_world, struct debug_node *node,
  struct debug_var **res_var, struct debug_node **res_node, int *res_pos,
- const char *match_text, const int *match_text_index, const size_t match_length,
- int search_flags, struct debug_var **stop_var)
+ const char *match_text, const struct string_search_data *match_text_index,
+ const size_t match_length, int search_flags, struct debug_var **stop_var)
 {
   boolean matched = false;
   struct debug_var *current;
@@ -1369,8 +1370,8 @@ static boolean search_vars(struct world *mzx_world, struct debug_node *node,
 
 static boolean search_node(struct world *mzx_world, struct debug_node *node,
  struct debug_var **res_var, struct debug_node **res_node, int *res_pos,
- const char *match_text, const int *match_text_index, const size_t match_length,
- int search_flags, struct debug_var **stop_var)
+ const char *match_text, const struct string_search_data *match_text_index,
+ const size_t match_length, int search_flags, struct debug_var **stop_var)
 {
   boolean r = false;
   int i;
@@ -1467,12 +1468,12 @@ static boolean search_debug(struct world *mzx_world, struct debug_node *node,
   struct debug_var *stop_var = NULL;
   boolean matched = false;
 
-  int match_text_index[256] = { 0 };
+  struct string_search_data match_text_index;
   boolean ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
 
   // Generate an index to help speed up substring searches.
   if(!(search_flags & VAR_SEARCH_EXACT))
-    boyer_moore_index(match_text, match_length, match_text_index, ignore_case);
+    string_search_index(match_text, match_length, &match_text_index, ignore_case);
 
   if(search_flags & VAR_SEARCH_WRAP)
   {
@@ -1492,12 +1493,12 @@ static boolean search_debug(struct world *mzx_world, struct debug_node *node,
   }
 
   matched = search_node(mzx_world, node, res_var, res_node, res_pos,
-   match_text, match_text_index, match_length, search_flags, &stop_var);
+   match_text, &match_text_index, match_length, search_flags, &stop_var);
 
   // Wrap? Try again from the start
   if(!matched && (search_flags & VAR_SEARCH_WRAP))
     matched = search_node(mzx_world, node, res_var, res_node, res_pos,
-     match_text, match_text_index, match_length, search_flags, &stop_var);
+     match_text, &match_text_index, match_length, search_flags, &stop_var);
 
   // If we stopped on a non-match, return false.
   if(*res_var == NULL)
