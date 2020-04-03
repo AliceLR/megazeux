@@ -23,7 +23,7 @@
  * copied into module memory, but supports more decompression methods than UZIP.
  */
 
-#include "../../src/zip.h"
+#include "../../src/io/zip.h"
 #include <stdlib.h>
 #include <emscripten.h>
 
