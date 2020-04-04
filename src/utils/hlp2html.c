@@ -26,8 +26,8 @@
 #define SKIP_SDL
 #define CORE_LIBSPEC
 #include "../compat.h"
+#include "../hashtable.h"
 #include "../util.h"
-#include "../io/hashtable.h"
 #include "../io/memfile.h"
 
 #ifdef CONFIG_PLEDGE_UTILS

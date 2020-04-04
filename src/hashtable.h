@@ -50,7 +50,7 @@
 #ifndef __IO_HASHTABLE_H
 #define __IO_HASHTABLE_H
 
-#include "../compat.h"
+#include "compat.h"
 
 __M_BEGIN_DECLS
 
@@ -61,7 +61,7 @@ __M_BEGIN_DECLS
 #include <limits.h>
 
 #include "memcasecmp.h"
-#include "../platform_endian.h"
+#include "platform_endian.h"
 
 #define __ac_isempty(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&2)
 #define __ac_isdel(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&1)

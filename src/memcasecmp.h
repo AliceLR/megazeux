@@ -20,12 +20,12 @@
 #ifndef __IO_MEMCASECMP_H
 #define __IO_MEMCASECMP_H
 
-#include "../compat.h"
+#include "compat.h"
 
 __M_BEGIN_DECLS
 
 #include <inttypes.h>
-#include "../platform_endian.h"
+#include "platform_endian.h"
 
 static const unsigned char memtolower_table[256] =
 {

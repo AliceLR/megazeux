@@ -17,22 +17,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * Boyer-Moore string search implementation.
+ * These functions are currently only used by the editor.
+ */
+
+#include "../memcasecmp.h"
 #include "../util.h"
 
-/**
- * These functions are currently only used by the editor. Remove this ifdef
- * if this ever changes.
- */
-#ifdef CONFIG_EDITOR
-
-#include "memcasecmp.h"
 #include "stringsearch.h"
 
 /**
  * Initialize a string search index for a needle substring to be used in
  * string_search(). This only needs to be performed once per search string.
  * This may be called subsequently on the same search_string_data struct to
- * prepare it for a different needle string.
+ * prepare it for a different needle string. The needle string does not need
+ * to be null-terminated.
  *
  * @param B             Pointer to needle substring.
  * @param b_len         Length of needle substring.
@@ -71,7 +71,12 @@ void string_search_index(const void *B, const size_t b_len,
  * Search for needle substring B in haystack A. This implementation uses a
  * simplified Boyer-Moore algorithm to improve search performance, particularly
  * for repeated searches. The provided string_search_data struct must be
- * initialized by calling string_search_index() before it is used.
+ * initialized by calling string_search_index() before it is used. Neither the
+ * needle string nor the haystack string need to be null-terminated.
+ *
+ * If a string search will only be performed once for a given needle or if the
+ * needle is short, and if both strings are null-terminated, the standard
+ * library function strstr should probably be used instead.
  *
  * @param A             Pointer to haystack string.
  * @param a_len         Length of haystack string.
@@ -125,5 +130,3 @@ const void *string_search(const void *A, const size_t a_len,
   }
   return NULL;
 }
-
-#endif /* CONFIG_EDITOR */

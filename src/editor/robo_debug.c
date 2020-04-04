@@ -25,6 +25,7 @@
 #include "debug.h"
 #include "robot.h"
 #include "robo_debug.h"
+#include "stringsearch.h"
 #include "window.h"
 
 #include "../core.h"
@@ -36,7 +37,6 @@
 #include "../util.h"
 #include "../window.h"
 #include "../world_struct.h"
-#include "../io/stringsearch.h"
 
 struct breakpoint
 {

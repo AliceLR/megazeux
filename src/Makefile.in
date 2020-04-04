@@ -117,7 +117,6 @@ core_cobjs := \
   ${core_obj}/world.o             \
   ${io_obj}/dir.o                 \
   ${io_obj}/fsafeopen.o           \
-  ${io_obj}/stringsearch.o        \
   ${io_obj}/vfile.o               \
   ${io_obj}/zip.o                 \
   ${io_obj}/zip_stream.o

@@ -63,7 +63,7 @@
  */
 
 #ifdef CONFIG_COUNTER_HASH_TABLES
-#include "io/hashtable.h"
+#include "hashtable.h"
 HASH_SET_INIT(COUNTER, struct counter *, name, name_length)
 #endif
 

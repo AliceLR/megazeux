@@ -28,12 +28,12 @@
 #include "counter.h"
 #include "error.h"
 #include "graphics.h"
+#include "memcasecmp.h"
 #include "rasm.h"
 #include "robot.h"
 #include "util.h"
 #include "world.h"
 #include "world_struct.h"
-#include "io/memcasecmp.h"
 
 /**
  * TODO: String lookups are currently case-insensitive, which is somewhat of
@@ -42,7 +42,7 @@
  */
 
 #ifdef CONFIG_COUNTER_HASH_TABLES
-#include "io/hashtable.h"
+#include "hashtable.h"
 HASH_SET_INIT(STRING, struct string *, name, name_length)
 #endif
 

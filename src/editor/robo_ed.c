@@ -43,7 +43,6 @@
 #include "../window.h"
 #include "../world.h"
 #include "../io/fsafeopen.h"
-#include "../io/stringsearch.h"
 
 #include "char_ed.h"
 #include "clipboard.h"
@@ -53,6 +52,7 @@
 #include "macro.h"
 #include "macro_struct.h"
 #include "robo_ed.h"
+#include "stringsearch.h"
 #include "window.h"
 
 #define combine_colors(a, b)  \

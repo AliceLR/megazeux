@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __IO_STRINGSEARCH_H
-#define __IO_STRINGSEARCH_H
+#ifndef __EDITOR_STRINGSEARCH_H
+#define __EDITOR_STRINGSEARCH_H
 
 #include "../compat.h"
 
@@ -31,12 +31,12 @@ struct string_search_data
   unsigned int index[256];
 };
 
-UTILS_LIBSPEC void string_search_index(const void *B, const size_t b_len,
+void string_search_index(const void *B, const size_t b_len,
  struct string_search_data *data, boolean ignore_case);
-UTILS_LIBSPEC const void *string_search(const void *A, const size_t a_len,
+const void *string_search(const void *A, const size_t a_len,
  const void *B, const size_t b_len, const struct string_search_data *data,
  boolean ignore_case);
 
 __M_END_DECLS
 
-#endif /* __IO_STRINGSEARCH_H */
+#endif /* __EDITOR_STRINGSEARCH_H */

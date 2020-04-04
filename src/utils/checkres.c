@@ -90,9 +90,9 @@
 
 // Safe- self sufficient or completely macros/static inlines
 #include "../const.h"
+#include "../hashtable.h"
+#include "../memcasecmp.h"
 #include "../world_format.h"
-#include "../io/hashtable.h"
-#include "../io/memcasecmp.h"
 #include "../io/memfile.h"
 #include "../io/zip.h"
 

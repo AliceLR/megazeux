@@ -24,6 +24,7 @@
 #include "char_ed.h"
 #include "pal_ed.h"
 #include "robo_debug.h"
+#include "stringsearch.h"
 #include "window.h"
 
 #include "../core.h"
@@ -31,14 +32,13 @@
 #include "../event.h"
 #include "../graphics.h"
 #include "../intake.h"
+#include "../memcasecmp.h"
 #include "../scrdisp.h"
 #include "../sprite.h"
 #include "../str.h"
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
-#include "../io/memcasecmp.h"
-#include "../io/stringsearch.h"
 
 #include "../audio/audio.h"
 
