@@ -47,8 +47,8 @@
  * See contrib/khash.h for the original example and changelog from this file.
  */
 
-#ifndef __IO_HASHTABLE_H
-#define __IO_HASHTABLE_H
+#ifndef __HASHTABLE_H
+#define __HASHTABLE_H
 
 #include "compat.h"
 
@@ -693,4 +693,4 @@ static inline uint32_t fnv_1a_hash_string_len(const void *_str, uint32_t len)
 
 __M_END_DECLS
 
-#endif // __IO_HASHTABLE_H
+#endif /* __HASHTABLE_H */

@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __IO_MEMCASECMP_H
-#define __IO_MEMCASECMP_H
+#ifndef __MEMCASECMP_H
+#define __MEMCASECMP_H
 
 #include "compat.h"
 
@@ -148,4 +148,4 @@ static inline int memcasecmp(const void *A, const void *B, size_t cmp_length)
 
 __M_END_DECLS
 
-#endif // __IO_MEMCASECMP_H
+#endif /* __MEMCASECMP_H */
