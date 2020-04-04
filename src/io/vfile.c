@@ -22,13 +22,13 @@
 #include <sys/stat.h>
 
 #include "memfile.h"
-#include "vfs.h"
+#include "vfile.h"
 //#include "zip.h"
 
 #ifdef __WIN32__
-#include "vfs_win32.h"
+#include "vfile_win32.h"
 #else
-#include "vfs_posix.h"
+#include "vfile_posix.h"
 #endif
 
 enum vfileflags

@@ -24,8 +24,8 @@
 
 __M_BEGIN_DECLS
 
-#include "memfile.h"
-#include "zip.h"
+#include "io/memfile.h"
+#include "io/zip.h"
 
 // Data and functions for the ZIP-based world/board/robot format.
 

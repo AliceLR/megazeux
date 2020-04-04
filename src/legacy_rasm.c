@@ -26,9 +26,9 @@
 
 #include "rasm.h"
 #include "data.h"
-#include "fsafeopen.h"
-#include "memfile.h"
 #include "util.h"
+#include "io/fsafeopen.h"
+#include "io/memfile.h"
 
 #define IMM_U16            (1 << 0)
 #define IMM_S16            (1 << 0)

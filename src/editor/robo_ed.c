@@ -34,7 +34,6 @@
 #include "../core.h"
 #include "../error.h"
 #include "../event.h"
-#include "../fsafeopen.h"
 #include "../graphics.h"
 #include "../helpsys.h"
 #include "../intake.h"
@@ -43,6 +42,7 @@
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+#include "../io/fsafeopen.h"
 
 #include "char_ed.h"
 #include "clipboard.h"
@@ -52,6 +52,7 @@
 #include "macro.h"
 #include "macro_struct.h"
 #include "robo_ed.h"
+#include "stringsearch.h"
 #include "window.h"
 
 #define combine_colors(a, b)  \
@@ -77,7 +78,7 @@ static int last_color_selected = 0;
 static int last_char_selected = 0;
 
 static enum search_option last_search_action = SEARCH_OPTION_NONE;
-static int search_index[256];
+static struct string_search_data search_index;
 static char search_string[256];
 static char replace_string[256];
 static boolean search_wrap_enabled = true;
@@ -1887,12 +1888,13 @@ static void replace_current_line(struct robot_editor_context *rstate,
 }
 
 static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
- int index[256], int *position, boolean wrap, boolean ignore_case)
+ struct string_search_data *data, int *position, boolean wrap,
+ boolean ignore_case)
 {
   struct robot_line *current_rline = rstate->current_rline;
   int current_line = rstate->current_line;
-  char *text = rstate->command_buffer;
-  char *pos = NULL;
+  const char *text = rstate->command_buffer;
+  const char *pos = NULL;
   size_t text_len;
   size_t str_len = strlen(str);
 
@@ -1908,7 +1910,7 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
   {
     text += rstate->current_x + 1;
     text_len -= rstate->current_x + 1;
-    pos = boyer_moore_search(text, text_len, str, str_len, index, ignore_case);
+    pos = string_search(text, text_len, str, str_len, data, ignore_case);
 
     text = rstate->command_buffer;
   }
@@ -1922,8 +1924,7 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
     while(current_rline != NULL)
     {
       text = current_rline->line_text;
-      pos = boyer_moore_search(text, strlen(text), str, str_len, index,
-       ignore_case);
+      pos = string_search(text, strlen(text), str, str_len, data, ignore_case);
 
       if(pos)
         break;
@@ -1941,8 +1942,7 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
     while(current_rline != rstate->current_rline->next)
     {
       text = current_rline->line_text;
-      pos = boyer_moore_search(text, strlen(text), str, str_len, index,
-       ignore_case);
+      pos = string_search(text, strlen(text), str, str_len, data, ignore_case);
 
       if(pos)
         break;
@@ -1975,7 +1975,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
     {
       // Find
       int l_pos;
-      int l_num = robo_ed_find_string(rstate, search_string, search_index,
+      int l_num = robo_ed_find_string(rstate, search_string, &search_index,
        &l_pos, search_wrap_enabled, search_ignore_case_enabled);
 
       if(l_num != -1)
@@ -1991,7 +1991,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
     {
       // Find & Replace
       int l_pos;
-      int l_num = robo_ed_find_string(rstate, search_string, search_index,
+      int l_num = robo_ed_find_string(rstate, search_string, &search_index,
        &l_pos, search_wrap_enabled, search_ignore_case_enabled);
 
       if(l_num != -1)
@@ -2019,7 +2019,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
 
       do
       {
-        l_num = robo_ed_find_string(rstate, search_string, search_index,
+        l_num = robo_ed_find_string(rstate, search_string, &search_index,
          &l_pos, search_wrap_enabled, search_ignore_case_enabled);
 
         // Is it on the starting line and below the starting cursor?
@@ -2109,7 +2109,7 @@ static void robo_ed_search_dialog(struct robot_editor_context *rstate)
 
   search_wrap_enabled = wrap;
   search_ignore_case_enabled = !casesens;
-  boyer_moore_index(search_string, strlen(search_string), search_index,
+  string_search_index(search_string, strlen(search_string), &search_index,
    search_ignore_case_enabled);
 
   if(result != -1)
@@ -2151,7 +2151,7 @@ static void robo_ed_replace_dialog(struct robot_editor_context *rstate)
 
   search_wrap_enabled = wrap;
   search_ignore_case_enabled = !casesens;
-  boyer_moore_index(search_string, strlen(search_string), search_index,
+  string_search_index(search_string, strlen(search_string), &search_index,
    search_ignore_case_enabled);
 
   if(result != -1)

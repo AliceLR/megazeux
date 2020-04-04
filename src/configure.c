@@ -21,18 +21,18 @@
 // Config file options, which can be given either through config.txt
 // or at the command line.
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#include <sys/stat.h>
 
 #include "configure.h"
 #include "counter.h"
 #include "event.h"
 #include "rasm.h"
-#include "fsafeopen.h"
 #include "util.h"
-#include "sys/stat.h"
+#include "io/fsafeopen.h"
 
 // Arch-specific config.
 #ifdef CONFIG_NDS

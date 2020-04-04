@@ -42,7 +42,7 @@
  */
 
 #ifdef CONFIG_COUNTER_HASH_TABLES
-#include <khashmzx.h>
+#include "hashtable.h"
 HASH_SET_INIT(STRING, struct string *, name, name_length)
 #endif
 

@@ -17,10 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __VFS_H
-#define __VFS_H
+#ifndef __IO_VFILE_H
+#define __IO_VFILE_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
@@ -61,8 +61,6 @@ long int vftell(vfile *vf);
 void vrewind(vfile *vf);
 long vfilelength(vfile *vf, boolean rewind);
 
-// FIXME dirent
-
 __M_END_DECLS
 
-#endif /* VFS_H */
+#endif /* __IO_VFILE_H */

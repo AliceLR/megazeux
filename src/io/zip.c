@@ -30,12 +30,12 @@
 // This needs to stay self-sufficient - don't use core functions.
 // Including util.h for the macros only...
 
-#include "memfile.h"
-#include "util.h"
-#include "zip.h"
+#include "../util.h"
 
-// TODO maybe just the header instead :(
-#include "zip/zip_stream.c"
+#include "memfile.h"
+#include "vfile.h"
+#include "zip.h"
+#include "zip_stream.h"
 
 #define ZIP_VERSION 20
 #define ZIP_VERSION_MINIMUM 20

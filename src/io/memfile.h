@@ -17,10 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __MEMFILE_H
-#define __MEMFILE_H
+#ifndef __IO_MEMFILE_H
+#define __IO_MEMFILE_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
@@ -300,4 +300,4 @@ static inline long int mftell(struct memfile *mf)
 
 __M_END_DECLS
 
-#endif // __MEMFILE_H
+#endif // __IO_MEMFILE_H

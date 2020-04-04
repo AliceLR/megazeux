@@ -35,9 +35,9 @@
 
 #include "../configure.h"
 #include "../data.h"
-#include "../fsafeopen.h"
 #include "../platform.h"
 #include "../util.h"
+#include "../io/fsafeopen.h"
 
 #if defined(CONFIG_MODPLUG) + defined(CONFIG_MIKMOD) + \
  defined(CONFIG_XMP) + defined(CONFIG_OPENMPT) > 1

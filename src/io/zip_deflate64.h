@@ -35,7 +35,7 @@ __M_BEGIN_DECLS
 #include "../../contrib/infback9/inftree9.h"
 #include "../../contrib/infback9/inftree9.c"
 
-#include "zip_stream.h"
+#include "zip.h"
 
 struct deflate64_stream_data
 {

@@ -25,6 +25,7 @@
 #include "debug.h"
 #include "robot.h"
 #include "robo_debug.h"
+#include "stringsearch.h"
 #include "window.h"
 
 #include "../core.h"
@@ -41,7 +42,7 @@ struct breakpoint
 {
   char match_name[ROBOT_NAME_SIZE];
   char match_string[61];
-  int index[256];
+  struct string_search_data index;
   int line_number;
   int match_name_len;
   int match_string_len;
@@ -242,8 +243,8 @@ static void new_breakpoint(struct world *mzx_world)
        num_breakpoints_allocated * sizeof(struct breakpoint *));
     }
 
-    boyer_moore_index(br->match_string, br->match_string_len,
-     br->index, true);
+    string_search_index(br->match_string, br->match_string_len,
+     &(br->index), true);
 
     breakpoints[num_breakpoints] = br;
     num_breakpoints++;
@@ -457,8 +458,8 @@ void __debug_robot_config(struct world *mzx_world)
 
             if(!edit_breakpoint_dialog(mzx_world, br, "Edit Breakpoint"))
             {
-              boyer_moore_index(br->match_string, br->match_string_len,
-               br->index, true);
+              string_search_index(br->match_string, br->match_string_len,
+               &(br->index), true);
             }
           }
           else
@@ -1205,8 +1206,8 @@ int __debug_robot_break(context *ctx, struct robot *cur_robot,
 
         // Try to find the match pattern in the line
         if(b->match_string_len)
-          if(!boyer_moore_search((void *)src_ptr, src_length,
-           (void *)b->match_string, b->match_string_len, b->index, true))
+          if(!string_search((void *)src_ptr, src_length,
+           (void *)b->match_string, b->match_string_len, &(b->index), true))
             continue;
 
         action = ACTION_MATCHED;

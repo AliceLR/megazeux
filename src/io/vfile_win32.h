@@ -17,10 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __VFS_WIN32_H
-#define __VFS_WIN32_H
+#ifndef __IO_VFILE_WIN32_H
+#define __IO_VFILE_WIN32_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
@@ -188,4 +188,4 @@ static inline int platform_stat(const char *path, struct stat *buf)
 
 __M_END_DECLS
 
-#endif /* __VFS_WIN32_H */
+#endif /* __IO_VFILE_WIN32_H */

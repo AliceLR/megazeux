@@ -82,26 +82,24 @@
 #include <strings.h>
 #endif
 
-// Defines so checkres builds when this is included.
-// This is because khashmzx.h uses the check_alloc functions (CORE_LIBSPEC)
-// and memcasecmp.h (which needs platform_endian.h and thus SDL_endian.h).
+// Defines so checkres builds when MZX headers are included.
 #define SKIP_SDL
 #define CORE_LIBSPEC
-#include "../../contrib/khash/khashmzx.h"
 
 // From MZX itself:
 
 // Safe- self sufficient or completely macros/static inlines
 #include "../const.h"
+#include "../hashtable.h"
 #include "../memcasecmp.h"
-#include "../memfile.h"
 #include "../world_format.h"
-#include "../zip.h"
+#include "../io/memfile.h"
+#include "../io/zip.h"
 
 // Contains some CORE_LIBSPEC functions, which should be fine if the object
 // is included in linking due to the CORE_LIBSPEC define above. Right now,
 // checkres needs fsafeopen.o and util.o.
-#include "../fsafeopen.h"
+#include "../io/fsafeopen.h"
 #include "../util.h"
 #include "../world.h"
 

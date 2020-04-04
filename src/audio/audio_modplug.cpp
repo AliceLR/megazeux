@@ -30,8 +30,8 @@
 #include "sampled_stream.h"
 
 #include "../const.h"
-#include "../fsafeopen.h"
 #include "../util.h"
+#include "../io/fsafeopen.h"
 
 struct _ModPlugFile
 {

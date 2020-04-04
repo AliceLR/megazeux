@@ -37,7 +37,6 @@
 #include "idarray.h"
 #include "legacy_rasm.h"
 #include "memcasecmp.h"
-#include "memfile.h"
 #include "robot.h"
 #include "rasm.h"
 #include "scrdisp.h"
@@ -47,8 +46,8 @@
 #include "world.h"
 #include "world_format.h"
 #include "world_struct.h"
-#include "zip.h"
-
+#include "io/memfile.h"
+#include "io/zip.h"
 
 void create_blank_robot(struct robot *cur_robot)
 {
