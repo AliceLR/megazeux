@@ -114,6 +114,7 @@ src/.build/
 src/config.h
 src/audio/.build/
 src/editor/.build/
+src/io/.build/
 src/network/.build/
 src/utils/.build/
 src/utils/ccv.exe
