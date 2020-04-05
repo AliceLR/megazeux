@@ -47,7 +47,8 @@ VPK package.
 Move the generated `mzxrun.vpk` or `megazeux.vpk` package to your console and
 use VitaShell or a similar application to install it to your LiveArea. If you
 only plan to play games, install `mzxrun.vpk`. If you plan to use the editor,
-install `megazeux.vpk`.
+install `megazeux.vpk`. Please note that a Bluetooth keyboard will be required
+in order to use the Robotic editor.
 
 MegaZeux expects all games and assets to be stored in `ux0:/data/MegaZeux`. Any
 games that you wish to run should be placed inside of that directory. If you

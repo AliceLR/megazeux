@@ -71,7 +71,13 @@ clean:
 		megazeux megazeux.elf megazeux.velf megazeux.vpk eboot.bin param.sfo
 
 build: package ${build}
-	echo TODO
+	${CP} ${mzx}.vpk ${build}
+	${CP} ${mzxrun}.vpk ${build}
+	${CP} arch/psvita/README.md ${build}/VITA-README.txt
+	${RM} ${build}/${mzxrun} \
+	      ${build}/${mzxrun}.debug \
+	      ${build}/${mzx} \
+	      ${build}/${mzx}.debug
 
 #
 # Vile hack, remove me ASAP
@@ -79,3 +85,5 @@ build: package ${build}
 arch/psvita/%.o: arch/psvita/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
+
+include arch/zip.inc
