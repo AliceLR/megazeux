@@ -50,9 +50,9 @@ only plan to play games, install `mzxrun.vpk`. If you plan to use the editor,
 install `megazeux.vpk`. Please note that a Bluetooth keyboard will be required
 in order to use the Robotic editor.
 
-MegaZeux expects all games and assets to be stored in `ux0:/data/MegaZeux`. Any
-games that you wish to run should be placed inside of that directory. If you
-install the version of MegaZeux that includes the editor, be sure to copy the
-`assets` directory from the source tree into that directory as well.
+MegaZeux expects all games and assets to be stored in `ux0:/data/MegaZeux`.
+Create this directory on your device, then transfer the included `config.txt`
+file, `assets` directory, and any games that you wish to run into that
+directory.
 
 After this is done, MegaZeux should be fully playable. Have fun!
