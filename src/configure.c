@@ -38,11 +38,13 @@
 #ifdef CONFIG_NDS
 #define VIDEO_OUTPUT_DEFAULT "nds"
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
+#define SAVE_SLOTS true
 #endif
 
 #ifdef CONFIG_GP2X
 #define VIDEO_OUTPUT_DEFAULT "gp2x"
 #define AUDIO_BUFFER_SAMPLES 128
+#define SAVE_SLOTS true
 #endif
 
 #ifdef CONFIG_PSP
@@ -50,6 +52,7 @@
 #define FULLSCREEN_HEIGHT_DEFAULT 363
 #define FORCE_BPP_DEFAULT 8
 #define FULLSCREEN_DEFAULT 1
+#define SAVE_SLOTS true
 #endif
 
 #ifdef CONFIG_WII
@@ -57,6 +60,7 @@
 #define FULLSCREEN_DEFAULT 1
 #define GL_VSYNC_DEFAULT 1
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
+#define SAVE_SLOTS true
 #ifdef CONFIG_SDL
 #define VIDEO_OUTPUT_DEFAULT "software"
 #define FULLSCREEN_WIDTH_DEFAULT 640
@@ -68,6 +72,7 @@
 #ifdef CONFIG_3DS
 #define FORCE_BPP_DEFAULT 16
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
+#define SAVE_SLOTS true
 #endif
 
 #ifdef CONFIG_SWITCH
@@ -75,6 +80,7 @@
 #define FULLSCREEN_WIDTH_DEFAULT 1920
 #define FULLSCREEN_HEIGHT_DEFAULT 1080
 #define FULLSCREEN_DEFAULT 1
+#define SAVE_SLOTS true
 #endif
 
 #ifdef ANDROID
@@ -132,6 +138,10 @@
 
 #ifndef AUTO_DECRYPT_WORLDS
 #define AUTO_DECRYPT_WORLDS false
+#endif
+
+#ifndef SAVE_SLOTS
+#define SAVE_SLOTS false
 #endif
 
 #ifdef CONFIG_UPDATER
@@ -208,7 +218,7 @@ static const struct config_info user_conf_default =
   false,                        // no_titlescreen
   false,                        // system_mouse
   false,                        // grab_mouse
-  false,                        // save_slots
+  SAVE_SLOTS,                   // save_slots
   "%w.",                        // save_slots_name
   ".sav",                       // save_slots_ext
 
