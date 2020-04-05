@@ -257,7 +257,6 @@ void gamecontroller_add_mapping(const char *mapping);
 const struct buffered_status *load_status(void);
 #endif
 
-enum keycode convert_internal_unicode(enum keycode key);
 void wait_event(int timeout);
 void force_last_key(enum keycode_type type, int val);
 void warp_mouse_x(Uint32 x);
