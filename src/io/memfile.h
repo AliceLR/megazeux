@@ -17,10 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __MEMFILE_H
-#define __MEMFILE_H
+#ifndef __IO_MEMFILE_H
+#define __IO_MEMFILE_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
@@ -153,6 +153,11 @@ static inline int mfgetd(struct memfile *mf)
   return v;
 }
 
+static inline unsigned int mfgetud(struct memfile *mf)
+{
+  return (unsigned int)mfgetd(mf);
+}
+
 static inline int mfputc(int ch, struct memfile *mf)
 {
   mf->current[0] = ch & 0xFF;
@@ -174,6 +179,11 @@ static inline void mfputd(int ch, struct memfile *mf)
   mf->current[2] = (ch >> 16) & 0xFF;
   mf->current[3] = (ch >> 24) & 0xFF;
   mf->current += 4;
+}
+
+static inline void mfputud(size_t ch, struct memfile *mf)
+{
+  mfputd((unsigned int)ch, mf);
 }
 
 static inline size_t mfread(void *dest, size_t len, size_t count,
@@ -210,6 +220,46 @@ static inline size_t mfwrite(const void *src, size_t len, size_t count,
   }
 
   return i;
+}
+
+/**
+ * Read a line from memory, safely trimming platform-specific EOL chars
+ * as-needed.
+ */
+static inline char *mfsafegets(char *dest, int len, struct memfile *mf)
+{
+  unsigned char *stop = mf->current + len - 1;
+  unsigned char *in = mf->current;
+  unsigned char ch;
+  char *out = dest;
+
+  if(mf->end < stop)
+    stop = mf->end;
+
+  // Return NULL if this is the end of the file.
+  if(in >= stop)
+    return NULL;
+
+  // Copy until the end/bound or a newline.
+  while(in < stop && (ch = *(in++)) != '\n')
+    *(out++) = ch;
+
+  *out = 0;
+
+  // Seek to the next line (or the end of the file).
+  mf->current = in;
+
+  // Length at least 1 -- get rid of \r and \n
+  if(out > dest)
+    if(out[-1] == '\r' || out[-1] == '\n')
+      out[-1] = 0;
+
+  // Length at least 2 -- get rid of \r and \n
+  if(out - 1 > dest)
+    if(out[-2] == '\r' || out[-2] == '\n')
+      out[-2] = 0;
+
+  return dest;
 }
 
 static inline int mfseek(struct memfile *mf, long int offs, int code)
@@ -250,4 +300,4 @@ static inline long int mftell(struct memfile *mf)
 
 __M_END_DECLS
 
-#endif // __MEMFILE_H
+#endif // __IO_MEMFILE_H

@@ -198,7 +198,8 @@ static boolean process_event(NDSEvent *event)
     {
       int internal_code, unicode;
       convert_nds_internal(event->key, &internal_code, &unicode);
-      key_press(status, internal_code, unicode);
+      key_press(status, internal_code);
+      key_press_unicode(status, unicode, true);
 
       keyboard_allow_release = true;
       break;

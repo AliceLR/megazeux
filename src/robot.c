@@ -37,7 +37,6 @@
 #include "idarray.h"
 #include "legacy_rasm.h"
 #include "memcasecmp.h"
-#include "memfile.h"
 #include "robot.h"
 #include "rasm.h"
 #include "scrdisp.h"
@@ -47,8 +46,8 @@
 #include "world.h"
 #include "world_format.h"
 #include "world_struct.h"
-#include "zip.h"
-
+#include "io/memfile.h"
+#include "io/zip.h"
 
 void create_blank_robot(struct robot *cur_robot)
 {
@@ -122,8 +121,8 @@ void create_blank_robot_program(struct robot *cur_robot)
 static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_robot,
  struct memfile *mf, int savegame, int file_version)
 {
-  char *program_legacy_bytecode = NULL;
 #ifdef CONFIG_DEBYTECODE
+  char *program_legacy_bytecode = NULL;
   char *saved_label_zaps = NULL;
   int num_label_zaps = 0;
 #endif
@@ -144,7 +143,9 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         break;
 
       case RPROP_ROBOT_NAME:
-        mfread(cur_robot->robot_name, ROBOT_NAME_SIZE, 1, &prop);
+        size = MIN(size, ROBOT_NAME_SIZE - 1);
+        mfread(cur_robot->robot_name, size, 1, &prop);
+        cur_robot->robot_name[size] = '\0';
         break;
 
       case RPROP_ROBOT_CHAR:
@@ -224,8 +225,10 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         break;
 
       case RPROP_STACK:
-        // Valid # of stack values (doubles) is file size /4
-        size /= 4;
+        // # of stack values is file size /4.
+        // Furthermore, there should be an even number of values, and a count
+        // over ROBOT_MAX_STACK is invalid.
+        size = MIN((size / 4) & ~1, ROBOT_MAX_STACK);
         cur_robot->stack_size = size;
         cur_robot->stack = cmalloc(size * sizeof(int));
         for(i = 0; i < size; i++)
@@ -335,6 +338,19 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
     last_ident = ident;
   }
 
+  // Check the stack for invalid states...
+  if(savegame && cur_robot->stack_pointer)
+  {
+    if(!cur_robot->stack || !cur_robot->stack_size)
+    {
+      cur_robot->stack_pointer = 0;
+    }
+    else
+
+    if(cur_robot->stack_pointer > cur_robot->stack_size)
+      cur_robot->stack_pointer = cur_robot->stack_size;
+  }
+
 #ifdef CONFIG_DEBYTECODE
 
   if(!cur_robot->program_source)
@@ -345,50 +361,27 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
   }
   else
 
-  if(savegame && cur_robot->cur_prog_line > 1)
+  if(savegame)
   {
-    // The cur_prog_line value loaded above was actually a source code position
-    // (or worse, a legacy bytecode position). Compile the source now and then
-    // determine the program offset using the generated command map.
-    //
-    // Note this doesn't need to be done if cur_prog_line is 0 (robot ended) or
-    // 1 (this is always the first command).
+    // The saved robot bytecode offsets are actually command numbers (3.00+)
+    // or legacy bytecode offsets (<3.00). Translate the loaded offsets into
+    // usable bytecode offsets. This may compile the robot program.
+    translate_robot_bytecode_offsets(mzx_world, cur_robot, file_version);
 
-    int cmd_num = 0;
-
-    prepare_robot_bytecode(mzx_world, cur_robot);
-
-    if(file_version < VERSION_SOURCE)
+    if(saved_label_zaps)
     {
-      // FIXME the following relies upon the new bytecode having the same number
-      // of commands as the old bytecode, which SHOULD be true, but it is not.
-      // Uncomment this when rasm gets the ability to compile comments and
-      // blank lines into NOPs.
-      cmd_num = 1;
-      cur_robot->pos_within_line = 0;
-      /*
-      if(program_legacy_bytecode)
-        cmd_num = get_legacy_bytecode_command_num(program_legacy_bytecode,
-         cur_robot->cur_prog_line);
-      */
-    }
-    else
-      cmd_num = cur_robot->cur_prog_line;
+      // Apply saved label zap data.
+      prepare_robot_bytecode(mzx_world, cur_robot);
 
-    cur_robot->cur_prog_line = command_num_to_program_pos(cur_robot, cmd_num);
-  }
-
-  if(savegame && saved_label_zaps)
-  {
-    // Apply saved label zap data.
-    prepare_robot_bytecode(mzx_world, cur_robot);
-
-    if(num_label_zaps == cur_robot->num_labels)
-    {
-      for(i = 0; i < num_label_zaps; i++)
-        cur_robot->label_list[i]->zapped = saved_label_zaps[i];
+      if(num_label_zaps == cur_robot->num_labels)
+      {
+        for(i = 0; i < num_label_zaps; i++)
+          cur_robot->label_list[i]->zapped = saved_label_zaps[i];
+      }
     }
   }
+
+  free(program_legacy_bytecode);
 
 #else /* !CONFIG_DEBYTECODE */
 
@@ -397,7 +390,6 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 
 #endif
 
-  free(program_legacy_bytecode);
   return 0;
 
 err_invalid:
@@ -410,8 +402,11 @@ err_invalid:
   strcpy(cur_robot->robot_name, "<<error>>");
   cur_robot->cur_prog_line = 0;
 
-  // Trigger error message
+#ifdef CONFIG_DEBYTECODE
   free(program_legacy_bytecode);
+#endif
+
+  // Trigger error message
   return -1;
 }
 
@@ -508,6 +503,8 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
         cur_scroll->mesg_size = size;
         cur_scroll->mesg = cmalloc(size);
         mfread(cur_scroll->mesg, size, 1, &prop);
+        if(size > 0)
+          cur_scroll->mesg[size - 1] = '\0';
         break;
 
       default:
@@ -515,9 +512,9 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
     }
   }
 
-  if(!cur_scroll->mesg_size)
+  if(cur_scroll->mesg_size < 3)
   {
-    // We have an incomplete sensor, so slip in an empty scroll.
+    // We have an incomplete scroll, so slip in an empty scroll.
     cur_scroll->num_lines = 1;
     cur_scroll->mesg_size = 3;
 
@@ -560,8 +557,9 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
         break;
 
       case SENPROP_SENSOR_NAME:
-        size = MIN(size, ROBOT_NAME_SIZE);
+        size = MIN(size, ROBOT_NAME_SIZE - 1);
         mfread(cur_sensor->sensor_name, size, 1, &prop);
+        cur_sensor->sensor_name[size] = '\0';
         break;
 
       case SENPROP_SENSOR_CHAR:
@@ -569,8 +567,9 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
         break;
 
       case SENPROP_ROBOT_TO_MESG:
-        size = MIN(size, ROBOT_NAME_SIZE);
+        size = MIN(size, ROBOT_NAME_SIZE - 1);
         mfread(cur_sensor->robot_to_mesg, size, 1, &prop);
+        cur_sensor->robot_to_mesg[size] = '\0';
         break;
 
       default:
@@ -657,9 +656,11 @@ static void save_robot_to_memory(struct robot *cur_robot,
 
     // The current bytecode offset isn't very useful when saved with
     // source code. Save the command number within the program instead.
-    program_line = get_program_command_num(cur_robot);
+    program_line = get_program_command_num(cur_robot, program_line);
 
     // Label zaps.
+    // TODO only do this if anything has actually been zapped/restored from the
+    // default so the robot doesn't have to be compiled when it's loaded.
     save_prop_v(RPROP_PROGRAM_LABEL_ZAPS, cur_robot->num_labels, &prop, mf);
     for(i = 0; i < cur_robot->num_labels; i++)
     {
@@ -690,8 +691,17 @@ static void save_robot_to_memory(struct robot *cur_robot,
     save_prop_d(RPROP_STACK_POINTER, cur_robot->stack_pointer, mf);
     save_prop_v(RPROP_STACK, stack_size * 4, &prop, mf);
 
-    for(i = 0; i < stack_size; i++)
-      mfputd(cur_robot->stack[i], &prop);
+    for(i = 0; i < stack_size; i += 2)
+    {
+      program_line = cur_robot->stack[i];
+#ifdef CONFIG_DEBYTECODE
+      // The stack bytecode offsets have the same problem as the current
+      // bytecode offset above, so convert these to line numbers too.
+      program_line = get_program_command_num(cur_robot, program_line);
+#endif
+      mfputd(program_line, &prop);
+      mfputd(cur_robot->stack[i + 1], &prop);
+    }
 
     save_prop_c(RPROP_CAN_GOOPWALK, cur_robot->can_goopwalk, mf);
   }
@@ -3679,7 +3689,7 @@ void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot)
   }
 }
 
-int command_num_to_program_pos(struct robot *cur_robot, int command_num)
+static int command_num_to_program_pos(struct robot *cur_robot, int command_num)
 {
   char *bc = cur_robot->program_bytecode;
   int program_length = cur_robot->program_bytecode_length;
@@ -3707,7 +3717,7 @@ int command_num_to_program_pos(struct robot *cur_robot, int command_num)
   return 0;
 }
 
-int get_legacy_bytecode_command_num(char *legacy_bc, int pos_in_bc)
+static int get_legacy_bytecode_command_num(char *legacy_bc, int pos_in_bc)
 {
   char *end = legacy_bc + pos_in_bc;
   int i = 1;
@@ -3727,13 +3737,82 @@ int get_legacy_bytecode_command_num(char *legacy_bc, int pos_in_bc)
   return 0;
 }
 
+/**
+ * The cur_prog_line value loaded for this robot is pretty much guaranteed to
+ * not be a true bytecode position but either a command number (3.00+) or a
+ * legacy bytecode position (<3.00). This is also true for all robot positions
+ * stored on the robot stack. If present these need to be converted to real
+ * bytecode positions in the compiled source so everything works properly.
+ *
+ * Note that if cur_prog_line is 0 (robot ended) or 1 (always the start of the
+ * first command) it does not need to be translated, and if the robot stack
+ * doesn't exist or the robot is currently at the bottom of it then the stack
+ * doesn't need to be translated. Checking for these cases is necessary to
+ * avoid compiling every robot in the entire save on load.
+ */
+void translate_robot_bytecode_offsets(struct world *mzx_world,
+ struct robot *cur_robot, int file_version)
+{
+  if(cur_robot->cur_prog_line > 1 ||
+   (cur_robot->stack && cur_robot->stack_pointer))
+  {
+    int cmd_num = 0;
+
+    prepare_robot_bytecode(mzx_world, cur_robot);
+
+    if(file_version < VERSION_SOURCE)
+    {
+      // FIXME the following relies upon the new bytecode having the same number
+      // of commands as the old bytecode, which SHOULD be true, but it is not.
+      // Uncomment this when rasm gets the ability to compile comments and
+      // blank lines into NOPs.
+      cur_robot->cur_prog_line = 1;
+      cur_robot->pos_within_line = 0;
+      /*
+      if(program_legacy_bytecode)
+        cmd_num = get_legacy_bytecode_command_num(program_legacy_bytecode,
+          cur_robot->cur_prog_line);
+      */
+    }
+    else
+      cmd_num = cur_robot->cur_prog_line;
+
+    if(cmd_num > 1)
+      cur_robot->cur_prog_line = command_num_to_program_pos(cur_robot, cmd_num);
+
+    // Also do the stack.
+    if(cur_robot->stack && cur_robot->stack_pointer)
+    {
+      int i;
+      for(i = 0; i < cur_robot->stack_pointer; i += 2)
+      {
+        int *stack_pos = cur_robot->stack + i;
+
+        if(file_version < VERSION_SOURCE)
+        {
+          // FIXME see above for why this doesn't work right now...
+          cur_robot->stack_pointer = 0;
+          break;
+          /*
+          cmd_num = get_legacy_bytecode_command_num(program_legacy_bytecode,
+           *stack_pos);
+          */
+        }
+        else
+          cmd_num = *stack_pos;
+
+        *stack_pos = command_num_to_program_pos(cur_robot, cmd_num);
+      }
+    }
+  }
+}
+
 #endif /* CONFIG_DEBYTECODE */
 
 #if defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE)
 
-int get_program_command_num(struct robot *cur_robot)
+int get_program_command_num(struct robot *cur_robot, int program_pos)
 {
-  int program_pos = cur_robot->cur_prog_line;
   int a = 0;
 
 #ifdef CONFIG_EDITOR

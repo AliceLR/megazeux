@@ -44,9 +44,9 @@
     color: #FFF;
   }
 
-  .helplink { color: #FFFFFF; }
-  .helplink:before { color: #FFFF55; }
-  .helplink:hover { color: #FF55FF; }
+  .hL { color: #FFFFFF; }
+  .hL:before { color: #FFFF55; }
+  .hL:hover { color: #FF55FF; }
 
   .f0 { color: #000000; }
   .f1 { color: #0000AA; }

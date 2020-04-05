@@ -674,24 +674,29 @@ static void place_text(struct editor_context *editor)
 {
   struct world *mzx_world = ((context *)editor)->world;
   struct buffer_info temp_buffer;
+  int num_placed = 0;
 
-  int key = get_key(keycode_unicode);
+  temp_buffer.id = __TEXT;
+  temp_buffer.color = editor->buffer.color;
 
-  if(key != 0)
+  while(num_placed < KEY_UNICODE_MAX)
   {
-    temp_buffer.id = __TEXT;
-    temp_buffer.param = key;
-    temp_buffer.color = editor->buffer.color;
-    place_current_at_xy(mzx_world, &temp_buffer,
-     editor->cursor_x, editor->cursor_y, editor->mode, editor->cur_history);
+    temp_buffer.param = get_key(keycode_text_ascii);
+    if(temp_buffer.param)
+    {
+      place_current_at_xy(mzx_world, &temp_buffer,
+       editor->cursor_x, editor->cursor_y, editor->mode, editor->cur_history);
 
-    if(editor->cursor_x < (editor->board_width - 1))
-      editor->cursor_x++;
+      if(editor->cursor_x < (editor->board_width - 1))
+        editor->cursor_x++;
 
-    fix_scroll(editor);
-
-    editor->modified = true;
+      num_placed++;
+      editor->modified = true;
+    }
+    else
+      break;
   }
+  fix_scroll(editor);
 }
 
 /**

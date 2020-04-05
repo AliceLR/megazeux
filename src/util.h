@@ -139,11 +139,6 @@ struct dso_syms_map
 
 #include <sys/types.h>
 
-CORE_LIBSPEC void boyer_moore_index(const void *B, const size_t b_len,
- int index[256], boolean ignore_case);
-CORE_LIBSPEC void *boyer_moore_search(const void *A, const size_t a_len,
- const void *B, const size_t b_len, const int index[256], boolean ignore_case);
-
 // Code to load/save multi-byte ints to/from little endian memory
 int mem_getc(const unsigned char **ptr);
 int mem_getd(const unsigned char **ptr);
@@ -151,8 +146,6 @@ int mem_getw(const unsigned char **ptr);
 void mem_putc(int src, unsigned char **ptr);
 void mem_putd(int src, unsigned char **ptr);
 void mem_putw(int src, unsigned char **ptr);
-
-CORE_LIBSPEC int memsafegets(char *dest, int size, char **src, char *end);
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 CORE_LIBSPEC int strcasecmp(const char *s1, const char *s2);

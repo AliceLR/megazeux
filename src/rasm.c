@@ -24,9 +24,10 @@
 
 #include "data.h"
 #include "rasm.h"
-#include "fsafeopen.h"
 #include "util.h"
 #include "counter.h"
+#include "io/fsafeopen.h"
+#include "io/memfile.h"
 
 #ifdef CONFIG_DEBYTECODE
 
@@ -5924,8 +5925,7 @@ char *legacy_convert_program(char *src, int len, int *_disasm_length,
 {
   if(len)
   {
-    char *input_start = src;
-    char *input_end = src + len;
+    struct memfile mf;
 
     int disasm_length = 0;
     int disasm_offset = 0;
@@ -5939,9 +5939,11 @@ char *legacy_convert_program(char *src, int len, int *_disasm_length,
 
     int disasm_line_length;
 
+    mfopen(src, len, &mf);
+
     // Copying to a buffer isn't the quickest solution, but trying to
     // handle it differently turns into spaghetti.
-    while(memsafegets(source_buffer, 255, &input_start, input_end))
+    while(mfsafegets(source_buffer, 256, &mf))
     {
       // Assemble line
       legacy_assemble_line(source_buffer, bytecode_buffer, errors,

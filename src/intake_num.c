@@ -115,28 +115,45 @@ static boolean intake_num_key(context *ctx, int *key)
   int increment_value = 0;
 
   if(get_exit_status())
-    *key = IKEY_ESCAPE;
-
-  if((*key >= IKEY_0) && (*key <= IKEY_9))
   {
-    // At exactly maximum/minimum, typing a number should wrap
-    if((intk->value == intk->min_val && intk->min_val < 0)
-     || (intk->value == intk->max_val && intk->max_val > 0))
+    *key = IKEY_ESCAPE;
+  }
+  else
+
+  if(has_unicode_input())
+  {
+    boolean modified = false;
+    int num_read = 0;
+
+    while(num_read < KEY_UNICODE_MAX)
     {
-      change_value(intk, 0);
+      Uint32 unicode = get_key(keycode_text_ascii);
+      num_read++;
+      if(unicode < '0' || unicode > '9')
+        continue;
+
+      modified = true;
+
+      // At exactly maximum/minimum, typing a number should wrap
+      if((intk->value == intk->min_val && intk->min_val < 0)
+       || (intk->value == intk->max_val && intk->max_val > 0))
+      {
+        change_value(intk, 0);
+        break;
+      }
+
+      else
+      {
+        int add_value = (unicode - '0');
+
+        if(intk->value < 0)
+          add_value *= -1;
+
+        change_value(intk, intk->value * 10 + add_value);
+      }
     }
-
-    else
-    {
-      int add_value = (*key - IKEY_0);
-
-      if(intk->value < 0)
-        add_value *= -1;
-
-      change_value(intk, intk->value * 10 + add_value);
-    }
-
-    return true;
+    if(modified)
+      return true;
   }
 
   switch(*key)
@@ -344,8 +361,6 @@ context *intake_num(context *parent, int value, int min_val, int max_val,
   spec.key      = intake_num_key;
   spec.click    = intake_num_click;
   spec.destroy  = intake_num_destroy;
-
-  spec.framerate_mode = FRAMERATE_UI_INTERRUPT;
 
   create_context((context *)intk, parent, &spec, CTX_INTAKE_NUM);
   return (context *)intk;

@@ -62,8 +62,14 @@ clean:
 
 all: emzip.js
 
-# NOTE: hack, core_obj isn't defined yet...
-emzip.js: arch/emscripten/emzip.c src/.build/zip.o src/.build/vfs.o src/.build/util.o
+# NOTE: hack, core_obj and io_obj aren't defined yet...
+emzip_objs := \
+  src/.build/util.o \
+  src/io/.build/vfile.o \
+  src/io/.build/zip.o \
+  src/io/.build/zip_stream.o
+
+emzip.js: arch/emscripten/emzip.c ${emzip_objs}
 	$(if ${V},,@echo "  LINK    " $@)
 	${CC} -O3 \
 	-s ENVIRONMENT=web \
@@ -71,9 +77,7 @@ emzip.js: arch/emscripten/emzip.c src/.build/zip.o src/.build/vfs.o src/.build/u
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME="'emzip'" \
 	-s "EXPORTED_RUNTIME_METHODS=['_main', 'UTF8ToString']" \
-	arch/emscripten/emzip.c \
-	${core_obj}/zip.o ${core_obj}/vfs.o ${core_obj}/util.o \
-	${ZLIB_LDFLAGS} -o emzip.js
+	$< ${emzip_objs} ${ZLIB_LDFLAGS} -o $@
 
 # Normally not defined yet...
 build := build/${SUBPLATFORM}

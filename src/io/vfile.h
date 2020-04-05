@@ -17,10 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __VFS_H
-#define __VFS_H
+#ifndef __IO_VFILE_H
+#define __IO_VFILE_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
@@ -55,14 +55,12 @@ int vfputw(int character, vfile *vf);
 int vfputd(int character, vfile *vf);
 int vfread(void *dest, size_t size, size_t count, vfile *vf);
 int vfwrite(const void *src, size_t size, size_t count, vfile *vf);
+char *vfsafegets(char *dest, int size, vfile *vf);
 int vfseek(vfile *vf, long int offset, int whence);
 long int vftell(vfile *vf);
 void vrewind(vfile *vf);
-
-long vftell_and_rewind(vfile *vf);
-
-// FIXME dirent
+long vfilelength(vfile *vf, boolean rewind);
 
 __M_END_DECLS
 
-#endif /* VFS_H */
+#endif /* __IO_VFILE_H */

@@ -17,6 +17,9 @@ libxmp_cflags = \
  ${libxmp_include} -w -O3 \
  -include src/platform_endian.h
 
+ifeq (${PLATFORM},emscripten)
+libxmp_cflags += -DHAVE_FNMATCH -DHAVE_MKSTEMP
+endif
 
 SRC_OBJS	= virtual.o format.o period.o player.o read_event.o dataio.o \
 		  fnmatch.o md5.o lfo.o scan.o control.o \
@@ -45,11 +48,11 @@ LOADERS_OBJ	= $(LOADERS_PATH)/.build
 libxmp_objs += $(addprefix $(LOADERS_OBJ)/,$(LOADERS_OBJS))
 
 
-${SRC_OBJ}/%.o: ${SRC_PATH}/%.c
+${SRC_OBJ}/%.o: ${SRC_PATH}/%.c src/config.h
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 
-${LOADERS_OBJ}/%.o: ${LOADERS_PATH}/%.c
+${LOADERS_OBJ}/%.o: ${LOADERS_PATH}/%.c src/config.h
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 

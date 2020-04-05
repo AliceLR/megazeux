@@ -20,7 +20,7 @@
 #ifndef __ZIP_H
 #define __ZIP_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
@@ -30,7 +30,7 @@ __M_BEGIN_DECLS
 // Don't use core features, don't extern anything.
 
 #include "memfile.h"
-#include "vfs.h"
+#include "vfile.h"
 
 /**
  * Methods universally supported by MZX are 0 (store) and 8 (Deflate).
@@ -140,22 +140,55 @@ enum zip_error
   ZIP_OUTPUT_FULL,
 };
 
-#include "zip/zip_stream.h"
-
 struct zip_file_header
 {
-  uint32_t mzx_prop_id;
-  uint8_t mzx_board_id;
-  uint8_t mzx_robot_id;
   uint16_t flags;
   uint16_t method;
   uint32_t crc32;
   uint32_t compressed_size;
   uint32_t uncompressed_size;
-  uint16_t file_name_length;
   uint32_t offset;
-  char *file_name;
+  uint32_t mzx_prop_id;
+  uint8_t mzx_board_id;
+  uint8_t mzx_robot_id;
+  uint16_t file_name_length;
+  // This struct is allocated with an extended area for the filename.
+  char file_name[1];
 };
+
+/**
+ * Data for an active ZIP (de)compression stream.
+ */
+struct zip_stream_data
+{
+  // Current position and remaining size of the input buffer.
+  const uint8_t *input_buffer;
+  size_t input_length;
+
+  // Current position and remaining size of the output buffer.
+  uint8_t *output_buffer;
+  size_t output_length;
+
+  size_t final_input_length;
+  size_t final_output_length;
+
+  // Has this stream been initialized?
+  boolean is_initialized;
+
+  // Is this stream finished?
+  boolean finished;
+
+  // Is this a compression stream? (false for a decompression stream)
+  boolean is_compression_stream;
+};
+
+// zip_stream_data structs should be allocated with at least this much extra
+// space for specific compression method data.
+#define ZIP_STREAM_DATA_PADDING 128
+#define ZIP_STREAM_DATA_ALLOC_SIZE \
+ (sizeof(struct zip_stream_data) + ZIP_STREAM_DATA_PADDING)
+
+struct zip_method_handler;
 
 struct zip_archive
 {

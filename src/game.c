@@ -36,7 +36,6 @@
 #include "data.h"
 #include "error.h"
 #include "event.h"
-#include "fsafeopen.h"
 #include "game.h"
 #include "game_menu.h"
 #include "game_player.h"
@@ -48,6 +47,7 @@
 #include "window.h"
 #include "world.h"
 #include "world_struct.h"
+#include "io/fsafeopen.h"
 
 #include "audio/audio.h"
 #include "audio/sfx.h"
@@ -624,7 +624,7 @@ static boolean game_key(context *ctx, int *key)
   {
     // Get the char for the KEY? labels. If there is no relevant unicode
     // keypress, we want to use the regular code instead.
-    int key_unicode = get_key(keycode_unicode);
+    int key_unicode = get_key(keycode_text_ascii);
     int key_char = *key;
 
     if(key_unicode > 0 && key_unicode < 256)

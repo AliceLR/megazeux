@@ -294,7 +294,7 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
 
       default:
       {
-        int key_char = get_key(keycode_unicode);
+        int key_char = get_key(keycode_text_ascii);
 
         if(!get_alt_status(keycode_internal) &&
          !get_ctrl_status(keycode_internal) && (key_char >= 32))
@@ -949,7 +949,7 @@ static int key_char_box(struct world *mzx_world, struct dialog *di,
 
     default:
     {
-      int key_char = get_key(keycode_unicode);
+      int key_char = get_key(keycode_text_ascii);
 
       if(key_char >= 32)
       {

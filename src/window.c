@@ -45,7 +45,6 @@
 #include "core.h"
 #include "counter.h"
 #include "data.h"
-#include "dir.h"
 #include "error.h"
 #include "event.h"
 #include "game_menu.h"
@@ -57,6 +56,7 @@
 #include "window.h"
 #include "world.h"
 #include "util.h"
+#include "io/dir.h"
 
 #include "audio/sfx.h"
 
@@ -747,7 +747,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
         if(!current_charset)
         {
           // If this is from 32 to 255, jump there.
-          int key_char = get_key(keycode_unicode);
+          int key_char = get_key(keycode_text_ascii);
 
           if(key_char >= 32 && key_char <= 255)
             current = key_char;
@@ -1773,7 +1773,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
 
     default:
     {
-      int key_char = get_key(keycode_unicode);
+      int key_char = get_key(keycode_text_ascii);
 
       if((key >= '0') && (key <= '9'))
       {
@@ -2060,7 +2060,7 @@ static int key_list_box(struct world *mzx_world, struct dialog *di,
 
     default:
     {
-      int key_char = get_key(keycode_unicode);
+      int key_char = get_key(keycode_text_ascii);
       if(!get_alt_status(keycode_internal) &&
        !get_ctrl_status(keycode_internal) && (key_char >= 32))
       {
@@ -2266,7 +2266,8 @@ static int click_slot_selector(struct world *mzx_world, struct dialog *di,
   struct slot_selector *src = (struct slot_selector *)e;
   int target_slot = 0;
 
-  if(mouse_y != SLOTSEL_BAR_Y) return 0;
+  if((mouse_x < 0) || (mouse_x >= 40) || (mouse_y != SLOTSEL_BAR_Y))
+    return 0;
 
   target_slot = mouse_x / 4;
 
@@ -2276,6 +2277,12 @@ static int click_slot_selector(struct world *mzx_world, struct dialog *di,
   }
 
   return 0;
+}
+
+static int drag_slot_selector(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y)
+{
+  return click_slot_selector(mzx_world, di, e, mouse_button, mouse_x, mouse_y, 0);
 }
 
 static int click_file_selector(struct world *mzx_world, struct dialog *di,
@@ -2566,7 +2573,7 @@ struct element *construct_slot_selector(int x, int y,
   src->save = save;
 
   construct_element(&(src->e), x, y, num_slots * 4, 3, draw_slot_selector,
-   key_slot_selector, click_slot_selector, NULL, NULL);
+   key_slot_selector, click_slot_selector, drag_slot_selector, NULL);
 
   return (struct element *)src;
 }
@@ -2770,7 +2777,7 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
   return strcasecmp(dest_str, src_str);
 }
 
-static void update_slot_prefix(void)
+static boolean update_slot_prefix(void)
 {
   char *world_name;
   size_t i;
@@ -2803,13 +2810,20 @@ static void update_slot_prefix(void)
     snprintf(cur_slot_prefix, MAX_PATH, "%s", fmt);
     cur_slot_prefix[fmt_len] = 0;
     debug("update_slot_prefix: slot prefix: %s\n", cur_slot_prefix);
-    return;
+    return true;
   }
 
   // Fetch the world name, sans extension.
-  world_len = strlen(curr_file) - 4;
-  world_name = cmalloc(sizeof(char) * world_len);
-  memcpy(world_name, curr_file, world_len);
+  world_name = strrchr(curr_file, DIR_SEPARATOR_CHAR);
+  world_name = world_name ? world_name + 1 : curr_file;
+  world_len = strlen(world_name);
+
+  if(world_len < 4 || strcasecmp(world_name + world_len - 4, ".mzx"))
+  {
+    debug("update_slot_prefix: filename not set or is invalid\n");
+    return false;
+  }
+  world_len -= 4;
 
   // We already know where the first token is. Copy everything before that
   // if possible.
@@ -2840,6 +2854,9 @@ static void update_slot_prefix(void)
 
         case 'w':
         {
+          if(pos + world_len >= MAX_PATH)
+            break;
+
           memcpy(cur_slot_prefix + pos, world_name, world_len);
           pos += world_len;
           break;
@@ -2848,7 +2865,7 @@ static void update_slot_prefix(void)
         default:
         {
           debug("update_slot_prefix: invalid token '%c'\n", fmt[i]);
-          break;
+          return false;
         }
       }
 
@@ -2861,9 +2878,7 @@ static void update_slot_prefix(void)
 
   cur_slot_prefix[pos] = '\0';
   debug("update_slot_prefix: slot prefix: %s\n", cur_slot_prefix);
-
-  // Clean up.
-  free(world_name);
+  return true;
 }
 
 int slot_manager(struct world *mzx_world, char *ret,
@@ -2878,7 +2893,8 @@ int slot_manager(struct world *mzx_world, char *ret,
   boolean *highlighted_slots = NULL;
   boolean *disabled_slots = NULL;
 
-  update_slot_prefix();
+  if(!update_slot_prefix())
+    return SLOTSEL_FILE_MANAGER_RESULT;
 
   while(return_value > 0)
   {

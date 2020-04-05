@@ -16,15 +16,16 @@ utils_obj = src/utils/.build
 # Define UTILS_LIBSPEC so these properly link.
 utils_cflags := ${LIBPNG_CFLAGS} -DUTILS_LIBSPEC=
 
+zip_objs  := ${io_obj}/vfile.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
+
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o \
-                 ${core_obj}/dir.o ${core_obj}/fsafeopen.o \
-                 ${core_obj}/util.o ${core_obj}/vfs.o ${core_obj}/zip.o
+                 ${io_obj}/dir.o ${io_obj}/fsafeopen.o \
+                 ${core_obj}/util.o ${zip_objs}
 checkres_ldflags := ${ZLIB_LDFLAGS}
 
 downver := ${utils_src}/downver${BINEXT}
-downver_objs := ${utils_obj}/downver.o \
-                ${core_obj}/util.o ${core_obj}/vfs.o ${core_obj}/zip.o
+downver_objs := ${utils_obj}/downver.o ${core_obj}/util.o ${zip_objs}
 downver_ldflags := ${ZLIB_LDFLAGS}
 
 hlp2html := ${utils_src}/hlp2html${BINEXT}

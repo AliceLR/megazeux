@@ -24,8 +24,8 @@
 
 __M_BEGIN_DECLS
 
-#include "memfile.h"
-#include "zip.h"
+#include "io/memfile.h"
+#include "io/zip.h"
 
 // Data and functions for the ZIP-based world/board/robot format.
 
@@ -43,9 +43,9 @@ enum file_prop
   FPROP_WORLD_CHARS               = 0x0008, // data, 3584*15
   FPROP_WORLD_PAL                 = 0x0009, // data, SMZX_PAL_SIZE * 3
   FPROP_WORLD_PAL_INDEX           = 0x000A, // data, 1024
-  FPROP_WORLD_PAL_INTENSITY       = 0x000B, // data, SMZX_PAL_SIZE * 1
   FPROP_WORLD_VCO                 = 0x000C, // data
   FPROP_WORLD_VCH                 = 0x000D, // data
+  FPROP_WORLD_PAL_INTENSITY       = 0x000E, // data, SMZX_PAL_SIZE * 1
 
   FPROP_WORLD_SPRITES             = 0x0080, // properties file
   FPROP_WORLD_COUNTERS            = 0x0081, // counter format, use stream
@@ -135,7 +135,7 @@ static inline void assign_fprops_parse_board(char *next, unsigned int *_file_id,
 
       if(next[1] == 'e')
       {
-        robot_id = strtoul(next+1, &next, 16);
+        robot_id = strtoul(next+2, &next, 16);
         if(robot_id != 0)
         {
           *_file_id = FPROP_SENSOR;
@@ -571,7 +571,8 @@ enum sprite_prop
   COUNT_BOARD_SAVE_PROPS * PROP_HEADER_SIZE   \
 )
 
-enum board_prop {
+enum board_prop
+{
   BPROP_EOF                       = 0x0000,
 
   // Essential                           8     10 + BOARD_NAME_SIZE
@@ -657,7 +658,8 @@ enum board_prop {
   BOUND_ROBOT_SAVE_PROPS                          \
 )
 
-enum robot_prop {
+enum robot_prop
+{
   RPROP_EOF                       = 0x0000,
   RPROP_ROBOT_NAME                = 0x0001, // ROBOT_NAME_SIZE
   RPROP_ROBOT_CHAR                = 0x0002, // 1
@@ -702,7 +704,8 @@ enum robot_prop {
   PROP_EOF_SIZE             \
 )
 
-enum scroll_prop {
+enum scroll_prop
+{
   SCRPROP_EOF                     = 0x00,
   SCRPROP_NUM_LINES               = 0x01, // 2
   SCRPROP_MESG                    = 0x02, // variable
@@ -716,7 +719,8 @@ enum scroll_prop {
   PROP_EOF_SIZE               \
 )
 
-enum sensor_prop {
+enum sensor_prop
+{
   SENPROP_EOF                     = 0x00,
   SENPROP_SENSOR_NAME             = 0x01, // ROBOT_NAME_SIZE
   SENPROP_SENSOR_CHAR             = 0x02, //  1
@@ -724,7 +728,7 @@ enum sensor_prop {
 };
 
 
-// This function is used to save properties files in world saving.
+// These functions are used to save properties files in world saving.
 // There are no safety checks here. USE THE BOUNDING MACROS WHEN ALLOCATING.
 static inline void save_prop_eof(struct memfile *mf)
 {

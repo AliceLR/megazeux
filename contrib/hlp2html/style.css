@@ -104,12 +104,13 @@ body
   padding-top: 6em;
 }
 
-.helpfile
+/* Help file div. */
+.hF
 {
   page-break-after: always;
 }
 
-.helpfile hr
+.hF hr
 {
   background-color: #000;
   height: 2px;
@@ -117,14 +118,16 @@ body
   border: none;
 }
 
-.helpcentered
+/* Help file centered text. */
+.hC
 {
   display: block;
   text-align: center;
   margin: 0px;
 }
 
-.helpanchor
+/* Help file anchor (link destination). */
+.hA
 {
   /* This forces the page to jump above the anchor so it doesn't display
    * under the navigation bar. */
@@ -136,12 +139,13 @@ body
   pointer-events: none;
 }
 
-.helplink
+/* Help file link. */
+.hL
 {
   text-decoration: none;
 }
 
-.helplink:before
+.hL:before
 {
   padding-right: 8px;
   font-family: 'mzxfont';

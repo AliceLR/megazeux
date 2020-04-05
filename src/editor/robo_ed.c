@@ -34,7 +34,6 @@
 #include "../core.h"
 #include "../error.h"
 #include "../event.h"
-#include "../fsafeopen.h"
 #include "../graphics.h"
 #include "../helpsys.h"
 #include "../intake.h"
@@ -43,6 +42,7 @@
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+#include "../io/fsafeopen.h"
 
 #include "char_ed.h"
 #include "clipboard.h"
@@ -52,6 +52,7 @@
 #include "macro.h"
 #include "macro_struct.h"
 #include "robo_ed.h"
+#include "stringsearch.h"
 #include "window.h"
 
 #define combine_colors(a, b)  \
@@ -77,7 +78,7 @@ static int last_color_selected = 0;
 static int last_char_selected = 0;
 
 static enum search_option last_search_action = SEARCH_OPTION_NONE;
-static int search_index[256];
+static struct string_search_data search_index;
 static char search_string[256];
 static char replace_string[256];
 static boolean search_wrap_enabled = true;
@@ -1887,12 +1888,13 @@ static void replace_current_line(struct robot_editor_context *rstate,
 }
 
 static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
- int index[256], int *position, boolean wrap, boolean ignore_case)
+ struct string_search_data *data, int *position, boolean wrap,
+ boolean ignore_case)
 {
   struct robot_line *current_rline = rstate->current_rline;
   int current_line = rstate->current_line;
-  char *text = rstate->command_buffer;
-  char *pos = NULL;
+  const char *text = rstate->command_buffer;
+  const char *pos = NULL;
   size_t text_len;
   size_t str_len = strlen(str);
 
@@ -1908,7 +1910,7 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
   {
     text += rstate->current_x + 1;
     text_len -= rstate->current_x + 1;
-    pos = boyer_moore_search(text, text_len, str, str_len, index, ignore_case);
+    pos = string_search(text, text_len, str, str_len, data, ignore_case);
 
     text = rstate->command_buffer;
   }
@@ -1922,8 +1924,7 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
     while(current_rline != NULL)
     {
       text = current_rline->line_text;
-      pos = boyer_moore_search(text, strlen(text), str, str_len, index,
-       ignore_case);
+      pos = string_search(text, strlen(text), str, str_len, data, ignore_case);
 
       if(pos)
         break;
@@ -1941,8 +1942,7 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
     while(current_rline != rstate->current_rline->next)
     {
       text = current_rline->line_text;
-      pos = boyer_moore_search(text, strlen(text), str, str_len, index,
-       ignore_case);
+      pos = string_search(text, strlen(text), str, str_len, data, ignore_case);
 
       if(pos)
         break;
@@ -1975,7 +1975,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
     {
       // Find
       int l_pos;
-      int l_num = robo_ed_find_string(rstate, search_string, search_index,
+      int l_num = robo_ed_find_string(rstate, search_string, &search_index,
        &l_pos, search_wrap_enabled, search_ignore_case_enabled);
 
       if(l_num != -1)
@@ -1991,7 +1991,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
     {
       // Find & Replace
       int l_pos;
-      int l_num = robo_ed_find_string(rstate, search_string, search_index,
+      int l_num = robo_ed_find_string(rstate, search_string, &search_index,
        &l_pos, search_wrap_enabled, search_ignore_case_enabled);
 
       if(l_num != -1)
@@ -2019,7 +2019,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
 
       do
       {
-        l_num = robo_ed_find_string(rstate, search_string, search_index,
+        l_num = robo_ed_find_string(rstate, search_string, &search_index,
          &l_pos, search_wrap_enabled, search_ignore_case_enabled);
 
         // Is it on the starting line and below the starting cursor?
@@ -2098,7 +2098,7 @@ static void robo_ed_search_dialog(struct robot_editor_context *rstate)
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  construct_dialog(&di, "Search (repeat: Ctrl+R)", 5, 10, 70, 5,
+  construct_dialog(&di, "Search (repeat: Ctrl+R; replace: Ctrl+H)", 5, 10, 70, 5,
    elements, num_elements, 3);
 
   result = run_dialog(mzx_world, &di);
@@ -2109,7 +2109,7 @@ static void robo_ed_search_dialog(struct robot_editor_context *rstate)
 
   search_wrap_enabled = wrap;
   search_ignore_case_enabled = !casesens;
-  boyer_moore_index(search_string, strlen(search_string), search_index,
+  string_search_index(search_string, strlen(search_string), &search_index,
    search_ignore_case_enabled);
 
   if(result != -1)
@@ -2140,7 +2140,7 @@ static void robo_ed_replace_dialog(struct robot_editor_context *rstate)
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  construct_dialog(&di, "Replace (repeat: Ctrl+R)", 2, 9, 76, 6,
+  construct_dialog(&di, "Replace (repeat: Ctrl+R; search: Ctrl+F)", 2, 9, 76, 6,
    elements, num_elements, 3);
 
   result = run_dialog(mzx_world, &di);
@@ -2151,7 +2151,7 @@ static void robo_ed_replace_dialog(struct robot_editor_context *rstate)
 
   search_wrap_enabled = wrap;
   search_ignore_case_enabled = !casesens;
-  boyer_moore_index(search_string, strlen(search_string), search_index,
+  string_search_index(search_string, strlen(search_string), &search_index,
    search_ignore_case_enabled);
 
   if(result != -1)
@@ -3424,8 +3424,9 @@ static boolean robot_editor_mouse(context *ctx, int *key, int button,
 
   if(button && (button <= MOUSE_BUTTON_RIGHT))
   {
+    // NOTE: let intake handle clicks on scr_line_middle.
     if((y >= rstate->scr_line_start) && (y <= rstate->scr_line_end) &&
-     (x >= 2) && (x <= 78))
+     (y != rstate->scr_line_middle) && (x >= 2) && (x <= 78))
     {
       move_and_update(rstate, y - rstate->scr_line_middle);
       rstate->current_x = x - 2;
@@ -3490,19 +3491,27 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_BACKSPACE:
     {
-      if(rstate->current_x == 0 && rstate->current_line > 1)
-        combine_current_line(rstate, -1);
+      // Let intake handle Alt+Backspace and Ctrl+Backspace.
+      if(get_alt_status(keycode_internal) || get_ctrl_status(keycode_internal))
+        break;
 
-      return true;
+      if(rstate->current_x == 0 && rstate->current_line > 1)
+      {
+        combine_current_line(rstate, -1);
+        return true;
+      }
+      break;
     }
 
     case IKEY_DELETE:
     {
       if(rstate->command_buffer[rstate->current_x] == 0 &&
        rstate->current_rline->next)
+      {
         combine_current_line(rstate, 1);
-
-      return true;
+        return true;
+      }
+      break;
     }
 
     case IKEY_RETURN:
@@ -3680,8 +3689,9 @@ static boolean robot_editor_key(context *ctx, int *key)
       {
         update_current_line(rstate);
         validate_lines(rstate, 1);
+        return true;
       }
-      return true;
+      break;
     }
 
 #ifdef CONFIG_DEBYTECODE
@@ -3707,12 +3717,16 @@ static boolean robot_editor_key(context *ctx, int *key)
           rstate->command_buffer[1] = '/';
         }
         update_current_line(rstate);
+        return true;
       }
-      return true;
+      break;
     }
 #else /* !CONFIG_DEBYTECODE */
     case IKEY_c:
     {
+      if(!get_ctrl_status(keycode_internal))
+        break;
+
       if(rstate->current_rline->validity_status != valid)
       {
         rstate->current_rline->validity_status = invalid_comment;
@@ -3752,8 +3766,7 @@ static boolean robot_editor_key(context *ctx, int *key)
       }
       else
 
-      if(get_ctrl_status(keycode_internal) &&
-       (rstate->command_buffer[0] == '.') &&
+      if((rstate->command_buffer[0] == '.') &&
        (rstate->command_buffer[1] == ' ') &&
        (rstate->command_buffer[2] == '"') &&
        (rstate->command_buffer[strlen(rstate->command_buffer) - 1] == '"'))
@@ -3788,19 +3801,21 @@ static boolean robot_editor_key(context *ctx, int *key)
 
         strcpy(rstate->command_buffer, uncomment_buffer);
       }
-
       return true;
     }
 
     case IKEY_d:
     {
-      if(rstate->current_rline->validity_status != valid)
+      if(get_ctrl_status(keycode_internal))
       {
-        rstate->current_rline->validity_status = invalid_discard;
-        update_current_line(rstate);
+        if(rstate->current_rline->validity_status != valid)
+        {
+          rstate->current_rline->validity_status = invalid_discard;
+          update_current_line(rstate);
+        }
+        return true;
       }
-
-      return true;
+      break;
     }
 #endif /* !CONFIG_DEBYTECODE */
 
@@ -3816,6 +3831,25 @@ static boolean robot_editor_key(context *ctx, int *key)
     case IKEY_HOME:
     case IKEY_END:
     {
+      if(get_ctrl_status(keycode_internal))
+      {
+        if(*key == IKEY_HOME)
+        {
+          // Jump to the first line of the program.
+          goto_line(rstate, 1);
+          return true;
+        }
+        else
+
+        if(*key == IKEY_END)
+        {
+          // Jump to the last line of the program.
+          goto_line(rstate, rstate->total_lines);
+          return true;
+        }
+      }
+      else
+
       if(get_alt_status(keycode_internal))
       {
         int mark_switch;
@@ -3873,8 +3907,9 @@ static boolean robot_editor_key(context *ctx, int *key)
           rstate->mark_start_rline = rstate->mark_end_rline;
           rstate->mark_end_rline = mark_swap_rline;
         }
+        return true;
       }
-      return true;
+      break;
     }
 
     // Block action menu
@@ -4077,7 +4112,6 @@ static void robot_editor_destroy(context *ctx)
   delete_robot_lines(rstate->cur_robot, rstate);
 
   restore_screen();
-  pop_context();
 }
 
 void robot_editor(context *parent, struct robot *cur_robot)
@@ -4121,7 +4155,6 @@ void robot_editor(context *parent, struct robot *cur_robot)
   spec.click          = robot_editor_mouse;
   spec.key            = robot_editor_key;
   spec.destroy        = robot_editor_destroy;
-  spec.framerate_mode = FRAMERATE_UI_INTERRUPT;
   create_context((context *)rstate, parent, &spec, CTX_ROBO_ED);
 
   rstate->intk =

@@ -1,7 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2012 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,43 +17,26 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __DIR_H
-#define __DIR_H
+#ifndef __EDITOR_STRINGSEARCH_H
+#define __EDITOR_STRINGSEARCH_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
-#include <stdio.h>
+#include <stddef.h>
 
-#define PATH_BUF_LEN MAX_PATH
-
-enum mzx_dir_type
+struct string_search_data
 {
-  DIR_TYPE_UNKNOWN,
-  DIR_TYPE_FILE,
-  DIR_TYPE_DIR
+  unsigned int index[256];
 };
 
-struct mzx_dir
-{
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
-  char path[PATH_BUF_LEN];
-#endif
-  void *opaque;
-  long entries;
-  long pos;
-#ifdef __WIN32__
-  boolean is_wdirent;
-#endif
-};
-
-boolean dir_open(struct mzx_dir *dir, const char *path);
-void dir_close(struct mzx_dir *dir);
-void dir_seek(struct mzx_dir *dir, long offset);
-long dir_tell(struct mzx_dir *dir);
-boolean dir_get_next_entry(struct mzx_dir *dir, char *entry, int *type);
+void string_search_index(const void *B, const size_t b_len,
+ struct string_search_data *data, boolean ignore_case);
+const void *string_search(const void *A, const size_t a_len,
+ const void *B, const size_t b_len, const struct string_search_data *data,
+ boolean ignore_case);
 
 __M_END_DECLS
 
-#endif /* __DIR_H */
+#endif /* __EDITOR_STRINGSEARCH_H */

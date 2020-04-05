@@ -32,7 +32,7 @@ __M_BEGIN_DECLS
 #include <inttypes.h>
 
 #include "bitstream.h"
-#include "dict.h"
+#include "zip_dict.h"
 #include "zip_stream.h"
 
 #include "../util.h"
@@ -167,15 +167,21 @@ static inline enum zip_error reduce_ex_file(struct zip_stream_data *zs)
         {
           value = BS_READ(b, 8);
           if(value < 0)
-            goto err_free;
+          {
+            eof = true;
+            break;
+          }
 
           last_character = value;
         }
         else
         {
           value = BS_READ(b, n[last_character]);
-          if(value < 0 && value >= 32)
-            goto err_free;
+          if(value < 0)
+          {
+            eof = true;
+            break;
+          }
 
           last_character = SET(last_character)[value];
         }

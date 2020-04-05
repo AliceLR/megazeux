@@ -32,7 +32,8 @@ __M_BEGIN_DECLS
 #include <inttypes.h>
 
 #include "bitstream.h"
-#include "dict.h"
+#include "zip.h"
+#include "zip_dict.h"
 #include "zip_stream.h"
 
 struct explode_stream_data

@@ -1,3 +1,55 @@
+GIT
+
+USERS
+
++ Added robot editor shortcuts CTRL+Home and CTRL+End to jump to
+  the start and the end of the current program.
++ Added docs/fileform.html, a document describing all currently
+  supported MZX file formats in excessive detail.
++ Fixed a bug where input text with no corresponding internal
+  key would be ignored by the robot editor.
++ Fixed a bug where some AltGr key combinations would not work
+  in the robot editor (note: SDL doesn't distinguish Alt from
+  AltGr, so any Alt key combos with a special meaning in the
+  robot editor will still be intercepted by MZX).
++ Windows Alt+numpad sequences corresponding to ASCII characters
+  32-126 should now be recognized.
++ Fixed an out-of-memory error in the save slot UI and improved
+  its mouse functionality.
++ Added optional CRC-32 output to checkres. Currently this flag
+  only works for files in ZIP archives and no CRC-32 validation
+  is performed.
++ Fixed checkres parsing for LOAD CHAR SET "+&+var&file.chr".
++ Fixed memory leaks in legacy_assemble_line.
++ Fixed potential null termination issues in both world loaders
+  that could be triggered with invalid board name, robot name,
+  scroll, sensor, sfx, and status counter strings. Also improved
+  loaded robot stack bounds checks.
++ Decreased the sizes of the counter and string structs and
+  fixed a crash that would occur when attempting to expand the
+  counters or strings lists beyond 1 billion. Checks have been
+  added to prevent them from expanding beyond 2^31 (please don't
+  actually use this many counters/strings).
++ Fixed hlp2html bug where certain chars wouldn't be escaped and
+  decreased the size of the output HTML files somewhat.
++ Fixed libxmp playback for S3Ms containing ADPCM4 samples. This
+  fixes mm2flash.s3m in ZeuxDrop.
+
+DEVELOPERS
+
++ Decoupled SDL 2 text input handling from regular key handling
+  and added a text input buffer. Text keys can now be requested
+  multiple times and either as ASCII or unicode; the next key in
+  the buffer is returned on subsequent calls. intake and editor
+  text entry can now accept multiple text chars per frame.
++ Added SDL 1.2 implementation for __peek_exit_input.
++ Contributed sound engines (libxmp, libmodplug) should now
+  properly rebuild after config.sh is run.
++ Fixed a bug where khash tables couldn't expand beyond 2^31,
+  added hash caching, made the MZX copy of khash use MZX style,
+  and better documented the changes made to it.
+
+
 March 8th, 2020 - MZX 2.92c
 
 Here's another bugfix release, this time mostly oriented towards

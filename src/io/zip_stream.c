@@ -19,8 +19,9 @@
 
 #include <inttypes.h>
 
+#include "zip.h"
 #include "zip_stream.h"
-#include "deflate.h"
+#include "zip_deflate.h"
 
 /**
  * The extra decompressors (shrink, reduce, implode, deflate64) are useful for
@@ -28,10 +29,10 @@
  */
 #if defined(CONFIG_UTILS) || defined(__EMSCRIPTEN__)
 #define ZIP_EXTRA_DECOMPRESSORS
-#include "deflate64.h"
-#include "implode.h"
-#include "reduce.h"
-#include "shrink.h"
+#include "zip_deflate64.h"
+#include "zip_implode.h"
+#include "zip_reduce.h"
+#include "zip_shrink.h"
 #endif
 
 static void zip_stream_close(struct zip_stream_data *zs,

@@ -34,7 +34,6 @@
 #include "world.h"
 #include "world_struct.h"
 
-
 struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
  int savegame, int file_version, boolean *truncated)
 {
@@ -84,8 +83,9 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   cur_robot->commands_caught = 0;
 #endif
 
-  memcpy(cur_robot->robot_name, bufferPtr, 15);
-  bufferPtr += 15;
+  memcpy(cur_robot->robot_name, bufferPtr, LEGACY_ROBOT_NAME_SIZE);
+  cur_robot->robot_name[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
+  bufferPtr += LEGACY_ROBOT_NAME_SIZE;
 
   cur_robot->robot_char = mem_getc(&bufferPtr);
   cur_robot->cur_prog_line = mem_getw(&bufferPtr);
@@ -120,6 +120,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   // If savegame, there's some additional information to get
   if(savegame)
   {
+    int stack_skip = 0;
     int stack_size;
 
     if(version >= V284)
@@ -132,12 +133,28 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     stack_size = mem_getd(&bufferPtr) * 2;
     cur_robot->stack_pointer = mem_getd(&bufferPtr) * 2;
 
+    // Don't allow the stack size to be loaded over the maximum.
+    if(stack_size > ROBOT_MAX_STACK)
+    {
+      stack_skip = ROBOT_MAX_STACK - stack_size;
+      stack_size = ROBOT_MAX_STACK;
+    }
+
+    // Also don't allow stack positions beyond the size of the stack.
+    if(cur_robot->stack_pointer > stack_size)
+      cur_robot->stack_pointer = stack_size;
+
     cur_robot->stack = ccalloc(stack_size, sizeof(int));
     for(i = 0; i < stack_size; i += 2)
     {
       cur_robot->stack[i] = mem_getd(&bufferPtr);
       cur_robot->stack[i+1] = 0;
     }
+
+    // In the (unlikely) event the saved stack size was larger than the maximum,
+    // the unused stack values need to be skipped...
+    for(i = 0; i < stack_skip; i += 2)
+      mem_getd(&bufferPtr);
 
     cur_robot->stack_size = stack_size;
   }
@@ -177,29 +194,11 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
      legacy_disassemble_program(program_legacy_bytecode, program_length,
      &(cur_robot->program_source_length), true, 10);
 
-    if(savegame && cur_robot->cur_prog_line > 1)
+    if(savegame)
     {
-      // Compile immediately if this is a save. The old bytecode and the new
-      // bytecode are both required to convert the old program position into
-      // the new program position.
-      //
-      // Note this doesn't need to be done if cur_prog_line is 0 (robot ended)
-      // or 1 (this is always the first command).
-
-      // FIXME the following relies upon the new bytecode having the same number
-      // of commands as the old bytecode, which SHOULD be true, but it is not.
-      // Uncomment this when rasm gets the ability to compile comments and
-      // blank lines into NOPs.
-      cur_robot->cur_prog_line = 1;
-      cur_robot->pos_within_line = 0;
-      /*
-      int cmd_num = get_legacy_bytecode_command_num(program_legacy_bytecode,
-       cur_robot->cur_prog_line);
-
-      prepare_robot_bytecode(mzx_world, cur_robot);
-
-      cur_robot->cur_prog_line = command_num_to_program_pos(cur_robot, cmd_num);
-      */
+      // Translate the legacy current bytecode offset and stack bytecode offsets
+      // into usable new bytecode offsets. This may compile the robot program.
+      translate_robot_bytecode_offsets(mzx_world, cur_robot, version);
     }
     free(program_legacy_bytecode);
   }
@@ -366,6 +365,10 @@ static void legacy_load_scroll(struct scroll *cur_scroll, FILE *fp)
   if(!fread(cur_scroll->mesg, scroll_size, 1, fp))
     goto scroll_err;
 
+  if(scroll_size < 3)
+    goto scroll_err;
+
+  cur_scroll->mesg[scroll_size - 1] = '\0';
   return;
 
 scroll_err:
@@ -388,14 +391,16 @@ struct scroll *legacy_load_scroll_allocate(FILE *fp)
 
 static void legacy_load_sensor(struct sensor *cur_sensor, FILE *fp)
 {
-  if(!fread(cur_sensor->sensor_name, 15, 1, fp))
+  if(!fread(cur_sensor->sensor_name, LEGACY_ROBOT_NAME_SIZE, 1, fp))
     goto sensor_err;
 
   cur_sensor->sensor_char = fgetc(fp);
 
-  if(!fread(cur_sensor->robot_to_mesg, 15, 1, fp))
+  if(!fread(cur_sensor->robot_to_mesg, LEGACY_ROBOT_NAME_SIZE, 1, fp))
     goto sensor_err;
 
+  cur_sensor->sensor_name[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
+  cur_sensor->robot_to_mesg[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
   cur_sensor->used = fgetc(fp);
 
   return;

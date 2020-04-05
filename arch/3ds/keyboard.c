@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "../../src/event.h"
 #include "../../src/graphics.h"
 #include "../../src/render.h"
 #include "../../src/renderers.h"
@@ -182,7 +183,7 @@ boolean ctr_keyboard_update(struct buffered_status *status)
   touchPosition pos;
   Uint32 down, up, i;
   boolean retval = false;
-  enum keycode unicode;
+  Uint32 unicode;
 
   if(get_bottom_screen_mode() != BOTTOM_SCREEN_MODE_KEYBOARD)
     return retval;
@@ -206,7 +207,9 @@ boolean ctr_keyboard_update(struct buffered_status *status)
       {
         unicode = convert_internal_unicode(area->keycode);
 
-        key_press(status, area->keycode, unicode);
+        key_press(status, area->keycode);
+        key_press_unicode(status, unicode, true);
+
         keys_down[keys_down_count++] = area->keycode;
         retval = true;
         break;

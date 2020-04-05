@@ -24,6 +24,7 @@
 #include "char_ed.h"
 #include "pal_ed.h"
 #include "robo_debug.h"
+#include "stringsearch.h"
 #include "window.h"
 
 #include "../core.h"
@@ -1240,8 +1241,8 @@ static boolean select_debug_var(struct debug_node *node, char *var_name,
 /******************/
 
 static boolean search_match(const char *var_text, const size_t var_text_length,
- const char *match_text, const int *match_text_index, const size_t match_length,
- int search_flags)
+ const char *match_text, const struct string_search_data *match_text_index,
+ const size_t match_length, int search_flags)
 {
   boolean ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
 
@@ -1262,7 +1263,7 @@ static boolean search_match(const char *var_text, const size_t var_text_length,
   }
   else
   {
-    if(boyer_moore_search(var_text, var_text_length, match_text, match_length,
+    if(string_search(var_text, var_text_length, match_text, match_length,
      match_text_index, ignore_case))
       return true;
   }
@@ -1272,8 +1273,8 @@ static boolean search_match(const char *var_text, const size_t var_text_length,
 
 static boolean search_vars(struct world *mzx_world, struct debug_node *node,
  struct debug_var **res_var, struct debug_node **res_node, int *res_pos,
- const char *match_text, const int *match_text_index, const size_t match_length,
- int search_flags, struct debug_var **stop_var)
+ const char *match_text, const struct string_search_data *match_text_index,
+ const size_t match_length, int search_flags, struct debug_var **stop_var)
 {
   boolean matched = false;
   struct debug_var *current;
@@ -1369,8 +1370,8 @@ static boolean search_vars(struct world *mzx_world, struct debug_node *node,
 
 static boolean search_node(struct world *mzx_world, struct debug_node *node,
  struct debug_var **res_var, struct debug_node **res_node, int *res_pos,
- const char *match_text, const int *match_text_index, const size_t match_length,
- int search_flags, struct debug_var **stop_var)
+ const char *match_text, const struct string_search_data *match_text_index,
+ const size_t match_length, int search_flags, struct debug_var **stop_var)
 {
   boolean r = false;
   int i;
@@ -1467,12 +1468,12 @@ static boolean search_debug(struct world *mzx_world, struct debug_node *node,
   struct debug_var *stop_var = NULL;
   boolean matched = false;
 
-  int match_text_index[256] = { 0 };
+  struct string_search_data match_text_index;
   boolean ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
 
   // Generate an index to help speed up substring searches.
   if(!(search_flags & VAR_SEARCH_EXACT))
-    boyer_moore_index(match_text, match_length, match_text_index, ignore_case);
+    string_search_index(match_text, match_length, &match_text_index, ignore_case);
 
   if(search_flags & VAR_SEARCH_WRAP)
   {
@@ -1492,12 +1493,12 @@ static boolean search_debug(struct world *mzx_world, struct debug_node *node,
   }
 
   matched = search_node(mzx_world, node, res_var, res_node, res_pos,
-   match_text, match_text_index, match_length, search_flags, &stop_var);
+   match_text, &match_text_index, match_length, search_flags, &stop_var);
 
   // Wrap? Try again from the start
   if(!matched && (search_flags & VAR_SEARCH_WRAP))
     matched = search_node(mzx_world, node, res_var, res_node, res_pos,
-     match_text, match_text_index, match_length, search_flags, &stop_var);
+     match_text, &match_text_index, match_length, search_flags, &stop_var);
 
   // If we stopped on a non-match, return false.
   if(*res_var == NULL)
@@ -1529,7 +1530,7 @@ static int get_rolodex_position(struct world *mzx_world, int first)
 }
 
 static struct debug_node *create_rolodex_nodes(struct debug_node *parent,
- int counts[NUM_ROLODEX], const char *name_prefix)
+ size_t counts[NUM_ROLODEX], const char *name_prefix)
 {
   struct debug_node *nodes = ccalloc(NUM_ROLODEX, sizeof(struct debug_node));
   int i;
@@ -1558,12 +1559,12 @@ static void init_counters_node(struct world *mzx_world, struct debug_node *dest)
   struct debug_node *nodes;
   struct debug_node *current_node = NULL;
   struct debug_var *current_var;
-  int var_counts[NUM_ROLODEX] = { 0 };
-  int num_counters = counter_list->num_counters;
+  size_t var_counts[NUM_ROLODEX] = { 0 };
+  size_t num_counters = counter_list->num_counters;
   int first_prev = -1;
   int first;
   int n = 0;
-  int i;
+  size_t i;
 
   // The counter list may not be in the order we want to display it in.
   sort_counter_list(counter_list);
@@ -1607,12 +1608,12 @@ static void init_strings_node(struct world *mzx_world, struct debug_node *dest)
   struct debug_node *nodes;
   struct debug_node *current_node = NULL;
   struct debug_var *current_var;
-  int var_counts[NUM_ROLODEX] = { 0 };
-  int num_strings = string_list->num_strings;
+  size_t var_counts[NUM_ROLODEX] = { 0 };
+  size_t num_strings = string_list->num_strings;
   int first_prev = -1;
   int first;
   int n = 0;
-  int i;
+  size_t i;
 
   // Don't create any child nodes if there are no strings.
   if(!num_strings)
@@ -2780,6 +2781,7 @@ void __debug_counters(context *ctx)
           struct counter_list *counter_list = &(mzx_world->counter_list);
           struct string_list *string_list = &(mzx_world->string_list);
           FILE *fp;
+          size_t i;
 
           fp = fopen_unsafe(export_name, "wb");
 

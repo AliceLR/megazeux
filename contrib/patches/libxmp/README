@@ -86,6 +86,8 @@ Patch summary
     This has been merged upstream.
 14: Fixes https://github.com/cmatsuoka/libxmp/issues/147. This has been merged
     upstream in PR https://github.com/cmatsuoka/libxmp/pull/148.
+15: Fixes S3M ADPCM4 sample support. Pending merge upstream:
+    https://github.com/cmatsuoka/libxmp/pull/163
 
 20: Disables USE_VERSIONED_SYMBOLS. Required to get our hacked libxmp to link
     on unix platforms. This should probably be merged into patch 01.

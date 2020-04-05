@@ -74,6 +74,7 @@ install: install-check install-arch
 		docs/changelog.txt.gz \
 		docs/mzxhelp.html.gz \
 		docs/macro.txt \
+		docs/fileform.html \
 		docs/keycodes.html \
 		docs/joystick.html \
 		docs/cycles_and_commands.txt \
