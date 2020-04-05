@@ -23,6 +23,9 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <psp2/io/fcntl.h>
+#include <psp2/io/stat.h>
+
 #include "linked_list.h"
 #include "vitaio.h"
 
@@ -164,9 +167,46 @@ char* vitaio_getcwd(char *buf, size_t size)
 
 int vitaio_mkdir(const char *path, mode_t mode)
 {
-  /* TODO: Actually implement this. */
-  errno = EROFS;
-  return -1;
+  int ret;
+  struct stat st;
+
+  /* The Vita I/O functions don't allow us to check for specific error
+     conditions, so we'll do as much of that as we can here. */
+  ret = vitaio_stat(path, &st);
+
+  if(ret == 0)
+  {
+    /* The stat call succeeded. The directory already exists. */
+    errno = EEXIST;
+    return -1;
+  }
+
+  /* If the directory doesn't exist, errno should be ENOENT. */
+  if(errno != ENOENT)
+  {
+    /* Catch the errors that mkdir shouldn't return and translate them. */
+    if(errno == EIO && errno == EOVERFLOW)
+      errno = EACCES;
+
+    return -1;
+  }
+
+  /* Make the actual call. SceMode is an int like mode_t generally is, so we
+     can just directly cast it. */
+  ret = sceIoMkdir(
+   get_absolute_path(resolve_virtual_path(path)),
+   (SceMode)mode
+  );
+
+  if(ret != 0)
+  {
+    /* The call failed and we don't know why. Assume it's because we don't
+       have write permissions. */
+    errno = EACCES;
+    return -1;
+  }
+
+  return 0;
 }
 
 DIR* vitaio_opendir(const char *name)
@@ -176,12 +216,87 @@ DIR* vitaio_opendir(const char *name)
 
 int vitaio_rmdir(const char *path)
 {
-  /* TODO: Actually implement this. */
-  errno = EROFS;
-  return -1;
+  int ret;
+  struct stat st;
+
+  /* The Vita I/O functions don't allow us to check for specific error
+     conditions, so we'll do as much of that as we can here. */
+  ret = vitaio_stat(path, &st);
+
+  if(ret == -1)
+  {
+    /* The stat call failed. Translate the error to something valid for rmdir
+       if necessary. */
+    if(errno == EOVERFLOW)
+      errno = EACCES;
+
+    return -1;
+  }
+
+  /* Check for ENOTDIR. */
+  if(S_ISREG(st.st_mode))
+  {
+    errno = ENOTDIR;
+    return -1;
+  }
+
+  /* Attempt to delete the file. */
+  ret = sceIoRmdir(get_absolute_path(resolve_virtual_path(path)));
+
+  if(ret != 0)
+  {
+    /* The call failed and we don't know why. Assume it's because we don't
+       have write permissions. */
+    errno = EACCES;
+    return -1;
+  }
+
+  return 0;
 }
 
 int vitaio_stat(const char *path, struct stat *buf)
 {
   return stat(get_absolute_path(resolve_virtual_path(path)), buf);
+}
+
+int vitaio_unlink(const char *path)
+{
+  /* The Vita SDK does export an unlink function, but it doesn't appear to ever
+     succeed. We need to use sceIoRemove instead. */
+  int ret;
+  struct stat st;
+
+  /* The Vita I/O functions don't allow us to check for specific error
+     conditions, so we'll do as much of that as we can here. */
+  ret = vitaio_stat(path, &st);
+
+  if(ret == -1)
+  {
+    /* The stat call failed. Translate the error to something valid for unlink
+       if necessary. */
+    if(errno == EIO && errno == EOVERFLOW)
+      errno = EACCES;
+
+    return -1;
+  }
+
+  /* Check for EPERM. */
+  if(S_ISDIR(st.st_mode))
+  {
+    errno = EPERM;
+    return -1;
+  }
+
+  /* Attempt to delete the file. */
+  ret = sceIoRemove(get_absolute_path(resolve_virtual_path(path)));
+
+  if(ret != 0)
+  {
+    /* The call failed and we don't know why. Assume it's because we don't
+       have write permissions. */
+    errno = EACCES;
+    return -1;
+  }
+
+  return 0;
 }

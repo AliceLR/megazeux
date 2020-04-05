@@ -39,6 +39,7 @@ int vitaio_mkdir(const char *path, mode_t mode);
 DIR* vitaio_opendir(const char *name);
 int vitaio_rmdir(const char *path);
 int vitaio_stat(const char *path, struct stat *buf);
+int vitaio_unlink(const char *path);
 
 #ifdef __cplusplus
 }
@@ -55,6 +56,7 @@ int vitaio_stat(const char *path, struct stat *buf);
 #define opendir(name) vitaio_opendir(name)
 #define rmdir(path) vitaio_rmdir(path)
 #define stat(path, buf) vitaio_stat(path, buf)
+#define unlink(path) vitaio_unlink(path)
 
 #endif /* __VITAIO_C */
 
