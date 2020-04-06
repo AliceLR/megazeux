@@ -26,9 +26,13 @@ __M_BEGIN_DECLS
 
 #include <stddef.h>
 
+#define STRINGSEARCH_SUFFIX_MAX 63
+
 struct string_search_data
 {
-  unsigned int index[256];
+  unsigned int bad_char[256];
+  unsigned int good_suffix[STRINGSEARCH_SUFFIX_MAX];
+  boolean has_good_suffix_table;
 };
 
 void string_search_index(const void *B, const size_t b_len,
