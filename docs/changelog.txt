@@ -49,6 +49,7 @@ DEVELOPERS
   added hash caching, made the MZX copy of khash use MZX style,
   and better documented the changes made to it.
 + Added a config.sh flag for UndefinedBehaviorSanitizer.
++ Categorized config.sh flags list.
 
 
 March 8th, 2020 - MZX 2.92c
