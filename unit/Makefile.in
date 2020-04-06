@@ -1,0 +1,72 @@
+#
+# Unit test Makefile fragment.
+#
+# Unit tests require C++11.
+#
+
+unit_src        := unit
+unit_obj        := unit/.build
+unit_src_editor := unit/editor
+unit_obj_editor := unit/editor/.build
+
+ifneq (${BINEXT},)
+unit_ext        := ${BINEXT}
+else
+unit_ext        := .test
+endif
+
+unit_objs :=
+
+ifneq (${BUILD_EDITOR},)
+
+unit_objs += \
+  ${unit_obj_editor}/stringsearch${unit_ext}
+
+endif
+
+#
+# This may already be set with sanitizer flags.
+#
+DEBUG_CFLAGS ?= -O0
+
+#
+# Build without -DDEBUG to suppress debug messages,
+# build without -DNDEBUG to allow assert().
+#
+unit_cflags ?= ${DEBUG_CFLAGS} -g \
+ -Wall -Wextra -Wpedantic -Wno-unused-parameter -std=gnu++11
+
+ifneq (${HAS_CXX_11},1)
+
+unittest:
+	$(if ${V},,@echo "Skipping unit tests (requires C++11).")
+
+else
+
+${unit_obj}/%${unit_ext}: ${unit_src}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${unit_cflags} $< -o $@
+
+${unit_obj_editor}/%${unit_ext}: ${unit_src_editor}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${unit_cflags} $< -o $@
+
+-include ${unit_objs:${unit_ext}=.d}
+
+${unit_objs}: | $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
+${unit_objs}: | $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
+
+unittest: ${unit_objs}
+	@failcount=0; \
+	for t in ${unit_objs}; do \
+		./$$t ; \
+		if [ "$$?" != "0" ] ; then \
+			failcount=$$(($$failcount + 1)); \
+		fi; \
+	done; \
+	if [ "$$failcount" -gt "0" ]; then \
+		echo "Failed $$failcount test(s)."; \
+		exit 1; \
+	fi;
+
+endif

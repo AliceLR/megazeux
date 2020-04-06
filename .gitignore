@@ -135,6 +135,8 @@ src/utils/*.debug
 stdout.txt
 stderr.txt
 Thumbs.db
+unit/.build/
+unit/editor/.build/
 /*.js
 /*.js.mem
 /*.js.orig.js

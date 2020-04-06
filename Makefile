@@ -14,7 +14,7 @@ ifeq ($(filter -r,$(MAKEFLAGS)),)
 MAKEFLAGS += -r
 endif
 
-.PHONY: all clean help_check test test_clean mzx mzx.debug build build_clean source
+.PHONY: all clean help_check test unittest test_clean mzx mzx.debug build build_clean source
 
 -include platform.inc
 include version.inc
@@ -503,7 +503,9 @@ help_check: ${hlp2txt} assets/help.fil
 	@diff --strip-trailing-cr -q docs/WIPHelp.txt help.txt
 	@rm -f help.txt
 
-test:
+-include unit/Makefile.in
+
+test: unittest
 	@bash testworlds/run.sh @{PLATFORM} @{LIBDIR}
 
 test_clean:
