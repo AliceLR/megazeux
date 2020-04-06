@@ -102,9 +102,10 @@ void *check_realloc(void *ptr, size_t size, const char *file,
 }
 
 template<class T, class S, int A, int B>
-static inline constexpr void samesize(T (&a)[A], S (&b)[B])
+static inline constexpr int samesize(T (&a)[A], S (&b)[B])
 {
   static_assert(A == B, "array size mismatch");
+  return 0;
 }
 
 template<class T, int A>
