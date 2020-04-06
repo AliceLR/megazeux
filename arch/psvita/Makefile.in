@@ -39,7 +39,7 @@ SCE_SYS = "arch/psvita/sce_sys"
 
 package: mzx
 ifneq ($(BUILD_EDITOR),)
-	cp ${mzx} ${mzx}.elf
+	${CP} ${mzx} ${mzx}.elf
 	${STRIP} -g ${mzx}.elf
 	vita-elf-create ${mzx}.elf ${mzx}.velf
 	vita-make-fself -s -c ${mzx}.velf eboot.bin
@@ -53,7 +53,7 @@ ifneq ($(BUILD_EDITOR),)
 		megazeux.vpk
 endif
 
-	cp ${mzxrun} ${mzxrun}.elf
+	${CP} ${mzxrun} ${mzxrun}.elf
 	${STRIP} -g ${mzxrun}.elf
 	vita-elf-create ${mzxrun}.elf ${mzxrun}.velf
 	vita-make-fself -s -c ${mzxrun}.velf eboot.bin
@@ -67,7 +67,7 @@ endif
 		mzxrun.vpk
 
 clean:
-	@rm -f arch/psvita/*.{o,d} mzxrun mzxrun.elf mzxrun.velf mzxrun.vpk \
+	@${RM} -f arch/psvita/*.{o,d} mzxrun mzxrun.elf mzxrun.velf mzxrun.vpk \
 		megazeux megazeux.elf megazeux.velf megazeux.vpk eboot.bin param.sfo
 
 build: package ${build}
