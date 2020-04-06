@@ -45,6 +45,7 @@ usage() {
 	echo "  --enable-asan           Enable AddressSanitizer for debug builds"
 	echo "  --enable-msan           Enable MemorySanitizer for debug builds"
 	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds"
+	echo "  --enable-ubsan          Enable UndefinedBehaviorSanitizer for debug builds"
 	echo "  --enable-pledge         Enable experimental OpenBSD pledge(2) support"
 	echo "  --disable-datestamp     Disable adding date to version."
 	echo "  --disable-editor        Disable the built-in editor."
@@ -243,6 +244,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-tsan" ] &&  SANITIZER="thread"
 	[ "$1" = "--disable-tsan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-ubsan" ] &&  SANITIZER="undefined"
+	[ "$1" = "--disable-ubsan" ] && SANITIZER="false"
 
 	[ "$1" = "--enable-pledge" ] &&  PLEDGE="true"  && PLEDGE_UTILS="true"
 	[ "$1" = "--disable-pledge" ] && PLEDGE="false" && PLEDGE_UTILS="false"

@@ -182,6 +182,8 @@ ifeq (${DEBUG},1)
 #
 ifeq (${SANITIZER},address)
 DEBUG_CFLAGS := -fsanitize=address -O1 -fno-omit-frame-pointer
+else ifeq (${SANITIZER},undefined)
+DEBUG_CFLAGS := -fsanitize=undefined -O0 -fno-omit-frame-pointer
 else ifeq (${SANITIZER},thread)
 DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE
 ARCH_EXE_LDFLAGS += -pie
