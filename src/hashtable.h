@@ -572,7 +572,7 @@ static inline uint32_t fnv_1a_hash_string_len(const void *_str, uint32_t len)
   fnv_1a_hash_string_len(keyptr, keylen)
 
 #define kh_mem_hash_equal(aptr, bptr, alen, blen) \
-  (((uint32_t)alen == (uint32_t)blen) && !memcasecmp(aptr, bptr, blen))
+  (((uint32_t)alen == (uint32_t)blen) && !memcasecmp32(aptr, bptr, blen))
 
 /* --- END OF HASH FUNCTIONS --- */
 

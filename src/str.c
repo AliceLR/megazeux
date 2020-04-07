@@ -127,12 +127,12 @@ static struct string *find_string(struct string_list *string_list,
 #endif
 }
 
-static size_t get_string_alloc_size(unsigned int name_length,
+static size_t get_string_alloc_size(unsigned int name_alloc_length,
  unsigned int value_length)
 {
   // Attempt to reclaim any padding bytes at the end of the struct...
   return MAX(sizeof(struct string),
-   offsetof(struct string, name) + name_length + value_length + 1);
+   offsetof(struct string, name) + name_alloc_length + value_length);
 }
 
 /**
@@ -143,9 +143,13 @@ static size_t get_string_alloc_size(unsigned int name_length,
 static struct string *allocate_new_string(const char *name, int name_length,
  size_t length)
 {
+  // Allocate the name with space for a null terminator and pad the end so the
+  // value will also be 4-aligned.
+  int name_alloc = (name_length + 1) & 3 ? (name_length & ~3) + 4 : name_length + 1;
+
   // Allocate a string with room for the name and initial value.
   // Does not initialize the value or the list index.
-  struct string *dest = cmalloc(get_string_alloc_size(name_length, length));
+  struct string *dest = cmalloc(get_string_alloc_size(name_alloc, length));
 
   memcpy(dest->name, name, name_length);
   dest->name[name_length] = 0;
@@ -153,7 +157,7 @@ static struct string *allocate_new_string(const char *name, int name_length,
   dest->name_length = name_length;
   dest->allocated_length = length;
   dest->length = length;
-  dest->value = dest->name + name_length + 1;
+  dest->value = dest->name + name_alloc;
   return dest;
 }
 
