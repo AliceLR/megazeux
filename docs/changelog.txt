@@ -48,6 +48,7 @@ DEVELOPERS
 + Fixed a bug where khash tables couldn't expand beyond 2^31,
   added hash caching, made the MZX copy of khash use MZX style,
   and better documented the changes made to it.
++ Fixed alignment issues in memcasecmp.
 + Added a config.sh flag for UndefinedBehaviorSanitizer.
 + Categorized config.sh flags list.
 
