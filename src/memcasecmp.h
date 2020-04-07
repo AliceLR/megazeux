@@ -295,8 +295,10 @@ static inline int memcasecmp32(const void *A, const void *B, size_t cmp_length)
   size_t i = 0;
   int cmp;
 
-  assert((size_t)A % _memcasecmp32_align == 0);
-  assert((size_t)B % _memcasecmp32_align == 0);
+  // The 4 alignment apparently can't be guaranteed 100% of the time, so just
+  // fall back to the regular compare if there's an issue.
+  if((size_t)A % _memcasecmp32_align || (size_t)B % _memcasecmp32_align)
+    return memcasecmp(A, B, cmp_length);
 
   cmp = _memcasecmp32(a_value, b_value, cmp_length, &i);
   if(cmp)
