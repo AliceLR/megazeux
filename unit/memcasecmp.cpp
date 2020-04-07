@@ -107,52 +107,54 @@ UNITTEST(Matching)
 
 UNITTEST(NoMatch)
 {
-  static const std::tuple<const char *, const char *> pairs[] =
+  static const std::tuple<const char *, const char *, int> pairs[] =
   {
-    { "-", "_" },
-    { "abcde", "ABCDF" },
-    { "testTESTtestTEST", "TASTtastTASTtast" },
-    { "@!%$*^!@$&#!*([a", "@!%$*^!@$&#!*([b" },
-    { u8"śśŚśśśŚś", u8"ŚśśśŚśśś" },
+    { "-", "_", ('-' - '_') },
+    { "abcde", "ABCDF", ('e' - 'f') },
+    { "testTESTtestTEST", "TASTtastTASTtast", ('e' - 'a') },
+    { "@!%$*^!@$&#!*([a", "@!%$*^!@$&#!*([b", ('a' - 'b') },
+    { u8"śśŚśśśŚś", u8"ŚśśśŚśśś", 1 },
   };
 
-  static const std::tuple<alignstr<uint64_t>, alignstr<uint64_t>> pairs64[] =
+  static const std::tuple<alignstr<uint64_t>, alignstr<uint64_t>, int> pairs64[] =
   {
-    { "-", "_" },
-    { "testTESTtestTEST", "TASTtastTASTtast" },
-    { "aaaaaaaa*aaaaaaaBAAAAAAAbaaaaaaa", "aaaaaaaaBAAAAAAAbaaaaaaabaaaaaaa" },
-    { "aaaaaaaab*aaaaaaBAAAAAAAbaaaaaaa", "aaaaaaaaBAAAAAAAbaaaaaaabaaaaaaa" },
-    { "aaaaaaaaba*aaaaaBAAAAAAAbaaaaaaa", "aaaaaaaaBAAAAAAAbaaaaaaabaaaaaaa" },
-    { "aaaaaaaabaa*aaaaBAAAAAAAbaaaaaaa", "aaaaaaaaBAAAAAAAbaaaaaaabaaaaaaa" },
-    { "aaaaaaaabaaa*aaaBAAAAAAAbaaaaaaa", "aaaaaaaaBAAAAAAAbaaaaaaabaaaaaaa" },
-    { "aaaaaaaabaaaa*aaBAAAAAAAbaaaaaaa", "aaaaaaaaBAAAAAAAbaaaaaaabaaaaaaa" },
-    { "aaaaaaaabaaaaa*aBAAAAAAAbaaaaaaa", "aaaaaaaaBAAAAAAAbaaaaaaabaaaaaaa" },
-    { "aaaaaaaabaaaaaa*BAAAAAAAbaaaaaaa", "aaaaaaaaBAAAAAAAbaaaaaaabaaaaaaa" },
-    { "@!%$*^!@$&#!*([a", "@!%$*^!@$&#!*([b" },
-    { u8"śśŚśśśŚś", u8"ŚśśśŚśśś" },
+    { "-", "_", ('-' - '_') },
+    { "testTESTtestTEST", "TASTtastTASTtast", ('e' - 'a') },
+    { "aaaaaaaa*aaaaaaaBAAAAAAA", "aaaaaaaaBAAAAAAAbaaaaaaa", ('*' - 'b') },
+    { "aaaaaaaab*aaaaaaBAAAAAAA", "aaaaaaaaBAAAAAAAbaaaaaaa", ('*' - 'a') },
+    { "aaaaaaaaba*aaaaaBAAAAAAA", "aaaaaaaaBAAAAAAAbaaaaaaa", ('*' - 'a') },
+    { "aaaaaaaabaa*aaaaBAAAAAAA", "aaaaaaaaBAAAAAAAbaaaaaaa", ('*' - 'a') },
+    { "aaaaaaaabaaa*aaaBAAAAAAA", "aaaaaaaaBAAAAAAAbaaaaaaa", ('*' - 'a') },
+    { "aaaaaaaabaaaa*aaBAAAAAAA", "aaaaaaaaBAAAAAAAbaaaaaaa", ('*' - 'a') },
+    { "aaaaaaaabaaaaa*aBAAAAAAA", "aaaaaaaaBAAAAAAAbaaaaaaa", ('*' - 'a') },
+    { "aaaaaaaabaaaaaa*BAAAAAAA", "aaaaaaaaBAAAAAAAbaaaaaaa", ('*' - 'a') },
+    { "@!%$*^!@$&#!*([a", "@!%$*^!@$&#!*([b", ('a' - 'b') },
+    { u8"śśŚśśśŚś", u8"ŚśśśŚśśś", 1 },
   };
   const char *a;
   const char *b;
+  int expected;
   int i;
 
   SECTION(memcasecmp)
   {
     for(i = 0; i < arraysize(pairs); i++)
     {
-      std::tie(a,b) = pairs[i];
+      std::tie(a,b,expected) = pairs[i];
       ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTX(memcasecmp(a, b, strlen(a)), a);
+      ASSERTEQX(memcasecmp(a, b, strlen(a)), expected, a);
     }
 
     for(i = 0; i < arraysize(pairs64); i++)
     {
       a = std::get<0>(pairs64[i]).c_str();
       b = std::get<1>(pairs64[i]).c_str();
+      expected = std::get<2>(pairs64[i]);
 
       ASSERTEQ((size_t)a & 0x7, 0);
       ASSERTEQ((size_t)b & 0x7, 0);
       ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTX(memcasecmp(a, b, strlen(a)), a);
+      ASSERTEQX(memcasecmp(a, b, strlen(a)), expected, a);
     }
   }
 
@@ -160,20 +162,21 @@ UNITTEST(NoMatch)
   {
     for(i = 0; i < arraysize(pairs); i++)
     {
-      std::tie(a,b) = pairs[i];
+      std::tie(a,b,expected) = pairs[i];
       ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTX(memcasecmp32(a, b, strlen(a)), a);
+      ASSERTEQX(memcasecmp32(a, b, strlen(a)), expected, a);
     }
 
     for(i = 0; i < arraysize(pairs64); i++)
     {
       a = std::get<0>(pairs64[i]).c_str();
       b = std::get<1>(pairs64[i]).c_str();
+      expected = std::get<2>(pairs64[i]);
 
       ASSERTEQ((size_t)a & 0x3, 0);
       ASSERTEQ((size_t)b & 0x3, 0);
       ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTX(memcasecmp32(a, b, strlen(a)), a);
+      ASSERTEQX(memcasecmp32(a, b, strlen(a)), expected, a);
     }
   }
 }
