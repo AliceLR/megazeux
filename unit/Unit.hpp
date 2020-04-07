@@ -101,6 +101,10 @@ void *check_realloc(void *ptr, size_t size, const char *file,
   return ptr;
 }
 
+/**
+ * Utility templates.
+ */
+
 template<class T, class S, int A, int B>
 static inline constexpr int samesize(T (&a)[A], S (&b)[B])
 {
@@ -113,6 +117,35 @@ static inline constexpr int arraysize(T (&a)[A])
 {
   return A;
 }
+
+template<class aligntype, size_t A=128>
+class alignstr
+{
+protected:
+  union
+  {
+    char arr[A];
+    aligntype ignore;
+  } u;
+  size_t len;
+
+public:
+  template<int B>
+  alignstr(const char (&str)[B]): len(B)
+  {
+    static_assert(A >= B, "alignstr buffer is too small!");
+    std::copy(str, str + B - 1, u.arr);
+  }
+
+  constexpr const char *c_str()
+  {
+    return u.arr;
+  }
+};
+
+/**
+ * Unit test macros.
+ */
 
 #define UNIMPLEMENTED() \
   do\
@@ -144,9 +177,9 @@ static inline constexpr int arraysize(T (&a)[A])
 #define ASSERTEQ(a, b) \
   do\
   {\
-    if(!(a == b))\
+    if(!((a) == (b)))\
     { \
-      this->assert_fail(__LINE__, #a " == " #b, a, b, nullptr); \
+      this->assert_fail(__LINE__, #a " == " #b, (a), (b), nullptr); \
       return; \
     } \
   } while(0)
@@ -154,9 +187,9 @@ static inline constexpr int arraysize(T (&a)[A])
 #define ASSERTEQX(a, b, reason) \
   do\
   {\
-    if(!(a == b))\
+    if(!((a) == (b)))\
     {\
-      this->assert_fail(__LINE__, #a " == " #b, a, b, reason); \
+      this->assert_fail(__LINE__, #a " == " #b, (a), (b), reason); \
       return; \
     }\
   } while(0)
@@ -166,7 +199,7 @@ static inline constexpr int arraysize(T (&a)[A])
   {\
     if(strcmp(a,b)) \
     {\
-      this->assert_fail(__LINE__, "strcmp(" #a ", " #b ")", a, b, nullptr); \
+      this->assert_fail(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), nullptr); \
       return; \
     }\
   } while(0)
@@ -177,7 +210,7 @@ static inline constexpr int arraysize(T (&a)[A])
   {\
     if(strcmp(a,b)) \
     {\
-      this->assert_fail(__LINE__, "strcmp(" #a ", " #b ")", a, b, reason); \
+      this->assert_fail(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), reason); \
       return; \
     }\
   } while(0)

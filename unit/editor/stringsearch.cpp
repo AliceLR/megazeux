@@ -19,8 +19,6 @@
 
 #include "../Unit.hpp"
 
-#include <string.h>
-#include <sstream>
 #include <tuple>
 
 #include "../../src/editor/stringsearch.c"
