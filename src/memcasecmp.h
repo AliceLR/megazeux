@@ -242,7 +242,9 @@ static inline int memcasecmp(const void *A, const void *B, size_t cmp_length)
    */
   if(cmp_length >= _memcasecmp32_threshold)
   {
+#if ARCHITECTURE_BITS >= 64
 try_32:
+#endif
     a_align = (size_t)(a_value) % _memcasecmp32_align;
     b_align = (size_t)(b_value) % _memcasecmp32_align;
 
