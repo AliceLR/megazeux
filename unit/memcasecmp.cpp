@@ -20,11 +20,8 @@
 #include "Unit.hpp"
 #include "../src/memcasecmp.h"
 
-#include <array>
+#include <string.h>
 #include <tuple>
-
-
-static const alignstr<uint32_t> a("abcde");
 
 UNITTEST(memtolower)
 {
