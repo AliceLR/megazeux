@@ -71,6 +71,10 @@ static const unsigned char memtolower_table[256] =
  240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255,
 };
 
+/**
+ * Convert ASCII uppercase characters (65-90) to lowercase characters (97-122)
+ * using a lookup table. This is faster than calling glibc's toupper().
+ */
 static inline int memtolower(unsigned char c)
 {
   return memtolower_table[c];
@@ -176,6 +180,17 @@ static inline int _memcasecmp32(const uint8_t *a_value, const uint8_t *b_value,
   return 0;
 }
 
+/**
+ * Compare two strings ignoring case for ASCII chars (65-90, 97-122).
+ * For best results, both strings should be 4 aligned (32-bit platforms) or
+ * 8 aligned (64-bit platforms), but this function is guaranteed to work
+ * with input strings of any alignment.
+ *
+ * @param  A            A non-terminated string.
+ * @param  B            A non-terminated string.
+ * @param  cmp_length   The length to compare.
+ * @return              0 if A==B; >0 if A>B; <0 if A<B.
+ */
 static inline int memcasecmp(const void *A, const void *B, size_t cmp_length)
 {
   const uint8_t *a_value = (const uint8_t *)A;
@@ -186,6 +201,15 @@ static inline int memcasecmp(const void *A, const void *B, size_t cmp_length)
   int cmp;
 
 #if ARCHITECTURE_BITS >= 64
+  /**
+   * Attempt an 8-aligned compare first. If both strings aren't of the same
+   * alignment or the string is too short for this to be worth it, attempt a
+   * 4-aligned compare instead.
+   *
+   * TODO: glibc memcpy uses a technique where it aligns the first input and
+   * then uses a slower alternate function if the second input isn't also
+   * aligned, which might be worth looking into.
+   */
   if(cmp_length >= _memcasecmp64_threshold)
   {
     a_align = (size_t)(a_value) % _memcasecmp64_align;
@@ -211,6 +235,11 @@ static inline int memcasecmp(const void *A, const void *B, size_t cmp_length)
   else
 #endif
 
+  /**
+   * Attempt a 4-aligned compare. If both strings aren't of the same alignment
+   * or the string is too short for this to be worth it, fall back to the slow
+   * compare loop instead.
+   */
   if(cmp_length >= _memcasecmp32_threshold)
   {
 try_32:
@@ -233,6 +262,10 @@ try_32:
     }
   }
 
+  /**
+   * Either the aligned compares could not be used or there are a few bytes
+   * left to compare. Finish comparing the string byte-by-byte...
+   */
   for(; i < cmp_length; i++)
   {
     cmp = memtolower(a_value[i]) - memtolower(b_value[i]);
@@ -244,10 +277,11 @@ try_32:
 }
 
 /**
- * Compare two strings known to be aligned to 4 bytes. This is useful
- * primarily for counter and string name comparisons, which are always
- * aligned to 4 bytes and are typically too short to benefit from the
- * 64-bit compare conditionally used in the general case function.
+ * Compare two strings known to be aligned to 4 bytes, ignoring case for
+ * ASCII chars (65-90, 97-122). This is useful primarily for counter and
+ * string name comparisons, which are always aligned to 4 bytes and are
+ * typically too short to benefit from the 64-bit compare conditionally
+ * used in the general case function.
  *
  * @param  A            A non-terminated string aligned to 4 bytes.
  * @param  B            A non-terminated string aligned to 4 bytes.
