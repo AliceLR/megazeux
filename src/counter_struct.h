@@ -35,6 +35,13 @@ struct counter
 #endif
   uint16_t name_length;
   uint8_t gateway_write;
+  uint8_t unused;
+
+  /**
+   * This struct will be allocated with extra space to contain the entire
+   * counter name, null-terminated. This field MUST be at least 4-aligned and
+   * it must be the last field (any extra padding after it will be used).
+   */
   char name[1];
 };
 
@@ -92,6 +99,14 @@ struct string
 #endif
 
   uint16_t name_length;
+  uint8_t unused;
+  uint8_t unused2;
+
+  /**
+   * This struct will be allocated with extra space to contain the string name
+   * and string value. This field MUST be at least 4-aligned and must be the
+   * last field in the struct (any extra padding after it will be used).
+   */
   char name[1];
 };
 

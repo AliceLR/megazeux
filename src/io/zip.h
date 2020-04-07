@@ -153,6 +153,8 @@ struct zip_file_header
   uint8_t mzx_robot_id;
   uint16_t file_name_length;
   // This struct is allocated with an extended area for the filename.
+  // This field MUST be at least 4-aligned and it must be the last field in the
+  // struct (any extra padding after will be used).
   char file_name[1];
 };
 
