@@ -4,7 +4,10 @@
 # of the compiler version check jank out of the main Makefile.
 #
 
-IS_GCC   := ${shell ${CC} --version | grep -qi "gcc"; echo $$?}
+#
+# Assume GCC until proven wrong...
+#
+IS_GCC   := 0
 IS_CLANG := ${shell ${CC} --version | grep -qi "\(clang version\|emcc\)"; echo $$?}
 
 GCC_VER := ${shell ${CC} -dumpfullversion -dumpversion |\
