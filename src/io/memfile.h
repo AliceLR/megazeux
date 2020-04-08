@@ -54,7 +54,7 @@ static inline void mfopen(const void *src, size_t len, struct memfile *mf)
 
 static inline struct memfile *mfopen_alloc(const void *src, size_t len)
 {
-  struct memfile *mf = cmalloc(sizeof(struct memfile));
+  struct memfile *mf = (struct memfile *)cmalloc(sizeof(struct memfile));
 
   mf->start = (unsigned char *)src;
   mf->current = (unsigned char *)src;
@@ -105,7 +105,7 @@ static inline void mfmove(void *new_buf, size_t new_len, struct memfile *mf)
 {
   size_t pos = mf->current - mf->start;
 
-  mf->start = new_buf;
+  mf->start = (unsigned char *)new_buf;
   mf->current = mf->start + pos;
   mf->end = mf->start + new_len;
 
@@ -190,7 +190,7 @@ static inline size_t mfread(void *dest, size_t len, size_t count,
  struct memfile *mf)
 {
   unsigned int i;
-  unsigned char *pos = dest;
+  unsigned char *pos = (unsigned char *)dest;
   for(i = 0; i < count; i++)
   {
     if(mf->current + len > mf->end)
