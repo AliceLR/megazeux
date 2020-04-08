@@ -14,7 +14,8 @@ ifeq ($(filter -r,$(MAKEFLAGS)),)
 MAKEFLAGS += -r
 endif
 
-.PHONY: all clean help_check test unittest test_clean mzx mzx.debug build build_clean source
+.PHONY: all clean help_check mzx mzx.debug build build_clean source
+.PHONY: test unittest test_clean unit_clean
 
 -include platform.inc
 include version.inc
@@ -403,7 +404,7 @@ endif
 
 include src/Makefile.in
 
-clean: mzx_clean test_clean
+clean: mzx_clean test_clean unit_clean
 
 ifeq (${BUILD_UTILS},1)
 include src/utils/Makefile.in
