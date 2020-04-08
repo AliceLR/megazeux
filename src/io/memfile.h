@@ -148,7 +148,7 @@ static inline int mfgetd(struct memfile *mf)
   v =  mf->current[0];
   v |= mf->current[1] << 8;
   v |= mf->current[2] << 16;
-  v |= mf->current[3] << 24;
+  v |= (unsigned int)mf->current[3] << 24;
   mf->current += 4;
   return v;
 }

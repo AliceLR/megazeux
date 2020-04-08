@@ -3369,8 +3369,16 @@ void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
     // In DOS versions, copy and copy block preserved the current robot state
     // Therefore leave all robot vars alone and copy the stack over
     size_t stack_capacity = copy_robot->stack_size * sizeof(int);
-    copy_robot->stack = cmalloc(stack_capacity);
-    memcpy(copy_robot->stack, cur_robot->stack, stack_capacity);
+    if(stack_capacity)
+    {
+      copy_robot->stack = cmalloc(stack_capacity);
+      memcpy(copy_robot->stack, cur_robot->stack, stack_capacity);
+    }
+    else
+    {
+      copy_robot->stack = NULL;
+      copy_robot->stack_pointer = 0;
+    }
   }
   else
   {

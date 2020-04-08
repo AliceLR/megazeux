@@ -542,7 +542,7 @@ int string_read_as_counter(struct world *mzx_world,
         {
           switch(size)
           {
-            case 4: value |= (int)src->value[real_index + 3] << 24; // fallthru
+            case 4: value |= (unsigned int)src->value[real_index + 3] << 24; // fallthru
             case 3: value |= (int)src->value[real_index + 2] << 16; // fallthru
             case 2: value |= (int)src->value[real_index + 1] << 8;  // fallthru
             case 1: value |= (int)src->value[real_index];
@@ -644,7 +644,7 @@ void string_write_as_counter(struct world *mzx_world,
       {
         unsigned int i;
 
-        for(i = 1 << 31; i != 0; i >>= 1)
+        for(i = (unsigned int)1 << 31; i != 0; i >>= 1)
           if(alloc_length & i)
             break;
 
