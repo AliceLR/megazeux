@@ -24,22 +24,28 @@
 
 #include "../../src/editor/stringsearch.c"
 
+struct string_pair
+{
+  const char *needle;
+  const char *haystack;
+};
+
 UNITTEST(Search)
 {
   // left: needle, right: haystack
-  static const std::tuple<const char *, const char *> haystack_none[] =
+  static const string_pair haystack_none[] =
   {
     { "", "literally anything" },
     { "literally anything", "" },
     { "abcd", "abdacbdacbdabdcabd" },
     {
-      "abcd",
+      "abce",
       "lomgstringlomgstringlomgstringlomgstringlomgstring"
       "lomgstringlomgstringlomgstringlomgstringlomgstring"
     },
-    { "abcd", "s" },
+    { "abcf", "s" },
     { "some needle", "some needl" },
-    { "some needle", "aome needle" },
+    { "dome needle", "aome needle" },
     { "case", "CASE" },
     { "abcde", "cbdebcedbcdebcdbecdbedcbebcdebcdebcedbcbdcbedcbedbcdebcedbc" },
     { "abcde", "cbdebcedbcdebcdbecAbcdEbebcdebABCDEedbcbdcbedcbedbcdebAbcde" },
@@ -51,7 +57,7 @@ UNITTEST(Search)
     },
     { "abcdabc", "abceabceabceabceabc" },
   };
-  static const std::tuple<const char *, const char *> haystack_once[] =
+  static const string_pair haystack_once[] =
   {
     { "abcde", "abcde" },
     { "abcd", "aaaaaaaaaabcaaaabcdaaaaa" },
@@ -69,7 +75,7 @@ UNITTEST(Search)
     },
     { "abcdabc", "abceabcdabceabceabc" },
   };
-  static const std::tuple<const char *, const char *> haystack_twice[] =
+  static const string_pair haystack_twice[] =
   {
     { "abcde", "abcdeabcde" },
     { "abcd", "aaaaaaaaaabcaaaabcdaaaaabcdaaaaaaaaa" },
@@ -99,14 +105,16 @@ UNITTEST(Search)
   {
     for(int i = 0; i < arraysize(haystack_none); i++)
     {
-      std::tie(B,A) = haystack_none[i];
+      A = haystack_none[i].haystack;
+      B = haystack_none[i].needle;
 
       ASSERTX(!string_search(A, strlen(A), B, strlen(B), nullptr, false), A);
     }
 
     for(int i = 0; i < arraysize(haystack_once); i++)
     {
-      std::tie(B,A) = haystack_once[i];
+      A = haystack_once[i].haystack;
+      B = haystack_once[i].needle;
 
       dest = string_search(A, strlen(A), B, strlen(B), nullptr, false);
       ASSERTX(dest, A);
@@ -115,7 +123,8 @@ UNITTEST(Search)
 
     for(int i = 0; i < arraysize(haystack_twice); i++)
     {
-      std::tie(B,A) = haystack_twice[i];
+      A = haystack_twice[i].haystack;
+      B = haystack_twice[i].needle;
 
       dest = string_search(A, strlen(A), B, strlen(B), nullptr, false);
       ASSERTX(dest, A);
@@ -128,7 +137,8 @@ UNITTEST(Search)
     for(int i = 0; i < arraysize(haystack_once); i++)
     {
       const char *dest;
-      std::tie(B,A) = haystack_once[i];
+      A = haystack_once[i].haystack;
+      B = haystack_once[i].needle;
       ssize_t a_len = strlen(A);
       ssize_t b_len = strlen(B);
 
@@ -147,7 +157,8 @@ UNITTEST(Search)
     for(int i = 0; i < arraysize(haystack_twice); i++)
     {
       const char *dest;
-      std::tie(B,A) = haystack_twice[i];
+      A = haystack_twice[i].haystack;
+      B = haystack_twice[i].needle;
       ssize_t a_len = strlen(A);
       ssize_t b_len = strlen(B);
 
@@ -175,19 +186,19 @@ UNITTEST(Search)
 UNITTEST(SearchCaseInsensitive)
 {
   // left: needle, right: haystack
-  static const std::tuple<const char *, const char *> haystack_none[] =
+  static const string_pair haystack_none[] =
   {
     { "", "literally anything" },
     { "literally anything", "" },
     { "abcd", "abdacbdacbdabdcabd" },
     {
-      "abcd",
+      "abce",
       "lomgstringlomgstringlomgstringlomgstringlomgstring"
       "lomgstringlomgstringlomgstringlomgstringlomgstring"
     },
-    { "abcd", "s" },
+    { "abcf", "s" },
     { "some needle", "some needl" },
-    { "some needle", "aome needle" },
+    { "dome needle", "aome needle" },
     { "abcde", "cbdebcedbcdebcdbecdbedcbebcdebcdebcedbcbdcbedcbedbcdebcedbc" },
     {
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAAAAAaaaaaaaa",
@@ -197,7 +208,7 @@ UNITTEST(SearchCaseInsensitive)
     },
     { "abcdabc", "abceABCeabceABCeabc" },
   };
-  static const std::tuple<const char *, const char *> haystack_once[] =
+  static const string_pair haystack_once[] =
   {
     { "abcde", "abcde" },
     { "abcd", "aaaaaaaaaabcaaaabcdaaaaa" },
@@ -215,7 +226,7 @@ UNITTEST(SearchCaseInsensitive)
     },
     { "abcdabc", "abceaBcdAbCeabceabc" },
   };
-  static const std::tuple<const char *, const char *> haystack_twice[] =
+  static const string_pair haystack_twice[] =
   {
     { "abcde", "abcdeabcde" },
     { "abcd", "aaaaaaaaaabcaaaabcdaaaaabcdaaaaaaaaa" },
@@ -246,14 +257,16 @@ UNITTEST(SearchCaseInsensitive)
   {
     for(int i = 0; i < arraysize(haystack_none); i++)
     {
-      std::tie(B,A) = haystack_none[i];
+      A = haystack_none[i].haystack;
+      B = haystack_none[i].needle;
 
       ASSERTX(!string_search(A, strlen(A), B, strlen(B), NULL, true), A);
     }
 
     for(int i = 0; i < arraysize(haystack_once); i++)
     {
-      std::tie(B,A) = haystack_once[i];
+      A = haystack_once[i].haystack;
+      B = haystack_once[i].needle;
 
       dest = string_search(A, strlen(A), B, strlen(B), NULL, true);
       ASSERTX(dest, A);
@@ -262,7 +275,8 @@ UNITTEST(SearchCaseInsensitive)
 
     for(int i = 0; i < arraysize(haystack_twice); i++)
     {
-      std::tie(B,A) = haystack_twice[i];
+      A = haystack_twice[i].haystack;
+      B = haystack_twice[i].needle;
 
       dest = string_search(A, strlen(A), B, strlen(B), NULL, true);
       ASSERTX(dest, A);
@@ -275,7 +289,8 @@ UNITTEST(SearchCaseInsensitive)
     for(int i = 0; i < arraysize(haystack_once); i++)
     {
       const char *dest;
-      std::tie(B,A) = haystack_once[i];
+      A = haystack_once[i].haystack;
+      B = haystack_once[i].needle;
       ssize_t a_len = strlen(A);
       ssize_t b_len = strlen(B);
 
@@ -294,7 +309,8 @@ UNITTEST(SearchCaseInsensitive)
     for(int i = 0; i < arraysize(haystack_twice); i++)
     {
       const char *dest;
-      std::tie(B,A) = haystack_twice[i];
+      A = haystack_twice[i].haystack;
+      B = haystack_twice[i].needle;
       ssize_t a_len = strlen(A);
       ssize_t b_len = strlen(B);
 

@@ -72,6 +72,8 @@
 #include "../src/compat.h"
 
 #include <assert.h>
+#include <string.h>
+
 #include <csignal>
 #include <iostream>
 #include <type_traits>
@@ -127,14 +129,20 @@ protected:
     char arr[A];
     aligntype ignore;
   } u;
-  size_t len;
 
 public:
   template<int B>
-  alignstr(const char (&str)[B]): len(B)
+  alignstr(const char (&str)[B])
   {
     static_assert(A >= B, "alignstr buffer is too small!");
     std::copy(str, str + B - 1, u.arr);
+  }
+
+  alignstr(const char * const str)
+  {
+    size_t slen = strlen(str);
+    assert(slen + 1 <= A);
+    std::copy(str, str + slen, u.arr);
   }
 
   constexpr const char *c_str() const
