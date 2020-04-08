@@ -47,8 +47,8 @@ __M_BEGIN_DECLS
 #define _memcaseget32(x,b) memtolower((x >> (b * 8)) & 0xFF)
 #define _memcaseget64(x,b) _memcaseget32(x,b)
 #else /* PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN */
-#define _memcaseget32(x,b) memtolower((x >> (24 >> (b * 8))) & 0xFF)
-#define _memcaseget64(x,b) memtolower((x >> (56 >> (b * 8))) & 0xFF)
+#define _memcaseget32(x,b) memtolower((x >> (24 - (b * 8))) & 0xFF)
+#define _memcaseget64(x,b) memtolower((x >> (56 - (b * 8))) & 0xFF)
 #endif
 
 static const unsigned char memtolower_table[256] =
