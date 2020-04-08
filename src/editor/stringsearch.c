@@ -216,8 +216,8 @@ const void *string_search(const void *A, const size_t a_len,
   const unsigned int *bad_char_index;
   const unsigned int *good_suffix_index;
   const void *result = NULL;
-  size_t i = b_len - 1;
-  size_t idx, idx2;
+  ssize_t i = b_len - 1;
+  ssize_t idx, idx2;
   ssize_t j;
   boolean has_good_suffix_table;
 
@@ -242,7 +242,7 @@ const void *string_search(const void *A, const size_t a_len,
    */
   if(!ignore_case)
   {
-    while(i < a_len)
+    while((size_t)i < a_len)
     {
       j = b_len - 1;
 
@@ -262,7 +262,7 @@ const void *string_search(const void *A, const size_t a_len,
   }
   else
   {
-    while(i < a_len)
+    while((size_t)i < a_len)
     {
       j = b_len - 1;
 

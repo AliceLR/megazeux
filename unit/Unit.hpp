@@ -137,7 +137,7 @@ public:
     std::copy(str, str + B - 1, u.arr);
   }
 
-  constexpr const char *c_str()
+  constexpr const char *c_str() const
   {
     return u.arr;
   }
