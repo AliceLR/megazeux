@@ -93,7 +93,7 @@ static THREAD_RES run_dns_thread(void *_data)
   struct dns_data *data = (struct dns_data *)_data;
   int ret = -1;
 
-  debug("--DNS-- New thread running.\n");
+  trace("--DNS-- New thread running.\n");
   LOCK(data);
   data->state = STATE_STANDBY;
 
@@ -105,14 +105,14 @@ static THREAD_RES run_dns_thread(void *_data)
 
     if(data->state == STATE_LOOKUP)
     {
-      debug("--DNS-- Starting lookup.\n");
+      trace("--DNS-- Starting lookup.\n");
       ret = platform_getaddrinfo(data->node, data->service, &(data->hints),
        &(data->res));
     }
 
     if(data->state == STATE_EXIT)
     {
-      debug("--DNS-- Thread exited.\n");
+      trace("--DNS-- Thread exited.\n");
       THREAD_RETURN;
     }
 
@@ -122,7 +122,7 @@ static THREAD_RES run_dns_thread(void *_data)
     {
       case(STATE_LOOKUP):
       {
-        debug("--DNS-- Lookup completed.\n");
+        trace("--DNS-- Lookup completed.\n");
         data->state = STATE_SUCCESS;
         data->ret = ret;
         break;
@@ -130,7 +130,7 @@ static THREAD_RES run_dns_thread(void *_data)
 
       default:
       {
-        debug("--DNS-- Lookup completed (discarding; %d).\n", data->state);
+        trace("--DNS-- Lookup completed (discarding; %d).\n", data->state);
         free_dns_thread_data(data, true);
         data->state = STATE_STANDBY;
         break;
@@ -187,34 +187,34 @@ int dns_getaddrinfo(const char *node, const char *service,
 
     if(data->state == STATE_INIT)
     {
-      debug("--DNS-- Starting DNS thread %d.\n", threads_count);
+      trace("--DNS-- Starting DNS thread %d.\n", threads_count);
       create_dns_thread(data);
       threads_count++;
     }
 
     if(data->state == STATE_STANDBY)
     {
-      debug("--DNS-- Using DNS thread %d.\n", i);
+      trace("--DNS-- Using DNS thread %d.\n", i);
       set_dns_thread_data(data, node, service, hints);
       data->state = STATE_LOOKUP;
 
       LOCK(data);
       SIGNAL(data);
 
-      debug("--DNS-- Waiting for response.\n");
+      trace("--DNS-- Waiting for response.\n");
       TIMED_WAIT(data, timeout);
 
       if(data->state == STATE_SUCCESS)
       {
         ret = data->ret;
         *res = data->res;
-        debug("--DNS-- Received response (return code %d)\n", ret);
+        trace("--DNS-- Received response (return code %d)\n", ret);
         free_dns_thread_data(data, false);
         data->state = STATE_STANDBY;
       }
       else
       {
-        debug("--DNS-- Timed out.\n");
+        trace("--DNS-- Timed out.\n");
         data->state = STATE_ABORT;
         ret = EAI_AGAIN;
         *res = NULL;
@@ -226,9 +226,9 @@ int dns_getaddrinfo(const char *node, const char *service,
   }
 
   // Try to run manually instead.
-  debug("--DNS-- No DNS threads available; running lookup in main thread.\n");
+  trace("--DNS-- No DNS threads available; running lookup in main thread.\n");
   ret = platform_getaddrinfo(node, service, hints, res);
-  debug("--DNS-- Completed successfully (return code %d)\n", ret);
+  trace("--DNS-- Completed successfully (return code %d)\n", ret);
   return ret;
 }
 
@@ -253,9 +253,9 @@ void dns_exit(void)
   {
     if(threads[i].state != STATE_INIT)
     {
-      debug("--DNS-- Waiting for DNS thread %d\n", i);
+      trace("--DNS-- Waiting for DNS thread %d\n", i);
       destroy_dns_thread(threads + i);
-      debug("--DNS-- Thread %d joined.\n", i);
+      trace("--DNS-- Thread %d joined.\n", i);
     }
   }
 

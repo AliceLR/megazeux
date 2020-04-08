@@ -51,6 +51,10 @@ DEVELOPERS
 + Fixed alignment issues in memcasecmp.
 + Added a config.sh flag for UndefinedBehaviorSanitizer.
 + Categorized config.sh flags list.
++ Added a trace logging level that is disabled by default and
+  changed most dns.c, fsafeopen.c, and checkres.c debug logging
+  to use it. Use the --enable-trace config.sh flag to enable
+  trace logging for debug builds.
 
 
 March 8th, 2020 - MZX 2.92c

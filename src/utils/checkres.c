@@ -1684,7 +1684,7 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file,
     *start = 0;
     *end = 0;
 
-    debug("SFX (class): %s\n", start + 1);
+    trace("SFX (class): %s\n", start + 1);
     add_requirement_sfx(start + 1, file, board_num, robot_num, line_num);
   }
 
@@ -1782,7 +1782,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
          || match_partial("LOAD_BC", V270)
          || match_partial("LOAD_ROBOT", V270))
         {
-          debug("SET: %s (%s)\n", src, function_counter);
+          trace("SET: %s (%s)\n", src, function_counter);
           add_requirement_robot(src, file, board_num, robot_num, line_num);
           break;
         }
@@ -1795,7 +1795,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
          || match_partial("SAVE_BC", V270)
          || match_partial("SAVE_ROBOT", V270))
         {
-          debug("SET: %s (%s)\n", src, function_counter);
+          trace("SET: %s (%s)\n", src, function_counter);
           add_resource(src, file);
           break;
         }
@@ -1805,7 +1805,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           // Maximum version
           if(world_version < V290)
           {
-            debug("SET: %s (%s)\n", src, function_counter);
+            trace("SET: %s (%s)\n", src, function_counter);
             add_resource(src, file);
           }
           break;
@@ -1835,7 +1835,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         if(src[src_len - 1] == '*')
           src[src_len - 1] = 0;
 
-        debug("MOD: %s\n", src);
+        trace("MOD: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
@@ -1861,7 +1861,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         // Don't trust null termination from data read in
         TERMINATE(src, src_len);
 
-        debug("SAM: %s\n", src);
+        trace("SAM: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
@@ -1909,7 +1909,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           {
             if(mfgetw(mf) == IMAGE_FILE && src[0] == '@')
             {
-              debug("PUT @file: %s\n", src + 1);
+              trace("PUT @file: %s\n", src + 1);
               add_requirement_robot(src + 1, file, board_num, robot_num,
                line_num);
             }
@@ -1963,7 +1963,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         if(src[src_len - 1] == '*')
           src[src_len - 1] = 0;
 
-        debug("MOD FADE IN: %s\n", src);
+        trace("MOD FADE IN: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
@@ -2000,7 +2000,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 
           if(src[0] == '@')
           {
-            debug("COPY BLOCK @file: %s\n", src + 1);
+            trace("COPY BLOCK @file: %s\n", src + 1);
             add_resource(src + 1, file);
           }
         }
@@ -2084,7 +2084,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
             rest = src;
         }
 
-        debug("LOAD CHAR SET: %s\n", rest);
+        trace("LOAD CHAR SET: %s\n", rest);
         add_requirement_robot(rest, file, board_num, robot_num, line_num);
         break;
       }
@@ -2102,7 +2102,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         // Don't trust null termination from data read in
         TERMINATE(src, src_len);
 
-        debug("LOAD PALETTE: %s\n", src);
+        trace("LOAD PALETTE: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
@@ -2120,7 +2120,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         // Don't trust null termination from data read in
         TERMINATE(src, src_len);
 
-        debug("SWAP WORLD: %s\n", src);
+        trace("SWAP WORLD: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
@@ -2373,7 +2373,7 @@ static enum status parse_legacy_board(struct memfile *mf,
   // check the board MOD exists
   if(strlen(board_mod) > 0 && strcmp(board_mod, "*"))
   {
-    debug("BOARD MOD: %s\n", board_mod);
+    trace("BOARD MOD: %s\n", board_mod);
     add_requirement_board(board_mod, file, board_num, IS_BOARD_MOD);
   }
 
@@ -2439,7 +2439,7 @@ static enum status parse_legacy_world(struct memfile *mf,
     char sfx_buf[LEGACY_SFX_SIZE + 1];
     int sfx_len;
 
-    debug("SFX table (input length: %d)\n", sfx_len_total);
+    trace("SFX table (input length: %d)\n", sfx_len_total);
 
     for(i = 0; i < NUM_SFX; i++)
     {
@@ -2501,7 +2501,7 @@ static enum status parse_legacy_world(struct memfile *mf,
   {
     struct legacy_board *board = &board_list[i];
 
-    debug("Board %d\n", i);
+    trace("Board %d\n", i);
 
     // don't care about deleted boards
     if(board->size == 0)
@@ -2523,7 +2523,7 @@ static enum status parse_legacy_world(struct memfile *mf,
     }
   }
 
-  debug("Global robot\n");
+  trace("Global robot\n");
 
   // Do the global robot too..
   if(mfseek(mf, global_robot_offset, SEEK_SET) != 0)
@@ -2596,7 +2596,7 @@ static enum status parse_board_info(struct memfile *mf, struct base_file *file,
           mfread(buffer, len, 1, &prop);
           buffer[len] = 0;
 
-          debug("BOARD MOD: %s\n", buffer);
+          trace("BOARD MOD: %s\n", buffer);
           add_requirement_board(buffer, file, board_num, IS_BOARD_MOD);
         }
         break;
@@ -2609,7 +2609,7 @@ static enum status parse_board_info(struct memfile *mf, struct base_file *file,
           mfread(buffer, len, 1, &prop);
           buffer[len] = 0;
 
-          debug("BOARD CHR/PAL: %s\n", buffer);
+          trace("BOARD CHR/PAL: %s\n", buffer);
           add_requirement_board(buffer, file, board_num,
            (ident == BPROP_CHARSET_PATH) ? IS_BOARD_CHARSET : IS_BOARD_PALETTE);
         }
@@ -2628,7 +2628,7 @@ static enum status parse_sfx_file(struct memfile *mf, struct base_file *file)
 
   enum status ret = SUCCESS;
 
-  debug("SFX table found\n");
+  trace("SFX table found\n");
 
   for(i = 0; i < NUM_SFX; i++)
   {
@@ -2690,7 +2690,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
 
         if(file_id == FPROP_BOARD_INFO)
         {
-          debug("Board %u\n", board_id);
+          trace("Board %u\n", board_id);
           ret = parse_board_info(&buf_file, file, (int)board_id);
         }
         else
@@ -2703,14 +2703,14 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
 
         if(file_id == FPROP_WORLD_GLOBAL_ROBOT)
         {
-          debug("Global robot\n");
+          trace("Global robot\n");
           ret = parse_robot_info(&buf_file, file, NO_BOARD, GLOBAL_ROBOT);
         }
         else
 
         if(file_id == FPROP_WORLD_SFX)
         {
-          debug("SFX table\n");
+          trace("SFX table\n");
           ret = parse_sfx_file(&buf_file, file);
         }
 

@@ -200,7 +200,7 @@ static int match(char *path)
               // try brute force
               if(case5(path, oldtoken) < 0)
               {
-                debug("%s:%d: file matches for %s failed.\n",
+                trace("%s:%d: file matches for %s failed.\n",
                  __FILE__, __LINE__, path);
                 return -FSAFE_MATCH_FAILED;
               }
@@ -230,7 +230,7 @@ static int match(char *path)
             // try brute force
             if(case5(path, oldtoken) < 0)
             {
-              debug("%s:%d: directory matches for %s failed.\n",
+              trace("%s:%d: directory matches for %s failed.\n",
                __FILE__, __LINE__, path);
               return -FSAFE_MATCH_FAILED;
             }
@@ -358,12 +358,12 @@ int fsafetranslate(const char *path, char *newpath)
 #if !defined(__WIN32__)
   if(ret == -FSAFE_SUCCESS || ret == -FSAFE_MATCHED_DIRECTORY)
   {
-    debug("%s:%d: translated %s to %s%s.\n", __FILE__, __LINE__,
+    trace("%s:%d: translated %s to %s%s.\n", __FILE__, __LINE__,
      path, newpath, (ret == -FSAFE_MATCHED_DIRECTORY) ? "/" : "");
   }
   else
   {
-    debug("%s:%d: failed to translate %s (err %d).\n",
+    trace("%s:%d: failed to translate %s (err %d).\n",
      __FILE__, __LINE__, path, ret);
   }
 #endif
