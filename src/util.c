@@ -381,7 +381,7 @@ int fgetd(FILE *fp)
   if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF))
     return EOF;
 
-  return (d << 24) | (c << 16) | (b << 8) | a;
+  return ((unsigned int)d << 24) | (c << 16) | (b << 8) | a;
 }
 
 // Put 2 bytes, little endian
