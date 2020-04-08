@@ -43,10 +43,12 @@ usage() {
 	echo "  --enable-release        Optimize and remove debugging code."
 	echo "  --enable-verbose        Build system is always verbose (V=1)."
 	echo "  --optimize-size         Perform size optimizations (-Os)."
-	echo "  --enable-asan           Enable AddressSanitizer for debug builds"
-	echo "  --enable-msan           Enable MemorySanitizer for debug builds"
-	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds"
-	echo "  --enable-ubsan          Enable UndefinedBehaviorSanitizer for debug builds"
+	echo "  --enable-asan           Enable AddressSanitizer for debug builds."
+	echo "  --enable-msan           Enable MemorySanitizer for debug builds."
+	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds."
+	echo "  --enable-ubsan          Enable UndefinedBehaviorSanitizer for debug builds."
+	echo "  --enable-trace          Enable trace logging for debug builds."
+	echo "  --enable-stdio-redirect Redirect console logging to stdout.txt/stderr.txt."
 	echo
 	echo "Platform-dependent options:"
 	echo "  --disable-x11           Disable X11, removing binary dependency."
@@ -71,7 +73,6 @@ usage() {
 	echo "  --disable-counter-hash  Disables hash tables for counter/string lookups."
 	echo "  --enable-meter          Enable load/save meter display."
 	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
-	echo "  --enable-stdio-redirect Redirect console output to stdout.txt/stderr.txt."
 	echo
 	echo "Graphics options:"
 	echo "  --disable-software      Disable software renderer."
@@ -165,6 +166,7 @@ CHECK_ALLOC="true"
 COUNTER_HASH="true"
 DEBYTECODE="false"
 LIBSDL2="true"
+TRACE_LOGGING="false"
 STDIO_REDIRECT="false"
 GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
@@ -373,6 +375,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-libsdl2" ]  && LIBSDL2="true"
 	[ "$1" = "--disable-libsdl2" ] && LIBSDL2="false"
+
+	[ "$1" = "--enable-trace" ]  && TRACE_LOGGING="true"
+	[ "$1" = "--disable-trace" ] && TRACE_LOGGING="false"
 
 	[ "$1" = "--enable-stdio-redirect" ]  && STDIO_REDIRECT="true"
 	[ "$1" = "--disable-stdio-redirect" ] && STDIO_REDIRECT="false"
@@ -948,8 +953,16 @@ else
 	echo "DEBUG=1" >> platform.inc
 
 	if [ "$SANITIZER" != "false" ]; then
-		echo "Enabling $SANITIZER sanitizer (may enable some optimizations)"
+		echo "Enabling $SANITIZER sanitizer (may enable some optimizations)."
 		echo "SANITIZER=$SANITIZER" >> platform.inc
+	fi
+
+	#
+	# Trace logging for debug builds, if enabled.
+	#
+	if [ "$TRACE_LOGGING" = "true" ]; then
+		echo "Enabling trace logging."
+		echo "#define DEBUG_TRACE" >> src/config.h
 	fi
 fi
 

@@ -652,7 +652,7 @@ static boolean http_read_status(struct http_info *result, const char *status,
   res = sscanf(status, "HTTP/1.%1s %3s %31[^\r\n]", ver, code,
    result->status_message);
 
-  debug("Status: %s (%s, %s, %s)\n", status, ver, code, result->status_message);
+  trace("Status: %s (%s, %s, %s)\n", status, ver, code, result->status_message);
   if(res != 3 || (ver[0] != '0' && ver[0] != '1'))
     return false;
 
@@ -1570,7 +1570,7 @@ boolean host_handle_http_request(struct host *h)
   }
 
   path++;
-  debug("Received request for '%s'\n", path);
+  trace("Received request for '%s'\n", path);
 
   f = fopen(path, "rb");
   if(!f)
