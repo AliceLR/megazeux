@@ -10,6 +10,8 @@ unit_src        := unit
 unit_obj        := unit/.build
 unit_src_editor := unit/editor
 unit_obj_editor := unit/editor/.build
+unit_src_io     := unit/io
+unit_obj_io     := unit/io/.build
 
 ifneq (${BINEXT},)
 unit_ext        := ${BINEXT}
@@ -18,8 +20,9 @@ unit_ext        := .test
 endif
 
 unit_objs := \
-  ${unit_obj}/align${unit_ext}      \
-  ${unit_obj}/memcasecmp${unit_ext}
+  ${unit_obj}/align${unit_ext}         \
+  ${unit_obj}/memcasecmp${unit_ext}    \
+  ${unit_obj_io}/bitstream${unit_ext}
 
 ifneq (${BUILD_EDITOR},)
 
@@ -57,10 +60,15 @@ ${unit_obj_editor}/%${unit_ext}: ${unit_src_editor}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
 	${CXX} -MD ${unit_cflags} $< -o $@
 
+${unit_obj_io}/%${unit_ext}: ${unit_src_io}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${unit_cflags} $< -o $@
+
 -include ${unit_objs:${unit_ext}=.d}
 
 ${unit_objs}: | $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
 ${unit_objs}: | $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
+${unit_objs}: | $(filter-out $(wildcard ${unit_obj_io}), ${unit_obj_io})
 
 unittest: ${unit_objs}
 	@failcount=0; \
@@ -71,12 +79,12 @@ unittest: ${unit_objs}
 		fi; \
 	done; \
 	if [ "$$failcount" -gt "0" ]; then \
-		echo "Failed $$failcount test(s)."; \
+		echo "Failed $$failcount test set(s)."; \
 		exit 1; \
 	fi;
 
 unit_clean:
-	$(if ${V},,@echo "  RM      " ${unit_obj} ${unit_obj_editor})
-	${RM} -r ${unit_obj} ${unit_obj_editor}
+	$(if ${V},,@echo "  RM      " ${unit_obj} ${unit_obj_editor} ${unit_obj_io})
+	${RM} -r ${unit_obj} ${unit_obj_editor} ${unit_obj_io}
 
 endif

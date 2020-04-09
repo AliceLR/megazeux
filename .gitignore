@@ -137,6 +137,7 @@ stderr.txt
 Thumbs.db
 unit/.build/
 unit/editor/.build/
+unit/io/.build/
 /*.js
 /*.js.mem
 /*.js.orig.js

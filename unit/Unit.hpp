@@ -262,10 +262,18 @@ namespace Unit
         return;
       }
 
+      if(total == count && total == passed && !failed && !skipped)
+      {
+        // Print a shorter summary for the general case...
+        std::cerr << "Passed " << total << " "
+         << (total > 1 ? "tests" : "test") << ".\n";
+        std::cerr << std::endl;
+        return;
+      }
+
       std::cerr << "\n"
         "Summary:\n"
-        "  Tests total: " << total << "\n"
-        "  Tests run: " << count << "\n";
+        "  Tests total: " << total << "\n";
 
       if(passed)  std::cerr << "  Tests passed: " << passed << "\n";
       if(failed)  std::cerr << "  Tests failed: " << failed << "\n";
@@ -288,7 +296,8 @@ namespace Unit
   {
     bool has_run = false;
     bool has_failed_main = false;
-    bool has_failed_section = false;
+    unsigned int last_failed_section = 0;
+    bool printed_failed = false;
 
   protected:
 
@@ -323,10 +332,7 @@ namespace Unit
       run_impl();
 
       if(has_failed_main)
-      {
-        print_test_failed();
         return false;
-      }
 
       this->num_sections = this->count_sections;
 
@@ -337,11 +343,8 @@ namespace Unit
         run_impl();
       }
 
-      if(this->has_failed_section)
-      {
-        print_test_failed();
+      if(this->last_failed_section)
         return false;
-      }
 
       print_test_success();
       return true;
@@ -374,9 +377,13 @@ namespace Unit
 
     inline void print_test_failed(void)
     {
-      const char *_test_name = coalesce(test_name);
+      if(!printed_failed)
+      {
+        const char *_test_name = coalesce(test_name);
 
-      std::cerr << "Failed test '" << file_name << "::" << _test_name << "'\n";
+        std::cerr << "Failed test '" << file_name << "::" << _test_name << "'\n";
+        printed_failed = true;
+      }
     }
 
     inline void signal_fail()
@@ -405,26 +412,23 @@ namespace Unit
     inline void assert_fail(int line, const char *test,
      const T left, const S right, const char *reason)
     {
-      const char *_test_name = coalesce(this->test_name);
       const char *_section_name = coalesce(this->section_name);
+
+      print_test_failed();
 
       if(this->expected_section)
       {
-        if(!this->has_failed_section)
+        if(this->last_failed_section < this->expected_section)
         {
-          std::cerr << "In test '" << file_name << "::" << _test_name << ": \n";
-          this->has_failed_section = true;
+          std::cerr << "  In section '" << _section_name << "': \n";
+          this->last_failed_section = this->expected_section;
         }
         std::cerr <<
-         "  Assert failed for section '" << _section_name <<
-           "' at line " << line << ": " << test;
+         "    Assert failed at line " << line << ": " << test;
       }
       else
       {
-        std::cerr <<
-         " Assert failed for test '" << file_name << "::" << _test_name <<
-         "' at line " << line << ": " << test;
-
+        std::cerr << "  Assert failed at line " << line << ": " << test;
         this->has_failed_main = true;
       }
 
