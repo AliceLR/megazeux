@@ -25,6 +25,7 @@
 __M_BEGIN_DECLS
 
 #include <inttypes.h>
+#include <stdio.h>
 
 #include "../platform_endian.h"
 
@@ -80,7 +81,7 @@ static inline boolean bs_fill(struct bitstream *b)
       b->buf |= ((BS_BUFTYPE)*((uint16_t *)b->input)) << b->buf_left;
       b->buf_left += 16;
       b->input += 2;
-      b->input_left += 2;
+      b->input_left -= 2;
     }
     else
 #endif
