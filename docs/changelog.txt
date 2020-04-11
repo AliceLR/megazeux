@@ -34,6 +34,9 @@ USERS
   decreased the size of the output HTML files somewhat.
 + Fixed libxmp playback for S3Ms containing ADPCM4 samples. This
   fixes mm2flash.s3m in ZeuxDrop.
++ Fixed libxmp playback for GDMs where 100/200/A00 should
+  continue the fine portamento and fine volume slide commands.
+  This fixes LB2_7.GDM from Kikan.
 + Windows builds now attempt to load and call SetProcessDPIAware
   on startup. This should fix undesirable DPI-related scaling
   and fullscreen bugs.
