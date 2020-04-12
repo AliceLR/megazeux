@@ -103,6 +103,30 @@ static ssize_t path_get_filename_offset(const char *path)
 }
 
 /**
+ * Determine if the given path contains a directory.
+ *
+ * @param  path   Path to test.
+ * @result        True if the path contains a directory, otherwise false.
+ */
+boolean path_has_directory(const char *path)
+{
+  struct stat stat_info;
+  size_t len;
+  size_t i;
+
+  if(!path || !path[0])
+    return false;
+
+  // Check for slashes first to avoid a stat call...
+  len = strlen(path);
+  for(i = 0; i < len; i++)
+    if(isslash(path[i]))
+      return true;
+
+  return vstat(path, &stat_info) >= 0 && S_ISDIR(stat_info.st_mode);
+}
+
+/**
  * Truncate a path to its directory portion, if any.
  *
  * @param  path         Path to truncate.
@@ -400,6 +424,33 @@ ssize_t path_join(char *dest, size_t dest_len, const char *base, const char *rel
 
     rel_len = path_clean_slashes_copy(dest + base_len, dest_len - base_len, rel);
     return base_len + rel_len;
+  }
+  return -1;
+}
+
+/**
+ * Remove a directory prefix from a path if it exists. The prefix does not
+ * need trailing slashes, but it must represent a complete directory name.
+ *
+ * @param  path         Path to remove a prefix from.
+ * @param  buffer_len   Size of the path buffer.
+ * @param  prefix       Prefixed directory to remove from path if found.
+ * @param  prefix_len   Length of prefix to test or 0 to test the entire prefix.
+ * @return              New length of path, or -1 if the prefix was not found.
+ */
+ssize_t path_remove_prefix(char *path, size_t buffer_len,
+ const char *prefix, size_t prefix_len)
+{
+  prefix_len = prefix_len ? prefix_len : strlen(prefix);
+
+  if(prefix_len && prefix_len < buffer_len && !strncmp(prefix, path, prefix_len) &&
+   (isslash(prefix[prefix_len - 1]) || isslash(path[prefix_len])))
+  {
+    // The prefix likely does not have trailing slashes, so skip them.
+    while(isslash(path[prefix_len]))
+      prefix_len++;
+
+    return path_clean_slashes_copy(path, buffer_len, path + prefix_len);
   }
   return -1;
 }

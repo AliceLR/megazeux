@@ -51,6 +51,7 @@ static inline boolean isslash(const char chr)
 CORE_LIBSPEC boolean path_force_ext(char *path, size_t buffer_len, const char *ext);
 CORE_LIBSPEC ssize_t path_get_ext_offset(const char *path);
 
+CORE_LIBSPEC boolean path_has_directory(const char *path);
 CORE_LIBSPEC ssize_t path_to_directory(char *path, size_t buffer_len);
 CORE_LIBSPEC ssize_t path_to_filename(char *path, size_t buffer_len);
 CORE_LIBSPEC ssize_t path_get_directory(char *dest, size_t dest_len,
@@ -66,6 +67,8 @@ CORE_LIBSPEC size_t path_clean_slashes_copy(char *dest, size_t dest_len,
 CORE_LIBSPEC ssize_t path_append(char *path, size_t buffer_len, const char *rel);
 CORE_LIBSPEC ssize_t path_join(char *dest, size_t dest_len, const char *base,
  const char *rel);
+CORE_LIBSPEC ssize_t path_remove_prefix(char *path, size_t buffer_len,
+ const char *prefix, size_t prefix_len);
 
 CORE_LIBSPEC ssize_t path_navigate(char *path, size_t path_len,
  const char *target);

@@ -3828,7 +3828,7 @@ skip_dir:
        strstr(current_dir_name, "..") ||
 
       // or if there's an unallowed subdirectory
-       (!dirs_okay && strstr(current_dir_name + base_dir_len, DIR_SEPARATOR)))
+       (!dirs_okay && path_has_directory(current_dir_name + base_dir_len)))
       {
         memcpy(current_dir_name, base_dir_name, base_dir_len + 1);
         return_value = 1;
@@ -3836,15 +3836,14 @@ skip_dir:
       }
       else
 
-      if(!strcmp(base_dir_name, return_dir_name) &&
-       !strncmp(base_dir_name, ret, base_dir_len))
+      // If the base dir and return dir are the same and the selected path is
+      // prefixed with the base dir, make it a relative path. This is necessary
+      // for files selected for use in a game from the editor.
+      // TODO should maybe do this regardless of the return path. The only
+      // thing that would be affected is probably GLSL shader selection.
+      if(!strcmp(base_dir_name, return_dir_name))
       {
-        // The base dir might not have a trailing slash, so skip any of those
-        // found in the selected file before copying the result.
-        while(isslash(ret[base_dir_len]))
-          base_dir_len++;
-
-        memmove(ret, ret + base_dir_len, strlen(ret + base_dir_len) + 1);
+        path_remove_prefix(ret, MAX_PATH, base_dir_name, base_dir_len);
       }
     }
 
