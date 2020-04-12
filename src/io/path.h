@@ -26,6 +26,8 @@
 
 __M_BEGIN_DECLS
 
+#include <stddef.h>
+
 #ifndef DIR_SEPARATOR
 #ifdef __WIN32__
 #define DIR_SEPARATOR "\\"
