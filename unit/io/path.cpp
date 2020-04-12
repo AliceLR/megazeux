@@ -784,7 +784,7 @@ UNITTEST(path_append_and_path_join)
   {
     for(i = 0; i < arraysize(data); i++)
     {
-      snprintf(buffer, MAX_PATH, data[i].path);
+      snprintf(buffer, MAX_PATH, "%s", data[i].path);
       buffer[MAX_PATH - 1] = '\0';
 
       result = path_append(buffer, MAX_PATH, data[i].target);
@@ -810,7 +810,7 @@ UNITTEST(path_append_and_path_join)
     for(i = 0; i < arraysize(small_data); i++)
     {
       static const char *def = "DO NOT MODIFY";
-      snprintf(buffer, MAX_PATH, def);
+      snprintf(buffer, MAX_PATH, "%s", def);
 
       result = path_join(buffer, 32, small_data[i].path, small_data[i].target);
       ASSERTEQX(result, small_data[i].return_value, small_data[i].path);
@@ -921,7 +921,7 @@ UNITTEST(path_remove_prefix)
   {
     for(i = 0; i < arraysize(data); i++)
     {
-      snprintf(buffer, MAX_PATH, data[i].path);
+      snprintf(buffer, MAX_PATH, "%s", data[i].path);
       buffer[MAX_PATH - 1] = '\0';
 
       result = path_remove_prefix(buffer, MAX_PATH, data[i].target, 0);
@@ -937,7 +937,7 @@ UNITTEST(path_remove_prefix)
   {
     for(i = 0; i < arraysize(data); i++)
     {
-      snprintf(buffer, MAX_PATH, data[i].path);
+      snprintf(buffer, MAX_PATH, "%s", data[i].path);
       buffer[MAX_PATH - 1] = '\0';
 
       result = path_remove_prefix(buffer, MAX_PATH, data[i].target,
