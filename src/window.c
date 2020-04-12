@@ -57,6 +57,7 @@
 #include "world.h"
 #include "util.h"
 #include "io/dir.h"
+#include "io/path.h"
 
 #include "audio/sfx.h"
 
@@ -3266,6 +3267,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
  const char *title, int dirs_okay, int allow_new, struct element **dialog_ext,
  int num_ext, int ext_height)
 {
+  // FIXME no buffer size parameter for ret. this function assumes MAX_PATH.
   // dirs_okay -- 0:none -- 1:all -- 2:subdirsonly
   struct mzx_dir current_dir;
   char *file_name;
@@ -3320,16 +3322,20 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     last_element = FILESEL_FILENAME;
 
   getcwd(return_dir_name, MAX_PATH);
-  strcpy(current_dir_name, return_dir_name);
+  snprintf(current_dir_name, MAX_PATH, "%s", return_dir_name);
+  current_dir_name[MAX_PATH - 1] = '\0';
 
   // Split the input path (it may be a directory)
-  split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
+  path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
 
-  // We may be searching in a base directory that isn't the cwd.
+  // If there was a directory component to the input, the base directory is
+  // not the same as the return directory.
+  // TODO: this is a bad way to do this. The base dir should be a param instead.
   if(ret_path[0])
-    change_dir_name(current_dir_name, ret_path);
+    path_navigate(current_dir_name, MAX_PATH, ret_path);
 
-  strcpy(base_dir_name, current_dir_name);
+  snprintf(base_dir_name, MAX_PATH, "%s", current_dir_name);
+  base_dir_name[MAX_PATH - 1] = '\0';
 
   while(return_value == 1)
   {
@@ -3405,7 +3411,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       if(dir_type == DIR_TYPE_FILE)
       {
         // Find the extension.
-        ext_pos = get_ext_pos(file_name);
+        ext_pos = path_get_ext_offset(file_name);
 
         for(i = 0; wildcards[i] != NULL; i++)
         {
@@ -3514,7 +3520,7 @@ skip_dir:
     }
 
     // Make ret relative for the display.
-    split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
+    path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
     strcpy(ret, ret_file);
     ret[55] = '\0'; // Just in case
 
@@ -3562,12 +3568,12 @@ skip_dir:
         if(ret[0] && (ret[ret_len - 1] == ':') && (ret_len + 1) < MAX_PATH)
           strcpy(ret + ret_len, DIR_SEPARATOR);
 
-        split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
+        path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
         if(ret_path[0])
-          change_dir_name(current_dir_name, ret_path);
+          path_navigate(current_dir_name, MAX_PATH, ret_path);
 
         if(ret_file[0])
-          join_path_names(ret, MAX_PATH, current_dir_name, ret_file);
+          path_join(ret, MAX_PATH, current_dir_name, ret_file);
       }
     }
 
@@ -3578,7 +3584,7 @@ skip_dir:
       // Pressed Backspace
       case -2:
       {
-        change_dir_name(current_dir_name, "..");
+        path_navigate(current_dir_name, MAX_PATH, "..");
         break;
       }
 
@@ -3607,19 +3613,19 @@ skip_dir:
            (struct file_list_entry *)file_list[chosen_file];
 
           if(strcmp(ret_file, e->filename))
-            join_path_names(ret, MAX_PATH, current_dir_name, e->filename);
+            path_join(ret, MAX_PATH, current_dir_name, e->filename);
         }
 
         if(default_ext)
-          add_ext(ret, default_ext);
+          path_force_ext(ret, MAX_PATH, default_ext);
 
         stat_result = stat(ret, &file_info);
 
         // It's actually a dir, oops!
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
         {
-          change_dir_name(current_dir_name, ret_file);
-          strcpy(ret, "");
+          path_navigate(current_dir_name, MAX_PATH, ret_file);
+          ret[0] = '\0';
           break;
         }
 
@@ -3656,7 +3662,7 @@ skip_dir:
       case 2:
       {
         if(dir_list && dir_list[chosen_dir])
-          change_dir_name(current_dir_name, dir_list[chosen_dir]);
+          path_navigate(current_dir_name, MAX_PATH, dir_list[chosen_dir]);
 
         break;
       }
@@ -3673,7 +3679,7 @@ skip_dir:
         if(!confirm_input(mzx_world, "Create New Directory",
          "New directory name:", new_name))
         {
-          join_path_names(full_name, MAX_PATH, current_dir_name, new_name);
+          path_join(full_name, MAX_PATH, current_dir_name, new_name);
 
           if(stat(full_name, &file_info) < 0)
           {
@@ -3727,8 +3733,8 @@ skip_dir:
 
         if(!confirm_input(mzx_world, "Rename File", "New file name:", new_name))
         {
-          join_path_names(old_path, MAX_PATH, current_dir_name, e->filename);
-          join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
+          path_join(old_path, MAX_PATH, current_dir_name, e->filename);
+          path_join(new_path, MAX_PATH, current_dir_name, new_name);
 
           if(strcmp(old_path, new_path))
             if(rename(old_path, new_path))
@@ -3757,7 +3763,7 @@ skip_dir:
           if(!confirm(mzx_world, confirm_string))
           {
             char file_name_ch[MAX_PATH];
-            join_path_names(file_name_ch, MAX_PATH, current_dir_name,
+            path_join(file_name_ch, MAX_PATH, current_dir_name,
              dir_list[chosen_dir]);
 
             if(!ask_yes_no(mzx_world,
@@ -3788,14 +3794,14 @@ skip_dir:
           char *new_path = cmalloc(MAX_PATH);
           char *new_name = cmalloc(MAX_PATH);
 
-          strncpy(new_name, dir_list[chosen_dir], MAX_PATH);
+          snprintf(new_name, MAX_PATH, "%s", dir_list[chosen_dir]);
+          new_name[MAX_PATH - 1] = '\0';
 
           if(!confirm_input(mzx_world, "Rename Directory",
            "New directory name:", new_name))
           {
-            join_path_names(old_path, MAX_PATH, current_dir_name,
-             dir_list[chosen_dir]);
-            join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
+            path_join(old_path, MAX_PATH, current_dir_name, dir_list[chosen_dir]);
+            path_join(new_path, MAX_PATH, current_dir_name, new_name);
 
             if(strcmp(old_path, new_path))
               if(rename(old_path, new_path))
@@ -3824,22 +3830,21 @@ skip_dir:
       // or if there's an unallowed subdirectory
        (!dirs_okay && strstr(current_dir_name + base_dir_len, DIR_SEPARATOR)))
       {
-        debug("some1 dropped da ball!!!!!!11\n");
-        strcpy(current_dir_name, base_dir_name);
+        memcpy(current_dir_name, base_dir_name, base_dir_len + 1);
         return_value = 1;
         ret[0] = 0;
       }
       else
 
-      if(!strcmp(base_dir_name, return_dir_name))
+      if(!strcmp(base_dir_name, return_dir_name) &&
+       !strncmp(base_dir_name, ret, base_dir_len))
       {
         // The base dir might not have a trailing slash, so skip any of those
         // found in the selected file before copying the result.
-        while(ret[base_dir_len] == DIR_SEPARATOR_CHAR)
+        while(isslash(ret[base_dir_len]))
           base_dir_len++;
 
-        strcpy(ret_file, ret + base_dir_len);
-        strcpy(ret, ret_file);
+        memmove(ret, ret + base_dir_len, strlen(ret + base_dir_len) + 1);
       }
     }
 

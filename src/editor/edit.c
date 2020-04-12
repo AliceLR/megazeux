@@ -40,6 +40,7 @@
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+#include "../io/path.h"
 
 #include "../audio/audio.h"
 #include "../audio/sfx.h"
@@ -2884,7 +2885,8 @@ static boolean editor_key(context *ctx, int *key)
             {
               audio_play_module(new_mod, false, 255);
               strcpy(editor->current_listening_mod, new_mod);
-              get_path(new_mod, editor->current_listening_dir, MAX_PATH);
+              path_get_directory(editor->current_listening_dir, MAX_PATH,
+               new_mod);
               editor->listening_mod_active = true;
             }
 
@@ -3087,8 +3089,7 @@ static boolean editor_key(context *ctx, int *key)
             strcpy(curr_file, world_name);
             save_world(mzx_world, world_name, false, MZX_VERSION);
 
-            get_path(world_name, new_path, MAX_PATH);
-            if(new_path[0])
+            if(path_get_directory(new_path, MAX_PATH, world_name) > 0)
               chdir(new_path);
 
             editor->modified = false;
@@ -3234,7 +3235,7 @@ static boolean editor_key(context *ctx, int *key)
               if(!file_manager(mzx_world, chr_ext, NULL, export_name,
                "Export character set", 1, 1, elements, ARRAY_SIZE(elements), 2))
               {
-                add_ext(export_name, ".chr");
+                path_force_ext(export_name, MAX_PATH, ".chr");
                 ec_save_set_var(export_name, char_offset, char_size);
                 strcpy(editor->chr_name_buffer, export_name);
               }

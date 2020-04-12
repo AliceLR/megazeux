@@ -6,6 +6,10 @@ USERS
   the start and the end of the current program.
 + Added docs/fileform.html, a document describing all currently
   supported MZX file formats in excessive detail.
++ When startup_file is provided with both a directory and a
+  filename and no startup_path has been set, the directory will
+  now be used as startup_path. If startup_path is set, the
+  directory portion of startup_file will still be ignored.
 + Fixed a bug where input text with no corresponding internal
   key would be ignored by the robot editor.
 + Fixed a bug where some AltGr key combinations would not work
@@ -58,6 +62,7 @@ DEVELOPERS
   changed most dns.c, fsafeopen.c, and checkres.c debug logging
   to use it. Use the --enable-trace config.sh flag to enable
   trace logging for debug builds.
++ Refactored path functions out of util.c.
 
 
 March 8th, 2020 - MZX 2.92c

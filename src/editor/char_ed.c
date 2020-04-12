@@ -29,6 +29,7 @@
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+#include "../io/path.h"
 
 #include "configure.h"
 #include "graphics.h"
@@ -967,7 +968,7 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
       replace_filenum(import_string, import_name,
        current_file);
 
-      add_ext(import_name, ".chr");
+      path_force_ext(import_name, sizeof(import_name), ".chr");
 
       if(import_mode)
       {
@@ -1060,7 +1061,7 @@ static void char_export(struct world *mzx_world, int char_offset, int charset,
       replace_filenum(export_string, export_name,
        current_file);
 
-      add_ext(export_name, ".chr");
+      path_force_ext(export_name, sizeof(export_name), ".chr");
 
       if(export_mode)
       {

@@ -47,6 +47,7 @@
 #include "world.h"
 #include "counter.h"
 #include "run_stubs.h"
+#include "io/path.h"
 
 #include "audio/audio.h"
 #include "audio/sfx.h"
@@ -206,7 +207,7 @@ __libspec int main(int argc, char *argv[])
   // Figure out where all configuration files should be loaded
   // form. For game.cnf, et al this should eventually be wrt
   // the game directory, not the config.txt's path.
-  get_path(mzx_res_get_by_id(CONFIG_TXT), config_dir, MAX_PATH);
+  path_get_directory(config_dir, MAX_PATH, mzx_res_get_by_id(CONFIG_TXT));
 
   // Move into the configuration file's directory so that any
   // "include" statements are done wrt this path. Move back
@@ -233,8 +234,13 @@ __libspec int main(int argc, char *argv[])
   // parameters. Interpret the first unparsed parameter
   // as a file to load (overriding startup_file etc.)
   if(argc > 1)
-    split_path_filename(argv[1], conf->startup_path, 256,
-     conf->startup_file, 256);
+  {
+    path_get_directory_and_filename(
+      conf->startup_path, sizeof(conf->startup_path),
+      conf->startup_file, sizeof(conf->startup_file),
+      argv[1]
+    );
+  }
 
   if(strlen(conf->startup_path))
   {

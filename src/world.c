@@ -50,8 +50,9 @@
 #include "str.h"
 #include "util.h"
 #include "window.h"
-#include "io/memfile.h"
 #include "io/fsafeopen.h"
+#include "io/memfile.h"
+#include "io/path.h"
 #include "io/zip.h"
 
 #include "audio/audio.h"
@@ -2631,10 +2632,8 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   char file_path[MAX_PATH];
   struct stat file_info;
 
-  get_path(file, file_path, MAX_PATH);
-
   // chdir to game directory
-  if(file_path[0])
+  if(path_get_directory(file_path, MAX_PATH, file) > 0)
   {
     getcwd(current_dir, MAX_PATH);
 
@@ -3190,11 +3189,10 @@ boolean reload_world(struct world *mzx_world, const char *file, boolean *faded)
   // Now that the world's loaded, fix the save path.
   {
     char save_name[MAX_PATH];
-    char current_dir[MAX_PATH];
-    getcwd(current_dir, MAX_PATH);
+    path_get_filename(save_name, MAX_PATH, curr_sav);
 
-    split_path_filename(curr_sav, NULL, 0, save_name, MAX_PATH);
-    join_path_names(curr_sav, MAX_PATH, current_dir, save_name);
+    getcwd(curr_sav, MAX_PATH);
+    path_append(curr_sav, MAX_PATH, save_name);
   }
 
   return true;
@@ -3232,7 +3230,6 @@ boolean reload_savegame(struct world *mzx_world, const char *file,
 boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded)
 {
   char name[BOARD_NAME_SIZE];
-  char full_path[MAX_PATH];
   char file_name[MAX_PATH];
   int version;
 
@@ -3255,9 +3252,9 @@ boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded)
   change_board_load_assets(mzx_world);
 
   // Give curr_file a full path
-  getcwd(full_path, MAX_PATH);
-  split_path_filename(file, NULL, 0, file_name, MAX_PATH);
-  join_path_names(curr_file, MAX_PATH, full_path, file_name);
+  path_get_filename(file_name, MAX_PATH, file);
+  getcwd(curr_file, MAX_PATH);
+  path_append(curr_file, MAX_PATH, file_name);
 
   return true;
 }
