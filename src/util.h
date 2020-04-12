@@ -43,16 +43,6 @@ __M_BEGIN_DECLS
 
 #define SGN(x) ((x > 0) - (x < 0))
 
-#ifndef DIR_SEPARATOR
-#ifdef __WIN32__
-#define DIR_SEPARATOR "\\"
-#define DIR_SEPARATOR_CHAR '\\'
-#else //!__WIN32__
-#define DIR_SEPARATOR "/"
-#define DIR_SEPARATOR_CHAR '/'
-#endif
-#endif //DIR_SEPARATOR
-
 enum resource_id
 {
   CONFIG_TXT = 0,

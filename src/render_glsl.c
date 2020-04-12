@@ -31,6 +31,7 @@
 #include "render_layer.h"
 #include "renderers.h"
 #include "util.h"
+#include "io/path.h"
 
 #ifdef CONFIG_SDL
 #include "render_sdl.h"
@@ -350,24 +351,25 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
       // Try to load these from config before loading the default.
 
       char *path = cmalloc(MAX_PATH);
-
-      strcpy(path, mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
+      size_t path_len = path_clean_slashes_copy(path, MAX_PATH,
+       mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
 
       switch(res)
       {
         case GLSL_SHADER_SCALER_VERT:
-          sprintf(path + strlen(path), "%s%s.vert",
-           DIR_SEPARATOR, graphics->gl_scaling_shader);
+          snprintf(path + path_len, MAX_PATH - path_len,
+           DIR_SEPARATOR "%s.vert", graphics->gl_scaling_shader);
           break;
 
         case GLSL_SHADER_SCALER_FRAG:
-          sprintf(path + strlen(path), "%s%s.frag",
-           DIR_SEPARATOR, graphics->gl_scaling_shader);
+          snprintf(path + path_len, MAX_PATH - path_len,
+           DIR_SEPARATOR "%s.frag", graphics->gl_scaling_shader);
           break;
 
         default:
           break;
       }
+      path[MAX_PATH - 1] = '\0';
 
       source_cache[index] = glsl_load_string(path);
 
