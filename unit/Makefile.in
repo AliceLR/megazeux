@@ -22,7 +22,8 @@ endif
 unit_objs := \
   ${unit_obj}/align${unit_ext}         \
   ${unit_obj}/memcasecmp${unit_ext}    \
-  ${unit_obj_io}/bitstream${unit_ext}
+  ${unit_obj_io}/bitstream${unit_ext}  \
+  ${unit_obj_io}/path${unit_ext}
 
 ifneq (${BUILD_EDITOR},)
 
