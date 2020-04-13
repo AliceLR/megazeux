@@ -271,7 +271,7 @@ static int fsafetest(const char *path, char *newpath)
   // FIXME assuming buffer size!
   pathlen = path_clean_slashes_copy(newpath, strlen(path) + 1, path);
 
-#ifdef __WIN32__
+#if (DIR_SEPARATOR_CHAR == '\\')
   // The slash cleaning function made these Windows slashes but fsafetranslate
   // should always return Unix slashes!
   for(i = 0; i < pathlen; i++)
