@@ -2228,10 +2228,26 @@ static boolean editor_key(context *ctx, int *key)
             if(!new_file(mzx_world, mzm_ext, ".mzm", export_name,
              "Export MZM", 1))
             {
+              enum mzm_save_mode save_mode;
+
+              switch(editor->mode)
+              {
+                default:
+                case EDIT_BOARD:
+                  save_mode = MZM_BOARD_TO_BOARD_STORAGE;
+                  break;
+
+                case EDIT_OVERLAY:
+                  save_mode = MZM_OVERLAY_TO_LAYER_STORAGE;
+                  break;
+
+                case EDIT_VLAYER:
+                  save_mode = MZM_VLAYER_TO_LAYER_STORAGE;
+                  break;
+              }
               strcpy(editor->mzm_name_buffer, export_name);
               save_mzm(mzx_world, editor->mzm_name_buffer, block->src_x,
-               block->src_y, block->width, block->height, editor->mode,
-               false);
+               block->src_y, block->width, block->height, save_mode, false);
             }
             block->selected = false;
             editor->cursor_mode = CURSOR_PLACE;
