@@ -27,6 +27,7 @@
 #include "updater.h"
 #include "util.h"
 #include "window.h"
+#include "io/path.h"
 
 #include "editor/window.h"
 
@@ -307,7 +308,7 @@ static boolean check_prune_basedir(const char *file)
   static char path[MAX_PATH];
   ssize_t ret;
 
-  ret = get_path(file, path, MAX_PATH);
+  ret = path_get_directory(path, MAX_PATH, file);
   if(ret < 0)
   {
     error_message(E_UPDATE, 0, "Failed to prune directories (path too long)");
@@ -334,7 +335,7 @@ static boolean check_create_basedir(const char *file)
   char path[MAX_PATH];
   ssize_t ret;
 
-  ret = get_path(file, path, MAX_PATH);
+  ret = path_get_directory(path, MAX_PATH, file);
   if(ret < 0)
   {
     error_message(E_UPDATE, 1, "Failed to create directories (path too long)");
@@ -461,8 +462,10 @@ static boolean find_executable_dir(int argc, char **argv)
     DWORD ret = GetModuleFileNameA(module, filename, MAX_PATH);
 
     if(ret > 0 && ret < MAX_PATH)
-      if(get_path(filename, executable_dir, MAX_PATH) > 0)
+    {
+      if(path_get_directory(executable_dir, MAX_PATH, filename) > 0)
         return true;
+    }
 
     warn("--MAIN-- Failed to get executable from Win32: %s\n", filename);
   }
@@ -470,7 +473,7 @@ static boolean find_executable_dir(int argc, char **argv)
 
   if(argc >= 1 && argv)
   {
-    if(get_path(argv[0], executable_dir, MAX_PATH) > 0)
+    if(path_get_directory(executable_dir, MAX_PATH, argv[0]) > 0)
       return true;
 
     else

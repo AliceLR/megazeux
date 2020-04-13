@@ -33,6 +33,7 @@
 #include "rasm.h"
 #include "util.h"
 #include "io/fsafeopen.h"
+#include "io/path.h"
 
 // Arch-specific config.
 #ifdef CONFIG_NDS
@@ -391,8 +392,26 @@ static void config_save_file(struct config_info *conf, char *name,
 static void config_startup_file(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // Split file from path; discard the path and save the file.
-  split_path_filename(value, NULL, 0, conf->startup_file, 256);
+  // If no startup_path has been set, set both startup_path and startup_file
+  // from this path. Otherwise, set startup_file and discard the directory
+  // portion of the path.
+  if(!conf->startup_path[0])
+  {
+    struct stat stat_info;
+
+    path_get_directory_and_filename(
+      conf->startup_path, sizeof(conf->startup_path),
+      conf->startup_file, sizeof(conf->startup_file),
+      value
+    );
+
+    // Make sure the startup path actually exists.
+    if(conf->startup_path[0] &&
+     (stat(conf->startup_path, &stat_info) < 0 || !S_ISDIR(stat_info.st_mode)))
+      conf->startup_path[0] = '\0';
+  }
+  else
+    path_get_filename(conf->startup_file, sizeof(conf->startup_file), value);
 }
 
 static void config_startup_path(struct config_info *conf, char *name,

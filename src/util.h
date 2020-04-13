@@ -43,16 +43,6 @@ __M_BEGIN_DECLS
 
 #define SGN(x) ((x > 0) - (x < 0))
 
-#ifndef DIR_SEPARATOR
-#ifdef __WIN32__
-#define DIR_SEPARATOR "\\"
-#define DIR_SEPARATOR_CHAR '\\'
-#else //!__WIN32__
-#define DIR_SEPARATOR "/"
-#define DIR_SEPARATOR_CHAR '/'
-#endif
-#endif //DIR_SEPARATOR
-
 enum resource_id
 {
   CONFIG_TXT = 0,
@@ -110,24 +100,7 @@ uint64_t rng_get_seed(void);
 void rng_set_seed(uint64_t seed);
 unsigned int Random(uint64_t range);
 
-CORE_LIBSPEC void add_ext(char *src, const char *ext);
-CORE_LIBSPEC int get_ext_pos(const char *filename);
-CORE_LIBSPEC ssize_t get_path(const char *file_name, char *dest, unsigned int buf_len);
-#ifdef CONFIG_UTILS
-ssize_t __get_path(const char *file_name, char *dest, unsigned int buf_len);
-#endif
-
-CORE_LIBSPEC void split_path_filename(const char *source,
- char *destpath, unsigned int path_buffer_len,
- char *destfile, unsigned int file_buffer_len);
-
 CORE_LIBSPEC int create_path_if_not_exists(const char *filename);
-
-CORE_LIBSPEC int change_dir_name(char *path_name, const char *dest);
-
-CORE_LIBSPEC void join_path_names(char* target, int max_len, const char* path1, const char* path2);
-
-CORE_LIBSPEC void clean_path_slashes(const char *source, char *dest, size_t buf_size);
 
 typedef void (*fn_ptr)(void);
 

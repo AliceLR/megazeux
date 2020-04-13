@@ -44,7 +44,9 @@
 #include <strings.h>
 #endif
 
+#define CORE_LIBSPEC
 #include "../compat.h"
+#include "utils_alloc.h"
 
 #ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
@@ -75,16 +77,6 @@ enum status
   WRITE_ERROR,
   SEEK_ERROR,
 };
-
-// MegaZeux's obtuse architecture requires this for the time being.
-// This function is used in out_of_memory_check (util.c), and check alloc
-// is required by zip.c (as it should be).
-
-int error(const char *message, unsigned int a, unsigned int b, unsigned int c)
-{
-  fprintf(stderr, "%s\n", message);
-  exit(-1);
-}
 
 #define error(...) \
   { \

@@ -103,6 +103,8 @@
 #include "../util.h"
 #include "../world.h"
 
+#include "utils_alloc.h"
+
 #ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
 #define PROMISES "stdio rpath"
@@ -179,17 +181,6 @@ enum status
 #define warnhere(...) \
  do{ fprintf(stderr, "At " __FILE__ ":%d: ", __LINE__); \
   fprintf(stderr, "" __VA_ARGS__); fflush(stderr); }while(0)
-
-// MegaZeux's obtuse architecture requires this for the time being.
-// This function is used in out_of_memory_check (util.c), and check alloc
-// is required by zip.c (as it should be). util.c is also required by the
-// directory reading functions in fsafeopen.c on non-Win32 platforms.
-
-int error(const char *message, unsigned int a, unsigned int b, unsigned int c)
-{
-  fprintf(stderr, "%s\n", message);
-  exit(-1);
-}
 
 static const char *decode_status(enum status status)
 {

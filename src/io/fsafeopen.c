@@ -25,6 +25,7 @@
 
 #include "fsafeopen.h"
 #include "dir.h"
+#include "path.h"
 
 #include "../util.h"
 
@@ -267,15 +268,18 @@ static int fsafetest(const char *path, char *newpath)
   if((path == NULL) || (path[0] == 0))
     return -FSAFE_INVALID_ARGUMENT;
 
-  pathlen = strlen (path);
-  clean_path_slashes(path, newpath, pathlen + 1);
+  // FIXME assuming buffer size!
+  pathlen = path_clean_slashes_copy(newpath, strlen(path) + 1, path);
 
-  // convert the slashes
+#if (DIR_SEPARATOR_CHAR == '\\')
+  // The slash cleaning function made these Windows slashes but fsafetranslate
+  // should always return Unix slashes!
   for(i = 0; i < pathlen; i++)
   {
     if(newpath[i] == '\\')
       newpath[i] = '/';
   }
+#endif
 
   // check root specifiers
   if(newpath[0] == '/')

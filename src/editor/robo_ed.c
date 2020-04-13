@@ -43,6 +43,7 @@
 #include "../window.h"
 #include "../world.h"
 #include "../io/fsafeopen.h"
+#include "../io/path.h"
 
 #include "char_ed.h"
 #include "clipboard.h"
@@ -1530,7 +1531,7 @@ static void export_block(struct robot_editor_context *rstate,
 #ifndef CONFIG_DEBYTECODE
     if(export_type)
     {
-      add_ext(export_name, ".bc");
+      path_force_ext(export_name, MAX_PATH, ".bc");
       export_file = fopen_unsafe(export_name, "wb");
 
       fputc(0xFF, export_file);
@@ -1547,7 +1548,7 @@ static void export_block(struct robot_editor_context *rstate,
     else
 #endif
     {
-      add_ext(export_name, ".txt");
+      path_force_ext(export_name, MAX_PATH, ".txt");
       export_file = fopen_unsafe(export_name, "w");
 
       while(current_rline != end_rline)

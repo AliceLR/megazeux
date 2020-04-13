@@ -30,13 +30,13 @@
 #include <unistd.h>
 #endif
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "const.h" // for MAX_PATH
 #include "error.h"
-#include "memcasecmp.h" // memtolower
+#include "io/path.h"
 
 struct mzx_resource
 {
@@ -130,18 +130,16 @@ int mzx_res_init(const char *argv0, boolean editor)
 {
   size_t i, bin_path_len = 0;
   struct stat file_info;
-  char *full_path_base;
   char *full_path;
   char *bin_path;
   ssize_t g_ret;
   char *p_dir;
   int ret = 0;
 
-  full_path_base = cmalloc(MAX_PATH);
   bin_path = cmalloc(MAX_PATH);
   p_dir = cmalloc(MAX_PATH);
 
-  g_ret = get_path(argv0, bin_path, MAX_PATH);
+  g_ret = path_get_directory(bin_path, MAX_PATH, argv0);
   if(g_ret > 0)
   {
     // move and convert to absolute path style
@@ -169,6 +167,7 @@ int mzx_res_init(const char *argv0, boolean editor)
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
     size_t base_name_len = strlen(mzx_res[i].base_name);
+    size_t full_path_len;
     size_t p_dir_len;
 
     if(i == CONFIG_TXT)
@@ -187,12 +186,14 @@ int mzx_res_init(const char *argv0, boolean editor)
     p_dir[p_dir_len++] = '/';
     p_dir[p_dir_len] = 0;
 
-    memcpy(full_path_base, p_dir, p_dir_len);
-    memcpy(full_path_base + p_dir_len, mzx_res[i].base_name, base_name_len);
-    full_path_base[p_dir_len + base_name_len] = 0;
+    full_path_len = p_dir_len + base_name_len;
+    full_path = cmalloc(full_path_len + 1);
 
-    full_path = cmalloc(MAX_PATH);
-    clean_path_slashes(full_path_base, full_path, MAX_PATH);
+    memcpy(full_path, p_dir, p_dir_len);
+    memcpy(full_path + p_dir_len, mzx_res[i].base_name, base_name_len);
+    full_path[full_path_len] = 0;
+
+    path_clean_slashes(full_path, full_path_len + 1);
 
     // Attempt to load it from this new path
     if(!stat(full_path, &file_info))
@@ -241,7 +242,6 @@ int mzx_res_init(const char *argv0, boolean editor)
 
   free(p_dir);
   free(bin_path);
-  free(full_path_base);
   return ret;
 }
 
@@ -314,28 +314,29 @@ char *mzx_res_get_by_id(enum resource_id id)
  */
 boolean redirect_stdio(const char *base_path, boolean require_conf)
 {
-  char clean_path[MAX_PATH];
   char dest_path[MAX_PATH];
+  size_t dest_len;
   FILE *fp_wr;
   uint64_t t;
 
   if(!base_path)
     return false;
 
-  clean_path_slashes(base_path, clean_path, MAX_PATH);
+  dest_len = path_clean_slashes_copy(dest_path, MAX_PATH - 10, base_path);
 
   if(require_conf)
   {
     // If the config file is required, attempt to stat it.
     struct stat stat_info;
 
-    join_path_names(dest_path, MAX_PATH, clean_path, "config.txt");
+    path_append(dest_path, MAX_PATH, "config.txt");
     if(stat(dest_path, &stat_info))
       return false;
+    dest_path[dest_len] = '\0';
   }
 
   // Test directory for write access.
-  join_path_names(dest_path, MAX_PATH, clean_path, "stdout.txt");
+  path_append(dest_path, MAX_PATH, "stdout.txt");
   fp_wr = fopen_unsafe(dest_path, "w");
   if(fp_wr)
   {
@@ -350,7 +351,8 @@ boolean redirect_stdio(const char *base_path, boolean require_conf)
       fprintf(stdout, "Failed to redirect stdout\n");
 
     // Redirect stderr to stderr.txt.
-    join_path_names(dest_path, MAX_PATH, clean_path, "stderr.txt");
+    dest_path[dest_len] = '\0';
+    path_append(dest_path, MAX_PATH, "stderr.txt");
     fprintf(stderr, "Redirecting logs to '%s'...\n", dest_path);
     if(freopen(dest_path, "w", stderr))
       fprintf(stderr, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
@@ -449,150 +451,12 @@ unsigned int Random(uint64_t range)
   return ((x * 0x2545F4914F6CDD1D) >> 32) * range / 0xFFFFFFFF;
 }
 
-// FIXME: This function should probably die. It's unsafe.
-void add_ext(char *src, const char *ext)
-{
-  size_t src_len = strlen(src);
-  size_t ext_len = strlen(ext);
-
-  if((src_len < ext_len) || (src[src_len - ext_len] != '.') ||
-   strcasecmp(src + src_len - ext_len, ext))
-  {
-    if(src_len + ext_len >= MAX_PATH)
-      src_len = MAX_PATH - ext_len - 1;
-
-    snprintf(src + src_len, MAX_PATH - src_len, "%s", ext);
-    src[MAX_PATH - 1] = '\0';
-  }
-}
-
-int get_ext_pos(const char *filename)
-{
-  int filename_length = strlen(filename);
-  int ext_pos;
-
-  for(ext_pos = filename_length - 1; ext_pos >= 0; ext_pos--)
-    if(filename[ext_pos] == '.')
-      break;
-
-  return ext_pos;
-}
-
-__utils_maybe_static ssize_t __get_path(const char *file_name, char *dest,
- unsigned int buf_len)
-{
-  ssize_t c = (ssize_t)strlen(file_name) - 1;
-
-  // no path, or it's too long to store
-  if(c == -1 || c > (int)buf_len)
-  {
-    if(buf_len > 0)
-      dest[0] = 0;
-    return -1;
-  }
-
-  while((file_name[c] != '/') && (file_name[c] != '\\') && c)
-    c--;
-
-  if(c > 0)
-    memcpy(dest, file_name, c);
-  dest[c] = 0;
-
-  return c;
-}
-
-ssize_t get_path(const char *file_name, char *dest, unsigned int buf_len)
-{
-  return __get_path(file_name, dest, buf_len);
-}
-
-static int isslash(char n)
-{
-  return n=='\\' || n=='/';
-}
-
-void clean_path_slashes(const char *src, char *dest, size_t buf_size)
-{
-  unsigned int i = 0;
-  unsigned int p = 0;
-  size_t src_len = strlen(src);
-
-  while((i < src_len) && (p < buf_size-1))
-  {
-    if(isslash(src[i]))
-    {
-      while(isslash(src[i]))
-        i++;
-
-      dest[p] = DIR_SEPARATOR_CHAR;
-      p++;
-    }
-    else
-    {
-      dest[p] = src[i];
-      i++;
-      p++;
-    }
-  }
-  dest[p] = '\0';
-
-  if((p >= 2) && (dest[p-1] == DIR_SEPARATOR_CHAR) && (dest[p-2] != ':'))
-    dest[p-1] = '\0';
-}
-
-void split_path_filename(const char *source,
- char *destpath, unsigned int dest_buffer_len,
- char *destfile, unsigned int file_buffer_len)
-{
-  char temppath[MAX_PATH];
-  struct stat path_info;
-  int stat_res = stat(source, &path_info);
-
-  // If the entirety of source is a directory
-  if((stat_res >= 0) && S_ISDIR(path_info.st_mode))
-  {
-    if(dest_buffer_len)
-      clean_path_slashes(source, destpath, dest_buffer_len);
-
-    if(file_buffer_len)
-      destfile[0] = '\0';
-  }
-  else
-  // If source has a directory and a file
-  if((source[0] != '\0') && get_path(source, temppath, MAX_PATH))
-  {
-    // get_path leaves off trailing /, add 1 to offset.
-    if(dest_buffer_len)
-      clean_path_slashes(temppath, destpath, dest_buffer_len);
-
-    if(file_buffer_len)
-      strncpy(destfile, &(source[strlen(temppath) + 1]), file_buffer_len);
-  }
-  // Source is just a file or blank.
-  else
-  {
-    if(dest_buffer_len)
-      destpath[0] = '\0';
-
-    if(file_buffer_len)
-      strncpy(destfile, source, file_buffer_len);
-  }
-}
-
-void join_path_names(char* target, int max_len, const char* path1, const char* path2)
-{
-  if(path1[strlen(path1)-1] == DIR_SEPARATOR_CHAR)
-    snprintf(target, max_len, "%s%s", path1, path2);
-  else
-    snprintf(target, max_len, "%s%s%s", path1, DIR_SEPARATOR, path2);
-}
-
 int create_path_if_not_exists(const char *filename)
 {
   struct stat stat_info;
   char parent_directory[MAX_PATH];
 
-  if(!get_path(filename, parent_directory, MAX_PATH))
+  if(path_get_directory(parent_directory, MAX_PATH, filename) <= 0)
     return 1;
 
   if(!stat(parent_directory, &stat_info))
@@ -604,131 +468,6 @@ int create_path_if_not_exists(const char *filename)
     return 3;
 
   return 0;
-}
-
-// Navigate a path name.
-int change_dir_name(char *path_name, const char *dest)
-{
-  struct stat stat_info;
-  char path_temp[MAX_PATH];
-  char path[MAX_PATH];
-  const char *current;
-  const char *next;
-  const char *end;
-  char current_char;
-  size_t len;
-
-  if(!dest || !dest[0])
-    return -1;
-
-  if(!path_name)
-    return -1;
-
-  current = dest;
-  end = dest + strlen(dest);
-
-  next = strchr(dest, ':');
-  if(next)
-  {
-    /**
-     * Destination starts with a Windows-style root directory.
-     * Aside from Windows, these are often used by console SDKs (albeit with /
-     * instead of \) to distinguish SD cards and the like.
-     */
-    if(next[1] != DIR_SEPARATOR_CHAR && next[1] != 0)
-      return -1;
-
-    snprintf(path, MAX_PATH, "%.*s" DIR_SEPARATOR, (int)(next - dest + 1),
-     dest);
-    path[MAX_PATH - 1] = '\0';
-
-    if(stat(path, &stat_info) < 0)
-      return -1;
-
-    current = next + 1;
-    if(current[0] == DIR_SEPARATOR_CHAR)
-      current++;
-  }
-  else
-
-  if(dest[0] == DIR_SEPARATOR_CHAR)
-  {
-    /**
-     * Destination starts with a Unix-style root directory.
-     * Aside from Unix-likes, these are also supported by console platforms.
-     * Even Windows (back through XP at least) doesn't seem to mind them.
-     */
-    snprintf(path, MAX_PATH, DIR_SEPARATOR);
-    current = dest + 1;
-  }
-
-  else
-  {
-    /**
-     * Destination is relative--start from the current path. Make sure there's
-     * a trailing separator.
-     */
-    if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
-      snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
-
-    else
-      snprintf(path, MAX_PATH, "%s", path_name);
-  }
-
-  path[MAX_PATH - 1] = '\0';
-  current_char = current[0];
-  len = strlen(path);
-
-  // Apply directory fragments to the path.
-  while(current_char != 0)
-  {
-    // Increment next to skip the separator so it will be copied over.
-    next = strchr(current, DIR_SEPARATOR_CHAR);
-    if(!next) next = end;
-    else      next++;
-
-    // . does nothing, .. goes back one level
-    if(current_char == '.')
-    {
-      if(current[1] == '.')
-      {
-        // Skip the rightmost separator (current level) and look for the
-        // previous separator. If found, truncate the path to it.
-        char *pos = path + len - 1;
-        do
-        {
-          pos--;
-        }
-        while(pos >= path && *pos != DIR_SEPARATOR_CHAR);
-
-        if(pos >= path)
-        {
-          pos[1] = 0;
-          len = strlen(path);
-        }
-      }
-    }
-    else
-    {
-      snprintf(path + len, MAX_PATH - len, "%.*s", (int)(next - current),
-       current);
-      path[MAX_PATH - 1] = '\0';
-      len = strlen(path);
-    }
-
-    current = next;
-    current_char = current[0];
-  }
-
-  // This needs to be done before the stat for some platforms (e.g. 3DS)
-  clean_path_slashes(path, path_temp, MAX_PATH);
-  if(stat(path_temp, &stat_info) >= 0)
-  {
-    snprintf(path_name, MAX_PATH, "%s", path_temp);
-    return 0;
-  }
-
-  return -1;
 }
 
 
