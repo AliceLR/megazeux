@@ -3325,13 +3325,10 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   snprintf(current_dir_name, MAX_PATH, "%s", return_dir_name);
   current_dir_name[MAX_PATH - 1] = '\0';
 
-  // Split the input path (it may be a directory)
-  path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
-
-  // If there was a directory component to the input, the base directory is
-  // not the same as the return directory.
+  // Check the input path for a directory. If there is a directory component
+  // to the input, that should be used as the base directory.
   // TODO: this is a bad way to do this. The base dir should be a param instead.
-  if(ret_path[0])
+  if(path_get_directory(ret_path, MAX_PATH, ret) > 0)
     path_navigate(current_dir_name, MAX_PATH, ret_path);
 
   snprintf(base_dir_name, MAX_PATH, "%s", current_dir_name);
@@ -3520,8 +3517,7 @@ skip_dir:
     }
 
     // Make ret relative for the display.
-    path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
-    strcpy(ret, ret_file);
+    path_to_filename(ret, MAX_PATH);
     ret[55] = '\0'; // Just in case
 
     elements[FILESEL_FILE_LIST] =
