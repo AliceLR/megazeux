@@ -56,6 +56,42 @@ Uint32 get_ticks(void)
   return SDL_GetTicks();
 }
 
+#ifdef __WIN32__
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+/**
+ * Set DPI awareness for Windows to avoid bad window scaling and various
+ * fullscreen-related bugs. This function was added in Windows Vista so it
+ * needs to be dynamically loaded.
+ */
+static void set_dpi_aware(void)
+{
+  BOOL (*_SetProcessDPIAware)(void) = NULL;
+  void *handle;
+
+  handle = SDL_LoadObject("User32.dll");
+  if(handle)
+  {
+    void **dest = (void **)&_SetProcessDPIAware;
+    *dest = SDL_LoadFunction(handle, "SetProcessDPIAware");
+
+    if(_SetProcessDPIAware && !_SetProcessDPIAware())
+    {
+      warn("failed to SetProcessDPIAware!\n");
+    }
+    else
+
+    if(!_SetProcessDPIAware)
+      debug("couldn't load SetProcessDPIAware.\n");
+
+    SDL_UnloadObject(handle);
+  }
+  else
+    debug("couldn't load User32.dll: %s\n", SDL_GetError());
+}
+#endif
+
 boolean platform_init(void)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
@@ -79,6 +115,10 @@ boolean platform_init(void)
 
 #ifdef CONFIG_AUDIO
   flags |= SDL_INIT_AUDIO;
+#endif
+
+#ifdef __WIN32__
+  set_dpi_aware();
 #endif
 
   if(SDL_Init(flags) < 0)

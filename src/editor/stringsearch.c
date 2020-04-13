@@ -28,6 +28,7 @@
  */
 
 #include <assert.h>
+#include <stdlib.h>
 
 #include "../memcasecmp.h"
 #include "../util.h"

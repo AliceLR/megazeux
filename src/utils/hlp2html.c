@@ -30,6 +30,8 @@
 #include "../util.h"
 #include "../io/memfile.h"
 
+#include "utils_alloc.h"
+
 #ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
 #define PROMISES "stdio rpath wpath cpath"
@@ -54,12 +56,6 @@ static const char * const style_extras_file = RESOURCES "style_color.css";
 #define MAX_LINE 256
 #define MAX_FILE_NAME 16
 #define MAX_ANCHOR_NAME 32
-
-int error(const char *message, unsigned int a, unsigned int b, unsigned int c)
-{
-  fprintf(stderr, "%s\n", message);
-  exit(-1);
-}
 
 struct html_buffer
 {
