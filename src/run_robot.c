@@ -651,8 +651,23 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
       char *translated_name = cmalloc(MAX_PATH);
       int err;
 
-      if(dest_param && !src_type)
-        src_type = 3;
+      switch(src_type)
+      {
+        case 0:
+          if(dest_param)
+            src_type = MZM_BOARD_TO_LAYER_STORAGE;
+          else
+            src_type = MZM_BOARD_TO_BOARD_STORAGE;
+          break;
+
+        case 1:
+          src_type = MZM_OVERLAY_TO_LAYER_STORAGE;
+          break;
+
+        case 2:
+          src_type = MZM_VLAYER_TO_LAYER_STORAGE;
+          break;
+      }
 
       // Save MZM to string (2.90+)
       if(mzx_world->version >= V290 && is_string(dest_name_buffer))

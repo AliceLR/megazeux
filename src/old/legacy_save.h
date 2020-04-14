@@ -27,11 +27,12 @@ __M_BEGIN_DECLS
 
 #include "const.h"
 #include "world_struct.h"
+#include "io/memfile.h"
 
 size_t legacy_save_robot_calculate_size(struct world *mzx_world,
  struct robot *cur_robot, int savegame, int version);
 
-void legacy_save_robot_to_memory(struct robot *cur_robot, void *buffer,
+void legacy_save_robot_to_memory(struct robot *cur_robot, struct memfile *mf,
  int savegame, int version);
 
 void legacy_save_robot(struct world *mzx_world, struct robot *cur_robot,
