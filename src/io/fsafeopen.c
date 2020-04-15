@@ -334,7 +334,7 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
       if(string_is_wildcard_sfn)
       {
         const char *newpath_cmp = get_sfn(newpath_sfn, SFN_BUFFER_LEN, newpath);
-        if(strcasecmp(string_cmp, newpath_cmp))
+        if(!strcasecmp(string_cmp, newpath_cmp))
         {
           size_t newpath_len = strlen(newpath);
 
