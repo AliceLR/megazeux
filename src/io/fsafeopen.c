@@ -325,7 +325,7 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
       // okay, we got something, but does it match?
       if(strcasecmp(string_cmp, newpath) == 0)
       {
-        memcpy(string, newpath, strlen(newpath));
+        memcpy(string, newpath, strlen(newpath) + 1);
         ret = FSAFE_SUCCESS;
         break;
       }
