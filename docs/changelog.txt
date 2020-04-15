@@ -24,6 +24,8 @@ USERS
   only works for files in ZIP archives and no CRC-32 validation
   is performed.
 + Fixed checkres parsing for LOAD CHAR SET "+&+var&file.chr".
++ Fixed checkres crash that could occur on some platforms when
+  attempting to checkres a directory.
 + Fixed memory leaks in legacy_assemble_line.
 + Fixed potential null termination issues in both world loaders
   that could be triggered with invalid board name, robot name,

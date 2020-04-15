@@ -2809,6 +2809,7 @@ static enum status parse_file(const char *file_name,
  struct base_path **path_list, int path_list_size)
 {
   char file_dir[MAX_PATH];
+  struct stat stat_info;
 
   int path_list_alloc = path_list_size;
 
@@ -2868,7 +2869,7 @@ static enum status parse_file(const char *file_name,
   }
   else
 
-  if(fp)
+  if(fp && !stat(file_name, &stat_info) && S_ISREG(stat_info.st_mode))
   {
     // Is a file but isn't an .mzx or an .mzb? Try to read it as a zip...
     struct base_path *zip_base;
@@ -2885,7 +2886,7 @@ static enum status parse_file(const char *file_name,
     zip_base = add_base_path(file_name, &path_list,
      &path_list_size, &path_list_alloc);
 
-    if(!zip_base)
+    if(!zip_base || !zip_base->zp)
       goto error;
 
     zp = zip_base->zp;
