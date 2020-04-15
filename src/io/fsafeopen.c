@@ -311,7 +311,7 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
     // checked against generated SFNs from files in the directory.
     if(check_sfn && is_sfn(string, strlen(string)) == SFN_TRUNCATED)
     {
-      memcpy(string_sfn, string, strlen(string));
+      memcpy(string_sfn, string, strlen(string) + 1);
       string_is_wildcard_sfn = true;
       string_cmp = string_sfn;
     }
