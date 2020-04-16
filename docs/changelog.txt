@@ -46,8 +46,8 @@ USERS
 + fsafetranslate now attempts to detect matches for truncated
   DOS SFNs on non-Windows platforms. If an unambiguous match for
   a truncated SFN is found, the SFN will be expanded to the
-  match. This fixes numerous games relying on SFNs with
-  unambiguous matches.
+  match. This fixes numerous games relying on truncated SFNs
+  with unambiguous matches.
 + Windows builds now attempt to load and call SetProcessDPIAware
   on startup. This should fix undesirable DPI-related scaling
   and fullscreen bugs.
