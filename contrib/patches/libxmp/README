@@ -90,6 +90,9 @@ Patch summary
     https://github.com/cmatsuoka/libxmp/pull/163
 16: Fixes GDM fine effects continue. Pending merge upstream:
     https://github.com/cmatsuoka/libxmp/pull/165
+17: Allows MODs to have a couple of errors in their patterns. This allows some
+    buggy MOD files to load. Backported from upstream:
+    cmatsuoka/libxmp@fa8ede35b76f23ea0d93f8ab22b2162469d49bc0
 
 20: Disables USE_VERSIONED_SYMBOLS. Required to get our hacked libxmp to link
     on unix platforms. This should probably be merged into patch 01.
