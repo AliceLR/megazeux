@@ -316,12 +316,8 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
       string_cmp = string_sfn;
     }
 
-    while(ret != FSAFE_SUCCESS)
+    while(dir_get_next_entry(&wd, newpath, NULL))
     {
-      // something bad happened, or there's no new entry
-      if(!dir_get_next_entry(&wd, newpath, NULL))
-        break;
-
       // okay, we got something, but does it match?
       if(strcasecmp(string_cmp, newpath) == 0)
       {
@@ -344,6 +340,7 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
           {
             trace("%s:%d: ambiguous match for SFN '%s' to '%s', aborting.\n",
              __FILE__, __LINE__, string_sfn, newpath);
+            memcpy(string, string_sfn, strlen(string_sfn) + 1);
             ret = -FSAFE_BRUTE_FORCE_SFN_AMBIGUOUS;
             break;
           }
