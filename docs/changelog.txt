@@ -48,6 +48,7 @@ USERS
   a truncated SFN is found, the SFN will be expanded to the
   match. This fixes numerous games relying on truncated SFNs
   with unambiguous matches.
++ Reimplemented COPY # # # # for layer-to-layer copies.
 + Windows builds now attempt to load and call SetProcessDPIAware
   on startup. This should fix undesirable DPI-related scaling
   and fullscreen bugs.

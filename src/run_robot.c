@@ -811,6 +811,93 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
   }
 }
 
+static void copy_xy_to_xy_wrapper(struct world *mzx_world, int id, int x, int y,
+ int src_type, int dest_type, int src_x, int src_y, int dest_x, int dest_y)
+{
+  struct board *cur_board = mzx_world->current_board;
+  int board_width = cur_board->board_width;
+  int board_height = cur_board->board_height;
+  int vlayer_width = mzx_world->vlayer_width;
+  int vlayer_height = mzx_world->vlayer_height;
+  int src_offset;
+  int dest_offset;
+
+  switch(src_type | (dest_type << 4))
+  {
+    // Board-to-board. Use the original implementation...
+    case 0x00:
+      prefix_first_last_xy(mzx_world, &src_x, &src_y, &dest_x, &dest_y, x, y);
+      copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
+      break;
+
+    // Overlay-to-overlay.
+    case 0x11:
+      if(!cur_board->overlay_mode)
+        setup_overlay(cur_board, 3);
+
+      prefix_first_last_xy(mzx_world, &src_x, &src_y, &dest_x, &dest_y, x, y);
+      src_offset = src_y * board_width + src_x;
+      dest_offset = dest_y * board_width + dest_x;
+      cur_board->overlay[dest_offset] = cur_board->overlay[src_offset];
+      cur_board->overlay_color[dest_offset] = cur_board->overlay_color[src_offset];
+      break;
+
+    // Vlayer-to-overlay.
+    case 0x12:
+      if(!cur_board->overlay_mode)
+        setup_overlay(cur_board, 3);
+
+      prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+       vlayer_width, vlayer_height);
+      prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
+       board_width, board_height);
+
+      src_offset = src_y * vlayer_width + src_x;
+      dest_offset = dest_y * board_width + dest_x;
+      cur_board->overlay[dest_offset] = mzx_world->vlayer_chars[src_offset];
+      cur_board->overlay_color[dest_offset] = mzx_world->vlayer_colors[src_offset];
+      break;
+
+    // Overlay-to-vlayer.
+    case 0x21:
+      if(!cur_board->overlay_mode)
+        setup_overlay(cur_board, 3);
+
+      prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+       board_width, board_height);
+      prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
+       vlayer_width, vlayer_height);
+
+      src_offset = src_y * board_width + src_x;
+      dest_offset = dest_y * vlayer_width + dest_x;
+      mzx_world->vlayer_chars[dest_offset] = cur_board->overlay[src_offset];
+      mzx_world->vlayer_colors[dest_offset] = cur_board->overlay_color[src_offset];
+      break;
+
+    // Vlayer-to-vlayer.
+    case 0x22:
+      prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+       vlayer_width, vlayer_height);
+      prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
+       vlayer_width, vlayer_height);
+
+      src_offset = src_y * vlayer_width + src_x;
+      dest_offset = dest_y * vlayer_width + dest_x;
+      mzx_world->vlayer_chars[dest_offset] = mzx_world->vlayer_chars[src_offset];
+      mzx_world->vlayer_colors[dest_offset] = mzx_world->vlayer_colors[src_offset];
+      break;
+
+    // All others should just use copy_block.
+    case 0x01:
+    case 0x02:
+    case 0x10:
+    case 0x20:
+      copy_block(mzx_world, id, x, y, src_type, dest_type, src_x, src_y, 1, 1,
+       dest_x, dest_y, NULL, 0, NULL);
+      break;
+  }
+}
+
 // Gets the type for a single copy block param.
 static int copy_block_param(struct world *mzx_world, int id, char *param,
  int *coord)
@@ -3987,28 +4074,16 @@ void run_robot(context *ctx, int id, int x, int y)
         if((type[2] == type[3]) && (type[2] <= 2))
           dest_type = type[2];
 
-        if((src_type < 0) || (dest_type < 0))
-          break;
-
-        // Do the copy.  If it's board to board, use the original impl.
-        if((src_type == 0) && (dest_type == 0))
-        {
-          prefix_first_last_xy(mzx_world, &src_x, &src_y, &dest_x, &dest_y, x, y);
-
-          copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
-        }
-        else
-        {
-          copy_block(mzx_world, id, x, y, src_type, dest_type, src_x, src_y, 1, 1,
-           dest_x, dest_y, NULL, 0, NULL);
-        }
+        // Do the copy. This may invoke copy_block internally.
+        copy_xy_to_xy_wrapper(mzx_world, id, x, y, src_type, dest_type,
+         src_x, src_y, dest_x, dest_y);
 
         // If this robot was deleted, exit. NOTE: all port versions prior
         // to 2.92 had a faulty check here that would only check dest_x
         // and dest_y and not whether or not the robot was actually
         // overwritten. If something actually relied on this, add a
         // version check.
-        if(id)
+        if(id && dest_type == 0)
         {
           int offset = x + (y * board_width);
           int d_id = (enum thing)level_id[offset];
