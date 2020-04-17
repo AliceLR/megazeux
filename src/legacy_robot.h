@@ -27,12 +27,13 @@ __M_BEGIN_DECLS
 
 #include "const.h"
 #include "world_struct.h"
+#include "io/memfile.h"
 
 struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
  int savegame, int file_version, boolean *truncated);
 
 void legacy_load_robot_from_memory(struct world *mzx_world,
- struct robot *cur_robot, const void *buffer, int savegame, int version,
+ struct robot *cur_robot, struct memfile *mf, int savegame, int version,
  int robot_location);
 
 size_t legacy_calculate_partial_robot_size(int savegame, int version);

@@ -46,7 +46,7 @@ png2smzx_ldflags := ${LIBPNG_LDFLAGS} ${ZLIB_LDFLAGS}
 ccv := ${utils_src}/ccv${BINEXT}
 ccv_objs := ${utils_obj}/ccv.o
 
-${utils_obj}/%.o: ${utils_src}/%.c
+${utils_obj}/%.o: ${utils_src}/%.c src/config.h
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${utils_cflags} -I${core_src} \
 	  ${ZLIB_CFLAGS} -c $< -o $@

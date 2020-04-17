@@ -24,6 +24,8 @@ USERS
   only works for files in ZIP archives and no CRC-32 validation
   is performed.
 + Fixed checkres parsing for LOAD CHAR SET "+&+var&file.chr".
++ Fixed checkres crash that could occur on some platforms when
+  attempting to checkres a directory.
 + Fixed memory leaks in legacy_assemble_line.
 + Fixed potential null termination issues in both world loaders
   that could be triggered with invalid board name, robot name,
@@ -41,6 +43,12 @@ USERS
 + Fixed libxmp playback for GDMs where 100/200/A00 should
   continue the fine portamento and fine volume slide commands.
   This fixes LB2_7.GDM from Kikan.
++ fsafetranslate now attempts to detect matches for truncated
+  DOS SFNs on non-Windows platforms. If an unambiguous match for
+  a truncated SFN is found, the SFN will be expanded to the
+  match. This fixes numerous games relying on truncated SFNs
+  with unambiguous matches.
++ Reimplemented COPY # # # # for layer-to-layer copies.
 + Windows builds now attempt to load and call SetProcessDPIAware
   on startup. This should fix undesirable DPI-related scaling
   and fullscreen bugs.
