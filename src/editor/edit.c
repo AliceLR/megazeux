@@ -823,8 +823,7 @@ static void flash_done(struct editor_context *editor)
 }
 
 /**
- * Determine if the protected char flash is required in standard MZX mode.
- * This doesn't matter for SMZX, which always uses protected char flash.
+ * Determine if a protected palette char flash is required.
  */
 static boolean flash_needs_protected(struct editor_context *editor,
  struct board *cur_board, Uint8 chr, Uint8 color, Uint8 flash_chr)
@@ -833,6 +832,10 @@ static boolean flash_needs_protected(struct editor_context *editor,
   Uint8 bg = (color & 0xF0) >> 4;
 
   ssize_t diff;
+
+  // Is this SMZX mode?
+  if(get_screen_mode())
+    return true;
 
   // Are the colors the same?
   if(fg == bg)
@@ -864,17 +867,12 @@ static void flash_draw(struct editor_context *editor, struct board *cur_board,
 
   if(id >= editor->flash_start && id < editor->flash_start + editor->flash_len)
   {
-    // FIXME if SMZX or colors too close or robot char is indistinguishable
-    // from the char it alternates with (protected !)
     Uint8 color = get_id_color(cur_board, offset);
     Uint8 chr = get_id_char(cur_board, offset);
-    int screen_mode = get_screen_mode();
 
-    if(screen_mode ||
-     flash_needs_protected(editor, cur_board, chr, color, flash_chr))
+    if(flash_needs_protected(editor, cur_board, chr, color, flash_chr))
     {
-      Uint32 avg_luma = get_char_average_luma(chr, color, screen_mode,
-       flash_chr + PRO_CH);
+      Uint32 avg_luma = get_char_average_luma(chr, color, -1, flash_chr + PRO_CH);
 
       if(!editor->flash_layer)
       {

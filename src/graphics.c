@@ -602,8 +602,8 @@ Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_ch
   Uint32 count = 0;
   Uint32 sum = 0;
   Uint8 mask;
-  Uint32 i;
-  Uint32 j;
+  Uint32 x;
+  Uint32 y;
 
   dump_char(chr, palette, graphics.screen_mode, char_buffer);
 
@@ -615,13 +615,13 @@ Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_ch
 
   if(mode)
   {
-    for(i = 0; i < CHAR_H; i++)
+    for(y = 0; y < CHAR_H; y++)
     {
-      for(j = 0, mask = 0xC0; j < CHAR_W; j += 2, mask >>= 2)
+      for(x = 0, mask = 0xC0; x < CHAR_W; x += 2, mask >>= 2)
       {
-        if(!use_mask || (mask_values[i] & mask))
+        if(!use_mask || (mask_values[y] & mask))
         {
-          sum += get_color_luma(char_buffer[j + CHAR_W * i]);
+          sum += get_color_luma(char_buffer[y * CHAR_W + x]);
           count++;
         }
       }
@@ -629,19 +629,19 @@ Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_ch
   }
   else
   {
-    for(i = 0; i < CHAR_H; i++)
+    for(y = 0; y < CHAR_H; y++)
     {
-      for(j = 0, mask = 0x80; j < CHAR_W; j++, mask >>= 1)
+      for(x = 0, mask = 0x80; x < CHAR_W; x++, mask >>= 1)
       {
-        if(!use_mask || (mask_values[i] & mask))
+        if(!use_mask || (mask_values[y] & mask))
         {
-          sum += get_color_luma(char_buffer[j + CHAR_W * i]);
+          sum += get_color_luma(char_buffer[y * CHAR_W + x]);
           count++;
         }
       }
     }
   }
-  //debug("%u %u\n", sum, count);
+  debug("%u %u\n", sum, count);
   return (sum + count / 2) / count;
 }
 
