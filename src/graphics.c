@@ -593,6 +593,58 @@ Uint32 get_color_luma(Uint32 color)
   return (Uint32)((r * .299) + (g * .587) + (b * .114) + .5);
 }
 
+__editor_maybe_static
+Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_chr)
+{
+  Uint8 char_buffer[CHAR_W * CHAR_H];
+  Uint8 *mask_values = NULL;
+  boolean use_mask = false;
+  Uint32 count = 0;
+  Uint32 sum = 0;
+  Uint8 mask;
+  Uint32 i;
+  Uint32 j;
+
+  dump_char(chr, palette, graphics.screen_mode, char_buffer);
+
+  if(mask_chr >= 0 && mask_chr < FULL_CHARSET_SIZE)
+  {
+    mask_values = graphics.charset + mask_chr * CHAR_SIZE;
+    use_mask = true;
+  }
+
+  if(mode)
+  {
+    for(i = 0; i < CHAR_H; i++)
+    {
+      for(j = 0, mask = 0xC0; j < CHAR_W; j += 2, mask >>= 2)
+      {
+        if(!use_mask || (mask_values[i] & mask))
+        {
+          sum += get_color_luma(char_buffer[j + CHAR_W * i]);
+          count++;
+        }
+      }
+    }
+  }
+  else
+  {
+    for(i = 0; i < CHAR_H; i++)
+    {
+      for(j = 0, mask = 0x80; j < CHAR_W; j++, mask >>= 1)
+      {
+        if(!use_mask || (mask_values[i] & mask))
+        {
+          sum += get_color_luma(char_buffer[j + CHAR_W * i]);
+          count++;
+        }
+      }
+    }
+  }
+  //debug("%u %u\n", sum, count);
+  return (sum + count / 2) / count;
+}
+
 void load_palette(const char *fname)
 {
   int file_size, i, r, g, b;
@@ -954,23 +1006,19 @@ static Uint16 get_cursor_color(void)
 
   else
   {
-    // Modes 2 and 3- read the entire char and pick protected white or black.
-    Uint8 char_buffer[CHAR_W * CHAR_H];
-    Uint32 sum = 0;
+    // Modes 2 and 3- pick protected white or black based on the average luma.
+    Uint32 avg;
     Uint8 pal;
 
     bg_color &= 0x0F;
     fg_color &= 0x0F;
     pal = (bg_color << 4) | fg_color;
 
-    dump_char(cursor_char, pal, graphics.screen_mode, char_buffer);
-
-    for(i = 0; i < CHAR_W * CHAR_H; i += 2)
-      sum += get_color_luma(char_buffer[i]);
+    avg = get_char_average_luma(cursor_char, pal, graphics.screen_mode, -1);
 
     cursor_color = graphics.protected_pal_position;
 
-    if(sum < 128 * (CHAR_W * CHAR_H / 2))
+    if(avg < 128)
       cursor_color |= 0x0F;
   }
 

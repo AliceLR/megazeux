@@ -179,12 +179,12 @@ struct editor_context
 
   // Flash thing
   boolean flashing;
-  unsigned char *flash_id;
   enum thing flash_start;
   int flash_len;
   int flash_char_a;
   int flash_char_b;
   int flash_timer;
+  Uint32 flash_layer;
 
   // Testing
   int test_reload_board;
@@ -799,34 +799,102 @@ static void flash_thing(struct editor_context *editor,
 }
 
 /**
- * Flash the current flash types on.
- * The easiest way to do this right now is currently to temporarily
- * overwrite the char ID table before drawing the screen.
+ * Initialize flashing for the current cycle and return the current flash char.
  */
-static void flash_on(struct editor_context *editor)
+static int flash_init(struct editor_context *editor)
 {
-  unsigned char *id_backup;
   int chr = editor->flash_char_a;
 
   if(editor->flash_timer >= FLASH_THING_B)
     chr = editor->flash_char_b;
 
-  id_backup = cmalloc(editor->flash_len);
-  memcpy(id_backup, id_chars + editor->flash_start, editor->flash_len);
-  memset(id_chars + editor->flash_start, chr, editor->flash_len);
-  editor->flash_id = id_backup;
+  editor->flash_layer = 0;
   cursor_off();
+  return chr;
 }
 
 /**
- * Restore the char ID table after the screen is drawn.
+ * Increment the flash timer and clear any flash values that shouldn't persist.
  */
-static void flash_off(struct editor_context *editor)
+static void flash_done(struct editor_context *editor)
 {
-  memcpy(id_chars + editor->flash_start, editor->flash_id, editor->flash_len);
-  free(editor->flash_id);
-
   editor->flash_timer = (editor->flash_timer + 1) % FLASH_THING_MAX;
+  editor->flash_layer = 0;
+}
+
+/**
+ * Determine if the protected char flash is required in standard MZX mode.
+ * This doesn't matter for SMZX, which always uses protected char flash.
+ */
+static boolean flash_needs_protected(struct editor_context *editor,
+ struct board *cur_board, Uint8 chr, Uint8 color, Uint8 flash_chr)
+{
+  Uint8 fg = color & 0x0F;
+  Uint8 bg = (color & 0xF0) >> 4;
+
+  ssize_t diff;
+
+  // Are the colors the same?
+  if(fg == bg)
+    return true;
+
+  // Are the colors too close?
+  diff = (ssize_t)get_color_luma(fg) - (ssize_t)get_color_luma(bg);
+  if(diff >= -64 && diff <= 64)
+    return true;
+
+  // If one of the chars to display is the board char, is it too close to the
+  //flash char?
+  if(!editor->flash_char_a || !editor->flash_char_b)
+    if(compare_char(chr, (Uint16)flash_chr + PRO_CH) >= (112*3/4))
+      return true;
+
+  return false;
+}
+
+/**
+ * Check if the current board element should be flashed. If it should be,
+ * flash it. This should be performed after id_put.
+ */
+static void flash_draw(struct editor_context *editor, struct board *cur_board,
+ int x, int y, int array_x, int array_y, int flash_chr)
+{
+  int offset = array_y * cur_board->board_width + array_x;
+  enum thing id = (enum thing)cur_board->level_id[offset];
+
+  if(id >= editor->flash_start && id < editor->flash_start + editor->flash_len)
+  {
+    // FIXME if SMZX or colors too close or robot char is indistinguishable
+    // from the char it alternates with (protected !)
+    Uint8 color = get_id_color(cur_board, offset);
+    Uint8 chr = get_id_char(cur_board, offset);
+    int screen_mode = get_screen_mode();
+
+    if(screen_mode ||
+     flash_needs_protected(editor, cur_board, chr, color, flash_chr))
+    {
+      Uint32 avg_luma = get_char_average_luma(chr, color, screen_mode,
+       flash_chr + PRO_CH);
+
+      if(!editor->flash_layer)
+      {
+        editor->flash_layer = create_layer(0, 0, 80, editor->screen_height,
+         LAYER_DRAWORDER_UI - 500, graphics.protected_pal_position + 5,
+         PRO_CH, true);
+        set_layer_mode(editor->flash_layer, 0);
+      }
+
+      color = (avg_luma < 128) ? 0x5F : 0x50;
+
+      select_layer(editor->flash_layer);
+      draw_char(flash_chr, color, x, y);
+    }
+    else
+    {
+      select_layer(BOARD_LAYER);
+      draw_char_ext(flash_chr, color, x, y, PRO_CH, 0);
+    }
+  }
 }
 
 /**
@@ -840,9 +908,10 @@ static void draw_edit_window(struct editor_context *editor)
   int viewport_height = editor->screen_height;
   int x, y;
   int a_x, a_y;
+  int flash_char = 0;
 
   if(editor->flashing)
-    flash_on(editor);
+    flash_char = flash_init(editor);
 
   blank_layers();
 
@@ -857,12 +926,15 @@ static void draw_edit_window(struct editor_context *editor)
     for(x = 0, a_x = editor->scroll_x; x < viewport_width; x++, a_x++)
     {
       id_put(cur_board, x, y, a_x, a_y, a_x, a_y);
+
+      if(flash_char)
+        flash_draw(editor, cur_board, x, y, a_x, a_y, flash_char);
     }
   }
   select_layer(UI_LAYER);
 
   if(editor->flashing)
-    flash_off(editor);
+    flash_done(editor);
 }
 
 /**
