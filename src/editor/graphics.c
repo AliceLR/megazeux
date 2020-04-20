@@ -228,3 +228,32 @@ void ec_load_char_mzx(Uint32 char_number)
 
   ec_change_char(char_number, default_char);
 }
+
+/**
+ * Returns the number of pixels (from 0 to 112) that are the same between two
+ * chars.
+ */
+Uint8 compare_char(Uint16 chr_a, Uint16 chr_b)
+{
+  Uint8 *a = graphics.charset + (chr_a % FULL_CHARSET_SIZE) * CHAR_SIZE;
+  Uint8 *b = graphics.charset + (chr_b % FULL_CHARSET_SIZE) * CHAR_SIZE;
+  Uint8 same = 0;
+  int i;
+  int mask;
+
+  if(get_screen_mode())
+  {
+    for(i = 0; i < CHAR_SIZE; i++)
+      for(mask = 0xC0; mask > 0; mask >>= 2)
+        same += (a[i] & mask) == (b[i] & mask);
+
+    same *= 2;
+  }
+  else
+  {
+    for(i = 0; i < CHAR_SIZE; i++)
+      for(mask = 0x80; mask > 0; mask >>= 1)
+        same += (a[i] & mask) == (b[i] & mask);
+  }
+  return same;
+}

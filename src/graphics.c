@@ -593,6 +593,69 @@ Uint32 get_color_luma(Uint32 color)
   return (Uint32)((r * .299) + (g * .587) + (b * .114) + .5);
 }
 
+__editor_maybe_static
+Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_chr)
+{
+  Uint8 char_buffer[CHAR_W * CHAR_H];
+  Uint8 *mask_values = NULL;
+  boolean use_mask = false;
+  Uint32 count = 0;
+  Uint32 sum = 0;
+  Uint8 mask;
+  Uint32 x;
+  Uint32 y;
+
+  dump_char(chr, palette, graphics.screen_mode, char_buffer);
+
+  if(mask_chr >= 0 && mask_chr < FULL_CHARSET_SIZE)
+  {
+    mask_values = graphics.charset + mask_chr * CHAR_SIZE;
+    use_mask = true;
+  }
+
+  if(mode < 0)
+    mode = graphics.screen_mode;
+
+  if(mode)
+  {
+    for(y = 0; y < CHAR_H; y++)
+    {
+      for(x = 0, mask = 0xC0; x < CHAR_W; x += 2, mask >>= 2)
+      {
+        if(!use_mask || (mask_values[y] & mask))
+        {
+          Uint32 col = char_buffer[y * CHAR_W + x];
+
+          // Due to quirks in mode 1 and layer rendering, dump_char and
+          // transparent colors and collision treat mode 1 addressing like
+          // mode 2. Conveniently, though, the stronger-weighted of the two
+          // user colors can be derived by just using the lower nibble.
+          if(mode == 1)
+            col &= 0x0F;
+
+          sum += get_color_luma(col);
+          count++;
+        }
+      }
+    }
+  }
+  else
+  {
+    for(y = 0; y < CHAR_H; y++)
+    {
+      for(x = 0, mask = 0x80; x < CHAR_W; x++, mask >>= 1)
+      {
+        if(!use_mask || (mask_values[y] & mask))
+        {
+          sum += get_color_luma(char_buffer[y * CHAR_W + x]);
+          count++;
+        }
+      }
+    }
+  }
+  return (sum + count / 2) / count;
+}
+
 void load_palette(const char *fname)
 {
   int file_size, i, r, g, b;
@@ -954,23 +1017,19 @@ static Uint16 get_cursor_color(void)
 
   else
   {
-    // Modes 2 and 3- read the entire char and pick protected white or black.
-    Uint8 char_buffer[CHAR_W * CHAR_H];
-    Uint32 sum = 0;
+    // Modes 2 and 3- pick protected white or black based on the average luma.
+    Uint32 avg;
     Uint8 pal;
 
     bg_color &= 0x0F;
     fg_color &= 0x0F;
     pal = (bg_color << 4) | fg_color;
 
-    dump_char(cursor_char, pal, graphics.screen_mode, char_buffer);
-
-    for(i = 0; i < CHAR_W * CHAR_H; i += 2)
-      sum += get_color_luma(char_buffer[i]);
+    avg = get_char_average_luma(cursor_char, pal, graphics.screen_mode, -1);
 
     cursor_color = graphics.protected_pal_position;
 
-    if(sum < 128 * (CHAR_W * CHAR_H / 2))
+    if(avg < 128)
       cursor_color |= 0x0F;
   }
 
