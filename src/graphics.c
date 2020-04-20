@@ -613,6 +613,9 @@ Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_ch
     use_mask = true;
   }
 
+  if(mode < 0)
+    mode = graphics.screen_mode;
+
   if(mode)
   {
     for(y = 0; y < CHAR_H; y++)
@@ -621,7 +624,16 @@ Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_ch
       {
         if(!use_mask || (mask_values[y] & mask))
         {
-          sum += get_color_luma(char_buffer[y * CHAR_W + x]);
+          Uint32 col = char_buffer[y * CHAR_W + x];
+
+          // Due to quirks in mode 1 and layer rendering, dump_char and
+          // transparent colors and collision treat mode 1 addressing like
+          // mode 2. Conveniently, though, the stronger-weighted of the two
+          // user colors can be derived by just using the lower nibble.
+          if(mode == 1)
+            col &= 0x0F;
+
+          sum += get_color_luma(col);
           count++;
         }
       }
@@ -641,7 +653,6 @@ Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_ch
       }
     }
   }
-  debug("%u %u\n", sum, count);
   return (sum + count / 2) / count;
 }
 

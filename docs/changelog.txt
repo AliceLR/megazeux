@@ -10,6 +10,10 @@ USERS
   filename and no startup_path has been set, the directory will
   now be used as startup_path. If startup_path is set, the
   directory portion of startup_file will still be ignored.
++ The flash thing editor functions (Show Robots, etc.) now use
+  the protected charset and will display with the protected
+  palette in SMZX mode and in regular mode situations where the
+  normal flashing would be difficult/impossible to see.
 + Fixed a bug where input text with no corresponding internal
   key would be ignored by the robot editor.
 + Fixed a bug where some AltGr key combinations would not work
