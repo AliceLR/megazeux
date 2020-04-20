@@ -2691,8 +2691,8 @@ void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer)
       char row = graphics.charset[char_idx * CHAR_SIZE + y];
       for(x = 0; x < CHAR_W; x += 2)
       {
-        buffer[y * CHAR_W + x] = cols[(row >> (7-x)) & 0x03];
-        buffer[y * CHAR_W + x + 1] = cols[(row >> (7-x)) & 0x03];
+        buffer[y * CHAR_W + x] = cols[(row >> (6-x)) & 0x03];
+        buffer[y * CHAR_W + x + 1] = cols[(row >> (6-x)) & 0x03];
       }
     }
   }
