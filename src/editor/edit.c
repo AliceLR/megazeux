@@ -784,6 +784,14 @@ static void view_board(struct editor_context *editor)
   m_hide();
 }
 
+enum flash_thing_type
+{
+  FLASH_THING_NORMAL,
+  FLASH_THING_CLOSE_COLORS,
+  FLASH_THING_CLOSE_CHAR,
+  FLASH_THING_SMZX,
+};
+
 /**
  * Flash a range of types to make them more visible onscreen.
  */
@@ -825,34 +833,38 @@ static void flash_done(struct editor_context *editor)
 /**
  * Determine if a protected palette char flash is required.
  */
-static boolean flash_needs_protected(struct editor_context *editor,
+static enum flash_thing_type flash_get_type(struct editor_context *editor,
  struct board *cur_board, Uint8 chr, Uint8 color, Uint8 flash_chr)
 {
-  Uint8 fg = color & 0x0F;
-  Uint8 bg = (color & 0xF0) >> 4;
+  int screen_mode = get_screen_mode();
+  if(!screen_mode)
+  {
+    Uint8 fg = color & 0x0F;
+    Uint8 bg = (color & 0xF0) >> 4;
 
-  ssize_t diff;
+    ssize_t diff;
 
-  // Is this SMZX mode?
-  if(get_screen_mode())
-    return true;
+    // Are the MZX mode colors the same?
+    if(fg == bg)
+      return FLASH_THING_CLOSE_COLORS;
 
-  // Are the colors the same?
-  if(fg == bg)
-    return true;
-
-  // Are the colors too close?
-  diff = (ssize_t)get_color_luma(fg) - (ssize_t)get_color_luma(bg);
-  if(diff >= -64 && diff <= 64)
-    return true;
+    // Are the MZX mode colors too close?
+    diff = (ssize_t)get_color_luma(fg) - (ssize_t)get_color_luma(bg);
+    if(diff >= -64 && diff <= 64)
+      return FLASH_THING_CLOSE_COLORS;
+  }
 
   // If one of the chars to display is the board char, is it too close to the
-  //flash char?
+  // flash char?
   if(!editor->flash_char_a || !editor->flash_char_b)
     if(compare_char(chr, (Uint16)flash_chr + PRO_CH) >= (112*3/4))
-      return true;
+      return FLASH_THING_CLOSE_CHAR;
 
-  return false;
+  // SMZX modes should always display protected...
+  if(screen_mode)
+    return FLASH_THING_SMZX;
+
+  return FLASH_THING_NORMAL;
 }
 
 /**
@@ -869,8 +881,10 @@ static void flash_draw(struct editor_context *editor, struct board *cur_board,
   {
     Uint8 color = get_id_color(cur_board, offset);
     Uint8 chr = get_id_char(cur_board, offset);
+    enum flash_thing_type type;
 
-    if(flash_needs_protected(editor, cur_board, chr, color, flash_chr))
+    type = flash_get_type(editor, cur_board, chr, color, flash_chr);
+    if(type != FLASH_THING_NORMAL)
     {
       Uint32 avg_luma = get_char_average_luma(chr, color, -1, flash_chr + PRO_CH);
 
@@ -880,6 +894,13 @@ static void flash_draw(struct editor_context *editor, struct board *cur_board,
          LAYER_DRAWORDER_UI - 500, graphics.protected_pal_position + 5,
          PRO_CH, true);
         set_layer_mode(editor->flash_layer, 0);
+      }
+
+      if(type == FLASH_THING_CLOSE_CHAR)
+      {
+        // Blank out the robot char so there's less visual conflict...
+        select_layer(BOARD_LAYER);
+        draw_char_ext(' ', color, x, y, PRO_CH, 0);
       }
 
       color = (avg_luma < 128) ? 0x5F : 0x50;
