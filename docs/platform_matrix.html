@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
-
+<!DOCTYPE html>
+<html>
 <head>
 <title>MegaZeux Platform Support Matrix</title>
 <script language="JavaScript">
@@ -51,9 +48,12 @@ var no_low_memory = subopt("NO", 5);
 var no_updater = subopt("NO", 6);
 var no_updater_unix = subopt("NO", 7);
 var no_sdl_3ds = std("NO", 8);
-var optional_sdl_wii = std("OPTIONAL", 9);
+var optional_sdl_wii = std("NO / SDL 1.2", 9);
 var yes_but_8bpp = subopt("YES (8bpp)", 10);
 var no_gl_switch = subopt("NO", 11);
+
+var sdl2 = _yes("SDL 2");
+var sdl1_2 = std("SDL 1.2");
 
 var ZIP = _yes("ZIP");
 var DMG = _yes("DMG");
@@ -183,7 +183,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl:              sdl2,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -241,7 +241,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl:              sdl2,
     editor:           _FAULTY(),
     helpsys:          yes,
     audio:            yes,
@@ -355,7 +355,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
-    sdl:              yes,
+    sdl:              sdl1_2,
     editor:           no_low_memory,
     helpsys:          no_low_memory,
     audio:            yes,
@@ -380,7 +380,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl:              sdl2,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -398,7 +398,7 @@ var archs =
   {
     platform:         "unix",
     description:      "Linux, BSD, Solaris, HaikuOS, etc.",
-    architecture:     "AMD64 (ELF) <br /> i386 (ELF) <br /> PPC64 (ELF)",
+    architecture:     "AMD64 (ELF) <br> i386 (ELF) <br> PPC64 (ELF) <br> PPC (ELF)",
     endian:           "Varies",
     toolchain:        "Various",
     packaged:         _yes("Various"),
@@ -497,7 +497,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl:              sdl1_2,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -526,7 +526,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
-    sdl:              yes,
+    sdl:              sdl1_2,
     editor:           no_low_memory,
     helpsys:          no_low_memory,
     audio:            yes,
@@ -552,7 +552,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     speed,
-    sdl:              yes,
+    sdl:              sdl1_2,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -830,8 +830,9 @@ considered unstable.
 </li>
 
 <li><a name="note10"/>Layer rendering is supported on this platform by as it
-uses the SDL software renderer, but this port does not currently support a color
-depth greater than 8bpp, so the UI palette will not be protected in SMZX mode.
+uses the SDL software renderer. By default, the 8bpp software renderer is
+selected for performance, so the UI palette will not be protected in SMZX mode.
+Switching to a higher force_bpp value will fix this issue.
 </li>
 
 <li><a name="note11"/>The GL renderers work on the Switch but have been
