@@ -386,10 +386,10 @@ exceptions are:
 Generally speaking, MZX should not use GNU extensions as they will worsen
 compatibility. The following GNU extensions are allowed:
 
-* Variadic macros
+* Variadic macros.
 * Attributes (such as unused or format(printf) or format(gnu_printf)) to avoid
-  spurious warnings. Generally these should be wrapped in #ifdef __GNUC__.
-* Attributes to specify deprecated functions (wrapped in #ifdef __GNUC__).
+  spurious warnings. Generally these should be wrapped in `#ifdef __GNUC__`.
+* Attributes to specify deprecated functions (wrapped in `#ifdef __GNUC__`).
 * `long long` (should usually use inttypes.h and/or `size_t`/`ssize_t` instead).
 * Pragmas to locally disable warnings are acceptable in rare cases.
 * `__PRETTY_FUNCTION__` (C++).
@@ -401,7 +401,7 @@ This list is probably not complete.
 
 Features with existing abstractions that shouldn't be used directly:
 * `dirent.h` (use `src/io/dir.{c,h}` instead)
-* `pthread.h` (use `src/platform.h` via `src/thread_{pthread,sdl}.h` instead)
+* `pthread.h` (use `src/platform.h` instead)
 * `getaddrinfo` (use `src/network/dns.{c,h}` instead)
 * Sockets and other network features (use `src/network/host.{c,h}` instead)
 
@@ -415,7 +415,8 @@ Features with partial or complete fallback implementations for MSVC:
 Features with fallback implementations for MSVC and/or MinGW and/or AmigaOS 4:
 * `strcasecmp` (`util.{c,h}` and/or `msvc.h`)
 * `strncasecmp` (`util.{c,h}` and/or `msvc.h`)
-* `mkdir(name,mode)` (`util.h` and/or `msvc.h` and/or `src/io/vfile_win32.h`)
+* `mkdir(name,mode)` (`util.h` and/or `msvc.h` and/or `src/io/vfile.{c,h}`)
+* Various network features (`src/network/socksyms.{c,h}`)
 
 ## Organization
 
@@ -460,6 +461,114 @@ and `__M_END_DECLS`. These macros are used to provide portability when the MZX h
 are included in C++ files.
 4) Functions/structs/variables in these MUST be required elsewhere; otherwise, use static and
 put it in the C/CPP file!
+
+### Includes
+
+Includes should generally be organized into several blocks separated by blank
+lines. The order of these blocks may vary but the order specified here is
+usually preferred. An effort should be made to keep each of these blocks in
+alphabetical order.
+
+* C standard library includes and other library includes (e.g. `zlib.h`).
+  In some cases the other library includes are in a separate block. External
+  library includes (particularly `SDL.h`) should be restricted to places that
+  explicitly need them to help reduce build times.
+* For Windows, `windows.h` may need to be included and certain headers may
+  need to be replaced with `_MSC_VER`-specific replacements. This should be its
+  own block, and in most cases `WIN32_LEAN_AND_MEAN` should be defined immediately
+  before the include. This header should be restricted to places that explicitly
+  use it, because it can make MinGW builds SLOW!
+* Includes from the current source dir or "module", followed by blocks for
+  includes from other dirs/"modules". These includes generally should be relative.
+  * Core includes (files in `src/` and `src/io/` should be in the same block,
+    with `src/` files first and `src/io/` files at the end).
+  * Audio includes (files in `src/audio/`).
+  * Editor includes (files in `src/editor/`).
+  * Network includes (files in `src/network/`).
+  * Contributed includes (files in `contrib/*/`).
+
+### Declarations
+
+Usually declarations occur in the following order, though there's no real
+consistency between different files:
+
+1) `#define`s, enum declarations, and struct declarations.
+
+Then, in .c/.cpp files:
+
+2) static variable declarations.
+3) function definitions.
+
+Or in headers:
+
+2) extern variable declarations.
+3) `LIBSPEC` external function declarations.
+4) Other external function declarations.
+5) Conditionally external function declarations.
+6) static inline function declarations.
+
+### `LIBSPEC` macros
+
+The `LIBSPEC` macros are used in function declarations to specify conditionally
+external functions/variables for modular builds. The `LIBSPEC` macro is defined
+as follows:
+
+| Build type                | `LIBSPEC` |
+|---------------------------|-----------|
+| Non-modular               | ` `
+| Windows, modular          | `__declspec(dllimport)`
+| Everything else, modular  | `__attribute__((visibility("default")))`
+
+Then, the following `LIBSPEC` macros are defined:
+
+| Macro             | core      | editor    | megazeux/mzxrun | utils             | Used in |
+|-------------------|-----------|-----------|-----------------|-------------------|---------|
+| `CORE_LIBSPEC`    | Export    | `LIBSPEC` | `LIBSPEC`       | `LIBSPEC` or ` `  | `src/`, `src/io/`
+| `EDITOR_LIBSPEC`  | `LIBSPEC` | Export    | `LIBSPEC`       | n/a               | `src/editor/`
+| `AUDIO_LIBSPEC`   | Export    | `LIBSPEC` | `LIBSPEC`       | n/a               | `src/audio/`
+| `UTILS_LIBSPEC`   | Export    | `LIBSPEC` | `LIBSPEC`       | ` `               | `src/`, `src/io/`
+| `UPDATER_LIBSPEC` | Export    | `LIBSPEC` | `LIBSPEC`       | n/a               | `src/network/`
+
+Export = `__declspec(dllexport)` for Windows modular builds and `LIBSPEC` for
+all other builds.
+
+These macros should only be used in declarations, e.g.:
+```
+CORE_LIBSPEC void *check_malloc(size_t size, const char *file, int line);
+```
+
+### Conditionally external function macros
+
+The following conditionally external function/variable macros are defined:
+
+| Macro                     | Notes |
+|---------------------------|-------|
+| `__editor_maybe_static`   | Is `static` when the editor is disabled.
+| `__updater_maybe_static`  | Is `static` when the updater is disabled. Unused.
+| `__utils_maybe_static`    | Is `static` when the utils are disabled. Unused.
+
+These macros are typically used for function/variable definitions and the header
+declarations of these functions/variables are typically enabled by an `#ifdef`
+for the particular build option that expects them.
+
+Definition (board.c):
+```
+__editor_maybe_static
+int load_board_direct(struct world *mzx_world, struct board *cur_board,
+ struct zip_archive *zp, int savegame, int file_version, unsigned int board_id)
+{
+  ...
+}
+```
+
+Declaration (board.h):
+```
+#ifdef CONFIG_EDITOR
+CORE_LIBSPEC int load_board_direct(struct world *mzx_world,
+ struct board *cur_board, struct zip_archive *zp, int savegame,
+ int file_version, unsigned int board_id);
+#endif /* CONFIG_EDITOR */
+```
 
 ### Cross-platform threading
 
