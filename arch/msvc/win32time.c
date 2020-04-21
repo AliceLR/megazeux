@@ -20,16 +20,17 @@
 #include "win32time.h"
 #include <time.h>
 
-int gettimeofday(struct timeval* tv, void* tz) {
-	time_t sec;
-	SYSTEMTIME st;
+int gettimeofday(struct timeval *tv, void *tz)
+{
+  time_t sec;
+  SYSTEMTIME st;
 
-	time(&sec);
-	GetLocalTime(&st);
+  time(&sec);
+  GetLocalTime(&st);
 
-	tv->tv_sec = sec;
-	tv->tv_usec = st.wMilliseconds * 1000;
+  tv->tv_sec = sec;
+  tv->tv_usec = st.wMilliseconds * 1000;
 
-	return 0;
+  return 0;
 }
 
