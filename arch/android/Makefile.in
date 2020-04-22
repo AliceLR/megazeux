@@ -155,6 +155,11 @@ else
 #
 
 ANDROID_TARGETS := arm arm64 i686 x86_64
+JNI_LIB_DIRS := \
+  ${JNI_LIB_DIR}/armeabi-v7a \
+  ${JNI_LIB_DIR}/arm64-v8a   \
+  ${JNI_LIB_DIR}/x86         \
+  ${JNI_LIB_DIR}/x86_64
 
 package:
 	$(error "Use 'make dist', 'make apk', 'make deps-install', or 'make deps-uninstall' instead.)
@@ -175,7 +180,10 @@ ${ASSETS_DIR}:
 	$(if ${V},,@echo "  MKDIR   " $@)
 	@${MKDIR} -p "$@"
 
-dist: | ${JNI_LIB_DIR}/armeabi-v7a ${JNI_LIB_DIR}/arm64-v8a ${JNI_LIB_DIR}/x86 ${JNI_LIB_DIR}/x86_64
+${ASSETS_DIR}/assets.zip: build/android/assets | ${ASSETS_DIR}
+	@(cd build/android/ && zip -9 -r assets.zip LICENSE config.txt assets/ && mv assets.zip ../../$@)
+
+dist: | ${JNI_LIB_DIRS} ${ASSETS_DIR}/assets.zip
 	@${MAKE} ANDROID_TARGET=arm    package
 	@${MAKE} ANDROID_TARGET=arm    clean
 	@${MAKE} ANDROID_TARGET=arm64  package
@@ -197,11 +205,6 @@ else
 	@${MV} mzxrun.i686   ${JNI_LIB_DIR}/x86/${JNI_LIB_SO}
 	@${MV} mzxrun.x86_64 ${JNI_LIB_DIR}/x86_64/${JNI_LIB_SO}
 endif
-	@touch mzxrun
-	@touch megazeux
-
-${ASSETS_DIR}/assets.zip: build/android/assets | ${ASSETS_DIR}
-	@(cd build/android/ && zip -9 -r assets.zip config.txt assets/ && mv assets.zip ../../$@)
 
 ${RELEASE_APK}: | ${ASSETS_DIR}/assets.zip
 	@cd ${PROJECT_DIR} && ./${GRADLEW} build
