@@ -45,6 +45,7 @@ char *vgetcwd(char *buf, size_t size);
 int vmkdir(const char *path, int mode);
 int vunlink(const char *path);
 int vrmdir(const char *path);
+int vaccess(const char *path, int mode);
 int vstat(const char *path, struct stat *buf);
 
 int vfgetc(vfile *vf);

@@ -58,6 +58,9 @@ USERS
   transparent color for the purposes of collision.
 + Fixed softscale bug on some platforms where the screen border
   wouldn't be cleared.
++ Directory navigation in the file manager now checks directory
+  access permissions before allowing navigation and displays an
+  error when navigation fails.
 + Windows builds now attempt to load and call SetProcessDPIAware
   on startup. This should fix undesirable DPI-related scaling
   and fullscreen bugs.

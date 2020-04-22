@@ -158,6 +158,23 @@ static inline int platform_rmdir(const char *path)
   return rmdir(path);
 }
 
+static inline int platform_access(const char *path, int mode)
+{
+  // X_OK isn't supported on Windows. Use R_OK instead...
+  if(mode & X_OK)
+    mode = (mode & ~X_OK) | R_OK;
+
+#ifdef WIDE_PATHS
+  {
+    wchar_t wpath[MAX_PATH];
+
+    if(utf8_to_utf16(path, wpath, MAX_PATH))
+      return _waccess(wpath, mode);
+  }
+#endif
+  return access(path, mode);
+}
+
 static inline int platform_stat(const char *path, struct stat *buf)
 {
 #ifdef WIDE_PATHS
