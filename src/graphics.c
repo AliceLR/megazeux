@@ -973,21 +973,22 @@ static Uint16 get_cursor_color(void)
   if(graphics.screen_mode <= 1)
   {
     // Modes 0 and 1- use the (modified) classic cursor color logic.
-    Uint32 *offset = (Uint32 *)(graphics.charset + cursor_char * CHAR_SIZE);
-    Uint32 cursor_solid = 0xFFFFFFFF;
+    // NOTE: there was a trick using Uint32 * here before that caused
+    // misalignment crashes on some platforms.
+    Uint8 *offset = graphics.charset + cursor_char * CHAR_SIZE;
+    Uint8 cursor_solid = 0xFF;
 
     // Choose FG by default.
     cursor_color = fg_color;
 
     // If the char under the cursor is completely solid, use the BG instead.
-    for(i = 0; i < 3; i++)
+    for(i = 0; i < CHAR_SIZE; i++)
     {
       cursor_solid &= *offset;
       offset++;
     }
-    cursor_solid &= (*((Uint16 *)offset)) | 0xFFFF0000;
 
-    if(cursor_solid == 0xFFFFFFFF)
+    if(cursor_solid == 0xFF)
       cursor_color = bg_color;
 
     if(fg_color < 0x10 && bg_color < 0x10)
