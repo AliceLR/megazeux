@@ -12,6 +12,12 @@ ifeq (${NDK_PATH},)
 $(error "Must define $$NDK_PATH!")
 endif
 
+#
+# NOTE: when updating the SDL_VERSION field here, the SDL android project code
+# in arch/android/project/app/src/main/org/libsdl/app/ needs to be updated with
+# the android project from the new SDL release (SDL/android-project/app/src/...).
+#
+
 SDL_VERSION       ?= 2.0.12
 LIBOGG_VERSION    ?= 1.3.3
 LIBVORBIS_VERSION ?= 1.3.6
