@@ -260,6 +260,20 @@ int vrmdir(const char *path)
 }
 
 /**
+ * Check an access permission for a path for the current process.
+ *
+ * F_OK   (checks existence only)
+ * R_OK   Read permission.
+ * W_OK   Write permission.
+ * X_OK   Execute permission.
+ */
+int vaccess(const char *path, int mode)
+{
+  // TODO archive detection, etc
+  return platform_access(path, mode);
+}
+
+/**
  * Get file information for a file at a given path.
  */
 int vstat(const char *path, struct stat *buf)
