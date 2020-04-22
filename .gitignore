@@ -1,6 +1,8 @@
 arch/3ds/*.d
 arch/3ds/*.o
 arch/3ds/*shbin*
+arch/android/deps
+arch/android/include
 arch/android/project/.eclipse
 arch/android/project/.gradle
 arch/android/project/.idea
