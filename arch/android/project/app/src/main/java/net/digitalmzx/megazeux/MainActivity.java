@@ -35,95 +35,123 @@ import java.io.InputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class MainActivity extends Activity {
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+public class MainActivity extends Activity
+{
+  @Override
+  protected void onCreate(Bundle savedInstanceState)
+  {
+    super.onCreate(savedInstanceState);
 
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1000);
-            } else {
-                launchGame();
-            }
-        }
+    if(Build.VERSION.SDK_INT >= 23)
+    {
+      if(checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+       != PackageManager.PERMISSION_GRANTED)
+      {
+        requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1000);
+      }
+      else
+        launchGame();
     }
+  }
 
-    private void launchGame() {
-        // unzip assets
-        File targetPath = GameActivity.getAssetPath(this);
-        InputStream assetStream = getResources().openRawResource(R.raw.assets);
-        ZipInputStream assetZip = new ZipInputStream(assetStream);
-        byte[] buffer = new byte[8192];
-        FileOutputStream output = null;
+  private void launchGame()
+  {
+    // unzip assets
+    File targetPath = GameActivity.getAssetPath(this);
+    InputStream assetStream = getResources().openRawResource(R.raw.assets);
+    ZipInputStream assetZip = new ZipInputStream(assetStream);
+    byte[] buffer = new byte[8192];
+    FileOutputStream output = null;
 
-        try {
-            ZipEntry entry;
-            while ((entry = assetZip.getNextEntry()) != null) {
-                File target = new File(targetPath, entry.getName());
+    try
+    {
+      ZipEntry entry;
+      while((entry = assetZip.getNextEntry()) != null)
+      {
+        File target = new File(targetPath, entry.getName());
 
-                if (entry.isDirectory()) {
-                    if (target.exists()) {
-                        continue;
-                    }
+        if(entry.isDirectory())
+        {
+          if(target.exists())
+            continue;
 
-                    target.mkdirs();
-                } else {
-                    if (target.exists()) {
-                        if (target.lastModified() == entry.getTime()) {
-                            continue;
-                        }
-                    }
+          target.mkdirs();
+        }
+        else
+        {
+          if(target.exists())
+          {
+            if(target.lastModified() == entry.getTime())
+              continue;
+          }
 
-                    int read;
-                    output = new FileOutputStream(target);
+          int read;
+          output = new FileOutputStream(target);
 
-                    while ((read = assetZip.read(buffer, 0, buffer.length)) >= 0) {
-                        output.write(buffer, 0, read);
-                    }
+          while((read = assetZip.read(buffer, 0, buffer.length)) >= 0)
+          {
+            output.write(buffer, 0, read);
+          }
 
-                    output.close();
-                    output = null;
+          output.close();
+          output = null;
 
-                    target.setLastModified(entry.getTime());
-                }
-
-                assetZip.closeEntry();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (output != null) {
-                try {
-                    output.close();
-                } catch (IOException e) {
-                    // pass
-                }
-            }
-
-            try {
-                assetZip.close();
-            } catch (IOException e) {
-                // pass
-            }
-
-            try {
-                assetStream.close();
-            } catch (IOException e) {
-                // pass
-            }
+          target.setLastModified(entry.getTime());
         }
 
-
-        // launch game
-        startActivity(new Intent(getApplicationContext(), GameActivity.class));
+        assetZip.closeEntry();
+      }
     }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            launchGame();
+    catch(IOException e)
+    {
+      throw new RuntimeException(e);
+    }
+    finally
+    {
+      if(output != null)
+      {
+        try
+        {
+          output.close();
         }
+        catch(IOException e)
+        {
+          // pass
+        }
+      }
+
+      try
+      {
+        assetZip.close();
+      }
+      catch(IOException e)
+      {
+        // pass
+      }
+
+      try
+      {
+        assetStream.close();
+      }
+      catch(IOException e)
+      {
+        // pass
+      }
     }
+
+    // launch game
+    startActivity(new Intent(getApplicationContext(), GameActivity.class));
+  }
+
+  @Override
+  public void onRequestPermissionsResult(int requestCode, String[] permissions,
+   int[] grantResults)
+  {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    if(grantResults.length > 0 &&
+     grantResults[0] == PackageManager.PERMISSION_GRANTED)
+    {
+      launchGame();
+    }
+  }
 }
