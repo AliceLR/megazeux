@@ -585,7 +585,7 @@ ssize_t path_navigate(char *path, size_t path_len, const char *target)
   // This needs to be done before the stat for some platforms (e.g. 3DS)
   len = path_clean_slashes(buffer, MAX_PATH);
   if(len < path_len && vstat(buffer, &stat_info) >= 0 &&
-   S_ISDIR(stat_info.st_mode) && !vaccess(buffer, X_OK))
+   S_ISDIR(stat_info.st_mode) && !vaccess(buffer, R_OK|X_OK))
   {
     memcpy(path, buffer, len + 1);
     path[path_len - 1] = '\0';
