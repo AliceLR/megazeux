@@ -56,6 +56,8 @@ USERS
 + Fixed a collision bug affecting unbound sprites with ccheck 3
   set in SMZX mode where wrong colors could be treated as the
   transparent color for the purposes of collision.
++ Fixed softscale bug on some platforms where the screen border
+  wouldn't be cleared.
 + Windows builds now attempt to load and call SetProcessDPIAware
   on startup. This should fix undesirable DPI-related scaling
   and fullscreen bugs.
