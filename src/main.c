@@ -193,6 +193,9 @@ __libspec int main(int argc, char *argv[])
     argv++;
     argc--;
   }
+
+  // Always try to start in /storage/emulated/0 to save some headaches.
+  path_navigate(current_dir, MAX_PATH, "/storage/emulated/0");
 #endif
 
   // argc may be 0 on e.g. some Wii homebrew loaders.
