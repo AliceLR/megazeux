@@ -58,6 +58,9 @@ USERS
   transparent color for the purposes of collision.
 + Fixed softscale bug on some platforms where the screen border
   wouldn't be cleared.
++ The GLSL renderer will now attempt to use a framebuffer when
+  available. This fixes GL_INVALID_OPERATION bugs with certain
+  OpenGL ES 2.0 implementations.
 + Directory navigation in the file manager now checks directory
   access permissions before allowing navigation and displays an
   error when navigation fails.
