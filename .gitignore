@@ -8,6 +8,7 @@ arch/android/project/.gradle
 arch/android/project/.idea
 arch/android/project/*.iml
 arch/android/project/*.ipr
+arch/android/project/app/.cxx
 arch/android/project/app/.externalNativeBuild
 arch/android/project/app/jni/.gradle
 arch/android/project/app/jni/SDL2

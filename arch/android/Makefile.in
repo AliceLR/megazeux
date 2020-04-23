@@ -141,11 +141,13 @@ LIBPNG_LDFLAGS := -L${JNI_LIBS} -lpng16
 VORBIS_CFLAGS  := -I${JNI_INCLUDES}
 VORBIS_LDFLAGS := -L${JNI_LIBS} -logg -lvorbis -lvorbisfile
 
-package: all
+package: all | ${JNI_LIB_DIR}/${ABI}
 ifneq (${BUILD_EDITOR},)
-	${MV} ${mzx} ${mzx}.${ANDROID_TARGET}
+	$(if ${V},,@echo "  MV      " ${mzx} "${JNI_LIB_DIR}/${ABI}/${JNI_LIB_SO}")
+	${MV} ${mzx} ${JNI_LIB_DIR}/${ABI}/${JNI_LIB_SO}
 else
-	${MV} ${mzxrun} ${mzxrun}.${ANDROID_TARGET}
+	$(if ${V},,@echo "  MV      " ${mzxrun} "${JNI_LIB_DIR}/${ABI}/${JNI_LIB_SO}")
+	${MV} ${mzxrun} ${JNI_LIB_DIR}/${ABI}/${JNI_LIB_SO}
 endif
 
 else
@@ -153,13 +155,6 @@ else
 #
 # Define meta targets.
 #
-
-ANDROID_TARGETS := arm arm64 i686 x86_64
-JNI_LIB_DIRS := \
-  ${JNI_LIB_DIR}/armeabi-v7a \
-  ${JNI_LIB_DIR}/arm64-v8a   \
-  ${JNI_LIB_DIR}/x86         \
-  ${JNI_LIB_DIR}/x86_64
 
 package:
 	$(error "Use 'make dist', 'make apk', 'make deps-install', or 'make deps-uninstall' instead.)
@@ -183,7 +178,8 @@ ${ASSETS_DIR}:
 ${ASSETS_DIR}/assets.zip: build/android/assets | ${ASSETS_DIR}
 	@(cd build/android/ && zip -9 -r assets.zip LICENSE config.txt assets/ && mv assets.zip ../../$@)
 
-dist: | ${JNI_LIB_DIRS} ${ASSETS_DIR}/assets.zip
+dist: | ${ASSETS_DIR}/assets.zip
+	@${MAKE} ANDROID_TARGET=arm    clean
 	@${MAKE} ANDROID_TARGET=arm    package
 	@${MAKE} ANDROID_TARGET=arm    clean
 	@${MAKE} ANDROID_TARGET=arm64  package
@@ -192,19 +188,6 @@ dist: | ${JNI_LIB_DIRS} ${ASSETS_DIR}/assets.zip
 	@${MAKE} ANDROID_TARGET=i686   clean
 	@${MAKE} ANDROID_TARGET=x86_64 package
 	@${MAKE} ANDROID_TARGET=x86_64 clean
-ifneq (${BUILD_EDITOR},)
-	$(if ${V},,@echo "  MV      megazeux.{${ANDROID_TARGETS}} ${JNI_LIB_DIR}/*/${JNI_LIB_SO}")
-	@${MV} megazeux.arm    ${JNI_LIB_DIR}/armeabi-v7a/${JNI_LIB_SO}
-	@${MV} megazeux.arm64  ${JNI_LIB_DIR}/arm64-v8a/${JNI_LIB_SO}
-	@${MV} megazeux.i686   ${JNI_LIB_DIR}/x86/${JNI_LIB_SO}
-	@${MV} megazeux.x86_64 ${JNI_LIB_DIR}/x86_64/${JNI_LIB_SO}
-else
-	$(if ${V},,@echo "  MV      mzxrun.{${ANDROID_TARGETS}} ${JNI_LIB_DIR}/*/${JNI_LIB_SO}")
-	@${MV} mzxrun.arm    ${JNI_LIB_DIR}/armeabi-v7a/${JNI_LIB_SO}
-	@${MV} mzxrun.arm64  ${JNI_LIB_DIR}/arm64-v8a/${JNI_LIB_SO}
-	@${MV} mzxrun.i686   ${JNI_LIB_DIR}/x86/${JNI_LIB_SO}
-	@${MV} mzxrun.x86_64 ${JNI_LIB_DIR}/x86_64/${JNI_LIB_SO}
-endif
 
 ${RELEASE_APK}: | ${ASSETS_DIR}/assets.zip
 	@cd ${PROJECT_DIR} && ./${GRADLEW} build
@@ -218,10 +201,6 @@ apk: ${RELEASE_APK}
 	${CP} ${build}/FIXME.apk build/dist/${SUBPLATFORM}
 
 clean:
-	$(if ${V},,@echo "  RM      " megazeux.{${ANDROID_TARGETS}})
-	@(for t in ${ANDROID_TARGETS}; do rm -f megazeux.$$t; done)
-	$(if ${V},,@echo "  RM      " mzxrun.{${ANDROID_TARGETS}})
-	@(for t in ${ANDROID_TARGETS}; do rm -f mzxrun.$$t; done)
 	$(if ${V},,@echo "  RM      " ${JNI_DIR}/lib/*/libmain.so)
 	@${RM} -r ${JNI_DIR}/lib/*/libmain.so
 	$(if ${V},,@echo "  RM      " ${APP_DIR}/build/)
