@@ -158,11 +158,20 @@ void init_event(void)
   initialize_joysticks();
 }
 
-Uint32 convert_internal_unicode(enum keycode key)
+Uint32 convert_internal_unicode(enum keycode key, boolean caps_lock)
 {
   if(KEYCODE_IS_ASCII(key))
   {
-    if(get_shift_status(keycode_internal))
+    boolean shift_status = get_shift_status(keycode_internal);
+
+    if(caps_lock && (key >= IKEY_a) && (key <= IKEY_z))
+    {
+      if(!shift_status)
+        return (key - 32);
+      return key;
+    }
+
+    if(shift_status)
     {
       if((key >= IKEY_a) && (key <= IKEY_z))
         return (key - 32);
