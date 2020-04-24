@@ -8,8 +8,16 @@ PROJECT_DIR := arch/android/project
 APP_DIR     := ${PROJECT_DIR}/app
 ASSETS_DIR  := ${APP_DIR}/src/main/res/raw
 
-RELEASE_DIR := ${APP_DIR}/release
-RELEASE_APK := ${RELEASE_DIR}/FIXME.apk
+#
+# NOTE: Android Studio produces APKs at ${APP_DIR}/debug and ${APP_DIR}/release.
+# These directories are for the `make apk` rule, which invokes gradle directly.
+#
+
+BUILD_DIR   := ${APP_DIR}/build
+DEBUG_DIR   := ${BUILD_DIR}/outputs/apk/debug
+DEBUG_APK   := ${DEBUG_DIR}/app-debug.apk
+RELEASE_DIR := ${BUILD_DIR}/outputs/apk/release
+RELEASE_APK := ${RELEASE_DIR}/app-release.apk
 
 JNI_DIR     := ${APP_DIR}/jni
 JNI_LIB_DIR := ${JNI_DIR}/lib
@@ -62,7 +70,7 @@ TOOLCHAIN := ${TOOLCHAIN_BASE}/${HOST}
 endif
 
 #
-# Determine the ${TARGET} toolchain to use.
+# Determine the toolchain to use.
 # If none is defined, disable make all and enable the meta targets.
 #
 
@@ -70,56 +78,56 @@ ARCH_CFLAGS  :=
 ARCH_LDFLAGS :=
 
 ifeq (${ANDROID_TARGET},arm)
-TARGET       := armv7a-linux-androideabi
-TARGET_LIBS  := arm-linux-androideabi
-BINUTILS     := arm-linux-androideabi
+ANDROID_LIBS := arm-linux-androideabi
+CLANG_PRE    := armv7a-linux-androideabi
+BINUTILS_PRE := arm-linux-androideabi
 ABI          := armeabi-v7a
-API          := 16
+SDK          := 16
 ARCH_CFLAGS  += -march=armv7-a -mthumb
 ARCH_LDFLAGS += -march=armv7-a -Wl,--fix-cortex-a8
 else
 
 ifeq (${ANDROID_TARGET},arm64)
-TARGET       := aarch64-linux-android
-TARGET_LIBS  := ${TARGET}
-BINUTILS     := ${TARGET}
+ANDROID_LIBS := aarch64-linux-android
+CLANG_PRE    := ${ANDROID_LIBS}
+BINUTILS_PRE := ${ANDROID_LIBS}
 ABI          := arm64-v8a
-API          := 21
+SDK          := 21
 else
 
 ifeq (${ANDROID_TARGET},i686)
-TARGET       := i686-linux-android
-TARGET_LIBS  := ${TARGET}
-BINUTILS     := ${TARGET}
+ANDROID_LIBS := i686-linux-android
+CLANG_PRE    := ${ANDROID_LIBS}
+BINUTILS_PRE := ${ANDROID_LIBS}
 ABI          := x86
-API          := 16
+SDK          := 16
 else
 
 ifeq (${ANDROID_TARGET},x86_64)
-TARGET       := x86_64-linux-android
-TARGET_LIBS  := ${TARGET}
-BINUTILS     := ${TARGET}
+ANDROID_LIBS := x86_64-linux-android
+CLANG_PRE    := ${ANDROID_LIBS}
+BINUTILS_PRE := ${ANDROID_LIBS}
 ABI          := x86_64
-API          := 21
+SDK          := 21
 else
 
-TARGET       := none
+ANDROID_LIBS := none
 
 endif
 endif
 endif
 endif
 
-ifneq (${TARGET},none)
+ifneq (${ANDROID_LIBS},none)
 
-CC             := ${TOOLCHAIN}/bin/${TARGET}${API}-clang
-CXX            := ${TOOLCHAIN}/bin/${TARGET}${API}-clang++
-AR             := ${TOOLCHAIN}/bin/${BINUTILS}-ar
-OBJCOPY        := ${TOOLCHAIN}/bin/${BINUTILS}-objcopy
-STRIP          := ${TOOLCHAIN}/bin/${BINUTILS}-strip --strip-unneeded
+CC             := ${TOOLCHAIN}/bin/${CLANG_PRE}${SDK}-clang
+CXX            := ${TOOLCHAIN}/bin/${CLANG_PRE}${SDK}-clang++
+AR             := ${TOOLCHAIN}/bin/${BINUTILS_PRE}-ar
+OBJCOPY        := ${TOOLCHAIN}/bin/${BINUTILS_PRE}-objcopy
+STRIP          := ${TOOLCHAIN}/bin/${BINUTILS_PRE}-strip --strip-unneeded
 
 PREFIX         := ${TOOLCHAIN}/sysroot/usr
-PREFIX_LIBS    := ${TOOLCHAIN}/sysroot/usr/lib/${TARGET_LIBS}/${API}
+PREFIX_LIBS    := ${TOOLCHAIN}/sysroot/usr/lib/${ANDROID_LIBS}/${SDK}
 
 JNI_INCLUDES   := arch/android/include
 JNI_LIBS       := ${JNI_LIB_DIR}/${ABI}
@@ -194,19 +202,20 @@ ${RELEASE_APK}: | ${ASSETS_DIR}/assets.zip
 
 apk: ${RELEASE_APK}
 	@${MKDIR} -p ${build}
-	$(if ${V},,@echo "  CP      " ${RELEASE_APK} ${build}/)
-	@${CP} ${RELEASE_APK} ${build}/
+	$(if ${V},,@echo "  CP      " ${RELEASE_APK} build/dist/${SUBPLATFORM}/)
 	${RM} -r build/dist/${SUBPLATFORM}
 	${MKDIR} -p build/dist/${SUBPLATFORM}
-	${CP} ${build}/FIXME.apk build/dist/${SUBPLATFORM}
+	@${CP} ${RELEASE_APK} build/dist/${SUBPLATFORM}/${TARGET}-${SUBPLATFORM}.apk
 
 clean:
 	$(if ${V},,@echo "  RM      " ${JNI_DIR}/lib/*/libmain.so)
 	@${RM} -r ${JNI_DIR}/lib/*/libmain.so
-	$(if ${V},,@echo "  RM      " ${APP_DIR}/build/)
-	@${RM} -r ${APP_DIR}/build
-	$(if ${V},,@echo "  RM      " ${RELEASE_DIR}/*.apk)
-	@${RM} ${RELEASE_DIR}/*.apk
+	$(if ${V},,@echo "  RM      " ${BUILD_DIR})
+	@${RM} -r ${BUILD_DIR}
+	$(if ${V},,@echo "  RM      " ${APP_DIR}/debug)
+	@${RM} -r ${APP_DIR}/debug
+	$(if ${V},,@echo "  RM      " ${APP_DIR}/release)
+	@${RM} -r ${APP_DIR}/release
 	$(if ${V},,@echo "  RM      " ${ASSETS_DIR}/assets.zip)
 	@${RM} ${ASSETS_DIR}/assets.zip
 
