@@ -14,6 +14,40 @@ build process, all other stages currently involve invoking Makefile targets
 from the command line. This guide assumes you are comfortable with the command
 line and GNU Make.
 
+## Overview
+
+The Android port of MegaZeux consists of the following components:
+
+* MegaZeux built into native code as `libmain`.
+* Native dependency libraries (`libSDL2`, `libogg`, `libvorbis`).
+* The SDL Android project, which performs most required interactions with
+  sensors/bluetooth/etc. and interfaces with the native code via JNI.
+* MegaZeux-specific Java glue code to extract assets from the APK resources.
+
+Each native library (MegaZeux + all dependency libraries) must be built for the
+following ABIs:
+
+| ABI           | Description               | Minimum API version |
+|---------------|---------------------------|---------------------|
+| `arm64-v8a`   | Modern 64-bit ARM devices | Lollipop 5.0 (API 21)
+| `armeabi-v7a` | Older 32-bit ARM devices  | Jelly Bean 4.1 (API 16)
+| `x86_64`      | Modern 64-bit x86 devices | Lollipop 5.0 (API 21)
+| `x86`         | Older 32-bit x86 devices  | Jelly Bean 4.1 (API 16)
+
+The build process for the MegaZeux port is as follows:
+
+1) If the dependency libraries have not been built and installed to the Gradle
+  project, they must be built and installed to `arch/android/project/app/jni/lib/${ABI}`.
+  This is performed using the Makefile.
+2) MegaZeux itself needs to be built as a library and installed to the Gradle project.
+  This is also performed using the Makefile. The assets ZIP containing default
+  charsets, shaders, etc. is also created and installed to
+  `arch/android/project/app/src/main/res/raw/assets.zip` at this stage.
+3) The Java portions of MZX/SDL are compiled and a debug or release APK is
+  generated via the Gradle project. This can be invoked either by the Makefile
+  or by Android Studio, but the following two steps *must* have been performed
+  for either option to work.
+
 ## Environment Setup
 
 1. Install the latest version of both the Android SDK and NDK. The easiest way
@@ -45,9 +79,9 @@ MegaZeux provides several make targets for handling these dependencies:
 
 The Android port currently relies on the following libraries:
 
-* libogg
-* libvorbis
-* libSDL2
+* `libogg`
+* `libvorbis`
+* `libSDL2`
 
 Currently, the Android port does not use libpng. The Android NDK contains
 a pre-built static library of zlib, so it does not need to be built manually.
@@ -69,3 +103,34 @@ targets are provided:
 
 Android Studio can be used in place of `make apk`. Release builds from Android
 Studio are placed in `arch/android/project/app/release`.
+
+## Known Issues
+
+Several issues with this MegaZeux port have been reported. As this port is
+effectively the same as every other SDL 2 port on MZX's side, most of these
+issues seem to be compatibility issues between Android and SDL.
+
+Issues **KNOWN** to be caused by MegaZeux bugs:
+
+* The GLSL renderer packs layer data into a texture assuming 32-bit RGBA textures.
+  Some Android machines rely on core OpenGL ES 2.0 (which only supports 16-bit
+  textures), meaning these ports will display graphical corruption. This issue
+  will be addressed in a future MZX release, but for now the GLSL renderer is
+  disabled.
+
+Issues **PROBABLY** caused by compatibility issues between Android and SDL:
+
+* When text input is enabled, some keys may spontaneously stop working or stick.
+  Because of this, text input has been disabled for Android, which means certain
+  international keybord layouts probably won't work properly.
+  (Moto G5 Plus, Android 8.1)
+* Keys which would usually produce both a scancode and text will generate a key
+  press and release on the same frame for some devices, meaning certain MZX
+  features relying on the held status of a key (including shooting, the KEY#
+  counters) will not work. (Nexus 7 (2013), Android 6.0)
+* The function keys (Fn) may not work as expected. (Xiaomi Mi 8 SE, Android ?)
+* RGBA components may be reversed to ARBG, causing serious graphical issues.
+  This can be worked around by turning on the "Disable HW Overlays" developer
+  option. (Xiaomi Mi 8 SE, Android ?)
+* Switching applications and/or connecting new Bluetooth devices may cause
+  crashes. (Xiaomi Mi 8 SE, Android ?)
