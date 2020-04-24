@@ -128,9 +128,9 @@ Issues **PROBABLY** caused by compatibility issues between Android and SDL:
   press and release on the same frame for some devices, meaning certain MZX
   features relying on the held status of a key (including shooting, the KEY#
   counters) will not work. (Nexus 7 (2013), Android 6.0, armeabi-v7a)
-* The function keys (Fn) may not work as expected. (Xiaomi Mi 8 SE, Android ?, ABI ?)
+* The function keys (Fn) may not work as expected. (Xiaomi Mi 8 SE, Android 8.1, arm64-v8a)
 * RGBA components may be reversed to ARBG, causing serious graphical issues.
   This can be worked around by turning on the "Disable HW Overlays" developer
-  option. (Xiaomi Mi 8 SE, Android ?, ABI ?)
+  option. (Xiaomi Mi 8 SE, Android 8.1, arm64-v8a)
 * Switching applications and/or connecting new Bluetooth devices may cause
-  crashes. (Xiaomi Mi 8 SE, Android ?, ABI ?)
+  crashes. (Xiaomi Mi 8 SE, Android 8.1, arm64-v8a)
