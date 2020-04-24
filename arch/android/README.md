@@ -7,7 +7,7 @@ NOTE: Requires a few gigabytes of hard drive space and some patience.
 This port is more complicated than the typical MegaZeux port and utilizes
 a hybrid of MegaZeux's build system and a Gradle project. For best results,
 follow this guide closely and ask for help on the MegaZeux Discord if you have
-and problems.
+any problems.
 
 While Android Studio can optionally be used to complete the final stages of the
 build process, all other stages currently involve invoking Makefile targets
@@ -45,7 +45,7 @@ The build process for the MegaZeux port is as follows:
   `arch/android/project/app/src/main/res/raw/assets.zip` at this stage.
 3) The Java portions of MZX/SDL are compiled and a debug or release APK is
   generated via the Gradle project. This can be invoked either by the Makefile
-  or by Android Studio, but the following two steps *must* have been performed
+  or by Android Studio, but the prior two steps *must* have been performed
   for either option to work.
 
 ## Environment Setup
