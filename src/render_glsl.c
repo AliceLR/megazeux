@@ -50,6 +50,14 @@ typedef GLint GLiftype;
 
 #include "render_gl.h"
 
+#ifndef GL_FRAMEBUFFER
+#define GL_FRAMEBUFFER GL_FRAMEBUFFER_EXT
+#endif
+
+#ifndef GL_COLOR_ATTACHMENT0
+#define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
+#endif
+
 static const struct gl_version gl_required_version = { 2, 0 };
 
 #define CHARSET_COLS 64
