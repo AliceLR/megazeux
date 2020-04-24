@@ -107,7 +107,7 @@ Studio are placed in `arch/android/project/app/release`.
 ## Known Issues
 
 Several issues with this MegaZeux port have been reported. As this port is
-effectively the same as every other SDL 2 port on MZX's side, most of these
+effectively the same as every other SDL 2 port on the MZX side, most of these
 issues seem to be compatibility issues between Android and SDL.
 
 Issues **KNOWN** to be caused by MegaZeux bugs:
@@ -116,21 +116,21 @@ Issues **KNOWN** to be caused by MegaZeux bugs:
   Some Android machines rely on core OpenGL ES 2.0 (which only supports 16-bit
   textures), meaning these ports will display graphical corruption. This issue
   will be addressed in a future MZX release, but for now the GLSL renderer is
-  disabled.
+  disabled. (Nexus 7 (2013), Android 6.0, armeabi-v7a)
 
 Issues **PROBABLY** caused by compatibility issues between Android and SDL:
 
 * When text input is enabled, some keys may spontaneously stop working or stick.
   Because of this, text input has been disabled for Android, which means certain
   international keybord layouts probably won't work properly.
-  (Moto G5 Plus, Android 8.1)
+  (Moto G5 Plus, Android 8.1, arm64-v8a)
 * Keys which would usually produce both a scancode and text will generate a key
   press and release on the same frame for some devices, meaning certain MZX
   features relying on the held status of a key (including shooting, the KEY#
-  counters) will not work. (Nexus 7 (2013), Android 6.0)
-* The function keys (Fn) may not work as expected. (Xiaomi Mi 8 SE, Android ?)
+  counters) will not work. (Nexus 7 (2013), Android 6.0, armeabi-v7a)
+* The function keys (Fn) may not work as expected. (Xiaomi Mi 8 SE, Android ?, ABI ?)
 * RGBA components may be reversed to ARBG, causing serious graphical issues.
   This can be worked around by turning on the "Disable HW Overlays" developer
-  option. (Xiaomi Mi 8 SE, Android ?)
+  option. (Xiaomi Mi 8 SE, Android ?, ABI ?)
 * Switching applications and/or connecting new Bluetooth devices may cause
-  crashes. (Xiaomi Mi 8 SE, Android ?)
+  crashes. (Xiaomi Mi 8 SE, Android ?, ABI ?)
