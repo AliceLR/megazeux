@@ -1497,7 +1497,10 @@ boolean __update_event_status(void)
   while(SDL_PollEvent(&event))
     rval |= process_event(&event);
 
+#if 0
+  // This one is a little annoying even for trace logging...
   trace("--EVENT_SDL-- __update_event_status -> %u\n", rval);
+#endif
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
   {
