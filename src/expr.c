@@ -29,6 +29,7 @@
 #include "rasm.h"
 #include "robot.h"
 #include "str.h"
+#include "util.h"
 #include "world.h"
 #include "world_struct.h"
 
@@ -1816,16 +1817,18 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
 
       default:
       {
-        char temp;
         char *next;
         struct string string;
+        char name_buffer[ROBOT_MAX_TR];
+        size_t len;
 
         next = find_non_identifier_char(expression);
+        len = MIN(ROBOT_MAX_TR - 1, next - expression);
 
-        temp = *next;
-        *next = 0;
-        get_string(mzx_world, expression, &string, id);
-        *next = temp;
+        memcpy(name_buffer, expression, len);
+        name_buffer[len] = '\0';
+
+        get_string(mzx_world, name_buffer, &string, id);
         expression = next;
 
         copy_length = string.length;
