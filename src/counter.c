@@ -131,13 +131,19 @@ static int translate_coordinates(const char *src, unsigned int *x,
 static int string_counter_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return string_read_as_counter(mzx_world, name, id);
+  // TODO: the only uses of get_counter() that can make it here should be using
+  // a temporary buffer already, so this cast should be safe... however, it is
+  // still very tacky.
+  return string_read_as_counter(mzx_world, (char *)name, id);
 }
 
 static void string_counter_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  string_write_as_counter(mzx_world, name, value, id);
+  // TODO: the only uses of set_counter() that can make it here should be using
+  // a temporary buffer already, so this cast should be safe... however, it is
+  // still very tacky.
+  string_write_as_counter(mzx_world, (char *)name, value, id);
 }
 
 static int local_read(struct world *mzx_world,
