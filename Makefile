@@ -421,12 +421,16 @@ build: ${build} ${build}/assets ${build}/docs
 ${build}:
 	${MKDIR} -p ${build}
 	${CP} config.txt LICENSE ${build}
-	${CP} ${mzxrun} ${build}
+	@if test -f ${mzxrun}; then \
+		cp ${mzxrun} ${build}; \
+	fi
 	@if test -f ${mzxrun}.debug; then \
 		cp ${mzxrun}.debug ${build}; \
 	fi
 ifeq (${BUILD_EDITOR},1)
-	${CP} ${mzx} ${build}
+	@if test -f ${mzx}; then \
+		cp ${mzx} ${build}; \
+	fi
 	@if test -f ${mzx}.debug; then \
 		cp ${mzx}.debug ${build}; \
 	fi

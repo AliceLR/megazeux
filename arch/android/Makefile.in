@@ -2,51 +2,228 @@
 # android makefile generics
 #
 
-CC      = ${CROSS_COMPILE}clang
-CXX     = ${CROSS_COMPILE}clang++
-AR      = ${CROSS_COMPILE}ar
-OBJCOPY = ${CROSS_COMPILE}objcopy
-STRIP   = ${CROSS_COMPILE}strip --strip-unneeded
+.PHONY: dist build archive clean deps-build deps-install deps-uninstall deps-clean
 
-ifeq (${ARCH},)
-ARCH=arm
+PROJECT_DIR := arch/android/project
+APP_DIR     := ${PROJECT_DIR}/app
+ASSETS_DIR  := ${APP_DIR}/src/main/res/raw
+
+#
+# NOTE: Android Studio produces APKs at ${APP_DIR}/debug and ${APP_DIR}/release.
+# These directories are for the `make apk` rule, which invokes gradle directly.
+#
+
+BUILD_DIR   := ${APP_DIR}/build
+DEBUG_DIR   := ${BUILD_DIR}/outputs/apk/debug
+DEBUG_APK   := ${DEBUG_DIR}/app-debug.apk
+RELEASE_DIR := ${BUILD_DIR}/outputs/apk/release
+RELEASE_APK := ${RELEASE_DIR}/app-release.apk
+
+JNI_DIR     := ${APP_DIR}/jni
+JNI_LIB_DIR := ${JNI_DIR}/lib
+JNI_LIB_SO  := libmain.so
+
+ifeq (${NDK_PATH},)
+$(error "Must define $$NDK_PATH!")
 endif
+
+${JNI_LIB_DIR}/%:
+	$(if ${V},,@echo "  MKDIR   " $@)
+	@${MKDIR} -p "$@"
+
+#
+# Determine ${TOOLCHAIN} (the common NDK toolchain path) if not provided.
+# Requires determining ${HOST} since currently the NDK toolchain path relies on it.
+#
 
 ifeq (${TOOLCHAIN},)
-TOOLCHAIN=build/android/toolchain-${ARCH}
+TOOLCHAIN_BASE := ${NDK_PATH}/toolchains/llvm/prebuilt
+
+HOST_LINUX := linux-x86_64
+HOST_MACOS := darwin-x86_64
+HOST_WIN32 := windows
+HOST_WIN64 := windows-x86_64
+
+ifneq ($(wildcard ${TOOLCHAIN_BASE}/${HOST_LINUX}/),)
+HOST    := ${HOST_LINUX}
+GRADLEW := gradlew
+else
+ifneq ($(wildcard ${TOOLCHAIN_BASE}/${HOST_MACOS}/),)
+HOST    := ${HOST_MACOS}
+GRADLEW := gradlew
+else
+ifneq ($(wildcard ${TOOLCHAIN_BASE}/${HOST_WIN64}/),)
+HOST    := ${HOST_WIN64}
+GRADLEW := gradlew.bat
+else
+ifneq ($(wildcard ${TOOLCHAIN_BASE}/${HOST_WIN32}/),)
+HOST    := ${HOST_WIN32}
+GRADLEW := gradlew.bat
+else
+$(error "No valid $$HOST for ${TOOLCHAIN_BASE} could be found, aborting.")
+endif
+endif
+endif
 endif
 
-ifeq (${ARCH},arm)
+TOOLCHAIN := ${TOOLCHAIN_BASE}/${HOST}
+endif
 
-CROSS_COMPILE ?= ${TOOLCHAIN}/bin/arm-linux-androideabi-
-ARCH_CFLAGS = -march=armv7-a -mthumb
-ARCH_LDFLAGS = -march=armv7-a -Wl,--fix-cortex-a8
+#
+# Determine the toolchain to use.
+# If none is defined, disable make all and enable the meta targets.
+#
 
-else ifeq (${ARCH},arm64)
+ARCH_CFLAGS  :=
+ARCH_LDFLAGS :=
 
-CROSS_COMPILE ?= ${TOOLCHAIN}/bin/aarch64-linux-android-
+ifeq (${ANDROID_TARGET},arm)
+ANDROID_LIBS := arm-linux-androideabi
+CLANG_PRE    := armv7a-linux-androideabi
+BINUTILS_PRE := arm-linux-androideabi
+ABI          := armeabi-v7a
+SDK          := 16
+ARCH_CFLAGS  += -march=armv7-a -mthumb
+ARCH_LDFLAGS += -march=armv7-a -Wl,--fix-cortex-a8
+else
 
-else ifeq (${ARCH},x86)
+ifeq (${ANDROID_TARGET},arm64)
+ANDROID_LIBS := aarch64-linux-android
+CLANG_PRE    := ${ANDROID_LIBS}
+BINUTILS_PRE := ${ANDROID_LIBS}
+ABI          := arm64-v8a
+SDK          := 21
+else
 
-CROSS_COMPILE ?= ${TOOLCHAIN}/bin/i686-linux-android-
+ifeq (${ANDROID_TARGET},i686)
+ANDROID_LIBS := i686-linux-android
+CLANG_PRE    := ${ANDROID_LIBS}
+BINUTILS_PRE := ${ANDROID_LIBS}
+ABI          := x86
+SDK          := 16
+else
 
-else ifeq (${ARCH},x86_64)
+ifeq (${ANDROID_TARGET},x86_64)
+ANDROID_LIBS := x86_64-linux-android
+CLANG_PRE    := ${ANDROID_LIBS}
+BINUTILS_PRE := ${ANDROID_LIBS}
+ABI          := x86_64
+SDK          := 21
+else
 
-CROSS_COMPILE ?= ${TOOLCHAIN}/bin/x86_64-linux-android-
+ANDROID_LIBS := none
+
+endif
+endif
+endif
+endif
+
+ifneq (${ANDROID_LIBS},none)
+
+CC             := ${TOOLCHAIN}/bin/${CLANG_PRE}${SDK}-clang
+CXX            := ${TOOLCHAIN}/bin/${CLANG_PRE}${SDK}-clang++
+AR             := ${TOOLCHAIN}/bin/${BINUTILS_PRE}-ar
+OBJCOPY        := ${TOOLCHAIN}/bin/${BINUTILS_PRE}-objcopy
+STRIP          := ${TOOLCHAIN}/bin/${BINUTILS_PRE}-strip --strip-unneeded
+
+PREFIX         := ${TOOLCHAIN}/sysroot/usr
+PREFIX_LIBS    := ${TOOLCHAIN}/sysroot/usr/lib/${ANDROID_LIBS}/${SDK}
+
+JNI_INCLUDES   := arch/android/include
+JNI_LIBS       := ${JNI_LIB_DIR}/${ABI}
+
+ARCH_CFLAGS    += -DANDROID -fPIE -fPIC
+ARCH_LDFLAGS   += -shared
+ARCH_CXXFLAGS  := ${ARCH_CFLAGS}
+
+SDL_PREFIX     := ${PREFIX}
+SDL_CFLAGS     := -I${JNI_INCLUDES}/SDL2
+SDL_LDFLAGS    := -L${JNI_LIBS} -lSDL2
+
+ZLIB_CFLAGS    := -I${PREFIX}/include
+ZLIB_LDFLAGS   := -L${PREFIX_LIBS} -lz
+
+LIBPNG_CFLAGS  := -I${JNI_INCLUDES}
+LIBPNG_LDFLAGS := -L${JNI_LIBS} -lpng16
+
+VORBIS_CFLAGS  := -I${JNI_INCLUDES}
+VORBIS_LDFLAGS := -L${JNI_LIBS} -logg -lvorbis -lvorbisfile
+
+package: all | ${JNI_LIB_DIR}/${ABI}
+ifneq (${BUILD_EDITOR},)
+	$(if ${V},,@echo "  MV      " ${mzx} "${JNI_LIB_DIR}/${ABI}/${JNI_LIB_SO}")
+	${MV} ${mzx} ${JNI_LIB_DIR}/${ABI}/${JNI_LIB_SO}
+else
+	$(if ${V},,@echo "  MV      " ${mzxrun} "${JNI_LIB_DIR}/${ABI}/${JNI_LIB_SO}")
+	${MV} ${mzxrun} ${JNI_LIB_DIR}/${ABI}/${JNI_LIB_SO}
+endif
 
 else
 
-$(error Specify a valid supported architecture)
+#
+# Define meta targets.
+#
+
+package:
+	$(error "Use 'make dist', 'make apk', 'make deps-install', or 'make deps-uninstall' instead.)
+
+deps-install: deps-build
+	@${MAKE} ANDROID_TARGET=arm    deps-install
+	@${MAKE} ANDROID_TARGET=arm64  deps-install
+	@${MAKE} ANDROID_TARGET=i686   deps-install
+	@${MAKE} ANDROID_TARGET=x86_64 deps-install
+
+deps-uninstall:
+	@${MAKE} ANDROID_TARGET=arm    deps-uninstall
+	@${MAKE} ANDROID_TARGET=arm64  deps-uninstall
+	@${MAKE} ANDROID_TARGET=i686   deps-uninstall
+	@${MAKE} ANDROID_TARGET=x86_64 deps-uninstall
+
+${ASSETS_DIR}:
+	$(if ${V},,@echo "  MKDIR   " $@)
+	@${MKDIR} -p "$@"
+
+${ASSETS_DIR}/assets.zip: build/android/assets | ${ASSETS_DIR}
+	@(cd build/android/ && zip -9 -r assets.zip LICENSE config.txt assets/ && mv assets.zip ../../$@)
+
+dist: | ${ASSETS_DIR}/assets.zip
+	@${MAKE} ANDROID_TARGET=arm    clean
+	@${MAKE} ANDROID_TARGET=arm    package
+	@${MAKE} ANDROID_TARGET=arm    clean
+	@${MAKE} ANDROID_TARGET=arm64  package
+	@${MAKE} ANDROID_TARGET=arm64  clean
+	@${MAKE} ANDROID_TARGET=i686   package
+	@${MAKE} ANDROID_TARGET=i686   clean
+	@${MAKE} ANDROID_TARGET=x86_64 package
+	@${MAKE} ANDROID_TARGET=x86_64 clean
+
+${RELEASE_APK}: | ${ASSETS_DIR}/assets.zip
+	@cd ${PROJECT_DIR} && ./${GRADLEW} build
+
+apk: ${RELEASE_APK}
+	@${MKDIR} -p ${build}
+	$(if ${V},,@echo "  CP      " ${RELEASE_APK} build/dist/${SUBPLATFORM}/)
+	${RM} -r build/dist/${SUBPLATFORM}
+	${MKDIR} -p build/dist/${SUBPLATFORM}
+	@${CP} ${RELEASE_APK} build/dist/${SUBPLATFORM}/${TARGET}-${SUBPLATFORM}.apk
+
+clean:
+	$(if ${V},,@echo "  RM      " ${JNI_DIR}/lib/*/libmain.so)
+	@${RM} -r ${JNI_DIR}/lib/*/libmain.so
+	$(if ${V},,@echo "  RM      " ${BUILD_DIR})
+	@${RM} -r ${BUILD_DIR}
+	$(if ${V},,@echo "  RM      " ${APP_DIR}/debug)
+	@${RM} -r ${APP_DIR}/debug
+	$(if ${V},,@echo "  RM      " ${APP_DIR}/release)
+	@${RM} -r ${APP_DIR}/release
+	$(if ${V},,@echo "  RM      " ${ASSETS_DIR}/assets.zip)
+	@${RM} ${ASSETS_DIR}/assets.zip
+
+deps-clean:
+	$(if ${V},,@echo "  RM      " arch/android/deps/)
+	@${RM} -r arch/android/deps/
+
 
 endif
 
-ARCH_CFLAGS += -DANDROID -fPIE -fPIC
-ARCH_LDFLAGS += -shared
-
-SDL_CFLAGS = -I${PREFIX}/include/SDL2
-SDL_LDFLAGS = -lSDL2
-
-LIBPNG_CFLAGS =
-LIBPNG_LDFLAGS = -lpng16
-
-ARCH_CXXFLAGS = ${ARCH_CFLAGS}
+include arch/android/Makefile.deps

@@ -90,6 +90,10 @@ DEVELOPERS
   to use it. Use the --enable-trace config.sh flag to enable
   trace logging for debug builds.
 + Refactored path functions out of util.c.
++ Replaced the Android build scripts with an improved Makefile
+  system. The Android Makefile now uses the NDK toolchains
+  directly. Also added support for APK signing and fixed several
+  Android port bugs.
 
 
 March 8th, 2020 - MZX 2.92c
