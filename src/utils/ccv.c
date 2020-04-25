@@ -286,7 +286,7 @@ Config *LoadConfig(int argc, char **argv)
         continue;
       }
       if (Option("-output", 1, argv[i], args_left)) {
-        strncpy(cfg->output, argv[i+1], MAX_PATH-4+1);
+        snprintf(cfg->output, MAX_PATH - 4, "%s", argv[i+1]);
         cfg->output[MAX_PATH-4] = '\0';
         arg_used[i+1] = 1;
         continue;
@@ -297,7 +297,7 @@ Config *LoadConfig(int argc, char **argv)
         continue;
       }
       if (Option("-dither", 1, argv[i], args_left)) {
-        strncpy(cfg->dither, argv[i+1], 256);
+        snprintf(cfg->dither, sizeof(cfg->dither), "%s", argv[i+1]);
         cfg->output[255] = '\0';
         arg_used[i+1] = 1;
         continue;
@@ -355,7 +355,7 @@ Config *LoadConfig(int argc, char **argv)
       }
     } else { // Filename
       InputFile *file = cmalloc(sizeof(InputFile));
-      strncpy(file->path, argv[i], MAX_PATH);
+      snprintf(file->path, MAX_PATH + 1, "%s", argv[i]);
       file->path[MAX_PATH] = 0;
       HASH_ADD_STR(cfg->files, path, file);
     }

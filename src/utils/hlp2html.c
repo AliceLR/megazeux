@@ -146,7 +146,7 @@ static char *expand_buffer(struct html_buffer *buffer, int required_length)
   while(buffer->alloc < required_length)
     buffer->alloc *= 2;
 
-  buffer->data = realloc(buffer->data, buffer->alloc);
+  buffer->data = crealloc(buffer->data, buffer->alloc);
   return buffer->data;
 }
 
@@ -181,7 +181,7 @@ static void append_file(struct help_file *current, const char *filename)
 static struct help_file *new_help_file(const char *title)
 {
   struct help_file *check;
-  struct help_file *current = calloc(1, sizeof(struct help_file));
+  struct help_file *current = ccalloc(1, sizeof(struct help_file));
   snprintf(current->name, MAX_FILE_NAME, "%s", title);
   current->name_length = strlen(current->name);
 
@@ -222,7 +222,7 @@ static void free_help_files(void)
 static void new_anchor(struct help_file *parent, const char *name)
 {
   struct help_anchor *check;
-  struct help_anchor *anchor = calloc(1, sizeof(struct help_anchor));
+  struct help_anchor *anchor = ccalloc(1, sizeof(struct help_anchor));
   snprintf(anchor->name, MAX_ANCHOR_NAME, "%s", name);
   anchor->name_length = strlen(anchor->name);
   anchor->parent = parent;
@@ -259,7 +259,7 @@ static void free_anchors(void)
 static void new_link(struct help_file *parent, const char *name,
  const char *target_file, const char *target_anchor)
 {
-  struct help_link *link = calloc(1, sizeof(struct help_link));
+  struct help_link *link = ccalloc(1, sizeof(struct help_link));
   snprintf(link->name, MAX_ANCHOR_NAME, "%s", name);
   link->name_length = strlen(link->name);
   link->parent = parent;
