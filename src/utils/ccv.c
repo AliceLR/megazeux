@@ -21,16 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // With fix contributed by Lachesis
 
-// Compile with:
-// gcc -o ccv ccv.c -Wall -O3
+#define CORE_LIBSPEC
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <ctype.h>
 #include <limits.h>
-
 #include "../config.h"
+
+#include "utils_alloc.h"
 
 #ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
@@ -41,8 +41,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // http://troydhanson.github.com/uthash/
 
 #include "uthash.h"
-
-#define MAX_PATH 65535
 
 #define USAGE  "Usage:\n" \
 "ccv input.bmp\n" \
@@ -206,7 +204,7 @@ typedef struct {
 
 Config *DefaultConfig()
 {
-  Config *cfg = malloc(sizeof(Config));
+  Config *cfg = cmalloc(sizeof(Config));
   cfg->files = NULL;
 
   cfg->w = 0;
@@ -288,7 +286,7 @@ Config *LoadConfig(int argc, char **argv)
         continue;
       }
       if (Option("-output", 1, argv[i], args_left)) {
-        strncpy(cfg->output, argv[i+1], MAX_PATH-4+1);
+        snprintf(cfg->output, MAX_PATH - 4, "%s", argv[i+1]);
         cfg->output[MAX_PATH-4] = '\0';
         arg_used[i+1] = 1;
         continue;
@@ -299,7 +297,7 @@ Config *LoadConfig(int argc, char **argv)
         continue;
       }
       if (Option("-dither", 1, argv[i], args_left)) {
-        strncpy(cfg->dither, argv[i+1], 256);
+        snprintf(cfg->dither, sizeof(cfg->dither), "%s", argv[i+1]);
         cfg->output[255] = '\0';
         arg_used[i+1] = 1;
         continue;
@@ -356,8 +354,8 @@ Config *LoadConfig(int argc, char **argv)
         continue;
       }
     } else { // Filename
-      InputFile *file = malloc(sizeof(InputFile));
-      strncpy(file->path, argv[i], MAX_PATH);
+      InputFile *file = cmalloc(sizeof(InputFile));
+      snprintf(file->path, MAX_PATH + 1, "%s", argv[i]);
       file->path[MAX_PATH] = 0;
       HASH_ADD_STR(cfg->files, path, file);
     }
@@ -379,8 +377,8 @@ typedef struct {
 
 Image *CreateImage(int w, int h, int channels)
 {
-  Image *image = malloc(sizeof(Image));
-  image->pixels = malloc(w * h * channels);
+  Image *image = cmalloc(sizeof(Image));
+  image->pixels = cmalloc(w * h * channels);
   image->w = w;
   image->h = h;
   image->channels = channels;
@@ -396,7 +394,7 @@ Image *LoadImage_RAW(Config *cfg, const char *path)
 
   img = CreateImage(cfg->w, cfg->h, 1);
 
-  fp = fopen(path, "rb");
+  fp = fopen_unsafe(path, "rb");
   if (!fp) Error("Failed to open %s", path);
   for (i = 0; i < cfg->w * cfg->h; i++) {
     img->pixels[i] = fgetc(fp) != 0 ? 255 : 0;
@@ -408,7 +406,7 @@ Image *LoadImage_RAW(Config *cfg, const char *path)
 
 Image *LoadImage_BMP(Config *cfg, const char *path)
 {
-  FILE *fp = fopen(path, "rb");
+  FILE *fp = fopen_unsafe(path, "rb");
   Image *img;
   char sig_a, sig_b;
   int pixelarray, dibheadersize, w, h, bpp, compression, palette_size;
@@ -578,7 +576,7 @@ Diffuse diffmethods[] = {
 
 void QuantiseDiffuse(Image *img, Image *qimg, int threshold, const char *method)
 {
-  int *err = malloc(img->w * img->h * sizeof(int));
+  int *err = cmalloc(img->w * img->h * sizeof(int));
   int method_i = -1;
   unsigned int i;
   int mx, my, x, y;
@@ -657,10 +655,10 @@ typedef struct {
 
 Charset *CreateCharset(Image *img)
 {
-  Charset *cset = malloc(sizeof(Charset));
+  Charset *cset = cmalloc(sizeof(Charset));
   int cset_size = (img->w / 8) * (img->h / 14);
   int chr, cy, cx, py, px;
-  cset->data = malloc(cset_size * 14);
+  cset->data = cmalloc(cset_size * 14);
   memset(cset->data, 0, cset_size * 14);
 
   cset->chars = cset_size;
@@ -687,15 +685,21 @@ typedef struct {
 
 Mzm *CreateMzm(int w, int h)
 {
-  Mzm *mzm = malloc(sizeof(Mzm));
+  Mzm *mzm = cmalloc(sizeof(Mzm));
   int i;
   mzm->w = w;
   mzm->h = h;
-  mzm->data = malloc(w * h * sizeof(int));
+  mzm->data = cmalloc(w * h * sizeof(int));
   for (i = 0; i < w * h; i++) {
     mzm->data[i] = i;
   }
   return mzm;
+}
+
+void FreeMzm(Mzm *mzm)
+{
+  free(mzm->data);
+  free(mzm);
 }
 
 typedef struct {
@@ -707,7 +711,7 @@ typedef struct {
 void Reuse(Charset *cset, Mzm *mzm)
 {
   Char *clist = NULL;
-  Char *c;
+  Char *c, *tmp;
   int out_chars = 0;
   int i;
   unsigned char *cdata;
@@ -716,7 +720,7 @@ void Reuse(Charset *cset, Mzm *mzm)
 
     HASH_FIND(hh, clist, cdata, sizeof(clist->data), c);
     if (!c) {
-      c = malloc(sizeof(Char));
+      c = cmalloc(sizeof(Char));
       memcpy(c->data, cdata, 14);
       if (mzm) {
         c->i = mzm->data[i] = out_chars;
@@ -732,6 +736,11 @@ void Reuse(Charset *cset, Mzm *mzm)
   }
   cset->chars = out_chars;
   cset->data = realloc(cset->data, cset->chars * 14);
+
+  HASH_ITER(hh, clist, c, tmp) {
+    HASH_DEL(clist, c);
+    free(c);
+  }
 }
 
 char *OutputPath(const char *input, Config *cfg, const char *ext)
@@ -747,12 +756,12 @@ char *OutputPath(const char *input, Config *cfg, const char *ext)
     if (buf_e) *buf_e = '\0';
 
     output_len = strlen(buf) + strlen(ext) + 1;
-    output_path = malloc(output_len);
+    output_path = cmalloc(output_len);
     snprintf(output_path, output_len, "%s%s", buf, ext);
     output_path[output_len - 1] = '\0';
   } else {
     output_len = strlen(cfg->output) + strlen(ext) + 1;
-    output_path = malloc(output_len);
+    output_path = cmalloc(output_len);
     snprintf(output_path, output_len, "%s%s", cfg->output, ext);
     output_path[output_len - 1] = '\0';
   }
@@ -761,14 +770,14 @@ char *OutputPath(const char *input, Config *cfg, const char *ext)
 
 void WriteCharset(const char *path, Charset *cset)
 {
-  FILE *fp = fopen(path, "wb");
+  FILE *fp = fopen_unsafe(path, "wb");
   fwrite(cset->data, 14, cset->chars, fp);
   fclose(fp);
 }
 
 void WriteMzm(const char *path, Mzm *mzm)
 {
-  FILE *fp = fopen(path, "wb");
+  FILE *fp = fopen_unsafe(path, "wb");
   int i;
   fwrite("MZM2", 1, 4, fp);
 
@@ -1020,7 +1029,9 @@ int main(int argc, char **argv)
   for(file = cfg->files; file != NULL; file = file->hh.next) {
     image = LoadImage(cfg, file->path);
 
-    if (((image->w % 8) != 0) || ((image->h % 14) != 0)) Error("Image dimensions are not divisible by 8x14");
+    if (((image->w % 8) != 0) || ((image->h % 14) != 0)) {
+      Error("Image dimensions are not divisible by 8x14");
+    }
     qimage = Quantise(cfg, image);
 
     cset = CreateCharset(qimage);
@@ -1046,11 +1057,12 @@ int main(int argc, char **argv)
       ExcludeChars(cset, mzm, cfg->exclude, cfg->offset);
     }
 
-
     if (cfg->offset) {
       OffsetMzm(mzm, cfg->offset);
     }
 
+    FreeImage(image);
+    FreeImage(qimage);
 
     { // Output charset
       char *filename_chr = OutputPath(file->path, cfg, ".chr");
@@ -1066,6 +1078,7 @@ int main(int argc, char **argv)
     if (cfg->mzm) { // Output MZM
       char *filename_mzm = OutputPath(file->path, cfg, ".mzm");
       WriteMzm(filename_mzm, mzm);
+      FreeMzm(mzm);
 
       if (!cfg->quiet) {
         printf(", %s", filename_mzm);

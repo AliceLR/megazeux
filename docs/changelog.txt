@@ -4,12 +4,19 @@ USERS
 
 + Added robot editor shortcuts CTRL+Home and CTRL+End to jump to
   the start and the end of the current program.
++ Char selector tile movement is now disabled outside of the
+  char editor and for 1x1 char selections. This allows typing
+  -/_/=/+ in other char selectors to jump to those characters.
 + Added docs/fileform.html, a document describing all currently
   supported MZX file formats in excessive detail.
 + When startup_file is provided with both a directory and a
   filename and no startup_path has been set, the directory will
   now be used as startup_path. If startup_path is set, the
   directory portion of startup_file will still be ignored.
++ The flash thing editor functions (Show Robots, etc.) now use
+  the protected charset and will display with the protected
+  palette in SMZX mode and in regular mode situations where the
+  normal flashing would be difficult/impossible to see.
 + Fixed a bug where input text with no corresponding internal
   key would be ignored by the robot editor.
 + Fixed a bug where some AltGr key combinations would not work
@@ -49,6 +56,17 @@ USERS
   match. This fixes numerous games relying on truncated SFNs
   with unambiguous matches.
 + Reimplemented COPY # # # # for layer-to-layer copies.
++ Fixed a collision bug affecting unbound sprites with ccheck 3
+  set in SMZX mode where wrong colors could be treated as the
+  transparent color for the purposes of collision.
++ Fixed softscale bug on some platforms where the screen border
+  wouldn't be cleared.
++ The GLSL renderer will now attempt to use a framebuffer when
+  available. This fixes GL_INVALID_OPERATION bugs with certain
+  OpenGL ES 2.0 implementations.
++ Directory navigation in the file manager now checks directory
+  access permissions before allowing navigation and displays an
+  error when navigation fails.
 + Windows builds now attempt to load and call SetProcessDPIAware
   on startup. This should fix undesirable DPI-related scaling
   and fullscreen bugs.
@@ -67,6 +85,7 @@ DEVELOPERS
   added hash caching, made the MZX copy of khash use MZX style,
   and better documented the changes made to it.
 + Fixed alignment issues in memcasecmp.
++ Fixed alignment issues in get_cursor_color.
 + Added a config.sh flag for UndefinedBehaviorSanitizer.
 + Categorized config.sh flags list.
 + Added a trace logging level that is disabled by default and
@@ -74,6 +93,10 @@ DEVELOPERS
   to use it. Use the --enable-trace config.sh flag to enable
   trace logging for debug builds.
 + Refactored path functions out of util.c.
++ Replaced the Android build scripts with an improved Makefile
+  system. The Android Makefile now uses the NDK toolchains
+  directly. Also added support for APK signing and fixed several
+  Android port bugs.
 
 
 March 8th, 2020 - MZX 2.92c

@@ -28,25 +28,30 @@ import org.libsdl.app.SDLActivity;
 
 import java.io.File;
 
-public class GameActivity extends SDLActivity {
-    static File getAssetPath(Activity activity) {
-        File extDir = activity.getExternalFilesDir(null);
-        if (extDir == null) {
-            extDir = new File(Environment.getExternalStorageDirectory(), "data/megazeux");
-            if (!extDir.exists()) {
-                //noinspection StatementWithEmptyBody
-                if (!extDir.mkdirs()) {
-                    // pass
-                }
-            }
+public class GameActivity extends SDLActivity
+{
+  static File getAssetPath(Activity activity)
+  {
+    File extDir = activity.getExternalFilesDir(null);
+    if(extDir == null)
+    {
+      extDir = new File(Environment.getExternalStorageDirectory(), "data/megazeux");
+      if(!extDir.exists())
+      {
+        //noinspection StatementWithEmptyBody
+        if(!extDir.mkdirs())
+        {
+          // pass
         }
-
-        return extDir;
+      }
     }
 
-    @Override
-    protected String[] getArguments() {
+    return extDir;
+  }
 
-        return new String[] { new File(getAssetPath(this), "megazeux").getAbsolutePath() };
-    }
+  @Override
+  protected String[] getArguments()
+  {
+    return new String[] { new File(getAssetPath(this), "megazeux").getAbsolutePath() };
+  }
 }

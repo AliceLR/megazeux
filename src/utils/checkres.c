@@ -1201,7 +1201,7 @@ static struct base_path *add_base_path(const char *path_name,
       alloc = 4;
     }
 
-    *path_list = realloc(*path_list, 2 * alloc * sizeof(struct base_path *));
+    *path_list = crealloc(*path_list, 2 * alloc * sizeof(struct base_path *));
     *path_list_alloc *= 2;
   }
 
@@ -1228,7 +1228,7 @@ static struct base_file *add_base_file(const char *path_name,
       alloc = 4;
     }
 
-    *file_list = realloc(*file_list, 2 * alloc * sizeof(struct base_file *));
+    *file_list = crealloc(*file_list, 2 * alloc * sizeof(struct base_file *));
     *file_list_alloc *= 2;
   }
 

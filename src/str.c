@@ -475,11 +475,22 @@ static int get_string_numeric_value(struct string *src)
   return 0;
 }
 
+/**
+ * Read a string as a counter. This occurs either when the string length is
+ * read, a string index is read, or when a counter is set to a string or a
+ * string is referenced in an expression. The provided buffer WILL be modified
+ * to the real name of the string.
+ *
+ * @param  mzx_world    World data.
+ * @param  name_buffer  Mutable buffer containing the string name.
+ * @param  id           Current robot ID or 0 for global.
+ * @return              Value read from the string.
+ */
 int string_read_as_counter(struct world *mzx_world,
- const char *name, int id)
+ char *name_buffer, int id)
 {
   struct string_list *string_list = &(mzx_world->string_list);
-  char *dot_ptr = strchr(name + 1, '.');
+  char *dot_ptr = strchr(name_buffer + 1, '.');
   struct string src;
 
   // User may have provided $str.N or $str.length explicitly
@@ -489,7 +500,7 @@ int string_read_as_counter(struct world *mzx_world,
     int next;
 
     *dot_ptr = 0;
-    src = find_string(string_list, name, &next);
+    src = find_string(string_list, name_buffer, &next);
 
     // Fix the dot because currently stuff like inc/dec/multiply
     // does a read function call followed by a write function call
@@ -555,18 +566,28 @@ int string_read_as_counter(struct world *mzx_world,
   else
 
   // Otherwise fall back to looking up a regular string
-  if(get_string(mzx_world, name, &src, id))
+  if(get_string(mzx_world, name_buffer, &src, id))
     return get_string_numeric_value(&src);
 
   // The string wasn't found or the request was out of bounds
   return 0;
 }
 
+/**
+ * Set a string as a counter. This occurs either when the string length is set,
+ * a string index is set, or when a string or string splice is used in a numeric
+ * command. The provided buffer WILL be modified to the real name of the string.
+ *
+ * @param  mzx_world    World data.
+ * @param  name_buffer  Mutable buffer containing the string name.
+ * @param  value        Numeric value to set the string to.
+ * @param  id           Current robot ID or 0 for global.
+ */
 void string_write_as_counter(struct world *mzx_world,
- const char *name, int value, int id)
+ char *name_buffer, int value, int id)
 {
   struct string_list *string_list = &(mzx_world->string_list);
-  char *dot_ptr = strrchr(name + 1, '.');
+  char *dot_ptr = strrchr(name_buffer + 1, '.');
 
   // User may have provided $str.N notation "write char at offset"
   if(dot_ptr)
@@ -593,7 +614,7 @@ void string_write_as_counter(struct world *mzx_world,
         return;
 
       // Writing to length from a non-existent string has no effect
-      src = find_string(string_list, name, &next);
+      src = find_string(string_list, name_buffer, &next);
       if(!src)
         return;
 
@@ -610,7 +631,7 @@ void string_write_as_counter(struct world *mzx_world,
       if(!index_specified)
         return;
 
-      src = find_string(string_list, name, &next);
+      src = find_string(string_list, name_buffer, &next);
 
       // Negative indices (2.91+)
       if(index < 0 && mzx_world->version < V291)
@@ -652,7 +673,7 @@ void string_write_as_counter(struct world *mzx_world,
       }
     }
 
-    if(!force_string_length(string_list, name, next, &src, &alloc_length))
+    if(!force_string_length(string_list, name_buffer, next, &src, &alloc_length))
       return;
 
     if(index_specified)
@@ -685,7 +706,7 @@ void string_write_as_counter(struct world *mzx_world,
 
     src_str.value = n_buffer;
     src_str.length = strlen(n_buffer);
-    set_string(mzx_world, name, &src_str, id);
+    set_string(mzx_world, name_buffer, &src_str, id);
   }
 }
 
@@ -699,11 +720,11 @@ static void add_string(struct string_list *string_list, const char *name,
     memcpy(dest->value, src->value, src->length);
 }
 
-static boolean get_string_size_offset(const char *name, size_t *ssize,
+static boolean get_string_size_offset(char *name_buffer, size_t *ssize,
  boolean *size_specified, int *soffset, boolean *offset_specified)
 {
-  char *offset_position = strchr(name, '+');
-  char *size_position = strchr(name, '#');
+  char *offset_position = strchr(name_buffer, '+');
+  char *size_position = strchr(name_buffer, '#');
   char *error;
 
   if(size_position)
@@ -770,7 +791,21 @@ static int load_string_board_direct(char *dest_chars, int dest_size,
   return dest_size;
 }
 
-void load_string_board(struct world *mzx_world, const char *name,
+/**
+ * Load a portion of the provided chars layer to the given string. This may
+ * be performed on a string with an offset or size suffix; in this situation,
+ * the provided name buffer WILL be truncated to the actual string name. The
+ * input block dimensions should be clipped prior to calling this function.
+ *
+ * @param  mzx_world    World data.
+ * @param  name_buffer  Mutable buffer containing the string name.
+ * @param  src_chars    Pointer to start of board or layer char data array to copy.
+ * @param  src_width    Width of board or layer.
+ * @param  block_width  Width of block to read from.
+ * @param  block_height Height of block to read from.
+ * @param  terminator   Terminator char to stop reading from, or 0 for none.
+ */
+void load_string_board(struct world *mzx_world, char *name_buffer,
  char *src_chars, int src_width, int block_width, int block_height,
  char terminator)
 {
@@ -785,17 +820,15 @@ void load_string_board(struct world *mzx_world, const char *name,
   size_t copy_size;
   int next;
 
-  boolean error = get_string_size_offset(name, &dest_size, &size_specified,
-   &input_offset, &offset_specified);
-
-  if(error)
+  if(get_string_size_offset(name_buffer, &dest_size, &size_specified,
+   &input_offset, &offset_specified))
     return;
 
   // Size/offset support (2.91+)
   if(mzx_world->version < V291 && (offset_specified || size_specified))
     return;
 
-  dest = find_string(string_list, name, &next);
+  dest = find_string(string_list, name_buffer, &next);
 
   if(get_string_real_index(dest, input_offset, &dest_offset))
     return;
@@ -806,13 +839,24 @@ void load_string_board(struct world *mzx_world, const char *name,
   copy_size = load_string_board_direct(copy_buffer, dest_size,
    src_chars, src_width, block_width, block_height, terminator);
 
-  force_string_move(string_list, name, next, &dest, copy_size,
+  force_string_move(string_list, name_buffer, next, &dest, copy_size,
    dest_offset, offset_specified, &dest_size, size_specified, copy_buffer);
 
   free(copy_buffer);
 }
 
-int set_string(struct world *mzx_world, const char *name, struct string *src,
+/**
+ * Set a string represented by a given name. The name may include an offset
+ * or size suffix; in this situation, the provided name buffer WILL be truncated
+ * to the actual string name.
+ *
+ * @param  mzx_world    World data.
+ * @param  name_buffer  Mutable buffer containing the string name.
+ * @param  src          String to set the destination string to.
+ * @param  id           Current robot ID or 0 for global.
+ * @return              1 if the robot program was modified, otherwise 0.
+ */
+int set_string(struct world *mzx_world, char *name, struct string *src,
  int id)
 {
   struct string_list *string_list = &(mzx_world->string_list);
@@ -826,10 +870,8 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   struct string *dest;
   int next = 0;
 
-  boolean error = get_string_size_offset(name, &size, &size_specified,
-   &input_offset, &offset_specified);
-
-  if(error)
+  if(get_string_size_offset(name, &size, &size_specified,
+   &input_offset, &offset_specified))
     return 0;
 
   dest = find_string(string_list, name, &next);
@@ -1269,37 +1311,37 @@ struct string *new_string(struct world *mzx_world, const char *name,
   return str;
 }
 
-int get_string(struct world *mzx_world, const char *name, struct string *dest,
+/**
+ * Get a string by name and initialize the provided string struct with its
+ * value. An offset or size suffix can be provided with the name buffer; in
+ * this situation, the name buffer WILL be truncated to the actual string name.
+ *
+ * @param  mzx_world    World data.
+ * @param  name_buffer  Mutable buffer containing the string name.
+ * @param  dest         Destination string struct for the string value. This
+ *                      struct will only be initialized on success.
+ * @param  id           Current robot ID or 0 for global.
+ * @return              1 if a valid string was found (success), otherwise 0.
+ */
+int get_string(struct world *mzx_world, char *name_buffer, struct string *dest,
  int id)
 {
   struct string_list *string_list = &(mzx_world->string_list);
-  boolean error;
   boolean offset_specified = false;
   boolean size_specified = false;
   size_t size = 0;
   size_t offset = 0;
   int input_offset = 0;
   struct string *src;
-  char *trimmed_name;
   int next;
 
   dest->length = 0;
 
-  trimmed_name = malloc(strlen(name) + 1);
-  memcpy(trimmed_name, name, strlen(name) + 1);
-
-  error = get_string_size_offset(trimmed_name, &size, &size_specified,
-   &input_offset, &offset_specified);
-
-  if(error)
-  {
-    free(trimmed_name);
+  if(get_string_size_offset(name_buffer, &size, &size_specified,
+   &input_offset, &offset_specified))
     return 0;
-  }
 
-  src = find_string(string_list, trimmed_name, &next);
-  free(trimmed_name);
-
+  src = find_string(string_list, name_buffer, &next);
   if(src)
   {
     // Negative offsets (2.91+)
@@ -1330,14 +1372,24 @@ int get_string(struct world *mzx_world, const char *name, struct string *dest,
 // You can't increment spliced strings (it's not really useful and
 // would introduce a world of problems..)
 
-void inc_string(struct world *mzx_world, const char *name, struct string *src,
+/**
+ * Increase a string by a provided value. This operation is invalid on a string
+ * splice, but this function will check the given name buffer for an offset or
+ * size suffix and WILL truncate the name buffer if one is found.
+ *
+ * @param  mzx_world    World data.
+ * @param  name_buffer  Mutable buffer containing the string name.
+ * @param  src          String to increase the destination string by.
+ * @param  id           Current robot ID or 0 for global.
+ */
+void inc_string(struct world *mzx_world, char *name_buffer, struct string *src,
  int id)
 {
   struct string_list *string_list = &(mzx_world->string_list);
   struct string *dest;
   int next;
 
-  dest = find_string(string_list, name, &next);
+  dest = find_string(string_list, name_buffer, &next);
 
   if(dest)
   {
@@ -1375,13 +1427,13 @@ void inc_string(struct world *mzx_world, const char *name, struct string *src,
     size_t size;
     int offset;
 
-    boolean error = get_string_size_offset(name, &size,
+    boolean error = get_string_size_offset(name_buffer, &size,
      &size_specified, &offset, &offset_specified);
 
     if(error || offset_specified || size_specified)
       return;
 
-    add_string(string_list, name, src, next);
+    add_string(string_list, name_buffer, src, next);
   }
 }
 

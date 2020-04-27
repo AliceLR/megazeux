@@ -1,9 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
-
+<!DOCTYPE html>
+<html>
 <head>
 <title>MegaZeux Platform Support Matrix</title>
 <script language="JavaScript">
@@ -51,9 +47,12 @@ var no_low_memory = subopt("NO", 5);
 var no_updater = subopt("NO", 6);
 var no_updater_unix = subopt("NO", 7);
 var no_sdl_3ds = std("NO", 8);
-var optional_sdl_wii = std("OPTIONAL", 9);
+var optional_sdl_wii = std("NO / SDL 1.2", 9);
 var yes_but_8bpp = subopt("YES (8bpp)", 10);
 var no_gl_switch = subopt("NO", 11);
+
+var sdl2 = _yes("SDL 2");
+var sdl1_2 = std("SDL 1.2");
 
 var ZIP = _yes("ZIP");
 var DMG = _yes("DMG");
@@ -64,12 +63,12 @@ var xmp = std("xmp");
 var rad = std("RAD");
 var libvorbis = std("libvorbis");
 var tremor = std("tremor");
-var tremor_lowmem = std("tremor<br />(lowmem)");
+var tremor_lowmem = std("tremor<br>(lowmem)");
 
 var render_ctr = std("render_ctr");
 var render_nds = std("render_nds");
 var render_gp2x = std("render_gp2x");
-var render_gx = std("render_gx\nrender_xfb");
+var render_gx = std("render_gx<br>render_xfb");
 
 var speed = "Speed";
 var size = "Size";
@@ -79,7 +78,7 @@ var fields =
 {
   platform:         "$PLATFORM",
   description:      "Description",
-  architecture:     "Architecutre(s)<br />(Tested Only)",
+  architecture:     "Architecutre(s)<br>(Tested Only)",
   endian:           "Endian",
   toolchain:        "Toolchain",
   packaged:         "Packaged",
@@ -149,7 +148,7 @@ var archs =
     description:      "Nintendo 3DS",
     architecture:     "ARM11 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 9.1.0 <br /> binutils 2.32 <br /> (dk r53)",
+    toolchain:        "gcc 9.1.0 <br> binutils 2.32 <br> (dk r53)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -172,9 +171,9 @@ var archs =
   {
     platform:         "android",
     description:      "Android",
-    architecture:     "ARMv7-a (ELF) <br/> AArch64 (ELF) <br /> i686 (ELF) <br /> x86_64 (ELF)",
+    architecture:     "ARMv7-a (ELF) <br> AArch64 (ELF) <br> i686 (ELF) <br> x86_64 (ELF)",
     endian:           "Little",
-    toolchain:        "clang 8.0.2 <br /> binutils 2.27.0.20170315 <br /> bionic",
+    toolchain:        "clang 8.0.2 <br> binutils 2.27.0.20170315 <br> bionic",
     packaged:         APK,
     visibility:       yes,
     stack_protector:  _FAULTY("NO"),
@@ -183,7 +182,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl:              sdl2,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -201,7 +200,7 @@ var archs =
   {
     platform:         "darwin",
     description:      "MacOS 10.x",
-    architecture:     "x86_64 (Mach-O) <br /> i686 (Mach-O) <br /> PPC (Mach-O)",
+    architecture:     "x86_64 (Mach-O) <br> i686 (Mach-O) <br> PPC (Mach-O)",
     endian:           "Varies",
     toolchain:        "Various",
     packaged:         DMG,
@@ -231,9 +230,9 @@ var archs =
   {
     platform:         "emscripten",
     description:      "HTML5 (Emscripten)",
-    architecture:     "JavaScript <br /> WebAssembly",
+    architecture:     "JavaScript <br> WebAssembly",
     endian:           "Little",
-    toolchain:        "clang 10.0.0 <br /> emsdk 1.38.41",
+    toolchain:        "clang 10.0.0 <br> emsdk 1.38.41",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -241,7 +240,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl:              sdl2,
     editor:           _FAULTY(),
     helpsys:          yes,
     audio:            yes,
@@ -259,10 +258,10 @@ var archs =
   mingw:
   {
     platform:         "mingw",
-    description:      "Windows <br /> (GNU toolchain)",
-    architecture:     "x64 (PE+ COFF) <br /> x86 (PE COFF)",
+    description:      "Windows <br> (GNU toolchain)",
+    architecture:     "x64 (PE+ COFF) <br> x86 (PE COFF)",
     endian:           "Little",
-    toolchain:        "gcc 9.3.0 <br /> binutils 2.34",
+    toolchain:        "gcc 9.3.0 <br> binutils 2.34",
     packaged:         ZIP,
     visibility:       yes,
     stack_protector:  no_mingw_stack_protector,
@@ -289,8 +288,8 @@ var archs =
   msvc:
   {
     platform:         "msvc",
-    description:      "Windows <br /> (Visual Studio)",
-    architecture:     "x64 (PE+ COFF) <br /> x86 (PE COFF)",
+    description:      "Windows <br> (Visual Studio)",
+    architecture:     "x64 (PE+ COFF) <br> x86 (PE COFF)",
     endian:           "Little",
     toolchain:        "Visual Studio 2017",
     packaged:         subopt("NO", 2),
@@ -322,7 +321,7 @@ var archs =
     description:      "Nintendo DS",
     architecture:     "ARM9 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 9.1.0 <br /> binutils 2.32 <br /> (dk r53)",
+    toolchain:        "gcc 9.1.0 <br> binutils 2.32 <br> (dk r53)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
@@ -347,7 +346,7 @@ var archs =
     description:      "PlayStation Portable",
     architecture:     "MIPS (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 4.6.2 <br /> binutils 2.22 <br /> (dk r16)",
+    toolchain:        "gcc 4.6.2 <br> binutils 2.22 <br> (dk r16)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes_but_8bpp,
@@ -355,7 +354,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
-    sdl:              yes,
+    sdl:              sdl1_2,
     editor:           no_low_memory,
     helpsys:          no_low_memory,
     audio:            yes,
@@ -372,7 +371,7 @@ var archs =
     description:      "Nintendo Switch",
     architecture:     "ARMv8/AArch64 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 9.2.0 <br /> binutils 2.32 <br /> (dk r14)",
+    toolchain:        "gcc 9.2.0 <br> binutils 2.32 <br> (dk r14)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -380,7 +379,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl:              sdl2,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -398,7 +397,7 @@ var archs =
   {
     platform:         "unix",
     description:      "Linux, BSD, Solaris, HaikuOS, etc.",
-    architecture:     "AMD64 (ELF) <br /> i386 (ELF) <br /> PPC64 (ELF)",
+    architecture:     "AMD64 (ELF) <br> i386 (ELF) <br> PPC64 (ELF) <br> PPC (ELF)",
     endian:           "Varies",
     toolchain:        "Various",
     packaged:         _yes("Various"),
@@ -431,7 +430,7 @@ var archs =
     description:      "Nintendo Wii",
     architecture:     "PPC (ELF)",
     endian:           "Big",
-    toolchain:        "gcc 8.4.0 <br /> binutils 2.32 <br /> (dk r36)",
+    toolchain:        "gcc 8.4.0 <br> binutils 2.32 <br> (dk r36)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -454,9 +453,9 @@ var archs =
   {
     platform:         "xcode",
     description:      ">= MacOS 10.6",
-    architecture:     "x86_64 (Mach-O) <br /> i686 (Mach-O)",
+    architecture:     "x86_64 (Mach-O) <br> i686 (Mach-O)",
     endian:           "Little",
-    toolchain:        "clang 900.0.38 <br /> LLVM 9.0.0",
+    toolchain:        "clang 900.0.38 <br> LLVM 9.0.0",
     packaged:         DMG,
     visibility:       yes,
     stack_protector:  yes,
@@ -488,7 +487,7 @@ var archs =
     description:      "AmigaOS 4.x",
     architecture:     "PPC (ELF)",
     endian:           "Big",
-    toolchain:        "gcc 4.2.2 <br /> binutils 2.14 <br /> clib2",
+    toolchain:        "gcc 4.2.2 <br> binutils 2.14 <br> clib2",
     packaged:         LHA,
     visibility:       yes,
     stack_protector:  yes,
@@ -497,7 +496,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl:              sdl1_2,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -518,7 +517,7 @@ var archs =
     description:      "GP2x",
     architecture:     "ARM9 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 4.1.1 <br /> binutils 2.16.1 <br /> glibc2.3.7 <br /> (open2x)",
+    toolchain:        "gcc 4.1.1 <br> binutils 2.16.1 <br> glibc2.3.7 <br> (open2x)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
@@ -526,7 +525,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
-    sdl:              yes,
+    sdl:              sdl1_2,
     editor:           no_low_memory,
     helpsys:          no_low_memory,
     audio:            yes,
@@ -543,7 +542,7 @@ var archs =
     description:      "Pandora",
     architecture:     "ARMv7-a (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 4.4.1 <br /> binutils 2.19.51 <br /> (CS 2009q3)",
+    toolchain:        "gcc 4.4.1 <br> binutils 2.19.51 <br> (CS 2009q3)",
     packaged:         subopt("ZIP (PND?)"),
     visibility:       yes,
     stack_protector:  yes,
@@ -552,7 +551,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     speed,
-    sdl:              yes,
+    sdl:              sdl1_2,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -776,65 +775,66 @@ li {
 
 <ol>
 
-<li><a name="note1"/>These platforms are currently unsupported due to lack
+<li id="note1">These platforms are currently unsupported due to lack
 of available hardware to test on, lack of working toolchains, inherent
 compatibility issues with MegaZeux, or simply lack of interest. Information
 based on last known working builds (if any).
 </li>
 
-<li><a name="note2"/>Could use existing `package.sh' however this does
-not handle PDB files.<br/>
+<li id="note2">Could use existing `package.sh' however this does
+not handle PDB files.<br>
 MSVC binaries are replicate of MinGW binaries and require a proprietary non
 cross-capable compiler.
 </li>
 
-<li><a name="note3"/>&quot;Optimized Visibility&quot; refers to the
+<li id="note3">&quot;Optimized Visibility&quot; refers to the
 hiding of library symbols which are not required or referenced
 outside of that library. An &quot;optimized&quot; library is smaller
-and loads faster.<br/>
+and loads faster.<br>
 Required on Win32. Only applicable with CONFIG_MODULAR=y builds.
 </li>
 
-<li><a name="note4"/>Disabled due to miscompilation of stack protector in
+<li id="note4">Disabled due to miscompilation of stack protector in
 conjunction with C++ exceptions with some MinGW compilers.
 </li>
 
-<li><a name="note5"/>The editor and help system features are disabled
+<li id="note5">The editor and help system features are disabled
 to conserve cache on embedded platforms. The features build and work
 on these platforms, but they are basically unusable due to the lack of any
 on-screen keyboard. Additionally, hash tables have been disabled on the NDS to
 conserve memory.
 </li>
 
-<li><a name="note6"/>The updater may or may not work on these platforms, but
+<li id="note6">The updater may or may not work on these platforms, but
 no builds are currently provided by the official update hosts.
 </li>
 
-<li><a name="note7"/>The updater is typically disabled in the Linux
+<li id="note7">The updater is typically disabled in the Linux
 binaries that are shipped (for distributions like Debian or Fedora), even
-though the feature can easily be enabled.<br/>The issue is that MegaZeux is
+though the feature can easily be enabled.<br>The issue is that MegaZeux is
 installed system-wide on these platforms and overwrites cannot be
-guaranteed.<br/>Additionally, it is felt that the advanced package management
+guaranteed.<br>Additionally, it is felt that the advanced package management
 on these platforms supercedes any usefulness of the built-in updater.
 </li>
 
-<li><a name="note8"/>Building MZX with SDL on the 3DS is viable, but the
+<li id="note8">Building MZX with SDL on the 3DS is viable, but the
 software renderer is far slower, currently offers no additional functionality,
 and doesn't allow for special features such as screen dragging. Furthermore,
 SDL significantly increases the size of the MZX executable.
 </li>
 
-<li><a name="note9"/>Building MZX with SDL Wii is viable, but produces larger
+<li id="note9">Building MZX with SDL Wii is viable, but produces larger
 binaries than desired, relies on the software renderer, and SDL Wii is
 considered unstable.
 </li>
 
-<li><a name="note10"/>Layer rendering is supported on this platform by as it
-uses the SDL software renderer, but this port does not currently support a color
-depth greater than 8bpp, so the UI palette will not be protected in SMZX mode.
+<li id="note10">Layer rendering is supported on this platform by as it
+uses the SDL software renderer. By default, the 8bpp software renderer is
+selected for performance, so the UI palette will not be protected in SMZX mode.
+Switching to a higher force_bpp value will fix this issue.
 </li>
 
-<li><a name="note11"/>The GL renderers work on the Switch but have been
+<li id="note11">The GL renderers work on the Switch but have been
 disabled because they cause system crashes when exiting MegaZeux. They generally
 seem to perform worse than softscale, so there isn't much reason to fix this.
 </li>

@@ -561,6 +561,9 @@ static void softscale_sync_screen(struct graphics_data *graphics)
 
   softscale_unlock_texture(render_data);
 
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+  SDL_RenderClear(renderer);
+
   SDL_RenderCopy(renderer, texture, src_rect, &dest_rect);
   SDL_RenderPresent(renderer);
 }

@@ -38,10 +38,12 @@
 #include "../window.h"
 #include "../world_struct.h"
 
+#define MATCH_STRING_MAX 61
+
 struct breakpoint
 {
   char match_name[ROBOT_NAME_SIZE];
-  char match_string[61];
+  char match_string[MATCH_STRING_MAX];
   struct string_search_data index;
   int line_number;
   int match_name_len;
@@ -50,7 +52,7 @@ struct breakpoint
 
 struct watchpoint
 {
-  char match_name[61];
+  char match_name[MATCH_STRING_MAX];
   int last_value;
 };
 
@@ -112,8 +114,10 @@ static inline int get_watchpoint_value(struct world *mzx_world,
   if(is_string(wt->match_name))
   {
     struct string src_string;
+    char tmp[MATCH_STRING_MAX];
+    memcpy(tmp, wt->match_name, MATCH_STRING_MAX);
 
-    if(get_string(mzx_world, wt->match_name, &src_string, 0))
+    if(get_string(mzx_world, tmp, &src_string, 0))
     {
       return hash_string(src_string.value, src_string.length);
     }
@@ -147,7 +151,7 @@ void update_watchpoint_last_values(struct world *mzx_world)
 static int edit_breakpoint_dialog(struct world *mzx_world,
  struct breakpoint *br, const char *title)
 {
-  char match_string[61];
+  char match_string[MATCH_STRING_MAX];
   char match_name[ROBOT_NAME_SIZE];
   int line_number;
 
@@ -158,7 +162,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  memcpy(match_string, br->match_string, 61);
+  memcpy(match_string, br->match_string, MATCH_STRING_MAX);
   memcpy(match_name, br->match_name, ROBOT_NAME_SIZE);
   line_number = br->line_number;
 
@@ -181,7 +185,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
 
   if(!result)
   {
-    memcpy(br->match_string, match_string, 61);
+    memcpy(br->match_string, match_string, MATCH_STRING_MAX);
     memcpy(br->match_name, match_name, ROBOT_NAME_SIZE);
     br->line_number = line_number;
     br->match_string_len = strlen(match_string);
@@ -197,7 +201,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
 static int edit_watchpoint_dialog(struct world *mzx_world,
  struct watchpoint *wt, const char *title)
 {
-  char match_name[61];
+  char match_name[MATCH_STRING_MAX];
 
   struct element *elements[3];
   struct dialog di;
@@ -206,7 +210,7 @@ static int edit_watchpoint_dialog(struct world *mzx_world,
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  memcpy(match_name, wt->match_name, 61);
+  memcpy(match_name, wt->match_name, MATCH_STRING_MAX);
 
   elements[0] = construct_input_box(3, 1,
    "Variable:", 60, match_name);
@@ -221,7 +225,7 @@ static int edit_watchpoint_dialog(struct world *mzx_world,
 
   if(!result)
   {
-    memcpy(wt->match_name, match_name, 61);
+    memcpy(wt->match_name, match_name, MATCH_STRING_MAX);
   }
 
   // Prevent UI keys from carrying through.

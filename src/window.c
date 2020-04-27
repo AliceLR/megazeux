@@ -730,18 +730,28 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
       case IKEY_KP_MINUS:
       case IKEY_MINUS:
       {
-        // Move in tile increment
-        current = char_select_next_tile(current, -1, width, height);
-        break;
+        if(allow_multichar && (width != 1 || height != 1))
+        {
+          // Move backward in tile increment.
+          if(!get_shift_status(keycode_internal))
+            current = char_select_next_tile(current, -1, width, height);
+          break;
+        }
       }
+      /* fall-through */
 
       case IKEY_KP_PLUS:
       case IKEY_EQUALS:
       {
-        // Move in tile increment
-        current = char_select_next_tile(current, 1, width, height);
-        break;
+        if(allow_multichar && (width != 1 || height != 1))
+        {
+          // Move forward in a tile increment.
+          if(!get_shift_status(keycode_internal))
+            current = char_select_next_tile(current, 1, width, height);
+          break;
+        }
       }
+      /* fall-through */
 
       default:
       {
@@ -749,6 +759,17 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
         {
           // If this is from 32 to 255, jump there.
           int key_char = get_key(keycode_text_ascii);
+
+          if(allow_multichar && (width != 1 || height != 1))
+          {
+            // Ignore text from these keys in situations where they are used
+            // for tile movement instead...
+            if(get_key_status(keycode_internal, IKEY_MINUS) ||
+             get_key_status(keycode_internal, IKEY_EQUALS) ||
+             get_key_status(keycode_internal, IKEY_KP_MINUS) ||
+             get_key_status(keycode_internal, IKEY_KP_PLUS))
+              break;
+          }
 
           if(key_char >= 32 && key_char <= 255)
             current = key_char;
@@ -3560,15 +3581,24 @@ skip_dir:
       case 4:
       {
         size_t ret_len = strlen(ret);
+        boolean ignore_file = false;
 
         if(ret[0] && (ret[ret_len - 1] == ':') && (ret_len + 1) < MAX_PATH)
           strcpy(ret + ret_len, DIR_SEPARATOR);
 
         path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
         if(ret_path[0])
-          path_navigate(current_dir_name, MAX_PATH, ret_path);
+        {
+          if(path_navigate(current_dir_name, MAX_PATH, ret_path) < 0)
+          {
+            error("Directory does not exist or permission denied.",
+             ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
+            ignore_file = true;
+            ret[0] = '\0';
+          }
+        }
 
-        if(ret_file[0])
+        if(ret_file[0] && !ignore_file)
           path_join(ret, MAX_PATH, current_dir_name, ret_file);
       }
     }
@@ -3620,7 +3650,9 @@ skip_dir:
         // It's actually a dir, oops!
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
         {
-          path_navigate(current_dir_name, MAX_PATH, ret_file);
+          if(path_navigate(current_dir_name, MAX_PATH, ret_file) < 0)
+            error("Directory does not exist or permission denied.",
+             ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
           ret[0] = '\0';
           break;
         }
@@ -3658,7 +3690,9 @@ skip_dir:
       case 2:
       {
         if(dir_list && dir_list[chosen_dir])
-          path_navigate(current_dir_name, MAX_PATH, dir_list[chosen_dir]);
+          if(path_navigate(current_dir_name, MAX_PATH, dir_list[chosen_dir]) < 0)
+            error("Directory does not exist or permission denied.",
+             ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
 
         break;
       }

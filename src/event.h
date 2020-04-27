@@ -235,7 +235,7 @@ CORE_LIBSPEC Uint32 get_joystick_ui_action(void);
 CORE_LIBSPEC Uint32 get_joystick_ui_key(void);
 
 boolean has_unicode_input(void);
-Uint32 convert_internal_unicode(enum keycode key);
+Uint32 convert_internal_unicode(enum keycode key, boolean caps_lock);
 
 // Implemented by "drivers" (SDL, Wii, NDS, 3DS, etc.)
 void initialize_joysticks(void);

@@ -5054,7 +5054,7 @@ static char *legacy_disassemble_print_expr_value_token(char *src,
   char *next_next;
 
   // Unary operators are okay, just eats up spaces until next ones.
-  while((*next == '-') || (*next == '~'))
+  while((*next == '-') || (*next == '~') || (*next == '!'))
   {
     *output = *next;
     output++;

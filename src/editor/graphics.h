@@ -49,6 +49,7 @@ void ec_load_blank(void);
 void ec_load_ascii(void);
 void ec_load_char_ascii(Uint32 char_number);
 void ec_load_char_mzx(Uint32 char_number);
+Uint8 compare_char(Uint16 chr_a, Uint16 chr_b);
 
 __M_END_DECLS
 

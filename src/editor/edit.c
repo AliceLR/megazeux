@@ -179,12 +179,12 @@ struct editor_context
 
   // Flash thing
   boolean flashing;
-  unsigned char *flash_id;
   enum thing flash_start;
   int flash_len;
   int flash_char_a;
   int flash_char_b;
   int flash_timer;
+  Uint32 flash_layer;
 
   // Testing
   int test_reload_board;
@@ -197,7 +197,6 @@ struct editor_context
 /**
  * Wrapper for reload_world that also loads world-specific editor config files.
  */
-
 static boolean editor_reload_world(struct editor_context *editor,
  const char *file)
 {
@@ -231,7 +230,6 @@ static boolean editor_reload_world(struct editor_context *editor,
  * Attempts to ensure that previous test files left behind due to crashes or
  * other instances of MegaZeux that are also testing aren't overwritten.
  */
-
 static void get_test_world_filename(struct editor_context *editor)
 {
   struct stat file_info;
@@ -247,7 +245,6 @@ static void get_test_world_filename(struct editor_context *editor)
 /**
  * Update the editor to the current undo history.
  */
-
 static void fix_history(struct editor_context *editor)
 {
   switch(editor->mode)
@@ -273,7 +270,6 @@ static void fix_history(struct editor_context *editor)
 /**
  * Clear or reset the current board undo history.
  */
-
 static void clear_board_history(struct editor_context *editor)
 {
   destruct_undo_history(editor->board_history);
@@ -284,7 +280,6 @@ static void clear_board_history(struct editor_context *editor)
 /**
  * Clear or reset the current overlay undo history.
  */
-
 static void clear_overlay_history(struct editor_context *editor)
 {
   destruct_undo_history(editor->overlay_history);
@@ -295,7 +290,6 @@ static void clear_overlay_history(struct editor_context *editor)
 /**
  * Clear or reset the current vlayer undo history.
  */
-
 static void clear_vlayer_history(struct editor_context *editor)
 {
   destruct_undo_history(editor->vlayer_history);
@@ -306,7 +300,6 @@ static void clear_vlayer_history(struct editor_context *editor)
 /**
  * Set the buffer to the default id/color/param for the current mode.
  */
-
 static void default_buffer(struct editor_context *editor)
 {
   struct buffer_info *buffer = &(editor->buffer);
@@ -329,7 +322,6 @@ static void default_buffer(struct editor_context *editor)
  * Switch the current editing mode. If switching to or from the vlayer,
  * the current cursor and scroll position needs to be stored.
  */
-
 static void set_editor_mode(struct editor_context *editor,
  enum editor_mode new_mode)
 {
@@ -415,7 +407,6 @@ static void set_editor_mode(struct editor_context *editor,
 /**
  * Update the editor board values to match the current board.
  */
-
 static void synchronize_board_values(struct editor_context *editor)
 {
   struct world *mzx_world = ((context *)editor)->world;
@@ -435,7 +426,6 @@ static void synchronize_board_values(struct editor_context *editor)
 /**
  * Set the caption for the editor.
  */
-
 static void fix_caption(struct editor_context *editor)
 {
   struct world *mzx_world = ((context *)editor)->world;
@@ -448,7 +438,6 @@ static void fix_caption(struct editor_context *editor)
  * Bound the cursor within the current board and update the debug window
  * position.
  */
-
 static void fix_cursor(struct editor_context *editor)
 {
   if(editor->cursor_x >= editor->board_width)
@@ -467,7 +456,6 @@ static void fix_cursor(struct editor_context *editor)
 /**
  * Bound the editor viewport within the board.
  */
-
 static void fix_scroll(struct editor_context *editor)
 {
   // Ensure the cursor is visible in the editor viewport.
@@ -503,7 +491,6 @@ static void fix_scroll(struct editor_context *editor)
  * Play the current board's mod if the listening mod isn't playing.
  * This will restart the board mod even if it's already playing.
  */
-
 static void fix_mod(struct editor_context *editor)
 {
   struct world *mzx_world = ((context *)editor)->world;
@@ -525,7 +512,6 @@ static void fix_mod(struct editor_context *editor)
 /**
  * Set the active world's current board.
  */
-
 static void editor_set_current_board(struct editor_context *editor,
  int new_board, boolean is_extram)
 {
@@ -574,7 +560,6 @@ static void editor_set_current_board(struct editor_context *editor,
 /**
  * Move the cursor on the board.
  */
-
 static void move_edit_cursor(struct editor_context *editor,
  int move_x, int move_y)
 {
@@ -670,7 +655,6 @@ static void move_edit_cursor(struct editor_context *editor,
 /**
  * Place typed text on the board.
  */
-
 static void place_text(struct editor_context *editor)
 {
   struct world *mzx_world = ((context *)editor)->world;
@@ -703,7 +687,6 @@ static void place_text(struct editor_context *editor)
 /**
  * Context to view the current board as if currently playing the board.
  */
-
 struct view_board_context
 {
   context ctx;
@@ -801,10 +784,17 @@ static void view_board(struct editor_context *editor)
   m_hide();
 }
 
+enum flash_thing_type
+{
+  FLASH_THING_NORMAL,
+  FLASH_THING_CLOSE_COLORS,
+  FLASH_THING_CLOSE_CHAR,
+  FLASH_THING_SMZX,
+};
+
 /**
  * Flash a range of types to make them more visible onscreen.
  */
-
 static void flash_thing(struct editor_context *editor,
  enum thing start, enum thing end, int flash_char_a, int flash_char_b)
 {
@@ -817,42 +807,118 @@ static void flash_thing(struct editor_context *editor,
 }
 
 /**
- * Flash the current flash types on.
- * The easiest way to do this right now is currently to temporarily
- * overwrite the char ID table before drawing the screen.
+ * Initialize flashing for the current cycle and return the current flash char.
  */
-
-static void flash_on(struct editor_context *editor)
+static int flash_init(struct editor_context *editor)
 {
-  unsigned char *id_backup;
   int chr = editor->flash_char_a;
 
   if(editor->flash_timer >= FLASH_THING_B)
     chr = editor->flash_char_b;
 
-  id_backup = cmalloc(editor->flash_len);
-  memcpy(id_backup, id_chars + editor->flash_start, editor->flash_len);
-  memset(id_chars + editor->flash_start, chr, editor->flash_len);
-  editor->flash_id = id_backup;
+  editor->flash_layer = 0;
   cursor_off();
+  return chr;
 }
 
 /**
- * Restore the char ID table after the screen is drawn.
+ * Increment the flash timer and clear any flash values that shouldn't persist.
  */
-
-static void flash_off(struct editor_context *editor)
+static void flash_done(struct editor_context *editor)
 {
-  memcpy(id_chars + editor->flash_start, editor->flash_id, editor->flash_len);
-  free(editor->flash_id);
-
   editor->flash_timer = (editor->flash_timer + 1) % FLASH_THING_MAX;
+  editor->flash_layer = 0;
+}
+
+/**
+ * Determine if a protected palette char flash is required.
+ */
+static enum flash_thing_type flash_get_type(struct editor_context *editor,
+ struct board *cur_board, Uint8 chr, Uint8 color, Uint8 flash_chr)
+{
+  int screen_mode = get_screen_mode();
+  if(!screen_mode)
+  {
+    Uint8 fg = color & 0x0F;
+    Uint8 bg = (color & 0xF0) >> 4;
+
+    ssize_t diff;
+
+    // Are the MZX mode colors the same?
+    if(fg == bg)
+      return FLASH_THING_CLOSE_COLORS;
+
+    // Are the MZX mode colors too close?
+    diff = (ssize_t)get_color_luma(fg) - (ssize_t)get_color_luma(bg);
+    if(diff >= -64 && diff <= 64)
+      return FLASH_THING_CLOSE_COLORS;
+  }
+
+  // If one of the chars to display is the board char, is it too close to the
+  // flash char?
+  if(!editor->flash_char_a || !editor->flash_char_b)
+    if(compare_char(chr, (Uint16)flash_chr + PRO_CH) >= (112*3/4))
+      return FLASH_THING_CLOSE_CHAR;
+
+  // SMZX modes should always display protected...
+  if(screen_mode)
+    return FLASH_THING_SMZX;
+
+  return FLASH_THING_NORMAL;
+}
+
+/**
+ * Check if the current board element should be flashed. If it should be,
+ * flash it. This should be performed after id_put.
+ */
+static void flash_draw(struct editor_context *editor, struct board *cur_board,
+ int x, int y, int array_x, int array_y, int flash_chr)
+{
+  int offset = array_y * cur_board->board_width + array_x;
+  enum thing id = (enum thing)cur_board->level_id[offset];
+
+  if(id >= editor->flash_start && id < editor->flash_start + editor->flash_len)
+  {
+    Uint8 color = get_id_color(cur_board, offset);
+    Uint8 chr = get_id_char(cur_board, offset);
+    enum flash_thing_type type;
+
+    type = flash_get_type(editor, cur_board, chr, color, flash_chr);
+    if(type != FLASH_THING_NORMAL)
+    {
+      Uint32 avg_luma = get_char_average_luma(chr, color, -1, flash_chr + PRO_CH);
+
+      if(!editor->flash_layer)
+      {
+        editor->flash_layer = create_layer(0, 0, 80, editor->screen_height,
+         LAYER_DRAWORDER_UI - 500, graphics.protected_pal_position + 5,
+         PRO_CH, true);
+        set_layer_mode(editor->flash_layer, 0);
+      }
+
+      if(type == FLASH_THING_CLOSE_CHAR)
+      {
+        // Blank out the robot char so there's less visual conflict...
+        select_layer(BOARD_LAYER);
+        draw_char_ext(' ', color, x, y, PRO_CH, 0);
+      }
+
+      color = (avg_luma < 128) ? 0x5F : 0x50;
+
+      select_layer(editor->flash_layer);
+      draw_char(flash_chr, color, x, y);
+    }
+    else
+    {
+      select_layer(BOARD_LAYER);
+      draw_char_ext(flash_chr, color, x, y, PRO_CH, 0);
+    }
+  }
 }
 
 /**
  * Draw the editing window (board version).
  */
-
 static void draw_edit_window(struct editor_context *editor)
 {
   struct world *mzx_world = ((context *)editor)->world;
@@ -861,9 +927,10 @@ static void draw_edit_window(struct editor_context *editor)
   int viewport_height = editor->screen_height;
   int x, y;
   int a_x, a_y;
+  int flash_char = 0;
 
   if(editor->flashing)
-    flash_on(editor);
+    flash_char = flash_init(editor);
 
   blank_layers();
 
@@ -878,18 +945,20 @@ static void draw_edit_window(struct editor_context *editor)
     for(x = 0, a_x = editor->scroll_x; x < viewport_width; x++, a_x++)
     {
       id_put(cur_board, x, y, a_x, a_y, a_x, a_y);
+
+      if(flash_char)
+        flash_draw(editor, cur_board, x, y, a_x, a_y, flash_char);
     }
   }
   select_layer(UI_LAYER);
 
   if(editor->flashing)
-    flash_off(editor);
+    flash_done(editor);
 }
 
 /**
  * Draw the editing window (vlayer version).
  */
-
 static void draw_vlayer_window(struct editor_context *editor)
 {
   struct world *mzx_world = ((context *)editor)->world;
@@ -931,7 +1000,6 @@ static void draw_vlayer_window(struct editor_context *editor)
 /**
  * Draw the part of the editor viewport that is outside of the board/vlayer.
  */
-
 static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
 {
   int offset = 0;
@@ -980,7 +1048,6 @@ static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
  * Draw the editor viewport and handle some other things that need
  * to happen at draw time.
  */
-
 static boolean editor_draw(context *ctx)
 {
   struct editor_context *editor = (struct editor_context *)ctx;
@@ -1108,7 +1175,6 @@ static boolean editor_draw(context *ctx)
 /**
  * Cancel drawing with the mouse.
  */
-
 static void cancel_mouse_draw(struct editor_context *editor)
 {
   if(editor->continue_mouse_history)
@@ -1120,7 +1186,6 @@ static void cancel_mouse_draw(struct editor_context *editor)
 /**
  * Draw at a position with the mouse.
  */
-
 static void mouse_draw_at_position(struct editor_context *editor, int x, int y)
 {
   struct buffer_info *buffer = &(editor->buffer);
@@ -1167,7 +1232,6 @@ static void mouse_draw_at_position(struct editor_context *editor, int x, int y)
  * Draw to a position with the mouse, starting from the previous position
  * of the mouse if it is being dragged.
  */
-
 static void mouse_draw(struct editor_context *editor, int x, int y)
 {
   if(editor->continue_mouse_history)
@@ -1200,7 +1264,6 @@ static void mouse_draw(struct editor_context *editor, int x, int y)
 /**
  * Update the editor at the start of each frame.
  */
-
 static boolean editor_idle(context *ctx)
 {
   struct editor_config_info *editor_conf = get_editor_config();
@@ -1289,7 +1352,6 @@ static boolean editor_idle(context *ctx)
 /**
  * Handle mouse clicks and drags for the editor.
  */
-
 static boolean editor_mouse(context *ctx, int *key, int button, int x, int y)
 {
   struct editor_context *editor = (struct editor_context *)ctx;
@@ -1345,7 +1407,6 @@ static boolean editor_mouse(context *ctx, int *key, int button, int x, int y)
 /**
  * Edit the parameter of the buffer and update it if the user doesn't cancel.
  */
-
 static void change_buffer_param_callback(context *ctx, context_callback_param *p)
 {
   struct editor_context *editor = (struct editor_context *)ctx;
@@ -1367,7 +1428,6 @@ static void change_buffer_param(struct editor_context *editor)
  * Get the thing at the cursor position on the board and edit it. If it was
  * modified, place it back on the board.
  */
-
 static void get_modify_place_callback(context *ctx, context_callback_param *p)
 {
   struct editor_context *editor = (struct editor_context *)ctx;
@@ -1423,7 +1483,6 @@ static void get_modify_place(struct editor_context *editor)
  * This is done with a temporary buffer to avoid replicating much of the
  * code of place_current_at_xy.
  */
-
 static void modify_thing_callback(context *ctx, context_callback_param *p)
 {
   struct editor_context *editor = (struct editor_context *)ctx;
@@ -1480,7 +1539,6 @@ static void modify_thing_at_cursor(struct editor_context *editor)
 /**
  * Editor keyhandler.
  */
-
 static boolean editor_key(context *ctx, int *key)
 {
   struct editor_config_info *editor_conf = get_editor_config();
@@ -3450,7 +3508,6 @@ static boolean editor_key(context *ctx, int *key)
 /**
  * The editor needs to reload a temporary world after testing.
  */
-
 static void editor_resume(context *ctx)
 {
   struct editor_context *editor = (struct editor_context *)ctx;
@@ -3506,7 +3563,6 @@ static void editor_resume(context *ctx)
 /**
  * Handle exiting the editor.
  */
-
 static void editor_destroy(context *ctx)
 {
   struct editor_context *editor = (struct editor_context *)ctx;
@@ -3547,7 +3603,6 @@ static void editor_destroy(context *ctx)
 /**
  * Initialize and run the editor context.
  */
-
 static void __edit_world(context *parent, boolean reload_curr_file)
 {
   struct editor_context *editor = ccalloc(1, sizeof(struct editor_context));

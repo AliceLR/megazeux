@@ -63,11 +63,13 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 &nbsp; [![Windows x64         ][arch-w64]][megazeux-w64]
 &nbsp; [![Windows x86         ][arch-w32]][megazeux-w32]
 &nbsp; [![Mac OS X            ][arch-osx]][megazeux-osx]
+&nbsp; [![Mac OS X (PowerPC)  ][arch-ppc]][megazeux-ppc]
 &nbsp; [![Ubuntu AMD64        ][arch-u64]][megazeux-u64]
 &nbsp; [![Ubuntu i386         ][arch-u32]][megazeux-u32]
 &nbsp; [![Debian AMD64        ][arch-d64]][megazeux-d64]
 &nbsp; [![Debian i386         ][arch-d32]][megazeux-d32]
 &nbsp; [![Fedora x86_64       ][arch-f64]][megazeux-f64]
+&nbsp; [![Raspbian            ][arch-rpi]][megazeux-rpi]
 &nbsp; [![HTML5 (Emscripten)  ][arch-html]][megazeux-html]
 &nbsp; [![Nintendo DS         ][arch-nds]][megazeux-nds]
 &nbsp; [![Nintendo 3DS        ][arch-3ds]][megazeux-3ds]
@@ -85,10 +87,9 @@ The following platforms have MegaZeux releases available via repository:
 &nbsp; [![GP2X (outdated)][arch-gp2x]](https://dl.openhandhelds.org/cgi-bin/gp2x.cgi?0,0,0,0,26,2920)
 &nbsp; [![Pandora (outdated)][arch-pand]](https://repo.openpandora.org/?page=detail&app=megazeux_ptitseb)
 
-Downloads are also available for the following platforms, but are not regularly updated:
+Downloads are also available for the following platform(s), but these
+platform(s) are not regularly updated:
 
-&nbsp; [![Mac OS X (PowerPC)  ][arch-ppc]][megazeux-ppc]
-&nbsp; [![Raspbian            ][arch-rpi]][megazeux-rpi]
 &nbsp; [![MS DOS (MZX 2.70)   ][arch-dos]][megazeux-dos]
 
 ## Credits
