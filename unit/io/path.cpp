@@ -50,6 +50,11 @@ int vstat(const char *path, struct stat *buf)
   }
 }
 
+int vaccess(const char *path, int mode)
+{
+  return 0;
+}
+
 struct path_ext_result
 {
   const char *path;
