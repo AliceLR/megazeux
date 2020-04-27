@@ -3072,15 +3072,13 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         // #(counter) is a hex representation.
         if(name_buffer[0] == '+')
         {
-          sprintf(number_buffer, "%x",
-           get_counter(mzx_world, name_buffer + 1, id));
-
-          name_length = strlen(number_buffer);
+          char *src = tr_int_to_hex_string(number_buffer,
+           get_counter(mzx_world, name_buffer + 1, id), &name_length);
 
           if(dest_pos + name_length >= ROBOT_MAX_TR)
             name_length = ROBOT_MAX_TR - dest_pos - 1;
 
-          memcpy(buffer + dest_pos, number_buffer, name_length);
+          memcpy(buffer + dest_pos, src, name_length);
           dest_pos += name_length;
         }
         else
@@ -3099,14 +3097,13 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         }
         else
         {
-          sprintf(number_buffer, "%d",
-           get_counter(mzx_world, name_buffer, id));
+          char *src = tr_int_to_string(number_buffer,
+           get_counter(mzx_world, name_buffer, id), &name_length);
 
-          name_length = strlen(number_buffer);
           if(dest_pos + name_length >= ROBOT_MAX_TR)
             name_length = ROBOT_MAX_TR - dest_pos - 1;
 
-          memcpy(buffer + dest_pos, number_buffer, name_length);
+          memcpy(buffer + dest_pos, src, name_length);
           dest_pos += name_length;
         }
       }

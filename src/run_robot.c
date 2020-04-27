@@ -1573,10 +1573,10 @@ void run_robot(context *ctx, int id, int x, int y)
           else
           {
             // Set it to immediate representation
-            sprintf(src_buffer, "%d", parse_param(mzx_world,
-             src_string, id));
-            dest.value = src_buffer;
-            dest.length = strlen(src_buffer);
+            size_t tmp;
+            dest.value = tr_int_to_string(src_buffer,
+             parse_param(mzx_world, src_string, id), &tmp);
+            dest.length = tmp;
           }
 
           gotoed = set_string(mzx_world, dest_buffer, &dest, id);
@@ -1750,10 +1750,10 @@ void run_robot(context *ctx, int id, int x, int y)
           }
           else
           {
-            sprintf(src_buffer, "%d", parse_param(mzx_world,
-             src_string, id));
-            src.value = src_buffer;
-            src.length = strlen(src_buffer);
+            size_t tmp;
+            src.value = tr_int_to_string(src_buffer,
+             parse_param(mzx_world, src_string, id), &tmp);
+            src.length = tmp;
           }
 
           // String equality extensions (2.91+)

@@ -24,6 +24,7 @@
 
 __M_BEGIN_DECLS
 
+#include <stddef.h>
 #include "world_struct.h"
 
 int parse_expression(struct world *mzx_world, char **expression, int *error,
@@ -33,6 +34,66 @@ int parse_expression(struct world *mzx_world, char **expression, int *error,
 int parse_string_expression(struct world *mzx_world, char **_expression,
  int id, char *output, size_t output_left);
 #endif
+
+static inline char *tr_int_to_string(char dest[12], int value, size_t *len)
+{
+  char *pos = dest + 11;
+
+  *(pos--) = '\0';
+
+  if(value >= 0)
+  {
+    while(value >= 10)
+    {
+      *(pos--) = '0' + value % 10;
+      value /= 10;
+    }
+    *pos = '0' + value;
+  }
+  else
+  {
+    while(value <= -10)
+    {
+      *(pos--) = '0' - value % 10;
+      value /= 10;
+    }
+    *(pos--) = '0' - value;
+    *pos = '-';
+  }
+
+  *len = dest + 11 - pos;
+  return pos;
+}
+
+static inline char *tr_int_to_hex_string(char dest[9], int value, size_t *len)
+{
+  static const char hex[] = "0123456789abcdef";
+  char *pos = dest + 8;
+
+  *(pos--) = '\0';
+
+  if(value >= 0)
+  {
+    while(value >= 0x10)
+    {
+      *(pos--) = hex[value & 0x0F];
+      value >>= 4;
+    }
+    *pos = hex[value & 0x0F];
+  }
+  else
+  {
+    while(dest < pos)
+    {
+      *(pos--) = hex[value & 0x0F];
+      value >>= 4;
+    }
+    *pos = hex[value & 0x0F];
+  }
+
+  *len = dest + 8 - pos;
+  return pos;
+}
 
 __M_END_DECLS
 
