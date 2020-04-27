@@ -84,6 +84,8 @@ DEVELOPERS
 + Fixed a bug where khash tables couldn't expand beyond 2^31,
   added hash caching, made the MZX copy of khash use MZX style,
   and better documented the changes made to it.
++ Added fast sprintf replacements for Robotic counter to string
+  conversion (counter interpolation, string/counter compares).
 + Fixed alignment issues in memcasecmp.
 + Fixed alignment issues in get_cursor_color.
 + Added a config.sh flag for UndefinedBehaviorSanitizer.
