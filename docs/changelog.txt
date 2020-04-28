@@ -43,6 +43,8 @@ USERS
   counters or strings lists beyond 1 billion. Checks have been
   added to prevent them from expanding beyond 2^31 (please don't
   actually use this many counters/strings).
++ Fixed string comparison for pre-2.81 games that relied on
+  null-terminated string compares. This fixes Mines of Madness.
 + Fixed hlp2html bug where certain chars wouldn't be escaped and
   decreased the size of the output HTML files somewhat.
 + Fixed libxmp playback for S3Ms containing ADPCM4 samples. This

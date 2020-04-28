@@ -61,6 +61,7 @@ void dec_string_int(struct world *mzx_world, const char *name, int value,
  int id);
 int compare_strings(struct string *A, struct string *B, boolean exact_case,
  boolean allow_wildcards);
+int compare_strings_null_terminated(struct string *A, struct string *B);
 
 struct string *load_new_string(struct string_list *string_list, int index,
  const char *name, int name_length, int str_length);

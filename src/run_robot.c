@@ -1726,8 +1726,6 @@ void run_robot(context *ctx, int id, int x, int y)
         {
           struct string dest;
           struct string src;
-          int allow_wildcards = 0;
-          int exact_case = 0;
 
           // NOTE: versions prior to 2.92 did tr_msg here instead of above.
 
@@ -1756,19 +1754,31 @@ void run_robot(context *ctx, int id, int x, int y)
             src.length = tmp;
           }
 
-          // String equality extensions (2.91+)
-          if(mzx_world->version >= V291)
+          // Non-terminated string compares (2.81+)
+          if(mzx_world->version >= V281)
           {
-            if(comparison == EXACTLY_EQUAL || comparison == WILD_EXACTLY_EQUAL)
-              exact_case = 1;
+            boolean exact_case = false;
+            boolean wildcards = false;
 
-            if(comparison == WILD_EQUAL || comparison == WILD_EXACTLY_EQUAL)
-              allow_wildcards = 1;
+            // String equality extensions (2.91+)
+            if(mzx_world->version >= V291)
+            {
+              if(comparison == EXACTLY_EQUAL || comparison == WILD_EXACTLY_EQUAL)
+                exact_case = true;
+
+              if(comparison == WILD_EQUAL || comparison == WILD_EXACTLY_EQUAL)
+                wildcards = true;
+            }
+
+            src_value = 0;
+            dest_value = compare_strings(&dest, &src, exact_case, wildcards);
           }
-
-          src_value = 0;
-          dest_value = compare_strings(&dest, &src,
-           exact_case, allow_wildcards);
+          // Null-terminated string compares (2.80X and prior).
+          else
+          {
+            src_value = 0;
+            dest_value = compare_strings_null_terminated(&dest, &src);
+          }
         }
         else
 
