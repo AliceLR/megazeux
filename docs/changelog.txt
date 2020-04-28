@@ -101,6 +101,8 @@ DEVELOPERS
   system. The Android Makefile now uses the NDK toolchains
   directly. Also added support for APK signing and fixed several
   Android port bugs.
++ MZX will now exit on startup if no world could be loaded and
+  the SDL dummy video driver is active.
 
 
 March 8th, 2020 - MZX 2.92c
