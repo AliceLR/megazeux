@@ -46,7 +46,8 @@
  "\nGeneral options:\n" \
  " -h   Display this message and exit.\n"                                   \
  "\nStatus options:\n" \
- " -a   Display all found, created, missing, and unused files.\n"           \
+ " -a   Display all found, created, missing, wildcard, and unused files.\n" \
+ " -A   Display all found, created, missing, and wildcard files.\n"         \
  " -C   Only display created files.\n"                                      \
  " -F   Only display found files.\n"                                        \
  " -M   Only display missing files (default).\n"                            \
@@ -3117,12 +3118,12 @@ int main(int argc, char *argv[])
             fprintf(stderr, USAGE);
             return SUCCESS;
 
-          case 'A': // Legacy equivalent of -Mc
+          case 'A':
             display_not_found = true;
-            display_found = false;
+            display_found = true;
             display_created = true;
             display_unused = false;
-            display_wildcard = false;
+            display_wildcard = true;
             break;
 
           case 'C':

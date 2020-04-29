@@ -35,6 +35,9 @@ USERS
   attempting to checkres a directory.
 + Fixed wrong robot board positions reported by checkres for
   some files when run with -vv.
++ Repurposed the old checkres -A flag to display everything but
+  unused files, which should be much more useful than the older
+  behavior (particularly with loose files in directory dumps).
 + Fixed memory leaks in legacy_assemble_line.
 + Fixed potential null termination issues in both world loaders
   that could be triggered with invalid board name, robot name,
