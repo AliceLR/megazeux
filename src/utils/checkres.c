@@ -634,9 +634,6 @@ static boolean path_search(const char *path_name, size_t base_len, int max_depth
   return false;
 }
 
-static int16_t robot_xpos[256];
-static int16_t robot_ypos[256];
-
 #define PARENT_DEFAULT_LEN 13
 #define RESOURCE_DEFAULT_LEN 14
 #define DETAILS_MAX_LEN 35
@@ -654,7 +651,7 @@ static int resource_max_len = RESOURCE_DEFAULT_LEN;
 static boolean table_has_crc32 = false;
 
 static void output_preformatted(const char *required_by,
- int board_num, int robot_num, int line_num,
+ int board_num, int robot_num, int line_num, int x, int y,
  const char *resource_path, const char *status, const char *found_in,
  uint32_t crc32, boolean has_crc32)
 {
@@ -708,10 +705,7 @@ static void output_preformatted(const char *required_by,
       else
       if(robot_num > 0)
       {
-        snprintf(xy, 14, "%d, %d",
-          robot_xpos[(unsigned char)robot_num],
-          robot_ypos[(unsigned char)robot_num]
-        );
+        snprintf(xy, 14, "%d, %d", (int16_t)x, (int16_t)y);
         snprintf(details, DETAILS_MAX_LEN,
           "b%-3.3s  r%-3.3s  %-6.6s   %-11.11s",
           board, robot, line, xy
@@ -754,7 +748,7 @@ static void output_preformatted(const char *required_by,
 }
 
 static void output_csv(const char *required_by,
- int board_num, int robot_num, int line_num,
+ int board_num, int robot_num, int line_num, int x, int y,
  const char *resource_path, const char *status, const char *found_in,
  uint32_t crc32, boolean has_crc32)
 {
@@ -803,9 +797,7 @@ static void output_csv(const char *required_by,
       if(display_all_details)
       {
         fprintf(stdout, "b%d,r%d,%d,\"(%d,%d)\",",
-          board_num, robot_num, line_num,
-          robot_xpos[(unsigned char)robot_num],
-          robot_ypos[(unsigned char)robot_num]
+          board_num, robot_num, line_num, x, y
         );
       }
       else
@@ -860,7 +852,7 @@ static void output_csv(const char *required_by,
 }
 
 static void output(const char *required_by,
- int board_num, int robot_num, int line_num,
+ int board_num, int robot_num, int line_num, int x, int y,
  const char *resource_path, const char *status, const char *found_in,
  uint32_t crc32, boolean has_crc32)
 {
@@ -873,13 +865,13 @@ static void output(const char *required_by,
 
   if(output_format_csv)
   {
-    output_csv(required_by, board_num, robot_num, line_num, resource_path,
+    output_csv(required_by, board_num, robot_num, line_num, x, y, resource_path,
      status, found_in, crc32, has_crc32);
   }
 
   else
   {
-    output_preformatted(required_by, board_num, robot_num, line_num,
+    output_preformatted(required_by, board_num, robot_num, line_num, x, y,
      resource_path, status, found_in, crc32, has_crc32);
   }
 }
@@ -924,6 +916,8 @@ struct resource
   int board_num;
   int robot_num;
   int line_num;
+  int x;
+  int y;
   uint32_t hash;
   boolean is_wildcard;
   struct base_file *parent;
@@ -935,9 +929,12 @@ HASH_SET_INIT(RESOURCE, struct resource *, path, key_len)
 static hash_t(RESOURCE) *requirement_table = NULL;
 static hash_t(RESOURCE) *resource_table = NULL;
 
+static int16_t robot_xpos[256];
+static int16_t robot_ypos[256];
+
 static struct resource *add_requirement_ext(const char *src,
- struct base_file *file, int board_num, int robot_num, int line_num,
- boolean allow_expressions)
+ struct base_file *file, int board_num, int robot_num, int line_num, int x,
+ int y, boolean allow_expressions)
 {
   // A resource file required by a world/board.
   struct resource *req = NULL;
@@ -983,6 +980,8 @@ static struct resource *add_requirement_ext(const char *src,
     req->board_num = board_num;
     req->robot_num = robot_num;
     req->line_num = line_num;
+    req->x = x;
+    req->y = y;
     req->is_wildcard = is_wildcard;
     req->parent = file;
 
@@ -1002,24 +1001,33 @@ static struct resource *add_requirement_ext(const char *src,
 static struct resource *add_requirement_sfx(const char *src,
  struct base_file *file, int board_num, int robot_num, int line_num)
 {
-  return add_requirement_ext(src, file, board_num, robot_num, line_num, false);
+  return add_requirement_ext(src, file, board_num, robot_num, line_num, -1, -1, false);
 }
 
 static struct resource *add_requirement_board(const char *src,
  struct base_file *file, int board_num, int resource_type)
 {
   if(board_num < 0 || resource_type >= 0) return NULL;
-  return add_requirement_ext(src, file, board_num, resource_type, -1, false);
+  return add_requirement_ext(src, file, board_num, resource_type, -1, -1, -1, false);
 }
 
 static struct resource *add_requirement_robot(const char *src,
  struct base_file *file, int board_num, int robot_num, int line_num)
 {
+  int x, y;
   if(robot_num < 0 || board_num < 0 ||
    (board_num == NO_BOARD && robot_num != GLOBAL_ROBOT))
     return NULL;
 
-  return add_requirement_ext(src, file, board_num, robot_num, line_num, true);
+  if(robot_num != GLOBAL_ROBOT)
+  {
+    x = robot_xpos[robot_num];
+    y = robot_ypos[robot_num];
+  }
+  else
+    x = y = -1;
+
+  return add_requirement_ext(src, file, board_num, robot_num, line_num, x, y, true);
 }
 
 static struct resource *add_resource(const char *src, struct base_file *file)
@@ -1059,6 +1067,8 @@ static struct resource *add_resource(const char *src, struct base_file *file)
     res->board_num = -1;
     res->robot_num = -1;
     res->line_num = -1;
+    res->x = -1;
+    res->y = -1;
     res->is_wildcard = is_wildcard;
     res->parent = NULL;
 
@@ -1428,8 +1438,8 @@ static void process_requirements(struct base_path **path_list,
     {
       if(display_wildcard)
         output(req->parent->file_name, req->board_num, req->robot_num,
-         req->line_num, req->path, pattern_append, current_path->actual_path,
-         0, false);
+         req->line_num, req->x, req->y, req->path, pattern_append,
+         current_path->actual_path, 0, false);
     }
     else
 
@@ -1437,8 +1447,8 @@ static void process_requirements(struct base_path **path_list,
     {
       if(display_found)
         output(req->parent->file_name, req->board_num, req->robot_num,
-         req->line_num, req->path, found_append, current_path->actual_path,
-         found_crc32, found_has_crc32);
+         req->line_num, req->x, req->y, req->path, found_append,
+         current_path->actual_path, found_crc32, found_has_crc32);
     }
     else
     {
@@ -1463,13 +1473,14 @@ static void process_requirements(struct base_path **path_list,
 
         if(display_created)
           output(req->parent->file_name, req->board_num, req->robot_num,
-           req->line_num, req->path, append, NULL, 0, false);
+           req->line_num, req->x, req->y, req->path, append, NULL, 0, false);
       }
       else
       {
         if(display_not_found)
           output(req->parent->file_name, req->board_num, req->robot_num,
-           req->line_num, req->path, not_found_append, NULL, 0, false);
+           req->line_num, req->x, req->y, req->path, not_found_append, NULL, 0,
+           false);
       }
     }
   }
@@ -1532,14 +1543,14 @@ static void process_requirements(struct base_path **path_list,
 
             if(display_unused && !bpf->used_wildcard)
             {
-              output("", DONT_PRINT, -1, -1, file_path, unused_append,
+              output("", DONT_PRINT, -1, -1, -1, -1, file_path, unused_append,
                current_path->actual_path, bpf->crc32, bpf->has_crc32);
             }
             else
 
             if(display_wildcard && bpf->used_wildcard)
             {
-              output("", DONT_PRINT, -1, -1, file_path, maybe_used_append,
+              output("", DONT_PRINT, -1, -1, -1, -1, file_path, maybe_used_append,
                current_path->actual_path, bpf->crc32, bpf->has_crc32);
             }
           }

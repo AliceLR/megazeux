@@ -33,6 +33,8 @@ USERS
 + Fixed checkres parsing for LOAD CHAR SET "+&+var&file.chr".
 + Fixed checkres crash that could occur on some platforms when
   attempting to checkres a directory.
++ Fixed wrong robot board positions reported by checkres for
+  some files when run with -vv.
 + Fixed memory leaks in legacy_assemble_line.
 + Fixed potential null termination issues in both world loaders
   that could be triggered with invalid board name, robot name,
