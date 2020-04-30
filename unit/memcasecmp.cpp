@@ -103,8 +103,8 @@ UNITTEST(Matching)
       a = pairs64[i].a.c_str();
       b = pairs64[i].b.c_str();
 
-      ASSERTEQ((size_t)a & 0x7, 0);
-      ASSERTEQ((size_t)b & 0x7, 0);
+      ASSERTEQ((size_t)a & (ALIGN_64_MODULO - 1), 0);
+      ASSERTEQ((size_t)b & (ALIGN_64_MODULO - 1), 0);
       ASSERTEQX(strlen(a), strlen(b), a);
       ASSERTX(!memcasecmp(a, b, strlen(a)), a);
     }
@@ -125,8 +125,8 @@ UNITTEST(Matching)
       a = pairs64[i].a.c_str();
       b = pairs64[i].b.c_str();
 
-      ASSERTEQ((size_t)a & 0x3, 0);
-      ASSERTEQ((size_t)b & 0x3, 0);
+      ASSERTEQ((size_t)a & (ALIGN_32_MODULO - 1), 0);
+      ASSERTEQ((size_t)b & (ALIGN_32_MODULO - 1), 0);
       ASSERTEQX(strlen(a), strlen(b), a);
       ASSERTX(!memcasecmp32(a, b, strlen(a)), a);
     }
@@ -181,8 +181,8 @@ UNITTEST(NoMatch)
       b = pairs64[i].b.c_str();
       expected = pairs64[i].expected;
 
-      ASSERTEQ((size_t)a & 0x7, 0);
-      ASSERTEQ((size_t)b & 0x7, 0);
+      ASSERTEQ((size_t)a & (ALIGN_64_MODULO - 1), 0);
+      ASSERTEQ((size_t)b & (ALIGN_64_MODULO - 1), 0);
       ASSERTEQX(strlen(a), strlen(b), a);
       ASSERTEQX(memcasecmp(a, b, strlen(a)), expected, a);
     }
@@ -205,8 +205,8 @@ UNITTEST(NoMatch)
       b = pairs64[i].b.c_str();
       expected = pairs64[i].expected;
 
-      ASSERTEQ((size_t)a & 0x3, 0);
-      ASSERTEQ((size_t)b & 0x3, 0);
+      ASSERTEQ((size_t)a & (ALIGN_32_MODULO - 1), 0);
+      ASSERTEQ((size_t)b & (ALIGN_32_MODULO - 1), 0);
       ASSERTEQX(strlen(a), strlen(b), a);
       ASSERTEQX(memcasecmp32(a, b, strlen(a)), expected, a);
     }

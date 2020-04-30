@@ -30,18 +30,18 @@
 
 UNITTEST(counter_struct_name)
 {
-  static_assert((offsetof(struct counter, name) & 0x3) == 0,
+  static_assert((offsetof(struct counter, name) & (ALIGN_32_MODULO - 1)) == 0,
    "struct counter::name is not aligned to 4 bytes!");
 }
 
 UNITTEST(string_struct_name)
 {
-  static_assert((offsetof(struct string, name) & 0x3) == 0,
+  static_assert((offsetof(struct string, name) & (ALIGN_32_MODULO - 1)) == 0,
    "struct string::name is not aligned to 4 bytes!");
 }
 
 UNITTEST(zip_file_header_file_name)
 {
-  static_assert((offsetof(struct zip_file_header, file_name) & 0x3) == 0,
+  static_assert((offsetof(struct zip_file_header, file_name) & (ALIGN_32_MODULO - 1)) == 0,
    "struct zip_file_header::file_name is not aligned to 4 bytes!");
 }
