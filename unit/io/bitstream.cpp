@@ -33,11 +33,6 @@ struct read_sequence
 {
   uint16_t length;
   int expected_value;
-
-  constexpr read_sequence(uint16_t len, int value):
-    length(len),
-    expected_value(value) {}
-  constexpr read_sequence(): length(0), expected_value(EOF) {}
 };
 
 /**
