@@ -33,6 +33,11 @@ USERS
 + Fixed checkres parsing for LOAD CHAR SET "+&+var&file.chr".
 + Fixed checkres crash that could occur on some platforms when
   attempting to checkres a directory.
++ Fixed wrong robot board positions reported by checkres for
+  some files when run with -vv.
++ Repurposed the old checkres -A flag to display everything but
+  unused files, which should be much more useful than the older
+  behavior (particularly with loose files in directory dumps).
 + Fixed memory leaks in legacy_assemble_line.
 + Fixed potential null termination issues in both world loaders
   that could be triggered with invalid board name, robot name,
@@ -43,6 +48,8 @@ USERS
   counters or strings lists beyond 1 billion. Checks have been
   added to prevent them from expanding beyond 2^31 (please don't
   actually use this many counters/strings).
++ Fixed string comparison for pre-2.81 games that relied on
+  null-terminated string compares. This fixes Mines of Madness.
 + Fixed hlp2html bug where certain chars wouldn't be escaped and
   decreased the size of the output HTML files somewhat.
 + Fixed libxmp playback for S3Ms containing ADPCM4 samples. This
@@ -99,6 +106,8 @@ DEVELOPERS
   system. The Android Makefile now uses the NDK toolchains
   directly. Also added support for APK signing and fixed several
   Android port bugs.
++ MZX will now exit on startup if no world could be loaded and
+  the SDL dummy video driver is active.
 
 
 March 8th, 2020 - MZX 2.92c

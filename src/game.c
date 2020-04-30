@@ -899,6 +899,14 @@ static void title_resume(context *ctx)
   {
     if(!load_world_title(title, curr_file))
     {
+      // World failed to load and no video? Hard exit so MZX doesn't stay
+      // stuck on a dialog or the blank title screen...
+      if(!has_video_initialized())
+      {
+        destroy_context(ctx);
+        return;
+      }
+
       conf->standalone_mode = false;
 
       // Do this to avoid some UI fade bugs...

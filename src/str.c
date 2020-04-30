@@ -1768,7 +1768,7 @@ static int compare_wildcard(const char *str, size_t str_len,
 int compare_strings(struct string *A, struct string *B, boolean exact_case,
  boolean allow_wildcards)
 {
-  size_t cmp_length = (A->length < B->length) ? A->length : B->length;
+  size_t cmp_length = MIN(A->length, B->length);
   int res = 0;
 
   if(!allow_wildcards)
@@ -1800,6 +1800,30 @@ int compare_strings(struct string *A, struct string *B, boolean exact_case,
   }
 
   return compare_wildcard(A->value, A->length, B->value, B->length, exact_case);
+}
+
+/**
+ * String comparison prior to 2.81 used strcasecmp, which worked because string
+ * values were guaranteed to be null terminated. Some games relied on this
+ * behavior by inserting nulls into strings (Mines of Madness). String values
+ * are not null terminated anymore, so approximate this with strncasecmp.
+ */
+int compare_strings_null_terminated(struct string *A, struct string *B)
+{
+  size_t cmp_length = MIN(A->length, B->length);
+  int res;
+
+  res = strncasecmp(A->value, B->value, cmp_length);
+  if(res)
+    return res;
+
+  if(A->length > B->length)
+    return A->value[cmp_length];
+
+  if(A->length < B->length)
+    return -B->value[cmp_length];
+
+  return 0;
 }
 
 // Create a new string from loading a save file. This skips find_string.
