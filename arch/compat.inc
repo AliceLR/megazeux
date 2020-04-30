@@ -14,6 +14,7 @@ GCC_VER := ${shell ${CC} -dumpfullversion -dumpversion |\
  awk -F. '{print $$3+100*($$2+100*$$1)}'}
 
 GCC_VER_GE_4     := ${shell test ${GCC_VER} -ge 40000; echo $$?}
+GCC_VER_GE_4_8   := ${shell test ${GCC_VER} -ge 40800; echo $$?}
 GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 
 ifeq (${IS_CLANG},0)
@@ -74,23 +75,12 @@ endif
 # required in the future for optional features (e.g. the network layer).
 #
 ifeq ($(IS_GCC),0)
-GCC_VER_GE_4_8   := ${shell test ${GCC_VER} -ge 40800; echo $$?}
-GCC_VER_GE_4_9_2 := ${shell test ${GCC_VER} -ge 40902; echo $$?}
-#
-# GCC 4.8 technically supports C++11 but certain features seem to be bugged
-# prior to GCC 4.9.2. All C++ in MegaZeux itself builds fine with GCC 4.8 but
-# unit tests relying on these features of C++11 have compile errors.
-#
 ifeq ($(GCC_VER_GE_4_8),0)
 HAS_CXX_11 = 1
-endif
-ifeq ($(GCC_VER_GE_4_9_2),0)
-HAS_RELIABLE_CXX_11 = 1
 endif
 endif
 ifeq ($(IS_CLANG),0)
 ifeq ($(CLANG_VER_GE_3_3),0)
 HAS_CXX_11 = 1
-HAS_RELIABLE_CXX_11 = 1
 endif
 endif
