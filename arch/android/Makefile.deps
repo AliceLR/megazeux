@@ -91,8 +91,6 @@ deps-build: ${DEPS_BUILD}/out
 
 else
 
-#  ${JNI_LIBS}/libSDL2main.so \
-
 dep_targets := \
   ${JNI_INCLUDES}/SDL2 \
   ${JNI_INCLUDES}/ogg \
@@ -106,24 +104,24 @@ dep_targets := \
 ${DEPS_BUILD}/out/${ABI}/%.so:
 	@test -s $@ || { echo "Missing $@! Aborting..."; exit 1; }
 
-${JNI_LIBS}/%.so: ${DEPS_BUILD}/out/${ABI}/%.so
+${JNI_LIBS}/%.so: ${DEPS_BUILD}/out/${ABI}/%.so | ${JNI_LIBS}
 	$(if ${V},,@echo "  CP      " $< " " $@)
 	@${CP} $< $@
 
-${JNI_INCLUDES}/SDL2: ${DEPS_BUILD}/SDL2
+${JNI_INCLUDES}/SDL2: ${DEPS_BUILD}/SDL2 | ${JNI_INCLUDES}
 	$(if ${V},,@echo "  CP      " "$</include/*" $@)
 	@${MKDIR} -p $@
 	@${CP} $</include/* $@
 
-${JNI_INCLUDES}/ogg: ${DEPS_BUILD}/libogg
+${JNI_INCLUDES}/ogg: ${DEPS_BUILD}/libogg | ${JNI_INCLUDES}
 	$(if ${V},,@echo "  CP      " $</include ${JNI_INCLUDES})
 	@${CP} -r "$</include/ogg" ${JNI_INCLUDES}
 
-${JNI_INCLUDES}/vorbis: ${DEPS_BUILD}/libvorbis
+${JNI_INCLUDES}/vorbis: ${DEPS_BUILD}/libvorbis | ${JNI_INCLUDES}
 	$(if ${V},,@echo "  CP      " $</include ${JNI_INCLUDES})
 	@${CP} -r "$</include/vorbis" ${JNI_INCLUDES}
 
-deps-install: ${dep_targets} | ${JNI_INCLUDES} ${JNI_LIBS}
+deps-install: ${dep_targets}
 
 deps-uninstall:
 	$(if ${V},,@echo "  RM " ${dep_targets})
