@@ -107,7 +107,7 @@ static enum sfn_type is_sfn(const char *filename, size_t check_len)
         {
           size_t tilde_pos = i;
           i++;
-          while(isdigit(filename[i]))
+          while(isdigit((unsigned char)filename[i]))
             i++;
 
           if(i > tilde_pos + 1 && (filename[i] == '.' || filename[i] == '\0'))
