@@ -112,6 +112,9 @@ int intake(struct world *mzx_world, char *string, int max_len,
     key = get_key(keycode_internal_wrt_numlock);
     place = 0;
 
+    if(!key && has_unicode_input())
+      key = IKEY_UNICODE;
+
     action = get_joystick_ui_action();
     if(action)
     {

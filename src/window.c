@@ -1037,6 +1037,9 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     update_event_status_delay();
     current_key = get_key(keycode_internal_wrt_numlock);
 
+    if(!current_key && has_unicode_input())
+      current_key = IKEY_UNICODE;
+
     new_key = get_joystick_ui_key();
     if(new_key)
       current_key = new_key;
