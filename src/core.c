@@ -872,11 +872,6 @@ static void core_update(core_context *root)
 
   get_mouse_position(&mouse_x, &mouse_y);
 
-  // The key handler needs to be called when there is text input but no
-  // regular key input. In this situation, use the IKEY_UNICODE keycode.
-  if(!key && has_unicode_input())
-    key = IKEY_UNICODE;
-
   if(update_count > (int)ARRAY_SIZE(_update_order))
     update_order = cmalloc(update_count * sizeof(context *));
 

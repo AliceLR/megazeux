@@ -1314,6 +1314,7 @@ static boolean process_event(SDL_Event *event)
       {
         // Clear any unicode keys on the buffer generated from the fallback...
         status->unicode_length = 0;
+        status->unicode_repeat = 0;
         unicode_fallback = false;
       }
 
@@ -1323,7 +1324,15 @@ static boolean process_event(SDL_Event *event)
         Uint32 unicode = utf8_next_char(&text);
 
         if(unicode)
+        {
           key_press_unicode(status, unicode, false);
+
+          // This doesn't necessarily coincide with a regular keypress like it
+          // did for SDL 1.2 (since MZX handles them separately). If there's no
+          // key currently pressed, fake one so key handlers can detect it.
+          if(!status->key)
+            status->key = IKEY_UNICODE;
+        }
       }
       break;
     }

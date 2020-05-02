@@ -1797,7 +1797,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
     {
       int key_char = get_key(keycode_text_ascii);
 
-      if((key >= '0') && (key <= '9'))
+      if((key_char >= '0') && (key_char <= '9'))
       {
         if(current_value == src->upper_limit || src->is_null)
         {
@@ -1805,8 +1805,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
         }
         else
         {
-          current_value = (current_value * 10) +
-           (key_char - '0');
+          current_value = (current_value * 10) + (key_char - '0');
         }
 
         if(src->type == NUMBER_BOX_MULT_FIVE)
