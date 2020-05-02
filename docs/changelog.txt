@@ -76,6 +76,9 @@ USERS
   error when navigation fails.
 + Fixed windowing code bug in extended macro editor that would
   occur after selecting "Default" multiple times.
++ Fixed a bug where long extended macros could sometimes break.
++ Fixed extended macros not working when the params line is
+  indented by more than one space or tab.
 + Windows builds now attempt to load and call SetProcessDPIAware
   on startup. This should fix undesirable DPI-related scaling
   and fullscreen bugs.
