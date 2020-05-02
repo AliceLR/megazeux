@@ -2337,115 +2337,119 @@ static void execute_macro(struct robot_editor_context *rstate,
 
   nominal_width += 3;
 
-  // Generate the dialogue box
-  start_x = 40 - (nominal_width / 2);
-  start_y = 12 - (nominal_height / 2);
-
-  x = 2;
-  y = 2;
-
-  current_type = macro_src->types;
-
-  for(i = 0, dialog_index = 3; i < num_types; i++, current_type++)
-  {
-    current_variable = current_type->variables;
-    // Draw this many
-    draw_on_line = vars_per_line[i];
-    for(i2 = current_type->num_variables; i2 > 0; i2 -= draw_on_line,
-     y++)
-    {
-      if(y >= (nominal_height - 3))
-      {
-        total_dialog_elements = dialog_index;
-        break;
-      }
-
-      if(i2 < draw_on_line)
-        draw_on_line = i2;
-
-      x += ((nominal_width - 3) / 2) -
-       ((nominal_column_widths[i] * draw_on_line) / 2);
-
-      for(i3 = 0; i3 < draw_on_line; i3++, current_variable++,
-       dialog_index++)
-      {
-        current_len = nominal_column_subwidths[i] -
-         (int)strlen(current_variable->name);
-        x += current_len;
-
-        switch(current_type->type)
-        {
-          case number:
-          {
-            elements[dialog_index] =
-             construct_number_box(x, y, current_variable->name,
-             current_type->type_attributes[0],
-             current_type->type_attributes[1], NUMBER_BOX,
-             &(current_variable->storage.int_storage));
-            break;
-          }
-
-          case string:
-          {
-            elements[dialog_index] =
-             construct_input_box(x, y, current_variable->name,
-             current_type->type_attributes[0],
-             current_variable->storage.str_storage);
-            break;
-          }
-
-          case character:
-          {
-            elements[dialog_index] =
-             construct_char_box(x, y, current_variable->name,
-             1, &(current_variable->storage.int_storage));
-            break;
-          }
-
-          case color:
-          {
-            elements[dialog_index] =
-             construct_color_box(x, y, current_variable->name,
-             1, &(current_variable->storage.int_storage));
-            break;
-          }
-        }
-
-        x += nominal_column_widths[i] - current_len;
-      }
-      // Start over on next line
-      x = 2;
-    }
-    // Start over after skipping a line
-    x = 2;
-
-    if(y >= (nominal_height - 3))
-      break;
-
-    y++;
-  }
-
-  // Place OK/Cancel/Default
-
-  elements[0] =
-   construct_button(subwidths[0] / 2, y, "OK", 0);
-  elements[1] =
-   construct_button(subwidths[0] + (subwidths[1] / 2) - 2, y,
-   "Cancel", -1);
-  elements[2] =
-   construct_button(subwidths[0] + subwidths[1] +
-   (subwidths[1] / 2) - 3, y, "Default", -2);
-
-  construct_dialog_ext(&di, macro_src->label, start_x,
-   start_y, nominal_width, nominal_height, elements,
-   total_dialog_elements, 0, 1, 2, NULL);
-
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
-
   do
   {
+    // Generate the dialogue box
+    start_x = 40 - (nominal_width / 2);
+    start_y = 12 - (nominal_height / 2);
+
+    x = 2;
+    y = 2;
+
+    current_type = macro_src->types;
+
+    for(i = 0, dialog_index = 3; i < num_types; i++, current_type++)
+    {
+      current_variable = current_type->variables;
+      // Draw this many
+      draw_on_line = vars_per_line[i];
+      for(i2 = current_type->num_variables; i2 > 0; i2 -= draw_on_line,
+       y++)
+      {
+        if(y >= (nominal_height - 3))
+        {
+          total_dialog_elements = dialog_index;
+          break;
+        }
+
+        if(i2 < draw_on_line)
+          draw_on_line = i2;
+
+        x += ((nominal_width - 3) / 2) -
+         ((nominal_column_widths[i] * draw_on_line) / 2);
+
+        for(i3 = 0; i3 < draw_on_line; i3++, current_variable++,
+         dialog_index++)
+        {
+          current_len = nominal_column_subwidths[i] -
+           (int)strlen(current_variable->name);
+          x += current_len;
+
+          switch(current_type->type)
+          {
+            case number:
+            {
+              elements[dialog_index] = construct_number_box(x, y,
+                current_variable->name,
+                current_type->type_attributes[0],
+                current_type->type_attributes[1], NUMBER_BOX,
+                &(current_variable->storage.int_storage)
+              );
+              break;
+            }
+
+            case string:
+            {
+              elements[dialog_index] = construct_input_box(x, y,
+                current_variable->name,
+                current_type->type_attributes[0],
+                current_variable->storage.str_storage
+              );
+              break;
+            }
+
+            case character:
+            {
+              elements[dialog_index] = construct_char_box(x, y,
+                current_variable->name,
+                1, &(current_variable->storage.int_storage)
+              );
+              break;
+            }
+
+            case color:
+            {
+              elements[dialog_index] = construct_color_box(x, y,
+                current_variable->name,
+                1, &(current_variable->storage.int_storage)
+              );
+              break;
+            }
+          }
+
+          x += nominal_column_widths[i] - current_len;
+        }
+        // Start over on next line
+        x = 2;
+      }
+      // Start over after skipping a line
+      x = 2;
+
+      if(y >= (nominal_height - 3))
+        break;
+
+      y++;
+    }
+
+    // Place OK/Cancel/Default
+
+    elements[0] =
+     construct_button(subwidths[0] / 2, y, "OK", 0);
+    elements[1] =
+     construct_button(subwidths[0] + (subwidths[1] / 2) - 2, y, "Cancel", -1);
+    elements[2] =
+     construct_button(subwidths[0] + subwidths[1] + (subwidths[1] / 2) - 3, y,
+     "Default", -2);
+
+    construct_dialog_ext(&di, macro_src->label, start_x,
+     start_y, nominal_width, nominal_height, elements,
+     total_dialog_elements, 0, 1, 2, NULL);
+
+    // Prevent previous keys from carrying through.
+    force_release_all_keys();
+
     dialog_value = run_dialog(mzx_world, &di);
+    destruct_dialog(&di);
 
     // Prevent UI keys from carrying through.
     force_release_all_keys();
@@ -2467,8 +2471,6 @@ static void execute_macro(struct robot_editor_context *rstate,
       }
     }
   } while(dialog_value == -2);
-
-  destruct_dialog(&di);
 
 exit_free:
   free(lines_needed);

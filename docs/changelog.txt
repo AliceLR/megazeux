@@ -74,6 +74,8 @@ USERS
 + Directory navigation in the file manager now checks directory
   access permissions before allowing navigation and displays an
   error when navigation fails.
++ Fixed windowing code bug in extended macro editor that would
+  occur after selecting "Default" multiple times.
 + Windows builds now attempt to load and call SetProcessDPIAware
   on startup. This should fix undesirable DPI-related scaling
   and fullscreen bugs.
