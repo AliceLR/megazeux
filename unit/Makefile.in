@@ -44,7 +44,7 @@ DEBUG_CFLAGS ?= -O0
 # build without -DNDEBUG to allow assert().
 #
 unit_cflags ?= ${DEBUG_CFLAGS} -g \
- -Wall -Wextra -Wpedantic -Wno-unused-parameter -std=gnu++11
+ -Wall -Wextra -pedantic -Wno-unused-parameter -std=gnu++11
 
 ifeq (${BUILD_F_ANALYZER},1)
 ifeq (${HAS_F_ANALYZER},1)

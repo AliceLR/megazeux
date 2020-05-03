@@ -7,15 +7,27 @@
 #
 # Assume GCC until proven wrong...
 #
-IS_GCC   := 0
-IS_CLANG := ${shell ${CC} --version | grep -qi "\(clang version\|emcc\)"; echo $$?}
+COMPILER := ${shell \
+ compiler="gcc"; \
+ tmp=`${CC} --version`; \
+ echo $$tmp | grep -qi "clang version" && compiler="clang"; \
+ echo $$tmp | grep -qi "emcc" && compiler="clang"; \
+ echo $$compiler; }
 
+#
+# Get compiler version (GCC).
+#
+ifeq (${COMPILER},gcc)
 GCC_VER := ${shell ${CC} -dumpfullversion -dumpversion |\
  awk -F. '{print $$3+100*($$2+100*$$1)}'}
 
 GCC_VER_GE_4     := ${shell test ${GCC_VER} -ge 40000; echo $$?}
+endif
 
-ifeq (${IS_CLANG},0)
+#
+# Get compiler version (clang).
+#
+ifeq (${COMPILER},clang)
 CLANG_VER_FLAG = "--version"
 
 #
@@ -28,12 +40,18 @@ CLANG_VER_FLAG = "-v"
 endif
 
 CLANG_VER := ${shell ${CC} ${CLANG_VER_FLAG} 2>&1 |\
- grep -oi "clang version.* [0-9]\+\.[0-9]\+\.[0-9]\+" |\
- grep -o "[0-9]\+.*" |\
+ grep -oi "clang version.* [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9] *" |\
+ grep -o "[0-9][0-9]*.*" |\
  awk -F. '{print $$3+100*($$2+100*$$1)}'}
 
-CLANG_VER_GE_3_3 := ${shell test "${CLANG_VER}" -ge 30300; echo $$?}
-IS_GCC :=
+IS_CLANGXX := ${shell ${CXX} ${CLANG_VER_FLAG} 2>&1 | grep -qi "clang version"; echo $$?}
+ifneq (${IS_CLANGXX},0)
+$(warning CC is clang but CXX isn't clang++; disabling compiler-specific checks.)
+COMPILER := unknown
+endif
+
+GCC_VER      := 40201
+GCC_VER_GE_4 := 0
 endif
 
 #
@@ -58,7 +76,7 @@ endif
 #
 # Features requiring higher versions of GCC.
 #
-ifneq (${IS_CLANG},0)
+ifeq (${COMPILER},gcc)
 
 GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 ifeq ($(GCC_VER_GE_7),0)
@@ -77,14 +95,15 @@ endif
 # C++11 is optional or unused for all core MegaZeux features, but may be
 # required in the future for optional features (e.g. the network layer).
 #
-ifeq ($(IS_GCC),0)
+ifeq (${COMPILER},gcc)
 GCC_VER_GE_4_8   := ${shell test ${GCC_VER} -ge 40800; echo $$?}
-ifeq ($(GCC_VER_GE_4_8),0)
+ifeq (${GCC_VER_GE_4_8},0)
 HAS_CXX_11 ?= 1
 endif
 endif
-ifeq ($(IS_CLANG),0)
-ifeq ($(CLANG_VER_GE_3_3),0)
+ifeq (${COMPILER},clang)
+CLANG_VER_GE_3_3 := ${shell test "${CLANG_VER}" -ge 30300; echo $$?}
+ifeq (${CLANG_VER_GE_3_3},0)
 HAS_CXX_11 ?= 1
 endif
 endif
