@@ -1314,6 +1314,7 @@ static boolean process_event(SDL_Event *event)
       {
         // Clear any unicode keys on the buffer generated from the fallback...
         status->unicode_length = 0;
+        status->unicode_repeat = 0;
         unicode_fallback = false;
       }
 

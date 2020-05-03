@@ -38,16 +38,22 @@ IS_GCC :=
 endif
 
 #
-# Features requiring GCC 4 minimum.
-# NOTE: most of these haven't been verified; this is how they were originally
-# version checked in the Makefile.
+# Features requiring GCC 4 minimum and compatible with clang.
 #
 ifeq (${GCC_VER_GE_4},0)
-HAS_PEDANTIC = 1
-HAS_F_PERMISSIVE = 1
-HAS_F_STACK_PROTECTOR = 1
-HAS_F_VISIBILITY = 1
-HAS_W_NO_VARIADIC_MACROS = 1
+HAS_PEDANTIC ?= 1
+HAS_F_VISIBILITY ?= 1
+HAS_W_NO_VARIADIC_MACROS ?= 1
+
+GCC_VER_GE_4_1   := ${shell test ${GCC_VER} -ge 40100; echo $$?}
+ifeq (${GCC_VER_GE_4_1},0)
+HAS_F_STACK_PROTECTOR ?= 1
+endif
+
+GCC_VER_GE_4_3   := ${shell test ${GCC_VER} -ge 40300; echo $$?}
+ifeq (${GCC_VER_GE_4_3},0)
+HAS_W_VLA ?= 1
+endif
 endif
 
 #
@@ -59,11 +65,11 @@ ifneq (${IS_CLANG},0)
 # Not supported by clang.
 # May also only be relevant for FORTRAN and Java (not clear).
 #
-HAS_F_BOUNDS_CHECK = 1
+HAS_F_BOUNDS_CHECK ?= 1
 
 ifeq ($(GCC_VER_GE_7),0)
-HAS_W_NO_FORMAT_TRUNCATION = 1
-HAS_W_NO_IMPLICIT_FALLTHROUGH = 1
+HAS_W_NO_FORMAT_TRUNCATION ?= 1
+HAS_W_NO_IMPLICIT_FALLTHROUGH ?= 1
 endif
 
 endif
@@ -76,11 +82,11 @@ endif
 ifeq ($(IS_GCC),0)
 GCC_VER_GE_4_8   := ${shell test ${GCC_VER} -ge 40800; echo $$?}
 ifeq ($(GCC_VER_GE_4_8),0)
-HAS_CXX_11 = 1
+HAS_CXX_11 ?= 1
 endif
 endif
 ifeq ($(IS_CLANG),0)
 ifeq ($(CLANG_VER_GE_3_3),0)
-HAS_CXX_11 = 1
+HAS_CXX_11 ?= 1
 endif
 endif

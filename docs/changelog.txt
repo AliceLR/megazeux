@@ -74,6 +74,11 @@ USERS
 + Directory navigation in the file manager now checks directory
   access permissions before allowing navigation and displays an
   error when navigation fails.
++ Fixed windowing code bug in extended macro editor that would
+  occur after selecting "Default" multiple times.
++ Fixed a bug where long extended macros could sometimes break.
++ Fixed extended macros not working when the params line is
+  indented by more than one space or tab.
 + Windows builds now attempt to load and call SetProcessDPIAware
   on startup. This should fix undesirable DPI-related scaling
   and fullscreen bugs.
@@ -108,6 +113,7 @@ DEVELOPERS
   Android port bugs.
 + MZX will now exit on startup if no world could be loaded and
   the SDL dummy video driver is active.
+- Removed -fpermissive from CXXFLAGS (pointless).
 
 
 March 8th, 2020 - MZX 2.92c

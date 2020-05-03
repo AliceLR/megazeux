@@ -1072,9 +1072,10 @@ __editor_maybe_static void __set_config_from_file(
       {
         // There might be extended information too - get it.
         peek_char = fgetc(conf_file);
-        extended_size = 0;
+        extended_size = 1;
         extended_buffer_offset = 0;
         use_extended_buffer = NULL;
+        extended_buffer[0] = '\0';
 
         while((peek_char == ' ') || (peek_char == '\t'))
         {
@@ -1082,20 +1083,25 @@ __editor_maybe_static void __set_config_from_file(
           use_extended_buffer = extended_buffer;
           if(fsafegets(line_buffer_alternate, 254, conf_file))
           {
-            line_size = (int)strlen(line_buffer_alternate);
-            line_buffer_alternate[line_size] = '\n';
-            line_size++;
+            // Skip any extra whitespace at the start of the line...
+            char *line_buffer_pos = line_buffer_alternate;
+            while(*line_buffer_pos && isspace((int)*line_buffer_pos))
+              line_buffer_pos++;
+
+            line_size = (int)strlen(line_buffer_pos);
+            line_buffer_pos[line_size++] = '\n';
+            line_buffer_pos[line_size] = '\0';
 
             extended_size += line_size;
             if(extended_size >= extended_allocate_size)
             {
               extended_allocate_size *= 2;
-              extended_buffer = crealloc(extended_buffer,
-                extended_allocate_size);
+              extended_buffer = crealloc(extended_buffer, extended_allocate_size);
+              use_extended_buffer = extended_buffer;
             }
 
-            strcpy(extended_buffer + extended_buffer_offset,
-              line_buffer_alternate);
+            memcpy(extended_buffer + extended_buffer_offset,
+             line_buffer_pos, line_size + 1);
             extended_buffer_offset += line_size;
           }
 

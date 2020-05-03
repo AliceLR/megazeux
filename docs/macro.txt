@@ -32,7 +32,7 @@ Examples:
 number20-30
 number256
 
-character - a single byte character.
+char - a single byte character.
 
 color - an MZX style color (includes wildcard variants)
 
@@ -55,7 +55,7 @@ The following are valid default values:
 
 For string: Any sequence of characters.
 For number: An integer number such as 1234
-For character: An integer value or a character inside
+For char: An integer value or a character inside
  single quotes, for instance 200 or 'x'
 For color: An MZX style color, such as c0F or c?3
 
@@ -63,7 +63,7 @@ If you don't supply defaults, default defaults are used:
 
 For string: The empty string
 For number: The lower boundary of the type
-For character: 0
+For char: 0
 For color: c??
 
 Once you write up an extended macro you can use it in the

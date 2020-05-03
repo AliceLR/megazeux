@@ -1037,6 +1037,9 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     update_event_status_delay();
     current_key = get_key(keycode_internal_wrt_numlock);
 
+    if(!current_key && has_unicode_input())
+      current_key = IKEY_UNICODE;
+
     new_key = get_joystick_ui_key();
     if(new_key)
       current_key = new_key;
@@ -1797,7 +1800,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
     {
       int key_char = get_key(keycode_text_ascii);
 
-      if((key >= '0') && (key <= '9'))
+      if((key_char >= '0') && (key_char <= '9'))
       {
         if(current_value == src->upper_limit || src->is_null)
         {
@@ -1805,8 +1808,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
         }
         else
         {
-          current_value = (current_value * 10) +
-           (key_char - '0');
+          current_value = (current_value * 10) + (key_char - '0');
         }
 
         if(src->type == NUMBER_BOX_MULT_FIVE)
