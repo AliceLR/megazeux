@@ -85,6 +85,10 @@ USERS
 
 DEVELOPERS
 
++ Added a set of C++-based unit tests for portions of MZX that
+  can't be reached/tested easily by MZX worlds. These tests will
+  be built and run when "make test" is used prior to running the
+  test worlds.
 + Decoupled SDL 2 text input handling from regular key handling
   and added a text input buffer. Text keys can now be requested
   multiple times and either as ASCII or unicode; the next key in
