@@ -53,6 +53,7 @@ export SDL_AUDIODRIVER=dummy
 
 pushd .. >/dev/null
 
+printf "Running test worlds"
 ./mzxrun \
   testworlds/tests.mzx \
   video_output=software \

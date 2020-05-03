@@ -14,7 +14,6 @@ GCC_VER := ${shell ${CC} -dumpfullversion -dumpversion |\
  awk -F. '{print $$3+100*($$2+100*$$1)}'}
 
 GCC_VER_GE_4     := ${shell test ${GCC_VER} -ge 40000; echo $$?}
-GCC_VER_GE_4_8   := ${shell test ${GCC_VER} -ge 40800; echo $$?}
 GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 
 ifeq (${IS_CLANG},0)
@@ -81,6 +80,7 @@ endif
 # required in the future for optional features (e.g. the network layer).
 #
 ifeq ($(IS_GCC),0)
+GCC_VER_GE_4_8   := ${shell test ${GCC_VER} -ge 40800; echo $$?}
 ifeq ($(GCC_VER_GE_4_8),0)
 HAS_CXX_11 ?= 1
 endif
