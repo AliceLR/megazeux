@@ -43,9 +43,13 @@ endif
 #
 ifeq (${GCC_VER_GE_4},0)
 HAS_PEDANTIC ?= 1
-HAS_F_STACK_PROTECTOR ?= 1
 HAS_F_VISIBILITY ?= 1
 HAS_W_NO_VARIADIC_MACROS ?= 1
+
+GCC_VER_GE_4_1   := ${shell test ${GCC_VER} -ge 40100; echo $$?}
+ifeq (${GCC_VER_GE_4_1},0)
+HAS_F_STACK_PROTECTOR ?= 1
+endif
 endif
 
 #
