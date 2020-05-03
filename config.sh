@@ -47,6 +47,7 @@ usage() {
 	echo "  --enable-msan           Enable MemorySanitizer for debug builds."
 	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds."
 	echo "  --enable-ubsan          Enable UndefinedBehaviorSanitizer for debug builds."
+	echo "  --enable-analyzer       Enable -fanalyzer (requires GCC 10+)."
 	echo "  --enable-trace          Enable trace logging for debug builds."
 	echo "  --enable-stdio-redirect Redirect console logging to stdout.txt/stderr.txt."
 	echo
@@ -130,6 +131,7 @@ AS_NEEDED="false"
 RELEASE="false"
 OPT_SIZE="false"
 SANITIZER="false"
+ANALYZER="false"
 PLEDGE="false"
 PLEDGE_UTILS="true"
 EDITOR="true"
@@ -258,6 +260,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-ubsan" ] &&  SANITIZER="undefined"
 	[ "$1" = "--disable-ubsan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-analyzer" ] &&  ANALYZER="true"
+	[ "$1" = "--disable-analyzer" ] && ANALYZER="false"
 
 	[ "$1" = "--enable-pledge" ] &&  PLEDGE="true"  && PLEDGE_UTILS="true"
 	[ "$1" = "--disable-pledge" ] && PLEDGE="false" && PLEDGE_UTILS="false"
@@ -911,6 +916,19 @@ fi
 if [ "$AS_NEEDED" = "true" ]; then
 	echo "Assuming GNU ld and passing --as-needed through."
 	echo "LDFLAGS+=-Wl,--as-needed" >> platform.inc
+fi
+
+#
+# Enable -fanalyzer support.
+#
+if [ "$ANALYZER" = "true" ]; then
+	echo "Enabling -fanalyzer."
+	echo ""
+	echo "  *** WARNING ***: this is an experimental GCC feature! Its output"
+	echo "  currently isn't very reliable, but it did help find some places"
+	echo "  check_alloc wasn't being used and one legitimate memory leak."
+	echo ""
+	echo "BUILD_F_ANALYZER=1" >> platform.inc
 fi
 
 #

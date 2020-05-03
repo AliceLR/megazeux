@@ -14,7 +14,6 @@ GCC_VER := ${shell ${CC} -dumpfullversion -dumpversion |\
  awk -F. '{print $$3+100*($$2+100*$$1)}'}
 
 GCC_VER_GE_4     := ${shell test ${GCC_VER} -ge 40000; echo $$?}
-GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 
 ifeq (${IS_CLANG},0)
 CLANG_VER_FLAG = "--version"
@@ -67,11 +66,16 @@ ifneq (${IS_CLANG},0)
 #
 HAS_F_BOUNDS_CHECK ?= 1
 
+GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 ifeq ($(GCC_VER_GE_7),0)
 HAS_W_NO_FORMAT_TRUNCATION ?= 1
 HAS_W_NO_IMPLICIT_FALLTHROUGH ?= 1
 endif
 
+GCC_VER_GE_10    := ${shell test ${GCC_VER} -ge 100000; echo $$?}
+ifeq (${GCC_VER_GE_10},0)
+HAS_F_ANALYZER ?= 1
+endif
 endif
 
 #

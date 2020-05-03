@@ -110,6 +110,8 @@ DEVELOPERS
   changed most dns.c, fsafeopen.c, and checkres.c debug logging
   to use it. Use the --enable-trace config.sh flag to enable
   trace logging for debug builds.
++ Added a config.sh flag to build using GCC's -fanalyzer flag
+  (disabled by default).
 + Refactored path functions out of util.c.
 + Replaced the Android build scripts with an improved Makefile
   system. The Android Makefile now uses the NDK toolchains

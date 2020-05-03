@@ -46,6 +46,12 @@ DEBUG_CFLAGS ?= -O0
 unit_cflags ?= ${DEBUG_CFLAGS} -g \
  -Wall -Wextra -Wpedantic -Wno-unused-parameter -std=gnu++11
 
+ifeq (${BUILD_F_ANALYZER},1)
+ifeq (${HAS_F_ANALYZER},1)
+unit_cflags += -fanalyzer
+endif
+endif
+
 ifneq (${HAS_CXX_11},1)
 
 unittest:

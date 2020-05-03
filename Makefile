@@ -314,6 +314,18 @@ endif
 endif
 
 #
+# Enable -fanalyzer if supported.
+#
+ifeq (${BUILD_F_ANALYZER},1)
+ifeq (${HAS_F_ANALYZER},1)
+CFLAGS   += -fanalyzer
+CXXFLAGS += -fanalyzer
+else
+$(warning GCC 10+ is required for -fanalyzer, ignoring.)
+endif
+endif
+
+#
 # Enable position-independent code across the board for modular builds.
 #
 ifeq (${BUILD_MODULAR},1)
