@@ -50,6 +50,11 @@ GCC_VER_GE_4_1   := ${shell test ${GCC_VER} -ge 40100; echo $$?}
 ifeq (${GCC_VER_GE_4_1},0)
 HAS_F_STACK_PROTECTOR ?= 1
 endif
+
+GCC_VER_GE_4_3   := ${shell test ${GCC_VER} -ge 40300; echo $$?}
+ifeq (${GCC_VER_GE_4_3},0)
+HAS_W_VLA ?= 1
+endif
 endif
 
 #

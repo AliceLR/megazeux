@@ -238,6 +238,15 @@ LDFLAGS  += ${ARCH_LDFLAGS}
 #
 
 #
+# Warn against variable-length array (VLA) usage, which is technically valid
+# C99 but is in bad taste and isn't supported by MSVC.
+#
+ifeq (${HAS_W_VLA},1)
+CFLAGS   += -Wvla
+CXXFLAGS += -Wvla
+endif
+
+#
 # Linux GCC gives spurious format truncation warnings. The snprintf
 # implementation on Linux will terminate even in the case of truncation,
 # making this largely useless. It does not trigger using mingw (where it
