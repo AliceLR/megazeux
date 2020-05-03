@@ -120,6 +120,8 @@ DEVELOPERS
 + MZX will now exit on startup if no world could be loaded and
   the SDL dummy video driver is active.
 - Removed -fpermissive from CXXFLAGS (pointless).
+- Removed -fbounds-check from debug builds (pointless; MegaZeux
+  doesn't use GCC to build any Fortran or Java code).
 
 
 March 8th, 2020 - MZX 2.92c

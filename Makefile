@@ -258,16 +258,6 @@ CFLAGS   += -Wno-format-truncation
 endif
 
 #
-# Enable bounds checks for debug builds.
-#
-ifeq (${DEBUG},1)
-ifeq (${HAS_F_BOUNDS_CHECK},1)
-CFLAGS   += -fbounds-check
-CXXFLAGS += -fbounds-check
-endif
-endif
-
-#
 # We enable pedantic warnings here, but this ends up turning on some things
 # we must disable by hand.
 #

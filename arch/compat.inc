@@ -60,12 +60,6 @@ endif
 #
 ifneq (${IS_CLANG},0)
 
-#
-# Not supported by clang.
-# May also only be relevant for FORTRAN and Java (not clear).
-#
-HAS_F_BOUNDS_CHECK ?= 1
-
 GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 ifeq ($(GCC_VER_GE_7),0)
 HAS_W_NO_FORMAT_TRUNCATION ?= 1
