@@ -1,19 +1,13 @@
 #!/bin/bash
 
 # Use make test
-if [ -z $1 ] || [ $1 = "unix" -a -z $2 ]; then
-       echo "USAGE: ./run.sh {PLATFORM} {LIBDIR} (or use make test)";
+if [ -z "$1" ]; then
+       echo "USAGE: ./run.sh {PLATFORM}"
+       echo ""
+       echo "OR:    ./run.sh {PLATFORM} {libcore.so|libcore.dylib} (if modular enabled and platform is 'unix' or 'darwin'"
+       echo ""
+       echo "OR:    make test"
        exit 1
-fi
-
-# On unix platforms, installed libraries will override the ones we want used.
-# The user has to manually remove or rename them to test if they aren't correct.
-if [ $1 = "unix" ] && [ $2 != "." ] && [ -e "$2/libcore.so" ]; then
-       diff -u libcore.so $2/libcore.so
-       if [ $? -ne 0 ]; then
-               echo "ERROR: Remove or update $2/libcore.so and try again";
-               exit 1;
-       fi
 fi
 
 # Unix release builds will try to find this if it isn't installed.
@@ -40,6 +34,11 @@ rm -f log/failures
 export LD_LIBRARY_PATH="."
 export DYLD_FALLBACK_LIBRARY_PATH="."
 
+preload=""
+if [ -n "$2" ]; then
+	preload="./$2";
+fi
+
 # Coupled with the software renderer, this will disable video in MZX, speeding things up
 # and allowing for automated testing. Disabling the SDL audio driver will prevent annoying
 # noises from occuring during tests, but shouldn't affect audio-related tests.
@@ -54,6 +53,7 @@ export SDL_AUDIODRIVER=dummy
 pushd .. >/dev/null
 
 printf "Running test worlds"
+LD_PRELOAD="$preload" \
 ./mzxrun \
   testworlds/tests.mzx \
   video_output=software \

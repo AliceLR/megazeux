@@ -513,7 +513,11 @@ help_check: ${hlp2txt} assets/help.fil
 -include unit/Makefile.in
 
 test: unittest
-	@bash testworlds/run.sh @{PLATFORM} @{LIBDIR}
+ifeq (${BUILD_MODULAR},1)
+	@bash testworlds/run.sh ${PLATFORM} ${core_target}
+else
+	@bash testworlds/run.sh ${PLATFORM}
+endif
 
 test_clean:
 	@rm -rf testworlds/log
