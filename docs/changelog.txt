@@ -113,6 +113,7 @@ DEVELOPERS
   Android port bugs.
 + MZX will now exit on startup if no world could be loaded and
   the SDL dummy video driver is active.
+- Removed -fpermissive from CXXFLAGS (pointless).
 
 
 March 8th, 2020 - MZX 2.92c

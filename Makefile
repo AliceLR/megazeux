@@ -209,13 +209,8 @@ CFLAGS   += ${OPTIMIZE_CFLAGS} -DNDEBUG
 CXXFLAGS += ${OPTIMIZE_CFLAGS} -DNDEBUG
 endif
 
-#
-# Android headers are busted and we get too many warnings..
-#
-ifneq (${PLATFORM},android)
 CFLAGS   += -Wundef -Wunused-macros
 CXXFLAGS += -Wundef -Wunused-macros
-endif
 
 #
 # Enable C++11 for compilers that support it.
@@ -269,19 +264,13 @@ endif
 # Variadic macros are arguably less portable, but all the compilers we
 # support have them.
 #
-ifneq (${PLATFORM},android)
 ifeq (${HAS_PEDANTIC},1)
 CFLAGS   += -pedantic
 CXXFLAGS += -pedantic
 
-ifeq (${HAS_F_PERMISSIVE},1)
-CXXFLAGS += -fpermissive
-endif
-
 ifeq (${HAS_W_NO_VARIADIC_MACROS},1)
 CFLAGS   += -Wno-variadic-macros
 CXXFLAGS += -Wno-variadic-macros
-endif
 endif
 endif
 
