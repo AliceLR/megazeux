@@ -570,14 +570,16 @@ UNITTEST(mfsafegets)
   const int SHORT_BUF_LEN = 32;
   static const memsafegets_data short_data[] =
   {
-    "this should be truncated by the tiny buffer and split into multiple lines"
-    "\nand still work after\n",
     {
-      "this should be truncated by the",
-      " tiny buffer and split into mul",
-      "tiple lines",
-      "and still work after",
-      nullptr
+      "this should be truncated by the tiny buffer and split into multiple lines"
+      "\nand still work after\n",
+      {
+        "this should be truncated by the",
+        " tiny buffer and split into mul",
+        "tiple lines",
+        "and still work after",
+        nullptr
+      }
     },
     {
       "wtf are you\r\nusing this very small and pathetic\r\nbuffer for anyway"
