@@ -514,9 +514,9 @@ help_check: ${hlp2txt} assets/help.fil
 
 test: unittest
 ifeq (${BUILD_MODULAR},1)
-	@bash testworlds/run.sh ${PLATFORM} ${core_target}
+	@${SHELL} testworlds/run.sh ${PLATFORM} ${core_target}
 else
-	@bash testworlds/run.sh ${PLATFORM}
+	@${SHELL} testworlds/run.sh ${PLATFORM}
 endif
 
 test_clean:
