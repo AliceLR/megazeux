@@ -40,7 +40,7 @@ CLANG_VER_FLAG = "-v"
 endif
 
 CLANG_VER := ${shell ${CC} ${CLANG_VER_FLAG} 2>&1 |\
- grep -oi "clang version.* [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9] *" |\
+ grep -oi "clang version.* [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*" |\
  grep -o "[0-9][0-9]*.*" |\
  awk -F. '{print $$3+100*($$2+100*$$1)}'}
 
