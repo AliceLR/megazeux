@@ -849,7 +849,7 @@ static void output_csv(const char *required_by,
       fprintf(stdout, ",");
   }
 
-  fprintf(stdout, "%s,\n", found_in);
+  fprintf(stdout, "%s\n", found_in);
 }
 
 static void output(const char *required_by,
