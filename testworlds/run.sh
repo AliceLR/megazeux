@@ -2,12 +2,12 @@
 
 # Use make test
 if [ -z "$1" ]; then
-       echo "USAGE: ./run.sh {PLATFORM}"
-       echo ""
-       echo "OR:    ./run.sh {PLATFORM} {libcore.so|libcore.dylib} (if modular enabled and platform is 'unix' or 'darwin'"
-       echo ""
-       echo "OR:    make test"
-       exit 1
+	echo "USAGE: ./run.sh {PLATFORM}"
+	echo ""
+	echo "OR:    ./run.sh {PLATFORM} {libcore.so|libcore.dylib} (if modular enabled and platform is 'unix' or 'darwin'"
+	echo ""
+	echo "OR:    make test"
+	exit 1
 fi
 
 TESTS_DIR=`dirname "$0"`
