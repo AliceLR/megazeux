@@ -249,6 +249,7 @@ window.MzxrunInitialize = function(options) {
             // keyboard control after focus is lost (though tab can be used too).
             // This needs to be done HERE since something clobbers all event
             // listeners added to the canvas.
+            var canvas = options.render.canvas;
             canvas.addEventListener("mousedown", function(){ canvas.focus(); });
 
             resolve();

@@ -82,6 +82,8 @@ USERS
 + Windows builds now attempt to load and call SetProcessDPIAware
   on startup. This should fix undesirable DPI-related scaling
   and fullscreen bugs.
++ Fixed Emscripten crashes on startup when built with Emscripten
+  1.39.5 and up caused by usage of deprecated canvas behavior.
 
 DEVELOPERS
 
