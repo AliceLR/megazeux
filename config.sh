@@ -673,6 +673,7 @@ fi
 #
 if [ "$PLATFORM" = "emscripten" ]; then
 	echo "Enabling Emscripten-specific hacks."
+	echo "BUILD_EMSCRIPTEN=1" >> platform.inc
 	EDITOR="false"
 	SCREENSHOTS="false"
 	UPDATER="false"
