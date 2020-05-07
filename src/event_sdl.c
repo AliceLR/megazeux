@@ -1154,10 +1154,9 @@ static boolean process_event(SDL_Event *event)
 
       ckey = convert_SDL_internal(event->key.keysym.sym);
       trace(
-        "--EVENT_SDL-- SDL_KEYDOWN: scancode:%d sym:%d repeat:%u -> %d\n",
+        "--EVENT_SDL-- SDL_KEYDOWN: scancode:%d sym:%d -> %d\n",
         event->key.keysym.scancode,
         event->key.keysym.sym,
-        event->key.repeat,
         ckey
       );
       if(!ckey)
@@ -1265,10 +1264,9 @@ static boolean process_event(SDL_Event *event)
 
       ckey = convert_SDL_internal(event->key.keysym.sym);
       trace(
-        "--EVENT_SDL-- SDL_KEYUP: scancode:%d sym:%d repeat:%u -> %d\n",
+        "--EVENT_SDL-- SDL_KEYUP: scancode:%d sym:%d -> %d\n",
         event->key.keysym.scancode,
         event->key.keysym.sym,
-        event->key.repeat,
         ckey
       );
       if(!ckey)
