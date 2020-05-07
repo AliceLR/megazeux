@@ -71,7 +71,6 @@ cd "$TESTS_DIR"
 # Attempt to detect a hang (e.g. an error occurred).
 
 mzxrun_pid=$!
-disown
 
 i="0"
 
