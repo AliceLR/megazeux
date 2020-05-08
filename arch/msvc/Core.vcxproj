@@ -407,6 +407,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\game_player.h" />
     <ClInclude Include="..\..\src\game_update.h" />
     <ClInclude Include="..\..\src\graphics.h" />
+    <ClInclude Include="..\..\src\hashtable.h" />
     <ClInclude Include="..\..\src\helpsys.h" />
     <ClInclude Include="..\..\src\idarray.h" />
     <ClInclude Include="..\..\src\idput.h" />

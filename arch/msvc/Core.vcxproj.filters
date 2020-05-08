@@ -770,5 +770,8 @@
     <ClInclude Include="..\..\src\io\zip_stream.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\hashtable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
