@@ -297,7 +297,6 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\event.c" />
     <ClCompile Include="..\..\src\event_sdl.c" />
     <ClCompile Include="..\..\src\expr.c" />
-    <ClCompile Include="..\..\src\fsafeopen.c" />
     <ClCompile Include="..\..\src\game.c" />
     <ClCompile Include="..\..\src\game_menu.c" />
     <ClCompile Include="..\..\src\game_ops.c" />
@@ -310,6 +309,12 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\idput.c" />
     <ClCompile Include="..\..\src\intake.c" />
     <ClCompile Include="..\..\src\intake_num.c" />
+    <ClCompile Include="..\..\src\io\dir.c" />
+    <ClCompile Include="..\..\src\io\fsafeopen.c" />
+    <ClCompile Include="..\..\src\io\path.c" />
+    <ClCompile Include="..\..\src\io\vfile.c" />
+    <ClCompile Include="..\..\src\io\zip.c" />
+    <ClCompile Include="..\..\src\io\zip_stream.c" />
     <ClCompile Include="..\..\src\legacy_board.c" />
     <ClCompile Include="..\..\src\legacy_rasm.c" />
     <ClCompile Include="..\..\src\legacy_robot.c" />
@@ -333,10 +338,8 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\sprite.c" />
     <ClCompile Include="..\..\src\str.c" />
     <ClCompile Include="..\..\src\util.c" />
-    <ClCompile Include="..\..\src\vfs.c" />
     <ClCompile Include="..\..\src\window.c" />
     <ClCompile Include="..\..\src\world.c" />
-    <ClCompile Include="..\..\src\zip.c" />
     <ClCompile Include="win32time.c" />
   </ItemGroup>
   <ItemGroup>
@@ -398,7 +401,6 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\error.h" />
     <ClInclude Include="..\..\src\event.h" />
     <ClInclude Include="..\..\src\expr.h" />
-    <ClInclude Include="..\..\src\fsafeopen.h" />
     <ClInclude Include="..\..\src\game.h" />
     <ClInclude Include="..\..\src\game_menu.h" />
     <ClInclude Include="..\..\src\game_ops.h" />
@@ -410,6 +412,21 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\idput.h" />
     <ClInclude Include="..\..\src\intake.h" />
     <ClInclude Include="..\..\src\intake_num.h" />
+    <ClInclude Include="..\..\src\io\bitstream.h" />
+    <ClInclude Include="..\..\src\io\dir.h" />
+    <ClInclude Include="..\..\src\io\fsafeopen.h" />
+    <ClInclude Include="..\..\src\io\memfile.h" />
+    <ClInclude Include="..\..\src\io\path.h" />
+    <ClInclude Include="..\..\src\io\vfile.h" />
+    <ClInclude Include="..\..\src\io\vfile_win32.h" />
+    <ClInclude Include="..\..\src\io\zip.h" />
+    <ClInclude Include="..\..\src\io\zip_deflate.h" />
+    <ClInclude Include="..\..\src\io\zip_deflate64.h" />
+    <ClInclude Include="..\..\src\io\zip_dict.h" />
+    <ClInclude Include="..\..\src\io\zip_implode.h" />
+    <ClInclude Include="..\..\src\io\zip_reduce.h" />
+    <ClInclude Include="..\..\src\io\zip_shrink.h" />
+    <ClInclude Include="..\..\src\io\zip_stream.h" />
     <ClInclude Include="..\..\src\keysym.h" />
     <ClInclude Include="..\..\src\legacy_board.h" />
     <ClInclude Include="..\..\src\legacy_rasm.h" />
@@ -433,11 +450,9 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\sprite_struct.h" />
     <ClInclude Include="..\..\src\str.h" />
     <ClInclude Include="..\..\src\util.h" />
-    <ClInclude Include="..\..\src\vfs.h" />
     <ClInclude Include="..\..\src\window.h" />
     <ClInclude Include="..\..\src\world.h" />
     <ClInclude Include="..\..\src\world_struct.h" />
-    <ClInclude Include="..\..\src\zip.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="dirent.h" />
     <ClInclude Include="msvc.h" />

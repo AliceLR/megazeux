@@ -182,12 +182,14 @@
     <ClCompile Include="..\..\src\editor\robo_ed.c" />
     <ClCompile Include="..\..\src\editor\select.c" />
     <ClCompile Include="..\..\src\editor\sfx_edit.c" />
+    <ClCompile Include="..\..\src\editor\stringsearch.c" />
     <ClCompile Include="..\..\src\editor\undo.c" />
     <ClCompile Include="..\..\src\editor\window.c" />
     <ClCompile Include="..\..\src\editor\world.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\audio.h" />
+    <ClInclude Include="..\..\src\audio\sfx.h" />
     <ClInclude Include="..\..\src\block.h" />
     <ClInclude Include="..\..\src\const.h" />
     <ClInclude Include="..\..\src\counter.h" />
@@ -223,14 +225,13 @@
     <ClInclude Include="..\..\src\idarray.h" />
     <ClInclude Include="..\..\src\idput.h" />
     <ClInclude Include="..\..\src\intake.h" />
+    <ClInclude Include="..\..\src\io\zip.h" />
     <ClInclude Include="..\..\src\mzm.h" />
     <ClInclude Include="..\..\src\platform.h" />
     <ClInclude Include="..\..\src\scrdisp.h" />
-    <ClInclude Include="..\..\src\sfx.h" />
     <ClInclude Include="..\..\src\util.h" />
     <ClInclude Include="..\..\src\window.h" />
     <ClInclude Include="..\..\src\world.h" />
-    <ClInclude Include="..\..\src\zip.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="dirent.h" />
     <ClInclude Include="msvc.h" />
