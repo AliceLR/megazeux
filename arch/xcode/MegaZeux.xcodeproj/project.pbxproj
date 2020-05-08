@@ -58,9 +58,6 @@
 		BF6058FA216B3725001B738C /* const.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D7216B3724001B738C /* const.h */; };
 		BF6058FB216B3725001B738C /* keysym.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D8216B3724001B738C /* keysym.h */; };
 		BF6058FC216B3725001B738C /* settings.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058D9216B3725001B738C /* settings.c */; };
-		BF6058FD216B3725001B738C /* memfile.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058DA216B3725001B738C /* memfile.h */; };
-		BFA52FCE233AC29900A90CB4 /* vfs.c in Sources */ = {isa = PBXBuildFile; fileRef = BFA52FCC233AC29800A90CB4 /* vfs.c */; };
-		BFA52FCF233AC29900A90CB4 /* vfs.h in Headers */ = {isa = PBXBuildFile; fileRef = BFA52FCD233AC29900A90CB4 /* vfs.h */; };
 		BFA52FD2233AC48100A90CB4 /* audio_reality.h in Headers */ = {isa = PBXBuildFile; fileRef = BFA52FD0233AC48100A90CB4 /* audio_reality.h */; };
 		BFA52FD3233AC48100A90CB4 /* audio_reality.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BFA52FD1233AC48100A90CB4 /* audio_reality.cpp */; };
 		BFC0B26B20681ACC00D28296 /* flt_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26620681A9000D28296 /* flt_load.c */; };
@@ -79,8 +76,30 @@
 		BFC1C06B2142591600378A4C /* socksyms.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC1C0662142591500378A4C /* socksyms.c */; };
 		BFC1C06C2142591600378A4C /* dns.h in Headers */ = {isa = PBXBuildFile; fileRef = BFC1C0672142591500378A4C /* dns.h */; };
 		BFC1C06D2142591600378A4C /* socksyms.h in Headers */ = {isa = PBXBuildFile; fileRef = BFC1C0682142591600378A4C /* socksyms.h */; };
-		BFD67B382410ABAD00AF114E /* dir.c in Sources */ = {isa = PBXBuildFile; fileRef = BFD67B372410ABAC00AF114E /* dir.c */; };
-		BFD67B3A2410ABCB00AF114E /* dir.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD67B392410ABCB00AF114E /* dir.h */; };
+		BFD5B0422465AFAE00BC91E9 /* zip_deflate64.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B02D2465AFAB00BC91E9 /* zip_deflate64.h */; };
+		BFD5B0432465AFAE00BC91E9 /* zip_reduce.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B02E2465AFAB00BC91E9 /* zip_reduce.h */; };
+		BFD5B0442465AFAE00BC91E9 /* zip.c in Sources */ = {isa = PBXBuildFile; fileRef = BFD5B02F2465AFAB00BC91E9 /* zip.c */; };
+		BFD5B0452465AFAE00BC91E9 /* zip.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B0302465AFAC00BC91E9 /* zip.h */; };
+		BFD5B0462465AFAE00BC91E9 /* fsafeopen.c in Sources */ = {isa = PBXBuildFile; fileRef = BFD5B0312465AFAC00BC91E9 /* fsafeopen.c */; };
+		BFD5B0472465AFAE00BC91E9 /* vfile.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B0322465AFAC00BC91E9 /* vfile.h */; };
+		BFD5B0482465AFAE00BC91E9 /* zip_stream.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B0332465AFAC00BC91E9 /* zip_stream.h */; };
+		BFD5B0492465AFAE00BC91E9 /* dir.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B0342465AFAC00BC91E9 /* dir.h */; };
+		BFD5B04A2465AFAE00BC91E9 /* zip_stream.c in Sources */ = {isa = PBXBuildFile; fileRef = BFD5B0352465AFAC00BC91E9 /* zip_stream.c */; };
+		BFD5B04B2465AFAE00BC91E9 /* vfile.c in Sources */ = {isa = PBXBuildFile; fileRef = BFD5B0362465AFAC00BC91E9 /* vfile.c */; };
+		BFD5B04C2465AFAE00BC91E9 /* path.c in Sources */ = {isa = PBXBuildFile; fileRef = BFD5B0372465AFAC00BC91E9 /* path.c */; };
+		BFD5B04D2465AFAE00BC91E9 /* zip_deflate.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B0382465AFAC00BC91E9 /* zip_deflate.h */; };
+		BFD5B04E2465AFAE00BC91E9 /* fsafeopen.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B0392465AFAC00BC91E9 /* fsafeopen.h */; };
+		BFD5B04F2465AFAE00BC91E9 /* path.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B03A2465AFAD00BC91E9 /* path.h */; };
+		BFD5B0502465AFAE00BC91E9 /* bitstream.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B03B2465AFAD00BC91E9 /* bitstream.h */; };
+		BFD5B0512465AFAE00BC91E9 /* zip_implode.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B03C2465AFAD00BC91E9 /* zip_implode.h */; };
+		BFD5B0522465AFAE00BC91E9 /* memfile.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B03D2465AFAD00BC91E9 /* memfile.h */; };
+		BFD5B0532465AFAE00BC91E9 /* zip_shrink.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B03E2465AFAD00BC91E9 /* zip_shrink.h */; };
+		BFD5B0542465AFAE00BC91E9 /* vfile_posix.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B03F2465AFAD00BC91E9 /* vfile_posix.h */; };
+		BFD5B0552465AFAE00BC91E9 /* zip_dict.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B0402465AFAD00BC91E9 /* zip_dict.h */; };
+		BFD5B0562465AFAE00BC91E9 /* dir.c in Sources */ = {isa = PBXBuildFile; fileRef = BFD5B0412465AFAD00BC91E9 /* dir.c */; };
+		BFD5B0582465AFEB00BC91E9 /* hashtable.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B0572465AFEB00BC91E9 /* hashtable.h */; };
+		BFD5B05B2465B0C400BC91E9 /* stringsearch.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD5B0592465B0C400BC91E9 /* stringsearch.h */; };
+		BFD5B05C2465B0C400BC91E9 /* stringsearch.c in Sources */ = {isa = PBXBuildFile; fileRef = BFD5B05A2465B0C400BC91E9 /* stringsearch.c */; };
 		BFD67B3D2410ABE200AF114E /* render_layer_code.hpp in Headers */ = {isa = PBXBuildFile; fileRef = BFD67B3B2410ABE200AF114E /* render_layer_code.hpp */; };
 		BFD67B3E2410ABE200AF114E /* render_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BFD67B3C2410ABE200AF114E /* render_layer.cpp */; };
 		BFFF16281FCDC55000BDEC58 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
@@ -109,8 +128,6 @@
 		BFFF16CB1FCDC76900BDEC58 /* event.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF166F1FCDC64D00BDEC58 /* event.h */; };
 		BFFF16CC1FCDC76900BDEC58 /* expr.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF165B1FCDC64A00BDEC58 /* expr.c */; };
 		BFFF16CD1FCDC76900BDEC58 /* expr.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16461FCDC64700BDEC58 /* expr.h */; };
-		BFFF16CE1FCDC76900BDEC58 /* fsafeopen.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF164A1FCDC64800BDEC58 /* fsafeopen.c */; };
-		BFFF16CF1FCDC76900BDEC58 /* fsafeopen.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16701FCDC64D00BDEC58 /* fsafeopen.h */; };
 		BFFF16D01FCDC76900BDEC58 /* game.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16681FCDC64C00BDEC58 /* game.c */; };
 		BFFF16D11FCDC76900BDEC58 /* game.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF164D1FCDC64800BDEC58 /* game.h */; };
 		BFFF16D41FCDC76900BDEC58 /* graphics.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16561FCDC64900BDEC58 /* graphics.c */; };
@@ -160,8 +177,6 @@
 		BFFF17071FCDC76900BDEC58 /* window.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF164F1FCDC64800BDEC58 /* window.h */; };
 		BFFF17081FCDC76900BDEC58 /* world.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16591FCDC64A00BDEC58 /* world.c */; };
 		BFFF17091FCDC76900BDEC58 /* world.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF165F1FCDC64B00BDEC58 /* world.h */; };
-		BFFF170A1FCDC76900BDEC58 /* zip.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16631FCDC64B00BDEC58 /* zip.c */; };
-		BFFF170B1FCDC76900BDEC58 /* zip.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16371FCDC64600BDEC58 /* zip.h */; };
 		BFFF170C1FCDC7AC00BDEC58 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
 		BFFF170D1FCDC7AC00BDEC58 /* Ogg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B91FCCABB5008EEDB6 /* Ogg.framework */; };
 		BFFF170E1FCDC7AC00BDEC58 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; };
@@ -429,9 +444,6 @@
 		BF6058D7216B3724001B738C /* const.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = const.h; path = ../../src/const.h; sourceTree = "<group>"; };
 		BF6058D8216B3724001B738C /* keysym.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = keysym.h; path = ../../src/keysym.h; sourceTree = "<group>"; };
 		BF6058D9216B3725001B738C /* settings.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = settings.c; path = ../../src/settings.c; sourceTree = "<group>"; };
-		BF6058DA216B3725001B738C /* memfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = memfile.h; path = ../../src/memfile.h; sourceTree = "<group>"; };
-		BFA52FCC233AC29800A90CB4 /* vfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = vfs.c; path = ../../src/vfs.c; sourceTree = "<group>"; };
-		BFA52FCD233AC29900A90CB4 /* vfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vfs.h; path = ../../src/vfs.h; sourceTree = "<group>"; };
 		BFA52FD0233AC48100A90CB4 /* audio_reality.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = audio_reality.h; path = ../../src/audio/audio_reality.h; sourceTree = "<group>"; };
 		BFA52FD1233AC48100A90CB4 /* audio_reality.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = audio_reality.cpp; path = ../../src/audio/audio_reality.cpp; sourceTree = "<group>"; };
 		BFC0B26520681A9000D28296 /* hmn_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hmn_load.c; path = ../../contrib/libxmp/src/loaders/hmn_load.c; sourceTree = "<group>"; };
@@ -458,13 +470,34 @@
 		BFC1C0662142591500378A4C /* socksyms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = socksyms.c; path = ../../src/network/socksyms.c; sourceTree = "<group>"; };
 		BFC1C0672142591500378A4C /* dns.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = dns.h; path = ../../src/network/dns.h; sourceTree = "<group>"; };
 		BFC1C0682142591600378A4C /* socksyms.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = socksyms.h; path = ../../src/network/socksyms.h; sourceTree = "<group>"; };
-		BFD67B372410ABAC00AF114E /* dir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = dir.c; path = ../../src/dir.c; sourceTree = "<group>"; };
-		BFD67B392410ABCB00AF114E /* dir.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = dir.h; path = ../../src/dir.h; sourceTree = "<group>"; };
+		BFD5B02D2465AFAB00BC91E9 /* zip_deflate64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip_deflate64.h; path = ../../src/io/zip_deflate64.h; sourceTree = "<group>"; };
+		BFD5B02E2465AFAB00BC91E9 /* zip_reduce.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip_reduce.h; path = ../../src/io/zip_reduce.h; sourceTree = "<group>"; };
+		BFD5B02F2465AFAB00BC91E9 /* zip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = zip.c; path = ../../src/io/zip.c; sourceTree = "<group>"; };
+		BFD5B0302465AFAC00BC91E9 /* zip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip.h; path = ../../src/io/zip.h; sourceTree = "<group>"; };
+		BFD5B0312465AFAC00BC91E9 /* fsafeopen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = fsafeopen.c; path = ../../src/io/fsafeopen.c; sourceTree = "<group>"; };
+		BFD5B0322465AFAC00BC91E9 /* vfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vfile.h; path = ../../src/io/vfile.h; sourceTree = "<group>"; };
+		BFD5B0332465AFAC00BC91E9 /* zip_stream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip_stream.h; path = ../../src/io/zip_stream.h; sourceTree = "<group>"; };
+		BFD5B0342465AFAC00BC91E9 /* dir.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = dir.h; path = ../../src/io/dir.h; sourceTree = "<group>"; };
+		BFD5B0352465AFAC00BC91E9 /* zip_stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = zip_stream.c; path = ../../src/io/zip_stream.c; sourceTree = "<group>"; };
+		BFD5B0362465AFAC00BC91E9 /* vfile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = vfile.c; path = ../../src/io/vfile.c; sourceTree = "<group>"; };
+		BFD5B0372465AFAC00BC91E9 /* path.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = path.c; path = ../../src/io/path.c; sourceTree = "<group>"; };
+		BFD5B0382465AFAC00BC91E9 /* zip_deflate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip_deflate.h; path = ../../src/io/zip_deflate.h; sourceTree = "<group>"; };
+		BFD5B0392465AFAC00BC91E9 /* fsafeopen.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fsafeopen.h; path = ../../src/io/fsafeopen.h; sourceTree = "<group>"; };
+		BFD5B03A2465AFAD00BC91E9 /* path.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = path.h; path = ../../src/io/path.h; sourceTree = "<group>"; };
+		BFD5B03B2465AFAD00BC91E9 /* bitstream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bitstream.h; path = ../../src/io/bitstream.h; sourceTree = "<group>"; };
+		BFD5B03C2465AFAD00BC91E9 /* zip_implode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip_implode.h; path = ../../src/io/zip_implode.h; sourceTree = "<group>"; };
+		BFD5B03D2465AFAD00BC91E9 /* memfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = memfile.h; path = ../../src/io/memfile.h; sourceTree = "<group>"; };
+		BFD5B03E2465AFAD00BC91E9 /* zip_shrink.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip_shrink.h; path = ../../src/io/zip_shrink.h; sourceTree = "<group>"; };
+		BFD5B03F2465AFAD00BC91E9 /* vfile_posix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vfile_posix.h; path = ../../src/io/vfile_posix.h; sourceTree = "<group>"; };
+		BFD5B0402465AFAD00BC91E9 /* zip_dict.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip_dict.h; path = ../../src/io/zip_dict.h; sourceTree = "<group>"; };
+		BFD5B0412465AFAD00BC91E9 /* dir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = dir.c; path = ../../src/io/dir.c; sourceTree = "<group>"; };
+		BFD5B0572465AFEB00BC91E9 /* hashtable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = hashtable.h; path = ../../src/hashtable.h; sourceTree = "<group>"; };
+		BFD5B0592465B0C400BC91E9 /* stringsearch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = stringsearch.h; path = ../../src/editor/stringsearch.h; sourceTree = "<group>"; };
+		BFD5B05A2465B0C400BC91E9 /* stringsearch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stringsearch.c; path = ../../src/editor/stringsearch.c; sourceTree = "<group>"; };
 		BFD67B3B2410ABE200AF114E /* render_layer_code.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = render_layer_code.hpp; path = ../../src/render_layer_code.hpp; sourceTree = "<group>"; };
 		BFD67B3C2410ABE200AF114E /* render_layer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = render_layer.cpp; path = ../../src/render_layer.cpp; sourceTree = "<group>"; };
 		BFE5EB622006DB4300E15CC0 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
 		BFFF16361FCDC64600BDEC58 /* util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = util.h; path = ../../src/util.h; sourceTree = "<group>"; };
-		BFFF16371FCDC64600BDEC58 /* zip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip.h; path = ../../src/zip.h; sourceTree = "<group>"; };
 		BFFF16381FCDC64600BDEC58 /* board.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = board.h; path = ../../src/board.h; sourceTree = "<group>"; };
 		BFFF16391FCDC64600BDEC58 /* robot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = robot.h; path = ../../src/robot.h; sourceTree = "<group>"; };
 		BFFF163A1FCDC64600BDEC58 /* board.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = board.c; path = ../../src/board.c; sourceTree = "<group>"; };
@@ -480,7 +513,6 @@
 		BFFF16451FCDC64700BDEC58 /* robot.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = robot.c; path = ../../src/robot.c; sourceTree = "<group>"; };
 		BFFF16461FCDC64700BDEC58 /* expr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = expr.h; path = ../../src/expr.h; sourceTree = "<group>"; };
 		BFFF16471FCDC64700BDEC58 /* legacy_world.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = legacy_world.c; path = ../../src/legacy_world.c; sourceTree = "<group>"; };
-		BFFF164A1FCDC64800BDEC58 /* fsafeopen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = fsafeopen.c; path = ../../src/fsafeopen.c; sourceTree = "<group>"; };
 		BFFF164B1FCDC64800BDEC58 /* error.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = error.c; path = ../../src/error.c; sourceTree = "<group>"; };
 		BFFF164C1FCDC64800BDEC58 /* legacy_robot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = legacy_robot.h; path = ../../src/legacy_robot.h; sourceTree = "<group>"; };
 		BFFF164D1FCDC64800BDEC58 /* game.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = game.h; path = ../../src/game.h; sourceTree = "<group>"; };
@@ -504,7 +536,6 @@
 		BFFF16601FCDC64B00BDEC58 /* sprite.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sprite.c; path = ../../src/sprite.c; sourceTree = "<group>"; };
 		BFFF16611FCDC64B00BDEC58 /* legacy_rasm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = legacy_rasm.h; path = ../../src/legacy_rasm.h; sourceTree = "<group>"; };
 		BFFF16621FCDC64B00BDEC58 /* str.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = str.h; path = ../../src/str.h; sourceTree = "<group>"; };
-		BFFF16631FCDC64B00BDEC58 /* zip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = zip.c; path = ../../src/zip.c; sourceTree = "<group>"; };
 		BFFF16641FCDC64B00BDEC58 /* mzm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mzm.h; path = ../../src/mzm.h; sourceTree = "<group>"; };
 		BFFF16651FCDC64C00BDEC58 /* util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = util.c; path = ../../src/util.c; sourceTree = "<group>"; };
 		BFFF16661FCDC64C00BDEC58 /* intake.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = intake.c; path = ../../src/intake.c; sourceTree = "<group>"; };
@@ -516,7 +547,6 @@
 		BFFF166D1FCDC64D00BDEC58 /* render.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render.c; path = ../../src/render.c; sourceTree = "<group>"; };
 		BFFF166E1FCDC64D00BDEC58 /* intake.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = intake.h; path = ../../src/intake.h; sourceTree = "<group>"; };
 		BFFF166F1FCDC64D00BDEC58 /* event.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = event.h; path = ../../src/event.h; sourceTree = "<group>"; };
-		BFFF16701FCDC64D00BDEC58 /* fsafeopen.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = fsafeopen.h; path = ../../src/fsafeopen.h; sourceTree = "<group>"; };
 		BFFF16711FCDC64D00BDEC58 /* graphics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = graphics.h; path = ../../src/graphics.h; sourceTree = "<group>"; };
 		BFFF16721FCDC64D00BDEC58 /* idarray.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = idarray.c; path = ../../src/idarray.c; sourceTree = "<group>"; };
 		BFFF16731FCDC64D00BDEC58 /* counter.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = counter.c; path = ../../src/counter.c; sourceTree = "<group>"; };
@@ -810,10 +840,39 @@
 			name = audio;
 			sourceTree = "<group>";
 		};
+		BFD5B02C2465AF6000BC91E9 /* io */ = {
+			isa = PBXGroup;
+			children = (
+				BFD5B03B2465AFAD00BC91E9 /* bitstream.h */,
+				BFD5B0412465AFAD00BC91E9 /* dir.c */,
+				BFD5B0342465AFAC00BC91E9 /* dir.h */,
+				BFD5B0312465AFAC00BC91E9 /* fsafeopen.c */,
+				BFD5B0392465AFAC00BC91E9 /* fsafeopen.h */,
+				BFD5B03D2465AFAD00BC91E9 /* memfile.h */,
+				BFD5B0372465AFAC00BC91E9 /* path.c */,
+				BFD5B03A2465AFAD00BC91E9 /* path.h */,
+				BFD5B03F2465AFAD00BC91E9 /* vfile_posix.h */,
+				BFD5B0362465AFAC00BC91E9 /* vfile.c */,
+				BFD5B0322465AFAC00BC91E9 /* vfile.h */,
+				BFD5B0382465AFAC00BC91E9 /* zip_deflate.h */,
+				BFD5B02D2465AFAB00BC91E9 /* zip_deflate64.h */,
+				BFD5B0402465AFAD00BC91E9 /* zip_dict.h */,
+				BFD5B03C2465AFAD00BC91E9 /* zip_implode.h */,
+				BFD5B02E2465AFAB00BC91E9 /* zip_reduce.h */,
+				BFD5B03E2465AFAD00BC91E9 /* zip_shrink.h */,
+				BFD5B0352465AFAC00BC91E9 /* zip_stream.c */,
+				BFD5B0332465AFAC00BC91E9 /* zip_stream.h */,
+				BFD5B02F2465AFAB00BC91E9 /* zip.c */,
+				BFD5B0302465AFAC00BC91E9 /* zip.h */,
+			);
+			name = io;
+			sourceTree = "<group>";
+		};
 		BFFF16351FCDC5AE00BDEC58 /* Core */ = {
 			isa = PBXGroup;
 			children = (
 				BFC1C040214254F500378A4C /* audio */,
+				BFD5B02C2465AF6000BC91E9 /* io */,
 				BFFF171F1FCDCB6D00BDEC58 /* libxmp */,
 				BFFF17121FCDC90400BDEC58 /* network */,
 				BFFF163E1FCDC64700BDEC58 /* block.c */,
@@ -835,8 +894,6 @@
 				BF6058BF216B3720001B738C /* counter_struct.h */,
 				BFFF163D1FCDC64700BDEC58 /* data.c */,
 				BFFF16441FCDC64700BDEC58 /* data.h */,
-				BFD67B372410ABAC00AF114E /* dir.c */,
-				BFD67B392410ABCB00AF114E /* dir.h */,
 				BFFF164B1FCDC64800BDEC58 /* error.c */,
 				BFFF163C1FCDC64600BDEC58 /* error.h */,
 				BFFF16961FCDC6D000BDEC58 /* event_sdl.c */,
@@ -845,8 +902,6 @@
 				BFFF165B1FCDC64A00BDEC58 /* expr.c */,
 				BFFF16461FCDC64700BDEC58 /* expr.h */,
 				BF6058B8216B371F001B738C /* extmem.h */,
-				BFFF164A1FCDC64800BDEC58 /* fsafeopen.c */,
-				BFFF16701FCDC64D00BDEC58 /* fsafeopen.h */,
 				BFFF16681FCDC64C00BDEC58 /* game.c */,
 				BFFF164D1FCDC64800BDEC58 /* game.h */,
 				BF6058BE216B3720001B738C /* game_menu.c */,
@@ -860,6 +915,7 @@
 				BF6058D3216B3724001B738C /* game_update.h */,
 				BFFF16561FCDC64900BDEC58 /* graphics.c */,
 				BFFF16711FCDC64D00BDEC58 /* graphics.h */,
+				BFD5B0572465AFEB00BC91E9 /* hashtable.h */,
 				BFFF18141FCDCD7B00BDEC58 /* helpsys.c */,
 				BFFF18151FCDCD7B00BDEC58 /* helpsys.h */,
 				BFFF16721FCDC64D00BDEC58 /* idarray.c */,
@@ -880,7 +936,6 @@
 				BFFF16471FCDC64700BDEC58 /* legacy_world.c */,
 				BFFF16521FCDC64900BDEC58 /* legacy_world.h */,
 				BF6058C0216B3720001B738C /* memcasecmp.h */,
-				BF6058DA216B3725001B738C /* memfile.h */,
 				BFFF16421FCDC64700BDEC58 /* mzm.c */,
 				BFFF16641FCDC64B00BDEC58 /* mzm.h */,
 				BFFF16A81FCDC6D300BDEC58 /* platform_endian.h */,
@@ -921,8 +976,6 @@
 				BF6058D6216B3724001B738C /* thread_sdl.h */,
 				BFFF16651FCDC64C00BDEC58 /* util.c */,
 				BFFF16361FCDC64600BDEC58 /* util.h */,
-				BFA52FCC233AC29800A90CB4 /* vfs.c */,
-				BFA52FCD233AC29900A90CB4 /* vfs.h */,
 				BFFF16531FCDC64900BDEC58 /* window.c */,
 				BFFF164F1FCDC64800BDEC58 /* window.h */,
 				BFFF16591FCDC64A00BDEC58 /* world.c */,
@@ -930,8 +983,6 @@
 				BF6058C5216B3721001B738C /* world_format.h */,
 				BF6058CB216B3722001B738C /* world_struct.h */,
 				BF3C7A7D22E6B6A20024C630 /* yuv.h */,
-				BFFF16631FCDC64B00BDEC58 /* zip.c */,
-				BFFF16371FCDC64600BDEC58 /* zip.h */,
 			);
 			name = Core;
 			sourceTree = "<group>";
@@ -1095,6 +1146,8 @@
 				BFFF18421FCDCF6700BDEC58 /* select.h */,
 				BFFF18221FCDCF6300BDEC58 /* sfx_edit.c */,
 				BFFF182D1FCDCF6400BDEC58 /* sfx_edit.h */,
+				BFD5B05A2465B0C400BC91E9 /* stringsearch.c */,
+				BFD5B0592465B0C400BC91E9 /* stringsearch.h */,
 				BFFF18281FCDCF6300BDEC58 /* undo.c */,
 				BFFF18441FCDCF6700BDEC58 /* undo.h */,
 				BFFF18291FCDCF6300BDEC58 /* window.c */,
@@ -1115,18 +1168,22 @@
 				BF6058FB216B3725001B738C /* keysym.h in Headers */,
 				BF6058EF216B3725001B738C /* compat_sdl.h in Headers */,
 				BFFF17CE1FCDCCF300BDEC58 /* mdataio.h in Headers */,
+				BFD5B0422465AFAE00BC91E9 /* zip_deflate64.h in Headers */,
 				BF6058EA216B3725001B738C /* settings.h in Headers */,
 				BFFF17CC1FCDCCF300BDEC58 /* list.h in Headers */,
-				BFFF170B1FCDC76900BDEC58 /* zip.h in Headers */,
 				BF6058F7216B3725001B738C /* game_player.h in Headers */,
 				BFFF17CA1FCDCCF300BDEC58 /* hmn_extras.h in Headers */,
 				BFFF17031FCDC76900BDEC58 /* str.h in Headers */,
 				BFFF17011FCDC76900BDEC58 /* sprite.h in Headers */,
+				BFD5B04D2465AFAE00BC91E9 /* zip_deflate.h in Headers */,
 				BFFF16BE1FCDC76900BDEC58 /* block.h in Headers */,
 				BF6058E3216B3725001B738C /* memcasecmp.h in Headers */,
 				BFFF16C01FCDC76900BDEC58 /* board.h in Headers */,
 				BF6058EB216B3725001B738C /* caption.h in Headers */,
+				BFD5B0482465AFAE00BC91E9 /* zip_stream.h in Headers */,
+				BFD5B0472465AFAE00BC91E9 /* vfile.h in Headers */,
 				BFFF181B1FCDCD8500BDEC58 /* pngops.h in Headers */,
+				BFD5B0452465AFAE00BC91E9 /* zip.h in Headers */,
 				BFFF16E11FCDC76900BDEC58 /* legacy_robot.h in Headers */,
 				BFFF17051FCDC76900BDEC58 /* util.h in Headers */,
 				BFFF16DF1FCDC76900BDEC58 /* legacy_rasm.h in Headers */,
@@ -1139,12 +1196,14 @@
 				BF6058E0216B3725001B738C /* compat.h in Headers */,
 				BFFF180E1FCDCD1200BDEC58 /* med.h in Headers */,
 				BFFF17C41FCDCCF300BDEC58 /* common.h in Headers */,
+				BFD5B04E2465AFAE00BC91E9 /* fsafeopen.h in Headers */,
 				BFFF16D91FCDC76900BDEC58 /* idput.h in Headers */,
 				BFFF17D21FCDCCF300BDEC58 /* paula.h in Headers */,
 				BFFF17CB1FCDCCF300BDEC58 /* lfo.h in Headers */,
+				BFD5B0492465AFAE00BC91E9 /* dir.h in Headers */,
+				BFD5B0532465AFAE00BC91E9 /* zip_shrink.h in Headers */,
 				BF6058F3216B3725001B738C /* intake_num.h in Headers */,
 				BFFF17071FCDC76900BDEC58 /* window.h in Headers */,
-				BF6058FD216B3725001B738C /* memfile.h in Headers */,
 				BF6058F5216B3725001B738C /* sprite_struct.h in Headers */,
 				BF6058F9216B3725001B738C /* thread_sdl.h in Headers */,
 				BF6058E7216B3725001B738C /* game_ops.h in Headers */,
@@ -1153,16 +1212,16 @@
 				BFFF16C41FCDC76900BDEC58 /* counter.h in Headers */,
 				BFFF17D41FCDCCF300BDEC58 /* player.h in Headers */,
 				BF6058DE216B3725001B738C /* board_struct.h in Headers */,
-				BFD67B3A2410ABCB00AF114E /* dir.h in Headers */,
-				BFA52FCF233AC29900A90CB4 /* vfs.h in Headers */,
 				BFFF17091FCDC76900BDEC58 /* world.h in Headers */,
 				BF6058F6216B3725001B738C /* game_update.h in Headers */,
 				BFFF16DD1FCDC76900BDEC58 /* legacy_board.h in Headers */,
 				BF6058F8216B3725001B738C /* robot_struct.h in Headers */,
 				BFFF17A61FCDCCE200BDEC58 /* manifest.h in Headers */,
 				BFFF16DB1FCDC76900BDEC58 /* intake.h in Headers */,
+				BFD5B04F2465AFAE00BC91E9 /* path.h in Headers */,
 				BFFF16CD1FCDC76900BDEC58 /* expr.h in Headers */,
 				BFFF17C81FCDCCF300BDEC58 /* format.h in Headers */,
+				BFD5B0432465AFAE00BC91E9 /* zip_reduce.h in Headers */,
 				BFFF180D1FCDCD1200BDEC58 /* loader.h in Headers */,
 				BFFF17D51FCDCCF300BDEC58 /* precomp_blep.h in Headers */,
 				BFFF16E51FCDC76900BDEC58 /* mzm.h in Headers */,
@@ -1170,6 +1229,7 @@
 				BFD67B3D2410ABE200AF114E /* render_layer_code.hpp in Headers */,
 				BFFF16EA1FCDC76900BDEC58 /* render_gl.h in Headers */,
 				BFFF16F81FCDC76900BDEC58 /* render.h in Headers */,
+				BFD5B0582465AFEB00BC91E9 /* hashtable.h in Headers */,
 				BFFF16C61FCDC76900BDEC58 /* data.h in Headers */,
 				BFFF16EF1FCDC76900BDEC58 /* render_layer.h in Headers */,
 				BFFF17AA1FCDCCE200BDEC58 /* sha256.h in Headers */,
@@ -1180,6 +1240,7 @@
 				BFFF17C61FCDCCF300BDEC58 /* extras.h in Headers */,
 				BFFF16FA1FCDC76900BDEC58 /* robot.h in Headers */,
 				BF6058E8216B3725001B738C /* world_format.h in Headers */,
+				BFD5B0552465AFAE00BC91E9 /* zip_dict.h in Headers */,
 				BFFF18101FCDCD1200BDEC58 /* s3m.h in Headers */,
 				BFA52FD2233AC48100A90CB4 /* audio_reality.h in Headers */,
 				BFFF16FD1FCDC76900BDEC58 /* scrdisp.h in Headers */,
@@ -1193,9 +1254,12 @@
 				BFFF16C81FCDC76900BDEC58 /* error.h in Headers */,
 				BFFF16D11FCDC76900BDEC58 /* game.h in Headers */,
 				BFFF18111FCDCD1200BDEC58 /* xm.h in Headers */,
+				BFD5B0542465AFAE00BC91E9 /* vfile_posix.h in Headers */,
 				BFFF17CD1FCDCCF300BDEC58 /* md5.h in Headers */,
 				BF6058EC216B3725001B738C /* core.h in Headers */,
+				BFD5B0512465AFAE00BC91E9 /* zip_implode.h in Headers */,
 				BFFF180F1FCDCD1200BDEC58 /* mod.h in Headers */,
+				BFD5B0522465AFAE00BC91E9 /* memfile.h in Headers */,
 				BFFF16E31FCDC76900BDEC58 /* legacy_world.h in Headers */,
 				BF6058FA216B3725001B738C /* const.h in Headers */,
 				BFFF17111FCDC81000BDEC58 /* config.h in Headers */,
@@ -1203,8 +1267,8 @@
 				BF6058E6216B3725001B738C /* rasm.h in Headers */,
 				BFFF16E81FCDC76900BDEC58 /* platform.h in Headers */,
 				BFFF17D01FCDCCF300BDEC58 /* memio.h in Headers */,
+				BFD5B0502465AFAE00BC91E9 /* bitstream.h in Headers */,
 				BFFF17C91FCDCCF300BDEC58 /* hio.h in Headers */,
-				BFFF16CF1FCDC76900BDEC58 /* fsafeopen.h in Headers */,
 				BFFF16D71FCDC76900BDEC58 /* idarray.h in Headers */,
 				BFC1C06D2142591600378A4C /* socksyms.h in Headers */,
 				BFFF180C1FCDCD1200BDEC58 /* it.h in Headers */,
@@ -1222,6 +1286,7 @@
 				BFFF18811FCDCF7C00BDEC58 /* undo.h in Headers */,
 				BF6058B6216B3683001B738C /* buffer_struct.h in Headers */,
 				BFFF18711FCDCF7C00BDEC58 /* macro.h in Headers */,
+				BFD5B05B2465B0C400BC91E9 /* stringsearch.h in Headers */,
 				BFFF187B1FCDCF7C00BDEC58 /* robot.h in Headers */,
 				BFFF18671FCDCF7C00BDEC58 /* debug.h in Headers */,
 				BFFF186B1FCDCF7C00BDEC58 /* edit.h in Headers */,
@@ -1443,6 +1508,7 @@
 				BFC1C05F214258CE00378A4C /* audio_wav.c in Sources */,
 				BFC1C060214258CE00378A4C /* audio_xmp.c in Sources */,
 				BFC1C061214258CE00378A4C /* ext.c in Sources */,
+				BFD5B04C2465AFAE00BC91E9 /* path.c in Sources */,
 				BFC1C062214258CE00378A4C /* sampled_stream.c in Sources */,
 				BFC1C063214258CE00378A4C /* sfx.c in Sources */,
 				BFFF16FB1FCDC76900BDEC58 /* run_robot.c in Sources */,
@@ -1454,7 +1520,6 @@
 				BFFF18061FCDCD1200BDEC58 /* stm_load.c in Sources */,
 				BFFF17BB1FCDCCF300BDEC58 /* mix_paula.c in Sources */,
 				BFFF16E01FCDC76900BDEC58 /* legacy_robot.c in Sources */,
-				BFD67B382410ABAD00AF114E /* dir.c in Sources */,
 				BFFF17AC1FCDCCF300BDEC58 /* dataio.c in Sources */,
 				BFFF17AF1FCDCCF300BDEC58 /* filter.c in Sources */,
 				BFFF18001FCDCD1200BDEC58 /* mmd3_load.c in Sources */,
@@ -1473,6 +1538,7 @@
 				BFC1C0692142591600378A4C /* dns.c in Sources */,
 				BFFF17FB1FCDCD1200BDEC58 /* med2_load.c in Sources */,
 				BF6058DF216B3725001B738C /* game_update.c in Sources */,
+				BFD5B0462465AFAE00BC91E9 /* fsafeopen.c in Sources */,
 				BFFF17B91FCDCCF300BDEC58 /* memio.c in Sources */,
 				BFFF17F61FCDCD1200BDEC58 /* far_load.c in Sources */,
 				BFFF17F71FCDCD1200BDEC58 /* gdm_load.c in Sources */,
@@ -1491,6 +1557,7 @@
 				BFFF17A51FCDCCE200BDEC58 /* manifest.c in Sources */,
 				BFFF16DE1FCDC76900BDEC58 /* legacy_rasm.c in Sources */,
 				BFFF16F71FCDC76900BDEC58 /* render.c in Sources */,
+				BFD5B04A2465AFAE00BC91E9 /* zip_stream.c in Sources */,
 				BFFF16E21FCDC76900BDEC58 /* legacy_world.c in Sources */,
 				BFFF17B51FCDCCF300BDEC58 /* load_helpers.c in Sources */,
 				BFFF18181FCDCD8500BDEC58 /* helpsys.c in Sources */,
@@ -1503,7 +1570,6 @@
 				BFFF16EC1FCDC76900BDEC58 /* render_gl2.c in Sources */,
 				BFFF18081FCDCD1200BDEC58 /* voltable.c in Sources */,
 				BFFF16D01FCDC76900BDEC58 /* game.c in Sources */,
-				BFFF16CE1FCDC76900BDEC58 /* fsafeopen.c in Sources */,
 				BFFF17F41FCDCD1200BDEC58 /* asylum_load.c in Sources */,
 				BF6058F1216B3725001B738C /* caption.c in Sources */,
 				BFFF17C01FCDCCF300BDEC58 /* read_event.c in Sources */,
@@ -1511,6 +1577,7 @@
 				BFFF16D81FCDC76900BDEC58 /* idput.c in Sources */,
 				BFFF17C21FCDCCF300BDEC58 /* smix.c in Sources */,
 				BFA52FD3233AC48100A90CB4 /* audio_reality.cpp in Sources */,
+				BFD5B04B2465AFAE00BC91E9 /* vfile.c in Sources */,
 				BFFF18031FCDCD1200BDEC58 /* okt_load.c in Sources */,
 				BFFF16ED1FCDC76900BDEC58 /* render_glsl.c in Sources */,
 				BFFF17BF1FCDCCF300BDEC58 /* player.c in Sources */,
@@ -1518,6 +1585,7 @@
 				BFFF16D41FCDC76900BDEC58 /* graphics.c in Sources */,
 				BFFF17F31FCDCD1200BDEC58 /* asif.c in Sources */,
 				BFFF17081FCDC76900BDEC58 /* world.c in Sources */,
+				BFD5B0442465AFAE00BC91E9 /* zip.c in Sources */,
 				BFFF17B71FCDCCF300BDEC58 /* md5.c in Sources */,
 				BFFF18091FCDCD1200BDEC58 /* xm_load.c in Sources */,
 				BF6058DC216B3725001B738C /* core.c in Sources */,
@@ -1540,9 +1608,9 @@
 				BFFF17AB1FCDCCF300BDEC58 /* control.c in Sources */,
 				BFFF17FC1FCDCD1200BDEC58 /* med3_load.c in Sources */,
 				BFFF17001FCDC76900BDEC58 /* sprite.c in Sources */,
-				BFFF170A1FCDC76900BDEC58 /* zip.c in Sources */,
 				BFFF17A31FCDCCE200BDEC58 /* host.c in Sources */,
 				BFFF16BD1FCDC76900BDEC58 /* block.c in Sources */,
+				BFD5B0562465AFAE00BC91E9 /* dir.c in Sources */,
 				BFFF18041FCDCD1200BDEC58 /* s3m_load.c in Sources */,
 				BFFF17A71FCDCCE200BDEC58 /* network.c in Sources */,
 				BFFF17AE1FCDCCF300BDEC58 /* extras.c in Sources */,
@@ -1551,7 +1619,6 @@
 				BFFF17FA1FCDCD1200BDEC58 /* itsex.c in Sources */,
 				BFD67B3E2410ABE200AF114E /* render_layer.cpp in Sources */,
 				BFC0B26B20681ACC00D28296 /* flt_load.c in Sources */,
-				BFA52FCE233AC29900A90CB4 /* vfs.c in Sources */,
 				BFC0B26C20681ACC00D28296 /* hmn_load.c in Sources */,
 				BFC0B26D20681ACC00D28296 /* st_load.c in Sources */,
 			);
@@ -1573,6 +1640,7 @@
 				BF6058B5216B3683001B738C /* buffer.c in Sources */,
 				BFFF186A1FCDCF7C00BDEC58 /* edit.c in Sources */,
 				BFFF185C1FCDCF7C00BDEC58 /* block.c in Sources */,
+				BFD5B05C2465B0C400BC91E9 /* stringsearch.c in Sources */,
 				BFFF18761FCDCF7C00BDEC58 /* robo_debug.c in Sources */,
 				BFFF18821FCDCF7C00BDEC58 /* window.c in Sources */,
 				BFFF18781FCDCF7C00BDEC58 /* robo_ed.c in Sources */,
