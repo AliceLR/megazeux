@@ -25,6 +25,6 @@
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 1994-2017 MegaZeux Dev Team. All rights reserved.</string>
+	<string>Copyright © 1994-2020 MegaZeux Dev Team. All rights reserved.</string>
 </dict>
 </plist>
