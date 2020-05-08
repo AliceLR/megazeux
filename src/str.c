@@ -348,12 +348,12 @@ static boolean force_string_move(struct string_list *string_list,
  char *src)
 {
   boolean src_dest_match = false;
-  ssize_t off = 0;
+  ptrdiff_t off = 0;
 
   if(*str)
   {
-    off = (ssize_t)(src - (*str)->value);
-    if(off >= 0 && (unsigned int)off <= (*str)->length)
+    off = src - (*str)->value;
+    if(off >= 0 && off < (ptrdiff_t)(*str)->length)
       src_dest_match = true;
   }
 
@@ -839,7 +839,7 @@ void load_string_board(struct world *mzx_world, char *name_buffer,
   copy_size = load_string_board_direct(copy_buffer, dest_size,
    src_chars, src_width, block_width, block_height, terminator);
 
-  force_string_move(string_list, name_buffer, next, &dest, copy_size,
+  force_string_copy(string_list, name_buffer, next, &dest, copy_size,
    dest_offset, offset_specified, &dest_size, size_specified, copy_buffer);
 
   free(copy_buffer);
