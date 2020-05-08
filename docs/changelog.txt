@@ -1,4 +1,30 @@
-GIT
+May 8th, 2020 - MZX 2.92d
+
+This release includes minor new features, an overhaul to the way
+MZX handles text input from SDL 2.0 which should fix various
+text bugs (particularly with non-US keyboards), fixes required
+to get the Android port working, and a new file format document.
+Other things of note are two libxmp patches fixing issues with
+S3Ms saved by the original Modplug Tracker and with GDMs relying
+on fine effect continue, checkres updates, and misc. fixes for
+the Windows and HTML5 ports.
+
+Fixed compatibility issues in this release are a string compare
+bug that prevented Mines of Madness from working and MODs with
+extended filenames working when referenced by their truncated
+DOS SFN in the MZX file. The latter fix only works when there is
+a single unambiguous match, which turned out to be essentially
+every affected game.
+
+It is worth noting that the Android port is EXPERIMENTAL and is
+likely to have compatibility issues on many devices. A USB OTG
+or Bluetooth keyboard or game controller is required at minimum.
+Many devices have key press issues that are likely caused by
+drivers or SDL. SDL text input events are disabled as they cause
+even more keyboard bugs, and as a result non-US keyboard layouts
+probably won't work with this port right now. Other problems
+with this port that have been reported include graphical bugs
+and crashes when focusing/unfocusing MegaZeux.
 
 USERS
 
@@ -84,6 +110,10 @@ USERS
   and fullscreen bugs.
 + Fixed Emscripten crashes on startup when built with Emscripten
   1.39.5 and up caused by usage of deprecated canvas behavior.
++ Fixed a COPY BLOCK $string bug where the buffer could be
+  allocated at the empty destination string's value on some
+  platforms and a faulty bounds check would result in the string
+  being expanded but otherwise blank.
 
 DEVELOPERS
 

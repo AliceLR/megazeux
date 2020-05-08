@@ -3,7 +3,7 @@
 
 MegaZeux is a game creation system (GCS) created by game developer Alexis Janson in 1994.
 Originally a DOS program, in 2005 a multi-platform port was released by Exophase. The most
-recent version of MegaZeux is 2.92c, which was released on March 8th, 2020.
+recent version of MegaZeux is 2.92d, which was released on May 8th, 2020.
 
 MegaZeux is officially supported on Windows, Linux/BSD, MacOS, as well as the NDS, 3DS, Wii,
 and PSP consoles. Historical support has also existed for GP2X, Pandora, and AmigaOS 4.
@@ -25,6 +25,7 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 [megazeux-d32]: https://www.digitalmzx.com/download.php?latest=debian32
 [megazeux-f64]: https://www.digitalmzx.com/download.php?latest=fedora64
 [megazeux-rpi]: https://www.digitalmzx.com/download.php?latest=raspbian
+[megazeux-and]: https://www.digitalmzx.com/download.php?latest=android
 [megazeux-html]: https://www.digitalmzx.com/download.php?latest=html5
 [megazeux-nds]: https://www.digitalmzx.com/download.php?latest=nds
 [megazeux-3ds]: https://www.digitalmzx.com/download.php?latest=3ds
@@ -45,6 +46,7 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 [arch-d32]: contrib/archicons/debian32.png  "Debian i386"
 [arch-f64]: contrib/archicons/fedora64.png  "Fedora x86_64"
 [arch-rpi]: contrib/archicons/raspbian.png  "Raspbian"
+[arch-and]: contrib/archicons/android.png   "Android"
 [arch-html]:contrib/archicons/html5.png     "HTML5 (Emscripten)"
 [arch-aur]: contrib/archicons/archlinux.png "Arch Linux (via AUR)"
 [arch-void]:contrib/archicons/voidlinux.png "Void Linux"
@@ -70,6 +72,7 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 &nbsp; [![Debian i386         ][arch-d32]][megazeux-d32]
 &nbsp; [![Fedora x86_64       ][arch-f64]][megazeux-f64]
 &nbsp; [![Raspbian            ][arch-rpi]][megazeux-rpi]
+&nbsp; [![Android             ][arch-and]][megazeux-and]
 &nbsp; [![HTML5 (Emscripten)  ][arch-html]][megazeux-html]
 &nbsp; [![Nintendo DS         ][arch-nds]][megazeux-nds]
 &nbsp; [![Nintendo 3DS        ][arch-3ds]][megazeux-3ds]
