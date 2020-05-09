@@ -8,18 +8,19 @@
  * https://www.digitalmzx.com/forums/index.php?app=tracker&showissue=788
  */
 * { border: 0; margin: 0; padding: 0; }
-#mzx_canvas {
+#canvas {
 	width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; overflow: hidden;
 	background: url('play.png') center center / contain no-repeat #000;
 }
 </style>
 </head>
 <body>
-<canvas id="mzx_canvas" width="640" height="350" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
+<canvas id="canvas" width="640" height="350" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
 <script type="text/javascript" src="./mzxrun_loader.js"></script>
 <script type="text/javascript">
 (function() {
-	var mzxCanvas = document.getElementById("mzx_canvas");
+	// NOTE: the canvas ID being "canvas" is a hardcoded requirement somewhere in Emscripten and/or SDL.
+	var mzxCanvas = document.getElementById("canvas");
 	var mzxLoadAttempted = false;
 
 	// The initialization process should be triggered by a click - audio enabling!

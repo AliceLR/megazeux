@@ -372,6 +372,11 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+
+#if SDL_VERSION_ATLEAST(2,0,10)
+  // Also, a hint needs to be set to make gl_swap_buffers not crash. Brilliant.
+  SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY, "0");
+#endif
 #endif
 
   render_data->window = SDL_CreateWindow("MegaZeux",
