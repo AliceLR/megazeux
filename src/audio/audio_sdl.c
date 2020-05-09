@@ -24,6 +24,10 @@
 
 #include <stdlib.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
+
 static SDL_AudioSpec audio_settings;
 #if SDL_VERSION_ATLEAST(2,0,0)
 static SDL_AudioDeviceID audio_device;
@@ -65,6 +69,17 @@ void init_audio_platform(struct config_info *conf)
   SDL_PauseAudioDevice(audio_device, 0);
 #else
   SDL_PauseAudio(0);
+#endif
+
+#ifdef __EMSCRIPTEN__
+  // Safari doesn't unlock the audio context unless a sound is played
+  // immediately after an input event has been fired. This takes an audio
+  // context that we set up earlier in JavaScript and sets up SDL2 to use that
+  // instead of the one that it creates (since SDL's context will never be
+  // unlocked).
+  //
+  // This swap should only happen if it's required by the web browser.
+  EM_ASM({ window.replaceSdlAudioContext(Module["SDL2"]); });
 #endif
 }
 
