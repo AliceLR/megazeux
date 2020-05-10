@@ -36,6 +36,9 @@ ARCH_LDFLAGS += -s 'ASYNCIFY_IMPORTS=["emscripten_sleep"]'
 ARCH_CFLAGS += -s ENVIRONMENT=web
 ARCH_LDFLAGS += -s ENVIRONMENT=web
 
+# Fix warnings caused by broken Emscripten macros.
+ARCH_CFLAGS += -Wno-gnu-zero-variadic-macro-arguments
+
 # Enable source map for debugging if this is supplied by the user.
 ifneq (${SOURCE_MAP_BASE},)
 ARCH_CFLAGS += -g4 --source-map-base ${SOURCE_MAP_BASE}

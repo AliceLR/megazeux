@@ -24,8 +24,13 @@
 	var mzxLoadAttempted = false;
 
 	// The initialization process should be triggered by a click - audio enabling!
-	// If you're embedding this on itch.io, you can safely comment this line out;
-	// the click itch.io uses to initialize the game iframe is sufficient.
+	// If you're embedding this on itch.io, this click makes the itch.io enabling click
+	// redundant. If you can get it to work, the itch.io option "Automatically start page
+	// on load" is supposed to skip the itch.io click. Notably, the click here is required
+	// to make audio work for Safari and itch.io's click isn't good enough.
+	//
+	// However, if you can't get rid of the itch.io click and don't want users to click
+	// twice, worst case you can just uncomment this line.
 	mzxCanvas.onclick = function()
 	{
 		if (mzxLoadAttempted) return;
