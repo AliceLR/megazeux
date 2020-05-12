@@ -76,4 +76,25 @@
 #define ARCHITECTURE_BITS 32
 #endif
 
+/**
+ * Also define some useful constants for byte alignment.
+ */
+#define ALIGN_16_MODULO 0x02
+
+/**
+ * Some 32-bit-capable processors (such as the Motorola 68000) still align
+ * their data to 16-bit boundaries.
+ */
+#if defined(__m68k__) || defined(mc68000) || defined(_M_M68K)
+#define ALIGN_32_MODULO ALIGN_16_MODULO
+#else
+#define ALIGN_32_MODULO 0x04
+#endif
+
+#if ARCHITECTURE_BITS >= 64
+#define ALIGN_64_MODULO 0x08
+#else
+#define ALIGN_64_MODULO ALIGN_32_MODULO
+#endif
+
 #endif // __ENDIAN_H

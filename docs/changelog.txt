@@ -1,3 +1,10 @@
+GIT
+
+USERS
+
++ Fixed memcasecmp test alignment checks for the Motorola 68000.
+
+
 May 8th, 2020 - MZX 2.92d
 
 This release includes minor new features, an overhaul to the way

@@ -55,7 +55,7 @@ static inline boolean bs_fill(struct bitstream *b)
   if(b->input_left)
   {
 #if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
-    size_t align = (size_t)b->input & 7;
+    size_t align = (size_t)b->input % ALIGN_64_MODULO;
 
 #if ARCHITECTURE_BITS >= 64
     if(!align && b->buf_left == 0 && b->input_left >= 8)
@@ -67,7 +67,7 @@ static inline boolean bs_fill(struct bitstream *b)
     }
     else
 #endif
-    if(!(align & 3) && b->buf_left <= (BS_CAPACITY - 32) && b->input_left >= 4)
+    if(!(align % ALIGN_32_MODULO) && b->buf_left <= (BS_CAPACITY - 32) && b->input_left >= 4)
     {
       b->buf |= ((BS_BUFTYPE)*((uint32_t *)b->input)) << b->buf_left;
       b->buf_left += 32;
@@ -76,7 +76,7 @@ static inline boolean bs_fill(struct bitstream *b)
     }
     else
 
-    if(!(align & 1) && b->buf_left <= (BS_CAPACITY - 16) && b->input_left >= 2)
+    if(!(align % ALIGN_16_MODULO) && b->buf_left <= (BS_CAPACITY - 16) && b->input_left >= 2)
     {
       b->buf |= ((BS_BUFTYPE)*((uint16_t *)b->input)) << b->buf_left;
       b->buf_left += 16;

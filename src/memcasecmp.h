@@ -32,12 +32,12 @@ __M_BEGIN_DECLS
 /**
  * Minimum string length before aligned comparison should be invoked.
  */
-#define _memcasecmp32_align (sizeof(uint32_t))
-#define _memcasecmp32_threshold (_memcasecmp32_align * 2)
+#define _memcasecmp32_size (sizeof(uint32_t))
+#define _memcasecmp32_threshold (_memcasecmp32_size * 2)
 
 #if ARCHITECTURE_BITS >= 64
-#define _memcasecmp64_align (sizeof(uint64_t))
-#define _memcasecmp64_threshold (_memcasecmp64_align * 2)
+#define _memcasecmp64_size (sizeof(uint64_t))
+#define _memcasecmp64_threshold (_memcasecmp64_size * 2)
 #endif
 
 /**
@@ -87,7 +87,7 @@ static inline int _memcasecmp64(const uint8_t *a_value, const uint8_t *b_value,
 {
   const uint64_t *a_value_64b = (const uint64_t *)a_value;
   const uint64_t *b_value_64b = (const uint64_t *)b_value;
-  size_t length_64b = cmp_length / _memcasecmp64_align;
+  size_t length_64b = cmp_length / _memcasecmp64_size;
   uint64_t val_a;
   uint64_t val_b;
   size_t i;
@@ -134,7 +134,7 @@ static inline int _memcasecmp64(const uint8_t *a_value, const uint8_t *b_value,
     }
   }
 
-  *position = length_64b * _memcasecmp64_align;
+  *position = length_64b * _memcasecmp64_size;
   return 0;
 }
 
@@ -145,7 +145,7 @@ static inline int _memcasecmp32(const uint8_t *a_value, const uint8_t *b_value,
 {
   const uint32_t *a_value_32b = (const uint32_t *)a_value;
   const uint32_t *b_value_32b = (const uint32_t *)b_value;
-  size_t length_32b = cmp_length / _memcasecmp32_align;
+  size_t length_32b = cmp_length / _memcasecmp32_size;
   uint32_t val_a;
   uint32_t val_b;
   size_t i;
@@ -176,7 +176,7 @@ static inline int _memcasecmp32(const uint8_t *a_value, const uint8_t *b_value,
     }
   }
 
-  *position = length_32b * _memcasecmp32_align;
+  *position = length_32b * _memcasecmp32_size;
   return 0;
 }
 
@@ -212,12 +212,12 @@ static inline int memcasecmp(const void *A, const void *B, size_t cmp_length)
    */
   if(cmp_length >= _memcasecmp64_threshold)
   {
-    a_align = (size_t)(a_value) % _memcasecmp64_align;
-    b_align = (size_t)(b_value) % _memcasecmp64_align;
+    a_align = (size_t)(a_value) % ALIGN_64_MODULO;
+    b_align = (size_t)(b_value) % ALIGN_64_MODULO;
 
     if(a_align == b_align)
     {
-      while((size_t)a_value % _memcasecmp64_align)
+      while((size_t)a_value % ALIGN_64_MODULO)
       {
         cmp = memtolower(*(a_value++)) - memtolower(*(b_value++));
         if(cmp)
@@ -245,12 +245,12 @@ static inline int memcasecmp(const void *A, const void *B, size_t cmp_length)
 #if ARCHITECTURE_BITS >= 64
 try_32:
 #endif
-    a_align = (size_t)(a_value) % _memcasecmp32_align;
-    b_align = (size_t)(b_value) % _memcasecmp32_align;
+    a_align = (size_t)(a_value) % ALIGN_32_MODULO;
+    b_align = (size_t)(b_value) % ALIGN_32_MODULO;
 
     if(a_align == b_align)
     {
-      while((size_t)a_value % _memcasecmp32_align)
+      while((size_t)a_value % ALIGN_32_MODULO)
       {
         cmp = memtolower(*(a_value++)) - memtolower(*(b_value++));
         if(cmp)
@@ -299,7 +299,7 @@ static inline int memcasecmp32(const void *A, const void *B, size_t cmp_length)
 
   // The 4 alignment apparently can't be guaranteed 100% of the time, so just
   // fall back to the regular compare if there's an issue.
-  if((size_t)A % _memcasecmp32_align || (size_t)B % _memcasecmp32_align)
+  if((size_t)A % ALIGN_32_MODULO || (size_t)B % ALIGN_32_MODULO)
     return memcasecmp(A, B, cmp_length);
 
   cmp = _memcasecmp32(a_value, b_value, cmp_length, &i);

@@ -121,13 +121,6 @@ static inline constexpr int arraysize(T (&a)[A])
   return A;
 }
 
-#define ALIGN_32_MODULO 0x04
-#if ARCHITECTURE_BITS >= 64
-#define ALIGN_64_MODULO 0x08
-#else
-#define ALIGN_64_MODULO 0x04
-#endif
-
 template<class aligntype, size_t A=128>
 class alignstr
 {
