@@ -258,8 +258,9 @@ static struct audio_stream *construct_xmp_stream(char *filename,
   {
     xmp_set_player(ctx, XMP_PLAYER_DEFPAN, 50);
 
-    // NOTE: this function uses fdopen(fileno(fp)); when the FILE * this opens
-    // is closed, it will also close the FILE * here, so don't close it.
+    // This function will close the file pointer provided. There's not really
+    // a clean way to fix this but it's better than what was here before (it
+    // would try to fdopen the fileno and cause platform-specific leaks).
     if(!xmp_load_module_from_file(ctx, fp, file_len))
     {
       struct xmp_stream *xmp_stream = ccalloc(1, sizeof(struct xmp_stream));

@@ -2,6 +2,11 @@ GIT
 
 USERS
 
++ Fixed Windows file handle leaks in audio_xmp.c caused by
+  MinGW's non-compliant fdopen.
+
+DEVELOPERS
+
 + Fixed memcasecmp test alignment checks for the Motorola 68000.
 
 
