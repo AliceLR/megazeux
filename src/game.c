@@ -440,7 +440,18 @@ static boolean game_draw(context *ctx)
     // There is no MZX_SPEED to derive a framerate from, so use the UI rate.
     set_context_framerate_mode(ctx, FRAMERATE_UI);
     if(!conf->standalone_mode)
+    {
+      // Animate the intro message and periodically reset the timer so it's
+      // obvious that MZX is still working and hasn't e.g. frozen. Do this at
+      // (effectively) MZX speed 4 so it doesn't hurt to look at.
+      if(!(intro_mesg_timer % 3))
+      {
+        if(intro_mesg_timer < 10)
+          enable_intro_mesg();
+        update_scroll_color();
+      }
       draw_intro_mesg(mzx_world);
+    }
     m_show();
     return true;
   }

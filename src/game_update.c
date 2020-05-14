@@ -52,6 +52,21 @@
 // Slowed = 1 to not update lazwall or time
 // due to slowtime or freezetime
 
+void update_scroll_color(void)
+{
+  static boolean scroll_color_flip_flop;
+  scroll_color_flip_flop = !scroll_color_flip_flop;
+
+  // Change scroll color
+  if(!scroll_color_flip_flop)
+  {
+    scroll_color++;
+
+    if(scroll_color > 15)
+      scroll_color = 7;
+  }
+}
+
 static void update_variables(struct world *mzx_world)
 {
   struct board *src_board = mzx_world->current_board;
@@ -63,7 +78,6 @@ static void update_variables(struct world *mzx_world)
   int b_mesg_timer = src_board->b_mesg_timer;
   int invinco;
   int lazwall_start = src_board->lazwall_start;
-  static boolean scroll_color_flip_flop;
 
   // Determine whether the current cycle is frozen
   if(mzx_world->freeze_time_dur)
@@ -84,17 +98,8 @@ static void update_variables(struct world *mzx_world)
   if(!mzx_world->current_cycle_frozen)
     mzx_world->current_cycle_odd = !mzx_world->current_cycle_odd;
 
-  // Also toggle the scroll color flip flop
-  scroll_color_flip_flop = !scroll_color_flip_flop;
-
-  // Change scroll color
-  if(!scroll_color_flip_flop)
-  {
-    scroll_color++;
-
-    if(scroll_color > 15)
-      scroll_color = 7;
-  }
+  // Also update the scroll color.
+  update_scroll_color();
 
   // Decrease time limit (unless this is a frozen cycle)
   if(!mzx_world->current_cycle_odd && !mzx_world->current_cycle_frozen)
