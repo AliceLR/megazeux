@@ -196,7 +196,7 @@ struct graphics_data
   Uint32 cursor_flipflop;
   Uint32 default_smzx_loaded;
   enum ratio_type ratio;
-  char *gl_filter_method;
+  enum gl_filter_type gl_filter_method;
   char *gl_scaling_shader;
   int gl_vsync;
 

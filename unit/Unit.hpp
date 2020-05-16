@@ -224,6 +224,16 @@ public:
     }\
   } while(0)
 
+#define ASSERTXNCMP(a, b, n, reason) \
+  do\
+  {\
+    if(strncmp(a,b,n)) \
+    {\
+      this->assert_fail(__LINE__, "strncmp(" #a ", " #b ", " #n ")", (a), (b), reason); \
+      return; \
+    }\
+  } while(0)
+
 #define SECTION(sectionname) \
   this->section_name = #sectionname; \
   if((++this->count_sections) == this->expected_section)
@@ -345,7 +355,10 @@ namespace Unit
       }
 
       if(this->last_failed_section)
+      {
+        std::cerr << "  Failed " << this->failed_sections << " section(s).\n";
         return false;
+      }
 
       print_test_success();
       return true;
@@ -421,6 +434,7 @@ namespace Unit
       {
         if(this->last_failed_section < this->expected_section)
         {
+          this->failed_sections++;
           std::cerr << "  In section '" << _section_name << "': \n";
           this->last_failed_section = this->expected_section;
         }
@@ -491,7 +505,11 @@ void sigabrt_handler(int signal)
     std::cerr << "Unexpected signal received\n";
 }
 
+#ifdef __WIN32__
+int WinMain(int argc, char *argv[])
+#else
 int main(int argc, char *argv[])
+#endif
 {
   std::signal(SIGABRT, sigabrt_handler);
   return !(Unit::unittestrunner.run());

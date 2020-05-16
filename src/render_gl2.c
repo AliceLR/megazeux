@@ -528,7 +528,7 @@ static int gl2_linear_filter_method(struct graphics_data *graphics)
 
   if(render_data->ignore_linear)
     return false;
-  return strcasecmp(graphics->gl_filter_method, CONFIG_GL_FILTER_LINEAR) == 0;
+  return graphics->gl_filter_method == CONFIG_GL_FILTER_LINEAR;
 }
 
 static inline Uint32 translate_layer_color(struct graphics_data *graphics,

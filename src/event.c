@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "configure.h"
 #include "event.h"
 #include "graphics.h"
 #include "platform.h"
@@ -133,9 +134,14 @@ static void bump_status(void)
          sizeof(struct buffered_status));
 }
 
-void init_event(void)
+void init_event(struct config_info *conf)
 {
   int i, i2;
+
+  // Get defaults from config.
+  num_buffered_events = MAX(1, conf->num_buffered_events);
+  input.unfocus_pause = conf->pause_on_unfocus;
+
   input.buffer = ccalloc(num_buffered_events, sizeof(struct buffered_status));
   input.load_offset = num_buffered_events - 1;
   input.store_offset = 0;
@@ -1106,11 +1112,14 @@ boolean get_ctrl_status(enum keycode_type type)
    get_key_status(type, IKEY_RCTRL);
 }
 
+// Nothing uses this right now, but it needs to be settable for networking.
 void set_unfocus_pause(boolean value)
 {
   input.unfocus_pause = value;
 }
 
+// Nothing uses this right now, but it needs to be settable for networking.
+// TODO: when set this ought to actually reallocate the buffered events.
 void set_num_buffered_events(Uint8 value)
 {
   num_buffered_events = MAX(1, value);

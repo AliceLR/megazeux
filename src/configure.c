@@ -22,6 +22,7 @@
 // or at the command line.
 
 #include <ctype.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -179,7 +180,7 @@ static const struct config_info user_conf_default =
   VIDEO_OUTPUT_DEFAULT,         // video_output
   FORCE_BPP_DEFAULT,            // force_bpp
   VIDEO_RATIO_DEFAULT,          // video_ratio
-  "linear",                     // opengl filter method
+  CONFIG_GL_FILTER_LINEAR,      // opengl filter method
   "",                           // opengl default scaling shader
   GL_VSYNC_DEFAULT,             // opengl vsync mode
   true,                         // allow screenshots
@@ -196,6 +197,11 @@ static const struct config_info user_conf_default =
   8,                            // pc_speaker_volume
   true,                         // music_on
   true,                         // pc_speaker_on
+
+  // Event options
+  true,                         // allow_gamecontroller
+  false,                        // pause_on_unfocus
+  1,                            // num_buffered_events
 
   // Game options
   "",                           // startup_path
@@ -241,27 +247,155 @@ struct config_entry
   boolean allow_in_game_config;
 };
 
+static const struct config_enum boolean_values[] =
+{
+  { "0", false },
+  { "1", true }
+};
+
+static const struct config_enum allow_cheats_values[] =
+{
+  { "0", ALLOW_CHEATS_NEVER },
+  { "1", ALLOW_CHEATS_ALWAYS },
+  { "never", ALLOW_CHEATS_NEVER },
+  { "always", ALLOW_CHEATS_ALWAYS },
+  { "mzxrun", ALLOW_CHEATS_MZXRUN }
+};
+
+static const struct config_enum force_bpp_values[] =
+{
+  { "8", 8 },
+  { "16", 16 },
+  { "32", 32 }
+};
+
+static const struct config_enum gl_filter_method_values[] =
+{
+  { "nearest", CONFIG_GL_FILTER_NEAREST },
+  { "linear", CONFIG_GL_FILTER_LINEAR }
+};
+
+static const struct config_enum gl_vsync_values[] =
+{
+  { "-1", -1 },
+  { "0", 0 },
+  { "1", 1 },
+  { "default", -1 }
+};
+
+static const struct config_enum module_resample_mode_values[] =
+{
+  { "none", RESAMPLE_MODE_NONE },
+  { "linear", RESAMPLE_MODE_LINEAR },
+  { "cubic", RESAMPLE_MODE_CUBIC },
+  { "fir", RESAMPLE_MODE_FIR }
+};
+
+static const struct config_enum resample_mode_values[] =
+{
+  { "none", RESAMPLE_MODE_NONE },
+  { "linear", RESAMPLE_MODE_LINEAR },
+  { "cubic", RESAMPLE_MODE_CUBIC }
+};
+
+static const struct config_enum system_mouse_values[] =
+{
+  { "0", 0 },
+  { "1", 1 }
+};
+
+static const struct config_enum update_auto_check_values[] =
+{
+  { "0", UPDATE_AUTO_CHECK_OFF },
+  { "1", UPDATE_AUTO_CHECK_ON },
+  { "off", UPDATE_AUTO_CHECK_OFF },
+  { "on", UPDATE_AUTO_CHECK_ON },
+  { "silent", UPDATE_AUTO_CHECK_SILENT }
+};
+
+static const struct config_enum video_ratio_values[] =
+{
+  { "classic", RATIO_CLASSIC_4_3 },
+  { "modern", RATIO_MODERN_64_35 },
+  { "stretch", RATIO_STRETCH }
+};
+
+__editor_maybe_static
+boolean config_int(int *dest, char *value, int min, int max)
+{
+  int result;
+  int n;
+
+  if(sscanf(value, "%d%n", &result, &n) != 1 || value[n] != 0)
+    return false;
+
+  if(result < min || result > max)
+    return false;
+
+  *dest = result;
+  return true;
+}
+
+#define config_enum(d, v, a) _config_enum(d, v, a, ARRAY_SIZE(a))
+
+__editor_maybe_static
+boolean _config_enum(int *dest, const char *value,
+ const struct config_enum *allowed, size_t num)
+{
+  size_t i;
+  for(i = 0; i < num; i++)
+  {
+    if(!strcasecmp(value, allowed[i].key))
+    {
+      *dest = allowed[i].value;
+      return true;
+    }
+  }
+  return false;
+}
+
+__editor_maybe_static
+boolean config_boolean(boolean *dest, const char *value)
+{
+  int result;
+  if(config_enum(&result, value, boolean_values))
+  {
+    *dest = (boolean)result;
+    return true;
+  }
+  return false;
+}
+
+#define config_string(d, v) _config_string(d, ARRAY_SIZE(d), v)
+
+__editor_maybe_static
+boolean _config_string(char *dest, size_t dest_len, const char *value)
+{
+  snprintf(dest, dest_len, "%s", value);
+  dest[dest_len - 1] = '\0';
+  return true;
+}
+
 #ifdef CONFIG_NETWORK
 
 static void config_set_network_enabled(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->network_enabled = strtoul(value, NULL, 10);
+  config_boolean(&conf->network_enabled, value);
 }
 
 static void config_set_socks_host(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  strncpy(conf->socks_host, value, 256);
-  conf->socks_host[256 - 1] = 0;
+  config_string(conf->socks_host, value);
 }
 
 static void config_set_socks_port(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->socks_port = strtoul(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 65535))
+    conf->socks_port = result;
 }
 
 #endif // CONFIG_NETWORK
@@ -273,14 +407,15 @@ static void config_update_host(struct config_info *conf, char *name,
 {
   if(!conf->update_hosts || conf->update_hosts == default_update_hosts)
   {
-    conf->update_hosts = ccalloc(MAX_UPDATE_HOSTS, sizeof(char *));
+    conf->update_hosts = (char **)ccalloc(MAX_UPDATE_HOSTS, sizeof(char *));
     conf->update_host_count = 0;
   }
 
   if(conf->update_host_count < MAX_UPDATE_HOSTS)
   {
-    conf->update_hosts[conf->update_host_count] = cmalloc(strlen(value) + 1);
-    strcpy(conf->update_hosts[conf->update_host_count], value);
+    size_t size = strlen(value) + 1;
+    conf->update_hosts[conf->update_host_count] = (char *)cmalloc(size);
+    memcpy(conf->update_hosts[conf->update_host_count], value, size);
     conf->update_host_count++;
   }
 }
@@ -288,29 +423,15 @@ static void config_update_host(struct config_info *conf, char *name,
 static void config_update_branch_pin(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  strncpy(conf->update_branch_pin, value, 256);
-  conf->update_branch_pin[256 - 1] = 0;
+  config_string(conf->update_branch_pin, value);
 }
 
 static void config_update_auto_check(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  if(!strcasecmp(value, "off"))
-  {
-    conf->update_auto_check = UPDATE_AUTO_CHECK_OFF;
-  }
-  else
-
-  if(!strcasecmp(value, "on"))
-  {
-    conf->update_auto_check = UPDATE_AUTO_CHECK_ON;
-  }
-  else
-
-  if(!strcasecmp(value, "silent"))
-  {
-    conf->update_auto_check = UPDATE_AUTO_CHECK_SILENT;
-  }
+  int result;
+  if(config_enum(&result, value, update_auto_check_values))
+    conf->update_auto_check = result;
 }
 
 #endif // CONFIG_UPDATER
@@ -318,75 +439,78 @@ static void config_update_auto_check(struct config_info *conf, char *name,
 static void config_set_audio_buffer(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->audio_buffer_samples = strtoul(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 1, INT_MAX))
+    conf->audio_buffer_samples = result;
 }
 
 static void config_set_resolution(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  char *next;
-  conf->resolution_width = strtoul(value, &next, 10);
-  conf->resolution_height = strtoul(next + 1, NULL, 10);
+  int width;
+  int height;
+  int n;
+
+  if(sscanf(value, "%d, %d%n", &width, &height, &n) != 2 || value[n] ||
+   width < -1 || height < -1)
+    return;
+
+  conf->resolution_width = width;
+  conf->resolution_height = height;
 }
 
 static void config_set_fullscreen(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->fullscreen = strtoul(value, NULL, 10);
+  config_boolean(&conf->fullscreen, value);
 }
 
 static void config_set_fullscreen_windowed(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->fullscreen_windowed = strtoul(value, NULL, 10);
+  config_boolean(&conf->fullscreen_windowed, value);
 }
 
 static void config_set_music(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->music_on = strtoul(value, NULL, 10);
+  config_boolean(&conf->music_on, value);
 }
 
 static void config_set_mod_volume(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  unsigned long new_volume = strtoul(value, NULL, 10);
-  conf->music_volume = MIN(new_volume, 10);
+  int result;
+  if(config_int(&result, value, 0, 10))
+    conf->music_volume = result;
 }
 
 static void config_set_mzx_speed(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  unsigned long new_speed = strtoul(value, NULL, 10);
-  conf->mzx_speed = CLAMP(new_speed, 1, 16);
+  int result;
+  if(config_int(&result, value, 1, 16))
+    conf->mzx_speed = result;
 }
 
 static void config_set_pc_speaker(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->pc_speaker_on = strtol(value, NULL, 10);
+  config_boolean(&conf->pc_speaker_on, value);
 }
 
 static void config_set_sam_volume(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  unsigned long new_volume = strtoul(value, NULL, 10);
-  conf->sam_volume = MIN(new_volume, 10);
+  int result;
+  if(config_int(&result, value, 0, 10))
+    conf->sam_volume = result;
 }
 
 static void config_save_file(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  snprintf(conf->default_save_name, 256, "%s", value);
+  config_string(conf->default_save_name, value);
 }
 
 static void config_startup_file(struct config_info *conf, char *name,
@@ -422,94 +546,63 @@ static void config_startup_path(struct config_info *conf, char *name,
     return;
 
   snprintf(conf->startup_path, 256, "%s", value);
+  conf->startup_path[255] = '\0';
 }
 
 static void config_system_mouse(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->system_mouse = strtol(value, NULL, 10);
+  int result;
+  if(config_enum(&result, value, system_mouse_values))
+    conf->system_mouse = result;
 }
 
 static void config_grab_mouse(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->grab_mouse = strtol(value, NULL, 10);
+  config_boolean(&conf->grab_mouse, value);
 }
 
 static void config_save_slots(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->save_slots = strtol(value, NULL, 10);
+  config_boolean(&conf->save_slots, value);
 }
 
 static void config_save_slots_name(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  snprintf(conf->save_slots_name, 256, "%s", value);
+  config_string(conf->save_slots_name, value);
 }
 
 static void config_save_slots_ext(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  snprintf(conf->save_slots_ext, 256, "%s", value);
+  config_string(conf->save_slots_ext, value);
 }
 
 static void config_enable_oversampling(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->oversampling_on = strtol(value, NULL, 10);
+  boolean result;
+  if(config_boolean(&result, value))
+    conf->oversampling_on = (int)result;
 }
 
 static void config_resample_mode(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  if(!strcasecmp(value, "none"))
-  {
-    conf->resample_mode = RESAMPLE_MODE_NONE;
-  }
-  else
-
-  if(!strcasecmp(value, "linear"))
-  {
-    conf->resample_mode = RESAMPLE_MODE_LINEAR;
-  }
-  else
-
-  if(!strcasecmp(value, "cubic"))
-  {
-    conf->resample_mode = RESAMPLE_MODE_CUBIC;
-  }
+  int result;
+  if(config_enum(&result, value, resample_mode_values))
+    conf->resample_mode = result;
 }
 
 static void config_mod_resample_mode(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  if(!strcasecmp(value, "none"))
-  {
-    conf->module_resample_mode = RESAMPLE_MODE_NONE;
-  }
-  else
-
-  if(!strcasecmp(value, "linear"))
-  {
-    conf->module_resample_mode = RESAMPLE_MODE_LINEAR;
-  }
-  else
-
-  if(!strcasecmp(value, "cubic"))
-  {
-    conf->module_resample_mode = RESAMPLE_MODE_CUBIC;
-  }
-  else
-
-  if(!strcasecmp(value, "fir"))
-  {
-    conf->module_resample_mode = RESAMPLE_MODE_FIR;
-  }
+  int result;
+  if(config_enum(&result, value, module_resample_mode_values))
+    conf->module_resample_mode = result;
 }
 
 #define JOY_ENUM "%15[0-9A-Za-z_]"
@@ -669,11 +762,7 @@ static void config_sdl_gc_add(struct config_info *conf, char *name,
 static void config_sdl_gc_enable(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  if(!strcmp(value, "0"))
-    gamecontroller_set_enabled(false);
-
-  else if(!strcmp(value, "1"))
-    gamecontroller_set_enabled(true);
+  config_boolean(&conf->allow_gamecontroller, value);
 }
 
 #endif // SDL_VERSION_ATLEAST(2,0,0)
@@ -682,8 +771,7 @@ static void config_sdl_gc_enable(struct config_info *conf, char *name,
 static void pause_on_unfocus(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  set_unfocus_pause(strtoul(value, NULL, 10) > 0);
+  config_boolean(&conf->pause_on_unfocus, value);
 }
 
 static void include_config(struct config_info *conf, char *name,
@@ -703,182 +791,157 @@ static void include2_config(struct config_info *conf, char *name,
 static void config_set_pcs_volume(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  unsigned long new_volume = strtoul(value, NULL, 10);
-  conf->pc_speaker_volume = MIN(new_volume, 10);
+  int result;
+  if(config_int(&result, value, 0, 10))
+    conf->pc_speaker_volume = result;
 }
 
 static void config_mask_midchars(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   // TODO move to editor config when non-editor code stops relying on it
-  // FIXME sloppy validation
-  conf->mask_midchars = strtoul(value, NULL, 10);
+  config_boolean(&conf->mask_midchars, value);
 }
 
 static void config_set_audio_freq(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->output_frequency = strtoul(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 1, INT_MAX))
+    conf->output_frequency = result;
 }
 
 static void config_force_bpp(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->force_bpp = strtoul(value, NULL, 10);
+  int result;
+  if(config_enum(&result, value, force_bpp_values))
+    conf->force_bpp = result;
 }
 
 static void config_window_resolution(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  char *next;
-  conf->window_width = strtoul(value, &next, 10);
-  conf->window_height = strtoul(next + 1, NULL, 10);
+  int width;
+  int height;
+  int n;
+
+  if(sscanf(value, "%d, %d%n", &width, &height, &n) != 2 || value[n] ||
+   width < -1 || height < -1)
+    return;
+
+  conf->window_width = width;
+  conf->window_height = height;
 }
 
 static void config_set_video_output(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  strncpy(conf->video_output, value, 16);
-  conf->video_output[15] = 0;
+  config_string(conf->video_output, value);
 }
 
 static void config_enable_resizing(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->allow_resize = strtoul(value, NULL, 10);
+  config_boolean(&conf->allow_resize, value);
 }
 
 static void config_set_gl_filter_method(struct config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  snprintf(conf->gl_filter_method, 16, "%s", value);
+  int result;
+  if(config_enum(&result, value, gl_filter_method_values))
+    conf->gl_filter_method = (enum gl_filter_type)result;
 }
 
 static void config_set_gl_scaling_shader(struct config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  snprintf(conf->gl_scaling_shader, 32, "%s", value);
+  config_string(conf->gl_scaling_shader, value);
 }
 
 static void config_gl_vsync(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation (note: negative value has special meaning...)
-  conf->gl_vsync = strtol(value, NULL, 10);
+  int result;
+  if(config_enum(&result, value, gl_vsync_values))
+    conf->gl_vsync = result;
 }
 
 static void config_set_allow_screenshots(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->allow_screenshots = strtol(value, NULL, 10);
+  config_boolean(&conf->allow_screenshots, value);
 }
 
 static void config_startup_editor(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->startup_editor = strtoul(value, NULL, 10);
+  config_boolean(&conf->startup_editor, value);
 }
 
 static void config_standalone_mode(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->standalone_mode = strtoul(value, NULL, 10);
+  config_boolean(&conf->standalone_mode, value);
 }
 
 static void config_no_titlescreen(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->no_titlescreen = strtoul(value, NULL, 10);
+  config_boolean(&conf->no_titlescreen, value);
 }
 
 static void config_set_allow_cheats(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  if(!strcmp(value, "0"))
-  {
-    conf->allow_cheats = ALLOW_CHEATS_NEVER;
-  }
-  else
-
-  if(!strcasecmp(value, "mzxrun"))
-  {
-    conf->allow_cheats = ALLOW_CHEATS_MZXRUN;
-  }
-  else
-
-  if(!strcmp(value, "1"))
-  {
-    conf->allow_cheats = ALLOW_CHEATS_ALWAYS;
-  }
+  int result;
+  if(config_enum(&result, value, allow_cheats_values))
+    conf->allow_cheats = (enum allow_cheats_type)result;
 }
 
 static void config_set_auto_decrypt_worlds(struct config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->auto_decrypt_worlds = !!strtoul(value, NULL, 10);
+  config_boolean(&conf->auto_decrypt_worlds, value);
 }
 
 static void config_set_video_ratio(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  if(!strcasecmp(value, "classic"))
-  {
-    conf->video_ratio = RATIO_CLASSIC_4_3;
-  }
-  else
-
-  if(!strcasecmp(value, "modern"))
-  {
-    conf->video_ratio = RATIO_MODERN_64_35;
-  }
-
-  else
-  {
-    conf->video_ratio = RATIO_STRETCH;
-  }
+  int result;
+  if(config_enum(&result, value, video_ratio_values))
+    conf->video_ratio = (enum ratio_type)result;
 }
 
 static void config_set_num_buffered_events(struct config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation also wtf?
-  Uint8 v = (Uint8)strtoul(value, NULL, 10);
-  set_num_buffered_events(v);
+  int result;
+  if(config_int(&result, value, 1, 256))
+    conf->num_buffered_events = result;
 }
 
 static void config_max_simultaneous_samples(struct config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME less sloppy validation but still needs more
-  int v = MAX( strtol(value, NULL, 10), -1 );
-  conf->max_simultaneous_samples = v;
+  int result;
+  if(config_int(&result, value, -1, INT_MAX))
+    conf->max_simultaneous_samples = result;
 }
 
 static void config_test_mode(struct config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  unsigned long test_mode = strtoul(value, NULL, 10);
-  conf->test_mode = !!test_mode;
+  config_boolean(&conf->test_mode, value);
 }
 
 static void config_test_mode_start_board(struct config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  unsigned long start_board = MIN(strtoul(value, NULL, 10), MAX_BOARDS-1);
-  conf->test_mode_start_board = start_board;
+  int result;
+  if(config_int(&result, value, 0, MAX_BOARDS - 1))
+    conf->test_mode_start_board = result;
 }
 
 /* NOTE: This is searched as a binary tree, the nodes must be
@@ -986,7 +1049,7 @@ static const struct config_entry *find_option(char *name,
   return NULL;
 }
 
-static int config_change_option(void *conf, char *name,
+static int config_change_option(void *_conf, char *name,
  char *value, char *extended_data)
 {
   const struct config_entry *current_option = find_option(name,
@@ -996,6 +1059,7 @@ static int config_change_option(void *conf, char *name,
   {
     if(current_option->allow_in_game_config || is_startup)
     {
+      struct config_info *conf = (struct config_info *)_conf;
       current_option->change_option(conf, name, value, extended_data);
       return 1;
     }
@@ -1021,7 +1085,7 @@ __editor_maybe_static void __set_config_from_file(
   if(!conf_file)
     return;
 
-  extended_buffer = cmalloc(extended_allocate_size);
+  extended_buffer = (char *)malloc(extended_allocate_size);
 
   while(fsafegets(line_buffer_alternate, 255, conf_file))
   {
@@ -1096,7 +1160,7 @@ __editor_maybe_static void __set_config_from_file(
             if(extended_size >= extended_allocate_size)
             {
               extended_allocate_size *= 2;
-              extended_buffer = crealloc(extended_buffer, extended_allocate_size);
+              extended_buffer = (char *)crealloc(extended_buffer, extended_allocate_size);
               use_extended_buffer = extended_buffer;
             }
 

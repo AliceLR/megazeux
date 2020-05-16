@@ -26,6 +26,7 @@
 
 __M_BEGIN_DECLS
 
+#include "configure.h"
 #include "graphics.h"
 #include "util.h"
 
@@ -55,9 +56,6 @@ __M_BEGIN_DECLS
 // Next power of 2 over SCREEN_PIX_H
 #define GL_POWER_2_HEIGHT         512
 
-#define CONFIG_GL_FILTER_LINEAR   "linear"
-#define CONFIG_GL_FILTER_NEAREST  "nearest"
-
 extern const float vertex_array_single[2 * 4];
 
 #ifdef DEBUG
@@ -69,7 +67,7 @@ static inline void gl_error(const char *file, int line,
 #endif
 
 boolean gl_load_syms(const struct dso_syms_map *map);
-void gl_set_filter_method(const char *method,
+void gl_set_filter_method(enum gl_filter_type method,
  void (GL_APIENTRY *glTexParameterf_p)(GLenum target, GLenum pname,
   GLfloat param));
 void get_context_width_height(struct graphics_data *graphics,
