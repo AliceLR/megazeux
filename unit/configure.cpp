@@ -33,6 +33,7 @@
 
 static const int MAX_ARGS = 16;
 static const int DEFAULT = 255;
+static const int IGNORE = INT_MAX;
 
 struct config_test_single
 {
@@ -50,6 +51,30 @@ struct config_test_pair
 struct config_test_string
 {
   const char * const value;
+};
+
+struct config_test_board_size_viewport
+{
+  const char * const setting;
+  const char * const value;
+  int width;
+  int height;
+  int viewport_x;
+  int viewport_y;
+  int viewport_w;
+  int viewport_h;
+};
+
+struct config_test_saved_position
+{
+  const char * const value;
+  int which;
+  int board;
+  int cursor_x;
+  int cursor_y;
+  int scroll_x;
+  int scroll_y;
+  int debug_x;
 };
 
 static void load_arg(char *arg)
@@ -614,8 +639,85 @@ UNITTEST(Settings)
 
   SECTION(viewport_and_size)
   {
-    // FIXME
-    UNIMPLEMENTED();
+    static const config_test_board_size_viewport data[] =
+    {
+      // Setting      Value     w       h       vx      vy      vw      vh
+      { "width",      "100",    100,    IGNORE, IGNORE, IGNORE, IGNORE, IGNORE },
+      { "height",     "100",    100,    100,    IGNORE, IGNORE, IGNORE, IGNORE },
+      { "viewport_w", "74",     100,    100,    IGNORE, IGNORE, 74,     IGNORE },
+      { "viewport_h", "21",     100,    100,    IGNORE, IGNORE, 74,     21 },
+      { "viewport_x", "3",      100,    100,    3,      IGNORE, 74,     21 },
+      { "viewport_y", "2",      100,    100,    3,      2,      74,     21 },
+
+      // Ignore invalid values...
+      { "width",      "0",      100,    100,    3,      2,      74,     21 },
+      { "width",      "32768",  100,    100,    3,      2,      74,     21 },
+      { "height",     "0",      100,    100,    3,      2,      74,     21 },
+      { "height",     "32768",  100,    100,    3,      2,      74,     21 },
+      { "viewport_x", "-1",     100,    100,    3,      2,      74,     21 },
+      { "viewport_x", "80",     100,    100,    3,      2,      74,     21 },
+      { "viewport_y", "-1",     100,    100,    3,      2,      74,     21 },
+      { "viewport_y", "25",     100,    100,    3,      2,      74,     21 },
+      { "viewport_w", "0",      100,    100,    3,      2,      74,     21 },
+      { "viewport_w", "81",     100,    100,    3,      2,      74,     21 },
+      { "viewport_h", "0",      100,    100,    3,      2,      74,     21 },
+      { "viewport_h", "26",     100,    100,    3,      2,      74,     21 },
+
+      // Width * height is capped to 16M.
+      { "width",      "32767",  32767,  100,    IGNORE, IGNORE, IGNORE, IGNORE },
+      { "height",     "32767",  512,    32767,  IGNORE, IGNORE, IGNORE, IGNORE },
+      { "width",      "4097",   4097,   4095,   IGNORE, IGNORE, IGNORE, IGNORE },
+      { "height",     "4097",   4095,   4097,   IGNORE, IGNORE, IGNORE, IGNORE },
+
+      // Width and height cap the viewport dimensions.
+      { "width",      "40",     40,     IGNORE, IGNORE, IGNORE, 40,     IGNORE },
+      { "height",     "15",     IGNORE, 15,     IGNORE, IGNORE, IGNORE, 15 },
+
+      // Viewport size values over the board size and under the cap work (capped).
+      { "width",      "60",     60,     IGNORE, IGNORE, IGNORE, IGNORE, IGNORE },
+      { "viewport_w", "75",     60,     IGNORE, IGNORE, IGNORE, 60,     IGNORE },
+      { "height",     "20",     IGNORE, 20,     IGNORE, IGNORE, IGNORE, IGNORE },
+      { "viewport_h", "25",     IGNORE, 20,     IGNORE, IGNORE, IGNORE, 20 },
+
+      // Viewport size overrides a previously set viewport position.
+      { "width",      "100",    100,    IGNORE, IGNORE, IGNORE, IGNORE, IGNORE },
+      { "height",     "100",    100,    100,    IGNORE, IGNORE, IGNORE, IGNORE },
+      { "viewport_x", "10",     IGNORE, IGNORE, 10,     IGNORE, IGNORE, IGNORE },
+      { "viewport_y", "5",      IGNORE, IGNORE, 10,     5,      IGNORE, IGNORE },
+      { "viewport_w", "80",     IGNORE, IGNORE, 0,      IGNORE, 80,     IGNORE },
+      { "viewport_h", "25",     IGNORE, IGNORE, IGNORE, 0,      IGNORE, 25 },
+
+      // Viewport position respects previously set viewport size.
+      { "viewport_w", "70",     IGNORE, IGNORE, IGNORE, IGNORE, 70,     IGNORE },
+      { "viewport_h", "20",     IGNORE, IGNORE, IGNORE, IGNORE, 70,     20 },
+      { "viewport_x", "5",      IGNORE, IGNORE, 5,      IGNORE, 70,     IGNORE },
+      { "viewport_x", "15",     IGNORE, IGNORE, 10,     IGNORE, 70,     IGNORE },
+      { "viewport_y", "2",      IGNORE, IGNORE, IGNORE, 2,      IGNORE, 20 },
+      { "viewport_y", "10",     IGNORE, IGNORE, IGNORE, 5,      IGNORE, 20 },
+    };
+    char buffer[512];
+
+    for(int i = 0; i < arraysize(data); i++)
+    {
+      const config_test_board_size_viewport &current = data[i];
+      snprintf(buffer, sizeof(buffer), "board_default_%s=%s",
+       current.setting, current.value);
+
+      load_arg(buffer);
+
+      if(current.width != IGNORE)
+        ASSERTEQX(econf->board_width, current.width, buffer);
+      if(current.height != IGNORE)
+        ASSERTEQX(econf->board_height, current.height, buffer);
+      if(current.viewport_x != IGNORE)
+        ASSERTEQX(econf->viewport_x, current.viewport_x, buffer);
+      if(current.viewport_y != IGNORE)
+        ASSERTEQX(econf->viewport_y, current.viewport_y, buffer);
+      if(current.viewport_w != IGNORE)
+        ASSERTEQX(econf->viewport_w, current.viewport_w, buffer);
+      if(current.viewport_h != IGNORE)
+        ASSERTEQX(econf->viewport_h, current.viewport_h, buffer);
+    }
   }
 
   SECTION(can_shoot)
