@@ -446,6 +446,9 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 		"OpenBSD")
 			UNIX="openbsd"
 			;;
+		"NetBSD")
+			UNIX="netbsd"
+			;;
 		*)
 			echo "WARNING: Should define proper UNIX name here!"
 			UNIX="unix"
@@ -466,6 +469,14 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	elif [ "$MACH" = "ppc" ]; then
 		ARCHNAME=ppc
 		#RAWLIBDIR=lib
+	elif [ "$MACH" = "m68k" ]; then
+		ARCHNAME=m68k
+	elif [ "$MACH" = "hppa" ]; then
+		ARCHNAME=hppa
+	elif [ "$MACH" = "sparc" ]; then
+		ARCHNAME=sparc
+	elif [ "$MACH" = "sparc64" ]; then
+		ARCHNAME=sparc64
 	else
 		ARCHNAME=$MACH
 		#RAWLIBDIR=lib
