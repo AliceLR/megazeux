@@ -51,6 +51,16 @@ enum robo_ed_color_codes
   ROBO_ED_CC_INVALID_COMMENT
 };
 
+struct saved_position
+{
+  int board_id;
+  int cursor_x;
+  int cursor_y;
+  int scroll_x;
+  int scroll_y;
+  int debug_x;
+};
+
 struct editor_config_info
 {
   // Board editor options
@@ -114,12 +124,7 @@ struct editor_config_info
   struct ext_macro **extended_macros;
 
   // Saved positions
-  int saved_board[NUM_SAVED_POSITIONS];
-  int saved_cursor_x[NUM_SAVED_POSITIONS];
-  int saved_cursor_y[NUM_SAVED_POSITIONS];
-  int saved_scroll_x[NUM_SAVED_POSITIONS];
-  int saved_scroll_y[NUM_SAVED_POSITIONS];
-  int saved_debug_x[NUM_SAVED_POSITIONS];
+  struct saved_position saved_positions[NUM_SAVED_POSITIONS];
 };
 
 EDITOR_LIBSPEC void default_editor_config(void);

@@ -96,13 +96,7 @@ static const struct editor_config_info editor_conf_default =
   NULL,
 
   // Saved positions
-  { 0 },
-  { 0 },
-  { 0 },
-  { 0 },
-  { 0 },
-  { 60, 60, 60, 60, 60, 60, 60, 60, 60, 60 },
-
+  { { 0, 0, 0, 0, 0, 0 } },
 };
 
 typedef void (* editor_config_function)(struct editor_config_info *conf,
@@ -426,20 +420,29 @@ static void config_saved_positions(struct editor_config_info *conf,
   unsigned int scroll_x;
   unsigned int scroll_y;
   unsigned int debug_x;
+  int n;
 
-  sscanf(name, "saved_position%u", &pos);
-  sscanf(value, "%u, %u, %u, %u, %u, %u",
-   &board_num, &board_x, &board_y, &scroll_x, &scroll_y, &debug_x);
-
-  if(pos >= NUM_SAVED_POSITIONS)
+  if(sscanf(name, "saved_position%u", &pos) != 1)
     return;
 
-  conf->saved_board[pos] = board_num;
-  conf->saved_cursor_x[pos] = board_x;
-  conf->saved_cursor_y[pos] = board_y;
-  conf->saved_scroll_x[pos] = scroll_x;
-  conf->saved_scroll_y[pos] = scroll_y;
-  conf->saved_debug_x[pos] = debug_x ? 60 : 0;
+  if(sscanf(value, "%u, %u, %u, %u, %u, %u%n",
+   &board_num, &board_x, &board_y, &scroll_x, &scroll_y, &debug_x, &n) != 6 ||
+   value[n])
+    return;
+
+  // Check for sane values only. This is not guaranteed to properly bound these.
+  if(pos < NUM_SAVED_POSITIONS && (board_num < MAX_BOARDS) &&
+   (board_x < 32768) && (board_y < 32768) && (scroll_x < 32768) &&
+   (scroll_y < 32768) && (debug_x < 80))
+  {
+    struct saved_position *s = &(conf->saved_positions[pos]);
+    s->board_id = board_num;
+    s->cursor_x = board_x;
+    s->cursor_y = board_y;
+    s->scroll_x = scroll_x;
+    s->scroll_y = scroll_y;
+    s->debug_x = debug_x ? 60 : 0;
+  }
 }
 
 /******************/
@@ -1002,14 +1005,9 @@ void save_local_editor_config(struct editor_config_info *conf,
   fwrite("\n", 1, 1, fp);
   for(i = 0; i < NUM_SAVED_POSITIONS; i++)
   {
-    sprintf(buf, "saved_position%u = %u, %u, %u, %u, %u, %u\n",
-     i,
-     conf->saved_board[i],
-     conf->saved_cursor_x[i],
-     conf->saved_cursor_y[i],
-     conf->saved_scroll_x[i],
-     conf->saved_scroll_y[i],
-     conf->saved_debug_x[i]
+    struct saved_position *s = &(conf->saved_positions[i]);
+    sprintf(buf, "saved_position%u = %u, %u, %u, %u, %u, %u\n", i,
+      s->board_id, s->cursor_x, s->cursor_y, s->scroll_x, s->scroll_y, s->debug_x
     );
     fwrite(buf, 1, strlen(buf), fp);
   }

@@ -70,14 +70,9 @@ struct config_test_board_size_viewport
 
 struct config_test_saved_position
 {
-  const char * const value;
   int which;
-  int board;
-  int cursor_x;
-  int cursor_y;
-  int scroll_x;
-  int scroll_y;
-  int debug_x;
+  const char * const value;
+  struct saved_position expected;
 };
 
 static void load_arg(char *arg)
@@ -610,6 +605,7 @@ UNITTEST(Settings)
 #ifdef CONFIG_EDITOR
 
   struct editor_config_info *econf = get_editor_config();
+  default_editor_config();
 
   // Board editor options.
 
@@ -995,8 +991,67 @@ UNITTEST(Settings)
 
   SECTION(saved_position)
   {
-    // FIXME
-    UNIMPLEMENTED();
+    static const config_test_saved_position data[] =
+    {
+      { 0, "1,2,3,4,5,0",       { 1, 2, 3, 4, 5, 0 } },
+      { 0, "",                  { 1, 2, 3, 4, 5, 0 } },
+      { 1, "9,8,7,6,5,60",      { 9, 8, 7, 6, 5, 60 } },
+      { 2, "249,32767,32767,32767,32767,60", { 249, 32767, 32767, 32767, 32767, 60 } },
+      { 3, "3,3,3,3,3,0",       { 3, 3, 3, 3, 3, 0 } },
+      { 4, "4,4,4,4,4,0",       { 4, 4, 4, 4, 4, 0 } },
+      { 5, "5,5,5,5,5,0",       { 5, 5, 5, 5, 5, 0 } },
+      { 6, "6,6,6,6,6,0",       { 6, 6, 6, 6, 6, 0 } },
+      { 7, "7,7,7,7,7,0",       { 7, 7, 7, 7, 7, 0 } },
+      { 8, "8,8,8,8,8,0",       { 8, 8, 8, 8, 8, 0 } },
+      { 9, "9,9,9,9,9,0",       { 9, 9, 9, 9, 9, 0 } },
+      { 8, "",                  { 8, 8, 8, 8, 8, 0 } },
+      { 7, "",                  { 7, 7, 7, 7, 7, 0 } },
+      { 6, "",                  { 6, 6, 6, 6, 6, 0 } },
+      { 5, "",                  { 5, 5, 5, 5, 5, 0 } },
+      { 4, "",                  { 4, 4, 4, 4, 4, 0 } },
+      { 3, "",                  { 3, 3, 3, 3, 3, 0 } },
+      // Make sure this at least has rudimentary bounding for invalid things...
+      { 0, "0,0,0,0,0,0",       { 0, 0, 0, 0, 0, 0 } },
+      { 0, "250,0,0,0,0,0",     { 0, IGNORE, IGNORE, IGNORE, IGNORE, IGNORE } },
+      { 0, "-1,0,0,0,0,0",      { 0, IGNORE, IGNORE, IGNORE, IGNORE, IGNORE } },
+      { 0, "9,32768,0,0,0,0,0", { 0, 0,      IGNORE, IGNORE, IGNORE, IGNORE } },
+      { 0, "9,-1,0,0,0,0",      { 0, 0,      IGNORE, IGNORE, IGNORE, IGNORE } },
+      { 0, "9,0,32768,0,0,0",   { 0, IGNORE, 0,      IGNORE, IGNORE, IGNORE } },
+      { 0, "9,0,-1,0,0,0",      { 0, IGNORE, 0,      IGNORE, IGNORE, IGNORE } },
+      { 0, "9,0,0,32768,0,0",   { 0, IGNORE, IGNORE, 0,      IGNORE, IGNORE } },
+      { 0, "9,0,0,-1,0,0",      { 0, IGNORE, IGNORE, 0,      IGNORE, IGNORE } },
+      { 0, "9,0,0,0,32768,0",   { 0, IGNORE, IGNORE, IGNORE, 0,      IGNORE } },
+      { 0, "9,0,0,0,-1,0",      { 0, IGNORE, IGNORE, IGNORE, 0,      IGNORE } },
+      { 0, "9,0,0,0,0,80",      { 0, IGNORE, IGNORE, IGNORE, IGNORE, 0 } },
+      { 0, "9,0,0,0,0,-1",      { 0, IGNORE, IGNORE, IGNORE, IGNORE, 0 } },
+    };
+    const struct saved_position *dest;
+    const struct saved_position *expected;
+    char buffer[256];
+
+    for(int i = 0; i < arraysize(data); i++)
+    {
+      snprintf(buffer, sizeof(buffer), "saved_position%d=%s",
+       data[i].which, data[i].value);
+
+      load_arg(buffer);
+
+      dest = &(econf->saved_positions[data[i].which]);
+      expected = &(data[i].expected);
+
+      if(expected->board_id != IGNORE)
+        ASSERTEQX(dest->board_id, expected->board_id, buffer);
+      if(expected->cursor_x != IGNORE)
+        ASSERTEQX(dest->cursor_x, expected->cursor_x, buffer);
+      if(expected->cursor_y != IGNORE)
+        ASSERTEQX(dest->cursor_y, expected->cursor_y, buffer);
+      if(expected->scroll_x != IGNORE)
+        ASSERTEQX(dest->scroll_x, expected->scroll_x, buffer);
+      if(expected->scroll_y != IGNORE)
+        ASSERTEQX(dest->scroll_y, expected->scroll_y, buffer);
+      if(expected->debug_x != IGNORE)
+        ASSERTEQX(dest->debug_x, expected->debug_x, buffer);
+    }
   }
 
 #endif
