@@ -304,6 +304,7 @@ static const struct config_enum system_mouse_values[] =
   { "1", 1 }
 };
 
+#ifdef CONFIG_UPDATER
 static const struct config_enum update_auto_check_values[] =
 {
   { "0", UPDATE_AUTO_CHECK_OFF },
@@ -312,6 +313,7 @@ static const struct config_enum update_auto_check_values[] =
   { "on", UPDATE_AUTO_CHECK_ON },
   { "silent", UPDATE_AUTO_CHECK_SILENT }
 };
+#endif
 
 static const struct config_enum video_ratio_values[] =
 {
