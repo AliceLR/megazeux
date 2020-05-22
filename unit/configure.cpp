@@ -54,6 +54,7 @@ struct config_test_pair
 struct config_test_string
 {
   const char * const value;
+  const char * const expected;
 };
 
 struct config_test_board_size_viewport
@@ -89,6 +90,30 @@ static void load_arg(char *arg)
 #endif
 }
 
+static void load_arg_file(char *arg, boolean is_game_config)
+{
+  static const char CONFIG_FILENAME[] = "_config_tmp";
+
+  FILE *fp = fopen_unsafe(CONFIG_FILENAME, "wb");
+  assert(fp);
+  if(fp)
+  {
+    int ret = fwrite(arg, strlen(arg), 1, fp);
+    assert(ret == 1);
+    ret = fclose(fp);
+    assert(!ret);
+
+    if(!is_game_config)
+      set_config_from_file_startup(CONFIG_FILENAME);
+    else
+      set_config_from_file(CONFIG_FILENAME);
+
+#ifdef CONFIG_EDITOR
+    set_editor_config_from_file(CONFIG_FILENAME);
+#endif
+  }
+}
+
 template<int SIZE>
 static void load_args(const char * const (&args)[SIZE])
 {
@@ -113,7 +138,6 @@ static void load_args(const char * const (&args)[SIZE])
 }
 
 #define DEFAULT_V(v) static_cast<std::remove_reference<decltype(v)>::type>(DEFAULT)
-//static_cast<decltype(setting)>(DEFAULT);
 
 #define TEST_INT(setting_name, setting, min, max) \
 do { \
@@ -128,6 +152,18 @@ do { \
       ASSERTEQX((int)(setting), _tmp, arg); \
     else \
       ASSERTEQX((int)(setting), DEFAULT, arg); \
+    setting = DEFAULT_V(setting); \
+    load_arg_file(arg, game_allowed); \
+    if(_tmp >= min && _tmp <= max) \
+      ASSERTEQX((int)(setting), _tmp, arg); \
+    else \
+      ASSERTEQX((int)(setting), DEFAULT, arg); \
+    if(!game_allowed) \
+    { \
+      setting = DEFAULT_V(setting); \
+      load_arg_file(arg, true); \
+      ASSERTEQX((int)(setting), DEFAULT, arg); \
+    } \
   } \
 } while(0)
 
@@ -140,6 +176,15 @@ do { \
     setting = DEFAULT_V(setting); \
     load_arg(arg); \
     ASSERTEQX((int)(setting), (int)data[_i].expected, arg); \
+    setting = DEFAULT_V(setting); \
+    load_arg_file(arg, game_allowed); \
+    ASSERTEQX((int)(setting), (int)data[_i].expected, arg); \
+    if(!game_allowed) \
+    { \
+      setting = DEFAULT_V(setting); \
+      load_arg_file(arg, true); \
+      ASSERTEQX((int)(setting), DEFAULT, arg); \
+    } \
   } \
 } while(0)
 
@@ -154,6 +199,19 @@ do { \
     load_arg(arg); \
     ASSERTEQX((int)(setting_a), (int)data[_i].expected_a, arg); \
     ASSERTEQX((int)(setting_b), (int)data[_i].expected_b, arg); \
+    setting_a = DEFAULT_V(setting_a); \
+    setting_b = DEFAULT_V(setting_b); \
+    load_arg_file(arg, game_allowed); \
+    ASSERTEQX((int)(setting_a), (int)data[_i].expected_a, arg); \
+    ASSERTEQX((int)(setting_b), (int)data[_i].expected_b, arg); \
+    if(!game_allowed) \
+    { \
+      setting_a = DEFAULT_V(setting_a); \
+      setting_b = DEFAULT_V(setting_b); \
+      load_arg_file(arg, true); \
+      ASSERTEQX((int)(setting_a), DEFAULT, arg); \
+      ASSERTEQX((int)(setting_b), DEFAULT, arg); \
+    } \
   } \
 } while(0)
 
@@ -162,22 +220,29 @@ do { \
   for(int _i = 0; _i < arraysize(data); _i++) \
   { \
     char arg[512]; \
-    size_t len = MIN(strlen(data[_i].value), sizeof(setting) - 1); \
+    size_t len = MIN(strlen(data[_i].expected), sizeof(setting) - 1); \
     snprintf(arg, 512, "%s=%s", setting_name, data[_i].value); \
     setting[0] = '\0'; \
     load_arg(arg); \
-    ASSERTXNCMP(setting, data[_i].value, len, arg); \
+    ASSERTXNCMP(setting, data[_i].expected, len, arg); \
     ASSERTEQX(setting[len], '\0', arg); \
+    setting[0] = '\0'; \
+    load_arg_file(arg, game_allowed); \
+    ASSERTXNCMP(setting, data[_i].expected, len, arg); \
+    ASSERTEQX(setting[len], '\0', arg); \
+    if(!game_allowed) \
+    { \
+      setting[0] = '\0'; \
+      load_arg_file(arg, true); \
+      ASSERTEQX(setting[0], '\0', arg); \
+    } \
   } \
 } while(0)
 
-/**
- * FIXME should make sure settings are enforced when loading as an arg vs.
- * when loading as a game config file!
- */
 UNITTEST(Settings)
 {
   struct config_info *conf = get_config();
+  boolean game_allowed = false;
 
   static const config_test_single boolean_data[] =
   {
@@ -189,6 +254,7 @@ UNITTEST(Settings)
     { "-1", DEFAULT },
     { "yes", DEFAULT },
     { "ABCD", DEFAULT },
+    { "0\\s", DEFAULT },
   };
 
   static const config_test_pair pair_data[] =
@@ -212,21 +278,33 @@ UNITTEST(Settings)
     { "1233,-13513", DEFAULT, DEFAULT },
   };
 
+  static const char LONGSTRING[] =
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
   static const config_test_string string_data[] =
   {
-    { "" },
-    { "software" },
-    { "glsl" },
-    { "crt" },
-    { "greyscale" },
-    { "really long setting string wtf don't do this" },
-    {
-      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-    },
+    { "", "" },
+    { "software", "software" },
+    { "glsl", "glsl" },
+    { "crt", "crt" },
+    { "greyscale", "greyscale" },
+    { "really_long_setting_string_wtf_don't_do_this",
+      "really_long_setting_string_wtf_don't_do_this" },
+    { LONGSTRING, LONGSTRING },
+    // NOTE: Both the command line and the config file translate \s to a single
+    // space. Whitespace can't really be tested the same between the two as it
+    // isn't consumed from the command line but is unconditionally consumed
+    // from the config file. This leads to situations where "test thing = a"
+    // tries to set the option "testthing" from the file but "test thing " from
+    // the command line. Both of these are wrong but not really worth fixing.
+    { "space\\sspace", "space space" },
+    { "copy\\soverlay\\sblock\\sat\\s0\\s0\\sfor\\s1\\sby\\s1\\sto\\s10\\s10",
+      "copy overlay block at 0 0 for 1 by 1 to 10 10" },
+    { "triple\\s\\s\\sspace", "triple   space" },
   };
 
   default_config();
@@ -308,6 +386,7 @@ UNITTEST(Settings)
 
   SECTION(gl_scaling_shader)
   {
+    game_allowed = true;
     TEST_STRING("gl_scaling_shader", conf->gl_scaling_shader, string_data);
   }
 
@@ -446,6 +525,7 @@ UNITTEST(Settings)
 
   SECTION(mzx_speed)
   {
+    game_allowed = true;
     TEST_INT("mzx_speed", conf->mzx_speed, 1, 16);
   }
 
@@ -606,6 +686,7 @@ UNITTEST(Settings)
 
   struct editor_config_info *econf = get_editor_config();
   default_editor_config();
+  game_allowed = true;
 
   // Board editor options.
 

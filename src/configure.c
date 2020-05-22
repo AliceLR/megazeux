@@ -1087,7 +1087,7 @@ __editor_maybe_static void __set_config_from_file(
 
   extended_buffer = (char *)malloc(extended_allocate_size);
 
-  while(fsafegets(line_buffer_alternate, 255, conf_file))
+  while(fsafegets(line_buffer_alternate, LINE_BUFFER_SIZE, conf_file))
   {
     if(line_buffer_alternate[0] != '#')
     {
