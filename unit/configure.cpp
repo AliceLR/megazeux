@@ -23,6 +23,7 @@
 #include "Unit.hpp"
 
 #include "../src/configure.h"
+#include "../src/const.h"
 #include "../src/util.h"
 
 #ifdef CONFIG_SDL
@@ -57,6 +58,7 @@ struct config_test_string
   const char * const expected;
 };
 
+#ifdef CONFIG_EDITOR
 struct config_test_board_size_viewport
 {
   const char * const setting;
@@ -75,6 +77,7 @@ struct config_test_saved_position
   const char * const value;
   struct saved_position expected;
 };
+#endif /* CONFIG_EDITOR */
 
 static void load_arg(char *arg)
 {
@@ -625,7 +628,7 @@ UNITTEST(Settings)
     TEST_INT("socks_port", conf->socks_port, 0, 65535);
   }
 
-#endif
+#endif /* CONFIG_NETWORK */
 
 #ifdef CONFIG_UPDATER
 
@@ -680,7 +683,7 @@ UNITTEST(Settings)
     TEST_ENUM("update_auto_check", conf->update_auto_check, data);
   }
 
-#endif
+#endif /* CONFIG_UPDATER */
 
 #ifdef CONFIG_EDITOR
 
@@ -1135,7 +1138,7 @@ UNITTEST(Settings)
     }
   }
 
-#endif
+#endif /* CONFIG_EDITOR */
 }
 
 #ifdef CONFIG_EDITOR
@@ -1150,4 +1153,4 @@ UNITTEST(ExtendedMacros)
 }
 */
 
-#endif
+#endif /* CONFIG_EDITOR */
