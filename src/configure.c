@@ -165,8 +165,6 @@ static char *default_update_hosts[] =
 
 #endif /* CONFIG_UPDATER */
 
-static boolean is_startup = false;
-
 static struct config_info user_conf;
 
 static const struct config_info user_conf_default =
@@ -268,7 +266,7 @@ void register_config(enum config_type type, void *conf, find_change_option handl
   }
 }
 
-static enum config_type last_config_type;
+static enum config_type current_config_type;
 
 typedef void (*config_function)(struct config_info *conf, char *name,
  char *value, char *extended_data);
@@ -711,6 +709,7 @@ static void joy_axis_set(struct config_info *conf, char *name,
    joy_axis_value(value, min, max))
   {
     // Right now do a global binding at startup and a game binding otherwise.
+    boolean is_startup = (current_config_type == SYSTEM_CNF);
     joystick_map_axis(first - 1, last - 1, axis - 1, min, max, is_startup);
   }
 }
@@ -723,6 +722,7 @@ static void joy_button_set(struct config_info *conf, char *name,
   if(joy_num(&name, &first, &last) && joy_button_name(name, &button))
   {
     // Right now do a global binding at startup and a game binding otherwise.
+    boolean is_startup = (current_config_type == SYSTEM_CNF);
     joystick_map_button(first - 1, last - 1, button - 1, value, is_startup);
   }
 }
@@ -737,6 +737,7 @@ static void joy_hat_set(struct config_info *conf, char *name,
    joy_hat_value(value, up, down, left, right))
   {
     // Right now do a global binding at startup and a game binding otherwise.
+    boolean is_startup = (current_config_type == SYSTEM_CNF);
     joystick_map_hat(first - 1, last - 1, up, down, left, right, is_startup);
   }
 }
@@ -749,6 +750,7 @@ static void joy_action_set(struct config_info *conf, char *name,
   if(joy_num(&name, &first, &last) && (*name == '.'))
   {
     // Right now do a global binding at startup and a game binding otherwise.
+    boolean is_startup = (current_config_type == SYSTEM_CNF);
     joystick_map_action(first - 1, last - 1, name + 1, value, is_startup);
   }
 }
@@ -813,14 +815,14 @@ static void include_config(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   // This one's for the original include N form
-  set_config_from_file(last_config_type, name + 7);
+  set_config_from_file(current_config_type, name + 7);
 }
 
 static void include2_config(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   // This one's for the include = N form
-  set_config_from_file(last_config_type, value);
+  set_config_from_file(current_config_type, value);
 }
 
 static void config_set_pcs_volume(struct config_info *conf, char *name,
@@ -1092,7 +1094,7 @@ static boolean config_change_option(void *_conf, char *name,
 
   if(current_option)
   {
-    if(current_option->allow_in_game_config || is_startup)
+    if(current_option->allow_in_game_config || (current_config_type == SYSTEM_CNF))
     {
       struct config_info *conf = (struct config_info *)_conf;
       current_option->change_option(conf, name, value, extended_data);
@@ -1214,8 +1216,7 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
         for(i = 0; i < config_registry[type].num_registered; i++)
         {
           struct config_registry_data *d = &config_registry[type].registered[i];
-          is_startup = type == SYSTEM_CNF ? true : false;
-          last_config_type = type;
+          current_config_type = type;
           if(d->handler(d->conf, line_buffer, value, use_extended_buffer))
             break;
         }
@@ -1274,8 +1275,7 @@ void set_config_from_command_line(int *argc, char *argv[])
       for(k = 0; k < config_registry[SYSTEM_CNF].num_registered; k++)
       {
         struct config_registry_data *d = &config_registry[SYSTEM_CNF].registered[k];
-        last_config_type = SYSTEM_CNF;
-        is_startup = true;
+        current_config_type = SYSTEM_CNF;
         if(d->handler(d->conf, line_buffer, value, NULL))
         {
           // Found the option; remove it from argv and make sure i stays the same
