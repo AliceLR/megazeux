@@ -81,15 +81,15 @@ else
 
 ${unit_obj}/%${unit_ext}: ${unit_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} ${unit_ldflags} $< -o $@
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
 
 ${unit_obj_editor}/%${unit_ext}: ${unit_src_editor}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} ${unit_ldflags} $< -o $@
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
 
 ${unit_obj_io}/%${unit_ext}: ${unit_src_io}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} ${unit_ldflags} $< -o $@
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
 
 -include ${unit_objs:${unit_ext}=.d}
 
