@@ -14,6 +14,9 @@ USERS
   "macro_6" would corrupt the extended macros and cause crashes.
 + Fixed division-by-zero crashes and GL errors when using
   invalid fullscreen_resolution or window_resolution values.
++ Fixed a bug where files included by the config file include
+  directive would ignore editor settings. Also added a recursion
+  limit for includes.
 
 DEVELOPERS
 
