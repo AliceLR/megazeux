@@ -813,32 +813,26 @@ static void pause_on_unfocus(struct config_info *conf, char *name,
   config_boolean(&conf->pause_on_unfocus, value);
 }
 
-// This one's for the original include N form.
 static void include_config(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   if(current_include_depth < MAX_INCLUDE_DEPTH)
   {
     current_include_depth++;
-    set_config_from_file(current_config_type, name + 7);
+
+    // The format "include FILENAME.EXT" is condensed into the name.
+    // The format "include=FILENAME.EXT" uses the value instead.
+    if(name[7])
+    {
+      set_config_from_file(current_config_type, name + 7);
+    }
+    else
+      set_config_from_file(current_config_type, value);
+
     current_include_depth--;
   }
   else
     warn("Failed to include '%s' (maximum recursion depth exceeded)\n", name + 7);
-}
-
-// This one's for the include = N form.
-static void include2_config(struct config_info *conf, char *name,
- char *value, char *extended_data)
-{
-  if(current_include_depth < MAX_INCLUDE_DEPTH)
-  {
-    current_include_depth++;
-    set_config_from_file(current_config_type, value);
-    current_include_depth--;
-  }
-  else
-    warn("Failed to include '%s' (maximum recursion depth exceeded)\n", value);
 }
 
 static void config_set_pcs_volume(struct config_info *conf, char *name,
@@ -1025,7 +1019,6 @@ static const struct config_entry config_options[] =
   { "gl_scaling_shader", config_set_gl_scaling_shader, true },
   { "gl_vsync", config_gl_vsync, false },
   { "grab_mouse", config_grab_mouse, false },
-  { "include", include2_config, true },
   { "include*", include_config, true },
   { "joy!.*", joy_action_set, true },
   { "joy!axis!", joy_axis_set, true },
