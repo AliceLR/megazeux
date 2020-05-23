@@ -95,7 +95,7 @@ static void load_arg(char *arg)
 
 static void load_arg_file(char *arg, boolean is_game_config)
 {
-  static const char CONFIG_FILENAME[] = "_config_tmp";
+  static const char CONFIG_FILENAME[] = "unit/.build/_config_tmp";
 
   FILE *fp = fopen_unsafe(CONFIG_FILENAME, "wb");
   assert(fp);
