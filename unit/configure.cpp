@@ -88,9 +88,6 @@ static void load_arg(char *arg)
   tmp_args[argc++] = arg;
 
   set_config_from_command_line(&argc, tmp_args);
-#ifdef CONFIG_EDITOR
-  set_editor_config_from_command_line(&argc, tmp_args);
-#endif
 }
 
 static void load_arg_file(char *arg, boolean is_game_config)
@@ -106,14 +103,8 @@ static void load_arg_file(char *arg, boolean is_game_config)
     ret = fclose(fp);
     assert(!ret);
 
-    if(!is_game_config)
-      set_config_from_file_startup(CONFIG_FILENAME);
-    else
-      set_config_from_file(CONFIG_FILENAME);
-
-#ifdef CONFIG_EDITOR
-    set_editor_config_from_file(CONFIG_FILENAME);
-#endif
+    config_type type = is_game_config ? GAME_EDITOR_CNF : SYSTEM_CNF;
+    set_config_from_file(type, CONFIG_FILENAME);
   }
 }
 
@@ -135,9 +126,6 @@ static void load_args(const char * const (&args)[SIZE])
   }
 
   set_config_from_command_line(&argc, tmp_args);
-#ifdef CONFIG_EDITOR
-  set_editor_config_from_command_line(&argc, tmp_args);
-#endif
 }
 
 #define DEFAULT_V(v) static_cast<std::remove_reference<decltype(v)>::type>(DEFAULT)

@@ -219,7 +219,7 @@ static boolean editor_reload_world(struct editor_context *editor,
   strncpy(config_file_name + file_name_len, ".editor.cnf", 12);
 
   if(stat(config_file_name, &file_info) >= 0)
-    set_editor_config_from_file(config_file_name);
+    set_config_from_file(GAME_EDITOR_CNF, config_file_name);
 
   edit_menu_show_board_mod(editor->edit_menu);
   return true;

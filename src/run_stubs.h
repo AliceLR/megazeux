@@ -30,8 +30,6 @@ void editor_init(void);
 void init_macros(void);
 
 void default_editor_config(void);
-void set_editor_config_from_file(const char *conf_file_name);
-void set_editor_config_from_command_line(int *argc, char *argv[]);
 void store_editor_config_backup(void);
 void free_editor_config(void);
 #else
@@ -40,8 +38,6 @@ static inline void editor_init(void) {}
 static inline void init_macros(void) {}
 
 static inline void default_editor_config(void) {}
-static inline void set_editor_config_from_file(const char *conf_file_name) {}
-static inline void set_editor_config_from_command_line(int *argc, char *argv[]){}
 static inline void store_editor_config_backup(void) {}
 static inline void free_editor_config(void) {}
 #endif

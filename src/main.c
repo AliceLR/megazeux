@@ -221,13 +221,11 @@ __libspec int main(int argc, char *argv[])
   chdir(config_dir);
 
   default_config();
-  set_config_from_file_startup(mzx_res_get_by_id(CONFIG_TXT));
+  default_editor_config();
+  set_config_from_file(SYSTEM_CNF, mzx_res_get_by_id(CONFIG_TXT));
   set_config_from_command_line(&argc, argv);
   conf = get_config();
 
-  default_editor_config();
-  set_editor_config_from_file(mzx_res_get_by_id(CONFIG_TXT));
-  set_editor_config_from_command_line(&argc, argv);
   store_editor_config_backup();
 
   init_macros();
