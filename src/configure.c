@@ -36,6 +36,7 @@
 #include "io/fsafeopen.h"
 #include "io/path.h"
 
+#define MAX_INCLUDE_DEPTH 16
 #define MAX_CONFIG_REGISTERED 2
 
 // Arch-specific config.
@@ -165,6 +166,9 @@ static char *default_update_hosts[] =
 
 #endif /* CONFIG_UPDATER */
 
+static enum config_type current_config_type;
+static int current_include_depth = 0;
+
 static struct config_info user_conf;
 
 static const struct config_info user_conf_default =
@@ -236,37 +240,6 @@ static const struct config_info user_conf_default =
   UPDATE_AUTO_CHECK_SILENT,     // update_auto_check
 #endif /* CONFIG_UPDATER */
 };
-
-struct config_registry_data
-{
-  void *conf;
-  find_change_option handler;
-};
-
-struct config_registry_entry
-{
-  int num_registered;
-  struct config_registry_data registered[MAX_CONFIG_REGISTERED];
-};
-
-static struct config_registry_entry config_registry[NUM_CONFIG_TYPES];
-
-__editor_maybe_static
-void register_config(enum config_type type, void *conf, find_change_option handler)
-{
-  if(type < NUM_CONFIG_TYPES)
-  {
-    struct config_registry_entry *e = &config_registry[type];
-    if(e->num_registered < MAX_CONFIG_REGISTERED)
-    {
-      e->registered[e->num_registered].conf = conf;
-      e->registered[e->num_registered].handler = handler;
-      e->num_registered++;
-    }
-  }
-}
-
-static enum config_type current_config_type;
 
 typedef void (*config_function)(struct config_info *conf, char *name,
  char *value, char *extended_data);
@@ -352,6 +325,35 @@ static const struct config_enum video_ratio_values[] =
   { "modern", RATIO_MODERN_64_35 },
   { "stretch", RATIO_STRETCH }
 };
+
+struct config_registry_data
+{
+  void *conf;
+  find_change_option handler;
+};
+
+struct config_registry_entry
+{
+  int num_registered;
+  struct config_registry_data registered[MAX_CONFIG_REGISTERED];
+};
+
+static struct config_registry_entry config_registry[NUM_CONFIG_TYPES];
+
+__editor_maybe_static
+void register_config(enum config_type type, void *conf, find_change_option handler)
+{
+  if(type < NUM_CONFIG_TYPES)
+  {
+    struct config_registry_entry *e = &config_registry[type];
+    if(e->num_registered < MAX_CONFIG_REGISTERED)
+    {
+      e->registered[e->num_registered].conf = conf;
+      e->registered[e->num_registered].handler = handler;
+      e->num_registered++;
+    }
+  }
+}
 
 __editor_maybe_static
 boolean config_int(int *dest, char *value, int min, int max)
@@ -811,18 +813,32 @@ static void pause_on_unfocus(struct config_info *conf, char *name,
   config_boolean(&conf->pause_on_unfocus, value);
 }
 
+// This one's for the original include N form.
 static void include_config(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // This one's for the original include N form
-  set_config_from_file(current_config_type, name + 7);
+  if(current_include_depth < MAX_INCLUDE_DEPTH)
+  {
+    current_include_depth++;
+    set_config_from_file(current_config_type, name + 7);
+    current_include_depth--;
+  }
+  else
+    warn("Failed to include '%s' (maximum recursion depth exceeded)\n", name + 7);
 }
 
+// This one's for the include = N form.
 static void include2_config(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // This one's for the include = N form
-  set_config_from_file(current_config_type, value);
+  if(current_include_depth < MAX_INCLUDE_DEPTH)
+  {
+    current_include_depth++;
+    set_config_from_file(current_config_type, value);
+    current_include_depth--;
+  }
+  else
+    warn("Failed to include '%s' (maximum recursion depth exceeded)\n", value);
 }
 
 static void config_set_pcs_volume(struct config_info *conf, char *name,
