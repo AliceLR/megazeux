@@ -1571,6 +1571,7 @@ static boolean editor_key(context *ctx, int *key)
     char mesg[80];
 
     int s_num = *key - IKEY_0;
+    struct saved_position *s = &(editor_conf->saved_positions[s_num]);
 
     if(get_ctrl_status(keycode_internal))
     {
@@ -1580,12 +1581,12 @@ static boolean editor_key(context *ctx, int *key)
 
       if(!confirm(mzx_world, mesg))
       {
-        editor_conf->saved_board[s_num] = mzx_world->current_board_id;
-        editor_conf->saved_cursor_x[s_num] = editor->cursor_x;
-        editor_conf->saved_cursor_y[s_num] = editor->cursor_y;
-        editor_conf->saved_scroll_x[s_num] = editor->scroll_x;
-        editor_conf->saved_scroll_y[s_num] = editor->scroll_y;
-        editor_conf->saved_debug_x[s_num] = editor->debug_x;
+        s->board_id = mzx_world->current_board_id;
+        s->cursor_x = editor->cursor_x;
+        s->cursor_y = editor->cursor_y;
+        s->scroll_x = editor->scroll_x;
+        s->scroll_y = editor->scroll_y;
+        s->debug_x = editor->debug_x;
         save_local_editor_config(editor_conf, curr_file);
       }
       return true;
@@ -1594,30 +1595,27 @@ static boolean editor_key(context *ctx, int *key)
 
     if(get_alt_status(keycode_internal))
     {
-      int s_board = editor_conf->saved_board[s_num];
+      int s_board = s->board_id;
 
       if(s_board < mzx_world->num_boards &&
        mzx_world->board_list[s_board])
       {
         sprintf(mesg, "Go to '%s' @ %d,%d (pos %d)?",
          mzx_world->board_list[s_board]->board_name,
-         editor_conf->saved_cursor_x[s_num],
-         editor_conf->saved_cursor_y[s_num],
-         s_num);
+         s->cursor_x, s->cursor_y, s_num);
 
         if(!confirm(mzx_world, mesg))
         {
-          editor->cursor_x = editor_conf->saved_cursor_x[s_num];
-          editor->cursor_y = editor_conf->saved_cursor_y[s_num];
-          editor->scroll_x = editor_conf->saved_scroll_x[s_num];
-          editor->scroll_y = editor_conf->saved_scroll_y[s_num];
-          editor->debug_x = editor_conf->saved_debug_x[s_num];
+          editor->cursor_x = s->cursor_x;
+          editor->cursor_y = s->cursor_y;
+          editor->scroll_x = s->scroll_x;
+          editor->scroll_y = s->scroll_y;
+          editor->debug_x = s->debug_x;
 
           if(mzx_world->current_board_id != s_board)
           {
             editor_set_current_board(editor, s_board, true);
           }
-
           else
           {
             // The saved position might be out of bounds. Board changing

@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "configure.h"
 #include "event.h"
 #include "platform.h"
 #include "graphics.h"
@@ -198,7 +199,6 @@ static int get_pandora_joystick_button(SDL_Keycode key)
  */
 
 static SDL_GameController *gamecontrollers[MAX_JOYSTICKS];
-boolean allow_gamecontroller_mapping = true;
 
 static enum joystick_special_axis sdl_axis_map[SDL_CONTROLLER_AXIS_MAX] =
 {
@@ -610,6 +610,7 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
 
     if(gamecontroller)
     {
+      struct config_info *conf = get_config();
       char *mapping = NULL;
       gamecontrollers[joystick_index] = gamecontroller;
 
@@ -648,7 +649,7 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
         if(strncmp(mapping, guid_string, strlen(guid_string)))
           info("--JOYSTICK-- GUID: %s\n", guid_string);
 
-        if(allow_gamecontroller_mapping)
+        if(conf->allow_gamecontroller)
           parse_gamecontroller_map(joystick_index, mapping);
 
         SDL_free(mapping);
@@ -759,14 +760,6 @@ void gamecontroller_map_sym(const char *sym, const char *value)
   }
 
   // TODO analog axes
-}
-
-/**
- * Enable or disable the SDL to MZX mapping system.
- */
-void gamecontroller_set_enabled(boolean enable)
-{
-  allow_gamecontroller_mapping = enable;
 }
 
 /**
@@ -1365,13 +1358,14 @@ static boolean process_event(SDL_Event *event)
     {
       // Since gamecontroller axis mappings can be complicated, use
       // the gamecontroller events to update the named axis values.
+      struct config_info *conf = get_config();
       int value = event->caxis.value;
       int which = event->caxis.which;
       int axis = event->caxis.axis;
       enum joystick_special_axis special_axis = sdl_axis_map[axis];
 
       int joystick_index = get_joystick_index(which);
-      if(joystick_index < 0 || !special_axis || !allow_gamecontroller_mapping)
+      if(joystick_index < 0 || !special_axis || !conf->allow_gamecontroller)
         break;
 
       trace(

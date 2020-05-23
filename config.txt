@@ -401,6 +401,7 @@
 # Color codes for various types.
 # For colors, use 255 to show a color box.
 
+# ccode_chars = 14
 # ccode_colors = 255
 # ccode_commands = 15
 # ccode_conditions = 15

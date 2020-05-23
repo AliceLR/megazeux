@@ -6,10 +6,20 @@ USERS
   MinGW's non-compliant fdopen.
 + Fixed a bug where the title screen's intro message wouldn't
   cycle the scroll color while no world was loaded.
++ Added the missing "ccode_chars" config setting.
++ Fixed a bug where the "ccode_extras" config setting would
+  change the strings color code instead.
++ Fixed a bug where "macro_#" where # is 0 or between 6-9 would
+  corrupt various parts of the editor configuration. Notably,
+  "macro_6" would corrupt the extended macros and cause crashes.
++ Fixed division-by-zero crashes and GL errors when using
+  invalid fullscreen_resolution or window_resolution values.
 
 DEVELOPERS
 
 + Fixed memcasecmp test alignment checks for the Motorola 68000.
++ Improved validation of config setting inputs and added a unit
+  test for config file and command line parsing.
 
 
 May 8th, 2020 - MZX 2.92d

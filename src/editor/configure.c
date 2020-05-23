@@ -18,15 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "configure.h"
+#include "robo_ed.h"
 
 #include "../counter.h"
 #include "../configure.h"
 #include "../const.h"
 #include "../util.h"
 
+#include <ctype.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 static struct editor_config_info editor_conf;
 static struct editor_config_info editor_conf_backup;
@@ -94,13 +96,7 @@ static const struct editor_config_info editor_conf_default =
   NULL,
 
   // Saved positions
-  { 0 },
-  { 0 },
-  { 0 },
-  { 0 },
-  { 0 },
-  { 60, 60, 60, 60, 60, 60, 60, 60, 60, 60 },
-
+  { { 0, 0, 0, 0, 0, 0 } },
 };
 
 typedef void (* editor_config_function)(struct editor_config_info *conf,
@@ -112,149 +108,204 @@ struct editor_config_entry
   editor_config_function change_option;
 };
 
+static const struct config_enum default_invalid_status_values[] =
+{
+#ifndef CONFIG_DEBYTECODE
+  { "ignore", invalid_uncertain },
+  { "delete", invalid_discard },
+  { "comment", invalid_comment }
+#else
+  { "", 0 }
+#endif
+};
+
+static const struct config_enum disassemble_base_values[] =
+{
+  { "10", 10 },
+  { "16", 16 }
+};
+
+static const struct config_enum explosions_leave_values[] =
+{
+  { "space", EXPL_LEAVE_SPACE },
+  { "ash", EXPL_LEAVE_ASH },
+  { "fire", EXPL_LEAVE_FIRE }
+};
+
+static const struct config_enum overlay_enabled_values[] =
+{
+  { "disabled", OVERLAY_OFF },
+  { "enabled", OVERLAY_ON },
+  { "static", OVERLAY_STATIC },
+  { "transparent", OVERLAY_TRANSPARENT },
+};
+
+static const struct config_enum saving_enabled_values[] =
+{
+  { "disabled", CANT_SAVE },
+  { "enabled", CAN_SAVE },
+  { "sensoronly", CAN_SAVE_ON_SENSOR }
+};
+
 // Default colors for color coding:
 // 0 current line - 11
-// 1 immediates - 10
-// 2 characters - 14
-// 3 colors - color box or 2
-// 4 directions - 3
-// 5 things - 11
-// 6 params - 2
-// 7 strings - 14
-// 8 equalities - 0
-// 9 conditions - 15
-// 10 items - 11
-// 11 extras - 7
-// 12 commands and command fragments - 15
+// 1 immediate  - 10
+// 2 immediates - 10 (unused?)
+// 3 characters - 14
+// 4 colors - color box (255) or 2
+// 5 directions - 3
+// 6 things - 11
+// 7 params - 2
+// 8 strings - 14
+// 9 equalities - 0
+// 10 conditions - 15
+// 11 items - 11
+// 12 extras - 7
+// 13 commands and command fragments - 15
+// 14 invalid line (ignore)
+// 15 invalid line (delete)
+// 16 invalid line (comment)
+
+static void config_ccode_chars(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  int result;
+  if(config_int(&result, value, 0, 15))
+    conf->color_codes[ROBO_ED_CC_CHARACTERS] = result;
+}
 
 static void config_ccode_colors(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->color_codes[4] = (char)strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 15))
+  {
+    conf->color_codes[ROBO_ED_CC_COLORS] = result;
+  }
+  else
+
+  // Special case- 255 instructs the robot editor to use a color box.
+  if(!strcmp(value, "255"))
+    conf->color_codes[ROBO_ED_CC_COLORS] = 255;
 }
 
 static void config_ccode_commands(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->color_codes[13] = (char)strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 15))
+    conf->color_codes[ROBO_ED_CC_COMMANDS] = result;
 }
 
 static void config_ccode_conditions(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->color_codes[10] = (char)strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 15))
+    conf->color_codes[ROBO_ED_CC_CONDITIONS] = result;
 }
 
 static void config_ccode_current_line(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->color_codes[0] = (char)strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 15))
+    conf->color_codes[ROBO_ED_CC_CURRENT_LINE] = result;
 }
 
 static void config_ccode_directions(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->color_codes[5] = (char)strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 15))
+    conf->color_codes[ROBO_ED_CC_DIRECTIONS] = result;
 }
 
 static void config_ccode_equalities(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->color_codes[9] = (char)strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 15))
+    conf->color_codes[ROBO_ED_CC_EQUALITIES] = result;
 }
 
 static void config_ccode_extras(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->color_codes[8] = (char)strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 15))
+    conf->color_codes[ROBO_ED_CC_EXTRAS] = result;
 }
 
 static void config_ccode_on(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->color_coding_on = strtol(value, NULL, 10);
+  config_boolean(&conf->color_coding_on, value);
 }
 
 static void config_ccode_immediates(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  int new_color = strtol(value, NULL, 10);
-  conf->color_codes[1] = new_color;
-  conf->color_codes[2] = new_color;
+  int result;
+  if(config_int(&result, value, 0, 15))
+  {
+    conf->color_codes[ROBO_ED_CC_IMMEDIATES] = result;
+    conf->color_codes[ROBO_ED_CC_IMMEDIATES_2] = result;
+  }
 }
 
 static void config_ccode_items(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->color_codes[11] = (char)strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 15))
+    conf->color_codes[ROBO_ED_CC_ITEMS] = result;
 }
 
 static void config_ccode_params(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->color_codes[7] = (char)strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 15))
+    conf->color_codes[ROBO_ED_CC_PARAMS] = result;
 }
 
 static void config_ccode_strings(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->color_codes[8] = (char)strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 15))
+    conf->color_codes[ROBO_ED_CC_STRINGS] = result;
 }
 
 static void config_ccode_things(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->color_codes[6] = (char)strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, 15))
+    conf->color_codes[ROBO_ED_CC_THINGS] = result;
 }
 
-static void config_default_invald(struct editor_config_info *conf,
+static void config_default_invalid(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  if(!strcasecmp(value, "ignore"))
-  {
-    conf->default_invalid_status = 1;
-  }
-  else
-
-  if(!strcasecmp(value, "delete"))
-  {
-    conf->default_invalid_status = 2;
-  }
-  else
-
-  if(!strcasecmp(value, "comment"))
-  {
-    conf->default_invalid_status = 3;
-  }
+  int result;
+  if(config_enum(&result, value, default_invalid_status_values))
+    conf->default_invalid_status = result;
 }
 
 static void config_disassemble_extras(struct editor_config_info *conf,
  char *name, char *value, char *ext_data)
 {
-  // FIXME sloppy validation
-  conf->disassemble_extras = strtoul(value, NULL, 10);
+  config_boolean(&conf->disassemble_extras, value);
 }
 
 static void config_disassemble_base(struct editor_config_info *conf,
  char *name, char *value, char *ext_data)
 {
-  // FIXME slightly sloppy validation
-  unsigned long new_base = strtoul(value, NULL, 10);
-
-  if((new_base == 10) || (new_base == 16))
-    conf->disassemble_base = new_base;
+  int result;
+  if(config_enum(&result, value, disassemble_base_values))
+    conf->disassemble_base = result;
 }
 
 static void config_macro(struct editor_config_info *conf,
@@ -264,9 +315,9 @@ static void config_macro(struct editor_config_info *conf,
 
   if(isdigit((int)macro_name[0]) && !macro_name[1] && !extended_data)
   {
-    int macro_num = macro_name[0] - 0x31;
-    value[63] = 0;
-    strcpy(conf->default_macros[macro_num], value);
+    size_t macro_num = macro_name[0] - '1';
+    if(macro_num < ARRAY_SIZE(conf->default_macros))
+      config_string(conf->default_macros[macro_num], value);
   }
   else
   {
@@ -278,90 +329,85 @@ static void config_macro(struct editor_config_info *conf,
 static void board_editor_hide_help(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->board_editor_hide_help = strtol(value, NULL, 10);
+  config_boolean(&conf->board_editor_hide_help, value);
 }
 
 static void robot_editor_hide_help(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->robot_editor_hide_help = strtol(value, NULL, 10);
+  config_boolean(&conf->robot_editor_hide_help, value);
 }
 
 static void palette_editor_hide_help(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->palette_editor_hide_help = strtol(value, NULL, 10);
+  config_boolean(&conf->palette_editor_hide_help, value);
 }
 
 static void backup_count(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->backup_count = strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, INT_MAX))
+    conf->backup_count = result;
 }
 
 static void backup_interval(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->backup_interval = strtol(value, NULL, 10);
+  int result;
+  if(config_int(&result, value, 0, INT_MAX))
+    conf->backup_interval = result;
 }
 
 static void backup_name(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  snprintf(conf->backup_name, 256, "%s", value);
+  config_string(conf->backup_name, value);
 }
 
 static void backup_ext(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  snprintf(conf->backup_ext, 256, "%s", value);
+  config_string(conf->backup_ext, value);
 }
 
 static void config_editor_space_toggles(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->editor_space_toggles = strtol(value, NULL, 10);
+  config_boolean(&conf->editor_space_toggles, value);
 }
 
 static void config_editor_enter_splits(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->editor_enter_splits = strtol(value, NULL, 10);
+  config_boolean(&conf->editor_enter_splits, value);
 }
 
 static void config_editor_load_board_assets(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->editor_load_board_assets = strtol(value, NULL, 10);
+  config_boolean(&conf->editor_load_board_assets, value);
 }
 
 static void config_editor_tab_focus(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->editor_tab_focuses_view = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->editor_tab_focuses_view, value);
 }
 
 static void config_editor_thing_menu_places(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->editor_thing_menu_places = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->editor_thing_menu_places, value);
 }
 
 static void config_undo_history_size(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  // FIXME sloppy validation
-  conf->undo_history_size = CLAMP(strtol(value, NULL, 10), 0, 1000);
+  int result;
+  if(config_int(&result, value, 0, 1000))
+    conf->undo_history_size = result;
 }
 
 static void config_saved_positions(struct editor_config_info *conf,
@@ -374,20 +420,29 @@ static void config_saved_positions(struct editor_config_info *conf,
   unsigned int scroll_x;
   unsigned int scroll_y;
   unsigned int debug_x;
+  int n;
 
-  sscanf(name, "saved_position%u", &pos);
-  sscanf(value, "%u, %u, %u, %u, %u, %u",
-   &board_num, &board_x, &board_y, &scroll_x, &scroll_y, &debug_x);
-
-  if(pos >= NUM_SAVED_POSITIONS)
+  if(sscanf(name, "saved_position%u", &pos) != 1)
     return;
 
-  conf->saved_board[pos] = board_num;
-  conf->saved_cursor_x[pos] = board_x;
-  conf->saved_cursor_y[pos] = board_y;
-  conf->saved_scroll_x[pos] = scroll_x;
-  conf->saved_scroll_y[pos] = scroll_y;
-  conf->saved_debug_x[pos] = debug_x ? 60 : 0;
+  if(sscanf(value, "%u, %u, %u, %u, %u, %u%n",
+   &board_num, &board_x, &board_y, &scroll_x, &scroll_y, &debug_x, &n) != 6 ||
+   value[n])
+    return;
+
+  // Check for sane values only. This is not guaranteed to properly bound these.
+  if(pos < NUM_SAVED_POSITIONS && (board_num < MAX_BOARDS) &&
+   (board_x < 32768) && (board_y < 32768) && (scroll_x < 32768) &&
+   (scroll_y < 32768) && (debug_x < 80))
+  {
+    struct saved_position *s = &(conf->saved_positions[pos]);
+    s->board_id = board_num;
+    s->cursor_x = board_x;
+    s->cursor_y = board_y;
+    s->scroll_x = scroll_x;
+    s->scroll_y = scroll_y;
+    s->debug_x = debug_x ? 60 : 0;
+  }
 }
 
 /******************/
@@ -397,197 +452,197 @@ static void config_saved_positions(struct editor_config_info *conf,
 static void config_board_width(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->board_width = CLAMP(strtol(value, NULL, 10), 1, 32767);
-  if(conf->viewport_w > conf->board_width)
-    conf->viewport_w = conf->board_width;
-  if(conf->board_width * conf->board_height > MAX_BOARD_SIZE)
-    conf->board_height = MAX_BOARD_SIZE / conf->board_width;
+  int result;
+  if(config_int(&result, value, 1, 32767))
+  {
+    conf->board_width = result;
+    if(conf->viewport_w > conf->board_width)
+      conf->viewport_w = conf->board_width;
+    if(conf->board_width * conf->board_height > MAX_BOARD_SIZE)
+      conf->board_height = MAX_BOARD_SIZE / conf->board_width;
+  }
 }
 
 static void config_board_height(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->board_height = CLAMP(strtol(value, NULL, 10), 1, 32767);
-  if(conf->viewport_h > conf->board_height)
-    conf->viewport_h = conf->board_height;
-  if(conf->board_width * conf->board_height > MAX_BOARD_SIZE)
-    conf->board_width = MAX_BOARD_SIZE / conf->board_height;
+  int result;
+  if(config_int(&result, value, 1, 32767))
+  {
+    conf->board_height = result;
+    if(conf->viewport_h > conf->board_height)
+      conf->viewport_h = conf->board_height;
+    if(conf->board_width * conf->board_height > MAX_BOARD_SIZE)
+      conf->board_width = MAX_BOARD_SIZE / conf->board_height;
+  }
 }
 
 static void config_board_viewport_w(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->viewport_w = CLAMP(strtol(value, NULL, 10), 1, MIN(conf->board_width, 80));
-  if(conf->viewport_x + conf->viewport_w > 80)
-    conf->viewport_x = 80 - conf->viewport_w;
+  int result;
+  if(config_int(&result, value, 1, 80))
+  {
+    conf->viewport_w = MIN(result, conf->board_width);
+    if(conf->viewport_x + conf->viewport_w > 80)
+      conf->viewport_x = 80 - conf->viewport_w;
+  }
 }
 
 static void config_board_viewport_h(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->viewport_h = CLAMP(strtol(value, NULL, 10), 1, MIN(conf->board_height, 25));
-  if(conf->viewport_y + conf->viewport_h > 25)
-    conf->viewport_y = 25 - conf->viewport_h;
+  int result;
+  if(config_int(&result, value, 1, 25))
+  {
+    conf->viewport_h = MIN(result, conf->board_height);
+    if(conf->viewport_y + conf->viewport_h > 25)
+      conf->viewport_y = 25 - conf->viewport_h;
+  }
 }
 
 static void config_board_viewport_x(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->viewport_x = CLAMP(strtol(value, NULL, 10), 0, 80 - conf->viewport_w);
+  int result;
+  if(config_int(&result, value, 0, 79))
+    conf->viewport_x = MIN(result, 80 - conf->viewport_w);
 }
 
 static void config_board_viewport_y(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->viewport_y = CLAMP(strtol(value, NULL, 10), 0, (25 - conf->viewport_h));
+  int result;
+  if(config_int(&result, value, 0, 24))
+    conf->viewport_y = MIN(result, 25 - conf->viewport_h);
 }
 
 static void config_board_can_shoot(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->can_shoot = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->can_shoot, value);
 }
 
 static void config_board_can_bomb(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->can_bomb = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->can_bomb, value);
 }
 
 static void config_board_fire_spaces(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->fire_burns_spaces = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->fire_burns_spaces, value);
 }
 
 static void config_board_fire_fakes(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->fire_burns_fakes = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->fire_burns_fakes, value);
 }
 
 static void config_board_fire_trees(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->fire_burns_trees = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->fire_burns_trees, value);
 }
 
 static void config_board_fire_brown(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->fire_burns_brown = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->fire_burns_brown, value);
 }
 
 static void config_board_fire_forever(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->fire_burns_forever = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->fire_burns_forever, value);
 }
 
 static void config_board_forest(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->forest_to_floor = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->forest_to_floor, value);
 }
 
 static void config_board_collect_bombs(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->collect_bombs = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->collect_bombs, value);
 }
 
 static void config_board_restart(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->restart_if_hurt = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->restart_if_hurt, value);
 }
 
 static void config_board_reset_on_entry(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->reset_on_entry = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->reset_on_entry, value);
 }
 
 static void config_board_locked_ns(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->player_locked_ns = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->player_locked_ns, value);
 }
 
 static void config_board_locked_ew(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->player_locked_ew = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->player_locked_ew, value);
 }
 
 static void config_board_locked_att(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->player_locked_att = CLAMP(strtol(value, NULL, 10), 0, 1);
+  config_boolean(&conf->player_locked_att, value);
 }
 
 static void config_board_time_limit(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->time_limit = CLAMP(strtol(value, NULL, 10), 0, 32767);
+  int result;
+  if(config_int(&result, value, 0, 32767))
+    conf->time_limit = result;
 }
 
 static void config_board_charset(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  int size = MIN(strlen(value), MAX_PATH - 1);
-  memcpy(conf->charset_path, value, size);
-  conf->charset_path[size] = 0;
+  config_string(conf->charset_path, value);
 }
 
 static void config_board_palette(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  int size = MIN(strlen(value), MAX_PATH - 1);
-  strncpy(conf->palette_path, value, size);
-  conf->palette_path[size] = 0;
+  config_string(conf->palette_path, value);
 }
 
 static void config_board_explosions(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  if(!strcasecmp(value, "space"))
-    conf->explosions_leave = EXPL_LEAVE_SPACE;
-
-  if(!strcasecmp(value, "ash"))
-    conf->explosions_leave = EXPL_LEAVE_ASH;
-
-  if(!strcasecmp(value, "fire"))
-    conf->explosions_leave = EXPL_LEAVE_FIRE;
+  int result;
+  if(config_enum(&result, value, explosions_leave_values))
+    conf->explosions_leave = result;
 }
 
 static void config_board_saving(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  if(!strcasecmp(value, "disabled"))
-    conf->saving_enabled = CANT_SAVE;
-
-  if(!strcasecmp(value, "enabled"))
-    conf->saving_enabled = CAN_SAVE;
-
-  if(!strcasecmp(value, "sensoronly"))
-    conf->saving_enabled = CAN_SAVE_ON_SENSOR;
+  int result;
+  if(config_enum(&result, value, saving_enabled_values))
+    conf->saving_enabled = result;
 }
 
 static void config_board_overlay(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  if(!strcasecmp(value, "disabled"))
-    conf->overlay_enabled = OVERLAY_OFF;
-
-  if(!strcasecmp(value, "enabled"))
-    conf->overlay_enabled = OVERLAY_ON;
-
-  if(!strcasecmp(value, "static"))
-    conf->overlay_enabled = OVERLAY_STATIC;
-
-  if(!strcasecmp(value, "transparent"))
-    conf->overlay_enabled = OVERLAY_TRANSPARENT;
+  int result;
+  if(config_enum(&result, value, overlay_enabled_values))
+    conf->overlay_enabled = result;
 }
 
 /**********************/
@@ -630,6 +685,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "board_default_viewport_y", config_board_viewport_y },
   { "board_default_width", config_board_width },
   { "board_editor_hide_help", board_editor_hide_help },
+  { "ccode_chars", config_ccode_chars },
   { "ccode_colors", config_ccode_colors },
   { "ccode_commands", config_ccode_commands },
   { "ccode_conditions", config_ccode_conditions },
@@ -643,7 +699,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "ccode_strings", config_ccode_strings },
   { "ccode_things", config_ccode_things },
   { "color_coding_on", config_ccode_on },
-  { "default_invalid_status", config_default_invald },
+  { "default_invalid_status", config_default_invalid },
   { "disassemble_base", config_disassemble_base },
   { "disassemble_extras", config_disassemble_extras },
   { "editor_enter_splits", config_editor_enter_splits },
@@ -949,14 +1005,9 @@ void save_local_editor_config(struct editor_config_info *conf,
   fwrite("\n", 1, 1, fp);
   for(i = 0; i < NUM_SAVED_POSITIONS; i++)
   {
-    sprintf(buf, "saved_position%u = %u, %u, %u, %u, %u, %u\n",
-     i,
-     conf->saved_board[i],
-     conf->saved_cursor_x[i],
-     conf->saved_cursor_y[i],
-     conf->saved_scroll_x[i],
-     conf->saved_scroll_y[i],
-     conf->saved_debug_x[i]
+    struct saved_position *s = &(conf->saved_positions[i]);
+    sprintf(buf, "saved_position%u = %u, %u, %u, %u, %u, %u\n", i,
+      s->board_id, s->cursor_x, s->cursor_y, s->scroll_x, s->scroll_y, s->debug_x
     );
     fwrite(buf, 1, strlen(buf), fp);
   }

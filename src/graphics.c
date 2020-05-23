@@ -1631,7 +1631,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   if(!set_graphics_output(conf))
     return false;
 
-  if(conf->resolution_width == -1 && conf->resolution_height == -1)
+  if(conf->resolution_width <= 0 || conf->resolution_height <= 0)
   {
 #ifdef CONFIG_SDL
     // TODO maybe be able to communicate with the renderer instead of this hack
@@ -1654,6 +1654,12 @@ boolean init_video(struct config_info *conf, const char *caption)
       graphics.resolution_width = 640;
       graphics.resolution_height = 480;
     }
+  }
+
+  if(conf->window_width <= 0 || conf->window_height <= 0)
+  {
+    graphics.window_width = 640;
+    graphics.window_height = 350;
   }
 
   snprintf(graphics.default_caption, 32, "%s", caption);

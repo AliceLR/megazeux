@@ -35,6 +35,23 @@ unit_objs += \
 endif
 
 #
+# Some unit tests only work with modular builds. The reason is usually
+# that the component(s) being tested are far too dependent on other
+# components of MegaZeux to work alone.
+#
+ifneq (${BUILD_MODULAR},)
+
+unit_objs += \
+  ${unit_obj}/configure${unit_ext}
+
+unit_ldflags += -L. -lcore
+
+ifneq (${BUILD_EDITOR},)
+unit_ldflags += -L. -leditor
+endif
+endif
+
+#
 # This may already be set with sanitizer flags.
 #
 DEBUG_CFLAGS ?= -O0
@@ -43,8 +60,9 @@ DEBUG_CFLAGS ?= -O0
 # Build without -DDEBUG to suppress debug messages,
 # build without -DNDEBUG to allow assert().
 #
-unit_cflags ?= ${DEBUG_CFLAGS} -g \
- -Wall -Wextra -pedantic -Wno-unused-parameter -std=gnu++11
+unit_cflags ?= ${DEBUG_CFLAGS} -g ${SDL_CFLAGS} \
+ -Wall -Wextra -pedantic -Wno-unused-parameter -funsigned-char -std=gnu++11
+unit_ldflags +=
 
 ifeq (${BUILD_F_ANALYZER},1)
 ifeq (${HAS_F_ANALYZER},1)
@@ -63,15 +81,15 @@ else
 
 ${unit_obj}/%${unit_ext}: ${unit_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
 
 ${unit_obj_editor}/%${unit_ext}: ${unit_src_editor}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
 
 ${unit_obj_io}/%${unit_ext}: ${unit_src_io}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
 
 -include ${unit_objs:${unit_ext}=.d}
 
@@ -79,10 +97,10 @@ ${unit_objs}: | $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
 ${unit_objs}: | $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
 ${unit_objs}: | $(filter-out $(wildcard ${unit_obj_io}), ${unit_obj_io})
 
-unittest: ${unit_objs}
+unittest: mzx ${unit_objs}
 	@failcount=0; \
 	for t in ${unit_objs}; do \
-		./$$t ; \
+		LD_LIBRARY_PATH="." ./$$t ; \
 		if [ "$$?" != "0" ] ; then \
 			failcount=$$(($$failcount + 1)); \
 		fi; \

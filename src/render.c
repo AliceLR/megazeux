@@ -728,8 +728,8 @@ void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
 {
   int numerator = 0, denominator = 0;
 
-  *v_width = width;
-  *v_height = height;
+  *v_width = MAX(width, 1);
+  *v_height = MAX(height, 1);
 
   if(ratio == RATIO_STRETCH)
     return;
@@ -746,9 +746,15 @@ void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
   }
 
   if(((float)width / (float)height) < ((float)numerator / (float)denominator))
-    *v_height = (width * denominator) / numerator;
+  {
+    height = (width * denominator) / numerator;
+    *v_height = MAX(height, 1);
+  }
   else
-    *v_width = (height * numerator) / denominator;
+  {
+    width = (height * numerator) / denominator;
+    *v_width = MAX(width, 1);
+  }
 }
 
 #endif /* CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM ||
