@@ -88,32 +88,31 @@ static void load_arg(char *arg)
   tmp_args[argc++] = arg;
 
   set_config_from_command_line(&argc, tmp_args);
-#ifdef CONFIG_EDITOR
-  set_editor_config_from_command_line(&argc, tmp_args);
-#endif
 }
 
-static void load_arg_file(char *arg, boolean is_game_config)
+static boolean write_config(const char *path, const char *config)
 {
-  static const char CONFIG_FILENAME[] = "unit/.build/_config_tmp";
-
-  FILE *fp = fopen_unsafe(CONFIG_FILENAME, "wb");
+  FILE *fp = fopen_unsafe(path, "wb");
   assert(fp);
   if(fp)
   {
-    int ret = fwrite(arg, strlen(arg), 1, fp);
+    int ret = fwrite(config, strlen(config), 1, fp);
     assert(ret == 1);
     ret = fclose(fp);
     assert(!ret);
+    return true;
+  }
+  return false;
+}
 
-    if(!is_game_config)
-      set_config_from_file_startup(CONFIG_FILENAME);
-    else
-      set_config_from_file(CONFIG_FILENAME);
+static void load_arg_file(const char *arg, boolean is_game_config)
+{
+  static const char CONFIG_FILENAME[] = "_config_tmp";
 
-#ifdef CONFIG_EDITOR
-    set_editor_config_from_file(CONFIG_FILENAME);
-#endif
+  if(write_config(CONFIG_FILENAME, arg))
+  {
+    config_type type = is_game_config ? GAME_EDITOR_CNF : SYSTEM_CNF;
+    set_config_from_file(type, CONFIG_FILENAME);
   }
 }
 
@@ -135,9 +134,6 @@ static void load_args(const char * const (&args)[SIZE])
   }
 
   set_config_from_command_line(&argc, tmp_args);
-#ifdef CONFIG_EDITOR
-  set_editor_config_from_command_line(&argc, tmp_args);
-#endif
 }
 
 #define DEFAULT_V(v) static_cast<std::remove_reference<decltype(v)>::type>(DEFAULT)
@@ -1139,6 +1135,81 @@ UNITTEST(Settings)
   }
 
 #endif /* CONFIG_EDITOR */
+}
+
+UNITTEST(Include)
+{
+  struct config_info *conf = get_config();
+  default_config();
+
+#ifdef CONFIG_EDITOR
+  struct editor_config_info *econf = get_editor_config();
+  default_editor_config();
+#endif
+
+  SECTION(Include)
+  {
+    // This version only works from a config file.
+    boolean ret = write_config("a.cnf", "include b.cnf");
+    ret &= write_config("b.cnf", "mzx_speed = 4");
+    ASSERTEQ(ret, true);
+
+    conf->mzx_speed = 2;
+
+    set_config_from_file(SYSTEM_CNF, "a.cnf");
+    ASSERTEQ(conf->mzx_speed, 4);
+  }
+
+  SECTION(IncludeEquals)
+  {
+    // This version works from both the config file and the command line.
+    char include_conf[] = "include=c.cnf";
+    boolean ret = write_config("c.cnf", "mzx_speed = 6");
+    ASSERTEQ(ret, true);
+
+    conf->mzx_speed = 1;
+
+    load_arg(include_conf);
+    ASSERTEQX(conf->mzx_speed, 6, include_conf);
+
+    conf->mzx_speed = 2;
+
+    load_arg_file(include_conf, false);
+    ASSERTEQX(conf->mzx_speed, 6, include_conf);
+  }
+
+  SECTION(Recursion)
+  {
+    // Make sure a sane amount of recursive includes work.
+    // Also make sure this works for both the main and editor configuration.
+    boolean ret = write_config("a.cnf", "include b.cnf");
+    ret &= write_config("b.cnf", "include c.cnf");
+    ret &= write_config("c.cnf", "mzx_speed=5\nboard_editor_hide_help=1");
+    ASSERTEQ(ret, true);
+
+    conf->mzx_speed = 1;
+#ifdef CONFIG_EDITOR
+    econf->board_editor_hide_help = false;
+#endif
+
+    load_arg((char *)"include=a.cnf");
+    ASSERTEQ(conf->mzx_speed, 5);
+#ifdef CONFIG_EDITOR
+    ASSERTEQ(econf->board_editor_hide_help, true);
+#endif
+  }
+
+  SECTION(RecursionLimit)
+  {
+    // Make sure recursive include fails gracefully. Even before the hard limit
+    // was added this would happen due to MZX hitting the maximum allowed number
+    // of file descriptors prior to running out of stack. This is pretty much
+    // a freebie, it just needs to not crash or run out of memory.
+    boolean ret = write_config("a.cnf", "include a.cnf");
+    ASSERTEQ(ret, true);
+
+    set_config_from_file(SYSTEM_CNF, "a.cnf");
+  }
 }
 
 #ifdef CONFIG_EDITOR

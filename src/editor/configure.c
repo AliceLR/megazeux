@@ -738,7 +738,7 @@ static const struct editor_config_entry *find_editor_option(char *name,
   return NULL;
 }
 
-static int editor_config_change_option(void *conf, char *name, char *value,
+static boolean editor_config_change_option(void *conf, char *name, char *value,
  char *extended_data)
 {
   const struct editor_config_entry *current_option = find_editor_option(name,
@@ -747,9 +747,9 @@ static int editor_config_change_option(void *conf, char *name, char *value,
   if(current_option)
   {
     current_option->change_option(conf, name, value, extended_data);
-    return 1;
+    return true;
   }
-  return 0;
+  return false;
 }
 
 struct editor_config_info *get_editor_config(void)
@@ -759,19 +759,15 @@ struct editor_config_info *get_editor_config(void)
 
 void default_editor_config(void)
 {
+  static boolean registered = false;
   memcpy(&editor_conf, &editor_conf_default, sizeof(struct editor_config_info));
-}
 
-void set_editor_config_from_file(const char *conf_file_name)
-{
-  __set_config_from_file(editor_config_change_option, &editor_conf,
-   conf_file_name);
-}
-
-void set_editor_config_from_command_line(int *argc, char *argv[])
-{
-  __set_config_from_command_line(editor_config_change_option, &editor_conf,
-   argc, argv);
+  if(!registered)
+  {
+    register_config(SYSTEM_CNF, &editor_conf, editor_config_change_option);
+    register_config(GAME_EDITOR_CNF, &editor_conf, editor_config_change_option);
+    registered = true;
+  }
 }
 
 void store_editor_config_backup(void)

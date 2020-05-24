@@ -26,6 +26,14 @@ __M_BEGIN_DECLS
 
 #define OPTION_NAME_LEN 33
 
+enum config_type
+{
+  SYSTEM_CNF,
+  GAME_CNF,
+  GAME_EDITOR_CNF,
+  NUM_CONFIG_TYPES
+};
+
 enum ratio_type
 {
   RATIO_CLASSIC_4_3,
@@ -145,20 +153,18 @@ struct config_enum
 
 CORE_LIBSPEC struct config_info *get_config(void);
 CORE_LIBSPEC void default_config(void);
-CORE_LIBSPEC void set_config_from_file(const char *conf_file_name);
-CORE_LIBSPEC void set_config_from_file_startup(const char *conf_file_name);
+CORE_LIBSPEC void set_config_from_file(enum config_type type,
+ const char *conf_file_name);
 CORE_LIBSPEC void set_config_from_command_line(int *argc, char *argv[]);
 CORE_LIBSPEC void free_config(void);
 
-typedef int (*find_change_option)(void *conf, char *name, char *value,
+typedef boolean (*find_change_option)(void *conf, char *name, char *value,
  char *extended_data);
 
 #ifdef CONFIG_EDITOR
 
-CORE_LIBSPEC void __set_config_from_file(find_change_option find_change_handler,
- void *conf, const char *conf_file_name);
-CORE_LIBSPEC void __set_config_from_command_line(
- find_change_option find_change_handler, void *conf, int *argc, char *argv[]);
+CORE_LIBSPEC void register_config(enum config_type type, void *conf,
+ find_change_option handler);
 
 CORE_LIBSPEC boolean config_int(int *dest, char *value, int min, int max);
 CORE_LIBSPEC boolean _config_enum(int *dest, const char *value,

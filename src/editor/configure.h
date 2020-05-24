@@ -128,10 +128,6 @@ struct editor_config_info
 };
 
 EDITOR_LIBSPEC void default_editor_config(void);
-EDITOR_LIBSPEC void set_editor_config_from_file(const char *conf_file_name);
-EDITOR_LIBSPEC void set_editor_config_from_command_line(int *argc,
- char *argv[]);
-
 EDITOR_LIBSPEC void store_editor_config_backup(void);
 EDITOR_LIBSPEC void free_editor_config(void);
 

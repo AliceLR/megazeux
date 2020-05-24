@@ -36,6 +36,9 @@
 #include "io/fsafeopen.h"
 #include "io/path.h"
 
+#define MAX_INCLUDE_DEPTH 16
+#define MAX_CONFIG_REGISTERED 2
+
 // Arch-specific config.
 #ifdef CONFIG_NDS
 #define VIDEO_OUTPUT_DEFAULT "nds"
@@ -163,7 +166,8 @@ static char *default_update_hosts[] =
 
 #endif /* CONFIG_UPDATER */
 
-static boolean is_startup = false;
+static enum config_type current_config_type;
+static int current_include_depth = 0;
 
 static struct config_info user_conf;
 
@@ -321,6 +325,35 @@ static const struct config_enum video_ratio_values[] =
   { "modern", RATIO_MODERN_64_35 },
   { "stretch", RATIO_STRETCH }
 };
+
+struct config_registry_data
+{
+  void *conf;
+  find_change_option handler;
+};
+
+struct config_registry_entry
+{
+  int num_registered;
+  struct config_registry_data registered[MAX_CONFIG_REGISTERED];
+};
+
+static struct config_registry_entry config_registry[NUM_CONFIG_TYPES];
+
+__editor_maybe_static
+void register_config(enum config_type type, void *conf, find_change_option handler)
+{
+  if(type < NUM_CONFIG_TYPES)
+  {
+    struct config_registry_entry *e = &config_registry[type];
+    if(e->num_registered < MAX_CONFIG_REGISTERED)
+    {
+      e->registered[e->num_registered].conf = conf;
+      e->registered[e->num_registered].handler = handler;
+      e->num_registered++;
+    }
+  }
+}
 
 __editor_maybe_static
 boolean config_int(int *dest, char *value, int min, int max)
@@ -678,6 +711,7 @@ static void joy_axis_set(struct config_info *conf, char *name,
    joy_axis_value(value, min, max))
   {
     // Right now do a global binding at startup and a game binding otherwise.
+    boolean is_startup = (current_config_type == SYSTEM_CNF);
     joystick_map_axis(first - 1, last - 1, axis - 1, min, max, is_startup);
   }
 }
@@ -690,6 +724,7 @@ static void joy_button_set(struct config_info *conf, char *name,
   if(joy_num(&name, &first, &last) && joy_button_name(name, &button))
   {
     // Right now do a global binding at startup and a game binding otherwise.
+    boolean is_startup = (current_config_type == SYSTEM_CNF);
     joystick_map_button(first - 1, last - 1, button - 1, value, is_startup);
   }
 }
@@ -704,6 +739,7 @@ static void joy_hat_set(struct config_info *conf, char *name,
    joy_hat_value(value, up, down, left, right))
   {
     // Right now do a global binding at startup and a game binding otherwise.
+    boolean is_startup = (current_config_type == SYSTEM_CNF);
     joystick_map_hat(first - 1, last - 1, up, down, left, right, is_startup);
   }
 }
@@ -716,6 +752,7 @@ static void joy_action_set(struct config_info *conf, char *name,
   if(joy_num(&name, &first, &last) && (*name == '.'))
   {
     // Right now do a global binding at startup and a game binding otherwise.
+    boolean is_startup = (current_config_type == SYSTEM_CNF);
     joystick_map_action(first - 1, last - 1, name + 1, value, is_startup);
   }
 }
@@ -779,15 +816,23 @@ static void pause_on_unfocus(struct config_info *conf, char *name,
 static void include_config(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // This one's for the original include N form
-  set_config_from_file(name + 7);
-}
+  if(current_include_depth < MAX_INCLUDE_DEPTH)
+  {
+    current_include_depth++;
 
-static void include2_config(struct config_info *conf, char *name,
- char *value, char *extended_data)
-{
-  // This one's for the include = N form
-  set_config_from_file(value);
+    // The format "include FILENAME.EXT" is condensed into the name.
+    // The format "include=FILENAME.EXT" uses the value instead.
+    if(name[7])
+    {
+      set_config_from_file(current_config_type, name + 7);
+    }
+    else
+      set_config_from_file(current_config_type, value);
+
+    current_include_depth--;
+  }
+  else
+    warn("Failed to include '%s' (maximum recursion depth exceeded)\n", name + 7);
 }
 
 static void config_set_pcs_volume(struct config_info *conf, char *name,
@@ -974,7 +1019,6 @@ static const struct config_entry config_options[] =
   { "gl_scaling_shader", config_set_gl_scaling_shader, true },
   { "gl_vsync", config_gl_vsync, false },
   { "grab_mouse", config_grab_mouse, false },
-  { "include", include2_config, true },
   { "include*", include_config, true },
   { "joy!.*", joy_action_set, true },
   { "joy!axis!", joy_axis_set, true },
@@ -1051,7 +1095,7 @@ static const struct config_entry *find_option(char *name,
   return NULL;
 }
 
-static int config_change_option(void *_conf, char *name,
+static boolean config_change_option(void *_conf, char *name,
  char *value, char *extended_data)
 {
   const struct config_entry *current_option = find_option(name,
@@ -1059,20 +1103,19 @@ static int config_change_option(void *_conf, char *name,
 
   if(current_option)
   {
-    if(current_option->allow_in_game_config || is_startup)
+    if(current_option->allow_in_game_config || (current_config_type == SYSTEM_CNF))
     {
       struct config_info *conf = (struct config_info *)_conf;
       current_option->change_option(conf, name, value, extended_data);
-      return 1;
+      return true;
     }
   }
-  return 0;
+  return false;
 }
 
 #define LINE_BUFFER_SIZE 512
 
-__editor_maybe_static void __set_config_from_file(
- find_change_option find_change_handler, void *conf, const char *conf_file_name)
+void set_config_from_file(enum config_type type, const char *conf_file_name)
 {
   char current_char, *input_position, *output_position, *use_extended_buffer;
   int line_size, extended_size, extended_allocate_size = 512;
@@ -1082,6 +1125,10 @@ __editor_maybe_static void __set_config_from_file(
   char *equals_position, *value;
   char *output_end_position = line_buffer + LINE_BUFFER_SIZE;
   FILE *conf_file;
+  int i;
+
+  if(type >= NUM_CONFIG_TYPES)
+    return;
 
   conf_file = fopen_unsafe(conf_file_name, "rb");
   if(!conf_file)
@@ -1175,7 +1222,13 @@ __editor_maybe_static void __set_config_from_file(
         }
         ungetc(peek_char, conf_file);
 
-        find_change_handler(conf, line_buffer, value, use_extended_buffer);
+        for(i = 0; i < config_registry[type].num_registered; i++)
+        {
+          struct config_registry_data *d = &config_registry[type].registered[i];
+          current_config_type = type;
+          if(d->handler(d->conf, line_buffer, value, use_extended_buffer))
+            break;
+        }
       }
     }
   }
@@ -1184,14 +1237,14 @@ __editor_maybe_static void __set_config_from_file(
   fclose(conf_file);
 }
 
-__editor_maybe_static void __set_config_from_command_line(
- find_change_option find_change_handler, void *conf, int *argc, char *argv[])
+void set_config_from_command_line(int *argc, char *argv[])
 {
   char current_char, *input_position, *output_position;
   char *equals_position, line_buffer[LINE_BUFFER_SIZE], *value;
   char *output_end_position = line_buffer + LINE_BUFFER_SIZE;
   int i = 1;
   int j;
+  int k;
 
   while(i < *argc)
   {
@@ -1228,15 +1281,20 @@ __editor_maybe_static void __set_config_from_command_line(
       *equals_position = 0;
       value = equals_position + 1;
 
-      if(find_change_handler(conf, line_buffer, value, NULL))
+      for(k = 0; k < config_registry[SYSTEM_CNF].num_registered; k++)
       {
-        // Found the option; remove it from argv and make sure i stays the same
-        for(j = i; j < *argc - 1; j++)
-          argv[j] = argv[j + 1];
-        (*argc)--;
-        i--;
+        struct config_registry_data *d = &config_registry[SYSTEM_CNF].registered[k];
+        current_config_type = SYSTEM_CNF;
+        if(d->handler(d->conf, line_buffer, value, NULL))
+        {
+          // Found the option; remove it from argv and make sure i stays the same
+          for(j = i; j < *argc - 1; j++)
+            argv[j] = argv[j + 1];
+          (*argc)--;
+          i--;
+          break;
+        }
       }
-      // Otherwise, leave it for the editor config.
     }
 
     i++;
@@ -1250,26 +1308,16 @@ struct config_info *get_config(void)
 
 void default_config(void)
 {
+  static boolean registered = false;
   memcpy(&user_conf, &user_conf_default, sizeof(struct config_info));
-}
 
-void set_config_from_file(const char *conf_file_name)
-{
-  __set_config_from_file(config_change_option, &user_conf, conf_file_name);
-}
-
-void set_config_from_file_startup(const char *conf_file_name)
-{
-  is_startup = true;
-  set_config_from_file(conf_file_name);
-  is_startup = false;
-}
-
-void set_config_from_command_line(int *argc, char *argv[])
-{
-  is_startup = true;
-  __set_config_from_command_line(config_change_option, &user_conf, argc, argv);
-  is_startup = false;
+  if(!registered)
+  {
+    register_config(SYSTEM_CNF, &user_conf, config_change_option);
+    register_config(GAME_CNF, &user_conf, config_change_option);
+    register_config(GAME_EDITOR_CNF, &user_conf, config_change_option);
+    registered = true;
+  }
 }
 
 void free_config(void)

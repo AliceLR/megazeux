@@ -2646,7 +2646,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   strncpy(config_file_name + file_name_len, ".cnf", 5);
 
   if(stat(config_file_name, &file_info) >= 0)
-    set_config_from_file(config_file_name);
+    set_config_from_file(GAME_CNF, config_file_name);
 
   // Some initial setting(s)
   mzx_world->custom_sfx_on = 0;

@@ -505,12 +505,23 @@ void sigabrt_handler(int signal)
     std::cerr << "Unexpected signal received\n";
 }
 
-#ifdef __WIN32__
-int WinMain(int argc, char *argv[])
-#else
 int main(int argc, char *argv[])
-#endif
 {
+  if(argc && argv && argv[0])
+  {
+    char *fpos = strrchr(argv[0], '/');
+    char *bpos = strrchr(argv[0], '\\');
+    char tmp;
+
+    if(fpos || bpos)
+    {
+      fpos = (fpos > bpos) ? fpos : bpos;
+      tmp = *fpos;
+      *fpos = '\0';
+      chdir(argv[0]);
+      *fpos = tmp;
+    }
+  }
   std::signal(SIGABRT, sigabrt_handler);
   return !(Unit::unittestrunner.run());
 }
