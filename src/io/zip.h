@@ -78,10 +78,11 @@ enum zip_general_purpose_flag
 };
 
 // These flags are allowed for all DEFLATE and stored files we care about.
-#define ZIP_F_ALLOWED   (\
-  ZIP_F_DATA_DESCRIPTOR |\
-  ZIP_F_COMPRESSION_1   |\
-  ZIP_F_COMPRESSION_2   )
+#define ZIP_F_ALLOWED     (\
+  ZIP_F_DATA_DESCRIPTOR   |\
+  ZIP_F_COMPRESSION_1     |\
+  ZIP_F_COMPRESSION_2     |\
+  ZIP_F_LANGUAGE_ENCODING )
 
 // Some ancient archives from unknown sources seem to have set the unused
 // flags in places. These should be safe to ignore.
