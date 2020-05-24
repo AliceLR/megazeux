@@ -18,6 +18,9 @@ USERS
   directive would ignore editor settings. Also added a recursion
   limit for includes and fixed a bug where the "include=file"
   format would not work on some platforms.
++ Fixed a libxmp bug where pattern jump/break could take effect
+  after using JUMP MOD ORDER or setting MOD_ORDER/MOD_POSITION.
+  This fixes a bug at the end of the Inmaportal scene in Cans 3.
 
 DEVELOPERS
 

@@ -76,6 +76,9 @@ Patch summary
 06: Fixes bugs in the MOD loader caused by the depacker removal patch.
     This should eventually be merged into patch 02.
 07: Removes a non-portable call to fdopen in xmp_load_module_from_file.
+    Upstream bug report: https://github.com/cmatsuoka/libxmp/issues/167.
+08: Makes xmp_set_position clear the pattern break/jump variables consistently.
+    Penting merge upstream: https://github.com/cmatsuoka/libxmp/pull/169.
 
 10: Fixes https://github.com/cmatsuoka/libxmp/issues/97. This has been merged
     upstream in PR https://github.com/cmatsuoka/libxmp/pull/98.
