@@ -61,13 +61,9 @@ static boolean zip_stream_input(struct zip_stream_data *zs, const void *src,
 static boolean zip_stream_output(struct zip_stream_data *zs, void *dest,
  size_t dest_len)
 {
-  if(!zs->output_buffer)
-  {
-    zs->output_buffer = (uint8_t *)dest;
-    zs->output_length = dest_len;
-    return true;
-  }
-  return false;
+  zs->output_buffer = (uint8_t *)dest;
+  zs->output_length = dest_len;
+  return true;
 }
 
 static struct zip_method_handler shrink_spec =
@@ -130,8 +126,8 @@ static struct zip_method_handler deflate_spec =
   zip_stream_close,
   deflate_input,
   deflate_output,
-  inflate_file,
-  NULL, // TODO
+  NULL,
+  inflate_block,
   deflate_file,
   NULL // TODO
 };
