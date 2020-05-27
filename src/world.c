@@ -1493,9 +1493,8 @@ static inline int save_world_counters(struct world *mzx_world,
 static inline int load_world_counters(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  Uint8 buffer[8];
   struct memfile mf;
-  char *buffer = NULL;
-
   char name_buffer[ROBOT_MAX_TR];
   size_t name_length;
   int value;
@@ -1506,33 +1505,18 @@ static inline int load_world_counters(struct world *mzx_world,
   size_t i;
 
   enum zip_error result;
-  unsigned int method;
-  boolean is_stream = false;
 
-  result = zip_get_next_method(zp, &method);
-  if(result != ZIP_SUCCESS)
+  // Stream counters out of the file instead of reading them all at once as
+  // the size of the counters file can vary greatly. This shouldn't hurt
+  // performance too much because of buffering.
+  result = zip_read_open_file_stream(zp, NULL);
+  if(result)
     return result;
 
-  // If this is an uncompressed memory zip, we can read the memory directly.
-  if(zp->is_memory && method == ZIP_M_NONE)
-  {
-    zip_read_open_mem_stream(zp, &mf);
-    is_stream = true;
-  }
-
-  else
-  {
-    size_t actual_size;
-
-    zip_get_next_uncompressed_size(zp, &actual_size);
-    buffer = cmalloc(actual_size);
-    zip_read_file(zp, buffer, actual_size, &actual_size);
-
-    mfopen(buffer, actual_size, &mf);
-  }
+  mfopen(buffer, 8, &mf);
+  zread(buffer, 4, zp);
 
   num_counters = mfgetud(&mf);
-
   num_prev_allocated = counter_list->num_counters_allocated;
 
   // If there aren't already any counters, allocate manually.
@@ -1545,13 +1529,15 @@ static inline int load_world_counters(struct world *mzx_world,
 
   for(i = 0; i < num_counters; i++)
   {
+    zread(buffer, 8, zp);
+    mf.current = buffer;
     value = mfgetd(&mf);
     name_length = mfgetud(&mf);
 
     if(name_length >= ROBOT_MAX_TR)
       break;
 
-    if(!mfread(name_buffer, name_length, 1, &mf))
+    if(ZIP_SUCCESS != zread(name_buffer, name_length, zp))
       break;
 
     // If there were already counters, use new_counter to set or add them
@@ -1579,11 +1565,7 @@ static inline int load_world_counters(struct world *mzx_world,
   sort_counter_list(counter_list);
 #endif
 
-  if(is_stream)
-    zip_read_close_stream(zp);
-
-  free(buffer);
-  return ZIP_SUCCESS;
+  return zip_read_close_stream(zp);;
 }
 
 
@@ -1625,104 +1607,6 @@ static inline int save_world_strings(struct world *mzx_world,
   return zip_write_close_stream(zp);
 }
 
-static inline int load_world_strings_mem(struct world *mzx_world,
- struct zip_archive *zp, int method)
-{
-  // In unusual cases (DEFLATEd strings, loading from memory), use this
-  // implementation.
-  struct memfile mf;
-  char *buffer = NULL;
-  boolean is_stream = false;
-
-  struct string_list *string_list = &(mzx_world->string_list);
-  struct string *src_string;
-  char name_buffer[ROBOT_MAX_TR];
-  size_t name_length;
-  size_t str_length;
-
-  size_t num_prev_allocated;
-  size_t num_strings;
-  size_t i;
-
-  // If this is an uncompressed memory zip, we can read the memory directly.
-  if(zp->is_memory && method == ZIP_M_NONE)
-  {
-    zip_read_open_mem_stream(zp, &mf);
-    is_stream = true;
-  }
-
-  else
-  {
-    size_t actual_size;
-
-    zip_get_next_uncompressed_size(zp, &actual_size);
-    buffer = cmalloc(actual_size);
-    zip_read_file(zp, buffer, actual_size, &actual_size);
-
-    mfopen(buffer, actual_size, &mf);
-  }
-
-  num_strings = mfgetud(&mf);
-
-  num_prev_allocated = string_list->num_strings_allocated;
-
-  // If there aren't already any strings, allocate manually.
-  if(!num_prev_allocated)
-  {
-    string_list->num_strings = num_strings;
-    string_list->num_strings_allocated = num_strings;
-    string_list->strings = ccalloc(num_strings, sizeof(struct string *));
-  }
-
-  for(i = 0; i < num_strings; i++)
-  {
-    name_length = mfgetud(&mf);
-    str_length = mfgetud(&mf);
-
-    if(name_length >= ROBOT_MAX_TR || str_length > MAX_STRING_LEN)
-      break;
-
-    if(!mfread(name_buffer, name_length, 1, &mf))
-      break;
-
-    // If there were already strings, use new_string to set or add them
-    // into the existing strings as-needed.
-    if(num_prev_allocated)
-    {
-      name_buffer[name_length] = 0;
-      src_string = new_string(mzx_world, name_buffer, str_length, -1);
-      if(!src_string)
-        break;
-    }
-
-    // Otherwise, put them in the list manually.
-    else
-    {
-      src_string = load_new_string(string_list, i,
-       name_buffer, name_length, str_length);
-    }
-
-    mfread(src_string->value, str_length, 1, &mf);
-    src_string->length = str_length;
-  }
-
-  // If there weren't any previously allocated, the number successfully read is
-  // the new number of strings.
-  if(!num_prev_allocated)
-    string_list->num_strings = i;
-
-#ifndef CONFIG_COUNTER_HASH_TABLES
-  // Versions without the hash table require this to be sorted at all times
-  sort_string_list(string_list);
-#endif
-
-  if(is_stream)
-    zip_read_close_stream(zp);
-
-  free(buffer);
-  return ZIP_SUCCESS;
-}
-
 static inline int load_world_strings(struct world *mzx_world,
  struct zip_archive *zp)
 {
@@ -1739,17 +1623,13 @@ static inline int load_world_strings(struct world *mzx_world,
   size_t i;
 
   enum zip_error result;
-  unsigned int method;
 
-  result = zip_get_next_method(zp, &method);
+  // Stream strings out of the file instead of reading them all at once as
+  // the size of the strings file can vary greatly. This shouldn't hurt
+  // performance too much because of buffering.
+  result = zip_read_open_file_stream(zp, NULL);
   if(result != ZIP_SUCCESS)
     return result;
-
-  if(zp->is_memory || method == ZIP_M_DEFLATE)
-    return load_world_strings_mem(mzx_world, zp, method);
-
-  // Stream the strings out of the file.
-  zip_read_open_file_stream(zp, NULL);
 
   mfopen(buffer, 8, &mf);
   zread(buffer, 4, zp);
