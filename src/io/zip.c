@@ -59,8 +59,8 @@
 
 #define ZIP_DEFAULT_NUM_FILES 4
 #define ZIP_STREAM_BUFFER_SIZE 65536
-#define ZIP_STREAM_BUFFER_U_SIZE 49152
-#define ZIP_STREAM_BUFFER_C_SIZE (ZIP_STREAM_BUFFER_SIZE - ZIP_STREAM_BUFFER_U_SIZE)
+#define ZIP_STREAM_BUFFER_U_SIZE (ZIP_STREAM_BUFFER_SIZE * 3 / 4)
+#define ZIP_STREAM_BUFFER_C_SIZE (ZIP_STREAM_BUFFER_SIZE / 4)
 
 #define LOCAL_FILE_HEADER_LEN 30
 #define CENTRAL_FILE_HEADER_LEN 46
@@ -1594,8 +1594,8 @@ enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
   }
   else
 
-  // Compression via stream (DEFLATE only)
-  if(fh->method == ZIP_M_DEFLATE && zp->stream)
+  // Compression via stream
+  if(zp->stream)
   {
     result = zwrite_stream(src, srcLen, &writeLen, zp);
     if(result)
