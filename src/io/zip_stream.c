@@ -75,7 +75,6 @@ static struct zip_method_handler shrink_spec =
   zip_stream_output,
   unshrink_file,
   NULL,
-  NULL,
   NULL
 };
 
@@ -87,7 +86,6 @@ static struct zip_method_handler reduce_spec =
   zip_stream_input,
   zip_stream_output,
   reduce_ex_file,
-  NULL,
   NULL,
   NULL
 };
@@ -101,7 +99,6 @@ static struct zip_method_handler implode_spec =
   zip_stream_output,
   expl_file,
   NULL,
-  NULL,
   NULL
 };
 
@@ -113,7 +110,6 @@ static struct zip_method_handler deflate64_spec =
   zip_stream_input,
   zip_stream_output,
   inflate64_file,
-  NULL,
   NULL,
   NULL
 };
@@ -128,8 +124,7 @@ static struct zip_method_handler deflate_spec =
   deflate_output,
   NULL,
   inflate_block,
-  deflate_file,
-  NULL // TODO
+  deflate_block
 };
 
 struct zip_method_handler *zip_method_handlers[] =
