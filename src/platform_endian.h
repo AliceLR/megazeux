@@ -71,7 +71,7 @@
   (defined(__sparc__) && defined(__arch64__)) || \
   (defined(__GNUC__) && \
     (defined(__x86_64__) || defined(__powerpc64__) || defined(__PPC64__) || \
-     defined(__aarch64__)))
+     defined(__aarch64__) || defined(__alpha__)))
 #define ARCHITECTURE_BITS 64
 #else
 #define ARCHITECTURE_BITS 32
