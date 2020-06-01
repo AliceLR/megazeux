@@ -70,6 +70,7 @@ struct zip_method_handler
 /**
  * ZIP stream function registry for supported (de)compression methods.
  */
+UTILS_LIBSPEC
 extern struct zip_method_handler *zip_method_handlers[MAX_SUPPORTED_METHOD + 1];
 
 __M_END_DECLS

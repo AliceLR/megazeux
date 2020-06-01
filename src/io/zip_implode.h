@@ -123,7 +123,7 @@ static inline enum zip_error expl_SF_read_tree(struct bitstream *b,
   int i, j;
 
   if(tree_data_len == 0 || tree_data_len > 256)
-    return ZIP_EOF;
+    goto err_free;
 
   // Read the raw tree data.
   data = cmalloc(sizeof(struct SF_pair) * tree_data_len);
@@ -368,7 +368,7 @@ static inline enum zip_error expl_file(struct zip_stream_data *zs)
     int value = BS_READ(b, 1);
 
     if(value < 0)
-      return ZIP_EOF;
+      break;
 
     if(value)
     {
@@ -376,13 +376,14 @@ static inline enum zip_error expl_file(struct zip_stream_data *zs)
       if(xs->literal_tree)
       {
         value = expl_SF_decode(b, xs->literal_tree);
-        if(value < 0)
-          return ZIP_EOF;
-
-        *(pos++) = value;
       }
       else
-        *(pos++) = BS_READ(b, 8);
+        value = BS_READ(b, 8);
+
+      if(value < 0)
+        break;
+
+      *(pos++) = value;
     }
     else
     {
@@ -396,7 +397,7 @@ static inline enum zip_error expl_file(struct zip_stream_data *zs)
         distance = BS_READ(b, 7);
         value = expl_SF_decode(b, xs->distance_tree);
         if(value < 0)
-          return ZIP_EOF;
+          break;
 
         distance |= value << 7;
       }
@@ -405,7 +406,7 @@ static inline enum zip_error expl_file(struct zip_stream_data *zs)
         distance = BS_READ(b, 6);
         value = expl_SF_decode(b, xs->distance_tree);
         if(value < 0)
-          return ZIP_EOF;
+          break;
 
         distance |= value << 6;
       }
@@ -413,14 +414,14 @@ static inline enum zip_error expl_file(struct zip_stream_data *zs)
       // Length
       value = expl_SF_decode(b, xs->length_tree);
       if(value < 0)
-        return ZIP_EOF;
+        break;
 
       length = value + xs->minimum_match_length;
       if(value == 63)
       {
         value = BS_READ(b, 8);
         if(value < 0)
-          return ZIP_EOF;
+          break;
 
         length += value;
       }

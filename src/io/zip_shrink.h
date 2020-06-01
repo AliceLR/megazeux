@@ -209,13 +209,13 @@ static inline enum zip_error LZW_output(struct LZW_tree *tree, uint16_t code,
 
     if(pos + length > end)
     {
-      debug("out of buffer in LZW_output!\n");
+      trace("--UNSHRINK-- out of buffer in LZW_output!\n");
       return ZIP_EOF;
     }
 
     if(length == 0)
     {
-      debug("encountered infinite cycle at %u! aborting\n", code);
+      trace("--UNSHRINK-- encountered infinite cycle at %u! aborting\n", code);
       return ZIP_DECOMPRESS_FAILED;
     }
 
@@ -236,7 +236,7 @@ static inline enum zip_error LZW_output(struct LZW_tree *tree, uint16_t code,
   }
   else
   {
-    debug("out of buffer in LZW_output!\n");
+    trace("--UNSHRINK-- out of buffer in LZW_output!\n");
     return ZIP_EOF;
   }
 
@@ -255,7 +255,7 @@ static inline enum zip_error LZW_decode(struct LZW_tree *tree, uint16_t code,
 
   if(code > tree->length)
   {
-    debug("invalid code %u\n", code);
+    trace("--UNSHRINK-- invalid code %u\n", code);
     return ZIP_DECOMPRESS_FAILED;
   }
 
@@ -266,7 +266,7 @@ static inline enum zip_error LZW_decode(struct LZW_tree *tree, uint16_t code,
     // before the output occurs (instead of after).
     if(tree->previous_code == LZW_NO_CODE)
     {
-      debug("invalid code %u (in special case)\n", code);
+      trace("--UNSHRINK-- invalid code %u (in special case)\n", code);
       return ZIP_DECOMPRESS_FAILED;
     }
 
@@ -363,19 +363,19 @@ static inline enum zip_error unshrink_file(struct zip_stream_data *zs)
   {
     int code = BS_READ(b, bit_width);
     if(code < 0)
-      return ZIP_EOF;
+      break;
 
     if(code == LZW_COMMAND_CODE)
     {
       code = BS_READ(b, bit_width);
       if(code < 0)
-        return ZIP_EOF;
+        break;
 
       if(code == 1)
       {
         if(bit_width >= LZW_BIT_WIDTH_MAX)
         {
-          debug("can't expand bit width beyond 13!\n");
+          trace("--UNSHRINK-- can't expand bit width beyond 13!\n");
           return ZIP_DECOMPRESS_FAILED;
         }
 
@@ -390,7 +390,7 @@ static inline enum zip_error unshrink_file(struct zip_stream_data *zs)
       }
       else
       {
-        debug("invalid shrink command code %u!\n", code);
+        trace("--UNSHRINK-- invalid shrink command code %u!\n", code);
         return ZIP_DECOMPRESS_FAILED;
       }
       continue;
