@@ -105,15 +105,15 @@ static zip_stream_test_data data[] =
   },
   // CN_S.CHR from Dark Nova was originally imploded.
   {
-    { "cn_s.chr",           3584, 0 },
-    { "cn_s.deflate",       1618, 0 },
-    { "cn_s.deflate",       1618, 0 }, // Result is same as above.
-    { "cn_s.shrink",        1906, 0 },
-    { "cn_s.reduce1",       2123, 0 },
-    { "cn_s.reduce2",       2134, 0 },
-    { "cn_s.reduce3",       2147, 0 },
-    { "cn_s.reduce4",       2138, 0 },
-    { "cn_s.implode",       1793, 0x0000 },
+    { "CN_S.CHR",           3584, 0 },
+    { "CN_S.CHR.deflate",   1618, 0 },
+    { "CN_S.CHR.deflate",   1618, 0 }, // Result is same as above.
+    { "CN_S.CHR.shrink",    1906, 0 },
+    { "CN_S.CHR.reduce1",   2123, 0 },
+    { "CN_S.CHR.reduce2",   2134, 0 },
+    { "CN_S.CHR.reduce3",   2147, 0 },
+    { "CN_S.CHR.reduce4",   2138, 0 },
+    { "CN_S.CHR.implode",   1793, 0x0000 },
     true,
     false,
     false,
