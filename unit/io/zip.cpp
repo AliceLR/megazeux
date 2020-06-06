@@ -220,6 +220,28 @@ static char *load_file(const char *path)
   return data;
 }
 
+static char *load_file(const char *path, char *buffer, size_t *buffer_len)
+{
+  char path_buffer[MAX_PATH];
+  if(path_join(path_buffer, arraysize(path_buffer), DATA_DIR, path) < 1)
+    return nullptr;
+
+  FILE *fp = fopen_unsafe(path_buffer, "rb");
+  if(!fp)
+    return nullptr;
+
+  fseek(fp, 0, SEEK_END);
+  size_t file_len = ftell(fp);
+  rewind(fp);
+
+  assert(file_len <= *buffer_len);
+  *buffer_len = file_len;
+  int fread_ret = fread(buffer, file_len, 1, fp);
+  assert(fread_ret);
+  fclose(fp);
+  return buffer;
+}
+
 static void check_data(zip_stream_test_data &data)
 {
   if(data.inputs_are_paths)
@@ -564,47 +586,400 @@ UNITTEST(Compress)
   }
 }
 
-/*
+enum contents_type
+{
+  CONTENTS_RAW,
+  CONTENTS_BASE64,
+  CONTENTS_FILE,
+};
+
+struct zip_test_file_data
+{
+  const char *filename;
+  const char *contents;
+  uint16_t flags;
+  uint16_t method;
+  uint32_t crc32;
+  uint32_t uncompressed_size;
+  uint32_t compressed_size;
+  uint32_t offset;
+  enum contents_type contents_type;
+};
+
+struct zip_test_data
+{
+  const char *data;
+  size_t data_length;
+  enum zip_error open_result;
+  uint32_t num_files;
+  zip_test_file_data files[16];
+};
+
+static const zip_test_data raw_zip_data[] =
+{
+  {
+    "PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+    22, ZIP_SUCCESS, 0, {}
+  },
+  {
+    "prefixed data here!"
+    "PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+    41, ZIP_SUCCESS, 0, {}
+  },
+  {
+    "abcde.zip", 0, ZIP_SUCCESS, 3,
+    {
+      { "abcde/", "",
+        0x0000, ZIP_M_NONE, 0x00000000, 0, 0, 0, CONTENTS_RAW },
+      { "abcde/a.txt", "abcde",
+        0x0000, ZIP_M_NONE, 0x8587D865, 5, 5, 36, CONTENTS_RAW },
+      { "abcde/b.txt",
+        "1234567890 1234567890 1234567890\r\n"
+        "1234567890 1234567890 1234567890\r\n"
+        "1234567890 1234567890 1234567890",
+        0x0000, ZIP_M_DEFLATE, 0xE3046765, 100, 32, 82, CONTENTS_RAW },
+    }
+  },
+  {
+    "dch1.zip", 0, ZIP_SUCCESS, 1,
+    {
+      "dch1.txt", "dch1.txt",
+      0x0000, ZIP_M_DEFLATE, 0xA3898FBE, 7045, 3385, 0, CONTENTS_FILE },
+  },
+  {
+    "ct_level.zip", 0, ZIP_SUCCESS, 1,
+    {
+      "CT_LEVEL.MOD", "CT_LEVEL.MOD",
+      0x0000, ZIP_M_DEFLATE, 0x2AF73EBE, 111885, 61105, 0, CONTENTS_FILE },
+  },
+};
+
+// The library should refuse to open these...
+static const zip_test_data raw_zip_invalid_data[] =
+{
+  { "", 0, ZIP_NO_EOCD, 0, {} },
+  { "                  PK\x05\x06", 22, ZIP_NO_EOCD, 0, {} },
+  {
+    "PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+    21, ZIP_NO_EOCD, 0, {}
+  },
+  {
+    "PK\x05\x06\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+    22, ZIP_NO_CENTRAL_DIRECTORY, 0, {}
+  },
+  {
+    "PK\x05\x06\x01\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+    22, ZIP_UNSUPPORTED_MULTIPLE_DISKS, 0, {}
+  },
+};
+
+static zip_archive *zip_test_open(const zip_test_data &d)
+{
+  if(!d.data_length)
+  {
+    char buffer[MAX_PATH];
+    if(path_join(buffer, arraysize(buffer), DATA_DIR, d.data) < 0)
+      return nullptr;
+
+    return zip_open_file_read(buffer);
+  }
+  else
+    return zip_open_mem_read((const void *)d.data, d.data_length);
+}
+
+static zip_archive *zip_test_open(const zip_test_data &d, char *buffer, size_t len)
+{
+  if(!d.data_length)
+  {
+    if(!load_file(d.data, buffer, &len))
+      return nullptr;
+
+    return zip_open_mem_read(buffer, len);
+  }
+  else
+    return zip_open_mem_read((const void *)d.data, d.data_length);
+}
+
+static const char *zip_get_contents(const zip_test_file_data &df, char *buf,
+ size_t buf_size)
+{
+  size_t len = df.contents ? strlen(df.contents) : 0;
+  if(len)
+  {
+    switch(df.contents_type)
+    {
+      case CONTENTS_RAW:
+        return df.contents;
+
+      case CONTENTS_BASE64:
+        debase64(buf, buf_size, df.contents, len);
+        return buf;
+
+      case CONTENTS_FILE:
+        assert(df.uncompressed_size <= buf_size);
+        if(load_file(df.contents, buf, &buf_size))
+        {
+          assert(df.uncompressed_size == buf_size);
+          return buf;
+        }
+        break;
+    }
+  }
+  return "";
+}
+
+// Check that the zip exists and that its central directory headers match the
+// expected data.
+#define ZIP_CHECK(d, zp) \
+  do \
+  { \
+    ASSERTX(zp, desc); \
+    ASSERTEQX(zp->num_files, d.num_files, desc); \
+    if(d.num_files) \
+      ASSERTX(zp->files, desc); \
+    for(size_t _j = 0; _j < d.num_files; _j++) \
+    { \
+      const zip_test_file_data &df = d.files[_j]; \
+      zip_file_header *fh = zp->files[_j]; \
+      snprintf(desc2, arraysize(desc2), "%d file %zu", i, _j); \
+      ASSERTX(fh, desc2); \
+      ASSERTEQX(fh->flags, df.flags, desc2); \
+      ASSERTEQX(fh->method, df.method, desc2); \
+      ASSERTEQX(fh->crc32, df.crc32, desc2); \
+      ASSERTEQX(fh->compressed_size, df.compressed_size, desc2); \
+      ASSERTEQX(fh->uncompressed_size, df.uncompressed_size, desc2); \
+      ASSERTXCMP(fh->file_name, df.filename, desc2); \
+      ASSERTX(df.uncompressed_size <= BUFFER_SIZE, desc); \
+    } \
+  } while(0)
+
+#define ZIP_GET_CONTENTS(df) zip_get_contents(df, db64_ptr.get(), BUFFER_SIZE)
+
 UNITTEST(ZipRead)
 {
-  UNIMPLEMENTED();
+  std::unique_ptr<char> buffer_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char> db64_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char> file_ptr(new char[BUFFER_SIZE]);
+  char *buffer = buffer_ptr.get();
+  char *file_buffer = file_ptr.get();
+  struct zip_archive *zp;
+  enum zip_error result;
+  char desc[64];
+  char desc2[64];
+  char small_buffer[32];
+  boolean has_files = false;
+  int cmp;
 
-  SECTION(open_close)
+  ASSERT(buffer);
+  ASSERT(file_buffer);
+
+  SECTION(OpenClose)
   {
-    //
+    for(int i = 0; i < arraysize(raw_zip_data); i++)
+    {
+      const zip_test_data &d = raw_zip_data[i];
+      snprintf(desc, arraysize(desc), "%d", i);
+
+      zp = zip_test_open(d);
+      ZIP_CHECK(d, zp);
+
+      result = zip_close(zp, nullptr);
+      ASSERTEQX(result, ZIP_SUCCESS, desc);
+    }
   }
 
-  SECTION(read_file)
+  SECTION(OpenInvalid)
   {
-    //
+    for(int i = 0; i < arraysize(raw_zip_invalid_data); i++)
+    {
+      const zip_test_data &d = raw_zip_invalid_data[i];
+      snprintf(desc, arraysize(desc), "%d", i);
+
+      zp = zip_test_open(d);
+      ASSERTEQX(zp, nullptr, desc);
+
+      // TODO: can't test the actual error returned from zip_read_directory anymore :(
+    }
   }
 
-  SECTION(read_stream)
+  SECTION(ReadFile)
   {
-    //
+    for(int i = 0; i < arraysize(raw_zip_data); i++)
+    {
+      const zip_test_data &d = raw_zip_data[i];
+      if(d.num_files)
+      {
+        snprintf(desc, arraysize(desc), "%d", i);
+        has_files = true;
+        zp = zip_test_open(d);
+        ZIP_CHECK(d, zp);
+
+        for(size_t j = 0; j < d.num_files; j++)
+        {
+          snprintf(desc2, arraysize(desc2), "%d file %zu", i, j);
+          const zip_test_file_data &df = d.files[j];
+          size_t real_length = 0;
+
+          result = zip_read_file(zp, buffer, BUFFER_SIZE, &real_length);
+          ASSERTEQX(result, ZIP_SUCCESS, desc2);
+          ASSERTEQX(real_length, df.uncompressed_size, desc2);
+
+          if(real_length)
+          {
+            const char *contents = ZIP_GET_CONTENTS(df);
+            cmp = memcmp(buffer, contents, real_length);
+            ASSERTEQX(cmp, 0, desc2);
+          }
+        }
+        result = zip_close(zp, nullptr);
+        ASSERTEQX(result, ZIP_SUCCESS, desc);
+      }
+    }
+    if(!has_files)
+      FAIL("Add test zips with files to read!");
   }
 
-  SECTION(read_mem_stream)
+  SECTION(ReadStream)
   {
-    //
+    for(int i = 0; i < arraysize(raw_zip_data); i++)
+    {
+      const zip_test_data &d = raw_zip_data[i];
+      if(d.num_files)
+      {
+        snprintf(desc, arraysize(desc), "%d", i);
+        has_files = true;
+        zp = zip_test_open(d);
+        ZIP_CHECK(d, zp);
+
+        for(size_t j = 0; j < d.num_files; j++)
+        {
+          snprintf(desc2, arraysize(desc2), "%d file %zu", i, j);
+          const zip_test_file_data &df = d.files[j];
+          size_t real_length = 0;
+
+          result = zip_read_open_file_stream(zp, &real_length);
+          ASSERTEQX(result, ZIP_SUCCESS, desc2);
+
+          const char *contents  = ZIP_GET_CONTENTS(df);
+          for(size_t k = 0; k < real_length; k += arraysize(small_buffer))
+          {
+            size_t n = MIN((size_t)arraysize(small_buffer), real_length - k);
+            result = zread(small_buffer, n, zp);
+            if(result == ZIP_UNSUPPORTED_DECOMPRESSION_STREAM)
+            {
+              // TODO remove this workaround for broken stream close CRC-32
+              // computation (fixed in https://github.com/AliceLR/megazeux/pull/244)
+              zread(buffer, real_length, zp);
+              break;
+            }
+            ASSERTEQX(result, ZIP_SUCCESS, desc2);
+            cmp = memcmp(small_buffer, contents + k, n);
+            ASSERTEQX(cmp, 0, desc2);
+          }
+          result = zip_read_close_stream(zp);
+          ASSERTEQX(result, ZIP_SUCCESS, desc2);
+        }
+        result = zip_close(zp, nullptr);
+        ASSERTEQX(result, ZIP_SUCCESS, desc);
+      }
+    }
+    if(!has_files)
+      FAIL("Add test zips with files to read!");
+  }
+
+  SECTION(ReadMemStream)
+  {
+    for(int i = 0; i < arraysize(raw_zip_data); i++)
+    {
+      const zip_test_data &d = raw_zip_data[i];
+      if(d.num_files)
+      {
+        snprintf(desc, arraysize(desc), "%d", i);
+        has_files = true;
+        zp = zip_test_open(d, file_buffer, BUFFER_SIZE);
+        ZIP_CHECK(d, zp);
+        ASSERTEQX(zp->is_memory, true, desc);
+
+        for(size_t j = 0; j < d.num_files; j++)
+        {
+          snprintf(desc2, arraysize(desc2), "%d file %zu", i, j);
+          const zip_test_file_data &df = d.files[j];
+          struct memfile mf;
+          size_t real_length = 0;
+          unsigned int method;
+
+          result = zip_get_next_method(zp, &method);
+          ASSERTEQX(result, ZIP_SUCCESS, desc2);
+
+          result = zip_get_next_uncompressed_size(zp, &real_length);
+          ASSERTEQX(result, ZIP_SUCCESS, desc2);
+
+          result = zip_read_open_mem_stream(zp, &mf);
+          if(method == ZIP_M_NONE)
+          {
+            const char *contents  = ZIP_GET_CONTENTS(df);
+            ASSERTEQX(result, ZIP_SUCCESS, desc2);
+
+            for(size_t k = 0; k < real_length; k += arraysize(small_buffer))
+            {
+              size_t n = MIN((size_t)arraysize(small_buffer), real_length - k);
+              cmp = mfread(small_buffer, n, 1, &mf);
+              ASSERTEQX(cmp, 1, desc2);
+              cmp = memcmp(small_buffer, contents + k, n);
+              ASSERTEQX(cmp, 0, desc2);
+            }
+            result = zip_read_close_stream(zp);
+            ASSERTEQX(result, ZIP_SUCCESS, desc2);
+          }
+          else
+          {
+            ASSERTEQX(result, ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM, desc2);
+            result = zip_skip_file(zp);
+            ASSERTEQX(result, ZIP_SUCCESS, desc2);
+          }
+        }
+        result = zip_close(zp, nullptr);
+        ASSERTEQX(result, ZIP_SUCCESS, desc);
+      }
+    }
+    if(!has_files)
+      FAIL("Add test zips with files to read!");
   }
 }
 
+/*
+// NOTE: file and memory tests are separate here to test expandable archives.
+// Intentionally trying to write ZIPs past a fixed buffer should be tested too.
 UNITTEST(ZipWrite)
 {
   UNIMPLEMENTED();
 
-  SECTION(write_file)
+  SECTION(File_WriteFile)
   {
     //
   }
 
-  SECTION(write_stream)
+  SECTION(MemoryExt_WriteFile)
   {
     //
   }
 
-  SECTION(write_mem_stream)
+  SECTION(File_WriteStream)
+  {
+    //
+  }
+
+  SECTION(MemoryExt_WriteStream)
+  {
+    //
+  }
+
+  SECTION(MemoryExt_WriteMemStream)
+  {
+    //
+  }
+
+  SECTION(Memory_EOF)
   {
     //
   }
