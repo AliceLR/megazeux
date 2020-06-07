@@ -947,41 +947,225 @@ UNITTEST(ZipRead)
   }
 }
 
-/*
-// NOTE: file and memory tests are separate here to test expandable archives.
-// Intentionally trying to write ZIPs past a fixed buffer should be tested too.
+#define VERIFY_BOILERPLATE(zp) \
+  do \
+  { \
+    ASSERTEQX(d.num_files, zp->num_files, desc); \
+    for(size_t _j = 0; _j < d.num_files; _j++) \
+    { \
+      const zip_test_file_data &df = d.files[_j]; \
+      const char *contents = ZIP_GET_CONTENTS(df); \
+      size_t real_length = 0; \
+      snprintf(desc2, arraysize(desc2), "%s %d %zu", label, i, _j); \
+      result = zip_read_file(zp, verify_buffer, BUFFER_SIZE, &real_length); \
+      ASSERTEQX(result, ZIP_SUCCESS, desc2); \
+      ASSERTEQX(real_length, df.uncompressed_size, desc2); \
+      int cmp = memcmp(contents, verify_buffer, real_length); \
+      ASSERTEQX(cmp, 0, desc2); \
+    } \
+    result = zip_close(zp, nullptr); \
+    ASSERTEQX(result, ZIP_SUCCESS, desc); \
+  } while(0)
+
 UNITTEST(ZipWrite)
 {
-  UNIMPLEMENTED();
+  std::unique_ptr<char> verify_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char> db64_ptr(new char[BUFFER_SIZE]);
+  char *verify_buffer = verify_ptr.get();
+  // This buffer needs to be resized by C code...
+  char *ext_buffer = (char *)cmalloc(32);
+  size_t ext_buffer_size = 32;
 
-  SECTION(File_WriteFile)
+  static const char OUTPUT_FILE[] = "_output_file.zip";
+  static const char LABEL[2][16] = { "File", "MemoryExt" };
+  struct zip_archive *zp;
+  enum zip_error result;
+  size_t final_size;
+  char desc[64];
+  char desc2[64];
+
+  SECTION(WriteFile)
   {
-    //
+    for(int type = 0; type < 2; type++)
+    {
+      const char *label = LABEL[type];
+      for(int i = 0; i < arraysize(raw_zip_data); i++)
+      {
+        const zip_test_data &d = raw_zip_data[i];
+        snprintf(desc, arraysize(desc), "%s %d", label, i);
+
+        if(!type)
+          zp = zip_open_file_write(OUTPUT_FILE);
+        else
+          zp = zip_open_mem_write_ext((void **)&ext_buffer, &ext_buffer_size, 0);
+        ASSERTX(zp, desc);
+
+        for(size_t j = 0; j < d.num_files; j++)
+        {
+          const zip_test_file_data &df = d.files[j];
+          const char *contents = ZIP_GET_CONTENTS(df);
+          snprintf(desc2, arraysize(desc2), "%s %d %zu", label, i, j);
+          result = zip_write_file(zp, df.filename, (const void *)contents,
+           df.uncompressed_size, df.method);
+          ASSERTEQX(result, ZIP_SUCCESS, desc2);
+        }
+        result = zip_close(zp, &final_size);
+        ASSERTEQX(result, ZIP_SUCCESS, desc);
+
+        if(!type)
+          zp = zip_open_file_read(OUTPUT_FILE);
+        else
+          zp = zip_open_mem_read(ext_buffer, final_size);
+        VERIFY_BOILERPLATE(zp);
+      }
+    }
   }
 
-  SECTION(MemoryExt_WriteFile)
+  SECTION(WriteStream)
   {
-    //
+    for(int type = 0; type < 2; type++)
+    {
+      const char *label = LABEL[type];
+      for(int i = 0; i < arraysize(raw_zip_data); i++)
+      {
+        const zip_test_data &d = raw_zip_data[i];
+        snprintf(desc, arraysize(desc), "%s %d", label, i);
+
+        if(!type)
+          zp = zip_open_file_write(OUTPUT_FILE);
+        else
+          zp = zip_open_mem_write_ext((void **)&ext_buffer, &ext_buffer_size, 0);
+        ASSERTX(zp, desc);
+
+        for(size_t j = 0; j < d.num_files; j++)
+        {
+          const zip_test_file_data &df = d.files[j];
+          const char *contents = ZIP_GET_CONTENTS(df);
+          snprintf(desc2, arraysize(desc2), "%s %d %zu", label, i, j);
+
+          result = zip_write_open_file_stream(zp, df.filename, df.method);
+          ASSERTEQX(result, ZIP_SUCCESS, desc2);
+          if(df.method == ZIP_M_NONE)
+          {
+            for(size_t k = 0; k < df.uncompressed_size; k += 32)
+            {
+              size_t size = MIN(df.uncompressed_size - k, 32);
+              result = zwrite(contents, size, zp);
+              ASSERTEQX(result, ZIP_SUCCESS, desc2);
+            }
+          }
+          // TODO the above should work for deflate too but doesn't yet.
+          // (fixed in https://github.com/AliceLR/megazeux/pull/244)
+          else
+          {
+            result = zwrite(contents, df.uncompressed_size, zp);
+            ASSERTEQX(result, ZIP_SUCCESS, desc2);
+          }
+          result = zip_write_close_stream(zp);
+          ASSERTEQX(result, ZIP_SUCCESS, desc2);
+        }
+        result = zip_close(zp, &final_size);
+        ASSERTEQX(result, ZIP_SUCCESS, desc);
+
+        if(!type)
+          zp = zip_open_file_read(OUTPUT_FILE);
+        else
+          zp = zip_open_mem_read(ext_buffer, final_size);
+        VERIFY_BOILERPLATE(zp);
+      }
+    }
   }
 
-  SECTION(File_WriteStream)
+  // This is a special version of streaming that allows direct write access to
+  // the buffer. This only works with the STORE method and likely doesn't work
+  // very well with expandable buffers right now.
+  SECTION(Memory_WriteMemStream)
   {
-    //
+    const char *label = "MemoryFixed";
+    for(int i = 0; i < arraysize(raw_zip_data); i++)
+    {
+      const zip_test_data &d = raw_zip_data[i];
+      snprintf(desc, arraysize(desc), "%s %d", label, i);
+
+      // Precompute likely required size for the archive.
+      size_t max_name_size = 8;
+      ext_buffer_size = 0;
+      for(size_t j = 0; j < d.num_files; j++)
+      {
+        ext_buffer_size += d.files[j].uncompressed_size;
+        max_name_size = MAX(max_name_size, strlen(d.files[j].filename));
+      }
+      ext_buffer_size += zip_bound_total_header_usage(d.num_files, max_name_size);
+      ext_buffer = (char *)crealloc(ext_buffer, ext_buffer_size);
+
+      zp = zip_open_mem_write(ext_buffer, ext_buffer_size, 0);
+      ASSERTX(zp, desc);
+
+      for(size_t j = 0; j < d.num_files; j++)
+      {
+        const zip_test_file_data &df = d.files[j];
+        const char *contents = ZIP_GET_CONTENTS(df);
+        struct memfile mf;
+        snprintf(desc2, arraysize(desc2), "%s %d %zu", label, i, j);
+
+        result = zip_write_open_mem_stream(zp, &mf, df.filename);
+        int res = mfwrite(contents, df.uncompressed_size, 1, &mf);
+        ASSERTEQX(res, 1, desc2);
+        result = zip_write_close_mem_stream(zp, &mf);
+        ASSERTEQX(result, ZIP_SUCCESS, desc2);
+      }
+      result = zip_close(zp, &final_size);
+      ASSERTEQX(result, ZIP_SUCCESS, desc);
+
+      zp = zip_open_mem_read(ext_buffer, final_size);
+      VERIFY_BOILERPLATE(zp);
+    }
   }
 
-  SECTION(MemoryExt_WriteStream)
-  {
-    //
-  }
-
-  SECTION(MemoryExt_WriteMemStream)
-  {
-    //
-  }
-
+  // Make sure fixed buffer memory write operations don't write past the buffer...
   SECTION(Memory_EOF)
   {
-    //
+    char buffer[128];
+
+    // EOF during EOCD write.
+    zp = zip_open_mem_write(buffer, 20, 0);
+    ASSERT(zp);
+    result = zip_close(zp, nullptr);
+    ASSERTEQX(result, ZIP_EOF, "Should fail EOCD write.");
+
+    // EOF during local header write.
+    zp = zip_open_mem_write(buffer, 32, 0);
+    ASSERT(zp);
+    result = zip_write_file(zp, "filename.ext", "abcde", 5, ZIP_M_NONE);
+    ASSERTEQX(result, ZIP_EOF, "Should fail local header write.");
+    zip_close(zp, nullptr);
+
+    // EOF during file contents write.
+    zp = zip_open_mem_write(buffer, 48, 0);
+    ASSERT(zp);
+    result = zip_write_open_file_stream(zp, "filename.ext", ZIP_M_NONE);
+    ASSERTEQX(result, ZIP_SUCCESS, "Failed to open write stream.");
+    result = zwrite("abcdefghij", 10, zp);
+    ASSERTEQX(result, ZIP_EOF, "Should fail file write.");
+    zip_write_close_stream(zp);
+    zip_close(zp, nullptr);
+
+    // EOF during central directory write.
+    zp = zip_open_mem_write(buffer, 72, 0);
+    ASSERT(zp);
+    result = zip_write_file(zp, "filename.ext", "abcdefghij", 10, ZIP_M_NONE);
+    ASSERTEQX(result, ZIP_SUCCESS, "Failed to write file.");
+    result = zip_close(zp, nullptr);
+    ASSERTEQX(result, ZIP_EOF, "Should fail to write central directory.");
+
+    // EOF during EOCD write after successful central directory write.
+    zp = zip_open_mem_write(buffer, 128, 0);
+    ASSERT(zp);
+    result = zip_write_file(zp, "filename.ext", "abcdefghij", 10, ZIP_M_NONE);
+    ASSERTEQX(result, ZIP_SUCCESS, "Failed to write file");
+    result = zip_close(zp, nullptr);
+    ASSERTEQX(result, ZIP_EOF, "Should fail to write EOCD (2).");
   }
+
+  free(ext_buffer);
 }
-*/
