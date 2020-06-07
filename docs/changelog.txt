@@ -29,6 +29,7 @@ DEVELOPERS
 + Fixed memcasecmp test alignment checks for the Motorola 68000.
 + Improved validation of config setting inputs and added a unit
   test for config file and command line parsing.
++ Added buffered zip compression/decompression support.
 + Added unit tests for the zip functions and (de)compressors.
 
 

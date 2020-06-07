@@ -350,8 +350,14 @@ static inline enum zip_error unshrink_file(struct zip_stream_data *zs)
 
   uint8_t bit_width = ss->bit_width;
 
-  if(!zs->input_buffer || !zs->output_buffer || zs->finished)
-    return ZIP_EOF;
+  if(zs->finished)
+    return ZIP_STREAM_FINISHED;
+
+  if(!zs->output_buffer)
+    return ZIP_OUTPUT_FULL;
+
+  if(!zs->input_buffer)
+    return ZIP_INPUT_EMPTY;
 
   b->input = zs->input_buffer;
   b->input_left = zs->input_length;
@@ -402,7 +408,7 @@ static inline enum zip_error unshrink_file(struct zip_stream_data *zs)
   }
   zs->final_output_length = pos - start;
   zs->finished = true;
-  return ZIP_SUCCESS;
+  return ZIP_STREAM_FINISHED;
 }
 
 __M_END_DECLS

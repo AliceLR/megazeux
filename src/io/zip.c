@@ -17,11 +17,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <time.h>
 
@@ -56,6 +58,9 @@
 #endif
 
 #define ZIP_DEFAULT_NUM_FILES 4
+#define ZIP_STREAM_BUFFER_SIZE 65536
+#define ZIP_STREAM_BUFFER_U_SIZE (ZIP_STREAM_BUFFER_SIZE * 3 / 4)
+#define ZIP_STREAM_BUFFER_C_SIZE (ZIP_STREAM_BUFFER_SIZE / 4)
 
 #define LOCAL_FILE_HEADER_LEN 30
 #define CENTRAL_FILE_HEADER_LEN 46
@@ -171,6 +176,8 @@ static const char *zip_error_string(enum zip_error code)
       return "stream input buffer exhausted";
     case ZIP_OUTPUT_FULL:
       return "stream output buffer full";
+    case ZIP_STREAM_FINISHED:
+      return "end of stream reached";
   }
   warn("zip_error_string: received unknown error code %d!\n", code);
   return "UNKNOWN ERROR";
@@ -794,13 +801,130 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
 /***********/
 
 /**
+ * Allocate or resize the stream buffer. A single buffer is used across the
+ * entire zip read/write session to reduce the number of allocations/frees.
+ */
+static void zip_set_stream_buffer_size(struct zip_archive *zp, size_t size)
+{
+  size = MAX(size, ZIP_STREAM_BUFFER_SIZE);
+
+  if(!zp->stream_buffer || zp->stream_buffer_alloc < size)
+  {
+    zp->stream_buffer = crealloc(zp->stream_buffer, size);
+    zp->stream_buffer_alloc = size;
+  }
+}
+
+/**
+ * Decompress data from a stream into the destination or into the stream
+ * buffer.
+ */
+static enum zip_error zread_stream(uint8_t *destBuf, size_t readLen,
+ size_t *consumed, struct zip_archive *zp)
+{
+  struct zip_stream_data *stream_data = &(zp->stream_data);
+  boolean direct_write = (readLen == zp->stream_u_left);
+  uint8_t *in;
+  size_t in_size;
+  size_t out_size;
+  enum zip_error (*decompress_fn)(struct zip_stream_data *);
+  enum zip_error result;
+
+  while(readLen)
+  {
+    if(zp->stream_buffer_pos < zp->stream_buffer_end)
+    {
+      size_t amount = zp->stream_buffer_end - zp->stream_buffer_pos;
+      amount = MIN(readLen, amount);
+
+      memcpy(destBuf, zp->stream_buffer + zp->stream_buffer_pos, amount);
+      zp->stream_buffer_pos += amount;
+      destBuf += amount;
+      readLen -= amount;
+      if(!readLen)
+        break;
+    }
+
+    // Fetch more decompressed data. If direct_write is true, this can be
+    // fetched directly into the output. Otherwise, it needs to stick around
+    // so it can be copied for future reads.
+
+    if(zp->stream->decompress_block)
+    {
+      zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
+      decompress_fn = zp->stream->decompress_block;
+
+      in = zp->stream_buffer;
+      in_size = ZIP_STREAM_BUFFER_SIZE;
+
+      if(!direct_write)
+      {
+        in = zp->stream_buffer + ZIP_STREAM_BUFFER_U_SIZE;
+        in_size = ZIP_STREAM_BUFFER_C_SIZE;
+        out_size = ZIP_STREAM_BUFFER_U_SIZE;
+      }
+    }
+    else
+
+    if(zp->stream_left)
+    {
+      size_t size = zp->streaming_file->compressed_size;
+      out_size = zp->streaming_file->uncompressed_size;
+      in_size = size;
+
+      if(!direct_write)
+        size += out_size;
+
+      zip_set_stream_buffer_size(zp, size);
+      decompress_fn = zp->stream->decompress_file;
+
+      in = zp->stream_buffer;
+      if(!direct_write)
+        in += out_size;
+    }
+    // If block decompression isn't available, the entire file should have
+    // already been decompressed. Requesting any more data is an instant EOF.
+    else
+      return ZIP_EOF;
+
+    if(direct_write)
+    {
+      zp->stream->output(stream_data, destBuf, readLen);
+      zp->stream_buffer_end = 0;
+      readLen = 0;
+    }
+    else
+    {
+      zp->stream->output(stream_data, zp->stream_buffer, out_size);
+      zp->stream_buffer_end = out_size;
+    }
+
+    while((result = decompress_fn(stream_data)) == ZIP_INPUT_EMPTY)
+    {
+      in_size = MIN(in_size, zp->stream_left - *consumed);
+      if(!in_size)
+        return ZIP_EOF;
+
+      zp->stream->input(stream_data, in, in_size);
+      if(!vfread(in, in_size, 1, zp->vf))
+        return ZIP_READ_ERROR;
+
+      *consumed += in_size;
+    }
+    if(result != ZIP_OUTPUT_FULL && result != ZIP_STREAM_FINISHED)
+      return result;
+
+    zp->stream_buffer_pos = 0;
+  }
+  return ZIP_SUCCESS;
+}
+
+/**
  * Read data from a zip archive. Only works while streaming a file.
  */
 enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
-  char *src;
-
   size_t consumed = 0;
 
   enum zip_error result;
@@ -812,15 +936,19 @@ enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
   if(!readLen)
     return ZIP_SUCCESS;
 
+  if(!zp->stream_u_left)
+    return ZIP_EOF;
+
+  // Can't read past the length of the file...
+  readLen = MIN(readLen, zp->stream_u_left);
+
   fh = zp->streaming_file;
 
   // No compression
   if(fh->method == ZIP_M_NONE)
   {
-    // Can't read past the length of the file
-    consumed = MIN(readLen, zp->stream_left);
-
-    if(!vfread(destBuf, consumed, 1, zp->vf))
+    consumed = readLen;
+    if(!vfread(destBuf, readLen, 1, zp->vf))
     {
       result = ZIP_EOF;
       goto err_out;
@@ -831,41 +959,10 @@ enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
   // Decompression via stream
   if(zp->stream)
   {
-    struct zip_stream_data *stream_data = &(zp->stream_data);
-    uint32_t u_size = fh->uncompressed_size;
-    uint32_t c_size = fh->compressed_size;
-
-    if(readLen != u_size)
-    {
-      result = ZIP_UNSUPPORTED_DECOMPRESSION_STREAM;
+    result = zread_stream(destBuf, readLen, &consumed, zp);
+    if(result)
       goto err_out;
-    }
-
-    src = cmalloc(c_size);
-
-    if(!vfread(src, c_size, 1, zp->vf))
-    {
-      result = ZIP_READ_ERROR;
-      goto err_free_src;
-    }
-
-    zp->stream->input(stream_data, src, c_size);
-    zp->stream->output(stream_data, destBuf, u_size);
-
-    result = zp->stream->decompress_file(stream_data);
-
-    zp->stream->close(stream_data, &consumed, &readLen);
-    zp->stream = NULL;
-
-    if(result != ZIP_SUCCESS || readLen != u_size || consumed != c_size)
-    {
-      result = ZIP_DECOMPRESS_FAILED;
-      goto err_free_src;
-    }
-    free(src);
   }
-
-  // This shouldn't have made it this far...
   else
   {
     result = ZIP_UNSUPPORTED_DECOMPRESSION;
@@ -873,16 +970,10 @@ enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
   }
 
   // Update the crc32 and streamed amount
-  if(fh)
-  {
-    zp->stream_crc32 = crc32(zp->stream_crc32, destBuf, readLen);
-    zp->stream_left -= consumed;
-  }
-
+  zp->stream_crc32 = crc32(zp->stream_crc32, destBuf, readLen);
+  zp->stream_u_left -= readLen;
+  zp->stream_left -= consumed;
   return ZIP_SUCCESS;
-
-err_free_src:
-  free(src);
 
 err_out:
   if(result != ZIP_EOF)
@@ -1028,6 +1119,7 @@ static enum zip_error zip_read_stream_open(struct zip_archive *zp, uint8_t mode)
   struct zip_file_header *central_fh;
 
   uint32_t c_size;
+  uint32_t u_size;
   uint16_t method;
 
   uint32_t read_pos;
@@ -1043,6 +1135,7 @@ static enum zip_error zip_read_stream_open(struct zip_archive *zp, uint8_t mode)
   central_fh = zp->files[zp->pos];
 
   c_size = central_fh->compressed_size;
+  u_size = central_fh->uncompressed_size;
   method = central_fh->method;
 
   // Special mem stream checks.
@@ -1076,7 +1169,10 @@ static enum zip_error zip_read_stream_open(struct zip_archive *zp, uint8_t mode)
 
   // Everything looks good. Set up stream mode.
   zp->mode = mode;
+  zp->stream_buffer_pos = 0;
+  zp->stream_buffer_end = 0;
   zp->streaming_file = central_fh;
+  zp->stream_u_left = u_size;
   zp->stream_left = c_size;
   zp->stream_crc32 = 0;
 
@@ -1146,8 +1242,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
 {
   uint32_t expected_crc32;
   uint32_t stream_crc32;
-  uint32_t stream_left;
-  uint8_t buffer[128];
+  uint8_t buffer[512];
   int size;
 
   enum zip_error result;
@@ -1159,7 +1254,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
     uint32_t c_size = zp->streaming_file->compressed_size;
 
     zp->read_stream_error = ZIP_SUCCESS;
-    zp->stream_left = 0;
+    zp->stream_u_left = 0;
     zp->stream_crc32 = crc32(0, mf->current, c_size);
   }
 
@@ -1167,27 +1262,36 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   if(result)
     goto err_out;
 
+  // If the stream was incomplete, finish the crc32
+  while(zp->stream_u_left)
+  {
+    size = MIN(sizeof(buffer), zp->stream_u_left);
+    result = zread(buffer, size, zp);
+    if(result)
+      break;
+  }
+
+  // TODO maybe check final in/out...
+  if(zp->stream)
+    zp->stream->close(&(zp->stream_data), NULL, NULL);
+
   expected_crc32 = zp->streaming_file->crc32;
   stream_crc32 = zp->stream_crc32;
-
-  // If the stream was incomplete, finish the crc32
-  stream_left = zp->stream_left;
-  while(stream_left)
-  {
-    size = MIN(128, stream_left);
-    vfread(buffer, size, 1, zp->vf);
-    stream_crc32 = crc32(stream_crc32, buffer, size);
-    stream_left -= size;
-  }
 
   // Increment the position and clear the streaming vars
   zp->mode = ZIP_S_READ_FILES;
   zp->streaming_file = NULL;
+  zp->stream = NULL;
   zp->stream_left = 0;
+  zp->stream_u_left = 0;
   zp->stream_crc32 = 0;
   zp->pos++;
 
   precalculate_read_errors(zp);
+
+  // Check for an error from zread...
+  if(result)
+    goto err_out;
 
   // Check the CRC-32 of the stream
   if(expected_crc32 != stream_crc32)
@@ -1344,14 +1448,130 @@ static enum zip_error zip_ensure_capacity(size_t len, struct zip_archive *zp)
 }
 
 /**
+ * Flush data out to the file.
+ */
+static enum zip_error zwrite_out(const void *buffer, size_t len,
+ struct zip_archive *zp)
+{
+  if(zp->is_memory && zip_ensure_capacity(len, zp))
+    return ZIP_EOF;
+
+  if(!vfwrite(buffer, len, 1, zp->vf))
+    return ZIP_WRITE_ERROR;
+
+  return ZIP_SUCCESS;
+}
+
+/**
+ * Compress an input buffer and output it as-needed until the entire input has
+ * been consumed. A null buffer can be provided to end the stream.
+ */
+static enum zip_error zwrite_stream_compress(const void *buffer, size_t len,
+ size_t *write_len, struct zip_archive *zp)
+{
+  struct zip_stream_data *stream_data = &(zp->stream_data);
+  uint8_t *out = zp->stream_buffer + ZIP_STREAM_BUFFER_U_SIZE;
+  size_t out_len = ZIP_STREAM_BUFFER_C_SIZE;
+  enum zip_error result;
+  boolean finish = !buffer;
+
+  if(!finish)
+    zp->stream->input(stream_data, buffer, len);
+
+  assert(zp->stream->compress_block);
+  while((result = zp->stream->compress_block(stream_data, finish)) == ZIP_OUTPUT_FULL)
+  {
+    result = zwrite_out(out, out_len, zp);
+    if(result)
+      return result;
+
+    *write_len += out_len;
+    zp->stream->output(stream_data, out, out_len);
+  }
+  if(result != ZIP_INPUT_EMPTY && result != ZIP_STREAM_FINISHED)
+    return result;
+
+  if(finish)
+  {
+    size_t total_written = zp->stream_left + *write_len;
+    if(result != ZIP_STREAM_FINISHED)
+      return ZIP_COMPRESS_FAILED;
+
+    // Flush any leftover data.
+    if(stream_data->final_output_length > total_written)
+    {
+      out_len = stream_data->final_output_length - total_written;
+      result = zwrite_out(out, out_len, zp);
+      if(result)
+        return result;
+
+      *write_len += out_len;
+    }
+  }
+  return ZIP_SUCCESS;
+}
+
+/**
+ * Buffer stream input data, compressing and flushing it to file as-needed.
+ */
+static enum zip_error zwrite_stream(const void *src, size_t srcLen,
+ size_t *write_len, struct zip_archive *zp)
+{
+  enum zip_error result;
+
+  assert(src);
+  if(zp->stream_buffer_pos + srcLen <= zp->stream_buffer_end)
+  {
+    memcpy(zp->stream_buffer + zp->stream_buffer_pos, src, srcLen);
+    zp->stream_buffer_pos += srcLen;
+    return ZIP_SUCCESS;
+  }
+
+  if(zp->stream_buffer_pos)
+  {
+    result = zwrite_stream_compress(zp->stream_buffer, zp->stream_buffer_pos,
+     write_len, zp);
+    zp->stream_buffer_pos = 0;
+    if(result)
+      return result;
+
+    if(srcLen <= zp->stream_buffer_end / 2)
+    {
+      memcpy(zp->stream_buffer, src, srcLen);
+      zp->stream_buffer_pos = srcLen;
+      return ZIP_SUCCESS;
+    }
+  }
+  return zwrite_stream_compress(src, srcLen, write_len, zp);
+}
+
+/**
+ * Finish the stream; write anything left on the buffer, then write a null
+ * buffer to signal the stream end.
+ */
+static enum zip_error zwrite_finish(size_t *write_len, struct zip_archive *zp)
+{
+  enum zip_error result;
+
+  if(zp->stream_buffer_pos)
+  {
+    result = zwrite_stream_compress(zp->stream_buffer, zp->stream_buffer_pos,
+     write_len, zp);
+    if(result)
+      return result;
+
+    zp->stream_buffer_pos = 0;
+  }
+  return zwrite_stream_compress(NULL, 0, write_len, zp);
+}
+
+/**
  * Write data to a zip archive. Only works in stream mode.
  */
 enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
-  char *buffer = NULL;
-  uint16_t method = ZIP_M_NONE;
-  size_t writeLen;
+  size_t writeLen = 0;
 
   enum zip_error result;
 
@@ -1359,104 +1579,68 @@ enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
   if(result)
     goto err_out;
 
-  if(!srcLen) return ZIP_SUCCESS;
+  if(!srcLen)
+    return ZIP_SUCCESS;
 
   fh = zp->streaming_file;
-  if(fh)
-  {
-    method = fh->method;
-  }
 
   // No compression
-  if(method == ZIP_M_NONE)
+  if(fh->method == ZIP_M_NONE)
   {
     writeLen = srcLen;
-
-    // Test if we have the space to write
-    if(zp->is_memory && zip_ensure_capacity(srcLen, zp))
-    {
-      result = ZIP_EOF;
+    result = zwrite_out(src, srcLen, zp);
+    if(result)
       goto err_out;
-    }
-
-    if(!vfwrite(src, srcLen, 1, zp->vf))
-    {
-      result = ZIP_WRITE_ERROR;
-      goto err_out;
-    }
   }
   else
 
-  // Compression via stream (DEFLATE only)
-  if(method == ZIP_M_DEFLATE && zp->stream)
+  // Compression via stream
+  if(zp->stream)
   {
-    struct zip_stream_data *stream_data = &(zp->stream_data);
-    size_t estimated_size;
-    size_t consumed = 0;
-
-    // Currently must write the entire file in one go...
-    if(zp->stream_left > 0)
-    {
-      result = ZIP_UNSUPPORTED_COMPRESSION_STREAM;
-      goto err_free;
-    }
-
-    estimated_size = zip_bound_deflate_usage(srcLen);
-    buffer = cmalloc(estimated_size);
-
-    zp->stream->input(stream_data, src, srcLen);
-    zp->stream->output(stream_data, buffer, estimated_size);
-
-    result = zp->stream->compress_file(stream_data);
-
-    zp->stream->close(stream_data, &consumed, &writeLen);
-    zp->stream = NULL;
-
-    if(result != ZIP_SUCCESS)
-    {
-      result = ZIP_COMPRESS_FAILED;
-      goto err_free;
-    }
-
-    // Test if we have the space to write
-    if(zp->is_memory && zip_ensure_capacity(writeLen, zp))
-    {
-      result = ZIP_EOF;
-      goto err_free;
-    }
-
-    // Write
-    if(!vfwrite(buffer, writeLen, 1, zp->vf))
-    {
-      result = ZIP_WRITE_ERROR;
-      goto err_free;
-    }
-
-    free(buffer);
+    result = zwrite_stream(src, srcLen, &writeLen, zp);
+    if(result)
+      goto err_out;
   }
-
   else
   {
     result = ZIP_UNSUPPORTED_COMPRESSION;
-    goto err_free;
+    goto err_out;
   }
 
-  if(fh)
-  {
-    // Update the stream
-    fh->uncompressed_size += srcLen;
-    zp->stream_crc32 = crc32(zp->stream_crc32, src, srcLen);
-    zp->stream_left += writeLen;
-  }
-
+  // Update the stream
+  fh->uncompressed_size += srcLen;
+  zp->stream_crc32 = crc32(zp->stream_crc32, src, srcLen);
+  zp->stream_left += writeLen;
   return ZIP_SUCCESS;
-
-err_free:
-  free(buffer);
 
 err_out:
   zip_error("zwrite", result);
   return result;
+}
+
+/**
+ * Write data to a zip archive. Only works in stream mode. This bypasses the
+ * input buffer for streams known to only need to write a single block and
+ * should only be used internally.
+ */
+static enum zip_error zwrite_direct(const void *src, size_t srcLen,
+ struct zip_archive *zp)
+{
+  size_t writeLen = 0;
+  enum zip_error result;
+
+  if(!zp->stream || zp->stream_buffer_pos)
+    return zwrite(src, srcLen, zp);
+
+  result = zwrite_stream_compress(src, srcLen, &writeLen, zp);
+  if(result)
+    return result;
+
+  // Update the stream
+  zp->streaming_file->uncompressed_size += srcLen;
+  zp->stream_crc32 = crc32(zp->stream_crc32, src, srcLen);
+  zp->stream_left += writeLen;
+  return ZIP_SUCCESS;
 }
 
 /**
@@ -1567,11 +1751,20 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
   // Set up the stream
   zp->mode = mode;
   zp->streaming_file = fh;
+  zp->stream_buffer_pos = 0;
+  zp->stream_buffer_end = ZIP_STREAM_BUFFER_U_SIZE;
   zp->stream_left = 0;
   zp->stream_crc32 = 0;
 
   if(zp->stream)
-    zp->stream->compress_open(&(zp->stream_data), method, 0);
+  {
+    struct zip_stream_data *stream_data = &(zp->stream_data);
+    zp->stream->compress_open(stream_data, method, 0);
+
+    zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
+    zp->stream->output(stream_data, zp->stream_buffer + ZIP_STREAM_BUFFER_U_SIZE,
+     ZIP_STREAM_BUFFER_C_SIZE);
+  }
 
   precalculate_write_errors(zp);
   return ZIP_SUCCESS;
@@ -1639,6 +1832,28 @@ enum zip_error zip_write_close_stream(struct zip_archive *zp)
   if(result)
     goto err_out;
 
+  if(zp->stream)
+  {
+    struct zip_stream_data *stream_data = &(zp->stream_data);
+    size_t final_in = 0;
+    size_t final_out = 0;
+    size_t write_len = 0;
+
+    result = zwrite_finish(&write_len, zp);
+    if(result)
+      goto err_out;
+
+    zp->stream_left += write_len;
+    zp->stream->close(stream_data, &final_in, &final_out);
+
+    if(final_in != zp->streaming_file->uncompressed_size)
+      warn("uncompressed size mismatch: %zu != %zu (THIS IS AN MZX BUG)\n",
+       final_in, (size_t)zp->streaming_file->uncompressed_size);
+    if(final_out != zp->stream_left)
+      warn("compressed size mismatch: %zu != %zu (THIS IS AN MZX BUG)\n",
+       final_out, (size_t)zp->stream_left);
+  }
+
   // Add missing fields to the header.
   fh = zp->streaming_file;
   fh->crc32 = zp->stream_crc32;
@@ -1664,6 +1879,7 @@ enum zip_error zip_write_close_stream(struct zip_archive *zp)
   // Clean up the stream
   zp->mode = ZIP_S_WRITE_FILES;
   zp->streaming_file = NULL;
+  zp->stream_buffer_end = 0;
   zp->stream_left = 0;
   zp->stream_crc32 = 0;
 
@@ -1724,11 +1940,10 @@ enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
   // No need to check mode; the functions used here will
 
   result = zip_write_open_file_stream(zp, name, method);
-
   if(result)
     goto err_out;
 
-  result = zwrite(src, srcLen, zp);
+  result = zwrite_direct(src, srcLen, zp);
   if(result && result != ZIP_EOF)
     goto err_close;
 
@@ -2096,6 +2311,7 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
 
   vfclose(zp->vf);
 
+  free(zp->stream_buffer);
   free(zp->files);
   free(zp);
 
@@ -2141,6 +2357,7 @@ static struct zip_archive *zip_new_archive(void)
   zp->offset_central_directory = 0;
 
   zp->streaming_file = NULL;
+  zp->stream_buffer = NULL;
   zp->stream_left = 0;
   zp->stream_crc32 = 0;
 

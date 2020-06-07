@@ -290,7 +290,7 @@ static enum zip_error compress(zip_method_handler *stream,
   assert(out);
   assert(final_out);
   assert(stream->compress_open);
-  assert(stream->compress_block || stream->compress_file);
+  assert(stream->compress_block);
   assert(stream->input);
   assert(stream->output);
   assert(stream->close);
@@ -299,10 +299,7 @@ static enum zip_error compress(zip_method_handler *stream,
   stream->input(sd, in, in_len);
   stream->output(sd, out, out_len);
 
-  if(stream->compress_block)
-    result = stream->compress_block(sd);
-  else
-    result = stream->compress_file(sd);
+  result = stream->compress_block(sd, true);
 
   stream->close(sd, nullptr, final_out);
   return result;
@@ -387,7 +384,7 @@ static enum zip_error decompress(zip_method_handler *stream,
       SET_B(b, b_len, d.field, d.compressed_is_base64); \
       result = decompress(stream, method, flags, b, b_len, \
        buffer, BUFFER_SIZE); \
-      ASSERTEQX(result, ZIP_SUCCESS, desc); \
+      ASSERTEQX(result, ZIP_STREAM_FINISHED, desc); \
       cmp = memcmp(a, buffer, a_len); \
       ASSERTEQX(cmp, 0, desc); \
       for(int _j = 7; _j >= 0; _j--) \
@@ -398,7 +395,7 @@ static enum zip_error decompress(zip_method_handler *stream,
          buffer, BUFFER_SIZE); \
         ASSERTX(result != ZIP_OUTPUT_FULL, desc); \
         ASSERTX(result != ZIP_EOF, desc); \
-        if(result == ZIP_SUCCESS) \
+        if(result == ZIP_STREAM_FINISHED) \
         { \
           cmp = !memcmp(a, buffer, a_len); \
           ASSERTEQX(cmp, 0, desc); \
@@ -420,7 +417,7 @@ static enum zip_error decompress(zip_method_handler *stream,
         result = decompress(stream, method, flags, b, b_len, \
          buffer, BUFFER_SIZE); \
         ASSERTX(result != ZIP_EOF, desc); \
-        if(result == ZIP_SUCCESS) \
+        if(result == ZIP_STREAM_FINISHED) \
         { \
           cmp = !memcmp(a, buffer, a_len); \
           ASSERTEQX(cmp, 0, desc); \
@@ -575,11 +572,11 @@ UNITTEST(Compress)
 
     result = compress(stream, ZIP_M_DEFLATE, 0, a, a_len,
      buffer_cmp, BUFFER_SIZE, &cmp_len);
-    ASSERTEQX(result, ZIP_SUCCESS, desc);
+    ASSERTEQX(result, ZIP_STREAM_FINISHED, desc);
 
     result = decompress(stream, ZIP_M_DEFLATE, 0, buffer_cmp, cmp_len,
      buffer_dcmp, BUFFER_SIZE);
-    ASSERTEQX(result, ZIP_SUCCESS, desc);
+    ASSERTEQX(result, ZIP_STREAM_FINISHED, desc);
 
     int cmp = memcmp(a, buffer_dcmp, a_len);
     ASSERTEQX(cmp, 0, desc);
@@ -865,13 +862,6 @@ UNITTEST(ZipRead)
           {
             size_t n = MIN((size_t)arraysize(small_buffer), real_length - k);
             result = zread(small_buffer, n, zp);
-            if(result == ZIP_UNSUPPORTED_DECOMPRESSION_STREAM)
-            {
-              // TODO remove this workaround for broken stream close CRC-32
-              // computation (fixed in https://github.com/AliceLR/megazeux/pull/244)
-              zread(buffer, real_length, zp);
-              break;
-            }
             ASSERTEQX(result, ZIP_SUCCESS, desc2);
             cmp = memcmp(small_buffer, contents + k, n);
             ASSERTEQX(cmp, 0, desc2);
@@ -1045,20 +1035,10 @@ UNITTEST(ZipWrite)
 
           result = zip_write_open_file_stream(zp, df.filename, df.method);
           ASSERTEQX(result, ZIP_SUCCESS, desc2);
-          if(df.method == ZIP_M_NONE)
+          for(size_t k = 0; k < df.uncompressed_size; k += 32)
           {
-            for(size_t k = 0; k < df.uncompressed_size; k += 32)
-            {
-              size_t size = MIN(df.uncompressed_size - k, 32);
-              result = zwrite(contents, size, zp);
-              ASSERTEQX(result, ZIP_SUCCESS, desc2);
-            }
-          }
-          // TODO the above should work for deflate too but doesn't yet.
-          // (fixed in https://github.com/AliceLR/megazeux/pull/244)
-          else
-          {
-            result = zwrite(contents, df.uncompressed_size, zp);
+            size_t size = MIN(df.uncompressed_size - k, 32);
+            result = zwrite(contents + k, size, zp);
             ASSERTEQX(result, ZIP_SUCCESS, desc2);
           }
           result = zip_write_close_stream(zp);

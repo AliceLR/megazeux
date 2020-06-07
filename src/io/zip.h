@@ -139,6 +139,7 @@ enum zip_error
   ZIP_COMPRESS_FAILED,
   ZIP_INPUT_EMPTY,
   ZIP_OUTPUT_FULL,
+  ZIP_STREAM_FINISHED,
 };
 
 struct zip_file_header
@@ -207,7 +208,12 @@ struct zip_archive
 
   struct zip_file_header **files;
   struct zip_file_header *streaming_file;
+  uint8_t *stream_buffer;
+  uint32_t stream_buffer_pos;
+  uint32_t stream_buffer_end;
+  uint32_t stream_buffer_alloc;
   uint32_t stream_crc_position;
+  uint32_t stream_u_left;
   uint32_t stream_left;
   uint32_t stream_crc32;
 

@@ -324,13 +324,16 @@ static inline enum zip_error expl_file(struct zip_stream_data *zs)
 
   enum zip_error result;
 
-  if(!start || zs->finished)
-    return ZIP_EOF;
+  if(zs->finished)
+    return ZIP_STREAM_FINISHED;
+
+  if(!start)
+    return ZIP_OUTPUT_FULL;
 
   if(!b->input)
   {
     if(!zs->input_buffer)
-      return ZIP_EOF;
+      return ZIP_INPUT_EMPTY;
 
     b->input = zs->input_buffer;
     b->input_left = zs->input_length;
@@ -435,7 +438,7 @@ static inline enum zip_error expl_file(struct zip_stream_data *zs)
   }
   zs->final_output_length = pos - start;
   zs->finished = true;
-  return ZIP_SUCCESS;
+  return ZIP_STREAM_FINISHED;
 }
 
 #endif /* __ZIP_IMPLODE_H */
