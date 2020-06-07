@@ -234,6 +234,19 @@ public:
     }\
   } while(0)
 
+#define FAIL(reason) \
+  do\
+  {\
+    this->assert_fail(__LINE__, nullptr, reason); \
+  } while(0)
+
+#define SKIP() \
+  do\
+  {\
+    this->skip(); \
+    return; \
+  } while(0)
+
 #define SECTION(sectionname) \
   this->section_name = #sectionname; \
   if((++this->count_sections) == this->expected_section)
@@ -320,8 +333,11 @@ namespace Unit
     unsigned int count_sections;
     unsigned int expected_section;
     unsigned int failed_sections;
+    unsigned int skipped_sections;
 
   public:
+
+    bool entire_test_skipped;
 
     unittest(const char *_file, const char *_test_name):
      file_name(_file), test_name(_test_name)
@@ -340,10 +356,18 @@ namespace Unit
       this->failed_sections = 0;
       this->count_sections = 0;
       this->expected_section = 0;
+      this->skipped_sections = 0;
+      this->entire_test_skipped = false;
       run_impl();
 
       if(has_failed_main)
         return false;
+
+      if(this->entire_test_skipped)
+      {
+        print_test_skipped();
+        return true;
+      }
 
       this->num_sections = this->count_sections;
 
@@ -354,9 +378,26 @@ namespace Unit
         run_impl();
       }
 
+      if(this->entire_test_skipped ||
+       (this->num_sections && this->skipped_sections == this->num_sections))
+      {
+        print_test_skipped();
+        this->entire_test_skipped = true;
+        return true;
+      }
+
       if(this->last_failed_section)
       {
-        std::cerr << "  Failed " << this->failed_sections << " section(s).\n";
+        unsigned int passed = this->passed_sections();
+        std::cerr << "  Failed " << this->failed_sections << " section(s)";
+
+        if(this->skipped_sections)
+        {
+          std::cerr << " (passed " << passed << ", skipped " <<
+           this->skipped_sections << ").\n";
+        }
+        else
+          std::cerr << " (passed " << passed << ").\n";
         return false;
       }
 
@@ -374,16 +415,26 @@ namespace Unit
     inline const char *coalesce(std::nullptr_t ignore)
     { return "NULL"; }
 
+    inline int passed_sections(void)
+    {
+      return this->count_sections - this->failed_sections - this->skipped_sections;
+    }
+
     inline void print_test_success(void)
     {
       const char *_test_name = coalesce(test_name);
+      unsigned int passed = this->passed_sections();
 
       std::cerr << "Passed test '" << file_name << "::" << _test_name << "'";
 
       if(num_sections > 0)
       {
-        std::cerr << " (" << num_sections
-          << (num_sections > 1 ? " sections)\n" : " section)\n");
+        std::cerr << " (" << passed << (passed > 1 ? " sections" : " section");
+
+        if(this->skipped_sections)
+          std::cerr << ", " << this->skipped_sections << " skipped)\n";
+        else
+          std::cerr << ")\n";
       }
       else
         std::cerr << "\n";
@@ -398,6 +449,20 @@ namespace Unit
         std::cerr << "Failed test '" << file_name << "::" << _test_name << "'\n";
         printed_failed = true;
       }
+    }
+
+    inline void print_test_skipped(void)
+    {
+      const char *_test_name = coalesce(test_name);
+      std::cerr << "Skipping test '" << file_name << "::" << _test_name << "'";
+
+      if(this->skipped_sections)
+      {
+        std::cerr << " (" << this->skipped_sections <<
+         (this->skipped_sections > 0 ? " section)\n" : " sections)\n");
+      }
+      else
+        std::cerr << "\n";
     }
 
     inline void signal_fail()
@@ -459,6 +524,16 @@ namespace Unit
       }
     }
 
+    void skip()
+    {
+      if(!this->expected_section)
+      {
+        this->entire_test_skipped = true;
+      }
+      else
+        this->skipped_sections++;
+    }
+
     virtual void run_impl(void) {};
   };
 
@@ -474,7 +549,17 @@ namespace Unit
     {
       count++;
       current_test = t;
-      t->run() ? passed++ : failed++;
+      bool result = t->run();
+
+      if(result)
+      {
+        if(!t->entire_test_skipped)
+          passed++;
+        else
+          skipped++;
+      }
+      else
+        failed++;
     }
 
     print_status();

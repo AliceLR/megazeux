@@ -471,6 +471,8 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 		#RAWLIBDIR=lib
 	elif [ "$MACH" = "m68k" ]; then
 		ARCHNAME=m68k
+	elif [ "$MACH" = "alpha" ]; then
+		ARCHNAME=alpha
 	elif [ "$MACH" = "hppa" ]; then
 		ARCHNAME=hppa
 	elif [ "$MACH" = "sparc" ]; then

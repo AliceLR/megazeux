@@ -140,10 +140,9 @@ static inline enum zip_error reduce_ex_file(struct zip_stream_data *zs)
   state = 0;
   while(pos < end)
   {
-    // If the end of the bitstream has been encountered, the loop only
-    // reaches this spot if the input stream is truncated. Abort.
+    // Abort if this is the end of the stream...
     if(eof)
-      goto err_free;
+      break;
 
     // Stage 1: probabilistic decompression using follower sets.
     buffer_pos = 0;

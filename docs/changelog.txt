@@ -30,6 +30,7 @@ DEVELOPERS
 + Improved validation of config setting inputs and added a unit
   test for config file and command line parsing.
 + Added buffered zip compression/decompression support.
++ Added unit tests for the zip functions and (de)compressors.
 
 
 May 8th, 2020 - MZX 2.92d
