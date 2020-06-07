@@ -104,7 +104,7 @@ static inline void LZW_add(struct LZW_tree *tree)
   {
     // Find the next available code for the next time this function is called.
     uint16_t i;
-    assert(tree->next != tree->previous_code);
+    //assert(tree->next != tree->previous_code);
     assert(LZW_GET_STATE(current) == LZW_AVAILABLE);
     for(i = tree->next + 1; i < tree->length; i++)
       if(LZW_GET_STATE(tree->nodes + i) == LZW_AVAILABLE)
@@ -210,7 +210,7 @@ static inline enum zip_error LZW_output(struct LZW_tree *tree, uint16_t code,
     if(pos + length > end)
     {
       trace("--UNSHRINK-- out of buffer in LZW_output!\n");
-      return ZIP_EOF;
+      return ZIP_OUTPUT_FULL;
     }
 
     if(length == 0)
@@ -237,7 +237,7 @@ static inline enum zip_error LZW_output(struct LZW_tree *tree, uint16_t code,
   else
   {
     trace("--UNSHRINK-- out of buffer in LZW_output!\n");
-    return ZIP_EOF;
+    return ZIP_OUTPUT_FULL;
   }
 
   *_pos = pos;
