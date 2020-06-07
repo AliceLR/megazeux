@@ -862,13 +862,6 @@ UNITTEST(ZipRead)
           {
             size_t n = MIN((size_t)arraysize(small_buffer), real_length - k);
             result = zread(small_buffer, n, zp);
-            if(result == ZIP_UNSUPPORTED_DECOMPRESSION_STREAM)
-            {
-              // TODO remove this workaround for broken stream close CRC-32
-              // computation (fixed in https://github.com/AliceLR/megazeux/pull/244)
-              zread(buffer, real_length, zp);
-              break;
-            }
             ASSERTEQX(result, ZIP_SUCCESS, desc2);
             cmp = memcmp(small_buffer, contents + k, n);
             ASSERTEQX(cmp, 0, desc2);
@@ -1042,20 +1035,10 @@ UNITTEST(ZipWrite)
 
           result = zip_write_open_file_stream(zp, df.filename, df.method);
           ASSERTEQX(result, ZIP_SUCCESS, desc2);
-          if(df.method == ZIP_M_NONE)
+          for(size_t k = 0; k < df.uncompressed_size; k += 32)
           {
-            for(size_t k = 0; k < df.uncompressed_size; k += 32)
-            {
-              size_t size = MIN(df.uncompressed_size - k, 32);
-              result = zwrite(contents, size, zp);
-              ASSERTEQX(result, ZIP_SUCCESS, desc2);
-            }
-          }
-          // TODO the above should work for deflate too but doesn't yet.
-          // (fixed in https://github.com/AliceLR/megazeux/pull/244)
-          else
-          {
-            result = zwrite(contents, df.uncompressed_size, zp);
+            size_t size = MIN(df.uncompressed_size - k, 32);
+            result = zwrite(contents + k, size, zp);
             ASSERTEQX(result, ZIP_SUCCESS, desc2);
           }
           result = zip_write_close_stream(zp);
