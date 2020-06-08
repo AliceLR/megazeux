@@ -356,8 +356,8 @@ int audio_play_module(char *filename, boolean safely, int volume)
 
   if(safely)
   {
-    if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS &&
-     audio_legacy_translate(filename, translated_filename) != FSAFE_SUCCESS)
+    if(fsafetranslate(filename, translated_filename, MAX_PATH) != FSAFE_SUCCESS &&
+     audio_legacy_translate(filename, translated_filename, MAX_PATH) != FSAFE_SUCCESS)
     {
       debug("Module filename '%s' failed safety checks\n", filename);
       return 0;
@@ -485,8 +485,8 @@ void audio_play_sample(char *filename, boolean safely, int period)
 
   if(safely)
   {
-    if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS &&
-     audio_legacy_translate(filename, translated_filename) != FSAFE_SUCCESS)
+    if(fsafetranslate(filename, translated_filename, MAX_PATH) != FSAFE_SUCCESS &&
+     audio_legacy_translate(filename, translated_filename, MAX_PATH) != FSAFE_SUCCESS)
     {
       debug("Sample filename '%s' failed safety checks\n", filename);
       return;
@@ -839,18 +839,18 @@ void audio_set_pcs_volume(int volume)
  * This function provides a compatibility layer for this old behavior; use
  * after the initial fsafetranslate fails.
  */
-int audio_legacy_translate(const char *path, char newpath[MAX_PATH])
+int audio_legacy_translate(const char *path, char *newpath, size_t buffer_len)
 {
   char temp[MAX_PATH];
   ssize_t ext_pos = strlen(path) - 4;
 
-  if(ext_pos >= 0)
+  if(ext_pos >= 0 && (size_t)(ext_pos + 4) < buffer_len)
   {
     if(!strcasecmp(path + ext_pos, ".SAM"))
     {
       strcpy(temp, path);
       strcpy(temp + ext_pos, ".WAV");
-      return fsafetranslate(temp, newpath);
+      return fsafetranslate(temp, newpath, buffer_len);
     }
     else
 
@@ -858,7 +858,7 @@ int audio_legacy_translate(const char *path, char newpath[MAX_PATH])
     {
       strcpy(temp, path);
       strcpy(temp + ext_pos, ".S3M");
-      return fsafetranslate(temp, newpath);
+      return fsafetranslate(temp, newpath, buffer_len);
     }
   }
   return -FSAFE_MATCH_FAILED;

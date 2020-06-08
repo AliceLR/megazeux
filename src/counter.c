@@ -2925,7 +2925,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           mzx_world->input_is_dir = false;
         }
 
-        err = fsafetranslate(char_value, translated_path);
+        err = fsafetranslate(char_value, translated_path, MAX_PATH);
 
         if(err == -FSAFE_MATCHED_DIRECTORY)
         {
@@ -3038,7 +3038,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       char *translated_path = cmalloc(MAX_PATH);
       int err;
 
-      err = fsafetranslate(char_value, translated_path);
+      err = fsafetranslate(char_value, translated_path, MAX_PATH);
 
       if(err == -FSAFE_SUCCESS)
         load_palette(translated_path);
@@ -3052,7 +3052,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       char *translated_path = cmalloc(MAX_PATH);
       int err;
 
-      err = fsafetranslate(char_value, translated_path);
+      err = fsafetranslate(char_value, translated_path, MAX_PATH);
 
       if(err == -FSAFE_SUCCESS)
         load_index_file(translated_path);
@@ -3066,7 +3066,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       char *translated_path = cmalloc(MAX_PATH);
       int err;
 
-      err = fsafetranslate(char_value, translated_path);
+      err = fsafetranslate(char_value, translated_path, MAX_PATH);
       if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
         save_counters_file(mzx_world, translated_path);
 
@@ -3079,7 +3079,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       char *translated_path = cmalloc(MAX_PATH);
       int err;
 
-      err = fsafetranslate(char_value, translated_path);
+      err = fsafetranslate(char_value, translated_path, MAX_PATH);
       if(err == -FSAFE_SUCCESS)
         load_counters_file(mzx_world, translated_path);
 
@@ -3103,7 +3103,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
         }
 
-        err = fsafetranslate(char_value, translated_path);
+        err = fsafetranslate(char_value, translated_path, MAX_PATH);
         if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
           save_world(mzx_world, translated_path, true, MZX_VERSION);
 
@@ -3114,7 +3114,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
         // From 2.90 onward, save_game takes place at the end
         // of the cycle
         mzx_world->robotic_save_type = SAVE_NONE;
-        err = fsafetranslate(char_value, mzx_world->robotic_save_path);
+        err = fsafetranslate(char_value, mzx_world->robotic_save_path, MAX_PATH);
         if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
           mzx_world->robotic_save_type = SAVE_GAME;
       }
@@ -3126,7 +3126,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       char *translated_path = cmalloc(MAX_PATH);
       boolean faded;
 
-      if(!fsafetranslate(char_value, translated_path))
+      if(!fsafetranslate(char_value, translated_path, MAX_PATH))
       {
         if(reload_savegame(mzx_world, translated_path, &faded))
         {

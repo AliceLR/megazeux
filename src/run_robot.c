@@ -679,7 +679,7 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
       // Save MZM to file
       else
       {
-        err = fsafetranslate(dest_name_buffer, translated_name);
+        err = fsafetranslate(dest_name_buffer, translated_name, MAX_PATH);
         if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
         {
           save_mzm(mzx_world, translated_name, src_x, src_y,
@@ -3211,7 +3211,7 @@ void run_robot(context *ctx, int id, int x, int y)
           }
           else
           {
-            if(!fsafetranslate(mzm_name_buffer, translated_name))
+            if(!fsafetranslate(mzm_name_buffer, translated_name, MAX_PATH))
             {
               load_mzm(mzx_world, translated_name, put_x, put_y,
               put_param, 1);
@@ -5405,7 +5405,7 @@ void run_robot(context *ctx, int id, int x, int y)
         else
 
         // Load from file
-        if(!fsafetranslate(src_name, translated_name))
+        if(!fsafetranslate(src_name, translated_name, MAX_PATH))
         {
           ec_load_set_var(translated_name, pos, mzx_world->version);
         }
@@ -5487,7 +5487,7 @@ void run_robot(context *ctx, int id, int x, int y)
         else
 
         // Load palette from file
-        if(!fsafetranslate(name_buffer, translated_name))
+        if(!fsafetranslate(name_buffer, translated_name, MAX_PATH))
         {
           load_palette(translated_name);
         }
@@ -5558,7 +5558,7 @@ void run_robot(context *ctx, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
         // Couldn't find world to swap to; abort cleanly
-        if(fsafetranslate(name_buffer, translated_name))
+        if(fsafetranslate(name_buffer, translated_name, MAX_PATH))
         {
           free(translated_name);
           break;

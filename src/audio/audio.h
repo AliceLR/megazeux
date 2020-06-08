@@ -165,7 +165,7 @@ void audio_set_music_volume(int volume);
 void audio_set_sound_volume(int volume);
 void audio_set_pcs_volume(int volume);
 
-int audio_legacy_translate(const char *path, char newpath[MAX_PATH]);
+int audio_legacy_translate(const char *path, char *newpath, size_t buffer_len);
 
 // Internal functions
 int audio_get_real_frequency(int period);

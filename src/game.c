@@ -149,9 +149,9 @@ boolean load_game_module(struct world *mzx_world, char *filename,
   }
 
   // Get the translated name (the one we want to compare against later)
-  n_result = fsafetranslate(filename, translated_name);
+  n_result = fsafetranslate(filename, translated_name, MAX_PATH);
   if(n_result != FSAFE_SUCCESS)
-    n_result = audio_legacy_translate(filename, translated_name);
+    n_result = audio_legacy_translate(filename, translated_name, MAX_PATH);
 
   // Add * back
   if(mod_star)

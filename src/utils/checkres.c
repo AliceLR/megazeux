@@ -556,9 +556,9 @@ static boolean check_wildcard_path(const char *path, const char *wildcard)
   return false;
 }
 
-static void strcpy_fsafe(char *dest, const char *src)
+static void strcpy_fsafe(char *dest, size_t dest_len, const char *src)
 {
-  int result = fsafetranslate(src, dest);
+  int result = fsafetranslate(src, dest, dest_len);
 
   // SUCCESS - file was actually found physically
   // MATCH_FAILED - no file was found physically, which is fine here
@@ -957,7 +957,7 @@ static struct resource *add_requirement_ext(const char *src,
   else
     join_path(temporary_buffer, file->relative_path, src);
 
-  strcpy_fsafe(fsafe_buffer, temporary_buffer);
+  strcpy_fsafe(fsafe_buffer, MAX_PATH, temporary_buffer);
   fsafe_len = strlen(fsafe_buffer);
 
   if(!display_first_only)
@@ -1053,7 +1053,7 @@ static struct resource *add_resource(const char *src, struct base_file *file)
   else
     join_path(temporary_buffer, file->relative_path, src);
 
-  strcpy_fsafe(fsafe_buffer, temporary_buffer);
+  strcpy_fsafe(fsafe_buffer, MAX_PATH, temporary_buffer);
   fsafe_len = strlen(fsafe_buffer);
 
   HASH_FIND(RESOURCE, resource_table, fsafe_buffer, fsafe_len, res);
@@ -1145,7 +1145,7 @@ static void change_base_path_dir(struct base_path *current_path,
  const char *new_relative_path)
 {
   size_t len;
-  fsafetranslate(new_relative_path, current_path->relative_path);
+  fsafetranslate(new_relative_path, current_path->relative_path, MAX_PATH);
 
   len = strlen(current_path->relative_path);
   if(current_path->relative_path[len - 1] != '/' && len < MAX_PATH - 1)

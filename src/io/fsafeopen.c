@@ -501,7 +501,7 @@ static int match(char *path, size_t buffer_len)
  * including "..". Do so here.
  */
 
-static int fsafetest(const char *path, char *newpath)
+static int fsafetest(const char *path, char *newpath, size_t buffer_len)
 {
   size_t i, pathlen;
 
@@ -509,8 +509,7 @@ static int fsafetest(const char *path, char *newpath)
   if((path == NULL) || (path[0] == 0))
     return -FSAFE_INVALID_ARGUMENT;
 
-  // FIXME assuming buffer size!
-  pathlen = path_clean_slashes_copy(newpath, strlen(path) + 1, path);
+  pathlen = path_clean_slashes_copy(newpath, buffer_len, path);
 
 #if (DIR_SEPARATOR_CHAR == '\\')
   // The slash cleaning function made these Windows slashes but fsafetranslate
@@ -560,13 +559,13 @@ static int fsafetest(const char *path, char *newpath)
   return FSAFE_SUCCESS;
 }
 
-int fsafetranslate(const char *path, char *newpath)
+int fsafetranslate(const char *path, char *newpath, size_t buffer_len)
 {
   struct stat file_info;
   int ret;
 
   // try to pass the basic security tests
-  ret = fsafetest(path, newpath);
+  ret = fsafetest(path, newpath, buffer_len);
   if(ret == FSAFE_SUCCESS)
   {
     // see if file is already there
@@ -574,8 +573,7 @@ int fsafetranslate(const char *path, char *newpath)
     {
 #ifdef ENABLE_DOS_COMPAT_TRANSLATIONS
       // it isn't, so try harder..
-      // FIXME assuming buffer size!
-      ret = match(newpath, PATH_BUF_LEN);
+      ret = match(newpath, buffer_len);
       if(ret == FSAFE_SUCCESS)
       {
         // ..and update the stat information for the new path
@@ -585,7 +583,7 @@ int fsafetranslate(const char *path, char *newpath)
       else
       {
         // Replace the failed match with the original user-supplied path
-        fsafetest(path, newpath);
+        fsafetest(path, newpath, buffer_len);
       }
 #else
       // on WIN32 we can't, so fail hard
@@ -626,7 +624,7 @@ FILE *fsafeopen(const char *path, const char *mode)
   newpath = cmalloc(MAX_PATH);
 
   // validate pathname, and optionally retrieve a better name
-  ret = fsafetranslate(path, newpath);
+  ret = fsafetranslate(path, newpath, MAX_PATH);
 
   // filename couldn't be "found", but there were no security issues
   if(ret == -FSAFE_MATCH_FAILED)

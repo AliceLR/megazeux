@@ -2567,7 +2567,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
     mzx_world->input_is_dir = false;
 
-    err = fsafetranslate(mzx_world->input_file_name, translated_path);
+    err = fsafetranslate(mzx_world->input_file_name, translated_path, MAX_PATH);
     if(err == -FSAFE_MATCHED_DIRECTORY)
     {
       if(dir_open(&mzx_world->input_directory, translated_path))
@@ -2897,7 +2897,7 @@ void change_board_load_assets(struct world *mzx_world)
   // Does this board need a char set loaded? (2.90+)
   if(mzx_world->version >= V290 && cur_board->charset_path[0])
   {
-    if(fsafetranslate(cur_board->charset_path, translated_name) == FSAFE_SUCCESS)
+    if(fsafetranslate(cur_board->charset_path, translated_name, MAX_PATH) == FSAFE_SUCCESS)
     {
       // Bug: ec_load_set cleared the extended chars prior to 2.91e
       if(mzx_world->version < V291)
@@ -2910,7 +2910,7 @@ void change_board_load_assets(struct world *mzx_world)
   // Does this board need a palette loaded? (2.90+)
   if(mzx_world->version >= V290 && cur_board->palette_path[0])
   {
-    if(fsafetranslate(cur_board->palette_path, translated_name) == FSAFE_SUCCESS)
+    if(fsafetranslate(cur_board->palette_path, translated_name, MAX_PATH) == FSAFE_SUCCESS)
       load_palette(translated_name);
   }
 }
