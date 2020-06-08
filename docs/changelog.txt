@@ -23,6 +23,10 @@ USERS
   This fixes a bug at the end of the Inmaportal scene in Cans 3.
 + Zip files with the language encoding flag set no longer print
   unsupported flag errors.
++ Fixed a bug where recursive directory deletion in the updater
+  could get stuck in an infinite loop due to not checking the
+  return value of rmdir and path_get_directory not behaving the
+  same as get_path used to.
 
 DEVELOPERS
 

@@ -319,11 +319,17 @@ static boolean check_prune_basedir(const char *file)
   if(ret == 0)
     return true;
 
-  // At the head of the recursion we remove the directory
-  rmdir(path);
+  // Attempt to remove the directory.
+  if(!rmdir(path))
+  {
+    ssize_t len = strlen(path);
+    info("--UPDATER-- Pruned empty directory '%s'\n", path);
 
-  // Recursion; remove any parent directory
-  return check_prune_basedir(path);
+    // If that worked, also try to remove the parent directory recursively.
+    if(path_navigate(path, MAX_PATH, "..") < len)
+      return check_prune_basedir(path);
+  }
+  return true;
 }
 
 /* FIXME: The allocation of MAX_PATH on the stack in a recursive
@@ -679,12 +685,10 @@ static void apply_delete_list(void)
         if(unlink(e->name))
           goto err_delete_failed;
 
-        /* Obtain the path for this file. If the file isn't at the top
-         * level, and the directory is empty (rmdir ensures this)
-         * the directory will be pruned.
-         */
-        check_prune_basedir(e->name);
         info("--UPDATER-- Deleted '%s'\n", e->name);
+        // Also try to delete the base directory. If it's empty, this won't
+        // do anything.
+        check_prune_basedir(e->name);
       }
       else
         info("--UPDATER-- Skipping invalid entry '%s'\n", e->name);
