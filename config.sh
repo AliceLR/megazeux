@@ -31,6 +31,7 @@ usage() {
 	echo "  3ds            Experimental 3DS port"
 	echo "  switch         Experimental Switch port"
 	echo "  wii            Experimental Wii port"
+	echo "  wiiu           Experimental Wii U port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
@@ -579,6 +580,12 @@ elif [ "$PLATFORM" = "wii" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "wiiu" ]; then
+	SHAREDIR=fs:/vol/external01/wiiu/apps/megazeux
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "switch" ]; then
 	SHAREDIR=/switch/megazeux
 	GAMESDIR=$SHAREDIR
@@ -737,6 +744,22 @@ if [ "$PLATFORM" = "3ds" ]; then
 fi
 
 #
+# If the Wii U arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "wiiu" ]; then
+	echo "Enabling Wii U-specific hacks."
+	echo "#define CONFIG_WIIU" >> src/config.h
+	echo "BUILD_WIIU=1" >> platform.inc
+
+	echo "Disabling utils on Wii U (silly)."
+	UTILS="false"
+
+	# Doesn't seem to be fully populated on the Wii U.
+	GAMECONTROLLERDB="false"
+fi
+
+#
 # If the Switch arch is enabled, some code has to be compile time
 # enabled too.
 #
@@ -792,6 +815,7 @@ fi
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
   -o "$PLATFORM" = "3ds" \
+  -o "$PLATFORM" = "wiiu" \
   -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
@@ -873,6 +897,7 @@ fi
 #
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
   -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
+  -o "$PLATFORM" = "wiiu" \
   -o "$PLATFORM" = "android" -o "$PLATFORM" = "emscripten" \
   -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
@@ -882,7 +907,7 @@ fi
 #
 # Force disable networking (unsupported platform or no editor build)
 #
-if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" ]; then
+if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wiiu" ]; then
 	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
 fi

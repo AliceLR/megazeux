@@ -199,7 +199,9 @@ __libspec int main(int argc, char *argv[])
 #endif
 
   // argc may be 0 on e.g. some Wii homebrew loaders.
+#ifndef CONFIG_WIIU
   if(argc == 0)
+#endif
   {
     argv = _backup_argv;
     argc = 1;

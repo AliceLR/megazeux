@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="1">
+	<name>MegaZeux</name>
+	<version>%VERSION%</version>
+	<release_date>%DATE%</release_date>
+	<short_description>A simple game creation system (GCS)</short_description>
+	<long_description>MegaZeux is a Game Creation System (GCS) inspired by Epic MegaGames' ZZT, first released by Alexis Janson in 1994. Originally written for DOS, MegaZeux is now available on a wide variety of platforms.&#xA;&#xA;Many features have been added since the original DOS version, and with the help of an intuitive editor and a simple but powerful scripting language, MegaZeux allows you to create your own ANSI-esque games. It is actively maintained by a thriving community. See https://www.digitalmzx.com/ for more information.</long_description>
+</app>

@@ -29,6 +29,10 @@
 
 #include "SDL.h"
 
+#ifdef CONFIG_WIIU
+#include <whb/proc.h>
+#endif
+
 extern struct input_status input;
 
 static boolean numlock_status_initialized;
@@ -1486,6 +1490,10 @@ boolean __update_event_status(void)
 {
   Uint32 rval = false;
   SDL_Event event;
+
+#ifdef CONFIG_WIIU
+  WHBProcIsRunning();
+#endif
 
   while(SDL_PollEvent(&event))
     rval |= process_event(&event);

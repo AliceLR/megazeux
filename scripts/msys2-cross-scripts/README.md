@@ -26,6 +26,7 @@ These scripts can be used to create a fresh build for each devkitPro platform.
 * DK4_3DS.bat -- generates a 3DS build and moves it to the "zips" folder.
 * DK5_Wii.bat -- generates a Wii build and moves it to the "zips" folder.
 * DK6_Switch.bat -- generates a Switch build and moves it to the "zips" folder.
+* DK7_WiiU.bat -- generates a Wii U build and moves it to the "zips" folder.
 
 These scripts no longer support devkitPSP as support for it has been officially
 dropped. Old devkitPSP binaries can not be distributed as they contain devkitPro
