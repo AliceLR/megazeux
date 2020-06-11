@@ -265,6 +265,8 @@ static inline void *crealloc(void *ptr, size_t size)
 // newlib's constants. (https://github.com/devkitPro/wut/issues/142)
 // The following code works around this problem.
 
+#include <sys/stat.h>
+
 #undef S_ISREG
 #define S_ISREG(m) (!S_ISDIR((m)))
 
