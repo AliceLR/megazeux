@@ -907,7 +907,7 @@ fi
 #
 # Force disable networking (unsupported platform or no editor build)
 #
-if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wiiu" ]; then
+if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
 fi

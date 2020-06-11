@@ -218,7 +218,7 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
   {
     OggVorbis_File open_file;
 
-#ifdef CONFIG_3DS
+#if defined(CONFIG_3DS) || defined(CONFIG_WIIU)
     setvbuf(input_file, NULL, _IOFBF, 32768);
 #endif
 
