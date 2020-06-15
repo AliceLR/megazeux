@@ -32,9 +32,6 @@ typedef struct
   u8 flags;
 } touch_area_t;
 
-// from platform.c
-boolean ctr_is_2d(void);
-
 void ctr_keyboard_init(struct ctr_render_data *render_data);
 void ctr_keyboard_draw(struct ctr_render_data *render_data);
 boolean ctr_keyboard_update(struct buffered_status *status);

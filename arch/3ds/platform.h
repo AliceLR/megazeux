@@ -28,6 +28,9 @@
 #include <3ds.h>
 #include <citro3d.h>
 
+boolean ctr_is_2d(void);
+boolean ctr_supports_wide(void);
+
 #ifdef CONFIG_CHECK_ALLOC
 
 #include <stddef.h>

@@ -74,6 +74,8 @@ struct linear_ptr_list_entry
   struct linear_ptr_list_entry *next;
 };
 
+#define CTR_TOP_WIDTH (gfxIsWide() ? 800 : 400)
+#define CTR_TOP_HEIGHT 240
 #define CTR_CHAR_H 16
 #define CTR_TEXTURE_WIDTH 1024
 #define CTR_TEXTURE_CHARS_ROW (CTR_TEXTURE_WIDTH / CHAR_W)
@@ -347,6 +349,27 @@ static void ctr_init_shader(struct ctr_shader_data *shader, const void *data,
   shader->offs_loc =
    shaderInstanceGetUniformLocation(shader->program.geometryShader, "offset");
   AttrInfo_Init(&shader->attr);
+}
+
+static boolean wide_requested = false, wide_new_state;
+
+void ctr_request_set_wide(bool wide)
+{
+  wide_requested = true;
+  wide_new_state = wide;
+}
+
+static void ctr_set_wide(struct ctr_render_data *render_data, bool wide)
+{
+  gfxSetWide(wide);
+
+  C3D_RenderTargetDelete(render_data->target_top);
+  render_data->target_top =
+   C3D_RenderTargetCreate(240, CTR_TOP_WIDTH, GPU_RB_RGB8, GPU_RB_DEPTH16);
+  C3D_RenderTargetClear(render_data->target_top, C3D_CLEAR_ALL, 0x000000, 0);
+  C3D_RenderTargetSetOutput(render_data->target_top, GFX_TOP, GFX_LEFT,
+    GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB8) |
+    GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8));
 }
 
 static boolean ctr_init_video(struct graphics_data *graphics,
@@ -689,6 +712,12 @@ static boolean ctr_should_render(struct ctr_render_data *render_data)
 {
   if(!render_data->rendering_frame)
   {
+    if(wide_requested)
+    {
+      ctr_set_wide(render_data, wide_new_state);
+      wide_requested = false;
+    }
+
     if(render_data->checked_frame || !C3D_FrameBegin(C3D_FRAME_NONBLOCK))
     {
       render_data->checked_frame = true;
