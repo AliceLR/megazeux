@@ -3415,6 +3415,10 @@ static boolean robot_editor_idle(context *ctx)
   }
 #endif
 
+  // Disable the cursor so it doesn't display over other interfaces.
+  // Intake will enable it again if needed.
+  cursor_off();
+
   rstate->macro_repeat_level = 0;
   rstate->macro_recurse_level = 0;
   return false;

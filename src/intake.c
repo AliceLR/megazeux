@@ -708,14 +708,11 @@ static boolean intake_draw(subcontext *sub)
 
 /**
  * Make sure the intake values are synchronized before doing anything.
- * Also, make sure the cursor is disabled before anything tries to open a
- * window.
  */
 
 static boolean intake_idle(subcontext *sub)
 {
   intake_sync(sub);
-  cursor_off();
   return false;
 }
 

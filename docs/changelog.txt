@@ -27,6 +27,8 @@ USERS
   could get stuck in an infinite loop due to not checking the
   return value of rmdir and path_get_directory not behaving the
   same as get_path used to.
++ Fixed a bug where the cursor could display over the color
+  selector and char editor when opened from the robot editor.
 
 DEVELOPERS
 
