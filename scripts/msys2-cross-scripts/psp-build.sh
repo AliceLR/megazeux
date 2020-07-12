@@ -2,6 +2,8 @@
 # $1 = branch
 
 [[ -z $PSPDEV ]] && { echo "\$PSPDEV is unset. Aborting"; exit 1; }
+
+export PSPDEV=`cygpath -u "$PSPDEV"`
 export PATH="$PSPDEV/bin:$PATH"
 
 [ -z "$1" ] && { echo "argument 1 required."; exit 1; }

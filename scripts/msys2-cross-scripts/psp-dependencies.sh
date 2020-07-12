@@ -1,6 +1,8 @@
 #!/bin/bash
 
 [[ -z $PSPDEV ]] && { echo "\$PSPDEV is unset. Aborting"; exit 1; }
+
+export PSPDEV=`cygpath -u "$PSPDEV"`
 export PATH="$PSPDEV/bin:$PATH"
 
 export PORTS_REPO=https://github.com/pspdev/psp-ports.git
