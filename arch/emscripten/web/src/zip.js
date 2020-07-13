@@ -51,7 +51,7 @@ export var zip =
       if(typeof(emzip)!=='function')
         return {then:function(cb){return cb();}};
 
-      var promise = emzip().then(module =>
+      return emzip().then(module =>
       {
         zip.emzip = module;
         zip.emzip_functions.forEach(function(fn)
@@ -64,7 +64,6 @@ export var zip =
           }
         });
       });
-      return promise;
     }
     else
       throw "zip.initialize: already initialized!";
