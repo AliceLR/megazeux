@@ -53,6 +53,7 @@ enum resource_id
   MZX_ASCII_CHR,
   MZX_BLANK_CHR,
   MZX_SMZX_CHR,
+  MZX_SMZX2_CHR,
 #endif
 #ifdef CONFIG_HELPSYS
   MZX_HELP_FIL,

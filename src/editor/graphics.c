@@ -35,6 +35,7 @@
 static Uint8 ascii_charset[CHAR_SIZE * CHARSET_SIZE];
 static Uint8 blank_charset[CHAR_SIZE * CHARSET_SIZE];
 static Uint8 smzx_charset[CHAR_SIZE * CHARSET_SIZE];
+static Uint8 smzx_charset2[CHAR_SIZE * CHARSET_SIZE];
 
 void store_backup_palette(char dest[SMZX_PAL_SIZE])
 {
@@ -194,11 +195,17 @@ void load_editor_charsets(void)
   ec_load_set_secondary(mzx_res_get_by_id(MZX_ASCII_CHR), ascii_charset);
   ec_load_set_secondary(mzx_res_get_by_id(MZX_BLANK_CHR), blank_charset);
   ec_load_set_secondary(mzx_res_get_by_id(MZX_SMZX_CHR),  smzx_charset);
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_SMZX2_CHR), smzx_charset2);
 }
 
 void ec_load_smzx(void)
 {
   ec_mem_load_set(smzx_charset, CHAR_SIZE * CHARSET_SIZE);
+}
+
+void ec_load_smzx2(void)
+{
+  ec_mem_load_set(smzx_charset2, CHAR_SIZE * CHARSET_SIZE);
 }
 
 void ec_load_blank(void)

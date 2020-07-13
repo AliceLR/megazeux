@@ -2388,6 +2388,12 @@ static boolean editor_key(context *ctx, int *key)
 
           case 3:
           {
+            ec_load_smzx2();
+            break;
+          }
+
+          case 4:
+          {
             ec_load_blank();
             break;
           }

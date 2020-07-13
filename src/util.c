@@ -67,6 +67,7 @@ static struct mzx_resource mzx_res[] =
   { ASSETS "ascii.chr",                 NULL, true,  false },
   { ASSETS "blank.chr",                 NULL, true,  false },
   { ASSETS "smzx.chr",                  NULL, true,  false },
+  { ASSETS "smzx2.chr",                 NULL, true,  false },
 #endif
 #ifdef CONFIG_HELPSYS
   { ASSETS "help.fil",                  NULL, false, true },

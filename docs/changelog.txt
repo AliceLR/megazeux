@@ -29,6 +29,10 @@ USERS
   same as get_path used to.
 + Fixed a bug where the cursor could display over the color
   selector and char editor when opened from the robot editor.
++ Fixed a bug where the default character set selection menu was
+  inconsistently labeled "Object type".
++ Added a second SMZX default character set with a more legible
+  font. The original is still available for those who prefer it.
 
 DEVELOPERS
 

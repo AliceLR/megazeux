@@ -473,7 +473,7 @@ ${build}/assets: ${build}
 	${CP} assets/smzx.pal ${build}/assets
 ifeq (${BUILD_EDITOR},1)
 	${CP} assets/ascii.chr assets/blank.chr ${build}/assets
-	${CP} assets/smzx.chr ${build}/assets
+	${CP} assets/smzx.chr assets/smzx2.chr ${build}/assets
 endif
 ifeq (${BUILD_HELPSYS},1)
 	${CP} assets/help.fil ${build}/assets
