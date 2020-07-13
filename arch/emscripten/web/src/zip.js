@@ -49,7 +49,7 @@ export var zip =
     {
       // If emzip isn't loaded, silently fail (it might not be needed anyway).
       if(typeof(emzip)!=='function')
-        return {then:function(cb){return cb();}};
+        return Promise.resolve();
 
       return emzip().then(module =>
       {
