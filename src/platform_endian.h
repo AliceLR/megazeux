@@ -69,6 +69,7 @@
  */
 #if defined(_WIN64) || defined(__EMSCRIPTEN__) || \
   (defined(__sparc__) && defined(__arch64__)) || \
+  (defined(__riscv) || defined(__riscv__)) || \
   (defined(__GNUC__) && \
     (defined(__x86_64__) || defined(__powerpc64__) || defined(__PPC64__) || \
      defined(__aarch64__) || defined(__alpha__)))

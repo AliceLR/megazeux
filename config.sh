@@ -479,6 +479,8 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 		ARCHNAME=sparc
 	elif [ "$MACH" = "sparc64" ]; then
 		ARCHNAME=sparc64
+	elif [ "$MACH" = "riscv64" ]; then
+		ARCHNAME=riscv64
 	else
 		ARCHNAME=$MACH
 		#RAWLIBDIR=lib
