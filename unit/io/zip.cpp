@@ -639,15 +639,15 @@ static const zip_test_data raw_zip_data[] =
   },
   {
     "dch1.zip", 0, ZIP_SUCCESS, 1,
-    {
+    {{
       "dch1.txt", "dch1.txt",
-      0x0000, ZIP_M_DEFLATE, 0xA3898FBE, 7045, 3385, 0, CONTENTS_FILE },
+      0x0000, ZIP_M_DEFLATE, 0xA3898FBE, 7045, 3385, 0, CONTENTS_FILE }},
   },
   {
     "ct_level.zip", 0, ZIP_SUCCESS, 1,
-    {
+    {{
       "CT_LEVEL.MOD", "CT_LEVEL.MOD",
-      0x0000, ZIP_M_DEFLATE, 0x2AF73EBE, 111885, 61105, 0, CONTENTS_FILE },
+      0x0000, ZIP_M_DEFLATE, 0x2AF73EBE, 111885, 61105, 0, CONTENTS_FILE }},
   },
 };
 

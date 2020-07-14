@@ -35,7 +35,6 @@
 #include "../src/editor/robo_ed.h"
 #endif
 
-static const int MAX_ARGS = 16;
 static const int DEFAULT = 255;
 static const int IGNORE = INT_MAX;
 
