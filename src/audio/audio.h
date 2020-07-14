@@ -218,7 +218,7 @@ static inline void audio_set_sound_volume(int volume) {}
 static inline void audio_set_pcs_volume(int volume) {}
 
 static inline int audio_legacy_translate(const char *path,
- char newpath[MAX_PATH]) { return -1; }
+ char *newpath, size_t buffer_len) { return -1; }
 
 #endif // CONFIG_AUDIO
 
