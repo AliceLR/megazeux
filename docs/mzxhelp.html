@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>MegaZeux 2.92d (20200508) - Help File</title>
+<title>MegaZeux 2.92e (20200719) - Help File</title>
 <style>
 /* MegaZeux
  *
@@ -390,7 +390,7 @@ body
 
 <body>
 <div id="helpnav">
-<h1>MegaZeux 2.92d (20200508) - Help File</h1>
+<h1>MegaZeux 2.92e (20200719) - Help File</h1>
 <div class="helpnavcentered"><ul>
 <li><a href="#MAIN.HLP__072">Contents</a></li><li><a href="#EDITINGK.HLP__080">Editor Keys</a></li><li><a href="#ROBOTICR.HLP__087">Robotic Manual</a></li><li><a href="#COMMANDR.HLP__1st">Commands</a></li><li><a href="#COUNTERS.HLP__1st">Counters</a></li><li><a href="#NEWINVER.HLP__1st">Changelog</a></li></ul></div>
 </div>
@@ -1827,7 +1827,7 @@ To make things sane for all parties, do this before submitting:
      port, upload a world made in 2.70 that works in 2.70 but
      does not in the current version to best isolate the
      problem.
-&#xE009; 
+
 Additionally, contacting the developers in real-time can help
 illuminate the problem.
 
@@ -8358,7 +8358,7 @@ save a Robot into a given string.
 <span class="fB">SAVE_BCn (function)</span>
 <span class="fB">LOAD_BCn (function)</span>
 
-Saves or loads Robotic code to or from bitcode files,
+Saves or loads Robotic code to or from bytecode files,
 respectively. The first forms save/load the current Robot,
 while the second forms save/load the Robot with the Robot ID of
 the number n.
@@ -10136,10 +10136,10 @@ names.
 <span class="fA">SET "file.bc" to "SAVE_BCn"</span>
 <span class="fA">SET "file.bc" to "LOAD_BCn"</span>
 
-These commands can save Robotic code to files in bitcode format
-and import bitcode files into a Robot. The first forms use the
+These commands can save Robotic code to files in bytecode format
+and import bytecode files into a Robot. The first forms use the
 current Robot, while the second forms use the Robot with the
-given Robot ID n. Bitcode is much more compact than plain text,
+given Robot ID n. Bytecode is much more compact than plain text,
 but cannot be easily read by the human eye.
 
 Note that for loading Robotic code via LOAD_ROBOT(n) or
@@ -10240,7 +10240,7 @@ very helpful for placing stuff at the end of a file.
 
 This command opens subdirectories for reading (by using the name
 of the subdirectory by itself, e.g. <span class="fA">SET "directory" to</span>
-"FREAD_OPEN"<span class="fF">). FREAD will then list the names of files in the</span>
+<span class="fA">"FREAD_OPEN"</span><span class="fF">). FREAD will then list the names of files in the</span>
 directory, with each read position being a different filename.
 Note that the files are not guaranteed to be read in any
 specific order.
@@ -11298,6 +11298,60 @@ updated.
 <div class="hF" id="NEWINVER.HLP">
 <a class="hA" name="NEWINVER.HLP__1st"> </a>
 <p class="hC"><span class="f9">NEW in MegaZeux!</span></p>
+July 20th, 2020 - MZX 2.92e
+
+This bugfix release includes miscellaneous audio fixes and fixes
+for bugs in the configuration system. Other things of note are a
+fix for a graphical bug in the robot editor, a freeze bugfix in
+the updater when updating from older MZX releases, and the title
+of the Alt+A ("Select Char Set") dialog has been reverted back
+to roughly what it was in DOS versions. A second default SMZX
+character set with a different font has been added as well.
+
+USERS
+
++ Fixed Windows file handle leaks in audio_xmp.c caused by
+  MinGW's non-compliant fdopen.
++ Fixed a bug where the title screen's intro message wouldn't
+  cycle the scroll color while no world was loaded.
++ Added the missing "ccode_chars" config setting.
++ Fixed a bug where the "ccode_extras" config setting would
+  change the strings color code instead.
++ Fixed a bug where "macro_#" where # is 0 or between 6-9 would
+  corrupt various parts of the editor configuration. Notably,
+  "macro_6" would corrupt the extended macros and cause crashes.
++ Fixed division-by-zero crashes and GL errors when using
+  invalid fullscreen_resolution or window_resolution values.
++ Fixed a bug where files included by the config file include
+  directive would ignore editor settings. Also added a recursion
+  limit for includes and fixed a bug where the "include=file"
+  format would not work on some platforms.
++ Fixed a libxmp bug where pattern jump/break could take effect
+  after using JUMP MOD ORDER or setting MOD_ORDER/MOD_POSITION.
+  This fixes a bug at the end of the Inmaportal scene in Cans 3.
++ Zip files with the language encoding flag set no longer print
+  unsupported flag errors.
++ Fixed a bug where recursive directory deletion in the updater
+  could get stuck in an infinite loop due to not checking the
+  return value of rmdir and path_get_directory not behaving the
+  same as get_path used to.
++ Fixed a bug where the cursor could display over the color
+  selector and char editor when opened from the robot editor.
++ Fixed a bug where the default character set selection menu was
+  inconsistently labeled "Object type".
++ Added a second SMZX default character set with a more legible
+  font. The original is still available for those who prefer it.
+
+DEVELOPERS
+
++ Fixed memcasecmp test alignment checks for the Motorola 68000.
++ Improved validation of config setting inputs and added a unit
+  test for config file and command line parsing.
++ Added buffered zip compression/decompression support.
++ Added unit tests for the zip functions and (de)compressors.
+
+<a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
+
 May 8th, 2020 - MZX 2.92d
 
 This release includes minor new features, an overhaul to the way
