@@ -65,7 +65,7 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_sysconfdir}/megazeux-config
 
 %changelog
-* Sun July 19 2020 Alice Rowan <petrifiedrowan️@gmail.com> 2.92e-1
+* Sun Jul 19 2020 Alice Rowan <petrifiedrowan️@gmail.com> 2.92e-1
 - new upstream version, replace __make with make_build.
 
 * Fri May 08 2020 Alice Rowan <petrifiedrowan@gmail.com> 2.92d-1
