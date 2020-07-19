@@ -1,4 +1,12 @@
-GIT
+July 20th, 2020 - MZX 2.92e
+
+This bugfix release includes miscellaneous audio fixes and fixes
+for bugs in the configuration system. Other things of note are a
+fix for a graphical bug in the robot editor, a freeze bugfix in
+the updater when updating from older MZX releases, and the title
+of the Alt+A ("Select Char Set") dialog has been reverted back
+to roughly what it was in DOS versions. A second default SMZX
+character set with a different font has been added as well.
 
 USERS
 
