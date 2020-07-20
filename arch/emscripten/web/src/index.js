@@ -3,19 +3,23 @@
  *
  * Copyright (C) 2018, 2019 Adrian Siekierka
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 import { getIndexedDB, getLocalStorage, drawErrorMessage } from "./util.js";
@@ -62,7 +66,13 @@ class LoadingScreen {
     }
 }
 
-window.MzxrunInitialize = function(options) {
+/**
+ * Initialize the MegaZeux frontend and run MegaZeux.
+ * @param {Object} options Options to configure the frontend and MegaZeux.
+ * @returns {Promise} Promise to run MegaZeux.
+ */
+window.MzxrunInitialize = function(options)
+{
     console.log("Initializing MegaZeux web frontend");
 
     if (!options.render) throw "Missing option: render!";
@@ -107,16 +117,14 @@ window.MzxrunInitialize = function(options) {
         return Promise.reject(e);
     }
 
-    // FIXME this breaks the return value of this function.
-    // Fix this when Emscripten bothers to make their Modules actual promises.
-    zip.initialize().then(_ =>
-    {
     const loadingScreen = new LoadingScreen(canvas, ctx, options);
 
     var vfsPromises = [];
     var vfsProgresses = [];
     var vfsObjects = [];
 
+  return zip.initialize().then(_ =>
+  {
     for (var s in options.files) {
         vfsProgresses.push(0);
         const file = options.files[s];
@@ -145,8 +153,8 @@ window.MzxrunInitialize = function(options) {
             );
         }
     }
-
-    return loadingScreen._drawBackground().then(_ => Promise.all(vfsPromises)).then(_ => {
+  }).then(_ => loadingScreen._drawBackground()).then(_ => Promise.all(vfsPromises)).then(_ =>
+  {
         // add MegaZeux config.txt vfs
         // Set startup_path first so user config will override it...
         var configString = "startup_path = /data/game\n";
@@ -233,24 +241,27 @@ window.MzxrunInitialize = function(options) {
         options.render.canvas = canvas;
 
         Module({
-            canvas: options.render.canvas
-        }).then((module) => {
+          canvas: options.render.canvas,
+          preRun: function(module)
+          {
             window.FS = module["FS"];
             FS.createFolder(FS.root, "data", true, true);
             FS.mount(wrapStorageForEmscripten(vfs), null, "/data");
             console.log("Filesystem initialization complete!");
-
+          }
+        }).then((module) =>
+        {
             // This event listener refocuses MZX when clicked if it's inside of
             // an iframe (e.g. embedded on itch.io). This is necessary to regain
             // keyboard control after focus is lost (though tab can be used too).
             // This needs to be done HERE since something clobbers all event
             // listeners added to the canvas.
+            var canvas = options.render.canvas;
             canvas.addEventListener("mousedown", function(){ canvas.focus(); });
 
             resolve();
         });
     })).then(_ => true).catch(reason => {
         drawErrorMessage(canvas, ctx, reason);
-    });
     });
 }

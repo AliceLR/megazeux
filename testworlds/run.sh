@@ -1,28 +1,26 @@
-#!/bin/bash
+#!/bin/sh
 
 # Use make test
-if [ -z $1 ] || [ $1 = "unix" -a -z $2 ]; then
-       echo "USAGE: ./run.sh {PLATFORM} {LIBDIR} (or use make test)";
-       exit 1
+if [ -z "$1" ]; then
+	echo "USAGE: ./run.sh {PLATFORM}"
+	echo ""
+	echo "OR:    ./run.sh {PLATFORM} {libcore.so|libcore.dylib} (if modular enabled and platform is 'unix' or 'darwin'"
+	echo ""
+	echo "OR:    make test"
+	exit 1
 fi
 
-# On unix platforms, installed libraries will override the ones we want used.
-# The user has to manually remove or rename them to test if they aren't correct.
-if [ $1 = "unix" ] && [ $2 != "." ] && [ -e "$2/libcore.so" ]; then
-       diff -u libcore.so $2/libcore.so
-       if [ $? -ne 0 ]; then
-               echo "ERROR: Remove or update $2/libcore.so and try again";
-               exit 1;
-       fi
-fi
+TESTS_DIR=`dirname "$0"`
+cd "$TESTS_DIR"
+cd ..
 
 # Unix release builds will try to find this if it isn't installed.
 ln -s config.txt megazeux-config
 
 # Give tests.mzx the MZX configuration so it can decide which tests to skip.
-cp src/config.h testworlds
+cp src/config.h "$TESTS_DIR"
 
-cd "$(dirname "$0")"
+cd "$TESTS_DIR"
 mkdir -p log
 
 # Clear out any backup files so they aren't mistaken for tests.
@@ -40,6 +38,11 @@ rm -f log/failures
 export LD_LIBRARY_PATH="."
 export DYLD_FALLBACK_LIBRARY_PATH="."
 
+preload=""
+if [ -n "$2" ]; then
+	preload="./$2";
+fi
+
 # Coupled with the software renderer, this will disable video in MZX, speeding things up
 # and allowing for automated testing. Disabling the SDL audio driver will prevent annoying
 # noises from occuring during tests, but shouldn't affect audio-related tests.
@@ -51,29 +54,30 @@ export SDL_AUDIODRIVER=dummy
 # might have issues detecting libraries and running from this folder, so run from
 # the base folder.
 
-pushd .. >/dev/null
+cd ..
 
+printf "Running test worlds"
+LD_PRELOAD="$preload" \
 ./mzxrun \
-  testworlds/tests.mzx \
+  "$TESTS_DIR/tests.mzx" \
   video_output=software \
   update_auto_check=off \
   standalone_mode=1 \
   no_titlescreen=1 \
   &
 
-popd >/dev/null
+cd "$TESTS_DIR"
 
 # Attempt to detect a hang (e.g. an error occurred).
 
 mzxrun_pid=$!
-disown
 
 i="0"
 
 while ps -p $mzxrun_pid | grep -q $mzxrun_pid
 do
 	sleep 1
-	i=$[$i+1]
+	i=$(($i+1))
 	printf "."
 	if [ $i -ge 60 ];
 	then

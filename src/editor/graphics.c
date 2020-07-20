@@ -35,6 +35,7 @@
 static Uint8 ascii_charset[CHAR_SIZE * CHARSET_SIZE];
 static Uint8 blank_charset[CHAR_SIZE * CHARSET_SIZE];
 static Uint8 smzx_charset[CHAR_SIZE * CHARSET_SIZE];
+static Uint8 smzx_charset2[CHAR_SIZE * CHARSET_SIZE];
 
 void store_backup_palette(char dest[SMZX_PAL_SIZE])
 {
@@ -194,11 +195,17 @@ void load_editor_charsets(void)
   ec_load_set_secondary(mzx_res_get_by_id(MZX_ASCII_CHR), ascii_charset);
   ec_load_set_secondary(mzx_res_get_by_id(MZX_BLANK_CHR), blank_charset);
   ec_load_set_secondary(mzx_res_get_by_id(MZX_SMZX_CHR),  smzx_charset);
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_SMZX2_CHR), smzx_charset2);
 }
 
 void ec_load_smzx(void)
 {
   ec_mem_load_set(smzx_charset, CHAR_SIZE * CHARSET_SIZE);
+}
+
+void ec_load_smzx2(void)
+{
+  ec_mem_load_set(smzx_charset2, CHAR_SIZE * CHARSET_SIZE);
 }
 
 void ec_load_blank(void)
@@ -227,4 +234,33 @@ void ec_load_char_mzx(Uint32 char_number)
   char *default_char = (char *)(default_charset + default_number * CHAR_SIZE);
 
   ec_change_char(char_number, default_char);
+}
+
+/**
+ * Returns the number of pixels (from 0 to 112) that are the same between two
+ * chars.
+ */
+Uint8 compare_char(Uint16 chr_a, Uint16 chr_b)
+{
+  Uint8 *a = graphics.charset + (chr_a % FULL_CHARSET_SIZE) * CHAR_SIZE;
+  Uint8 *b = graphics.charset + (chr_b % FULL_CHARSET_SIZE) * CHAR_SIZE;
+  Uint8 same = 0;
+  int i;
+  int mask;
+
+  if(get_screen_mode())
+  {
+    for(i = 0; i < CHAR_SIZE; i++)
+      for(mask = 0xC0; mask > 0; mask >>= 2)
+        same += (a[i] & mask) == (b[i] & mask);
+
+    same *= 2;
+  }
+  else
+  {
+    for(i = 0; i < CHAR_SIZE; i++)
+      for(mask = 0x80; mask > 0; mask >>= 1)
+        same += (a[i] & mask) == (b[i] & mask);
+  }
+  return same;
 }

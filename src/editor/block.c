@@ -119,7 +119,7 @@ static void flip_layer_block(
  char *dest_char, char *dest_color, int dest_width, int dest_offset,
  int block_width, int block_height)
 {
-  char *buffer = malloc(sizeof(char) * block_width);
+  char *buffer = cmalloc(sizeof(char) * block_width);
 
   int start_offset = dest_offset;
   int end_offset = dest_offset + dest_width * (block_height - 1);
@@ -150,7 +150,7 @@ static void flip_layer_block(
 static void flip_board_block(struct board *dest_board, int dest_offset,
  int block_width, int block_height)
 {
-  char *buffer = malloc(sizeof(char) * block_width);
+  char *buffer = cmalloc(sizeof(char) * block_width);
 
   char *level_id = dest_board->level_id;
   char *level_color = dest_board->level_color;

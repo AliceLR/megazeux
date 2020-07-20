@@ -31,6 +31,7 @@
 #include "render_layer.h"
 #include "renderers.h"
 #include "util.h"
+#include "io/path.h"
 
 #ifdef CONFIG_SDL
 #include "render_sdl.h"
@@ -48,6 +49,14 @@ typedef GLint GLiftype;
 #endif
 
 #include "render_gl.h"
+
+#ifndef GL_FRAMEBUFFER
+#define GL_FRAMEBUFFER GL_FRAMEBUFFER_EXT
+#endif
+
+#ifndef GL_COLOR_ATTACHMENT0
+#define GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
+#endif
 
 static const struct gl_version gl_required_version = { 2, 0 };
 
@@ -93,6 +102,12 @@ enum
   TEX_SCREEN_ID,
   TEX_DATA_ID,
   NUM_TEXTURES
+};
+
+enum
+{
+  FBO_SCREEN_TEX,
+  NUM_FBOS
 };
 
 enum
@@ -192,6 +207,14 @@ static struct
   void (GL_APIENTRY *glDeleteProgram)(GLuint program);
   void (GL_APIENTRY *glGetAttachedShaders)(GLuint program, GLsizei maxCount,
    GLsizei *count, GLuint *shaders);
+
+  // FBO functions are optional for GL (requires 3.0+), mandatory for GLES.
+  boolean has_fbo;
+  void (GL_APIENTRY *glGenFramebuffers)(GLsizei n, GLuint *ids);
+  void (GL_APIENTRY *glDeleteFramebuffers)(GLsizei n, GLuint *framebuffers);
+  void (GL_APIENTRY *glBindFramebuffer)(GLenum target, GLuint framebuffer);
+  void (GL_APIENTRY *glFramebufferTexture2D)(GLenum target, GLenum attachment,
+   GLenum textarget, GLuint texture, GLint level);
 }
 glsl;
 
@@ -233,6 +256,15 @@ static const struct dso_syms_map glsl_syms_map[] =
   { NULL, NULL}
 };
 
+static const struct dso_syms_map glsl_syms_map_fbo[] =
+{
+  { "glBindFramebuffer",          (fn_ptr *)&glsl.glBindFramebuffer },
+  { "glDeleteFramebuffers",       (fn_ptr *)&glsl.glDeleteFramebuffers },
+  { "glFramebufferTexture2D",     (fn_ptr *)&glsl.glFramebufferTexture2D },
+  { "glGenFramebuffers",          (fn_ptr *)&glsl.glGenFramebuffers },
+  { NULL, NULL }
+};
+
 #define gl_check_error() gl_error(__FILE__, __LINE__, glsl.glGetError)
 
 struct glsl_render_data
@@ -247,6 +279,7 @@ struct glsl_render_data
   Uint32 charset_texture[CHAR_H * FULL_CHARSET_SIZE * CHAR_W];
   Uint32 background_texture[BG_WIDTH * BG_HEIGHT];
   GLuint textures[NUM_TEXTURES];
+  GLuint fbos[NUM_FBOS];
   GLubyte palette[3 * FULL_PAL_SIZE];
   Uint8 remap_texture;
   Uint8 remap_char[FULL_CHARSET_SIZE];
@@ -350,24 +383,25 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
       // Try to load these from config before loading the default.
 
       char *path = cmalloc(MAX_PATH);
-
-      strcpy(path, mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
+      size_t path_len = path_clean_slashes_copy(path, MAX_PATH,
+       mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
 
       switch(res)
       {
         case GLSL_SHADER_SCALER_VERT:
-          sprintf(path + strlen(path), "%s%s.vert",
-           DIR_SEPARATOR, graphics->gl_scaling_shader);
+          snprintf(path + path_len, MAX_PATH - path_len,
+           DIR_SEPARATOR "%s.vert", graphics->gl_scaling_shader);
           break;
 
         case GLSL_SHADER_SCALER_FRAG:
-          sprintf(path + strlen(path), "%s%s.frag",
-           DIR_SEPARATOR, graphics->gl_scaling_shader);
+          snprintf(path + path_len, MAX_PATH - path_len,
+           DIR_SEPARATOR "%s.frag", graphics->gl_scaling_shader);
           break;
 
         default:
           break;
       }
+      path[MAX_PATH - 1] = '\0';
 
       source_cache[index] = glsl_load_string(path);
 
@@ -642,6 +676,12 @@ static void glsl_free_video(struct graphics_data *graphics)
 
   if(render_data)
   {
+    if(glsl.has_fbo)
+    {
+      glsl.glDeleteFramebuffers(NUM_FBOS, render_data->fbos);
+      gl_check_error();
+    }
+
     glsl.glDeleteTextures(NUM_TEXTURES, render_data->textures);
     gl_check_error();
 
@@ -702,6 +742,21 @@ static void glsl_resize_screen(struct graphics_data *graphics,
    render_data->pixels);
   gl_check_error();
 
+  if(glsl.has_fbo)
+  {
+    glsl.glDeleteFramebuffers(NUM_FBOS, render_data->fbos);
+    gl_check_error();
+
+    glsl.glGenFramebuffers(NUM_FBOS, render_data->fbos);
+    gl_check_error();
+
+    glsl.glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbos[FBO_SCREEN_TEX]);
+    gl_check_error();
+
+    glsl.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+     GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID], 0);
+  }
+
   // Data texture
   glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
@@ -720,6 +775,8 @@ static void glsl_resize_screen(struct graphics_data *graphics,
 static boolean glsl_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
+  boolean load_fbo_syms = true;
+
   gl_set_attributes(graphics);
 
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize,
@@ -762,10 +819,23 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
         return false;
       }
 
+      if(version_float >= 3.0)
+        debug("Attempting to load FBO syms...\n");
+      else
+        load_fbo_syms = false;
+
       initialized = true;
     }
   }
 #endif
+
+  if(load_fbo_syms && gl_load_syms(glsl_syms_map_fbo))
+  {
+    debug("Using FBO syms for GLSL renderer.\n");
+    glsl.has_fbo = true;
+  }
+  else
+    glsl.has_fbo = false;
 
   glsl_resize_screen(graphics, width, height);
   return true;
@@ -1186,9 +1256,20 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
   gl_check_error();
 
-  glsl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0,
-   GL_POWER_2_WIDTH, GL_POWER_2_HEIGHT, 0);
-  gl_check_error();
+  // If FBOs are enabled, the screen was directly drawn to the screen texture
+  // and the window framebuffer needs to be selected. Otherwise, copy the
+  // screen off of the window framebuffer to the screen texture.
+  if(!glsl.has_fbo)
+  {
+    glsl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0,
+     GL_POWER_2_WIDTH, GL_POWER_2_HEIGHT, 0);
+    gl_check_error();
+  }
+  else
+  {
+    glsl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    gl_check_error();
+  }
 
   glsl.glClear(GL_COLOR_BUFFER_BIT);
   gl_check_error();
@@ -1222,6 +1303,12 @@ static void glsl_sync_screen(struct graphics_data *graphics)
 
   glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
+
+  if(glsl.has_fbo)
+  {
+    glsl.glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbos[FBO_SCREEN_TEX]);
+    gl_check_error();
+  }
 
   gl_swap_buffers(graphics);
 

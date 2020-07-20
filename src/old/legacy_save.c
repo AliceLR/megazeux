@@ -94,12 +94,11 @@ size_t legacy_save_robot_calculate_size(struct world *mzx_world,
   return robot_size;
 }
 
-void legacy_save_robot_to_memory(struct robot *cur_robot, void *buffer, int savegame, int version)
+void legacy_save_robot_to_memory(struct robot *cur_robot, struct memfile *mf,
+ int savegame, int version)
 {
   int program_length;
   int i;
-
-  unsigned char *bufferPtr = buffer;
 
 #ifdef CONFIG_DEBYTECODE
   // Write the program's source code if it's a world file, or the
@@ -117,60 +116,59 @@ void legacy_save_robot_to_memory(struct robot *cur_robot, void *buffer, int save
   }
 
   // As of 2.83 we're writing out 4 byte sizes.
-  mem_putd(program_length, &bufferPtr);
+  mfputd(program_length, mf);
 #else /* !CONFIG_DEBYTECODE */
   program_length = cur_robot->program_bytecode_length;
-  mem_putw(program_length, &bufferPtr);
+  mfputw(program_length, mf);
   // Junk
-  mem_putw(0, &bufferPtr);
+  mfputw(0, mf);
 #endif /* !CONFIG_DEBYTECODE */
 
-  memcpy(bufferPtr, cur_robot->robot_name, 15);
-  bufferPtr += 15;
+  mfwrite(cur_robot->robot_name, LEGACY_ROBOT_NAME_SIZE, 1, mf);
 
-  mem_putc(cur_robot->robot_char, &bufferPtr);
+  mfputc(cur_robot->robot_char, mf);
   if(savegame)
   {
-    mem_putw(cur_robot->cur_prog_line, &bufferPtr);
-    mem_putc(cur_robot->pos_within_line, &bufferPtr);
-    mem_putc(cur_robot->robot_cycle, &bufferPtr);
-    mem_putc(cur_robot->cycle_count, &bufferPtr);
-    mem_putc(cur_robot->bullet_type, &bufferPtr);
-    mem_putc(cur_robot->is_locked, &bufferPtr);
-    mem_putc(cur_robot->can_lavawalk, &bufferPtr);
-    mem_putc(cur_robot->walk_dir, &bufferPtr);
-    mem_putc(cur_robot->last_touch_dir, &bufferPtr);
-    mem_putc(cur_robot->last_shot_dir, &bufferPtr);
-    mem_putw(cur_robot->xpos, &bufferPtr);
-    mem_putw(cur_robot->ypos, &bufferPtr);
-    mem_putc(cur_robot->status, &bufferPtr);
+    mfputw(cur_robot->cur_prog_line, mf);
+    mfputc(cur_robot->pos_within_line, mf);
+    mfputc(cur_robot->robot_cycle, mf);
+    mfputc(cur_robot->cycle_count, mf);
+    mfputc(cur_robot->bullet_type, mf);
+    mfputc(cur_robot->is_locked, mf);
+    mfputc(cur_robot->can_lavawalk, mf);
+    mfputc(cur_robot->walk_dir, mf);
+    mfputc(cur_robot->last_touch_dir, mf);
+    mfputc(cur_robot->last_shot_dir, mf);
+    mfputw(cur_robot->xpos, mf);
+    mfputw(cur_robot->ypos, mf);
+    mfputc(cur_robot->status, mf);
   }
   else
   {
     // Put some "default" values here instead
-    mem_putw(1, &bufferPtr);
-    mem_putc(0, &bufferPtr);
-    mem_putc(0, &bufferPtr);
-    mem_putc(0, &bufferPtr);
-    mem_putc(1, &bufferPtr);
-    mem_putc(0, &bufferPtr);
-    mem_putc(0, &bufferPtr);
-    mem_putc(0, &bufferPtr);
-    mem_putc(0, &bufferPtr);
-    mem_putc(0, &bufferPtr);
-    mem_putw(cur_robot->xpos, &bufferPtr);
-    mem_putw(cur_robot->ypos, &bufferPtr);
-    mem_putc(0, &bufferPtr);
+    mfputw(1, mf);
+    mfputc(0, mf);
+    mfputc(0, mf);
+    mfputc(0, mf);
+    mfputc(1, mf);
+    mfputc(0, mf);
+    mfputc(0, mf);
+    mfputc(0, mf);
+    mfputc(0, mf);
+    mfputc(0, mf);
+    mfputw(cur_robot->xpos, mf);
+    mfputw(cur_robot->ypos, mf);
+    mfputc(0, mf);
   }
 
   // Junk local
-  mem_putw(0, &bufferPtr);
-  mem_putc(cur_robot->used, &bufferPtr);
+  mfputw(0, mf);
+  mfputc(cur_robot->used, mf);
   // loop_count
   if(version <= V283)
-    mem_putw(cur_robot->loop_count, &bufferPtr);
+    mfputw(cur_robot->loop_count, mf);
   else // junk
-    mem_putw(0, &bufferPtr);
+    mfputw(0, mf);
 
   // If savegame, there's some additional information to get
   if(savegame)
@@ -179,25 +177,25 @@ void legacy_save_robot_to_memory(struct robot *cur_robot, void *buffer, int save
 
     // Write the local counters
     if(version >= V284)
-      mem_putd(cur_robot->loop_count, &bufferPtr);
+      mfputd(cur_robot->loop_count, mf);
 
     for(i = 0; i < 32; i++)
     {
-      mem_putd(cur_robot->local[i], &bufferPtr);
+      mfputd(cur_robot->local[i], mf);
     }
 
     // Put the stack size
     // Divide by two; we don't want to save pos_within_line values.
-    mem_putd(stack_size/2, &bufferPtr);
+    mfputd(stack_size/2, mf);
 
     // Put the stack pointer
-    mem_putd(cur_robot->stack_pointer/2, &bufferPtr);
+    mfputd(cur_robot->stack_pointer/2, mf);
 
     // Put the stack
     // Only put even indices; odd indices are pos_within_line values.
     for(i = 0; i < stack_size; i += 2)
     {
-      mem_putd(cur_robot->stack[i], &bufferPtr);
+      mfputd(cur_robot->stack[i], mf);
     }
   }
 
@@ -207,11 +205,10 @@ void legacy_save_robot_to_memory(struct robot *cur_robot, void *buffer, int save
   // the zap status stored somewhere else.
 
   if(!savegame)
-    memcpy(bufferPtr, cur_robot->program_source, program_length);
+    mfwrite(cur_robot->program_source, program_length, 1, mf);
   else
 #endif
-    memcpy(bufferPtr, cur_robot->program_bytecode, program_length);
-  //bufferPtr += program_length;  // Uncomment if adding more
+    mfwrite(cur_robot->program_bytecode, program_length, 1, mf);
 }
 
 void legacy_save_robot(struct world *mzx_world, struct robot *cur_robot,
@@ -219,14 +216,14 @@ void legacy_save_robot(struct world *mzx_world, struct robot *cur_robot,
 {
   size_t robot_size = legacy_save_robot_calculate_size(mzx_world, cur_robot,
    savegame, version);
-
   void *buffer = cmalloc(robot_size);
-  legacy_save_robot_to_memory(cur_robot, buffer, savegame, version);
+  struct memfile mf;
 
-  if(buffer) {
-    fwrite(buffer, robot_size, 1, fp);
-    free(buffer);
-  }
+  mfopen(buffer, robot_size, &mf);
+  legacy_save_robot_to_memory(cur_robot, &mf, savegame, version);
+
+  fwrite(buffer, robot_size, 1, fp);
+  free(buffer);
 }
 
 void legacy_save_scroll(struct scroll *cur_scroll, FILE *fp, int savegame)

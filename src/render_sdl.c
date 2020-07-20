@@ -199,6 +199,11 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 
   sdl_destruct_window(graphics);
 
+#if defined(__EMSCRIPTEN__) && SDL_VERSION_ATLEAST(2,0,10)
+  // Also, a hint needs to be set to make SDL_UpdateWindowSurface not crash.
+  SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY, "0");
+#endif
+
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
    sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
@@ -372,6 +377,11 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+
+#if SDL_VERSION_ATLEAST(2,0,10)
+  // Also, a hint needs to be set to make gl_swap_buffers not crash. Brilliant.
+  SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY, "0");
+#endif
 #endif
 
   render_data->window = SDL_CreateWindow("MegaZeux",

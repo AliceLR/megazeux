@@ -39,20 +39,44 @@ usage() {
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
+	echo "Optimization and debug options:"
 	echo "  --as-needed-hack        Pass --as-needed through to GNU ld."
 	echo "  --enable-release        Optimize and remove debugging code."
 	echo "  --enable-verbose        Build system is always verbose (V=1)."
 	echo "  --optimize-size         Perform size optimizations (-Os)."
-	echo "  --enable-asan           Enable AddressSanitizer for debug builds"
-	echo "  --enable-msan           Enable MemorySanitizer for debug builds"
-	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds"
+	echo "  --enable-asan           Enable AddressSanitizer for debug builds."
+	echo "  --enable-msan           Enable MemorySanitizer for debug builds."
+	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds."
+	echo "  --enable-ubsan          Enable UndefinedBehaviorSanitizer for debug builds."
+	echo "  --enable-analyzer       Enable -fanalyzer (requires GCC 10+)."
+	echo "  --enable-trace          Enable trace logging for debug builds."
+	echo "  --enable-stdio-redirect Redirect console logging to stdout.txt/stderr.txt."
+	echo
+	echo "Platform-dependent options:"
+	echo "  --disable-x11           Disable X11, removing binary dependency."
+	echo "  --disable-pthread       Use SDL's threads/locking instead of pthread."
+	echo "  --disable-icon          Do not try to brand executable."
+	echo "  --disable-modular       Disable dynamically shared objects."
+	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
+	echo "  --disable-sdl           Disables SDL dependencies and features."
+	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
+	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
 	echo "  --enable-pledge         Enable experimental OpenBSD pledge(2) support"
+	echo
+	echo "General options:"
 	echo "  --disable-datestamp     Disable adding date to version."
 	echo "  --disable-editor        Disable the built-in editor."
 	echo "  --disable-mzxrun        Disable generation of separate MZXRun."
 	echo "  --disable-helpsys       Disable the built-in help system."
 	echo "  --disable-utils         Disable compilation of utils."
-	echo "  --disable-x11           Disable X11, removing binary dependency."
+	echo "  --disable-network       Disable networking abilities."
+	echo "  --disable-updater       Disable built-in updater."
+	echo "  --disable-check-alloc   Disables memory allocator error handling."
+	echo "  --disable-counter-hash  Disables hash tables for counter/string lookups."
+	echo "  --enable-meter          Enable load/save meter display."
+	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
+	echo
+	echo "Graphics options:"
 	echo "  --disable-software      Disable software renderer."
 	echo "  --disable-softscale     Disable SDL 2 accelerated software renderer."
 	echo "  --disable-gl            Disable all GL renderers."
@@ -60,32 +84,20 @@ usage() {
 	echo "  --disable-gl-prog       Disable GL renderers for programmable h/w."
 	echo "  --disable-overlay       Disable SDL 1.2 overlay renderers."
 	echo "  --enable-gp2x           Enables half-res software renderer."
+	echo "  --disable-libpng        Disable PNG screendump support."
 	echo "  --disable-screenshots   Disable the screenshot hotkey."
+	echo "  --enable-fps            Enable frames-per-second counter."
+	echo
+	echo "Audio options:"
+	echo "  --disable-audio         Disable all audio (sound + music)."
 	echo "  --disable-xmp           Disable XMP music engine."
 	echo "  --enable-modplug        Enables ModPlug music engine."
 	echo "  --enable-mikmod         Enables MikMod music engine."
 	echo "  --enable-openmpt        Enables OpenMPT music engine."
 	echo "  --disable-rad           Disables Reality Adlib Tracker (RAD) support."
-	echo "  --disable-libpng        Disable PNG screendump support."
-	echo "  --disable-audio         Disable all audio (sound + music)."
 	echo "  --disable-vorbis        Disable ogg/vorbis support."
-	echo "  --enable-tremor         Switches out libvorbis for libvorbisidec."
-	echo "  --enable-tremor-lowmem  Switches out libvorbis for libvorbisidec (lowmem branch)."
-	echo "  --disable-pthread       Use SDL's threads/locking instead of pthread."
-	echo "  --disable-icon          Do not try to brand executable."
-	echo "  --disable-modular       Disable dynamically shared objects."
-	echo "  --disable-updater       Disable built-in updater."
-	echo "  --disable-network       Disable networking abilities."
-	echo "  --enable-meter          Enable load/save meter display."
-	echo "  --disable-sdl           Disables SDL dependencies and features."
-	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
-	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
-	echo "  --disable-check-alloc   Disables memory allocator error handling."
-	echo "  --disable-counter-hash  Disables hash tables for counter/string lookups."
-	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
-	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
-	echo "  --enable-stdio-redirect Redirect console output to stdout.txt/stderr.txt."
-	echo "  --enable-fps            Enable frames-per-second counter."
+	echo "  --enable-tremor         Use libvorbisidec instead of libvorbis."
+	echo "  --enable-tremor-lowmem  Use libvorbisidec (lowmem branch) instead of libvorbis."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -120,6 +132,7 @@ AS_NEEDED="false"
 RELEASE="false"
 OPT_SIZE="false"
 SANITIZER="false"
+ANALYZER="false"
 PLEDGE="false"
 PLEDGE_UTILS="true"
 EDITOR="true"
@@ -156,6 +169,7 @@ CHECK_ALLOC="true"
 COUNTER_HASH="true"
 DEBYTECODE="false"
 LIBSDL2="true"
+TRACE_LOGGING="false"
 STDIO_REDIRECT="false"
 GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
@@ -244,6 +258,12 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-tsan" ] &&  SANITIZER="thread"
 	[ "$1" = "--disable-tsan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-ubsan" ] &&  SANITIZER="undefined"
+	[ "$1" = "--disable-ubsan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-analyzer" ] &&  ANALYZER="true"
+	[ "$1" = "--disable-analyzer" ] && ANALYZER="false"
 
 	[ "$1" = "--enable-pledge" ] &&  PLEDGE="true"  && PLEDGE_UTILS="true"
 	[ "$1" = "--disable-pledge" ] && PLEDGE="false" && PLEDGE_UTILS="false"
@@ -362,6 +382,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--enable-libsdl2" ]  && LIBSDL2="true"
 	[ "$1" = "--disable-libsdl2" ] && LIBSDL2="false"
 
+	[ "$1" = "--enable-trace" ]  && TRACE_LOGGING="true"
+	[ "$1" = "--disable-trace" ] && TRACE_LOGGING="false"
+
 	[ "$1" = "--enable-stdio-redirect" ]  && STDIO_REDIRECT="true"
 	[ "$1" = "--disable-stdio-redirect" ] && STDIO_REDIRECT="false"
 
@@ -424,6 +447,9 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 		"OpenBSD")
 			UNIX="openbsd"
 			;;
+		"NetBSD")
+			UNIX="netbsd"
+			;;
 		*)
 			echo "WARNING: Should define proper UNIX name here!"
 			UNIX="unix"
@@ -444,6 +470,18 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	elif [ "$MACH" = "ppc" ]; then
 		ARCHNAME=ppc
 		#RAWLIBDIR=lib
+	elif [ "$MACH" = "m68k" ]; then
+		ARCHNAME=m68k
+	elif [ "$MACH" = "alpha" ]; then
+		ARCHNAME=alpha
+	elif [ "$MACH" = "hppa" ]; then
+		ARCHNAME=hppa
+	elif [ "$MACH" = "sparc" ]; then
+		ARCHNAME=sparc
+	elif [ "$MACH" = "sparc64" ]; then
+		ARCHNAME=sparc64
+	elif [ "$MACH" = "riscv64" ]; then
+		ARCHNAME=riscv64
 	else
 		ARCHNAME=$MACH
 		#RAWLIBDIR=lib
@@ -657,6 +695,7 @@ fi
 #
 if [ "$PLATFORM" = "emscripten" ]; then
 	echo "Enabling Emscripten-specific hacks."
+	echo "BUILD_EMSCRIPTEN=1" >> platform.inc
 	EDITOR="false"
 	SCREENSHOTS="false"
 	UPDATER="false"
@@ -917,6 +956,19 @@ if [ "$AS_NEEDED" = "true" ]; then
 fi
 
 #
+# Enable -fanalyzer support.
+#
+if [ "$ANALYZER" = "true" ]; then
+	echo "Enabling -fanalyzer."
+	echo ""
+	echo "  *** WARNING ***: this is an experimental GCC feature! Its output"
+	echo "  currently isn't very reliable, but it did help find some places"
+	echo "  check_alloc wasn't being used and one legitimate memory leak."
+	echo ""
+	echo "BUILD_F_ANALYZER=1" >> platform.inc
+fi
+
+#
 # Enable pledge(2) support (OpenBSD only)
 #
 if [ "$UNIX" = "openbsd" ]; then
@@ -956,8 +1008,16 @@ else
 	echo "DEBUG=1" >> platform.inc
 
 	if [ "$SANITIZER" != "false" ]; then
-		echo "Enabling $SANITIZER sanitizer (may enable some optimizations)"
+		echo "Enabling $SANITIZER sanitizer (may enable some optimizations)."
 		echo "SANITIZER=$SANITIZER" >> platform.inc
+	fi
+
+	#
+	# Trace logging for debug builds, if enabled.
+	#
+	if [ "$TRACE_LOGGING" = "true" ]; then
+		echo "Enabling trace logging."
+		echo "#define DEBUG_TRACE" >> src/config.h
 	fi
 fi
 

@@ -6,4 +6,5 @@ docs/macro.txt text
 docs/port.txt text
 docs/push_and_transport.txt text
 docs/WIPHelp.txt text
+unit/io/data/*.txt text eol=lf
 config.txt text

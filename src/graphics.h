@@ -196,7 +196,7 @@ struct graphics_data
   Uint32 cursor_flipflop;
   Uint32 default_smzx_loaded;
   enum ratio_type ratio;
-  char *gl_filter_method;
+  enum gl_filter_type gl_filter_method;
   char *gl_scaling_shader;
   int gl_vsync;
 
@@ -356,6 +356,8 @@ void focus_pixel(int x, int y);  // Pixel coordinates
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC extern struct graphics_data graphics;
+CORE_LIBSPEC Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode,
+ Sint32 mask_chr);
 CORE_LIBSPEC void ec_load_mzx(void);
 CORE_LIBSPEC void ec_load_set_secondary(const char *name, Uint8 *dest);
 #endif // CONFIG_EDITOR

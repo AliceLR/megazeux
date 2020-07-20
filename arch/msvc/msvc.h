@@ -28,9 +28,15 @@
 #include <direct.h>
 #include <process.h>
 
+// unistd.h mode defines (required for access calls)
+#define X_OK   0
+#define W_OK   2
+#define R_OK   4
+
 #define S_ISREG(mode) (mode & _S_IFREG)
 #define S_ISDIR(mode) (mode & _S_IFDIR)
 
+#define access      _access
 #define chdir       _chdir
 #define execv       _execv
 #define getcwd      _getcwd

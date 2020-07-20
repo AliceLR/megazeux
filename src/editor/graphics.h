@@ -45,10 +45,12 @@ void ec_read_block(Uint8 offset, Uint8 charset,
  Uint8 width, Uint8 height, char *matrix);
 void load_editor_charsets(void);
 void ec_load_smzx(void);
+void ec_load_smzx2(void);
 void ec_load_blank(void);
 void ec_load_ascii(void);
 void ec_load_char_ascii(Uint32 char_number);
 void ec_load_char_mzx(Uint32 char_number);
+Uint8 compare_char(Uint16 chr_a, Uint16 chr_b);
 
 __M_END_DECLS
 

@@ -37,6 +37,7 @@ struct deflate_stream_data
 {
   struct zip_stream_data zs;
   z_stream z;
+  boolean should_finish;
 };
 
 static inline void inflate_open(struct zip_stream_data *zs, uint16_t method,
@@ -89,7 +90,7 @@ static inline enum zip_error inflate_init(struct zip_stream_data *zs)
   return ZIP_INPUT_EMPTY;
 }
 
-static inline enum zip_error inflate_file(struct zip_stream_data *zs)
+static inline enum zip_error inflate_block(struct zip_stream_data *zs)
 {
   struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
 
@@ -99,20 +100,34 @@ static inline enum zip_error inflate_file(struct zip_stream_data *zs)
   if(result)
     return result;
 
+  if(zs->finished)
+    return ZIP_STREAM_FINISHED;
+
   if(!ds->z.avail_out)
     return ZIP_OUTPUT_FULL;
 
+  if(!ds->z.avail_in)
+    return ZIP_INPUT_EMPTY;
+
   err = inflate(&(ds->z), Z_FINISH);
-
-  zs->final_input_length = ds->z.total_in;
-  zs->final_output_length = ds->z.total_out;
-  zs->finished = true;
-
-  inflateEnd(&(ds->z));
-
   if(err == Z_STREAM_END)
-    return ZIP_SUCCESS;
+  {
+    zs->final_input_length = ds->z.total_in;
+    zs->final_output_length = ds->z.total_out;
+    zs->finished = true;
 
+    inflateEnd(&(ds->z));
+    return ZIP_STREAM_FINISHED;
+  }
+
+  if(err == Z_OK || err == Z_BUF_ERROR)
+  {
+    if(!ds->z.avail_out)
+      return ZIP_OUTPUT_FULL;
+
+    if(!ds->z.avail_in)
+      return ZIP_INPUT_EMPTY;
+  }
   return ZIP_DECOMPRESS_FAILED;
 }
 
@@ -131,33 +146,53 @@ static inline enum zip_error deflate_init(struct zip_stream_data *zs)
   return ZIP_SUCCESS;
 }
 
-static inline enum zip_error deflate_file(struct zip_stream_data *zs)
+static inline enum zip_error deflate_block(struct zip_stream_data *zs,
+ boolean should_finish)
 {
   struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
 
   enum zip_error result = deflate_init(zs);
+  int flush = Z_NO_FLUSH;
   int err;
 
   if(result)
     return result;
 
-  if(!ds->z.avail_in)
-    return ZIP_INPUT_EMPTY;
+  if(zs->finished)
+    return ZIP_STREAM_FINISHED;
 
   if(!ds->z.avail_out)
     return ZIP_OUTPUT_FULL;
 
-  err = deflate(&(ds->z), Z_FINISH);
+  should_finish |= ds->should_finish;
+  if(!should_finish && !ds->z.avail_in)
+    return ZIP_INPUT_EMPTY;
 
-  zs->final_input_length = ds->z.total_in;
-  zs->final_output_length = ds->z.total_out;
-  zs->finished = true;
+  if(should_finish)
+  {
+    ds->should_finish = true;
+    flush = Z_FINISH;
+  }
 
-  deflateEnd(&(ds->z));
-
+  err = deflate(&(ds->z), flush);
   if(err == Z_STREAM_END)
-    return ZIP_SUCCESS;
+  {
+    zs->final_input_length = ds->z.total_in;
+    zs->final_output_length = ds->z.total_out;
+    zs->finished = true;
 
+    deflateEnd(&(ds->z));
+    return ZIP_STREAM_FINISHED;
+  }
+
+  if(err == Z_OK || err == Z_BUF_ERROR)
+  {
+    if(!ds->z.avail_out)
+      return ZIP_OUTPUT_FULL;
+
+    if(flush != Z_FINISH && !ds->z.avail_in)
+      return ZIP_INPUT_EMPTY;
+  }
   return ZIP_COMPRESS_FAILED;
 }
 

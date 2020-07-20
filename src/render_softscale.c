@@ -320,6 +320,12 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
   else
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
+#if defined(__EMSCRIPTEN__) && SDL_VERSION_ATLEAST(2,0,10)
+  // Not clear if this hint is required to make this renderer not crash, but
+  // considering both software and GLSL need it...
+  SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY, "0");
+#endif
+
   render_data->sdl.window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
    sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
@@ -560,6 +566,9 @@ static void softscale_sync_screen(struct graphics_data *graphics)
   dest_rect.h = v_height;
 
   softscale_unlock_texture(render_data);
+
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+  SDL_RenderClear(renderer);
 
   SDL_RenderCopy(renderer, texture, src_rect, &dest_rect);
   SDL_RenderPresent(renderer);

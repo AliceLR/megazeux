@@ -390,7 +390,7 @@ static int load_sam_file(const char *file, struct wav_info *spec)
   source_length = ftell_and_rewind(fp);
   if(source_length > WARN_FILESIZE)
   {
-    debug("Size of SAM file '%s' is %zu; OGG should be used instead.\n",
+    trace("Size of SAM file '%s' is %zu; OGG should be used instead.\n",
      file, source_length);
   }
 
@@ -448,8 +448,8 @@ static int load_wav_file(const char *file, struct wav_info *spec)
   file_size = ftell_and_rewind(fp);
   if(file_size > WARN_FILESIZE)
   {
-    debug("This WAV is too big sempai OwO;;;\n");
-    debug("Size of WAV file '%s' is %zu; OGG should be used instead.\n",
+    trace("This WAV is too big sempai OwO;;;\n");
+    trace("Size of WAV file '%s' is %zu; OGG should be used instead.\n",
      file, file_size);
   }
 

@@ -78,10 +78,11 @@ enum zip_general_purpose_flag
 };
 
 // These flags are allowed for all DEFLATE and stored files we care about.
-#define ZIP_F_ALLOWED   (\
-  ZIP_F_DATA_DESCRIPTOR |\
-  ZIP_F_COMPRESSION_1   |\
-  ZIP_F_COMPRESSION_2   )
+#define ZIP_F_ALLOWED     (\
+  ZIP_F_DATA_DESCRIPTOR   |\
+  ZIP_F_COMPRESSION_1     |\
+  ZIP_F_COMPRESSION_2     |\
+  ZIP_F_LANGUAGE_ENCODING )
 
 // Some ancient archives from unknown sources seem to have set the unused
 // flags in places. These should be safe to ignore.
@@ -138,6 +139,7 @@ enum zip_error
   ZIP_COMPRESS_FAILED,
   ZIP_INPUT_EMPTY,
   ZIP_OUTPUT_FULL,
+  ZIP_STREAM_FINISHED,
 };
 
 struct zip_file_header
@@ -153,6 +155,8 @@ struct zip_file_header
   uint8_t mzx_robot_id;
   uint16_t file_name_length;
   // This struct is allocated with an extended area for the filename.
+  // This field MUST be at least 4-aligned and it must be the last field in the
+  // struct (any extra padding after will be used).
   char file_name[1];
 };
 
@@ -204,7 +208,12 @@ struct zip_archive
 
   struct zip_file_header **files;
   struct zip_file_header *streaming_file;
+  uint8_t *stream_buffer;
+  uint32_t stream_buffer_pos;
+  uint32_t stream_buffer_end;
+  uint32_t stream_buffer_alloc;
   uint32_t stream_crc_position;
+  uint32_t stream_u_left;
   uint32_t stream_left;
   uint32_t stream_crc32;
 

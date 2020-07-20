@@ -37,9 +37,9 @@ __M_BEGIN_DECLS
 // Strings cannot be longer than 4M (orig 1M)
 #define MAX_STRING_LEN (1 << 22)
 
-CORE_LIBSPEC int get_string(struct world *mzx_world, const char *name,
+CORE_LIBSPEC int get_string(struct world *mzx_world, char *name_buffer,
  struct string *dest, int id);
-CORE_LIBSPEC int set_string(struct world *mzx_world, const char *name,
+CORE_LIBSPEC int set_string(struct world *mzx_world, char *name_buffer,
  struct string *src, int id);
 CORE_LIBSPEC struct string *new_string(struct world *mzx_world,
  const char *name, size_t length, int id);
@@ -47,20 +47,21 @@ CORE_LIBSPEC boolean is_string(char *buffer);
 CORE_LIBSPEC void sort_string_list(struct string_list *string_list);
 
 int string_read_as_counter(struct world *mzx_world,
- const char *name, int id);
+ char *name_buffer, int id);
 void string_write_as_counter(struct world *mzx_world,
- const char *name, int value, int id);
+ char *name_buffer, int value, int id);
 
-void load_string_board(struct world *mzx_world, const char *name,
+void load_string_board(struct world *mzx_world, char *name_buffer,
  char *src_chars, int src_width, int block_width, int block_height,
  char terminator);
 
-void inc_string(struct world *mzx_world, const char *name, struct string *src,
+void inc_string(struct world *mzx_world, char *name_buffer, struct string *src,
  int id);
 void dec_string_int(struct world *mzx_world, const char *name, int value,
  int id);
 int compare_strings(struct string *A, struct string *B, boolean exact_case,
  boolean allow_wildcards);
+int compare_strings_null_terminated(struct string *A, struct string *B);
 
 struct string *load_new_string(struct string_list *string_list, int index,
  const char *name, int name_length, int str_length);

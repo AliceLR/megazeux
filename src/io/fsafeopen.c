@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2004-2005 Alistair Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2020 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -25,10 +26,198 @@
 
 #include "fsafeopen.h"
 #include "dir.h"
+#include "path.h"
 
 #include "../util.h"
 
 #ifndef __WIN32__
+#define ENABLE_DOS_COMPAT_TRANSLATIONS
+#endif
+
+#ifdef ENABLE_DOS_COMPAT_TRANSLATIONS
+enum sfn_type
+{
+  NOT_AN_SFN,
+  SFN,
+  SFN_TRUNCATED,
+};
+
+#define SFN_BUFFER_LEN 13
+
+/**
+ * Determine if a given character is a valid SFN character.
+ * NOTE: ~ will return false for this for the purposes of detecting truncated
+ * SFNs. Spaces also cause this function to return false, as though they were
+ * technically valid in the SFN, they were stripped in practice. Conversely,
+ * lowercase letters will be treated as valid even though they technically
+ * are not as these strings are going to be compared case-insensitively anyway.
+ *
+ * Valid SFN chars:     Space ! # $ % & ' ( ) - 0-9 @ A-Z ^ _ ` { } ~ \x80-\xFF
+ * Invalid SFN chars:   \x00-\x1F a-z " * + , . / : ; < = > ? [ \ ] | \x7F
+ *
+ * https://en.wikipedia.org/wiki/8.3_filename
+ *
+ * @param  chr  Character to test.
+ * @return      True if the character is a valid SFN character, otherwise false.
+ */
+static boolean is_sfn_char(unsigned char chr)
+{
+  static const unsigned char sfn_chars[256] =
+  {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x0
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x1
+    0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, // 0x2
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, // 0x3
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x4
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, // 0x5
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x6
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, // 0x7
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x8
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x9
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0xA
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0xB
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0xC
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0xD
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0xE
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0xF
+  };
+  return sfn_chars[chr];
+}
+
+/**
+ * Determine if an input filename is a valid SFN.
+ *
+ * @param  filename   Filename to check.
+ * @param  check_len  Length of filename to check.
+ * @return            "NOT_AN_SFN" if not an SFN; "SFN" if an SFN;
+ *                    or "SFN_TRUNCATED" if an SFN in the format "NAME~1.EXT".
+ */
+static enum sfn_type is_sfn(const char *filename, size_t check_len)
+{
+  boolean is_truncated = false;
+  size_t i;
+
+  if(check_len < SFN_BUFFER_LEN)
+  {
+    for(i = 0; i < check_len; i++)
+    {
+      if(!is_sfn_char(filename[i]))
+      {
+        if(i <= 6 && filename[i] == '~')
+        {
+          size_t tilde_pos = i;
+          i++;
+          while(isdigit((unsigned char)filename[i]))
+            i++;
+
+          if(i > tilde_pos + 1 && (filename[i] == '.' || filename[i] == '\0'))
+            is_truncated = true;
+        }
+        break;
+      }
+    }
+
+    // The filename portion must be no longer than 8 chars...
+    if(i > 8)
+      return NOT_AN_SFN;
+
+    if(i < check_len)
+    {
+      // These are the only valid terminators for the filename portion.
+      if(filename[i] != '.' && filename[i] != '\0')
+        return NOT_AN_SFN;
+
+      if(filename[i++] == '.')
+      {
+        size_t j;
+        for(j = i; j < check_len; j++)
+          if(!is_sfn_char(filename[j]))
+            break;
+
+        // The extension portion must be no longer than 3 chars and must not
+        // be terminated before the end of the string...
+        if(j < check_len || (j - i) > 3)
+          return NOT_AN_SFN;
+      }
+    }
+    return is_truncated ? SFN_TRUNCATED : SFN;
+  }
+  return NOT_AN_SFN;
+}
+
+/**
+ * Translate a given filename to an SFN. The provided buffer must be long
+ * enough to hold an SFN. If the given filename is already an SFN, the filename
+ * pointer will be returned; otherwise, the buffer pointer will be returned.
+ *
+ * @param  dest         Destination buffer.
+ * @param  buffer_len   Length of destination buffer.
+ * @param  filename     Filename to translate to an SFN.
+ * @return              filename if already an SFN; dest on a successful
+ *                      translation; NULL if an error occured.
+ */
+static const char *get_sfn(char *dest, size_t buffer_len, const char *filename)
+{
+  size_t len = strlen(filename);
+  ssize_t _ext_pos = path_get_ext_offset(filename);
+  size_t ext_pos = _ext_pos >= 0 ? (size_t)_ext_pos : len;
+  size_t i;
+  size_t j;
+
+  if(is_sfn(filename, len))
+    return filename;
+
+  if(buffer_len < SFN_BUFFER_LEN)
+    return NULL;
+
+  // 1) Copy the first 6 valid chars of the filename.
+  // Spaces and periods before the extension position should be stripped.
+  // Other invalid characters should be replaced with an underscore.
+  for(i = 0, j = 0; i < ext_pos && j < 6; i++)
+  {
+    char c = filename[i];
+
+    if(!is_sfn_char(c))
+    {
+      if(c == ' ' || c == '.')
+        continue;
+
+      dest[j++] = '_';
+    }
+    else
+      dest[j++] = c;
+  }
+
+  // 2) Append ~1.
+  dest[j++] = '~';
+  dest[j++] = '1';
+
+  // 3) If there's an extension, place one period and the first 3 valid
+  // characters of the extension. In the case of a trailing period, just
+  // skip it.
+  if(ext_pos + 1 < len)
+  {
+    size_t ext_max = j + 4;
+    dest[j++] = '.';
+
+    for(i = ext_pos + 1; i < len && j < ext_max; i++)
+    {
+      char c = filename[i];
+
+      if(!is_sfn_char(c))
+      {
+        if(c == ' ')
+          continue;
+
+        dest[j++] = '_';
+      }
+      else
+        dest[j++] = c;
+    }
+  }
+  dest[j] = '\0';
+  return dest;
+}
 
 // convert to lowercase
 
@@ -96,7 +285,7 @@ static void case4(char *string)
 
 // brute force method; returns -1 if no permutation can be found to work
 
-static int case5(char *path, char *string)
+static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
 {
   int ret = -FSAFE_BRUTE_FORCE_FAILED;
   int dirlen = string - path;
@@ -119,17 +308,70 @@ static int case5(char *path, char *string)
 
   if(dir_open(&wd, newpath))
   {
-    while(ret != FSAFE_SUCCESS)
-    {
-      // somebody bad happened, or there's no new entry
-      if(!dir_get_next_entry(&wd, newpath, NULL))
-        break;
+    const char *string_cmp = string;
+    char string_sfn[SFN_BUFFER_LEN];
+    char newpath_sfn[SFN_BUFFER_LEN];
+    boolean string_is_wildcard_sfn = false;
+    boolean has_sfn_match = false;
 
+    // If the input path is a truncated SFN, it may need to be aggressively
+    // checked against generated SFNs from files in the directory.
+    if(check_sfn && is_sfn(string, strlen(string)) == SFN_TRUNCATED)
+    {
+      memcpy(string_sfn, string, strlen(string) + 1);
+      string_is_wildcard_sfn = true;
+      string_cmp = string_sfn;
+    }
+
+    while(dir_get_next_entry(&wd, newpath, NULL))
+    {
       // okay, we got something, but does it match?
-      if(strcasecmp(string, newpath) == 0)
+      if(strcasecmp(string_cmp, newpath) == 0)
       {
-        memcpy(string, newpath, strlen(newpath));
+        memcpy(string, newpath, strlen(newpath) + 1);
         ret = FSAFE_SUCCESS;
+        break;
+      }
+      else
+
+      if(string_is_wildcard_sfn)
+      {
+        const char *newpath_cmp = get_sfn(newpath_sfn, SFN_BUFFER_LEN, newpath);
+        if(!strcasecmp(string_cmp, newpath_cmp))
+        {
+          size_t newpath_len = strlen(newpath);
+
+          // If there are duplicate SFN matches, there is no unambiguous
+          // result and thus it is not possible to guarantee a correct match.
+          if(has_sfn_match)
+          {
+            trace("%s:%d: ambiguous match for SFN '%s' to '%s', aborting.\n",
+             __FILE__, __LINE__, string_sfn, newpath);
+            memcpy(string, string_sfn, strlen(string_sfn) + 1);
+            ret = -FSAFE_BRUTE_FORCE_SFN_AMBIGUOUS;
+            break;
+          }
+          else
+
+          // Make sure the SFN expansion won't overflow the buffer.
+          if(newpath_len + dirlen + 1 > buffer_len)
+          {
+            trace("%s:%d: expansion for SFN '%s' to '%s' would overflow buffer,"
+             " aborting.\n", __FILE__, __LINE__, string_sfn, newpath);
+            ret = -FSAFE_BRUTE_FORCE_SFN_OVERFLOW;
+            break;
+          }
+          else
+          {
+            // Overwrite the old path with the expanded match, then continue
+            // searching the directory for duplicate matches or an exact match.
+            memcpy(string, newpath, newpath_len + 1);
+            trace("%s:%d: expanded SFN '%s' to '%s'\n",
+             __FILE__, __LINE__, string_sfn, newpath);
+            has_sfn_match = true;
+            ret = FSAFE_SUCCESS;
+          }
+        }
       }
     }
 
@@ -140,7 +382,7 @@ static int case5(char *path, char *string)
   return ret;
 }
 
-static int match(char *path)
+static int match(char *path, size_t buffer_len)
 {
   char *oldtoken = NULL, *token = NULL;
   struct stat inode;
@@ -198,9 +440,9 @@ static int match(char *path)
 
             default:
               // try brute force
-              if(case5(path, oldtoken) < 0)
+              if(case5(path, buffer_len, oldtoken, true) < 0)
               {
-                debug("%s:%d: file matches for %s failed.\n",
+                trace("%s:%d: file matches for %s failed.\n",
                  __FILE__, __LINE__, path);
                 return -FSAFE_MATCH_FAILED;
               }
@@ -228,9 +470,9 @@ static int match(char *path)
 
           default:
             // try brute force
-            if(case5(path, oldtoken) < 0)
+            if(case5(path, buffer_len, oldtoken, false) < 0)
             {
-              debug("%s:%d: directory matches for %s failed.\n",
+              trace("%s:%d: directory matches for %s failed.\n",
                __FILE__, __LINE__, path);
               return -FSAFE_MATCH_FAILED;
             }
@@ -238,7 +480,7 @@ static int match(char *path)
       }
 
       /* this "hack" overwrites the token's \0 to re-formulate
-       * the string versus strtok(); it has the nice side-affect of
+       * the string versus strtok(); it has the nice side-effect of
        * also converting windows style path to UNIX ones, so they'll
        * work on everything.
        */
@@ -251,7 +493,7 @@ static int match(char *path)
 
   return FSAFE_SUCCESS;
 }
-#endif // !__WIN32__
+#endif /* ENABLE_DOS_COMPAT_TRANSLATIONS */
 
 /* OK before we do anything, we need to make some security checks. MZX games
  * shouldn't be able to open C:\Windows\Explorer.exe and overwrite it, so
@@ -259,7 +501,7 @@ static int match(char *path)
  * including "..". Do so here.
  */
 
-static int fsafetest(const char *path, char *newpath)
+static int fsafetest(const char *path, char *newpath, size_t buffer_len)
 {
   size_t i, pathlen;
 
@@ -267,15 +509,17 @@ static int fsafetest(const char *path, char *newpath)
   if((path == NULL) || (path[0] == 0))
     return -FSAFE_INVALID_ARGUMENT;
 
-  pathlen = strlen (path);
-  clean_path_slashes(path, newpath, pathlen + 1);
+  pathlen = path_clean_slashes_copy(newpath, buffer_len, path);
 
-  // convert the slashes
+#if (DIR_SEPARATOR_CHAR == '\\')
+  // The slash cleaning function made these Windows slashes but fsafetranslate
+  // should always return Unix slashes!
   for(i = 0; i < pathlen; i++)
   {
     if(newpath[i] == '\\')
       newpath[i] = '/';
   }
+#endif
 
   // check root specifiers
   if(newpath[0] == '/')
@@ -315,21 +559,21 @@ static int fsafetest(const char *path, char *newpath)
   return FSAFE_SUCCESS;
 }
 
-int fsafetranslate(const char *path, char *newpath)
+int fsafetranslate(const char *path, char *newpath, size_t buffer_len)
 {
   struct stat file_info;
   int ret;
 
   // try to pass the basic security tests
-  ret = fsafetest(path, newpath);
+  ret = fsafetest(path, newpath, buffer_len);
   if(ret == FSAFE_SUCCESS)
   {
     // see if file is already there
     if(stat(newpath, &file_info) != 0)
     {
-#ifndef __WIN32__
+#ifdef ENABLE_DOS_COMPAT_TRANSLATIONS
       // it isn't, so try harder..
-      ret = match(newpath);
+      ret = match(newpath, buffer_len);
       if(ret == FSAFE_SUCCESS)
       {
         // ..and update the stat information for the new path
@@ -339,7 +583,7 @@ int fsafetranslate(const char *path, char *newpath)
       else
       {
         // Replace the failed match with the original user-supplied path
-        fsafetest(path, newpath);
+        fsafetest(path, newpath, buffer_len);
       }
 #else
       // on WIN32 we can't, so fail hard
@@ -355,15 +599,15 @@ int fsafetranslate(const char *path, char *newpath)
     }
   }
 
-#if !defined(__WIN32__)
+#ifdef ENABLE_DOS_COMPAT_TRANSLATIONS
   if(ret == -FSAFE_SUCCESS || ret == -FSAFE_MATCHED_DIRECTORY)
   {
-    debug("%s:%d: translated %s to %s%s.\n", __FILE__, __LINE__,
+    trace("%s:%d: translated %s to %s%s.\n", __FILE__, __LINE__,
      path, newpath, (ret == -FSAFE_MATCHED_DIRECTORY) ? "/" : "");
   }
   else
   {
-    debug("%s:%d: failed to translate %s (err %d).\n",
+    trace("%s:%d: failed to translate %s (err %d).\n",
      __FILE__, __LINE__, path, ret);
   }
 #endif
@@ -380,7 +624,7 @@ FILE *fsafeopen(const char *path, const char *mode)
   newpath = cmalloc(MAX_PATH);
 
   // validate pathname, and optionally retrieve a better name
-  ret = fsafetranslate(path, newpath);
+  ret = fsafetranslate(path, newpath, MAX_PATH);
 
   // filename couldn't be "found", but there were no security issues
   if(ret == -FSAFE_MATCH_FAILED)

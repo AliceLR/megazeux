@@ -260,7 +260,7 @@ static struct audio_stream *modplug_convert_gdm(char *filename,
   /* If the destination S3M already exists, check its size. If it's
    * non-zero in size, we can load it.
    */
-  if(!fsafetranslate(new_file, translated_filename_dest))
+  if(!fsafetranslate(new_file, translated_filename_dest, MAX_PATH))
   {
     FILE *f = fopen_unsafe(translated_filename_dest, "r");
     long file_len = ftell_and_rewind(f);
@@ -273,7 +273,7 @@ static struct audio_stream *modplug_convert_gdm(char *filename,
   /* In the case we need to convert the GDM, we need to find
    * the real source path for it. Translate accordingly.
    */
-  if(!have_s3m && !fsafetranslate(filename, translated_filename_dest))
+  if(!have_s3m && !fsafetranslate(filename, translated_filename_dest, MAX_PATH))
   {
     if(!convert_gdm_s3m(translated_filename_dest, new_file))
       have_s3m = 1;

@@ -8,23 +8,29 @@
  * https://www.digitalmzx.com/forums/index.php?app=tracker&showissue=788
  */
 * { border: 0; margin: 0; padding: 0; }
-#mzx_canvas {
+#canvas {
 	width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; overflow: hidden;
 	background: url('play.png') center center / contain no-repeat #000;
 }
 </style>
 </head>
 <body>
-<canvas id="mzx_canvas" width="640" height="350" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
+<canvas id="canvas" width="640" height="350" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
 <script type="text/javascript" src="./mzxrun_loader.js"></script>
 <script type="text/javascript">
 (function() {
-	var mzxCanvas = document.getElementById("mzx_canvas");
+	// NOTE: the canvas ID being "canvas" is a hardcoded requirement somewhere in Emscripten and/or SDL.
+	var mzxCanvas = document.getElementById("canvas");
 	var mzxLoadAttempted = false;
 
 	// The initialization process should be triggered by a click - audio enabling!
-	// If you're embedding this on itch.io, you can safely comment this line out;
-	// the click itch.io uses to initialize the game iframe is sufficient.
+	// If you're embedding this on itch.io, this click makes the itch.io enabling click
+	// redundant. If you can get it to work, the itch.io option "Automatically start page
+	// on load" is supposed to skip the itch.io click. Notably, the click here is required
+	// to make audio work for Safari and itch.io's click isn't good enough.
+	//
+	// However, if you can't get rid of the itch.io click and don't want users to click
+	// twice, worst case you can just comment this line out.
 	mzxCanvas.onclick = function()
 	{
 		if (mzxLoadAttempted) return;

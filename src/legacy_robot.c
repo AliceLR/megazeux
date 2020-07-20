@@ -54,14 +54,12 @@ struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
 // Most of this stuff does not have to be loaded unless savegame
 // is set.
 void legacy_load_robot_from_memory(struct world *mzx_world,
- struct robot *cur_robot, const void *buffer, int savegame, int version,
+ struct robot *cur_robot, struct memfile *mf, int savegame, int version,
  int robot_location)
 {
   int program_length;
   int xpos, ypos;
   int i;
-
-  const unsigned char *bufferPtr = buffer;
 
   cur_robot->world_version = mzx_world->version;
 
@@ -71,8 +69,9 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   cur_robot->program_source = NULL;
   cur_robot->num_labels = 0;
 
-  program_length = mem_getw(&bufferPtr);
-  bufferPtr += 2;
+  program_length = mfgetw(mf);
+  // Skip DOS program pointer field.
+  mf->current += 2;
 
 #ifdef CONFIG_EDITOR
   cur_robot->command_map = NULL;
@@ -83,31 +82,30 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   cur_robot->commands_caught = 0;
 #endif
 
-  memcpy(cur_robot->robot_name, bufferPtr, LEGACY_ROBOT_NAME_SIZE);
+  mfread(cur_robot->robot_name, LEGACY_ROBOT_NAME_SIZE, 1, mf);
   cur_robot->robot_name[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
-  bufferPtr += LEGACY_ROBOT_NAME_SIZE;
 
-  cur_robot->robot_char = mem_getc(&bufferPtr);
-  cur_robot->cur_prog_line = mem_getw(&bufferPtr);
-  cur_robot->pos_within_line = mem_getc(&bufferPtr);
-  cur_robot->robot_cycle = mem_getc(&bufferPtr);
-  cur_robot->cycle_count = mem_getc(&bufferPtr);
-  cur_robot->bullet_type = mem_getc(&bufferPtr);
-  cur_robot->is_locked = mem_getc(&bufferPtr);
-  cur_robot->can_lavawalk = mem_getc(&bufferPtr);
-  cur_robot->walk_dir = (enum dir)mem_getc(&bufferPtr);
-  cur_robot->last_touch_dir = (enum dir)mem_getc(&bufferPtr);
-  cur_robot->last_shot_dir = (enum dir)mem_getc(&bufferPtr);
-  xpos = mem_getw(&bufferPtr);
-  ypos = mem_getw(&bufferPtr);
-  cur_robot->status = mem_getc(&bufferPtr);
+  cur_robot->robot_char = mfgetc(mf);
+  cur_robot->cur_prog_line = mfgetw(mf);
+  cur_robot->pos_within_line = mfgetc(mf);
+  cur_robot->robot_cycle = mfgetc(mf);
+  cur_robot->cycle_count = mfgetc(mf);
+  cur_robot->bullet_type = mfgetc(mf);
+  cur_robot->is_locked = mfgetc(mf);
+  cur_robot->can_lavawalk = mfgetc(mf);
+  cur_robot->walk_dir = (enum dir)mfgetc(mf);
+  cur_robot->last_touch_dir = (enum dir)mfgetc(mf);
+  cur_robot->last_shot_dir = (enum dir)mfgetc(mf);
+  xpos = mfgetw(mf);
+  ypos = mfgetw(mf);
+  cur_robot->status = mfgetc(mf);
   // Skip local - these are in the save files now
-  bufferPtr += 2;
-  cur_robot->used = mem_getc(&bufferPtr);
+  mf->current += 2;
+  cur_robot->used = mfgetc(mf);
   if(version <= V283)
-    cur_robot->loop_count = mem_getw(&bufferPtr);
+    cur_robot->loop_count = mfgetw(mf);
   else
-    bufferPtr += 2;
+    mf->current += 2;
 
   // Fix xpos and ypos for global robot
   xpos = (xpos >= 32768) ? -1 : xpos;
@@ -124,14 +122,14 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     int stack_size;
 
     if(version >= V284)
-      cur_robot->loop_count = mem_getd(&bufferPtr);
+      cur_robot->loop_count = mfgetd(mf);
 
     for(i = 0; i < 32; i++)
-      cur_robot->local[i] = mem_getd(&bufferPtr);
+      cur_robot->local[i] = mfgetd(mf);
 
     // Double so we can fit pos_within_line values in.
-    stack_size = mem_getd(&bufferPtr) * 2;
-    cur_robot->stack_pointer = mem_getd(&bufferPtr) * 2;
+    stack_size = mfgetd(mf) * 2;
+    cur_robot->stack_pointer = mfgetd(mf) * 2;
 
     // Don't allow the stack size to be loaded over the maximum.
     if(stack_size > ROBOT_MAX_STACK)
@@ -147,14 +145,13 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     cur_robot->stack = ccalloc(stack_size, sizeof(int));
     for(i = 0; i < stack_size; i += 2)
     {
-      cur_robot->stack[i] = mem_getd(&bufferPtr);
+      cur_robot->stack[i] = mfgetd(mf);
       cur_robot->stack[i+1] = 0;
     }
 
     // In the (unlikely) event the saved stack size was larger than the maximum,
     // the unused stack values need to be skipped...
-    for(i = 0; i < stack_skip; i += 2)
-      mem_getd(&bufferPtr);
+    mf->current += 4 * (stack_skip / 2);
 
     cur_robot->stack_size = stack_size;
   }
@@ -181,8 +178,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   if((cur_robot->used) || (program_length >= 2))
   {
     char *program_legacy_bytecode = cmalloc(program_length);
-    memcpy(program_legacy_bytecode, bufferPtr, program_length);
-    bufferPtr += program_length;
+    mfread(program_legacy_bytecode, program_length, 1, mf);
 
     if(!validate_legacy_bytecode(&program_legacy_bytecode, &program_length))
     {
@@ -205,7 +201,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   else
   {
     // Skip over program, we're not going to use it.
-    bufferPtr += program_length;
+    mf->current += program_length;
 
     create_blank_robot_program(cur_robot);
     cur_robot->cur_prog_line = 0;
@@ -217,9 +213,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   if(program_length > 0)
   {
     cur_robot->program_bytecode = cmalloc(program_length);
-
-    memcpy(cur_robot->program_bytecode, bufferPtr, program_length);
-    bufferPtr += program_length;
+    mfread(cur_robot->program_bytecode, program_length, 1, mf);
 
     if(!validate_legacy_bytecode(&cur_robot->program_bytecode, &program_length))
     {
@@ -256,11 +250,12 @@ err_invalid:
   cur_robot->cur_prog_line = 0;
 }
 
+/**
+ * Calculate the amount of a robot that needs to be read in order to
+ * calculate its size.
+ */
 size_t legacy_calculate_partial_robot_size(int savegame, int version)
 {
-  // Calculate the amount of a robot that needs to be read in order to
-  // calculate its size
-
   size_t partial_robot_size = 41;
 
   if(savegame)
@@ -273,14 +268,15 @@ size_t legacy_calculate_partial_robot_size(int savegame, int version)
   return partial_robot_size;
 }
 
+/**
+ * This function is used to calculate a robot's total size based on an
+ * incomplete load of that robot. This allows the robot size to be
+ * calculated before the entire thing is loaded.
+ */
 size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
  int version)
 {
-  // This function is used to calculate a robot's total size based on an
-  // incomplete load of that robot. This allows the robot size to be
-  // calculated before the entire thing is loaded
-
-  const unsigned char *bufferPtr;
+  struct memfile mf;
   int program_length;
   int stack_size;
 
@@ -288,8 +284,8 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
   size_t robot_size = legacy_calculate_partial_robot_size(savegame, version);
 
   // First, read the program length (0 bytes in)
-  bufferPtr = (unsigned char *)buffer + 0;
-  program_length = mem_getd(&bufferPtr);
+  mfopen(buffer, robot_size, &mf);
+  program_length = mfgetd(&mf);
 
   // Prior to DBC / VERSION_SOURCE the last two bytes are junk
   #ifdef CONFIG_DEBYTECODE
@@ -300,8 +296,8 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
   // Next, if this is a savegame robot, read the stack size
   if(savegame)
   {
-    bufferPtr = (unsigned char *)buffer + robot_size - 8;
-    stack_size = mem_getd(&bufferPtr);
+    mfseek(&mf, robot_size - 8, SEEK_SET);
+    stack_size = mfgetd(&mf);
 
     robot_size += stack_size * 4;
   }
@@ -340,7 +336,9 @@ boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
   }
   else
   {
-    legacy_load_robot_from_memory(mzx_world, cur_robot, buffer, savegame,
+    struct memfile mf;
+    mfopen(buffer, full_size, &mf);
+    legacy_load_robot_from_memory(mzx_world, cur_robot, &mf, savegame,
      version, robot_location);
   }
   free(buffer);

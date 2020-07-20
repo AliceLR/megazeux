@@ -19,6 +19,12 @@
     <Filter Include="Header Files\MSVC">
       <UniqueIdentifier>{6131c0a7-9bce-4b74-aeb9-f3f30e620e77}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Core\audio">
+      <UniqueIdentifier>{d60cb56f-4c01-4e0e-8e69-73c5f5ca0dd6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\io">
+      <UniqueIdentifier>{838adbd6-7cb7-4c4a-b278-40c07c44fed0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\editor\world.c">
@@ -90,6 +96,9 @@
     <ClCompile Include="..\..\src\editor\edit_menu.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\editor\stringsearch.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\editor\block.h">
@@ -155,9 +164,6 @@
     <ClInclude Include="..\..\src\editor\world.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\zip.h">
-      <Filter>Header Files\Core</Filter>
-    </ClInclude>
     <ClInclude Include="config.h">
       <Filter>Header Files\MSVC</Filter>
     </ClInclude>
@@ -166,9 +172,6 @@
     </ClInclude>
     <ClInclude Include="msvc.h">
       <Filter>Header Files\MSVC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\audio.h">
-      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\block.h">
       <Filter>Header Files\Core</Filter>
@@ -215,9 +218,6 @@
     <ClInclude Include="..\..\src\scrdisp.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\sfx.h">
-      <Filter>Header Files\Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\util.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
@@ -232,6 +232,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\editor\edit_menu.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio.h">
+      <Filter>Header Files\Core\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\io\zip.h">
+      <Filter>Header Files\Core\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\sfx.h">
+      <Filter>Header Files\Core\audio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

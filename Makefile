@@ -14,7 +14,8 @@ ifeq ($(filter -r,$(MAKEFLAGS)),)
 MAKEFLAGS += -r
 endif
 
-.PHONY: all clean help_check test test_clean mzx mzx.debug build build_clean source
+.PHONY: all clean help_check mzx mzx.debug build build_clean source
+.PHONY: test unittest test_clean unit_clean
 
 -include platform.inc
 include version.inc
@@ -182,6 +183,8 @@ ifeq (${DEBUG},1)
 #
 ifeq (${SANITIZER},address)
 DEBUG_CFLAGS := -fsanitize=address -O1 -fno-omit-frame-pointer
+else ifeq (${SANITIZER},undefined)
+DEBUG_CFLAGS := -fsanitize=undefined -O0 -fno-omit-frame-pointer
 else ifeq (${SANITIZER},thread)
 DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE
 ARCH_EXE_LDFLAGS += -pie
@@ -207,13 +210,8 @@ CFLAGS   += ${OPTIMIZE_CFLAGS} -DNDEBUG
 CXXFLAGS += ${OPTIMIZE_CFLAGS} -DNDEBUG
 endif
 
-#
-# Android headers are busted and we get too many warnings..
-#
-ifneq (${PLATFORM},android)
 CFLAGS   += -Wundef -Wunused-macros
 CXXFLAGS += -Wundef -Wunused-macros
-endif
 
 #
 # Enable C++11 for compilers that support it.
@@ -241,6 +239,15 @@ LDFLAGS  += ${ARCH_LDFLAGS}
 #
 
 #
+# Warn against variable-length array (VLA) usage, which is technically valid
+# C99 but is in bad taste and isn't supported by MSVC.
+#
+ifeq (${HAS_W_VLA},1)
+CFLAGS   += -Wvla
+CXXFLAGS += -Wvla
+endif
+
+#
 # Linux GCC gives spurious format truncation warnings. The snprintf
 # implementation on Linux will terminate even in the case of truncation,
 # making this largely useless. It does not trigger using mingw (where it
@@ -251,35 +258,19 @@ CFLAGS   += -Wno-format-truncation
 endif
 
 #
-# Enable bounds checks for debug builds.
-#
-ifeq (${DEBUG},1)
-ifeq (${HAS_F_BOUNDS_CHECK},1)
-CFLAGS   += -fbounds-check
-CXXFLAGS += -fbounds-check
-endif
-endif
-
-#
 # We enable pedantic warnings here, but this ends up turning on some things
 # we must disable by hand.
 #
 # Variadic macros are arguably less portable, but all the compilers we
 # support have them.
 #
-ifneq (${PLATFORM},android)
 ifeq (${HAS_PEDANTIC},1)
 CFLAGS   += -pedantic
 CXXFLAGS += -pedantic
 
-ifeq (${HAS_F_PERMISSIVE},1)
-CXXFLAGS += -fpermissive
-endif
-
 ifeq (${HAS_W_NO_VARIADIC_MACROS},1)
 CFLAGS   += -Wno-variadic-macros
 CXXFLAGS += -Wno-variadic-macros
-endif
 endif
 endif
 
@@ -304,13 +295,25 @@ endif
 # function.
 #
 ifeq (${HAS_F_STACK_PROTECTOR},1)
-ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_3DS},${BUILD_PSP},${BUILD_WII},\
+ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_3DS},${BUILD_PSP},${BUILD_WII},${BUILD_EMSCRIPTEN},\
 	${BUILD_PSVITA}),)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
 endif
 endif
 
+endif
+
+#
+# Enable -fanalyzer if supported.
+#
+ifeq (${BUILD_F_ANALYZER},1)
+ifeq (${HAS_F_ANALYZER},1)
+CFLAGS   += -fanalyzer
+CXXFLAGS += -fanalyzer
+else
+$(warning GCC 10+ is required for -fanalyzer, ignoring.)
+endif
 endif
 
 #
@@ -402,7 +405,7 @@ endif
 
 include src/Makefile.in
 
-clean: mzx_clean test_clean
+clean: mzx_clean test_clean unit_clean
 
 ifeq (${BUILD_UTILS},1)
 include src/utils/Makefile.in
@@ -420,12 +423,16 @@ build: ${build} ${build}/assets ${build}/docs
 ${build}:
 	${MKDIR} -p ${build}
 	${CP} config.txt LICENSE ${build}
-	${CP} ${mzxrun} ${build}
+	@if test -f ${mzxrun}; then \
+		cp ${mzxrun} ${build}; \
+	fi
 	@if test -f ${mzxrun}.debug; then \
 		cp ${mzxrun}.debug ${build}; \
 	fi
 ifeq (${BUILD_EDITOR},1)
-	${CP} ${mzx} ${build}
+	@if test -f ${mzx}; then \
+		cp ${mzx} ${build}; \
+	fi
 	@if test -f ${mzx}.debug; then \
 		cp ${mzx}.debug ${build}; \
 	fi
@@ -467,7 +474,7 @@ ${build}/assets: ${build}
 	${CP} assets/smzx.pal ${build}/assets
 ifeq (${BUILD_EDITOR},1)
 	${CP} assets/ascii.chr assets/blank.chr ${build}/assets
-	${CP} assets/smzx.chr ${build}/assets
+	${CP} assets/smzx.chr assets/smzx2.chr ${build}/assets
 endif
 ifeq (${BUILD_HELPSYS},1)
 	${CP} assets/help.fil ${build}/assets
@@ -504,8 +511,14 @@ help_check: ${hlp2txt} assets/help.fil
 	@diff --strip-trailing-cr -q docs/WIPHelp.txt help.txt
 	@rm -f help.txt
 
-test:
-	@bash testworlds/run.sh @{PLATFORM} @{LIBDIR}
+-include unit/Makefile.in
+
+test: unittest
+ifeq (${BUILD_MODULAR},1)
+	@${SHELL} testworlds/run.sh ${PLATFORM} ${core_target}
+else
+	@${SHELL} testworlds/run.sh ${PLATFORM}
+endif
 
 test_clean:
 	@rm -rf testworlds/log

@@ -30,6 +30,37 @@ __M_BEGIN_DECLS
 
 #define NUM_SAVED_POSITIONS 10
 
+enum robo_ed_color_codes
+{
+  ROBO_ED_CC_CURRENT_LINE,
+  ROBO_ED_CC_IMMEDIATES,
+  ROBO_ED_CC_IMMEDIATES_2,
+  ROBO_ED_CC_CHARACTERS,
+  ROBO_ED_CC_COLORS,
+  ROBO_ED_CC_DIRECTIONS,
+  ROBO_ED_CC_THINGS,
+  ROBO_ED_CC_PARAMS,
+  ROBO_ED_CC_STRINGS,
+  ROBO_ED_CC_EQUALITIES,
+  ROBO_ED_CC_CONDITIONS,
+  ROBO_ED_CC_ITEMS,
+  ROBO_ED_CC_EXTRAS,
+  ROBO_ED_CC_COMMANDS,
+  ROBO_ED_CC_INVALID_IGNORE,
+  ROBO_ED_CC_INVALID_DELETE,
+  ROBO_ED_CC_INVALID_COMMENT
+};
+
+struct saved_position
+{
+  int board_id;
+  int cursor_x;
+  int cursor_y;
+  int scroll_x;
+  int scroll_y;
+  int debug_x;
+};
+
 struct editor_config_info
 {
   // Board editor options
@@ -47,20 +78,20 @@ struct editor_config_info
   int viewport_h;
   int board_width;
   int board_height;
-  int can_shoot;
-  int can_bomb;
-  int fire_burns_spaces;
-  int fire_burns_fakes;
-  int fire_burns_trees;
-  int fire_burns_brown;
-  int fire_burns_forever;
-  int forest_to_floor;
-  int collect_bombs;
-  int restart_if_hurt;
-  int reset_on_entry;
-  int player_locked_ns;
-  int player_locked_ew;
-  int player_locked_att;
+  boolean can_shoot;
+  boolean can_bomb;
+  boolean fire_burns_spaces;
+  boolean fire_burns_fakes;
+  boolean fire_burns_trees;
+  boolean fire_burns_brown;
+  boolean fire_burns_forever;
+  boolean forest_to_floor;
+  boolean collect_bombs;
+  boolean restart_if_hurt;
+  boolean reset_on_entry;
+  boolean player_locked_ns;
+  boolean player_locked_ew;
+  boolean player_locked_att;
   int time_limit;
   int explosions_leave;
   int saving_enabled;
@@ -93,23 +124,14 @@ struct editor_config_info
   struct ext_macro **extended_macros;
 
   // Saved positions
-  int saved_board[NUM_SAVED_POSITIONS];
-  int saved_cursor_x[NUM_SAVED_POSITIONS];
-  int saved_cursor_y[NUM_SAVED_POSITIONS];
-  int saved_scroll_x[NUM_SAVED_POSITIONS];
-  int saved_scroll_y[NUM_SAVED_POSITIONS];
-  int saved_debug_x[NUM_SAVED_POSITIONS];
+  struct saved_position saved_positions[NUM_SAVED_POSITIONS];
 };
 
 EDITOR_LIBSPEC void default_editor_config(void);
-EDITOR_LIBSPEC void set_editor_config_from_file(const char *conf_file_name);
-EDITOR_LIBSPEC void set_editor_config_from_command_line(int *argc,
- char *argv[]);
-
 EDITOR_LIBSPEC void store_editor_config_backup(void);
 EDITOR_LIBSPEC void free_editor_config(void);
 
-struct editor_config_info *get_editor_config(void);
+EDITOR_LIBSPEC struct editor_config_info *get_editor_config(void);
 void load_editor_config_backup(void);
 
 void save_local_editor_config(struct editor_config_info *conf,

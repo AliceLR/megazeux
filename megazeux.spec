@@ -1,5 +1,5 @@
 Name:		megazeux
-Version:	2.92c
+Version:	2.92e
 Release:	1%{?dist}
 
 Summary:	A simple game creation system (GCS)
@@ -7,7 +7,7 @@ Summary:	A simple game creation system (GCS)
 Group:		Amusements/Games
 License:	GPLv2+
 URL:		https://www.digitalmzx.com/
-Source:		megazeux-2.92c.tar.xz
+Source:		megazeux-2.92e.tar.xz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires:	SDL2-devel
@@ -30,7 +30,7 @@ regardless of genre.
 See https://www.digitalmzx.com/ for more information.
 
 %prep
-%setup -q -n mzx292c
+%setup -q -n mzx292e
 
 %build
 ./config.sh --platform unix --enable-release --as-needed-hack \
@@ -39,11 +39,14 @@ See https://www.digitalmzx.com/ for more information.
             --sharedir %{_datadir} \
             --bindir %{_datadir}/megazeux/bin \
             --sysconfdir %{_sysconfdir}
-%{__make}
+%make_build
 
 %install
 rm -rf "$RPM_BUILD_ROOT"
 make install DESTDIR=${RPM_BUILD_ROOT}
+
+%check
+%make_build test
 
 %clean
 rm -rf "$RPM_BUILD_ROOT"
@@ -62,6 +65,12 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_sysconfdir}/megazeux-config
 
 %changelog
+* Sun Jul 19 2020 Alice Rowan <petrifiedrowan️@gmail.com> 2.92e-1
+- new upstream version, replace __make with make_build.
+
+* Fri May 08 2020 Alice Rowan <petrifiedrowan@gmail.com> 2.92d-1
+- new upstream version, add check
+
 * Sun Mar 08 2020 Alice Rowan <petrifiedrowan@gmail.com> 2.92c-1
 - new upstream version, fix outdated info
 

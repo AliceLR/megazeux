@@ -51,7 +51,6 @@ int error(const char *string, enum error_type type, unsigned int options,
   const char *type_name;
   int t1 = 9, ret = 0;
   int joystick_key;
-  char temp[5];
   int x;
 
   // Find the name of this error type.
@@ -149,9 +148,9 @@ int error(const char *string, enum error_type type, unsigned int options,
 
   if(code != 0)
   {
-    write_string(" Debug code:0000h ", 30, 14, 64, 0);
-    sprintf(temp, "%x", code);
-    write_string(temp, 46 - (Uint32)strlen(temp), 14, 64, 0);
+    char temp[32];
+    snprintf(temp, 32, " Debug code:%4.4xh ", code);
+    write_string(temp, 30, 14, 64, 0);
   }
 
   update_screen();

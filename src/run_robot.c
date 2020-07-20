@@ -651,8 +651,23 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
       char *translated_name = cmalloc(MAX_PATH);
       int err;
 
-      if(dest_param && !src_type)
-        src_type = 3;
+      switch(src_type)
+      {
+        case 0:
+          if(dest_param)
+            src_type = MZM_BOARD_TO_LAYER_STORAGE;
+          else
+            src_type = MZM_BOARD_TO_BOARD_STORAGE;
+          break;
+
+        case 1:
+          src_type = MZM_OVERLAY_TO_LAYER_STORAGE;
+          break;
+
+        case 2:
+          src_type = MZM_VLAYER_TO_LAYER_STORAGE;
+          break;
+      }
 
       // Save MZM to string (2.90+)
       if(mzx_world->version >= V290 && is_string(dest_name_buffer))
@@ -664,7 +679,7 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
       // Save MZM to file
       else
       {
-        err = fsafetranslate(dest_name_buffer, translated_name);
+        err = fsafetranslate(dest_name_buffer, translated_name, MAX_PATH);
         if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
         {
           save_mzm(mzx_world, translated_name, src_x, src_y,
@@ -793,6 +808,93 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
 
       break;
     }
+  }
+}
+
+static void copy_xy_to_xy_wrapper(struct world *mzx_world, int id, int x, int y,
+ int src_type, int dest_type, int src_x, int src_y, int dest_x, int dest_y)
+{
+  struct board *cur_board = mzx_world->current_board;
+  int board_width = cur_board->board_width;
+  int board_height = cur_board->board_height;
+  int vlayer_width = mzx_world->vlayer_width;
+  int vlayer_height = mzx_world->vlayer_height;
+  int src_offset;
+  int dest_offset;
+
+  switch(src_type | (dest_type << 4))
+  {
+    // Board-to-board. Use the original implementation...
+    case 0x00:
+      prefix_first_last_xy(mzx_world, &src_x, &src_y, &dest_x, &dest_y, x, y);
+      copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
+      break;
+
+    // Overlay-to-overlay.
+    case 0x11:
+      if(!cur_board->overlay_mode)
+        setup_overlay(cur_board, 3);
+
+      prefix_first_last_xy(mzx_world, &src_x, &src_y, &dest_x, &dest_y, x, y);
+      src_offset = src_y * board_width + src_x;
+      dest_offset = dest_y * board_width + dest_x;
+      cur_board->overlay[dest_offset] = cur_board->overlay[src_offset];
+      cur_board->overlay_color[dest_offset] = cur_board->overlay_color[src_offset];
+      break;
+
+    // Vlayer-to-overlay.
+    case 0x12:
+      if(!cur_board->overlay_mode)
+        setup_overlay(cur_board, 3);
+
+      prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+       vlayer_width, vlayer_height);
+      prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
+       board_width, board_height);
+
+      src_offset = src_y * vlayer_width + src_x;
+      dest_offset = dest_y * board_width + dest_x;
+      cur_board->overlay[dest_offset] = mzx_world->vlayer_chars[src_offset];
+      cur_board->overlay_color[dest_offset] = mzx_world->vlayer_colors[src_offset];
+      break;
+
+    // Overlay-to-vlayer.
+    case 0x21:
+      if(!cur_board->overlay_mode)
+        setup_overlay(cur_board, 3);
+
+      prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+       board_width, board_height);
+      prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
+       vlayer_width, vlayer_height);
+
+      src_offset = src_y * board_width + src_x;
+      dest_offset = dest_y * vlayer_width + dest_x;
+      mzx_world->vlayer_chars[dest_offset] = cur_board->overlay[src_offset];
+      mzx_world->vlayer_colors[dest_offset] = cur_board->overlay_color[src_offset];
+      break;
+
+    // Vlayer-to-vlayer.
+    case 0x22:
+      prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+       vlayer_width, vlayer_height);
+      prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
+       vlayer_width, vlayer_height);
+
+      src_offset = src_y * vlayer_width + src_x;
+      dest_offset = dest_y * vlayer_width + dest_x;
+      mzx_world->vlayer_chars[dest_offset] = mzx_world->vlayer_chars[src_offset];
+      mzx_world->vlayer_colors[dest_offset] = mzx_world->vlayer_colors[src_offset];
+      break;
+
+    // All others should just use copy_block.
+    case 0x01:
+    case 0x02:
+    case 0x10:
+    case 0x20:
+      copy_block(mzx_world, id, x, y, src_type, dest_type, src_x, src_y, 1, 1,
+       dest_x, dest_y, NULL, 0, NULL);
+      break;
   }
 }
 
@@ -1471,10 +1573,10 @@ void run_robot(context *ctx, int id, int x, int y)
           else
           {
             // Set it to immediate representation
-            sprintf(src_buffer, "%d", parse_param(mzx_world,
-             src_string, id));
-            dest.value = src_buffer;
-            dest.length = strlen(src_buffer);
+            size_t tmp;
+            dest.value = tr_int_to_string(src_buffer,
+             parse_param(mzx_world, src_string, id), &tmp);
+            dest.length = tmp;
           }
 
           gotoed = set_string(mzx_world, dest_buffer, &dest, id);
@@ -1624,8 +1726,6 @@ void run_robot(context *ctx, int id, int x, int y)
         {
           struct string dest;
           struct string src;
-          int allow_wildcards = 0;
-          int exact_case = 0;
 
           // NOTE: versions prior to 2.92 did tr_msg here instead of above.
 
@@ -1648,25 +1748,37 @@ void run_robot(context *ctx, int id, int x, int y)
           }
           else
           {
-            sprintf(src_buffer, "%d", parse_param(mzx_world,
-             src_string, id));
-            src.value = src_buffer;
-            src.length = strlen(src_buffer);
+            size_t tmp;
+            src.value = tr_int_to_string(src_buffer,
+             parse_param(mzx_world, src_string, id), &tmp);
+            src.length = tmp;
           }
 
-          // String equality extensions (2.91+)
-          if(mzx_world->version >= V291)
+          // Non-terminated string compares (2.81+)
+          if(mzx_world->version >= V281)
           {
-            if(comparison == EXACTLY_EQUAL || comparison == WILD_EXACTLY_EQUAL)
-              exact_case = 1;
+            boolean exact_case = false;
+            boolean wildcards = false;
 
-            if(comparison == WILD_EQUAL || comparison == WILD_EXACTLY_EQUAL)
-              allow_wildcards = 1;
+            // String equality extensions (2.91+)
+            if(mzx_world->version >= V291)
+            {
+              if(comparison == EXACTLY_EQUAL || comparison == WILD_EXACTLY_EQUAL)
+                exact_case = true;
+
+              if(comparison == WILD_EQUAL || comparison == WILD_EXACTLY_EQUAL)
+                wildcards = true;
+            }
+
+            src_value = 0;
+            dest_value = compare_strings(&dest, &src, exact_case, wildcards);
           }
-
-          src_value = 0;
-          dest_value = compare_strings(&dest, &src,
-           exact_case, allow_wildcards);
+          // Null-terminated string compares (2.80X and prior).
+          else
+          {
+            src_value = 0;
+            dest_value = compare_strings_null_terminated(&dest, &src);
+          }
         }
         else
 
@@ -3099,7 +3211,7 @@ void run_robot(context *ctx, int id, int x, int y)
           }
           else
           {
-            if(!fsafetranslate(mzm_name_buffer, translated_name))
+            if(!fsafetranslate(mzm_name_buffer, translated_name, MAX_PATH))
             {
               load_mzm(mzx_world, translated_name, put_x, put_y,
               put_param, 1);
@@ -3972,28 +4084,16 @@ void run_robot(context *ctx, int id, int x, int y)
         if((type[2] == type[3]) && (type[2] <= 2))
           dest_type = type[2];
 
-        if((src_type < 0) || (dest_type < 0))
-          break;
-
-        // Do the copy.  If it's board to board, use the original impl.
-        if((src_type == 0) && (dest_type == 0))
-        {
-          prefix_first_last_xy(mzx_world, &src_x, &src_y, &dest_x, &dest_y, x, y);
-
-          copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
-        }
-        else
-        {
-          copy_block(mzx_world, id, x, y, src_type, dest_type, src_x, src_y, 1, 1,
-           dest_x, dest_y, NULL, 0, NULL);
-        }
+        // Do the copy. This may invoke copy_block internally.
+        copy_xy_to_xy_wrapper(mzx_world, id, x, y, src_type, dest_type,
+         src_x, src_y, dest_x, dest_y);
 
         // If this robot was deleted, exit. NOTE: all port versions prior
         // to 2.92 had a faulty check here that would only check dest_x
         // and dest_y and not whether or not the robot was actually
         // overwritten. If something actually relied on this, add a
         // version check.
-        if(id)
+        if(id && dest_type == 0)
         {
           int offset = x + (y * board_width);
           int d_id = (enum thing)level_id[offset];
@@ -5305,7 +5405,7 @@ void run_robot(context *ctx, int id, int x, int y)
         else
 
         // Load from file
-        if(!fsafetranslate(src_name, translated_name))
+        if(!fsafetranslate(src_name, translated_name, MAX_PATH))
         {
           ec_load_set_var(translated_name, pos, mzx_world->version);
         }
@@ -5387,7 +5487,7 @@ void run_robot(context *ctx, int id, int x, int y)
         else
 
         // Load palette from file
-        if(!fsafetranslate(name_buffer, translated_name))
+        if(!fsafetranslate(name_buffer, translated_name, MAX_PATH))
         {
           load_palette(translated_name);
         }
@@ -5458,7 +5558,7 @@ void run_robot(context *ctx, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
         // Couldn't find world to swap to; abort cleanly
-        if(fsafetranslate(name_buffer, translated_name))
+        if(fsafetranslate(name_buffer, translated_name, MAX_PATH))
         {
           free(translated_name);
           break;

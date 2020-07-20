@@ -43,16 +43,6 @@ __M_BEGIN_DECLS
 
 #define SGN(x) ((x > 0) - (x < 0))
 
-#ifndef DIR_SEPARATOR
-#ifdef __WIN32__
-#define DIR_SEPARATOR "\\"
-#define DIR_SEPARATOR_CHAR '\\'
-#else //!__WIN32__
-#define DIR_SEPARATOR "/"
-#define DIR_SEPARATOR_CHAR '/'
-#endif
-#endif //DIR_SEPARATOR
-
 enum resource_id
 {
   CONFIG_TXT = 0,
@@ -63,6 +53,7 @@ enum resource_id
   MZX_ASCII_CHR,
   MZX_BLANK_CHR,
   MZX_SMZX_CHR,
+  MZX_SMZX2_CHR,
 #endif
 #ifdef CONFIG_HELPSYS
   MZX_HELP_FIL,
@@ -110,24 +101,7 @@ uint64_t rng_get_seed(void);
 void rng_set_seed(uint64_t seed);
 unsigned int Random(uint64_t range);
 
-CORE_LIBSPEC void add_ext(char *src, const char *ext);
-CORE_LIBSPEC int get_ext_pos(const char *filename);
-CORE_LIBSPEC ssize_t get_path(const char *file_name, char *dest, unsigned int buf_len);
-#ifdef CONFIG_UTILS
-ssize_t __get_path(const char *file_name, char *dest, unsigned int buf_len);
-#endif
-
-CORE_LIBSPEC void split_path_filename(const char *source,
- char *destpath, unsigned int path_buffer_len,
- char *destfile, unsigned int file_buffer_len);
-
 CORE_LIBSPEC int create_path_if_not_exists(const char *filename);
-
-CORE_LIBSPEC int change_dir_name(char *path_name, const char *dest);
-
-CORE_LIBSPEC void join_path_names(char* target, int max_len, const char* path1, const char* path2);
-
-CORE_LIBSPEC void clean_path_slashes(const char *source, char *dest, size_t buf_size);
 
 typedef void (*fn_ptr)(void);
 
@@ -138,14 +112,6 @@ struct dso_syms_map
 };
 
 #include <sys/types.h>
-
-// Code to load/save multi-byte ints to/from little endian memory
-int mem_getc(const unsigned char **ptr);
-int mem_getd(const unsigned char **ptr);
-int mem_getw(const unsigned char **ptr);
-void mem_putc(int src, unsigned char **ptr);
-void mem_putd(int src, unsigned char **ptr);
-void mem_putw(int src, unsigned char **ptr);
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 CORE_LIBSPEC int strcasecmp(const char *s1, const char *s2);
@@ -188,11 +154,18 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 #define debug(...) do { } while(0)
 #endif
 
+#if defined(DEBUG) && defined(DEBUG_TRACE)
+#define trace(...)  __android_log_print(ANDROID_LOG_VERBOSE, "MegaZeux", __VA_ARGS__)
+#else
+#define trace(...) do { } while(0)
+#endif
+
 #elif defined(CONFIG_NDS) && !defined(CONFIG_STDIO_REDIRECT) /* ANDROID */
 
 // When the graphics have initialized, print to a debug buffer rather than the screen.
 void info(const char *format, ...)  __attribute__((format(printf, 1, 2)));
 void warn(const char *format, ...)  __attribute__((format(printf, 1, 2)));
+#define trace(...) do { } while(0)
 
 #ifdef DEBUG
 void debug(const char *format, ...) __attribute__((format(printf, 1, 2)));
@@ -226,6 +199,15 @@ void debug(const char *format, ...) __attribute__((format(printf, 1, 2)));
  } while(0)
 #else
 #define debug(...) do { } while(0)
+#endif
+#if defined(DEBUG) && defined(DEBUG_TRACE)
+#define trace(...) \
+ do { \
+    fprintf(stderr, "TRACE: " __VA_ARGS__); \
+    fflush(stderr); \
+ } while(0)
+#else
+#define trace(...) do { } while(0)
 #endif
 
 #endif /* ANDROID, CONFIG_NDS */

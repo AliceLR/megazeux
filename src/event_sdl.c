@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "configure.h"
 #include "event.h"
 #include "platform.h"
 #include "graphics.h"
@@ -198,7 +199,6 @@ static int get_pandora_joystick_button(SDL_Keycode key)
  */
 
 static SDL_GameController *gamecontrollers[MAX_JOYSTICKS];
-boolean allow_gamecontroller_mapping = true;
 
 static enum joystick_special_axis sdl_axis_map[SDL_CONTROLLER_AXIS_MAX] =
 {
@@ -406,7 +406,7 @@ static void parse_gamecontroller_read_value(char *key, char *value,
       return;
     }
   }
-  debug("[JOYSTICK] ignoring '%s' -> '%s'\n", value, key);
+  debug("--JOYSTICK-- ignoring '%s' -> '%s'\n", value, key);
   return;
 }
 
@@ -460,7 +460,7 @@ static void parse_gamecontroller_read_entry(char *key, char *value,
 
   else
   {
-    warn("[JOYSTICK] Invalid control '%s'! Report this!\n", key);
+    warn("--JOYSTICK-- Invalid control '%s'! Report this!\n", key);
     return;
   }
 
@@ -516,7 +516,7 @@ static void parse_gamecontroller_apply(int joy, Sint16 mapping,
 
     case GC_BUTTON:
     {
-      debug("[JOYSTICK]  b%u -> '%s' (%d)\n", which, target->dbg, mapping);
+      debug("--JOYSTICK--  b%u -> '%s' (%d)\n", which, target->dbg, mapping);
       if(!input.joystick_global_map.button_is_conf[joy][which])
         input.joystick_global_map.button[joy][which] = mapping;
 
@@ -527,7 +527,7 @@ static void parse_gamecontroller_apply(int joy, Sint16 mapping,
 
     case GC_AXIS:
     {
-      debug("[JOYSTICK]  a%u%s -> '%s' (%d)\n", which, pos?"+":"-",
+      debug("--JOYSTICK--  a%u%s -> '%s' (%d)\n", which, pos?"+":"-",
        target->dbg, mapping);
 
       if(!input.joystick_global_map.axis_is_conf[joy][which])
@@ -540,7 +540,7 @@ static void parse_gamecontroller_apply(int joy, Sint16 mapping,
 
     case GC_HAT:
     {
-      debug("[JOYSTICK]  hd%u -> '%s' (%d)\n", pos, target->dbg, mapping);
+      debug("--JOYSTICK--  hd%u -> '%s' (%d)\n", pos, target->dbg, mapping);
       if(!input.joystick_global_map.hat_is_conf[joy])
         input.joystick_global_map.hat[joy][pos] = mapping;
 
@@ -588,7 +588,7 @@ static void parse_gamecontroller_map(int joystick_index, char *map)
   {
     // TODO originally this was going to try to place JOY_SELECT on another
     // button. That was kind of a bad idea, so just print a warning for now.
-    info("[JOYSTICK] %d doesn't have any gamecontroller button that binds "
+    info("--JOYSTICK-- %d doesn't have any gamecontroller button that binds "
      "'select' or 'start' (by default, these are the SDL gamecontoller buttons "
      "'back' and 'start', respectively). Since these buttons are used to open "
      "the joystick menu, you may want to override this controller mapping.\n",
@@ -610,6 +610,7 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
 
     if(gamecontroller)
     {
+      struct config_info *conf = get_config();
       char *mapping = NULL;
       gamecontrollers[joystick_index] = gamecontroller;
 
@@ -642,13 +643,13 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
 
       if(mapping)
       {
-        info("[JOYSTICK] joystick %d has an SDL mapping: %s\n",
+        info("--JOYSTICK-- joystick %d has an SDL mapping: %s\n",
          joystick_index + 1, mapping);
 
         if(strncmp(mapping, guid_string, strlen(guid_string)))
-          info("[JOYSTICK] GUID: %s\n", guid_string);
+          info("--JOYSTICK-- GUID: %s\n", guid_string);
 
-        if(allow_gamecontroller_mapping)
+        if(conf->allow_gamecontroller)
           parse_gamecontroller_map(joystick_index, mapping);
 
         SDL_free(mapping);
@@ -656,7 +657,7 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
       }
     }
   }
-  info("[JOYSTICK] joystick %d does not have an SDL mapping or could not be "
+  info("--JOYSTICK-- joystick %d does not have an SDL mapping or could not be "
    "opened as a gamecontroller (GUID: %s).\n", joystick_index + 1, guid_string);
 }
 
@@ -721,7 +722,7 @@ static void load_gamecontrollerdb(void)
     {
       int result = SDL_GameControllerAddMappingsFromFile(path);
       if(result >= 0)
-        debug("[JOYSTICK] Added %d mappings from '%s'.\n", result, path);
+        debug("--JOYSTICK-- Added %d mappings from '%s'.\n", result, path);
     }
 
     gamecontrollerdb_loaded = true;
@@ -759,14 +760,6 @@ void gamecontroller_map_sym(const char *sym, const char *value)
   }
 
   // TODO analog axes
-}
-
-/**
- * Enable or disable the SDL to MZX mapping system.
- */
-void gamecontroller_set_enabled(boolean enable)
-{
-  allow_gamecontroller_mapping = enable;
 }
 
 /**
@@ -826,7 +819,7 @@ static void init_joystick(int sdl_index)
       joysticks[joystick_index] = joystick;
       joystick_set_active(status, joystick_index, true);
 
-      debug("[JOYSTICK] Opened %d (SDL instance ID: %d)\n",
+      debug("--JOYSTICK-- Opened %d (SDL instance ID: %d)\n",
        joystick_index + 1, joystick_instance_ids[joystick_index]);
 
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -842,7 +835,7 @@ static void close_joystick(int joystick_index)
 {
   if(joystick_index >= 0)
   {
-    debug("[JOYSTICK] Closing %d (SDL instance ID: %d)\n",
+    debug("--JOYSTICK-- Closing %d (SDL instance ID: %d)\n",
      joystick_index + 1, joystick_instance_ids[joystick_index]);
 
     // SDL_GameControllerClose also closes the joystick.
@@ -939,6 +932,7 @@ static boolean process_event(SDL_Event *event)
   {
     case SDL_QUIT:
     {
+      trace("--EVENT_SDL-- SDL_QUIT\n");
       // Set the exit status
       status->exit_status = true;
       break;
@@ -951,12 +945,17 @@ static boolean process_event(SDL_Event *event)
       {
         case SDL_WINDOWEVENT_RESIZED:
         {
+          trace(
+            "--EVENT_SDL-- SDL_WINDOWEVENT_RESIZED: (%u,%u)\n",
+            event->window.data1, event->window.data2
+          );
           resize_screen(event->window.data1, event->window.data2);
           break;
         }
 
         case SDL_WINDOWEVENT_FOCUS_LOST:
         {
+          trace("--EVENT_SDL-- SDL_WINDOWEVENT_FOCUS_LOST\n");
           // Pause while minimized
           if(input.unfocus_pause)
           {
@@ -969,6 +968,7 @@ static boolean process_event(SDL_Event *event)
                 break;
             }
           }
+          trace("--EVENT_SDL-- SDL_WINDOWEVENT_FOCUS_GAINED\n");
           break;
         }
       }
@@ -978,12 +978,17 @@ static boolean process_event(SDL_Event *event)
 #else // !SDL_VERSION_ATLEAST(2,0,0)
     case SDL_VIDEORESIZE:
     {
+      trace(
+        "--EVENT_SDL-- SDL_VIDEORESIZE: (%u,%u)\n",
+        event->resize.w, event->resize.h
+      );
       resize_screen(event->resize.w, event->resize.h);
       break;
     }
 
     case SDL_ACTIVEEVENT:
     {
+      trace("--EVENT_SDL-- SDL_ACTIVEEVENT: %u\n", event->active.state);
       if(input.unfocus_pause)
       {
         // Pause while minimized
@@ -1034,6 +1039,10 @@ static boolean process_event(SDL_Event *event)
         my = 0;
       }
 
+      trace(
+        "--EVENT_SDL-- SDL_MOUSEMOTION: (%d,%d) -> (%d,%d)\n",
+        mx_real, my_real, mx, my
+      );
       status->real_mouse_x = mx;
       status->real_mouse_y = my;
       status->mouse_x = mx / 8;
@@ -1044,6 +1053,7 @@ static boolean process_event(SDL_Event *event)
 
     case SDL_MOUSEBUTTONDOWN:
     {
+      trace("--EVENT_SDL-- SDL_MOUSEBUTTONDOWN: %u\n", event->button.button);
       status->mouse_button = event->button.button;
       status->mouse_repeat = event->button.button;
       status->mouse_button_state |= SDL_BUTTON(event->button.button);
@@ -1055,6 +1065,7 @@ static boolean process_event(SDL_Event *event)
 
     case SDL_MOUSEBUTTONUP:
     {
+      trace("--EVENT_SDL-- SDL_MOUSEBUTTONUP: %u\n", event->button.button);
       status->mouse_button_state &= ~SDL_BUTTON(event->button.button);
       status->mouse_repeat = 0;
       status->mouse_drag_state = 0;
@@ -1067,6 +1078,11 @@ static boolean process_event(SDL_Event *event)
     case SDL_MOUSEWHEEL:
     {
       SDL_Event fake_event;
+
+      trace(
+        "--EVENT_SDL-- SDL_MOUSEWHEEL: x=%d y=%d\n",
+        event->wheel.x, event->wheel.y
+      );
 
       fake_event.type = SDL_MOUSEBUTTONDOWN;
       fake_event.button.windowID = event->wheel.windowID;
@@ -1130,6 +1146,12 @@ static boolean process_event(SDL_Event *event)
 #endif
 
       ckey = convert_SDL_internal(event->key.keysym.sym);
+      trace(
+        "--EVENT_SDL-- SDL_KEYDOWN: scancode:%d sym:%d -> %d\n",
+        event->key.keysym.scancode,
+        event->key.keysym.sym,
+        ckey
+      );
       if(!ckey)
       {
 #if !SDL_VERSION_ATLEAST(2,0,0)
@@ -1153,7 +1175,10 @@ static boolean process_event(SDL_Event *event)
       // field (SDL 1.2); until usage of those is detected, fake the text key
       // using the internal keycode.
       if(unicode_fallback && KEYCODE_IS_ASCII(ckey))
-        unicode = convert_internal_unicode(ckey);
+      {
+        boolean caps_lock = !!(SDL_GetModState() & KMOD_CAPS);
+        unicode = convert_internal_unicode(ckey, caps_lock);
+      }
 
       if((ckey == IKEY_RETURN) &&
        get_alt_status(keycode_internal) &&
@@ -1231,6 +1256,12 @@ static boolean process_event(SDL_Event *event)
 #endif
 
       ckey = convert_SDL_internal(event->key.keysym.sym);
+      trace(
+        "--EVENT_SDL-- SDL_KEYUP: scancode:%d sym:%d -> %d\n",
+        event->key.keysym.scancode,
+        event->key.keysym.sym,
+        ckey
+      );
       if(!ckey)
       {
 #if !SDL_VERSION_ATLEAST(2,0,0)
@@ -1268,10 +1299,13 @@ static boolean process_event(SDL_Event *event)
     {
       Uint8 *text = (Uint8 *)event->text.text;
 
+      trace("--EVENT_SDL-- SDL_TEXTINPUT: %s\n", text);
+
       if(unicode_fallback)
       {
         // Clear any unicode keys on the buffer generated from the fallback...
         status->unicode_length = 0;
+        status->unicode_repeat = 0;
         unicode_fallback = false;
       }
 
@@ -1291,6 +1325,11 @@ static boolean process_event(SDL_Event *event)
       // Add a new joystick.
       // "which" for this event (but not for any other joystick event) is not
       // a joystick instance ID, but instead an index for SDL_JoystickOpen().
+
+      trace(
+        "--EVENT_SDL-- SDL_JOYDEVICEADDED\n"
+      );
+
       init_joystick(event->jdevice.which);
       break;
     }
@@ -1300,6 +1339,11 @@ static boolean process_event(SDL_Event *event)
       // Close a disconnected joystick.
       int which = event->jdevice.which;
       int joystick_index = get_joystick_index(which);
+
+      trace(
+        "--EVENT_SDL-- SDL_JOYDEVICEREMOVED: j%d\n",
+        joystick_index
+      );
 
       close_joystick(joystick_index);
 
@@ -1314,14 +1358,20 @@ static boolean process_event(SDL_Event *event)
     {
       // Since gamecontroller axis mappings can be complicated, use
       // the gamecontroller events to update the named axis values.
+      struct config_info *conf = get_config();
       int value = event->caxis.value;
       int which = event->caxis.which;
       int axis = event->caxis.axis;
       enum joystick_special_axis special_axis = sdl_axis_map[axis];
 
       int joystick_index = get_joystick_index(which);
-      if(joystick_index < 0 || !special_axis || !allow_gamecontroller_mapping)
+      if(joystick_index < 0 || !special_axis || !conf->allow_gamecontroller)
         break;
+
+      trace(
+        "--EVENT_SDL-- SDL_CONTROLLERAXISMOTION: j%d sa%d = %d\n",
+        joystick_index, special_axis, value
+      );
 
       joystick_special_axis_update(status, joystick_index, special_axis, value);
       break;
@@ -1339,6 +1389,11 @@ static boolean process_event(SDL_Event *event)
       if(joystick_index < 0)
         break;
 
+      trace(
+        "--EVENT_SDL-- SDL_JOYAXISMOTION: j%d a%d = %d\n",
+        joystick_index, axis, axis_value
+      );
+
       joystick_axis_update(status, joystick_index, axis, axis_value);
       break;
     }
@@ -1352,6 +1407,11 @@ static boolean process_event(SDL_Event *event)
       int joystick_index = get_joystick_index(which);
       if(joystick_index < 0)
         break;
+
+      trace(
+        "--EVENT_SDL-- SDL_JOYBUTTONDOWN: j%d b%d\n",
+        joystick_index, button
+      );
 
 #ifdef CONFIG_SWITCH
       // Ignore fake axis "buttons".
@@ -1379,6 +1439,11 @@ static boolean process_event(SDL_Event *event)
         break;
 #endif
 
+      trace(
+        "--EVENT_SDL-- SDL_JOYBUTTONUP: j%d b%d\n",
+        joystick_index, button
+      );
+
       joystick_button_release(status, joystick_index, button);
       break;
     }
@@ -1397,6 +1462,11 @@ static boolean process_event(SDL_Event *event)
       if(joystick_index < 0)
         break;
 
+      trace(
+        "--EVENT_SDL-- SDL_JOYHATMOTION: j%d up:%u down:%u left:%u right:%u\n",
+        joystick_index, hat_u, hat_d, hat_l, hat_r
+      );
+
       joystick_hat_update(status, joystick_index, JOYHAT_UP, hat_u);
       joystick_hat_update(status, joystick_index, JOYHAT_DOWN, hat_d);
       joystick_hat_update(status, joystick_index, JOYHAT_LEFT, hat_l);
@@ -1405,6 +1475,7 @@ static boolean process_event(SDL_Event *event)
     }
 
     default:
+      trace("--EVENT_SDL-- unhandled event %u\n", event->type);
       return false;
   }
 
@@ -1418,6 +1489,11 @@ boolean __update_event_status(void)
 
   while(SDL_PollEvent(&event))
     rval |= process_event(&event);
+
+#if 0
+  // This one is a little annoying even for trace logging...
+  trace("--EVENT_SDL-- __update_event_status -> %u\n", rval);
+#endif
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
   {

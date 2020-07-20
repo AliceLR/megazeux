@@ -63,6 +63,14 @@ __M_BEGIN_DECLS
 #include "memcasecmp.h"
 #include "platform_endian.h"
 
+#ifndef klib_unused
+#if (defined __clang__ && __clang_major__ >= 3) || (defined __GNUC__ && __GNUC__ >= 3)
+#define klib_unused __attribute__ ((__unused__))
+#else
+#define klib_unused
+#endif
+#endif /* klib_unused */
+
 #define __ac_isempty(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&2)
 #define __ac_isdel(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&1)
 #define __ac_iseither(flag, i) ((flag[i>>4]>>((i&0xfU)<<1))&3)
@@ -105,11 +113,11 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
 #define __KHASH_IMPL(name, khkey_t, khval_t, kh_is_map, ptr_field, len_field, \
  __hash_func, __hash_equal) \
   \
-  static inline kh_##name##_t *kh_init_##name(void) \
+  static inline klib_unused kh_##name##_t *kh_init_##name(void) \
   { \
     return (kh_##name##_t*)ccalloc(1, sizeof(kh_##name##_t));             \
   } \
-  static inline void kh_destroy_##name(kh_##name##_t *h) \
+  static inline klib_unused void kh_destroy_##name(kh_##name##_t *h) \
   { \
     if(h)                                                                 \
     {                                                                     \
@@ -120,7 +128,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
     }                                                                     \
   } \
   \
-  static inline void kh_clear_##name(kh_##name##_t *h) \
+  static inline klib_unused void kh_clear_##name(kh_##name##_t *h) \
   { \
     if(h && h->flags)                                                     \
     {                                                                     \
@@ -130,7 +138,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
     }                                                                     \
   } \
   \
-  static inline size_t kh_get_no_obj_##name(const kh_##name##_t *h, \
+  static inline klib_unused size_t kh_get_no_obj_##name(const kh_##name##_t *h, \
    const void *key_ptr, uint32_t key_len, uint32_t hash, int has_hash) \
   { \
     if(h->n_buckets)                                                      \
@@ -157,13 +165,13 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
     return h->n_buckets;                                                  \
   } \
   \
-  static inline size_t kh_get_##name(const kh_##name##_t *h, khkey_t key) \
+  static inline klib_unused size_t kh_get_##name(const kh_##name##_t *h, khkey_t key) \
   { \
     return kh_get_no_obj_##name(h, key->ptr_field, key->len_field,        \
      key->hash, 1);                                                       \
   } \
   \
-  static inline int kh_resize_##name(kh_##name##_t *h, size_t new_n_buckets) \
+  static inline klib_unused int kh_resize_##name(kh_##name##_t *h, size_t new_n_buckets) \
   { \
     /* This function uses 0.25*n_buckets bytes of working space instead of \
      * [sizeof(key_t+val_t)+.25]*n_buckets. \
@@ -282,7 +290,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
     return 0;                                                             \
   } \
   \
-  static inline size_t kh_put_##name(kh_##name##_t *h, khkey_t key, int *ret) \
+  static inline klib_unused size_t kh_put_##name(kh_##name##_t *h, khkey_t key, int *ret) \
   { \
     size_t x;                                                             \
     if(h->n_occupied >= h->upper_bound)                                   \
@@ -371,7 +379,7 @@ static const size_t __ac_HASH_MAXIMUM = ((size_t)INT32_MAX) + 1;
     return x;                                                             \
   }                                                                       \
   \
-  static inline void kh_del_##name(kh_##name##_t *h, size_t x) \
+  static inline klib_unused void kh_del_##name(kh_##name##_t *h, size_t x) \
   { \
     if(x != h->n_buckets && !__ac_iseither(h->flags, x))                  \
     {                                                                     \
@@ -572,7 +580,7 @@ static inline uint32_t fnv_1a_hash_string_len(const void *_str, uint32_t len)
   fnv_1a_hash_string_len(keyptr, keylen)
 
 #define kh_mem_hash_equal(aptr, bptr, alen, blen) \
-  (((uint32_t)alen == (uint32_t)blen) && !memcasecmp(aptr, bptr, blen))
+  (((uint32_t)alen == (uint32_t)blen) && !memcasecmp32(aptr, bptr, blen))
 
 /* --- END OF HASH FUNCTIONS --- */
 

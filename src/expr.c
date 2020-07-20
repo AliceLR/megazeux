@@ -29,6 +29,7 @@
 #include "rasm.h"
 #include "robot.h"
 #include "str.h"
+#include "util.h"
 #include "world.h"
 #include "world_struct.h"
 
@@ -542,7 +543,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
     // Interpolate a counter or string
     if(state & EXPR_STATE_INTERPOLATING)
     {
-      int len;
+      size_t len;
       char *src;
       buf_pos = buffer + buf_start;
 
@@ -570,11 +571,8 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       // #(counter) is a hex representation.
       if(*buf_pos == '+')
       {
-        sprintf(number_buffer, "%x",
-         get_counter(mzx_world, buf_pos + 1, id));
-
-        src = number_buffer;
-        len = strlen(number_buffer);
+        src = tr_int_to_hex_string(number_buffer,
+         get_counter(mzx_world, buf_pos + 1, id), &len);
       }
       else
 
@@ -588,17 +586,14 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       }
       else
       {
-        sprintf(number_buffer, "%d",
-         get_counter(mzx_world, buf_pos, id));
-
-        src = number_buffer;
-        len = strlen(number_buffer);
+        src = tr_int_to_string(number_buffer,
+         get_counter(mzx_world, buf_pos, id), &len);
       }
 
       // Pop before writing to remove the unary null terminator
       POP_STACK(true);
 
-      if(len > (buf_alloc - buf_pos))
+      if((ptrdiff_t)len > (buf_alloc - buf_pos))
       {
         // Truncate the interpolated value and continue
         len = buf_alloc - buf_pos;
@@ -901,7 +896,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       case ')':
       {
         int value = operand_a;
-        int len;
+        size_t len;
 
         // Invalid end of expression where : should exist
         if(state & EXPR_STATE_TERNARY_MIDDLE)
@@ -916,16 +911,15 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         // If we're in the middle of an operand, print to the buffer
         if(state & EXPR_STATE_PARSE_OPERAND)
         {
-          sprintf(number_buffer, "%d", value);
-          len = strlen(number_buffer);
+          char *src = tr_int_to_string(number_buffer, value, &len);
 
-          if(len+1 > (buf_alloc - buf_pos))
+          if((ptrdiff_t)(len + 1) > (buf_alloc - buf_pos))
           {
             // Truncate the interpolated value and continue.
             len = buf_alloc - buf_pos - 1;
           }
 
-          strcpy(buf_pos, number_buffer);
+          memcpy(buf_pos, src, len);
           buf_pos += len;
         }
 
@@ -1816,16 +1810,18 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
 
       default:
       {
-        char temp;
         char *next;
         struct string string;
+        char name_buffer[ROBOT_MAX_TR];
+        size_t len;
 
         next = find_non_identifier_char(expression);
+        len = MIN(ROBOT_MAX_TR - 1, next - expression);
 
-        temp = *next;
-        *next = 0;
-        get_string(mzx_world, expression, &string, id);
-        *next = temp;
+        memcpy(name_buffer, expression, len);
+        name_buffer[len] = '\0';
+
+        get_string(mzx_world, name_buffer, &string, id);
         expression = next;
 
         copy_length = string.length;

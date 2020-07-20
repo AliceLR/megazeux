@@ -108,7 +108,13 @@ static inline enum zip_error inflate64_file(struct zip_stream_data *zs)
   int err;
 
   if(zs->finished)
-    return ZIP_EOF;
+    return ZIP_STREAM_FINISHED;
+
+  if(!zs->output_buffer)
+    return ZIP_OUTPUT_FULL;
+
+  if(!zs->input_buffer)
+    return ZIP_INPUT_EMPTY;
 
   err = inflateBack9Init(&(d64s->z), d64s->window);
   if(err != Z_OK)
@@ -125,7 +131,7 @@ static inline enum zip_error inflate64_file(struct zip_stream_data *zs)
   inflateBack9End(&(d64s->z));
 
   if(err == Z_STREAM_END)
-    return ZIP_SUCCESS;
+    return ZIP_STREAM_FINISHED;
 
   return ZIP_DECOMPRESS_FAILED;
 }

@@ -3,19 +3,23 @@
  *
  * Copyright (C) 2020 Alice Rowan
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 export var zip =
@@ -33,27 +37,45 @@ export var zip =
     "_emzip_free",
     "UTF8ToString"
   ],
+
+  /**
+   * Initialize the zip utility.
+   * @returns {Promise} Promise to initialize the zip utility.
+   * @throws {string} Error string if an error occurred.
+   */
   initialize: function()
   {
     if(zip.emzip === undefined)
     {
       // If emzip isn't loaded, silently fail (it might not be needed anyway).
       if(typeof(emzip)!=='function')
-        return {then:function(cb){return cb();}};
+        return Promise.resolve();
 
-      zip.emzip = emzip();
-
-      zip.emzip_functions.forEach(function(fn)
+      return emzip().then(module =>
       {
-        if(typeof(zip.emzip[fn])!=='function')
-          throw "zip.initialize: function emzip." + fn + " not found!";
+        zip.emzip = module;
+        zip.emzip_functions.forEach(function(fn)
+        {
+          if(typeof(zip.emzip[fn])!=='function')
+          {
+            console.error('zip.initialize: typeof(zip.emzip["'+fn+'"]) == ' +
+             typeof(zip.emzip[fn]));
+            throw "zip.initialize: function emzip." + fn + " not found!";
+          }
+        });
       });
-
-      return zip.emzip;
     }
     else
       throw "zip.initialize: already initialized!";
   },
+
+  /**
+   * Extract files from a zip archive.
+   * @param {ArrayBuffer} bytes Zip archive to extract.
+   * @returns {Object.<string, Uint8Array>}
+   *   Object containing {filename => file data} for each file in the archive.
+   * @throws {string} Error string if an error occurred.
+   */
   extract: function(bytes)
   {
     // Attempt UZIP first since it's lighter on memory usage. If that fails,

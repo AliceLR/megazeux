@@ -1,11 +1,101 @@
-GIT
+July 20th, 2020 - MZX 2.92e
+
+This bugfix release includes miscellaneous audio fixes and fixes
+for bugs in the configuration system. Other things of note are a
+fix for a graphical bug in the robot editor, a freeze bugfix in
+the updater when updating from older MZX releases, and the title
+of the Alt+A ("Select Char Set") dialog has been reverted back
+to roughly what it was in DOS versions. A second default SMZX
+character set with a different font has been added as well.
+
+USERS
+
++ Fixed Windows file handle leaks in audio_xmp.c caused by
+  MinGW's non-compliant fdopen.
++ Fixed a bug where the title screen's intro message wouldn't
+  cycle the scroll color while no world was loaded.
++ Added the missing "ccode_chars" config setting.
++ Fixed a bug where the "ccode_extras" config setting would
+  change the strings color code instead.
++ Fixed a bug where "macro_#" where # is 0 or between 6-9 would
+  corrupt various parts of the editor configuration. Notably,
+  "macro_6" would corrupt the extended macros and cause crashes.
++ Fixed division-by-zero crashes and GL errors when using
+  invalid fullscreen_resolution or window_resolution values.
++ Fixed a bug where files included by the config file include
+  directive would ignore editor settings. Also added a recursion
+  limit for includes and fixed a bug where the "include=file"
+  format would not work on some platforms.
++ Fixed a libxmp bug where pattern jump/break could take effect
+  after using JUMP MOD ORDER or setting MOD_ORDER/MOD_POSITION.
+  This fixes a bug at the end of the Inmaportal scene in Cans 3.
++ Zip files with the language encoding flag set no longer print
+  unsupported flag errors.
++ Fixed a bug where recursive directory deletion in the updater
+  could get stuck in an infinite loop due to not checking the
+  return value of rmdir and path_get_directory not behaving the
+  same as get_path used to.
++ Fixed a bug where the cursor could display over the color
+  selector and char editor when opened from the robot editor.
++ Fixed a bug where the default character set selection menu was
+  inconsistently labeled "Object type".
++ Added a second SMZX default character set with a more legible
+  font. The original is still available for those who prefer it.
+
+DEVELOPERS
+
++ Fixed memcasecmp test alignment checks for the Motorola 68000.
++ Improved validation of config setting inputs and added a unit
+  test for config file and command line parsing.
++ Added buffered zip compression/decompression support.
++ Added unit tests for the zip functions and (de)compressors.
+
+
+May 8th, 2020 - MZX 2.92d
+
+This release includes minor new features, an overhaul to the way
+MZX handles text input from SDL 2.0 which should fix various
+text bugs (particularly with non-US keyboards), fixes required
+to get the Android port working, and a new file format document.
+Other things of note are two libxmp patches fixing issues with
+S3Ms saved by the original Modplug Tracker and with GDMs relying
+on fine effect continue, checkres updates, and misc. fixes for
+the Windows and HTML5 ports.
+
+Fixed compatibility issues in this release are a string compare
+bug that prevented Mines of Madness from working and MODs with
+extended filenames working when referenced by their truncated
+DOS SFN in the MZX file. The latter fix only works when there is
+a single unambiguous match, which turned out to be essentially
+every affected game.
+
+It is worth noting that the Android port is EXPERIMENTAL and is
+likely to have compatibility issues on many devices. A USB OTG
+or Bluetooth keyboard or game controller is required at minimum.
+Many devices have key press issues that are likely caused by
+drivers or SDL. SDL text input events are disabled as they cause
+even more keyboard bugs, and as a result non-US keyboard layouts
+probably won't work with this port right now. Other problems
+with this port that have been reported include graphical bugs
+and crashes when focusing/unfocusing MegaZeux.
 
 USERS
 
 + Added robot editor shortcuts CTRL+Home and CTRL+End to jump to
   the start and the end of the current program.
++ Char selector tile movement is now disabled outside of the
+  char editor and for 1x1 char selections. This allows typing
+  -/_/=/+ in other char selectors to jump to those characters.
 + Added docs/fileform.html, a document describing all currently
   supported MZX file formats in excessive detail.
++ When startup_file is provided with both a directory and a
+  filename and no startup_path has been set, the directory will
+  now be used as startup_path. If startup_path is set, the
+  directory portion of startup_file will still be ignored.
++ The flash thing editor functions (Show Robots, etc.) now use
+  the protected charset and will display with the protected
+  palette in SMZX mode and in regular mode situations where the
+  normal flashing would be difficult/impossible to see.
 + Fixed a bug where input text with no corresponding internal
   key would be ignored by the robot editor.
 + Fixed a bug where some AltGr key combinations would not work
@@ -20,6 +110,13 @@ USERS
   only works for files in ZIP archives and no CRC-32 validation
   is performed.
 + Fixed checkres parsing for LOAD CHAR SET "+&+var&file.chr".
++ Fixed checkres crash that could occur on some platforms when
+  attempting to checkres a directory.
++ Fixed wrong robot board positions reported by checkres for
+  some files when run with -vv.
++ Repurposed the old checkres -A flag to display everything but
+  unused files, which should be much more useful than the older
+  behavior (particularly with loose files in directory dumps).
 + Fixed memory leaks in legacy_assemble_line.
 + Fixed potential null termination issues in both world loaders
   that could be triggered with invalid board name, robot name,
@@ -30,13 +127,53 @@ USERS
   counters or strings lists beyond 1 billion. Checks have been
   added to prevent them from expanding beyond 2^31 (please don't
   actually use this many counters/strings).
++ Fixed string comparison for pre-2.81 games that relied on
+  null-terminated string compares. This fixes Mines of Madness.
 + Fixed hlp2html bug where certain chars wouldn't be escaped and
   decreased the size of the output HTML files somewhat.
 + Fixed libxmp playback for S3Ms containing ADPCM4 samples. This
   fixes mm2flash.s3m in ZeuxDrop.
++ Fixed libxmp playback for GDMs where 100/200/A00 should
+  continue the fine portamento and fine volume slide commands.
+  This fixes LB2_7.GDM from Kikan.
++ fsafetranslate now attempts to detect matches for truncated
+  DOS SFNs on non-Windows platforms. If an unambiguous match for
+  a truncated SFN is found, the SFN will be expanded to the
+  match. This fixes numerous games relying on truncated SFNs
+  with unambiguous matches.
++ Reimplemented COPY # # # # for layer-to-layer copies.
++ Fixed a collision bug affecting unbound sprites with ccheck 3
+  set in SMZX mode where wrong colors could be treated as the
+  transparent color for the purposes of collision.
++ Fixed softscale bug on some platforms where the screen border
+  wouldn't be cleared.
++ The GLSL renderer will now attempt to use a framebuffer when
+  available. This fixes GL_INVALID_OPERATION bugs with certain
+  OpenGL ES 2.0 implementations.
++ Directory navigation in the file manager now checks directory
+  access permissions before allowing navigation and displays an
+  error when navigation fails.
++ Fixed windowing code bug in extended macro editor that would
+  occur after selecting "Default" multiple times.
++ Fixed a bug where long extended macros could sometimes break.
++ Fixed extended macros not working when the params line is
+  indented by more than one space or tab.
++ Windows builds now attempt to load and call SetProcessDPIAware
+  on startup. This should fix undesirable DPI-related scaling
+  and fullscreen bugs.
++ Fixed Emscripten crashes on startup when built with Emscripten
+  1.39.5 and up caused by usage of deprecated canvas behavior.
++ Fixed a COPY BLOCK $string bug where the buffer could be
+  allocated at the empty destination string's value on some
+  platforms and a faulty bounds check would result in the string
+  being expanded but otherwise blank.
 
 DEVELOPERS
 
++ Added a set of C++-based unit tests for portions of MZX that
+  can't be reached/tested easily by MZX worlds. These tests will
+  be built and run when "make test" is used prior to running the
+  test worlds.
 + Decoupled SDL 2 text input handling from regular key handling
   and added a text input buffer. Text keys can now be requested
   multiple times and either as ASCII or unicode; the next key in
@@ -48,6 +185,28 @@ DEVELOPERS
 + Fixed a bug where khash tables couldn't expand beyond 2^31,
   added hash caching, made the MZX copy of khash use MZX style,
   and better documented the changes made to it.
++ Added fast sprintf replacements for Robotic counter to string
+  conversion (counter interpolation, string/counter compares).
++ Fixed alignment issues in memcasecmp.
++ Fixed alignment issues in get_cursor_color.
++ Added a config.sh flag for UndefinedBehaviorSanitizer.
++ Categorized config.sh flags list.
++ Added a trace logging level that is disabled by default and
+  changed most dns.c, fsafeopen.c, and checkres.c debug logging
+  to use it. Use the --enable-trace config.sh flag to enable
+  trace logging for debug builds.
++ Added a config.sh flag to build using GCC's -fanalyzer flag
+  (disabled by default).
++ Refactored path functions out of util.c.
++ Replaced the Android build scripts with an improved Makefile
+  system. The Android Makefile now uses the NDK toolchains
+  directly. Also added support for APK signing and fixed several
+  Android port bugs.
++ MZX will now exit on startup if no world could be loaded and
+  the SDL dummy video driver is active.
+- Removed -fpermissive from CXXFLAGS (pointless).
+- Removed -fbounds-check from debug builds (pointless; MegaZeux
+  doesn't use GCC to build any Fortran or Java code).
 
 
 March 8th, 2020 - MZX 2.92c

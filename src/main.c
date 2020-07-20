@@ -47,6 +47,7 @@
 #include "world.h"
 #include "counter.h"
 #include "run_stubs.h"
+#include "io/path.h"
 
 #include "audio/audio.h"
 #include "audio/sfx.h"
@@ -196,7 +197,13 @@ __libspec int main(int argc, char *argv[])
 #ifdef ANDROID
   // Accept argv[1] passed in from the Java side as the "intended" argv[0].
   if(argc >= 2)
+  {
     argv++;
+    argc--;
+  }
+
+  // Always try to start in /storage/emulated/0 to save some headaches.
+  path_navigate(current_dir, MAX_PATH, "/storage/emulated/0");
 #endif
 
   // argc may be 0 on e.g. some Wii homebrew loaders.
@@ -214,7 +221,7 @@ __libspec int main(int argc, char *argv[])
   // Figure out where all configuration files should be loaded
   // form. For game.cnf, et al this should eventually be wrt
   // the game directory, not the config.txt's path.
-  get_path(mzx_res_get_by_id(CONFIG_TXT), config_dir, MAX_PATH);
+  path_get_directory(config_dir, MAX_PATH, mzx_res_get_by_id(CONFIG_TXT));
 
   // Move into the configuration file's directory so that any
   // "include" statements are done wrt this path. Move back
@@ -222,13 +229,11 @@ __libspec int main(int argc, char *argv[])
   chdir(config_dir);
 
   default_config();
-  set_config_from_file_startup(mzx_res_get_by_id(CONFIG_TXT));
+  default_editor_config();
+  set_config_from_file(SYSTEM_CNF, mzx_res_get_by_id(CONFIG_TXT));
   set_config_from_command_line(&argc, argv);
   conf = get_config();
 
-  default_editor_config();
-  set_editor_config_from_file(mzx_res_get_by_id(CONFIG_TXT));
-  set_editor_config_from_command_line(&argc, argv);
   store_editor_config_backup();
 
   init_macros();
@@ -241,8 +246,13 @@ __libspec int main(int argc, char *argv[])
   // parameters. Interpret the first unparsed parameter
   // as a file to load (overriding startup_file etc.)
   if(argc > 1)
-    split_path_filename(argv[1], conf->startup_path, 256,
-     conf->startup_file, 256);
+  {
+    path_get_directory_and_filename(
+      conf->startup_path, sizeof(conf->startup_path),
+      conf->startup_file, sizeof(conf->startup_file),
+      argv[1]
+    );
+  }
 
   if(strlen(conf->startup_path))
   {
@@ -258,7 +268,7 @@ __libspec int main(int argc, char *argv[])
 
   set_mouse_mul(8, 14);
 
-  init_event();
+  init_event(conf);
 
   if(!init_video(conf, CAPTION))
     goto err_free_config;

@@ -59,17 +59,16 @@ struct zip_method_handler
   // Can be called multiple times.
   enum zip_error (*decompress_block)(struct zip_stream_data *);
 
-  // Compress, treating the input and output as an entire file.
-  enum zip_error (*compress_file)(struct zip_stream_data *);
-
   // Compress until the input is exhausted or the output is full.
-  // Can be called multiple times.
-  enum zip_error (*compress_block)(struct zip_stream_data *);
+  // Can be called multiple times. Provide "true" to the second parameter
+  // to finish the stream.
+  enum zip_error (*compress_block)(struct zip_stream_data *, boolean);
 };
 
 /**
  * ZIP stream function registry for supported (de)compression methods.
  */
+UTILS_LIBSPEC
 extern struct zip_method_handler *zip_method_handlers[MAX_SUPPORTED_METHOD + 1];
 
 __M_END_DECLS

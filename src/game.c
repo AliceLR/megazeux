@@ -149,9 +149,9 @@ boolean load_game_module(struct world *mzx_world, char *filename,
   }
 
   // Get the translated name (the one we want to compare against later)
-  n_result = fsafetranslate(filename, translated_name);
+  n_result = fsafetranslate(filename, translated_name, MAX_PATH);
   if(n_result != FSAFE_SUCCESS)
-    n_result = audio_legacy_translate(filename, translated_name);
+    n_result = audio_legacy_translate(filename, translated_name, MAX_PATH);
 
   // Add * back
   if(mod_star)
@@ -440,7 +440,18 @@ static boolean game_draw(context *ctx)
     // There is no MZX_SPEED to derive a framerate from, so use the UI rate.
     set_context_framerate_mode(ctx, FRAMERATE_UI);
     if(!conf->standalone_mode)
+    {
+      // Animate the intro message and periodically reset the timer so it's
+      // obvious that MZX is still working and hasn't e.g. frozen. Do this at
+      // (effectively) MZX speed 4 so it doesn't hurt to look at.
+      if(!(intro_mesg_timer % 3))
+      {
+        if(intro_mesg_timer < 10)
+          enable_intro_mesg();
+        update_scroll_color();
+      }
       draw_intro_mesg(mzx_world);
+    }
     m_show();
     return true;
   }
@@ -899,6 +910,14 @@ static void title_resume(context *ctx)
   {
     if(!load_world_title(title, curr_file))
     {
+      // World failed to load and no video? Hard exit so MZX doesn't stay
+      // stuck on a dialog or the blank title screen...
+      if(!has_video_initialized())
+      {
+        destroy_context(ctx);
+        return;
+      }
+
       conf->standalone_mode = false;
 
       // Do this to avoid some UI fade bugs...

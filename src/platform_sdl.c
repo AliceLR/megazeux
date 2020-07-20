@@ -56,6 +56,42 @@ Uint32 get_ticks(void)
   return SDL_GetTicks();
 }
 
+#ifdef __WIN32__
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+/**
+ * Set DPI awareness for Windows to avoid bad window scaling and various
+ * fullscreen-related bugs. This function was added in Windows Vista so it
+ * needs to be dynamically loaded.
+ */
+static void set_dpi_aware(void)
+{
+  BOOL (*_SetProcessDPIAware)(void) = NULL;
+  void *handle;
+
+  handle = SDL_LoadObject("User32.dll");
+  if(handle)
+  {
+    void **dest = (void **)&_SetProcessDPIAware;
+    *dest = SDL_LoadFunction(handle, "SetProcessDPIAware");
+
+    if(_SetProcessDPIAware && !_SetProcessDPIAware())
+    {
+      warn("failed to SetProcessDPIAware!\n");
+    }
+    else
+
+    if(!_SetProcessDPIAware)
+      debug("couldn't load SetProcessDPIAware.\n");
+
+    SDL_UnloadObject(handle);
+  }
+  else
+    debug("couldn't load User32.dll: %s\n", SDL_GetError());
+}
+#endif
+
 boolean platform_init(void)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
@@ -81,6 +117,10 @@ boolean platform_init(void)
   flags |= SDL_INIT_AUDIO;
 #endif
 
+#ifdef __WIN32__
+  set_dpi_aware();
+#endif
+
   if(SDL_Init(flags) < 0)
   {
     debug("Failed to initialize SDL; attempting with joystick support disabled: %s\n", SDL_GetError());
@@ -99,7 +139,15 @@ boolean platform_init(void)
   }
 
 #if SDL_VERSION_ATLEAST(2,0,0)
+/**
+ * TODO: Don't enable SDL_TEXTINPUT events on Android for now. They seem to
+ * cause more issues than they solve. Enabling these on Android also seems
+ * to assume that the onscreen keyboard should be opened, which usually
+ * covers whatever part of the MZX screen is being typed into.
+ */
+#if !defined(ANDROID)
   SDL_StartTextInput();
+#endif
 #else
   SDL_EnableUNICODE(1);
 #endif

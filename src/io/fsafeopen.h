@@ -32,6 +32,8 @@ enum
   FSAFE_MATCHED_DIRECTORY,
   FSAFE_MATCH_FAILED,
   FSAFE_BRUTE_FORCE_FAILED,
+  FSAFE_BRUTE_FORCE_SFN_AMBIGUOUS,
+  FSAFE_BRUTE_FORCE_SFN_OVERFLOW,
   FSAFE_INVALID_ARGUMENT,
   FSAFE_ABSOLUTE_PATH_ERROR,
   FSAFE_WINDOWS_DRIVE_LETTER_ERROR,
@@ -40,7 +42,7 @@ enum
 
 CORE_LIBSPEC char *fsafegets(char *s, int size, FILE *stream);
 
-int fsafetranslate(const char *path, char *newpath);
+int fsafetranslate(const char *path, char *newpath, size_t buffer_len);
 FILE *fsafeopen(const char *path, const char *mode);
 
 __M_END_DECLS

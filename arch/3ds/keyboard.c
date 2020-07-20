@@ -205,7 +205,7 @@ boolean ctr_keyboard_update(struct buffered_status *status)
       touch_area_t *area = &touch_areas[i];
       if(ctr_key_touched(&pos, area))
       {
-        unicode = convert_internal_unicode(area->keycode);
+        unicode = convert_internal_unicode(area->keycode, false);
 
         key_press(status, area->keycode);
         key_press_unicode(status, unicode, true);

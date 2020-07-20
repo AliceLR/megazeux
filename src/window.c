@@ -57,6 +57,7 @@
 #include "world.h"
 #include "util.h"
 #include "io/dir.h"
+#include "io/path.h"
 
 #include "audio/sfx.h"
 
@@ -729,18 +730,28 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
       case IKEY_KP_MINUS:
       case IKEY_MINUS:
       {
-        // Move in tile increment
-        current = char_select_next_tile(current, -1, width, height);
-        break;
+        if(allow_multichar && (width != 1 || height != 1))
+        {
+          // Move backward in tile increment.
+          if(!get_shift_status(keycode_internal))
+            current = char_select_next_tile(current, -1, width, height);
+          break;
+        }
       }
+      /* fall-through */
 
       case IKEY_KP_PLUS:
       case IKEY_EQUALS:
       {
-        // Move in tile increment
-        current = char_select_next_tile(current, 1, width, height);
-        break;
+        if(allow_multichar && (width != 1 || height != 1))
+        {
+          // Move forward in a tile increment.
+          if(!get_shift_status(keycode_internal))
+            current = char_select_next_tile(current, 1, width, height);
+          break;
+        }
       }
+      /* fall-through */
 
       default:
       {
@@ -748,6 +759,17 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
         {
           // If this is from 32 to 255, jump there.
           int key_char = get_key(keycode_text_ascii);
+
+          if(allow_multichar && (width != 1 || height != 1))
+          {
+            // Ignore text from these keys in situations where they are used
+            // for tile movement instead...
+            if(get_key_status(keycode_internal, IKEY_MINUS) ||
+             get_key_status(keycode_internal, IKEY_EQUALS) ||
+             get_key_status(keycode_internal, IKEY_KP_MINUS) ||
+             get_key_status(keycode_internal, IKEY_KP_PLUS))
+              break;
+          }
 
           if(key_char >= 32 && key_char <= 255)
             current = key_char;
@@ -1014,6 +1036,9 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     current_element = di->elements[current_element_num];
     update_event_status_delay();
     current_key = get_key(keycode_internal_wrt_numlock);
+
+    if(!current_key && has_unicode_input())
+      current_key = IKEY_UNICODE;
 
     new_key = get_joystick_ui_key();
     if(new_key)
@@ -1775,7 +1800,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
     {
       int key_char = get_key(keycode_text_ascii);
 
-      if((key >= '0') && (key <= '9'))
+      if((key_char >= '0') && (key_char <= '9'))
       {
         if(current_value == src->upper_limit || src->is_null)
         {
@@ -1783,8 +1808,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
         }
         else
         {
-          current_value = (current_value * 10) +
-           (key_char - '0');
+          current_value = (current_value * 10) + (key_char - '0');
         }
 
         if(src->type == NUMBER_BOX_MULT_FIVE)
@@ -3266,6 +3290,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
  const char *title, int dirs_okay, int allow_new, struct element **dialog_ext,
  int num_ext, int ext_height)
 {
+  // FIXME no buffer size parameter for ret. this function assumes MAX_PATH.
   // dirs_okay -- 0:none -- 1:all -- 2:subdirsonly
   struct mzx_dir current_dir;
   char *file_name;
@@ -3320,16 +3345,17 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     last_element = FILESEL_FILENAME;
 
   getcwd(return_dir_name, MAX_PATH);
-  strcpy(current_dir_name, return_dir_name);
+  snprintf(current_dir_name, MAX_PATH, "%s", return_dir_name);
+  current_dir_name[MAX_PATH - 1] = '\0';
 
-  // Split the input path (it may be a directory)
-  split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
+  // Check the input path for a directory. If there is a directory component
+  // to the input, that should be used as the base directory.
+  // TODO: this is a bad way to do this. The base dir should be a param instead.
+  if(path_get_directory(ret_path, MAX_PATH, ret) > 0)
+    path_navigate(current_dir_name, MAX_PATH, ret_path);
 
-  // We may be searching in a base directory that isn't the cwd.
-  if(ret_path[0])
-    change_dir_name(current_dir_name, ret_path);
-
-  strcpy(base_dir_name, current_dir_name);
+  snprintf(base_dir_name, MAX_PATH, "%s", current_dir_name);
+  base_dir_name[MAX_PATH - 1] = '\0';
 
   while(return_value == 1)
   {
@@ -3405,7 +3431,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       if(dir_type == DIR_TYPE_FILE)
       {
         // Find the extension.
-        ext_pos = get_ext_pos(file_name);
+        ext_pos = path_get_ext_offset(file_name);
 
         for(i = 0; wildcards[i] != NULL; i++)
         {
@@ -3514,8 +3540,7 @@ skip_dir:
     }
 
     // Make ret relative for the display.
-    split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
-    strcpy(ret, ret_file);
+    path_to_filename(ret, MAX_PATH);
     ret[55] = '\0'; // Just in case
 
     elements[FILESEL_FILE_LIST] =
@@ -3558,16 +3583,25 @@ skip_dir:
       case 4:
       {
         size_t ret_len = strlen(ret);
+        boolean ignore_file = false;
 
         if(ret[0] && (ret[ret_len - 1] == ':') && (ret_len + 1) < MAX_PATH)
           strcpy(ret + ret_len, DIR_SEPARATOR);
 
-        split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
+        path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
         if(ret_path[0])
-          change_dir_name(current_dir_name, ret_path);
+        {
+          if(path_navigate(current_dir_name, MAX_PATH, ret_path) < 0)
+          {
+            error("Directory does not exist or permission denied.",
+             ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
+            ignore_file = true;
+            ret[0] = '\0';
+          }
+        }
 
-        if(ret_file[0])
-          join_path_names(ret, MAX_PATH, current_dir_name, ret_file);
+        if(ret_file[0] && !ignore_file)
+          path_join(ret, MAX_PATH, current_dir_name, ret_file);
       }
     }
 
@@ -3578,7 +3612,7 @@ skip_dir:
       // Pressed Backspace
       case -2:
       {
-        change_dir_name(current_dir_name, "..");
+        path_navigate(current_dir_name, MAX_PATH, "..");
         break;
       }
 
@@ -3607,19 +3641,21 @@ skip_dir:
            (struct file_list_entry *)file_list[chosen_file];
 
           if(strcmp(ret_file, e->filename))
-            join_path_names(ret, MAX_PATH, current_dir_name, e->filename);
+            path_join(ret, MAX_PATH, current_dir_name, e->filename);
         }
 
         if(default_ext)
-          add_ext(ret, default_ext);
+          path_force_ext(ret, MAX_PATH, default_ext);
 
         stat_result = stat(ret, &file_info);
 
         // It's actually a dir, oops!
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
         {
-          change_dir_name(current_dir_name, ret_file);
-          strcpy(ret, "");
+          if(path_navigate(current_dir_name, MAX_PATH, ret_file) < 0)
+            error("Directory does not exist or permission denied.",
+             ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
+          ret[0] = '\0';
           break;
         }
 
@@ -3656,7 +3692,9 @@ skip_dir:
       case 2:
       {
         if(dir_list && dir_list[chosen_dir])
-          change_dir_name(current_dir_name, dir_list[chosen_dir]);
+          if(path_navigate(current_dir_name, MAX_PATH, dir_list[chosen_dir]) < 0)
+            error("Directory does not exist or permission denied.",
+             ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
 
         break;
       }
@@ -3673,7 +3711,7 @@ skip_dir:
         if(!confirm_input(mzx_world, "Create New Directory",
          "New directory name:", new_name))
         {
-          join_path_names(full_name, MAX_PATH, current_dir_name, new_name);
+          path_join(full_name, MAX_PATH, current_dir_name, new_name);
 
           if(stat(full_name, &file_info) < 0)
           {
@@ -3727,8 +3765,8 @@ skip_dir:
 
         if(!confirm_input(mzx_world, "Rename File", "New file name:", new_name))
         {
-          join_path_names(old_path, MAX_PATH, current_dir_name, e->filename);
-          join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
+          path_join(old_path, MAX_PATH, current_dir_name, e->filename);
+          path_join(new_path, MAX_PATH, current_dir_name, new_name);
 
           if(strcmp(old_path, new_path))
             if(rename(old_path, new_path))
@@ -3757,7 +3795,7 @@ skip_dir:
           if(!confirm(mzx_world, confirm_string))
           {
             char file_name_ch[MAX_PATH];
-            join_path_names(file_name_ch, MAX_PATH, current_dir_name,
+            path_join(file_name_ch, MAX_PATH, current_dir_name,
              dir_list[chosen_dir]);
 
             if(!ask_yes_no(mzx_world,
@@ -3788,14 +3826,14 @@ skip_dir:
           char *new_path = cmalloc(MAX_PATH);
           char *new_name = cmalloc(MAX_PATH);
 
-          strncpy(new_name, dir_list[chosen_dir], MAX_PATH);
+          snprintf(new_name, MAX_PATH, "%s", dir_list[chosen_dir]);
+          new_name[MAX_PATH - 1] = '\0';
 
           if(!confirm_input(mzx_world, "Rename Directory",
            "New directory name:", new_name))
           {
-            join_path_names(old_path, MAX_PATH, current_dir_name,
-             dir_list[chosen_dir]);
-            join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
+            path_join(old_path, MAX_PATH, current_dir_name, dir_list[chosen_dir]);
+            path_join(new_path, MAX_PATH, current_dir_name, new_name);
 
             if(strcmp(old_path, new_path))
               if(rename(old_path, new_path))
@@ -3822,24 +3860,22 @@ skip_dir:
        strstr(current_dir_name, "..") ||
 
       // or if there's an unallowed subdirectory
-       (!dirs_okay && strstr(current_dir_name + base_dir_len, DIR_SEPARATOR)))
+       (!dirs_okay && path_has_directory(current_dir_name + base_dir_len)))
       {
-        debug("some1 dropped da ball!!!!!!11\n");
-        strcpy(current_dir_name, base_dir_name);
+        memcpy(current_dir_name, base_dir_name, base_dir_len + 1);
         return_value = 1;
         ret[0] = 0;
       }
       else
 
+      // If the base dir and return dir are the same and the selected path is
+      // prefixed with the base dir, make it a relative path. This is necessary
+      // for files selected for use in a game from the editor.
+      // TODO should maybe do this regardless of the return path. The only
+      // thing that would be affected is probably GLSL shader selection.
       if(!strcmp(base_dir_name, return_dir_name))
       {
-        // The base dir might not have a trailing slash, so skip any of those
-        // found in the selected file before copying the result.
-        while(ret[base_dir_len] == DIR_SEPARATOR_CHAR)
-          base_dir_len++;
-
-        strcpy(ret_file, ret + base_dir_len);
-        strcpy(ret, ret_file);
+        path_remove_prefix(ret, MAX_PATH, base_dir_name, base_dir_len);
       }
     }
 

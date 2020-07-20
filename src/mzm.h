@@ -26,6 +26,21 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
+enum mzm_save_mode
+{
+  MZM_BOARD_TO_BOARD_STORAGE    = 0,
+  MZM_OVERLAY_TO_LAYER_STORAGE  = 1,
+  MZM_VLAYER_TO_LAYER_STORAGE   = 2,
+  MZM_BOARD_TO_LAYER_STORAGE    = 3,
+};
+
+enum mzm_load_mode
+{
+  MZM_LOAD_TO_BOARD   = 0,
+  MZM_LOAD_TO_OVERLAY = 1,
+  MZM_LOAD_TO_VLAYER  = 2,
+};
+
 CORE_LIBSPEC void save_mzm(struct world *mzx_world, char *name,
  int start_x, int start_y, int width, int height, int mode, int savegame);
 CORE_LIBSPEC void save_mzm_string(struct world *mzx_world, const char *name,

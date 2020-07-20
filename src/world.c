@@ -50,8 +50,9 @@
 #include "str.h"
 #include "util.h"
 #include "window.h"
-#include "io/memfile.h"
 #include "io/fsafeopen.h"
+#include "io/memfile.h"
+#include "io/path.h"
 #include "io/zip.h"
 
 #include "audio/audio.h"
@@ -1492,9 +1493,8 @@ static inline int save_world_counters(struct world *mzx_world,
 static inline int load_world_counters(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  Uint8 buffer[8];
   struct memfile mf;
-  char *buffer = NULL;
-
   char name_buffer[ROBOT_MAX_TR];
   size_t name_length;
   int value;
@@ -1505,33 +1505,18 @@ static inline int load_world_counters(struct world *mzx_world,
   size_t i;
 
   enum zip_error result;
-  unsigned int method;
-  boolean is_stream = false;
 
-  result = zip_get_next_method(zp, &method);
-  if(result != ZIP_SUCCESS)
+  // Stream counters out of the file instead of reading them all at once as
+  // the size of the counters file can vary greatly. This shouldn't hurt
+  // performance too much because of buffering.
+  result = zip_read_open_file_stream(zp, NULL);
+  if(result)
     return result;
 
-  // If this is an uncompressed memory zip, we can read the memory directly.
-  if(zp->is_memory && method == ZIP_M_NONE)
-  {
-    zip_read_open_mem_stream(zp, &mf);
-    is_stream = true;
-  }
-
-  else
-  {
-    size_t actual_size;
-
-    zip_get_next_uncompressed_size(zp, &actual_size);
-    buffer = cmalloc(actual_size);
-    zip_read_file(zp, buffer, actual_size, &actual_size);
-
-    mfopen(buffer, actual_size, &mf);
-  }
+  mfopen(buffer, 8, &mf);
+  zread(buffer, 4, zp);
 
   num_counters = mfgetud(&mf);
-
   num_prev_allocated = counter_list->num_counters_allocated;
 
   // If there aren't already any counters, allocate manually.
@@ -1544,13 +1529,15 @@ static inline int load_world_counters(struct world *mzx_world,
 
   for(i = 0; i < num_counters; i++)
   {
+    zread(buffer, 8, zp);
+    mf.current = buffer;
     value = mfgetd(&mf);
     name_length = mfgetud(&mf);
 
     if(name_length >= ROBOT_MAX_TR)
       break;
 
-    if(!mfread(name_buffer, name_length, 1, &mf))
+    if(ZIP_SUCCESS != zread(name_buffer, name_length, zp))
       break;
 
     // If there were already counters, use new_counter to set or add them
@@ -1578,11 +1565,7 @@ static inline int load_world_counters(struct world *mzx_world,
   sort_counter_list(counter_list);
 #endif
 
-  if(is_stream)
-    zip_read_close_stream(zp);
-
-  free(buffer);
-  return ZIP_SUCCESS;
+  return zip_read_close_stream(zp);;
 }
 
 
@@ -1624,104 +1607,6 @@ static inline int save_world_strings(struct world *mzx_world,
   return zip_write_close_stream(zp);
 }
 
-static inline int load_world_strings_mem(struct world *mzx_world,
- struct zip_archive *zp, int method)
-{
-  // In unusual cases (DEFLATEd strings, loading from memory), use this
-  // implementation.
-  struct memfile mf;
-  char *buffer = NULL;
-  boolean is_stream = false;
-
-  struct string_list *string_list = &(mzx_world->string_list);
-  struct string *src_string;
-  char name_buffer[ROBOT_MAX_TR];
-  size_t name_length;
-  size_t str_length;
-
-  size_t num_prev_allocated;
-  size_t num_strings;
-  size_t i;
-
-  // If this is an uncompressed memory zip, we can read the memory directly.
-  if(zp->is_memory && method == ZIP_M_NONE)
-  {
-    zip_read_open_mem_stream(zp, &mf);
-    is_stream = true;
-  }
-
-  else
-  {
-    size_t actual_size;
-
-    zip_get_next_uncompressed_size(zp, &actual_size);
-    buffer = cmalloc(actual_size);
-    zip_read_file(zp, buffer, actual_size, &actual_size);
-
-    mfopen(buffer, actual_size, &mf);
-  }
-
-  num_strings = mfgetud(&mf);
-
-  num_prev_allocated = string_list->num_strings_allocated;
-
-  // If there aren't already any strings, allocate manually.
-  if(!num_prev_allocated)
-  {
-    string_list->num_strings = num_strings;
-    string_list->num_strings_allocated = num_strings;
-    string_list->strings = ccalloc(num_strings, sizeof(struct string *));
-  }
-
-  for(i = 0; i < num_strings; i++)
-  {
-    name_length = mfgetud(&mf);
-    str_length = mfgetud(&mf);
-
-    if(name_length >= ROBOT_MAX_TR || str_length > MAX_STRING_LEN)
-      break;
-
-    if(!mfread(name_buffer, name_length, 1, &mf))
-      break;
-
-    // If there were already strings, use new_string to set or add them
-    // into the existing strings as-needed.
-    if(num_prev_allocated)
-    {
-      name_buffer[name_length] = 0;
-      src_string = new_string(mzx_world, name_buffer, str_length, -1);
-      if(!src_string)
-        break;
-    }
-
-    // Otherwise, put them in the list manually.
-    else
-    {
-      src_string = load_new_string(string_list, i,
-       name_buffer, name_length, str_length);
-    }
-
-    mfread(src_string->value, str_length, 1, &mf);
-    src_string->length = str_length;
-  }
-
-  // If there weren't any previously allocated, the number successfully read is
-  // the new number of strings.
-  if(!num_prev_allocated)
-    string_list->num_strings = i;
-
-#ifndef CONFIG_COUNTER_HASH_TABLES
-  // Versions without the hash table require this to be sorted at all times
-  sort_string_list(string_list);
-#endif
-
-  if(is_stream)
-    zip_read_close_stream(zp);
-
-  free(buffer);
-  return ZIP_SUCCESS;
-}
-
 static inline int load_world_strings(struct world *mzx_world,
  struct zip_archive *zp)
 {
@@ -1738,17 +1623,13 @@ static inline int load_world_strings(struct world *mzx_world,
   size_t i;
 
   enum zip_error result;
-  unsigned int method;
 
-  result = zip_get_next_method(zp, &method);
+  // Stream strings out of the file instead of reading them all at once as
+  // the size of the strings file can vary greatly. This shouldn't hurt
+  // performance too much because of buffering.
+  result = zip_read_open_file_stream(zp, NULL);
   if(result != ZIP_SUCCESS)
     return result;
-
-  if(zp->is_memory || method == ZIP_M_DEFLATE)
-    return load_world_strings_mem(mzx_world, zp, method);
-
-  // Stream the strings out of the file.
-  zip_read_open_file_stream(zp, NULL);
 
   mfopen(buffer, 8, &mf);
   zread(buffer, 4, zp);
@@ -2654,10 +2535,8 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   char file_path[MAX_PATH];
   struct stat file_info;
 
-  get_path(file, file_path, MAX_PATH);
-
   // chdir to game directory
-  if(file_path[0])
+  if(path_get_directory(file_path, MAX_PATH, file) > 0)
   {
     getcwd(current_dir, MAX_PATH);
 
@@ -2670,7 +2549,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   strncpy(config_file_name + file_name_len, ".cnf", 5);
 
   if(stat(config_file_name, &file_info) >= 0)
-    set_config_from_file(config_file_name);
+    set_config_from_file(GAME_CNF, config_file_name);
 
   // Some initial setting(s)
   mzx_world->custom_sfx_on = 0;
@@ -2711,7 +2590,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
     mzx_world->input_is_dir = false;
 
-    err = fsafetranslate(mzx_world->input_file_name, translated_path);
+    err = fsafetranslate(mzx_world->input_file_name, translated_path, MAX_PATH);
     if(err == -FSAFE_MATCHED_DIRECTORY)
     {
       if(dir_open(&mzx_world->input_directory, translated_path))
@@ -3041,7 +2920,7 @@ void change_board_load_assets(struct world *mzx_world)
   // Does this board need a char set loaded? (2.90+)
   if(mzx_world->version >= V290 && cur_board->charset_path[0])
   {
-    if(fsafetranslate(cur_board->charset_path, translated_name) == FSAFE_SUCCESS)
+    if(fsafetranslate(cur_board->charset_path, translated_name, MAX_PATH) == FSAFE_SUCCESS)
     {
       // Bug: ec_load_set cleared the extended chars prior to 2.91e
       if(mzx_world->version < V291)
@@ -3054,7 +2933,7 @@ void change_board_load_assets(struct world *mzx_world)
   // Does this board need a palette loaded? (2.90+)
   if(mzx_world->version >= V290 && cur_board->palette_path[0])
   {
-    if(fsafetranslate(cur_board->palette_path, translated_name) == FSAFE_SUCCESS)
+    if(fsafetranslate(cur_board->palette_path, translated_name, MAX_PATH) == FSAFE_SUCCESS)
       load_palette(translated_name);
   }
 }
@@ -3213,11 +3092,10 @@ boolean reload_world(struct world *mzx_world, const char *file, boolean *faded)
   // Now that the world's loaded, fix the save path.
   {
     char save_name[MAX_PATH];
-    char current_dir[MAX_PATH];
-    getcwd(current_dir, MAX_PATH);
+    path_get_filename(save_name, MAX_PATH, curr_sav);
 
-    split_path_filename(curr_sav, NULL, 0, save_name, MAX_PATH);
-    join_path_names(curr_sav, MAX_PATH, current_dir, save_name);
+    getcwd(curr_sav, MAX_PATH);
+    path_append(curr_sav, MAX_PATH, save_name);
   }
 
   return true;
@@ -3255,7 +3133,6 @@ boolean reload_savegame(struct world *mzx_world, const char *file,
 boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded)
 {
   char name[BOARD_NAME_SIZE];
-  char full_path[MAX_PATH];
   char file_name[MAX_PATH];
   int version;
 
@@ -3278,9 +3155,9 @@ boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded)
   change_board_load_assets(mzx_world);
 
   // Give curr_file a full path
-  getcwd(full_path, MAX_PATH);
-  split_path_filename(file, NULL, 0, file_name, MAX_PATH);
-  join_path_names(curr_file, MAX_PATH, full_path, file_name);
+  path_get_filename(file_name, MAX_PATH, file);
+  getcwd(curr_file, MAX_PATH);
+  path_append(curr_file, MAX_PATH, file_name);
 
   return true;
 }

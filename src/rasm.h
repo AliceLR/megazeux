@@ -296,8 +296,8 @@ CORE_LIBSPEC int get_thing(char *name, int name_length);
 
 #endif // CONFIG_EDITOR
 
-#endif // CONFIG_DEBYTECODE
-
 __M_END_DECLS
+
+#endif // CONFIG_DEBYTECODE
 
 #endif // __RASM_H

@@ -24,6 +24,7 @@
 
 __M_BEGIN_DECLS
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -38,7 +39,6 @@ struct memfile
 /**
  * Open a memory buffer for reading.
  */
-
 static inline void mfopen(const void *src, size_t len, struct memfile *mf)
 {
   mf->start = (unsigned char *)src;
@@ -51,10 +51,9 @@ static inline void mfopen(const void *src, size_t len, struct memfile *mf)
  * This version exists to be a drop-in alternative for fopen().
  * For general purposes, use mfopen() instead.
  */
-
 static inline struct memfile *mfopen_alloc(const void *src, size_t len)
 {
-  struct memfile *mf = cmalloc(sizeof(struct memfile));
+  struct memfile *mf = (struct memfile *)cmalloc(sizeof(struct memfile));
 
   mf->start = (unsigned char *)src;
   mf->current = (unsigned char *)src;
@@ -67,7 +66,6 @@ static inline struct memfile *mfopen_alloc(const void *src, size_t len)
  * This function is intended to be a drop-in fclose() alternative for
  * use with mfopen_alloc().
  */
-
 static inline int mf_alloc_free(struct memfile *mf)
 {
   if(mf && mf->alloc)
@@ -81,7 +79,6 @@ static inline int mf_alloc_free(struct memfile *mf)
 /**
  * Copy the buffer position and length to external variables.
  */
-
 static inline void mfsync(void **buf, size_t *len, struct memfile *mf)
 {
   if(buf) *buf = mf->start;
@@ -91,7 +88,6 @@ static inline void mfsync(void **buf, size_t *len, struct memfile *mf)
 /**
  * Determine if the memfile has at least len space remaining.
  */
-
 static inline int mfhasspace(size_t len, struct memfile *mf)
 {
   return (len + mf->current) <= mf->end;
@@ -100,12 +96,11 @@ static inline int mfhasspace(size_t len, struct memfile *mf)
 /**
  * Move the buffer of a memfile while preserving its current position.
  */
-
 static inline void mfmove(void *new_buf, size_t new_len, struct memfile *mf)
 {
   size_t pos = mf->current - mf->start;
 
-  mf->start = new_buf;
+  mf->start = (unsigned char *)new_buf;
   mf->current = mf->start + pos;
   mf->end = mf->start + new_len;
 
@@ -117,7 +112,6 @@ static inline void mfmove(void *new_buf, size_t new_len, struct memfile *mf)
  * Resize the memfile buffer and preserve the current position.
  * Do not use this function unless the memfile buffer is on the heap.
  */
-
 static inline void mfresize(size_t new_len, struct memfile *mf)
 {
   void *new_buf = realloc(mf->start, new_len);
@@ -148,7 +142,7 @@ static inline int mfgetd(struct memfile *mf)
   v =  mf->current[0];
   v |= mf->current[1] << 8;
   v |= mf->current[2] << 16;
-  v |= mf->current[3] << 24;
+  v |= (unsigned int)mf->current[3] << 24;
   mf->current += 4;
   return v;
 }
@@ -190,7 +184,7 @@ static inline size_t mfread(void *dest, size_t len, size_t count,
  struct memfile *mf)
 {
   unsigned int i;
-  unsigned char *pos = dest;
+  unsigned char *pos = (unsigned char *)dest;
   for(i = 0; i < count; i++)
   {
     if(mf->current + len > mf->end)
@@ -225,6 +219,9 @@ static inline size_t mfwrite(const void *src, size_t len, size_t count,
 /**
  * Read a line from memory, safely trimming platform-specific EOL chars
  * as-needed.
+ *
+ * NOTE: this only works with Unix and Windows line ends right now. If support
+ * for Mac OS <=9 is ever added the loop should terminate at \r instead of \n.
  */
 static inline char *mfsafegets(char *dest, int len, struct memfile *mf)
 {

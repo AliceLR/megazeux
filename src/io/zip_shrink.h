@@ -104,7 +104,7 @@ static inline void LZW_add(struct LZW_tree *tree)
   {
     // Find the next available code for the next time this function is called.
     uint16_t i;
-    assert(tree->next != tree->previous_code);
+    //assert(tree->next != tree->previous_code);
     assert(LZW_GET_STATE(current) == LZW_AVAILABLE);
     for(i = tree->next + 1; i < tree->length; i++)
       if(LZW_GET_STATE(tree->nodes + i) == LZW_AVAILABLE)
@@ -209,13 +209,13 @@ static inline enum zip_error LZW_output(struct LZW_tree *tree, uint16_t code,
 
     if(pos + length > end)
     {
-      debug("out of buffer in LZW_output!\n");
-      return ZIP_EOF;
+      trace("--UNSHRINK-- out of buffer in LZW_output!\n");
+      return ZIP_OUTPUT_FULL;
     }
 
     if(length == 0)
     {
-      debug("encountered infinite cycle at %u! aborting\n", code);
+      trace("--UNSHRINK-- encountered infinite cycle at %u! aborting\n", code);
       return ZIP_DECOMPRESS_FAILED;
     }
 
@@ -236,8 +236,8 @@ static inline enum zip_error LZW_output(struct LZW_tree *tree, uint16_t code,
   }
   else
   {
-    debug("out of buffer in LZW_output!\n");
-    return ZIP_EOF;
+    trace("--UNSHRINK-- out of buffer in LZW_output!\n");
+    return ZIP_OUTPUT_FULL;
   }
 
   *_pos = pos;
@@ -255,7 +255,7 @@ static inline enum zip_error LZW_decode(struct LZW_tree *tree, uint16_t code,
 
   if(code > tree->length)
   {
-    debug("invalid code %u\n", code);
+    trace("--UNSHRINK-- invalid code %u\n", code);
     return ZIP_DECOMPRESS_FAILED;
   }
 
@@ -266,7 +266,7 @@ static inline enum zip_error LZW_decode(struct LZW_tree *tree, uint16_t code,
     // before the output occurs (instead of after).
     if(tree->previous_code == LZW_NO_CODE)
     {
-      debug("invalid code %u (in special case)\n", code);
+      trace("--UNSHRINK-- invalid code %u (in special case)\n", code);
       return ZIP_DECOMPRESS_FAILED;
     }
 
@@ -350,8 +350,14 @@ static inline enum zip_error unshrink_file(struct zip_stream_data *zs)
 
   uint8_t bit_width = ss->bit_width;
 
-  if(!zs->input_buffer || !zs->output_buffer || zs->finished)
-    return ZIP_EOF;
+  if(zs->finished)
+    return ZIP_STREAM_FINISHED;
+
+  if(!zs->output_buffer)
+    return ZIP_OUTPUT_FULL;
+
+  if(!zs->input_buffer)
+    return ZIP_INPUT_EMPTY;
 
   b->input = zs->input_buffer;
   b->input_left = zs->input_length;
@@ -363,19 +369,19 @@ static inline enum zip_error unshrink_file(struct zip_stream_data *zs)
   {
     int code = BS_READ(b, bit_width);
     if(code < 0)
-      return ZIP_EOF;
+      break;
 
     if(code == LZW_COMMAND_CODE)
     {
       code = BS_READ(b, bit_width);
       if(code < 0)
-        return ZIP_EOF;
+        break;
 
       if(code == 1)
       {
         if(bit_width >= LZW_BIT_WIDTH_MAX)
         {
-          debug("can't expand bit width beyond 13!\n");
+          trace("--UNSHRINK-- can't expand bit width beyond 13!\n");
           return ZIP_DECOMPRESS_FAILED;
         }
 
@@ -390,7 +396,7 @@ static inline enum zip_error unshrink_file(struct zip_stream_data *zs)
       }
       else
       {
-        debug("invalid shrink command code %u!\n", code);
+        trace("--UNSHRINK-- invalid shrink command code %u!\n", code);
         return ZIP_DECOMPRESS_FAILED;
       }
       continue;
@@ -402,7 +408,7 @@ static inline enum zip_error unshrink_file(struct zip_stream_data *zs)
   }
   zs->final_output_length = pos - start;
   zs->finished = true;
-  return ZIP_SUCCESS;
+  return ZIP_STREAM_FINISHED;
 }
 
 __M_END_DECLS
