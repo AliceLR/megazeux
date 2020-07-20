@@ -988,6 +988,7 @@ UNITTEST(Settings)
     TEST_ENUM("color_coding_on", econf->color_coding_on, boolean_data);
   }
 
+#ifndef CONFIG_DEBYTECODE
   SECTION(default_invalid_status)
   {
     static const config_test_single data[] =
@@ -1003,6 +1004,7 @@ UNITTEST(Settings)
     };
     TEST_ENUM("default_invalid_status", econf->default_invalid_status, data);
   }
+#endif
 
   SECTION(disassemble_extras)
   {
