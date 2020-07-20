@@ -25,6 +25,12 @@
 void vitadebug_close(void);
 void vitadebug_init(void);
 
+#if defined(DEBUG) && defined(DEBUG_TRACE)
+void trace(const char *format, ...);
+#else
+#define trace(...) do { } while(0)
+#endif // DEBUG && DEBUG_TRACE
+
 #ifdef DEBUG
 void info(const char *format, ...);
 void warn(const char *format, ...);

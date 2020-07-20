@@ -22,7 +22,9 @@
 
 #include "../../src/compat.h"
 #include "../../src/config.h"
-#include "../../src/util.h"
+#include "../../src/io/path.h"
+
+#include "vita_debug.h"
 
 FILE *vitaout = NULL;
 FILE *vitaerr = NULL;
@@ -36,7 +38,7 @@ void vitadebug_close(void)
 void vitadebug_init(void)
 {
   char clean_path[MAX_PATH];
-  clean_path_slashes(CONFDIR, clean_path, MAX_PATH);
+  path_clean_slashes_copy(clean_path, MAX_PATH, CONFDIR);
 
   // This will drop the files into the MZX root path (ux0:data/MegaZeux/)
   vitaout = fopen_unsafe("/stdout.txt", "w");
@@ -44,6 +46,20 @@ void vitadebug_init(void)
 }
 
 #ifdef DEBUG
+#ifdef DEBUG_TRACE
+void trace(const char *format, ...)
+{
+  if(vitaout == NULL) return;
+
+  va_list args;
+  va_start(args, format);
+
+  vfprintf(vitaout, format, args);
+  fflush(vitaout);
+
+  va_end(args);
+}
+#endif // DEBUG_TRACE
 void info(const char *format, ...)
 {
   if(vitaout == NULL) return;
