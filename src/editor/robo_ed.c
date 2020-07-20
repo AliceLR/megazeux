@@ -381,7 +381,7 @@ static char *package_program(struct robot_line *start_rline,
 {
   // TODO: Have some option for giving a size maybe.
   struct robot_line *current_rline = start_rline;
-  char *packaged_program;
+  char *packaged_program = NULL;
   char *source_pos;
   int source_size = 0;
 
@@ -391,7 +391,8 @@ static char *package_program(struct robot_line *start_rline,
     current_rline = current_rline->next;
   }
 
-  packaged_program = realloc(existing_source, source_size);
+  if(source_size)
+    packaged_program = realloc(existing_source, source_size);
 
   if(packaged_program != NULL)
   {
@@ -414,6 +415,8 @@ static char *package_program(struct robot_line *start_rline,
     if(_source_size != NULL)
       *_source_size = source_size;
   }
+  else
+    free(existing_source);
 
   return packaged_program;
 }
