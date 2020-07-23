@@ -710,15 +710,20 @@ if [ "$PLATFORM" = "nds" ]; then
 	echo "#define CONFIG_NDS" >> src/config.h
 	echo "BUILD_NDS=1" >> platform.inc
 
-	echo "Force-disabling audio on NDS (fixme)."
-	AUDIO="false"
-
 	echo "Force-disabling software renderer on NDS."
 	echo "Building custom NDS renderer."
 	SOFTWARE="false"
 
 	echo "Force-disabling hash tables on NDS."
 	COUNTER_HASH="false"
+
+	echo "Force-disabling existing music playback libraries on NDS."
+	MODPLUG="false"
+	MIKMOD="false"
+	XMP="false"
+	OPENMPT="false"
+	REALITY="false"
+	VORBIS="false"
 fi
 
 #

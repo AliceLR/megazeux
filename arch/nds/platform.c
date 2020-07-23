@@ -181,6 +181,5 @@ int main(int argc, char *argv[])
     real_main(argc, argv);
   }
 
-  systemShutDown();
-  while(true);
+  return 0;
 }

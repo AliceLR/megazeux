@@ -288,7 +288,9 @@ void init_audio(struct config_info *conf)
   audio.max_simultaneous_samples = -1;
   audio.max_simultaneous_samples_config = conf->max_simultaneous_samples;
 
+#ifndef CONFIG_NDS
   init_wav(conf);
+#endif
 
 #ifdef CONFIG_VORBIS
   init_vorbis(conf);
@@ -319,7 +321,9 @@ void init_audio(struct config_info *conf)
   audio_set_music_on(conf->music_on);
   audio_set_pcs_on(conf->pc_speaker_on);
 
+#ifndef CONFIG_NDS
   init_pc_speaker(conf);
+#endif
 
   audio_set_pcs_volume(conf->pc_speaker_volume);
 
@@ -511,6 +515,7 @@ void audio_play_sample(char *filename, boolean safely, int period)
 
 void audio_spot_sample(int period, int which)
 {
+#ifndef CONFIG_NDS
   // Play a sample from the current playing mod.
   // Currently only works with libxmp (and maybe only ever will).
 
@@ -535,6 +540,7 @@ void audio_spot_sample(int period, int which)
 
     limit_samples(audio.max_simultaneous_samples);
   }
+#endif
 }
 
 void audio_end_sample(void)
@@ -812,15 +818,14 @@ void audio_set_sound_volume(int volume)
 void audio_set_pcs_volume(int volume)
 {
   int real_volume;
-  if(!audio.pcs_stream)
-    return;
 
   LOCK();
 
   audio.pcs_volume = volume;
   real_volume = volume_function(255, audio.pcs_volume);
 
-  audio.pcs_stream->set_volume(audio.pcs_stream, real_volume);
+  if(audio.pcs_stream)
+    audio.pcs_stream->set_volume(audio.pcs_stream, real_volume);
 
   UNLOCK();
 }

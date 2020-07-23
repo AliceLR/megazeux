@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "render.h"
+#include "platform.h"
 
 #include "../../src/renderers.h"
 #include "../../src/graphics.h"
@@ -78,6 +79,11 @@ static void nds_on_vblank(void)
   nds_video_rasterhack();
   nds_video_jitter();
   nds_video_do_transition();
+
+#ifdef CONFIG_AUDIO
+  /* Handle PC speaker audio. */
+  nds_audio_vblank();
+#endif
 }
 
 boolean is_scaled_mode(enum Subscreen_Mode mode)
@@ -113,7 +119,7 @@ static void nds_subscreen_scaled_init(void)
   int xscale = (int)(320.0/256.0 * 256.0);
   int yscale = (int)(350.0/subscreen_height * 256.0);
 
-  /* Use banks A and B for the ZZT screen. */
+  /* Use banks A and B for the MZX screen. */
   videoSetMode(MODE_5_2D | DISPLAY_BG2_ACTIVE | DISPLAY_BG3_ACTIVE);
   vramSetBankA(VRAM_A_MAIN_BG);
   vramSetBankB(VRAM_B_MAIN_BG);
@@ -786,48 +792,4 @@ void nds_subscreen_switch(void)
 void nds_mouselook(boolean enabled)
 {
   mouselook = enabled;
-}
-
-// Display a warning screen.
-void warning_screen(u8 *pcx_data)
-{
-  sImage image;
-
-  consoleDemoInit();
-
-  if(loadPCX(pcx_data, &image))
-  {
-    u16 *img = image.image.data16;
-    int ox, oy;
-    u16 *gfx;
-
-    videoSetMode(MODE_5_2D | DISPLAY_BG2_ACTIVE);
-    vramSetBankA(VRAM_A_MAIN_BG);
-
-    REG_BG2CNT = BG_BMP8_256x256;
-    REG_BG2PA  = 1 << 8;
-    REG_BG2PB  = 0;
-    REG_BG2PC  = 0;
-    REG_BG2PD  = 1 << 8;
-    REG_BG2X   = 0;
-    REG_BG2Y   = 0;
-
-    memcpy(BG_PALETTE, image.palette, 2*256);
-
-    ox = 128 - image.width/2;
-    oy = 96 - image.height/2;
-    gfx = (u16*)(0x06000000 + 256*oy + ox);
-
-    for(int row = 0; row < image.height; row++)
-    {
-      for(int col = 0; col < image.width/2; col++)
-        *(gfx++) = *(img++);
-      gfx += ox;
-    }
-
-    while(!keysDown())
-      scanKeys();
-
-    imageDestroy(&image);
-  }
 }

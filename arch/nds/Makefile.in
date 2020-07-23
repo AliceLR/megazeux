@@ -30,13 +30,9 @@ PORTLIBS_INCLUDES := $(foreach dir, $(PORTLIBS), -isystem $(dir)/include)
 PORTLIBS_LIBS     := $(foreach dir, $(PORTLIBS), -L$(dir)/lib)
 
 EXTRA_INCLUDES := ${PORTLIBS_INCLUDES} \
-                 -isystem arch/nds/ndsScreens/build \
-                 -isystem $(DEVKITPRO)/libfat-nds/include \
                  -isystem $(LIBNDS)/include
 
 EXTRA_LIBS := ${PORTLIBS_LIBS} \
-             -Larch/nds/ndsScreens/lib \
-             -L$(DEVKITPRO)/libfat-nds/lib \
              -L$(LIBNDS)/lib -lfat -lm -lnds9
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds
