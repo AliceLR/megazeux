@@ -1,3 +1,10 @@
+GIT
+
+USERS
+
++ Fixed a graphics corruption issue when using the GLSL renderer
+  on big endian platforms.
+
 July 20th, 2020 - MZX 2.92e
 
 This bugfix release includes miscellaneous audio fixes and fixes

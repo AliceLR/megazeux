@@ -117,6 +117,29 @@ enum
   ATTRIB_COLOR,
 };
 
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+/**
+ * This uses GL_UNSIGNED_BYTE for GLES 2 compatibility. This leads to some
+ * problems when packing bytes on big endian machines because these packings
+ * assume GL_UNSIGNED_INT_8_8_8_8_REV (which isn't in GLES 2).
+ */
+static inline Uint32 pack_u32(Uint32 x)
+{
+  return
+   ((x & 0xFF000000) >> 24) |
+   ((x & 0x00FF0000) >> 8) |
+   ((x & 0x0000FF00) << 8) |
+   ((x & 0x000000FF) << 24);
+}
+#else
+/**
+ * For little endian, GL_UNSIGNED_BYTE and GL_UNSIGNED_INT_8_8_8_8_REV are
+ * equivalent, so don't change anything.
+ */
+#define pack_u32(x) (x)
+#endif
+
+
 /**
  * Some GL drivers attempt to run GLSL in software, resulting in extremely poor
  * performance for MegaZeux. When one of the drivers in this blacklist is
@@ -961,8 +984,8 @@ static void glsl_update_colors(struct graphics_data *graphics,
   Uint32 i;
   for(i = 0; i < count; i++)
   {
-    graphics->flat_intensity_palette[i] = (0xFF << 24) | (palette[i].b << 16) |
-     (palette[i].g << 8) | palette[i].r;
+    graphics->flat_intensity_palette[i] = pack_u32((0xFF << 24) |
+     (palette[i].b << 16) | (palette[i].g << 8) | palette[i].r);
     render_data->palette[i*3  ] = (GLubyte)palette[i].r;
     render_data->palette[i*3+1] = (GLubyte)palette[i].g;
     render_data->palette[i*3+2] = (GLubyte)palette[i].b;
@@ -1076,10 +1099,10 @@ static void glsl_render_layer(struct graphics_data *graphics,
       fg_color = FULL_PAL_SIZE;
     }
 
-    *dest =
+    *dest = pack_u32(
      (char_value << LAYER_CHAR_POS) |
      (bg_color << LAYER_BG_POS) |
-     (fg_color << LAYER_FG_POS);
+     (fg_color << LAYER_FG_POS));
   }
 
   glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
