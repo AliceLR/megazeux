@@ -120,13 +120,13 @@ static void nds_subscreen_scaled_init(void)
   int yscale = (int)(350.0/subscreen_height * 256.0);
 
   /* Use banks A and B for the MZX screen. */
-  videoSetMode(MODE_5_2D | DISPLAY_BG2_ACTIVE | DISPLAY_BG3_ACTIVE);
+  videoSetMode(MODE_5_2D | DISPLAY_BG0_ACTIVE | DISPLAY_BG1_ACTIVE | DISPLAY_BG2_ACTIVE | DISPLAY_BG3_ACTIVE);
   vramSetBankA(VRAM_A_MAIN_BG);
   vramSetBankB(VRAM_B_MAIN_BG);
 
   /* Use flickered alpha lerp to scale 320x350 to 256x192. */
-  /* (Bump the BG up to base 3 (+0xc0000) to make room for the keyboard.) */
-  REG_BG2CNT = BG_BMP8_512x512 | BG_BMP_BASE(3) | BG_PRIORITY(0);
+  /* (Bump the BG up to base 5 (+0x14000) to make room for the keyboard and console.) */
+  REG_BG2CNT = BG_BMP8_512x512 | BG_BMP_BASE(5) | BG_PRIORITY(1);
   REG_BG2PA  = xscale;
   REG_BG2PB  = 0;
   REG_BG2PC  = 0;
@@ -134,7 +134,7 @@ static void nds_subscreen_scaled_init(void)
   REG_BG2X   = 0;
   REG_BG2Y   = subscreen_offset_y;
 
-  REG_BG3CNT = BG_BMP8_512x512 | BG_BMP_BASE(3) | BG_PRIORITY(0);
+  REG_BG3CNT = BG_BMP8_512x512 | BG_BMP_BASE(5) | BG_PRIORITY(1);
   REG_BG3PA  = xscale;
   REG_BG3PB  = 0;
   REG_BG3PC  = 0;
@@ -145,6 +145,10 @@ static void nds_subscreen_scaled_init(void)
   /* Enable BG2/BG3 blending. */
   REG_BLDCNT   = BLEND_ALPHA | BLEND_SRC_BG2 | BLEND_DST_BG3;
   REG_BLDALPHA = (8 << 8) | 8; /* 50% / 50% */
+
+  /* Enable the console. */
+  consoleInit(NULL, 1, BgType_Text4bpp, BgSize_T_256x256, 31, 4, true, true);
+  bgSetPriority(1, 1);
 
   update_palette();
   update_screen();
@@ -158,7 +162,7 @@ static void nds_subscreen_keyboard_init(void)
   // Clear the keyboard area before drawing it.
   dmaFillWords(0, BG_MAP_RAM(20), 4096);
   keyboardInit(kb, 0, BgType_Text4bpp, BgSize_T_256x512, 20, 0, true, true);
-  bgHide(0);
+  bgSetPriority(0, 1);
   kb->scrollSpeed = 7;
   transition.time = 0;
   transition.state = TRANSITION_IN;
@@ -464,7 +468,7 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
   int const VRAM_WIDTH       = 512;     // HW surface width in pixels
 
   struct char_element *text_cell = graphics->text_video;
-  u32 *vram_ptr  = (u32*)BG_BMP_RAM(3);
+  u32 *vram_ptr  = (u32*)BG_BMP_RAM(5);
   int chars, lines;
 
   /* Iterate over every character in text memory. */

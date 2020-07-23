@@ -160,19 +160,6 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 #define trace(...) do { } while(0)
 #endif
 
-#elif defined(CONFIG_NDS) && !defined(CONFIG_STDIO_REDIRECT) /* ANDROID */
-
-// When the graphics have initialized, print to a debug buffer rather than the screen.
-void info(const char *format, ...)  __attribute__((format(printf, 1, 2)));
-void warn(const char *format, ...)  __attribute__((format(printf, 1, 2)));
-#define trace(...) do { } while(0)
-
-#ifdef DEBUG
-void debug(const char *format, ...) __attribute__((format(printf, 1, 2)));
-#else
-#define debug(...) do { } while(0)
-#endif
-
 #else /* ANDROID, CONFIG_NDS */
 
 #define info(...) \

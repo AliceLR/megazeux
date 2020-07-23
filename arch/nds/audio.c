@@ -202,7 +202,7 @@ int audio_play_module(char *filename, boolean safely, int volume)
 {
   char mas_filename[MAX_PATH];
   char translated_filename[MAX_PATH];
-  int mas_size;
+  u32 mas_size;
   u8 *mas_buffer;
   char *mas_ext_pos;
   FILE *mas_file;
@@ -234,9 +234,7 @@ int audio_play_module(char *filename, boolean safely, int volume)
   }
 
   // get soundbank filesize
-  fseek(mas_file, 0, SEEK_END);
-  mas_size = ftell(mas_file);
-  fseek(mas_file, 0, SEEK_SET);
+  fread(&mas_size, 4, 1, mas_file);
 
   // read buffer
   if (mas_size <= 0)
@@ -245,14 +243,14 @@ int audio_play_module(char *filename, boolean safely, int volume)
     return 0;
   }
 
-  mas_buffer = malloc(mas_size);
+  mas_buffer = malloc(mas_size + 8);
   if (mas_buffer == NULL)
   {
     fclose(mas_file);
     return 0;
   }
 
-  if (!fread(mas_buffer, mas_size, 1, mas_file))
+  if (!fread(mas_buffer + 4, mas_size + 4, 1, mas_file))
   {
     fclose(mas_file);
     return 0;
@@ -260,12 +258,6 @@ int audio_play_module(char *filename, boolean safely, int volume)
 
   fclose(mas_file);
   audio_end_module();
-
-  while (mmActive())
-  {
-    DC_FlushAll();
-    swiWaitForVBlank();
-  }
 
   maxmod_conf.mem_bank[0] = (mm_word) mas_buffer;
   DC_FlushAll();
@@ -286,6 +278,12 @@ void audio_end_module(void)
     return;
 
   mmStop();
+
+  while (mmActive())
+  {
+    DC_FlushAll();
+    swiWaitForVBlank();
+  }
 
   if (maxmod_conf.mem_bank[0] != 0)
   {
