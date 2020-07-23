@@ -460,6 +460,7 @@ static void nds_mainscreen_focus(int x, int y)
 }
 
 // Render the scaled screen.
+__attribute__((optimize("-O3")))
 static void nds_render_graph_scaled(struct graphics_data *graphics)
 {
   int const WIDTH_IN_PIXELS  = 80 * 4;  // Screen width in pixels
@@ -470,6 +471,8 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
   struct char_element *text_cell = graphics->text_video;
   u32 *vram_ptr  = (u32*)BG_BMP_RAM(5);
   int chars, lines;
+
+  DTCM_BSS static u8 pal_tbl[4];
 
   /* Iterate over every character in text memory. */
   int columns = 0;
@@ -484,12 +487,15 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
     u32 bg_idx = bg + 16; // Solid colors are offset by 16.
     u32 fg_idx = fg + 16;
     u32 mix_idx = palette_idx_table[bg][fg];
-    u32 pal_tbl[4] = {
-      bg_idx,   /* 00: bg color    */
-      mix_idx,  /* 01: fg+bg blend */
-      mix_idx,  /* 10: "         " */
-      fg_idx    /* 11: fg color    */
-    };
+    pal_tbl[0] = bg_idx;
+    pal_tbl[1] = mix_idx;
+    pal_tbl[2] = mix_idx;
+    pal_tbl[3] = fg_idx;
+//      bg_idx,   /* 00: bg color    */
+//      mix_idx,  /* 01: fg+bg blend */
+//      mix_idx,  /* 10: "         " */
+//      fg_idx    /* 11: fg color    */
+//    };
 
     /* Iterate over every line in the character. */
     u8 *line = graphics->charset + CHARACTER_HEIGHT * chr;
@@ -621,10 +627,14 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
 static void nds_render_graph(struct graphics_data *graphics)
 {
   // Always render the scaled screen.
+  profile_start("render_scaled");
   nds_render_graph_scaled(graphics);
+  profile_end();
 
   // Always render the 1:1 "main" screen.
+  profile_start("render_1to1");
   nds_render_graph_1to1(graphics);
+  profile_end();
 }
 
 static void nds_update_palette_entry(struct rgb_color *palette, Uint32 idx)

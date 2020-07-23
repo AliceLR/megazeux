@@ -27,6 +27,7 @@
 #include "../../src/util.h"
 
 #include <fat.h>
+#include "platform.h"
 #include "render.h"
 #include "extmem.h"
 #include "dlmalloc.h"
@@ -37,7 +38,8 @@ extern void nds_update_input(void);
 
 // Timer code stolen from SDL (LGPL)
 
-#define timers2ms(tlow,thigh)(tlow | (thigh<<16)) >> 5
+#define timers2ms(tlow,thigh) ((tlow) | ((thigh)<<16)) >> 7
+#define timers2ticks(tlow,thigh) ((tlow) | ((thigh)<<16))
 
 void delay(Uint32 ms)
 {
@@ -57,7 +59,7 @@ static void timer_init(void)
   // TIMER0, TIMER1: Tick timer
   TIMER0_DATA = 0;
   TIMER1_DATA = 0;
-  TIMER0_CR = TIMER_ENABLE | TIMER_DIV_1024;
+  TIMER0_CR = TIMER_ENABLE | TIMER_DIV_256;
   TIMER1_CR = TIMER_ENABLE | TIMER_CASCADE;
 
   // TIMER2: Input handler IRQ
@@ -69,6 +71,43 @@ static void timer_init(void)
   irqSet(IRQ_TIMER2, nds_update_input);
   irqEnable(IRQ_TIMER2);
 }
+
+#ifdef BUILD_PROFILING
+
+#define PROFILE_QUEUE_DEPTH 4
+
+static const char *profile_names[PROFILE_QUEUE_DEPTH];
+static u32 profile_times[PROFILE_QUEUE_DEPTH];
+static int profile_pos = 0;
+
+ITCM_CODE
+void profile_start(const char *name)
+{
+  if (profile_pos < PROFILE_QUEUE_DEPTH)
+  {
+    profile_names[profile_pos] = name;
+    profile_times[profile_pos] = timers2ticks(TIMER0_DATA, TIMER1_DATA);
+  }
+
+  profile_pos++;
+}
+
+ITCM_CODE
+void profile_end(void)
+{
+  u32 ctime;
+
+  if (profile_pos <= 0)
+    return;
+
+  if (--profile_pos < PROFILE_QUEUE_DEPTH)
+  {
+    ctime = timers2ticks(TIMER0_DATA, TIMER1_DATA);
+    iprintf("%s: %lld cycles\n", profile_names[profile_pos], (u64) (ctime - profile_times[profile_pos]) << 8);
+  }
+}
+
+#endif
 
 boolean platform_init(void)
 {

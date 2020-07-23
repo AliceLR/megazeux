@@ -26,6 +26,16 @@
 
 #include <nds.h>
 
+// #define BUILD_PROFILING
+
+#ifdef BUILD_PROFILING
+void profile_start(const char *name);
+void profile_end(void);
+#else
+#define profile_start(name) {}
+#define profile_end() {}
+#endif
+
 // FIFO definitions.
 #define FIFO_MZX FIFO_USER_01
 #define CMD_MZX_PCS_TONE 0x01
