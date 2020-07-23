@@ -263,7 +263,7 @@ int audio_play_module(char *filename, boolean safely, int volume)
   DC_FlushAll();
 
   // play module
-  mmLoad(0);
+  // mmLoad(0);
   mmStart(0, MM_PLAY_LOOP);
 
   audio_set_module_volume(volume);
@@ -281,13 +281,12 @@ void audio_end_module(void)
 
   while (mmActive())
   {
-    DC_FlushAll();
     swiWaitForVBlank();
   }
 
   if (maxmod_conf.mem_bank[0] != 0)
   {
-    mmUnload(0);
+    // mmUnload(0);
 
     free((void*) maxmod_conf.mem_bank[0]);
     maxmod_conf.mem_bank[0] = 0;
