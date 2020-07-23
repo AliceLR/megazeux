@@ -1133,7 +1133,7 @@ static void glsl_render_layer(struct graphics_data *graphics,
   dest = render_data->background_texture;
   for(i = 0; i < 4; i++)
     for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
-      *dest = graphics->smzx_indices[j * 4 + i];
+      *dest = pack_u32(graphics->smzx_indices[j * 4 + i]);
 
   glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
    TEX_DATA_IDX_X, TEX_DATA_IDX_Y, SMZX_PAL_SIZE, 4,
