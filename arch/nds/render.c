@@ -46,7 +46,7 @@ static int focus_y = -1;
 static u16 scroll_table[192];
 
 // This table maps palette color combinations to their index in BG_PALETTE.
-static int palette_idx_table[16][16];
+static u8 palette_idx_table[16][16];
 
 // If we're looking around with the mouse, ignore the next call to focus.
 static boolean mouselook;
@@ -195,7 +195,7 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
 
   /* BG1: background characters. */
   REG_BG1CNT_SUB  = BG_64x32 | BG_COLOR_16 | BG_MAP_BASE(2) |
-                    BG_TILE_BASE(1);
+                    BG_TILE_BASE(3);
   REG_BG1HOFS_SUB = 0;
   REG_BG1VOFS_SUB = 0;
 
@@ -204,7 +204,7 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
   focus_y = 350/2;
 
   // Add a solid tile for background colors.
-  vram = (u16*)BG_TILE_RAM_SUB(1) + 32*256;
+  vram = (u16*)BG_TILE_RAM_SUB(1) + 1024*16;
   for(i = 0; i < 16; i++)
     *(vram++) = 1 << 12 | 1 << 8 | 1 << 4 | 1;
 }
@@ -476,7 +476,7 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
   for(chars = 0; chars < 80*25; chars++)
   {
     /* Extract the character, and fore/back colors. */
-    int chr = (*text_cell).char_value & 0xFF;
+    int chr = (*text_cell).char_value & 0x1FF;
     int bg  = (*text_cell).bg_color   & 0x0F;
     int fg  = (*text_cell).fg_color   & 0x0F;
 
@@ -557,7 +557,7 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
       for(x = 0; x < 32; x++)
       {
         // Extract the character and the foreground color.
-        chr = (*text_cell).char_value & 0xFF;
+        chr = (*text_cell).char_value & 0x1FF;
         fg  = (*text_cell).fg_color   & 0x0F;
 
         *vram = (2*chr + tile_offset) | (fg << 12);
@@ -598,7 +598,7 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
         // Extract the background color only.
         bg  = (*text_cell).bg_color & 0x0F;
 
-        *vram = 512 | (bg << 12);
+        *vram = (bg << 12);
 
         text_cell++;
         vram++;
@@ -606,7 +606,7 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
 
       // Plot the 33rd column (in the next plane)
       bg = (*text_cell).bg_color & 0x0F;
-      *(vram+992) = 512 | (bg << 12);
+      *(vram+992) = (bg << 12);
 
       // Move back.
       text_cell -= 32;
@@ -686,7 +686,7 @@ static void nds_sync_screen(struct graphics_data *graphics)
 
 static void nds_remap_char(struct graphics_data *graphics, Uint16 chr)
 {
-  if(chr < 256)
+  if(chr < 512)
   {
     /* Each character is 64 bytes.  Advance the vram pointer. */
     u16* vram = (u16*)BG_TILE_RAM_SUB(1) + 32*chr;
@@ -714,7 +714,7 @@ static void nds_remap_char(struct graphics_data *graphics, Uint16 chr)
 static void nds_remap_charbyte(struct graphics_data *graphics, Uint16 chr,
  Uint8 byte)
 {
-  if(chr < 256)
+  if(chr < 512)
   {
     /* Each character is 64 bytes.  Advance the vram pointer. */
     u16* vram = (u16*)BG_TILE_RAM_SUB(1) + 32*chr + 2*byte;
@@ -739,8 +739,8 @@ static void nds_remap_char_range(struct graphics_data *graphics, Uint16 first,
   int stop = first + count;
   int chr;
 
-  if(stop > 256)
-    stop = 256;
+  if(stop > 512)
+    stop = 512;
 
   for(chr = first; chr < stop; chr++)
     nds_remap_char(graphics, chr);
