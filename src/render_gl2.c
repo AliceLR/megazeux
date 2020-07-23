@@ -405,8 +405,8 @@ static void gl2_update_colors(struct graphics_data *graphics,
   Uint32 i;
   for(i = 0; i < count; i++)
   {
-    graphics->flat_intensity_palette[i] = (0xFF << 24) | (palette[i].b << 16) |
-     (palette[i].g << 8) | palette[i].r;
+    graphics->flat_intensity_palette[i] = gl_pack_u32((0xFF << 24) |
+     (palette[i].b << 16) | (palette[i].g << 8) | palette[i].r);
     render_data->palette[i*3  ] = (GLubyte)palette[i].r;
     render_data->palette[i*3+1] = (GLubyte)palette[i].g;
     render_data->palette[i*3+2] = (GLubyte)palette[i].b;
