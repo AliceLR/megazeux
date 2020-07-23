@@ -143,7 +143,8 @@ boolean platform_init(void)
   }
 
 #if !defined(CONFIG_DEBYTECODE)
-  nds_ram_init(DETECT_RAM);
+  if (!isDSiMode())
+    nds_ram_init(DETECT_RAM);
 #endif
   timer_init();
 

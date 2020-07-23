@@ -28,7 +28,7 @@
 
 ---------------------------------------------------------------------------------*/
 #include <nds.h>
-// #include <maxmod7.h>
+#include <maxmod7.h>
 
 #define FIFO_MZX FIFO_USER_01
 #define CMD_MZX_PCS_TONE 0x01
@@ -86,7 +86,7 @@ int main() {
 	fifoInit();
 	touchInit();
 
-//	mmInstall(FIFO_MAXMOD);
+	mmInstall(FIFO_MAXMOD);
 
 	SetYtrigger(80);
 

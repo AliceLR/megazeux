@@ -33,7 +33,7 @@ EXTRA_INCLUDES := ${PORTLIBS_INCLUDES} \
                  -isystem $(LIBNDS)/include
 
 EXTRA_LIBS := ${PORTLIBS_LIBS} \
-             -L$(LIBNDS)/lib -lfat -lm -lnds9
+             -L$(LIBNDS)/lib -lfat -lm -lnds9 -lmm9
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}

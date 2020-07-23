@@ -159,6 +159,10 @@ static int volume_function(int input, int volume_setting)
   return CLAMP(output, 0, 255);
 }
 
+// Disable most of the standard audio implementation on NDS, where
+// hardware mixing is utilized.
+#ifndef CONFIG_NDS
+
 void destruct_audio_stream(struct audio_stream *a_src)
 {
   if(a_src == audio.stream_list_base)
@@ -288,9 +292,7 @@ void init_audio(struct config_info *conf)
   audio.max_simultaneous_samples = -1;
   audio.max_simultaneous_samples_config = conf->max_simultaneous_samples;
 
-#ifndef CONFIG_NDS
   init_wav(conf);
-#endif
 
 #ifdef CONFIG_VORBIS
   init_vorbis(conf);
@@ -321,9 +323,7 @@ void init_audio(struct config_info *conf)
   audio_set_music_on(conf->music_on);
   audio_set_pcs_on(conf->pc_speaker_on);
 
-#ifndef CONFIG_NDS
   init_pc_speaker(conf);
-#endif
 
   audio_set_pcs_volume(conf->pc_speaker_volume);
 
@@ -515,7 +515,6 @@ void audio_play_sample(char *filename, boolean safely, int period)
 
 void audio_spot_sample(int period, int which)
 {
-#ifndef CONFIG_NDS
   // Play a sample from the current playing mod.
   // Currently only works with libxmp (and maybe only ever will).
 
@@ -540,7 +539,6 @@ void audio_spot_sample(int period, int which)
 
     limit_samples(audio.max_simultaneous_samples);
   }
-#endif
 }
 
 void audio_end_sample(void)
@@ -740,6 +738,8 @@ int audio_get_module_loop_end(void)
 
   return loop_end;
 }
+
+#endif
 
 void audio_set_music_on(int val)
 {
