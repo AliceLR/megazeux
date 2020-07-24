@@ -33,6 +33,8 @@
 
 #include <nds/arm9/keyboard.h>
 
+#define SCALED_USE_CELL_CACHE /* 5-10% penalty on full redraws, up to 10x speed increase on no redraws */
+
 // These variables control the panning along the 1:1 "main" screen.
 static int cell_pan_x = 0;
 static int cell_pan_y = 0;
@@ -220,14 +222,14 @@ void nds_video_jitter(void)
   static size_t jidx = 0;    /* jitter table index */
 
   /* Jitter the backgrounds for scaled mode. */
-  if(jidx >= sizeof(jitterF4)/sizeof(*jitterF4))
-    jidx = 0;
+//  if(jidx >= sizeof(jitterF4)/sizeof(*jitterF4))
+//    jidx = 0;
 
   REG_BG2X = jitterF4[jidx];
   REG_BG2Y = jitterF4[jidx+1] + subscreen_offset_y;
   REG_BG3X = jitterF4[jidx+2];
   REG_BG3Y = jitterF4[jidx+3] + subscreen_offset_y;
-  jidx += 4;
+  jidx ^= 4;
 }
 
 /* Use HBlank DMA to load row scroll values in for each line. */
@@ -350,10 +352,23 @@ void nds_sleep_check(void)
   }
 }
 
+#ifdef SCALED_USE_CELL_CACHE
+static u32 graph_cache[80*25];
+static bool graph_cache_invalid = false;
+
+static void nds_clear_graph_cache(void)
+{
+  graph_cache_invalid = true;
+}
+#else
+#define nds_clear_graph_cache() {}
+#endif
+
 static boolean nds_init_video(struct graphics_data *graphics,
  struct config_info *config)
 {
   lcdMainOnBottom();
+  nds_clear_graph_cache();
 
   // Build the palette blend mapping table.
   palette_idx_table_init();
@@ -459,8 +474,10 @@ static void nds_mainscreen_focus(int x, int y)
   }
 }
 
+
 // Render the scaled screen.
 __attribute__((optimize("-O3")))
+ITCM_CODE
 static void nds_render_graph_scaled(struct graphics_data *graphics)
 {
   int const WIDTH_IN_PIXELS  = 80 * 4;  // Screen width in pixels
@@ -474,6 +491,14 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
 
   DTCM_BSS static u8 pal_tbl[4];
 
+#ifdef SCALED_USE_CELL_CACHE
+  if(graph_cache_invalid)
+  {
+    dmaFillWords(0xFFFFFFFF, graph_cache, 80*25*4);
+    graph_cache_invalid = false;
+  }
+#endif
+
   /* Iterate over every character in text memory. */
   int columns = 0;
   for(chars = 0; chars < 80*25; chars++)
@@ -483,35 +508,40 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
     int bg  = (*text_cell).bg_color   & 0x0F;
     int fg  = (*text_cell).fg_color   & 0x0F;
 
-    // Construct a table mapping charset two-bit pairs to palette entries.
-    u32 bg_idx = bg + 16; // Solid colors are offset by 16.
-    u32 fg_idx = fg + 16;
-    u32 mix_idx = palette_idx_table[bg][fg];
-    pal_tbl[0] = bg_idx;
-    pal_tbl[1] = mix_idx;
-    pal_tbl[2] = mix_idx;
-    pal_tbl[3] = fg_idx;
-//      bg_idx,   /* 00: bg color    */
-//      mix_idx,  /* 01: fg+bg blend */
-//      mix_idx,  /* 10: "         " */
-//      fg_idx    /* 11: fg color    */
-//    };
-
-    /* Iterate over every line in the character. */
-    u8 *line = graphics->charset + CHARACTER_HEIGHT * chr;
+#ifdef SCALED_USE_CELL_CACHE
+    u32 key = (chr) | (bg << 16) | (fg << 20);
     u32* vram_next = vram_ptr + 1;
-    for(lines = 0; lines < CHARACTER_HEIGHT; lines++)
-    {
-      /* Plot four pixels using the two-bit pair table. */
-      u32 fourpx = pal_tbl[((*line) & 0xC0) >> 6]      ;
-      fourpx    |= pal_tbl[((*line) & 0x30) >> 4] <<  8;
-      fourpx    |= pal_tbl[((*line) & 0x0C) >> 2] << 16;
-      fourpx    |= pal_tbl[((*line) & 0x03)     ] << 24;
-      *((u32*)vram_ptr) = fourpx;
 
-      /* Advance to the next line. */
-      line++;
-      vram_ptr += VRAM_WIDTH/4;
+    if (graph_cache[chars] != key)
+    {
+      graph_cache[chars] = key;
+#else
+    {
+#endif
+      // Construct a table mapping charset two-bit pairs to palette entries.
+      u32 bg_idx = bg + 16; // Solid colors are offset by 16.
+      u32 fg_idx = fg + 16;
+      u32 mix_idx = palette_idx_table[bg][fg];
+      pal_tbl[0] = bg_idx;
+      pal_tbl[1] = mix_idx;
+      pal_tbl[2] = mix_idx;
+      pal_tbl[3] = fg_idx;
+
+      /* Iterate over every line in the character. */
+      u8 *line = graphics->charset + CHARACTER_HEIGHT * chr;
+      for(lines = 0; lines < CHARACTER_HEIGHT; lines++)
+      {
+        /* Plot four pixels using the two-bit pair table. */
+        u32 fourpx = pal_tbl[((*line) & 0xC0) >> 6]      ;
+        fourpx    |= pal_tbl[((*line) & 0x30) >> 4] <<  8;
+        fourpx    |= pal_tbl[((*line) & 0x0C) >> 2] << 16;
+        fourpx    |= pal_tbl[((*line) & 0x03)     ] << 24;
+        *((u32*)vram_ptr) = fourpx;
+
+        /* Advance to the next line. */
+        line++;
+        vram_ptr += VRAM_WIDTH/4;
+      }
     }
 
     /* Advance to the next character. */
@@ -632,9 +662,7 @@ static void nds_render_graph(struct graphics_data *graphics)
   profile_end();
 
   // Always render the 1:1 "main" screen.
-  profile_start("render_1to1");
   nds_render_graph_1to1(graphics);
-  profile_end();
 }
 
 static void nds_update_palette_entry(struct rgb_color *palette, Uint32 idx)
@@ -718,6 +746,8 @@ static void nds_remap_char(struct graphics_data *graphics, Uint16 chr)
                   ((line >> 1) & 1) <<  8 |
                   ((line     ) & 1) << 12;
     }
+
+    nds_clear_graph_cache();
   }
 }
 
@@ -740,6 +770,8 @@ static void nds_remap_charbyte(struct graphics_data *graphics, Uint16 chr,
                 ((line >> 2) & 1) <<  4 |
                 ((line >> 1) & 1) <<  8 |
                 ((line     ) & 1) << 12;
+
+    nds_clear_graph_cache();
   }
 }
 

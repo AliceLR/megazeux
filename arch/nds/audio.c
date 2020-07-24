@@ -100,27 +100,30 @@ static inline void nds_pcs_tick(int duration)
 
 // Maxmod glue code
 
-#define MAXMOD_SONGS 1
-#define MAXMOD_SAMPLES 0
+#define MAX_NUM_SAMPLES 8
 
 static mm_ds_system maxmod_conf;
 static int maxmod_effective_frequency;
+static char *maxmod_sample_filenames[MAX_NUM_SAMPLES];
 
 static void nds_maxmod_init(void)
 {
-  int i;
+  u32 i;
 
-  maxmod_conf.mod_count = MAXMOD_SONGS;
-  maxmod_conf.samp_count = MAXMOD_SAMPLES;
-  maxmod_conf.mem_bank = malloc(sizeof(mm_word) * (MAXMOD_SONGS + MAXMOD_SAMPLES));
-  for (i = 0; i < MAXMOD_SONGS + MAXMOD_SAMPLES; i++)
+  maxmod_conf.mod_count = 1;
+  maxmod_conf.samp_count = isDSiMode() ? MAX_NUM_SAMPLES : 4;
+  maxmod_conf.mem_bank = malloc(sizeof(mm_word) * (maxmod_conf.mod_count + maxmod_conf.samp_count));
+  for (i = 0; i < (maxmod_conf.mod_count + maxmod_conf.samp_count); i++)
     maxmod_conf.mem_bank[i] = 0;
+  for (i = 0; i < maxmod_conf.samp_count; i++)
+    maxmod_sample_filenames[i] = NULL;
   maxmod_conf.fifo_channel = FIFO_MAXMOD;
 
   DC_FlushAll();
 
   mmInit(&maxmod_conf);
-  mmSelectMode(MM_MODE_C);
+  mmSelectMode(MM_MODE_C); // extended mixing
+  mmLockChannels(1 << 8); // sound channel 8 is used for PC speaker
 }
 
 void audio_set_module_order(int order)
@@ -149,7 +152,7 @@ int audio_get_module_position(void)
 void audio_set_module_volume(int volume) // 0..255
 {
   int base_volume = NDS_VOLUME(audio_get_music_volume()); // 0..127
-  mmSetModuleVolume((base_volume * volume) >> 5); // 0..1012 (should be 0..1023)
+  mmSetModuleVolume((base_volume * volume) >> 5); // 0..1012
 }
 
 void audio_set_module_frequency(int frequency)
@@ -198,14 +201,112 @@ int audio_get_module_loop_end(void)
   return 0;
 }
 
+static u8 *audio_load_mas_file(char *filename)
+{
+  u32 mas_size;
+  u8 *mas_buffer;
+  FILE *mas_file;
+
+  // load the maxmod soundbank file
+  mas_file = fopen_unsafe(filename, "rb");
+  if (mas_file == NULL)
+  {
+    return NULL;
+  }
+
+  // get soundbank filesize
+  fread(&mas_size, 4, 1, mas_file);
+
+  // read buffer
+  if (mas_size <= 0)
+  {
+    fclose(mas_file);
+    return NULL;
+  }
+
+  mas_buffer = malloc(mas_size + 8);
+  if (mas_buffer == NULL)
+  {
+    fclose(mas_file);
+    return NULL;
+  }
+
+  if (!fread(mas_buffer + 4, mas_size + 4, 1, mas_file))
+  {
+    free(mas_buffer);
+    fclose(mas_file);
+    return NULL;
+  }
+
+  fclose(mas_file);
+  return mas_buffer;
+}
+
+#define MAXMOD_SAMPLE_FREQ(f) (((f) * 1024 + (1 << 14)) >> 15)
+
+static u8 *audio_load_sam_file(char *filename)
+{
+  u32 sam_size;
+  u32 sam_size_aligned;
+  u8 *mas_buffer;
+  FILE *sam_file;
+
+  // load the SAM file
+  sam_file = fopen_unsafe(filename, "rb");
+  if (sam_file == NULL)
+  {
+    return NULL;
+  }
+
+  // get SAM filesize
+  fseek(sam_file, 0, SEEK_END);
+  sam_size = ftell(sam_file);
+  fseek(sam_file, 0, SEEK_SET);
+  if (sam_size <= 0)
+  {
+    fclose(sam_file);
+    return NULL;
+  }
+
+  // generate a .MAS-format sample on the fly
+  sam_size_aligned = (sam_size + 3) & (~3);
+  mas_buffer = malloc(8 /* preamble */ + 16 /* header */ + sam_size_aligned + 4 /* padded data */);
+  if (mas_buffer == NULL)
+  {
+    fclose(sam_file);
+    return NULL;
+  }
+
+  if (!fread(mas_buffer + 8 + 16, sam_size, 1, sam_file))
+  {
+    free(mas_buffer);
+    fclose(sam_file);
+    return NULL;
+  }
+
+  fclose(sam_file);
+
+  // clear up and convert data to signed 8-bit
+  memset(mas_buffer, 0, 8 + 16);
+  memset(mas_buffer + 8 + 16 + sam_size, 0, sam_size_aligned - sam_size + 4);
+
+  // generate header
+  mas_buffer[4] = 2; // type: NDS sample
+  mas_buffer[5] = 0x18; // version
+  *((u32*) &mas_buffer[8 + 4]) = sam_size_aligned >> 2; // length
+  mas_buffer[8 + 8] = 0; // format: signed 8-bit
+  mas_buffer[8 + 9] = 2; // repeat: no
+  *((u16*) &mas_buffer[8 + 10]) = MAXMOD_SAMPLE_FREQ(audio_get_real_frequency(SAM_DEFAULT_PERIOD)); // length
+
+  return mas_buffer;
+}
+
 int audio_play_module(char *filename, boolean safely, int volume)
 {
   char mas_filename[MAX_PATH];
   char translated_filename[MAX_PATH];
-  u32 mas_size;
-  u8 *mas_buffer;
   char *mas_ext_pos;
-  FILE *mas_file;
+  u8 *mas_buffer;
 
   // we can only play pre-converted .MAS files
   strcpy(mas_filename, filename);
@@ -226,44 +327,17 @@ int audio_play_module(char *filename, boolean safely, int volume)
     strcpy(mas_filename, translated_filename);
   }
 
-  // load the maxmod soundbank file
-  mas_file = fopen_unsafe(mas_filename, "rb");
-  if (mas_file == NULL)
-  {
-    return 0;
-  }
-
-  // get soundbank filesize
-  fread(&mas_size, 4, 1, mas_file);
-
-  // read buffer
-  if (mas_size <= 0)
-  {
-    fclose(mas_file);
-    return 0;
-  }
-
-  mas_buffer = malloc(mas_size + 8);
+  mas_buffer = audio_load_mas_file(mas_filename);
   if (mas_buffer == NULL)
   {
-    fclose(mas_file);
     return 0;
   }
-
-  if (!fread(mas_buffer + 4, mas_size + 4, 1, mas_file))
-  {
-    fclose(mas_file);
-    return 0;
-  }
-
-  fclose(mas_file);
   audio_end_module();
 
   maxmod_conf.mem_bank[0] = (mm_word) mas_buffer;
   DC_FlushAll();
 
   // play module
-  // mmLoad(0);
   mmStart(0, MM_PLAY_LOOP);
 
   audio_set_module_volume(volume);
@@ -280,14 +354,10 @@ void audio_end_module(void)
   mmStop();
 
   while (mmActive())
-  {
-    swiWaitForVBlank();
-  }
+    delay(1);
 
   if (maxmod_conf.mem_bank[0] != 0)
   {
-    // mmUnload(0);
-
     free((void*) maxmod_conf.mem_bank[0]);
     maxmod_conf.mem_bank[0] = 0;
   }
@@ -302,17 +372,97 @@ void audio_spot_sample(int period, int which)
 
 void audio_play_sample(char *filename, boolean safely, int period)
 {
-  // TODO
+  char mas_filename[MAX_PATH];
+  char translated_filename[MAX_PATH];
+  char *mas_ext_pos;
+  u8 *mas_buffer;
+  mm_sound_effect sfx;
+  int freq_desired, freq_real;
+  u32 sample_id, mas_fn_len;
+
+  // we can only play pre-converted .SAM files
+  strcpy(mas_filename, filename);
+  mas_ext_pos = strrchr(mas_filename, '.');
+  if (mas_ext_pos == NULL)
+  {
+    return;
+  }
+  strcpy(mas_ext_pos, ".sam");
+
+  if(safely)
+  {
+    if(fsafetranslate(mas_filename, translated_filename, MAX_PATH) != FSAFE_SUCCESS)
+    {
+      return;
+    }
+
+    strcpy(mas_filename, translated_filename);
+  }
+
+  sample_id = 0;
+  for (sample_id = 0; sample_id < maxmod_conf.samp_count; sample_id++)
+  {
+    if (maxmod_sample_filenames[sample_id] != NULL)
+      if (!strcmp(maxmod_sample_filenames[sample_id], mas_filename))
+        break;
+  }
+
+  if (sample_id == maxmod_conf.samp_count)
+  {
+    // deallocate all samples
+    audio_end_sample();
+    sample_id = 0;
+  }
+
+  if (maxmod_sample_filenames[sample_id] == NULL)
+  {
+    mas_buffer = audio_load_sam_file(mas_filename);
+    if (mas_buffer == NULL)
+    {
+      return;
+    }
+
+    maxmod_conf.mem_bank[1 + sample_id] = (mm_word) mas_buffer;
+    DC_FlushAll();
+
+    mas_fn_len = strlen(mas_filename) + 1;
+    maxmod_sample_filenames[sample_id] = malloc(mas_fn_len);
+    strcpy(maxmod_sample_filenames[sample_id], mas_filename);
+  }
+
+  freq_real = audio_get_real_frequency(SAM_DEFAULT_PERIOD);
+  freq_desired = period == 0 ? freq_real : audio_get_real_frequency(period);
+
+  // play sample
+  sfx.id = 0;
+  sfx.rate = CLAMP(divf32(freq_desired << 12, freq_real << 12) >> 2, 0, 0xFFFF);
+  sfx.handle = 0;
+  sfx.volume = NDS_VOLUME(audio_get_sound_volume()) << 1;
+  sfx.panning = 128;
+
+  mmEffectEx(&sfx);
 }
 
 void audio_end_sample(void)
 {
+  u32 i;
 
+  // TODO: mmEffectActive() is not present on ARM9 currently
+  mmEffectCancelAll();
+  delay(1);
+
+  for (i = 0; i < maxmod_conf.samp_count; i++)
+    if (maxmod_conf.mem_bank[1 + i] != 0)
+    {
+      free((void*) maxmod_conf.mem_bank[1 + i]);
+      maxmod_conf.mem_bank[1 + i] = 0;
+
+      free(maxmod_sample_filenames[i]);
+      maxmod_sample_filenames[i] = NULL;
+    }
 }
 
 // Audio glue code
-
-#define NDS_SAMPLES_MAX 2
 
 int nds_max_samples;
 
@@ -323,12 +473,9 @@ int audio_get_max_samples(void)
 
 void audio_set_max_samples(int max_samples)
 {
-  if (max_samples < 0 || max_samples > NDS_SAMPLES_MAX)
-    max_samples = NDS_SAMPLES_MAX;
+  if (max_samples < 0 || (u32)max_samples > maxmod_conf.samp_count)
+    max_samples = maxmod_conf.samp_count;
   nds_max_samples = max_samples;
-
-  // TODO: vary locked channels depending on nds_max_samples value
-  mmLockChannels(0x07 << 8);
 }
 
 void nds_audio_vblank(void)
