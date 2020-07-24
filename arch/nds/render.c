@@ -595,11 +595,12 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
   }
 }
 
+__attribute__((optimize("-O3")))
 static void nds_render_graph_1to1(struct graphics_data *graphics)
 {
   struct char_element *text_start = graphics->text_video;
   struct char_element *text_cell;
-  u16 *vram;
+  u16 *vram_bg, *vram_fg;
   int x, y;
 
   // Before drawing the screen, check if the focus needs to be updated!
@@ -613,79 +614,43 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
   text_start += cell_pan_x + 80*cell_pan_y;
   text_cell = text_start;
 
-  /* Plot the first 32x30 foreground tiles. */
-  vram = (u16*)BG_MAP_RAM_SUB(0);
+  /* Plot the foreground and background tiles. */
+  vram_fg = (u16*)BG_MAP_RAM_SUB(0);
+  vram_bg = (u16*)BG_MAP_RAM_SUB(2);
+
   for(y = 0; y < 15; y++)
   {
     // Draw the top halves of this line for tile_offset=0, then the bottom
     // halves for tile_offset=1.
-    int tile_offset = 0;
-
-    while(tile_offset != 2)
+    for(int tile_offset = 0; tile_offset < 2; tile_offset++)
     {
       int chr;
+      int bg;
       int fg;
 
       for(x = 0; x < 32; x++)
       {
-        // Extract the character and the foreground color.
+        // Extract the cell data.
         chr = (*text_cell).char_value & 0x1FF;
+        bg  = (*text_cell).bg_color   & 0x0F;
         fg  = (*text_cell).fg_color   & 0x0F;
 
-        *vram = (2*chr + tile_offset) | (fg << 12);
+        *vram_fg = (2*chr + tile_offset) | (fg << 12);
+        *vram_bg = (bg << 12) | (chr >> 8);
 
         text_cell++;
-        vram++;
+        vram_bg++; vram_fg++;
       }
 
       // Plot the 33rd column (in the next plane)
       chr = (*text_cell).char_value & 0x1FF;
+      bg  = (*text_cell).bg_color   & 0x0F;
       fg  = (*text_cell).fg_color   & 0x0F;
-      *(vram+992) = (2*chr + tile_offset) | (fg << 12);
+      *(vram_fg+992) = (2*chr + tile_offset) | (fg << 12);
+      *(vram_bg+992) = (bg << 12) | (chr >> 8);
 
       // Move back.
       text_cell -= 32;
-      tile_offset++;
-    }
-
-    // Move to the next row.
-    text_cell += 80;
-  }
-
-  // Plot the first 32x30 background tiles.
-  text_cell = text_start;
-  vram = (u16*)BG_MAP_RAM_SUB(2);
-  for(y = 0; y < 15; y++)
-  {
-    // Draw the top halves of this line for tile_offset=0, then the bottom
-    // halves for tile_offset=1.
-    int tile_offset = 0;
-
-    while(tile_offset != 2)
-    {
-      int chr;
-      int bg;
-
-      for(x = 0; x < 32; x++)
-      {
-        // Extract the background color only.
-        chr = (*text_cell).char_value & 0x1FF;
-        bg  = (*text_cell).bg_color & 0x0F;
-
-        *vram = (bg << 12) | (chr >> 8);
-
-        text_cell++;
-        vram++;
-      }
-
-      // Plot the 33rd column (in the next plane)
-      chr = (*text_cell).char_value & 0x1FF;
-      bg = (*text_cell).bg_color & 0x0F;
-      *(vram+992) = (bg << 12) | (chr >> 8);
-
-      // Move back.
-      text_cell -= 32;
-      tile_offset++;
     }
 
     // Move to the next row.
@@ -696,9 +661,7 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
 static void nds_render_graph(struct graphics_data *graphics)
 {
   // Always render the scaled screen.
-  profile_start("render_scaled");
   nds_render_graph_scaled(graphics);
-  profile_end();
 
   // Always render the 1:1 "main" screen.
   nds_render_graph_1to1(graphics);
