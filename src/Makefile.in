@@ -146,6 +146,7 @@ endif
 # These are really just hacks and should be moved elsewhere
 #
 ifeq (${BUILD_NDS},1)
+core_cobjs += arch/nds/protected_palette.bin.o
 core_cobjs += arch/nds/exception.o arch/nds/audio.o
 core_cobjs += arch/nds/platform.o arch/nds/event.o
 core_cobjs += arch/nds/render.o arch/nds/evq.o

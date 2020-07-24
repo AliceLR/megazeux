@@ -17,6 +17,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+// LIMITATIONS:
+// - No SMZX mode support.
+// - No extended charset support. In theory, 512 characters could be
+//   supported, after fixing the issue below.
+// - The "1-to-1" renderer assumes that non-protected characters always use
+//   the non-protected palette, and vice versa. This can be fixed by adding
+//   a separate background layer for protected characters with its own
+//   tileset, but it will also be a mild performance detriment.
+// - Runtime changes to the protected palette will only display on the
+//   "1-to-1" screen, not the "scaled" screen.
+
 /* NOMENCLATURE NOTICE:
  * What we call the "subscreen" is called the "main screen" by libnds.
  * But in terms of functionality, it only contains auxiliary screen modes.
@@ -33,6 +44,8 @@
 
 #include <nds/arm9/keyboard.h>
 
+#include "protected_palette_bin.h"
+
 #define SCALED_USE_CELL_CACHE /* 5-10% penalty on full redraws, up to 10x speed increase on no redraws */
 
 // These variables control the panning along the 1:1 "main" screen.
@@ -48,7 +61,11 @@ static int focus_y = -1;
 static u16 scroll_table[192];
 
 // This table maps palette color combinations to their index in BG_PALETTE.
-static u8 palette_idx_table[16][16];
+static u8 palette_idx_table[256];
+
+#define PALETTE_NORMAL_START (16)
+#define PALETTE_PROTECTED_START (PALETTE_NORMAL_START + 16 + 120)
+#define palette_protected_idx_table protected_palette_bin
 
 // If we're looking around with the mouse, ignore the next call to focus.
 static boolean mouselook;
@@ -96,12 +113,12 @@ boolean is_scaled_mode(enum Subscreen_Mode mode)
 static void palette_idx_table_init(void)
 {
   // Start the palette at 16, reserving colors 0-16 for the overlay.
-  const int offset = 16;
+  const int offset = PALETTE_NORMAL_START;
   int idx;
 
   // Store the normal palette sequentially.
   for(idx = 0; idx < 16; idx++)
-    palette_idx_table[idx][idx] = idx + offset;
+    palette_idx_table[idx * 17] = idx + offset;
 
   // Store the blends after that.
   idx += offset;
@@ -109,8 +126,8 @@ static void palette_idx_table_init(void)
   {
     for(int b = a+1; b < 16; b++)
     {
-      palette_idx_table[a][b] = idx;
-      palette_idx_table[b][a] = idx;
+      palette_idx_table[(a << 4) | b] = idx;
+      palette_idx_table[(b << 4) | a] = idx;
       idx++;
     }
   }
@@ -207,8 +224,8 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
 
   // Add a solid tile for background colors.
   vram = (u16*)BG_TILE_RAM_SUB(1) + 1024*16;
-  for(i = 0; i < 16; i++)
-    *(vram++) = 1 << 12 | 1 << 8 | 1 << 4 | 1;
+  for(i = 0; i < 32; i++)
+    *(vram++) = (1 << 12 | 1 << 8 | 1 << 4 | 1) * (1+(i >> 4));
 }
 
 void nds_video_jitter(void)
@@ -367,11 +384,17 @@ static void nds_clear_graph_cache(void)
 static boolean nds_init_video(struct graphics_data *graphics,
  struct config_info *config)
 {
+  u32 i;
+
   lcdMainOnBottom();
   nds_clear_graph_cache();
 
   // Build the palette blend mapping table.
   palette_idx_table_init();
+
+  // Copy protected palette to BG_PALETTE.
+  for (i = 0; i < protected_palette_bin_size - 256; i += 2)
+    BG_PALETTE[PALETTE_PROTECTED_START + (i>>1)] = *((u16*) &protected_palette_bin[i + 256]);
 
   // Start with scaled mode.
   switch(config->video_ratio)
@@ -519,13 +542,26 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
     {
 #endif
       // Construct a table mapping charset two-bit pairs to palette entries.
-      u32 bg_idx = bg + 16; // Solid colors are offset by 16.
-      u32 fg_idx = fg + 16;
-      u32 mix_idx = palette_idx_table[bg][fg];
-      pal_tbl[0] = bg_idx;
-      pal_tbl[1] = mix_idx;
-      pal_tbl[2] = mix_idx;
-      pal_tbl[3] = fg_idx;
+      if (chr & 0x100) // Protected palette
+      {
+        u32 bg_idx = bg + PALETTE_PROTECTED_START;
+        u32 fg_idx = fg + PALETTE_PROTECTED_START;
+        u32 mix_idx = palette_protected_idx_table[(bg << 4) | fg];
+        pal_tbl[0] = bg_idx;
+        pal_tbl[1] = mix_idx;
+        pal_tbl[2] = mix_idx;
+        pal_tbl[3] = fg_idx;
+      }
+      else // Regular palette
+      {
+        u32 bg_idx = bg + PALETTE_NORMAL_START;
+        u32 fg_idx = fg + PALETTE_NORMAL_START;
+        u32 mix_idx = palette_idx_table[(bg << 4) | fg];
+        pal_tbl[0] = bg_idx;
+        pal_tbl[1] = mix_idx;
+        pal_tbl[2] = mix_idx;
+        pal_tbl[3] = fg_idx;
+      }
 
       /* Iterate over every line in the character. */
       u8 *line = graphics->charset + CHARACTER_HEIGHT * chr;
@@ -603,7 +639,7 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
       }
 
       // Plot the 33rd column (in the next plane)
-      chr = (*text_cell).char_value & 0xFF;
+      chr = (*text_cell).char_value & 0x1FF;
       fg  = (*text_cell).fg_color   & 0x0F;
       *(vram+992) = (2*chr + tile_offset) | (fg << 12);
 
@@ -627,22 +663,25 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
 
     while(tile_offset != 2)
     {
+      int chr;
       int bg;
 
       for(x = 0; x < 32; x++)
       {
         // Extract the background color only.
+        chr = (*text_cell).char_value & 0x1FF;
         bg  = (*text_cell).bg_color & 0x0F;
 
-        *vram = (bg << 12);
+        *vram = (bg << 12) | (chr >> 8);
 
         text_cell++;
         vram++;
       }
 
       // Plot the 33rd column (in the next plane)
+      chr = (*text_cell).char_value & 0x1FF;
       bg = (*text_cell).bg_color & 0x0F;
-      *(vram+992) = (bg << 12);
+      *(vram+992) = (bg << 12) | (chr >> 8);
 
       // Move back.
       text_cell -= 32;
@@ -686,8 +725,13 @@ static void nds_update_palette_entry(struct rgb_color *palette, Uint32 idx)
       u16 g = (color1.g + color2.g) / 16;
       u16 b = (color1.b + color2.b) / 16;
 
-      BG_PALETTE[ palette_idx_table[idx][idx2] ] = RGB15(r, g, b);
+      BG_PALETTE[ palette_idx_table[(idx << 4) | idx2] ] = RGB15(r, g, b);
     }
+  }
+  else
+  {
+    // Update the mainscreen protected palette.
+    BG_PALETTE_SUB[16*(idx & 0x0F) + 2] = RGB15(color1.r/8, color1.g/8, color1.b/8);
   }
 }
 
@@ -729,6 +773,7 @@ static void nds_remap_char(struct graphics_data *graphics, Uint16 chr)
     /* Each character is 64 bytes.  Advance the vram pointer. */
     u16* vram = (u16*)BG_TILE_RAM_SUB(1) + 32*chr;
     u8* charset = graphics->charset + 14*chr;
+    u8 cshift = chr >= 256 ? 1 : 0;
 
     /* Iterate over every line. */
     u8 *end = charset + 14;
@@ -737,14 +782,14 @@ static void nds_remap_char(struct graphics_data *graphics, Uint16 chr)
       u16 line = *charset;
 
       /* Plot 8 pixels, 4 pixels at a time. */
-      *(vram++) = ((line >> 7) & 1)       |
+      *(vram++) = (((line >> 7) & 1)      |
                   ((line >> 6) & 1) <<  4 |
                   ((line >> 5) & 1) <<  8 |
-                  ((line >> 4) & 1) << 12;
-      *(vram++) = ((line >> 3) & 1)       |
+                  ((line >> 4) & 1) << 12) << cshift;
+      *(vram++) = (((line >> 3) & 1)      |
                   ((line >> 2) & 1) <<  4 |
                   ((line >> 1) & 1) <<  8 |
-                  ((line     ) & 1) << 12;
+                  ((line     ) & 1) << 12) << cshift;
     }
 
     nds_clear_graph_cache();
@@ -760,16 +805,17 @@ static void nds_remap_charbyte(struct graphics_data *graphics, Uint16 chr,
     u16* vram = (u16*)BG_TILE_RAM_SUB(1) + 32*chr + 2*byte;
     u8* charset = graphics->charset + 14*chr + byte;
     u16 line = *charset;
+    u8 cshift = chr >= 256 ? 1 : 0;
 
     /* Plot 8 pixels, 4 pixels at a time. */
-    *(vram++) = ((line >> 7) & 1)       |
+    *(vram++) = (((line >> 7) & 1)      |
                 ((line >> 6) & 1) <<  4 |
                 ((line >> 5) & 1) <<  8 |
-                ((line >> 4) & 1) << 12;
-    *(vram++) = ((line >> 3) & 1)       |
+                ((line >> 4) & 1) << 12) << cshift;
+    *(vram++) = (((line >> 3) & 1)      |
                 ((line >> 2) & 1) <<  4 |
                 ((line >> 1) & 1) <<  8 |
-                ((line     ) & 1) << 12;
+                ((line     ) & 1) << 12) << cshift;
 
     nds_clear_graph_cache();
   }

@@ -66,7 +66,6 @@ struct char_element
  */
 #if defined(CONFIG_NDS)
 #define NUM_CHARSETS 2
-#define NO_PROTECTED_PALETTE
 #endif
 
 #define CHAR_SIZE 14
