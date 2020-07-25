@@ -26,6 +26,8 @@
 #include <3ds.h>
 #include <citro3d.h>
 
+__M_BEGIN_DECLS
+
 struct ctr_render_data;
 
 C3D_Tex *ctr_load_png(const char *name);
@@ -36,5 +38,7 @@ void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex *texture,
 
 void ctr_request_set_wide(bool wide);
 int ctr_get_subscreen_height(void);
+
+__M_END_DECLS
 
 #endif /* __3DS_RENDER_H__ */

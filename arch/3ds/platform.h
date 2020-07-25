@@ -28,6 +28,8 @@
 #include <3ds.h>
 #include <citro3d.h>
 
+__M_BEGIN_DECLS
+
 boolean ctr_is_2d(void);
 boolean ctr_supports_wide(void);
 
@@ -49,5 +51,7 @@ static inline void *clinearAlloc(size_t size)
 }
 
 #endif /* CONFIG_CHECK_ALLOC */
+
+__M_END_DECLS
 
 #endif /* __3DS_PLATFORM_H__ */
