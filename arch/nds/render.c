@@ -46,7 +46,7 @@
 
 #include "protected_palette_bin.h"
 
-#define SCALED_USE_CELL_CACHE /* 5-10% penalty on full redraws, up to 10x speed increase on no redraws */
+#define SCALED_USE_CELL_CACHE /* 5% penalty on full redraws, up to 20x speed increase on no redraws */
 
 // These variables control the panning along the 1:1 "main" screen.
 static int cell_pan_x = 0;
@@ -497,7 +497,6 @@ static void nds_mainscreen_focus(int x, int y)
   }
 }
 
-
 // Render the scaled screen.
 __attribute__((optimize("-O3")))
 ITCM_CODE
@@ -526,14 +525,9 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
   int columns = 0;
   for(chars = 0; chars < 80*25; chars++)
   {
-    /* Extract the character, and fore/back colors. */
-    int chr = (*text_cell).char_value & 0x1FF;
-    int bg  = (*text_cell).bg_color   & 0x0F;
-    int fg  = (*text_cell).fg_color   & 0x0F;
-
-#ifdef SCALED_USE_CELL_CACHE
-    u32 key = (chr) | (bg << 16) | (fg << 20);
     u32* vram_next = vram_ptr + 1;
+#ifdef SCALED_USE_CELL_CACHE
+    u32 key = *((u32*) text_cell);
 
     if (graph_cache[chars] != key)
     {
@@ -541,12 +535,16 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
 #else
     {
 #endif
+      int chr = (*text_cell).char_value & 0x1FF;
+      int bg  = (*text_cell).bg_color   & 0x0F;
+      int fg  = (*text_cell).fg_color   & 0x0F;
+
       // Construct a table mapping charset two-bit pairs to palette entries.
       if (chr & 0x100) // Protected palette
       {
-        u32 bg_idx = bg + PALETTE_PROTECTED_START;
-        u32 fg_idx = fg + PALETTE_PROTECTED_START;
-        u32 mix_idx = palette_protected_idx_table[(bg << 4) | fg];
+        u8 bg_idx = bg + PALETTE_PROTECTED_START;
+        u8 fg_idx = fg + PALETTE_PROTECTED_START;
+        u8 mix_idx = palette_protected_idx_table[(bg << 4) | fg];
         pal_tbl[0] = bg_idx;
         pal_tbl[1] = mix_idx;
         pal_tbl[2] = mix_idx;
@@ -554,9 +552,9 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
       }
       else // Regular palette
       {
-        u32 bg_idx = bg + PALETTE_NORMAL_START;
-        u32 fg_idx = fg + PALETTE_NORMAL_START;
-        u32 mix_idx = palette_idx_table[(bg << 4) | fg];
+        u8 bg_idx = bg + PALETTE_NORMAL_START;
+        u8 fg_idx = fg + PALETTE_NORMAL_START;
+        u8 mix_idx = palette_idx_table[(bg << 4) | fg];
         pal_tbl[0] = bg_idx;
         pal_tbl[1] = mix_idx;
         pal_tbl[2] = mix_idx;
@@ -565,6 +563,7 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
 
       /* Iterate over every line in the character. */
       u8 *line = graphics->charset + CHARACTER_HEIGHT * chr;
+      #pragma GCC unroll CHARACTER_HEIGHT
       for(lines = 0; lines < CHARACTER_HEIGHT; lines++)
       {
         /* Plot four pixels using the two-bit pair table. */
@@ -632,8 +631,9 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
       {
         // Extract the cell data.
         chr = (*text_cell).char_value & 0x1FF;
-        bg  = (*text_cell).bg_color   & 0x0F;
-        fg  = (*text_cell).fg_color   & 0x0F;
+        // Colors are not explicitly "& 0x0F" - this is done by the shift below.
+        bg  = (*text_cell).bg_color;
+        fg  = (*text_cell).fg_color;
 
         *vram_fg = (2*chr + tile_offset) | (fg << 12);
         *vram_bg = (bg << 12) | (chr >> 8);
@@ -644,8 +644,8 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
 
       // Plot the 33rd column (in the next plane)
       chr = (*text_cell).char_value & 0x1FF;
-      bg  = (*text_cell).bg_color   & 0x0F;
-      fg  = (*text_cell).fg_color   & 0x0F;
+      bg  = (*text_cell).bg_color;
+      fg  = (*text_cell).fg_color;
       *(vram_fg+992) = (2*chr + tile_offset) | (fg << 12);
       *(vram_bg+992) = (bg << 12) | (chr >> 8);
 
