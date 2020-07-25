@@ -172,6 +172,7 @@ TRACE_LOGGING="false"
 STDIO_REDIRECT="false"
 GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
+LAYER_RENDERING="true"
 
 #
 # User may override above settings
@@ -716,6 +717,9 @@ if [ "$PLATFORM" = "nds" ]; then
 
 	echo "Force-disabling hash tables on NDS."
 	COUNTER_HASH="false"
+
+	echo "Force-disabling layer rendering on NDS."
+	LAYER_RENDERING="false"
 
 	echo "Force-disabling existing music playback libraries on NDS."
 	MODPLUG="false"
@@ -1465,6 +1469,16 @@ if [ "$PLEDGE" = "true" ]; then
 	echo "  scaling renderers (use fullscreen=1 and/or fullscreen_windowed=1);"
 	echo "  crash when using any scaling renderer with some Mesa versions."
 	echo "  You've been warned!"
+fi
+
+#
+# Layer rendering, if enabled
+#
+if [ "$LAYER_RENDERING" = "true" ]; then
+	echo "Layer rendering enabled."
+else
+	echo "Layer rendering disabled."
+	echo "#define CONFIG_NO_LAYER_RENDERING" >> src/config.h
 fi
 
 echo
