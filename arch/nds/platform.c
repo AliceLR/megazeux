@@ -31,7 +31,6 @@
 #include "render.h"
 #include "extmem.h"
 #include "dlmalloc.h"
-#include "exception.h"
 
 // from arch/nds/event.c
 extern void nds_update_input(void);
@@ -109,10 +108,32 @@ void profile_end(void)
 
 #endif
 
+// pulled in from libnds - we need to wrap it to undo some of our
+// graphics changes
+extern void guruMeditationDump(void);
+
+static void mzxExceptionHandler() {
+	DMA0_CR = 0;
+	DMA1_CR = 0;
+	DMA2_CR = 0;
+	DMA3_CR = 0;
+	REG_BG0HOFS_SUB = 0;
+	REG_BG0VOFS_SUB = 0;
+
+	videoSetMode(0);
+	videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE);
+	vramSetBankC(VRAM_C_SUB_BG);
+
+	REG_BG0CNT_SUB = BG_MAP_BASE(31);
+
+	guruMeditationDump();
+	while(1);
+}
+
 boolean platform_init(void)
 {
   powerOn(POWER_ALL_2D);
-  setMzxExceptionHandler();
+  setExceptionHandler(mzxExceptionHandler);
 
   if(!fatInitDefault())
   {
