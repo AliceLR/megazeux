@@ -23,6 +23,7 @@ APP_AUTHOR := \"MegaZeux Developers\"
 APP_ICON   := arch/switch/icon.jpg
 
 STRIP      := /bin/true
+LINK_GC_FUNCTION_SECTIONS := 1
 
 #
 # Override library paths.
@@ -34,7 +35,7 @@ ifeq (${DEBUG},1)
   #DRM_NOUVEAU := drm_nouveaud
   NX := nxd
 else
-  OPTIMIZE_CFLAGS := -O3 -ffunction-sections
+  OPTIMIZE_CFLAGS := -O3
   #DRM_NOUVEAU := drm_nouveau
   NX := nx
 endif

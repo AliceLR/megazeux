@@ -23,6 +23,7 @@ APP_ICON = arch/3ds/banner/megazeux-icon.png
 # 3DS target rules
 #
 STRIP  = /bin/true
+LINK_GC_FUNCTION_SECTIONS = 1
 
 #
 # Override library paths.
@@ -40,8 +41,7 @@ ifeq (${DEBUG},1)
   ARCH_CFLAGS += -Og
   EXTRA_LIBS += -lcitro3dd -lctrud -lpng16 -lz
 else
-  OPTIMIZE_CFLAGS = -O3 -fomit-frame-pointer -ffunction-sections
-# OPTIMIZE_CFLAGS += -flto
+  OPTIMIZE_CFLAGS = -O3 -fomit-frame-pointer
   EXTRA_LIBS += -lcitro3d -lctru -lpng16 -lz
 endif
 

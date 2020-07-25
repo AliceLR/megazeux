@@ -301,6 +301,20 @@ CXXFLAGS += -fstack-protector-all
 endif
 endif
 
+#
+# For non-modular builds, using linker garbage collection will enable
+# further dead code elimination on non-debug builds.
+#
+ifneq (${BUILD_MODULAR},1)
+ifneq (${DEBUG},1)
+ifeq (${LINK_GC_FUNCTION_SECTIONS},1)
+CFLAGS += -ffunction-sections
+CXXFLAGS += -ffunction-sections
+LDFLAGS += -Wl,--gc-sections
+endif
+endif
+endif
+
 endif
 
 #

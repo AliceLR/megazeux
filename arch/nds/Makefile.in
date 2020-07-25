@@ -18,6 +18,7 @@ include ${DEVKITARM}/ds_rules
 # NDS target rules
 #
 STRIP  = /bin/true
+LINK_GC_FUNCTION_SECTIONS = 1
 
 #
 # Override library paths.
