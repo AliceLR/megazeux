@@ -82,7 +82,13 @@ struct char_element
 #define PROTECTED_PAL_SIZE 16
 #define FULL_PAL_SIZE (SMZX_PAL_SIZE + PROTECTED_PAL_SIZE)
 
+#ifdef CONFIG_NDS
+// The NDS does not use layers.
+#define SET_SCREEN_SIZE (SCREEN_W * SCREEN_H)
+#else
 #define SET_SCREEN_SIZE (SCREEN_W * SCREEN_H * 3)
+#define SET_SCREEN_COPY_LAYERS
+#endif
 
 #define TEXTVIDEO_LAYERS 512
 

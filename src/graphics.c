@@ -2457,11 +2457,13 @@ void set_screen(struct char_element *src)
   int offset = SCREEN_W * SCREEN_H;
   int size = offset * sizeof(struct char_element);
 
+#ifdef SET_SCREEN_COPY_LAYERS
   memcpy(graphics.video_layers[UI_LAYER].data, src, size);
   src += offset;
 
   memcpy(graphics.video_layers[GAME_UI_LAYER].data, src, size);
   src += offset;
+#endif
 
   memcpy(graphics.text_video, src, size);
 }
@@ -2471,11 +2473,13 @@ void get_screen(struct char_element *dest)
   int offset = SCREEN_W * SCREEN_H;
   int size = offset * sizeof(struct char_element);
 
+#ifdef SET_SCREEN_COPY_LAYERS
   memcpy(dest, graphics.video_layers[UI_LAYER].data, size);
   dest += offset;
 
   memcpy(dest, graphics.video_layers[GAME_UI_LAYER].data, size);
   dest += offset;
+#endif
 
   memcpy(dest, graphics.text_video, size);
 }
