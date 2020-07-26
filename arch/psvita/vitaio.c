@@ -41,6 +41,7 @@ static char* get_absolute_path(const char* path)
   full_path[0] = '\0';
   strncpy(full_path, root, MAX_PATH);
   strncat(full_path, path, MAX_PATH);
+
   return full_path;
 }
 
@@ -109,11 +110,16 @@ cont:
   return result;
 }
 
+int vitaio_access(const char *path, int mode)
+{
+  return access(get_absolute_path(resolve_virtual_path(path)), mode);
+}
+
 int vitaio_chdir(const char *path)
 {
   DIR *dir;
 
-  /* Attempt to open the directory to see if it exists and is valid.
+  /* Attempt to open the directory to see if it exists and is valid.6
    * As an added bonus, this will set errno to a reasonable value for us. */
   dir = opendir(get_absolute_path(resolve_virtual_path(path)));
   if(dir == NULL)
@@ -151,7 +157,7 @@ char* vitaio_getcwd(char *buf, size_t size)
    * buffer is passed with a size of 0. */
   if(buf == NULL && size == 0)
   {
-    buf = malloc(path_len + 1);
+    buf = malloc(path_len + 2);  // Leave room for the terminator and slash.
 
     /* Check for an out of memory condition. malloc() will set errno if there
      * was an issue, so leave it alone and just return NULL. */
@@ -159,9 +165,13 @@ char* vitaio_getcwd(char *buf, size_t size)
       return NULL;
   }
 
-  /* Copy the virtualized path into buf and return a pointer to buf. Add 1 to
-   * the length so that strncpy null-terminates the string for us. */
+  /* Copy the virtualized path into buf and return a pointer to buf. */
   strncpy(buf, cwd, path_len + 1);
+
+  /* Add the trailing slash and null terminator. */
+  buf[path_len] = '/';
+  buf[path_len + 1] = 0;
+
   return buf;
 }
 

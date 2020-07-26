@@ -32,6 +32,7 @@
 extern "C" {
 #endif
 
+int vitaio_access(const char *path, int mode);
 int vitaio_chdir(const char *path);
 FILE* vitaio_fopen(const char *pathname, const char *mode);
 char* vitaio_getcwd(char *buf, size_t size);
@@ -49,6 +50,7 @@ int vitaio_unlink(const char *path);
 /* These functions cannot be defined if we're hitting this include file from
  * the implementation code. If we do, it won't be able to call the standard
  * POSIX functions when necessary. */
+#define access(path, mode) vitaio_access(path, mode)
 #define chdir(path) vitaio_chdir(path)
 #define fopen(pathname, mode) vitaio_fopen(pathname, mode)
 #define getcwd(buf, size) vitaio_getcwd(buf, size)

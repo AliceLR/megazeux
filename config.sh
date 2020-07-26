@@ -606,7 +606,6 @@ elif [ "$PLATFORM" = "psvita" ]; then
 	GAMESDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\""      >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""       >> src/config.h
-	echo "#include \"../arch/psvita/vitaio.h\"" >> src/config.h
 else
 	SHAREDIR=.
 	GAMESDIR=.

@@ -60,6 +60,10 @@ typedef unsigned char boolean;
 #include <nds.h>
 #endif
 
+#ifdef CONFIG_PSVITA
+#include "../arch/psvita/vitaio.h"
+#endif
+
 #ifdef CONFIG_WII
 #define BOOL _BOOL
 #include <gctypes.h>
