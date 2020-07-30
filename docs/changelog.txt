@@ -1,3 +1,11 @@
+GIT
+
+USERS
+
++ Fixed a bug that would cause string searches to sometimes skip
+  certain matches.
+
+
 July 20th, 2020 - MZX 2.92e
 
 This bugfix release includes miscellaneous audio fixes and fixes
