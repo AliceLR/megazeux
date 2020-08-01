@@ -714,6 +714,10 @@ static boolean ctr_should_render(struct ctr_render_data *render_data)
 {
   if(!render_data->rendering_frame)
   {
+    // If we aren't currently in control of the GPU, do not draw video.
+    if(!gspHasGpuRight())
+      return false;
+
     if(wide_requested)
     {
       ctr_set_wide(render_data, wide_new_state);
