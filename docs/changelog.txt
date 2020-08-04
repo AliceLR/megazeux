@@ -4,6 +4,9 @@ USERS
 
 + Fixed graphics corruption when using the glsl and opengl2
   renderers on big endian platforms.
++ Fixed a bug that would cause string searches to sometimes skip
+  certain matches.
+
 
 July 20th, 2020 - MZX 2.92e
 

@@ -158,7 +158,7 @@ void string_search_index(const void *B, const size_t b_len,
       if(prefix_check(start, b_len, i + 1, ignore_case))
         last_prefix_position = i + 1;
 
-      good_suffix[i] = b_len - 1 - i + last_prefix_position;
+      good_suffix[i] = MIN(b_len, b_len - 1 - i + last_prefix_position);
     }
 
     /**
