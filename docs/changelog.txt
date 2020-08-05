@@ -6,6 +6,8 @@ USERS
   certain matches.
 + Improved performance of saving ZIP worlds/save files/etc. for
   some platforms.
++ Platforms without a protected palette and the meter enabled
+  should now fade out properly before loading a world.
 
 
 July 20th, 2020 - MZX 2.92e
