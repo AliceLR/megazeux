@@ -4,6 +4,8 @@ USERS
 
 + Fixed a bug that would cause string searches to sometimes skip
   certain matches.
++ Improved performance of saving ZIP worlds/save files/etc. for
+  some platforms.
 
 
 July 20th, 2020 - MZX 2.92e
