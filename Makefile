@@ -28,6 +28,7 @@ debuglink: all mzx.debug
 CC      ?= gcc
 CXX     ?= g++
 AR      ?= ar
+AS      ?= as
 STRIP   ?= strip --strip-unneeded
 OBJCOPY ?= objcopy
 PEFIX   ?= true
@@ -332,6 +333,7 @@ override V:=
 CC      := @${CC}
 CXX     := @${CXX}
 AR      := @${AR}
+AS      := @${AS}
 STRIP   := @${STRIP}
 OBJCOPY := @${OBJCOPY}
 PEFIX   := @${PEFIX}
