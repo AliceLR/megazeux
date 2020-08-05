@@ -292,9 +292,10 @@ endif
 endif
 
 #
-# The following flags are not applicable to mingw builds.
+# The following flags are not applicable to mingw or djgpp builds.
 #
 ifneq (${PLATFORM},mingw)
+ifneq (${PLATFORM},djgpp)
 
 #
 # Symbols in COFF binaries are implicitly hidden unless exported; this
@@ -312,11 +313,13 @@ endif
 # function.
 #
 ifeq (${HAS_F_STACK_PROTECTOR},1)
+ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_3DS},${BUILD_PSP},${BUILD_WII},${BUILD_EMSCRIPTEN}),)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
 endif
 endif
 
+endif
 endif
 
 #

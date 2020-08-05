@@ -366,7 +366,8 @@ static boolean process_keypress(int key)
     }
   }
 
-  key_press(status, ikey, unicode);
+  key_press(status, ikey);
+  key_press_unicode(status, unicode, true);
   return true;
 }
 
