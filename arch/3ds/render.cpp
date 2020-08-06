@@ -384,9 +384,9 @@ static boolean ctr_init_video(struct graphics_data *graphics,
   memset(&render_data, 0, sizeof(struct ctr_render_data));
   graphics->render_data = &render_data;
 
+  gfxSet3D(false);
   C3D_Init(0x40000);
   C3D_CullFace(GPU_CULL_NONE);
-  gfxSet3D(false);
 
   render_data.rendering_frame = false;
   render_data.checked_frame = false;
@@ -507,10 +507,13 @@ static void ctr_free_video(struct graphics_data *graphics)
     C3D_TexDelete(&render_data->charset[i]);
     C3D_TexDelete(&render_data->charset_vram[i]);
   }
+  C3D_TexDelete(&render_data->playfield_tex);
 
   C3D_RenderTargetDelete(render_data->playfield);
   C3D_RenderTargetDelete(render_data->target_top);
   C3D_RenderTargetDelete(render_data->target_bottom);
+
+  C3D_Fini();
 }
 
 static boolean ctr_check_video_mode(struct graphics_data *graphics, int width,

@@ -78,11 +78,10 @@ boolean platform_init(void)
   cfguInit();
   romfsInit();
   osSetSpeedupEnable(1);
-  APT_SetAppCpuTimeLimit(80);
+  APT_SetAppCpuTimeLimit(30);
 
   gfxInitDefault();
   gfxSet3D(false);
-  C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
 
   CFGU_GetSystemModel(&consoleModelId);
   CFGU_GetModelNintendo2DS(&isNot2DS);
@@ -91,7 +90,6 @@ boolean platform_init(void)
 
 void platform_quit(void)
 {
-  C3D_Fini();
   gfxExit();
 
   romfsExit();
