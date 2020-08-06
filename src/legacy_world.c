@@ -182,11 +182,10 @@ static long decrypt_backup(struct decrypt_data *data)
   long ret = -1;
   long file_length;
   long left;
-  int meter_target;
+  int meter_target = 1;
   int meter_curr = 0;
   int len;
 
-  meter_target = 1;
   meter_initial_draw(meter_curr, meter_target, "Writing backup world...");
 
   source = fopen_unsafe(data->file_name, "rb");
@@ -321,7 +320,7 @@ static void decrypt(const char *file_name)
   if(!fread(data->buffer, 44, 1, data->source))
     goto err_meter;
 
-  src_ptr = data->buffer + 25;
+  src_ptr = data->buffer + LEGACY_BOARD_NAME_SIZE;
   pro_method = *src_ptr;
   src_ptr++;
 
@@ -343,12 +342,12 @@ static void decrypt(const char *file_name)
    (data->xor_val << 16) | (data->xor_val << 24);
 
   // Copy title
-  if(!fwrite(data->buffer, 25, 1, data->dest))
+  if(!fwrite(data->buffer, LEGACY_BOARD_NAME_SIZE, 1, data->dest))
     goto err_meter;
   fputc(0, data->dest);
   fputs("M\x02\x11", data->dest);
 
-  data->meter_curr += 25 + 1 + 3 - 1;
+  data->meter_curr += LEGACY_BOARD_NAME_SIZE + 1 + 3 - 1;
   meter_update_screen(&data->meter_curr, data->meter_target);
 
   // Decrypt world data.
