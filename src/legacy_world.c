@@ -165,7 +165,9 @@ struct decrypt_data
   FILE *source;
   FILE *dest;
   const char *file_name;
-  char xor_val;
+  unsigned int xor_val;
+  int xor_w;
+  int xor_d;
   char password[MAX_PASSWORD_LENGTH + 1];
   char backup_name[MAX_PATH];
   char buffer[DECRYPT_BUFFER_SIZE];
@@ -226,26 +228,26 @@ err:
   return ret;
 }
 
-static boolean decrypt_block(struct decrypt_data *data, int len)
+static boolean decrypt_block(struct decrypt_data *data, int block_len)
 {
-  int next;
+  int len;
   int i;
 
-  while(len > 0)
+  while(block_len > 0)
   {
-    next = MIN(len, DECRYPT_BUFFER_SIZE);
-    len -= next;
+    len = MIN(block_len, DECRYPT_BUFFER_SIZE);
+    block_len -= len;
 
-    if(!fread(data->buffer, next, 1, data->source))
+    if(!fread(data->buffer, len, 1, data->source))
       return false;
 
-    for(i = 0; i < next; i++)
+    for(i = 0; i < len; i++)
       data->buffer[i] ^= data->xor_val;
 
-    if(!fwrite(data->buffer, next, 1, data->dest))
+    if(!fwrite(data->buffer, len, 1, data->dest))
       return false;
 
-    data->meter_curr += next - 1;
+    data->meter_curr += len - 1;
     meter_update_screen(&data->meter_curr, data->meter_target);
   }
   return true;
@@ -257,8 +259,7 @@ static boolean decrypt_and_fix_offset(struct decrypt_data *data)
   if(offset == EOF)
     return false;
 
-  offset ^= data->xor_val | (data->xor_val << 8) |
-   (data->xor_val << 16) | (data->xor_val << 24);
+  offset ^= data->xor_d;
 
   // Adjust the offset to account for removing the password...
   offset -= MAX_PASSWORD_LENGTH;
@@ -337,6 +338,9 @@ static void decrypt(const char *file_name)
 
   // Xor code
   data->xor_val = get_pw_xor_code(data->password, pro_method);
+  data->xor_w = data->xor_val | (data->xor_val << 8);
+  data->xor_d = data->xor_val | (data->xor_val << 8) |
+   (data->xor_val << 16) | (data->xor_val << 24);
 
   // Copy title
   if(!fwrite(data->buffer, 25, 1, data->dest))
@@ -361,8 +365,7 @@ static void decrypt(const char *file_name)
   data->meter_curr++;
   if(!num_boards)
   {
-    int sfx_length = fgetw(data->source);
-    sfx_length ^= (data->xor_val << 8) | data->xor_val;
+    int sfx_length = fgetw(data->source) ^ data->xor_w;
     fputw(sfx_length, data->dest);
     data->meter_curr += 2;
 
@@ -382,9 +385,7 @@ static void decrypt(const char *file_name)
   for(i = 0; i < num_boards; i++)
   {
     // Board length.
-    int board_length = fgetd(data->source);
-    board_length ^= data->xor_val | (data->xor_val << 8) |
-     (data->xor_val << 16) | (data->xor_val << 24);
+    int board_length = fgetd(data->source) ^ data->xor_d;
     fputd(board_length, data->dest);
     data->meter_curr += 4;
 
