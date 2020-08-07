@@ -850,7 +850,7 @@ static void init_counter_var(struct debug_var *v, struct counter *src)
   v->data.counter = src;
 
   copy_name_escaped(buf, CVALUE_COL_OFFSET, src->name, src->name_length);
-  snprintf(v->text, VAR_LIST_WIDTH, "%-*.*s %i",
+  snprintf(v->text, VAR_LIST_WIDTH, "%-*.*s %"PRId32,
    CVALUE_COL_OFFSET - 1, CVALUE_COL_OFFSET - 1, buf, src->value);
 }
 
@@ -2146,7 +2146,7 @@ static void input_counter_value(struct world *mzx_world, struct debug_var *v)
 
       strcpy(dialog_name, mesg);
       copy_name_escaped(dest, dest_len, src->name, src->name_length);
-      sprintf(new_value, "%d", src->value);
+      sprintf(new_value, "%"PRId32, src->value);
       break;
     }
 
@@ -2787,7 +2787,7 @@ void __debug_counters(context *ctx)
 
           for(i = 0; i < counter_list->num_counters; i++)
           {
-            fprintf(fp, "set \"%s\" to %d\n",
+            fprintf(fp, "set \"%s\" to %"PRId32"\n",
              counter_list->counters[i]->name, counter_list->counters[i]->value);
           }
 

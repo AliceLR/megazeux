@@ -735,7 +735,7 @@ static void output_preformatted(const char *required_by,
       details[0] = 0;
 
     if(crc32_len && has_crc32)
-      snprintf(crc, 9, "%8.8x", crc32);
+      snprintf(crc, 9, "%8.8"PRIx32, crc32);
 
     fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s%-*.*s %s\n",
      parent_max_len, parent_max_len, required_by,
@@ -843,7 +843,7 @@ static void output_csv(const char *required_by,
   {
     if(has_crc32)
     {
-      fprintf(stdout, "%8.8x,", crc32);
+      fprintf(stdout, "%8.8"PRIx32",", crc32);
     }
     else
       fprintf(stdout, ",");
