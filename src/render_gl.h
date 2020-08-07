@@ -95,6 +95,8 @@ enum gl_lib_type
  * compatibility. This leads to some problems when packing bytes on big endian
  * machines because each of these packings assumes GL_UNSIGNED_INT_8_8_8_8_REV
  * (which isn't in GLES 2).
+ *
+ * TODO: bswap32 here if compatibility defines for it are added.
  */
 static inline Uint32 gl_pack_u32(Uint32 x)
 {
