@@ -961,8 +961,8 @@ static void glsl_update_colors(struct graphics_data *graphics,
   Uint32 i;
   for(i = 0; i < count; i++)
   {
-    graphics->flat_intensity_palette[i] = (0xFF << 24) | (palette[i].b << 16) |
-     (palette[i].g << 8) | palette[i].r;
+    graphics->flat_intensity_palette[i] = gl_pack_u32((0xFF << 24) |
+     (palette[i].b << 16) | (palette[i].g << 8) | palette[i].r);
     render_data->palette[i*3  ] = (GLubyte)palette[i].r;
     render_data->palette[i*3+1] = (GLubyte)palette[i].g;
     render_data->palette[i*3+2] = (GLubyte)palette[i].b;
@@ -1076,10 +1076,10 @@ static void glsl_render_layer(struct graphics_data *graphics,
       fg_color = FULL_PAL_SIZE;
     }
 
-    *dest =
+    *dest = gl_pack_u32(
      (char_value << LAYER_CHAR_POS) |
      (bg_color << LAYER_BG_POS) |
-     (fg_color << LAYER_FG_POS);
+     (fg_color << LAYER_FG_POS));
   }
 
   glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
@@ -1110,7 +1110,7 @@ static void glsl_render_layer(struct graphics_data *graphics,
   dest = render_data->background_texture;
   for(i = 0; i < 4; i++)
     for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
-      *dest = graphics->smzx_indices[j * 4 + i];
+      *dest = gl_pack_u32(graphics->smzx_indices[j * 4 + i]);
 
   glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
    TEX_DATA_IDX_X, TEX_DATA_IDX_Y, SMZX_PAL_SIZE, 4,
