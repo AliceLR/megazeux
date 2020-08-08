@@ -11,6 +11,8 @@ USERS
 + Platforms without a protected palette and the meter enabled
   should now fade out properly before loading a world.
 + Rewrote decrypt() to work better on low-memory platforms.
++ Improved GLSL layer renderer performance slightly by sending
+  the palette and indices to the GPU fewer times per frame.
 
 
 July 20th, 2020 - MZX 2.92e

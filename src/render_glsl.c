@@ -283,6 +283,9 @@ struct glsl_render_data
   GLubyte palette[3 * FULL_PAL_SIZE];
   Uint8 remap_texture;
   Uint8 remap_char[FULL_CHARSET_SIZE];
+  boolean dirty_palette;
+  boolean dirty_indices;
+  int last_tcol;
   GLuint scaler_program;
   GLuint tilemap_program;
   GLuint tilemap_smzx_program;
@@ -768,6 +771,8 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   gl_check_error();
 
   glsl_remap_char_range(graphics, 0, FULL_CHARSET_SIZE);
+  render_data->dirty_palette = true;
+  render_data->dirty_indices = true;
 
   glsl_load_shaders(graphics);
 }
@@ -1090,32 +1095,43 @@ static void glsl_render_layer(struct graphics_data *graphics,
    GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
-  colorptr = graphics->flat_intensity_palette;
-  dest = render_data->background_texture;
-
-  for(i = 0; i < graphics->protected_pal_position + 16; i++, dest++, colorptr++)
-    *dest = *colorptr;
-
   // Palette
-  if(layer->transparent_col != -1)
-    render_data->background_texture[layer->transparent_col] = 0x00000000;
-  render_data->background_texture[FULL_PAL_SIZE] = 0x00000000;
+  if(render_data->dirty_palette ||
+   render_data->last_tcol != layer->transparent_col)
+  {
+    render_data->dirty_palette = false;
+    render_data->last_tcol = layer->transparent_col;
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
-   TEX_DATA_PAL_X, TEX_DATA_PAL_Y, FULL_PAL_SIZE + 1, 1,
-   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
-  gl_check_error();
+    colorptr = graphics->flat_intensity_palette;
+    dest = render_data->background_texture;
+
+    for(i = 0; i < graphics->protected_pal_position + 16; i++, dest++, colorptr++)
+      *dest = *colorptr;
+
+    if(layer->transparent_col != -1)
+      render_data->background_texture[layer->transparent_col] = 0x00000000;
+    render_data->background_texture[FULL_PAL_SIZE] = 0x00000000;
+
+    glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+     TEX_DATA_PAL_X, TEX_DATA_PAL_Y, FULL_PAL_SIZE + 1, 1,
+     GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
+    gl_check_error();
+  }
 
   // Indices
-  dest = render_data->background_texture;
-  for(i = 0; i < 4; i++)
-    for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
-      *dest = gl_pack_u32(graphics->smzx_indices[j * 4 + i]);
+  if(render_data->dirty_indices && layer->mode)
+  {
+    render_data->dirty_indices = false;
+    dest = render_data->background_texture;
+    for(i = 0; i < 4; i++)
+      for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
+        *dest = gl_pack_u32(graphics->smzx_indices[j * 4 + i]);
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
-   TEX_DATA_IDX_X, TEX_DATA_IDX_Y, SMZX_PAL_SIZE, 4,
-   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
-  gl_check_error();
+    glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+     TEX_DATA_IDX_X, TEX_DATA_IDX_Y, SMZX_PAL_SIZE, 4,
+     GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
+    gl_check_error();
+  }
 
   glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
   glsl.glEnableVertexAttribArray(ATTRIB_TEXCOORD);
@@ -1311,6 +1327,8 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   }
 
   gl_swap_buffers(graphics);
+  render_data->dirty_palette = true;
+  render_data->dirty_indices = true;
 
 #ifndef __EMSCRIPTEN__
   glsl.glClear(GL_COLOR_BUFFER_BIT);
