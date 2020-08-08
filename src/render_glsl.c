@@ -33,8 +33,14 @@
 #include "util.h"
 #include "io/path.h"
 
+// Uncomment to enable GL debug output (requires OpenGL 4.3+).
+//#define ENABLE_GL_DEBUG_OUTPUT 1
+
 #ifdef CONFIG_SDL
 #include "render_sdl.h"
+#ifdef ENABLE_GL_DEBUG_OUTPUT
+#include <SDL_opengl_glext.h>
+#endif
 #endif
 
 #ifdef CONFIG_EGL
@@ -207,6 +213,9 @@ static struct
   void (GL_APIENTRY *glDeleteProgram)(GLuint program);
   void (GL_APIENTRY *glGetAttachedShaders)(GLuint program, GLsizei maxCount,
    GLsizei *count, GLuint *shaders);
+#ifdef ENABLE_GL_DEBUG_OUTPUT
+  void (GL_APIENTRY *glDebugMessageCallback)(GLDEBUGPROC callback, void *param);
+#endif
 
   // FBO functions are optional for GL (requires 3.0+), mandatory for GLES.
   boolean has_fbo;
@@ -253,6 +262,9 @@ static const struct dso_syms_map glsl_syms_map[] =
   { "glUseProgram",               (fn_ptr *)&glsl.glUseProgram },
   { "glVertexAttribPointer",      (fn_ptr *)&glsl.glVertexAttribPointer },
   { "glViewport",                 (fn_ptr *)&glsl.glViewport },
+#ifdef ENABLE_GL_DEBUG_OUTPUT
+  { "glDebugMessageCallback",     (fn_ptr *)&glsl.glDebugMessageCallback },
+#endif
   { NULL, NULL}
 };
 
@@ -777,6 +789,19 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   glsl_load_shaders(graphics);
 }
 
+#ifdef ENABLE_GL_DEBUG_OUTPUT
+static void glsl_debug_callback(GLenum source, GLenum type, GLuint id,
+ GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+{
+  length = length < 0 ? (GLsizei)strlen(message) : length;
+  fprintf(stderr,
+    "GL DEBUG (source 0x%x, type 0x%x, severity 0x%x): %.*s\n",
+    source, type, severity, length, message
+  );
+  fflush(stderr);
+}
+#endif
+
 static boolean glsl_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
@@ -836,6 +861,12 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
   }
   else
     glsl.has_fbo = false;
+
+#ifdef ENABLE_GL_DEBUG_OUTPUT
+  glsl.glEnable(GL_DEBUG_OUTPUT);
+  glsl.glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+  glsl.glDebugMessageCallback(glsl_debug_callback, NULL);
+#endif
 
   glsl_resize_screen(graphics, width, height);
   return true;
