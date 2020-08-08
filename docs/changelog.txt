@@ -13,6 +13,9 @@ USERS
 + Rewrote decrypt() to work better on low-memory platforms.
 + Improved GLSL layer renderer performance slightly by sending
   the palette and indices to the GPU fewer times per frame.
++ Fixed a bug where the GLSL renderer could attempt to load the
+  framebuffer symbols from a driver that doesn't support them
+  when resizing the window.
 
 
 July 20th, 2020 - MZX 2.92e

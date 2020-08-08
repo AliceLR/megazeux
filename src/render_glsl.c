@@ -801,35 +801,30 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
   // the check with these configurations.
 #ifndef CONFIG_GLES
   {
-    static boolean initialized = false;
+    const char *version;
+    double version_float;
 
-    if(!initialized)
+    version = (const char *)glsl.glGetString(GL_VERSION);
+    if(!version)
     {
-      const char *version;
-      double version_float;
+      warn("Could not load GL version string.\n");
+      gl_cleanup(graphics);
+      return false;
+    }
 
-      version = (const char *)glsl.glGetString(GL_VERSION);
-      if(!version)
-      {
-        warn("Could not load GL version string.\n");
-        gl_cleanup(graphics);
-        return false;
-      }
+    version_float = atof(version);
+    if(version_float < 2.0)
+    {
+      warn("Need >= OpenGL 2.0, got OpenGL %.1f.\n", version_float);
+      gl_cleanup(graphics);
+      return false;
+    }
 
-      version_float = atof(version);
-      if(version_float < 2.0)
-      {
-        warn("Need >= OpenGL 2.0, got OpenGL %.1f.\n", version_float);
-        gl_cleanup(graphics);
-        return false;
-      }
-
-      if(version_float >= 3.0)
-        debug("Attempting to load FBO syms...\n");
-      else
-        load_fbo_syms = false;
-
-      initialized = true;
+    load_fbo_syms = false;
+    if(version_float >= 3.0)
+    {
+      debug("Attempting to load FBO syms...\n");
+      load_fbo_syms = true;
     }
   }
 #endif
