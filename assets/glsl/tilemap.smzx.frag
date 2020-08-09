@@ -65,44 +65,21 @@ int int_(float v)
   return int(v + 0.01);
 }
 
-// NOTE: Layer data packing scheme
-// (highest two bits currently unused but included as part of the char)
+// NOTE: Layer data packing scheme.
+// This is intentionally wasteful so the components don't interfere with each
+// other on old and embedded cards with poor float precision.
+// C = char.
+// P = subpalette or COLOR_TRANSPARENT for a fully transparent char.
 // w        z        y        x
 // 00000000 00000000 00000000 00000000
-// CCCCCCCC CCCCCCBB BBBBBBBF FFFFFFFF
+// CCCCCCCC CCCCCCCC PPPPPPPP PPPPPPPP
 
 // Some older cards/drivers tend to be slightly off; slight variations
 // in values here are intentional.
 
-/**
- * Get the char number from packed layer data as (approx.) an int.
- */
-
-float layer_get_char(vec4 layer_data)
+float layer_unpack_16(vec2 layer_data)
 {
-  return floor_(layer_data.z * 63.75) + (layer_data.w * 255.0) * 64.0;
-}
-
-/**
- * Get the foreground color from layer data as (approx.) an int.
- */
-
-float layer_get_fg_color(vec4 layer_data)
-{
-  return
-   (layer_data.x * 255.001) +
-   fract_(layer_data.y * 127.501) * 512.0;
-}
-
-/**
- * Get the background color from layer data as (approx.) an int.
- */
-
-float layer_get_bg_color(vec4 layer_data)
-{
-  return
-   floor_(layer_data.y * 127.5) +
-   fract_(layer_data.z * 63.751) * 512.0;
+  return floor_(layer_data.x * 255.001) + (layer_data.y * 255.001) * 256.0;
 }
 
 void main( void )
@@ -111,14 +88,13 @@ void main( void )
    * Get the packed char/color data for this position from the current layer.
    * vTexcoord will be provided in the range of x=[0..layer.w), y=[0..layer.h).
    */
-  float layer_x = (vTexcoord.x + TEX_DATA_LAYER_X) / TEX_DATA_WIDTH;
-  float layer_y = (vTexcoord.y + TEX_DATA_LAYER_Y) / TEX_DATA_HEIGHT;
+  float layer_x = (floor_(vTexcoord.x) + TEX_DATA_LAYER_X) / TEX_DATA_WIDTH;
+  float layer_y = (floor_(vTexcoord.y) + TEX_DATA_LAYER_Y) / TEX_DATA_HEIGHT;
   vec4 layer_data = texture2D(baseMap, vec2(layer_x, layer_y));
 
-  float fg_color = layer_get_fg_color(layer_data);
-  float bg_color = layer_get_bg_color(layer_data);
+  float subpalette = layer_unpack_16(layer_data.xy);
 
-  if(fg_color >= COLOR_TRANSPARENT || bg_color >= COLOR_TRANSPARENT)
+  if(subpalette >= COLOR_TRANSPARENT)
   {
     gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
   }
@@ -138,7 +114,7 @@ void main( void )
      * 2) Calculate the position on the texture in pixel scale where the
      * current char is and add the offset from step 1.
      */
-    float char_num = layer_get_char(layer_data);
+    float char_num = layer_unpack_16(layer_data.zw);
 
     int px = int_(fract_(vTexcoord.x) * CHAR_W) / 2 * 2;
     int py = int_(fract_(vTexcoord.y) * CHAR_H);
@@ -187,9 +163,7 @@ void main( void )
       }
     }
 
-    float subpal = mod_(floor_(bg_color), 16.0) * 16.0 + mod_(fg_color, 16.0);
-
-    float smzx_tex_x = subpal / TEX_DATA_WIDTH;
+    float smzx_tex_x = subpalette / TEX_DATA_WIDTH;
     float smzx_tex_y = (float(smzx_col) + TEX_DATA_IDX_Y) / TEX_DATA_HEIGHT;
 
     // NOTE: This must use the x component.
