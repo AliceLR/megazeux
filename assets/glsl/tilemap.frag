@@ -22,8 +22,19 @@
 
 #version 110
 
+#ifdef GL_ES
+precision mediump float;
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+#define HIGHP highp
+#endif
+#endif
+#ifndef HIGHP
+#define HIGHP
+#endif
+
 // Keep these the same as in render_glsl.c
 #define CHARSET_COLS      64.0
+#define CHARSET_ROWS_EACH 4.0
 #define TEX_DATA_WIDTH    512.0
 #define TEX_DATA_HEIGHT   1024.0
 #define TEX_DATA_PAL_Y    896.0
@@ -67,13 +78,17 @@ int int_(float v)
 // w        z        y        x
 // 00000000 00000000 00000000 00000000
 // CCCCCCCC CCCCCCCC BBBBBBBB FFFFFFFF
+#define PACK_COLOR_FG  x
+#define PACK_COLOR_BG  y
+#define PACK_CHAR      z
+#define PACK_CHARSET   w
 
-// Some older cards/drivers tend o be slightly off; slight variations
+// Some older cards/drivers tend to be slightly off; slight variations
 // in values here are intentional.
 
-float layer_unpack_16(vec2 layer_data)
+float layer_unpack(float layer_data)
 {
-  return floor_(layer_data.x * 255.001) + (layer_data.y * 255.001) * 256.0;
+  return layer_data * 255.001;
 }
 
 float layer_unpack_color(float color_data)
@@ -100,9 +115,10 @@ void main(void)
    * but for the y position it's easier to get the pixel position and
    * normalize afterward.
    */
-  float char_num = layer_unpack_16(layer_data.zw);
+  float char_num = layer_unpack(layer_data.PACK_CHAR);
+  float char_set = layer_unpack(layer_data.PACK_CHARSET);
   float char_x = fract_(char_num / CHARSET_COLS);
-  float char_y = floor_(char_num / CHARSET_COLS);
+  float char_y = floor_(char_num / CHARSET_COLS) + char_set * CHARSET_ROWS_EACH;
 
   /**
    * Get the current pixel value of the current char from the texture.
@@ -120,11 +136,11 @@ void main(void)
   // We could actually check any component here.
   if(char_pix.x > 0.5)
   {
-    color = layer_unpack_color(layer_data.x);
+    color = layer_unpack_color(layer_data.PACK_COLOR_FG);
   }
   else
   {
-    color = layer_unpack_color(layer_data.y);
+    color = layer_unpack_color(layer_data.PACK_COLOR_BG);
   }
 
   gl_FragColor = texture2D(baseMap,

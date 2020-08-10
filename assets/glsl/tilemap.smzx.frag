@@ -22,12 +22,24 @@
 
 #version 110
 
+#ifdef GL_ES
+precision mediump float;
+precision mediump int;
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+#define HIGHP highp
+#endif
+#endif
+#ifndef HIGHP
+#define HIGHP
+#endif
+
 uniform sampler2D baseMap;
 
 varying vec2 vTexcoord;
 
 // Keep these the same as in render_glsl.c
 #define CHARSET_COLS      64.0
+#define CHARSET_ROWS_EACH 4.0
 #define TEX_DATA_WIDTH    512.0
 #define TEX_DATA_HEIGHT   1024.0
 #define TEX_DATA_PAL_Y    896.0
@@ -69,17 +81,21 @@ int int_(float v)
 // This is intentionally wasteful so the components don't interfere with each
 // other on old and embedded cards with poor float precision.
 // C = char.
-// P = subpalette or COLOR_TRANSPARENT for a fully transparent char.
+// P = subpalette (or a fully transparent char if any high bits are set).
 // w        z        y        x
 // 00000000 00000000 00000000 00000000
 // CCCCCCCC CCCCCCCC PPPPPPPP PPPPPPPP
+#define PACK_SUBPAL_LO x
+#define PACK_SUBPAL_HI y
+#define PACK_CHAR      z
+#define PACK_CHARSET   w
 
 // Some older cards/drivers tend to be slightly off; slight variations
 // in values here are intentional.
 
-float layer_unpack_16(vec2 layer_data)
+float layer_unpack(float layer_data)
 {
-  return floor_(layer_data.x * 255.001) + (layer_data.y * 255.001) * 256.0;
+  return layer_data * 255.001;
 }
 
 void main( void )
@@ -92,9 +108,8 @@ void main( void )
   float layer_y = (floor_(vTexcoord.y) + TEX_DATA_LAYER_Y) / TEX_DATA_HEIGHT;
   vec4 layer_data = texture2D(baseMap, vec2(layer_x, layer_y));
 
-  float subpalette = layer_unpack_16(layer_data.xy);
-
-  if(subpalette >= COLOR_TRANSPARENT)
+  // If any of the high subpalette bits are set, display a transparent pixel...
+  if(layer_unpack(layer_data.PACK_SUBPAL_HI) >= 0.999)
   {
     gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
   }
@@ -114,20 +129,20 @@ void main( void )
      * 2) Calculate the position on the texture in pixel scale where the
      * current char is and add the offset from step 1.
      */
-    float char_num = layer_unpack_16(layer_data.zw);
+    float char_num = layer_unpack(layer_data.PACK_CHAR);
+    float char_set = layer_unpack(layer_data.PACK_CHARSET);
 
     int px = int_(fract_(vTexcoord.x) * CHAR_W) / 2 * 2;
-    int py = int_(fract_(vTexcoord.y) * CHAR_H);
 
     int char_x = int_(mod_(char_num, CHARSET_COLS) * CHAR_W) + px;
-    int char_y = int_(char_num / CHARSET_COLS) * CHAR_H_I + py;
+    float char_y = floor_(char_num / CHARSET_COLS) + (char_set * CHARSET_ROWS_EACH);
 
     /**
      * Get the current pixels of the current char from the texture.
      * Together, these determine which color of the current subpalette to use.
      */
     float char_tex_x = float(char_x) / TEX_DATA_WIDTH;
-    float char_tex_y = float(char_y) / TEX_DATA_HEIGHT;
+    float char_tex_y = (char_y + fract_(vTexcoord.y)) * CHAR_H / TEX_DATA_HEIGHT;
 
     vec4 char_pix_l = texture2D(baseMap, vec2(char_tex_x, char_tex_y));
     vec4 char_pix_r = texture2D(baseMap, vec2(char_tex_x + PIXEL_X, char_tex_y));
@@ -163,6 +178,7 @@ void main( void )
       }
     }
 
+    float subpalette = layer_unpack(layer_data.PACK_SUBPAL_LO);
     float smzx_tex_x = subpalette / TEX_DATA_WIDTH;
     float smzx_tex_y = (float(smzx_col) + TEX_DATA_IDX_Y) / TEX_DATA_HEIGHT;
 
