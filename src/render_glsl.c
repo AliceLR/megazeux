@@ -223,6 +223,10 @@ static struct
    GLsizei *count, GLuint *shaders);
   GLint (GL_APIENTRY *glGetUniformLocation)(GLuint program, const char *name);
   void (GL_APIENTRY *glUniform1f)(GLint location, GLfloat v0);
+#ifdef CONFIG_GLES
+  void (GL_APIENTRY *glGetShaderPrecisionFormat)(GLenum shaderType,
+   GLenum precisionType, GLint *range, GLint *precision);
+#endif
 #ifdef ENABLE_GL_DEBUG_OUTPUT
   void (GL_APIENTRY *glDebugMessageCallback)(GLDEBUGPROC callback, void *param);
 #endif
@@ -274,6 +278,9 @@ static const struct dso_syms_map glsl_syms_map[] =
   { "glUseProgram",               (fn_ptr *)&glsl.glUseProgram },
   { "glVertexAttribPointer",      (fn_ptr *)&glsl.glVertexAttribPointer },
   { "glViewport",                 (fn_ptr *)&glsl.glViewport },
+#ifdef CONFIG_GLES
+  { "glGetShaderPrecisionFormat", (fn_ptr *)&glsl.glGetShaderPrecisionFormat },
+#endif
 #ifdef ENABLE_GL_DEBUG_OUTPUT
   { "glDebugMessageCallback",     (fn_ptr *)&glsl.glDebugMessageCallback },
 #endif
@@ -837,7 +844,7 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
     return false;
   }
 
-  // We need a specific version of OpenGL; desktop GL must be 2.0.
+  // GLSL needs a specific version of OpenGL; desktop GL must be 2.0.
   // All OpenGL ES 2.0 implementations are supported, so don't do
   // the check with these configurations.
 #ifndef CONFIG_GLES
@@ -866,6 +873,31 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
     {
       debug("Attempting to load FBO syms...\n");
       load_fbo_syms = true;
+    }
+  }
+#else
+  {
+    // All OpenGL ES 2.0 implementations are "technically" supported, but some
+    // may not support highp floats and may not provide adequate precision in
+    // their mediump floats. Print some warnings in this case.
+    GLint range[2];
+    GLint precision;
+
+    glsl.glGetShaderPrecisionFormat(GL_FRAGMENT_SHADER, GL_HIGH_FLOAT,
+     range, &precision);
+    if(precision == 0)
+    {
+      warn("no support for high-precision floats in the fragment shader!\n");
+
+      glsl.glGetShaderPrecisionFormat(GL_FRAGMENT_SHADER, GL_MEDIUM_FLOAT,
+       range, &precision);
+      warn("fragment mediump float range = (2^-%d, 2^%d), precision = %d\n",
+       range[0], range[1], precision);
+      if(range[0] <= 11 || precision <= 10)
+      {
+        warn("poor medium float precision! "
+         "This renderer may look bad; use \"softscale\" instead.\n");
+      }
     }
   }
 #endif

@@ -23,13 +23,11 @@
 #version 110
 
 #ifdef GL_ES
-precision mediump float;
 #ifdef GL_FRAGMENT_PRECISION_HIGH
-#define HIGHP highp
+precision highp float;
+#else
+precision mediump float;
 #endif
-#endif
-#ifndef HIGHP
-#define HIGHP
 #endif
 
 // Keep these the same as in render_glsl.c

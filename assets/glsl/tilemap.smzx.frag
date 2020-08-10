@@ -23,14 +23,11 @@
 #version 110
 
 #ifdef GL_ES
-precision mediump float;
-precision mediump int;
 #ifdef GL_FRAGMENT_PRECISION_HIGH
-#define HIGHP highp
+precision highp float;
+#else
+precision mediump float;
 #endif
-#endif
-#ifndef HIGHP
-#define HIGHP
 #endif
 
 uniform sampler2D baseMap;
