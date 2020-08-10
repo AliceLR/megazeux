@@ -891,7 +891,7 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
 
       glsl.glGetShaderPrecisionFormat(GL_FRAGMENT_SHADER, GL_MEDIUM_FLOAT,
        range, &precision);
-      warn("fragment mediump float range = (2^-%d, 2^%d), precision = %d\n",
+      warn("fragment mediump float range = (2^-%d, 2^%d), precision = 2^-%d\n",
        range[0], range[1], precision);
       if(range[0] <= 11 || precision <= 10)
       {
