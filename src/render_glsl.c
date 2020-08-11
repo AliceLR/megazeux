@@ -935,7 +935,8 @@ static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
     renderer = (const char *)glsl.glGetString(GL_RENDERER);
 
     // Print the full renderer string for reference.
-    info("GL driver: %s\n\n", renderer);
+    info("GL driver: %s\n", renderer);
+    info("GL version: %s\n\n", (const char *)glsl.glGetString(GL_VERSION));
 
     for(i = 0; i < auto_glsl_blacklist_len; i++)
     {
