@@ -102,9 +102,11 @@ void main(void)
   /**
    * Get the packed char/color data for this position from the current layer.
    * vTexcoord will be provided in the range of x=[0..layer.w), y=[0..layer.h).
+   * Note that floor() is not required on vTexcoord since the texture filtering
+   * is set to GL_NEAREST (floor() also causes bugs here on some old drivers).
    */
-  float layer_x = (floor_(vTexcoord.x) + TEX_DATA_LAYER_X) / TEX_DATA_WIDTH;
-  float layer_y = (floor_(vTexcoord.y) + TEX_DATA_LAYER_Y) / TEX_DATA_HEIGHT;
+  float layer_x = (vTexcoord.x + TEX_DATA_LAYER_X) / TEX_DATA_WIDTH;
+  float layer_y = (vTexcoord.y + TEX_DATA_LAYER_Y) / TEX_DATA_HEIGHT;
   vec4 layer_data = texture2D(baseMap, vec2(layer_x, layer_y));
 
   /**
