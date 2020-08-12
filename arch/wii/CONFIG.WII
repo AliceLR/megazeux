@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 ./config.sh --platform wii --prefix $DEVKITPPC --disable-sdl --enable-release \
             --disable-utils --enable-tremor --enable-meter \

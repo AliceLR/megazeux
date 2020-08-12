@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# NOTE: disabling softscale to save a little space since it's redundant
+# with software + canvas scaling. These should probably have their performace
+# compared at some point though.
+
+./config.sh --platform emscripten --enable-release --disable-softscale "$@"
