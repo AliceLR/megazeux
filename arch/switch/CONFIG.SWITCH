@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # NOTE: GL renderers currently cause system crashes on exit and are disabled
 # by default. They don't perform as well as the softscale renderer on the

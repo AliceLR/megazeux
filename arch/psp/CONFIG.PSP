@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 [[ -z $PSPDEV ]] && { echo "\$PSPDEV is unset. Aborting"; exit 1; }
 
