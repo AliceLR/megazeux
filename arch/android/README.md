@@ -112,11 +112,11 @@ issues seem to be compatibility issues between Android and SDL.
 
 Issues **KNOWN** to be caused by MegaZeux bugs:
 
-* The GLSL renderer packs layer data into a texture assuming 32-bit RGBA textures.
-  Some Android machines rely on core OpenGL ES 2.0 (which only supports 16-bit
-  textures), meaning these ports will display graphical corruption. This issue
-  will be addressed in a future MZX release, but for now the GLSL renderer is
-  disabled. (Nexus 7 (2013), Android 6.0, armeabi-v7a)
+* The GLSL renderer relies on precise addressing of a 512x1024 texture in the
+  tilemap fragment shaders, which is generally hard or impossible to do unless
+  highp floats are available (or alternatively, mediump floats have more than
+  10 bits of precision). This renderer is generally slower than softscale so
+  it is not selected by default.
 
 Issues **PROBABLY** caused by compatibility issues between Android and SDL:
 
