@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# TODO: GL doesn't work.
+# TODO: GL fixed renderers don't work. Probably not worth fixing.
 
 ./config.sh --platform android --enable-release --disable-utils \
-  --disable-libpng --disable-gl "$@"
+  --disable-libpng --disable-gl-fixed "$@"
