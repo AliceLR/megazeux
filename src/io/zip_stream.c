@@ -119,7 +119,7 @@ static struct zip_method_handler deflate_spec =
 {
   inflate_open,
   deflate_open,
-  zip_stream_close,
+  deflate_close,
   deflate_input,
   deflate_output,
   NULL,
