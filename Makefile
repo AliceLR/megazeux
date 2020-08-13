@@ -516,7 +516,7 @@ help_check: ${hlp2txt} assets/help.fil
 
 test: unittest
 ifeq (${BUILD_MODULAR},1)
-	@${SHELL} testworlds/run.sh ${PLATFORM} ${core_target}
+	@${SHELL} testworlds/run.sh ${PLATFORM} "$(realpath ${core_target})"
 else
 	@${SHELL} testworlds/run.sh ${PLATFORM}
 endif

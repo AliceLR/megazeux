@@ -4,11 +4,32 @@
 if [ -z "$1" ]; then
 	echo "USAGE: ./run.sh {PLATFORM}"
 	echo ""
-	echo "OR:    ./run.sh {PLATFORM} {libcore.so|libcore.dylib} (if modular enabled and platform is 'unix' or 'darwin'"
+	echo "OR:    ./run.sh {PLATFORM} /path/to/{libcore.so|libcore.dylib} (if modular enabled and platform is 'unix' or 'darwin'"
 	echo ""
 	echo "OR:    make test"
 	exit 1
 fi
+
+get_asan()
+{
+	libs=$(ldd $1 2>/dev/null)
+	if [ "$?" = "0" ]; then
+		ASAN=$(echo "$libs" | grep -i "lib[^ ]*asan" | awk '{print $3}')
+	fi
+}
+
+get_preload()
+{
+	preload="$1"
+	get_asan $1
+	if [ -z "$ASAN" ]; then
+		# Some compilers may link it to mzxrun but not libcore.so...
+		get_asan "../mzxrun"
+	fi
+	if [ -n "$ASAN" ]; then
+		preload="$ASAN $preload"
+	fi
+}
 
 TESTS_DIR=`dirname "$0"`
 cd "$TESTS_DIR"
@@ -40,7 +61,8 @@ export DYLD_FALLBACK_LIBRARY_PATH="."
 
 preload=""
 if [ -n "$2" ]; then
-	preload="./$2";
+	get_preload $2
+	echo "Test worlds preload: $preload"
 fi
 
 # Coupled with the software renderer, this will disable video in MZX, speeding things up

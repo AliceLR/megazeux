@@ -17,6 +17,11 @@ USERS
   framebuffer symbols from a driver that doesn't support them
   when resizing the window.
 
+DEVELOPERS
+
++ The test worlds now run correctly when AddressSanitizer is
+  enabled.
+
 
 July 20th, 2020 - MZX 2.92e
 
