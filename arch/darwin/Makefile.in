@@ -35,7 +35,7 @@ endif
 
 ifeq (${SUBPLATFORM},darwin-dist)
 
-.PHONY: dist lipo package_clean
+.PHONY: dist lipo package package_clean
 
 # Make dylib path the same as the executable path instead
 DSOSONAME  = -install_name @executable_path/
@@ -65,6 +65,7 @@ CROSS_COMPILE_PPC_CXX ?= powerpc-apple-darwin10-g++-4.2.1
 
 ifeq (${ARCH},)
 ARCH := i686
+SUPPRESS_BUILD := 1
 endif
 
 ifeq (${ARCH},i686)
@@ -113,26 +114,41 @@ package_clean: clean
 	${RM} -f ${core_target}.${REAL_ARCH}
 	${RM} -f ${editor_target}.${REAL_ARCH}
 
+ifeq (${SUPPRESS_BUILD},1)
+
+#
+# Define meta targets.
+#
+
+all: dist
+
 lipo:
 	@arch/darwin/lipo.sh
 
 dist:
 ifeq (${HAS_PREFIX},0)
-	$(error No dist target prefixes defined)
+	$(error No target prefix defined!\
+	 Select build targets by defining one or more of PREFIX_i686,\
+	 PREFIX_AMD64, PREFIX_PPC, or PREFIX_PPC64, then build with "make dist")
 endif
+	@${MAKE} ARCH=i686 clean
 ifneq (${PREFIX_I686},)
+	@echo "Building 'i686' with PREFIX='${PREFIX_I686}'"
 	@${MAKE} PREFIX=${PREFIX_I686} ARCH=i686 package
 	@${MAKE} PREFIX=${PREFIX_I686} ARCH=i686 clean
 endif
 ifneq (${PREFIX_AMD64},)
+	@echo "Building 'amd64' with PREFIX='${PREFIX_AMD64}'"
 	@${MAKE} PREFIX=${PREFIX_AMD64} ARCH=amd64 package
 	@${MAKE} PREFIX=${PREFIX_AMD64} ARCH=amd64 clean
 endif
 ifneq (${PREFIX_PPC},)
+	@echo "Building 'ppc' with PREFIX='${PREFIX_PPC}'"
 	@${MAKE} PREFIX=${PREFIX_PPC} ARCH=ppc package
 	@${MAKE} PREFIX=${PREFIX_PPC} ARCH=ppc clean
 endif
 ifneq (${PREFIX_PPC64},)
+	@echo "Building 'ppc64' with PREFIX='${PREFIX_PPC64}'"
 	@${MAKE} PREFIX=${PREFIX_PPC64} ARCH=ppc64 package
 	@${MAKE} PREFIX=${PREFIX_PPC64} ARCH=ppc64 clean
 endif
@@ -143,6 +159,7 @@ mzxrun_app := build/${SUBPLATFORM}/MZXRun.app/
 
 build := ${mzx_app}/Contents/Resources
 build:
+	@${MAKE} ARCH=i686 build
 	${RM} ${build}/*.debug ${build}/utils/*.debug
 	${MKDIR}                          ${mzx_app}/Contents/MacOS
 	${CP} contrib/icons/quantump.icns ${mzx_app}/Contents/Resources/MegaZeux.icns
@@ -170,4 +187,14 @@ endif
 archive: build
 	@arch/darwin/dmg.sh ${TARGET}
 
+test:
+	@${MAKE} ARCH=i686 test
+
+clean:
+	@${MAKE} ARCH=i686 clean
+
+distclean:
+	@${MAKE} ARCH=i686 distclean
+
+endif # SUPPRESS_BUILD=1
 endif # darwin-dist

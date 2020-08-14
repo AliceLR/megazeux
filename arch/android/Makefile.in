@@ -164,6 +164,9 @@ else
 # Define meta targets.
 #
 
+SUPPRESS_BUILD := 1
+all: dist
+
 package:
 	$(error "Use 'make dist', 'make apk', 'make deps-install', or 'make deps-uninstall' instead.)
 
@@ -183,17 +186,22 @@ ${ASSETS_DIR}:
 	$(if ${V},,@echo "  MKDIR   " $@)
 	@${MKDIR} -p "$@"
 
-${ASSETS_DIR}/assets.zip: build/android/assets | ${ASSETS_DIR}
+${ASSETS_DIR}/assets.zip: | ${ASSETS_DIR}
+	@${MAKE} ANDROID_TARGET=arm    build/android/assets
 	@(cd build/android/ && zip -9 -r assets.zip LICENSE config.txt assets/ && mv assets.zip ../../$@)
 
 dist: | ${ASSETS_DIR}/assets.zip
 	@${MAKE} ANDROID_TARGET=arm    clean
+	@echo "Building 'arm'."
 	@${MAKE} ANDROID_TARGET=arm    package
 	@${MAKE} ANDROID_TARGET=arm    clean
+	@echo "Building 'arm64'."
 	@${MAKE} ANDROID_TARGET=arm64  package
 	@${MAKE} ANDROID_TARGET=arm64  clean
+	@echo "Building 'i686'."
 	@${MAKE} ANDROID_TARGET=i686   package
 	@${MAKE} ANDROID_TARGET=i686   clean
+	@echo "Building 'x86_64'."
 	@${MAKE} ANDROID_TARGET=x86_64 package
 	@${MAKE} ANDROID_TARGET=x86_64 clean
 
@@ -208,6 +216,7 @@ apk: ${RELEASE_APK}
 	@${CP} ${RELEASE_APK} build/dist/${SUBPLATFORM}/${TARGET}-${SUBPLATFORM}.apk
 
 clean:
+	@${MAKE} ANDROID_TARGET=arm clean
 	$(if ${V},,@echo "  RM      " ${JNI_DIR}/lib/*/libmain.so)
 	@${RM} -r ${JNI_DIR}/lib/*/libmain.so
 	$(if ${V},,@echo "  RM      " ${BUILD_DIR})
@@ -223,6 +232,8 @@ deps-clean:
 	$(if ${V},,@echo "  RM      " arch/android/deps/)
 	@${RM} -r arch/android/deps/
 
+distclean:
+	@${MAKE} ANDROID_TARGET=arm distclean
 
 endif
 

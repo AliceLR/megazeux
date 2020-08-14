@@ -21,6 +21,9 @@ DEVELOPERS
 
 + The test worlds now run correctly when AddressSanitizer is
   enabled.
++ The Android and Darwin "dist" meta targets use SUPPRESS_BUILD
+  to disable the default "all" target. "make" can now be used in
+  place of "make dist" for these platforms.
 
 
 July 20th, 2020 - MZX 2.92e
