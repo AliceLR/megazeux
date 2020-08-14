@@ -61,7 +61,7 @@ clean:
 #
 # We're only interested in our packaged binary; remove the ELF intermediaries
 #
-build := build/${SUBPLATFORM}/games/megazeux
+build := ${build_root}/games/megazeux
 build: package ${build}
 	${CP} arch/nds/pad.config ${build}
 	${CP} ${mzxrun}.nds ${build}

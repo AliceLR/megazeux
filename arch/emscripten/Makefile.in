@@ -82,9 +82,6 @@ emzip.js: arch/emscripten/emzip.c ${emzip_objs}
 	-s "EXPORTED_RUNTIME_METHODS=['_main', 'UTF8ToString']" \
 	$< ${emzip_objs} ${ZLIB_LDFLAGS} -o $@
 
-# Normally not defined yet...
-build := build/${SUBPLATFORM}
-
 ${build}/mzxrun.js: ${build}
 	@cp mzxrun.js ${build}/
 

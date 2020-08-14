@@ -21,6 +21,11 @@ DEVELOPERS
 
 + The test worlds now run correctly when AddressSanitizer is
   enabled.
++ Using "make build" will now remove the build/${SUBPLATFORM}
+  directory if it exists before preparing a build. Before, using
+  "make build" when the platform build directory already exists
+  would not copy any updated binaries/assets/etc., potentially
+  causing confusion.
 
 
 July 20th, 2020 - MZX 2.92e
