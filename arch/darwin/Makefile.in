@@ -128,7 +128,7 @@ lipo:
 dist:
 ifeq (${HAS_PREFIX},0)
 	$(error No target prefix defined!\
-	 Select build targets by defining one or more of PREFIX_i686,\
+	 Select build targets by defining one or more of PREFIX_I686,\
 	 PREFIX_AMD64, PREFIX_PPC, or PREFIX_PPC64, then build with "make dist")
 endif
 	@${MAKE} ARCH=i686 clean
