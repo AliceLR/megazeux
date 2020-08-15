@@ -128,6 +128,11 @@ static inline const T coalesce(const T var)
   return var;
 }
 
+static inline unsigned int coalesce(boolean var)
+{
+  return var;
+}
+
 static inline const char *coalesce(const char *var)
 {
   return (var ? var : "NULL");
