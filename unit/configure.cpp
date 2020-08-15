@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <climits>
 #include <cstdio>
+#include <limits>
 
 #include "Unit.hpp"
 
@@ -148,8 +149,9 @@ void TEST_INT(const char *setting_name, T &setting, ssize_t min, ssize_t max)
     ssize_t tmp = (max - min) * i / 16 + min;
     ssize_t expected = (tmp >= min && tmp <= max) ? tmp : default_value;
 
-    if(max == INT_MAX && tmp > max)
-      expected = max;
+    if(tmp < (ssize_t)std::numeric_limits<T>::min() ||
+     tmp > (ssize_t)std::numeric_limits<T>::max())
+      continue;
 
     snprintf(arg, arraysize(arg), "%s=%zd", setting_name, tmp);
 
