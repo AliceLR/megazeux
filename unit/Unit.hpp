@@ -50,6 +50,10 @@
  *                    exactly equal.
  * ASSERTXCMP(a,b,m)  a and b must be null-terminated C strings and must be
  *                    exactly equal. (m = message to display on failure)
+ * ASSERTMEM(a,b,l)   the memory pointed to by a and b must be identical for l
+ *                    bytes (memcmp).
+ * ASSERTXMEM(a,b,l,m) the memory pointed to by a and b must be identical for l
+ *                    bytes (memcmp). (m = message to display on failure)
  *
  * Additionally, failed assert() assertions will be detected and print error
  * messages (generally, these should only be used in the code being tested).
@@ -248,6 +252,23 @@ public:
     }\
   } while(0)
 
+#define ASSERTMEM(a, b, l) \
+  do\
+  {\
+    if(memcmp(a,b,l)) \
+    {\
+      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", (a), (b), (l), nullptr); \
+    }\
+  } while(0)
+#define ASSERTXMEM(a, b, l, reason) \
+  do\
+  {\
+    if(memcmp(a,b,l)) \
+    {\
+      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", (a), (b), (l), reason); \
+    }\
+  } while(0)
+
 #define FAIL(reason) \
   do\
   {\
@@ -297,12 +318,12 @@ namespace Unit
      left(coalesce(nullptr)), right(coalesce(nullptr)), has_values(false) {}
 
     exception(int _line, const char *_test, const char *_reason):
-     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(true),
+     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason),
      left(coalesce(nullptr)), right(coalesce(nullptr)), has_values(false) {}
 
     template<class T, class S>
     exception(int _line, const char *_test, T _left, S _right, const char *_reason):
-     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(true)
+     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason)
     {
       std::stringstream l;
       std::stringstream r;
@@ -319,6 +340,45 @@ namespace Unit
       else
         has_values = false;
     }
+
+    template<class T, class E = std::enable_if<std::is_integral<T>::value>>
+    exception(int _line, const char *_test, const T *_left, const T *_right,
+     size_t length, const char *_reason):
+     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason)
+    {
+      std::stringstream l;
+      std::stringstream r;
+
+      has_values = (_left || _right);
+      length /= sizeof(T);
+
+      if(_left)
+      {
+        l << std::hex;
+        for(size_t i = 0; i < length; i++)
+          l << _left[i] << ' ';
+      }
+      else
+        l << coalesce(_left);
+
+      if(_right)
+      {
+        r << std::hex;
+        for(size_t i = 0; i < length; i++)
+          r << _right[i] << ' ';
+      }
+      else
+        r << coalesce(_right);
+
+      left = l.str();
+      right = r.str();
+    }
+
+    // Print non-integral memcmp types bytewise.
+    exception(int _line, const char *_test, const void *_left, const void *_right,
+     size_t length, const char *_reason):
+     exception(_line, _test, (const uint8_t *)_left, (const uint8_t *)_right,
+      length, _reason) {}
   };
 
   class unittestrunner_cls final
