@@ -35,11 +35,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Suppress unfixable sign comparison warning.
-#if defined(__WIN32__) && defined(__GNUC__)
-//#pragma GCC diagnostic ignored "-Wsign-compare"
-#endif
-
 #ifndef __amigaos__
 #define CONFIG_IPV6
 #endif
@@ -804,51 +799,43 @@ boolean Host::listen()
 
 #ifdef NETWORK_DEADCODE
 
-boolean host_recv_raw(struct host *h, char *buffer, unsigned int len)
+struct buf_priv_data
 {
-  return __recv(h, buffer, len);
-}
-
-boolean host_send_raw(struct host *h, const char *buffer, unsigned int len)
-{
-  return __send(h, buffer, len);
-}
-
-struct buf_priv_data {
   char *buffer;
-  unsigned int len;
-  struct host *h;
+  size_t len;
   boolean ret;
 };
 
-static struct addrinfo *recvfrom_raw_op(int fd, struct addrinfo *ais,
- void *priv, Uint32 timeout)
+struct addrinfo *Host::receive_from_op(struct addrinfo *ais, void *priv)
 {
   // timeout currently unimplemented
-  struct buf_priv_data *buf_priv = priv;
-  unsigned int len = buf_priv->len;
+  struct buf_priv_data *buf_priv = (struct buf_priv_data *)priv;
   char *buffer = buf_priv->buffer;
-  struct host *h = buf_priv->h;
+  size_t len = buf_priv->len;
   struct addrinfo *ai;
   ssize_t ret;
+
+  trace("--HOST-- Host::receive_from_op\n");
 
   for(ai = ais; ai; ai = ai->ai_next)
   {
     socklen_t addrlen = ai->ai_addrlen;
 
-    if(ai->ai_family != h->af)
+    if(ai->ai_family != this->af)
       continue;
 
-    ret = platform_recvfrom(h->fd, buffer, len, 0, ai->ai_addr, &addrlen);
+    ret = Socket::recvfrom(this->sockfd, buffer, len, 0, ai->ai_addr, &addrlen);
 
     if(ret < 0)
     {
       warn("Failed to recvfrom() any data.\n");
       buf_priv->ret = false;
     }
-    else if((unsigned int)ret != len)
+    else
+
+    if((size_t)ret != len)
     {
-      warn("Failed to recvfrom() all data (sent %zd wanted %u).\n", ret, len);
+      warn("Failed to recvfrom() all data (sent %zd wanted %zu).\n", ret, len);
       buf_priv->ret = false;
     }
 
@@ -861,23 +848,23 @@ static struct addrinfo *recvfrom_raw_op(int fd, struct addrinfo *ais,
   return ai;
 }
 
-static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv,
- Uint32 timeout)
+struct addrinfo *Host::send_to_op(struct addrinfo *ais, void *priv)
 {
   // timeout currently unimplemented
-  struct buf_priv_data *buf_priv = priv;
-  unsigned int len = buf_priv->len;
-  char *buffer = buf_priv->buffer;
-  struct host *h = buf_priv->h;
+  struct buf_priv_data *buf_priv = (struct buf_priv_data *)priv;
+  const char *buffer = buf_priv->buffer;
+  size_t len = buf_priv->len;
   struct addrinfo *ai;
   ssize_t ret;
 
+  trace("--HOST-- Host::send_to_op\n");
+
   for(ai = ais; ai; ai = ai->ai_next)
   {
-    if(ai->ai_family != h->af)
+    if(ai->ai_family != this->af)
       continue;
 
-    ret = platform_sendto(h->fd, buffer, len, 0,
+    ret = Socket::sendto(this->sockfd, buffer, len, 0,
      ai->ai_addr, ai->ai_addrlen);
 
     if(ret < 0)
@@ -885,9 +872,11 @@ static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv,
       warn("Failed to sendto() any data.\n");
       buf_priv->ret = false;
     }
-    else if((unsigned int)ret != len)
+    else
+
+    if((size_t)ret != len)
     {
-      warn("Failed to sendto() all data (sent %zd wanted %u).\n", ret, len);
+      warn("Failed to sendto() all data (sent %zd wanted %zu).\n", ret, len);
       buf_priv->ret = false;
     }
 
@@ -900,19 +889,21 @@ static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv,
   return ai;
 }
 
-boolean host_recvfrom_raw(struct host *h, char *buffer, unsigned int len,
+boolean Host::receive_from(char *buffer, size_t len,
  const char *hostname, int port)
 {
-  struct buf_priv_data buf_priv = { buffer, len, h, true };
-  host_address_op(h, hostname, port, &buf_priv, recvfrom_raw_op);
+  struct buf_priv_data buf_priv = { buffer, len, true };
+  trace("--HOST-- Host::receive_from(%s, %d)\n", hostname, port);
+  this->address_op(hostname, port, &buf_priv, Host::receive_from_op);
   return buf_priv.ret;
 }
 
-boolean host_sendto_raw(struct host *h, const char *buffer, unsigned int len,
+boolean Host::send_to(const char *buffer, size_t len,
  const char *hostname, int port)
 {
-  struct buf_priv_data buf_priv = { (char *)buffer, len, h, true };
-  host_address_op(h, hostname, port, &buf_priv, sendto_raw_op);
+  struct buf_priv_data buf_priv = { (char *)buffer, len, true };
+  trace("--HOST-- Host::send_to(%s, %d)\n", hostname, port);
+  this->address_op(hostname, port, &buf_priv, Host::send_to_op);
   return buf_priv.ret;
 }
 

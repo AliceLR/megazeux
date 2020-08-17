@@ -106,6 +106,9 @@ private:
 
   struct addrinfo *bind_op(struct addrinfo *ais, void *priv);
 
+  struct addrinfo *receive_from_op(struct addrinfo *ais, void *priv);
+  struct addrinfo *send_to_op(struct addrinfo *ais, void *priv);
+
 public:
   /**
    * Default time to wait for requests before aborting.
@@ -254,6 +257,11 @@ public:
 
 protected:
   /**
+   * These functions are not exposed externally as use of them might interfere
+   * with an active stream.
+   */
+
+  /**
    * Receive a buffer on a host via raw socket access.
    *
    * @param buffer    Buffer to receive data into (pre-allocated).
@@ -272,18 +280,34 @@ protected:
    * @return `true` if the buffer was sent, otherwise `false`.
    */
   boolean send(const void *buffer, size_t len);
-};
 
 #ifdef NETWORK_DEADCODE
 
-// FIXME: Document
-boolean host_recvfrom_raw(struct host *h, char *buffer,
- unsigned int len, const char *hostname, int port);
+  /**
+   * Connect to and receive a buffer from a remote host.
+   *
+   * @param buffer    Buffer to receive data into (pre-allocated).
+   * @param len       Maximum amount of data that can be received into the buffer.
+   * @param hostname  Remote hostname or IP address to receive from.
+   * @param port      Remote host port to receive from.
+   *
+   * @return `true` if a buffer was successfully received, otherwise `false`.
+   */
+  boolean receive_from(char *buffer, size_t len, const char *hostname, int port);
 
-// FIXME: Document
-boolean host_sendto_raw(struct host *h, const char *buffer,
- unsigned int len, const char *hostname, int port);
+  /**
+   * Connect to and send a buffer to a remote host.
+   *
+   * @param buffer    Buffer to send from (pre-allocated).
+   * @param len       Length of data to send.
+   * @param hostname  Remote hostname or IP address to send to.
+   * @param port      Remote host port to send to.
+   *
+   * @return `true` if the buffer was successfully sent, otherwise `false`.
+   */
+  boolean send_to(const char *buffer, size_t len, const char *hostname, int port);
 
 #endif // NETWORK_DEADCODE
+};
 
 #endif /* __HOST_HPP */
