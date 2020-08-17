@@ -25,6 +25,7 @@
 #include "../compat.h"
 #include "../configure.h"
 #include "../platform.h"
+#include "../util.h"
 
 #include <errno.h>
 #include <stdio.h>

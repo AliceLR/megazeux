@@ -256,6 +256,7 @@ endif
 #
 ifeq (${HAS_W_NO_FORMAT_TRUNCATION},1)
 CFLAGS   += -Wno-format-truncation
+CXXFLAGS += -Wno-format-truncation
 endif
 
 #
