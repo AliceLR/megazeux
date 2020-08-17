@@ -98,98 +98,98 @@ public:
   static int getaddrinfo(const char *node, const char *service,
    const struct addrinfo *hints, struct addrinfo **res) UNIX_MAYBE_INLINE
   ({
-    return getaddrinfo(node, service, hints, res);
+    return ::getaddrinfo(node, service, hints, res);
   });
 
   static void freeaddrinfo(struct addrinfo *res) UNIX_MAYBE_INLINE
   ({
-    freeaddrinfo(res);
+    ::freeaddrinfo(res);
   });
 
   static void getaddrinfo_perror(const char *message, int errcode) UNIX_MAYBE_INLINE
   ({
-    warn("%s (code %d): %s\n", message, errcode, gai_strerror(errcode));
+    warn("%s (code %d): %s\n", message, errcode, ::gai_strerror(errcode));
   });
 
   static void perror(const char *message) UNIX_INLINE
   ({
-    perror(message);
+    ::perror(message);
   });
 
   static int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) UNIX_INLINE
   ({
-    return accept(sockfd, addr, addrlen);
+    return ::accept(sockfd, addr, addrlen);
   });
 
   static int bind(int sockfd, const struct sockaddr *addr,
    socklen_t addrlen) UNIX_INLINE
   ({
-    return bind(sockfd, addr, addrlen);
+    return ::bind(sockfd, addr, addrlen);
   });
 
   static void close(int fd) UNIX_INLINE
   ({
-    close(fd);
+    ::close(fd);
   });
 
   static int connect(int sockfd, const struct sockaddr *serv_addr,
    socklen_t addrlen) UNIX_INLINE
   ({
-    return connect(sockfd, serv_addr, addrlen);
+    return ::connect(sockfd, serv_addr, addrlen);
   });
 
   static struct hostent *gethostbyname(const char *name) UNIX_INLINE
   ({
-    return gethostbyname(name);
+    return ::gethostbyname(name);
   });
 
   static uint16_t htons(uint16_t hostshort) UNIX_INLINE
   ({
-    return htons(hostshort);
+    return ::htons(hostshort);
   });
 
   static int listen(int sockfd, int backlog) UNIX_INLINE
   ({
-    return listen(sockfd, backlog);
+    return ::listen(sockfd, backlog);
   });
 
   static int select(int nfds, fd_set *readfds, fd_set *writefds,
    fd_set *exceptfds, struct timeval *timeout) UNIX_INLINE
   ({
-    return select(nfds, readfds, writefds, exceptfds, timeout);
+    return ::select(nfds, readfds, writefds, exceptfds, timeout);
   });
 
   static ssize_t send(int sockfd, const void *buf, size_t len, int flags) UNIX_INLINE
   ({
-    return send(sockfd, (const char *)buf, len, flags);
+    return ::send(sockfd, (const char *)buf, len, flags);
   });
 
   static ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
    const struct sockaddr *to, socklen_t tolen) UNIX_INLINE
   ({
-    return sendto(sockfd, (const char *)buf, len, flags, to, tolen);
+    return ::sendto(sockfd, (const char *)buf, len, flags, to, tolen);
   });
 
   static int setsockopt(int sockfd, int level, int optname,
    const void *optval, socklen_t optlen) UNIX_INLINE
   ({
-    return setsockopt(sockfd, level, optname, (const char *)optval, optlen);
+    return ::setsockopt(sockfd, level, optname, (const char *)optval, optlen);
   });
 
   static int socket(int af, int type, int protocol) UNIX_INLINE
   ({
-    return socket(af, type, protocol);
+    return ::socket(af, type, protocol);
   });
 
   static ssize_t recv(int sockfd, void *buf, size_t len, int flags) UNIX_INLINE
   ({
-    return recv(sockfd, (char *)buf, len, flags);
+    return ::recv(sockfd, (char *)buf, len, flags);
   });
 
   static ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
    struct sockaddr *from, socklen_t *fromlen) UNIX_INLINE
   ({
-    return recvfrom(sockfd, (char *)buf, len, flags, from, fromlen);
+    return ::recvfrom(sockfd, (char *)buf, len, flags, from, fromlen);
   });
 
 #ifdef __WIN32__
