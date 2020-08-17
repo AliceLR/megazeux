@@ -661,16 +661,14 @@ void Host::set_blocking(boolean blocking)
   Socket::set_blocking(this->sockfd, blocking);
 }
 
-#ifdef NETWORK_DEADCODE
-
-struct host *host_accept(struct host *s)
+boolean Host::accept(Host &client_host)
 {
+  boolean retval = false;
   struct sockaddr *addr;
-  struct host *c = NULL;
   socklen_t addrlen;
   int newfd;
 
-  switch(s->af)
+  switch(this->af)
   {
 #ifdef CONFIG_IPV6
     case AF_INET6:
@@ -682,34 +680,39 @@ struct host *host_accept(struct host *s)
       break;
   }
 
-  addr = cmalloc(addrlen);
+  addr = (struct sockaddr *)cmalloc(addrlen);
 
-  newfd = platform_accept(s->fd, addr, &addrlen);
+  newfd = Socket::accept(this->sockfd, addr, &addrlen);
   if(newfd >= 0)
   {
-    assert(addr->sa_family == s->af);
+    assert(addr->sa_family == this->af);
 
-    platform_socket_blocking(newfd, true);
-    c = ccalloc(1, sizeof(struct host));
-    c->af = addr->sa_family;
-    c->proto = s->proto;
-    c->name = NULL;
-    c->fd = newfd;
+    // Make sure any open connection on the provided client host is released.
+    client_host.close();
+
+    Socket::set_blocking(newfd, true);
+    client_host.state = HOST_CONNECTED;
+    client_host.sockfd = newfd;
+    client_host.af = addr->sa_family;
+    client_host.proto = this->proto;
+    client_host.name = nullptr;
+    client_host.endpoint = nullptr;
+    client_host.proxied = false;
+    client_host.timeout_ms = this->timeout_ms;
+    retval = true;
   }
   else
   {
-    if(platform_last_error_fatal())
-      platform_perror("accept");
+    if(Socket::is_last_error_fatal())
+      Socket::perror("accept");
   }
 
   free(addr);
-  return c;
+  return retval;
 }
 
-static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv,
- Uint32 timeout)
+struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
 {
-  // timeout currently unimplemented
   struct addrinfo *ai;
 
 #ifdef CONFIG_IPV6
@@ -717,49 +720,49 @@ static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv,
    */
   for(ai = ais; ai; ai = ai->ai_next)
   {
-    if(ai->ai_family != AF_INET6)
-      continue;
+    if(ai->ai_family == AF_INET6)
+    {
+      if(Socket::bind(this->sockfd, ai->ai_addr, ai->ai_addrlen) >= 0)
+        return ai;
 
-    if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
-      break;
-
-    platform_perror("bind");
+      Socket::perror("bind");
+    }
   }
-
-  if(ai)
-    return ai;
 #endif
 
   /* No IPv6 addresses could be bound; try IPv4 (if any)
    */
   for(ai = ais; ai; ai = ai->ai_next)
   {
-    if(ai->ai_family != AF_INET)
-      continue;
+    if(ai->ai_family == AF_INET)
+    {
+      if(Socket::bind(this->sockfd, ai->ai_addr, ai->ai_addrlen) >= 0)
+        return ai;
 
-    if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
-      break;
-
-    platform_perror("bind");
+      Socket::perror("bind");
+    }
   }
-
-  return ai;
+  return nullptr;
 }
 
-boolean host_bind(struct host *h, const char *hostname, int port)
+boolean Host::bind(const char *hostname, int port)
 {
-  return host_address_op(h, hostname, port, NULL, bind_op);
+  return Host::address_op(hostname, port, NULL, Host::bind_op);
 }
 
-boolean host_listen(struct host *h)
+boolean Host::listen()
 {
-  if(platform_listen(h->fd, 0) < 0)
+  assert(this->state == HOST_BOUND);
+
+  if(Socket::listen(this->sockfd, 0) < 0)
   {
-    platform_perror("listen");
+    Socket::perror("listen");
     return false;
   }
   return true;
 }
+
+#ifdef NETWORK_DEADCODE
 
 boolean host_recv_raw(struct host *h, char *buffer, unsigned int len)
 {
@@ -873,27 +876,25 @@ boolean host_sendto_raw(struct host *h, const char *buffer, unsigned int len,
   return buf_priv.ret;
 }
 
-int host_poll_raw(struct host *h, unsigned int timeout)
+#endif // NETWORK_DEADCODE
+
+int Host::poll(Uint32 timeout)
 {
   struct timeval tv;
   fd_set mask;
   int ret;
 
   FD_ZERO(&mask);
-  FD_SET(h->fd, &mask);
+  FD_SET(this->sockfd, &mask);
 
-  tv.tv_sec  = (timeout / 1000);
-  tv.tv_usec = (timeout % 1000) * 1000;
-
-  ret = platform_select(h->fd + 1, &mask, NULL, NULL, &tv);
+  reset_timeout(&tv, timeout);
+  ret = Socket::select(this->sockfd + 1, &mask, NULL, NULL, &tv);
   if(ret < 0)
     return -1;
 
   if(ret > 0)
-    if(FD_ISSET(h->fd, &mask))
+    if(FD_ISSET(this->sockfd, &mask))
       return 1;
 
   return 0;
 }
-
-#endif // NETWORK_DEADCODE

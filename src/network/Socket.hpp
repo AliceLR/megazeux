@@ -186,9 +186,9 @@ public:
 
   static ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
    struct sockaddr *from, socklen_t *fromlen) UNIX_INLINE
-   ({
-     return recvfrom(sockfd, (char *)buf, len, flags, from, fromlen);
-   });
+  ({
+    return recvfrom(sockfd, (char *)buf, len, flags, from, fromlen);
+  });
 
 #ifdef __WIN32__
   static int __WSAFDIsSet(int sockfd, fd_set *set);

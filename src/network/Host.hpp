@@ -102,6 +102,8 @@ private:
   enum proxy_status connect_socks5(struct addrinfo *ai);
   enum proxy_status connect_proxy(const char *hostname, int port);
 
+  struct addrinfo *bind_op(struct addrinfo *ais, void *priv);
+
 public:
   /**
    * Default time to wait for requests before aborting.
@@ -202,19 +204,16 @@ public:
   void set_blocking(boolean blocking);
 
   /**
-   * Accepts a connection from a host processed by \ref host_bind and
-   * \ref host_listen previously. The new connection is assigned a new
-   * host data structure which must be freed. The new host will be
-   * blocking by default.
+   * Accepts a connection from a host processed by `host_bind` and
+   * `host_listen` previously. The new connection is assigned to the
+   * provided `Host` instance. The new connection will be blocking by default.
    *
-   * @param s Serving host to accept connection with
+   * @param client_host `Host` instance to accept incoming client connection.
    *
-   * @return Connected client connection, or NULL if a failure occurred
+   * @return `true` on a successful connection to the client, otherwise `false`.
    */
-  struct host *accept();
+  boolean accept(Host &client_host);
 
-#ifdef NETWORK_DEADCODE
-  // FIXME
   /**
    * Binds the managed host to the specified host and port.
    *
@@ -232,7 +231,16 @@ public:
    * @return `true` if listening is successful, otherwise `false`.
    */
   boolean listen();
-#endif
+
+  /**
+   * Polls a host via raw socket access.
+   *
+   * @param timeout Timeout in milliseconds for poll.
+   *
+   * @return <0 if there was a failure, 0 if there was no data, and the
+   *         >0 if there was activity on the socket.
+   */
+  int poll(Uint32 timeout);
 
 protected:
   /**
@@ -258,17 +266,6 @@ protected:
 
 #ifdef NETWORK_DEADCODE
 
-/**
- * Polls a host via raw socket access.
- *
- * @param h       Host to poll socket of
- * @param timeout Timeout in milliseconds for poll
- *
- * @return <0 if there was a failure, 0 if there was no data, and the
- *         >0 if there was activity on the socket.
- */
-int host_poll_raw(struct host *h, unsigned int timeout);
-
 // FIXME: Document
 boolean host_recvfrom_raw(struct host *h, char *buffer,
  unsigned int len, const char *hostname, int port);
@@ -276,21 +273,6 @@ boolean host_recvfrom_raw(struct host *h, char *buffer,
 // FIXME: Document
 boolean host_sendto_raw(struct host *h, const char *buffer,
  unsigned int len, const char *hostname, int port);
-
-/**
- * Stream a file from disk to a network socket.
- *
- * @param h           Host to converse in HTTP with
- * @param file        File to stream to socket (must already exist)
- * @param mime_type   MIME type of payload
- *
- * @return See \ref host_status_t.
- */
-enum host_status host_send_file(struct host *h, FILE *file,
- const char *mime_type);
-
-// FIXME: Document?
-boolean host_handle_http_request(struct host *h);
 
 #endif // NETWORK_DEADCODE
 

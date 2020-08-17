@@ -435,7 +435,7 @@ ssize_t Socket::recvfrom(int sockfd, void *buf, size_t len,
   return socksyms.recvfrom(sockfd, (char *)buf, (int)len, flags, from, fromlen);
 }
 
-int __WSAFDIsSet(int sockfd, fd_set *set)
+int Socket::__WSAFDIsSet(int sockfd, fd_set *set)
 {
   return socksyms.__WSAFDIsSet(sockfd, set);
 }
