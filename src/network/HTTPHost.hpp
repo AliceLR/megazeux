@@ -104,25 +104,29 @@ public:
    * @return see HTTPHostStatus.
    */
   HTTPHostStatus get(HTTPRequestInfo &request, FILE *file);
-};
 
 #ifdef NETWORK_DEADCODE
 
-/**
- * Stream a file from disk to a network socket.
- *
- * @param h           Host to converse in HTTP with
- * @param file        File to stream to socket (must already exist)
- * @param mime_type   MIME type of payload
- *
- * @return See \ref host_status_t.
- */
-enum host_status host_send_file(struct host *h, FILE *file,
- const char *mime_type);
+  /**
+   * Transmit a response to a GET request.
+   * Streams a file from disk to the network socket.
+   *
+   * @param file        File to stream to socket (must already exist).
+   * @param mime_type   MIME type of payload.
+   *
+   * @return see HTTPHostStatus.
+   */
+  HTTPHostStatus send_file(FILE *file, const char *mime_type);
 
-// FIXME: Document?
-boolean host_handle_http_request(struct host *h);
+  /**
+   * Handle an incoming HTTP request.
+   *
+   * @return `true` if the request was successfully handled, otherwise `false`.
+   */
+  boolean handle_request();
 
 #endif
+
+};
 
 #endif /* __HTTPHOST_HPP */

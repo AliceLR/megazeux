@@ -75,8 +75,8 @@ static ssize_t zlib_skip_gzip_header(char *initial, unsigned long len)
   return gzip - (Bytef *)initial;
 }
 
-// FIXME
-__attribute__((unused))
+#ifdef NETWORK_DEADCODE
+
 static int zlib_forge_gzip_header(char *buffer)
 {
   // GZIP magic (see RFC 1952)
@@ -93,6 +93,8 @@ static int zlib_forge_gzip_header(char *buffer)
   // GZIP header is 10 bytes
   return 10;
 }
+
+#endif
 
 ssize_t HTTPHost::http_receive_line(char *buffer, size_t len)
 {
@@ -366,8 +368,9 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
       if(strcmp(value, request.expected_type) != 0)
         return HOST_HTTP_INVALID_CONTENT_TYPE;
     }
+    else
 
-    else if(strcmp(key, "Content-Encoding") == 0)
+    if(strcmp(key, "Content-Encoding") == 0)
     {
       if(strcmp(value, "gzip") != 0)
         return HOST_HTTP_INVALID_CONTENT_ENCODING;
@@ -555,9 +558,12 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
     if(len == pos)
     {
       if(transfer_type == NORMAL)
+      {
         break;
+      }
+      else
 
-      else if(transfer_type == CHUNKED)
+      if(transfer_type == CHUNKED)
       {
         if(http_receive_line(line, LINE_BUF_LEN) != 0)
           return HOST_HTTP_INVALID_HEADER;
@@ -570,8 +576,7 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
 
 #ifdef NETWORK_DEADCODE
 
-enum host_status host_send_file(struct host *h, FILE *file,
- const char *mime_type)
+HTTPHostStatus HTTPHost::send_file(FILE *file, const char *mime_type)
 {
   boolean mid_deflate = false;
   char line[LINE_BUF_LEN];
@@ -579,35 +584,37 @@ enum host_status host_send_file(struct host *h, FILE *file,
   z_stream stream;
   long size;
 
+  trace("--HOST-- HTTPHost::send_file\n");
+
   // Tell the client that we're going to use HTTP/1.1 features
-  if(http_send_line(h, "HTTP/1.1 200 OK") < 0)
-    return -HOST_SEND_FAILED;
+  if(http_send_line("HTTP/1.1 200 OK") < 0)
+    return HOST_SEND_FAILED;
 
   /* To bring ourselves into complete HTTP 1.1 compliance, send
    * some headers that we know our client doesn't actually need.
    */
-  if(http_send_line(h, "Accept-Ranges: bytes") < 0)
-    return -HOST_SEND_FAILED;
-  if(http_send_line(h, "Vary: Accept-Encoding") < 0)
-    return -HOST_SEND_FAILED;
+  if(http_send_line("Accept-Ranges: bytes") < 0)
+    return HOST_SEND_FAILED;
+  if(http_send_line("Vary: Accept-Encoding") < 0)
+    return HOST_SEND_FAILED;
 
   // Always zlib deflate content; keeps code simple
-  if(http_send_line(h, "Content-Encoding: gzip") < 0)
-    return -HOST_SEND_FAILED;
+  if(http_send_line("Content-Encoding: gzip") < 0)
+    return HOST_SEND_FAILED;
 
   // We'll just send everything chunked, unconditionally
-  if(http_send_line(h, "Transfer-Encoding: chunked") < 0)
-    return -HOST_SEND_FAILED;
+  if(http_send_line("Transfer-Encoding: chunked") < 0)
+    return HOST_SEND_FAILED;
 
   // Pass along a type hint for the client (mandatory sanity check for MZX)
   snprintf(line, LINE_BUF_LEN, "Content-Type: %s", mime_type);
   line[LINE_BUF_LEN - 1] = 0;
-  if(http_send_line(h, line) < 0)
-    return -HOST_SEND_FAILED;
+  if(http_send_line(line) < 0)
+    return HOST_SEND_FAILED;
 
   // Terminate the headers with a blank line
-  if(http_send_line(h, "") < 0)
-    return -HOST_SEND_FAILED;
+  if(http_send_line("") < 0)
+    return HOST_SEND_FAILED;
 
   // Initialize CRC for GZIP footer
   crc = crc32(0L, Z_NULL, 0);
@@ -616,7 +623,7 @@ enum host_status host_send_file(struct host *h, FILE *file,
   size = ftell_and_rewind(file);
   uSize = (uint32_t)size;
   if(size < 0)
-    return -HOST_FREAD_FAILED;
+    return HOST_FREAD_FAILED;
 
   while(true)
   {
@@ -640,7 +647,7 @@ enum host_status host_send_file(struct host *h, FILE *file,
     if(block_size != BLOCK_SIZE)
     {
       if(!feof(file))
-        return -HOST_FREAD_FAILED;
+        return HOST_FREAD_FAILED;
       deflate_flag = Z_FINISH;
     }
 
@@ -671,7 +678,7 @@ enum host_status host_send_file(struct host *h, FILE *file,
       ret = deflateInit2(&stream, Z_BEST_COMPRESSION,
        Z_DEFLATED, -MAX_WBITS, 8, Z_DEFAULT_STRATEGY);
       if(ret != Z_OK)
-        return -HOST_ZLIB_DEFLATE_FAILED;
+        return HOST_ZLIB_DEFLATE_FAILED;
 
       mid_deflate = true;
     }
@@ -688,7 +695,7 @@ enum host_status host_send_file(struct host *h, FILE *file,
       // Deflate a chunk of the input (partially or fully)
       ret = deflate(&stream, deflate_flag);
       if(ret != Z_OK && ret != Z_STREAM_END)
-        return -HOST_ZLIB_INFLATE_FAILED;
+        return HOST_ZLIB_INFLATE_FAILED;
 
       // Compute chunk length (final chunk includes GZIP footer)
       chunk_size = BLOCK_SIZE - stream.avail_out;
@@ -697,12 +704,12 @@ enum host_status host_send_file(struct host *h, FILE *file,
 
       // Dump compressed chunk length
       snprintf(line, LINE_BUF_LEN, "%lx", chunk_size);
-      if(http_send_line(h, line) < 0)
-        return -HOST_SEND_FAILED;
+      if(http_send_line(line) < 0)
+        return HOST_SEND_FAILED;
 
       // Send the compressed output block over the socket
-      if(!__send(h, zblock, BLOCK_SIZE - stream.avail_out))
-        return -HOST_SEND_FAILED;
+      if(!this->send(zblock, BLOCK_SIZE - stream.avail_out))
+        return HOST_SEND_FAILED;
 
       /* We might not have finished the entire stream, but the
        * available input is likely to have been exhausted. With
@@ -728,19 +735,19 @@ enum host_status host_send_file(struct host *h, FILE *file,
       deflateEnd(&stream);
 
       // Write out GZIP `CRC32' footer
-      if(!__send(h, &crc, sizeof(uint32_t)))
-        return -HOST_SEND_FAILED;
+      if(!this->send(&crc, sizeof(uint32_t)))
+        return HOST_SEND_FAILED;
 
       // Write out GZIP `ISIZE' footer
-      if(!__send(h, &uSize, sizeof(uint32_t)))
-        return -HOST_SEND_FAILED;
+      if(!this->send(&uSize, sizeof(uint32_t)))
+        return HOST_SEND_FAILED;
 
       mid_deflate = false;
     }
 
     // Newline after chunk's data
-    if(http_send_line(h, "") < 0)
-      return -HOST_SEND_FAILED;
+    if(http_send_line("") < 0)
+      return HOST_SEND_FAILED;
 
     // Final block; can break out
     if(block_size != BLOCK_SIZE)
@@ -748,12 +755,12 @@ enum host_status host_send_file(struct host *h, FILE *file,
   }
 
   // Terminal chunk signature, so called "trailer"
-  if(http_send_line(h, "0") < 0)
-    return -HOST_SEND_FAILED;
+  if(http_send_line("0") < 0)
+    return HOST_SEND_FAILED;
 
   // Post-trailer newline
-  if(http_send_line(h, "") < 0)
-    return -HOST_SEND_FAILED;
+  if(http_send_line("") < 0)
+    return HOST_SEND_FAILED;
 
   return HOST_SUCCESS;
 }
@@ -764,16 +771,18 @@ static const char resp_404[] =
   "<body><pre>404 ;-(</pre></body>"
  "</html>";
 
-boolean host_handle_http_request(struct host *h)
+boolean HTTPHost::handle_request()
 {
   const char *mime_type = "application/octet-stream";
   char buffer[LINE_BUF_LEN], *buf = buffer;
   char *cmd_type, *path, *proto;
-  enum host_status ret;
+  HTTPHostStatus ret;
   size_t path_len;
   FILE *f;
 
-  if(http_recv_line(h, buffer, LINE_BUF_LEN) < 0)
+  trace("--HOST-- HTTPHost::handle_request\n");
+
+  if(http_receive_line(buffer, LINE_BUF_LEN) < 0)
   {
     warn("Failed to receive HTTP request\n");
     return false;
@@ -800,7 +809,7 @@ boolean host_handle_http_request(struct host *h)
     return false;
   }
 
-  if(!http_skip_headers(h))
+  if(!http_skip_headers())
   {
     warn("Failed to skip HTTP headers\n");
     return false;
@@ -809,7 +818,7 @@ boolean host_handle_http_request(struct host *h)
   path++;
   trace("Received request for '%s'\n", path);
 
-  f = fopen(path, "rb");
+  f = fopen_unsafe(path, "rb");
   if(!f)
   {
     warn("Failed to open file '%s', sending 404\n", path);
@@ -820,9 +829,9 @@ boolean host_handle_http_request(struct host *h)
      "Content-Type: text/html\r\n"
      "Connection: close\r\n\r\n", strlen(resp_404));
 
-    if(__send(h, buffer, strlen(buffer)))
+    if(this->send(buffer, strlen(buffer)))
     {
-      if(!__send(h, resp_404, strlen(resp_404)))
+      if(!this->send(resp_404, strlen(resp_404)))
         warn("Failed to send 404 payload\n");
     }
     else
@@ -835,7 +844,7 @@ boolean host_handle_http_request(struct host *h)
   if(path_len >= 4 && strcasecmp(&path[path_len - 4], ".txt") == 0)
     mime_type = "text/plain";
 
-  ret = host_send_file(h, f, mime_type);
+  ret = this->send_file(f, mime_type);
   if(ret != HOST_SUCCESS)
   {
     warn("Failed to send file '%s' over HTTP (error %d)\n", path, ret);
