@@ -79,10 +79,6 @@ private:
   int socktype;
   int proto;
 
-  // TODO send_callback
-  void (*receive_callback)(long offset);
-  boolean (*cancel_callback)(void);
-
   const char *name = nullptr;
   const char *endpoint = nullptr;
   boolean proxied;
@@ -90,6 +86,12 @@ private:
   int sockfd;
   Uint32 timeout_ms;
 
+protected:
+  // TODO send_callback
+  void (*receive_callback)(long offset);
+  boolean (*cancel_callback)(void);
+
+private:
   boolean create_socket(enum host_type type, enum host_family family);
   boolean address_op(const char *hostname, int port, void *priv,
    struct addrinfo *(Host::*op)(struct addrinfo *ais, void *priv));
@@ -142,6 +144,14 @@ public:
    * Closes the connection (if connected) and releases the socket (if created).
    */
   void close();
+
+  /**
+   * Gets the hostname of this connection. For proxied connections, this will
+   * return the endpoint name.
+   *
+   * @return the hostname of the current connection, or `NULL` if there is none.
+   */
+  const char *get_host_name();
 
   /**
    * Connects to the specified remote host and port.

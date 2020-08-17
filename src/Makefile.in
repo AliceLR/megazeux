@@ -372,6 +372,7 @@ core_cobjs += ${network_obj}/sha256.o ${network_obj}/socksyms.o
 core_cxxobjs += \
   ${network_obj}/DNS_.o \
   ${network_obj}/Host_.o \
+  ${network_obj}/HTTPHost.o \
   ${network_obj}/Socket.o
 #  ${network_obj}/Network.o
 

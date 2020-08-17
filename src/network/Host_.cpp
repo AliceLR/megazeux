@@ -220,6 +220,14 @@ void Host::close()
   }
 }
 
+const char *Host::get_host_name()
+{
+  if(this->proxied)
+    return this->endpoint;
+
+  return this->name;
+}
+
 void Host::set_timeout_ms(Uint32 timeout_ms)
 {
   this->timeout_ms = timeout_ms;
