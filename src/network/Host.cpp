@@ -103,9 +103,14 @@ void Host:: host_layer_exit(void)
 
 Host::Host(enum host_type type, enum host_family family)
 {
+  trace("--HOST-- Host::Host(%s, %s)\n",
+    (type == HOST_TYPE_UDP) ? "UDP" : "TCP",
+    (family == HOST_FAMILY_IPV6) ? "IPv6" : "IPv4"
+  );
   this->state = HOST_UNINITIALIZED;
   this->type = type;
   this->preferred_family = family;
+  this->timeout_ms = Host::TIMEOUT_DEFAULT;
 
   // Hints to provide to getaddrinfo.
   this->preferred_af = host_family_to_af(family);
@@ -115,6 +120,7 @@ Host::Host(enum host_type type, enum host_family family)
 
 Host::~Host()
 {
+  trace("--HOST-- Host::~Host\n");
   this->close();
 }
 
@@ -133,6 +139,8 @@ boolean Host::create_socket(enum host_type type, enum host_family family)
   struct linger linger = { 1, 30 };
   const uint32_t on = 1;
   int err, fd, af;
+
+  trace("--HOST-- Host::create_socket\n");
 
   assert(this->state == HOST_UNINITIALIZED);
   if(this->state != HOST_UNINITIALIZED)
@@ -334,6 +342,8 @@ boolean Host::create_connection(struct addrinfo *ai, enum host_family family)
   fd_set mask;
   int res;
 
+  trace("--HOST-- Host::create_connection\n");
+
   if(!this->create_socket(this->type, family))
     return false;
 
@@ -369,6 +379,7 @@ boolean Host::create_connection(struct addrinfo *ai, enum host_family family)
 struct addrinfo *Host::create_connection_op(struct addrinfo *ais, void *priv)
 {
   struct addrinfo *ai;
+  trace("--HOST-- Host::create_connection_op\n");
 
 #ifdef CONFIG_IPV6
   /* First try to connect to an IPv6 address (if any)
@@ -413,6 +424,8 @@ boolean Host::address_op(const char *hostname, int port, void *priv,
   char port_str[6];
   int ret;
 
+  trace("--HOST-- Host::address_op\n");
+
   // Stringify user port for "service" argument below
   snprintf(port_str, 6, "%d", port);
   port_str[5] = 0;
@@ -431,6 +444,7 @@ boolean Host::address_op(const char *hostname, int port, void *priv,
     return false;
   }
 
+  trace("--HOST-- Host::address_op: calling this->*op!\n");
   ai = (this->*op)(ais, priv);
   Socket::freeaddrinfo(ais);
 
@@ -440,6 +454,8 @@ boolean Host::address_op(const char *hostname, int port, void *priv,
     warn("No routeable host '%s' found\n", hostname);
     return false;
   }
+
+  trace("--HOST-- Host::address_op: completed successfully!\n");
 
   // TODO should duplicate this. It's safe right now since the hostname always
   // comes from the config file, but that won't always be the case.
@@ -451,6 +467,7 @@ boolean Host::address_op(const char *hostname, int port, void *priv,
 
 boolean Host::connect_direct(const char *hostname, int port)
 {
+  trace("--HOST-- Host::connect_direct(%s, %d)\n", hostname, port);
   return this->address_op(hostname, port, nullptr, Host::create_connection_op);
 }
 
@@ -458,6 +475,8 @@ enum proxy_status Host::connect_socks4a(const char *target_host, int target_port
 {
   char handshake[8];
   int rBuf;
+
+  trace("--HOST-- Host::connect_socks4a\n");
   target_port = Socket::htons(target_port);
 
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
@@ -487,6 +506,8 @@ enum proxy_status Host::connect_socks4(struct addrinfo *ai_data)
   char handshake[8];
   int rBuf;
 
+  trace("--HOST-- Host::connect_socks4\n");
+
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
     return PROXY_CONNECTION_FAILED;
 
@@ -513,6 +534,8 @@ enum proxy_status Host::connect_socks5(struct addrinfo *ai_data)
 
   char handshake[10];
   int rBuf;
+
+  trace("--HOST-- Host::connect_socks5\n");
 
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
     return PROXY_CONNECTION_FAILED;
@@ -572,6 +595,8 @@ enum proxy_status Host::connect_proxy(const char *target_host, int target_port)
   char port_str[6];
   int ret;
 
+  trace("--HOST-- Host::connect_proxy(%s, %d)\n", target_host, target_port);
+
   snprintf(port_str, 6, "%d", target_port);
   port_str[5] = 0;
 
@@ -628,6 +653,7 @@ enum proxy_status Host::connect_proxy(const char *target_host, int target_port)
 
 boolean Host::connect(const char *hostname, int port)
 {
+  trace("--HOST-- Host::connect(%s, %d)\n", hostname, port);
   assert(this->state == HOST_UNINITIALIZED);
   if(this->state != HOST_UNINITIALIZED)
     return false;
@@ -650,6 +676,7 @@ boolean Host::connect(const char *hostname, int port)
 void Host::set_callbacks(void (*send_callback)(long offset),
  void (*receive_callback)(long offset), boolean (*cancel_callback)(void))
 {
+  trace("--HOST-- Host::set_callbacks\n");
   assert(send_callback == nullptr);
   this->receive_callback = receive_callback;
   this->cancel_callback = cancel_callback;
@@ -662,6 +689,7 @@ boolean Host::is_last_error_fatal()
 
 void Host::set_blocking(boolean blocking)
 {
+  trace("--HOST-- Host::set_blocking(%d)\n", (int)blocking);
   assert(this->state != HOST_UNINITIALIZED);
   if(this->state == HOST_UNINITIALIZED)
     return;
@@ -675,6 +703,8 @@ boolean Host::accept(Host &client_host)
   struct sockaddr *addr;
   socklen_t addrlen;
   int newfd;
+
+  trace("--HOST-- Host::accept\n");
 
   switch(this->af)
   {
@@ -722,6 +752,7 @@ boolean Host::accept(Host &client_host)
 struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
 {
   struct addrinfo *ai;
+  trace("--HOST-- Host::bind_op\n");
 
 #ifdef CONFIG_IPV6
   /* First try to bind to an IPv6 address (if any)
@@ -755,6 +786,7 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
 
 boolean Host::bind(const char *hostname, int port)
 {
+  trace("--HOST-- Host::bind(%s, %d)\n", hostname, port);
   return Host::address_op(hostname, port, nullptr, Host::bind_op);
 }
 

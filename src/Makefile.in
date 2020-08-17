@@ -46,9 +46,9 @@ ${core_obj}/run_stubs.o: ${core_src}/run_stubs.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
 
-${core_obj}/updater.o: ${core_src}/updater.c
-	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
+${core_obj}/updater.o: ${core_src}/updater.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CC} -MD ${core_cxxflags} ${core_flags} -c $< -o $@
 
 ${audio_obj}/%.o: ${audio_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
@@ -366,15 +366,14 @@ core_cflags := ${ZLIB_CFLAGS} ${core_cflags}
 core_ldflags := ${ZLIB_LDFLAGS} ${core_ldflags}
 
 ifeq (${BUILD_NETWORK},1)
-core_cobjs += ${network_obj}/dns.o ${network_obj}/host.o
-core_cobjs += ${network_obj}/manifest.o ${network_obj}/network.o
-core_cobjs += ${network_obj}/sha256.o ${network_obj}/socksyms.o
+core_cobjs += ${network_obj}/sha256.o
 core_cxxobjs += \
-  ${network_obj}/DNS_.o \
-  ${network_obj}/Host_.o \
+  ${network_obj}/DNS.o \
+  ${network_obj}/Host.o \
   ${network_obj}/HTTPHost.o \
+  ${network_obj}/Manifest.o \
+  ${network_obj}/Network.o \
   ${network_obj}/Socket.o
-#  ${network_obj}/Network.o
 
 ifeq (${BUILD_UPDATER},1)
 mzx_objs += ${core_obj}/updater.o

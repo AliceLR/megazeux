@@ -71,7 +71,7 @@ struct HTTPRequestInfo
 /**
  * Class for network connections over the HTTP protocol.
  */
-class UPDATER_LIBSPEC HTTPHost: Host
+class UPDATER_LIBSPEC HTTPHost: public Host
 {
 private:
   ssize_t http_receive_line(char *buffer, size_t len);
@@ -81,6 +81,11 @@ private:
   boolean http_skip_headers();
 
 public:
+  /**
+   * See `Host()`.
+   */
+  HTTPHost(enum host_type type, enum host_family family): Host(type, family) {}
+
   /**
    * Send a HEAD request and return the response header info (if any).
    *

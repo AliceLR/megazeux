@@ -104,6 +104,7 @@ ssize_t HTTPHost::http_receive_line(char *buffer, size_t len)
     // If recv() times out or fails, abort
     if(!this->receive(buffer + pos, 1))
     {
+      trace("--HOST-- HTTPHost::http_receive_line (failed)\n");
       return HOST_RECV_FAILED;
     }
 
@@ -123,6 +124,7 @@ ssize_t HTTPHost::http_receive_line(char *buffer, size_t len)
   if(pos == len)
     return HOST_HTTP_EXCEEDED_BUFFER;
 
+  trace("--HOST-- HTTPHost::http_receive_line: %.*s\n", (int)pos, buffer);
   return pos;
 }
 
@@ -131,6 +133,7 @@ ssize_t HTTPHost::http_send_line(const char *message)
   char line[LINE_BUF_LEN];
   ssize_t len;
 
+  trace("--HOST-- HTTPHost::http_send_line( %s )\n", message);
   snprintf(line, LINE_BUF_LEN, "%s\r\n", message);
   len = (ssize_t)strlen(line);
 
@@ -163,7 +166,8 @@ boolean HTTPHost::http_read_status(HTTPRequestInfo &dest, const char *status,
   res = sscanf(status, "HTTP/1.%1s %3s %31[^\r\n]", ver, code,
    dest.status_message);
 
-  trace("Status: %s (%s, %s, %s)\n", status, ver, code, dest.status_message);
+  trace("--HOST-- HTTPHost::http_read_status: %s (%s, %s, %s)\n",
+   status, ver, code, dest.status_message);
   if(res != 3 || (ver[0] != '0' && ver[0] != '1'))
     return false;
 
@@ -196,15 +200,56 @@ boolean HTTPHost::http_skip_headers()
   }
 }
 
+HTTPHostStatus HTTPHost::head(HTTPRequestInfo &request)
+{
+  char line[LINE_BUF_LEN];
+  ssize_t line_len;
+
+  trace("--HOST-- HTTPHost::head\n");
+
+  snprintf(line, LINE_BUF_LEN, "HEAD %s HTTP/1.1", request.url);
+  line[LINE_BUF_LEN - 1] = 0;
+  if(http_send_line(line) < 0)
+    return HOST_SEND_FAILED;
+
+  snprintf(line, LINE_BUF_LEN, "Host: %s", this->get_host_name());
+  line[LINE_BUF_LEN - 1] = 0;
+  if(http_send_line(line) < 0)
+    return HOST_SEND_FAILED;
+
+  if(http_send_line("") < 0)
+    return HOST_SEND_FAILED;
+
+  line_len = http_receive_line(line, LINE_BUF_LEN);
+  if(line_len < 0)
+  {
+    warn("No response for url '%s': %zd!\n", request.url, line_len);
+    return (HTTPHostStatus)line_len;
+  }
+
+  if(!http_read_status(request, line, line_len))
+  {
+    warn("Invalid status: %s\nFailed for url '%s'\n", line, request.url);
+    return HOST_HTTP_INVALID_STATUS;
+  }
+
+  // TODO should probably read the headers!
+  if(!http_skip_headers())
+    return HOST_HTTP_INVALID_HEADER;
+
+  return HOST_SUCCESS;
+}
+
 HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
 {
   boolean mid_inflate = false, mid_chunk = false, deflated = false;
   unsigned int content_length = 0;
-  const char *host_name = this->get_host_name();
   unsigned long len = 0, pos = 0;
   char line[LINE_BUF_LEN];
   z_stream stream;
   ssize_t line_len;
+
+  trace("--HOST-- HTTPHost::get\n");
 
   enum {
     NONE,
@@ -218,7 +263,7 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
   if(http_send_line(line) < 0)
     return HOST_SEND_FAILED;
 
-  snprintf(line, LINE_BUF_LEN, "Host: %s", host_name);
+  snprintf(line, LINE_BUF_LEN, "Host: %s", this->get_host_name());
 
   line[LINE_BUF_LEN - 1] = 0;
   if(http_send_line(line) < 0)
@@ -228,7 +273,7 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
   if(http_send_line("Accept-Encoding: gzip") < 0)
     return HOST_SEND_FAILED;
 
-  // Black line tells server we are done
+  // Blank line tells server we are done
   if(http_send_line("") < 0)
     return HOST_SEND_FAILED;
 

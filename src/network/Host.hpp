@@ -88,8 +88,8 @@ private:
 
 protected:
   // TODO send_callback
-  void (*receive_callback)(long offset);
-  boolean (*cancel_callback)(void);
+  void (*receive_callback)(long offset) = nullptr;
+  boolean (*cancel_callback)(void) = nullptr;
 
 private:
   boolean create_socket(enum host_type type, enum host_family family);
@@ -110,7 +110,7 @@ public:
   /**
    * Default time to wait for requests before aborting.
    */
-  const int TIMEOUT_DEFAULT = (10 * 1000);
+  static const int TIMEOUT_DEFAULT = (10 * 1000);
 
   /**
    * Initializes the host layer. Must be called before all other host functions.

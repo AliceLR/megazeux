@@ -31,7 +31,8 @@
 
 #include "editor/window.h"
 
-#include "network/manifest.h"
+#include "network/HTTPHost.hpp"
+#include "network/Manifest.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -176,25 +177,25 @@ static int ui_confirm_changes(context *ctx, struct manifest_entry *removed,
   // We don't want the listbox to be too wide
   list_entry_width = MIN(list_entry_width, 60);
 
-  list_entries = cmalloc(entries * sizeof(char *));
+  list_entries = (char **)cmalloc(entries * sizeof(char *));
 
   for(e = removed; e; e = e->next, i++)
   {
-    list_entries[i] = cmalloc(list_entry_width);
+    list_entries[i] = (char *)cmalloc(list_entry_width);
     snprintf(list_entries[i], list_entry_width, "- %s", e->name);
     list_entries[i][list_entry_width - 1] = 0;
   }
 
   for(e = replaced; e; e = e->next, i++)
   {
-    list_entries[i] = cmalloc(list_entry_width);
+    list_entries[i] = (char *)cmalloc(list_entry_width);
     snprintf(list_entries[i], list_entry_width, "* %s", e->name);
     list_entries[i][list_entry_width - 1] = 0;
   }
 
   for(e = added; e; e = e->next, i++)
   {
-    list_entries[i] = cmalloc(list_entry_width);
+    list_entries[i] = (char *)cmalloc(list_entry_width);
     snprintf(list_entries[i], list_entry_width, "+ %s", e->name);
     list_entries[i][list_entry_width - 1] = 0;
   }
@@ -417,7 +418,7 @@ static void delete_hook(const char *file)
   boolean ret;
   FILE *f;
 
-  new_entry = ccalloc(1, sizeof(struct manifest_entry));
+  new_entry = (struct manifest_entry *)ccalloc(1, sizeof(struct manifest_entry));
   if(!new_entry)
     goto err_out;
 
@@ -429,7 +430,7 @@ static void delete_hook(const char *file)
   else
     delete_list = delete_p = new_entry;
 
-  delete_p->name = cmalloc(strlen(file) + 1);
+  delete_p->name = (char *)cmalloc(strlen(file) + 1);
   if(!delete_p->name)
     goto err_delete_p;
   strcpy(delete_p->name, file);
@@ -777,33 +778,24 @@ err_delete_failed:
      "Failed to delete files; check permissions and restart MegaZeux");
 }
 
-static boolean reissue_connection(struct config_info *conf, struct host **h,
- char *host_name, int is_automatic)
+static boolean reissue_connection(HTTPHost &http, char *host_name,
+ boolean is_automatic)
 {
   boolean ret = false;
-
-  assert(h != NULL);
 
   /* We might be passed an existing socket. If we have been, close
    * and destroy the associated host, and create a new one.
    */
-  if(*h)
-    host_destroy(*h);
+  http.close();
 
-  *h = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
-  if(!*h)
-  {
-    if(!is_automatic)
-      error_message(E_UPDATE, 11, "Failed to create TCP client socket.");
-    goto err_out;
-  }
-
+  // If this is an automatic check, make the timeout duration shorter than the
+  // default so it's less annoying.
   if(is_automatic)
-    host_set_timeout_ms(*h, 1000);
+    http.set_timeout_ms(1000);
 
   display_connecting(host_name);
 
-  if(!host_connect(*h, host_name, OUTBOUND_PORT))
+  if(!http.connect(host_name, OUTBOUND_PORT))
   {
     if(!is_automatic)
     {
@@ -814,11 +806,12 @@ static boolean reissue_connection(struct config_info *conf, struct host **h,
     }
   }
   else
+  {
+    trace("--UPDATER-- Successfully connected to %s:%d.\n", host_name, OUTBOUND_PORT);
     ret = true;
+  }
 
   display_clear();
-
-err_out:
   return ret;
 }
 
@@ -858,14 +851,15 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
 
   for(cur_host = 0; (cur_host < conf->update_host_count) && try_next_host; cur_host++)
   {
+    HTTPHost http(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
+    HTTPRequestInfo request;
+    HTTPHostStatus status;
+
     char buffer[LINE_BUF_LEN], *url_base, *value;
     struct manifest_entry *removed, *replaced, *added, *e;
     int i = 0, entries = 0;
     char update_branch[LINE_BUF_LEN];
     const char *version = VERSION;
-    enum host_status status;
-    struct host *h = NULL;
-    struct http_info req;
     unsigned int retries;
     FILE *f;
 
@@ -880,20 +874,22 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
 
     update_host = conf->update_hosts[cur_host];
 
-    if(!reissue_connection(conf, &h, update_host, is_automatic))
+    if(!reissue_connection(http, update_host, is_automatic))
       goto err_host_destroy;
 
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
       // Grab the file containing the names of the current Stable and Unstable
-      strcpy(req.url, "/" UPDATES_TXT);
-      strcpy(req.expected_type, "text/plain");
+      strcpy(request.url, "/" UPDATES_TXT);
+      strcpy(request.expected_type, "text/plain");
 
-      status = host_recv_file(h, &req, f);
+      status = http.get(request, f);
       rewind(f);
 
       if(status == HOST_SUCCESS)
         break;
+
+      trace("--UPDATER-- Failed to fetch " UPDATES_TXT ".\n");
 
       // Stop early on redirect and client error codes
       if(-status == HOST_HTTP_REDIRECT || -status == HOST_HTTP_CLIENT_ERROR)
@@ -902,7 +898,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         break;
       }
 
-      if(!reissue_connection(conf, &h, update_host, is_automatic))
+      if(!reissue_connection(http, update_host, is_automatic))
         goto err_host_destroy;
     }
 
@@ -911,13 +907,14 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       if(!is_automatic)
       {
         snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
-         UPDATES_TXT "\" (%d/%d).\n", req.status_code, status);
+         UPDATES_TXT "\" (%d/%d).\n", request.status_code, status);
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
         error_message(E_UPDATE, 16, widget_buf);
       }
       goto err_host_destroy;
     }
 
+    trace("--UPDATER-- Checking " UPDATES_TXT " for updates.\n");
     snprintf(update_branch, LINE_BUF_LEN, "Current-%.240s",
      conf->update_branch_pin);
 
@@ -994,7 +991,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
      * be composed of a user-selected version and a static platform-archicture
      * name.
      */
-    url_base = cmalloc(LINE_BUF_LEN);
+    url_base = (char *)cmalloc(LINE_BUF_LEN);
     snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, version);
     debug("Update base URL: %s\n", url_base);
 
@@ -1015,7 +1012,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     {
       display_computing_manifest();
 
-      status = manifest_get_updates(h, url_base, &removed, &replaced, &added);
+      status = manifest_get_updates(http, url_base, &removed, &replaced, &added);
 
       display_clear();
 
@@ -1029,7 +1026,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         goto err_roll_back_manifest;
       }
 
-      if(!reissue_connection(conf, &h, update_host, 0))
+      if(!reissue_connection(http, update_host, false))
         goto err_roll_back_manifest;
     }
 
@@ -1063,7 +1060,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       if(conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
         goto err_free_update_manifests;
 
-      host_set_timeout_ms(h, HOST_TIMEOUT_DEFAULT);
+      http.set_timeout_ms(Host::TIMEOUT_DEFAULT);
       is_automatic = 0;
     }
 
@@ -1100,7 +1097,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       replaced = added;
 
     cancel_update = false;
-    host_set_callbacks(h, NULL, recv_cb, cancel_cb);
+    http.set_callbacks(NULL, recv_cb, cancel_cb);
 
     i = 1;
     for(e = replaced; e; e = e->next, i++)
@@ -1115,7 +1112,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         final_size = (long)e->size;
         display_download_init(e->name, i, entries);
 
-        m_ret = manifest_entry_download_replace(h, url_base, e, delete_hook);
+        m_ret = manifest_entry_download_replace(http, url_base, e, delete_hook);
 
         display_clear();
 
@@ -1128,9 +1125,9 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
           goto err_free_delete_list;
         }
 
-        if(!reissue_connection(conf, &h, update_host, 0))
+        if(!reissue_connection(http, update_host, 0))
           goto err_free_delete_list;
-        host_set_callbacks(h, NULL, recv_cb, cancel_cb);
+        http.set_callbacks(NULL, recv_cb, cancel_cb);
       }
 
       if(retries == MAX_RETRIES)
@@ -1159,7 +1156,7 @@ err_roll_back_manifest:
 err_free_url_base:
     free(url_base);
 err_host_destroy:
-    host_destroy(h);
+    http.close();
 
     pop_context();
   } //end host for loop
