@@ -27,6 +27,7 @@
 #include "../platform.h"
 
 #include <errno.h>
+#include <stdio.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -104,9 +105,9 @@ public:
     freeaddrinfo(res);
   });
 
-  static const char *getaddrinfo_error(int errcode) UNIX_MAYBE_INLINE
+  static void getaddrinfo_perror(const char *message, int errcode) UNIX_MAYBE_INLINE
   ({
-    return gai_strerror(errcode);
+    warn("%s (code %d): %s\n", message, errcode, gai_strerror(errcode));
   });
 
   static void perror(const char *message) UNIX_INLINE

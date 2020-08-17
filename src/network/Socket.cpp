@@ -88,7 +88,7 @@ static void __freeaddrinfo(struct addrinfo *res)
   }
 }
 
-static const char *__gai_strerror(int errcode)
+static inline const char *__gai_strerror(int errcode)
 {
   switch(errcode)
   {
@@ -114,9 +114,9 @@ void Socket::freeaddrinfo(struct addrinfo *res)
   return __freeaddrinfo(res);
 }
 
-const char *Socket::getaddrinfo_error(int errcode)
+void Socket::getaddrinfo_perror(const char *message, int errcode)
 {
-  return __gai_strerror(errcode);
+  warn("%s (code %d): %s\n", message, errcode, __gai_strerror(errcode));
 }
 #endif
 
@@ -174,7 +174,6 @@ static struct
   void (WSAAPI *freeaddrinfo)(struct addrinfo *);
   int (WSAAPI *getaddrinfo)(const char *, const char *,
    const struct addrinfo *, struct addrinfo **);
-  const char *(*_gai_strerrorA)(int ecode);
 
   void *handle;
 }
@@ -206,7 +205,6 @@ static const struct dso_syms_map socksyms_map[] =
 
   { "freeaddrinfo",          (fn_ptr *)&socksyms.freeaddrinfo },
   { "getaddrinfo",           (fn_ptr *)&socksyms.getaddrinfo },
-  { "gai_strerrorA",         (fn_ptr *)&socksyms._gai_strerrorA },
 
   { NULL, NULL }
 };
@@ -309,9 +307,13 @@ boolean Socket::is_last_error_fatal(void)
   return Socket::is_last_errno_fatal();
 }
 
-void Socket::perror(const char *message)
+/**
+ * It turns out perror is completely useless for Winsock error messages, so
+ * as a workaround, use Win32 functions instead (these should be safe back to
+ * Windows 95).
+ */
+void winsock_perror(const char *message, int code)
 {
-  int code = socksyms.WSAGetLastError();
   LPSTR err_message = NULL;
 
   FormatMessage(
@@ -324,8 +326,14 @@ void Socket::perror(const char *message)
     NULL
   );
 
-  fprintf(stderr, "%s (code %d): %s", message, code, err_message);
-  fflush(stderr);
+  warn("%s (code %d): %s", message, code, err_message);
+  LocalFree(err_message);
+}
+
+void Socket::perror(const char *message)
+{
+  int code = socksyms.WSAGetLastError();
+  winsock_perror(message, code);
 }
 
 int Socket::accept(int sockfd,
@@ -377,11 +385,14 @@ int Socket::getaddrinfo(const char *node, const char *service,
   return __getaddrinfo(node, service, hints, res);
 }
 
-const char *Socket::getaddrinfo_error(int errcode)
+/**
+ * A Win32 version of gai_strerror is available but apparently uses a 1K
+ * static buffer for the error message, making it non-thread safe.
+ * Fortunately, the workaround for this is the same as for perror.
+ */
+void Socket::getaddrinfo_perror(const char *message, int errcode)
 {
-  if(socksyms._gai_strerrorA)
-    return socksyms._gai_strerrorA(errcode);
-  return __gai_strerror(errcode);
+  winsock_perror(message, errcode);
 }
 
 int Socket::listen(int sockfd, int backlog)

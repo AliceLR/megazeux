@@ -435,7 +435,8 @@ boolean Host::address_op(const char *hostname, int port, void *priv,
   ret = DNS::lookup(hostname, port_str, &hints, &ais, this->timeout_ms);
   if(ret != 0)
   {
-    warn("Failed to look up '%s' (%s)\n", hostname, Socket::getaddrinfo_error(ret));
+    Socket::getaddrinfo_perror("address_op", ret);
+    warn("Failed to look up '%s'\n", hostname);
     return false;
   }
 
