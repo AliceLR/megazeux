@@ -464,7 +464,7 @@ boolean Host::address_op(const char *hostname, int port, void *priv,
 boolean Host::connect_direct(const char *hostname, int port)
 {
   trace("--HOST-- Host::connect_direct(%s, %d)\n", hostname, port);
-  return this->address_op(hostname, port, nullptr, Host::create_connection_op);
+  return this->address_op(hostname, port, nullptr, &Host::create_connection_op);
 }
 
 enum proxy_status Host::connect_socks4a(const char *target_host, int target_port)
@@ -783,7 +783,7 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
 boolean Host::bind(const char *hostname, int port)
 {
   trace("--HOST-- Host::bind(%s, %d)\n", hostname, port);
-  return Host::address_op(hostname, port, nullptr, Host::bind_op);
+  return Host::address_op(hostname, port, nullptr, &Host::bind_op);
 }
 
 boolean Host::listen()
@@ -895,7 +895,7 @@ boolean Host::receive_from(char *buffer, size_t len,
 {
   struct buf_priv_data buf_priv = { buffer, len, true };
   trace("--HOST-- Host::receive_from(%s, %d)\n", hostname, port);
-  this->address_op(hostname, port, &buf_priv, Host::receive_from_op);
+  this->address_op(hostname, port, &buf_priv, &Host::receive_from_op);
   return buf_priv.ret;
 }
 
@@ -904,7 +904,7 @@ boolean Host::send_to(const char *buffer, size_t len,
 {
   struct buf_priv_data buf_priv = { (char *)buffer, len, true };
   trace("--HOST-- Host::send_to(%s, %d)\n", hostname, port);
-  this->address_op(hostname, port, &buf_priv, Host::send_to_op);
+  this->address_op(hostname, port, &buf_priv, &Host::send_to_op);
   return buf_priv.ret;
 }
 
