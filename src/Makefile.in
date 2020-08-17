@@ -369,7 +369,11 @@ ifeq (${BUILD_NETWORK},1)
 core_cobjs += ${network_obj}/dns.o ${network_obj}/host.o
 core_cobjs += ${network_obj}/manifest.o ${network_obj}/network.o
 core_cobjs += ${network_obj}/sha256.o ${network_obj}/socksyms.o
-core_cxxobjs += ${network_obj}/Socket.o
+core_cxxobjs += \
+  ${network_obj}/DNS_.o \
+  ${network_obj}/Host_.o \
+  ${network_obj}/Socket.o
+#  ${network_obj}/Network.o
 
 ifeq (${BUILD_UPDATER},1)
 mzx_objs += ${core_obj}/updater.o

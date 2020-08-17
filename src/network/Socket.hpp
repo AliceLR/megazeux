@@ -109,98 +109,104 @@ public:
     return gai_strerror(errcode);
   });
 
-  static inline void perror(const char *message) UNIX_INLINE
+  static void perror(const char *message) UNIX_INLINE
   ({
     perror(message);
   });
 
-  static inline int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) UNIX_INLINE
+  static int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) UNIX_INLINE
   ({
     return accept(sockfd, addr, addrlen);
   });
 
-  static inline int bind(int sockfd, const struct sockaddr *addr,
+  static int bind(int sockfd, const struct sockaddr *addr,
    socklen_t addrlen) UNIX_INLINE
   ({
     return bind(sockfd, addr, addrlen);
   });
 
-  static inline void close(int fd) UNIX_INLINE
+  static void close(int fd) UNIX_INLINE
   ({
     close(fd);
   });
 
-  static inline int connect(int sockfd, const struct sockaddr *serv_addr,
+  static int connect(int sockfd, const struct sockaddr *serv_addr,
    socklen_t addrlen) UNIX_INLINE
   ({
     return connect(sockfd, serv_addr, addrlen);
   });
 
-  static inline struct hostent *gethostbyname(const char *name) UNIX_INLINE
+  static struct hostent *gethostbyname(const char *name) UNIX_INLINE
   ({
     return gethostbyname(name);
   });
 
-  static inline uint16_t htons(uint16_t hostshort) UNIX_INLINE
+  static uint16_t htons(uint16_t hostshort) UNIX_INLINE
   ({
     return htons(hostshort);
   });
 
-  static inline int listen(int sockfd, int backlog) UNIX_INLINE
+  static int listen(int sockfd, int backlog) UNIX_INLINE
   ({
     return listen(sockfd, backlog);
   });
 
-  static inline int select(int nfds, fd_set *readfds, fd_set *writefds,
+  static int select(int nfds, fd_set *readfds, fd_set *writefds,
    fd_set *exceptfds, struct timeval *timeout) UNIX_INLINE
   ({
     return select(nfds, readfds, writefds, exceptfds, timeout);
   });
 
-  static inline ssize_t send(int sockfd, const void *buf, size_t len, int flags) UNIX_INLINE
+  static ssize_t send(int sockfd, const void *buf, size_t len, int flags) UNIX_INLINE
   ({
     return send(sockfd, (const char *)buf, len, flags);
   });
 
-  static inline ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
+  static ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
    const struct sockaddr *to, socklen_t tolen) UNIX_INLINE
   ({
     return sendto(sockfd, (const char *)buf, len, flags, to, tolen);
   });
 
-  static inline int setsockopt(int sockfd, int level, int optname,
+  static int setsockopt(int sockfd, int level, int optname,
    const void *optval, socklen_t optlen) UNIX_INLINE
   ({
     return setsockopt(sockfd, level, optname, (const char *)optval, optlen);
   });
 
-  static inline int socket(int af, int type, int protocol) UNIX_INLINE
+  static int socket(int af, int type, int protocol) UNIX_INLINE
   ({
     return socket(af, type, protocol);
   });
 
-  static inline ssize_t recv(int sockfd, void *buf, size_t len, int flags) UNIX_INLINE
+  static ssize_t recv(int sockfd, void *buf, size_t len, int flags) UNIX_INLINE
   ({
     return recv(sockfd, (char *)buf, len, flags);
   });
 
-  static inline ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+  static ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
    struct sockaddr *from, socklen_t *fromlen) UNIX_INLINE
    ({
      return recvfrom(sockfd, (char *)buf, len, flags, from, fromlen);
    });
+
+#ifdef __WIN32__
+  static int __WSAFDIsSet(int sockfd, fd_set *set);
+#undef  FD_ISSET
+#define FD_ISSET(fd,set) Socket::__WSAFDIsSet((int)fd, (fd_set *)(set))
+#endif
 
    /**
     * These functions don't correspond to POSIX/Berkeley socket functions but
     * are provided for convenience.
     */
 
-  static inline boolean is_last_error_fatal() UNIX_INLINE
+  static boolean is_last_error_fatal() UNIX_INLINE
   ({
     return is_last_errno_fatal();
   });
 
-  static inline void set_blocking(int sockfd, boolean blocking) UNIX_INLINE
+  static void set_blocking(int sockfd, boolean blocking) UNIX_INLINE
   ({
     int flags = fcntl(sockfd, F_GETFL);
 
@@ -213,7 +219,7 @@ public:
   });
 
 private:
-  static inline boolean is_last_errno_fatal()
+  static boolean is_last_errno_fatal()
   {
     switch(errno)
     {
