@@ -372,8 +372,8 @@ core_cxxobjs += \
   ${network_obj}/Host.o \
   ${network_obj}/HTTPHost.o \
   ${network_obj}/Manifest.o \
-  ${network_obj}/Network.o \
-  ${network_obj}/Socket.o
+  ${network_obj}/Socket.o \
+  ${network_obj}/network.o
 
 ifeq (${BUILD_UPDATER},1)
 mzx_objs += ${core_obj}/updater.o
