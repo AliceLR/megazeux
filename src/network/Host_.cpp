@@ -338,7 +338,7 @@ boolean Host::create_connection(struct addrinfo *ai, enum host_family family)
   FD_SET(this->sockfd, &mask);
   reset_timeout(&tv, this->timeout_ms);
 
-  res = Socket::select(this->sockfd + 1, NULL, &mask, NULL, &tv);
+  res = Socket::select(this->sockfd + 1, nullptr, &mask, nullptr, &tv);
   if(res != 1)
   {
     if(res == 0)
@@ -642,7 +642,7 @@ boolean Host::connect(const char *hostname, int port)
 void Host::set_callbacks(void (*send_callback)(long offset),
  void (*receive_callback)(long offset), boolean (*cancel_callback)(void))
 {
-  assert(send_callback == NULL);
+  assert(send_callback == nullptr);
   this->receive_callback = receive_callback;
   this->cancel_callback = cancel_callback;
 }
@@ -747,7 +747,7 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
 
 boolean Host::bind(const char *hostname, int port)
 {
-  return Host::address_op(hostname, port, NULL, Host::bind_op);
+  return Host::address_op(hostname, port, nullptr, Host::bind_op);
 }
 
 boolean Host::listen()
@@ -888,7 +888,7 @@ int Host::poll(Uint32 timeout)
   FD_SET(this->sockfd, &mask);
 
   reset_timeout(&tv, timeout);
-  ret = Socket::select(this->sockfd + 1, &mask, NULL, NULL, &tv);
+  ret = Socket::select(this->sockfd + 1, &mask, nullptr, nullptr, &tv);
   if(ret < 0)
     return -1;
 
