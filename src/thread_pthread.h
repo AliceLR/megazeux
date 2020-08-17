@@ -85,7 +85,8 @@ static inline boolean platform_cond_timedwait(platform_cond *cond,
   struct timespec timeout;
 
   clock_gettime(CLOCK_REALTIME, &timeout);
-  timeout.tv_nsec += timeout_ms * 1000000;
+  timeout.tv_sec  += (timeout_ms / 1000);
+  timeout.tv_nsec += (timeout_ms % 1000) * 1000000;
 
   if(pthread_cond_timedwait(cond, mutex, &timeout))
     return false;
