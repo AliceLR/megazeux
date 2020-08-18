@@ -248,8 +248,7 @@ static boolean socket_load_syms(void)
     {
       // Skip these NT 5.1 WS2 extensions; we can fall back
       if((strcmp(socksyms_map[i].name, "freeaddrinfo") == 0) ||
-         (strcmp(socksyms_map[i].name, "getaddrinfo") == 0) ||
-         (strcmp(socksyms_map[i].name, "gai_strerrorA") == 0))
+         (strcmp(socksyms_map[i].name, "getaddrinfo") == 0))
         continue;
 
       // However all other Winsock symbols must be loaded, or we fail hard
