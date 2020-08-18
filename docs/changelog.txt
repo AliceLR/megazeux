@@ -16,6 +16,8 @@ USERS
 + Fixed a bug where the GLSL renderer could attempt to load the
   framebuffer symbols from a driver that doesn't support them
   when resizing the window.
++ Fixed a bug where checkres wouldn't correctly detect
+  "LOAD_ROBOT#" when used to load to a specific robot.
 
 DEVELOPERS
 
