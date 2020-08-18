@@ -687,9 +687,6 @@ void Host::set_blocking(boolean blocking)
 {
   trace("--HOST-- Host::set_blocking(%d)\n", (int)blocking);
   assert(this->state != HOST_UNINITIALIZED);
-  if(this->state == HOST_UNINITIALIZED)
-    return;
-
   Socket::set_blocking(this->sockfd, blocking);
 }
 
@@ -700,7 +697,7 @@ boolean Host::accept(Host &client_host)
   socklen_t addrlen;
   int newfd;
 
-  trace("--HOST-- Host::accept\n");
+  assert(this->state == HOST_BOUND);
 
   switch(this->af)
   {
@@ -719,6 +716,7 @@ boolean Host::accept(Host &client_host)
   newfd = Socket::accept(this->sockfd, addr, &addrlen);
   if(newfd >= 0)
   {
+    trace("--HOST-- Host::accept: accepting new connection!\n");
     assert(addr->sa_family == this->af);
 
     // Make sure any open connection on the provided client host is released.
@@ -750,6 +748,9 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
   struct addrinfo *ai;
   trace("--HOST-- Host::bind_op\n");
 
+  if(!this->create_socket(this->type, this->preferred_family))
+    return nullptr;
+
 #ifdef CONFIG_IPV6
   /* First try to bind to an IPv6 address (if any)
    */
@@ -758,8 +759,10 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
     if(ai->ai_family == AF_INET6)
     {
       if(Socket::bind(this->sockfd, ai->ai_addr, ai->ai_addrlen) >= 0)
+      {
+        this->state = HOST_BOUND;
         return ai;
-
+      }
       Socket::perror("bind");
     }
   }
@@ -772,17 +775,21 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
     if(ai->ai_family == AF_INET)
     {
       if(Socket::bind(this->sockfd, ai->ai_addr, ai->ai_addrlen) >= 0)
+      {
+        this->state = HOST_BOUND;
         return ai;
-
+      }
       Socket::perror("bind");
     }
   }
+  this->close();
   return nullptr;
 }
 
 boolean Host::bind(const char *hostname, int port)
 {
   trace("--HOST-- Host::bind(%s, %d)\n", hostname, port);
+  assert(this->state == HOST_UNINITIALIZED);
   return Host::address_op(hostname, port, nullptr, &Host::bind_op);
 }
 
