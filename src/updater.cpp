@@ -783,8 +783,9 @@ static boolean reissue_connection(HTTPHost &http, char *host_name,
 {
   boolean ret = false;
 
-  /* We might be passed an existing socket. If we have been, close
-   * and destroy the associated host, and create a new one.
+  /**
+   * The provided host may have an existing connection; in this case, close the
+   * connection so a new one can be opened.
    */
   http.close();
 
@@ -892,7 +893,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       trace("--UPDATER-- Failed to fetch " UPDATES_TXT ".\n");
 
       // Stop early on redirect and client error codes
-      if(-status == HOST_HTTP_REDIRECT || -status == HOST_HTTP_CLIENT_ERROR)
+      if(status == HOST_HTTP_REDIRECT || status == HOST_HTTP_CLIENT_ERROR)
       {
         retries = MAX_RETRIES;
         break;
@@ -1020,7 +1021,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         break;
 
       // Unsupported platform.
-      if(-status == HOST_HTTP_REDIRECT || -status == HOST_HTTP_CLIENT_ERROR)
+      if(status == HOST_HTTP_REDIRECT || status == HOST_HTTP_CLIENT_ERROR)
       {
         error_message(E_UPDATE, 19, "No updates available for this platform.");
         goto err_roll_back_manifest;
