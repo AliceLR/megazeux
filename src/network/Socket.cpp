@@ -25,7 +25,7 @@
 #include <assert.h>
 #include <inttypes.h>
 
-#ifdef NO_GETADDRINFO
+#if defined(__WIN32__) || defined(__amigaos__)
 
 static int __getaddrinfo(const char *node, const char *service,
  const struct addrinfo *hints, struct addrinfo **res)
@@ -100,7 +100,7 @@ static inline const char *__gai_strerror(int errcode)
       return "Unknown error.";
   }
 }
-#endif /* NO_GETADDRINFO */
+#endif // __WIN32__ || __amigaos__
 
 #ifdef __amigaos__
 int Socket::getaddrinfo(const char *node, const char *service,

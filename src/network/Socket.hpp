@@ -35,7 +35,7 @@
 #endif
 
 #ifdef __WIN32__
-#define NO_GETADDRINFO
+// Winsock symbols are dynamically loaded, so disable the inline versions.
 #define UNIX_INLINE(x)
 #ifndef __WIN64__
 // Windows XP WinSock2 needed for getaddrinfo() API
@@ -45,7 +45,6 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else // !__WIN32__
-#define UNIX_INLINE(x) x
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -59,7 +58,8 @@
 
 #if defined(__amigaos__)
 
-#define NO_GETADDRINFO
+// Amiga doesn't have getaddrinfo and needs to use a fallback implementation.
+#define GETADDRINFO_MAYBE_INLINE(x)
 #define EAI_NONAME -2
 #define EAI_FAMILY -6
 
@@ -76,10 +76,12 @@ struct addrinfo
 };
 #endif
 
-#ifndef NO_GETADDRINFO
-#define UNIX_MAYBE_INLINE(x) UNIX_INLINE(x)
-#else
-#define UNIX_MAYBE_INLINE(x)
+#ifndef UNIX_INLINE
+#define UNIX_INLINE(x) x
+#endif
+
+#ifndef GETADDRINFO_MAYBE_INLINE
+#define GETADDRINFO_MAYBE_INLINE(x) UNIX_INLINE(x)
 #endif
 
 /**
@@ -96,17 +98,17 @@ public:
   static void exit(void) UNIX_INLINE({});
 
   static int getaddrinfo(const char *node, const char *service,
-   const struct addrinfo *hints, struct addrinfo **res) UNIX_MAYBE_INLINE
+   const struct addrinfo *hints, struct addrinfo **res) GETADDRINFO_MAYBE_INLINE
   ({
     return ::getaddrinfo(node, service, hints, res);
   });
 
-  static void freeaddrinfo(struct addrinfo *res) UNIX_MAYBE_INLINE
+  static void freeaddrinfo(struct addrinfo *res) GETADDRINFO_MAYBE_INLINE
   ({
     ::freeaddrinfo(res);
   });
 
-  static void getaddrinfo_perror(const char *message, int errcode) UNIX_MAYBE_INLINE
+  static void getaddrinfo_perror(const char *message, int errcode) GETADDRINFO_MAYBE_INLINE
   ({
     warn("%s (code %d): %s\n", message, errcode, ::gai_strerror(errcode));
   });
