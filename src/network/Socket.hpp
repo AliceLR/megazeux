@@ -51,9 +51,11 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <arpa/inet.h>
-#include <net/if.h>
 #include <netdb.h>
 #include <fcntl.h>
+// Not clear what the intent of including this was but it's not present for PSP.
+// Commenting out for now until it's needed (if at all).
+//#include <net/if.h>
 #endif // __WIN32__
 
 #if defined(__amigaos__)
@@ -61,6 +63,7 @@
 // Amiga doesn't have getaddrinfo and needs to use a fallback implementation.
 #define GETADDRINFO_MAYBE_INLINE(x)
 #define EAI_NONAME -2
+#define EAI_AGAIN  -3
 #define EAI_FAMILY -6
 
 struct addrinfo

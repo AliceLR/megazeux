@@ -33,6 +33,7 @@ enum host_family
   HOST_FAMILY_IPV4,
   /** Prefer IPv6 address resolution for hostnames */
   HOST_FAMILY_IPV6,
+  NUM_HOST_FAMILIES
 };
 
 enum host_type
@@ -41,6 +42,7 @@ enum host_type
   HOST_TYPE_TCP,
   /** Use UDP protocol for sockets */
   HOST_TYPE_UDP,
+  NUM_HOST_TYPES
 };
 
 enum proxy_status
@@ -71,6 +73,7 @@ private:
     HOST_INITIALIZED,   // Has a socket, but no connection.
     HOST_CONNECTED,     // Has a connection.
     HOST_BOUND,         // Is bound to a port.
+    NUM_HOST_STATES
   };
   enum host_state state;
   enum host_type type;
@@ -79,8 +82,8 @@ private:
   int socktype;
   int proto;
 
-  const char *name = nullptr;
-  const char *endpoint = nullptr;
+  const char *name;
+  const char *endpoint;
   boolean proxied;
   int af;
   int sockfd;
@@ -88,8 +91,8 @@ private:
 
 protected:
   // TODO send_callback
-  void (*receive_callback)(long offset) = nullptr;
-  boolean (*cancel_callback)(void) = nullptr;
+  void (*receive_callback)(long offset);
+  boolean (*cancel_callback)(void);
 
 private:
   boolean create_socket(enum host_type type, enum host_family family);

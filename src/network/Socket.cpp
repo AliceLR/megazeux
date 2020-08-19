@@ -94,6 +94,8 @@ static inline const char *__gai_strerror(int errcode)
   {
     case EAI_NONAME:
       return "Node or service is not known.";
+    case EAI_AGAIN:
+      return "Temporary failure in name resolution";
     case EAI_FAMILY:
       return "Address family is not supported.";
     default:

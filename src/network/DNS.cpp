@@ -42,6 +42,7 @@ enum dns_state
   STATE_LOOKUP,
   STATE_SUCCESS,
   STATE_ABORT,
+  NUM_DNS_STATES
 };
 
 struct dns_data

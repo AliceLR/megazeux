@@ -111,6 +111,11 @@ Host::Host(enum host_type type, enum host_family family)
   this->preferred_af = host_family_to_af(family);
   this->socktype = host_type_to_socktype(type);
   this->proto = host_type_to_proto(type);
+
+  this->name = nullptr;
+  this->endpoint = nullptr;
+  this->receive_callback = nullptr;
+  this->cancel_callback = nullptr;
 }
 
 Host::~Host()
