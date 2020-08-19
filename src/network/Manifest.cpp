@@ -212,8 +212,8 @@ boolean manifest_check_remote_exists(HTTPHost &http, const char *basedir)
   ret = http.head(request);
   if(ret != HOST_SUCCESS)
   {
-    warn("Check for remote " MANIFEST_TXT " failed (code %d, error %d)\n",
-     request.status_code, ret);
+    warn("Check for remote " MANIFEST_TXT " failed (code %d; error: %s)\n",
+     request.status_code, HTTPHost::get_error_string(ret));
     return false;
   }
   trace("Check for remote " MANIFEST_TXT "successful, code %d\n",
@@ -249,8 +249,8 @@ static HTTPHostStatus manifest_get_remote(HTTPHost &http,
   ret = http.get(request, f);
   if(ret != HOST_SUCCESS)
   {
-    warn("Processing " MANIFEST_TXT " failed (code %d, error %d)\n",
-     request.status_code, ret);
+    warn("Processing " MANIFEST_TXT " failed (code %d; error: %s)\n",
+     request.status_code, HTTPHost::get_error_string(ret));
     goto err_fclose;
   }
 
@@ -484,8 +484,8 @@ boolean manifest_entry_download_replace(HTTPHost &http, const char *basedir,
   ret = http.get(request, f);
   if(ret != HOST_SUCCESS)
   {
-    warn("File '%s' could not be downloaded (code %d, error %d)\n", e->name,
-     request.status_code, ret);
+    warn("File '%s' could not be downloaded (code %d; error: %s)\n", e->name,
+     request.status_code, HTTPHost::get_error_string(ret));
     goto err_close;
   }
 

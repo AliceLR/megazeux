@@ -87,6 +87,15 @@ public:
   HTTPHost(enum host_type type, enum host_family family): Host(type, family) {}
 
   /**
+   * Get a description string for an `HTTPHostStatus` value.
+   *
+   * @param status        `HTTPHostStatus` value to get a description for.
+   *
+   * @return description of the provided status.
+   */
+  static const char *get_error_string(HTTPHostStatus status);
+
+  /**
    * Send a HEAD request and return the response header info (if any).
    *
    * @param request       HTTP request to send; returns response data.

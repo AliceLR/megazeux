@@ -97,6 +97,61 @@ static int zlib_forge_gzip_header(char *buffer)
 
 #endif
 
+const char *HTTPHost::get_error_string(HTTPHostStatus status)
+{
+  switch(status)
+  {
+    case HOST_SUCCESS:
+      return "Operation completed successfully.";
+    case HOST_INIT_FAILED:
+      return "FIXME not used";
+    case HOST_FREAD_FAILED:
+      return "Failed to fread file.";
+    case HOST_FWRITE_FAILED:
+      return "Failed to fwrite file.";
+    case HOST_SEND_FAILED:
+      return "Connection issue occurred (send() failed).";
+    case HOST_RECV_FAILED:
+      return "Connection issue occurred (receive() failed).";
+    case HOST_HTTP_EXCEEDED_BUFFER:
+      return "Operation would exceed the provided buffer"
+       " (INTERNAL ERROR: REPORT THIS!)";
+    case HOST_HTTP_INFO:
+      return "Unexpected response of type 1xx (informational).";
+    case HOST_HTTP_REDIRECT:
+      return "Unexpected response of type 3xx (redirect).";
+    case HOST_HTTP_CLIENT_ERROR:
+      return "Unexpected response of type 4xx (client error).";
+    case HOST_HTTP_SERVER_ERROR:
+      return "Unexpected response of type 5xx (server error).";
+    case HOST_HTTP_INVALID_STATUS:
+      return "Response status is invalid.";
+    case HOST_HTTP_INVALID_HEADER:
+      return "Response header is invalid.";
+    case HOST_HTTP_INVALID_CONTENT_LENGTH:
+      return "Response 'Content-Length' value is invalid.";
+    case HOST_HTTP_INVALID_TRANSFER_ENCODING:
+      return "Response 'Transfer-Encoding' value is invalid"
+       " (only 'chunked' is accepted).";
+    case HOST_HTTP_INVALID_CONTENT_TYPE:
+      return "Response 'Content-Type' does not match the expected value(s).";
+    case HOST_HTTP_INVALID_CONTENT_ENCODING:
+      return "Response 'Content-Encoding' value is invalid"
+       " (only 'gzip' is accepted).";
+    case HOST_HTTP_INVALID_CHUNK_LENGTH:
+      return "Response chunk length is invalid.";
+    case HOST_ZLIB_INVALID_DATA:
+      return "Response gzip header is missing.";
+    case HOST_ZLIB_INVALID_GZIP_HEADER:
+      return "Response gzip header is invalid.";
+    case HOST_ZLIB_DEFLATE_FAILED:
+      return "Failed to compress response data.";
+    case HOST_ZLIB_INFLATE_FAILED:
+      return "Failed to decompress response data.";
+  }
+  return "invalid status code!";
+}
+
 ssize_t HTTPHost::http_receive_line(char *buffer, size_t len)
 {
   size_t pos;

@@ -908,7 +908,8 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       if(!is_automatic)
       {
         snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
-         UPDATES_TXT "\" (%d/%d).\n", request.status_code, status);
+         UPDATES_TXT "\" (%d/%s).\n", request.status_code,
+         HTTPHost::get_error_string(status));
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
         error_message(E_UPDATE, 16, widget_buf);
       }
