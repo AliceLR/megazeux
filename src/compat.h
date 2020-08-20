@@ -225,6 +225,8 @@ static inline int check_chdir(const char *path)
 
 #include <stddef.h>
 
+CORE_LIBSPEC void check_alloc_init(void);
+
 #define ccalloc(nmemb, size) check_calloc(nmemb, size, __FILE__, __LINE__)
 CORE_LIBSPEC void *check_calloc(size_t nmemb, size_t size, const char *file,
  int line);
@@ -240,6 +242,8 @@ CORE_LIBSPEC void *check_realloc(void *ptr, size_t size, const char *file,
 #else /* CONFIG_CHECK_ALLOC */
 
 #include <stdlib.h>
+
+static inline void check_alloc_init(void) {}
 
 static inline void *ccalloc(size_t nmemb, size_t size)
 {

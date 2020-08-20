@@ -40,6 +40,7 @@ __M_BEGIN_DECLS
 typedef cond_t platform_cond;
 typedef mutex_t platform_mutex;
 typedef lwp_t platform_thread;
+typedef lwp_t platform_thread_id;
 typedef THREAD_RES (*platform_thread_fn)(void *);
 
 static inline void platform_mutex_init(platform_mutex *mutex)
@@ -125,6 +126,17 @@ static inline int platform_thread_create(platform_thread *thread,
 static inline void platform_thread_join(platform_thread *thread)
 {
   LWP_JoinThread(*thread, NULL);
+}
+
+static inline platform_thread_id platform_get_thread_id(void)
+{
+  return LWP_GetSelf();
+}
+
+static inline boolean platform_is_same_thread(platform_thread_id a,
+ platform_thread_id b)
+{
+  return a == b;
 }
 
 static inline void platform_yield(void)

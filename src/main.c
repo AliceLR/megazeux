@@ -164,6 +164,8 @@ __libspec int main(int argc, char *argv[])
   if(!platform_init())
     goto err_out;
 
+  check_alloc_init();
+
   // We need to store the current working directory so it's
   // always possible to get back to it..
   getcwd(startup_dir, MAX_PATH);
