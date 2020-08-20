@@ -26,6 +26,7 @@ __M_BEGIN_DECLS
 
 #include <SDL_thread.h>
 #include <SDL_version.h>
+#include "compat_sdl.h"
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
 typedef int(*SDL_ThreadFunction)(void *);
