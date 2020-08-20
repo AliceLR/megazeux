@@ -36,6 +36,7 @@
 
 #include "const.h" // for MAX_PATH
 #include "error.h"
+#include "platform.h"
 #include "io/path.h"
 
 struct mzx_resource
@@ -93,14 +94,28 @@ static struct mzx_resource mzx_res[] =
 
 #ifdef CONFIG_CHECK_ALLOC
 
+static platform_thread_id main_thread_id;
+
+void check_alloc_init(void)
+{
+  main_thread_id = platform_get_thread_id();
+}
+
 static void out_of_memory_check(void *p, const char *file, int line)
 {
   char msgbuf[128];
   if(!p)
   {
-    snprintf(msgbuf, sizeof(msgbuf), "Out of memory in %s:%d", file, line);
-    msgbuf[sizeof(msgbuf)-1] = '\0';
-    error(msgbuf, ERROR_T_FATAL, ERROR_OPT_EXIT|ERROR_OPT_NO_HELP, 0);
+    platform_thread_id cur_thread_id = platform_get_thread_id();
+    if(platform_is_same_thread(cur_thread_id, main_thread_id))
+    {
+      snprintf(msgbuf, sizeof(msgbuf), "Out of memory in %s:%d", file, line);
+      msgbuf[sizeof(msgbuf)-1] = '\0';
+      error(msgbuf, ERROR_T_FATAL, ERROR_OPT_EXIT|ERROR_OPT_NO_HELP, 0);
+    }
+    else
+      warn("Out of memory in in %s:%d (thread %zu)\n",
+       file, line, (size_t)cur_thread_id);
   }
 }
 

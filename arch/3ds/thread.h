@@ -33,6 +33,7 @@ __M_BEGIN_DECLS
 
 typedef LightLock platform_mutex;
 typedef Thread platform_thread;
+typedef Thread platform_thread_id;
 typedef ThreadFunc platform_thread_fn;
 
 static inline void platform_mutex_init(platform_mutex *mutex)
@@ -74,6 +75,18 @@ static inline void platform_thread_join(platform_thread *thread)
 {
   threadJoin(*thread, U64_MAX);
 }
+
+static inline platform_thread_id platform_get_thread_id(void)
+{
+  return threadGetCurrent();
+}
+
+static inline boolean platform_is_same_thread(platform_thread_id a,
+ platform_thread_id b)
+{
+  return a == b;
+}
+
 
 __M_END_DECLS
 
