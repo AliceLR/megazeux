@@ -101,8 +101,8 @@ static void lock(const char *file, int line)
 
   if(locked && (last_thread == cur_thread))
   {
-    debug("%s:%d (thread %ld): locked at %s (thread %ld) already!\n",
-     file, line, cur_thread, last_lock, last_thread);
+    debug("%s:%d (thread %zu): locked at %s (thread %zu) already!\n",
+     file, line, (size_t)cur_thread, last_lock, (size_t)last_thread);
   }
 #endif
 
