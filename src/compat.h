@@ -29,6 +29,22 @@
 #define __M_BEGIN_DECLS extern "C" {
 #define __M_END_DECLS   }
 
+#if __cplusplus >= 201103
+#define IS_CXX_11 1
+#else /* !IS_CXX_11 */
+// Compatibility defines so certain C++11 features can be used without checks.
+// Don't create any variables named "final" or "noexcept"...
+#include <stddef.h>
+#define nullptr (NULL)
+#define final
+#define noexcept
+#define override
+#endif /* !IS_CXX_11 */
+
+#ifdef _MSC_VER
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
+
 #else
 
 #define __M_BEGIN_DECLS
