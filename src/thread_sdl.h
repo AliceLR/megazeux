@@ -24,12 +24,13 @@
 
 __M_BEGIN_DECLS
 
+#include <SDL_stdinc.h>
 #include <SDL_thread.h>
 #include <SDL_version.h>
-#include "compat_sdl.h"
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
 typedef int(*SDL_ThreadFunction)(void *);
+typedef Uint32 SDL_threadID;
 #endif
 
 #define THREAD_RES int
