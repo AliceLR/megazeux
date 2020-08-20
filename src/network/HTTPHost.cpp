@@ -27,6 +27,10 @@
 #include "HTTPHost.hpp"
 #include "../util.h"
 
+#ifdef IS_CXX_11
+#include <type_traits>
+#endif
+
 #define BLOCK_SIZE    4096UL
 #define LINE_BUF_LEN  256
 
@@ -99,6 +103,9 @@ static int zlib_forge_gzip_header(char *buffer)
 
 const char *HTTPHost::get_error_string(HTTPHostStatus status)
 {
+#ifdef IS_CXX_11
+  static_assert(HOST_STATUS_ERROR_MAX < 0, "HOST_STATUS_ERROR_MAX not < 0!");
+#endif
   switch(status)
   {
     case HOST_SUCCESS:
@@ -148,6 +155,8 @@ const char *HTTPHost::get_error_string(HTTPHostStatus status)
       return "Failed to compress response data.";
     case HOST_ZLIB_INFLATE_FAILED:
       return "Failed to decompress response data.";
+    case HOST_STATUS_ERROR_MAX:
+      return "INTERNAL ERROR: REPORT THIS!";
   }
   return "invalid status code!";
 }

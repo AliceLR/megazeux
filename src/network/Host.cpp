@@ -90,7 +90,7 @@ boolean Host::host_layer_init(struct config_info *in_conf)
   return true;
 }
 
-void Host:: host_layer_exit(void)
+void Host::host_layer_exit(void)
 {
   DNS::exit();
   Socket::exit();

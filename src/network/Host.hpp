@@ -199,7 +199,7 @@ public:
    * @param recv_cb   Implementation of a recv callback (or NULL for none)
    * @param cancel_cb Implementation of a cancel callback (or NULL for none)
    */
-  void set_callbacks( void (*send_cb)(long offset), void (*recv_cb)(long offset),
+  void set_callbacks(void (*send_cb)(long offset), void (*recv_cb)(long offset),
    boolean (*cancel_cb)(void));
 
   /**
