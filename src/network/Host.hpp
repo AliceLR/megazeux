@@ -26,6 +26,7 @@
 #include "../platform.h"
 
 #include <stdio.h> // for FILE
+#include <string>
 
 enum host_family
 {
@@ -95,6 +96,14 @@ protected:
   boolean (*cancel_callback)(void);
 
 private:
+  // No copies (or moves since they aren't as portable). Use Host::swap.
+  Host(Host &h) {}
+  Host &operator=(const Host &h) { return *this; }
+#ifdef IS_CXX_11
+  Host(Host &&h) {};
+  Host &operator=(Host &&h) { return *this; };
+#endif
+
   boolean create_socket(enum host_type type, enum host_family family);
   boolean address_op(const char *hostname, int port, void *priv,
    struct addrinfo *(Host::*op)(struct addrinfo *ais, void *priv));
@@ -132,6 +141,14 @@ public:
   static void host_layer_exit(void);
 
   /**
+   * Swap the connection data of two Host objects.
+   *
+   * @param a        Object to swap.
+   * @param b        Object to swap.
+   */
+  static void swap(Host &a, Host &b);
+
+  /**
    * Initialize a host object.
    *
    * @param type     IP protocol to use (HOST_TYPE_TCP or HOST_TYPE_UDP).
@@ -148,6 +165,7 @@ public:
   /**
    * Resets this host object to its initial state.
    * Closes the connection (if connected) and releases the socket (if created).
+   * This function doesn't change the callbacks assigned to this Host.
    */
   void close();
 
@@ -312,5 +330,13 @@ protected:
 
 #endif // NETWORK_DEADCODE
 };
+
+namespace std
+{
+  inline void swap(Host &a, Host &b)
+  {
+    Host::swap(a, b);
+  }
+}
 
 #endif /* __HOST_HPP */

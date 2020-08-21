@@ -35,6 +35,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <algorithm>
+#include <utility>
+
 #ifndef __amigaos__
 #define CONFIG_IPV6
 #endif
@@ -94,6 +97,24 @@ void Host::host_layer_exit(void)
 {
   DNS::exit();
   Socket::exit();
+}
+
+void Host::swap(Host &a, Host &b)
+{
+  std::swap(a.state, b.state);
+  std::swap(a.type, b.type);
+  std::swap(a.preferred_family, b.preferred_family);
+  std::swap(a.preferred_af, b.preferred_af);
+  std::swap(a.socktype, b.socktype);
+  std::swap(a.proto, b.proto);
+  std::swap(a.name, b.name);
+  std::swap(a.endpoint, b.endpoint);
+  std::swap(a.proxied, b.proxied);
+  std::swap(a.af, b.af);
+  std::swap(a.sockfd, b.sockfd);
+  std::swap(a.timeout_ms, b.timeout_ms);
+  std::swap(a.receive_callback, b.receive_callback);
+  std::swap(a.cancel_callback, b.cancel_callback);
 }
 
 Host::Host(enum host_type type, enum host_family family)
