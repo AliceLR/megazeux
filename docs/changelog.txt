@@ -27,6 +27,9 @@ DEVELOPERS
   The main thread will display a fatal error as usual when
   allocation fails; others threads will print a warning and
   return NULL.
++ Added implementations of new/delete/__cxa_pure_virtual that
+  can be linked to avoid linking libstdc++/libc++ on platforms
+  and configurations that otherwise don't need those libraries.
 
 
 July 20th, 2020 - MZX 2.92e
