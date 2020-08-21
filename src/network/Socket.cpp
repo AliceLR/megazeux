@@ -20,6 +20,7 @@
 
 #include "Socket.hpp"
 
+#include "../platform.h"
 #include "../util.h"
 
 #include <assert.h>
@@ -27,19 +28,33 @@
 
 #if defined(__WIN32__) || defined(__amigaos__)
 
-static int __getaddrinfo(const char *node, const char *service,
+/**
+ * gethostbyname may use a static struct that is shared across threads
+ * in some implementations. For safety, acquire a lock until the call to it
+ * and all use of its return value is complete.
+ */
+static platform_mutex gai_lock;
+
+int Socket::getaddrinfo_alt(const char *node, const char *service,
  const struct addrinfo *hints, struct addrinfo **res)
 {
   struct addrinfo *r = NULL, *r_head = NULL;
   struct hostent *hostent;
   int i;
 
+  trace("--SOCKET-- Socket::getaddrinfo_alt\n");
+
   if(hints->ai_family != AF_INET)
     return EAI_FAMILY;
 
+  platform_mutex_lock(&gai_lock);
+
   hostent = Socket::gethostbyname(node);
-  if(hostent->h_addrtype != AF_INET)
+  if(!hostent || hostent->h_addrtype != AF_INET)
+  {
+    platform_mutex_unlock(&gai_lock);
     return EAI_NONAME;
+  }
 
   /* Walk the h_addr_list and create faked addrinfo structures
    * corresponding to the addresses. We don't support non-IPV4
@@ -73,11 +88,12 @@ static int __getaddrinfo(const char *node, const char *service,
     addr->sin_port = Socket::htons(atoi(service));
   }
 
+  platform_mutex_unlock(&gai_lock);
   *res = r_head;
   return 0;
 }
 
-static void __freeaddrinfo(struct addrinfo *res)
+void Socket::freeaddrinfo_alt(struct addrinfo *res)
 {
   struct addrinfo *r, *r_next;
   for(r = res; r; r = r_next)
@@ -88,7 +104,7 @@ static void __freeaddrinfo(struct addrinfo *res)
   }
 }
 
-static inline const char *__gai_strerror(int errcode)
+const char *Socket::gai_strerror_alt(int errcode)
 {
   switch(errcode)
   {
@@ -105,20 +121,38 @@ static inline const char *__gai_strerror(int errcode)
 #endif // __WIN32__ || __amigaos__
 
 #ifdef __amigaos__
+static int init_ref_count;
+
+boolean Socket::init(struct config_info *conf)
+{
+  if(!init_ref_count)
+    platform_mutex_init(&gai_lock);
+  init_ref_count++;
+}
+
+void Socket::exit()
+{
+  assert(init_ref_count);
+  init_ref_count--;
+  if(!init_ref_count)
+    platform_mutex_destroy(&gai_lock);
+}
+
 int Socket::getaddrinfo(const char *node, const char *service,
  const struct addrinfo *hints, struct addrinfo **res)
 {
-  return __getaddrinfo(node, service, hints, res);
+  return Socket::getaddrinfo_alt(node, service, hints, res);
 }
 
 void Socket::freeaddrinfo(struct addrinfo *res)
 {
-  return __freeaddrinfo(res);
+  return Socket::freeaddrinfo_alt(res);
 }
 
 void Socket::getaddrinfo_perror(const char *message, int errcode)
 {
-  warn("%s (code %d): %s\n", message, errcode, __gai_strerror(errcode));
+  warn("%s (code %d): %s\n", message, errcode,
+   Socket::gai_strerror_alt(errcode));
 }
 #endif
 
@@ -270,6 +304,9 @@ boolean Socket::init(struct config_info *conf)
 
   if(init_ref_count == 0)
   {
+    if(!gai_lock)
+      platform_mutex_init(&gai_lock);
+
     if(!socket_load_syms())
       return false;
 
@@ -298,6 +335,8 @@ void Socket::exit(void)
     }
   }
 
+  platform_mutex_destroy(&gai_lock);
+  gai_lock = 0;
   socket_free_syms();
 }
 
@@ -375,7 +414,7 @@ void Socket::freeaddrinfo(struct addrinfo *res)
   if(socksyms.freeaddrinfo)
     socksyms.freeaddrinfo(res);
   else
-    __freeaddrinfo(res);
+    Socket::freeaddrinfo_alt(res);
 }
 
 int Socket::getaddrinfo(const char *node, const char *service,
@@ -383,7 +422,7 @@ int Socket::getaddrinfo(const char *node, const char *service,
 {
   if(socksyms.getaddrinfo)
     return socksyms.getaddrinfo(node, service, hints, res);
-  return __getaddrinfo(node, service, hints, res);
+  return Socket::getaddrinfo_alt(node, service, hints, res);
 }
 
 /**

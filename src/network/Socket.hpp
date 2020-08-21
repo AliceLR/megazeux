@@ -96,9 +96,20 @@ class Socket final
 private:
   Socket() {}
 
+  // Potentially non thread-safe. Only allow internally in getaddrinfo_alt.
+  static struct hostent *gethostbyname(const char *name) UNIX_INLINE
+  ({
+    return ::gethostbyname(name);
+  });
+
+  static int getaddrinfo_alt(const char *node, const char *service,
+   const struct addrinfo *hints, struct addrinfo **res);
+  static void freeaddrinfo_alt(struct addrinfo *res);
+  static const char *gai_strerror_alt(int errcode);
+
 public:
-  static boolean init(struct config_info *conf) UNIX_INLINE({ return true; });
-  static void exit(void) UNIX_INLINE({});
+  static boolean init(struct config_info *conf) GETADDRINFO_MAYBE_INLINE({ return true; });
+  static void exit(void) GETADDRINFO_MAYBE_INLINE({});
 
   static int getaddrinfo(const char *node, const char *service,
    const struct addrinfo *hints, struct addrinfo **res) GETADDRINFO_MAYBE_INLINE
@@ -141,11 +152,6 @@ public:
    socklen_t addrlen) UNIX_INLINE
   ({
     return ::connect(sockfd, serv_addr, addrlen);
-  });
-
-  static struct hostent *gethostbyname(const char *name) UNIX_INLINE
-  ({
-    return ::gethostbyname(name);
   });
 
   static uint16_t htons(uint16_t hostshort) UNIX_INLINE
