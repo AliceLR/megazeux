@@ -9,6 +9,11 @@ include contrib/libxmp/Makefile.megazeux
 
 .PHONY: mzx_clean core_target_clean
 
+#
+# This allows selection of g++ for linking instead of gcc.
+# Linking with g++ is only necessary if linking the C++ standard library
+# (libstdc++ or libc++) is required; usually it isn't, and gcc can be used.
+#
 LINK_CC := ${CC}
 
 core_src = src
@@ -268,7 +273,6 @@ core_cxxflags += -I${gdm2s3m_src}
 core_cobjs += ${gdm2s3m_objs}
 core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
 core_cxxobjs += ${audio_obj}/audio_modplug.o ${libmodplug_objs}
-LINK_CC := ${CXX}
 endif
 
 ifeq (${BUILD_MIKMOD},1)
@@ -293,7 +297,6 @@ endif
 
 ifeq (${BUILD_REALITY},1)
 core_cxxobjs += ${audio_obj}/audio_reality.o
-#LINK_CC := ${CXX}
 endif
 
 ifeq (${LIBPNG},1)
@@ -387,6 +390,17 @@ endif
 
 ifeq (${BUILD_DEBYTECODE},1)
 core_cobjs += ${core_obj}/rasm.o
+endif
+
+#
+# Link libstdc++-less compatibility implementations of various functions.
+# Doing this instead of linking libstdc++ when possible avoids pulling in
+# external libraries for MinGW and (particularly) Android builds.
+#
+ifneq (${core_cxxobjs},)
+ifneq (${LINK_CC},${CXX})
+core_cxxobjs := ${core_obj}/nostdc++.o ${core_cxxobjs}
+endif
 endif
 
 core_objs := ${core_cobjs} ${core_cxxobjs}
