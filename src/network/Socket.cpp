@@ -85,7 +85,7 @@ int Socket::getaddrinfo_alt(const char *node, const char *service,
     addr = (struct sockaddr_in *)r->ai_addr;
     memcpy(&addr->sin_addr.s_addr, hostent->h_addr_list[i], sizeof(uint32_t));
     addr->sin_family = r->ai_family;
-    addr->sin_port = Socket::htons(atoi(service));
+    addr->sin_port = Socket::hton_short(atoi(service));
   }
 
   platform_mutex_unlock(&gai_lock);
@@ -404,7 +404,7 @@ struct hostent *Socket::gethostbyname(const char *name)
   return socksyms.gethostbyname(name);
 }
 
-uint16_t Socket::htons(uint16_t hostshort)
+uint16_t Socket::hton_short(uint16_t hostshort)
 {
   return socksyms.htons(hostshort);
 }

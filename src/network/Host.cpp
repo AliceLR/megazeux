@@ -499,7 +499,7 @@ enum proxy_status Host::connect_socks4a(const char *target_host, int target_port
   int rBuf;
 
   trace("--HOST-- Host::connect_socks4a\n");
-  target_port = Socket::htons(target_port);
+  target_port = Socket::hton_short(target_port);
 
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
     return PROXY_CONNECTION_FAILED;

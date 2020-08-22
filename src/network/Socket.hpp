@@ -154,9 +154,13 @@ public:
     return ::connect(sockfd, serv_addr, addrlen);
   });
 
-  static uint16_t htons(uint16_t hostshort) UNIX_INLINE
+  /**
+   * Convert a short from host byte order to network byte order (big endian).
+   * Don't use "htons" as the function name; BSD defines it as a macro.
+   */
+  static uint16_t hton_short(uint16_t hostshort) UNIX_INLINE
   ({
-    return ::htons(hostshort);
+    return htons(hostshort);
   });
 
   static int listen(int sockfd, int backlog) UNIX_INLINE
