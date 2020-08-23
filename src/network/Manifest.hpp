@@ -27,6 +27,8 @@
 #include "HTTPHost.hpp"
 
 #define MANIFEST_TXT "manifest.txt"
+#define LOCAL_MANIFEST_TXT MANIFEST_TXT
+#define REMOTE_MANIFEST_TXT "manifest.remote.txt"
 
 struct manifest_entry
 {

@@ -190,10 +190,10 @@ static void manifest_get_local(struct manifest_entry **manifest)
 
   *manifest = NULL;
 
-  f = fopen_unsafe(MANIFEST_TXT, "rb");
+  f = fopen_unsafe(LOCAL_MANIFEST_TXT, "rb");
   if(!f)
   {
-    warn("Local " MANIFEST_TXT " is missing\n");
+    warn("Local " LOCAL_MANIFEST_TXT " is missing\n");
     return;
   }
 
@@ -238,10 +238,10 @@ static HTTPHostStatus manifest_get_remote(HTTPHost &http,
   snprintf(request.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, base);
   strcpy(request.expected_type, "text/plain");
 
-  f = fopen_unsafe(MANIFEST_TXT, "w+b");
+  f = fopen_unsafe(REMOTE_MANIFEST_TXT, "w+b");
   if(!f)
   {
-    warn("Failed to open local " MANIFEST_TXT " for writing\n");
+    warn("Failed to open local " REMOTE_MANIFEST_TXT " for writing\n");
     ret = HOST_FWRITE_FAILED;
     goto err_out;
   }
@@ -249,7 +249,7 @@ static HTTPHostStatus manifest_get_remote(HTTPHost &http,
   ret = http.get(request, f);
   if(ret != HOST_SUCCESS)
   {
-    warn("Processing " MANIFEST_TXT " failed (code %d; error: %s)\n",
+    warn("Processing " REMOTE_MANIFEST_TXT " failed (code %d; error: %s)\n",
      request.status_code, HTTPHost::get_error_string(ret));
     goto err_fclose;
   }
@@ -381,7 +381,7 @@ static void manifest_add_list_validate_augment(struct manifest_entry *local,
       fclose(f);
     }
 
-    warn("Local file '%s' failed manifest validation\n", e->name);
+    trace("Local file '%s' doesn't match the remote manifest entry.\n", e->name);
 
     new_added = manifest_entry_copy(e);
     if(*added)

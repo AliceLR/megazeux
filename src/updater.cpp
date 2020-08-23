@@ -58,7 +58,6 @@
 
 #define OUTBOUND_PORT 80
 #define LINE_BUF_LEN  256
-#define BLOCK_SIZE    4096
 
 #define UPDATES_TXT   "updates.txt"
 #define DELETE_TXT    "delete.txt"
@@ -269,12 +268,12 @@ static void display_connecting(const char *host_name)
 /**
  * Indicate that the manifest is currently being processed.
  */
-static void display_computing_manifest(void)
+static void display_manifest(void)
 {
+  static const char *str = "Fetching remote " MANIFEST_TXT "..";
   m_hide();
   draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
-  write_string("Computing manifest deltas (added, replaced, deleted)..",
-   13, 12, DI_TEXT, 0);
+  write_string(str, (WIDGET_BUF_LEN - strlen(str)) / 2, 12, DI_TEXT, 0);
   update_screen();
   m_show();
 }
@@ -545,83 +544,31 @@ static boolean swivel_current_dir_back(boolean have_video)
   return true;
 }
 
-static boolean backup_original_manifest(void)
-{
-  unsigned int len, pos = 0;
-  char block[BLOCK_SIZE];
-  FILE *input, *output;
-  boolean ret = false;
-  struct stat s;
-
-  // No existing manifest; this is non-fatal
-  if(stat(MANIFEST_TXT, &s))
-  {
-    ret = true;
-    goto err_out;
-  }
-
-  input = fopen_unsafe(MANIFEST_TXT, "rb");
-  if(!input)
-    goto err_out;
-
-  output = fopen_unsafe(MANIFEST_TXT "~", "wb");
-  if(!output)
-    goto err_close_input;
-
-  len = (unsigned int)ftell_and_rewind(input);
-
-  while(pos < len)
-  {
-    unsigned int block_size = MIN(BLOCK_SIZE, len - pos);
-
-    if(fread(block, block_size, 1, input) != 1)
-      goto err_close_output;
-    if(fwrite(block, block_size, 1, output) != 1)
-      goto err_close_output;
-
-    pos += block_size;
-  }
-
-  ret = true;
-err_close_output:
-  fclose(output);
-err_close_input:
-  fclose(input);
-err_out:
-  return ret;
-}
-
-static boolean restore_original_manifest(boolean ret)
+/**
+ * Replace the old manifest with the new manifest.
+ * This should only be called if the update was successful.
+ */
+static boolean replace_manifest(void)
 {
   struct stat s;
 
-  if(ret)
-  {
-    /* The update was successful, so we try to remove the backup manifest.
-     * Ignore any errors that might occur as a result of this file not
-     * existing (it won't if we never backed a manifest up).
-     */
-    unlink(MANIFEST_TXT "~");
-    return true;
-  }
+  // The new manifest should exist...
+  if(stat(REMOTE_MANIFEST_TXT, &s))
+    return false;
 
-  // Try to remove original manifest before restoration
-  if(unlink(MANIFEST_TXT))
+  // Remove the old manifest.
+  if(unlink(LOCAL_MANIFEST_TXT))
   {
     error_message(E_UPDATE, 7,
-     "Failed to remove " MANIFEST_TXT ". Check permissions.");
+     "Failed to remove " LOCAL_MANIFEST_TXT ". Check permissions.");
     return false;
   }
 
-  // No manifest to restore; consider this successful
-  if(stat(MANIFEST_TXT "~", &s))
-    return true;
-
-  // Try to restore backup manifest
-  if(rename(MANIFEST_TXT "~", MANIFEST_TXT))
+  // Rename the new manifest.
+  if(rename(REMOTE_MANIFEST_TXT, LOCAL_MANIFEST_TXT))
   {
     error_message(E_UPDATE, 8,
-     "Failed to roll back manifest. Check permissions.");
+     "Failed to rename " REMOTE_MANIFEST_TXT ". Check permissions.");
     return false;
   }
 
@@ -827,6 +774,8 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
   struct config_info *conf = get_config();
   int cur_host;
   char *update_host;
+  char *url_base = nullptr;
+  boolean delete_remote_manifest = true;
   boolean try_next_host = true;
   boolean ret = false;
 
@@ -850,18 +799,21 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
   if(!swivel_current_dir(true))
     goto err_out;
 
+  url_base = (char *)cmalloc(LINE_BUF_LEN);
+
   for(cur_host = 0; (cur_host < conf->update_host_count) && try_next_host; cur_host++)
   {
     HTTPHost http(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
     HTTPRequestInfo request;
     HTTPHostStatus status;
 
-    char buffer[LINE_BUF_LEN], *url_base, *value;
+    char buffer[LINE_BUF_LEN], *value;
     struct manifest_entry *removed, *replaced, *added, *e;
     int i = 0, entries = 0;
     char update_branch[LINE_BUF_LEN];
     const char *version = VERSION;
     unsigned int retries;
+    boolean reconnect = false;
     FILE *f;
 
     // Acid test: Can we write to this directory?
@@ -875,11 +827,11 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
 
     update_host = conf->update_hosts[cur_host];
 
-    if(!reissue_connection(http, update_host, is_automatic))
-      goto err_host_destroy;
-
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
+      if(!reissue_connection(http, update_host, is_automatic))
+        goto err_host_destroy;
+
       // Grab the file containing the names of the current Stable and Unstable
       strcpy(request.url, "/" UPDATES_TXT);
       strcpy(request.expected_type, "text/plain");
@@ -898,9 +850,6 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         retries = MAX_RETRIES;
         break;
       }
-
-      if(!reissue_connection(http, update_host, is_automatic))
-        goto err_host_destroy;
     }
 
     if(retries == MAX_RETRIES)
@@ -980,6 +929,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       }
 
       version = ui_new_version_available(ctx, version, value);
+      reconnect = true;
 
       // Abort if no version was selected.
       if(version == NULL)
@@ -993,26 +943,15 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
      * be composed of a user-selected version and a static platform-archicture
      * name.
      */
-    url_base = (char *)cmalloc(LINE_BUF_LEN);
     snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, version);
     debug("Update base URL: %s\n", url_base);
 
-    /* The call to manifest_get_updates() destroys any existing manifest
-     * file in this directory. Since we still allow user to abort after
-     * this call, and downloading the updates may fail, we copy the
-     * old manifest to a backup location and optionally restore it later.
-     */
-    if(!backup_original_manifest())
-    {
-      error_message(E_UPDATE, 18,
-       "Failed to back up manifest. Check permissions.");
-      try_next_host = false;
-      goto err_free_url_base;
-    }
-
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
-      display_computing_manifest();
+      if(reconnect && !reissue_connection(http, update_host, false))
+        goto err_host_destroy;
+
+      display_manifest();
 
       status = manifest_get_updates(http, url_base, &removed, &replaced, &added);
 
@@ -1025,17 +964,15 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       if(status == HOST_HTTP_REDIRECT || status == HOST_HTTP_CLIENT_ERROR)
       {
         error_message(E_UPDATE, 19, "No updates available for this platform.");
-        goto err_roll_back_manifest;
+        goto err_host_destroy;
       }
-
-      if(!reissue_connection(http, update_host, false))
-        goto err_roll_back_manifest;
+      reconnect = true;
     }
 
     if(retries == MAX_RETRIES)
     {
-      error_message(E_UPDATE, 20, "Failed to compute update manifests");
-      goto err_roll_back_manifest;
+      error_message(E_UPDATE, 20, "Failed to fetch or process update manifest");
+      goto err_host_destroy;
     }
 
     // At this point, we have a successful manifest, so we won't need another host
@@ -1070,6 +1007,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
      * confirm or cancel.
      */
     entries = ui_confirm_changes(ctx, removed, replaced, added);
+    reconnect = true;
 
     if(entries <= 0)
       goto err_free_update_manifests;
@@ -1108,6 +1046,17 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       {
         boolean m_ret;
 
+        if(reconnect)
+        {
+          if(reissue_connection(http, update_host, 0))
+          {
+            http.set_callbacks(NULL, recv_cb, cancel_cb);
+            reconnect = false;
+          }
+          else
+            goto err_free_delete_list;
+        }
+
         if(!check_create_basedir(e->name))
           goto err_free_delete_list;
 
@@ -1126,10 +1075,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
           error_message(E_UPDATE, 21, "Download was cancelled; update aborted.");
           goto err_free_delete_list;
         }
-
-        if(!reissue_connection(http, update_host, 0))
-          goto err_free_delete_list;
-        http.set_callbacks(NULL, recv_cb, cancel_cb);
+        reconnect = true;
       }
 
       if(retries == MAX_RETRIES)
@@ -1145,6 +1091,10 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     if(!write_delete_list())
       goto err_free_delete_list;
 
+    delete_remote_manifest = false;
+    if(!replace_manifest())
+      goto err_free_delete_list;
+
     try_next_host = false;
     ret = true;
 err_free_delete_list:
@@ -1153,10 +1103,8 @@ err_free_delete_list:
 err_free_update_manifests:
     manifest_list_free(&removed);
     manifest_list_free(&replaced);
-err_roll_back_manifest:
-    restore_original_manifest(ret);
-err_free_url_base:
-    free(url_base);
+    if(delete_remote_manifest)
+      unlink(REMOTE_MANIFEST_TXT);
 err_host_destroy:
     http.close();
 
@@ -1166,6 +1114,7 @@ err_host_destroy:
 err_chdir:
   swivel_current_dir_back(true);
 err_out:
+  free(url_base);
 
   if(ret)
   {
