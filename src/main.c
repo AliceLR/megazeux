@@ -99,7 +99,7 @@ static void init_pledge(void)
 }
 #endif
 
-#ifdef CONFIG_UPDATER
+#if defined(CONFIG_UPDATER) && defined(__WIN32__)
 static char **rewrite_argv_for_execv(int argc, char **argv)
 {
   char **new_argv = cmalloc((argc+1) * sizeof(char *));
@@ -332,7 +332,7 @@ update_restart_mzx:
   network_layer_exit(conf);
   quit_audio();
 
-#ifdef CONFIG_UPDATER
+#if defined(CONFIG_UPDATER) && defined(__WIN32__)
   // TODO: eventually any platform with execv will need to be able to allow
   // this for config/standalone-invoked restarts. Locking it to the updater
   // for now because that's the only thing that currently uses it.

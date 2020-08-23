@@ -16,7 +16,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "manifest.h"
+
+#include "Manifest.hpp"
+#include "HTTPHost.hpp"
 #include "../util.h"
 
 #include <stdlib.h>
@@ -84,10 +86,10 @@ static struct manifest_entry *manifest_entry_copy(struct manifest_entry *src)
   struct manifest_entry *dest;
   size_t name_len;
 
-  dest = cmalloc(sizeof(struct manifest_entry));
+  dest = (struct manifest_entry *)cmalloc(sizeof(struct manifest_entry));
 
   name_len = strlen(src->name);
-  dest->name = cmalloc(name_len + 1);
+  dest->name = (char *)cmalloc(name_len + 1);
   strncpy(dest->name, src->name, name_len);
   dest->name[name_len] = 0;
 
@@ -132,7 +134,7 @@ struct manifest_entry *manifest_list_create(FILE *f)
     if(!fgets(buffer, LINE_BUF_LEN, f))
       break;
 
-    next_e = ccalloc(1, sizeof(struct manifest_entry));
+    next_e = (struct manifest_entry *)ccalloc(1, sizeof(struct manifest_entry));
     if(head)
     {
       e->next = next_e;
@@ -167,7 +169,7 @@ struct manifest_entry *manifest_list_create(FILE *f)
       goto err_invalid_manifest;
 
     line_len = strlen(line);
-    e->name = cmalloc(line_len + 1);
+    e->name = (char *)cmalloc(line_len + 1);
     memcpy(e->name, line, line_len + 1);
   }
 
@@ -199,17 +201,42 @@ static void manifest_get_local(struct manifest_entry **manifest)
   fclose(f);
 }
 
-static enum host_status manifest_get_remote(struct host *h,
+boolean manifest_check_remote_exists(HTTPHost &http, const char *basedir)
+{
+  HTTPRequestInfo request;
+  HTTPHostStatus ret;
+
+  memset(&request, 0, sizeof(HTTPRequestInfo));
+  snprintf(request.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, basedir);
+
+  ret = http.head(request);
+  if(ret != HOST_SUCCESS)
+  {
+    warn("Check for remote " MANIFEST_TXT " failed (code %d; error: %s)\n",
+     request.status_code, HTTPHost::get_error_string(ret));
+    return false;
+  }
+  trace("Check for remote " MANIFEST_TXT "successful, code %d\n",
+   request.status_code);
+
+  if(request.status_code == 200)
+    return true;
+
+  return false;
+}
+
+static HTTPHostStatus manifest_get_remote(HTTPHost &http,
  const char *base, struct manifest_entry **manifest)
 {
-  struct http_info req;
-  enum host_status ret;
+  HTTPRequestInfo request;
+  HTTPHostStatus ret;
   FILE *f;
 
   *manifest = NULL;
 
-  snprintf(req.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, base);
-  strcpy(req.expected_type, "text/plain");
+  memset(&request, 0, sizeof(HTTPRequestInfo));
+  snprintf(request.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, base);
+  strcpy(request.expected_type, "text/plain");
 
   f = fopen_unsafe(MANIFEST_TXT, "w+b");
   if(!f)
@@ -219,11 +246,11 @@ static enum host_status manifest_get_remote(struct host *h,
     goto err_out;
   }
 
-  ret = host_recv_file(h, &req, f);
+  ret = http.get(request, f);
   if(ret != HOST_SUCCESS)
   {
-    warn("Processing " MANIFEST_TXT " failed (code %d, error %d)\n",
-     req.status_code, ret);
+    warn("Processing " MANIFEST_TXT " failed (code %d; error: %s)\n",
+     request.status_code, HTTPHost::get_error_string(ret));
     goto err_fclose;
   }
 
@@ -367,16 +394,16 @@ static void manifest_add_list_validate_augment(struct manifest_entry *local,
   }
 }
 
-enum host_status manifest_get_updates(struct host *h, const char *basedir,
+HTTPHostStatus manifest_get_updates(HTTPHost &http, const char *basedir,
  struct manifest_entry **removed, struct manifest_entry **replaced,
  struct manifest_entry **added)
 {
   struct manifest_entry *local, *remote;
-  enum host_status status;
+  HTTPHostStatus status;
 
   manifest_get_local(&local);
 
-  status = manifest_get_remote(h, basedir, &remote);
+  status = manifest_get_remote(http, basedir, &remote);
   if(status != HOST_SUCCESS)
     return status;
 
@@ -414,12 +441,12 @@ enum host_status manifest_get_updates(struct host *h, const char *basedir,
   return HOST_SUCCESS;
 }
 
-boolean manifest_entry_download_replace(struct host *h, const char *basedir,
+boolean manifest_entry_download_replace(HTTPHost &http, const char *basedir,
  struct manifest_entry *e, void (*delete_hook)(const char *file))
 {
   char buf[LINE_BUF_LEN];
-  struct http_info req;
-  enum host_status ret;
+  HTTPRequestInfo request;
+  HTTPHostStatus ret;
   boolean valid = false;
   FILE *f;
 
@@ -448,17 +475,17 @@ boolean manifest_entry_download_replace(struct host *h, const char *basedir,
     }
   }
 
-  memset(&req, 0, sizeof(struct http_info));
-  strcpy(req.expected_type, "application/octet-stream");
-  snprintf(req.url, LINE_BUF_LEN, "%s/%08x%08x%08x%08x%08x%08x%08x%08x", basedir,
+  memset(&request, 0, sizeof(HTTPRequestInfo));
+  strcpy(request.expected_type, "application/octet-stream");
+  snprintf(request.url, LINE_BUF_LEN, "%s/%08x%08x%08x%08x%08x%08x%08x%08x", basedir,
     e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
     e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7]);
 
-  ret = host_recv_file(h, &req, f);
+  ret = http.get(request, f);
   if(ret != HOST_SUCCESS)
   {
-    warn("File '%s' could not be downloaded (code %d, error %d)\n", e->name,
-     req.status_code, ret);
+    warn("File '%s' could not be downloaded (code %d; error: %s)\n", e->name,
+     request.status_code, HTTPHost::get_error_string(ret));
     goto err_close;
   }
 

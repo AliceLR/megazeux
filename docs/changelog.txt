@@ -18,6 +18,15 @@ USERS
   when resizing the window.
 + Fixed a bug where checkres wouldn't correctly detect
   "LOAD_ROBOT#" when used to load to a specific robot.
++ Fixed a memory leak when printing network error messages in
+  Windows builds.
++ Fixed a potential crash bug in the netcode where socket IDs
+  could be reused after close() when attempting to connect.
++ Fixed a crash bug affecting the compatibility implementation
+  of getaddrinfo() that would occur if NULL was returned by
+  gethostbyname() during DNS resolution.
++ Fixed a potential crash in the compatibility implementation of
+  getaddrinfo() caused by gethostbyname() being thread-unsafe.
 
 DEVELOPERS
 
@@ -30,6 +39,13 @@ DEVELOPERS
 + Added implementations of new/delete/__cxa_pure_virtual that
   can be linked to avoid linking libstdc++/libc++ on platforms
   and configurations that otherwise don't need those libraries.
++ Refactored the netcode to use C++ instead of/in addition to C,
+  allowing some cleanup that otherwise wouldn't have worked.
+  Host::bind, Host::listen, Host::accept, and Host::poll are no
+  longer disabled. Other network deadcode functions have been
+  updated but are still disabled.
++ Fixed FD_ISSET in the Windows netcode.
++ Added a EAI_AGAIN define for the getaddrinfo() fallback.
 
 
 July 20th, 2020 - MZX 2.92e

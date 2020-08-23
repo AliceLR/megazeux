@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,22 +17,30 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __DNS_H
-#define __DNS_H
+#include "network.h"
+#include "../error.h"
 
-#include "../compat.h"
+#include "Host.hpp"
 
-__M_BEGIN_DECLS
+boolean network_layer_init(struct config_info *conf)
+{
+  if(!conf->network_enabled)
+    return false;
 
-#include "../platform.h"
-#include "socksyms.h"
+  if(!Host::host_layer_init(conf))
+  {
+    error("Failed to initialize network layer.",
+     ERROR_T_ERROR, ERROR_OPT_OK, 0);
+    return false;
+  }
 
-int dns_getaddrinfo(const char *node, const char *service,
- const struct addrinfo *hints, struct addrinfo **res, Uint32 timeout);
+  return true;
+}
 
-boolean dns_init(struct config_info *conf);
-void dns_exit(void);
-
-__M_END_DECLS
-
-#endif /* __DNS_H */
+void network_layer_exit(struct config_info *conf)
+{
+  if(conf->network_enabled)
+  {
+    Host::host_layer_exit();
+  }
+}
