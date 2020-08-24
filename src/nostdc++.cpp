@@ -29,21 +29,21 @@
 #include <stdlib.h>
 #include <new>
 
-void __cxa_pure_virtual()
+extern "C" CORE_LIBSPEC void __cxa_pure_virtual()
 {
   fprintf(stderr, "Attempted to call pure virtual function! Aborting!\n");
   fflush(stderr);
   exit(1);
 }
 
-void __cxa_deleted_virtual()
+extern "C" CORE_LIBSPEC void __cxa_deleted_virtual()
 {
   fprintf(stderr, "Attempted to call deleted virtual function! Aborting!\n");
   fflush(stderr);
   exit(1);
 }
 
-void *operator new(size_t count) noexcept
+CORE_LIBSPEC void *operator new(size_t count) noexcept
 {
   void *ptr = cmalloc(count);
   if(!ptr)
@@ -56,7 +56,7 @@ void *operator new(size_t count) noexcept
   return ptr;
 }
 
-void *operator new[](size_t count) noexcept
+CORE_LIBSPEC void *operator new[](size_t count) noexcept
 {
   void *ptr = cmalloc(count);
   if(!ptr)
@@ -69,12 +69,12 @@ void *operator new[](size_t count) noexcept
   return ptr;
 }
 
-void operator delete(void *ptr) noexcept
+CORE_LIBSPEC void operator delete(void *ptr) noexcept
 {
   free(ptr);
 }
 
-void operator delete[](void *ptr) noexcept
+CORE_LIBSPEC void operator delete[](void *ptr) noexcept
 {
   free(ptr);
 }
