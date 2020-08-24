@@ -64,8 +64,6 @@
 
 #define WIDGET_BUF_LEN 80
 
-static struct manifest_entry *delete_list, *delete_p;
-
 static char widget_buf[WIDGET_BUF_LEN];
 
 static char executable_dir[MAX_PATH];
@@ -156,21 +154,21 @@ static boolean ui_version_is_current(context *ctx, boolean has_next_host)
  * Show the user the list of changes to be applied. Return the number of
  * changes to be applied (or 0 if canceled).
  */
-static int ui_confirm_changes(context *ctx, struct manifest_entry *removed,
- struct manifest_entry *replaced, struct manifest_entry *added)
+static int ui_confirm_changes(context *ctx, const Manifest &removed,
+ const Manifest &replaced, const Manifest &added)
 {
-  struct manifest_entry *e;
+  const ManifestEntry *e;
   char **list_entries;
   int list_entry_width = 0;
   int entries = 0;
   int result;
   int i = 0;
 
-  for(e = removed; e; e = e->next, entries++)
+  for(e = removed.first(); e; e = e->next, entries++)
     list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
-  for(e = replaced; e; e = e->next, entries++)
+  for(e = replaced.first(); e; e = e->next, entries++)
     list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
-  for(e = added; e; e = e->next, entries++)
+  for(e = added.first(); e; e = e->next, entries++)
     list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
 
   // We don't want the listbox to be too wide
@@ -178,21 +176,21 @@ static int ui_confirm_changes(context *ctx, struct manifest_entry *removed,
 
   list_entries = (char **)cmalloc(entries * sizeof(char *));
 
-  for(e = removed; e; e = e->next, i++)
+  for(e = removed.first(); e; e = e->next, i++)
   {
     list_entries[i] = (char *)cmalloc(list_entry_width);
     snprintf(list_entries[i], list_entry_width, "- %s", e->name);
     list_entries[i][list_entry_width - 1] = 0;
   }
 
-  for(e = replaced; e; e = e->next, i++)
+  for(e = replaced.first(); e; e = e->next, i++)
   {
     list_entries[i] = (char *)cmalloc(list_entry_width);
     snprintf(list_entries[i], list_entry_width, "* %s", e->name);
     list_entries[i][list_entry_width - 1] = 0;
   }
 
-  for(e = added; e; e = e->next, i++)
+  for(e = added.first(); e; e = e->next, i++)
   {
     list_entries[i] = (char *)cmalloc(list_entry_width);
     snprintf(list_entries[i], list_entry_width, "+ %s", e->name);
@@ -410,52 +408,6 @@ static boolean cancel_cb(void)
   return cancel_update;
 }
 
-static void delete_hook(const char *file)
-{
-  struct manifest_entry *new_entry;
-  struct SHA256_ctx ctx;
-  boolean ret;
-  FILE *f;
-
-  new_entry = (struct manifest_entry *)ccalloc(1, sizeof(struct manifest_entry));
-  if(!new_entry)
-    goto err_out;
-
-  if(delete_p)
-  {
-    delete_p->next = new_entry;
-    delete_p = delete_p->next;
-  }
-  else
-    delete_list = delete_p = new_entry;
-
-  delete_p->name = (char *)cmalloc(strlen(file) + 1);
-  if(!delete_p->name)
-    goto err_delete_p;
-  strcpy(delete_p->name, file);
-
-  f = fopen_unsafe(file, "rb");
-  if(!f)
-    goto err_delete_p_name;
-  delete_p->size = (unsigned long)ftell_and_rewind(f);
-
-  ret = manifest_compute_sha256(&ctx, f, delete_p->size);
-  fclose(f);
-  if(!ret)
-    goto err_delete_p_name;
-
-  memcpy(delete_p->sha256, ctx.H, sizeof(Uint32) * 8);
-  return;
-
-err_delete_p_name:
-  free(delete_p->name);
-err_delete_p:
-  free(delete_p);
-  delete_p = NULL;
-err_out:
-  return;
-}
-
 // Determine the executable dir. This is required for the updater.
 static boolean find_executable_dir(int argc, char **argv)
 {
@@ -575,39 +527,22 @@ static boolean replace_manifest(void)
   return true;
 }
 
-static boolean write_delete_list(void)
+static boolean write_delete_list(const Manifest &delete_list)
 {
-  struct manifest_entry *e;
-  FILE *f;
-
-  if(delete_list)
+  if(!delete_list.write_to_file(DELETE_TXT))
   {
-    f = fopen_unsafe(DELETE_TXT, "ab");
-    if(!f)
-    {
-      error_message(E_UPDATE, 9,
-       "Failed to create \"" DELETE_TXT "\". Check permissions.");
-      return false;
-    }
-
-    for(e = delete_list; e; e = e->next)
-    {
-      fprintf(f, "%08x%08x%08x%08x%08x%08x%08x%08x %lu %s\n",
-       e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
-       e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7],
-       e->size, e->name);
-    }
-
-    fclose(f);
+    error_message(E_UPDATE, 9,
+     "Failed to create \"" DELETE_TXT "\". Check permissions.");
+    return false;
   }
   return true;
 }
 
-static void apply_delete_list(void)
+static void apply_delete_list(Manifest &delete_list)
 {
-  struct manifest_entry *e_next = delete_list;
-  struct manifest_entry *e_prev = NULL;
-  struct manifest_entry *e;
+  ManifestEntry *e_next = delete_list.first();
+  ManifestEntry *e_prev = NULL;
+  ManifestEntry *e;
   int retry_times = 0;
   struct stat s;
   boolean files_failed = false;
@@ -625,7 +560,7 @@ static void apply_delete_list(void)
       if(!f)
         goto err_delete_failed;
 
-      is_valid = manifest_entry_check_validity(e, f);
+      is_valid = ManifestEntry::validate_filename(e->name) && e->validate(f);
       fclose(f);
 
       if(is_valid)
@@ -643,14 +578,14 @@ static void apply_delete_list(void)
     }
 
     // File was removed, doesn't exist, or is non-applicable; remove from list
-    if(delete_list == e)
-      delete_list = e_next;
+    if(delete_list.head == e)
+      delete_list.head = e_next;
 
     // Keep the link on the last failed file up-to-date.
     if(e_prev)
       e_prev->next = e_next;
 
-    manifest_entry_free(e);
+    delete e;
     continue;
 
 err_delete_failed:
@@ -807,8 +742,10 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     HTTPRequestInfo request;
     HTTPHostStatus status;
 
+    Manifest removed, replaced, added, delete_list;
+    ManifestEntry *e;
+
     char buffer[LINE_BUF_LEN], *value;
-    struct manifest_entry *removed, *replaced, *added, *e;
     int i = 0, entries = 0;
     char update_branch[LINE_BUF_LEN];
     const char *version = VERSION;
@@ -953,7 +890,8 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
 
       display_manifest();
 
-      status = manifest_get_updates(http, url_base, &removed, &replaced, &added);
+      status = Manifest::get_updates(http, request, url_base,
+       removed, replaced, added);
 
       display_clear();
 
@@ -978,16 +916,16 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     // At this point, we have a successful manifest, so we won't need another host
     try_next_host = false;
 
-    if(!removed && !replaced && !added)
+    if(!removed.has_entries() && !replaced.has_entries() && !added.has_entries())
     {
       boolean has_next_host = (cur_host < conf->update_host_count);
 
       if(is_automatic)
-        goto err_free_update_manifests;
+        goto err_cleanup;
 
       // The user may want to attempt an update from the next host.
       try_next_host = ui_version_is_current(ctx, has_next_host);
-      goto err_free_update_manifests;
+      goto err_cleanup;
     }
 
     // Set the updates available notification if it hasn't been set already.
@@ -997,7 +935,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     if(is_automatic)
     {
       if(conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
-        goto err_free_update_manifests;
+        goto err_cleanup;
 
       http.set_timeout_ms(Host::TIMEOUT_DEFAULT);
       is_automatic = 0;
@@ -1010,37 +948,26 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     reconnect = true;
 
     if(entries <= 0)
-      goto err_free_update_manifests;
+      goto err_cleanup;
 
     /* Defer deletions until we restart; any of these files may still be
      * in use by this (old) process. Reduce the number of entries by the
-     * number of removed items for the progress meter below.
+     * number of removed items for the progress meter below. Since the
+     * local manifest might be wrong, generate new manifest entries for this.
      */
-    for(e = removed; e; e = e->next, entries--)
-      delete_hook(e->name);
+    for(e = removed.first(); e; e = e->next, entries--)
+      delete_list.append(ManifestEntry::create_from_file(e->name));
 
     /* Since the operations for adding and replacing a file are identical,
-     * we modify the replaced list and tack on the added list to the end.
-     *
-     * Either list may be NULL; in the case that `replaced' is NULL, simply
-     * re-assign the `added' pointer. `added' being NULL has no effect.
-     *
-     * Later, we need only free the replaced list (see below).
+     * move the added list to the end of the replaced list.
      */
-    if(replaced)
-    {
-      for(e = replaced; e->next; e = e->next)
-        ;
-      e->next = added;
-    }
-    else
-      replaced = added;
+    replaced.append(added);
 
     cancel_update = false;
     http.set_callbacks(NULL, recv_cb, cancel_cb);
 
     i = 1;
-    for(e = replaced; e; e = e->next, i++)
+    for(e = replaced.first(); e; e = e->next, i++)
     {
       for(retries = 0; retries < MAX_RETRIES; retries++)
       {
@@ -1054,16 +981,17 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
             reconnect = false;
           }
           else
-            goto err_free_delete_list;
+            goto err_cleanup;
         }
 
         if(!check_create_basedir(e->name))
-          goto err_free_delete_list;
+          goto err_cleanup;
 
         final_size = (long)e->size;
         display_download_init(e->name, i, entries);
 
-        m_ret = manifest_entry_download_replace(http, url_base, e, delete_hook);
+        m_ret = Manifest::download_and_replace_entry(http, request, url_base,
+         e, delete_list);
 
         display_clear();
 
@@ -1073,7 +1001,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         if(cancel_update)
         {
           error_message(E_UPDATE, 21, "Download was cancelled; update aborted.");
-          goto err_free_delete_list;
+          goto err_cleanup;
         }
         reconnect = true;
       }
@@ -1084,25 +1012,20 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
          "Failed to download \"%s\" (after %d attempts).", e->name, retries);
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
         error_message(E_UPDATE, 22, widget_buf);
-        goto err_free_delete_list;
+        goto err_cleanup;
       }
     }
 
-    if(!write_delete_list())
-      goto err_free_delete_list;
+    if(!write_delete_list(delete_list))
+      goto err_cleanup;
 
     delete_remote_manifest = false;
     if(!replace_manifest())
-      goto err_free_delete_list;
+      goto err_cleanup;
 
     try_next_host = false;
     ret = true;
-err_free_delete_list:
-    manifest_list_free(&delete_list);
-    delete_list = delete_p = NULL;
-err_free_update_manifests:
-    manifest_list_free(&removed);
-    manifest_list_free(&replaced);
+err_cleanup:
     if(delete_remote_manifest)
       unlink(REMOTE_MANIFEST_TXT);
 err_host_destroy:
@@ -1130,7 +1053,8 @@ err_out:
 
 boolean updater_init(int argc, char *argv[])
 {
-  FILE *f;
+  Manifest delete_list;
+  struct stat stat_info;
 
   check_for_updates = __check_for_updates;
   updater_was_initialized = false;
@@ -1141,21 +1065,17 @@ boolean updater_init(int argc, char *argv[])
   if(!swivel_current_dir(false))
     return false;
 
-  f = fopen_unsafe(DELETE_TXT, "rb");
-  if(!f)
+  if(stat(DELETE_TXT, &stat_info))
     goto err_swivel_back;
 
-  delete_list = manifest_list_create(f);
-  fclose(f);
+  if(!delete_list.create(DELETE_TXT))
+    goto err_swivel_back;
 
-  apply_delete_list();
+  apply_delete_list(delete_list);
   unlink(DELETE_TXT);
 
-  if(delete_list)
-  {
-    write_delete_list();
-    manifest_list_free(&delete_list);
-  }
+  if(delete_list.has_entries())
+    write_delete_list(delete_list);
 
 err_swivel_back:
   swivel_current_dir_back(false);

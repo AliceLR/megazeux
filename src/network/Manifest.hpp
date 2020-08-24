@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2020 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -26,33 +27,124 @@
 #include "sha256.h"
 #include "HTTPHost.hpp"
 
+#include <stdio.h>
+
 #define MANIFEST_TXT "manifest.txt"
 #define LOCAL_MANIFEST_TXT MANIFEST_TXT
 #define REMOTE_MANIFEST_TXT "manifest.remote.txt"
 
-struct manifest_entry
+class UPDATER_LIBSPEC ManifestEntry
 {
-  struct manifest_entry *next;
+public:
+  ManifestEntry *next;
   Uint32 sha256[8];
-  unsigned long size;
+  size_t size;
   char *name;
+
+  ManifestEntry(const Uint32 (&_sha256)[8], size_t _size, const char *name);
+  ManifestEntry(const ManifestEntry &e);
+  ManifestEntry &operator=(const ManifestEntry &e);
+  ~ManifestEntry();
+
+  /**
+   * Check this manifest entry against its corresponding file.
+   *
+   * @return `true` if the file exists and is an exact match, otherwise `false`.
+   */
+  boolean validate(FILE *fp) const;
+
+  /**
+   * Filter invalid ManifestEntry filenames.
+   *
+   * @return `true` if the filename is a valid filename, otherwise `false`.
+   */
+  static boolean validate_filename(const char *filename);
+
+  /**
+   * Create a ManifestEntry from an existing file.
+   *
+   * @param filename    Filename of file to create ManifestEntry from.
+   *
+   * @return pointer to a new ManifestEntry object on success, otherwise null.
+   */
+  static ManifestEntry *create_from_file(const char *filename);
+
+private:
+  void init(const Uint32 (&_sha256)[8], size_t _size, const char *name);
+  static boolean compute_sha256(SHA256_ctx &ctx, FILE *fp, size_t len);
 };
 
-UPDATER_LIBSPEC boolean manifest_compute_sha256(struct SHA256_ctx *ctx, FILE *f,
- unsigned long len);
-UPDATER_LIBSPEC boolean manifest_entry_check_validity(struct manifest_entry *e,
- FILE *f);
-UPDATER_LIBSPEC struct manifest_entry *manifest_list_create(FILE *f);
+class UPDATER_LIBSPEC Manifest
+{
+public:
+  ManifestEntry *head;
 
-UPDATER_LIBSPEC void manifest_entry_free(struct manifest_entry *e);
-UPDATER_LIBSPEC void manifest_list_free(struct manifest_entry **head);
-UPDATER_LIBSPEC boolean manifest_check_remote_exists(HTTPHost &http,
- const char *basedir);
-UPDATER_LIBSPEC HTTPHostStatus manifest_get_updates(HTTPHost &http,
- const char *basedir, struct manifest_entry **removed,
- struct manifest_entry **replaced, struct manifest_entry **added);
-UPDATER_LIBSPEC boolean manifest_entry_download_replace(HTTPHost &http,
- const char *basedir, struct manifest_entry *e,
- void (*delete_hook)(const char *file));
+private:
+  Manifest(const Manifest &) {}
+  Manifest &operator=(const Manifest &) { return *this; }
+#ifdef IS_CXX_11
+  Manifest(Manifest &&) {}
+  Manifest &operator=(Manifest &&) { return *this; }
+#endif
+
+  void create(FILE *fp);
+  HTTPHostStatus get_remote(HTTPHost &http, HTTPRequestInfo &request,
+   const char *basedir);
+  void filter_duplicates(Manifest &local, Manifest &remote);
+  void filter_existing_files();
+
+public:
+  Manifest(): head(nullptr) {}
+  ~Manifest();
+  void clear();
+
+  void create(const Manifest &src);
+  boolean create(const char *filename);
+
+  /**
+   * Move the contents of the provided manifest to the end of this manifest.
+   * The provided manifest will be empty after this operation.
+   *
+   * @param src           Manifest to move the contents of.
+   */
+  void append(Manifest &src);
+
+  /**
+   * Append a ManifestEntry to the end of this manifest.
+   * This operation will not duplicate the ManifestEntry or modify entry.next.
+   *
+   * @param entry         ManifestEntry to append to this Manifest.
+   */
+  void append(ManifestEntry *entry);
+
+  boolean has_entries() const { return this->head != nullptr; }
+  ManifestEntry *first() const { return this->head; }
+  boolean write_to_file(const char *filename) const;
+
+  static boolean check_if_remote_exists(HTTPHost &http, HTTPRequestInfo &request,
+   const char *basedir);
+  static HTTPHostStatus get_updates(HTTPHost &http, HTTPRequestInfo &request,
+   const char *basedir, Manifest &removed, Manifest &replaced, Manifest &added);
+
+  /**
+   * Download the remote file represented by a manifest entry and replace the
+   * local file if it exists. If the local file can't be deleted, it will be
+   * added to the provided delete list to be deleted at a later time.
+   *
+   * @param http          Active connection to download from.
+   * @param request       Request object to return response data in. Its
+   *                      contents will be overwritten.
+   * @param basedir       Remote basedir (/VERSION/PLATFORM).
+   * @param e             Manifest entry to fetch remote file for.
+   * @param delete_list   List to log file deletions to perform at a later time.
+   *                      Files are only added to this if they could not be
+   *                      deleted during the execution of this function.
+   *
+   * @return `true` on success, otherwise `false`.
+   */
+  static boolean download_and_replace_entry(HTTPHost &http,
+   HTTPRequestInfo &request, const char *basedir, const ManifestEntry *e,
+   Manifest &delete_list);
+};
 
 #endif /* __MANIFEST_HPP */
