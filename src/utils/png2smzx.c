@@ -24,6 +24,7 @@
 
 #include "pngops.h"
 #include "smzxconv.h"
+#include "utils_alloc.h"
 
 #ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>

@@ -12,6 +12,8 @@ unit_src_editor := unit/editor
 unit_obj_editor := unit/editor/.build
 unit_src_io     := unit/io
 unit_obj_io     := unit/io/.build
+unit_src_network:= unit/network
+unit_obj_network:= unit/network/.build
 
 ifneq (${BINEXT},)
 unit_ext        := ${BINEXT}
@@ -31,6 +33,13 @@ ifneq (${BUILD_EDITOR},)
 
 unit_objs += \
   ${unit_obj_editor}/stringsearch${unit_ext}
+
+endif
+
+ifneq (${BUILD_NETWORK},)
+
+unit_objs += \
+  ${unit_obj_network}/sha256${unit_ext}
 
 endif
 
@@ -94,11 +103,16 @@ ${unit_obj_io}/%${unit_ext}: ${unit_src_io}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
 	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
 
+${unit_obj_network}/%${unit_ext}: ${unit_src_network}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
+
 -include ${unit_objs:${unit_ext}=.d}
 
 ${unit_objs}: | $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
 ${unit_objs}: | $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
 ${unit_objs}: | $(filter-out $(wildcard ${unit_obj_io}), ${unit_obj_io})
+${unit_objs}: | $(filter-out $(wildcard ${unit_obj_network}), ${unit_obj_network})
 
 unittest: ${unit_objs}
 	@failcount=0; \
@@ -114,7 +128,7 @@ unittest: ${unit_objs}
 	fi;
 
 unit_clean:
-	$(if ${V},,@echo "  RM      " ${unit_obj} ${unit_obj_editor} ${unit_obj_io})
-	${RM} -r ${unit_obj} ${unit_obj_editor} ${unit_obj_io}
+	$(if ${V},,@echo "  RM      " ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network})
+	${RM} -r ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network}
 
 endif

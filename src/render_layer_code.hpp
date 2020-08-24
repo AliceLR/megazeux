@@ -28,14 +28,12 @@
 
 #include "platform.h"
 
-#if __cplusplus >= 201103
+#ifdef IS_CXX_11
 #include <type_traits>
-#define HAS_CONSTEXPR
 #endif
 
 #ifdef _MSC_VER
 #include <cstdio>
-#define __PRETTY_FUNCTION__ ""
 #endif
 
 template<typename PIXTYPE>
@@ -500,7 +498,7 @@ template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR, int C
 static inline void render_layer_func(void *pixels, Uint32 pitch,
  struct graphics_data *graphics, struct video_layer *layer)
 {
-#ifdef HAS_CONSTEXPR
+#ifdef IS_CXX_11
   constexpr int BPP = sizeof(PIXTYPE) * 8;
   constexpr int PPW = sizeof(ALIGNTYPE) / sizeof(PIXTYPE);
 

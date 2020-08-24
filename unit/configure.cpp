@@ -17,8 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <algorithm>
 #include <climits>
 #include <cstdio>
+#include <limits>
 
 #include "Unit.hpp"
 
@@ -37,6 +39,7 @@
 
 static const int DEFAULT = 255;
 static const int IGNORE = INT_MAX;
+static boolean game_allowed;
 
 struct config_test_single
 {
@@ -135,112 +138,135 @@ static void load_args(const char * const (&args)[SIZE])
   set_config_from_command_line(&argc, tmp_args);
 }
 
-#define DEFAULT_V(v) static_cast<std::remove_reference<decltype(v)>::type>(DEFAULT)
+template<class T>
+void TEST_INT(const char *setting_name, T &setting, ssize_t min, ssize_t max)
+{
+  constexpr T default_value = static_cast<T>(DEFAULT);
+  char arg[512];
 
-#define TEST_INT(setting_name, setting, min, max) \
-do { \
-  char arg[512]; \
-  for(int _i = -16; _i < 32; _i++) \
-  { \
-    int _tmp = ((unsigned)max - min) * _i / 16 + min; \
-    snprintf(arg, 512, "%s=%d", setting_name, _tmp); \
-    setting = DEFAULT_V(setting); \
-    load_arg(arg); \
-    if(_tmp >= min && _tmp <= max) \
-      ASSERTEQX((int)(setting), _tmp, arg); \
-    else \
-      ASSERTEQX((int)(setting), DEFAULT, arg); \
-    setting = DEFAULT_V(setting); \
-    load_arg_file(arg, game_allowed); \
-    if(_tmp >= min && _tmp <= max) \
-      ASSERTEQX((int)(setting), _tmp, arg); \
-    else \
-      ASSERTEQX((int)(setting), DEFAULT, arg); \
-    if(!game_allowed) \
-    { \
-      setting = DEFAULT_V(setting); \
-      load_arg_file(arg, true); \
-      ASSERTEQX((int)(setting), DEFAULT, arg); \
-    } \
-  } \
-} while(0)
+  for(int i = -16; i < 32; i++)
+  {
+    ssize_t tmp = (max - min) * i / 16 + min;
+    ssize_t expected = (tmp >= min && tmp <= max) ? tmp : default_value;
 
-#define TEST_ENUM(setting_name, setting, data) \
-do { \
-  for(int _i = 0; _i < arraysize(data); _i++) \
-  { \
-    char arg[512]; \
-    snprintf(arg, 512, "%s=%s", setting_name, data[_i].value); \
-    setting = DEFAULT_V(setting); \
-    load_arg(arg); \
-    ASSERTEQX((int)(setting), (int)data[_i].expected, arg); \
-    setting = DEFAULT_V(setting); \
-    load_arg_file(arg, game_allowed); \
-    ASSERTEQX((int)(setting), (int)data[_i].expected, arg); \
-    if(!game_allowed) \
-    { \
-      setting = DEFAULT_V(setting); \
-      load_arg_file(arg, true); \
-      ASSERTEQX((int)(setting), DEFAULT, arg); \
-    } \
-  } \
-} while(0)
+    if(tmp < (ssize_t)std::numeric_limits<T>::min() ||
+     tmp > (ssize_t)std::numeric_limits<T>::max())
+      continue;
 
-#define TEST_PAIR(setting_name, setting_a, setting_b, data) \
-do { \
-  for(int _i = 0; _i < arraysize(data); _i++) \
-  { \
-    char arg[512]; \
-    snprintf(arg, 512, "%s=%s", setting_name, data[_i].value); \
-    setting_a = DEFAULT_V(setting_a); \
-    setting_b = DEFAULT_V(setting_b); \
-    load_arg(arg); \
-    ASSERTEQX((int)(setting_a), (int)data[_i].expected_a, arg); \
-    ASSERTEQX((int)(setting_b), (int)data[_i].expected_b, arg); \
-    setting_a = DEFAULT_V(setting_a); \
-    setting_b = DEFAULT_V(setting_b); \
-    load_arg_file(arg, game_allowed); \
-    ASSERTEQX((int)(setting_a), (int)data[_i].expected_a, arg); \
-    ASSERTEQX((int)(setting_b), (int)data[_i].expected_b, arg); \
-    if(!game_allowed) \
-    { \
-      setting_a = DEFAULT_V(setting_a); \
-      setting_b = DEFAULT_V(setting_b); \
-      load_arg_file(arg, true); \
-      ASSERTEQX((int)(setting_a), DEFAULT, arg); \
-      ASSERTEQX((int)(setting_b), DEFAULT, arg); \
-    } \
-  } \
-} while(0)
+    snprintf(arg, arraysize(arg), "%s=%zd", setting_name, tmp);
 
-#define TEST_STRING(setting_name, setting, data) \
-do { \
-  for(int _i = 0; _i < arraysize(data); _i++) \
-  { \
-    char arg[512]; \
-    size_t len = MIN(strlen(data[_i].expected), sizeof(setting) - 1); \
-    snprintf(arg, 512, "%s=%s", setting_name, data[_i].value); \
-    setting[0] = '\0'; \
-    load_arg(arg); \
-    ASSERTXNCMP(setting, data[_i].expected, len, arg); \
-    ASSERTEQX(setting[len], '\0', arg); \
-    setting[0] = '\0'; \
-    load_arg_file(arg, game_allowed); \
-    ASSERTXNCMP(setting, data[_i].expected, len, arg); \
-    ASSERTEQX(setting[len], '\0', arg); \
-    if(!game_allowed) \
-    { \
-      setting[0] = '\0'; \
-      load_arg_file(arg, true); \
-      ASSERTEQX(setting[0], '\0', arg); \
-    } \
-  } \
-} while(0)
+    setting = default_value;
+    load_arg(arg);
+    ASSERTEQX((ssize_t)setting, expected, arg);
+
+    setting = default_value;
+    load_arg_file(arg, game_allowed);
+    ASSERTEQX((ssize_t)setting, expected, arg);
+
+    if(!game_allowed)
+    {
+      setting = default_value;
+      load_arg_file(arg, true);
+      ASSERTEQX(setting, default_value, arg);
+    }
+  }
+}
+
+template<class T, int NUM_TESTS>
+void TEST_ENUM(const char *setting_name, T &setting,
+ const config_test_single (&data)[NUM_TESTS])
+{
+  constexpr T default_value = static_cast<T>(DEFAULT);
+  char arg[512];
+
+  for(int i = 0; i < NUM_TESTS; i++)
+  {
+    snprintf(arg, arraysize(arg), "%s=%s", setting_name, data[i].value);
+
+    setting = default_value;
+    load_arg(arg);
+    ASSERTEQX((int)setting, data[i].expected, arg);
+
+    setting = default_value;
+    load_arg_file(arg, game_allowed);
+    ASSERTEQX((int)setting, data[i].expected, arg);
+
+    if(!game_allowed)
+    {
+      setting = default_value;
+      load_arg_file(arg, true);
+      ASSERTEQX(setting, default_value, arg);
+    }
+  }
+}
+
+template<class T, int NUM_TESTS>
+void TEST_PAIR(const char *setting_name, T &setting_a, T &setting_b,
+ const config_test_pair (&data)[NUM_TESTS])
+{
+  constexpr T default_value = static_cast<T>(DEFAULT);
+  char arg[512];
+
+  for(int i = 0; i < NUM_TESTS; i++)
+  {
+    snprintf(arg, 512, "%s=%s", setting_name, data[i].value);
+
+    setting_a = default_value;
+    setting_b = default_value;
+    load_arg(arg);
+    ASSERTEQX((int)setting_a, data[i].expected_a, arg);
+    ASSERTEQX((int)setting_b, data[i].expected_b, arg);
+
+    setting_a = default_value;
+    setting_b = default_value;
+    load_arg_file(arg, game_allowed);
+    ASSERTEQX((int)setting_a, data[i].expected_a, arg);
+    ASSERTEQX((int)setting_b, data[i].expected_b, arg);
+
+    if(!game_allowed)
+    {
+      setting_a = default_value;
+      setting_b = default_value;
+      load_arg_file(arg, true);
+      ASSERTEQX(setting_a, default_value, arg);
+      ASSERTEQX(setting_b, default_value, arg);
+    }
+  }
+}
+
+template<size_t S, int NUM_TESTS>
+void TEST_STRING(const char *setting_name, char (&setting)[S],
+ const config_test_string (&data)[NUM_TESTS])
+{
+  char arg[512];
+
+  for(int i = 0; i < NUM_TESTS; i++)
+  {
+    size_t len = std::min(strlen(data[i].expected), S - 1);
+    snprintf(arg, arraysize(arg), "%s=%s", setting_name, data[i].value);
+
+    setting[0] = '\0';
+    load_arg(arg);
+    ASSERTXNCMP(setting, data[i].expected, len, arg);
+    ASSERTEQX(setting[len], '\0', arg);
+
+    setting[0] = '\0';
+    load_arg_file(arg, game_allowed);
+    ASSERTXNCMP(setting, data[i].expected, len, arg);
+    ASSERTEQX(setting[len], '\0', arg);
+
+    if(!game_allowed)
+    {
+      setting[0] = '\0';
+      load_arg_file(arg, true);
+      ASSERTEQX(setting[0], '\0', arg);
+    }
+  }
+}
 
 UNITTEST(Settings)
 {
   struct config_info *conf = get_config();
-  boolean game_allowed = false;
 
   static const config_test_single boolean_data[] =
   {
@@ -305,6 +331,7 @@ UNITTEST(Settings)
     { "triple\\s\\s\\sspace", "triple   space" },
   };
 
+  game_allowed = false;
   default_config();
 
   // Video options.

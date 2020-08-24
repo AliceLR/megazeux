@@ -20,14 +20,13 @@
 // Asynchronous wrapper for getaddrinfo. This was easier to implement than
 // trying to work with platform-dependent solutions.
 
-#include "dns.h"
-#include "socksyms.h"
+#include <assert.h>
+
+#include "DNS.hpp"
+#include "Socket.hpp"
 
 #include "../platform.h"
 #include "../util.h"
-
-// Default thread cap for lookups (note: can get overriden by update host count)
-#define DNS_DEFAULT_MAX_THREADS 3
 
 #define LOCK(d)         platform_mutex_lock(&(d->mutex))
 #define UNLOCK(d)       platform_mutex_unlock(&(d->mutex))
@@ -43,6 +42,7 @@ enum dns_state
   STATE_LOOKUP,
   STATE_SUCCESS,
   STATE_ABORT,
+  NUM_DNS_STATES
 };
 
 struct dns_data
@@ -61,6 +61,7 @@ struct dns_data
 static struct dns_data *threads;
 static int threads_count;
 static int threads_max;
+static int init_ref_count;
 
 static void set_dns_thread_data(struct dns_data *data,
  const char *node, const char *service, const struct addrinfo *hints)
@@ -68,8 +69,8 @@ static void set_dns_thread_data(struct dns_data *data,
   size_t node_len = strlen(node) + 1;
   size_t service_len = strlen(service) + 1;
 
-  data->node = cmalloc(node_len);
-  data->service = cmalloc(service_len);
+  data->node = (char *)cmalloc(node_len);
+  data->service = (char *)cmalloc(service_len);
   memcpy(data->node, node, node_len);
   memcpy(data->service, service, service_len);
   memcpy(&(data->hints), hints, sizeof(struct addrinfo));
@@ -81,7 +82,7 @@ static void free_dns_thread_data(struct dns_data *data, boolean free_result)
   free(data->node);
   free(data->service);
   if(free_result && data->res)
-    platform_freeaddrinfo(data->res);
+    Socket::freeaddrinfo(data->res);
 
   data->node = NULL;
   data->service = NULL;
@@ -106,7 +107,7 @@ static THREAD_RES run_dns_thread(void *_data)
     if(data->state == STATE_LOOKUP)
     {
       trace("--DNS-- Starting lookup.\n");
-      ret = platform_getaddrinfo(data->node, data->service, &(data->hints),
+      ret = Socket::getaddrinfo(data->node, data->service, &(data->hints),
        &(data->res));
     }
 
@@ -175,7 +176,7 @@ static void destroy_dns_thread(struct dns_data *data)
   free_dns_thread_data(data, true);
 }
 
-int dns_getaddrinfo(const char *node, const char *service,
+int DNS::lookup(const char *node, const char *service,
  const struct addrinfo *hints, struct addrinfo **res, Uint32 timeout)
 {
   int ret;
@@ -227,29 +228,40 @@ int dns_getaddrinfo(const char *node, const char *service,
 
   // Try to run manually instead.
   trace("--DNS-- No DNS threads available; running lookup in main thread.\n");
-  ret = platform_getaddrinfo(node, service, hints, res);
+  ret = Socket::getaddrinfo(node, service, hints, res);
   trace("--DNS-- Completed successfully (return code %d)\n", ret);
   return ret;
 }
 
-boolean dns_init(struct config_info *conf)
+boolean DNS::init(struct config_info *conf)
 {
-  threads_max = DNS_DEFAULT_MAX_THREADS;
+  if(!init_ref_count)
+  {
+    if(!Socket::init(conf))
+      return false;
+
+    threads_max = DNS::DEFAULT_MAX_THREADS;
 
 #ifdef CONFIG_UPDATER
-  if(threads_max < conf->update_host_count)
-    threads_max = conf->update_host_count;
+    if(threads_max < conf->update_host_count)
+      threads_max = conf->update_host_count;
 #endif
 
-  threads = ccalloc(threads_max, sizeof(struct dns_data));
-  threads_count = 0;
+    threads = (struct dns_data *)ccalloc(threads_max, sizeof(struct dns_data));
+    threads_count = 0;
+  }
+  init_ref_count++;
   return true;
 }
 
-void dns_exit(void)
+void DNS::exit(void)
 {
-  int i;
-  for(i = 0; i < threads_count; i++)
+  assert(init_ref_count > 0);
+  init_ref_count--;
+  if(init_ref_count != 0)
+    return;
+
+  for(int i = 0; i < threads_count; i++)
   {
     if(threads[i].state != STATE_INIT)
     {
@@ -260,4 +272,7 @@ void dns_exit(void)
   }
 
   free(threads);
+  threads = nullptr;
+  threads_count = 0;
+  Socket::exit();
 }

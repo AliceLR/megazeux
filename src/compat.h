@@ -29,6 +29,22 @@
 #define __M_BEGIN_DECLS extern "C" {
 #define __M_END_DECLS   }
 
+#if __cplusplus >= 201103
+#define IS_CXX_11 1
+#else /* !IS_CXX_11 */
+// Compatibility defines so certain C++11 features can be used without checks.
+// Don't create any variables named "final" or "noexcept"...
+#include <stddef.h>
+#define nullptr (NULL)
+#define final
+#define noexcept
+#define override
+#endif /* !IS_CXX_11 */
+
+#ifdef _MSC_VER
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
+
 #else
 
 #define __M_BEGIN_DECLS
@@ -225,6 +241,8 @@ static inline int check_chdir(const char *path)
 
 #include <stddef.h>
 
+CORE_LIBSPEC void check_alloc_init(void);
+
 #define ccalloc(nmemb, size) check_calloc(nmemb, size, __FILE__, __LINE__)
 CORE_LIBSPEC void *check_calloc(size_t nmemb, size_t size, const char *file,
  int line);
@@ -240,6 +258,8 @@ CORE_LIBSPEC void *check_realloc(void *ptr, size_t size, const char *file,
 #else /* CONFIG_CHECK_ALLOC */
 
 #include <stdlib.h>
+
+static inline void check_alloc_init(void) {}
 
 static inline void *ccalloc(size_t nmemb, size_t size)
 {

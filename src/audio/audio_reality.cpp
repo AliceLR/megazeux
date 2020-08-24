@@ -40,24 +40,6 @@
 // player much easier.
 #define ORDER_LINES 64
 
-// HACK: MSYS2 libstdc++ wants to link lpthread when regular new is
-// used, but there may not be a good way to force it to link static.
-// Using placement new on a regular alloc means nothing should throw
-// and thus nothing should try to link lpthread anymore.
-template<typename T>//typename ...Args>
-T *nothrow_new(int i)//(Args... args)
-{
-  T *t = new(ccalloc(1,sizeof(T))) T(i); //T(args...);
-  return t;
-}
-
-template<typename T>
-void nothrow_delete(T *t)
-{
-  t->~T();
-  free(t);
-}
-
 struct rad_stream_cls
 {
   Opal adlib;
@@ -193,7 +175,7 @@ static void rad_destruct(struct audio_stream *a_src)
 {
   struct rad_stream *rad_stream = (struct rad_stream *)a_src;
   free(rad_stream->data);
-  nothrow_delete(rad_stream->cls);
+  delete rad_stream->cls;
   sampled_destruct(a_src);
 }
 
@@ -243,7 +225,7 @@ static struct audio_stream *construct_rad_stream(char *filename,
       if(!validate)
       {
         rad_stream = (struct rad_stream *)cmalloc(sizeof(struct rad_stream));
-        cls = nothrow_new<rad_stream_cls>(audio.output_frequency);
+        cls = new rad_stream_cls(audio.output_frequency);
 
         cls->player.Init(data, rad_player_callback, cls);
         rate = cls->player.GetHertz();

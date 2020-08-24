@@ -17,18 +17,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __MANIFEST_H
-#define __MANIFEST_H
+#ifndef __MANIFEST_HPP
+#define __MANIFEST_HPP
 
 #include "../compat.h"
-
-__M_BEGIN_DECLS
-
 #include "../platform.h"
+
 #include "sha256.h"
-#include "host.h"
+#include "HTTPHost.hpp"
 
 #define MANIFEST_TXT "manifest.txt"
+#define LOCAL_MANIFEST_TXT MANIFEST_TXT
+#define REMOTE_MANIFEST_TXT "manifest.remote.txt"
 
 struct manifest_entry
 {
@@ -46,13 +46,13 @@ UPDATER_LIBSPEC struct manifest_entry *manifest_list_create(FILE *f);
 
 UPDATER_LIBSPEC void manifest_entry_free(struct manifest_entry *e);
 UPDATER_LIBSPEC void manifest_list_free(struct manifest_entry **head);
-UPDATER_LIBSPEC enum host_status manifest_get_updates(struct host *h,
+UPDATER_LIBSPEC boolean manifest_check_remote_exists(HTTPHost &http,
+ const char *basedir);
+UPDATER_LIBSPEC HTTPHostStatus manifest_get_updates(HTTPHost &http,
  const char *basedir, struct manifest_entry **removed,
  struct manifest_entry **replaced, struct manifest_entry **added);
-UPDATER_LIBSPEC boolean manifest_entry_download_replace(struct host *h,
+UPDATER_LIBSPEC boolean manifest_entry_download_replace(HTTPHost &http,
  const char *basedir, struct manifest_entry *e,
  void (*delete_hook)(const char *file));
 
-__M_END_DECLS
-
-#endif // __MANIFEST_H
+#endif /* __MANIFEST_HPP */

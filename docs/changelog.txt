@@ -16,6 +16,22 @@ USERS
 + Fixed a bug where the GLSL renderer could attempt to load the
   framebuffer symbols from a driver that doesn't support them
   when resizing the window.
++ Fixed a bug where checkres wouldn't correctly detect
+  "LOAD_ROBOT#" when used to load to a specific robot.
++ Fixed a memory leak when printing network error messages in
+  Windows builds.
++ Fixed a potential crash bug in the netcode where socket IDs
+  could be reused after close() when attempting to connect.
++ Fixed a crash bug affecting the compatibility implementation
+  of getaddrinfo() that would occur if NULL was returned by
+  gethostbyname() during DNS resolution.
++ Fixed a potential crash in the compatibility implementation of
+  getaddrinfo() caused by gethostbyname() being thread-unsafe.
++ Fixed a bug where the updater would hang for up to 10 seconds
+  due to connections timing out during the confirmation UI.
++ Fixed a bug where the local manifest.txt would be overwritten
+  by the remote manifest, potentially causing bugs. The local
+  manifest will now be replaced only after a successful update.
 
 DEVELOPERS
 
@@ -26,6 +42,20 @@ DEVELOPERS
   "make build" when the platform build directory already exists
   would not copy any updated binaries/assets/etc., potentially
   causing confusion.
++ The check_alloc series of functions should now be thread safe.
+  The main thread will display a fatal error as usual when
+  allocation fails; others threads will print a warning and
+  return NULL.
++ Added implementations of new/delete/__cxa_pure_virtual that
+  can be linked to avoid linking libstdc++/libc++ on platforms
+  and configurations that otherwise don't need those libraries.
++ Refactored the netcode to use C++ instead of/in addition to C,
+  allowing some cleanup that otherwise wouldn't have worked.
+  Host::bind, Host::listen, Host::accept, and Host::poll are no
+  longer disabled. Other network deadcode functions have been
+  updated but are still disabled.
++ Fixed FD_ISSET in the Windows netcode.
++ Added a EAI_AGAIN define for the getaddrinfo() fallback.
 
 
 July 20th, 2020 - MZX 2.92e
