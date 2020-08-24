@@ -70,7 +70,7 @@ arch/wii/%.o: arch/wii/%.c
 #
 # Need to nest Wii binaries in a subdir
 #
-build := build/${SUBPLATFORM}/apps/megazeux
+build := ${build_root}/apps/megazeux
 build: package ${build}
 ifeq ($(BUILD_SDL),)
 	${CP} arch/wii/pad.config ${build}

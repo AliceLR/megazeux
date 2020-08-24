@@ -37,6 +37,11 @@ DEVELOPERS
 
 + The test worlds now run correctly when AddressSanitizer is
   enabled.
++ Using "make build" will now remove the build/${SUBPLATFORM}
+  directory if it exists before preparing a build. Before, using
+  "make build" when the platform build directory already exists
+  would not copy any updated binaries/assets/etc., potentially
+  causing confusion.
 + The check_alloc series of functions should now be thread safe.
   The main thread will display a fatal error as usual when
   allocation fails; others threads will print a warning and

@@ -23,6 +23,16 @@ include version.inc
 all: mzx
 debuglink: all mzx.debug
 
+#
+# ${build_root}: base location where builds are copied to be archived for release.
+# ${build}: location where the MegaZeux executable and data files should be placed.
+# Defaults to ${build_root}, but the architecture Makefile may override this to
+# use a subdirectory instead. This is useful when a platform expects a particular
+# path hierarchy within the archive (e.g. MacOS .app bundles).
+#
+build_root := build/${SUBPLATFORM}
+build := ${build_root}
+
 -include arch/${PLATFORM}/Makefile.in
 
 CC      ?= gcc
@@ -417,12 +427,15 @@ all: utils
 endif
 
 ifeq (${build},)
-build := build/${SUBPLATFORM}
+build := ${build_root}
 endif
+
+.PHONY: ${build}
 
 build: ${build} ${build}/assets ${build}/docs
 
 ${build}:
+	${RM} -r ${build_root}
 	${MKDIR} -p ${build}
 	${CP} config.txt LICENSE ${build}
 	@if test -f ${mzxrun}; then \
