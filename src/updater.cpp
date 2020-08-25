@@ -710,30 +710,29 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
   int cur_host;
   char *update_host;
   char *url_base = nullptr;
-  boolean delete_remote_manifest = true;
+  boolean delete_remote_manifest = false;
   boolean try_next_host = true;
   boolean ret = false;
 
-  set_context(CTX_UPDATER);
   set_error_suppression(E_UPDATE, false);
 
   if(!updater_was_initialized)
   {
     error_message(E_UPDATE, 13,
      "Updater couldn't be initialized; check folder permissions");
-    goto err_out;
+    return false;
   }
 
   if(conf->update_host_count < 1)
   {
-    error_message(E_UPDATE, 14,
-     "No updater hosts defined! Aborting.");
-    goto err_out;
+    error_message(E_UPDATE, 14, "No updater hosts defined! Aborting.");
+    return false;
   }
 
   if(!swivel_current_dir(true))
-    goto err_out;
+    return false;
 
+  set_context(CTX_UPDATER);
   url_base = (char *)cmalloc(LINE_BUF_LEN);
 
   for(cur_host = 0; (cur_host < conf->update_host_count) && try_next_host; cur_host++)
@@ -767,7 +766,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
       if(!reissue_connection(http, update_host, is_automatic))
-        goto err_host_destroy;
+        goto err_try_next_host;
 
       // Grab the file containing the names of the current Stable and Unstable
       strcpy(request.url, "/" UPDATES_TXT);
@@ -799,7 +798,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
         error_message(E_UPDATE, 16, widget_buf);
       }
-      goto err_host_destroy;
+      goto err_try_next_host;
     }
 
     trace("--UPDATER-- Checking " UPDATES_TXT " for updates.\n");
@@ -839,7 +838,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       if(!is_automatic)
         error_message(E_UPDATE, 17,
          "Failed to identify applicable update version.");
-      goto err_host_destroy;
+      goto err_try_next_host;
     }
 
     /* There's likely to be a space prepended to the version number.
@@ -862,7 +861,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       if(is_automatic && conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
       {
         try_next_host = false;
-        goto err_host_destroy;
+        goto err_try_next_host;
       }
 
       version = ui_new_version_available(ctx, version, value);
@@ -872,7 +871,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       if(version == NULL)
       {
         try_next_host = false;
-        goto err_host_destroy;
+        goto err_try_next_host;
       }
     }
 
@@ -886,12 +885,13 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
       if(reconnect && !reissue_connection(http, update_host, false))
-        goto err_host_destroy;
+        goto err_try_next_host;
 
       display_manifest();
 
       status = Manifest::get_updates(http, request, url_base,
        removed, replaced, added);
+      delete_remote_manifest = true;
 
       display_clear();
 
@@ -902,7 +902,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       if(status == HOST_HTTP_REDIRECT || status == HOST_HTTP_CLIENT_ERROR)
       {
         error_message(E_UPDATE, 19, "No updates available for this platform.");
-        goto err_host_destroy;
+        goto err_try_next_host;
       }
       reconnect = true;
     }
@@ -910,7 +910,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     if(retries == MAX_RETRIES)
     {
       error_message(E_UPDATE, 20, "Failed to fetch or process update manifest");
-      goto err_host_destroy;
+      goto err_try_next_host;
     }
 
     // At this point, we have a successful manifest, so we won't need another host
@@ -921,11 +921,11 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       boolean has_next_host = (cur_host < conf->update_host_count);
 
       if(is_automatic)
-        goto err_cleanup;
+        goto err_try_next_host;
 
       // The user may want to attempt an update from the next host.
       try_next_host = ui_version_is_current(ctx, has_next_host);
-      goto err_cleanup;
+      goto err_try_next_host;
     }
 
     // Set the updates available notification if it hasn't been set already.
@@ -935,7 +935,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     if(is_automatic)
     {
       if(conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
-        goto err_cleanup;
+        goto err_try_next_host;
 
       http.set_timeout_ms(Host::TIMEOUT_DEFAULT);
       is_automatic = 0;
@@ -948,7 +948,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     reconnect = true;
 
     if(entries <= 0)
-      goto err_cleanup;
+      goto err_try_next_host;
 
     /* Defer deletions until we restart; any of these files may still be
      * in use by this (old) process. Reduce the number of entries by the
@@ -981,11 +981,11 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
             reconnect = false;
           }
           else
-            goto err_cleanup;
+            goto err_try_next_host;
         }
 
         if(!check_create_basedir(e->name))
-          goto err_cleanup;
+          goto err_try_next_host;
 
         final_size = (long)e->size;
         display_download_init(e->name, i, entries);
@@ -1001,7 +1001,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         if(cancel_update)
         {
           error_message(E_UPDATE, 21, "Download was cancelled; update aborted.");
-          goto err_cleanup;
+          goto err_try_next_host;
         }
         reconnect = true;
       }
@@ -1012,31 +1012,30 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
          "Failed to download \"%s\" (after %d attempts).", e->name, retries);
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
         error_message(E_UPDATE, 22, widget_buf);
-        goto err_cleanup;
+        goto err_try_next_host;
       }
     }
 
     if(!write_delete_list(delete_list))
-      goto err_cleanup;
+      goto err_try_next_host;
 
     delete_remote_manifest = false;
     if(!replace_manifest())
-      goto err_cleanup;
+      goto err_try_next_host;
 
     try_next_host = false;
     ret = true;
-err_cleanup:
-    if(delete_remote_manifest)
-      unlink(REMOTE_MANIFEST_TXT);
-err_host_destroy:
+err_try_next_host:
     http.close();
-
-    pop_context();
   } //end host for loop
 
 err_chdir:
+  if(delete_remote_manifest)
+    unlink(REMOTE_MANIFEST_TXT);
+
   swivel_current_dir_back(true);
-err_out:
+
+  pop_context();
   free(url_base);
 
   if(ret)
