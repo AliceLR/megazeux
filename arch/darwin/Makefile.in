@@ -138,8 +138,8 @@ ifneq (${PREFIX_PPC64},)
 endif
 	@${MAKE} lipo
 
-mzx_app := build/${SUBPLATFORM}/MegaZeux.app/
-mzxrun_app := build/${SUBPLATFORM}/MZXRun.app/
+mzx_app := ${build_root}/MegaZeux.app/
+mzxrun_app := ${build_root}/MZXRun.app/
 
 build := ${mzx_app}/Contents/Resources
 build:

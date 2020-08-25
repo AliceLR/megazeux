@@ -68,7 +68,9 @@ int real_main(int argc, char *argv[]);
 #error Provide a valid thread/mutex implementation for this platform!
 #endif
 
-#endif // defined(CONFIG_AUDIO) || defined(CONFIG_NETWORK) || defined(CONFIG_WII)
+#else
+#include "thread_dummy.h"
+#endif
 
 CORE_LIBSPEC void delay(Uint32 ms);
 CORE_LIBSPEC Uint32 get_ticks(void);

@@ -94,7 +94,7 @@ package: mzx mzxrun.smdh
 clean:
 	@rm -f ${mzxrun}.{smdh,cia,3dsx} megazeux-cia.smdh megazeux-cia.bnr arch/3ds/*.{d,o} arch/3ds/*shbin*
 
-build := build/${SUBPLATFORM}/3ds/megazeux
+build := ${build_root}/3ds/megazeux
 build: package ${build}
 	${CP} arch/3ds/pad.config ${build}
 	${CP} ${mzxrun}.3dsx ${build}
