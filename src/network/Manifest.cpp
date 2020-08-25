@@ -22,6 +22,7 @@
 #include "HTTPHost.hpp"
 #include "../util.h"
 #include "../io/fsafeopen.h"
+#include "../io/memfile.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -196,24 +197,46 @@ static boolean manifest_parse_size(char *p, size_t *size)
   return true;
 }
 
-void Manifest::create(const Manifest &src)
+static ManifestEntry *manifest_parse_line(char *buffer)
 {
-  const ManifestEntry *src_current = src.head;
-  ManifestEntry *current = nullptr;
-  ManifestEntry *next;
-  this->clear();
-
-  while(src_current)
+  if(buffer[0])
   {
-    next = new ManifestEntry(*src_current);
-    src_current = src_current->next;
+    Uint32 sha256[8];
+    size_t size;
+    char *m = buffer, *line;
 
-    if(current)
-      current->next = next;
-    else
-      this->head = next;
-    current = next;
+    // Grab the sha256 token
+    line = strsep(&m, " ");
+    if(!line)
+      return nullptr;
+
+    /* Break the 64 character (8x8) hex string down into
+     * eight constituent 32bit SHA result registers (32*8=256).
+     */
+    if(!manifest_parse_sha256(line, sha256))
+      return nullptr;
+
+    // Grab the size token
+    line = strsep(&m, " ");
+    if(!line)
+      return nullptr;
+
+    // Validate and parse it
+    if(!manifest_parse_size(line, &size))
+      return nullptr;
+
+    // Grab the filename token
+    line = strsep(&m, "\n");
+    if(!line)
+      return nullptr;
+
+    // Reject any invalid or insecure filenames.
+    if(!ManifestEntry::validate_filename(line))
+      return nullptr;
+
+    return new ManifestEntry(sha256, size, line);
   }
+  return nullptr;
 }
 
 void Manifest::create(FILE *f)
@@ -221,68 +244,18 @@ void Manifest::create(FILE *f)
   char buffer[LINE_BUF_LEN];
   boolean has_errors = false;
   ManifestEntry *current = nullptr;
-  ManifestEntry *next;
   this->clear();
 
   // Walk the manifest line by line
-  while(true)
+  while(fsafegets(buffer, LINE_BUF_LEN, f))
   {
-    Uint32 sha256[8];
-    size_t size;
-    char *m = buffer, *line;
-
-    // Grab a single line from the manifest
-    if(!fsafegets(buffer, LINE_BUF_LEN, f))
-      break;
-
-    // Grab the sha256 token
-    line = strsep(&m, " ");
-    if(!line)
+    ManifestEntry *next = manifest_parse_line(buffer);
+    if(!next)
     {
       has_errors = true;
       continue;
     }
 
-    /* Break the 64 character (8x8) hex string down into
-     * eight constituent 32bit SHA result registers (32*8=256).
-     */
-    if(!manifest_parse_sha256(line, sha256))
-    {
-      has_errors = true;
-      continue;
-    }
-
-    // Grab the size token
-    line = strsep(&m, " ");
-    if(!line)
-    {
-      has_errors = true;
-      continue;
-    }
-
-    // Validate and parse it
-    if(!manifest_parse_size(line, &size))
-    {
-      has_errors = true;
-      continue;
-    }
-
-    // Grab the filename token
-    line = strsep(&m, "\n");
-    if(!line)
-    {
-      has_errors = true;
-      continue;
-    }
-
-    // Reject any invalid or insecure filenames.
-    if(!ManifestEntry::validate_filename(line))
-    {
-      has_errors = true;
-      continue;
-    }
-
-    next = new ManifestEntry(sha256, size, line);
     if(current)
       current->next = next;
     else
@@ -306,6 +279,49 @@ boolean Manifest::create(const char *filename)
   this->create(f);
   fclose(f);
   return true;
+}
+
+void Manifest::create(const void *data, size_t data_len)
+{
+  char buffer[LINE_BUF_LEN];
+  ManifestEntry *current = nullptr;
+  struct memfile mf;
+  this->clear();
+
+  mfopen(data, data_len, &mf);
+
+  while(mfsafegets(buffer, LINE_BUF_LEN, &mf))
+  {
+    ManifestEntry *next = manifest_parse_line(buffer);
+    if(!next)
+      continue;
+
+    if(current)
+      current->next = next;
+    else
+      this->head = next;
+    current = next;
+  }
+}
+
+void Manifest::create(const Manifest &src)
+{
+  const ManifestEntry *src_current = src.head;
+  ManifestEntry *current = nullptr;
+  ManifestEntry *next;
+  this->clear();
+
+  while(src_current)
+  {
+    next = new ManifestEntry(*src_current);
+    src_current = src_current->next;
+
+    if(current)
+      current->next = next;
+    else
+      this->head = next;
+    current = next;
+  }
 }
 
 void Manifest::append(Manifest &src)

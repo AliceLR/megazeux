@@ -98,8 +98,9 @@ public:
   ~Manifest();
   void clear();
 
-  void create(const Manifest &src);
   boolean create(const char *filename);
+  void create(const void *data, size_t data_len);
+  void create(const Manifest &src);
 
   /**
    * Move the contents of the provided manifest to the end of this manifest.
