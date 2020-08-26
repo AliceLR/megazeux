@@ -49,9 +49,20 @@ public:
   /**
    * Check this manifest entry against its corresponding file.
    *
+   * @param fp          File pointer to validate.
+   *
    * @return `true` if the file exists and is an exact match, otherwise `false`.
    */
   boolean validate(FILE *fp) const;
+
+  /**
+   * Check this manifest entry against its corresponding file (indicated by
+   * its `name` field).
+   *
+   * @return `true` if the file has a valid filename, exists, and matches,
+   *         otherwise `false`.
+   */
+  boolean validate() const;
 
   /**
    * Filter invalid ManifestEntry filenames.

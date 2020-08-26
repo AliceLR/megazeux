@@ -56,6 +56,8 @@ DEVELOPERS
   updated but are still disabled.
 + Fixed FD_ISSET in the Windows netcode.
 + Added a EAI_AGAIN define for the getaddrinfo() fallback.
++ Fixed leak of updates.txt file pointers in the updater that
+  could occur when updates.txt fails to download.
 
 
 July 20th, 2020 - MZX 2.92e

@@ -33,6 +33,7 @@
 
 #include "network/HTTPHost.hpp"
 #include "network/Manifest.hpp"
+#include "network/Scoped.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -546,8 +547,6 @@ static void apply_delete_list(Manifest &delete_list)
   int retry_times = 0;
   struct stat s;
   boolean files_failed = false;
-  boolean is_valid;
-  FILE *f;
 
   while(e_next)
   {
@@ -556,14 +555,7 @@ static void apply_delete_list(Manifest &delete_list)
 
     if(!stat(e->name, &s))
     {
-      f = fopen_unsafe(e->name, "rb");
-      if(!f)
-        goto err_delete_failed;
-
-      is_valid = ManifestEntry::validate_filename(e->name) && e->validate(f);
-      fclose(f);
-
-      if(is_valid)
+      if(e->validate())
       {
         if(unlink(e->name))
           goto err_delete_failed;
@@ -710,6 +702,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
   int cur_host;
   char *update_host;
   char *url_base = nullptr;
+  boolean delete_updates_txt = false;
   boolean delete_remote_manifest = false;
   boolean try_next_host = true;
   boolean ret = false;
@@ -750,10 +743,9 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     const char *version = VERSION;
     unsigned int retries;
     boolean reconnect = false;
-    FILE *f;
 
     // Acid test: Can we write to this directory?
-    f = fopen_unsafe(UPDATES_TXT, "w+b");
+    Scoped<FILE, fclose> f = fopen_unsafe(UPDATES_TXT, "w+b");
     if(!f)
     {
       error_message(E_UPDATE, 15,
@@ -761,6 +753,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       goto err_chdir;
     }
 
+    delete_updates_txt = true;
     update_host = conf->update_hosts[cur_host];
 
     for(retries = 0; retries < MAX_RETRIES; retries++)
@@ -826,9 +819,6 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       if(strcmp(key, update_branch) == 0)
         break;
     }
-
-    fclose(f);
-    unlink(UPDATES_TXT);
 
     /* There was no "Current-XXX: Version" found; we cannot proceed with the
      * update because we cannot compute an update URL below.
@@ -1030,6 +1020,8 @@ err_try_next_host:
   } //end host for loop
 
 err_chdir:
+  if(delete_updates_txt)
+    unlink(UPDATES_TXT);
   if(delete_remote_manifest)
     unlink(REMOTE_MANIFEST_TXT);
 

@@ -20,6 +20,7 @@
 
 #include "Manifest.hpp"
 #include "HTTPHost.hpp"
+#include "Scoped.hpp"
 #include "../util.h"
 #include "../io/fsafeopen.h"
 #include "../io/memfile.h"
@@ -112,6 +113,19 @@ boolean ManifestEntry::validate(FILE *fp) const
   return true;
 }
 
+boolean ManifestEntry::validate() const
+{
+  // This should already have been checked but check it again anyway.
+  if(!ManifestEntry::validate_filename(this->name))
+    return false;
+
+  Scoped<FILE, fclose> f = fopen_unsafe(this->name, "rb");
+  if(!f)
+    return false;
+
+  return this->validate(f);
+}
+
 boolean ManifestEntry::validate_filename(const char *filename)
 {
   if(filename[0] == '/' || filename[0] == '\\' ||
@@ -130,14 +144,13 @@ ManifestEntry *ManifestEntry::create_from_file(const char *filename)
   if(!ManifestEntry::validate_filename(filename))
     return nullptr;
 
-  FILE *fp = fopen_unsafe(filename, "rb");
+  Scoped<FILE, fclose> fp = fopen_unsafe(filename, "rb");
   if(!fp)
     return nullptr;
 
   size = ftell_and_rewind(fp);
 
   boolean ret = ManifestEntry::compute_sha256(ctx, fp, size);
-  fclose(fp);
   if(!ret)
     return nullptr;
 
@@ -269,7 +282,7 @@ void Manifest::create(FILE *f)
 
 boolean Manifest::create(const char *filename)
 {
-  FILE *f = fopen_unsafe(filename, "rb");
+  Scoped<FILE, fclose> f = fopen_unsafe(filename, "rb");
   if(!f)
   {
     warn("Failed to open manifest file '%s'!\n", filename);
@@ -277,7 +290,6 @@ boolean Manifest::create(const char *filename)
   }
 
   this->create(f);
-  fclose(f);
   return true;
 }
 
@@ -377,7 +389,6 @@ HTTPHostStatus Manifest::get_remote(HTTPHost &http, HTTPRequestInfo &request,
  const char *basedir)
 {
   HTTPHostStatus ret;
-  FILE *f;
 
   trace("--MANIFEST-- Manifest::get_remote\n");
 
@@ -386,12 +397,11 @@ HTTPHostStatus Manifest::get_remote(HTTPHost &http, HTTPRequestInfo &request,
   snprintf(request.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, basedir);
   strcpy(request.expected_type, "text/plain");
 
-  f = fopen_unsafe(REMOTE_MANIFEST_TXT, "w+b");
+  Scoped<FILE, fclose> f = fopen_unsafe(REMOTE_MANIFEST_TXT, "w+b");
   if(!f)
   {
     warn("Failed to open local " REMOTE_MANIFEST_TXT " for writing\n");
-    ret = HOST_FWRITE_FAILED;
-    goto err_out;
+    return HOST_FWRITE_FAILED;
   }
 
   ret = http.get(request, f);
@@ -399,15 +409,11 @@ HTTPHostStatus Manifest::get_remote(HTTPHost &http, HTTPRequestInfo &request,
   {
     warn("Processing " REMOTE_MANIFEST_TXT " failed (code %d; error: %s)\n",
      request.status_code, HTTPHost::get_error_string(ret));
-    goto err_fclose;
+    return ret;
   }
 
   rewind(f);
   this->create(f);
-
-err_fclose:
-  fclose(f);
-err_out:
   return ret;
 }
 
@@ -486,7 +492,7 @@ void Manifest::filter_existing_files()
   {
     e_next = e->next;
 
-    FILE *f = fopen_unsafe(e->name, "rb");
+    Scoped<FILE, fclose> f = fopen_unsafe(e->name, "rb");
     if(f)
     {
       if(e->validate(f))
@@ -504,8 +510,6 @@ void Manifest::filter_existing_files()
         trace("Local file '%s' doesn't match the remote manifest entry.\n", e->name);
         prev = e;
       }
-
-      fclose(f);
     }
     else
     {
@@ -570,8 +574,6 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
 {
   char buf[LINE_BUF_LEN];
   HTTPHostStatus ret;
-  boolean valid = false;
-  FILE *f;
 
   assert(e);
 
@@ -579,14 +581,14 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
    * write protected or in-use. In this case, it may be possible to
    * rename the original file out of the way. Try this trick first.
    */
-  f = fopen_unsafe(e->name, "w+b");
+  Scoped<FILE, fclose> f = fopen_unsafe(e->name, "w+b");
   if(!f)
   {
     snprintf(buf, LINE_BUF_LEN, "%s-%u~", e->name, (unsigned int)time(NULL));
     if(rename(e->name, buf))
     {
       warn("Failed to rename in-use file '%s' to '%s'\n", e->name, buf);
-      goto err_out;
+      return false;
     }
 
     delete_list.append(ManifestEntry::create_from_file(buf));
@@ -595,7 +597,7 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
     if(!f)
     {
       warn("Unable to open file '%s' for writing\n", e->name);
-      goto err_out;
+      return false;
     }
   }
 
@@ -610,43 +612,34 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
   {
     warn("File '%s' could not be downloaded (code %d; error: %s)\n", e->name,
      request.status_code, HTTPHost::get_error_string(ret));
-    goto err_close;
+    return false;
   }
 
   rewind(f);
   if(!e->validate(f))
   {
     warn("File '%s' failed validation\n", e->name);
-    goto err_close;
+    return false;
   }
 
-  valid = true;
-err_close:
-  fclose(f);
-err_out:
-  return valid;
+  return true;
 }
 
 boolean Manifest::write_to_file(const char *filename) const
 {
-  ManifestEntry *e;
-  FILE *f;
-
   if(this->head)
   {
-    f = fopen_unsafe(filename, "ab");
+    Scoped<FILE, fclose> f = fopen_unsafe(filename, "ab");
     if(!f)
       return false;
 
-    for(e = this->head; e; e = e->next)
+    for(ManifestEntry *e = this->head; e; e = e->next)
     {
       fprintf(f, "%08x%08x%08x%08x%08x%08x%08x%08x %zu %s\n",
        e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
        e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7],
        e->size, e->name);
     }
-
-    fclose(f);
   }
   return true;
 }
