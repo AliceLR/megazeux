@@ -143,6 +143,7 @@ Thumbs.db
 unit/.build/
 unit/editor/.build/
 unit/io/.build/
+unit/network/.build/
 /*.js
 /*.js.mem
 /*.js.orig.js
