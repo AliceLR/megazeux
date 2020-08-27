@@ -59,6 +59,11 @@ unit_ldflags += -L. -lcore
 ifneq (${BUILD_EDITOR},)
 unit_ldflags += -L. -leditor
 endif
+
+ifneq (${BUILD_NETWORK},)
+unit_objs += \
+  ${unit_obj_network}/Manifest${unit_ext}
+endif
 endif
 
 #
