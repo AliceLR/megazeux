@@ -36,6 +36,8 @@ class ScopedFile
 private:
   T *ptr;
 
+  ScopedFile &operator=(const ScopedFile &) { return *this; }
+
 public:
   ScopedFile(T *p = nullptr): ptr(p) {}
   ~ScopedFile()

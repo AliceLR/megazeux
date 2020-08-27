@@ -593,7 +593,7 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
 
     delete_list.append(ManifestEntry::create_from_file(buf));
 
-    f = fopen_unsafe(e->name, "w+b");
+    f.reset(fopen_unsafe(e->name, "w+b"));
     if(!f)
     {
       warn("Unable to open file '%s' for writing\n", e->name);
