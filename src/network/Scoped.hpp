@@ -31,21 +31,20 @@
  * RAII wrapper for <FILE, fclose> and <vfile, vfclose>.
  */
 template<class T, int (*RELEASE_FN)(T *)>
-class Scoped
+class ScopedFile
 {
 private:
   T *ptr;
 
 public:
-  Scoped(): ptr(nullptr) {}
-  Scoped(T *p): ptr(p) {}
-  ~Scoped()
+  ScopedFile(T *p = nullptr): ptr(p) {}
+  ~ScopedFile()
   {
     if(ptr)
       RELEASE_FN(ptr);
   }
 
-  Scoped &operator=(T *p)
+  void reset(T *p = nullptr)
   {
     if(p != ptr)
     {
@@ -53,7 +52,6 @@ public:
         RELEASE_FN(ptr);
       ptr = p;
     }
-    return *this;
   }
 
   operator T *() const
@@ -61,10 +59,7 @@ public:
     return ptr;
   }
 
-#ifdef IS_CXX_11
-  explicit
-#endif
-  operator bool() const
+  maybe_explicit operator bool() const
   {
     return ptr != nullptr;
   }

@@ -119,7 +119,7 @@ boolean ManifestEntry::validate() const
   if(!ManifestEntry::validate_filename(this->name))
     return false;
 
-  Scoped<FILE, fclose> f = fopen_unsafe(this->name, "rb");
+  ScopedFile<FILE, fclose> f = fopen_unsafe(this->name, "rb");
   if(!f)
     return false;
 
@@ -144,7 +144,7 @@ ManifestEntry *ManifestEntry::create_from_file(const char *filename)
   if(!ManifestEntry::validate_filename(filename))
     return nullptr;
 
-  Scoped<FILE, fclose> fp = fopen_unsafe(filename, "rb");
+  ScopedFile<FILE, fclose> fp = fopen_unsafe(filename, "rb");
   if(!fp)
     return nullptr;
 
@@ -282,7 +282,7 @@ void Manifest::create(FILE *f)
 
 boolean Manifest::create(const char *filename)
 {
-  Scoped<FILE, fclose> f = fopen_unsafe(filename, "rb");
+  ScopedFile<FILE, fclose> f = fopen_unsafe(filename, "rb");
   if(!f)
   {
     warn("Failed to open manifest file '%s'!\n", filename);
@@ -397,7 +397,7 @@ HTTPHostStatus Manifest::get_remote(HTTPHost &http, HTTPRequestInfo &request,
   snprintf(request.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, basedir);
   strcpy(request.expected_type, "text/plain");
 
-  Scoped<FILE, fclose> f = fopen_unsafe(REMOTE_MANIFEST_TXT, "w+b");
+  ScopedFile<FILE, fclose> f = fopen_unsafe(REMOTE_MANIFEST_TXT, "w+b");
   if(!f)
   {
     warn("Failed to open local " REMOTE_MANIFEST_TXT " for writing\n");
@@ -492,7 +492,7 @@ void Manifest::filter_existing_files()
   {
     e_next = e->next;
 
-    Scoped<FILE, fclose> f = fopen_unsafe(e->name, "rb");
+    ScopedFile<FILE, fclose> f = fopen_unsafe(e->name, "rb");
     if(f)
     {
       if(e->validate(f))
@@ -581,7 +581,7 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
    * write protected or in-use. In this case, it may be possible to
    * rename the original file out of the way. Try this trick first.
    */
-  Scoped<FILE, fclose> f = fopen_unsafe(e->name, "w+b");
+  ScopedFile<FILE, fclose> f = fopen_unsafe(e->name, "w+b");
   if(!f)
   {
     snprintf(buf, LINE_BUF_LEN, "%s-%u~", e->name, (unsigned int)time(NULL));
@@ -629,7 +629,7 @@ boolean Manifest::write_to_file(const char *filename) const
 {
   if(this->head)
   {
-    Scoped<FILE, fclose> f = fopen_unsafe(filename, "ab");
+    ScopedFile<FILE, fclose> f = fopen_unsafe(filename, "ab");
     if(!f)
       return false;
 

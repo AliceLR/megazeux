@@ -745,7 +745,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     boolean reconnect = false;
 
     // Acid test: Can we write to this directory?
-    Scoped<FILE, fclose> f = fopen_unsafe(UPDATES_TXT, "w+b");
+    ScopedFile<FILE, fclose> f = fopen_unsafe(UPDATES_TXT, "w+b");
     if(!f)
     {
       error_message(E_UPDATE, 15,
