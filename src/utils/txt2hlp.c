@@ -188,10 +188,10 @@ int main(int argc, char *argv[])
     }
 
     // Skip the rest of the line
-    while((current_char != '\n') && (current_char != -1))
+    while((current_char != '\n') && !feof(source))
       current_char = fgetc(source);
 
-  } while(current_char != -1);
+  } while(!feof(source));
 
   printf("Files: %d  Links: %d\n", num_files, num_links);
 
