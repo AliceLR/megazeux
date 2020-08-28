@@ -467,25 +467,6 @@ unsigned int Random(uint64_t range)
   return ((x * 0x2545F4914F6CDD1D) >> 32) * range / 0xFFFFFFFF;
 }
 
-int create_path_if_not_exists(const char *filename)
-{
-  struct stat stat_info;
-  char parent_directory[MAX_PATH];
-
-  if(path_get_directory(parent_directory, MAX_PATH, filename) <= 0)
-    return 1;
-
-  if(!stat(parent_directory, &stat_info))
-    return 2;
-
-  create_path_if_not_exists(parent_directory);
-
-  if(mkdir(parent_directory, 0755))
-    return 3;
-
-  return 0;
-}
-
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 
 /* On WIN32 with C99 defining __STRICT_ANSI__ these POSIX.1-2001 functions

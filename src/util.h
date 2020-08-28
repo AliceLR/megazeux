@@ -101,8 +101,6 @@ uint64_t rng_get_seed(void);
 void rng_set_seed(uint64_t seed);
 unsigned int Random(uint64_t range);
 
-CORE_LIBSPEC int create_path_if_not_exists(const char *filename);
-
 typedef void (*fn_ptr)(void);
 
 struct dso_syms_map

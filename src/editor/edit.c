@@ -1298,12 +1298,16 @@ static boolean editor_idle(context *ctx)
     {
       char backup_name_formatted[MAX_PATH];
       int backup_num = editor->backup_num + 1;
+      int ret;
 
       snprintf(backup_name_formatted, MAX_PATH, "%s%d%s",
        editor_conf->backup_name, backup_num, editor_conf->backup_ext);
 
       // Ensure any subdirectories exist before saving.
-      create_path_if_not_exists(editor_conf->backup_name);
+      ret = path_create_parent_recursively(editor_conf->backup_name);
+      if(ret != PATH_CREATE_SUCCESS)
+        warn("Failed to create backup directory for backup_name='%s' (ret=%d)!\n",
+         editor_conf->backup_name, ret);
 
       save_world(mzx_world, backup_name_formatted, false, MZX_VERSION);
       editor->backup_num = backup_num % editor_conf->backup_count;

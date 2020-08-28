@@ -304,7 +304,7 @@ static void display_download_update(long progress)
 
 static boolean check_prune_basedir(const char *file)
 {
-  static char path[MAX_PATH];
+  char path[MAX_PATH];
   ssize_t ret;
 
   ret = path_get_directory(path, MAX_PATH, file);
@@ -319,66 +319,50 @@ static boolean check_prune_basedir(const char *file)
     return true;
 
   // Attempt to remove the directory.
-  if(!rmdir(path))
+  while(!rmdir(path))
   {
     ssize_t len = strlen(path);
     info("--UPDATER-- Pruned empty directory '%s'\n", path);
 
     // If that worked, also try to remove the parent directory recursively.
-    if(path_navigate(path, MAX_PATH, "..") < len)
-      return check_prune_basedir(path);
+    ssize_t ret = path_navigate(path, MAX_PATH, "..");
+    if(ret < 0 || ret >= len)
+      break;
   }
   return true;
 }
 
-/* FIXME: The allocation of MAX_PATH on the stack in a recursive
- *        function WILL cause problems, eventually!
- */
 static boolean check_create_basedir(const char *file)
 {
-  static struct stat s;
-  char path[MAX_PATH];
-  ssize_t ret;
+  enum path_create_error ret = path_create_parent_recursively(file);
+  if(ret)
+    warn("Failed to mkdir() parent directory of '%s'\n", file);
 
-  ret = path_get_directory(path, MAX_PATH, file);
-  if(ret < 0)
+  switch(ret)
   {
-    error_message(E_UPDATE, 1, "Failed to create directories (path too long)");
-    return false;
-  }
+    case PATH_CREATE_SUCCESS:
+      return true;
 
-  // This file has no base directory
-  if(ret == 0)
-    return true;
+    case PATH_CREATE_ERR_BUFFER:
+      error_message(E_UPDATE, 1, "Failed to mkdir(); path is too long");
+      break;
 
-  if(stat(path, &s) < 0)
-  {
-    // Every other kind of error is fatal
-    if(errno != ENOENT)
+    case PATH_CREATE_ERR_STAT_ERROR:
+      error_message(E_UPDATE, 1, "Failed to mkdir(); unknown stat error occurred");
+      break;
+
+    case PATH_CREATE_ERR_MKDIR_FAILED:
+      error_message(E_UPDATE, 1, "Failed to mkdir(); check permissions");
+      break;
+
+    case PATH_CREATE_ERR_FILE_EXISTS:
     {
-      error_message(E_UPDATE, 2, "Unknown stat() error occurred");
-      return false;
+      error_message(E_UPDATE, 1,
+       "Failed to mkdir(); file exists with the specified name");
+      break;
     }
-
-    // Recursion; create any parent directory
-    if(!check_create_basedir(path))
-      return false;
-
-    // At the tail of the recursion we create the directory
-    mkdir(path, 0777);
-    return true;
   }
-
-  if(!S_ISDIR(s.st_mode))
-  {
-    snprintf(widget_buf, WIDGET_BUF_LEN,
-     "File \"%s\" prevents creation of directory by same name", path);
-    widget_buf[WIDGET_BUF_LEN - 1] = 0;
-    error_message(E_UPDATE, 3, widget_buf);
-    return false;
-  }
-
-  return true;
+  return false;
 }
 
 static void check_cancel_update(void)

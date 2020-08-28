@@ -20,6 +20,8 @@
 #include "../Unit.hpp"
 #include "../../src/io/path.c"
 
+#include <errno.h>
+
 /**
  * Allow tests to specify when stat should succeed or fail...
  */
@@ -29,6 +31,8 @@ static enum
   STAT_REG,
   STAT_DIR
 } stat_result_type = STAT_FAIL;
+int stat_result_errno = 0;
+int mkdir_result = 0;
 
 // Custom vstat so this builds without vfile.c and can control the output.
 int vstat(const char *path, struct stat *buf)
@@ -38,6 +42,7 @@ int vstat(const char *path, struct stat *buf)
   {
     default:
     case STAT_FAIL:
+      errno = stat_result_errno;
       return -1;
 
     case STAT_REG:
@@ -48,6 +53,11 @@ int vstat(const char *path, struct stat *buf)
       buf->st_mode = S_IFDIR;
       return 0;
   }
+}
+
+int vmkdir(const char *path, int mode)
+{
+  return mkdir_result;
 }
 
 int vaccess(const char *path, int mode)
@@ -1099,5 +1109,80 @@ UNITTEST(path_navigate)
       ASSERTEQX(result, -1, data[i].path);
       ASSERTCMP(buffer, data[i].path);
     }
+  }
+}
+
+struct path_mkdir_data
+{
+  const char *path;
+};
+
+template<size_t N>
+static void test_mkdir(const path_mkdir_data (&data)[N],
+ enum path_create_error expected)
+{
+  for(size_t i = 0; i < N; i++)
+  {
+    const path_mkdir_data &cur = data[i];
+    enum path_create_error ret = path_create_parent_recursively(cur.path);
+    ASSERTEQX(ret, expected, cur.path);
+  }
+}
+
+UNITTEST(path_create_parent_recursively)
+{
+  static const path_mkdir_data has_parent[] =
+  {
+    { "path/with/parent.txt" },
+    { "not\\really\\a\\lot\\to\\test\\here\\right\\now" },
+    { "check/out\\my/cool\\slashes" },
+  };
+
+  static const path_mkdir_data no_parent[] =
+  {
+    { "config.txt" },
+    { "lol.cnf" },
+    { "megazeux.exe" },
+  };
+
+  mkdir_result = 0;
+  stat_result_type = STAT_FAIL;
+  stat_result_errno = ENOENT;
+
+  SECTION(Success)
+  {
+    test_mkdir(has_parent, PATH_CREATE_SUCCESS);
+  }
+
+  SECTION(NoParent)
+  {
+    test_mkdir(no_parent, PATH_CREATE_SUCCESS);
+  }
+
+  SECTION(ParentExists)
+  {
+    stat_result_type = STAT_DIR;
+    test_mkdir(has_parent, PATH_CREATE_SUCCESS);
+  }
+
+  SECTION(FileExists)
+  {
+    stat_result_type = STAT_REG;
+    test_mkdir(no_parent, PATH_CREATE_SUCCESS);
+    test_mkdir(has_parent, PATH_CREATE_ERR_FILE_EXISTS);
+  }
+
+  SECTION(mkdirFail)
+  {
+    mkdir_result = -1;
+    test_mkdir(no_parent, PATH_CREATE_SUCCESS);
+    test_mkdir(has_parent, PATH_CREATE_ERR_MKDIR_FAILED);
+  }
+
+  SECTION(StatError)
+  {
+    stat_result_errno = EACCES;
+    test_mkdir(no_parent, PATH_CREATE_SUCCESS);
+    test_mkdir(has_parent, PATH_CREATE_ERR_STAT_ERROR);
   }
 }
