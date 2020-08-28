@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2020 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,7 +20,10 @@
 
 #include "Manifest.hpp"
 #include "HTTPHost.hpp"
+#include "Scoped.hpp"
 #include "../util.h"
+#include "../io/fsafeopen.h"
+#include "../io/memfile.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -29,7 +33,149 @@
 #define BLOCK_SIZE    4096UL
 #define LINE_BUF_LEN  256
 
-static boolean manifest_parse_sha256(const char *p, Uint32 sha256[8])
+void ManifestEntry::init(const Uint32 (&_sha256)[8], size_t _size,
+ const char *name)
+{
+  size_t name_len = strlen(name);
+  this->size = _size;
+  for(size_t i = 0; i < ARRAY_SIZE(sha256); i++)
+    this->sha256[i] = _sha256[i];
+
+  this->name = new char[name_len + 1];
+  memcpy(this->name, name, name_len + 1);
+}
+
+ManifestEntry::ManifestEntry(const Uint32 (&_sha256)[8], size_t _size,
+ const char *name)
+{
+  this->init(_sha256, _size, name);
+  this->next = nullptr;
+}
+
+ManifestEntry::ManifestEntry(const ManifestEntry &e)
+{
+  this->init(e.sha256, e.size, e.name);
+  this->next = nullptr;
+}
+
+ManifestEntry &ManifestEntry::operator=(const ManifestEntry &e)
+{
+  delete[] this->name;
+  this->init(e.sha256, e.size, e.name);
+  return *this;
+}
+
+ManifestEntry::~ManifestEntry()
+{
+  delete[] this->name;
+}
+
+boolean ManifestEntry::compute_sha256(SHA256_ctx &ctx, FILE *fp, size_t len)
+{
+  unsigned long pos = 0;
+
+  SHA256_init(&ctx);
+
+  while(pos < len)
+  {
+    unsigned long block_size = MIN(BLOCK_SIZE, len - pos);
+    char block[BLOCK_SIZE];
+
+    if(fread(block, block_size, 1, fp) != 1)
+      return false;
+
+    SHA256_update(&ctx, block, block_size);
+    pos += block_size;
+  }
+
+  SHA256_final(&ctx);
+  return true;
+}
+
+boolean ManifestEntry::validate(FILE *fp) const
+{
+  SHA256_ctx ctx;
+
+  // It must be the same length
+  if((size_t)ftell_and_rewind(fp) != this->size)
+    return false;
+
+  /* Compute the SHA256 digest for this file. Do it block-wise so as to
+  * conserve RAM and scale to enormously large files.
+  */
+  if(!ManifestEntry::compute_sha256(ctx, fp, this->size))
+    return false;
+
+  // Verify the digest against the manifest
+  if(memcmp(ctx.H, this->sha256, sizeof(Uint32) * 8) != 0)
+    return false;
+
+  return true;
+}
+
+boolean ManifestEntry::validate() const
+{
+  // This should already have been checked but check it again anyway.
+  if(!ManifestEntry::validate_filename(this->name))
+    return false;
+
+  ScopedFile<FILE, fclose> f = fopen_unsafe(this->name, "rb");
+  if(!f)
+    return false;
+
+  return this->validate(f);
+}
+
+boolean ManifestEntry::validate_filename(const char *filename)
+{
+  if(filename[0] == '/' || filename[0] == '\\' ||
+   strstr(filename, ":/") || strstr(filename, ":\\") ||
+   strstr(filename, "../") || strstr(filename, "..\\"))
+    return false;
+
+  return true;
+}
+
+ManifestEntry *ManifestEntry::create_from_file(const char *filename)
+{
+  SHA256_ctx ctx;
+  size_t size;
+
+  if(!ManifestEntry::validate_filename(filename))
+    return nullptr;
+
+  ScopedFile<FILE, fclose> fp = fopen_unsafe(filename, "rb");
+  if(!fp)
+    return nullptr;
+
+  size = ftell_and_rewind(fp);
+
+  boolean ret = ManifestEntry::compute_sha256(ctx, fp, size);
+  if(!ret)
+    return nullptr;
+
+  return new ManifestEntry(ctx.H, size, filename);
+}
+
+Manifest::~Manifest()
+{
+  this->clear();
+}
+
+void Manifest::clear()
+{
+  ManifestEntry *current = this->head;
+  ManifestEntry *next;
+  while(current)
+  {
+    next = current->next;
+    delete current;
+    current = next;
+  }
+  this->head = nullptr;
+}
+
+static boolean manifest_parse_sha256(const char *p, Uint32 (&sha256)[8])
 {
   int i, j;
 
@@ -55,7 +201,7 @@ static boolean manifest_parse_sha256(const char *p, Uint32 sha256[8])
   return true;
 }
 
-static boolean manifest_parse_size(char *p, unsigned long *size)
+static boolean manifest_parse_size(char *p, size_t *size)
 {
   char *endptr;
   *size = strtoul(p, &endptr, 10);
@@ -64,147 +210,161 @@ static boolean manifest_parse_size(char *p, unsigned long *size)
   return true;
 }
 
-void manifest_entry_free(struct manifest_entry *e)
+static ManifestEntry *manifest_parse_line(char *buffer)
 {
-  free(e->name);
-  free(e);
-}
-
-void manifest_list_free(struct manifest_entry **head)
-{
-  struct manifest_entry *e, *next_e;
-  for(e = *head; e; e = next_e)
+  if(buffer[0])
   {
-    next_e = e->next;
-    manifest_entry_free(e);
-  }
-  *head = NULL;
-}
-
-static struct manifest_entry *manifest_entry_copy(struct manifest_entry *src)
-{
-  struct manifest_entry *dest;
-  size_t name_len;
-
-  dest = (struct manifest_entry *)cmalloc(sizeof(struct manifest_entry));
-
-  name_len = strlen(src->name);
-  dest->name = (char *)cmalloc(name_len + 1);
-  strncpy(dest->name, src->name, name_len);
-  dest->name[name_len] = 0;
-
-  memcpy(dest->sha256, src->sha256, sizeof(Uint32) * 8);
-  dest->size = src->size;
-  dest->next = NULL;
-
-  return dest;
-}
-
-static struct manifest_entry *manifest_list_copy(struct manifest_entry *src)
-{
-  struct manifest_entry *src_e, *dest = NULL, *dest_e, *next_dest_e;
-
-  for(src_e = src; src_e; src_e = src_e->next)
-  {
-    next_dest_e = manifest_entry_copy(src_e);
-    if(dest)
-    {
-      dest_e->next = next_dest_e;
-      dest_e = dest_e->next;
-    }
-    else
-      dest = dest_e = next_dest_e;
-  }
-
-  return dest;
-}
-
-struct manifest_entry *manifest_list_create(FILE *f)
-{
-  struct manifest_entry *head = NULL, *e = NULL, *next_e;
-  char buffer[LINE_BUF_LEN];
-
-  // Walk the manifest line by line
-  while(true)
-  {
+    Uint32 sha256[8];
+    size_t size;
     char *m = buffer, *line;
-    size_t line_len;
-
-    // Grab a single line from the manifest
-    if(!fgets(buffer, LINE_BUF_LEN, f))
-      break;
-
-    next_e = (struct manifest_entry *)ccalloc(1, sizeof(struct manifest_entry));
-    if(head)
-    {
-      e->next = next_e;
-      e = e->next;
-    }
-    else
-      head = e = next_e;
 
     // Grab the sha256 token
     line = strsep(&m, " ");
     if(!line)
-      goto err_invalid_manifest;
+      return nullptr;
 
     /* Break the 64 character (8x8) hex string down into
      * eight constituent 32bit SHA result registers (32*8=256).
      */
-    if(!manifest_parse_sha256(line, e->sha256))
-      goto err_invalid_manifest;
+    if(!manifest_parse_sha256(line, sha256))
+      return nullptr;
 
     // Grab the size token
     line = strsep(&m, " ");
     if(!line)
-      goto err_invalid_manifest;
+      return nullptr;
 
     // Validate and parse it
-    if(!manifest_parse_size(line, &e->size))
-      goto err_invalid_manifest;
+    if(!manifest_parse_size(line, &size))
+      return nullptr;
 
     // Grab the filename token
     line = strsep(&m, "\n");
     if(!line)
-      goto err_invalid_manifest;
+      return nullptr;
 
-    line_len = strlen(line);
-    e->name = (char *)cmalloc(line_len + 1);
-    memcpy(e->name, line, line_len + 1);
+    // Reject any invalid or insecure filenames.
+    if(!ManifestEntry::validate_filename(line))
+      return nullptr;
+
+    return new ManifestEntry(sha256, size, line);
   }
-
-  if(e)
-    e->next = NULL;
-
-  return head;
-
-err_invalid_manifest:
-  warn("Malformed manifest file.\n");
-  manifest_list_free(&head);
-  return head;
+  return nullptr;
 }
 
-static void manifest_get_local(struct manifest_entry **manifest)
+void Manifest::create(FILE *f)
 {
-  FILE *f;
+  char buffer[LINE_BUF_LEN];
+  boolean has_errors = false;
+  ManifestEntry *current = nullptr;
+  this->clear();
 
-  *manifest = NULL;
+  // Walk the manifest line by line
+  while(fsafegets(buffer, LINE_BUF_LEN, f))
+  {
+    ManifestEntry *next = manifest_parse_line(buffer);
+    if(!next)
+    {
+      has_errors = true;
+      continue;
+    }
 
-  f = fopen_unsafe(LOCAL_MANIFEST_TXT, "rb");
+    if(current)
+      current->next = next;
+    else
+      this->head = next;
+    current = next;
+  }
+
+  if(has_errors)
+    warn("Malformed manifest file.\n");
+}
+
+boolean Manifest::create(const char *filename)
+{
+  ScopedFile<FILE, fclose> f = fopen_unsafe(filename, "rb");
   if(!f)
   {
-    warn("Local " LOCAL_MANIFEST_TXT " is missing\n");
-    return;
+    warn("Failed to open manifest file '%s'!\n", filename);
+    return false;
   }
 
-  *manifest = manifest_list_create(f);
-  fclose(f);
+  this->create(f);
+  return true;
 }
 
-boolean manifest_check_remote_exists(HTTPHost &http, const char *basedir)
+void Manifest::create(const void *data, size_t data_len)
 {
-  HTTPRequestInfo request;
+  char buffer[LINE_BUF_LEN];
+  ManifestEntry *current = nullptr;
+  struct memfile mf;
+  this->clear();
+
+  mfopen(data, data_len, &mf);
+
+  while(mfsafegets(buffer, LINE_BUF_LEN, &mf))
+  {
+    ManifestEntry *next = manifest_parse_line(buffer);
+    if(!next)
+      continue;
+
+    if(current)
+      current->next = next;
+    else
+      this->head = next;
+    current = next;
+  }
+}
+
+void Manifest::create(const Manifest &src)
+{
+  const ManifestEntry *src_current = src.head;
+  ManifestEntry *current = nullptr;
+  ManifestEntry *next;
+  this->clear();
+
+  while(src_current)
+  {
+    next = new ManifestEntry(*src_current);
+    src_current = src_current->next;
+
+    if(current)
+      current->next = next;
+    else
+      this->head = next;
+    current = next;
+  }
+}
+
+void Manifest::append(Manifest &src)
+{
+  this->append(src.head);
+  src.head = nullptr;
+}
+
+void Manifest::append(ManifestEntry *entry)
+{
+  if(entry)
+  {
+    ManifestEntry *tail = this->head;
+    if(tail)
+    {
+      while(tail->next)
+        tail = tail->next;
+
+      tail->next = entry;
+    }
+    else
+      this->head = entry;
+  }
+}
+
+boolean Manifest::check_if_remote_exists(HTTPHost &http,
+ HTTPRequestInfo &request, const char *basedir)
+{
   HTTPHostStatus ret;
+
+  trace("--MANIFEST-- Manifest::check_if_remote_exists\n");
 
   memset(&request, 0, sizeof(HTTPRequestInfo));
   snprintf(request.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, basedir);
@@ -225,25 +385,23 @@ boolean manifest_check_remote_exists(HTTPHost &http, const char *basedir)
   return false;
 }
 
-static HTTPHostStatus manifest_get_remote(HTTPHost &http,
- const char *base, struct manifest_entry **manifest)
+HTTPHostStatus Manifest::get_remote(HTTPHost &http, HTTPRequestInfo &request,
+ const char *basedir)
 {
-  HTTPRequestInfo request;
   HTTPHostStatus ret;
-  FILE *f;
 
-  *manifest = NULL;
+  trace("--MANIFEST-- Manifest::get_remote\n");
 
+  this->clear();
   memset(&request, 0, sizeof(HTTPRequestInfo));
-  snprintf(request.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, base);
+  snprintf(request.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, basedir);
   strcpy(request.expected_type, "text/plain");
 
-  f = fopen_unsafe(REMOTE_MANIFEST_TXT, "w+b");
+  ScopedFile<FILE, fclose> f = fopen_unsafe(REMOTE_MANIFEST_TXT, "w+b");
   if(!f)
   {
     warn("Failed to open local " REMOTE_MANIFEST_TXT " for writing\n");
-    ret = HOST_FWRITE_FAILED;
-    goto err_out;
+    return HOST_FWRITE_FAILED;
   }
 
   ret = http.get(request, f);
@@ -251,28 +409,39 @@ static HTTPHostStatus manifest_get_remote(HTTPHost &http,
   {
     warn("Processing " REMOTE_MANIFEST_TXT " failed (code %d; error: %s)\n",
      request.status_code, HTTPHost::get_error_string(ret));
-    goto err_fclose;
+    return ret;
   }
 
   rewind(f);
-  *manifest = manifest_list_create(f);
-
-err_fclose:
-  fclose(f);
-err_out:
+  this->create(f);
   return ret;
 }
 
-static void manifest_lists_remove_duplicate_names(
- struct manifest_entry **local, struct manifest_entry **remote)
+/**
+ * Filter duplicates between the two provided Manifests into this Manifest.
+ * Duplicates from the local list will be deleted and duplicates from the
+ * remote list will be moved into this Manifest.
+ *
+ * @param local     Manifest to filter (duplicates are deleted).
+ * @param remote    Manifest to filter (duplicates are moved).
+ */
+void Manifest::filter_duplicates(Manifest &local, Manifest &remote)
 {
-  struct manifest_entry *l, *prev_l, *next_l;
+  ManifestEntry *l, *prev_l, *next_l;
+  ManifestEntry *tail = this->head;
 
-  for(l = *local, prev_l = NULL; l; l = next_l)
+  trace("--MANIFEST-- Manifest::filter_duplicates\n");
+
+  // Skip to the end of this manifest.
+  if(tail)
+    while(tail->next)
+      tail = tail->next;
+
+  for(l = local.head, prev_l = nullptr; l; l = next_l)
   {
-    struct manifest_entry *r, *prev_r, *next_r;
+    ManifestEntry *r, *prev_r, *next_r;
 
-    for(r = *remote, prev_r = NULL; r; r = next_r)
+    for(r = remote.head, prev_r = nullptr; r; r = next_r)
     {
       next_r = r->next;
 
@@ -281,8 +450,15 @@ static void manifest_lists_remove_duplicate_names(
         if(prev_r)
           prev_r->next = next_r;
         else
-          *remote = next_r;
-        manifest_entry_free(r);
+          remote.head = next_r;
+
+        // Move duplicate element from the remote manifest to this manifest.
+        r->next = nullptr;
+        if(tail)
+          tail->next = r;
+        else
+          this->head = r;
+        tail = r;
         break;
       }
       else
@@ -296,182 +472,132 @@ static void manifest_lists_remove_duplicate_names(
       if(prev_l)
         prev_l->next = next_l;
       else
-        *local = next_l;
-      manifest_entry_free(l);
+        local.head = next_l;
+
+      delete l;
     }
     else
       prev_l = l;
   }
 }
 
-boolean manifest_compute_sha256(struct SHA256_ctx *ctx, FILE *f,
- unsigned long len)
+void Manifest::filter_existing_files()
 {
-  unsigned long pos = 0;
+  ManifestEntry *prev = nullptr;
+  ManifestEntry *e, *e_next;
 
-  SHA256_init(ctx);
+  trace("--MANIFEST-- Manifest::filter_existing_files\n");
 
-  while(pos < len)
+  for(e = this->head; e; e = e_next)
   {
-    unsigned long block_size = MIN(BLOCK_SIZE, len - pos);
-    char block[BLOCK_SIZE];
+    e_next = e->next;
 
-    if(fread(block, block_size, 1, f) != 1)
-      return false;
-
-    SHA256_update(ctx, block, block_size);
-    pos += block_size;
-  }
-
-  SHA256_final(ctx);
-  return true;
-}
-
-boolean manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
-{
-  unsigned long len = e->size;
-  struct SHA256_ctx ctx;
-
-  // Nope
-  if(e->name[0] == '/' || e->name[0] == '\\' ||
-   strstr(e->name, ":/") || strstr(e->name, ":\\") ||
-   strstr(e->name, "../") || strstr(e->name, "..\\"))
-    return false;
-
-  // It must be the same length
-  if((unsigned long)ftell_and_rewind(f) != len)
-    return false;
-
-  /* Compute the SHA256 digest for this file. Do it block-wise so as to
-   * conserve RAM and scale to enormously large files.
-   */
-  if(!manifest_compute_sha256(&ctx, f, len))
-    return false;
-
-  // Verify the digest against the manifest
-  if(memcmp(ctx.H, e->sha256, sizeof(Uint32) * 8) != 0)
-    return false;
-
-  return true;
-}
-
-static void manifest_add_list_validate_augment(struct manifest_entry *local,
- struct manifest_entry **added)
-{
-  struct manifest_entry *e, *a = *added;
-
-  // Scan along to penultimate `added' (if we have any)
-  if(a)
-    while(a->next)
-      a = a->next;
-
-  for(e = local; e; e = e->next)
-  {
-    struct manifest_entry *new_added;
-    FILE *f;
-
-    f = fopen_unsafe(e->name, "rb");
+    ScopedFile<FILE, fclose> f = fopen_unsafe(e->name, "rb");
     if(f)
     {
-      if(manifest_entry_check_validity(e, f))
+      if(e->validate(f))
       {
-        fclose(f);
-        continue;
+        trace("Local file '%s' matches the remote manifest; ignoring.\n", e->name);
+        if(prev)
+          prev->next = e_next;
+        else
+          this->head = e_next;
+
+        delete e;
       }
-      fclose(f);
-    }
-
-    trace("Local file '%s' doesn't match the remote manifest entry.\n", e->name);
-
-    new_added = manifest_entry_copy(e);
-    if(*added)
-    {
-      a->next = new_added;
-      a = a->next;
+      else
+      {
+        trace("Local file '%s' doesn't match the remote manifest entry.\n", e->name);
+        prev = e;
+      }
     }
     else
-      a = *added = new_added;
+    {
+      trace("Local file '%s' from remote manifest doesn't exist.\n", e->name);
+      prev = e;
+    }
   }
 }
 
-HTTPHostStatus manifest_get_updates(HTTPHost &http, const char *basedir,
- struct manifest_entry **removed, struct manifest_entry **replaced,
- struct manifest_entry **added)
+HTTPHostStatus Manifest::get_updates(HTTPHost &http, HTTPRequestInfo &request,
+ const char *basedir, Manifest &removed, Manifest &replaced, Manifest &added)
 {
-  struct manifest_entry *local, *remote;
+  Manifest local, remote;
   HTTPHostStatus status;
 
-  manifest_get_local(&local);
+  trace("--MANIFEST-- Manifest::get_updates\n");
 
-  status = manifest_get_remote(http, basedir, &remote);
+  status = remote.get_remote(http, request, basedir);
   if(status != HOST_SUCCESS)
     return status;
 
-  *replaced = NULL;
-  *removed = NULL;
-  *added = NULL;
+  local.create(LOCAL_MANIFEST_TXT);
+  replaced.clear();
+  removed.clear();
+  added.clear();
 
-  if(local)
+  if(local.has_entries())
   {
-    struct manifest_entry *added_copy;
-
-    // Copy remote -> added because the list is modified by the next call
-    *added = manifest_list_copy(remote);
-    *removed = local;
-
-    /* The "removed" list is simply the local list; both lists are modified
-     * in place to filter any duplicate entries.
+    /**
+     * Filter duplicates out of both local and remote. The duplicates from
+     * remote will be moved into the replaced list; the duplicates from local
+     * will be deleted.
      */
-    manifest_lists_remove_duplicate_names(removed, added);
+    replaced.filter_duplicates(local, remote);
 
-    /* This hack removes the "added" list entries from the remote list, to
-     * give us a list containing only the files that remained the same.
+    /**
+     * The local list is now the removed list and the remote list is now the
+     * added list.
      */
-    added_copy = manifest_list_copy(*added);
-    manifest_lists_remove_duplicate_names(&remote, &added_copy);
-    assert(added_copy == NULL);
+    removed.append(local);
+    added.append(remote);
+  }
+  else
+  {
+    // If there's no local manifest added vs. replaced can't really be
+    // determined reliably. Just treat everything as replaced.
+    replaced.append(remote);
   }
 
-  /* Now we've decided what files should be added/removed, we use the remote
-   * subset manifest to produce a replacement list. Any file that doesn't match
-   * the remote manifest is added to this third list.
+  /**
+   * Check the duplicates from the remote manifest against their corresponding
+   * files. If the file exists and matches the manifest entry, remove it. The
+   * remaining list will contain files that need to be replaced.
    */
-  manifest_add_list_validate_augment(remote, replaced);
-  manifest_list_free(&remote);
+  replaced.filter_existing_files();
   return HOST_SUCCESS;
 }
 
-boolean manifest_entry_download_replace(HTTPHost &http, const char *basedir,
- struct manifest_entry *e, void (*delete_hook)(const char *file))
+boolean Manifest::download_and_replace_entry(HTTPHost &http,
+ HTTPRequestInfo &request, const char *basedir, const ManifestEntry *e,
+ Manifest &delete_list)
 {
   char buf[LINE_BUF_LEN];
-  HTTPRequestInfo request;
   HTTPHostStatus ret;
-  boolean valid = false;
-  FILE *f;
+
+  assert(e);
 
   /* Try to open our target file. If we can't open it, it might be
    * write protected or in-use. In this case, it may be possible to
    * rename the original file out of the way. Try this trick first.
    */
-  f = fopen_unsafe(e->name, "w+b");
+  ScopedFile<FILE, fclose> f = fopen_unsafe(e->name, "w+b");
   if(!f)
   {
     snprintf(buf, LINE_BUF_LEN, "%s-%u~", e->name, (unsigned int)time(NULL));
     if(rename(e->name, buf))
     {
       warn("Failed to rename in-use file '%s' to '%s'\n", e->name, buf);
-      goto err_out;
+      return false;
     }
 
-    if(delete_hook)
-      delete_hook(buf);
+    delete_list.append(ManifestEntry::create_from_file(buf));
 
-    f = fopen_unsafe(e->name, "w+b");
+    f.reset(fopen_unsafe(e->name, "w+b"));
     if(!f)
     {
       warn("Unable to open file '%s' for writing\n", e->name);
-      goto err_out;
+      return false;
     }
   }
 
@@ -486,19 +612,34 @@ boolean manifest_entry_download_replace(HTTPHost &http, const char *basedir,
   {
     warn("File '%s' could not be downloaded (code %d; error: %s)\n", e->name,
      request.status_code, HTTPHost::get_error_string(ret));
-    goto err_close;
+    return false;
   }
 
   rewind(f);
-  if(!manifest_entry_check_validity(e, f))
+  if(!e->validate(f))
   {
     warn("File '%s' failed validation\n", e->name);
-    goto err_close;
+    return false;
   }
 
-  valid = true;
-err_close:
-  fclose(f);
-err_out:
-  return valid;
+  return true;
+}
+
+boolean Manifest::write_to_file(const char *filename) const
+{
+  if(this->head)
+  {
+    ScopedFile<FILE, fclose> f = fopen_unsafe(filename, "ab");
+    if(!f)
+      return false;
+
+    for(ManifestEntry *e = this->head; e; e = e->next)
+    {
+      fprintf(f, "%08x%08x%08x%08x%08x%08x%08x%08x %zu %s\n",
+       e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
+       e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7],
+       e->size, e->name);
+    }
+  }
+  return true;
 }
