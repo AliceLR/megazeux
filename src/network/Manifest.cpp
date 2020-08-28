@@ -41,7 +41,7 @@ void ManifestEntry::init(const Uint32 (&_sha256)[8], size_t _size,
   for(size_t i = 0; i < ARRAY_SIZE(sha256); i++)
     this->sha256[i] = _sha256[i];
 
-  this->name = new char[name_len + 1]();
+  this->name = new char[name_len + 1];
   memcpy(this->name, name, name_len + 1);
 }
 
