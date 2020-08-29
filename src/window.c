@@ -58,6 +58,7 @@
 #include "util.h"
 #include "io/dir.h"
 #include "io/path.h"
+#include "io/vfile.h"
 
 #include "audio/sfx.h"
 
@@ -3715,7 +3716,7 @@ skip_dir:
 
           if(stat(full_name, &file_info) < 0)
           {
-            mkdir(full_name, 0777);
+            vmkdir(full_name, 0777);
           }
           else
           {

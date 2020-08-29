@@ -34,8 +34,6 @@
 
 #ifdef __WIN32__
 // utf8_to_utf16, utf16_to_utf8
-// FIXME util.h defines over mkdir and breaks this...
-#undef mkdir
 #include "vfile_win32.h"
 #endif
 

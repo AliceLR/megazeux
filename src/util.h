@@ -130,10 +130,6 @@ CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
 #endif
 #endif // !__WIN32__
 
-#if defined(__WIN32__) && !defined(_MSC_VER)
-#define mkdir(file,mode) mkdir(file)
-#endif
-
 #if defined(__amigaos__)
 CORE_LIBSPEC extern long __stack_chk_guard[8];
 CORE_LIBSPEC void __stack_chk_fail(void);
