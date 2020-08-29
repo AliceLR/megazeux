@@ -34,6 +34,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __WIN32__
+#include "io/vfile_win32.h" // for windows.h, WIDE_PATHS, and utf16_to_utf8
+#endif
+
 #include "const.h" // for MAX_PATH
 #include "error.h"
 #include "platform.h"
@@ -60,6 +64,7 @@ struct mzx_resource
 static struct mzx_resource mzx_res[] =
 {
 #define ASSETS "assets/"
+  { "(binpath)",                        NULL, false, true },
   { CONFFILE,                           NULL, false, false },
   { ASSETS "default.chr",               NULL, false, false },
   { ASSETS "edit.chr",                  NULL, false, false },
@@ -142,30 +147,77 @@ void *check_realloc(void *ptr, size_t size, const char *file, int line)
 
 #endif /* CONFIG_CHECK_ALLOC */
 
+// Determine the executable dir.
+static ssize_t find_executable_dir(char *dest, size_t dest_len, const char *argv0)
+{
+#ifdef __WIN32__
+  {
+    // Windows may not reliably give a full path in argv[0]. Fortunately,
+    // there's a Windows solution for this.
+    HMODULE module = GetModuleHandle(NULL);
+    char filename[MAX_PATH];
+
+#ifdef WIDE_PATHS
+    wchar_t filename_wide[MAX_PATH];
+    DWORD ret = GetModuleFileNameW(module, filename_wide, MAX_PATH);
+
+    if(ret > 0 && ret < MAX_PATH)
+    {
+      if(!utf16_to_utf8(filename_wide, filename, MAX_PATH))
+        ret = 0;
+    }
+#else /* !WIDE_PATHS */
+    DWORD ret = GetModuleFileNameA(module, filename, MAX_PATH);
+#endif
+
+    if(ret > 0 && ret < MAX_PATH)
+    {
+      ssize_t len = path_get_directory(dest, dest_len, filename);
+      if(len > 0)
+        return len;
+    }
+
+    warn("--RES-- Failed to get executable path from Win32\n");
+  }
+#endif /* __WIN32__ */
+
+  if(argv0)
+  {
+    ssize_t len = path_get_directory(dest, dest_len, argv0);
+    if(len > 0)
+    {
+      // chdir to it and get it as an absolute path.
+      if(!chdir(dest) && getcwd(dest, dest_len))
+        return strlen(dest);
+    }
+
+    warn("--RES-- Failed to get executable path from argv[0]: %s\n", argv0);
+  }
+  else
+    warn("--RES-- Failed to get executable path from argv[0]: (null)\n");
+
+  dest[0] = 0;
+  return 0;
+}
+
 int mzx_res_init(const char *argv0, boolean editor)
 {
-  size_t i, bin_path_len = 0;
+  int i;
+  ssize_t bin_path_len;
   struct stat file_info;
   char *full_path;
   char *bin_path;
-  ssize_t g_ret;
   char *p_dir;
   int ret = 0;
 
   bin_path = cmalloc(MAX_PATH);
   p_dir = cmalloc(MAX_PATH);
 
-  g_ret = path_get_directory(bin_path, MAX_PATH, argv0);
-  if(g_ret > 0)
+  bin_path_len = find_executable_dir(bin_path, MAX_PATH, argv0);
+  if(bin_path_len > 0)
   {
-    // move and convert to absolute path style
-    chdir(bin_path);
-    getcwd(bin_path, MAX_PATH);
-    bin_path_len = strlen(bin_path);
-
-    // append the trailing '/'
-    bin_path[bin_path_len++] = '/';
-    bin_path[bin_path_len] = 0;
+    // Shrink the allocation...
+    bin_path = crealloc(bin_path, bin_path_len + 1);
   }
   else
   {
@@ -186,6 +238,13 @@ int mzx_res_init(const char *argv0, boolean editor)
     size_t full_path_len;
     size_t p_dir_len;
 
+    if(i == MZX_EXECUTABLE_DIR)
+    {
+      // Special--this was already determined above if applicable.
+      mzx_res[i].path = bin_path;
+      continue;
+    }
+
     if(i == CONFIG_TXT)
       chdir(CONFDIR);
     else
@@ -194,28 +253,17 @@ int mzx_res_init(const char *argv0, boolean editor)
     getcwd(p_dir, MAX_PATH);
     p_dir_len = strlen(p_dir);
 
-    // if we can't add the path we should really fail hard
-    if(p_dir_len + base_name_len + 1 >= MAX_PATH)
-      continue;
+    full_path_len = p_dir_len + base_name_len + 2;
+    full_path = cmalloc(full_path_len);
 
-    // append the trailing '/'
-    p_dir[p_dir_len++] = '/';
-    p_dir[p_dir_len] = 0;
-
-    full_path_len = p_dir_len + base_name_len;
-    full_path = cmalloc(full_path_len + 1);
-
-    memcpy(full_path, p_dir, p_dir_len);
-    memcpy(full_path + p_dir_len, mzx_res[i].base_name, base_name_len);
-    full_path[full_path_len] = 0;
-
-    path_clean_slashes(full_path, full_path_len + 1);
-
-    // Attempt to load it from this new path
-    if(!stat(full_path, &file_info))
+    // The provided buffer should always be big enough, but check anyway.
+    if(path_join(full_path, full_path_len, p_dir, mzx_res[i].base_name) > 0)
     {
-      mzx_res[i].path = full_path;
-      continue;
+      if(!stat(full_path, &file_info))
+      {
+        mzx_res[i].path = full_path;
+        continue;
+      }
     }
 
     free(full_path);
@@ -226,11 +274,16 @@ int mzx_res_init(const char *argv0, boolean editor)
       chdir(bin_path);
       if(!stat(mzx_res[i].base_name, &file_info))
       {
-        mzx_res[i].path = cmalloc(bin_path_len + base_name_len + 1);
-        memcpy(mzx_res[i].path, bin_path, bin_path_len);
-        memcpy(mzx_res[i].path + bin_path_len,
-         mzx_res[i].base_name, base_name_len);
-        mzx_res[i].path[bin_path_len + base_name_len] = 0;
+        full_path_len = bin_path_len + base_name_len + 2;
+        full_path = cmalloc(full_path_len);
+
+        // The provided buffer should always be big enough, but check anyway.
+        if(path_join(full_path, full_path_len, bin_path, mzx_res[i].base_name) > 0)
+        {
+          mzx_res[i].path = full_path;
+          continue;
+        }
+        free(full_path);
       }
     }
   }
@@ -254,10 +307,11 @@ int mzx_res_init(const char *argv0, boolean editor)
        mzx_res[i].base_name);
       ret = 1;
     }
+    else
+      trace("--RES-- %d -> %s\n", i, mzx_res[i].path);
   }
 
   free(p_dir);
-  free(bin_path);
   return ret;
 }
 

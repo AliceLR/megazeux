@@ -67,7 +67,6 @@
 
 static char widget_buf[WIDGET_BUF_LEN];
 
-static char executable_dir[MAX_PATH];
 static char previous_dir[MAX_PATH];
 
 static long final_size = -1;
@@ -393,53 +392,12 @@ static boolean cancel_cb(void)
   return cancel_update;
 }
 
-// Determine the executable dir. This is required for the updater.
-static boolean find_executable_dir(int argc, char **argv)
-{
-#ifdef __WIN32__
-  {
-    // Windows may not reliably give a full path in argv[0]. Fortunately,
-    // there's a Windows solution for this. TODO make UTF-friendly
-    char filename[MAX_PATH];
-    HMODULE module = GetModuleHandle(NULL);
-    DWORD ret = GetModuleFileNameA(module, filename, MAX_PATH);
-
-    if(ret > 0 && ret < MAX_PATH)
-    {
-      if(path_get_directory(executable_dir, MAX_PATH, filename) > 0)
-        return true;
-    }
-
-    warn("--MAIN-- Failed to get executable from Win32: %s\n", filename);
-  }
-#endif
-
-  if(argc >= 1 && argv)
-  {
-    if(path_get_directory(executable_dir, MAX_PATH, argv[0]) > 0)
-      return true;
-
-    else
-    {
-      if(argv[0] && argv[0][0])
-        warn("--MAIN-- Failed to get executable from argv[0]: %s\n", argv[0]);
-      else
-        warn("--MAIN-- Failed to get executable from argv[0]: (null)\n");
-    }
-  }
-  else
-    warn("--MAIN-- Failed to get executable from argv: argc < 1\n");
-
-  // Nope. Oh well.
-  executable_dir[0] = 0;
-  return false;
-}
-
 static boolean swivel_current_dir(boolean have_video)
 {
+  const char *executable_dir = mzx_res_get_by_id(MZX_EXECUTABLE_DIR);
   char base_path[MAX_PATH];
 
-  if(!executable_dir[0])
+  if(!executable_dir)
   {
     if(have_video)
       error_message(E_UPDATE, 25,
@@ -1026,16 +984,13 @@ err_chdir:
   return false;
 }
 
-boolean updater_init(int argc, char *argv[])
+boolean updater_init(void)
 {
   Manifest delete_list;
   struct stat stat_info;
 
   check_for_updates = __check_for_updates;
   updater_was_initialized = false;
-
-  if(!find_executable_dir(argc, argv))
-    return false;
 
   if(!swivel_current_dir(false))
     return false;

@@ -45,7 +45,8 @@ __M_BEGIN_DECLS
 
 enum resource_id
 {
-  CONFIG_TXT = 0,
+  MZX_EXECUTABLE_DIR = 0,
+  CONFIG_TXT,
   MZX_DEFAULT_CHR,
   MZX_EDIT_CHR,
   SMZX_PAL,

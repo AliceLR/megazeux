@@ -30,6 +30,6 @@ void free_editor_config(void) {}
 #endif
 
 #ifdef CONFIG_UPDATER
-boolean updater_init(int argc, char *argv[]) { return true; }
+boolean updater_init(void) { return true; }
 boolean is_updater(void) { return false; }
 #endif

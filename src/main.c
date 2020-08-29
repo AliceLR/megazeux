@@ -279,7 +279,7 @@ __libspec int main(int argc, char *argv[])
 #ifdef CONFIG_UPDATER
     if(is_updater())
     {
-      if(updater_init(argc, argv))
+      if(updater_init())
       {
         // No auto update checks on repo builds.
         if(!strcmp(VERSION, "GIT") &&
