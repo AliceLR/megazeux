@@ -769,6 +769,13 @@ UNITTEST(path_append_and_path_join)
       30
     },
     {
+      "C:/an/exact/fit",
+      "and/should/pass",
+      "C:/an/exact/fit/and/should/pass",
+      "C:\\an\\exact\\fit\\and\\should\\pass",
+      31
+    },
+    {
       "/should/not/be/able/to/fit",
       "these/strings",
       nullptr,
@@ -806,6 +813,24 @@ UNITTEST(path_append_and_path_join)
       ASSERTEQX(result, data[i].return_value, data[i].path);
       if(result && data[i].PATH_CLEAN_RESULT)
         ASSERTCMP(buffer, data[i].PATH_CLEAN_RESULT);
+    }
+  }
+
+  SECTION(path_append_SmallBufferCases)
+  {
+    for(i = 0; i < arraysize(small_data); i++)
+    {
+      snprintf(buffer, MAX_PATH, small_data[i].path);
+      buffer[MAX_PATH - 1] = '\0';
+
+      result = path_append(buffer, 32, small_data[i].target);
+      ASSERTEQX(result, small_data[i].return_value, small_data[i].path);
+      if(result && small_data[i].PATH_CLEAN_RESULT)
+      {
+        ASSERTCMP(buffer, small_data[i].PATH_CLEAN_RESULT);
+      }
+      else
+        ASSERTCMP(buffer, small_data[i].path);
     }
   }
 

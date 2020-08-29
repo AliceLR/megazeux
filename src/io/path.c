@@ -390,7 +390,8 @@ ssize_t path_append(char *path, size_t buffer_len, const char *rel)
   size_t path_len = strlen(path);
   size_t rel_len = strlen(rel);
 
-  if(path_len && rel_len && path_len + rel_len + 2 < buffer_len)
+  // Needs to be able to fit the worst case size: path + separator + rel + \0.
+  if(path_len && rel_len && path_len + rel_len + 2 <= buffer_len)
   {
     path_len = path_clean_slashes(path, buffer_len);
     path[path_len++] = DIR_SEPARATOR_CHAR;
@@ -418,7 +419,8 @@ ssize_t path_join(char *dest, size_t dest_len, const char *base, const char *rel
   size_t base_len = strlen(base);
   size_t rel_len = strlen(rel);
 
-  if(base_len && rel_len && base_len + rel_len + 2 < dest_len)
+  // Needs to be able to fit the worst case size: base + separator + rel + \0.
+  if(base_len && rel_len && base_len + rel_len + 2 <= dest_len)
   {
     base_len = path_clean_slashes_copy(dest, dest_len, base);
     dest[base_len++] = DIR_SEPARATOR_CHAR;
