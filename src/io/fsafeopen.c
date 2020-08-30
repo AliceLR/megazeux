@@ -302,7 +302,7 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
   {
     if(dirlen + 2 >= PATH_BUF_LEN)
       dirlen = PATH_BUF_LEN - 2;
-    strncpy(newpath + 2, path, dirlen - 1);
+    memcpy(newpath + 2, path, dirlen - 1);
     newpath[dirlen + 2 - 1] = 0;
   }
 
@@ -384,7 +384,8 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
 
 static int match(char *path, size_t buffer_len)
 {
-  char *oldtoken = NULL, *token = NULL;
+  char *nexttoken = path;
+  char *token = NULL;
   struct stat inode;
   int i;
 
@@ -400,18 +401,11 @@ static int match(char *path, size_t buffer_len)
 
   while(1)
   {
-    if(token == NULL)
     {
-      // initial token
-      token = strtok(path, "/\\");
-    }
-    else
-    {
-      // subsequent tokens
-      token = strtok(NULL, "/\\");
+      token = strsep(&nexttoken, "/\\");
 
       // this token is the file
-      if(token == NULL)
+      if(nexttoken == NULL)
       {
         for(i = 0; i < 5; i++)
         {
@@ -423,24 +417,24 @@ static int match(char *path, size_t buffer_len)
           switch(i)
           {
             case 0:
-              case1(oldtoken);
+              case1(token);
               break;
 
             case 1:
-              case2(oldtoken);
+              case2(token);
               break;
 
             case 2:
-              case3(oldtoken);
+              case3(token);
               break;
 
             case 3:
-              case4(oldtoken);
+              case4(token);
               break;
 
             default:
               // try brute force
-              if(case5(path, buffer_len, oldtoken, true) < 0)
+              if(case5(path, buffer_len, token, true) < 0)
               {
                 trace("%s:%d: file matches for %s failed.\n",
                  __FILE__, __LINE__, path);
@@ -461,16 +455,16 @@ static int match(char *path, size_t buffer_len)
         switch(i)
         {
           case 0:
-            case1(oldtoken);
+            case1(token);
             break;
 
           case 1:
-            case2(oldtoken);
+            case2(token);
             break;
 
           default:
             // try brute force
-            if(case5(path, buffer_len, oldtoken, false) < 0)
+            if(case5(path, buffer_len, token, false) < 0)
             {
               trace("%s:%d: directory matches for %s failed.\n",
                __FILE__, __LINE__, path);
@@ -480,15 +474,12 @@ static int match(char *path, size_t buffer_len)
       }
 
       /* this "hack" overwrites the token's \0 to re-formulate
-       * the string versus strtok(); it has the nice side-effect of
+       * the string versus strsep(); it has the nice side-effect of
        * also converting windows style path to UNIX ones, so they'll
        * work on everything.
        */
-      oldtoken[strlen(oldtoken)] = '/';
+      token[strlen(token)] = '/';
     }
-
-    // backup last token pointer
-    oldtoken = token;
   }
 
   return FSAFE_SUCCESS;
