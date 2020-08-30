@@ -202,7 +202,7 @@ static boolean editor_reload_world(struct editor_context *editor,
 {
   struct world *mzx_world = ((context *)editor)->world;
 
-  size_t file_name_len = strlen(file) - 4;
+  int file_name_len = strlen(file) - 4;
   char config_file_name[MAX_PATH];
   struct stat file_info;
   boolean ignore;
@@ -215,8 +215,9 @@ static boolean editor_reload_world(struct editor_context *editor,
 
   // Part 2: Now load the new world.editor.cnf.
 
-  strncpy(config_file_name, file, file_name_len);
-  strncpy(config_file_name + file_name_len, ".editor.cnf", 12);
+  snprintf(config_file_name, MAX_PATH, "%*.*s.editor.cnf",
+   file_name_len, file_name_len, file);
+  config_file_name[MAX_PATH - 1] = '\0';
 
   if(stat(config_file_name, &file_info) >= 0)
     set_config_from_file(GAME_EDITOR_CNF, config_file_name);
@@ -3667,7 +3668,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   if(reload_curr_file && curr_file[0] &&
    editor_reload_world(editor, curr_file))
   {
-    strncpy(editor->current_world, curr_file, MAX_PATH);
+    memcpy(editor->current_world, curr_file, MAX_PATH);
 
     mzx_world->current_board_id = mzx_world->first_board;
     set_current_board_ext(mzx_world,
