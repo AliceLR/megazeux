@@ -215,8 +215,7 @@ static boolean editor_reload_world(struct editor_context *editor,
 
   // Part 2: Now load the new world.editor.cnf.
 
-  snprintf(config_file_name, MAX_PATH, "%*.*s.editor.cnf",
-   file_name_len, file_name_len, file);
+  snprintf(config_file_name, MAX_PATH, "%.*s.editor.cnf", file_name_len, file);
   config_file_name[MAX_PATH - 1] = '\0';
 
   if(stat(config_file_name, &file_info) >= 0)
