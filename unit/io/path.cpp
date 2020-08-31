@@ -820,7 +820,7 @@ UNITTEST(path_append_and_path_join)
   {
     for(i = 0; i < arraysize(small_data); i++)
     {
-      snprintf(buffer, MAX_PATH, small_data[i].path);
+      snprintf(buffer, MAX_PATH, "%s", small_data[i].path);
       buffer[MAX_PATH - 1] = '\0';
 
       result = path_append(buffer, 32, small_data[i].target);
