@@ -1541,9 +1541,9 @@ static void draw_list_box(struct world *mzx_world, struct dialog *di,
   int scroll_offset = src->scroll_offset;
   const char **choices = src->choices;
   int i, num_draw;
-  int draw_width = choice_length;
   int current_in_window = current_choice - scroll_offset;
   char name_buffer[MAX_NAME_BUFFER];
+  int draw_width = MIN(choice_length, MAX_NAME_BUFFER);
 
   num_draw = num_choices_visible;
 
@@ -1556,9 +1556,8 @@ static void draw_list_box(struct world *mzx_world, struct dialog *di,
   for(i = 0; i < num_draw; i++)
   {
     fill_line(choice_length, x, y + i, 32, DI_LIST);
-    strncpy(name_buffer, choices[scroll_offset + i], draw_width);
-    name_buffer[MAX_NAME_BUFFER - 1] = '\0';
-    name_buffer[draw_width - 1] = 0;
+    snprintf(name_buffer, draw_width, "%s", choices[scroll_offset + i]);
+    name_buffer[draw_width - 1] = '\0';
 
     if(src->respect_color_codes)
       color_string(name_buffer, x, y + i, DI_LIST);
@@ -1581,12 +1580,8 @@ static void draw_list_box(struct world *mzx_world, struct dialog *di,
     fill_line(choice_length, x, y + current_in_window,
      32, color);
 
-    strncpy(name_buffer, choices[current_choice], MAX_NAME_BUFFER - 1);
-
-    if(draw_width < MAX_NAME_BUFFER)
-      name_buffer[draw_width - 1] = '\0';
-    else
-      name_buffer[MAX_NAME_BUFFER - 1] = '\0';
+    snprintf(name_buffer, draw_width, "%s", choices[current_choice]);
+    name_buffer[draw_width - 1] = '\0';
 
     if(src->respect_color_codes)
       color_string(name_buffer, x, y + current_in_window, color);
@@ -3155,7 +3150,7 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
         if(current_element_num == FILESEL_FILE_LIST)
         {
           struct file_list_entry *entry = (struct file_list_entry *)file_name;
-          strncpy(dest->result, entry->filename, dest->max_length - 1);
+          snprintf(dest->result, dest->max_length, "%s", entry->filename);
           dest->result[dest->max_length - 1] = '\0';
           e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
         }
