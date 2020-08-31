@@ -50,7 +50,7 @@ void set_mesg(struct world *mzx_world, const char *str)
 
 void set_mesg_direct(struct board *src_board, const char *str)
 {
-  strncpy(src_board->bottom_mesg, str, ROBOT_MAX_TR - 1);
+  snprintf(src_board->bottom_mesg, ROBOT_MAX_TR, "%s", str);
   src_board->bottom_mesg[ROBOT_MAX_TR - 1] = 0;
   src_board->b_mesg_timer = MESG_TIMEOUT;
   clear_intro_mesg();

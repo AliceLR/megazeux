@@ -1297,12 +1297,12 @@ static boolean set_graphics_output(struct config_info *conf)
 
   // Some "renderers" are aliases for other renderers that are kept around for
   // compatibility reasons only. These are kept separate from the main list.
-  strcpy(video_output, conf->video_output);
+  memcpy(video_output, conf->video_output, sizeof(video_output));
   while(alias->alias)
   {
     if(!strcasecmp(video_output, alias->alias))
     {
-      strcpy(video_output, alias->name);
+      snprintf(video_output, sizeof(video_output), "%s", alias->name);
       break;
     }
     alias++;
@@ -1788,15 +1788,16 @@ boolean set_video_mode(void)
 
 boolean change_video_output(struct config_info *conf, const char *output)
 {
-  char old_video_output[16];
+  char old_video_output[sizeof(conf->video_output)];
+  size_t len = sizeof(conf->video_output);
   boolean fallback = false;
   boolean retval = true;
 
-  strncpy(old_video_output, conf->video_output, 16);
-  old_video_output[15] = 0;
+  memcpy(old_video_output, conf->video_output, len);
+  old_video_output[len - 1] = 0;
 
-  strncpy(conf->video_output, output, 16);
-  conf->video_output[15] = 0;
+  snprintf(conf->video_output, len, "%s", output);
+  conf->video_output[len - 1] = 0;
 
   if(graphics.renderer.free_video)
     graphics.renderer.free_video(&graphics);
@@ -1807,7 +1808,7 @@ boolean change_video_output(struct config_info *conf, const char *output)
   {
     retval = false;
 
-    strcpy(conf->video_output, old_video_output);
+    memcpy(conf->video_output, old_video_output, len);
     if(!set_graphics_output(conf))
     {
       warn("Failed to roll back renderer!\n");
@@ -1831,7 +1832,7 @@ boolean change_video_output(struct config_info *conf, const char *output)
       exit(1);
     }
 
-    strcpy(conf->video_output, renderers->name);
+    snprintf(conf->video_output, len, "%s", renderers->name);
     if(!set_graphics_output(conf))
     {
       warn("Failed to load fallback renderer, aborting!\n");

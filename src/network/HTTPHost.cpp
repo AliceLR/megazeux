@@ -428,7 +428,9 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
 
     if(strcmp(key, "Content-Type") == 0)
     {
-      strncpy(request.content_type, value, 63);
+      const size_t len = ARRAY_SIZE(request.content_type);
+      snprintf(request.content_type, len, "%s", value);
+      request.content_type[len - 1] = '\0';
 
       if(strcmp(value, request.expected_type) != 0)
         return HOST_HTTP_INVALID_CONTENT_TYPE;

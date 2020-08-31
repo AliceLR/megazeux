@@ -32,6 +32,8 @@ USERS
 + Fixed a bug where the local manifest.txt would be overwritten
   by the remote manifest, potentially causing bugs. The local
   manifest will now be replaced only after a successful update.
++ Fixed a bug where INPUT STRING would display newlines from
+  an interpolated string.
 
 DEVELOPERS
 

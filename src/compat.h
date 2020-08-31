@@ -233,6 +233,27 @@ static inline int check_chdir(const char *path)
 #define getcwd(buf, size) check_getcwd(buf, size)
 #define chdir(path) check_chdir(path)
 
+// Also deprecate some notoriously bad string functions.
+// strncpy and strncat are unsafe functions that get cargo cult usage as "safe"
+// versions of strcpy and strcat (which they aren't). strtok is non-reentrant.
+
+#include <string.h>
+static inline char *check_strncpy(char *, const char *, size_t)
+ __attribute__((deprecated));
+static inline char *check_strncat(char *, const char *, size_t)
+ __attribute__((deprecated));
+static inline char *check_strtok(char *, const char *)
+ __attribute__((deprecated));
+static inline char *check_strncpy(char *d, const char *s, size_t n)
+ { return strncpy(d,s,n); }
+static inline char *check_strncat(char *d, const char *s, size_t n)
+ { return strncat(d,s,n); }
+static inline char *check_strtok(char *d, const char *delim)
+ { return strtok(d,delim); }
+#define strncpy(d,s,n) check_strncpy(d,s,n)
+#define strncat(d,s,n) check_strncat(d,s,n)
+#define strtok(d,delim) check_strtok(d,delim)
+
 #else // !__GNUC__
 
 #define fopen_unsafe(file, mode) fopen(file, mode)

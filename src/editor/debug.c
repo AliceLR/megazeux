@@ -951,9 +951,11 @@ static void init_scroll_text(struct debug_var *v, int scroll)
  *     2 (139,18)
  */
 
+#define DEBUG_NODE_NAME_SIZE 32
+
 struct debug_node
 {
-   char name[15];
+   char name[DEBUG_NODE_NAME_SIZE];
    boolean opened;
    boolean refresh_on_focus;
    boolean show_child_contents;
@@ -980,24 +982,25 @@ static void build_tree_list(struct debug_node *node,
   if(level > 0)
   {
     // Display name and a real name so the menu can find it later.
-    name = cmalloc(TREE_LIST_WIDTH + strlen(node->name) + 1);
-    memset(name, ' ', level * level_offset);
+    int buffer_len = TREE_LIST_WIDTH + strlen(node->name) + 1;
+    int pad_len = level * level_offset;
+    name = cmalloc(buffer_len);
+
+    snprintf(name, buffer_len, "%*.*s%-*.*s %s",
+      pad_len, pad_len, "",
+      TREE_LIST_WIDTH - pad_len - 1, TREE_LIST_WIDTH - pad_len - 1, node->name,
+      node->name
+    );
+    name[TREE_LIST_WIDTH - 1] = '\0';
+    name[buffer_len - 1] = '\0';
+
     if(node->num_nodes)
     {
       if(node->opened)
-        name[(level-1) * level_offset] = '-';
+        name[pad_len - 1] = '-';
       else
-        name[(level-1) * level_offset] = '+';
+        name[pad_len - 1] = '+';
     }
-
-    // Display name
-    strncpy(name + level * level_offset, node->name,
-     TREE_LIST_WIDTH - level * level_offset);
-    name[TREE_LIST_WIDTH - 1] = '\0';
-
-    // Real name
-    strcpy(name + TREE_LIST_WIDTH, node->name);
-    name[TREE_LIST_WIDTH + strlen(node->name)] = '\0';
 
     (*tree_list) = crealloc(*tree_list, sizeof(char *) * (*tree_size + 1));
 
@@ -1008,7 +1011,6 @@ static void build_tree_list(struct debug_node *node,
   if(node->num_nodes && node->opened)
     for(i = 0; i < node->num_nodes; i++)
       build_tree_list(&(node->nodes[i]), tree_list, tree_size, level+1);
-
 }
 
 // Free the tree list and all of its lines.
@@ -1542,7 +1544,9 @@ static struct debug_node *create_rolodex_nodes(struct debug_node *parent,
   {
     if(counts[i])
     {
-      snprintf(nodes[i].name, 14, "%s%c", name_prefix, rolodex_letters[i]);
+      snprintf(nodes[i].name, DEBUG_NODE_NAME_SIZE, "%s%c", name_prefix,
+       rolodex_letters[i]);
+      nodes[i].name[DEBUG_NODE_NAME_SIZE - 1] = '\0';
       nodes[i].parent = parent;
       nodes[i].num_nodes = 0;
       nodes[i].num_vars = 0;
@@ -1669,7 +1673,8 @@ static void init_sprite_vars_node(struct world *mzx_world,
     read_var(mzx_world, current_var);
   }
 
-  snprintf(dest->name, 15, "spr%d", sprite_num);
+  snprintf(dest->name, DEBUG_NODE_NAME_SIZE, "spr%d", sprite_num);
+  dest->name[DEBUG_NODE_NAME_SIZE - 1] = '\0';
   dest->parent = parent;
   dest->num_nodes = 0;
   dest->nodes = NULL;
@@ -1776,7 +1781,7 @@ static void init_robot_vars_node(struct world *mzx_world,
   int num_vars = num_robot_vars + 32;
   struct debug_var *vars = cmalloc(num_vars * sizeof(struct debug_var));
   struct debug_var *current_var;
-  char temp[15];
+  char temp[DEBUG_NODE_NAME_SIZE];
   int i;
 
   // Init the default vars first
@@ -1795,8 +1800,9 @@ static void init_robot_vars_node(struct world *mzx_world,
     read_var(mzx_world, current_var);
   }
 
-  snprintf(temp, 14, "%d:%s", robot_id, src_robot->robot_name);
-  copy_name_escaped(dest->name, 15, temp, strlen(temp));
+  snprintf(temp, DEBUG_NODE_NAME_SIZE, "%d:%s", robot_id, src_robot->robot_name);
+  temp[DEBUG_NODE_NAME_SIZE - 1] = '\0';
+  copy_name_escaped(dest->name, DEBUG_NODE_NAME_SIZE, temp, strlen(temp));
   dest->parent = parent;
   dest->num_nodes = 0;
   dest->nodes = NULL;
@@ -1836,7 +1842,8 @@ static void init_scroll_var_node(struct world *mzx_world,
   init_scroll_text(&(var_list[0]), scroll_id);
   read_var(mzx_world, &(var_list[0]));
 
-  snprintf(dest->name, 14, "Scroll %d", scroll_id);
+  snprintf(dest->name, DEBUG_NODE_NAME_SIZE, "Scroll %d", scroll_id);
+  dest->name[DEBUG_NODE_NAME_SIZE - 1] = '\0';
   dest->parent = parent;
   dest->num_nodes = 0;
   dest->nodes = NULL;
@@ -1877,7 +1884,8 @@ static void init_sensor_var_node(struct world *mzx_world,
   init_builtin_node(mzx_world, dest, sensor_var_list, num_sensor_vars,
    sensor_id);
 
-  snprintf(dest->name, 14, "Sensor %d", sensor_id);
+  snprintf(dest->name, DEBUG_NODE_NAME_SIZE, "Sensor %d", sensor_id);
+  dest->name[DEBUG_NODE_NAME_SIZE - 1] = '\0';
   dest->parent = parent;
   dest->num_nodes = 0;
   dest->nodes = NULL;
@@ -2478,7 +2486,7 @@ static int counter_debugger_idle_function(struct world *mzx_world,
 
 static struct debug_node root;
 static char previous_var[VAR_SEARCH_MAX + 1];
-static char previous_node_name[15];
+static char previous_node_name[DEBUG_NODE_NAME_SIZE];
 
 void __debug_counters(context *ctx)
 {
@@ -2640,8 +2648,8 @@ void __debug_counters(context *ctx)
         struct debug_var *search_var = NULL;
         struct debug_node *search_node = NULL;
         struct debug_node *search_targ = &root;
-        char search_text_unescaped[VAR_SEARCH_MAX + 1] = { 0 };
-        size_t search_text_length = 0;
+        char search_text_unescaped[VAR_SEARCH_MAX + 1];
+        int search_text_length = 0;
         int search_pos = 0;
 
         // There is a var currently selected.
@@ -2651,8 +2659,9 @@ void __debug_counters(context *ctx)
         else
           search_node = focus;
 
-        strcpy(search_text_unescaped, search_text);
-        unescape_string(search_text_unescaped, (int *)(&search_text_length));
+        memcpy(search_text_unescaped, search_text, VAR_SEARCH_MAX);
+        search_text_unescaped[VAR_SEARCH_MAX] = '\0';
+        unescape_string(search_text_unescaped, &search_text_length);
 
         if(!search_text_length)
           break;
@@ -2876,9 +2885,10 @@ void __debug_counters(context *ctx)
     if(len > VAR_SEARCH_MAX)
       len = VAR_SEARCH_MAX;
 
-    strcpy(previous_node_name, focus->name);
+    memcpy(previous_node_name, focus->name, DEBUG_NODE_NAME_SIZE);
+    previous_node_name[DEBUG_NODE_NAME_SIZE - 1] = '\0';
     memcpy(previous_var, var_name, len + 1);
-    previous_var[len] = 0;
+    previous_var[len] = '\0';
   }
 
   // Clear the big dumb tree first

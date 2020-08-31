@@ -1351,8 +1351,8 @@ int send_robot_id_def(struct world *mzx_world, int robot_id, const char *mesg,
   //now, attempt to send the subroutine version of it
   if(mzx_world->version >= V284)
   {
-    strcpy(submesg, "#");
-    strncat(submesg, mesg, ROBOT_MAX_TR - 2);
+    snprintf(submesg, ROBOT_MAX_TR, "#%s", mesg);
+    submesg[ROBOT_MAX_TR - 1] = '\0';
     subresult = send_robot_id(mzx_world, robot_id, submesg, ignore_lock);
     if(result && !subresult)
       result = subresult;
@@ -1368,8 +1368,8 @@ void send_robot_all_def(struct world *mzx_world, const char *mesg)
   //now, attempt to send the subroutine version of it
   if(mzx_world->version >= V284)
   {
-    strcpy(submesg, "#");
-    strncat(submesg, mesg, ROBOT_MAX_TR - 2);
+    snprintf(submesg, ROBOT_MAX_TR, "#%s", mesg);
+    submesg[ROBOT_MAX_TR - 1] = '\0';
     send_robot_all(mzx_world, submesg, 0);
   }
 }

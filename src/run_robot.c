@@ -3878,19 +3878,15 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_INPUT: // input string
       {
         char input_buffer[ROBOT_MAX_TR];
-        char input_buffer_msg[71 + 1];
         char *break_pos;
 
-        // Copy and clip
-        strncpy(input_buffer_msg, cmd_ptr + 2, 71);
-        input_buffer_msg[71] = 0;
+        tr_msg(mzx_world, cmd_ptr + 2, id, input_buffer);
+        input_buffer[71] = '\0';
 
-        // No linebreak thanks bye
-        if((break_pos = strchr(input_buffer_msg, '\n')))
+        // Newlines break the UI. :(
+        break_pos = strchr(input_buffer, '\n');
+        if(break_pos)
           *break_pos = '\0';
-
-        tr_msg(mzx_world, input_buffer_msg, id, input_buffer);
-        input_buffer[71] = 0;
 
         src_board->input_string[0] = 0;
 
