@@ -229,7 +229,8 @@ static void _get_path(char *dest, const char *src)
   while((src[i] != '/') && (src[i] != '\\') && i)
     i--;
 
-  strncpy(dest, src, i);
+  if(i > 0)
+    memcpy(dest, src, i);
   dest[i] = 0;
 }
 
