@@ -34,6 +34,11 @@ USERS
   manifest will now be replaced only after a successful update.
 + Fixed a bug where INPUT STRING would display newlines from
   an interpolated string.
++ MZX now validates the world version of encrypted worlds before
+  offering to decrypt them. This should reduce the chance of
+  accidentally "decrypting" a corrupted file and prevents MZX
+  from attempting to decrypt MZX 1.x files (which store the
+  password differently).
 
 DEVELOPERS
 
