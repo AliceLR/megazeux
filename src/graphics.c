@@ -1097,7 +1097,7 @@ void update_screen(void)
   }
 
   if(graphics.cursor_flipflop &&
-   (graphics.cursor_mode != cursor_mode_invisible))
+   (graphics.cursor_mode != CURSOR_MODE_INVISIBLE))
   {
     Uint16 cursor_color = get_cursor_color();
     Uint32 lines = 0;
@@ -1105,15 +1105,16 @@ void update_screen(void)
 
     switch(graphics.cursor_mode)
     {
-      case cursor_mode_underline:
+      case CURSOR_MODE_UNDERLINE:
         lines = 2;
         offset = 12;
         break;
-      case cursor_mode_solid:
+      case CURSOR_MODE_SOLID:
         lines = 14;
         offset = 0;
         break;
-      case cursor_mode_invisible:
+      case CURSOR_MODE_HINT:
+      case CURSOR_MODE_INVISIBLE:
         break;
     }
 
@@ -2481,25 +2482,30 @@ void get_screen(struct char_element *dest)
   memcpy(dest, graphics.text_video, size);
 }
 
-void cursor_underline(void)
+void cursor_underline(Uint32 x, Uint32 y)
 {
-  graphics.cursor_mode = cursor_mode_underline;
+  graphics.cursor_mode = CURSOR_MODE_UNDERLINE;
+  graphics.cursor_x = x;
+  graphics.cursor_y = y;
 }
 
-void cursor_solid(void)
+void cursor_solid(Uint32 x, Uint32 y)
 {
-  graphics.cursor_mode = cursor_mode_solid;
+  graphics.cursor_mode = CURSOR_MODE_SOLID;
+  graphics.cursor_x = x;
+  graphics.cursor_y = y;
+}
+
+void cursor_hint(Uint32 x, Uint32 y)
+{
+  graphics.cursor_mode = CURSOR_MODE_HINT;
+  graphics.cursor_x = x;
+  graphics.cursor_y = y;
 }
 
 void cursor_off(void)
 {
-  graphics.cursor_mode = cursor_mode_invisible;
-}
-
-void move_cursor(Uint32 x, Uint32 y)
-{
-  graphics.cursor_x = x;
-  graphics.cursor_y = y;
+  graphics.cursor_mode = CURSOR_MODE_INVISIBLE;
 }
 
 #ifdef CONFIG_HELPSYS

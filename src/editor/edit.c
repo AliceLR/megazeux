@@ -1065,8 +1065,7 @@ static boolean editor_draw(context *ctx)
     insta_fadein();
 
   m_show();
-  cursor_solid();
-  move_cursor(cursor_screen_x, cursor_screen_y);
+  cursor_solid(cursor_screen_x, cursor_screen_y);
 
   // Draw the board/vlayer
   if(editor->mode == EDIT_BOARD)

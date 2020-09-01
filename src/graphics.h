@@ -29,9 +29,10 @@ __M_BEGIN_DECLS
 
 enum cursor_mode_types
 {
-  cursor_mode_underline,
-  cursor_mode_solid,
-  cursor_mode_invisible
+  CURSOR_MODE_UNDERLINE,  // Underline for text entry (insert).
+  CURSOR_MODE_SOLID,      // Solid for text entry (overwrite) and editing.
+  CURSOR_MODE_HINT,       // Hidden cursor for active UI element hints.
+  CURSOR_MODE_INVISIBLE   // Cursor disabled.
 };
 
 struct rgb_color
@@ -237,9 +238,9 @@ CORE_LIBSPEC void write_string_mask(const char *str, Uint32 x, Uint32 y,
 
 CORE_LIBSPEC void clear_screen(void);
 
-CORE_LIBSPEC void cursor_solid(void);
+CORE_LIBSPEC void cursor_solid(Uint32 x, Uint32 y);
+CORE_LIBSPEC void cursor_hint(Uint32 x, Uint32 y);
 CORE_LIBSPEC void cursor_off(void);
-CORE_LIBSPEC void move_cursor(Uint32 x, Uint32 y);
 
 CORE_LIBSPEC boolean init_video(struct config_info *conf, const char *caption);
 CORE_LIBSPEC void quit_video(void);
@@ -314,7 +315,7 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
 
 Uint8 get_color_linear(Uint32 offset);
 
-void cursor_underline(void);
+void cursor_underline(Uint32 x, Uint32 y);
 
 boolean change_video_output(struct config_info *conf, const char *output);
 int get_available_video_output_list(const char **buffer, int buffer_len);
