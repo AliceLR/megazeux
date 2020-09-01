@@ -1106,6 +1106,7 @@ void update_screen(void)
     switch(graphics.cursor_mode)
     {
       case CURSOR_MODE_UNDERLINE:
+      case CURSOR_MODE_HINT:
         lines = 2;
         offset = 12;
         break;
@@ -1113,7 +1114,6 @@ void update_screen(void)
         lines = 14;
         offset = 0;
         break;
-      case CURSOR_MODE_HINT:
       case CURSOR_MODE_INVISIBLE:
         break;
     }

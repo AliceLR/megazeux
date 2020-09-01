@@ -388,8 +388,6 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
   force_release_all_keys();
   save_screen();
 
-  cursor_off();
-
   do
   {
     // Draw box and inner box
@@ -442,6 +440,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
 
     x = (current & 31);
     y = (current >> 5);
+    cursor_hint(x + 23, y + 7);
 
     if(get_shift_status(keycode_internal) && allow_multichar)
     {
@@ -791,6 +790,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
   // Prevent UI keys from carrying through.
   force_release_all_keys();
   restore_screen();
+  cursor_off();
 
   return current;
 }
@@ -1004,7 +1004,6 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
   else
     set_context(get_context(NULL));
 
-  cursor_off();
   m_show();
 
   save_screen();
@@ -1031,6 +1030,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
   do
   {
+    cursor_off();
     highlight_element(mzx_world, di, current_element_num);
     update_screen();
 
@@ -1094,7 +1094,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
         if((element_under != -1) &&
          (element_under != current_element_num) &&
-         ((di->elements[element_under])->key_function))
+         ((di->elements[element_under])->click_function))
         {
           unhighlight_element(mzx_world, di, current_element_num);
           current_element_num = element_under;
@@ -1246,12 +1246,14 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     {
       force_release_all_keys();
       pop_context();
+      cursor_off();
       return -1;
     }
 
   } while(di->done != 1);
 
   pop_context();
+  cursor_off();
 
   return di->return_value;
 }
@@ -1356,6 +1358,7 @@ static void draw_radio_button(struct world *mzx_world, struct dialog *di,
   {
     color_line(src->max_length + 4, x, y + *(src->result),
      DI_ACTIVE);
+    cursor_hint(x + 1, y + *(src->result));
   }
 }
 
@@ -1374,6 +1377,9 @@ static void draw_button(struct world *mzx_world, struct dialog *di,
   write_string(src->label, x + 1, y, color, 0);
   draw_char(' ', color, x, y);
   draw_char(' ', color, x + (Uint32)strlen(src->label) + 1, y);
+
+  if(active)
+    cursor_hint(x + 1, y);
 }
 
 static void draw_number_box(struct world *mzx_world, struct dialog *di,
@@ -1389,6 +1395,8 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
     increment = 5;
 
   write_string(src->question, x, y, color, 0);
+  if(active)
+    cursor_hint(x, y);
 
   x += (int)strlen(src->question) + di->pad_space;
 
@@ -1493,6 +1501,9 @@ static void draw_slot_selector(struct world *mzx_world, struct dialog *di,
 
     fill_line(4, slot_x, slot_y, 0, slot_color);
     write_number(i + 1, slot_color, slot_x + 2, slot_y, 1, true, 10);
+
+    if(active && i == src->selected_slot)
+      cursor_hint(slot_x + 1, slot_y);
   }
 }
 
@@ -1508,6 +1519,8 @@ static void draw_file_selector(struct world *mzx_world, struct dialog *di,
 
   write_string(src->title, x, y, color, 0);
   fill_line(width, x, y + 1, 32, DI_LIST);
+  if(active)
+    cursor_hint(x, y);
 
   if(path[0])
   {
@@ -1579,6 +1592,8 @@ static void draw_list_box(struct world *mzx_world, struct dialog *di,
 
     fill_line(choice_length, x, y + current_in_window,
      32, color);
+    if(active)
+      cursor_hint(x, y + current_in_window);
 
     snprintf(name_buffer, draw_width, "%s", choices[current_choice]);
     name_buffer[draw_width - 1] = '\0';
