@@ -27,14 +27,6 @@ __M_BEGIN_DECLS
 #include "platform.h"
 #include "configure.h"
 
-enum cursor_mode_types
-{
-  CURSOR_MODE_UNDERLINE,  // Underline for text entry (insert).
-  CURSOR_MODE_SOLID,      // Solid for text entry (overwrite) and editing.
-  CURSOR_MODE_HINT,       // Hidden cursor for active UI element hints.
-  CURSOR_MODE_INVISIBLE   // Cursor disabled.
-};
-
 struct rgb_color
 {
   Uint8 r;
@@ -176,6 +168,7 @@ struct graphics_data
   boolean requires_extended;
 
   enum cursor_mode_types cursor_mode;
+  enum cursor_mode_types cursor_hint_mode;
   boolean fade_status;
   boolean dialog_fade_status;
   Uint32 cursor_x;

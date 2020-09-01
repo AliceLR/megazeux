@@ -1099,14 +1099,17 @@ void update_screen(void)
   if(graphics.cursor_flipflop &&
    (graphics.cursor_mode != CURSOR_MODE_INVISIBLE))
   {
+    enum cursor_mode_types cursor_mode = graphics.cursor_mode;
     Uint16 cursor_color = get_cursor_color();
     Uint32 lines = 0;
     Uint32 offset = 0;
 
-    switch(graphics.cursor_mode)
+    if(cursor_mode == CURSOR_MODE_HINT)
+      cursor_mode = graphics.cursor_hint_mode;
+
+    switch(cursor_mode)
     {
       case CURSOR_MODE_UNDERLINE:
-      case CURSOR_MODE_HINT:
         lines = 2;
         offset = 12;
         break;
@@ -1114,6 +1117,7 @@ void update_screen(void)
         lines = 14;
         offset = 0;
         break;
+      case CURSOR_MODE_HINT:
       case CURSOR_MODE_INVISIBLE:
         break;
     }
@@ -1617,6 +1621,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   graphics.window_width = conf->window_width;
   graphics.window_height = conf->window_height;
   graphics.mouse_status = false;
+  graphics.cursor_hint_mode = conf->cursor_hint_mode;
   graphics.cursor_timestamp = get_ticks();
   graphics.cursor_flipflop = 1;
   graphics.system_mouse = conf->system_mouse;

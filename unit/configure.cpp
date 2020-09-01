@@ -432,6 +432,25 @@ UNITTEST(Settings)
     TEST_ENUM("gl_vsync", conf->gl_vsync, data);
   }
 
+  SECTION(cursor_hint_mode)
+  {
+    static const config_test_single data[] =
+    {
+      { "0", CURSOR_MODE_INVISIBLE },
+      { "1", CURSOR_MODE_UNDERLINE },
+      { "off", CURSOR_MODE_INVISIBLE },
+      { "underline", CURSOR_MODE_UNDERLINE },
+      { "solid",  CURSOR_MODE_SOLID },
+      { "-1", DEFAULT },
+      { "-24124124", DEFAULT },
+      { "2", DEFAULT },
+      { "938019831", DEFAULT },
+      { "1a", DEFAULT },
+      { "umderl1ne", DEFAULT },
+    };
+    TEST_ENUM("dialog_cursor_hints", conf->cursor_hint_mode, data);
+  }
+
   SECTION(allow_screenshots)
   {
     TEST_ENUM("allow_screenshots", conf->allow_screenshots, boolean_data);
