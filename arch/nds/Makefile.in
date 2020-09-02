@@ -49,7 +49,8 @@ arch/nds/%.o: arch/nds/%.c
 
 arch/nds/%.bin.o arch/nds/%_bin.h : arch/nds/%.bin
 	$(if ${V},,@echo "  BIN2O   " $<)
-	bin2s -a 32 -H arch/nds/`(echo $(<F) | tr . _)`.h $< | $(AS) -o arch/nds/$(<F).o
+	bin2s -a 32 -H arch/nds/`(echo $(<F) | tr . _)`.h $< > $<.S
+	$(AS) $<.S -o arch/nds/$(<F).o
 
 package: mzx
 	${MAKE} -C arch/nds TARGET=${mzxrun}

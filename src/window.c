@@ -94,6 +94,7 @@ static char *cur_slot_prefix = NULL;
 #define SLOTSEL_FILE_MANAGER_BUTTON 2
 #define SLOTSEL_SELECTOR            3
 #define SLOTSEL_NUM_SLOTS           10
+
 // Free up memory.
 
 // The following functions do NOT check to see if memory is reserved, in

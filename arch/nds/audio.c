@@ -33,7 +33,8 @@
 
 // Utility logic
 
-static u8 nds_vol_table[] = {
+static u8 nds_vol_table[] =
+{
 	0, 8, 16, 26, 36, 48, 61, 75, 91, 108, 127
 };
 
@@ -41,11 +42,13 @@ static u8 nds_vol_table[] = {
 
 // FIFO calls
 
-static inline void nds_sound_volume(int volume) {
+static inline void nds_sound_volume(int volume)
+{
   fifoSendValue32(FIFO_MZX, CMD_MZX_SOUND_VOLUME | (NDS_VOLUME(volume) << 24));
 }
 
-static inline void nds_pcs_sound(int freq, int volume) {
+static inline void nds_pcs_sound(int freq, int volume)
+{
   fifoSendValue32(FIFO_MZX, CMD_MZX_PCS_TONE | (((freq) & 0xFFFF) << 8) | (NDS_VOLUME(volume) << 24));
 }
 
@@ -64,11 +67,11 @@ static inline void nds_pcs_tick(int duration)
   int ticks = 0;
   int ticked;
 
-  while (ticks < duration)
+  while(ticks < duration)
   {
-    if (pcs_playing)
+    if(pcs_playing)
     {
-      if (pcs_duration <= 0)
+      if(pcs_duration <= 0)
       {
         pcs_playing = 0;
       }
@@ -84,15 +87,16 @@ static inline void nds_pcs_tick(int duration)
     // Update PC speaker.
     sfx_next_note(&pcs_playing, &pcs_frequency, &pcs_duration);
 
-    if (!pcs_playing)
+    if(!pcs_playing)
       break;
   }
 
-  if (pcs_playing != last_playing)
+  if(pcs_playing != last_playing)
   {
     nds_pcs_sound(pcs_playing ? pcs_frequency : 0, NDS_VOLUME(audio_get_pcs_volume()));
   }
-  else if (pcs_playing && (pcs_frequency != last_frequency))
+  else
+  if(pcs_playing && (pcs_frequency != last_frequency))
   {
     nds_pcs_sound(pcs_frequency, NDS_VOLUME(audio_get_pcs_volume()));
   }
@@ -113,10 +117,14 @@ static void nds_maxmod_init(void)
   maxmod_conf.mod_count = 1;
   maxmod_conf.samp_count = isDSiMode() ? MAX_NUM_SAMPLES : 4;
   maxmod_conf.mem_bank = malloc(sizeof(mm_word) * (maxmod_conf.mod_count + maxmod_conf.samp_count));
-  for (i = 0; i < (maxmod_conf.mod_count + maxmod_conf.samp_count); i++)
+  for(i = 0; i < (maxmod_conf.mod_count + maxmod_conf.samp_count); i++)
+  {
     maxmod_conf.mem_bank[i] = 0;
-  for (i = 0; i < maxmod_conf.samp_count; i++)
+  }
+  for(i = 0; i < maxmod_conf.samp_count; i++)
+  {
     maxmod_sample_filenames[i] = NULL;
+  }
   maxmod_conf.fifo_channel = FIFO_MAXMOD;
 
   DC_FlushAll();
@@ -159,7 +167,7 @@ void audio_set_module_frequency(int frequency)
 {
   int mm_freq;
 
-  if (frequency == 0)
+  if(frequency == 0)
     frequency = 44100;
   maxmod_effective_frequency = frequency;
   mm_freq = CLAMP(div32(frequency * 0x400, 44100), 0x200, 0x800);
@@ -209,7 +217,7 @@ static u8 *audio_load_mas_file(char *filename)
 
   // load the maxmod soundbank file
   mas_file = fopen_unsafe(filename, "rb");
-  if (mas_file == NULL)
+  if(mas_file == NULL)
   {
     return NULL;
   }
@@ -218,20 +226,20 @@ static u8 *audio_load_mas_file(char *filename)
   fread(&mas_size, 4, 1, mas_file);
 
   // read buffer
-  if (mas_size <= 0)
+  if(mas_size <= 0)
   {
     fclose(mas_file);
     return NULL;
   }
 
   mas_buffer = malloc(mas_size + 8);
-  if (mas_buffer == NULL)
+  if(mas_buffer == NULL)
   {
     fclose(mas_file);
     return NULL;
   }
 
-  if (!fread(mas_buffer + 4, mas_size + 4, 1, mas_file))
+  if(!fread(mas_buffer + 4, mas_size + 4, 1, mas_file))
   {
     free(mas_buffer);
     fclose(mas_file);
@@ -253,7 +261,7 @@ static u8 *audio_load_sam_file(char *filename)
 
   // load the SAM file
   sam_file = fopen_unsafe(filename, "rb");
-  if (sam_file == NULL)
+  if(sam_file == NULL)
   {
     return NULL;
   }
@@ -262,7 +270,7 @@ static u8 *audio_load_sam_file(char *filename)
   fseek(sam_file, 0, SEEK_END);
   sam_size = ftell(sam_file);
   fseek(sam_file, 0, SEEK_SET);
-  if (sam_size <= 0)
+  if(sam_size <= 0)
   {
     fclose(sam_file);
     return NULL;
@@ -271,13 +279,13 @@ static u8 *audio_load_sam_file(char *filename)
   // generate a .MAS-format sample on the fly
   sam_size_aligned = (sam_size + 3) & (~3);
   mas_buffer = malloc(8 /* preamble */ + 16 /* header */ + sam_size_aligned + 4 /* padded data */);
-  if (mas_buffer == NULL)
+  if(mas_buffer == NULL)
   {
     fclose(sam_file);
     return NULL;
   }
 
-  if (!fread(mas_buffer + 8 + 16, sam_size, 1, sam_file))
+  if(!fread(mas_buffer + 8 + 16, sam_size, 1, sam_file))
   {
     free(mas_buffer);
     fclose(sam_file);
@@ -311,7 +319,7 @@ int audio_play_module(char *filename, boolean safely, int volume)
   // we can only play pre-converted .MAS files
   strcpy(mas_filename, filename);
   mas_ext_pos = strrchr(mas_filename, '.');
-  if (mas_ext_pos == NULL)
+  if(mas_ext_pos == NULL)
   {
     return 0;
   }
@@ -328,7 +336,7 @@ int audio_play_module(char *filename, boolean safely, int volume)
   }
 
   mas_buffer = audio_load_mas_file(mas_filename);
-  if (mas_buffer == NULL)
+  if(mas_buffer == NULL)
   {
     return 0;
   }
@@ -348,15 +356,15 @@ int audio_play_module(char *filename, boolean safely, int volume)
 
 void audio_end_module(void)
 {
-  if (!mmActive())
+  if(!mmActive())
     return;
 
   mmStop();
 
-  while (mmActive())
+  while(mmActive())
     delay(1);
 
-  if (maxmod_conf.mem_bank[0] != 0)
+  if(maxmod_conf.mem_bank[0] != 0)
   {
     free((void*) maxmod_conf.mem_bank[0]);
     maxmod_conf.mem_bank[0] = 0;
@@ -383,7 +391,7 @@ void audio_play_sample(char *filename, boolean safely, int period)
   // we can only play pre-converted .SAM files
   strcpy(mas_filename, filename);
   mas_ext_pos = strrchr(mas_filename, '.');
-  if (mas_ext_pos == NULL)
+  if(mas_ext_pos == NULL)
   {
     return;
   }
@@ -400,24 +408,28 @@ void audio_play_sample(char *filename, boolean safely, int period)
   }
 
   sample_id = 0;
-  for (sample_id = 0; sample_id < maxmod_conf.samp_count; sample_id++)
+  for(sample_id = 0; sample_id < maxmod_conf.samp_count; sample_id++)
   {
-    if (maxmod_sample_filenames[sample_id] != NULL)
-      if (!strcmp(maxmod_sample_filenames[sample_id], mas_filename))
+    if(maxmod_sample_filenames[sample_id] != NULL)
+    {
+      if(!strcmp(maxmod_sample_filenames[sample_id], mas_filename))
+      {
         break;
+      }
+    }
   }
 
-  if (sample_id == maxmod_conf.samp_count)
+  if(sample_id == maxmod_conf.samp_count)
   {
     // deallocate all samples
     audio_end_sample();
     sample_id = 0;
   }
 
-  if (maxmod_sample_filenames[sample_id] == NULL)
+  if(maxmod_sample_filenames[sample_id] == NULL)
   {
     mas_buffer = audio_load_sam_file(mas_filename);
-    if (mas_buffer == NULL)
+    if(mas_buffer == NULL)
     {
       return;
     }
@@ -451,8 +463,9 @@ void audio_end_sample(void)
   mmEffectCancelAll();
   delay(1);
 
-  for (i = 0; i < maxmod_conf.samp_count; i++)
-    if (maxmod_conf.mem_bank[1 + i] != 0)
+  for(i = 0; i < maxmod_conf.samp_count; i++)
+  {
+    if(maxmod_conf.mem_bank[1 + i] != 0)
     {
       free((void*) maxmod_conf.mem_bank[1 + i]);
       maxmod_conf.mem_bank[1 + i] = 0;
@@ -460,6 +473,7 @@ void audio_end_sample(void)
       free(maxmod_sample_filenames[i]);
       maxmod_sample_filenames[i] = NULL;
     }
+  }
 }
 
 // Audio glue code
@@ -473,7 +487,7 @@ int audio_get_max_samples(void)
 
 void audio_set_max_samples(int max_samples)
 {
-  if (max_samples < 0 || (u32)max_samples > maxmod_conf.samp_count)
+  if(max_samples < 0 || (u32)max_samples > maxmod_conf.samp_count)
     max_samples = maxmod_conf.samp_count;
   nds_max_samples = max_samples;
 }

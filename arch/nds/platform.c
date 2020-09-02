@@ -82,7 +82,7 @@ static int profile_pos = 0;
 ITCM_CODE
 void profile_start(const char *name)
 {
-  if (profile_pos < PROFILE_QUEUE_DEPTH)
+  if(profile_pos < PROFILE_QUEUE_DEPTH)
   {
     profile_names[profile_pos] = name;
     profile_times[profile_pos] = timers2ticks(TIMER0_DATA, TIMER1_DATA);
@@ -96,10 +96,10 @@ void profile_end(void)
 {
   u32 ctime;
 
-  if (profile_pos <= 0)
+  if(profile_pos <= 0)
     return;
 
-  if (--profile_pos < PROFILE_QUEUE_DEPTH)
+  if(--profile_pos < PROFILE_QUEUE_DEPTH)
   {
     ctime = timers2ticks(TIMER0_DATA, TIMER1_DATA);
     iprintf("%s: %lld cycles\n", profile_names[profile_pos], (u64) (ctime - profile_times[profile_pos]) << 8);
@@ -112,23 +112,25 @@ void profile_end(void)
 // graphics changes
 extern void guruMeditationDump(void);
 
-void mzxExceptionHandler() {
-        // stop vblank handler
-        irqClear(IRQ_VBLANK);
+static void mzxExceptionHandler() {
+  // stop vblank handler
+  irqClear(IRQ_VBLANK);
 
-        // clear sub screen (incl. DMA to it)
-	DMA0_CR = 0;
-	DMA1_CR = 0;
-	DMA2_CR = 0;
-	DMA3_CR = 0;
-	REG_BG0HOFS_SUB = 0;
-	REG_BG0VOFS_SUB = 0;
+  // clear sub screen (incl. DMA to it)
+  DMA0_CR = 0;
+  DMA1_CR = 0;
+  DMA2_CR = 0;
+  DMA3_CR = 0;
+  REG_BG0HOFS_SUB = 0;
+  REG_BG0VOFS_SUB = 0;
 
-	videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE);
-	vramSetBankC(VRAM_C_SUB_BG);
+  videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE);
+  vramSetBankC(VRAM_C_SUB_BG);
 
-	guruMeditationDump();
-	while(1);
+  guruMeditationDump();
+  while(1)
+  {
+  }
 }
 
 boolean platform_init(void)
@@ -144,7 +146,7 @@ boolean platform_init(void)
   }
 
 #if !defined(CONFIG_DEBYTECODE)
-  if (!isDSiMode())
+  if(!isDSiMode())
     nds_ram_init(DETECT_RAM);
 #endif
   timer_init();

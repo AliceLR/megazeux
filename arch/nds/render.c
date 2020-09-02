@@ -393,7 +393,7 @@ static boolean nds_init_video(struct graphics_data *graphics,
   palette_idx_table_init();
 
   // Copy protected palette to BG_PALETTE.
-  for (i = 0; i < protected_palette_bin_size - 256; i += 2)
+  for(i = 0; i < protected_palette_bin_size - 256; i += 2)
     BG_PALETTE[PALETTE_PROTECTED_START + (i>>1)] = *((u16*) &protected_palette_bin[i + 256]);
 
   // Start with scaled mode.
@@ -509,7 +509,10 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
 
   struct char_element *text_cell = graphics->text_video;
   u32 *vram_ptr  = (u32*)BG_BMP_RAM(5);
-  int chars, lines;
+  int chars, lines, columns;
+  int chr, bg, fg;
+  u8 *line;
+  u32 fourpx;
 
   DTCM_BSS static u8 pal_tbl[4];
 
@@ -522,25 +525,25 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
 #endif
 
   /* Iterate over every character in text memory. */
-  int columns = 0;
+  columns = 0;
   for(chars = 0; chars < 80*25; chars++)
   {
     u32* vram_next = vram_ptr + 1;
 #ifdef SCALED_USE_CELL_CACHE
     u32 key = *((u32*) text_cell);
 
-    if (graph_cache[chars] != key)
+    if(graph_cache[chars] != key)
     {
       graph_cache[chars] = key;
 #else
     {
 #endif
-      int chr = (*text_cell).char_value & 0x1FF;
-      int bg  = (*text_cell).bg_color   & 0x0F;
-      int fg  = (*text_cell).fg_color   & 0x0F;
+      chr = (*text_cell).char_value & 0x1FF;
+      bg  = (*text_cell).bg_color   & 0x0F;
+      fg  = (*text_cell).fg_color   & 0x0F;
 
       // Construct a table mapping charset two-bit pairs to palette entries.
-      if (chr & 0x100) // Protected palette
+      if(chr & 0x100) // Protected palette
       {
         u8 bg_idx = bg + PALETTE_PROTECTED_START;
         u8 fg_idx = fg + PALETTE_PROTECTED_START;
@@ -562,12 +565,12 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
       }
 
       /* Iterate over every line in the character. */
-      u8 *line = graphics->charset + CHARACTER_HEIGHT * chr;
+      line = graphics->charset + CHARACTER_HEIGHT * chr;
       #pragma GCC unroll CHARACTER_HEIGHT
       for(lines = 0; lines < CHARACTER_HEIGHT; lines++)
       {
         /* Plot four pixels using the two-bit pair table. */
-        u32 fourpx = pal_tbl[((*line) & 0xC0) >> 6]      ;
+        fourpx = pal_tbl[((*line) & 0xC0) >> 6]      ;
         fourpx    |= pal_tbl[((*line) & 0x30) >> 4] <<  8;
         fourpx    |= pal_tbl[((*line) & 0x0C) >> 2] << 16;
         fourpx    |= pal_tbl[((*line) & 0x03)     ] << 24;

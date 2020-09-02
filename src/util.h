@@ -160,7 +160,7 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 #define trace(...) do { } while(0)
 #endif
 
-#else /* ANDROID, CONFIG_NDS */
+#else /* ANDROID */
 
 #define info(...) \
  do { \
@@ -193,7 +193,7 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 #define trace(...) do { } while(0)
 #endif
 
-#endif /* ANDROID, CONFIG_NDS */
+#endif /* ANDROID */
 
 __M_END_DECLS
 

@@ -43,7 +43,7 @@ void mzxFifoCommandHandler(u32 command, void *userdata) {
 		case CMD_MZX_PCS_TONE: {
 			int freq = (command >> 8) & 0xFFFF;
 			int volume = (command >> 24);
-			if (freq > 0) {
+			if(freq > 0) {
 				SCHANNEL_CR(MZX_PCS_CHANNEL) = SCHANNEL_ENABLE | volume | SOUND_PAN(64) | SOUND_FORMAT_PSG | (3 << 24);
 				SCHANNEL_TIMER(MZX_PCS_CHANNEL) = SOUND_FREQ(freq << 3);
 			} else {
@@ -101,8 +101,8 @@ int main() {
 	setPowerButtonCB(powerButtonCB);
 
 	// Keep the ARM7 mostly idle
-	while (!exitflag) {
-		if ( 0 == (REG_KEYINPUT & (KEY_SELECT | KEY_START | KEY_L | KEY_R))) {
+	while(!exitflag) {
+		if( 0 == (REG_KEYINPUT & (KEY_SELECT | KEY_START | KEY_L | KEY_R))) {
 			exitflag = true;
 		}
 		swiWaitForVBlank();
