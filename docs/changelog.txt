@@ -34,6 +34,11 @@ USERS
   manifest will now be replaced only after a successful update.
 + Fixed a bug where INPUT STRING would display newlines from
   an interpolated string.
++ MZX now validates the world version of encrypted worlds before
+  offering to decrypt them. This should reduce the chance of
+  accidentally "decrypting" a corrupted file and prevents MZX
+  from attempting to decrypt MZX 1.x files (which store the
+  password differently).
 
 DEVELOPERS
 
@@ -60,6 +65,9 @@ DEVELOPERS
 + Added a EAI_AGAIN define for the getaddrinfo() fallback.
 + Fixed leak of updates.txt file pointers in the updater that
   could occur when updates.txt fails to download.
++ Added graphics.renderer.hardware_cursor for platforms with
+  hardware cursors that may need to be updated during any frame
+  regardless of the current cursor state/blinking (i.e. DJGPP).
 
 
 July 20th, 2020 - MZX 2.92e
