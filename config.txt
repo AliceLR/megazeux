@@ -170,11 +170,13 @@
 # fullscreen = 1
 
 # MZX can optionally display the text cursor to hint at the currently selected
-# UI element when applicable. Valid settings are 0 or "off" (doesn't display),
-# 1 or "underline" (displays the underline text cursor), and "solid" (displays
-# the filled text cursor). The default value is 0.
+# UI element when applicable. Valid settings are 0 or "off" (doesn't display
+# or update the cursor position), 1 or "hidden" (doesn't display, but updates
+# the cursor position for platforms with hardware cursors), "underline"
+# (displays the underline cursor), and "solid" (displays the filled cursor).
+# The default value is 1.
 
-# dialog_cursor_hints = 0
+# dialog_cursor_hints = 1
 
 # Whether MZX should allow a screenshot to be taken when F12 is pressed.
 # Defaults to enabled.

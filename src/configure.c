@@ -187,7 +187,7 @@ static const struct config_info user_conf_default =
   CONFIG_GL_FILTER_LINEAR,      // opengl filter method
   "",                           // opengl default scaling shader
   GL_VSYNC_DEFAULT,             // opengl vsync mode
-  CURSOR_MODE_UNDERLINE,        // cursor_hint_mode
+  CURSOR_MODE_HINT,             // cursor_hint_mode
   true,                         // allow screenshots
 
   // Audio options
@@ -306,8 +306,9 @@ static const struct config_enum resample_mode_values[] =
 static const struct config_enum cursor_hint_type_values[] =
 {
   { "0", CURSOR_MODE_INVISIBLE },
-  { "1", CURSOR_MODE_UNDERLINE },
+  { "1", CURSOR_MODE_HINT },
   { "off", CURSOR_MODE_INVISIBLE },
+  { "hidden", CURSOR_MODE_HINT },
   { "underline", CURSOR_MODE_UNDERLINE },
   { "solid", CURSOR_MODE_SOLID },
 };

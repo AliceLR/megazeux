@@ -437,8 +437,9 @@ UNITTEST(Settings)
     static const config_test_single data[] =
     {
       { "0", CURSOR_MODE_INVISIBLE },
-      { "1", CURSOR_MODE_UNDERLINE },
+      { "1", CURSOR_MODE_HINT },
       { "off", CURSOR_MODE_INVISIBLE },
+      { "hidden", CURSOR_MODE_HINT },
       { "underline", CURSOR_MODE_UNDERLINE },
       { "solid",  CURSOR_MODE_SOLID },
       { "-1", DEFAULT },

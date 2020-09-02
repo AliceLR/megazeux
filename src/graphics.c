@@ -1098,16 +1098,12 @@ void update_screen(void)
 
   if(graphics.renderer.render_cursor || graphics.renderer.hardware_cursor)
   {
-    enum cursor_mode_types cursor_mode = graphics.cursor_mode;
     Uint16 cursor_color = get_cursor_color();
     boolean enabled = true;
     Uint32 lines = 0;
     Uint32 offset = 0;
 
-    if(cursor_mode == CURSOR_MODE_HINT)
-      cursor_mode = graphics.cursor_hint_mode;
-
-    switch(cursor_mode)
+    switch(graphics.cursor_mode)
     {
       case CURSOR_MODE_UNDERLINE:
         lines = 2;
@@ -2518,7 +2514,7 @@ void cursor_solid(Uint32 x, Uint32 y)
 
 void cursor_hint(Uint32 x, Uint32 y)
 {
-  graphics.cursor_mode = CURSOR_MODE_HINT;
+  graphics.cursor_mode = graphics.cursor_hint_mode;
   graphics.cursor_x = x;
   graphics.cursor_y = y;
 }
