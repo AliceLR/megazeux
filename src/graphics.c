@@ -2513,20 +2513,6 @@ void cursor_off(void)
   graphics.cursor_mode = CURSOR_MODE_INVISIBLE;
 }
 
-#ifdef CONFIG_HELPSYS
-
-void set_cursor_mode(enum cursor_mode_types mode)
-{
-  graphics.cursor_mode = mode;
-}
-
-enum cursor_mode_types get_cursor_mode(void)
-{
-  return graphics.cursor_mode;
-}
-
-#endif // CONFIG_HELPSYS
-
 void m_hide(void)
 {
   if(!graphics.system_mouse)

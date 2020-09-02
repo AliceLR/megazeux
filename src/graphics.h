@@ -356,11 +356,6 @@ CORE_LIBSPEC void ec_load_mzx(void);
 CORE_LIBSPEC void ec_load_set_secondary(const char *name, Uint8 *dest);
 #endif // CONFIG_EDITOR
 
-#ifdef CONFIG_HELPSYS
-void set_cursor_mode(enum cursor_mode_types mode);
-enum cursor_mode_types get_cursor_mode(void);
-#endif // CONFIG_HELPSYS
-
 #ifdef CONFIG_ENABLE_SCREENSHOTS
 void dump_screen(void);
 #endif
