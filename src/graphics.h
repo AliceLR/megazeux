@@ -67,7 +67,6 @@ struct char_element
  */
 #if defined(CONFIG_NDS)
 #define NUM_CHARSETS 2
-#define NO_PROTECTED_PALETTE
 #endif
 
 #define CHAR_SIZE 14
@@ -84,7 +83,11 @@ struct char_element
 #define PROTECTED_PAL_SIZE 16
 #define FULL_PAL_SIZE (SMZX_PAL_SIZE + PROTECTED_PAL_SIZE)
 
+#ifdef CONFIG_NO_LAYER_RENDERING
+#define SET_SCREEN_SIZE (SCREEN_W * SCREEN_H)
+#else
 #define SET_SCREEN_SIZE (SCREEN_W * SCREEN_H * 3)
+#endif
 
 #define TEXTVIDEO_LAYERS 512
 

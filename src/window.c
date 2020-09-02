@@ -66,7 +66,12 @@
 #include <sys/iosupport.h>
 #endif
 
+#ifdef CONFIG_NDS
+// Should be sufficient with a disabled editor.
+#define NUM_SAVSCR 3
+#else
 #define NUM_SAVSCR 6
+#endif
 
 static struct char_element screen_storage[NUM_SAVSCR][SET_SCREEN_SIZE];
 

@@ -39,9 +39,16 @@ __M_BEGIN_DECLS
 
 #define STATUS_NUM_KEYCODES 512
 
+#if defined(CONFIG_NDS) || defined(CONFIG_3DS)
+#define MAX_JOYSTICKS           1
+#define MAX_JOYSTICK_AXES       4
+#define MAX_JOYSTICK_BUTTONS    16
+#else
 #define MAX_JOYSTICKS           16
 #define MAX_JOYSTICK_AXES       16
 #define MAX_JOYSTICK_BUTTONS    256
+#endif
+
 #define MAX_JOYSTICK_PRESS      16
 #define AXIS_DEFAULT_THRESHOLD  10000
 

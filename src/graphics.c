@@ -1037,16 +1037,20 @@ static Uint16 get_cursor_color(void)
   return cursor_color;
 }
 
+#ifndef CONFIG_NO_LAYER_RENDERING
 static int compare_layers(const void *a, const void *b)
 {
   return (*(struct video_layer * const *)a)->draw_order -
     (*(struct video_layer * const *)b)->draw_order;
 }
+#endif
 
 void update_screen(void)
 {
   Uint32 ticks = get_ticks();
+#ifndef CONFIG_NO_LAYER_RENDERING
   Uint32 layer;
+#endif
 
   if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
   {
@@ -1060,6 +1064,7 @@ void update_screen(void)
     graphics.palette_dirty = false;
   }
 
+#ifndef CONFIG_NO_LAYER_RENDERING
   if(graphics.requires_extended && graphics.renderer.render_layer)
   {
     for(layer = 0; layer < graphics.layer_count; layer++)
@@ -1079,12 +1084,13 @@ void update_screen(void)
     }
   }
   else
-
+#endif
   if(graphics.renderer.render_graph)
   {
     // Fallback if the layer renderer is unavailable or unnecessary
     graphics.renderer.render_graph(&graphics);
   }
+#ifndef CONFIG_NO_LAYER_RENDERING
   else
 
   if(graphics.renderer.render_layer)
@@ -1095,6 +1101,7 @@ void update_screen(void)
 
     graphics.renderer.render_layer(&graphics, &(graphics.text_video_layer));
   }
+#endif
 
   if(graphics.renderer.render_cursor || graphics.renderer.hardware_cursor)
   {
@@ -2473,11 +2480,13 @@ void set_screen(struct char_element *src)
   int offset = SCREEN_W * SCREEN_H;
   int size = offset * sizeof(struct char_element);
 
+#ifndef CONFIG_NO_LAYER_RENDERING
   memcpy(graphics.video_layers[UI_LAYER].data, src, size);
   src += offset;
 
   memcpy(graphics.video_layers[GAME_UI_LAYER].data, src, size);
   src += offset;
+#endif
 
   memcpy(graphics.text_video, src, size);
 }
@@ -2487,11 +2496,13 @@ void get_screen(struct char_element *dest)
   int offset = SCREEN_W * SCREEN_H;
   int size = offset * sizeof(struct char_element);
 
+#ifndef CONFIG_NO_LAYER_RENDERING
   memcpy(dest, graphics.video_layers[UI_LAYER].data, size);
   dest += offset;
 
   memcpy(dest, graphics.video_layers[GAME_UI_LAYER].data, size);
   dest += offset;
+#endif
 
   memcpy(dest, graphics.text_video, size);
 }
@@ -2831,7 +2842,11 @@ boolean switch_shader(const char *name)
 
 boolean layer_renderer_check(boolean show_error)
 {
+#ifdef CONFIG_NO_LAYER_RENDERING
+  if(1)
+#else
   if(!graphics.renderer.render_layer)
+#endif
   {
     if(show_error)
     {

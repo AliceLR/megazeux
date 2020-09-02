@@ -100,11 +100,22 @@ __editor_maybe_static char sfx_strs[NUM_SFX][SFX_SIZE] =
 static int topindex = 0;  // Marks the top of the queue
 static int backindex = 0; // Marks bottom of queue
 
+// Sound queue data structure.
+#ifdef CONFIG_NDS
+// Reduce memory usage in half.
 struct noise
 {
-  int duration;//This is the struc of the sound queue
+  Uint16 duration;
+  Uint16 freq;
+};
+#else
+// 32-bit ints should be nicer to deal with on most platforms.
+struct noise
+{
+  int duration;
   int freq;
 };
+#endif
 
 // Frequencies of 6C thru 6B
 static const int note_freq[12] =

@@ -157,6 +157,10 @@ static int volume_function(int input, int volume_setting)
   return CLAMP(output, 0, 255);
 }
 
+// Disable most of the standard audio implementation on NDS, where
+// hardware mixing is utilized.
+#ifndef CONFIG_NDS
+
 void destruct_audio_stream(struct audio_stream *a_src)
 {
   if(a_src == audio.stream_list_base)
@@ -733,6 +737,8 @@ int audio_get_module_loop_end(void)
   return loop_end;
 }
 
+#endif
+
 void audio_set_music_on(int val)
 {
   LOCK();
@@ -810,15 +816,14 @@ void audio_set_sound_volume(int volume)
 void audio_set_pcs_volume(int volume)
 {
   int real_volume;
-  if(!audio.pcs_stream)
-    return;
 
   LOCK();
 
   audio.pcs_volume = volume;
   real_volume = volume_function(255, audio.pcs_volume);
 
-  audio.pcs_stream->set_volume(audio.pcs_stream, real_volume);
+  if(audio.pcs_stream)
+    audio.pcs_stream->set_volume(audio.pcs_stream, real_volume);
 
   UNLOCK();
 }

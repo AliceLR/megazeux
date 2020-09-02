@@ -62,6 +62,8 @@ int real_main(int argc, char *argv[]);
 #include "../arch/wii/thread.h"
 #elif defined(CONFIG_3DS)
 #include "../arch/3ds/thread.h"
+#elif defined(CONFIG_NDS)
+#include "../arch/nds/thread.h"
 #elif defined(CONFIG_SDL)
 #include "thread_sdl.h"
 #else
