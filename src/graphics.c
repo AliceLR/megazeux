@@ -1096,10 +1096,10 @@ void update_screen(void)
     graphics.renderer.render_layer(&graphics, &(graphics.text_video_layer));
   }
 
-  if(graphics.cursor_flipflop &&
-   (graphics.cursor_mode != CURSOR_MODE_INVISIBLE))
+  if(graphics.renderer.render_cursor || graphics.renderer.hardware_cursor)
   {
     Uint16 cursor_color = get_cursor_color();
+    boolean enabled = true;
     Uint32 lines = 0;
     Uint32 offset = 0;
 
@@ -1115,11 +1115,25 @@ void update_screen(void)
         break;
       case CURSOR_MODE_HINT:
       case CURSOR_MODE_INVISIBLE:
+        enabled = false;
         break;
     }
 
-    graphics.renderer.render_cursor(&graphics,
-     graphics.cursor_x, graphics.cursor_y, cursor_color, lines, offset);
+    // Try to render the standard software cursor first.
+    if(graphics.renderer.render_cursor && enabled && graphics.cursor_flipflop)
+    {
+      graphics.renderer.render_cursor(&graphics,
+       graphics.cursor_x, graphics.cursor_y, cursor_color, lines, offset);
+    }
+    else
+
+    // Other platforms may use a hardware cursor instead that may need to be
+    // updated any frame regardless of the cursor state and blinking.
+    if(graphics.renderer.hardware_cursor)
+    {
+      graphics.renderer.hardware_cursor(&graphics,
+       graphics.cursor_x, graphics.cursor_y, cursor_color, lines, offset, enabled);
+    }
   }
 
   if(graphics.mouse_status)

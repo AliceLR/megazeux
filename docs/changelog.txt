@@ -65,6 +65,9 @@ DEVELOPERS
 + Added a EAI_AGAIN define for the getaddrinfo() fallback.
 + Fixed leak of updates.txt file pointers in the updater that
   could occur when updates.txt fails to download.
++ Added graphics.renderer.hardware_cursor for platforms with
+  hardware cursors that may need to be updated during any frame
+  regardless of the current cursor state/blinking (i.e. DJGPP).
 
 
 July 20th, 2020 - MZX 2.92e

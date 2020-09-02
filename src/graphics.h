@@ -130,6 +130,9 @@ struct renderer
   void    (*render_layer)     (struct graphics_data *, struct video_layer *);
   void    (*render_cursor)    (struct graphics_data *, Uint32 x, Uint32 y,
                                 Uint16 color, Uint8 lines, Uint8 offset);
+  void    (*hardware_cursor)  (struct graphics_data *, Uint32 x, Uint32 y,
+                                Uint16 color, Uint8 lines, Uint8 offset,
+                                boolean enable);
   void    (*render_mouse)     (struct graphics_data *, Uint32 x, Uint32 y,
                                 Uint8 w, Uint8 h);
   void    (*sync_screen)      (struct graphics_data *);
