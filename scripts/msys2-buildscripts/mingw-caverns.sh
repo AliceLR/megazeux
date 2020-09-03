@@ -5,6 +5,7 @@ URL="https://www.digitalmzx.com/download/182/26f59999fc55953e81a66cf01d0207fe3b1
 PREFIX="/mzx-build-workingdir/caverns"
 
 CAVERNS_PATH="caverns"
+CAVERNS_MMUTIL_PATH="caverns_mmutil"
 
 _3DS_PATH="3ds"
 NDS_PATH="nds"
@@ -17,13 +18,23 @@ WII_DIR="apps/megazeux"
 SWITCH_DIR="switch/megazeux"
 
 
-mkdir -p $PREFIX/caverns	
+mkdir -p $PREFIX
 
 if [ ! -f "$PREFIX/caverns.zip" ]; then
-
 	wget $URL -O $PREFIX/caverns.zip
-	7z e $PREFIX/caverns.zip -o$PREFIX/$CAVERNS_PATH
+fi
 
+if [ ! -d "$PREFIX/$CAVERNS_PATH" ]; then
+	7z e $PREFIX/caverns.zip -o$PREFIX/$CAVERNS_PATH
+fi
+
+if [ ! -z "$DEVKITPRO" -a ! -d "$PREFIX/$CAVERNS_MMUTIL_PATH" ]; then
+	7z e $PREFIX/caverns.zip -o$PREFIX/$CAVERNS_MMUTIL_PATH
+	pushd $PREFIX/$CAVERNS_MMUTIL_PATH
+	for f in *.{mod,MOD}; do
+		$DEVKITPRO/tools/bin/mmutil -d -m $f && rm -f $f
+	done
+	popd
 fi
 
 
@@ -34,24 +45,30 @@ function setup_arch
 
 	# $1 Arch folder
 	# $2 Directory to put caverns in
+	# $3 Caverns path to copy from (optional, defaults to $CAVERNS_PATH)
+
+	CAVERNS_SETUP=$CAVERNS_PATH
+	if [ ! -z $3 ]; then
+		CAVERNS_SETUP=$3
+	fi
 
 	if [ ! -d "$PREFIX/$1" ]; then
 
 		mkdir -p $PREFIX/$1/$2
-		cp -r $PREFIX/$CAVERNS_PATH/* $PREFIX/$1/$2
+		cp -r $PREFIX/$CAVERNS_SETUP/* $PREFIX/$1/$2
 
 	fi
 }
 
 setup_arch $_3DS_PATH $_3DS_DIR
-setup_arch $NDS_PATH $NDS_DIR
+setup_arch $NDS_PATH $NDS_DIR $CAVERNS_MMUTIL_PATH
 setup_arch $WII_PATH $WII_DIR
 setup_arch $SWITCH_PATH $SWITCH_DIR
 
 
 function locate_mzx
 {
-	# $1 - archive to search 
+	# $1 - archive to search
 	# $2 - filename to check for
 
 	return $(7za l $1 $2 -r | grep -q "$2")
