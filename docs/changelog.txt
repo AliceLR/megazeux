@@ -2,6 +2,14 @@ GIT
 
 USERS
 
++ Added audio support to the NDS port. PC speaker effects and
+  .SAM files will work out of the box, but .MOD/.S3M/.XM/.IT
+  files require preconversion to .MAS using mmutil. All other
+  audio formats are unsupported. (asie)
+  Example:
+
+    mmutil -d -m CV_TECH.MOD
+
 + Fixed graphics corruption when using the glsl and opengl2
   renderers on big endian platforms.
 + Fixed a bug that would cause string searches to sometimes skip

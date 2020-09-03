@@ -34,6 +34,7 @@ __M_BEGIN_DECLS
 
 typedef u8 platform_mutex;
 typedef u8 platform_thread;
+typedef u8 platform_thread_id;
 typedef u8 platform_thread_fn;
 
 static inline void platform_mutex_init(platform_mutex *mutex)
@@ -64,6 +65,17 @@ static inline int platform_thread_create(platform_thread *thread,
 
 static inline void platform_thread_join(platform_thread *thread)
 {
+}
+
+static inline platform_thread_id platform_get_thread_id(void)
+{
+  return 0;
+}
+
+static inline boolean platform_is_same_thread(platform_thread_id a,
+ platform_thread_id b)
+{
+  return true;
 }
 
 __M_END_DECLS

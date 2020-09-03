@@ -112,7 +112,8 @@ void profile_end(void)
 // graphics changes
 extern void guruMeditationDump(void);
 
-static void mzxExceptionHandler() {
+static void mzxExceptionHandler()
+{
   // stop vblank handler
   irqClear(IRQ_VBLANK);
 

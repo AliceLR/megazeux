@@ -96,6 +96,7 @@ static inline void nds_pcs_tick(int duration)
     nds_pcs_sound(pcs_playing ? pcs_frequency : 0, NDS_VOLUME(audio_get_pcs_volume()));
   }
   else
+
   if(pcs_playing && (pcs_frequency != last_frequency))
   {
     nds_pcs_sound(pcs_frequency, NDS_VOLUME(audio_get_pcs_volume()));
