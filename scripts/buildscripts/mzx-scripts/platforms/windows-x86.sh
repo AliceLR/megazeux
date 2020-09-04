@@ -21,6 +21,9 @@ if [ -n "$MSYSTEM" ]; then
 	MINGW32_PLATFORM="win32"
 	MSYSTEM="MINGW32"
 	source /etc/profile
+
+	export SDL_PREFIX="$MZX_WORKINGDIR/sdl2-mingw/i686-w64-mingw32/"
+	[ -d "$SDL_PREFIX" ] || { echo "Failed to find MinGW SDL dir!"; exit 1; }
 fi
 
 platform_init()

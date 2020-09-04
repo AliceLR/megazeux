@@ -1,11 +1,11 @@
 #!/bin/sh
 
-export MZX_SCRIPTS_BASE="`dirname $0`/mzx-scripts"
-export MZX_BUILD_DIR="."
+export MZX_SCRIPTS="`dirname $0`/mzx-scripts"
+export MZX_WORKINGDIR="`dirname $0`/mzx-workingdir"
 export MZX_TARGET="TARGET/"
 
-source $MZX_SCRIPTS_BASE/version.sh
-source $MZX_SCRIPTS_BASE/build.sh
+source $MZX_SCRIPTS/version.sh
+source $MZX_SCRIPTS/build.sh
 
 build_init
 

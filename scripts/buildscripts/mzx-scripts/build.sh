@@ -16,6 +16,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
+source "$MZX_SCRIPTS/common.sh"
+
 if [ -z $MZX_MAKE ]; then
 	if command -v gmake &> /dev/null; then
 		export MZX_MAKE="gmake"
@@ -46,25 +48,36 @@ build_error()
 
 build_init()
 {
-	if git ls-files --error-unmatch "$0" "$MZX_SCRIPTS_BASE" &>/dev/null; then
-		echo "ERROR: attempting to run this script from 'scripts/'."
-		echo "The scripts directory is tracked by Git and may be modified when"
-		echo "checking out different tags/branches for MZX builds."
-		echo ""
-		echo "You should duplicate 'scripts/' to another directory and run this script"
-		echo "from that directory instead."
-		exit 1
+	#
+	# Check if the current working directory is the MZX repo.
+	# Otherwise, use the repo that (should) exist in the working directory.
+	#
+	if [ -f "config.sh" ]; then
+		MZX_BUILD_DIR=$(pwd)
+	else
+		MZX_BUILD_DIR="$MZX_WORKINGDIR/megazeux"
+
+		[ -d "$MZX_BUILD_DIR" ] || { echo "Couldn't find MegaZeux repository dir!"; exit 1; }
+		OLD_DIR=$(pwd)
+		cd "$MZX_BUILD_DIR"
+		[ -f "config.sh" ] || { echo "Couldn't find config.sh!"; exit 1; }
+		MZX_BUILD_DIR=$(pwd)
+		cd "$OLD_DIR"
 	fi
+	build_log "Using MegaZeux repository at $MZX_BUILD_DIR for builds"
+	export MZX_BUILD_DIR
 
-	[ -d "$MZX_BUILD_DIR" ] || { echo "Couldn't find MegaZeux repository dir!"; exit 1; }
-	cd "$MZX_BUILD_DIR"
-	[ -f "config.sh" ] || { echo "Couldn't find config.sh!"; exit 1; }
-
+	#
+	# Make sure the target dir exists and get its full path.
+	#
 	mkdir -p "$MZX_TARGET"
+	cd "$MZX_TARGET"
+	MZX_TARGET=$(pwd)
 
 	#
 	# Reset the git repository and make sure all branches/tags are up-to-date.
 	#
+	cd "$MZX_BUILD_DIR"
 	git reset --hard
 	git fetch
 	git fetch --tags
@@ -82,7 +95,6 @@ build_remove_debug()
 	#
 	# Clear the debug files out of the release archive and put them in their own archive.
 	#
-	OLD_DIR=$(pwd)
 	cd "build/dist/$SUBPLATFORM/"
 
 	ZIPS=$(ls -1 *.zip)
@@ -96,7 +108,7 @@ build_remove_debug()
 			rm *.debug
 		fi
 	done
-	cd "$OLD_DIR"
+	cd "$MZX_BUILD_DIR"
 }
 
 # $1 subplatform
@@ -113,12 +125,15 @@ build_common()
 	MZX_RELEASE_TYPE=$5
 	[ -n "$SUBPLATFORM" ] || { build_error "no SUBPLATFORM defined" 1; return; }
 	[ -n "$MZX_GIT_BRANCH" ] || { build_error "no git branch/tag provided" 2; return; }
-	[ -f "$MZX_SCRIPTS_BASE/platforms/$SUBPLATFORM.sh" ] ||\
-	 { build_error "couldn't find $MZX_SCRIPTS_BASE/platforms/$SUBPLATFORM.sh" 3; return; }
+	[ -f "$MZX_SCRIPTS/platforms/$SUBPLATFORM.sh" ] ||\
+	 { build_error "couldn't find $MZX_SCRIPTS/platforms/$SUBPLATFORM.sh" 3; return; }
+
+	# This may be set from a previous build...
+	unset $SDL_PREFIX
 
 	export PATH="$OLD_PATH"
-	source "$MZX_SCRIPTS_BASE/platforms/default.sh"
-	source "$MZX_SCRIPTS_BASE/platforms/$SUBPLATFORM.sh"
+	source "$MZX_SCRIPTS/platforms/default.sh"
+	source "$MZX_SCRIPTS/platforms/$SUBPLATFORM.sh"
 
 	export ERRNO=0
 	export IS_HOST="false"
@@ -130,6 +145,8 @@ build_common()
 	build_log "  Branch/tag:    $MZX_GIT_BRANCH"
 	build_log "  Update branch: $MZX_UPDATE_BRANCH"
 	build_log "  Options:       $MZX_EXTRA_CONFIG_FLAGS"
+
+	cd "$MZX_BUILD_DIR"
 
 	#
 	# Initialize platform-dependent variables and perform platform-dependent
