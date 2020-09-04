@@ -22,7 +22,6 @@ platform_init()
 		ERRNO=20;
 		return;
 	fi
-	[ -z "$EMSDK" ] && { ERRNO=20; return; }
 }
 
 platform_config_release()
