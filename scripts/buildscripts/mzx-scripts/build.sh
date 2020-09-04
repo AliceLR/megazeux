@@ -129,7 +129,7 @@ build_common()
 	 { build_error "couldn't find $MZX_SCRIPTS/platforms/$SUBPLATFORM.sh" 3; return; }
 
 	# This may be set from a previous build...
-	unset $SDL_PREFIX
+	unset SDL_PREFIX
 
 	export PATH="$OLD_PATH"
 	source "$MZX_SCRIPTS/platforms/default.sh"
