@@ -85,11 +85,11 @@ build_remove_debug()
 	OLD_DIR=$(pwd)
 	cd "build/dist/$SUBPLATFORM/"
 
-	ZIPS=$(ls -1 "*.zip")
+	ZIPS=$(ls -1 *.zip)
 
 	for SRC in $ZIPS; do
 		DEST=$(echo "$SRC" | sed "s/\.zip\$/\.debug\.zip/g")
-		if [ $(7za l "$SRC" *.debug -r | grep -q ".debug") ]; then
+		if 7za l "$SRC" *.debug -r | grep -q ".debug"; then
 			7za e "$SRC"        *.debug -r
 			7za d "$SRC"        *.debug -r
 			7za a -tzip "$DEST" *.debug
