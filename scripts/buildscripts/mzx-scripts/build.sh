@@ -46,9 +46,7 @@ build_error()
 
 build_init()
 {
-	[ -f "config.sh" ] || { echo "Use this script from the MegaZeux repository root."; exit 1; }
-
-	if echo "$MZX_SCRIPTS_BASE" | grep -q "^\(./\)\?scripts\(/\|\$\)"; then
+	if git ls-files --error-unmatch "$0" "$MZX_SCRIPTS_BASE" &>/dev/null; then
 		echo "ERROR: attempting to run this script from 'scripts/'."
 		echo "The scripts directory is tracked by Git and may be modified when"
 		echo "checking out different tags/branches for MZX builds."
@@ -58,6 +56,10 @@ build_init()
 		exit 1
 	fi
 
+	[ -d "$MZX_BUILD_DIR" ] || { echo "Couldn't find MegaZeux repository dir!"; exit 1; }
+	cd "$MZX_BUILD_DIR"
+	[ -f "config.sh" ] || { echo "Couldn't find config.sh!"; exit 1; }
+
 	mkdir -p "$MZX_TARGET"
 
 	#
@@ -66,6 +68,35 @@ build_init()
 	git reset --hard
 	git fetch
 	git fetch --tags
+}
+
+build_remove_debug()
+{
+	#
+	# Clear the debug files out of the updates dir (if applicable).
+	#
+	if [ -d "build/$SUBPLATFORM/" ]; then
+		find "build/$SUBPLATFORM/" -type f -name '*.debug' -delete
+	fi
+
+	#
+	# Clear the debug files out of the release archive and put them in their own archive.
+	#
+	OLD_DIR=$(pwd)
+	cd "build/dist/$SUBPLATFORM/"
+
+	ZIPS=$(ls -1 "*.zip")
+
+	for SRC in $ZIPS; do
+		DEST=$(echo "$SRC" | sed "s/\.zip\$/\.debug\.zip/g")
+		if [ $(7za l "$SRC" *.debug -r | grep -q ".debug") ]; then
+			7za e "$SRC"        *.debug -r
+			7za d "$SRC"        *.debug -r
+			7za a -tzip "$DEST" *.debug
+			rm *.debug
+		fi
+	done
+	cd "$OLD_DIR"
 }
 
 # $1 subplatform
@@ -156,8 +187,16 @@ build_common()
 	[ -d "build/dist/$SUBPLATFORM" ] || { build_error "couldn't find build/dist/$SUBPLATFORM/" 11; return; }
 
 	#
-	# All files in build/dist/SUBPLATFORM/ (there may be multiple depending on how the
-	# platform handles things like .debug files) should be moved to the $MZX_TARGET/zips/ folder.
+	# If this is a release build, separate the debug symbols to their own archive
+	# and remove them from the updates directory (if applicable).
+	#
+	if [ "$MZX_RELEASE_TYPE" = "release" ]; then
+		build_remove_debug
+	fi
+
+	#
+	# All files in build/dist/SUBPLATFORM/ (there may be multiple depending on the
+	# platform or if there is a .debug zip) should be moved to the $MZX_TARGET/zips/ folder.
 	#
 	ZIP_DIR="$MZX_GIT_BRANCH"
 	if [ "$MZX_GIT_BRANCH" = "master" -a "$MZX_UPDATE_BRANCH" != "" ]; then
