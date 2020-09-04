@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export MZX_SCRIPTS_BASE="`dirname $0`/mzx-build-scripts"
+export MZX_SCRIPTS_BASE="`dirname $0`/mzx-scripts"
 export MZX_BUILD_DIR="."
 export MZX_TARGET="TARGET/"
 
