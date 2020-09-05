@@ -38,18 +38,16 @@ build and updates process.
 - `2_CreateReleases.bat` (runs `mzx-build.sh`): run a complete set of MZX builds
   (see `mzx-build.sh` for a list of builds). This will produce a set of archives
   in `TARGET/zips/` and a release tree in `TARGET/releases/` for processing by
-  the next script.
+  the next script. Note that this script will typically take several minutes to run.
 - `3_PackageReleases.bat` (runs `mzx-updates.sh`): convert `TARGET/releases/`
   into the format expected by the MZX updater. Files are gzipped and renamed to
-  their SHA-256 sum with no extension; manifest.txt is gzipped but left unchanged,
+  their SHA-256 sum with no extension; manifest.txt is gzipped with the same filename,
   and config.txt is removed. This will also create `updates.txt` (in gzipped form).
   This process occurs in the intermediate directory `TARGET/releases-update/`.
   Finally, the contents of this directory are archived with `tar` for distribution.
 - `4_UploadReleases.bat` (runs `mzx-upload.sh`): uploads the updates tarball to
   user-specified update hosts and extracts it. The file `mzx-upload.sh` must be
   edited for this step to work.
-- `5_Caverns.bat` (runs `mzx-caverns.sh`): adds Caverns of Zeux to any applicable
-  archives in `TARGET/zips/`. (FIXME this may be merged into `mzx-build.sh`).
 
 NOTE: the batch scripts only work if the entire buildscript system is copied to
 the root MSYS2 directory. To run the scripts from a different directory, use the
