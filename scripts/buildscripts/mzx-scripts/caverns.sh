@@ -46,7 +46,7 @@ caverns_init()
 
 	dkp_dependency_check mmutil
 	if [ "$ERRNO" = "0" ]; then
-		if [ ! -d "$PREFIX/$CAVERNS_MMUTIL_PATH" ]; then
+		if [ ! -d "$CAVERNS_BASE/$CAVERNS_MMUTIL_PATH" ]; then
 			7za e "$CAVERNS_BASE/caverns.zip" "-o$CAVERNS_BASE/$CAVERNS_MMUTIL_PATH"
 			OLD_DIR=$(pwd)
 			cd "$CAVERNS_BASE/$CAVERNS_MMUTIL_PATH"
