@@ -31,21 +31,6 @@ fi
 
 OLD_PATH="$PATH"
 
-build_log()
-{
-	echo "INFO:" "$1" >&2
-}
-
-build_warn()
-{
-	echo "WARN:" "$1" "(code $2)" >&2
-}
-
-build_error()
-{
-	echo "ERROR:" "$1" "(code $2)" >&2
-}
-
 build_init()
 {
 	#
@@ -57,14 +42,14 @@ build_init()
 	else
 		MZX_BUILD_DIR="$MZX_WORKINGDIR/megazeux"
 
-		[ -d "$MZX_BUILD_DIR" ] || { echo "Couldn't find MegaZeux repository dir!"; exit 1; }
+		[ -d "$MZX_BUILD_DIR" ] || { mzx_log "Couldn't find MegaZeux repository dir!"; exit 1; }
 		OLD_DIR=$(pwd)
 		cd "$MZX_BUILD_DIR"
-		[ -f "config.sh" ] || { echo "Couldn't find config.sh!"; exit 1; }
+		[ -f "config.sh" ] || { mzx_log "Couldn't find config.sh!"; exit 1; }
 		MZX_BUILD_DIR=$(pwd)
 		cd "$OLD_DIR"
 	fi
-	build_log "Using MegaZeux repository at $MZX_BUILD_DIR for builds"
+	mzx_log "Using MegaZeux repository at $MZX_BUILD_DIR for builds"
 	export MZX_BUILD_DIR
 
 	#
@@ -123,10 +108,10 @@ build_common()
 	MZX_UPDATE_BRANCH=$3
 	MZX_EXTRA_CONFIG_FLAGS=$4
 	MZX_RELEASE_TYPE=$5
-	[ -n "$SUBPLATFORM" ] || { build_error "no SUBPLATFORM defined" 1; return; }
-	[ -n "$MZX_GIT_BRANCH" ] || { build_error "no git branch/tag provided" 2; return; }
+	[ -n "$SUBPLATFORM" ] || { mzx_error "no SUBPLATFORM defined" 1; return; }
+	[ -n "$MZX_GIT_BRANCH" ] || { mzx_error "no git branch/tag provided" 2; return; }
 	[ -f "$MZX_SCRIPTS/platforms/$SUBPLATFORM.sh" ] ||\
-	 { build_error "couldn't find $MZX_SCRIPTS/platforms/$SUBPLATFORM.sh" 3; return; }
+	 { mzx_error "couldn't find $MZX_SCRIPTS/platforms/$SUBPLATFORM.sh" 3; return; }
 
 	# This may be set from a previous build...
 	unset SDL_PREFIX
@@ -138,13 +123,13 @@ build_common()
 	export ERRNO=0
 	export IS_HOST="false"
 
-	echo "" >&2
-	build_log "Starting build:"
-	build_log "  Platform:      $SUBPLATFORM"
-	build_log "  Type:          $MZX_RELEASE_TYPE"
-	build_log "  Branch/tag:    $MZX_GIT_BRANCH"
-	build_log "  Update branch: $MZX_UPDATE_BRANCH"
-	build_log "  Options:       $MZX_EXTRA_CONFIG_FLAGS"
+	mzx_log ""
+	mzx_log "Starting build:"
+	mzx_log "  Platform:      $SUBPLATFORM"
+	mzx_log "  Type:          $MZX_RELEASE_TYPE"
+	mzx_log "  Branch/tag:    $MZX_GIT_BRANCH"
+	mzx_log "  Update branch: $MZX_UPDATE_BRANCH"
+	mzx_log "  Options:       $MZX_EXTRA_CONFIG_FLAGS"
 
 	cd "$MZX_BUILD_DIR"
 
@@ -153,7 +138,7 @@ build_common()
 	# checks to make sure MegaZeux will be able to build.
 	#
 	platform_init
-	[ "$ERRNO" = "0" ] || { build_warn "failed to initialize platform; skipping" $ERRNO; return; }
+	[ "$ERRNO" = "0" ] || { mzx_warn "failed to initialize platform; skipping" $ERRNO; return; }
 
 	#
 	# Check out the requested branch.
@@ -171,27 +156,27 @@ build_common()
 	else
 		platform_config_debug "$MZX_EXTRA_CONFIG_FLAGS"
 	fi
-	[ "$ERRNO" = "0" ] || { build_error "failed to configure for $MZX_RELEASE_TYPE" $ERRNO; return; }
-	[ -e "platform.inc" ] || { build_error "config.sh failed to create platform.inc for $MZX_RELEASE_TYPE" 10; return; }
+	[ "$ERRNO" = "0" ] || { mzx_error "failed to configure for $MZX_RELEASE_TYPE" $ERRNO; return; }
+	[ -e "platform.inc" ] || { mzx_error "config.sh failed to create platform.inc for $MZX_RELEASE_TYPE" 10; return; }
 
 	#
 	# Build MegaZeux.
 	#
 	platform_make
-	[ "$ERRNO" = "0" ] || { build_error "make failed" $ERRNO; return; }
+	[ "$ERRNO" = "0" ] || { mzx_error "make failed" $ERRNO; return; }
 
 	#
 	# Perform make test (if applicable).
 	# If this fails it's not a fatal error but it definitely should be looked at.
 	#
 	platform_make_test
-	[ "$ERRNO" = "0" ] || { build_warn "make test failed" $ERRNO; ERRNO=0; }
+	[ "$ERRNO" = "0" ] || { mzx_warn "make test failed" $ERRNO; ERRNO=0; }
 
 	#
 	# Perform any other checks on the build that may be necessary.
 	#
 	platform_check_build
-	[ "$ERRNO" = "0" ] || { build_error "build check failed" $ERRNO; return; }
+	[ "$ERRNO" = "0" ] || { mzx_error "build check failed" $ERRNO; return; }
 
 	#
 	# Package the build.
@@ -200,8 +185,8 @@ build_common()
 	# Only check for the build/dist/SUBPLATFORM/ right now.
 	#
 	platform_package
-	[ "$ERRNO" = "0" ] || { build_error "package failed" $ERRNO; return; }
-	[ -d "build/dist/$SUBPLATFORM" ] || { build_error "couldn't find build/dist/$SUBPLATFORM/" 11; return; }
+	[ "$ERRNO" = "0" ] || { mzx_error "package failed" $ERRNO; return; }
+	[ -d "build/dist/$SUBPLATFORM" ] || { mzx_error "couldn't find build/dist/$SUBPLATFORM/" 11; return; }
 
 	#
 	# If this is a release build, separate the debug symbols to their own archive
@@ -230,11 +215,11 @@ build_common()
 	#
 	if [ -n "$MZX_UPDATE_BRANCH" ]; then
 		if [ ! -d "build/$SUBPLATFORM" ]; then
-			build_error "couldn't find build/$SUBPLATFORM/" 12
+			mzx_error "couldn't find build/$SUBPLATFORM/" 12
 			return
 		fi
 		if ! find "build/$SUBPLATFORM" -name "manifest.txt" | grep -q "manifest.txt"; then
-			build_error "couldn't find manifest.txt for $MZX_UPDATE_BRANCH/$SUBPLATFORM" 13
+			mzx_error "couldn't find manifest.txt for $MZX_UPDATE_BRANCH/$SUBPLATFORM" 13
 			return
 		fi
 		mkdir -p "$MZX_TARGET/releases/$MZX_UPDATE_BRANCH/"

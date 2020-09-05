@@ -14,11 +14,26 @@ if git ls-files --error-unmatch "$0" "$MZX_SCRIPTS" &>/dev/null; then
 	exit 1
 fi
 
+mzx_log()
+{
+	echo "$1" >&2
+}
+
+mzx_warn()
+{
+	echo "WARN:" "$1" "(code $2)" >&2
+}
+
+mzx_error()
+{
+	echo "ERROR:" "$1" "(code $2)" >&2
+}
+
 # $@ commands to check for (e.g. "7za")
 cmd_check()
 {
 	MSG=""
-	while $1; do
+	while [ -n "$1" ]; do
 		if ! command -v "$1" &>/dev/null; then
 			MSG="$MSG$1;"
 		fi
