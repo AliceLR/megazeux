@@ -41,7 +41,11 @@ platform_config_release()
 
 platform_make()
 {
-	$MZX_MAKE_PARALLEL debuglink
+	if [ "$MZX_RELEASE_TYPE" = "release" ]; then
+		$MZX_MAKE_PARALLEL debuglink
+	else
+		$MZX_MAKE_PARALLEL
+	fi
 	[ "$?" -eq "0" ] || { ERRNO=23; }
 }
 

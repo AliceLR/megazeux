@@ -32,7 +32,7 @@ process_release_dir()
 	# Make sure there's no Makefile or config.sh or anything else
 	# that should only appear in a development directory.
 	#
-	if [ -f config.sh ] || [-f Makefile ] || [ -d src ]
+	if [ -f config.sh ] || [ -f Makefile ] || [ -d src ]
 	then
 		mzx_error "this appears to be a source dir. Aborting." 3
 		exit 1
@@ -88,16 +88,19 @@ process_release_dir()
 #
 process_updates()
 {
-	[ -f "$TARGET/releases" ] || \
+	mkdir -p "$MZX_TARGET"
+	cd "$MZX_TARGET"
+	MZX_TARGET=$(pwd)
+
+	[ -d "releases" ] || \
 	 { mzx_error "Couldn't find 'releases' dir. Must run mzx-build.sh first!" 1; exit 1; }
-	cd "$TARGET"
 	rm -rf "uploads"
 	mkdir -p "uploads"
 	rm -rf "releases-update"
 	cp -r "releases" "releases-update"
 
 	#
-	# Convert
+	# Process each tag:branch pair.
 	#
 	while [ -n "$1" ]
 	do
@@ -107,9 +110,9 @@ process_updates()
 		#
 		# Handle each architecture found in the branch directory if it exists.
 		#
-		if [ -d "$TARGET/releases-update/$UPDATE_BRANCH" ]
+		if [ -d "$MZX_TARGET/releases-update/$UPDATE_BRANCH" ]
 		then
-			cd "$TARGET/releases-update/$UPDATE_BRANCH"
+			cd "$MZX_TARGET/releases-update/$UPDATE_BRANCH"
 			for F in $(ls -1 2>/dev/null)
 			do
 				if [ -d "$F" ]
@@ -117,6 +120,7 @@ process_updates()
 					cd "$F"
 					mzx_log "Processing '$(pwd)'..."
 					process_release_dir &
+					cd ..
 				fi
 			done
 		fi
@@ -126,18 +130,18 @@ process_updates()
 		# processed. This way, individual release tags can be updated without
 		# breaking other existing release tags.
 		#
-		cd "$TARGET/releases-update"
+		cd "$MZX_TARGET/releases-update"
 		echo "Current-$UPDATE_TAG: $UPDATE_BRANCH" >> "updates-uncompressed.txt"
 		shift
 	done
 	wait
 
-	cd "$TARGET/releases-update"
+	cd "$MZX_TARGET/releases-update"
 	if [ -f "updates-uncompressed.txt" ]
 	then
 		gzip < updates-uncompressed.txt > updates.txt
 		rm -f updates-uncompressed.txt
-		tar -cvf "$TARGET/uploads/updates.tar" *
+		tar -cvf "$MZX_TARGET/uploads/updates.tar" *
 	else
 		mzx_error "No updates to process! Aborting." 2
 		exit 1
