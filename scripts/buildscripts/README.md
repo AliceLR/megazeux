@@ -1,0 +1,84 @@
+# MegaZeux Build Scripts
+
+This set of scripts is meant to compile a (mostly) complete set of MegaZeux
+builds and updater files. It is only tested and known to work with MSYS2 but
+the scripts here should be fairly POSIX-friendly.
+
+FIXME idk about this
+These scripts should be run only after "1_PrepareReleaseEnvironment.bat"
+from the Windows scripts has been run.
+
+The following platforms can currently be built by this script:
+
+- Windows (via MSYS2 or MinGW)
+- Nintendo DS
+- Nintendo 3DS
+- Nintendo Wii
+- Nintendo Switch
+- PlayStation Portable
+- HTML5/Emscripten
+- Android
+- DJGPP
+- Source package
+
+Any platforms requiring chroots (Debian, Ubuntu, Raspbian), rpmbuild (Fedora),
+obscure toolchains (Mac OS X x86/PPC, Amiga, Pandora, GP2X), or a separate build
+system (Xcode, MSVC) are not currently supported by these scripts. Support for
+some of these may be added at a later date.
+
+## Usage
+For MSYS2, the easiest way to do this is to copy all of these files to the MSYS
+root folder. The following batch scripts can then be run, mostly automating the
+build and updates process.
+
+- `1_PrepareReleaseEnvironment.bat` (runs `mzx-init.sh`): create the `mzx-workingdir/`
+  folder and clone an MegaZeux repository to build MZX with. For MSYS2 this can
+  also install all required dependencies for the Windows builds, but other builds
+  require additional work (see below).
+- `2_CreateReleases.bat` (runs `mzx-build.sh`): run a complete set of MZX builds
+  (see `mzx-build.sh` for a list of builds). This will produce a set of archives
+  in `TARGET/zips/` and a release tree in `TARGET/releases/` for processing by
+  the next script.
+- `3_PackageReleases.bat` (runs `mzx-updates.sh`): convert `TARGET/releases/`
+  into the format expected by the MZX updater. Files are gzipped and renamed to
+  their SHA-256 sum with no extension; manifest.txt is gzipped but left unchanged,
+  and config.txt is removed. This will also create `updates.txt` (in gzipped form).
+  This process occurs in the intermediate directory `TARGET/releases-update/`.
+  Finally, the contents of this directory are archived with `tar` for distribution.
+- `4_UploadReleases.bat` (runs `mzx-upload.sh`): uploads the updates tarball to
+  user-specified update hosts and extracts it. The file `mzx-upload.sh` must be
+  edited for this step to work.
+- `5_Caverns.bat` (runs `mzx-caverns.sh`): adds Caverns of Zeux to any applicable
+  archives in `TARGET/zips/`. (FIXME this may be merged into `mzx-build.sh`).
+
+These scripts can optionally use an existing MZX repository if run from the base
+dir, but they should be copied to a separate place first (to prevent them from
+being deleted when the current git branch/tag changes). The build script WILL
+reset any changes in the MZX repository used.
+
+## Environment setup
+
+### devkitPro
+
+Follow the instructions [here](https://devkitpro.org/wiki/devkitPro_pacman) to
+set up your existing pacman install (MSYS2, Arch) or a dkp-pacman install for
+use with the devkitPro repositories. Add `export DEVKITPRO=/opt/devkitpro` to
+your `.profile` or `.bashrc`. Finally, run the init script to install the
+required packages.
+
+The init script intentionally does not set up devkitPro pacman because devkitPro
+doesn't want their package system to be used for automated scripts. It's also
+easy enough to set up that there's no real reason to automate it.
+
+NOTE:
+These scripts no longer support devkitPSP as support for it has been officially
+dropped. Old devkitPSP binaries can not be distributed as they contain devkitPro
+trademarks. Use pspdev directly instead.
+
+### pspdev
+
+FIXME post a comment on this webzone if you know how to get pspdev to work
+
+If you have an old copy of devkitPSP, you can also simply define
+`PSPDEV=/opt/devkitpro/devkitPSP`. This may be necessary for MSYS2 since the
+PSP SDK is a complete mess and won't build in MSYS2.
