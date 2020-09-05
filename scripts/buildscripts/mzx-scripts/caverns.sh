@@ -34,6 +34,8 @@ caverns_init()
 	cmd_check 7za wget
 	[ "$ERRNO" = "0" ] || { return; }
 
+	mkdir -p "$CAVERNS_BASE"
+
 	if [ ! -f "$CAVERNS_BASE/caverns.zip" ]; then
 		wget "$CAVERNS_URL" -O "$CAVERNS_BASE/caverns.zip"
 	fi
