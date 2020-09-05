@@ -153,7 +153,7 @@ build_common()
 	# checks to make sure MegaZeux will be able to build.
 	#
 	platform_init
-	[ "$ERRNO" -eq "0" ] || { build_warn "failed to initialize platform; skipping" $ERRNO; return; }
+	[ "$ERRNO" = "0" ] || { build_warn "failed to initialize platform; skipping" $ERRNO; return; }
 
 	#
 	# Check out the requested branch.
@@ -171,27 +171,27 @@ build_common()
 	else
 		platform_config_debug "$MZX_EXTRA_CONFIG_FLAGS"
 	fi
-	[ "$ERRNO" -eq "0" ] || { build_error "failed to configure for $MZX_RELEASE_TYPE" $ERRNO; return; }
+	[ "$ERRNO" = "0" ] || { build_error "failed to configure for $MZX_RELEASE_TYPE" $ERRNO; return; }
 	[ -e "platform.inc" ] || { build_error "config.sh failed to create platform.inc for $MZX_RELEASE_TYPE" 10; return; }
 
 	#
 	# Build MegaZeux.
 	#
 	platform_make
-	[ "$ERRNO" -eq "0" ] || { build_error "make failed" $ERRNO; return; }
+	[ "$ERRNO" = "0" ] || { build_error "make failed" $ERRNO; return; }
 
 	#
 	# Perform make test (if applicable).
 	# If this fails it's not a fatal error but it definitely should be looked at.
 	#
 	platform_make_test
-	[ "$ERRNO" -eq "0" ] || { build_warn "make test failed" $ERRNO; ERRNO=0; }
+	[ "$ERRNO" = "0" ] || { build_warn "make test failed" $ERRNO; ERRNO=0; }
 
 	#
 	# Perform any other checks on the build that may be necessary.
 	#
 	platform_check_build
-	[ "$ERRNO" -eq "0" ] || { build_error "build check failed" $ERRNO; return; }
+	[ "$ERRNO" = "0" ] || { build_error "build check failed" $ERRNO; return; }
 
 	#
 	# Package the build.
@@ -200,7 +200,7 @@ build_common()
 	# Only check for the build/dist/SUBPLATFORM/ right now.
 	#
 	platform_package
-	[ "$ERRNO" -eq "0" ] || { build_error "package failed" $ERRNO; return; }
+	[ "$ERRNO" = "0" ] || { build_error "package failed" $ERRNO; return; }
 	[ -d "build/dist/$SUBPLATFORM" ] || { build_error "couldn't find build/dist/$SUBPLATFORM/" 11; return; }
 
 	#

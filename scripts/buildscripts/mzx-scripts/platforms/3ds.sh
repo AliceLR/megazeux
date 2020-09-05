@@ -16,9 +16,15 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
+source "$MZX_SCRIPTS/common-dkp.sh"
+
 platform_init()
 {
-	[ -z "$DEVKITPRO" ] && { ERRNO=20; return; }
+	dkp_init_check
+	[ "$ERRNO" = "0" ] || { return; }
+
+	dkp_dependency_check devkitARM
+	[ "$ERRNO" = "0" ] || { return; }
 
 	if [ -n "$MSYSTEM" ]; then
 		export DEVKITPRO=`cygpath -u "$DEVKITPRO"`
@@ -40,12 +46,6 @@ platform_check_build()
 
 platform_setup_environment()
 {
-	# FIXME generalize?
-	if ! command -v pacman &> /dev/null; then
-		echo "Need to install pacman and devkitPro repositories!"
-		ERRNO=26
-		return
-	fi
-	pacman --needed --noconfirm -S devkitARM libctru citro3d picasso 3dstools general-tools
-	pacman --needed --noconfirm -S 3ds-zlib 3ds-libpng 3ds-libogg 3ds-libvorbisidec
+	dkp_install devkitARM libctru citro3d picasso 3dstools general-tools
+	dkp_install 3ds-zlib 3ds-libpng 3ds-libogg 3ds-libvorbisidec
 }

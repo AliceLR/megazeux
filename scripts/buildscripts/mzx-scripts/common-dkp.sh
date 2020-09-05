@@ -16,36 +16,56 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-source "$MZX_SCRIPTS/common-dkp.sh"
+#
+# Common functions for platforms using devkitPro toolchains.
+#
 
-platform_init()
+dkp_init_check()
+{
+	if [ -z "$DEVKITPRO" ]; then
+		ERRNO="DK-1"
+		return
+	fi
+}
+
+dkp_pacman_check()
 {
 	dkp_init_check
 	[ "$ERRNO" = "0" ] || { return; }
 
-	dkp_dependency_check devkitARM
+	if [ -z "$DKP_PACMAN" ]; then
+		if command -v pacman &>/dev/null; then
+			export DKP_PACMAN="pacman"
+		fi
+
+		if command -v dkp-pacman &>/dev/null; then
+			export DKP_PACMAN="dkp-pacman"
+		fi
+
+		if [ -z "$DKP_PACMAN" ]; then
+			ERRNO="DK-2"
+			return
+		fi
+	fi
+}
+
+# $1 - package to check for
+dkp_dependency_check()
+{
+	dkp_pacman_check
 	[ "$ERRNO" = "0" ] || { return; }
 
-	if [ -n "$MSYSTEM" ]; then
-		export DEVKITPRO=`cygpath -u "$DEVKITPRO"`
+	if ! $DKP_PACMAN -Qi "$1" &>/dev/null; then
+		ERRNO="DK-3:$1"
+		return
 	fi
-
-	export PATH="$PATH:$DEVKITPRO/devkitARM/bin"
-	export PATH="$PATH:$DEVKITPRO/tools/bin"
 }
 
-platform_config_release()
+# $@ - packages to install
+dkp_install()
 {
-	arch/nds/CONFIG.NDS "$@"
-}
+	dkp_pacman_check
+	[ "$ERRNO" = "0" ] || { return; }
 
-platform_check_build()
-{
-	[ -f "mzxrun" ] || ERRNO=25;
-}
-
-platform_setup_environment()
-{
-	dkp_install devkitARM ndstool dstools mmutil
-	dkp_install libnds libfat-nds maxmod-nds nds-zlib
+	$DKP_PACMAN --needed --noconfirm -S "$@"
 }
