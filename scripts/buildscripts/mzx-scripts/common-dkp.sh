@@ -20,14 +20,6 @@
 # Common functions for platforms using devkitPro toolchains.
 #
 
-# FIXME general deps--need a less host-specific way of doing this...
-
-# Required for nds
-#pacman --needed --noconfirm -S p7zip
-
-# Required for 3ds and wii
-#pacman --needed --noconfirm -S autoconf automake libtool pkg-config zip unzip
-
 dkp_init_check()
 {
 	if [ -z "$DEVKITPRO" ]; then

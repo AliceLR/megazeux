@@ -50,8 +50,15 @@ platform_setup_environment()
 	echo "  PSP - dependencies  "
 	echo "/********************/"
 
-	# FIXME host-specific!
-	pacman --needed --noconfirm -S autoconf automake libtool patch mingw-w64-x86_64-imagemagick
+	#
+	# Can just install these for MSYS2.
+	# This probably shouldn't be extended to support other systems because this sucks.
+	#
+	if [ -n "$MSYSTEM" ]; then
+		pacman --needed --noconfirm -S autoconf automake libtool patch mingw-w64-x86_64-imagemagick
+	fi
+
+	cmd_check autoconf automake patch convert
 
 	rm -rf "$PSP_PORTS_DIR"
 	git clone "$PSP_PORTS_REPO" "$PSP_PORTS_DIR"
