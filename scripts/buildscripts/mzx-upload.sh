@@ -9,8 +9,12 @@ source $MZX_SCRIPTS/uploads.sh
 
 #
 # Add lines to configure upload targets here.
+#
 # "upload_curl" will POST the uploads via curl to a remote HTTP script.
+#
 # "upload-ssh" will transfer the uploads via scp and then extract them via ssh.
+# Note that upload-ssh will upload and extract the .tar file directly into the
+# user directory.
 #
 
 # upload_curl "http://Put the URL of your upload PHP script here/.php"
