@@ -103,7 +103,7 @@ build_package_caverns()
 	caverns_platform_init
 	[ "$ERRNO" = "0" ] || { return; }
 
-	for f in $(find "build/dist/$SUBPLATFORM/" -name "*.zip"); do
+	for f in $(find "$MZX_BUILD_DIR/build/dist/$SUBPLATFORM/" -name "*.zip"); do
 		if $(caverns_check_archive "$f" "$PLATFORM_CAVERNS_EXEC"); then
 			mzx_log "Found '$PLATFORM_CAVERNS_EXEC' in '$f'; adding Caverns of Zeux at '$PLATFORM_CAVERNS_BASE'"
 			caverns_add "$f"
