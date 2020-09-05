@@ -34,11 +34,11 @@ dkp_pacman_check()
 	[ "$ERRNO" = "0" ] || { return; }
 
 	if [ -z "$DKP_PACMAN" ]; then
-		if command -v pacman &>/dev/null; then
+		if command -v pacman >/dev/null 2>&1; then
 			export DKP_PACMAN="pacman"
 		fi
 
-		if command -v dkp-pacman &>/dev/null; then
+		if command -v dkp-pacman >/dev/null 2>&1; then
 			export DKP_PACMAN="dkp-pacman"
 		fi
 
@@ -55,7 +55,7 @@ dkp_dependency_check()
 	dkp_pacman_check
 	[ "$ERRNO" = "0" ] || { return; }
 
-	if ! $DKP_PACMAN -Qi "$1" &>/dev/null; then
+	if ! $DKP_PACMAN -Qi "$1" >/dev/null 2>&1; then
 		ERRNO="DK-3:$1"
 		return
 	fi

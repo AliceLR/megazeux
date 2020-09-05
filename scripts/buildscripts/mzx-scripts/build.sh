@@ -19,7 +19,7 @@
 source "$MZX_SCRIPTS/common.sh"
 
 if [ -z $MZX_MAKE ]; then
-	if command -v gmake &> /dev/null; then
+	if command -v gmake >/dev/null 2>&1; then
 		export MZX_MAKE="gmake"
 	else
 		export MZX_MAKE="make"
