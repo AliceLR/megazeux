@@ -51,6 +51,10 @@ build and updates process.
 - `5_Caverns.bat` (runs `mzx-caverns.sh`): adds Caverns of Zeux to any applicable
   archives in `TARGET/zips/`. (FIXME this may be merged into `mzx-build.sh`).
 
+NOTE: the batch scripts only work if the entire buildscript system is copied to
+the root MSYS2 directory. To run the scripts from a different directory, use the
+shell scripts directly.
+
 These scripts can optionally use an existing MZX repository if run from the base
 dir, but they should be copied to a separate place first (to prevent them from
 being deleted when the current git branch/tag changes). The build script WILL
