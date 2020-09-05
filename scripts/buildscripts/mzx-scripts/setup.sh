@@ -56,7 +56,7 @@ setup_environment()
 	[ "$ERRNO" = "0" ] || { exit 1; }
 
 	while [ -n "$1" ]; do
-		echo $1
+		mzx_log "Performing setup for: $1"
 		if [ -f "$MZX_SCRIPTS/platforms/$1.sh" ]; then
 
 			source "$MZX_SCRIPTS/platforms/default.sh"
