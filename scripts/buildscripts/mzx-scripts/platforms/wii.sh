@@ -32,6 +32,9 @@ platform_init()
 
 	export PATH="$PATH:$DEVKITPRO/devkitPPC/bin"
 	export PATH="$PATH:$DEVKITPRO/tools/bin"
+
+	export PLATFORM_CAVERNS_EXEC="boot.dol"
+	export PLATFORM_CAVERNS_BASE="apps/megazeux"
 }
 
 platform_config_release()

@@ -17,6 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 source "$MZX_SCRIPTS/common.sh"
+source "$MZX_SCRIPTS/caverns.sh"
 
 if [ -z $MZX_MAKE ]; then
 	if command -v gmake >/dev/null 2>&1; then
@@ -122,6 +123,9 @@ build_common()
 
 	export ERRNO=0
 	export IS_HOST="false"
+	export PLATFORM_CAVERNS_EXEC=""
+	export PLATFORM_CAVERNS_BASE=""
+	export PLATFORM_CAVERNS_WHICH=""
 
 	mzx_log ""
 	mzx_log "Starting build:"
@@ -187,6 +191,14 @@ build_common()
 	platform_package
 	[ "$ERRNO" = "0" ] || { mzx_error "package failed" $ERRNO; return; }
 	[ -d "build/dist/$SUBPLATFORM" ] || { mzx_error "couldn't find build/dist/$SUBPLATFORM/" 11; return; }
+
+	#
+	# If this platform wants to package games in its release archive, add it now.
+	#
+	if [ -n "$PLATFORM_CAVERNS_EXEC" ]; then
+		build_package_caverns
+		[ "$ERRNO" = "0" ] || { mzx_warn "build_package_caverns failed", $ERRNO; }
+	fi
 
 	#
 	# If this is a release build, separate the debug symbols to their own archive

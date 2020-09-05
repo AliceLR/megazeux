@@ -32,6 +32,9 @@ platform_init()
 
 	export PATH="$PATH:$DEVKITPRO/devkitARM/bin"
 	export PATH="$PATH:$DEVKITPRO/tools/bin"
+
+	export PLATFORM_CAVERNS_EXEC="mzxrun.3dsx"
+	export PLATFORM_CAVERNS_BASE="3ds/megazeux"
 }
 
 platform_config_release()

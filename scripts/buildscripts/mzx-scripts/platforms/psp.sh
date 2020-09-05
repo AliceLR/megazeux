@@ -27,6 +27,9 @@ platform_init()
 	fi
 
 	export PATH="$PATH:$PSPDEV/bin"
+
+	export PLATFORM_CAVERNS_EXEC="EBOOT.PBP"
+	export PLATFORM_CAVERNS_BASE="."
 }
 
 platform_config_release()

@@ -32,6 +32,9 @@ platform_init()
 
 	export PATH="$PATH:$DEVKITPRO/devkitA64/bin"
 	export PATH="$PATH:$DEVKITPRO/tools/bin"
+
+	export PLATFORM_CAVERNS_EXEC="megazeux.nro"
+	export PLATFORM_CAVERNS_BASE="switch/megazeux"
 }
 
 platform_config_release()

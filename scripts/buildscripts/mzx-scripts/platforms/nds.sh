@@ -23,7 +23,7 @@ platform_init()
 	dkp_init_check
 	[ "$ERRNO" = "0" ] || { return; }
 
-	dkp_dependency_check devkitARM
+	dkp_dependency_check devkitARM mmutil
 	[ "$ERRNO" = "0" ] || { return; }
 
 	if [ -n "$MSYSTEM" ]; then
@@ -32,6 +32,9 @@ platform_init()
 
 	export PATH="$PATH:$DEVKITPRO/devkitARM/bin"
 	export PATH="$PATH:$DEVKITPRO/tools/bin"
+
+	export PLATFORM_CAVERNS_EXEC="mzxrun.nds"
+	export PLATFORM_CAVERNS_BASE="games/megazeux"
 }
 
 platform_config_release()

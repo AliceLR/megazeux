@@ -33,6 +33,9 @@ platform_init()
 {
 	# FIXME should verify packages somehow...
 	[ -n "$MSYSTEM" ] && IS_HOST="true"
+
+	export PLATFORM_CAVERNS_EXEC="mzxrun.exe"
+	export PLATFORM_CAVERNS_BASE="."
 }
 
 platform_config_debug()
