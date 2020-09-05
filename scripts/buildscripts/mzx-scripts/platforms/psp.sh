@@ -17,7 +17,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 PSP_PORTS_REPO="https://github.com/pspdev/psp-ports.git"
-PSP_PORTS_DIR="$MZX_WORKINGDIR/psp-ports"
 
 platform_init()
 {
@@ -45,6 +44,10 @@ platform_setup_environment()
 	platform_init
 	[ "$ERRNO" = "0" ] || { return; }
 
+	# Get this as an absolute path...
+	cd "$MZX_BUILD_WORKINGDIR"
+	PSP_PORTS_DIR="$(pwd)/psp-ports"
+
 	echo ""
 	echo "/********************/"
 	echo "  PSP - dependencies  "
@@ -60,8 +63,11 @@ platform_setup_environment()
 
 	cmd_check autoconf automake patch convert
 
-	rm -rf "$PSP_PORTS_DIR"
-	git clone "$PSP_PORTS_REPO" "$PSP_PORTS_DIR"
+	if [ ! -d "$PSP_PORTS_DIR" ]; then
+		git clone "$PSP_PORTS_REPO" "$PSP_PORTS_DIR"
+	fi
+	cd "$PSP_PORTS_DIR"
+	git pull
 
 	#
 	# The copy of the SDK formerly distributed with the Windows version of
@@ -73,80 +79,92 @@ platform_setup_environment()
 	fi
 
 
-	echo ""
-	echo "/************/"
-	echo "  PSP - zlib  "
-	echo "/************/"
+	if [ ! -f "$PSPDEV/psp/lib/libz.a" ]; then
+		echo ""
+		echo "/************/"
+		echo "  PSP - zlib  "
+		echo "/************/"
 
-	cd "$PSP_PORTS_DIR/zlib"
-	make -j8
-	make install
-
-
-	echo ""
-	echo "/**************/"
-	echo "  PSP - libpng  "
-	echo "/**************/"
-
-	cd "$PSP_PORTS_DIR/libpng"
-	make -j8
-	make install
+		cd "$PSP_PORTS_DIR/zlib"
+		make -j8
+		make install
+	fi
 
 
-	echo ""
-	echo "/**************/"
-	echo "  PSP - tremor  "
-	echo "/**************/"
+	if [ ! -f "$PSPDEV/psp/lib/libpng.a" ]; then
+		echo ""
+		echo "/**************/"
+		echo "  PSP - libpng  "
+		echo "/**************/"
 
-	cd "$PSP_PORTS_DIR/libTremor"
-
-	LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" ./autogen.sh \
-	  --host psp --prefix=$(psp-config --psp-prefix)
-
-	make -j8
-	make install
+		cd "$PSP_PORTS_DIR/libpng"
+		make -j8
+		make install
+	fi
 
 
-	echo ""
-	echo "/***********/"
-	echo "  PSP - SDL  "
-	echo "/***********/"
+	if [ ! -f "$PSPDEV/psp/lib/libvorbisidec.a" ]; then
+		echo ""
+		echo "/**************/"
+		echo "  PSP - tremor  "
+		echo "/**************/"
 
-	cd "$PSP_PORTS_DIR/SDL"
+		cd "$PSP_PORTS_DIR/libTremor"
 
-	./autogen.sh
-	LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" \
-	  ./configure --host psp --prefix=$(psp-config --psp-prefix)
+		LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" ./autogen.sh \
+		  --host psp --prefix=$(psp-config --psp-prefix)
 
-	#
-	# If you thought that pspge.h patch was pretty cool, then you should
-	# know that this generated a worthless SDL_config.h. Replace it with
-	# a custom one based on SDL2's PSP config.
-	#
-	cp "$MZX_SCRIPTS/patches/SDL_config_psp.h" "include/SDL_config.h"
-
-	make -j8
-	make install
+		make -j8
+		make install
+	fi
 
 
-	echo ""
-	echo "/*****************/"
-	echo "  PSP - pspirkeyb  "
-	echo "/*****************/"
+	if [ ! -f "$PSPDEV/psp/lib/libSDL.a" ]; then
+		echo ""
+		echo "/***********/"
+		echo "  PSP - SDL  "
+		echo "/***********/"
 
-	cd "$PSP_PORTS_DIR/pspirkeyb"
-	make -j8
-	make install
+		cd "$PSP_PORTS_DIR/SDL"
+
+		./autogen.sh
+		LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" \
+		  ./configure --host psp --prefix=$(psp-config --psp-prefix)
+
+		#
+		# If you thought that pspge.h patch was pretty cool, then you should
+		# know that this generated a worthless SDL_config.h. Replace it with
+		# a custom one based on SDL2's PSP config.
+		#
+		cp "$MZX_SCRIPTS/patches/SDL_config_psp.h" "include/SDL_config.h"
+
+		make -j8
+		make install
+	fi
 
 
-	echo ""
-	echo "/*************/"
-	echo "  PSP - pspgl  "
-	echo "/*************/"
+	if [ ! -f "$PSPDEV/psp/sdk/lib/libpspirkeyb.a" ]; then
+		echo ""
+		echo "/*****************/"
+		echo "  PSP - pspirkeyb  "
+		echo "/*****************/"
 
-	cd "$PSP_PORTS_DIR/pspgl"
-	export PSP_MOUNTDIR=/Volumes/PSP
-	export PSP_REVISION=1.50
-	make -j8
-	make install
+		cd "$PSP_PORTS_DIR/pspirkeyb"
+		make -j8
+		make install
+	fi
+
+
+	if [ ! -f "$PSPDEV/psp/lib/libGL.a" ]; then
+		echo ""
+		echo "/*************/"
+		echo "  PSP - pspgl  "
+		echo "/*************/"
+
+		cd "$PSP_PORTS_DIR/pspgl"
+		export PSP_MOUNTDIR=/Volumes/PSP
+		export PSP_REVISION=1.50
+		make -j8
+		make install
+	fi
 }

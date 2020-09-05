@@ -23,10 +23,13 @@ source "$MZX_SCRIPTS/common.sh"
 common_setup_environment()
 {
 	if [ -n "$MSYSTEM" ]; then
-		pacman --needed --no-confirm -S git make tar curl p7zip
+		pacman --needed --noconfirm -S git make tar curl p7zip
 	fi
 	cmd_check git make tar curl 7za
-	[ "$ERRNO" = "0" ] || { return; } #FIXME
+	if [ "$ERRNO" != "0" ]; then
+		mzx_error "failed setup; missing required tools" "$ERRNO"
+		return
+	fi
 
 	mkdir -p "$MZX_WORKINGDIR"
 
@@ -36,7 +39,11 @@ common_setup_environment()
 	if [ ! -f "config.sh" ]; then
 		if [ ! -d "$MZX_WORKINGDIR/megazeux" ]; then
 			git clone "$MZX_REPOSITORY" "$MZX_WORKINGDIR/megazeux"
-			[ "$?" -eq "0" ] || { return; } #FIXME
+			if [ "$?" -ne "0" ]; then
+				ERRNO="GIT-1"
+				mzx_error "failed to create MZX repository" "$ERRNO"
+				return
+			fi
 		fi
 	fi
 }
@@ -44,23 +51,20 @@ common_setup_environment()
 # $@ - platforms to initialize.
 setup_environment()
 {
+	export ERRNO=0
 	common_setup_environment
-	[ "$ERRNO" = "0" ] || { return; } #FIXME
+	[ "$ERRNO" = "0" ] || { exit 1; }
 
-	while $1; do
+	while [ -n "$1" ]; do
+		echo $1
 		if [ -f "$MZX_SCRIPTS/platforms/$1.sh" ]; then
 
 			source "$MZX_SCRIPTS/platforms/default.sh"
 			source "$MZX_SCRIPTS/platforms/$1.sh"
 
-			platform_init
-			if [ "$ERRNO" = "0" ]; then
-				platform_setup_environment
-				if [ ! "$ERRNO" = "0" ]; then
-					echo "failed $1" #FIXME
-				fi
-			else
-				echo "skipping $1"; #FIXME
+			platform_setup_environment
+			if [ ! "$ERRNO" = "0" ]; then
+				mzx_error "failed $1" "$ERRNO"
 			fi
 		fi
 		shift
