@@ -10,7 +10,7 @@ from the Windows scripts has been run.
 
 The following platforms can currently be built by this script:
 
-- Windows (via MSYS2 or MinGW)
+- Windows x64 and x86 (MinGW)
 - Nintendo DS
 - Nintendo 3DS
 - Nintendo Wii
@@ -57,6 +57,15 @@ being deleted when the current git branch/tag changes). The build script WILL
 reset any changes in the MZX repository used.
 
 ## Environment setup
+
+### MSYS2
+
+Before running the init script above, you should run the following command:
+`pacman -Syu`
+
+This will make sure the base MSYS2 system is up to date. This command will likely
+ask you to close the window; after doing so, simply open MSYS2 again and run
+`pacman -Su` to finish the update.
 
 ### devkitPro
 
