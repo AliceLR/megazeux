@@ -69,6 +69,36 @@ build_init()
 	git fetch --tags
 }
 
+#
+# Perform a check to see if git branch(es) have updates. Use after build_init.
+# Returns 0 if there are updates or 1 if there are no updates.
+#
+# $@ - branches to check
+#
+build_check_branch_updates()
+{
+	[ -n "$MZX_BUILD_DIR" -a -d "$MZX_BUILD_DIR" ] || { mzx_error "Use after build_init!" 1; exit 1; }
+  cd "$MZX_BUILD_DIR"
+
+  RETVAL=1
+  while [ -n "$1" ]
+  do
+    git checkout "$1"
+    shift
+
+    CURRENT=$(git rev-parse @)
+    REMOTE=$(git rev-parse @{u})
+
+    if [ "$CURRENT" = "$REMOTE" ]; then
+      mzx_log "No updates required for branch '$1'."
+    else
+      mzx_log "Branch '$1' has updates."
+      RETVAL=0
+    fi
+  done
+  return $RETVAL
+}
+
 build_remove_debug()
 {
 	#
