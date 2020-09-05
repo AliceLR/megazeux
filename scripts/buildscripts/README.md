@@ -1,12 +1,8 @@
 # MegaZeux Build Scripts
 
 This set of scripts is meant to compile a (mostly) complete set of MegaZeux
-builds and updater files. It is only tested and known to work with MSYS2 but
+builds and updater files. They are only tested and known to work with MSYS2 but
 the scripts here should be fairly POSIX-friendly.
-
-FIXME idk about this
-These scripts should be run only after "1_PrepareReleaseEnvironment.bat"
-from the Windows scripts has been run.
 
 The following platforms can currently be built by this script:
 
