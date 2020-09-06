@@ -30,7 +30,7 @@ mingw_check()
 	#
 	# Check for the MinGW toolchain.
 	#
-	cmd_check "$1gcc" "$1g++" "$1ld"
+	cmd_check "$1gcc" "$1g++" "$1ar" "$1ld" "$1strip" "$1objcopy" "$1windres"
 	[ "$ERRNO" = "0" ] || { return; }
 
 	#
@@ -51,7 +51,7 @@ mingw_check()
 mingw32_check()
 {
 	if [ -n "$MSYSTEM" ]; then
-		mingw_check "" "/mingw64"
+		mingw_check "" "/mingw32"
 	else
 		mingw_check "i686-w64-mingw32-" "$MINGW32_PREFIX"
 	fi
@@ -60,7 +60,7 @@ mingw32_check()
 mingw64_check()
 {
 	if [ -n "$MSYSTEM" ]; then
-		mingw_check "" "/mingw32"
+		mingw_check "" "/mingw64"
 	else
 		mingw_check "x86_64-w64-mingw32-" "$MINGW64_PREFIX"
 	fi
