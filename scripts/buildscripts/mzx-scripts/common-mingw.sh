@@ -23,6 +23,49 @@
 MZX_SDL_MINGW_VERSION="2.0.12"
 MZX_SDL_MINGW_FILENAME="SDL2-devel-$MZX_SDL_MINGW_VERSION-mingw.tar.gz"
 
+# $1 - toolchain prefix
+# $2 - dependencies path
+mingw_check()
+{
+	#
+	# Check for the MinGW toolchain.
+	#
+	cmd_check "$1gcc" "$1g++" "$1ld"
+	[ "$ERRNO" = "0" ] || { return; }
+
+	#
+	# Check for MinGW prebuilt dependencies.
+	#
+	MISSING=""
+	for DEP in "bin/SDL2.dll" "lib/libSDL2main.a" "lib/libz.a" "lib/libpng.a" "lib/libogg.a" "lib/libvorbis.a"
+	do
+		if [ ! -e "$2/$DEP" ]; then
+			MISSING="$MISSING:$DEP"
+		fi
+	done
+	if [ -n "$MISSING" ]; then
+		ERRNO="MINGW-DEPS-MISSING$MISSING";
+	fi
+}
+
+mingw32_check()
+{
+	if [ -n "$MSYSTEM" ]; then
+		mingw_check "" "/mingw64"
+	else
+		mingw_check "i686-w64-mingw32-" "$MINGW32_PREFIX"
+	fi
+}
+
+mingw64_check()
+{
+	if [ -n "$MSYSTEM" ]; then
+		mingw_check "" "/mingw32"
+	else
+		mingw_check "x86_64-w64-mingw32-" "$MINGW64_PREFIX"
+	fi
+}
+
 mingw_setup_environment()
 {
 	if [ -n "$MSYSTEM" ]; then

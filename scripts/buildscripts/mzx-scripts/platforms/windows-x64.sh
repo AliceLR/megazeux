@@ -20,8 +20,10 @@ source "$MZX_SCRIPTS/common.sh"
 source "$MZX_SCRIPTS/common-mingw.sh"
 
 MINGW64_PLATFORM="mingw64"
+MINGW64_CONFIG="--prefix $MINGW64_PREFIX"
 if [ -n "$MSYSTEM" ]; then
 	MINGW64_PLATFORM="win64"
+	MINGW64_CONFIG=""
 	MSYSTEM="MINGW64"
 	source /etc/profile
 
@@ -31,7 +33,9 @@ fi
 
 platform_init()
 {
-	# FIXME should verify packages somehow...
+	mingw64_check
+	[ "$ERRNO" = "0" ] || { return; }
+
 	[ -n "$MSYSTEM" ] && IS_HOST="true"
 
 	export PLATFORM_CAVERNS_EXEC="mzxrun.exe"
@@ -40,12 +44,12 @@ platform_init()
 
 platform_config_debug()
 {
-	./config.sh --platform $MINGW64_PLATFORM --enable-fps --enable-trace "$@"
+	./config.sh --platform $MINGW64_PLATFORM $MINGW64_CONFIG --enable-fps --enable-trace "$@"
 }
 
 platform_config_release()
 {
-	./config.sh --platform $MINGW64_PLATFORM --enable-release "$@"
+	./config.sh --platform $MINGW64_PLATFORM $MINGW64_CONFIG --enable-release "$@"
 }
 
 platform_check_build()
