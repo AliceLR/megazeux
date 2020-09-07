@@ -90,7 +90,6 @@ process_updates()
 {
 	mkdir -p "$MZX_TARGET"
 	cd "$MZX_TARGET"
-	MZX_TARGET=$(pwd)
 
 	[ -d "releases" ] || \
 	 { mzx_error "Couldn't find 'releases' dir. Must run mzx-build.sh first!" 1; exit 1; }

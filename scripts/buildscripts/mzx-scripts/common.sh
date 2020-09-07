@@ -14,6 +14,16 @@ if git ls-files --error-unmatch "$0" "$MZX_SCRIPTS" >/dev/null 2>&1; then
 	exit 1
 fi
 
+if [ ! -w "$MZX_SCRIPTS" ]; then
+	echo "ERROR: current user lacks write permissions for '$MZX_SCRIPTS'."
+	exit 1
+fi
+
+if [ ! -w "$(dirname "$MZX_TARGET")" ]; then
+	echo "ERROR: current user lacks write permissions for '$(dirname "$MZX_TARGET")'."
+	exit 1
+fi
+
 mzx_log()
 {
 	echo "$1" 1>&2

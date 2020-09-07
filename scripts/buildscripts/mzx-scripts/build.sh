@@ -54,11 +54,10 @@ build_init()
 	export MZX_BUILD_DIR
 
 	#
-	# Make sure the target dir exists and get its full path.
+	# Make sure the target dir exists.
 	#
 	mkdir -p "$MZX_TARGET"
 	cd "$MZX_TARGET"
-	MZX_TARGET=$(pwd)
 
 	#
 	# Reset the git repository and make sure all branches/tags are up-to-date.
