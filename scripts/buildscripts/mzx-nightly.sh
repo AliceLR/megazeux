@@ -14,7 +14,7 @@ source "$MZX_SCRIPTS/build.sh"
 # and push updates files for them.
 #
 build_init
-if ! build_check_branch_updates $UNSTABLE $DEBYTECODE; then exit 0; fi
+if ! build_check_branch_updates "$UNSTABLE" "$DEBYTECODE"; then exit 0; fi
 
 #
 # Clear out the old release dir so the updates script doesn't process anything
