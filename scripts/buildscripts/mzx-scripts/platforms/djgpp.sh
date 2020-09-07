@@ -25,6 +25,9 @@ platform_init()
 	fi
 
 	export PATH="$PATH:$DJGPP/bin"
+
+	export PLATFORM_CAVERNS_EXEC="mzxrun.exe"
+	export PLATFORM_CAVERNS_BASE="."
 }
 
 platform_config_release()
