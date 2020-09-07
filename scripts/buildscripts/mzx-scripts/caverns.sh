@@ -78,7 +78,7 @@ caverns_platform_init()
 # $2 - filename to check for
 caverns_check_archive()
 {
-	return $(7za l "$1" "$2" -r | grep -q "$2")
+	return "$(7za l "$1" "$2" -r | grep -q "$2")"
 }
 
 # $1 - archive to check
@@ -90,7 +90,7 @@ caverns_add()
 	OLD_DIR="$(pwd)"
 	cd "$CAVERNS_BASE/$SUBPLATFORM" || { ERRNO="CV-1"; return; }
 
-	7za a "$1" * -y -bsp0 -bso0
+	7za a "$1" ./* -y -bsp0 -bso0
 
 	cd "$OLD_DIR" || { ERRNO="CV-2"; return; }
 }

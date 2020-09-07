@@ -109,11 +109,11 @@ build_remove_debug()
 	#
 	cd "build/dist/$SUBPLATFORM/" || { mzx_error "failed to cd to build/dist/$SUBPLATFORM" 14; return; }
 
-	ZIPS=$(ls -1 ./*.zip 2>/dev/null)
-
-	for SRC in $ZIPS; do
+	for SRC in ./*.zip
+	do
 		DEST=$(echo "$SRC" | sed "s/\.zip\$/\.debug\.zip/g")
-		if 7za l "$SRC" *.debug -r | grep -q ".debug"; then
+		if 7za l "$SRC" *.debug -r | grep -q ".debug"
+		then
 			7za e "$SRC"        *.debug -r
 			7za d "$SRC"        *.debug -r
 			7za a -tzip "$DEST" *.debug

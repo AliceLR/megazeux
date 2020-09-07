@@ -77,9 +77,9 @@ process_release_dir()
 	#
 	# Prune directories and config.txt.
 	#
-	find -mindepth 1 -type d -exec rm -rf '{}' ';' 2>/dev/null
+	find . -mindepth 1 -type d -exec rm -rf '{}' ';' 2>/dev/null
 	rm -f config.txt
-	chmod 0644 *
+	chmod 0644 ./*
 }
 
 #
@@ -89,10 +89,10 @@ process_release_dir()
 process_updates()
 {
 	mkdir -p "$MZX_TARGET"
-	cd "$MZX_TARGET"
+	cd "$MZX_TARGET" || { mzx_error "failed to cd to '$MZX_TARGET'" 1; exit 1; }
 
 	[ -d "releases" ] || \
-	 { mzx_error "Couldn't find 'releases' dir. Must run mzx-build.sh first!" 1; exit 1; }
+	 { mzx_error "Couldn't find 'releases' dir. Must run mzx-build.sh first!" 2; exit 1; }
 	rm -rf "uploads"
 	mkdir -p "uploads"
 	rm -rf "releases-update"
@@ -111,15 +111,19 @@ process_updates()
 		#
 		if [ -d "$MZX_TARGET/releases-update/$UPDATE_BRANCH" ]
 		then
-			cd "$MZX_TARGET/releases-update/$UPDATE_BRANCH"
-			for F in $(ls -1 2>/dev/null)
+			for F in "$MZX_TARGET/releases-update/$UPDATE_BRANCH"/*
 			do
 				if [ -d "$F" ]
 				then
-					cd "$F"
-					mzx_log "Processing '$(pwd)'..."
-					process_release_dir &
-					cd ..
+					mzx_log "Processing '$F'..."
+					(
+						if ! cd "$F"
+						then
+							mzx_error "failed to cd to '$F'" 3
+							exit 1
+						fi
+						process_release_dir
+					) &
 				fi
 			done
 		fi
@@ -129,20 +133,19 @@ process_updates()
 		# processed. This way, individual release tags can be updated without
 		# breaking other existing release tags.
 		#
-		cd "$MZX_TARGET/releases-update"
-		echo "Current-$UPDATE_TAG: $UPDATE_BRANCH" >> "updates-uncompressed.txt"
+		echo "Current-$UPDATE_TAG: $UPDATE_BRANCH" >> "$MZX_TARGET/releases-update/updates-uncompressed.txt"
 		shift
 	done
 	wait
 
-	cd "$MZX_TARGET/releases-update"
+	cd "$MZX_TARGET/releases-update" || { mzx_error "failed to cd to '$MZX_TARGET/releases-update'" 4; exit 1; }
 	if [ -f "updates-uncompressed.txt" ]
 	then
 		gzip < updates-uncompressed.txt > updates.txt
 		rm -f updates-uncompressed.txt
-		tar -cvf "$MZX_TARGET/uploads/updates.tar" *
+		tar -cvf "$MZX_TARGET/uploads/updates.tar" ./*
 	else
-		mzx_error "No updates to process! Aborting." 2
+		mzx_error "No updates to process! Aborting." 5
 		exit 1
 	fi
 }

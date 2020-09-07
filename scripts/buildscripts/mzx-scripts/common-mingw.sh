@@ -73,7 +73,11 @@ mingw_setup_environment()
 		#
 		# Can just install the toolchains and packages for both builds...
 		#
-		pacman --needed --noconfirm -S mingw-w64-{x86_64,i686}-{zlib,gcc,libpng,libogg,libvorbis}
+		M32="mingw-w64-i686"
+		M64="mingw-w64-x86_64"
+		pacman --needed --noconfirm -S \
+		 $M32-gcc $M32-zlib $M32-libpng $M32-libogg $M32-libvorbis $M32-SDL2 \
+		 $M64-gcc $M64-zlib $M64-libpng $M64-libogg $M64-libvorbis $M64-SDL2
 
 		#
 		# ...except SDL2. The MSYS2 SDL2 builds unfortunately have some issues that
@@ -82,7 +86,7 @@ mingw_setup_environment()
 		# during the MinGW builds to make sure this SDL gets used instead.
 		#
 		if [ ! -f "$MZX_WORKINGDIR/$MZX_SDL_MINGW_FILENAME" ]; then
-			cd "$MZX_WORKINGDIR"
+			cd "$MZX_WORKINGDIR" || { ERRNO="MINGW-CD"; return; }
 			wget "https://www.libsdl.org/release/$MZX_SDL_MINGW_FILENAME"
 			tar -xzf "$MZX_SDL_MINGW_FILENAME"
 
