@@ -122,7 +122,7 @@ platform_setup_environment()
 		cd "$PSP_PORTS_DIR/libTremor" || { ERRNO="PSP-tremor"; return; }
 
 		LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" ./autogen.sh \
-		  --host psp --prefix=$(psp-config --psp-prefix)
+		  --host psp "--prefix=$(psp-config --psp-prefix)"
 
 		make -j8
 		make install
@@ -140,7 +140,7 @@ platform_setup_environment()
 
 		./autogen.sh
 		LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" \
-		  ./configure --host psp --prefix=$(psp-config --psp-prefix)
+		  ./configure --host psp "--prefix=$(psp-config --psp-prefix)"
 
 		#
 		# If you thought that pspge.h patch was pretty cool, then you should
