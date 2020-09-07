@@ -42,18 +42,16 @@ platform_config_release()
 platform_make()
 {
 	if [ "$MZX_RELEASE_TYPE" = "release" ]; then
-		$MZX_MAKE_PARALLEL debuglink
+		$MZX_MAKE_PARALLEL debuglink || ERRNO=23;
 	else
-		$MZX_MAKE_PARALLEL
+		$MZX_MAKE_PARALLEL || ERRNO=23;
 	fi
-	[ "$?" -eq "0" ] || { ERRNO=23; }
 }
 
 platform_make_test()
 {
 	if [ "$IS_HOST" = "true" ]; then
-		$MZX_MAKE_PARALLEL test
-		[ "$?" -eq "0" ] || { ERRNO=24; }
+		$MZX_MAKE_PARALLEL test || ERRNO=24;
 	fi
 }
 
@@ -65,8 +63,7 @@ platform_check_build()
 
 platform_package()
 {
-	$MZX_MAKE archive
-	[ "$?" -eq "0" ] || { ERRNO=26; }
+	$MZX_MAKE archive || ERRNO=26;
 }
 
 platform_setup_environment()

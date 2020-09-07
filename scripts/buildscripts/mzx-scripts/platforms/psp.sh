@@ -24,7 +24,7 @@ platform_init()
 	[ -z "$PSPDEV" ] && { ERRNO=20; return; }
 
 	if [ -n "$MSYSTEM" ]; then
-		export PSPDEV=`cygpath -u "$PSPDEV"`
+		export PSPDEV="$(cygpath -u "$PSPDEV")"
 	fi
 
 	export PATH="$PATH:$PSPDEV/bin"
@@ -49,7 +49,7 @@ psp_ports_init()
 		if [ ! -d "$PSP_PORTS_DIR" ]; then
 			git clone "$PSP_PORTS_REPO" "$PSP_PORTS_DIR"
 		else
-			cd "$PSP_PORTS_DIR"
+			cd "$PSP_PORTS_DIR" || { mzx_error "failed to cd to '$PSP_PORTS_DIR'" "PSP-init"; return; }
 			git pull
 		fi
 		export PSP_PORTS_INITIALIZED="true"
@@ -93,7 +93,7 @@ platform_setup_environment()
 		echo "/************/"
 
 		psp_ports_init
-		cd "$PSP_PORTS_DIR/zlib"
+		cd "$PSP_PORTS_DIR/zlib" || { ERRNO="PSP-zlib"; return; }
 		make -j8
 		make install
 	fi
@@ -106,7 +106,7 @@ platform_setup_environment()
 		echo "/**************/"
 
 		psp_ports_init
-		cd "$PSP_PORTS_DIR/libpng"
+		cd "$PSP_PORTS_DIR/libpng" || { ERRNO="PSP-libpng"; return; }
 		make -j8
 		make install
 	fi
@@ -119,7 +119,7 @@ platform_setup_environment()
 		echo "/**************/"
 
 		psp_ports_init
-		cd "$PSP_PORTS_DIR/libTremor"
+		cd "$PSP_PORTS_DIR/libTremor" || { ERRNO="PSP-tremor"; return; }
 
 		LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" ./autogen.sh \
 		  --host psp --prefix=$(psp-config --psp-prefix)
@@ -136,7 +136,7 @@ platform_setup_environment()
 		echo "/***********/"
 
 		psp_ports_init
-		cd "$PSP_PORTS_DIR/SDL"
+		cd "$PSP_PORTS_DIR/SDL" || { ERRNO="PSP-SDL"; return; }
 
 		./autogen.sh
 		LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" \
@@ -161,7 +161,7 @@ platform_setup_environment()
 		echo "/*****************/"
 
 		psp_ports_init
-		cd "$PSP_PORTS_DIR/pspirkeyb"
+		cd "$PSP_PORTS_DIR/pspirkeyb" || { ERRNO="PSP-pspirkeyb"; return; }
 		make -j8
 		make install
 	fi
@@ -174,7 +174,7 @@ platform_setup_environment()
 		echo "/*************/"
 
 		psp_ports_init
-		cd "$PSP_PORTS_DIR/pspgl"
+		cd "$PSP_PORTS_DIR/pspgl" || { ERRNO="PSP-pspgl"; return; }
 		export PSP_MOUNTDIR=/Volumes/PSP
 		export PSP_REVISION=1.50
 		make -j8

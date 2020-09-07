@@ -27,7 +27,7 @@ platform_init()
 	[ "$ERRNO" = "0" ] || { return; }
 
 	if [ -n "$MSYSTEM" ]; then
-		export DEVKITPRO=`cygpath -u "$DEVKITPRO"`
+		export DEVKITPRO="$(cygpath -u "$DEVKITPRO")"
 	fi
 
 	export PATH="$PATH:$DEVKITPRO/devkitA64/bin"

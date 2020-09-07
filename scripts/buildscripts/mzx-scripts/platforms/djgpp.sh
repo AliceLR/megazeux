@@ -21,7 +21,7 @@ platform_init()
 	[ -z "$DJGPP" ] && { ERRNO=20; return; }
 
 	if [ -n "$MSYSTEM" ]; then
-		export DJGPP=`cygpath -u "$DJGPP"`
+		export DJGPP="$(cygpath -u "$DJGPP")"
 	fi
 
 	export PATH="$PATH:$DJGPP/bin"

@@ -30,8 +30,7 @@ platform_config_release()
 
 platform_make()
 {
-	$MZX_MAKE source
-	[ "$?" -eq "0" ] || { ERRNO=23; }
+	$MZX_MAKE source || ERRNO=23;
 }
 
 platform_make_test()
