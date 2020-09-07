@@ -226,10 +226,10 @@ void game_settings(struct world *mzx_world)
      radio_strings_2, 2, 18, &pcs);
     elements[2] = construct_label(2, 8 + y_offset,
      "Audio volumes-");
-    elements[3] = construct_number_box(2, 9 + y_offset,
-     "     Music- ", 0, 10, NUMBER_SLIDER, &music_volume);
-    elements[4] = construct_number_box(2, 10 + y_offset,
-     "   Samples- ", 0, 10, NUMBER_SLIDER, &sound_volume);
+    elements[3] = construct_number_box(7, 9 + y_offset,
+     "Music- ", 0, 10, NUMBER_SLIDER, &music_volume);
+    elements[4] = construct_number_box(5, 10 + y_offset,
+     "Samples- ", 0, 10, NUMBER_SLIDER, &sound_volume);
     elements[5] = construct_number_box(2, 11 + y_offset,
      "PC Speaker- ", 0, 10, NUMBER_SLIDER, &pcs_volume);
 

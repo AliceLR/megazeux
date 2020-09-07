@@ -1121,6 +1121,7 @@ void update_screen(void)
         offset = 0;
         break;
       case CURSOR_MODE_HINT:
+        break;
       case CURSOR_MODE_INVISIBLE:
         enabled = false;
         break;
@@ -1638,6 +1639,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   graphics.window_width = conf->window_width;
   graphics.window_height = conf->window_height;
   graphics.mouse_status = false;
+  graphics.cursor_hint_mode = conf->cursor_hint_mode;
   graphics.cursor_timestamp = get_ticks();
   graphics.cursor_flipflop = 1;
   graphics.system_mouse = conf->system_mouse;
@@ -2523,7 +2525,7 @@ void cursor_solid(Uint32 x, Uint32 y)
 
 void cursor_hint(Uint32 x, Uint32 y)
 {
-  graphics.cursor_mode = CURSOR_MODE_HINT;
+  graphics.cursor_mode = graphics.cursor_hint_mode;
   graphics.cursor_x = x;
   graphics.cursor_y = y;
 }
@@ -2532,20 +2534,6 @@ void cursor_off(void)
 {
   graphics.cursor_mode = CURSOR_MODE_INVISIBLE;
 }
-
-#ifdef CONFIG_HELPSYS
-
-void set_cursor_mode(enum cursor_mode_types mode)
-{
-  graphics.cursor_mode = mode;
-}
-
-enum cursor_mode_types get_cursor_mode(void)
-{
-  return graphics.cursor_mode;
-}
-
-#endif // CONFIG_HELPSYS
 
 void m_hide(void)
 {

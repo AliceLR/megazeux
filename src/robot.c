@@ -2696,6 +2696,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   {
     // Display scroll
     robot_frame(mzx_world, program + pos, id);
+    cursor_hint(8, 12);
     update_screen();
 
     update_event_status_delay();
@@ -2837,6 +2838,7 @@ void robot_box_display(struct world *mzx_world, char *program,
 
   // Restore screen and exit
   m_hide();
+  cursor_off();
   restore_screen();
   update_event_status();
 }
