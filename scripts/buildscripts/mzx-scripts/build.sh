@@ -112,7 +112,7 @@ build_remove_debug()
 	#
 	cd "build/dist/$SUBPLATFORM/"
 
-	ZIPS=$(ls -1 *.zip)
+	ZIPS=$(ls -1 *.zip 2>/dev/null)
 
 	for SRC in $ZIPS; do
 		DEST=$(echo "$SRC" | sed "s/\.zip\$/\.debug\.zip/g")
