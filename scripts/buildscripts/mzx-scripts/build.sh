@@ -73,7 +73,11 @@ build_init()
 #
 build_check_branch_updates()
 {
-	[ -n "$MZX_BUILD_DIR" -a -d "$MZX_BUILD_DIR" ] || { mzx_error "Use after build_init!" 1; exit 1; }
+	if [ -z "$MZX_BUILD_DIR" ] || [ ! -d "$MZX_BUILD_DIR" ]
+	then
+		mzx_error "Use after build_init!" 1
+		exit 1
+	fi
   cd "$MZX_BUILD_DIR" || { mzx_error "failed to cd to build dir!" 2; exit 1; }
 
   RETVAL=1
@@ -222,7 +226,7 @@ build_common()
 	# If this platform wants to package games in its release archive, add it now.
 	# Skip this for testing builds since it's just bloat.
 	#
-	if [ "$MZX_RELEASE_TYPE" = "release" -a -n "$PLATFORM_CAVERNS_EXEC" ]; then
+	if [ "$MZX_RELEASE_TYPE" = "release" ] && [ -n "$PLATFORM_CAVERNS_EXEC" ]; then
 		build_package_caverns
 		[ "$ERRNO" = "0" ] || { mzx_warn "build_package_caverns failed", $ERRNO; }
 	fi
@@ -240,7 +244,7 @@ build_common()
 	# platform or if there is a .debug zip) should be moved to the $MZX_TARGET/zips/ folder.
 	#
 	ZIP_DIR="$MZX_GIT_BRANCH"
-	if [ "$MZX_GIT_BRANCH" = "master" -a "$MZX_UPDATE_BRANCH" != "" ]; then
+	if [ "$MZX_GIT_BRANCH" = "master" ] && [ "$MZX_UPDATE_BRANCH" != "" ]; then
 		ZIP_DIR="$MZX_UPDATE_BRANCH"
 	fi
 	mkdir -p "$MZX_TARGET/zips/$ZIP_DIR/"
