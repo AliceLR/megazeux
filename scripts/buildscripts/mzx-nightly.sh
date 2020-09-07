@@ -22,17 +22,14 @@ if ! build_check_branch_updates $UNSTABLE $DEBYTECODE; then exit 0; fi
 #
 rm -rf "$MZX_TARGET/releases"
 
-# Type          Subplatform     Branch        Update Branch         Extra config flags
-# -----------   -------------   -----------   -------------------   ------------------
-build_debug     "windows-x86"   $UNSTABLE     $UNSTABLE_UPDATES
-build_debug     "windows-x86"   $DEBYTECODE   $DEBYTECODE_UPDATES   "--enable-debytecode"
-build_debug     "windows-x64"   $UNSTABLE     $UNSTABLE_UPDATES
-build_debug     "windows-x64"   $DEBYTECODE   $DEBYTECODE_UPDATES   "--enable-debytecode"
+# Type          Subplatform     Branch          Update Branch           Extra config flags
+# -----------   -------------   -------------   ---------------------   ------------------
+build_debug     "windows-x86"   "$UNSTABLE"     "$UNSTABLE_UPDATES"
+build_debug     "windows-x86"   "$DEBYTECODE"   "$DEBYTECODE_UPDATES"   "--enable-debytecode"
+build_debug     "windows-x64"   "$UNSTABLE"     "$UNSTABLE_UPDATES"
+build_debug     "windows-x64"   "$DEBYTECODE"   "$DEBYTECODE_UPDATES"   "--enable-debytecode"
 
-cd "$MZX_SCRIPTS_BASE"
+cd "$MZX_SCRIPTS_BASE" || exit 1
 
-./mzx-updates.sh
-[ "$?" -eq "0" ] || { exit 1; }
-
-./mzx-upload.sh
-[ "$?" -eq "0" ] || { exit 1; }
+./mzx-updates.sh || exit 1
+./mzx-upload.sh || exit 1
