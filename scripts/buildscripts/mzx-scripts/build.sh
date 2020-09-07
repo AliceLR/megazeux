@@ -223,8 +223,9 @@ build_common()
 
 	#
 	# If this platform wants to package games in its release archive, add it now.
+	# Skip this for testing builds since it's just bloat.
 	#
-	if [ -n "$PLATFORM_CAVERNS_EXEC" ]; then
+	if [ "$MZX_RELEASE_TYPE" = "release" -a -n "$PLATFORM_CAVERNS_EXEC" ]; then
 		build_package_caverns
 		[ "$ERRNO" = "0" ] || { mzx_warn "build_package_caverns failed", $ERRNO; }
 	fi
