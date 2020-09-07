@@ -17,6 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 PSP_PORTS_REPO="https://github.com/pspdev/psp-ports.git"
+PSP_PORTS_DIR="$MZX_WORKINGDIR/psp-ports"
 
 platform_init()
 {
@@ -42,14 +43,23 @@ platform_check_build()
 	[ -f "mzxrun" ] || ERRNO=25;
 }
 
+psp_ports_init()
+{
+	if [ -z "$PSP_PORTS_INITIALIZED" ]; then
+		if [ ! -d "$PSP_PORTS_DIR" ]; then
+			git clone "$PSP_PORTS_REPO" "$PSP_PORTS_DIR"
+		else
+			cd "$PSP_PORTS_DIR"
+			git pull
+		fi
+		export PSP_PORTS_INITIALIZED="true"
+	fi
+}
+
 platform_setup_environment()
 {
 	platform_init
 	[ "$ERRNO" = "0" ] || { return; }
-
-	# Get this as an absolute path...
-	cd "$MZX_BUILD_WORKINGDIR"
-	PSP_PORTS_DIR="$(pwd)/psp-ports"
 
 	echo ""
 	echo "/********************/"
@@ -65,12 +75,6 @@ platform_setup_environment()
 	fi
 
 	cmd_check autoconf automake patch convert
-
-	if [ ! -d "$PSP_PORTS_DIR" ]; then
-		git clone "$PSP_PORTS_REPO" "$PSP_PORTS_DIR"
-	fi
-	cd "$PSP_PORTS_DIR"
-	git pull
 
 	#
 	# The copy of the SDK formerly distributed with the Windows version of
@@ -88,6 +92,7 @@ platform_setup_environment()
 		echo "  PSP - zlib  "
 		echo "/************/"
 
+		psp_ports_init
 		cd "$PSP_PORTS_DIR/zlib"
 		make -j8
 		make install
@@ -100,6 +105,7 @@ platform_setup_environment()
 		echo "  PSP - libpng  "
 		echo "/**************/"
 
+		psp_ports_init
 		cd "$PSP_PORTS_DIR/libpng"
 		make -j8
 		make install
@@ -112,6 +118,7 @@ platform_setup_environment()
 		echo "  PSP - tremor  "
 		echo "/**************/"
 
+		psp_ports_init
 		cd "$PSP_PORTS_DIR/libTremor"
 
 		LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" ./autogen.sh \
@@ -128,6 +135,7 @@ platform_setup_environment()
 		echo "  PSP - SDL  "
 		echo "/***********/"
 
+		psp_ports_init
 		cd "$PSP_PORTS_DIR/SDL"
 
 		./autogen.sh
@@ -152,6 +160,7 @@ platform_setup_environment()
 		echo "  PSP - pspirkeyb  "
 		echo "/*****************/"
 
+		psp_ports_init
 		cd "$PSP_PORTS_DIR/pspirkeyb"
 		make -j8
 		make install
@@ -164,6 +173,7 @@ platform_setup_environment()
 		echo "  PSP - pspgl  "
 		echo "/*************/"
 
+		psp_ports_init
 		cd "$PSP_PORTS_DIR/pspgl"
 		export PSP_MOUNTDIR=/Volumes/PSP
 		export PSP_REVISION=1.50
