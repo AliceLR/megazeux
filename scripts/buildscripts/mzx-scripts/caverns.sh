@@ -48,12 +48,12 @@ caverns_init()
 	if [ "$ERRNO" = "0" ]; then
 		if [ ! -d "$CAVERNS_BASE/$CAVERNS_MMUTIL_PATH" ]; then
 			7za e "$CAVERNS_BASE/caverns.zip" "-o$CAVERNS_BASE/$CAVERNS_MMUTIL_PATH"
-			OLD_DIR=$(pwd)
-			cd "$CAVERNS_BASE/$CAVERNS_MMUTIL_PATH"
-			for f in *.{mod,MOD}; do
+			OLD_DIR="$(pwd)"
+			cd "$CAVERNS_BASE/$CAVERNS_MMUTIL_PATH" || { ERRNO="CV-1"; return; }
+			for f in ./*.MOD; do
 				"$DEVKITPRO/tools/bin/mmutil" -d -m "$f" && rm -f "$f"
 			done
-			cd "$OLD_DIR"
+			cd "$OLD_DIR" || { ERRNO="CV-2"; return; }
 		fi
 	fi
 	ERRNO="0"
@@ -69,16 +69,16 @@ caverns_platform_init()
 		CAVERNS_SETUP=$PLATFORM_CAVERNS_WHICH
 	fi
 
-	rm -rf "$CAVERNS_BASE/$SUBPLATFORM"
+	rm -rf "${CAVERNS_BASE:?}/$SUBPLATFORM"
 	mkdir -p "$CAVERNS_BASE/$SUBPLATFORM/$PLATFORM_CAVERNS_BASE"
-	cp -r $CAVERNS_BASE/$CAVERNS_SETUP/* "$CAVERNS_BASE/$SUBPLATFORM/$PLATFORM_CAVERNS_BASE"
+	cp -r "$CAVERNS_BASE/$CAVERNS_SETUP/"* "$CAVERNS_BASE/$SUBPLATFORM/$PLATFORM_CAVERNS_BASE"
 }
 
 # $1 - archive to check
 # $2 - filename to check for
 caverns_check_archive()
 {
-	return $(7za l $1 $2 -r | grep -q "$2")
+	return $(7za l "$1" "$2" -r | grep -q "$2")
 }
 
 # $1 - archive to check
@@ -87,12 +87,12 @@ caverns_add()
 	# 7za actually requires changing to the directory for the copy to not
 	# include the containing directory. No, really.
 
-	OLD_DIR=$(pwd)
-	cd "$CAVERNS_BASE/$SUBPLATFORM"
+	OLD_DIR="$(pwd)"
+	cd "$CAVERNS_BASE/$SUBPLATFORM" || { ERRNO="CV-1"; return; }
 
-	7za a $1 * -y -bsp0 -bso0
+	7za a "$1" * -y -bsp0 -bso0
 
-	cd "$OLD_DIR"
+	cd "$OLD_DIR" || { ERRNO="CV-2"; return; }
 }
 
 build_package_caverns()
@@ -104,9 +104,10 @@ build_package_caverns()
 	[ "$ERRNO" = "0" ] || { return; }
 
 	for f in $(find "$MZX_BUILD_DIR/build/dist/$SUBPLATFORM/" -name "*.zip"); do
-		if $(caverns_check_archive "$f" "$PLATFORM_CAVERNS_EXEC"); then
+		if caverns_check_archive "$f" "$PLATFORM_CAVERNS_EXEC"; then
 			mzx_log "Found '$PLATFORM_CAVERNS_EXEC' in '$f'; adding Caverns of Zeux at '$PLATFORM_CAVERNS_BASE'"
 			caverns_add "$f"
+			[ "$ERRNO" = "0" ] || { mzx_error "failed to add caverns to '$f'" $ERRNO; }
 		fi
 	done
 }

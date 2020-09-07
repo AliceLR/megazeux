@@ -74,7 +74,7 @@ build_init()
 build_check_branch_updates()
 {
 	[ -n "$MZX_BUILD_DIR" -a -d "$MZX_BUILD_DIR" ] || { mzx_error "Use after build_init!" 1; exit 1; }
-  cd "$MZX_BUILD_DIR"
+  cd "$MZX_BUILD_DIR" || { mzx_error "failed to cd to build dir!" 2; exit 1; }
 
   RETVAL=1
   while [ -n "$1" ]
@@ -109,7 +109,7 @@ build_remove_debug()
 	#
 	cd "build/dist/$SUBPLATFORM/" || { mzx_error "failed to cd to build/dist/$SUBPLATFORM" 14; return; }
 
-	ZIPS=$(ls -1 *.zip 2>/dev/null)
+	ZIPS=$(ls -1 ./*.zip 2>/dev/null)
 
 	for SRC in $ZIPS; do
 		DEST=$(echo "$SRC" | sed "s/\.zip\$/\.debug\.zip/g")
@@ -117,7 +117,7 @@ build_remove_debug()
 			7za e "$SRC"        *.debug -r
 			7za d "$SRC"        *.debug -r
 			7za a -tzip "$DEST" *.debug
-			rm *.debug
+			rm ./*.debug
 		fi
 	done
 	cd "$MZX_BUILD_DIR" || { mzx_error "failed to cd to build dir" 15; return; }
