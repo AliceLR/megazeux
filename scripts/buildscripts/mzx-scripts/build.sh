@@ -19,14 +19,14 @@
 source "$MZX_SCRIPTS/common.sh"
 source "$MZX_SCRIPTS/caverns.sh"
 
-if [ -z $MZX_MAKE ]; then
+if [ -z "$MZX_MAKE" ]; then
 	if command -v gmake >/dev/null 2>&1; then
 		export MZX_MAKE="gmake"
 	else
 		export MZX_MAKE="make"
 	fi
 fi
-if [ -z $MZX_MAKE_PARALLEL ]; then
+if [ -z "$MZX_MAKE_PARALLEL" ]; then
 	export MZX_MAKE_PARALLEL="$MZX_MAKE -j8"
 fi
 
@@ -39,16 +39,14 @@ build_init()
 	# Otherwise, use the repo that (should) exist in the working directory.
 	#
 	if [ -f "config.sh" ]; then
-		MZX_BUILD_DIR=$(pwd)
+		MZX_BUILD_DIR="$(pwd)"
 	else
 		MZX_BUILD_DIR="$MZX_WORKINGDIR/megazeux"
 
 		[ -d "$MZX_BUILD_DIR" ] || { mzx_log "Couldn't find MegaZeux repository dir!"; exit 1; }
-		OLD_DIR=$(pwd)
-		cd "$MZX_BUILD_DIR"
+		cd "$MZX_BUILD_DIR" || { mzx_log "failed to cd to build dir!"; exit 1; }
 		[ -f "config.sh" ] || { mzx_log "Couldn't find config.sh!"; exit 1; }
-		MZX_BUILD_DIR=$(pwd)
-		cd "$OLD_DIR"
+		MZX_BUILD_DIR="$(pwd)"
 	fi
 	mzx_log "Using MegaZeux repository at $MZX_BUILD_DIR for builds"
 	export MZX_BUILD_DIR
@@ -57,12 +55,11 @@ build_init()
 	# Make sure the target dir exists.
 	#
 	mkdir -p "$MZX_TARGET"
-	cd "$MZX_TARGET"
 
 	#
 	# Reset the git repository and make sure all branches/tags are up-to-date.
 	#
-	cd "$MZX_BUILD_DIR"
+	cd "$MZX_BUILD_DIR" || { mzx_log "failed to cd to build dir!"; exit 1; }
 	git reset --hard
 	git fetch
 	git fetch --tags
@@ -85,8 +82,8 @@ build_check_branch_updates()
     git checkout "$1"
     shift
 
-    CURRENT=$(git rev-parse @)
-    REMOTE=$(git rev-parse @{u})
+    CURRENT=$(git rev-parse "@")
+    REMOTE=$(git rev-parse "@{u}")
 
     if [ "$CURRENT" = "$REMOTE" ]; then
       mzx_log "No updates required for branch '$1'."
@@ -110,7 +107,7 @@ build_remove_debug()
 	#
 	# Clear the debug files out of the release archive and put them in their own archive.
 	#
-	cd "build/dist/$SUBPLATFORM/"
+	cd "build/dist/$SUBPLATFORM/" || { mzx_error "failed to cd to build/dist/$SUBPLATFORM" 14; return; }
 
 	ZIPS=$(ls -1 *.zip 2>/dev/null)
 
@@ -123,7 +120,7 @@ build_remove_debug()
 			rm *.debug
 		fi
 	done
-	cd "$MZX_BUILD_DIR"
+	cd "$MZX_BUILD_DIR" || { mzx_error "failed to cd to build dir" 15; return; }
 }
 
 # $1 subplatform
@@ -164,7 +161,7 @@ build_common()
 	mzx_log "  Update branch: $MZX_UPDATE_BRANCH"
 	mzx_log "  Options:       $MZX_EXTRA_CONFIG_FLAGS"
 
-	cd "$MZX_BUILD_DIR"
+	cd "$MZX_BUILD_DIR" || { mzx_error "failed to cd to build dir" 4; return; }
 
 	#
 	# Initialize platform-dependent variables and perform platform-dependent
@@ -176,7 +173,7 @@ build_common()
 	#
 	# Check out the requested branch.
 	#
-	git checkout $MZX_GIT_BRANCH
+	git checkout "$MZX_GIT_BRANCH"
 	git merge
 	$MZX_MAKE distclean
 	rm -rf build
@@ -247,7 +244,7 @@ build_common()
 		ZIP_DIR="$MZX_UPDATE_BRANCH"
 	fi
 	mkdir -p "$MZX_TARGET/zips/$ZIP_DIR/"
-	mv build/dist/$SUBPLATFORM/* "$MZX_TARGET/zips/$ZIP_DIR/"
+	mv build/dist/"$SUBPLATFORM"/* "$MZX_TARGET/zips/$ZIP_DIR/"
 
 	#
 	# The build/SUBPLATFORM/ folder should be moved to the $MZX_TARGET/releases/ folder

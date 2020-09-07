@@ -38,8 +38,7 @@ common_setup_environment()
 	#
 	if [ ! -f "config.sh" ]; then
 		if [ ! -d "$MZX_WORKINGDIR/megazeux" ]; then
-			git clone "$MZX_REPOSITORY" "$MZX_WORKINGDIR/megazeux"
-			if [ "$?" -ne "0" ]; then
+			if ! git clone "$MZX_REPOSITORY" "$MZX_WORKINGDIR/megazeux"; then
 				ERRNO="GIT-1"
 				mzx_error "failed to create MZX repository" "$ERRNO"
 				return
