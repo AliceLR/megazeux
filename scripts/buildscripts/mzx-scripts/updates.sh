@@ -50,7 +50,7 @@ process_release_dir()
 	#
 	# Compress everything to its sha256sum.
 	#
-	for file in $(find -mindepth 1 -type f -not -name manifest.txt -not -name config.txt)
+	for file in $(find . -mindepth 1 -type f -not -name manifest.txt -not -name config.txt)
 	do
 		#
 		# Calculate the sha256sum and make sure it's something that's actually in
