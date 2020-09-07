@@ -37,7 +37,8 @@ mingw_check()
 	# Check for MinGW prebuilt dependencies.
 	#
 	MISSING=""
-	for DEP in "bin/SDL2.dll" "lib/libSDL2main.a" "lib/libz.a" "lib/libpng.a" "lib/libogg.a" "lib/libvorbis.a"
+	for DEP in "bin/SDL2.dll" "bin/sdl2-config" "bin/libpng-config" "lib/libSDL2main.a" \
+	 "lib/libz.a" "lib/libpng.a" "lib/libogg.a" "lib/libvorbis.a" "lib/libvorbisfile.a"
 	do
 		if [ ! -e "$2/$DEP" ]; then
 			MISSING="$MISSING:$DEP"
