@@ -78,7 +78,8 @@ caverns_platform_init()
 # $2 - filename to check for
 caverns_check_archive()
 {
-	return "$(7za l "$1" "$2" -r | grep -q "$2")"
+	7za l "$1" "$2" -r | grep -q "$2"
+	return $?
 }
 
 # $1 - archive to check
