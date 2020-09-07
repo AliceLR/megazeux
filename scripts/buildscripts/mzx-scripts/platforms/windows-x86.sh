@@ -36,7 +36,12 @@ platform_init()
 	mingw32_check
 	[ "$ERRNO" = "0" ] || { return; }
 
-	[ -n "$MSYSTEM" ] && IS_HOST="true"
+	if [ -n "$MSYSTEM" ]; then
+		IS_HOST="true"
+		export PATH="$SDL_PREFIX/bin:$PATH"
+	else
+		export PATH="$MINGW32_PREFIX/bin:$PATH"
+	fi
 
 	export PLATFORM_CAVERNS_EXEC="mzxrun.exe"
 	export PLATFORM_CAVERNS_BASE="."
