@@ -30,6 +30,12 @@ platform_config_release()
 	arch/emscripten/CONFIG.HTML5 "$@"
 }
 
+# debuglink breaks for this platform so always use 'all'...
+platform_make()
+{
+	$MZX_MAKE_PARALLEL || ERRNO=23;
+}
+
 platform_check_build()
 {
 	[ -f "mzxrun.js" ] || ERRNO=25;

@@ -8,4 +8,4 @@ export MZX_TARGET="${MZX_TARGET_BASE%/}/TARGET"
 
 . "$MZX_SCRIPTS/setup.sh"
 
-setup_environment windows-x64 windows-x86 nds 3ds wii switch psp
+setup_environment windows-x64 windows-x86 nds 3ds wii switch psp android emscripten

@@ -16,7 +16,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-JNI_LIB_DIR=arch/android/project/app/jni
+JNI_LIB_DIR=arch/android/project/app/jni/lib
 JNI_LIB_SO=libmain.so
 
 . "$MZX_SCRIPTS/common.sh"
