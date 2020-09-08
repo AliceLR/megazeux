@@ -38,9 +38,7 @@ platform_init()
 
 	if [ -n "$MSYSTEM" ]; then
 		IS_HOST="true"
-		export PATH="$SDL_PREFIX/bin:$PATH"
 	else
-		export PATH="$MINGW32_PREFIX/bin:$PATH"
 		export SDL_PREFIX="$MINGW32_PREFIX"
 	fi
 
