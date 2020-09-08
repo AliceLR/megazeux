@@ -20,17 +20,6 @@
 . "$MZX_SCRIPTS/caverns.sh"
 . "$MZX_SCRIPTS/crlf.sh"
 
-if [ -z "$MZX_MAKE" ]; then
-	if command -v gmake >/dev/null 2>&1; then
-		export MZX_MAKE="gmake"
-	else
-		export MZX_MAKE="make"
-	fi
-fi
-if [ -z "$MZX_MAKE_PARALLEL" ]; then
-	export MZX_MAKE_PARALLEL="$MZX_MAKE -j8"
-fi
-
 OLD_PATH="$PATH"
 
 build_init()

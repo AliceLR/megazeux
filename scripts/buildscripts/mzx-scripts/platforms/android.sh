@@ -19,13 +19,13 @@
 JNI_LIB_DIR=arch/android/project/app/jni
 JNI_LIB_SO=libmain.so
 
+. "$MZX_SCRIPTS/common.sh"
+
 platform_init()
 {
-	[ -z "$SDK_PATH" ] && { ERRNO=20; return; }
 	[ -z "$NDK_PATH" ] && { ERRNO=20; return; }
 
 	if [ -n "$MSYSTEM" ]; then
-		export SDK_PATH="$(cygpath -u "$SDK_PATH")"
 		export NDK_PATH="$(cygpath -u "$NDK_PATH")"
 	fi
 }

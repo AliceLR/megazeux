@@ -61,6 +61,7 @@ setup_environment()
 			. "$MZX_SCRIPTS/platforms/default.sh"
 			. "$MZX_SCRIPTS/platforms/$1.sh"
 
+			export ERRNO=0
 			platform_setup_environment
 			if [ ! "$ERRNO" = "0" ]; then
 				mzx_error "failed $1" "$ERRNO"
