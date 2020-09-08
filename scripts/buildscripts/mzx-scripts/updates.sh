@@ -17,7 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-source "$MZX_SCRIPTS/common.sh"
+. "$MZX_SCRIPTS/common.sh"
 
 #
 # Convert the current working directory from release dir to an updater dir.

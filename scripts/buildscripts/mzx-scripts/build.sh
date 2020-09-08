@@ -16,8 +16,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-source "$MZX_SCRIPTS/common.sh"
-source "$MZX_SCRIPTS/caverns.sh"
+. "$MZX_SCRIPTS/common.sh"
+. "$MZX_SCRIPTS/caverns.sh"
 
 if [ -z "$MZX_MAKE" ]; then
 	if command -v gmake >/dev/null 2>&1; then
@@ -149,8 +149,8 @@ build_common()
 	unset SDL_PREFIX
 
 	export PATH="$OLD_PATH"
-	source "$MZX_SCRIPTS/platforms/default.sh"
-	source "$MZX_SCRIPTS/platforms/$SUBPLATFORM.sh"
+	. "$MZX_SCRIPTS/platforms/default.sh"
+	. "$MZX_SCRIPTS/platforms/$SUBPLATFORM.sh"
 
 	export ERRNO=0
 	export IS_HOST="false"

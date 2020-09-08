@@ -26,8 +26,8 @@ CAVERNS_BASE="$MZX_WORKINGDIR/caverns"
 CAVERNS_PATH="caverns"
 CAVERNS_MMUTIL_PATH="caverns_mmutil"
 
-source "$MZX_SCRIPTS/common.sh"
-source "$MZX_SCRIPTS/common-dkp.sh"
+. "$MZX_SCRIPTS/common.sh"
+. "$MZX_SCRIPTS/common-dkp.sh"
 
 caverns_init()
 {

@@ -16,8 +16,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-source "$MZX_SCRIPTS/common.sh"
-source "$MZX_SCRIPTS/common-mingw.sh"
+. "$MZX_SCRIPTS/common.sh"
+. "$MZX_SCRIPTS/common-mingw.sh"
 
 MINGW64_PLATFORM="mingw64"
 MINGW64_CONFIG="--prefix $MINGW64_PREFIX"
@@ -25,7 +25,7 @@ if [ -n "$MSYSTEM" ]; then
 	MINGW64_PLATFORM="win64"
 	MINGW64_CONFIG=""
 	MSYSTEM="MINGW64"
-	source /etc/profile
+	. /etc/profile
 
 	export SDL_PREFIX="$MZX_WORKINGDIR/sdl2-mingw/x86_64-w64-mingw32/"
 	[ -d "$SDL_PREFIX" ] || { mzx_warn "Failed to find MinGW SDL dir!" "MINGW64-1"; }

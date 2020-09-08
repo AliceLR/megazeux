@@ -18,7 +18,7 @@
 
 export MZX_REPOSITORY="https://github.com/AliceLR/megazeux.git"
 
-source "$MZX_SCRIPTS/common.sh"
+. "$MZX_SCRIPTS/common.sh"
 
 common_setup_environment()
 {
@@ -58,8 +58,8 @@ setup_environment()
 		mzx_log "Performing setup for: $1"
 		if [ -f "$MZX_SCRIPTS/platforms/$1.sh" ]; then
 
-			source "$MZX_SCRIPTS/platforms/default.sh"
-			source "$MZX_SCRIPTS/platforms/$1.sh"
+			. "$MZX_SCRIPTS/platforms/default.sh"
+			. "$MZX_SCRIPTS/platforms/$1.sh"
 
 			platform_setup_environment
 			if [ ! "$ERRNO" = "0" ]; then

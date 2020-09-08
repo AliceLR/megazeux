@@ -6,6 +6,6 @@ export MZX_WORKINGDIR="${MZX_SCRIPTS_BASE%/}/mzx-workingdir"
 export MZX_TARGET_BASE="$(pwd)"
 export MZX_TARGET="${MZX_TARGET_BASE%/}/TARGET"
 
-source "$MZX_SCRIPTS/setup.sh"
+. "$MZX_SCRIPTS/setup.sh"
 
 setup_environment windows-x64 windows-x86 nds 3ds wii switch psp

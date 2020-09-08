@@ -6,7 +6,7 @@ export MZX_WORKINGDIR="${MZX_SCRIPTS_BASE%/}/mzx-workingdir"
 export MZX_TARGET_BASE="$(pwd)"
 export MZX_TARGET="${MZX_TARGET_BASE%/}/TARGET"
 
-source "$MZX_SCRIPTS/uploads.sh"
+. "$MZX_SCRIPTS/uploads.sh"
 
 #
 # Add lines to configure upload targets here.

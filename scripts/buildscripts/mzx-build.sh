@@ -6,8 +6,8 @@ export MZX_WORKINGDIR="${MZX_SCRIPTS_BASE%/}/mzx-workingdir"
 export MZX_TARGET_BASE="$(pwd)"
 export MZX_TARGET="${MZX_TARGET_BASE%/}/TARGET"
 
-source "$MZX_SCRIPTS/version.sh"
-source "$MZX_SCRIPTS/build.sh"
+. "$MZX_SCRIPTS/version.sh"
+. "$MZX_SCRIPTS/build.sh"
 
 build_init
 
