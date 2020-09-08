@@ -85,7 +85,7 @@ crlf_convert_repository()
 		CONVERT_FUNCTION="crlf_convert_posix"
 	fi
 
-	for F in FILES
+	for F in $FILES
 	do
 		if "$CONVERT_FUNCTION" "$F"
 		then
