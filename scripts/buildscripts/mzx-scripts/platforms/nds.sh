@@ -36,6 +36,7 @@ platform_init()
 	export PLATFORM_CAVERNS_EXEC="mzxrun.nds"
 	export PLATFORM_CAVERNS_BASE="games/megazeux"
 	export PLATFORM_CAVERNS_WHICH="caverns_mmutil"
+	export PLATFORM_CRLF=1
 }
 
 platform_config_release()

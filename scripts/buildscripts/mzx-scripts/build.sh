@@ -18,6 +18,7 @@
 
 . "$MZX_SCRIPTS/common.sh"
 . "$MZX_SCRIPTS/caverns.sh"
+. "$MZX_SCRIPTS/crlf.sh"
 
 if [ -z "$MZX_MAKE" ]; then
 	if command -v gmake >/dev/null 2>&1; then
@@ -154,6 +155,7 @@ build_common()
 
 	export ERRNO=0
 	export IS_HOST="false"
+	export PLATFORM_CRLF=""
 	export PLATFORM_CAVERNS_EXEC=""
 	export PLATFORM_CAVERNS_BASE=""
 	export PLATFORM_CAVERNS_WHICH=""
@@ -178,6 +180,7 @@ build_common()
 	#
 	# Check out the requested branch.
 	#
+	git reset --hard
 	git checkout "$MZX_GIT_BRANCH"
 	git merge
 	$MZX_MAKE distclean
@@ -212,6 +215,15 @@ build_common()
 	#
 	platform_check_build
 	[ "$ERRNO" = "0" ] || { mzx_error "build check failed" $ERRNO; return; }
+
+	#
+	# Perform LF->CRLF conversion for text files if requested by this platform.
+	# This needs to be done before packaging so manifest.sh can compute the
+	# correct SHA-256 sums.
+	#
+	if [ -n "$PLATFORM_CRLF" ]; then
+		crlf_convert_repository
+	fi
 
 	#
 	# Package the build.

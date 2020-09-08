@@ -35,6 +35,7 @@ platform_init()
 
 	export PLATFORM_CAVERNS_EXEC="boot.dol"
 	export PLATFORM_CAVERNS_BASE="apps/megazeux"
+	export PLATFORM_CRLF=1
 }
 
 platform_config_release()

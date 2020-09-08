@@ -22,6 +22,7 @@ platform_init()
 		ERRNO=20;
 		return;
 	fi
+	export PLATFORM_CRLF=1
 }
 
 platform_config_release()

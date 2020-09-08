@@ -31,6 +31,7 @@ platform_init()
 
 	export PLATFORM_CAVERNS_EXEC="EBOOT.PBP"
 	export PLATFORM_CAVERNS_BASE="."
+	export PLATFORM_CRLF=1
 }
 
 platform_config_release()

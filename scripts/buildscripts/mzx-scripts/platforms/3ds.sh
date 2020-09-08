@@ -35,6 +35,7 @@ platform_init()
 
 	export PLATFORM_CAVERNS_EXEC="mzxrun.3dsx"
 	export PLATFORM_CAVERNS_BASE="3ds/megazeux"
+	export PLATFORM_CRLF=1
 }
 
 platform_config_release()

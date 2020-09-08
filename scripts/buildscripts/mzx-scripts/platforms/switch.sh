@@ -35,6 +35,7 @@ platform_init()
 
 	export PLATFORM_CAVERNS_EXEC="megazeux.nro"
 	export PLATFORM_CAVERNS_BASE="switch/megazeux"
+	export PLATFORM_CRLF=1
 }
 
 platform_config_release()
