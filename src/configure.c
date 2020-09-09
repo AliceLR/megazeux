@@ -187,6 +187,7 @@ static const struct config_info user_conf_default =
   CONFIG_GL_FILTER_LINEAR,      // opengl filter method
   "",                           // opengl default scaling shader
   GL_VSYNC_DEFAULT,             // opengl vsync mode
+  CURSOR_MODE_HINT,             // cursor_hint_mode
   true,                         // allow screenshots
 
   // Audio options
@@ -300,6 +301,16 @@ static const struct config_enum resample_mode_values[] =
   { "none", RESAMPLE_MODE_NONE },
   { "linear", RESAMPLE_MODE_LINEAR },
   { "cubic", RESAMPLE_MODE_CUBIC }
+};
+
+static const struct config_enum cursor_hint_type_values[] =
+{
+  { "0", CURSOR_MODE_INVISIBLE },
+  { "1", CURSOR_MODE_HINT },
+  { "off", CURSOR_MODE_INVISIBLE },
+  { "hidden", CURSOR_MODE_HINT },
+  { "underline", CURSOR_MODE_UNDERLINE },
+  { "solid", CURSOR_MODE_SOLID },
 };
 
 static const struct config_enum system_mouse_values[] =
@@ -492,6 +503,14 @@ static void config_set_resolution(struct config_info *conf, char *name,
 
   conf->resolution_width = width;
   conf->resolution_height = height;
+}
+
+static void config_set_dialog_cursor_hints(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  int result;
+  if(config_enum(&result, value, cursor_hint_type_values))
+    conf->cursor_hint_mode = result;
 }
 
 static void config_set_fullscreen(struct config_info *conf, char *name,
@@ -1002,6 +1021,7 @@ static const struct config_entry config_options[] =
   { "audio_buffer_samples", config_set_audio_buffer, false },
   { "audio_sample_rate", config_set_audio_freq, false },
   { "auto_decrypt_worlds", config_set_auto_decrypt_worlds, false },
+  { "dialog_cursor_hints", config_set_dialog_cursor_hints, false },
   { "enable_oversampling", config_enable_oversampling, false },
   { "enable_resizing", config_enable_resizing, false },
   { "force_bpp", config_force_bpp, false },

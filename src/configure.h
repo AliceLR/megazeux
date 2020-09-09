@@ -55,6 +55,14 @@ enum gl_filter_type
   CONFIG_GL_FILTER_LINEAR
 };
 
+enum cursor_mode_types
+{
+  CURSOR_MODE_UNDERLINE,  // Underline for text entry (insert).
+  CURSOR_MODE_SOLID,      // Solid for text entry (overwrite) and editing.
+  CURSOR_MODE_HINT,       // Hidden cursor for active UI element hints.
+  CURSOR_MODE_INVISIBLE   // Cursor disabled.
+};
+
 enum allow_cheats_type
 {
   ALLOW_CHEATS_NEVER,
@@ -85,6 +93,7 @@ struct config_info
   enum gl_filter_type gl_filter_method;
   char gl_scaling_shader[32];
   int gl_vsync;
+  enum cursor_mode_types cursor_hint_mode;
   boolean allow_screenshots;
 
   // Audio options
