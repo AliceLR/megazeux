@@ -760,6 +760,16 @@ UNITTEST(Settings)
     TEST_ENUM("editor_thing_menu_places", econf->editor_thing_menu_places, boolean_data);
   }
 
+  SECTION(editor_show_thing_toggles)
+  {
+    TEST_ENUM("editor_show_thing_toggles", econf->editor_show_thing_toggles, boolean_data);
+  }
+
+  SECTION(editor_show_thing_blink_speed)
+  {
+    TEST_INT("editor_show_thing_blink_speed", econf->editor_show_thing_blink_speed, 0, INT_MAX);
+  }
+
   // Board defaults.
 
   SECTION(viewport_and_size)

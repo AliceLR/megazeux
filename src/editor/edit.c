@@ -79,9 +79,6 @@
 #define TEST_WORLD_FILENAME   "__test.mzx"
 #define TEST_WORLD_PATTERN    "__test%d.mzx"
 
-#define FLASH_THING_B         4
-#define FLASH_THING_MAX       8
-
 static const char *const world_ext[] = { ".MZX", NULL };
 static const char *const mzb_ext[] = { ".MZB", NULL };
 static const char *const mzm_ext[] = { ".MZM", NULL };
@@ -184,6 +181,8 @@ struct editor_context
   int flash_char_a;
   int flash_char_b;
   int flash_timer;
+  int flash_timer_swap;
+  int flash_timer_max;
   Uint32 flash_layer;
 
   // Testing
@@ -798,12 +797,24 @@ enum flash_thing_type
 static void flash_thing(struct editor_context *editor,
  enum thing start, enum thing end, int flash_char_a, int flash_char_b)
 {
+  struct editor_config_info *editor_conf = get_editor_config();
+
+  // If the same type of flashing is already enabled, toggle it off instead.
+  if(editor_conf->editor_show_thing_toggles && editor->flashing &&
+   (editor->flash_start == start))
+  {
+    editor->flashing = false;
+    return;
+  }
+
   editor->flashing = true;
   editor->flash_start = start;
   editor->flash_len = end - start + 1;
   editor->flash_char_a = flash_char_a;
   editor->flash_char_b = flash_char_b;
   editor->flash_timer = 0;
+  editor->flash_timer_swap = MAX(1, editor_conf->editor_show_thing_blink_speed);
+  editor->flash_timer_max = MAX(1, editor_conf->editor_show_thing_blink_speed * 2);
 }
 
 /**
@@ -811,13 +822,15 @@ static void flash_thing(struct editor_context *editor,
  */
 static int flash_init(struct editor_context *editor)
 {
+  struct editor_config_info *editor_conf = get_editor_config();
   int chr = editor->flash_char_a;
 
-  if(editor->flash_timer >= FLASH_THING_B)
+  if(editor->flash_timer >= editor->flash_timer_swap)
     chr = editor->flash_char_b;
 
   editor->flash_layer = 0;
-  cursor_off();
+  if(!editor_conf->editor_show_thing_toggles)
+    cursor_off();
   return chr;
 }
 
@@ -826,7 +839,7 @@ static int flash_init(struct editor_context *editor)
  */
 static void flash_done(struct editor_context *editor)
 {
-  editor->flash_timer = (editor->flash_timer + 1) % FLASH_THING_MAX;
+  editor->flash_timer = (editor->flash_timer + 1) % editor->flash_timer_max;
   editor->flash_layer = 0;
 }
 
@@ -1336,8 +1349,8 @@ static boolean editor_idle(context *ctx)
   fix_history(editor);
 
   // Preempt inputs to cancel flashing mode if active.
-  if(editor->flashing && (get_mouse_status() || get_exit_status() ||
-   get_key(keycode_internal_wrt_numlock)))
+  if(editor->flashing && !editor_conf->editor_show_thing_toggles &&
+   (get_mouse_status() || get_exit_status() || get_key(keycode_internal_wrt_numlock)))
   {
     editor->flashing = false;
     return true;
@@ -1936,6 +1949,13 @@ static boolean editor_key(context *ctx, int *key)
         synchronize_board_values(editor);
         fix_scroll(editor);
         key = 0;
+        return true;
+      }
+      else
+
+      if(editor->flashing)
+      {
+        editor->flashing = false;
         return true;
       }
 
