@@ -76,6 +76,8 @@ DEVELOPERS
 + Added graphics.renderer.hardware_cursor for platforms with
   hardware cursors that may need to be updated during any frame
   regardless of the current cursor state/blinking (i.e. DJGPP).
++ Fixed "make build" error after using "make debuglink" with png
+  support disabled.
 
 
 July 20th, 2020 - MZX 2.92e
