@@ -106,9 +106,9 @@ build_remove_debug()
 	for SRC in ./*.zip
 	do
 		# NOTE: 7za uses its own internal globs, hence the quotes.
-		DEST=$(echo "$SRC" | sed "s/\.zip\$/\.debug\.zip/g")
-		if 7za l "$SRC" "*.debug" -r | grep -q ".debug"
+		if [ -n "$SRC" ] && 7za l "$SRC" "*.debug" -r | grep -q ".debug"
 		then
+			DEST=$(echo "$SRC" | sed "s/\.zip\$/\.debug\.zip/g")
 			7za e "$SRC"        "*.debug" -r
 			7za d "$SRC"        "*.debug" -r
 			7za a -tzip "$DEST" ./*.debug
