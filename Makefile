@@ -59,6 +59,8 @@ include arch/compat.inc
 
 ifeq (${BUILD_SDL},1)
 
+SDL_PREFIX ?= ${PREFIX}
+
 #
 # SDL 2
 #
