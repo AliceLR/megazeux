@@ -103,7 +103,8 @@ build_remove_debug()
 	#
 	cd "build/dist/$SUBPLATFORM/" || { mzx_error "failed to cd to build/dist/$SUBPLATFORM" 14; return; }
 
-	for SRC in ./*.zip
+	FILES=$(find . -name "*.zip")
+	for SRC in $FILES
 	do
 		# NOTE: 7za uses its own internal globs, hence the quotes.
 		if [ -n "$SRC" ] && 7za l "$SRC" "*.debug" -r | grep -q ".debug"
