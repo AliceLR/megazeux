@@ -88,6 +88,7 @@ struct UPDATER_LIBSPEC HTTPRequestInfo
   char content_encoding[ENC_BUF_SIZE];
   char transfer_encoding[ENC_BUF_SIZE];
   size_t content_length;
+  size_t final_length;
   HTTPEncodingType transfer_encoding_type;
   HTTPEncodingType content_encoding_type;
 
@@ -149,7 +150,7 @@ public:
 
   /**
    * Send a GET request and stream the response (if any) to a buffer.
-   * Use request.content_length to determine the length of the response.
+   * Use request.final_length to determine the actual length of the response.
    *
    * @param request       HTTP request to send; returns response data.
    * @param buffer        Buffer to stream to.

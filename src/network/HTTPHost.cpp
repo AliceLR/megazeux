@@ -25,6 +25,7 @@
 #include <zlib.h>
 
 #include "HTTPHost.hpp"
+#include "Scoped.hpp"
 #include "../util.h"
 
 #ifdef IS_CXX_11
@@ -34,7 +35,7 @@
 #define BLOCK_SIZE    4096UL
 #define LINE_BUF_LEN  256
 
-static ssize_t zlib_skip_gzip_header(char *initial, unsigned long len)
+static ssize_t zlib_skip_gzip_header(void *initial, unsigned long len)
 {
   Bytef *gzip = (Bytef *)initial;
   uint8_t flags;
@@ -124,11 +125,13 @@ void HTTPRequestInfo::print_response() const
 {
   boolean params = this->content_type_params[0] != '\0';
   fprintf(stderr,
+    "  URL               : %s\n"
     "  Status            : %d %s\n"
     "  Content-Type      : %s%s%s\n"
     "  Content-Encoding  : %s\n"
     "  Transfer-Encoding : %s\n"
     "  Content-Length    : %zu\n",
+    this->url,
     this->status_code, this->status_message,
     this->content_type,
     (params ? "; " : ""),
@@ -571,10 +574,14 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
   if(request.content_encoding_type == HTTPEncodingType::EN_UNSUPPORTED)
     return HOST_HTTP_INVALID_CONTENT_ENCODING;
 
+  // Use Bytef for these buffers since they'll mostly interact with zlib...
+  // outbuf will be expanded when/if it's needed.
+  ScopedBuffer<Bytef> block(BLOCK_SIZE);
+  ScopedBuffer<Bytef> outbuf(0);
+
   while(true)
   {
     unsigned long block_size;
-    char block[BLOCK_SIZE];
 
     /* Both transfer mechanisms need preambles. For NORMAL, this will
      * happen only once, because we have a predetermined length for
@@ -670,7 +677,7 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
          * the DEFLATE header too, which is what the -MAX_WBITS trick is for).
          */
         stream.avail_in = block_size - (unsigned long)deflate_offset;
-        stream.next_in = (Bytef *)&block[deflate_offset];
+        stream.next_in = &block[deflate_offset];
         stream.zalloc = Z_NULL;
         stream.zfree = Z_NULL;
         stream.opaque = Z_NULL;
@@ -683,22 +690,21 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
       else
       {
         stream.avail_in = block_size;
-        stream.next_in = (Bytef *)block;
+        stream.next_in = block;
       }
 
       while(true)
       {
-        char outbuf[BLOCK_SIZE];
-        int ret;
+        outbuf.resize(BLOCK_SIZE);
 
         // Each pass, only decompress a maximum of BLOCK_SIZE
         stream.avail_out = BLOCK_SIZE;
-        stream.next_out = (Bytef *)outbuf;
+        stream.next_out = outbuf;
 
         /* Perform the inflation (this will modify avail_in and
          * next_in automatically.
          */
-        ret = inflate(&stream, Z_NO_FLUSH);
+        int ret = inflate(&stream, Z_NO_FLUSH);
         if(ret != Z_OK && ret != Z_STREAM_END)
           return HOST_ZLIB_INFLATE_FAILED;
 
@@ -760,6 +766,7 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
       }
     }
   }
+  request.final_length = vftell(file);
   return HOST_SUCCESS;
 }
 

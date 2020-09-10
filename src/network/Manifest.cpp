@@ -75,11 +75,11 @@ boolean ManifestEntry::compute_sha256(SHA256_ctx &ctx, FILE *fp, size_t len)
   unsigned long pos = 0;
 
   SHA256_init(&ctx);
+  ScopedBuffer<char> block(BLOCK_SIZE);
 
   while(pos < len)
   {
     unsigned long block_size = MIN(BLOCK_SIZE, len - pos);
-    char block[BLOCK_SIZE];
 
     if(fread(block, block_size, 1, fp) != 1)
       return false;
