@@ -76,6 +76,8 @@ boolean ManifestEntry::compute_sha256(SHA256_ctx &ctx, FILE *fp, size_t len)
 
   SHA256_init(&ctx);
   ScopedBuffer<char> block(BLOCK_SIZE);
+  if(!block)
+    return false;
 
   while(pos < len)
   {

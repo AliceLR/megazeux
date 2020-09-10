@@ -162,6 +162,8 @@ const char *HTTPHost::get_error_string(HTTPHostStatus status)
       return "Connection issue occurred (send() failed).";
     case HOST_RECV_FAILED:
       return "Connection issue occurred (receive() failed).";
+    case HOST_ALLOC_FAILED:
+      return "Failed to allocate buffer memory.";
     case HOST_HTTP_EXCEEDED_BUFFER:
       return "Operation would exceed the provided buffer"
        " (INTERNAL ERROR: REPORT THIS!)";
@@ -578,6 +580,8 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
   // outbuf will be expanded when/if it's needed.
   ScopedBuffer<Bytef> block(BLOCK_SIZE);
   ScopedBuffer<Bytef> outbuf(0);
+  if(!block)
+    return HOST_ALLOC_FAILED;
 
   while(true)
   {
@@ -696,6 +700,8 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
       while(true)
       {
         outbuf.resize(BLOCK_SIZE);
+        if(!outbuf)
+          return HOST_ALLOC_FAILED;
 
         // Each pass, only decompress a maximum of BLOCK_SIZE
         stream.avail_out = BLOCK_SIZE;
