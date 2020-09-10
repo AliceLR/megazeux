@@ -181,8 +181,6 @@ const char *HTTPHost::get_error_string(HTTPHostStatus status)
        " (only 'chunked' is accepted).";
     case HOST_HTTP_INVALID_CONTENT_TYPE:
       return "Response 'Content-Type' does not match the expected value(s).";
-    case HOST_HTTP_INVALID_CONTENT_TYPE_PARAMS:
-      return "Response 'Content-Type' params do not match the expected value(s).";
     case HOST_HTTP_INVALID_CONTENT_ENCODING:
       return "Response 'Content-Encoding' value is invalid"
        " (only 'gzip' is accepted).";
