@@ -639,8 +639,6 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
   struct config_info *conf = get_config();
   int cur_host;
   char *update_host;
-  char *url_base = nullptr;
-  boolean delete_updates_txt = false;
   boolean delete_remote_manifest = false;
   boolean try_next_host = true;
   boolean ret = false;
@@ -664,7 +662,9 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     return false;
 
   set_context(CTX_UPDATER);
-  url_base = (char *)cmalloc(LINE_BUF_LEN);
+
+  ScopedBuffer<char> updates_txt(LINE_BUF_LEN);
+  ScopedBuffer<char> url_base(LINE_BUF_LEN);
 
   for(cur_host = 0; (cur_host < conf->update_host_count) && try_next_host; cur_host++)
   {
@@ -682,16 +682,6 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     unsigned int retries;
     boolean reconnect = false;
 
-    // Acid test: Can we write to this directory?
-    ScopedFile<FILE, fclose> f = fopen_unsafe(UPDATES_TXT, "w+b");
-    if(!f)
-    {
-      error_message(E_UPDATE, 15,
-       "Failed to create \"" UPDATES_TXT "\". Check permissions.");
-      goto err_chdir;
-    }
-
-    delete_updates_txt = true;
     update_host = conf->update_hosts[cur_host];
 
     for(retries = 0; retries < MAX_RETRIES; retries++)
@@ -704,8 +694,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       strcpy(request.url, "/" UPDATES_TXT);
       request.allowed_types = HTTPRequestInfo::plaintext_types;
 
-      status = http.get(request, f);
-      rewind(f);
+      status = http.get(request, updates_txt, updates_txt.size());
 
       if(status == HOST_SUCCESS)
         break;
@@ -718,6 +707,9 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         retries = MAX_RETRIES;
         break;
       }
+
+      if(request.content_length > updates_txt.size())
+        updates_txt.resize(request.content_length);
     }
 
     if(retries == MAX_RETRIES)
@@ -741,14 +733,12 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
      conf->update_branch_pin);
 
     // Walk this list (of two, hopefully)
-    while(true)
+    struct memfile mf;
+    mfopen(updates_txt, request.final_length, &mf);
+    while(mfsafegets(buffer, LINE_BUF_LEN, &mf))
     {
       char *m = buffer, *key;
       value = NULL;
-
-      // Grab a single line from the manifest
-      if(!fgets(buffer, LINE_BUF_LEN, f))
-        break;
 
       key = strsep(&m, ":\n");
       if(!key)
@@ -776,7 +766,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     /* There's likely to be a space prepended to the version number.
      * Skip it here.
      */
-    if(value[0] == ' ')
+    while(isspace(*value))
       value++;
 
     /* We found the latest update version, but we should check to see if that
@@ -812,7 +802,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
      * name.
      */
     snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, version);
-    debug("Update base URL: %s\n", url_base);
+    debug("Update base URL: %s\n", url_base.data());
 
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
@@ -961,16 +951,12 @@ err_try_next_host:
     http.close();
   } //end host for loop
 
-err_chdir:
-  if(delete_updates_txt)
-    unlink(UPDATES_TXT);
   if(delete_remote_manifest)
     unlink(REMOTE_MANIFEST_TXT);
 
   swivel_current_dir_back(true);
 
   pop_context();
-  free(url_base);
 
   if(ret)
   {
