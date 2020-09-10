@@ -366,7 +366,7 @@ boolean Manifest::check_if_remote_exists(HTTPHost &http,
 
   trace("--MANIFEST-- Manifest::check_if_remote_exists\n");
 
-  memset(&request, 0, sizeof(HTTPRequestInfo));
+  request.clear();
   snprintf(request.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, basedir);
 
   ret = http.head(request);
@@ -393,9 +393,9 @@ HTTPHostStatus Manifest::get_remote(HTTPHost &http, HTTPRequestInfo &request,
   trace("--MANIFEST-- Manifest::get_remote\n");
 
   this->clear();
-  memset(&request, 0, sizeof(HTTPRequestInfo));
+  request.clear();
   snprintf(request.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, basedir);
-  strcpy(request.expected_type, "text/plain");
+  request.allowed_types = HTTPRequestInfo::plaintext_types;
 
   ScopedFile<FILE, fclose> f = fopen_unsafe(REMOTE_MANIFEST_TXT, "w+b");
   if(!f)
@@ -409,6 +409,7 @@ HTTPHostStatus Manifest::get_remote(HTTPHost &http, HTTPRequestInfo &request,
   {
     warn("Processing " REMOTE_MANIFEST_TXT " failed (code %d; error: %s)\n",
      request.status_code, HTTPHost::get_error_string(ret));
+    request.print_response();
     return ret;
   }
 
@@ -601,8 +602,8 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
     }
   }
 
-  memset(&request, 0, sizeof(HTTPRequestInfo));
-  strcpy(request.expected_type, "application/octet-stream");
+  request.clear();
+  request.allowed_types = HTTPRequestInfo::binary_types;
   snprintf(request.url, LINE_BUF_LEN, "%s/%08x%08x%08x%08x%08x%08x%08x%08x", basedir,
     e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
     e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7]);

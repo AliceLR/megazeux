@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2020 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -699,8 +700,9 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         goto err_try_next_host;
 
       // Grab the file containing the names of the current Stable and Unstable
+      request.clear();
       strcpy(request.url, "/" UPDATES_TXT);
-      strcpy(request.expected_type, "text/plain");
+      request.allowed_types = HTTPRequestInfo::plaintext_types;
 
       status = http.get(request, f);
       rewind(f);
@@ -709,6 +711,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         break;
 
       trace("--UPDATER-- Failed to fetch " UPDATES_TXT ".\n");
+      request.print_response();
 
       // Stop early on redirect and client error codes
       if(status == HOST_HTTP_REDIRECT || status == HOST_HTTP_CLIENT_ERROR)
@@ -722,9 +725,12 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     {
       if(!is_automatic)
       {
+        warn("Failed to download \"" UPDATES_TXT "\" (code %d; error: %s)\n",
+         request.status_code, HTTPHost::get_error_string(status));
+        request.print_response();
+
         snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
-         UPDATES_TXT "\" (%d/%s).\n", request.status_code,
-         HTTPHost::get_error_string(status));
+         UPDATES_TXT "\" (%d/%d).\n", request.status_code, status);
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
         error_message(E_UPDATE, 16, widget_buf);
       }

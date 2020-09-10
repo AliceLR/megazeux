@@ -22,6 +22,7 @@
 #define __HTTPHOST_HPP
 
 #include "../compat.h"
+#include "../io/vfile.h"
 #include "Host.hpp"
 
 #include <stdio.h> // for FILE
@@ -47,6 +48,7 @@ enum HTTPHostStatus
   HOST_HTTP_INVALID_CONTENT_LENGTH,
   HOST_HTTP_INVALID_TRANSFER_ENCODING,
   HOST_HTTP_INVALID_CONTENT_TYPE,
+  HOST_HTTP_INVALID_CONTENT_TYPE_PARAMS,
   HOST_HTTP_INVALID_CONTENT_ENCODING,
   HOST_HTTP_INVALID_CHUNK_LENGTH,
   HOST_ZLIB_INVALID_DATA,
@@ -56,17 +58,42 @@ enum HTTPHostStatus
   HOST_STATUS_ERROR_MAX
 };
 
+enum HTTPEncodingType
+{
+  EN_UNSUPPORTED,
+  EN_NORMAL,
+  EN_CHUNKED,
+  EN_GZIP
+};
+
 /**
  * Struct for HTTP request and response data.
  */
-struct HTTPRequestInfo
+struct UPDATER_LIBSPEC HTTPRequestInfo
 {
-  char url[1024];
-  char expected_type[64];
+  static const int URL_BUF_SIZE = 256;
+  static const int STATUS_BUF_SIZE = 32;
+  static const int CONTENT_TYPE_BUF_SIZE = 64;
+  static const int ENC_BUF_SIZE = 32;
+
+  static const char * const plaintext_types[];
+  static const char * const binary_types[];
+
+  char url[URL_BUF_SIZE];
+  const char * const *allowed_types;
   int status_type;
   int status_code;
-  char status_message[32];
-  char content_type[64];
+  char status_message[STATUS_BUF_SIZE];
+  char content_type[CONTENT_TYPE_BUF_SIZE];
+  char content_type_params[CONTENT_TYPE_BUF_SIZE];
+  char content_encoding[ENC_BUF_SIZE];
+  char transfer_encoding[ENC_BUF_SIZE];
+  size_t content_length;
+  HTTPEncodingType transfer_encoding_type;
+  HTTPEncodingType content_encoding_type;
+
+  void clear();
+  void print_response() const;
 };
 
 /**
@@ -75,10 +102,16 @@ struct HTTPRequestInfo
 class UPDATER_LIBSPEC HTTPHost: public Host
 {
 private:
+  HTTPHostStatus _get(HTTPRequestInfo &request, vfile *file);
+
+protected:
   ssize_t http_receive_line(char *buffer, size_t len);
   ssize_t http_send_line(const char *message);
-  boolean http_read_status(HTTPRequestInfo &dest, const char *status,
+  HTTPHostStatus http_read_status(HTTPRequestInfo &dest, const char *status,
    size_t status_len);
+  HTTPHostStatus http_read_header_line(HTTPRequestInfo &dest, char *h,
+   size_t h_len);
+  HTTPHostStatus http_filter_content_type(const HTTPRequestInfo &request) const;
   boolean http_skip_headers();
 
 public:
@@ -114,6 +147,18 @@ public:
    * @return see HTTPHostStatus.
    */
   HTTPHostStatus get(HTTPRequestInfo &request, FILE *file);
+
+  /**
+   * Send a GET request and stream the response (if any) to a buffer.
+   * Use request.content_length to determine the length of the response.
+   *
+   * @param request       HTTP request to send; returns response data.
+   * @param buffer        Buffer to stream to.
+   * @param buffer_len    Size of buffer.
+   *
+   * @return see HTTPHostStatus.
+   */
+  HTTPHostStatus get(HTTPRequestInfo &request, char *buffer, size_t buffer_len);
 
 #ifdef NETWORK_DEADCODE
 
