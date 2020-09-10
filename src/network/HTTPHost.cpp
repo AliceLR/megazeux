@@ -579,7 +579,7 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
   // Use Bytef for these buffers since they'll mostly interact with zlib...
   // outbuf will be expanded when/if it's needed.
   ScopedBuffer<Bytef> block(BLOCK_SIZE);
-  ScopedBuffer<Bytef> outbuf(0);
+  ScopedBuffer<Bytef> outbuf;
   if(!block)
     return HOST_ALLOC_FAILED;
 

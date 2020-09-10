@@ -86,7 +86,7 @@ private:
   ScopedBuffer &operator=(const ScopedBuffer &) { return *this; }
 
 public:
-  explicit ScopedBuffer(size_t length): ptr(nullptr), alloc(length)
+  explicit ScopedBuffer(size_t length = 0): ptr(nullptr), alloc(length)
   {
 #ifdef IS_CXX_11
     static_assert(std::is_trivial<T>::value,
