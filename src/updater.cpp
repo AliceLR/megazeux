@@ -711,7 +711,6 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         break;
 
       trace("--UPDATER-- Failed to fetch " UPDATES_TXT ".\n");
-      request.print_response();
 
       // Stop early on redirect and client error codes
       if(status == HOST_HTTP_REDIRECT || status == HOST_HTTP_CLIENT_ERROR)
