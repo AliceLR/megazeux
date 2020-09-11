@@ -35,9 +35,9 @@
 #define BLOCK_SIZE    4096UL
 #define LINE_BUF_LEN  256
 
-static ssize_t zlib_skip_gzip_header(void *initial, unsigned long len)
+static ssize_t zlib_skip_gzip_header(Bytef *initial, unsigned long len)
 {
-  Bytef *gzip = (Bytef *)initial;
+  Bytef *gzip = initial;
   uint8_t flags;
 
   if(len < 10)
@@ -78,7 +78,7 @@ static ssize_t zlib_skip_gzip_header(void *initial, unsigned long len)
     gzip += 2;
 
   // Return number of bytes to skip from buffer
-  return gzip - (Bytef *)initial;
+  return gzip - initial;
 }
 
 #ifdef NETWORK_DEADCODE
