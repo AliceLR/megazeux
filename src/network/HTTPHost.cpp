@@ -121,6 +121,21 @@ void HTTPRequestInfo::clear()
   memset(this, 0, sizeof(HTTPRequestInfo));
 }
 
+void HTTPRequestInfo::clear_response()
+{
+  status_type = 0;
+  status_code = 0;
+  status_message[0] = '\0';
+  content_type[0] = '\0';
+  content_type_params[0] = '\0';
+  content_encoding[0] = '\0';
+  transfer_encoding[0] = '\0';
+  content_length = 0;
+  final_length = 0;
+  transfer_encoding_type = HTTPRequestInfo::EN_NORMAL;
+  content_encoding_type = HTTPRequestInfo::EN_NORMAL;
+}
+
 void HTTPRequestInfo::print_response() const
 {
   boolean params = this->content_type_params[0] != '\0';
@@ -462,6 +477,7 @@ HTTPHostStatus HTTPHost::head(HTTPRequestInfo &request)
   ssize_t line_len;
 
   trace("--HOST-- HTTPHost::head\n");
+  request.clear_response();
 
   snprintf(line, LINE_BUF_LEN, "HEAD %s HTTP/1.1", request.url);
   line[LINE_BUF_LEN - 1] = 0;
@@ -516,6 +532,7 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
   z_stream stream;
 
   trace("--HOST-- HTTPHost::get\n");
+  request.clear_response();
 
   // Tell the server that we support pipelining
   snprintf(line, LINE_BUF_LEN, "GET %s HTTP/1.1", request.url);
@@ -568,8 +585,6 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
   }
 
   // Now parse the HTTP headers, extracting only the pertinent fields
-  request.content_encoding_type = HTTPRequestInfo::EN_NORMAL;
-  request.transfer_encoding_type = HTTPRequestInfo::EN_NORMAL;
 
   while(true)
   {

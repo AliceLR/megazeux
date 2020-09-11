@@ -94,6 +94,7 @@ struct UPDATER_LIBSPEC HTTPRequestInfo
   HTTPEncodingType content_encoding_type;
 
   void clear();
+  void clear_response();
   void print_response() const;
 };
 
