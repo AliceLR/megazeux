@@ -675,8 +675,10 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     Manifest removed, replaced, added, delete_list;
     ManifestEntry *e;
 
-    char buffer[LINE_BUF_LEN], *value;
-    int i = 0, entries = 0;
+    char buffer[LINE_BUF_LEN];
+    char *value = nullptr;
+    int i = 0;
+    int entries = 0;
     char update_branch[LINE_BUF_LEN];
     const char *version = VERSION;
     unsigned int retries;
@@ -737,8 +739,9 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     mfopen(updates_txt, request.final_length, &mf);
     while(mfsafegets(buffer, LINE_BUF_LEN, &mf))
     {
-      char *m = buffer, *key;
-      value = NULL;
+      char *m = buffer;
+      char *key;
+      value = nullptr;
 
       key = strsep(&m, ":\n");
       if(!key)

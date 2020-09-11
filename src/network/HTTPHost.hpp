@@ -58,14 +58,6 @@ enum HTTPHostStatus
   HOST_STATUS_ERROR_MAX
 };
 
-enum HTTPEncodingType
-{
-  EN_UNSUPPORTED,
-  EN_NORMAL,
-  EN_CHUNKED,
-  EN_GZIP
-};
-
 /**
  * Struct for HTTP request and response data.
  */
@@ -78,6 +70,14 @@ struct UPDATER_LIBSPEC HTTPRequestInfo
 
   static const char * const plaintext_types[];
   static const char * const binary_types[];
+
+  enum HTTPEncodingType
+  {
+    EN_UNSUPPORTED,
+    EN_NORMAL,
+    EN_CHUNKED,
+    EN_GZIP
+  };
 
   char url[URL_BUF_SIZE];
   const char * const *allowed_types;

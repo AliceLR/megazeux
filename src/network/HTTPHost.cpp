@@ -323,7 +323,7 @@ HTTPHostStatus HTTPHost::http_read_header_line(HTTPRequestInfo &dest, char *h,
     if(endptr[0])
       return HOST_HTTP_INVALID_CONTENT_LENGTH;
 
-    dest.transfer_encoding_type = HTTPEncodingType::EN_NORMAL;
+    dest.transfer_encoding_type = HTTPRequestInfo::EN_NORMAL;
   }
   else
 
@@ -333,9 +333,9 @@ HTTPHostStatus HTTPHost::http_read_header_line(HTTPRequestInfo &dest, char *h,
     snprintf(dest.transfer_encoding, len, "%s", value);
     dest.transfer_encoding[len - 1] = '\0';
 
-    dest.transfer_encoding_type = HTTPEncodingType::EN_UNSUPPORTED;
+    dest.transfer_encoding_type = HTTPRequestInfo::EN_UNSUPPORTED;
     if(strcmp(value, "chunked") == 0)
-      dest.transfer_encoding_type = HTTPEncodingType::EN_CHUNKED;
+      dest.transfer_encoding_type = HTTPRequestInfo::EN_CHUNKED;
   }
   else
 
@@ -366,9 +366,9 @@ HTTPHostStatus HTTPHost::http_read_header_line(HTTPRequestInfo &dest, char *h,
     snprintf(dest.content_encoding, len, "%s", value);
     dest.content_encoding[len - 1] = '\0';
 
-    dest.content_encoding_type = HTTPEncodingType::EN_UNSUPPORTED;
+    dest.content_encoding_type = HTTPRequestInfo::EN_UNSUPPORTED;
     if(strcmp(value, "gzip") == 0 || strcmp(value, "x-gzip") == 0)
-      dest.content_encoding_type = HTTPEncodingType::EN_GZIP;
+      dest.content_encoding_type = HTTPRequestInfo::EN_GZIP;
   }
   return HOST_SUCCESS;
 }
@@ -570,10 +570,10 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
   if(result != HOST_SUCCESS)
     return result;
 
-  if(request.transfer_encoding_type == HTTPEncodingType::EN_UNSUPPORTED)
+  if(request.transfer_encoding_type == HTTPRequestInfo::EN_UNSUPPORTED)
     return HOST_HTTP_INVALID_TRANSFER_ENCODING;
 
-  if(request.content_encoding_type == HTTPEncodingType::EN_UNSUPPORTED)
+  if(request.content_encoding_type == HTTPRequestInfo::EN_UNSUPPORTED)
     return HOST_HTTP_INVALID_CONTENT_ENCODING;
 
   // Use Bytef for these buffers since they'll mostly interact with zlib...
@@ -597,13 +597,13 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
      */
     if(!mid_chunk)
     {
-      if(request.transfer_encoding_type == HTTPEncodingType::EN_NORMAL)
+      if(request.transfer_encoding_type == HTTPRequestInfo::EN_NORMAL)
       {
         len = request.content_length;
       }
       else
 
-      if(request.transfer_encoding_type == HTTPEncodingType::EN_CHUNKED)
+      if(request.transfer_encoding_type == HTTPRequestInfo::EN_CHUNKED)
       {
         char *endptr, *length, *buf = line;
 
@@ -635,7 +635,7 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
      */
     if(len == 0)
     {
-      if(request.transfer_encoding_type == HTTPEncodingType::EN_CHUNKED)
+      if(request.transfer_encoding_type == HTTPRequestInfo::EN_CHUNKED)
         if(!http_skip_headers())
           return HOST_HTTP_INVALID_HEADER;
       break;
@@ -658,7 +658,7 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
     if(!this->receive(block, block_size))
       return HOST_RECV_FAILED;
 
-    if(request.content_encoding_type == HTTPEncodingType::EN_GZIP)
+    if(request.content_encoding_type == HTTPRequestInfo::EN_GZIP)
     {
       /* This is the first block requiring inflation. In this case, we must
        * parse the GZIP header in order to compute an offset to the DEFLATE
@@ -758,13 +758,13 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
      */
     if(len == pos)
     {
-      if(request.transfer_encoding_type == HTTPEncodingType::EN_NORMAL)
+      if(request.transfer_encoding_type == HTTPRequestInfo::EN_NORMAL)
       {
         break;
       }
       else
 
-      if(request.transfer_encoding_type == HTTPEncodingType::EN_CHUNKED)
+      if(request.transfer_encoding_type == HTTPRequestInfo::EN_CHUNKED)
       {
         if(http_receive_line(line, LINE_BUF_LEN) != 0)
           return HOST_HTTP_INVALID_HEADER;
