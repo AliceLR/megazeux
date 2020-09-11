@@ -428,8 +428,8 @@ HTTPHostStatus HTTPHost::http_filter_content_type(const HTTPRequestInfo &request
       const char *params = strchr(type, ';');
       if(params)
       {
-        size_t mime_len = (params - type);
-        if(strncasecmp(type, request.content_type, mime_len) == 0)
+        size_t type_len = (params - type);
+        if(strncasecmp(type, request.content_type, type_len) == 0)
         {
           params++;
           while(isspace(*params))
