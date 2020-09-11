@@ -313,9 +313,21 @@ HTTPHostStatus HTTPHost::http_read_header_line(HTTPRequestInfo &dest, char *h,
    *   Transfer-Encoding  Instead of Content-Length, can only be "chunked"
    *   Content-Type       Text or binary; also used for sanity checks
    *   Content-Encoding   Present and set to 'gzip' if deflated
+   *
+   * NOTE: all header field names are case-insensitive.
+   * https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2
+   * https://tools.ietf.org/html/rfc7230#section-3.2
+   *
+   * NOTE: all content coding names are case-insensitive.
+   * https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.5
+   * https://tools.ietf.org/html/rfc7231#section-3.1.2.1
+   *
+   * NOTE: all transfer coding names are case-insensitive.
+   * https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.6
+   * https://tools.ietf.org/html/rfc7230#section-4
    */
 
-  if(strcmp(key, "Content-Length") == 0)
+  if(strcasecmp(key, "Content-Length") == 0)
   {
     char *endptr;
 
@@ -327,19 +339,19 @@ HTTPHostStatus HTTPHost::http_read_header_line(HTTPRequestInfo &dest, char *h,
   }
   else
 
-  if(strcmp(key, "Transfer-Encoding") == 0)
+  if(strcasecmp(key, "Transfer-Encoding") == 0)
   {
     const size_t len = ARRAY_SIZE(dest.transfer_encoding);
     snprintf(dest.transfer_encoding, len, "%s", value);
     dest.transfer_encoding[len - 1] = '\0';
 
     dest.transfer_encoding_type = HTTPRequestInfo::EN_UNSUPPORTED;
-    if(strcmp(value, "chunked") == 0)
+    if(strcasecmp(value, "chunked") == 0)
       dest.transfer_encoding_type = HTTPRequestInfo::EN_CHUNKED;
   }
   else
 
-  if(strcmp(key, "Content-Type") == 0)
+  if(strcasecmp(key, "Content-Type") == 0)
   {
     const char *type = strsep(&value, ";");
 
@@ -360,14 +372,14 @@ HTTPHostStatus HTTPHost::http_read_header_line(HTTPRequestInfo &dest, char *h,
   }
   else
 
-  if(strcmp(key, "Content-Encoding") == 0)
+  if(strcasecmp(key, "Content-Encoding") == 0)
   {
     const size_t len = ARRAY_SIZE(dest.content_encoding);
     snprintf(dest.content_encoding, len, "%s", value);
     dest.content_encoding[len - 1] = '\0';
 
     dest.content_encoding_type = HTTPRequestInfo::EN_UNSUPPORTED;
-    if(strcmp(value, "gzip") == 0 || strcmp(value, "x-gzip") == 0)
+    if(strcasecmp(value, "gzip") == 0 || strcasecmp(value, "x-gzip") == 0)
       dest.content_encoding_type = HTTPRequestInfo::EN_GZIP;
   }
   return HOST_SUCCESS;
@@ -376,6 +388,13 @@ HTTPHostStatus HTTPHost::http_read_header_line(HTTPRequestInfo &dest, char *h,
 /**
  * Check the content_type and content_type_params fields of a request response
  * against the allowed_types array provided with the request.
+ *
+ * NOTE: all media types, subtypes, and parameter names are case-insensitive.
+ * https://tools.ietf.org/html/rfc7231#section-3.1.1.1
+ *
+ * NOTE: all charset tokens are case-insensitive.
+ * https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.4
+ * https://tools.ietf.org/html/rfc7231#section-3.1.1.2
  */
 HTTPHostStatus HTTPHost::http_filter_content_type(const HTTPRequestInfo &request) const
 {
@@ -549,6 +568,8 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
   }
 
   // Now parse the HTTP headers, extracting only the pertinent fields
+  request.content_encoding_type = HTTPRequestInfo::EN_NORMAL;
+  request.transfer_encoding_type = HTTPRequestInfo::EN_NORMAL;
 
   while(true)
   {
