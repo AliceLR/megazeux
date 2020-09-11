@@ -112,7 +112,7 @@ const char * const HTTPRequestInfo::plaintext_types[] =
 
 const char * const HTTPRequestInfo::binary_types[] =
 {
-  "application/octet-stream",
+  "application/octet-stream;*",
   nullptr
 };
 
@@ -422,18 +422,30 @@ HTTPHostStatus HTTPHost::http_filter_content_type(const HTTPRequestInfo &request
        * The provided type may have a list of params. If the type has params
        * (denoted by ;), the request params must exactly match the allowed type
        * params. If the allowed type has no params, the response must also not
-       * have any params.
+       * have any params. If the allowed type has "*" provided in place of
+       * params, any or no params are accepted.
        */
       const char *type = request.allowed_types[i];
       const char *params = strchr(type, ';');
       if(params)
       {
         size_t type_len = (params - type);
-        if(strncasecmp(type, request.content_type, type_len) == 0)
+        if(type_len >= ARRAY_SIZE(request.content_type))
+        {
+          warn("Content-Type filter '%s' exceeds buffer length (REPORT THIS).\n",
+           type);
+          continue;
+        }
+
+        if(strncasecmp(type, request.content_type, type_len) == 0 &&
+         request.content_type[type_len] == '\0')
         {
           params++;
           while(isspace(*params))
             params++;
+
+          if(strcmp(params, "*") == 0)
+            break;
 
           if(strcasecmp(params, request.content_type_params) == 0)
             break;
