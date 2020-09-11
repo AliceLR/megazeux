@@ -79,8 +79,19 @@ struct UPDATER_LIBSPEC HTTPRequestInfo
     EN_GZIP
   };
 
+  /**
+   * This field must be set to the remote URL to request.
+   * It may be overwritten in the case of a redirect.
+   */
   char url[URL_BUF_SIZE];
+
+  /**
+   * Set this field to a nullptr-terminated list of strings to filter the
+   * Content-Type of the response. Leaving it nullptr allows all content types.
+   */
   const char * const *allowed_types;
+
+  // Response fields.
   int status_type;
   int status_code;
   char status_message[STATUS_BUF_SIZE];
