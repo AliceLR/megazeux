@@ -25,6 +25,7 @@
 #include <zlib.h>
 
 #include "HTTPHost.hpp"
+#include "Scoped.hpp"
 #include "../util.h"
 
 #ifdef IS_CXX_11
@@ -34,9 +35,9 @@
 #define BLOCK_SIZE    4096UL
 #define LINE_BUF_LEN  256
 
-static ssize_t zlib_skip_gzip_header(char *initial, unsigned long len)
+static ssize_t zlib_skip_gzip_header(Bytef *initial, unsigned long len)
 {
-  Bytef *gzip = (Bytef *)initial;
+  Bytef *gzip = initial;
   uint8_t flags;
 
   if(len < 10)
@@ -77,7 +78,7 @@ static ssize_t zlib_skip_gzip_header(char *initial, unsigned long len)
     gzip += 2;
 
   // Return number of bytes to skip from buffer
-  return gzip - (Bytef *)initial;
+  return gzip - initial;
 }
 
 #ifdef NETWORK_DEADCODE
@@ -101,6 +102,62 @@ static int zlib_forge_gzip_header(char *buffer)
 
 #endif
 
+const char * const HTTPRequestInfo::plaintext_types[] =
+{
+  "text/plain",
+  "text/plain;charset=us",
+  "text/plain;charset=utf-8",
+  nullptr
+};
+
+const char * const HTTPRequestInfo::binary_types[] =
+{
+  "application/octet-stream;*",
+  nullptr
+};
+
+void HTTPRequestInfo::clear()
+{
+  memset(this, 0, sizeof(HTTPRequestInfo));
+}
+
+void HTTPRequestInfo::clear_response()
+{
+  status_type = 0;
+  status_code = 0;
+  status_message[0] = '\0';
+  content_type[0] = '\0';
+  content_type_params[0] = '\0';
+  content_encoding[0] = '\0';
+  transfer_encoding[0] = '\0';
+  content_length = 0;
+  final_length = 0;
+  transfer_encoding_type = HTTPRequestInfo::EN_NORMAL;
+  content_encoding_type = HTTPRequestInfo::EN_NORMAL;
+}
+
+void HTTPRequestInfo::print_response() const
+{
+  boolean params = this->content_type_params[0] != '\0';
+  fprintf(stderr,
+    "  URL               : %s\n"
+    "  Status            : %d %s\n"
+    "  Content-Type      : %s%s%s\n"
+    "  Content-Encoding  : %s\n"
+    "  Transfer-Encoding : %s\n"
+    "  Content-Length    : %zu\n",
+    this->url,
+    this->status_code, this->status_message,
+    this->content_type,
+    (params ? "; " : ""),
+    (params ? this->content_type_params : ""),
+    this->content_encoding,
+    this->transfer_encoding,
+    this->content_length
+  );
+  fflush(stderr);
+}
+
 const char *HTTPHost::get_error_string(HTTPHostStatus status)
 {
 #ifdef IS_CXX_11
@@ -120,6 +177,8 @@ const char *HTTPHost::get_error_string(HTTPHostStatus status)
       return "Connection issue occurred (send() failed).";
     case HOST_RECV_FAILED:
       return "Connection issue occurred (receive() failed).";
+    case HOST_ALLOC_FAILED:
+      return "Failed to allocate buffer memory.";
     case HOST_HTTP_EXCEEDED_BUFFER:
       return "Operation would exceed the provided buffer"
        " (INTERNAL ERROR: REPORT THIS!)";
@@ -210,8 +269,8 @@ ssize_t HTTPHost::http_send_line(const char *message)
   return len;
 }
 
-boolean HTTPHost::http_read_status(HTTPRequestInfo &dest, const char *status,
- size_t status_len)
+HTTPHostStatus HTTPHost::http_read_status(HTTPRequestInfo &dest,
+ const char *status, size_t status_len)
 {
   /* These conditionals check the status line is formatted:
    *   "HTTP/1.? XXX ..." (where ? is 0 or 1, XXX is the status code,
@@ -236,17 +295,173 @@ boolean HTTPHost::http_read_status(HTTPRequestInfo &dest, const char *status,
   trace("--HOST-- HTTPHost::http_read_status: %s (%s, %s, %s)\n",
    status, ver, code, dest.status_message);
   if(res != 3 || (ver[0] != '0' && ver[0] != '1'))
-    return false;
+    return HOST_HTTP_INVALID_STATUS;
 
   // Make sure the code is a 3-digit number
   c = strtol(code, NULL, 10);
   if(c < 100)
-    return false;
+    return HOST_HTTP_INVALID_STATUS;
 
   dest.status_code = c;
   dest.status_type = c / 100;
 
-  return true;
+  return HOST_SUCCESS;
+}
+
+HTTPHostStatus HTTPHost::http_read_header_line(HTTPRequestInfo &dest, char *h,
+ size_t h_len)
+{
+  char *next = h;
+  char *key = strsep(&next, ":");
+  char *value = strsep(&next, ":");
+
+  if(!key || !value)
+    return HOST_HTTP_INVALID_HEADER;
+
+  // Skip common prefix space if present.
+  while(isspace(*value))
+    value++;
+
+  /* Parse pertinent headers. These are:
+   *
+   *   Content-Length     Necessary to determine payload length
+   *   Transfer-Encoding  Instead of Content-Length, can only be "chunked"
+   *   Content-Type       Text or binary; also used for sanity checks
+   *   Content-Encoding   Present and set to 'gzip' if deflated
+   *
+   * NOTE: all header field names are case-insensitive.
+   * https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2
+   * https://tools.ietf.org/html/rfc7230#section-3.2
+   *
+   * NOTE: all content coding names are case-insensitive.
+   * https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.5
+   * https://tools.ietf.org/html/rfc7231#section-3.1.2.1
+   *
+   * NOTE: all transfer coding names are case-insensitive.
+   * https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.6
+   * https://tools.ietf.org/html/rfc7230#section-4
+   */
+
+  if(strcasecmp(key, "Content-Length") == 0)
+  {
+    char *endptr;
+
+    dest.content_length = strtoul(value, &endptr, 10);
+    if(endptr[0])
+      return HOST_HTTP_INVALID_CONTENT_LENGTH;
+
+    dest.transfer_encoding_type = HTTPRequestInfo::EN_NORMAL;
+  }
+  else
+
+  if(strcasecmp(key, "Transfer-Encoding") == 0)
+  {
+    const size_t len = ARRAY_SIZE(dest.transfer_encoding);
+    snprintf(dest.transfer_encoding, len, "%s", value);
+    dest.transfer_encoding[len - 1] = '\0';
+
+    dest.transfer_encoding_type = HTTPRequestInfo::EN_UNSUPPORTED;
+    if(strcasecmp(value, "chunked") == 0)
+      dest.transfer_encoding_type = HTTPRequestInfo::EN_CHUNKED;
+  }
+  else
+
+  if(strcasecmp(key, "Content-Type") == 0)
+  {
+    const char *type = strsep(&value, ";");
+
+    size_t len = ARRAY_SIZE(dest.content_type);
+    snprintf(dest.content_type, len, "%s", type);
+    dest.content_type[len - 1] = '\0';
+    if(value)
+    {
+      while(isspace(*value))
+        value++;
+
+      len = ARRAY_SIZE(dest.content_type_params);
+      snprintf(dest.content_type_params, len, "%s", value);
+      dest.content_type_params[len - 1] = '\0';
+    }
+    else
+      dest.content_type_params[0] = '\0';
+  }
+  else
+
+  if(strcasecmp(key, "Content-Encoding") == 0)
+  {
+    const size_t len = ARRAY_SIZE(dest.content_encoding);
+    snprintf(dest.content_encoding, len, "%s", value);
+    dest.content_encoding[len - 1] = '\0';
+
+    dest.content_encoding_type = HTTPRequestInfo::EN_UNSUPPORTED;
+    if(strcasecmp(value, "gzip") == 0 || strcasecmp(value, "x-gzip") == 0)
+      dest.content_encoding_type = HTTPRequestInfo::EN_GZIP;
+  }
+  return HOST_SUCCESS;
+}
+
+/**
+ * Check the content_type and content_type_params fields of a request response
+ * against the allowed_types array provided with the request.
+ *
+ * NOTE: all media types, subtypes, and parameter names are case-insensitive.
+ * https://tools.ietf.org/html/rfc7231#section-3.1.1.1
+ *
+ * NOTE: all charset tokens are case-insensitive.
+ * https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.4
+ * https://tools.ietf.org/html/rfc7231#section-3.1.1.2
+ */
+HTTPHostStatus HTTPHost::http_filter_content_type(const HTTPRequestInfo &request) const
+{
+  if(request.allowed_types)
+  {
+    size_t i;
+    for(i = 0; request.allowed_types[i]; i++)
+    {
+      /**
+       * The provided type may have a list of params. If the type has params
+       * (denoted by ;), the request params must exactly match the allowed type
+       * params. If the allowed type has no params, the response must also not
+       * have any params. If the allowed type has "*" provided in place of
+       * params, any or no params are accepted.
+       */
+      const char *type = request.allowed_types[i];
+      const char *params = strchr(type, ';');
+      if(params)
+      {
+        size_t type_len = (params - type);
+        if(type_len >= ARRAY_SIZE(request.content_type))
+        {
+          warn("Content-Type filter '%s' exceeds buffer length (REPORT THIS).\n",
+           type);
+          continue;
+        }
+
+        if(strncasecmp(type, request.content_type, type_len) == 0 &&
+         request.content_type[type_len] == '\0')
+        {
+          params++;
+          while(isspace(*params))
+            params++;
+
+          if(strcmp(params, "*") == 0)
+            return HOST_SUCCESS;
+
+          if(strcasecmp(params, request.content_type_params) == 0)
+            return HOST_SUCCESS;
+        }
+      }
+      else
+
+      if(request.content_type_params[0] == '\0')
+      {
+        if(strcasecmp(type, request.content_type) == 0)
+          return HOST_SUCCESS;
+      }
+    }
+    return HOST_HTTP_INVALID_CONTENT_TYPE;
+  }
+  return HOST_SUCCESS;
 }
 
 boolean HTTPHost::http_skip_headers()
@@ -273,6 +488,7 @@ HTTPHostStatus HTTPHost::head(HTTPRequestInfo &request)
   ssize_t line_len;
 
   trace("--HOST-- HTTPHost::head\n");
+  request.clear_response();
 
   snprintf(line, LINE_BUF_LEN, "HEAD %s HTTP/1.1", request.url);
   line[LINE_BUF_LEN - 1] = 0;
@@ -294,35 +510,40 @@ HTTPHostStatus HTTPHost::head(HTTPRequestInfo &request)
     return (HTTPHostStatus)line_len;
   }
 
-  if(!http_read_status(request, line, line_len))
+  if(http_read_status(request, line, line_len) != HOST_SUCCESS)
   {
     warn("Invalid status: %s\nFailed for url '%s'\n", line, request.url);
     return HOST_HTTP_INVALID_STATUS;
   }
 
-  // TODO should probably read the headers!
-  if(!http_skip_headers())
-    return HOST_HTTP_INVALID_HEADER;
+  while(true)
+  {
+    line_len = http_receive_line(line, LINE_BUF_LEN);
+    if(line_len < 0)
+      return (HTTPHostStatus)line_len;
+
+    if(line_len == 0)
+      break;
+
+    HTTPHostStatus result = http_read_header_line(request, line, line_len);
+    if(result != HOST_SUCCESS)
+      return result;
+  }
 
   return HOST_SUCCESS;
 }
 
-HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
+HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
 {
-  boolean mid_inflate = false, mid_chunk = false, deflated = false;
-  unsigned int content_length = 0;
-  unsigned long len = 0, pos = 0;
+  boolean mid_inflate = false;
+  boolean mid_chunk = false;
+  size_t len = 0;
+  size_t pos = 0;
   char line[LINE_BUF_LEN];
   z_stream stream;
-  ssize_t line_len;
 
   trace("--HOST-- HTTPHost::get\n");
-
-  enum {
-    NONE,
-    NORMAL,
-    CHUNKED,
-  } transfer_type = NONE;
+  request.clear_response();
 
   // Tell the server that we support pipelining
   snprintf(line, LINE_BUF_LEN, "GET %s HTTP/1.1", request.url);
@@ -345,14 +566,14 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
     return HOST_SEND_FAILED;
 
   // Read in the HTTP status line
-  line_len = http_receive_line(line, LINE_BUF_LEN);
+  ssize_t line_len = http_receive_line(line, LINE_BUF_LEN);
   if(line_len < 0)
   {
     warn("No response for url '%s': %zd!\n", request.url, line_len);
     return (HTTPHostStatus)line_len;
   }
 
-  if(!http_read_status(request, line, line_len))
+  if(http_read_status(request, line, line_len) != HOST_SUCCESS)
   {
     warn("Invalid status: %s\nFailed for url '%s'\n", line, request.url);
     return HOST_HTTP_INVALID_STATUS;
@@ -379,7 +600,6 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
   while(true)
   {
     ssize_t len = http_receive_line(line, LINE_BUF_LEN);
-    char *key, *value, *buf = line;
 
     if(len < 0)
       return HOST_HTTP_INVALID_HEADER;
@@ -387,72 +607,32 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
     if(len == 0)
       break;
 
-    key = strsep(&buf, ":");
-    value = strsep(&buf, ":");
-
-    if(!key || !value)
-      return HOST_HTTP_INVALID_HEADER;
-
-    // Skip common prefix space if present
-    if(value[0] == ' ')
-      value++;
-
-    /* Parse pertinent headers. These are:
-     *
-     *   Content-Length     Necessary to determine payload length
-     *   Transfer-Encoding  Instead of Content-Length, can only be "chunked"
-     *   Content-Type       Text or binary; also used for sanity checks
-     *   Content-Encoding   Present and set to 'gzip' if deflated
-     */
-
-    if(strcmp(key, "Content-Length") == 0)
-    {
-      char *endptr;
-
-      content_length = (unsigned int)strtoul(value, &endptr, 10);
-      if(endptr[0])
-        return HOST_HTTP_INVALID_CONTENT_LENGTH;
-
-      transfer_type = NORMAL;
-    }
-    else
-
-    if(strcmp(key, "Transfer-Encoding") == 0)
-    {
-      if(strcmp(value, "chunked") != 0)
-        return HOST_HTTP_INVALID_TRANSFER_ENCODING;
-
-      transfer_type = CHUNKED;
-    }
-    else
-
-    if(strcmp(key, "Content-Type") == 0)
-    {
-      const size_t len = ARRAY_SIZE(request.content_type);
-      snprintf(request.content_type, len, "%s", value);
-      request.content_type[len - 1] = '\0';
-
-      if(strcmp(value, request.expected_type) != 0)
-        return HOST_HTTP_INVALID_CONTENT_TYPE;
-    }
-    else
-
-    if(strcmp(key, "Content-Encoding") == 0)
-    {
-      if(strcmp(value, "gzip") != 0)
-        return HOST_HTTP_INVALID_CONTENT_ENCODING;
-
-      deflated = true;
-    }
+    HTTPHostStatus result = http_read_header_line(request, line, len);
+    if(result != HOST_SUCCESS)
+      return result;
   }
 
-  if(transfer_type != NORMAL && transfer_type != CHUNKED)
+  // Filter by Content-Type (if requested).
+  HTTPHostStatus result = http_filter_content_type(request);
+  if(result != HOST_SUCCESS)
+    return result;
+
+  if(request.transfer_encoding_type == HTTPRequestInfo::EN_UNSUPPORTED)
     return HOST_HTTP_INVALID_TRANSFER_ENCODING;
+
+  if(request.content_encoding_type == HTTPRequestInfo::EN_UNSUPPORTED)
+    return HOST_HTTP_INVALID_CONTENT_ENCODING;
+
+  // Use Bytef for these buffers since they'll mostly interact with zlib...
+  // outbuf will be expanded when/if it's needed.
+  ScopedBuffer<Bytef> block(BLOCK_SIZE);
+  ScopedBuffer<Bytef> outbuf;
+  if(!block)
+    return HOST_ALLOC_FAILED;
 
   while(true)
   {
     unsigned long block_size;
-    char block[BLOCK_SIZE];
 
     /* Both transfer mechanisms need preambles. For NORMAL, this will
      * happen only once, because we have a predetermined length for
@@ -464,13 +644,13 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
      */
     if(!mid_chunk)
     {
-      if(transfer_type == NORMAL)
+      if(request.transfer_encoding_type == HTTPRequestInfo::EN_NORMAL)
       {
-        len = content_length;
+        len = request.content_length;
       }
       else
 
-      if(transfer_type == CHUNKED)
+      if(request.transfer_encoding_type == HTTPRequestInfo::EN_CHUNKED)
       {
         char *endptr, *length, *buf = line;
 
@@ -502,7 +682,7 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
      */
     if(len == 0)
     {
-      if(transfer_type == CHUNKED)
+      if(request.transfer_encoding_type == HTTPRequestInfo::EN_CHUNKED)
         if(!http_skip_headers())
           return HOST_HTTP_INVALID_HEADER;
       break;
@@ -525,7 +705,7 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
     if(!this->receive(block, block_size))
       return HOST_RECV_FAILED;
 
-    if(deflated)
+    if(request.content_encoding_type == HTTPRequestInfo::EN_GZIP)
     {
       /* This is the first block requiring inflation. In this case, we must
        * parse the GZIP header in order to compute an offset to the DEFLATE
@@ -548,7 +728,7 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
          * the DEFLATE header too, which is what the -MAX_WBITS trick is for).
          */
         stream.avail_in = block_size - (unsigned long)deflate_offset;
-        stream.next_in = (Bytef *)&block[deflate_offset];
+        stream.next_in = &block[deflate_offset];
         stream.zalloc = Z_NULL;
         stream.zfree = Z_NULL;
         stream.opaque = Z_NULL;
@@ -561,27 +741,28 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
       else
       {
         stream.avail_in = block_size;
-        stream.next_in = (Bytef *)block;
+        stream.next_in = block;
       }
 
       while(true)
       {
-        char outbuf[BLOCK_SIZE];
-        int ret;
+        outbuf.resize(BLOCK_SIZE);
+        if(!outbuf)
+          return HOST_ALLOC_FAILED;
 
         // Each pass, only decompress a maximum of BLOCK_SIZE
         stream.avail_out = BLOCK_SIZE;
-        stream.next_out = (Bytef *)outbuf;
+        stream.next_out = outbuf;
 
         /* Perform the inflation (this will modify avail_in and
          * next_in automatically.
          */
-        ret = inflate(&stream, Z_NO_FLUSH);
+        int ret = inflate(&stream, Z_NO_FLUSH);
         if(ret != Z_OK && ret != Z_STREAM_END)
           return HOST_ZLIB_INFLATE_FAILED;
 
         // Push the block to disk
-        if(fwrite(outbuf, BLOCK_SIZE - stream.avail_out, 1, file) != 1)
+        if(vfwrite(outbuf, BLOCK_SIZE - stream.avail_out, 1, file) != 1)
           return HOST_FWRITE_FAILED;
 
         // If the stream has terminated, flag it and break out
@@ -607,14 +788,14 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
       /* If the transfer is not deflated, we can simply write out
        * block_size bytes to the file now.
        */
-      if(fwrite(block, block_size, 1, file) != 1)
+      if(vfwrite(block, block_size, 1, file) != 1)
         return HOST_FWRITE_FAILED;
     }
 
     pos += block_size;
 
     if(this->receive_callback)
-      this->receive_callback(ftell(file));
+      this->receive_callback(vftell(file));
 
     /* For NORMAL transfers we can now abort since we have reached the end
      * of our payload.
@@ -624,13 +805,13 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
      */
     if(len == pos)
     {
-      if(transfer_type == NORMAL)
+      if(request.transfer_encoding_type == HTTPRequestInfo::EN_NORMAL)
       {
         break;
       }
       else
 
-      if(transfer_type == CHUNKED)
+      if(request.transfer_encoding_type == HTTPRequestInfo::EN_CHUNKED)
       {
         if(http_receive_line(line, LINE_BUF_LEN) != 0)
           return HOST_HTTP_INVALID_HEADER;
@@ -638,7 +819,25 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
       }
     }
   }
+  request.final_length = vftell(file);
   return HOST_SUCCESS;
+}
+
+HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
+{
+  vfile *vf = vfile_init_fp(file, "wb");
+  HTTPHostStatus result = this->_get(request, vf);
+  // FIXME hack
+  free(vf);
+  return result;
+}
+
+HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, char *buffer, size_t len)
+{
+  vfile *vf = vfile_init_mem(buffer, len, "wb");
+  HTTPHostStatus result = this->_get(request, vf);
+  vfclose(vf);
+  return result;
 }
 
 #ifdef NETWORK_DEADCODE
