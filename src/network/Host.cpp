@@ -146,6 +146,7 @@ void Host::swap(Host &a, Host &b)
   std::swap(a.name, b.name);
   std::swap(a.endpoint, b.endpoint);
   std::swap(a.proxied, b.proxied);
+  std::swap(a.trace_raw, b.trace_raw);
   std::swap(a.af, b.af);
   std::swap(a.sockfd, b.sockfd);
   std::swap(a.timeout_ms, b.timeout_ms);
@@ -173,6 +174,8 @@ Host::Host(enum host_type type, enum host_family family)
   this->endpoint = nullptr;
   this->receive_callback = nullptr;
   this->cancel_callback = nullptr;
+  this->proxied = false;
+  this->trace_raw = false;
 }
 
 Host::~Host()
