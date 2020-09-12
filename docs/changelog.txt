@@ -82,6 +82,8 @@ DEVELOPERS
   regardless of the current cursor state/blinking (i.e. DJGPP).
 + Fixed "make build" error after using "make debuglink" with png
   support disabled.
++ Added const and restrict to the software render_graph and
+  render_layer implementations for a small performance boost.
 
 
 July 20th, 2020 - MZX 2.92e

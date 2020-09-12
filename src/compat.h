@@ -29,6 +29,10 @@
 #define __M_BEGIN_DECLS extern "C" {
 #define __M_END_DECLS   }
 
+#ifndef restrict
+#define restrict __restrict
+#endif
+
 #if __cplusplus >= 201103
 #define IS_CXX_11 1
 #define maybe_explicit explicit
@@ -104,6 +108,9 @@ typedef unsigned char boolean;
 
 #ifdef _MSC_VER
 #include "msvc.h"
+#ifndef restrict
+#define restrict __restrict
+#endif
 #endif
 
 #ifdef __APPLE__

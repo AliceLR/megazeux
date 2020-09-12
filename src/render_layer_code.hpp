@@ -62,8 +62,8 @@ static void render_layer_func(void *pixels, Uint32 pitch,
  int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR, int CLIP>
-static void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer);
+static void render_layer_func(void * restrict pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer);
 
 /**
  * Alignment of pixel buffer (8bpp).
@@ -374,7 +374,7 @@ static inline int select_color_16(Uint8 color, int tcol)
  * much faster to precompute in SMZX mode.
  */
 template<int BPP, int PPW, typename ALIGNTYPE>
-static inline void set_colors_mzx(ALIGNTYPE dest[16], ALIGNTYPE cols[4])
+static inline void set_colors_mzx(ALIGNTYPE (&dest)[16], ALIGNTYPE (&cols)[4])
 {
   ALIGNTYPE bg = cols[0];
   ALIGNTYPE fg = cols[1];
@@ -453,7 +453,7 @@ static inline void set_colors_mzx(ALIGNTYPE dest[16], ALIGNTYPE cols[4])
  * This optimization is only useful for PPW >= 2 renderers.
  */
 template<int PPW, typename ALIGNTYPE>
-static inline ALIGNTYPE get_colors_mzx(ALIGNTYPE set_colors[16],
+static inline ALIGNTYPE get_colors_mzx(ALIGNTYPE (&set_colors)[16],
  Uint8 char_byte, int write_pos)
 {
   Uint8 mask = ((0xFF) << (8 - PPW)) & 0xFF;
@@ -495,8 +495,8 @@ static inline ALIGNTYPE get_colors_mzx(ALIGNTYPE set_colors[16],
  * The optimizer will optimize out the unnecessary parts for relevant renderers.
  */
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR, int CLIP>
-static inline void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer)
+static inline void render_layer_func(void * restrict pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer)
 {
 #ifdef IS_CXX_11
   constexpr int BPP = sizeof(PIXTYPE) * 8;
@@ -534,7 +534,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
   Uint32 ch_x, ch_y;
   Uint16 c;
 
-  struct char_element *src = layer->data;
+  const struct char_element *src = layer->data;
   int row;
 
   // Transparency vars...
@@ -542,7 +542,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
   ALIGNTYPE bgdata;
   ALIGNTYPE mask = (PIXTYPE)(~0);
 
-  Uint8 *char_ptr;
+  const Uint8 *char_ptr;
   Uint32 current_char_byte;
   Uint32 pcol;
 
