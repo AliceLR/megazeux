@@ -445,10 +445,10 @@ HTTPHostStatus HTTPHost::http_filter_content_type(const HTTPRequestInfo &request
             params++;
 
           if(strcmp(params, "*") == 0)
-            break;
+            return HOST_SUCCESS;
 
           if(strcasecmp(params, request.content_type_params) == 0)
-            break;
+            return HOST_SUCCESS;
         }
       }
       else
@@ -456,11 +456,10 @@ HTTPHostStatus HTTPHost::http_filter_content_type(const HTTPRequestInfo &request
       if(request.content_type_params[0] == '\0')
       {
         if(strcasecmp(type, request.content_type) == 0)
-          break;
+          return HOST_SUCCESS;
       }
     }
-    if(!request.allowed_types[i])
-      return HOST_HTTP_INVALID_CONTENT_TYPE;
+    return HOST_HTTP_INVALID_CONTENT_TYPE;
   }
   return HOST_SUCCESS;
 }
