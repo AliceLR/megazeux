@@ -232,6 +232,8 @@ static const struct config_info user_conf_default =
 #ifdef CONFIG_NETWORK
   true,                         // network_enabled
   "",                           // socks_host
+  "",                           // socks_username
+  "",                           // socks_password
   1080,                         // socks_port
 #endif
 #if defined(CONFIG_UPDATER)
@@ -442,6 +444,18 @@ static void config_set_socks_port(struct config_info *conf, char *name,
   int result;
   if(config_int(&result, value, 0, 65535))
     conf->socks_port = result;
+}
+
+static void config_set_socks_username(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  config_string(conf->socks_username, value);
+}
+
+static void config_set_socks_password(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  config_string(conf->socks_password, value);
 }
 
 #endif // CONFIG_NETWORK
@@ -1072,7 +1086,9 @@ static const struct config_entry config_options[] =
   { "save_slots_name", config_save_slots_name, false },
 #ifdef CONFIG_NETWORK
   { "socks_host", config_set_socks_host, false },
+  { "socks_password", config_set_socks_password, false },
   { "socks_port", config_set_socks_port, false },
+  { "socks_username", config_set_socks_username, false },
 #endif
   { "standalone_mode", config_standalone_mode, false },
   { "startup_editor", config_startup_editor, false },

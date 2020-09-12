@@ -496,7 +496,6 @@ boolean Host::connect_direct(const char *hostname, int port)
 enum proxy_status Host::connect_socks4a(const char *target_host, int target_port)
 {
   char handshake[8];
-  int rBuf;
 
   trace("--HOST-- Host::connect_socks4a\n");
   target_port = Socket::hton_short(target_port);
@@ -515,8 +514,7 @@ enum proxy_status Host::connect_socks4a(const char *target_host, int target_port
   if(!this->send("\0", 1))
     return PROXY_SEND_ERROR;
 
-  rBuf = this->receive(handshake, 8);
-  if(rBuf == -1)
+  if(!this->receive(handshake, 8))
     return PROXY_CONNECTION_FAILED;
   if(handshake[1] != 90)
     return PROXY_HANDSHAKE_FAILED;
@@ -526,22 +524,26 @@ enum proxy_status Host::connect_socks4a(const char *target_host, int target_port
 enum proxy_status Host::connect_socks4(struct addrinfo *ai_data)
 {
   char handshake[8];
-  int rBuf;
 
   trace("--HOST-- Host::connect_socks4\n");
 
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
     return PROXY_CONNECTION_FAILED;
 
+  struct sockaddr_in *addr = reinterpret_cast<struct sockaddr_in *>(ai_data->ai_addr);
+  if(addr->sin_family != AF_INET)
+    return PROXY_ADDRESS_INVALID;
+
   if(!this->send("\4\1", 2))
     return PROXY_SEND_ERROR;
-  if(!this->send(ai_data->ai_addr->sa_data, 6))
+  if(!this->send(&(addr->sin_port), 2))
+    return PROXY_SEND_ERROR;
+  if(!this->send(&(addr->sin_addr), 4))
     return PROXY_SEND_ERROR;
   if(!this->send("anonymous\0", 10))
     return PROXY_SEND_ERROR;
 
-  rBuf = this->receive(handshake, 8);
-  if(rBuf == -1)
+  if(!this->receive(handshake, 8))
     return PROXY_CONNECTION_FAILED;
   if(handshake[1] != 90)
     return PROXY_HANDSHAKE_FAILED;
@@ -554,44 +556,117 @@ enum proxy_status Host::connect_socks5(struct addrinfo *ai_data)
    * and we're also only supporting none or user/password auth.
    */
 
-  char handshake[10];
-  int rBuf;
+  boolean has_pw = conf->socks_username[0] && conf->socks_password[0];
+  char handshake[32];
 
   trace("--HOST-- Host::connect_socks5\n");
 
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
     return PROXY_CONNECTION_FAILED;
 
-  // Version[0x05]|Number of auth methods|auth methods
-  if(!this->send("\5\1\0", 3))
+  // Version[0x05]|Number of auth methods|auth methods (0=none, 2=user/pw)
+  static const char *init_no_pw = "\5\1\0";
+  static const char *init_with_pw = "\5\2\0\2";
+  const char *init = (has_pw ? init_with_pw : init_no_pw);
+  if(!this->send(init, strlen(init)))
     return PROXY_SEND_ERROR;
 
-  rBuf = this->receive(handshake, 2);
-  if(rBuf == -1)
+  if(!this->receive(handshake, 2))
     return PROXY_CONNECTION_FAILED;
   if(handshake[0] != 0x5)
     return PROXY_HANDSHAKE_FAILED;
 
+  switch(handshake[1])
+  {
+    // None.
+    case 0x0:
+      break;
+
+    // Username/Password.
+    // https://tools.ietf.org/html/rfc1929
+    case 0x2:
+    {
+      size_t username_len = strlen(conf->socks_username);
+      size_t password_len = strlen(conf->socks_password);
+      if(username_len > 255 || password_len > 255)
+        return PROXY_INVALID_CONFIG;
+
+      Uint8 username_len_b = static_cast<Uint8>(username_len);
+      Uint8 password_len_b = static_cast<Uint8>(password_len);
+
+      if(!this->send("\1", 1))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&username_len_b, 1))
+        return PROXY_SEND_ERROR;
+      if(!this->send(conf->socks_username, username_len))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&password_len_b, 1))
+        return PROXY_SEND_ERROR;
+      if(!this->send(conf->socks_password, password_len))
+        return PROXY_SEND_ERROR;
+
+      if(!this->receive(handshake, 2))
+        return PROXY_CONNECTION_FAILED;
+      if(handshake[0] != 0x1)
+        return PROXY_AUTH_VERSION_UNSUPPORTED;
+      if(handshake[1] != 0x0)
+        return PROXY_AUTH_FAILED;
+      break;
+    }
+
+    // No supported methods (0xFF) or some other value.
+    default:
+      return PROXY_AUTH_METHOD_UNSUPPORTED;
+  }
+
+  struct sockaddr *ai_addr = ai_data->ai_addr;
+  switch(ai_data->ai_family)
+  {
 #ifdef CONFIG_IPV6
-  if(ai_data->ai_family == AF_INET6)
-    return PROXY_ADDRESS_TYPE_UNSUPPORTED;
+    case AF_INET6:
+    {
+      struct sockaddr_in6 *addr = reinterpret_cast<struct sockaddr_in6 *>(ai_addr);
+      if(addr->sin6_family != AF_INET6)
+        return PROXY_ADDRESS_INVALID;
+
+      // Version[0x05]|Command|0x00|address type (4=IPv6)|address|port
+      if(!this->send("\5\1\0\4", 4))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&(addr->sin6_addr), 16))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&(addr->sin6_port), 2))
+        return PROXY_SEND_ERROR;
+      break;
+    }
 #endif
 
-  // Version[0x05]|Command|0x00|address type|destination|port
-  if(!this->send("\5\1\0\1", 4))
-    return PROXY_SEND_ERROR;
-  if(!this->send(ai_data->ai_addr->sa_data+2, 4))
-    return PROXY_SEND_ERROR;
-  if(!this->send(ai_data->ai_addr->sa_data, 2))
-    return PROXY_SEND_ERROR;
+    case AF_INET:
+    {
+      struct sockaddr_in *addr = reinterpret_cast<struct sockaddr_in *>(ai_addr);
+      if(addr->sin_family != AF_INET)
+        return PROXY_ADDRESS_INVALID;
 
-  rBuf = this->receive(handshake, 10);
-  if(rBuf == -1)
+      // Version[0x05]|Command|0x00|address type (1=IPv4)|address|port
+      if(!this->send("\5\1\0\1", 4))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&(addr->sin_addr), 4))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&(addr->sin_port), 2))
+        return PROXY_SEND_ERROR;
+      break;
+    }
+
+    default:
+      return PROXY_ADDRESS_TYPE_UNSUPPORTED;
+  }
+
+  // Version[0x05]|Status|0x00|address type|address|port
+  if(!this->receive(handshake, 4))
     return PROXY_CONNECTION_FAILED;
   switch(handshake[1])
   {
     case 0x0:
-      return PROXY_SUCCESS;
+      break;
     case 0x1:
     case 0x7:
       return PROXY_UNKNOWN_ERROR;
@@ -608,6 +683,25 @@ enum proxy_status Host::connect_socks5(struct addrinfo *ai_data)
     default:
       return PROXY_UNKNOWN_ERROR;
   }
+
+  switch(handshake[3])
+  {
+    // IPv4
+    case 0x1:
+      if(!this->receive(handshake + 4, 6))
+        return PROXY_CONNECTION_FAILED;
+      break;
+
+    // IPv6
+    case 0x4:
+      if(!this->receive(handshake + 4, 18))
+        return PROXY_CONNECTION_FAILED;
+      break;
+
+    default:
+      return PROXY_ADDRESS_TYPE_UNSUPPORTED;
+  }
+  return PROXY_SUCCESS;
 }
 
 // SOCKS Proxy support
