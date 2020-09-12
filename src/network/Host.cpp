@@ -580,8 +580,20 @@ enum proxy_status Host::connect_socks4a(const char *target_host, int target_port
 
   if(!this->receive(handshake, 8))
     return PROXY_CONNECTION_FAILED;
-  if(handshake[1] != 90)
+  if(handshake[0] != 0x00)
     return PROXY_HANDSHAKE_FAILED;
+  switch(handshake[1])
+  {
+    case 0x5A:
+      break;
+    case 0x5B:
+      return PROXY_TARGET_REFUSED;
+    case 0x5C:
+    case 0x5D:
+      return PROXY_AUTH_FAILED;
+    default:
+      return PROXY_HANDSHAKE_FAILED;
+  }
   return PROXY_SUCCESS;
 }
 
@@ -612,8 +624,20 @@ enum proxy_status Host::connect_socks4(struct addrinfo *ai_data)
 
   if(!this->receive(handshake, 8))
     return PROXY_CONNECTION_FAILED;
-  if(handshake[1] != 90)
+  if(handshake[0] != 0x00)
     return PROXY_HANDSHAKE_FAILED;
+  switch(handshake[1])
+  {
+    case 0x5A:
+      break;
+    case 0x5B:
+      return PROXY_TARGET_REFUSED;
+    case 0x5C:
+    case 0x5D:
+      return PROXY_AUTH_FAILED;
+    default:
+      return PROXY_HANDSHAKE_FAILED;
+  }
   return PROXY_SUCCESS;
 }
 
