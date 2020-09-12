@@ -89,6 +89,7 @@ private:
   const char *name;
   const char *endpoint;
   boolean proxied;
+  boolean trace_raw;
   int af;
   int sockfd;
   Uint32 timeout_ms;

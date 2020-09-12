@@ -718,7 +718,8 @@
 # socks_port = 1080
 
 # For SOCKS5 proxies, a username and password can optionally be provided.
-# Note that these will be sent unencrypted over your network connection.
+# Note that if your socks host is remote, these will be sent unencrypted over
+# your network connection.
 
 # socks_username = your_username
 # socks_password = your_password

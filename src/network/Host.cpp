@@ -44,6 +44,42 @@
 
 static struct config_info *conf;
 
+const char *get_proxy_error(enum proxy_status s)
+{
+  switch(s)
+  {
+    case PROXY_SUCCESS:
+      return "proxy connection successful";
+    case PROXY_INVALID_CONFIG:
+      return "user configuration error";
+    case PROXY_CONNECTION_FAILED:
+      return "connection error (receive failed)";
+    case PROXY_SEND_ERROR:
+      return "connection error (send failed)";
+    case PROXY_AUTH_FAILED:
+      return "authentication failure";
+    case PROXY_AUTH_VERSION_UNSUPPORTED:
+      return "authentication protocol version not supported by remote host";
+    case PROXY_AUTH_METHOD_UNSUPPORTED:
+      return "authentication method not supported by remote host";
+    case PROXY_HANDSHAKE_FAILED:
+      return "protocol not supported by remote host";
+    case PROXY_REFLECTION_FAILED:
+      return "error establishing proxy connection";
+    case PROXY_TARGET_REFUSED:
+      return "connection refused by remote host";
+    case PROXY_ADDRESS_TYPE_UNSUPPORTED:
+      return "address provided by getaddrinfo is not supported by client";
+    case PROXY_ADDRESS_INVALID:
+      return "address provided by getaddrinfo is invalid";
+    case PROXY_ACCESS_DENIED:
+      return "connection not allowed by ruleset";
+    case PROXY_UNKNOWN_ERROR:
+      break;
+  }
+  return "unknown error (REPORT THIS!)";
+}
+
 int host_type_to_proto(enum host_type type)
 {
   switch(type)
@@ -295,6 +331,17 @@ boolean Host::send(const void *buffer, size_t len)
 
     if(this->cancel_callback && this->cancel_callback())
       return false;
+
+#ifdef DEBUG_TRACE
+    if(trace_raw)
+    {
+      trace("--HOST-- Host::send    ");
+      for(size_t i = pos; i < pos + count; i++)
+        fprintf(stderr, "%02x ", buf[i]);
+      fprintf(stderr, "\n");
+      fflush(stderr);
+    }
+#endif
   }
   return true;
 }
@@ -336,6 +383,17 @@ boolean Host::receive(void *buffer, size_t len)
 
     if(this->cancel_callback && this->cancel_callback())
       return false;
+
+#ifdef DEBUG_TRACE
+    if(trace_raw)
+    {
+      trace("--HOST-- Host::receive ");
+      for(size_t i = pos; i < pos + count; i++)
+        fprintf(stderr, "%02x ", buf[i]);
+      fprintf(stderr, "\n");
+      fflush(stderr);
+    }
+#endif
   }
   return true;
 }
@@ -503,6 +561,9 @@ enum proxy_status Host::connect_socks4a(const char *target_host, int target_port
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
     return PROXY_CONNECTION_FAILED;
 
+  // Temporarily disable blocking in case the connection needs to time out.
+  Socket::scoped_nonblocking nb(this->sockfd);
+
   if(!this->send("\4\1", 2))
     return PROXY_SEND_ERROR;
   if(!this->send(&target_port, 2))
@@ -530,6 +591,9 @@ enum proxy_status Host::connect_socks4(struct addrinfo *ai_data)
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
     return PROXY_CONNECTION_FAILED;
 
+  // Temporarily disable blocking in case the connection needs to time out.
+  Socket::scoped_nonblocking nb(this->sockfd);
+
   struct sockaddr_in *addr = reinterpret_cast<struct sockaddr_in *>(ai_data->ai_addr);
   if(addr->sin_family != AF_INET)
     return PROXY_ADDRESS_INVALID;
@@ -556,7 +620,6 @@ enum proxy_status Host::connect_socks5(struct addrinfo *ai_data)
    * and we're also only supporting none or user/password auth.
    */
 
-  boolean has_pw = conf->socks_username[0] && conf->socks_password[0];
   char handshake[32];
 
   trace("--HOST-- Host::connect_socks5\n");
@@ -564,11 +627,19 @@ enum proxy_status Host::connect_socks5(struct addrinfo *ai_data)
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
     return PROXY_CONNECTION_FAILED;
 
+  // Temporarily disable blocking in case the connection needs to time out.
+  Socket::scoped_nonblocking nb(this->sockfd);
+
   // Version[0x05]|Number of auth methods|auth methods (0=none, 2=user/pw)
-  static const char *init_no_pw = "\5\1\0";
-  static const char *init_with_pw = "\5\2\0\2";
-  const char *init = (has_pw ? init_with_pw : init_no_pw);
-  if(!this->send(init, strlen(init)))
+  const char *init = "\5\1\0";
+  size_t init_len = 3;
+  if(conf->socks_username[0] && conf->socks_password[0])
+  {
+    init = "\5\2\0\2";
+    init_len = 4;
+  }
+
+  if(!this->send(init, init_len))
     return PROXY_SEND_ERROR;
 
   if(!this->receive(handshake, 2))
@@ -728,18 +799,27 @@ enum proxy_status Host::connect_proxy(const char *target_host, int target_port)
    * to force the proxy to DNS the address for us. If this fails, we abort.
    */
   if(ret != 0)
-    return this->connect_socks4a(target_host, target_port);
+  {
+    enum proxy_status ret = this->connect_socks4a(target_host, target_port);
+
+    if(ret != PROXY_SUCCESS)
+      trace("--HOST-- Host::connect_socks4a failed: %s\n", get_proxy_error(ret));
+
+    return ret;
+  }
 
 #ifdef CONFIG_IPV6
   for(target_ai = target_ais; target_ai; target_ai = target_ai->ai_next)
   {
     if(target_ai->ai_family == AF_INET6)
     {
-      if(this->connect_socks5(target_ai) == PROXY_SUCCESS)
+      enum proxy_status ret = this->connect_socks5(target_ai);
+      if(ret == PROXY_SUCCESS)
       {
         Socket::freeaddrinfo(target_ais);
         return PROXY_SUCCESS;
       }
+      trace("--HOST-- Host::connect_socks5 failed: %s\n", get_proxy_error(ret));
       this->close();
     }
   }
@@ -749,18 +829,22 @@ enum proxy_status Host::connect_proxy(const char *target_host, int target_port)
   {
     if(target_ai->ai_family == AF_INET)
     {
-      if(this->connect_socks5(target_ai) == PROXY_SUCCESS)
+      enum proxy_status ret = this->connect_socks5(target_ai);
+      if(ret == PROXY_SUCCESS)
       {
         Socket::freeaddrinfo(target_ais);
         return PROXY_SUCCESS;
       }
       this->close();
-      if(this->connect_socks4(target_ai) == PROXY_SUCCESS)
+      trace("--HOST-- Host::connect_socks5 failed: %s\n", get_proxy_error(ret));
+      ret = this->connect_socks4(target_ai);
+      if(ret == PROXY_SUCCESS)
       {
         Socket::freeaddrinfo(target_ais);
         return PROXY_SUCCESS;
       }
       this->close();
+      trace("--HOST-- Host::connect_socks4 failed: %s\n", get_proxy_error(ret));
     }
   }
   Socket::freeaddrinfo(target_ais);
@@ -777,7 +861,11 @@ boolean Host::connect(const char *hostname, int port)
   this->proxied = false;
   if(strlen(conf->socks_host) > 0)
   {
-    if(this->connect_proxy(hostname, port) == PROXY_SUCCESS)
+    this->trace_raw = true;
+    enum proxy_status ret = this->connect_proxy(hostname, port);
+    this->trace_raw = false;
+
+    if(ret == PROXY_SUCCESS)
     {
       this->proxied = true;
       this->endpoint = hostname;
