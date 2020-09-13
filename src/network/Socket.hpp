@@ -79,6 +79,14 @@ struct addrinfo
 };
 #endif
 
+#ifndef AI_V4MAPPED
+#define AI_V4MAPPED (0)
+#endif
+
+#ifndef AI_ADDRCONFIG
+#define AI_ADDRCONFIG (0)
+#endif
+
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL (0)
 #endif

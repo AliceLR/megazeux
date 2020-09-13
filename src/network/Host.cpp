@@ -531,6 +531,7 @@ boolean Host::address_op(const char *hostname, int port, void *priv,
   hints.ai_socktype = this->socktype;
   hints.ai_protocol = this->proto;
   hints.ai_family = this->preferred_af;
+  hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
 
   // Look up host(s) matching hints
   ret = DNS::lookup(hostname, port_str, &hints, &ais, this->timeout_ms);
@@ -832,6 +833,7 @@ enum proxy_status Host::connect_proxy(const char *target_host, int target_port)
   target_hints.ai_socktype = this->socktype;
   target_hints.ai_protocol = this->proto;
   target_hints.ai_family = this->preferred_af;
+  target_hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
   ret = DNS::lookup(target_host, port_str, &target_hints, &target_ais,
    this->timeout_ms);
 
