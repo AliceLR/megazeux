@@ -50,6 +50,7 @@ USERS
   accidentally "decrypting" a corrupted file and prevents MZX
   from attempting to decrypt MZX 1.x files (which store the
   password differently).
++ Added SOCKS5 IPv6 and username/password support.
 
 DEVELOPERS
 

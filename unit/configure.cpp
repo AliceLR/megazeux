@@ -670,6 +670,16 @@ UNITTEST(Settings)
     TEST_INT("socks_port", conf->socks_port, 0, 65535);
   }
 
+  SECTION(socks_username)
+  {
+    TEST_STRING("socks_username", conf->socks_username, string_data);
+  }
+
+  SECTION(socks_password)
+  {
+    TEST_STRING("socks_password", conf->socks_password, string_data);
+  }
+
 #endif /* CONFIG_NETWORK */
 
 #ifdef CONFIG_UPDATER

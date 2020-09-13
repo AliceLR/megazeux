@@ -140,6 +140,8 @@ struct config_info
 #ifdef CONFIG_NETWORK
   boolean network_enabled;
   char socks_host[256];
+  char socks_username[256];
+  char socks_password[256];
   int socks_port;
 #endif
 
