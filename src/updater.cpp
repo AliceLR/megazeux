@@ -668,7 +668,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
 
   for(cur_host = 0; (cur_host < conf->update_host_count) && try_next_host; cur_host++)
   {
-    HTTPHost http(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
+    HTTPHost http(HOST_TYPE_TCP, conf->network_address_family);
     HTTPRequestInfo request;
     HTTPHostStatus status;
 

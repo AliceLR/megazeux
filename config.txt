@@ -711,6 +711,14 @@
 
 # network_enabled = 1
 
+# By default, MZX will allow IPv4 and IPv6 connections and name resolution based
+# on whether the system has an IPv4 address and/or an IPv6 address configured.
+# This setting can be changed to "ipv4" to force IPv4 connections/lookups or
+# "ipv6" to force IPv6 connections/lookups (and IPv4-mapped IPv6 addresses if
+# no real IPv6 addresses are found). Default value is "any".
+
+# network_address_family = any
+
 # MegaZeux can support connections via a SOCKS4/5 proxy to punch through
 # connections that would otherwise require some sort of pipe intermediary.
 

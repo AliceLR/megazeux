@@ -28,15 +28,6 @@
 #include <stdio.h> // for FILE
 #include <string>
 
-enum host_family
-{
-  /** Prefer IPv4 address resolution for hostnames */
-  HOST_FAMILY_IPV4,
-  /** Prefer IPv6 address resolution for hostnames */
-  HOST_FAMILY_IPV6,
-  NUM_HOST_FAMILIES
-};
-
 enum host_type
 {
   /** Use TCP protocol for sockets */
@@ -82,9 +73,10 @@ private:
   enum host_state state;
   enum host_type type;
   enum host_family preferred_family;
-  int preferred_af;
-  int socktype;
-  int proto;
+  int hint_af;
+  int hint_socktype;
+  int hint_proto;
+  int hint_flags;
 
   const char *name;
   const char *endpoint;
@@ -92,6 +84,7 @@ private:
   boolean trace_raw;
   int af;
   int sockfd;
+  int proto;
   Uint32 timeout_ms;
 
 protected:

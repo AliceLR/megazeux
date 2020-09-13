@@ -44,7 +44,16 @@ int Socket::getaddrinfo_alt(const char *node, const char *service,
 
   trace("--SOCKET-- Socket::getaddrinfo_alt\n");
 
-  if(hints->ai_family != AF_INET)
+  // This relies on hints being provided to initialize the addrinfo structs...
+  if(!hints)
+    return EAI_FAIL;
+
+  /**
+   * If hints.ai_family is provided as AF_UNSPEC, getaddrinfo is expected to
+   * return anything found (including AF_INET), so it's acceptable here.
+   * https://pubs.opengroup.org/onlinepubs/9699919799/functions/freeaddrinfo.html
+   */
+  if(hints->ai_family != AF_INET && hints->ai_family != AF_UNSPEC)
     return EAI_FAMILY;
 
   platform_mutex_lock(&gai_lock);
@@ -75,7 +84,7 @@ int Socket::getaddrinfo_alt(const char *node, const char *service,
 
     // Zero the fake addrinfo and fill out the essential fields
     memset(r, 0, sizeof(struct addrinfo));
-    r->ai_family = hints->ai_family;
+    r->ai_family = hostent->h_addrtype;
     r->ai_socktype = hints->ai_socktype;
     r->ai_protocol = hints->ai_protocol;
     r->ai_addrlen = sizeof(struct sockaddr_in);
@@ -112,6 +121,8 @@ const char *Socket::gai_strerror_alt(int errcode)
       return "Node or service is not known.";
     case EAI_AGAIN:
       return "Temporary failure in name resolution";
+    case EAI_FAIL:
+      return "Non-recoverable failure in name resolution";
     case EAI_FAMILY:
       return "Address family is not supported.";
     default:

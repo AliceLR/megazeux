@@ -231,6 +231,7 @@ static const struct config_info user_conf_default =
 
 #ifdef CONFIG_NETWORK
   true,                         // network_enabled
+  HOST_FAMILY_ANY,              // network_address_family
   "",                           // socks_host
   "",                           // socks_username
   "",                           // socks_password
@@ -320,6 +321,16 @@ static const struct config_enum system_mouse_values[] =
   { "0", 0 },
   { "1", 1 }
 };
+
+#ifdef CONFIG_NETWORK
+static const struct config_enum network_address_family_values[] =
+{
+  { "0", HOST_FAMILY_ANY },
+  { "any", HOST_FAMILY_ANY },
+  { "ipv4", HOST_FAMILY_IPV4 },
+  { "ipv6", HOST_FAMILY_IPV6 }
+};
+#endif
 
 #ifdef CONFIG_UPDATER
 static const struct config_enum update_auto_check_values[] =
@@ -430,6 +441,14 @@ static void config_set_network_enabled(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   config_boolean(&conf->network_enabled, value);
+}
+
+static void config_set_network_address_family(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  int result;
+  if(config_enum(&result, value, network_address_family_values))
+    conf->network_address_family = result;
 }
 
 static void config_set_socks_host(struct config_info *conf, char *name,
@@ -1071,6 +1090,7 @@ static const struct config_entry config_options[] =
   { "music_volume", config_set_mod_volume, false },
   { "mzx_speed", config_set_mzx_speed, true },
 #ifdef CONFIG_NETWORK
+  { "network_address_family", config_set_network_address_family, false },
   { "network_enabled", config_set_network_enabled, false },
 #endif
   { "no_titlescreen", config_no_titlescreen, false },

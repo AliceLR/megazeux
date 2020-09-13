@@ -660,6 +660,22 @@ UNITTEST(Settings)
     TEST_ENUM("network_enabled", conf->network_enabled, boolean_data);
   }
 
+  SECTION(network_address_family)
+  {
+    static const config_test_single data[] =
+    {
+      { "0", HOST_FAMILY_ANY },
+      { "any", HOST_FAMILY_ANY },
+      { "ipv4", HOST_FAMILY_IPV4 },
+      { "ipv6", HOST_FAMILY_IPV6 },
+      { "", DEFAULT },
+      { "1", DEFAULT },
+      { "sdfasdf", DEFAULT },
+      { "-1213", DEFAULT }
+    };
+    TEST_ENUM("network_address_family", conf->network_address_family, data);
+  }
+
   SECTION(socks_host)
   {
     TEST_STRING("socks_host", conf->socks_host, string_data);

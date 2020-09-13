@@ -51,6 +51,11 @@ USERS
   from attempting to decrypt MZX 1.x files (which store the
   password differently).
 + Added SOCKS5 IPv6 and username/password support.
++ Added "network_address_family" config setting to allow users
+  to force either IPv4 or IPv6 connections/name resolution. By
+  default, MZX will now request either or both depending on the
+  system IP address configuration (previously, it was hardcoded
+  to only allow IPv4 despite IPv6 support being implemented).
 
 DEVELOPERS
 

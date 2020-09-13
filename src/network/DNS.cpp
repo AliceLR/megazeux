@@ -56,6 +56,7 @@ struct dns_data
   struct addrinfo hints;
   struct addrinfo *res;
   int ret;
+  boolean has_hints;
 };
 
 static struct dns_data *threads;
@@ -71,9 +72,18 @@ static void set_dns_thread_data(struct dns_data *data,
 
   data->node = (char *)cmalloc(node_len);
   data->service = (char *)cmalloc(service_len);
+  data->has_hints = false;
   memcpy(data->node, node, node_len);
   memcpy(data->service, service, service_len);
-  memcpy(&(data->hints), hints, sizeof(struct addrinfo));
+  memset(&(data->hints), 0, sizeof(struct addrinfo));
+  if(hints)
+  {
+    data->hints.ai_flags = hints->ai_flags;
+    data->hints.ai_family = hints->ai_family;
+    data->hints.ai_socktype = hints->ai_socktype;
+    data->hints.ai_protocol = hints->ai_protocol;
+    data->has_hints = true;
+  }
   data->res = NULL;
 }
 
@@ -107,8 +117,8 @@ static THREAD_RES run_dns_thread(void *_data)
     if(data->state == STATE_LOOKUP)
     {
       trace("--DNS-- Starting lookup.\n");
-      ret = Socket::getaddrinfo(data->node, data->service, &(data->hints),
-       &(data->res));
+      ret = Socket::getaddrinfo(data->node, data->service,
+       data->has_hints ? &(data->hints) : nullptr, &(data->res));
     }
 
     if(data->state == STATE_EXIT)

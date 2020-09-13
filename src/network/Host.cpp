@@ -44,7 +44,7 @@
 
 static struct config_info *conf;
 
-const char *get_proxy_error(enum proxy_status s)
+static const char *get_proxy_error(enum proxy_status s)
 {
   switch(s)
   {
@@ -80,7 +80,7 @@ const char *get_proxy_error(enum proxy_status s)
   return "unknown error (REPORT THIS!)";
 }
 
-int host_type_to_proto(enum host_type type)
+static int host_type_to_proto(enum host_type type)
 {
   switch(type)
   {
@@ -92,7 +92,7 @@ int host_type_to_proto(enum host_type type)
   }
 }
 
-int host_type_to_socktype(enum host_type type)
+static int host_type_to_socktype(enum host_type type)
 {
   switch(type)
   {
@@ -104,16 +104,38 @@ int host_type_to_socktype(enum host_type type)
   }
 }
 
-int host_family_to_af(enum host_family family)
+static int host_family_to_af(enum host_family family)
 {
   switch(family)
   {
 #ifdef CONFIG_IPV6
     case HOST_FAMILY_IPV6:
       return AF_INET6;
+
+    // This allows getaddrinfo to return both IPv4 and IPv6 addresses.
+    case HOST_FAMILY_ANY:
+      return AF_UNSPEC;
 #endif
     default:
       return AF_INET;
+  }
+}
+
+static int host_family_hint_flags(enum host_family family)
+{
+  switch(family)
+  {
+#ifdef CONFIG_IPV6
+    // This flag allows IPv4-mapped addresses if no IPv6 addresses are found.
+    case HOST_FAMILY_IPV6:
+      return AI_V4MAPPED;
+
+    // Both allowed--try to autodetect which ones work based on system config.
+    case HOST_FAMILY_ANY:
+      return AI_ADDRCONFIG;
+#endif
+    default:
+      return 0;
   }
 }
 
@@ -140,15 +162,17 @@ void Host::swap(Host &a, Host &b)
   std::swap(a.state, b.state);
   std::swap(a.type, b.type);
   std::swap(a.preferred_family, b.preferred_family);
-  std::swap(a.preferred_af, b.preferred_af);
-  std::swap(a.socktype, b.socktype);
-  std::swap(a.proto, b.proto);
+  std::swap(a.hint_af, b.hint_af);
+  std::swap(a.hint_socktype, b.hint_socktype);
+  std::swap(a.hint_proto, b.hint_proto);
+  std::swap(a.hint_flags, b.hint_flags);
   std::swap(a.name, b.name);
   std::swap(a.endpoint, b.endpoint);
   std::swap(a.proxied, b.proxied);
   std::swap(a.trace_raw, b.trace_raw);
   std::swap(a.af, b.af);
   std::swap(a.sockfd, b.sockfd);
+  std::swap(a.proto, b.proto);
   std::swap(a.timeout_ms, b.timeout_ms);
   std::swap(a.receive_callback, b.receive_callback);
   std::swap(a.cancel_callback, b.cancel_callback);
@@ -158,7 +182,7 @@ Host::Host(enum host_type type, enum host_family family)
 {
   trace("--HOST-- Host::Host(%s, %s)\n",
     (type == HOST_TYPE_UDP) ? "UDP" : "TCP",
-    (family == HOST_FAMILY_IPV6) ? "IPv6" : "IPv4"
+    (family == HOST_FAMILY_IPV6) ? "IPv6" : (family == HOST_FAMILY_IPV4) ? "IPv4" : "any"
   );
   this->state = HOST_UNINITIALIZED;
   this->type = type;
@@ -166,9 +190,10 @@ Host::Host(enum host_type type, enum host_family family)
   this->timeout_ms = Host::TIMEOUT_DEFAULT;
 
   // Hints to provide to getaddrinfo.
-  this->preferred_af = host_family_to_af(family);
-  this->socktype = host_type_to_socktype(type);
-  this->proto = host_type_to_proto(type);
+  this->hint_af = host_family_to_af(family);
+  this->hint_socktype = host_type_to_socktype(type);
+  this->hint_proto = host_type_to_proto(type);
+  this->hint_flags = host_family_hint_flags(family);
 
   this->name = nullptr;
   this->endpoint = nullptr;
@@ -198,9 +223,11 @@ boolean Host::create_socket(enum host_type type, enum host_family family)
 {
   struct linger linger = { 1, 30 };
   const uint32_t on = 1;
-  int err, fd, af;
+  int err, fd, af, proto;
 
-  trace("--HOST-- Host::create_socket\n");
+  trace("--HOST-- Host::create_socket(%d,%d)\n", type, family);
+  assert(type == HOST_TYPE_TCP || type == HOST_TYPE_UDP);
+  assert(family == HOST_FAMILY_IPV4 || family == HOST_FAMILY_IPV6);
 
   assert(this->state == HOST_UNINITIALIZED);
   if(this->state != HOST_UNINITIALIZED)
@@ -212,10 +239,12 @@ boolean Host::create_socket(enum host_type type, enum host_family family)
   {
     case HOST_TYPE_UDP:
       fd = Socket::socket(af, SOCK_DGRAM, IPPROTO_UDP);
+      proto = IPPROTO_UDP;
       break;
 
     default:
       fd = Socket::socket(af, SOCK_STREAM, IPPROTO_TCP);
+      proto = IPPROTO_TCP;
       break;
   }
 
@@ -286,6 +315,7 @@ boolean Host::create_socket(enum host_type type, enum host_family family)
   this->state = HOST_INITIALIZED;
   this->af = af;
   this->sockfd = fd;
+  this->proto = proto;
   return true;
 
 err_close:
@@ -528,9 +558,10 @@ boolean Host::address_op(const char *hostname, int port, void *priv,
 
   // Set some hints for the getaddrinfo() call
   memset(&hints, 0, sizeof(struct addrinfo));
-  hints.ai_socktype = this->socktype;
-  hints.ai_protocol = this->proto;
-  hints.ai_family = this->preferred_af;
+  hints.ai_socktype = this->hint_socktype;
+  hints.ai_protocol = this->hint_proto;
+  hints.ai_family = this->hint_af;
+  hints.ai_flags = this->hint_flags;
 
   // Look up host(s) matching hints
   ret = DNS::lookup(hostname, port_str, &hints, &ais, this->timeout_ms);
@@ -829,9 +860,10 @@ enum proxy_status Host::connect_proxy(const char *target_host, int target_port)
   port_str[5] = 0;
 
   memset(&target_hints, 0, sizeof(struct addrinfo));
-  target_hints.ai_socktype = this->socktype;
-  target_hints.ai_protocol = this->proto;
-  target_hints.ai_family = this->preferred_af;
+  target_hints.ai_socktype = this->hint_socktype;
+  target_hints.ai_protocol = this->hint_proto;
+  target_hints.ai_family = this->hint_af;
+  target_hints.ai_flags = this->hint_flags;
   ret = DNS::lookup(target_host, port_str, &target_hints, &target_ais,
    this->timeout_ms);
 
@@ -997,9 +1029,6 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
   struct addrinfo *ai;
   trace("--HOST-- Host::bind_op\n");
 
-  if(!this->create_socket(this->type, this->preferred_family))
-    return nullptr;
-
 #ifdef CONFIG_IPV6
   /* First try to bind to an IPv6 address (if any)
    */
@@ -1007,12 +1036,17 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
   {
     if(ai->ai_family == AF_INET6)
     {
+      if(!this->create_socket(this->type, HOST_FAMILY_IPV6))
+        return nullptr;
+
       if(Socket::bind(this->sockfd, ai->ai_addr, ai->ai_addrlen) >= 0)
       {
         this->state = HOST_BOUND;
         return ai;
       }
       Socket::perror("bind");
+      Socket::close(this->sockfd);
+      this->state = HOST_UNINITIALIZED;
     }
   }
 #endif
@@ -1023,15 +1057,19 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
   {
     if(ai->ai_family == AF_INET)
     {
+      if(!this->create_socket(this->type, HOST_FAMILY_IPV4))
+        return nullptr;
+
       if(Socket::bind(this->sockfd, ai->ai_addr, ai->ai_addrlen) >= 0)
       {
         this->state = HOST_BOUND;
         return ai;
       }
       Socket::perror("bind");
+      Socket::close(this->sockfd);
+      this->state = HOST_UNINITIALIZED;
     }
   }
-  this->close();
   return nullptr;
 }
 
