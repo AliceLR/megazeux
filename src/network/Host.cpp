@@ -275,7 +275,7 @@ boolean Host::create_socket(enum host_type type, enum host_family family)
   err = Socket::setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&on, sizeof(on));
   if(err < 0)
   {
-    Socket::perror("setsockopt(SO_NOSIGPIPE");
+    Socket::perror("setsockopt(SO_NOSIGPIPE)");
     goto err_close;
   }
 #endif
