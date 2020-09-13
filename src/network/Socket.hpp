@@ -79,6 +79,10 @@ struct addrinfo
 };
 #endif
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL (0)
+#endif
+
 #ifndef UNIX_INLINE
 #define UNIX_INLINE(x) x
 #endif

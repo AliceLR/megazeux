@@ -266,6 +266,20 @@ boolean Host::create_socket(enum host_type type, enum host_family family)
     }
   }
 
+#ifdef SO_NOSIGPIPE
+  /**
+   * Disable SIGPIPE for this socket on platforms that support this option.
+   * This is redundant with the send() flag MSG_NOSIGNAL, as neither seems to
+   * be universally supported.
+   */
+  err = Socket::setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&on, sizeof(on));
+  if(err < 0)
+  {
+    Socket::perror("setsockopt(SO_NOSIGPIPE");
+    goto err_close;
+  }
+#endif
+
   // Initially the socket is blocking
   Socket::set_blocking(fd, true);
 
@@ -320,7 +334,7 @@ boolean Host::send(const void *buffer, size_t len)
       return false;
 
     // normally it won't all get through at once
-    count = Socket::send(this->sockfd, buf + pos, len - pos, 0);
+    count = Socket::send(this->sockfd, buf + pos, len - pos, MSG_NOSIGNAL);
     if(count < 0)
     {
       // non-blocking socket, so can fail and still be ok
@@ -1107,7 +1121,7 @@ struct addrinfo *Host::send_to_op(struct addrinfo *ais, void *priv)
     if(ai->ai_family != this->af)
       continue;
 
-    ret = Socket::sendto(this->sockfd, buffer, len, 0,
+    ret = Socket::sendto(this->sockfd, buffer, len, MSG_NOSIGNAL,
      ai->ai_addr, ai->ai_addrlen);
 
     if(ret < 0)
