@@ -59,7 +59,6 @@ usage() {
 	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
 	echo "  --disable-sdl           Disables SDL dependencies and features."
 	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
-	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
 	echo "  --enable-pledge         Enable experimental OpenBSD pledge(2) support"
 	echo
 	echo "General options:"
@@ -74,6 +73,7 @@ usage() {
 	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
 	echo
 	echo "Graphics options:"
+	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
 	echo "  --disable-software      Disable software renderer."
 	echo "  --disable-softscale     Disable SDL 2 accelerated software renderer."
 	echo "  --disable-gl            Disable all GL renderers."
@@ -1230,6 +1230,26 @@ else
 fi
 
 #
+# Frames-per-second counter
+#
+if [ "$FPSCOUNTER" = "true" ]; then
+	echo "fps counter enabled."
+	echo "#define CONFIG_FPS" >> src/config.h
+else
+	echo "fps counter disabled."
+fi
+
+#
+# Layer rendering, if enabled
+#
+if [ "$LAYER_RENDERING" = "true" ]; then
+	echo "Layer rendering enabled."
+else
+	echo "Layer rendering disabled."
+	echo "#define CONFIG_NO_LAYER_RENDERING" >> src/config.h
+fi
+
+#
 # GP2X needs Mikmod, other platforms can pick
 # Keep the default at the bottom so it doesn't override others.
 #
@@ -1488,16 +1508,6 @@ else
 fi
 
 #
-# Frames-per-second counter
-#
-if [ "$FPSCOUNTER" = "true" ]; then
-	echo "fps counter enabled."
-	echo "#define CONFIG_FPS" >> src/config.h
-else
-	echo "fps counter disabled."
-fi
-
-#
 # Pledge(2) on main executable warning
 #
 if [ "$PLEDGE" = "true" ]; then
@@ -1508,16 +1518,6 @@ if [ "$PLEDGE" = "true" ]; then
 	echo "  scaling renderers (use fullscreen=1 and/or fullscreen_windowed=1);"
 	echo "  crash when using any scaling renderer with some Mesa versions."
 	echo "  You've been warned!"
-fi
-
-#
-# Layer rendering, if enabled
-#
-if [ "$LAYER_RENDERING" = "true" ]; then
-	echo "Layer rendering enabled."
-else
-	echo "Layer rendering disabled."
-	echo "#define CONFIG_NO_LAYER_RENDERING" >> src/config.h
 fi
 
 echo
