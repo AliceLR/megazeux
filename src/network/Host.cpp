@@ -472,7 +472,19 @@ boolean Host::create_connection(struct addrinfo *ai, enum host_family family)
   // Disable blocking on the socket so a timeout can be enforced.
   Socket::set_blocking(this->sockfd, false);
 
-  Socket::connect(this->sockfd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
+  res = Socket::connect(this->sockfd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
+  if(res)
+  {
+    // This may be caused by an actual error or it might just be EINPROGRESS,
+    // which means the connect call worked.
+    if(Socket::is_last_error_fatal())
+    {
+      Socket::perror("create_connection: connect");
+      Socket::close(this->sockfd);
+      this->state = HOST_UNINITIALIZED;
+      return false;
+    }
+  }
 
   FD_ZERO(&mask);
   FD_SET(this->sockfd, &mask);
@@ -484,8 +496,21 @@ boolean Host::create_connection(struct addrinfo *ai, enum host_family family)
     if(res == 0)
       info("Connection timed out.\n");
     else
-      Socket::perror("connect");
+      Socket::perror("create_connection: select");
 
+    Socket::close(this->sockfd);
+    this->state = HOST_UNINITIALIZED;
+    return false;
+  }
+
+  // The select can apparently return successfully even if the connection
+  // failed. Check the socket error state directly.
+  int error = 0;
+  socklen_t len = sizeof(int);
+  res = Socket::getsockopt(this->sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
+  if(res || len != sizeof(int) || error)
+  {
+    Socket::perror("create_connection: getsockopt(SO_ERROR)");
     Socket::close(this->sockfd);
     this->state = HOST_UNINITIALIZED;
     return false;

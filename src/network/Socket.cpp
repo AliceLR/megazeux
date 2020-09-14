@@ -206,6 +206,7 @@ static struct
   int (PASCAL *send)(SOCKET, const char *, int, int);
   int (PASCAL *sendto)(SOCKET, const char*, int, int,
    const struct sockaddr *, int);
+  int (PASCAL *getsockopt)(SOCKET, int, int, char *, int *);
   int (PASCAL *setsockopt)(SOCKET, int, int, const char *, int);
   SOCKET (PASCAL *socket)(int, int, int);
   int (PASCAL *recv)(SOCKET, char *, int, int);
@@ -235,6 +236,7 @@ static const struct dso_syms_map socksyms_map[] =
   { "closesocket",           (fn_ptr *)&socksyms.closesocket },
   { "connect",               (fn_ptr *)&socksyms.connect },
   { "gethostbyname",         (fn_ptr *)&socksyms.gethostbyname },
+  { "getsockopt",            (fn_ptr *)&socksyms.getsockopt },
   { "htons",                 (fn_ptr *)&socksyms.htons },
   { "ioctlsocket",           (fn_ptr *)&socksyms.ioctlsocket },
   { "listen",                (fn_ptr *)&socksyms.listen },
@@ -415,6 +417,12 @@ int Socket::connect(int sockfd,
 struct hostent *Socket::gethostbyname(const char *name)
 {
   return socksyms.gethostbyname(name);
+}
+
+int Socket::getsockopt(int sockfd, int level, int optname, void *optval,
+ socklen_t *optlen)
+{
+  return socksyms.getsockopt(sockfd, level, optname, (char *)optval, optlen);
 }
 
 uint16_t Socket::hton_short(uint16_t hostshort)

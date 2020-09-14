@@ -184,6 +184,12 @@ public:
     return ::connect(sockfd, serv_addr, addrlen);
   });
 
+  static int getsockopt(int sockfd, int level, int optname, void *optval,
+   socklen_t *optlen) UNIX_INLINE
+  ({
+    return ::getsockopt(sockfd, level, optname, (char *)optval, optlen);
+  });
+
   /**
    * Convert a short from host byte order to network byte order (big endian).
    * Don't use "htons" as the function name; BSD defines it as a macro.
@@ -289,6 +295,7 @@ private:
     switch(errno)
     {
       case 0:
+      case EINPROGRESS:
       case EAGAIN:
       case EINTR:
         return false;
