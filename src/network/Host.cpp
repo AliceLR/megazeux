@@ -38,10 +38,6 @@
 #include <algorithm>
 #include <utility>
 
-#ifndef __amigaos__
-#define CONFIG_IPV6
-#endif
-
 static struct config_info *conf;
 
 static const char *get_proxy_error(enum proxy_status s)

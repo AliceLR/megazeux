@@ -68,8 +68,6 @@ usage() {
 	echo "  --disable-mzxrun        Disable generation of separate MZXRun."
 	echo "  --disable-helpsys       Disable the built-in help system."
 	echo "  --disable-utils         Disable compilation of utils."
-	echo "  --disable-network       Disable networking abilities."
-	echo "  --disable-updater       Disable built-in updater."
 	echo "  --disable-check-alloc   Disables memory allocator error handling."
 	echo "  --disable-counter-hash  Disables hash tables for counter/string lookups."
 	echo "  --enable-meter          Enable load/save meter display."
@@ -97,6 +95,12 @@ usage() {
 	echo "  --disable-vorbis        Disable ogg/vorbis support."
 	echo "  --enable-tremor         Use libvorbisidec instead of libvorbis."
 	echo "  --enable-tremor-lowmem  Use libvorbisidec (lowmem branch) instead of libvorbis."
+	echo
+	echo "Network options:"
+	echo "  --disable-network       Disable networking abilities."
+	echo "  --disable-updater       Disable built-in updater."
+	echo "  --disable-getaddrinfo   Disable getaddrinfo() for name resolution."
+	echo "  --disable-ipv6          Disable IPv6 support."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -159,6 +163,8 @@ ICON="true"
 MODULAR="true"
 UPDATER="true"
 NETWORK="true"
+GETADDRINFO="true"
+IPV6="true"
 VERBOSE="false"
 METER="false"
 SDL="true"
@@ -354,6 +360,12 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-network" ] && NETWORK="false"
 	[ "$1" = "--enable-network" ]  && NETWORK="true"
+
+	[ "$1" = "--disable-getaddrinfo" ] && GETADDRINFO="false"
+	[ "$1" = "--enable-getaddrinfo" ]  && GETADDRINFO="true"
+
+	[ "$1" = "--disable-ipv6" ] && IPV6="false"
+	[ "$1" = "--enable-ipv6" ]  && IPV6="true"
 
 	[ "$1" = "--disable-verbose" ] && VERBOSE="false"
 	[ "$1" = "--enable-verbose" ]  && VERBOSE="true"
@@ -923,6 +935,16 @@ if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
 fi
 
 #
+# Force disable getaddrinfo and IPv6 (unsupported platform)
+#
+if [ "$NETWORK" = "true" ] && \
+ [ "$PLATFORM" = "amiga" -o "$PLATFORM" = "wii" -o "$PLATFORM" = "psp" ]; then
+	echo "Force-disabling getaddrinfo() name resolution and IPv6 support (unsupported platform)."
+	GETADDRINFO="false"
+	IPV6="false"
+fi
+
+#
 # Force disable utils.
 #
 if [ "$DEBYTECODE" = "true" ]; then
@@ -1347,9 +1369,26 @@ fi
 # Handle networking, if enabled
 #
 if [ "$NETWORK" = "true" ]; then
-        echo "Networking enabled."
+	echo "Networking enabled."
 	echo "#define CONFIG_NETWORK" >> src/config.h
 	echo "BUILD_NETWORK=1" >> platform.inc
+
+	#
+	# Handle networking options.
+	#
+	if [ "$GETADDRINFO" = "true" ]; then
+		echo "getaddrinfo() name resolution enabled."
+		echo "#define CONFIG_GETADDRINFO" >> src/config.h
+	else
+		echo "getaddrinfo() name resolution disabled."
+	fi
+
+	if [ "$IPV6" = "true" ]; then
+		echo "IPv6 support enabled."
+		echo "#define CONFIG_IPV6" >> src/config.h
+	else
+		echo "IPv6 support disabled."
+	fi
 else
 	echo "Networking disabled."
 fi

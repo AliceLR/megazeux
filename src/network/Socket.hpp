@@ -58,10 +58,21 @@
 //#include <net/if.h>
 #endif // __WIN32__
 
-#if defined(__amigaos__)
+#if defined(CONFIG_GETADDRINFO) && !defined(EAI_AGAIN)
+#error "Missing getaddrinfo() support; configure with --disable-getaddrinfo."
+#endif
+
+#if defined(CONFIG_IPV6) && !defined(AF_INET6)
+#error "Missing IPv6 support; configure with --disable-ipv6."
+#endif
+
+#if !defined(CONFIG_GETADDRINFO)
 
 // Amiga doesn't have getaddrinfo and needs to use a fallback implementation.
+// This affects various other legacy platforms and some console SDKs as well.
 #define GETADDRINFO_MAYBE_INLINE(x)
+
+#if !defined(EAI_AGAIN)
 #define EAI_NONAME -2
 #define EAI_AGAIN  -3
 #define EAI_FAIL   -4
@@ -78,6 +89,7 @@ struct addrinfo
   char *ai_canonname;
   struct addrinfo *ai_next;
 };
+#endif
 #endif
 
 #ifndef AI_V4MAPPED
