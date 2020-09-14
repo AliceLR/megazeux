@@ -23,7 +23,8 @@ ARCH_LDFLAGS  += -L${PREFIX}/sdk/lib
 # needs to go there. Otherwise, linking fails. This issue was encountered with
 # the devkitPSP r16 build of PSPDEV.
 SDL_CFLAGS = -I${PREFIX}/include/SDL
-SDL_LDFLAGS = -lSDL -lGL -lpspirkeyb -lc -lc -lpspvfpu -lpsprtc -lpsppower -lpspaudio -lpspgu -lpspge -lpspdisplay -lpsphprm -lpspctrl -lpspnet_inet -lpspuser
+SDL_LDFLAGS = -lSDL -lGL -lpspirkeyb -lc -lc -lpspvfpu -lpsprtc -lpsppower -lpspaudio \
+  -lpspgu -lpspge -lpspdisplay -lpsphprm -lpspctrl -lpspnet_inet -lpspnet_resolver -lpspuser
 LIBPNG_CFLAGS =
 LIBPNG_LDFLAGS = -lpng
 

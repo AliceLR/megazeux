@@ -25,8 +25,9 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
-#if defined(__WIN32__) || defined(__amigaos__)
+#if defined(__WIN32__) || !defined(CONFIG_GETADDRINFO)
 
 /**
  * gethostbyname may use a static struct that is shared across threads
@@ -129,9 +130,9 @@ const char *Socket::gai_strerror_alt(int errcode)
       return "Unknown error.";
   }
 }
-#endif // __WIN32__ || __amigaos__
+#endif // __WIN32__ || !CONFIG_GETADDRINFO
 
-#ifdef __amigaos__
+#if !defined(__WIN32__) && !defined(CONFIG_GETADDRINFO)
 static int init_ref_count;
 
 boolean Socket::init(struct config_info *conf)
@@ -139,6 +140,7 @@ boolean Socket::init(struct config_info *conf)
   if(!init_ref_count)
     platform_mutex_init(&gai_lock);
   init_ref_count++;
+  return true;
 }
 
 void Socket::exit()

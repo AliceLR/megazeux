@@ -21,6 +21,7 @@
 // trying to work with platform-dependent solutions.
 
 #include <assert.h>
+#include <stdlib.h>
 
 #include "DNS.hpp"
 #include "Socket.hpp"
