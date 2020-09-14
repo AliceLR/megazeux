@@ -25,6 +25,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
 #if defined(__WIN32__) || !defined(CONFIG_GETADDRINFO)
 

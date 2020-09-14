@@ -189,6 +189,10 @@ ifeq (${BUILD_AUDIO},1)
 core_cobjs += arch/wii/audio.o
 endif
 endif
+# Required regardless of whether SDL is enabled or not...
+ifeq (${BUILD_NETWORK},1)
+core_cxxobjs += arch/wii/network.o
+endif
 endif
 
 ifeq (${BUILD_PSP},1)

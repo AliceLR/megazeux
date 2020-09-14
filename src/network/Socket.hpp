@@ -44,7 +44,12 @@
 #endif // !__WIN64__
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#else // !__WIN32__
+#elif defined(CONFIG_WII)
+// See arch/wii/network.cpp.
+#include <network.h>
+#include <fcntl.h>
+#define UNIX_INLINE(x)
+#else // !__WIN32__ && !CONFIG_WII
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/select.h>
