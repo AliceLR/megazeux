@@ -40,7 +40,7 @@
 
 static struct config_info *conf;
 
-static const char *get_proxy_error(enum proxy_status s)
+static inline const char *get_proxy_error(enum proxy_status s)
 {
   switch(s)
   {

@@ -139,6 +139,7 @@ boolean Socket::init(struct config_info *conf)
   if(!init_ref_count)
     platform_mutex_init(&gai_lock);
   init_ref_count++;
+  return true;
 }
 
 void Socket::exit()
