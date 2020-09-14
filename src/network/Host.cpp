@@ -76,6 +76,36 @@ static inline const char *get_proxy_error(enum proxy_status s)
   return "unknown error (REPORT THIS!)";
 }
 
+static inline const char *get_host_type_string(enum host_type type)
+{
+  switch(type)
+  {
+    case HOST_TYPE_TCP:
+      return "TCP";
+    case HOST_TYPE_UDP:
+      return "UDP";
+    case NUM_HOST_TYPES:
+      break;
+  }
+  return "(unknown)";
+}
+
+static inline const char *get_host_family_string(enum host_family family)
+{
+  switch(family)
+  {
+    case HOST_FAMILY_IPV4:
+      return "IPv4";
+    case HOST_FAMILY_IPV6:
+      return "IPv6";
+    case HOST_FAMILY_ANY:
+      return "any";
+    case NUM_HOST_FAMILIES:
+      break;
+  }
+  return "(unknown)";
+}
+
 static int host_type_to_proto(enum host_type type)
 {
   switch(type)
@@ -177,9 +207,8 @@ void Host::swap(Host &a, Host &b)
 Host::Host(enum host_type type, enum host_family family)
 {
   trace("--HOST-- Host::Host(%s, %s)\n",
-    (type == HOST_TYPE_UDP) ? "UDP" : "TCP",
-    (family == HOST_FAMILY_IPV6) ? "IPv6" : (family == HOST_FAMILY_IPV4) ? "IPv4" : "any"
-  );
+   get_host_type_string(type), get_host_family_string(family));
+
   this->state = HOST_UNINITIALIZED;
   this->type = type;
   this->preferred_family = family;
@@ -210,7 +239,7 @@ Host::~Host()
  * This may be called multiple times as part connect(), bind(), sendto(),
  * or recvfrom().
  *
- * @param type     IP protocol to use (HOST_TYPE_TCP or HOST_TYPE_UDP).
+ * @param type     Transport protocol to use (HOST_TYPE_TCP or HOST_TYPE_UDP).
  * @param family   Address family to use (HOST_FAMILY_IPV4 or HOST_FAMILY_IPV6).
  *
  * @return `true` on successful socket creation, otherwise `false`.
@@ -221,7 +250,8 @@ boolean Host::create_socket(enum host_type type, enum host_family family)
   const uint32_t on = 1;
   int err, fd, af, proto;
 
-  trace("--HOST-- Host::create_socket(%d,%d)\n", type, family);
+  trace("--HOST-- Host::create_socket(%s, %s)\n",
+   get_host_type_string(type), get_host_family_string(family));
   assert(type == HOST_TYPE_TCP || type == HOST_TYPE_UDP);
   assert(family == HOST_FAMILY_IPV4 || family == HOST_FAMILY_IPV6);
 
