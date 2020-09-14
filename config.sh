@@ -99,7 +99,7 @@ usage() {
 	echo "Network options:"
 	echo "  --disable-network       Disable networking abilities."
 	echo "  --disable-updater       Disable built-in updater."
-	echo "  --disable-getaddrinfo   Disable getaddrinfo() for name resolution."
+	echo "  --disable-getaddrinfo   Disable getaddrinfo for name resolution."
 	echo "  --disable-ipv6          Disable IPv6 support."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
@@ -939,7 +939,7 @@ fi
 #
 if [ "$NETWORK" = "true" ] && \
  [ "$PLATFORM" = "amiga" -o "$PLATFORM" = "wii" -o "$PLATFORM" = "psp" ]; then
-	echo "Force-disabling getaddrinfo() name resolution and IPv6 support (unsupported platform)."
+	echo "Force-disabling getaddrinfo name resolution and IPv6 support (unsupported platform)."
 	GETADDRINFO="false"
 	IPV6="false"
 fi
@@ -1377,10 +1377,10 @@ if [ "$NETWORK" = "true" ]; then
 	# Handle networking options.
 	#
 	if [ "$GETADDRINFO" = "true" ]; then
-		echo "getaddrinfo() name resolution enabled."
+		echo "getaddrinfo name resolution enabled."
 		echo "#define CONFIG_GETADDRINFO" >> src/config.h
 	else
-		echo "getaddrinfo() name resolution disabled."
+		echo "getaddrinfo name resolution disabled."
 	fi
 
 	if [ "$IPV6" = "true" ]; then
