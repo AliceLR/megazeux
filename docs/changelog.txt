@@ -90,6 +90,9 @@ DEVELOPERS
   support disabled.
 + Added const and restrict to the software render_graph and
   render_layer implementations for a small performance boost.
++ Added --disable-getaddrinfo and --disable-ipv6 config.sh flags
+  to allow disabling these for old platforms and consoles SDKs.
+  Amiga, Wii, and PSP network builds force-disable these.
 
 
 July 20th, 2020 - MZX 2.92e
