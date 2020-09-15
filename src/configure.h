@@ -160,7 +160,7 @@ struct config_info
 #ifdef CONFIG_UPDATER
   boolean updater_enabled;
   int update_host_count;
-  char **update_hosts;
+  const char **update_hosts;
   char update_branch_pin[256];
   int update_auto_check;
 #endif

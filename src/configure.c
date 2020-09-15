@@ -152,12 +152,12 @@
 #define UPDATE_HOST_COUNT 4
 #endif
 
-static char *default_update_hosts[] =
+static const char *default_update_hosts[] =
 {
-  (char *)"updates.digitalmzx.com",
-  (char *)"updates.digitalmzx.net",
-  (char *)"updates.megazeux.org",
-  (char *)"updates.megazeux.net",
+  "updates.digitalmzx.com",
+  "updates.digitalmzx.net",
+  "updates.megazeux.org",
+  "updates.megazeux.net",
 };
 
 #ifndef UPDATE_BRANCH_PIN
@@ -495,15 +495,16 @@ static void config_update_host(struct config_info *conf, char *name,
 {
   if(!conf->update_hosts || conf->update_hosts == default_update_hosts)
   {
-    conf->update_hosts = (char **)ccalloc(MAX_UPDATE_HOSTS, sizeof(char *));
+    conf->update_hosts = (const char **)ccalloc(MAX_UPDATE_HOSTS, sizeof(char *));
     conf->update_host_count = 0;
   }
 
   if(conf->update_host_count < MAX_UPDATE_HOSTS)
   {
     size_t size = strlen(value) + 1;
-    conf->update_hosts[conf->update_host_count] = (char *)cmalloc(size);
-    memcpy(conf->update_hosts[conf->update_host_count], value, size);
+    char *host = (char *)cmalloc(size);
+    memcpy(host, value, size);
+    conf->update_hosts[conf->update_host_count] = host;
     conf->update_host_count++;
   }
 }
@@ -1401,7 +1402,7 @@ void free_config(void)
     int i;
 
     for(i = 0; i < user_conf.update_host_count; i++)
-      free(user_conf.update_hosts[i]);
+      free((char *)user_conf.update_hosts[i]);
 
     free(user_conf.update_hosts);
     user_conf.update_hosts = default_update_hosts;

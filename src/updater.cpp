@@ -663,7 +663,7 @@ err_delete_failed:
      "Failed to delete files; check permissions and restart MegaZeux");
 }
 
-static boolean reissue_connection(HTTPHost &http, char *host_name,
+static boolean reissue_connection(HTTPHost &http, const char *host_name,
  boolean is_automatic)
 {
   boolean ret = false;
@@ -711,7 +711,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
 {
   struct config_info *conf = get_config();
   int cur_host;
-  char *update_host;
+  const char *update_host;
   boolean in_exec_dir = false;
   boolean delete_remote_manifest = false;
   boolean try_next_host = true;
@@ -1067,8 +1067,8 @@ static UpdaterInit::StatusValue updater_init_safety_checks()
    * If they aren't, this is probably the same as above. Use the protected
    * charset to test this (though this really should apply to all assets).
    */
-  char *executable_dir = mzx_res_get_by_id(MZX_EXECUTABLE_DIR);
-  char *edit_chr = mzx_res_get_by_id(MZX_EDIT_CHR);
+  const char *executable_dir = mzx_res_get_by_id(MZX_EXECUTABLE_DIR);
+  const char *edit_chr = mzx_res_get_by_id(MZX_EDIT_CHR);
   size_t len = strlen(executable_dir);
   if(strncmp(executable_dir, edit_chr, len))
     return UpdaterInit::INCOMPATIBLE_ASSETS;

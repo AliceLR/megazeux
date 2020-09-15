@@ -328,7 +328,7 @@ void mzx_res_free(void)
 static unsigned char copy_buffer[COPY_BUFFER_SIZE];
 #endif
 
-char *mzx_res_get_by_id(enum resource_id id)
+const char *mzx_res_get_by_id(enum resource_id id)
 {
 #ifdef USERCONFFILE
   static char userconfpath[MAX_PATH];
