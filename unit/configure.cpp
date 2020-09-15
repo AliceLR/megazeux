@@ -751,6 +751,11 @@ UNITTEST(Settings)
     TEST_ENUM("update_auto_check", conf->update_auto_check, data);
   }
 
+  SECTION(updater_enabled)
+  {
+    TEST_ENUM("updater_enabled", conf->updater_enabled, boolean_data);
+  }
+
 #endif /* CONFIG_UPDATER */
 
 #ifdef CONFIG_EDITOR

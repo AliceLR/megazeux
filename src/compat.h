@@ -35,6 +35,7 @@
 
 #if __cplusplus >= 201103
 #define IS_CXX_11 1
+#define maybe_constexpr constexpr
 #define maybe_explicit explicit
 #else /* !IS_CXX_11 */
 // Compatibility defines so certain C++11 features can be used without checks.
@@ -44,6 +45,7 @@
 #define final
 #define noexcept
 #define override
+#define maybe_constexpr
 #define maybe_explicit
 #endif /* !IS_CXX_11 */
 

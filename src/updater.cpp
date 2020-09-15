@@ -68,7 +68,79 @@ static char previous_dir[MAX_PATH];
 static long final_size = -1;
 static boolean cancel_update;
 
-static boolean updater_was_initialized;
+/**
+ * Functions and enum for updater startup error codes (namespace because no
+ * enum classes in C++98...).
+ */
+namespace UpdaterInit
+{
+  enum StatusValue
+  {
+    SUCCESS,
+    UNINITIALIZED,
+    INCOMPATIBLE_ASSETS,
+    INCOMPATIBLE_CONFDIR,
+    FAILED_CHDIR_TO_EXEC_DIR,
+    FAILED_TO_STAT_MANIFEST,
+    FAILED_FILE_WRITE,
+    FAILED_FILE_UNLINK
+  };
+  static StatusValue status = UpdaterInit::UNINITIALIZED;
+
+  static boolean allow_full_updates()
+  {
+    return status == SUCCESS || status == FAILED_TO_STAT_MANIFEST;
+  }
+
+  static const char *status_string(StatusValue st)
+  {
+    switch(st)
+    {
+      case SUCCESS:
+        return "updater initialization successful";
+      case UNINITIALIZED:
+        return "updater hasn't been initialized";
+      case INCOMPATIBLE_ASSETS:
+      case INCOMPATIBLE_CONFDIR:
+        return "platform not configured for full updates";
+      case FAILED_CHDIR_TO_EXEC_DIR:
+        return "failed to chdir to executable dir";
+      case FAILED_TO_STAT_MANIFEST:
+        return "failed to stat manifest.txt";
+      case FAILED_FILE_WRITE:
+        return "failed to write to executable dir";
+      case FAILED_FILE_UNLINK:
+        return "failed to delete file from executable dir";
+    }
+    return "unknown error";
+  }
+
+#ifdef IS_CXX_11
+  static constexpr int const_strcmp(const char *a, const char *b)
+  {
+    return (a == b) || (a[0] == b[0] && \
+     (a[0] == '\0' || const_strcmp(a + 1, b + 1))) ? 0 : -1;
+  }
+#else
+#define const_strcmp(a,b) strcmp(a,b)
+#endif
+
+  /**
+   * Compile time checks for the paranoid to disable the parts of the updater
+   * that can delete things on UNIX-like platforms and Mac OS X.
+   */
+  static maybe_constexpr StatusValue _const_safety_checks()
+  {
+    /**
+     * The config file should exist in the executable dir.
+     * If it doesn't, this is probably a UNIX-like platform or Mac OS X.
+     * TODO other checks may be possible here e.g. make sure SHAREDIR is
+     * prefixed by GAMEDIR--requires GAMEDIR being added to config.h.
+     */
+    return const_strcmp(CONFDIR, "./") ? INCOMPATIBLE_CONFDIR : SUCCESS;
+  }
+  static maybe_constexpr const StatusValue const_safety_checks = _const_safety_checks();
+}
 
 /**
  * A new version has been released and there are updates available on the
@@ -417,6 +489,7 @@ static boolean swivel_current_dir(boolean have_video)
       warn("--UPDATER-- Failed to change into install directory.\n");
     return false;
   }
+  trace("--UPDATER-- chdir() to exec dir successful: %s\n", executable_dir);
   return true;
 }
 
@@ -431,7 +504,7 @@ static boolean swivel_current_dir_back(boolean have_video)
       warn("--UPDATER-- Failed to change back to user directory.\n");
     return false;
   }
-
+  trace("--UPDATER-- chdir() to user dir successful: %s\n", previous_dir);
   return true;
 }
 
@@ -639,27 +712,18 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
   struct config_info *conf = get_config();
   int cur_host;
   char *update_host;
+  boolean in_exec_dir = false;
   boolean delete_remote_manifest = false;
   boolean try_next_host = true;
   boolean ret = false;
 
   set_error_suppression(E_UPDATE, false);
 
-  if(!updater_was_initialized)
-  {
-    error_message(E_UPDATE, 13,
-     "Updater couldn't be initialized; check folder permissions");
-    return false;
-  }
-
   if(conf->update_host_count < 1)
   {
     error_message(E_UPDATE, 14, "No updater hosts defined! Aborting.");
     return false;
   }
-
-  if(!swivel_current_dir(true))
-    return false;
 
   set_context(CTX_UPDATER);
 
@@ -798,6 +862,24 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         try_next_host = false;
         goto err_try_next_host;
       }
+    }
+
+    /**
+     * To continue, the updater needs to switch to the executable directory.
+     * Platforms that don't pass the startup checks should stop here. Explicitly
+     * checking the constexpr check result here lets the compiler optimize out
+     * large sections of inaccessible code for platforms like Linux.
+     */
+    if(UpdaterInit::const_safety_checks != UpdaterInit::SUCCESS ||
+     !UpdaterInit::allow_full_updates())
+      break;
+
+    if(!in_exec_dir)
+    {
+      if(!swivel_current_dir(true))
+        break;
+
+      in_exec_dir = true;
     }
 
     /* We can now compute a unique URL base for the updater. This will
@@ -957,7 +1039,8 @@ err_try_next_host:
   if(delete_remote_manifest)
     unlink(REMOTE_MANIFEST_TXT);
 
-  swivel_current_dir_back(true);
+  if(in_exec_dir)
+    swivel_current_dir_back(true);
 
   pop_context();
 
@@ -973,32 +1056,116 @@ err_try_next_host:
   return false;
 }
 
-boolean updater_init(void)
+/**
+ * Perform some sanity checks to make sure certain parts of this code will
+ * never run on platforms that don't support it (e.g. Linux).
+ */
+static UpdaterInit::StatusValue updater_init_safety_checks()
+{
+  /**
+   * The assets should should be relative to the executable dir.
+   * If they aren't, this is probably the same as above. Use the protected
+   * charset to test this (though this really should apply to all assets).
+   */
+  char *executable_dir = mzx_res_get_by_id(MZX_EXECUTABLE_DIR);
+  char *edit_chr = mzx_res_get_by_id(MZX_EDIT_CHR);
+  size_t len = strlen(executable_dir);
+  if(strncmp(executable_dir, edit_chr, len))
+    return UpdaterInit::INCOMPATIBLE_ASSETS;
+
+  return UpdaterInit::SUCCESS;
+}
+
+/**
+ * Perform several steps to determine whether full updater capabilities are
+ * available in the exec dir.
+ *
+ * 1) File read + make sure manifest.txt exists.
+ * 2) File create.
+ * 3) File unlink.
+ */
+static UpdaterInit::StatusValue updater_init_exec_dir_check()
+{
+  struct stat stat_info;
+
+  if(stat(LOCAL_MANIFEST_TXT, &stat_info))
+    return UpdaterInit::FAILED_TO_STAT_MANIFEST;
+
+  FILE *fp = fopen_unsafe(REMOTE_MANIFEST_TXT "~", "wb");
+  if(!fp)
+    return UpdaterInit::FAILED_FILE_WRITE;
+
+  fclose(fp);
+  if(unlink(REMOTE_MANIFEST_TXT "~"))
+    return UpdaterInit::FAILED_FILE_UNLINK;
+
+  return UpdaterInit::SUCCESS;
+}
+
+/**
+ * Check for a delete.txt manifest indicating files to delete from a prior
+ * update. If found, delete the files listed and update (or remove) delete.txt.
+ */
+static void updater_init_delete_txt_check()
 {
   Manifest delete_list;
   struct stat stat_info;
 
-  check_for_updates = __check_for_updates;
-  updater_was_initialized = false;
-
-  if(!swivel_current_dir(false))
-    return false;
-
   if(stat(DELETE_TXT, &stat_info))
-    goto err_swivel_back;
+    return;
 
   if(!delete_list.create(DELETE_TXT))
-    goto err_swivel_back;
+    return;
 
   apply_delete_list(delete_list);
   unlink(DELETE_TXT);
 
   if(delete_list.has_entries())
     write_delete_list(delete_list);
+}
 
-err_swivel_back:
-  swivel_current_dir_back(false);
-  updater_was_initialized = true;
+boolean updater_init(void)
+{
+  struct config_info *conf = get_config();
+  if(!conf->updater_enabled)
+    return false;
+
+  check_for_updates = __check_for_updates;
+
+  /**
+   * Explicitly compare against the constexpr checks first so the rest gets
+   * optimized out as inaccessible code for platforms like Linux.
+   */
+  UpdaterInit::status = UpdaterInit::const_safety_checks;
+  if(UpdaterInit::const_safety_checks != UpdaterInit::SUCCESS)
+    return true;
+
+  /**
+   * More checks to filter out platforms where the full update process is
+   * entirely non-applicable.
+   */
+  UpdaterInit::status = updater_init_safety_checks();
+  if(UpdaterInit::status != UpdaterInit::SUCCESS)
+    return true;
+
+  if(swivel_current_dir(false))
+  {
+    UpdaterInit::status = updater_init_exec_dir_check();
+
+    if(UpdaterInit::allow_full_updates())
+      updater_init_delete_txt_check();
+
+    swivel_current_dir_back(false);
+  }
+  else
+    UpdaterInit::status = UpdaterInit::FAILED_CHDIR_TO_EXEC_DIR;
+
+  if(!UpdaterInit::allow_full_updates())
+  {
+    warn("Updater startup checks failed; full updates will not be available (%s).\n",
+     UpdaterInit::status_string(UpdaterInit::status));
+  }
+
   return true;
 }
 

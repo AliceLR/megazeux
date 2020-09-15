@@ -40,6 +40,10 @@
 #define MAX_CONFIG_REGISTERED 2
 
 // Arch-specific config.
+#ifdef __WIN32__
+#define UPDATE_AUTO_CHECK_DEFAULT UPDATE_AUTO_CHECK_SILENT
+#endif
+
 #ifdef CONFIG_NDS
 #define VIDEO_OUTPUT_DEFAULT "nds"
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
@@ -164,6 +168,10 @@ static char *default_update_hosts[] =
 #endif
 #endif
 
+#ifndef UPDATE_AUTO_CHECK_DEFAULT
+#define UPDATE_AUTO_CHECK_DEFAULT UPDATE_AUTO_CHECK_OFF
+#endif
+
 #endif /* CONFIG_UPDATER */
 
 static enum config_type current_config_type;
@@ -238,10 +246,11 @@ static const struct config_info user_conf_default =
   1080,                         // socks_port
 #endif
 #if defined(CONFIG_UPDATER)
+  true,                         // updater_enabled
   UPDATE_HOST_COUNT,            // update_host_count
   default_update_hosts,         // update_hosts
   UPDATE_BRANCH_PIN,            // update_branch_pin
-  UPDATE_AUTO_CHECK_SILENT,     // update_auto_check
+  UPDATE_AUTO_CHECK_DEFAULT,    // update_auto_check
 #endif /* CONFIG_UPDATER */
 };
 
@@ -511,6 +520,12 @@ static void config_update_auto_check(struct config_info *conf, char *name,
   int result;
   if(config_enum(&result, value, update_auto_check_values))
     conf->update_auto_check = result;
+}
+
+static void config_set_updater_enabled(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  config_boolean(&conf->updater_enabled, value);
 }
 
 #endif // CONFIG_UPDATER
@@ -1118,6 +1133,7 @@ static const struct config_entry config_options[] =
   { "test_mode", config_test_mode, false },
   { "test_mode_start_board", config_test_mode_start_board, false },
 #ifdef CONFIG_UPDATER
+  { "updater_enabled", config_set_updater_enabled, false },
   { "update_auto_check", config_update_auto_check, false },
   { "update_branch_pin", config_update_branch_pin, false },
   { "update_host", config_update_host, false },
