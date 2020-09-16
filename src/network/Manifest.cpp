@@ -376,9 +376,10 @@ boolean Manifest::check_if_remote_exists(HTTPHost &http,
   {
     warn("Check for remote " MANIFEST_TXT " failed (code %d; error: %s)\n",
      request.status_code, HTTPHost::get_error_string(ret));
+    request.print_response();
     return false;
   }
-  trace("Check for remote " MANIFEST_TXT "successful, code %d\n",
+  trace("Check for remote " MANIFEST_TXT " successful, code %d\n",
    request.status_code);
 
   if(request.status_code == 200)

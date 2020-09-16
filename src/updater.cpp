@@ -59,6 +59,8 @@
 #define UPDATES_TXT   "updates.txt"
 #define DELETE_TXT    "delete.txt"
 
+#define UPDATES_TXT_MAX_SIZE ((size_t)1 << 20)
+
 #define WIDGET_BUF_LEN 80
 
 static char widget_buf[WIDGET_BUF_LEN];
@@ -142,6 +144,13 @@ namespace UpdaterInit
   static maybe_constexpr const StatusValue const_safety_checks = _const_safety_checks();
 }
 
+enum new_version_opts
+{
+  OPT_EXIT,
+  OPT_TRY_NEXT_HOST,
+  OPT_UPDATE_CURRENT
+};
+
 /**
  * A new version has been released and there are updates available on the
  * current host for this platform. Prompt the user to either update to the
@@ -154,12 +163,12 @@ static const char *ui_new_version_available(context *ctx,
   struct world *mzx_world = ctx->world;
   struct element *elements[6];
   struct dialog di;
-  size_t buf_len;
   int result;
 
-  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
+  int buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
    "A new version is available (%s)", new_ver);
   widget_buf[WIDGET_BUF_LEN - 1] = 0;
+  buf_len = MAX(0, buf_len);
 
   elements[0] = construct_label((55 - buf_len) >> 1, 2, widget_buf);
 
@@ -176,7 +185,7 @@ static const char *ui_new_version_available(context *ctx,
   elements[4] = construct_button(21, 11, "Update Old", 1);
   elements[5] = construct_button(36, 11, "Cancel", 2);
 
-  construct_dialog(&di, "New Version", 11, 6, 55, 14, elements, 6, 3);
+  construct_dialog(&di, "New Version", 12, 6, 55, 14, elements, 6, 3);
   result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
 
@@ -190,6 +199,100 @@ static const char *ui_new_version_available(context *ctx,
 
   // Check for updates on the current version.
   return current_ver;
+}
+
+/**
+ * A new version has been released, but either there are no updates available
+ * on the current host or something went wrong in initializing the updater.
+ * Either way, the update can't be performed, so explain why and possibly
+ * offer some other useful options.
+ */
+enum new_version_opts ui_new_version_error(context *ctx,
+ const char *new_ver, boolean platform_has_remote_manifest)
+{
+  char reason[LINE_BUF_LEN];
+  struct world *mzx_world = ctx->world;
+  struct element *elements[7];
+  struct dialog di;
+  int result;
+  int num_elements = ARRAY_SIZE(elements) - 2;
+
+  int buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
+   "A new version is available (%s)", new_ver);
+  widget_buf[WIDGET_BUF_LEN - 1] = '\0';
+  buf_len = MAX(0, buf_len);
+
+  elements[0] = construct_label((55 - buf_len) >> 1, 2, widget_buf);
+
+  elements[1] = construct_label(2, 4,
+   "This update can not be downloaded from the remote\n"
+   "host for the following reason(s):");
+
+  int reason_lines = 0;
+  buf_len = 0;
+  if(UpdaterInit::const_safety_checks != UpdaterInit::SUCCESS)
+  {
+    int res = snprintf(reason + buf_len, LINE_BUF_LEN - buf_len,
+     "* This platform does not support updates.\n");
+    buf_len += MAX(0, res);
+    reason_lines += 1;
+  }
+  else
+  {
+    if(!platform_has_remote_manifest)
+    {
+      int res = snprintf(reason + buf_len, LINE_BUF_LEN - buf_len,
+       "* The remote host does not have updates for your\n"
+       "  platform (%s).\n", PLATFORM);
+      buf_len += MAX(0, res);
+      reason_lines += 2;
+    }
+
+    if(!UpdaterInit::allow_full_updates())
+    {
+      int res = snprintf(reason + buf_len, LINE_BUF_LEN - buf_len,
+       "* The updater failed to initialize on startup:\n"
+       "  %s.\n", UpdaterInit::status_string(UpdaterInit::status));
+      buf_len += MAX(0, res);
+      reason_lines += 2;
+    }
+  }
+  elements[2] = construct_label(2, 7, reason);
+
+  elements[3] = construct_label(2, 8 + reason_lines,
+   "Check digitalmzx.com or github.com/AliceLR/megazeux\n"
+   "to download the latest release for your platform.");
+
+  if(UpdaterInit::allow_full_updates())
+  {
+    elements[4] = construct_button(9, 11 + reason_lines, "OK", OPT_EXIT);
+    elements[5] = construct_button(16, 11 + reason_lines, "Update Old",
+     OPT_UPDATE_CURRENT);
+    elements[6] = construct_button(31, 11 + reason_lines, "Try next host",
+     OPT_TRY_NEXT_HOST);
+
+    num_elements += 2;
+  }
+  else
+    elements[4] = construct_button(25, 11 + reason_lines, "OK", OPT_EXIT);
+
+  int h = 12 + reason_lines + 2;
+  int y = (25 - h) / 2;
+
+  construct_dialog(&di, "New Version", 12, y, 55, h, elements, num_elements, 4);
+  result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  // User pressed "Update Old"; attempt to update the current version.
+  if(result == OPT_UPDATE_CURRENT)
+    return OPT_UPDATE_CURRENT;
+
+  // User pressed "Try next host"
+  if(result == OPT_TRY_NEXT_HOST)
+    return OPT_TRY_NEXT_HOST;
+
+  // User pressed escape or OK; abort.
+  return OPT_EXIT;
 }
 
 /**
@@ -774,8 +877,20 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         break;
       }
 
-      if(request.content_length > updates_txt.size())
-        updates_txt.resize(request.content_length);
+      /**
+       * In the unlikely event this legitimately failed because updates.txt is
+       * too big for the buffer, expand it. Use x2 the reported Content-Length
+       * since update hosts should almost always be serving gzipped files.
+       */
+      if(status == HOST_FWRITE_FAILED)
+      {
+        size_t new_size = MAX(request.content_length, updates_txt.size()) * 2;
+        if(!updates_txt.resize(MIN(new_size, UPDATES_TXT_MAX_SIZE)))
+        {
+          retries = MAX_RETRIES;
+          break;
+        }
+      }
     }
 
     if(retries == MAX_RETRIES)
@@ -853,7 +968,31 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         goto err_try_next_host;
       }
 
-      version = ui_new_version_available(ctx, version, value);
+      /**
+       * Compute a temporary url base and use it to check if the current branch
+       * supports full updates for this platform.
+       */
+      snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, value);
+      boolean platform_has_remote_manifest =
+       Manifest::check_if_remote_exists(http, request, url_base);
+
+      if(!platform_has_remote_manifest || !UpdaterInit::allow_full_updates())
+      {
+        switch(ui_new_version_error(ctx, value, platform_has_remote_manifest))
+        {
+          case OPT_EXIT:
+            version = nullptr;
+            break;
+          case OPT_UPDATE_CURRENT:
+            version = VERSION;
+            break;
+          case OPT_TRY_NEXT_HOST:
+            goto err_try_next_host;
+        }
+      }
+      else
+        version = ui_new_version_available(ctx, version, value);
+
       reconnect = true;
 
       // Abort if no version was selected.
