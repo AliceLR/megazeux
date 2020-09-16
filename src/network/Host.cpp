@@ -391,22 +391,25 @@ boolean Host::send(const void *buffer, size_t len)
 
     // normally it won't all get through at once
     count = Socket::send(this->sockfd, buf + pos, len - pos, MSG_NOSIGNAL);
-    if(count < 0)
+    if(count < 0 && Socket::is_last_error_fatal())
+    {
+      return false;
+    }
+    else
+
+    if(count <= 0)
     {
       // non-blocking socket, so can fail and still be ok
-      if(!Socket::is_last_error_fatal())
-      {
-        count = 0;
-        continue;
-      }
-      return false;
+      // Short delay to prevent excessive CPU usage.
+      delay(10);
+      count = 0;
     }
 
     if(this->cancel_callback && this->cancel_callback())
       return false;
 
 #ifdef DEBUG_TRACE
-    if(trace_raw)
+    if(trace_raw && count)
     {
       trace("--HOST-- Host::send    ");
       for(size_t i = pos; i < pos + count; i++)
@@ -451,14 +454,13 @@ boolean Host::receive(void *buffer, size_t len)
       // Add a short delay to prevent excessive CPU use
       delay(10);
       count = 0;
-      continue;
     }
 
     if(this->cancel_callback && this->cancel_callback())
       return false;
 
 #ifdef DEBUG_TRACE
-    if(trace_raw)
+    if(trace_raw && count)
     {
       trace("--HOST-- Host::receive ");
       for(size_t i = pos; i < pos + count; i++)
