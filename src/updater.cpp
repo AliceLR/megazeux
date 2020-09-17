@@ -1227,9 +1227,6 @@ static UpdaterInit::StatusValue updater_init_exec_dir_check()
 {
   struct stat stat_info;
 
-  if(stat(LOCAL_MANIFEST_TXT, &stat_info))
-    return UpdaterInit::FAILED_TO_STAT_MANIFEST;
-
   FILE *fp = fopen_unsafe(REMOTE_MANIFEST_TXT "~", "wb");
   if(!fp)
     return UpdaterInit::FAILED_FILE_WRITE;
@@ -1237,6 +1234,9 @@ static UpdaterInit::StatusValue updater_init_exec_dir_check()
   fclose(fp);
   if(unlink(REMOTE_MANIFEST_TXT "~"))
     return UpdaterInit::FAILED_FILE_UNLINK;
+
+  if(stat(LOCAL_MANIFEST_TXT, &stat_info))
+    return UpdaterInit::FAILED_TO_STAT_MANIFEST;
 
   return UpdaterInit::SUCCESS;
 }
