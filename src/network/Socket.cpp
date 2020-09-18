@@ -138,7 +138,12 @@ static int init_ref_count;
 boolean Socket::init(struct config_info *conf)
 {
   if(!init_ref_count)
+  {
+    if(!platform_socket_init())
+      return false;
+
     platform_mutex_init(&gai_lock);
+  }
   init_ref_count++;
   return true;
 }
@@ -148,7 +153,10 @@ void Socket::exit()
   assert(init_ref_count);
   init_ref_count--;
   if(!init_ref_count)
+  {
+    platform_socket_exit();
     platform_mutex_destroy(&gai_lock);
+  }
 }
 
 int Socket::getaddrinfo(const char *node, const char *service,
@@ -383,6 +391,11 @@ void winsock_perror(const char *message, int code)
 
   warn("%s (code %d): %s", message, code, err_message);
   LocalFree(err_message);
+}
+
+void Socket::get_errno()
+{
+  return socksyms.WSAGetLastError();
 }
 
 void Socket::perror(const char *message)

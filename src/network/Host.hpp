@@ -132,6 +132,16 @@ public:
   static boolean host_layer_init(struct config_info *conf);
 
   /**
+   * Check the host layer initialization status. If the current platform needs
+   * to perform any late initialization (e.g. when initializing the network
+   * would take too long for it to be worth performing on startup), this
+   * function will handle that.
+   *
+   * @return `true` if the host layer is ready, otherwise `false`.
+   */
+  static boolean host_layer_init_check();
+
+  /**
    * Shuts down the host layer.
    * Frees any associated operating system resources.
    */
