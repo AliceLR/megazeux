@@ -37,6 +37,13 @@ enum host_type
   NUM_HOST_TYPES
 };
 
+enum host_poll
+{
+  HOST_POLL_READ = 1,
+  HOST_POLL_WRITE = 2,
+  HOST_POLL_EXCEPT = 4
+};
+
 enum proxy_status
 {
   PROXY_SUCCESS,
@@ -266,12 +273,13 @@ public:
   /**
    * Polls a host via raw socket access.
    *
+   * @param flags   Events to poll for (see `enum host_poll`).
    * @param timeout Timeout in milliseconds for poll.
    *
    * @return <0 if there was a failure, 0 if there was no data, and the
    *         >0 if there was activity on the socket.
    */
-  int poll(Uint32 timeout);
+  int poll(int flags, Uint32 timeout);
 
 protected:
   /**

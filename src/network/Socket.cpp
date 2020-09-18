@@ -27,6 +27,10 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
+#ifndef _MSC_VER
+#include <sys/time.h>
+#endif
+
 #if defined(__WIN32__) || !defined(CONFIG_GETADDRINFO)
 
 /**
@@ -132,6 +136,106 @@ const char *Socket::gai_strerror_alt(int errcode)
 }
 #endif // __WIN32__ || !CONFIG_GETADDRINFO
 
+#if defined(__WIN32__) || !defined(CONFIG_POLL)
+
+static void reset_timeout(struct timeval *tv, Uint32 timeout)
+{
+  /* Because of the way select() works on Unix platforms, this needs to
+   * be reset every time select() is used on it. */
+  tv->tv_sec = (timeout / 1000);
+  tv->tv_usec = (timeout % 1000) * 1000;
+}
+
+/**
+ * Alternative implementation of poll() that uses select() internally.
+ * Only use this if poll() isn't available (examples: couldn't load WSAPoll;
+ * POSIX <2001; broken poll() in some Mac OS X versions; some console SDKs).
+ */
+int Socket::poll_alt(struct pollfd *fds, size_t nfds, int timeout_ms)
+{
+  struct timeval tv;
+  fd_set readfds;
+  fd_set writefds;
+  fd_set exceptfds;
+  int maxfd = -1;
+  int ret;
+
+  FD_ZERO(&readfds);
+  FD_ZERO(&writefds);
+  FD_ZERO(&exceptfds);
+
+  if(nfds >= FD_SETSIZE)
+  {
+    warn(
+      "--SOCKET-- Socket::poll_alt: provided number of fds for select() %d >= "
+      "FD_SETSIZE %d\n",
+      (int)nfds, (int)FD_SETSIZE
+    );
+  }
+
+  for(size_t i = 0; i < nfds; i++)
+  {
+    struct pollfd &p = fds[i];
+
+#ifndef __WIN32__
+    /**
+     * Reject any fds over FD_SETSIZE. These can't be supported and attempting
+     * to work around this is prone to security issues.
+     *
+     * This doesn't matter for Windows, which uses a list instead of a bitmask.
+     */
+    if(p.fd >= FD_SETSIZE)
+    {
+      warn(
+        "--SOCKET-- Socket::poll_alt: ignoring fd %d >= FD_SETSIZE %d for "
+        "select()\n",
+        (int)p.fd, (int)FD_SETSIZE
+      );
+      continue;
+    }
+#endif
+
+    maxfd = MAX(maxfd, (int)p.fd);
+    p.revents = 0;
+    if(p.events & POLLIN)
+      FD_SET(p.fd, &readfds);
+    if(p.events & POLLOUT)
+      FD_SET(p.fd, &writefds);
+    if(p.events & POLLPRI)
+      FD_SET(p.fd, &exceptfds);
+  }
+
+  reset_timeout(&tv, timeout_ms);
+  ret = Socket::select(maxfd + 1, &readfds, &writefds, &exceptfds, &tv);
+  if(ret < 0)
+    return -1;
+
+  if(ret > 0)
+  {
+    for(size_t i = 0; i < nfds; i++)
+    {
+      struct pollfd &p = fds[i];
+
+      if((p.events & POLLIN) && FD_ISSET(p.fd, &readfds))
+        p.revents |= POLLIN;
+      if((p.events & POLLOUT) && FD_ISSET(p.fd, &writefds))
+        p.revents |= POLLOUT;
+      if((p.events & POLLPRI) && FD_ISSET(p.fd, &exceptfds))
+        p.revents |= POLLPRI;
+    }
+    return ret;
+  }
+  return 0;
+}
+
+#ifndef __WIN32__
+int Socket::poll(struct pollfd *fds, unsigned int nfds, int timeout_ms)
+{
+  return Socket::poll_alt(fds, nfds, timeout_ms);
+}
+#endif
+#endif /* __WIN32__ || !CONFIG_POLL */
+
 #if !defined(__WIN32__) && !defined(CONFIG_GETADDRINFO)
 static int init_ref_count;
 
@@ -167,7 +271,7 @@ void Socket::getaddrinfo_perror(const char *message, int errcode)
   warn("%s (code %d): %s\n", message, errcode,
    Socket::gai_strerror_alt(errcode));
 }
-#endif
+#endif /* !__WIN32__ && !CONFIG_GETADDRINFO */
 
 #ifdef __WIN32__
 
@@ -225,6 +329,9 @@ static struct
   int (WSAAPI *getaddrinfo)(const char *, const char *,
    const struct addrinfo *, struct addrinfo **);
 
+  // These functions were only implemented as of Windows Vista.
+  int (WSAAPI *WSAPoll)(struct pollfd *fds, unsigned long nfds, int timeout);
+
   void *handle;
 }
 socksyms;
@@ -256,6 +363,8 @@ static const struct dso_syms_map socksyms_map[] =
 
   { "freeaddrinfo",          (fn_ptr *)&socksyms.freeaddrinfo },
   { "getaddrinfo",           (fn_ptr *)&socksyms.getaddrinfo },
+
+  { "WSAPoll",               (fn_ptr *)&socksyms.WSAPoll },
 
   { NULL, NULL }
 };
@@ -299,7 +408,8 @@ static boolean socket_load_syms(void)
     {
       // Skip these NT 5.1 WS2 extensions; we can fall back
       if((strcmp(socksyms_map[i].name, "freeaddrinfo") == 0) ||
-         (strcmp(socksyms_map[i].name, "getaddrinfo") == 0))
+         (strcmp(socksyms_map[i].name, "getaddrinfo") == 0) ||
+         (strcmp(socksyms_map[i].name, "WSAPoll") == 0))
         continue;
 
       // However all other Winsock symbols must be loaded, or we fail hard
@@ -459,6 +569,13 @@ void Socket::getaddrinfo_perror(const char *message, int errcode)
 int Socket::listen(int sockfd, int backlog)
 {
   return socksyms.listen(sockfd, backlog);
+}
+
+int Socket::poll(struct pollfd *fds, unsigned int nfds, int timeout_ms)
+{
+  if(socksyms.WSAPoll)
+    return socksyms.WSAPoll(fds, nfds, timeout_ms);
+  return Socket::poll_alt(fds, nfds, timeout_ms);
 }
 
 int Socket::select(int nfds, fd_set *readfds,
