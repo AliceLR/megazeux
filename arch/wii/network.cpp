@@ -158,7 +158,8 @@ struct hostent *Socket::gethostbyname(const char *name)
 {
   // This one actually does set errno...
   struct hostent *ret = net_gethostbyname(name);
-  set_net_errno(errno);
+  if(!ret)
+    set_net_errno(errno);
   return ret;
 }
 
@@ -170,11 +171,11 @@ int Socket::get_errno()
 
 void Socket::perror(const char *message)
 {
+  int net_errno = get_net_errno();
   char buf[256];
   buf[0] = '\0';
 
   // NOTE: return value not portable.
-  int net_errno = get_net_errno();
   strerror_r(MAX(0, -net_errno), buf, ARRAY_SIZE(buf));
   warn("--SOCKET-- %s: %s\n", message, buf);
 }
