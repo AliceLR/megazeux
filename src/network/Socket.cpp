@@ -365,9 +365,21 @@ void Socket::exit(void)
 
 boolean Socket::is_last_error_fatal(void)
 {
-  if(socksyms.WSAGetLastError() == WSAEWOULDBLOCK)
-    return false;
-  return Socket::is_last_errno_fatal();
+  /**
+   * NOTE: WSA error codes are not intercompatible with errno, so there's no
+   * point in calling is_last_errno_fatal from this function. Just handle the
+   * WSA error codes directly.
+   */
+  switch(Socket::get_errno())
+  {
+    case 0:
+    case WSAEINPROGRESS:
+    case WSAEWOULDBLOCK:
+    case WSAEINTR:
+      return false;
+    default:
+      return true;
+  }
 }
 
 /**
@@ -393,15 +405,14 @@ void winsock_perror(const char *message, int code)
   LocalFree(err_message);
 }
 
-void Socket::get_errno()
+int Socket::get_errno()
 {
   return socksyms.WSAGetLastError();
 }
 
 void Socket::perror(const char *message)
 {
-  int code = socksyms.WSAGetLastError();
-  winsock_perror(message, code);
+  winsock_perror(message, Socket::get_errno());
 }
 
 int Socket::accept(int sockfd,
