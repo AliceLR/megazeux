@@ -255,9 +255,6 @@ int Socket::poll(struct pollfd *fds, unsigned int nfds, int timeout_ms)
   static_assert(offsetof(pollfd, revents) == offsetof(pollsd, revents), "");
 #endif
 
-  if(!fds || !nfds)
-    return set_net_errno(-EINVAL);
-
   int res = net_poll(reinterpret_cast<struct pollsd *>(fds), nfds, timeout_ms);
   return set_net_errno(res);
 }
