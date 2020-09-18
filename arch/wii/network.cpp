@@ -18,13 +18,16 @@
  */
 
 #include "../../src/network/Socket.hpp"
-#include "../../src/network/Scoped.hpp"
 #include "../../src/platform.h"
 #include "../../src/util.h"
 
 #include <network.h>
 #include <fcntl.h>
 #include <stdlib.h>
+
+#ifdef IS_CXX_11
+#include <type_traits>
+#endif
 
 /**
  * Wii essentially uses standard BSD socket functions with different names.
@@ -236,34 +239,26 @@ int Socket::poll(struct pollfd *fds, unsigned int nfds, int timeout_ms)
 {
   /**
    * libogc supports poll but uses its own struct with u32s instead of shorts
-   * for some reason. Note "pollsd" instead of "pollfd". It does have defines
-   * for POLLIN, POLLPRI, and POLLOUT, so the event flags can just be copied.
+   * for some reason. Note "pollsd" instead of "pollfd". Socket.hpp defines a
+   * pollfd that should be compatible with "pollsd".
    */
-  ScopedBuffer<struct pollsd> ps(nfds);
+#ifdef IS_CXX_11
+  struct pollfd tmpf;
+  struct pollsd tmps;
+  // Make sure pollsd wasn't modified in libogc...
+  static_assert(sizeof(pollfd) == sizeof(pollsd), "");
+  static_assert(sizeof(tmpf.fd) == sizeof(tmps.socket), "");
+  static_assert(sizeof(tmpf.events) == sizeof(tmps.events), "");
+  static_assert(sizeof(tmpf.revents) == sizeof(tmps.revents), "");
+  static_assert(offsetof(pollfd, fd) == offsetof(pollsd, socket), "");
+  static_assert(offsetof(pollfd, events) == offsetof(pollsd, events), "");
+  static_assert(offsetof(pollfd, revents) == offsetof(pollsd, revents), "");
+#endif
 
-  if(!fds || !nfds || !ps)
+  if(!fds || !nfds)
     return set_net_errno(-EINVAL);
 
-  for(size_t i = 0; i < nfds; i++)
-  {
-    struct pollfd &f = fds[i];
-    struct pollsd &s = ps[i];
-    s.socket = f.fd;
-    s.events = f.events;
-    s.revents = 0;
-    f.revents = 0;
-  }
-
-  int res = net_poll(ps, nfds, timeout_ms);
-  if(res > 0)
-  {
-    for(size_t i = 0; i < nfds; i++)
-    {
-      struct pollfd &f = fds[i];
-      struct pollsd &s = ps[i];
-      f.revents = s.revents;
-    }
-  }
+  int res = net_poll(reinterpret_cast<struct pollsd *>(fds), nfds, timeout_ms);
   return set_net_errno(res);
 }
 

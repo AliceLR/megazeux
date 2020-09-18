@@ -53,11 +53,13 @@
 #include <fcntl.h>
 #define UNIX_INLINE(x)
 
+// libogc uses a structure different from the regular structure and does not
+// declare pollfd. Declare this to be identical to the libogc version...
 struct pollfd
 {
-  int fd;
-  short events;
-  short revents;
+  s32 fd;
+  u32 events;
+  u32 revents;
 };
 
 #else // !__WIN32__ && !CONFIG_WII
