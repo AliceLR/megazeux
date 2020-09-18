@@ -100,6 +100,7 @@ usage() {
 	echo "  --disable-network       Disable networking abilities."
 	echo "  --disable-updater       Disable built-in updater."
 	echo "  --disable-getaddrinfo   Disable getaddrinfo for name resolution."
+	echo "  --disable-poll          Disable poll for socket monitoring."
 	echo "  --disable-ipv6          Disable IPv6 support."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
@@ -164,6 +165,7 @@ MODULAR="true"
 UPDATER="true"
 NETWORK="true"
 GETADDRINFO="true"
+POLL="true"
 IPV6="true"
 VERBOSE="false"
 METER="false"
@@ -363,6 +365,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-getaddrinfo" ] && GETADDRINFO="false"
 	[ "$1" = "--enable-getaddrinfo" ]  && GETADDRINFO="true"
+
+	[ "$1" = "--disable-poll" ] && POLL="false"
+	[ "$1" = "--enable-poll" ]  && POLL="true"
 
 	[ "$1" = "--disable-ipv6" ] && IPV6="false"
 	[ "$1" = "--enable-ipv6" ]  && IPV6="true"
@@ -945,6 +950,19 @@ if [ "$NETWORK" = "true" ] && \
 fi
 
 #
+# Force disable poll (unsupported platform)
+# PSPSDK doesn't have this function and old versions of Mac OS X have a bugged
+# implementation. Amiga hasn't been verified, but considering the other things
+# missing, it's probably a safe inclusion.
+#
+if [ "$NETWORK" = "true" ] && \
+ [ "$PLATFORM" = "amiga" -o "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-dist" \
+  -o "$PLATFORM" = "darwin-devel" -o "$PLATFORM" = "psp" ]; then
+	echo "Force-disabling poll (unsupported platform)."
+	POLL="false"
+fi
+
+#
 # Force disable utils.
 #
 if [ "$DEBYTECODE" = "true" ]; then
@@ -1401,6 +1419,13 @@ if [ "$NETWORK" = "true" ]; then
 		echo "#define CONFIG_GETADDRINFO" >> src/config.h
 	else
 		echo "getaddrinfo name resolution disabled."
+	fi
+
+	if [ "$POLL" = "true" ]; then
+		echo "poll enabled."
+		echo "#define CONFIG_POLL" >> src/config.h
+	else
+		echo "poll disabled; falling back to select."
 	fi
 
 	if [ "$IPV6" = "true" ]; then

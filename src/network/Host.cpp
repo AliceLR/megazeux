@@ -25,10 +25,6 @@
 #include "../platform.h"
 #include "../util.h"
 
-#ifndef _MSC_VER
-#include <sys/time.h>
-#endif
-
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -481,14 +477,6 @@ boolean Host::receive(void *buffer, size_t len)
   return true;
 }
 
-static void reset_timeout(struct timeval *tv, Uint32 timeout)
-{
-  /* Because of the way select() works on Unix platforms, this needs to
-   * be reset every time select() is used on it. */
-  tv->tv_sec = (timeout / 1000);
-  tv->tv_usec = (timeout % 1000) * 1000;
-}
-
 /**
  * Create a socket and connect to a host.
  *
@@ -500,8 +488,6 @@ static void reset_timeout(struct timeval *tv, Uint32 timeout)
  */
 boolean Host::create_connection(struct addrinfo *ai, enum host_family family)
 {
-  struct timeval tv;
-  fd_set mask;
   int res;
 
   trace("--HOST-- Host::create_connection\n");
@@ -526,17 +512,13 @@ boolean Host::create_connection(struct addrinfo *ai, enum host_family family)
     }
   }
 
-  FD_ZERO(&mask);
-  FD_SET(this->sockfd, &mask);
-  reset_timeout(&tv, this->timeout_ms);
-
-  res = Socket::select(this->sockfd + 1, nullptr, &mask, nullptr, &tv);
+  res = this->poll(HOST_POLL_WRITE, this->timeout_ms);
   if(res != 1)
   {
     if(res == 0)
       info("Connection timed out.\n");
     else
-      Socket::perror("create_connection: select");
+      Socket::perror("create_connection: Host::poll");
 
     Socket::close(this->sockfd);
     this->state = HOST_UNINITIALIZED;
@@ -1265,23 +1247,27 @@ boolean Host::send_to(const char *buffer, size_t len,
 
 #endif // NETWORK_DEADCODE
 
-int Host::poll(Uint32 timeout)
+int Host::poll(int flags, Uint32 timeout)
 {
-  struct timeval tv;
-  fd_set mask;
-  int ret;
+  struct pollfd p;
+  p.fd = this->sockfd;
+  p.events = 0;
+  p.revents = 0;
+  if(flags & HOST_POLL_READ)
+    p.events |= POLLIN;
+  if(flags & HOST_POLL_WRITE)
+    p.events |= POLLOUT;
+  if(flags & HOST_POLL_EXCEPT)
+    p.events |= POLLPRI;
 
-  FD_ZERO(&mask);
-  FD_SET(this->sockfd, &mask);
-
-  reset_timeout(&tv, timeout);
-  ret = Socket::select(this->sockfd + 1, &mask, nullptr, nullptr, &tv);
+  int ret = Socket::poll(&p, 1, timeout);
   if(ret < 0)
     return -1;
 
   if(ret > 0)
-    if(FD_ISSET(this->sockfd, &mask))
+  {
+    if(p.events & p.revents)
       return 1;
-
+  }
   return 0;
 }

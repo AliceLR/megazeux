@@ -35,6 +35,7 @@
 #endif
 
 #ifdef __WIN32__
+
 // Winsock symbols are dynamically loaded, so disable the inline versions.
 #define UNIX_INLINE(x)
 #ifndef __WIN64__
@@ -44,12 +45,23 @@
 #endif // !__WIN64__
 #include <winsock2.h>
 #include <ws2tcpip.h>
+
 #elif defined(CONFIG_WII)
+
 // See arch/wii/network.cpp.
 #include <network.h>
 #include <fcntl.h>
 #define UNIX_INLINE(x)
+
+struct pollfd
+{
+  int fd;
+  short events;
+  short revents;
+};
+
 #else // !__WIN32__ && !CONFIG_WII
+
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -58,13 +70,21 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fcntl.h>
+#ifdef CONFIG_POLL
+#include <poll.h>
+#endif
 // Not clear what the intent of including this was but it's not present for PSP.
 // Commenting out for now until it's needed (if at all).
 //#include <net/if.h>
+
 #endif // __WIN32__
 
 #if defined(CONFIG_GETADDRINFO) && !defined(EAI_AGAIN)
 #error "Missing getaddrinfo() support; configure with --disable-getaddrinfo."
+#endif
+
+#if defined(CONFIG_POLL) && !defined(POLLPRI)
+#error "Missing poll support; configure with --disable-poll."
 #endif
 
 #if defined(CONFIG_IPV6) && !defined(AF_INET6)
@@ -97,6 +117,29 @@ struct addrinfo
 #endif
 #endif
 
+#if !defined(CONFIG_POLL)
+
+// PSP and probably a lot of older systems don't have poll and need to fall
+// back to using select().
+#define POLL_MAYBE_INLINE(x)
+
+#if !defined(POLLPRI)
+#define POLLIN   0x001
+#define POLLPRI  0x002
+#define POLLOUT  0x004
+#define POLLERR  0x008
+#define POLLHUP  0x010
+#define POLLNVAL 0x020
+
+struct pollfd
+{
+  int fd;
+  short events;
+  short revents;
+};
+#endif
+#endif
+
 #ifndef AI_V4MAPPED
 #define AI_V4MAPPED (0)
 #endif
@@ -115,6 +158,10 @@ struct addrinfo
 
 #ifndef GETADDRINFO_MAYBE_INLINE
 #define GETADDRINFO_MAYBE_INLINE(x) UNIX_INLINE(x)
+#endif
+
+#ifndef POLL_MAYBE_INLINE
+#define POLL_MAYBE_INLINE(x) UNIX_INLINE(x)
 #endif
 
 /**
@@ -150,6 +197,8 @@ private:
    const struct addrinfo *hints, struct addrinfo **res);
   static void freeaddrinfo_alt(struct addrinfo *res);
   static const char *gai_strerror_alt(int errcode);
+
+  static int poll_alt(struct pollfd *fds, size_t nfds, int timeout_ms);
 
 public:
   static boolean init(struct config_info *conf) GETADDRINFO_MAYBE_INLINE
@@ -233,6 +282,11 @@ public:
   static int listen(int sockfd, int backlog) UNIX_INLINE
   ({
     return ::listen(sockfd, backlog);
+  });
+
+  static int poll(struct pollfd *fds, unsigned int nfds, int timeout_ms) POLL_MAYBE_INLINE
+  ({
+    return ::poll(fds, nfds, timeout_ms);
   });
 
   static int select(int nfds, fd_set *readfds, fd_set *writefds,
