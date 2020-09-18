@@ -18,10 +18,12 @@
  */
 
 #include "../../src/network/Socket.hpp"
+#include "../../src/platform.h"
 #include "../../src/util.h"
 
 #include <network.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 /**
  * Wii essentially uses standard BSD socket functions with different names.
@@ -41,10 +43,74 @@ static boolean net_is_initialized = false;
  * whatever the return value of the previous socket function was. When >= 0,
  * there is no error. When negative, there was an error, which should be
  * converted to an error message using strerror_r(-net_errno).
- *
- * TODO thread safety.
  */
-static int net_errno = 0;
+struct net_errno_pair
+{
+  platform_thread_id thread_id;
+  int thread_errno;
+};
+
+static net_errno_pair *net_errno_list = nullptr;
+static size_t net_errno_len = 0;
+static size_t net_errno_alloc = 0;
+static platform_mutex net_errno_lock;
+
+static int &get_thread_net_errno()
+{
+  platform_thread_id current_id = platform_get_thread_id();
+  size_t i = 0;
+
+  if(net_errno_list)
+  {
+    for(i = 0; i < net_errno_len; i++)
+    {
+      net_errno_pair &p = net_errno_list[i];
+
+      if(platform_is_same_thread(current_id, p.thread_id))
+        return p.thread_errno;
+    }
+  }
+
+  if(!net_errno_list || net_errno_len >= net_errno_alloc)
+  {
+    net_errno_alloc = net_errno_alloc ? net_errno_alloc * 2 : 4;
+    net_errno_list =
+     (net_errno_pair *)crealloc(net_errno_list, net_errno_alloc * sizeof(net_errno_pair));
+  }
+
+  net_errno_pair &p = net_errno_list[net_errno_len++];
+  p.thread_id = current_id;
+  p.thread_errno = 0;
+  return p.thread_errno;
+}
+
+static int get_net_errno()
+{
+  platform_mutex_lock(&net_errno_lock);
+
+  int result = get_thread_net_errno();
+
+  platform_mutex_unlock(&net_errno_lock);
+  return result;
+}
+
+static int set_net_errno(int value)
+{
+  /**
+   * Nothing should be trying to read the errno unless something explicitly
+   * returns a negative value...
+   */
+  if(value < 0)
+  {
+    platform_mutex_lock(&net_errno_lock);
+
+    int &net_errno = get_thread_net_errno();
+    net_errno = value;
+
+    platform_mutex_unlock(&net_errno_lock);
+  }
+  return value;
+}
 
 boolean platform_socket_init()
 {
@@ -55,8 +121,12 @@ boolean platform_socket_init_late()
 {
   if(!net_is_initialized)
   {
-    net_errno = net_init();
-    if(net_errno != 0)
+    if(!net_errno_lock)
+      platform_mutex_init(&net_errno_lock);
+
+    int res = net_init();
+    set_net_errno(res);
+    if(res != 0)
     {
       Socket::perror("platform_socket_init_late() -> net_init()");
       return false;
@@ -73,18 +143,28 @@ void platform_socket_exit()
     net_is_initialized = false;
     net_deinit();
   }
+  if(net_errno_lock)
+  {
+    platform_mutex_destroy(&net_errno_lock);
+    net_errno_lock = 0;
+  }
+  free(net_errno_list);
+  net_errno_list = nullptr;
+  net_errno_alloc = 0;
+  net_errno_len = 0;
 }
 
 struct hostent *Socket::gethostbyname(const char *name)
 {
   // This one actually does set errno...
   struct hostent *ret = net_gethostbyname(name);
-  net_errno = errno;
+  set_net_errno(errno);
   return ret;
 }
 
 int Socket::get_errno()
 {
+  int net_errno = get_net_errno();
   return net_errno < 0 ? -net_errno : 0;
 }
 
@@ -94,32 +174,34 @@ void Socket::perror(const char *message)
   buf[0] = '\0';
 
   // NOTE: return value not portable.
+  int net_errno = get_net_errno();
   strerror_r(MAX(0, -net_errno), buf, ARRAY_SIZE(buf));
   warn("--SOCKET-- %s: %s\n", message, buf);
 }
 
 int Socket::accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
-  net_errno = net_accept(sockfd, addr, addrlen);
-  return net_errno;
+  int res = net_accept(sockfd, addr, addrlen);
+  return set_net_errno(res);
 }
 
 int Socket::bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
-  net_errno = net_bind(sockfd, (struct sockaddr *)addr, addrlen);
-  return net_errno;
+  int res = net_bind(sockfd, (struct sockaddr *)addr, addrlen);
+  return set_net_errno(res);
 }
 
 void Socket::close(int fd)
 {
-  net_errno = net_close(fd);
+  int res = net_close(fd);
+  set_net_errno(res);
 }
 
 int Socket::connect(int sockfd, const struct sockaddr *serv_addr,
  socklen_t addrlen)
 {
-  net_errno = net_connect(sockfd, const_cast<struct sockaddr *>(serv_addr), addrlen);
-  return net_errno;
+  int res = net_connect(sockfd, const_cast<struct sockaddr *>(serv_addr), addrlen);
+  return set_net_errno(res);
 }
 
 int Socket::getsockopt(int sockfd, int level, int optname, void *optval,
@@ -132,11 +214,9 @@ int Socket::getsockopt(int sockfd, int level, int optname, void *optval,
     // Just pretend everything is ok since there's no way to get the error ;-(
     int *optval_i = reinterpret_cast<int *>(optval);
     *optval_i = 0;
-    net_errno = 0;
-    return 0;
+    return set_net_errno(0);
   }
-  net_errno = -EINVAL;
-  return net_errno;
+  return set_net_errno(-EINVAL);
 }
 
 uint16_t Socket::hton_short(uint16_t hostshort)
@@ -146,8 +226,8 @@ uint16_t Socket::hton_short(uint16_t hostshort)
 
 int Socket::listen(int sockfd, int backlog)
 {
-  net_errno = net_listen(sockfd, backlog);
-  return net_errno;
+  int res = net_listen(sockfd, backlog);
+  return set_net_errno(res);
 }
 
 int Socket::select(int nfds, fd_set *readfds, fd_set *writefds,
@@ -159,9 +239,9 @@ int Socket::select(int nfds, fd_set *readfds, fd_set *writefds,
    * return -EINVAL, but this only happens if nfds or the timeout are invalid
    * (i.e. it should happen instantly).
    */
-  net_errno = net_select(nfds, readfds, writefds, exceptfds, timeout);
-  if(net_errno != -EINVAL)
-    return net_errno;
+  int res = net_select(nfds, readfds, writefds, exceptfds, timeout);
+  if(res != -EINVAL)
+    return set_net_errno(res);
 
   struct pollsd ps[FD_SETSIZE];
   int num_ps = 0;
@@ -174,7 +254,7 @@ int Socket::select(int nfds, fd_set *readfds, fd_set *writefds,
     if(rf || wf || ef)
     {
       if(num_ps >= FD_SETSIZE)
-        return -EINVAL;
+        return set_net_errno(-EINVAL);
 
       struct pollsd &p = ps[num_ps++];
 
@@ -199,8 +279,8 @@ int Socket::select(int nfds, fd_set *readfds, fd_set *writefds,
     FD_ZERO(exceptfds);
 
   int timeout_ms = (timeout->tv_sec * 1000 + timeout->tv_usec / 1000);
-  net_errno = net_poll(ps, num_ps, timeout_ms);
-  if(net_errno > 0)
+  res = net_poll(ps, num_ps, timeout_ms);
+  if(res > 0)
   {
     for(int i = 0; i < num_ps; i++)
     {
@@ -213,27 +293,27 @@ int Socket::select(int nfds, fd_set *readfds, fd_set *writefds,
         FD_SET(p.socket, exceptfds);
     }
   }
-  return net_errno;
+  return set_net_errno(res);
 }
 
 ssize_t Socket::send(int sockfd, const void *buf, size_t len, int flags)
 {
-  net_errno = net_send(sockfd, buf, len, flags);
-  return net_errno;
+  int res = net_send(sockfd, buf, len, flags);
+  return set_net_errno(res);
 }
 
 ssize_t Socket::sendto(int sockfd, const void *buf, size_t len, int flags,
  const struct sockaddr *to, socklen_t tolen)
 {
-  net_errno = net_sendto(sockfd, buf, len, flags, (struct sockaddr *)to, tolen);
-  return net_errno;
+  int res = net_sendto(sockfd, buf, len, flags, (struct sockaddr *)to, tolen);
+  return set_net_errno(res);
 }
 
 int Socket::setsockopt(int sockfd, int level, int optname,
  const void *optval, socklen_t optlen)
 {
-  net_errno = net_setsockopt(sockfd, level, optname, optval, optlen);
-  return net_errno;
+  int res = net_setsockopt(sockfd, level, optname, optval, optlen);
+  return set_net_errno(res);
 }
 
 int Socket::socket(int af, int type, int protocol)
@@ -246,21 +326,21 @@ int Socket::socket(int af, int type, int protocol)
    (type == SOCK_DGRAM && protocol == IPPROTO_UDP))
     protocol = IPPROTO_IP;
 
-  net_errno = net_socket(af, type, protocol);
-  return net_errno;
+  int res = net_socket(af, type, protocol);
+  return set_net_errno(res);
 }
 
 int Socket::recv(int sockfd, void *buf, size_t len, int flags)
 {
-  net_errno = net_recv(sockfd, buf, len, flags);
-  return net_errno;
+  int res = net_recv(sockfd, buf, len, flags);
+  return set_net_errno(res);
 }
 
 int Socket::recvfrom(int sockfd, void *buf, size_t len, int flags,
  struct sockaddr *from, socklen_t *fromlen)
 {
-  net_errno = net_recvfrom(sockfd, buf, len, flags, from, fromlen);
-  return net_errno;
+  int res = net_recvfrom(sockfd, buf, len, flags, from, fromlen);
+  return set_net_errno(res);
 }
 
 boolean Socket::is_last_error_fatal()
