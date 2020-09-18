@@ -18,6 +18,7 @@
  */
 
 #include "../../src/network/Socket.hpp"
+#include "../../src/network/Scoped.hpp"
 #include "../../src/platform.h"
 #include "../../src/util.h"
 
@@ -231,69 +232,46 @@ int Socket::listen(int sockfd, int backlog)
   return set_net_errno(res);
 }
 
+int Socket::poll(struct pollfd *fds, unsigned int nfds, int timeout_ms)
+{
+  /**
+   * libogc supports poll but uses its own struct with u32s instead of shorts
+   * for some reason. Note "pollsd" instead of "pollfd". It does have defines
+   * for POLLIN, POLLPRI, and POLLOUT, so the event flags can just be copied.
+   */
+  ScopedBuffer<struct pollsd> ps(nfds);
+
+  if(!fds || !nfds || !ps)
+    return set_net_errno(-EINVAL);
+
+  for(size_t i = 0; i < nfds; i++)
+  {
+    struct pollfd &f = fds[i];
+    struct pollsd &s = ps[i];
+    s.socket = f.fd;
+    s.events = f.events;
+    s.revents = 0;
+    f.revents = 0;
+  }
+
+  int res = net_poll(ps, nfds, timeout_ms);
+  if(res > 0)
+  {
+    for(size_t i = 0; i < nfds; i++)
+    {
+      struct pollfd &f = fds[i];
+      struct pollsd &s = ps[i];
+      f.revents = s.revents;
+    }
+  }
+  return set_net_errno(res);
+}
+
 int Socket::select(int nfds, fd_set *readfds, fd_set *writefds,
  fd_set *exceptfds, struct timeval *timeout)
 {
-  /**
-   * Try actual select first. Most likely, this isn't actually implemented and
-   * poll needs to be substituted for it instead. Actual select can technically
-   * return -EINVAL, but this only happens if nfds or the timeout are invalid
-   * (i.e. it should happen instantly).
-   */
+  warn("--SOCKET-- select() is not implemented by libogc.\n");
   int res = net_select(nfds, readfds, writefds, exceptfds, timeout);
-  if(res != -EINVAL)
-    return set_net_errno(res);
-
-  struct pollsd ps[FD_SETSIZE];
-  int num_ps = 0;
-
-  for(int i = 0; i < nfds; i++)
-  {
-    int rf = readfds ? FD_ISSET(i, readfds) : 0;
-    int wf = writefds ? FD_ISSET(i, writefds) : 0;
-    int ef = exceptfds ? FD_ISSET(i, exceptfds) : 0;
-    if(rf || wf || ef)
-    {
-      if(num_ps >= FD_SETSIZE)
-        return set_net_errno(-EINVAL);
-
-      struct pollsd &p = ps[num_ps++];
-
-      p.socket = i;
-      p.events = 0;
-      p.revents = 0;
-
-      if(rf)
-        p.events |= POLLIN;
-      if(wf)
-        p.events |= POLLOUT;
-      if(ef)
-        p.events |= POLLPRI;
-    }
-  }
-
-  if(readfds)
-    FD_ZERO(readfds);
-  if(writefds)
-    FD_ZERO(writefds);
-  if(exceptfds)
-    FD_ZERO(exceptfds);
-
-  int timeout_ms = (timeout->tv_sec * 1000 + timeout->tv_usec / 1000);
-  res = net_poll(ps, num_ps, timeout_ms);
-  if(res > 0)
-  {
-    for(int i = 0; i < num_ps; i++)
-    {
-      struct pollsd &p = ps[i];
-      if(readfds && (p.revents & POLLIN))
-        FD_SET(p.socket, readfds);
-      if(writefds && (p.revents & POLLOUT))
-        FD_SET(p.socket, writefds);
-      if(exceptfds && (p.revents & POLLPRI))
-        FD_SET(p.socket, exceptfds);
-    }
-  }
   return set_net_errno(res);
 }
 
