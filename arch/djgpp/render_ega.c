@@ -412,8 +412,8 @@ static void ega_render_graph(struct graphics_data *graphics)
                  | (src->char_value & 0xFF));
 }
 
-static void ega_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void ega_hardware_cursor(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset, boolean enable)
 {
   struct ega_render_data *render_data = graphics->render_data;
   unsigned long dest = ega_vb_page[render_data->page];
@@ -426,7 +426,7 @@ static void ega_render_cursor(struct graphics_data *graphics,
     render_data->offset = offset;
     render_data->curpages = 4;
   }
-  if(lines)
+  if(enable)
   {
     if((x != render_data->x) || (y != render_data->y))
     {
@@ -439,8 +439,14 @@ static void ega_render_cursor(struct graphics_data *graphics,
       ega_set_cursor_pos(render_data->page, x, y);
       render_data->curpages--;
     }
-    _farsetsel(render_data->vbsel);
-    _farnspokeb(dest, (_farnspeekb(dest) & 0xF0) | (color & 0x0F));
+    /**
+     * Disable setting the cursor color for now. This changes the color of the
+     * color of the entire char which is generally not desirable; the point of
+     * having a different cursor color than the char color is to make it more
+     * visible.
+     */
+    //_farsetsel(render_data->vbsel);
+    //_farnspokeb(dest, (_farnspeekb(dest) & 0xF0) | (color & 0x0F));
   }
 }
 
@@ -489,7 +495,7 @@ void render_ega_register(struct renderer *renderer)
   renderer->get_screen_coords = get_screen_coords_centered;
   renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = ega_render_graph;
-  renderer->render_cursor = ega_render_cursor;
+  renderer->hardware_cursor = ega_hardware_cursor;
   renderer->render_mouse = ega_render_mouse;
   renderer->sync_screen = ega_sync_screen;
 }
