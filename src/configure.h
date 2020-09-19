@@ -70,6 +70,17 @@ enum allow_cheats_type
   ALLOW_CHEATS_ALWAYS
 };
 
+enum host_family
+{
+  /** Prefer IPv4 address resolution for hostnames */
+  HOST_FAMILY_IPV4,
+  /** Prefer IPv6 address resolution for hostnames */
+  HOST_FAMILY_IPV6,
+  /** Allow either IPv4 or IPv6 addresses. */
+  HOST_FAMILY_ANY,
+  NUM_HOST_FAMILIES
+};
+
 enum update_auto_check_mode
 {
   UPDATE_AUTO_CHECK_OFF = 0,
@@ -139,13 +150,17 @@ struct config_info
   // Network layer options
 #ifdef CONFIG_NETWORK
   boolean network_enabled;
+  enum host_family network_address_family;
   char socks_host[256];
+  char socks_username[256];
+  char socks_password[256];
   int socks_port;
 #endif
 
 #ifdef CONFIG_UPDATER
+  boolean updater_enabled;
   int update_host_count;
-  char **update_hosts;
+  const char **update_hosts;
   char update_branch_pin[256];
   int update_auto_check;
 #endif

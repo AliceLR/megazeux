@@ -25,10 +25,6 @@
 #include "../platform.h"
 #include "../util.h"
 
-#ifndef _MSC_VER
-#include <sys/time.h>
-#endif
-
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -38,13 +34,75 @@
 #include <algorithm>
 #include <utility>
 
-#ifndef __amigaos__
-#define CONFIG_IPV6
-#endif
-
 static struct config_info *conf;
 
-int host_type_to_proto(enum host_type type)
+static inline const char *get_proxy_error(enum proxy_status s)
+{
+  switch(s)
+  {
+    case PROXY_SUCCESS:
+      return "proxy connection successful";
+    case PROXY_INVALID_CONFIG:
+      return "user configuration error";
+    case PROXY_CONNECTION_FAILED:
+      return "connection error (receive failed)";
+    case PROXY_SEND_ERROR:
+      return "connection error (send failed)";
+    case PROXY_AUTH_FAILED:
+      return "authentication failure";
+    case PROXY_AUTH_VERSION_UNSUPPORTED:
+      return "authentication protocol version not supported by remote host";
+    case PROXY_AUTH_METHOD_UNSUPPORTED:
+      return "authentication method not supported by remote host";
+    case PROXY_HANDSHAKE_FAILED:
+      return "protocol not supported by remote host";
+    case PROXY_REFLECTION_FAILED:
+      return "error establishing proxy connection";
+    case PROXY_TARGET_REFUSED:
+      return "connection refused by remote host";
+    case PROXY_ADDRESS_TYPE_UNSUPPORTED:
+      return "address provided by getaddrinfo is not supported by client";
+    case PROXY_ADDRESS_INVALID:
+      return "address provided by getaddrinfo is invalid";
+    case PROXY_ACCESS_DENIED:
+      return "connection not allowed by ruleset";
+    case PROXY_UNKNOWN_ERROR:
+      break;
+  }
+  return "unknown error (REPORT THIS!)";
+}
+
+static inline const char *get_host_type_string(enum host_type type)
+{
+  switch(type)
+  {
+    case HOST_TYPE_TCP:
+      return "TCP";
+    case HOST_TYPE_UDP:
+      return "UDP";
+    case NUM_HOST_TYPES:
+      break;
+  }
+  return "(unknown)";
+}
+
+static inline const char *get_host_family_string(enum host_family family)
+{
+  switch(family)
+  {
+    case HOST_FAMILY_IPV4:
+      return "IPv4";
+    case HOST_FAMILY_IPV6:
+      return "IPv6";
+    case HOST_FAMILY_ANY:
+      return "any";
+    case NUM_HOST_FAMILIES:
+      break;
+  }
+  return "(unknown)";
+}
+
+static int host_type_to_proto(enum host_type type)
 {
   switch(type)
   {
@@ -56,7 +114,7 @@ int host_type_to_proto(enum host_type type)
   }
 }
 
-int host_type_to_socktype(enum host_type type)
+static int host_type_to_socktype(enum host_type type)
 {
   switch(type)
   {
@@ -68,16 +126,38 @@ int host_type_to_socktype(enum host_type type)
   }
 }
 
-int host_family_to_af(enum host_family family)
+static int host_family_to_af(enum host_family family)
 {
   switch(family)
   {
 #ifdef CONFIG_IPV6
     case HOST_FAMILY_IPV6:
       return AF_INET6;
+
+    // This allows getaddrinfo to return both IPv4 and IPv6 addresses.
+    case HOST_FAMILY_ANY:
+      return AF_UNSPEC;
 #endif
     default:
       return AF_INET;
+  }
+}
+
+static int host_family_hint_flags(enum host_family family)
+{
+  switch(family)
+  {
+#ifdef CONFIG_IPV6
+    // This flag allows IPv4-mapped addresses if no IPv6 addresses are found.
+    case HOST_FAMILY_IPV6:
+      return AI_V4MAPPED;
+
+    // Both allowed--try to autodetect which ones work based on system config.
+    case HOST_FAMILY_ANY:
+      return AI_ADDRCONFIG;
+#endif
+    default:
+      return 0;
   }
 }
 
@@ -93,6 +173,14 @@ boolean Host::host_layer_init(struct config_info *in_conf)
   return true;
 }
 
+boolean Host::host_layer_init_check()
+{
+  if(!conf)
+    return false;
+
+  return Socket::init_late();
+}
+
 void Host::host_layer_exit(void)
 {
   DNS::exit();
@@ -104,14 +192,17 @@ void Host::swap(Host &a, Host &b)
   std::swap(a.state, b.state);
   std::swap(a.type, b.type);
   std::swap(a.preferred_family, b.preferred_family);
-  std::swap(a.preferred_af, b.preferred_af);
-  std::swap(a.socktype, b.socktype);
-  std::swap(a.proto, b.proto);
+  std::swap(a.hint_af, b.hint_af);
+  std::swap(a.hint_socktype, b.hint_socktype);
+  std::swap(a.hint_proto, b.hint_proto);
+  std::swap(a.hint_flags, b.hint_flags);
   std::swap(a.name, b.name);
   std::swap(a.endpoint, b.endpoint);
   std::swap(a.proxied, b.proxied);
+  std::swap(a.trace_raw, b.trace_raw);
   std::swap(a.af, b.af);
   std::swap(a.sockfd, b.sockfd);
+  std::swap(a.proto, b.proto);
   std::swap(a.timeout_ms, b.timeout_ms);
   std::swap(a.receive_callback, b.receive_callback);
   std::swap(a.cancel_callback, b.cancel_callback);
@@ -120,23 +211,25 @@ void Host::swap(Host &a, Host &b)
 Host::Host(enum host_type type, enum host_family family)
 {
   trace("--HOST-- Host::Host(%s, %s)\n",
-    (type == HOST_TYPE_UDP) ? "UDP" : "TCP",
-    (family == HOST_FAMILY_IPV6) ? "IPv6" : "IPv4"
-  );
+   get_host_type_string(type), get_host_family_string(family));
+
   this->state = HOST_UNINITIALIZED;
   this->type = type;
   this->preferred_family = family;
   this->timeout_ms = Host::TIMEOUT_DEFAULT;
 
   // Hints to provide to getaddrinfo.
-  this->preferred_af = host_family_to_af(family);
-  this->socktype = host_type_to_socktype(type);
-  this->proto = host_type_to_proto(type);
+  this->hint_af = host_family_to_af(family);
+  this->hint_socktype = host_type_to_socktype(type);
+  this->hint_proto = host_type_to_proto(type);
+  this->hint_flags = host_family_hint_flags(family);
 
   this->name = nullptr;
   this->endpoint = nullptr;
   this->receive_callback = nullptr;
   this->cancel_callback = nullptr;
+  this->proxied = false;
+  this->trace_raw = false;
 }
 
 Host::~Host()
@@ -150,7 +243,7 @@ Host::~Host()
  * This may be called multiple times as part connect(), bind(), sendto(),
  * or recvfrom().
  *
- * @param type     IP protocol to use (HOST_TYPE_TCP or HOST_TYPE_UDP).
+ * @param type     Transport protocol to use (HOST_TYPE_TCP or HOST_TYPE_UDP).
  * @param family   Address family to use (HOST_FAMILY_IPV4 or HOST_FAMILY_IPV6).
  *
  * @return `true` on successful socket creation, otherwise `false`.
@@ -159,9 +252,12 @@ boolean Host::create_socket(enum host_type type, enum host_family family)
 {
   struct linger linger = { 1, 30 };
   const uint32_t on = 1;
-  int err, fd, af;
+  int err, fd, af, proto;
 
-  trace("--HOST-- Host::create_socket\n");
+  trace("--HOST-- Host::create_socket(%s, %s)\n",
+   get_host_type_string(type), get_host_family_string(family));
+  assert(type == HOST_TYPE_TCP || type == HOST_TYPE_UDP);
+  assert(family == HOST_FAMILY_IPV4 || family == HOST_FAMILY_IPV6);
 
   assert(this->state == HOST_UNINITIALIZED);
   if(this->state != HOST_UNINITIALIZED)
@@ -173,10 +269,12 @@ boolean Host::create_socket(enum host_type type, enum host_family family)
   {
     case HOST_TYPE_UDP:
       fd = Socket::socket(af, SOCK_DGRAM, IPPROTO_UDP);
+      proto = IPPROTO_UDP;
       break;
 
     default:
       fd = Socket::socket(af, SOCK_STREAM, IPPROTO_TCP);
+      proto = IPPROTO_TCP;
       break;
   }
 
@@ -227,12 +325,27 @@ boolean Host::create_socket(enum host_type type, enum host_family family)
     }
   }
 
+#ifdef SO_NOSIGPIPE
+  /**
+   * Disable SIGPIPE for this socket on platforms that support this option.
+   * This is redundant with the send() flag MSG_NOSIGNAL, as neither seems to
+   * be universally supported.
+   */
+  err = Socket::setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&on, sizeof(on));
+  if(err < 0)
+  {
+    Socket::perror("setsockopt(SO_NOSIGPIPE)");
+    goto err_close;
+  }
+#endif
+
   // Initially the socket is blocking
   Socket::set_blocking(fd, true);
 
   this->state = HOST_INITIALIZED;
   this->af = af;
   this->sockfd = fd;
+  this->proto = proto;
   return true;
 
 err_close:
@@ -281,20 +394,34 @@ boolean Host::send(const void *buffer, size_t len)
       return false;
 
     // normally it won't all get through at once
-    count = Socket::send(this->sockfd, buf + pos, len - pos, 0);
-    if(count < 0)
+    count = Socket::send(this->sockfd, buf + pos, len - pos, MSG_NOSIGNAL);
+    if(count < 0 && Socket::is_last_error_fatal())
+    {
+      return false;
+    }
+    else
+
+    if(count <= 0)
     {
       // non-blocking socket, so can fail and still be ok
-      if(!Socket::is_last_error_fatal())
-      {
-        count = 0;
-        continue;
-      }
-      return false;
+      // Short delay to prevent excessive CPU usage.
+      delay(10);
+      count = 0;
     }
 
     if(this->cancel_callback && this->cancel_callback())
       return false;
+
+#ifdef DEBUG_TRACE
+    if(trace_raw && count)
+    {
+      trace("--HOST-- Host::send    ");
+      for(size_t i = pos; i < pos + count; i++)
+        fprintf(stderr, "%02x ", buf[i]);
+      fprintf(stderr, "\n");
+      fflush(stderr);
+    }
+#endif
   }
   return true;
 }
@@ -331,21 +458,23 @@ boolean Host::receive(void *buffer, size_t len)
       // Add a short delay to prevent excessive CPU use
       delay(10);
       count = 0;
-      continue;
     }
 
     if(this->cancel_callback && this->cancel_callback())
       return false;
+
+#ifdef DEBUG_TRACE
+    if(trace_raw && count)
+    {
+      trace("--HOST-- Host::receive ");
+      for(size_t i = pos; i < pos + count; i++)
+        fprintf(stderr, "%02x ", buf[i]);
+      fprintf(stderr, "\n");
+      fflush(stderr);
+    }
+#endif
   }
   return true;
-}
-
-static void reset_timeout(struct timeval *tv, Uint32 timeout)
-{
-  /* Because of the way select() works on Unix platforms, this needs to
-   * be reset every time select() is used on it. */
-  tv->tv_sec = (timeout / 1000);
-  tv->tv_usec = (timeout % 1000) * 1000;
 }
 
 /**
@@ -359,8 +488,6 @@ static void reset_timeout(struct timeval *tv, Uint32 timeout)
  */
 boolean Host::create_connection(struct addrinfo *ai, enum host_family family)
 {
-  struct timeval tv;
-  fd_set mask;
   int res;
 
   trace("--HOST-- Host::create_connection\n");
@@ -371,20 +498,41 @@ boolean Host::create_connection(struct addrinfo *ai, enum host_family family)
   // Disable blocking on the socket so a timeout can be enforced.
   Socket::set_blocking(this->sockfd, false);
 
-  Socket::connect(this->sockfd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
+  res = Socket::connect(this->sockfd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
+  if(res)
+  {
+    // This may be caused by an actual error or it might just be EINPROGRESS,
+    // which means the connect call worked.
+    if(Socket::is_last_error_fatal())
+    {
+      Socket::perror("create_connection: connect");
+      Socket::close(this->sockfd);
+      this->state = HOST_UNINITIALIZED;
+      return false;
+    }
+  }
 
-  FD_ZERO(&mask);
-  FD_SET(this->sockfd, &mask);
-  reset_timeout(&tv, this->timeout_ms);
-
-  res = Socket::select(this->sockfd + 1, nullptr, &mask, nullptr, &tv);
+  res = this->poll(HOST_POLL_WRITE, this->timeout_ms);
   if(res != 1)
   {
     if(res == 0)
       info("Connection timed out.\n");
     else
-      Socket::perror("connect");
+      Socket::perror("create_connection: Host::poll");
 
+    Socket::close(this->sockfd);
+    this->state = HOST_UNINITIALIZED;
+    return false;
+  }
+
+  // The select can apparently return successfully even if the connection
+  // failed. Check the socket error state directly.
+  int error = 0;
+  socklen_t len = sizeof(int);
+  res = Socket::getsockopt(this->sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
+  if(res || len != sizeof(int) || error)
+  {
+    Socket::perror("create_connection: getsockopt(SO_ERROR)");
     Socket::close(this->sockfd);
     this->state = HOST_UNINITIALIZED;
     return false;
@@ -453,9 +601,10 @@ boolean Host::address_op(const char *hostname, int port, void *priv,
 
   // Set some hints for the getaddrinfo() call
   memset(&hints, 0, sizeof(struct addrinfo));
-  hints.ai_socktype = this->socktype;
-  hints.ai_protocol = this->proto;
-  hints.ai_family = this->preferred_af;
+  hints.ai_socktype = this->hint_socktype;
+  hints.ai_protocol = this->hint_proto;
+  hints.ai_family = this->hint_af;
+  hints.ai_flags = this->hint_flags;
 
   // Look up host(s) matching hints
   ret = DNS::lookup(hostname, port_str, &hints, &ais, this->timeout_ms);
@@ -496,13 +645,15 @@ boolean Host::connect_direct(const char *hostname, int port)
 enum proxy_status Host::connect_socks4a(const char *target_host, int target_port)
 {
   char handshake[8];
-  int rBuf;
 
   trace("--HOST-- Host::connect_socks4a\n");
   target_port = Socket::hton_short(target_port);
 
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
     return PROXY_CONNECTION_FAILED;
+
+  // Temporarily disable blocking in case the connection needs to time out.
+  Socket::scoped_nonblocking nb(this->sockfd);
 
   if(!this->send("\4\1", 2))
     return PROXY_SEND_ERROR;
@@ -515,36 +666,66 @@ enum proxy_status Host::connect_socks4a(const char *target_host, int target_port
   if(!this->send("\0", 1))
     return PROXY_SEND_ERROR;
 
-  rBuf = this->receive(handshake, 8);
-  if(rBuf == -1)
+  if(!this->receive(handshake, 8))
     return PROXY_CONNECTION_FAILED;
-  if(handshake[1] != 90)
+  if(handshake[0] != 0x00)
     return PROXY_HANDSHAKE_FAILED;
+  switch(handshake[1])
+  {
+    case 0x5A:
+      break;
+    case 0x5B:
+      return PROXY_TARGET_REFUSED;
+    case 0x5C:
+    case 0x5D:
+      return PROXY_AUTH_FAILED;
+    default:
+      return PROXY_HANDSHAKE_FAILED;
+  }
   return PROXY_SUCCESS;
 }
 
 enum proxy_status Host::connect_socks4(struct addrinfo *ai_data)
 {
   char handshake[8];
-  int rBuf;
 
   trace("--HOST-- Host::connect_socks4\n");
 
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
     return PROXY_CONNECTION_FAILED;
 
+  // Temporarily disable blocking in case the connection needs to time out.
+  Socket::scoped_nonblocking nb(this->sockfd);
+
+  struct sockaddr_in *addr = reinterpret_cast<struct sockaddr_in *>(ai_data->ai_addr);
+  if(addr->sin_family != AF_INET)
+    return PROXY_ADDRESS_INVALID;
+
   if(!this->send("\4\1", 2))
     return PROXY_SEND_ERROR;
-  if(!this->send(ai_data->ai_addr->sa_data, 6))
+  if(!this->send(&(addr->sin_port), 2))
+    return PROXY_SEND_ERROR;
+  if(!this->send(&(addr->sin_addr), 4))
     return PROXY_SEND_ERROR;
   if(!this->send("anonymous\0", 10))
     return PROXY_SEND_ERROR;
 
-  rBuf = this->receive(handshake, 8);
-  if(rBuf == -1)
+  if(!this->receive(handshake, 8))
     return PROXY_CONNECTION_FAILED;
-  if(handshake[1] != 90)
+  if(handshake[0] != 0x00)
     return PROXY_HANDSHAKE_FAILED;
+  switch(handshake[1])
+  {
+    case 0x5A:
+      break;
+    case 0x5B:
+      return PROXY_TARGET_REFUSED;
+    case 0x5C:
+    case 0x5D:
+      return PROXY_AUTH_FAILED;
+    default:
+      return PROXY_HANDSHAKE_FAILED;
+  }
   return PROXY_SUCCESS;
 }
 
@@ -554,44 +735,124 @@ enum proxy_status Host::connect_socks5(struct addrinfo *ai_data)
    * and we're also only supporting none or user/password auth.
    */
 
-  char handshake[10];
-  int rBuf;
+  char handshake[32];
 
   trace("--HOST-- Host::connect_socks5\n");
 
   if(!this->connect_direct(conf->socks_host, conf->socks_port))
     return PROXY_CONNECTION_FAILED;
 
-  // Version[0x05]|Number of auth methods|auth methods
-  if(!this->send("\5\1\0", 3))
+  // Temporarily disable blocking in case the connection needs to time out.
+  Socket::scoped_nonblocking nb(this->sockfd);
+
+  // Version[0x05]|Number of auth methods|auth methods (0=none, 2=user/pw)
+  const char *init = "\5\1\0";
+  size_t init_len = 3;
+  if(conf->socks_username[0] && conf->socks_password[0])
+  {
+    init = "\5\2\0\2";
+    init_len = 4;
+  }
+
+  if(!this->send(init, init_len))
     return PROXY_SEND_ERROR;
 
-  rBuf = this->receive(handshake, 2);
-  if(rBuf == -1)
+  if(!this->receive(handshake, 2))
     return PROXY_CONNECTION_FAILED;
   if(handshake[0] != 0x5)
     return PROXY_HANDSHAKE_FAILED;
 
+  switch(handshake[1])
+  {
+    // None.
+    case 0x0:
+      break;
+
+    // Username/Password.
+    // https://tools.ietf.org/html/rfc1929
+    case 0x2:
+    {
+      size_t username_len = strlen(conf->socks_username);
+      size_t password_len = strlen(conf->socks_password);
+      if(username_len > 255 || password_len > 255)
+        return PROXY_INVALID_CONFIG;
+
+      Uint8 username_len_b = static_cast<Uint8>(username_len);
+      Uint8 password_len_b = static_cast<Uint8>(password_len);
+
+      if(!this->send("\1", 1))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&username_len_b, 1))
+        return PROXY_SEND_ERROR;
+      if(!this->send(conf->socks_username, username_len))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&password_len_b, 1))
+        return PROXY_SEND_ERROR;
+      if(!this->send(conf->socks_password, password_len))
+        return PROXY_SEND_ERROR;
+
+      if(!this->receive(handshake, 2))
+        return PROXY_CONNECTION_FAILED;
+      if(handshake[0] != 0x1)
+        return PROXY_AUTH_VERSION_UNSUPPORTED;
+      if(handshake[1] != 0x0)
+        return PROXY_AUTH_FAILED;
+      break;
+    }
+
+    // No supported methods (0xFF) or some other value.
+    default:
+      return PROXY_AUTH_METHOD_UNSUPPORTED;
+  }
+
+  struct sockaddr *ai_addr = ai_data->ai_addr;
+  switch(ai_data->ai_family)
+  {
 #ifdef CONFIG_IPV6
-  if(ai_data->ai_family == AF_INET6)
-    return PROXY_ADDRESS_TYPE_UNSUPPORTED;
+    case AF_INET6:
+    {
+      struct sockaddr_in6 *addr = reinterpret_cast<struct sockaddr_in6 *>(ai_addr);
+      if(addr->sin6_family != AF_INET6)
+        return PROXY_ADDRESS_INVALID;
+
+      // Version[0x05]|Command|0x00|address type (4=IPv6)|address|port
+      if(!this->send("\5\1\0\4", 4))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&(addr->sin6_addr), 16))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&(addr->sin6_port), 2))
+        return PROXY_SEND_ERROR;
+      break;
+    }
 #endif
 
-  // Version[0x05]|Command|0x00|address type|destination|port
-  if(!this->send("\5\1\0\1", 4))
-    return PROXY_SEND_ERROR;
-  if(!this->send(ai_data->ai_addr->sa_data+2, 4))
-    return PROXY_SEND_ERROR;
-  if(!this->send(ai_data->ai_addr->sa_data, 2))
-    return PROXY_SEND_ERROR;
+    case AF_INET:
+    {
+      struct sockaddr_in *addr = reinterpret_cast<struct sockaddr_in *>(ai_addr);
+      if(addr->sin_family != AF_INET)
+        return PROXY_ADDRESS_INVALID;
 
-  rBuf = this->receive(handshake, 10);
-  if(rBuf == -1)
+      // Version[0x05]|Command|0x00|address type (1=IPv4)|address|port
+      if(!this->send("\5\1\0\1", 4))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&(addr->sin_addr), 4))
+        return PROXY_SEND_ERROR;
+      if(!this->send(&(addr->sin_port), 2))
+        return PROXY_SEND_ERROR;
+      break;
+    }
+
+    default:
+      return PROXY_ADDRESS_TYPE_UNSUPPORTED;
+  }
+
+  // Version[0x05]|Status|0x00|address type|address|port
+  if(!this->receive(handshake, 4))
     return PROXY_CONNECTION_FAILED;
   switch(handshake[1])
   {
     case 0x0:
-      return PROXY_SUCCESS;
+      break;
     case 0x1:
     case 0x7:
       return PROXY_UNKNOWN_ERROR;
@@ -608,6 +869,25 @@ enum proxy_status Host::connect_socks5(struct addrinfo *ai_data)
     default:
       return PROXY_UNKNOWN_ERROR;
   }
+
+  switch(handshake[3])
+  {
+    // IPv4
+    case 0x1:
+      if(!this->receive(handshake + 4, 6))
+        return PROXY_CONNECTION_FAILED;
+      break;
+
+    // IPv6
+    case 0x4:
+      if(!this->receive(handshake + 4, 18))
+        return PROXY_CONNECTION_FAILED;
+      break;
+
+    default:
+      return PROXY_ADDRESS_TYPE_UNSUPPORTED;
+  }
+  return PROXY_SUCCESS;
 }
 
 // SOCKS Proxy support
@@ -623,9 +903,10 @@ enum proxy_status Host::connect_proxy(const char *target_host, int target_port)
   port_str[5] = 0;
 
   memset(&target_hints, 0, sizeof(struct addrinfo));
-  target_hints.ai_socktype = this->socktype;
-  target_hints.ai_protocol = this->proto;
-  target_hints.ai_family = this->preferred_af;
+  target_hints.ai_socktype = this->hint_socktype;
+  target_hints.ai_protocol = this->hint_proto;
+  target_hints.ai_family = this->hint_af;
+  target_hints.ai_flags = this->hint_flags;
   ret = DNS::lookup(target_host, port_str, &target_hints, &target_ais,
    this->timeout_ms);
 
@@ -634,18 +915,27 @@ enum proxy_status Host::connect_proxy(const char *target_host, int target_port)
    * to force the proxy to DNS the address for us. If this fails, we abort.
    */
   if(ret != 0)
-    return this->connect_socks4a(target_host, target_port);
+  {
+    enum proxy_status ret = this->connect_socks4a(target_host, target_port);
+
+    if(ret != PROXY_SUCCESS)
+      trace("--HOST-- Host::connect_socks4a failed: %s\n", get_proxy_error(ret));
+
+    return ret;
+  }
 
 #ifdef CONFIG_IPV6
   for(target_ai = target_ais; target_ai; target_ai = target_ai->ai_next)
   {
     if(target_ai->ai_family == AF_INET6)
     {
-      if(this->connect_socks5(target_ai) == PROXY_SUCCESS)
+      enum proxy_status ret = this->connect_socks5(target_ai);
+      if(ret == PROXY_SUCCESS)
       {
         Socket::freeaddrinfo(target_ais);
         return PROXY_SUCCESS;
       }
+      trace("--HOST-- Host::connect_socks5 failed: %s\n", get_proxy_error(ret));
       this->close();
     }
   }
@@ -655,18 +945,22 @@ enum proxy_status Host::connect_proxy(const char *target_host, int target_port)
   {
     if(target_ai->ai_family == AF_INET)
     {
-      if(this->connect_socks5(target_ai) == PROXY_SUCCESS)
+      enum proxy_status ret = this->connect_socks5(target_ai);
+      if(ret == PROXY_SUCCESS)
       {
         Socket::freeaddrinfo(target_ais);
         return PROXY_SUCCESS;
       }
       this->close();
-      if(this->connect_socks4(target_ai) == PROXY_SUCCESS)
+      trace("--HOST-- Host::connect_socks5 failed: %s\n", get_proxy_error(ret));
+      ret = this->connect_socks4(target_ai);
+      if(ret == PROXY_SUCCESS)
       {
         Socket::freeaddrinfo(target_ais);
         return PROXY_SUCCESS;
       }
       this->close();
+      trace("--HOST-- Host::connect_socks4 failed: %s\n", get_proxy_error(ret));
     }
   }
   Socket::freeaddrinfo(target_ais);
@@ -683,7 +977,11 @@ boolean Host::connect(const char *hostname, int port)
   this->proxied = false;
   if(strlen(conf->socks_host) > 0)
   {
-    if(this->connect_proxy(hostname, port) == PROXY_SUCCESS)
+    this->trace_raw = true;
+    enum proxy_status ret = this->connect_proxy(hostname, port);
+    this->trace_raw = false;
+
+    if(ret == PROXY_SUCCESS)
     {
       this->proxied = true;
       this->endpoint = hostname;
@@ -774,9 +1072,6 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
   struct addrinfo *ai;
   trace("--HOST-- Host::bind_op\n");
 
-  if(!this->create_socket(this->type, this->preferred_family))
-    return nullptr;
-
 #ifdef CONFIG_IPV6
   /* First try to bind to an IPv6 address (if any)
    */
@@ -784,12 +1079,17 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
   {
     if(ai->ai_family == AF_INET6)
     {
+      if(!this->create_socket(this->type, HOST_FAMILY_IPV6))
+        return nullptr;
+
       if(Socket::bind(this->sockfd, ai->ai_addr, ai->ai_addrlen) >= 0)
       {
         this->state = HOST_BOUND;
         return ai;
       }
       Socket::perror("bind");
+      Socket::close(this->sockfd);
+      this->state = HOST_UNINITIALIZED;
     }
   }
 #endif
@@ -800,15 +1100,19 @@ struct addrinfo *Host::bind_op(struct addrinfo *ais, void *priv)
   {
     if(ai->ai_family == AF_INET)
     {
+      if(!this->create_socket(this->type, HOST_FAMILY_IPV4))
+        return nullptr;
+
       if(Socket::bind(this->sockfd, ai->ai_addr, ai->ai_addrlen) >= 0)
       {
         this->state = HOST_BOUND;
         return ai;
       }
       Socket::perror("bind");
+      Socket::close(this->sockfd);
+      this->state = HOST_UNINITIALIZED;
     }
   }
-  this->close();
   return nullptr;
 }
 
@@ -898,7 +1202,7 @@ struct addrinfo *Host::send_to_op(struct addrinfo *ais, void *priv)
     if(ai->ai_family != this->af)
       continue;
 
-    ret = Socket::sendto(this->sockfd, buffer, len, 0,
+    ret = Socket::sendto(this->sockfd, buffer, len, MSG_NOSIGNAL,
      ai->ai_addr, ai->ai_addrlen);
 
     if(ret < 0)
@@ -943,23 +1247,27 @@ boolean Host::send_to(const char *buffer, size_t len,
 
 #endif // NETWORK_DEADCODE
 
-int Host::poll(Uint32 timeout)
+int Host::poll(int flags, Uint32 timeout)
 {
-  struct timeval tv;
-  fd_set mask;
-  int ret;
+  struct pollfd p;
+  p.fd = this->sockfd;
+  p.events = 0;
+  p.revents = 0;
+  if(flags & HOST_POLL_READ)
+    p.events |= POLLIN;
+  if(flags & HOST_POLL_WRITE)
+    p.events |= POLLOUT;
+  if(flags & HOST_POLL_EXCEPT)
+    p.events |= POLLPRI;
 
-  FD_ZERO(&mask);
-  FD_SET(this->sockfd, &mask);
-
-  reset_timeout(&tv, timeout);
-  ret = Socket::select(this->sockfd + 1, &mask, nullptr, nullptr, &tv);
+  int ret = Socket::poll(&p, 1, timeout);
   if(ret < 0)
     return -1;
 
   if(ret > 0)
-    if(FD_ISSET(this->sockfd, &mask))
+  {
+    if(p.events & p.revents)
       return 1;
-
+  }
   return 0;
 }

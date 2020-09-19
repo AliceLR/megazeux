@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2020 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -58,6 +59,8 @@
 #define UPDATES_TXT   "updates.txt"
 #define DELETE_TXT    "delete.txt"
 
+#define UPDATES_TXT_MAX_SIZE ((size_t)1 << 20)
+
 #define WIDGET_BUF_LEN 80
 
 static char widget_buf[WIDGET_BUF_LEN];
@@ -67,7 +70,86 @@ static char previous_dir[MAX_PATH];
 static long final_size = -1;
 static boolean cancel_update;
 
-static boolean updater_was_initialized;
+/**
+ * Functions and enum for updater startup error codes (namespace because no
+ * enum classes in C++98...).
+ */
+namespace UpdaterInit
+{
+  enum StatusValue
+  {
+    SUCCESS,
+    UNINITIALIZED,
+    INCOMPATIBLE_ASSETS,
+    INCOMPATIBLE_CONFDIR,
+    FAILED_CHDIR_TO_EXEC_DIR,
+    FAILED_TO_STAT_MANIFEST,
+    FAILED_FILE_WRITE,
+    FAILED_FILE_UNLINK
+  };
+  static StatusValue status = UpdaterInit::UNINITIALIZED;
+
+  static boolean allow_full_updates()
+  {
+    return status == SUCCESS || status == FAILED_TO_STAT_MANIFEST;
+  }
+
+  static const char *status_string(StatusValue st)
+  {
+    switch(st)
+    {
+      case SUCCESS:
+        return "updater initialization successful";
+      case UNINITIALIZED:
+        return "updater hasn't been initialized";
+      case INCOMPATIBLE_ASSETS:
+      case INCOMPATIBLE_CONFDIR:
+        return "platform not configured for full updates";
+      case FAILED_CHDIR_TO_EXEC_DIR:
+        return "failed to chdir to executable dir";
+      case FAILED_TO_STAT_MANIFEST:
+        return "failed to stat manifest.txt";
+      case FAILED_FILE_WRITE:
+        return "failed to write to executable dir";
+      case FAILED_FILE_UNLINK:
+        return "failed to delete file from executable dir";
+    }
+    return "unknown error";
+  }
+
+#ifdef IS_CXX_11
+  static constexpr int const_strcmp(const char *a, const char *b)
+  {
+    return (a == b) || (a[0] == b[0] && \
+     (a[0] == '\0' || const_strcmp(a + 1, b + 1))) ? 0 : -1;
+  }
+#else
+#define const_strcmp(a,b) strcmp(a,b)
+#endif
+
+  /**
+   * Compile time checks for the paranoid to disable the parts of the updater
+   * that can delete things on UNIX-like platforms and Mac OS X.
+   */
+  static maybe_constexpr StatusValue _const_safety_checks()
+  {
+    /**
+     * The config file should exist in the executable dir.
+     * If it doesn't, this is probably a UNIX-like platform or Mac OS X.
+     * TODO other checks may be possible here e.g. make sure SHAREDIR is
+     * prefixed by GAMEDIR--requires GAMEDIR being added to config.h.
+     */
+    return const_strcmp(CONFDIR, "./") ? INCOMPATIBLE_CONFDIR : SUCCESS;
+  }
+  static maybe_constexpr const StatusValue const_safety_checks = _const_safety_checks();
+}
+
+enum new_version_opts
+{
+  OPT_EXIT,
+  OPT_TRY_NEXT_HOST,
+  OPT_UPDATE_CURRENT
+};
 
 /**
  * A new version has been released and there are updates available on the
@@ -81,12 +163,12 @@ static const char *ui_new_version_available(context *ctx,
   struct world *mzx_world = ctx->world;
   struct element *elements[6];
   struct dialog di;
-  size_t buf_len;
   int result;
 
-  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
+  int buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
    "A new version is available (%s)", new_ver);
   widget_buf[WIDGET_BUF_LEN - 1] = 0;
+  buf_len = MAX(0, buf_len);
 
   elements[0] = construct_label((55 - buf_len) >> 1, 2, widget_buf);
 
@@ -103,7 +185,7 @@ static const char *ui_new_version_available(context *ctx,
   elements[4] = construct_button(21, 11, "Update Old", 1);
   elements[5] = construct_button(36, 11, "Cancel", 2);
 
-  construct_dialog(&di, "New Version", 11, 6, 55, 14, elements, 6, 3);
+  construct_dialog(&di, "New Version", 12, 6, 55, 14, elements, 6, 3);
   result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
 
@@ -117,6 +199,100 @@ static const char *ui_new_version_available(context *ctx,
 
   // Check for updates on the current version.
   return current_ver;
+}
+
+/**
+ * A new version has been released, but either there are no updates available
+ * on the current host or something went wrong in initializing the updater.
+ * Either way, the update can't be performed, so explain why and possibly
+ * offer some other useful options.
+ */
+enum new_version_opts ui_new_version_error(context *ctx,
+ const char *new_ver, boolean platform_has_remote_manifest)
+{
+  char reason[LINE_BUF_LEN];
+  struct world *mzx_world = ctx->world;
+  struct element *elements[7];
+  struct dialog di;
+  int result;
+  int num_elements = ARRAY_SIZE(elements) - 2;
+
+  int buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
+   "A new version is available (%s)", new_ver);
+  widget_buf[WIDGET_BUF_LEN - 1] = '\0';
+  buf_len = MAX(0, buf_len);
+
+  elements[0] = construct_label((55 - buf_len) >> 1, 2, widget_buf);
+
+  elements[1] = construct_label(2, 4,
+   "This update can not be downloaded from the remote\n"
+   "host for the following reason(s):");
+
+  int reason_lines = 0;
+  buf_len = 0;
+  if(UpdaterInit::const_safety_checks != UpdaterInit::SUCCESS)
+  {
+    int res = snprintf(reason + buf_len, LINE_BUF_LEN - buf_len,
+     "* This platform does not support updates.\n");
+    buf_len += MAX(0, res);
+    reason_lines += 1;
+  }
+  else
+  {
+    if(!platform_has_remote_manifest)
+    {
+      int res = snprintf(reason + buf_len, LINE_BUF_LEN - buf_len,
+       "* The remote host does not have updates for your\n"
+       "  platform (%s).\n", PLATFORM);
+      buf_len += MAX(0, res);
+      reason_lines += 2;
+    }
+
+    if(!UpdaterInit::allow_full_updates())
+    {
+      int res = snprintf(reason + buf_len, LINE_BUF_LEN - buf_len,
+       "* The updater failed to initialize on startup:\n"
+       "  %s.\n", UpdaterInit::status_string(UpdaterInit::status));
+      buf_len += MAX(0, res);
+      reason_lines += 2;
+    }
+  }
+  elements[2] = construct_label(2, 7, reason);
+
+  elements[3] = construct_label(2, 8 + reason_lines,
+   "Check digitalmzx.com or github.com/AliceLR/megazeux\n"
+   "to download the latest release for your platform.");
+
+  if(UpdaterInit::allow_full_updates())
+  {
+    elements[4] = construct_button(9, 11 + reason_lines, "OK", OPT_EXIT);
+    elements[5] = construct_button(16, 11 + reason_lines, "Update Old",
+     OPT_UPDATE_CURRENT);
+    elements[6] = construct_button(31, 11 + reason_lines, "Try next host",
+     OPT_TRY_NEXT_HOST);
+
+    num_elements += 2;
+  }
+  else
+    elements[4] = construct_button(25, 11 + reason_lines, "OK", OPT_EXIT);
+
+  int h = 12 + reason_lines + 2;
+  int y = (25 - h) / 2;
+
+  construct_dialog(&di, "New Version", 12, y, 55, h, elements, num_elements, 4);
+  result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  // User pressed "Update Old"; attempt to update the current version.
+  if(result == OPT_UPDATE_CURRENT)
+    return OPT_UPDATE_CURRENT;
+
+  // User pressed "Try next host"
+  if(result == OPT_TRY_NEXT_HOST)
+    return OPT_TRY_NEXT_HOST;
+
+  // User pressed escape or OK; abort.
+  return OPT_EXIT;
 }
 
 /**
@@ -241,6 +417,19 @@ static void display_clear(void)
 }
 
 /**
+ * Indicate that the network is currently being initialized.
+ */
+static void display_initializing()
+{
+  static const char str[] = "Initializing network...";
+  m_hide();
+  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  write_string(str, (WIDGET_BUF_LEN - strlen(str)) / 2, 12, DI_TEXT, 0);
+  update_screen();
+  m_show();
+}
+
+/**
  * Indicate that the client is currently connecting to a remote host.
  */
 static void display_connecting(const char *host_name)
@@ -254,6 +443,20 @@ static void display_connecting(const char *host_name)
   m_hide();
   draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
   write_string(widget_buf, (WIDGET_BUF_LEN - buf_len) >> 1, 12, DI_TEXT, 0);
+  update_screen();
+  m_show();
+}
+
+/**
+ * Indicate that MZX is currently trying to determine if a remote manifest
+ * exists for this platform.
+ */
+static void display_manifest_check()
+{
+  static const char str[] = "Checking for remote " MANIFEST_TXT "..";
+  m_hide();
+  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  write_string(str, (WIDGET_BUF_LEN - strlen(str)) / 2, 12, DI_TEXT, 0);
   update_screen();
   m_show();
 }
@@ -416,6 +619,7 @@ static boolean swivel_current_dir(boolean have_video)
       warn("--UPDATER-- Failed to change into install directory.\n");
     return false;
   }
+  trace("--UPDATER-- chdir() to exec dir successful: %s\n", executable_dir);
   return true;
 }
 
@@ -430,7 +634,7 @@ static boolean swivel_current_dir_back(boolean have_video)
       warn("--UPDATER-- Failed to change back to user directory.\n");
     return false;
   }
-
+  trace("--UPDATER-- chdir() to user dir successful: %s\n", previous_dir);
   return true;
 }
 
@@ -589,7 +793,7 @@ err_delete_failed:
      "Failed to delete files; check permissions and restart MegaZeux");
 }
 
-static boolean reissue_connection(HTTPHost &http, char *host_name,
+static boolean reissue_connection(HTTPHost &http, const char *host_name,
  boolean is_automatic)
 {
   boolean ret = false;
@@ -637,21 +841,13 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
 {
   struct config_info *conf = get_config();
   int cur_host;
-  char *update_host;
-  char *url_base = nullptr;
-  boolean delete_updates_txt = false;
+  const char *update_host;
+  boolean in_exec_dir = false;
   boolean delete_remote_manifest = false;
   boolean try_next_host = true;
   boolean ret = false;
 
   set_error_suppression(E_UPDATE, false);
-
-  if(!updater_was_initialized)
-  {
-    error_message(E_UPDATE, 13,
-     "Updater couldn't be initialized; check folder permissions");
-    return false;
-  }
 
   if(conf->update_host_count < 1)
   {
@@ -659,38 +855,38 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     return false;
   }
 
-  if(!swivel_current_dir(true))
+  display_initializing();
+  if(!Host::host_layer_init_check())
+  {
+    error_message(E_UPDATE, 15, "Failed to initialize network layer.");
+    display_clear();
     return false;
+  }
+  display_clear();
 
   set_context(CTX_UPDATER);
-  url_base = (char *)cmalloc(LINE_BUF_LEN);
+
+  ScopedBuffer<char> updates_txt(LINE_BUF_LEN);
+  ScopedBuffer<char> url_base(LINE_BUF_LEN);
 
   for(cur_host = 0; (cur_host < conf->update_host_count) && try_next_host; cur_host++)
   {
-    HTTPHost http(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
+    HTTPHost http(HOST_TYPE_TCP, conf->network_address_family);
     HTTPRequestInfo request;
     HTTPHostStatus status;
 
     Manifest removed, replaced, added, delete_list;
     ManifestEntry *e;
 
-    char buffer[LINE_BUF_LEN], *value;
-    int i = 0, entries = 0;
+    char buffer[LINE_BUF_LEN];
+    char *value = nullptr;
+    int i = 0;
+    int entries = 0;
     char update_branch[LINE_BUF_LEN];
     const char *version = VERSION;
     unsigned int retries;
     boolean reconnect = false;
 
-    // Acid test: Can we write to this directory?
-    ScopedFile<FILE, fclose> f = fopen_unsafe(UPDATES_TXT, "w+b");
-    if(!f)
-    {
-      error_message(E_UPDATE, 15,
-       "Failed to create \"" UPDATES_TXT "\". Check permissions.");
-      goto err_chdir;
-    }
-
-    delete_updates_txt = true;
     update_host = conf->update_hosts[cur_host];
 
     for(retries = 0; retries < MAX_RETRIES; retries++)
@@ -699,11 +895,11 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         goto err_try_next_host;
 
       // Grab the file containing the names of the current Stable and Unstable
+      request.clear();
       strcpy(request.url, "/" UPDATES_TXT);
-      strcpy(request.expected_type, "text/plain");
+      request.allowed_types = HTTPRequestInfo::plaintext_types;
 
-      status = http.get(request, f);
-      rewind(f);
+      status = http.get(request, updates_txt, updates_txt.size());
 
       if(status == HOST_SUCCESS)
         break;
@@ -716,15 +912,33 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         retries = MAX_RETRIES;
         break;
       }
+
+      /**
+       * In the unlikely event this legitimately failed because updates.txt is
+       * too big for the buffer, expand it. Use x2 the reported Content-Length
+       * since update hosts should almost always be serving gzipped files.
+       */
+      if(status == HOST_FWRITE_FAILED)
+      {
+        size_t new_size = MAX(request.content_length, updates_txt.size()) * 2;
+        if(!updates_txt.resize(MIN(new_size, UPDATES_TXT_MAX_SIZE)))
+        {
+          retries = MAX_RETRIES;
+          break;
+        }
+      }
     }
 
     if(retries == MAX_RETRIES)
     {
       if(!is_automatic)
       {
+        warn("Failed to download \"" UPDATES_TXT "\" (code %d; error: %s)\n",
+         request.status_code, HTTPHost::get_error_string(status));
+        request.print_response();
+
         snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
-         UPDATES_TXT "\" (%d/%s).\n", request.status_code,
-         HTTPHost::get_error_string(status));
+         UPDATES_TXT "\" (%d/%d).\n", request.status_code, status);
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
         error_message(E_UPDATE, 16, widget_buf);
       }
@@ -736,14 +950,13 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
      conf->update_branch_pin);
 
     // Walk this list (of two, hopefully)
-    while(true)
+    struct memfile mf;
+    mfopen(updates_txt, request.final_length, &mf);
+    while(mfsafegets(buffer, LINE_BUF_LEN, &mf))
     {
-      char *m = buffer, *key;
-      value = NULL;
-
-      // Grab a single line from the manifest
-      if(!fgets(buffer, LINE_BUF_LEN, f))
-        break;
+      char *m = buffer;
+      char *key;
+      value = nullptr;
 
       key = strsep(&m, ":\n");
       if(!key)
@@ -771,7 +984,7 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     /* There's likely to be a space prepended to the version number.
      * Skip it here.
      */
-    if(value[0] == ' ')
+    while(isspace(*value))
       value++;
 
     /* We found the latest update version, but we should check to see if that
@@ -791,7 +1004,35 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
         goto err_try_next_host;
       }
 
-      version = ui_new_version_available(ctx, version, value);
+      /**
+       * Compute a temporary url base and use it to check if the current branch
+       * supports full updates for this platform.
+       */
+      display_manifest_check();
+
+      snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, value);
+      boolean platform_has_remote_manifest =
+       Manifest::check_if_remote_exists(http, request, url_base);
+
+      display_clear();
+
+      if(!platform_has_remote_manifest || !UpdaterInit::allow_full_updates())
+      {
+        switch(ui_new_version_error(ctx, value, platform_has_remote_manifest))
+        {
+          case OPT_EXIT:
+            version = nullptr;
+            break;
+          case OPT_UPDATE_CURRENT:
+            version = VERSION;
+            break;
+          case OPT_TRY_NEXT_HOST:
+            goto err_try_next_host;
+        }
+      }
+      else
+        version = ui_new_version_available(ctx, version, value);
+
       reconnect = true;
 
       // Abort if no version was selected.
@@ -802,12 +1043,30 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
       }
     }
 
+    /**
+     * To continue, the updater needs to switch to the executable directory.
+     * Platforms that don't pass the startup checks should stop here. Explicitly
+     * checking the constexpr check result here lets the compiler optimize out
+     * large sections of inaccessible code for platforms like Linux.
+     */
+    if(UpdaterInit::const_safety_checks != UpdaterInit::SUCCESS ||
+     !UpdaterInit::allow_full_updates())
+      break;
+
+    if(!in_exec_dir)
+    {
+      if(!swivel_current_dir(true))
+        break;
+
+      in_exec_dir = true;
+    }
+
     /* We can now compute a unique URL base for the updater. This will
      * be composed of a user-selected version and a static platform-archicture
      * name.
      */
     snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, version);
-    debug("Update base URL: %s\n", url_base);
+    debug("Update base URL: %s\n", url_base.data());
 
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
@@ -956,16 +1215,13 @@ err_try_next_host:
     http.close();
   } //end host for loop
 
-err_chdir:
-  if(delete_updates_txt)
-    unlink(UPDATES_TXT);
   if(delete_remote_manifest)
     unlink(REMOTE_MANIFEST_TXT);
 
-  swivel_current_dir_back(true);
+  if(in_exec_dir)
+    swivel_current_dir_back(true);
 
   pop_context();
-  free(url_base);
 
   if(ret)
   {
@@ -979,32 +1235,116 @@ err_chdir:
   return false;
 }
 
-boolean updater_init(void)
+/**
+ * Perform some sanity checks to make sure certain parts of this code will
+ * never run on platforms that don't support it (e.g. Linux).
+ */
+static UpdaterInit::StatusValue updater_init_safety_checks()
+{
+  /**
+   * The assets should should be relative to the executable dir.
+   * If they aren't, this is probably the same as above. Use the protected
+   * charset to test this (though this really should apply to all assets).
+   */
+  const char *executable_dir = mzx_res_get_by_id(MZX_EXECUTABLE_DIR);
+  const char *edit_chr = mzx_res_get_by_id(MZX_EDIT_CHR);
+  size_t len = strlen(executable_dir);
+  if(strncmp(executable_dir, edit_chr, len))
+    return UpdaterInit::INCOMPATIBLE_ASSETS;
+
+  return UpdaterInit::SUCCESS;
+}
+
+/**
+ * Perform several steps to determine whether full updater capabilities are
+ * available in the exec dir.
+ *
+ * 1) File read + make sure manifest.txt exists.
+ * 2) File create.
+ * 3) File unlink.
+ */
+static UpdaterInit::StatusValue updater_init_exec_dir_check()
+{
+  struct stat stat_info;
+
+  FILE *fp = fopen_unsafe(REMOTE_MANIFEST_TXT "~", "wb");
+  if(!fp)
+    return UpdaterInit::FAILED_FILE_WRITE;
+
+  fclose(fp);
+  if(unlink(REMOTE_MANIFEST_TXT "~"))
+    return UpdaterInit::FAILED_FILE_UNLINK;
+
+  if(stat(LOCAL_MANIFEST_TXT, &stat_info))
+    return UpdaterInit::FAILED_TO_STAT_MANIFEST;
+
+  return UpdaterInit::SUCCESS;
+}
+
+/**
+ * Check for a delete.txt manifest indicating files to delete from a prior
+ * update. If found, delete the files listed and update (or remove) delete.txt.
+ */
+static void updater_init_delete_txt_check()
 {
   Manifest delete_list;
   struct stat stat_info;
 
-  check_for_updates = __check_for_updates;
-  updater_was_initialized = false;
-
-  if(!swivel_current_dir(false))
-    return false;
-
   if(stat(DELETE_TXT, &stat_info))
-    goto err_swivel_back;
+    return;
 
   if(!delete_list.create(DELETE_TXT))
-    goto err_swivel_back;
+    return;
 
   apply_delete_list(delete_list);
   unlink(DELETE_TXT);
 
   if(delete_list.has_entries())
     write_delete_list(delete_list);
+}
 
-err_swivel_back:
-  swivel_current_dir_back(false);
-  updater_was_initialized = true;
+boolean updater_init(void)
+{
+  struct config_info *conf = get_config();
+  if(!conf->updater_enabled)
+    return false;
+
+  check_for_updates = __check_for_updates;
+
+  /**
+   * Explicitly compare against the constexpr checks first so the rest gets
+   * optimized out as inaccessible code for platforms like Linux.
+   */
+  UpdaterInit::status = UpdaterInit::const_safety_checks;
+  if(UpdaterInit::const_safety_checks != UpdaterInit::SUCCESS)
+    return true;
+
+  /**
+   * More checks to filter out platforms where the full update process is
+   * entirely non-applicable.
+   */
+  UpdaterInit::status = updater_init_safety_checks();
+  if(UpdaterInit::status != UpdaterInit::SUCCESS)
+    return true;
+
+  if(swivel_current_dir(false))
+  {
+    UpdaterInit::status = updater_init_exec_dir_check();
+
+    if(UpdaterInit::allow_full_updates())
+      updater_init_delete_txt_check();
+
+    swivel_current_dir_back(false);
+  }
+  else
+    UpdaterInit::status = UpdaterInit::FAILED_CHDIR_TO_EXEC_DIR;
+
+  if(!UpdaterInit::allow_full_updates())
+  {
+    warn("Updater startup checks failed; full updates will not be available (%s).\n",
+     UpdaterInit::status_string(UpdaterInit::status));
+  }
+
   return true;
 }
 

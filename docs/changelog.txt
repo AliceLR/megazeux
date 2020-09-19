@@ -40,6 +40,9 @@ USERS
 + Fixed a bug where the local manifest.txt would be overwritten
   by the remote manifest, potentially causing bugs. The local
   manifest will now be replaced only after a successful update.
++ Fixed bugs where the HTTP layer would filter header names,
+  content/transfer coding values, and content type values too
+  strictly.
 + Fixed a bug where INPUT STRING would display newlines from
   an interpolated string.
 + MZX now validates the world version of encrypted worlds before
@@ -52,6 +55,18 @@ USERS
   speed of the show thing (Shift+F2 et al.) editor keys and the
   latter allows these keys to be treated as a toggle instead of
   blocking input.
++ Added SOCKS5 IPv6 and username/password support.
++ Added "network_address_family" config setting to allow users
+  to force either IPv4 or IPv6 connections/name resolution. By
+  default, MZX will now request either or both depending on the
+  system IP address configuration (previously, it was hardcoded
+  to only allow IPv4 despite IPv6 support being implemented).
+* The config setting "updater_enabled" has been added to turn
+  off the updater system entirely without disabling networking.
++ The updater now allows update checks to be performed even when
+  a full update wouldn't be possible, and should be more helpful
+  about printing warnings to the console when this situation
+  occurs.
 
 DEVELOPERS
 
@@ -77,12 +92,18 @@ DEVELOPERS
 + Fixed FD_ISSET in the Windows netcode.
 + Added a EAI_AGAIN define for the getaddrinfo() fallback.
 + Fixed leak of updates.txt file pointers in the updater that
-  could occur when updates.txt fails to download.
+  could occur when updates.txt fails to download. The updater
+  now downloads updates.txt to a buffer instead of to disk.
 + Added graphics.renderer.hardware_cursor for platforms with
   hardware cursors that may need to be updated during any frame
   regardless of the current cursor state/blinking (i.e. DJGPP).
 + Fixed "make build" error after using "make debuglink" with png
   support disabled.
++ Added const and restrict to the software render_graph and
+  render_layer implementations for a small performance boost.
++ Added --disable-getaddrinfo and --disable-ipv6 config.sh flags
+  to allow disabling these for old platforms and consoles SDKs.
+  Amiga, Wii, and PSP network builds force-disable these.
 
 
 July 20th, 2020 - MZX 2.92e

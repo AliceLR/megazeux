@@ -28,15 +28,6 @@
 #include <stdio.h> // for FILE
 #include <string>
 
-enum host_family
-{
-  /** Prefer IPv4 address resolution for hostnames */
-  HOST_FAMILY_IPV4,
-  /** Prefer IPv6 address resolution for hostnames */
-  HOST_FAMILY_IPV6,
-  NUM_HOST_FAMILIES
-};
-
 enum host_type
 {
   /** Use TCP protocol for sockets */
@@ -46,17 +37,27 @@ enum host_type
   NUM_HOST_TYPES
 };
 
+enum host_poll
+{
+  HOST_POLL_READ = 1,
+  HOST_POLL_WRITE = 2,
+  HOST_POLL_EXCEPT = 4
+};
+
 enum proxy_status
 {
   PROXY_SUCCESS,
+  PROXY_INVALID_CONFIG,
   PROXY_CONNECTION_FAILED,
   PROXY_AUTH_FAILED,
-  PROXY_AUTH_UNSUPPORTED,
+  PROXY_AUTH_VERSION_UNSUPPORTED,
+  PROXY_AUTH_METHOD_UNSUPPORTED,
   PROXY_SEND_ERROR,
   PROXY_HANDSHAKE_FAILED,
   PROXY_REFLECTION_FAILED,
   PROXY_TARGET_REFUSED,
   PROXY_ADDRESS_TYPE_UNSUPPORTED,
+  PROXY_ADDRESS_INVALID,
   PROXY_ACCESS_DENIED,
   PROXY_UNKNOWN_ERROR
 };
@@ -79,15 +80,18 @@ private:
   enum host_state state;
   enum host_type type;
   enum host_family preferred_family;
-  int preferred_af;
-  int socktype;
-  int proto;
+  int hint_af;
+  int hint_socktype;
+  int hint_proto;
+  int hint_flags;
 
   const char *name;
   const char *endpoint;
   boolean proxied;
+  boolean trace_raw;
   int af;
   int sockfd;
+  int proto;
   Uint32 timeout_ms;
 
 protected:
@@ -133,6 +137,16 @@ public:
    * @return Whether initialization succeeded, or not
    */
   static boolean host_layer_init(struct config_info *conf);
+
+  /**
+   * Check the host layer initialization status. If the current platform needs
+   * to perform any late initialization (e.g. when initializing the network
+   * would take too long for it to be worth performing on startup), this
+   * function will handle that.
+   *
+   * @return `true` if the host layer is ready, otherwise `false`.
+   */
+  static boolean host_layer_init_check();
 
   /**
    * Shuts down the host layer.
@@ -269,12 +283,13 @@ public:
   /**
    * Polls a host via raw socket access.
    *
+   * @param flags   Events to poll for (see `enum host_poll`).
    * @param timeout Timeout in milliseconds for poll.
    *
    * @return <0 if there was a failure, 0 if there was no data, and the
    *         >0 if there was activity on the socket.
    */
-  int poll(Uint32 timeout);
+  int poll(int flags, Uint32 timeout);
 
 protected:
   /**

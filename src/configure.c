@@ -40,6 +40,10 @@
 #define MAX_CONFIG_REGISTERED 2
 
 // Arch-specific config.
+#ifdef __WIN32__
+#define UPDATE_AUTO_CHECK_DEFAULT UPDATE_AUTO_CHECK_SILENT
+#endif
+
 #ifdef CONFIG_NDS
 #define VIDEO_OUTPUT_DEFAULT "nds"
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
@@ -148,12 +152,12 @@
 #define UPDATE_HOST_COUNT 4
 #endif
 
-static char *default_update_hosts[] =
+static const char *default_update_hosts[] =
 {
-  (char *)"updates.digitalmzx.com",
-  (char *)"updates.digitalmzx.net",
-  (char *)"updates.megazeux.org",
-  (char *)"updates.megazeux.net",
+  "updates.digitalmzx.com",
+  "updates.digitalmzx.net",
+  "updates.megazeux.org",
+  "updates.megazeux.net",
 };
 
 #ifndef UPDATE_BRANCH_PIN
@@ -162,6 +166,10 @@ static char *default_update_hosts[] =
 #else
 #define UPDATE_BRANCH_PIN "Stable"
 #endif
+#endif
+
+#ifndef UPDATE_AUTO_CHECK_DEFAULT
+#define UPDATE_AUTO_CHECK_DEFAULT UPDATE_AUTO_CHECK_OFF
 #endif
 
 #endif /* CONFIG_UPDATER */
@@ -231,14 +239,18 @@ static const struct config_info user_conf_default =
 
 #ifdef CONFIG_NETWORK
   true,                         // network_enabled
+  HOST_FAMILY_ANY,              // network_address_family
   "",                           // socks_host
+  "",                           // socks_username
+  "",                           // socks_password
   1080,                         // socks_port
 #endif
 #if defined(CONFIG_UPDATER)
+  true,                         // updater_enabled
   UPDATE_HOST_COUNT,            // update_host_count
   default_update_hosts,         // update_hosts
   UPDATE_BRANCH_PIN,            // update_branch_pin
-  UPDATE_AUTO_CHECK_SILENT,     // update_auto_check
+  UPDATE_AUTO_CHECK_DEFAULT,    // update_auto_check
 #endif /* CONFIG_UPDATER */
 };
 
@@ -318,6 +330,16 @@ static const struct config_enum system_mouse_values[] =
   { "0", 0 },
   { "1", 1 }
 };
+
+#ifdef CONFIG_NETWORK
+static const struct config_enum network_address_family_values[] =
+{
+  { "0", HOST_FAMILY_ANY },
+  { "any", HOST_FAMILY_ANY },
+  { "ipv4", HOST_FAMILY_IPV4 },
+  { "ipv6", HOST_FAMILY_IPV6 }
+};
+#endif
 
 #ifdef CONFIG_UPDATER
 static const struct config_enum update_auto_check_values[] =
@@ -430,6 +452,14 @@ static void config_set_network_enabled(struct config_info *conf, char *name,
   config_boolean(&conf->network_enabled, value);
 }
 
+static void config_set_network_address_family(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  int result;
+  if(config_enum(&result, value, network_address_family_values))
+    conf->network_address_family = result;
+}
+
 static void config_set_socks_host(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -444,6 +474,18 @@ static void config_set_socks_port(struct config_info *conf, char *name,
     conf->socks_port = result;
 }
 
+static void config_set_socks_username(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  config_string(conf->socks_username, value);
+}
+
+static void config_set_socks_password(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  config_string(conf->socks_password, value);
+}
+
 #endif // CONFIG_NETWORK
 
 #ifdef CONFIG_UPDATER
@@ -453,15 +495,16 @@ static void config_update_host(struct config_info *conf, char *name,
 {
   if(!conf->update_hosts || conf->update_hosts == default_update_hosts)
   {
-    conf->update_hosts = (char **)ccalloc(MAX_UPDATE_HOSTS, sizeof(char *));
+    conf->update_hosts = (const char **)ccalloc(MAX_UPDATE_HOSTS, sizeof(char *));
     conf->update_host_count = 0;
   }
 
   if(conf->update_host_count < MAX_UPDATE_HOSTS)
   {
     size_t size = strlen(value) + 1;
-    conf->update_hosts[conf->update_host_count] = (char *)cmalloc(size);
-    memcpy(conf->update_hosts[conf->update_host_count], value, size);
+    char *host = (char *)cmalloc(size);
+    memcpy(host, value, size);
+    conf->update_hosts[conf->update_host_count] = host;
     conf->update_host_count++;
   }
 }
@@ -478,6 +521,12 @@ static void config_update_auto_check(struct config_info *conf, char *name,
   int result;
   if(config_enum(&result, value, update_auto_check_values))
     conf->update_auto_check = result;
+}
+
+static void config_set_updater_enabled(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  config_boolean(&conf->updater_enabled, value);
 }
 
 #endif // CONFIG_UPDATER
@@ -1057,6 +1106,7 @@ static const struct config_entry config_options[] =
   { "music_volume", config_set_mod_volume, false },
   { "mzx_speed", config_set_mzx_speed, true },
 #ifdef CONFIG_NETWORK
+  { "network_address_family", config_set_network_address_family, false },
   { "network_enabled", config_set_network_enabled, false },
 #endif
   { "no_titlescreen", config_no_titlescreen, false },
@@ -1072,7 +1122,9 @@ static const struct config_entry config_options[] =
   { "save_slots_name", config_save_slots_name, false },
 #ifdef CONFIG_NETWORK
   { "socks_host", config_set_socks_host, false },
+  { "socks_password", config_set_socks_password, false },
   { "socks_port", config_set_socks_port, false },
+  { "socks_username", config_set_socks_username, false },
 #endif
   { "standalone_mode", config_standalone_mode, false },
   { "startup_editor", config_startup_editor, false },
@@ -1082,6 +1134,7 @@ static const struct config_entry config_options[] =
   { "test_mode", config_test_mode, false },
   { "test_mode_start_board", config_test_mode_start_board, false },
 #ifdef CONFIG_UPDATER
+  { "updater_enabled", config_set_updater_enabled, false },
   { "update_auto_check", config_update_auto_check, false },
   { "update_branch_pin", config_update_branch_pin, false },
   { "update_host", config_update_host, false },
@@ -1349,7 +1402,7 @@ void free_config(void)
     int i;
 
     for(i = 0; i < user_conf.update_host_count; i++)
-      free(user_conf.update_hosts[i]);
+      free((char *)user_conf.update_hosts[i]);
 
     free(user_conf.update_hosts);
     user_conf.update_hosts = default_update_hosts;

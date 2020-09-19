@@ -25,8 +25,13 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
-#if defined(__WIN32__) || defined(__amigaos__)
+#ifndef _MSC_VER
+#include <sys/time.h>
+#endif
+
+#if defined(__WIN32__) || !defined(CONFIG_GETADDRINFO)
 
 /**
  * gethostbyname may use a static struct that is shared across threads
@@ -44,7 +49,16 @@ int Socket::getaddrinfo_alt(const char *node, const char *service,
 
   trace("--SOCKET-- Socket::getaddrinfo_alt\n");
 
-  if(hints->ai_family != AF_INET)
+  // This relies on hints being provided to initialize the addrinfo structs...
+  if(!hints)
+    return EAI_FAIL;
+
+  /**
+   * If hints.ai_family is provided as AF_UNSPEC, getaddrinfo is expected to
+   * return anything found (including AF_INET), so it's acceptable here.
+   * https://pubs.opengroup.org/onlinepubs/9699919799/functions/freeaddrinfo.html
+   */
+  if(hints->ai_family != AF_INET && hints->ai_family != AF_UNSPEC)
     return EAI_FAMILY;
 
   platform_mutex_lock(&gai_lock);
@@ -75,7 +89,7 @@ int Socket::getaddrinfo_alt(const char *node, const char *service,
 
     // Zero the fake addrinfo and fill out the essential fields
     memset(r, 0, sizeof(struct addrinfo));
-    r->ai_family = hints->ai_family;
+    r->ai_family = hostent->h_addrtype;
     r->ai_socktype = hints->ai_socktype;
     r->ai_protocol = hints->ai_protocol;
     r->ai_addrlen = sizeof(struct sockaddr_in);
@@ -112,22 +126,130 @@ const char *Socket::gai_strerror_alt(int errcode)
       return "Node or service is not known.";
     case EAI_AGAIN:
       return "Temporary failure in name resolution";
+    case EAI_FAIL:
+      return "Non-recoverable failure in name resolution";
     case EAI_FAMILY:
       return "Address family is not supported.";
     default:
       return "Unknown error.";
   }
 }
-#endif // __WIN32__ || __amigaos__
+#endif // __WIN32__ || !CONFIG_GETADDRINFO
 
-#ifdef __amigaos__
+#if defined(__WIN32__) || !defined(CONFIG_POLL)
+
+static void reset_timeout(struct timeval *tv, Uint32 timeout)
+{
+  /* Because of the way select() works on Unix platforms, this needs to
+   * be reset every time select() is used on it. */
+  tv->tv_sec = (timeout / 1000);
+  tv->tv_usec = (timeout % 1000) * 1000;
+}
+
+/**
+ * Alternative implementation of poll() that uses select() internally.
+ * Only use this if poll() isn't available (examples: couldn't load WSAPoll;
+ * POSIX <2001; broken poll() in some Mac OS X versions; some console SDKs).
+ */
+int Socket::poll_alt(struct pollfd *fds, size_t nfds, int timeout_ms)
+{
+  struct timeval tv;
+  fd_set readfds;
+  fd_set writefds;
+  fd_set exceptfds;
+  int maxfd = -1;
+  int ret;
+
+  FD_ZERO(&readfds);
+  FD_ZERO(&writefds);
+  FD_ZERO(&exceptfds);
+
+  if(nfds >= FD_SETSIZE)
+  {
+    warn(
+      "--SOCKET-- Socket::poll_alt: provided number of fds for select() %d >= "
+      "FD_SETSIZE %d\n",
+      (int)nfds, (int)FD_SETSIZE
+    );
+  }
+
+  for(size_t i = 0; i < nfds; i++)
+  {
+    struct pollfd &p = fds[i];
+
+#ifndef __WIN32__
+    /**
+     * Reject any fds over FD_SETSIZE. These can't be supported and attempting
+     * to work around this is prone to security issues.
+     *
+     * This doesn't matter for Windows, which uses a list instead of a bitmask.
+     */
+    if(p.fd >= FD_SETSIZE)
+    {
+      warn(
+        "--SOCKET-- Socket::poll_alt: ignoring fd %d >= FD_SETSIZE %d for "
+        "select()\n",
+        (int)p.fd, (int)FD_SETSIZE
+      );
+      continue;
+    }
+#endif
+
+    maxfd = MAX(maxfd, (int)p.fd);
+    p.revents = 0;
+    if(p.events & POLLIN)
+      FD_SET(p.fd, &readfds);
+    if(p.events & POLLOUT)
+      FD_SET(p.fd, &writefds);
+    if(p.events & POLLPRI)
+      FD_SET(p.fd, &exceptfds);
+  }
+
+  reset_timeout(&tv, timeout_ms);
+  ret = Socket::select(maxfd + 1, &readfds, &writefds, &exceptfds, &tv);
+  if(ret < 0)
+    return -1;
+
+  if(ret > 0)
+  {
+    for(size_t i = 0; i < nfds; i++)
+    {
+      struct pollfd &p = fds[i];
+
+      if((p.events & POLLIN) && FD_ISSET(p.fd, &readfds))
+        p.revents |= POLLIN;
+      if((p.events & POLLOUT) && FD_ISSET(p.fd, &writefds))
+        p.revents |= POLLOUT;
+      if((p.events & POLLPRI) && FD_ISSET(p.fd, &exceptfds))
+        p.revents |= POLLPRI;
+    }
+    return ret;
+  }
+  return 0;
+}
+
+#ifndef __WIN32__
+int Socket::poll(struct pollfd *fds, unsigned int nfds, int timeout_ms)
+{
+  return Socket::poll_alt(fds, nfds, timeout_ms);
+}
+#endif
+#endif /* __WIN32__ || !CONFIG_POLL */
+
+#if !defined(__WIN32__) && !defined(CONFIG_GETADDRINFO)
 static int init_ref_count;
 
 boolean Socket::init(struct config_info *conf)
 {
   if(!init_ref_count)
+  {
+    if(!platform_socket_init())
+      return false;
+
     platform_mutex_init(&gai_lock);
+  }
   init_ref_count++;
+  return true;
 }
 
 void Socket::exit()
@@ -135,7 +257,10 @@ void Socket::exit()
   assert(init_ref_count);
   init_ref_count--;
   if(!init_ref_count)
+  {
+    platform_socket_exit();
     platform_mutex_destroy(&gai_lock);
+  }
 }
 
 int Socket::getaddrinfo(const char *node, const char *service,
@@ -154,7 +279,7 @@ void Socket::getaddrinfo_perror(const char *message, int errcode)
   warn("%s (code %d): %s\n", message, errcode,
    Socket::gai_strerror_alt(errcode));
 }
-#endif
+#endif /* !__WIN32__ && !CONFIG_GETADDRINFO */
 
 #ifdef __WIN32__
 
@@ -193,6 +318,7 @@ static struct
   int (PASCAL *send)(SOCKET, const char *, int, int);
   int (PASCAL *sendto)(SOCKET, const char*, int, int,
    const struct sockaddr *, int);
+  int (PASCAL *getsockopt)(SOCKET, int, int, char *, int *);
   int (PASCAL *setsockopt)(SOCKET, int, int, const char *, int);
   SOCKET (PASCAL *socket)(int, int, int);
   int (PASCAL *recv)(SOCKET, char *, int, int);
@@ -211,6 +337,9 @@ static struct
   int (WSAAPI *getaddrinfo)(const char *, const char *,
    const struct addrinfo *, struct addrinfo **);
 
+  // These functions were only implemented as of Windows Vista.
+  int (WSAAPI *WSAPoll)(struct pollfd *fds, unsigned long nfds, int timeout);
+
   void *handle;
 }
 socksyms;
@@ -222,6 +351,7 @@ static const struct dso_syms_map socksyms_map[] =
   { "closesocket",           (fn_ptr *)&socksyms.closesocket },
   { "connect",               (fn_ptr *)&socksyms.connect },
   { "gethostbyname",         (fn_ptr *)&socksyms.gethostbyname },
+  { "getsockopt",            (fn_ptr *)&socksyms.getsockopt },
   { "htons",                 (fn_ptr *)&socksyms.htons },
   { "ioctlsocket",           (fn_ptr *)&socksyms.ioctlsocket },
   { "listen",                (fn_ptr *)&socksyms.listen },
@@ -241,6 +371,8 @@ static const struct dso_syms_map socksyms_map[] =
 
   { "freeaddrinfo",          (fn_ptr *)&socksyms.freeaddrinfo },
   { "getaddrinfo",           (fn_ptr *)&socksyms.getaddrinfo },
+
+  { "WSAPoll",               (fn_ptr *)&socksyms.WSAPoll },
 
   { NULL, NULL }
 };
@@ -284,7 +416,8 @@ static boolean socket_load_syms(void)
     {
       // Skip these NT 5.1 WS2 extensions; we can fall back
       if((strcmp(socksyms_map[i].name, "freeaddrinfo") == 0) ||
-         (strcmp(socksyms_map[i].name, "getaddrinfo") == 0))
+         (strcmp(socksyms_map[i].name, "getaddrinfo") == 0) ||
+         (strcmp(socksyms_map[i].name, "WSAPoll") == 0))
         continue;
 
       // However all other Winsock symbols must be loaded, or we fail hard
@@ -342,9 +475,21 @@ void Socket::exit(void)
 
 boolean Socket::is_last_error_fatal(void)
 {
-  if(socksyms.WSAGetLastError() == WSAEWOULDBLOCK)
-    return false;
-  return Socket::is_last_errno_fatal();
+  /**
+   * NOTE: WSA error codes are not intercompatible with errno, so there's no
+   * point in calling is_last_errno_fatal from this function. Just handle the
+   * WSA error codes directly.
+   */
+  switch(Socket::get_errno())
+  {
+    case 0:
+    case WSAEINPROGRESS:
+    case WSAEWOULDBLOCK:
+    case WSAEINTR:
+      return false;
+    default:
+      return true;
+  }
 }
 
 /**
@@ -370,10 +515,14 @@ void winsock_perror(const char *message, int code)
   LocalFree(err_message);
 }
 
+int Socket::get_errno()
+{
+  return socksyms.WSAGetLastError();
+}
+
 void Socket::perror(const char *message)
 {
-  int code = socksyms.WSAGetLastError();
-  winsock_perror(message, code);
+  winsock_perror(message, Socket::get_errno());
 }
 
 int Socket::accept(int sockfd,
@@ -402,6 +551,12 @@ int Socket::connect(int sockfd,
 struct hostent *Socket::gethostbyname(const char *name)
 {
   return socksyms.gethostbyname(name);
+}
+
+int Socket::getsockopt(int sockfd, int level, int optname, void *optval,
+ socklen_t *optlen)
+{
+  return socksyms.getsockopt(sockfd, level, optname, (char *)optval, optlen);
 }
 
 uint16_t Socket::hton_short(uint16_t hostshort)
@@ -438,6 +593,13 @@ void Socket::getaddrinfo_perror(const char *message, int errcode)
 int Socket::listen(int sockfd, int backlog)
 {
   return socksyms.listen(sockfd, backlog);
+}
+
+int Socket::poll(struct pollfd *fds, unsigned int nfds, int timeout_ms)
+{
+  if(socksyms.WSAPoll)
+    return socksyms.WSAPoll(fds, nfds, timeout_ms);
+  return Socket::poll_alt(fds, nfds, timeout_ms);
 }
 
 int Socket::select(int nfds, fd_set *readfds,

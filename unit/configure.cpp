@@ -660,6 +660,22 @@ UNITTEST(Settings)
     TEST_ENUM("network_enabled", conf->network_enabled, boolean_data);
   }
 
+  SECTION(network_address_family)
+  {
+    static const config_test_single data[] =
+    {
+      { "0", HOST_FAMILY_ANY },
+      { "any", HOST_FAMILY_ANY },
+      { "ipv4", HOST_FAMILY_IPV4 },
+      { "ipv6", HOST_FAMILY_IPV6 },
+      { "", DEFAULT },
+      { "1", DEFAULT },
+      { "sdfasdf", DEFAULT },
+      { "-1213", DEFAULT }
+    };
+    TEST_ENUM("network_address_family", conf->network_address_family, data);
+  }
+
   SECTION(socks_host)
   {
     TEST_STRING("socks_host", conf->socks_host, string_data);
@@ -668,6 +684,16 @@ UNITTEST(Settings)
   SECTION(socks_port)
   {
     TEST_INT("socks_port", conf->socks_port, 0, 65535);
+  }
+
+  SECTION(socks_username)
+  {
+    TEST_STRING("socks_username", conf->socks_username, string_data);
+  }
+
+  SECTION(socks_password)
+  {
+    TEST_STRING("socks_password", conf->socks_password, string_data);
   }
 
 #endif /* CONFIG_NETWORK */
@@ -723,6 +749,11 @@ UNITTEST(Settings)
       { "", DEFAULT },
     };
     TEST_ENUM("update_auto_check", conf->update_auto_check, data);
+  }
+
+  SECTION(updater_enabled)
+  {
+    TEST_ENUM("updater_enabled", conf->updater_enabled, boolean_data);
   }
 
 #endif /* CONFIG_UPDATER */
