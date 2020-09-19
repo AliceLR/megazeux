@@ -448,6 +448,20 @@ static void display_connecting(const char *host_name)
 }
 
 /**
+ * Indicate that MZX is currently trying to determine if a remote manifest
+ * exists for this platform.
+ */
+static void display_manifest_check()
+{
+  static const char str[] = "Checking for remote " MANIFEST_TXT "..";
+  m_hide();
+  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  write_string(str, (WIDGET_BUF_LEN - strlen(str)) / 2, 12, DI_TEXT, 0);
+  update_screen();
+  m_show();
+}
+
+/**
  * Indicate that the manifest is currently being processed.
  */
 static void display_manifest(void)
@@ -994,9 +1008,13 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
        * Compute a temporary url base and use it to check if the current branch
        * supports full updates for this platform.
        */
+      display_manifest_check();
+
       snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, value);
       boolean platform_has_remote_manifest =
        Manifest::check_if_remote_exists(http, request, url_base);
+
+      display_clear();
 
       if(!platform_has_remote_manifest || !UpdaterInit::allow_full_updates())
       {
