@@ -67,11 +67,11 @@ LIBPNG_LDFLAGS = -lpng16
 # Vile hack, remove me ASAP
 # (also, vile hack in a vile hack to get the shaders to build parallel)
 #
-arch/3ds/%.o: arch/3ds/%.c arch/3ds/shader_2d.shbin.o arch/3ds/shader_playfield.shbin.o
+arch/3ds/%.o: arch/3ds/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
 
-arch/3ds/%.o: arch/3ds/%.cpp
+arch/3ds/%.o: arch/3ds/%.cpp arch/3ds/shader_2d.shbin.o arch/3ds/shader_playfield.shbin.o
 	$(if ${V},,@echo "  CXX     " $<)
 	${CXX} -MD ${core_cxxflags} ${core_flags} -Wno-unused-macros -c $< -o $@
 
