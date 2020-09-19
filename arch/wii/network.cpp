@@ -18,10 +18,10 @@
  */
 
 #include "../../src/network/Socket.hpp"
-#include "../../src/platform.h"
 #include "../../src/util.h"
 
 #include <network.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 
@@ -42,77 +42,16 @@
 static boolean net_is_initialized = false;
 
 /**
- * Since it seems like libogc won't set errno for anything but gethostbyname,
- * it has to be manually handled by the wrapper functions here. This is set to
- * whatever the return value of the previous socket function was. When >= 0,
- * there is no error. When negative, there was an error, which should be
- * converted to an error message using strerror_r(-net_errno).
+ * Set this thread's errno value.
+ * If the provided value is negative, errno will be set to `-value`.
+ * If the provided value is zero or positive, errno will be set to `0`.
+ *
+ * @param value   Return value from a network.h function.
+ * @return        `value`.
  */
-struct net_errno_pair
-{
-  platform_thread_id thread_id;
-  int thread_errno;
-};
-
-static net_errno_pair *net_errno_list = nullptr;
-static size_t net_errno_len = 0;
-static size_t net_errno_alloc = 0;
-static platform_mutex net_errno_lock;
-
-static int &get_thread_net_errno()
-{
-  platform_thread_id current_id = platform_get_thread_id();
-  size_t i = 0;
-
-  if(net_errno_list)
-  {
-    for(i = 0; i < net_errno_len; i++)
-    {
-      net_errno_pair &p = net_errno_list[i];
-
-      if(platform_is_same_thread(current_id, p.thread_id))
-        return p.thread_errno;
-    }
-  }
-
-  if(!net_errno_list || net_errno_len >= net_errno_alloc)
-  {
-    net_errno_alloc = net_errno_alloc ? net_errno_alloc * 2 : 4;
-    net_errno_list =
-     (net_errno_pair *)crealloc(net_errno_list, net_errno_alloc * sizeof(net_errno_pair));
-  }
-
-  net_errno_pair &p = net_errno_list[net_errno_len++];
-  p.thread_id = current_id;
-  p.thread_errno = 0;
-  return p.thread_errno;
-}
-
-static int get_net_errno()
-{
-  platform_mutex_lock(&net_errno_lock);
-
-  int result = get_thread_net_errno();
-
-  platform_mutex_unlock(&net_errno_lock);
-  return result;
-}
-
 static int set_net_errno(int value)
 {
-  /**
-   * Nothing should be trying to read the errno unless something explicitly
-   * returns a negative value...
-   */
-  if(value < 0)
-  {
-    platform_mutex_lock(&net_errno_lock);
-
-    int &net_errno = get_thread_net_errno();
-    net_errno = value;
-
-    platform_mutex_unlock(&net_errno_lock);
-  }
+  errno = value < 0 ? -value : 0;
   return value;
 }
 
@@ -125,9 +64,6 @@ boolean platform_socket_init_late()
 {
   if(!net_is_initialized)
   {
-    if(!net_errno_lock)
-      platform_mutex_init(&net_errno_lock);
-
     int res = net_init();
     set_net_errno(res);
     if(res != 0)
@@ -147,15 +83,6 @@ void platform_socket_exit()
     net_is_initialized = false;
     net_deinit();
   }
-  if(net_errno_lock)
-  {
-    platform_mutex_destroy(&net_errno_lock);
-    net_errno_lock = 0;
-  }
-  free(net_errno_list);
-  net_errno_list = nullptr;
-  net_errno_alloc = 0;
-  net_errno_len = 0;
 }
 
 struct hostent *Socket::gethostbyname(const char *name)
@@ -169,18 +96,16 @@ struct hostent *Socket::gethostbyname(const char *name)
 
 int Socket::get_errno()
 {
-  int net_errno = get_net_errno();
-  return net_errno < 0 ? -net_errno : 0;
+  return errno;
 }
 
 void Socket::perror(const char *message)
 {
-  int net_errno = get_net_errno();
   char buf[256];
   buf[0] = '\0';
 
   // NOTE: return value not portable.
-  strerror_r(MAX(0, -net_errno), buf, ARRAY_SIZE(buf));
+  strerror_r(errno, buf, ARRAY_SIZE(buf));
   warn("--SOCKET-- %s: %s\n", message, buf);
 }
 
