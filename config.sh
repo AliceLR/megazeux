@@ -918,7 +918,7 @@ fi
 #
 # Force disable updater (unsupported platform)
 #
-if [ "$PLATFORM" != "mingw" -a "$PLATFORM" != "wii" ]; then
+if [ "$PLATFORM" != "mingw" ]; then
 	echo "Force-disabling updater (unsupported platform)."
 	UPDATER="false"
 fi
