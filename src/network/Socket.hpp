@@ -53,11 +53,13 @@
 #include <fcntl.h>
 #define UNIX_INLINE(x)
 
+// libogc uses a structure different from the regular structure and does not
+// declare pollfd. Declare this to be identical to the libogc version...
 struct pollfd
 {
-  int fd;
-  short events;
-  short revents;
+  s32 fd;
+  u32 events;
+  u32 revents;
 };
 
 #else // !__WIN32__ && !CONFIG_WII
@@ -165,6 +167,20 @@ struct pollfd
 #endif
 
 /**
+ * These are extern "C" so something that otherwise uses the default socket
+ * code can just stick these functions in its platform.c file (e.g. PSP).
+ */
+#if defined(CONFIG_WII)
+extern "C" boolean platform_socket_init();
+extern "C" boolean platform_socket_init_late();
+extern "C" void platform_socket_exit();
+#else
+static inline boolean platform_socket_init() { return true; }
+static inline boolean platform_socket_init_late() { return true; }
+static inline void platform_socket_exit() {}
+#endif
+
+/**
  * Low-level abstraction for misc. socket symbols.
  * Don't use directly outside of src/network/.
  */
@@ -187,8 +203,20 @@ private:
   static int poll_alt(struct pollfd *fds, size_t nfds, int timeout_ms);
 
 public:
-  static boolean init(struct config_info *conf) GETADDRINFO_MAYBE_INLINE({ return true; });
-  static void exit(void) GETADDRINFO_MAYBE_INLINE({});
+  static boolean init(struct config_info *conf) GETADDRINFO_MAYBE_INLINE
+  ({
+    return platform_socket_init();
+  });
+
+  static boolean init_late()
+  {
+    return platform_socket_init_late();
+  }
+
+  static void exit(void) GETADDRINFO_MAYBE_INLINE
+  ({
+    platform_socket_exit();
+  });
 
   static int getaddrinfo(const char *node, const char *service,
    const struct addrinfo *hints, struct addrinfo **res) GETADDRINFO_MAYBE_INLINE
@@ -204,6 +232,11 @@ public:
   static void getaddrinfo_perror(const char *message, int errcode) GETADDRINFO_MAYBE_INLINE
   ({
     warn("%s (code %d): %s\n", message, errcode, ::gai_strerror(errcode));
+  });
+
+  static int get_errno() UNIX_INLINE
+  ({
+    return errno;
   });
 
   static void perror(const char *message) UNIX_INLINE
@@ -346,7 +379,7 @@ public:
 private:
   static boolean is_last_errno_fatal()
   {
-    switch(errno)
+    switch(Socket::get_errno())
     {
       case 0:
       case EINPROGRESS:

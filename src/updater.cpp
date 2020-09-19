@@ -417,6 +417,19 @@ static void display_clear(void)
 }
 
 /**
+ * Indicate that the network is currently being initialized.
+ */
+static void display_initializing()
+{
+  static const char str[] = "Initializing network...";
+  m_hide();
+  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  write_string(str, (WIDGET_BUF_LEN - strlen(str)) / 2, 12, DI_TEXT, 0);
+  update_screen();
+  m_show();
+}
+
+/**
  * Indicate that the client is currently connecting to a remote host.
  */
 static void display_connecting(const char *host_name)
@@ -827,6 +840,15 @@ static boolean __check_for_updates(context *ctx, boolean is_automatic)
     error_message(E_UPDATE, 14, "No updater hosts defined! Aborting.");
     return false;
   }
+
+  display_initializing();
+  if(!Host::host_layer_init_check())
+  {
+    error_message(E_UPDATE, 15, "Failed to initialize network layer.");
+    display_clear();
+    return false;
+  }
+  display_clear();
 
   set_context(CTX_UPDATER);
 

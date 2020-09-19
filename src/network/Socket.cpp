@@ -242,7 +242,12 @@ static int init_ref_count;
 boolean Socket::init(struct config_info *conf)
 {
   if(!init_ref_count)
+  {
+    if(!platform_socket_init())
+      return false;
+
     platform_mutex_init(&gai_lock);
+  }
   init_ref_count++;
   return true;
 }
@@ -252,7 +257,10 @@ void Socket::exit()
   assert(init_ref_count);
   init_ref_count--;
   if(!init_ref_count)
+  {
+    platform_socket_exit();
     platform_mutex_destroy(&gai_lock);
+  }
 }
 
 int Socket::getaddrinfo(const char *node, const char *service,
@@ -467,9 +475,21 @@ void Socket::exit(void)
 
 boolean Socket::is_last_error_fatal(void)
 {
-  if(socksyms.WSAGetLastError() == WSAEWOULDBLOCK)
-    return false;
-  return Socket::is_last_errno_fatal();
+  /**
+   * NOTE: WSA error codes are not intercompatible with errno, so there's no
+   * point in calling is_last_errno_fatal from this function. Just handle the
+   * WSA error codes directly.
+   */
+  switch(Socket::get_errno())
+  {
+    case 0:
+    case WSAEINPROGRESS:
+    case WSAEWOULDBLOCK:
+    case WSAEINTR:
+      return false;
+    default:
+      return true;
+  }
 }
 
 /**
@@ -495,10 +515,14 @@ void winsock_perror(const char *message, int code)
   LocalFree(err_message);
 }
 
+int Socket::get_errno()
+{
+  return socksyms.WSAGetLastError();
+}
+
 void Socket::perror(const char *message)
 {
-  int code = socksyms.WSAGetLastError();
-  winsock_perror(message, code);
+  winsock_perror(message, Socket::get_errno());
 }
 
 int Socket::accept(int sockfd,

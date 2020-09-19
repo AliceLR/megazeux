@@ -173,6 +173,14 @@ boolean Host::host_layer_init(struct config_info *in_conf)
   return true;
 }
 
+boolean Host::host_layer_init_check()
+{
+  if(!conf)
+    return false;
+
+  return Socket::init_late();
+}
+
 void Host::host_layer_exit(void)
 {
   DNS::exit();
