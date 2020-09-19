@@ -80,9 +80,9 @@ static void audio_sb_interrupt(void)
 static void audio_sb_parse_env(struct sb_config *conf, char *env)
 {
   char *token;
-  token = strtok(env, " ");
-  while(token != NULL)
+  while(env != NULL)
   {
+    token = strsep(&env, " ");
     switch(token[0])
     {
       case 'A':
@@ -101,7 +101,6 @@ static void audio_sb_parse_env(struct sb_config *conf, char *env)
         conf->type = strtol(token + 1, NULL, 16);
         break;
     }
-    token = strtok(NULL, " ");
   }
 }
 
