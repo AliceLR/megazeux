@@ -31,6 +31,7 @@
 __M_BEGIN_DECLS
 
 typedef int platform_mutex;
+typedef int platform_thread_id;
 
 static inline void platform_mutex_init(platform_mutex *mutex)
 {
@@ -50,6 +51,17 @@ static inline boolean platform_mutex_unlock(platform_mutex *mutex)
     enable();
     *mutex = 0;
   }
+  return true;
+}
+
+static inline platform_thread_id platform_get_thread_id(void)
+{
+  return 0;
+}
+
+static inline boolean platform_is_same_thread(platform_thread_id a,
+ platform_thread_id b)
+{
   return true;
 }
 
