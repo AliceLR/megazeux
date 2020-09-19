@@ -90,13 +90,23 @@ static inline boolean platform_cond_timedwait(platform_cond *cond,
  platform_mutex *mutex, unsigned int timeout_ms)
 {
   struct timespec timeout;
-  u64 ticks;
 
-  // Use LWP watchdog to get a usable absolute time
-  ticks = gettime() + millisecs_to_ticks(timeout_ms);
+  /**
+   * FIXME: LWP_CondTimedWait, despite its documentation, currently takes a
+   * relative timeout. Apparently this behavior is going to get changed in
+   * libogc at some point to match the documentation, so until then, the
+   * correct handling of this is commented out.
+   *
+   * https://github.com/devkitPro/libogc/issues/101
+   */
+  /*
+  u64 ticks = gettime() + millisecs_to_ticks(timeout_ms);
 
   timeout.tv_sec = ticks_to_secs(ticks);
   timeout.tv_nsec = ticks_to_nanosecs(ticks) % 1000000000;
+  */
+  timeout.tv_sec = timeout_ms / 1000;
+  timeout.tv_nsec = (timeout_ms % 1000) / 1000000;
 
   if(LWP_CondTimedWait(*cond, *mutex, &timeout))
     return false;
