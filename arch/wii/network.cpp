@@ -88,10 +88,7 @@ void platform_socket_exit()
 struct hostent *Socket::gethostbyname(const char *name)
 {
   // This one actually does set errno...
-  struct hostent *ret = net_gethostbyname(name);
-  if(!ret)
-    set_net_errno(errno);
-  return ret;
+  return net_gethostbyname(name);
 }
 
 int Socket::get_errno()
