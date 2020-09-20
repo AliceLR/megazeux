@@ -54,9 +54,12 @@ static inline boolean platform_opendir(struct mzx_dir *dir, const char *path)
   }
 #endif
 
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+#ifdef NO_REWINDDIR
   if(dir->path != path)
+  {
     snprintf(dir->path, PATH_BUF_LEN, "%s", path);
+    dir->path[PATH_BUF_LEN - 1] = 0;
+  }
 #endif
 
   dir->opaque = opendir(path);
@@ -154,10 +157,7 @@ static inline boolean platform_readdir(struct mzx_dir *dir,
 
 static inline boolean platform_rewinddir(struct mzx_dir *dir)
 {
-  // pspdev/devkitPSP historically does not have a rewinddir implementation.
-  // libctru (3DS) has rewinddir but it doesn't work.
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
-  dir->path[PATH_BUF_LEN - 1] = 0;
+#ifdef NO_REWINDDIR
   platform_closedir(dir);
   if(!platform_opendir(dir, dir->path))
     return false;
