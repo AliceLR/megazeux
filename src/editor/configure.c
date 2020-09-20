@@ -41,6 +41,8 @@ static const struct editor_config_info editor_conf_default =
   false,                        // editor_tab_focuses_view
   false,                        // editor_load_board_assets
   true,                         // editor_thing_menu_places
+  false,                        // editor_show_thing_toggles
+  4,                            // editor_show_thing_blink_speed
   100,                          // Undo history size
 
   // Defaults for new boards
@@ -402,6 +404,20 @@ static void config_editor_thing_menu_places(struct editor_config_info *conf,
   config_boolean(&conf->editor_thing_menu_places, value);
 }
 
+static void config_editor_show_thing_toggles(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  config_boolean(&conf->editor_show_thing_toggles, value);
+}
+
+static void config_editor_show_thing_blink_speed(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  int result;
+  if(config_int(&result, value, 0, INT_MAX))
+    conf->editor_show_thing_blink_speed = result;
+}
+
 static void config_undo_history_size(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
@@ -704,6 +720,8 @@ static const struct editor_config_entry editor_config_options[] =
   { "disassemble_extras", config_disassemble_extras },
   { "editor_enter_splits", config_editor_enter_splits },
   { "editor_load_board_assets", config_editor_load_board_assets },
+  { "editor_show_thing_blink_speed", config_editor_show_thing_blink_speed },
+  { "editor_show_thing_toggles", config_editor_show_thing_toggles },
   { "editor_space_toggles", config_editor_space_toggles },
   { "editor_tab_focuses_view", config_editor_tab_focus },
   { "editor_thing_menu_places", config_editor_thing_menu_places },

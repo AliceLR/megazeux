@@ -69,6 +69,8 @@ struct editor_config_info
   boolean editor_tab_focuses_view;
   boolean editor_load_board_assets;
   boolean editor_thing_menu_places;
+  boolean editor_show_thing_toggles;
+  int editor_show_thing_blink_speed;
   int undo_history_size;
 
   // Defaults for new boards

@@ -50,6 +50,11 @@ USERS
   accidentally "decrypting" a corrupted file and prevents MZX
   from attempting to decrypt MZX 1.x files (which store the
   password differently).
++ Added config settings "editor_show_thing_blink_speed" and
+  "editor_show_thing_toggles". The former controls the blinking
+  speed of the show thing (Shift+F2 et al.) editor keys and the
+  latter allows these keys to be treated as a toggle instead of
+  blocking input.
 + Added SOCKS5 IPv6 and username/password support.
 + Added "network_address_family" config setting to allow users
   to force either IPv4 or IPv6 connections/name resolution. By

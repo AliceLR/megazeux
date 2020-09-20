@@ -339,6 +339,22 @@
 
 # editor_thing_menu_places = 1
 
+# By default, the show thing keys (e.g. "Shift+F2: Show Robots") will block
+# editing until a key or mouse button is pressed, after which they are turned
+# off. If this option is set to 1, these keys will instead toggle on until
+# the same key is pressed again, another show thing key is pressed, or until
+# escape is pressed. This allows scrolling and other editing without having to
+# press these keys repeatedly.
+
+# editor_show_thing_toggles = 0
+
+# This option controls the blinking speed when a show thing key is used.
+# Lower numbers mean faster blinking; for example, when set to 4 (default),
+# the character displayed by the blinking will alternate every 4 frames (~8 Hz).
+# When set to 0, no blinking will occur and only the first character will display.
+
+# editor_show_thing_blink_speed = 4
+
 # If this is set to 1 (the default), enter can be used to split
 # a line in the robot editor. However, the classic behaviour is
 # that enter moves the cursor down a line. If you would like to
