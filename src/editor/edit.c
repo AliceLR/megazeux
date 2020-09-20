@@ -959,7 +959,8 @@ static void draw_edit_window(struct editor_context *editor)
     {
       id_put(cur_board, x, y, a_x, a_y, a_x, a_y);
 
-      if(flash_char)
+      // Don't display flashing when the overlay is enabled.
+      if(flash_char && !cur_board->overlay_mode)
         flash_draw(editor, cur_board, x, y, a_x, a_y, flash_char);
     }
   }
