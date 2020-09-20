@@ -419,6 +419,7 @@ boolean redirect_stdio(const char *base_path, boolean require_conf)
       fprintf(stdout, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
     else
       fprintf(stdout, "Failed to redirect stdout\n");
+    fflush(stdout);
 
     // Redirect stderr to stderr.txt.
     dest_path[dest_len] = '\0';
@@ -428,6 +429,7 @@ boolean redirect_stdio(const char *base_path, boolean require_conf)
       fprintf(stderr, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
     else
       fprintf(stderr, "Failed to redirect stderr\n");
+    fflush(stderr);
 
     return true;
   }
