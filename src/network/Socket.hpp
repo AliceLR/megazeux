@@ -40,8 +40,15 @@
 #define UNIX_INLINE(x)
 #ifndef __WIN64__
 // Windows XP WinSock2 needed for getaddrinfo() API
+#ifdef CONFIG_GETADDRINFO
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
+#endif
+// Windows Vista WinSock2 is needed for poll().
+#ifdef CONFIG_POLL
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+#endif
 #endif // !__WIN64__
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -377,6 +384,7 @@ public:
   };
 
 private:
+#ifndef __WIN32__
   static boolean is_last_errno_fatal()
   {
     switch(Socket::get_errno())
@@ -390,6 +398,7 @@ private:
         return true;
     }
   }
+#endif
 };
 
 #endif /* __SOCKET_HPP */
