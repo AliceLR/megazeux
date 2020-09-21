@@ -251,7 +251,7 @@ Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
   if(fp)
   {
     size = ftell_and_rewind(fp) / CHAR_SIZE;
-    if(size + pos >= 256 && maxChars > 256 && !layer_renderer_check(true))
+    if(size + pos > 256 && maxChars > 256 && !layer_renderer_check(true))
       maxChars = 256;
 
     if(size + pos > maxChars)
