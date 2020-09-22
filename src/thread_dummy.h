@@ -58,7 +58,9 @@ typedef THREAD_RES (*platform_thread_fn)(void *);
 
 /**
  * This should pretty much only be used to get audio.c to build for platforms
- * that don't have proper mutexes.
+ * that don't have proper mutexes. Don't add hacks like this for the other
+ * functions in this file; anything relying on those functions WILL NOT WORK
+ * without a proper threading/synchronization implementation.
  */
 #ifdef THREAD_DUMMY_ALLOW_MUTEX
 static inline void platform_mutex_init(platform_mutex *mutex)
