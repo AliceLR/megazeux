@@ -106,6 +106,10 @@ THREAD_ERROR
 boolean platform_cond_wait(platform_cond *cond, platform_mutex *mutex);
 
 THREAD_ERROR
+boolean platform_cond_timedwait(platform_cond *cond,
+ platform_mutex *muted, unsigned int timeout_ms);
+
+THREAD_ERROR
 boolean platform_cond_signal(platform_cond *cond);
 
 THREAD_ERROR
