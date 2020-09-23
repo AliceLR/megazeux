@@ -50,27 +50,26 @@ int real_main(int argc, char *argv[]);
 
 #endif // CONFIG_SDL
 
-// Need threads and mutexes for DNS lookups.
-// Otherwise only need mutexes for audio, but the Wii port
-// uses them for events too
-
-#if defined(CONFIG_AUDIO) || defined(CONFIG_NETWORK) || defined(CONFIG_WII)
-
+/**
+ * Audio, networking, and other misc. optional features require threading
+ * support. Include a platform-specific thread header here if it's available.
+ * If not, a dummy implementation will be included.
+ *
+ * Most of the dummy functions will emit errors when used.
+ * If this happens, implement proper threading functions for that platform.
+ */
 #ifdef CONFIG_PTHREAD
 #include "thread_pthread.h"
 #elif defined(CONFIG_WII)
 #include "../arch/wii/thread.h"
 #elif defined(CONFIG_3DS)
 #include "../arch/3ds/thread.h"
-#elif defined(CONFIG_NDS)
-#include "../arch/nds/thread.h"
 #elif defined(CONFIG_SDL)
 #include "thread_sdl.h"
 #else
-#error Provide a valid thread/mutex implementation for this platform!
+#if defined(CONFIG_NDS)
+#define THREAD_DUMMY_ALLOW_MUTEX
 #endif
-
-#else
 #include "thread_dummy.h"
 #endif
 
