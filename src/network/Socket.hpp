@@ -21,7 +21,6 @@
 #ifndef __SOCKET_HPP
 #define __SOCKET_HPP
 
-#define SKIP_SDL
 #include "../compat.h"
 #include "../configure.h"
 #include "../platform.h"
@@ -88,7 +87,7 @@ struct pollfd
 
 #endif // __WIN32__
 
-#if defined(CONFIG_GETADDRINFO) && !defined(EAI_AGAIN)
+#if defined(CONFIG_GETADDRINFO) && (!defined(EAI_AGAIN) && !defined(EAI_FAMILY))
 #error "Missing getaddrinfo() support; configure with --disable-getaddrinfo."
 #endif
 
@@ -149,6 +148,14 @@ struct pollfd
 #endif
 #endif
 
+#if defined(CONFIG_WII) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
+#define SOCKET_INIT_MAYBE_INLINE(x)
+#endif
+
+#if !defined(EAI_AGAIN) && defined(EAI_NONAME)
+#define EAI_AGAIN EAI_NONAME
+#endif
+
 #ifndef AI_V4MAPPED
 #define AI_V4MAPPED (0)
 #endif
@@ -165,6 +172,10 @@ struct pollfd
 #define UNIX_INLINE(x) x
 #endif
 
+#ifndef SOCKET_INIT_MAYBE_INLINE
+#define SOCKET_INIT_MAYBE_INLINE(x) UNIX_INLINE(x)
+#endif
+
 #ifndef GETADDRINFO_MAYBE_INLINE
 #define GETADDRINFO_MAYBE_INLINE(x) UNIX_INLINE(x)
 #endif
@@ -174,27 +185,30 @@ struct pollfd
 #endif
 
 /**
- * These are extern "C" so something that otherwise uses the default socket
- * code can just stick these functions in its platform.c file (e.g. PSP).
- */
-#if defined(CONFIG_WII)
-extern "C" boolean platform_socket_init();
-extern "C" boolean platform_socket_init_late();
-extern "C" void platform_socket_exit();
-#else
-static inline boolean platform_socket_init() { return true; }
-static inline boolean platform_socket_init_late() { return true; }
-static inline void platform_socket_exit() {}
-#endif
-
-/**
  * Low-level abstraction for misc. socket symbols.
  * Don't use directly outside of src/network/.
  */
 class Socket final
 {
 private:
+  static int init_ref_count;
+
   Socket() {}
+
+  static boolean platform_init(struct config_info *conf) SOCKET_INIT_MAYBE_INLINE
+  ({
+    return true;
+  });
+
+  static boolean platform_init_late() SOCKET_INIT_MAYBE_INLINE
+  ({
+    return true;
+  });
+
+  static void platform_exit() SOCKET_INIT_MAYBE_INLINE
+  ({
+    return;
+  });
 
   // Potentially non thread-safe. Only allow internally in getaddrinfo_alt.
   static struct hostent *gethostbyname(const char *name) UNIX_INLINE
@@ -210,20 +224,9 @@ private:
   static int poll_alt(struct pollfd *fds, size_t nfds, int timeout_ms);
 
 public:
-  static boolean init(struct config_info *conf) GETADDRINFO_MAYBE_INLINE
-  ({
-    return platform_socket_init();
-  });
-
-  static boolean init_late()
-  {
-    return platform_socket_init_late();
-  }
-
-  static void exit(void) GETADDRINFO_MAYBE_INLINE
-  ({
-    platform_socket_exit();
-  });
+  static boolean init(struct config_info *conf);
+  static boolean init_late();
+  static void exit();
 
   static int getaddrinfo(const char *node, const char *service,
    const struct addrinfo *hints, struct addrinfo **res) GETADDRINFO_MAYBE_INLINE

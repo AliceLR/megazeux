@@ -134,6 +134,25 @@ const char *Socket::gai_strerror_alt(int errcode)
       return "Unknown error.";
   }
 }
+
+#ifndef __WIN32__
+int Socket::getaddrinfo(const char *node, const char *service,
+ const struct addrinfo *hints, struct addrinfo **res)
+{
+  return Socket::getaddrinfo_alt(node, service, hints, res);
+}
+
+void Socket::freeaddrinfo(struct addrinfo *res)
+{
+  return Socket::freeaddrinfo_alt(res);
+}
+
+void Socket::getaddrinfo_perror(const char *message, int errcode)
+{
+  warn("%s (code %d): %s\n", message, errcode,
+   Socket::gai_strerror_alt(errcode));
+}
+#endif
 #endif // __WIN32__ || !CONFIG_GETADDRINFO
 
 #if defined(__WIN32__) || !defined(CONFIG_POLL)
@@ -236,51 +255,6 @@ int Socket::poll(struct pollfd *fds, unsigned int nfds, int timeout_ms)
 #endif
 #endif /* __WIN32__ || !CONFIG_POLL */
 
-#if !defined(__WIN32__) && !defined(CONFIG_GETADDRINFO)
-static int init_ref_count;
-
-boolean Socket::init(struct config_info *conf)
-{
-  if(!init_ref_count)
-  {
-    if(!platform_socket_init())
-      return false;
-
-    platform_mutex_init(&gai_lock);
-  }
-  init_ref_count++;
-  return true;
-}
-
-void Socket::exit()
-{
-  assert(init_ref_count);
-  init_ref_count--;
-  if(!init_ref_count)
-  {
-    platform_socket_exit();
-    platform_mutex_destroy(&gai_lock);
-  }
-}
-
-int Socket::getaddrinfo(const char *node, const char *service,
- const struct addrinfo *hints, struct addrinfo **res)
-{
-  return Socket::getaddrinfo_alt(node, service, hints, res);
-}
-
-void Socket::freeaddrinfo(struct addrinfo *res)
-{
-  return Socket::freeaddrinfo_alt(res);
-}
-
-void Socket::getaddrinfo_perror(const char *message, int errcode)
-{
-  warn("%s (code %d): %s\n", message, errcode,
-   Socket::gai_strerror_alt(errcode));
-}
-#endif /* !__WIN32__ && !CONFIG_GETADDRINFO */
-
 #ifdef __WIN32__
 
 /* MegaZeux needs ws2_32.dll for getaddrinfo() and friends, which are
@@ -377,8 +351,6 @@ static const struct dso_syms_map socksyms_map[] =
   { NULL, NULL }
 };
 
-static int init_ref_count;
-
 #define WINSOCK2 "ws2_32.dll"
 #define WINSOCK  "wsock32.dll"
 
@@ -430,35 +402,27 @@ static boolean socket_load_syms(void)
   return true;
 }
 
-boolean Socket::init(struct config_info *conf)
+boolean Socket::platform_init(struct config_info *conf)
 {
   WORD version = MAKEWORD(1, 0);
   WSADATA ws_data;
 
-  if(init_ref_count == 0)
-  {
-    if(!gai_lock)
-      platform_mutex_init(&gai_lock);
+  if(!socket_load_syms())
+    return false;
 
-    if(!socket_load_syms())
-      return false;
+  if(socksyms.WSAStartup(version, &ws_data) < 0)
+    return false;
 
-    if(socksyms.WSAStartup(version, &ws_data) < 0)
-      return false;
-  }
-
-  init_ref_count++;
   return true;
 }
 
-void Socket::exit(void)
+boolean Socket::platform_init_late()
 {
-  assert(init_ref_count > 0);
-  init_ref_count--;
+  return true;
+}
 
-  if(init_ref_count != 0)
-    return;
-
+void Socket::platform_exit(void)
+{
   if(socksyms.WSACleanup() == SOCKET_ERROR)
   {
     if(socksyms.WSAGetLastError() == WSAEINPROGRESS)
@@ -467,9 +431,6 @@ void Socket::exit(void)
       socksyms.WSACleanup();
     }
   }
-
-  platform_mutex_destroy(&gai_lock);
-  gai_lock = 0;
   socket_free_syms();
 }
 
@@ -654,3 +615,130 @@ int Socket::__WSAFDIsSet(int sockfd, fd_set *set)
 }
 
 #endif /*__WIN32__*/
+
+
+#ifdef CONFIG_3DS
+
+#include <3ds.h>
+#include <malloc.h>
+
+// Just going off what the examples use for the buffer size here...
+#define SOC_ALIGN       0x1000
+#define SOC_BUFFERSIZE  0x100000
+
+static boolean socket_3ds_init = false;
+static u32 *socket_ctx_buffer = nullptr;
+
+boolean Socket::platform_init(struct config_info *conf)
+{
+  return true;
+}
+
+boolean Socket::platform_init_late()
+{
+  if(!socket_3ds_init)
+  {
+    void *buf = memalign(SOC_ALIGN, SOC_BUFFERSIZE);
+    if(!buf)
+      return false;
+
+    socket_ctx_buffer = static_cast<u32 *>(buf);
+
+    Result ret = socInit(socket_ctx_buffer, SOC_BUFFERSIZE);
+    if(ret != 0)
+    {
+      free(socket_ctx_buffer);
+      socket_ctx_buffer = nullptr;
+      return false;
+    }
+    socket_3ds_init = true;
+  }
+  return true;
+}
+
+void Socket::platform_exit()
+{
+  if(socket_3ds_init)
+  {
+    socExit();
+    free(socket_ctx_buffer);
+    socket_3ds_init = false;
+    socket_ctx_buffer = nullptr;
+  }
+}
+
+#endif /* CONFIG_3DS */
+
+
+#ifdef CONFIG_SWITCH
+
+#include <switch.h>
+
+static boolean socket_switch_init = false;
+
+boolean Socket::platform_init(struct config_info *conf)
+{
+  return true;
+}
+
+boolean Socket::platform_init_late()
+{
+  if(!socket_switch_init)
+  {
+    Result ret = socketInitializeDefault();
+    if(ret != 0)
+      return false;
+
+    socket_switch_init = true;
+  }
+  return true;
+}
+
+void Socket::platform_exit()
+{
+  if(socket_switch_init)
+  {
+    socketExit();
+    socket_switch_init = false;
+  }
+}
+
+#endif /* CONFIG_SWITCH */
+
+
+int Socket::init_ref_count = 0;
+
+boolean Socket::init(struct config_info *conf)
+{
+  if(!init_ref_count)
+  {
+    if(!Socket::platform_init(conf))
+      return false;
+
+#if defined(__WIN32__) || !defined(CONFIG_GETADDRINFO)
+    platform_mutex_init(&gai_lock);
+#endif
+  }
+  init_ref_count++;
+  return true;
+}
+
+boolean Socket::init_late()
+{
+  return Socket::platform_init_late();
+}
+
+void Socket::exit()
+{
+  assert(init_ref_count > 0);
+  init_ref_count--;
+  if(!init_ref_count)
+  {
+    Socket::platform_exit();
+
+#if defined(__WIN32__) || !defined(CONFIG_GETADDRINFO)
+    platform_mutex_destroy(&gai_lock);
+    gai_lock = 0;
+#endif
+  }
+}

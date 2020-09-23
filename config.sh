@@ -762,6 +762,9 @@ if [ "$PLATFORM" = "3ds" ]; then
 
 	echo "Disabling utils on 3DS (silly)."
 	UTILS="false"
+
+	echo "Force-disabling IPv6 on 3DS (not implemented)."
+	IPV6="false"
 fi
 
 #
@@ -778,6 +781,9 @@ if [ "$PLATFORM" = "switch" ]; then
 
 	echo "Force-enabling OpenGL ES support (Switch)."
 	GLES="true"
+
+	echo "Force-disabling IPv6 on Switch (FIXME getaddrinfo seems to not support it)."
+	IPV6="false"
 
 	# This may or may not be totally useless for the Switch, disable it for now.
 	GAMECONTROLLERDB="false"
