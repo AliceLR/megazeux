@@ -30,8 +30,8 @@ __M_BEGIN_DECLS
 #define PATH_BUF_LEN MAX_PATH
 
 // pspdev/devkitPSP historically does not have a rewinddir implementation.
-// libctru (3DS) has rewinddir but it doesn't work.
-#if defined(CONFIG_3DS) || defined(CONFIG_PSP)
+// libctru (3DS) and libnx (Switch) have rewinddir but it doesn't work.
+#if defined(CONFIG_3DS) || defined(CONFIG_PSP) || defined(CONFIG_SWITCH)
 #define NO_REWINDDIR
 #endif
 

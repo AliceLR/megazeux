@@ -3391,7 +3391,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     if(!dir_open(&current_dir, current_dir_name))
       goto skip_dir;
 
-#ifdef CONFIG_3DS
+#if defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
     if(dirs_okay == 1 && strlen(current_dir_name) > 1)
     {
       dir_list[num_dirs] = cmalloc(3);

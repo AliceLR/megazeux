@@ -67,6 +67,8 @@ USERS
   a full update wouldn't be possible, and should be more helpful
   about printing warnings to the console when this situation
   occurs.
++ Enabled rewinddir hack and .. file manager hacks for Nintendo
+  Switch builds to fix the file manager and directory seeking.
 
 DEVELOPERS
 
