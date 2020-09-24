@@ -192,14 +192,5 @@ endif
 archive: build
 	@arch/darwin/dmg.sh ${TARGET}
 
-test:
-	@${MAKE} ARCH=i686 test
-
-clean:
-	@${MAKE} ARCH=i686 clean
-
-distclean:
-	@${MAKE} ARCH=i686 distclean
-
-endif # SUPPRESS_BUILD=1
+endif # DARWIN_META_TARGETS=1
 endif # darwin-dist

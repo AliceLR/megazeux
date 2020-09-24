@@ -224,7 +224,6 @@ apk: ${RELEASE_APK}
 	@${CP} ${RELEASE_APK} build/dist/${SUBPLATFORM}/${TARGET}-${SUBPLATFORM}.apk
 
 clean:
-	@${MAKE} ANDROID_TARGET=arm clean
 	$(if ${V},,@echo "  RM      " ${JNI_DIR}/lib/*/libmain.so)
 	@${RM} -r ${JNI_DIR}/lib/*/libmain.so
 	$(if ${V},,@echo "  RM      " ${BUILD_DIR})
@@ -239,9 +238,6 @@ clean:
 deps-clean:
 	$(if ${V},,@echo "  RM      " arch/android/deps/)
 	@${RM} -r arch/android/deps/
-
-distclean:
-	@${MAKE} ANDROID_TARGET=arm distclean
 
 endif
 
