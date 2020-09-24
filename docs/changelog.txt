@@ -10,6 +10,8 @@ USERS
 
     mmutil -d -m CV_TECH.MOD
 
++ Added protected character set and palette support to the NDS
+  port and reduced overall RAM usage for the NDS port. (asie)
 + Fixed graphics corruption when using the glsl and opengl2
   renderers on big endian platforms.
 + Fixed a bug that would cause string searches to sometimes skip
