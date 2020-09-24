@@ -27,7 +27,7 @@
 #if defined(CONFIG_SDL)
 #include "../compat_sdl.h"
 #include "../render_sdl.h"
-#include "SDL_syswm.h"
+#include <SDL_syswm.h>
 #endif
 
 static char **copy_buffer;

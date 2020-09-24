@@ -558,11 +558,14 @@ boolean Host::create_connection(struct addrinfo *ai, enum host_family family)
     }
   }
 
-  res = this->poll(HOST_POLL_WRITE, this->timeout_ms);
-  if(res != 1)
+  res = this->poll(Host::POLL_WRITE, this->timeout_ms);
+  if(Host::is_poll_error(res) || !(res & Host::POLL_WRITE))
   {
-    if(res == 0)
-      info("Connection timed out.\n");
+    if(res >= 0)
+    {
+      trace("--HOST-- Host::create_connection: Host::poll returned %d\n", res);
+      warn("Connection failed or timed out.\n");
+    }
     else
       Socket::perror("create_connection: Host::poll");
 
@@ -1289,27 +1292,32 @@ boolean Host::send_to(const char *buffer, size_t len,
 
 #endif // NETWORK_DEADCODE
 
-int Host::poll(int flags, Uint32 timeout)
+int Host::poll(int flags, Uint32 timeout_ms)
 {
   struct pollfd p;
   p.fd = this->sockfd;
-  p.events = 0;
+  p.events = flags;
   p.revents = 0;
-  if(flags & HOST_POLL_READ)
-    p.events |= POLLIN;
-  if(flags & HOST_POLL_WRITE)
-    p.events |= POLLOUT;
-  if(flags & HOST_POLL_EXCEPT)
-    p.events |= POLLPRI;
 
-  int ret = Socket::poll(&p, 1, timeout);
-  if(ret < 0)
-    return -1;
-
-  if(ret > 0)
+  /**
+   * POSIX is a little vague about whether or not poll() should return before
+   * the timeout is complete, and while most implementations seem to return
+   * immediately, others may block for the entire timeout. Splitting up the
+   * timeout over multiple calls to avoid this shouldn't hurt anything.
+   */
+  Uint32 now = get_ticks();
+  Uint32 end = now + timeout_ms;
+  while(now < end)
   {
-    if(p.events & p.revents)
-      return 1;
+    int dur = MIN(end - now, 100);
+    int ret = Socket::poll(&p, 1, dur);
+    if(ret < 0)
+      return -1;
+
+    if(ret > 0)
+      return p.revents;
+
+    now = get_ticks();
   }
   return 0;
 }

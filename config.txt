@@ -203,7 +203,7 @@
 # audio_buffer_samples = 1024
 
 # Allow music to be sampled at higher precision. Increases CPU
-# usage but increases audio quality as well.
+# usage but increases audio quality as well. (Modplug only.)
 
 # enable_oversampling = 0
 

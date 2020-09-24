@@ -18,10 +18,10 @@
  */
 
 #include "audio.h"
-#include "SDL.h"
 
 #include "../util.h"
 
+#include <SDL.h>
 #include <stdlib.h>
 
 #ifdef __EMSCRIPTEN__
