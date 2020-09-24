@@ -298,7 +298,7 @@ void Socket::getaddrinfo_perror(const char *message, int errcode)
  */
 
 // For LoadObject/LoadFunction
-#include "SDL.h"
+#include <SDL.h>
 
 static struct
 {

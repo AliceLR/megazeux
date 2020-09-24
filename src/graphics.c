@@ -46,9 +46,9 @@
 #endif
 
 #ifdef CONFIG_SDL
-#include "SDL.h"
+#include <SDL.h>
 #ifdef CONFIG_ICON
-#include "SDL_syswm.h"
+#include <SDL_syswm.h>
 #endif // CONFIG_ICON
 #include "compat_sdl.h"
 #include "render_sdl.h"

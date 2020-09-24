@@ -53,7 +53,6 @@
 
 #ifdef CONFIG_MODPLUG
 #include "audio_modplug.h"
-#include "gdm2s3m.h"
 #endif
 
 #ifdef CONFIG_MIKMOD
