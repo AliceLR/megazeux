@@ -78,9 +78,11 @@ DEVELOPERS
 
 + The test worlds now run correctly when AddressSanitizer is
   enabled.
-+ The Android and Darwin "dist" meta targets use SUPPRESS_BUILD
-  to disable the default "all" target. "make" can now be used in
-  place of "make dist" for these platforms.
++ The SUPPRESS_BUILD Makefile flag has been split into several
+  flags, allowing more granularity for disabling default rules.
+  The Android and Darwin "dist" meta targets use these flags to
+  to disable the default "all" target, so "make" can now be used
+  in place of "make dist" for these platforms.
 + Using "make build" will now remove the build/${SUBPLATFORM}
   directory if it exists before preparing a build. Before, using
   "make build" when the platform build directory already exists
