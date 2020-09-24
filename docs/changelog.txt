@@ -69,6 +69,8 @@ USERS
   occurs.
 + Enabled rewinddir hack and .. file manager hacks for Nintendo
   Switch builds to fix the file manager and directory seeking.
++ Fixed a bug where importing a board over the title board would
+  not update the world title.
 
 DEVELOPERS
 

@@ -423,6 +423,22 @@ static void synchronize_board_values(struct editor_context *editor)
 }
 
 /**
+ * Fix the world title after an operation that may have modified the current
+ * board's title. This should be done before fix_caption.
+ */
+static void fix_world_title(struct editor_context *editor)
+{
+  struct world *mzx_world = ((context *)editor)->world;
+  struct board *cur_board = mzx_world->current_board;
+
+  if(mzx_world->current_board_id == 0)
+  {
+    snprintf(mzx_world->name, BOARD_NAME_SIZE, "%s", cur_board->board_name);
+    mzx_world->name[BOARD_NAME_SIZE - 1] = '\0';
+  }
+}
+
+/**
  * Set the caption for the editor.
  */
 static void fix_caption(struct editor_context *editor)
@@ -2673,6 +2689,7 @@ static boolean editor_key(context *ctx, int *key)
                 // Exit vlayer mode if necessary.
                 set_editor_mode(editor, EDIT_BOARD);
                 synchronize_board_values(editor);
+                fix_world_title(editor);
                 fix_scroll(editor);
                 fix_caption(editor);
 
@@ -2796,11 +2813,9 @@ static boolean editor_key(context *ctx, int *key)
         if(editor->mode != EDIT_VLAYER)
         {
           board_info(mzx_world);
-          // If this is the first board, patch the title into the world name
-          if(mzx_world->current_board_id == 0)
-            strcpy(mzx_world->name, cur_board->board_name);
 
           synchronize_board_values(editor);
+          fix_world_title(editor);
           fix_caption(editor);
 
           if(!cur_board->overlay_mode && editor->mode == EDIT_OVERLAY)
@@ -3479,9 +3494,7 @@ static boolean editor_key(context *ctx, int *key)
           strcpy(mzx_world->real_mod_playing,
            cur_board->mod_playing);
 
-          if(mzx_world->current_board_id == 0)
-            mzx_world->name[0] = 0;
-
+          fix_world_title(editor);
           fix_caption(editor);
 
           clear_board_history(editor);
