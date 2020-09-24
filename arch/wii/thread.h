@@ -40,6 +40,7 @@ __M_BEGIN_DECLS
 typedef cond_t platform_cond;
 typedef mutex_t platform_mutex;
 typedef lwp_t platform_thread;
+typedef lwp_t platform_thread_id;
 typedef THREAD_RES (*platform_thread_fn)(void *);
 
 static inline void platform_mutex_init(platform_mutex *mutex)
@@ -89,13 +90,23 @@ static inline boolean platform_cond_timedwait(platform_cond *cond,
  platform_mutex *mutex, unsigned int timeout_ms)
 {
   struct timespec timeout;
-  u64 ticks;
 
-  // Use LWP watchdog to get a usable absolute time
-  ticks = gettime() + millisecs_to_ticks(timeout_ms);
+  /**
+   * FIXME: LWP_CondTimedWait, despite its documentation, currently takes a
+   * relative timeout. Apparently this behavior is going to get changed in
+   * libogc at some point to match the documentation, so until then, the
+   * correct handling of this is commented out.
+   *
+   * https://github.com/devkitPro/libogc/issues/101
+   */
+  /*
+  u64 ticks = gettime() + millisecs_to_ticks(timeout_ms);
 
   timeout.tv_sec = ticks_to_secs(ticks);
   timeout.tv_nsec = ticks_to_nanosecs(ticks) % 1000000000;
+  */
+  timeout.tv_sec = timeout_ms / 1000;
+  timeout.tv_nsec = (timeout_ms % 1000) / 1000000;
 
   if(LWP_CondTimedWait(*cond, *mutex, &timeout))
     return false;
@@ -125,6 +136,17 @@ static inline int platform_thread_create(platform_thread *thread,
 static inline void platform_thread_join(platform_thread *thread)
 {
   LWP_JoinThread(*thread, NULL);
+}
+
+static inline platform_thread_id platform_get_thread_id(void)
+{
+  return LWP_GetSelf();
+}
+
+static inline boolean platform_is_same_thread(platform_thread_id a,
+ platform_thread_id b)
+{
+  return a == b;
 }
 
 static inline void platform_yield(void)

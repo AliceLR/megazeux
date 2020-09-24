@@ -19,14 +19,14 @@
 
 // Provides a ModPlug module stream backend
 
-#include "modplug.h"
-#include "stdafx.h"
-#include "sndfile.h"
+#include <modplug.h>
+#include <stdafx.h>
+#include <sndfile.h>
+#include <gdm2s3m.h>
 
 #include "audio.h"
 #include "audio_modplug.h"
 #include "ext.h"
-#include "gdm2s3m.h"
 #include "sampled_stream.h"
 
 #include "../const.h"

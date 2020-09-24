@@ -1351,8 +1351,8 @@ int send_robot_id_def(struct world *mzx_world, int robot_id, const char *mesg,
   //now, attempt to send the subroutine version of it
   if(mzx_world->version >= V284)
   {
-    strcpy(submesg, "#");
-    strncat(submesg, mesg, ROBOT_MAX_TR - 2);
+    snprintf(submesg, ROBOT_MAX_TR, "#%s", mesg);
+    submesg[ROBOT_MAX_TR - 1] = '\0';
     subresult = send_robot_id(mzx_world, robot_id, submesg, ignore_lock);
     if(result && !subresult)
       result = subresult;
@@ -1368,8 +1368,8 @@ void send_robot_all_def(struct world *mzx_world, const char *mesg)
   //now, attempt to send the subroutine version of it
   if(mzx_world->version >= V284)
   {
-    strcpy(submesg, "#");
-    strncat(submesg, mesg, ROBOT_MAX_TR - 2);
+    snprintf(submesg, ROBOT_MAX_TR, "#%s", mesg);
+    submesg[ROBOT_MAX_TR - 1] = '\0';
     send_robot_all(mzx_world, submesg, 0);
   }
 }
@@ -2696,6 +2696,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   {
     // Display scroll
     robot_frame(mzx_world, program + pos, id);
+    cursor_hint(8, 12);
     update_screen();
 
     update_event_status_delay();
@@ -2837,6 +2838,7 @@ void robot_box_display(struct world *mzx_world, char *program,
 
   // Restore screen and exit
   m_hide();
+  cursor_off();
   restore_screen();
   update_event_status();
 }

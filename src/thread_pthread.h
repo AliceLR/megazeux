@@ -35,6 +35,7 @@ __M_BEGIN_DECLS
 typedef pthread_cond_t platform_cond;
 typedef pthread_mutex_t platform_mutex;
 typedef pthread_t platform_thread;
+typedef pthread_t platform_thread_id;
 typedef THREAD_RES (*platform_thread_fn)(void *);
 
 static inline void platform_mutex_init(platform_mutex *mutex)
@@ -85,7 +86,8 @@ static inline boolean platform_cond_timedwait(platform_cond *cond,
   struct timespec timeout;
 
   clock_gettime(CLOCK_REALTIME, &timeout);
-  timeout.tv_nsec += timeout_ms * 1000000;
+  timeout.tv_sec  += (timeout_ms / 1000);
+  timeout.tv_nsec += (timeout_ms % 1000) * 1000000;
 
   if(pthread_cond_timedwait(cond, mutex, &timeout))
     return false;
@@ -115,6 +117,17 @@ static inline int platform_thread_create(platform_thread *thread,
 static inline void platform_thread_join(platform_thread *thread)
 {
   pthread_join(*thread, NULL);
+}
+
+static inline platform_thread_id platform_get_thread_id(void)
+{
+  return pthread_self();
+}
+
+static inline boolean platform_is_same_thread(platform_thread_id a,
+ platform_thread_id b)
+{
+  return pthread_equal(a, b) != 0;
 }
 
 static inline void platform_yield(void)

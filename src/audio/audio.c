@@ -53,7 +53,6 @@
 
 #ifdef CONFIG_MODPLUG
 #include "audio_modplug.h"
-#include "gdm2s3m.h"
 #endif
 
 #ifdef CONFIG_MIKMOD
@@ -87,9 +86,7 @@ static volatile int locked = 0;
 static volatile char last_lock[32];
 
 #ifdef CONFIG_SDL
-#include "../compat_sdl.h"
-#include <SDL_thread.h>
-static volatile SDL_threadID last_thread = 0;
+static volatile platform_thread_id last_thread = 0;
 #endif
 
 static void lock(const char *file, int line)
@@ -99,12 +96,12 @@ static void lock(const char *file, int line)
   // If this is SDL, we can determine if the current thread is holding it.
   // Otherwise, print nothing because this debug message is annoying and is
   // almost always spurious.
-  SDL_threadID cur_thread = SDL_ThreadID();
+  platform_thread_id cur_thread = platform_get_thread_id();
 
   if(locked && (last_thread == cur_thread))
   {
-    debug("%s:%d (thread %ld): locked at %s (thread %ld) already!\n",
-     file, line, cur_thread, last_lock, last_thread);
+    debug("%s:%d (thread %zu): locked at %s (thread %zu) already!\n",
+     file, line, (size_t)cur_thread, last_lock, (size_t)last_thread);
   }
 #endif
 
@@ -115,7 +112,7 @@ static void lock(const char *file, int line)
   snprintf((char *)last_lock, 32, "%s:%d", file, line);
   last_lock[31] = '\0';
 #ifdef CONFIG_SDL
-  last_thread = SDL_ThreadID();
+  last_thread = platform_get_thread_id();
 #endif
 
   locked = 1;
@@ -158,6 +155,10 @@ static int volume_function(int input, int volume_setting)
 
   return CLAMP(output, 0, 255);
 }
+
+// Disable most of the standard audio implementation on NDS, where
+// hardware mixing is utilized.
+#ifndef CONFIG_NDS
 
 void destruct_audio_stream(struct audio_stream *a_src)
 {
@@ -735,6 +736,8 @@ int audio_get_module_loop_end(void)
   return loop_end;
 }
 
+#endif
+
 void audio_set_music_on(int val)
 {
   LOCK();
@@ -812,15 +815,14 @@ void audio_set_sound_volume(int volume)
 void audio_set_pcs_volume(int volume)
 {
   int real_volume;
-  if(!audio.pcs_stream)
-    return;
 
   LOCK();
 
   audio.pcs_volume = volume;
   real_volume = volume_function(255, audio.pcs_volume);
 
-  audio.pcs_stream->set_volume(audio.pcs_stream, real_volume);
+  if(audio.pcs_stream)
+    audio.pcs_stream->set_volume(audio.pcs_stream, real_volume);
 
   UNLOCK();
 }

@@ -79,11 +79,6 @@ int intake(struct world *mzx_world, char *string, int max_len,
   int action;
   int key;
 
-  // Activate cursor
-  if(insert_on)
-    cursor_underline();
-  else
-    cursor_solid();
   // Put cursor at the end of the string...
   currx = curr_len = (int)strlen(string);
 
@@ -91,12 +86,10 @@ int intake(struct world *mzx_world, char *string, int max_len,
   if((return_x_pos) && (*return_x_pos < currx))
     currx = *return_x_pos;
 
-  move_cursor(x + currx, y);
-
   if(insert_on)
-    cursor_underline();
+    cursor_underline(x + currx, y);
   else
-    cursor_solid();
+    cursor_solid(x + currx, y);
 
   do
   {
@@ -301,11 +294,6 @@ int intake(struct world *mzx_world, char *string, int max_len,
       case IKEY_INSERT:
       {
         // Insert
-        if(insert_on)
-          cursor_solid();
-        else
-          cursor_underline();
-
         insert_on ^= 1;
         break;
       }
@@ -468,12 +456,10 @@ int intake(struct world *mzx_world, char *string, int max_len,
       }
     }
 
-    move_cursor(x + currx, y);
-
     if(insert_on)
-      cursor_underline();
+      cursor_underline(x + currx, y);
     else
-      cursor_solid();
+      cursor_solid(x + currx, y);
 
     // Loop
   } while(!done);
@@ -683,12 +669,10 @@ static boolean intake_draw(subcontext *sub)
     display_length = intk->width;
   }
 
-  move_cursor(intk->x + cursor_pos, intk->y);
-
   if(insert_on)
-    cursor_underline();
+    cursor_underline(intk->x + cursor_pos, intk->y);
   else
-    cursor_solid();
+    cursor_solid(intk->x + cursor_pos, intk->y);
 
   if(use_mask)
     write_string_mask(intk->dest + start_offset,
@@ -854,11 +838,6 @@ static boolean intake_key(subcontext *sub, int *key)
       if(!any_mod)
       {
         // Insert
-        if(insert_on)
-          cursor_solid();
-        else
-          cursor_underline();
-
         insert_on = !insert_on;
         return true;
       }

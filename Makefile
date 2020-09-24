@@ -23,6 +23,16 @@ include version.inc
 all: mzx
 debuglink: all mzx.debug
 
+#
+# ${build_root}: base location where builds are copied to be archived for release.
+# ${build}: location where the MegaZeux executable and data files should be placed.
+# Defaults to ${build_root}, but the architecture Makefile may override this to
+# use a subdirectory instead. This is useful when a platform expects a particular
+# path hierarchy within the archive (e.g. MacOS .app bundles).
+#
+build_root := build/${SUBPLATFORM}
+build := ${build_root}
+
 -include arch/${PLATFORM}/Makefile.in
 
 CC      ?= gcc
@@ -48,6 +58,8 @@ include arch/compat.inc
 #
 
 ifeq (${BUILD_SDL},1)
+
+SDL_PREFIX ?= ${PREFIX}
 
 #
 # SDL 2
@@ -256,6 +268,7 @@ endif
 #
 ifeq (${HAS_W_NO_FORMAT_TRUNCATION},1)
 CFLAGS   += -Wno-format-truncation
+CXXFLAGS += -Wno-format-truncation
 endif
 
 #
@@ -416,12 +429,15 @@ all: utils
 endif
 
 ifeq (${build},)
-build := build/${SUBPLATFORM}
+build := ${build_root}
 endif
+
+.PHONY: ${build}
 
 build: ${build} ${build}/assets ${build}/docs
 
 ${build}:
+	${RM} -r ${build_root}
 	${MKDIR} -p ${build}
 	${CP} config.txt LICENSE ${build}
 	@if test -f ${mzxrun}; then \
@@ -451,15 +467,16 @@ ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
+	${CP} ${ccv} ${build}/utils
+	@if [ -f "${checkres}.debug" ]; then cp ${checkres}.debug ${build}/utils; fi
+	@if [ -f "${downver}.debug" ]; then cp ${downver}.debug ${build}/utils; fi
+	@if [ -f "${hlp2txt}.debug" ]; then cp ${hlp2txt}.debug ${build}/utils; fi
+	@if [ -f "${txt2hlp}.debug" ]; then cp ${txt2hlp}.debug ${build}/utils; fi
+	@if [ -f "${ccv}.debug" ]; then cp ${ccv}.debug ${build}/utils; fi
 ifeq (${LIBPNG},1)
 	${CP} ${png2smzx} ${build}/utils
+	@if [ -f "${png2smzx}.debug" ]; then cp ${png2smzx}.debug ${build}/utils; fi
 endif
-	${CP} ${ccv} ${build}/utils
-	@if test -f ${checkres}.debug; then \
-		cp ${checkres}.debug ${downver}.debug ${build}/utils; \
-		cp ${hlp2txt}.debug  ${txt2hlp}.debug ${build}/utils; \
-		cp ${png2smzx}.debug ${build}/utils; \
-	fi
 endif
 
 ${build}/docs: ${build}

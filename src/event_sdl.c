@@ -27,7 +27,9 @@
 #include "render_sdl.h"
 #include "util.h"
 
-#include "SDL.h"
+#include <SDL.h>
+#include <ctype.h>
+#include <stdlib.h>
 
 extern struct input_status input;
 

@@ -229,7 +229,8 @@ static void _get_path(char *dest, const char *src)
   while((src[i] != '/') && (src[i] != '\\') && i)
     i--;
 
-  strncpy(dest, src, i);
+  if(i > 0)
+    memcpy(dest, src, i);
   dest[i] = 0;
 }
 
@@ -1698,7 +1699,7 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file,
  (fn_len == sizeof(s)-1) && (!strcasecmp(function_counter, s)))
 
 #define match_partial(s, reqv) ((world_version >= reqv) && \
- (fn_len >= sizeof(s)-1) && (!strncasecmp(function_counter, s, fn_len)))
+ (fn_len >= sizeof(s)-1) && (!strncasecmp(function_counter, s, sizeof(s)-1)))
 
 #define TERMINATE(s,slen) \
  do{ if(slen && s[slen - 1] == '\0') slen--; else s[slen]='\0'; }while(0)

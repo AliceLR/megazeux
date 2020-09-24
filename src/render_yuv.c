@@ -41,7 +41,8 @@
 struct yuv_render_data
 {
   struct sdl_render_data sdl;
-  void (*set_colors_mzx)(struct graphics_data *, Uint32 *, Uint8, Uint8);
+  void (*set_colors_mzx)(const struct graphics_data *, Uint32 * restrict,
+   Uint8, Uint8);
   Uint32 (*rgb_to_yuv)(Uint8 r, Uint8 g, Uint8 b);
   Uint32 bpp;
   Uint32 w;

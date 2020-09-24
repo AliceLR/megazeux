@@ -64,7 +64,7 @@ static const Uint32 H_initial[] = {
 
 static void convert_to_bigendian(void *data, int len)
 {
-  Uint32 *data_as_words = data;
+  Uint32 *data_as_words = (Uint32 *)data;
   Uint8 *data_as_bytes;
   Uint32 temp;
   Uint8 *temp_as_bytes = (Uint8 *)&temp;
@@ -141,7 +141,7 @@ void SHA256_init(struct SHA256_ctx *ctx)
 
 void SHA256_update(struct SHA256_ctx *ctx, const void *vdata, Uint32 data_len)
 {
-  const Uint8 *data = vdata;
+  const Uint8 *data = (const Uint8 *)vdata;
   Uint32 low_bits;
   Uint32 use;
 

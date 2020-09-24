@@ -667,6 +667,7 @@ static boolean menu_draw(context *ctx)
     x = game_menu->x + 1;
     y = + game_menu->y + 1 + i;
     color_line(game_menu->width - 2, x, y, MENU_COL_SELECTED);
+    cursor_hint(x + 1, y);
     //write_string(game_menu->options[i].label, x, y, MENU_COL_SELECTED, false);
 
     x = game_menu->x + 1;
@@ -1150,6 +1151,7 @@ static void menu_destroy(context *ctx)
     else
       main_menu_last_selected = (enum main_menu_opts)which;
   }
+  cursor_off();
   restore_screen();
 }
 

@@ -99,7 +99,7 @@ static void init_pledge(void)
 }
 #endif
 
-#ifdef CONFIG_UPDATER
+#if defined(CONFIG_UPDATER) && defined(__WIN32__)
 static char **rewrite_argv_for_execv(int argc, char **argv)
 {
   char **new_argv = cmalloc((argc+1) * sizeof(char *));
@@ -163,6 +163,8 @@ __libspec int main(int argc, char *argv[])
 
   if(!platform_init())
     goto err_out;
+
+  check_alloc_init();
 
   // We need to store the current working directory so it's
   // always possible to get back to it..
@@ -277,7 +279,7 @@ __libspec int main(int argc, char *argv[])
 #ifdef CONFIG_UPDATER
     if(is_updater())
     {
-      if(updater_init(argc, argv))
+      if(updater_init())
       {
         // No auto update checks on repo builds.
         if(!strcmp(VERSION, "GIT") &&
@@ -330,7 +332,7 @@ update_restart_mzx:
   network_layer_exit(conf);
   quit_audio();
 
-#ifdef CONFIG_UPDATER
+#if defined(CONFIG_UPDATER) && defined(__WIN32__)
   // TODO: eventually any platform with execv will need to be able to allow
   // this for config/standalone-invoked restarts. Locking it to the updater
   // for now because that's the only thing that currently uses it.

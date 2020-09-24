@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <errno.h>
 #include <sys/stat.h>
 
 #include "path.h"
@@ -389,7 +390,8 @@ ssize_t path_append(char *path, size_t buffer_len, const char *rel)
   size_t path_len = strlen(path);
   size_t rel_len = strlen(rel);
 
-  if(path_len && rel_len && path_len + rel_len + 2 < buffer_len)
+  // Needs to be able to fit the worst case size: path + separator + rel + \0.
+  if(path_len && rel_len && path_len + rel_len + 2 <= buffer_len)
   {
     path_len = path_clean_slashes(path, buffer_len);
     path[path_len++] = DIR_SEPARATOR_CHAR;
@@ -417,7 +419,8 @@ ssize_t path_join(char *dest, size_t dest_len, const char *base, const char *rel
   size_t base_len = strlen(base);
   size_t rel_len = strlen(rel);
 
-  if(base_len && rel_len && base_len + rel_len + 2 < dest_len)
+  // Needs to be able to fit the worst case size: base + separator + rel + \0.
+  if(base_len && rel_len && base_len + rel_len + 2 <= dest_len)
   {
     base_len = path_clean_slashes_copy(dest, dest_len, base);
     dest[base_len++] = DIR_SEPARATOR_CHAR;
@@ -593,4 +596,92 @@ ssize_t path_navigate(char *path, size_t path_len, const char *target)
   }
 
   return -1;
+}
+
+/**
+ * Create the parent directory of a given filename if it doesn't exist
+ * (similar to mkdir -p). This function will call vstat multiple times and
+ * will call vmkdir to create directories as needed. This function will not
+ * make recursive calls.
+ *
+ * @param filename    Filename to create the parent directory of.
+ * @return            `0` on success or a non-zero value on error.
+ *                    See `enum path_create_error`.
+ */
+enum path_create_error path_create_parent_recursively(const char *filename)
+{
+  struct stat stat_info;
+  char parent_directory[MAX_PATH];
+  ssize_t pos;
+
+  ssize_t parent_len = path_get_directory(parent_directory, MAX_PATH, filename);
+  if(parent_len < 0)
+    return PATH_CREATE_ERR_BUFFER;
+
+  // No parent directory? Don't need to do anything...
+  if(parent_len == 0)
+    return PATH_CREATE_SUCCESS;
+
+  /**
+   * Step 1: walk the parent directory backwards and stat it successively until
+   * it finds something that exists. Replace slashes with nuls; they can be
+   * added back when needed again.
+   */
+  pos = parent_len;
+  do
+  {
+    parent_directory[pos] = '\0';
+    if(vstat(parent_directory, &stat_info))
+    {
+      // Make sure the error is that the dir is missing and not something else.
+      if(errno != ENOENT)
+        return PATH_CREATE_ERR_STAT_ERROR;
+    }
+    else
+
+    /**
+     * If a file exists where a directory needs to be placed there isn't
+     * really anything else that can be done.
+     */
+    if(!S_ISDIR(stat_info.st_mode))
+    {
+      return PATH_CREATE_ERR_FILE_EXISTS;
+    }
+    else
+      break;
+
+    // Find the next slash.
+    while(pos > 0 && !isslash(parent_directory[pos]))
+      pos--;
+  }
+  while(pos > 0);
+
+  // The entire path already exists? Nothing else needs to be done...
+  if(pos == parent_len)
+    return PATH_CREATE_SUCCESS;
+
+  /**
+   * Step 2: restore slashes and mkdir until the original end of the parent
+   * directory is found.
+   */
+  while(pos < parent_len)
+  {
+    /**
+     * If pos==0, the base of the path didn't exist and needs to be created.
+     * Otherwise, look for slashes that were removed, fix them, and create
+     * the next directory.
+     */
+    if(!pos || !parent_directory[pos])
+    {
+      if(!parent_directory[pos])
+        parent_directory[pos] = DIR_SEPARATOR_CHAR;
+
+      if(vmkdir(parent_directory, 0755))
+        return PATH_CREATE_ERR_MKDIR_FAILED;
+    }
+
+    while(pos < parent_len && parent_directory[pos])
+      pos++;
+  }
+  return PATH_CREATE_SUCCESS;
 }

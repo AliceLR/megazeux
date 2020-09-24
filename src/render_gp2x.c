@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "SDL.h"
+#include <SDL.h>
 
 struct gp2x_render_data
 {

@@ -33,16 +33,20 @@
 		if(!swapSdlContext || sdl.audioContext.state !== "suspended")
 			return;
 
-		// Replace the forever-locked context that SDL2 creates in favor
-		// of the unlocked one we created earlier.
-		sdl.audioContext = audioCtx;
-
 		// Fetch some data from the original script processor node and create
 		// a new one.
 		let node = sdl.audio.scriptProcessorNode;
 		let buffer = node.bufferSize;
 		let channels = node.channelCount;
 		let audioProcessFunc = node.onaudioprocess;
+
+		// If any of the values is obviously invalid, abort.
+		if(typeof(channels) !== "number" || channels < 1)
+			return;
+
+		// Replace the forever-locked context that SDL2 creates in favor
+		// of the unlocked one we created earlier.
+		sdl.audioContext = audioCtx;
 
 		sdl.audio.scriptProcessorNode =
 			sdl.audioContext.createScriptProcessor(buffer, 0, channels);

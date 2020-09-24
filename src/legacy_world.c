@@ -453,19 +453,23 @@ static enum val_result __validate_legacy_world_file(const char *file,
 
     v = save_magic(magic);
     if(!v)
+    {
       goto err_invalid;
+    }
+    else
 
-    else if(v > MZX_LEGACY_FORMAT_VERSION)
+    if(v > MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_TOO_RECENT, v, NULL);
       result = VAL_VERSION;
       goto err_close;
     }
+    else
 
     // This enables 2.84 save loading.
     // If we ever want to remove this, change this check.
-    //else if (v < MZX_VERSION)
-    else if(v < MZX_LEGACY_FORMAT_VERSION)
+    //if (v < MZX_VERSION)
+    if(v < MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_OLD, v, NULL);
       result = VAL_VERSION;
@@ -582,6 +586,30 @@ static enum val_result __validate_legacy_world_file(const char *file,
       if(protection_method > 3)
         goto err_invalid;
 
+      /**
+       * Check the version to make sure this file is a non-corrupted MZX file.
+       * The MZX 2.x format stores a 15 byte password followed by the version.
+       * The MZX 1.x format stores a 1 byte password length, a fixed 15 byte
+       * password buffer, and then the version. In either case, the version is
+       * not encrypted.
+       */
+      fseek(f, LEGACY_BOARD_NAME_SIZE + 1 + MAX_PASSWORD_LENGTH, SEEK_SET);
+      if(!fread(magic, 4, 1, f))
+        goto err_invalid;
+
+      v = world_magic(magic);
+      if(v < V200)
+      {
+        v = world_magic(magic + 1);
+        if(v != V100)
+          goto err_invalid;
+
+        // Can't actually handle 1.x files right now...
+        error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
+        result = VAL_VERSION;
+        goto err_close;
+      }
+
       result = VAL_PROTECTED;
       goto err_close;
     }
@@ -592,16 +620,20 @@ static enum val_result __validate_legacy_world_file(const char *file,
 
     v = world_magic(magic);
     if(v == 0)
+    {
       goto err_invalid;
+    }
+    else
 
-    else if(v < V251)
+    if(v < V200)
     {
       error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
       result = VAL_VERSION;
       goto err_close;
     }
+    else
 
-    else if(v > MZX_LEGACY_FORMAT_VERSION)
+    if(v > MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_WORLD_FILE_VERSION_TOO_RECENT, v, NULL);
       result = VAL_VERSION;

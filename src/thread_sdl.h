@@ -24,11 +24,13 @@
 
 __M_BEGIN_DECLS
 
+#include <SDL_stdinc.h>
 #include <SDL_thread.h>
 #include <SDL_version.h>
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
 typedef int(*SDL_ThreadFunction)(void *);
+typedef Uint32 SDL_threadID;
 #endif
 
 #define THREAD_RES int
@@ -37,6 +39,7 @@ typedef int(*SDL_ThreadFunction)(void *);
 typedef SDL_cond* platform_cond;
 typedef SDL_mutex* platform_mutex;
 typedef SDL_Thread* platform_thread;
+typedef SDL_threadID platform_thread_id;
 typedef SDL_ThreadFunction platform_thread_fn;
 
 static inline void platform_mutex_init(platform_mutex *mutex)
@@ -120,6 +123,17 @@ static inline int platform_thread_create(platform_thread *thread,
 static inline void platform_thread_join(platform_thread *thread)
 {
   SDL_WaitThread(*thread, NULL);
+}
+
+static inline platform_thread_id platform_get_thread_id(void)
+{
+  return SDL_ThreadID();
+}
+
+static inline boolean platform_is_same_thread(platform_thread_id a,
+ platform_thread_id b)
+{
+  return a == b;
 }
 
 static inline void platform_yield(void)

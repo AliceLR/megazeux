@@ -37,7 +37,8 @@ arch/msvc/MegaZeux.v12.suo
 arch/msvc/obj
 arch/msvc/version.h
 arch/nds/mzxrun.arm7.elf
-arch/nds/ndsScreens/
+arch/nds/protected_palette_bin.h
+arch/nds/*.S
 arch/nds/*.d
 arch/nds/*.o
 arch/psp/*.d
@@ -76,6 +77,7 @@ ICON0.PNG
 libeditor.so
 libeditor.dylib
 megazeux-cia.*
+megazeux.3dsx
 megazeux.dol
 megazeux.elf
 megazeux.exe
@@ -88,6 +90,7 @@ megazeux.nacp
 megazeux.nro
 megazeux.nso
 MegaZeux.pdb
+megazeux.smdh
 /megazeux
 mzxrun.3dsx
 mzxrun.cia
@@ -143,6 +146,7 @@ Thumbs.db
 unit/.build/
 unit/editor/.build/
 unit/io/.build/
+unit/network/.build/
 /*.js
 /*.js.mem
 /*.js.orig.js
