@@ -1,9 +1,10 @@
 ##
 # MegaZeux Build System (GNU Make)
 #
-# NOTE: This build system was recently re-designed to not use recursive
-#       Makefiles. The rationale for this is documented here:
-#                  http://aegis.sourceforge.net/auug97.pdf
+# NOTE: This build system is designed to not use recursive Makefiles.
+#       The rationale for this is documented here:
+#
+# https://web.archive.org/web/20200128044903/http://aegis.sourceforge.net/auug97.pdf
 ##
 
 #
