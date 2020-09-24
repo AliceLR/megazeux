@@ -25,6 +25,8 @@
 #include "../configure.h"
 #include "../platform.h"
 
+#include "Socket.hpp"
+
 #include <stdio.h> // for FILE
 #include <string>
 
@@ -35,13 +37,6 @@ enum host_type
   /** Use UDP protocol for sockets */
   HOST_TYPE_UDP,
   NUM_HOST_TYPES
-};
-
-enum host_poll
-{
-  HOST_POLL_READ = 1,
-  HOST_POLL_WRITE = 2,
-  HOST_POLL_EXCEPT = 4
 };
 
 enum proxy_status
@@ -126,6 +121,20 @@ private:
   struct addrinfo *send_to_op(struct addrinfo *ais, void *priv);
 
 public:
+  /**
+   * Event bitmask flags for poll(). These are defined to be the same as the
+   * poll event flags for convenience, but these should be referenced instead.
+   */
+  enum host_poll
+  {
+    POLL_READ       = POLLIN,
+    POLL_WRITE      = POLLOUT,
+    POLL_EXCEPT     = POLLPRI,
+    POLL_ERROR      = POLLERR, // Return value only.
+    POLL_DISCONNECT = POLLHUP, // Return value only.
+    POLL_INVALID    = POLLNVAL // Return value only.
+  };
+
   /**
    * Default time to wait for requests before aborting.
    */
@@ -283,13 +292,27 @@ public:
   /**
    * Polls a host via raw socket access.
    *
-   * @param flags   Events to poll for (see `enum host_poll`).
-   * @param timeout Timeout in milliseconds for poll.
+   * @param flags       Bitmask of events to poll for (see `enum host_poll`).
+   * @param timeout_ms  Timeout in milliseconds for poll.
    *
-   * @return <0 if there was a failure, 0 if there was no data, and the
-   *         >0 if there was activity on the socket.
+   * @return <0 if there was a failure, 0 if there was no activity,
+   *         or a >0 bitmask of event flags indicating the type(s) of activity.
    */
-  int poll(int flags, Uint32 timeout);
+  int poll(int flags, Uint32 timeout_ms);
+
+  /**
+   * Check if a poll() result is an error.
+   *
+   * @param poll_result Return value from poll().
+   *
+   * @return `true` if the result is <0 or Host::POLL_ERROR, Host::POLL_INVALID,
+   *         or Host::POLL_DISCONNECT is set; otherwise, `false`.
+   */
+  static boolean is_poll_error(int poll_result)
+  {
+    return poll_result < 0 ||
+     (poll_result & (POLL_ERROR | POLL_DISCONNECT | POLL_INVALID));
+  }
 
 protected:
   /**
