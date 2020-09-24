@@ -24,6 +24,9 @@ APP_ICON   := arch/switch/icon.jpg
 
 STRIP      := /bin/true
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 #
 # Override library paths.
 #

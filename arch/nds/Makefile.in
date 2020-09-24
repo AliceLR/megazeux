@@ -19,6 +19,9 @@ include ${DEVKITARM}/ds_rules
 #
 STRIP  = /bin/true
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 #
 # Override library paths.
 #

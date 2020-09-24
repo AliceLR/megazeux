@@ -65,7 +65,7 @@ CROSS_COMPILE_PPC_CXX ?= powerpc-apple-darwin10-g++-4.2.1
 
 ifeq (${ARCH},)
 ARCH := i686
-SUPPRESS_BUILD := 1
+DARWIN_META_TARGETS := 1
 endif
 
 ifeq (${ARCH},i686)
@@ -114,12 +114,17 @@ package_clean: clean
 	${RM} -f ${core_target}.${REAL_ARCH}
 	${RM} -f ${editor_target}.${REAL_ARCH}
 
-ifeq (${SUPPRESS_BUILD},1)
+ifeq (${DARWIN_META_TARGETS},1)
 
 #
 # Define meta targets.
 #
 
+#
+# Disable 'all' for the meta rules since no specific target arch is selected.
+# Then add 'dist' to the 'all' target for convenience.
+#
+SUPPRESS_CC_TARGETS ?= 1
 all: dist
 
 lipo:

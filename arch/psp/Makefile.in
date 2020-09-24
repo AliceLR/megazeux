@@ -13,6 +13,9 @@ AR      = psp-ar
 OBJCOPY = psp-objcopy
 STRIP   = /bin/true
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 # flag PSP build and link in c/psppower
 ARCH_CFLAGS   += -G0 -isystem ${PREFIX}/sdk/include -DPATH_MAX=4096
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}

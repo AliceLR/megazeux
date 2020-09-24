@@ -1,6 +1,6 @@
 # placebo makefile
 
-SUPPRESS_BUILD=1
+SUPPRESS_ALL_TARGETS=1
 
 mzx:
 	@echo "Please run config.sh before make!"
