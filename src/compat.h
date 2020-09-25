@@ -259,6 +259,9 @@ static inline char *check_strncat(char *d, const char *s, size_t n)
  { return strncat(d,s,n); }
 static inline char *check_strtok(char *d, const char *delim)
  { return strtok(d,delim); }
+#undef strncpy
+#undef strncat
+#undef strtok
 #define strncpy(d,s,n) check_strncpy(d,s,n)
 #define strncat(d,s,n) check_strncat(d,s,n)
 #define strtok(d,delim) check_strtok(d,delim)
