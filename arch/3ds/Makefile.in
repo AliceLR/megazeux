@@ -30,6 +30,9 @@ APP_ICON = arch/3ds/banner/megazeux-icon.png
 #
 STRIP  = /bin/true
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 #
 # Override library paths.
 #

@@ -49,16 +49,20 @@ ifdef DEBUG
 ARCH_LDFLAGS += -mconsole
 endif
 
-pefix := arch/mingw/pefix${BINEXT}
+#
+# Don't use BINEXT here; if the host is MinGW it will automatically
+# append .exe, and if it isn't the extension would just be confusing.
+#
+pefix := arch/mingw/pefix
 
 -include arch/mingw/pefix.d
 
 arch/mingw/pefix.o: arch/mingw/pefix.c
-	$(if ${V},,@echo "  CC      " $<)
+	$(if ${V},,@echo "  HOSTCC  " $<)
 	${HOST_CC} -MD ${CFLAGS} -c $< -o $@
 
 ${pefix}: arch/mingw/pefix.o
-	$(if ${V},,@echo "  LINK    " ${pefix})
+	$(if ${V},,@echo "  HOSTLINK" ${pefix})
 	${HOST_CC} arch/mingw/pefix.o -o ${pefix}
 
 all: ${pefix}

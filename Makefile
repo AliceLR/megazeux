@@ -1,9 +1,10 @@
 ##
 # MegaZeux Build System (GNU Make)
 #
-# NOTE: This build system was recently re-designed to not use recursive
-#       Makefiles. The rationale for this is documented here:
-#                  http://aegis.sourceforge.net/auug97.pdf
+# NOTE: This build system is designed to not use recursive Makefiles.
+#       The rationale for this is documented here:
+#
+# https://web.archive.org/web/20200128044903/http://aegis.sourceforge.net/auug97.pdf
 ##
 
 #
@@ -17,11 +18,13 @@ endif
 .PHONY: all clean help_check mzx mzx.debug build build_clean source
 .PHONY: test unittest test_clean unit_clean
 
+#
+# Define this first so arch-specific rules don't hijack the default target.
+#
+all:
+
 -include platform.inc
 include version.inc
-
-all: mzx
-debuglink: all mzx.debug
 
 #
 # ${build_root}: base location where builds are copied to be archived for release.
@@ -385,11 +388,19 @@ build/${TARGET}src:
 	@tar -C build -Jcf build/dist/source/${TARGET}src.tar.xz ${TARGET}
 
 #
-# The SUPPRESS_BUILD hack is required to allow the placebo "dist"
+# The SUPPRESS_ALL_TARGETS hack is required to allow the placebo "dist"
 # Makefile to provide an 'all:' target, which allows it to print
-# a message. We don't want to pull in other targets, confusing Make.
+# a message. Pulling in any other targets would confuse Make.
 #
-ifneq (${SUPPRESS_BUILD},1)
+# Additionally, there are several other SUPPRESS flags that can be set to
+# conditionally disable rules. This is useful for cross-compiling builds that
+# have no use for host-based rules or for platforms that use meta targets.
+#
+# * SUPPRESS_CC_TARGETS prevents "mzx", etc from being added to "all".
+# * SUPPRESS_BUILD_TARGETS suppresses "build".
+# * SUPPRESS_HOST_TARGETS suppresses "assets/help.fil", "test", etc.
+#
+ifneq (${SUPPRESS_ALL_TARGETS},1)
 
 mzxrun = mzxrun${BINEXT}
 mzx = megazeux${BINEXT}
@@ -421,12 +432,21 @@ include src/Makefile.in
 
 clean: mzx_clean test_clean unit_clean
 
+ifneq (${SUPPRESS_CC_TARGETS},1)
+all: mzx
+debuglink: all mzx.debug
+endif
+
 ifeq (${BUILD_UTILS},1)
 include src/utils/Makefile.in
-debuglink: utils utils.debug
 clean: utils_clean
+ifneq (${SUPPRESS_CC_TARGETS},1)
+debuglink: utils utils.debug
 all: utils
 endif
+endif
+
+ifneq (${SUPPRESS_BUILD_TARGETS},1)
 
 ifeq (${build},)
 build := ${build_root}
@@ -510,10 +530,14 @@ ifeq (${BUILD_GAMECONTROLLERDB},1)
 	 ${build}/assets
 endif
 
+endif # !SUPPRESS_BUILD_TARGETS
+
 distclean: clean
 	@echo "  DISTCLEAN"
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
+
+ifneq (${SUPPRESS_HOST_TARGETS},1)
 
 assets/help.fil: ${txt2hlp} docs/WIPHelp.txt
 	$(if ${V},,@echo "  txt2hlp " $@)
@@ -538,7 +562,9 @@ else
 	@${SHELL} testworlds/run.sh ${PLATFORM}
 endif
 
+endif # !SUPPRESS_HOST_TARGETS
+
 test_clean:
 	@rm -rf testworlds/log
 
-endif
+endif # !SUPPRESS_ALL_TARGETS

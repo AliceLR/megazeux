@@ -21,6 +21,9 @@ include $(DEVKITPPC)/wii_rules
 ELF2DOL := elf2dol
 STRIP   := /bin/true
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 #
 # Override library paths
 #
