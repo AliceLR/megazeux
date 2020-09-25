@@ -396,7 +396,7 @@ build/${TARGET}src:
 # conditionally disable rules. This is useful for cross-compiling builds that
 # have no use for host-based rules or for platforms that use meta targets.
 #
-# * SUPPRESS_CC_TARGETS suppresses "all", "mzx", etc.
+# * SUPPRESS_CC_TARGETS prevents "mzx", etc from being added to "all".
 # * SUPPRESS_BUILD_TARGETS suppresses "build".
 # * SUPPRESS_HOST_TARGETS suppresses "assets/help.fil", "test", etc.
 #
