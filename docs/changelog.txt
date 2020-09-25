@@ -114,7 +114,9 @@ DEVELOPERS
   render_layer implementations for a small performance boost.
 + Added --disable-getaddrinfo and --disable-ipv6 config.sh flags
   to allow disabling these for old platforms and consoles SDKs.
-  Amiga, Wii, and PSP network builds force-disable these.
+  Amiga, Wii, and PSP network builds force-disable these. Switch
+  and 3DS builds currently force-disable IPv6.
++ Added experimental network support for Wii, Switch, and 3DS.
 
 
 July 20th, 2020 - MZX 2.92e

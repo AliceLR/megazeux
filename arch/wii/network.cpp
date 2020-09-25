@@ -55,12 +55,12 @@ static int set_net_errno(int value)
   return value;
 }
 
-boolean platform_socket_init()
+boolean Socket::platform_init(struct config_info *conf)
 {
   return true;
 }
 
-boolean platform_socket_init_late()
+boolean Socket::platform_init_late()
 {
   if(!net_is_initialized)
   {
@@ -76,7 +76,7 @@ boolean platform_socket_init_late()
   return true;
 }
 
-void platform_socket_exit()
+void Socket::platform_exit()
 {
   if(net_is_initialized)
   {
