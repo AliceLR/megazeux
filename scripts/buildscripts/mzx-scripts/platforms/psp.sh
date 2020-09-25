@@ -54,6 +54,8 @@ platform_setup_environment()
 		pacman --needed --noconfirm -S patch mingw-w64-x86_64-imagemagick
 	fi
 
+	cmd_check convert
+
 	#
 	# The copy of the SDK formerly distributed with the Windows version of
 	# devkitPro was missing an include. If the include is missing, patch
