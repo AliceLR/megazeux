@@ -20,8 +20,10 @@
 # Common functions for MinGW.
 #
 
-MZX_SDL_MINGW_VERSION="2.0.12"
-MZX_SDL_MINGW_FILENAME="SDL2-devel-$MZX_SDL_MINGW_VERSION-mingw.tar.gz"
+MZX_SDL_MINGW_VERSION="1.2.15"
+MZX_SDL_MINGW_FILENAME="SDL-devel-$MZX_SDL_MINGW_VERSION-mingw32.tar.gz"
+MZX_SDL2_MINGW_VERSION="2.0.12"
+MZX_SDL2_MINGW_FILENAME="SDL2-devel-$MZX_SDL2_MINGW_VERSION-mingw.tar.gz"
 
 # $1 - toolchain prefix
 # $2 - dependencies path
@@ -80,18 +82,28 @@ mingw_setup_environment()
 		 $M64-gcc $M64-zlib $M64-libpng $M64-libogg $M64-libvorbis $M64-SDL2
 
 		#
-		# ...except SDL2. The MSYS2 SDL2 builds unfortunately have some issues that
-		# make it unsuitable for release builds. Just grab the official MinGW SDL2
-		# package and extract it; the environment variable SDL_PREFIX will be set
-		# during the MinGW builds to make sure this SDL gets used instead.
+		# ...except SDL. The MSYS2 SDL builds unfortunately have some issues that
+		# make them unsuitable for release builds. Just grab the official MinGW SDL
+		# packages and extract them; the environment variable SDL_PREFIX will be set
+		# during the MinGW builds to make sure the correct SDL gets used instead.
 		#
 		if [ ! -f "$MZX_WORKINGDIR/$MZX_SDL_MINGW_FILENAME" ]; then
 			cd "$MZX_WORKINGDIR" || { ERRNO="MINGW-CD"; return; }
 			wget "https://www.libsdl.org/release/$MZX_SDL_MINGW_FILENAME"
 			tar -xzf "$MZX_SDL_MINGW_FILENAME"
 
+			rm -rf "sdl1-mingw"
+			mv "SDL-$MZX_SDL_MINGW_VERSION" "sdl1-mingw"
+
+		fi
+
+		if [ ! -f "$MZX_WORKINGDIR/$MZX_SDL2_MINGW_FILENAME" ]; then
+			cd "$MZX_WORKINGDIR" || { ERRNO="MINGW-CD"; return; }
+			wget "https://www.libsdl.org/release/$MZX_SDL2_MINGW_FILENAME"
+			tar -xzf "$MZX_SDL2_MINGW_FILENAME"
+
 			rm -rf "sdl2-mingw"
-			mv "SDL2-$MZX_SDL_MINGW_VERSION" "sdl2-mingw"
+			mv "SDL2-$MZX_SDL2_MINGW_VERSION" "sdl2-mingw"
 		fi
 	fi
 }

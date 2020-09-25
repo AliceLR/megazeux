@@ -84,8 +84,34 @@ trademarks. Use pspdev directly instead.
 
 ### pspdev
 
-FIXME post a comment on this webzone if you know how to get pspdev to work
+TODO: Versions of psptoolchain since April 2020 now successfully build in MSYS2.
+Support for the newer toolchain has been patched into the PSP Makefile, but
+builds produced with this fail to start in ppsspp with a black screen and no
+console output. This needs to be investigated further.
 
 If you have an old copy of devkitPSP, you can also simply define
-`PSPDEV=/opt/devkitpro/devkitPSP`. This may be necessary for MSYS2 since the
-PSP SDK is a complete mess and won't build in MSYS2.
+`PSPDEV=/opt/devkitpro/devkitPSP` until then.
+
+To set up pspdev, first add the following to your .profile or .bashrc:
+```
+export PSPDEV="/opt/pspdev"
+export PATH="$PATH:$PSPDEV/bin"
+```
+
+Make sure the following packages are installed (MSYS2; use a MINGW64 terminal):
+```
+pacman --needed --noconfirm -S git svn wget patch tar unzip bzip2 xz diffutils python
+pacman --needed --noconfirm -S autoconf automake cmake make m4 bison flex tcl texinfo doxygen
+pacman --needed --noconfirm -S mingw-w64-x86_64-{gcc,SDL}
+pacman --needed --noconfirm -S mingw-w64-x86_64-{libelf,libusb,ncurses,curl,gpgme,dlfcn}
+pacman --needed --noconfirm -S mingw-w64-x86_64-{libarchive,openssl,readline,libtool}
+```
+
+Then clone the pspdev repository somewhere, `cd` to it, and run `./pspdev.sh`
+to generate a pspdev build. Note that for MSYS2, this currently requires manual
+intervention to finish linking GDB and certain utilities currently don't build.
+```
+git clone "https://github.com/pspdev/pspdev" /opt/pspdev-repo
+cd /opt/pspdev-repo
+./pspdev.sh
+```
