@@ -164,7 +164,6 @@ mzxrun_app := ${build_root}/MZXRun.app/
 
 build := ${mzx_app}/Contents/Resources
 build:
-	@${MAKE} ARCH=i686 build
 	${RM} ${build}/*.debug ${build}/utils/*.debug
 	${MKDIR}                          ${mzx_app}/Contents/MacOS
 	${CP} contrib/icons/quantump.icns ${mzx_app}/Contents/Resources/MegaZeux.icns
