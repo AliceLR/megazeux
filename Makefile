@@ -530,7 +530,7 @@ ifeq (${BUILD_GAMECONTROLLERDB},1)
 	 ${build}/assets
 endif
 
-endif # SUPPRESS_BUILD_TARGETS
+endif # !SUPPRESS_BUILD_TARGETS
 
 distclean: clean
 	@echo "  DISTCLEAN"
@@ -562,9 +562,9 @@ else
 	@${SHELL} testworlds/run.sh ${PLATFORM}
 endif
 
-endif # SUPPRESS_HOST_TARGETS
+endif # !SUPPRESS_HOST_TARGETS
 
 test_clean:
 	@rm -rf testworlds/log
 
-endif
+endif # !SUPPRESS_ALL_TARGETS
