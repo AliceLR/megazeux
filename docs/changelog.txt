@@ -63,7 +63,7 @@ USERS
   default, MZX will now request either or both depending on the
   system IP address configuration (previously, it was hardcoded
   to only allow IPv4 despite IPv6 support being implemented).
-* The config setting "updater_enabled" has been added to turn
++ The config setting "updater_enabled" has been added to turn
   off the updater system entirely without disabling networking.
 + The updater now allows update checks to be performed even when
   a full update wouldn't be possible, and should be more helpful
