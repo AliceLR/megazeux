@@ -1401,7 +1401,9 @@ UNITTEST(Joystick)
     {
       // Setting              Value           [#, #]  which   expected
       { "joy1button1",        "key_space",    1,  1,  1,      { IKEY_SPACE }},
+      { "joy[1,1]button2",    "key_insert",   1,  1,  2,      { IKEY_INSERT }},
       { "joy16button256",     "key_escape",   16, 16, 256,    { IKEY_ESCAPE, }},
+      { "joy[1,16]button16",  "act_lstick",   1,  16, 16,     { -JOY_LSTICK }},
       { "joy[1,16]button256", "act_a",        1,  16, 256,    { -JOY_A }},
       { "joy[4,8]button10",   "act_start",    4,  8,  10,     { -JOY_START }},
       { "joy[9,9]button123",  "27",           9,  9,  123,    { IKEY_ESCAPE }},
@@ -1416,6 +1418,7 @@ UNITTEST(Joystick)
     {
       // Setting              Value                   [#, #]  which   expected
       { "joy1axis1",          "key_left, key_right",  1,  1,  1,      { IKEY_LEFT, IKEY_RIGHT }},
+      { "joy[1,1]axis2",      "key_a,key_d",          1,  1,  2,      { IKEY_a, IKEY_d }},
       { "joy16axis16",        "key_w,key_s",          16, 16, 16,     { IKEY_w, IKEY_s }},
       { "joy[11,16]axis16",   "key_up, key_down",     11, 16, 16,     { IKEY_UP, IKEY_DOWN }},
       { "joy[2,9]axis7",      "key_1,key_delete",     2,  9,  7,      { IKEY_1, IKEY_DELETE }},
