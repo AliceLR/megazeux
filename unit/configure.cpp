@@ -26,6 +26,8 @@
 
 #include "../src/configure.h"
 #include "../src/const.h"
+#include "../src/event.h"
+#include "../src/keysym.h"
 #include "../src/util.h"
 
 #ifdef CONFIG_SDL
@@ -535,9 +537,6 @@ UNITTEST(Settings)
   }
 
   // Event options.
-
-  // TODO Most joystick and gamecontroller options are stored elsewhere and
-  // too hard to test right now.
 
 #ifdef CONFIG_SDL
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -1224,6 +1223,412 @@ UNITTEST(Settings)
   }
 
 #endif /* CONFIG_EDITOR */
+}
+
+struct config_test_joystick
+{
+  const char * const setting;
+  const char * const value;
+  int first;
+  int last;
+  int which;
+  int expected[4];
+};
+
+// TODO only bothering to test these as strings right now, but they all should
+// work from game config files too.
+
+template<int NUM_TESTS>
+void TEST_JOY_ALIAS(const config_test_single (&data)[NUM_TESTS])
+{
+  struct joystick_map *joy_global_map = get_joystick_map(true);
+  char arg[512];
+
+  ASSERT(joy_global_map);
+  for(int i = 0; i < NUM_TESTS; i++)
+  {
+    joy_global_map->button[0][0] = DEFAULT;
+    snprintf(arg, arraysize(arg), "joy1button1=%s", data[i].value);
+    load_arg(arg);
+
+    ASSERTEQX(joy_global_map->button[0][0], data[i].expected, arg);
+  }
+}
+
+template<int NUM_TESTS>
+void TEST_JOY_BUTTON(const config_test_joystick (&data)[NUM_TESTS])
+{
+  struct joystick_map *joy_global_map = get_joystick_map(true);
+  char arg[512];
+
+  ASSERT(joy_global_map);
+  for(int i = 0; i < NUM_TESTS; i++)
+  {
+    const config_test_joystick &t = data[i];
+    if(t.which > MAX_JOYSTICK_BUTTONS)
+      continue;
+
+    for(int j = 0; j < MAX_JOYSTICKS; j++)
+      joy_global_map->button[j][t.which - 1] = DEFAULT;
+
+    snprintf(arg, arraysize(arg), "%s=%s", t.setting, t.value);
+    load_arg(arg);
+
+    for(int j = 0; j < MAX_JOYSTICKS; j++)
+    {
+      if(j >= t.first - 1 && j <= t.last - 1)
+        ASSERTEQX(joy_global_map->button[j][t.which - 1], t.expected[0], arg);
+      else
+        ASSERTEQX(joy_global_map->button[j][t.which - 1], DEFAULT, arg);
+    }
+  }
+}
+
+template<int NUM_TESTS>
+void TEST_JOY_AXIS(const config_test_joystick (&data)[NUM_TESTS])
+{
+  struct joystick_map *joy_global_map = get_joystick_map(true);
+  char arg[512];
+
+  ASSERT(joy_global_map);
+  for(int i = 0; i < NUM_TESTS; i++)
+  {
+    const config_test_joystick &t = data[i];
+    if(t.which > MAX_JOYSTICK_AXES)
+      continue;
+
+    for(int j = 0; j < MAX_JOYSTICKS; j++)
+    {
+      joy_global_map->axis[j][t.which - 1][0] = DEFAULT;
+      joy_global_map->axis[j][t.which - 1][1] = DEFAULT;
+    }
+
+    snprintf(arg, arraysize(arg), "%s=%s", t.setting, t.value);
+    load_arg(arg);
+
+    for(int j = 0; j < MAX_JOYSTICKS; j++)
+    {
+      if(j >= t.first - 1 && j <= t.last - 1)
+      {
+        ASSERTEQX(joy_global_map->axis[j][t.which - 1][0], t.expected[0], arg);
+        ASSERTEQX(joy_global_map->axis[j][t.which - 1][1], t.expected[1], arg);
+      }
+      else
+      {
+        ASSERTEQX(joy_global_map->axis[j][t.which - 1][0], DEFAULT, arg);
+        ASSERTEQX(joy_global_map->axis[j][t.which - 1][1], DEFAULT, arg);
+      }
+    }
+  }
+}
+
+template<int NUM_TESTS>
+void TEST_JOY_HAT(const config_test_joystick (&data)[NUM_TESTS])
+{
+  struct joystick_map *joy_global_map = get_joystick_map(true);
+  char arg[512];
+
+  ASSERT(joy_global_map);
+  for(int i = 0; i < NUM_TESTS; i++)
+  {
+    const config_test_joystick &t = data[i];
+
+    for(int j = 0; j < MAX_JOYSTICKS; j++)
+    {
+      joy_global_map->hat[j][JOYHAT_UP] = DEFAULT;
+      joy_global_map->hat[j][JOYHAT_DOWN] = DEFAULT;
+      joy_global_map->hat[j][JOYHAT_LEFT] = DEFAULT;
+      joy_global_map->hat[j][JOYHAT_RIGHT] = DEFAULT;
+    }
+
+    snprintf(arg, arraysize(arg), "%s=%s", t.setting, t.value);
+    load_arg(arg);
+
+    for(int j = 0; j < MAX_JOYSTICKS; j++)
+    {
+      if(j >= t.first - 1 && j <= t.last - 1)
+      {
+        ASSERTEQX(joy_global_map->hat[j][JOYHAT_UP], t.expected[JOYHAT_UP], arg);
+        ASSERTEQX(joy_global_map->hat[j][JOYHAT_DOWN], t.expected[JOYHAT_DOWN], arg);
+        ASSERTEQX(joy_global_map->hat[j][JOYHAT_LEFT], t.expected[JOYHAT_LEFT], arg);
+        ASSERTEQX(joy_global_map->hat[j][JOYHAT_RIGHT], t.expected[JOYHAT_RIGHT], arg);
+      }
+      else
+      {
+        ASSERTEQX(joy_global_map->hat[j][JOYHAT_UP], DEFAULT, arg);
+        ASSERTEQX(joy_global_map->hat[j][JOYHAT_DOWN], DEFAULT, arg);
+        ASSERTEQX(joy_global_map->hat[j][JOYHAT_LEFT], DEFAULT, arg);
+        ASSERTEQX(joy_global_map->hat[j][JOYHAT_RIGHT], DEFAULT, arg);
+      }
+    }
+  }
+}
+
+template<int NUM_TESTS>
+void TEST_JOY_ACTION(const config_test_joystick (&data)[NUM_TESTS])
+{
+  struct joystick_map *joy_global_map = get_joystick_map(true);
+  char arg[512];
+
+  ASSERT(joy_global_map);
+  for(int i = 0; i < NUM_TESTS; i++)
+  {
+    const config_test_joystick &t = data[i];
+
+    // NOTE: unlike the other tests, don't subtract 1 from t.which here since
+    // it's an action number.
+    for(int j = 0; j < MAX_JOYSTICKS; j++)
+      joy_global_map->action[j][t.which] = DEFAULT;
+
+    snprintf(arg, arraysize(arg), "%s=%s", t.setting, t.value);
+    load_arg(arg);
+
+    for(int j = 0; j < MAX_JOYSTICKS; j++)
+    {
+      if(j >= t.first - 1 && j <= t.last - 1)
+        ASSERTEQX(joy_global_map->action[j][t.which], t.expected[0], arg);
+      else
+        ASSERTEQX(joy_global_map->action[j][t.which], DEFAULT, arg);
+    }
+  }
+}
+
+UNITTEST(Joystick)
+{
+  SECTION(joyN_button)
+  {
+    static const config_test_joystick data[] =
+    {
+      // Setting              Value           [#, #]  which   expected
+      { "joy1button1",        "key_space",    1,  1,  1,      { IKEY_SPACE }},
+      { "joy16button256",     "key_escape",   16, 16, 256,    { IKEY_ESCAPE, }},
+      { "joy[1,16]button256", "act_a",        1,  16, 256,    { -JOY_A }},
+      { "joy[4,8]button10",   "act_start",    4,  8,  10,     { -JOY_START }},
+      { "joy[9,9]button123",  "27",           9,  9,  123,    { IKEY_ESCAPE }},
+      { "joy[10,11]button71", "13",           10, 11, 71,     { IKEY_RETURN }},
+    };
+    TEST_JOY_BUTTON(data);
+  }
+
+  SECTION(joyN_axis)
+  {
+    static const config_test_joystick data[] =
+    {
+      // Setting              Value                   [#, #]  which   expected
+      { "joy1axis1",          "key_left, key_right",  1,  1,  1,      { IKEY_LEFT, IKEY_RIGHT }},
+      { "joy16axis16",        "key_w,key_s",          16, 16, 16,     { IKEY_w, IKEY_s }},
+      { "joy[11,16]axis16",   "key_up, key_down",     11, 16, 16,     { IKEY_UP, IKEY_DOWN }},
+      { "joy[2,9]axis7",      "key_1,key_delete",     2,  9,  7,      { IKEY_1, IKEY_DELETE }},
+      { "joy[1,14]axis3",     "act_r_up,act_r_down",  1,  14, 3,      { -JOY_R_UP, -JOY_R_DOWN }},
+      { "joy[7,7]axis15",     "act_x,act_y",          7,  7,  15,     { -JOY_X, -JOY_Y }},
+    };
+    TEST_JOY_AXIS(data);
+  }
+
+  SECTION(joyN_hat)
+  {
+    static const config_test_joystick data[] =
+    {
+      // Setting          Value                                 [#, #]  which
+      { "joy1hat",        "key_up,key_down,key_left,key_right", 1,  1,  0,
+        { IKEY_UP, IKEY_DOWN, IKEY_LEFT, IKEY_RIGHT }},
+      { "joy[10,14]hat",  "key_w, key_s, key_a, key_d",         10, 14, 0,
+        { IKEY_w, IKEY_s, IKEY_a, IKEY_d }},
+      { "joy[1,16]hat",   "act_up,act_down,act_left,act_right", 1,  16, 0,
+        { -JOY_UP, -JOY_DOWN, -JOY_LEFT, -JOY_RIGHT }},
+      { "joy[7,12]hat",   "273,274,276,275",                    7,  12, 0,
+        { IKEY_UP, IKEY_DOWN, IKEY_LEFT, IKEY_RIGHT }},
+    };
+    TEST_JOY_HAT(data);
+  }
+
+  SECTION(joyN_action)
+  {
+    static const config_test_joystick data[] =
+    {
+      // Make sure every action is assignable.
+      // Setting              Value           [#, #]  which           expected
+      { "joy1.a",             "key_space",    1,  1,  JOY_A,          { IKEY_SPACE }},
+      { "joy1.b",             "key_space",    1,  1,  JOY_B,          { IKEY_SPACE }},
+      { "joy1.x",             "key_space",    1,  1,  JOY_X,          { IKEY_SPACE }},
+      { "joy1.y",             "key_space",    1,  1,  JOY_Y,          { IKEY_SPACE }},
+      { "joy1.select",        "key_space",    1,  1,  JOY_SELECT,     { IKEY_SPACE }},
+      { "joy1.start",         "key_space",    1,  1,  JOY_START,      { IKEY_SPACE }},
+      { "joy1.lstick",        "key_space",    1,  1,  JOY_LSTICK,     { IKEY_SPACE }},
+      { "joy1.rstick",        "key_space",    1,  1,  JOY_RSTICK,     { IKEY_SPACE }},
+      { "joy1.lshoulder",     "key_space",    1,  1,  JOY_LSHOULDER,  { IKEY_SPACE }},
+      { "joy1.rshoulder",     "key_space",    1,  1,  JOY_RSHOULDER,  { IKEY_SPACE }},
+      { "joy1.ltrigger",      "key_space",    1,  1,  JOY_LTRIGGER,   { IKEY_SPACE }},
+      { "joy1.rtrigger",      "key_space",    1,  1,  JOY_RTRIGGER,   { IKEY_SPACE }},
+      { "joy1.up",            "key_space",    1,  1,  JOY_UP,         { IKEY_SPACE }},
+      { "joy1.down",          "key_space",    1,  1,  JOY_DOWN,       { IKEY_SPACE }},
+      { "joy1.left",          "key_space",    1,  1,  JOY_LEFT,       { IKEY_SPACE }},
+      { "joy1.right",         "key_space",    1,  1,  JOY_RIGHT,      { IKEY_SPACE }},
+      { "joy1.l_up",          "key_space",    1,  1,  JOY_L_UP,       { IKEY_SPACE }},
+      { "joy1.l_down",        "key_space",    1,  1,  JOY_L_DOWN,     { IKEY_SPACE }},
+      { "joy1.l_left",        "key_space",    1,  1,  JOY_L_LEFT,     { IKEY_SPACE }},
+      { "joy1.l_right",       "key_space",    1,  1,  JOY_L_RIGHT,    { IKEY_SPACE }},
+      { "joy1.r_up",          "key_space",    1,  1,  JOY_R_UP,       { IKEY_SPACE }},
+      { "joy1.r_down",        "key_space",    1,  1,  JOY_R_DOWN,     { IKEY_SPACE }},
+      { "joy1.r_left",        "key_space",    1,  1,  JOY_R_LEFT,     { IKEY_SPACE }},
+      { "joy1.r_right",       "key_space",    1,  1,  JOY_R_RIGHT,    { IKEY_SPACE }},
+
+      // Ranges.
+      // Setting              Value           [#, #]  which           expected
+      { "joy[1,16].select",   "key_escape",   1,  16, JOY_SELECT,     { IKEY_ESCAPE }},
+      { "joy[7,9].up",        "key_w",        7,  9,  JOY_UP,         { IKEY_w }},
+      { "joy[14,15].l_right", "key_7",        14, 15, JOY_L_RIGHT,    { IKEY_7 }},
+      { "joy[1,4].y",         "49",           1,  4,  JOY_Y,          { IKEY_1 }},
+    };
+    TEST_JOY_ACTION(data);
+  }
+
+  SECTION(joystick_aliases)
+  {
+    /**
+     * That general case stuff worked?
+     * Great, now make sure every alias works! :(
+     *
+     * Uses joy1button1 internally. Action aliases translate to negative values.
+     */
+    static const config_test_single data[] =
+    {
+      // Keys (keep in the same order as the list in event.c).
+      { "key_0",            IKEY_0 },
+      { "key_1",            IKEY_1 },
+      { "key_2",            IKEY_2 },
+      { "key_3",            IKEY_3 },
+      { "key_4",            IKEY_4 },
+      { "key_5",            IKEY_5 },
+      { "key_6",            IKEY_6 },
+      { "key_7",            IKEY_7 },
+      { "key_8",            IKEY_8 },
+      { "key_9",            IKEY_9 },
+      { "key_a",            IKEY_a },
+      { "key_b",            IKEY_b },
+      { "key_backquote",    IKEY_BACKQUOTE },
+      { "key_backslash",    IKEY_BACKSLASH },
+      { "key_backspace",    IKEY_BACKSPACE },
+      { "key_break",        IKEY_BREAK },
+      { "key_c",            IKEY_c },
+      { "key_capslock",     IKEY_CAPSLOCK },
+      { "key_comma",        IKEY_COMMA },
+      { "key_d",            IKEY_d },
+      { "key_delete",       IKEY_DELETE },
+      { "key_down",         IKEY_DOWN },
+      { "key_e",            IKEY_e },
+      { "key_end",          IKEY_END },
+      { "key_equals",       IKEY_EQUALS },
+      { "key_escape",       IKEY_ESCAPE },
+      { "key_f",            IKEY_f },
+      { "key_f1",           IKEY_F1 },
+      { "key_f10",          IKEY_F10 },
+      { "key_f11",          IKEY_F11 },
+      { "key_f12",          IKEY_F12 },
+      { "key_f2",           IKEY_F2 },
+      { "key_f3",           IKEY_F3 },
+      { "key_f4",           IKEY_F4 },
+      { "key_f5",           IKEY_F5 },
+      { "key_f6",           IKEY_F6 },
+      { "key_f7",           IKEY_F7 },
+      { "key_f8",           IKEY_F8 },
+      { "key_f9",           IKEY_F9 },
+      { "key_g",            IKEY_g },
+      { "key_h",            IKEY_h },
+      { "key_home",         IKEY_HOME },
+      { "key_i",            IKEY_i },
+      { "key_insert",       IKEY_INSERT },
+      { "key_j",            IKEY_j },
+      { "key_k",            IKEY_k },
+      { "key_kp0",          IKEY_KP0 },
+      { "key_kp1",          IKEY_KP1 },
+      { "key_kp2",          IKEY_KP2 },
+      { "key_kp3",          IKEY_KP3 },
+      { "key_kp4",          IKEY_KP4 },
+      { "key_kp5",          IKEY_KP5 },
+      { "key_kp6",          IKEY_KP6 },
+      { "key_kp7",          IKEY_KP7 },
+      { "key_kp8",          IKEY_KP8 },
+      { "key_kp9",          IKEY_KP9 },
+      { "key_kp_divide",    IKEY_KP_DIVIDE },
+      { "key_kp_enter",     IKEY_KP_ENTER },
+      { "key_kp_minus",     IKEY_KP_MINUS },
+      { "key_kp_multiply",  IKEY_KP_MULTIPLY },
+      { "key_kp_period",    IKEY_KP_PERIOD },
+      { "key_kp_plus",      IKEY_KP_PLUS },
+      { "key_l",            IKEY_l },
+      { "key_lalt",         IKEY_LALT },
+      { "key_lctrl",        IKEY_LCTRL },
+      { "key_left",         IKEY_LEFT },
+      { "key_leftbracket",  IKEY_LEFTBRACKET },
+      { "key_lshift",       IKEY_LSHIFT },
+      { "key_lsuper",       IKEY_LSUPER },
+      { "key_m",            IKEY_m },
+      { "key_menu",         IKEY_MENU },
+      { "key_minus",        IKEY_MINUS },
+      { "key_n",            IKEY_n },
+      { "key_numlock",      IKEY_NUMLOCK },
+      { "key_o",            IKEY_o },
+      { "key_p",            IKEY_p },
+      { "key_pagedown",     IKEY_PAGEDOWN },
+      { "key_pageup",       IKEY_PAGEUP },
+      { "key_period",       IKEY_PERIOD },
+      { "key_q",            IKEY_q },
+      { "key_quote",        IKEY_QUOTE },
+      { "key_r",            IKEY_r },
+      { "key_ralt",         IKEY_RALT },
+      { "key_rctrl",        IKEY_RCTRL },
+      { "key_return",       IKEY_RETURN },
+      { "key_right",        IKEY_RIGHT },
+      { "key_rightbracket", IKEY_RIGHTBRACKET },
+      { "key_rshift",       IKEY_RSHIFT },
+      { "key_rsuper",       IKEY_RSUPER },
+      { "key_s",            IKEY_s },
+      { "key_scrolllock",   IKEY_SCROLLOCK },
+      { "key_semicolon",    IKEY_SEMICOLON },
+      { "key_slash",        IKEY_SLASH },
+      { "key_space",        IKEY_SPACE },
+      { "key_sysreq",       IKEY_SYSREQ },
+      { "key_t",            IKEY_t },
+      { "key_tab",          IKEY_TAB },
+      { "key_u",            IKEY_u },
+      { "key_up",           IKEY_UP },
+      { "key_v",            IKEY_v },
+      { "key_w",            IKEY_w },
+      { "key_x",            IKEY_x },
+      { "key_y",            IKEY_y },
+      { "key_z",            IKEY_z },
+
+      // Actions (keep in the same order as the list in event.c).
+      { "act_a",            -JOY_A },
+      { "act_b",            -JOY_B },
+      { "act_down",         -JOY_DOWN },
+      { "act_l_down",       -JOY_L_DOWN },
+      { "act_l_left",       -JOY_L_LEFT },
+      { "act_l_right",      -JOY_L_RIGHT },
+      { "act_l_up",         -JOY_L_UP },
+      { "act_left",         -JOY_LEFT },
+      { "act_lshoulder",    -JOY_LSHOULDER },
+      { "act_lstick",       -JOY_LSTICK },
+      { "act_ltrigger",     -JOY_LTRIGGER },
+      { "act_r_down",       -JOY_R_DOWN },
+      { "act_r_left",       -JOY_R_LEFT },
+      { "act_r_right",      -JOY_R_RIGHT },
+      { "act_r_up",         -JOY_R_UP },
+      { "act_right",        -JOY_RIGHT },
+      { "act_rshoulder",    -JOY_RSHOULDER },
+      { "act_rstick",       -JOY_RSTICK },
+      { "act_rtrigger",     -JOY_RTRIGGER },
+      { "act_select",       -JOY_SELECT },
+      { "act_start",        -JOY_START },
+      { "act_up",           -JOY_UP },
+      { "act_x",            -JOY_X },
+      { "act_y",            -JOY_Y }
+    };
+    TEST_JOY_ALIAS(data);
+  }
+
+  // TODO SDL2 gamecontroller options are static in event_sdl.c (annoying to test...)
 }
 
 UNITTEST(Include)
