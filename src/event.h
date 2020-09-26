@@ -239,6 +239,7 @@ CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
 CORE_LIBSPEC boolean get_exit_status(void);
 CORE_LIBSPEC boolean set_exit_status(boolean value);
 CORE_LIBSPEC boolean peek_exit_input(void);
+CORE_LIBSPEC struct joystick_map *get_joystick_map(boolean is_global);
 CORE_LIBSPEC Uint32 get_joystick_ui_action(void);
 CORE_LIBSPEC Uint32 get_joystick_ui_key(void);
 
