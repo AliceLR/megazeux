@@ -266,6 +266,16 @@
 }
 
 {
+   libGLdispatch leaking memory
+   Memcheck:Leak
+   fun:malloc
+   fun:strdup
+   ...
+   obj:*libGLdispatch*
+   ...
+}
+
+{
    dlopen kind of forgot about RAII
    Memcheck:Leak
    fun:_Znwm
