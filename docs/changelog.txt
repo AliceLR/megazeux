@@ -73,6 +73,8 @@ USERS
   Switch builds to fix the file manager and directory seeking.
 + Fixed a bug where importing a board over the title board would
   not update the world title.
++ Fixed a crash that could be caused by selecting a block on the
+  overlay/vlayer, changing boards, then pressing enter.
 
 DEVELOPERS
 

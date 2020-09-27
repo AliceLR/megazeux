@@ -548,8 +548,18 @@ static void editor_set_current_board(struct editor_context *editor,
     else
       set_current_board(mzx_world, cur_board);
 
-    if(!cur_board->overlay_mode || editor->mode == EDIT_VLAYER)
+    if((editor->mode == EDIT_OVERLAY && !cur_board->overlay_mode) ||
+     editor->mode == EDIT_VLAYER)
+    {
       set_editor_mode(editor, EDIT_BOARD);
+
+      // If there's a block action active, cancel it.
+      if(editor->block.selected)
+      {
+        editor->block.selected = false;
+        editor->cursor_mode = CURSOR_PLACE;
+      }
+    }
 
     synchronize_board_values(editor);
     fix_scroll(editor);
