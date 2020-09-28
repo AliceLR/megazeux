@@ -27,6 +27,7 @@
 __M_BEGIN_DECLS
 
 void init_pc_speaker(struct config_info *conf);
+void pcs_stream_cancel_current(void);
 
 __M_END_DECLS
 

@@ -28,6 +28,8 @@
 
 #include <string.h>
 
+static boolean pcs_cancel_current = false;
+
 struct pc_speaker_stream
 {
   struct audio_stream a;
@@ -42,6 +44,11 @@ struct pc_speaker_stream
   Uint32 last_increment_buffer;
 };
 
+void pcs_stream_cancel_current(void)
+{
+  pcs_cancel_current = true;
+}
+
 static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
  Uint32 len)
 {
@@ -54,6 +61,18 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
   Uint32 sfx_scale_half = sfx_scale / 2;
   Sint32 *mix_dest_ptr = buffer;
   Sint16 cur_sample;
+
+  /**
+   * Cancel the current playing note if PC speaker effects were turned off or
+   * if the sfx queue was cleared.
+   */
+  if(!audio_get_pcs_on() || pcs_cancel_current)
+  {
+    pcs_cancel_current = false;
+    pcs_stream->last_playing = 0;
+    pcs_stream->last_duration = 0;
+    sample_duration = 0;
+  }
 
   if(sample_duration >= len / 4)
   {
@@ -93,8 +112,11 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
 
   while(offset < len / 4)
   {
-    sfx_next_note((int *)&(pcs_stream->playing),
-     (int *)&(pcs_stream->frequency), (int *)&(pcs_stream->note_duration));
+    int playing, frequency, note_duration;
+    sfx_next_note(&playing, &frequency, &note_duration);
+    pcs_stream->playing = playing;
+    pcs_stream->frequency = frequency;
+    pcs_stream->note_duration = note_duration;
 
     // Minimum note duration is 1 to prevent locking up the audio thread.
     if(pcs_stream->note_duration < 1)

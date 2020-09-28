@@ -32,6 +32,7 @@
 #include "audio_pcs.h"
 #include "ext.h"
 #include "sampled_stream.h"
+#include "sfx.h"
 
 #include "../configure.h"
 #include "../data.h"
@@ -323,6 +324,7 @@ void init_audio(struct config_info *conf)
   init_pc_speaker(conf);
 
   audio_set_pcs_volume(conf->pc_speaker_volume);
+  sfx_init();
 
   init_audio_platform(conf);
 }
@@ -331,6 +333,7 @@ void quit_audio(void)
 {
   // Signal the audio thread to stop and wait for it to release the lock.
   quit_audio_platform();
+  sfx_quit();
 
   LOCK();
 

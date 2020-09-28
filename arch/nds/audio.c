@@ -103,6 +103,11 @@ static inline void nds_pcs_tick(int duration)
   }
 }
 
+void pcs_stream_cancel_current(void)
+{
+  pcs_playing = 0;
+}
+
 // Maxmod glue code
 
 #define MAX_NUM_SAMPLES 8

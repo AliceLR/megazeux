@@ -75,6 +75,9 @@ USERS
   not update the world title.
 + Fixed a crash that could be caused by selecting a block on the
   overlay/vlayer, changing boards, then pressing enter.
++ Fixed a bug where the currently playing PC speaker note would
+  play for the rest of its duration after turning off PC speaker
+  sound effects, after "end play", after exiting gameplay, etc.
 
 DEVELOPERS
 

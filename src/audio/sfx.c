@@ -21,6 +21,7 @@
 /* Sound effects system- PLAY, SFX, and bkground code */
 
 #include <string.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "audio.h"
@@ -28,7 +29,9 @@
 #include "sfx.h"
 
 #include "../data.h"
+#include "../platform.h"
 #include "../world_struct.h"
+#include "../util.h"
 
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
 
@@ -94,28 +97,45 @@ __editor_maybe_static char sfx_strs[NUM_SFX][SFX_SIZE] =
 
 #ifdef CONFIG_AUDIO
 
+// Size of sound queue
+#define NOISEMAX        4096
+
 // Special freqs
 #define F_REST          1
+
+/**
+ * The circular buffer here was originally designed to keep this queue safe
+ * in DOS, where the dequeues occurred in an interrupt that had no chance
+ * of running concurrently with the enqueues.
+ *
+ * In a parallel environment circular buffers are prone to very subtle bugs
+ * without the use of atomics or locks. While normally that wouldn't cause
+ * serious issues here, to make things worse both the main thread and audio
+ * thread can cancel the entire SFX queue arbitrarily (and were previously
+ * modifying the other thread's queue index where this occurred!).
+ *
+ * Just to be sure this isn't a problem going forward, the queue is now
+ * protected with a mutex. The locked functions are very small so this
+ * shouldn't cause much of a performance issue.
+ */
+static platform_mutex sfx_mutex;
 
 static int topindex = 0;  // Marks the top of the queue
 static int backindex = 0; // Marks bottom of queue
 
-// Sound queue data structure.
-#ifdef CONFIG_NDS
-// Reduce memory usage in half.
+/**
+ * NOTE: these were signed 16-bit ints in DOS versions and signed 32-bit ints
+ * up through 2.92e. It is highly unlikely anything ever relied on a duration
+ * over 65535 (~131 seconds at 500 Hz).
+ *
+ * The frequency is guaranteed to never actually need aynthing higher than the
+ * table below, so there's no reason for it to be 32-bit.
+ */
 struct noise
 {
   Uint16 duration;
   Uint16 freq;
 };
-#else
-// 32-bit ints should be nicer to deal with on most platforms.
-struct noise
-{
-  int duration;
-  int freq;
-};
-#endif
 
 // Frequencies of 6C thru 6B
 static const int note_freq[12] =
@@ -125,8 +145,7 @@ static const int note_freq[12] =
 static const int sam_freq[12] =
  { 3424, 3232, 3048, 2880, 2712, 2560, 2416, 2280, 2152, 2032, 1920, 1812 };
 
-static struct noise background[NOISEMAX]; // The sound queue itself
-static int sound_in_queue = 0;     // Tells if sound in queue
+static struct noise background[NOISEMAX];
 
 #ifdef CONFIG_DEBYTECODE
 static const char open_char  = '(';
@@ -136,19 +155,40 @@ static const char open_char  = '&';
 static const char close_char = '&';
 #endif
 
+#define SFX_LOCK()   platform_mutex_lock(&sfx_mutex)
+#define SFX_UNLOCK() platform_mutex_unlock(&sfx_mutex)
+
+void sfx_init(void)
+{
+  platform_mutex_init(&sfx_mutex);
+}
+
+void sfx_quit(void)
+{
+  platform_mutex_destroy(&sfx_mutex);
+}
+
+static boolean sound_in_queue(void)
+{
+  return topindex != backindex;
+}
+
 static void submit_sound(int freq, int delay)
 {
-  if((backindex == 0) && (topindex == NOISEMAX))
-    return;
-  if(topindex != (backindex - 1))
+  int nextindex;
+  delay = CLAMP(delay, 0, UINT16_MAX);
+
+  SFX_LOCK();
+
+  nextindex = (topindex < NOISEMAX - 1) ? topindex + 1 : 0;
+  if(nextindex != backindex)
   {
-    // Queue full?
-    background[topindex].freq = freq; // No, put it in queue
-    background[topindex++].duration = delay;
-    if(topindex == NOISEMAX)
-      topindex = 0; // Wraparound
-    sound_in_queue = 1; // Note sound in queue
+    background[topindex].freq = freq;
+    background[topindex].duration = delay;
+    topindex = nextindex;
   }
+
+  SFX_UNLOCK();
 }
 
 static void play_note(int note, int octave, int delay)
@@ -183,13 +223,21 @@ void play_string(char *str, int sfx_play)
   // Note trans. table from 1-7 (a-z) to 1-12
   char nn[7] = { 10, 12, 1, 3, 5, 6, 8 };
 
+  /**
+   * There is a bug in the SFX code where every duration is unconditionally
+   * increased by 1 dating back to 2.51 or earlier. For compatibility, this
+   * is emulated, but at some point in the future it might be nice to have a
+   * world option to use the correct durations.
+   */
+  static const int extra_duration = 1;
+
   if(!audio_get_pcs_on())
   {
     sfx_play = 1; // SFX off
   }
   else
   {
-    if(!sound_in_queue)
+    if(!sound_in_queue())
       sfx_play = 0;
   }
 
@@ -216,7 +264,7 @@ void play_string(char *str, int sfx_play)
     {
       // Rest
       if(!sfx_play && !(digi_st > 0))
-        submit_sound(F_REST,dur);
+        submit_sound(F_REST, dur + extra_duration);
 
       continue;
     }
@@ -284,18 +332,18 @@ void play_string(char *str, int sfx_play)
       {
         if(dur <= 9)
         {
-          submit_sound(F_REST, 1);
-          play_note(note, oct, dur - 1);
+          submit_sound(F_REST, 1 + extra_duration);
+          play_note(note, oct, dur - 1 + extra_duration);
         }
         else
         {
-          submit_sound(F_REST, 2);
-          play_note(note, oct, dur - 2);
+          submit_sound(F_REST, 2 + extra_duration);
+          play_note(note, oct, dur - 2 + extra_duration);
         }
       }
       else
       {
-        play_note(note, oct, dur);
+        play_note(note, oct, dur + extra_duration);
         last_note = note;
       }
       oct = t2; // Restore old octave
@@ -378,7 +426,18 @@ void play_string(char *str, int sfx_play)
 
 void sfx_clear_queue(void)
 {
-  backindex = topindex = sound_in_queue = 0; // queue pointers
+  SFX_LOCK();
+
+  /**
+   * In DOS versions, clearing the SFX queue would also stop the current
+   * note. The best that can be done here is to alert the PC speaker stream
+   * to cancel the current playing sound the next time pcs_mix_data runs.
+   */
+  pcs_stream_cancel_current();
+  topindex = 0;
+  backindex = 0;
+
+  SFX_UNLOCK();
 }
 
 // Called by audio_pcs.c under lock.
@@ -386,15 +445,20 @@ void sfx_next_note(int *is_playing, int *freq, int *duration)
 {
   int sfx_on = audio_get_pcs_on();
 
-  if(sound_in_queue)
+  SFX_LOCK();
+
+  if(sound_in_queue())
   {
-    // Current sound finished, more?
+    /**
+     * NOTE: originally, 1 was unconditionally added to the durations here.
+     * This is now done in play_string instead to keep things less messy.
+     */
     if(background[backindex].freq == F_REST)
     {
       if(sfx_on)
       {
         *is_playing = false;
-        *duration = background[backindex].duration + 1; // freq == 1 for rest
+        *duration = background[backindex].duration;
       }
     }
     else
@@ -404,14 +468,18 @@ void sfx_next_note(int *is_playing, int *freq, int *duration)
       // Start sound
       *is_playing = true;
       *freq = background[backindex].freq;
-      *duration = background[backindex].duration + 1;
+      *duration = background[backindex].duration;
     }
 
-    backindex++;
-    if(backindex == NOISEMAX)
-      backindex = 0; // Wraparound
-    if(backindex == topindex) // If last sound reset queue pointers
-      backindex = topindex = sound_in_queue = 0;
+    if(backindex < NOISEMAX - 1)
+      backindex++;
+    else
+      backindex = 0;
+
+    /**
+     * NOTE: originally, would reset topindex and backindex to 0 here if they
+     * were equal. There's not really much of a point to doing this.
+     */
   }
   else
   {
@@ -422,6 +490,8 @@ void sfx_next_note(int *is_playing, int *freq, int *duration)
     }
   }
 
+  SFX_UNLOCK();
+
   // Silence the emulated PC speaker when sounds are disabled.
   // NOTE: there was not a corresponding nosound() call here in DOS versions.
   if(!sfx_on)
@@ -431,9 +501,9 @@ void sfx_next_note(int *is_playing, int *freq, int *duration)
   }
 }
 
-char sfx_is_playing(void)
+boolean sfx_is_playing(void)
 {
-  return sound_in_queue;
+  return sound_in_queue();
 }
 
 int sfx_length_left(void)
