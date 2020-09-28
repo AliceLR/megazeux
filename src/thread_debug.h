@@ -42,7 +42,7 @@ struct platform_mutex_debug
 typedef struct platform_mutex_debug platform_mutex_debug;
 
 static inline void platform_mutex_lock_debug(platform_mutex *mutex,
- platform_mutex *debug_mutex, platform_mutex_debug *info,
+ platform_mutex *debug_mutex, platform_mutex_debug *dinfo,
  const char *file, int line)
 {
   // lock may be held here, but it shouldn't be held by the current thread.
@@ -50,14 +50,14 @@ static inline void platform_mutex_lock_debug(platform_mutex *mutex,
 
   platform_mutex_lock(debug_mutex);
 
-  if(info->locked)
+  if(dinfo->locked)
   {
-    if(info->lock_thread == cur_thread)
+    if(dinfo->lock_thread == cur_thread)
       warn("%s:%d (TID %zu): locked at %s (TID %zu) already!\n",
-       file, line, (size_t)cur_thread, info->message, (size_t)info->lock_thread);
+       file, line, (size_t)cur_thread, dinfo->message, (size_t)dinfo->lock_thread);
     else
       trace("%s:%d (TID %zu): waiting on mutex locked by %s (TID %zu)\n",
-       file, line, (size_t)cur_thread, info->message, (size_t)info->lock_thread);
+       file, line, (size_t)cur_thread, dinfo->message, (size_t)dinfo->lock_thread);
   }
 
   platform_mutex_unlock(debug_mutex);
@@ -68,17 +68,17 @@ static inline void platform_mutex_lock_debug(platform_mutex *mutex,
   platform_mutex_lock(debug_mutex);
 
   // store information on this lock
-  snprintf((char *)info->message, 32, "%s:%d", file, line);
-  info->message[31] = '\0';
+  snprintf((char *)dinfo->message, 32, "%s:%d", file, line);
+  dinfo->message[31] = '\0';
 
-  info->lock_thread = cur_thread;
-  info->locked = true;
+  dinfo->lock_thread = cur_thread;
+  dinfo->locked = true;
 
   platform_mutex_unlock(debug_mutex);
 }
 
 static inline void platform_mutex_unlock_debug(platform_mutex *mutex,
- platform_mutex *debug_mutex, platform_mutex_debug *info,
+ platform_mutex *debug_mutex, platform_mutex_debug *dinfo,
  const char *file, int line)
 {
   platform_thread_id cur_thread = platform_get_thread_id();
@@ -86,7 +86,7 @@ static inline void platform_mutex_unlock_debug(platform_mutex *mutex,
   platform_mutex_lock(debug_mutex);
 
   // lock should be held here
-  if(!info->locked)
+  if(!dinfo->locked)
   {
     warn("%s:%d (TID %zu): tried to unlock when not locked!\n",
      file, line, (size_t)cur_thread);
@@ -94,11 +94,11 @@ static inline void platform_mutex_unlock_debug(platform_mutex *mutex,
   else
 
   // ...but not by another thread.
-  if(info->lock_thread != cur_thread)
+  if(dinfo->lock_thread != cur_thread)
     warn("%s:%d (TID %zu): tried to unlock mutex held by %s (TID %zu)!\n",
-     file, line, (size_t)cur_thread, info->message, (size_t)info->lock_thread);
+     file, line, (size_t)cur_thread, dinfo->message, (size_t)dinfo->lock_thread);
 
-  info->locked = false;
+  dinfo->locked = false;
 
   platform_mutex_unlock(debug_mutex);
 
