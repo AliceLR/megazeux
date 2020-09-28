@@ -511,7 +511,7 @@ int sfx_length_left(void)
   int left = topindex - backindex;
 
   if(left < 0)
-    left = topindex + (NOISEMAX - backindex);
+    left += NOISEMAX;
 
   return left;
 }
