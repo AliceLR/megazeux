@@ -120,8 +120,7 @@ namespace UpdaterInit
 #ifdef IS_CXX_11
   static constexpr int const_strcmp(const char *a, const char *b)
   {
-    return (a == b) || (a[0] == b[0] && \
-     (a[0] == '\0' || const_strcmp(a + 1, b + 1))) ? 0 : -1;
+    return (a[0] == b[0] && (a[0] == '\0' || const_strcmp(a + 1, b + 1))) ? 0 : -1;
   }
 #else
 #define const_strcmp(a,b) strcmp(a,b)
