@@ -127,7 +127,7 @@ static int backindex = 0; // Marks bottom of queue
  * up through 2.92e. It is highly unlikely anything ever relied on a duration
  * over 65535 (~131 seconds at 500 Hz).
  *
- * The frequency is guaranteed to never actually need aynthing higher than the
+ * The frequency is guaranteed to never actually need anything higher than the
  * table below, so there's no reason for it to be 32-bit.
  */
 struct noise
