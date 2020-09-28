@@ -29,8 +29,6 @@
 
 __M_BEGIN_DECLS
 
-//#ifdef DEBUG
-
 #include "platform.h"
 #include "util.h"
 
@@ -106,8 +104,6 @@ static inline void platform_mutex_unlock_debug(platform_mutex *mutex,
 
   platform_mutex_unlock(mutex);
 }
-
-//#endif /* DEBUG */
 
 __M_END_DECLS
 
