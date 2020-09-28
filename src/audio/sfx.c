@@ -118,7 +118,6 @@ __editor_maybe_static char sfx_strs[NUM_SFX][SFX_SIZE] =
  * protected with a mutex. The locked functions are very small so this
  * shouldn't cause much of a performance issue.
  */
-static platform_mutex sfx_mutex;
 
 static int topindex = 0;  // Marks the top of the queue
 static int backindex = 0; // Marks bottom of queue
@@ -155,18 +154,23 @@ static const char open_char  = '&';
 static const char close_char = '&';
 #endif
 
-#define SFX_LOCK()   platform_mutex_lock(&sfx_mutex)
-#define SFX_UNLOCK() platform_mutex_unlock(&sfx_mutex)
+#ifndef DEBUG
 
-void sfx_init(void)
-{
-  platform_mutex_init(&sfx_mutex);
-}
+#define SFX_LOCK()   platform_mutex_lock(&audio.audio_sfx_mutex)
+#define SFX_UNLOCK() platform_mutex_unlock(&audio.audio_sfx_mutex)
 
-void sfx_quit(void)
-{
-  platform_mutex_destroy(&sfx_mutex);
-}
+#else /* DEBUG */
+
+#include "../thread_debug.h"
+
+static platform_mutex_debug mutex_debug;
+
+#define SFX_LOCK()   platform_mutex_lock_debug(&audio.audio_sfx_mutex, \
+                      &audio.audio_debug_mutex, &mutex_debug, __FILE__, __LINE__)
+#define SFX_UNLOCK() platform_mutex_unlock_debug(&audio.audio_sfx_mutex, \
+                      &audio.audio_debug_mutex, &mutex_debug, __FILE__, __LINE__)
+
+#endif /* DEBUG */
 
 static boolean sound_in_queue(void)
 {

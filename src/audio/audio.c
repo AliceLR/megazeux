@@ -75,65 +75,21 @@
 // May be used by audio plugins
 struct audio audio;
 
-#define __lock()      platform_mutex_lock(&audio.audio_mutex)
-#define __unlock()    platform_mutex_unlock(&audio.audio_mutex)
+#ifndef DEBUG
 
-#ifdef DEBUG
+#define LOCK()   platform_mutex_lock(&audio.audio_mutex)
+#define UNLOCK() platform_mutex_unlock(&audio.audio_mutex)
 
-#define LOCK()   lock(__FILE__, __LINE__)
-#define UNLOCK() unlock(__FILE__, __LINE__)
+#else /* DEBUG */
 
-static volatile int locked = 0;
-static volatile char last_lock[32];
+#include "../thread_debug.h"
 
-#ifdef CONFIG_SDL
-static volatile platform_thread_id last_thread = 0;
-#endif
+static platform_mutex_debug mutex_debug;
 
-static void lock(const char *file, int line)
-{
-#ifdef CONFIG_SDL
-  // lock may be held here, but it shouldn't be held by the current thread.
-  // If this is SDL, we can determine if the current thread is holding it.
-  // Otherwise, print nothing because this debug message is annoying and is
-  // almost always spurious.
-  platform_thread_id cur_thread = platform_get_thread_id();
-
-  if(locked && (last_thread == cur_thread))
-  {
-    debug("%s:%d (thread %zu): locked at %s (thread %zu) already!\n",
-     file, line, (size_t)cur_thread, last_lock, (size_t)last_thread);
-  }
-#endif
-
-  // acquire the mutex
-  __lock();
-
-  // store information on this lock
-  snprintf((char *)last_lock, 32, "%s:%d", file, line);
-  last_lock[31] = '\0';
-#ifdef CONFIG_SDL
-  last_thread = platform_get_thread_id();
-#endif
-
-  locked = 1;
-}
-
-static void unlock(const char *file, int line)
-{
-  // lock should be held here
-  if(!locked)
-    debug("%s:%d: tried to unlock when not locked!\n", file, line);
-
-  // all ok, unlock this mutex
-  locked = 0;
-  __unlock();
-}
-
-#else // !DEBUG
-
-#define LOCK()     __lock()
-#define UNLOCK()   __unlock()
+#define LOCK()   platform_mutex_lock_debug(&audio.audio_mutex, \
+                  &audio.audio_debug_mutex, &mutex_debug, __FILE__, __LINE__)
+#define UNLOCK() platform_mutex_unlock_debug(&audio.audio_mutex, \
+                  &audio.audio_debug_mutex, &mutex_debug, __FILE__, __LINE__)
 
 #endif // DEBUG
 
@@ -283,6 +239,10 @@ void audio_callback(Sint16 *stream, int len)
 void init_audio(struct config_info *conf)
 {
   platform_mutex_init(&audio.audio_mutex);
+  platform_mutex_init(&audio.audio_sfx_mutex);
+#ifdef DEBUG
+  platform_mutex_init(&audio.audio_debug_mutex);
+#endif
 
   audio.output_frequency = conf->output_frequency;
   audio.master_resample_mode = conf->resample_mode;
@@ -324,7 +284,6 @@ void init_audio(struct config_info *conf)
   init_pc_speaker(conf);
 
   audio_set_pcs_volume(conf->pc_speaker_volume);
-  sfx_init();
 
   init_audio_platform(conf);
 }
@@ -333,7 +292,6 @@ void quit_audio(void)
 {
   // Signal the audio thread to stop and wait for it to release the lock.
   quit_audio_platform();
-  sfx_quit();
 
   LOCK();
 
@@ -341,6 +299,12 @@ void quit_audio(void)
   free(audio.pcs_stream);
 
   UNLOCK();
+
+#ifdef DEBUG
+  platform_mutex_destroy(&audio.audio_debug_mutex);
+#endif
+  platform_mutex_destroy(&audio.audio_sfx_mutex);
+  platform_mutex_destroy(&audio.audio_mutex);
 }
 
 /* If the mod was successfully changed, return 1.  This value is used
