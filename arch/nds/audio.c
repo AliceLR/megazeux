@@ -27,7 +27,6 @@
 #include <maxmod9.h>
 #include "platform.h"
 #include "../../src/audio/audio.h"
-#include "../../src/audio/audio_pcs.h"
 #include "../../src/audio/sfx.h"
 
 #ifdef CONFIG_AUDIO
