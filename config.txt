@@ -699,13 +699,13 @@
 # To use a "%" symbol as part of the target filename, use "%%". The slot
 # number will immediately follow this value.
 
-# save_slot_name = %w.
+# save_slots_name = %w.
 
 # The extension of the saved games used by the save slot system. Keep this
 # set to .sav if you wish to be able to easily load slot saves using the
 # traditional load dialog.
 
-# save_slot_ext = .sav
+# save_slots_ext = .sav
 
 # Set to 1 to start MZX in testing mode, exactly as if Alt+T was pressed in
 # the editor. MegaZeux will exit after gameplay ends. This is intended to be
