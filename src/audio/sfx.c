@@ -118,6 +118,23 @@ __editor_maybe_static char sfx_strs[NUM_SFX][SFX_SIZE] =
  * protected with a mutex. The locked functions are very small so this
  * shouldn't cause much of a performance issue.
  */
+#ifndef DEBUG
+
+#define SFX_LOCK()   platform_mutex_lock(&audio.audio_sfx_mutex)
+#define SFX_UNLOCK() platform_mutex_unlock(&audio.audio_sfx_mutex)
+
+#else /* DEBUG */
+
+#include "../thread_debug.h"
+
+static platform_mutex_debug mutex_debug;
+
+#define SFX_LOCK()   platform_mutex_lock_debug(&audio.audio_sfx_mutex, \
+                      &audio.audio_debug_mutex, &mutex_debug, __FILE__, __LINE__)
+#define SFX_UNLOCK() platform_mutex_unlock_debug(&audio.audio_sfx_mutex, \
+                      &audio.audio_debug_mutex, &mutex_debug, __FILE__, __LINE__)
+
+#endif /* DEBUG */
 
 static int topindex = 0;  // Marks the top of the queue
 static int backindex = 0; // Marks bottom of queue
@@ -146,6 +163,12 @@ static const int sam_freq[12] =
 
 static struct noise background[NOISEMAX];
 
+/**
+ * Allows the audio thread to determine whether the note held over from the
+ * previous pcs_mix_data call should be cancelled.
+ */
+static boolean cancel_current_note = false;
+
 #ifdef CONFIG_DEBYTECODE
 static const char open_char  = '(';
 static const char close_char = ')';
@@ -153,24 +176,6 @@ static const char close_char = ')';
 static const char open_char  = '&';
 static const char close_char = '&';
 #endif
-
-#ifndef DEBUG
-
-#define SFX_LOCK()   platform_mutex_lock(&audio.audio_sfx_mutex)
-#define SFX_UNLOCK() platform_mutex_unlock(&audio.audio_sfx_mutex)
-
-#else /* DEBUG */
-
-#include "../thread_debug.h"
-
-static platform_mutex_debug mutex_debug;
-
-#define SFX_LOCK()   platform_mutex_lock_debug(&audio.audio_sfx_mutex, \
-                      &audio.audio_debug_mutex, &mutex_debug, __FILE__, __LINE__)
-#define SFX_UNLOCK() platform_mutex_unlock_debug(&audio.audio_sfx_mutex, \
-                      &audio.audio_debug_mutex, &mutex_debug, __FILE__, __LINE__)
-
-#endif /* DEBUG */
 
 static boolean sound_in_queue(void)
 {
@@ -437,7 +442,7 @@ void sfx_clear_queue(void)
    * note. The best that can be done here is to alert the PC speaker stream
    * to cancel the current playing sound the next time pcs_mix_data runs.
    */
-  pcs_stream_cancel_current();
+  cancel_current_note = true;
   topindex = 0;
   backindex = 0;
 
@@ -451,6 +456,7 @@ void sfx_next_note(int *is_playing, int *freq, int *duration)
 
   SFX_LOCK();
 
+  cancel_current_note = false;
   if(sound_in_queue())
   {
     /**
@@ -503,6 +509,20 @@ void sfx_next_note(int *is_playing, int *freq, int *duration)
     *is_playing = false;
     *duration = 1;
   }
+}
+
+// Called by audio_pcs.c under lock.
+boolean sfx_should_cancel_note(void)
+{
+  boolean ret;
+
+  SFX_LOCK();
+
+  ret = cancel_current_note;
+
+  SFX_UNLOCK();
+
+  return ret;
 }
 
 boolean sfx_is_playing(void)

@@ -68,6 +68,9 @@ static inline void nds_pcs_tick(int duration)
   int ticks = 0;
   int ticked;
 
+  if(sfx_should_cancel_note())
+    pcs_playing = 0;
+
   while(ticks < duration)
   {
     if(pcs_playing)
@@ -102,11 +105,6 @@ static inline void nds_pcs_tick(int duration)
   {
     nds_pcs_sound(pcs_frequency, NDS_VOLUME(audio_get_pcs_volume()));
   }
-}
-
-void pcs_stream_cancel_current(void)
-{
-  pcs_playing = 0;
 }
 
 // Maxmod glue code

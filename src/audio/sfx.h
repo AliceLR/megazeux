@@ -96,6 +96,7 @@ CORE_LIBSPEC extern char sfx_strs[NUM_SFX][SFX_SIZE];
 
 // Called by audio_pcs.c under lock.
 void sfx_next_note(int *is_playing, int *freq, int *duration);
+boolean sfx_should_cancel_note(void);
 
 void play_sfx(struct world *mzx_world, enum sfx_id sfx);
 void play_string(char *str, int sfx_play);

@@ -28,8 +28,6 @@
 
 #include <string.h>
 
-static boolean pcs_cancel_current = false;
-
 struct pc_speaker_stream
 {
   struct audio_stream a;
@@ -43,11 +41,6 @@ struct pc_speaker_stream
   Uint32 sample_cutoff;
   Uint32 last_increment_buffer;
 };
-
-void pcs_stream_cancel_current(void)
-{
-  pcs_cancel_current = true;
-}
 
 static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
  Uint32 len)
@@ -66,9 +59,8 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
    * Cancel the current playing note if PC speaker effects were turned off or
    * if the sfx queue was cleared.
    */
-  if(!audio_get_pcs_on() || pcs_cancel_current)
+  if(!audio_get_pcs_on() || sfx_should_cancel_note())
   {
-    pcs_cancel_current = false;
     pcs_stream->last_playing = 0;
     pcs_stream->last_duration = 0;
     sample_duration = 0;
