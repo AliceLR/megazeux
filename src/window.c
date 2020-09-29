@@ -2828,10 +2828,7 @@ static boolean update_slot_prefix(void)
   size_t fmt_len;
   size_t world_len;
 
-  if(cur_slot_prefix != NULL)
-    free(cur_slot_prefix);
-
-  cur_slot_prefix = cmalloc(sizeof(char) * MAX_PATH);
+  cur_slot_prefix = crealloc(cur_slot_prefix, sizeof(char) * MAX_PATH);
 
   fmt = get_config()->save_slots_name;
   fmt_len = strlen(fmt);
@@ -2949,7 +2946,7 @@ int slot_manager(struct world *mzx_world, char *ret,
       disabled_slots = cmalloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
       for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
       {
-        disabled_slots[i] = !slot_save_exists(cur_slot_prefix, i);
+        disabled_slots[i] = !highlighted_slots[i];
       }
 
       // If the current slot is empty, try to set it to one that isn't.
@@ -3007,8 +3004,8 @@ int slot_manager(struct world *mzx_world, char *ret,
 
     destruct_dialog(&di);
 
-    if(highlighted_slots != NULL) free(highlighted_slots);
-    if(disabled_slots != NULL) free(disabled_slots);
+    free(highlighted_slots);
+    free(disabled_slots);
   }
 
   if(return_value != 0)
