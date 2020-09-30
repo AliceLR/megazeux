@@ -100,6 +100,7 @@ void game_settings(struct world *mzx_world)
 {
   struct board *src_board = mzx_world->current_board;
   int mzx_speed, music, pcs;
+  int prev_music;
   int music_volume, sound_volume, pcs_volume;
   struct dialog di;
   int dialog_result;
@@ -137,6 +138,7 @@ void game_settings(struct world *mzx_world)
   music_volume = audio_get_music_volume();
   sound_volume = audio_get_sound_volume();
   pcs_volume = audio_get_pcs_volume();
+  prev_music = !music;
 
   // Prevent previous keys from carrying through.
   force_release_all_keys();
@@ -268,22 +270,22 @@ void game_settings(struct world *mzx_world)
       pcs ^= 1;
 
       audio_set_pcs_on(pcs);
+      audio_set_music_on(music);
 
-      if(!music)
+      if(!music && prev_music && mzx_world->active)
       {
-        // Turn off music.
-        if(audio_get_music_on() && (mzx_world->active))
-          audio_end_module();
+        // Turn off music and sound effects.
+        audio_end_module();
+        audio_end_sample();
       }
       else
 
-      if(!audio_get_music_on() && (mzx_world->active))
+      if(music && !prev_music && mzx_world->active)
       {
         // Turn on music.
-        load_board_module(mzx_world);
+        load_game_module(mzx_world, mzx_world->real_mod_playing, false);
       }
 
-      audio_set_music_on(music);
       mzx_world->mzx_speed = mzx_speed;
     }
     else

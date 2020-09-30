@@ -78,6 +78,9 @@ USERS
 + Fixed a bug where the currently playing PC speaker note would
   play for the rest of its duration after turning off PC speaker
   sound effects, after "end play", after exiting gameplay, etc.
++ Fixed a regression where turning off music in the settings
+  menu and then turning music back on would not start playing
+  the music file for the current board.
 
 DEVELOPERS
 
