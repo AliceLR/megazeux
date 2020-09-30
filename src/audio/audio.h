@@ -120,6 +120,10 @@ struct audio
   struct audio_stream *stream_list_end;
 
   platform_mutex audio_mutex;
+  platform_mutex audio_sfx_mutex;
+#ifdef DEBUG
+  platform_mutex audio_debug_mutex;
+#endif
 
   Uint32 music_on;
   Uint32 pcs_on;

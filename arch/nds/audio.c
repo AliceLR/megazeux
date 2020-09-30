@@ -67,6 +67,9 @@ static inline void nds_pcs_tick(int duration)
   int ticks = 0;
   int ticked;
 
+  if(!audio_get_pcs_on() || sfx_should_cancel_note())
+    pcs_playing = 0;
+
   while(ticks < duration)
   {
     if(pcs_playing)
@@ -317,6 +320,9 @@ int audio_play_module(char *filename, boolean safely, int volume)
   char *mas_ext_pos;
   u8 *mas_buffer;
 
+  if(!audio_get_music_on())
+    return 1;
+
   // we can only play pre-converted .MAS files
   strcpy(mas_filename, filename);
   mas_ext_pos = strrchr(mas_filename, '.');
@@ -388,6 +394,9 @@ void audio_play_sample(char *filename, boolean safely, int period)
   mm_sound_effect sfx;
   int freq_desired, freq_real;
   u32 sample_id, mas_fn_len;
+
+  if(!audio_get_music_on())
+    return;
 
   // we can only play pre-converted .SAM files
   strcpy(mas_filename, filename);
