@@ -81,6 +81,8 @@ USERS
 + Fixed a regression where turning off music in the settings
   menu and then turning music back on would not start playing
   the music file for the current board.
++ Fixed multiple libvorbis and tremor crashes related to the
+  3DS platform_mutex_lock implementation not blocking.
 
 DEVELOPERS
 

@@ -44,8 +44,7 @@ static inline void platform_mutex_init(platform_mutex *mutex)
 
 static inline boolean platform_mutex_lock(platform_mutex *mutex)
 {
-  if(LightLock_TryLock(mutex))
-    return false;
+  LightLock_Lock(mutex);
   return true;
 }
 
