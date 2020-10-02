@@ -5,14 +5,14 @@
 #define __AMIGA__
 #endif
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include "xmp.h"
 
-#if defined(__GNUC__) || defined(__clang__)
-#if !defined(WIN32) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(__AMIGA__) && !defined(B_BEOS_VERSION) && !defined(__ATHEOS__) && !defined(EMSCRIPTEN) && !defined(__MINT__) 
-/* Force libxmp to link on unix platforms */
-//#define USE_VERSIONED_SYMBOLS
+#if (defined(__GNUC__) || defined(__clang__)) && defined(XMP_SYM_VISIBILITY)
+#if !defined(WIN32) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(__AMIGA__) && !defined(__MSDOS__) && !defined(B_BEOS_VERSION) && !defined(__ATHEOS__) && !defined(EMSCRIPTEN) && !defined(__MINT__)
+#define USE_VERSIONED_SYMBOLS
 #endif
 #endif
 
@@ -37,10 +37,6 @@ typedef unsigned __int64 uint64;
 #elif !defined B_BEOS_VERSION		/* BeOS has its own int64 definition */
 typedef unsigned long long uint64;
 typedef signed long long int64;
-#endif
-
-#ifndef LIBXMP_CORE_PLAYER
-#define LIBXMP_PAULA_SIMULATOR
 #endif
 
 /* Constants */
@@ -106,6 +102,19 @@ void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
 #define D_(args...) do {} while (0)
 #endif
 
+#elif defined(__WATCOMC__)
+#ifdef DEBUG
+#define D_INFO "\x1b[33m"
+#define D_CRIT "\x1b[31m"
+#define D_WARN "\x1b[36m"
+#define D_(...) do { \
+	printf("\x1b[33m%s \x1b[37m[%s:%d] " D_INFO, __FUNCTION__, \
+		__FILE__, __LINE__); printf (__VA_ARGS__); printf ("\x1b[0m\n"); \
+	} while (0)
+#else
+#define D_(...) do {} while (0)
+#endif
+
 #else
 
 #ifdef DEBUG
@@ -125,10 +134,6 @@ void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
 #ifdef _MSC_VER
 #define dup _dup
 #define fileno _fileno
-#if _MSC_VER <= 1800 /* VS2015+ */
-#define snprintf _snprintf
-#define vsnprintf _vsnprintf
-#endif
 #define strnicmp _strnicmp
 #define strdup _strdup
 #define fdopen _fdopen
@@ -386,7 +391,7 @@ struct context_data {
 /* Prototypes */
 
 char	*libxmp_adjust_string	(char *);
-int	libxmp_exclude_match	(char *);
+int	libxmp_exclude_match	(const char *);
 int	libxmp_prepare_scan	(struct context_data *);
 int	libxmp_scan_sequences	(struct context_data *);
 int	libxmp_get_sequence	(struct context_data *, int);
@@ -400,19 +405,21 @@ uint32	read24l			(FILE *, int *err);
 uint32	read24b			(FILE *, int *err);
 uint32	read32l			(FILE *, int *err);
 uint32	read32b			(FILE *, int *err);
-void	write8			(FILE *, uint8);
+static inline void write8	(FILE *f, uint8 b) {
+	fputc(b, f);
+}
 void	write16l		(FILE *, uint16);
 void	write16b		(FILE *, uint16);
 void	write32l		(FILE *, uint32);
 void	write32b		(FILE *, uint32);
 int	move_data		(FILE *, FILE *, int);
 
-uint16	readmem16l		(uint8 *);
-uint16	readmem16b		(uint8 *);
-uint32	readmem24l		(uint8 *);
-uint32	readmem24b		(uint8 *);
-uint32	readmem32l		(uint8 *);
-uint32	readmem32b		(uint8 *);
+uint16	readmem16l		(const uint8 *);
+uint16	readmem16b		(const uint8 *);
+uint32	readmem24l		(const uint8 *);
+uint32	readmem24b		(const uint8 *);
+uint32	readmem32l		(const uint8 *);
+uint32	readmem32b		(const uint8 *);
 
 struct xmp_instrument *libxmp_get_instrument(struct context_data *, int);
 struct xmp_sample *libxmp_get_sample(struct context_data *, int);

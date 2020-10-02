@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -619,6 +619,7 @@ static int read_event_ft2(struct context_data *ctx, struct xmp_event *e, int chn
 	 *  memory). The instrument number next it, however, is not affected
 	 *  and remains in the memory."
 	 */
+	sub = NULL;
 	if (is_valid_note(key - 1)) {
 		int k = key - 1;
 		sub = get_subinstrument(ctx, xc->ins, k);

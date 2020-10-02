@@ -15,6 +15,7 @@ char **format_list(void);
 
 #ifndef LIBXMP_CORE_PLAYER
 #define NUM_FORMATS 22
+#define NUM_PW_FORMATS 43
 #endif
 
 #endif

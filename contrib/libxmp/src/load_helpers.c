@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -135,7 +135,7 @@ static void module_quirks(struct context_data *ctx)
  * Check whether the given string matches one of the blacklisted glob
  * patterns. Used to filter file names stored in archive files.
  */
-int libxmp_exclude_match(char *name)
+int libxmp_exclude_match(const char *name)
 {
 	int i;
 

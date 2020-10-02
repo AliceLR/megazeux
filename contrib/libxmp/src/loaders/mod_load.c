@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -41,7 +41,7 @@
 #include "mod.h"
 
 struct mod_magic {
-	char *magic;
+	const char *magic;
 	int flag;
 	int id;
 	int ch;
@@ -101,7 +101,7 @@ static int validate_pattern(uint8 *buf)
 		for (j = 0; j < 4; j++) {
 			uint8 *d = buf + (i * 4 + j) * 4;
 			if ((d[0] >> 4) > 1) {
-				printf("invalid pattern data: row %d ch %d: %02x\n", i, j, d[0]);
+				D_(D_CRIT "invalid pattern data: row %d ch %d: %02x", i, j, d[0]);
 				return -1;
 			}
 		}
@@ -204,14 +204,17 @@ static int mod_test(HIO_HANDLE * f, char *t, const int start)
 	num_pat++;
 
 	/* see if module size matches UNIC */
-	if (start + 1084 + num_pat * 0x300 + smp_size == size)
+	if (start + 1084 + num_pat * 0x300 + smp_size == size) {
+		D_(D_CRIT "module size matches UNIC");
 		return -1;
+	}
 
 	/* validate pattern data in an attempt to catch UNICs with MOD size */
 	for (count = i = 0; i < num_pat; i++) {
 		hio_seek(f, start + 1084 + 1024 * i, SEEK_SET);
 		hio_read(pat_buf, 1024, 1, f);
 		if (validate_pattern(pat_buf) < 0) {
+			D_(D_WARN "pattern %d: error in pattern data", i);
 			/* Allow a few errors, "lexstacy" has 0x52 */
 			count++;
 		}
@@ -389,7 +392,8 @@ static int mod_load(struct module_data *m, HIO_HANDLE *f, const int start)
     struct xmp_event *event;
     struct mod_header mh;
     uint8 mod_event[4];
-    char *x, pathname[PATH_MAX] = "", *tracker = "";
+    char pathname[PATH_MAX] = "";
+    const char *x, *tracker = "";
     int detected = 0;
     char magic[8], idbuffer[32];
     int ptkloop = 0;			/* Protracker loop */

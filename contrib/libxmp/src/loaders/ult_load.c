@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -106,7 +106,7 @@ static int ult_load(struct module_data *m, HIO_HANDLE *f, const int start)
     struct ult_header2 ufh2;
     struct ult_instrument uih;
     struct ult_event ue;
-    char *verstr[4] = { "< 1.4", "1.4", "1.5", "1.6" };
+    const char *verstr[4] = { "< 1.4", "1.4", "1.5", "1.6" };
 
     int keep_porta1 = 0, keep_porta2 = 0;
     uint8 x8;
