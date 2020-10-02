@@ -66,6 +66,7 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
 
   switch(w_stream->format)
   {
+    case SAMPLE_S8:
     case SAMPLE_U8:
     {
       Sint16 *dest = (Sint16 *)buffer;
@@ -93,9 +94,15 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
 
       data_read = read_len * 2;
 
-      for(i = 0; i < read_len; i++)
+      if(w_stream->format == SAMPLE_U8)
       {
-        dest[i] = (Sint8)(src[i] - 128) << 8;
+        for(i = 0; i < read_len; i++)
+          dest[i] = (Sint16)((src[i] - 128) << 8);
+      }
+      else
+      {
+        for(i = 0; i < read_len; i++)
+          dest[i] = (Sint16)(src[i] << 8);
       }
 
       break;
@@ -400,6 +407,7 @@ static int load_sam_file(const char *file, struct wav_info *spec)
   spec->format = SAMPLE_S8;
   spec->loop_start = 0;
   spec->loop_end = 0;
+  spec->enable_sam_frequency_hack = true;
 
   buf = cmalloc(source_length);
   if(fread(buf, 1, source_length, fp) < source_length)
@@ -489,6 +497,9 @@ static int load_wav_file(const char *file, struct wav_info *spec)
   // Default to no loop
   spec->loop_start = 0;
   spec->loop_end = 0;
+
+  // Not a SAM, so don't enable this hack.
+  spec->enable_sam_frequency_hack = false;
 
   // If the WAV file isn't uncompressed PCM (format 1), let SDL handle it.
   if(read_little_endian16(fmt_chunk) != 1)
@@ -614,6 +625,15 @@ struct audio_stream *construct_wav_stream_direct(struct wav_info *w_info,
   w_stream->bytes_per_sample = w_info->channels;
   w_stream->loop_start = w_info->loop_start;
   w_stream->loop_end = w_info->loop_end;
+
+  /**
+   * Due to a bug in the old SAM to WAV conversion code, the frequency provided
+   * has been halved with respect to what it should have been in DOS versions.
+   * If this wav spec was loaded directly from a SAM or via audio_spot_sample,
+   * reverse this "fix" that is now a permanent compatibility concern.
+   */
+  if(w_info->enable_sam_frequency_hack)
+    frequency *= 2;
 
   if((w_info->format != SAMPLE_U8) && (w_info->format != SAMPLE_S8))
     w_stream->bytes_per_sample *= 2;

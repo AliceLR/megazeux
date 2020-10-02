@@ -201,6 +201,11 @@ static boolean audio_xmp_get_sample(struct audio_stream *a_src, Uint32 which,
       dest->freq = audio_get_real_frequency(SAM_DEFAULT_PERIOD);
       dest->data_length = sam->len;
 
+      // The period provided to audio_spot_sample was doubled for consistency
+      // with the incorrect behavior added to audio_play_sample, so enable SAM
+      // hacks to fix the frequency.
+      dest->enable_sam_frequency_hack = true;
+
       // If the sample loops, the sample this returns needs to loop too.
       if(sam->flg & XMP_SAMPLE_LOOP)
       {

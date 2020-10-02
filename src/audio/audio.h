@@ -50,9 +50,10 @@ struct wav_info
   Uint32 data_length;
   Uint32 channels;
   Uint32 freq;
-  Uint16 format;
   Uint32 loop_start;
   Uint32 loop_end;
+  Uint16 format;
+  boolean enable_sam_frequency_hack;
 };
 
 struct audio_stream
