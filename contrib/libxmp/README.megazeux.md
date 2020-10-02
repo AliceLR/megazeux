@@ -1,6 +1,8 @@
 # MegaZeux libxmp fork.
 
-This is a fork of libxmp generated specifically for MegaZeux.
+This is a fork of libxmp generated specifically for MegaZeux
+from this branch using the file `mzx-gen.sh`: https://github.com/AliceLR/libxmp/tree/mzx-gen-libxmp
+
 The script that generated this forked libxmp from commit
 [92313f6f](https://github.com/AliceLR/libxmp/commit/92313f6f525a8510a2492df4266abcf8f0b45834)
 and applied the following branches as patches:
