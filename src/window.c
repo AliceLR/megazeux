@@ -58,6 +58,7 @@
 #include "util.h"
 #include "io/dir.h"
 #include "io/path.h"
+#include "io/vfile.h"
 
 #include "audio/sfx.h"
 
@@ -65,7 +66,12 @@
 #include <sys/iosupport.h>
 #endif
 
+#ifdef CONFIG_NDS
+// Should be sufficient with a disabled editor.
+#define NUM_SAVSCR 3
+#else
 #define NUM_SAVSCR 6
+#endif
 
 static struct char_element screen_storage[NUM_SAVSCR][SET_SCREEN_SIZE];
 
@@ -387,8 +393,6 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
   force_release_all_keys();
   save_screen();
 
-  cursor_off();
-
   do
   {
     // Draw box and inner box
@@ -441,6 +445,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
 
     x = (current & 31);
     y = (current >> 5);
+    cursor_hint(x + 23, y + 7);
 
     if(get_shift_status(keycode_internal) && allow_multichar)
     {
@@ -790,6 +795,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
   // Prevent UI keys from carrying through.
   force_release_all_keys();
   restore_screen();
+  cursor_off();
 
   return current;
 }
@@ -1003,7 +1009,6 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
   else
     set_context(get_context(NULL));
 
-  cursor_off();
   m_show();
 
   save_screen();
@@ -1030,6 +1035,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
   do
   {
+    cursor_off();
     highlight_element(mzx_world, di, current_element_num);
     update_screen();
 
@@ -1093,7 +1099,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
         if((element_under != -1) &&
          (element_under != current_element_num) &&
-         ((di->elements[element_under])->key_function))
+         ((di->elements[element_under])->click_function))
         {
           unhighlight_element(mzx_world, di, current_element_num);
           current_element_num = element_under;
@@ -1245,12 +1251,14 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     {
       force_release_all_keys();
       pop_context();
+      cursor_off();
       return -1;
     }
 
   } while(di->done != 1);
 
   pop_context();
+  cursor_off();
 
   return di->return_value;
 }
@@ -1355,6 +1363,7 @@ static void draw_radio_button(struct world *mzx_world, struct dialog *di,
   {
     color_line(src->max_length + 4, x, y + *(src->result),
      DI_ACTIVE);
+    cursor_hint(x + 1, y + *(src->result));
   }
 }
 
@@ -1373,6 +1382,9 @@ static void draw_button(struct world *mzx_world, struct dialog *di,
   write_string(src->label, x + 1, y, color, 0);
   draw_char(' ', color, x, y);
   draw_char(' ', color, x + (Uint32)strlen(src->label) + 1, y);
+
+  if(active)
+    cursor_hint(x + 1, y);
 }
 
 static void draw_number_box(struct world *mzx_world, struct dialog *di,
@@ -1388,6 +1400,8 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
     increment = 5;
 
   write_string(src->question, x, y, color, 0);
+  if(active)
+    cursor_hint(x, y);
 
   x += (int)strlen(src->question) + di->pad_space;
 
@@ -1492,6 +1506,9 @@ static void draw_slot_selector(struct world *mzx_world, struct dialog *di,
 
     fill_line(4, slot_x, slot_y, 0, slot_color);
     write_number(i + 1, slot_color, slot_x + 2, slot_y, 1, true, 10);
+
+    if(active && i == src->selected_slot)
+      cursor_hint(slot_x + 1, slot_y);
   }
 }
 
@@ -1507,6 +1524,8 @@ static void draw_file_selector(struct world *mzx_world, struct dialog *di,
 
   write_string(src->title, x, y, color, 0);
   fill_line(width, x, y + 1, 32, DI_LIST);
+  if(active)
+    cursor_hint(x, y);
 
   if(path[0])
   {
@@ -1540,9 +1559,9 @@ static void draw_list_box(struct world *mzx_world, struct dialog *di,
   int scroll_offset = src->scroll_offset;
   const char **choices = src->choices;
   int i, num_draw;
-  int draw_width = choice_length;
   int current_in_window = current_choice - scroll_offset;
   char name_buffer[MAX_NAME_BUFFER];
+  int draw_width = MIN(choice_length, MAX_NAME_BUFFER);
 
   num_draw = num_choices_visible;
 
@@ -1555,9 +1574,8 @@ static void draw_list_box(struct world *mzx_world, struct dialog *di,
   for(i = 0; i < num_draw; i++)
   {
     fill_line(choice_length, x, y + i, 32, DI_LIST);
-    strncpy(name_buffer, choices[scroll_offset + i], draw_width);
-    name_buffer[MAX_NAME_BUFFER - 1] = '\0';
-    name_buffer[draw_width - 1] = 0;
+    snprintf(name_buffer, draw_width, "%s", choices[scroll_offset + i]);
+    name_buffer[draw_width - 1] = '\0';
 
     if(src->respect_color_codes)
       color_string(name_buffer, x, y + i, DI_LIST);
@@ -1579,13 +1597,11 @@ static void draw_list_box(struct world *mzx_world, struct dialog *di,
 
     fill_line(choice_length, x, y + current_in_window,
      32, color);
+    if(active)
+      cursor_hint(x, y + current_in_window);
 
-    strncpy(name_buffer, choices[current_choice], MAX_NAME_BUFFER - 1);
-
-    if(draw_width < MAX_NAME_BUFFER)
-      name_buffer[draw_width - 1] = '\0';
-    else
-      name_buffer[MAX_NAME_BUFFER - 1] = '\0';
+    snprintf(name_buffer, draw_width, "%s", choices[current_choice]);
+    name_buffer[draw_width - 1] = '\0';
 
     if(src->respect_color_codes)
       color_string(name_buffer, x, y + current_in_window, color);
@@ -2812,10 +2828,7 @@ static boolean update_slot_prefix(void)
   size_t fmt_len;
   size_t world_len;
 
-  if(cur_slot_prefix != NULL)
-    free(cur_slot_prefix);
-
-  cur_slot_prefix = cmalloc(sizeof(char) * MAX_PATH);
+  cur_slot_prefix = crealloc(cur_slot_prefix, sizeof(char) * MAX_PATH);
 
   fmt = get_config()->save_slots_name;
   fmt_len = strlen(fmt);
@@ -2933,7 +2946,7 @@ int slot_manager(struct world *mzx_world, char *ret,
       disabled_slots = cmalloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
       for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
       {
-        disabled_slots[i] = !slot_save_exists(cur_slot_prefix, i);
+        disabled_slots[i] = !highlighted_slots[i];
       }
 
       // If the current slot is empty, try to set it to one that isn't.
@@ -2991,8 +3004,8 @@ int slot_manager(struct world *mzx_world, char *ret,
 
     destruct_dialog(&di);
 
-    if(highlighted_slots != NULL) free(highlighted_slots);
-    if(disabled_slots != NULL) free(disabled_slots);
+    free(highlighted_slots);
+    free(disabled_slots);
   }
 
   if(return_value != 0)
@@ -3154,7 +3167,7 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
         if(current_element_num == FILESEL_FILE_LIST)
         {
           struct file_list_entry *entry = (struct file_list_entry *)file_name;
-          strncpy(dest->result, entry->filename, dest->max_length - 1);
+          snprintf(dest->result, dest->max_length, "%s", entry->filename);
           dest->result[dest->max_length - 1] = '\0';
           e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
         }
@@ -3375,7 +3388,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     if(!dir_open(&current_dir, current_dir_name))
       goto skip_dir;
 
-#ifdef CONFIG_3DS
+#if defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
     if(dirs_okay == 1 && strlen(current_dir_name) > 1)
     {
       dir_list[num_dirs] = cmalloc(3);
@@ -3715,7 +3728,7 @@ skip_dir:
 
           if(stat(full_name, &file_info) < 0)
           {
-            mkdir(full_name, 0777);
+            vmkdir(full_name, 0777);
           }
           else
           {

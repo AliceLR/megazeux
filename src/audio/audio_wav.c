@@ -33,7 +33,7 @@
 
 // For WAV loader fallback
 #ifdef CONFIG_SDL
-#include "SDL.h"
+#include <SDL.h>
 #endif
 
 // If the WAV/SAM is larger than this, print a warning to the console.

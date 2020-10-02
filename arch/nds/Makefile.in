@@ -19,6 +19,9 @@ include ${DEVKITARM}/ds_rules
 #
 STRIP  = /bin/true
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 #
 # Override library paths.
 #
@@ -30,15 +33,12 @@ PORTLIBS_INCLUDES := $(foreach dir, $(PORTLIBS), -isystem $(dir)/include)
 PORTLIBS_LIBS     := $(foreach dir, $(PORTLIBS), -L$(dir)/lib)
 
 EXTRA_INCLUDES := ${PORTLIBS_INCLUDES} \
-                 -isystem arch/nds/ndsScreens/build \
-                 -isystem $(DEVKITPRO)/libfat-nds/include \
                  -isystem $(LIBNDS)/include
 
 EXTRA_LIBS := ${PORTLIBS_LIBS} \
-             -Larch/nds/ndsScreens/lib \
-             -L$(DEVKITPRO)/libfat-nds/lib \
-             -L$(LIBNDS)/lib -lfat -lm -lnds9
+             -L$(LIBNDS)/lib -lfat -lm -lnds9 -lmm9
 
+ARCH_CFLAGS   += -marm -mthumb-interwork -march=armv5te -mtune=arm946e-s
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
 ARCH_LDFLAGS  += ${EXTRA_LIBS} -specs=ds_arm9.specs
@@ -50,6 +50,13 @@ arch/nds/%.o: arch/nds/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
 
+arch/nds/render.o: arch/nds/protected_palette.bin.o
+
+arch/nds/%.bin.o arch/nds/%_bin.h : arch/nds/%.bin
+	$(if ${V},,@echo "  AS      " $<)
+	@bin2s -a 32 -H arch/nds/`(echo $(<F) | tr . _)`.h $< > $<.S
+	$(AS) $<.S -o arch/nds/$(<F).o
+
 package: mzx
 	${MAKE} -C arch/nds TARGET=${mzxrun}
 	ndstool -c ${mzxrun}.nds -7 arch/nds/${mzxrun}.arm7.elf -9 ${mzxrun} -b arch/nds/icon.bmp "MegaZeux ${VERSION}"
@@ -57,11 +64,12 @@ package: mzx
 clean:
 	@${MAKE} -C arch/nds TARGET=${mzxrun} clean
 	@rm -f ${mzxrun}.nds arch/nds/*.{d,o}
+	@rm -f arch/nds/protected_palette.bin.S arch/nds/protected_palette_bin.h
 
 #
 # We're only interested in our packaged binary; remove the ELF intermediaries
 #
-build := build/${SUBPLATFORM}/games/megazeux
+build := ${build_root}/games/megazeux
 build: package ${build}
 	${CP} arch/nds/pad.config ${build}
 	${CP} ${mzxrun}.nds ${build}

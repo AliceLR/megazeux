@@ -79,9 +79,6 @@
 #define TEST_WORLD_FILENAME   "__test.mzx"
 #define TEST_WORLD_PATTERN    "__test%d.mzx"
 
-#define FLASH_THING_B         4
-#define FLASH_THING_MAX       8
-
 static const char *const world_ext[] = { ".MZX", NULL };
 static const char *const mzb_ext[] = { ".MZB", NULL };
 static const char *const mzm_ext[] = { ".MZM", NULL };
@@ -184,6 +181,8 @@ struct editor_context
   int flash_char_a;
   int flash_char_b;
   int flash_timer;
+  int flash_timer_swap;
+  int flash_timer_max;
   Uint32 flash_layer;
 
   // Testing
@@ -202,7 +201,7 @@ static boolean editor_reload_world(struct editor_context *editor,
 {
   struct world *mzx_world = ((context *)editor)->world;
 
-  size_t file_name_len = strlen(file) - 4;
+  int file_name_len = strlen(file) - 4;
   char config_file_name[MAX_PATH];
   struct stat file_info;
   boolean ignore;
@@ -215,8 +214,8 @@ static boolean editor_reload_world(struct editor_context *editor,
 
   // Part 2: Now load the new world.editor.cnf.
 
-  strncpy(config_file_name, file, file_name_len);
-  strncpy(config_file_name + file_name_len, ".editor.cnf", 12);
+  snprintf(config_file_name, MAX_PATH, "%.*s.editor.cnf", file_name_len, file);
+  config_file_name[MAX_PATH - 1] = '\0';
 
   if(stat(config_file_name, &file_info) >= 0)
     set_config_from_file(GAME_EDITOR_CNF, config_file_name);
@@ -424,6 +423,22 @@ static void synchronize_board_values(struct editor_context *editor)
 }
 
 /**
+ * Fix the world title after an operation that may have modified the current
+ * board's title. This should be done before fix_caption.
+ */
+static void fix_world_title(struct editor_context *editor)
+{
+  struct world *mzx_world = ((context *)editor)->world;
+  struct board *cur_board = mzx_world->current_board;
+
+  if(mzx_world->current_board_id == 0)
+  {
+    snprintf(mzx_world->name, BOARD_NAME_SIZE, "%s", cur_board->board_name);
+    mzx_world->name[BOARD_NAME_SIZE - 1] = '\0';
+  }
+}
+
+/**
  * Set the caption for the editor.
  */
 static void fix_caption(struct editor_context *editor)
@@ -533,8 +548,18 @@ static void editor_set_current_board(struct editor_context *editor,
     else
       set_current_board(mzx_world, cur_board);
 
-    if(!cur_board->overlay_mode || editor->mode == EDIT_VLAYER)
+    if((editor->mode == EDIT_OVERLAY && !cur_board->overlay_mode) ||
+     editor->mode == EDIT_VLAYER)
+    {
       set_editor_mode(editor, EDIT_BOARD);
+
+      // If there's a block action active, cancel it.
+      if(editor->block.selected)
+      {
+        editor->block.selected = false;
+        editor->cursor_mode = CURSOR_PLACE;
+      }
+    }
 
     synchronize_board_values(editor);
     fix_scroll(editor);
@@ -798,12 +823,24 @@ enum flash_thing_type
 static void flash_thing(struct editor_context *editor,
  enum thing start, enum thing end, int flash_char_a, int flash_char_b)
 {
+  struct editor_config_info *editor_conf = get_editor_config();
+
+  // If the same type of flashing is already enabled, toggle it off instead.
+  if(editor_conf->editor_show_thing_toggles && editor->flashing &&
+   (editor->flash_start == start))
+  {
+    editor->flashing = false;
+    return;
+  }
+
   editor->flashing = true;
   editor->flash_start = start;
   editor->flash_len = end - start + 1;
   editor->flash_char_a = flash_char_a;
   editor->flash_char_b = flash_char_b;
   editor->flash_timer = 0;
+  editor->flash_timer_swap = MAX(1, editor_conf->editor_show_thing_blink_speed);
+  editor->flash_timer_max = MAX(1, editor_conf->editor_show_thing_blink_speed * 2);
 }
 
 /**
@@ -811,13 +848,15 @@ static void flash_thing(struct editor_context *editor,
  */
 static int flash_init(struct editor_context *editor)
 {
+  struct editor_config_info *editor_conf = get_editor_config();
   int chr = editor->flash_char_a;
 
-  if(editor->flash_timer >= FLASH_THING_B)
+  if(editor->flash_timer >= editor->flash_timer_swap)
     chr = editor->flash_char_b;
 
   editor->flash_layer = 0;
-  cursor_off();
+  if(!editor_conf->editor_show_thing_toggles)
+    cursor_off();
   return chr;
 }
 
@@ -826,7 +865,7 @@ static int flash_init(struct editor_context *editor)
  */
 static void flash_done(struct editor_context *editor)
 {
-  editor->flash_timer = (editor->flash_timer + 1) % FLASH_THING_MAX;
+  editor->flash_timer = (editor->flash_timer + 1) % editor->flash_timer_max;
   editor->flash_layer = 0;
 }
 
@@ -946,7 +985,8 @@ static void draw_edit_window(struct editor_context *editor)
     {
       id_put(cur_board, x, y, a_x, a_y, a_x, a_y);
 
-      if(flash_char)
+      // Don't display flashing when the overlay is enabled.
+      if(flash_char && !cur_board->overlay_mode)
         flash_draw(editor, cur_board, x, y, a_x, a_y, flash_char);
     }
   }
@@ -1065,8 +1105,7 @@ static boolean editor_draw(context *ctx)
     insta_fadein();
 
   m_show();
-  cursor_solid();
-  move_cursor(cursor_screen_x, cursor_screen_y);
+  cursor_solid(cursor_screen_x, cursor_screen_y);
 
   // Draw the board/vlayer
   if(editor->mode == EDIT_BOARD)
@@ -1298,12 +1337,16 @@ static boolean editor_idle(context *ctx)
     {
       char backup_name_formatted[MAX_PATH];
       int backup_num = editor->backup_num + 1;
+      int ret;
 
       snprintf(backup_name_formatted, MAX_PATH, "%s%d%s",
        editor_conf->backup_name, backup_num, editor_conf->backup_ext);
 
       // Ensure any subdirectories exist before saving.
-      create_path_if_not_exists(editor_conf->backup_name);
+      ret = path_create_parent_recursively(editor_conf->backup_name);
+      if(ret != PATH_CREATE_SUCCESS)
+        warn("Failed to create backup directory for backup_name='%s' (ret=%d)!\n",
+         editor_conf->backup_name, ret);
 
       save_world(mzx_world, backup_name_formatted, false, MZX_VERSION);
       editor->backup_num = backup_num % editor_conf->backup_count;
@@ -1333,8 +1376,8 @@ static boolean editor_idle(context *ctx)
   fix_history(editor);
 
   // Preempt inputs to cancel flashing mode if active.
-  if(editor->flashing && (get_mouse_status() || get_exit_status() ||
-   get_key(keycode_internal_wrt_numlock)))
+  if(editor->flashing && !editor_conf->editor_show_thing_toggles &&
+   (get_mouse_status() || get_exit_status() || get_key(keycode_internal_wrt_numlock)))
   {
     editor->flashing = false;
     return true;
@@ -1933,6 +1976,13 @@ static boolean editor_key(context *ctx, int *key)
         synchronize_board_values(editor);
         fix_scroll(editor);
         key = 0;
+        return true;
+      }
+      else
+
+      if(editor->flashing)
+      {
+        editor->flashing = false;
         return true;
       }
 
@@ -2649,6 +2699,7 @@ static boolean editor_key(context *ctx, int *key)
                 // Exit vlayer mode if necessary.
                 set_editor_mode(editor, EDIT_BOARD);
                 synchronize_board_values(editor);
+                fix_world_title(editor);
                 fix_scroll(editor);
                 fix_caption(editor);
 
@@ -2772,11 +2823,9 @@ static boolean editor_key(context *ctx, int *key)
         if(editor->mode != EDIT_VLAYER)
         {
           board_info(mzx_world);
-          // If this is the first board, patch the title into the world name
-          if(mzx_world->current_board_id == 0)
-            strcpy(mzx_world->name, cur_board->board_name);
 
           synchronize_board_values(editor);
+          fix_world_title(editor);
           fix_caption(editor);
 
           if(!cur_board->overlay_mode && editor->mode == EDIT_OVERLAY)
@@ -3455,9 +3504,7 @@ static boolean editor_key(context *ctx, int *key)
           strcpy(mzx_world->real_mod_playing,
            cur_board->mod_playing);
 
-          if(mzx_world->current_board_id == 0)
-            mzx_world->name[0] = 0;
-
+          fix_world_title(editor);
           fix_caption(editor);
 
           clear_board_history(editor);
@@ -3663,7 +3710,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   if(reload_curr_file && curr_file[0] &&
    editor_reload_world(editor, curr_file))
   {
-    strncpy(editor->current_world, curr_file, MAX_PATH);
+    memcpy(editor->current_world, curr_file, MAX_PATH);
 
     mzx_world->current_board_id = mzx_world->first_board;
     set_current_board_ext(mzx_world,

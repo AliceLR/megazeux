@@ -29,7 +29,7 @@
 #include "../util.h"
 
 // TODO: deSDL MikMod plugin
-#include "SDL.h"
+#include <SDL.h>
 #include <mikmod.h>
 
 struct mikmod_stream

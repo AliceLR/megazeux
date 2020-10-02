@@ -59,7 +59,6 @@ usage() {
 	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
 	echo "  --disable-sdl           Disables SDL dependencies and features."
 	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
-	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
 	echo "  --enable-pledge         Enable experimental OpenBSD pledge(2) support"
 	echo
 	echo "General options:"
@@ -68,14 +67,13 @@ usage() {
 	echo "  --disable-mzxrun        Disable generation of separate MZXRun."
 	echo "  --disable-helpsys       Disable the built-in help system."
 	echo "  --disable-utils         Disable compilation of utils."
-	echo "  --disable-network       Disable networking abilities."
-	echo "  --disable-updater       Disable built-in updater."
 	echo "  --disable-check-alloc   Disables memory allocator error handling."
 	echo "  --disable-counter-hash  Disables hash tables for counter/string lookups."
 	echo "  --enable-meter          Enable load/save meter display."
 	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
 	echo
 	echo "Graphics options:"
+	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
 	echo "  --disable-software      Disable software renderer."
 	echo "  --disable-softscale     Disable SDL 2 accelerated software renderer."
 	echo "  --disable-gl            Disable all GL renderers."
@@ -97,6 +95,13 @@ usage() {
 	echo "  --disable-vorbis        Disable ogg/vorbis support."
 	echo "  --enable-tremor         Use libvorbisidec instead of libvorbis."
 	echo "  --enable-tremor-lowmem  Use libvorbisidec (lowmem branch) instead of libvorbis."
+	echo
+	echo "Network options:"
+	echo "  --disable-network       Disable networking abilities."
+	echo "  --disable-updater       Disable built-in updater."
+	echo "  --disable-getaddrinfo   Disable getaddrinfo for name resolution."
+	echo "  --disable-poll          Disable poll for socket monitoring."
+	echo "  --disable-ipv6          Disable IPv6 support."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -159,6 +164,9 @@ ICON="true"
 MODULAR="true"
 UPDATER="true"
 NETWORK="true"
+GETADDRINFO="true"
+POLL="true"
+IPV6="true"
 VERBOSE="false"
 METER="false"
 SDL="true"
@@ -172,6 +180,7 @@ TRACE_LOGGING="false"
 STDIO_REDIRECT="false"
 GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
+LAYER_RENDERING="true"
 
 #
 # User may override above settings
@@ -353,6 +362,15 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-network" ] && NETWORK="false"
 	[ "$1" = "--enable-network" ]  && NETWORK="true"
+
+	[ "$1" = "--disable-getaddrinfo" ] && GETADDRINFO="false"
+	[ "$1" = "--enable-getaddrinfo" ]  && GETADDRINFO="true"
+
+	[ "$1" = "--disable-poll" ] && POLL="false"
+	[ "$1" = "--enable-poll" ]  && POLL="true"
+
+	[ "$1" = "--disable-ipv6" ] && IPV6="false"
+	[ "$1" = "--enable-ipv6" ]  && IPV6="true"
 
 	[ "$1" = "--disable-verbose" ] && VERBOSE="false"
 	[ "$1" = "--enable-verbose" ]  && VERBOSE="true"
@@ -710,15 +728,23 @@ if [ "$PLATFORM" = "nds" ]; then
 	echo "#define CONFIG_NDS" >> src/config.h
 	echo "BUILD_NDS=1" >> platform.inc
 
-	echo "Force-disabling audio on NDS (fixme)."
-	AUDIO="false"
-
 	echo "Force-disabling software renderer on NDS."
 	echo "Building custom NDS renderer."
 	SOFTWARE="false"
 
 	echo "Force-disabling hash tables on NDS."
 	COUNTER_HASH="false"
+
+	echo "Force-disabling layer rendering on NDS."
+	LAYER_RENDERING="false"
+
+	echo "Force-disabling existing music playback libraries on NDS."
+	MODPLUG="false"
+	MIKMOD="false"
+	XMP="false"
+	OPENMPT="false"
+	REALITY="false"
+	VORBIS="false"
 fi
 
 #
@@ -736,6 +762,9 @@ if [ "$PLATFORM" = "3ds" ]; then
 
 	echo "Disabling utils on 3DS (silly)."
 	UTILS="false"
+
+	echo "Force-disabling IPv6 on 3DS (not implemented)."
+	IPV6="false"
 fi
 
 #
@@ -752,6 +781,9 @@ if [ "$PLATFORM" = "switch" ]; then
 
 	echo "Force-enabling OpenGL ES support (Switch)."
 	GLES="true"
+
+	echo "Force-disabling IPv6 on Switch (FIXME getaddrinfo seems to not support it)."
+	IPV6="false"
 
 	# This may or may not be totally useless for the Switch, disable it for now.
 	GAMECONTROLLERDB="false"
@@ -911,6 +943,29 @@ fi
 if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
 	echo "Force-disabling networking (no network-dependent features enabled)."
 	NETWORK="false"
+fi
+
+#
+# Force disable getaddrinfo and IPv6 (unsupported platform)
+#
+if [ "$NETWORK" = "true" ] && \
+ [ "$PLATFORM" = "amiga" -o "$PLATFORM" = "wii" -o "$PLATFORM" = "psp" ]; then
+	echo "Force-disabling getaddrinfo name resolution and IPv6 support (unsupported platform)."
+	GETADDRINFO="false"
+	IPV6="false"
+fi
+
+#
+# Force disable poll (unsupported platform)
+# PSPSDK doesn't have this function and old versions of Mac OS X have a bugged
+# implementation. Amiga hasn't been verified, but considering the other things
+# missing, it's probably a safe inclusion.
+#
+if [ "$NETWORK" = "true" ] && \
+ [ "$PLATFORM" = "amiga" -o "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-dist" \
+  -o "$PLATFORM" = "darwin-devel" -o "$PLATFORM" = "psp" ]; then
+	echo "Force-disabling poll (unsupported platform)."
+	POLL="false"
 fi
 
 #
@@ -1199,6 +1254,26 @@ else
 fi
 
 #
+# Frames-per-second counter
+#
+if [ "$FPSCOUNTER" = "true" ]; then
+	echo "fps counter enabled."
+	echo "#define CONFIG_FPS" >> src/config.h
+else
+	echo "fps counter disabled."
+fi
+
+#
+# Layer rendering, if enabled
+#
+if [ "$LAYER_RENDERING" = "true" ]; then
+	echo "Layer rendering enabled."
+else
+	echo "Layer rendering disabled."
+	echo "#define CONFIG_NO_LAYER_RENDERING" >> src/config.h
+fi
+
+#
 # GP2X needs Mikmod, other platforms can pick
 # Keep the default at the bottom so it doesn't override others.
 #
@@ -1338,9 +1413,33 @@ fi
 # Handle networking, if enabled
 #
 if [ "$NETWORK" = "true" ]; then
-        echo "Networking enabled."
+	echo "Networking enabled."
 	echo "#define CONFIG_NETWORK" >> src/config.h
 	echo "BUILD_NETWORK=1" >> platform.inc
+
+	#
+	# Handle networking options.
+	#
+	if [ "$GETADDRINFO" = "true" ]; then
+		echo "getaddrinfo name resolution enabled."
+		echo "#define CONFIG_GETADDRINFO" >> src/config.h
+	else
+		echo "getaddrinfo name resolution disabled."
+	fi
+
+	if [ "$POLL" = "true" ]; then
+		echo "poll enabled."
+		echo "#define CONFIG_POLL" >> src/config.h
+	else
+		echo "poll disabled; falling back to select."
+	fi
+
+	if [ "$IPV6" = "true" ]; then
+		echo "IPv6 support enabled."
+		echo "#define CONFIG_IPV6" >> src/config.h
+	else
+		echo "IPv6 support disabled."
+	fi
 else
 	echo "Networking disabled."
 fi
@@ -1437,16 +1536,6 @@ if [ "$LIBSDL2" = "true" -a "$GAMECONTROLLERDB" = "true" ]; then
 	echo "BUILD_GAMECONTROLLERDB=1" >> platform.inc
 else
 	echo "SDL_GameControllerDB disabled."
-fi
-
-#
-# Frames-per-second counter
-#
-if [ "$FPSCOUNTER" = "true" ]; then
-	echo "fps counter enabled."
-	echo "#define CONFIG_FPS" >> src/config.h
-else
-	echo "fps counter disabled."
 fi
 
 #

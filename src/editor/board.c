@@ -223,8 +223,9 @@ struct board *create_blank_board(struct editor_config_info *conf)
   int layer_size = conf->board_width * conf->board_height;
   int i;
 
+  memset(cur_board->board_name, 0, sizeof(cur_board->board_name));
+
   cur_board->size = 0;
-  cur_board->board_name[0] = 0;
   cur_board->board_width =       conf->board_width;
   cur_board->board_height =      conf->board_height;
   cur_board->overlay_mode =      conf->overlay_enabled;

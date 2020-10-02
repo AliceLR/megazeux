@@ -153,11 +153,10 @@ int error(const char *string, enum error_type type, unsigned int options,
     write_string(temp, 30, 14, 64, 0);
   }
 
-  update_screen();
-
   // Get key
   do
   {
+    update_screen();
     update_event_status_delay();
     t1 = get_key(keycode_internal_wrt_numlock);
 

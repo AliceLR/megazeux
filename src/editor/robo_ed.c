@@ -1875,7 +1875,7 @@ static void replace_current_line(struct robot_editor_context *rstate,
   size_t replace_size = strlen(replace);
   size_t str_size = strlen(str);
 
-  strncpy(new_buffer, current_rline->line_text, COMMAND_BUFFER_LEN - 1);
+  snprintf(new_buffer, COMMAND_BUFFER_LEN, "%s", current_rline->line_text);
   new_buffer[COMMAND_BUFFER_LEN - 1] = '\0';
 
   memmove(new_buffer + r_pos + replace_size,
@@ -1886,7 +1886,7 @@ static void replace_current_line(struct robot_editor_context *rstate,
   rstate->command_buffer = new_buffer;
   update_current_line(rstate);
 
-  strncpy(rstate->command_buffer_space, new_buffer, COMMAND_BUFFER_LEN - 1);
+  memcpy(rstate->command_buffer_space, new_buffer, COMMAND_BUFFER_LEN);
   rstate->command_buffer_space[COMMAND_BUFFER_LEN - 1] = '\0';
   rstate->command_buffer = rstate->command_buffer_space;
 }

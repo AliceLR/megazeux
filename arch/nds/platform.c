@@ -27,17 +27,18 @@
 #include "../../src/util.h"
 
 #include <fat.h>
+#include "platform.h"
 #include "render.h"
 #include "extmem.h"
 #include "dlmalloc.h"
-#include "exception.h"
 
 // from arch/nds/event.c
 extern void nds_update_input(void);
 
 // Timer code stolen from SDL (LGPL)
 
-#define timers2ms(tlow,thigh)(tlow | (thigh<<16)) >> 5
+#define timers2ms(tlow,thigh) ((tlow) | ((thigh)<<16)) >> 7
+#define timers2ticks(tlow,thigh) ((tlow) | ((thigh)<<16))
 
 void delay(Uint32 ms)
 {
@@ -57,7 +58,7 @@ static void timer_init(void)
   // TIMER0, TIMER1: Tick timer
   TIMER0_DATA = 0;
   TIMER1_DATA = 0;
-  TIMER0_CR = TIMER_ENABLE | TIMER_DIV_1024;
+  TIMER0_CR = TIMER_ENABLE | TIMER_DIV_256;
   TIMER1_CR = TIMER_ENABLE | TIMER_CASCADE;
 
   // TIMER2: Input handler IRQ
@@ -70,70 +71,73 @@ static void timer_init(void)
   irqEnable(IRQ_TIMER2);
 }
 
-#ifndef CONFIG_STDIO_REDIRECT
-/*
- * Special handling for debug output
- */
-static __attribute__((format(printf, 2, 0)))
-void handle_debug_info(const char *type, const char *format, va_list args)
-{
-  static unsigned int y = 0;
+#ifdef BUILD_PROFILING
 
-  if(!has_video_initialized())
+#define PROFILE_QUEUE_DEPTH 4
+
+static const char *profile_names[PROFILE_QUEUE_DEPTH];
+static u32 profile_times[PROFILE_QUEUE_DEPTH];
+static int profile_pos = 0;
+
+ITCM_CODE
+void profile_start(const char *name)
+{
+  if(profile_pos < PROFILE_QUEUE_DEPTH)
   {
-    iprintf("%s: ", type);
-    viprintf(format, args);
-    fflush(stdout);
+    profile_names[profile_pos] = name;
+    profile_times[profile_pos] = timers2ticks(TIMER0_DATA, TIMER1_DATA);
   }
-  // TODO: Have a debug console on the subscreen show these.
-  else
+
+  profile_pos++;
+}
+
+ITCM_CODE
+void profile_end(void)
+{
+  u32 ctime;
+
+  if(profile_pos <= 0)
+    return;
+
+  if(--profile_pos < PROFILE_QUEUE_DEPTH)
   {
-    // This is just a hack right now :(
-    char buffer[81];
-    size_t len;
-
-    sprintf(buffer, "%s: ", type);
-    len = strlen(buffer);
-
-    vsnprintf(buffer + len, 80 - len, format, args);
-    buffer[80] = 0;
-
-    write_string(buffer, 0, y, 0x4F, 1);
-    y = (y+1)&7;
+    ctime = timers2ticks(TIMER0_DATA, TIMER1_DATA);
+    iprintf("%s: %lld cycles\n", profile_names[profile_pos], (u64) (ctime - profile_times[profile_pos]) << 8);
   }
 }
 
-void info(const char *format, ...)
-{
-  va_list args;
-  va_start(args, format);
-  handle_debug_info("INFO", format, args);
-  va_end(args);
-}
+#endif
 
-void warn(const char *format, ...)
-{
-  va_list args;
-  va_start(args, format);
-  handle_debug_info("WARNING", format, args);
-  va_end(args);
-}
+// pulled in from libnds - we need to wrap it to undo some of our
+// graphics changes
+extern void guruMeditationDump(void);
 
-#ifdef DEBUG
-void debug(const char *format, ...)
+static void mzxExceptionHandler()
 {
-  va_list args;
-  va_start(args, format);
-  handle_debug_info("DEBUG", format, args);
-  va_end(args);
+  // stop vblank handler
+  irqClear(IRQ_VBLANK);
+
+  // clear sub screen (incl. DMA to it)
+  DMA0_CR = 0;
+  DMA1_CR = 0;
+  DMA2_CR = 0;
+  DMA3_CR = 0;
+  REG_BG0HOFS_SUB = 0;
+  REG_BG0VOFS_SUB = 0;
+
+  videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE);
+  vramSetBankC(VRAM_C_SUB_BG);
+
+  guruMeditationDump();
+  while(1)
+  {
+  }
 }
-#endif // DEBUG
-#endif /* !CONFIG_STDIO_REDIRECT */
 
 boolean platform_init(void)
 {
   powerOn(POWER_ALL_2D);
-  setMzxExceptionHandler();
+  setExceptionHandler(mzxExceptionHandler);
 
   if(!fatInitDefault())
   {
@@ -143,7 +147,8 @@ boolean platform_init(void)
   }
 
 #if !defined(CONFIG_DEBYTECODE)
-  nds_ram_init(DETECT_RAM);
+  if(!isDSiMode())
+    nds_ram_init(DETECT_RAM);
 #endif
   timer_init();
 
@@ -181,6 +186,5 @@ int main(int argc, char *argv[])
     real_main(argc, argv);
   }
 
-  systemShutDown();
-  while(true);
+  return 0;
 }

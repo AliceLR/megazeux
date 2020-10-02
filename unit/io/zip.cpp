@@ -429,9 +429,9 @@ static enum zip_error decompress(zip_method_handler *stream,
 
 UNITTEST(Decompress)
 {
-  std::unique_ptr<char> _buffer(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> _buffer_a(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> _buffer_b(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer_a(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer_b(new char[BUFFER_SIZE]);
   char *buffer = _buffer.get();
   char *buffer_a = _buffer_a.get();
   char *buffer_b = _buffer_b.get();
@@ -542,9 +542,9 @@ UNITTEST(Decompress)
  */
 UNITTEST(Compress)
 {
-  std::unique_ptr<char> _buffer_a(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> _buffer_cmp(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> _buffer_dcmp(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer_a(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer_cmp(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer_dcmp(new char[BUFFER_SIZE]);
   char *buffer_a = _buffer_a.get();
   char *buffer_cmp = _buffer_cmp.get();
   char *buffer_dcmp = _buffer_dcmp.get();
@@ -754,9 +754,9 @@ static const char *zip_get_contents(const zip_test_file_data &df, char *buf,
 
 UNITTEST(ZipRead)
 {
-  std::unique_ptr<char> buffer_ptr(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> db64_ptr(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> file_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> buffer_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> db64_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> file_ptr(new char[BUFFER_SIZE]);
   char *buffer = buffer_ptr.get();
   char *file_buffer = file_ptr.get();
   struct zip_archive *zp;
@@ -959,8 +959,8 @@ UNITTEST(ZipRead)
 
 UNITTEST(ZipWrite)
 {
-  std::unique_ptr<char> verify_ptr(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> db64_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> verify_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> db64_ptr(new char[BUFFER_SIZE]);
   char *verify_buffer = verify_ptr.get();
   // This buffer needs to be resized by C code...
   char *ext_buffer = (char *)cmalloc(32);

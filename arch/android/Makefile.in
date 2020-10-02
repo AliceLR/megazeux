@@ -164,6 +164,17 @@ else
 # Define meta targets.
 #
 
+#
+# Disable everything but the clean rules when no target ABI is selected so
+# nobody accidentally uses them, then add "dist" to "all" and "apk" to "archive"
+# and "build" for convenience.
+#
+SUPPRESS_CC_TARGETS ?= 1
+SUPPRESS_BUILD_TARGETS ?= 1
+SUPPRESS_HOST_TARGETS ?= 1
+all: dist
+archive build: apk
+
 package:
 	$(error "Use 'make dist', 'make apk', 'make deps-install', or 'make deps-uninstall' instead.)
 
@@ -183,17 +194,22 @@ ${ASSETS_DIR}:
 	$(if ${V},,@echo "  MKDIR   " $@)
 	@${MKDIR} -p "$@"
 
-${ASSETS_DIR}/assets.zip: build/android/assets | ${ASSETS_DIR}
+${ASSETS_DIR}/assets.zip: | ${ASSETS_DIR}
+	@${MAKE} ANDROID_TARGET=arm    build/android/assets
 	@(cd build/android/ && zip -9 -r assets.zip LICENSE config.txt assets/ && mv assets.zip ../../$@)
 
 dist: | ${ASSETS_DIR}/assets.zip
 	@${MAKE} ANDROID_TARGET=arm    clean
+	@echo "Building 'arm'."
 	@${MAKE} ANDROID_TARGET=arm    package
 	@${MAKE} ANDROID_TARGET=arm    clean
+	@echo "Building 'arm64'."
 	@${MAKE} ANDROID_TARGET=arm64  package
 	@${MAKE} ANDROID_TARGET=arm64  clean
+	@echo "Building 'i686'."
 	@${MAKE} ANDROID_TARGET=i686   package
 	@${MAKE} ANDROID_TARGET=i686   clean
+	@echo "Building 'x86_64'."
 	@${MAKE} ANDROID_TARGET=x86_64 package
 	@${MAKE} ANDROID_TARGET=x86_64 clean
 
@@ -222,7 +238,6 @@ clean:
 deps-clean:
 	$(if ${V},,@echo "  RM      " arch/android/deps/)
 	@${RM} -r arch/android/deps/
-
 
 endif
 

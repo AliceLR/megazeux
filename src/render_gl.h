@@ -40,7 +40,7 @@ __M_BEGIN_DECLS
 #include <SDL_opengles2.h>
 #endif
 #else
-#include "SDL_opengl.h"
+#include <SDL_opengl.h>
 #endif
 #endif
 

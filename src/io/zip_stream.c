@@ -35,6 +35,7 @@
 #include "zip_shrink.h"
 #endif
 
+#ifdef ZIP_EXTRA_DECOMPRESSORS
 static void zip_stream_close(struct zip_stream_data *zs,
  size_t *final_input_length, size_t *final_output_length)
 {
@@ -45,7 +46,6 @@ static void zip_stream_close(struct zip_stream_data *zs,
     *final_output_length = zs->final_output_length;
 }
 
-#ifdef ZIP_EXTRA_DECOMPRESSORS
 static boolean zip_stream_input(struct zip_stream_data *zs, const void *src,
  size_t src_len)
 {
@@ -119,7 +119,7 @@ static struct zip_method_handler deflate_spec =
 {
   inflate_open,
   deflate_open,
-  zip_stream_close,
+  deflate_close,
   deflate_input,
   deflate_output,
   NULL,

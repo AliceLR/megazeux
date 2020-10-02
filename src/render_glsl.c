@@ -392,6 +392,28 @@ err_out:
   return buffer;
 }
 
+static boolean glsl_scaling_shader_is_default(struct graphics_data *graphics)
+{
+  return graphics->gl_scaling_shader[0] == '\0';
+}
+
+/**
+ * Sets the name of the current scaling shader. If shader is NULL, this will be
+ * set to the default scaling shader.
+ */
+static void glsl_set_scaling_shader(struct graphics_data *graphics,
+ const char *shader)
+{
+  if(shader)
+  {
+    size_t buf_len = ARRAY_SIZE(graphics->gl_scaling_shader);
+    snprintf(graphics->gl_scaling_shader, buf_len, "%s", shader);
+    graphics->gl_scaling_shader[buf_len - 1] = '\0';
+  }
+  else
+    graphics->gl_scaling_shader[0] = '\0';
+}
+
 static GLuint glsl_load_shader(struct graphics_data *graphics,
  enum resource_id res, GLenum type)
 {
@@ -405,7 +427,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
   assert(res >= GLSL_SHADER_RES_FIRST && res <= GLSL_SHADER_RES_LAST);
 
   if(res == GLSL_SHADER_SCALER_VERT || res == GLSL_SHADER_SCALER_FRAG)
-    if(graphics->gl_scaling_shader[0])
+    if(!glsl_scaling_shader_is_default(graphics))
       is_user_scaler = true;
 
   // If we've already seen this shader, it's loaded, and we don't
@@ -458,7 +480,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
       is_user_scaler = false;
 
       if(res == GLSL_SHADER_SCALER_FRAG)
-        graphics->gl_scaling_shader[0] = 0;
+        glsl_set_scaling_shader(graphics, NULL);
 
       source_cache[index] = glsl_load_string(mzx_res_get_by_id(res));
       if(!source_cache[index])
@@ -522,7 +544,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
     if(is_user_scaler)
     {
       // Attempt the default shader
-      graphics->gl_scaling_shader[0] = 0;
+      glsl_set_scaling_shader(graphics, NULL);
       free(source_cache[index]);
       source_cache[index] = NULL;
 
@@ -669,9 +691,10 @@ static boolean glsl_init_video(struct graphics_data *graphics,
   graphics->gl_vsync = conf->gl_vsync;
   graphics->allow_resize = conf->allow_resize;
   graphics->gl_filter_method = conf->gl_filter_method;
-  graphics->gl_scaling_shader = conf->gl_scaling_shader;
   graphics->ratio = conf->video_ratio;
   graphics->bits_per_pixel = 32;
+
+  glsl_set_scaling_shader(graphics, conf->gl_scaling_shader);
 
   // OpenGL only supports 16/32bit colour
   if(conf->force_bpp == 16 || conf->force_bpp == 32)
@@ -1419,25 +1442,28 @@ static void glsl_sync_screen(struct graphics_data *graphics)
 #endif
 }
 
-static void glsl_switch_shader(struct graphics_data *graphics,
+static boolean glsl_switch_shader(struct graphics_data *graphics,
  const char *name)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   int index = GLSL_SHADER_SCALER_VERT - GLSL_SHADER_RES_FIRST;
 
-  if(source_cache[index]) free(source_cache[index]);
+  free(source_cache[index]);
   source_cache[index] = NULL;
 
   index = GLSL_SHADER_SCALER_FRAG - GLSL_SHADER_RES_FIRST;
-  if(source_cache[index]) free(source_cache[index]);
+  free(source_cache[index]);
   source_cache[index] = NULL;
 
-  strncpy(graphics->gl_scaling_shader, name, 32);
-  graphics->gl_scaling_shader[31] = 0;
+  glsl_set_scaling_shader(graphics, name);
 
   glsl.glDeleteProgram(render_data->scaler_program);
   gl_check_error();
 
+  /**
+   * If the user-specified shader fails to load, this will fall back to the
+   * default scaling shader.
+   */
   render_data->scaler_program = glsl_load_program(graphics,
    GLSL_SHADER_SCALER_VERT, GLSL_SHADER_SCALER_FRAG);
   if(render_data->scaler_program)
@@ -1450,6 +1476,7 @@ static void glsl_switch_shader(struct graphics_data *graphics,
     glsl_verify_link(render_data, render_data->scaler_program);
     glsl_delete_shaders(render_data->scaler_program);
   }
+  return !glsl_scaling_shader_is_default(graphics);
 }
 
 void render_glsl_register(struct renderer *renderer)

@@ -4,6 +4,9 @@ AR      = emar
 OBJCOPY = /bin/true
 STRIP   = /bin/true
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 SDL_CFLAGS = -s USE_SDL=2
 SDL_LDFLAGS = -s USE_SDL=2
 
@@ -81,9 +84,6 @@ emzip.js: arch/emscripten/emzip.c ${emzip_objs}
 	-s EXPORT_NAME="'emzip'" \
 	-s "EXPORTED_RUNTIME_METHODS=['_main', 'UTF8ToString']" \
 	$< ${emzip_objs} ${ZLIB_LDFLAGS} -o $@
-
-# Normally not defined yet...
-build := build/${SUBPLATFORM}
 
 ${build}/mzxrun.js: ${build}
 	@cp mzxrun.js ${build}/

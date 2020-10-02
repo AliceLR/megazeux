@@ -1,9 +1,10 @@
 ##
 # MegaZeux Build System (GNU Make)
 #
-# NOTE: This build system was recently re-designed to not use recursive
-#       Makefiles. The rationale for this is documented here:
-#                  http://aegis.sourceforge.net/auug97.pdf
+# NOTE: This build system is designed to not use recursive Makefiles.
+#       The rationale for this is documented here:
+#
+# https://web.archive.org/web/20200128044903/http://aegis.sourceforge.net/auug97.pdf
 ##
 
 #
@@ -17,11 +18,23 @@ endif
 .PHONY: all clean help_check mzx mzx.debug build build_clean source
 .PHONY: test unittest test_clean unit_clean
 
+#
+# Define this first so arch-specific rules don't hijack the default target.
+#
+all:
+
 -include platform.inc
 include version.inc
 
-all: mzx
-debuglink: all mzx.debug
+#
+# ${build_root}: base location where builds are copied to be archived for release.
+# ${build}: location where the MegaZeux executable and data files should be placed.
+# Defaults to ${build_root}, but the architecture Makefile may override this to
+# use a subdirectory instead. This is useful when a platform expects a particular
+# path hierarchy within the archive (e.g. MacOS .app bundles).
+#
+build_root := build/${SUBPLATFORM}
+build := ${build_root}
 
 -include arch/${PLATFORM}/Makefile.in
 
@@ -48,6 +61,8 @@ include arch/compat.inc
 #
 
 ifeq (${BUILD_SDL},1)
+
+SDL_PREFIX ?= ${PREFIX}
 
 #
 # SDL 2
@@ -256,6 +271,7 @@ endif
 #
 ifeq (${HAS_W_NO_FORMAT_TRUNCATION},1)
 CFLAGS   += -Wno-format-truncation
+CXXFLAGS += -Wno-format-truncation
 endif
 
 #
@@ -372,11 +388,19 @@ build/${TARGET}src:
 	@tar -C build -Jcf build/dist/source/${TARGET}src.tar.xz ${TARGET}
 
 #
-# The SUPPRESS_BUILD hack is required to allow the placebo "dist"
+# The SUPPRESS_ALL_TARGETS hack is required to allow the placebo "dist"
 # Makefile to provide an 'all:' target, which allows it to print
-# a message. We don't want to pull in other targets, confusing Make.
+# a message. Pulling in any other targets would confuse Make.
 #
-ifneq (${SUPPRESS_BUILD},1)
+# Additionally, there are several other SUPPRESS flags that can be set to
+# conditionally disable rules. This is useful for cross-compiling builds that
+# have no use for host-based rules or for platforms that use meta targets.
+#
+# * SUPPRESS_CC_TARGETS prevents "mzx", etc from being added to "all".
+# * SUPPRESS_BUILD_TARGETS suppresses "build".
+# * SUPPRESS_HOST_TARGETS suppresses "assets/help.fil", "test", etc.
+#
+ifneq (${SUPPRESS_ALL_TARGETS},1)
 
 mzxrun = mzxrun${BINEXT}
 mzx = megazeux${BINEXT}
@@ -408,20 +432,32 @@ include src/Makefile.in
 
 clean: mzx_clean test_clean unit_clean
 
-ifeq (${BUILD_UTILS},1)
-include src/utils/Makefile.in
-debuglink: utils utils.debug
-clean: utils_clean
-all: utils
+ifneq (${SUPPRESS_CC_TARGETS},1)
+all: mzx
+debuglink: all mzx.debug
 endif
 
-ifeq (${build},)
-build := build/${SUBPLATFORM}
+ifeq (${BUILD_UTILS},1)
+include src/utils/Makefile.in
+clean: utils_clean
+ifneq (${SUPPRESS_CC_TARGETS},1)
+debuglink: utils utils.debug
+all: utils
 endif
+endif
+
+ifneq (${SUPPRESS_BUILD_TARGETS},1)
+
+ifeq (${build},)
+build := ${build_root}
+endif
+
+.PHONY: ${build}
 
 build: ${build} ${build}/assets ${build}/docs
 
 ${build}:
+	${RM} -r ${build_root}
 	${MKDIR} -p ${build}
 	${CP} config.txt LICENSE ${build}
 	@if test -f ${mzxrun}; then \
@@ -451,15 +487,16 @@ ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
+	${CP} ${ccv} ${build}/utils
+	@if [ -f "${checkres}.debug" ]; then cp ${checkres}.debug ${build}/utils; fi
+	@if [ -f "${downver}.debug" ]; then cp ${downver}.debug ${build}/utils; fi
+	@if [ -f "${hlp2txt}.debug" ]; then cp ${hlp2txt}.debug ${build}/utils; fi
+	@if [ -f "${txt2hlp}.debug" ]; then cp ${txt2hlp}.debug ${build}/utils; fi
+	@if [ -f "${ccv}.debug" ]; then cp ${ccv}.debug ${build}/utils; fi
 ifeq (${LIBPNG},1)
 	${CP} ${png2smzx} ${build}/utils
+	@if [ -f "${png2smzx}.debug" ]; then cp ${png2smzx}.debug ${build}/utils; fi
 endif
-	${CP} ${ccv} ${build}/utils
-	@if test -f ${checkres}.debug; then \
-		cp ${checkres}.debug ${downver}.debug ${build}/utils; \
-		cp ${hlp2txt}.debug  ${txt2hlp}.debug ${build}/utils; \
-		cp ${png2smzx}.debug ${build}/utils; \
-	fi
 endif
 
 ${build}/docs: ${build}
@@ -493,10 +530,14 @@ ifeq (${BUILD_GAMECONTROLLERDB},1)
 	 ${build}/assets
 endif
 
+endif # !SUPPRESS_BUILD_TARGETS
+
 distclean: clean
 	@echo "  DISTCLEAN"
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
+
+ifneq (${SUPPRESS_HOST_TARGETS},1)
 
 assets/help.fil: ${txt2hlp} docs/WIPHelp.txt
 	$(if ${V},,@echo "  txt2hlp " $@)
@@ -516,12 +557,14 @@ help_check: ${hlp2txt} assets/help.fil
 
 test: unittest
 ifeq (${BUILD_MODULAR},1)
-	@${SHELL} testworlds/run.sh ${PLATFORM} ${core_target}
+	@${SHELL} testworlds/run.sh ${PLATFORM} "$(realpath ${core_target})"
 else
 	@${SHELL} testworlds/run.sh ${PLATFORM}
 endif
 
+endif # !SUPPRESS_HOST_TARGETS
+
 test_clean:
 	@rm -rf testworlds/log
 
-endif
+endif # !SUPPRESS_ALL_TARGETS

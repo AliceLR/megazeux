@@ -4471,8 +4471,8 @@ static char *assemble_command(char *src, char **_output)
     int newline_pos = strcspn(src, "\n");
     if(newline_pos > 0)
     {
-      strncpy(short_output, src, newline_pos);
-      short_output[newline_pos] = 0;
+      snprintf(short_output, sizeof(short_output), "%.*s", newline_pos, src);
+      short_output[sizeof(short_output) - 1] = 0;
       warn("Failed to assemble command: %s\n", short_output);
     }
   }

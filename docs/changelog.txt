@@ -2,6 +2,16 @@ GIT
 
 USERS
 
++ Added audio support to the NDS port. PC speaker effects and
+  .SAM files will work out of the box, but .MOD/.S3M/.XM/.IT
+  files require preconversion to .MAS using mmutil. All other
+  audio formats are unsupported. (asie)
+  Example:
+
+    mmutil -d -m CV_TECH.MOD
+
++ Added protected character set and palette support to the NDS
+  port and reduced overall RAM usage for the NDS port. (asie)
 + Fixed graphics corruption when using the glsl and opengl2
   renderers on big endian platforms.
 + Fixed a bug that would cause string searches to sometimes skip
@@ -16,6 +26,107 @@ USERS
 + Fixed a bug where the GLSL renderer could attempt to load the
   framebuffer symbols from a driver that doesn't support them
   when resizing the window.
++ Fixed a bug where checkres wouldn't correctly detect
+  "LOAD_ROBOT#" when used to load to a specific robot.
++ Fixed a memory leak when printing network error messages in
+  Windows builds.
++ Fixed a potential crash bug in the netcode where socket IDs
+  could be reused after close() when attempting to connect.
++ Fixed a crash bug affecting the compatibility implementation
+  of getaddrinfo() that would occur if NULL was returned by
+  gethostbyname() during DNS resolution.
++ Fixed a potential crash in the compatibility implementation of
+  getaddrinfo() caused by gethostbyname() being thread-unsafe.
++ Fixed a bug where the updater would hang for up to 10 seconds
+  due to connections timing out during the confirmation UI.
++ Fixed a bug where the local manifest.txt would be overwritten
+  by the remote manifest, potentially causing bugs. The local
+  manifest will now be replaced only after a successful update.
++ Fixed bugs where the HTTP layer would filter header names,
+  content/transfer coding values, and content type values too
+  strictly.
++ Fixed a bug where INPUT STRING would display newlines from
+  an interpolated string.
++ MZX now validates the world version of encrypted worlds before
+  offering to decrypt them. This should reduce the chance of
+  accidentally "decrypting" a corrupted file and prevents MZX
+  from attempting to decrypt MZX 1.x files (which store the
+  password differently).
++ Added config settings "editor_show_thing_blink_speed" and
+  "editor_show_thing_toggles". The former controls the blinking
+  speed of the show thing (Shift+F2 et al.) editor keys and the
+  latter allows these keys to be treated as a toggle instead of
+  blocking input.
++ Added SOCKS5 IPv6 and username/password support.
++ Added "network_address_family" config setting to allow users
+  to force either IPv4 or IPv6 connections/name resolution. By
+  default, MZX will now request either or both depending on the
+  system IP address configuration (previously, it was hardcoded
+  to only allow IPv4 despite IPv6 support being implemented).
++ The config setting "updater_enabled" has been added to turn
+  off the updater system entirely without disabling networking.
++ The updater now allows update checks to be performed even when
+  a full update wouldn't be possible, and should be more helpful
+  about printing warnings to the console when this situation
+  occurs.
++ Enabled rewinddir hack and .. file manager hacks for Nintendo
+  Switch builds to fix the file manager and directory seeking.
++ Fixed a bug where importing a board over the title board would
+  not update the world title.
++ Fixed a crash that could be caused by selecting a block on the
+  overlay/vlayer, changing boards, then pressing enter.
++ Fixed a bug where the currently playing PC speaker note would
+  play for the rest of its duration after turning off PC speaker
+  sound effects, after "end play", after exiting gameplay, etc.
++ Fixed a regression where turning off music in the settings
+  menu and then turning music back on would not start playing
+  the music file for the current board.
++ Fixed multiple libvorbis and tremor crashes related to the
+  3DS platform_mutex_lock implementation not blocking.
+
+DEVELOPERS
+
++ The test worlds now run correctly when AddressSanitizer is
+  enabled.
++ The SUPPRESS_BUILD Makefile flag has been split into several
+  flags, allowing more granularity for disabling default rules.
+  The Android and Darwin "dist" meta targets use these flags to
+  to disable the default "all" target, so "make" can now be used
+  in place of "make dist" for these platforms.
++ Using "make build" will now remove the build/${SUBPLATFORM}
+  directory if it exists before preparing a build. Before, using
+  "make build" when the platform build directory already exists
+  would not copy any updated binaries/assets/etc., potentially
+  causing confusion.
++ The check_alloc series of functions should now be thread safe.
+  The main thread will display a fatal error as usual when
+  allocation fails; others threads will print a warning and
+  return NULL.
++ Added implementations of new/delete/__cxa_pure_virtual that
+  can be linked to avoid linking libstdc++/libc++ on platforms
+  and configurations that otherwise don't need those libraries.
++ Refactored the netcode to use C++ instead of/in addition to C,
+  allowing some cleanup that otherwise wouldn't have worked.
+  Host::bind, Host::listen, Host::accept, and Host::poll are no
+  longer disabled. Other network deadcode functions have been
+  updated but are still disabled.
++ Fixed FD_ISSET in the Windows netcode.
++ Added a EAI_AGAIN define for the getaddrinfo() fallback.
++ Fixed leak of updates.txt file pointers in the updater that
+  could occur when updates.txt fails to download. The updater
+  now downloads updates.txt to a buffer instead of to disk.
++ Added graphics.renderer.hardware_cursor for platforms with
+  hardware cursors that may need to be updated during any frame
+  regardless of the current cursor state/blinking (i.e. DJGPP).
++ Fixed "make build" error after using "make debuglink" with png
+  support disabled.
++ Added const and restrict to the software render_graph and
+  render_layer implementations for a small performance boost.
++ Added --disable-getaddrinfo and --disable-ipv6 config.sh flags
+  to allow disabling these for old platforms and consoles SDKs.
+  Amiga, Wii, and PSP network builds force-disable these. Switch
+  and 3DS builds currently force-disable IPv6.
++ Added experimental network support for Wii, Switch, and 3DS.
 
 
 July 20th, 2020 - MZX 2.92e
