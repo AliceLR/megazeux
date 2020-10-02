@@ -36,11 +36,6 @@
 #include "hio.h"
 #include "tempfile.h"
 
-#if defined(LIBXMP_CORE_PLAYER) && !defined(LIBXMP_NO_DEPACKERS)
-#define LIBXMP_NO_DEPACKERS
-#endif
-
-#ifndef LIBXMP_CORE_PLAYER
 #ifndef LIBXMP_NO_DEPACKERS
 #if !defined(HAVE_POPEN) && defined(WIN32)
 #include "win32/ptpopen.h"
@@ -51,7 +46,8 @@
 #define pclose _pclose
 #define HAVE_POPEN 1
 #endif
-#endif /* LIBXMP_NO_DEPACKERS */
+#endif
+#ifndef LIBXMP_CORE_PLAYER
 #include "md5.h"
 #include "extras.h"
 #endif
