@@ -120,7 +120,7 @@ struct renderer
                                 int *min_y, int *max_x, int *max_y);
   void    (*set_screen_coords)(struct graphics_data *, int x, int y,
                                 int *screen_x, int *screen_y);
-  void    (*switch_shader)    (struct graphics_data *, const char *name);
+  boolean (*switch_shader)    (struct graphics_data *, const char *name);
   void    (*render_graph)     (struct graphics_data *);
   void    (*render_layer)     (struct graphics_data *, struct video_layer *);
   void    (*render_cursor)    (struct graphics_data *, Uint32 x, Uint32 y,
@@ -197,8 +197,8 @@ struct graphics_data
   Uint32 default_smzx_loaded;
   enum ratio_type ratio;
   enum gl_filter_type gl_filter_method;
-  char *gl_scaling_shader;
   int gl_vsync;
+  char gl_scaling_shader[32];
 
   Uint8 default_charset[CHAR_SIZE * CHARSET_SIZE];
 

@@ -2820,10 +2820,7 @@ void focus_pixel(int x, int y)
 boolean switch_shader(const char *name)
 {
   if(graphics.renderer.switch_shader)
-    graphics.renderer.switch_shader(&graphics, name);
-
-  if(graphics.gl_scaling_shader[0])
-    return true;
+    return graphics.renderer.switch_shader(&graphics, name);
 
   return false;
 }
