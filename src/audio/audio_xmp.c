@@ -215,10 +215,11 @@ static boolean audio_xmp_get_sample(struct audio_stream *a_src, Uint32 which,
       else
         dest->loop_start = dest->loop_end = 0;
 
-      // XMP samples are signed, and if 16bit, LSB, so just copy it directly.
+      // XMP samples are signed, and if 16bit, use the system byte order.
+      // MZX supports all of these, so just copy the sample directly.
       if(sam->flg & XMP_SAMPLE_16BIT)
       {
-        dest->format = SAMPLE_S16LSB;
+        dest->format = SAMPLE_S16SYS;
         dest->data_length *= 2;
       }
       else

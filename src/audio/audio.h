@@ -39,6 +39,12 @@ __M_BEGIN_DECLS
 // Default period for .SAM files.
 #define SAM_DEFAULT_PERIOD 428
 
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+#define SAMPLE_S16SYS SAMPLE_S16MSB
+#else
+#define SAMPLE_S16SYS SAMPLE_S16LSB
+#endif
+
 enum wav_format
 {
   SAMPLE_U8,

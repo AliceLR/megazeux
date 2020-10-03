@@ -86,6 +86,8 @@ USERS
 + Fixed audio frequency bugs in .SAM file playback.
 + Certain .WAV subtypes handled by SDL_LoadWav should now load
   properly on big endian machines.
++ Signed 16-bit samples should now work correctly with mod sam
+  on big endian machines.
 
 DEVELOPERS
 

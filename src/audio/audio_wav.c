@@ -41,12 +41,6 @@
 // anticipated use big WAVs and it could get annoying for end users.)
 #define WARN_FILESIZE (1<<22)
 
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-#define SAMPLE_S16SYS SAMPLE_S16MSB
-#else
-#define SAMPLE_S16SYS SAMPLE_S16LSB
-#endif
-
 struct wav_stream
 {
   struct sampled_stream s;
