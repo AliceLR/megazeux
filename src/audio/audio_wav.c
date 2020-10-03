@@ -41,6 +41,12 @@
 // anticipated use big WAVs and it could get annoying for end users.)
 #define WARN_FILESIZE (1<<22)
 
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+#define SAMPLE_S16SYS SAMPLE_S16MSB
+#else
+#define SAMPLE_S16SYS SAMPLE_S16LSB
+#endif
+
 struct wav_stream
 {
   struct sampled_stream s;
@@ -50,18 +56,18 @@ struct wav_stream
   Uint32 channels;
   Uint32 bytes_per_sample;
   Uint32 natural_frequency;
-  Uint16 format;
   Uint32 loop_start;
   Uint32 loop_end;
+  enum wav_format format;
 };
 
 static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
  Uint32 len, Uint32 repeat)
 {
   Uint8 *src = (Uint8 *)w_stream->wav_data + w_stream->data_offset;
-  Uint32 data_read;
+  Uint32 data_read = 0;
   Uint32 read_len = len;
-  Uint32 new_offset;
+  Uint32 new_offset = w_stream->data_offset;
   Uint32 i;
 
   switch(w_stream->format)
@@ -85,8 +91,7 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
       }
 
       if(repeat && (w_stream->data_offset < w_stream->loop_end) &&
-       (w_stream->data_offset + read_len >= w_stream->loop_end) &&
-       (w_stream->loop_start < w_stream->loop_end))
+       (w_stream->data_offset + read_len >= w_stream->loop_end))
       {
         read_len = w_stream->loop_end - w_stream->data_offset;
         new_offset = w_stream->loop_start;
@@ -108,7 +113,8 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
       break;
     }
 
-    default:
+    case SAMPLE_S16LSB:
+    case SAMPLE_S16MSB:
     {
       Uint8 *dest = (Uint8 *) buffer;
 
@@ -130,20 +136,19 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
         new_offset = w_stream->loop_start;
       }
 
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-      // swap bytes on big endian machines
-      for(i = 0; i < read_len; i += 2)
+      if(w_stream->format != SAMPLE_S16SYS)
       {
-        dest[i] = src[i + 1];
-        dest[i + 1] = src[i];
+        // Swap bytes to match the current platform endianness...
+        for(i = 0; i < read_len; i += 2)
+        {
+          dest[i] = src[i + 1];
+          dest[i + 1] = src[i];
+        }
       }
-#else
-      // no swap necessary on little endian machines
-      memcpy(dest, src, read_len);
-#endif
+      else
+        memcpy(dest, src, read_len);
 
       data_read = read_len;
-
       break;
     }
   }
@@ -525,9 +530,19 @@ static int load_wav_file(const char *file, struct wav_info *spec)
         case AUDIO_S16LSB:
           spec->format = SAMPLE_S16LSB;
           break;
+        // May be returned by SDL on big endian machines.
+        case AUDIO_S16MSB:
+          spec->format = SAMPLE_S16MSB;
+          break;
+        /**
+         * TODO: SDL 2.0 can technically return AUDIO_S32LSB or AUDIO_F32LSB.
+         * Support for these would be trivial to add but might encourage worse
+         * abuse of .WAV support (as those formats are twice the size of S16).
+         */
         default:
-         free(copy_buf);
-         goto exit_close;
+          warn("Unsupported WAV SDL_AudioFormat 0x%x! Report this!\n", sdlspec.format);
+          free(copy_buf);
+          goto exit_close;
       }
 
       goto exit_close_success;

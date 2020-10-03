@@ -36,13 +36,16 @@ __M_BEGIN_DECLS
 #include "modplug.h"
 #endif
 
-// WAV sample types
-#define SAMPLE_U8     0
-#define SAMPLE_S8     1
-#define SAMPLE_S16LSB 2
-
 // Default period for .SAM files.
 #define SAM_DEFAULT_PERIOD 428
+
+enum wav_format
+{
+  SAMPLE_U8,
+  SAMPLE_S8,
+  SAMPLE_S16LSB,
+  SAMPLE_S16MSB
+};
 
 struct wav_info
 {
@@ -52,7 +55,7 @@ struct wav_info
   Uint32 freq;
   Uint32 loop_start;
   Uint32 loop_end;
-  Uint16 format;
+  enum wav_format format;
   boolean enable_sam_frequency_hack;
 };
 
