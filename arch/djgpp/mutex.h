@@ -38,6 +38,11 @@ static inline void platform_mutex_init(platform_mutex *mutex)
   *mutex = 0;
 }
 
+static inline void platform_mutex_destroy(platform_mutex *mutex)
+{
+  *mutex = 0;
+}
+
 static inline boolean platform_mutex_lock(platform_mutex *mutex)
 {
   *mutex = disable();
