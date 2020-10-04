@@ -7,6 +7,15 @@ The script that generated this forked libxmp from commit
 [92313f6f](https://github.com/AliceLR/libxmp/commit/92313f6f525a8510a2492df4266abcf8f0b45834)
 and applied the following branches as patches:
 
+* [mingw-snprintf](https://github.com/AliceLR/libxmp/tree/mingw-snprintf):
+  disables the usage of libxmp_snprintf and libxmp_vsnprintf in Windows for MSVC 2015+
+  and for MinGW when using `__USE_MINGW_ANSI_STDIO`, which are both standard for MZX
+  Windows builds.
+* [add-libxmp-no-depackers](https://github.com/AliceLR/libxmp/tree/add-libxmp-no-depackers):
+  adds a define that allows the depackers to be disabled entirely. MegaZeux uses
+  this since depackers have never been supported by MegaZeux, aren't really
+  needed for MegaZeux games, and removing them reduces the executable size.
+  Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/172
 * [mzx-integration-hacks](https://github.com/AliceLR/libxmp/tree/mzx-integration-hacks):
   adds some defines to the start of xmp.h to hack various things to act
   the way MZX would prefer, since this copy of libxmp needs to build static
@@ -18,11 +27,6 @@ and applied the following branches as patches:
   be mistaken for other formats (misc. formats for MOD, MED derivatives for MED).
   This keeps the MZX supported formats list roughly the same between libmodplug,
   mikmod, and libxmp and helps reduce executable size for embedded platforms.
-* [add-libxmp-no-depackers](https://github.com/AliceLR/libxmp/tree/add-libxmp-no-depackers):
-  adds a define that allows the depackers to be disabled entirely. MegaZeux uses
-  this since depackers have never been supported by MegaZeux, aren't really
-  needed for MegaZeux games, and removing them reduces the executable size.
-  Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/172
 * [fix-xmp-load-module-from-file](https://github.com/AliceLR/libxmp/tree/fix-xmp-load-module-from-file):
   removes erroneous usage of fdopen that was causing portability issues.
   Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/173
