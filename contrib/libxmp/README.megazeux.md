@@ -11,6 +11,7 @@ and applied the following branches as patches:
   disables the usage of libxmp_snprintf and libxmp_vsnprintf in Windows for MSVC 2015+
   and for MinGW when using `__USE_MINGW_ANSI_STDIO`, which are both standard for MZX
   Windows builds.
+  Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/175
 * [add-libxmp-no-depackers](https://github.com/AliceLR/libxmp/tree/add-libxmp-no-depackers):
   adds a define that allows the depackers to be disabled entirely. MegaZeux uses
   this since depackers have never been supported by MegaZeux, aren't really

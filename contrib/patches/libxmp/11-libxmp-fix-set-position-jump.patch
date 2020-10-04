@@ -1,0 +1,14 @@
+diff --git a/src/control.c b/src/control.c
+index b1adfe11..b5629d1d 100644
+--- a/src/control.c
++++ b/src/control.c
+@@ -121,6 +121,9 @@ static void set_position(struct context_data *ctx, int pos, int dir)
+ 			} else {
+ 				p->pos = pos;
+ 			}
++			f->jumpline = 0;
++			f->jump = -1;
++			f->pbreak = 0;
+ 		}
+ 	}
+ }
