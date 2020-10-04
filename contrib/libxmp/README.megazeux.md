@@ -50,3 +50,12 @@ removal should no longer be necessary.
 See README and docs/COPYING.LIB for more libxmp information and the libxmp license.
 See the upstream repository for the original libxmp, which you should probably use
 instead of this hacked up copy for most purposes: https://github.com/cmatsuoka/libxmp/
+
+## Pending MZX-specific hacks
+
+* asie contributed a patch for tracker detection removal in the S3M and IT loaders.
+  This is not currently used by MZX and could save about 2-3kb RAM. This might be
+  worth looking into someday. https://github.com/AliceLR/megazeux/pull/202
+* There are also IceTracker/ST2.6 and Archimedes cleanup patches attached to that
+  which saved far less RAM. If something ends up desperate for 1kb of RAM this could
+  be looked at too.
