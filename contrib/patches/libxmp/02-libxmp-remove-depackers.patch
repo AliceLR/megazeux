@@ -1,0 +1,566 @@
+diff --git a/Makefile.in b/Makefile.in
+index 3abab7e9..8eaefb75 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -7,10 +7,16 @@ VERSION		= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_RELEASE)
+ # This dylib will support anything linked against COMPAT_VERSION through VERSION
+ COMPAT_VERSION	= $(VERSION_MAJOR)
+ 
++# Module depacker functionality. To disable: make USE_DEPACKERS=0
++USE_DEPACKERS	= 1
++
+ CC		= @CC@
+ CFLAGS		= -c @CFLAGS@ @DEFS@ -D_REENTRANT
+ CFLAGS_SHARED	= @CFLAGS_SHARED@
+ CFLAGS_STATIC	= -DBUILDING_STATIC
++ifeq ($(USE_DEPACKERS),0)
++CFLAGS		+= -DLIBXMP_NO_DEPACKERS
++endif
+ LD		= @CC@
+ LDFLAGS		= @LDFLAGS@
+ LIBS		= @LIBS@
+@@ -63,10 +69,14 @@ include src/depackers/Makefile
+ include src/os2/Makefile
+ include src/win32/Makefile
+ include test/Makefile
++ALL_OBJS=$(OBJS)
++ifeq ($(USE_DEPACKERS),1)
++ALL_OBJS+= $(DEPACKER_OBJS)
++endif
+ 
+-LOBJS = $(OBJS:.o=.lo)
++LOBJS = $(ALL_OBJS:.o=.lo)
+ 
+-GCOBJS = $(OBJS:.o=.gco)
++GCOBJS = $(ALL_OBJS:.o=.gco)
+ 
+ CFLAGS += -Iinclude -Isrc
+ 
+@@ -97,9 +107,9 @@ dll: lib/$(DLL)
+ 
+ dylib: lib/$(DYLIB)
+ 
+-lib/$(LIB): $(OBJS)
++lib/$(LIB): $(ALL_OBJS)
+ 	@mkdir -p lib
+-	@CMD='$(AR) r $@ $(OBJS)'; \
++	@CMD='$(AR) r $@ $(ALL_OBJS)'; \
+ 	if [ "$(V)" -gt 0 ]; then echo $$CMD; else echo AR $@ ; fi; \
+ 	eval $$CMD
+ 	$(RANLIB) $@
+@@ -138,8 +148,8 @@ lib/$(GCLIB): $(GCOBJS)
+ 	$(RANLIB) $@
+ 
+ clean:
+-	@rm -f $(OBJS) $(LOBJS) lib/lib*
+-	@rm -f $(GCOBJS) $(OBJS:.o=.gcno) $(OBJS:.o=.gcda)
++	@rm -f $(ALL_OBJS) $(LOBJS) lib/lib*
++	@rm -f $(GCOBJS) $(ALL_OBJS:.o=.gcno) $(ALL_OBJS:.o=.gcda)
+ 
+ install: all
+ 	@mkdir -p $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCLUDEDIR)
+@@ -172,7 +182,7 @@ install: all
+ depend:
+ 	@echo Building dependencies...
+ 	@echo > $@
+-	@for i in $(OBJS) $(T_OBJS); do \
++	@for i in $(ALL_OBJS) $(T_OBJS); do \
+ 	    c="$${i%.o}.c"; l="$${i%.o}.lo"; \
+ 	    $(CC) $(CFLAGS) -MM $$c | \
+ 		sed "s!^.*\.o:!$$i $$l:!" >> $@ ; \
+@@ -192,11 +202,11 @@ dist-prepare:
+ 
+ vc-prepare:
+ 	@echo Generate Makefile.vc
+-	@sed -e 's!@OBJS@!$(subst /,\\,$(OBJS:.o=.obj))!' Makefile.vc.in > Makefile.vc
++	@sed -e 's!@OBJS@!$(subst /,\\,$(OBJS:.o=.obj))!' -e 's!@DEPACKER_OBJS@!$(subst /,\\,$(DEPACKER_OBJS:.o=.obj))!' Makefile.vc.in > Makefile.vc
+ 
+ os2-prepare:
+ 	@echo Generate Makefile.os2
+-	@sed -e 's!@OBJS@!$(OBJS:.o=.obj)!' Makefile.os2.in > Makefile.os2
++	@sed -e 's!@OBJS@!$(OBJS:.o=.obj)!' -e 's!@DEPACKER_OBJS@!$(DEPACKER_OBJS:.o=.obj)!' Makefile.os2.in > Makefile.os2
+ 
+ dist-subdirs: $(addprefix dist-,$(DDIRS))
+ 	chmod -R u+w $(DIST)/*
+@@ -217,10 +227,10 @@ covercheck: coverage
+ 	$(MAKE) -C test-dev covercheck
+ 
+ coverclean:
+-	rm -f $(OBJS:.o=.gco) $(OBJS:.o=.gcno) $(OBJS:.o=.gcda)
++	rm -f $(ALL_OBJS:.o=.gco) $(ALL_OBJS:.o=.gcno) $(ALL_OBJS:.o=.gcda)
+ 	$(MAKE) -C test-dev coverclean
+ 
+-$(OBJS): Makefile
++$(ALL_OBJS): Makefile
+ 
+ $(LOBJS): Makefile
+ 
+diff --git a/Makefile.os2 b/Makefile.os2
+index b038ee2a..d865c790 100644
+--- a/Makefile.os2
++++ b/Makefile.os2
+@@ -5,17 +5,25 @@
+ #
+ # wmake -f Makefile.os2 target=static
+ # - builds the static library xmp_static.lib
++#
++# To disable module depacker functionality:
++#	wmake -f Makefile.os2 USE_DEPACKERS=0
+ 
+ !ifndef target
+ target = dll
+ !endif
+ 
++USE_DEPACKERS	= 1
++
+ CC = wcc386
+ 
+ CFLAGS = -zq -bt=os2 -bm -fp5 -fpi87 -mf -oeatxh -w4 -ei -zp8
+ # -5s  :  Pentium stack calling conventions.
+ # -5r  :  Pentium register calling conventions.
+ CFLAGS += -5s
++!ifeq USE_DEPACKERS 0
++CFLAGS += -DLIBXMP_NO_DEPACKERS
++!endif
+ CFLAGS += -DHAVE_ALLOCA_H -DHAVE_FNMATCH -DHAVE_MKSTEMP -DHAVE_UMASK
+ #CFLAGS += -DDEBUG
+ CFLAGS += -I"src/os2" -Iinclude -Isrc
+@@ -34,7 +42,12 @@ CFLAGS+= $(DLLFLAGS)
+ BLD_TARGET=$(DLLNAME)
+ !endif
+ 
+-OBJ=src/virtual.obj src/format.obj src/period.obj src/player.obj src/read_event.obj src/dataio.obj src/win32.obj src/mkstemp.obj src/fnmatch.obj src/md5.obj src/lfo.obj src/scan.obj src/control.obj src/med_extras.obj src/filter.obj src/effects.obj src/mixer.obj src/mix_all.obj src/load_helpers.obj src/load.obj src/hio.obj src/hmn_extras.obj src/extras.obj src/smix.obj src/memio.obj src/tempfile.obj src/mix_paula.obj src/loaders/common.obj src/loaders/iff.obj src/loaders/itsex.obj src/loaders/asif.obj src/loaders/voltable.obj src/loaders/sample.obj src/loaders/xm_load.obj src/loaders/mod_load.obj src/loaders/s3m_load.obj src/loaders/stm_load.obj src/loaders/669_load.obj src/loaders/far_load.obj src/loaders/mtm_load.obj src/loaders/ptm_load.obj src/loaders/okt_load.obj src/loaders/ult_load.obj src/loaders/mdl_load.obj src/loaders/it_load.obj src/loaders/stx_load.obj src/loaders/pt3_load.obj src/loaders/sfx_load.obj src/loaders/flt_load.obj src/loaders/st_load.obj src/loaders/emod_load.obj src/loaders/imf_load.obj src/loaders/digi_load.obj src/loaders/fnk_load.obj src/loaders/ice_load.obj src/loaders/liq_load.obj src/loaders/ims_load.obj src/loaders/masi_load.obj src/loaders/amf_load.obj src/loaders/psm_load.obj src/loaders/stim_load.obj src/loaders/mmd_common.obj src/loaders/mmd1_load.obj src/loaders/mmd3_load.obj src/loaders/rtm_load.obj src/loaders/dt_load.obj src/loaders/no_load.obj src/loaders/arch_load.obj src/loaders/sym_load.obj src/loaders/med2_load.obj src/loaders/med3_load.obj src/loaders/med4_load.obj src/loaders/dbm_load.obj src/loaders/umx_load.obj src/loaders/gdm_load.obj src/loaders/pw_load.obj src/loaders/gal5_load.obj src/loaders/gal4_load.obj src/loaders/mfp_load.obj src/loaders/asylum_load.obj src/loaders/hmn_load.obj src/loaders/mgt_load.obj src/loaders/chip_load.obj src/loaders/abk_load.obj src/loaders/prowizard/prowiz.obj src/loaders/prowizard/ptktable.obj src/loaders/prowizard/tuning.obj src/loaders/prowizard/ac1d.obj src/loaders/prowizard/di.obj src/loaders/prowizard/eureka.obj src/loaders/prowizard/fc-m.obj src/loaders/prowizard/fuchs.obj src/loaders/prowizard/fuzzac.obj src/loaders/prowizard/gmc.obj src/loaders/prowizard/heatseek.obj src/loaders/prowizard/ksm.obj src/loaders/prowizard/mp.obj src/loaders/prowizard/np1.obj src/loaders/prowizard/np2.obj src/loaders/prowizard/np3.obj src/loaders/prowizard/p61a.obj src/loaders/prowizard/pm10c.obj src/loaders/prowizard/pm18a.obj src/loaders/prowizard/pha.obj src/loaders/prowizard/prun1.obj src/loaders/prowizard/prun2.obj src/loaders/prowizard/tdd.obj src/loaders/prowizard/unic.obj src/loaders/prowizard/unic2.obj src/loaders/prowizard/wn.obj src/loaders/prowizard/zen.obj src/loaders/prowizard/tp1.obj src/loaders/prowizard/tp3.obj src/loaders/prowizard/p40.obj src/loaders/prowizard/xann.obj src/loaders/prowizard/theplayer.obj src/loaders/prowizard/pp10.obj src/loaders/prowizard/pp21.obj src/loaders/prowizard/starpack.obj src/loaders/prowizard/titanics.obj src/loaders/prowizard/skyt.obj src/loaders/prowizard/novotrade.obj src/loaders/prowizard/hrt.obj src/loaders/prowizard/noiserun.obj src/depackers/ppdepack.obj src/depackers/unsqsh.obj src/depackers/mmcmp.obj src/depackers/readrle.obj src/depackers/readlzw.obj src/depackers/unarc.obj src/depackers/arcfs.obj src/depackers/xfd.obj src/depackers/inflate.obj src/depackers/muse.obj src/depackers/unlzx.obj src/depackers/s404_dec.obj src/depackers/unzip.obj src/depackers/gunzip.obj src/depackers/uncompress.obj src/depackers/unxz.obj src/depackers/bunzip2.obj src/depackers/unlha.obj src/depackers/xz_dec_lzma2.obj src/depackers/xz_dec_stream.obj src/depackers/oxm.obj src/depackers/vorbis.obj src/depackers/crc32.obj src/depackers/xfd_link.obj
++OBJ=src/virtual.obj src/format.obj src/period.obj src/player.obj src/read_event.obj src/dataio.obj src/win32.obj src/mkstemp.obj src/fnmatch.obj src/md5.obj src/lfo.obj src/scan.obj src/control.obj src/med_extras.obj src/filter.obj src/effects.obj src/mixer.obj src/mix_all.obj src/load_helpers.obj src/load.obj src/hio.obj src/hmn_extras.obj src/extras.obj src/smix.obj src/memio.obj src/tempfile.obj src/mix_paula.obj src/loaders/common.obj src/loaders/iff.obj src/loaders/itsex.obj src/loaders/asif.obj src/loaders/voltable.obj src/loaders/sample.obj src/loaders/xm_load.obj src/loaders/mod_load.obj src/loaders/s3m_load.obj src/loaders/stm_load.obj src/loaders/669_load.obj src/loaders/far_load.obj src/loaders/mtm_load.obj src/loaders/ptm_load.obj src/loaders/okt_load.obj src/loaders/ult_load.obj src/loaders/mdl_load.obj src/loaders/it_load.obj src/loaders/stx_load.obj src/loaders/pt3_load.obj src/loaders/sfx_load.obj src/loaders/flt_load.obj src/loaders/st_load.obj src/loaders/emod_load.obj src/loaders/imf_load.obj src/loaders/digi_load.obj src/loaders/fnk_load.obj src/loaders/ice_load.obj src/loaders/liq_load.obj src/loaders/ims_load.obj src/loaders/masi_load.obj src/loaders/amf_load.obj src/loaders/psm_load.obj src/loaders/stim_load.obj src/loaders/mmd_common.obj src/loaders/mmd1_load.obj src/loaders/mmd3_load.obj src/loaders/rtm_load.obj src/loaders/dt_load.obj src/loaders/no_load.obj src/loaders/arch_load.obj src/loaders/sym_load.obj src/loaders/med2_load.obj src/loaders/med3_load.obj src/loaders/med4_load.obj src/loaders/dbm_load.obj src/loaders/umx_load.obj src/loaders/gdm_load.obj src/loaders/pw_load.obj src/loaders/gal5_load.obj src/loaders/gal4_load.obj src/loaders/mfp_load.obj src/loaders/asylum_load.obj src/loaders/hmn_load.obj src/loaders/mgt_load.obj src/loaders/chip_load.obj src/loaders/abk_load.obj src/loaders/prowizard/prowiz.obj src/loaders/prowizard/ptktable.obj src/loaders/prowizard/tuning.obj src/loaders/prowizard/ac1d.obj src/loaders/prowizard/di.obj src/loaders/prowizard/eureka.obj src/loaders/prowizard/fc-m.obj src/loaders/prowizard/fuchs.obj src/loaders/prowizard/fuzzac.obj src/loaders/prowizard/gmc.obj src/loaders/prowizard/heatseek.obj src/loaders/prowizard/ksm.obj src/loaders/prowizard/mp.obj src/loaders/prowizard/np1.obj src/loaders/prowizard/np2.obj src/loaders/prowizard/np3.obj src/loaders/prowizard/p61a.obj src/loaders/prowizard/pm10c.obj src/loaders/prowizard/pm18a.obj src/loaders/prowizard/pha.obj src/loaders/prowizard/prun1.obj src/loaders/prowizard/prun2.obj src/loaders/prowizard/tdd.obj src/loaders/prowizard/unic.obj src/loaders/prowizard/unic2.obj src/loaders/prowizard/wn.obj src/loaders/prowizard/zen.obj src/loaders/prowizard/tp1.obj src/loaders/prowizard/tp3.obj src/loaders/prowizard/p40.obj src/loaders/prowizard/xann.obj src/loaders/prowizard/theplayer.obj src/loaders/prowizard/pp10.obj src/loaders/prowizard/pp21.obj src/loaders/prowizard/starpack.obj src/loaders/prowizard/titanics.obj src/loaders/prowizard/skyt.obj src/loaders/prowizard/novotrade.obj src/loaders/prowizard/hrt.obj src/loaders/prowizard/noiserun.obj
++DEPACKER_OBJ=src/depackers/ppdepack.obj src/depackers/unsqsh.obj src/depackers/mmcmp.obj src/depackers/readrle.obj src/depackers/readlzw.obj src/depackers/unarc.obj src/depackers/arcfs.obj src/depackers/xfd.obj src/depackers/inflate.obj src/depackers/muse.obj src/depackers/unlzx.obj src/depackers/s404_dec.obj src/depackers/unzip.obj src/depackers/gunzip.obj src/depackers/uncompress.obj src/depackers/unxz.obj src/depackers/bunzip2.obj src/depackers/unlha.obj src/depackers/xz_dec_lzma2.obj src/depackers/xz_dec_stream.obj src/depackers/oxm.obj src/depackers/vorbis.obj src/depackers/crc32.obj src/depackers/xfd_link.obj
++ALL_OBJ=$(OBJ)
++!ifeq USE_DEPACKERS 1
++ALL_OBJ+= $(DEPACKER_OBJ)
++!endif
+ 
+ #.SUFFIXES: .obj .c
+ 
+@@ -45,15 +58,15 @@ OBJ=src/virtual.obj src/format.obj src/period.obj src/player.obj src/read_event.
+ all: $(BLD_TARGET)
+ 
+ # rely on symbol name, not ordinal: -irn switch of wlib is default, but -inn is not.
+-$(DLLNAME): $(OBJ)
+-	wlink NAM $@ SYSTEM os2v2_dll INITINSTANCE TERMINSTANCE FIL {$(OBJ)} OPTION IMPF=$(EXPNAME)
++$(DLLNAME): $(ALL_OBJ)
++	wlink NAM $@ SYSTEM os2v2_dll INITINSTANCE TERMINSTANCE FIL {$(ALL_OBJ)} OPTION IMPF=$(EXPNAME)
+ 	wlib -q -b -n -c -pa -s -t -zld -ii -io -inn $(LIBNAME) +$(DLLNAME)
+ 
+-$(LIBSTATIC): $(OBJ)
+-	wlib -q -b -n -c -pa -s -t -zld -ii -io $@ $(OBJ)
++$(LIBSTATIC): $(ALL_OBJ)
++	wlib -q -b -n -c -pa -s -t -zld -ii -io $@ $(ALL_OBJ)
+ 
+ clean: .symbolic
+-	rm -f $(OBJ)
++	rm -f $(OBJ) $(DEPACKER_OBJ)
+ 
+ distclean: clean .symbolic
+ 	rm -f $(DLLNAME) $(EXPNAME) $(LIBNAME) $(LIBSTATIC)
+diff --git a/Makefile.os2.in b/Makefile.os2.in
+index 9939c476..86027ef8 100644
+--- a/Makefile.os2.in
++++ b/Makefile.os2.in
+@@ -5,17 +5,25 @@
+ #
+ # wmake -f Makefile.os2 target=static
+ # - builds the static library xmp_static.lib
++#
++# To disable module depacker functionality:
++#	wmake -f Makefile.os2 USE_DEPACKERS=0
+ 
+ !ifndef target
+ target = dll
+ !endif
+ 
++USE_DEPACKERS	= 1
++
+ CC = wcc386
+ 
+ CFLAGS = -zq -bt=os2 -bm -fp5 -fpi87 -mf -oeatxh -w4 -ei -zp8
+ # -5s  :  Pentium stack calling conventions.
+ # -5r  :  Pentium register calling conventions.
+ CFLAGS += -5s
++!ifeq USE_DEPACKERS 0
++CFLAGS += -DLIBXMP_NO_DEPACKERS
++!endif
+ CFLAGS += -DHAVE_ALLOCA_H -DHAVE_FNMATCH -DHAVE_MKSTEMP -DHAVE_UMASK
+ #CFLAGS += -DDEBUG
+ CFLAGS += -I"src/os2" -Iinclude -Isrc
+@@ -35,6 +43,11 @@ BLD_TARGET=$(DLLNAME)
+ !endif
+ 
+ OBJ=@OBJS@
++DEPACKER_OBJ=@DEPACKER_OBJS@
++ALL_OBJ=$(OBJ)
++!ifeq USE_DEPACKERS 1
++ALL_OBJ+= $(DEPACKER_OBJ)
++!endif
+ 
+ #.SUFFIXES: .obj .c
+ 
+@@ -45,15 +58,15 @@ OBJ=@OBJS@
+ all: $(BLD_TARGET)
+ 
+ # rely on symbol name, not ordinal: -irn switch of wlib is default, but -inn is not.
+-$(DLLNAME): $(OBJ)
+-	wlink NAM $@ SYSTEM os2v2_dll INITINSTANCE TERMINSTANCE FIL {$(OBJ)} OPTION IMPF=$(EXPNAME)
++$(DLLNAME): $(ALL_OBJ)
++	wlink NAM $@ SYSTEM os2v2_dll INITINSTANCE TERMINSTANCE FIL {$(ALL_OBJ)} OPTION IMPF=$(EXPNAME)
+ 	wlib -q -b -n -c -pa -s -t -zld -ii -io -inn $(LIBNAME) +$(DLLNAME)
+ 
+-$(LIBSTATIC): $(OBJ)
+-	wlib -q -b -n -c -pa -s -t -zld -ii -io $@ $(OBJ)
++$(LIBSTATIC): $(ALL_OBJ)
++	wlib -q -b -n -c -pa -s -t -zld -ii -io $@ $(ALL_OBJ)
+ 
+ clean: .symbolic
+-	rm -f $(OBJ)
++	rm -f $(OBJ) $(DEPACKER_OBJ)
+ 
+ distclean: clean .symbolic
+ 	rm -f $(DLLNAME) $(EXPNAME) $(LIBNAME) $(LIBSTATIC)
+diff --git a/Makefile.vc b/Makefile.vc
+index b17b036b..c8be4302 100644
+--- a/Makefile.vc
++++ b/Makefile.vc
+@@ -1,3 +1,7 @@
++# To disable module depacker functionality:
++#	nmake -f Makefile.vc USE_DEPACKERS=0
++USE_DEPACKERS	= 1
++
+ CC	= cl
+ CFLAGS	= /O2 /Iinclude /Isrc /Isrc\win32 /DBUILDING_DLL /DWIN32 \
+ 	  /Dinline=__inline /DPATH_MAX=1024 /D_USE_MATH_DEFINES
+@@ -5,7 +9,16 @@ LD	= link
+ LDFLAGS	= /DLL /RELEASE /OUT:$(DLL)
+ DLL	= libxmp.dll
+ 
+-OBJS	= src\virtual.obj src\format.obj src\period.obj src\player.obj src\read_event.obj src\dataio.obj src\win32.obj src\mkstemp.obj src\fnmatch.obj src\md5.obj src\lfo.obj src\scan.obj src\control.obj src\med_extras.obj src\filter.obj src\effects.obj src\mixer.obj src\mix_all.obj src\load_helpers.obj src\load.obj src\hio.obj src\hmn_extras.obj src\extras.obj src\smix.obj src\memio.obj src\tempfile.obj src\mix_paula.obj src\loaders\common.obj src\loaders\iff.obj src\loaders\itsex.obj src\loaders\asif.obj src\loaders\voltable.obj src\loaders\sample.obj src\loaders\xm_load.obj src\loaders\mod_load.obj src\loaders\s3m_load.obj src\loaders\stm_load.obj src\loaders\669_load.obj src\loaders\far_load.obj src\loaders\mtm_load.obj src\loaders\ptm_load.obj src\loaders\okt_load.obj src\loaders\ult_load.obj src\loaders\mdl_load.obj src\loaders\it_load.obj src\loaders\stx_load.obj src\loaders\pt3_load.obj src\loaders\sfx_load.obj src\loaders\flt_load.obj src\loaders\st_load.obj src\loaders\emod_load.obj src\loaders\imf_load.obj src\loaders\digi_load.obj src\loaders\fnk_load.obj src\loaders\ice_load.obj src\loaders\liq_load.obj src\loaders\ims_load.obj src\loaders\masi_load.obj src\loaders\amf_load.obj src\loaders\psm_load.obj src\loaders\stim_load.obj src\loaders\mmd_common.obj src\loaders\mmd1_load.obj src\loaders\mmd3_load.obj src\loaders\rtm_load.obj src\loaders\dt_load.obj src\loaders\no_load.obj src\loaders\arch_load.obj src\loaders\sym_load.obj src\loaders\med2_load.obj src\loaders\med3_load.obj src\loaders\med4_load.obj src\loaders\dbm_load.obj src\loaders\umx_load.obj src\loaders\gdm_load.obj src\loaders\pw_load.obj src\loaders\gal5_load.obj src\loaders\gal4_load.obj src\loaders\mfp_load.obj src\loaders\asylum_load.obj src\loaders\hmn_load.obj src\loaders\mgt_load.obj src\loaders\chip_load.obj src\loaders\abk_load.obj src\loaders\prowizard\prowiz.obj src\loaders\prowizard\ptktable.obj src\loaders\prowizard\tuning.obj src\loaders\prowizard\ac1d.obj src\loaders\prowizard\di.obj src\loaders\prowizard\eureka.obj src\loaders\prowizard\fc-m.obj src\loaders\prowizard\fuchs.obj src\loaders\prowizard\fuzzac.obj src\loaders\prowizard\gmc.obj src\loaders\prowizard\heatseek.obj src\loaders\prowizard\ksm.obj src\loaders\prowizard\mp.obj src\loaders\prowizard\np1.obj src\loaders\prowizard\np2.obj src\loaders\prowizard\np3.obj src\loaders\prowizard\p61a.obj src\loaders\prowizard\pm10c.obj src\loaders\prowizard\pm18a.obj src\loaders\prowizard\pha.obj src\loaders\prowizard\prun1.obj src\loaders\prowizard\prun2.obj src\loaders\prowizard\tdd.obj src\loaders\prowizard\unic.obj src\loaders\prowizard\unic2.obj src\loaders\prowizard\wn.obj src\loaders\prowizard\zen.obj src\loaders\prowizard\tp1.obj src\loaders\prowizard\tp3.obj src\loaders\prowizard\p40.obj src\loaders\prowizard\xann.obj src\loaders\prowizard\theplayer.obj src\loaders\prowizard\pp10.obj src\loaders\prowizard\pp21.obj src\loaders\prowizard\starpack.obj src\loaders\prowizard\titanics.obj src\loaders\prowizard\skyt.obj src\loaders\prowizard\novotrade.obj src\loaders\prowizard\hrt.obj src\loaders\prowizard\noiserun.obj src\depackers\ppdepack.obj src\depackers\unsqsh.obj src\depackers\mmcmp.obj src\depackers\readrle.obj src\depackers\readlzw.obj src\depackers\unarc.obj src\depackers\arcfs.obj src\depackers\xfd.obj src\depackers\inflate.obj src\depackers\muse.obj src\depackers\unlzx.obj src\depackers\s404_dec.obj src\depackers\unzip.obj src\depackers\gunzip.obj src\depackers\uncompress.obj src\depackers\unxz.obj src\depackers\bunzip2.obj src\depackers\unlha.obj src\depackers\xz_dec_lzma2.obj src\depackers\xz_dec_stream.obj src\depackers\oxm.obj src\depackers\vorbis.obj src\depackers\crc32.obj src\depackers\xfd_link.obj src\win32\ptpopen.obj
++!if $(USE_DEPACKERS)==0
++CFLAGS  = $(CFLAGS) /DLIBXMP_NO_DEPACKERS
++!endif
++
++OBJS	= src\virtual.obj src\format.obj src\period.obj src\player.obj src\read_event.obj src\dataio.obj src\win32.obj src\mkstemp.obj src\fnmatch.obj src\md5.obj src\lfo.obj src\scan.obj src\control.obj src\med_extras.obj src\filter.obj src\effects.obj src\mixer.obj src\mix_all.obj src\load_helpers.obj src\load.obj src\hio.obj src\hmn_extras.obj src\extras.obj src\smix.obj src\memio.obj src\tempfile.obj src\mix_paula.obj src\loaders\common.obj src\loaders\iff.obj src\loaders\itsex.obj src\loaders\asif.obj src\loaders\voltable.obj src\loaders\sample.obj src\loaders\xm_load.obj src\loaders\mod_load.obj src\loaders\s3m_load.obj src\loaders\stm_load.obj src\loaders\669_load.obj src\loaders\far_load.obj src\loaders\mtm_load.obj src\loaders\ptm_load.obj src\loaders\okt_load.obj src\loaders\ult_load.obj src\loaders\mdl_load.obj src\loaders\it_load.obj src\loaders\stx_load.obj src\loaders\pt3_load.obj src\loaders\sfx_load.obj src\loaders\flt_load.obj src\loaders\st_load.obj src\loaders\emod_load.obj src\loaders\imf_load.obj src\loaders\digi_load.obj src\loaders\fnk_load.obj src\loaders\ice_load.obj src\loaders\liq_load.obj src\loaders\ims_load.obj src\loaders\masi_load.obj src\loaders\amf_load.obj src\loaders\psm_load.obj src\loaders\stim_load.obj src\loaders\mmd_common.obj src\loaders\mmd1_load.obj src\loaders\mmd3_load.obj src\loaders\rtm_load.obj src\loaders\dt_load.obj src\loaders\no_load.obj src\loaders\arch_load.obj src\loaders\sym_load.obj src\loaders\med2_load.obj src\loaders\med3_load.obj src\loaders\med4_load.obj src\loaders\dbm_load.obj src\loaders\umx_load.obj src\loaders\gdm_load.obj src\loaders\pw_load.obj src\loaders\gal5_load.obj src\loaders\gal4_load.obj src\loaders\mfp_load.obj src\loaders\asylum_load.obj src\loaders\hmn_load.obj src\loaders\mgt_load.obj src\loaders\chip_load.obj src\loaders\abk_load.obj src\loaders\prowizard\prowiz.obj src\loaders\prowizard\ptktable.obj src\loaders\prowizard\tuning.obj src\loaders\prowizard\ac1d.obj src\loaders\prowizard\di.obj src\loaders\prowizard\eureka.obj src\loaders\prowizard\fc-m.obj src\loaders\prowizard\fuchs.obj src\loaders\prowizard\fuzzac.obj src\loaders\prowizard\gmc.obj src\loaders\prowizard\heatseek.obj src\loaders\prowizard\ksm.obj src\loaders\prowizard\mp.obj src\loaders\prowizard\np1.obj src\loaders\prowizard\np2.obj src\loaders\prowizard\np3.obj src\loaders\prowizard\p61a.obj src\loaders\prowizard\pm10c.obj src\loaders\prowizard\pm18a.obj src\loaders\prowizard\pha.obj src\loaders\prowizard\prun1.obj src\loaders\prowizard\prun2.obj src\loaders\prowizard\tdd.obj src\loaders\prowizard\unic.obj src\loaders\prowizard\unic2.obj src\loaders\prowizard\wn.obj src\loaders\prowizard\zen.obj src\loaders\prowizard\tp1.obj src\loaders\prowizard\tp3.obj src\loaders\prowizard\p40.obj src\loaders\prowizard\xann.obj src\loaders\prowizard\theplayer.obj src\loaders\prowizard\pp10.obj src\loaders\prowizard\pp21.obj src\loaders\prowizard\starpack.obj src\loaders\prowizard\titanics.obj src\loaders\prowizard\skyt.obj src\loaders\prowizard\novotrade.obj src\loaders\prowizard\hrt.obj src\loaders\prowizard\noiserun.obj src\win32\ptpopen.obj
++DEPACKER_OBJS	= src\depackers\ppdepack.obj src\depackers\unsqsh.obj src\depackers\mmcmp.obj src\depackers\readrle.obj src\depackers\readlzw.obj src\depackers\unarc.obj src\depackers\arcfs.obj src\depackers\xfd.obj src\depackers\inflate.obj src\depackers\muse.obj src\depackers\unlzx.obj src\depackers\s404_dec.obj src\depackers\unzip.obj src\depackers\gunzip.obj src\depackers\uncompress.obj src\depackers\unxz.obj src\depackers\bunzip2.obj src\depackers\unlha.obj src\depackers\xz_dec_lzma2.obj src\depackers\xz_dec_stream.obj src\depackers\oxm.obj src\depackers\vorbis.obj src\depackers\crc32.obj src\depackers\xfd_link.obj
++ALL_OBJS	= $(OBJS)
++!if $(USE_DEPACKERS)==1
++ALL_OBJS	= $(ALL_OBJS) $(DEPACKER_OBJS)
++!endif
+ 
+ TEST	= test\md5.obj test\test.obj
+ 
+@@ -14,11 +27,12 @@ TEST	= test\md5.obj test\test.obj
+ 
+ all: $(DLL)
+ 
+-$(DLL): $(OBJS)
+-	$(LD) $(LDFLAGS) $(OBJS)
++$(DLL): $(ALL_OBJS)
++	$(LD) $(LDFLAGS) $(ALL_OBJS)
+ 
+ clean:
+ 	del $(OBJS) $(DLL) *.lib *.exp
++	del $(DEPACKER_OBJS)
+ 
+ check: $(TEST)
+ 	$(LD) /RELEASE /OUT:test\libxmp-test.exe $(TEST) libxmp.lib
+diff --git a/Makefile.vc.in b/Makefile.vc.in
+index 46cbf423..a50f56da 100644
+--- a/Makefile.vc.in
++++ b/Makefile.vc.in
+@@ -1,3 +1,7 @@
++# To disable module depacker functionality:
++#	nmake -f Makefile.vc USE_DEPACKERS=0
++USE_DEPACKERS	= 1
++
+ CC	= cl
+ CFLAGS	= /O2 /Iinclude /Isrc /Isrc\win32 /DBUILDING_DLL /DWIN32 \
+ 	  /Dinline=__inline /DPATH_MAX=1024 /D_USE_MATH_DEFINES
+@@ -5,7 +9,16 @@ LD	= link
+ LDFLAGS	= /DLL /RELEASE /OUT:$(DLL)
+ DLL	= libxmp.dll
+ 
++!if $(USE_DEPACKERS)==0
++CFLAGS  = $(CFLAGS) /DLIBXMP_NO_DEPACKERS
++!endif
++
+ OBJS	= @OBJS@ src\win32\ptpopen.obj
++DEPACKER_OBJS	= @DEPACKER_OBJS@
++ALL_OBJS	= $(OBJS)
++!if $(USE_DEPACKERS)==1
++ALL_OBJS	= $(ALL_OBJS) $(DEPACKER_OBJS)
++!endif
+ 
+ TEST	= test\md5.obj test\test.obj
+ 
+@@ -14,11 +27,12 @@ TEST	= test\md5.obj test\test.obj
+ 
+ all: $(DLL)
+ 
+-$(DLL): $(OBJS)
+-	$(LD) $(LDFLAGS) $(OBJS)
++$(DLL): $(ALL_OBJS)
++	$(LD) $(LDFLAGS) $(ALL_OBJS)
+ 
+ clean:
+ 	del $(OBJS) $(DLL) *.lib *.exp
++	del $(DEPACKER_OBJS)
+ 
+ check: $(TEST)
+ 	$(LD) /RELEASE /OUT:test\libxmp-test.exe $(TEST) libxmp.lib
+diff --git a/lite/Makefile.in.in b/lite/Makefile.in.in
+index 3e967639..541cd280 100644
+--- a/lite/Makefile.in.in
++++ b/lite/Makefile.in.in
+@@ -5,7 +5,7 @@ VERSION		= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_RELEASE)
+ COMPAT_VERSION	= $(VERSION_MAJOR)
+ 
+ CC		= @CC@
+-CFLAGS		= -c @CFLAGS@ @DEFS@ -D_REENTRANT -DLIBXMP_CORE_PLAYER
++CFLAGS		= -c @CFLAGS@ @DEFS@ -D_REENTRANT -DLIBXMP_CORE_PLAYER -DLIBXMP_NO_DEPACKERS
+ CFLAGS_SHARED	= @CFLAGS_SHARED@
+ CFLAGS_STATIC	= -DBUILDING_STATIC
+ LD		= @CC@
+diff --git a/lite/Makefile.os2.in b/lite/Makefile.os2.in
+index 7178cd82..7ac7482d 100644
+--- a/lite/Makefile.os2.in
++++ b/lite/Makefile.os2.in
+@@ -16,7 +16,7 @@ CFLAGS = -zq -bt=os2 -bm -fp5 -fpi87 -mf -oeatxh -w4 -ei -zp8
+ # -5s  :  Pentium stack calling conventions.
+ # -5r  :  Pentium register calling conventions.
+ CFLAGS += -5s
+-CFLAGS += -DHAVE_ALLOCA_H -DHAVE_FNMATCH -DHAVE_MKSTEMP -DHAVE_UMASK -DLIBXMP_CORE_PLAYER
++CFLAGS += -DHAVE_ALLOCA_H -DHAVE_FNMATCH -DHAVE_MKSTEMP -DHAVE_UMASK -DLIBXMP_CORE_PLAYER -DLIBXMP_NO_DEPACKERS
+ #CFLAGS += -DDEBUG
+ CFLAGS += -I"src/os2" -I"include/libxmp-lite" -Isrc
+ 
+diff --git a/lite/Makefile.vc.in b/lite/Makefile.vc.in
+index 9debe144..27866fd3 100644
+--- a/lite/Makefile.vc.in
++++ b/lite/Makefile.vc.in
+@@ -1,6 +1,6 @@
+ CC	= cl
+ CFLAGS	= /O2 /Iinclude\libxmp-lite /Isrc /DBUILDING_DLL /DWIN32 \
+-          /Dinline=__inline /D_USE_MATH_DEFINES /DLIBXMP_CORE_PLAYER
++          /Dinline=__inline /D_USE_MATH_DEFINES /DLIBXMP_CORE_PLAYER /DLIBXMP_NO_DEPACKERS
+ LD	= link
+ LDFLAGS	= /DLL /RELEASE /OUT:$(DLL)
+ DLL	= libxmp-lite.dll
+diff --git a/src/depackers/Makefile b/src/depackers/Makefile
+index cfc0c8cb..7b84fd11 100644
+--- a/src/depackers/Makefile
++++ b/src/depackers/Makefile
+@@ -11,7 +11,7 @@ DEPACKERS_DFILES = Makefile $(DEPACKERS_OBJS:.o=.c) readhuff.h readlzw.h \
+ 
+ DEPACKERS_PATH	= src/depackers
+ 
+-OBJS += $(addprefix $(DEPACKERS_PATH)/,$(DEPACKERS_OBJS))
++DEPACKER_OBJS	= $(addprefix $(DEPACKERS_PATH)/,$(DEPACKERS_OBJS))
+ 
+ default-depackers::
+ 	$(MAKE) -C ..
+diff --git a/src/load.c b/src/load.c
+index 401ba861..5544540a 100644
+--- a/src/load.c
++++ b/src/load.c
+@@ -36,7 +36,7 @@
+ #include "hio.h"
+ #include "tempfile.h"
+ 
+-#ifndef LIBXMP_CORE_PLAYER
++#ifndef LIBXMP_NO_DEPACKERS
+ #if !defined(HAVE_POPEN) && defined(WIN32)
+ #include "win32/ptpopen.h"
+ #define HAVE_POPEN 1
+@@ -46,6 +46,8 @@
+ #define pclose _pclose
+ #define HAVE_POPEN 1
+ #endif
++#endif
++#ifndef LIBXMP_CORE_PLAYER
+ #include "md5.h"
+ #include "extras.h"
+ #endif
+@@ -58,6 +60,10 @@ void libxmp_load_epilogue(struct context_data *);
+ int  libxmp_prepare_scan(struct context_data *);
+ 
+ #ifndef LIBXMP_CORE_PLAYER
++#define BUFLEN 16384
++#endif
++
++#ifndef LIBXMP_NO_DEPACKERS
+ 
+ #include "depacker.h"
+ 
+@@ -84,8 +90,6 @@ static struct depacker *depacker_list[] = {
+ 
+ int test_oxm		(FILE *);
+ 
+-#define BUFLEN 16384
+-
+ #ifndef HAVE_POPEN
+ static int execute_command(const char *cmd, const char *filename, FILE *t) {
+ 	return -1;
+@@ -228,7 +232,9 @@ static int decrunch(HIO_HANDLE **h, const char *filename, char **temp)
+     err:
+ 	return -1;
+ }
++#endif /* LIBXMP_NO_DEPACKERS */
+ 
++#ifndef LIBXMP_CORE_PLAYER
+ static void set_md5sum(HIO_HANDLE *f, unsigned char *digest)
+ {
+ 	unsigned char buf[BUFLEN];
+@@ -289,7 +295,7 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
+ 	char buf[XMP_NAME_SIZE];
+ 	int i;
+ 	int ret = -XMP_ERROR_FORMAT;
+-#ifndef LIBXMP_CORE_PLAYER
++#ifndef LIBXMP_NO_DEPACKERS
+ 	char *temp = NULL;
+ #endif
+ 
+@@ -306,7 +312,7 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
+ 	if ((h = hio_open(path, "rb")) == NULL)
+ 		return -XMP_ERROR_SYSTEM;
+ 
+-#ifndef LIBXMP_CORE_PLAYER
++#ifndef LIBXMP_NO_DEPACKERS
+ 	if (decrunch(&h, path, &temp) < 0) {
+ 		ret = -XMP_ERROR_DEPACK;
+ 		goto err;
+@@ -339,7 +345,7 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
+ 
+ 			fclose(h->handle.file);
+ 
+-#ifndef LIBXMP_CORE_PLAYER
++#ifndef LIBXMP_NO_DEPACKERS
+ 			unlink_temp_file(temp);
+ #endif
+ 
+@@ -352,7 +358,7 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
+ 		}
+ 	}
+ 
+-#ifndef LIBXMP_CORE_PLAYER
++#ifndef LIBXMP_NO_DEPACKERS
+     err:
+ 	hio_close(h);
+ 	unlink_temp_file(temp);
+@@ -470,6 +476,8 @@ int xmp_load_module(xmp_context opaque, char *path)
+ #ifndef LIBXMP_CORE_PLAYER
+ 	struct module_data *m = &ctx->m;
+ 	long size;
++#endif
++#ifndef LIBXMP_NO_DEPACKERS
+ 	char *temp_name;
+ #endif
+ 	HIO_HANDLE *h;
+@@ -493,13 +501,15 @@ int xmp_load_module(xmp_context opaque, char *path)
+ 		return -XMP_ERROR_SYSTEM;
+ 	}
+ 
+-#ifndef LIBXMP_CORE_PLAYER
++#ifndef LIBXMP_NO_DEPACKERS
+ 	D_(D_INFO "decrunch");
+ 	if (decrunch(&h, path, &temp_name) < 0) {
+ 		ret = -XMP_ERROR_DEPACK;
+ 		goto err;
+ 	}
++#endif
+ 
++#ifndef LIBXMP_CORE_PLAYER
+ 	size = hio_size(h);
+ 	if (size < 256) {		/* get size after decrunch */
+ 		ret = -XMP_ERROR_FORMAT;
+@@ -530,7 +540,7 @@ int xmp_load_module(xmp_context opaque, char *path)
+ 	ret = load_module(opaque, h);
+ 	hio_close(h);
+ 
+-#ifndef LIBXMP_CORE_PLAYER
++#ifndef LIBXMP_NO_DEPACKERS
+ 	unlink_temp_file(temp_name);
+ #endif
+ 
+@@ -539,7 +549,9 @@ int xmp_load_module(xmp_context opaque, char *path)
+ #ifndef LIBXMP_CORE_PLAYER
+     err:
+ 	hio_close(h);
++#ifndef LIBXMP_NO_DEPACKERS
+ 	unlink_temp_file(temp_name);
++#endif
+ 	return ret;
+ #endif
+ }
+diff --git a/src/loaders/sym_load.c b/src/loaders/sym_load.c
+index ecd45649..f2351184 100644
+--- a/src/loaders/sym_load.c
++++ b/src/loaders/sym_load.c
+@@ -21,7 +21,9 @@
+  */
+ 
+ #include "loader.h"
++#ifndef LIBXMP_NO_DEPACKERS
+ #include "depackers/readlzw.h"
++#endif
+ 
+ 
+ static int sym_test(HIO_HANDLE *, char *, const int);
+@@ -322,12 +324,17 @@ static int sym_load(struct module_data *m, HIO_HANDLE *f, const int start)
+ 		return -1;
+ 
+ 	if (a) {
++#ifdef LIBXMP_NO_DEPACKERS
++		free(buf);
++		return -1;
++#else
+ 		unsigned char *x = libxmp_read_lzw_dynamic(f->handle.file, buf,
+ 					13, 0, size, size, XMP_LZW_QUIRK_DSYM);
+ 		if (x == NULL) {
+ 			free(buf);
+ 			return -1;
+ 		}
++#endif
+ 	} else {
+ 		if (hio_read(buf, 1, size, f) != size) {
+ 			free(buf);
+@@ -376,12 +383,17 @@ static int sym_load(struct module_data *m, HIO_HANDLE *f, const int start)
+ 		return -1;
+ 
+ 	if (a) {
++#ifdef LIBXMP_NO_DEPACKERS
++		free(buf);
++		return -1;
++#else
+ 		unsigned char *x = libxmp_read_lzw_dynamic(f->handle.file, buf,
+ 					13, 0, size, size, XMP_LZW_QUIRK_DSYM);
+ 		if (x == NULL) {
+ 			free(buf);
+ 			return -1;
+ 		}
++#endif
+ 	} else {
+ 		if (hio_read(buf, 1, size, f) != size) {
+ 			free(buf);
+@@ -466,6 +478,9 @@ static int sym_load(struct module_data *m, HIO_HANDLE *f, const int start)
+ 		}
+ 
+ 		if (a == 1) {
++#ifdef LIBXMP_NO_DEPACKERS
++			return -1;
++#else
+ 			uint8 *b = malloc(mod->xxs[i].len);
+ 			libxmp_read_lzw_dynamic(f->handle.file, b, 13, 0,
+ 					mod->xxs[i].len, mod->xxs[i].len,
+@@ -474,6 +489,7 @@ static int sym_load(struct module_data *m, HIO_HANDLE *f, const int start)
+ 					SAMPLE_FLAG_NOLOAD | SAMPLE_FLAG_DIFF,
+ 					&mod->xxs[i], (char*)b);
+ 			free(b);
++#endif
+ 		/*} else if (a == 4) {
+ 			ret = libxmp_load_sample(m, f, SAMPLE_FLAG_VIDC,
+ 					&mod->xxs[i], NULL);*/

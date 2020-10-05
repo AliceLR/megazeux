@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -295,7 +295,7 @@ int hio_error(HIO_HANDLE *h)
 	return error;
 }
 
-HIO_HANDLE *hio_open(void *path, char *mode)
+HIO_HANDLE *hio_open(const void *path, const char *mode)
 {
 	HIO_HANDLE *h;
 
@@ -323,7 +323,7 @@ HIO_HANDLE *hio_open(void *path, char *mode)
 	return NULL;
 }
 
-HIO_HANDLE *hio_open_mem(void *ptr, long size)
+HIO_HANDLE *hio_open_mem(const void *ptr, long size)
 {
 	HIO_HANDLE *h;
 

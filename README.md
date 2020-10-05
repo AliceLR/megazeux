@@ -97,16 +97,16 @@ platform(s) are not regularly updated:
 
 ## Credits
 
-| MegaZeux 2.9x     |                                  |
-| ----------------- | -------------------------------- |
-| Alice Rowan       | Developer/current maintainer     |
-| Dr. Lancer X      | Developer (layer rendering)      |
-| Adrian Siekierka  | Developer (various ports)        |
-| Alistair Strachan | Developer (initial SDL 2 support)|
-| Terryn            | Help file                        |
-| Spectere          | Mac OS X builds                  |
-| Insidious         | Ubuntu/Debian builds             |
-| Others            | Various                          |
+| MegaZeux 2.9x     |                                                            |
+| ----------------- | ---------------------------------------------------------- |
+| Alice Rowan       | Development/current maintainer                             |
+| Terryn            | Help file; testing                                         |
+| Lancer X          | Development; testing                                       |
+| Adrian Siekierka  | Development; testing; various ports                        |
+| Insidious         | Development; testing; Ubuntu/Debian/Raspbian/Arch packages |
+| Spectere          | Development; testing; Xcode and MSVC projects              |
+| Alistair Strachan | Development                                                |
+| Others            | Various                                                    |
 
 #### MegaZeux Credits
 
@@ -135,12 +135,12 @@ Other past contributors: Spider124, Koji, JZig, Akwende, MenTaLguY.
 
 #### Special Thanks
 
-Insidious (.deb Builds)
+Insidious (Testing, .deb and Arch packages)
+Spectere (Testing, OS X Builds, MSVC project)
+Terryn (Testing)
 mzxgiant (MSVC Testing, Bug Fixes)
 mzxrules (Testing)
 Quantum P. (OS X Testing / Builds)
-Spectere (OS X Builds)
-Terryn (Testing)
 Wervyn (Testing)
 
 ## License
