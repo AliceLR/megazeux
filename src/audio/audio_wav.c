@@ -361,7 +361,7 @@ static void skip_riff_chunk(FILE *fp, int filesize)
   }
 }
 
-static void* get_riff_chunk_by_id(FILE *fp, int filesize,
+static void *get_riff_chunk_by_id(FILE *fp, int filesize,
  const char *id, int *size)
 {
   int i;
@@ -383,16 +383,17 @@ static void* get_riff_chunk_by_id(FILE *fp, int filesize,
 
 // Simple SAM loader.
 
-static int load_sam_file(const char *file, struct wav_info *spec)
+static boolean load_sam_file(const char *file, struct wav_info *spec)
 {
   size_t source_length;
+  size_t read_length;
   void *buf;
-  int ret = 0;
   FILE *fp;
 
   fp = fopen_unsafe(file, "rb");
   if(!fp)
-    goto exit_out;
+    return false;
+
   source_length = ftell_and_rewind(fp);
   if(source_length > WARN_FILESIZE)
   {
@@ -409,48 +410,38 @@ static int load_sam_file(const char *file, struct wav_info *spec)
   spec->enable_sam_frequency_hack = true;
 
   buf = cmalloc(source_length);
-  if(fread(buf, 1, source_length, fp) < source_length)
+  read_length = fread(buf, 1, source_length, fp);
+  fclose(fp);
+
+  if(read_length < source_length)
   {
     free(buf);
-    goto exit_close;
+    return false;
   }
   spec->data_length = source_length;
   spec->wav_data = buf;
-  goto exit_close_success;
-
-exit_close_success:
-  ret = 1;
-exit_close:
-  fclose(fp);
-exit_out:
-  return ret;
+  return true;
 }
 
 // More lenient than SDL's WAV loader, but only supports
 // uncompressed PCM files (for now.)
 
-static int load_wav_file(const char *file, struct wav_info *spec)
+static boolean load_wav_file(const char *file, struct wav_info *spec)
 {
   int data_size, filesize, riffsize, channels, srate, sbytes, fmt_size;
   int smpl_size, numloops;
   Uint32 loop_start, loop_end;
   char *fmt_chunk, *smpl_chunk, tmp_buf[4];
-  ssize_t sam_ext_pos = (ssize_t)strlen(file) - 4;
   size_t file_size;
-  int ret = 0;
+  boolean ret = false;
   FILE *fp;
 #ifdef CONFIG_SDL
   SDL_AudioSpec sdlspec;
 #endif
 
-  // First, check if this isn't actually a SAM file. If so,
-  // route to load_sam_file instead.
-  if((sam_ext_pos > 0) && !strcasecmp(file + sam_ext_pos, ".sam"))
-    return load_sam_file(file, spec);
-
   fp = fopen_unsafe(file, "rb");
   if(!fp)
-    goto exit_out;
+    return false;
 
   file_size = ftell_and_rewind(fp);
   if(file_size > WARN_FILESIZE)
@@ -611,10 +602,9 @@ static int load_wav_file(const char *file, struct wav_info *spec)
   spec->loop_end = loop_end;
 
 exit_close_success:
-  ret = 1;
+  ret = true;
 exit_close:
   fclose(fp);
-exit_out:
   return ret;
 }
 
@@ -690,8 +680,20 @@ static struct audio_stream *construct_wav_stream(char *filename,
   return NULL;
 }
 
+static struct audio_stream *construct_sam_stream(char *filename,
+ Uint32 frequency, Uint32 volume, Uint32 repeat)
+{
+  struct wav_info w_info;
+  memset(&w_info, 0, sizeof(struct wav_info));
+
+  if(load_sam_file(filename, &w_info))
+    return construct_wav_stream_direct(&w_info, frequency, volume, repeat);
+
+  return NULL;
+}
+
 void init_wav(struct config_info *conf)
 {
-  audio_ext_register("sam", construct_wav_stream);
+  audio_ext_register("sam", construct_sam_stream);
   audio_ext_register("wav", construct_wav_stream);
 }
