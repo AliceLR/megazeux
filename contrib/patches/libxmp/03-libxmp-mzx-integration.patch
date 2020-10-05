@@ -1,5 +1,5 @@
 diff --git a/include/xmp.h b/include/xmp.h
-index 8ec6deeb..4daa268b 100644
+index 8ec6deeb..abf49cf4 100644
 --- a/include/xmp.h
 +++ b/include/xmp.h
 @@ -1,6 +1,22 @@
@@ -25,20 +25,11 @@ index 8ec6deeb..4daa268b 100644
  #ifdef __cplusplus
  extern "C" {
  #endif
-diff --git a/src/common.h b/src/common.h
-index 65a9f57f..9aa26a7e 100644
---- a/src/common.h
-+++ b/src/common.h
-@@ -145,12 +145,6 @@ void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
- #define close _close
- #define unlink _unlink
- #endif
--#if defined(_WIN32) || defined(__WATCOMC__) /* in win32.c */
--int libxmp_vsnprintf(char *, size_t, const char *, va_list);
--int libxmp_snprintf (char *, size_t, const char *, ...);
--#define snprintf  libxmp_snprintf
--#define vsnprintf libxmp_vsnprintf
--#endif
- 
- /* Quirks */
- #define QUIRK_S3MLOOP	(1 << 0)	/* S3M loop mode */
+@@ -26,6 +42,7 @@ extern "C" {
+ #elif defined(__SUNPRO_C) && defined(XMP_LDSCOPE_GLOBAL)
+ # define LIBXMP_EXPORT __global
+ #elif defined(EMSCRIPTEN)
++# include <emscripten.h>
+ # define LIBXMP_EXPORT EMSCRIPTEN_KEEPALIVE
+ #else
+ # define LIBXMP_EXPORT

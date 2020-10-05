@@ -88,6 +88,8 @@ USERS
   properly on big endian machines.
 + Signed 16-bit samples should now work correctly with MOD SAM
   on big endian machines.
++ Fixed the white border present when using the GLSL renderer in
+  HTML5 builds.
 
 DEVELOPERS
 
