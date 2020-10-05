@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -165,9 +165,9 @@
     int old_vl = vi->old_vl; \
     VAR_NORM(x)
 
-#define VAR_SPLINE_STEREO(x); \
+#define VAR_SPLINE_STEREO(x) \
     VAR_SPLINE_MONO(x); \
-    int old_vr = vi->old_vr; \
+    int old_vr = vi->old_vr
 
 #ifndef LIBXMP_CORE_DISABLE_IT
 

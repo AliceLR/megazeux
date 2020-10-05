@@ -1,6 +1,41 @@
 Stable versions
 ---------------
 
+4.5.0 ():
+	Changes by Ozkan Sezer:
+	- fix win64 compatibility in ptpopen
+	- fix build with C89 compilers
+	- fix issues related to visibility attributes
+	- fix compatibility with old gcc, mingw, djgpp
+	- fix warnings in configure script
+	- fix Watcom C build on OS/2
+	- fix Amiga build
+	Changes by Carsten Teibes:
+	- fix lite build mod loader symbols
+	Changes by NoSuck:
+	- fix IT message length
+	Changes by Cameron Cawley:
+	- fix sanity check in Digital Symphony loader
+	Fix problems reported by Ralf Hoffmann:
+	- fix MMD3 instrument type sanity check
+	- fix strictness of MOD pattern data tester
+	- fix loading of XMLiTE XM modules
+	- fix loading of ST modules with invalid names
+	Fix problems reported by Lionel Debroux:
+	- fix PTM loader issues
+	- fix MED4 invalid sample load error
+	- fix NNA and DCT/DCA issues
+	Fix problems reported by Dennis Mulleneers:
+	- handle XM 16-bit samples with odd in-file data
+	Fix problems reported by Jay Garcia:
+	- fix smix sample allocation
+	- force reset of buffer state on player start
+	Other changes:
+	- fix double free in case of ADPCM sample load error
+	- code refactoring and cleanup
+	- accept WUZAMOD! Scream Tracker 2 modules
+	- add call to set the replay tempo multiplier
+
 4.4.1 (20161012):
 	Fix issues reported by Saga Musix:
 	- fix MDL c5spd to preserve base periods
