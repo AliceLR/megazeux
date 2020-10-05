@@ -83,6 +83,8 @@ USERS
   the music file for the current board.
 + Fixed multiple libvorbis and tremor crashes related to the
   3DS platform_mutex_lock implementation not blocking.
++ Fixed the white border present when using the GLSL renderer in
+  HTML5 builds.
 
 DEVELOPERS
 
