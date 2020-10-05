@@ -50,22 +50,23 @@ struct wav_stream
   Uint32 channels;
   Uint32 bytes_per_sample;
   Uint32 natural_frequency;
-  Uint16 format;
   Uint32 loop_start;
   Uint32 loop_end;
+  enum wav_format format;
 };
 
 static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
  Uint32 len, Uint32 repeat)
 {
   Uint8 *src = (Uint8 *)w_stream->wav_data + w_stream->data_offset;
-  Uint32 data_read;
+  Uint32 data_read = 0;
   Uint32 read_len = len;
-  Uint32 new_offset;
+  Uint32 new_offset = w_stream->data_offset;
   Uint32 i;
 
   switch(w_stream->format)
   {
+    case SAMPLE_S8:
     case SAMPLE_U8:
     {
       Sint16 *dest = (Sint16 *)buffer;
@@ -84,8 +85,7 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
       }
 
       if(repeat && (w_stream->data_offset < w_stream->loop_end) &&
-       (w_stream->data_offset + read_len >= w_stream->loop_end) &&
-       (w_stream->loop_start < w_stream->loop_end))
+       (w_stream->data_offset + read_len >= w_stream->loop_end))
       {
         read_len = w_stream->loop_end - w_stream->data_offset;
         new_offset = w_stream->loop_start;
@@ -93,15 +93,22 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
 
       data_read = read_len * 2;
 
-      for(i = 0; i < read_len; i++)
+      if(w_stream->format == SAMPLE_U8)
       {
-        dest[i] = (Sint8)(src[i] - 128) << 8;
+        for(i = 0; i < read_len; i++)
+          dest[i] = (Sint16)((src[i] - 128) << 8);
+      }
+      else
+      {
+        for(i = 0; i < read_len; i++)
+          dest[i] = (Sint16)(src[i] << 8);
       }
 
       break;
     }
 
-    default:
+    case SAMPLE_S16LSB:
+    case SAMPLE_S16MSB:
     {
       Uint8 *dest = (Uint8 *) buffer;
 
@@ -123,20 +130,19 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
         new_offset = w_stream->loop_start;
       }
 
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-      // swap bytes on big endian machines
-      for(i = 0; i < read_len; i += 2)
+      if(w_stream->format != SAMPLE_S16SYS)
       {
-        dest[i] = src[i + 1];
-        dest[i + 1] = src[i];
+        // Swap bytes to match the current platform endianness...
+        for(i = 0; i < read_len; i += 2)
+        {
+          dest[i] = src[i + 1];
+          dest[i + 1] = src[i];
+        }
       }
-#else
-      // no swap necessary on little endian machines
-      memcpy(dest, src, read_len);
-#endif
+      else
+        memcpy(dest, src, read_len);
 
       data_read = read_len;
-
       break;
     }
   }
@@ -400,6 +406,7 @@ static int load_sam_file(const char *file, struct wav_info *spec)
   spec->format = SAMPLE_S8;
   spec->loop_start = 0;
   spec->loop_end = 0;
+  spec->enable_sam_frequency_hack = true;
 
   buf = cmalloc(source_length);
   if(fread(buf, 1, source_length, fp) < source_length)
@@ -490,6 +497,9 @@ static int load_wav_file(const char *file, struct wav_info *spec)
   spec->loop_start = 0;
   spec->loop_end = 0;
 
+  // Not a SAM, so don't enable this hack.
+  spec->enable_sam_frequency_hack = false;
+
   // If the WAV file isn't uncompressed PCM (format 1), let SDL handle it.
   if(read_little_endian16(fmt_chunk) != 1)
   {
@@ -514,9 +524,19 @@ static int load_wav_file(const char *file, struct wav_info *spec)
         case AUDIO_S16LSB:
           spec->format = SAMPLE_S16LSB;
           break;
+        // May be returned by SDL on big endian machines.
+        case AUDIO_S16MSB:
+          spec->format = SAMPLE_S16MSB;
+          break;
+        /**
+         * TODO: SDL 2.0 can technically return AUDIO_S32LSB or AUDIO_F32LSB.
+         * Support for these would be trivial to add but might encourage worse
+         * abuse of .WAV support (as those formats are twice the size of S16).
+         */
         default:
-         free(copy_buf);
-         goto exit_close;
+          warn("Unsupported WAV SDL_AudioFormat 0x%x! Report this!\n", sdlspec.format);
+          free(copy_buf);
+          goto exit_close;
       }
 
       goto exit_close_success;
@@ -614,6 +634,15 @@ struct audio_stream *construct_wav_stream_direct(struct wav_info *w_info,
   w_stream->bytes_per_sample = w_info->channels;
   w_stream->loop_start = w_info->loop_start;
   w_stream->loop_end = w_info->loop_end;
+
+  /**
+   * Due to a bug in the old SAM to WAV conversion code, the frequency provided
+   * has been halved with respect to what it should have been in DOS versions.
+   * If this wav spec was loaded directly from a SAM or via audio_spot_sample,
+   * reverse this "fix" that is now a permanent compatibility concern.
+   */
+  if(w_info->enable_sam_frequency_hack)
+    frequency *= 2;
 
   if((w_info->format != SAMPLE_U8) && (w_info->format != SAMPLE_S8))
     w_stream->bytes_per_sample *= 2;

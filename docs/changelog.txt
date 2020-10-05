@@ -83,6 +83,11 @@ USERS
   the music file for the current board.
 + Fixed multiple libvorbis and tremor crashes related to the
   3DS platform_mutex_lock implementation not blocking.
++ Fixed audio frequency bugs in .SAM file playback.
++ Certain .WAV subtypes handled by SDL_LoadWav should now load
+  properly on big endian machines.
++ Signed 16-bit samples should now work correctly with MOD SAM
+  on big endian machines.
 + Fixed the white border present when using the GLSL renderer in
   HTML5 builds.
 
