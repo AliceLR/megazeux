@@ -1,8 +1,8 @@
 diff --git a/src/loaders/it_load.c b/src/loaders/it_load.c
-index 1009557..29736d7 100644
+index 12665e0e..8dea5b3e 100644
 --- a/src/loaders/it_load.c
 +++ b/src/loaders/it_load.c
-@@ -782,6 +782,7 @@ static int load_it_sample(struct module_data *m, int i, int start,
+@@ -783,6 +783,7 @@ static int load_it_sample(struct module_data *m, int i, int start,
  
  	if (sample_mode) {
  		/* Create an instrument for each sample */
@@ -10,7 +10,7 @@ index 1009557..29736d7 100644
  		mod->xxi[i].sub[0].vol = ish.vol;
  		mod->xxi[i].sub[0].pan = 0x80;
  		mod->xxi[i].sub[0].sid = i;
-@@ -813,8 +814,8 @@ static int load_it_sample(struct module_data *m, int i, int start,
+@@ -814,8 +815,8 @@ static int load_it_sample(struct module_data *m, int i, int start,
  			if (sub->sid == i) {
  				sub->vol = ish.vol;
  				sub->gvl = ish.gvl;
@@ -21,7 +21,7 @@ index 1009557..29736d7 100644
  				sub->vwf = ish.vit;
  				sub->vsw = (0xff - ish.vir) >> 1;
  
-@@ -1117,7 +1118,7 @@ static int it_load(struct module_data *m, HIO_HANDLE *f, const int start)
+@@ -1123,7 +1124,7 @@ static int it_load(struct module_data *m, HIO_HANDLE *f, const int start)
  		m->period_type = PERIOD_LINEAR;
  	}
  

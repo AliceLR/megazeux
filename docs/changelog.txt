@@ -132,6 +132,8 @@ DEVELOPERS
   Amiga, Wii, and PSP network builds force-disable these. Switch
   and 3DS builds currently force-disable IPv6.
 + Added experimental network support for Wii, Switch, and 3DS.
++ Updated libxmp to git-92313f6, refactored the libxmp patches.
++ Removed unused libxmp Paula simulator code to save RAM. (asie)
 
 
 July 20th, 2020 - MZX 2.92e

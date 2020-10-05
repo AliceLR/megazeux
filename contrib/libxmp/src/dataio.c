@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -156,7 +156,7 @@ uint32 read32b(FILE *f, int *err)
 	return 0xffffffff;
 }
 
-uint16 readmem16l(uint8 *m)
+uint16 readmem16l(const uint8 *m)
 {
 	uint32 a, b;
 
@@ -166,7 +166,7 @@ uint16 readmem16l(uint8 *m)
 	return (b << 8) | a;
 }
 
-uint16 readmem16b(uint8 *m)
+uint16 readmem16b(const uint8 *m)
 {
 	uint32 a, b;
 
@@ -176,7 +176,7 @@ uint16 readmem16b(uint8 *m)
 	return (a << 8) | b;
 }
 
-uint32 readmem24l(uint8 *m)
+uint32 readmem24l(const uint8 *m)
 {
 	uint32 a, b, c;
 
@@ -187,7 +187,7 @@ uint32 readmem24l(uint8 *m)
 	return (c << 16) | (b << 8) | a;
 }
 
-uint32 readmem24b(uint8 *m)
+uint32 readmem24b(const uint8 *m)
 {
 	uint32 a, b, c;
 
@@ -198,7 +198,7 @@ uint32 readmem24b(uint8 *m)
 	return (a << 16) | (b << 8) | c;
 }
 
-uint32 readmem32l(uint8 *m)
+uint32 readmem32l(const uint8 *m)
 {
 	uint32 a, b, c, d;
 
@@ -210,7 +210,7 @@ uint32 readmem32l(uint8 *m)
 	return (d << 24) | (c << 16) | (b << 8) | a;
 }
 
-uint32 readmem32b(uint8 *m)
+uint32 readmem32b(const uint8 *m)
 {
 	uint32 a, b, c, d;
 
@@ -223,11 +223,6 @@ uint32 readmem32b(uint8 *m)
 }
 
 #ifndef LIBXMP_CORE_PLAYER
-
-inline void write8(FILE *f, uint8 b)
-{
-	fputc(b, f);
-}
 
 void write16l(FILE *f, uint16 w)
 {

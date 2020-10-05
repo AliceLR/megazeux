@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -23,7 +23,9 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <stdarg.h>
-#ifndef WIN32
+#ifdef __WATCOMC__
+#include <direct.h>
+#elif !defined(_WIN32)
 #include <dirent.h>
 #endif
 
@@ -211,10 +213,10 @@ int libxmp_test_name(uint8 *s, int n)
 {
 	int i;
 
-	/* ACS_Team2.mod has a backspace in instrument name */
 	for (i = 0; i < n; i++) {
 		if (s[i] > 0x7f)
 			return -1;
+		/* ACS_Team2.mod has a backspace in instrument name */
 		if (s[i] > 0 && s[i] < 32 && s[i] != 0x08)
 			return -1;
 	}
@@ -354,7 +356,7 @@ void libxmp_get_instrument_path(struct module_data *m, char *path, int size)
 }
 #endif /* LIBXMP_CORE_PLAYER */
 
-void libxmp_set_type(struct module_data *m, char *fmt, ...)
+void libxmp_set_type(struct module_data *m, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);

@@ -1,5 +1,20 @@
+diff --git a/src/common.h b/src/common.h
+index 65a9f57f..0b372536 100644
+--- a/src/common.h
++++ b/src/common.h
+@@ -39,10 +39,6 @@ typedef unsigned long long uint64;
+ typedef signed long long int64;
+ #endif
+ 
+-#ifndef LIBXMP_CORE_PLAYER
+-#define LIBXMP_PAULA_SIMULATOR
+-#endif
+-
+ /* Constants */
+ #define PAL_RATE	250.0		/* 1 / (50Hz * 80us)		  */
+ #define NTSC_RATE	208.0		/* 1 / (60Hz * 80us)		  */
 diff --git a/src/format.c b/src/format.c
-index 86325290..66244d0a 100644
+index 54a13053..401bd740 100644
 --- a/src/format.c
 +++ b/src/format.c
 @@ -22,7 +22,6 @@
@@ -155,27 +170,27 @@ index 86325290..66244d0a 100644
  
  		_farray[count] = NULL;
 diff --git a/src/format.h b/src/format.h
-index 4d90458b..d8cbdf06 100644
+index 4d90458b..5c7d4eb6 100644
 --- a/src/format.h
 +++ b/src/format.h
-@@ -14,11 +14,7 @@ struct format_loader {
+@@ -14,11 +14,8 @@ struct format_loader {
  char **format_list(void);
  
  #ifndef LIBXMP_CORE_PLAYER
 -
 -#define NUM_FORMATS 52
--#define NUM_PW_FORMATS 43
++#define NUM_FORMATS 22
+ #define NUM_PW_FORMATS 43
 -
 -int pw_test_format(HIO_HANDLE *, char *, const int, struct xmp_test_info *);
-+#define NUM_FORMATS 22
  #endif
  
  #endif
 diff --git a/src/load.c b/src/load.c
-index 8bac0696..49231031 100644
+index 401ba861..e1458e8c 100644
 --- a/src/load.c
 +++ b/src/load.c
-@@ -175,14 +175,6 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
+@@ -329,14 +329,6 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
  		if (format_loader[i]->test(h, buf, 0) == 0) {
  			int is_prowizard = 0;
  
@@ -189,4 +204,4 @@ index 8bac0696..49231031 100644
 -
  			fclose(h->handle.file);
  
- 			if (info != NULL && !is_prowizard) {
+ #ifndef LIBXMP_CORE_PLAYER
