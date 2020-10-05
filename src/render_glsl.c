@@ -1430,16 +1430,26 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   {
     glsl.glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbos[FBO_SCREEN_TEX]);
     gl_check_error();
+
+    // Clear the framebuffer so elements of this frame don't bleed through.
+    glsl.glClear(GL_COLOR_BUFFER_BIT);
+    gl_check_error();
   }
 
   gl_swap_buffers(graphics);
   render_data->dirty_palette = true;
   render_data->dirty_indices = true;
 
-#ifndef __EMSCRIPTEN__
-  glsl.glClear(GL_COLOR_BUFFER_BIT);
-  gl_check_error();
-#endif
+  /**
+   * When FBOs are not available, the next window frame needs to be cleared
+   * since the screen will be temporarily drawn there before scaling. This call
+   * was previously disabled for Emscripten (which should always have FBOs).
+   */
+  if(!glsl.has_fbo)
+  {
+    glsl.glClear(GL_COLOR_BUFFER_BIT);
+    gl_check_error();
+  }
 }
 
 static boolean glsl_switch_shader(struct graphics_data *graphics,
