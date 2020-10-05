@@ -42,6 +42,7 @@ extern "C" {
 #elif defined(__SUNPRO_C) && defined(XMP_LDSCOPE_GLOBAL)
 # define LIBXMP_EXPORT __global
 #elif defined(EMSCRIPTEN)
+# include <emscripten.h>
 # define LIBXMP_EXPORT EMSCRIPTEN_KEEPALIVE
 #else
 # define LIBXMP_EXPORT
