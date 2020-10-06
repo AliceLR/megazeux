@@ -2316,6 +2316,22 @@ static void init_pal_ed_palettes(struct pal_ed_context *pal_ed)
 }
 
 /**
+ * Basic joystick handler for the palette editor.
+ * This one intentionally does not do much because there's no way to get here
+ * without a keyboard right now.
+ */
+static boolean pal_ed_joystick(context *ctx, int *key, int action)
+{
+  enum keycode ui_key = get_joystick_ui_key();
+  if(ui_key)
+  {
+    *key = ui_key;
+    return true;
+  }
+  return false;
+}
+
+/**
  * Basic key handler for the palette editor.
  */
 static boolean pal_ed_key(context *ctx, int *key)
@@ -2468,6 +2484,7 @@ void palette_editor(context *parent)
   init_pal_ed_palettes(pal_ed);
 
   memset(&spec, 0, sizeof(struct context_spec));
+  spec.joystick = pal_ed_joystick;
   spec.key      = pal_ed_key;
   spec.destroy  = pal_ed_destroy;
 

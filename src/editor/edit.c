@@ -1448,6 +1448,95 @@ static boolean editor_mouse(context *ctx, int *key, int button, int x, int y)
 }
 
 /**
+ * Handle joystick actions for the editor.
+ * Currently support here is fairly weak and only exists to allow basic
+ * features like moving the cursor, peeking at robots, or exiting.
+ */
+static boolean editor_joystick(context *ctx, int *key, int action)
+{
+  struct editor_context *editor = (struct editor_context *)ctx;
+
+  switch(action)
+  {
+    // Place
+    case JOY_A:
+      *key = IKEY_SPACE;
+      return true;
+
+    // Delete
+    case JOY_B:
+      *key = IKEY_DELETE;
+      return true;
+
+    // Modify+Grab
+    case JOY_X:
+      *key = IKEY_RETURN;
+      return true;
+
+    // Grab
+    case JOY_Y:
+      *key = IKEY_INSERT;
+      return true;
+
+    // Board menu
+    case JOY_START:
+      *key = IKEY_b;
+      return true;
+
+    // Global info
+    case JOY_LSHOULDER:
+      *key = IKEY_g;
+      return true;
+
+    // Board info
+    case JOY_RSHOULDER:
+      *key = IKEY_i;
+      return true;
+
+    // Previous menu
+    case JOY_LTRIGGER:
+    {
+      if(editor->screen_height != EDIT_SCREEN_NORMAL)
+      {
+        editor->screen_height = EDIT_SCREEN_NORMAL;
+        fix_scroll(editor);
+      }
+      else
+        *key = IKEY_PAGEUP;
+
+      return true;
+    }
+
+    // Next menu
+    case JOY_RTRIGGER:
+    {
+      if(editor->screen_height != EDIT_SCREEN_NORMAL)
+      {
+        editor->screen_height = EDIT_SCREEN_NORMAL;
+        fix_scroll(editor);
+      }
+      else
+        *key = IKEY_PAGEDOWN;
+
+      return true;
+    }
+
+    // Defaults for select, arrows, etc.
+    default:
+    {
+      enum keycode ui_key = get_joystick_ui_key();
+      if(ui_key)
+      {
+        *key = ui_key;
+        return true;
+      }
+      break;
+    }
+  }
+  return false;
+}
+
+/**
  * Edit the parameter of the buffer and update it if the user doesn't cancel.
  */
 static void change_buffer_param_callback(context *ctx, context_callback_param *p)
@@ -3695,6 +3784,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   spec.draw     = editor_draw;
   spec.idle     = editor_idle;
   spec.key      = editor_key;
+  spec.joystick = editor_joystick;
   spec.click    = editor_mouse;
   spec.drag     = editor_mouse;
   spec.destroy  = editor_destroy;

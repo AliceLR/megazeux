@@ -90,6 +90,10 @@ USERS
   on big endian machines.
 + Fixed the white border present when using the GLSL renderer in
   HTML5 builds.
++ Added joystick input handlers for most editor interfaces.
+  Only very basic things are supported like navigating boards
+  and robots. This is intended for things like handheld consoles
+  without a keyboard.
 
 DEVELOPERS
 
