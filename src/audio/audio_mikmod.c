@@ -99,6 +99,27 @@ static MODULE *mm_load_vfile(vfile *vf, int maxchan)
 }
 
 /**
+ * Handle the resample mode for MikMod.
+ * This is a global rather than a per-module setting.
+ */
+static void mm_set_resample_mode(void)
+{
+  struct config_info *conf = get_config();
+  switch(conf->module_resample_mode)
+  {
+    case RESAMPLE_MODE_NONE:
+      md_mode = md_mode & ~(DMODE_INTERP);
+      break;
+
+    case RESAMPLE_MODE_LINEAR:
+    case RESAMPLE_MODE_CUBIC:
+    case RESAMPLE_MODE_FIR:
+      md_mode |= DMODE_INTERP;
+      break;
+  }
+}
+
+/**
  * Use MikMod internal data to provide support for length and position.
  * TODO: Dunno how stable this is :-(
  */
@@ -287,6 +308,7 @@ static struct audio_stream *construct_mikmod_stream(char *filename,
       Player_Start(mm_stream->module_data);
 
       mm_init_order_table(mm_stream, open_file);
+      mm_set_resample_mode();
 
       memset(&a_spec, 0, sizeof(struct audio_stream_spec));
       a_spec.mix_data     = mm_mix_data;

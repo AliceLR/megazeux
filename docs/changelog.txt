@@ -96,6 +96,7 @@ USERS
   without a keyboard.
 + Fixed loading Soundtracker 15-instrument .MODs with MikMod.
 + Fixed MOD_POSITION and MOD_LENGTH counters for MikMod.
++ MikMod now uses interpolation if module_resample_mode is set.
 - Disabled playing modules using the SAM command with MikMod to
   avoid crashes due to MikMod using a global player state.
 
