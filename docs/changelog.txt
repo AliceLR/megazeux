@@ -95,9 +95,7 @@ USERS
   and robots. This is intended for things like handheld consoles
   without a keyboard.
 + Fixed loading Soundtracker 15-instrument .MODs with MikMod.
-+ Fixed MOD_POSITION and MOD_LENGTH counters for MikMod. Setting
-  MOD_POSITION only partially works right now (jumps to the
-  correct order, but not the correct row).
++ Fixed MOD_POSITION and MOD_LENGTH counters for MikMod.
 
 DEVELOPERS
 

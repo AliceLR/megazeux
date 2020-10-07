@@ -191,8 +191,16 @@ static void mm_set_position(struct audio_stream *a_src, Uint32 position)
   {
     Player_SetPosition(order);
 
-    // FIXME this doesn't actually work, not sure what else to try.
-    mm_stream->module_data->patpos = row;
+    /**
+     * TODO: DIRTY HACK!
+     *
+     * Setting the row directly doesn't affect anything because SetPosition
+     * sets data->posjmp, which will make MikMod reset the row during the next
+     * tick to data->patbrk % data->numrow. So instead of setting the row
+     * directly, set patbrk after using Player_SetPosition to force MikMod to
+     * jump to this row when it processes the next tick.
+     */
+    mm_stream->module_data->patbrk = row;
   }
 }
 
