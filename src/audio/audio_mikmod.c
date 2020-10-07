@@ -264,6 +264,14 @@ static struct audio_stream *construct_mikmod_stream(char *filename,
   vfile *input_file;
   struct audio_stream *ret_val = NULL;
 
+  /**
+   * FIXME since MikMod uses a global player state, attempting to play
+   * multiple modules at the same time predictably causes crashes. Use
+   * this hack to ignore any modules played as samples for now. :(
+   */
+  if(!repeat)
+    return NULL;
+
   input_file = vfopen_unsafe(filename, "rb");
 
   if(input_file)
