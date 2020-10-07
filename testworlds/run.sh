@@ -120,6 +120,7 @@ rm -f LOCKED.MZX
 rm -f LOCKED.MZX.locked
 rm -f ../megazeux-config
 rm -f config.h
+rm -f data/audio/drivin.s3m
 
 # Color code PASS/FAIL tags and important numbers.
 
@@ -134,7 +135,7 @@ then
 	  cat log/failures \
 	  | sed -e "s/\[PASS\]/\[${COL_GREEN}PASS${COL_END}\]/g" \
 	  | sed -e "s/\[FAIL\]/\[${COL_RED}FAIL${COL_END}\]/g" \
-	  | sed -e "s/\[[?][?][?][?]]/\[${COL_YELLOW}????${COL_END}\]/g" \
+	  | sed -e "s/\[\(WARN\|SKIP\)\]/\[${COL_YELLOW}\1${COL_END}\]/g" \
 	  | sed -e "s/passes: \([1-9][0-9]*\)/passes: ${COL_GREEN}\1${COL_END}/g" \
 	  | sed -e "s/failures: \([1-9][0-9]*\)/failures: ${COL_RED}\1${COL_END}/g" \
 	  )"
