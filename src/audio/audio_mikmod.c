@@ -355,7 +355,23 @@ void init_mikmod(struct config_info *conf)
 
   MikMod_RegisterDriver(&drv_nos);
 
-  /* XM and AMF seem to be broken with Mikmod? */
+  /* XM and AMF (both variants) do not work in MikMod.
+   * Some (but not all) STM files are broken as well.
+   *
+   * Non-working example files:
+   *
+   * XM: drozerix_-_bit_loader.xm
+   *    https://modarchive.org/index.php?request=view_by_moduleid&query=178415
+   *
+   * STM: georythm.stm
+   *    https://modarchive.org/index.php?request=view_by_moduleid&query=180379
+   *
+   * DSMI AMF: spiritual_high.amf and terminal_velocity.amf
+   *    https://modarchive.org/index.php?request=view_by_moduleid&query=182744
+   *    https://modarchive.org/index.php?request=view_by_moduleid&query=182743
+   *
+   * ASYLUM AMF: m06.amf and m07.amf from Crusader - No Remorse
+   */
 
   MikMod_RegisterLoader(&load_gdm);
   //MikMod_RegisterLoader(&load_xm);
@@ -371,7 +387,8 @@ void init_mikmod(struct config_info *conf)
   MikMod_RegisterLoader(&load_dsm);
   MikMod_RegisterLoader(&load_far);
   MikMod_RegisterLoader(&load_okt);
-  //MikMod_RegisterLoader(&load_amf);
+  //MikMod_RegisterLoader(&load_amf); // DSMI .AMF
+  //MikMod_RegisterLoader(&load_asy); // ASYLUM .AMF
 
   // FIXME: Should break a lot more here
   if(MikMod_Init(NULL))
