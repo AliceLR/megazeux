@@ -251,11 +251,11 @@ static struct audio_stream *modplug_convert_gdm(char *filename,
   int have_s3m = 0;
 
   /* We know this file has a .gdm extension. */
-  ssize_t ext_pos = (ssize_t)strlen(filename) - 4;
+  int ext_pos = (int)strlen(filename) - 4;
 
   /* Get the name of its .s3m counterpart */
-  memcpy(new_file, filename, ext_pos);
-  memcpy(new_file + ext_pos, ".s3m", 4);
+  snprintf(new_file, MAX_PATH, "%.*s.s3m", ext_pos, filename);
+  new_file[MAX_PATH - 1] = '\0';
 
   /* If the destination S3M already exists, check its size. If it's
    * non-zero in size, we can load it.
