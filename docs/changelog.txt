@@ -94,7 +94,10 @@ USERS
   Only very basic things are supported like navigating boards
   and robots. This is intended for things like handheld consoles
   without a keyboard.
-+ Fixed loading Soundtracker 15-channel .MODs with MikMod.
++ Fixed loading Soundtracker 15-instrument .MODs with MikMod.
++ Fixed MOD_POSITION and MOD_LENGTH counters for MikMod. Setting
+  MOD_POSITION only partially works right now (jumps to the
+  correct order, but not the correct row).
 
 DEVELOPERS
 
@@ -143,9 +146,6 @@ DEVELOPERS
 + Removed unused libxmp Paula simulator code to save RAM. (asie)
 + SDL is no longer required to build MZX with MikMod enabled.
 + Fixed MikMod static linking on Windows.
-+ Fixed MikMod get_position and get_length implementations. The
-  implementation for set_position currently only partially works
-  (jumps to the correct order, but can't set the row).
 
 
 July 20th, 2020 - MZX 2.92e
