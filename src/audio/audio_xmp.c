@@ -341,9 +341,12 @@ void init_xmp(struct config_info *conf)
   audio_ext_register("med", construct_xmp_stream);
   audio_ext_register("mod", construct_xmp_stream);
   audio_ext_register("mtm", construct_xmp_stream);
+  audio_ext_register("nst", construct_xmp_stream);
+  audio_ext_register("oct", construct_xmp_stream);
   audio_ext_register("okt", construct_xmp_stream);
   audio_ext_register("s3m", construct_xmp_stream);
   audio_ext_register("stm", construct_xmp_stream);
   audio_ext_register("ult", construct_xmp_stream);
+  audio_ext_register("wow", construct_xmp_stream);
   audio_ext_register("xm", construct_xmp_stream);
 }

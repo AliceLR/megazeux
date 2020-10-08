@@ -87,8 +87,8 @@ static const char *const chr_ext[] = { ".CHR", NULL };
 static const char *const mod_ext[] =
 { ".ogg", ".mod", ".s3m", ".xm", ".it",
   ".669", ".amf", ".dsm", ".far", ".gdm",
-  ".med", ".mtm", ".okt", ".stm", ".ult",
-  ".rad",
+  ".med", ".mtm", ".nst", ".oct", ".okt",
+  ".stm", ".ult", ".wow", ".rad",
   NULL
 };
 static const char *const sam_ext[] =

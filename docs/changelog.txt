@@ -96,6 +96,10 @@ USERS
   without a keyboard.
 + Restored libxmp support for Soundtracker 2.6/IceTracker .MODs.
   Currently only libxmp supports this .MOD variant.
++ Fixed a bug where MZX would fail to load Noisetracker,
+  Octalyser, and Mod's Grave .MOD files if they were named using
+  the extensions .NST, .OCT, and .WOW (respectively). These can
+  now be selected with Alt+N/Ctrl+N in the editor.
 + Fixed loading Soundtracker 15-instrument .MODs with MikMod.
 + Fixed MOD_POSITION and MOD_LENGTH counters for MikMod.
 + MikMod now uses interpolation if module_resample_mode is set.

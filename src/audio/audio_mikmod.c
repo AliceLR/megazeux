@@ -403,9 +403,12 @@ void init_mikmod(struct config_info *conf)
   audio_ext_register("med", construct_mikmod_stream);
   audio_ext_register("mod", construct_mikmod_stream);
   audio_ext_register("mtm", construct_mikmod_stream);
+  audio_ext_register("nst", construct_mikmod_stream);
+  audio_ext_register("oct", construct_mikmod_stream);
   audio_ext_register("okt", construct_mikmod_stream);
   audio_ext_register("s3m", construct_mikmod_stream);
   audio_ext_register("stm", construct_mikmod_stream);
   audio_ext_register("ult", construct_mikmod_stream);
+  audio_ext_register("wow", construct_mikmod_stream);
   //audio_ext_register("xm", construct_mikmod_stream);
 }
