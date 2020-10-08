@@ -38,7 +38,7 @@ libxmp_objs += $(addprefix $(SRC_OBJ)/,$(SRC_OBJS))
 LOADERS	= xm_load.o mod_load.o s3m_load.o stm_load.o 669_load.o far_load.o \
 	  mtm_load.o okt_load.o ult_load.o it_load.o amf_load.o asylum_load.o \
 	  mmd_common.o mmd1_load.o mmd3_load.o med2_load.o med3_load.o med4_load.o \
-	  gdm_load.o st_load.o flt_load.o hmn_load.o
+	  gdm_load.o st_load.o flt_load.o hmn_load.o ice_load.o
 
 LOADERS_OBJS	= common.o iff.o itsex.o sample.o $(LOADERS)
 

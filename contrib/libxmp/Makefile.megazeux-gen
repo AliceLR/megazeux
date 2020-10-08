@@ -100,6 +100,7 @@ install := \
 	${dest_loaders}/flt_load.c \
 	${dest_loaders}/gdm_load.c \
 	${dest_loaders}/hmn_load.c \
+	${dest_loaders}/ice_load.c \
 	${dest_loaders}/it.h \
 	${dest_loaders}/it_load.c \
 	${dest_loaders}/itsex.c \

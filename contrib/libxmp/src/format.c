@@ -32,6 +32,7 @@ extern const struct format_loader libxmp_loader_it;
 extern const struct format_loader libxmp_loader_s3m;
 extern const struct format_loader libxmp_loader_stm;
 extern const struct format_loader libxmp_loader_mtm;
+extern const struct format_loader libxmp_loader_ice;
 extern const struct format_loader libxmp_loader_ult;
 extern const struct format_loader libxmp_loader_amf;
 extern const struct format_loader libxmp_loader_asylum;
@@ -57,6 +58,7 @@ const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
 	&libxmp_loader_s3m,
 	&libxmp_loader_stm,
 	&libxmp_loader_mtm,
+	&libxmp_loader_ice,
 	&libxmp_loader_ult,
 	&libxmp_loader_amf,
 	&libxmp_loader_asylum,

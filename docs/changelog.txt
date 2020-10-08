@@ -94,6 +94,8 @@ USERS
   Only very basic things are supported like navigating boards
   and robots. This is intended for things like handheld consoles
   without a keyboard.
++ Restored libxmp support for Soundtracker 2.6/IceTracker .MODs.
+  Currently only libxmp supports this .MOD variant.
 + Fixed loading Soundtracker 15-instrument .MODs with MikMod.
 + Fixed MOD_POSITION and MOD_LENGTH counters for MikMod.
 + MikMod now uses interpolation if module_resample_mode is set.
