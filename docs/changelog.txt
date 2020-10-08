@@ -94,6 +94,11 @@ USERS
   Only very basic things are supported like navigating boards
   and robots. This is intended for things like handheld consoles
   without a keyboard.
++ Fixed loading Soundtracker 15-instrument .MODs with MikMod.
++ Fixed MOD_POSITION and MOD_LENGTH counters for MikMod.
++ MikMod now uses interpolation if module_resample_mode is set.
+- Disabled playing modules using the SAM command with MikMod to
+  avoid crashes due to MikMod using a global player state.
 
 DEVELOPERS
 
@@ -140,6 +145,8 @@ DEVELOPERS
 + Added experimental network support for Wii, Switch, and 3DS.
 + Updated libxmp to git-92313f6, refactored the libxmp patches.
 + Removed unused libxmp Paula simulator code to save RAM. (asie)
++ SDL is no longer required to build MZX with MikMod enabled.
++ Fixed MikMod static linking on Windows.
 
 
 July 20th, 2020 - MZX 2.92e

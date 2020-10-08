@@ -660,11 +660,10 @@ fi
 #
 if [ "$SDL" = "false" ]; then
 	echo "Force-disabling SDL dependent components:"
-	echo " -> SOFTWARE, SOFTSCALE, OVERLAY, MIKMOD"
+	echo " -> SOFTWARE, SOFTSCALE, OVERLAY"
 	SOFTWARE="false"
 	SOFTSCALE="false"
 	OVERLAY="false"
-	MIKMOD="false"
 	LIBSDL2="false"
 else
 	echo "#define CONFIG_SDL" >> src/config.h
