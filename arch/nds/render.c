@@ -800,7 +800,7 @@ static void nds_focus_pixel(struct graphics_data *graphics, Uint32 x, Uint32 y)
     case FOCUS_FORBID:
       return;
     case FOCUS_ALLOW:
-      if (last_focus_x != (int)x || last_focus_y != (int)y)
+      if(last_focus_x != (int)x || last_focus_y != (int)y)
       {
         last_focus_x = x;
         last_focus_y = y;
