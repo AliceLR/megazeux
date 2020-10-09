@@ -1,5 +1,5 @@
 diff --git a/include/xmp.h b/include/xmp.h
-index 8ec6deeb..abf49cf4 100644
+index 8ec6deeb..38a07af1 100644
 --- a/include/xmp.h
 +++ b/include/xmp.h
 @@ -1,6 +1,22 @@
@@ -25,11 +25,12 @@ index 8ec6deeb..abf49cf4 100644
  #ifdef __cplusplus
  extern "C" {
  #endif
-@@ -26,6 +42,7 @@ extern "C" {
+@@ -25,8 +41,6 @@ extern "C" {
+ # define LIBXMP_EXPORT __attribute__((visibility ("default")))
  #elif defined(__SUNPRO_C) && defined(XMP_LDSCOPE_GLOBAL)
  # define LIBXMP_EXPORT __global
- #elif defined(EMSCRIPTEN)
-+# include <emscripten.h>
- # define LIBXMP_EXPORT EMSCRIPTEN_KEEPALIVE
+-#elif defined(EMSCRIPTEN)
+-# define LIBXMP_EXPORT EMSCRIPTEN_KEEPALIVE
  #else
  # define LIBXMP_EXPORT
+ #endif
