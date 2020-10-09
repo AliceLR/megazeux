@@ -1,6 +1,8 @@
 /* MegaZeux
  *
- * Copyright (C) 2007 Kevin Vance <kvance@kvance.com>
+ * Copyright (C) 2004-2006 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2007 Alan Williams <mralert@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,37 +19,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __RENDER_NDS_H
-#define __RENDER_NDS_H
+#ifndef __NDS_EVENT_H__
+#define __NDS_EVENT_H__
 
-#include "../../src/compat.h"
+#include "../../src/event.h"
 
-__M_BEGIN_DECLS
-
-#include "../../src/graphics.h"
-
-// The subscreen can display different information.
-enum Subscreen_Mode
+enum focus_mode
 {
-  SUBSCREEN_SCALED = 0,
-  SUBSCREEN_KEYBOARD,
-  SUBSCREEN_MODE_COUNT,
-  SUBSCREEN_MODE_INVALID
+  FOCUS_FORBID,
+  FOCUS_ALLOW, // checks if position changed
+  FOCUS_PASS // ignores all checks and check updates - for touchscreen
 };
 
-extern enum Subscreen_Mode subscreen_mode;
+enum focus_mode get_allow_focus_changes(void);
 
-boolean is_scaled_mode(enum Subscreen_Mode mode);
-
-// Call these 4 functions every vblank.
-void nds_sleep_check(void);
-void nds_video_jitter(void);
-void nds_video_rasterhack(void);
-void nds_video_do_transition(void);
-
-// Toggle to the next subscreen mode.
-void nds_subscreen_switch(void);
-
-__M_END_DECLS
-
-#endif // __RENDER_NDS_H
+#endif /* __NDS_EVENT_H__ */
