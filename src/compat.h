@@ -41,7 +41,9 @@
 // Compatibility defines so certain C++11 features can be used without checks.
 // Don't create any variables named "final" or "noexcept"...
 #include <stddef.h>
+#ifndef nullptr
 #define nullptr (NULL)
+#endif
 #define final
 #define noexcept
 #define override
