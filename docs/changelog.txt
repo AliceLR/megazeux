@@ -97,6 +97,12 @@ USERS
   Only very basic things are supported like navigating boards
   and robots. This is intended for things like handheld consoles
   without a keyboard.
++ Fixed a bug where turning off the listening mod would load the
+  mod that was playing when the listening mod was loaded instead
+  of the current board's mod.
++ Fixed a bug where setting a board mod to a partiular mod, then
+  setting the board mod to *, then changing to a different board
+  with the same mod would not restart the board mod.
 + Restored libxmp support for Soundtracker 2.6/IceTracker .MODs.
   Currently only libxmp supports this .MOD variant.
 + Fixed a bug where MZX would fail to load Noisetracker,

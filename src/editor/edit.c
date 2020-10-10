@@ -514,6 +514,7 @@ static void fix_mod(struct editor_context *editor)
   {
     if(!strcmp(mzx_world->current_board->mod_playing, "*"))
     {
+      mzx_world->real_mod_playing[0] = '\0';
       audio_end_module();
     }
 
@@ -3113,12 +3114,7 @@ static boolean editor_key(context *ctx, int *key)
             audio_end_module();
             editor->listening_mod_active = false;
 
-            // If there's a mod currently "playing", restart it. Otherwise,
-            // just start the current board's mod.
-            if(mzx_world->real_mod_playing[0])
-              audio_play_module(mzx_world->real_mod_playing, true, 255);
-            else
-              fix_mod(editor);
+            fix_mod(editor);
           }
         }
       }
