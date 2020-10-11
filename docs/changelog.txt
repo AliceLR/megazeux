@@ -18,6 +18,9 @@ USERS
 + Added SET RANDOM, INC RANDOM, DEC RANDOM, and TAKE "label"
   commands to the list of commands that should allow "infinite"
   loops in pre-2.80 versions.
++ Fixed SET RANDOM # TO # for large ranges on certain platforms
+  (example: Linux) confused by the 32-bit math used to calculate
+  the random range.
 + Fixed graphics corruption when using the glsl and opengl2
   renderers on big endian platforms.
 + Fixed a bug that would cause string searches to sometimes skip

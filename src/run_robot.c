@@ -347,7 +347,7 @@ static void send_at_xy(struct world *mzx_world, int id, int x, int y,
 static int get_random_range(int min_value, int max_value)
 {
   int result;
-  unsigned int difference;
+  Uint64 difference;
 
   if(min_value == max_value)
   {
@@ -357,15 +357,15 @@ static int get_random_range(int min_value, int max_value)
   {
     if(max_value > min_value)
     {
-      difference = max_value - min_value;
+      difference = (Sint64)max_value - (Sint64)min_value;
     }
     else
     {
-      difference = min_value - max_value;
+      difference = (Sint64)min_value - (Sint64)max_value;
       min_value = max_value;
     }
 
-    result = Random((unsigned long long)difference + 1) + min_value;
+    result = Random(difference + 1) + min_value;
   }
 
   return result;
