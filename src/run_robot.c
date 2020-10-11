@@ -2548,6 +2548,7 @@ void run_robot(context *ctx, int id, int x, int y)
           gotoed = send_self_label_tr(mzx_world,  p2 + 4, id);
         }
 
+        last_label = -1;
         break;
       }
 
@@ -3552,6 +3553,7 @@ void run_robot(context *ctx, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
         result = get_random_range(min_value, max_value);
         inc_counter(mzx_world, dest_buffer, result, id);
+        last_label = -1;
         break;
       }
 
@@ -3567,6 +3569,7 @@ void run_robot(context *ctx, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
         result = get_random_range(min_value, max_value);
         dec_counter(mzx_world, dest_buffer, result, id);
+        last_label = -1;
         break;
       }
 
@@ -3582,6 +3585,7 @@ void run_robot(context *ctx, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
         result = get_random_range(min_value, max_value);
         set_counter(mzx_world, dest_buffer, result, id);
+        last_label = -1;
         break;
       }
 

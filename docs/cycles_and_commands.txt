@@ -267,9 +267,9 @@ default "["/"%"/"&" boxes.
 invalid/inapplicable string.
 (3) = While it never ends the cycle in current MZX worlds, it can end the cycle
 in special cases in pre-port MZX worlds. If a loop consists of a label, a send
-to the same label, and none of the following commands: DEC, DIVIDE, DOUBLE,
-GIVE, HALF, INC, LOOP FOR #, MODULO, MULTIPLY, SET, TAKE, TRADE, then the label
-itself will end the cycle.
+to the same label, and none of the following commands: DEC, DEC RANDOM, DIVIDE,
+DOUBLE, GIVE, HALF, INC, INC RANDOM, LOOP FOR #, MODULO, MULTIPLY, SET,
+SET RANDOM, TAKE, TAKE "label", TRADE, then the label itself will end the cycle.
 (4) = Attempting to jump to labels that do not exist does not consume a cycle.
 (5) = Does not end a cycle if all # is/are 0.
 (6) = A special case exists where it currently executes a cycle end going
