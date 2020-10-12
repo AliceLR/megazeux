@@ -168,6 +168,10 @@ DEVELOPERS
 + Removed unused libxmp Paula simulator code to save RAM. (asie)
 + SDL is no longer required to build MZX with MikMod enabled.
 + Fixed MikMod static linking on Windows.
++ Added --disable-stack-protector config.sh option. Platforms
+  that previously disabled the stack protector in the Makefile
+  now force disable this config option. These force disable
+  hacks will probably be removed in the near future.
 
 
 July 20th, 2020 - MZX 2.92e

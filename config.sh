@@ -50,6 +50,7 @@ usage() {
 	echo "  --enable-analyzer         Enable -fanalyzer (requires GCC 10+)."
 	echo "  --enable-trace            Enable trace logging for debug builds."
 	echo "  --enable-stdio-redirect   Redirect console logging to stdout.txt/stderr.txt."
+	echo "  --disable-stack-protector Disable stack protector safety checks."
 	echo
 	echo "Platform-dependent options:"
 	echo "  --disable-x11             Disable X11, removing binary dependency."
@@ -137,6 +138,7 @@ RELEASE="false"
 OPT_SIZE="false"
 SANITIZER="false"
 ANALYZER="false"
+STACK_PROTECTOR="true"
 PLEDGE="false"
 PLEDGE_UTILS="true"
 EDITOR="true"
@@ -272,6 +274,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-analyzer" ] &&  ANALYZER="true"
 	[ "$1" = "--disable-analyzer" ] && ANALYZER="false"
+
+	[ "$1" = "--enable-stack-protector" ]  && STACK_PROTECTOR="true"
+	[ "$1" = "--disable-stack-protector" ] && STACK_PROTECTOR="false"
 
 	[ "$1" = "--enable-pledge" ] &&  PLEDGE="true"  && PLEDGE_UTILS="true"
 	[ "$1" = "--disable-pledge" ] && PLEDGE="false" && PLEDGE_UTILS="false"
@@ -643,6 +648,9 @@ if [ "$PLATFORM" = "wii" ]; then
 	echo "#define CONFIG_WII" >> src/config.h
 	echo "BUILD_WII=1" >> platform.inc
 	LIBSDL2="false"
+
+	echo "Force-disabling stack protector on Wii."
+	STACK_PROTECTOR="false"
 fi
 
 if [ "$PLATFORM" = "3ds" -o "$PLATFORM" = "nds" ]; then
@@ -701,11 +709,25 @@ if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
 fi
 
 #
+# The stack protector may cause issues with various C++ features (platform
+# matrix claims it breaks exceptions) in some versions of MinGW. This hasn't
+# been verified (and MZX doesn't use exceptions), but for now just disable it.
+#
+if [ "$PLATFORM" = "mingw" ]; then
+	echo "Force-disabling stack protector on Windows."
+	STACK_PROTECTOR="false"
+fi
+
+#
 # Force-disable features unnecessary on Emscripten.
 #
 if [ "$PLATFORM" = "emscripten" ]; then
 	echo "Enabling Emscripten-specific hacks."
 	echo "BUILD_EMSCRIPTEN=1" >> platform.inc
+
+	echo "Force-disabling stack protector (Emscripten)."
+	STACK_PROTECTOR="false"
+
 	EDITOR="false"
 	SCREENSHOTS="false"
 	UPDATER="false"
@@ -723,6 +745,9 @@ if [ "$PLATFORM" = "nds" ]; then
 	echo "Enabling NDS-specific hacks."
 	echo "#define CONFIG_NDS" >> src/config.h
 	echo "BUILD_NDS=1" >> platform.inc
+
+	echo "Force-disabling stack protector on NDS."
+	STACK_PROTECTOR="false"
 
 	echo "Force-disabling software renderer on NDS."
 	echo "Building custom NDS renderer."
@@ -751,6 +776,9 @@ if [ "$PLATFORM" = "3ds" ]; then
 	echo "Enabling 3DS-specific hacks."
 	echo "#define CONFIG_3DS" >> src/config.h
 	echo "BUILD_3DS=1" >> platform.inc
+
+	echo "Force-disabling stack protector on 3DS."
+	STACK_PROTECTOR="false"
 
 	echo "Force-disabling software renderer on 3DS."
 	echo "Building custom 3DS renderer."
@@ -793,6 +821,9 @@ if [ "$PLATFORM" = "psp" ]; then
 	echo "Enabling PSP-specific hacks."
 	echo "#define CONFIG_PSP" >> src/config.h
 	echo "BUILD_PSP=1" >> platform.inc
+
+	echo "Force-disabling stack protector on PSP."
+	STACK_PROTECTOR="false"
 fi
 
 #
@@ -806,6 +837,9 @@ if [ "$PLATFORM" = "gp2x" ]; then
 	echo "Enabling GP2X-specific hacks."
 	echo "#define CONFIG_GP2X" >> src/config.h
 	echo "BUILD_GP2X=1" >> platform.inc
+
+	echo "Force-disabling stack protector on GP2X."
+	STACK_PROTECTOR="false"
 
 	echo "Force disabling software renderer on GP2X."
 	SOFTWARE="false"
@@ -1049,6 +1083,16 @@ else
 		echo "Enabling trace logging."
 		echo "#define DEBUG_TRACE" >> src/config.h
 	fi
+fi
+
+#
+# Enable stack protector.
+#
+if [ "$STACK_PROTECTOR" = "true" ]; then
+	echo "Stack protector enabled."
+	echo "BUILD_STACK_PROTECTOR=1" >> platform.inc
+else
+	echo "Stack protector disabled."
 fi
 
 #

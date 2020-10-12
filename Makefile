@@ -303,19 +303,19 @@ CFLAGS   += -fvisibility=hidden
 CXXFLAGS += -fvisibility=hidden
 endif
 
+endif # PLATFORM=mingw
+
 #
-# Skip the stack protector on embedded platforms; it just unnecessarily
-# slows things down, and there's no easy way to write a convincing
-# __stack_chk_fail function. MinGW may or may not have a __stack_chk_fail
-# function.
+# The stack protector is optional and is generally only built for Linux/BSD and
+# Mac OS X. Windows and most embedded platforms currently disable this.
 #
+ifeq (${BUILD_STACK_PROTECTOR},1)
 ifeq (${HAS_F_STACK_PROTECTOR},1)
-ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_3DS},${BUILD_PSP},${BUILD_WII},${BUILD_EMSCRIPTEN}),)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
+else
+$(warning stack protector not supported, ignoring.)
 endif
-endif
-
 endif
 
 #
