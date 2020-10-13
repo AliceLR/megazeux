@@ -21,6 +21,8 @@ USERS
 + Fixed SET RANDOM # TO # for large ranges on certain platforms
   (example: Linux) confused by the 32-bit math used to calculate
   the random range.
++ Fixed crashes that could occur when attempting to run MegaZeux
+  without help.fil.
 + Fixed graphics corruption when using the glsl and opengl2
   renderers on big endian platforms.
 + Fixed a bug that would cause string searches to sometimes skip
