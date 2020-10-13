@@ -48,6 +48,10 @@ and applied the following branches as patches:
 * [fix-gdm-fine-effects](https://github.com/AliceLR/libxmp/tree/fix-gdm-fine-effects):
   fixes continue for the fine volume slide and portamento effects for GDM files.
   Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/165
+  [fix-st-2-zero-volume](https://github.com/AliceLR/libxmp/tree/fix-st-2-zero-volume):
+  fixes the loading of zero volume samples from STM files, which would result in
+  corrupted samples. (by Viiri)
+  Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/93
 
 This patch automatically copies only the files required by MegaZeux, so manual file
 removal should no longer be necessary.

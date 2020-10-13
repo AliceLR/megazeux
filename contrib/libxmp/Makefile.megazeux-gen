@@ -30,7 +30,8 @@ patches := \
 	fix-xmp-set-position-jump \
 	fix-it-sample-volume-vibrato \
 	fix-s3m-adpcm \
-	fix-gdm-fine-effects
+	fix-gdm-fine-effects \
+	fix-st-2-zero-volume
 
 #
 # Files to install from the generated libxmp branch to the
