@@ -111,6 +111,8 @@ USERS
 + Fixed a bug where setting a board mod to a partiular mod, then
   setting the board mod to *, then changing to a different board
   with the same mod would not restart the board mod.
++ Fixed a bug where libxmp would not ignore zero volume samples
+  in STM files.
 + Restored libxmp support for Soundtracker 2.6/IceTracker .MODs.
   Currently only libxmp supports this .MOD variant.
 + Fixed a bug where MZX would fail to load Noisetracker,
