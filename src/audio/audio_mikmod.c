@@ -283,7 +283,6 @@ static struct audio_stream *construct_mikmod_stream(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
   vfile *input_file;
-  struct audio_stream *ret_val = NULL;
 
   /**
    * FIXME since MikMod uses a global player state, attempting to play
@@ -298,6 +297,7 @@ static struct audio_stream *construct_mikmod_stream(char *filename,
   if(input_file)
   {
     MODULE *open_file = mm_load_vfile(input_file, 64);
+    vfclose(input_file);
 
     if(open_file)
     {
@@ -331,13 +331,13 @@ static struct audio_stream *construct_mikmod_stream(char *filename,
       initialize_audio_stream((struct audio_stream *)mm_stream, &a_spec,
        volume, repeat);
 
-      ret_val = (struct audio_stream *)mm_stream;
+      return (struct audio_stream *)mm_stream;
     }
-
-    vfclose(input_file);
+    else
+      debug("MikMod failed to open '%s': %s\n", filename,
+       MikMod_strerror(MikMod_errno));
   }
-
-  return ret_val;
+  return NULL;
 }
 
 void init_mikmod(struct config_info *conf)
@@ -355,47 +355,34 @@ void init_mikmod(struct config_info *conf)
 
   MikMod_RegisterDriver(&drv_nos);
 
-  /* XM and AMF (both variants) do not work in MikMod.
-   * Some (but not all) STM files are broken as well.
-   *
-   * Non-working example files:
-   *
-   * XM: drozerix_-_bit_loader.xm
-   *    https://modarchive.org/index.php?request=view_by_moduleid&query=178415
-   *
-   * STM: georythm.stm
-   *    https://modarchive.org/index.php?request=view_by_moduleid&query=180379
-   *
-   * DSMI AMF: spiritual_high.amf and terminal_velocity.amf
-   *    https://modarchive.org/index.php?request=view_by_moduleid&query=182744
-   *    https://modarchive.org/index.php?request=view_by_moduleid&query=182743
-   *
-   * ASYLUM AMF: m06.amf and m07.amf from Crusader - No Remorse
+  /**
+   * These are arranged in the same order as MikMod_RegisterAllLoaders
+   * registers them--alphabetical, with the exception of SoundTracker 15-sample
+   * .MODs last (presumably since they do not have a magic string).
    */
-
-  MikMod_RegisterLoader(&load_gdm);
-  //MikMod_RegisterLoader(&load_xm);
-  MikMod_RegisterLoader(&load_s3m);
-  MikMod_RegisterLoader(&load_mod);
-  MikMod_RegisterLoader(&load_m15); // Soundtracker .MOD
-  MikMod_RegisterLoader(&load_med);
-  MikMod_RegisterLoader(&load_mtm);
-  MikMod_RegisterLoader(&load_stm);
-  MikMod_RegisterLoader(&load_it);
   MikMod_RegisterLoader(&load_669);
-  MikMod_RegisterLoader(&load_ult);
+  MikMod_RegisterLoader(&load_amf); // DSMI .AMF
+  MikMod_RegisterLoader(&load_asy); // ASYLUM .AMF
   MikMod_RegisterLoader(&load_dsm);
   MikMod_RegisterLoader(&load_far);
+  MikMod_RegisterLoader(&load_gdm);
+  MikMod_RegisterLoader(&load_it);
+  MikMod_RegisterLoader(&load_mod);
+  MikMod_RegisterLoader(&load_med);
+  MikMod_RegisterLoader(&load_mtm);
   MikMod_RegisterLoader(&load_okt);
-  //MikMod_RegisterLoader(&load_amf); // DSMI .AMF
-  //MikMod_RegisterLoader(&load_asy); // ASYLUM .AMF
+  MikMod_RegisterLoader(&load_stm);
+  MikMod_RegisterLoader(&load_s3m);
+  MikMod_RegisterLoader(&load_ult);
+  MikMod_RegisterLoader(&load_xm);
+  MikMod_RegisterLoader(&load_m15); // Soundtracker .MOD
 
   // FIXME: Should break a lot more here
   if(MikMod_Init(NULL))
-    fprintf(stderr, "MikMod Init failed: %s", MikMod_strerror(MikMod_errno));
+    warn("MikMod Init failed: %s\n", MikMod_strerror(MikMod_errno));
 
   audio_ext_register("669", construct_mikmod_stream);
-  //audio_ext_register("amf", construct_mikmod_stream);
+  audio_ext_register("amf", construct_mikmod_stream);
   audio_ext_register("dsm", construct_mikmod_stream);
   audio_ext_register("far", construct_mikmod_stream);
   audio_ext_register("gdm", construct_mikmod_stream);
@@ -410,5 +397,5 @@ void init_mikmod(struct config_info *conf)
   audio_ext_register("stm", construct_mikmod_stream);
   audio_ext_register("ult", construct_mikmod_stream);
   audio_ext_register("wow", construct_mikmod_stream);
-  //audio_ext_register("xm", construct_mikmod_stream);
+  audio_ext_register("xm", construct_mikmod_stream);
 }

@@ -117,6 +117,8 @@ USERS
   Octalyser, and Mod's Grave .MOD files if they were named using
   the extensions .NST, .OCT, and .WOW (respectively). These can
   now be selected with Alt+N/Ctrl+N in the editor.
++ Enabled loading .XM and .AMF files with MikMod. Whatever the
+  issue was with these in 2007 seems to have since been fixed.
 + Fixed loading Soundtracker 15-instrument .MODs with MikMod.
 + Fixed MOD_POSITION and MOD_LENGTH counters for MikMod.
 + MikMod now uses interpolation if module_resample_mode is set.
