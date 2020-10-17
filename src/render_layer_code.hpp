@@ -62,7 +62,7 @@ static void render_layer_func(void *pixels, Uint32 pitch,
  int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR, int CLIP>
-static void render_layer_func(void * restrict pixels, Uint32 pitch,
+static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
  const struct graphics_data *graphics, const struct video_layer *layer);
 
 /**
@@ -495,7 +495,7 @@ static inline ALIGNTYPE get_colors_mzx(ALIGNTYPE (&set_colors)[16],
  * The optimizer will optimize out the unnecessary parts for relevant renderers.
  */
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR, int CLIP>
-static inline void render_layer_func(void * restrict pixels, Uint32 pitch,
+static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
  const struct graphics_data *graphics, const struct video_layer *layer)
 {
 #ifdef IS_CXX_11
