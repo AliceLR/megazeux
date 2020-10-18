@@ -98,7 +98,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;LIBXMP_NO_DEPACKERS;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <SDLCheck>false</SDLCheck>
       <DisableSpecificWarnings>
@@ -122,7 +122,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;LIBXMP_NO_DEPACKERS;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <SDLCheck>false</SDLCheck>
       <DisableSpecificWarnings>
@@ -148,7 +148,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;LIBXMP_NO_DEPACKERS;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <SDLCheck>false</SDLCheck>
       <LanguageStandard>stdcpp14</LanguageStandard>
@@ -174,7 +174,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;LIBXMP_NO_DEPACKERS;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <SDLCheck>false</SDLCheck>
       <LanguageStandard>stdcpp14</LanguageStandard>
@@ -237,13 +237,13 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\contrib\libxmp\src\load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\669_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\amf_load.c" />
-    <ClCompile Include="..\..\contrib\libxmp\src\loaders\asif.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\asylum_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\common.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\far_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\flt_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\gdm_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\hmn_load.c" />
+    <ClCompile Include="..\..\contrib\libxmp\src\loaders\ice_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\iff.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\itsex.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\it_load.c" />
@@ -261,7 +261,6 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\stm_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\st_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\ult_load.c" />
-    <ClCompile Include="..\..\contrib\libxmp\src\loaders\voltable.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\xm_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\load_helpers.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\md5.c" />
@@ -269,7 +268,6 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\contrib\libxmp\src\memio.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\mixer.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\mix_all.c" />
-    <ClCompile Include="..\..\contrib\libxmp\src\mix_paula.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\period.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\player.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\read_event.c" />
@@ -358,7 +356,6 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\contrib\libxmp\src\hmn_extras.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\lfo.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\list.h" />
-    <ClInclude Include="..\..\contrib\libxmp\src\loaders\asif.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\loaders\iff.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\loaders\it.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\loaders\loader.h" />
