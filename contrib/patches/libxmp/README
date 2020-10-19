@@ -25,6 +25,8 @@ Patch summary
     https://github.com/cmatsuoka/libxmp/pull/165
 15: Fixes STM zero volume samples, which should have been ignored but weren't. (by Viiri)
     Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/93
+16: Fixes FAR volume handling, which caused bugs like 0 volume events getting ignored.
+    Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/176
 
 
 --Lachesis
