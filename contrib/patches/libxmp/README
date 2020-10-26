@@ -27,6 +27,8 @@ Patch summary
     Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/93
 16: Fixes FAR volume handling, which caused bugs like 0 volume events getting ignored.
     Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/176
+17: Fixes MED compatibility tempos.
+    Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/177
 
 
 --Lachesis

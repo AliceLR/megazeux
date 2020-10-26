@@ -56,6 +56,9 @@ and applied the following branches as patches:
   fixes the handling of volume for FAR files, which would result in weird bugs like
   samples not stopping when their volume is set to 0.
   Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/176
+  [fix-med-compat-tempos](https://github.com/AliceLR/libxmp/tree/fix-med-compat-tempos):
+  fixes the "tracker compatibility" tempos in OctaMED files.
+  Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/177
 
 This patch automatically copies only the files required by MegaZeux, so manual file
 removal should no longer be necessary.

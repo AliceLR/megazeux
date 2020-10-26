@@ -32,7 +32,8 @@ patches := \
 	fix-s3m-adpcm \
 	fix-gdm-fine-effects \
 	fix-st-2-zero-volume \
-	fix-far-volume
+	fix-far-volume \
+	fix-med-compat-tempos
 
 #
 # Files to install from the generated libxmp branch to the
