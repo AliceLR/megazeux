@@ -6,29 +6,10 @@ automatically patch libxmp and generate contrib/libxmp/.
 Patch summary
 -------------
 
-01: Patches out libxmp_snprintf for most Windows environments MZX cases about.
-    Upstream pull request: https://github.com/cmatsuoka/libxmp/pull/175
-02: Adds a define to patch out depacker support.
-    Upstream pull request: https://github.com/cmatsuoka/libxmp/pull/172
-03: Adds MZX integration hacks to include/xmp.h.
-04: Removes extra formats not required by MZX.
+01: Adds MZX integration hacks to include/xmp.h.
+02: Removes extra formats not required by MZX.
 
-10: Removes a non-portable call to fdopen in xmp_load_module_from_file.
-    Upstream bug report: https://github.com/cmatsuoka/libxmp/issues/167.
-11: Makes xmp_set_position clear the pattern break/jump variables consistently.
-    Penting merge upstream: https://github.com/cmatsuoka/libxmp/pull/169.
 12: Fixes https://github.com/cmatsuoka/libxmp/issues/102 (global sample volume)
     and https://github.com/cmatsuoka/libxmp/issues/103 (sample vibrato).
-13: Fixes S3M ADPCM4 sample support. Pending merge upstream:
-    https://github.com/cmatsuoka/libxmp/pull/163
-14: Fixes GDM fine effects continue. Pending merge upstream:
-    https://github.com/cmatsuoka/libxmp/pull/165
-15: Fixes STM zero volume samples, which should have been ignored but weren't. (by Viiri)
-    Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/93
-16: Fixes FAR volume handling, which caused bugs like 0 volume events getting ignored.
-    Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/176
-17: Fixes MED compatibility tempos.
-    Pending merge upstream: https://github.com/cmatsuoka/libxmp/pull/177
-
 
 --Lachesis

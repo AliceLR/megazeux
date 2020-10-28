@@ -22,18 +22,9 @@ dest_loaders	:= ${dest_base}/${loaders}
 # Patch branches to merge into the generated libxmp branch.
 #
 patches := \
-	mingw-snprintf \
-	add-libxmp-no-depackers \
 	mzx-integration-hacks \
 	mzx-remove-extra-formats \
-	fix-xmp-load-module-from-file \
-	fix-xmp-set-position-jump \
 	fix-it-sample-volume-vibrato \
-	fix-s3m-adpcm \
-	fix-gdm-fine-effects \
-	fix-st-2-zero-volume \
-	fix-far-volume \
-	fix-med-compat-tempos
 
 #
 # Files to install from the generated libxmp branch to the
