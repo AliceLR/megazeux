@@ -1,4 +1,4 @@
-These patches are designed to get a fresh copy of libxmp git-92313f6 in line with
+These patches are designed to get a fresh copy of libxmp's master branch in line with
 MegaZeux's needs. Apply them in order (01, 02, ...) for best results. Alternatively,
 use [this libxmp branch](https://github.com/AliceLR/libxmp/tree/mzx-gen-libxmp) to
 automatically patch libxmp and generate contrib/libxmp/.
