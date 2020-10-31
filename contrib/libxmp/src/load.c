@@ -223,7 +223,7 @@ static int decrunch(HIO_HANDLE **h, const char *filename, char **temp)
 	}
 
 	hio_close(*h);
-	*h = hio_open_file(t);
+	*h = hio_open_file2(t);
 
 	return res;
 
@@ -343,8 +343,11 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
 
 			if (info != NULL && !is_prowizard) {
 				strncpy(info->name, buf, XMP_NAME_SIZE - 1);
+				info->name[XMP_NAME_SIZE - 1] = '\0';
+
 				strncpy(info->type, format_loader[i]->name,
 							XMP_NAME_SIZE - 1);
+				info->type[XMP_NAME_SIZE - 1] = '\0';
 			}
 			return 0;
 		}
@@ -582,15 +585,10 @@ int xmp_load_module_from_file(xmp_context opaque, void *file, long size)
 	struct context_data *ctx = (struct context_data *)opaque;
 	struct module_data *m = &ctx->m;
 	HIO_HANDLE *h;
-	FILE *f = (FILE *)file;
 	int ret;
 
-	if ((h = hio_open_file(f)) == NULL) {
-		/* Close the provided file since hio_close will close it
-		 * in the general case. */
-		fclose(f);
+	if ((h = hio_open_file((FILE *)file)) == NULL)
 		return -XMP_ERROR_SYSTEM;
-	}
 
 	if (ctx->state > XMP_STATE_UNLOADED)
 		xmp_release_module(opaque);

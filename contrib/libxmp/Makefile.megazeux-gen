@@ -22,18 +22,9 @@ dest_loaders	:= ${dest_base}/${loaders}
 # Patch branches to merge into the generated libxmp branch.
 #
 patches := \
-	mingw-snprintf \
-	add-libxmp-no-depackers \
 	mzx-integration-hacks \
 	mzx-remove-extra-formats \
-	fix-xmp-load-module-from-file \
-	fix-xmp-set-position-jump \
 	fix-it-sample-volume-vibrato \
-	fix-s3m-adpcm \
-	fix-gdm-fine-effects \
-	fix-st-2-zero-volume \
-	fix-far-volume \
-	fix-med-compat-tempos
 
 #
 # Files to install from the generated libxmp branch to the
@@ -57,8 +48,6 @@ install := \
 	${dest_src}/extras.c \
 	${dest_src}/extras.h \
 	${dest_src}/filter.c \
-	${dest_src}/fnmatch.c \
-	${dest_src}/fnmatch.h \
 	${dest_src}/format.c \
 	${dest_src}/format.h \
 	${dest_src}/hio.c \
@@ -91,6 +80,8 @@ install := \
 	${dest_src}/tempfile.h \
 	${dest_src}/virtual.c \
 	${dest_src}/virtual.h \
+	${dest_src}/xfnmatch.c \
+	${dest_src}/xfnmatch.h \
 	${dest_loaders}/common.c \
 	${dest_loaders}/iff.c \
 	${dest_loaders}/iff.h \
