@@ -48,8 +48,6 @@ install := \
 	${dest_src}/extras.c \
 	${dest_src}/extras.h \
 	${dest_src}/filter.c \
-	${dest_src}/fnmatch.c \
-	${dest_src}/fnmatch.h \
 	${dest_src}/format.c \
 	${dest_src}/format.h \
 	${dest_src}/hio.c \
@@ -82,6 +80,8 @@ install := \
 	${dest_src}/tempfile.h \
 	${dest_src}/virtual.c \
 	${dest_src}/virtual.h \
+	${dest_src}/xfnmatch.c \
+	${dest_src}/xfnmatch.h \
 	${dest_loaders}/common.c \
 	${dest_loaders}/iff.c \
 	${dest_loaders}/iff.h \
