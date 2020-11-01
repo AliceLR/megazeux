@@ -15,6 +15,8 @@ USERS
 + Fixed a bug in the NDS port where MZX would immediately focus
   the player after a touchscreen press event, preventing the
   touchscreen from being used to scroll the upper screen. (asie)
++ Fixed a crash that could occur sometimes when duplicating
+  robots on a board with Reset Board on Entry enabled.
 + Added SET RANDOM, INC RANDOM, DEC RANDOM, and TAKE "label"
   commands to the list of commands that should allow "infinite"
   loops in pre-2.80 versions.

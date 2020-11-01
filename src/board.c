@@ -1175,10 +1175,10 @@ struct board *duplicate_board(struct world *mzx_world,
 
   // Robots
   dest_robot_list =
-   ccalloc(src_board->num_robots + 1, sizeof(struct robot *));
+   ccalloc(src_board->num_robots_allocated + 1, sizeof(struct robot *));
 
   dest_robot_name_list =
-   ccalloc(src_board->num_robots, sizeof(struct robot *));
+   ccalloc(src_board->num_robots_allocated, sizeof(struct robot *));
 
   dest_board->robot_list = dest_robot_list;
   dest_board->robot_list_name_sorted = dest_robot_name_list;
@@ -1212,7 +1212,7 @@ struct board *duplicate_board(struct world *mzx_world,
 
   // Scrolls
   dest_scroll_list =
-   ccalloc(src_board->num_scrolls + 1, sizeof(struct scroll *));
+   ccalloc(src_board->num_scrolls_allocated + 1, sizeof(struct scroll *));
 
   dest_board->scroll_list = dest_scroll_list;
 
@@ -1231,7 +1231,7 @@ struct board *duplicate_board(struct world *mzx_world,
 
   // Sensors
   dest_sensor_list =
-   ccalloc(src_board->num_sensors + 1, sizeof(struct sensor *));
+   ccalloc(src_board->num_sensors_allocated + 1, sizeof(struct sensor *));
 
   dest_board->sensor_list = dest_sensor_list;
 
