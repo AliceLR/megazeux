@@ -229,7 +229,6 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\contrib\libxmp\src\effects.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\extras.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\filter.c" />
-    <ClCompile Include="..\..\contrib\libxmp\src\fnmatch.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\format.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\hio.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\hmn_extras.c" />
@@ -274,6 +273,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\contrib\libxmp\src\scan.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\smix.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\virtual.c" />
+    <ClCompile Include="..\..\contrib\libxmp\src\xfnmatch.c" />
     <ClCompile Include="..\..\src\audio\audio.c" />
     <ClCompile Include="..\..\src\audio\audio_pcs.c" />
     <ClCompile Include="..\..\src\audio\audio_reality.cpp" />
@@ -350,7 +350,6 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\contrib\libxmp\src\common.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\effects.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\extras.h" />
-    <ClInclude Include="..\..\contrib\libxmp\src\fnmatch.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\format.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\hio.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\hmn_extras.h" />
@@ -368,15 +367,14 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\contrib\libxmp\src\med_extras.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\memio.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\mixer.h" />
-    <ClInclude Include="..\..\contrib\libxmp\src\paula.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\period.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\player.h" />
-    <ClInclude Include="..\..\contrib\libxmp\src\precomp_blep.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\precomp_lut.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\virtual.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\win32\osdcomm.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\win32\ptpopen.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\win32\unistd.h" />
+    <ClInclude Include="..\..\contrib\libxmp\src\xfnmatch.h" />
     <ClInclude Include="..\..\src\audio\audio.h" />
     <ClInclude Include="..\..\src\audio\audio_pcs.h" />
     <ClInclude Include="..\..\src\audio\audio_reality.h" />

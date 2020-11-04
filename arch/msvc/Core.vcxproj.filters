@@ -225,9 +225,6 @@
     <ClCompile Include="..\..\contrib\libxmp\src\filter.c">
       <Filter>Source Files\contrib\libxmp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\fnmatch.c">
-      <Filter>Source Files\contrib\libxmp</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\format.c">
       <Filter>Source Files\contrib\libxmp</Filter>
     </ClCompile>
@@ -420,6 +417,9 @@
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\ice_load.c">
       <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\xfnmatch.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\block.h">
@@ -521,9 +521,6 @@
     <ClInclude Include="..\..\contrib\libxmp\src\extras.h">
       <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\contrib\libxmp\src\fnmatch.h">
-      <Filter>Header Files\contrib\libxmp</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\format.h">
       <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
@@ -554,16 +551,10 @@
     <ClInclude Include="..\..\contrib\libxmp\src\mixer.h">
       <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\contrib\libxmp\src\paula.h">
-      <Filter>Header Files\contrib\libxmp</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\period.h">
       <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\player.h">
-      <Filter>Header Files\contrib\libxmp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\contrib\libxmp\src\precomp_blep.h">
       <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\precomp_lut.h">
@@ -763,6 +754,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\hashtable.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\contrib\libxmp\src\xfnmatch.h">
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
