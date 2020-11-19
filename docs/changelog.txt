@@ -1,4 +1,24 @@
-GIT
+November 22nd, 2020 - MZX 2.92f
+
+Here's another bugfix release. Highlights of this release are
+crash fixes (including the 3DS OGG crash bugs), numerous SAM/WAV
+playback bugfixes, some edge case compatibility fixes, world
+decryption improvements, networking improvements (including
+experimental Wii, 3DS, and Switch support), bugfixes for the
+file manager in Nintendo Switch builds, and too many libxmp
+fixes/improvements to list. Since libxmp development is active
+again, the number of MegaZeux hack patches is down to just two!
+The editor is now enabled for 3DS builds, and some rudimentary
+joystick support has been added to the editor so it will (maybe)
+be (almost) usable.
+
+Of special note are asie's improvements to the NDS port. New
+features include protected character set and palette support,
+improved touchscreen focus, reduced memory consumption, and
+*audio support*. Currently NDS audio requires preconversion of
+music files to .MAS and sample files to .SAM, but that it works
+at all is amazing by itself. Pre-converted .MAS files are
+included with the packed-in copy of Caverns of Zeux.
 
 USERS
 
