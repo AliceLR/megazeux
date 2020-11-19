@@ -9,7 +9,4 @@ Patch summary
 01: Adds MZX integration hacks to include/xmp.h.
 02: Removes extra formats not required by MZX.
 
-12: Fixes https://github.com/cmatsuoka/libxmp/issues/102 (global sample volume)
-    and https://github.com/cmatsuoka/libxmp/issues/103 (sample vibrato).
-
 --Lachesis

@@ -47,9 +47,9 @@ extern const struct format_loader libxmp_loader_far;
 extern const struct format_loader libxmp_loader_669;
 extern const struct format_loader libxmp_loader_hmn;
 
-extern const struct pw_format *const pw_format[];
+extern const struct pw_format *const pw_formats[];
 
-const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
+const struct format_loader *const format_loaders[NUM_FORMATS + 2] = {
 	&libxmp_loader_xm,
 	&libxmp_loader_mod,
 	&libxmp_loader_flt,
@@ -77,18 +77,17 @@ const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
 
 static const char *_farray[NUM_FORMATS + 1] = { NULL };
 
-char **format_list()
+const char *const *format_list(void)
 {
 	int count, i;
 
 	if (_farray[0] == NULL) {
-		for (count = i = 0; format_loader[i] != NULL; i++) {
-
-			_farray[count++] = format_loader[i]->name;
+		for (count = i = 0; format_loaders[i] != NULL; i++) {
+			_farray[count++] = format_loaders[i]->name;
 		}
 
 		_farray[count] = NULL;
 	}
 
-	return (char **)_farray;
+	return _farray;
 }

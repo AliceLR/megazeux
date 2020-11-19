@@ -24,7 +24,6 @@ dest_loaders	:= ${dest_base}/${loaders}
 patches := \
 	mzx-integration-hacks \
 	mzx-remove-extra-formats \
-	fix-it-sample-volume-vibrato \
 
 #
 # Files to install from the generated libxmp branch to the
