@@ -3601,7 +3601,11 @@ skip_dir:
         if(ret[0] && (ret[ret_len - 1] == ':') && (ret_len + 1) < MAX_PATH)
           strcpy(ret + ret_len, DIR_SEPARATOR);
 
+        // TODO: for reliable results this needs to happen from the current dir.
+        chdir(current_dir_name);
         path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
+        chdir(return_dir_name);
+
         if(ret_path[0])
         {
           if(path_navigate(current_dir_name, MAX_PATH, ret_path) < 0)
