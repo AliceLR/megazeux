@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -92,6 +92,7 @@ static int mmd3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	int playseq_offset;
 	int pos;
 	int bpm_on, bpmlen, med_8ch, hexvol;
+	char name[40];
 
 	LOAD_INIT();
 
@@ -349,7 +350,13 @@ static int mmd3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		block.lines = hio_read16b(f);
 		hio_read32b(f);
 
-		if (libxmp_alloc_pattern_tracks(mod, i, block.lines + 1) < 0)
+		/* Sanity check--Amiga OctaMED files have an upper bound of 3200 lines per block,
+		 * but MED Soundstudio for Windows allows up to 9999 lines.
+		  */
+		if (block.lines + 1 > 9999)
+			return -1;
+
+		if (libxmp_alloc_pattern_tracks_long(mod, i, block.lines + 1) < 0)
 			return -1;
 
 		for (j = 0; j < mod->xxp[i]->rows; j++) {
@@ -424,10 +431,12 @@ static int mmd3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 			struct xmp_instrument *xxi = &mod->xxi[i];
 			int offset = iinfo_offset + i * expdata.i_ext_entrsz;
 
-			if (offset < 0 || hio_seek(f, offset, SEEK_SET) < 0) {
+			if (offset < 0 || hio_seek(f, start + offset, SEEK_SET) < 0) {
 				return -1;
 			}
-			hio_read(&xxi->name, 40, 1, f);
+			hio_read(name, 40, 1, f);
+			strncpy(xxi->name, name, 32);
+			xxi->name[31] = '\0';
 			D_(D_INFO "[%2x] %-40.40s %d", i, mod->xxi[i].name, instr.type);
 		}
 
@@ -436,7 +445,7 @@ static int mmd3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		if (expdata_offset && i < expdata.s_ext_entries) {
 			int offset = expsmp_offset + i * expdata.s_ext_entrsz;
 
-			if (offset < 0 || hio_seek(f, offset, SEEK_SET) < 0) {
+			if (offset < 0 || hio_seek(f, start + offset, SEEK_SET) < 0) {
 				return -1;
 			}
 			exp_smp.hold = hio_read8(f);
@@ -496,11 +505,11 @@ static int mmd3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 			smp_idx += oct;
 
 			continue;
-		} else if ((instr.type & ~(S_16 | STEREO)) != 0) {
+		} else if ((instr.type & STEREO) != 0) {
 			D_(D_WARN "stereo sample unsupported");
 			mod->xxi[i].nsm = 0;
 			continue;
-		} else if ((instr.type & ~S_16) == 0) {	/* Sample */
+		} else if ((instr.type & S_16) == 0) {	/* Sample */
 			int ret;
 
 			hio_seek(f, start + smpl_offset + 6, SEEK_SET);
@@ -517,7 +526,7 @@ static int mmd3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 			continue;
 		} else {
 			/* Invalid instrument type */
-			D_(D_CRIT "invalid instrument type");
+			D_(D_CRIT "invalid instrument type: %d", instr.type);
 			return -1;
 		}
 	}

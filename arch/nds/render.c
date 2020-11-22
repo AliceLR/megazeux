@@ -35,6 +35,7 @@
 
 #include <string.h>
 
+#include "event.h"
 #include "render.h"
 #include "platform.h"
 
@@ -54,6 +55,8 @@ static int cell_pan_y = 0;
 
 // When set to >= 0, the upper screen will attempt to focus to this position
 // the next  time it is drawn and then reset them to -1.
+static int last_focus_x = -1;
+static int last_focus_y = -1;
 static int focus_x = -1;
 static int focus_y = -1;
 
@@ -66,9 +69,6 @@ static u8 palette_idx_table[256];
 #define PALETTE_NORMAL_START (16)
 #define PALETTE_PROTECTED_START (PALETTE_NORMAL_START + 16 + 120)
 #define palette_protected_idx_table protected_palette_bin
-
-// If we're looking around with the mouse, ignore the next call to focus.
-static boolean mouselook;
 
 // Y offset information for subscreen
 static s16 subscreen_offset_y = 0;
@@ -416,7 +416,6 @@ static boolean nds_init_video(struct graphics_data *graphics,
   // Initialize the 1:1 scaled "main" screen.
   nds_mainscreen_init(graphics);
 
-  mouselook = false;
   transition.state = TRANSITION_NONE;
   transition.time = 0;
 
@@ -445,12 +444,6 @@ static void nds_mainscreen_focus(int x, int y)
   static int old_y = -1;
   int scroll_x, scroll_y, i, ypos, ycounter;
   u16 *sptr;
-
-  if(mouselook)
-  {
-    // We're mouselooking, don't move the focus.
-    return;
-  }
 
   if(x == old_x && y == old_y)
   {
@@ -802,9 +795,24 @@ static void nds_remap_char_range(struct graphics_data *graphics, Uint16 first,
 
 static void nds_focus_pixel(struct graphics_data *graphics, Uint32 x, Uint32 y)
 {
-  // We want these values to be handled later while render_graph is run.
-  focus_x = (int)x;
-  focus_y = (int)y;
+  switch(get_allow_focus_changes())
+  {
+    case FOCUS_FORBID:
+      return;
+    case FOCUS_ALLOW:
+      if(last_focus_x != (int)x || last_focus_y != (int)y)
+      {
+        last_focus_x = x;
+        last_focus_y = y;
+        focus_x = x;
+        focus_y = y;
+      }
+      break;
+    case FOCUS_PASS:
+      focus_x = x;
+      focus_y = y;
+      break;
+  }
 }
 
 void render_nds_register(struct renderer *renderer)
@@ -845,9 +853,4 @@ void nds_subscreen_switch(void)
   // Call the appropriate init function.
   if(subscreen_mode == SUBSCREEN_KEYBOARD)
     nds_subscreen_keyboard_init();
-}
-
-void nds_mouselook(boolean enabled)
-{
-  mouselook = enabled;
 }

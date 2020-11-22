@@ -1125,7 +1125,7 @@ int add_board(struct world *mzx_world, int current)
 {
   struct board *new_board;
   char name[BOARD_NAME_SIZE];
-  name[0] = 0;
+  memset(name, 0, BOARD_NAME_SIZE);
 
   if(input_window(mzx_world, "Name for new board:", name, BOARD_NAME_SIZE - 1))
     return -1;

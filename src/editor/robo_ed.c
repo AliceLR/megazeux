@@ -3462,6 +3462,45 @@ static boolean robot_editor_mouse(context *ctx, int *key, int button,
   return false;
 }
 
+static boolean robot_editor_joystick(context *ctx, int *key, int action)
+{
+  struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
+
+  // Note: intake context also handles X, Y.
+  switch(action)
+  {
+    // Special case for backspace at the start of a line.
+    // Otherwise, intake should handle this.
+    case JOY_Y:
+    {
+      if(rstate->current_x == 0 && rstate->current_line > 1)
+      {
+        combine_current_line(rstate, -1);
+        return true;
+      }
+      break;
+    }
+
+    // Thing param menu
+    case JOY_LSHOULDER:
+      *key = IKEY_F4;
+      return true;
+
+    // Defaults for everything else...
+    default:
+    {
+      enum keycode ui_key = get_joystick_ui_key();
+      if(ui_key)
+      {
+        *key = ui_key;
+        return true;
+      }
+      break;
+    }
+  }
+  return false;
+}
+
 static boolean robot_editor_key(context *ctx, int *key)
 {
   struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
@@ -4163,6 +4202,7 @@ void robot_editor(context *parent, struct robot *cur_robot)
   spec.draw           = robot_editor_draw;
   spec.idle           = robot_editor_idle;
   spec.click          = robot_editor_mouse;
+  spec.joystick       = robot_editor_joystick;
   spec.key            = robot_editor_key;
   spec.destroy        = robot_editor_destroy;
   create_context((context *)rstate, parent, &spec, CTX_ROBO_ED);

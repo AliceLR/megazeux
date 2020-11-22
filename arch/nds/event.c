@@ -23,6 +23,7 @@
 #include "../../src/graphics.h"
 
 #include <nds/arm9/keyboard.h>
+#include "event.h"
 #include "render.h"
 #include "evq.h"
 
@@ -31,6 +32,7 @@ static boolean process_event(NDSEvent *event);
 
 extern struct input_status input;
 extern u16 subscreen_height;
+static enum focus_mode allow_focus_changes = FOCUS_ALLOW;
 
 static boolean keyboard_allow_release = true;
 
@@ -54,16 +56,13 @@ void __wait_event(void)
   process_event(&event);
 }
 
+enum focus_mode get_allow_focus_changes(void)
+{
+  return allow_focus_changes;
+}
+
 void real_warp_mouse(int x, int y)
 {
-  const struct buffered_status *status = load_status();
-
-  if(x < 0)
-    x = status->real_mouse_x;
-
-  if(y < 0)
-    y = status->real_mouse_y;
-
   // Since we can't warp a touchscreen stylus, focus there instead.
   focus_pixel(x, y);
 }
@@ -223,6 +222,7 @@ static boolean process_event(NDSEvent *event)
       status->mouse_repeat_state = 1;
       status->mouse_drag_state = -1;
       status->mouse_time = get_ticks();
+      allow_focus_changes = FOCUS_FORBID;
       break;
     }
 
@@ -234,7 +234,7 @@ static boolean process_event(NDSEvent *event)
       status->mouse_repeat = 0;
       status->mouse_drag_state = 0;
       status->mouse_repeat_state = 0;
-      nds_mouselook(false);
+      allow_focus_changes = FOCUS_ALLOW;
       break;
     }
 
@@ -253,10 +253,10 @@ static boolean process_event(NDSEvent *event)
       status->mouse_y = my / 14;
       status->mouse_moved = true;
 
-      // Update our internal mouselook state.
-      nds_mouselook(false);
+      // Update our internal focus.
+      allow_focus_changes = FOCUS_PASS;
       focus_pixel(mx, my);
-      nds_mouselook(true);
+      allow_focus_changes = FOCUS_FORBID;
       break;
     }
 

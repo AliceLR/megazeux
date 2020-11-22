@@ -1,4 +1,24 @@
-GIT
+November 22nd, 2020 - MZX 2.92f
+
+Here's another bugfix release. Highlights of this release are
+crash fixes (including the 3DS OGG crash bugs), numerous SAM/WAV
+playback bugfixes, some edge case compatibility fixes, world
+decryption improvements, networking improvements (including
+experimental Wii, 3DS, and Switch support), bugfixes for the
+file manager in Nintendo Switch builds, and too many libxmp
+fixes/improvements to list. Since libxmp development is active
+again, the number of MegaZeux hack patches is down to just two!
+The editor is now enabled for 3DS builds, and some rudimentary
+joystick support has been added to the editor so it will (maybe)
+be (almost) usable.
+
+Of special note are asie's improvements to the NDS port. New
+features include protected character set and palette support,
+improved touchscreen focus, reduced memory consumption, and
+*audio support*. Currently NDS audio requires preconversion of
+music files to .MAS and sample files to .SAM, but that it works
+at all is amazing by itself. Pre-converted .MAS files are
+included with the packed-in copy of Caverns of Zeux.
 
 USERS
 
@@ -12,6 +32,19 @@ USERS
 
 + Added protected character set and palette support to the NDS
   port and reduced overall RAM usage for the NDS port. (asie)
++ Fixed a bug in the NDS port where MZX would immediately focus
+  the player after a touchscreen press event, preventing the
+  touchscreen from being used to scroll the upper screen. (asie)
++ Fixed a crash that could occur sometimes when duplicating
+  robots on a board with Reset Board on Entry enabled.
++ Added SET RANDOM, INC RANDOM, DEC RANDOM, and TAKE "label"
+  commands to the list of commands that should allow "infinite"
+  loops in pre-2.80 versions.
++ Fixed SET RANDOM # TO # for large ranges on certain platforms
+  (example: Linux) confused by the 32-bit math used to calculate
+  the random range.
++ Fixed crashes that could occur when attempting to run MegaZeux
+  without help.fil.
 + Fixed graphics corruption when using the glsl and opengl2
   renderers on big endian platforms.
 + Fixed a bug that would cause string searches to sometimes skip
@@ -83,6 +116,38 @@ USERS
   the music file for the current board.
 + Fixed multiple libvorbis and tremor crashes related to the
   3DS platform_mutex_lock implementation not blocking.
++ Fixed audio frequency bugs in .SAM file playback.
++ Certain .WAV subtypes handled by SDL_LoadWav should now load
+  properly on big endian machines.
++ Signed 16-bit samples should now work correctly with MOD SAM
+  on big endian machines.
++ Fixed the white border present when using the GLSL renderer in
+  HTML5 builds.
++ Added joystick input handlers for most editor interfaces.
+  Only very basic things are supported like navigating boards
+  and robots. This is intended for things like handheld consoles
+  without a keyboard.
++ Fixed a bug where turning off the listening mod would load the
+  mod that was playing when the listening mod was loaded instead
+  of the current board's mod.
++ Fixed a bug where setting a board mod to a partiular mod, then
+  setting the board mod to *, then changing to a different board
+  with the same mod would not restart the board mod.
++ Fixed a bug where libxmp would not ignore zero volume samples
+  in STM files.
++ Restored libxmp support for Soundtracker 2.6/IceTracker .MODs.
+  Currently only libxmp supports this .MOD variant.
++ Fixed a bug where MZX would fail to load Noisetracker,
+  Octalyser, and Mod's Grave .MOD files if they were named using
+  the extensions .NST, .OCT, and .WOW (respectively). These can
+  now be selected with Alt+N/Ctrl+N in the editor.
++ Enabled loading .XM and .AMF files with MikMod. Whatever the
+  issue was with these in 2007 seems to have since been fixed.
++ Fixed loading Soundtracker 15-instrument .MODs with MikMod.
++ Fixed MOD_POSITION and MOD_LENGTH counters for MikMod.
++ MikMod now uses interpolation if module_resample_mode is set.
+- Disabled playing modules using the SAM command with MikMod to
+  avoid crashes due to MikMod using a global player state.
 
 DEVELOPERS
 
@@ -127,6 +192,14 @@ DEVELOPERS
   Amiga, Wii, and PSP network builds force-disable these. Switch
   and 3DS builds currently force-disable IPv6.
 + Added experimental network support for Wii, Switch, and 3DS.
++ Updated libxmp to git-ab70ec9f, refactored libxmp patches.
++ Removed unused libxmp Paula simulator code to save RAM. (asie)
++ SDL is no longer required to build MZX with MikMod enabled.
++ Fixed MikMod static linking on Windows.
++ Added --disable-stack-protector config.sh option. Platforms
+  that previously disabled the stack protector in the Makefile
+  now force disable this config option. These force disable
+  hacks will probably be removed in the near future.
 
 
 July 20th, 2020 - MZX 2.92e

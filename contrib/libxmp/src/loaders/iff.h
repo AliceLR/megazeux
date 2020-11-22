@@ -13,7 +13,7 @@
 #define IFF_SKIP_EMBEDDED	0x10
 #define IFF_CHUNK_TRUNC4	0x20
 
-#define IFF_MAX_CHUNK_SIZE	0x400000
+#define IFF_MAX_CHUNK_SIZE	0x800000
 
 typedef void *iff_handle;
 
@@ -32,7 +32,7 @@ struct iff_info {
 iff_handle libxmp_iff_new(void);
 int	libxmp_iff_load(iff_handle, struct module_data *, HIO_HANDLE *, void *);
 /* int libxmp_iff_chunk(iff_handle, struct module_data *, HIO_HANDLE *, void *); */
-int 	libxmp_iff_register(iff_handle, char *,
+int 	libxmp_iff_register(iff_handle, const char *,
 	int (*loader)(struct module_data *, int, HIO_HANDLE *, void *));
 void 	libxmp_iff_id_size(iff_handle, int);
 void 	libxmp_iff_set_quirk(iff_handle, int);

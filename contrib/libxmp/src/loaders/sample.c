@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -195,7 +195,7 @@ static void unroll_loop(struct xmp_sample *xxs)
 }
 
 
-int libxmp_load_sample(struct module_data *m, HIO_HANDLE *f, int flags, struct xmp_sample *xxs, void *buffer)
+int libxmp_load_sample(struct module_data *m, HIO_HANDLE *f, int flags, struct xmp_sample *xxs, const void *buffer)
 {
 	int bytelen, extralen, unroll_extralen, i;
 
@@ -409,8 +409,16 @@ int libxmp_load_sample(struct module_data *m, HIO_HANDLE *f, int flags, struct x
 
 #ifndef LIBXMP_CORE_PLAYER
     err2:
-	free(xxs->data - 4);
+	libxmp_free_sample(xxs);
 #endif
     err:
 	return -1;
+}
+
+void libxmp_free_sample(struct xmp_sample *s)
+{
+    if (s->data) {
+	free(s->data - 4);
+	s->data = NULL;		/* prevent double free in PCM load error */
+    }
 }

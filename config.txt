@@ -1,5 +1,5 @@
-# Configuration file for MegaZeux 2.92e
-# July 20th, 2020
+# Configuration file for MegaZeux 2.92f
+# November 22nd, 2020
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -207,7 +207,7 @@
 
 # enable_oversampling = 0
 
-# Set master resample mode. This affects how OGGs, WAVs, and
+# Set master resample mode. This affects how OGGs, SAMs, WAVs, and
 # frequency shifted modules sound. Choices are:
 # none (fastest, poor quality)
 # linear (fast, good quality)

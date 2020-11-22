@@ -86,6 +86,11 @@ endif
 #
 ifeq (${COMPILER},gcc)
 
+GCC_VER_GE_4_6   := ${shell test ${GCC_VER} -ge 40600; echo $$?}
+ifeq ($(GCC_VER_GE_4_6),0)
+HAS_W_NO_UNUSED_BUT_SET_VARIABLE ?= 1
+endif
+
 GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 ifeq ($(GCC_VER_GE_7),0)
 HAS_W_NO_FORMAT_TRUNCATION ?= 1

@@ -347,7 +347,7 @@ static void send_at_xy(struct world *mzx_world, int id, int x, int y,
 static int get_random_range(int min_value, int max_value)
 {
   int result;
-  unsigned int difference;
+  Uint64 difference;
 
   if(min_value == max_value)
   {
@@ -357,15 +357,15 @@ static int get_random_range(int min_value, int max_value)
   {
     if(max_value > min_value)
     {
-      difference = max_value - min_value;
+      difference = (Sint64)max_value - (Sint64)min_value;
     }
     else
     {
-      difference = min_value - max_value;
+      difference = (Sint64)min_value - (Sint64)max_value;
       min_value = max_value;
     }
 
-    result = Random((unsigned long long)difference + 1) + min_value;
+    result = Random(difference + 1) + min_value;
   }
 
   return result;
@@ -2548,6 +2548,7 @@ void run_robot(context *ctx, int id, int x, int y)
           gotoed = send_self_label_tr(mzx_world,  p2 + 4, id);
         }
 
+        last_label = -1;
         break;
       }
 
@@ -3552,6 +3553,7 @@ void run_robot(context *ctx, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
         result = get_random_range(min_value, max_value);
         inc_counter(mzx_world, dest_buffer, result, id);
+        last_label = -1;
         break;
       }
 
@@ -3567,6 +3569,7 @@ void run_robot(context *ctx, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
         result = get_random_range(min_value, max_value);
         dec_counter(mzx_world, dest_buffer, result, id);
+        last_label = -1;
         break;
       }
 
@@ -3582,6 +3585,7 @@ void run_robot(context *ctx, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
         result = get_random_range(min_value, max_value);
         set_counter(mzx_world, dest_buffer, result, id);
+        last_label = -1;
         break;
       }
 

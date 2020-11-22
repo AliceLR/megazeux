@@ -87,8 +87,8 @@ static const char *const chr_ext[] = { ".CHR", NULL };
 static const char *const mod_ext[] =
 { ".ogg", ".mod", ".s3m", ".xm", ".it",
   ".669", ".amf", ".dsm", ".far", ".gdm",
-  ".med", ".mtm", ".okt", ".stm", ".ult",
-  ".rad",
+  ".med", ".mtm", ".nst", ".oct", ".okt",
+  ".stm", ".ult", ".wow", ".rad",
   NULL
 };
 static const char *const sam_ext[] =
@@ -514,6 +514,7 @@ static void fix_mod(struct editor_context *editor)
   {
     if(!strcmp(mzx_world->current_board->mod_playing, "*"))
     {
+      mzx_world->real_mod_playing[0] = '\0';
       audio_end_module();
     }
 
@@ -1442,6 +1443,95 @@ static boolean editor_mouse(context *ctx, int *key, int button, int x, int y)
       // We want mouse draw to continue even if the cursor goes out of bounds.
       mouse_draw(editor, editor->cursor_x, editor->cursor_y);
       return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Handle joystick actions for the editor.
+ * Currently support here is fairly weak and only exists to allow basic
+ * features like moving the cursor, peeking at robots, or exiting.
+ */
+static boolean editor_joystick(context *ctx, int *key, int action)
+{
+  struct editor_context *editor = (struct editor_context *)ctx;
+
+  switch(action)
+  {
+    // Place
+    case JOY_A:
+      *key = IKEY_SPACE;
+      return true;
+
+    // Delete
+    case JOY_B:
+      *key = IKEY_DELETE;
+      return true;
+
+    // Modify+Grab
+    case JOY_X:
+      *key = IKEY_RETURN;
+      return true;
+
+    // Grab
+    case JOY_Y:
+      *key = IKEY_INSERT;
+      return true;
+
+    // Board menu
+    case JOY_START:
+      *key = IKEY_b;
+      return true;
+
+    // Global info
+    case JOY_LSHOULDER:
+      *key = IKEY_g;
+      return true;
+
+    // Board info
+    case JOY_RSHOULDER:
+      *key = IKEY_i;
+      return true;
+
+    // Previous menu
+    case JOY_LTRIGGER:
+    {
+      if(editor->screen_height != EDIT_SCREEN_NORMAL)
+      {
+        editor->screen_height = EDIT_SCREEN_NORMAL;
+        fix_scroll(editor);
+      }
+      else
+        *key = IKEY_PAGEUP;
+
+      return true;
+    }
+
+    // Next menu
+    case JOY_RTRIGGER:
+    {
+      if(editor->screen_height != EDIT_SCREEN_NORMAL)
+      {
+        editor->screen_height = EDIT_SCREEN_NORMAL;
+        fix_scroll(editor);
+      }
+      else
+        *key = IKEY_PAGEDOWN;
+
+      return true;
+    }
+
+    // Defaults for select, arrows, etc.
+    default:
+    {
+      enum keycode ui_key = get_joystick_ui_key();
+      if(ui_key)
+      {
+        *key = ui_key;
+        return true;
+      }
+      break;
     }
   }
   return false;
@@ -3024,12 +3114,7 @@ static boolean editor_key(context *ctx, int *key)
             audio_end_module();
             editor->listening_mod_active = false;
 
-            // If there's a mod currently "playing", restart it. Otherwise,
-            // just start the current board's mod.
-            if(mzx_world->real_mod_playing[0])
-              audio_play_module(mzx_world->real_mod_playing, true, 255);
-            else
-              fix_mod(editor);
+            fix_mod(editor);
           }
         }
       }
@@ -3695,6 +3780,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   spec.draw     = editor_draw;
   spec.idle     = editor_idle;
   spec.key      = editor_key;
+  spec.joystick = editor_joystick;
   spec.click    = editor_mouse;
   spec.drag     = editor_mouse;
   spec.destroy  = editor_destroy;

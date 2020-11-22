@@ -470,6 +470,16 @@ void audio_play_sample(char *filename, boolean safely, int period)
   }
   else
   {
+    /**
+     * NOTE: the period is doubled here to compensate for a SAM to WAV
+     * conversion bug introduced in MZX 2.80. Unfortunately this has
+     * permanently affected the way the frequency field has been used for WAV
+     * and OGG samples and needs to be carried forward.
+     *
+     * Note that WAVs generated from the buggy SAM to WAV conversion routine
+     * are treated as stereo and must also have this buggy doubling. In other
+     * words, just double the frequency in the SAM loader.
+     */
     audio_ext_construct_stream(filename,
      audio_get_real_frequency(period * 2), vol, 0);
   }
@@ -497,6 +507,11 @@ void audio_spot_sample(int period, int which)
 
   if(ret)
   {
+    /**
+     * NOTE: see above for why the period is being multiplied by 2 here.
+     * The player implementation of get_sample should enable the sam frequency
+     * hack to compensate for this.
+     */
     struct audio_stream *a_src = construct_wav_stream_direct(&wav,
      audio_get_real_frequency(period * 2), vol, !!(wav.loop_end));
     a_src->is_spot_sample = true;

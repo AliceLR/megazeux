@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -235,7 +235,7 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	/* read instrument names in temporary space */
 
 	num_ins = 0;
-	memset(&temp_inst, 0, sizeof(temp_inst));
+	memset(temp_inst, 0, sizeof(temp_inst));
 	for (i = 0; mask != 0 && i < 64; i++, mask <<= 1) {
 		uint8 c, size, buf[40];
 		uint16 loop_len = 0;
@@ -554,8 +554,9 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 	mod->smp = num_smp;
 
-	if (libxmp_init_instrument(m) < 0)
+	if (libxmp_init_instrument(m) < 0) {
 		return -1;
+	}
 
 	D_(D_INFO "Instruments: %d", mod->ins);
 
@@ -567,8 +568,9 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		struct xmp_subinstrument *sub;
 		struct xmp_sample *xxs;
 
-		if ((int64)mask > 0)
+		if ((int64)mask > 0) {
 			continue;
+		}
 
 		xxi = &mod->xxi[i];
 
@@ -576,6 +578,7 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		type = (int16)hio_read16b(f);	/* instrument type */
 
 		strncpy((char *)xxi->name, temp_inst[i].name, 32);
+		xxi->name[31] = '\0';
 
 		D_(D_INFO "\n[%2X] %-32.32s %d", i, xxi->name, type);
 
@@ -708,6 +711,11 @@ static int med4_load(struct module_data *m, HIO_HANDLE *f, const int start)
 			MED_INSTRUMENT_EXTRAS(*xxi)->wts = synth.wfspeed;
 
 			for (j = 0; j < synth.wforms; j++) {
+				/* Sanity check */
+				if (smp_idx >= num_smp) {
+					return -1;
+				}
+
 				sub = &xxi->sub[j];
 
 				sub->pan = 0x80;
