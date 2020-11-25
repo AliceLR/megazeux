@@ -1,3 +1,12 @@
+GIT
+
+USERS
+
++ Fixed a bug where, if a world's title screen music is set but
+  fails to load when the world is loaded, the music from another
+  world could continue to play.
+
+
 November 22nd, 2020 - MZX 2.92f
 
 Here's another bugfix release. Highlights of this release are

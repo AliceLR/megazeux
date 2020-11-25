@@ -307,6 +307,9 @@ static boolean load_world_title(struct game_context *game, char *name)
     change_board_set_values(mzx_world);
     change_board_load_assets(mzx_world);
 
+    // Music may be playing from the previous world or from editing. End the
+    // module explicitly first in case the title module fails to load.
+    audio_end_module();
     load_board_module(mzx_world);
     sfx_clear_queue();
 
