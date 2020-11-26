@@ -866,8 +866,11 @@ if [ "$PLATFORM" = "psvita" ]; then
 	echo "#define CONFIG_PSVITA" >> src/config.h
 	echo "BUILD_PSVITA=1" >> platform.inc
 
-	echo "Disabling utils on PS Vita (silly)."
+	echo "Force-disabling utils on PS Vita."
 	UTILS="false"
+
+	echo "Force-disabling stack protector on PS Vita."
+	STACK_PROTECTOR="false"
 fi
 
 #
