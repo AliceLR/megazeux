@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -165,11 +165,13 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
             break;
         }
 
-        /* Don't update pattern information if we're inside a loop, otherwise
-         * a loop containing e.g. a global volume fade can make the pattern
-         * start with the wrong volume.
+        /* Only update pattern information if we weren't here before. This also
+         * means that we don't update pattern information if we're inside a loop,
+         * otherwise a loop containing e.g. a global volume fade can make the
+         * pattern start with the wrong volume. (fixes xyce-dans_la_rue.xm replay,
+         * see https://github.com/libxmp/libxmp/issues/153 for more details).
          */
-        if (!inside_loop && info->gvl < 0) {
+        if (info->time < 0) {
             info->gvl = gvl;
             info->bpm = bpm;
             info->speed = speed;
@@ -507,7 +509,7 @@ int libxmp_scan_sequences(struct context_data *ctx)
 	 * multiple times at different starting points (see janosik.xm).
 	 */
 	for (i = 0; i < XMP_MAX_MOD_LENGTH; i++) {
-		m->xxo_info[i].gvl = -1;
+		m->xxo_info[i].time = -1;
 	}
 
 	ep = 0;

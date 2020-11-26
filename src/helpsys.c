@@ -36,20 +36,26 @@ static char *help;
 
 void help_open(struct world *mzx_world, const char *file_name)
 {
-  mzx_world->help_file = fopen_unsafe(file_name, "rb");
-  if(!mzx_world->help_file)
-    return;
+  if(file_name)
+  {
+    mzx_world->help_file = fopen_unsafe(file_name, "rb");
+    if(!mzx_world->help_file)
+      return;
 
-  help = cmalloc(1024 * 64);
+    help = cmalloc(1024 * 64);
+  }
 }
 
 void help_close(struct world *mzx_world)
 {
-  if(!mzx_world->help_file)
-    return;
+  if(mzx_world->help_file)
+  {
+    fclose(mzx_world->help_file);
+    mzx_world->help_file = NULL;
+  }
 
-  fclose(mzx_world->help_file);
   free(help);
+  help = NULL;
 }
 
 /**
@@ -64,14 +70,11 @@ void help_system(context *ctx, struct world *mzx_world)
 {
   char file[13], file2[13], label[13];
   int where, offs, size, t1, t2;
-  enum cursor_mode_types old_cmode;
   FILE *fp;
 
   fp = mzx_world->help_file;
   if(!fp)
     return;
-
-  old_cmode = get_cursor_mode();
 
   rewind(fp);
   t1 = fgetw(fp);
@@ -133,6 +136,4 @@ labelled:
       }
     }
   }
-
-  set_cursor_mode(old_cmode);
 }

@@ -1109,6 +1109,7 @@ int char_editor(struct world *mzx_world)
   int block_mode = 0;
   int shifted = 0;
   int i, i2, key;
+  int joystick_key;
   int pad_height;
   int small_chars;
   int screen_mode = get_screen_mode();
@@ -1304,6 +1305,10 @@ int char_editor(struct world *mzx_world)
     update_event_status_delay();
 
     key = get_key(keycode_internal_wrt_numlock);
+
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      key = joystick_key;
 
     // Exit event -- mimic Escape
     if(get_exit_status())

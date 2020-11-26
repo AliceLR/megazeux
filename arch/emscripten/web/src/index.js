@@ -245,7 +245,7 @@ window.MzxrunInitialize = function(options)
           preRun: function(module)
           {
             window.FS = module["FS"];
-            FS.createFolder(FS.root, "data", true, true);
+            FS.mkdir("/data");
             FS.mount(wrapStorageForEmscripten(vfs), null, "/data");
             console.log("Filesystem initialization complete!");
           }

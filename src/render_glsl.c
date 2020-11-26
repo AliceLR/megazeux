@@ -33,8 +33,14 @@
 #include "util.h"
 #include "io/path.h"
 
+// Uncomment to enable GL debug output (requires OpenGL 4.3+).
+//#define ENABLE_GL_DEBUG_OUTPUT 1
+
 #ifdef CONFIG_SDL
 #include "render_sdl.h"
+#ifdef ENABLE_GL_DEBUG_OUTPUT
+#include <SDL_opengl_glext.h>
+#endif
 #endif
 
 #ifdef CONFIG_EGL
@@ -207,6 +213,9 @@ static struct
   void (GL_APIENTRY *glDeleteProgram)(GLuint program);
   void (GL_APIENTRY *glGetAttachedShaders)(GLuint program, GLsizei maxCount,
    GLsizei *count, GLuint *shaders);
+#ifdef ENABLE_GL_DEBUG_OUTPUT
+  void (GL_APIENTRY *glDebugMessageCallback)(GLDEBUGPROC callback, void *param);
+#endif
 
   // FBO functions are optional for GL (requires 3.0+), mandatory for GLES.
   boolean has_fbo;
@@ -253,6 +262,9 @@ static const struct dso_syms_map glsl_syms_map[] =
   { "glUseProgram",               (fn_ptr *)&glsl.glUseProgram },
   { "glVertexAttribPointer",      (fn_ptr *)&glsl.glVertexAttribPointer },
   { "glViewport",                 (fn_ptr *)&glsl.glViewport },
+#ifdef ENABLE_GL_DEBUG_OUTPUT
+  { "glDebugMessageCallback",     (fn_ptr *)&glsl.glDebugMessageCallback },
+#endif
   { NULL, NULL}
 };
 
@@ -283,6 +295,9 @@ struct glsl_render_data
   GLubyte palette[3 * FULL_PAL_SIZE];
   Uint8 remap_texture;
   Uint8 remap_char[FULL_CHARSET_SIZE];
+  boolean dirty_palette;
+  boolean dirty_indices;
+  int last_tcol;
   GLuint scaler_program;
   GLuint tilemap_program;
   GLuint tilemap_smzx_program;
@@ -357,6 +372,28 @@ err_out:
   return buffer;
 }
 
+static boolean glsl_scaling_shader_is_default(struct graphics_data *graphics)
+{
+  return graphics->gl_scaling_shader[0] == '\0';
+}
+
+/**
+ * Sets the name of the current scaling shader. If shader is NULL, this will be
+ * set to the default scaling shader.
+ */
+static void glsl_set_scaling_shader(struct graphics_data *graphics,
+ const char *shader)
+{
+  if(shader)
+  {
+    size_t buf_len = ARRAY_SIZE(graphics->gl_scaling_shader);
+    snprintf(graphics->gl_scaling_shader, buf_len, "%s", shader);
+    graphics->gl_scaling_shader[buf_len - 1] = '\0';
+  }
+  else
+    graphics->gl_scaling_shader[0] = '\0';
+}
+
 static GLuint glsl_load_shader(struct graphics_data *graphics,
  enum resource_id res, GLenum type)
 {
@@ -370,7 +407,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
   assert(res >= GLSL_SHADER_RES_FIRST && res <= GLSL_SHADER_RES_LAST);
 
   if(res == GLSL_SHADER_SCALER_VERT || res == GLSL_SHADER_SCALER_FRAG)
-    if(graphics->gl_scaling_shader[0])
+    if(!glsl_scaling_shader_is_default(graphics))
       is_user_scaler = true;
 
   // If we've already seen this shader, it's loaded, and we don't
@@ -423,7 +460,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
       is_user_scaler = false;
 
       if(res == GLSL_SHADER_SCALER_FRAG)
-        graphics->gl_scaling_shader[0] = 0;
+        glsl_set_scaling_shader(graphics, NULL);
 
       source_cache[index] = glsl_load_string(mzx_res_get_by_id(res));
       if(!source_cache[index])
@@ -487,7 +524,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
     if(is_user_scaler)
     {
       // Attempt the default shader
-      graphics->gl_scaling_shader[0] = 0;
+      glsl_set_scaling_shader(graphics, NULL);
       free(source_cache[index]);
       source_cache[index] = NULL;
 
@@ -631,9 +668,10 @@ static boolean glsl_init_video(struct graphics_data *graphics,
   graphics->gl_vsync = conf->gl_vsync;
   graphics->allow_resize = conf->allow_resize;
   graphics->gl_filter_method = conf->gl_filter_method;
-  graphics->gl_scaling_shader = conf->gl_scaling_shader;
   graphics->ratio = conf->video_ratio;
   graphics->bits_per_pixel = 32;
+
+  glsl_set_scaling_shader(graphics, conf->gl_scaling_shader);
 
   // OpenGL only supports 16/32bit colour
   if(conf->force_bpp == 16 || conf->force_bpp == 32)
@@ -768,9 +806,24 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   gl_check_error();
 
   glsl_remap_char_range(graphics, 0, FULL_CHARSET_SIZE);
+  render_data->dirty_palette = true;
+  render_data->dirty_indices = true;
 
   glsl_load_shaders(graphics);
 }
+
+#ifdef ENABLE_GL_DEBUG_OUTPUT
+static void glsl_debug_callback(GLenum source, GLenum type, GLuint id,
+ GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+{
+  length = length < 0 ? (GLsizei)strlen(message) : length;
+  fprintf(stderr,
+    "GL DEBUG (source 0x%x, type 0x%x, severity 0x%x): %.*s\n",
+    source, type, severity, length, message
+  );
+  fflush(stderr);
+}
+#endif
 
 static boolean glsl_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
@@ -796,35 +849,30 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
   // the check with these configurations.
 #ifndef CONFIG_GLES
   {
-    static boolean initialized = false;
+    const char *version;
+    double version_float;
 
-    if(!initialized)
+    version = (const char *)glsl.glGetString(GL_VERSION);
+    if(!version)
     {
-      const char *version;
-      double version_float;
+      warn("Could not load GL version string.\n");
+      gl_cleanup(graphics);
+      return false;
+    }
 
-      version = (const char *)glsl.glGetString(GL_VERSION);
-      if(!version)
-      {
-        warn("Could not load GL version string.\n");
-        gl_cleanup(graphics);
-        return false;
-      }
+    version_float = atof(version);
+    if(version_float < 2.0)
+    {
+      warn("Need >= OpenGL 2.0, got OpenGL %.1f.\n", version_float);
+      gl_cleanup(graphics);
+      return false;
+    }
 
-      version_float = atof(version);
-      if(version_float < 2.0)
-      {
-        warn("Need >= OpenGL 2.0, got OpenGL %.1f.\n", version_float);
-        gl_cleanup(graphics);
-        return false;
-      }
-
-      if(version_float >= 3.0)
-        debug("Attempting to load FBO syms...\n");
-      else
-        load_fbo_syms = false;
-
-      initialized = true;
+    load_fbo_syms = false;
+    if(version_float >= 3.0)
+    {
+      debug("Attempting to load FBO syms...\n");
+      load_fbo_syms = true;
     }
   }
 #endif
@@ -836,6 +884,12 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
   }
   else
     glsl.has_fbo = false;
+
+#ifdef ENABLE_GL_DEBUG_OUTPUT
+  glsl.glEnable(GL_DEBUG_OUTPUT);
+  glsl.glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+  glsl.glDebugMessageCallback(glsl_debug_callback, NULL);
+#endif
 
   glsl_resize_screen(graphics, width, height);
   return true;
@@ -961,8 +1015,8 @@ static void glsl_update_colors(struct graphics_data *graphics,
   Uint32 i;
   for(i = 0; i < count; i++)
   {
-    graphics->flat_intensity_palette[i] = (0xFF << 24) | (palette[i].b << 16) |
-     (palette[i].g << 8) | palette[i].r;
+    graphics->flat_intensity_palette[i] = gl_pack_u32((0xFF << 24) |
+     (palette[i].b << 16) | (palette[i].g << 8) | palette[i].r);
     render_data->palette[i*3  ] = (GLubyte)palette[i].r;
     render_data->palette[i*3+1] = (GLubyte)palette[i].g;
     render_data->palette[i*3+2] = (GLubyte)palette[i].b;
@@ -1076,10 +1130,10 @@ static void glsl_render_layer(struct graphics_data *graphics,
       fg_color = FULL_PAL_SIZE;
     }
 
-    *dest =
+    *dest = gl_pack_u32(
      (char_value << LAYER_CHAR_POS) |
      (bg_color << LAYER_BG_POS) |
-     (fg_color << LAYER_FG_POS);
+     (fg_color << LAYER_FG_POS));
   }
 
   glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
@@ -1090,32 +1144,43 @@ static void glsl_render_layer(struct graphics_data *graphics,
    GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
-  colorptr = graphics->flat_intensity_palette;
-  dest = render_data->background_texture;
-
-  for(i = 0; i < graphics->protected_pal_position + 16; i++, dest++, colorptr++)
-    *dest = *colorptr;
-
   // Palette
-  if(layer->transparent_col != -1)
-    render_data->background_texture[layer->transparent_col] = 0x00000000;
-  render_data->background_texture[FULL_PAL_SIZE] = 0x00000000;
+  if(render_data->dirty_palette ||
+   render_data->last_tcol != layer->transparent_col)
+  {
+    render_data->dirty_palette = false;
+    render_data->last_tcol = layer->transparent_col;
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
-   TEX_DATA_PAL_X, TEX_DATA_PAL_Y, FULL_PAL_SIZE + 1, 1,
-   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
-  gl_check_error();
+    colorptr = graphics->flat_intensity_palette;
+    dest = render_data->background_texture;
+
+    for(i = 0; i < graphics->protected_pal_position + 16; i++, dest++, colorptr++)
+      *dest = *colorptr;
+
+    if(layer->transparent_col != -1)
+      render_data->background_texture[layer->transparent_col] = 0x00000000;
+    render_data->background_texture[FULL_PAL_SIZE] = 0x00000000;
+
+    glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+     TEX_DATA_PAL_X, TEX_DATA_PAL_Y, FULL_PAL_SIZE + 1, 1,
+     GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
+    gl_check_error();
+  }
 
   // Indices
-  dest = render_data->background_texture;
-  for(i = 0; i < 4; i++)
-    for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
-      *dest = graphics->smzx_indices[j * 4 + i];
+  if(render_data->dirty_indices && layer->mode)
+  {
+    render_data->dirty_indices = false;
+    dest = render_data->background_texture;
+    for(i = 0; i < 4; i++)
+      for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
+        *dest = gl_pack_u32(graphics->smzx_indices[j * 4 + i]);
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
-   TEX_DATA_IDX_X, TEX_DATA_IDX_Y, SMZX_PAL_SIZE, 4,
-   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
-  gl_check_error();
+    glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+     TEX_DATA_IDX_X, TEX_DATA_IDX_Y, SMZX_PAL_SIZE, 4,
+     GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
+    gl_check_error();
+  }
 
   glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
   glsl.glEnableVertexAttribArray(ATTRIB_TEXCOORD);
@@ -1308,35 +1373,50 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   {
     glsl.glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbos[FBO_SCREEN_TEX]);
     gl_check_error();
+
+    // Clear the framebuffer so elements of this frame don't bleed through.
+    glsl.glClear(GL_COLOR_BUFFER_BIT);
+    gl_check_error();
   }
 
   gl_swap_buffers(graphics);
+  render_data->dirty_palette = true;
+  render_data->dirty_indices = true;
 
-#ifndef __EMSCRIPTEN__
-  glsl.glClear(GL_COLOR_BUFFER_BIT);
-  gl_check_error();
-#endif
+  /**
+   * When FBOs are not available, the next window frame needs to be cleared
+   * since the screen will be temporarily drawn there before scaling. This call
+   * was previously disabled for Emscripten (which should always have FBOs).
+   */
+  if(!glsl.has_fbo)
+  {
+    glsl.glClear(GL_COLOR_BUFFER_BIT);
+    gl_check_error();
+  }
 }
 
-static void glsl_switch_shader(struct graphics_data *graphics,
+static boolean glsl_switch_shader(struct graphics_data *graphics,
  const char *name)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   int index = GLSL_SHADER_SCALER_VERT - GLSL_SHADER_RES_FIRST;
 
-  if(source_cache[index]) free(source_cache[index]);
+  free(source_cache[index]);
   source_cache[index] = NULL;
 
   index = GLSL_SHADER_SCALER_FRAG - GLSL_SHADER_RES_FIRST;
-  if(source_cache[index]) free(source_cache[index]);
+  free(source_cache[index]);
   source_cache[index] = NULL;
 
-  strncpy(graphics->gl_scaling_shader, name, 32);
-  graphics->gl_scaling_shader[31] = 0;
+  glsl_set_scaling_shader(graphics, name);
 
   glsl.glDeleteProgram(render_data->scaler_program);
   gl_check_error();
 
+  /**
+   * If the user-specified shader fails to load, this will fall back to the
+   * default scaling shader.
+   */
   render_data->scaler_program = glsl_load_program(graphics,
    GLSL_SHADER_SCALER_VERT, GLSL_SHADER_SCALER_FRAG);
   if(render_data->scaler_program)
@@ -1349,6 +1429,7 @@ static void glsl_switch_shader(struct graphics_data *graphics,
     glsl_verify_link(render_data, render_data->scaler_program);
     glsl_delete_shaders(render_data->scaler_program);
   }
+  return !glsl_scaling_shader_is_default(graphics);
 }
 
 void render_glsl_register(struct renderer *renderer)

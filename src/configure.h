@@ -55,11 +55,30 @@ enum gl_filter_type
   CONFIG_GL_FILTER_LINEAR
 };
 
+enum cursor_mode_types
+{
+  CURSOR_MODE_UNDERLINE,  // Underline for text entry (insert).
+  CURSOR_MODE_SOLID,      // Solid for text entry (overwrite) and editing.
+  CURSOR_MODE_HINT,       // Hidden cursor for active UI element hints.
+  CURSOR_MODE_INVISIBLE   // Cursor disabled.
+};
+
 enum allow_cheats_type
 {
   ALLOW_CHEATS_NEVER,
   ALLOW_CHEATS_MZXRUN,
   ALLOW_CHEATS_ALWAYS
+};
+
+enum host_family
+{
+  /** Prefer IPv4 address resolution for hostnames */
+  HOST_FAMILY_IPV4,
+  /** Prefer IPv6 address resolution for hostnames */
+  HOST_FAMILY_IPV6,
+  /** Allow either IPv4 or IPv6 addresses. */
+  HOST_FAMILY_ANY,
+  NUM_HOST_FAMILIES
 };
 
 enum update_auto_check_mode
@@ -85,6 +104,7 @@ struct config_info
   enum gl_filter_type gl_filter_method;
   char gl_scaling_shader[32];
   int gl_vsync;
+  enum cursor_mode_types cursor_hint_mode;
   boolean allow_screenshots;
 
   // Audio options
@@ -130,13 +150,17 @@ struct config_info
   // Network layer options
 #ifdef CONFIG_NETWORK
   boolean network_enabled;
+  enum host_family network_address_family;
   char socks_host[256];
+  char socks_username[256];
+  char socks_password[256];
   int socks_port;
 #endif
 
 #ifdef CONFIG_UPDATER
+  boolean updater_enabled;
   int update_host_count;
-  char **update_hosts;
+  const char **update_hosts;
   char update_branch_pin[256];
   int update_auto_check;
 #endif

@@ -460,7 +460,7 @@ void create_blank_world(struct world *mzx_world)
     mzx_world->status_counters_shown[i][0] = 0;
   }
 
-  mzx_world->name[0] = 0;
+  memset(mzx_world->name, 0, sizeof(mzx_world->name));
 
   // Defaults for things set by load_world
   mzx_world->custom_sfx_on = 0;

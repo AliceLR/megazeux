@@ -46,9 +46,9 @@
 #endif
 
 #ifdef CONFIG_SDL
-#include "SDL.h"
+#include <SDL.h>
 #ifdef CONFIG_ICON
-#include "SDL_syswm.h"
+#include <SDL_syswm.h>
 #endif // CONFIG_ICON
 #include "compat_sdl.h"
 #include "render_sdl.h"
@@ -251,7 +251,7 @@ Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
   if(fp)
   {
     size = ftell_and_rewind(fp) / CHAR_SIZE;
-    if(size + pos >= 256 && maxChars > 256 && !layer_renderer_check(true))
+    if(size + pos > 256 && maxChars > 256 && !layer_renderer_check(true))
       maxChars = 256;
 
     if(size + pos > maxChars)
@@ -1037,16 +1037,20 @@ static Uint16 get_cursor_color(void)
   return cursor_color;
 }
 
+#ifndef CONFIG_NO_LAYER_RENDERING
 static int compare_layers(const void *a, const void *b)
 {
   return (*(struct video_layer * const *)a)->draw_order -
     (*(struct video_layer * const *)b)->draw_order;
 }
+#endif
 
 void update_screen(void)
 {
   Uint32 ticks = get_ticks();
+#ifndef CONFIG_NO_LAYER_RENDERING
   Uint32 layer;
+#endif
 
   if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
   {
@@ -1060,6 +1064,7 @@ void update_screen(void)
     graphics.palette_dirty = false;
   }
 
+#ifndef CONFIG_NO_LAYER_RENDERING
   if(graphics.requires_extended && graphics.renderer.render_layer)
   {
     for(layer = 0; layer < graphics.layer_count; layer++)
@@ -1079,12 +1084,13 @@ void update_screen(void)
     }
   }
   else
-
+#endif
   if(graphics.renderer.render_graph)
   {
     // Fallback if the layer renderer is unavailable or unnecessary
     graphics.renderer.render_graph(&graphics);
   }
+#ifndef CONFIG_NO_LAYER_RENDERING
   else
 
   if(graphics.renderer.render_layer)
@@ -1095,30 +1101,47 @@ void update_screen(void)
 
     graphics.renderer.render_layer(&graphics, &(graphics.text_video_layer));
   }
+#endif
 
-  if(graphics.cursor_flipflop &&
-   (graphics.cursor_mode != cursor_mode_invisible))
+  if(graphics.renderer.render_cursor || graphics.renderer.hardware_cursor)
   {
     Uint16 cursor_color = get_cursor_color();
+    boolean enabled = true;
     Uint32 lines = 0;
     Uint32 offset = 0;
 
     switch(graphics.cursor_mode)
     {
-      case cursor_mode_underline:
+      case CURSOR_MODE_UNDERLINE:
         lines = 2;
         offset = 12;
         break;
-      case cursor_mode_solid:
+      case CURSOR_MODE_SOLID:
         lines = 14;
         offset = 0;
         break;
-      case cursor_mode_invisible:
+      case CURSOR_MODE_HINT:
+        break;
+      case CURSOR_MODE_INVISIBLE:
+        enabled = false;
         break;
     }
 
-    graphics.renderer.render_cursor(&graphics,
-     graphics.cursor_x, graphics.cursor_y, cursor_color, lines, offset);
+    // Try to render the standard software cursor first.
+    if(graphics.renderer.render_cursor && enabled && graphics.cursor_flipflop)
+    {
+      graphics.renderer.render_cursor(&graphics,
+       graphics.cursor_x, graphics.cursor_y, cursor_color, lines, offset);
+    }
+    else
+
+    // Other platforms may use a hardware cursor instead that may need to be
+    // updated any frame regardless of the cursor state and blinking.
+    if(graphics.renderer.hardware_cursor)
+    {
+      graphics.renderer.hardware_cursor(&graphics,
+       graphics.cursor_x, graphics.cursor_y, cursor_color, lines, offset, enabled);
+    }
   }
 
   if(graphics.mouse_status)
@@ -1297,12 +1320,12 @@ static boolean set_graphics_output(struct config_info *conf)
 
   // Some "renderers" are aliases for other renderers that are kept around for
   // compatibility reasons only. These are kept separate from the main list.
-  strcpy(video_output, conf->video_output);
+  memcpy(video_output, conf->video_output, sizeof(video_output));
   while(alias->alias)
   {
     if(!strcasecmp(video_output, alias->alias))
     {
-      strcpy(video_output, alias->name);
+      snprintf(video_output, sizeof(video_output), "%s", alias->name);
       break;
     }
     alias++;
@@ -1616,6 +1639,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   graphics.window_width = conf->window_width;
   graphics.window_height = conf->window_height;
   graphics.mouse_status = false;
+  graphics.cursor_hint_mode = conf->cursor_hint_mode;
   graphics.cursor_timestamp = get_ticks();
   graphics.cursor_flipflop = 1;
   graphics.system_mouse = conf->system_mouse;
@@ -1788,15 +1812,16 @@ boolean set_video_mode(void)
 
 boolean change_video_output(struct config_info *conf, const char *output)
 {
-  char old_video_output[16];
+  char old_video_output[sizeof(conf->video_output)];
+  size_t len = sizeof(conf->video_output);
   boolean fallback = false;
   boolean retval = true;
 
-  strncpy(old_video_output, conf->video_output, 16);
-  old_video_output[15] = 0;
+  memcpy(old_video_output, conf->video_output, len);
+  old_video_output[len - 1] = 0;
 
-  strncpy(conf->video_output, output, 16);
-  conf->video_output[15] = 0;
+  snprintf(conf->video_output, len, "%s", output);
+  conf->video_output[len - 1] = 0;
 
   if(graphics.renderer.free_video)
     graphics.renderer.free_video(&graphics);
@@ -1807,7 +1832,7 @@ boolean change_video_output(struct config_info *conf, const char *output)
   {
     retval = false;
 
-    strcpy(conf->video_output, old_video_output);
+    memcpy(conf->video_output, old_video_output, len);
     if(!set_graphics_output(conf))
     {
       warn("Failed to roll back renderer!\n");
@@ -1831,7 +1856,7 @@ boolean change_video_output(struct config_info *conf, const char *output)
       exit(1);
     }
 
-    strcpy(conf->video_output, renderers->name);
+    snprintf(conf->video_output, len, "%s", renderers->name);
     if(!set_graphics_output(conf))
     {
       warn("Failed to load fallback renderer, aborting!\n");
@@ -2457,11 +2482,13 @@ void set_screen(struct char_element *src)
   int offset = SCREEN_W * SCREEN_H;
   int size = offset * sizeof(struct char_element);
 
+#ifndef CONFIG_NO_LAYER_RENDERING
   memcpy(graphics.video_layers[UI_LAYER].data, src, size);
   src += offset;
 
   memcpy(graphics.video_layers[GAME_UI_LAYER].data, src, size);
   src += offset;
+#endif
 
   memcpy(graphics.text_video, src, size);
 }
@@ -2471,49 +2498,42 @@ void get_screen(struct char_element *dest)
   int offset = SCREEN_W * SCREEN_H;
   int size = offset * sizeof(struct char_element);
 
+#ifndef CONFIG_NO_LAYER_RENDERING
   memcpy(dest, graphics.video_layers[UI_LAYER].data, size);
   dest += offset;
 
   memcpy(dest, graphics.video_layers[GAME_UI_LAYER].data, size);
   dest += offset;
+#endif
 
   memcpy(dest, graphics.text_video, size);
 }
 
-void cursor_underline(void)
+void cursor_underline(Uint32 x, Uint32 y)
 {
-  graphics.cursor_mode = cursor_mode_underline;
-}
-
-void cursor_solid(void)
-{
-  graphics.cursor_mode = cursor_mode_solid;
-}
-
-void cursor_off(void)
-{
-  graphics.cursor_mode = cursor_mode_invisible;
-}
-
-void move_cursor(Uint32 x, Uint32 y)
-{
+  graphics.cursor_mode = CURSOR_MODE_UNDERLINE;
   graphics.cursor_x = x;
   graphics.cursor_y = y;
 }
 
-#ifdef CONFIG_HELPSYS
-
-void set_cursor_mode(enum cursor_mode_types mode)
+void cursor_solid(Uint32 x, Uint32 y)
 {
-  graphics.cursor_mode = mode;
+  graphics.cursor_mode = CURSOR_MODE_SOLID;
+  graphics.cursor_x = x;
+  graphics.cursor_y = y;
 }
 
-enum cursor_mode_types get_cursor_mode(void)
+void cursor_hint(Uint32 x, Uint32 y)
 {
-  return graphics.cursor_mode;
+  graphics.cursor_mode = graphics.cursor_hint_mode;
+  graphics.cursor_x = x;
+  graphics.cursor_y = y;
 }
 
-#endif // CONFIG_HELPSYS
+void cursor_off(void)
+{
+  graphics.cursor_mode = CURSOR_MODE_INVISIBLE;
+}
 
 void m_hide(void)
 {
@@ -2800,17 +2820,18 @@ void focus_pixel(int x, int y)
 boolean switch_shader(const char *name)
 {
   if(graphics.renderer.switch_shader)
-    graphics.renderer.switch_shader(&graphics, name);
-
-  if(graphics.gl_scaling_shader[0])
-    return true;
+    return graphics.renderer.switch_shader(&graphics, name);
 
   return false;
 }
 
 boolean layer_renderer_check(boolean show_error)
 {
+#ifdef CONFIG_NO_LAYER_RENDERING
+  if(1)
+#else
   if(!graphics.renderer.render_layer)
+#endif
   {
     if(show_error)
     {

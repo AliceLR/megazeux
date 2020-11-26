@@ -188,10 +188,10 @@ int main(int argc, char *argv[])
     }
 
     // Skip the rest of the line
-    while((current_char != '\n') && (current_char != -1))
+    while((current_char != '\n') && !feof(source))
       current_char = fgetc(source);
 
-  } while(current_char != -1);
+  } while(!feof(source));
 
   printf("Files: %d  Links: %d\n", num_files, num_links);
 
@@ -403,7 +403,7 @@ int main(int argc, char *argv[])
         if(file_len > biggest_file)
         {
           biggest_file = file_len;
-          strncpy(max_file, curr_file, 12);
+          memcpy(max_file, curr_file, 12);
           max_file[12] = '\0';
         }
 
@@ -458,7 +458,7 @@ int main(int argc, char *argv[])
         tstr[12] = '\0';
 
         //Copy over new filename
-        strncpy(curr_file, tstr, 12);
+        memcpy(curr_file, tstr, 12);
         curr_file[12] = '\0';
 
         //Next file ready to roar!

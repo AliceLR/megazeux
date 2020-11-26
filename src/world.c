@@ -2529,7 +2529,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
  FILE *fp, const char *file, boolean savegame, int file_version, char *name,
  boolean *faded)
 {
-  size_t file_name_len = strlen(file) - 4;
+  int file_name_len = strlen(file) - 4;
   char config_file_name[MAX_PATH];
   char current_dir[MAX_PATH];
   char file_path[MAX_PATH];
@@ -2545,8 +2545,8 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   }
 
   // load world config file
-  memcpy(config_file_name, file, file_name_len);
-  strncpy(config_file_name + file_name_len, ".cnf", 5);
+  snprintf(config_file_name, MAX_PATH, "%.*s.cnf", file_name_len, file);
+  config_file_name[MAX_PATH - 1] = '\0';
 
   if(stat(config_file_name, &file_info) >= 0)
     set_config_from_file(GAME_CNF, config_file_name);

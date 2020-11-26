@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -52,7 +52,7 @@ size_t mread(void *buf, size_t size, size_t num, MFILE *m)
  	size_t should_read = size * num;
  	ptrdiff_t can_read = CAN_READ(m);
 
- 	if (size <= 0 || num <= 0 || can_read <= 0) {
+ 	if (!size || !num || can_read <= 0) {
  		return 0;
 	}
 
@@ -69,24 +69,29 @@ size_t mread(void *buf, size_t size, size_t num, MFILE *m)
 
 int mseek(MFILE *m, long offset, int whence)
 {
+	ptrdiff_t ofs = offset;
+
 	switch (whence) {
-	default:
 	case SEEK_SET:
-		if (m->size >= 0 && (offset > m->size || offset < 0))
-			return -1;
-		m->pos = offset;
-		return 0;
+		break;
 	case SEEK_CUR:
-		if (m->size >= 0 && (offset > CAN_READ(m) || offset < -m->pos))
-			return -1;
-		m->pos += offset;
-		return 0;
+		ofs += m->pos;
+		break;
 	case SEEK_END:
 		if (m->size < 0)
 			return -1;
-		m->pos = m->size + offset;
-		return 0;
+		ofs += m->size;
+		break;
+	default:
+		return -1;
 	}
+	if (m->size >= 0) {
+		if (ofs < 0) return -1;
+		if (ofs > m->size)
+			ofs = m->size;
+	}
+	m->pos = ofs;
+	return 0;
 }
 
 long mtell(MFILE *m)
@@ -102,7 +107,7 @@ int meof(MFILE *m)
 		return CAN_READ(m) <= 0;
 }
 
-MFILE *mopen(void *ptr, long size)
+MFILE *mopen(const void *ptr, long size)
 {
 	MFILE *m;
 

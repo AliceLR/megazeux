@@ -3,7 +3,7 @@
 
 MegaZeux is a game creation system (GCS) created by game developer Alexis Janson in 1994.
 Originally a DOS program, in 2005 a multi-platform port was released by Exophase. The most
-recent version of MegaZeux is 2.92e, which was released on July 20th, 2020.
+recent version of MegaZeux is 2.92f, which was released on November 22nd, 2020.
 
 MegaZeux is officially supported on Windows, Linux/BSD, MacOS, as well as the NDS, 3DS, Wii,
 and PSP consoles. Historical support has also existed for GP2X, Pandora, and AmigaOS 4.
@@ -97,16 +97,16 @@ platform(s) are not regularly updated:
 
 ## Credits
 
-| MegaZeux 2.9x     |                                  |
-| ----------------- | -------------------------------- |
-| Alice Rowan       | Developer/current maintainer     |
-| Dr. Lancer X      | Developer (layer rendering)      |
-| Adrian Siekierka  | Developer (various ports)        |
-| Alistair Strachan | Developer (initial SDL 2 support)|
-| Terryn            | Help file                        |
-| Spectere          | Mac OS X builds                  |
-| Insidious         | Ubuntu/Debian builds             |
-| Others            | Various                          |
+| MegaZeux 2.9x     |                                                            |
+| ----------------- | ---------------------------------------------------------- |
+| Alice Rowan       | Development/current maintainer                             |
+| Terryn            | Help file; testing                                         |
+| Lancer X          | Development; testing                                       |
+| Adrian Siekierka  | Development; testing; various ports                        |
+| Insidious         | Development; testing; Ubuntu/Debian/Raspbian/Arch packages |
+| Spectere          | Development; testing; Xcode and MSVC projects              |
+| Alistair Strachan | Development                                                |
+| Others            | Various                                                    |
 
 #### MegaZeux Credits
 
@@ -135,12 +135,12 @@ Other past contributors: Spider124, Koji, JZig, Akwende, MenTaLguY.
 
 #### Special Thanks
 
-Insidious (.deb Builds)
+Insidious (Testing, .deb and Arch packages)
+Spectere (Testing, OS X Builds, MSVC project)
+Terryn (Testing)
 mzxgiant (MSVC Testing, Bug Fixes)
 mzxrules (Testing)
 Quantum P. (OS X Testing / Builds)
-Spectere (OS X Builds)
-Terryn (Testing)
 Wervyn (Testing)
 
 ## License

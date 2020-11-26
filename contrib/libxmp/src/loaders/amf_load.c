@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -78,7 +78,8 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	ver = hio_read8(f);
 
 	hio_read(buf, 1, 32, f);
-	strncpy(mod->name, (char *)buf, 32);
+	memcpy(mod->name, buf, 32);
+	mod->name[32] = '\0';
 	libxmp_set_type(m, "DSMI %d.%d AMF", ver / 10, ver % 10);
 
 	mod->ins = hio_read8(f);
@@ -204,13 +205,12 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	}
 
 	for (i = 0; i < mod->ins; i++) {
-		/*uint8 b;*/
 		int c2spd;
 
 		if (libxmp_alloc_subinstrument(mod, i, 1) < 0)
 			return -1;
 
-		/*b =*/ hio_read8(f);
+		hio_read8(f);
 
 		hio_read(buf, 1, 32, f);
 		libxmp_instrument_name(mod, i, buf, 32);

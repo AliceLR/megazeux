@@ -255,3 +255,31 @@
    fun:snd1_pcm_hw_param_set_last
    ...
 }
+
+{
+   X11 Locale Modifiers
+   Memcheck:Leak
+   fun:malloc
+   fun:_XlcDefaultMapModifiers
+   fun:XSetLocaleModifiers
+   ...
+}
+
+{
+   libGLdispatch leaking memory
+   Memcheck:Leak
+   fun:malloc
+   fun:strdup
+   ...
+   obj:*libGLdispatch*
+   ...
+}
+
+{
+   dlopen kind of forgot about RAII
+   Memcheck:Leak
+   fun:_Znwm
+   ...
+   fun:_dl_catch_exception
+   ...
+}

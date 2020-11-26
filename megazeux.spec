@@ -1,5 +1,5 @@
 Name:		megazeux
-Version:	2.92e
+Version:	2.92f
 Release:	1%{?dist}
 
 Summary:	A simple game creation system (GCS)
@@ -7,7 +7,7 @@ Summary:	A simple game creation system (GCS)
 Group:		Amusements/Games
 License:	GPLv2+
 URL:		https://www.digitalmzx.com/
-Source:		megazeux-2.92e.tar.xz
+Source:		megazeux-2.92f.tar.xz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires:	SDL2-devel
@@ -30,7 +30,7 @@ regardless of genre.
 See https://www.digitalmzx.com/ for more information.
 
 %prep
-%setup -q -n mzx292e
+%setup -q -n mzx292f
 
 %build
 ./config.sh --platform unix --enable-release --as-needed-hack \
@@ -65,6 +65,9 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_sysconfdir}/megazeux-config
 
 %changelog
+* Sun Nov 22 2020 Alice Rowan <petrifiedrowan@gmail.com> 2.92f-1
+- new upstream version
+
 * Sun Jul 19 2020 Alice Rowan <petrifiedrowan️@gmail.com> 2.92e-1
 - new upstream version, replace __make with make_build.
 

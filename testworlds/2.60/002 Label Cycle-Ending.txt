@@ -1,0 +1,3 @@
+Title: Label Cycle Ending Test
+Author: Alice Rowan
+Desc: pre-port versions of MZX give the label command a special cycle-ending behavior; if the exact same label (i.e. exact position in bytecode) is the target of a GOTO/etc twice in a row and various commands were not encountered between the two jumps to that position, the label command will end the cycle. Test created using MZX 2.6 to get access to the COMMANDS counter for obvious reasons.

@@ -229,7 +229,8 @@ static void _get_path(char *dest, const char *src)
   while((src[i] != '/') && (src[i] != '\\') && i)
     i--;
 
-  strncpy(dest, src, i);
+  if(i > 0)
+    memcpy(dest, src, i);
   dest[i] = 0;
 }
 
@@ -735,7 +736,7 @@ static void output_preformatted(const char *required_by,
       details[0] = 0;
 
     if(crc32_len && has_crc32)
-      snprintf(crc, 9, "%8.8x", crc32);
+      snprintf(crc, 9, "%8.8"PRIx32, crc32);
 
     fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s%-*.*s %s\n",
      parent_max_len, parent_max_len, required_by,
@@ -843,7 +844,7 @@ static void output_csv(const char *required_by,
   {
     if(has_crc32)
     {
-      fprintf(stdout, "%8.8x,", crc32);
+      fprintf(stdout, "%8.8"PRIx32",", crc32);
     }
     else
       fprintf(stdout, ",");
@@ -1698,7 +1699,7 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file,
  (fn_len == sizeof(s)-1) && (!strcasecmp(function_counter, s)))
 
 #define match_partial(s, reqv) ((world_version >= reqv) && \
- (fn_len >= sizeof(s)-1) && (!strncasecmp(function_counter, s, fn_len)))
+ (fn_len >= sizeof(s)-1) && (!strncasecmp(function_counter, s, sizeof(s)-1)))
 
 #define TERMINATE(s,slen) \
  do{ if(slen && s[slen - 1] == '\0') slen--; else s[slen]='\0'; }while(0)

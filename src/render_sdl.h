@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 #include "graphics.h"
 
-#include "SDL.h"
+#include <SDL.h>
 
 struct sdl_render_data
 {

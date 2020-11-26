@@ -19,14 +19,14 @@
 
 // Provides a ModPlug module stream backend
 
-#include "modplug.h"
-#include "stdafx.h"
-#include "sndfile.h"
+#include <modplug.h>
+#include <stdafx.h>
+#include <sndfile.h>
+#include <gdm2s3m.h>
 
 #include "audio.h"
 #include "audio_modplug.h"
 #include "ext.h"
-#include "gdm2s3m.h"
 #include "sampled_stream.h"
 
 #include "../const.h"
@@ -251,11 +251,11 @@ static struct audio_stream *modplug_convert_gdm(char *filename,
   int have_s3m = 0;
 
   /* We know this file has a .gdm extension. */
-  ssize_t ext_pos = (ssize_t)strlen(filename) - 4;
+  int ext_pos = (int)strlen(filename) - 4;
 
   /* Get the name of its .s3m counterpart */
-  memcpy(new_file, filename, ext_pos);
-  memcpy(new_file + ext_pos, ".s3m", 4);
+  snprintf(new_file, MAX_PATH, "%.*s.s3m", ext_pos, filename);
+  new_file[MAX_PATH - 1] = '\0';
 
   /* If the destination S3M already exists, check its size. If it's
    * non-zero in size, we can load it.
@@ -335,9 +335,12 @@ void init_modplug(struct config_info *conf)
   audio_ext_register("med", construct_modplug_stream);
   audio_ext_register("mod", construct_modplug_stream);
   audio_ext_register("mtm", construct_modplug_stream);
+  audio_ext_register("nst", construct_modplug_stream);
+  audio_ext_register("oct", construct_modplug_stream);
   audio_ext_register("okt", construct_modplug_stream);
   audio_ext_register("s3m", construct_modplug_stream);
   audio_ext_register("stm", construct_modplug_stream);
   audio_ext_register("ult", construct_modplug_stream);
+  audio_ext_register("wow", construct_modplug_stream);
   audio_ext_register("xm", construct_modplug_stream);
 }

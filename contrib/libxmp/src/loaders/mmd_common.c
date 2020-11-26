@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -44,18 +44,35 @@ const char *const mmd_inst_type[] = {
 };
 #endif
 
-static int get_8ch_tempo(int tempo)
+static int mmd_convert_tempo(int tempo, int bpm_on, int med_8ch)
 {
-	const int tempos[10] = {
+	const int tempos_compat[10] = {
+		195, 97, 65, 49, 39, 32, 28, 24, 22, 20
+	};
+	const int tempos_8ch[10] = {
 		47, 43, 40, 37, 35, 32, 30, 29, 27, 26
 	};
 
 	if (tempo > 0) {
-		tempo = tempo > 10 ? 10 : tempo;
-		return tempos[tempo-1];
-	} else {
-		return tempo;
+		/* From the OctaMEDv4 documentation:
+		 *
+		 * In 8-channel mode, you can control the playing speed more
+		 * accurately (to techies: by changing the size of the mix buffer).
+		 * This can be done with the left tempo gadget (values 1-10; the
+		 * lower, the faster). Values 11-240 are equivalent to 10.
+		 */
+		if (med_8ch) {
+			tempo = tempo > 10 ? 10 : tempo;
+			return tempos_8ch[tempo-1];
+		}
+		/* Tempos 1-10 in tempo mode are compatibility tempos that
+		 * approximate Soundtracker speeds.
+		 */
+		if (tempo <= 10 && !bpm_on) {
+			return tempos_compat[tempo-1];
+		}
 	}
+	return tempo;
 }
 
 void mmd_xlat_fx(struct xmp_event *event, int bpm_on, int bpmlen, int med_8ch,
@@ -69,20 +86,26 @@ void mmd_xlat_fx(struct xmp_event *event, int bpm_on, int bpmlen, int med_8ch,
 		 * chord sound or other special effect. Arpeggio works better
 		 * with some instruments than others.
 		 */
-		/* fall-through */
+		break;
 	case 0x01:
 		/* SLIDE UP 01
 		 * This slides the pitch of the current track up. It decreases
 		 * the period of the note by the amount of the argument on each
 		 * timing pulse. OctaMED-Pro can create slides automatically,
 		 * but you may want to use this function for special effects.
+		 * Note: a param of 0 does nothing and should be ignored.
 		 */
-		/* fall-through */
+		if (!event->fxp)
+			event->fxt = 0;
+		break;
 	case 0x02:
 		/* SLIDE DOWN 02
 		 * The same as SLIDE UP, but it slides down.
+		 * Note: a param of 0 does nothing and should be ignored.
 		 */
-		/* fall-through */
+		if (!event->fxp)
+			event->fxt = 0;
+		break;
 	case 0x03:
 		/* PORTAMENTO 03
 		 * Makes precise sliding easy.
@@ -131,9 +154,9 @@ void mmd_xlat_fx(struct xmp_event *event, int bpm_on, int bpmlen, int med_8ch,
 	case 0x09:
 		/* SECONDARY TEMPO 09
 		 * This sets the secondary tempo (the number of timing
-		 * pulses per note). The argument must be from 01 to 20.
+		 * pulses per note). The argument must be from 01 to 20 (hex).
 		 */
-		if (event->fxp >= 1 && event->fxp <= 20) {
+		if (event->fxp >= 0x01 && event->fxp <= 0x20) {
 			event->fxt = FX_SPEED;
 		} else {
 			event->fxt = event->fxp = 0;
@@ -184,7 +207,7 @@ void mmd_xlat_fx(struct xmp_event *event, int bpm_on, int bpmlen, int med_8ch,
 			break;
 		} else if (event->fxp <= 0xf0) {
 			event->fxt = FX_S3M_BPM;
-                        event->fxp = med_8ch ? get_8ch_tempo(event->fxp) : event->fxp;
+			event->fxp = mmd_convert_tempo(event->fxp, bpm_on, med_8ch);
 			break;
 		} else switch (event->fxp) {
 		case 0xf1:	/* Play note twice */
@@ -220,12 +243,14 @@ void mmd_xlat_fx(struct xmp_event *event, int bpm_on, int bpmlen, int med_8ch,
 		 * Equivalent to ProTracker command E1x.
 		 * Lets you control the pitch with great accuracy. This
 		 * command changes only this occurrence of the note.
+		 * Note: a param of 0 does nothing and should be ignored.
 		 */
 		event->fxt = FX_F_PORTA_UP;
 		break;
 	case 0x12:
 		/* SLIDE DOWN (only once) 12
 		 * Equivalent to ProTracker command E2x.
+		 * Note: a param of 0 does nothing and should be ignored.
 		 */
 		event->fxt = FX_F_PORTA_DN;
 		break;
@@ -282,14 +307,16 @@ void mmd_xlat_fx(struct xmp_event *event, int bpm_on, int bpmlen, int med_8ch,
 		/* SLIDE VOLUME UP ONCE
 		 * Only once ProTracker command EAx. Lets volume slide
 		 * slowly once per line.
+		 * Note: a param of 0 does nothing and should be ignored.
 		 */
-		event->fxt = FX_F_VSLIDE_UP;
+		event->fxt = event->fxp ? FX_F_VSLIDE_UP : 0;
 		break;
 	case 0x1b:
-		/* VOLUME DOWN?
-		 * Only once ProTracker command EBx ?
+		/* SLIDE VOLUME DOWN ONCE
+		 * Only once ProTracker command EBx.
+		 * Note: a param of 0 does nothing and should be ignored.
 		 */
-		event->fxt = FX_F_VSLIDE_DN;
+		event->fxt = event->fxp ? FX_F_VSLIDE_DN : 0;
 		break;
 	case 0x1d:
 		/* JUMP TO NEXT BLOCK 1D
@@ -712,22 +739,13 @@ void mmd_set_bpm(struct module_data *m, int med_8ch, int deftempo,
 {
 	struct xmp_module *mod = &m->mod;
 
-	/* From the OctaMEDv4 documentation:
-	 *
-	 * In 8-channel mode, you can control the playing speed more
-	 * accurately (to techies: by changing the size of the mix buffer).
-	 * This can be done with the left tempo gadget (values 1-10; the
-	 * lower, the faster). Values 11-240 are equivalent to 10.
+	mod->bpm = mmd_convert_tempo(deftempo, bpm_on, med_8ch);
+
+	/* 8-channel mode completely overrides BPM mode timing.
+	 * See mmd_convert_tempo for more info.
 	 */
-
-	if (med_8ch) {
-		mod->bpm = get_8ch_tempo(deftempo);
-	} else {
-		mod->bpm = deftempo;
-
-		if (bpm_on) {
-			m->time_factor = DEFAULT_TIME_FACTOR * 4 / bpmlen;
-		}
+	if (bpm_on && !med_8ch) {
+		m->time_factor = DEFAULT_TIME_FACTOR * 4 / bpmlen;
 	}
 }
 

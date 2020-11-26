@@ -9,6 +9,9 @@ OBJCOPY = arm-open2x-linux-objcopy
 
 BINEXT = .gpe
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 #
 # GP2X binaries must be statically linked.
 #

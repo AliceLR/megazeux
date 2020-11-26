@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -140,7 +140,14 @@ void fix_effect(uint8 *fxt, uint8 *fxp)
 		*fxt = FX_FINE_VIBRATO;
 		break;
 	case 0x1e:			/* special misc */
-		*fxt = *fxp = 0;
+		switch (MSN(*fxp)) {
+		case 0x8:		/* set pan position */
+			*fxt = FX_EXTENDED;
+			break;
+		default:
+			*fxt = *fxp = 0;
+			break;
+		}
 		break;
 	case 0x1f:
 		*fxt = FX_S3M_BPM;

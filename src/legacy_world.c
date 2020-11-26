@@ -43,8 +43,14 @@
 #include "world.h"
 #include "util.h"
 #include "io/fsafeopen.h"
+#include "io/path.h"
 
 #include "audio/sfx.h"
+
+#define WORLD_GLOBAL_OFFSET_OFFSET 4230
+#define WORLD_BLOCK_1_SIZE 4129
+#define WORLD_BLOCK_2_SIZE 72
+#define DECRYPT_BUFFER_SIZE 8192
 
 #ifndef CONFIG_LOADSAVE_METER
 
@@ -154,186 +160,255 @@ static int get_pw_xor_code(char *password, int pro_method)
   return work;
 }
 
-static void decrypt(const char *file_name)
+struct decrypt_data
 {
   FILE *source;
-  FILE *backup;
   FILE *dest;
+  const char *file_name;
+  unsigned int xor_val;
+  int xor_w;
+  int xor_d;
+  char password[MAX_PASSWORD_LENGTH + 1];
+  char backup_name[MAX_PATH];
+  char buffer[DECRYPT_BUFFER_SIZE];
+  int meter_curr;
+  int meter_target;
+};
+
+static long decrypt_backup(struct decrypt_data *data)
+{
+  FILE *source = NULL;
+  FILE *dest = NULL;
+  long ret = -1;
+  long file_length;
+  long left;
+  int meter_target = 1;
+  int meter_curr = 0;
+  int len;
+
+  meter_initial_draw(meter_curr, meter_target, "Writing backup world...");
+
+  source = fopen_unsafe(data->file_name, "rb");
+  if(!source)
+    goto err;
+
+  dest = fopen_unsafe(data->backup_name, "wb");
+  if(!dest)
+    goto err;
+
+  file_length = ftell_and_rewind(source);
+  meter_target = file_length;
+
+  left = file_length;
+  while(left > 0)
+  {
+    len = MIN(left, DECRYPT_BUFFER_SIZE);
+    left -= len;
+
+    if(!fread(data->buffer, len, 1, source))
+      goto err;
+
+    if(!fwrite(data->buffer, len, 1, dest))
+      goto err;
+
+    meter_curr += len - 1;
+    meter_update_screen(&meter_curr, meter_target);
+  }
+
+  ret = file_length;
+
+err:
+  if(source)
+    fclose(source);
+  if(dest)
+    fclose(dest);
+
+  meter_restore_screen();
+  return ret;
+}
+
+static boolean decrypt_block(struct decrypt_data *data, int block_len)
+{
+  int len;
+  int i;
+
+  while(block_len > 0)
+  {
+    len = MIN(block_len, DECRYPT_BUFFER_SIZE);
+    block_len -= len;
+
+    if(!fread(data->buffer, len, 1, data->source))
+      return false;
+
+    for(i = 0; i < len; i++)
+      data->buffer[i] ^= data->xor_val;
+
+    if(!fwrite(data->buffer, len, 1, data->dest))
+      return false;
+
+    data->meter_curr += len - 1;
+    meter_update_screen(&data->meter_curr, data->meter_target);
+  }
+  return true;
+}
+
+static boolean decrypt_and_fix_offset(struct decrypt_data *data)
+{
+  long offset = fgetd(data->source);
+  if(offset == EOF)
+    return false;
+
+  offset ^= data->xor_d;
+
+  // Adjust the offset to account for removing the password...
+  offset -= MAX_PASSWORD_LENGTH;
+
+  fputd(offset, data->dest);
+
+  data->meter_curr += 4 - 1;
+  meter_update_screen(&data->meter_curr, data->meter_target);
+  return true;
+}
+
+static void decrypt(const char *file_name)
+{
+  struct decrypt_data *data;
   int file_length;
   int pro_method;
   int i;
-  int len;
-  char num_boards;
-  char offset_low_byte;
-  char xor_val;
-  char password[MAX_PASSWORD_LENGTH + 1];
-  char *file_buffer;
+  int num_boards;
   char *src_ptr;
-  char backup_name[MAX_PATH];
-  int count;
 
-  int meter_target, meter_curr = 0;
+  data = cmalloc(sizeof(struct decrypt_data));
+  memset(data, 0, sizeof(struct decrypt_data));
 
-  source = fopen_unsafe(file_name, "rb");
-  file_length = ftell_and_rewind(source);
+  data->file_name = file_name;
+  snprintf(data->backup_name, MAX_PATH, "%.*s.locked", MAX_PATH - 8, file_name);
 
-  meter_target = file_length + (file_length - 15) + 4;
+  file_length = decrypt_backup(data);
+  if(file_length < 0)
+  {
+    // Try a shorter name...
+    ptrdiff_t pos = strrchr(file_name, '.') - file_name;
+    if(pos >= 0 && pos < MAX_PATH)
+    {
+      data->backup_name[pos] = '\0';
 
-  meter_initial_draw(meter_curr, meter_target, "Decrypting...");
+      if(path_force_ext(data->backup_name, MAX_PATH, ".LCK"))
+        file_length = decrypt_backup(data);
+    }
 
-  file_buffer = cmalloc(file_length);
-  src_ptr = file_buffer;
-  count = fread(file_buffer, file_length, 1, source);
-  fclose(source);
-  if(!count)
+    if(file_length < 0)
+      goto err_free;
+  }
+
+  data->source = fopen_unsafe(data->backup_name, "rb");
+  if(!data->source)
     goto err_free;
 
-  meter_curr = file_length - 1;
-  meter_update_screen(&meter_curr, meter_target);
-
-  src_ptr += 25;
-
-  snprintf(backup_name, MAX_PATH, "%.*s.locked", MAX_PATH - 8, file_name);
-
-  backup = fopen_unsafe(backup_name, "wb");
-  count = fwrite(file_buffer, file_length, 1, backup);
-  fclose(backup);
-  if(!count)
-    goto err_free;
-
-  dest = fopen_unsafe(file_name, "wb");
-  if(!dest)
+  data->dest = fopen_unsafe(file_name, "wb");
+  if(!data->dest)
   {
     error_message(E_WORLD_DECRYPT_WRITE_PROTECTED, 0, NULL);
-    return;
+    goto err_free;
   }
+
+  data->meter_target = (file_length - MAX_PASSWORD_LENGTH);
+  data->meter_curr = 0;
+  meter_initial_draw(data->meter_curr, data->meter_target, "Decrypting...");
+
+  if(!fread(data->buffer, 44, 1, data->source))
+    goto err_meter;
+
+  src_ptr = data->buffer + LEGACY_BOARD_NAME_SIZE;
   pro_method = *src_ptr;
   src_ptr++;
 
   // Get password
-  memcpy(password, src_ptr, MAX_PASSWORD_LENGTH);
-  password[MAX_PASSWORD_LENGTH] = '\0';
-  src_ptr += 18;
+  memcpy(data->password, src_ptr, MAX_PASSWORD_LENGTH);
+  data->password[MAX_PASSWORD_LENGTH] = '\0';
   // First, normalize password...
   for(i = 0; i < MAX_PASSWORD_LENGTH; i++)
   {
-    password[i] ^= magic_code[i];
-    password[i] -= 0x12 + pro_method;
-    password[i] ^= 0x8D;
+    data->password[i] ^= magic_code[i];
+    data->password[i] -= 0x12 + pro_method;
+    data->password[i] ^= 0x8D;
   }
 
   // Xor code
-  xor_val = get_pw_xor_code(password, pro_method);
+  data->xor_val = get_pw_xor_code(data->password, pro_method);
+  data->xor_w = data->xor_val | (data->xor_val << 8);
+  data->xor_d = data->xor_val | (data->xor_val << 8) |
+   (data->xor_val << 16) | (data->xor_val << 24);
 
   // Copy title
-  if(!fwrite(file_buffer, 25, 1, dest))
-    goto err_close;
-  fputc(0, dest);
-  fputs("M\x02\x11", dest);
+  if(!fwrite(data->buffer, LEGACY_BOARD_NAME_SIZE, 1, data->dest))
+    goto err_meter;
+  fputc(0, data->dest);
+  fputs("M\x02\x11", data->dest);
 
-  meter_curr += 25 + 1 + 3 - 1;
-  meter_update_screen(&meter_curr, meter_target);
+  data->meter_curr += LEGACY_BOARD_NAME_SIZE + 1 + 3 - 1;
+  meter_update_screen(&data->meter_curr, data->meter_target);
 
-  len = file_length - 44;
-  for(; len > 0; len--)
-  {
-    fputc((*src_ptr) ^ xor_val, dest);
-    src_ptr++;
+  // Decrypt world data.
+  if(!decrypt_block(data, WORLD_BLOCK_1_SIZE + WORLD_BLOCK_2_SIZE))
+    goto err_meter;
 
-    if((len % 1000) == 0)
-    {
-      meter_curr += 999;
-      meter_update_screen(&meter_curr, meter_target);
-    }
-  }
+  // Decrypt and fix global robot offset.
+  if(!decrypt_and_fix_offset(data))
+    goto err_meter;
 
-  meter_curr = file_length + (file_length - MAX_PASSWORD_LENGTH) - 1;
-  meter_update_screen(&meter_curr, meter_target);
-
-  // Must fix all the absolute file positions so that they're MAX_PASSWORD_LENGTH
-  // less now
-  src_ptr = file_buffer + 4245;
-  fseek(dest, 4230, SEEK_SET);
-  offset_low_byte = src_ptr[0] ^ xor_val;
-  fputc(offset_low_byte - MAX_PASSWORD_LENGTH, dest);
-  if(offset_low_byte < MAX_PASSWORD_LENGTH)
-  {
-    fputc((src_ptr[1] ^ xor_val) - 1, dest);
-  }
-  else
-  {
-    fputc(src_ptr[1] ^ xor_val, dest);
-  }
-
-  fputc(src_ptr[2] ^ xor_val, dest);
-  fputc(src_ptr[3] ^ xor_val, dest);
-
-  meter_curr += 4 - 1;
-  meter_update_screen(&meter_curr, meter_target);
-
-  src_ptr += 4;
-
-  num_boards = ((*src_ptr) ^ xor_val);
-  src_ptr++;
-
-  // If custom SFX is there, run through and skip it
+  // Decrypt SFX table (if present).
+  num_boards = fgetc(data->source) ^ data->xor_val;
+  fputc(num_boards, data->dest);
+  data->meter_curr++;
   if(!num_boards)
   {
-    int sfx_length = (char)(src_ptr[0] ^ xor_val);
-    sfx_length |= ((char)(src_ptr[1] ^ xor_val)) << 8;
-    src_ptr += sfx_length + 2;
-    num_boards = (*src_ptr) ^ xor_val;
-    src_ptr++;
+    int sfx_length = fgetw(data->source) ^ data->xor_w;
+    fputw(sfx_length, data->dest);
+    data->meter_curr += 2;
+
+    if(!decrypt_block(data, sfx_length))
+      goto err_meter;
+
+    num_boards = fgetc(data->source) ^ data->xor_val;
+    fputc(num_boards, data->dest);
+    data->meter_curr++;
   }
 
-  meter_target += num_boards * 4;
-  meter_curr--;
-  meter_update_screen(&meter_curr, meter_target);
+  // Decrypt board titles.
+  if(!decrypt_block(data, LEGACY_BOARD_NAME_SIZE * num_boards))
+    goto err_meter;
 
-  // Skip titles
-  src_ptr += (25 * num_boards);
-  // Synchronize source and dest positions
-  fseek(dest, (long)(src_ptr - file_buffer - MAX_PASSWORD_LENGTH), SEEK_SET);
-
-  // Offset boards
+  // Decrypt and fix board table.
   for(i = 0; i < num_boards; i++)
   {
-    // Skip length
-    src_ptr += 4;
-    fseek(dest, 4, SEEK_CUR);
+    // Board length.
+    int board_length = fgetd(data->source) ^ data->xor_d;
+    fputd(board_length, data->dest);
+    data->meter_curr += 4;
 
-    // Get offset
-    offset_low_byte = src_ptr[0] ^ xor_val;
-    fputc(offset_low_byte - MAX_PASSWORD_LENGTH, dest);
-    if(offset_low_byte < MAX_PASSWORD_LENGTH)
-    {
-      fputc((src_ptr[1] ^ xor_val) - 1, dest);
-    }
-    else
-    {
-      fputc(src_ptr[1] ^ xor_val, dest);
-    }
-    fputc(src_ptr[2] ^ xor_val, dest);
-    fputc(src_ptr[3] ^ xor_val, dest);
-    src_ptr += 4;
-
-    meter_target += 4 - 1;
-    meter_update_screen(&meter_curr, meter_target);
+    // Board offset.
+    if(!decrypt_and_fix_offset(data))
+      goto err_meter;
   }
 
-err_close:
-  fclose(dest);
+  // Decrypt the rest of the file.
+  i = ftell(data->source);
+  decrypt_block(data, file_length - i);
+
+err_meter:
+  meter_restore_screen();
 
 err_free:
-  free(file_buffer);
+  if(data->source)
+    fclose(data->source);
+  if(data->dest)
+    fclose(data->dest);
 
-  meter_restore_screen();
+  free(data);
 }
 
-
-#define WORLD_GLOBAL_OFFSET_OFFSET 4230
-#define WORLD_BLOCK_1_SIZE 4129
-#define WORLD_BLOCK_2_SIZE 72
 
 /* This is a lot like try_load_world but much more thorough, and doesn't
  * pass data through or leave a file open.  This needs to be done before
@@ -378,19 +453,23 @@ static enum val_result __validate_legacy_world_file(const char *file,
 
     v = save_magic(magic);
     if(!v)
+    {
       goto err_invalid;
+    }
+    else
 
-    else if(v > MZX_LEGACY_FORMAT_VERSION)
+    if(v > MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_TOO_RECENT, v, NULL);
       result = VAL_VERSION;
       goto err_close;
     }
+    else
 
     // This enables 2.84 save loading.
     // If we ever want to remove this, change this check.
-    //else if (v < MZX_VERSION)
-    else if(v < MZX_LEGACY_FORMAT_VERSION)
+    //if (v < MZX_VERSION)
+    if(v < MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_OLD, v, NULL);
       result = VAL_VERSION;
@@ -507,6 +586,30 @@ static enum val_result __validate_legacy_world_file(const char *file,
       if(protection_method > 3)
         goto err_invalid;
 
+      /**
+       * Check the version to make sure this file is a non-corrupted MZX file.
+       * The MZX 2.x format stores a 15 byte password followed by the version.
+       * The MZX 1.x format stores a 1 byte password length, a fixed 15 byte
+       * password buffer, and then the version. In either case, the version is
+       * not encrypted.
+       */
+      fseek(f, LEGACY_BOARD_NAME_SIZE + 1 + MAX_PASSWORD_LENGTH, SEEK_SET);
+      if(!fread(magic, 4, 1, f))
+        goto err_invalid;
+
+      v = world_magic(magic);
+      if(v < V200)
+      {
+        v = world_magic(magic + 1);
+        if(v != V100)
+          goto err_invalid;
+
+        // Can't actually handle 1.x files right now...
+        error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
+        result = VAL_VERSION;
+        goto err_close;
+      }
+
       result = VAL_PROTECTED;
       goto err_close;
     }
@@ -517,16 +620,20 @@ static enum val_result __validate_legacy_world_file(const char *file,
 
     v = world_magic(magic);
     if(v == 0)
+    {
       goto err_invalid;
+    }
+    else
 
-    else if(v < V251)
+    if(v < V200)
     {
       error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
       result = VAL_VERSION;
       goto err_close;
     }
+    else
 
-    else if(v > MZX_LEGACY_FORMAT_VERSION)
+    if(v > MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_WORLD_FILE_VERSION_TOO_RECENT, v, NULL);
       result = VAL_VERSION;

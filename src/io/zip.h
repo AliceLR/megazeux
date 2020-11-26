@@ -204,6 +204,9 @@ struct zip_archive
   uint32_t size_central_directory;
   uint32_t offset_central_directory;
 
+  uint8_t *header_buffer;
+  uint32_t header_buffer_alloc;
+  uint32_t header_timestamp;
   uint32_t running_file_name_length;
 
   struct zip_file_header **files;

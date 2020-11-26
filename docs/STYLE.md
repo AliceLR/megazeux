@@ -300,6 +300,16 @@ sai.frag
 #define HALF_PIXEL_Y      0.5 / TEX_SCREEN_HEIGHT
 ```
 
+## Naming
+
+Variables, structs, and functions in C should generally be named with lowercase
+words separated by underscores (examples: `thing`, `other_thing`).
+
+Constants should be `ALL_CAPS_WORDS_SEPARATED_BY_UNDERSCORES`.
+
+C++ code should follow the same guidelines as C with the exception that class
+names (and only class names) may use `CamelCase` instead of C naming.
+
 ## Types
 
 ### Pointers
@@ -342,6 +352,12 @@ typically exist for a reason (usually to make the code more readable and
 maintainable), so code with consistent constant usage shouldn't be polluted
 with magic numbers unless you have a good excuse.
 
+### `struct` and `class` in C++
+
+In C++ code, `struct` and `class` may be omitted when using classes exclusive
+to the C++ code. When referencing types defined and used in C code, preface the
+type name with `struct` for consistency between the two languages.
+
 ## Language features
 
 ### C vs. C++
@@ -349,7 +365,8 @@ with magic numbers unless you have a good excuse.
 MZX is almost entirely written in C.  Add C++ only where absolutely necessary
 e.g. when interfacing with a library that only has a C++ interface available,
 or for things that need inheritance or access specifiers or templates to be
-maintainable.
+maintainable (example: the network code was mostly a mess prior to getting a C++
+makeover).
 
 ### C++98 vs. C++11
 
@@ -364,8 +381,18 @@ available or is unreliable.
 To avoid including libstdc++/libc++ for platforms where it would just bloat
 (Android NDK) or pull in ugly DLL dependency chains (MinGW via MSYS2),
 features dependent on these libraries should be completely avoided. This means
-no exceptions and using placement new/delete wrappers instead of new/delete
-(see `src/audio/audio_reality.cpp` for an example).
+no exceptions and using MZX-specific implementations of new/delete/etc.
+(see `src/nostdc++.cpp`).
+
+Features introduced in C++11 that can be used without compatibility checks due
+to defines in `src/compat.h` are:
+
+| Feature | C++98 `compat.h` define |
+|---------|-------------------------|
+| `nullptr`             | `(NULL)`
+| `final` qualifier     | ` `
+| `noexcept` qualifier  | ` `
+| `override` qualifier  | ` `
 
 ### C99 Features
 
@@ -380,6 +407,26 @@ exceptions are:
 * Only use designated array initializers in code that will never be compiled
   as C++ (as C++ does not support them).
 * As a general rule, mixed declarations and code should be avoided as well.
+  The primary exception to this is when using declarations for RAII in C++.
+* The `restrict` keyword should be used only through the macro `RESTRICT`.
+  This is for intercompatibility with C++. See GNU extensions for more info
+  and restrictions on usage.
+
+### C standard library functions
+
+Avoid use of the following C standard library functions:
+
+* `strcpy`, `strcat`, and `sprintf` do not check the size of the provided buffer
+  and should only be used in circumstances where there is no chance of an overflow.
+  Generally speaking, `snprintf` (followed by manual null termination for MSVC
+  safety) or `memcpy`/`memmove` is preferable.
+* `strncpy` and `strncat` do not do what you think they do. `strncpy` was
+  intended to null-pad fixed size buffers and does not insert a null terminator
+  if there is an overflow. The length parameter of `strncat` does not specify
+  the size of the provided buffer but instead how many bytes from the source
+  should be copied. Do not use these functions, ever.
+* `strtok` is non-reentrant; it stores the initial pointer provided to it in a
+  static variable. Use `strsep` instead (see POSIX features).
 
 ### GNU extensions
 
@@ -392,7 +439,12 @@ compatibility. The following GNU extensions are allowed:
 * Attributes to specify deprecated functions (wrapped in `#ifdef __GNUC__`).
 * `long long` (should usually use inttypes.h and/or `size_t`/`ssize_t` instead).
 * Pragmas to locally disable warnings are acceptable in rare cases.
-* `__PRETTY_FUNCTION__` (C++).
+* `__PRETTY_FUNCTION__` (C++ only; an MSVC compatibility define is included).
+* The `__restrict` keyword provided for C and C++ by GCC, Clang, ICC, and MSVC
+  may be used via the macro `RESTRICT` defined in compat.h. Since this is an
+  extension in C++, it's probably best to use it only on pointers. `RESTRICT`
+  should generally only be used in places where it's verified to produce a
+  significant performance increase (example: the software renderers).
 
 ### POSIX features
 
@@ -402,8 +454,8 @@ This list is probably not complete.
 Features with existing abstractions that shouldn't be used directly:
 * `dirent.h` (use `src/io/dir.{c,h}` instead)
 * `pthread.h` (use `src/platform.h` instead)
-* `getaddrinfo` (use `src/network/dns.{c,h}` instead)
-* Sockets and other network features (use `src/network/host.{c,h}` instead)
+* `getaddrinfo` (use `src/network/DNS.{cpp,hpp}` instead)
+* Sockets and other network features (use `src/network/Host.{cpp,hpp}` instead)
 
 Features with partial or complete fallback implementations for MSVC:
 * `ssize_t` (`msvc.h`)
@@ -413,10 +465,17 @@ Features with partial or complete fallback implementations for MSVC:
 * `gettimeofday` (`arch/msvc/win32time.{c,h}`)
 
 Features with fallback implementations for MSVC and/or MinGW and/or AmigaOS 4:
+* `strsep` (`util.{c,h}`)
 * `strcasecmp` (`util.{c,h}` and/or `msvc.h`)
 * `strncasecmp` (`util.{c,h}` and/or `msvc.h`)
 * `mkdir(name,mode)` (`util.h` and/or `msvc.h` and/or `src/io/vfile.{c,h}`)
-* Various network features (`src/network/socksyms.{c,h}`)
+* Various network features (`src/network/Socket.{cpp,hpp}`)
+
+Other notes:
+* Never use `fdopen` on a file descriptor obtained from using `fileno` on a
+  `FILE` pointer. This usage of `fdopen` will trick most operating systems into
+  thinking you leaked a file descriptor, and it is impossible to close either
+  resulting `FILE` pointer safely without corrupting the other.
 
 ## Organization
 
@@ -467,7 +526,8 @@ put it in the C/CPP file!
 Includes should generally be organized into several blocks separated by blank
 lines. The order of these blocks may vary but the order specified here is
 usually preferred. An effort should be made to keep each of these blocks in
-alphabetical order.
+alphabetical order. Use angle brackets for system and external library includes
+and use quotes for MZX and contrib includes.
 
 * C standard library includes and other library includes (e.g. `zlib.h`).
   In some cases the other library includes are in a separate block. External
@@ -580,3 +640,9 @@ Use the macro `THREAD_RES` as the return type of the thread function and `THREAD
 exit the thread function, even if control would otherwise reach the end of the function.
 This is necessary due to some platforms expecting a pointer, some expecting an integer,
 and some that use no return type at all.
+
+In general, parts of MegaZeux likely to be used in a multithreaded context
+should be thread-safe (particularly the `check_alloc` series of functions and
+the `src/nostdc++.cpp` implementations of new/delete, which internally use
+`check_malloc`). Calling anything related to MZX gameplay from a thread should
+generally be avoided.

@@ -38,6 +38,15 @@ __M_BEGIN_DECLS
 #endif
 #endif /* DIR_SEPARATOR */
 
+enum path_create_error
+{
+  PATH_CREATE_SUCCESS,
+  PATH_CREATE_ERR_BUFFER,
+  PATH_CREATE_ERR_STAT_ERROR,
+  PATH_CREATE_ERR_MKDIR_FAILED,
+  PATH_CREATE_ERR_FILE_EXISTS
+};
+
 /**
  * Determine if a character is a path separating slash.
  * @param  chr  Character to check.
@@ -72,6 +81,9 @@ CORE_LIBSPEC ssize_t path_remove_prefix(char *path, size_t buffer_len,
 
 CORE_LIBSPEC ssize_t path_navigate(char *path, size_t path_len,
  const char *target);
+
+CORE_LIBSPEC enum path_create_error path_create_parent_recursively(
+ const char *filename);
 
 __M_END_DECLS
 

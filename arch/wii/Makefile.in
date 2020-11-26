@@ -21,6 +21,9 @@ include $(DEVKITPPC)/wii_rules
 ELF2DOL := elf2dol
 STRIP   := /bin/true
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 #
 # Override library paths
 #
@@ -67,10 +70,14 @@ arch/wii/%.o: arch/wii/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
 
+arch/wii/%.o: arch/wii/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${core_cxxflags} ${core_flags} -c $< -o $@
+
 #
 # Need to nest Wii binaries in a subdir
 #
-build := build/${SUBPLATFORM}/apps/megazeux
+build := ${build_root}/apps/megazeux
 build: package ${build}
 ifeq ($(BUILD_SDL),)
 	${CP} arch/wii/pad.config ${build}

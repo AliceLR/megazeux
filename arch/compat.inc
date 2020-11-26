@@ -11,6 +11,7 @@ COMPILER := ${shell \
  compiler="gcc"; \
  tmp=`${CC} --version`; \
  echo $$tmp | grep -qi "clang version" && compiler="clang"; \
+ echo $$tmp | grep -qi "LLVM version" && compiler="clang"; \
  echo $$tmp | grep -qi "emcc" && compiler="clang"; \
  echo $$compiler; }
 
@@ -40,12 +41,19 @@ CLANG_VER_FLAG = "-v"
 endif
 
 CLANG_VER := ${shell ${CC} ${CLANG_VER_FLAG} 2>&1 |\
- grep -oi "clang version.* [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*" |\
+ grep -oi "version.* [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*" |\
  grep -o "[0-9][0-9]*.*" |\
  awk -F. '{print $$3+100*($$2+100*$$1)}'}
 
-IS_CLANGXX := ${shell ${CXX} ${CLANG_VER_FLAG} 2>&1 | grep -qi "clang version"; echo $$?}
-ifneq (${IS_CLANGXX},0)
+COMPILERXX := ${shell \
+ compiler="gcc"; \
+ tmp=`${CXX} --version`; \
+ echo $$tmp | grep -qi "clang version" && compiler="clang"; \
+ echo $$tmp | grep -qi "LLVM version" && compiler="clang"; \
+ echo $$tmp | grep -qi "emcc" && compiler="clang"; \
+ echo $$compiler; }
+
+ifneq (${COMPILERXX},clang)
 $(warning CC is clang but CXX isn't clang++; disabling compiler-specific checks.)
 COMPILER := unknown
 endif
@@ -77,6 +85,11 @@ endif
 # Features requiring higher versions of GCC.
 #
 ifeq (${COMPILER},gcc)
+
+GCC_VER_GE_4_6   := ${shell test ${GCC_VER} -ge 40600; echo $$?}
+ifeq ($(GCC_VER_GE_4_6),0)
+HAS_W_NO_UNUSED_BUT_SET_VARIABLE ?= 1
+endif
 
 GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 ifeq ($(GCC_VER_GE_7),0)
