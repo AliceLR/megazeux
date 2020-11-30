@@ -228,8 +228,6 @@ static void unescape_string(char *buf, int *len)
  * Var reading/setting *
  ***********************/
 
-CORE_LIBSPEC struct graphics_data graphics;
-
 enum virtual_var
 {
   VIR_RAM_COUNTER_LIST,
