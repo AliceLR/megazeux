@@ -82,7 +82,7 @@
 #define VAR_ADD_DIALOG_H 6
 #define VAR_ADD_MAX 30
 
-static char asc[17] = "0123456789ABCDEF";
+static const char asc[17] = "0123456789ABCDEF";
 
 // Escape \n. Use for most debug var name/text fields. This is intended for
 // display only and doesn't escape \. For anything that needs to be edited
@@ -133,7 +133,9 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
       dest[i++] = '\\';
       dest[i] = '\\';
     }
-    else if(src[j] == '\n')
+    else
+
+    if(src[j] == '\n')
     {
       if(left < 3)
         break;
@@ -141,7 +143,9 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
       dest[i++] = '\\';
       dest[i] = 'n';
     }
-    else if(src[j] == '\r')
+    else
+
+    if(src[j] == '\r')
     {
       if(left < 3)
         break;
@@ -149,7 +153,9 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
       dest[i++] = '\\';
       dest[i] = 'r';
     }
-    else if(src[j] == '\t')
+    else
+
+    if(src[j] == '\t')
     {
       if(left < 3)
         break;
@@ -157,7 +163,9 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
       dest[i++] = '\\';
       dest[i] = 't';
     }
-    else if(src[j] < 32 || src[j] > 126)
+    else
+
+    if(src[j] < 32 || src[j] > 126)
     {
       if(left < 5)
         break;
@@ -183,7 +191,7 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
 static void unescape_string(char *buf, int *len)
 {
   size_t i = 0, j, old_len = strlen(buf);
-  char t;
+  char tmp[3];
 
   for(j = 0; j < old_len; i++, j++)
   {
@@ -198,27 +206,38 @@ static void unescape_string(char *buf, int *len)
     if(j == old_len)
       break;
 
-    if(buf[j] == 'n')
-      buf[i] = '\n';
-    else if(buf[j] == 'r')
-      buf[i] = '\r';
-    else if(buf[j] == 't')
-      buf[i] = '\t';
-    else if(buf[j] == '\\')
-      buf[i] = '\\';
-    else if(buf[j] == 'x')
+    switch(buf[j])
     {
-      if(j + 2 > old_len)
+      case 'n':
+        buf[i] = '\n';
+        break;
+      case 'r':
+        buf[i] = '\r';
+        break;
+      case 't':
+        buf[i] = '\t';
+        break;
+      case '\\':
+        buf[i] = '\\';
         break;
 
-      t = buf[j + 3];
-      buf[j + 3] = '\0';
-      buf[i] = (char)strtol(buf + j + 1, NULL, 16);
-      buf[j + 3] = t;
-      j += 2;
+      case 'x':
+        if(j + 2 >= old_len)
+        {
+          j = old_len;
+          break;
+        }
+        tmp[0] = buf[j + 1];
+        tmp[1] = buf[j + 2];
+        tmp[2] = '\0';
+        buf[i] = strtol(tmp, NULL, 16);
+        j += 2;
+        break;
+
+      default:
+        buf[i] = buf[j];
+        break;
     }
-    else
-      buf[i] = buf[j];
   }
 
   (*len) = i;
