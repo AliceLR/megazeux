@@ -1880,3 +1880,39 @@ void clear_string_list(struct string_list *string_list)
   string_list->num_strings_allocated = 0;
   string_list->strings = NULL;
 }
+
+#ifdef CONFIG_EDITOR
+
+void string_list_size(struct string_list *string_list,
+ size_t *list_size, size_t *table_size, size_t *strings_size)
+{
+  if(list_size)
+    *list_size = string_list->num_strings_allocated * sizeof(struct string *);
+
+  if(table_size)
+  {
+    *table_size = 0;
+#ifdef CONFIG_COUNTER_HASH_TABLES
+    HASH_MEMORY_USAGE(STRING, string_list->hash_table, *table_size);
+#endif
+  }
+
+  if(strings_size)
+  {
+    size_t total = 0;
+    size_t i;
+
+    if(string_list->strings)
+    {
+      for(i = 0; i < string_list->num_strings; i++)
+      {
+        struct string *s = string_list->strings[i];
+        if(s)
+          total += get_string_alloc_size(s->name_length, s->allocated_length);
+      }
+    }
+    *strings_size = total;
+  }
+}
+
+#endif /* CONFIG_EDITOR */

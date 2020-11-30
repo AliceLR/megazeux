@@ -2,6 +2,8 @@ GIT
 
 USERS
 
++ Added a list of variables related to RAM usage to the counter
+  debug window. This list can be found in the "World" list.
 + Fixed a bug where, if a world's title screen music is set but
   fails to load when the world is loaded, the music from another
   world could continue to play.
