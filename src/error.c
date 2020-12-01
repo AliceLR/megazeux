@@ -431,6 +431,12 @@ int error_message(enum error_code id, int parameter, const char *string)
       code = 0x2563;
       break;
 
+    case E_NO_EXTENDED_CHARSETS:
+      sprintf(error_mesg, "Limited/missing extended charset support; "
+       "some features may not work");
+      code = 0x2564;
+      break;
+
     case E_ZIP_BOARD_CORRUPT:
       sprintf(error_mesg, "Board # %d is corrupt", lo);
       code = 0x9000;

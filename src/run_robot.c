@@ -4158,9 +4158,10 @@ void run_robot(context *ctx, int id, int x, int y)
           next_param = next_param_pos(next_param);
         }
         // Prior to 2.90 char params are clipped
-        if(mzx_world->version < V290) char_num &= 0xFF;
-        if(char_num <= 0xFF || layer_renderer_check(true))
-          ec_change_char(char_num, char_buffer);
+        if(mzx_world->version < V290)
+          char_num &= 0xFF;
+
+        ec_change_char(char_num, char_buffer);
         break;
       }
 

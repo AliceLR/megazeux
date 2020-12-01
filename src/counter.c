@@ -1725,8 +1725,7 @@ static void char_byte_write(struct world *mzx_world,
     byte_num %= 14;
   }
 
-  if(char_num <= 0xFF || layer_renderer_check(true))
-    ec_change_byte(char_num, byte_num, value);
+  ec_change_byte(char_num, byte_num, value);
 }
 
 static int pixel_read(struct world *mzx_world,

@@ -135,6 +135,15 @@ static const struct rgb_color default_pal[16] =
   { 255, 255, 255, 0 }
 };
 
+#if (NUM_CHARSETS < 16)
+static boolean extended_charsets_check(boolean show_error, int pos, int count);
+#else
+static inline boolean extended_charsets_check(boolean s, int p, int c)
+{
+  return true;
+}
+#endif
+
 static void remap_charbyte(struct graphics_data *graphics, Uint16 chr,
  Uint8 byte)
 {
@@ -157,6 +166,8 @@ static void remap_char_range(struct graphics_data *graphics, Uint16 first,
 
 void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value)
 {
+  extended_charsets_check(true, chr, 1);
+
   chr = chr % PROTECTED_CHARSET_POSITION;
   graphics.charset[(chr * CHAR_SIZE) + byte] = new_value;
 
@@ -165,6 +176,8 @@ void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value)
 
 void ec_change_char(Uint16 chr, char *matrix)
 {
+  extended_charsets_check(true, chr, 1);
+
   chr = chr % PROTECTED_CHARSET_POSITION;
   memcpy(graphics.charset + (chr * CHAR_SIZE), matrix, CHAR_SIZE);
 
@@ -173,31 +186,24 @@ void ec_change_char(Uint16 chr, char *matrix)
 
 Uint8 ec_read_byte(Uint16 chr, Uint8 byte)
 {
+  extended_charsets_check(true, chr, 1);
+
   chr = chr % PROTECTED_CHARSET_POSITION;
   return graphics.charset[(chr * CHAR_SIZE) + byte];
 }
 
 void ec_read_char(Uint16 chr, char *matrix)
 {
+  extended_charsets_check(true, chr, 1);
+
   chr = chr % PROTECTED_CHARSET_POSITION;
   memcpy(matrix, graphics.charset + (chr * CHAR_SIZE), CHAR_SIZE);
 }
 
 void ec_clear_set(void)
 {
-  if(layer_renderer_check(false))
-  {
-    memset(graphics.charset, 0, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
-    remap_char_range(&graphics, 0, FULL_CHARSET_SIZE);
-  }
-
-  // For compatibility with old renderers, clear only the first charset;
-  // the second could be a duplicate of the protected set.
-  else
-  {
-    memset(graphics.charset, 0, CHARSET_SIZE * CHAR_SIZE);
-    remap_char_range(&graphics, 0, CHARSET_SIZE);
-  }
+  memset(graphics.charset, 0, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
+  remap_char_range(&graphics, 0, FULL_CHARSET_SIZE);
 }
 
 Sint32 ec_load_set(char *name)
@@ -245,14 +251,19 @@ Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
   Uint32 maxChars = PROTECTED_CHARSET_POSITION;
   Uint16 count;
 
-  if(version < V290)
-    maxChars = 256;
-
   if(fp)
   {
     size = ftell_and_rewind(fp) / CHAR_SIZE;
-    if(size + pos > 256 && maxChars > 256 && !layer_renderer_check(true))
+
+    if(version >= V290)
+    {
+      extended_charsets_check(true, pos, size);
+    }
+    else
       maxChars = 256;
+
+    if(pos > maxChars)
+      return -1;
 
     if(size + pos > maxChars)
       size = maxChars - pos;
@@ -274,9 +285,6 @@ void ec_mem_load_set(Uint8 *chars, size_t len)
   // This is used only for legacy and ZIP world loading and the default charsets
   // Use ec_clear_set() in conjunction with this for world loads.
   Uint16 count;
-
-  if(!layer_renderer_check(false) && len > CHAR_SIZE * CHARSET_SIZE)
-    len = CHAR_SIZE * CHARSET_SIZE;
 
   if(len > CHAR_SIZE * PROTECTED_CHARSET_POSITION)
     len = CHAR_SIZE * PROTECTED_CHARSET_POSITION;
@@ -300,10 +308,11 @@ void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int version)
   Uint32 offset = pos * CHAR_SIZE;
   Uint16 count = (len + CHAR_SIZE - 1) / CHAR_SIZE;
 
-  if(version < V290)
-    maxChars = 256;
-
-  if(len + offset > (256 * CHAR_SIZE) && !layer_renderer_check(true))
+  if(version >= V290)
+  {
+    extended_charsets_check(true, pos, count);
+  }
+  else
     maxChars = 256;
 
   if(pos > maxChars)
@@ -1710,20 +1719,6 @@ boolean init_video(struct config_info *conf, const char *caption)
   ec_load_set_secondary(mzx_res_get_by_id(MZX_EDIT_CHR),
    graphics.charset + (PROTECTED_CHARSET_POSITION * CHAR_SIZE));
 
-#if NUM_CHARSETS > 2
-  if(!layer_renderer_check(false))
-  {
-    // As the renderer doesn't support advanced features, it
-    // may also not support the number of charsets we want
-    // Copy the protected charset to the end of the normal charset
-    // position
-    // TODO: This check ought to happen whenever the renderer changes, too
-    memcpy(graphics.charset + (CHARSET_SIZE * CHAR_SIZE),
-     graphics.charset + (PROTECTED_CHARSET_POSITION * CHAR_SIZE),
-     CHARSET_SIZE * CHAR_SIZE);
-  }
-#endif
-
   ec_clear_set();
   ec_load_mzx();
   init_palette();
@@ -2842,3 +2837,38 @@ boolean layer_renderer_check(boolean show_error)
   }
   return true;
 }
+
+#if (NUM_CHARSETS < 16)
+
+/**
+ * Determine if an extended charsets write would be valid on platforms that
+ * don't have a full-sized charset buffer. While a renderer capable of layer
+ * renderering is required to display from extended charsets, the extended
+ * charset buffer space is available to all 2.90+ games and it may be used to
+ * copy char data into the main charset. Thus, attempts to access extended
+ * charsets do not necessarily have a direct relation to the renderer.
+ *
+ * This should only ever be the Nintendo DS. Do not add any other platforms
+ * that rely on this horrible hack to save (only 50k) RAM unless you also plan
+ * to add support for the extended charsets being allocated to the heap so
+ * games using them as a buffer don't break.
+ */
+static boolean extended_charsets_check(boolean show_error, int pos, int count)
+{
+  // Simulate the bounding that'd be used with the normal charset count...
+  pos %= (15 * CHARSET_SIZE);
+
+  if((pos >= PROTECTED_CHARSET_POSITION) ||
+   (pos + count > PROTECTED_CHARSET_POSITION))
+  {
+    if(show_error)
+    {
+      error_message(E_NO_EXTENDED_CHARSETS, 0, NULL);
+      set_error_suppression(E_NO_EXTENDED_CHARSETS, true);
+    }
+    return false;
+  }
+  return true;
+}
+
+#endif
