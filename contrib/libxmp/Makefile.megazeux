@@ -30,7 +30,10 @@ libxmp_cflags += -Wno-unused-but-set-variable
 endif
 
 ifeq (${PLATFORM},emscripten)
-libxmp_cflags += -DHAVE_FNMATCH -DHAVE_MKSTEMP
+# Note: these were only used by the depackers, so xfnmatch.c
+# ends up getting optimized out. Furthermore, emcc emits an annoying
+# empty translation unit warning when HAVE_FNMATCH is defined.
+#libxmp_cflags += -DHAVE_FNMATCH -DHAVE_MKSTEMP
 endif
 
 SRC_OBJS = \
