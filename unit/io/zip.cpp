@@ -1147,5 +1147,37 @@ UNITTEST(ZipWrite)
     ASSERTEQX(result, ZIP_EOF, "Should fail to write EOCD (2).");
   }
 
+  // Make sure attempting to provide the external size buffer as the final
+  // length doesn't crash (this really shouldn't be done though)...
+  SECTION(Memory_Ext_DuplicateFinalLength)
+  {
+    char tmp[32]{};
+
+    zp = zip_open_mem_write_ext(reinterpret_cast<void **>(&ext_buffer), &ext_buffer_size, 0);
+    ASSERT(zp);
+
+    result = zip_write_file(zp, "", tmp, arraysize(tmp), ZIP_M_NONE);
+    ASSERTEQX(result, ZIP_SUCCESS, "Failed to write dummy file.");
+
+    // This is the bad thing you shouldn't do!
+    result = zip_close(zp, &ext_buffer_size);
+    ASSERTEQX(result, ZIP_SUCCESS, "Failed write central directory.");
+
+    // Final size = local header (30) + data (32) + central header (46) + eocd (22).
+    ASSERTEQX(ext_buffer_size, 130, "Incorrect final size.");
+
+    // :)
+    static const char eocd[22] =
+    {
+      'P', 'K', 5, 6,
+      0, 0, 0, 0,
+      1, 0, 1, 0,
+      46, 0, 0, 0,
+      62, 0, 0, 0,
+      0, 0
+    };
+    ASSERTXMEM(ext_buffer + 108, eocd, 22, "EOCD data incorrect.");
+  }
+
   free(ext_buffer);
 }

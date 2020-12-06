@@ -2232,8 +2232,16 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
   int i;
 
   if(!zp)
-  {
     return ZIP_NULL;
+
+  // On the off chance someone actually tries this...
+  if(zp->is_memory && final_length && final_length == zp->external_buffer_size)
+  {
+    warn(
+      "zip_close: Detected use of external buffer size pointer as final_length "
+      "(should provide NULL instead). Report this!\n"
+    );
+    final_length = NULL;
   }
 
   mode = zp->mode;
