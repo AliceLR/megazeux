@@ -80,6 +80,7 @@ static inline void platform_closedir(struct mzx_dir *dir)
 }
 
 #ifdef DT_UNKNOWN
+#define DIRENT_HAS_D_TYPE 1
 /**
  * On platforms that support it, the d_type field can be used to avoid
  * stat calls. This is critical for the file manager on embedded platforms.
@@ -118,7 +119,7 @@ static inline boolean platform_readdir(struct mzx_dir *dir,
 
     if(type)
     {
-#ifdef DT_UNKNOWN
+#ifdef DIRENT_HAS_D_TYPE
       *type = resolve_dirent_d_type(w_inode->d_type);
 #else
       *type = DIR_TYPE_UNKNOWN;
@@ -142,7 +143,7 @@ static inline boolean platform_readdir(struct mzx_dir *dir,
 
   if(type)
   {
-#ifdef DT_UNKNOWN
+#ifdef DIRENT_HAS_D_TYPE
     *type = resolve_dirent_d_type(inode->d_type);
 #else
     *type = DIR_TYPE_UNKNOWN;
