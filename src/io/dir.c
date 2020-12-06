@@ -114,6 +114,24 @@ static inline int resolve_w_dirent_d_type(struct _wdirent *wd)
 #endif
 #endif
 
+#ifdef CONFIG_PSVITA
+#define DIRENT_HAS_D_TYPE 1
+static inline int resolve_d_type(int d_type)
+{
+  if(SCE_S_ISREG(d_type))
+    return DIR_TYPE_FILE;
+  else if(SCE_S_ISDIR(d_type))
+    return DIR_TYPE_DIR;
+  else
+    return DIR_TYPE_UNKNOWN;
+}
+
+static inline int resolve_dirent_d_type(struct dirent *d)
+{
+  return resolve_d_type(d->d_stat.st_mode);
+}
+#endif
+
 static inline boolean platform_readdir(struct mzx_dir *dir,
  char *dest, size_t dest_len, int *type)
 {
