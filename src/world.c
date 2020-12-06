@@ -2946,6 +2946,7 @@ static void default_sprite_data(struct world *mzx_world)
 
   // Allocate space for sprites and clist
   mzx_world->num_sprites = MAX_SPRITES;
+  mzx_world->num_sprites_allocated = MAX_SPRITES;
   mzx_world->sprite_list = ccalloc(MAX_SPRITES, sizeof(struct sprite *));
 
   for(i = 0; i < MAX_SPRITES; i++)
@@ -3245,6 +3246,7 @@ void clear_global_data(struct world *mzx_world)
   free(sprite_list);
   mzx_world->sprite_list = NULL;
   mzx_world->num_sprites = 0;
+  mzx_world->num_sprites_allocated = 0;
 
   free(mzx_world->collision_list);
   mzx_world->collision_list = NULL;

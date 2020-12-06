@@ -699,6 +699,28 @@ static inline uint32_t fnv_1a_hash_string_len(const void *_str, uint32_t len)
   }                                                               \
 } while(0)
 
+/**
+ * Get the total memory usage of a hash table.
+ *
+ * @param name    The unique identifier of the hash table type (e.g. COUNTER)
+ * @param h       Variable containing the hash table pointer.
+ * @param size    Variable to store total size (should be size_t).
+ */
+#define HASH_MEMORY_USAGE(n, _h, size) do                         \
+{                                                                 \
+  khash_t(n) *__h = _h;                                           \
+  if(__h && __h->keys)                                            \
+  {                                                               \
+    (size) = sizeof(__h);                                         \
+    (size) += __h->n_buckets * sizeof(__h->keys[0]);              \
+    (size) += __ac_fsize(__h->n_buckets);                         \
+    if(__h->vals)                                                 \
+      (size) += __h->n_buckets * sizeof(__h->vals[0]);            \
+  }                                                               \
+  else                                                            \
+    (size) = 0;                                                   \
+} while(0)
+
 __M_END_DECLS
 
 #endif /* __HASHTABLE_H */

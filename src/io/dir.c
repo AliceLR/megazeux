@@ -80,11 +80,12 @@ static inline void platform_closedir(struct mzx_dir *dir)
 }
 
 #ifdef DT_UNKNOWN
+#define DIRENT_HAS_D_TYPE 1
 /**
  * On platforms that support it, the d_type field can be used to avoid
  * stat calls. This is critical for the file manager on embedded platforms.
  */
-static inline int resolve_dirent_d_type(int d_type)
+static inline int resolve_d_type(int d_type)
 {
   switch(d_type)
   {
@@ -98,6 +99,19 @@ static inline int resolve_dirent_d_type(int d_type)
       return DIR_TYPE_UNKNOWN;
   }
 }
+
+static inline int resolve_dirent_d_type(struct dirent *d)
+{
+  return resolve_d_type(d->d_type);
+}
+
+/* Windows only... */
+#ifdef WIDE_PATHS
+static inline int resolve_w_dirent_d_type(struct _wdirent *wd)
+{
+  return resolve_d_type(wd->d_type);
+}
+#endif
 #endif
 
 static inline boolean platform_readdir(struct mzx_dir *dir,
@@ -118,8 +132,8 @@ static inline boolean platform_readdir(struct mzx_dir *dir,
 
     if(type)
     {
-#ifdef DT_UNKNOWN
-      *type = resolve_dirent_d_type(w_inode->d_type);
+#ifdef DIRENT_HAS_D_TYPE
+      *type = resolve_w_dirent_d_type(w_inode);
 #else
       *type = DIR_TYPE_UNKNOWN;
 #endif
@@ -142,8 +156,8 @@ static inline boolean platform_readdir(struct mzx_dir *dir,
 
   if(type)
   {
-#ifdef DT_UNKNOWN
-    *type = resolve_dirent_d_type(inode->d_type);
+#ifdef DIRENT_HAS_D_TYPE
+    *type = resolve_dirent_d_type(inode);
 #else
     *type = DIR_TYPE_UNKNOWN;
 #endif

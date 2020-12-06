@@ -2,9 +2,18 @@ GIT
 
 USERS
 
++ Added a list of variables related to RAM usage to the counter
+  debug window. This list can be found in the "World" list.
 + Fixed a bug where, if a world's title screen music is set but
   fails to load when the world is loaded, the music from another
   world could continue to play.
++ Fixed a buffer overflow crash that could occur when using LOAD
+  CHAR SET with both a large input file and a large offset.
++ Reading from and writing to extended character sets should no
+  longer display an "advanced graphical features" error message
+  when a renderer without layer rendering support is active.
+  This will, however, display a (new) error message specific to
+  the Nintendo DS port.
 
 
 November 22nd, 2020 - MZX 2.92f
