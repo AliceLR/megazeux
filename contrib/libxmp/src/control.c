@@ -30,10 +30,10 @@
 #include "virtual.h"
 #include "mixer.h"
 
-const char *xmp_version = XMP_VERSION;
-const unsigned int xmp_vercode = XMP_VERCODE;
+const char *xmp_version LIBXMP_EXPORT_VAR = XMP_VERSION;
+const unsigned int xmp_vercode LIBXMP_EXPORT_VAR = XMP_VERCODE;
 
-xmp_context xmp_create_context()
+xmp_context xmp_create_context(void)
 {
 	struct context_data *ctx;
 
@@ -124,6 +124,10 @@ static void set_position(struct context_data *ctx, int pos, int dir)
 			f->jumpline = 0;
 			f->jump = -1;
 			f->pbreak = 0;
+			f->loop_chn = 0;
+			f->delay = 0;
+			f->rowdelay = 0;
+			f->rowdelay_set = 0;
 		}
 	}
 }

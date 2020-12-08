@@ -56,7 +56,7 @@ static int it_test(HIO_HANDLE *f, char *t, const int start)
 #define L_CHANNELS 64
 
 
-static const uint8 fx[] = {
+static const uint8 fx[32] = {
 	/*   */ FX_NONE,
 	/* A */ FX_S3M_SPEED,
 	/* B */ FX_JUMP,
@@ -83,7 +83,12 @@ static const uint8 fx[] = {
 	/* W */ FX_GVOL_SLIDE,
 	/* X */ FX_SETPAN,
 	/* Y */ FX_PANBRELLO,
-	/* Z */ FX_FLT_CUTOFF
+	/* Z */ FX_FLT_CUTOFF,
+	/* ? */ FX_NONE,
+	/* ? */ FX_NONE,
+	/* ? */ FX_NONE,
+	/* ? */ FX_NONE,
+	/* ? */ FX_NONE
 };
 
 
@@ -516,7 +521,7 @@ static int load_new_it_instrument(struct xmp_instrument *xxi, HIO_HANDLE *f)
 	int inst_map[120], inst_rmap[XMP_MAX_KEYS];
 	struct it_instrument2_header i2h;
 	struct it_envelope env;
-	int dca2nna[] = { 0, 2, 3 };
+	int dca2nna[] = { 0, 2, 3, 3 /* Northern Sky (cj-north.it) has this... */ };
 	int c, k, j;
 	uint8 buf[64];
 
@@ -970,7 +975,7 @@ static int load_it_pattern(struct module_data *m, int i, int new_fx,
 		}
 		if (mask[c] & 0x08) {
 			b = hio_read8(f);
-			if (b > 31) {
+			if (b >= ARRAY_SIZE(fx)) {
 				D_(D_WARN "invalid effect %#02x", b);
 				hio_read8(f);
 				
