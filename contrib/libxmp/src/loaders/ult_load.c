@@ -225,6 +225,10 @@ static int ult_load(struct module_data *m, HIO_HANDLE *f, const int start)
     ufh2.channels = hio_read8(f);
     ufh2.patterns = hio_read8(f);
 
+    if (hio_error(f)) {
+	return -1;
+    }
+
     for (i = 0; i < 256; i++) {
 	if (ufh2.order[i] == 0xff)
 	    break;
@@ -236,6 +240,11 @@ static int ult_load(struct module_data *m, HIO_HANDLE *f, const int start)
     mod->spd = 6;
     mod->bpm = 125;
     mod->trk = mod->chn * mod->pat;
+
+    /* Sanity check */
+    if (mod->chn > XMP_MAX_CHANNELS) {
+	return -1;
+    }
 
     for (i = 0; i < mod->chn; i++) {
 	if (ver >= 3) {
@@ -271,6 +280,11 @@ static int ult_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 	    if (cnt == 0)
 		cnt++;
+
+	    if (j + cnt > 64 * mod->pat) {
+		D_(D_WARN "invalid track data packing");
+		return -1;
+	    }
 
 	    for (k = 0; k < cnt; k++, j++) {
 		event = &EVENT (j >> 6, i , j & 0x3f);

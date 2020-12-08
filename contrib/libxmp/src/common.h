@@ -6,6 +6,14 @@
 #include <string.h>
 #include "xmp.h"
 
+#undef  LIBXMP_EXPORT_VAR
+#if defined(EMSCRIPTEN)
+#include <emscripten.h>
+#define LIBXMP_EXPORT_VAR EMSCRIPTEN_KEEPALIVE
+#else
+#define LIBXMP_EXPORT_VAR
+#endif
+
 #if defined(__MORPHOS__) || defined(__AROS__) || defined(AMIGAOS) || \
     defined(__amigaos__) || defined(__amigaos4__) ||defined(__amigados__) || \
     defined(AMIGA) || defined(_AMIGA) || defined(__AMIGA__)
@@ -65,6 +73,7 @@ typedef signed long long int64;
 } while (0)
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 #define TRACK_NUM(a,c)	m->mod.xxp[a]->index[c]
 #define EVENT(a,c,r)	m->mod.xxt[TRACK_NUM((a),(c))]->event[r]
