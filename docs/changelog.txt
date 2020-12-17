@@ -241,6 +241,7 @@ DEVELOPERS
   find_function_counter.
 + _FILE_OFFSET_BITS=64 is now used for 64-bit fseeko, ftello,
   readdir, and stat/fstat support for 32-bit Linux builds.
++ Applied various Opal fixes from OpenMPT.
 
 
 November 22nd, 2020 - MZX 2.92f

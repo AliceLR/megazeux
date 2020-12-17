@@ -140,6 +140,7 @@ class Opal {
             uint16_t        GetOctave() const {  return Octave;  }
             uint16_t        GetKeyScaleNumber() const {  return KeyScaleNumber;  }
             uint16_t        GetModulationType() const {  return ModulationType;  }
+            Channel *       GetChannelPair() const { return ChannelPair; }
 
             void            ComputeKeyScaleNumber();
 
@@ -301,6 +302,7 @@ void Opal::Init(int sample_rate) {
 
     Clock = 0;
     TremoloClock = 0;
+    TremoloLevel = 0;
     VibratoTick = 0;
     VibratoClock = 0;
     NoteSel = false;
@@ -444,20 +446,28 @@ void Opal::Port(uint16_t reg_num, uint8_t val) {
 
         Channel &chan = Chan[chan_num];
 
+        // Registers Ax and Bx affect both channels.
+        Channel *chans[2] = { &chan, chan.GetChannelPair() };
+        int numchans = chans[1] ? 2 : 1;
+
         // Do specific registers
         switch (reg_num & 0xF0) {
 
             // Frequency low
             case 0xA0: {
-                chan.SetFrequencyLow(val);
+                for (int i = 0; i < numchans; i++) {
+                    chan.SetFrequencyLow(val);
+                }
                 break;
             }
 
             // Key-on / Octave / Frequency High
             case 0xB0: {
-                chan.SetKeyOn(val & 0x20);
-                chan.SetOctave(val >> 2 & 7);
-                chan.SetFrequencyHigh(val & 3);
+                for (int i = 0; i < numchans; i++) {
+                    chan.SetKeyOn(val & 0x20);
+                    chan.SetOctave(val >> 2 & 7);
+                    chan.SetFrequencyHigh(val & 3);
+                }
                 break;
             }
 
@@ -894,12 +904,10 @@ int16_t Opal::Operator::Output(uint16_t keyscalenum, uint32_t phase_step, int16_
 
         // Attack stage
         case EnvAtt: {
-            if (AttackRate == 0)
-                break;
-            if (AttackMask && (Master->Clock & AttackMask))
-                break;
-            uint16_t add = ((AttackAdd >> AttackTab[Master->Clock >> AttackShift & 7]) * ~EnvelopeLevel) >> 3;
-            EnvelopeLevel += add;
+            if (!(AttackRate == 0) && !(AttackMask && (Master->Clock & AttackMask))) {
+                uint16_t add = ((AttackAdd >> AttackTab[Master->Clock >> AttackShift & 7]) * ~EnvelopeLevel) >> 3;
+                EnvelopeLevel += add;
+            }
             if (EnvelopeLevel <= 0) {
                 EnvelopeLevel = 0;
                 EnvelopeStage = EnvDec;
@@ -909,12 +917,10 @@ int16_t Opal::Operator::Output(uint16_t keyscalenum, uint32_t phase_step, int16_
 
         // Decay stage
         case EnvDec: {
-            if (DecayRate == 0)
-                break;
-            if (DecayMask && (Master->Clock & DecayMask))
-                break;
-            uint16_t add = DecayAdd >> DecayTab[Master->Clock >> DecayShift & 7];
-            EnvelopeLevel += add;
+            if (!(DecayRate == 0) && !(DecayMask && (Master->Clock & DecayMask))) {
+                uint16_t add = DecayAdd >> DecayTab[Master->Clock >> DecayShift & 7];
+                EnvelopeLevel += add;
+            }
             if (EnvelopeLevel >= SustainLevel) {
                 EnvelopeLevel = SustainLevel;
                 EnvelopeStage = EnvSus;
@@ -933,12 +939,10 @@ int16_t Opal::Operator::Output(uint16_t keyscalenum, uint32_t phase_step, int16_
 
         // Release stage
         case EnvRel: {
-            if (ReleaseRate == 0)
-                break;
-            if (ReleaseMask && (Master->Clock & ReleaseMask))
-                break;
-            uint16_t add = ReleaseAdd >> ReleaseTab[Master->Clock >> ReleaseShift & 7];
-            EnvelopeLevel += add;
+            if (!(ReleaseRate == 0) && !(ReleaseMask && (Master->Clock & ReleaseMask))) {
+                uint16_t add = ReleaseAdd >> ReleaseTab[Master->Clock >> ReleaseShift & 7];
+                EnvelopeLevel += add;
+            }
             if (EnvelopeLevel >= 0x1FF) {
                 EnvelopeLevel = 0x1FF;
                 EnvelopeStage = EnvOff;
@@ -1070,9 +1074,7 @@ int16_t Opal::Operator::Output(uint16_t keyscalenum, uint32_t phase_step, int16_
     // position given by the 8 LSB's of the input. The value + 1024 (the hidden bit) is then the
     // significand of the floating point output and the yet unused MSB's of the input are the
     // exponent of the floating point output."
-    int16_t v = Master->ExpTable[mix & 0xFF] + 1024;
-    v >>= mix >> 8;
-    v += v;
+    int16_t v = ((Master->ExpTable[mix & 0xFF] + 1024) << 1) >> (mix >> 8);
     if (negate)
         v = ~v;
 
@@ -1179,13 +1181,8 @@ void Opal::Operator::SetFrequencyMultiplier(uint16_t scale) {
 //==================================================================================================
 void Opal::Operator::SetKeyScale(uint16_t scale) {
 
-    if (scale > 0)
-        KeyScaleShift = 3 - scale;
-
-    // No scaling, ensure it has no effect
-    else
-        KeyScaleShift = 15;
-
+    static const uint8_t kslShift[4] = { 8, 1, 2, 0 };
+    KeyScaleShift = kslShift[scale & 3];
     ComputeKeyScaleLevel();
 }
 
