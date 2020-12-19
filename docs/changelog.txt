@@ -14,6 +14,8 @@ USERS
   when a renderer without layer rendering support is active.
   This will, however, display a (new) error message specific to
   the Nintendo DS port.
++ Fixed crashes in the RAD player that could be caused by
+  references to uninitialized instruments.
 
 
 November 22nd, 2020 - MZX 2.92f
