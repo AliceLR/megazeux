@@ -2,6 +2,8 @@ GIT
 
 USERS
 
++ Added support for 800x240 mode to the 3DS port. This mode can
+  be toggled with the 3DS keyboard. (asie)
 + Added a list of variables related to RAM usage to the counter
   debug window. This list can be found in the "World" list.
 + Fixed a bug where, if a world's title screen music is set but
@@ -16,6 +18,11 @@ USERS
   the Nintendo DS port.
 + Fixed crashes in the RAD player that could be caused by
   references to uninitialized instruments.
+- Removed 3DS CIA support. (asie)
+
+DEVELOPERS
+
++ Refactored the 3DS renderer to use templates. (asie)
 
 
 November 22nd, 2020 - MZX 2.92f
