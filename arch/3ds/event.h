@@ -24,6 +24,8 @@
 
 #include "../../src/event.h"
 
+__M_BEGIN_DECLS
+
 enum bottom_screen_mode
 {
   BOTTOM_SCREEN_MODE_PREVIEW,
@@ -41,5 +43,7 @@ enum focus_mode
 enum bottom_screen_mode get_bottom_screen_mode(void);
 enum focus_mode get_allow_focus_changes(void);
 int ctr_get_subscreen_height(void);
+
+__M_END_DECLS
 
 #endif /* __3DS_EVENT_H__ */
