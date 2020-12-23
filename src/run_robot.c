@@ -3208,14 +3208,14 @@ void run_robot(context *ctx, int id, int x, int y)
 
             if(get_string(mzx_world, mzm_name_buffer, &src, id))
               load_mzm_memory(mzx_world, mzm_name_buffer, put_x, put_y,
-               put_param, 1, src.value, src.length);
+               put_param, 1, CUSTOM_BLOCK, src.value, src.length);
           }
           else
           {
             if(!fsafetranslate(mzm_name_buffer, translated_name, MAX_PATH))
             {
               load_mzm(mzx_world, translated_name, put_x, put_y,
-              put_param, 1);
+               put_param, 1, CUSTOM_BLOCK);
             }
           }
           free(translated_name);

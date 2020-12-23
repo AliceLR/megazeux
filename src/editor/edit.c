@@ -2466,6 +2466,14 @@ static boolean editor_key(context *ctx, int *key)
         block->dest_board = cur_board;
         block->dest_x = editor->cursor_x;
         block->dest_y = editor->cursor_y;
+        block->convert_id = CUSTOM_BLOCK;
+
+        if(block->dest_mode == EDIT_BOARD && block->src_mode != EDIT_BOARD)
+        {
+          block->convert_id = select_object_type(mzx_world);
+          if(block->convert_id == NO_ID)
+            break;
+        }
 
         do_block_command(mzx_world, block, editor->cur_history,
          editor->mzm_name_buffer, 0);
@@ -2891,16 +2899,25 @@ static boolean editor_key(context *ctx, int *key)
               if(!choose_file(mzx_world, mzm_ext, import_name,
                "Choose image file to import", 1))
               {
-                strcpy(editor->mzm_name_buffer, import_name);
-                editor->cursor_mode = CURSOR_MZM_PLACE;
-                block->command = BLOCK_CMD_LOAD_MZM;
-                block->selected = true;
-                block->src_board = NULL;
-                block->src_mode = editor->mode;
-                block->dest_mode = editor->mode;
-                load_mzm_size(import_name, &block->width, &block->height);
-              }
+                struct mzm_header mzm;
+                if(load_mzm_header(import_name, &mzm))
+                {
+                  strcpy(editor->mzm_name_buffer, import_name);
+                  editor->cursor_mode = CURSOR_MZM_PLACE;
+                  block->command = BLOCK_CMD_LOAD_MZM;
+                  block->selected = true;
+                  block->src_board = NULL;
+                  block->src_mode = editor->mode;
+                  block->dest_mode = editor->mode;
+                  block->width = mzm.width;
+                  block->height = mzm.height;
 
+                  // Enable conversion ID selection menu upon placement.
+                  if(editor->mode == EDIT_BOARD &&
+                   mzm.storage_mode == MZM_STORAGE_MODE_LAYER)
+                    block->src_mode = EDIT_OVERLAY;
+                }
+              }
               break;
             }
           }

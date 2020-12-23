@@ -55,6 +55,7 @@ struct block_info
   int dest_y;
   int width;
   int height;
+  enum thing convert_id;
   struct board *src_board;
   struct board *dest_board;
   boolean selected;
