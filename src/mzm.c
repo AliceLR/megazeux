@@ -409,6 +409,19 @@ static boolean read_mzm_header(struct memfile *mf, size_t file_length,
   else
     return false;
 
+  // Perform minimal validation on the header data to make sure it isn't junk.
+  if(mzm_header->savegame_mode < 0 || mzm_header->savegame_mode > 1)
+    return false;
+
+  if(mzm_header->storage_mode != MZM_STORAGE_MODE_BOARD
+   && mzm_header->storage_mode != MZM_STORAGE_MODE_LAYER)
+    return false;
+
+  if(mzm_header->width < 1 || mzm_header->width >= 32768 ||
+   mzm_header->height < 1 || mzm_header->height >= 32768 ||
+   (mzm_header->width * mzm_header->height) > MAX_BOARD_SIZE)
+    return false;
+
   return true;
 }
 
@@ -432,15 +445,10 @@ static int load_mzm_common(struct world *mzx_world, struct memfile *mf,
   data_start = mftell(mf);
   expected_data_size = (mzm.width * mzm.height) * (mzm.storage_mode ? 2 : 6);
 
-  // Validate
-  if(
-   (mzm.savegame_mode > 1) || (mzm.savegame_mode < 0) // Invalid save mode
-   || (mzm.storage_mode != MZM_STORAGE_MODE_BOARD
-     && mzm.storage_mode != MZM_STORAGE_MODE_LAYER) // Invalid storage mode
-   || (file_length - data_start < expected_data_size) // not enough space
+  // Validate MZM size, robots location (the other fields have been validated).
+  if((file_length - data_start < expected_data_size) // not enough space
    || (file_length < mzm.robots_location) // The end of file is before the robots
-   || (mzm.robots_location && (expected_data_size + data_start > mzm.robots_location))
-    )
+   || (mzm.robots_location && (expected_data_size + data_start > mzm.robots_location)))
     goto err_invalid;
 
   // If the mzm version is newer than the MZX version, notify
@@ -1023,8 +1031,10 @@ boolean load_mzm_header(char *name, struct mzm_header *mzm_header)
     fclose(input_file);
 
     mfopen(buffer, read_length, &mf);
-    return read_mzm_header(&mf, read_length, mzm_header);
-  }
+    if(read_mzm_header(&mf, read_length, mzm_header))
+      return true;
 
+    error_message(E_MZM_FILE_INVALID, 0, name);
+  }
   return false;
 }
