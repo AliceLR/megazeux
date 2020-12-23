@@ -549,15 +549,10 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
           case EDIT_OVERLAY:
           case EDIT_VLAYER:
           {
-            enum thing convert_id = layer_to_board_object_type(mzx_world);
-
-            if(convert_id != NO_ID)
-            {
-              copy_layer_to_board(
-               src_char, src_color, src_width, src_offset,
-               dest_board, dest_offset,
-               dest_block_width, dest_block_height, convert_id);
-            }
+            copy_layer_to_board(
+             src_char, src_color, src_width, src_offset,
+             dest_board, dest_offset,
+             dest_block_width, dest_block_height, block->convert_id);
             break;
           }
         }
@@ -613,7 +608,7 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
       case BLOCK_CMD_LOAD_MZM:
       {
         load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, block->dest_mode,
-         false);
+         false, block->convert_id);
         break;
       }
     }
@@ -706,7 +701,7 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
       case BLOCK_CMD_LOAD_MZM:
       {
         load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, block->dest_mode,
-         false);
+         false, NO_ID);
         break;
       }
     }

@@ -2,6 +2,11 @@ GIT
 
 USERS
 
++ When loading a layer MZM to the board in the editor, instead
+  of always loading the MZM as CustomBlocks the conversion type
+  can now be selected from CustomBlock, CustomFloor, and Text.
+  Canceling the object type dialog no longer cancels the current
+  block or MZM placement.
 + Added support for 800x240 mode to the 3DS port. This mode can
   be toggled with the 3DS keyboard. (asie)
 + Added a list of variables related to RAM usage to the counter
