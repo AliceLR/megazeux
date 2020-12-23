@@ -2470,7 +2470,7 @@ static boolean editor_key(context *ctx, int *key)
 
         if(block->dest_mode == EDIT_BOARD && block->src_mode != EDIT_BOARD)
         {
-          block->convert_id = select_object_type(mzx_world);
+          block->convert_id = layer_to_board_object_type(mzx_world);
           if(block->convert_id == NO_ID)
             break;
         }

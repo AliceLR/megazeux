@@ -868,3 +868,49 @@ boolean select_block_command(struct world *mzx_world, struct block_info *block,
   }
   return true;
 }
+
+enum thing layer_to_board_object_type(struct world *mzx_world)
+{
+  int dialog_result;
+  struct element *elements[3];
+  struct dialog di;
+  int object_type = 0;
+  const char *radio_button_strings[] =
+  {
+    "Custom Block",
+    "Custom Floor",
+    "Text"
+  };
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
+  set_context(CTX_BLOCK_TYPE);
+  elements[0] = construct_radio_button(6, 4, radio_button_strings,
+   3, 12, &object_type);
+  elements[1] = construct_button(5, 11, "OK", 0);
+  elements[2] = construct_button(15, 11, "Cancel", -1);
+
+  construct_dialog(&di, "Object type", 26, 4, 28, 14,
+   elements, 3, 0);
+
+  dialog_result = run_dialog(mzx_world, &di);
+
+  destruct_dialog(&di);
+  pop_context();
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
+  if(dialog_result)
+    return NO_ID;
+
+  switch(object_type)
+  {
+    case 0: return CUSTOM_BLOCK;
+    case 1: return CUSTOM_FLOOR;
+    case 2: return __TEXT;
+  }
+
+  return NO_ID;
+}

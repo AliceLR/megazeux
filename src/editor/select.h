@@ -32,7 +32,6 @@ int select_screen_mode(struct world *mzx_world);
 int choose_char_set(struct world *mzx_world);
 int export_type(struct world *mzx_world);
 int import_type(struct world *mzx_world);
-enum thing select_object_type(struct world *mzx_world);
 
 __M_END_DECLS
 
