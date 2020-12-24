@@ -291,9 +291,13 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     tm = localtime(&t);
     strftime(datebuf, ARRAY_SIZE(datebuf), "%Y%m%d", tm);
 
-    // SAUCE record.
     total_len = ftell(fp);
-    fprintf(fp, "\x1aSAUCE00%-35.35s%-20.20s%-20.20s%-8.8s",
+
+    // SAUCE record.
+    fputc(0x1A, fp);
+    fprintf(fp, "COMNT%-64.64s", // Comment
+     "Created with MegaZeux " VERSION VERSION_DATE ".");
+    fprintf(fp, "SAUCE00%-35.35s%-20.20s%-20.20s%-8.8s",
       title,
       author,
       "",     // Group
@@ -317,8 +321,6 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     fputc(1, fp);                     // Comment lines
     fputc(SAUCE_NO_BLINK | SAUCE_8_PIXEL_FONT | SAUCE_MODERN_RATIO, fp); // TFlags
     fprintf(fp, "%-22.22s", "IBM EGA"); // TInfoS
-    fprintf(fp, "COMNT%-64.64s",      // Comment
-     "Created with MegaZeux " VERSION VERSION_DATE ".");
   }
   fclose(fp);
   return true;
@@ -655,6 +657,7 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
 {
   struct ansi_data ansi = default_state;
   char magic[7];
+  long file_len;
   FILE *fp;
   int chr;
 
@@ -667,7 +670,8 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
   if(!fp)
     goto err;
 
-  setvbuf(fp, NULL, _IOFBF, 1024);
+  setvbuf(fp, NULL, _IOFBF, 128);
+  file_len = ftell_and_rewind(fp);
 
   while(1)
   {
@@ -684,39 +688,46 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
       ansi.y++;
     }
 
-    if(ansi.x + 1 > ansi.width)
-      ansi.width = ansi.x + 1;
-    if(ansi.y + 1 > ansi.height)
-      ansi.height = ansi.y + 1;
-
     if(chr >= 0)
+    {
+      if(ansi.x + 1 > ansi.width)
+        ansi.width = ansi.x + 1;
+      if(ansi.y + 1 > ansi.height)
+        ansi.height = ansi.y + 1;
+
       ansi.x++;
+    }
   }
   trace("--ANSI-- scan width=%d, height=%d\n", ansi.width, ansi.height);
 
   // Check for a SAUCE record. If found and valid, prefer its requested
   // width/height over the calculated scan width/height.
-  if(fread(magic, 7, 1, fp) && !strncmp(magic, "SAUCE00", 7))
+  if(file_len > 128)
   {
-    int data_type;
-    int file_type;
-    int sauce_width;
-    int sauce_height;
+    fseek(fp, file_len - 128, SEEK_SET);
 
-    // Skip optional fields.
-    fseek(fp, 35+20+20+8+4, SEEK_CUR);
-
-    // FIXME :(
-    data_type = fgetc(fp);
-    file_type = fgetc(fp);
-    sauce_width = fgetc(fp) | (fgetc(fp) << 8);
-    sauce_height = fgetc(fp) | (fgetc(fp) << 8);
-
-    if(!feof(fp) && data_type == 1 /* Character */ && file_type == 1 /* ANSi */)
+    if(fread(magic, 7, 1, fp) && !strncmp(magic, "SAUCE00", 7))
     {
-      ansi.width = sauce_width;
-      ansi.height = sauce_height;
-      trace("--ANSI-- SAUCE width=%d, height=%d\n", ansi.width, ansi.height);
+      int data_type;
+      int file_type;
+      int sauce_width;
+      int sauce_height;
+
+      // Skip optional fields.
+      fseek(fp, 35+20+20+8+4, SEEK_CUR);
+
+      // FIXME :(
+      data_type = fgetc(fp);
+      file_type = fgetc(fp);
+      sauce_width = fgetc(fp) | (fgetc(fp) << 8);
+      sauce_height = fgetc(fp) | (fgetc(fp) << 8);
+
+      if(!feof(fp) && data_type == 1 /* Character */ && file_type == 1 /* ANSi */)
+      {
+        ansi.width = sauce_width;
+        ansi.height = sauce_height;
+        trace("--ANSI-- SAUCE width=%d, height=%d\n", ansi.width, ansi.height);
+      }
     }
   }
 
