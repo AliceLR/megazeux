@@ -61,7 +61,7 @@ static ssize_t issue_color_meta_codes(int curr, int dest, FILE *fp)
   };
 
   int size = 2;
-  boolean reset = 0;
+  boolean reset = false;
 
   if(curr == dest)
     return 0;
@@ -69,10 +69,10 @@ static ssize_t issue_color_meta_codes(int curr, int dest, FILE *fp)
   fwrite(ansi_csi_prefix, 1, 2, fp);
 
   if((curr & 128) && !(dest & 128))
-    reset = 1;
+    reset = true;
 
   if((curr & 8) && !(dest & 8))
-    reset = 1;
+    reset = true;
 
   if(reset)
   {
