@@ -20,6 +20,7 @@ ${editor_obj}/%.o: ${editor_src}/%.c
 	${CC} -MD ${core_cflags} ${editor_flags} ${editor_spec} -c $< -o $@
 
 editor_objs := \
+  ${editor_obj}/ansi.o          \
   ${editor_obj}/block.o         \
   ${editor_obj}/board.o         \
   ${editor_obj}/buffer.o        \

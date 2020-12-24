@@ -24,6 +24,7 @@
 
 #include <string.h>
 
+#include "ansi.h"
 #include "block.h"
 #include "undo.h"
 
@@ -600,6 +601,7 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
       }
 
       case BLOCK_CMD_SAVE_MZM:
+      case BLOCK_CMD_SAVE_ANSI:
       {
         // not handled here
         break;
@@ -609,6 +611,16 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
       {
         load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, block->dest_mode,
          false, block->convert_id);
+        break;
+      }
+
+      case BLOCK_CMD_LOAD_ANSI:
+      {
+        clear_board_block(dest_board, dest_offset,
+         dest_block_width, dest_block_height);
+        // This function takes the original block size, not the clipped size.
+        import_ansi(mzx_world, mzm_name_buffer, block->dest_mode, dest_x,
+         dest_y, block_width, block_height, block->convert_id);
         break;
       }
     }
@@ -693,6 +705,7 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
       }
 
       case BLOCK_CMD_SAVE_MZM:
+      case BLOCK_CMD_SAVE_ANSI:
       {
         // not handled here
         break;
@@ -702,6 +715,17 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
       {
         load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, block->dest_mode,
          false, NO_ID);
+        break;
+      }
+
+      case BLOCK_CMD_LOAD_ANSI:
+      {
+        clear_layer_block(
+         dest_char, dest_color, dest_width, dest_offset,
+         dest_block_width, dest_block_height);
+        // This function takes the original block size, not the clipped size.
+        import_ansi(mzx_world, mzm_name_buffer, block->dest_mode, dest_x,
+         dest_y, block_width, block_height, NO_ID);
         break;
       }
     }
@@ -721,6 +745,7 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
 // ( ) Paint block
 // ( ) Copy to...
 // ( ) Copy to...
+// ( ) Save as ANSi
 // ( ) Save as MZM
 //
 //    _OK_      _Cancel_
@@ -744,6 +769,7 @@ boolean select_block_command(struct world *mzx_world, struct block_info *block,
     "Paint block",
     NULL,
     NULL,
+    "Save as ANSi",
     "Save as MZM"
   };
 
@@ -771,11 +797,11 @@ boolean select_block_command(struct world *mzx_world, struct block_info *block,
 
   set_context(CTX_BLOCK_CMD);
   elements[0] = construct_radio_button(2, 2, radio_button_strings,
-   10, 21, &selection);
-  elements[1] = construct_button(5, 13, "OK", 0);
-  elements[2] = construct_button(15, 13, "Cancel", -1);
+   11, 21, &selection);
+  elements[1] = construct_button(5, 14, "OK", 0);
+  elements[2] = construct_button(15, 14, "Cancel", -1);
 
-  construct_dialog(&di, "Choose block command", 26, 3, 29, 16,
+  construct_dialog(&di, "Choose block command", 26, 3, 29, 17,
    elements, 3, 0);
 
   dialog_result = run_dialog(mzx_world, &di);
@@ -863,6 +889,10 @@ boolean select_block_command(struct world *mzx_world, struct block_info *block,
     }
 
     case 9:
+      block->command = BLOCK_CMD_SAVE_ANSI;
+      break;
+
+    case 10:
       block->command = BLOCK_CMD_SAVE_MZM;
       break;
   }

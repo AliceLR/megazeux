@@ -45,6 +45,7 @@
 #include "../audio/audio.h"
 #include "../audio/sfx.h"
 
+#include "ansi.h"
 #include "block.h"
 #include "board.h"
 #include "buffer.h"
@@ -84,6 +85,7 @@ static const char *const mzb_ext[] = { ".MZB", NULL };
 static const char *const mzm_ext[] = { ".MZM", NULL };
 static const char *const sfx_ext[] = { ".SFX", NULL };
 static const char *const chr_ext[] = { ".CHR", NULL };
+static const char *const ans_ext[] = { ".ANS", ".TXT", NULL };
 static const char *const mod_ext[] =
 { ".ogg", ".mod", ".s3m", ".xm", ".it",
   ".669", ".amf", ".dsm", ".far", ".gdm",
@@ -184,6 +186,13 @@ struct editor_context
   int flash_timer_swap;
   int flash_timer_max;
   Uint32 flash_layer;
+
+  // ANSi settings
+  int ansi_line_wrap_column; // = 80
+  boolean ansi_line_wrap;
+  boolean ansi_save_text_only;
+  char ansi_save_title[36];
+  char ansi_save_author[21];
 
   // Testing
   int test_reload_board;
@@ -2450,7 +2459,48 @@ static boolean editor_key(context *ctx, int *key)
             break;
           }
 
+          case BLOCK_CMD_SAVE_ANSI:
+          {
+            // Save as ANSi.
+            char title[ARRAY_SIZE(editor->ansi_save_title)];
+            char author[ARRAY_SIZE(editor->ansi_save_author)];
+            char export_name[MAX_PATH];
+            int text_only = editor->ansi_save_text_only;
+            static const char *radio_strings[] =
+            {
+              "Save ANSi",
+              "Save TXT"
+            };
+            struct element *elements[] =
+            {
+              construct_radio_button(4, 19, radio_strings, ARRAY_SIZE(radio_strings),
+               9, &text_only),
+              construct_input_box(23, 19, "Title (ANSi):", ARRAY_SIZE(title) - 1, title),
+              construct_input_box(22, 20, "Author (ANSi):", ARRAY_SIZE(author) - 1, author),
+            };
+
+            memcpy(export_name, editor->mzm_name_buffer, MAX_PATH);
+            memcpy(title, editor->ansi_save_title, ARRAY_SIZE(title));
+            memcpy(author, editor->ansi_save_author, ARRAY_SIZE(author));
+
+            if(!file_manager(mzx_world, ans_ext, NULL, export_name,
+             "Export ANSi or TXT", 1, 1, elements, ARRAY_SIZE(elements), 3))
+            {
+              memcpy(editor->mzm_name_buffer, export_name, MAX_PATH);
+              memcpy(editor->ansi_save_title, title, ARRAY_SIZE(title));
+              memcpy(editor->ansi_save_author, author, ARRAY_SIZE(author));
+              editor->ansi_save_text_only = text_only;
+
+              export_ansi(mzx_world, export_name, editor->mode, block->src_x,
+               block->src_y, block->width, block->height, text_only, title, author);
+            }
+            block->selected = false;
+            editor->cursor_mode = CURSOR_PLACE;
+            break;
+          }
+
           case BLOCK_CMD_LOAD_MZM:
+          case BLOCK_CMD_LOAD_ANSI:
           {
             // ignore
             break;
@@ -2460,7 +2510,8 @@ static boolean editor_key(context *ctx, int *key)
       else
 
       if(editor->cursor_mode == CURSOR_BLOCK_PLACE ||
-       editor->cursor_mode == CURSOR_MZM_PLACE)
+       editor->cursor_mode == CURSOR_MZM_PLACE ||
+       editor->cursor_mode == CURSOR_ANSI_PLACE)
       {
         // Block placement
         block->dest_board = cur_board;
@@ -2893,6 +2944,44 @@ static boolean editor_key(context *ctx, int *key)
             }
 
             case 5:
+            {
+              // ANSi file.
+              int wrap_width = editor->ansi_line_wrap_column;
+              int enable_wrap = editor->ansi_line_wrap;
+              static const char *labels[] = { "Force wrap" };
+              struct element *elements[] =
+              {
+                construct_check_box(14, 20, labels, 1, strlen(labels[0]), &enable_wrap),
+                construct_number_box(37, 20, "Wrap width: ", 1, 32767, NUMBER_BOX, &wrap_width)
+              };
+
+              strcpy(import_name, editor->mzm_name_buffer);
+              if(!file_manager(mzx_world, ans_ext, NULL, import_name,
+               "Choose ANSi file to import", 1, 0, elements, ARRAY_SIZE(elements), 2))
+              {
+                int width = -1;
+                int height = -1;
+                editor->ansi_line_wrap = enable_wrap;
+                editor->ansi_line_wrap_column = wrap_width;
+
+                if(validate_ansi(import_name, enable_wrap ? wrap_width : -1,
+                 &width, &height) && width > 0 && height > 0)
+                {
+                  strcpy(editor->mzm_name_buffer, import_name);
+                  editor->cursor_mode = CURSOR_ANSI_PLACE;
+                  block->command = BLOCK_CMD_LOAD_ANSI;
+                  block->selected = true;
+                  block->src_board = NULL;
+                  block->src_mode = EDIT_OVERLAY; // Force ID selection for board.
+                  block->dest_mode = editor->mode;
+                  block->width = width;
+                  block->height = height;
+                }
+              }
+              break;
+            }
+
+            case 6:
             {
               // MZM file
               strcpy(import_name, editor->mzm_name_buffer);
@@ -3779,6 +3868,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   editor->show_board_under_overlay = true;
   editor->backup_timestamp = get_ticks();
   editor->debug_x = 60;
+  editor->ansi_line_wrap_column = 80;
 
   buffer->robot = &(editor->buffer_robot);
   buffer->scroll = &(editor->buffer_scroll);
