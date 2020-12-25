@@ -612,7 +612,7 @@ static int read_ansi(struct ansi_data *ansi, FILE *fp)
           return ANSI_ESCAPE;
         }
 
-        if(sym == 'H')
+        if(sym == 'H' || sym == 'f')
         {
           // Cursor position.
           if(param[0] <= 0)
@@ -626,9 +626,9 @@ static int read_ansi(struct ansi_data *ansi, FILE *fp)
         }
         else
 
-        // TODO should this error instead?
+        // Ignore unsupported CSI sequences.
         if((sym < '0') || (sym > '9'))
-          return sym;
+          return ANSI_ESCAPE;
 
         // Read parameter.
         param[cur_param] = 0;
