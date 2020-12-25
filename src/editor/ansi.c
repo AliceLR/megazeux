@@ -673,6 +673,52 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
   setvbuf(fp, NULL, _IOFBF, 128);
   file_len = ftell_and_rewind(fp);
 
+  // Check for a SAUCE record. If found and valid, prefer its requested
+  // wrap width over the provided wrap width.
+  if(file_len > 128)
+  {
+    fseek(fp, file_len - 128, SEEK_SET);
+
+    if(fread(magic, 7, 1, fp) && !strncmp(magic, "SAUCE00", 7))
+    {
+      int data_type;
+      int file_type;
+      int sauce_width;
+      int sauce_height;
+
+      // Skip optional fields.
+      fseek(fp, 35+20+20+8+4, SEEK_CUR);
+
+      // FIXME :(
+      data_type = fgetc(fp);
+      file_type = fgetc(fp);
+      sauce_width = fgetc(fp) | (fgetc(fp) << 8);
+      sauce_height = fgetc(fp) | (fgetc(fp) << 8);
+
+      if(!feof(fp) && data_type == 1 /* Character */ && file_type == 1 /* ANSi */)
+      {
+        ansi.width = sauce_width;
+        ansi.height = sauce_height;
+        trace("--ANSI-- SAUCE width=%d, height=%d\n", ansi.width, ansi.height);
+
+        if(sauce_width && (wrap_width < 1 || wrap_width > sauce_width))
+        {
+          wrap_width = sauce_width;
+          trace("--ANSI-- using SAUCE width to wrap ANSi.\n");
+        }
+        else
+
+        if(!sauce_width && wrap_width < 1)
+        {
+          wrap_width = 80;
+          trace("--ANSI-- SAUCE record with width 0--using default width "
+           "of 80 to wrap ANSi.\n");
+        }
+      }
+    }
+  }
+  rewind(fp);
+
   while(1)
   {
     chr = read_ansi(&ansi, fp);
@@ -699,37 +745,6 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
     }
   }
   trace("--ANSI-- scan width=%d, height=%d\n", ansi.width, ansi.height);
-
-  // Check for a SAUCE record. If found and valid, prefer its requested
-  // width/height over the calculated scan width/height.
-  if(file_len > 128)
-  {
-    fseek(fp, file_len - 128, SEEK_SET);
-
-    if(fread(magic, 7, 1, fp) && !strncmp(magic, "SAUCE00", 7))
-    {
-      int data_type;
-      int file_type;
-      int sauce_width;
-      int sauce_height;
-
-      // Skip optional fields.
-      fseek(fp, 35+20+20+8+4, SEEK_CUR);
-
-      // FIXME :(
-      data_type = fgetc(fp);
-      file_type = fgetc(fp);
-      sauce_width = fgetc(fp) | (fgetc(fp) << 8);
-      sauce_height = fgetc(fp) | (fgetc(fp) << 8);
-
-      if(!feof(fp) && data_type == 1 /* Character */ && file_type == 1 /* ANSi */)
-      {
-        ansi.width = sauce_width;
-        ansi.height = sauce_height;
-        trace("--ANSI-- SAUCE width=%d, height=%d\n", ansi.width, ansi.height);
-      }
-    }
-  }
 
   fclose(fp);
   *width = ansi.width;
