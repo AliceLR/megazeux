@@ -335,6 +335,14 @@ err:
   return false;
 }
 
+enum ansi_eol_type
+{
+  EOL_UNKNOWN,
+  EOL_DOS,
+  EOL_UNIX,
+  EOL_MAC,
+};
+
 enum ansi_retvals
 {
   ANSI_EOF    = -1,
@@ -359,6 +367,7 @@ struct ansi_data
   int height;
   int saved_x;
   int saved_y;
+  enum ansi_eol_type eol;
   enum ansi_erase erase_display;
   enum ansi_erase erase_line;
 };
@@ -372,6 +381,7 @@ static const struct ansi_data default_state =
   0, // height,
   0, // saved_x
   0, // saved_y,
+  EOL_UNKNOWN,
   ANSI_NO_ERASE,
   ANSI_NO_ERASE
 };
@@ -444,15 +454,45 @@ static int read_ansi(struct ansi_data *ansi, FILE *fp)
   if(feof(fp))
     return ANSI_EOF;
 
+  if(ansi->eol == EOL_UNKNOWN && (sym == '\r' || sym == '\n'))
+  {
+    int tmp = fgetc(fp);
+    if(sym == '\r' && tmp == '\n')
+    {
+      trace("--ANSI-- Detected DOS line ends.\n");
+      ansi->eol = EOL_DOS;
+    }
+    else
+
+    if(sym == '\r')
+    {
+      trace("--ANSI-- Detected MAC line ends.\n");
+      ansi->eol = EOL_MAC;
+    }
+    else
+    {
+      trace("--ANSI-- Detected Unix line ends.\n");
+      ansi->eol = EOL_UNIX;
+    }
+
+    ungetc(tmp, fp);
+  }
+
   if(sym == '\r')
   {
     ansi->x = 0;
+    if(ansi->eol == EOL_MAC)
+      ansi->y++;
+
     return ANSI_ESCAPE;
   }
   else
 
   if(sym == '\n')
   {
+    if(ansi->eol == EOL_UNIX)
+      ansi->x = 0;
+
     ansi->y++;
     return ANSI_ESCAPE;
   }
@@ -467,6 +507,12 @@ static int read_ansi(struct ansi_data *ansi, FILE *fp)
   // ANSi escape sequence.
   if(sym == 0x1B)
   {
+    if(ansi->eol != EOL_DOS)
+    {
+      trace("--ANSI-- Detected ANSi, forcing DOS line ends.\n");
+      ansi->eol = EOL_DOS;
+    }
+
     sym = fgetc(fp);
     if(sym == '[')
     {
@@ -611,6 +657,7 @@ static int read_ansi(struct ansi_data *ansi, FILE *fp)
           ansi->x = param[0] - 1;
           return ANSI_ESCAPE;
         }
+        else
 
         if(sym == 'H' || sym == 'f')
         {
