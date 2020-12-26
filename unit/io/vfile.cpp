@@ -759,17 +759,19 @@ UNITTEST(Filesystem)
 #else
     static constexpr int access_flags = R_OK|W_OK;
 #endif
-    int flags = access(".", access_flags);
-    int flags2 = vaccess(".", R_OK|W_OK|X_OK);
-    ASSERTEQ(flags, flags2);
+    ret = access(".", access_flags);
+    ASSERTEQ(ret, 0);
+    ret = vaccess(".", R_OK|W_OK|X_OK);
+    ASSERTEQ(ret, 0);
 
     ret = vchdir("..");
     ASSERTEQ(ret, 0);
     ret = vchdir("data");
     ASSERTEQ(ret, 0);
-    flags = access("CT_LEVEL.MOD", access_flags);
-    flags2 = vaccess("CT_LEVEL.MOD", R_OK|W_OK|X_OK);
-    ASSERTEQ(flags, flags2);
+    ret = access("CT_LEVEL.MOD", access_flags);
+    ASSERTEQ(ret, 0);
+    ret = vaccess("CT_LEVEL.MOD", R_OK|W_OK|X_OK);
+    ASSERTEQ(ret, 0);
   }
 
   SECTION(vstat)
@@ -841,11 +843,8 @@ UNITTEST(Filesystem)
     ASSERTEQ(stat_info.st_size, arraysize(test_data));
     ASSERT(S_ISREG(stat_info.st_mode));
 
-#if 0
-    /* TODO doesn't work... */
     ret = vaccess(UTF8_FILE, R_OK|W_OK);
-    ASSERTEQ(ret, R_OK|W_OK);
-#endif
+    ASSERTEQ(ret, 0);
 
     ret = vunlink(UTF8_FILE);
     ASSERTEQ(ret, 0);
