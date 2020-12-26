@@ -464,8 +464,14 @@ static void test_vungetc(vfile *vf)
   value = vfgetd(vf);
   ASSERTEQ(value, first_dword);
 
-  // TODO ftell is supposed to account for the buffered char in binary streams
-  // (undefined at position 0) and is unspecified for text streams. agh
+  // ftell should subtract the buffered char count from the cursor for binary
+  // streams. Calling ftell when (cursor - buffered char count)<0 is undefined.
+  ret = vfseek(vf, 128, SEEK_SET);
+  ASSERTEQ(ret, 0);
+  ret = vungetc(0x9A, vf);
+  ASSERTEQ(ret, 0x9A);
+  long pos = vftell(vf);
+  ASSERTEQ(pos, 127);
 }
 
 static void test_vfsafegets(vfile *vf, int i, const char * const (&output)[MAX_LINES])

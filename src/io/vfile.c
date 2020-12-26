@@ -723,7 +723,18 @@ long int vftell(vfile *vf)
   assert(vf->flags & VF_STORAGE_MASK);
 
   if(vf->flags & VF_MEMORY)
-    return mftell(&(vf->mf));
+  {
+    long res = mftell(&(vf->mf));
+    /**
+     * The number of buffered chars should be subtracted from the cursor for
+     * binary mode files (in text mode the behavior is unspecified.). If the
+     * cursor is at position 0 the return value of this operation is undefined.
+     */
+    if((vf->tmp_chr != EOF) && (vf->flags & VF_BINARY) && res > 0)
+      return res - 1;
+
+    return res;
+  }
 
   if(vf->flags & VF_FILE)
     return ftell(vf->fp);
