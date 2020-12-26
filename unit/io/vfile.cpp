@@ -768,9 +768,9 @@ UNITTEST(Filesystem)
     ASSERTEQ(ret, 0);
     ret = vchdir("data");
     ASSERTEQ(ret, 0);
-    ret = access("CT_LEVEL.MOD", access_flags);
+    ret = access("CT_LEVEL.MOD", R_OK|W_OK);
     ASSERTEQ(ret, 0);
-    ret = vaccess("CT_LEVEL.MOD", R_OK|W_OK|X_OK);
+    ret = vaccess("CT_LEVEL.MOD", R_OK|W_OK);
     ASSERTEQ(ret, 0);
   }
 
