@@ -31,36 +31,46 @@ __M_BEGIN_DECLS
 typedef struct vfile vfile;
 struct stat;
 
-vfile *vfopen_unsafe(const char *filename, const char *mode);
+enum vfileflags
+{
+  V_SMALL_BUFFER = (1<<29), // setvbuf <= 256 for real files in binary mode.
+  V_LARGE_BUFFER = (1<<30), // setvbuf >= 8192 for real files in binary mode.
+};
+
+UTILS_LIBSPEC vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
+ int user_flags);
+UTILS_LIBSPEC vfile *vfopen_unsafe(const char *filename, const char *mode);
 vfile *vfile_init_fp(FILE *fp, const char *mode);
 vfile *vfile_init_mem(void *buffer, size_t size, const char *mode);
 vfile *vfile_init_mem_ext(void **external_buffer, size_t *external_buffer_size,
  const char *mode);
-int vfclose(vfile *vf);
+UTILS_LIBSPEC int vfclose(vfile *vf);
 
 struct memfile *vfile_get_memfile(vfile *vf);
 
-int vchdir(const char *path);
-char *vgetcwd(char *buf, size_t size);
-int vmkdir(const char *path, int mode);
-int vunlink(const char *path);
-int vrmdir(const char *path);
-int vaccess(const char *path, int mode);
-int vstat(const char *path, struct stat *buf);
+UTILS_LIBSPEC int vchdir(const char *path);
+UTILS_LIBSPEC char *vgetcwd(char *buf, size_t size);
+UTILS_LIBSPEC int vmkdir(const char *path, int mode);
+UTILS_LIBSPEC int vunlink(const char *path);
+UTILS_LIBSPEC int vrmdir(const char *path);
+UTILS_LIBSPEC int vaccess(const char *path, int mode);
+UTILS_LIBSPEC int vstat(const char *path, struct stat *buf);
 
-int vfgetc(vfile *vf);
-int vfgetw(vfile *vf);
-int vfgetd(vfile *vf);
-int vfputc(int character, vfile *vf);
-int vfputw(int character, vfile *vf);
-int vfputd(int character, vfile *vf);
-int vfread(void *dest, size_t size, size_t count, vfile *vf);
-int vfwrite(const void *src, size_t size, size_t count, vfile *vf);
-char *vfsafegets(char *dest, int size, vfile *vf);
-int vfseek(vfile *vf, long int offset, int whence);
-long int vftell(vfile *vf);
-void vrewind(vfile *vf);
-long vfilelength(vfile *vf, boolean rewind);
+UTILS_LIBSPEC int vfgetc(vfile *vf);
+UTILS_LIBSPEC int vfgetw(vfile *vf);
+UTILS_LIBSPEC int vfgetd(vfile *vf);
+UTILS_LIBSPEC int vfputc(int character, vfile *vf);
+UTILS_LIBSPEC int vfputw(int character, vfile *vf);
+UTILS_LIBSPEC int vfputd(int character, vfile *vf);
+UTILS_LIBSPEC int vfread(void *dest, size_t size, size_t count, vfile *vf);
+UTILS_LIBSPEC int vfwrite(const void *src, size_t size, size_t count, vfile *vf);
+UTILS_LIBSPEC char *vfsafegets(char *dest, int size, vfile *vf);
+UTILS_LIBSPEC int vfputs(const char *src, vfile *vf);
+UTILS_LIBSPEC int vungetc(unsigned char ch, vfile *vf);
+UTILS_LIBSPEC int vfseek(vfile *vf, long int offset, int whence);
+UTILS_LIBSPEC long int vftell(vfile *vf);
+UTILS_LIBSPEC void vrewind(vfile *vf);
+UTILS_LIBSPEC long vfilelength(vfile *vf, boolean rewind);
 
 __M_END_DECLS
 

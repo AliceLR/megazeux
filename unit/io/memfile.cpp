@@ -218,7 +218,14 @@ UNITTEST(mfseek_mftell)
   {
     -1,
     -1000,
+    -128731282,
+  };
+  static const int offs_maybe_safe[] =
+  {
+    arraysize(buffer) + 1,
     1024,
+    9999,
+    293819028,
     INT_MAX,
   };
   int ret;
@@ -252,6 +259,13 @@ UNITTEST(mfseek_mftell)
       ASSERTEQ(ret, -1);
       ASSERTEQ(mftell(&mf), 129);
     }
+
+    for(i = 0; i < arraysize(offs_maybe_safe); i++)
+    {
+      ret = mfseek(&mf, offs_maybe_safe[i], SEEK_SET);
+      ASSERTEQ(ret, -1);
+      ASSERTEQ(mftell(&mf), 129);
+    }
   }
 
   SECTION(seek_cur)
@@ -280,6 +294,19 @@ UNITTEST(mfseek_mftell)
   {
     mfseek(&mf, 0, SEEK_END);
     ASSERTEQ(mftell(&mf), arraysize(buffer));
+  }
+
+  SECTION(seek_past_end)
+  {
+    mf.seek_past_end = true;
+
+    for(i = 0; i < arraysize(offs_maybe_safe); i++)
+    {
+      ret = mfseek(&mf, offs_maybe_safe[i], SEEK_SET);
+      ASSERTEQ(ret, 0);
+      ASSERTEQ(mftell(&mf), offs_maybe_safe[i]);
+      ASSERTEQ(mfhasspace(1, &mf), false);
+    }
   }
 }
 

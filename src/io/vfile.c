@@ -31,16 +31,27 @@
 #include "vfile_posix.h"
 #endif
 
-enum vfileflags
+#ifndef VFILE_SMALL_BUFFER_SIZE
+#define VFILE_SMALL_BUFFER_SIZE 256
+#endif
+
+#ifndef VFILE_LARGE_BUFFER_SIZE
+#define VFILE_LARGE_BUFFER_SIZE 32768
+#endif
+
+enum vfileflags_private
 {
   VF_FILE               = (1<<0),
   VF_MEMORY             = (1<<1),
-  VF_MEMORY_EXPANDABLE  = (1<<2) | VF_MEMORY,
+  VF_MEMORY_EXPANDABLE  = (1<<2),
 //VF_IN_ARCHIVE         = (1<<3),
   VF_READ               = (1<<4),
   VF_WRITE              = (1<<5),
   VF_APPEND             = (1<<6),
   VF_BINARY             = (1<<7),
+
+  VF_STORAGE_MASK       = (VF_FILE | VF_MEMORY),
+  VF_PUBLIC_MASK        = (V_SMALL_BUFFER | V_LARGE_BUFFER)
 };
 
 struct vfile
@@ -51,15 +62,17 @@ struct vfile
   void **external_buffer;
   size_t *external_buffer_size;
 
-  enum vfileflags flags;
+  // vungetc buffer for memory files.
+  int tmp_chr;
+  int flags;
 };
 
 /**
  * Parse vfile mode flags from a standard fopen mode string.
  */
-static enum vfileflags get_vfile_mode_flags(const char *mode)
+static int get_vfile_mode_flags(const char *mode)
 {
-  enum vfileflags flags = 0;
+  int flags = 0;
 
   assert(mode);
 
@@ -101,14 +114,16 @@ static enum vfileflags get_vfile_mode_flags(const char *mode)
 }
 
 /**
- * Open a file for input or output.
+ * Open a file for input or output with user-defined flags.
  */
-vfile *vfopen_unsafe(const char *filename, const char *mode)
+vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
+ int user_flags)
 {
-  enum vfileflags flags = get_vfile_mode_flags(mode);
+  int flags = get_vfile_mode_flags(mode);
   vfile *vf = NULL;
 
   assert(filename && flags);
+  flags |= (user_flags & VF_PUBLIC_MASK);
 
   // TODO archive detection/memory file caching here
   // TODO vf = vfscache_vfopen(filename, flags);
@@ -120,12 +135,24 @@ vfile *vfopen_unsafe(const char *filename, const char *mode)
 
     if(fp)
     {
-      // TODO buffering for real files
-      //if((flags & VF_BINARY) && (!(flags & VF_READ) || !(flags & VF_WRITE)))
-      //  setvbuf lol
+      if((flags & VF_BINARY) && (!(flags & VF_READ) || !(flags & VF_WRITE)))
+      {
+        if(flags & V_LARGE_BUFFER)
+        {
+          setvbuf(fp, NULL, _IOFBF, VFILE_LARGE_BUFFER_SIZE);
+          flags &= ~V_SMALL_BUFFER;
+        }
+        else
 
-      vf = ccalloc(1, sizeof(vfile));
+        if(flags & V_SMALL_BUFFER)
+          setvbuf(fp, NULL, _IOFBF, VFILE_SMALL_BUFFER_SIZE);
+      }
+      else
+        flags &= ~(V_SMALL_BUFFER | V_LARGE_BUFFER);
+
+      vf = (vfile *)ccalloc(1, sizeof(vfile));
       vf->fp = fp;
+      vf->tmp_chr = EOF;
       vf->flags = flags | VF_FILE;
       return vf;
     }
@@ -134,17 +161,26 @@ vfile *vfopen_unsafe(const char *filename, const char *mode)
 }
 
 /**
+ * Open a file for input or output.
+ */
+vfile *vfopen_unsafe(const char *filename, const char *mode)
+{
+  return vfopen_unsafe_ext(filename, mode, 0);
+}
+
+/**
  * Create a vfile from an existing fp.
  */
 vfile *vfile_init_fp(FILE *fp, const char *mode)
 {
-  enum vfileflags flags = get_vfile_mode_flags(mode);
+  int flags = get_vfile_mode_flags(mode);
   vfile *vf = NULL;
 
   assert(fp && flags);
 
-  vf = ccalloc(1, sizeof(vfile));
+  vf = (vfile *)ccalloc(1, sizeof(vfile));
   vf->fp = fp;
+  vf->tmp_chr = EOF;
   vf->flags = flags | VF_FILE;
   return vf;
 }
@@ -154,15 +190,16 @@ vfile *vfile_init_fp(FILE *fp, const char *mode)
  */
 vfile *vfile_init_mem(void *buffer, size_t size, const char *mode)
 {
-  enum vfileflags flags = get_vfile_mode_flags(mode);
+  int flags = get_vfile_mode_flags(mode);
   vfile *vf = NULL;
 
-  // TODO append not really supported by memfiles, so that needs manual
-  // handling at some point..
-  assert(buffer && size && flags && !(flags & VF_APPEND));
+  assert((buffer && size) || (!buffer && !size));
+  assert(flags);
 
-  vf = ccalloc(1, sizeof(vfile));
+  vf = (vfile *)ccalloc(1, sizeof(vfile));
   mfopen(buffer, size, &(vf->mf));
+  vf->mf.seek_past_end = true;
+  vf->tmp_chr = EOF;
   vf->flags = flags | VF_MEMORY;
   return vf;
 }
@@ -293,6 +330,10 @@ static inline boolean vfile_ensure_space(int amount_to_write, vfile *vf)
 
   assert(vf->flags & VF_MEMORY);
 
+  /* In append mode, all writes should occur at the end. */
+  if(vf->flags & VF_APPEND)
+    mf->current = mf->end;
+
   if(!mfhasspace(amount_to_write, mf))
   {
     if(!(vf->flags & VF_MEMORY_EXPANDABLE))
@@ -315,15 +356,23 @@ static inline boolean vfile_ensure_space(int amount_to_write, vfile *vf)
  */
 int vfgetc(vfile *vf)
 {
-  assert(vf && (vf->flags & VF_READ));
+  assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_READ);
 
   if(vf->flags & VF_MEMORY)
+  {
+    int tmp = vf->tmp_chr;
+    vf->tmp_chr = EOF;
+    if(tmp != EOF)
+      return tmp;
+
     return mfhasspace(1, &(vf->mf)) ? mfgetc(&(vf->mf)) : EOF;
+  }
 
   if(vf->flags & VF_FILE)
     return fgetc(vf->fp);
 
-  assert(0);
   return EOF;
 }
 
@@ -332,10 +381,24 @@ int vfgetc(vfile *vf)
  */
 int vfgetw(vfile *vf)
 {
-  assert(vf && (vf->flags & VF_READ));
+  assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_READ);
 
   if(vf->flags & VF_MEMORY)
+  {
+    int tmp = vf->tmp_chr;
+    if(tmp != EOF)
+    {
+      if(!mfhasspace(1, &(vf->mf)))
+        return EOF;
+
+      vf->tmp_chr = EOF;
+      return tmp | (mfgetc(&(vf->mf)) << 8);
+    }
+
     return mfhasspace(2, &(vf->mf)) ? mfgetw(&(vf->mf)) : EOF;
+  }
 
   if(vf->flags & VF_FILE)
   {
@@ -346,7 +409,6 @@ int vfgetw(vfile *vf)
     return (a != EOF) && (b != EOF) ? ((b << 8) | a) : EOF;
   }
 
-  assert(0);
   return EOF;
 }
 
@@ -355,10 +417,24 @@ int vfgetw(vfile *vf)
  */
 int vfgetd(vfile *vf)
 {
-  assert(vf && (vf->flags & VF_READ));
+  assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_READ);
 
   if(vf->flags & VF_MEMORY)
+  {
+    int tmp = vf->tmp_chr;
+    if(tmp != EOF)
+    {
+      if(!mfhasspace(3, &(vf->mf)))
+        return EOF;
+
+      vf->tmp_chr = EOF;
+      return tmp | (mfgetc(&(vf->mf)) << 8) | (mfgetw(&(vf->mf)) << 16);
+    }
+
     return mfhasspace(4, &(vf->mf)) ? mfgetd(&(vf->mf)) : EOF;
+  }
 
   if(vf->flags & VF_FILE)
   {
@@ -374,7 +450,6 @@ int vfgetd(vfile *vf)
     return (d << 24) | (c << 16) | (b << 8) | a;
   }
 
-  assert(0);
   return EOF;
 }
 
@@ -383,7 +458,9 @@ int vfgetd(vfile *vf)
  */
 int vfputc(int character, vfile *vf)
 {
-  assert(vf && (vf->flags & VF_WRITE));
+  assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_WRITE);
 
   if(vf->flags & VF_MEMORY)
   {
@@ -396,7 +473,6 @@ int vfputc(int character, vfile *vf)
   if(vf->flags & VF_FILE)
     return fputc(character, vf->fp);
 
-  assert(0);
   return EOF;
 }
 
@@ -405,7 +481,9 @@ int vfputc(int character, vfile *vf)
  */
 int vfputw(int character, vfile *vf)
 {
-  assert(vf && (vf->flags & VF_WRITE));
+  assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_WRITE);
 
   if(vf->flags & VF_MEMORY)
   {
@@ -424,7 +502,6 @@ int vfputw(int character, vfile *vf)
     return (a != EOF) && (b != EOF) ? character : EOF;
   }
 
-  assert(0);
   return EOF;
 }
 
@@ -433,7 +510,9 @@ int vfputw(int character, vfile *vf)
  */
 int vfputd(int character, vfile *vf)
 {
-  assert(vf && (vf->flags & VF_WRITE));
+  assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_WRITE);
 
   if(vf->flags & VF_MEMORY)
   {
@@ -458,7 +537,6 @@ int vfputd(int character, vfile *vf)
     return character;
   }
 
-  assert(0);
   return EOF;
 }
 
@@ -467,15 +545,34 @@ int vfputd(int character, vfile *vf)
  */
 int vfread(void *dest, size_t size, size_t count, vfile *vf)
 {
-  assert(vf && dest && (vf->flags & VF_READ));
+  assert(vf);
+  assert(dest);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_READ);
 
   if(vf->flags & VF_MEMORY)
+  {
+    if(size && count && vf->tmp_chr != EOF)
+    {
+      char *d = (char *)dest;
+      *(d++) = vf->tmp_chr;
+      if(size > 1)
+      {
+        if(!mfread(d, size - 1, 1, &(vf->mf)))
+          return 0;
+
+        d += size - 1;
+      }
+      vf->tmp_chr = EOF;
+      return (count > 1) ? mfread(d, size, count - 1, &(vf->mf)) + 1 : 1;
+    }
+
     return mfread(dest, size, count, &(vf->mf));
+  }
 
   if(vf->flags & VF_FILE)
     return fread(dest, size, count, vf->fp);
 
-  assert(0);
   return 0;
 }
 
@@ -484,7 +581,10 @@ int vfread(void *dest, size_t size, size_t count, vfile *vf)
  */
 int vfwrite(const void *src, size_t size, size_t count, vfile *vf)
 {
-  assert(vf && src && (vf->flags & VF_WRITE));
+  assert(vf);
+  assert(src);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_WRITE);
 
   if(vf->flags & VF_MEMORY)
   {
@@ -497,7 +597,6 @@ int vfwrite(const void *src, size_t size, size_t count, vfile *vf)
   if(vf->flags & VF_FILE)
     return fwrite(src, size, count, vf->fp);
 
-  assert(0);
   return 0;
 }
 
@@ -507,18 +606,94 @@ int vfwrite(const void *src, size_t size, size_t count, vfile *vf)
  */
 char *vfsafegets(char *dest, int size, vfile *vf)
 {
-  assert(vf && dest && (vf->flags & VF_READ));
+  assert(vf);
+  assert(dest);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_READ);
 
   if(vf->flags & VF_MEMORY)
-    return mfsafegets(dest, size, &(vf->mf));
+  {
+    if(size && vf->tmp_chr != EOF)
+    {
+      int tmp = vf->tmp_chr;
+      vf->tmp_chr = EOF;
+      // TODO Not 100% correct handling for this...
+      if(tmp == '\r' || tmp == '\n')
+      {
+        dest[0] = '\0';
+        return dest;
+      }
+      dest[0] = tmp;
+      if(!mfsafegets(dest + 1, size - 1, &(vf->mf)))
+        return NULL;
 
-/* FIXME commenting this so utils don't need to link fsafeopen.o right now.
-  Eventually, the contents of fsafegets will probably end up here.
+      return dest;
+    }
+    return mfsafegets(dest, size, &(vf->mf));
+  }
+
   if(vf->flags & VF_FILE)
-    return fsafegets(dest, size, vf->fp);
-*/
-  assert(0);
+  {
+    if(fgets(dest, size, vf->fp))
+    {
+      size_t len = strlen(dest);
+      while(len > 1 && (dest[len - 1] == '\r' || dest[len - 1] == '\n'))
+      {
+        len--;
+        dest[len] = '\0';
+      }
+      return dest;
+    }
+    return NULL;
+  }
+
   return NULL;
+}
+
+/**
+ * Write a null-terminated string to a file. The null terminator will not be
+ * written to the file.
+ */
+int vfputs(const char *src, vfile *vf)
+{
+  size_t len;
+  int ret;
+
+  assert(vf);
+  assert(src);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_WRITE);
+
+  len = strlen(src);
+  if(!len)
+    return 0;
+
+  ret = vfwrite(src, len, 1, vf);
+  return (ret == 1) ? 0 : EOF;
+}
+
+/**
+ * Place a character back into the stream. This can be used once only for
+ * memory streams and is only guaranteed to be usable once for files.
+ */
+int vungetc(unsigned char chr, vfile *vf)
+{
+  assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
+
+  if(vf->flags & VF_MEMORY)
+  {
+    if(vf->tmp_chr != EOF)
+      return EOF;
+
+    vf->tmp_chr = chr;
+    return chr;
+  }
+
+  if(vf->flags & VF_FILE)
+    return ungetc(chr, vf->fp);
+
+  return EOF;
 }
 
 /**
@@ -527,6 +702,8 @@ char *vfsafegets(char *dest, int size, vfile *vf)
 int vfseek(vfile *vf, long int offset, int whence)
 {
   assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
+  vf->tmp_chr = EOF;
 
   if(vf->flags & VF_MEMORY)
     return mfseek(&(vf->mf), offset, whence);
@@ -534,7 +711,6 @@ int vfseek(vfile *vf, long int offset, int whence)
   if(vf->flags & VF_FILE)
     return fseek(vf->fp, offset, whence);
 
-  assert(0);
   return -1;
 }
 
@@ -544,6 +720,7 @@ int vfseek(vfile *vf, long int offset, int whence)
 long int vftell(vfile *vf)
 {
   assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
 
   if(vf->flags & VF_MEMORY)
     return mftell(&(vf->mf));
@@ -551,7 +728,6 @@ long int vftell(vfile *vf)
   if(vf->flags & VF_FILE)
     return ftell(vf->fp);
 
-  assert(0);
   return -1;
 }
 
@@ -561,6 +737,8 @@ long int vftell(vfile *vf)
 void vrewind(vfile *vf)
 {
   assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
+  vf->tmp_chr = EOF;
 
   if(vf->flags & VF_MEMORY)
   {
@@ -573,20 +751,21 @@ void vrewind(vfile *vf)
     rewind(vf->fp);
     return;
   }
-
-  assert(0);
 }
 
 /**
  * Return the length of the file and optionally rewind to the start of it.
  * If rewind is false, this function is guaranteed to either not modify the
  * current file position or to restore it to its position prior to calling this.
+ * This function is not guaranteed to work correctly on streams that have been
+ * written to or on memory write streams with fixed buffers.
  */
 long vfilelength(vfile *vf, boolean rewind)
 {
   long size = -1;
 
   assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
 
   if(vf->flags & VF_MEMORY)
   {
