@@ -23,8 +23,9 @@
 #include "../../src/network/Scoped.hpp"
 #include "../../src/io/vfile.c"
 
-static constexpr char TEST_READ_FILENAME[]      = "VFILE_TEST_DATA";
-static constexpr char TEST_WRITE_FILENAME[]     = "VFILE_TEST_WRITE";
+static constexpr char TEST_READ_FILENAME[]  = "VFILE_TEST_DATA";
+static constexpr char TEST_WRITE_FILENAME[] = "VFILE_TEST_WRITE";
+static constexpr char TEST_DIR[]            = "VFILE_TEST_DIR";
 
 // Randomly generated binary data. Note: this is null terminated for vfputs.
 static const uint8_t test_data[] =
@@ -677,45 +678,182 @@ UNITTEST(vfsafegets)
 
 UNITTEST(Filesystem)
 {
+  static char execdir[1024];
+  struct stat stat_info;
+  int ret;
+
+  if(!this->expected_section)
+  {
+    char *t = getcwd(execdir, arraysize(execdir));
+    ASSERTEQ(t, execdir);
+  }
+  else
+  {
+    ret = vchdir(execdir);
+    ASSERTEQ(ret, 0);
+  }
+
   SECTION(vchdir)
   {
-    // FIXME
-    UNIMPLEMENTED();
+    ret = vchdir("..");
+    ASSERTEQ(ret, 0);
+    ret = vchdir("data");
+    ASSERTEQ(ret, 0);
+
+    ScopedFile<vfile, vfclose> vf = vfopen_unsafe("CT_LEVEL.MOD", "rb");
+    ASSERT(vf);
+    long len = vfilelength(vf, false);
+    ASSERTEQ(len, 111885);
   }
 
   SECTION(vgetcwd)
   {
-    // FIXME
-    UNIMPLEMENTED();
+    char buffer[1024];
+    char buffer2[1024];
+    char *t = getcwd(buffer, arraysize(buffer));
+    ASSERTEQ(t, buffer);
+    ret = vchdir("..");
+    ASSERTEQ(ret, 0);
+    t = getcwd(buffer2, arraysize(buffer2));
+    ASSERTEQ(t, buffer2);
+    size_t len = strlen(buffer2);
+    ASSERT(len < arraysize(buffer));
+    ASSERTMEM(buffer, buffer2, len);
   }
 
   SECTION(vmkdir)
   {
-    // FIXME
-    UNIMPLEMENTED();
+    ret = vmkdir(TEST_DIR, 0777);
+    ASSERTEQ(ret, 0);
+    ret = stat(TEST_DIR, &stat_info);
+    ASSERTEQ(ret, 0);
+    ASSERT(S_ISDIR(stat_info.st_mode));
   }
 
   SECTION(vunlink)
   {
-    // FIXME
-    UNIMPLEMENTED();
+    ret = stat(TEST_WRITE_FILENAME, &stat_info);
+    ASSERTEQ(ret, 0);
+    ASSERT(S_ISREG(stat_info.st_mode));
+    ret = vunlink(TEST_WRITE_FILENAME);
+    ASSERTEQ(ret, 0);
+    ret = stat(TEST_WRITE_FILENAME, &stat_info);
+    ASSERT(ret != 0);
   }
 
   SECTION(vrmdir)
   {
-    // FIXME
-    UNIMPLEMENTED();
+    ret = stat(TEST_DIR, &stat_info);
+    ASSERTEQ(ret, 0);
+    ASSERT(S_ISDIR(stat_info.st_mode));
+    ret = vrmdir(TEST_DIR);
+    ASSERTEQ(ret, 0);
+    ret = stat(TEST_DIR, &stat_info);
+    ASSERT(ret != 0);
   }
 
   SECTION(vaccess)
   {
-    // FIXME
-    UNIMPLEMENTED();
+#ifndef _WIN32
+    static constexpr int access_flags = R_OK|W_OK|X_OK;
+#else
+    static constexpr int access_flags = R_OK|W_OK;
+#endif
+    int flags = access(".", access_flags);
+    int flags2 = vaccess(".", R_OK|W_OK|X_OK);
+    ASSERTEQ(flags, flags2);
+
+    ret = vchdir("..");
+    ASSERTEQ(ret, 0);
+    ret = vchdir("data");
+    ASSERTEQ(ret, 0);
+    flags = access("CT_LEVEL.MOD", access_flags);
+    flags2 = vaccess("CT_LEVEL.MOD", R_OK|W_OK|X_OK);
+    ASSERTEQ(flags, flags2);
   }
 
   SECTION(vstat)
   {
-    // FIXME
-    UNIMPLEMENTED();
+    struct stat stat_info2;
+    ret = stat(".", &stat_info);
+    ASSERTEQ(ret, 0);
+    ret = vstat(".", &stat_info2);
+    ASSERTEQ(ret, 0);
+    ASSERT(S_ISDIR(stat_info.st_mode));
+    ASSERT(S_ISDIR(stat_info2.st_mode));
+
+    ret = vchdir("..");
+    ASSERTEQ(ret, 0);
+    ret = vchdir("data");
+    ASSERTEQ(ret, 0);
+    ret = stat("CT_LEVEL.MOD", &stat_info);
+    ASSERTEQ(ret, 0);
+    ret = vstat("CT_LEVEL.MOD", &stat_info2);
+    ASSERTEQ(ret, 0);
+    ASSERT(S_ISREG(stat_info.st_mode));
+    ASSERT(S_ISREG(stat_info2.st_mode));
+  }
+
+  SECTION(UTF8)
+  {
+    static constexpr char UTF8_FILE[] = u8"\u00A5\u2014\U0001F970";
+    static constexpr char UTF8_DIR[] = "æRëòmMJ·‡²’ˆÞ‘$"; // : )
+    static constexpr int utf8_dir_len = arraysize(UTF8_DIR) - 1;
+
+    ret = vstat(UTF8_DIR, &stat_info);
+    if(!ret)
+    {
+      ret = vchdir(UTF8_DIR);
+      ASSERTEQ(ret, 0);
+      ret = vunlink(UTF8_FILE);
+      ASSERTEQ(ret, 0);
+      ret = vchdir("..");
+      ASSERTEQ(ret, 0);
+      ret = vrmdir(UTF8_DIR);
+      ASSERTEQ(ret, 0);
+    }
+
+    ret = vmkdir(UTF8_DIR, 0777);
+    ASSERTEQ(ret, 0);
+
+    ret = vstat(UTF8_DIR, &stat_info);
+    ASSERTEQ(ret, 0);
+    ASSERT(S_ISDIR(stat_info.st_mode));
+
+    ret = vchdir(UTF8_DIR);
+    ASSERTEQ(ret, 0);
+    char buffer[1024];
+
+    char *t = vgetcwd(buffer, arraysize(buffer));
+    ASSERTEQ(t, buffer);
+    size_t len = strlen(buffer);
+    ASSERTCMP(buffer + len - utf8_dir_len, UTF8_DIR);
+
+    {
+      ScopedFile<vfile, vfclose> vf = vfopen_unsafe(UTF8_FILE, "wb");
+      ASSERT(vf);
+      ret = vfwrite(test_data, arraysize(test_data), 1, vf);
+      ASSERTEQ(ret, 1);
+    }
+
+    ret = vstat(UTF8_FILE, &stat_info);
+    ASSERTEQ(ret, 0);
+    ASSERTEQ(stat_info.st_size, arraysize(test_data));
+    ASSERT(S_ISREG(stat_info.st_mode));
+
+#ifndef _WIN32
+    /* Doesn't work in Windows for some reason... */
+    ret = vaccess(UTF8_FILE, R_OK|W_OK);
+    ASSERTEQ(ret, R_OK|W_OK);
+#endif
+
+    ret = vunlink(UTF8_FILE);
+    ASSERTEQ(ret, 0);
+
+    ret = vchdir("..");
+    ASSERTEQ(ret, 0);
+
+    ret = vrmdir(UTF8_DIR);
+    ASSERTEQ(ret, 0);
   }
 }
