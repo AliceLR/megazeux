@@ -28,19 +28,22 @@
 #include "../robot.h"
 #include "../util.h"
 #include "../world_struct.h"
+#include "../io/vfile.h"
 
 #include <stdio.h>
 #include <time.h>
 
 enum sauce_flags
 {
-  SAUCE_NO_BLINK      = (1<<0),
+  SAUCE_NO_BLINK      = (1<<0), // aka "iCE colors".
   SAUCE_DEFAULT_FONT  = (0<<1),
   SAUCE_8_PIXEL_FONT  = (1<<1),
   SAUCE_9_PIXEL_FONT  = (2<<1),
   SAUCE_DEFAULT_RATIO = (0<<3),
   SAUCE_CLASSIC_RATIO = (1<<3),
   SAUCE_MODERN_RATIO  = (2<<3),
+  // Flags that correspond (roughly) to how MZX displays graphics.
+  SAUCE_MZX_FLAGS = SAUCE_NO_BLINK | SAUCE_8_PIXEL_FONT | SAUCE_MODERN_RATIO,
 };
 
 static const char ansi_csi_prefix[3] = "\x1b[";
@@ -50,10 +53,10 @@ static const char ansi_csi_prefix[3] = "\x1b[";
  *
  * @param curr    color to change from.
  * @param dest    color to change to.
- * @param fp      file handle.
+ * @param vf      vfile handle.
  * @return        size of the written meta code (0 if none), or -1 on error.
  */
-static ssize_t issue_color_meta_codes(int curr, int dest, FILE *fp)
+static ssize_t issue_color_meta_codes(int curr, int dest, vfile *vf)
 {
   static const char ega_to_ansi_colors[8] =
   {
@@ -66,7 +69,7 @@ static ssize_t issue_color_meta_codes(int curr, int dest, FILE *fp)
   if(curr == dest)
     return 0;
 
-  fwrite(ansi_csi_prefix, 1, 2, fp);
+  vfwrite(ansi_csi_prefix, 1, 2, vf);
 
   if((curr & 128) && !(dest & 128))
     reset = true;
@@ -76,7 +79,7 @@ static ssize_t issue_color_meta_codes(int curr, int dest, FILE *fp)
 
   if(reset)
   {
-    fputc('0', fp);
+    vfputc('0', vf);
     size++;
   }
 
@@ -85,10 +88,10 @@ static ssize_t issue_color_meta_codes(int curr, int dest, FILE *fp)
     // Blink
     if(size > 2)
     {
-      fputc(';', fp);
+      vfputc(';', vf);
       size++;
     }
-    fputc('5', fp);
+    vfputc('5', vf);
     size++;
   }
 
@@ -97,10 +100,10 @@ static ssize_t issue_color_meta_codes(int curr, int dest, FILE *fp)
     // Bold
     if(size > 2)
     {
-      fputc(';', fp);
+      vfputc(';', vf);
       size++;
     }
-    fputc('1', fp);
+    vfputc('1', vf);
     size++;
   }
 
@@ -109,11 +112,11 @@ static ssize_t issue_color_meta_codes(int curr, int dest, FILE *fp)
     // FG color
     if(size > 2)
     {
-      fputc(';', fp);
+      vfputc(';', vf);
       size++;
     }
-    fputc('3', fp);
-    fputc(ega_to_ansi_colors[dest & 7], fp);
+    vfputc('3', vf);
+    vfputc(ega_to_ansi_colors[dest & 7], vf);
     size += 2;
   }
 
@@ -122,15 +125,15 @@ static ssize_t issue_color_meta_codes(int curr, int dest, FILE *fp)
     // BG color
     if(size > 2)
     {
-      fputc(';', fp);
+      vfputc(';', vf);
       size++;
     }
-    fputc('4', fp);
-    fputc(ega_to_ansi_colors[(dest >> 4) & 7], fp);
+    vfputc('4', vf);
+    vfputc(ega_to_ansi_colors[(dest >> 4) & 7], vf);
     size += 2;
   }
 
-  if(fputc('m', fp) < 0)
+  if(vfputc('m', vf) < 0)
     return -1;
 
   return size;
@@ -154,7 +157,7 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
  boolean text_only, const char *title, const char *author)
 {
   struct board *cur_board = mzx_world->current_board;
-  FILE *fp;
+  vfile *vf;
   ssize_t color_size;
   int x, y, line_size;
   int curr_color;
@@ -163,8 +166,8 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
   int board_width;
   int line_skip;
 
-  fp = fopen_unsafe(filename, "wb");
-  if(!fp)
+  vf = vfopen_unsafe_ext(filename, "wb", V_SMALL_BUFFER);
+  if(!vf)
     goto err;
 
   /**
@@ -185,10 +188,10 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
 
   if(!text_only)
   {
-    fwrite(ansi_csi_prefix, 1, 2, fp);
-    fwrite("0m", 1, 2, fp);
-    fwrite(ansi_csi_prefix, 1, 2, fp);
-    fwrite("2J", 1, 2, fp);
+    vfwrite(ansi_csi_prefix, 1, 2, vf);
+    vfwrite("0m", 1, 2, vf);
+    vfwrite(ansi_csi_prefix, 1, 2, vf);
+    vfwrite("2J", 1, 2, vf);
     line_size += 8;
   }
 
@@ -220,7 +223,7 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
 
       if(!text_only)
       {
-        color_size = issue_color_meta_codes(curr_color, col, fp);
+        color_size = issue_color_meta_codes(curr_color, col, vf);
         if(color_size < 0)
           goto err;
         line_size += color_size;
@@ -252,7 +255,7 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
           chr = '-';
           break;
       }
-      fputc(chr, fp);
+      vfputc(chr, vf);
       line_size++;
 
       // Line too long? (Can't happen in text mode)
@@ -260,18 +263,18 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
       if(!text_only && line_size > 230)
       {
         //Issue save/restore
-        fwrite(ansi_csi_prefix, 1, 2, fp);
-        fputc('s', fp);
-        fputc('\r', fp);
-        fputc('\n', fp);
-        fwrite(ansi_csi_prefix, 1, 2, fp);
-        fputc('u', fp);
+        vfwrite(ansi_csi_prefix, 1, 2, vf);
+        vfputc('s', vf);
+        vfputc('\r', vf);
+        vfputc('\n', vf);
+        vfwrite(ansi_csi_prefix, 1, 2, vf);
+        vfputc('u', vf);
         line_size = 3;
       }
     }
     // Issue CR/LF.
-    fputc('\r', fp);
-    fputc('\n', fp);
+    vfputc('\r', vf);
+    vfputc('\n', vf);
     line_size = 0;
     offset += line_skip;
   }
@@ -282,8 +285,9 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     struct tm *tm;
     long total_len;
     char datebuf[9];
+    char buffer[192];
 
-    color_size = issue_color_meta_codes(curr_color, col, fp);
+    color_size = issue_color_meta_codes(curr_color, col, vf);
     if(color_size < 0)
       goto err;
 
@@ -291,38 +295,35 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     tm = localtime(&t);
     strftime(datebuf, ARRAY_SIZE(datebuf), "%Y%m%d", tm);
 
-    total_len = ftell(fp);
+    total_len = vftell(vf);
 
     // SAUCE record.
-    fputc(0x1A, fp);
-    fprintf(fp, "COMNT%-64.64s", // Comment
-     "Created with MegaZeux " VERSION VERSION_DATE ".");
-    fprintf(fp, "SAUCE00%-35.35s%-20.20s%-20.20s%-8.8s",
+    vfputc(0x1A, vf);
+    snprintf(buffer, ARRAY_SIZE(buffer),
+      "COMNT%-64.64sSAUCE00%-35.35s%-20.20s%-20.20s%-8.8s",
+      "Created with MegaZeux " VERSION VERSION_DATE ".", // Comment line 1.
       title,
       author,
       "",     // Group
       datebuf
     );
-    // FIXME :(
-    fputc(total_len & 0xFF, fp);
-    fputc((total_len >> 8) & 0xFF, fp);
-    fputc((total_len >> 16) & 0xFF, fp);
-    fputc((total_len >> 24) & 0xFF, fp);
-    fputc(1, fp);                     // DataType (Character)
-    fputc(1, fp);                     // FileType (ANSi)
-    fputc(width & 0xFF, fp);          // TInfo1 (width in characters)
-    fputc((width >> 8) & 0xFF, fp);
-    fputc(height & 0xFF, fp);         // TInfo2 (height in rows)
-    fputc((height >> 8) & 0xFF, fp);
-    fputc(0, fp);                     // TInfo3
-    fputc(0, fp);
-    fputc(0, fp);                     // TInfo4
-    fputc(0, fp);
-    fputc(1, fp);                     // Comment lines
-    fputc(SAUCE_NO_BLINK | SAUCE_8_PIXEL_FONT | SAUCE_MODERN_RATIO, fp); // TFlags
-    fprintf(fp, "%-22.22s", "IBM EGA"); // TInfoS
+    vfputs(buffer, vf);
+    vfputd(total_len, vf);
+    vfputc(1, vf);                // DataType (Character)
+    vfputc(1, vf);                // FileType (ANSi)
+    vfputw(width, vf);            // TInfo1 (width in characters)
+    vfputw(height, vf);           // TInfo2 (height in rows)
+    vfputw(0, vf);                // TInfo3
+    vfputw(0, vf);                // TInfo4
+    vfputc(1, vf);                // Comment line count.
+    vfputc(SAUCE_MZX_FLAGS, vf);  // TFlags
+    snprintf(buffer, ARRAY_SIZE(buffer),
+      "%-22.22s",
+      "IBM EGA"
+    );
+    vfputs(buffer, vf);           // TInfoS
   }
-  fclose(fp);
+  vfclose(vf);
   return true;
 
 err:
@@ -330,8 +331,8 @@ err:
   if(text_only) error("Error exporting text",1,24,0x1401);
   else error("Error exporting ANSi",1,24,0x0F01);
 
-  if(fp)
-    fclose(fp);
+  if(vf)
+    vfclose(vf);
   return false;
 }
 
@@ -445,18 +446,18 @@ static void apply_ansi_sgr_code(struct ansi_data *ansi, int param)
  * Read a single char or escape code from an ANSI file.
  *
  * @param ansi  ANSi data.
- * @param fp    file handle.
+ * @param vf    vfile handle.
  * @return      -1 for EOF, -2 for escape code, -3 for error, otherwise a char.
  */
-static int read_ansi(struct ansi_data *ansi, FILE *fp)
+static int read_ansi(struct ansi_data *ansi, vfile *vf)
 {
-  int sym = fgetc(fp);
-  if(feof(fp))
+  int sym = vfgetc(vf);
+  if(sym < 0)
     return ANSI_EOF;
 
   if(ansi->eol == EOL_UNKNOWN && (sym == '\r' || sym == '\n'))
   {
-    int tmp = fgetc(fp);
+    int tmp = vfgetc(vf);
     if(sym == '\r' && tmp == '\n')
     {
       trace("--ANSI-- Detected DOS line ends.\n");
@@ -475,7 +476,7 @@ static int read_ansi(struct ansi_data *ansi, FILE *fp)
       ansi->eol = EOL_UNIX;
     }
 
-    ungetc(tmp, fp);
+    vungetc(tmp, vf);
   }
 
   if(sym == '\r')
@@ -513,7 +514,7 @@ static int read_ansi(struct ansi_data *ansi, FILE *fp)
       ansi->eol = EOL_DOS;
     }
 
-    sym = fgetc(fp);
+    sym = vfgetc(vf);
     if(sym == '[')
     {
       // CSI sequence.
@@ -525,7 +526,7 @@ static int read_ansi(struct ansi_data *ansi, FILE *fp)
       int cur_param = 0;
       int i;
 
-      sym = fgetc(fp);
+      sym = vfgetc(vf);
       while(1)
       {
         if(sym == ';')
@@ -538,7 +539,7 @@ static int read_ansi(struct ansi_data *ansi, FILE *fp)
             return ANSI_ERROR;
 
           cur_param++;
-          sym = fgetc(fp);
+          sym = vfgetc(vf);
           continue;
         }
         else
@@ -682,7 +683,7 @@ static int read_ansi(struct ansi_data *ansi, FILE *fp)
         while(sym >= '0' && sym <= '9')
         {
           param[cur_param] = (param[cur_param] * 10) + (sym - '0');
-          sym = fgetc(fp);
+          sym = vfgetc(vf);
         }
       }
     }
@@ -705,7 +706,7 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
   struct ansi_data ansi = default_state;
   char magic[7];
   long file_len;
-  FILE *fp;
+  vfile *vf;
   int chr;
 
   trace("--ANSI-- validate_ansi\n");
@@ -713,20 +714,19 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
   *width = -1;
   *height = -1;
 
-  fp = fopen_unsafe(filename, "rb");
-  if(!fp)
+  vf = vfopen_unsafe_ext(filename, "rb", V_SMALL_BUFFER);
+  if(!vf)
     goto err;
 
-  setvbuf(fp, NULL, _IOFBF, 128);
-  file_len = ftell_and_rewind(fp);
+  file_len = vfilelength(vf, false);
 
   // Check for a SAUCE record. If found and valid, prefer its requested
   // wrap width over the provided wrap width.
   if(file_len > 128)
   {
-    fseek(fp, file_len - 128, SEEK_SET);
+    vfseek(vf, file_len - 128, SEEK_SET);
 
-    if(fread(magic, 7, 1, fp) && !strncmp(magic, "SAUCE00", 7))
+    if(vfread(magic, 7, 1, vf) && !strncmp(magic, "SAUCE00", 7))
     {
       int data_type;
       int file_type;
@@ -734,15 +734,14 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
       int sauce_height;
 
       // Skip optional fields.
-      fseek(fp, 35+20+20+8+4, SEEK_CUR);
+      vfseek(vf, 35+20+20+8+4, SEEK_CUR);
 
-      // FIXME :(
-      data_type = fgetc(fp);
-      file_type = fgetc(fp);
-      sauce_width = fgetc(fp) | (fgetc(fp) << 8);
-      sauce_height = fgetc(fp) | (fgetc(fp) << 8);
+      data_type = vfgetc(vf);
+      file_type = vfgetc(vf);
+      sauce_width = vfgetw(vf);
+      sauce_height = vfgetw(vf);
 
-      if(!feof(fp) && data_type == 1 /* Character */ && file_type == 1 /* ANSi */)
+      if(sauce_height >= 0 && data_type == 1 /* Character */ && file_type == 1 /* ANSi */)
       {
         ansi.width = sauce_width;
         ansi.height = sauce_height;
@@ -764,11 +763,11 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
       }
     }
   }
-  rewind(fp);
+  vrewind(vf);
 
   while(1)
   {
-    chr = read_ansi(&ansi, fp);
+    chr = read_ansi(&ansi, vf);
     if(chr == ANSI_EOF)
       break;
 
@@ -793,14 +792,14 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
   }
   trace("--ANSI-- scan width=%d, height=%d\n", ansi.width, ansi.height);
 
-  fclose(fp);
+  vfclose(vf);
   *width = ansi.width;
   *height = ansi.height;
   return true;
 
 err:
-  if(fp)
-    fclose(fp);
+  if(vf)
+    vfclose(vf);
 
   // FIXME
   error("Error importing ANSi",1,24,0x1901);
@@ -836,7 +835,7 @@ boolean import_ansi(struct world *mzx_world, const char *filename,
   int board_height = cur_board->board_height;
   int wrap_width = width;
   boolean need_erase = true;
-  FILE *fp;
+  vfile *vf;
   int chr;
 
   // Bound the area to the board (or vlayer).
@@ -868,11 +867,9 @@ boolean import_ansi(struct world *mzx_world, const char *filename,
   clear_buffer.color = 7;
   clear_buffer.param = ' ';
 
-  fp = fopen_unsafe(filename, "rb");
-  if(!fp)
+  vf = vfopen_unsafe_ext(filename, "rb", V_SMALL_BUFFER);
+  if(!vf)
     goto err;
-
-  setvbuf(fp, NULL, _IOFBF, 1024);
 
   while(1)
   {
@@ -886,7 +883,7 @@ boolean import_ansi(struct world *mzx_world, const char *filename,
       need_erase = false;
     }
     else
-      chr = read_ansi(&ansi, fp);
+      chr = read_ansi(&ansi, vf);
 
     if(chr == ANSI_EOF)
       break;
@@ -979,12 +976,12 @@ boolean import_ansi(struct world *mzx_world, const char *filename,
       ansi.x++;
     }
   }
-  fclose(fp);
+  vfclose(vf);
   return true;
 
 err:
-  if(fp)
-    fclose(fp);
+  if(vf)
+    vfclose(vf);
 
   // FIXME
   error("Error importing ANSi",1,24,0x1901);
