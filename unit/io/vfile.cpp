@@ -457,6 +457,16 @@ static void test_vungetc(vfile *vf)
   pos = vftell(vf);
   ASSERTEQ(pos, 1);
 
+  // Reading a buffer char from the end of the file should not return NULL.
+  vfseek(vf, 0, SEEK_END);
+  ret = vungetc('a', vf);
+  ASSERTEQ(ret, 'a');
+  retstr = vfsafegets(tmp, arraysize(tmp), vf);
+  ASSERT(retstr);
+  ASSERTCMP(retstr, "a");
+  pos = vftell(vf);
+  ASSERTEQ(pos, arraysize(test_data));
+
   // vseek should discard the buffered char.
   ret = vungetc(0x34, vf);
   ASSERTEQ(ret, 0x34);

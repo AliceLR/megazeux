@@ -608,6 +608,7 @@ char *vfsafegets(char *dest, int size, vfile *vf)
 {
   assert(vf);
   assert(dest);
+  assert(size > 1);
   assert(vf->flags & VF_STORAGE_MASK);
   assert(vf->flags & VF_READ);
 
@@ -626,9 +627,8 @@ char *vfsafegets(char *dest, int size, vfile *vf)
         return dest;
       }
       dest[0] = tmp;
-      if(!mfsafegets(dest + 1, size - 1, &(vf->mf)))
-        return NULL;
-
+      dest[1] = '\0';
+      mfsafegets(dest + 1, size - 1, &(vf->mf));
       return dest;
     }
     return mfsafegets(dest, size, &(vf->mf));
