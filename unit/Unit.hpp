@@ -356,7 +356,7 @@ namespace Unit
       {
         l << std::hex;
         for(size_t i = 0; i < length; i++)
-          l << _left[i] << ' ';
+          l << static_cast<uint64_t>(_left[i]) << ' ';
       }
       else
         l << coalesce(_left);
@@ -365,7 +365,7 @@ namespace Unit
       {
         r << std::hex;
         for(size_t i = 0; i < length; i++)
-          r << _right[i] << ' ';
+          r << static_cast<uint64_t>(_right[i]) << ' ';
       }
       else
         r << coalesce(_right);
@@ -698,10 +698,11 @@ void sigabrt_handler(int signal)
   if(signal == SIGABRT)
   {
     std::cerr << "Received SIGABRT: ";
-    Unit::unittestrunner.signal_fail();
   }
   else
-    std::cerr << "Unexpected signal received\n";
+    std::cerr << "Unexpected signal " << signal << " received: ";
+
+  Unit::unittestrunner.signal_fail();
 }
 
 int main(int argc, char *argv[])
