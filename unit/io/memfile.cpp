@@ -226,7 +226,6 @@ UNITTEST(mfseek_mftell)
     arraysize(buffer) + 1,
     1024,
     9999,
-    29381902,
   };
   int ret;
   int i;

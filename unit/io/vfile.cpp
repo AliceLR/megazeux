@@ -292,10 +292,10 @@ static void test_vfputs(vfile *vf)
 
 static void test_vfseek_vftell_vrewind_read(vfile *vf)
 {
-  static constexpr int set_valid[] = { 0, 128, 256, 7, 19, 157, 79, 12345 };
+  static constexpr int set_valid[] = { 0, 128, 256, 7, 19, 157, 79, 9999 };
   static constexpr int cur_valid[] = { 0, 128, 64, 32, 16, -16, -32, -64, -128 }; // Cumulative.
   static constexpr int set_cur_invalid[] = { -15, -120312, -1 };
-  static constexpr int end_valid[] = { 0, -1, -5, -20, -256, 10, 129312 };
+  static constexpr int end_valid[] = { 0, -1, -5, -20, -256, 10, 9999 };
   static constexpr int end_invalid[] = { -257, -2000, -127848, -2391231 };
   static constexpr int len = arraysize(test_data);
 
@@ -353,7 +353,7 @@ static void test_vfseek_vftell_vrewind_read(vfile *vf)
   // SEEK_END (valid).
   for(int i = 0; i < arraysize(end_valid); i++)
   {
-    snprintf(buf, arraysize(buf), "SEEK_SET valid %d", i);
+    snprintf(buf, arraysize(buf), "SEEK_END valid %d", i);
     ret = vfseek(vf, end_valid[i], SEEK_END);
     pos = vftell(vf);
     ASSERTEQX(ret, 0, buf);
@@ -366,7 +366,7 @@ static void test_vfseek_vftell_vrewind_read(vfile *vf)
   // SEEK_END (invalid).
   for(int i = 0; i < arraysize(end_invalid); i++)
   {
-    snprintf(buf, arraysize(buf), "SEEK_SET invalid %d", i);
+    snprintf(buf, arraysize(buf), "SEEK_END invalid %d", i);
     ret = vfseek(vf, end_invalid[i], SEEK_END);
     ASSERTX(ret != 0, buf);
     vrewind(vf);
