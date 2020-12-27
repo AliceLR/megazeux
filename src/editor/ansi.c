@@ -258,11 +258,15 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
       vfputc(chr, vf);
       line_size++;
 
-      // Line too long? (Can't happen in text mode)
-      // TODO it's not clear why this is here but this comes from DOS MZX.
+      /**
+       * If the line length is near 256, use save/restore to start a new line.
+       * TODO: it's not 100% clear why this was added (it was present in 2.51)
+       * but it was likely due to a DOS ANSi viewer or editor using fixed size
+       * line buffer. More information on this would be great.
+       */
       if(!text_only && line_size > 230)
       {
-        //Issue save/restore
+        // Issue save/restore
         vfwrite(ansi_csi_prefix, 1, 2, vf);
         vfputc('s', vf);
         vfputc('\r', vf);
