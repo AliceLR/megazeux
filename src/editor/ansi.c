@@ -327,12 +327,10 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
   return true;
 
 err:
-  /* FIXME */
-  if(text_only) error("Error exporting text",1,24,0x1401);
-  else error("Error exporting ANSi",1,24,0x0F01);
-
   if(vf)
     vfclose(vf);
+
+  error_message(text_only ? E_TEXT_EXPORT : E_ANSI_EXPORT, 0, NULL);
   return false;
 }
 
@@ -801,8 +799,7 @@ err:
   if(vf)
     vfclose(vf);
 
-  // FIXME
-  error("Error importing ANSi",1,24,0x1901);
+  error_message(E_ANSI_IMPORT, 0, NULL);
   return false;
 }
 
@@ -983,7 +980,6 @@ err:
   if(vf)
     vfclose(vf);
 
-  // FIXME
-  error("Error importing ANSi",1,24,0x1901);
+  error_message(E_ANSI_IMPORT, 0, NULL);
   return false;
 }

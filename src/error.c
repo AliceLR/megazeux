@@ -485,6 +485,21 @@ int error_message(enum error_code id, int parameter, const char *string)
       severity = ERROR_T_WARNING;
       code = 0x0000;
       break;
+
+    case E_ANSI_IMPORT:
+      sprintf(error_mesg, "Error importing ANSi");
+      code = 0x1901;
+      break;
+
+    case E_ANSI_EXPORT:
+      sprintf(error_mesg, "Error exporting ANSi");
+      code = 0x0F01;
+      break;
+
+    case E_TEXT_EXPORT:
+      sprintf(error_mesg, "Error exporting text");
+      code = 0x1401;
+      break;
 #endif
 
 #ifdef CONFIG_UPDATER
