@@ -28,9 +28,10 @@ static constexpr char TEST_WRITE_FILENAME[] = "VFILE_TEST_WRITE";
 static constexpr char TEST_DIR[]            = "VFILE_TEST_DIR";
 
 // Randomly generated binary data. Note: this is null terminated for vfputs.
+// The first byte is also \n to help test vungetc/vfsafegets behavior.
 static const uint8_t test_data[] =
 {
-  0x60,0xFF,0xE9,0x06,0x94,0xEE,0xC2,0xCE,0x87,0x72,0x5C,0xCE,0x5A,0xBD,0x72,0xE8,
+  0x0A,0xFF,0xE9,0x06,0x94,0xEE,0xC2,0xCE,0x87,0x72,0x5C,0xCE,0x5A,0xBD,0x72,0xE8,
   0x3A,0xD3,0x47,0x5F,0x2B,0x3F,0x8E,0x31,0x04,0x04,0x87,0xA7,0xBB,0xD6,0x6C,0x2A,
   0xE3,0x8A,0x0B,0x58,0x73,0xCC,0xB4,0x57,0xC9,0x10,0x55,0x69,0xEF,0xCB,0xE4,0xC1,
   0x1C,0xE2,0xFD,0x96,0x7E,0x62,0xCD,0x75,0x36,0x73,0x2E,0xDB,0xA5,0x87,0x13,0x03,
@@ -65,6 +66,7 @@ static const char * const vfsafegets_data[] =
   "abcdef\n"
 //"i hope no one is actually using these in 2020 ;-(\r"
   "use this line to fill past the buffer!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+  "\r\n"
   "end of file also counts as an end of line",
 
   // Test 2.
@@ -82,6 +84,7 @@ static const char * const vfsafegets_output[][MAX_LINES] =
 //  "i hope no one is actually using these in 2020 ;-(",
     "use this line to fill past the buffer!!!!!!!!!!!!!!!!!!!!!!!!!!",
     "!!!!!!!!!",
+    "",
     "end of file also counts as an end of line",
     nullptr
   },
@@ -394,11 +397,14 @@ static void test_filelength(long expected_len, vfile *vf)
 
 static void test_vungetc(vfile *vf)
 {
+  long pos;
   int ret;
   int value;
   int first_dword;
   char next_64[64];
   char last_5[5];
+  char tmp[64];
+  char *retstr;
 
   first_dword = vfgetd(vf);
   vfread(next_64, 64, 1, vf);
@@ -427,7 +433,6 @@ static void test_vungetc(vfile *vf)
   // vfread should read the buffered char + n-1 chars from the data.
   ret = vungetc(0x12, vf);
   ASSERTEQ(ret, 0x12);
-  char tmp[64];
   value = vfread(tmp, 64, 1, vf);
   ASSERTEQ(value, 1);
   ASSERTEQ(tmp[0], 0x12);
@@ -437,10 +442,20 @@ static void test_vungetc(vfile *vf)
   vfseek(vf, arraysize(test_data) - 5, SEEK_SET);
   ret = vungetc(0xFF, vf);
   ASSERTEQ(ret, 0xFF);
-  char *retstr = vfsafegets(tmp, arraysize(tmp), vf);
+  retstr = vfsafegets(tmp, arraysize(tmp), vf);
   ASSERT(retstr);
   ASSERTEQ(tmp[0], 0xFF);
   ASSERTMEM(tmp + 1, last_5, 5);
+
+  // If the buffer char is \r and the next char in the stream is \n, consume both.
+  vfseek(vf, 0, SEEK_SET);
+  ret = vungetc(0x0D, vf);
+  ASSERTEQ(ret, 0x0D);
+  retstr = vfsafegets(tmp, arraysize(tmp), vf);
+  ASSERT(retstr);
+  ASSERTEQ((int)tmp[0], 0);
+  pos = vftell(vf);
+  ASSERTEQ(pos, 1);
 
   // vseek should discard the buffered char.
   ret = vungetc(0x34, vf);
@@ -470,7 +485,7 @@ static void test_vungetc(vfile *vf)
   ASSERTEQ(ret, 0);
   ret = vungetc(0x9A, vf);
   ASSERTEQ(ret, 0x9A);
-  long pos = vftell(vf);
+  pos = vftell(vf);
   ASSERTEQ(pos, 127);
 }
 

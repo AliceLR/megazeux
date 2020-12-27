@@ -617,9 +617,11 @@ char *vfsafegets(char *dest, int size, vfile *vf)
     {
       int tmp = vf->tmp_chr;
       vf->tmp_chr = EOF;
-      // TODO Not 100% correct handling for this...
       if(tmp == '\r' || tmp == '\n')
       {
+        // If this \r is part of a DOS line end, consume the corresponding \n.
+        if(tmp == '\r' && (mfhasspace(1, &(vf->mf)) && vf->mf.current[0] == '\n'))
+          vf->mf.current++;
         dest[0] = '\0';
         return dest;
       }
@@ -637,7 +639,7 @@ char *vfsafegets(char *dest, int size, vfile *vf)
     if(fgets(dest, size, vf->fp))
     {
       size_t len = strlen(dest);
-      while(len > 1 && (dest[len - 1] == '\r' || dest[len - 1] == '\n'))
+      while(len >= 1 && (dest[len - 1] == '\r' || dest[len - 1] == '\n'))
       {
         len--;
         dest[len] = '\0';
