@@ -80,6 +80,7 @@ static ssize_t issue_color_meta_codes(int curr, int dest, vfile *vf)
   if(reset)
   {
     vfputc('0', vf);
+    curr = 7;
     size++;
   }
 
