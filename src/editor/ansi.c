@@ -315,7 +315,6 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     total_len = vftell(vf);
 
     // SAUCE record.
-    // NOTE: write width+1 as terminal width
     vfputc(0x1A, vf);
     snprintf(buffer, ARRAY_SIZE(buffer),
       "COMNT%-64.64sSAUCE00%-35.35s%-20.20s%-20.20s%-8.8s",
