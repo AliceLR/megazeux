@@ -79,8 +79,8 @@ static ssize_t issue_color_meta_codes(int curr, int dest, vfile *vf)
 
   if(reset)
   {
-    vfputc('0', vf);
     curr = 7;
+    vfputc('0', vf);
     size++;
   }
 
@@ -161,11 +161,14 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
   vfile *vf;
   ssize_t color_size;
   int x, y, line_size;
+  int terminal_width = -1;
   int curr_color;
   int col, chr;
   int offset;
   int board_width;
   int line_skip;
+
+  trace("--ANSI-- export_ansi\n");
 
   vf = vfopen_unsafe_ext(filename, "wb", V_SMALL_BUFFER);
   if(!vf)
@@ -194,6 +197,12 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     vfwrite(ansi_csi_prefix, 1, 2, vf);
     vfwrite("2J", 1, 2, vf);
     line_size += 8;
+
+    /**
+     * TODO: it might be useful to allow a user-specified width here so e.g.
+     * line ends are inserted.
+     */
+    terminal_width = width;
   }
 
   // Longest meta code issuable is \x1b[0;5;1;30;40m, or 14 characters.
@@ -277,10 +286,13 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
         line_size = 3;
       }
     }
-    // Issue CR/LF.
-    vfputc('\r', vf);
-    vfputc('\n', vf);
-    line_size = 0;
+    // Issue CR/LF if this isn't the edge of the terminal.
+    if(width != terminal_width)
+    {
+      vfputc('\r', vf);
+      vfputc('\n', vf);
+      line_size = 0;
+    }
     offset += line_skip;
   }
 
@@ -303,6 +315,7 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     total_len = vftell(vf);
 
     // SAUCE record.
+    // NOTE: write width+1 as terminal width
     vfputc(0x1A, vf);
     snprintf(buffer, ARRAY_SIZE(buffer),
       "COMNT%-64.64sSAUCE00%-35.35s%-20.20s%-20.20s%-8.8s",
@@ -316,7 +329,7 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     vfputd(total_len, vf);
     vfputc(1, vf);                // DataType (Character)
     vfputc(1, vf);                // FileType (ANSi)
-    vfputw(width, vf);            // TInfo1 (width in characters)
+    vfputw(terminal_width, vf);   // TInfo1 (terminal width in characters)
     vfputw(height, vf);           // TInfo2 (height in rows)
     vfputw(0, vf);                // TInfo3
     vfputw(0, vf);                // TInfo4
@@ -367,27 +380,31 @@ struct ansi_data
   int color;
   int x;
   int y;
-  int width;
-  int height;
+  int terminal_width;
+  int scan_width;
+  int scan_height;
   int saved_x;
   int saved_y;
   enum ansi_eol_type eol;
   enum ansi_erase erase_display;
   enum ansi_erase erase_line;
+  boolean is_scan;
 };
 
 static const struct ansi_data default_state =
 {
-  7, // Color
-  0, // x
-  0, // y
-  0, // width
-  0, // height,
-  0, // saved_x
-  0, // saved_y,
+  7,  // Color
+  0,  // x
+  0,  // y
+  -1, // terminal_width
+  0,  // scan_width
+  0,  // scan_height,
+  0,  // saved_x
+  0,  // saved_y,
   EOL_UNKNOWN,
   ANSI_NO_ERASE,
-  ANSI_NO_ERASE
+  ANSI_NO_ERASE,
+  false
 };
 
 /**
@@ -457,6 +474,11 @@ static int read_ansi(struct ansi_data *ansi, vfile *vf)
   int sym = vfgetc(vf);
   if(sym < 0)
     return ANSI_EOF;
+
+  if(ansi->terminal_width > 0 && ansi->x >= ansi->terminal_width && (sym == '\r' || sym == '\n'))
+  {
+    trace("--ANSI-- line end at %d (term width %d)\n", ansi->x, ansi->terminal_width);
+  }
 
   if(ansi->eol == EOL_UNKNOWN && (sym == '\r' || sym == '\n'))
   {
@@ -695,33 +717,22 @@ static int read_ansi(struct ansi_data *ansi, vfile *vf)
 }
 
 /**
- * Test an ANSi file for correctness and determine its output dimensions.
- * The expected output dimensions are required to correctly load the ANSi later.
+ * Read SAUCE from an incoming file, if present.
+ * `ansi->terminal_width` should be initialized prior to calling this function.
+ * This function will set `ansi->terminal_width` depending on the SAUCE width
+ * and the initial value of `ansi->terminal_width`. If no SAUCE record is found,
+ * no values in the ANSi data will be modified.
  *
- * @param filename    filename of ANSi or plaintext file.
- * @param wrap_width  force line wrap after this many columsn (<=0 for none).
- * @param width       pointer to store width at.
- * @param height      pointer to store height at.
- * @return            `true` if the ANSi file is valid, otherwise `false`.
+ * @param ansi  ANSi data.
+ * @param vf    vfile handle.
+ * @return      `true` if relevant SAUCE data was found, otherwise `false`.
  */
-boolean validate_ansi(const char *filename, int wrap_width, int *width, int *height)
+static boolean read_sauce(struct ansi_data *ansi, vfile *vf)
 {
-  struct ansi_data ansi = default_state;
+  long file_len = vfilelength(vf, false);
   char magic[7];
-  long file_len;
-  vfile *vf;
-  int chr;
 
-  trace("--ANSI-- validate_ansi\n");
-
-  *width = -1;
-  *height = -1;
-
-  vf = vfopen_unsafe_ext(filename, "rb", V_SMALL_BUFFER);
-  if(!vf)
-    goto err;
-
-  file_len = vfilelength(vf, false);
+  trace("--ANSI-- read_sauce\n");
 
   // Check for a SAUCE record. If found and valid, prefer its requested
   // wrap width over the provided wrap width.
@@ -746,26 +757,65 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
 
       if(sauce_height >= 0 && data_type == 1 /* Character */ && file_type == 1 /* ANSi */)
       {
-        ansi.width = sauce_width;
-        ansi.height = sauce_height;
-        trace("--ANSI-- SAUCE width=%d, height=%d\n", ansi.width, ansi.height);
+        /*
+        // The width value is the terminal width and the line count is
+        // apparently unreliable, so don't set the scan dimensions from either.
+        ansi->scan_width = sauce_width;
+        ansi->scan_height = sauce_height;
+        */
+        trace("--ANSI-- SAUCE width=%d, height=%d\n", sauce_width, sauce_height);
 
-        if(sauce_width && (wrap_width < 1 || wrap_width > sauce_width))
+        if(sauce_width &&
+         (ansi->terminal_width < 1 || ansi->terminal_width > sauce_width))
         {
-          wrap_width = sauce_width;
-          trace("--ANSI-- using SAUCE width to wrap ANSi.\n");
+          ansi->terminal_width = sauce_width;
+          trace("--ANSI-- using SAUCE width as ANSi terminal width.\n");
         }
         else
 
-        if(!sauce_width && wrap_width < 1)
+        if(!sauce_width && ansi->terminal_width < 1)
         {
-          wrap_width = 80;
+          ansi->terminal_width = 80;
           trace("--ANSI-- SAUCE record with width 0--using default width "
-           "of 80 to wrap ANSi.\n");
+           "of 80 as ANSi terminal width.\n");
         }
+        return true;
       }
     }
   }
+  trace("--ANSI-- no relevant SAUCE data found.\n");
+  return false;
+}
+
+/**
+ * Test an ANSi file for correctness and determine its output dimensions.
+ * The expected output dimensions are required to correctly load the ANSi later.
+ *
+ * @param filename    filename of ANSi or plaintext file.
+ * @param wrap_width  force line wrap after this many columsn (<=0 for none).
+ * @param width       pointer to store width at.
+ * @param height      pointer to store height at.
+ * @return            `true` if the ANSi file is valid, otherwise `false`.
+ */
+boolean validate_ansi(const char *filename, int wrap_width, int *width, int *height)
+{
+  struct ansi_data ansi = default_state;
+  vfile *vf;
+  int chr;
+
+  trace("--ANSI-- validate_ansi\n");
+
+  *width = -1;
+  *height = -1;
+
+  vf = vfopen_unsafe_ext(filename, "rb", V_SMALL_BUFFER);
+  if(!vf)
+    goto err;
+
+  ansi.is_scan = true;
+  ansi.terminal_width = wrap_width;
+
+  read_sauce(&ansi, vf);
   vrewind(vf);
 
   while(1)
@@ -777,27 +827,40 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
     if(chr == ANSI_ERROR)
       goto err;
 
-    if(wrap_width > 0 && ansi.x >= wrap_width)
+    if(chr >= 0)
+    {
+      if(ansi.x + 1 > ansi.scan_width)
+        ansi.scan_width = ansi.x + 1;
+      if(ansi.y + 1 > ansi.scan_height)
+        ansi.scan_height = ansi.y + 1;
+
+      ansi.x++;
+    }
+
+    if(ansi.terminal_width > 0 && ansi.x >= ansi.terminal_width)
     {
       ansi.x = 0;
       ansi.y++;
     }
-
-    if(chr >= 0)
-    {
-      if(ansi.x + 1 > ansi.width)
-        ansi.width = ansi.x + 1;
-      if(ansi.y + 1 > ansi.height)
-        ansi.height = ansi.y + 1;
-
-      ansi.x++;
-    }
   }
-  trace("--ANSI-- scan width=%d, height=%d\n", ansi.width, ansi.height);
+  trace("--ANSI-- scan width=%d, height=%d\n", ansi.scan_width, ansi.scan_height);
+
+  if(ansi.terminal_width <= 0)
+  {
+    /**
+     * If no terminal width was used, a line end was present at the end of the
+     * longest line. Add one to the width to avoid line wrapping. This should
+     * only affect TXT files or ANSi files in the case where 1) no SAUCE record
+     * exists and 2) a wrap width wasn't explicitly provided by the user.
+     */
+    trace("--ANSI-- adding 1 to final width to avoid line wrapping: %d, %d\n",
+     ansi.scan_width + 1, ansi.scan_height);
+    ansi.scan_width++;
+  }
 
   vfclose(vf);
-  *width = ansi.width;
-  *height = ansi.height;
+  *width = ansi.scan_width;
+  *height = ansi.scan_height;
   return true;
 
 err:
@@ -840,6 +903,8 @@ boolean import_ansi(struct world *mzx_world, const char *filename,
   vfile *vf;
   int chr;
 
+  trace("--ANSI-- import_ansi\n");
+
   // Bound the area to the board (or vlayer).
   if(mode == EDIT_VLAYER)
   {
@@ -850,6 +915,8 @@ boolean import_ansi(struct world *mzx_world, const char *filename,
   if(start_x >= board_width || start_y >= board_height ||
    start_x < 0 || start_y < 0 || width < 1 || height < 1)
     return false;
+
+  trace("--ANSI-- image is %d by %d\n", width, height);
 
   if(start_x + width > board_width)
     width = board_width - start_x;
@@ -873,6 +940,17 @@ boolean import_ansi(struct world *mzx_world, const char *filename,
   if(!vf)
     goto err;
 
+  if(!read_sauce(&ansi, vf))
+  {
+    // If no SAUCE terminal width is found, the provided width from the scan
+    // should be the correct width.
+    ansi.terminal_width = wrap_width;
+  }
+  vrewind(vf);
+
+  trace("--ANSI-- importing @ %d,%d (%d by %d) with terminal width=%d\n",
+   start_x, start_y, width, height, ansi.terminal_width);
+
   while(1)
   {
     if(need_erase)
@@ -892,12 +970,6 @@ boolean import_ansi(struct world *mzx_world, const char *filename,
 
     if(chr == ANSI_ERROR) // Shouldn't happen.
       goto err;
-
-    if(wrap_width > 0 && ansi.x >= wrap_width)
-    {
-      ansi.x = 0;
-      ansi.y++;
-    }
 
     if(chr == ANSI_ESCAPE)
     {
@@ -976,6 +1048,13 @@ boolean import_ansi(struct world *mzx_world, const char *filename,
         }
       }
       ansi.x++;
+    }
+
+    if(ansi.terminal_width > 0 && ansi.x >= ansi.terminal_width)
+    {
+      //trace("force wrap at %d,%d\n", ansi.x, ansi.y);
+      ansi.x = 0;
+      ansi.y++;
     }
   }
   vfclose(vf);
