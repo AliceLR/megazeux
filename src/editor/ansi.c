@@ -304,7 +304,7 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     char datebuf[9];
     char buffer[192];
 
-    color_size = issue_color_meta_codes(curr_color, col, vf);
+    color_size = issue_color_meta_codes(curr_color, 7, vf);
     if(color_size < 0)
       goto err;
 
