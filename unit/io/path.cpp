@@ -272,7 +272,7 @@ struct path_clean_output
   const char *win32_result;
 };
 
-#ifdef __WIN32__
+#if DIR_SEPARATOR_CHAR == '\\'
 #define PATH_CLEAN_RESULT win32_result
 #else
 #define PATH_CLEAN_RESULT posix_result
@@ -402,7 +402,7 @@ struct path_split_data
   boolean dir_and_file_return_value;
 };
 
-#ifdef __WIN32__
+#if DIR_SEPARATOR_CHAR == '\\'
 #define SPLIT_DIRECTORY directory_win32
 #else
 #define SPLIT_DIRECTORY directory_posix
