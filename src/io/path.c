@@ -432,6 +432,52 @@ ssize_t path_join(char *dest, size_t dest_len, const char *base, const char *rel
 }
 
 /**
+ * Determine if `path` is prefixed by `prefix`. Returns the index of the first
+ * non-prefix and non-slash char of `path` if `path` is prefixed by `prefix`,
+ * otherwise -1.
+ */
+static ssize_t path_has_prefix(const char *path, size_t buffer_len,
+ const char *prefix, size_t prefix_len)
+{
+  // Normal string compare, but allow different kinds of slashes.
+  size_t i = 0;
+  size_t j = 0;
+  while(i < prefix_len && prefix[i])
+  {
+    if(j >= buffer_len || !path[j])
+      return -1;
+
+    if(isslash(prefix[i]))
+    {
+      if(!isslash(path[j]))
+        return -1;
+
+      // Skip duplicate slashes.
+      while(isslash(prefix[i]))
+        i++;
+      while(isslash(path[j]))
+        j++;
+    }
+    else
+    {
+      if(prefix[i++] != path[j++])
+        return -1;
+    }
+  }
+
+  // Make sure this was actually a valid prefix--the prefix should either have
+  // a trailing slash or the next character of the path should be a slash.
+  if(!isslash(prefix[i - 1]) && !isslash(path[j]))
+    return -1;
+
+  // The prefix likely does not have trailing slashes, so skip them.
+  while(isslash(path[j]))
+    j++;
+
+  return j;
+}
+
+/**
  * Remove a directory prefix from a path if it exists. The prefix does not
  * need trailing slashes, but it must represent a complete directory name.
  *
@@ -446,14 +492,13 @@ ssize_t path_remove_prefix(char *path, size_t buffer_len,
 {
   prefix_len = prefix_len ? prefix_len : strlen(prefix);
 
-  if(prefix_len && prefix_len < buffer_len && !strncmp(prefix, path, prefix_len) &&
-   (isslash(prefix[prefix_len - 1]) || isslash(path[prefix_len])))
+  if(prefix_len)
   {
-    // The prefix likely does not have trailing slashes, so skip them.
-    while(isslash(path[prefix_len]))
-      prefix_len++;
+    ssize_t offset = path_has_prefix(path, buffer_len, prefix, prefix_len);
+    if(offset < 0)
+      return -1;
 
-    return path_clean_slashes_copy(path, buffer_len, path + prefix_len);
+    return path_clean_slashes_copy(path, buffer_len, path + offset);
   }
   return -1;
 }

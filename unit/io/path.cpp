@@ -911,13 +911,6 @@ UNITTEST(path_remove_prefix)
       -1
     },
     {
-      "/dont/mix/slash/styles",
-      "\\dont/mix\\slash",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
       "/some/path/here",
       "/some/path",
       "here",
@@ -948,6 +941,20 @@ UNITTEST(path_remove_prefix)
     {
       "consume/all/slashes////////////////////////////////////thanks",
       "consume/all/slashes",
+      "thanks",
+      "thanks",
+      6
+    },
+    {
+      "/allow/mixed/slash/styles",
+      "\\allow/mixed\\slash",
+      "styles",
+      "styles",
+      6
+    },
+    {
+      "merge//prefix\\\\slashes//////thanks",
+      "merge/\\//\\\\prefix///////////\\slashes",
       "thanks",
       "thanks",
       6
