@@ -53,7 +53,7 @@ int add_board(struct world *mzx_world, int current);
 int choose_board(struct world *mzx_world, int current, const char *title,
  int board0_none);
 int choose_file(struct world *mzx_world, const char *const *wildcards,
- char *ret, const char *title, int dirs_okay);
+ char *ret, const char *title, enum allow_dirs allow_dirs);
 
 __M_END_DECLS
 

@@ -2526,7 +2526,7 @@ void import_palette(context *ctx)
   // Palette
   strcpy(filename_buffer, pal_filename);
   if(!choose_file(ctx->world, pal_ext, filename_buffer,
-   "Choose palette to import", true))
+   "Choose palette to import", ALLOW_ALL_DIRS))
   {
     strcpy(pal_filename, filename_buffer);
     load_palette(filename_buffer);
@@ -2536,7 +2536,7 @@ void import_palette(context *ctx)
   strcpy(filename_buffer, palidx_filename);
   if((get_screen_mode() == 3) &&
    !choose_file(ctx->world, idx_ext, filename_buffer,
-    "Choose indices to import (.PALIDX)", true))
+    "Choose indices to import (.PALIDX)", ALLOW_ALL_DIRS))
   {
     strcpy(palidx_filename, filename_buffer);
     load_index_file(filename_buffer);
@@ -2554,7 +2554,7 @@ void export_palette(context *ctx)
   // Palette
   strcpy(filename_buffer, pal_filename);
   if(!new_file(ctx->world, pal_ext, ".pal", filename_buffer,
-   "Export palette", true))
+   "Export palette", ALLOW_ALL_DIRS))
   {
     strcpy(pal_filename, filename_buffer);
     save_palette(filename_buffer);
@@ -2564,7 +2564,7 @@ void export_palette(context *ctx)
   strcpy(filename_buffer, palidx_filename);
   if((get_screen_mode() == 3) &&
    !new_file(ctx->world, idx_ext, ".palidx", filename_buffer,
-    "Export indices (.PALIDX)", true))
+    "Export indices (.PALIDX)", ALLOW_ALL_DIRS))
   {
     strcpy(palidx_filename, filename_buffer);
     save_index_file(filename_buffer);

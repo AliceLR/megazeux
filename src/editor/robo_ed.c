@@ -1516,7 +1516,7 @@ static void export_block(struct robot_editor_context *rstate,
   export_name[0] = 0;
 
   if(!file_manager(mzx_world, export_ext, NULL, export_name,
-   "Export robot", 1, 1, elements, num_elements, 3))
+   "Export robot", ALLOW_ALL_DIRS, ALLOW_NEW_FILES, elements, num_elements, 3))
   {
     FILE *export_file;
 
@@ -1579,7 +1579,7 @@ static void import_block(struct robot_editor_context *rstate)
 
   txt_ext[1] = ".BC";
 
-  if(choose_file(mzx_world, txt_ext, import_name, "Import Robot", 1))
+  if(choose_file(mzx_world, txt_ext, import_name, "Import Robot", ALLOW_ALL_DIRS))
     return;
 
 #else // CONFIG_DEBYTECODE
@@ -1590,8 +1590,8 @@ static void import_block(struct robot_editor_context *rstate)
     construct_check_box(21, 20, label, 1, strlen(label[0]), &is_legacy)
   };
 
-  if(file_manager(mzx_world, txt_ext, NULL, import_name, "Import Robot", 1,
-   0, elements, 1, 2))
+  if(file_manager(mzx_world, txt_ext, NULL, import_name, "Import Robot",
+   ALLOW_ALL_DIRS, NO_NEW_FILES, elements, 1, 2))
     return;
 
 #endif

@@ -375,7 +375,8 @@ static boolean load_world_title_selection(struct game_context *game)
   struct world *mzx_world = ((context *)game)->world;
   char world_name[MAX_PATH] = { 0 };
 
-  if(!choose_file_ch(mzx_world, world_ext, world_name, "Load World", true))
+  if(!choose_file_ch(mzx_world, world_ext, world_name, "Load World",
+   ALLOW_ALL_DIRS))
   {
     return load_world_title(game, world_name);
   }
@@ -404,8 +405,9 @@ static boolean load_savegame_selection(struct game_context *game)
     }
   }
 
-  if(slot_result == SLOTSEL_OK_RESULT || !choose_file_ch(mzx_world, save_ext,
-   save_file_name, "Choose game to restore", true))
+  if(slot_result == SLOTSEL_OK_RESULT ||
+   !choose_file_ch(mzx_world, save_ext, save_file_name,
+    "Choose game to restore", ALLOW_ALL_DIRS))
   {
     return load_savegame(game, save_file_name);
   }
@@ -688,7 +690,8 @@ static boolean game_key(context *ctx, int *key)
           }
 
           if(slot_result == SLOTSEL_OK_RESULT ||
-           !new_file(mzx_world, save_ext, ".sav", save_game, "Save game", 1))
+           !new_file(mzx_world, save_ext, ".sav", save_game, "Save game",
+            ALLOW_ALL_DIRS))
           {
             strcpy(curr_sav, save_game);
             save_world(mzx_world, curr_sav, true, MZX_VERSION);
