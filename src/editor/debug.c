@@ -3207,7 +3207,7 @@ void __debug_counters(context *ctx)
         export_name[0] = 0;
 
         if(!new_file(mzx_world, txt_ext, ".txt", export_name,
-         "Export counters/strings text file...", 1))
+         "Export counters/strings text file...", ALLOW_ALL_DIRS))
         {
           struct counter_list *counter_list = &(mzx_world->counter_list);
           struct string_list *string_list = &(mzx_world->string_list);

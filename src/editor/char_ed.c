@@ -952,7 +952,8 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
 
   strcpy(import_string, saved_import_string);
   if(!file_manager(mzx_world, chr_ext, NULL, import_string,
-   "Import character set(s)", 1, 2, elements, ARRAY_SIZE(elements), 2))
+   "Import character set(s)", ALLOW_ALL_DIRS, ALLOW_WILDCARD_FILES,
+   elements, ARRAY_SIZE(elements), 2))
   {
     int num_files_present = num_files;
 
@@ -1048,7 +1049,8 @@ static void char_export(struct world *mzx_world, int char_offset, int charset,
 
   strcpy(export_string, saved_export_string);
   if(!file_manager(mzx_world, chr_ext, ".chr", export_string,
-   "Export character set(s)", 1, 1, elements, ARRAY_SIZE(elements), 2))
+   "Export character set(s)", ALLOW_ALL_DIRS, ALLOW_NEW_FILES,
+   elements, ARRAY_SIZE(elements), 2))
   {
     int num_files_present = num_files;
 

@@ -1962,7 +1962,7 @@ static int key_file_selector(struct world *mzx_world, struct dialog *di,
       strcpy(new_path, src->base_path);
 
       if(!choose_file_ch(mzx_world, src->file_manager_exts, new_path,
-       src->file_manager_title, 2))
+       src->file_manager_title, ALLOW_SUBDIRS))
       {
         strcpy(src->result, new_path);
         di->done = 1;
@@ -3018,8 +3018,6 @@ int slot_manager(struct world *mzx_world, char *ret,
 }
 
 // Shell for list_menu() (copies file chosen to ret and returns -1 for ESC)
-// dirs_okay of 1 means drive and directory changing is allowed.
-// dirs_okay of 2 means only subdirectories of the current dir are allowed
 
 #define FILESEL_MAX_ELEMENTS  64
 #define FILESEL_BASE_ELEMENTS 7
@@ -3300,11 +3298,10 @@ static boolean remove_files(char *directory_name, boolean remove_recursively)
 
 __editor_maybe_static int file_manager(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
- const char *title, int dirs_okay, int allow_new, struct element **dialog_ext,
- int num_ext, int ext_height)
+ const char *title, enum allow_dirs allow_dirs, enum allow_new allow_new,
+ struct element **dialog_ext, int num_ext, int ext_height)
 {
   // FIXME no buffer size parameter for ret. this function assumes MAX_PATH.
-  // dirs_okay -- 0:none -- 1:all -- 2:subdirsonly
   struct mzx_dir current_dir;
   char *file_name;
   struct stat file_info;
@@ -3328,6 +3325,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   struct element *elements[FILESEL_MAX_ELEMENTS];
   int list_length = 17 - ext_height;
   int last_element = FILESEL_FILE_LIST;
+  boolean return_dir_is_base_dir = true;
+  boolean show_parent_dir;
   int i;
 
 #ifdef __WIN32__
@@ -3354,10 +3353,13 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   // Where the file manager needs to return on exit.
   return_dir_name = cmalloc(MAX_PATH);
 
-  if(allow_new)
+  if(allow_new != NO_NEW_FILES)
     last_element = FILESEL_FILENAME;
 
+  // TODO: some platforms don't return this in the format MZX needs it.
   getcwd(return_dir_name, MAX_PATH);
+  path_clean_slashes(return_dir_name, MAX_PATH);
+
   snprintf(current_dir_name, MAX_PATH, "%s", return_dir_name);
   current_dir_name[MAX_PATH - 1] = '\0';
 
@@ -3365,7 +3367,10 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   // to the input, that should be used as the base directory.
   // TODO: this is a bad way to do this. The base dir should be a param instead.
   if(path_get_directory(ret_path, MAX_PATH, ret) > 0)
+  {
     path_navigate(current_dir_name, MAX_PATH, ret_path);
+    return_dir_is_base_dir = false;
+  }
 
   snprintf(base_dir_name, MAX_PATH, "%s", current_dir_name);
   base_dir_name[MAX_PATH - 1] = '\0';
@@ -3388,8 +3393,20 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     if(!dir_open(&current_dir, current_dir_name))
       goto skip_dir;
 
+    // Hide .. if changing directories isn't allowed or if the selected file
+    // should be in the current directory or a subdirectory of it. Also hide it
+    // if this is a root directory.
+    if(allow_dirs == NO_DIRS ||
+     (allow_dirs == ALLOW_SUBDIRS && !strcmp(current_dir_name, base_dir_name)) ||
+     path_is_root(current_dir_name))
+    {
+      show_parent_dir = false;
+    }
+    else
+      show_parent_dir = true;
+
 #if defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
-    if(dirs_okay == 1 && strlen(current_dir_name) > 1)
+    if(show_parent_dir)
     {
       dir_list[num_dirs] = cmalloc(3);
       dir_list[num_dirs][0] = '.';
@@ -3429,9 +3446,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       if(dir_type == DIR_TYPE_DIR)
       {
         // Exclude .. from base dir in subdirsonly mode
-        if(dirs_okay &&
-         !(dirs_okay == 2 && !strcmp(file_name, "..") &&
-          !strcmp(current_dir_name, base_dir_name) ))
+        if(allow_dirs != NO_DIRS &&
+         !(!show_parent_dir && !strcmp(file_name, "..")))
         {
           dir_list[num_dirs] = cmalloc(file_name_length + 1);
           memcpy(dir_list[num_dirs], file_name, file_name_length + 1);
@@ -3486,7 +3502,7 @@ skip_dir:
     qsort(dir_list, num_dirs, sizeof(char *), sort_function);
 
 #ifdef __WIN32__
-    if(dirs_okay == 1)
+    if(allow_dirs == ALLOW_ALL_DIRS)
     {
       drive_letter_bitmap = GetLogicalDrives();
 
@@ -3513,7 +3529,7 @@ skip_dir:
 #endif
 
 #ifdef CONFIG_WII
-    if(dirs_okay == 1)
+    if(allow_dirs == ALLOW_ALL_DIRS)
     {
       for(i = 0; i < STD_MAX; i++)
       {
@@ -3677,10 +3693,10 @@ skip_dir:
         }
 
         // We're creating a new file
-        if(allow_new)
+        if(allow_new != NO_NEW_FILES)
         {
           // File Exists
-          if((stat_result >= 0) && (allow_new == 1))
+          if((stat_result >= 0) && (allow_new == ALLOW_NEW_FILES))
           {
             char confirm_string[512];
             snprintf(confirm_string, 512, "%s already exists, overwrite?",
@@ -3867,8 +3883,8 @@ skip_dir:
       }
     }
 
-    // No unallowed paths kthx
-    if(dirs_okay != 1)
+    // Filter out paths that violate the allowed directories mode.
+    if(allow_dirs != ALLOW_ALL_DIRS)
     {
       size_t base_dir_len = strlen(base_dir_name);
 
@@ -3877,7 +3893,7 @@ skip_dir:
        strstr(current_dir_name, "..") ||
 
       // or if there's an unallowed subdirectory
-       (!dirs_okay && path_has_directory(current_dir_name + base_dir_len)))
+       (allow_dirs == NO_DIRS && path_has_directory(current_dir_name + base_dir_len)))
       {
         memcpy(current_dir_name, base_dir_name, base_dir_len + 1);
         return_value = 1;
@@ -3890,7 +3906,7 @@ skip_dir:
       // for files selected for use in a game from the editor.
       // TODO should maybe do this regardless of the return path. The only
       // thing that would be affected is probably GLSL shader selection.
-      if(!strcmp(base_dir_name, return_dir_name))
+      if(return_dir_is_base_dir)
       {
         path_remove_prefix(ret, MAX_PATH, base_dir_name, base_dir_len);
       }
@@ -3937,17 +3953,17 @@ skip_dir:
 }
 
 int choose_file_ch(struct world *mzx_world, const char *const *wildcards,
- char *ret, const char *title, int dirs_okay)
+ char *ret, const char *title, enum allow_dirs allow_dirs)
 {
-  return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
-   0, NULL, 0, 0);
+  return file_manager(mzx_world, wildcards, NULL, ret, title, allow_dirs,
+   NO_NEW_FILES, NULL, 0, 0);
 }
 
 int new_file(struct world *mzx_world, const char *const *wildcards,
- const char *default_ext, char *ret, const char *title, int dirs_okay)
+ const char *default_ext, char *ret, const char *title, enum allow_dirs allow_dirs)
 {
-  return file_manager(mzx_world, wildcards, default_ext, ret, title, dirs_okay,
-   1, NULL, 0, 0);
+  return file_manager(mzx_world, wildcards, default_ext, ret, title, allow_dirs,
+   ALLOW_NEW_FILES, NULL, 0, 0);
 }
 
 #if defined(CONFIG_UPDATER) || defined(CONFIG_LOADSAVE_METER)

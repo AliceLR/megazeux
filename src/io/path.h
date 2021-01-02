@@ -60,6 +60,8 @@ static inline boolean isslash(const char chr)
 UTILS_LIBSPEC boolean path_force_ext(char *path, size_t buffer_len, const char *ext);
 UTILS_LIBSPEC ssize_t path_get_ext_offset(const char *path);
 
+UTILS_LIBSPEC ssize_t path_is_absolute(const char *path);
+UTILS_LIBSPEC boolean path_is_root(const char *path);
 UTILS_LIBSPEC boolean path_has_directory(const char *path);
 UTILS_LIBSPEC ssize_t path_to_directory(char *path, size_t buffer_len);
 UTILS_LIBSPEC ssize_t path_to_filename(char *path, size_t buffer_len);
