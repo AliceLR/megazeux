@@ -3337,11 +3337,6 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   char ret_path[MAX_PATH];
   char ret_file[MAX_PATH];
 
-  // TODO: some platforms don't return this in the format MZX needs it.
-  if(!vgetcwd(ret_path, MAX_PATH) ||
-   path_clean_slashes(ret_path, MAX_PATH) <= 0)
-    return -1;
-
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
@@ -3361,9 +3356,11 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   if(allow_new != NO_NEW_FILES)
     last_element = FILESEL_FILENAME;
 
-  snprintf(return_dir_name, MAX_PATH, "%s", ret_path);
-  return_dir_name[MAX_PATH - 1] = '\0';
-  snprintf(current_dir_name, MAX_PATH, "%s", ret_path);
+  // TODO: some platforms don't return this in the format MZX needs it.
+  getcwd(return_dir_name, MAX_PATH);
+  path_clean_slashes(return_dir_name, MAX_PATH);
+
+  snprintf(current_dir_name, MAX_PATH, "%s", return_dir_name);
   current_dir_name[MAX_PATH - 1] = '\0';
 
   // Check the input path for a directory. If there is a directory component
