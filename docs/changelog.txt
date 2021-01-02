@@ -23,6 +23,14 @@ USERS
   the Nintendo DS port.
 + Fixed crashes in the RAD player that could be caused by
   references to uninitialized instruments.
++ Fixed a bug where the 3DS and Switch ports would display .. in
+  the file manager when selecting a board module, board charset,
+  or board palette.
++ Fixed a bug where, when a faulty dirent implementation returns
+  .. when listing the contents of a root directory, .. would be
+  displayed despite being meaningless.
++ Fixed a bug where some checks in the file manager could fail
+  when getcwd returns different slashes than expected.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS

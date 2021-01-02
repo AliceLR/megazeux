@@ -3397,9 +3397,11 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       goto skip_dir;
 
     // Hide .. if changing directories isn't allowed or if the selected file
-    // should be in the current directory or a subdirectory of it.
+    // should be in the current directory or a subdirectory of it. Also hide it
+    // if this is a root directory.
     if(allow_dirs == NO_DIRS ||
-     (allow_dirs == ALLOW_SUBDIRS && !strcmp(current_dir_name, base_dir_name)))
+     (allow_dirs == ALLOW_SUBDIRS && !strcmp(current_dir_name, base_dir_name)) ||
+     path_is_root(current_dir_name))
     {
       show_parent_dir = false;
     }
@@ -3407,7 +3409,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       show_parent_dir = true;
 
 #if defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
-    if(show_parent_dir && strlen(current_dir_name) > 1)
+    if(show_parent_dir)
     {
       dir_list[num_dirs] = cmalloc(3);
       dir_list[num_dirs][0] = '.';
