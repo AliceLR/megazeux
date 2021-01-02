@@ -23,6 +23,10 @@
 
 #include "../config.h"
 
+#ifndef VERSION_DATE
+#define VERSION_DATE
+#endif
+
 #define USAGE \
  "checkres :: MegaZeux " VERSION VERSION_DATE "\n" \
  "Usage: checkres [options] " \

@@ -37,6 +37,10 @@
 #define PROMISES "stdio rpath wpath cpath"
 #endif
 
+#ifndef VERSION_DATE
+#define VERSION_DATE
+#endif
+
 #define EOL "\n"
 #define MZXFONT_OFFSET (0xE000)
 
