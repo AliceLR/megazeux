@@ -2390,20 +2390,20 @@ static struct zip_archive *zip_new_archive(void)
  * pointer if this archive is ready for file reading; otherwise, returns
  * NULL. On failure, this will also close the file pointer.
  */
-struct zip_archive *zip_open_fp_read(FILE *fp)
+struct zip_archive *zip_open_vf_read(vfile *vf)
 {
-  if(fp)
+  if(vf)
   {
     struct zip_archive *zp = zip_new_archive();
     long int file_len;
 
-    zp->vf = vfile_init_fp(fp, "rb");
+    zp->vf = vf;
     file_len = vfilelength(zp->vf, false);
 
     if(file_len < 0)
     {
       zip_error("zip_open_fp_read", ZIP_STAT_ERROR);
-      fclose(fp);
+      vfclose(vf);
       free(zp);
       return NULL;
     }
@@ -2411,7 +2411,7 @@ struct zip_archive *zip_open_fp_read(FILE *fp)
     if(file_len > INT_MAX)
     {
       zip_error("zip_open_fp_read", ZIP_UNSUPPORTED_ZIP64);
-      fclose(fp);
+      vfclose(vf);
       free(zp);
       return NULL;
     }
@@ -2433,9 +2433,9 @@ struct zip_archive *zip_open_fp_read(FILE *fp)
 
 struct zip_archive *zip_open_file_read(const char *file_name)
 {
-  FILE *fp = fopen_unsafe(file_name, "rb");
+  vfile *vf = vfopen_unsafe(file_name, "rb");
 
-  return zip_open_fp_read(fp);
+  return zip_open_vf_read(vf);
 }
 
 /**
@@ -2443,13 +2443,13 @@ struct zip_archive *zip_open_file_read(const char *file_name)
  * raw write mode, for use with zip_write(), until zip_write_file() is called.
  * Afterward, the archive will be in file write mode.
  */
-struct zip_archive *zip_open_fp_write(FILE *fp)
+struct zip_archive *zip_open_vf_write(vfile *vf)
 {
-  if(fp)
+  if(vf)
   {
     struct zip_archive *zp = zip_new_archive();
 
-    zp->vf = vfile_init_fp(fp, "wb");
+    zp->vf = vf;
 
     zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES);
 
@@ -2462,9 +2462,9 @@ struct zip_archive *zip_open_fp_write(FILE *fp)
 
 struct zip_archive *zip_open_file_write(const char *file_name)
 {
-  FILE *fp = fopen_unsafe(file_name, "wb");
+  vfile *vf = vfopen_unsafe(file_name, "wb");
 
-  return zip_open_fp_write(fp);
+  return zip_open_vf_write(vf);
 }
 
 /**

@@ -56,22 +56,21 @@ static int board_magic(const char magic_string[4])
 }
 
 void save_board_file(struct world *mzx_world, struct board *cur_board,
- char *name)
+ const char *name)
 {
-  FILE *fp = fopen_unsafe(name, "wb");
+  vfile *vf = vfopen_unsafe(name, "wb");
   struct zip_archive *zp;
   boolean success = false;
 
-  if(fp)
+  if(vf)
   {
-    fputc(0xFF, fp);
+    vfputc(0xFF, vf);
 
-    fputc('M', fp);
-    fputc((MZX_VERSION >> 8) & 0xFF, fp);
-    fputc(MZX_VERSION & 0xFF, fp);
+    vfputc('M', vf);
+    vfputc((MZX_VERSION >> 8) & 0xFF, vf);
+    vfputc(MZX_VERSION & 0xFF, vf);
 
-    zp = zip_open_fp_write(fp);
-
+    zp = zip_open_vf_write(vf);
     if(zp)
     {
       if(!save_board(mzx_world, cur_board, zp, 0, MZX_VERSION, 0))
@@ -80,7 +79,7 @@ void save_board_file(struct world *mzx_world, struct board *cur_board,
       zip_close(zp, NULL);
     }
     else
-      fclose(fp);
+      vfclose(vf);
   }
 
   if(!success)
@@ -88,21 +87,19 @@ void save_board_file(struct world *mzx_world, struct board *cur_board,
 }
 
 static struct board *legacy_load_board_allocate_direct(struct world *mzx_world,
- FILE *fp, int version)
+ vfile *vf, int version)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
   int board_start, board_end;
 
-  board_start = ftell(fp);
-  fseek(fp, 0, SEEK_END);
-  board_end = ftell(fp);
-  fseek(fp, board_start, SEEK_SET);
+  board_start = vftell(vf);
+  board_end = vfilelength(vf, false);
 
   cur_board->world_version = version;
-  legacy_load_board_direct(mzx_world, cur_board, fp, (board_end - board_start), 0,
+  legacy_load_board_direct(mzx_world, cur_board, vf, (board_end - board_start), 0,
    version);
 
-  if(!fread(cur_board->board_name, 25, 1, fp))
+  if(!vfread(cur_board->board_name, 25, 1, vf))
     cur_board->board_name[0] = 0;
 
   return cur_board;
@@ -129,24 +126,24 @@ static int find_first_board(struct zip_archive *zp)
   return -1;
 }
 
-void replace_current_board(struct world *mzx_world, char *name)
+void replace_current_board(struct world *mzx_world, const char *name)
 {
   int current_board_id = mzx_world->current_board_id;
   struct board *src_board = mzx_world->current_board;
 
-  FILE *fp = fopen_unsafe(name, "rb");
+  vfile *vf = vfopen_unsafe(name, "rb");
   struct zip_archive *zp;
 
   char version_string[4];
   int file_version;
   int success = 0;
 
-  if(fp)
+  if(vf)
   {
-    if(!fread(version_string, 4, 1, fp))
+    if(!vfread(version_string, 4, 1, vf))
     {
       error_message(E_IO_READ, 0, NULL);
-      fclose(fp);
+      vfclose(vf);
       return;
     }
 
@@ -158,19 +155,20 @@ void replace_current_board(struct world *mzx_world, char *name)
       clear_board(src_board);
 
       src_board =
-       legacy_load_board_allocate_direct(mzx_world, fp, file_version);
+       legacy_load_board_allocate_direct(mzx_world, vf, file_version);
 
       success = 1;
-      fclose(fp);
+      vfclose(vf);
     }
     else
 
     if(file_version <= MZX_VERSION)
     {
       int board_id;
+      vfclose(vf);
 
       // Regular board or maybe not a board at all.
-      zp = zip_open_fp_read(fp);
+      zp = zip_open_file_read(name);
 
       // Make sure it's an actual zip.
       if(zp)
@@ -198,7 +196,7 @@ void replace_current_board(struct world *mzx_world, char *name)
     else
     {
       error_message(E_BOARD_FILE_FUTURE_VERSION, file_version, NULL);
-      fclose(fp);
+      vfclose(vf);
     }
 
     if(success)

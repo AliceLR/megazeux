@@ -27,12 +27,13 @@ __M_BEGIN_DECLS
 
 #include "const.h"
 #include "world_struct.h"
+#include "io/vfile.h"
 
 CORE_LIBSPEC int legacy_load_board_direct(struct world *mzx_world,
- struct board *cur_board, FILE *fp, int data_size, int savegame, int version);
+ struct board *cur_board, vfile *vf, int data_size, int savegame, int version);
 
 CORE_LIBSPEC struct board *legacy_load_board_allocate(struct world *mzx_world,
- FILE *fp, int data_offset, int data_size, int savegame, int file_version);
+ vfile *vf, int data_offset, int data_size, int savegame, int file_version);
 
 __M_END_DECLS
 

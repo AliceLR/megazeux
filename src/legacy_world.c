@@ -42,8 +42,8 @@
 #include "window.h"
 #include "world.h"
 #include "util.h"
-#include "io/fsafeopen.h"
 #include "io/path.h"
+#include "io/vfile.h"
 
 #include "audio/sfx.h"
 
@@ -60,17 +60,15 @@ static inline void meter_initial_draw(int curr, int target, const char *title) {
 
 #endif //!CONFIG_LOADSAVE_METER
 
-
-static char name_buffer[ROBOT_MAX_TR];
-
 static inline boolean legacy_load_counter(struct world *mzx_world,
- FILE *fp, struct counter_list *counter_list, int index)
+ vfile *vf, struct counter_list *counter_list, int index)
 {
-  int value = fgetd(fp);
-  int name_length = fgetd(fp);
+  char name_buffer[ROBOT_MAX_TR];
+  int value = vfgetd(vf);
+  int name_length = vfgetd(vf);
 
   name_buffer[0] = 0;
-  if(name_length && !fread(name_buffer, name_length, 1, fp))
+  if(name_length && !vfread(name_buffer, name_length, 1, vf))
     return false;
 
   // Stupid legacy hacks
@@ -90,22 +88,23 @@ static inline boolean legacy_load_counter(struct world *mzx_world,
   return true;
 }
 
-static inline void legacy_load_string(FILE *fp,
+static inline void legacy_load_string(vfile *vf,
  struct string_list *string_list, int index)
 {
-  int name_length = fgetd(fp);
-  int str_length = fgetd(fp);
+  char name_buffer[ROBOT_MAX_TR];
+  int name_length = vfgetd(vf);
+  int str_length = vfgetd(vf);
 
   struct string *src_string;
 
   name_buffer[0] = 0;
-  if(name_length && !fread(name_buffer, name_length, 1, fp))
+  if(name_length && !vfread(name_buffer, name_length, 1, vf))
     return;
 
   src_string = load_new_string(string_list, index,
    name_buffer, name_length, str_length);
 
-  if(str_length && !fread(src_string->value, str_length, 1, fp))
+  if(str_length && !vfread(src_string->value, str_length, 1, vf))
     return;
 }
 
@@ -410,45 +409,25 @@ err_free:
 }
 
 
-/* This is a lot like try_load_world but much more thorough, and doesn't
- * pass data through or leave a file open.  This needs to be done before
- * any data is ever loaded, so that Megazeux can cleanly abort if there
- * is an issue.
+/* Validate that this file is a world or save file within reasonable doubt.
+ * This needs to be done before any data is ever loaded so that Megazeux can
+ * cleanly abort if there is an issue.
  *
  * There are a few redundant checks here with try_load_world, but that's ok.
  */
-
-static enum val_result __validate_legacy_world_file(const char *file,
- boolean savegame)
+static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
 {
-  enum val_result result = VAL_SUCCESS;
-
-  struct stat stat_result;
-  int stat_op_result;
-  FILE *f;
   char magic[15];
   int num_boards;
   int board_name_offset;
   int v, i;
-
-  /* TEST 1: make sure it's even a file */
-  stat_op_result = stat(file, &stat_result);
-
-  if(stat_op_result ||
-   !S_ISREG(stat_result.st_mode) ||
-   !(f = fopen_unsafe(file, "rb")))
-  {
-    error_message(E_FILE_DOES_NOT_EXIST, 0, NULL);
-    result = VAL_MISSING;
-    goto err_out;
-  }
 
   /* TEST 2:  Is it a save file? */
   if(savegame)
   {
     int screen_mode, num_counters, num_strings, len;
 
-    if(fread(magic, 5, 1, f) != 1)
+    if(vfread(magic, 5, 1, vf) != 1)
       goto err_invalid;
 
     v = save_magic(magic);
@@ -461,8 +440,7 @@ static enum val_result __validate_legacy_world_file(const char *file,
     if(v > MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_TOO_RECENT, v, NULL);
-      result = VAL_VERSION;
-      goto err_close;
+      return VAL_VERSION;
     }
     else
 
@@ -472,28 +450,24 @@ static enum val_result __validate_legacy_world_file(const char *file,
     if(v < MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_OLD, v, NULL);
-      result = VAL_VERSION;
-      goto err_close;
+      return VAL_VERSION;
     }
 
-    /* TEST 3:  Check for truncation, savegame style, hope this
-     * doesn't explode :erm:
-     */
-    if(
-     fseek(f, 8, SEEK_SET) ||
-     fseek(f, WORLD_BLOCK_1_SIZE, SEEK_CUR) ||
-     fseek(f, 71, SEEK_CUR) ||
-     fseek(f, (len = fgetw(f)), SEEK_CUR) ||
-     (len < 0) ||
-     fseek(f, WORLD_BLOCK_2_SIZE, SEEK_CUR) ||
-     fseek(f, 24, SEEK_CUR))
+    /* TEST 3:  Check for truncation, savegame style. */
+    if(vfseek(vf, 8 + WORLD_BLOCK_1_SIZE + 71, SEEK_SET))
     {
-      debug("pre-counters\n");
+      debug("save block 1\n");
+      goto err_invalid;
+    }
+    len = vfgetw(vf);
+    if(vfseek(vf, len + WORLD_BLOCK_2_SIZE + 24, SEEK_CUR))
+    {
+      debug("save block 2\n");
       goto err_invalid;
     }
 
     //do counters - vvvvnnnn(name)
-    num_counters = fgetd(f);
+    num_counters = vfgetd(vf);
     if(num_counters < 0)
     {
       debug("counter num\n");
@@ -502,18 +476,23 @@ static enum val_result __validate_legacy_world_file(const char *file,
 
     for(i = 0; i < num_counters; i++)
     {
-      if(
-       fseek(f, 4, SEEK_CUR) || //value
-       fseek(f, (len = fgetd(f)), SEEK_CUR) ||
-       (len < 0))
+      int value = vfgetd(vf);
+      int name_length = vfgetd(vf);
+
+      if(value < 0 || name_length < 0 || name_length >= ROBOT_MAX_TR)
       {
-        debug("counters\n");
+        debug("counter %d: value=%d, name length=%d\n", i, value, name_length);
+        goto err_invalid;
+      }
+      if(vfseek(vf, name_length, SEEK_CUR))
+      {
+        debug("counter %d name\n", i);
         goto err_invalid;
       }
     }
 
     //do strings-   nnnnllll(name)(value)
-    num_strings = fgetd(f);
+    num_strings = vfgetd(vf);
     if(num_strings < 0)
     {
       debug("string num\n");
@@ -522,45 +501,47 @@ static enum val_result __validate_legacy_world_file(const char *file,
 
     for(i = 0; i < num_strings; i++)
     {
-      int name_length = fgetd(f);
-      int value_length = fgetd(f);
-      if(
-       (name_length < 0) ||
-       (value_length < 0) ||
-       fseek(f, name_length, SEEK_CUR) ||
-       fseek(f, value_length, SEEK_CUR))
+      int name_length = vfgetd(vf);
+      int value_length = vfgetd(vf);
+      if(value_length < 0 || name_length < 0 || name_length >= ROBOT_MAX_TR)
       {
-        debug("strings\n");
+        debug("string %d: value length=%d, name length=%d\n",
+         i, value_length, name_length);
+        goto err_invalid;
+      }
+      if(vfseek(vf, name_length + value_length, SEEK_CUR))
+      {
+        debug("string %d name+value\n", i);
         goto err_invalid;
       }
     }
 
     if(
-     fseek(f, 4612, SEEK_CUR) || //sprites
-     fseek(f, 12, SEEK_CUR) || //misc
-     fseek(f, fgetw(f), SEEK_CUR) || //fread_open
-     fseek(f, 4, SEEK_CUR) || //fread_pos
-     fseek(f, fgetw(f), SEEK_CUR) || //fwrite_open
-     fseek(f, 4, SEEK_CUR)) //fwrite_pos
+     vfseek(vf, 4612, SEEK_CUR) || //sprites
+     vfseek(vf, 12, SEEK_CUR) || //misc
+     vfseek(vf, vfgetw(vf), SEEK_CUR) || //fread_open
+     vfseek(vf, 4, SEEK_CUR) || //fread_pos
+     vfseek(vf, vfgetw(vf), SEEK_CUR) || //fwrite_open
+     vfseek(vf, 4, SEEK_CUR)) //fwrite_pos
     {
       debug("post strings\n");
       goto err_invalid;
     }
 
-    screen_mode = fgetw(f);
-    if((screen_mode > 3) || (screen_mode > 1 &&
-     fseek(f, 768, SEEK_CUR))) //smzx palette
+    screen_mode = vfgetw(vf);
+    if((screen_mode < 0) || (screen_mode > 3) || (screen_mode > 1 &&
+     vfseek(vf, 768, SEEK_CUR))) //smzx palette
     {
       debug("smzx palette\n");
       goto err_invalid;
     }
 
     if(
-     fseek(f, 4, SEEK_CUR) || //commands
-     ((len = fgetd(f)) < 0) || //vlayer size
-     fseek(f, 4, SEEK_CUR) || // width & height
-     fseek(f, len, SEEK_CUR) || //chars
-     fseek(f, len, SEEK_CUR)) //colors
+     vfseek(vf, 4, SEEK_CUR) || //commands
+     ((len = vfgetd(vf)) < 0) || //vlayer size
+     vfseek(vf, 4, SEEK_CUR) || // width & height
+     vfseek(vf, len, SEEK_CUR) || //chars
+     vfseek(vf, len, SEEK_CUR)) //colors
     {
       debug("vlayer\n");
       goto err_invalid;
@@ -573,17 +554,17 @@ static enum val_result __validate_legacy_world_file(const char *file,
   {
     int protection_method;
 
-    /* TEST 3:  Check for truncation */
-    if(fseek(f, WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET))
-      goto err_invalid;
-
-    fseek(f, LEGACY_BOARD_NAME_SIZE, SEEK_SET);
-
-    /* TEST 4:  If we think it's locked, try to decrypt it. */
-    protection_method = fgetc(f);
-    if(protection_method > 0)
+    if(vfseek(vf, LEGACY_BOARD_NAME_SIZE, SEEK_SET))
     {
-      if(protection_method > 3)
+      debug("world name\n");
+      goto err_invalid;
+    }
+
+    /* TEST 4:  If it's locked, try to decrypt it. */
+    protection_method = vfgetc(vf);
+    if(protection_method != 0)
+    {
+      if(protection_method < 0 || protection_method > 3)
         goto err_invalid;
 
       /**
@@ -593,8 +574,8 @@ static enum val_result __validate_legacy_world_file(const char *file,
        * password buffer, and then the version. In either case, the version is
        * not encrypted.
        */
-      fseek(f, LEGACY_BOARD_NAME_SIZE + 1 + MAX_PASSWORD_LENGTH, SEEK_SET);
-      if(!fread(magic, 4, 1, f))
+      vfseek(vf, LEGACY_BOARD_NAME_SIZE + 1 + MAX_PASSWORD_LENGTH, SEEK_SET);
+      if(!vfread(magic, 4, 1, vf))
         goto err_invalid;
 
       v = world_magic(magic);
@@ -606,16 +587,13 @@ static enum val_result __validate_legacy_world_file(const char *file,
 
         // Can't actually handle 1.x files right now...
         error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
-        result = VAL_VERSION;
-        goto err_close;
+        return VAL_VERSION;
       }
-
-      result = VAL_PROTECTED;
-      goto err_close;
+      return VAL_PROTECTED;
     }
 
     /* TEST 5:  Test the magic */
-    if(!fread(magic, 3, 1, f))
+    if(!vfread(magic, 3, 1, vf))
       goto err_invalid;
 
     v = world_magic(magic);
@@ -628,25 +606,23 @@ static enum val_result __validate_legacy_world_file(const char *file,
     if(v < V200)
     {
       error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
-      result = VAL_VERSION;
-      goto err_close;
+      return VAL_VERSION;
     }
     else
 
     if(v > MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_WORLD_FILE_VERSION_TOO_RECENT, v, NULL);
-      result = VAL_VERSION;
-      goto err_close;
+      return VAL_VERSION;
     }
 
     /* TEST 6:  Attempt to eliminate invalid files by
      * testing the palette for impossible values.
      */
-    fseek(f, WORLD_GLOBAL_OFFSET_OFFSET - 48, SEEK_SET);
-    for(i = 0; i<48; i++)
+    vfseek(vf, WORLD_GLOBAL_OFFSET_OFFSET - 48, SEEK_SET);
+    for(i = 0; i < 48; i++)
     {
-      int val = fgetc(f);
+      int val = vfgetc(vf);
       if((val < 0) || (val > 63))
         goto err_invalid;
     }
@@ -657,87 +633,109 @@ static enum val_result __validate_legacy_world_file(const char *file,
   /* TEST 7:  Either branch should be at the global robot pointer now.
    * Test for valid SFX structure, if applicable, and board information.
    */
-  fseek(f, 4, SEEK_CUR);
+  if(vfgetd(vf) < 0)
+    goto err_invalid;
 
   // Do the sfx
-  num_boards = fgetc(f);
+  num_boards = vfgetc(vf);
   if(num_boards == 0)
   {
-    int sfx_size = fgetw(f);
-    int sfx_off = ftell(f);
+    int sfx_size = vfgetw(vf);
+    int sfx_off = vftell(vf);
     int cur_sfx_size;
 
     for(i = 0; i < NUM_SFX; i++)
     {
-      cur_sfx_size = fgetc(f);
-      if(cur_sfx_size > LEGACY_SFX_SIZE)
+      cur_sfx_size = vfgetc(vf);
+      if(cur_sfx_size < 0 || cur_sfx_size > LEGACY_SFX_SIZE)
         goto err_invalid;
 
-      if(fseek(f, cur_sfx_size, SEEK_CUR))
+      if(vfseek(vf, cur_sfx_size, SEEK_CUR))
         break;
     }
 
-    if((i != NUM_SFX) || ((ftell(f) - sfx_off) != sfx_size))
+    if((i != NUM_SFX) || ((vftell(vf) - sfx_off) != sfx_size))
       goto err_invalid;
 
-    num_boards = fgetc(f);
+    num_boards = vfgetc(vf);
   }
-  if(num_boards == 0)
+  if(num_boards <= 0)
     goto err_invalid;
 
-  board_name_offset = ftell(f);
+  board_name_offset = vftell(vf);
 
   //Make sure board name and pointer data exists
   if(
-   fseek(f, num_boards * LEGACY_BOARD_NAME_SIZE, SEEK_CUR) ||
-   fseek(f, num_boards * 8, SEEK_CUR) ||
-   ((ftell(f) - board_name_offset) != num_boards * (LEGACY_BOARD_NAME_SIZE + 8)))
+   vfseek(vf, num_boards * LEGACY_BOARD_NAME_SIZE, SEEK_CUR) ||
+   vfseek(vf, num_boards * 8, SEEK_CUR) ||
+   ((vftell(vf) - board_name_offset) != num_boards * (LEGACY_BOARD_NAME_SIZE + 8)))
     goto err_invalid;
 
   //todo: maybe have a complete fail when N number of pointers fail?
 
-  goto err_close;
+  return VAL_SUCCESS;
 
 err_invalid:
-  result = VAL_INVALID;
   if(savegame)
     error_message(E_SAVE_FILE_INVALID, 0, NULL);
   else
     error_message(E_WORLD_FILE_INVALID, 0, NULL);
-err_close:
-  fclose(f);
-err_out:
-  return result;
+  return VAL_INVALID;
 }
 
-enum val_result validate_legacy_world_file(struct world *mzx_world,
+vfile *validate_legacy_world_file(struct world *mzx_world,
  const char *file, boolean savegame)
 {
-  enum val_result res = __validate_legacy_world_file(file, savegame);
   struct config_info *conf = get_config();
+  struct stat stat_result;
+  enum val_result res;
+  vfile *vf;
 
+  /* TEST 1: make sure it's even a file. */
+  if(stat(file, &stat_result) || !S_ISREG(stat_result.st_mode))
+  {
+    error_message(E_FILE_DOES_NOT_EXIST, 0, NULL);
+    return NULL;
+  }
+
+  vf = vfopen_unsafe_ext(file, "rb", V_LARGE_BUFFER);
+  if(!vf)
+    return NULL;
+
+  res = __validate_legacy_world_file(vf, savegame);
   if(res == VAL_PROTECTED)
   {
+    // FIXME should decrypt into a temporary/memory file instead.
     if(conf->auto_decrypt_worlds || !has_video_initialized() ||
      !confirm(mzx_world, "This world may be password protected. Decrypt it?"))
     {
+      vfclose(vf);
+
       // Decrypt and try again
       decrypt(file);
-      res = __validate_legacy_world_file(file, savegame);
+
+      vf = vfopen_unsafe_ext(file, "rb", V_LARGE_BUFFER);
+      if(!vf)
+        return NULL;
+      res = __validate_legacy_world_file(vf, savegame);
 
       // If the world is still protected, abort.
       if(res != VAL_PROTECTED)
-        return res;
+        return vf;
     }
+    vfclose(vf);
 
     error_message(E_WORLD_LOCKED, 0, NULL);
-    return VAL_ABORTED;
+    return NULL;
   }
-
-  return res;
+  return vf;
 }
 
-void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
+/**
+ * Load a world or save file from the legacy world format.
+ * This will close the provided vfile handle.
+ */
+void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
  boolean savegame, int file_version, char *name, boolean *faded)
 {
   int i;
@@ -754,13 +752,13 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   if(savegame)
   {
-    fseek(fp, 5, SEEK_SET);
-    mzx_world->version = fgetw(fp);
-    mzx_world->current_board_id = fgetc(fp);
+    vfseek(vf, 5, SEEK_SET);
+    mzx_world->version = vfgetw(vf);
+    mzx_world->current_board_id = vfgetc(vf);
   }
   else
   {
-    fseek(fp, 29, SEEK_SET);
+    vfseek(vf, 29, SEEK_SET);
     strcpy(mzx_world->name, name);
     mzx_world->version = file_version;
     mzx_world->current_board_id = 0;
@@ -769,7 +767,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   meter_initial_draw(meter_curr, meter_target, "Loading...");
 
   charset_mem = cmalloc(CHAR_SIZE * CHARSET_SIZE);
-  if(!fread(charset_mem, CHAR_SIZE * CHARSET_SIZE, 1, fp))
+  if(!vfread(charset_mem, CHAR_SIZE * CHARSET_SIZE, 1, vf))
     goto err_close;
   ec_clear_set();
   ec_mem_load_set(charset_mem, CHAR_SIZE * CHARSET_SIZE);
@@ -780,17 +778,17 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   memset(id_dmg, 0, ID_DMG_SIZE);
   memset(bullet_color, 0, ID_BULLET_COLOR_SIZE);
 
-  if(!fread(id_chars, LEGACY_ID_CHARS_SIZE, 1, fp))
+  if(!vfread(id_chars, LEGACY_ID_CHARS_SIZE, 1, vf))
     goto err_close;
-  missile_color = fgetc(fp);
-  if(!fread(bullet_color, LEGACY_ID_BULLET_COLOR_SIZE, 1, fp))
+  missile_color = vfgetc(vf);
+  if(!vfread(bullet_color, LEGACY_ID_BULLET_COLOR_SIZE, 1, vf))
     goto err_close;
-  if(!fread(id_dmg, LEGACY_ID_DMG_SIZE, 1, fp))
+  if(!vfread(id_dmg, LEGACY_ID_DMG_SIZE, 1, vf))
     goto err_close;
 
   // Status counters...
-  if(fread((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE,
-   NUM_STATUS_COUNTERS, fp) != NUM_STATUS_COUNTERS)
+  if(vfread((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE,
+   NUM_STATUS_COUNTERS, vf) != NUM_STATUS_COUNTERS)
     goto err_close;
 
   // Don't trust legacy null termination...
@@ -799,71 +797,71 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   if(savegame)
   {
-    if(!fread(mzx_world->keys, NUM_KEYS, 1, fp))
+    if(!vfread(mzx_world->keys, NUM_KEYS, 1, vf))
       goto err_close;
-    mzx_world->blind_dur = fgetc(fp);
-    mzx_world->firewalker_dur = fgetc(fp);
-    mzx_world->freeze_time_dur = fgetc(fp);
-    mzx_world->slow_time_dur = fgetc(fp);
-    mzx_world->wind_dur = fgetc(fp);
+    mzx_world->blind_dur = vfgetc(vf);
+    mzx_world->firewalker_dur = vfgetc(vf);
+    mzx_world->freeze_time_dur = vfgetc(vf);
+    mzx_world->slow_time_dur = vfgetc(vf);
+    mzx_world->wind_dur = vfgetc(vf);
 
     for(i = 0; i < 8; i++)
     {
-      mzx_world->pl_saved_x[i] = fgetw(fp);
+      mzx_world->pl_saved_x[i] = vfgetw(vf);
     }
 
     for(i = 0; i < 8; i++)
     {
-      mzx_world->pl_saved_y[i] = fgetw(fp);
+      mzx_world->pl_saved_y[i] = vfgetw(vf);
     }
 
-    if(!fread(mzx_world->pl_saved_board, 8, 1, fp))
+    if(!vfread(mzx_world->pl_saved_board, 8, 1, vf))
       goto err_close;
-    mzx_world->saved_pl_color = fgetc(fp);
-    mzx_world->under_player_id = fgetc(fp);
-    mzx_world->under_player_color = fgetc(fp);
-    mzx_world->under_player_param = fgetc(fp);
-    mzx_world->mesg_edges = fgetc(fp);
-    mzx_world->scroll_base_color = fgetc(fp);
-    mzx_world->scroll_corner_color = fgetc(fp);
-    mzx_world->scroll_pointer_color = fgetc(fp);
-    mzx_world->scroll_title_color = fgetc(fp);
-    mzx_world->scroll_arrow_color = fgetc(fp);
+    mzx_world->saved_pl_color = vfgetc(vf);
+    mzx_world->under_player_id = vfgetc(vf);
+    mzx_world->under_player_color = vfgetc(vf);
+    mzx_world->under_player_param = vfgetc(vf);
+    mzx_world->mesg_edges = vfgetc(vf);
+    mzx_world->scroll_base_color = vfgetc(vf);
+    mzx_world->scroll_corner_color = vfgetc(vf);
+    mzx_world->scroll_pointer_color = vfgetc(vf);
+    mzx_world->scroll_title_color = vfgetc(vf);
+    mzx_world->scroll_arrow_color = vfgetc(vf);
 
     {
-      size_t len = fgetw(fp);
+      size_t len = vfgetw(vf);
       if(len >= MAX_PATH)
         len = MAX_PATH - 1;
 
-      if(len && !fread(mzx_world->real_mod_playing, len, 1, fp))
+      if(len && !vfread(mzx_world->real_mod_playing, len, 1, vf))
         goto err_close;
       mzx_world->real_mod_playing[len] = 0;
     }
   }
 
-  mzx_world->edge_color = fgetc(fp);
-  mzx_world->first_board = fgetc(fp);
-  mzx_world->endgame_board = fgetc(fp);
-  mzx_world->death_board = fgetc(fp);
-  mzx_world->endgame_x = fgetw(fp);
-  mzx_world->endgame_y = fgetw(fp);
-  mzx_world->game_over_sfx = fgetc(fp);
-  mzx_world->death_x = fgetw(fp);
-  mzx_world->death_y = fgetw(fp);
-  mzx_world->starting_lives = fgetw(fp);
-  mzx_world->lives_limit = fgetw(fp);
-  mzx_world->starting_health = fgetw(fp);
-  mzx_world->health_limit = fgetw(fp);
-  mzx_world->enemy_hurt_enemy = fgetc(fp);
-  mzx_world->clear_on_exit = fgetc(fp);
-  mzx_world->only_from_swap = fgetc(fp);
+  mzx_world->edge_color = vfgetc(vf);
+  mzx_world->first_board = vfgetc(vf);
+  mzx_world->endgame_board = vfgetc(vf);
+  mzx_world->death_board = vfgetc(vf);
+  mzx_world->endgame_x = vfgetw(vf);
+  mzx_world->endgame_y = vfgetw(vf);
+  mzx_world->game_over_sfx = vfgetc(vf);
+  mzx_world->death_x = vfgetw(vf);
+  mzx_world->death_y = vfgetw(vf);
+  mzx_world->starting_lives = vfgetw(vf);
+  mzx_world->lives_limit = vfgetw(vf);
+  mzx_world->starting_health = vfgetw(vf);
+  mzx_world->health_limit = vfgetw(vf);
+  mzx_world->enemy_hurt_enemy = vfgetc(vf);
+  mzx_world->clear_on_exit = vfgetc(vf);
+  mzx_world->only_from_swap = vfgetc(vf);
 
   // Palette...
   for(i = 0; i < 16; i++)
   {
-    r = fgetc(fp);
-    g = fgetc(fp);
-    b = fgetc(fp);
+    r = vfgetc(vf);
+    g = vfgetc(vf);
+    b = vfgetc(vf);
 
     set_rgb(i, r, g, b);
   }
@@ -877,19 +875,19 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     for(i = 0; i < 16; i++)
     {
-      set_color_intensity(i, fgetc(fp));
+      set_color_intensity(i, vfgetc(vf));
     }
 
-    *faded = fgetc(fp);
+    *faded = vfgetc(vf);
 
-    mzx_world->player_restart_x = fgetw(fp);
-    mzx_world->player_restart_y = fgetw(fp);
-    mzx_world->under_player_id = fgetc(fp);
-    mzx_world->under_player_color = fgetc(fp);
-    mzx_world->under_player_param = fgetc(fp);
+    mzx_world->player_restart_x = vfgetw(vf);
+    mzx_world->player_restart_y = vfgetw(vf);
+    mzx_world->under_player_id = vfgetc(vf);
+    mzx_world->under_player_color = vfgetc(vf);
+    mzx_world->under_player_param = vfgetc(vf);
 
     // Read counters
-    num_counters = fgetd(fp);
+    num_counters = vfgetd(vf);
     counter_list = &(mzx_world->counter_list);
     counter_list->num_counters = num_counters;
     counter_list->num_counters_allocated = num_counters;
@@ -897,7 +895,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     for(i = 0, j = 0; i < num_counters; i++)
     {
-      boolean counter = legacy_load_counter(mzx_world, fp, counter_list, j);
+      boolean counter = legacy_load_counter(mzx_world, vf, counter_list, j);
 
       /* We loaded a special counter, this doesn't need to be
        * loaded into the regular list.
@@ -912,7 +910,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     }
 
     // Read strings
-    num_strings = fgetd(fp);
+    num_strings = vfgetd(vf);
     string_list = &(mzx_world->string_list);
     string_list->num_strings = num_strings;
     string_list->num_strings_allocated = num_strings;
@@ -920,7 +918,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     for(i = 0; i < num_strings; i++)
     {
-      legacy_load_string(fp, string_list, i);
+      legacy_load_string(vf, string_list, i);
     }
 
 #ifndef CONFIG_COUNTER_HASH_TABLES
@@ -932,70 +930,70 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     // Sprite data
     for(i = 0; i < MAX_SPRITES; i++)
     {
-      (mzx_world->sprite_list[i])->x = fgetw(fp);
-      (mzx_world->sprite_list[i])->y = fgetw(fp);
-      (mzx_world->sprite_list[i])->ref_x = fgetw(fp);
-      (mzx_world->sprite_list[i])->ref_y = fgetw(fp);
-      (mzx_world->sprite_list[i])->color = fgetc(fp);
-      (mzx_world->sprite_list[i])->flags = fgetc(fp);
-      (mzx_world->sprite_list[i])->width = fgetc(fp);
-      (mzx_world->sprite_list[i])->height = fgetc(fp);
-      (mzx_world->sprite_list[i])->col_x = fgetc(fp);
-      (mzx_world->sprite_list[i])->col_y = fgetc(fp);
-      (mzx_world->sprite_list[i])->col_width = fgetc(fp);
-      (mzx_world->sprite_list[i])->col_height = fgetc(fp);
+      (mzx_world->sprite_list[i])->x = vfgetw(vf);
+      (mzx_world->sprite_list[i])->y = vfgetw(vf);
+      (mzx_world->sprite_list[i])->ref_x = vfgetw(vf);
+      (mzx_world->sprite_list[i])->ref_y = vfgetw(vf);
+      (mzx_world->sprite_list[i])->color = vfgetc(vf);
+      (mzx_world->sprite_list[i])->flags = vfgetc(vf);
+      (mzx_world->sprite_list[i])->width = vfgetc(vf);
+      (mzx_world->sprite_list[i])->height = vfgetc(vf);
+      (mzx_world->sprite_list[i])->col_x = vfgetc(vf);
+      (mzx_world->sprite_list[i])->col_y = vfgetc(vf);
+      (mzx_world->sprite_list[i])->col_width = vfgetc(vf);
+      (mzx_world->sprite_list[i])->col_height = vfgetc(vf);
     }
 
     // total sprites
-    mzx_world->active_sprites = fgetc(fp);
+    mzx_world->active_sprites = vfgetc(vf);
     // y order flag
-    mzx_world->sprite_y_order = fgetc(fp);
+    mzx_world->sprite_y_order = vfgetc(vf);
     // collision info
-    mzx_world->collision_count = fgetw(fp);
+    mzx_world->collision_count = vfgetw(vf);
 
     for(i = 0; i < MAX_SPRITES; i++)
     {
-      mzx_world->collision_list[i] = fgetw(fp);
+      mzx_world->collision_list[i] = vfgetw(vf);
     }
 
     // Multiplier
-    mzx_world->multiplier = fgetw(fp);
+    mzx_world->multiplier = vfgetw(vf);
     // Divider
-    mzx_world->divider = fgetw(fp);
+    mzx_world->divider = vfgetw(vf);
     // Circle divisions
-    mzx_world->c_divisions = fgetw(fp);
+    mzx_world->c_divisions = vfgetw(vf);
     // String FREAD and FWRITE Delimiters
-    mzx_world->fread_delimiter = fgetw(fp);
-    mzx_world->fwrite_delimiter = fgetw(fp);
+    mzx_world->fread_delimiter = vfgetw(vf);
+    mzx_world->fwrite_delimiter = vfgetw(vf);
     // Builtin shooting/message status
-    mzx_world->bi_shoot_status = fgetc(fp);
-    mzx_world->bi_mesg_status = fgetc(fp);
+    mzx_world->bi_shoot_status = vfgetc(vf);
+    mzx_world->bi_mesg_status = vfgetc(vf);
 
     // Load input file name, open later
     {
-      size_t len = fgetw(fp);
+      size_t len = vfgetw(vf);
       if(len >= MAX_PATH)
         len = MAX_PATH - 1;
 
-      if(len && !fread(mzx_world->input_file_name, len, 1, fp))
+      if(len && !vfread(mzx_world->input_file_name, len, 1, vf))
         goto err_close;
       mzx_world->input_file_name[len] = 0;
     }
-    mzx_world->temp_input_pos = fgetd(fp);
+    mzx_world->temp_input_pos = vfgetd(vf);
 
     // Load output file name, open later
     {
-      size_t len = fgetw(fp);
+      size_t len = vfgetw(vf);
       if(len >= MAX_PATH)
         len = MAX_PATH - 1;
 
-      if(len && !fread(mzx_world->output_file_name, len, 1, fp))
+      if(len && !vfread(mzx_world->output_file_name, len, 1, vf))
         goto err_close;
       mzx_world->output_file_name[len] = 0;
     }
-    mzx_world->temp_output_pos = fgetd(fp);
+    mzx_world->temp_output_pos = vfgetd(vf);
 
-    screen_mode = fgetw(fp);
+    screen_mode = vfgetw(vf);
 
     // If it's at SMZX mode 2, set default palette as loaded
     // so the .sav one doesn't get overwritten
@@ -1010,19 +1008,19 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     {
       for(i = 0; i < 256; i++)
       {
-        r = fgetc(fp);
-        g = fgetc(fp);
-        b = fgetc(fp);
+        r = vfgetc(vf);
+        g = vfgetc(vf);
+        b = vfgetc(vf);
 
         set_rgb(i, r, g, b);
       }
     }
 
-    mzx_world->commands = fgetd(fp);
+    mzx_world->commands = vfgetd(vf);
 
-    vlayer_size = fgetd(fp);
-    mzx_world->vlayer_width = fgetw(fp);
-    mzx_world->vlayer_height = fgetw(fp);
+    vlayer_size = vfgetd(vf);
+    mzx_world->vlayer_width = vfgetw(vf);
+    mzx_world->vlayer_height = vfgetw(vf);
     mzx_world->vlayer_size = vlayer_size;
 
     // This might have been allocated already...
@@ -1030,15 +1028,15 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->vlayer_colors = crealloc(mzx_world->vlayer_colors, vlayer_size);
 
     if(vlayer_size &&
-     (!fread(mzx_world->vlayer_chars, vlayer_size, 1, fp) ||
-      !fread(mzx_world->vlayer_colors, vlayer_size, 1, fp)))
+     (!vfread(mzx_world->vlayer_chars, vlayer_size, 1, vf) ||
+      !vfread(mzx_world->vlayer_colors, vlayer_size, 1, vf)))
       goto err_close;
   }
 
   // Get position of global robot...
-  global_robot_pos = fgetd(fp);
+  global_robot_pos = vfgetd(vf);
   // Get number of boards
-  num_boards = fgetc(fp);
+  num_boards = vfgetc(vf);
 
   if(num_boards == 0)
   {
@@ -1046,18 +1044,18 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     char *sfx_offset = mzx_world->custom_sfx;
     // Sfx
     mzx_world->custom_sfx_on = 1;
-    fgetw(fp); // Skip word size
+    vfgetw(vf); // Skip word size
 
     //Read sfx
     for(i = 0; i < NUM_SFX; i++, sfx_offset += LEGACY_SFX_SIZE)
     {
-      sfx_size = fgetc(fp);
-      if(sfx_size && !fread(sfx_offset, sfx_size, 1, fp))
+      sfx_size = vfgetc(vf);
+      if(sfx_size && !vfread(sfx_offset, sfx_size, 1, vf))
         goto err_close;
 
       sfx_offset[LEGACY_SFX_SIZE - 1] = '\0';
     }
-    num_boards = fgetc(fp);
+    num_boards = vfgetc(vf);
   }
   else
   {
@@ -1072,22 +1070,22 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   mzx_world->board_list = cmalloc(sizeof(struct board *) * num_boards);
 
   // Skip the names for now
-  board_names_pos = ftell(fp);
-  fseek(fp, num_boards * LEGACY_BOARD_NAME_SIZE, SEEK_CUR);
+  board_names_pos = vftell(vf);
+  vfseek(vf, num_boards * LEGACY_BOARD_NAME_SIZE, SEEK_CUR);
 
   // Read the board offsets/sizes preemptively to reduce the amount of seeking.
   board_offsets = cmalloc(sizeof(int) * num_boards);
   board_sizes = cmalloc(sizeof(int) * num_boards);
   for(i = 0; i < num_boards; i++)
   {
-    board_sizes[i] = fgetd(fp);
-    board_offsets[i] = fgetd(fp);
+    board_sizes[i] = vfgetd(vf);
+    board_offsets[i] = vfgetd(vf);
   }
 
   for(i = 0; i < num_boards; i++)
   {
     mzx_world->board_list[i] =
-     legacy_load_board_allocate(mzx_world, fp, board_offsets[i], board_sizes[i],
+     legacy_load_board_allocate(mzx_world, vf, board_offsets[i], board_sizes[i],
       savegame, file_version);
 
     if(mzx_world->board_list[i])
@@ -1109,15 +1107,15 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   free(board_sizes);
 
   // Read global robot
-  fseek(fp, global_robot_pos, SEEK_SET); //don't worry if this fails
-  legacy_load_robot(mzx_world, &mzx_world->global_robot, fp, savegame,
+  vfseek(vf, global_robot_pos, SEEK_SET); //don't worry if this fails
+  legacy_load_robot(mzx_world, &mzx_world->global_robot, vf, savegame,
    file_version);
 
   // Some old worlds have the global_robot marked unused. Always mark it used.
   mzx_world->global_robot.used = 1;
 
   // Go back to where the names are
-  fseek(fp, board_names_pos, SEEK_SET);
+  vfseek(vf, board_names_pos, SEEK_SET);
   for(i = 0; i < num_boards; i++)
   {
     char ignore[LEGACY_BOARD_NAME_SIZE];
@@ -1126,7 +1124,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     if(mzx_world->board_list[i])
       board_name = mzx_world->board_list[i]->board_name;
 
-    if(!fread(board_name, LEGACY_BOARD_NAME_SIZE, 1, fp))
+    if(!vfread(board_name, LEGACY_BOARD_NAME_SIZE, 1, vf))
       board_name[0] = 0;
 
     board_name[LEGACY_BOARD_NAME_SIZE - 1] = '\0';
@@ -1134,7 +1132,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   meter_update_screen(&meter_curr, meter_target);
   meter_restore_screen();
-  fclose(fp);
+  vfclose(vf);
   return;
 
 err_close:
@@ -1145,5 +1143,5 @@ err_close:
 
   error_message(E_IO_READ, 0, NULL);
   meter_restore_screen();
-  fclose(fp);
+  vfclose(vf);
 }
