@@ -31,6 +31,9 @@ USERS
   displayed despite being meaningless.
 + Fixed a bug where some checks in the file manager could fail
   when getcwd returns different slashes than expected.
++ Fixed a bug where checkres would not check the current dir
+  for files when provided with a MZX filename with no path
+  component.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS

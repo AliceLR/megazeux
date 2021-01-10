@@ -224,7 +224,7 @@ static const char *decode_status(enum status status)
   }
 }
 
-static void _get_path(char *dest, const char *src)
+static boolean _get_path(char *dest, const char *src)
 {
   int i;
 
@@ -234,8 +234,13 @@ static void _get_path(char *dest, const char *src)
     i--;
 
   if(i > 0)
+  {
     memcpy(dest, src, i);
-  dest[i] = 0;
+    dest[i] = '\0';
+    return true;
+  }
+  dest[0] = '\0';
+  return false;
 }
 
 static void join_path(char *dest, const char *dir, const char *file)
@@ -2850,7 +2855,8 @@ static enum status parse_file(const char *file_name,
   len = strlen(file_name);
   ext = len >= 4 ? (char *)file_name + len - 4 : NULL;
 
-  _get_path(file_dir, file_name);
+  if(!_get_path(file_dir, file_name))
+    strcpy(file_dir, ".");
 
   if(fp && ext && !strcasecmp(ext, ".MZX"))
   {
