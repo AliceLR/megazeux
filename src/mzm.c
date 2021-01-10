@@ -37,6 +37,7 @@
 #include "world_format.h"
 #include "world_struct.h"
 #include "io/memfile.h"
+#include "io/vfile.h"
 #include "io/zip.h"
 
 
@@ -969,21 +970,19 @@ err_invalid:
 int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
  int mode, int savegame, enum thing layer_convert_id)
 {
-  FILE *input_file;
+  vfile *input_file;
   size_t file_size;
   void *buffer;
   int success;
   int count;
   struct memfile mf;
-  input_file = fopen_unsafe(name, "rb");
+  input_file = vfopen_unsafe(name, "rb");
   if(input_file)
   {
-    fseek(input_file, 0, SEEK_END);
-    file_size = ftell(input_file);
+    file_size = vfilelength(input_file, false);
     buffer = cmalloc(file_size);
-    fseek(input_file, 0, SEEK_SET);
-    count = fread(buffer, file_size, 1, input_file);
-    fclose(input_file);
+    count = vfread(buffer, file_size, 1, input_file);
+    vfclose(input_file);
 
     if(!count)
     {
@@ -1016,7 +1015,7 @@ int load_mzm_memory(struct world *mzx_world, char *name, int start_x,
 
 boolean load_mzm_header(char *name, struct mzm_header *mzm_header)
 {
-  FILE *input_file;
+  vfile *input_file;
   struct memfile mf;
   char buffer[20];
   int read_length;
@@ -1024,11 +1023,11 @@ boolean load_mzm_header(char *name, struct mzm_header *mzm_header)
   mzm_header->width = -1;
   mzm_header->height = -1;
 
-  input_file = fopen_unsafe(name, "rb");
+  input_file = vfopen_unsafe(name, "rb");
   if(input_file)
   {
-    read_length = fread(buffer, 1, 20, input_file);
-    fclose(input_file);
+    read_length = vfread(buffer, 1, 20, input_file);
+    vfclose(input_file);
 
     mfopen(buffer, read_length, &mf);
     if(read_mzm_header(&mf, read_length, mzm_header))
