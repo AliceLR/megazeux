@@ -700,7 +700,10 @@ vfile *validate_legacy_world_file(struct world *mzx_world,
 
   vf = vfopen_unsafe_ext(file, "rb", V_LARGE_BUFFER);
   if(!vf)
+  {
+    error_message(E_IO_READ, 0, NULL);
     return NULL;
+  }
 
   res = __validate_legacy_world_file(vf, savegame);
   if(res == VAL_SUCCESS)
@@ -719,7 +722,10 @@ vfile *validate_legacy_world_file(struct world *mzx_world,
 
       vf = vfopen_unsafe_ext(file, "rb", V_LARGE_BUFFER);
       if(!vf)
+      {
+        error_message(E_IO_READ, 0, NULL);
         return NULL;
+      }
 
       res = __validate_legacy_world_file(vf, savegame);
       if(res == VAL_SUCCESS)
