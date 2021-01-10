@@ -182,7 +182,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   {
     overlay_mode = 0;
     // Undo that last get
-    fseek(vf, -1, SEEK_CUR);
+    vfseek(vf, -1, SEEK_CUR);
   }
 
   cur_board->overlay_mode = overlay_mode;
