@@ -161,8 +161,8 @@ static int get_pw_xor_code(char *password, int pro_method)
 
 struct decrypt_data
 {
-  FILE *source;
-  FILE *dest;
+  vfile *source;
+  vfile *dest;
   const char *file_name;
   unsigned int xor_val;
   int xor_w;
@@ -176,8 +176,8 @@ struct decrypt_data
 
 static long decrypt_backup(struct decrypt_data *data)
 {
-  FILE *source = NULL;
-  FILE *dest = NULL;
+  vfile *source = NULL;
+  vfile *dest = NULL;
   long ret = -1;
   long file_length;
   long left;
@@ -187,15 +187,15 @@ static long decrypt_backup(struct decrypt_data *data)
 
   meter_initial_draw(meter_curr, meter_target, "Writing backup world...");
 
-  source = fopen_unsafe(data->file_name, "rb");
+  source = vfopen_unsafe(data->file_name, "rb");
   if(!source)
     goto err;
 
-  dest = fopen_unsafe(data->backup_name, "wb");
+  dest = vfopen_unsafe(data->backup_name, "wb");
   if(!dest)
     goto err;
 
-  file_length = ftell_and_rewind(source);
+  file_length = vfilelength(source, false);
   meter_target = file_length;
 
   left = file_length;
@@ -204,10 +204,10 @@ static long decrypt_backup(struct decrypt_data *data)
     len = MIN(left, DECRYPT_BUFFER_SIZE);
     left -= len;
 
-    if(!fread(data->buffer, len, 1, source))
+    if(!vfread(data->buffer, len, 1, source))
       goto err;
 
-    if(!fwrite(data->buffer, len, 1, dest))
+    if(!vfwrite(data->buffer, len, 1, dest))
       goto err;
 
     meter_curr += len - 1;
@@ -218,9 +218,9 @@ static long decrypt_backup(struct decrypt_data *data)
 
 err:
   if(source)
-    fclose(source);
+    vfclose(source);
   if(dest)
-    fclose(dest);
+    vfclose(dest);
 
   meter_restore_screen();
   return ret;
@@ -236,13 +236,13 @@ static boolean decrypt_block(struct decrypt_data *data, int block_len)
     len = MIN(block_len, DECRYPT_BUFFER_SIZE);
     block_len -= len;
 
-    if(!fread(data->buffer, len, 1, data->source))
+    if(!vfread(data->buffer, len, 1, data->source))
       return false;
 
     for(i = 0; i < len; i++)
       data->buffer[i] ^= data->xor_val;
 
-    if(!fwrite(data->buffer, len, 1, data->dest))
+    if(!vfwrite(data->buffer, len, 1, data->dest))
       return false;
 
     data->meter_curr += len - 1;
@@ -253,7 +253,7 @@ static boolean decrypt_block(struct decrypt_data *data, int block_len)
 
 static boolean decrypt_and_fix_offset(struct decrypt_data *data)
 {
-  long offset = fgetd(data->source);
+  long offset = vfgetd(data->source);
   if(offset == EOF)
     return false;
 
@@ -262,7 +262,7 @@ static boolean decrypt_and_fix_offset(struct decrypt_data *data)
   // Adjust the offset to account for removing the password...
   offset -= MAX_PASSWORD_LENGTH;
 
-  fputd(offset, data->dest);
+  vfputd(offset, data->dest);
 
   data->meter_curr += 4 - 1;
   meter_update_screen(&data->meter_curr, data->meter_target);
@@ -301,11 +301,11 @@ static void decrypt(const char *file_name)
       goto err_free;
   }
 
-  data->source = fopen_unsafe(data->backup_name, "rb");
+  data->source = vfopen_unsafe(data->backup_name, "rb");
   if(!data->source)
     goto err_free;
 
-  data->dest = fopen_unsafe(file_name, "wb");
+  data->dest = vfopen_unsafe(file_name, "wb");
   if(!data->dest)
   {
     error_message(E_WORLD_DECRYPT_WRITE_PROTECTED, 0, NULL);
@@ -316,7 +316,7 @@ static void decrypt(const char *file_name)
   data->meter_curr = 0;
   meter_initial_draw(data->meter_curr, data->meter_target, "Decrypting...");
 
-  if(!fread(data->buffer, 44, 1, data->source))
+  if(!vfread(data->buffer, 44, 1, data->source))
     goto err_meter;
 
   src_ptr = data->buffer + LEGACY_BOARD_NAME_SIZE;
@@ -341,10 +341,10 @@ static void decrypt(const char *file_name)
    (data->xor_val << 16) | (data->xor_val << 24);
 
   // Copy title
-  if(!fwrite(data->buffer, LEGACY_BOARD_NAME_SIZE, 1, data->dest))
+  if(!vfwrite(data->buffer, LEGACY_BOARD_NAME_SIZE, 1, data->dest))
     goto err_meter;
-  fputc(0, data->dest);
-  fputs("M\x02\x11", data->dest);
+  vfputc(0, data->dest);
+  vfputs("M\x02\x11", data->dest);
 
   data->meter_curr += LEGACY_BOARD_NAME_SIZE + 1 + 3 - 1;
   meter_update_screen(&data->meter_curr, data->meter_target);
@@ -358,20 +358,20 @@ static void decrypt(const char *file_name)
     goto err_meter;
 
   // Decrypt SFX table (if present).
-  num_boards = fgetc(data->source) ^ data->xor_val;
-  fputc(num_boards, data->dest);
+  num_boards = vfgetc(data->source) ^ data->xor_val;
+  vfputc(num_boards, data->dest);
   data->meter_curr++;
   if(!num_boards)
   {
-    int sfx_length = fgetw(data->source) ^ data->xor_w;
-    fputw(sfx_length, data->dest);
+    int sfx_length = vfgetw(data->source) ^ data->xor_w;
+    vfputw(sfx_length, data->dest);
     data->meter_curr += 2;
 
     if(!decrypt_block(data, sfx_length))
       goto err_meter;
 
-    num_boards = fgetc(data->source) ^ data->xor_val;
-    fputc(num_boards, data->dest);
+    num_boards = vfgetc(data->source) ^ data->xor_val;
+    vfputc(num_boards, data->dest);
     data->meter_curr++;
   }
 
@@ -383,8 +383,8 @@ static void decrypt(const char *file_name)
   for(i = 0; i < num_boards; i++)
   {
     // Board length.
-    int board_length = fgetd(data->source) ^ data->xor_d;
-    fputd(board_length, data->dest);
+    int board_length = vfgetd(data->source) ^ data->xor_d;
+    vfputd(board_length, data->dest);
     data->meter_curr += 4;
 
     // Board offset.
@@ -393,7 +393,7 @@ static void decrypt(const char *file_name)
   }
 
   // Decrypt the rest of the file.
-  i = ftell(data->source);
+  i = vftell(data->source);
   decrypt_block(data, file_length - i);
 
 err_meter:
@@ -401,9 +401,9 @@ err_meter:
 
 err_free:
   if(data->source)
-    fclose(data->source);
+    vfclose(data->source);
   if(data->dest)
-    fclose(data->dest);
+    vfclose(data->dest);
 
   free(data);
 }

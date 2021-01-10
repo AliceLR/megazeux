@@ -2171,8 +2171,6 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
  int world_version)
 {
 #ifdef CONFIG_DEBYTECODE
-  FILE *fp;
-
   // TODO we'll cross this bridge when we need to. That shouldn't be
   // until debytecode gets an actual release, though.
 
@@ -2185,13 +2183,13 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
 
   if(!savegame)
   {
-    fp = fopen_unsafe(file, "rb");
-    if(fp)
+    vfile *vf = vfopen_unsafe(file, "rb");
+    if(vf)
     {
-      if(!fseek(fp, 0x1A, SEEK_SET))
+      if(!vfseek(vf, 0x1A, SEEK_SET))
       {
         char tmp[3];
-        if(fread(tmp, 1, 3, fp) == 3)
+        if(vfread(tmp, 1, 3, vf) == 3)
         {
           int old_version = world_magic(tmp);
 
@@ -2199,12 +2197,12 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
           if(old_version < VERSION_SOURCE)
           {
             error_message(E_DBC_WORLD_OVERWRITE_OLD, old_version, NULL);
-            fclose(fp);
+            vfclose(vf);
             return -1;
           }
         }
       }
-      fclose(fp);
+      vfclose(vf);
     }
   }
 #endif /* CONFIG_DEBYTECODE */
