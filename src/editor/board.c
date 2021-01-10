@@ -165,10 +165,9 @@ void replace_current_board(struct world *mzx_world, const char *name)
     if(file_version <= MZX_VERSION)
     {
       int board_id;
-      vfclose(vf);
 
       // Regular board or maybe not a board at all.
-      zp = zip_open_file_read(name);
+      zp = zip_open_vf_read(vf);
 
       // Make sure it's an actual zip.
       if(zp)
