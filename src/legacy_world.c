@@ -460,7 +460,7 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
       goto err_invalid;
     }
     len = vfgetw(vf);
-    if(vfseek(vf, len + WORLD_BLOCK_2_SIZE + 24, SEEK_CUR))
+    if(len < 0 || vfseek(vf, len + WORLD_BLOCK_2_SIZE + 24, SEEK_CUR))
     {
       debug("save block 2\n");
       goto err_invalid;
@@ -476,15 +476,15 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
 
     for(i = 0; i < num_counters; i++)
     {
-      int value = vfgetd(vf);
-      int name_length = vfgetd(vf);
+      vfgetd(vf);
+      len = vfgetd(vf);
 
-      if(value < 0 || name_length < 0 || name_length >= ROBOT_MAX_TR)
+      if(len < 0 || len >= ROBOT_MAX_TR)
       {
-        debug("counter %d: value=%d, name length=%d\n", i, value, name_length);
+        debug("counter %d: name length=%d\n", i, len);
         goto err_invalid;
       }
-      if(vfseek(vf, name_length, SEEK_CUR))
+      if(vfseek(vf, len, SEEK_CUR))
       {
         debug("counter %d name\n", i);
         goto err_invalid;
@@ -703,6 +703,9 @@ vfile *validate_legacy_world_file(struct world *mzx_world,
     return NULL;
 
   res = __validate_legacy_world_file(vf, savegame);
+  if(res == VAL_SUCCESS)
+    return vf;
+
   if(res == VAL_PROTECTED)
   {
     // FIXME should decrypt into a temporary/memory file instead.
@@ -717,18 +720,16 @@ vfile *validate_legacy_world_file(struct world *mzx_world,
       vf = vfopen_unsafe_ext(file, "rb", V_LARGE_BUFFER);
       if(!vf)
         return NULL;
-      res = __validate_legacy_world_file(vf, savegame);
 
-      // If the world is still protected, abort.
-      if(res != VAL_PROTECTED)
+      res = __validate_legacy_world_file(vf, savegame);
+      if(res == VAL_SUCCESS)
         return vf;
     }
-    vfclose(vf);
-
-    error_message(E_WORLD_LOCKED, 0, NULL);
-    return NULL;
+    if(res == VAL_PROTECTED)
+      error_message(E_WORLD_LOCKED, 0, NULL);
   }
-  return vf;
+  vfclose(vf);
+  return NULL;
 }
 
 /**
