@@ -2409,7 +2409,7 @@ static enum status parse_legacy_board(struct memfile *mf,
     ret = parse_legacy_robot(mf, file, board_num, i + 1);
     if(ret != SUCCESS)
     {
-      warnhere("Failed processing robot %d\n", i + 1);
+      warnhere("Error processing robot %d\n", i + 1);
       break;
     }
   }
@@ -2524,15 +2524,15 @@ static enum status parse_legacy_world(struct memfile *mf,
     if(mfseek(mf, board->offset, SEEK_SET) != 0)
     {
       warnhere("Failed to seek to position of board %d\n", i);
-      return CORRUPT_WORLD;
+      continue;
     }
 
     // parse this board atomically
     ret = parse_legacy_board(mf, file, i);
     if(ret != SUCCESS)
     {
-      warnhere("Failed processing board %d\n", i);
-      goto err_out;
+      warnhere("Error processing board %d\n", i);
+      continue;
     }
   }
 
@@ -2549,7 +2549,6 @@ static enum status parse_legacy_world(struct memfile *mf,
   if(ret != SUCCESS)
     warnhere("Failed processing global robot\n");
 
-err_out:
   return ret;
 }
 

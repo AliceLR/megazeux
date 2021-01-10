@@ -34,6 +34,9 @@ USERS
 + Fixed a bug where checkres would not check the current dir
   for files when provided with a MZX filename with no path
   component.
++ checkres now attempts to scan every board in <=2.84 worlds
+  where a corrupt board/robot is found. Due to old world format
+  limitations, robots after a corrupt robot can not be scanned.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS
