@@ -227,6 +227,20 @@ struct file_selector
   char *result;
 };
 
+enum allow_dirs
+{
+  NO_DIRS,
+  ALLOW_ALL_DIRS,
+  ALLOW_SUBDIRS,
+};
+
+enum allow_new
+{
+  NO_NEW_FILES,
+  ALLOW_NEW_FILES,
+  ALLOW_WILDCARD_FILES,
+};
+
 CORE_LIBSPEC int input_window(struct world *mzx_world, const char *title,
  char *buffer, int max_len);
 
@@ -257,10 +271,11 @@ CORE_LIBSPEC struct element *construct_list_box(int x, int y,
  boolean respect_color_codes);
 
 CORE_LIBSPEC int choose_file_ch(struct world *mzx_world,
- const char *const *wildcards, char *ret, const char *title, int dirs_okay);
+ const char *const *wildcards, char *ret, const char *title,
+ enum allow_dirs allow_dirs);
 CORE_LIBSPEC int new_file(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
- const char *title, int dirs_okay);
+ const char *title, enum allow_dirs allow_dirs);
 
 #if defined(CONFIG_UPDATER) || defined(CONFIG_LOADSAVE_METER)
 CORE_LIBSPEC void meter(const char *title, unsigned int progress,
@@ -357,7 +372,7 @@ CORE_LIBSPEC int char_select_next_tile(int current_char,
 
 CORE_LIBSPEC int file_manager(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
- const char *title, int dirs_okay, int allow_new,
+ const char *title, enum allow_dirs allow_dirs, enum allow_new allow_new,
  struct element **dialog_ext, int num_ext, int ext_height);
 #endif // CONFIG_EDITOR
 

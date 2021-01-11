@@ -38,6 +38,11 @@ static inline FILE *platform_fopen_unsafe(const char *path, const char *mode)
   return fopen_unsafe(path, mode);
 }
 
+static inline FILE *platform_tmpfile(void)
+{
+  return tmpfile();
+}
+
 static inline char *platform_getcwd(char *buf, size_t size)
 {
   return getcwd(buf, size);

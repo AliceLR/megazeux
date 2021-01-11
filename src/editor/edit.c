@@ -2431,7 +2431,7 @@ static boolean editor_key(context *ctx, int *key)
             strcpy(export_name, editor->mzm_name_buffer);
 
             if(!new_file(mzx_world, mzm_ext, ".mzm", export_name,
-             "Export MZM", 1))
+             "Export MZM", ALLOW_ALL_DIRS))
             {
               enum mzm_save_mode save_mode;
 
@@ -2840,7 +2840,7 @@ static boolean editor_key(context *ctx, int *key)
             {
               strcpy(import_name, editor->mzb_name_buffer);
               if(!choose_file(mzx_world, mzb_ext, import_name,
-               "Choose board to import", 1))
+               "Choose board to import", ALLOW_ALL_DIRS))
               {
                 strcpy(editor->mzb_name_buffer, import_name);
                 replace_current_board(mzx_world, import_name);
@@ -2886,7 +2886,7 @@ static boolean editor_key(context *ctx, int *key)
 
               strcpy(import_name, editor->chr_name_buffer);
               if(!file_manager(mzx_world, chr_ext, NULL, import_name,
-               "Choose character set to import", 1, 0,
+               "Choose character set to import", ALLOW_ALL_DIRS, NO_NEW_FILES,
                elements, ARRAY_SIZE(elements), 2))
               {
                 strcpy(editor->chr_name_buffer, import_name);
@@ -2900,7 +2900,7 @@ static boolean editor_key(context *ctx, int *key)
             {
               // World file
               if(!choose_file(mzx_world, world_ext, import_name,
-               "Choose world to import", 1))
+               "Choose world to import", ALLOW_ALL_DIRS))
               {
                 // FIXME: Check retval?
                 append_world(mzx_world, import_name);
@@ -2927,7 +2927,7 @@ static boolean editor_key(context *ctx, int *key)
             {
               // Sound effects
               if(!choose_file(mzx_world, sfx_ext, import_name,
-               "Choose SFX file to import", 1))
+               "Choose SFX file to import", ALLOW_ALL_DIRS))
               {
                 FILE *sfx_file;
 
@@ -2986,7 +2986,7 @@ static boolean editor_key(context *ctx, int *key)
               // MZM file
               strcpy(import_name, editor->mzm_name_buffer);
               if(!choose_file(mzx_world, mzm_ext, import_name,
-               "Choose image file to import", 1))
+               "Choose image file to import", ALLOW_ALL_DIRS))
               {
                 struct mzm_header mzm;
                 if(load_mzm_header(import_name, &mzm))
@@ -3047,7 +3047,7 @@ static boolean editor_key(context *ctx, int *key)
         char test_wav[MAX_PATH] = { 0, };
 
         if(!choose_file(mzx_world, sam_ext, test_wav,
-         "Choose a wav file", 1))
+         "Choose a wav file", ALLOW_ALL_DIRS))
         {
           audio_play_sample(test_wav, false, 0);
         }
@@ -3065,7 +3065,7 @@ static boolean editor_key(context *ctx, int *key)
           strcpy(load_world, editor->current_world);
 
           if(!choose_file_ch(mzx_world, world_ext, load_world,
-           "Load World", 1))
+           "Load World", ALLOW_ALL_DIRS))
           {
             // Load world curr_file
             strcpy(editor->current_world, load_world);
@@ -3167,7 +3167,7 @@ static boolean editor_key(context *ctx, int *key)
             char new_mod[MAX_PATH] = { 0 };
 
             if(!choose_file(mzx_world, mod_ext, new_mod,
-             "Choose a module file", 2)) // 2:subdirsonly
+             "Choose a module file", ALLOW_SUBDIRS))
             {
               const char *ext_pos = new_mod + strlen(new_mod) - 4;
               if(ext_pos >= new_mod && !strcasecmp(ext_pos, ".WAV"))
@@ -3204,7 +3204,7 @@ static boolean editor_key(context *ctx, int *key)
             chdir(editor->current_listening_dir);
 
             if(!choose_file(mzx_world, mod_ext, new_mod,
-             "Choose a module file (listening only)", 1))
+             "Choose a module file (listening only)", ALLOW_ALL_DIRS))
             {
               audio_play_module(new_mod, false, 255);
               strcpy(editor->current_listening_mod, new_mod);
@@ -3395,7 +3395,7 @@ static boolean editor_key(context *ctx, int *key)
           char new_path[MAX_PATH];
           strcpy(world_name, editor->current_world);
           if(!new_file(mzx_world, world_ext, ".mzx", world_name,
-           "Save world", 1))
+           "Save world", ALLOW_ALL_DIRS))
           {
             debug("Save path: %s\n", world_name);
 
@@ -3528,7 +3528,7 @@ static boolean editor_key(context *ctx, int *key)
               // Board file
               strcpy(export_name, editor->mzb_name_buffer);
               if(!new_file(mzx_world, mzb_ext, ".mzb", export_name,
-               "Export board file", 1))
+               "Export board file", ALLOW_ALL_DIRS))
               {
                 strcpy(editor->mzb_name_buffer, export_name);
                 save_board_file(mzx_world, cur_board, export_name);
@@ -3551,7 +3551,8 @@ static boolean editor_key(context *ctx, int *key)
 
               strcpy(export_name, editor->chr_name_buffer);
               if(!file_manager(mzx_world, chr_ext, NULL, export_name,
-               "Export character set", 1, 1, elements, ARRAY_SIZE(elements), 2))
+               "Export character set", ALLOW_ALL_DIRS, ALLOW_NEW_FILES,
+               elements, ARRAY_SIZE(elements), 2))
               {
                 path_force_ext(export_name, MAX_PATH, ".chr");
                 ec_save_set_var(export_name, char_offset, char_size);
@@ -3572,7 +3573,7 @@ static boolean editor_key(context *ctx, int *key)
             {
               // Sound effects
               if(!new_file(mzx_world, sfx_ext, ".sfx", export_name,
-               "Export SFX file", 1))
+               "Export SFX file", ALLOW_ALL_DIRS))
               {
                 FILE *sfx_file;
 
@@ -3600,7 +3601,7 @@ static boolean editor_key(context *ctx, int *key)
                (MZX_VERSION_PREV >> 8) & 0xFF, MZX_VERSION_PREV & 0xFF);
 
               if(!new_file(mzx_world, world_ext, ".mzx", export_name,
-               title, 1))
+               title, ALLOW_ALL_DIRS))
               {
                 save_world(mzx_world, export_name, false, MZX_VERSION_PREV);
               }

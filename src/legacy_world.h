@@ -25,10 +25,9 @@
 
 __M_BEGIN_DECLS
 
-#include <stdio.h>
-
 #include "world.h"
 #include "world_struct.h"
+#include "io/vfile.h"
 
 /****************************
  * LEGACY WORLD FORMAT INFO *
@@ -95,10 +94,10 @@ __M_BEGIN_DECLS
  * (block 3)
  */
 
-void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
+void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
  boolean savegame, int file_version, char *name, boolean *faded);
 
-enum val_result validate_legacy_world_file(struct world *mzx_world,
+vfile *validate_legacy_world_file(struct world *mzx_world,
  const char *file, boolean savegame);
 
 __M_END_DECLS

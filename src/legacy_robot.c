@@ -33,8 +33,9 @@
 #include "util.h"
 #include "world.h"
 #include "world_struct.h"
+#include "io/vfile.h"
 
-struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
+struct robot *legacy_load_robot_allocate(struct world *mzx_world, vfile *vf,
  int savegame, int file_version, boolean *truncated)
 {
   struct robot *cur_robot = cmalloc(sizeof(struct robot));
@@ -45,7 +46,7 @@ struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
   cur_robot->program_source = NULL;
   cur_robot->num_labels = 0;
 
-  if(!legacy_load_robot(mzx_world, cur_robot, fp, savegame, file_version))
+  if(!legacy_load_robot(mzx_world, cur_robot, vf, savegame, file_version))
     *truncated = true;
 
   return cur_robot;
@@ -307,21 +308,21 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
 }
 
 boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
- FILE *fp, int savegame, int version)
+ vfile *vf, int savegame, int version)
 {
-  int robot_location = ftell(fp);
+  int robot_location = vftell(vf);
   size_t partial_size = legacy_calculate_partial_robot_size(savegame, version);
   char *buffer = cmalloc(partial_size);
   boolean truncated = true;
   size_t full_size;
 
-  if(fread(buffer, partial_size, 1, fp))
+  if(vfread(buffer, partial_size, 1, vf))
   {
     full_size = legacy_load_robot_calculate_size(buffer, savegame, version);
     buffer = crealloc(buffer, full_size);
 
     if((partial_size == full_size) ||
-     fread(buffer + partial_size, full_size - partial_size, 1, fp))
+     vfread(buffer + partial_size, full_size - partial_size, 1, vf))
       truncated = false;
   }
 
@@ -332,7 +333,7 @@ boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
     error_message(E_BOARD_ROBOT_CORRUPT, robot_location, NULL);
     create_blank_robot_program(cur_robot);
     strcpy(cur_robot->robot_name, "<<error>>");
-    fseek(fp, 0, SEEK_END);
+    vfseek(vf, 0, SEEK_END);
   }
   else
   {
@@ -345,22 +346,22 @@ boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
   return !truncated;
 }
 
-static void legacy_load_scroll(struct scroll *cur_scroll, FILE *fp)
+static void legacy_load_scroll(struct scroll *cur_scroll, vfile *vf)
 {
   int scroll_size;
 
   cur_scroll->mesg = NULL;
-  cur_scroll->num_lines = fgetw(fp);
-  fgetw(fp); // Skip junk
-  scroll_size = fgetw(fp);
+  cur_scroll->num_lines = vfgetw(vf);
+  vfgetw(vf); // Skip junk
+  scroll_size = vfgetw(vf);
   cur_scroll->mesg_size = scroll_size;
-  cur_scroll->used = fgetc(fp);
+  cur_scroll->used = vfgetc(vf);
 
   if(scroll_size < 0)
     goto scroll_err;
 
   cur_scroll->mesg = cmalloc(scroll_size);
-  if(!fread(cur_scroll->mesg, scroll_size, 1, fp))
+  if(!vfread(cur_scroll->mesg, scroll_size, 1, vf))
     goto scroll_err;
 
   if(scroll_size < 3)
@@ -380,26 +381,26 @@ scroll_err:
   strcpy(cur_scroll->mesg, "\x01\x0A");
 }
 
-struct scroll *legacy_load_scroll_allocate(FILE *fp)
+struct scroll *legacy_load_scroll_allocate(vfile *vf)
 {
   struct scroll *cur_scroll = cmalloc(sizeof(struct scroll));
-  legacy_load_scroll(cur_scroll, fp);
+  legacy_load_scroll(cur_scroll, vf);
   return cur_scroll;
 }
 
-static void legacy_load_sensor(struct sensor *cur_sensor, FILE *fp)
+static void legacy_load_sensor(struct sensor *cur_sensor, vfile *vf)
 {
-  if(!fread(cur_sensor->sensor_name, LEGACY_ROBOT_NAME_SIZE, 1, fp))
+  if(!vfread(cur_sensor->sensor_name, LEGACY_ROBOT_NAME_SIZE, 1, vf))
     goto sensor_err;
 
-  cur_sensor->sensor_char = fgetc(fp);
+  cur_sensor->sensor_char = vfgetc(vf);
 
-  if(!fread(cur_sensor->robot_to_mesg, LEGACY_ROBOT_NAME_SIZE, 1, fp))
+  if(!vfread(cur_sensor->robot_to_mesg, LEGACY_ROBOT_NAME_SIZE, 1, vf))
     goto sensor_err;
 
   cur_sensor->sensor_name[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
   cur_sensor->robot_to_mesg[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
-  cur_sensor->used = fgetc(fp);
+  cur_sensor->used = vfgetc(vf);
 
   return;
 
@@ -411,9 +412,9 @@ sensor_err:
   cur_sensor->used = 1;
 }
 
-struct sensor *legacy_load_sensor_allocate(FILE *fp)
+struct sensor *legacy_load_sensor_allocate(vfile *vf)
 {
   struct sensor *cur_sensor = cmalloc(sizeof(struct sensor));
-  legacy_load_sensor(cur_sensor, fp);
+  legacy_load_sensor(cur_sensor, vf);
   return cur_sensor;
 }
