@@ -44,6 +44,7 @@ enum vfileflags_private
   VF_FILE               = (1<<0),
   VF_MEMORY             = (1<<1),
   VF_MEMORY_EXPANDABLE  = (1<<2),
+  VF_MEMORY_FREE        = (1<<3), // Free memory buffer on vfclose.
 //VF_IN_ARCHIVE         = (1<<3),
   VF_READ               = (1<<4),
   VF_WRITE              = (1<<5),
@@ -59,6 +60,10 @@ struct vfile
   FILE *fp;
 
   struct memfile mf;
+  // Local copy of pointer/size of expandable vfile buffer.
+  void *local_buffer;
+  size_t local_buffer_size;
+  // External copy of pointer/size of expandable vfile buffer.
   void **external_buffer;
   size_t *external_buffer_size;
 
@@ -217,9 +222,45 @@ vfile *vfile_init_mem_ext(void **external_buffer, size_t *external_buffer_size,
   assert(vf->flags & VF_WRITE);
 
   vf->flags |= VF_MEMORY_EXPANDABLE;
+  vf->local_buffer = *external_buffer;
+  vf->local_buffer_size = *external_buffer_size;
   vf->external_buffer = external_buffer;
   vf->external_buffer_size = external_buffer_size;
   return vf;
+}
+
+/**
+ * Create a temporary vfile.
+ * If `initial_size` is non-zero, this function will attempt to allocate an
+ * expandable temporary file in RAM with this size. If allocation fails or if
+ * `initial_size` is zero, tmpfile() will be called instead.
+ */
+vfile *vtempfile(size_t initial_size)
+{
+  FILE *fp;
+  vfile *vf;
+
+  if(initial_size)
+  {
+    void *buffer = malloc(initial_size);
+    if(buffer)
+    {
+      vf = vfile_init_mem(buffer, initial_size, "wb+");
+      vf->flags |= VF_MEMORY_EXPANDABLE | VF_MEMORY_FREE;
+      vf->local_buffer = buffer;
+      vf->local_buffer_size = initial_size;
+      return vf;
+    }
+  }
+
+  fp = platform_tmpfile();
+  if(fp)
+  {
+    setvbuf(fp, NULL, _IOFBF, VFILE_SMALL_BUFFER_SIZE);
+    return vfile_init_fp(fp, "wb+");
+  }
+
+  return NULL;
 }
 
 /**
@@ -230,6 +271,17 @@ int vfclose(vfile *vf)
   int retval = 0;
 
   assert(vf);
+
+  if((vf->flags & VF_MEMORY) && (vf->flags & VF_MEMORY_FREE))
+  {
+    free(vf->local_buffer);
+    if(vf->external_buffer)
+    {
+      // Make sure these didn't desync somehow...
+      assert(vf->local_buffer == *(vf->external_buffer));
+      *(vf->external_buffer) = NULL;
+    }
+  }
 
   if(vf->flags & VF_FILE)
     retval = fclose(vf->fp);
@@ -326,7 +378,7 @@ int vstat(const char *path, struct stat *buf)
 static inline boolean vfile_ensure_space(int amount_to_write, vfile *vf)
 {
   struct memfile *mf = &(vf->mf);
-  ssize_t new_size;
+  size_t new_size;
 
   assert(vf->flags & VF_MEMORY);
 
@@ -339,14 +391,34 @@ static inline boolean vfile_ensure_space(int amount_to_write, vfile *vf)
     if(!(vf->flags & VF_MEMORY_EXPANDABLE))
       return false;
 
-    // TODO it would be cool if this could have a separate alloc size.
     new_size = (mf->current - mf->start) + amount_to_write;
-    mfresize(new_size, mf);
+    if(new_size > vf->local_buffer_size)
+    {
+      size_t new_size_alloc = 32;
+      void *t;
+      int i;
 
-    *(vf->external_buffer) = mf->start;
-    *(vf->external_buffer_size) = new_size;
+      for(i = 0; i < 64 && new_size_alloc < new_size; i++)
+        new_size_alloc <<= 1;
 
-    return (mf->end - mf->start) >= new_size;
+      if(i >= 64)
+        return false;
+
+      t = realloc(vf->local_buffer, new_size_alloc);
+      if(!t)
+        return false;
+
+      vf->local_buffer = t;
+      vf->local_buffer_size = new_size_alloc;
+
+      if(vf->external_buffer)
+        *(vf->external_buffer) = t;
+      if(vf->external_buffer_size)
+        *(vf->external_buffer_size) = new_size_alloc;
+    }
+    mfmove(vf->local_buffer, new_size, mf);
+
+    return (mf->end - mf->start) >= (ptrdiff_t)new_size;
   }
   return true;
 }

@@ -100,6 +100,27 @@ static inline FILE *platform_fopen_unsafe(const char *path, const char *mode)
   return fopen_unsafe(path, mode);
 }
 
+static inline FILE *platform_tmpfile(void)
+{
+#ifdef WIDE_PATHS
+  /**
+   * The non-terrible solution to doing this was introduced around roughly the
+   * same time wide path support was so just tie them together. This also
+   * hopefully means that user dirs with unicode characters won't break.
+   */
+  wchar_t wpath[MAX_PATH];
+  wchar_t wfile[MAX_PATH];
+
+  if(GetTempPathW(MAX_PATH, wpath))
+  {
+    if(GetTempFileNameW(wpath, L"MZX", 0, wfile))
+      return _wfopen(wfile, L"wb+");
+  }
+#endif
+  /* This attempts to put a file in C:\ and generally is terrible! */
+  return tmpfile();
+}
+
 static inline char *platform_getcwd(char *buf, size_t size)
 {
 #ifdef WIDE_PATHS
