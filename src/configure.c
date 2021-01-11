@@ -92,7 +92,6 @@
 
 #ifdef __EMSCRIPTEN__
 #define AUDIO_SAMPLE_RATE 48000
-#define AUTO_DECRYPT_WORLDS true
 #endif
 
 // End arch-specific config.
@@ -140,7 +139,7 @@
 #endif
 
 #ifndef AUTO_DECRYPT_WORLDS
-#define AUTO_DECRYPT_WORLDS false
+#define AUTO_DECRYPT_WORLDS true
 #endif
 
 #ifdef CONFIG_UPDATER

@@ -164,6 +164,7 @@ struct decrypt_data
   vfile *source;
   vfile *dest;
   const char *file_name;
+  size_t source_length;
   unsigned int xor_val;
   int xor_w;
   int xor_d;
@@ -269,50 +270,15 @@ static boolean decrypt_and_fix_offset(struct decrypt_data *data)
   return true;
 }
 
-static void decrypt(const char *file_name)
+static boolean decrypt(struct decrypt_data *data)
 {
-  struct decrypt_data *data;
-  int file_length;
   int pro_method;
   int i;
   int num_boards;
   char *src_ptr;
+  char *magic_pos;
 
-  data = cmalloc(sizeof(struct decrypt_data));
-  memset(data, 0, sizeof(struct decrypt_data));
-
-  data->file_name = file_name;
-  snprintf(data->backup_name, MAX_PATH, "%.*s.locked", MAX_PATH - 8, file_name);
-
-  file_length = decrypt_backup(data);
-  if(file_length < 0)
-  {
-    // Try a shorter name...
-    ptrdiff_t pos = strrchr(file_name, '.') - file_name;
-    if(pos >= 0 && pos < MAX_PATH)
-    {
-      data->backup_name[pos] = '\0';
-
-      if(path_force_ext(data->backup_name, MAX_PATH, ".LCK"))
-        file_length = decrypt_backup(data);
-    }
-
-    if(file_length < 0)
-      goto err_free;
-  }
-
-  data->source = vfopen_unsafe(data->backup_name, "rb");
-  if(!data->source)
-    goto err_free;
-
-  data->dest = vfopen_unsafe(file_name, "wb");
-  if(!data->dest)
-  {
-    error_message(E_WORLD_DECRYPT_WRITE_PROTECTED, 0, NULL);
-    goto err_free;
-  }
-
-  data->meter_target = (file_length - MAX_PASSWORD_LENGTH);
+  data->meter_target = (data->source_length - MAX_PASSWORD_LENGTH);
   data->meter_curr = 0;
   meter_initial_draw(data->meter_curr, data->meter_target, "Decrypting...");
 
@@ -343,8 +309,14 @@ static void decrypt(const char *file_name)
   // Copy title
   if(!vfwrite(data->buffer, LEGACY_BOARD_NAME_SIZE, 1, data->dest))
     goto err_meter;
+
+  // Protection method.
   vfputc(0, data->dest);
-  vfputs("M\x02\x11", data->dest);
+
+  // Copy magic.
+  magic_pos = data->buffer + LEGACY_BOARD_NAME_SIZE + 1 + MAX_PASSWORD_LENGTH;
+  if(!vfwrite(magic_pos, 3, 1, data->dest))
+    goto err_meter;
 
   data->meter_curr += LEGACY_BOARD_NAME_SIZE + 1 + 3 - 1;
   meter_update_screen(&data->meter_curr, data->meter_target);
@@ -394,10 +366,103 @@ static void decrypt(const char *file_name)
 
   // Decrypt the rest of the file.
   i = vftell(data->source);
-  decrypt_block(data, file_length - i);
+  if(!decrypt_block(data, data->source_length - i))
+    goto err_meter;
+
+  meter_restore_screen();
+  return true;
 
 err_meter:
   meter_restore_screen();
+  return false;
+}
+
+static vfile *legacy_decrypt_world_to_temp_file(vfile *source)
+{
+  struct decrypt_data *data;
+  vfile *dest;
+  size_t source_length = vfilelength(source, true);
+
+  debug("Attempting decrypt: to temporary file.\n");
+  dest = vtempfile(source_length - MAX_PASSWORD_LENGTH);
+  if(!dest)
+  {
+    debug("Attempting decrypt: to _DECRYPT.TMP\n");
+    dest = vfopen_unsafe("_DECRYPT.TMP", "wb+");
+    if(!dest)
+      return NULL;
+  }
+
+  data = ccalloc(1, sizeof(struct decrypt_data));
+
+  data->source_length = source_length;
+  data->source = source;
+  data->dest = dest;
+
+  if(!decrypt(data))
+  {
+    vfclose(data->dest);
+    free(data);
+    return NULL;
+  }
+  free(data);
+  return dest;
+}
+
+static vfile *legacy_decrypt_world(const char *file_name)
+{
+  struct decrypt_data *data;
+  vfile *dest;
+  int file_length;
+
+  data = ccalloc(1, sizeof(struct decrypt_data));
+
+  data->file_name = file_name;
+  snprintf(data->backup_name, MAX_PATH, "%.*s.locked", MAX_PATH - 8, file_name);
+  debug("Attempting decrypt: to '%s'.\n", data->backup_name);
+
+  file_length = decrypt_backup(data);
+  if(file_length < 0)
+  {
+    // Try a shorter name...
+    ptrdiff_t pos = strrchr(file_name, '.') - file_name;
+    if(pos >= 0 && pos < MAX_PATH)
+    {
+      data->backup_name[pos] = '\0';
+
+      if(path_force_ext(data->backup_name, MAX_PATH, ".LCK"))
+      {
+        debug("Attempting decrypt: to '%s'.\n", data->backup_name);
+        file_length = decrypt_backup(data);
+      }
+    }
+
+    if(file_length < 0)
+    {
+      free(data);
+      return NULL;
+    }
+  }
+
+  data->source_length = file_length;
+  data->source = vfopen_unsafe(data->backup_name, "rb");
+  if(!data->source)
+    goto err_free;
+
+  data->dest = vfopen_unsafe_ext(file_name, "wb", V_SMALL_BUFFER);
+  if(!data->dest)
+  {
+    error_message(E_WORLD_DECRYPT_WRITE_PROTECTED, 0, NULL);
+    goto err_free;
+  }
+
+  if(!decrypt(data))
+    goto err_free;
+
+  dest = data->dest;
+  vfclose(data->source);
+  free(data);
+  return dest;
 
 err_free:
   if(data->source)
@@ -406,6 +471,7 @@ err_free:
     vfclose(data->dest);
 
   free(data);
+  return NULL;
 }
 
 
@@ -711,16 +777,25 @@ vfile *validate_legacy_world_file(struct world *mzx_world,
 
   if(res == VAL_PROTECTED)
   {
-    // FIXME should decrypt into a temporary/memory file instead.
-    if(conf->auto_decrypt_worlds || !has_video_initialized() ||
-     !confirm(mzx_world, "This world may be password protected. Decrypt it?"))
+    if(conf->auto_decrypt_worlds || !has_video_initialized())
+    {
+      // Attempt to decrypt to a temporary file.
+      vfile *tmp = legacy_decrypt_world_to_temp_file(vf);
+      if(tmp)
+      {
+        vfclose(vf);
+        return tmp;
+      }
+      error_message(E_IO_WRITE, 0, NULL);
+      return NULL;
+    }
+
+    if(!confirm(mzx_world, "This world may be password protected. Decrypt it?"))
     {
       vfclose(vf);
 
       // Decrypt and try again
-      decrypt(file);
-
-      vf = vfopen_unsafe_ext(file, "rb", V_LARGE_BUFFER);
+      vf = legacy_decrypt_world(file);
       if(!vf)
       {
         error_message(E_IO_READ, 0, NULL);
