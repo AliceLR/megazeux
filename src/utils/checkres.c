@@ -2167,6 +2167,97 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 /* Legacy Worlds */
 /*****************/
 
+#define MAX_PASSWORD_LENGTH 15
+
+// From legacy_world.c
+static uint8_t get_pw_xor_code(char *password, int pro_method)
+{
+  static const char magic_code[16] =
+   "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
+
+  int work = 85; // Start with 85... (01010101)
+  size_t i;
+
+  // First, normalize password...
+  for(i = 0; i < MAX_PASSWORD_LENGTH; i++)
+  {
+    password[i] ^= magic_code[i];
+    password[i] -= 0x12 + pro_method;
+    password[i] ^= 0x8D;
+  }
+
+  // Clear pw after first null
+  for(i = strlen(password); i < MAX_PASSWORD_LENGTH; i++)
+  {
+    password[i] = 0;
+  }
+
+  for(i = 0; i < MAX_PASSWORD_LENGTH; i++)
+  {
+    //For each byte, roll once to the left and xor in pw byte if it
+    //is an odd character, or add in pw byte if it is an even character.
+    work <<= 1;
+    if(work > 255)
+      work ^= 257; // Wraparound from roll
+
+    if(i & 1)
+    {
+      work += (signed char)password[i]; // Add (even byte)
+      if(work > 255)
+        work ^= 257; // Wraparound from add
+    }
+    else
+    {
+      work ^= (signed char)password[i]; // XOR (odd byte);
+    }
+  }
+  // To factor in protection method, add it in and roll one last time
+  work += pro_method;
+  if(work > 255)
+    work ^= 257;
+
+  work <<= 1;
+  if(work > 255)
+    work ^= 257;
+
+  // Can't be 0-
+  if(work == 0)
+    work = 86; // (01010110)
+  // Done!
+  return work;
+}
+
+#if ARCHITECTURE_BITS == 64
+#define ALIGN_TYPE uint64_t
+#define ALIGN_XOR(x) ((x) | (x << 8) | (x << 16) | (x << 24) | \
+ (x << 32) | (x << 40) | (x << 48) | (x << 56))
+#else
+#define ALIGN_TYPE uint32_t
+#define ALIGN_XOR(x) ((x) | (x << 8) | (x << 16) | (x << 24))
+#endif
+
+static void _decrypt_legacy_world(struct memfile *mf, char *password,
+ int protection_method)
+{
+  ALIGN_TYPE xor = get_pw_xor_code(password, protection_method);
+  ALIGN_TYPE xor_w = ALIGN_XOR(xor);
+  debug("xor=%u, password: %s\n", xor, password);
+
+  unsigned char *pos = mf->current;
+
+  while(pos < mf->end && ((size_t)pos) % sizeof(ALIGN_TYPE))
+    *(pos++) ^= xor;
+
+  while(mf->end - pos >= (ptrdiff_t)sizeof(ALIGN_TYPE))
+  {
+    *((ALIGN_TYPE *)pos) ^= xor_w;
+    pos += sizeof(ALIGN_TYPE);
+  }
+
+  while(pos < mf->end)
+    *(pos++) ^= xor;
+}
+
 static enum status parse_legacy_robot(struct memfile *mf,
  struct base_file *file, int board_num, int robot_num)
 {
@@ -2423,7 +2514,7 @@ struct legacy_board {
 };
 
 static enum status parse_legacy_world(struct memfile *mf,
- struct base_file *file)
+ struct base_file *file, int protection_method)
 {
   int global_robot_offset;
   struct legacy_board board_list[MAX_BOARDS];
@@ -2438,6 +2529,9 @@ static enum status parse_legacy_world(struct memfile *mf,
     warnhere("couldn't seek to global robot position (truncated)\n");
     return CORRUPT_WORLD;
   }
+  // Protected worlds: everything is offset 15 bytes.
+  if(protection_method)
+    mfseek(mf, MAX_PASSWORD_LENGTH, SEEK_CUR);
 
   // Absolute offset (in bytes) of global robot
   global_robot_offset = mfgetd(mf);
@@ -2778,16 +2872,50 @@ static enum status parse_board_file(struct memfile *mf, struct base_file *file)
 
 static enum status parse_world_file(struct memfile *mf, struct base_file *file)
 {
-  unsigned char magic[3];
+  unsigned char magic[4];
+  int protection_method;
   int file_version;
+
+  // Truncation safety check.
+  if(!mfhasspace(64, mf))
+    return FREAD_FAILED;
 
   // skip to protected byte; don't care about world name
   if(mfseek(mf, LEGACY_WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
     return FSEEK_FAILED;
 
-  // can't yet support protected worlds
-  if(mfgetc(mf) != 0)
-    return PROTECTED_WORLD;
+  protection_method = mfgetc(mf);
+  if(protection_method != 0)
+  {
+    // World is probably protected (or possibly junk).
+    char password[16];
+    long magic_pos;
+
+    if(protection_method < 0 || protection_method > 3)
+      return MAGIC_CHECK_FAILED;
+
+    if(mfread(password, 1, MAX_PASSWORD_LENGTH, mf) != MAX_PASSWORD_LENGTH)
+      return FREAD_FAILED;
+    password[MAX_PASSWORD_LENGTH] = '\0';
+
+    magic_pos = mftell(mf);
+    if(mfread(magic, 1, 4, mf) != 4)
+      return FREAD_FAILED;
+
+    file_version = _world_magic(magic);
+    if(file_version <= 0)
+    {
+      // 1.xx world magic is located one byte further in the file.
+      file_version = _world_magic(magic + 1);
+      if(file_version != V100)
+        return MAGIC_CHECK_FAILED;
+
+      return MZX_100_NOT_SUPPORTED;
+    }
+    mfseek(mf, magic_pos + 3, SEEK_SET);
+    _decrypt_legacy_world(mf, password, protection_method);
+    mfseek(mf, magic_pos, SEEK_SET);
+  }
 
   // read in world magic (version)
   if(mfread(magic, 1, 3, mf) != 3)
@@ -2804,7 +2932,7 @@ static enum status parse_world_file(struct memfile *mf, struct base_file *file)
   file->world_version = file_version;
 
   if(file_version <= MZX_LEGACY_FORMAT_VERSION)
-    return parse_legacy_world(mf, file);
+    return parse_legacy_world(mf, file, protection_method);
 
   if(file_version <= MZX_VERSION)
     return parse_world(mf, file, 0);

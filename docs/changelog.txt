@@ -37,6 +37,7 @@ USERS
 + checkres now attempts to scan every board in <=2.84 worlds
   where a corrupt board/robot is found. Due to old world format
   limitations, robots after a corrupt robot can not be scanned.
++ checkres now supports scanning protected worlds.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS
