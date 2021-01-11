@@ -707,6 +707,30 @@ UNITTEST(vfsafegets)
   }
 }
 
+UNITTEST(vtempfile)
+{
+  SECTION(File)
+  {
+    ScopedFile<vfile, vfclose> vf = vtempfile(0);
+    ASSERT(vf);
+    test_vfwrite(vf);
+  }
+
+  SECTION(Memory)
+  {
+    ScopedFile<vfile, vfclose> vf = vtempfile(arraysize(test_data));
+    ASSERT(vf);
+    test_vfwrite(vf);
+  }
+
+  SECTION(MemorySmallInit)
+  {
+    ScopedFile<vfile, vfclose> vf = vtempfile(1);
+    ASSERT(vf);
+    test_vfputc(vf);
+  }
+}
+
 UNITTEST(Filesystem)
 {
   static char execdir[1024];
