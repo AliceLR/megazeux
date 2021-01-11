@@ -2241,9 +2241,9 @@ static void _decrypt_legacy_world(struct memfile *mf, char *password,
 {
   ALIGN_TYPE xor = get_pw_xor_code(password, protection_method);
   ALIGN_TYPE xor_w = ALIGN_XOR(xor);
-  debug("xor=%u, password: %s\n", xor, password);
-
   unsigned char *pos = mf->current;
+
+  debug("xor=%u, password: %s\n", (unsigned int)xor, password);
 
   while(pos < mf->end && ((size_t)pos) % sizeof(ALIGN_TYPE))
     *(pos++) ^= xor;
