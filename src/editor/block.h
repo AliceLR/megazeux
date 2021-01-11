@@ -42,6 +42,8 @@ enum block_command
   BLOCK_CMD_PAINT,
   BLOCK_CMD_SAVE_MZM,
   BLOCK_CMD_LOAD_MZM,
+  BLOCK_CMD_SAVE_ANSI,
+  BLOCK_CMD_LOAD_ANSI,
 };
 
 struct block_info

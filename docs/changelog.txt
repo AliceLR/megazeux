@@ -7,6 +7,9 @@ USERS
   can now be selected from CustomBlock, CustomFloor, and Text.
   Canceling the object type dialog no longer cancels the current
   block or MZM placement.
++ Reimplemented ANSi import/export support for the editor. ANSi
+  and TXT files can be imported in the editor with Alt+I and can
+  be exported by selecting a block (Alt+B).
 + Added support for 800x240 mode to the 3DS port. This mode can
   be toggled with the 3DS keyboard. (asie)
 + Added a list of variables related to RAM usage to the counter

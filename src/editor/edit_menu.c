@@ -113,24 +113,26 @@ static const char *const minimal_help_mode_mesg[3] =
   "Alt+H : Vlayer Menu",
 };
 
-static const char cursor_mode_names[6][10] =
+static const char cursor_mode_names[MAX_CURSOR_MODE][10] =
 {
   " Current:",
   " Drawing:",
   "    Text:",
   "   Block:",
   "   Block:",
-  "  Import:"
+  "  Import:",
+  "  Import:",
 };
 
-static const char cursor_mode_help[6][32] =
+static const char cursor_mode_help[MAX_CURSOR_MODE][32] =
 {
   "",
   "",
   "Type to place text",
   "Press ENTER on other corner",
   "Press ENTER to place block",
-  "Press ENTER to place MZM"
+  "Press ENTER to place MZM",
+  "Press ENTER to place ANSi",
 };
 
 #define num2hex(x) ((x) > 9 ? 87 + (x) : 48 + (x))
@@ -160,10 +162,14 @@ static void draw_menu_status(struct edit_menu_subcontext *edit_menu, int line)
 
   switch(edit_menu->cursor_mode)
   {
+    case MAX_CURSOR_MODE:
+      return;
+
     case CURSOR_TEXT:
     case CURSOR_BLOCK_SELECT:
     case CURSOR_BLOCK_PLACE:
     case CURSOR_MZM_PLACE:
+    case CURSOR_ANSI_PLACE:
     {
       write_string(cursor_mode_help[edit_menu->cursor_mode],
        (Uint32)display_next_pos, line, EC_MODE_HELP, false);
