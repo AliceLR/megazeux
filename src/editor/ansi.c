@@ -844,7 +844,7 @@ boolean validate_ansi(const char *filename, int wrap_width, int *width, int *hei
   }
   trace("--ANSI-- scan width=%d, height=%d\n", ansi.scan_width, ansi.scan_height);
 
-  if(ansi.terminal_width <= 0)
+  if(ansi.terminal_width <= 0 || ansi.scan_width < ansi.terminal_width)
   {
     /**
      * If no terminal width was used, a line end was present at the end of the
