@@ -2,6 +2,9 @@ GIT
 
 USERS
 
++ Protected worlds are now decrypted to RAM or a temporary file
+  when 'auto_decrypt_worlds' is enabled and the original file is
+  left unmodified. This setting is now enabled by default.
 + When loading a layer MZM to the board in the editor, instead
   of always loading the MZM as CustomBlocks the conversion type
   can now be selected from CustomBlock, CustomFloor, and Text.
