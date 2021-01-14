@@ -331,6 +331,42 @@ static void update_player_input(struct world *mzx_world)
   int left_pressed = get_key_status(keycode_internal_wrt_numlock, IKEY_LEFT);
   int del_pressed = get_key_status(keycode_internal_wrt_numlock, IKEY_DELETE);
 
+  // Experimental buffering.
+  int key_pressed = get_key(keycode_internal);
+  switch(key_pressed)
+  {
+    case IKEY_SPACE:
+      if(!space_pressed)
+        trace("Buffered space press!\n");
+      space_pressed = 1;
+      break;
+    case IKEY_DELETE:
+      if(!del_pressed)
+        trace("Buffered delete press!\n");
+      del_pressed = 1;
+      break;
+    case IKEY_UP:
+      if(!up_pressed)
+        trace("Buffered up press!\n");
+      up_pressed = 1;
+      break;
+    case IKEY_DOWN:
+      if(!down_pressed)
+        trace("Buffered down press!\n");
+      down_pressed = 1;
+      break;
+    case IKEY_RIGHT:
+      if(!right_pressed)
+        trace("Buffered right press!\n");
+      right_pressed = 1;
+      break;
+    case IKEY_LEFT:
+      if(!left_pressed)
+        trace("Buffered left press!\n");
+      left_pressed = 1;
+      break;
+  }
+
   // Shoot
   if(space_pressed && mzx_world->bi_shoot_status)
   {
