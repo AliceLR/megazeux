@@ -831,8 +831,25 @@ Uint32 get_key_status(enum keycode_type type, Uint32 index)
       return status->keymap[index];
 
     case keycode_internal_wrt_numlock:
-      return status->keymap[index] ||
-        status->keymap[reverse_keysym_numlock(index)];
+    {
+      enum keycode alt = reverse_keysym_numlock(index);
+
+      if(status->keymap[index])
+        return status->keymap[index];
+      if(status->keymap[alt])
+        return status->keymap[alt];
+
+      /* This is used mainly for UI and built-in player controls so, finally,
+       * if the keymap isn't set but this value is the pressed key (meaning it
+       * was pressed and released during the same cycle), treat it as 1 (pressed).
+       */
+      if(status->key == index)
+        trace("Buffered press for key # %d\n", index);
+      if(status->key == alt && alt != index)
+        trace("Buffered press for key # %d\n", alt);
+
+      return status->key == index || status->key == alt;
+    }
 
     default:
       return 0;
