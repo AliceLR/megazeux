@@ -816,44 +816,51 @@ Uint32 get_key(enum keycode_type type)
 Uint32 get_key_status(enum keycode_type type, Uint32 index)
 {
   const struct buffered_status *status = load_status();
+  enum keycode first;
+  enum keycode second;
+
   index = MIN((Uint32)index, STATUS_NUM_KEYCODES - 1);
 
   switch(type)
   {
     case keycode_pc_xt:
-    {
-      enum keycode first, second;
       first = convert_xt_internal(index, &second);
-      return (status->keymap[first] || status->keymap[second]);
-    }
+      break;
 
     case keycode_internal:
-      return status->keymap[index];
+      first = index;
+      second = IKEY_UNKNOWN;
+      break;
 
     case keycode_internal_wrt_numlock:
-    {
-      enum keycode alt = reverse_keysym_numlock(index);
-
-      if(status->keymap[index])
-        return status->keymap[index];
-      if(status->keymap[alt])
-        return status->keymap[alt];
-
-      /* This is used mainly for UI and built-in player controls so, finally,
-       * if the keymap isn't set but this value is the pressed key (meaning it
-       * was pressed and released during the same cycle), treat it as 1 (pressed).
-       */
-      if(status->key == index)
-        trace("Buffered press for key # %d\n", index);
-      if(status->key == alt && alt != index)
-        trace("Buffered press for key # %d\n", alt);
-
-      return status->key == index || status->key == alt;
-    }
+      first = index;
+      second = reverse_keysym_numlock(index);
+      break;
 
     default:
       return 0;
   }
+
+  if(first && status->keymap[first])
+    return status->keymap[first];
+  if(second && status->keymap[second])
+    return status->keymap[second];
+
+  /**
+   * If the keymap isn't set but this value is the pressed key (meaning it
+   * was pressed and released during the same cycle), treat it as 1 (pressed).
+   */
+  if(first && status->key == first)
+  {
+    trace("Buffered press for key # %d\n", first);
+    return 1;
+  }
+  if(second && status->key == second)
+  {
+    trace("Buffered press for key # %d\n", second);
+    return 1;
+  }
+  return 0;
 }
 
 Uint32 get_last_key(enum keycode_type type)
