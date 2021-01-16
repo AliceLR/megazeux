@@ -21,6 +21,7 @@
 
 #include "../Unit.hpp"
 #include "../../src/network/Scoped.hpp"
+#include "../../src/io/path.h"
 #include "../../src/io/vio.c"
 
 static constexpr char TEST_READ_FILENAME[]  = "VFILE_TEST_DATA";
@@ -733,6 +734,8 @@ UNITTEST(vtempfile)
 
 UNITTEST(Filesystem)
 {
+  static constexpr char TEST_RENAME_FILENAME[] = "VFILE_TEST_dfbdfbshd";
+  static constexpr char TEST_RENAME_DIR[] = "VFILE_TEST_DIR_ndfjsdbnfjdfd";
   static char execdir[1024];
   struct stat stat_info;
   int ret;
@@ -851,9 +854,55 @@ UNITTEST(Filesystem)
     ASSERT(S_ISREG(stat_info2.st_mode));
   }
 
+  SECTION(vrename)
+  {
+    char buffer[1024];
+
+    // Clean up from any previous tests...
+    snprintf(buffer, arraysize(buffer), "%s" DIR_SEPARATOR "%s", TEST_RENAME_DIR, TEST_RENAME_FILENAME);
+    vunlink(buffer);
+    snprintf(buffer, arraysize(buffer), "%s" DIR_SEPARATOR "%s", TEST_DIR, TEST_RENAME_FILENAME);
+    vunlink(buffer);
+    vrmdir(TEST_RENAME_DIR);
+    vrmdir(TEST_DIR);
+
+    ret = vmkdir(TEST_DIR, 0777);
+    ASSERTEQ(ret, 0);
+
+    {
+      ScopedFile<vfile, vfclose> vf = vfopen_unsafe(TEST_WRITE_FILENAME, "wb");
+      ASSERT(vf);
+    }
+
+    ret = vstat(TEST_WRITE_FILENAME, &stat_info);
+    ASSERTEQ(ret, 0);
+
+    // Rename file.
+    ret = vrename(TEST_WRITE_FILENAME, buffer);
+    ASSERTEQ(ret, 0);
+
+    ret = vstat(buffer, &stat_info);
+    ASSERTEQ(ret, 0);
+
+    // Rename dir.
+    ret = vrename(TEST_DIR, TEST_RENAME_DIR);
+    ASSERTEQ(ret, 0);
+
+    ret = vstat(TEST_RENAME_DIR, &stat_info);
+    ASSERTEQ(ret, 0);
+
+    // Renamed filename still in dir?
+    ret = vchdir(TEST_RENAME_DIR);
+    ASSERTEQ(ret, 0);
+
+    ret = vstat(TEST_RENAME_FILENAME, &stat_info);
+    ASSERTEQ(ret, 0);
+  }
+
   SECTION(UTF8)
   {
     static constexpr char UTF8_FILE[] = u8"\u00A5\u2014\U0001F970";
+    static constexpr char UTF8_FILE2[] = u8"\U0001F970\u2014\u00A5";
     static constexpr char UTF8_DIR[] = "æRëòmMJ·‡²’ˆÞ‘$"; // : )
     static constexpr int utf8_dir_len = arraysize(UTF8_DIR) - 1;
 
@@ -863,6 +912,8 @@ UNITTEST(Filesystem)
       ret = vchdir(UTF8_DIR);
       ASSERTEQ(ret, 0);
       ret = vunlink(UTF8_FILE);
+      ASSERTEQ(ret, 0);
+      ret =  vunlink(UTF8_FILE2);
       ASSERTEQ(ret, 0);
       ret = vchdir("..");
       ASSERTEQ(ret, 0);
@@ -901,7 +952,15 @@ UNITTEST(Filesystem)
     ret = vaccess(UTF8_FILE, R_OK|W_OK);
     ASSERTEQ(ret, 0);
 
-    ret = vunlink(UTF8_FILE);
+    ret = vrename(UTF8_FILE, UTF8_FILE2);
+    ASSERTEQ(ret, 0);
+
+    ret = vstat(UTF8_FILE2, &stat_info);
+    ASSERTEQ(ret, 0);
+    ASSERTEQ(stat_info.st_size, arraysize(test_data));
+    ASSERT(S_ISREG(stat_info.st_mode));
+
+    ret = vunlink(UTF8_FILE2);
     ASSERTEQ(ret, 0);
 
     ret = vchdir("..");
