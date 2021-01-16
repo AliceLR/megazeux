@@ -43,7 +43,7 @@
 #include "world.h"
 #include "util.h"
 #include "io/path.h"
-#include "io/vfile.h"
+#include "io/vio.h"
 
 #include "audio/sfx.h"
 

@@ -310,7 +310,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\io\dir.c" />
     <ClCompile Include="..\..\src\io\fsafeopen.c" />
     <ClCompile Include="..\..\src\io\path.c" />
-    <ClCompile Include="..\..\src\io\vfile.c" />
+    <ClCompile Include="..\..\src\io\vio.c" />
     <ClCompile Include="..\..\src\io\zip.c" />
     <ClCompile Include="..\..\src\io\zip_stream.c" />
     <ClCompile Include="..\..\src\legacy_board.c" />
@@ -414,7 +414,8 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\io\memfile.h" />
     <ClInclude Include="..\..\src\io\path.h" />
     <ClInclude Include="..\..\src\io\vfile.h" />
-    <ClInclude Include="..\..\src\io\vfile_win32.h" />
+    <ClInclude Include="..\..\src\io\vio.h" />
+    <ClInclude Include="..\..\src\io\vio_win32.h" />
     <ClInclude Include="..\..\src\io\zip.h" />
     <ClInclude Include="..\..\src\io\zip_deflate.h" />
     <ClInclude Include="..\..\src\io\zip_deflate64.h" />

@@ -21,7 +21,7 @@
 
 #include "../Unit.hpp"
 #include "../../src/network/Scoped.hpp"
-#include "../../src/io/vfile.c"
+#include "../../src/io/vio.c"
 
 static constexpr char TEST_READ_FILENAME[]  = "VFILE_TEST_DATA";
 static constexpr char TEST_WRITE_FILENAME[] = "VFILE_TEST_WRITE";

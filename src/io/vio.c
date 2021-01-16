@@ -22,13 +22,13 @@
 #include <sys/stat.h>
 
 #include "memfile.h"
-#include "vfile.h"
+#include "vio.h"
 //#include "zip.h"
 
 #ifdef __WIN32__
-#include "vfile_win32.h"
+#include "vio_win32.h"
 #else
-#include "vfile_posix.h"
+#include "vio_posix.h"
 #endif
 
 #ifndef VFILE_SMALL_BUFFER_SIZE
@@ -327,6 +327,15 @@ int vmkdir(const char *path, int mode)
 {
   // TODO archive detection, etc
   return platform_mkdir(path, mode);
+}
+
+/**
+ * Rename a file or directory.
+ */
+int vrename(const char *oldpath, const char *newpath)
+{
+  // TODO archive detection, etc
+  return platform_rename(oldpath, newpath);
 }
 
 /**

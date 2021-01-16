@@ -35,13 +35,14 @@
 #include <string.h>
 
 #ifdef __WIN32__
-#include "io/vfile_win32.h" // for windows.h, WIDE_PATHS, and utf16_to_utf8
+#include "io/vio_win32.h" // for windows.h, WIDE_PATHS, and utf16_to_utf8
 #endif
 
 #include "const.h" // for MAX_PATH
 #include "error.h"
 #include "platform.h"
 #include "io/path.h"
+#include "io/vio.h"
 
 struct mzx_resource
 {
@@ -186,8 +187,8 @@ static ssize_t find_executable_dir(char *dest, size_t dest_len, const char *argv
     ssize_t len = path_get_directory(dest, dest_len, argv0);
     if(len > 0)
     {
-      // chdir to it and get it as an absolute path.
-      if(!chdir(dest) && getcwd(dest, dest_len))
+      // Change to the executable dir and get it as an absolute path.
+      if(!vchdir(dest) && vgetcwd(dest, dest_len))
         return strlen(dest);
     }
 
@@ -246,11 +247,11 @@ int mzx_res_init(const char *argv0, boolean editor)
     }
 
     if(i == CONFIG_TXT)
-      chdir(CONFDIR);
+      vchdir(CONFDIR);
     else
-      chdir(SHAREDIR);
+      vchdir(SHAREDIR);
 
-    getcwd(p_dir, MAX_PATH);
+    vgetcwd(p_dir, MAX_PATH);
     p_dir_len = strlen(p_dir);
 
     full_path_len = p_dir_len + base_name_len + 2;
@@ -259,7 +260,7 @@ int mzx_res_init(const char *argv0, boolean editor)
     // The provided buffer should always be big enough, but check anyway.
     if(path_join(full_path, full_path_len, p_dir, mzx_res[i].base_name) > 0)
     {
-      if(!stat(full_path, &file_info))
+      if(!vstat(full_path, &file_info))
       {
         mzx_res[i].path = full_path;
         continue;
@@ -271,8 +272,8 @@ int mzx_res_init(const char *argv0, boolean editor)
     // Try to locate the resource relative to the bin_path
     if(bin_path)
     {
-      chdir(bin_path);
-      if(!stat(mzx_res[i].base_name, &file_info))
+      vchdir(bin_path);
+      if(!vstat(mzx_res[i].base_name, &file_info))
       {
         full_path_len = bin_path_len + base_name_len + 2;
         full_path = cmalloc(full_path_len);
@@ -334,41 +335,41 @@ const char *mzx_res_get_by_id(enum resource_id id)
   static char userconfpath[MAX_PATH];
   if(id == CONFIG_TXT)
   {
-    FILE *fp;
+    vfile *vf;
 
     // Special handling for CONFIG_TXT to allow for user
     // configuration files
     snprintf(userconfpath, MAX_PATH, "%s/%s", getenv("HOME"), USERCONFFILE);
 
     // Check if the file can be opened for reading
-    fp = fopen_unsafe(userconfpath, "rb");
+    vf = vfopen_unsafe(userconfpath, "rb");
 
-    if(fp)
+    if(vf)
     {
-      fclose(fp);
+      vfclose(vf);
       return (char *)userconfpath;
     }
     // Otherwise, try to open the file for writing
-    fp = fopen_unsafe(userconfpath, "wb");
-    if(fp)
+    vf = vfopen_unsafe(userconfpath, "wb");
+    if(vf)
     {
-      FILE *original = fopen_unsafe(mzx_res[id].path, "rb");
+      vfile *original = vfopen_unsafe(mzx_res[id].path, "rb");
       if(original)
       {
         size_t bytes_read;
         for(;;)
         {
-          bytes_read = fread(copy_buffer, 1, COPY_BUFFER_SIZE, original);
+          bytes_read = vfread(copy_buffer, 1, COPY_BUFFER_SIZE, original);
           if(bytes_read)
-            fwrite(copy_buffer, 1, bytes_read, fp);
+            vfwrite(copy_buffer, 1, bytes_read, fp);
           else
             break;
         }
-        fclose(fp);
-        fclose(original);
+        vfclose(vf);
+        vfclose(original);
         return (char *)userconfpath;
       }
-      fclose(fp);
+      vfclose(vf);
     }
 
     // If that's no good, just read the normal config file
@@ -380,7 +381,7 @@ const char *mzx_res_get_by_id(enum resource_id id)
 /**
  * Some platforms may not be able to display console output without extra work.
  * On these platforms redirect STDIO to files so the console output is easier
- * to read.
+ * to read. NOTE: this needs to use stdio, don't use vfile here.
  */
 boolean redirect_stdio(const char *base_path, boolean require_conf)
 {

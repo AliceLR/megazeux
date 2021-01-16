@@ -35,7 +35,7 @@
 #include "../util.h"
 
 #include "memfile.h"
-#include "vfile.h"
+#include "vio.h"
 #include "zip.h"
 #include "zip_stream.h"
 

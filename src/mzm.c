@@ -37,7 +37,7 @@
 #include "world_format.h"
 #include "world_struct.h"
 #include "io/memfile.h"
-#include "io/vfile.h"
+#include "io/vio.h"
 #include "io/zip.h"
 
 
@@ -304,7 +304,7 @@ static size_t save_mzm_common(struct world *mzx_world,
 void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
  int width, int height, int mode, int savegame)
 {
-  FILE *output_file = fopen_unsafe(name, "wb");
+  vfile *output_file = vfopen_unsafe(name, "wb");
   enum mzm_storage_mode storage_mode;
   struct memfile mf;
   void *buffer;
@@ -321,9 +321,9 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     mzm_size = save_mzm_common(mzx_world, start_x, start_y, width, height, mode,
      savegame, storage_mode, &mf);
 
-    fwrite(buffer, mzm_size, 1, output_file);
+    vfwrite(buffer, mzm_size, 1, output_file);
     free(buffer);
-    fclose(output_file);
+    vfclose(output_file);
   }
 }
 

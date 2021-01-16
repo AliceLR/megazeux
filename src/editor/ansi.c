@@ -28,7 +28,7 @@
 #include "../robot.h"
 #include "../util.h"
 #include "../world_struct.h"
-#include "../io/vfile.h"
+#include "../io/vio.h"
 
 #include <stdio.h>
 #include <time.h>

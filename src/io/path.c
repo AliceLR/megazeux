@@ -23,7 +23,7 @@
 #include <sys/stat.h>
 
 #include "path.h"
-#include "vfile.h"
+#include "vio.h"
 
 /**
  * Force a given filename path to use the provided file extension. If the
