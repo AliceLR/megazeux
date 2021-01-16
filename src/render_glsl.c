@@ -32,6 +32,7 @@
 #include "renderers.h"
 #include "util.h"
 #include "io/path.h"
+#include "io/vio.h"
 
 // Uncomment to enable GL debug output (requires OpenGL 4.3+).
 //#define ENABLE_GL_DEBUG_OUTPUT 1
@@ -347,27 +348,27 @@ static char *glsl_load_string(const char *filename)
 {
   char *buffer = NULL;
   unsigned long size;
-  FILE *f;
+  vfile *vf;
 
-  f = fopen_unsafe(filename, "rb");
-  if(!f)
+  vf = vfopen_unsafe(filename, "rb");
+  if(!vf)
     goto err_out;
 
-  size = ftell_and_rewind(f);
-  if(!size)
+  size = vfilelength(vf, false);
+  if(size <= 0)
     goto err_close;
 
   buffer = cmalloc(size + 1);
   buffer[size] = '\0';
 
-  if(fread(buffer, size, 1, f) != 1)
+  if(vfread(buffer, size, 1, vf) != 1)
   {
     free(buffer);
     buffer = NULL;
   }
 
 err_close:
-  fclose(f);
+  vfclose(vf);
 err_out:
   return buffer;
 }

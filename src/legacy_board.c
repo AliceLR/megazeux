@@ -32,7 +32,7 @@
 #include "util.h"
 #include "world.h"
 #include "world_struct.h"
-#include "io/vfile.h"
+#include "io/vio.h"
 
 /* 13 (not NULL terminated in format) */
 #define LEGACY_MOD_FILENAME_MAX 13

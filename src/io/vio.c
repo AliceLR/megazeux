@@ -22,13 +22,13 @@
 #include <sys/stat.h>
 
 #include "memfile.h"
-#include "vfile.h"
+#include "vio.h"
 //#include "zip.h"
 
 #ifdef __WIN32__
-#include "vfile_win32.h"
+#include "vio_win32.h"
 #else
-#include "vfile_posix.h"
+#include "vio_posix.h"
 #endif
 
 #ifndef VFILE_SMALL_BUFFER_SIZE
@@ -327,6 +327,15 @@ int vmkdir(const char *path, int mode)
 {
   // TODO archive detection, etc
   return platform_mkdir(path, mode);
+}
+
+/**
+ * Rename a file or directory.
+ */
+int vrename(const char *oldpath, const char *newpath)
+{
+  // TODO archive detection, etc
+  return platform_rename(oldpath, newpath);
 }
 
 /**
@@ -749,11 +758,18 @@ int vfputs(const char *src, vfile *vf)
 /**
  * Place a character back into the stream. This can be used once only for
  * memory streams and is only guaranteed to be usable once for files.
+ * If chr is EOF or otherwise does not represent a valid char, this function
+ * will fail and the stream will be unmodified.
  */
-int vungetc(unsigned char chr, vfile *vf)
+int vungetc(int chr, vfile *vf)
 {
   assert(vf);
   assert(vf->flags & VF_STORAGE_MASK);
+
+  // Note: MSVCRT &255s non-EOF values so this may not be 100% accurate to stdio.
+  // If this somehow breaks something it can be reverted later.
+  if(chr < 0 || chr >= 256)
+    return EOF;
 
   if(vf->flags & VF_MEMORY)
   {

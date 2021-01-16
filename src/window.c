@@ -58,7 +58,7 @@
 #include "util.h"
 #include "io/dir.h"
 #include "io/path.h"
-#include "io/vfile.h"
+#include "io/vio.h"
 
 #include "audio/sfx.h"
 
@@ -2296,7 +2296,7 @@ static boolean slot_save_exists(const char *file, int slot)
 
   snprintf(path, MAX_PATH, "%s%i%s",
    cur_slot_prefix, slot, get_config()->save_slots_ext);
-  return !stat(path, &s);
+  return !vstat(path, &s);
 }
 
 static int click_slot_selector(struct world *mzx_world, struct dialog *di,
@@ -3049,16 +3049,16 @@ struct file_list_entry
  */
 static void file_list_get_mzx_world_name(struct file_list_entry *entry)
 {
-  FILE *mzx_file = fopen_unsafe(entry->filename, "rb");
+  vfile *mzx_file = vfopen_unsafe(entry->filename, "rb");
   char *world_name = entry->display + MAX_FILE_LIST_DISPLAY_MZX;
 
-  if(!fread(world_name, 24, 1, mzx_file))
+  if(!vfread(world_name, 24, 1, mzx_file))
     strcpy(world_name, "@0~c\x10 name read failed \x11");
   else
   if(!memcmp(world_name, "PK\x03\x04", 4))
     strcpy(world_name, "@0~c\x10 rearchived world \x11");
 
-  fclose(mzx_file);
+  vfclose(mzx_file);
 
   entry->display[MAX_FILE_LIST_DISPLAY - 1] = '\0';
   entry->loaded_world_name = true;
@@ -3260,21 +3260,21 @@ static boolean remove_files(char *directory_name, boolean remove_recursively)
   current_dir_name = cmalloc(MAX_PATH);
   file_name = cmalloc(PATH_BUF_LEN);
 
-  getcwd(current_dir_name, MAX_PATH);
-  chdir(directory_name);
+  vgetcwd(current_dir_name, MAX_PATH);
+  vchdir(directory_name);
 
   while(1)
   {
     if(!dir_get_next_entry(&current_dir, file_name, NULL))
       break;
 
-    if(stat(file_name, &file_info) < 0)
+    if(vstat(file_name, &file_info) < 0)
       continue;
 
     if(!S_ISDIR(file_info.st_mode))
     {
       // Only attempt to remove contents if remove_recursively is set...
-      if(!remove_recursively || unlink(file_name))
+      if(!remove_recursively || vunlink(file_name))
         success = false;
     }
     else
@@ -3282,12 +3282,12 @@ static boolean remove_files(char *directory_name, boolean remove_recursively)
     if(strcmp(file_name, ".") && strcmp(file_name, ".."))
     {
       if(!remove_recursively ||
-       !remove_files(file_name, true) || rmdir(file_name))
+       !remove_files(file_name, true) || vrmdir(file_name))
         success = false;
     }
   }
 
-  chdir(current_dir_name);
+  vchdir(current_dir_name);
 
   free(file_name);
   free(current_dir_name);
@@ -3357,7 +3357,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     last_element = FILESEL_FILENAME;
 
   // TODO: some platforms don't return this in the format MZX needs it.
-  getcwd(return_dir_name, MAX_PATH);
+  vgetcwd(return_dir_name, MAX_PATH);
   path_clean_slashes(return_dir_name, MAX_PATH);
 
   snprintf(current_dir_name, MAX_PATH, "%s", return_dir_name);
@@ -3387,8 +3387,11 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     chosen_file = 0;
     chosen_dir = 0;
 
-    //FIXME: something relies on being chdired here
-    chdir(current_dir_name);
+    /**
+     * Change to the current directory to make things like reading MZX files
+     * to display world names a little easier.
+     */
+    vchdir(current_dir_name);
 
     if(!dir_open(&current_dir, current_dir_name))
       goto skip_dir;
@@ -3432,7 +3435,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       // need to use stat instead.
       if(dir_type == DIR_TYPE_UNKNOWN)
       {
-        if(stat(file_name, &file_info) < 0)
+        if(vstat(file_name, &file_info) < 0)
           continue;
 
         if(S_ISDIR(file_info.st_mode))
@@ -3496,7 +3499,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     dir_close(&current_dir);
 skip_dir:
 
-    chdir(return_dir_name);
+    vchdir(return_dir_name);
 
     qsort(file_list, num_files, sizeof(char *), sort_function);
     qsort(dir_list, num_dirs, sizeof(char *), sort_function);
@@ -3618,9 +3621,9 @@ skip_dir:
           strcpy(ret + ret_len, DIR_SEPARATOR);
 
         // TODO: for reliable results this needs to happen from the current dir.
-        chdir(current_dir_name);
+        vchdir(current_dir_name);
         path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
-        chdir(return_dir_name);
+        vchdir(return_dir_name);
 
         if(ret_path[0])
         {
@@ -3680,7 +3683,7 @@ skip_dir:
         if(default_ext)
           path_force_ext(ret, MAX_PATH, default_ext);
 
-        stat_result = stat(ret, &file_info);
+        stat_result = vstat(ret, &file_info);
 
         // It's actually a dir, oops!
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
@@ -3746,7 +3749,7 @@ skip_dir:
         {
           path_join(full_name, MAX_PATH, current_dir_name, new_name);
 
-          if(stat(full_name, &file_info) < 0)
+          if(vstat(full_name, &file_info) < 0)
           {
             vmkdir(full_name, 0777);
           }
@@ -3765,7 +3768,7 @@ skip_dir:
       // Delete file
       case 4:
       {
-        if((stat(ret, &file_info) >= 0) &&
+        if((vstat(ret, &file_info) >= 0) &&
          strcmp(ret, "..") && strcmp(ret, "."))
         {
           char *confirm_string;
@@ -3775,7 +3778,7 @@ skip_dir:
            "Delete %s - are you sure?", ret_file);
 
           if(!confirm(mzx_world, confirm_string))
-            if(unlink(ret))
+            if(vunlink(ret))
               error("File could not be deleted.",
                ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 
@@ -3802,7 +3805,7 @@ skip_dir:
           path_join(new_path, MAX_PATH, current_dir_name, new_name);
 
           if(strcmp(old_path, new_path))
-            if(rename(old_path, new_path))
+            if(vrename(old_path, new_path))
               error("File rename failed.",
                ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 
@@ -3834,13 +3837,13 @@ skip_dir:
             if(!ask_yes_no(mzx_world,
              (char *)"Delete subdirectories recursively?"))
             {
-              if(!remove_files(file_name_ch, true) || rmdir(file_name_ch))
+              if(!remove_files(file_name_ch, true) || vrmdir(file_name_ch))
                 error("Directory could not be deleted.",
                  ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
             }
             else
             {
-              if(!remove_files(file_name_ch, false) || rmdir(file_name_ch))
+              if(!remove_files(file_name_ch, false) || vrmdir(file_name_ch))
                 error("Directory contains files or could not be deleted.",
                  ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
             }
@@ -3869,7 +3872,7 @@ skip_dir:
             path_join(new_path, MAX_PATH, current_dir_name, new_name);
 
             if(strcmp(old_path, new_path))
-              if(rename(old_path, new_path))
+              if(vrename(old_path, new_path))
                 error("Directory rename failed.",
                  ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 

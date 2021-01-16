@@ -53,7 +53,7 @@
 #include "io/fsafeopen.h"
 #include "io/memfile.h"
 #include "io/path.h"
-#include "io/vfile.h"
+#include "io/vio.h"
 #include "io/zip.h"
 
 #include "audio/audio.h"
@@ -2502,20 +2502,20 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   char file_path[MAX_PATH];
   struct stat file_info;
 
-  // chdir to game directory
+  // Change to the game (or save) directory.
   if(path_get_directory(file_path, MAX_PATH, file) > 0)
   {
-    getcwd(current_dir, MAX_PATH);
+    vgetcwd(current_dir, MAX_PATH);
 
     if(strcmp(current_dir, file_path))
-      chdir(file_path);
+      vchdir(file_path);
   }
 
   // load world config file
   snprintf(config_file_name, MAX_PATH, "%.*s.cnf", file_name_len, file);
   config_file_name[MAX_PATH - 1] = '\0';
 
-  if(stat(config_file_name, &file_info) >= 0)
+  if(vstat(config_file_name, &file_info) >= 0)
     set_config_from_file(GAME_CNF, config_file_name);
 
   // Some initial setting(s)
@@ -3055,7 +3055,7 @@ boolean reload_world(struct world *mzx_world, const char *file, boolean *faded)
     char save_name[MAX_PATH];
     path_get_filename(save_name, MAX_PATH, curr_sav);
 
-    getcwd(curr_sav, MAX_PATH);
+    vgetcwd(curr_sav, MAX_PATH);
     path_append(curr_sav, MAX_PATH, save_name);
   }
 
@@ -3117,7 +3117,7 @@ boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded)
 
   // Give curr_file a full path
   path_get_filename(file_name, MAX_PATH, file);
-  getcwd(curr_file, MAX_PATH);
+  vgetcwd(curr_file, MAX_PATH);
   path_append(curr_file, MAX_PATH, file_name);
 
   return true;

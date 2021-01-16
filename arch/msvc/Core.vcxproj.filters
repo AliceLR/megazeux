@@ -405,7 +405,7 @@
     <ClCompile Include="..\..\src\io\path.c">
       <Filter>Source Files\io</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\io\vfile.c">
+    <ClCompile Include="..\..\src\io\vio.c">
       <Filter>Source Files\io</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\io\zip.c">
@@ -725,7 +725,10 @@
     <ClInclude Include="..\..\src\io\vfile.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\io\vfile_win32.h">
+    <ClInclude Include="..\..\src\io\vio.h">
+      <Filter>Header Files\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\io\vio_win32.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\io\zip.h">

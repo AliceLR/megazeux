@@ -27,7 +27,7 @@
 
 #include "../const.h"
 #include "../util.h"
-#include "../io/vfile.h"
+#include "../io/vio.h"
 
 #ifdef _WIN32
 #define MIKMOD_STATIC

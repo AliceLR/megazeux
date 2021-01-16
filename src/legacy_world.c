@@ -43,7 +43,7 @@
 #include "world.h"
 #include "util.h"
 #include "io/path.h"
-#include "io/vfile.h"
+#include "io/vio.h"
 
 #include "audio/sfx.h"
 
@@ -758,7 +758,7 @@ vfile *validate_legacy_world_file(struct world *mzx_world,
   vfile *vf;
 
   /* TEST 1: make sure it's even a file. */
-  if(stat(file, &stat_result) || !S_ISREG(stat_result.st_mode))
+  if(vstat(file, &stat_result) || !S_ISREG(stat_result.st_mode))
   {
     error_message(E_FILE_DOES_NOT_EXIST, 0, NULL);
     return NULL;

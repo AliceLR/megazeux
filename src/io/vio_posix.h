@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __IO_VFILE_WIN32_H
-#define __IO_VFILE_WIN32_H
+#ifndef __IO_VIO_POSIX_H
+#define __IO_VIO_POSIX_H
 
 #include "../compat.h"
 
@@ -58,6 +58,11 @@ static inline int platform_mkdir(const char *path, int mode)
   return mkdir(path, mode);
 }
 
+static inline int platform_rename(const char *oldpath, const char *newpath)
+{
+  return rename(oldpath, newpath);
+}
+
 static inline int platform_unlink(const char *path)
 {
   return unlink(path);
@@ -80,4 +85,4 @@ static inline int platform_stat(const char *path, struct stat *buf)
 
 __M_END_DECLS
 
-#endif /* __IO_VFILE_WIN32_H */
+#endif /* __IO_VIO_POSIX_H */

@@ -34,6 +34,7 @@
 #include "../idput.h"
 #include "../util.h"
 #include "../io/memfile.h"
+#include "../io/vio.h"
 #include "../io/zip.h"
 
 #include "../world_format.h"

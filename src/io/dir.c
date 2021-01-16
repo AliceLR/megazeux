@@ -34,7 +34,7 @@
 
 #ifdef __WIN32__
 // utf8_to_utf16, utf16_to_utf8
-#include "vfile_win32.h"
+#include "vio_win32.h"
 #endif
 
 static inline boolean platform_opendir(struct mzx_dir *dir, const char *path)

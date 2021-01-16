@@ -35,6 +35,7 @@
 #include "util.h"
 #include "io/fsafeopen.h"
 #include "io/path.h"
+#include "io/vio.h"
 
 #define MAX_INCLUDE_DEPTH 16
 #define MAX_CONFIG_REGISTERED 2
@@ -633,7 +634,7 @@ static void config_startup_file(struct config_info *conf, char *name,
 
     // Make sure the startup path actually exists.
     if(conf->startup_path[0] &&
-     (stat(conf->startup_path, &stat_info) < 0 || !S_ISDIR(stat_info.st_mode)))
+     (vstat(conf->startup_path, &stat_info) < 0 || !S_ISDIR(stat_info.st_mode)))
       conf->startup_path[0] = '\0';
   }
   else
@@ -644,7 +645,7 @@ static void config_startup_path(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   struct stat stat_info;
-  if(stat(value, &stat_info) || !S_ISDIR(stat_info.st_mode))
+  if(vstat(value, &stat_info) || !S_ISDIR(stat_info.st_mode))
     return;
 
   snprintf(conf->startup_path, 256, "%s", value);
@@ -1196,19 +1197,19 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
   char *extended_buffer;
   char *equals_position, *value;
   char *output_end_position = line_buffer + LINE_BUFFER_SIZE;
-  FILE *conf_file;
+  vfile *conf_file;
   int i;
 
   if(type >= NUM_CONFIG_TYPES)
     return;
 
-  conf_file = fopen_unsafe(conf_file_name, "rb");
+  conf_file = vfopen_unsafe(conf_file_name, "rb");
   if(!conf_file)
     return;
 
   extended_buffer = (char *)cmalloc(extended_allocate_size);
 
-  while(fsafegets(line_buffer_alternate, LINE_BUFFER_SIZE, conf_file))
+  while(vfsafegets(line_buffer_alternate, LINE_BUFFER_SIZE, conf_file))
   {
     if(line_buffer_alternate[0] != '#')
     {
@@ -1256,7 +1257,7 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
       if(line_buffer[0])
       {
         // There might be extended information too - get it.
-        peek_char = fgetc(conf_file);
+        peek_char = vfgetc(conf_file);
         extended_size = 1;
         extended_buffer_offset = 0;
         use_extended_buffer = NULL;
@@ -1266,7 +1267,7 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
         {
           // Extended data line
           use_extended_buffer = extended_buffer;
-          if(fsafegets(line_buffer_alternate, 254, conf_file))
+          if(vfsafegets(line_buffer_alternate, 254, conf_file))
           {
             // Skip any extra whitespace at the start of the line...
             char *line_buffer_pos = line_buffer_alternate;
@@ -1290,9 +1291,9 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
             extended_buffer_offset += line_size;
           }
 
-          peek_char = fgetc(conf_file);
+          peek_char = vfgetc(conf_file);
         }
-        ungetc(peek_char, conf_file);
+        vungetc(peek_char, conf_file);
 
         for(i = 0; i < config_registry[type].num_registered; i++)
         {
@@ -1306,7 +1307,7 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
   }
 
   free(extended_buffer);
-  fclose(conf_file);
+  vfclose(conf_file);
 }
 
 void set_config_from_command_line(int *argc, char *argv[])

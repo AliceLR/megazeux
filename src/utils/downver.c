@@ -58,7 +58,7 @@
 #include "../world.h"
 #include "../world_format.h"
 #include "../io/memfile.h"
-#include "../io/vfile.h"
+#include "../io/vio.h"
 #include "../io/zip.h"
 
 #define DOWNVER_VERSION "2.92"

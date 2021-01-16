@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __IO_VFILE_WIN32_H
-#define __IO_VFILE_WIN32_H
+#ifndef __IO_VIO_WIN32_H
+#define __IO_VIO_WIN32_H
 
 #include "../compat.h"
 
@@ -157,6 +157,19 @@ static inline int platform_mkdir(const char *path, int mode)
   return mkdir(path);
 }
 
+static inline int platform_rename(const char *oldpath, const char *newpath)
+{
+#ifdef WIDE_PATHS
+  wchar_t woldpath[MAX_PATH];
+  wchar_t wnewpath[MAX_PATH];
+
+  if(utf8_to_utf16(oldpath, woldpath, MAX_PATH))
+    if(utf8_to_utf16(newpath, wnewpath, MAX_PATH))
+      return _wrename(woldpath, wnewpath);
+#endif
+  return rename(oldpath, newpath);
+}
+
 static inline int platform_unlink(const char *path)
 {
 #ifdef WIDE_PATHS
@@ -226,4 +239,4 @@ static inline int platform_stat(const char *path, struct stat *buf)
 
 __M_END_DECLS
 
-#endif /* __IO_VFILE_WIN32_H */
+#endif /* __IO_VIO_WIN32_H */
