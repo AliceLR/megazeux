@@ -48,6 +48,7 @@
 #include "world.h"
 #include "world_struct.h"
 #include "io/fsafeopen.h"
+#include "io/vio.h"
 
 #include "audio/audio.h"
 #include "audio/sfx.h"
@@ -766,7 +767,7 @@ static boolean game_key(context *ctx, int *key)
         {
           struct stat file_info;
 
-          if(!stat(curr_sav, &file_info))
+          if(!vstat(curr_sav, &file_info))
             load_savegame(game, curr_sav);
         }
         return true;
@@ -1132,7 +1133,7 @@ static boolean title_key(context *ctx, int *key)
       {
         struct stat file_info;
 
-        if(!stat(curr_sav, &file_info) && load_savegame(title, curr_sav))
+        if(!vstat(curr_sav, &file_info) && load_savegame(title, curr_sav))
         {
           play_game(ctx, &(title->fade_in));
           title->need_reload = true;

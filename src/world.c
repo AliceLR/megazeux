@@ -2515,7 +2515,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   snprintf(config_file_name, MAX_PATH, "%.*s.cnf", file_name_len, file);
   config_file_name[MAX_PATH - 1] = '\0';
 
-  if(stat(config_file_name, &file_info) >= 0)
+  if(vstat(config_file_name, &file_info) >= 0)
     set_config_from_file(GAME_CNF, config_file_name);
 
   // Some initial setting(s)

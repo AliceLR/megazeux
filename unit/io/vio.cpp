@@ -413,6 +413,15 @@ static void test_vungetc(vfile *vf)
   vfread(last_5, 5, 1, vf);
   vrewind(vf);
 
+  // vungetc should fail if EOF or some other junk is provided.
+  // Note: MSVCRT stdio &255s non-EOF values (?).
+  ret = vungetc(EOF, vf);
+  ASSERTEQ(ret, EOF);
+  ret = vungetc(-128141, vf);
+  ASSERTEQ(ret, EOF);
+  ret = vungetc(256, vf);
+  ASSERTEQ(ret, EOF);
+
   // vfgetc should read the buffered char.
   ret = vungetc(0xAB, vf);
   ASSERTEQ(ret, 0xAB);

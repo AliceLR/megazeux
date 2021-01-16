@@ -67,7 +67,7 @@ UTILS_LIBSPEC int vfread(void *dest, size_t size, size_t count, vfile *vf);
 UTILS_LIBSPEC int vfwrite(const void *src, size_t size, size_t count, vfile *vf);
 UTILS_LIBSPEC char *vfsafegets(char *dest, int size, vfile *vf);
 UTILS_LIBSPEC int vfputs(const char *src, vfile *vf);
-UTILS_LIBSPEC int vungetc(unsigned char ch, vfile *vf);
+UTILS_LIBSPEC int vungetc(int ch, vfile *vf);
 UTILS_LIBSPEC int vfseek(vfile *vf, long int offset, int whence);
 UTILS_LIBSPEC long int vftell(vfile *vf);
 UTILS_LIBSPEC void vrewind(vfile *vf);
