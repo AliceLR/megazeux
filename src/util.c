@@ -361,7 +361,7 @@ const char *mzx_res_get_by_id(enum resource_id id)
         {
           bytes_read = vfread(copy_buffer, 1, COPY_BUFFER_SIZE, original);
           if(bytes_read)
-            vfwrite(copy_buffer, 1, bytes_read, fp);
+            vfwrite(copy_buffer, 1, bytes_read, vf);
           else
             break;
         }
