@@ -1164,7 +1164,8 @@ static void input_write(struct world *mzx_world,
 {
   char buf[12];
   sprintf(buf, "%d", value);
-  board_set_input(mzx_world->current_board, buf, strlen(buf));
+  board_set_input_string(mzx_world->current_board, buf, strlen(buf));
+  mzx_world->current_board->num_input = value;
 }
 
 static int key_read(struct world *mzx_world,

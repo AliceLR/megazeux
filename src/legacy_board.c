@@ -297,7 +297,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     if(!vfread(input_string, LEGACY_INPUT_STRING_MAX + 1, 1, vf))
       input_string[0] = 0;
     input_string[LEGACY_INPUT_STRING_MAX] = 0;
-    board_set_input(cur_board, input_string, LEGACY_INPUT_STRING_MAX);
+    board_set_input_string(cur_board, input_string, LEGACY_INPUT_STRING_MAX);
 
     cur_board->player_last_dir = vfgetc(vf);
 
@@ -331,7 +331,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     if(!vfread(input_string, len, 1, vf))
       len = 0;
     input_string[len] = 0;
-    board_set_input(cur_board, input_string, len);
+    board_set_input_string(cur_board, input_string, len);
 
     cur_board->player_last_dir = vfgetc(vf);
 

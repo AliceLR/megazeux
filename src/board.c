@@ -339,7 +339,7 @@ void dummy_board(struct board *cur_board)
   cur_board->sensor_list = ccalloc(1, sizeof(struct sensor *));
 }
 
-void board_set_input(struct board *cur_board, const char *input, size_t len)
+void board_set_input_string(struct board *cur_board, const char *input, size_t len)
 {
   if(!len || !input || !input[0])
   {
@@ -359,8 +359,6 @@ void board_set_input(struct board *cur_board, const char *input, size_t len)
   // The provided input may be a part of the input string!
   memmove(cur_board->input_string, input, len);
   cur_board->input_string[len] = '\0';
-  cur_board->input_size = len;
-  cur_board->num_input = atoi(cur_board->input_string);
 }
 
 __editor_maybe_static void board_set_charset_path(struct board *cur_board,
@@ -652,7 +650,7 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
       case BPROP_INPUT_STRING:
         size = MIN(size, ROBOT_MAX_TR-1);
-        board_set_input(cur_board, (const char *)prop.start, size);
+        board_set_input_string(cur_board, (const char *)prop.start, size);
         break;
 
       case BRPOP_BOTTOM_MESG:
@@ -1245,7 +1243,7 @@ struct board *duplicate_board(struct world *mzx_world,
   {
     dest_board->input_string = NULL;
     dest_board->input_allocated = 0;
-    board_set_input(dest_board, src_board->input_string,
+    board_set_input_string(dest_board, src_board->input_string,
      src_board->input_allocated);
   }
 

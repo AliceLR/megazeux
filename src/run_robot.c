@@ -3884,6 +3884,7 @@ void run_robot(context *ctx, int id, int x, int y)
         char input_buffer[ROBOT_MAX_TR];
         char title_buffer[ROBOT_MAX_TR];
         char *break_pos;
+        size_t len;
 
         tr_msg(mzx_world, cmd_ptr + 2, id, title_buffer);
         title_buffer[71] = '\0';
@@ -3902,7 +3903,10 @@ void run_robot(context *ctx, int id, int x, int y)
         // If something is found that relies on that, make this conditional.
         dialog_fadeout();
 
-        board_set_input(src_board, input_buffer, strlen(input_buffer));
+        len = strlen(input_buffer);
+        board_set_input_string(src_board, input_buffer, len);
+        src_board->input_size = len;
+        src_board->num_input = len ? atoi(src_board->input_string) : 0;
         break;
       }
 
@@ -5070,6 +5074,7 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_CLIP_INPUT: // Clip input
       {
         const char *input_string = src_board->input_string ? src_board->input_string : "";
+        size_t len;
 
         // Chop up to and through first section of whitespace.
         // First, until non space or end
@@ -5083,7 +5088,10 @@ void run_robot(context *ctx, int id, int x, int y)
         while(*input_string == ' ')
           input_string++;
 
-        board_set_input(src_board, input_string, strlen(input_string));
+        len = strlen(input_string);
+        board_set_input_string(src_board, input_string, len);
+        src_board->input_size = len;
+        src_board->num_input = len ? atoi(src_board->input_string) : 0;
         break;
       }
 
