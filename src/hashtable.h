@@ -711,7 +711,7 @@ static inline uint32_t fnv_1a_hash_string_len(const void *_str, uint32_t len)
   khash_t(n) *__h = _h;                                           \
   if(__h && __h->keys)                                            \
   {                                                               \
-    (size) = sizeof(__h);                                         \
+    (size) = sizeof(*__h);                                        \
     (size) += __h->n_buckets * sizeof(__h->keys[0]);              \
     (size) += __ac_fsize(__h->n_buckets);                         \
     if(__h->vals)                                                 \
