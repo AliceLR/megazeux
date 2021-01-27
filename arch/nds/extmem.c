@@ -93,7 +93,7 @@ static void real_extram_check_error(enum extram_result err, const char *file,
   // If we're out of extra memory, we can still allocate in main memory.
   if(err && err != OUT_OF_EXTRA_MEMORY)
   {
-    snprintf(msgbuf, sizeof(msgbuf), "%s at %s:%d",
+    sniprintf(msgbuf, sizeof(msgbuf), "%s at %s:%d",
      extram_result_string(err), file, line);
     msgbuf[sizeof(msgbuf)-1] = '\0';
     error(msgbuf, ERROR_T_FATAL, ERROR_OPT_EXIT|ERROR_OPT_NO_HELP, 0);

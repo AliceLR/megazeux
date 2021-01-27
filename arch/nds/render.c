@@ -208,7 +208,7 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
   graphics->resolution_width = 640;
   graphics->resolution_height = 350;
 
-  /* Use bank C for the text screens. */
+  /* Use banks H and I for the text screens. */
   videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE | DISPLAY_BG1_ACTIVE);
   vramSetBankH(VRAM_H_SUB_BG);
   vramSetBankI(VRAM_I_SUB_BG_0x06208000);
