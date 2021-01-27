@@ -38,6 +38,7 @@
 static int save_board_info(struct board *cur_board, struct zip_archive *zp,
  int savegame, int file_version, const char *name)
 {
+  const char *tmp;
   char *buffer;
   struct memfile mf;
   int result;
@@ -89,16 +90,13 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
   save_prop_c(BPROP_PLAYER_ATTACK_LOCKED, cur_board->player_attack_locked, &mf);
   save_prop_c(BPROP_RESET_ON_ENTRY, cur_board->reset_on_entry, &mf);
 
-  if(cur_board->charset_path)
-  {
-    length = strlen(cur_board->charset_path);
-    save_prop_s(BPROP_CHARSET_PATH, cur_board->charset_path, length, 1, &mf);
-  }
-  if(cur_board->palette_path)
-  {
-    length = strlen(cur_board->palette_path);
-    save_prop_s(BPROP_PALETTE_PATH, cur_board->palette_path, length, 1, &mf);
-  }
+  tmp = cur_board->charset_path ? cur_board->charset_path : "";
+  length = strlen(tmp);
+  save_prop_s(BPROP_CHARSET_PATH, tmp, length, 1, &mf);
+
+  tmp = cur_board->palette_path ? cur_board->palette_path : "";
+  length = strlen(tmp);
+  save_prop_s(BPROP_PALETTE_PATH, tmp, length, 1, &mf);
 
   if(savegame)
   {
@@ -112,11 +110,9 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
     save_prop_d(BPROP_NUM_INPUT, cur_board->num_input, &mf);
     save_prop_d(BPROP_INPUT_SIZE, cur_board->input_size, &mf);
 
-    if(cur_board->input_string)
-    {
-      length = strlen(cur_board->input_string);
-      save_prop_s(BPROP_INPUT_STRING, cur_board->input_string, length, 1, &mf);
-    }
+    tmp = cur_board->input_string ? cur_board->input_string : "";
+    length = strlen(tmp);
+    save_prop_s(BPROP_INPUT_STRING, tmp, length, 1, &mf);
 
     length = strlen(cur_board->bottom_mesg);
     save_prop_s(BRPOP_BOTTOM_MESG, cur_board->bottom_mesg, length, 1, &mf);
