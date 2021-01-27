@@ -322,7 +322,7 @@ static boolean force_string_splice(struct string_list *string_list,
 static boolean force_string_copy(struct string_list *string_list,
  const char *name, int next, struct string **str, size_t s_length,
  size_t offset, boolean offset_specified, size_t *size, boolean size_specified,
- char *src)
+ const char *src)
 {
   if(!force_string_splice(string_list, name, next, str, s_length,
    offset, offset_specified, size, size_specified))
@@ -345,7 +345,7 @@ static boolean force_string_copy(struct string_list *string_list,
 static boolean force_string_move(struct string_list *string_list,
  const char *name, int next, struct string **str, size_t s_length,
  size_t offset, boolean offset_specified, size_t *size, boolean size_specified,
- char *src)
+ const char *src)
 {
   boolean src_dest_match = false;
   ptrdiff_t off = 0;
@@ -1022,8 +1022,13 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
 
   if(special_name("input"))
   {
-    char *input_string = mzx_world->current_board->input_string;
-    size_t str_length = strlen(input_string);
+    const char *input_string = mzx_world->current_board->input_string;
+    size_t str_length;
+
+    if(!input_string)
+      input_string = "";
+
+    str_length = strlen(input_string);
     force_string_copy(string_list, name, next, &dest, str_length,
      offset, offset_specified, &size, size_specified, input_string);
   }

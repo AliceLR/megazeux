@@ -93,6 +93,7 @@ static int load_RLE2_plane(char *plane, vfile *vf, int size)
 int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
  vfile *vf, int data_size, int savegame, int file_version)
 {
+  char input_string[ROBOT_MAX_TR];
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, size, board_width, board_height, i;
   int viewport_x, viewport_y, viewport_width, viewport_height;
@@ -122,7 +123,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->last_key = '?';
   cur_board->num_input = 0;
   cur_board->input_size = 0;
-  cur_board->input_string[0] = 0;
+  cur_board->input_allocated = 0;
+  cur_board->input_string = NULL;
   cur_board->player_last_dir = 0x10;
   cur_board->bottom_mesg[0] = 0;
   cur_board->b_mesg_timer = 0;
@@ -292,9 +294,10 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     cur_board->num_input = vfgetw(vf);
     cur_board->input_size = vfgetc(vf);
 
-    if(!vfread(cur_board->input_string, LEGACY_INPUT_STRING_MAX + 1, 1, vf))
-      cur_board->input_string[0] = 0;
-    cur_board->input_string[LEGACY_INPUT_STRING_MAX] = 0;
+    if(!vfread(input_string, LEGACY_INPUT_STRING_MAX + 1, 1, vf))
+      input_string[0] = 0;
+    input_string[LEGACY_INPUT_STRING_MAX] = 0;
+    board_set_input(cur_board, input_string, LEGACY_INPUT_STRING_MAX);
 
     cur_board->player_last_dir = vfgetc(vf);
 
@@ -311,7 +314,9 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     cur_board->locked_x = (signed short)vfgetw(vf);
     cur_board->locked_y = (signed short)vfgetw(vf);
   }
-  else if(savegame)
+  else
+
+  if(savegame)
   {
     size_t len;
 
@@ -323,9 +328,10 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     if(len >= ROBOT_MAX_TR)
       len = ROBOT_MAX_TR - 1;
 
-    if(!vfread(cur_board->input_string, len, 1, vf))
+    if(!vfread(input_string, len, 1, vf))
       len = 0;
-    cur_board->input_string[len] = 0;
+    input_string[len] = 0;
+    board_set_input(cur_board, input_string, len);
 
     cur_board->player_last_dir = vfgetc(vf);
 

@@ -34,6 +34,8 @@ CORE_LIBSPEC int save_board(struct world *mzx_world, struct board *cur_board,
 CORE_LIBSPEC struct board *load_board_allocate(struct world *mzx_world,
  struct zip_archive *zp, int savegame, int file_version, unsigned int board_id);
 
+CORE_LIBSPEC void board_set_input(struct board *cur_board,
+ const char *input, size_t len);
 CORE_LIBSPEC void clear_board(struct board *cur_board);
 
 struct board *duplicate_board(struct world *mzx_world,

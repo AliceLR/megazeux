@@ -66,7 +66,8 @@ struct board
   int last_key;
   int num_input;
   size_t input_size;
-  char input_string[ROBOT_MAX_TR];
+  size_t input_allocated;
+  char *input_string;
   int player_last_dir;
   char bottom_mesg[ROBOT_MAX_TR];
   int b_mesg_timer;

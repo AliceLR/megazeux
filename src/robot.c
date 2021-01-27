@@ -2914,7 +2914,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         if(!strncasecmp(src_ptr, "input)", 6))
         {
           dest_pos += sprintf(buffer + dest_pos, "%s",
-           src_board->input_string);
+           src_board->input_string ? src_board->input_string : "");
           src_ptr += 6;
         }
         else
@@ -3043,12 +3043,12 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         if(!memcasecmp(name_buffer, "INPUT", 6))
         {
           // Input
-          name_length = strlen(src_board->input_string);
+          const char *input_string = src_board->input_string ? src_board->input_string : "";
+          name_length = strlen(input_string);
           if(dest_pos + name_length >= ROBOT_MAX_TR)
             name_length = ROBOT_MAX_TR - dest_pos - 1;
 
-          memcpy(buffer + dest_pos, src_board->input_string,
-           name_length);
+          memcpy(buffer + dest_pos, input_string, name_length);
           dest_pos += name_length;
         }
         else

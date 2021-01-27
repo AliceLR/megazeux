@@ -112,8 +112,11 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
     save_prop_d(BPROP_NUM_INPUT, cur_board->num_input, &mf);
     save_prop_d(BPROP_INPUT_SIZE, cur_board->input_size, &mf);
 
-    length = strlen(cur_board->input_string);
-    save_prop_s(BPROP_INPUT_STRING, cur_board->input_string, length, 1, &mf);
+    if(cur_board->input_string)
+    {
+      length = strlen(cur_board->input_string);
+      save_prop_s(BPROP_INPUT_STRING, cur_board->input_string, length, 1, &mf);
+    }
 
     length = strlen(cur_board->bottom_mesg);
     save_prop_s(BRPOP_BOTTOM_MESG, cur_board->bottom_mesg, length, 1, &mf);
@@ -296,7 +299,8 @@ static void default_board(struct board *cur_board)
   cur_board->last_key = '?';
   cur_board->num_input = 0;
   cur_board->input_size = 0;
-  cur_board->input_string[0] = 0;
+  cur_board->input_allocated = 0;
+  cur_board->input_string = NULL;
   cur_board->bottom_mesg[0] = 0;
   cur_board->b_mesg_timer = 0;
   cur_board->b_mesg_row = 24;
@@ -337,6 +341,30 @@ void dummy_board(struct board *cur_board)
   cur_board->num_sensors = 0;
   cur_board->num_sensors_allocated = 0;
   cur_board->sensor_list = ccalloc(1, sizeof(struct sensor *));
+}
+
+void board_set_input(struct board *cur_board, const char *input, size_t len)
+{
+  if(!len || !input || !input[0])
+  {
+    if(cur_board->input_string)
+      cur_board->input_string[0] = '\0';
+    cur_board->num_input = 0;
+    cur_board->input_size = 0;
+    return;
+  }
+
+  if(len + 1 > cur_board->input_allocated)
+  {
+    size_t size = MAX(len + 1, 81);
+    cur_board->input_string = crealloc(cur_board->input_string, size);
+    cur_board->input_allocated = size;
+  }
+  // The provided input may be a part of the input string!
+  memmove(cur_board->input_string, input, len);
+  cur_board->input_string[len] = '\0';
+  cur_board->input_size = len;
+  cur_board->num_input = atoi(cur_board->input_string);
 }
 
 __editor_maybe_static void board_set_charset_path(struct board *cur_board,
@@ -628,8 +656,7 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
       case BPROP_INPUT_STRING:
         size = MIN(size, ROBOT_MAX_TR-1);
-        mfread(cur_board->input_string, size, 1, &prop);
-        cur_board->input_string[size] = 0;
+        board_set_input(cur_board, (const char *)prop.start, size);
         break;
 
       case BRPOP_BOTTOM_MESG:
@@ -1218,6 +1245,14 @@ struct board *duplicate_board(struct world *mzx_world,
   }
 
   // Buffers
+  if(src_board->input_string)
+  {
+    dest_board->input_string = NULL;
+    dest_board->input_allocated = 0;
+    board_set_input(dest_board, src_board->input_string,
+     src_board->input_allocated);
+  }
+
   if(src_board->charset_path)
   {
     dest_board->charset_path = NULL;
@@ -1330,6 +1365,7 @@ void clear_board(struct board *cur_board)
   free(cur_board->level_under_param);
   free(cur_board->level_under_color);
 
+  free(cur_board->input_string);
   free(cur_board->charset_path);
   free(cur_board->palette_path);
 

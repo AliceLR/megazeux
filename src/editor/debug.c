@@ -572,9 +572,14 @@ static void update_ram_usage_data(struct world *mzx_world,
   for(i = 0; i < mzx_world->num_boards; i++)
   {
     struct board *b = mzx_world->board_list[i];
+    // Board data.
     ram_data.board_data_size += b->board_width * b->board_height * 6;
     if(b->overlay_mode)
       ram_data.board_overlay_size += b->board_width * b->board_height * 2;
+
+    // Buffers (split off the board struct).
+    ram_data.board_list_and_struct_size +=
+     b->input_allocated + b->charset_path_allocated + b->palette_path_allocated;
 
     // Robot list (+1) and robot name sorted list.
     ram_data.robot_list_and_struct_size +=
@@ -631,7 +636,7 @@ int get_counter_safe(struct world *mzx_world, const char *name, int id)
   return get_counter(mzx_world, name, id);
 }
 
-static void get_var_name(struct debug_var *v, char **name, int *len,
+static void get_var_name(struct debug_var *v, const char **name, int *len,
  char buffer[VAR_LIST_WIDTH + 1])
 {
   switch((enum debug_var_type)v->type)
@@ -681,7 +686,7 @@ static void get_var_name(struct debug_var *v, char **name, int *len,
 
 // The buffer param is used for any vars that need to generate char values.
 static void get_var_value(struct world *mzx_world, struct debug_var *v,
- char **char_value, int *int_value, int64_t *long_value,
+ const char **char_value, int *int_value, int64_t *long_value,
  char buffer[VAR_LIST_WIDTH + 1])
 {
   struct board *cur_board = mzx_world->current_board;
@@ -780,7 +785,7 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       if(match_var("input*"))
       {
         // the starred version of input is the input string!
-        *char_value = cur_board->input_string;
+        *char_value = cur_board->input_string ? cur_board->input_string : "";
         *int_value = strlen(*char_value);
       }
       else
@@ -1008,7 +1013,7 @@ static void read_var(struct world *mzx_world, struct debug_var *v)
 {
   char buffer[VAR_LIST_WIDTH + 1];
   char *char_dest = v->text + SVALUE_COL_OFFSET;
-  char *char_value = NULL;
+  const char *char_value = NULL;
   int64_t long_value = INT64_MIN;
   int int_value = 0;
 
@@ -1633,7 +1638,7 @@ static boolean search_vars(struct world *mzx_world, struct debug_node *node,
 
   char var_text_buffer[VAR_LIST_WIDTH + 1];
   int var_text_length;
-  char *var_text;
+  const char *var_text;
 
   if(search_flags & VAR_SEARCH_REVERSE)
   {
@@ -3300,7 +3305,7 @@ void __debug_counters(context *ctx)
   if(var_selected < num_vars)
   {
     char buffer[VAR_LIST_WIDTH + 1];
-    char *var_name;
+    const char *var_name;
     int len;
 
     get_var_name(var_list[var_selected], &var_name, &len, buffer);
