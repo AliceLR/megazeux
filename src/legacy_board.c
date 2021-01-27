@@ -137,8 +137,10 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->volume_inc = 0;
   cur_board->volume_target = 255;
   cur_board->reset_on_entry = 0;
-  cur_board->charset_path[0] = 0;
-  cur_board->palette_path[0] = 0;
+  cur_board->charset_path = NULL;
+  cur_board->palette_path = NULL;
+  cur_board->charset_path_allocated = 0;
+  cur_board->palette_path_allocated = 0;
 
 #ifdef DEBUG
   cur_board->is_extram = false;
@@ -664,7 +666,6 @@ struct board *legacy_load_board_allocate(struct world *mzx_world, vfile *vf,
   }
 
   cur_board = cmalloc(sizeof(struct board));
-  cur_board->world_version = mzx_world->version;
   result = legacy_load_board_direct(mzx_world, cur_board, vf, data_size,
    savegame, file_version);
 

@@ -2878,7 +2878,7 @@ void change_board_load_assets(struct world *mzx_world)
   char translated_name[MAX_PATH];
 
   // Does this board need a char set loaded? (2.90+)
-  if(mzx_world->version >= V290 && cur_board->charset_path[0])
+  if(mzx_world->version >= V290 && cur_board->charset_path)
   {
     if(fsafetranslate(cur_board->charset_path, translated_name, MAX_PATH) == FSAFE_SUCCESS)
     {
@@ -2891,7 +2891,7 @@ void change_board_load_assets(struct world *mzx_world)
   }
 
   // Does this board need a palette loaded? (2.90+)
-  if(mzx_world->version >= V290 && cur_board->palette_path[0])
+  if(mzx_world->version >= V290 && cur_board->palette_path)
   {
     if(fsafetranslate(cur_board->palette_path, translated_name, MAX_PATH) == FSAFE_SUCCESS)
       load_palette(translated_name);

@@ -28,9 +28,6 @@ __M_BEGIN_DECLS
 
 struct board
 {
-  int size;
-  int world_version;
-
   char board_name[32];
 
   int board_width;
@@ -86,8 +83,10 @@ struct board
   int volume;
   int volume_inc;
   int volume_target;
-  char charset_path[MAX_PATH];
-  char palette_path[MAX_PATH];
+  char *charset_path;
+  char *palette_path;
+  size_t charset_path_allocated;
+  size_t palette_path_allocated;
 
   int num_robots;
   int num_robots_active;

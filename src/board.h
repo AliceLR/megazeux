@@ -47,6 +47,11 @@ int find_board(struct world *mzx_world, char *name);
 CORE_LIBSPEC int load_board_direct(struct world *mzx_world,
  struct board *cur_board,  struct zip_archive *zp, int savegame,
  int file_version, unsigned int board_id);
+
+CORE_LIBSPEC void board_set_charset_path(struct board *cur_board,
+ const char *path, size_t path_len);
+CORE_LIBSPEC void board_set_palette_path(struct board *cur_board,
+ const char *path, size_t path_len);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

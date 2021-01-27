@@ -96,7 +96,6 @@ static struct board *legacy_load_board_allocate_direct(struct world *mzx_world,
   board_start = vftell(vf);
   board_end = vfilelength(vf, false);
 
-  cur_board->world_version = version;
   legacy_load_board_direct(mzx_world, cur_board, vf, (board_end - board_start), 0,
    version);
 
@@ -217,13 +216,10 @@ void replace_current_board(struct world *mzx_world, const char *name)
 
 struct board *create_blank_board(struct editor_config_info *conf)
 {
-  struct board *cur_board = cmalloc(sizeof(struct board));
+  struct board *cur_board = ccalloc(1, sizeof(struct board));
   int layer_size = conf->board_width * conf->board_height;
   int i;
 
-  memset(cur_board->board_name, 0, sizeof(cur_board->board_name));
-
-  cur_board->size = 0;
   cur_board->board_width =       conf->board_width;
   cur_board->board_height =      conf->board_height;
   cur_board->overlay_mode =      conf->overlay_enabled;
@@ -285,8 +281,8 @@ struct board *create_blank_board(struct editor_config_info *conf)
   cur_board->volume_inc = 0;
   cur_board->volume_target = 255;
 
-  strcpy(cur_board->charset_path, conf->charset_path);
-  strcpy(cur_board->palette_path, conf->palette_path);
+  board_set_charset_path(cur_board, conf->charset_path, strlen(conf->charset_path));
+  board_set_palette_path(cur_board, conf->palette_path, strlen(conf->palette_path));
 
   cur_board->num_robots = 0;
   cur_board->num_robots_active = 0;
