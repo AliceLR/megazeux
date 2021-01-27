@@ -8,6 +8,7 @@
 #define MSPACES			1
 #define LACKS_SYS_MMAN_H 	1
 #define LACKS_SCHED_H		1
+#define FOOTERS			1
 
 #define malloc_getpagesize	4096
 #undef  DEBUG

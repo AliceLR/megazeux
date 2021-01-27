@@ -50,8 +50,14 @@
 #define SCALED_USE_CELL_CACHE /* 5% penalty on full redraws, up to 20x speed increase on no redraws */
 
 // These variables control the panning along the 1:1 "main" screen.
+DTCM_BSS
 static int cell_pan_x = 0;
+DTCM_BSS
 static int cell_pan_y = 0;
+DTCM_BSS
+static int mainscr_x_33rd = 0;
+DTCM_BSS
+static int mainscr_y_max = 0;
 
 // When set to >= 0, the upper screen will attempt to focus to this position
 // the next  time it is drawn and then reset them to -1.
@@ -204,7 +210,8 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
 
   /* Use bank C for the text screens. */
   videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE | DISPLAY_BG1_ACTIVE);
-  vramSetBankC(VRAM_C_SUB_BG);
+  vramSetBankH(VRAM_H_SUB_BG);
+  vramSetBankI(VRAM_I_SUB_BG_0x06208000);
 
   /* BG0: foreground characters. */
   REG_BG0CNT_SUB  = BG_64x32 | BG_COLOR_16 | BG_MAP_BASE(0) |
@@ -214,7 +221,7 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
 
   /* BG1: background characters. */
   REG_BG1CNT_SUB  = BG_64x32 | BG_COLOR_16 | BG_MAP_BASE(2) |
-                    BG_TILE_BASE(3);
+                    BG_TILE_BASE(0);
   REG_BG1HOFS_SUB = 0;
   REG_BG1VOFS_SUB = 0;
 
@@ -223,7 +230,7 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
   focus_y = 350/2;
 
   // Add a solid tile for background colors.
-  vram = (u16*)BG_TILE_RAM_SUB(1) + 1024*16;
+  vram = (u16*)BG_TILE_RAM_SUB(0) + 256*16;
   for(i = 0; i < 32; i++)
     *(vram++) = (1 << 12 | 1 << 8 | 1 << 4 | 1) * (1+(i >> 4));
 }
@@ -469,6 +476,9 @@ static void nds_mainscreen_focus(int x, int y)
   cell_pan_y = y / 14;
   scroll_y   = y % 14;
 
+  mainscr_x_33rd = scroll_x > 0 ? 1 : 0;
+  mainscr_y_max = scroll_y >= 4 ? 15 : 14;
+
   // Adjust the X scroll registers now.
   REG_BG0HOFS_SUB = scroll_x;
   REG_BG1HOFS_SUB = scroll_x;
@@ -613,7 +623,7 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
   vram_fg = (u16*)BG_MAP_RAM_SUB(0);
   vram_bg = (u16*)BG_MAP_RAM_SUB(2);
 
-  for(y = 0; y < 15; y++)
+  for(y = 0; y < mainscr_y_max; y++)
   {
     // Draw the top halves of this line for tile_offset=0, then the bottom
     // halves for tile_offset=1.
@@ -632,18 +642,22 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
         fg  = (*text_cell).fg_color;
 
         *vram_fg = (2*chr + tile_offset) | (fg << 12);
-        *vram_bg = (bg << 12) | (chr >> 8);
+        *vram_bg = (bg << 12) | (chr >> 8) | 0x100;
 
         text_cell++;
-        vram_bg++; vram_fg++;
+        vram_bg++;
+        vram_fg++;
       }
 
-      // Plot the 33rd column (in the next plane)
-      chr = (*text_cell).char_value & 0x1FF;
-      bg  = (*text_cell).bg_color;
-      fg  = (*text_cell).fg_color;
-      *(vram_fg+992) = (2*chr + tile_offset) | (fg << 12);
-      *(vram_bg+992) = (bg << 12) | (chr >> 8);
+      if (mainscr_x_33rd)
+      {
+        // Plot the 33rd column (in the next plane)
+        chr = (*text_cell).char_value & 0x1FF;
+        bg  = (*text_cell).bg_color;
+        fg  = (*text_cell).fg_color;
+        *(vram_fg+992) = (2*chr + tile_offset) | (fg << 12);
+        *(vram_bg+992) = (bg << 12) | (chr >> 8) | 0x100;
+      }
 
       // Move back.
       text_cell -= 32;

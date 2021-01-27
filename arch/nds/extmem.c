@@ -31,6 +31,8 @@
 #include "ram.h"
 #include "extmem.h"
 
+#define ALLOW_VRAM_MSPACE
+#define ALLOW_32BIT_WRITES
 // CRC-32 values can optionally be computed to verify that the block of memory
 // retrieved from a RAM cart is the same as the block originally stored. This
 // is useful for debugging but makes extram operations slower.
@@ -43,10 +45,15 @@
 #define CRC_SIZE 0
 #endif
 
-static boolean has_extmem = false;
-static u16 *base;
-static size_t capacity;
-static mspace nds_mspace;
+#define IS_EXTRAM(ptr) (((u32)(ptr) & 0xFF000000) != 0x02000000)
+
+enum extram_mspace
+{
+  MSPACE_VRAM = 0,
+  MSPACE_TWL_WRAM,
+  MSPACE_SLOT_2,
+  MSPACE_COUNT
+};
 
 enum extram_result
 {
@@ -56,14 +63,22 @@ enum extram_result
   CHECKSUM_FAILED
 };
 
+static u16 *slot2_base;
+static size_t slot2_capacity;
+static boolean has_extmem;
+static boolean nds_has_mspace[MSPACE_COUNT];
+static mspace nds_mspace[MSPACE_COUNT];
+
 static const char *extram_result_string(enum extram_result res)
 {
   switch(res)
   {
     case SUCCESS:               return "No error";
     case OUT_OF_NORMAL_MEMORY:  return "Out of memory";
-    case OUT_OF_EXTRA_MEMORY:   return "Out of extra memory";
+    case OUT_OF_EXTRA_MEMORY:  return "Out of extra memory";
+#ifdef ENABLE_CRCS
     case CHECKSUM_FAILED:       return "Extra memory checksum failed";
+#endif
     default:                    return "Unknown error";
   }
 }
@@ -75,7 +90,8 @@ static void real_extram_check_error(enum extram_result err, const char *file,
 {
   char msgbuf[128];
 
-  if(err)
+  // If we're out of extra memory, we can still allocate in main memory.
+  if(err && err != OUT_OF_EXTRA_MEMORY)
   {
     snprintf(msgbuf, sizeof(msgbuf), "%s at %s:%d",
      extram_result_string(err), file, line);
@@ -90,21 +106,25 @@ static void nds_ext_print_info(void)
   if(has_printed) return;
   has_printed = true;
 
-  if(has_extmem)
+  if(nds_has_mspace[MSPACE_VRAM])
     info("Using '%s' RAM expansion with capacity of %d (base %p).\n",
-     ram_type_string(), capacity, (void *)base);
+     ram_type_string(), slot2_capacity, (void *)slot2_base);
   else
     info("No RAM expansion detected.\n");
 }
 
 static void *nds_ext_malloc(size_t bytes)
 {
-  void *retval;
+  void *retval = NULL;
+  int i;
 
-  if(has_extmem)
-    retval = mspace_malloc(nds_mspace, bytes);
-  else
-    retval = NULL;
+  for(i = 0; i < MSPACE_COUNT; i++)
+    if(nds_has_mspace[i])
+    {
+      retval = mspace_malloc(nds_mspace[i], bytes);
+      if(retval != NULL)
+        break;
+    }
 
   return retval;
 }
@@ -112,34 +132,39 @@ static void *nds_ext_malloc(size_t bytes)
 static inline void *nds_ext_realloc(void *mem, size_t bytes)
 {
   void *retval;
+  int i;
 
-  if(has_extmem)
-    retval = mspace_realloc(nds_mspace, mem, bytes);
-  else
-    retval = NULL;
+  for(i = 0; i < MSPACE_COUNT; i++)
+    if(nds_has_mspace[i])
+    {
+      retval = mspace_realloc(nds_mspace[i], mem, bytes);
+      if(retval != NULL)
+        break;
+    }
 
   return retval;
 }
 
 static void nds_ext_free(void *mem)
 {
-  if(has_extmem)
-    mspace_free(nds_mspace, mem);
+  int i;
+
+  for(i = 0; i < MSPACE_COUNT; i++)
+    if(nds_has_mspace[i])
+      mspace_free(nds_mspace[i], mem);
 }
 
 static void nds_ext_unlock()
 {
-  if(has_extmem)
+  if(nds_has_mspace[MSPACE_SLOT_2])
     ram_unlock();
 }
 
 static void nds_ext_lock()
 {
-  if(has_extmem)
+  if(nds_has_mspace[MSPACE_SLOT_2])
     ram_lock();
 }
-
-#define ALLOW_32BIT_WRITES
 
 // Copy with no 8-bit writes.
 static void nds_ext_copy(void *dest, void *src, size_t size)
@@ -225,7 +250,7 @@ static enum extram_result nds_ext_out(void *extra_buffer_ptr, size_t size)
   void **extra_buffer = (void **)extra_buffer_ptr;
   enum extram_result retval = SUCCESS;
 
-  if(*extra_buffer)
+  if(IS_EXTRAM(*extra_buffer))
   {
     char *normal_buffer;
     normal_buffer = malloc(size);
@@ -267,20 +292,44 @@ static enum extram_result nds_ext_out(void *extra_buffer_ptr, size_t size)
 
 boolean nds_ram_init(RAM_TYPE type)
 {
-  boolean retval = false;
+  int i;
+
+  // Clear mspace flags.
+  memset(nds_has_mspace, 0, sizeof(nds_has_mspace));
+
+  // Allocate VRAM mspace.
+#ifdef ALLOW_VRAM_MSPACE
+  // Use VRAM banks C-G as mspace.
+  // See internals_notes.txt for details.
+  vramSetBankC(VRAM_C_LCD);
+  vramSetBankD(VRAM_D_LCD);
+  vramSetBankE(VRAM_E_LCD);
+  vramSetBankF(VRAM_F_LCD);
+  vramSetBankG(VRAM_G_LCD);
+  nds_mspace[MSPACE_VRAM] = create_mspace_with_base((u16*) 0x06840000, 0x06898000 - 0x06840000, 0);
+  nds_has_mspace[MSPACE_VRAM] = true;
+#endif
 
   // Check for RAM expansion.
   if(ram_init(type))
   {
     // Initialize an mspace for this RAM.
-    has_extmem = true;
-    base = (u16 *)ram_unlock();
-    capacity = ram_size();
-    nds_mspace = create_mspace_with_base(base, capacity, 0);
-    retval = true;
+    slot2_base = (u16 *)ram_unlock();
+    slot2_capacity = ram_size();
+    nds_mspace[MSPACE_SLOT_2] = create_mspace_with_base(slot2_base, slot2_capacity, 0);
+    nds_has_mspace[MSPACE_SLOT_2] = true;
     nds_ext_lock();
   }
-  return retval;
+
+  has_extmem = false;
+  for(i = 0; i < MSPACE_COUNT; i++)
+    if(nds_has_mspace[i])
+    {
+      has_extmem = true;
+      break;
+    }
+
+  return has_extmem;
 }
 
 // Move the robot's memory from normal RAM to extra RAM.
