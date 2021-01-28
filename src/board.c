@@ -345,8 +345,6 @@ void board_set_input_string(struct board *cur_board, const char *input, size_t l
   {
     if(cur_board->input_string)
       cur_board->input_string[0] = '\0';
-    cur_board->num_input = 0;
-    cur_board->input_size = 0;
     return;
   }
 
