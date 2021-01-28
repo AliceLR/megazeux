@@ -5074,24 +5074,26 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_CLIP_INPUT: // Clip input
       {
         const char *input_string = src_board->input_string ? src_board->input_string : "";
-        size_t len;
+        size_t input_size = src_board->input_size;
+        size_t i = 0;
 
         // Chop up to and through first section of whitespace.
         // First, until non space or end
-        while(*input_string)
+        while(*input_string && i < input_size)
         {
           if(*input_string == ' ')
             break;
           input_string++;
+          i++;
         }
 
-        while(*input_string == ' ')
-          input_string++;
+        while(*input_string == ' ' && i < input_size)
+          input_string++, i++;
 
-        len = strlen(input_string);
-        board_set_input_string(src_board, input_string, len);
-        src_board->input_size = len;
-        src_board->num_input = len ? atoi(src_board->input_string) : 0;
+        i = strlen(input_string);
+        board_set_input_string(src_board, input_string, i);
+        src_board->input_size = i;
+        src_board->num_input = i ? atoi(src_board->input_string) : 0;
         break;
       }
 
@@ -5652,7 +5654,7 @@ void run_robot(context *ctx, int id, int x, int y)
           {
             if(input_string[i] == 32) break;
             i++;
-          } while(i < (ssize_t)src_board->input_size);
+          } while(i < (ssize_t)src_board->input_size && input_string[i]);
         }
 
         if(input_string[i] == 32)
