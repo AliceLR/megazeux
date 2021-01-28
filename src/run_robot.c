@@ -3882,35 +3882,40 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_INPUT: // input string
       {
         char input_buffer[ROBOT_MAX_TR];
+        char title_buffer[ROBOT_MAX_TR];
         char *break_pos;
+        size_t len;
 
-        tr_msg(mzx_world, cmd_ptr + 2, id, input_buffer);
-        input_buffer[71] = '\0';
+        tr_msg(mzx_world, cmd_ptr + 2, id, title_buffer);
+        title_buffer[71] = '\0';
 
         // Newlines break the UI. :(
-        break_pos = strchr(input_buffer, '\n');
+        break_pos = strchr(title_buffer, '\n');
         if(break_pos)
           *break_pos = '\0';
 
-        src_board->input_string[0] = 0;
+        input_buffer[0] = 0;
 
         dialog_fadein();
-        input_window(mzx_world, input_buffer, src_board->input_string, 70);
+        input_window(mzx_world, input_buffer, input_buffer, 70);
 
         // Due to a faulty check, 2.83 through 2.91f always stay faded in here.
         // If something is found that relies on that, make this conditional.
         dialog_fadeout();
 
-        src_board->input_size = strlen(src_board->input_string);
-        src_board->num_input = atoi(src_board->input_string);
+        len = strlen(input_buffer);
+        board_set_input_string(src_board, input_buffer, len);
+        src_board->input_size = len;
+        src_board->num_input = len ? atoi(src_board->input_string) : 0;
         break;
       }
 
       case ROBOTIC_CMD_IF_INPUT: // If string "" "l"
       {
+        const char *input_string = src_board->input_string ? src_board->input_string : "";
         char cmp_buffer[ROBOT_MAX_TR];
         tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
-        if(!strcasecmp(cmp_buffer, src_board->input_string))
+        if(!strcasecmp(cmp_buffer, input_string))
         {
           char *p2 = next_param_pos(cmd_ptr + 1);
           gotoed = send_self_label_tr(mzx_world, p2 + 1, id);
@@ -3920,9 +3925,10 @@ void run_robot(context *ctx, int id, int x, int y)
 
       case ROBOTIC_CMD_IF_INPUT_NOT: // If string not "" "l"
       {
+        const char *input_string = src_board->input_string ? src_board->input_string : "";
         char cmp_buffer[ROBOT_MAX_TR];
         tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
-        if(strcasecmp(cmp_buffer, src_board->input_string))
+        if(strcasecmp(cmp_buffer, input_string))
         {
           char *p2 = next_param_pos(cmd_ptr + 1);
           gotoed = send_self_label_tr(mzx_world, p2 + 1, id);
@@ -3933,8 +3939,8 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_IF_INPUT_MATCHES: // If string matches "" "l"
       {
         // compare
+        const char *input_string = src_board->input_string ? src_board->input_string : "";
         char cmp_buffer[ROBOT_MAX_TR];
-        char *input_string = src_board->input_string;
         size_t i, cmp_len;
         char current_char;
         char cmp_char;
@@ -5067,33 +5073,27 @@ void run_robot(context *ctx, int id, int x, int y)
 
       case ROBOTIC_CMD_CLIP_INPUT: // Clip input
       {
-        size_t i = 0, input_size = src_board->input_size;
-        char *input_string = src_board->input_string;
+        const char *input_string = src_board->input_string ? src_board->input_string : "";
+        size_t input_size = src_board->input_size;
+        size_t i = 0;
 
         // Chop up to and through first section of whitespace.
         // First, until non space or end
-        if(input_size)
+        while(*input_string && i < input_size)
         {
-          do
-          {
-            if(input_string[i] == 32)
-              break;
-          } while((++i) < input_size);
+          if(*input_string == ' ')
+            break;
+          input_string++;
+          i++;
         }
 
-        if(input_string[i] == 32)
-        {
-          do
-          {
-            if(input_string[i] != 32)
-              break;
-          } while((++i) < input_size);
-        }
-        // Chop UNTIL i. (i points to first No-Chop)
+        while(*input_string == ' ' && i < input_size)
+          input_string++, i++;
 
-        strcpy(input_string, input_string + i);
-        src_board->input_size = strlen(input_string);
-        src_board->num_input = atoi(input_string);
+        i = strlen(input_string);
+        board_set_input_string(src_board, input_string, i);
+        src_board->input_size = i;
+        src_board->num_input = i ? atoi(src_board->input_string) : 0;
         break;
       }
 
@@ -5640,9 +5640,13 @@ void run_robot(context *ctx, int id, int x, int y)
 
       case ROBOTIC_CMD_IF_FIRST_INPUT: // If first string str str
       {
+        char tmp[2] = "";
         char *input_string = src_board->input_string;
         char match_string_buffer[ROBOT_MAX_TR];
         ssize_t i = 0;
+
+        if(!input_string)
+          input_string = tmp;
 
         if(src_board->input_size)
         {
@@ -5650,7 +5654,7 @@ void run_robot(context *ctx, int id, int x, int y)
           {
             if(input_string[i] == 32) break;
             i++;
-          } while(i < (ssize_t)src_board->input_size);
+          } while(i < (ssize_t)src_board->input_size && input_string[i]);
         }
 
         if(input_string[i] == 32)

@@ -1,0 +1,3 @@
+Title: SET $string INPUT test
+Author: Alice Rowan
+Desc: Test the feature to set a string to INPUT added in 2.62.

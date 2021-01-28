@@ -37,6 +37,9 @@ USERS
   displayed despite being meaningless.
 + Fixed a bug where some checks in the file manager could fail
   when getcwd returns different slashes than expected.
++ Fixed CLIP INPUT and IF FIRST STRING "" "" bug where INPUTSIZE
+  would be used as the bound on the input string without also
+  checking for null chars, potentially allowing heap corruption.
 + Fixed a bug where checkres would not check the current dir
   for files when provided with a MZX filename with no path
   component.
@@ -48,6 +51,8 @@ USERS
 
 DEVELOPERS
 
++ Board input strings, charset paths, and palette paths are now
+  heap allocated on-demand to save RAM for low-memory systems.
 + Refactored the 3DS renderer to use templates. (asie)
 
 

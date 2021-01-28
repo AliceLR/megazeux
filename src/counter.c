@@ -35,6 +35,7 @@
 #include <sys/time.h>
 #endif /* _MSC_VER */
 
+#include "board.h"
 #include "configure.h"
 #include "counter.h"
 #include "data.h"
@@ -1161,8 +1162,10 @@ static int input_read(struct world *mzx_world,
 static void input_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
+  char buf[12];
+  sprintf(buf, "%d", value);
+  board_set_input_string(mzx_world->current_board, buf, strlen(buf));
   mzx_world->current_board->num_input = value;
-  sprintf(mzx_world->current_board->input_string, "%d", value);
 }
 
 static int key_read(struct world *mzx_world,

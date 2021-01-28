@@ -263,7 +263,8 @@ struct board *create_blank_board(struct editor_config_info *conf)
   cur_board->last_key = '?';
   cur_board->num_input = 0;
   cur_board->input_size = 0;
-  cur_board->input_string[0] = 0;
+  cur_board->input_allocated = 0;
+  cur_board->input_string = NULL;
   cur_board->player_last_dir = 0x10;
   cur_board->bottom_mesg[0] = 0;
   cur_board->b_mesg_timer = 0;
