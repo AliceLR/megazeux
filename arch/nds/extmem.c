@@ -75,7 +75,7 @@ static const char *extram_result_string(enum extram_result res)
   {
     case SUCCESS:               return "No error";
     case OUT_OF_NORMAL_MEMORY:  return "Out of memory";
-    case OUT_OF_EXTRA_MEMORY:  return "Out of extra memory";
+    case OUT_OF_EXTRA_MEMORY:   return "Out of extra memory";
 #ifdef ENABLE_CRCS
     case CHECKSUM_FAILED:       return "Extra memory checksum failed";
 #endif

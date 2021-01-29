@@ -18,4 +18,4 @@ This will emit a "mzxrun.nds" which you should know how to launch.
 PACKAGING THE BUILD
 
 You can then use the usual "make archive" to build a
-suitable ZIT file for distribution.
+suitable .ZIP file for distribution.

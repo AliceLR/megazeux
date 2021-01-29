@@ -649,7 +649,7 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
         vram_fg++;
       }
 
-      if (mainscr_x_33rd)
+      if(mainscr_x_33rd)
       {
         // Plot the 33rd column (in the next plane)
         chr = (*text_cell).char_value & 0x1FF;
