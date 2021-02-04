@@ -36,8 +36,6 @@ else
 endif
 
 SDL_PREFIX := ${PORTLIBS_PATH}/wiiu
-ZLIB_CFLAGS := 
-ZLIB_LDFLAGS := 
 
 EXTRA_INCLUDES := -isystem ${WUT_ROOT}/include -isystem ${PORTLIBS_PATH}/wiiu/include \
                   -isystem ${PORTLIBS_PATH}/ppc/include

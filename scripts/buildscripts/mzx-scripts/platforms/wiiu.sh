@@ -52,5 +52,5 @@ platform_check_build()
 platform_setup_environment()
 {
 	dkp_install devkitPPC wut wut-tools
-	dkp_install ppc-zlib ppc-libpng ppc-libogg ppc-libvorbisidec wiiu-sdl2
+	dkp_install ppc-zlib ppc-libpng ppc-libogg ppc-libvorbis wiiu-sdl2
 }

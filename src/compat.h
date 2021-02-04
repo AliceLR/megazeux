@@ -324,20 +324,6 @@ static inline void *crealloc(void *ptr, size_t size)
 
 #endif /* CONFIG_CHECK_ALLOC */
 
-#ifdef CONFIG_WIIU
-
-// The devoptab implementation in the Wii U homebrew toolchain seems to trust
-// the system-provided mode value for files. This value does not seem to match
-// newlib's constants. (https://github.com/devkitPro/wut/issues/142)
-// The following code works around this problem.
-
-#include <sys/stat.h>
-
-#undef S_ISREG
-#define S_ISREG(m) (!S_ISDIR((m)))
-
-#endif /* CONFIG_WIIU */
-
 __M_END_DECLS
 
 #endif // __COMPAT_H

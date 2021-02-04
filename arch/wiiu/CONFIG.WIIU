@@ -2,4 +2,4 @@
 
 ./config.sh --platform wiiu --prefix $DEVKITPPC --enable-release \
             --disable-utils --enable-meter --enable-stdio-redirect \
-            --disable-gl --disable-libpng --enable-tremor $@
+            --disable-gl $@
