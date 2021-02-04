@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>MegaZeux 2.92d (20200508) - Help File</title>
+<title>MegaZeux 2.92f (20201120) - Help File</title>
 <style>
 /* MegaZeux
  *
@@ -390,7 +390,7 @@ body
 
 <body>
 <div id="helpnav">
-<h1>MegaZeux 2.92d (20200508) - Help File</h1>
+<h1>MegaZeux 2.92f (20201120) - Help File</h1>
 <div class="helpnavcentered"><ul>
 <li><a href="#MAIN.HLP__072">Contents</a></li><li><a href="#EDITINGK.HLP__080">Editor Keys</a></li><li><a href="#ROBOTICR.HLP__087">Robotic Manual</a></li><li><a href="#COMMANDR.HLP__1st">Commands</a></li><li><a href="#COUNTERS.HLP__1st">Counters</a></li><li><a href="#NEWINVER.HLP__1st">Changelog</a></li></ul></div>
 </div>
@@ -1827,7 +1827,7 @@ To make things sane for all parties, do this before submitting:
      port, upload a world made in 2.70 that works in 2.70 but
      does not in the current version to best isolate the
      problem.
-&#xE009; 
+
 Additionally, contacting the developers in real-time can help
 illuminate the problem.
 
@@ -8358,7 +8358,7 @@ save a Robot into a given string.
 <span class="fB">SAVE_BCn (function)</span>
 <span class="fB">LOAD_BCn (function)</span>
 
-Saves or loads Robotic code to or from bitcode files,
+Saves or loads Robotic code to or from bytecode files,
 respectively. The first forms save/load the current Robot,
 while the second forms save/load the Robot with the Robot ID of
 the number n.
@@ -10136,10 +10136,10 @@ names.
 <span class="fA">SET "file.bc" to "SAVE_BCn"</span>
 <span class="fA">SET "file.bc" to "LOAD_BCn"</span>
 
-These commands can save Robotic code to files in bitcode format
-and import bitcode files into a Robot. The first forms use the
+These commands can save Robotic code to files in bytecode format
+and import bytecode files into a Robot. The first forms use the
 current Robot, while the second forms use the Robot with the
-given Robot ID n. Bitcode is much more compact than plain text,
+given Robot ID n. Bytecode is much more compact than plain text,
 but cannot be easily read by the human eye.
 
 Note that for loading Robotic code via LOAD_ROBOT(n) or
@@ -10240,7 +10240,7 @@ very helpful for placing stuff at the end of a file.
 
 This command opens subdirectories for reading (by using the name
 of the subdirectory by itself, e.g. <span class="fA">SET "directory" to</span>
-"FREAD_OPEN"<span class="fF">). FREAD will then list the names of files in the</span>
+<span class="fA">"FREAD_OPEN"</span><span class="fF">). FREAD will then list the names of files in the</span>
 directory, with each read position being a different filename.
 Note that the files are not guaranteed to be read in any
 specific order.
@@ -11298,6 +11298,265 @@ updated.
 <div class="hF" id="NEWINVER.HLP">
 <a class="hA" name="NEWINVER.HLP__1st"> </a>
 <p class="hC"><span class="f9">NEW in MegaZeux!</span></p>
+November 22nd, 2020 - MZX 2.92f
+
+Here's another bugfix release. Highlights of this release are
+crash fixes (including the 3DS OGG crash bugs), numerous SAM/WAV
+playback bugfixes, some edge case compatibility fixes, world
+decryption improvements, networking improvements (including
+experimental Wii, 3DS, and Switch support), bugfixes for the
+file manager in Nintendo Switch builds, and too many libxmp
+fixes/improvements to list. Since libxmp development is active
+again, the number of MegaZeux hack patches is down to just two!
+The editor is now enabled for 3DS builds, and some rudimentary
+joystick support has been added to the editor so it will (maybe)
+be (almost) usable.
+
+Of special note are asie's improvements to the NDS port. New
+features include protected character set and palette support,
+improved touchscreen focus, reduced memory consumption, and
+*audio support*. Currently NDS audio requires preconversion of
+music files to .MAS and sample files to .SAM, but that it works
+at all is amazing by itself. Pre-converted .MAS files are
+included with the packed-in copy of Caverns of Zeux.
+
+USERS
+
++ Added audio support to the NDS port. PC speaker effects and
+  .SAM files will work out of the box, but .MOD/.S3M/.XM/.IT
+  files require preconversion to .MAS using mmutil. All other
+  audio formats are unsupported. (asie)
+  Example:
+
+    mmutil -d -m CV_TECH.MOD
+
++ Added protected character set and palette support to the NDS
+  port and reduced overall RAM usage for the NDS port. (asie)
++ Fixed a bug in the NDS port where MZX would immediately focus
+  the player after a touchscreen press event, preventing the
+  touchscreen from being used to scroll the upper screen. (asie)
++ Fixed a crash that could occur sometimes when duplicating
+  robots on a board with Reset Board on Entry enabled.
++ Added SET RANDOM, INC RANDOM, DEC RANDOM, and TAKE "label"
+  commands to the list of commands that should allow "infinite"
+  loops in pre-2.80 versions.
++ Fixed SET RANDOM # TO # for large ranges on certain platforms
+  (example: Linux) confused by the 32-bit math used to calculate
+  the random range.
++ Fixed crashes that could occur when attempting to run MegaZeux
+  without help.fil.
++ Fixed graphics corruption when using the glsl and opengl2
+  renderers on big endian platforms.
++ Fixed a bug that would cause string searches to sometimes skip
+  certain matches.
++ Improved performance of saving ZIP worlds/save files/etc. for
+  some platforms.
++ Platforms without a protected palette and the meter enabled
+  should now fade out properly before loading a world.
++ Rewrote decrypt() to work better on low-memory platforms.
++ Improved GLSL layer renderer performance slightly by sending
+  the palette and indices to the GPU fewer times per frame.
++ Fixed a bug where the GLSL renderer could attempt to load the
+  framebuffer symbols from a driver that doesn't support them
+  when resizing the window.
++ Fixed a bug where checkres wouldn't correctly detect
+  "LOAD_ROBOT#" when used to load to a specific robot.
++ Fixed a memory leak when printing network error messages in
+  Windows builds.
++ Fixed a potential crash bug in the netcode where socket IDs
+  could be reused after close() when attempting to connect.
++ Fixed a crash bug affecting the compatibility implementation
+  of getaddrinfo() that would occur if NULL was returned by
+  gethostbyname() during DNS resolution.
++ Fixed a potential crash in the compatibility implementation of
+  getaddrinfo() caused by gethostbyname() being thread-unsafe.
++ Fixed a bug where the updater would hang for up to 10 seconds
+  due to connections timing out during the confirmation UI.
++ Fixed a bug where the local manifest.txt would be overwritten
+  by the remote manifest, potentially causing bugs. The local
+  manifest will now be replaced only after a successful update.
++ Fixed bugs where the HTTP layer would filter header names,
+  content/transfer coding values, and content type values too
+  strictly.
++ Fixed a bug where INPUT STRING would display newlines from
+  an interpolated string.
++ MZX now validates the world version of encrypted worlds before
+  offering to decrypt them. This should reduce the chance of
+  accidentally "decrypting" a corrupted file and prevents MZX
+  from attempting to decrypt MZX 1.x files (which store the
+  password differently).
++ Added config settings "editor_show_thing_blink_speed" and
+  "editor_show_thing_toggles". The former controls the blinking
+  speed of the show thing (Shift+F2 et al.) editor keys and the
+  latter allows these keys to be treated as a toggle instead of
+  blocking input.
++ Added SOCKS5 IPv6 and username/password support.
++ Added "network_address_family" config setting to allow users
+  to force either IPv4 or IPv6 connections/name resolution. By
+  default, MZX will now request either or both depending on the
+  system IP address configuration (previously, it was hardcoded
+  to only allow IPv4 despite IPv6 support being implemented).
++ The config setting "updater_enabled" has been added to turn
+  off the updater system entirely without disabling networking.
++ The updater now allows update checks to be performed even when
+  a full update wouldn't be possible, and should be more helpful
+  about printing warnings to the console when this situation
+  occurs.
++ Enabled rewinddir hack and .. file manager hacks for Nintendo
+  Switch builds to fix the file manager and directory seeking.
++ Fixed a bug where importing a board over the title board would
+  not update the world title.
++ Fixed a crash that could be caused by selecting a block on the
+  overlay/vlayer, changing boards, then pressing enter.
++ Fixed a bug where the currently playing PC speaker note would
+  play for the rest of its duration after turning off PC speaker
+  sound effects, after "end play", after exiting gameplay, etc.
++ Fixed a regression where turning off music in the settings
+  menu and then turning music back on would not start playing
+  the music file for the current board.
++ Fixed multiple libvorbis and tremor crashes related to the
+  3DS platform_mutex_lock implementation not blocking.
++ Fixed audio frequency bugs in .SAM file playback.
++ Certain .WAV subtypes handled by SDL_LoadWav should now load
+  properly on big endian machines.
++ Signed 16-bit samples should now work correctly with MOD SAM
+  on big endian machines.
++ Fixed the white border present when using the GLSL renderer in
+  HTML5 builds.
++ Added joystick input handlers for most editor interfaces.
+  Only very basic things are supported like navigating boards
+  and robots. This is intended for things like handheld consoles
+  without a keyboard.
++ Fixed a bug where turning off the listening mod would load the
+  mod that was playing when the listening mod was loaded instead
+  of the current board's mod.
++ Fixed a bug where setting a board mod to a partiular mod, then
+  setting the board mod to *, then changing to a different board
+  with the same mod would not restart the board mod.
++ Fixed a bug where libxmp would not ignore zero volume samples
+  in STM files.
++ Restored libxmp support for Soundtracker 2.6/IceTracker .MODs.
+  Currently only libxmp supports this .MOD variant.
++ Fixed a bug where MZX would fail to load Noisetracker,
+  Octalyser, and Mod's Grave .MOD files if they were named using
+  the extensions .NST, .OCT, and .WOW (respectively). These can
+  now be selected with Alt+N/Ctrl+N in the editor.
++ Enabled loading .XM and .AMF files with MikMod. Whatever the
+  issue was with these in 2007 seems to have since been fixed.
++ Fixed loading Soundtracker 15-instrument .MODs with MikMod.
++ Fixed MOD_POSITION and MOD_LENGTH counters for MikMod.
++ MikMod now uses interpolation if module_resample_mode is set.
+- Disabled playing modules using the SAM command with MikMod to
+  avoid crashes due to MikMod using a global player state.
+
+DEVELOPERS
+
++ The test worlds now run correctly when AddressSanitizer is
+  enabled.
++ The SUPPRESS_BUILD Makefile flag has been split into several
+  flags, allowing more granularity for disabling default rules.
+  The Android and Darwin "dist" meta targets use these flags to
+  to disable the default "all" target, so "make" can now be used
+  in place of "make dist" for these platforms.
++ Using "make build" will now remove the build/${SUBPLATFORM}
+  directory if it exists before preparing a build. Before, using
+  "make build" when the platform build directory already exists
+  would not copy any updated binaries/assets/etc., potentially
+  causing confusion.
++ The check_alloc series of functions should now be thread safe.
+  The main thread will display a fatal error as usual when
+  allocation fails; others threads will print a warning and
+  return NULL.
++ Added implementations of new/delete/__cxa_pure_virtual that
+  can be linked to avoid linking libstdc++/libc++ on platforms
+  and configurations that otherwise don't need those libraries.
++ Refactored the netcode to use C++ instead of/in addition to C,
+  allowing some cleanup that otherwise wouldn't have worked.
+  Host::bind, Host::listen, Host::accept, and Host::poll are no
+  longer disabled. Other network deadcode functions have been
+  updated but are still disabled.
++ Fixed FD_ISSET in the Windows netcode.
++ Added a EAI_AGAIN define for the getaddrinfo() fallback.
++ Fixed leak of updates.txt file pointers in the updater that
+  could occur when updates.txt fails to download. The updater
+  now downloads updates.txt to a buffer instead of to disk.
++ Added graphics.renderer.hardware_cursor for platforms with
+  hardware cursors that may need to be updated during any frame
+  regardless of the current cursor state/blinking (i.e. DJGPP).
++ Fixed "make build" error after using "make debuglink" with png
+  support disabled.
++ Added const and restrict to the software render_graph and
+  render_layer implementations for a small performance boost.
++ Added --disable-getaddrinfo and --disable-ipv6 config.sh flags
+  to allow disabling these for old platforms and consoles SDKs.
+  Amiga, Wii, and PSP network builds force-disable these. Switch
+  and 3DS builds currently force-disable IPv6.
++ Added experimental network support for Wii, Switch, and 3DS.
++ Updated libxmp to git-ab70ec9f, refactored libxmp patches.
++ Removed unused libxmp Paula simulator code to save RAM. (asie)
++ SDL is no longer required to build MZX with MikMod enabled.
++ Fixed MikMod static linking on Windows.
++ Added --disable-stack-protector config.sh option. Platforms
+  that previously disabled the stack protector in the Makefile
+  now force disable this config option. These force disable
+  hacks will probably be removed in the near future.
+
+<a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
+
+July 20th, 2020 - MZX 2.92e
+
+This bugfix release includes miscellaneous audio fixes and fixes
+for bugs in the configuration system. Other things of note are a
+fix for a graphical bug in the robot editor, a freeze bugfix in
+the updater when updating from older MZX releases, and the title
+of the Alt+A ("Select Char Set") dialog has been reverted back
+to roughly what it was in DOS versions. A second default SMZX
+character set with a different font has been added as well.
+
+USERS
+
++ Fixed Windows file handle leaks in audio_xmp.c caused by
+  MinGW's non-compliant fdopen.
++ Fixed a bug where the title screen's intro message wouldn't
+  cycle the scroll color while no world was loaded.
++ Added the missing "ccode_chars" config setting.
++ Fixed a bug where the "ccode_extras" config setting would
+  change the strings color code instead.
++ Fixed a bug where "macro_#" where # is 0 or between 6-9 would
+  corrupt various parts of the editor configuration. Notably,
+  "macro_6" would corrupt the extended macros and cause crashes.
++ Fixed division-by-zero crashes and GL errors when using
+  invalid fullscreen_resolution or window_resolution values.
++ Fixed a bug where files included by the config file include
+  directive would ignore editor settings. Also added a recursion
+  limit for includes and fixed a bug where the "include=file"
+  format would not work on some platforms.
++ Fixed a libxmp bug where pattern jump/break could take effect
+  after using JUMP MOD ORDER or setting MOD_ORDER/MOD_POSITION.
+  This fixes a bug at the end of the Inmaportal scene in Cans 3.
++ Zip files with the language encoding flag set no longer print
+  unsupported flag errors.
++ Fixed a bug where recursive directory deletion in the updater
+  could get stuck in an infinite loop due to not checking the
+  return value of rmdir and path_get_directory not behaving the
+  same as get_path used to.
++ Fixed a bug where the cursor could display over the color
+  selector and char editor when opened from the robot editor.
++ Fixed a bug where the default character set selection menu was
+  inconsistently labeled "Object type".
++ Added a second SMZX default character set with a more legible
+  font. The original is still available for those who prefer it.
+
+DEVELOPERS
+
++ Fixed memcasecmp test alignment checks for the Motorola 68000.
++ Improved validation of config setting inputs and added a unit
+  test for config file and command line parsing.
++ Added buffered zip compression/decompression support.
++ Added unit tests for the zip functions and (de)compressors.
+
+<a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
+
 May 8th, 2020 - MZX 2.92d
 
 This release includes minor new features, an overhaul to the way

@@ -1351,8 +1351,8 @@ int send_robot_id_def(struct world *mzx_world, int robot_id, const char *mesg,
   //now, attempt to send the subroutine version of it
   if(mzx_world->version >= V284)
   {
-    strcpy(submesg, "#");
-    strncat(submesg, mesg, ROBOT_MAX_TR - 2);
+    snprintf(submesg, ROBOT_MAX_TR, "#%s", mesg);
+    submesg[ROBOT_MAX_TR - 1] = '\0';
     subresult = send_robot_id(mzx_world, robot_id, submesg, ignore_lock);
     if(result && !subresult)
       result = subresult;
@@ -1368,8 +1368,8 @@ void send_robot_all_def(struct world *mzx_world, const char *mesg)
   //now, attempt to send the subroutine version of it
   if(mzx_world->version >= V284)
   {
-    strcpy(submesg, "#");
-    strncat(submesg, mesg, ROBOT_MAX_TR - 2);
+    snprintf(submesg, ROBOT_MAX_TR, "#%s", mesg);
+    submesg[ROBOT_MAX_TR - 1] = '\0';
     send_robot_all(mzx_world, submesg, 0);
   }
 }
@@ -2696,6 +2696,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   {
     // Display scroll
     robot_frame(mzx_world, program + pos, id);
+    cursor_hint(8, 12);
     update_screen();
 
     update_event_status_delay();
@@ -2837,6 +2838,7 @@ void robot_box_display(struct world *mzx_world, char *program,
 
   // Restore screen and exit
   m_hide();
+  cursor_off();
   restore_screen();
   update_event_status();
 }
@@ -2912,7 +2914,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         if(!strncasecmp(src_ptr, "input)", 6))
         {
           dest_pos += sprintf(buffer + dest_pos, "%s",
-           src_board->input_string);
+           src_board->input_string ? src_board->input_string : "");
           src_ptr += 6;
         }
         else
@@ -3041,12 +3043,12 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         if(!memcasecmp(name_buffer, "INPUT", 6))
         {
           // Input
-          name_length = strlen(src_board->input_string);
+          const char *input_string = src_board->input_string ? src_board->input_string : "";
+          name_length = strlen(input_string);
           if(dest_pos + name_length >= ROBOT_MAX_TR)
             name_length = ROBOT_MAX_TR - dest_pos - 1;
 
-          memcpy(buffer + dest_pos, src_board->input_string,
-           name_length);
+          memcpy(buffer + dest_pos, input_string, name_length);
           dest_pos += name_length;
         }
         else

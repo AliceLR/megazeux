@@ -322,7 +322,7 @@ static boolean force_string_splice(struct string_list *string_list,
 static boolean force_string_copy(struct string_list *string_list,
  const char *name, int next, struct string **str, size_t s_length,
  size_t offset, boolean offset_specified, size_t *size, boolean size_specified,
- char *src)
+ const char *src)
 {
   if(!force_string_splice(string_list, name, next, str, s_length,
    offset, offset_specified, size, size_specified))
@@ -345,7 +345,7 @@ static boolean force_string_copy(struct string_list *string_list,
 static boolean force_string_move(struct string_list *string_list,
  const char *name, int next, struct string **str, size_t s_length,
  size_t offset, boolean offset_specified, size_t *size, boolean size_specified,
- char *src)
+ const char *src)
 {
   boolean src_dest_match = false;
   ptrdiff_t off = 0;
@@ -1022,8 +1022,13 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
 
   if(special_name("input"))
   {
-    char *input_string = mzx_world->current_board->input_string;
-    size_t str_length = strlen(input_string);
+    const char *input_string = mzx_world->current_board->input_string;
+    size_t str_length;
+
+    if(!input_string)
+      input_string = "";
+
+    str_length = strlen(input_string);
     force_string_copy(string_list, name, next, &dest, str_length,
      offset, offset_specified, &size, size_specified, input_string);
   }
@@ -1880,3 +1885,39 @@ void clear_string_list(struct string_list *string_list)
   string_list->num_strings_allocated = 0;
   string_list->strings = NULL;
 }
+
+#ifdef CONFIG_EDITOR
+
+void string_list_size(struct string_list *string_list,
+ size_t *list_size, size_t *table_size, size_t *strings_size)
+{
+  if(list_size)
+    *list_size = string_list->num_strings_allocated * sizeof(struct string *);
+
+  if(table_size)
+  {
+    *table_size = 0;
+#ifdef CONFIG_COUNTER_HASH_TABLES
+    HASH_MEMORY_USAGE(STRING, string_list->hash_table, *table_size);
+#endif
+  }
+
+  if(strings_size)
+  {
+    size_t total = 0;
+    size_t i;
+
+    if(string_list->strings)
+    {
+      for(i = 0; i < string_list->num_strings; i++)
+      {
+        struct string *s = string_list->strings[i];
+        if(s)
+          total += get_string_alloc_size(s->name_length, s->allocated_length);
+      }
+    }
+    *strings_size = total;
+  }
+}
+
+#endif /* CONFIG_EDITOR */

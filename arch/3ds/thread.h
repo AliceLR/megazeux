@@ -31,8 +31,10 @@ __M_BEGIN_DECLS
 #define THREAD_RES void
 #define THREAD_RETURN do { return; } while(0)
 
+typedef CondVar platform_cond;
 typedef LightLock platform_mutex;
 typedef Thread platform_thread;
+typedef Thread platform_thread_id;
 typedef ThreadFunc platform_thread_fn;
 
 static inline void platform_mutex_init(platform_mutex *mutex)
@@ -42,8 +44,7 @@ static inline void platform_mutex_init(platform_mutex *mutex)
 
 static inline boolean platform_mutex_lock(platform_mutex *mutex)
 {
-  if(LightLock_TryLock(mutex))
-    return false;
+  LightLock_Lock(mutex);
   return true;
 }
 
@@ -55,6 +56,45 @@ static inline boolean platform_mutex_unlock(platform_mutex *mutex)
 
 static inline boolean platform_mutex_destroy(platform_mutex *mutex)
 {
+  return true;
+}
+
+static inline boolean platform_cond_init(platform_cond *cond)
+{
+  CondVar_Init(cond);
+  return true;
+}
+
+static inline void platform_cond_destroy(platform_cond *cond)
+{
+  return;
+}
+
+static inline boolean platform_cond_wait(platform_cond *cond,
+ platform_mutex *mutex)
+{
+  CondVar_Wait(cond, mutex);
+  return true;
+}
+
+static inline boolean platform_cond_timedwait(platform_cond *cond,
+ platform_mutex *mutex, unsigned int timeout_ms)
+{
+  s64 timeout_ns = (s64)timeout_ms * 1000000;
+  if(CondVar_WaitTimeout(cond, mutex, timeout_ns))
+    return false;
+  return true;
+}
+
+static inline boolean platform_cond_signal(platform_cond *cond)
+{
+  CondVar_Signal(cond);
+  return true;
+}
+
+static inline boolean platform_cond_broadcast(platform_cond *cond)
+{
+  CondVar_Broadcast(cond);
   return true;
 }
 
@@ -73,6 +113,17 @@ static inline int platform_thread_create(platform_thread *thread,
 static inline void platform_thread_join(platform_thread *thread)
 {
   threadJoin(*thread, U64_MAX);
+}
+
+static inline platform_thread_id platform_get_thread_id(void)
+{
+  return threadGetCurrent();
+}
+
+static inline boolean platform_is_same_thread(platform_thread_id a,
+ platform_thread_id b)
+{
+  return a == b;
 }
 
 __M_END_DECLS

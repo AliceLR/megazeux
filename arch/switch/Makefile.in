@@ -24,6 +24,9 @@ APP_ICON   := arch/switch/icon.jpg
 
 STRIP      := /bin/true
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 #
 # Override library paths.
 #
@@ -68,7 +71,7 @@ package: mzx mzxrun.nro megazeux.nro mzxrun.nso megazeux.nso mzxrun.nacp megazeu
 clean:
 	@rm -f mzxrun.{nacp,nro,nso,pfs0,elf} megazeux.{nacp,nro,nso,pfs0,elf}
 
-build := build/${SUBPLATFORM}/switch/megazeux
+build := ${build_root}/switch/megazeux
 build: package ${build}
 	${CP} arch/switch/pad.config ${build}
 	${CP} megazeux.nro ${build}

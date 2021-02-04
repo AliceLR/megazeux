@@ -24,6 +24,8 @@
 
 __M_BEGIN_DECLS
 
+#include <stdio.h>
+
 #include "board_struct.h"
 #include "robot_struct.h"
 #include "counter_struct.h"

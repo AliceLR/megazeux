@@ -17,6 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * Types for vio.h (so it doesn't have to be included in world_struct.h).
+ */
+
 #ifndef __IO_VFILE_H
 #define __IO_VFILE_H
 
@@ -24,43 +28,8 @@
 
 __M_BEGIN_DECLS
 
-#include "memfile.h"
-
-#include <stdio.h>
-
 typedef struct vfile vfile;
 struct stat;
-
-vfile *vfopen_unsafe(const char *filename, const char *mode);
-vfile *vfile_init_fp(FILE *fp, const char *mode);
-vfile *vfile_init_mem(void *buffer, size_t size, const char *mode);
-vfile *vfile_init_mem_ext(void **external_buffer, size_t *external_buffer_size,
- const char *mode);
-int vfclose(vfile *vf);
-
-struct memfile *vfile_get_memfile(vfile *vf);
-
-int vchdir(const char *path);
-char *vgetcwd(char *buf, size_t size);
-int vmkdir(const char *path, int mode);
-int vunlink(const char *path);
-int vrmdir(const char *path);
-int vaccess(const char *path, int mode);
-int vstat(const char *path, struct stat *buf);
-
-int vfgetc(vfile *vf);
-int vfgetw(vfile *vf);
-int vfgetd(vfile *vf);
-int vfputc(int character, vfile *vf);
-int vfputw(int character, vfile *vf);
-int vfputd(int character, vfile *vf);
-int vfread(void *dest, size_t size, size_t count, vfile *vf);
-int vfwrite(const void *src, size_t size, size_t count, vfile *vf);
-char *vfsafegets(char *dest, int size, vfile *vf);
-int vfseek(vfile *vf, long int offset, int whence);
-long int vftell(vfile *vf);
-void vrewind(vfile *vf);
-long vfilelength(vfile *vf, boolean rewind);
 
 __M_END_DECLS
 

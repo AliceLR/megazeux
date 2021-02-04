@@ -14,15 +14,24 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "DEVKITARM must be set in your environment.")
 endif
 
-APP_TITLE = MegaZeux
-APP_DESCRIPTION = \"Game creation system\"
-APP_AUTHOR = \"MegaZeux Developers\"
+ifneq (${BUILD_EDITOR},)
+APP_TITLE_MZX = MegaZeux
+APP_TITLE_MZXRUN = MegaZeux (MZXRun)
+else
+APP_TITLE_MZXRUN = MegaZeux
+endif
+
+APP_DESCRIPTION = Game creation system
+APP_AUTHOR = MegaZeux Developers
 APP_ICON = arch/3ds/banner/megazeux-icon.png
 
 #
 # 3DS target rules
 #
 STRIP  = /bin/true
+
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
 
 #
 # Override library paths.
@@ -58,9 +67,13 @@ LIBPNG_LDFLAGS = -lpng16
 # Vile hack, remove me ASAP
 # (also, vile hack in a vile hack to get the shaders to build parallel)
 #
-arch/3ds/%.o: arch/3ds/%.c arch/3ds/shader_2d.shbin.o arch/3ds/shader_playfield.shbin.o
+arch/3ds/%.o: arch/3ds/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
+
+arch/3ds/%.o: arch/3ds/%.cpp arch/3ds/shader_2d.shbin.o arch/3ds/shader_playfield.shbin.o
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${core_cxxflags} ${core_flags} -Wno-unused-macros -c $< -o $@
 
 # Do not delete these, since doing so will retrigger .o rebuilds above
 .SECONDARY: arch/3ds/shader_2d_shbin.h arch/3ds/shader_playfield_shbin.h
@@ -71,7 +84,8 @@ arch/3ds/%.shbin: arch/3ds/%.v.pica arch/3ds/%.g.pica
 
 arch/3ds/%.shbin.o: arch/3ds/%.shbin arch/3ds/%_shbin.h
 	$(if ${V},,@echo "  AS      " $<)
-	@bin2s $< | $(AS) -o $@
+	@bin2s $< > $<.S
+	$(AS) $<.S -o $@
 
 arch/3ds/%_shbin.h: arch/3ds/%.shbin
 	$(eval CURLOC := $(patsubst %_shbin.h,%.shbin,$@))
@@ -81,23 +95,30 @@ arch/3ds/%_shbin.h: arch/3ds/%.shbin
 	@echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURLOC) | tr . _)`.h
 	@echo "extern const u32" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(CURLOC) | tr . _)`.h
 
-package: mzx mzxrun.smdh
+#
+# Target-specific variables to force the .3dsx files to have different titles...
+#
+mzxrun.smdh: APP_TITLE=${APP_TITLE_MZXRUN}
+megazeux.smdh: APP_TITLE=${APP_TITLE_MZX}
+
+package: mzx mzxrun.smdh megazeux.smdh
 	3dsxtool ${mzxrun} ${mzxrun}.3dsx --smdh=${mzxrun}.smdh	--romfs=arch/3ds/romfs
-	bannertool makebanner -i arch/3ds/banner/megazeux-banner.png \
-		-a arch/3ds/banner/silence.wav -o megazeux-cia.bnr
-	bannertool makesmdh -s "MegaZeux" -l "MegaZeux game player" -p "MegaZeux developers" \
-		-i arch/3ds/banner/megazeux-icon.png -o megazeux-cia.smdh -r regionfree
-	makerom -f cia -elf ${mzxrun} -icon megazeux-cia.smdh -banner megazeux-cia.bnr \
-		-desc app:4 -v -o ${mzxrun}.cia -target t -exefslogo -rsf arch/3ds/banner/megazeux.rsf
+ifneq (${BUILD_EDITOR},)
+	3dsxtool ${mzx} ${mzx}.3dsx --smdh=${mzx}.smdh --romfs=arch/3ds/romfs
+endif
 
 clean:
-	@rm -f ${mzxrun}.{smdh,cia,3dsx} megazeux-cia.smdh megazeux-cia.bnr arch/3ds/*.{d,o} arch/3ds/*shbin*
+	${RM} ${mzxrun}.{smdh,3dsx} ${mzx}.{smdh,3dsx}
+	${RM} arch/3ds/*.{d,o} arch/3ds/*shbin*
 
-build := build/${SUBPLATFORM}/3ds/megazeux
+build := ${build_root}/3ds/megazeux
 build: package ${build}
 	${CP} arch/3ds/pad.config ${build}
 	${CP} ${mzxrun}.3dsx ${build}
-	${CP} ${mzxrun}.cia ${build}/../../
+ifneq (${BUILD_EDITOR},)
+	${CP} ${mzx}.3dsx ${build}
+endif
 	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
+	${RM} ${build}/${mzx} ${build}/${mzx}.debug
 
 include arch/zip.inc

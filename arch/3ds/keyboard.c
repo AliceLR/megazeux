@@ -30,6 +30,7 @@
 
 #include "event.h"
 #include "keyboard.h"
+#include "platform.h"
 #include "render.h"
 
 #define MAX_KEYS_DOWN 8
@@ -158,6 +159,12 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
      16, 16, 302, 2, 16, 16, 3.0f, 0xffffffff, false);
   }
 
+  if(ctr_supports_wide())
+  {
+    ctr_draw_2d_texture(render_data, keyboard_tex, gfxIsWide() ? 48 : 32, 240,
+     16, 16, 284, 2, 16, 16, 3.0f, 0xffffffff, false);
+  }
+
   if(keys_down_count > 0)
   {
     for(i = 0; i < touch_areas_len; i++)
@@ -198,6 +205,11 @@ boolean ctr_keyboard_update(struct buffered_status *status)
      pos.py < 18)
     {
       force_zoom_out = !force_zoom_out;
+    }
+    else if(ctr_supports_wide() && pos.px >= 284 && pos.py >= 2 &&
+     pos.px < 300 && pos.py < 18)
+    {
+      ctr_request_set_wide(!gfxIsWide());
     }
 
     for(i = 0; i < touch_areas_len; i++)

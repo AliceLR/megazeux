@@ -44,10 +44,10 @@ static inline void free_editor_config(void) {}
 
 
 #ifdef CONFIG_UPDATER
-boolean updater_init(int argc, char *argv[]);
+boolean updater_init(void);
 boolean is_updater(void);
 #else
-static inline boolean updater_init(int argc, char *argv[])
+static inline boolean updater_init(void)
 { return true; }
 static inline boolean is_updater(void)
 { return false; }

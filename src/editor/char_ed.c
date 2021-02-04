@@ -952,7 +952,8 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
 
   strcpy(import_string, saved_import_string);
   if(!file_manager(mzx_world, chr_ext, NULL, import_string,
-   "Import character set(s)", 1, 2, elements, ARRAY_SIZE(elements), 2))
+   "Import character set(s)", ALLOW_ALL_DIRS, ALLOW_WILDCARD_FILES,
+   elements, ARRAY_SIZE(elements), 2))
   {
     int num_files_present = num_files;
 
@@ -1048,7 +1049,8 @@ static void char_export(struct world *mzx_world, int char_offset, int charset,
 
   strcpy(export_string, saved_export_string);
   if(!file_manager(mzx_world, chr_ext, ".chr", export_string,
-   "Export character set(s)", 1, 1, elements, ARRAY_SIZE(elements), 2))
+   "Export character set(s)", ALLOW_ALL_DIRS, ALLOW_NEW_FILES,
+   elements, ARRAY_SIZE(elements), 2))
   {
     int num_files_present = num_files;
 
@@ -1109,6 +1111,7 @@ int char_editor(struct world *mzx_world)
   int block_mode = 0;
   int shifted = 0;
   int i, i2, key;
+  int joystick_key;
   int pad_height;
   int small_chars;
   int screen_mode = get_screen_mode();
@@ -1304,6 +1307,10 @@ int char_editor(struct world *mzx_world)
     update_event_status_delay();
 
     key = get_key(keycode_internal_wrt_numlock);
+
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      key = joystick_key;
 
     // Exit event -- mimic Escape
     if(get_exit_status())

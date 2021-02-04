@@ -28,6 +28,7 @@ __M_BEGIN_DECLS
 
 #include "configure.h"
 #include "graphics.h"
+#include "platform.h"
 #include "util.h"
 
 #ifdef CONFIG_SDL
@@ -39,7 +40,7 @@ __M_BEGIN_DECLS
 #include <SDL_opengles2.h>
 #endif
 #else
-#include "SDL_opengl.h"
+#include <SDL_opengl.h>
 #endif
 #endif
 
@@ -87,6 +88,31 @@ enum gl_lib_type
   GL_LIB_FIXED,
   GL_LIB_PROGRAMMABLE,
 };
+
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+/**
+ * The GL renderers use GL_UNSIGNED_BYTE for 32-bit texture buffers for GLES 2
+ * compatibility. This leads to some problems when packing bytes on big endian
+ * machines because each of these packings assumes GL_UNSIGNED_INT_8_8_8_8_REV
+ * (which isn't in GLES 2).
+ *
+ * TODO: bswap32 here if compatibility defines for it are added.
+ */
+static inline Uint32 gl_pack_u32(Uint32 x)
+{
+  return
+   ((x & 0xFF000000) >> 24) |
+   ((x & 0x00FF0000) >> 8) |
+   ((x & 0x0000FF00) << 8) |
+   ((x & 0x000000FF) << 24);
+}
+#else
+/**
+ * For little endian, GL_UNSIGNED_BYTE and GL_UNSIGNED_INT_8_8_8_8_REV are
+ * equivalent, so don't change anything.
+ */
+#define gl_pack_u32(x) (x)
+#endif
 
 __M_END_DECLS
 

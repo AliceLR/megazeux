@@ -4103,7 +4103,7 @@ static int match_command(const struct mzx_command *command,
       if((current_token == NULL) || (current_token->type != TOKEN_TYPE_COMMENT))
         goto no_match;
 
-      *match_type = TOKEN_TYPE_COMMENT;
+      *match_type = ARG_TYPE_INDEXED_COMMENT;
       next = current_token->value + current_token->length;
     }
   }
@@ -4471,8 +4471,8 @@ static char *assemble_command(char *src, char **_output)
     int newline_pos = strcspn(src, "\n");
     if(newline_pos > 0)
     {
-      strncpy(short_output, src, newline_pos);
-      short_output[newline_pos] = 0;
+      snprintf(short_output, sizeof(short_output), "%.*s", newline_pos, src);
+      short_output[sizeof(short_output) - 1] = 0;
       warn("Failed to assemble command: %s\n", short_output);
     }
   }
@@ -4615,7 +4615,7 @@ enum legacy_command_number
   ROBOTIC_CMD_REMOVED = 0xFF01
 };
 
-static const enum legacy_command_number legacy_command_to_current[256] =
+static const int legacy_command_to_current[256] =
 {
   ROBOTIC_CMD_END,
   ROBOTIC_CMD_DIE,

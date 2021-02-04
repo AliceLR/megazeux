@@ -30,6 +30,13 @@ struct string_pair
   const char *haystack;
 };
 
+struct string_pair_idx
+{
+  const char *needle;
+  const char *haystack;
+  ssize_t where;
+};
+
 UNITTEST(Search)
 {
   // left: needle, right: haystack
@@ -57,23 +64,28 @@ UNITTEST(Search)
     },
     { "abcdabc", "abceabceabceabceabc" },
   };
-  static const string_pair haystack_once[] =
+  static const string_pair_idx haystack_once[] =
   {
-    { "abcde", "abcde" },
-    { "abcd", "aaaaaaaaaabcaaaabcdaaaaa" },
+    { "abcde", "abcde", 0 },
+    { "abcd", "aaaaaaaaaabcaaaabcdaaaaa", 15 },
     {
       "------------separator",
       "fhs-----------fhsdklfhsdlseparator"
-      "aflskdfhsdjklsfhdj------------separator"
+      "aflskdfhsdjklsfhdj------------separator", 52
     },
-    { "case", "CASEcaseCASE" },
+    { "case", "CASEcaseCASE", 4 },
     {
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       "baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-      "baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      "baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      141
     },
-    { "abcdabc", "abceabcdabceabceabc" },
+    { "abcdabc", "abceabcdabceabceabc", 4 },
+    { "pfatt",
+      "set \"pf\" to "
+      "\"('pldir'*6+('pfatt'>0*3)+('pfwalk'=1 ? 1 : 'pfwalk'=3 ? 2 : 0))\"", 26
+    },
   };
   static const string_pair haystack_twice[] =
   {
@@ -115,10 +127,12 @@ UNITTEST(Search)
     {
       A = haystack_once[i].haystack;
       B = haystack_once[i].needle;
+      ssize_t where = haystack_once[i].where;
 
       dest = string_search(A, strlen(A), B, strlen(B), nullptr, false);
       ASSERTX(dest, A);
       ASSERT(dest >= A && dest < A + strlen(A));
+      ASSERTEQX((const char *)dest - A, where, A);
     }
 
     for(int i = 0; i < arraysize(haystack_twice); i++)
@@ -139,6 +153,7 @@ UNITTEST(Search)
       const char *dest;
       A = haystack_once[i].haystack;
       B = haystack_once[i].needle;
+      ssize_t where = haystack_once[i].where;
       ssize_t a_len = strlen(A);
       ssize_t b_len = strlen(B);
 
@@ -147,6 +162,7 @@ UNITTEST(Search)
       dest = (const char *)string_search(A, a_len, B, b_len, &data, false);
       ASSERTX(dest, A);
       ASSERT(dest >= A && dest < A + a_len);
+      ASSERTEQX((const char *)dest - A, where, A);
       dest++;
       a_len -= dest - A;
       A = dest;

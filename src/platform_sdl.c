@@ -23,7 +23,7 @@
 #include "platform.h"
 #include "util.h"
 
-#include "SDL.h"
+#include <SDL.h>
 
 #ifdef CONFIG_PSP
 #include <psppower.h>

@@ -28,27 +28,42 @@
 
 ---------------------------------------------------------------------------------*/
 #include <nds.h>
-//#include <dswifi7.h>
-//#include <maxmod7.h>
+#include <maxmod7.h>
 
-//---------------------------------------------------------------------------------
-void VblankHandler(void) {
-//---------------------------------------------------------------------------------
-//	Wifi_Update();
+#define FIFO_MZX FIFO_USER_01
+#define CMD_MZX_PCS_TONE 0x01
+#define CMD_MZX_SOUND_VOLUME 0x02
+#define MZX_PCS_CHANNEL 8
+
+void mzxFifoCommandHandler(u32 command, void *userdata) {
+	switch (command & 0xF) {
+		case CMD_MZX_SOUND_VOLUME: {
+			REG_MASTER_VOLUME = (command >> 24);
+		} break;
+		case CMD_MZX_PCS_TONE: {
+			int freq = (command >> 8) & 0xFFFF;
+			int volume = (command >> 24);
+			if(freq > 0) {
+				SCHANNEL_CR(MZX_PCS_CHANNEL) = SCHANNEL_ENABLE | volume | SOUND_PAN(64) | SOUND_FORMAT_PSG | (3 << 24);
+				SCHANNEL_TIMER(MZX_PCS_CHANNEL) = SOUND_FREQ(freq << 3);
+			} else {
+				SCHANNEL_CR(MZX_PCS_CHANNEL) = 0;
+			}
+		} break;
+	}
 }
 
+void VblankHandler(void) {
 
-//---------------------------------------------------------------------------------
+}
+
 void VcountHandler() {
-//---------------------------------------------------------------------------------
 	inputGetAndSend();
 }
 
 volatile bool exitflag = false;
 
-//---------------------------------------------------------------------------------
 void powerButtonCB() {
-//---------------------------------------------------------------------------------
 	exitflag = true;
 }
 
@@ -56,11 +71,11 @@ void powerButtonCB() {
 int main() {
 //---------------------------------------------------------------------------------
 	// clear sound registers
-//	dmaFillWords(0, (void*)0x04000400, 0x100);
+	dmaFillWords(0, (void*)0x04000400, 0x100);
 
-//	REG_SOUNDCNT |= SOUND_ENABLE;
-//	writePowerManagement(PM_CONTROL_REG, ( readPowerManagement(PM_CONTROL_REG) & ~PM_SOUND_MUTE ) | PM_SOUND_AMP );
-//	powerOn(POWER_SOUND);
+	REG_SOUNDCNT |= SOUND_ENABLE;
+	writePowerManagement(PM_CONTROL_REG, ( readPowerManagement(PM_CONTROL_REG) & ~PM_SOUND_MUTE ) | PM_SOUND_AMP );
+	powerOn(POWER_SOUND);
 
 	readUserSettings();
 	ledBlink(0);
@@ -71,26 +86,23 @@ int main() {
 	fifoInit();
 	touchInit();
 
-//	mmInstall(FIFO_MAXMOD);
+	mmInstall(FIFO_MAXMOD);
 
 	SetYtrigger(80);
 
-//	installWifiFIFO();
-//	installSoundFIFO();
-
 	installSystemFIFO();
+	fifoSetValue32Handler(FIFO_MZX, mzxFifoCommandHandler, NULL);
 
 	irqSet(IRQ_VCOUNT, VcountHandler);
 	irqSet(IRQ_VBLANK, VblankHandler);
 
-//	irqEnable( IRQ_VBLANK | IRQ_VCOUNT | IRQ_NETWORK);
-	irqEnable( IRQ_VBLANK | IRQ_VCOUNT);
+	irqEnable(IRQ_VBLANK | IRQ_VCOUNT);
 
 	setPowerButtonCB(powerButtonCB);
 
 	// Keep the ARM7 mostly idle
-	while (!exitflag) {
-		if ( 0 == (REG_KEYINPUT & (KEY_SELECT | KEY_START | KEY_L | KEY_R))) {
+	while(!exitflag) {
+		if( 0 == (REG_KEYINPUT & (KEY_SELECT | KEY_START | KEY_L | KEY_R))) {
 			exitflag = true;
 		}
 		swiWaitForVBlank();

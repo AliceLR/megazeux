@@ -34,6 +34,7 @@
 #include "../idput.h"
 #include "../util.h"
 #include "../io/memfile.h"
+#include "../io/vio.h"
 #include "../io/zip.h"
 
 #include "../world_format.h"
@@ -194,7 +195,7 @@ static void append_world_refactor_board(struct board *cur_board,
 }
 
 
-static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
+static boolean append_world_legacy(struct world *mzx_world, vfile *vf,
  int file_version)
 {
   int i, j;
@@ -204,28 +205,28 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
   unsigned int *board_offsets;
   unsigned int *board_sizes;
 
-  fseek(fp, 4234, SEEK_SET);
+  vfseek(vf, 4234, SEEK_SET);
 
-  num_boards = fgetc(fp);
+  num_boards = vfgetc(vf);
 
   if(num_boards == 0)
   {
     int sfx_size;
     // Sfx skip word size
-    fseek(fp, 2, SEEK_CUR);
+    vfseek(vf, 2, SEEK_CUR);
 
     // Skip sfx
     for(i = 0; i < NUM_SFX; i++)
     {
-      sfx_size = fgetc(fp);
-      fseek(fp, sfx_size, SEEK_CUR);
+      sfx_size = vfgetc(vf);
+      vfseek(vf, sfx_size, SEEK_CUR);
     }
-    num_boards = fgetc(fp);
+    num_boards = vfgetc(vf);
   }
 
   // Skip the names for now
-  board_names_pos = ftell(fp);
-  fseek(fp, num_boards * BOARD_NAME_SIZE, SEEK_CUR);
+  board_names_pos = vftell(vf);
+  vfseek(vf, num_boards * BOARD_NAME_SIZE, SEEK_CUR);
 
   if(num_boards + old_num_boards >= MAX_BOARDS)
     num_boards = MAX_BOARDS - old_num_boards;
@@ -241,15 +242,15 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
   board_sizes = cmalloc(sizeof(int) * num_boards);
   for(i = 0; i < num_boards; i++)
   {
-    board_sizes[i] = fgetd(fp);
-    board_offsets[i] = fgetd(fp);
+    board_sizes[i] = vfgetd(vf);
+    board_offsets[i] = vfgetd(vf);
   }
 
   // Append boards
   for(i = 0, j = old_num_boards; j < old_num_boards + num_boards; i++, j++)
   {
     cur_board =
-     legacy_load_board_allocate(mzx_world, fp, board_offsets[i], board_sizes[i],
+     legacy_load_board_allocate(mzx_world, vf, board_offsets[i], board_sizes[i],
       false, file_version);
 
     mzx_world->board_list[j] = cur_board;
@@ -274,7 +275,7 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
   free(board_sizes);
 
   // Go back to where the names are
-  fseek(fp, board_names_pos, SEEK_SET);
+  vfseek(vf, board_names_pos, SEEK_SET);
   for(i = old_num_boards; i < old_num_boards + num_boards; i++)
   {
     char ignore[BOARD_NAME_SIZE];
@@ -284,11 +285,11 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
     if(cur_board)
       dest = cur_board->board_name;
 
-    if(!fread(dest, BOARD_NAME_SIZE, 1, fp))
+    if(!vfread(dest, BOARD_NAME_SIZE, 1, vf))
       dest[0] = 0;
   }
 
-  fclose(fp);
+  vfclose(vf);
   return true;
 }
 
@@ -392,9 +393,9 @@ boolean append_world(struct world *mzx_world, const char *file)
   boolean ret = false;
 
   struct zip_archive *zp;
-  FILE *fp;
+  vfile *vf;
 
-  try_load_world(mzx_world, &zp, &fp, file, false, &file_version, ignore);
+  try_load_world(mzx_world, &zp, &vf, file, false, &file_version, ignore);
 
   if(zp)
   {
@@ -402,9 +403,9 @@ boolean append_world(struct world *mzx_world, const char *file)
   }
   else
 
-  if(fp)
+  if(vf)
   {
-    ret = append_world_legacy(mzx_world, fp, file_version);
+    ret = append_world_legacy(mzx_world, vf, file_version);
   }
 
   // Remove any null boards
@@ -460,7 +461,7 @@ void create_blank_world(struct world *mzx_world)
     mzx_world->status_counters_shown[i][0] = 0;
   }
 
-  mzx_world->name[0] = 0;
+  memset(mzx_world->name, 0, sizeof(mzx_world->name));
 
   // Defaults for things set by load_world
   mzx_world->custom_sfx_on = 0;

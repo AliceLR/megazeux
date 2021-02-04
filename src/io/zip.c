@@ -35,7 +35,7 @@
 #include "../util.h"
 
 #include "memfile.h"
-#include "vfile.h"
+#include "vio.h"
 #include "zip.h"
 #include "zip_stream.h"
 
@@ -66,6 +66,8 @@
 #define CENTRAL_FILE_HEADER_LEN 46
 #define EOCD_RECORD_LEN 22
 
+#define ZIP_DEFAULT_HEADER_BUFFER (CENTRAL_FILE_HEADER_LEN + 8)
+
 /**
  * This zip reader/writer was designed:
  *
@@ -83,7 +85,7 @@
  * implications for downver or accessing files/worlds from inside of a zip.
  */
 
-static int zip_get_dos_date_time(void)
+static uint32_t zip_get_dos_date_time(void)
 {
   time_t current_time = time(NULL);
   struct tm *tm = localtime(&current_time);
@@ -698,27 +700,32 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
   enum zip_error result = ZIP_SUCCESS;
 
   char *magic;
-  char *buffer;
   struct memfile mf;
-  int header_size;
+  size_t header_size;
   int i;
 
   if(is_central)
   {
-    // Position to write CRC, sizes after file write
-    zp->stream_crc_position = vftell(zp->vf) + 16;
     header_size = fh->file_name_length + CENTRAL_FILE_HEADER_LEN;
     magic = file_sig_central;
   }
   else
   {
+#ifndef ZIP_WRITE_DATA_DESCRIPTOR
+    // Position to write CRC, sizes after file write
     zp->stream_crc_position = vftell(zp->vf) + 14;
+#endif
     header_size = fh->file_name_length + LOCAL_FILE_HEADER_LEN;
     magic = file_sig_local;
   }
 
-  buffer = cmalloc(header_size);
-  mfopen(buffer, header_size, &mf);
+  if(header_size > zp->header_buffer_alloc)
+  {
+    zp->header_buffer = crealloc(zp->header_buffer, header_size);
+    zp->header_buffer_alloc = header_size;
+  }
+
+  mfopen(zp->header_buffer, header_size, &mf);
 
   // Signature
   for(i = 0; i<4; i++)
@@ -741,7 +748,7 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
 
   // File last modification time
   // File last modification date
-  mfputd(zip_get_dos_date_time(), &mf);
+  mfputud(zp->header_timestamp, &mf);
 
   // note: zp->stream_crc_position should be here.
 
@@ -786,13 +793,9 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
 
   // File comment (zero bytes)
 
-  if(!vfwrite(buffer, header_size, 1, zp->vf))
+  if(!vfwrite(zp->header_buffer, header_size, 1, zp->vf))
     result = ZIP_WRITE_ERROR;
 
-  // Memfile zips - we know there's enough space, because it was already
-  // checked in zip_write_file or zip_close
-
-  free(buffer);
   return result;
 }
 
@@ -2229,8 +2232,16 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
   int i;
 
   if(!zp)
-  {
     return ZIP_NULL;
+
+  // On the off chance someone actually tries this...
+  if(zp->is_memory && final_length && final_length == zp->external_buffer_size)
+  {
+    warn(
+      "zip_close: Detected use of external buffer size pointer as final_length "
+      "(should provide NULL instead). Report this!\n"
+    );
+    final_length = NULL;
   }
 
   mode = zp->mode;
@@ -2311,6 +2322,7 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
 
   vfclose(zp->vf);
 
+  free(zp->header_buffer);
   free(zp->stream_buffer);
   free(zp->files);
   free(zp);
@@ -2333,6 +2345,9 @@ static void zip_init_for_write(struct zip_archive *zp, int num_files)
   zp->files_alloc = num_files;
   zp->files = f;
 
+  zp->header_buffer = cmalloc(ZIP_DEFAULT_HEADER_BUFFER);
+  zp->header_buffer_alloc = ZIP_DEFAULT_HEADER_BUFFER;
+  zp->header_timestamp = zip_get_dos_date_time();
   zp->running_file_name_length = 0;
 
   zp->mode = ZIP_S_WRITE_UNINITIALIZED;
@@ -2347,6 +2362,7 @@ static struct zip_archive *zip_new_archive(void)
   zp->is_memory = false;
 
   zp->files = NULL;
+  zp->header_buffer = NULL;
 
   zp->start_in_file = 0;
   zp->files_alloc = 0;
@@ -2374,20 +2390,20 @@ static struct zip_archive *zip_new_archive(void)
  * pointer if this archive is ready for file reading; otherwise, returns
  * NULL. On failure, this will also close the file pointer.
  */
-struct zip_archive *zip_open_fp_read(FILE *fp)
+struct zip_archive *zip_open_vf_read(vfile *vf)
 {
-  if(fp)
+  if(vf)
   {
     struct zip_archive *zp = zip_new_archive();
     long int file_len;
 
-    zp->vf = vfile_init_fp(fp, "rb");
+    zp->vf = vf;
     file_len = vfilelength(zp->vf, false);
 
     if(file_len < 0)
     {
       zip_error("zip_open_fp_read", ZIP_STAT_ERROR);
-      fclose(fp);
+      vfclose(vf);
       free(zp);
       return NULL;
     }
@@ -2395,7 +2411,7 @@ struct zip_archive *zip_open_fp_read(FILE *fp)
     if(file_len > INT_MAX)
     {
       zip_error("zip_open_fp_read", ZIP_UNSUPPORTED_ZIP64);
-      fclose(fp);
+      vfclose(vf);
       free(zp);
       return NULL;
     }
@@ -2417,9 +2433,9 @@ struct zip_archive *zip_open_fp_read(FILE *fp)
 
 struct zip_archive *zip_open_file_read(const char *file_name)
 {
-  FILE *fp = fopen_unsafe(file_name, "rb");
+  vfile *vf = vfopen_unsafe(file_name, "rb");
 
-  return zip_open_fp_read(fp);
+  return zip_open_vf_read(vf);
 }
 
 /**
@@ -2427,13 +2443,13 @@ struct zip_archive *zip_open_file_read(const char *file_name)
  * raw write mode, for use with zip_write(), until zip_write_file() is called.
  * Afterward, the archive will be in file write mode.
  */
-struct zip_archive *zip_open_fp_write(FILE *fp)
+struct zip_archive *zip_open_vf_write(vfile *vf)
 {
-  if(fp)
+  if(vf)
   {
     struct zip_archive *zp = zip_new_archive();
 
-    zp->vf = vfile_init_fp(fp, "wb");
+    zp->vf = vf;
 
     zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES);
 
@@ -2446,9 +2462,9 @@ struct zip_archive *zip_open_fp_write(FILE *fp)
 
 struct zip_archive *zip_open_file_write(const char *file_name)
 {
-  FILE *fp = fopen_unsafe(file_name, "wb");
+  vfile *vf = vfopen_unsafe(file_name, "wb");
 
-  return zip_open_fp_write(fp);
+  return zip_open_vf_write(vf);
 }
 
 /**

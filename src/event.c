@@ -1406,6 +1406,19 @@ static enum joystick_special_axis find_joystick_axis(const char *name)
 }
 
 /**
+ * Provide direct access to the joystick map structure. This is currently only
+ * used for config file unit tests but it might be useful later for the
+ * settings menu.
+ */
+struct joystick_map *get_joystick_map(boolean is_global)
+{
+  if(is_global)
+    return &(input.joystick_global_map);
+  else
+    return &(input.joystick_game_map);
+}
+
+/**
  * A joystick can be mapped to either an int from 0 to 32767 (a key binding),
  * a key enum string (also a key binding), or to a joystick action enum string
  * (action binding). Read either from an input value string.
@@ -1453,7 +1466,7 @@ boolean joystick_parse_map_value(const char *value, Sint16 *binding)
 void joystick_map_button(int first, int last, int button, const char *value,
  boolean is_global)
 {
-  if((first <= last) && (first >= 0) && (last < MAX_JOYSTICKS) &&
+  if((first <= last) && (first >= 0) && (first < MAX_JOYSTICKS) &&
    (button >= 0) && (button < MAX_JOYSTICK_BUTTONS))
   {
     Sint16 binding;
@@ -1461,6 +1474,7 @@ void joystick_map_button(int first, int last, int button, const char *value,
 
     if(joystick_parse_map_value(value, &binding))
     {
+      last = MIN(last, MAX_JOYSTICKS - 1);
       for(i = first; i <= last; i++)
       {
         if(is_global)
@@ -1485,7 +1499,7 @@ void joystick_map_button(int first, int last, int button, const char *value,
 void joystick_map_axis(int first, int last, int axis, const char *neg,
  const char *pos, boolean is_global)
 {
-  if((first <= last) && (first >= 0) && (last < MAX_JOYSTICKS) &&
+  if((first <= last) && (first >= 0) && (first < MAX_JOYSTICKS) &&
    (axis >= 0) && (axis < MAX_JOYSTICK_AXES))
   {
     Sint16 binding_neg, binding_pos;
@@ -1494,6 +1508,7 @@ void joystick_map_axis(int first, int last, int axis, const char *neg,
     if(joystick_parse_map_value(neg, &binding_neg) &&
      joystick_parse_map_value(pos, &binding_pos))
     {
+      last = MIN(last, MAX_JOYSTICKS - 1);
       for(i = first; i <= last; i++)
       {
         if(is_global)
@@ -1520,7 +1535,7 @@ void joystick_map_axis(int first, int last, int axis, const char *neg,
 void joystick_map_hat(int first, int last, const char *up, const char *down,
  const char *left, const char *right, boolean is_global)
 {
-  if((first <= last) && (first >= 0) && (last < MAX_JOYSTICKS))
+  if((first <= last) && (first >= 0) && (first < MAX_JOYSTICKS))
   {
     Sint16 binding_up, binding_down, binding_left, binding_right;
     int i;
@@ -1530,6 +1545,7 @@ void joystick_map_hat(int first, int last, const char *up, const char *down,
      joystick_parse_map_value(left, &binding_left) &&
      joystick_parse_map_value(right, &binding_right))
     {
+      last = MIN(last, MAX_JOYSTICKS - 1);
       for(i = first; i <= last; i++)
       {
         if(is_global)
@@ -1563,7 +1579,7 @@ void joystick_map_hat(int first, int last, const char *up, const char *down,
 void joystick_map_action(int first, int last, const char *action,
  const char *value, boolean is_global)
 {
-  if((first <= last) && (first >= 0) && (last < MAX_JOYSTICKS))
+  if((first <= last) && (first >= 0) && (first < MAX_JOYSTICKS))
   {
     enum joystick_action action_value = find_joystick_action(action);
     Sint16 binding;
@@ -1571,6 +1587,8 @@ void joystick_map_action(int first, int last, const char *action,
 
     if(!joystick_parse_map_value(value, &binding) || (binding < 0))
       return;
+
+    last = MIN(last, MAX_JOYSTICKS - 1);
 
     if(action_value != JOY_NO_ACTION)
     {

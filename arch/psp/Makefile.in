@@ -13,17 +13,29 @@ AR      = psp-ar
 OBJCOPY = psp-objcopy
 STRIP   = /bin/true
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 # flag PSP build and link in c/psppower
 ARCH_CFLAGS   += -G0 -isystem ${PREFIX}/sdk/include -DPATH_MAX=4096
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
 ARCH_LDFLAGS  += -L${PREFIX}/sdk/lib
 
+ifneq (${BUILD_LIBSDL2},)
+SDL_CFLAGS = -I${PREFIX}/include/SDL2
+SDL_LDFLAGS = -lSDL2 -lpspvram
+else
+SDL_CFLAGS = -I${PREFIX}/include/SDL
+SDL_LDFLAGS = -lSDL
+endif
+
+# HACK: Append the rest of the dependencies to SDL_LDFLAGS for now.
 # psp-g++ seems to either remove the first -lc it finds or repositions it to
 # after the rest of the includes. Specify it twice so psp-g++ really knows it
 # needs to go there. Otherwise, linking fails. This issue was encountered with
 # the devkitPSP r16 build of PSPDEV.
-SDL_CFLAGS = -I${PREFIX}/include/SDL
-SDL_LDFLAGS = -lSDL -lGL -lpspirkeyb -lc -lc -lpspvfpu -lpsprtc -lpsppower -lpspaudio -lpspgu -lpspge -lpspdisplay -lpsphprm -lpspctrl -lpspnet_inet -lpspuser
+SDL_LDFLAGS += -lGL -lpspirkeyb -lm -lc -lc -lpspvfpu -lpsprtc -lpsppower -lpspaudio \
+  -lpspgu -lpspge -lpspdisplay -lpsphprm -lpspctrl -lpspnet_inet -lpspnet_resolver -lpspuser
 LIBPNG_CFLAGS =
 LIBPNG_LDFLAGS = -lpng
 

@@ -50,6 +50,10 @@
  *                    exactly equal.
  * ASSERTXCMP(a,b,m)  a and b must be null-terminated C strings and must be
  *                    exactly equal. (m = message to display on failure)
+ * ASSERTMEM(a,b,l)   the memory pointed to by a and b must be identical for l
+ *                    bytes (memcmp).
+ * ASSERTXMEM(a,b,l,m) the memory pointed to by a and b must be identical for l
+ *                    bytes (memcmp). (m = message to display on failure)
  *
  * Additionally, failed assert() assertions will be detected and print error
  * messages (generally, these should only be used in the code being tested).
@@ -77,6 +81,7 @@
 
 #include <csignal>
 #include <iostream>
+#include <sstream>
 #include <type_traits>
 #include <vector>
 
@@ -121,6 +126,27 @@ static inline constexpr int arraysize(T (&a)[A])
   return A;
 }
 
+template<class T>
+static inline const T coalesce(const T var)
+{
+  return var;
+}
+
+static inline unsigned int coalesce(boolean var)
+{
+  return var;
+}
+
+static inline const char *coalesce(const char *var)
+{
+  return (var ? var : "NULL");
+}
+
+static inline constexpr const char *coalesce(std::nullptr_t ignore)
+{
+  return "NULL";
+}
+
 template<class aligntype, size_t A=128>
 class alignstr
 {
@@ -159,8 +185,7 @@ public:
 #define UNIMPLEMENTED() \
   do\
   {\
-    this->assert_fail(__LINE__, "Test is not yet implemented"); \
-    return; \
+    throw Unit::exception(__LINE__, "Test is not yet implemented"); \
   } while(0)
 
 #define ASSERT(test) \
@@ -168,8 +193,7 @@ public:
   {\
     if(!(test)) \
     { \
-      this->assert_fail(__LINE__, #test); \
-      return; \
+      throw Unit::exception(__LINE__, #test); \
     } \
   } while(0)
 
@@ -178,8 +202,7 @@ public:
   {\
     if(!(test)) \
     {\
-      this->assert_fail(__LINE__, #test, reason); \
-      return; \
+      throw Unit::exception(__LINE__, #test, reason); \
     }\
   } while(0)
 
@@ -188,8 +211,7 @@ public:
   {\
     if(!((a) == (b)))\
     { \
-      this->assert_fail(__LINE__, #a " == " #b, (a), (b), nullptr); \
-      return; \
+      throw Unit::exception(__LINE__, #a " == " #b, (a), (b), nullptr); \
     } \
   } while(0)
 
@@ -198,8 +220,7 @@ public:
   {\
     if(!((a) == (b)))\
     {\
-      this->assert_fail(__LINE__, #a " == " #b, (a), (b), reason); \
-      return; \
+      throw Unit::exception(__LINE__, #a " == " #b, (a), (b), reason); \
     }\
   } while(0)
 
@@ -208,8 +229,7 @@ public:
   {\
     if(strcmp(a,b)) \
     {\
-      this->assert_fail(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), nullptr); \
-      return; \
+      throw Unit::exception(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), nullptr); \
     }\
   } while(0)
 
@@ -219,8 +239,7 @@ public:
   {\
     if(strcmp(a,b)) \
     {\
-      this->assert_fail(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), reason); \
-      return; \
+      throw Unit::exception(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), reason); \
     }\
   } while(0)
 
@@ -229,22 +248,37 @@ public:
   {\
     if(strncmp(a,b,n)) \
     {\
-      this->assert_fail(__LINE__, "strncmp(" #a ", " #b ", " #n ")", (a), (b), reason); \
-      return; \
+      throw Unit::exception(__LINE__, "strncmp(" #a ", " #b ", " #n ")", (a), (b), reason); \
+    }\
+  } while(0)
+
+#define ASSERTMEM(a, b, l) \
+  do\
+  {\
+    if(memcmp(a,b,l)) \
+    {\
+      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", (a), (b), (l), nullptr); \
+    }\
+  } while(0)
+#define ASSERTXMEM(a, b, l, reason) \
+  do\
+  {\
+    if(memcmp(a,b,l)) \
+    {\
+      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", (a), (b), (l), reason); \
     }\
   } while(0)
 
 #define FAIL(reason) \
   do\
   {\
-    this->assert_fail(__LINE__, nullptr, reason); \
+    throw Unit::exception(__LINE__, nullptr, reason); \
   } while(0)
 
 #define SKIP() \
   do\
   {\
-    this->skip(); \
-    return; \
+    throw Unit::skip(); \
   } while(0)
 
 #define SECTION(sectionname) \
@@ -265,6 +299,87 @@ inline void testname ## _unittest_impl::run_impl(void)
 namespace Unit
 {
   class unittest;
+
+  class skip final: std::exception {};
+
+  class exception final: std::exception
+  {
+  public:
+    int line;
+    std::string test;
+    std::string reason;
+    bool has_reason;
+    std::string left;
+    std::string right;
+    bool has_values;
+
+    exception(int _line, const char *_test):
+     line(_line), test(coalesce(_test)), reason(""), has_reason(false),
+     left(coalesce(nullptr)), right(coalesce(nullptr)), has_values(false) {}
+
+    exception(int _line, const char *_test, const char *_reason):
+     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason),
+     left(coalesce(nullptr)), right(coalesce(nullptr)), has_values(false) {}
+
+    template<class T, class S>
+    exception(int _line, const char *_test, T _left, S _right, const char *_reason):
+     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason)
+    {
+      std::stringstream l;
+      std::stringstream r;
+      l << coalesce(_left);
+      r << coalesce(_right);
+      left = l.str();
+      right = r.str();
+
+      if(!std::is_same<T, std::nullptr_t>::value ||
+       !std::is_same<S, std::nullptr_t>::value)
+      {
+        has_values = true;
+      }
+      else
+        has_values = false;
+    }
+
+    template<class T, class E = std::enable_if<std::is_integral<T>::value>>
+    exception(int _line, const char *_test, const T *_left, const T *_right,
+     size_t length, const char *_reason):
+     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason)
+    {
+      std::stringstream l;
+      std::stringstream r;
+
+      has_values = (_left || _right);
+      length /= sizeof(T);
+
+      if(_left)
+      {
+        l << std::hex;
+        for(size_t i = 0; i < length; i++)
+          l << static_cast<uint64_t>(_left[i]) << ' ';
+      }
+      else
+        l << coalesce(_left);
+
+      if(_right)
+      {
+        r << std::hex;
+        for(size_t i = 0; i < length; i++)
+          r << static_cast<uint64_t>(_right[i]) << ' ';
+      }
+      else
+        r << coalesce(_right);
+
+      left = l.str();
+      right = r.str();
+    }
+
+    // Print non-integral memcmp types bytewise.
+    exception(int _line, const char *_test, const void *_left, const void *_right,
+     size_t length, const char *_reason):
+     exception(_line, _test, (const uint8_t *)_left, (const uint8_t *)_right,
+      length, _reason) {}
+  };
 
   class unittestrunner_cls final
   {
@@ -347,6 +462,22 @@ namespace Unit
 
     ~unittest() {};
 
+    inline void run_section(void)
+    {
+      try
+      {
+        run_impl();
+      }
+      catch(const Unit::skip &e)
+      {
+        this->skip();
+      }
+      catch(const Unit::exception &e)
+      {
+        this->print_exception(e);
+      }
+    }
+
     inline bool run(void)
     {
       assert(!has_run);
@@ -358,7 +489,7 @@ namespace Unit
       this->expected_section = 0;
       this->skipped_sections = 0;
       this->entire_test_skipped = false;
-      run_impl();
+      run_section();
 
       if(has_failed_main)
         return false;
@@ -375,7 +506,7 @@ namespace Unit
       {
         this->count_sections = 0;
         this->expected_section++;
-        run_impl();
+        run_section();
       }
 
       if(this->entire_test_skipped ||
@@ -404,16 +535,6 @@ namespace Unit
       print_test_success();
       return true;
     }
-
-    template<class T>
-    inline T coalesce(const T var)
-    { return var; }
-
-    inline const char *coalesce(const char *var)
-    { return (var ? var : "NULL"); }
-
-    inline const char *coalesce(std::nullptr_t ignore)
-    { return "NULL"; }
 
     inline int passed_sections(void)
     {
@@ -481,15 +602,7 @@ namespace Unit
         std::cerr << "Test '" << file_name << "::" << _test_name << "' aborted\n";
     }
 
-    inline void assert_fail(int line, const char *test)
-    { assert_fail(line, test, nullptr, nullptr, nullptr); }
-
-    inline void assert_fail(int line, const char *test, const char *reason)
-    { assert_fail(line, test, nullptr, nullptr, reason); }
-
-    template<class T, class S>
-    inline void assert_fail(int line, const char *test,
-     const T left, const S right, const char *reason)
+    inline void print_exception(const Unit::exception &e)
     {
       const char *_section_name = coalesce(this->section_name);
 
@@ -504,23 +617,24 @@ namespace Unit
           this->last_failed_section = this->expected_section;
         }
         std::cerr <<
-         "    Assert failed at line " << line << ": " << test;
+         "    Assert failed at line " << e.line << ": " << e.test;
       }
       else
       {
-        std::cerr << "  Assert failed at line " << line << ": " << test;
+        std::cerr << "  Assert failed at line " << e.line << ": " << e.test;
         this->has_failed_main = true;
       }
 
-      if(reason) std::cerr << " (" << reason << ")\n";
-      else       std::cerr << "\n";
+      if(e.has_reason)
+        std::cerr << " (" << e.reason << ")\n";
+      else
+        std::cerr << "\n";
 
-      if(!std::is_same<T, std::nullptr_t>::value ||
-       !std::is_same<S, std::nullptr_t>::value)
+      if(e.has_values)
       {
         std::cerr
-          << "    Left:  " << coalesce(left) << "\n"
-          << "    Right: " << coalesce(right) << "\n";
+          << "    Left:  " << e.left << "\n"
+          << "    Right: " << e.right << "\n";
       }
     }
 
@@ -584,10 +698,11 @@ void sigabrt_handler(int signal)
   if(signal == SIGABRT)
   {
     std::cerr << "Received SIGABRT: ";
-    Unit::unittestrunner.signal_fail();
   }
   else
-    std::cerr << "Unexpected signal received\n";
+    std::cerr << "Unexpected signal " << signal << " received: ";
+
+  Unit::unittestrunner.signal_fail();
 }
 
 int main(int argc, char *argv[])

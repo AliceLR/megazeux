@@ -9,6 +9,11 @@ include contrib/libxmp/Makefile.megazeux
 
 .PHONY: mzx_clean core_target_clean
 
+#
+# This allows selection of g++ for linking instead of gcc.
+# Linking with g++ is only necessary if linking the C++ standard library
+# (libstdc++ or libc++) is required; usually it isn't, and gcc can be used.
+#
 LINK_CC := ${CC}
 
 core_src = src
@@ -46,9 +51,9 @@ ${core_obj}/run_stubs.o: ${core_src}/run_stubs.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
 
-${core_obj}/updater.o: ${core_src}/updater.c
-	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
+${core_obj}/updater.o: ${core_src}/updater.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CC} -MD ${core_cxxflags} ${core_flags} -c $< -o $@
 
 ${audio_obj}/%.o: ${audio_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
@@ -65,6 +70,10 @@ ${io_obj}/%.o: ${io_src}/%.c
 ${network_obj}/%.o: ${network_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@
+
+${network_obj}/%.o: ${network_src}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} -c $< -o $@
 
 ${core_obj}/%.o: ${core_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
@@ -118,7 +127,7 @@ core_cobjs := \
   ${io_obj}/dir.o                 \
   ${io_obj}/fsafeopen.o           \
   ${io_obj}/path.o                \
-  ${io_obj}/vfile.o               \
+  ${io_obj}/vio.o                 \
   ${io_obj}/zip.o                 \
   ${io_obj}/zip_stream.o
 
@@ -146,7 +155,8 @@ endif
 # These are really just hacks and should be moved elsewhere
 #
 ifeq (${BUILD_NDS},1)
-core_cobjs += arch/nds/exception.o
+core_cobjs += arch/nds/protected_palette.bin.o
+core_cobjs += arch/nds/audio.o
 core_cobjs += arch/nds/platform.o arch/nds/event.o
 core_cobjs += arch/nds/render.o arch/nds/evq.o
 ifneq (${BUILD_DEBYTECODE},1)
@@ -178,6 +188,10 @@ endif
 ifeq (${BUILD_AUDIO},1)
 core_cobjs += arch/wii/audio.o
 endif
+endif
+# Required regardless of whether SDL is enabled or not...
+ifeq (${BUILD_NETWORK},1)
+core_cxxobjs += arch/wii/network.o
 endif
 endif
 
@@ -264,7 +278,6 @@ core_cxxflags += -I${gdm2s3m_src}
 core_cobjs += ${gdm2s3m_objs}
 core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
 core_cxxobjs += ${audio_obj}/audio_modplug.o ${libmodplug_objs}
-LINK_CC := ${CXX}
 endif
 
 ifeq (${BUILD_MIKMOD},1)
@@ -289,7 +302,6 @@ endif
 
 ifeq (${BUILD_REALITY},1)
 core_cxxobjs += ${audio_obj}/audio_reality.o
-#LINK_CC := ${CXX}
 endif
 
 ifeq (${LIBPNG},1)
@@ -299,6 +311,13 @@ core_cobjs += ${core_obj}/pngops.o
 endif
 
 ifeq (${BUILD_AUDIO},1)
+ifeq (${BUILD_NDS},1)
+# NDS has a custom audio implementation
+audio_cobjs := \
+ ${audio_obj}/audio.o          \
+ ${audio_obj}/ext.o            \
+ ${audio_obj}/sfx.o
+else
 audio_cobjs := \
  ${audio_obj}/audio.o          \
  ${audio_obj}/audio_pcs.o      \
@@ -312,9 +331,10 @@ audio_cobjs += \
  ${audio_obj}/audio_vorbis.o
 endif
 
-core_cobjs += ${audio_cobjs}
 core_flags += ${VORBIS_CFLAGS}
 core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
+endif
+core_cobjs += ${audio_cobjs}
 else
 # The editor needs this for sfx_strs...
 ifeq (${BUILD_EDITOR},1)
@@ -362,9 +382,14 @@ core_cflags := ${ZLIB_CFLAGS} ${core_cflags}
 core_ldflags := ${ZLIB_LDFLAGS} ${core_ldflags}
 
 ifeq (${BUILD_NETWORK},1)
-core_cobjs += ${network_obj}/dns.o ${network_obj}/host.o
-core_cobjs += ${network_obj}/manifest.o ${network_obj}/network.o
-core_cobjs += ${network_obj}/sha256.o ${network_obj}/socksyms.o
+core_cobjs += ${network_obj}/sha256.o
+core_cxxobjs += \
+  ${network_obj}/DNS.o \
+  ${network_obj}/Host.o \
+  ${network_obj}/HTTPHost.o \
+  ${network_obj}/Manifest.o \
+  ${network_obj}/Socket.o \
+  ${network_obj}/network.o
 
 ifeq (${BUILD_UPDATER},1)
 mzx_objs += ${core_obj}/updater.o
@@ -378,6 +403,17 @@ endif
 
 ifeq (${BUILD_DEBYTECODE},1)
 core_cobjs += ${core_obj}/rasm.o
+endif
+
+#
+# Link libstdc++-less compatibility implementations of various functions.
+# Doing this instead of linking libstdc++ when possible avoids pulling in
+# external libraries for MinGW and (particularly) Android builds.
+#
+ifneq (${core_cxxobjs},)
+ifneq (${LINK_CC},${CXX})
+core_cxxobjs := ${core_obj}/nostdc++.o ${core_cxxobjs}
+endif
 endif
 
 core_objs := ${core_cobjs} ${core_cxxobjs}

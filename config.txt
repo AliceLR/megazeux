@@ -1,5 +1,5 @@
-# Configuration file for MegaZeux 2.92d
-# May 8th, 2020
+# Configuration file for MegaZeux 2.92f
+# November 22nd, 2020
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -169,6 +169,15 @@
 
 # fullscreen = 1
 
+# MZX can optionally display the text cursor to hint at the currently selected
+# UI element when applicable. Valid settings are 0 or "off" (doesn't display
+# or update the cursor position), 1 or "hidden" (doesn't display, but updates
+# the cursor position for platforms with hardware cursors), "underline"
+# (displays the underline cursor), and "solid" (displays the filled cursor).
+# The default value is 1.
+
+# dialog_cursor_hints = 1
+
 # Whether MZX should allow a screenshot to be taken when F12 is pressed.
 # Defaults to enabled.
 
@@ -194,11 +203,11 @@
 # audio_buffer_samples = 1024
 
 # Allow music to be sampled at higher precision. Increases CPU
-# usage but increases audio quality as well.
+# usage but increases audio quality as well. (Modplug only.)
 
 # enable_oversampling = 0
 
-# Set master resample mode. This affects how OGGs, WAVs, and
+# Set master resample mode. This affects how OGGs, SAMs, WAVs, and
 # frequency shifted modules sound. Choices are:
 # none (fastest, poor quality)
 # linear (fast, good quality)
@@ -272,10 +281,10 @@
 # allow_cheats = 0
 
 # Allow MegaZeux to automatically decrypt worlds without confirmation.
-# Set to 1 to enable this. This feature is disabled by default outside
-# of the HTML5 port.
+# Instead of replacing the world, the world will be decrypted either in
+# memory or to a temporary file. Enabled by default.
 
-# auto_decrypt_worlds = 0
+# auto_decrypt_worlds = 1
 
 # Enable standalone mode. This is a game mode meant to be used
 # for packaged standalone MegaZeux games. In standalone mode:
@@ -329,6 +338,22 @@
 # the board when that object is selected. Enabled by default.
 
 # editor_thing_menu_places = 1
+
+# By default, the show thing keys (e.g. "Shift+F2: Show Robots") will block
+# editing until a key or mouse button is pressed, after which they are turned
+# off. If this option is set to 1, these keys will instead toggle on until
+# the same key is pressed again, another show thing key is pressed, or until
+# escape is pressed. This allows scrolling and other editing without having to
+# press these keys repeatedly.
+
+# editor_show_thing_toggles = 0
+
+# This option controls the blinking speed when a show thing key is used.
+# Lower numbers mean faster blinking; for example, when set to 4 (default),
+# the character displayed by the blinking will alternate every 4 frames (~8 Hz).
+# When set to 0, no blinking will occur and only the first character will display.
+
+# editor_show_thing_blink_speed = 4
 
 # If this is set to 1 (the default), enter can be used to split
 # a line in the robot editor. However, the classic behaviour is
@@ -674,13 +699,13 @@
 # To use a "%" symbol as part of the target filename, use "%%". The slot
 # number will immediately follow this value.
 
-# save_slot_name = %w.
+# save_slots_name = %w.
 
 # The extension of the saved games used by the save slot system. Keep this
 # set to .sav if you wish to be able to easily load slot saves using the
 # traditional load dialog.
 
-# save_slot_ext = .sav
+# save_slots_ext = .sav
 
 # Set to 1 to start MZX in testing mode, exactly as if Alt+T was pressed in
 # the editor. MegaZeux will exit after gameplay ends. This is intended to be
@@ -702,11 +727,34 @@
 
 # network_enabled = 1
 
+# By default, MZX will allow IPv4 and IPv6 connections and name resolution based
+# on whether the system has an IPv4 address and/or an IPv6 address configured.
+# This setting can be changed to "ipv4" to force IPv4 connections/lookups or
+# "ipv6" to force IPv6 connections/lookups (and IPv4-mapped IPv6 addresses if
+# no real IPv6 addresses are found). Default value is "any".
+
+# network_address_family = any
+
 # MegaZeux can support connections via a SOCKS4/5 proxy to punch through
 # connections that would otherwise require some sort of pipe intermediary.
 
 # socks_host = localhost
 # socks_port = 1080
+
+# For SOCKS5 proxies, a username and password can optionally be provided.
+# Note that if your socks host is remote, these will be sent unencrypted over
+# your network connection.
+
+# socks_username = your_username
+# socks_password = your_password
+
+# By default, MZX builds with networking enabled will allow the user to check
+# for updates (either manually or automatically; see update_auto_check below).
+# For platforms that support it, a full update can also be performed. This
+# option allows the updater system (both update checks and the full update
+# process if applicable) to be turned off entirely.
+
+# updater_enabled = 1
 
 # The update host is an HTTP server containing all data and metadata
 # associated with updates for MegaZeux. You normally won't want to
@@ -735,8 +783,8 @@
 # By default, MZX will check for updates on startup. There are three modes:
 # "on", which will display most messages; "silent", which will only display
 # certain errors and a message in the window caption; and "off", which disables
-# this feature altogether. The default setting is "silent". If you start MZX
-# in fullscreen, "on" is recommended.
+# this feature altogether. The default setting is "silent" for Windows and
+# "off" for any other platform.
 
 # update_auto_check = silent
 

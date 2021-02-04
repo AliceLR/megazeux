@@ -4,6 +4,8 @@ This is a modified version of the RAD 2.x player for MegaZeux. Included:
 
 * RAD 1.x playback and validation support.
 * New functions required for MegaZeux's set_order/set_position and get_length.
+* Clear RADPlayer::Instruments during Init() to prevent uninitialized reads and
+  crashes caused by instruments referenced but not saved in a RAD.
 * A bugfix for Dxx. The vanilla player fails to skip directly to the parameter
   row and instead will play the next pattern extremely fast until the parameter
   row is reached.

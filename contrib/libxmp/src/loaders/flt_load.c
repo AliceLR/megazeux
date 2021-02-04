@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2016 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -294,7 +294,7 @@ static int flt_load(struct module_data *m, HIO_HANDLE * f, const int start)
 	struct xmp_event *event;
 	struct mod_header mh;
 	uint8 mod_event[4];
-	char *tracker;
+	const char *tracker;
 	char filename[1024];
 	char buf[16];
 	HIO_HANDLE *nt;
@@ -336,9 +336,9 @@ static int flt_load(struct module_data *m, HIO_HANDLE * f, const int start)
 		}
 	}
 
-	hio_read(&mh.name, 20, 1, f);
+	hio_read(mh.name, 20, 1, f);
 	for (i = 0; i < 31; i++) {
-		hio_read(&mh.ins[i].name, 22, 1, f);
+		hio_read(mh.ins[i].name, 22, 1, f);
 		mh.ins[i].size = hio_read16b(f);
 		mh.ins[i].finetune = hio_read8(f);
 		mh.ins[i].volume = hio_read8(f);
@@ -347,8 +347,8 @@ static int flt_load(struct module_data *m, HIO_HANDLE * f, const int start)
 	}
 	mh.len = hio_read8(f);
 	mh.restart = hio_read8(f);
-	hio_read(&mh.order, 128, 1, f);
-	hio_read(&mh.magic, 4, 1, f);
+	hio_read(mh.order, 128, 1, f);
+	hio_read(mh.magic, 4, 1, f);
 
 	if (mh.magic[3] == '4') {
 		mod->chn = 4;

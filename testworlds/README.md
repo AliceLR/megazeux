@@ -72,7 +72,7 @@ to the title of the test, the `$author` string to your identifier, and the
 robot editor window with `inc "$desc" "[more description]"` as-needed.
 
 6) Upon completion or failure, the counter `result` must be set to one of the
-following counters: `PASS`, `FAIL`, `BADF`, or `SKIP`.
+following counters: `PASS`, `WARN`, `FAIL`, `BADF`, or `SKIP`.
 
 7) Extra testing notes may be included in the `$result` string.
 
@@ -96,6 +96,7 @@ The following counters have special meaning:
 
 * `PASS`: Set `result` to this to indicate that the test passed.
 * `FAIL`: Set `result` to this to indicate that the test failed.
+* `WARN`: Set `result` to this to indicate that the test had an error condition but otherwise should count as a success.
 * `BADF`: Set `result` to this to indicate that the test failed due to a file loading error.
 * `SKIP`: Set `result` to this to indicate that the test was skipped.
 * `result`: indicates the result of the test. Defaults to `BADF`.

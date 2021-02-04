@@ -32,6 +32,7 @@
 #include "audio_pcs.h"
 #include "ext.h"
 #include "sampled_stream.h"
+#include "sfx.h"
 
 #include "../configure.h"
 #include "../data.h"
@@ -53,7 +54,6 @@
 
 #ifdef CONFIG_MODPLUG
 #include "audio_modplug.h"
-#include "gdm2s3m.h"
 #endif
 
 #ifdef CONFIG_MIKMOD
@@ -75,67 +75,21 @@
 // May be used by audio plugins
 struct audio audio;
 
-#define __lock()      platform_mutex_lock(&audio.audio_mutex)
-#define __unlock()    platform_mutex_unlock(&audio.audio_mutex)
+#ifndef DEBUG
 
-#ifdef DEBUG
+#define LOCK()   platform_mutex_lock(&audio.audio_mutex)
+#define UNLOCK() platform_mutex_unlock(&audio.audio_mutex)
 
-#define LOCK()   lock(__FILE__, __LINE__)
-#define UNLOCK() unlock(__FILE__, __LINE__)
+#else /* DEBUG */
 
-static volatile int locked = 0;
-static volatile char last_lock[32];
+#include "../thread_debug.h"
 
-#ifdef CONFIG_SDL
-#include "../compat_sdl.h"
-#include <SDL_thread.h>
-static volatile SDL_threadID last_thread = 0;
-#endif
+static platform_mutex_debug mutex_debug;
 
-static void lock(const char *file, int line)
-{
-#ifdef CONFIG_SDL
-  // lock may be held here, but it shouldn't be held by the current thread.
-  // If this is SDL, we can determine if the current thread is holding it.
-  // Otherwise, print nothing because this debug message is annoying and is
-  // almost always spurious.
-  SDL_threadID cur_thread = SDL_ThreadID();
-
-  if(locked && (last_thread == cur_thread))
-  {
-    debug("%s:%d (thread %ld): locked at %s (thread %ld) already!\n",
-     file, line, cur_thread, last_lock, last_thread);
-  }
-#endif
-
-  // acquire the mutex
-  __lock();
-
-  // store information on this lock
-  snprintf((char *)last_lock, 32, "%s:%d", file, line);
-  last_lock[31] = '\0';
-#ifdef CONFIG_SDL
-  last_thread = SDL_ThreadID();
-#endif
-
-  locked = 1;
-}
-
-static void unlock(const char *file, int line)
-{
-  // lock should be held here
-  if(!locked)
-    debug("%s:%d: tried to unlock when not locked!\n", file, line);
-
-  // all ok, unlock this mutex
-  locked = 0;
-  __unlock();
-}
-
-#else // !DEBUG
-
-#define LOCK()     __lock()
-#define UNLOCK()   __unlock()
+#define LOCK()   platform_mutex_lock_debug(&audio.audio_mutex, \
+                  &audio.audio_debug_mutex, &mutex_debug, __FILE__, __LINE__)
+#define UNLOCK() platform_mutex_unlock_debug(&audio.audio_mutex, \
+                  &audio.audio_debug_mutex, &mutex_debug, __FILE__, __LINE__)
 
 #endif // DEBUG
 
@@ -158,6 +112,10 @@ static int volume_function(int input, int volume_setting)
 
   return CLAMP(output, 0, 255);
 }
+
+// Disable most of the standard audio implementation on NDS, where
+// hardware mixing is utilized.
+#ifndef CONFIG_NDS
 
 void destruct_audio_stream(struct audio_stream *a_src)
 {
@@ -281,6 +239,10 @@ void audio_callback(Sint16 *stream, int len)
 void init_audio(struct config_info *conf)
 {
   platform_mutex_init(&audio.audio_mutex);
+  platform_mutex_init(&audio.audio_sfx_mutex);
+#ifdef DEBUG
+  platform_mutex_init(&audio.audio_debug_mutex);
+#endif
 
   audio.output_frequency = conf->output_frequency;
   audio.master_resample_mode = conf->resample_mode;
@@ -337,6 +299,12 @@ void quit_audio(void)
   free(audio.pcs_stream);
 
   UNLOCK();
+
+#ifdef DEBUG
+  platform_mutex_destroy(&audio.audio_debug_mutex);
+#endif
+  platform_mutex_destroy(&audio.audio_sfx_mutex);
+  platform_mutex_destroy(&audio.audio_mutex);
 }
 
 /* If the mod was successfully changed, return 1.  This value is used
@@ -502,6 +470,16 @@ void audio_play_sample(char *filename, boolean safely, int period)
   }
   else
   {
+    /**
+     * NOTE: the period is doubled here to compensate for a SAM to WAV
+     * conversion bug introduced in MZX 2.80. Unfortunately this has
+     * permanently affected the way the frequency field has been used for WAV
+     * and OGG samples and needs to be carried forward.
+     *
+     * Note that WAVs generated from the buggy SAM to WAV conversion routine
+     * are treated as stereo and must also have this buggy doubling. In other
+     * words, just double the frequency in the SAM loader.
+     */
     audio_ext_construct_stream(filename,
      audio_get_real_frequency(period * 2), vol, 0);
   }
@@ -529,6 +507,11 @@ void audio_spot_sample(int period, int which)
 
   if(ret)
   {
+    /**
+     * NOTE: see above for why the period is being multiplied by 2 here.
+     * The player implementation of get_sample should enable the sam frequency
+     * hack to compensate for this.
+     */
     struct audio_stream *a_src = construct_wav_stream_direct(&wav,
      audio_get_real_frequency(period * 2), vol, !!(wav.loop_end));
     a_src->is_spot_sample = true;
@@ -735,6 +718,8 @@ int audio_get_module_loop_end(void)
   return loop_end;
 }
 
+#endif
+
 void audio_set_music_on(int val)
 {
   LOCK();
@@ -812,15 +797,14 @@ void audio_set_sound_volume(int volume)
 void audio_set_pcs_volume(int volume)
 {
   int real_volume;
-  if(!audio.pcs_stream)
-    return;
 
   LOCK();
 
   audio.pcs_volume = volume;
   real_volume = volume_function(255, audio.pcs_volume);
 
-  audio.pcs_stream->set_volume(audio.pcs_stream, real_volume);
+  if(audio.pcs_stream)
+    audio.pcs_stream->set_volume(audio.pcs_stream, real_volume);
 
   UNLOCK();
 }

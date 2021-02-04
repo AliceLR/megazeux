@@ -23,6 +23,10 @@
 
 #include "../config.h"
 
+#ifndef VERSION_DATE
+#define VERSION_DATE
+#endif
+
 #define USAGE \
  "checkres :: MegaZeux " VERSION VERSION_DATE "\n" \
  "Usage: checkres [options] " \
@@ -220,7 +224,7 @@ static const char *decode_status(enum status status)
   }
 }
 
-static void _get_path(char *dest, const char *src)
+static boolean _get_path(char *dest, const char *src)
 {
   int i;
 
@@ -229,8 +233,14 @@ static void _get_path(char *dest, const char *src)
   while((src[i] != '/') && (src[i] != '\\') && i)
     i--;
 
-  strncpy(dest, src, i);
-  dest[i] = 0;
+  if(i > 0)
+  {
+    memcpy(dest, src, i);
+    dest[i] = '\0';
+    return true;
+  }
+  dest[0] = '\0';
+  return false;
 }
 
 static void join_path(char *dest, const char *dir, const char *file)
@@ -735,7 +745,7 @@ static void output_preformatted(const char *required_by,
       details[0] = 0;
 
     if(crc32_len && has_crc32)
-      snprintf(crc, 9, "%8.8x", crc32);
+      snprintf(crc, 9, "%8.8"PRIx32, crc32);
 
     fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s%-*.*s %s\n",
      parent_max_len, parent_max_len, required_by,
@@ -843,7 +853,7 @@ static void output_csv(const char *required_by,
   {
     if(has_crc32)
     {
-      fprintf(stdout, "%8.8x,", crc32);
+      fprintf(stdout, "%8.8"PRIx32",", crc32);
     }
     else
       fprintf(stdout, ",");
@@ -1698,7 +1708,7 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file,
  (fn_len == sizeof(s)-1) && (!strcasecmp(function_counter, s)))
 
 #define match_partial(s, reqv) ((world_version >= reqv) && \
- (fn_len >= sizeof(s)-1) && (!strncasecmp(function_counter, s, fn_len)))
+ (fn_len >= sizeof(s)-1) && (!strncasecmp(function_counter, s, sizeof(s)-1)))
 
 #define TERMINATE(s,slen) \
  do{ if(slen && s[slen - 1] == '\0') slen--; else s[slen]='\0'; }while(0)
@@ -2157,6 +2167,97 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 /* Legacy Worlds */
 /*****************/
 
+#define MAX_PASSWORD_LENGTH 15
+
+// From legacy_world.c
+static uint8_t get_pw_xor_code(char *password, int pro_method)
+{
+  static const char magic_code[16] =
+   "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
+
+  int work = 85; // Start with 85... (01010101)
+  size_t i;
+
+  // First, normalize password...
+  for(i = 0; i < MAX_PASSWORD_LENGTH; i++)
+  {
+    password[i] ^= magic_code[i];
+    password[i] -= 0x12 + pro_method;
+    password[i] ^= 0x8D;
+  }
+
+  // Clear pw after first null
+  for(i = strlen(password); i < MAX_PASSWORD_LENGTH; i++)
+  {
+    password[i] = 0;
+  }
+
+  for(i = 0; i < MAX_PASSWORD_LENGTH; i++)
+  {
+    //For each byte, roll once to the left and xor in pw byte if it
+    //is an odd character, or add in pw byte if it is an even character.
+    work <<= 1;
+    if(work > 255)
+      work ^= 257; // Wraparound from roll
+
+    if(i & 1)
+    {
+      work += (signed char)password[i]; // Add (even byte)
+      if(work > 255)
+        work ^= 257; // Wraparound from add
+    }
+    else
+    {
+      work ^= (signed char)password[i]; // XOR (odd byte);
+    }
+  }
+  // To factor in protection method, add it in and roll one last time
+  work += pro_method;
+  if(work > 255)
+    work ^= 257;
+
+  work <<= 1;
+  if(work > 255)
+    work ^= 257;
+
+  // Can't be 0-
+  if(work == 0)
+    work = 86; // (01010110)
+  // Done!
+  return work;
+}
+
+#if ARCHITECTURE_BITS == 64
+#define ALIGN_TYPE uint64_t
+#define ALIGN_XOR(x) ((x) | (x << 8) | (x << 16) | (x << 24) | \
+ (x << 32) | (x << 40) | (x << 48) | (x << 56))
+#else
+#define ALIGN_TYPE uint32_t
+#define ALIGN_XOR(x) ((x) | (x << 8) | (x << 16) | (x << 24))
+#endif
+
+static void _decrypt_legacy_world(struct memfile *mf, char *password,
+ int protection_method)
+{
+  ALIGN_TYPE xor = get_pw_xor_code(password, protection_method);
+  ALIGN_TYPE xor_w = ALIGN_XOR(xor);
+  unsigned char *pos = mf->current;
+
+  debug("xor=%u, password: %s\n", (unsigned int)xor, password);
+
+  while(pos < mf->end && ((size_t)pos) % sizeof(ALIGN_TYPE))
+    *(pos++) ^= xor;
+
+  while(mf->end - pos >= (ptrdiff_t)sizeof(ALIGN_TYPE))
+  {
+    *((ALIGN_TYPE *)pos) ^= xor_w;
+    pos += sizeof(ALIGN_TYPE);
+  }
+
+  while(pos < mf->end)
+    *(pos++) ^= xor;
+}
+
 static enum status parse_legacy_robot(struct memfile *mf,
  struct base_file *file, int board_num, int robot_num)
 {
@@ -2399,7 +2500,7 @@ static enum status parse_legacy_board(struct memfile *mf,
     ret = parse_legacy_robot(mf, file, board_num, i + 1);
     if(ret != SUCCESS)
     {
-      warnhere("Failed processing robot %d\n", i + 1);
+      warnhere("Error processing robot %d\n", i + 1);
       break;
     }
   }
@@ -2413,7 +2514,7 @@ struct legacy_board {
 };
 
 static enum status parse_legacy_world(struct memfile *mf,
- struct base_file *file)
+ struct base_file *file, int protection_method)
 {
   int global_robot_offset;
   struct legacy_board board_list[MAX_BOARDS];
@@ -2428,6 +2529,9 @@ static enum status parse_legacy_world(struct memfile *mf,
     warnhere("couldn't seek to global robot position (truncated)\n");
     return CORRUPT_WORLD;
   }
+  // Protected worlds: everything is offset 15 bytes.
+  if(protection_method)
+    mfseek(mf, MAX_PASSWORD_LENGTH, SEEK_CUR);
 
   // Absolute offset (in bytes) of global robot
   global_robot_offset = mfgetd(mf);
@@ -2514,15 +2618,15 @@ static enum status parse_legacy_world(struct memfile *mf,
     if(mfseek(mf, board->offset, SEEK_SET) != 0)
     {
       warnhere("Failed to seek to position of board %d\n", i);
-      return CORRUPT_WORLD;
+      continue;
     }
 
     // parse this board atomically
     ret = parse_legacy_board(mf, file, i);
     if(ret != SUCCESS)
     {
-      warnhere("Failed processing board %d\n", i);
-      goto err_out;
+      warnhere("Error processing board %d\n", i);
+      continue;
     }
   }
 
@@ -2539,7 +2643,6 @@ static enum status parse_legacy_world(struct memfile *mf,
   if(ret != SUCCESS)
     warnhere("Failed processing global robot\n");
 
-err_out:
   return ret;
 }
 
@@ -2769,16 +2872,50 @@ static enum status parse_board_file(struct memfile *mf, struct base_file *file)
 
 static enum status parse_world_file(struct memfile *mf, struct base_file *file)
 {
-  unsigned char magic[3];
+  unsigned char magic[4];
+  int protection_method;
   int file_version;
+
+  // Truncation safety check.
+  if(!mfhasspace(64, mf))
+    return FREAD_FAILED;
 
   // skip to protected byte; don't care about world name
   if(mfseek(mf, LEGACY_WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
     return FSEEK_FAILED;
 
-  // can't yet support protected worlds
-  if(mfgetc(mf) != 0)
-    return PROTECTED_WORLD;
+  protection_method = mfgetc(mf);
+  if(protection_method != 0)
+  {
+    // World is probably protected (or possibly junk).
+    char password[16];
+    long magic_pos;
+
+    if(protection_method < 0 || protection_method > 3)
+      return MAGIC_CHECK_FAILED;
+
+    if(mfread(password, 1, MAX_PASSWORD_LENGTH, mf) != MAX_PASSWORD_LENGTH)
+      return FREAD_FAILED;
+    password[MAX_PASSWORD_LENGTH] = '\0';
+
+    magic_pos = mftell(mf);
+    if(mfread(magic, 1, 4, mf) != 4)
+      return FREAD_FAILED;
+
+    file_version = _world_magic(magic);
+    if(file_version <= 0)
+    {
+      // 1.xx world magic is located one byte further in the file.
+      file_version = _world_magic(magic + 1);
+      if(file_version != V100)
+        return MAGIC_CHECK_FAILED;
+
+      return MZX_100_NOT_SUPPORTED;
+    }
+    mfseek(mf, magic_pos + 3, SEEK_SET);
+    _decrypt_legacy_world(mf, password, protection_method);
+    mfseek(mf, magic_pos, SEEK_SET);
+  }
 
   // read in world magic (version)
   if(mfread(magic, 1, 3, mf) != 3)
@@ -2795,7 +2932,7 @@ static enum status parse_world_file(struct memfile *mf, struct base_file *file)
   file->world_version = file_version;
 
   if(file_version <= MZX_LEGACY_FORMAT_VERSION)
-    return parse_legacy_world(mf, file);
+    return parse_legacy_world(mf, file, protection_method);
 
   if(file_version <= MZX_VERSION)
     return parse_world(mf, file, 0);
@@ -2845,7 +2982,8 @@ static enum status parse_file(const char *file_name,
   len = strlen(file_name);
   ext = len >= 4 ? (char *)file_name + len - 4 : NULL;
 
-  _get_path(file_dir, file_name);
+  if(!_get_path(file_dir, file_name))
+    strcpy(file_dir, ".");
 
   if(fp && ext && !strcasecmp(ext, ".MZX"))
   {

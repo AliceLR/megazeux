@@ -34,6 +34,10 @@ struct memfile
   unsigned char *start;
   unsigned char *end;
   boolean alloc;
+  /* Generally an error on seeking past the end of memfiles is desired but for
+   * wrappers with safety checks (vfile.c), it is useful to seek past the end.
+   */
+  boolean seek_past_end;
 };
 
 /**
@@ -45,6 +49,7 @@ static inline void mfopen(const void *src, size_t len, struct memfile *mf)
   mf->current = (unsigned char *)src;
   mf->end = (unsigned char *)src + len;
   mf->alloc = false;
+  mf->seek_past_end = false;
 }
 
 /**
@@ -59,6 +64,7 @@ static inline struct memfile *mfopen_alloc(const void *src, size_t len)
   mf->current = (unsigned char *)src;
   mf->end = (unsigned char *)src + len;
   mf->alloc = true;
+  mf->seek_past_end = false;
   return mf;
 }
 
@@ -262,28 +268,32 @@ static inline char *mfsafegets(char *dest, int len, struct memfile *mf)
 static inline int mfseek(struct memfile *mf, long int offs, int code)
 {
   unsigned char *ptr;
+  ptrdiff_t pos;
+
   switch(code)
   {
     case SEEK_SET:
-      ptr = mf->start + offs;
+      pos = offs;
       break;
 
     case SEEK_CUR:
-      ptr = mf->current + offs;
+      pos = (mf->current - mf->start) + offs;
       break;
 
     case SEEK_END:
-      ptr = mf->end + offs;
+      pos = (mf->end - mf->start) + offs;
       break;
 
     default:
-      ptr = NULL;
+      pos = -1;
       break;
   }
 
-  if(ptr && ptr >= mf->start && ptr <= mf->end)
+  // pos >= 0 doesn't necessarily imply ptr >= start due to overflow.
+  ptr = mf->start + pos;
+  if(pos >= 0 && ptr >= mf->start && (mf->seek_past_end || ptr <= mf->end))
   {
-    mf->current = ptr;
+    mf->current = mf->start + pos;
     return 0;
   }
 

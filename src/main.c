@@ -48,6 +48,7 @@
 #include "counter.h"
 #include "run_stubs.h"
 #include "io/path.h"
+#include "io/vio.h"
 
 #include "audio/audio.h"
 #include "audio/sfx.h"
@@ -99,7 +100,7 @@ static void init_pledge(void)
 }
 #endif
 
-#ifdef CONFIG_UPDATER
+#if defined(CONFIG_UPDATER) && defined(__WIN32__)
 static char **rewrite_argv_for_execv(int argc, char **argv)
 {
   char **new_argv = cmalloc((argc+1) * sizeof(char *));
@@ -164,9 +165,11 @@ __libspec int main(int argc, char *argv[])
   if(!platform_init())
     goto err_out;
 
+  check_alloc_init();
+
   // We need to store the current working directory so it's
   // always possible to get back to it..
-  getcwd(startup_dir, MAX_PATH);
+  vgetcwd(startup_dir, MAX_PATH);
   snprintf(current_dir, MAX_PATH, "%s", startup_dir);
 
 #ifdef CONFIG_STDIO_REDIRECT
@@ -220,7 +223,7 @@ __libspec int main(int argc, char *argv[])
   // Move into the configuration file's directory so that any
   // "include" statements are done wrt this path. Move back
   // into the "current" directory after loading.
-  chdir(config_dir);
+  vchdir(config_dir);
 
   default_config();
   default_editor_config();
@@ -233,7 +236,7 @@ __libspec int main(int argc, char *argv[])
   init_macros();
 
   // Startup path might be relative, so change back before checking it.
-  chdir(current_dir);
+  vchdir(current_dir);
 
   // At this point argv should have all the config options
   // of the form var=value removed, leaving only unparsed
@@ -254,7 +257,7 @@ __libspec int main(int argc, char *argv[])
     snprintf(current_dir, MAX_PATH, "%s", conf->startup_path);
   }
 
-  chdir(current_dir);
+  vchdir(current_dir);
 
   counter_fsg();
 
@@ -279,7 +282,7 @@ __libspec int main(int argc, char *argv[])
 #ifdef CONFIG_UPDATER
     if(is_updater())
     {
-      if(updater_init(argc, argv))
+      if(updater_init())
       {
         // No auto update checks on repo builds.
         if(!strcmp(VERSION, "GIT") &&
@@ -332,7 +335,7 @@ update_restart_mzx:
   network_layer_exit(conf);
   quit_audio();
 
-#ifdef CONFIG_UPDATER
+#if defined(CONFIG_UPDATER) && defined(__WIN32__)
   // TODO: eventually any platform with execv will need to be able to allow
   // this for config/standalone-invoked restarts. Locking it to the updater
   // for now because that's the only thing that currently uses it.
@@ -341,7 +344,7 @@ update_restart_mzx:
     char **new_argv = rewrite_argv_for_execv(argc, argv);
 
     info("Attempting to restart MegaZeux...\n");
-    if(!chdir(startup_dir))
+    if(!vchdir(startup_dir))
     {
       execv(argv[0], (const void *)new_argv);
       perror("execv");

@@ -153,11 +153,10 @@ int error(const char *string, enum error_type type, unsigned int options,
     write_string(temp, 30, 14, 64, 0);
   }
 
-  update_screen();
-
   // Get key
   do
   {
+    update_screen();
     update_event_status_delay();
     t1 = get_key(keycode_internal_wrt_numlock);
 
@@ -432,6 +431,12 @@ int error_message(enum error_code id, int parameter, const char *string)
       code = 0x2563;
       break;
 
+    case E_NO_EXTENDED_CHARSETS:
+      sprintf(error_mesg, "Limited/missing extended charset support; "
+       "some features may not work");
+      code = 0x2564;
+      break;
+
     case E_ZIP_BOARD_CORRUPT:
       sprintf(error_mesg, "Board # %d is corrupt", lo);
       code = 0x9000;
@@ -479,6 +484,21 @@ int error_message(enum error_code id, int parameter, const char *string)
       sprintf(error_mesg, "Cannot overwrite the player- move it first");
       severity = ERROR_T_WARNING;
       code = 0x0000;
+      break;
+
+    case E_ANSI_IMPORT:
+      sprintf(error_mesg, "Error importing ANSi");
+      code = 0x1901;
+      break;
+
+    case E_ANSI_EXPORT:
+      sprintf(error_mesg, "Error exporting ANSi");
+      code = 0x0F01;
+      break;
+
+    case E_TEXT_EXPORT:
+      sprintf(error_mesg, "Error exporting text");
+      code = 0x1401;
       break;
 #endif
 

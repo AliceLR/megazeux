@@ -48,12 +48,6 @@ void nds_video_do_transition(void);
 // Toggle to the next subscreen mode.
 void nds_subscreen_switch(void);
 
-// Turn on or off mouselook (the next focus call will be ignored).
-void nds_mouselook(boolean enable);
-
-// Display a warning screen (PCX format).
-void warning_screen(u8 *pcx_data);
-
 __M_END_DECLS
 
 #endif // __RENDER_NDS_H

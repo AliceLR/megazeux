@@ -27,13 +27,6 @@ __M_BEGIN_DECLS
 #include "platform.h"
 #include "configure.h"
 
-enum cursor_mode_types
-{
-  cursor_mode_underline,
-  cursor_mode_solid,
-  cursor_mode_invisible
-};
-
 struct rgb_color
 {
   Uint8 r;
@@ -66,7 +59,6 @@ struct char_element
  */
 #if defined(CONFIG_NDS)
 #define NUM_CHARSETS 2
-#define NO_PROTECTED_PALETTE
 #endif
 
 #define CHAR_SIZE 14
@@ -83,7 +75,11 @@ struct char_element
 #define PROTECTED_PAL_SIZE 16
 #define FULL_PAL_SIZE (SMZX_PAL_SIZE + PROTECTED_PAL_SIZE)
 
+#ifdef CONFIG_NO_LAYER_RENDERING
+#define SET_SCREEN_SIZE (SCREEN_W * SCREEN_H)
+#else
 #define SET_SCREEN_SIZE (SCREEN_W * SCREEN_H * 3)
+#endif
 
 #define TEXTVIDEO_LAYERS 512
 
@@ -124,11 +120,14 @@ struct renderer
                                 int *min_y, int *max_x, int *max_y);
   void    (*set_screen_coords)(struct graphics_data *, int x, int y,
                                 int *screen_x, int *screen_y);
-  void    (*switch_shader)    (struct graphics_data *, const char *name);
+  boolean (*switch_shader)    (struct graphics_data *, const char *name);
   void    (*render_graph)     (struct graphics_data *);
   void    (*render_layer)     (struct graphics_data *, struct video_layer *);
   void    (*render_cursor)    (struct graphics_data *, Uint32 x, Uint32 y,
                                 Uint16 color, Uint8 lines, Uint8 offset);
+  void    (*hardware_cursor)  (struct graphics_data *, Uint32 x, Uint32 y,
+                                Uint16 color, Uint8 lines, Uint8 offset,
+                                boolean enable);
   void    (*render_mouse)     (struct graphics_data *, Uint32 x, Uint32 y,
                                 Uint8 w, Uint8 h);
   void    (*sync_screen)      (struct graphics_data *);
@@ -175,6 +174,7 @@ struct graphics_data
   boolean requires_extended;
 
   enum cursor_mode_types cursor_mode;
+  enum cursor_mode_types cursor_hint_mode;
   boolean fade_status;
   boolean dialog_fade_status;
   Uint32 cursor_x;
@@ -197,8 +197,8 @@ struct graphics_data
   Uint32 default_smzx_loaded;
   enum ratio_type ratio;
   enum gl_filter_type gl_filter_method;
-  char *gl_scaling_shader;
   int gl_vsync;
+  char gl_scaling_shader[32];
 
   Uint8 default_charset[CHAR_SIZE * CHARSET_SIZE];
 
@@ -237,9 +237,9 @@ CORE_LIBSPEC void write_string_mask(const char *str, Uint32 x, Uint32 y,
 
 CORE_LIBSPEC void clear_screen(void);
 
-CORE_LIBSPEC void cursor_solid(void);
+CORE_LIBSPEC void cursor_solid(Uint32 x, Uint32 y);
+CORE_LIBSPEC void cursor_hint(Uint32 x, Uint32 y);
 CORE_LIBSPEC void cursor_off(void);
-CORE_LIBSPEC void move_cursor(Uint32 x, Uint32 y);
 
 CORE_LIBSPEC boolean init_video(struct config_info *conf, const char *caption);
 CORE_LIBSPEC void quit_video(void);
@@ -314,7 +314,7 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
 
 Uint8 get_color_linear(Uint32 offset);
 
-void cursor_underline(void);
+void cursor_underline(Uint32 x, Uint32 y);
 
 boolean change_video_output(struct config_info *conf, const char *output);
 int get_available_video_output_list(const char **buffer, int buffer_len);
@@ -361,11 +361,6 @@ CORE_LIBSPEC Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode,
 CORE_LIBSPEC void ec_load_mzx(void);
 CORE_LIBSPEC void ec_load_set_secondary(const char *name, Uint8 *dest);
 #endif // CONFIG_EDITOR
-
-#ifdef CONFIG_HELPSYS
-void set_cursor_mode(enum cursor_mode_types mode);
-enum cursor_mode_types get_cursor_mode(void);
-#endif // CONFIG_HELPSYS
 
 #ifdef CONFIG_ENABLE_SCREENSHOTS
 void dump_screen(void);

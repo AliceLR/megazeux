@@ -38,23 +38,24 @@
 
 #include "render_layer_code.hpp"
 
-#if 0
+#ifdef BUILD_REFERENCE_RENDERER
 // This layer renderer is very slow, but it should work properly.
-// The renderers in render_layer_code.h should generally be used instead.
+// The renderers in render_layer_code.hpp should generally be used instead.
+// It might be useful to build for tests or benchmarking, though.
 
-static inline void reference_renderer(Uint32 *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer)
+static inline void reference_renderer(Uint32 * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer)
 {
   Uint32 mode = layer->mode;
 
   Uint32 ch_x, ch_y;
   Uint16 c;
 
-  struct char_element *src = layer->data;
+  const struct char_element *src = layer->data;
   int row, col;
   int tcol = layer->transparent_col;
 
-  Uint8 *char_ptr;
+  const Uint8 *char_ptr;
   Uint8 current_char_byte;
 
   Uint32 *drawPtr;
@@ -167,26 +168,8 @@ static inline void reference_renderer(Uint32 *pixels, Uint32 pitch,
 }
 #endif
 
-void render_layer_32bpp(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer)
-{
-  render_layer(pixels, 32, pitch, graphics, layer);
-}
-
-void render_layer_16bpp(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer)
-{
-  render_layer(pixels, 16, pitch, graphics, layer);
-}
-
-void render_layer_8bpp(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer)
-{
-  render_layer(pixels, 8, pitch, graphics, layer);
-}
-
-void render_layer(void *pixels, int force_bpp, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer)
+void render_layer(void * RESTRICT pixels, int force_bpp, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer)
 {
   //reference_renderer(pixels, pitch, graphics, layer); return;
 

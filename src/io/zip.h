@@ -204,6 +204,9 @@ struct zip_archive
   uint32_t size_central_directory;
   uint32_t offset_central_directory;
 
+  uint8_t *header_buffer;
+  uint32_t header_buffer_alloc;
+  uint32_t header_timestamp;
   uint32_t running_file_name_length;
 
   struct zip_file_header **files;
@@ -289,8 +292,8 @@ UTILS_LIBSPEC enum zip_error zip_write_file(struct zip_archive *zp,
 UTILS_LIBSPEC enum zip_error zip_close(struct zip_archive *zp,
  size_t *final_length);
 
-UTILS_LIBSPEC struct zip_archive *zip_open_fp_read(FILE *fp);
-UTILS_LIBSPEC struct zip_archive *zip_open_fp_write(FILE *fp);
+UTILS_LIBSPEC struct zip_archive *zip_open_vf_read(vfile *vf);
+UTILS_LIBSPEC struct zip_archive *zip_open_vf_write(vfile *vf);
 UTILS_LIBSPEC struct zip_archive *zip_open_file_read(const char *file_name);
 UTILS_LIBSPEC struct zip_archive *zip_open_file_write(const char *file_name);
 UTILS_LIBSPEC struct zip_archive *zip_open_mem_read(const void *src, size_t len);

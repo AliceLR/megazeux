@@ -201,6 +201,11 @@ static boolean audio_xmp_get_sample(struct audio_stream *a_src, Uint32 which,
       dest->freq = audio_get_real_frequency(SAM_DEFAULT_PERIOD);
       dest->data_length = sam->len;
 
+      // The period provided to audio_spot_sample was doubled for consistency
+      // with the incorrect behavior added to audio_play_sample, so enable SAM
+      // hacks to fix the frequency.
+      dest->enable_sam_frequency_hack = true;
+
       // If the sample loops, the sample this returns needs to loop too.
       if(sam->flg & XMP_SAMPLE_LOOP)
       {
@@ -210,10 +215,11 @@ static boolean audio_xmp_get_sample(struct audio_stream *a_src, Uint32 which,
       else
         dest->loop_start = dest->loop_end = 0;
 
-      // XMP samples are signed, and if 16bit, LSB, so just copy it directly.
+      // XMP samples are signed, and if 16bit, use the system byte order.
+      // MZX supports all of these, so just copy the sample directly.
       if(sam->flg & XMP_SAMPLE_16BIT)
       {
-        dest->format = SAMPLE_S16LSB;
+        dest->format = SAMPLE_S16SYS;
         dest->data_length *= 2;
       }
       else
@@ -261,9 +267,9 @@ static struct audio_stream *construct_xmp_stream(char *filename,
   {
     xmp_set_player(ctx, XMP_PLAYER_DEFPAN, 50);
 
-    // This function will close the file pointer provided. There's not really
-    // a clean way to fix this but it's better than what was here before (it
-    // would try to fdopen the fileno and cause platform-specific leaks).
+    /**
+     * This function does not close the provided file pointer.
+     */
     if(!xmp_load_module_from_file(ctx, fp, file_len))
     {
       struct xmp_stream *xmp_stream = ccalloc(1, sizeof(struct xmp_stream));
@@ -317,13 +323,12 @@ static struct audio_stream *construct_xmp_stream(char *filename,
       initialize_audio_stream((struct audio_stream *)xmp_stream, &a_spec,
        volume, repeat);
 
+      fclose(fp);
       return (struct audio_stream *)xmp_stream;
     }
     xmp_free_context(ctx);
   }
-  else
-    fclose(fp);
-
+  fclose(fp);
   return NULL;
 }
 
@@ -338,9 +343,12 @@ void init_xmp(struct config_info *conf)
   audio_ext_register("med", construct_xmp_stream);
   audio_ext_register("mod", construct_xmp_stream);
   audio_ext_register("mtm", construct_xmp_stream);
+  audio_ext_register("nst", construct_xmp_stream);
+  audio_ext_register("oct", construct_xmp_stream);
   audio_ext_register("okt", construct_xmp_stream);
   audio_ext_register("s3m", construct_xmp_stream);
   audio_ext_register("stm", construct_xmp_stream);
   audio_ext_register("ult", construct_xmp_stream);
+  audio_ext_register("wow", construct_xmp_stream);
   audio_ext_register("xm", construct_xmp_stream);
 }

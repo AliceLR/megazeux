@@ -48,6 +48,7 @@
 #include "world.h"
 #include "world_struct.h"
 #include "io/fsafeopen.h"
+#include "io/vio.h"
 
 #include "audio/audio.h"
 #include "audio/sfx.h"
@@ -185,24 +186,24 @@ void load_board_module(struct world *mzx_world)
 }
 
 /**
- * Fade out before the world load. Hack that should be removed if the NDS ever
- * gets protected palette support.
+ * Fade out before the world load and clear the screen. The Emscripten port and
+ * anything using the meter without a protected palette need special handling.
  */
-static inline void load_vquick_fadeout(void)
+static inline void load_vquick_fadeout_and_clear(void)
 {
-#if defined(CONFIG_LOADSAVE_METER) && defined(NO_PROTECTED_PALETTE)
-  // HACK: If using the meter with no protected palette, don't fade out;
-  // the user would like to be able to see the meter. In fact, fade in
-  // in case something else tried to fade out.
-  insta_fadein();
-  return;
-#endif
-
 #ifdef __EMSCRIPTEN__
   // HACK: avoid putting load_world_*/load_savegame on the asyncify whitelist
   insta_fadeout();
 #else
   vquick_fadeout();
+#endif
+
+  clear_screen();
+
+#ifdef CONFIG_LOADSAVE_METER
+  // Fade back in to display the meter if, for whatever reason, it can't use
+  // the protected palette.
+  insta_fadein();
 #endif
 }
 
@@ -226,8 +227,7 @@ static boolean load_world_gameplay_ext(struct game_context *game, char *name,
   char old_mod_playing[MAX_PATH];
   strcpy(old_mod_playing, mzx_world->real_mod_playing);
 
-  load_vquick_fadeout();
-  clear_screen();
+  load_vquick_fadeout_and_clear();
 
   game->fade_in = true;
 
@@ -289,8 +289,7 @@ static boolean load_world_title(struct game_context *game, char *name)
   struct world *mzx_world = ((context *)game)->world;
   boolean ignore;
 
-  load_vquick_fadeout();
-  clear_screen();
+  load_vquick_fadeout_and_clear();
   enable_intro_mesg();
   game->fade_in = true;
 
@@ -309,6 +308,9 @@ static boolean load_world_title(struct game_context *game, char *name)
     change_board_set_values(mzx_world);
     change_board_load_assets(mzx_world);
 
+    // Music may be playing from the previous world or from editing. End the
+    // module explicitly first in case the title module fails to load.
+    audio_end_module();
     load_board_module(mzx_world);
     sfx_clear_queue();
 
@@ -337,8 +339,7 @@ static boolean load_savegame(struct game_context *game, char *name)
   boolean was_faded = get_fade_status();
   boolean save_is_faded;
 
-  load_vquick_fadeout();
-  clear_screen();
+  load_vquick_fadeout_and_clear();
   game->fade_in = true;
 
   if(reload_savegame(mzx_world, name, &save_is_faded))
@@ -375,7 +376,8 @@ static boolean load_world_title_selection(struct game_context *game)
   struct world *mzx_world = ((context *)game)->world;
   char world_name[MAX_PATH] = { 0 };
 
-  if(!choose_file_ch(mzx_world, world_ext, world_name, "Load World", true))
+  if(!choose_file_ch(mzx_world, world_ext, world_name, "Load World",
+   ALLOW_ALL_DIRS))
   {
     return load_world_title(game, world_name);
   }
@@ -404,8 +406,9 @@ static boolean load_savegame_selection(struct game_context *game)
     }
   }
 
-  if(slot_result == SLOTSEL_OK_RESULT || !choose_file_ch(mzx_world, save_ext,
-   save_file_name, "Choose game to restore", true))
+  if(slot_result == SLOTSEL_OK_RESULT ||
+   !choose_file_ch(mzx_world, save_ext, save_file_name,
+    "Choose game to restore", ALLOW_ALL_DIRS))
   {
     return load_savegame(game, save_file_name);
   }
@@ -688,7 +691,8 @@ static boolean game_key(context *ctx, int *key)
           }
 
           if(slot_result == SLOTSEL_OK_RESULT ||
-           !new_file(mzx_world, save_ext, ".sav", save_game, "Save game", 1))
+           !new_file(mzx_world, save_ext, ".sav", save_game, "Save game",
+            ALLOW_ALL_DIRS))
           {
             strcpy(curr_sav, save_game);
             save_world(mzx_world, curr_sav, true, MZX_VERSION);
@@ -763,7 +767,7 @@ static boolean game_key(context *ctx, int *key)
         {
           struct stat file_info;
 
-          if(!stat(curr_sav, &file_info))
+          if(!vstat(curr_sav, &file_info))
             load_savegame(game, curr_sav);
         }
         return true;
@@ -1129,7 +1133,7 @@ static boolean title_key(context *ctx, int *key)
       {
         struct stat file_info;
 
-        if(!stat(curr_sav, &file_info) && load_savegame(title, curr_sav))
+        if(!vstat(curr_sav, &file_info) && load_savegame(title, curr_sav))
         {
           play_game(ctx, &(title->fade_in));
           title->need_reload = true;

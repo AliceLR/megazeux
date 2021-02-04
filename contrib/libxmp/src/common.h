@@ -1,18 +1,28 @@
 #ifndef LIBXMP_COMMON_H
 #define LIBXMP_COMMON_H
 
-#ifdef __AROS__
-#define __AMIGA__
-#endif
-
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include "xmp.h"
 
-#if defined(__GNUC__) || defined(__clang__)
-#if !defined(WIN32) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(__AMIGA__) && !defined(B_BEOS_VERSION) && !defined(__ATHEOS__) && !defined(EMSCRIPTEN) && !defined(__MINT__) 
-/* Force libxmp to link on unix platforms */
-//#define USE_VERSIONED_SYMBOLS
+#undef  LIBXMP_EXPORT_VAR
+#if defined(EMSCRIPTEN)
+#include <emscripten.h>
+#define LIBXMP_EXPORT_VAR EMSCRIPTEN_KEEPALIVE
+#else
+#define LIBXMP_EXPORT_VAR
+#endif
+
+#if defined(__MORPHOS__) || defined(__AROS__) || defined(AMIGAOS) || \
+    defined(__amigaos__) || defined(__amigaos4__) ||defined(__amigados__) || \
+    defined(AMIGA) || defined(_AMIGA) || defined(__AMIGA__)
+#define LIBXMP_AMIGA	1	/* to identify amiga platforms. */
+#endif
+
+#if (defined(__GNUC__) || defined(__clang__)) && defined(XMP_SYM_VISIBILITY)
+#if !defined(_WIN32) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(LIBXMP_AMIGA) && !defined(__MSDOS__) && !defined(B_BEOS_VERSION) && !defined(__ATHEOS__) && !defined(EMSCRIPTEN) && !defined(__MINT__)
+#define USE_VERSIONED_SYMBOLS
 #endif
 #endif
 
@@ -39,10 +49,6 @@ typedef unsigned long long uint64;
 typedef signed long long int64;
 #endif
 
-#ifndef LIBXMP_CORE_PLAYER
-#define LIBXMP_PAULA_SIMULATOR
-#endif
-
 /* Constants */
 #define PAL_RATE	250.0		/* 1 / (50Hz * 80us)		  */
 #define NTSC_RATE	208.0		/* 1 / (60Hz * 80us)		  */
@@ -67,6 +73,7 @@ typedef signed long long int64;
 } while (0)
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 #define TRACK_NUM(a,c)	m->mod.xxp[a]->index[c]
 #define EVENT(a,c,r)	m->mod.xxt[TRACK_NUM((a),(c))]->event[r]
@@ -106,6 +113,19 @@ void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
 #define D_(args...) do {} while (0)
 #endif
 
+#elif defined(__WATCOMC__)
+#ifdef DEBUG
+#define D_INFO "\x1b[33m"
+#define D_CRIT "\x1b[31m"
+#define D_WARN "\x1b[36m"
+#define D_(...) do { \
+	printf("\x1b[33m%s \x1b[37m[%s:%d] " D_INFO, __FUNCTION__, \
+		__FILE__, __LINE__); printf (__VA_ARGS__); printf ("\x1b[0m\n"); \
+	} while (0)
+#else
+#define D_(...) do {} while (0)
+#endif
+
 #else
 
 #ifdef DEBUG
@@ -125,16 +145,31 @@ void __inline CLIB_DECL D_(const char *text, ...) { do {} while (0); }
 #ifdef _MSC_VER
 #define dup _dup
 #define fileno _fileno
-#if _MSC_VER <= 1800 /* VS2015+ */
-#define snprintf _snprintf
-#define vsnprintf _vsnprintf
-#endif
 #define strnicmp _strnicmp
 #define strdup _strdup
 #define fdopen _fdopen
 #define open _open
 #define close _close
 #define unlink _unlink
+#endif
+#if defined(_WIN32) || defined(__WATCOMC__) /* in win32.c */
+#define USE_LIBXMP_SNPRINTF
+/* MSVC 2015+ has C99 compliant snprintf and vsnprintf implementations.
+ * If __USE_MINGW_ANSI_STDIO is defined for MinGW (which it is by default),
+ * compliant implementations will be used instead of the broken MSVCRT
+ * functions. Additionally, GCC may optimize some calls to those functions. */
+#if defined(_MSC_VER) && _MSC_VER >= 1900
+#undef USE_LIBXMP_SNPRINTF
+#endif
+#if defined(__MINGW32__) && defined(__USE_MINGW_ANSI_STDIO) && (__USE_MINGW_ANSI_STDIO != 0)
+#undef USE_LIBXMP_SNPRINTF
+#endif
+#ifdef USE_LIBXMP_SNPRINTF
+int libxmp_vsnprintf(char *, size_t, const char *, va_list);
+int libxmp_snprintf (char *, size_t, const char *, ...);
+#define snprintf  libxmp_snprintf
+#define vsnprintf libxmp_vsnprintf
+#endif
 #endif
 
 /* Quirks */
@@ -240,7 +275,7 @@ struct module_data {
 
 	char *dirname;			/* file dirname */
 	char *basename;			/* file basename */
-	char *filename;			/* Module file name */
+	const char *filename;		/* Module file name */
 	char *comment;			/* Comments, if any */
 	uint8 md5[16];			/* MD5 message digest */
 	int size;			/* File size */
@@ -386,8 +421,9 @@ struct context_data {
 /* Prototypes */
 
 char	*libxmp_adjust_string	(char *);
-int	libxmp_exclude_match	(char *);
+int	libxmp_exclude_match	(const char *);
 int	libxmp_prepare_scan	(struct context_data *);
+void	libxmp_free_scan	(struct context_data *);
 int	libxmp_scan_sequences	(struct context_data *);
 int	libxmp_get_sequence	(struct context_data *, int);
 int	libxmp_set_player_mode	(struct context_data *);
@@ -400,19 +436,21 @@ uint32	read24l			(FILE *, int *err);
 uint32	read24b			(FILE *, int *err);
 uint32	read32l			(FILE *, int *err);
 uint32	read32b			(FILE *, int *err);
-void	write8			(FILE *, uint8);
+static inline void write8	(FILE *f, uint8 b) {
+	fputc(b, f);
+}
 void	write16l		(FILE *, uint16);
 void	write16b		(FILE *, uint16);
 void	write32l		(FILE *, uint32);
 void	write32b		(FILE *, uint32);
 int	move_data		(FILE *, FILE *, int);
 
-uint16	readmem16l		(uint8 *);
-uint16	readmem16b		(uint8 *);
-uint32	readmem24l		(uint8 *);
-uint32	readmem24b		(uint8 *);
-uint32	readmem32l		(uint8 *);
-uint32	readmem32b		(uint8 *);
+uint16	readmem16l		(const uint8 *);
+uint16	readmem16b		(const uint8 *);
+uint32	readmem24l		(const uint8 *);
+uint32	readmem24b		(const uint8 *);
+uint32	readmem32l		(const uint8 *);
+uint32	readmem32b		(const uint8 *);
 
 struct xmp_instrument *libxmp_get_instrument(struct context_data *, int);
 struct xmp_sample *libxmp_get_sample(struct context_data *, int);

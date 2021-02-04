@@ -30,6 +30,7 @@
 #include "../graphics.h"
 #include "../idarray.h"
 #include "../idput.h"
+#include "../util.h"
 #include "../window.h"
 #include "../world_struct.h"
 
@@ -97,14 +98,15 @@ int select_screen_mode(struct world *mzx_world)
 int choose_char_set(struct world *mzx_world)
 {
   int dialog_result;
-  struct element *elements[3];
+  struct element *elements[4];
   struct dialog di;
   int charset_type = 0;
   const char *radio_button_strings[] =
   {
     "MegaZeux default",
     "ASCII set",
-    "SMZX set",
+    "SMZX Classic set",
+    "SMZX Modern set",
     "Blank set"
   };
 
@@ -112,13 +114,15 @@ int choose_char_set(struct world *mzx_world)
   force_release_all_keys();
 
   set_context(CTX_CHOOSE_CHARSET);
-  elements[0] = construct_radio_button(4, 4, radio_button_strings,
-   4, 16, &charset_type);
-  elements[1] = construct_button(5, 11, "OK", 0);
-  elements[2] = construct_button(15, 11, "Cancel", -1);
+  elements[0] = construct_radio_button(4, 6, radio_button_strings,
+   ARRAY_SIZE(radio_button_strings), 16, &charset_type);
+  elements[1] = construct_button(5, 12, "OK", 0);
+  elements[2] = construct_button(15, 12, "Cancel", -1);
+  elements[3] = construct_label(4, 2,
+   "~9Note: this will clear\nany changes made to\nthe character set.");
 
-  construct_dialog(&di, "Object type", 26, 4, 28, 14,
-   elements, 3, 0);
+  construct_dialog(&di, "Select Character Set", 26, 3, 28, 15,
+   elements, ARRAY_SIZE(elements), 0);
 
   dialog_result = run_dialog(mzx_world, &di);
 
@@ -188,6 +192,7 @@ int import_type(struct world *mzx_world)
     "World file (MZX)",
     "Palette (PAL)",
     "Sound effects (SFX)",
+    "ANSi (choose pos.)",
     "MZM (choose pos.)"
   };
 
@@ -196,8 +201,8 @@ int import_type(struct world *mzx_world)
 
   set_context(CTX_IMPORTEXPORT_TYPE);
 
-  elements[0] = construct_radio_button(2, 3, radio_strings,
-   6, 19, &import_choice);
+  elements[0] = construct_radio_button(2, 2, radio_strings,
+   ARRAY_SIZE(radio_strings), 19, &import_choice);
   elements[1] = construct_button(5, 10, "OK", 0);
   elements[2] = construct_button(15, 10, "Cancel", -1);
 

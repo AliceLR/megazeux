@@ -35,6 +35,7 @@
 #include <sys/time.h>
 #endif /* _MSC_VER */
 
+#include "board.h"
 #include "configure.h"
 #include "counter.h"
 #include "data.h"
@@ -1161,8 +1162,10 @@ static int input_read(struct world *mzx_world,
 static void input_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
+  char buf[12];
+  sprintf(buf, "%d", value);
+  board_set_input_string(mzx_world->current_board, buf, strlen(buf));
   mzx_world->current_board->num_input = value;
-  sprintf(mzx_world->current_board->input_string, "%d", value);
 }
 
 static int key_read(struct world *mzx_world,
@@ -1725,8 +1728,7 @@ static void char_byte_write(struct world *mzx_world,
     byte_num %= 14;
   }
 
-  if(char_num <= 0xFF || layer_renderer_check(true))
-    ec_change_byte(char_num, byte_num, value);
+  ec_change_byte(char_num, byte_num, value);
 }
 
 static int pixel_read(struct world *mzx_world,
@@ -3675,14 +3677,17 @@ void initialize_gateway_functions(struct world *mzx_world)
   set_gateway(counter_list, "TIME", GATEWAY_TIME);
 }
 
+static size_t get_counter_alloc_size(int name_length)
+{
+  // Attempt to reclaim any padding bytes at the end of the struct...
+  return MAX(sizeof(struct counter),
+   offsetof(struct counter, name) + name_length + 1);
+}
+
 static struct counter *allocate_new_counter(const char *name, int name_length,
  int value)
 {
-  // Attempt to reclaim any padding bytes at the end of the struct...
-  size_t size = MAX(sizeof(struct counter),
-   offsetof(struct counter, name) + name_length + 1);
-
-  struct counter *dest = cmalloc(size);
+  struct counter *dest = cmalloc(get_counter_alloc_size(name_length));
 
   memcpy(dest->name, name, name_length);
   dest->name[name_length] = 0;
@@ -4070,3 +4075,39 @@ void clear_counter_list(struct counter_list *counter_list)
   counter_list->num_counters_allocated = 0;
   counter_list->counters = NULL;
 }
+
+#ifdef CONFIG_EDITOR
+
+void counter_list_size(struct counter_list *counter_list,
+ size_t *list_size, size_t *table_size, size_t *counters_size)
+{
+  if(list_size)
+    *list_size = counter_list->num_counters_allocated * sizeof(struct counter *);
+
+  if(table_size)
+  {
+    *table_size = 0;
+#ifdef CONFIG_COUNTER_HASH_TABLES
+    HASH_MEMORY_USAGE(COUNTER, counter_list->hash_table, *table_size);
+#endif
+  }
+
+  if(counters_size)
+  {
+    size_t total = 0;
+    size_t i;
+
+    if(counter_list->counters)
+    {
+      for(i = 0; i < counter_list->num_counters; i++)
+      {
+        struct counter *c = counter_list->counters[i];
+        if(c)
+          total += get_counter_alloc_size(c->name_length);
+      }
+    }
+    *counters_size = total;
+  }
+}
+
+#endif /* CONFIG_EDITOR */

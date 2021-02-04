@@ -381,7 +381,7 @@ static char *package_program(struct robot_line *start_rline,
 {
   // TODO: Have some option for giving a size maybe.
   struct robot_line *current_rline = start_rline;
-  char *packaged_program;
+  char *packaged_program = NULL;
   char *source_pos;
   int source_size = 0;
 
@@ -391,7 +391,8 @@ static char *package_program(struct robot_line *start_rline,
     current_rline = current_rline->next;
   }
 
-  packaged_program = realloc(existing_source, source_size);
+  if(source_size)
+    packaged_program = realloc(existing_source, source_size);
 
   if(packaged_program != NULL)
   {
@@ -414,6 +415,8 @@ static char *package_program(struct robot_line *start_rline,
     if(_source_size != NULL)
       *_source_size = source_size;
   }
+  else
+    free(existing_source);
 
   return packaged_program;
 }
@@ -1513,7 +1516,7 @@ static void export_block(struct robot_editor_context *rstate,
   export_name[0] = 0;
 
   if(!file_manager(mzx_world, export_ext, NULL, export_name,
-   "Export robot", 1, 1, elements, num_elements, 3))
+   "Export robot", ALLOW_ALL_DIRS, ALLOW_NEW_FILES, elements, num_elements, 3))
   {
     FILE *export_file;
 
@@ -1576,7 +1579,7 @@ static void import_block(struct robot_editor_context *rstate)
 
   txt_ext[1] = ".BC";
 
-  if(choose_file(mzx_world, txt_ext, import_name, "Import Robot", 1))
+  if(choose_file(mzx_world, txt_ext, import_name, "Import Robot", ALLOW_ALL_DIRS))
     return;
 
 #else // CONFIG_DEBYTECODE
@@ -1587,8 +1590,8 @@ static void import_block(struct robot_editor_context *rstate)
     construct_check_box(21, 20, label, 1, strlen(label[0]), &is_legacy)
   };
 
-  if(file_manager(mzx_world, txt_ext, NULL, import_name, "Import Robot", 1,
-   0, elements, 1, 2))
+  if(file_manager(mzx_world, txt_ext, NULL, import_name, "Import Robot",
+   ALLOW_ALL_DIRS, NO_NEW_FILES, elements, 1, 2))
     return;
 
 #endif
@@ -1872,7 +1875,7 @@ static void replace_current_line(struct robot_editor_context *rstate,
   size_t replace_size = strlen(replace);
   size_t str_size = strlen(str);
 
-  strncpy(new_buffer, current_rline->line_text, COMMAND_BUFFER_LEN - 1);
+  snprintf(new_buffer, COMMAND_BUFFER_LEN, "%s", current_rline->line_text);
   new_buffer[COMMAND_BUFFER_LEN - 1] = '\0';
 
   memmove(new_buffer + r_pos + replace_size,
@@ -1883,7 +1886,7 @@ static void replace_current_line(struct robot_editor_context *rstate,
   rstate->command_buffer = new_buffer;
   update_current_line(rstate);
 
-  strncpy(rstate->command_buffer_space, new_buffer, COMMAND_BUFFER_LEN - 1);
+  memcpy(rstate->command_buffer_space, new_buffer, COMMAND_BUFFER_LEN);
   rstate->command_buffer_space[COMMAND_BUFFER_LEN - 1] = '\0';
   rstate->command_buffer = rstate->command_buffer_space;
 }
@@ -3415,6 +3418,10 @@ static boolean robot_editor_idle(context *ctx)
   }
 #endif
 
+  // Disable the cursor so it doesn't display over other interfaces.
+  // Intake will enable it again if needed.
+  cursor_off();
+
   rstate->macro_repeat_level = 0;
   rstate->macro_recurse_level = 0;
   return false;
@@ -3452,6 +3459,45 @@ static boolean robot_editor_mouse(context *ctx, int *key, int button,
     return true;
   }
 
+  return false;
+}
+
+static boolean robot_editor_joystick(context *ctx, int *key, int action)
+{
+  struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
+
+  // Note: intake context also handles X, Y.
+  switch(action)
+  {
+    // Special case for backspace at the start of a line.
+    // Otherwise, intake should handle this.
+    case JOY_Y:
+    {
+      if(rstate->current_x == 0 && rstate->current_line > 1)
+      {
+        combine_current_line(rstate, -1);
+        return true;
+      }
+      break;
+    }
+
+    // Thing param menu
+    case JOY_LSHOULDER:
+      *key = IKEY_F4;
+      return true;
+
+    // Defaults for everything else...
+    default:
+    {
+      enum keycode ui_key = get_joystick_ui_key();
+      if(ui_key)
+      {
+        *key = ui_key;
+        return true;
+      }
+      break;
+    }
+  }
   return false;
 }
 
@@ -4156,6 +4202,7 @@ void robot_editor(context *parent, struct robot *cur_robot)
   spec.draw           = robot_editor_draw;
   spec.idle           = robot_editor_idle;
   spec.click          = robot_editor_mouse;
+  spec.joystick       = robot_editor_joystick;
   spec.key            = robot_editor_key;
   spec.destroy        = robot_editor_destroy;
   create_context((context *)rstate, parent, &spec, CTX_ROBO_ED);

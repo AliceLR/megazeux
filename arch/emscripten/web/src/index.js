@@ -66,7 +66,13 @@ class LoadingScreen {
     }
 }
 
-window.MzxrunInitialize = function(options) {
+/**
+ * Initialize the MegaZeux frontend and run MegaZeux.
+ * @param {Object} options Options to configure the frontend and MegaZeux.
+ * @returns {Promise} Promise to run MegaZeux.
+ */
+window.MzxrunInitialize = function(options)
+{
     console.log("Initializing MegaZeux web frontend");
 
     if (!options.render) throw "Missing option: render!";
@@ -111,16 +117,14 @@ window.MzxrunInitialize = function(options) {
         return Promise.reject(e);
     }
 
-    // FIXME this breaks the return value of this function.
-    // Fix this when Emscripten bothers to make their Modules actual promises.
-    zip.initialize().then(_ =>
-    {
     const loadingScreen = new LoadingScreen(canvas, ctx, options);
 
     var vfsPromises = [];
     var vfsProgresses = [];
     var vfsObjects = [];
 
+  return zip.initialize().then(_ =>
+  {
     for (var s in options.files) {
         vfsProgresses.push(0);
         const file = options.files[s];
@@ -149,8 +153,8 @@ window.MzxrunInitialize = function(options) {
             );
         }
     }
-
-    return loadingScreen._drawBackground().then(_ => Promise.all(vfsPromises)).then(_ => {
+  }).then(_ => loadingScreen._drawBackground()).then(_ => Promise.all(vfsPromises)).then(_ =>
+  {
         // add MegaZeux config.txt vfs
         // Set startup_path first so user config will override it...
         var configString = "startup_path = /data/game\n";
@@ -237,13 +241,16 @@ window.MzxrunInitialize = function(options) {
         options.render.canvas = canvas;
 
         Module({
-            canvas: options.render.canvas
-        }).then((module) => {
+          canvas: options.render.canvas,
+          preRun: function(module)
+          {
             window.FS = module["FS"];
-            FS.createFolder(FS.root, "data", true, true);
+            FS.mkdir("/data");
             FS.mount(wrapStorageForEmscripten(vfs), null, "/data");
             console.log("Filesystem initialization complete!");
-
+          }
+        }).then((module) =>
+        {
             // This event listener refocuses MZX when clicked if it's inside of
             // an iframe (e.g. embedded on itch.io). This is necessary to regain
             // keyboard control after focus is lost (though tab can be used too).
@@ -256,6 +263,5 @@ window.MzxrunInitialize = function(options) {
         });
     })).then(_ => true).catch(reason => {
         drawErrorMessage(canvas, ctx, reason);
-    });
     });
 }

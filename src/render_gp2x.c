@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "SDL.h"
+#include <SDL.h>
 
 struct gp2x_render_data
 {
@@ -42,8 +42,8 @@ gp2x_get_screen_surface(struct gp2x_render_data *render_data)
    render_data->sdl.shadow : render_data->sdl.screen;
 }
 
-static void gp2x_set_colors_mzx (struct graphics_data *graphics,
- Uint32 *char_colors, Uint8 bg, Uint8 fg)
+static void gp2x_set_colors_mzx(const struct graphics_data *graphics,
+ Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
   Uint32 cb_bg, cb_fg, cb_mx;
@@ -93,8 +93,8 @@ static void gp2x_set_colors_mzx (struct graphics_data *graphics,
 #endif
 }
 
-static void gp2x_set_colors_smzx (struct graphics_data *graphics,
- Uint32 *char_colors, Uint8 bg, Uint8 fg)
+static void gp2x_set_colors_smzx(const struct graphics_data *graphics,
+ Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
 {
   Uint32 bb, bf, fb, ff;
 
@@ -143,8 +143,8 @@ static void gp2x_set_colors_smzx (struct graphics_data *graphics,
 #endif
 }
 
-static void gp2x_set_colors_smzx3 (struct graphics_data *graphics,
- Uint32 *char_colors, Uint8 bg, Uint8 fg)
+static void gp2x_set_colors_smzx3(const struct graphics_data *graphics,
+ Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
 {
   Uint8 base;
   Uint32 c0, c1, c2, c3;
@@ -194,7 +194,7 @@ static void gp2x_set_colors_smzx3 (struct graphics_data *graphics,
 }
 
 static void (*gp2x_set_colors[4])
- (struct graphics_data *, Uint32 *, Uint8, Uint8) =
+ (const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8) =
 {
   gp2x_set_colors_mzx,
   gp2x_set_colors_smzx,

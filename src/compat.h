@@ -29,6 +29,37 @@
 #define __M_BEGIN_DECLS extern "C" {
 #define __M_END_DECLS   }
 
+/**
+ * Compatibility define for restrict in C++, where it is a (commonly supported)
+ * compiler extension. This has to be defined as 'RESTRICT' because defining
+ * 'restrict' conflicts with MSVC's __declspec(restrict) attribute.
+ */
+#ifndef RESTRICT
+#define RESTRICT __restrict
+#endif
+
+#if __cplusplus >= 201103
+#define IS_CXX_11 1
+#define maybe_constexpr constexpr
+#define maybe_explicit explicit
+#else /* !IS_CXX_11 */
+// Compatibility defines so certain C++11 features can be used without checks.
+// Don't create any variables named "final" or "noexcept"...
+#include <stddef.h>
+#ifndef nullptr
+#define nullptr (NULL)
+#endif
+#define final
+#define noexcept
+#define override
+#define maybe_constexpr
+#define maybe_explicit
+#endif /* !IS_CXX_11 */
+
+#ifdef _MSC_VER
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
+
 #else
 
 #define __M_BEGIN_DECLS
@@ -86,6 +117,9 @@ typedef unsigned char boolean;
 
 #ifdef _MSC_VER
 #include "msvc.h"
+#ifndef RESTRICT
+#define RESTRICT __restrict
+#endif
 #endif
 
 #ifdef __APPLE__
@@ -126,6 +160,10 @@ typedef unsigned char boolean;
 
 #ifndef MAX_PATH
 #define MAX_PATH 512
+#endif
+
+#ifndef RESTRICT
+#define RESTRICT restrict
 #endif
 
 #if defined(CONFIG_MODULAR) && defined(__WIN32__)
@@ -215,6 +253,30 @@ static inline int check_chdir(const char *path)
 #define getcwd(buf, size) check_getcwd(buf, size)
 #define chdir(path) check_chdir(path)
 
+// Also deprecate some notoriously bad string functions.
+// strncpy and strncat are unsafe functions that get cargo cult usage as "safe"
+// versions of strcpy and strcat (which they aren't). strtok is non-reentrant.
+
+#include <string.h>
+static inline char *check_strncpy(char *, const char *, size_t)
+ __attribute__((deprecated));
+static inline char *check_strncat(char *, const char *, size_t)
+ __attribute__((deprecated));
+static inline char *check_strtok(char *, const char *)
+ __attribute__((deprecated));
+static inline char *check_strncpy(char *d, const char *s, size_t n)
+ { return strncpy(d,s,n); }
+static inline char *check_strncat(char *d, const char *s, size_t n)
+ { return strncat(d,s,n); }
+static inline char *check_strtok(char *d, const char *delim)
+ { return strtok(d,delim); }
+#undef strncpy
+#undef strncat
+#undef strtok
+#define strncpy(d,s,n) check_strncpy(d,s,n)
+#define strncat(d,s,n) check_strncat(d,s,n)
+#define strtok(d,delim) check_strtok(d,delim)
+
 #else // !__GNUC__
 
 #define fopen_unsafe(file, mode) fopen(file, mode)
@@ -224,6 +286,8 @@ static inline int check_chdir(const char *path)
 #ifdef CONFIG_CHECK_ALLOC
 
 #include <stddef.h>
+
+CORE_LIBSPEC void check_alloc_init(void);
 
 #define ccalloc(nmemb, size) check_calloc(nmemb, size, __FILE__, __LINE__)
 CORE_LIBSPEC void *check_calloc(size_t nmemb, size_t size, const char *file,
@@ -240,6 +304,8 @@ CORE_LIBSPEC void *check_realloc(void *ptr, size_t size, const char *file,
 #else /* CONFIG_CHECK_ALLOC */
 
 #include <stdlib.h>
+
+static inline void check_alloc_init(void) {}
 
 static inline void *ccalloc(size_t nmemb, size_t size)
 {

@@ -98,7 +98,7 @@ ifeq (${BUILD_EDITOR},1)
 	@${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
 	 ${install} -m 0755 ${mzx} ${DESTDIR}${GAMESDIR}/ && \
 	 ${install} -m 0644 assets/ascii.chr assets/blank.chr \
-		assets/smzx.chr ${DESTDIR}${SHAREDIR}/megazeux/assets
+		assets/smzx.chr assets/smzx2.chr ${DESTDIR}${SHAREDIR}/megazeux/assets
 endif
 ifeq (${BUILD_UTILS},1)
 	@${install} -m 0755 -d ${DESTDIR}${BINDIR} && \

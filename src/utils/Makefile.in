@@ -16,7 +16,7 @@ utils_obj = src/utils/.build
 # Define UTILS_LIBSPEC so these properly link.
 utils_cflags := ${LIBPNG_CFLAGS} -DUTILS_LIBSPEC=
 
-zip_objs  := ${io_obj}/vfile.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
+zip_objs  := ${io_obj}/vio.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
 
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o \
@@ -39,8 +39,8 @@ txt2hlp_objs := ${utils_obj}/txt2hlp.o
 
 png2smzx := ${utils_src}/png2smzx${BINEXT}
 png2smzx_objs := ${utils_obj}/png2smzx.o ${utils_obj}/smzxconv.o
-png2smzx_objs += ${core_obj}/util.o ${core_obj}/pngops.o
-png2smzx_objs += ${io_obj}/path.o ${io_obj}/vfile.o
+png2smzx_objs += ${core_obj}/pngops.o
+png2smzx_objs += ${io_obj}/path.o ${io_obj}/vio.o
 png2smzx_ldflags := ${LIBPNG_LDFLAGS} ${ZLIB_LDFLAGS}
 
 ccv := ${utils_src}/ccv${BINEXT}

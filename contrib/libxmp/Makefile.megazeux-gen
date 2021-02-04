@@ -1,0 +1,159 @@
+#
+# Makefile to generate MegaZeux contrib/libxmp/ directory.
+#
+
+ifeq (${MEGAZEUX_REPO_PATH},)
+$(error Must define MEGAZEUX_REPO_PATH!)
+endif
+
+base		:= .
+docs		:= ${base}/docs
+include		:= ${base}/include
+src		:= ${base}/src
+loaders		:= ${src}/loaders
+
+dest_base	:= ${MEGAZEUX_REPO_PATH}/contrib/libxmp
+dest_docs	:= ${dest_base}/${docs}
+dest_include	:= ${dest_base}/${include}
+dest_src	:= ${dest_base}/${src}
+dest_loaders	:= ${dest_base}/${loaders}
+
+#
+# Patch branches to merge into the generated libxmp branch.
+#
+patches := \
+	mzx-integration-hacks \
+	mzx-remove-extra-formats \
+
+#
+# Files to install from the generated libxmp branch to the
+# MegaZeux libxmp contrib folder.
+#
+install := \
+	${dest_base}/README \
+	${dest_base}/README.megazeux.md \
+	${dest_base}/Makefile.megazeux \
+	${dest_base}/Makefile.megazeux-gen \
+	${dest_base}/mzx-gen.sh \
+	${dest_docs}/COPYING.LIB \
+	${dest_docs}/CREDITS \
+	${dest_docs}/Changelog \
+	${dest_include}/xmp.h \
+	${dest_src}/common.h \
+	${dest_src}/control.c \
+	${dest_src}/dataio.c \
+	${dest_src}/effects.c \
+	${dest_src}/effects.h \
+	${dest_src}/extras.c \
+	${dest_src}/extras.h \
+	${dest_src}/filter.c \
+	${dest_src}/format.c \
+	${dest_src}/format.h \
+	${dest_src}/hio.c \
+	${dest_src}/hio.h \
+	${dest_src}/hmn_extras.c \
+	${dest_src}/hmn_extras.h \
+	${dest_src}/lfo.c \
+	${dest_src}/lfo.h \
+	${dest_src}/list.h \
+	${dest_src}/load.c \
+	${dest_src}/load_helpers.c \
+	${dest_src}/md5.c \
+	${dest_src}/md5.h \
+	${dest_src}/mdataio.h \
+	${dest_src}/med_extras.c \
+	${dest_src}/med_extras.h \
+	${dest_src}/memio.c \
+	${dest_src}/memio.h \
+	${dest_src}/mix_all.c \
+	${dest_src}/mixer.c \
+	${dest_src}/mixer.h \
+	${dest_src}/period.c \
+	${dest_src}/period.h \
+	${dest_src}/player.c \
+	${dest_src}/player.h \
+	${dest_src}/precomp_lut.h \
+	${dest_src}/read_event.c \
+	${dest_src}/scan.c \
+	${dest_src}/smix.c \
+	${dest_src}/tempfile.h \
+	${dest_src}/virtual.c \
+	${dest_src}/virtual.h \
+	${dest_src}/xfnmatch.c \
+	${dest_src}/xfnmatch.h \
+	${dest_loaders}/common.c \
+	${dest_loaders}/iff.c \
+	${dest_loaders}/iff.h \
+	${dest_loaders}/loader.h \
+	${dest_loaders}/sample.c \
+	${dest_loaders}/669_load.c \
+	${dest_loaders}/amf_load.c \
+	${dest_loaders}/asylum_load.c \
+	${dest_loaders}/far_load.c \
+	${dest_loaders}/flt_load.c \
+	${dest_loaders}/gdm_load.c \
+	${dest_loaders}/hmn_load.c \
+	${dest_loaders}/ice_load.c \
+	${dest_loaders}/it.h \
+	${dest_loaders}/it_load.c \
+	${dest_loaders}/itsex.c \
+	${dest_loaders}/med.h \
+	${dest_loaders}/med2_load.c \
+	${dest_loaders}/med3_load.c \
+	${dest_loaders}/med4_load.c \
+	${dest_loaders}/mmd1_load.c \
+	${dest_loaders}/mmd3_load.c \
+	${dest_loaders}/mmd_common.c \
+	${dest_loaders}/mod.h \
+	${dest_loaders}/mod_load.c \
+	${dest_loaders}/mtm_load.c \
+	${dest_loaders}/okt_load.c \
+	${dest_loaders}/s3m.h \
+	${dest_loaders}/s3m_load.c \
+	${dest_loaders}/st_load.c \
+	${dest_loaders}/stm_load.c \
+	${dest_loaders}/ult_load.c \
+	${dest_loaders}/xm.h \
+	${dest_loaders}/xm_load.c
+
+
+.PHONY: all libxmp_dir libxmp_branch libxmp_patches
+
+all: libxmp_dir libxmp_branch libxmp_patches ${install}
+
+libxmp_dir:
+	rm -rf ${dest_base}
+	mkdir -p ${dest_base}
+	mkdir -p ${dest_docs}
+	mkdir -p ${dest_include}
+	mkdir -p ${dest_src}
+	mkdir -p ${dest_loaders}
+
+libxmp_branch:
+	git checkout mzx-gen-libxmp || true
+	git branch -D mzx-libxmp-generated || true
+	git checkout -b mzx-libxmp-generated
+
+libxmp_patches: libxmp_branch
+	@for p in ${patches}; do \
+	  echo "Attempting to merge:" $$p; \
+	  git merge --no-edit $$p; \
+	done
+
+${install}: libxmp_patches libxmp_dir
+
+${dest_base}/%: ${base}/%
+	cp $< $@
+
+${dest_docs}/%: ${docs}/%
+	cp $< $@
+
+${dest_include}/%: ${include}/%
+	cp $< $@
+
+${dest_src}/%: ${src}/%
+	cp $< $@
+
+${dest_loaders}/%: ${loaders}/%
+	cp $< $@
+

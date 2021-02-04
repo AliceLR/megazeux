@@ -38,6 +38,15 @@ __M_BEGIN_DECLS
 #endif
 #endif /* DIR_SEPARATOR */
 
+enum path_create_error
+{
+  PATH_CREATE_SUCCESS,
+  PATH_CREATE_ERR_BUFFER,
+  PATH_CREATE_ERR_STAT_ERROR,
+  PATH_CREATE_ERR_MKDIR_FAILED,
+  PATH_CREATE_ERR_FILE_EXISTS
+};
+
 /**
  * Determine if a character is a path separating slash.
  * @param  chr  Character to check.
@@ -48,30 +57,35 @@ static inline boolean isslash(const char chr)
   return (chr == '\\') || (chr == '/');
 }
 
-CORE_LIBSPEC boolean path_force_ext(char *path, size_t buffer_len, const char *ext);
-CORE_LIBSPEC ssize_t path_get_ext_offset(const char *path);
+UTILS_LIBSPEC boolean path_force_ext(char *path, size_t buffer_len, const char *ext);
+UTILS_LIBSPEC ssize_t path_get_ext_offset(const char *path);
 
-CORE_LIBSPEC boolean path_has_directory(const char *path);
-CORE_LIBSPEC ssize_t path_to_directory(char *path, size_t buffer_len);
-CORE_LIBSPEC ssize_t path_to_filename(char *path, size_t buffer_len);
-CORE_LIBSPEC ssize_t path_get_directory(char *dest, size_t dest_len,
+UTILS_LIBSPEC ssize_t path_is_absolute(const char *path);
+UTILS_LIBSPEC boolean path_is_root(const char *path);
+UTILS_LIBSPEC boolean path_has_directory(const char *path);
+UTILS_LIBSPEC ssize_t path_to_directory(char *path, size_t buffer_len);
+UTILS_LIBSPEC ssize_t path_to_filename(char *path, size_t buffer_len);
+UTILS_LIBSPEC ssize_t path_get_directory(char *dest, size_t dest_len,
  const char *path);
-CORE_LIBSPEC ssize_t path_get_filename(char *dest, size_t dest_len,
+UTILS_LIBSPEC ssize_t path_get_filename(char *dest, size_t dest_len,
  const char *path);
-CORE_LIBSPEC boolean path_get_directory_and_filename(char *d_dest, size_t d_len,
+UTILS_LIBSPEC boolean path_get_directory_and_filename(char *d_dest, size_t d_len,
  char *f_dest, size_t f_len, const char *path);
 
-CORE_LIBSPEC size_t path_clean_slashes(char *path, size_t path_len);
-CORE_LIBSPEC size_t path_clean_slashes_copy(char *dest, size_t dest_len,
+UTILS_LIBSPEC size_t path_clean_slashes(char *path, size_t path_len);
+UTILS_LIBSPEC size_t path_clean_slashes_copy(char *dest, size_t dest_len,
  const char *path);
-CORE_LIBSPEC ssize_t path_append(char *path, size_t buffer_len, const char *rel);
-CORE_LIBSPEC ssize_t path_join(char *dest, size_t dest_len, const char *base,
+UTILS_LIBSPEC ssize_t path_append(char *path, size_t buffer_len, const char *rel);
+UTILS_LIBSPEC ssize_t path_join(char *dest, size_t dest_len, const char *base,
  const char *rel);
-CORE_LIBSPEC ssize_t path_remove_prefix(char *path, size_t buffer_len,
+UTILS_LIBSPEC ssize_t path_remove_prefix(char *path, size_t buffer_len,
  const char *prefix, size_t prefix_len);
 
-CORE_LIBSPEC ssize_t path_navigate(char *path, size_t path_len,
+UTILS_LIBSPEC ssize_t path_navigate(char *path, size_t path_len,
  const char *target);
+
+UTILS_LIBSPEC enum path_create_error path_create_parent_recursively(
+ const char *filename);
 
 __M_END_DECLS
 

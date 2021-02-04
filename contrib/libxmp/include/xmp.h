@@ -1,38 +1,56 @@
 #ifndef XMP_H
 #define XMP_H
 
+/* Suppress unwanted debug messages */
+#ifdef DEBUG
+#undef DEBUG
+#define MEGAZEUX_DEBUG
+#endif
+
+/* Force libxmp to build static */
+#ifndef BUILDING_STATIC
+#define BUILDING_STATIC
+#endif
+
+/* Force libxmp to not use versioned symbols on Linux */
+#ifdef XMP_SYM_VISIBILITY
+#undef XMP_SYM_VISIBILITY
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define XMP_VERSION "4.4.1"
-#define XMP_VERCODE 0x040401
+#define XMP_VERSION "4.5.0"
+#define XMP_VERCODE 0x040500
 #define XMP_VER_MAJOR 4
-#define XMP_VER_MINOR 4
-#define XMP_VER_RELEASE 1
-
-/* Suppress unwanted debug messages */
-#undef DEBUG
-
-/* Force libxmp to build static */
-#define BUILDING_STATIC
+#define XMP_VER_MINOR 5
+#define XMP_VER_RELEASE 0
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
 # if defined(BUILDING_STATIC)
-#  define EXPORT
+#  define LIBXMP_EXPORT
 # elif defined(BUILDING_DLL)
-#  define EXPORT __declspec(dllexport)
+#  define LIBXMP_EXPORT __declspec(dllexport)
 # else
-#  define EXPORT __declspec(dllimport)
+#  define LIBXMP_EXPORT __declspec(dllimport)
 # endif
-#elif __GNUC__ >= 4 || defined(__HP_cc)
-# define EXPORT __attribute__((visibility ("default")))
-#elif defined(__SUNPRO_C)
-# define EXPORT __global
+#elif defined(__OS2__) && defined(__WATCOMC__) && defined(__SW_BD)
+#  define LIBXMP_EXPORT __declspec(dllexport)
+#elif (defined(__GNUC__) || defined(__clang__) || defined(__HP_cc)) && defined(XMP_SYM_VISIBILITY)
+# define LIBXMP_EXPORT __attribute__((visibility ("default")))
+#elif defined(__SUNPRO_C) && defined(XMP_LDSCOPE_GLOBAL)
+# define LIBXMP_EXPORT __global
 #elif defined(EMSCRIPTEN)
-# define EXPORT EMSCRIPTEN_KEEPALIVE
+# include <emscripten.h>
+# define LIBXMP_EXPORT EMSCRIPTEN_KEEPALIVE
+# define LIBXMP_EXPORT_VAR
 #else
-# define EXPORT 
+# define LIBXMP_EXPORT
+#endif
+
+#if !defined (LIBXMP_EXPORT_VAR)
+# define LIBXMP_EXPORT_VAR LIBXMP_EXPORT
 #endif
 
 #define XMP_NAME_SIZE		64	/* Size of module name and type */
@@ -175,6 +193,36 @@ struct xmp_envelope {
 	short data[XMP_MAX_ENV_POINTS * 2];
 };
 
+struct xmp_subinstrument {
+	int vol;			/* Default volume */
+	int gvl;			/* Global volume */
+	int pan;			/* Pan */
+	int xpo;			/* Transpose */
+	int fin;			/* Finetune */
+	int vwf;			/* Vibrato waveform */
+	int vde;			/* Vibrato depth */
+	int vra;			/* Vibrato rate */
+	int vsw;			/* Vibrato sweep */
+	int rvv;			/* Random volume/pan variation (IT) */
+	int sid;			/* Sample number */
+#define XMP_INST_NNA_CUT	0x00
+#define XMP_INST_NNA_CONT	0x01
+#define XMP_INST_NNA_OFF	0x02
+#define XMP_INST_NNA_FADE	0x03
+	int nna;			/* New note action */
+#define XMP_INST_DCT_OFF	0x00
+#define XMP_INST_DCT_NOTE	0x01
+#define XMP_INST_DCT_SMP	0x02
+#define XMP_INST_DCT_INST	0x03
+	int dct;			/* Duplicate check type */
+#define XMP_INST_DCA_CUT	XMP_INST_NNA_CUT
+#define XMP_INST_DCA_OFF	XMP_INST_NNA_OFF
+#define XMP_INST_DCA_FADE	XMP_INST_NNA_FADE
+	int dca;			/* Duplicate check action */
+	int ifc;			/* Initial filter cutoff */
+	int ifr;			/* Initial filter resonance */
+};
+
 struct xmp_instrument {
 	char name[32];			/* Instrument name */
 	int vol;			/* Instrument volume */
@@ -189,35 +237,7 @@ struct xmp_instrument {
 		signed char xpo;	/* Instrument transpose for each key */
 	} map[XMP_MAX_KEYS];
 
-	struct xmp_subinstrument {
-		int vol;		/* Default volume */
-		int gvl;		/* Global volume */
-		int pan;		/* Pan */
-		int xpo;		/* Transpose */
-		int fin;		/* Finetune */
-		int vwf;		/* Vibrato waveform */
-		int vde;		/* Vibrato depth */
-		int vra;		/* Vibrato rate */
-		int vsw;		/* Vibrato sweep */
-		int rvv;		/* Random volume/pan variation (IT) */
-		int sid;		/* Sample number */
-#define XMP_INST_NNA_CUT	0x00
-#define XMP_INST_NNA_CONT	0x01
-#define XMP_INST_NNA_OFF	0x02
-#define XMP_INST_NNA_FADE	0x03
-		int nna;		/* New note action */
-#define XMP_INST_DCT_OFF	0x00
-#define XMP_INST_DCT_NOTE	0x01
-#define XMP_INST_DCT_SMP	0x02
-#define XMP_INST_DCT_INST	0x03
-		int dct;		/* Duplicate check type */
-#define XMP_INST_DCA_CUT	XMP_INST_NNA_CUT
-#define XMP_INST_DCA_OFF	XMP_INST_NNA_OFF
-#define XMP_INST_DCA_FADE	XMP_INST_NNA_FADE
-		int dca;		/* Duplicate check action */
-		int ifc;		/* Initial filter cutoff */
-		int ifr;		/* Initial filter resonance */
-	} *sub;
+	struct xmp_subinstrument	*sub;
 
 	void *extra;			/* Extra fields */
 };
@@ -280,6 +300,19 @@ struct xmp_module_info {
 	struct xmp_sequence *seq_data;	/* Pointer to sequence data */
 };
 
+struct xmp_channel_info {
+	unsigned int period;		/* Sample period (* 4096) */
+	unsigned int position;		/* Sample position */
+	short pitchbend;		/* Linear bend from base note*/
+	unsigned char note;		/* Current base note number */
+	unsigned char instrument;	/* Current instrument number */
+	unsigned char sample;		/* Current sample number */
+	unsigned char volume;		/* Current volume */
+	unsigned char pan;		/* Current stereo pan */
+	unsigned char reserved;		/* Reserved */
+	struct xmp_event event;		/* Current track event */
+};
+
 struct xmp_frame_info {			/* Current frame information */
 	int pos;			/* Current position */
 	int pattern;			/* Current pattern */
@@ -300,63 +333,55 @@ struct xmp_frame_info {			/* Current frame information */
 	int virt_used;			/* Used virtual channels */
 	int sequence;			/* Current sequence */
 
-	struct xmp_channel_info {	/* Current channel information */
-		unsigned int period;	/* Sample period (* 4096) */
-		unsigned int position;	/* Sample position */
-		short pitchbend;	/* Linear bend from base note*/
-		unsigned char note;	/* Current base note number */
-		unsigned char instrument; /* Current instrument number */
-		unsigned char sample;	/* Current sample number */
-		unsigned char volume;	/* Current volume */
-		unsigned char pan;	/* Current stereo pan */
-		unsigned char reserved;	/* Reserved */
-		struct xmp_event event;	/* Current track event */
-	} channel_info[XMP_MAX_CHANNELS];
+	struct xmp_channel_info channel_info[XMP_MAX_CHANNELS];		/* Current channel information */
 };
 
 
 typedef char *xmp_context;
 
-EXPORT extern const char *xmp_version;
-EXPORT extern const unsigned int xmp_vercode;
+LIBXMP_EXPORT_VAR extern const char *xmp_version;
+LIBXMP_EXPORT_VAR extern const unsigned int xmp_vercode;
 
-EXPORT xmp_context xmp_create_context  (void);
-EXPORT void        xmp_free_context    (xmp_context);
-EXPORT int         xmp_test_module     (char *, struct xmp_test_info *);
-EXPORT int         xmp_load_module     (xmp_context, char *);
-EXPORT void        xmp_scan_module     (xmp_context);
-EXPORT void        xmp_release_module  (xmp_context);
-EXPORT int         xmp_start_player    (xmp_context, int, int);
-EXPORT int         xmp_play_frame      (xmp_context);
-EXPORT int         xmp_play_buffer     (xmp_context, void *, int, int);
-EXPORT void        xmp_get_frame_info  (xmp_context, struct xmp_frame_info *);
-EXPORT void        xmp_end_player      (xmp_context);
-EXPORT void        xmp_inject_event    (xmp_context, int, struct xmp_event *);
-EXPORT void        xmp_get_module_info (xmp_context, struct xmp_module_info *);
-EXPORT char      **xmp_get_format_list (void);
-EXPORT int         xmp_next_position   (xmp_context);
-EXPORT int         xmp_prev_position   (xmp_context);
-EXPORT int         xmp_set_position    (xmp_context, int);
-EXPORT int         xmp_set_row         (xmp_context, int);
-EXPORT void        xmp_stop_module     (xmp_context);
-EXPORT void        xmp_restart_module  (xmp_context);
-EXPORT int         xmp_seek_time       (xmp_context, int);
-EXPORT int         xmp_channel_mute    (xmp_context, int, int);
-EXPORT int         xmp_channel_vol     (xmp_context, int, int);
-EXPORT int         xmp_set_player      (xmp_context, int, int);
-EXPORT int         xmp_get_player      (xmp_context, int);
-EXPORT int         xmp_set_instrument_path (xmp_context, char *);
-EXPORT int         xmp_load_module_from_memory (xmp_context, void *, long);
-EXPORT int         xmp_load_module_from_file (xmp_context, void *, long);
+LIBXMP_EXPORT xmp_context xmp_create_context  (void);
+LIBXMP_EXPORT void        xmp_free_context    (xmp_context);
+LIBXMP_EXPORT int         xmp_test_module     (const char *, struct xmp_test_info *);
+LIBXMP_EXPORT int         xmp_load_module     (xmp_context, const char *);
+LIBXMP_EXPORT void        xmp_scan_module     (xmp_context);
+LIBXMP_EXPORT void        xmp_release_module  (xmp_context);
+LIBXMP_EXPORT int         xmp_start_player    (xmp_context, int, int);
+LIBXMP_EXPORT int         xmp_play_frame      (xmp_context);
+LIBXMP_EXPORT int         xmp_play_buffer     (xmp_context, void *, int, int);
+LIBXMP_EXPORT void        xmp_get_frame_info  (xmp_context, struct xmp_frame_info *);
+LIBXMP_EXPORT void        xmp_end_player      (xmp_context);
+LIBXMP_EXPORT void        xmp_inject_event    (xmp_context, int, struct xmp_event *);
+LIBXMP_EXPORT void        xmp_get_module_info (xmp_context, struct xmp_module_info *);
+LIBXMP_EXPORT const char *const *xmp_get_format_list (void);
+LIBXMP_EXPORT int         xmp_next_position   (xmp_context);
+LIBXMP_EXPORT int         xmp_prev_position   (xmp_context);
+LIBXMP_EXPORT int         xmp_set_position    (xmp_context, int);
+LIBXMP_EXPORT int         xmp_set_row         (xmp_context, int);
+LIBXMP_EXPORT int         xmp_set_tempo_factor(xmp_context, double);
+LIBXMP_EXPORT void        xmp_stop_module     (xmp_context);
+LIBXMP_EXPORT void        xmp_restart_module  (xmp_context);
+LIBXMP_EXPORT int         xmp_seek_time       (xmp_context, int);
+LIBXMP_EXPORT int         xmp_channel_mute    (xmp_context, int, int);
+LIBXMP_EXPORT int         xmp_channel_vol     (xmp_context, int, int);
+LIBXMP_EXPORT int         xmp_set_player      (xmp_context, int, int);
+LIBXMP_EXPORT int         xmp_get_player      (xmp_context, int);
+LIBXMP_EXPORT int         xmp_set_instrument_path (xmp_context, const char *);
+LIBXMP_EXPORT int         xmp_load_module_from_memory (xmp_context, void *, long);
+LIBXMP_EXPORT int         xmp_load_module_from_file (xmp_context, void *, long);
+LIBXMP_EXPORT int         xmp_test_module_from_memory (void *, long, struct xmp_test_info *);
+LIBXMP_EXPORT int         xmp_test_module_from_file (void *, struct xmp_test_info *);
 
 /* External sample mixer API */
-EXPORT int         xmp_start_smix       (xmp_context, int, int);
-EXPORT void        xmp_end_smix         (xmp_context);
-EXPORT int         xmp_smix_play_instrument(xmp_context, int, int, int, int);
-EXPORT int         xmp_smix_play_sample (xmp_context, int, int, int, int);
-EXPORT int         xmp_smix_channel_pan (xmp_context, int, int);
-EXPORT int         xmp_smix_load_sample (xmp_context, int, char *);
-EXPORT int         xmp_smix_release_sample (xmp_context, int);
+LIBXMP_EXPORT int         xmp_start_smix       (xmp_context, int, int);
+LIBXMP_EXPORT void        xmp_end_smix         (xmp_context);
+LIBXMP_EXPORT int         xmp_smix_play_instrument(xmp_context, int, int, int, int);
+LIBXMP_EXPORT int         xmp_smix_play_sample (xmp_context, int, int, int, int);
+LIBXMP_EXPORT int         xmp_smix_channel_pan (xmp_context, int, int);
+LIBXMP_EXPORT int         xmp_smix_load_sample (xmp_context, int, const char *);
+LIBXMP_EXPORT int         xmp_smix_release_sample (xmp_context, int);
 
 #ifdef __cplusplus
 }

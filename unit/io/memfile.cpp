@@ -201,6 +201,7 @@ struct seq
 UNITTEST(mfseek_mftell)
 {
   unsigned char buffer[256];
+  char msg[64];
   struct memfile mf;
   static const int offs_safe[] =
   {
@@ -218,8 +219,13 @@ UNITTEST(mfseek_mftell)
   {
     -1,
     -1000,
+    -128731282,
+  };
+  static const int offs_maybe_safe[] =
+  {
+    arraysize(buffer) + 1,
     1024,
-    INT_MAX,
+    9999,
   };
   int ret;
   int i;
@@ -230,8 +236,9 @@ UNITTEST(mfseek_mftell)
   {
     for(i = 0; i < arraysize(offs_safe); i++)
     {
+      snprintf(msg, arraysize(msg), "mftell safe %d", i);
       mf.current = mf.start + offs_safe[i];
-      ASSERTEQ(mftell(&mf), offs_safe[i]);
+      ASSERTEQX(mftell(&mf), offs_safe[i], msg);
     }
   }
 
@@ -239,18 +246,28 @@ UNITTEST(mfseek_mftell)
   {
     for(i = 0; i < arraysize(offs_safe); i++)
     {
+      snprintf(msg, arraysize(msg), "seek_set safe %d", i);
       ret = mfseek(&mf, offs_safe[i], SEEK_SET);
-      ASSERTEQ(ret, 0);
-      ASSERTEQ(mftell(&mf), offs_safe[i]);
+      ASSERTEQX(ret, 0, msg);
+      ASSERTEQX(mftell(&mf), offs_safe[i], msg);
     }
 
     ASSERT(!mfseek(&mf, 129, SEEK_SET));
 
     for(i = 0; i < arraysize(offs_unsafe); i++)
     {
+      snprintf(msg, arraysize(msg), "seek_set unsafe %d", i);
       ret = mfseek(&mf, offs_unsafe[i], SEEK_SET);
-      ASSERTEQ(ret, -1);
-      ASSERTEQ(mftell(&mf), 129);
+      ASSERTEQX(ret, -1, msg);
+      ASSERTEQX(mftell(&mf), 129, msg);
+    }
+
+    for(i = 0; i < arraysize(offs_maybe_safe); i++)
+    {
+      snprintf(msg, arraysize(msg), "seek_set unsafe2 %d", i);
+      ret = mfseek(&mf, offs_maybe_safe[i], SEEK_SET);
+      ASSERTEQX(ret, -1, msg);
+      ASSERTEQX(mftell(&mf), 129, msg);
     }
   }
 
@@ -270,16 +287,31 @@ UNITTEST(mfseek_mftell)
 
     for(i = 0; i < arraysize(sequence); i++)
     {
-      ASSERTEQ(mftell(&mf), sequence[i].position);
+      snprintf(msg, arraysize(msg), "seek_cur sequence %d", i);
+      ASSERTEQX(mftell(&mf), sequence[i].position, msg);
       ret = mfseek(&mf, sequence[i].next, SEEK_CUR);
-      ASSERTEQ(ret, sequence[i].retval);
+      ASSERTEQX(ret, sequence[i].retval, msg);
     }
   }
 
   SECTION(seek_end)
   {
     mfseek(&mf, 0, SEEK_END);
-    ASSERTEQ(mftell(&mf), arraysize(buffer));
+    ASSERTEQX(mftell(&mf), arraysize(buffer), "seek_end");
+  }
+
+  SECTION(seek_past_end)
+  {
+    mf.seek_past_end = true;
+
+    for(i = 0; i < arraysize(offs_maybe_safe); i++)
+    {
+      snprintf(msg, arraysize(msg), "seek_set past end %d", i);
+      ret = mfseek(&mf, offs_maybe_safe[i], SEEK_SET);
+      ASSERTEQX(ret, 0, msg);
+      ASSERTEQX(mftell(&mf), offs_maybe_safe[i], msg);
+      ASSERTEQX(mfhasspace(1, &mf), false, msg);
+    }
   }
 }
 

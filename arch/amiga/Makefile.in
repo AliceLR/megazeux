@@ -32,11 +32,11 @@ LIBPNG_LDFLAGS = $(shell libpng12-config --static --ldflags)
 #
 # Need to nest Amiga binaries in a subdir
 #
-build := build/${SUBPLATFORM}/MegaZeux
+build := ${build_root}/MegaZeux
 build: ${build}
 	${CP} arch/amiga/MegaZeux.info ${build}
 	${CP} arch/amiga/MegaZeux.info ${build}/MZXRun.info
-	${CP} arch/amiga/MegaZeux.info build/${SUBPLATFORM}
+	${CP} arch/amiga/MegaZeux.info ${build_root}
 	${CP} arch/amiga/MegaZeux arch/amiga/MZXRun ${build}
 	${RM} ${build}/*.debug
 

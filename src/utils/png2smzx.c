@@ -24,6 +24,7 @@
 
 #include "pngops.h"
 #include "smzxconv.h"
+#include "utils_alloc.h"
 
 #ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
@@ -107,7 +108,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  strncpy(input_file_name, argv[1], MAX_PATH);
+  snprintf(input_file_name, MAX_PATH, "%s", argv[1]);
   input_file_name[MAX_PATH - 1] = '\0';
 
   // Read the input files
@@ -146,12 +147,12 @@ int main(int argc, char **argv)
   }
   else
   {
+    const char *src = input_file_name;
+
     if(argc >= 3 && argv[2] && argv[2][0] != '-')
-      strncpy(output_base_name, argv[2], MAX_PATH - 5);
+      src = argv[2];
 
-    else
-      strncpy(output_base_name, input_file_name, MAX_PATH - 5);
-
+    snprintf(output_base_name, MAX_PATH - 5, "%s", src);
     output_base_name[MAX_PATH - 6] = '\0';
 
     snprintf(output_mzm_name, MAX_PATH, "%s.mzm", output_base_name);

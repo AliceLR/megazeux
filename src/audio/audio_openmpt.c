@@ -271,9 +271,12 @@ void init_openmpt(struct config_info *conf)
   audio_ext_register("med", construct_openmpt_stream);
   audio_ext_register("mod", construct_openmpt_stream);
   audio_ext_register("mtm", construct_openmpt_stream);
+  audio_ext_register("nst", construct_openmpt_stream);
+  audio_ext_register("oct", construct_openmpt_stream);
   audio_ext_register("okt", construct_openmpt_stream);
   audio_ext_register("s3m", construct_openmpt_stream);
   audio_ext_register("stm", construct_openmpt_stream);
   audio_ext_register("ult", construct_openmpt_stream);
+  audio_ext_register("wow", construct_openmpt_stream);
   audio_ext_register("xm", construct_openmpt_stream);
 }

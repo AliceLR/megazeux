@@ -50,7 +50,7 @@ var no_sdl_3ds = std("NO", 8);
 var optional_sdl_wii = std("NO / SDL 1.2", 9);
 var yes_but_8bpp = subopt("YES (8bpp)", 10);
 var no_gl_switch = subopt("NO", 11);
-var no_libpng_wiiu = subopt("NO", 12);
+var no_libpng_wiiu = subopt("NO", 13);
 
 var sdl2 = _yes("SDL 2");
 var sdl1_2 = std("SDL 1.2");
@@ -61,6 +61,7 @@ var LHA = _yes("LHA");
 var APK = _yes("APK");
 
 var xmp = std("xmp");
+var maxmod = std("Maxmod");
 var rad = std("RAD");
 var libvorbis = std("libvorbis");
 var tremor = std("tremor");
@@ -98,6 +99,7 @@ var fields =
   overlay:          "SOFTSCALE",
   gl:               "GL",
   glsl:             "GLSL",
+  network:          "NETWORK" + note_link(12),
   updater:          "UPDATER",
   modular:          "MODULAR",
   png:              "PNG",
@@ -134,6 +136,7 @@ var archs =
     overlay:          // Does this platform use the softscale (SDL 2) or overlay (SDL 1.2) renderer(s)?
     gl:               // Does this platform use the OpenGL fixed function renderers?
     glsl:             // Does this platform use the GLSL renderer?
+    network:          // Does this platform have general network support?
     updater:          // Is this platform compatible with the updater?
     modular:          // Does this platform use modular builds?
     png:              // Does this platform build with libpng?
@@ -149,7 +152,7 @@ var archs =
     description:      "Nintendo 3DS",
     architecture:     "ARM11 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 10.1.0 <br> binutils 2.32 <br> (dk r54)",
+    toolchain:        "gcc 10.2.0 <br> binutils 2.34 <br> (dk r55)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -158,10 +161,11 @@ var archs =
     ogg_vorbis:       tremor,
     optimization:     speed,
     sdl:              no_sdl_3ds,
-    editor:           no_low_memory,
-    helpsys:          no_low_memory,
+    editor:           yes,
+    helpsys:          yes,
     audio:            yes,
     software:         render_ctr,
+    network:          yes,
     updater:          no_updater,
     png:              yes,
     hashtables:       yes,
@@ -177,7 +181,7 @@ var archs =
     toolchain:        "clang 9.0.8 <br> binutils 2.27 <br> (ndk r21b)",
     packaged:         APK,
     visibility:       yes,
-    stack_protector:  _FAULTY("NO"),
+    stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
@@ -191,6 +195,7 @@ var archs =
     gl:               _FAULTY("NO"),
     overlay:          yes,
     glsl:             _FAULTY("NO"),
+    network:          yes,
     updater:          no_updater,
     png:              yes,
     hashtables:       yes,
@@ -220,6 +225,7 @@ var archs =
     gl:               yes,
     overlay:          yes,
     glsl:             yes,
+    network:          yes,
     updater:          no_updater,
     modular:          yes,
     png:              yes,
@@ -233,7 +239,7 @@ var archs =
     description:      "HTML5 (Emscripten)",
     architecture:     "JavaScript <br> WebAssembly",
     endian:           "Little",
-    toolchain:        "clang 11.0.0 <br> emsdk 1.39.15",
+    toolchain:        "clang 12.0.0 <br> (sdk 2.0.6)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -249,6 +255,7 @@ var archs =
     gl:               no,
     overlay:          yes,
     glsl:             yes,
+    network:          no,
     updater:          no,
     modular:          no,
     png:              no,
@@ -262,7 +269,7 @@ var archs =
     description:      "Windows <br> (GNU toolchain)",
     architecture:     "x64 (PE+ COFF) <br> x86 (PE COFF)",
     endian:           "Little",
-    toolchain:        "gcc 10.1.0 <br> binutils 2.34",
+    toolchain:        "gcc 10.2.0 <br> binutils 2.35.1",
     packaged:         ZIP,
     visibility:       yes,
     stack_protector:  no_mingw_stack_protector,
@@ -279,6 +286,7 @@ var archs =
     gl:               yes,
     overlay:          yes,
     glsl:             yes,
+    network:          yes,
     updater:          yes,
     modular:          yes,
     png:              yes,
@@ -309,6 +317,7 @@ var archs =
     gl:               yes,
     overlay:          yes,
     glsl:             yes,
+    network:          yes,
     updater:          yes,
     modular:          yes,
     png:              yes,
@@ -322,20 +331,19 @@ var archs =
     description:      "Nintendo DS",
     architecture:     "ARM9 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 10.1.0 <br> binutils 2.32 <br> (dk r54)",
+    toolchain:        "gcc 10.2.0 <br> binutils 2.34 <br> (dk r55)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
-    module_engine:    _FAULTY(),
+    module_engine:    maxmod,
     adlib_engine:     _FAULTY(),
     ogg_vorbis:       _FAULTY(),
     optimization:     size,
     sdl:              no,
     editor:           no_low_memory,
     helpsys:          no_low_memory,
-    audio:            _FAULTY(),
+    audio:            yes,
     software:         render_nds,
-    updater:          no_updater,
     png:              no_low_memory,
     hashtables:       no_low_memory,
     loadsave_meter:   yes,
@@ -360,6 +368,7 @@ var archs =
     helpsys:          no_low_memory,
     audio:            yes,
     software:         yes,
+    network:          _FAULTY(),
     updater:          no_updater,
     png:              yes,
     hashtables:       yes,
@@ -372,9 +381,9 @@ var archs =
     description:      "Nintendo Switch",
     architecture:     "ARMv8/AArch64 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 10.1.0 <br> binutils 2.32 <br> (dk r15)",
+    toolchain:        "gcc 10.2.0 <br> binutils 2.32 <br> (dk r16)",
     packaged:         ZIP,
-    stack_protector:  _FAULTY(),
+    stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
@@ -388,6 +397,7 @@ var archs =
     overlay:          yes,
     gl:               no_gl_switch,
     glsl:             no_gl_switch,
+    network:          yes,
     updater:          no_updater,
     png:              yes,
     hashtables:       yes,
@@ -417,6 +427,7 @@ var archs =
     gl:               yes,
     overlay:          yes,
     glsl:             yes,
+    network:          yes,
     updater:          no_updater_unix,
     modular:          yes,
     png:              yes,
@@ -431,7 +442,7 @@ var archs =
     description:      "Nintendo Wii",
     architecture:     "PPC (ELF)",
     endian:           "Big",
-    toolchain:        "gcc 8.4.0 <br> binutils 2.32 <br> (dk r36)",
+    toolchain:        "gcc 10.2.0 <br> binutils 2.34 <br> (dk r38)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -444,6 +455,7 @@ var archs =
     helpsys:          yes,
     audio:            yes,
     software:         render_gx,
+    network:          yes,
     updater:          no_updater,
     png:              yes,
     hashtables:       yes,
@@ -499,6 +511,7 @@ var archs =
     gl:               yes,
     overlay:          yes,
     glsl:             yes,
+    network:          yes,
     updater:          no_updater,
     modular:          yes,
     png:              yes,
@@ -531,6 +544,7 @@ var archs =
     gl:               yes,
     overlay:          yes,
     glsl:             yes,
+    network:          yes,
     updater:          no_updater,
     modular:          yes,
     png:              yes,
@@ -557,7 +571,6 @@ var archs =
     helpsys:          no_low_memory,
     audio:            yes,
     software:         render_gp2x,
-    updater:          no_updater,
     png:              yes,
     hashtables:       yes,
     loadsave_meter:   yes,
@@ -586,6 +599,7 @@ var archs =
     gl:               _FAULTY(),
     overlay:          _FAULTY(),
     glsl:             _FAULTY(),
+    network:          yes,
     updater:          no_updater,
     png:              yes,
     x11:              subopt(),
@@ -866,9 +880,15 @@ disabled because they cause system crashes when exiting MegaZeux. They generally
 seem to perform worse than softscale, so there isn't much reason to fix this.
 </li>
 
-<li id="note12">There is currently a toolchain conflict between two versions of
+<li id="note12">Networking support is only enabled when some feature that
+requires it is also enabled. The only feature that currently uses networking
+is the updater.
+</li>
+
+<li id="note13">There is currently a toolchain conflict between two versions of
 zlib - one (1.2.5) included in the Wii U operating system, one (1.2.11) included
-in devkitPro. As such, the devkitPro-provided version of libpng fails to link.</li>
+in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
+</li>
 </ol>
 
 <h3>Copyright</h3>

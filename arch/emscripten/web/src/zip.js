@@ -37,27 +37,45 @@ export var zip =
     "_emzip_free",
     "UTF8ToString"
   ],
+
+  /**
+   * Initialize the zip utility.
+   * @returns {Promise} Promise to initialize the zip utility.
+   * @throws {string} Error string if an error occurred.
+   */
   initialize: function()
   {
     if(zip.emzip === undefined)
     {
       // If emzip isn't loaded, silently fail (it might not be needed anyway).
       if(typeof(emzip)!=='function')
-        return {then:function(cb){return cb();}};
+        return Promise.resolve();
 
-      zip.emzip = emzip();
-
-      zip.emzip_functions.forEach(function(fn)
+      return emzip().then(module =>
       {
-        if(typeof(zip.emzip[fn])!=='function')
-          throw "zip.initialize: function emzip." + fn + " not found!";
+        zip.emzip = module;
+        zip.emzip_functions.forEach(function(fn)
+        {
+          if(typeof(zip.emzip[fn])!=='function')
+          {
+            console.error('zip.initialize: typeof(zip.emzip["'+fn+'"]) == ' +
+             typeof(zip.emzip[fn]));
+            throw "zip.initialize: function emzip." + fn + " not found!";
+          }
+        });
       });
-
-      return zip.emzip;
     }
     else
       throw "zip.initialize: already initialized!";
   },
+
+  /**
+   * Extract files from a zip archive.
+   * @param {ArrayBuffer} bytes Zip archive to extract.
+   * @returns {Object.<string, Uint8Array>}
+   *   Object containing {filename => file data} for each file in the archive.
+   * @throws {string} Error string if an error occurred.
+   */
   extract: function(bytes)
   {
     // Attempt UZIP first since it's lighter on memory usage. If that fails,

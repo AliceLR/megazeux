@@ -36,13 +36,22 @@ __M_BEGIN_DECLS
 #include "modplug.h"
 #endif
 
-// WAV sample types
-#define SAMPLE_U8     0
-#define SAMPLE_S8     1
-#define SAMPLE_S16LSB 2
-
 // Default period for .SAM files.
 #define SAM_DEFAULT_PERIOD 428
+
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+#define SAMPLE_S16SYS SAMPLE_S16MSB
+#else
+#define SAMPLE_S16SYS SAMPLE_S16LSB
+#endif
+
+enum wav_format
+{
+  SAMPLE_U8,
+  SAMPLE_S8,
+  SAMPLE_S16LSB,
+  SAMPLE_S16MSB
+};
 
 struct wav_info
 {
@@ -50,9 +59,10 @@ struct wav_info
   Uint32 data_length;
   Uint32 channels;
   Uint32 freq;
-  Uint16 format;
   Uint32 loop_start;
   Uint32 loop_end;
+  enum wav_format format;
+  boolean enable_sam_frequency_hack;
 };
 
 struct audio_stream
@@ -120,6 +130,10 @@ struct audio
   struct audio_stream *stream_list_end;
 
   platform_mutex audio_mutex;
+  platform_mutex audio_sfx_mutex;
+#ifdef DEBUG
+  platform_mutex audio_debug_mutex;
+#endif
 
   Uint32 music_on;
   Uint32 pcs_on;
@@ -218,7 +232,7 @@ static inline void audio_set_sound_volume(int volume) {}
 static inline void audio_set_pcs_volume(int volume) {}
 
 static inline int audio_legacy_translate(const char *path,
- char newpath[MAX_PATH]) { return -1; }
+ char *newpath, size_t buffer_len) { return -1; }
 
 #endif // CONFIG_AUDIO
 

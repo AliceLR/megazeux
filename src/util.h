@@ -45,7 +45,8 @@ __M_BEGIN_DECLS
 
 enum resource_id
 {
-  CONFIG_TXT = 0,
+  MZX_EXECUTABLE_DIR = 0,
+  CONFIG_TXT,
   MZX_DEFAULT_CHR,
   MZX_EDIT_CHR,
   SMZX_PAL,
@@ -53,6 +54,7 @@ enum resource_id
   MZX_ASCII_CHR,
   MZX_BLANK_CHR,
   MZX_SMZX_CHR,
+  MZX_SMZX2_CHR,
 #endif
 #ifdef CONFIG_HELPSYS
   MZX_HELP_FIL,
@@ -83,7 +85,7 @@ enum resource_id
 
 CORE_LIBSPEC int mzx_res_init(const char *argv0, boolean editor);
 CORE_LIBSPEC void mzx_res_free(void);
-CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
+CORE_LIBSPEC const char *mzx_res_get_by_id(enum resource_id id);
 
 CORE_LIBSPEC boolean redirect_stdio(const char *base_path, boolean require_conf);
 
@@ -99,8 +101,6 @@ CORE_LIBSPEC void rng_seed_init(void);
 uint64_t rng_get_seed(void);
 void rng_set_seed(uint64_t seed);
 unsigned int Random(uint64_t range);
-
-CORE_LIBSPEC int create_path_if_not_exists(const char *filename);
 
 typedef void (*fn_ptr)(void);
 
@@ -132,10 +132,6 @@ CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
 #endif
 #endif // !__WIN32__
 
-#if defined(__WIN32__) && !defined(_MSC_VER)
-#define mkdir(file,mode) mkdir(file)
-#endif
-
 #if defined(__amigaos__)
 CORE_LIBSPEC extern long __stack_chk_guard[8];
 CORE_LIBSPEC void __stack_chk_fail(void);
@@ -160,20 +156,7 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 #define trace(...) do { } while(0)
 #endif
 
-#elif defined(CONFIG_NDS) && !defined(CONFIG_STDIO_REDIRECT) /* ANDROID */
-
-// When the graphics have initialized, print to a debug buffer rather than the screen.
-void info(const char *format, ...)  __attribute__((format(printf, 1, 2)));
-void warn(const char *format, ...)  __attribute__((format(printf, 1, 2)));
-#define trace(...) do { } while(0)
-
-#ifdef DEBUG
-void debug(const char *format, ...) __attribute__((format(printf, 1, 2)));
-#else
-#define debug(...) do { } while(0)
-#endif
-
-#else /* ANDROID, CONFIG_NDS */
+#else /* ANDROID */
 
 #define info(...) \
  do { \
@@ -206,7 +189,7 @@ void debug(const char *format, ...) __attribute__((format(printf, 1, 2)));
 #define trace(...) do { } while(0)
 #endif
 
-#endif /* ANDROID, CONFIG_NDS */
+#endif /* ANDROID */
 
 __M_END_DECLS
 

@@ -880,7 +880,7 @@ static int debug_robot(context *ctx, struct robot *cur_robot, int id,
 
   if(info && info[0])
   {
-    strncpy(buffer_pos, info, 76);
+    snprintf(buffer_pos, 77, "%s", info);
     buffer_pos[76] = 0;
 
     len = strlen(buffer_pos);

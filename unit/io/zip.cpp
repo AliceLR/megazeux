@@ -429,9 +429,9 @@ static enum zip_error decompress(zip_method_handler *stream,
 
 UNITTEST(Decompress)
 {
-  std::unique_ptr<char> _buffer(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> _buffer_a(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> _buffer_b(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer_a(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer_b(new char[BUFFER_SIZE]);
   char *buffer = _buffer.get();
   char *buffer_a = _buffer_a.get();
   char *buffer_b = _buffer_b.get();
@@ -542,9 +542,9 @@ UNITTEST(Decompress)
  */
 UNITTEST(Compress)
 {
-  std::unique_ptr<char> _buffer_a(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> _buffer_cmp(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> _buffer_dcmp(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer_a(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer_cmp(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> _buffer_dcmp(new char[BUFFER_SIZE]);
   char *buffer_a = _buffer_a.get();
   char *buffer_cmp = _buffer_cmp.get();
   char *buffer_dcmp = _buffer_dcmp.get();
@@ -639,15 +639,15 @@ static const zip_test_data raw_zip_data[] =
   },
   {
     "dch1.zip", 0, ZIP_SUCCESS, 1,
-    {
+    {{
       "dch1.txt", "dch1.txt",
-      0x0000, ZIP_M_DEFLATE, 0xA3898FBE, 7045, 3385, 0, CONTENTS_FILE },
+      0x0000, ZIP_M_DEFLATE, 0xA3898FBE, 7045, 3385, 0, CONTENTS_FILE }},
   },
   {
     "ct_level.zip", 0, ZIP_SUCCESS, 1,
-    {
+    {{
       "CT_LEVEL.MOD", "CT_LEVEL.MOD",
-      0x0000, ZIP_M_DEFLATE, 0x2AF73EBE, 111885, 61105, 0, CONTENTS_FILE },
+      0x0000, ZIP_M_DEFLATE, 0x2AF73EBE, 111885, 61105, 0, CONTENTS_FILE }},
   },
 };
 
@@ -754,9 +754,9 @@ static const char *zip_get_contents(const zip_test_file_data &df, char *buf,
 
 UNITTEST(ZipRead)
 {
-  std::unique_ptr<char> buffer_ptr(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> db64_ptr(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> file_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> buffer_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> db64_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> file_ptr(new char[BUFFER_SIZE]);
   char *buffer = buffer_ptr.get();
   char *file_buffer = file_ptr.get();
   struct zip_archive *zp;
@@ -959,8 +959,8 @@ UNITTEST(ZipRead)
 
 UNITTEST(ZipWrite)
 {
-  std::unique_ptr<char> verify_ptr(new char[BUFFER_SIZE]);
-  std::unique_ptr<char> db64_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> verify_ptr(new char[BUFFER_SIZE]);
+  std::unique_ptr<char[]> db64_ptr(new char[BUFFER_SIZE]);
   char *verify_buffer = verify_ptr.get();
   // This buffer needs to be resized by C code...
   char *ext_buffer = (char *)cmalloc(32);
@@ -1145,6 +1145,38 @@ UNITTEST(ZipWrite)
     ASSERTEQX(result, ZIP_SUCCESS, "Failed to write file");
     result = zip_close(zp, nullptr);
     ASSERTEQX(result, ZIP_EOF, "Should fail to write EOCD (2).");
+  }
+
+  // Make sure attempting to provide the external size buffer as the final
+  // length doesn't crash (this really shouldn't be done though)...
+  SECTION(Memory_Ext_DuplicateFinalLength)
+  {
+    char tmp[32]{};
+
+    zp = zip_open_mem_write_ext(reinterpret_cast<void **>(&ext_buffer), &ext_buffer_size, 0);
+    ASSERT(zp);
+
+    result = zip_write_file(zp, "", tmp, arraysize(tmp), ZIP_M_NONE);
+    ASSERTEQX(result, ZIP_SUCCESS, "Failed to write dummy file.");
+
+    // This is the bad thing you shouldn't do!
+    result = zip_close(zp, &ext_buffer_size);
+    ASSERTEQX(result, ZIP_SUCCESS, "Failed write central directory.");
+
+    // Final size = local header (30) + data (32) + central header (46) + eocd (22).
+    ASSERTEQX(ext_buffer_size, 130, "Incorrect final size.");
+
+    // :)
+    static const char eocd[22] =
+    {
+      'P', 'K', 5, 6,
+      0, 0, 0, 0,
+      1, 0, 1, 0,
+      46, 0, 0, 0,
+      62, 0, 0, 0,
+      0, 0
+    };
+    ASSERTXMEM(ext_buffer + 108, eocd, 22, "EOCD data incorrect.");
   }
 
   free(ext_buffer);
