@@ -380,10 +380,10 @@ static boolean retrieve_buffer_from_extram(void **src, size_t len)
 
   if(flags & EXTRAM_PLATFORM_ALLOC)
   {
-    platform_extram_free(*src);
+    platform_extram_free(block);
   }
   else
-    free(*src);
+    free(block);
 
   *src = (void *)buffer;
   return true;
