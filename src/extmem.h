@@ -28,34 +28,36 @@ __M_BEGIN_DECLS
 #include "board_struct.h"
 #include "world_struct.h"
 
-#if defined(CONFIG_NDS) && !defined(CONFIG_DEBYTECODE)
-
-// Move the board's memory from normal RAM to extra RAM.
-void store_board_to_extram(struct board *board);
-
-// Move the board's memory from normal RAM to extra RAM.
-void retrieve_board_from_extram(struct board *board);
-
-// Set the current board to cur_board, in regular memory.
-void set_current_board(struct world *mzx_world, struct board *cur_board);
-
-// Set the current board to cur_board, in extra memory.
-void set_current_board_ext(struct world *mzx_world, struct board *cur_board);
-
-#else // !CONFIG_NDS || CONFIG_DEBYTECODE
-
-/* If we're not on NDS, these inline functions should get optimised
- * away. The implementations are obvious enough.
- */
-
-#ifdef DEBUG
-#include "util.h"
-#endif
-
 #define store_board_to_extram(b) \
  real_store_board_to_extram(b, __FILE__, __LINE__)
 #define retrieve_board_from_extram(b) \
  real_retrieve_board_from_extram(b, __FILE__, __LINE__)
+
+#define set_current_board(mzx_world, b) \
+ real_set_current_board(mzx_world, b, __FILE__, __LINE__)
+#define set_current_board_ext(mzx_world, b) \
+ real_set_current_board_ext(mzx_world, b, __FILE__, __LINE__)
+
+#ifdef CONFIG_EXTRAM
+
+// Move the board's memory from normal RAM to extra RAM.
+CORE_LIBSPEC void real_store_board_to_extram(struct board *board,
+ const char *file, int line);
+
+// Move the board's memory from normal RAM to extra RAM.
+CORE_LIBSPEC void real_retrieve_board_from_extram(struct board *board,
+ const char *file, int line);
+
+#ifdef CONFIG_EDITOR
+CORE_LIBSPEC boolean board_extram_usage(struct board *board, size_t *compressed,
+ size_t *uncompressed);
+#endif /* CONFIG_EDITOR */
+
+#else /* !CONFIG_EXTRAM */
+
+#ifdef DEBUG
+#include "util.h"
+#endif
 
 static inline void real_store_board_to_extram(struct board *board,
  const char *file, int line)
@@ -79,22 +81,22 @@ static inline void real_retrieve_board_from_extram(struct board *board,
 #endif
 }
 
-static inline void set_current_board(struct world *mzx_world,
- struct board *cur_board)
+#endif /* !CONFIG_EXTRAM */
+
+static inline void real_set_current_board(struct world *mzx_world,
+ struct board *cur_board, const char *file, int line)
 {
   if(mzx_world->current_board)
-    store_board_to_extram(mzx_world->current_board);
+    real_store_board_to_extram(mzx_world->current_board, file, line);
   mzx_world->current_board = cur_board;
 }
 
-static inline void set_current_board_ext(struct world *mzx_world,
- struct board *cur_board)
+static inline void real_set_current_board_ext(struct world *mzx_world,
+ struct board *cur_board, const char *file, int line)
 {
-  set_current_board(mzx_world, cur_board);
-  retrieve_board_from_extram(cur_board);
+  real_set_current_board(mzx_world, cur_board, file, line);
+  real_retrieve_board_from_extram(cur_board, file, line);
 }
-
-#endif // CONFIG_NDS && !CONFIG_DEBYTECODE
 
 __M_END_DECLS
 

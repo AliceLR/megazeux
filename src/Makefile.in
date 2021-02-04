@@ -207,6 +207,10 @@ ifeq (${BUILD_HELPSYS},1)
 core_cobjs += ${core_obj}/helpsys.o
 endif
 
+ifeq (${BUILD_EXTRAM},1)
+core_cobjs += ${core_obj}/extmem.o
+endif
+
 render_layer_software = 0
 
 ifeq (${BUILD_RENDER_SOFT},1)

@@ -40,6 +40,12 @@ USERS
 + Fixed CLIP INPUT and IF FIRST STRING "" "" bug where INPUTSIZE
   would be used as the bound on the input string without also
   checking for null chars, potentially allowing heap corruption.
++ Fixed a bug where boards wouldn't be pulled from extra memory
+  before saving, potentially causing save corruption on the NDS.
++ Fixed a hack where the TELEPORT command would temporarily
+  store the current board to extra memory, causing the game
+  update loop to potentially cause memory corruption with stale
+  board pointers on the NDS.
 + Fixed a bug where checkres would not check the current dir
   for files when provided with a MZX filename with no path
   component.
@@ -51,6 +57,11 @@ USERS
 
 DEVELOPERS
 
++ Added --enable-extram config.sh flag to enable extra memory
+  hacks on arbitrary platforms. This is enabled by default in
+  CONFIG.NDS and CONFIG.PSP. When enabled, non-active boards are
+  compressed in RAM. Certain platforms can use platform-specific
+  storage, like the NDS.
 + Board input strings, charset paths, and palette paths are now
   heap allocated on-demand to save RAM for low-memory systems.
 + Refactored the 3DS renderer to use templates. (asie)

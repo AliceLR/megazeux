@@ -70,6 +70,7 @@ usage() {
 	echo "  --disable-utils           Disable compilation of utils."
 	echo "  --disable-check-alloc     Disables memory allocator error handling."
 	echo "  --disable-counter-hash    Disables hash tables for counter/string lookups."
+	echo "  --enable-extram           Enable board memory compression and storage hacks."
 	echo "  --enable-meter            Enable load/save meter display."
 	echo "  --enable-debytecode       Enable experimental 'debytecode' transform."
 	echo
@@ -170,6 +171,7 @@ GETADDRINFO="true"
 POLL="true"
 IPV6="true"
 VERBOSE="false"
+EXTRAM="false"
 METER="false"
 SDL="true"
 EGL="false"
@@ -379,6 +381,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-verbose" ] && VERBOSE="false"
 	[ "$1" = "--enable-verbose" ]  && VERBOSE="true"
+
+	[ "$1" = "--enable-extram" ]  && EXTRAM="true"
+	[ "$1" = "--disable-extram" ] && EXTRAM="false"
 
 	[ "$1" = "--enable-meter" ]  && METER="true"
 	[ "$1" = "--disable-meter" ] && METER="false"
@@ -1501,6 +1506,17 @@ fi
 if [ "$VERBOSE" = "true" ]; then
 	echo "Verbose build system (always)."
 	echo "export V=1" >> platform.inc
+fi
+
+#
+# Enable extra memory hacks and memory compression, if enabled.
+#
+if [ "$EXTRAM" = "true" ]; then
+	echo "Board memory compression and extra memory hacks enabled."
+	echo "#define CONFIG_EXTRAM" >> src/config.h
+	echo "BUILD_EXTRAM=1" >> platform.inc
+else
+	echo "Board memory compression and extra memory hacks disabled."
 fi
 
 #

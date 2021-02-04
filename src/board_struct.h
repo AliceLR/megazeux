@@ -100,7 +100,7 @@ struct board
   int num_sensors;
   int num_sensors_allocated;
   struct sensor **sensor_list;
-#ifdef DEBUG
+#if defined(DEBUG) || defined(CONFIG_EXTRAM)
   boolean is_extram;
 #endif
 };

@@ -31,6 +31,7 @@
 #include "error.h"
 #include "event.h"
 #include "expr.h"
+#include "extmem.h"
 #include "game_ops.h"
 #include "game_player.h"
 #include "graphics.h"
@@ -2268,6 +2269,33 @@ void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y)
     *mx = board_width - 1;
   if(*my >= board_height)
     *my = board_height - 1;
+}
+
+/**
+ * Apply middle prefixes with respect to a different board than the current.
+ */
+void prefix_mid_xy_ext(struct world *mzx_world, struct board *dest_board,
+ int *mx, int *my, int x, int y)
+{
+  struct board *cur_board = mzx_world->current_board;
+
+  if(!mzx_world->mid_prefix)
+    return;
+
+  if(cur_board != dest_board)
+  {
+    mzx_world->current_board = dest_board;
+    retrieve_board_from_extram(dest_board);
+  }
+
+  prefix_mid_xy(mzx_world, mx, my, x, y);
+
+  if(cur_board != dest_board)
+  {
+    store_board_to_extram(dest_board);
+    mzx_world->current_board = cur_board;
+    find_player(mzx_world);
+  }
 }
 
 // Move an x/y pair in a given direction. Returns non-0 if edge reached.

@@ -30,6 +30,7 @@
 #include "../core.h"
 #include "../counter.h"
 #include "../event.h"
+#include "../extmem.h"
 #include "../graphics.h"
 #include "../intake.h"
 #include "../memcasecmp.h"
@@ -269,6 +270,7 @@ enum virtual_var
   VIR_RAM_VIDEO_LAYERS,
   VIR_RAM_DEBUGGER_ROBOTS,
   VIR_RAM_DEBUGGER_VARIABLES,
+  VIR_RAM_EXTRAM_DELTA,
 };
 
 static const char * const virtual_var_names[] =
@@ -293,6 +295,7 @@ static const char * const virtual_var_names[] =
   "Video layers*",
   "Debug (robots)*",
   "Debug (variables)*",
+  "ExtRAM compression delta*",
 };
 
 // We'll read off of these when we construct the tree
@@ -361,6 +364,9 @@ static const enum virtual_var world_ram_var_list[] =
   VIR_RAM_VIDEO_LAYERS,
   VIR_RAM_DEBUGGER_ROBOTS,
   VIR_RAM_DEBUGGER_VARIABLES,
+#ifdef CONFIG_EXTRAM
+  VIR_RAM_EXTRAM_DELTA,
+#endif
 };
 
 static const char *board_var_list[] =
@@ -509,6 +515,8 @@ struct debug_ram_data
   size_t video_layer_size;
   size_t debug_robot_total_size;
   size_t debug_variables_total_size;
+  size_t extram_uncompressed_size;
+  size_t extram_compressed_size;
 };
 
 static struct debug_ram_data ram_data;
@@ -607,6 +615,18 @@ static void update_ram_usage_data(struct world *mzx_world,
     for(j = 1; j <= b->num_sensors; j++)
       if(b->sensor_list[j])
         ram_data.scroll_sensor_total_size += sizeof(struct sensor);
+
+#ifdef CONFIG_EXTRAM
+    {
+      size_t c;
+      size_t u;
+      if(board_extram_usage(b, &c, &u))
+      {
+        ram_data.extram_compressed_size += c;
+        ram_data.extram_uncompressed_size += u;
+      }
+    }
+#endif
   }
 
   for(u = 0; u < graphics.layer_count; u++)
@@ -858,7 +878,7 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
     case V_VIRTUAL_VAR:
     {
       enum virtual_var vvar = v->data.virtual_var;
-      size_t value = 0;
+      int64_t value = 0;
 
       switch(vvar)
       {
@@ -921,6 +941,10 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
           break;
         case VIR_RAM_DEBUGGER_VARIABLES:
           value = ram_data.debug_variables_total_size;
+          break;
+        case VIR_RAM_EXTRAM_DELTA:
+          value = (int64_t)ram_data.extram_uncompressed_size -
+           (int64_t)ram_data.extram_compressed_size;
           break;
       }
       *long_value = value;
