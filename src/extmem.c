@@ -59,6 +59,16 @@ static void *platform_extram_retrieve(void *buffer, size_t len) { return buffer;
 
 #define EXTRAM_ID ((uint32_t)(('E') | ('X' << 8) | ('T' << 16) | (0xfe << 24)))
 
+#ifndef EXTRAM_DEFLATE_THRESHOLD
+/* Minimum size (in bytes) for memory blocks to be deflated. */
+#define EXTRAM_DEFLATE_THRESHOLD 1024
+#endif
+
+#ifndef EXTRAM_DEFLATE_BUFFER
+/* Size (in uint32_t) of extra memory deflate buffer. */
+#define EXTRAM_DEFLATE_BUFFER (4096 / sizeof(uint32_t))
+#endif
+
 enum extram_flags
 {
   EXTRAM_PLATFORM_ALLOC   = (1 << 0), /* Buffer created by platform_extram. */
@@ -76,18 +86,108 @@ struct extram_block
   uint32_t data[];
 };
 
+struct extram_data
+{
+  z_stream z;
+  int status;
+  boolean initialized;
+};
+
+/**
+ * Initialize a deflate stream.
+ */
+static boolean extram_deflate_init(struct extram_data *data)
+{
+  int window_bits = -MAX_WBITS;
+  int mem_level = 8;
+
+  if(data->status && data->status != Z_OK)
+    return false;
+
+  if(data->initialized)
+  {
+    data->status = deflateReset(&data->z);
+    return (data->status == Z_OK);
+  }
+
+  while(mem_level > 4 || window_bits < -8)
+  {
+    int res = deflateInit2(&data->z, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
+     window_bits, mem_level, Z_DEFAULT_STRATEGY);
+
+    data->status = res;
+    if(res == Z_OK)
+    {
+      data->initialized = true;
+      return true;
+    }
+
+    /* Try progressively worse settings to see if one will stick... */
+    /* This works out to (1 << (mem_level + 9)) = 8192 minimum. */
+    if(mem_level > 4)
+      mem_level--;
+    /* This works out to (1 << (window_bits + 2)) = 2048 minimum. */
+    if(window_bits < -8)
+      window_bits++;
+  }
+  return false;
+}
+
+/**
+ * Destroy a deflate stream.
+ */
+static void extram_deflate_destroy(struct extram_data *data)
+{
+  if(data->initialized)
+    deflateEnd(&data->z);
+}
+
+/**
+ * Initialize an inflate stream.
+ */
+static boolean extram_inflate_init(struct extram_data *data)
+{
+  if(data->status && data->status != Z_OK)
+    return false;
+
+  if(data->initialized)
+  {
+    data->status = inflateReset(&data->z);
+    return (data->status == Z_OK);
+  }
+
+  /* This needs to be -MAX_WBITS (32k buffer). */
+  data->status = inflateInit2(&data->z, -MAX_WBITS);
+  if(data->status == Z_OK)
+  {
+    data->initialized = true;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Destroy an inflate stream.
+ */
+static void extram_inflate_destroy(struct extram_data *data)
+{
+  if(data->initialized)
+    inflateEnd(&data->z);
+}
+
 /**
  * Perform a 32-bit aligned copy. Both the source and the dest buffers must be
- * 32-bit aligned and should be a multiple of 4 bytes long.
+ * 32-bit aligned. The destination buffer additionally should be large enough
+ * to fit `len` rounded up to a multiple of 4 bytes (use `extram_alloc_size`).
  */
-static boolean extram_cpy(void * RESTRICT dest, const void *src, size_t len)
+static boolean extram_copy(void * RESTRICT dest, const void *src, size_t len)
 {
   const uint32_t *s32 = src;
   uint32_t *d32 = dest;
   size_t len32;
   size_t i;
 
-  if((len & 3) || (((size_t)src) & 3) || (((size_t)dest) & 3))
+  if(((size_t)src & 3) || ((size_t)dest & 3))
   {
     debug("--EXTRAM-- bad copy parameters: %p %p %zu!\n", dest, src, len);
     return false;
@@ -97,7 +197,31 @@ static boolean extram_cpy(void * RESTRICT dest, const void *src, size_t len)
   for(i = 0; i < len32; i++)
     d32[i] = s32[i];
 
+  if(len & 3)
+  {
+    const uint8_t *src8 = (const uint8_t *)src;
+    uint32_t buffer = 0;
+    uint32_t pos;
+    i <<= 2;
+
+#if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
+    for(pos = 0; i < len; i++, pos += 8)
+      buffer |= src8[i] << pos;
+#else
+    for(pos = 24; i < len; i++, pos -= 8)
+      buffer |= src8[i] << pos;
+#endif
+    d32[len >> 2] = buffer;
+  }
   return true;
+}
+
+/**
+ * Get the rounded allocation size for a buffer.
+ */
+static size_t extram_alloc_size(size_t len)
+{
+  return (len + 3) & ~3;
 }
 
 /**
@@ -105,42 +229,38 @@ static boolean extram_cpy(void * RESTRICT dest, const void *src, size_t len)
  */
 static size_t extram_block_size(size_t len)
 {
-  return sizeof(struct extram_block) + ((len + 3) & ~3);
+  return sizeof(struct extram_block) + extram_alloc_size(len);
 }
 
 /**
  * Send a buffer to extra memory.
  *
+ * @param  data structure including z_stream information.
  * @param  _src pointer to buffer to store to extra RAM.
  * @param  len  size of buffer to store to extra RAM.
  * @return      `true` on success, otherwise `false`.
  */
-static boolean store_buffer_to_extram(void **_src, size_t len)
+static boolean store_buffer_to_extram(struct extram_data *data,
+ char **_src, size_t len)
 {
   struct extram_block *block;
-  uint8_t *src = *_src;
+  uint8_t *src = (uint8_t *)*_src;
   void *ptr;
   uint32_t compressed_size = len;
   uint32_t flags = EXTRAM_PLATFORM_ALLOC;
   size_t alloc_size;
-  z_stream z;
 
   trace("--EXTRAM-- store_buffer_to_extram %p %zu\n", src, len);
 
-  if(len > 1024)
+  if(len >= EXTRAM_DEFLATE_THRESHOLD)
   {
     // Project compressed size...
-    int res;
+    data->z.next_in = src;
+    data->z.avail_in = len;
 
-    memset(&z, 0, sizeof(z_stream));
-    z.next_in = src;
-    z.avail_in = len;
-
-    res = deflateInit2(&z, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -MAX_WBITS,
-     8, Z_DEFAULT_STRATEGY);
-    if(res == Z_OK)
+    if(extram_deflate_init(data))
     {
-      compressed_size = deflateBound(&z, len);
+      compressed_size = deflateBound(&data->z, len);
       flags |= EXTRAM_DEFLATE;
     }
   }
@@ -162,21 +282,21 @@ static boolean store_buffer_to_extram(void **_src, size_t len)
   if(flags & EXTRAM_DEFLATE)
   {
     // Compress.
-    uint32_t tmp[2048 / 4];
+    uint32_t tmp[EXTRAM_DEFLATE_BUFFER];
     uint32_t *pos = block->data;
     size_t sz;
     size_t new_alloc_size;
     int res = Z_OK;
 
-    z.next_in = src;
-    z.avail_in = len;
+    data->z.next_in = (Bytef *)src;
+    data->z.avail_in = len;
 
     while(res != Z_STREAM_END)
     {
-      z.next_out = (Bytef *)tmp;
-      z.avail_out = sizeof(tmp);
+      data->z.next_out = (Bytef *)tmp;
+      data->z.avail_out = sizeof(tmp);
 
-      res = deflate(&z, Z_FINISH);
+      res = deflate(&data->z, Z_FINISH);
 
       if(res != Z_OK && res != Z_BUF_ERROR && res != Z_STREAM_END)
       {
@@ -184,17 +304,16 @@ static boolean store_buffer_to_extram(void **_src, size_t len)
         goto err;
       }
 
-      sz = (sizeof(tmp) - z.avail_out + 3) & ~3;
-      if(!extram_cpy(pos, tmp, sz))
+      sz = sizeof(tmp) - data->z.avail_out;
+      if(!extram_copy(pos, tmp, sz))
         goto err;
 
       pos += sz >> 2;
     }
 
-    trace("--EXTRAM--   compressed_size=%zu\n", (size_t)z.total_out);
+    trace("--EXTRAM--   compressed_size=%zu\n", (size_t)data->z.total_out);
 
-    block->compressed_size = (z.total_out + 3) & ~3;
-    deflateEnd(&z);
+    block->compressed_size = data->z.total_out;
 
     /* Shrink the allocation to the real compressed size. */
     new_alloc_size = extram_block_size(block->compressed_size);
@@ -218,24 +337,8 @@ static boolean store_buffer_to_extram(void **_src, size_t len)
     // Store.
     block->compressed_size = len;
 
-    if(!extram_cpy(block->data, src, len & ~3))
+    if(!extram_copy(block->data, src, len))
       goto err;
-
-    if(len & 3)
-    {
-      uint32_t buffer = 0;
-      uint32_t pos;
-      size_t i = len & ~3;
-
-#if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
-      for(pos = 0; i < len; i++, pos += 8)
-        buffer |= src[i] << pos;
-#else
-      for(pos = 24; i < len; i++, pos -= 8)
-        buffer |= src[i] << pos;
-#endif
-      block->data[len >> 2] = buffer;
-    }
   }
 
   ptr = platform_extram_store(block, alloc_size);
@@ -257,20 +360,19 @@ err:
   else
     free(block);
 
-  if(flags & EXTRAM_DEFLATE)
-    deflateEnd(&z);
-
   return false;
 }
 
 /**
  * Retrieve a buffer from extra memory.
  *
+ * @param  data structure including z_stream information.
  * @param  src  pointer to buffer to retrieve from extra RAM.
  * @param  len  length of buffer to retreieve from extra RAM.
  * @return      `true` on success, otherwise `false`.
  */
-static boolean retrieve_buffer_from_extram(void **src, size_t len)
+static boolean retrieve_buffer_from_extram(struct extram_data *data,
+ char **src, size_t len)
 {
   struct extram_block *block = (struct extram_block *)(*src);
   void *ptr;
@@ -303,56 +405,50 @@ static boolean retrieve_buffer_from_extram(void **src, size_t len)
     return false;
   }
 
-  alloc_size = (len + 3) & ~3;
+  alloc_size = extram_alloc_size(len);
   buffer = cmalloc(alloc_size);
 
   if(flags & EXTRAM_DEFLATE)
   {
     // Compressed.
-    uint32_t tmp[2048 / 4];
+    uint32_t tmp[EXTRAM_DEFLATE_BUFFER];
     uint32_t *pos = block->data;
-    size_t left = block->compressed_size;
-    z_stream z;
-    int res;
+    size_t left = extram_alloc_size(block->compressed_size);
+    int res = Z_OK;
 
-    memset(&z, 0, sizeof(z_stream));
-    z.next_in = (Bytef *)tmp;
-    z.avail_in = sizeof(tmp);
+    data->z.next_in = (Bytef *)tmp;
+    data->z.avail_in = sizeof(tmp);
 
-    res = inflateInit2(&z, -MAX_WBITS);
-    if(res != Z_OK)
+    if(!extram_inflate_init(data))
     {
       debug("--EXTRAM-- inflateInit failed @ %p\n", (void *)block);
       goto err;
     }
 
-    z.next_out = buffer;
-    z.avail_out = len;
+    data->z.next_out = buffer;
+    data->z.avail_out = len;
 
     while((res == Z_OK || res == Z_BUF_ERROR) && left)
     {
       size_t sz = MIN(left, sizeof(tmp));
       left -= sz;
-      if(!extram_cpy(tmp, pos, sz))
-      {
-        inflateEnd(&z);
+      if(!extram_copy(tmp, pos, sz))
         goto err;
-      }
+
       pos += sz >> 2;
 
-      z.next_in = (Bytef *)tmp;
-      z.avail_in = sz;
-      res = inflate(&z, 0);
+      data->z.next_in = (Bytef *)tmp;
+      data->z.avail_in = sz;
+      res = inflate(&data->z, 0);
     }
-    inflateEnd(&z);
 
-    if(res != Z_STREAM_END || z.total_out != len)
+    if(res != Z_STREAM_END || data->z.total_out != len)
     {
       debug("--EXTRAM-- inflate failed @ %p with code %d\n", (void *)block, res);
       goto err;
     }
     trace("--EXTRAM--   decompressed block of size %zu to %zu\n",
-     (size_t)z.total_in, (size_t)z.total_out);
+     (size_t)data->z.total_in, (size_t)data->z.total_out);
   }
   else
   {
@@ -364,7 +460,7 @@ static boolean retrieve_buffer_from_extram(void **src, size_t len)
       );
       goto err;
     }
-    if(!extram_cpy(buffer, block->data, alloc_size))
+    if(!extram_copy(buffer, block->data, alloc_size))
       goto err;
   }
 
@@ -404,6 +500,7 @@ void real_store_board_to_extram(struct board *board, const char *file, int line)
 {
   size_t board_size = board->board_width * board->board_height;
   struct robot **robot_list = board->robot_list;
+  struct extram_data data;
   int i;
 
   if(board->is_extram)
@@ -415,43 +512,40 @@ void real_store_board_to_extram(struct board *board, const char *file, int line)
   trace("--EXTRAM-- storing board %p (%s:%d)\n", (void *)board, file, line);
   board->is_extram = true;
 
+  memset(&data, 0, sizeof(struct extram_data));
+
   // Layer data.
-  if(!store_buffer_to_extram((void **)&board->level_id, board_size))
+  if(!store_buffer_to_extram(&data, &board->level_id, board_size))
     goto err;
-  if(!store_buffer_to_extram((void **)&board->level_param, board_size))
+  if(!store_buffer_to_extram(&data, &board->level_param, board_size))
     goto err;
-  if(!store_buffer_to_extram((void **)&board->level_color, board_size))
+  if(!store_buffer_to_extram(&data, &board->level_color, board_size))
     goto err;
-  if(!store_buffer_to_extram((void **)&board->level_under_id, board_size))
+  if(!store_buffer_to_extram(&data, &board->level_under_id, board_size))
     goto err;
-  if(!store_buffer_to_extram((void **)&board->level_under_param, board_size))
+  if(!store_buffer_to_extram(&data, &board->level_under_param, board_size))
     goto err;
-  if(!store_buffer_to_extram((void **)&board->level_under_color, board_size))
+  if(!store_buffer_to_extram(&data, &board->level_under_color, board_size))
     goto err;
 
   // Overlay.
   if(board->overlay_mode)
   {
-    if(!store_buffer_to_extram((void **)&board->overlay, board_size))
+    if(!store_buffer_to_extram(&data, &board->overlay, board_size))
       goto err;
-    if(!store_buffer_to_extram((void **)&board->overlay_color, board_size))
+    if(!store_buffer_to_extram(&data, &board->overlay_color, board_size))
       goto err;
   }
 
   // Robot programs and source.
-  if(!robot_list)
-  {
-    debug("wtf\n");
-    return;
-  }
-  for(i = 1; i <= board->num_robots; i++)
+  for(i = 1; robot_list && i <= board->num_robots; i++)
   {
     struct robot *cur_robot = robot_list[i];
     if(cur_robot)
     {
       if(cur_robot->program_bytecode)
       {
-        if(!store_buffer_to_extram((void **)&cur_robot->program_bytecode,
+        if(!store_buffer_to_extram(&data, &cur_robot->program_bytecode,
          cur_robot->program_bytecode_length))
           goto err;
       }
@@ -459,14 +553,14 @@ void real_store_board_to_extram(struct board *board, const char *file, int line)
 #if defined(CONFIG_DEBYTECODE) || defined(CONFIG_EDITOR)
       if(cur_robot->program_source)
       {
-        if(!store_buffer_to_extram((void **)&cur_robot->program_source,
+        if(!store_buffer_to_extram(&data, &cur_robot->program_source,
          cur_robot->program_source_length))
           goto err;
       }
 
       if(cur_robot->command_map)
       {
-        if(!store_buffer_to_extram((void **)&cur_robot->command_map,
+        if(!store_buffer_to_extram(&data, (char **)&cur_robot->command_map,
          cur_robot->command_map_length * sizeof(struct command_mapping)))
           goto err;
       }
@@ -474,6 +568,7 @@ void real_store_board_to_extram(struct board *board, const char *file, int line)
       clear_label_cache(cur_robot);
     }
   }
+  extram_deflate_destroy(&data);
   return;
 
 err:
@@ -495,6 +590,7 @@ void real_retrieve_board_from_extram(struct board *board, const char *file, int 
 {
   size_t board_size = board->board_width * board->board_height;
   struct robot **robot_list = board->robot_list;
+  struct extram_data data;
   int i;
 
   if(!board->is_extram)
@@ -506,43 +602,40 @@ void real_retrieve_board_from_extram(struct board *board, const char *file, int 
   trace("--EXTRAM-- retrieving board %p (%s:%d)\n", (void *)board, file, line);
   board->is_extram = false;
 
+  memset(&data, 0, sizeof(struct extram_data));
+
   // Layer data.
-  if(!retrieve_buffer_from_extram((void **)&board->level_id, board_size))
+  if(!retrieve_buffer_from_extram(&data, &board->level_id, board_size))
     goto err;
-  if(!retrieve_buffer_from_extram((void **)&board->level_param, board_size))
+  if(!retrieve_buffer_from_extram(&data, &board->level_param, board_size))
     goto err;
-  if(!retrieve_buffer_from_extram((void **)&board->level_color, board_size))
+  if(!retrieve_buffer_from_extram(&data, &board->level_color, board_size))
     goto err;
-  if(!retrieve_buffer_from_extram((void **)&board->level_under_id, board_size))
+  if(!retrieve_buffer_from_extram(&data, &board->level_under_id, board_size))
     goto err;
-  if(!retrieve_buffer_from_extram((void **)&board->level_under_param, board_size))
+  if(!retrieve_buffer_from_extram(&data, &board->level_under_param, board_size))
     goto err;
-  if(!retrieve_buffer_from_extram((void **)&board->level_under_color, board_size))
+  if(!retrieve_buffer_from_extram(&data, &board->level_under_color, board_size))
     goto err;
 
   // Overlay.
   if(board->overlay_mode)
   {
-    if(!retrieve_buffer_from_extram((void **)&board->overlay, board_size))
+    if(!retrieve_buffer_from_extram(&data, &board->overlay, board_size))
       goto err;
-    if(!retrieve_buffer_from_extram((void **)&board->overlay_color, board_size))
+    if(!retrieve_buffer_from_extram(&data, &board->overlay_color, board_size))
       goto err;
   }
 
   // Robot programs and source.
-  if(!robot_list)
-  {
-    debug("wtf\n");
-    return;
-  }
-  for(i = 1; i <= board->num_robots; i++)
+  for(i = 1; robot_list && i <= board->num_robots; i++)
   {
     struct robot *cur_robot = robot_list[i];
     if(cur_robot)
     {
       if(cur_robot->program_bytecode)
       {
-        if(!retrieve_buffer_from_extram((void **)&cur_robot->program_bytecode,
+        if(!retrieve_buffer_from_extram(&data, &cur_robot->program_bytecode,
          cur_robot->program_bytecode_length))
           goto err;
       }
@@ -550,14 +643,14 @@ void real_retrieve_board_from_extram(struct board *board, const char *file, int 
 #if defined(CONFIG_DEBYTECODE) || defined(CONFIG_EDITOR)
       if(cur_robot->program_source)
       {
-        if(!retrieve_buffer_from_extram((void **)&cur_robot->program_source,
+        if(!retrieve_buffer_from_extram(&data, &cur_robot->program_source,
          cur_robot->program_source_length))
           goto err;
       }
 
       if(cur_robot->command_map)
       {
-        if(!retrieve_buffer_from_extram((void **)&cur_robot->command_map,
+        if(!retrieve_buffer_from_extram(&data, (char **)&cur_robot->command_map,
          cur_robot->command_map_length * sizeof(struct command_mapping)))
           goto err;
       }
@@ -566,6 +659,7 @@ void real_retrieve_board_from_extram(struct board *board, const char *file, int 
       cache_robot_labels(cur_robot);
     }
   }
+  extram_inflate_destroy(&data);
   return;
 
 err:
