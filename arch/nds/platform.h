@@ -40,6 +40,7 @@ void profile_end(void);
 #define FIFO_MZX FIFO_USER_01
 #define CMD_MZX_PCS_TONE 0x01
 #define CMD_MZX_SOUND_VOLUME 0x02
+#define CMD_MZX_MM_GET_POSITION 0x03
 
 #ifdef CONFIG_AUDIO
 void nds_audio_vblank(void);
