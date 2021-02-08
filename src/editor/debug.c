@@ -943,8 +943,8 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
           value = ram_data.debug_variables_total_size;
           break;
         case VIR_RAM_EXTRAM_DELTA:
-          value = (int64_t)ram_data.extram_uncompressed_size -
-           (int64_t)ram_data.extram_compressed_size;
+          value = (int64_t)ram_data.extram_compressed_size -
+           (int64_t)ram_data.extram_uncompressed_size;
           break;
       }
       *long_value = value;

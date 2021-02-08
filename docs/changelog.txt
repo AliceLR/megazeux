@@ -46,6 +46,8 @@ USERS
   store the current board to extra memory, causing the game
   update loop to potentially cause memory corruption with stale
   board pointers on the NDS.
++ Fixed editor extra memory crashes when importing and deleting
+  boards.
 + Fixed a bug where checkres would not check the current dir
   for files when provided with a MZX filename with no path
   component.

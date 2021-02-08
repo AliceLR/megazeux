@@ -61,7 +61,7 @@ static void *platform_extram_retrieve(void *buffer, size_t len) { return buffer;
 
 #ifndef EXTRAM_DEFLATE_THRESHOLD
 /* Minimum size (in bytes) for memory blocks to be deflated. */
-#define EXTRAM_DEFLATE_THRESHOLD 1024
+#define EXTRAM_DEFLATE_THRESHOLD 256
 #endif
 
 #ifndef EXTRAM_DEFLATE_BUFFER
@@ -182,8 +182,8 @@ static void extram_inflate_destroy(struct extram_data *data)
  */
 static boolean extram_copy(void * RESTRICT dest, const void *src, size_t len)
 {
-  const uint32_t *s32 = src;
-  uint32_t *d32 = dest;
+  const uint32_t *s32 = (const uint32_t *)src;
+  uint32_t *d32 = (uint32_t *)dest;
   size_t len32;
   size_t i;
 
@@ -246,7 +246,7 @@ static boolean store_buffer_to_extram(struct extram_data *data,
   struct extram_block *block;
   uint8_t *src = (uint8_t *)*_src;
   void *ptr;
-  uint32_t compressed_size = len;
+  uint32_t projected_size = len;
   uint32_t flags = EXTRAM_PLATFORM_ALLOC;
   size_t alloc_size;
 
@@ -255,17 +255,17 @@ static boolean store_buffer_to_extram(struct extram_data *data,
   if(len >= EXTRAM_DEFLATE_THRESHOLD)
   {
     // Project compressed size...
-    data->z.next_in = src;
+    data->z.next_in = (Bytef *)src;
     data->z.avail_in = len;
 
     if(extram_deflate_init(data))
     {
-      compressed_size = deflateBound(&data->z, len);
+      projected_size = deflateBound(&data->z, len);
       flags |= EXTRAM_DEFLATE;
     }
   }
 
-  alloc_size = extram_block_size(compressed_size);
+  alloc_size = extram_block_size(projected_size);
   block = (struct extram_block *)platform_extram_alloc(alloc_size);
   if(!block)
   {
@@ -287,9 +287,6 @@ static boolean store_buffer_to_extram(struct extram_data *data,
     size_t sz;
     size_t new_alloc_size;
     int res = Z_OK;
-
-    data->z.next_in = (Bytef *)src;
-    data->z.avail_in = len;
 
     while(res != Z_STREAM_END)
     {
