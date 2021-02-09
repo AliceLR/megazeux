@@ -31,7 +31,9 @@ __M_BEGIN_DECLS
 #define store_board_to_extram(b) \
  real_store_board_to_extram(b, __FILE__, __LINE__)
 #define retrieve_board_from_extram(b) \
- real_retrieve_board_from_extram(b, __FILE__, __LINE__)
+ real_retrieve_board_from_extram(b, false, __FILE__, __LINE__)
+#define clear_board_from_extram(b) \
+ real_retrieve_board_from_extram(b, true, __FILE__, __LINE__)
 
 #define set_current_board(mzx_world, b) \
  real_set_current_board(mzx_world, b, __FILE__, __LINE__)
@@ -44,9 +46,10 @@ __M_BEGIN_DECLS
 CORE_LIBSPEC void real_store_board_to_extram(struct board *board,
  const char *file, int line);
 
-// Move the board's memory from normal RAM to extra RAM.
+// Move the board's memory from extra RAM to normal RAM. If free_data is set,
+// clear all buffers and NULL their respective pointers instead.
 CORE_LIBSPEC void real_retrieve_board_from_extram(struct board *board,
- const char *file, int line);
+ boolean free_data, const char *file, int line);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC boolean board_extram_usage(struct board *board, size_t *compressed,
@@ -71,7 +74,7 @@ static inline void real_store_board_to_extram(struct board *board,
 }
 
 static inline void real_retrieve_board_from_extram(struct board *board,
- const char *file, int line)
+ boolean free_data, const char *file, int line)
 {
 #ifdef DEBUG
   if(board->is_extram)
@@ -95,7 +98,7 @@ static inline void real_set_current_board_ext(struct world *mzx_world,
  struct board *cur_board, const char *file, int line)
 {
   real_set_current_board(mzx_world, cur_board, file, line);
-  real_retrieve_board_from_extram(cur_board, file, line);
+  real_retrieve_board_from_extram(cur_board, false, file, line);
 }
 
 __M_END_DECLS

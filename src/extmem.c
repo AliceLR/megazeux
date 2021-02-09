@@ -95,6 +95,7 @@ struct extram_data
   z_stream z;
   int status;
   boolean initialized;
+  boolean free_data;
 };
 
 /**
@@ -429,6 +430,10 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
     goto err;
   }
 
+  /* Destroy the block and clear *src. */
+  if(data->free_data)
+    goto clear;
+
   alloc_size = extram_alloc_size(len);
   buffer = cmalloc(alloc_size);
 
@@ -499,6 +504,7 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
     goto err;
   }
 
+clear:
   if(block->flags & EXTRAM_PLATFORM_ALLOC)
   {
     platform_extram_free(block);
@@ -609,11 +615,14 @@ err:
 /**
  * Move the board's memory from extra RAM to normal RAM.
  *
- * @param  board  board to retrieve from extra RAM.
- * @param  file   __FILE__ of invoking call (via macro).
- * @param  line   __LINE__ of invoking call (via macro).
+ * @param  board      board to retrieve from extra RAM.
+ * @param  free_data  free all buffers and NULL their respective pointers. This
+ *                    is faster than retrieving and freeing from normal RAM.
+ * @param  file       __FILE__ of invoking call (via macro).
+ * @param  line       __LINE__ of invoking call (via macro).
  */
-void real_retrieve_board_from_extram(struct board *board, const char *file, int line)
+void real_retrieve_board_from_extram(struct board *board, boolean free_data,
+ const char *file, int line)
 {
   size_t board_size = board->board_width * board->board_height;
   struct robot **robot_list = board->robot_list;
@@ -630,6 +639,7 @@ void real_retrieve_board_from_extram(struct board *board, const char *file, int 
   board->is_extram = false;
 
   memset(&data, 0, sizeof(struct extram_data));
+  data.free_data = free_data;
 
   // Layer data.
   if(!retrieve_buffer_from_extram(&data, &board->level_id, board_size))
