@@ -42,6 +42,10 @@
 #endif
 
 #ifndef USE_PLATFORM_EXTRAM_ALLOC
+/* Acquire permissions to read from/write to platform extra RAM. */
+static void platform_extram_lock(void) {}
+/* Release permissions to read from/write to platform extra RAM. */
+static void platform_extram_unlock(void) {}
 /* Attempt to allocate a memory mapped buffer in extra RAM. */
 static uint32_t *platform_extram_alloc(size_t len) { return NULL; }
 /* Attempt to reallocate a memory mapped buffer in extra RAM. */
@@ -82,7 +86,7 @@ struct extram_block
   uint32_t flags;
   uint32_t uncompressed_size;
   uint32_t compressed_size;
-  uint32_t adler32;
+  uint32_t checksum;
   uint32_t data[];
 };
 
@@ -176,6 +180,22 @@ static void extram_inflate_destroy(struct extram_data *data)
 }
 
 /**
+ * Calculate a checksum for a block of memory.
+ */
+static uint32_t extram_checksum(const void *src, size_t len)
+{
+  // FIXME pls use something faster than adler32
+  uint32_t checksum = adler32_z(0L, NULL, 0);
+  return adler32_z(checksum, src, len);
+}
+
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)
+/* FIXME prevent GCC from replacing the copy loop with memcpy, breaking NDS extram copies. */
+static boolean extram_copy(void * RESTRICT, const void *, size_t)
+__attribute__((optimize("-fno-tree-loop-distribute-patterns")));
+#endif
+
+/**
  * Perform a 32-bit aligned copy. Both the source and the dest buffers must be
  * 32-bit aligned. The destination buffer additionally should be large enough
  * to fit `len` rounded up to a multiple of 4 bytes (use `extram_alloc_size`).
@@ -265,6 +285,8 @@ static boolean store_buffer_to_extram(struct extram_data *data,
     }
   }
 
+  platform_extram_lock();
+
   alloc_size = extram_block_size(projected_size);
   block = (struct extram_block *)platform_extram_alloc(alloc_size);
   if(!block)
@@ -276,8 +298,7 @@ static boolean store_buffer_to_extram(struct extram_data *data,
   block->id = EXTRAM_ID;
   block->flags = flags;
   block->uncompressed_size = len;
-  block->adler32 = adler32_z(0L, NULL, 0);
-  block->adler32 = adler32_z(block->adler32, src, len);
+  block->checksum = extram_checksum(src, len);
 
   if(flags & EXTRAM_DEFLATE)
   {
@@ -338,6 +359,8 @@ static boolean store_buffer_to_extram(struct extram_data *data,
       goto err;
   }
 
+  platform_extram_unlock();
+
   ptr = platform_extram_store(block, alloc_size);
   if(!ptr)
   {
@@ -357,6 +380,7 @@ err:
   else
     free(block);
 
+  platform_extram_unlock();
   return false;
 }
 
@@ -373,10 +397,9 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
 {
   struct extram_block *block = (struct extram_block *)(*src);
   void *ptr;
-  uint32_t flags = block->flags;
   uint32_t checksum;
   size_t alloc_size;
-  uint8_t *buffer;
+  uint8_t *buffer = NULL;
 
   trace("--EXTRAM-- retrieve_buffer_from_extram %p %zu\n", *src, len);
 
@@ -384,14 +407,18 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
   if(!ptr)
   {
     debug("--EXTRAM-- failed to retrieve buffer %p from non-mapped platform RAM.\n", *src);
-    return false;
+    goto err;
   }
+  block = ptr;
+
+  platform_extram_lock();
 
   /* Try to eliminate false positives arriving here... */
   if(block->id != EXTRAM_ID)
   {
-    debug("--EXTRAM-- ID mismatch @ %p\n", (void *)block);
-    return false;
+    debug("--EXTRAM-- ID mismatch @ %p (expected %08zx, got %08zx)\n",
+     (void *)block, (size_t)EXTRAM_ID, (size_t)block->id);
+    goto err;
   }
 
   if(len != block->uncompressed_size)
@@ -399,18 +426,18 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
     debug("--EXTRAM-- size mismatch @ %p (expected %zu, got %zu)\n",
       (void *)block, len, (size_t)block->uncompressed_size
     );
-    return false;
+    goto err;
   }
 
   alloc_size = extram_alloc_size(len);
   buffer = cmalloc(alloc_size);
 
-  if(flags & EXTRAM_DEFLATE)
+  if(block->flags & EXTRAM_DEFLATE)
   {
     // Compressed.
     uint32_t tmp[EXTRAM_DEFLATE_BUFFER];
     uint32_t *pos = block->data;
-    size_t left = extram_alloc_size(block->compressed_size);
+    size_t left = block->compressed_size;
     int res = Z_OK;
 
     data->z.next_in = (Bytef *)tmp;
@@ -428,11 +455,12 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
     while((res == Z_OK || res == Z_BUF_ERROR) && left)
     {
       size_t sz = MIN(left, sizeof(tmp));
+      size_t sz_ext = extram_alloc_size(sz);
       left -= sz;
-      if(!extram_copy(tmp, pos, sz))
+      if(!extram_copy(tmp, pos, sz_ext))
         goto err;
 
-      pos += sz >> 2;
+      pos += sz_ext >> 2;
 
       data->z.next_in = (Bytef *)tmp;
       data->z.avail_in = sz;
@@ -441,7 +469,8 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
 
     if(res != Z_STREAM_END || data->z.total_out != len)
     {
-      debug("--EXTRAM-- inflate failed @ %p with code %d\n", (void *)block, res);
+      debug("--EXTRAM-- inflate failed @ %p with code %d (%s)\n",
+       (void *)block, res, (data->z.msg ? data->z.msg : "no message"));
       goto err;
     }
     trace("--EXTRAM--   decompressed block of size %zu to %zu\n",
@@ -461,27 +490,28 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
       goto err;
   }
 
-  checksum = adler32_z(0L, NULL, 0);
-  checksum = adler32_z(checksum, buffer, len);
-  if(checksum != block->adler32)
+  checksum = extram_checksum(buffer, len);
+  if(checksum != block->checksum)
   {
     debug("--EXTRAM-- checksum fail @ %p (expected %08zx, got %08zx)\n",
-      (void *)block, (size_t)block->adler32, (size_t)checksum
+      (void *)block, (size_t)block->checksum, (size_t)checksum
     );
     goto err;
   }
 
-  if(flags & EXTRAM_PLATFORM_ALLOC)
+  if(block->flags & EXTRAM_PLATFORM_ALLOC)
   {
     platform_extram_free(block);
   }
   else
     free(block);
 
+  platform_extram_unlock();
   *src = (void *)buffer;
   return true;
 
 err:
+  platform_extram_unlock();
   free(buffer);
   return false;
 }
@@ -710,25 +740,27 @@ boolean board_extram_usage(struct board *board, size_t *compressed,
   if(!board->is_extram)
     return true;
 
+  platform_extram_lock();
+
   if(!get_extram_buffer_usage(board->level_id, compressed, uncompressed))
-    return false;
+    goto err;
   if(!get_extram_buffer_usage(board->level_param, compressed, uncompressed))
-    return false;
+    goto err;
   if(!get_extram_buffer_usage(board->level_color, compressed, uncompressed))
-    return false;
+    goto err;
   if(!get_extram_buffer_usage(board->level_under_id, compressed, uncompressed))
-    return false;
+    goto err;
   if(!get_extram_buffer_usage(board->level_under_param, compressed, uncompressed))
-    return false;
+    goto err;
   if(!get_extram_buffer_usage(board->level_under_color, compressed, uncompressed))
-    return false;
+    goto err;
 
   if(board->overlay_mode)
   {
     if(!get_extram_buffer_usage(board->overlay, compressed, uncompressed))
-      return false;
+      goto err;
     if(!get_extram_buffer_usage(board->overlay_color, compressed, uncompressed))
-      return false;
+      goto err;
   }
 
   robot_list = board->robot_list;
@@ -740,22 +772,27 @@ boolean board_extram_usage(struct board *board, size_t *compressed,
       if(cur_robot->program_bytecode)
         if(!get_extram_buffer_usage(cur_robot->program_bytecode,
          compressed, uncompressed))
-          return false;
+          goto err;
 
 #if defined(CONFIG_DEBYTECODE) || defined(CONFIG_EDITOR)
       if(cur_robot->program_source)
         if(!get_extram_buffer_usage(cur_robot->program_source,
          compressed, uncompressed))
-          return false;
+          goto err;
 
       if(cur_robot->command_map)
         if(!get_extram_buffer_usage(cur_robot->command_map,
          compressed, uncompressed))
-          return false;
+          goto err;
 #endif
     }
   }
+  platform_extram_unlock();
   return true;
+
+err:
+  platform_extram_unlock();
+  return false;
 }
 
 #endif /* CONFIG_EDITOR */
