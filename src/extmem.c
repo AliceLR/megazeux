@@ -30,6 +30,11 @@
 #ifdef CONFIG_NDS
 #include "../arch/nds/extmem.h"
 #define USE_PLATFORM_EXTRAM_ALLOC
+#define EXTRAM_BUFFER_SIZE
+#define EXTRAM_BUFFER_DECL
+// Use a static buffer in fast RAM instead of the default stack buffer.
+// The benefits of this are questionable but at least it isn't on the stack.
+DTCM_BSS static uint32_t extram_deflate_buffer[4096 / sizeof(uint32_t)];
 #endif
 
 /**
@@ -68,9 +73,13 @@ static void *platform_extram_retrieve(void *buffer, size_t len) { return buffer;
 #define EXTRAM_DEFLATE_THRESHOLD 256
 #endif
 
-#ifndef EXTRAM_DEFLATE_BUFFER
+#ifndef EXTRAM_BUFFER_SIZE
 /* Size (in uint32_t) of extra memory deflate buffer. */
-#define EXTRAM_DEFLATE_BUFFER (4096 / sizeof(uint32_t))
+#define EXTRAM_BUFFER_SIZE (4096 / sizeof(uint32_t))
+#endif
+
+#ifndef EXTRAM_BUFFER_DECL
+#define EXTRAM_BUFFER_DECL uint32_t extram_deflate_buffer[EXTRAM_BUFFER_SIZE]
 #endif
 
 enum extram_flags
@@ -304,16 +313,16 @@ static boolean store_buffer_to_extram(struct extram_data *data,
   if(flags & EXTRAM_DEFLATE)
   {
     // Compress.
-    uint32_t tmp[EXTRAM_DEFLATE_BUFFER];
     uint32_t *pos = block->data;
     size_t sz;
     size_t new_alloc_size;
     int res = Z_OK;
+    EXTRAM_BUFFER_DECL;
 
     while(res != Z_STREAM_END)
     {
-      data->z.next_out = (Bytef *)tmp;
-      data->z.avail_out = sizeof(tmp);
+      data->z.next_out = (Bytef *)extram_deflate_buffer;
+      data->z.avail_out = sizeof(extram_deflate_buffer);
 
       res = deflate(&data->z, Z_FINISH);
 
@@ -323,8 +332,8 @@ static boolean store_buffer_to_extram(struct extram_data *data,
         goto err;
       }
 
-      sz = sizeof(tmp) - data->z.avail_out;
-      if(!extram_copy(pos, tmp, sz))
+      sz = sizeof(extram_deflate_buffer) - data->z.avail_out;
+      if(!extram_copy(pos, extram_deflate_buffer, sz))
         goto err;
 
       pos += sz >> 2;
@@ -440,13 +449,13 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
   if(block->flags & EXTRAM_DEFLATE)
   {
     // Compressed.
-    uint32_t tmp[EXTRAM_DEFLATE_BUFFER];
     uint32_t *pos = block->data;
     size_t left = block->compressed_size;
     int res = Z_OK;
+    EXTRAM_BUFFER_DECL;
 
-    data->z.next_in = (Bytef *)tmp;
-    data->z.avail_in = sizeof(tmp);
+    data->z.next_in = (Bytef *)extram_deflate_buffer;
+    data->z.avail_in = sizeof(extram_deflate_buffer);
 
     if(!extram_inflate_init(data))
     {
@@ -459,15 +468,15 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
 
     while((res == Z_OK || res == Z_BUF_ERROR) && left)
     {
-      size_t sz = MIN(left, sizeof(tmp));
+      size_t sz = MIN(left, sizeof(extram_deflate_buffer));
       size_t sz_ext = extram_alloc_size(sz);
       left -= sz;
-      if(!extram_copy(tmp, pos, sz_ext))
+      if(!extram_copy(extram_deflate_buffer, pos, sz_ext))
         goto err;
 
       pos += sz_ext >> 2;
 
-      data->z.next_in = (Bytef *)tmp;
+      data->z.next_in = (Bytef *)extram_deflate_buffer;
       data->z.avail_in = sz;
       res = inflate(&data->z, 0);
     }
