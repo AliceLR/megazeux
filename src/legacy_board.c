@@ -144,7 +144,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->charset_path_allocated = 0;
   cur_board->palette_path_allocated = 0;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(CONFIG_EXTRAM)
   cur_board->is_extram = false;
 #endif
 
