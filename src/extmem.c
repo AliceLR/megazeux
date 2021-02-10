@@ -319,6 +319,16 @@ static boolean store_buffer_to_extram(struct extram_data *data,
     int res = Z_OK;
     EXTRAM_BUFFER_DECL;
 
+    if(~flags & EXTRAM_PLATFORM_ALLOC)
+    {
+      /* DEFLATE directly into the extram block. */
+      data->z.next_out = (Bytef *)block->data;
+      data->z.avail_out = extram_alloc_size(projected_size);
+
+      res = deflate(&data->z, Z_FINISH);
+    }
+    else
+
     while(res != Z_STREAM_END)
     {
       data->z.next_out = (Bytef *)extram_deflate_buffer;
@@ -327,10 +337,7 @@ static boolean store_buffer_to_extram(struct extram_data *data,
       res = deflate(&data->z, Z_FINISH);
 
       if(res != Z_OK && res != Z_BUF_ERROR && res != Z_STREAM_END)
-      {
-        debug("--EXTRAM-- deflate failed with code %d\n", res);
-        goto err;
-      }
+        break;
 
       sz = sizeof(extram_deflate_buffer) - data->z.avail_out;
       if(!extram_copy(pos, extram_deflate_buffer, sz))
@@ -339,6 +346,11 @@ static boolean store_buffer_to_extram(struct extram_data *data,
       pos += sz >> 2;
     }
 
+    if(res != Z_STREAM_END)
+    {
+      debug("--EXTRAM-- deflate failed with code %d\n", res);
+      goto err;
+    }
     trace("--EXTRAM--   compressed_size=%zu\n", (size_t)data->z.total_out);
 
     block->compressed_size = data->z.total_out;
@@ -466,6 +478,16 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
     data->z.next_out = buffer;
     data->z.avail_out = len;
 
+    if(~block->flags & EXTRAM_PLATFORM_ALLOC)
+    {
+      /* Inflate directly from the extram block. */
+      data->z.next_in = (Bytef *)block->data;
+      data->z.avail_in = block->compressed_size;
+
+      res = inflate(&data->z, Z_FINISH);
+    }
+    else
+
     while((res == Z_OK || res == Z_BUF_ERROR) && left)
     {
       size_t sz = MIN(left, sizeof(extram_deflate_buffer));
@@ -483,8 +505,10 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
 
     if(res != Z_STREAM_END || data->z.total_out != len)
     {
-      debug("--EXTRAM-- inflate failed @ %p with code %d (%s)\n",
-       (void *)block, res, (data->z.msg ? data->z.msg : "no message"));
+      debug("--EXTRAM-- inflate failed @ %p (total_out=%zu, len=%zu) with code %d (%s)\n",
+        (void *)block, (size_t)data->z.total_out, len, res,
+        (data->z.msg ? data->z.msg : "no message")
+      );
       goto err;
     }
     trace("--EXTRAM--   decompressed block of size %zu to %zu\n",
