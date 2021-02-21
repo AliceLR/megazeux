@@ -47,6 +47,8 @@ USERS
   where a corrupt board/robot is found. Due to old world format
   limitations, robots after a corrupt robot can not be scanned.
 + checkres now supports scanning protected worlds.
++ Fixed a standalone mode crash on exit that occurred when using
+  Alt+F4 or the window close button.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS
