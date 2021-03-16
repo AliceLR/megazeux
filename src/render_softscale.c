@@ -495,9 +495,9 @@ static void softscale_render_graph(struct graphics_data *graphics)
   if(bpp == 32)
   {
     if(!mode)
-      render_graph32(pixels, pitch, graphics, set_colors32[mode]);
+      render_graph32(pixels, pitch, graphics);
     else
-      render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
+      render_graph32s(pixels, pitch, graphics);
   }
 }
 

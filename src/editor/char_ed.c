@@ -186,7 +186,7 @@ static void char_editor_update_colors(void)
     case 3:
     {
       // Hack
-      char *index = graphics.smzx_indices + (current_palette * 4);
+      Uint8 *index = graphics.smzx_indices + (current_palette * 4);
 
       copy_color_to_protected(*(index++), 2);
       copy_color_to_protected(*(index++), 3);

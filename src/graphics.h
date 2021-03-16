@@ -158,7 +158,7 @@ struct graphics_data
   struct rgb_color protected_palette[PAL_SIZE];
   struct rgb_color intensity_palette[SMZX_PAL_SIZE];
   struct rgb_color backup_palette[SMZX_PAL_SIZE];
-  char smzx_indices[SMZX_PAL_SIZE * 4];
+  Uint8 smzx_indices[SMZX_PAL_SIZE * 4];
   Uint32 current_intensity[SMZX_PAL_SIZE];
   Uint32 saved_intensity[SMZX_PAL_SIZE];
   Uint32 backup_intensity[SMZX_PAL_SIZE];
