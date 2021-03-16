@@ -97,7 +97,9 @@ static const struct editor_config_info editor_conf_default =
   0,
   NULL,
 
-  // Saved positions
+  // saved_positions
+  { { 0, 0, 0, 0, 0, 0 } },
+  // vlayer_positions
   { { 0, 0, 0, 0, 0, 0 } },
 };
 
@@ -461,6 +463,39 @@ static void config_saved_positions(struct editor_config_info *conf,
   }
 }
 
+static void config_vlayer_positions(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  unsigned int pos;
+  unsigned int vlayer_x;
+  unsigned int vlayer_y;
+  unsigned int scroll_x;
+  unsigned int scroll_y;
+  unsigned int debug_x;
+  int n;
+
+  if(sscanf(name, "vlayer_position%u", &pos) != 1)
+    return;
+
+  if(sscanf(value, "%u, %u, %u, %u, %u%n",
+   &vlayer_x, &vlayer_y, &scroll_x, &scroll_y, &debug_x, &n) != 5 ||
+   value[n])
+    return;
+
+  // Check for sane values only. The editor needs to properly bound these later.
+  if(pos < NUM_SAVED_POSITIONS && (vlayer_x < 32768) && (vlayer_y < 32768) &&
+   (scroll_x < 32768) && (scroll_y < 32768) && (debug_x < 80))
+  {
+    struct saved_position *s = &(conf->vlayer_positions[pos]);
+    s->board_id = 0;
+    s->cursor_x = vlayer_x;
+    s->cursor_y = vlayer_y;
+    s->scroll_x = scroll_x;
+    s->scroll_y = scroll_y;
+    s->debug_x = debug_x ? 60 : 0;
+  }
+}
+
 /******************/
 /* BOARD DEFAULTS */
 /******************/
@@ -730,6 +765,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "robot_editor_hide_help", robot_editor_hide_help },
   { "saved_position!", config_saved_positions },
   { "undo_history_size", config_undo_history_size },
+  { "vlayer_position!", config_vlayer_positions },
 };
 
 static const struct editor_config_entry *find_editor_option(char *name,
@@ -1023,6 +1059,13 @@ void save_local_editor_config(struct editor_config_info *conf,
     sprintf(buf, "saved_position%u = %u, %u, %u, %u, %u, %u\n", i,
       s->board_id, s->cursor_x, s->cursor_y, s->scroll_x, s->scroll_y, s->debug_x
     );
+    fwrite(buf, 1, strlen(buf), fp);
+  }
+  for(i = 0; i < NUM_SAVED_POSITIONS; i++)
+  {
+    struct saved_position *s = &(conf->vlayer_positions[i]);
+    sprintf(buf, "vlayer_position%u = %u, %u, %u, %u, %u\n", i,
+     s->cursor_x, s->cursor_y, s->scroll_x, s->scroll_y, s->debug_x);
     fwrite(buf, 1, strlen(buf), fp);
   }
 

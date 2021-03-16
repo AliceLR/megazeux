@@ -21,6 +21,10 @@ USERS
   be toggled with the 3DS keyboard. (asie)
 + Added a list of variables related to RAM usage to the counter
   debug window. This list can be found in the "World" list.
++ Added vlayer saved positions to the editor. Like regular saved
+  positions, these can be configured with the config file option
+  "vlayer_position#", and they work identically to board saved
+  positions.
 + Fixed a bug where, if a world's title screen music is set but
   fails to load when the world is loaded, the music from another
   world could continue to play.
