@@ -53,6 +53,8 @@ USERS
 + checkres now supports scanning protected worlds.
 + Fixed a standalone mode crash on exit that occurred when using
   Alt+F4 or the window close button.
++ Fixed another bug that would cause string searching in the
+  robot editor to sometimes skip matches.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS
