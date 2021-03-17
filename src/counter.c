@@ -1194,7 +1194,7 @@ static int keyn_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   int key_num = strtol(name + 3, NULL, 10);
-  return get_key_status(keycode_pc_xt, key_num);
+  return get_key_status(keycode_pc_xt, key_num) != 0;
 }
 
 static int key_code_read(struct world *mzx_world,

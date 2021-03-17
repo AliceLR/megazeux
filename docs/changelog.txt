@@ -2,6 +2,9 @@ GIT
 
 USERS
 
++ Added experimental player "input buffering". When a player key
+  is pressed and released on the same cycle, the player will now
+  respond to that key press. This also affects Robotic.
 + Protected worlds are now decrypted to RAM or a temporary file
   when 'auto_decrypt_worlds' is enabled and the original file is
   left unmodified. This setting is now enabled by default.

@@ -630,7 +630,6 @@ static boolean game_key(context *ctx, int *key)
   struct board *cur_board = mzx_world->current_board;
   char keylbl[] = "KEY?";
 
-  int key_status = get_key_status(keycode_internal_wrt_numlock, *key);
   boolean exit_status = get_exit_status();
   boolean confirm_exit = false;
 
@@ -796,6 +795,7 @@ static boolean game_key(context *ctx, int *key)
 
       case IKEY_RETURN:
       {
+        int key_status = get_key_status(keycode_internal_wrt_numlock, IKEY_RETURN);
         send_robot_all_def(mzx_world, "KeyEnter");
 
         // Ignore if this isn't a fresh press
@@ -814,6 +814,7 @@ static boolean game_key(context *ctx, int *key)
       {
         // Ignore if this isn't a fresh press
         // NOTE: disabled because it breaks the joystick action.
+        //int key_status = get_key_status(keycode_internal_wrt_numlock, IKEY_ESCAPE);
         //if(key_status != 1)
           //return true;
 
