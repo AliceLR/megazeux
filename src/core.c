@@ -199,6 +199,8 @@ static const char *get_ctx_name(enum context_type id)
     case CTX_EDITOR:            return "Editor";
     case CTX_EDITOR_VIEW_BOARD: return "(view board)";
     case CTX_THING_MENU:        return "Thing menu";
+    case CTX_TEXT_EDITOR:       return "Text editor";
+    case CTX_HEX_EDITOR:        return "Hex editor";
     case CTX_BLOCK_CMD:         return "Block command";
     case CTX_BLOCK_TYPE:        return "Block type";
     case CTX_CHOOSE_CHARSET:    return "Select charset";

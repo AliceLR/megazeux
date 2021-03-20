@@ -54,6 +54,8 @@ enum context_type
   CTX_EDITOR                = -100,
   CTX_EDITOR_VIEW_BOARD     = -101,
   CTX_THING_MENU            = -102,
+  CTX_TEXT_EDITOR           = -103,
+  CTX_HEX_EDITOR            = -104,
   CTX_BLOCK_CMD             = 73,
   CTX_BLOCK_TYPE            = 74,
   CTX_CHOOSE_CHARSET        = 75,
