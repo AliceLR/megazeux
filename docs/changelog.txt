@@ -61,6 +61,8 @@ USERS
   robot editor to sometimes skip matches.
 + Fixed string wildcard matching bug that could cause patterns
   ending with ? to sometimes fail.
++ Fixed a bug where multichar char tile movement could still
+  sometimes jump to the -/+/= chars in the main charset.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS

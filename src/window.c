@@ -769,7 +769,8 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
           {
             // Ignore text from these keys in situations where they are used
             // for tile movement instead...
-            if(get_key_status(keycode_internal, IKEY_MINUS) ||
+            if(key_char == '=' || key_char == '+' || key_char == '-' ||
+             get_key_status(keycode_internal, IKEY_MINUS) ||
              get_key_status(keycode_internal, IKEY_EQUALS) ||
              get_key_status(keycode_internal, IKEY_KP_MINUS) ||
              get_key_status(keycode_internal, IKEY_KP_PLUS))
