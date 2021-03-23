@@ -40,6 +40,12 @@ struct text_line
   char data[];
 };
 
+struct text_position
+{
+  struct text_line *t;
+  int pos;
+};
+
 struct text_document
 {
   struct text_line *head;
@@ -76,6 +82,57 @@ struct text_edit_context
   boolean dos_line_ends;
   void *priv;
   void (*flush_cb)(struct world *mzx_world, void *priv, char *src, size_t src_len);
+};
+
+/**
+ * Undo history implementation:
+ * - Frame:
+ *    before cursor line/pos (set on init)
+ *    after cursor line/pos (set on update function)
+ *    action list and count
+ * - Actions:
+ *    add blank line (redo: line#; undo: line#)
+ *    delete blank line (redo: line#; undo: line#)
+ *    split line (redo: line#, pos; undo: line#)
+ *    join line (redo: line#, undo: line#, pos)
+ *    modify line (redo: line#, after contents, undo: line#, before contents)
+ * Like undo positions, a frame needs to be capable of performing multiple of these.
+ */
+enum text_ua_type
+{
+  TE_ADD_BLANK_LINE,
+  TE_DELETE_BLANK_LINE,
+  TE_SPLIT_LINE,
+  TE_JOIN_LINE,
+  TE_MODIFY_LINE,
+};
+
+struct text_ua
+{
+  enum text_ua_type type;
+};
+
+struct text_ua_line
+{
+  struct text_ua ua;
+  int line;
+};
+
+struct text_ua_line_pos
+{
+  struct text_ua ua;
+  int line;
+  int pos;
+};
+
+struct text_ua_modify
+{
+  struct text_ua ua;
+  int line;
+  char *before;
+  char *after;
+  int before_size;
+  int after_size;
 };
 
 static void text_set_edit_buffer(struct text_document *td, size_t size)
@@ -446,6 +503,29 @@ static boolean text_move(struct text_document *td, int amount)
   if(!text_set_current(td, t))
     return false;
   return true;
+}
+
+static struct text_line *text_get_line(struct text_document *td, int line_number)
+{
+  struct text_line *t;
+  int i;
+  if(!td)
+    return false;
+
+  t = td->head;
+  for(i = 0; i < line_number && t; i++, t = t->next);
+  return t;
+}
+
+static boolean text_move_to_line(struct text_document *td, int line_number)
+{
+  struct text_line *t = text_get_line(td, line_number);
+  if(text_set_current(td, t))
+  {
+    td->current_line = line_number;
+    return true;
+  }
+  return false;
 }
 
 static boolean text_move_start(struct text_document *td)
