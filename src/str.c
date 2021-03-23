@@ -1725,8 +1725,9 @@ static int compare_wildcard(const char *str, size_t str_len,
           if(pat[i] == '%')
             break;
           else
-          if(pat[i] == '\\')
-            i++;
+          if(pat[i] == '\\' && i+1 < pat_len)
+            if(wildcard_char_is_escapable(pat[i+1]))
+              i++;
           left++;
         }
         if(i == pat_len)
