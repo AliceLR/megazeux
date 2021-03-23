@@ -1490,6 +1490,14 @@ static boolean wildcard_char_is_escapable(unsigned char c)
   return (c == '%') || (c == '?') || (c == '\\');
 }
 
+#if 0
+#define WILDCARD_PRINT() do { \
+    for(size_t k = 0; k <= str_len; k++) \
+      fprintf(stderr, "%c ", (k+1 < left ? ' ' : str_matched[k] ? 'Y' : 'n')); \
+    fprintf(stderr, "\n"); \
+} while(0)
+#endif
+
 // Slower wildcard compare algorithm that manipulates an array of booleans to
 // determine the match state of the entire source string at once.
 // This approach seems to perform a bit better than a stack.
@@ -1516,7 +1524,10 @@ static int compare_wildcard_slow(const char *str, size_t str_len,
   char next = 0;
   int res = -1;
 
-  //info("Slow: %.*s ?=%s %.*s\n", str_len, str, exact_case?"=":"", pat_len, pat);
+#ifdef WILDCARD_PRINT
+  debug("--WILDCARD-- Slow: %.*s ?=%s %.*s\n",
+   (int)str_len, str, exact_case?"=":"", (int)pat_len, pat);
+#endif
 
   str_matched[0] = 1;
 
@@ -1524,6 +1535,10 @@ static int compare_wildcard_slow(const char *str, size_t str_len,
   {
     next = exact_case ? pat[i] : memtolower(pat[i]);
     i++;
+
+#ifdef WILDCARD_PRINT
+    WILDCARD_PRINT();
+#endif
 
     switch(next)
     {
@@ -1547,8 +1562,9 @@ static int compare_wildcard_slow(const char *str, size_t str_len,
 
           if(next == '?')
           {
-            new_left++;
-            if(new_right < str_len)
+            if(new_left <= str_len)
+              new_left++;
+            if(new_right <= str_len)
               new_right++;
           }
           else
@@ -1635,6 +1651,10 @@ static int compare_wildcard_slow(const char *str, size_t str_len,
   while(i < pat_len && pat[i] == '%')
     i++;
 
+#ifdef WILDCARD_PRINT
+    WILDCARD_PRINT();
+#endif
+
   if(str_matched[str_len] && i == pat_len)
     res = 0;
 
@@ -1651,7 +1671,10 @@ static int compare_wildcard(const char *str, size_t str_len,
   size_t s = 0;
   size_t w = 0;
 
-  //info("Fast: %.*s ?=%s %.*s\n", str_len, str, exact_case?"=":"", pat_len, pat);
+#ifdef WILDCARD_PRINT
+  debug("--WILDCARD-- Fast: %.*s ?=%s %.*s\n",
+   (int)str_len, str, exact_case?"=":"", (int)pat_len, pat);
+#endif
 
   // Pattern is length 0: match if str is length 0, otherwise not a match.
   if(pat_len == 0)
@@ -1666,6 +1689,8 @@ static int compare_wildcard(const char *str, size_t str_len,
         // Consume extra wildcards.
         size_t oldw = w;
         size_t olds = s;
+        size_t left = 0;
+        size_t i;
         char lookahead;
         w++;
         while(w < pat_len)
@@ -1692,6 +1717,23 @@ static int compare_wildcard(const char *str, size_t str_len,
         // End of the pattern and >=0 characters left? Match.
         if(w == pat_len)
           return 0;
+
+        // No % wildcards present in the rest of the pattern? Align with the
+        // end of the string and keep going.
+        for(i = w; i < pat_len; i++)
+        {
+          if(pat[i] == '%')
+            break;
+          else
+          if(pat[i] == '\\')
+            i++;
+          left++;
+        }
+        if(i == pat_len)
+        {
+          s = MAX(s, str_len - left);
+          break;
+        }
 
         // Lookahead char not present anywhere in the source? Not a match.
         // This is a good opportunity to reduce the size of the source if it

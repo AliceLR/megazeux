@@ -59,6 +59,8 @@ USERS
   Alt+F4 or the window close button.
 + Fixed another bug that would cause string searching in the
   robot editor to sometimes skip matches.
++ Fixed string wildcard matching bug that could cause patterns
+  ending with ? to sometimes fail.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS
