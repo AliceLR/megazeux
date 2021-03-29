@@ -19,6 +19,8 @@
 
 #include "textedit.h"
 #include "clipboard.h"
+#include "configure.h"
+#include "undo.h"
 
 #include "../event.h"
 #include "../graphics.h"
@@ -32,37 +34,12 @@
 
 #define TEXT_EDIT_BUFFER_MIN 256
 
-struct text_line
-{
-  struct text_line *prev;
-  struct text_line *next;
-  int size;
-  char data[];
-};
-
-struct text_position
-{
-  struct text_line *t;
-  int pos;
-};
-
-struct text_document
-{
-  struct text_line *head;
-  struct text_line *tail;
-  struct text_line *current;
-  char *edit_buffer;
-  size_t edit_buffer_alloc;
-  int edit_buffer_size;
-  int num_lines;
-  int current_line;
-};
-
 struct text_edit_context
 {
   context ctx;
   subcontext *intk;
   struct text_document td;
+  struct undo_history *u;
   char *title;
   enum text_edit_type type;
   int x;
@@ -73,7 +50,6 @@ struct text_edit_context
   int edit_y;
   int edit_w;
   int edit_h;
-  int current_col;
   int intk_row;
   int text_color;
   int text_highlight;
@@ -82,57 +58,6 @@ struct text_edit_context
   boolean dos_line_ends;
   void *priv;
   void (*flush_cb)(struct world *mzx_world, void *priv, char *src, size_t src_len);
-};
-
-/**
- * Undo history implementation:
- * - Frame:
- *    before cursor line/pos (set on init)
- *    after cursor line/pos (set on update function)
- *    action list and count
- * - Actions:
- *    add blank line (redo: line#; undo: line#)
- *    delete blank line (redo: line#; undo: line#)
- *    split line (redo: line#, pos; undo: line#)
- *    join line (redo: line#, undo: line#, pos)
- *    modify line (redo: line#, after contents, undo: line#, before contents)
- * Like undo positions, a frame needs to be capable of performing multiple of these.
- */
-enum text_ua_type
-{
-  TE_ADD_BLANK_LINE,
-  TE_DELETE_BLANK_LINE,
-  TE_SPLIT_LINE,
-  TE_JOIN_LINE,
-  TE_MODIFY_LINE,
-};
-
-struct text_ua
-{
-  enum text_ua_type type;
-};
-
-struct text_ua_line
-{
-  struct text_ua ua;
-  int line;
-};
-
-struct text_ua_line_pos
-{
-  struct text_ua ua;
-  int line;
-  int pos;
-};
-
-struct text_ua_modify
-{
-  struct text_ua ua;
-  int line;
-  char *before;
-  char *after;
-  int before_size;
-  int after_size;
 };
 
 static void text_set_edit_buffer(struct text_document *td, size_t size)
@@ -217,7 +142,15 @@ static boolean text_set_line(struct text_document *td, struct text_line *t,
   return true;
 }
 
-static boolean text_update_current(struct text_document *td)
+/**
+ * Sync the text document line structure data with the current edit buffer.
+ * This should only fail if a serious issue has occurred or if the provided
+ * `text_document *` is `NULL`.
+ *
+ * @param   td    text document.
+ * @return        `true` on success, otherwise `false`.
+ */
+boolean text_update_current(struct text_document *td)
 {
   return text_set_line(td, td->current, td->edit_buffer, td->edit_buffer_size);
 }
@@ -246,7 +179,22 @@ static boolean text_set_current(struct text_document *td, struct text_line *t)
   return true;
 }
 
-static struct text_line *text_insert_line(struct text_document *td,
+/**
+ * Insert a new line at a given position. The line will be preallocated to the
+ * given size and zero initialized.
+ *
+ * If the provided direction is 0 this function will fail and the text document
+ * state will be left unmodified.
+ *
+ * @param   td          text document.
+ * @param   at          line to insert at. If this is `NULL`, the new line will
+ *                      be inserted at the start of the document.
+ * @param   init_size   initial data size to allocate the new line with.
+ * @param   direction   insert after (positive) or before (negative) `at`.
+ *                      If `at` is `NULL` this parameter is ignored.
+ * @return              the new `text_line *` on success, otherwise `NULL`.
+ */
+struct text_line *text_insert_line(struct text_document *td,
  struct text_line *at, int init_size, int direction)
 {
   struct text_line *prev;
@@ -294,7 +242,19 @@ static struct text_line *text_insert_line(struct text_document *td,
   return t;
 }
 
-static boolean text_delete_line(struct text_document *td, struct text_line *t)
+/**
+ * Delete a given line from the text document. This should not be used with
+ * lines from other text documents. The line struct is freed in this function
+ * and should not be used after a successful call.
+ *
+ * If the provided line is `NULL`, this function will fail and the document
+ * state will be unmodified.
+ *
+ * @param   td  text document.
+ * @param   t   line to delete.
+ * @return      `true` on success, otherwise `false`.
+ */
+boolean text_delete_line(struct text_document *td, struct text_line *t)
 {
   struct text_line *prev;
   struct text_line *next;
@@ -317,40 +277,70 @@ static boolean text_delete_line(struct text_document *td, struct text_line *t)
   if(t == td->tail)
     td->tail = prev;
 
+  if(t == td->current)
+  {
+    td->current = td->head;
+    td->current_line = 0;
+    td->current_col = 0;
+  }
+
   td->num_lines--;
   return true;
 }
 
-static boolean text_split_current(struct text_document *td, int pos)
+/**
+ * Split the current line into two lines at the current column.
+ * TODO: this does not change the current position but maybe should for
+ * consistency with the other current position operations.
+ *
+ * If the current line doesn't exist or the current column is invalid, this
+ * function will fail and the document state will be left unmodified.
+ *
+ * @param   td    text document.
+ * @return        `true` on success, otherwise `false`.
+ */
+boolean text_split_current(struct text_document *td)
 {
   struct text_line *next;
   size_t next_size;
-  if(!td->edit_buffer)
+  if(!td->edit_buffer || td->current_col < 0 || td->current_col > td->edit_buffer_size)
     return false;
 
   trace("--TEXTDOC-- text_split_current %p (size %d) at pos %d\n",
-   (void *)td, td->edit_buffer_size, pos);
+   (void *)td, td->edit_buffer_size, td->current_col);
 
-  if(pos == 0)
+  if(td->current_col == 0)
   {
     // If pos is 0, just insert a blank line before the current...
     text_insert_line(td, td->current, 0, -1);
     return true;
   }
 
-  next_size = td->edit_buffer_size - pos;
+  next_size = td->edit_buffer_size - td->current_col;
   next = text_insert_line(td, td->current, next_size, 1);
-  if(pos < td->edit_buffer_size)
+  if(td->current_col < td->edit_buffer_size)
   {
-    memcpy(next->data, td->edit_buffer + pos, next_size);
+    memcpy(next->data, td->edit_buffer + td->current_col, next_size);
     next->data[next_size] = '\0';
-    td->edit_buffer[pos] = '\0';
-    td->edit_buffer_size = pos;
+    td->edit_buffer[td->current_col] = '\0';
+    td->edit_buffer_size = td->current_col;
   }
   return true;
 }
 
-static boolean text_join_current(struct text_document *td, int direction)
+/**
+ * Join the current line to another line in the provided direction. The cursor
+ * will be moved to the position corresponding to the end of the first of the
+ * two joined lines.
+ *
+ * If the direction is 0 or a line doesn't exist in the provided direction,
+ * this function will fail and the document state will be left unmodified.
+ *
+ * @param   td          text document.
+ * @param   direction   join with the next (positive) or previous (negative) line.
+ * @return              `true` on success, otherwise `false`.
+ */
+boolean text_join_current(struct text_document *td, int direction)
 {
   struct text_line *t = td->current;
   struct text_line *next;
@@ -377,6 +367,7 @@ static boolean text_join_current(struct text_document *td, int direction)
       return false;
 
     td->current_line--;
+    td->current_col = t->prev->size;
     t = t->prev;
   }
 
@@ -394,7 +385,21 @@ static boolean text_join_current(struct text_document *td, int direction)
   return true;
 }
 
-static int text_insert_current(struct text_document *td, int insert_pos,
+/**
+ * Insert a block of text at the current line and column, handling line breaks
+ * as-needed. The cursor will be repositioned to the end of the inserted block.
+ *
+ * If the block of text is `NULL` or if the current cursor column is invalid,
+ * this function will fail and the document state will not be modified.
+ *
+ * @param   td              text document.
+ * @param   src             block of text to insert.
+ * @param   src_len         length of text to insert, not including a nul.
+ * @param   linebreak_char  char to interpret as a line break. If this is \\n,
+ *                          a \\r character preceding it will also be stripped.
+ * @return                  `true` on success, otherwise `false`.
+ */
+boolean text_insert_current(struct text_document *td,
  const char *src, size_t src_len, char linebreak_char)
 {
   struct text_line *t;
@@ -403,21 +408,21 @@ static int text_insert_current(struct text_document *td, int insert_pos,
   size_t linestart;
   size_t i;
   int col;
-  if(!td || !src || insert_pos < 0)
-    return -1;
+  if(!td || !src || td->current_col < 0 || td->current_col > td->edit_buffer_size)
+    return false;
 
   trace("--TEXTDOC-- text_insert_current pos:%d, size:%zu, linebreak:%d\n",
-   insert_pos, src_len, linebreak_char);
+   td->current_col, src_len, linebreak_char);
 
   if(src_len == 0)
-    return insert_pos;
+    return true;
 
-  if(insert_pos < td->edit_buffer_size)
+  if(td->current_col < td->edit_buffer_size)
   {
-    tmp_size = td->edit_buffer_size - insert_pos;
+    tmp_size = td->edit_buffer_size - td->current_col;
     tmp = cmalloc(tmp_size);
-    memcpy(tmp, td->edit_buffer + insert_pos, tmp_size);
-    td->edit_buffer_size = insert_pos;
+    memcpy(tmp, td->edit_buffer + td->current_col, tmp_size);
+    td->edit_buffer_size = td->current_col;
   }
 
   for(i = 0, linestart = 0; i < src_len; i++)
@@ -470,10 +475,25 @@ static int text_insert_current(struct text_document *td, int insert_pos,
   }
 
   text_update_current(td);
-  return col;
+  td->current_col = CLAMP(col, 0, td->edit_buffer_size);
+  return true;
 }
 
-static boolean text_move(struct text_document *td, int amount)
+/**
+ * Increase/decrease the current line in the text document by an amount. If the
+ * full amount provided can not be moved, the current position will be moved as
+ * far as possible in the provided direction. The current column is not modified.
+ * On success, this function flushes the current buffer to its respective line
+ * and updates `current_line`, `current`, and the edit buffer for the new line.
+ *
+ * If there are no lines in the text document, this will fail and the text
+ * document state will be left unmodified.
+ *
+ * @param   td      text document.
+ * @param   amount  number of lines to move down (positive) or up (negative).
+ * @return          `true` on success, otherwise `false`.
+ */
+boolean text_move(struct text_document *td, int amount)
 {
   struct text_line *t;
   if(!td)
@@ -505,7 +525,15 @@ static boolean text_move(struct text_document *td, int amount)
   return true;
 }
 
-static struct text_line *text_get_line(struct text_document *td, int line_number)
+/**
+ * Get the line struct at a given line number if applicable. Does not modify
+ * the state of the text document.
+ *
+ * @param   td            text document.
+ * @param   line_number   line number in the document to get.
+ * @return                line struct pointer on success, otherwise `NULL`.
+ */
+struct text_line *text_get_line(struct text_document *td, int line_number)
 {
   struct text_line *t;
   int i;
@@ -517,18 +545,46 @@ static struct text_line *text_get_line(struct text_document *td, int line_number
   return t;
 }
 
-static boolean text_move_to_line(struct text_document *td, int line_number)
+/**
+ * Set the current line and column in line for the text document.
+ * On success, this function flushes the current buffer to its respective line
+ * and updates `current_line`, `current_col`, `current`, and the edit buffer
+ * for the new line.
+ *
+ * If the given line number doesn't exist, this function will fail and the
+ * text document state will be left unmodified. The given column will be
+ * clamped to a valid position within the new line on success.
+ *
+ * @param   td            text document.
+ * @param   line_number   line number in the document to jump to.
+ * @param   pos           position within line to jump to.
+ * @return                `true` on success, otherwise `false`.
+ */
+boolean text_move_to_line(struct text_document *td, int line_number, int pos)
 {
   struct text_line *t = text_get_line(td, line_number);
   if(text_set_current(td, t))
   {
     td->current_line = line_number;
+    td->current_col = CLAMP(pos, 0, t->size);
     return true;
   }
   return false;
 }
 
-static boolean text_move_start(struct text_document *td)
+/**
+ * Set the current line and column to the start of the text document.
+ * On success, this function flushes the current buffer to its respective line
+ * and updates `current_line`, `current_col`, `current`, and the edit buffer
+ * for the new line.
+ *
+ * If there are no lines in the text document, this will fail and the text
+ * document state will be left unmodified.
+ *
+ * @param   td  text document.
+ * @return      `true` on success, otherwise `false`.
+ */
+boolean text_move_start(struct text_document *td)
 {
   if(!td || !td->head)
     return false;
@@ -537,10 +593,23 @@ static boolean text_move_start(struct text_document *td)
     return false;
 
   td->current_line = 0;
+  td->current_col = 0;
   return true;
 }
 
-static boolean text_move_end(struct text_document *td)
+/**
+ * Set the current line and column to the end of the text document.
+ * On success, this function flushes the current buffer to its respective line
+ * and updates `current_line`, `current_col`, `current`, and the edit buffer
+ * for the new line.
+ *
+ * If there are no lines in the text document, this will fail and the text
+ * document state will be left unmodified.
+ *
+ * @param   td  text document.
+ * @return      `true` on success, otherwise `false`.
+ */
+boolean text_move_end(struct text_document *td)
 {
   if(!td || !td->tail)
     return false;
@@ -549,6 +618,7 @@ static boolean text_move_end(struct text_document *td)
     return false;
 
   td->current_line = td->num_lines - 1;
+  td->current_col = td->current->size;
   return true;
 }
 
@@ -682,7 +752,7 @@ static void text_edit_reset_intake(struct text_edit_context *te)
   te->intk =
    intake2((context *)te, td->edit_buffer, td->edit_buffer_alloc,
    te->edit_x, te->edit_y + te->intk_row, te->edit_w,
-   te->text_highlight, &(te->current_col), &(td->edit_buffer_size));
+   te->text_highlight, &(td->current_col), &(td->edit_buffer_size));
 }
 
 /**
@@ -715,8 +785,8 @@ static boolean text_edit_draw(context *ctx)
         draw_char(179, line_col, te->x + te->w - 1, te->edit_y + i);
         fill_line(te->w - 2, te->x + 1, te->edit_y + i, 0, line_col);
       }
-      left_chr = (te->current_col >= te->edit_w) ? '\xae' : '\x10';
-      right_chr = (te->current_col < td->edit_buffer_size && td->edit_buffer_size >= te->edit_w) ? '\xaf' : '\x11';
+      left_chr = (td->current_col >= te->edit_w) ? '\xae' : '\x10';
+      right_chr = (td->current_col < td->edit_buffer_size && td->edit_buffer_size >= te->edit_w) ? '\xaf' : '\x11';
 
       draw_char(left_chr, active_col, te->x, te->edit_y + te->intk_row);
       draw_char(right_chr, active_col, te->x + te->w - 1, te->edit_y + te->intk_row);
@@ -731,7 +801,7 @@ static boolean text_edit_draw(context *ctx)
 
       write_string("Col:", te->x + 23, bottom_y, top_col, false);
       draw_char('/', top_col, te->x + 35, bottom_y);
-      write_number(te->current_col + 1, stat_col, te->x + 28, bottom_y, 7, false, 10);
+      write_number(td->current_col + 1, stat_col, te->x + 28, bottom_y, 7, false, 10);
       write_number(td->edit_buffer_size + 1, stat_col, te->x + 36, bottom_y, 7, false, 10);
       break;
 
@@ -800,7 +870,7 @@ static boolean text_edit_mouse(context *ctx, int *key, int button, int x, int y)
       {
         text_move(td, amount);
         text_edit_reset_intake(te);
-        te->current_col = x - te->edit_x;
+        td->current_col = x - te->edit_x;
         warp_mouse(x, te->edit_y + te->intk_row);
         return true;
       }
@@ -840,11 +910,8 @@ static boolean text_edit_joystick(context *ctx, int *key, int action)
     case JOY_Y:
     {
       // Backspace: join previous if at the start of the current line.
-      if(te->current_col == 0)
+      if(td->current_col == 0)
       {
-        if(td->current && td->current->prev)
-          te->current_col = td->current->prev->size;
-
         text_join_current(td, -1);
         text_edit_reset_intake(te);
         return true;
@@ -889,12 +956,12 @@ static boolean text_edit_key(context *ctx, int *key)
     case IKEY_RETURN:
     {
       // Split line.
-      if(text_split_current(td, te->current_col))
+      if(text_split_current(td))
       {
         // Move to the start of the new line unless already at the start.
-        if(te->current_col)
+        if(td->current_col)
         {
-          te->current_col = 0;
+          td->current_col = 0;
           text_move(td, 1);
           text_edit_reset_intake(te);
         }
@@ -909,11 +976,8 @@ static boolean text_edit_key(context *ctx, int *key)
         break;
 
       // Join previous line if at the start of the current line.
-      if(te->current_col == 0)
+      if(td->current_col == 0)
       {
-        if(td->current && td->current->prev)
-          te->current_col = td->current->prev->size;
-
         text_join_current(td, -1);
         text_edit_reset_intake(te);
         return true;
@@ -924,7 +988,7 @@ static boolean text_edit_key(context *ctx, int *key)
     case IKEY_DELETE:
     {
       // Join next line if at the end of the current line.
-      if(te->current_col == td->edit_buffer_size)
+      if(td->current_col == td->edit_buffer_size)
       {
         text_join_current(td, 1);
         text_edit_reset_intake(te);
@@ -998,12 +1062,8 @@ static boolean text_edit_key(context *ctx, int *key)
         char *clipboard_text = get_clipboard_buffer();
         if(clipboard_text)
         {
-          int new_col = text_insert_current(td, te->current_col,
-           clipboard_text, strlen(clipboard_text), '\n');
+          text_insert_current(td, clipboard_text, strlen(clipboard_text), '\n');
           free(clipboard_text);
-
-          if(new_col >= 0)
-            te->current_col = new_col;
           text_edit_reset_intake(te);
         }
         return true;
@@ -1020,6 +1080,7 @@ static boolean text_edit_key(context *ctx, int *key)
 static void text_edit_destroy(context *ctx)
 {
   struct text_edit_context *te = (struct text_edit_context *)ctx;
+  destruct_undo_history(&te->u);
   text_edit_flush(te);
   text_clear(&te->td);
   free(te->title);
@@ -1047,6 +1108,7 @@ void text_editor(context *parent, int x, int y, int w, int h, int type,
  void (*flush_cb)(struct world *, void *, char *, size_t))
 {
   struct text_edit_context *te = ccalloc(1, sizeof(struct text_edit_context));
+  struct editor_config_info *editor_conf = get_editor_config();
   struct text_document *td = &te->td;
   struct context_spec spec;
 
@@ -1091,6 +1153,8 @@ void text_editor(context *parent, int x, int y, int w, int h, int type,
   if(td->num_lines < 1)
     text_insert_line(td, NULL, 0, 1);
   text_set_current(td, td->head);
+
+  te->u = construct_text_editor_undo_history(editor_conf->undo_history_size);
 
   memset(&spec, 0, sizeof(struct context_spec));
   spec.draw           = text_edit_draw;

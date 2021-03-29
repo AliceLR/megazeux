@@ -54,6 +54,27 @@ void add_layer_undo_pos_frame(struct undo_history *h, char *layer_chars,
 void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
  char *layer_colors, int layer_width, int layer_offset, int width, int height);
 
+enum text_undo_line_type
+{
+  TX_OLD_LINE,
+  TX_NEW_LINE,
+  TX_SAME_LINE,
+};
+
+struct text_document;
+struct robot_editor_context;
+
+struct undo_history *construct_text_editor_undo_history(int max_size);
+struct undo_history *construct_robot_editor_undo_history(int max_size);
+
+void add_text_editor_frame(struct undo_history *h, struct text_document *td);
+void add_robot_editor_frame(struct undo_history *h, struct robot_editor_context *rstate);
+
+void add_text_editor_undo_line(struct undo_history *h, enum text_undo_line_type type,
+ int line, int pos, char *value, size_t length);
+void add_robot_editor_undo_line(struct undo_history *h, enum text_undo_line_type type,
+ int line, int pos, char *value, size_t length);
+
 __M_END_DECLS
 
 #endif // __EDITOR_UNDO_H

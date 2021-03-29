@@ -25,7 +25,9 @@
 #include "buffer_struct.h"
 #include "edit.h"
 #include "graphics.h"
+#include "robo_ed.h"
 #include "robot.h"
+#include "textedit.h"
 #include "undo.h"
 
 #include "../block.h"
@@ -34,6 +36,7 @@
 #include "../idarray.h"
 #include "../platform.h"
 #include "../robot.h"
+#include "../util.h"
 #include "../world.h"
 #include "../world_struct.h"
 
@@ -1106,5 +1109,301 @@ void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
      current->prev_chars, current->prev_colors, width, 0,
      width, height
     );
+  }
+}
+
+
+/****************************/
+/* Text specific functions. */
+/****************************/
+
+/**
+ * Notes:
+ *    add(text_document or rstate)
+ *      set previous line/col
+ *    position(type, line, pos, char *, len):
+ *      line replacement: add old line position, add same line position
+ *        (only difference from new is that another same will replace it instead
+ *        of adding a new event).
+ *        if last frame cursor is at the current position and this is the same
+ *        type of line modification, ignore old and send TE_SAME_LINE to replace
+ *        previous new.
+ *      line split: add old line, add two new lines
+ *      line join: add two old lines, add new line
+ *      text insert: add old line, add new lines as-needed
+ *      replace (all): for each replace: add old line, add same lines as-needed
+ *      block clear: add old lines
+ *    update():
+ *      shrink position array
+ *      set current line/col
+ *    undo/redo():
+ *      text_update_current to make sure all line data is fresh.
+ *      for each pos:
+ *        get line (text_get_line)
+ *        if ((old line && redo) || (same/new line && undo))
+ *          remove line (text_delete_line)
+ *        if ((old line && undo) || (same/new line && redo))
+ *          insert line (text_insert_line)
+ *      jump to prev (undo) or current (redo) line/pos (text_move_to_line)
+ *
+ *    other:
+ *      end current frame if the next text modification event is different from
+ *        the current modification event (insert, overwrite, delete, backspace, clear).
+ *      end current frame if any form of cursor repositioning occurs
+ *      end current frame after a certain amount of time passes between inputs
+ */
+
+struct text_undo_line
+{
+  enum text_undo_line_type type;
+  int line;
+  int pos;
+  unsigned int length;
+  unsigned int length_allocated;
+  char *value;
+};
+
+struct text_undo_line_list
+{
+  struct text_undo_line *lines;
+  size_t count;
+  size_t allocated;
+};
+
+static void add_text_undo_line(struct text_undo_line_list *list,
+ enum text_undo_line_type type, int line, int pos, char *value, size_t length)
+{
+  struct text_undo_line *tl;
+  if(list->count >= list->allocated)
+  {
+    list->allocated = MAX(4, list->allocated);
+    while(list->count >= list->allocated)
+      list->allocated *= 2;
+
+    list->lines = crealloc(list->lines, list->allocated * sizeof(struct text_undo_line));
+  }
+
+  tl = &(list->lines[list->count++]);
+  tl->type = type;
+  tl->line = line;
+  tl->length = length;
+  tl->length_allocated = length + 1;
+  tl->value = cmalloc(length + 1);
+  memcpy(tl->value, value, length);
+  tl->value[length] = '\0';
+}
+
+static void update_text_undo_line(struct text_undo_line_list *list,
+ char *value, size_t length)
+{
+  if(list->count > 0)
+  {
+    struct text_undo_line *tl = &(list->lines[list->count - 1]);
+
+    if(tl->length_allocated < length + 1)
+    {
+      while(tl->length_allocated < length + 1)
+        tl->length_allocated *= 2;
+
+      tl->value = crealloc(tl->value, tl->length_allocated);
+    }
+    memcpy(tl->value, value, length);
+    tl->value[length] = '\0';
+  }
+}
+
+static void shrink_text_undo_line_array(struct text_undo_line_list *list)
+{
+  size_t i;
+
+  // Shrink the lines array.
+  if(list->allocated > list->count)
+  {
+    list->lines = crealloc(list->lines, list->count * sizeof(struct text_undo_line));
+    list->allocated = list->count;
+  }
+
+  // Shrink individual line contents.
+  for(i = 0; i < list->count; i++)
+  {
+    struct text_undo_line *pos = &(list->lines[i]);
+    if(pos->length_allocated > pos->length + 1)
+    {
+      pos->value = crealloc(pos->value, pos->length + 1);
+      pos->length_allocated = pos->length + 1;
+      pos->value[pos->length] = '\0';
+    }
+  }
+}
+
+static void free_text_undo_line_array(struct text_undo_line_list *list)
+{
+  size_t i;
+  for(i = 0; i < list->count; i++)
+    free(list->lines[i].value);
+  free(list->lines);
+  list->lines = NULL;
+  list->count = 0;
+  list->allocated = 0;
+}
+
+/* Text editor functions. */
+
+struct text_editor_undo_frame
+{
+  struct undo_frame f;
+  struct text_document *td;
+  struct text_undo_line_list list;
+  // Cursor position info.
+  int prev_line;
+  int prev_col;
+  int current_line;
+  int current_col;
+};
+
+static void apply_text_editor_undo(struct undo_frame *f)
+{
+  struct text_editor_undo_frame *current = (struct text_editor_undo_frame *)f;
+  struct text_document *td = current->td;
+  ssize_t i;
+
+  // Flush the contents of the edit buffer to the document structure.
+  text_update_current(td);
+
+  // Apply line operations in reverse.
+  for(i = current->list.count - 1; i >= 0; i--)
+  {
+    struct text_undo_line *tl = &(current->list.lines[i]);
+    struct text_line *at = text_get_line(td, tl->line);
+    struct text_line *t;
+
+    switch(tl->type)
+    {
+      case TX_OLD_LINE:
+        t = text_insert_line(td, at, tl->length, -1);
+        if(t)
+          memcpy(t->data, tl->value, tl->length);
+        break;
+
+      case TX_NEW_LINE:
+      case TX_SAME_LINE:
+        text_delete_line(td, at);
+        break;
+    }
+  }
+
+  // Jump to the start line/column of the frame.
+  text_move_to_line(td, current->prev_line, current->prev_col);
+}
+
+static void apply_text_editor_redo(struct undo_frame *f)
+{
+  struct text_editor_undo_frame *current = (struct text_editor_undo_frame *)f;
+  struct text_document *td = current->td;
+  size_t i;
+
+  // Flush the contents of the edit buffer to the document structure.
+  text_update_current(td);
+
+  // Apply line operations forward.
+  for(i = 0; i < current->list.count; i++)
+  {
+    struct text_undo_line *tl = &(current->list.lines[i]);
+    struct text_line *at = text_get_line(td, tl->line);
+    struct text_line *t;
+
+    switch(tl->type)
+    {
+      case TX_OLD_LINE:
+        text_delete_line(td, at);
+        break;
+
+      case TX_NEW_LINE:
+      case TX_SAME_LINE:
+        t = text_insert_line(td, at, tl->length, -1);
+        if(t)
+          memcpy(t->data, tl->value, tl->length);
+        break;
+    }
+  }
+
+  // Jump to the end line/column of the frame.
+  text_move_to_line(td, current->current_line, current->current_col);
+}
+
+static void apply_text_editor_update(struct undo_frame *f)
+{
+  struct text_editor_undo_frame *current = (struct text_editor_undo_frame *)f;
+  shrink_text_undo_line_array(&current->list);
+  current->current_line = current->td->current_line;
+  current->current_col = current->td->current_col;
+}
+
+static void apply_text_editor_clear(struct undo_frame *f)
+{
+  struct text_editor_undo_frame *current = (struct text_editor_undo_frame *)f;
+
+  free_text_undo_line_array(&current->list);
+  free(f);
+}
+
+struct undo_history *construct_text_editor_undo_history(int max_size)
+{
+  if(max_size)
+  {
+    struct undo_history *h = construct_undo_history(max_size);
+
+    // Note: uses text undo lines instead of standard positions.
+    h->undo_function = apply_text_editor_undo;
+    h->redo_function = apply_text_editor_redo;
+    h->update_function = apply_text_editor_update;
+    h->clear_function = apply_text_editor_clear;
+    return h;
+  }
+  return NULL;
+}
+
+void add_text_editor_frame(struct undo_history *h, struct text_document *td)
+{
+  if(h)
+  {
+    struct text_editor_undo_frame *current =
+     cmalloc(sizeof(struct text_editor_undo_frame));
+
+    add_undo_frame(h, current);
+    current->f.type = POS_FRAME;
+
+    current->td = td;
+
+    current->list.lines = NULL;
+    current->list.count = 0;
+    current->list.allocated = 0;
+
+    current->prev_line = td->current_line;
+    current->prev_col = td->current_col;
+    current->current_line = -1;
+    current->current_col = -1;
+  }
+}
+
+void add_text_editor_undo_line(struct undo_history *h, enum text_undo_line_type type,
+ int line, int pos, char *value, size_t length)
+{
+  if(h && h->current_frame)
+  {
+    struct text_editor_undo_frame *current =
+     (struct text_editor_undo_frame *)h->current_frame;
+    struct text_undo_line_list *list = &current->list;
+
+    if(list->count > 0 && type == TX_SAME_LINE)
+    {
+      struct text_undo_line *tl = &(list->lines[list->count - 1]);
+      if(tl->type == TX_SAME_LINE)
+      {
+        update_text_undo_line(list, value, length);
+        return;
+      }
+    }
+    add_text_undo_line(list, type, line, pos, value, length);
   }
 }
