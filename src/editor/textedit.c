@@ -39,7 +39,6 @@ struct text_edit_context
   context ctx;
   subcontext *intk;
   struct text_document td;
-  struct undo_history *u;
   char *title;
   enum text_edit_type type;
   int x;
@@ -58,6 +57,10 @@ struct text_edit_context
   boolean dos_line_ends;
   void *priv;
   void (*flush_cb)(struct world *mzx_world, void *priv, char *src, size_t src_len);
+
+  /* Undo history and related variables. */
+  struct undo_history *u;
+  enum intake_event_type current_frame_type;
 };
 
 static void text_set_edit_buffer(struct text_document *td, size_t size)
@@ -740,6 +743,42 @@ static boolean text_edit_flush(struct text_edit_context *te)
   return true;
 }
 
+static void text_edit_intake_callback(void *priv, enum intake_event_type type,
+ int old_pos, int new_pos, int value)
+{
+  struct text_edit_context *te = (struct text_edit_context *)priv;
+
+  // FIXME placeholder
+  const char *str = "wtf!!!";
+  switch(type)
+  {
+    case INTK_NO_EVENT:
+      str = "INTK_NO_EVENT";
+      break;
+    case INTK_MOVE:
+      str = "INTK_MOVE";
+      break;
+    case INTK_INSERT:
+      str = "INTK_INSERT";
+      break;
+    case INTK_OVERWRITE:
+      str = "INTK_OVERWRITE";
+      break;
+    case INTK_DELETE:
+      str = "INTK_DELETE";
+      break;
+    case INTK_BACKSPACE:
+      str = "INTK_BACKSPACE";
+      break;
+    case INTK_CLEAR:
+      str = "INTK_CLEAR";
+      break;
+  }
+  debug("--TEXTEDIT-- intake ev: %s %d %d %d\n", str, old_pos, new_pos, value);
+
+  te->current_frame_type = type;
+}
+
 static void text_edit_reset_intake(struct text_edit_context *te)
 {
   struct text_document *td = &(te->td);
@@ -753,6 +792,8 @@ static void text_edit_reset_intake(struct text_edit_context *te)
    intake2((context *)te, td->edit_buffer, td->edit_buffer_alloc,
    te->edit_x, te->edit_y + te->intk_row, te->edit_w,
    te->text_highlight, &(td->current_col), &(td->edit_buffer_size));
+
+  intake_event_callback(te->intk, te, text_edit_intake_callback);
 }
 
 /**
@@ -1080,7 +1121,7 @@ static boolean text_edit_key(context *ctx, int *key)
 static void text_edit_destroy(context *ctx)
 {
   struct text_edit_context *te = (struct text_edit_context *)ctx;
-  destruct_undo_history(&te->u);
+  destruct_undo_history(te->u);
   text_edit_flush(te);
   text_clear(&te->td);
   free(te->title);
@@ -1155,6 +1196,7 @@ void text_editor(context *parent, int x, int y, int w, int h, int type,
   text_set_current(td, td->head);
 
   te->u = construct_text_editor_undo_history(editor_conf->undo_history_size);
+  te->current_frame_type = INTK_NO_EVENT;
 
   memset(&spec, 0, sizeof(struct context_spec));
   spec.draw           = text_edit_draw;

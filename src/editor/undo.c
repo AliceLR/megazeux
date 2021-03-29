@@ -1119,24 +1119,24 @@ void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
 
 /**
  * Notes:
- *    add(text_document or rstate)
+ *    [√] add(text_document or rstate)
  *      set previous line/col
- *    position(type, line, pos, char *, len):
- *      line replacement: add old line position, add same line position
+ *    [ ] position(type, line, pos, char *, len):
+ *      [ ] line replacement: add old line position, add same line position
  *        (only difference from new is that another same will replace it instead
  *        of adding a new event).
  *        if last frame cursor is at the current position and this is the same
  *        type of line modification, ignore old and send TE_SAME_LINE to replace
  *        previous new.
- *      line split: add old line, add two new lines
- *      line join: add two old lines, add new line
- *      text insert: add old line, add new lines as-needed
- *      replace (all): for each replace: add old line, add same lines as-needed
- *      block clear: add old lines
- *    update():
+ *      [ ] line split: add old line, add two new lines
+ *      [ ] line join: add two old lines, add new line
+ *      [ ] text insert: add old line, add new lines as-needed
+ *      [ ] replace (all): for each replace: add old line, add same lines as-needed
+ *      [ ] block clear: add old lines
+ *    [√] update():
  *      shrink position array
  *      set current line/col
- *    undo/redo():
+ *    [√] undo/redo():
  *      text_update_current to make sure all line data is fresh.
  *      for each pos:
  *        get line (text_get_line)
@@ -1147,10 +1147,10 @@ void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
  *      jump to prev (undo) or current (redo) line/pos (text_move_to_line)
  *
  *    other:
- *      end current frame if the next text modification event is different from
+ *      [ ] end current frame if the next text modification event is different from
  *        the current modification event (insert, overwrite, delete, backspace, clear).
- *      end current frame if any form of cursor repositioning occurs
- *      end current frame after a certain amount of time passes between inputs
+ *      [ ] end current frame if any form of cursor repositioning occurs
+ *      [ ] end current frame after a certain amount of time passes between inputs
  */
 
 struct text_undo_line
