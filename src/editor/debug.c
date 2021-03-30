@@ -2607,9 +2607,13 @@ static void set_string_callback(struct world *mzx_world, void *p,
     unescape_string(src, &src_len);
 
     str = new_string(mzx_world, str->name, src_len, 0);
-    memcpy(str->value, src, src_len);
+    if(str)
+    {
+      src_len = MIN(src_len, str->length);
+      memcpy(str->value, src, src_len);
+      v->data.string = str;
+    }
 
-    v->data.string = str;
     read_var(mzx_world, v);
   }
 }

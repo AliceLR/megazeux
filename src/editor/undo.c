@@ -1262,10 +1262,59 @@ struct text_editor_undo_frame
   int current_col;
 };
 
+static struct text_line *traverse_lines(struct text_document *td,
+ struct text_line *start, int *_current_line, int target_line)
+{
+  struct text_line *t = start;
+  int current_line = *_current_line;
+  if(t && current_line >= 0)
+  {
+    while(current_line < target_line && t)
+    {
+      t = t->next;
+      current_line++;
+    }
+    while(current_line > target_line && t)
+    {
+      t = t->prev;
+      current_line--;
+    }
+  }
+  else
+  {
+    t = text_get_line(td, target_line);
+    current_line = CLAMP(target_line, 0, td->num_lines);
+  }
+
+  *_current_line = current_line;
+  return t;
+}
+
+static struct text_line *safe_adjacent(struct text_line *start,
+ int *_current_line)
+{
+  if(start)
+  {
+    if(start->next)
+    {
+      // Current line will be deleted, making next this line number.
+      return start->next;
+    }
+    if(start->prev)
+    {
+      (*_current_line)--;
+      return start->prev;
+    }
+  }
+  return NULL;
+}
+
 static void apply_text_editor_undo(struct undo_frame *f)
 {
   struct text_editor_undo_frame *current = (struct text_editor_undo_frame *)f;
   struct text_document *td = current->td;
+  struct text_line *at = NULL;
+  int current_line = -1;
   ssize_t i;
 
   // Flush the contents of the edit buffer to the document structure.
@@ -1276,13 +1325,12 @@ static void apply_text_editor_undo(struct undo_frame *f)
   for(i = current->list.count - 1; i >= 0; i--)
   {
     struct text_undo_line *tl = &(current->list.lines[i]);
-    struct text_line *at;
     struct text_line *t;
 
     switch(tl->type)
     {
       case TX_OLD_LINE:
-        at = text_get_line(td, tl->line - 1);
+        at = traverse_lines(td, at, &current_line, tl->line - 1);
         t = text_insert_line(td, at, tl->length, 1);
         if(t)
           memcpy(t->data, tl->value, tl->length);
@@ -1290,8 +1338,9 @@ static void apply_text_editor_undo(struct undo_frame *f)
 
       case TX_NEW_LINE:
       case TX_SAME_LINE:
-        at = text_get_line(td, tl->line);
-        text_delete_line(td, at);
+        t = traverse_lines(td, at, &current_line, tl->line);
+        at = safe_adjacent(t, &current_line);
+        text_delete_line(td, t);
         break;
     }
   }
@@ -1304,6 +1353,8 @@ static void apply_text_editor_redo(struct undo_frame *f)
 {
   struct text_editor_undo_frame *current = (struct text_editor_undo_frame *)f;
   struct text_document *td = current->td;
+  struct text_line *at = NULL;
+  int current_line = -1;
   size_t i;
 
   // Flush the contents of the edit buffer to the document structure.
@@ -1314,19 +1365,19 @@ static void apply_text_editor_redo(struct undo_frame *f)
   for(i = 0; i < current->list.count; i++)
   {
     struct text_undo_line *tl = &(current->list.lines[i]);
-    struct text_line *at = text_get_line(td, tl->line);
     struct text_line *t;
 
     switch(tl->type)
     {
       case TX_OLD_LINE:
-        at = text_get_line(td, tl->line);
-        text_delete_line(td, at);
+        t = traverse_lines(td, at, &current_line, tl->line);
+        at = safe_adjacent(t, &current_line);
+        text_delete_line(td, t);
         break;
 
       case TX_NEW_LINE:
       case TX_SAME_LINE:
-        at = text_get_line(td, tl->line - 1);
+        at = traverse_lines(td, at, &current_line, tl->line - 1);
         t = text_insert_line(td, at, tl->length, 1);
         if(t)
           memcpy(t->data, tl->value, tl->length);
