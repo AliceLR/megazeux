@@ -33,6 +33,7 @@
 #include <string.h>
 
 #define TEXT_EDIT_BUFFER_MIN 256
+#define TEXT_IDLE_TIMER_MAX 30
 
 struct text_edit_context
 {
@@ -61,6 +62,7 @@ struct text_edit_context
   /* Undo history and related variables. */
   struct undo_history *u;
   enum intake_event_type current_frame_type;
+  int idle_timer;
 };
 
 static void text_set_edit_buffer(struct text_document *td, size_t size)
@@ -296,8 +298,8 @@ boolean text_delete_line(struct text_document *td, struct text_line *t)
  * TODO: this does not change the current position but maybe should for
  * consistency with the other current position operations.
  *
- * If the current line doesn't exist or the current column is invalid, this
- * function will fail and the document state will be left unmodified.
+ * If the current line doesn't exist this function will fail and the document
+ * state will be left unmodified.
  *
  * @param   td    text document.
  * @return        `true` on success, otherwise `false`.
@@ -306,8 +308,10 @@ boolean text_split_current(struct text_document *td)
 {
   struct text_line *next;
   size_t next_size;
-  if(!td->edit_buffer || td->current_col < 0 || td->current_col > td->edit_buffer_size)
+  if(!td || !td->current || !td->edit_buffer)
     return false;
+
+  td->current_col = CLAMP(td->current_col, 0, td->edit_buffer_size);
 
   trace("--TEXTDOC-- text_split_current %p (size %d) at pos %d\n",
    (void *)td, td->edit_buffer_size, td->current_col);
@@ -392,8 +396,8 @@ boolean text_join_current(struct text_document *td, int direction)
  * Insert a block of text at the current line and column, handling line breaks
  * as-needed. The cursor will be repositioned to the end of the inserted block.
  *
- * If the block of text is `NULL` or if the current cursor column is invalid,
- * this function will fail and the document state will not be modified.
+ * If the block of text is `NULL` or if the current line doesn't exist, this
+ * function will fail and the document state will not be modified.
  *
  * @param   td              text document.
  * @param   src             block of text to insert.
@@ -411,8 +415,10 @@ boolean text_insert_current(struct text_document *td,
   size_t linestart;
   size_t i;
   int col;
-  if(!td || !src || td->current_col < 0 || td->current_col > td->edit_buffer_size)
+  if(!td || !src || !td->current || !td->edit_buffer)
     return false;
+
+  td->current_col = CLAMP(td->current_col, 0, td->edit_buffer_size);
 
   trace("--TEXTDOC-- text_insert_current pos:%d, size:%zu, linebreak:%d\n",
    td->current_col, src_len, linebreak_char);
@@ -540,8 +546,8 @@ struct text_line *text_get_line(struct text_document *td, int line_number)
 {
   struct text_line *t;
   int i;
-  if(!td)
-    return false;
+  if(!td || line_number < 0)
+    return NULL;
 
   t = td->head;
   for(i = 0; i < line_number && t; i++, t = t->next);
@@ -566,6 +572,10 @@ struct text_line *text_get_line(struct text_document *td, int line_number)
 boolean text_move_to_line(struct text_document *td, int line_number, int pos)
 {
   struct text_line *t = text_get_line(td, line_number);
+
+  trace("--TEXTDOC-- text_move_to_line %p line:%d col:%d\n", (void *)td,
+   line_number, pos);
+
   if(text_set_current(td, t))
   {
     td->current_line = line_number;
@@ -743,40 +753,61 @@ static boolean text_edit_flush(struct text_edit_context *te)
   return true;
 }
 
+/* End the current undo frame, if any. */
+static void text_edit_end_frame(struct text_edit_context *te)
+{
+  if(te->current_frame_type != INTK_NO_EVENT)
+  {
+    trace("--TEXTEDIT-- text_edit_end_frame (type=%d)\n", te->current_frame_type);
+    update_undo_frame(te->u);
+    text_update_current(&te->td);
+    te->current_frame_type = INTK_NO_EVENT;
+    te->idle_timer = 0;
+  }
+}
+
+/* Start a new undo frame from the current edit buffer. */
+static void text_edit_start_frame(struct text_edit_context *te)
+{
+  struct text_document *td = &(te->td);
+  text_edit_end_frame(te);
+  add_text_editor_undo_frame(te->u, td);
+  add_text_editor_undo_line(te->u, TX_OLD_LINE, td->current_line,
+   td->current_col, td->edit_buffer, td->edit_buffer_size);
+}
+
 static void text_edit_intake_callback(void *priv, enum intake_event_type type,
  int old_pos, int new_pos, int value)
 {
   struct text_edit_context *te = (struct text_edit_context *)priv;
+  struct text_document *td = &(te->td);
 
-  // FIXME placeholder
-  const char *str = "wtf!!!";
+  if(te->current_frame_type != type)
+    text_edit_end_frame(te);
+
   switch(type)
   {
     case INTK_NO_EVENT:
-      str = "INTK_NO_EVENT";
-      break;
     case INTK_MOVE:
-      str = "INTK_MOVE";
       break;
     case INTK_INSERT:
-      str = "INTK_INSERT";
-      break;
     case INTK_OVERWRITE:
-      str = "INTK_OVERWRITE";
-      break;
     case INTK_DELETE:
-      str = "INTK_DELETE";
-      break;
     case INTK_BACKSPACE:
-      str = "INTK_BACKSPACE";
-      break;
     case INTK_CLEAR:
-      str = "INTK_CLEAR";
+      if(te->current_frame_type != type)
+      {
+        te->current_frame_type = type;
+        add_text_editor_undo_frame(te->u, td);
+        add_text_editor_undo_line(te->u, TX_OLD_LINE, td->current_line,
+         old_pos, td->current->data, td->current->size);
+      }
+      add_text_editor_undo_line(te->u, TX_SAME_LINE, td->current_line,
+       new_pos, td->edit_buffer, td->edit_buffer_size);
+
+      te->idle_timer = TEXT_IDLE_TIMER_MAX;
       break;
   }
-  debug("--TEXTEDIT-- intake ev: %s %d %d %d\n", str, old_pos, new_pos, value);
-
-  te->current_frame_type = type;
 }
 
 static void text_edit_reset_intake(struct text_edit_context *te)
@@ -889,6 +920,13 @@ static boolean text_edit_idle(context *ctx)
   if(td->edit_buffer_alloc != old_size)
     text_edit_reset_intake(te);
 
+  // End the current undo frame after a period of no input.
+  if(te->idle_timer > 0)
+  {
+    te->idle_timer--;
+    if(!te->idle_timer)
+      text_edit_end_frame(te);
+  }
   return false;
 }
 
@@ -909,6 +947,7 @@ static boolean text_edit_mouse(context *ctx, int *key, int button, int x, int y)
       int amount = y - (te->edit_y + te->intk_row);
       if(amount)
       {
+        text_edit_end_frame(te);
         text_move(td, amount);
         text_edit_reset_intake(te);
         td->current_col = x - te->edit_x;
@@ -921,6 +960,7 @@ static boolean text_edit_mouse(context *ctx, int *key, int button, int x, int y)
 
   if(button == MOUSE_BUTTON_WHEELUP)
   {
+    text_edit_end_frame(te);
     text_move(td, -3);
     text_edit_reset_intake(te);
     return true;
@@ -929,6 +969,7 @@ static boolean text_edit_mouse(context *ctx, int *key, int button, int x, int y)
 
   if(button == MOUSE_BUTTON_WHEELDOWN)
   {
+    text_edit_end_frame(te);
     text_move(td, 3);
     text_edit_reset_intake(te);
     return true;
@@ -953,8 +994,7 @@ static boolean text_edit_joystick(context *ctx, int *key, int action)
       // Backspace: join previous if at the start of the current line.
       if(td->current_col == 0)
       {
-        text_join_current(td, -1);
-        text_edit_reset_intake(te);
+        *key = IKEY_BACKSPACE;
         return true;
       }
       break;
@@ -997,15 +1037,24 @@ static boolean text_edit_key(context *ctx, int *key)
     case IKEY_RETURN:
     {
       // Split line.
-      if(text_split_current(td))
+      if(td->current)
       {
-        // Move to the start of the new line unless already at the start.
+        text_edit_start_frame(te);
+
+        // Split, then move to the start of the second line.
+        text_split_current(td);
         if(td->current_col)
         {
           td->current_col = 0;
           text_move(td, 1);
           text_edit_reset_intake(te);
         }
+
+        add_text_editor_undo_line(te->u, TX_NEW_LINE, td->current_line - 1, 0,
+         td->current->prev->data, td->current->prev->size);
+        add_text_editor_undo_line(te->u, TX_NEW_LINE, td->current_line, 0,
+         td->current->data, td->current->size);
+        update_undo_frame(te->u);
       }
       return true;
     }
@@ -1017,10 +1066,18 @@ static boolean text_edit_key(context *ctx, int *key)
         break;
 
       // Join previous line if at the start of the current line.
-      if(td->current_col == 0)
+      if(td->current_col == 0 && td->current && td->current->prev)
       {
+        text_edit_start_frame(te);
+        add_text_editor_undo_line(te->u, TX_OLD_LINE, td->current_line - 1, 0,
+         td->current->prev->data, td->current->prev->size);
+
         text_join_current(td, -1);
         text_edit_reset_intake(te);
+
+        add_text_editor_undo_line(te->u, TX_NEW_LINE, td->current_line,
+         td->current_col, td->edit_buffer, td->edit_buffer_size);
+        update_undo_frame(te->u);
         return true;
       }
       break;
@@ -1029,10 +1086,18 @@ static boolean text_edit_key(context *ctx, int *key)
     case IKEY_DELETE:
     {
       // Join next line if at the end of the current line.
-      if(td->current_col == td->edit_buffer_size)
+      if(td->current_col == td->edit_buffer_size && td->current && td->current->next)
       {
+        text_edit_start_frame(te);
+        add_text_editor_undo_line(te->u, TX_OLD_LINE, td->current_line, 0,
+         td->current->next->data, td->current->next->size);
+
         text_join_current(td, 1);
         text_edit_reset_intake(te);
+
+        add_text_editor_undo_line(te->u, TX_NEW_LINE, td->current_line,
+         td->current_col, td->edit_buffer, td->edit_buffer_size);
+        update_undo_frame(te->u);
         return true;
       }
       break;
@@ -1041,6 +1106,7 @@ static boolean text_edit_key(context *ctx, int *key)
     case IKEY_UP:
     {
       // Cursor up.
+      text_edit_end_frame(te);
       text_move(td, -1);
       text_edit_reset_intake(te);
       return true;
@@ -1049,6 +1115,7 @@ static boolean text_edit_key(context *ctx, int *key)
     case IKEY_DOWN:
     {
       // Cursor down.
+      text_edit_end_frame(te);
       text_move(td, 1);
       text_edit_reset_intake(te);
       return true;
@@ -1057,6 +1124,7 @@ static boolean text_edit_key(context *ctx, int *key)
     case IKEY_PAGEUP:
     {
       // Cursor up * half edit height.
+      text_edit_end_frame(te);
       text_move(td, -te->edit_h / 2);
       text_edit_reset_intake(te);
       return true;
@@ -1065,6 +1133,7 @@ static boolean text_edit_key(context *ctx, int *key)
     case IKEY_PAGEDOWN:
     {
       // Cursor down * half edit height.
+      text_edit_end_frame(te);
       text_move(td, te->edit_h / 2);
       text_edit_reset_intake(te);
       return true;
@@ -1075,6 +1144,7 @@ static boolean text_edit_key(context *ctx, int *key)
       if(get_ctrl_status(keycode_internal))
       {
         // Cursor to start of text document.
+        text_edit_end_frame(te);
         text_move_start(td);
         text_edit_reset_intake(te);
         return true;
@@ -1087,6 +1157,7 @@ static boolean text_edit_key(context *ctx, int *key)
       if(get_ctrl_status(keycode_internal))
       {
         // Cursor to end of text document.
+        text_edit_end_frame(te);
         text_move_end(td);
         text_edit_reset_intake(te);
         return true;
@@ -1103,10 +1174,51 @@ static boolean text_edit_key(context *ctx, int *key)
         char *clipboard_text = get_clipboard_buffer();
         if(clipboard_text)
         {
+          struct text_line *t;
+          int old_line = td->current_line;
+          text_edit_start_frame(te);
+
           text_insert_current(td, clipboard_text, strlen(clipboard_text), '\n');
           free(clipboard_text);
           text_edit_reset_intake(te);
+
+          t = text_get_line(td, old_line);
+          while(old_line < td->current_line && t)
+          {
+            add_text_editor_undo_line(te->u, TX_NEW_LINE, old_line, 0,
+             t->data, t->size);
+            t = t->next;
+            old_line++;
+          }
+          add_text_editor_undo_line(te->u, TX_NEW_LINE, td->current_line,
+           td->current_col, td->edit_buffer, td->edit_buffer_size);
         }
+        return true;
+      }
+      break;
+    }
+
+    case IKEY_z:
+    {
+      if(get_ctrl_status(keycode_internal))
+      {
+        // Undo.
+        text_edit_end_frame(te);
+        apply_undo(te->u);
+        text_edit_reset_intake(te);
+        return true;
+      }
+      break;
+    }
+
+    case IKEY_y:
+    {
+      if(get_ctrl_status(keycode_internal))
+      {
+        // Redo.
+        text_edit_end_frame(te);
+        apply_redo(te->u);
+        text_edit_reset_intake(te);
         return true;
       }
       break;
