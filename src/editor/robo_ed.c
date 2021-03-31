@@ -703,7 +703,8 @@ static boolean update_current_line(struct robot_editor_context *rstate)
   bytecode_length = legacy_assemble_line(command_buffer, bytecode_buffer,
    error_buffer, arg_types, &arg_count);
 
-  // Trigger macro expansion; if the macro doesn't exist, do nothing
+  // Trigger macro expansion; if the macro exists, return false to let the
+  // caller know this line can be discarded if necessary.
   if(command_buffer[0] == '#')
     if(execute_named_macro(rstate, command_buffer + 1))
       return false;
