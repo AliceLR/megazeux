@@ -24,6 +24,7 @@
 // robot assembly/disassembly code is in rasm.cpp.
 
 #include <ctype.h>
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -392,7 +393,7 @@ static char *package_program(struct robot_line *start_rline,
   }
 
   if(source_size)
-    packaged_program = realloc(existing_source, source_size);
+    packaged_program = crealloc(existing_source, source_size);
 
   if(packaged_program != NULL)
   {
@@ -493,7 +494,7 @@ static void update_program_status(struct robot_editor_context *rstate,
       // The number of color codes for any given line is at most the number
       // of tokens.
       color_codes =
-       malloc(sizeof(struct color_code_pair) * num_parse_tokens);
+       cmalloc(sizeof(struct color_code_pair) * num_parse_tokens);
 
       // Where the current program line begins.
       line_start = command_start;
@@ -584,7 +585,7 @@ static void update_program_status(struct robot_editor_context *rstate,
           }
         }
 
-        current_rline->color_codes = realloc(current_rline->color_codes,
+        current_rline->color_codes = crealloc(current_rline->color_codes,
          num_color_codes * sizeof(struct color_code_pair));
         current_rline->num_color_codes = num_color_codes;
 
@@ -622,7 +623,7 @@ static void update_program_status(struct robot_editor_context *rstate,
   free(source_block);
 }
 
-static int update_current_line(struct robot_editor_context *rstate)
+static boolean update_current_line(struct robot_editor_context *rstate)
 {
   char *command_buffer = rstate->command_buffer;
   int line_text_length = strlen(command_buffer);
@@ -634,7 +635,7 @@ static int update_current_line(struct robot_editor_context *rstate)
    strcmp(current_rline->line_text, command_buffer))
   {
     current_rline->line_text =
-     realloc(current_rline->line_text, line_text_length + 1);
+     crealloc(current_rline->line_text, line_text_length + 1);
 
     current_rline->line_text_length = line_text_length;
     memcpy(current_rline->line_text, command_buffer, line_text_length + 1);
@@ -642,7 +643,7 @@ static int update_current_line(struct robot_editor_context *rstate)
     rstate->program_modified = true;
   }
 
-  return 0;
+  return true;
 }
 
 #else /* !CONFIG_DEBYTECODE */
@@ -671,11 +672,11 @@ static void trim_whitespace(char *buffer, int length)
 
 #ifndef CONFIG_DEBYTECODE
 // fix cyclic dependency (could be done in several ways)
-static int execute_named_macro(struct robot_editor_context *rstate,
+static boolean execute_named_macro(struct robot_editor_context *rstate,
  char *macro_name);
 #endif
 
-static int update_current_line(struct robot_editor_context *rstate)
+static boolean update_current_line(struct robot_editor_context *rstate)
 {
   struct editor_config_info *editor_conf = get_editor_config();
   char bytecode_buffer[COMMAND_BUFFER_LEN];
@@ -691,8 +692,12 @@ static int update_current_line(struct robot_editor_context *rstate)
   enum validity_types use_type = rstate->default_invalid;
   int line_text_length;
 
-  command_buffer[MAX_COMMAND_LEN] = 0;
   line_text_length = (int)strlen(command_buffer);
+  if(line_text_length > MAX_COMMAND_LEN)
+  {
+    line_text_length = MAX_COMMAND_LEN;
+    command_buffer[MAX_COMMAND_LEN] = 0;
+  }
   trim_whitespace(command_buffer, line_text_length);
 
   bytecode_length = legacy_assemble_line(command_buffer, bytecode_buffer,
@@ -700,8 +705,8 @@ static int update_current_line(struct robot_editor_context *rstate)
 
   // Trigger macro expansion; if the macro doesn't exist, do nothing
   if(command_buffer[0] == '#')
-    if(!execute_named_macro(rstate, command_buffer + 1))
-      return -1;
+    if(execute_named_macro(rstate, command_buffer + 1))
+      return false;
 
   if((bytecode_length != -1) &&
    (current_size + bytecode_length - last_bytecode_length) <=
@@ -790,7 +795,7 @@ static int update_current_line(struct robot_editor_context *rstate)
     }
   }
 
-  return 0;
+  return true;
 }
 
 #endif /* !CONFIG_DEBYTECODE */
@@ -799,16 +804,16 @@ static int update_current_line(struct robot_editor_context *rstate)
 // unfortunately that just isn't working that well right now. Needs to
 // be very carefully modularized down.
 
-static void add_line(struct robot_editor_context *rstate, int relation)
+static void add_line(struct robot_editor_context *rstate, char *value, int relation)
 {
 #ifndef CONFIG_DEBYTECODE
-  if(rstate->size + 3 + (int)strlen(rstate->command_buffer) < rstate->max_size)
+  if(rstate->size + 3 + (int)strlen(value) < rstate->max_size)
 #endif
   {
     struct robot_line *new_rline = cmalloc(sizeof(struct robot_line));
     struct robot_line *current_rline = rstate->current_rline;
-    struct robot_line *old_previous = current_rline->previous;
-    struct robot_line *old_next = current_rline->next;
+    char *tmp = rstate->command_buffer;
+    rstate->command_buffer = value;
 
     new_rline->line_text_length = 0;
     new_rline->line_text = NULL;
@@ -842,7 +847,7 @@ static void add_line(struct robot_editor_context *rstate, int relation)
       current_rline->previous = new_rline;
     }
 
-    if(update_current_line(rstate) != -1)
+    if(update_current_line(rstate))
     {
       int current_line = rstate->current_line;
 
@@ -876,38 +881,39 @@ static void add_line(struct robot_editor_context *rstate, int relation)
     }
     else
     {
-      current_rline->previous = old_previous;
-      current_rline->next = old_next;
+      // Line was consumed by update_current_line (likely because of a macro),
+      // so remove it.
       rstate->current_rline = current_rline;
+      if(new_rline->previous)
+        new_rline->previous->next = new_rline->next;
+      if(new_rline->next)
+        new_rline->next->previous = new_rline->previous;
       free(new_rline);
     }
+
+    rstate->command_buffer = tmp;
   }
 }
 
 static void split_current_line(struct robot_editor_context *rstate)
 {
   char *command_buffer = rstate->command_buffer;
-  char line_remainder[MAX_COMMAND_LEN + 1];
   size_t remainder_len;
+  char tmp;
 
   remainder_len = strlen(command_buffer + rstate->current_x);
   if(remainder_len > MAX_COMMAND_LEN)
     remainder_len = MAX_COMMAND_LEN;
 
-  memcpy(line_remainder, command_buffer + rstate->current_x, remainder_len);
-  line_remainder[remainder_len] = 0;
-  command_buffer[rstate->current_x] = 0;
+  tmp = command_buffer[rstate->current_x];
+  command_buffer[rstate->current_x] = '\0';
+  add_line(rstate, command_buffer, -1);
+  command_buffer[rstate->current_x] = tmp;
 
-#ifdef CONFIG_DEBYTECODE
-  add_line(rstate, -1);
-#else
-  update_current_line(rstate);
-  add_blank_line(rstate, 1);
-#endif
-
-  memcpy(command_buffer, line_remainder, remainder_len);
-  command_buffer[remainder_len] = 0;
+  memmove(command_buffer, command_buffer + rstate->current_x, remainder_len);
+  command_buffer[remainder_len] = '\0';
   rstate->current_x = 0;
+
   update_current_line(rstate);
 }
 
@@ -977,7 +983,6 @@ static void output_macro(struct robot_editor_context *rstate,
   char line_buffer[COMMAND_BUFFER_LEN];
   char number_buffer[16];
   char *line_pos, *line_pos_old;
-  char *old_buffer_space = rstate->command_buffer;
   struct macro_variable_reference *current_reference;
   int i, i2;
   size_t len;
@@ -994,8 +999,6 @@ static void output_macro(struct robot_editor_context *rstate,
   rstate->macro_repeat_level++;
 
   // OK, output the lines
-
-  rstate->command_buffer = line_buffer;
 
   for(i = 0; i < num_lines; i++)
   {
@@ -1096,16 +1099,15 @@ static void output_macro(struct robot_editor_context *rstate,
 
 err_cancel_expansion:
     *line_pos = 0;
-    add_line(rstate, -1);
+    add_line(rstate, line_buffer, -1);
   }
 
-  rstate->command_buffer = old_buffer_space;
   rstate->macro_recurse_level--;
 }
 
 #ifndef CONFIG_DEBYTECODE
 
-static int execute_named_macro(struct robot_editor_context *rstate,
+static boolean execute_named_macro(struct robot_editor_context *rstate,
  char *macro_name)
 {
   struct editor_config_info *editor_conf = get_editor_config();
@@ -1128,7 +1130,7 @@ static int execute_named_macro(struct robot_editor_context *rstate,
 
   // it doesn't, carefully abort
   if(!macro_src)
-    return 1;
+    return false;
 
   last_char = *line_pos;
 
@@ -1265,7 +1267,7 @@ static int execute_named_macro(struct robot_editor_context *rstate,
 
   // And replace it with the macro contents
   output_macro(rstate, macro_src);
-  return 0;
+  return true;
 }
 
 #endif /* !CONFIG_DEBYTECODE */
@@ -1331,7 +1333,7 @@ static void copy_block_to_buffer(struct robot_editor_context *rstate)
   for(i = 0; i < num_lines; i++)
   {
     line_length = current_rline->line_text_length + 1;
-    copy_buffer[i] = cmalloc(COMMAND_BUFFER_LEN);
+    copy_buffer[i] = cmalloc(line_length);
     memcpy(copy_buffer[i], current_rline->line_text, line_length);
     current_rline = current_rline->next;
 
@@ -1353,12 +1355,11 @@ static void paste_buffer(struct robot_editor_context *rstate)
   // If we can use an OS buffer, do so
   if(ext_buffer)
   {
-    char line_buffer[COMMAND_BUFFER_LEN];
     char *src_ptr;
     int line_length;
     int copy_length;
+    char tmp;
 
-    rstate->command_buffer = line_buffer;
     src_ptr = ext_buffer;
 
     while(*src_ptr)
@@ -1369,9 +1370,10 @@ static void paste_buffer(struct robot_editor_context *rstate)
       if(copy_length >= COMMAND_BUFFER_LEN)
         copy_length = COMMAND_BUFFER_LEN - 1;
 
-      memcpy(line_buffer, src_ptr, copy_length);
-      line_buffer[copy_length] = 0;
-      add_line(rstate, -1);
+      tmp = src_ptr[copy_length];
+      src_ptr[copy_length] = '\0';
+      add_line(rstate, src_ptr, -1);
+      src_ptr[copy_length] = tmp;
       src_ptr += line_length;
 
 #ifdef __WIN32__
@@ -1393,13 +1395,8 @@ static void paste_buffer(struct robot_editor_context *rstate)
   if(copy_buffer)
   {
     for(i = 0; i < copy_buffer_lines; i++)
-    {
-      rstate->command_buffer = copy_buffer[i];
-      add_line(rstate, -1);
-    }
+      add_line(rstate, copy_buffer[i], -1);
   }
-
-  rstate->command_buffer = rstate->command_buffer_space;
 }
 
 static void clear_block(struct robot_editor_context *rstate)
@@ -1598,8 +1595,6 @@ static void import_block(struct robot_editor_context *rstate)
 
   import_file = fopen_unsafe(import_name, "rb");
 
-  rstate->command_buffer = line_buffer;
-
 #ifndef CONFIG_DEBYTECODE
   ext_pos = (ssize_t)strlen(import_name) - 3;
 
@@ -1634,7 +1629,7 @@ static void import_block(struct robot_editor_context *rstate)
             editor_conf->disassemble_base);
 
            if(new_line)
-             add_line(rstate, -1);
+             add_line(rstate, line_buffer, -1);
            else
              break;
 
@@ -1655,8 +1650,6 @@ static void import_block(struct robot_editor_context *rstate)
 
     int disasm_length;
 
-    rstate->command_buffer = command_buffer;
-
     while(fsafegets(line_buffer, 256, import_file) != NULL)
     {
       legacy_assemble_line(line_buffer, bytecode_buffer, errors,
@@ -1669,7 +1662,7 @@ static void import_block(struct robot_editor_context *rstate)
 
       command_buffer[disasm_length] = 0;
 
-      add_line(rstate,-1);
+      add_line(rstate, command_buffer, -1);
     }
   }
 
@@ -1678,10 +1671,8 @@ static void import_block(struct robot_editor_context *rstate)
   {
     // fsafegets ensures that no line terminators are present
     while(fsafegets(line_buffer, 255, import_file) != NULL)
-      add_line(rstate, -1);
+      add_line(rstate, line_buffer, -1);
   }
-
-  rstate->command_buffer = rstate->command_buffer_space;
 
   fclose(import_file);
 }
@@ -1819,7 +1810,7 @@ static void move_and_update(struct robot_editor_context *rstate, int count)
   strcpy(rstate->command_buffer, rstate->current_rline->line_text);
 }
 
-static void goto_line(struct robot_editor_context *rstate, int line)
+static void goto_line(struct robot_editor_context *rstate, int line, int column)
 {
   if(line > rstate->total_lines)
     line = rstate->total_lines;
@@ -1828,6 +1819,7 @@ static void goto_line(struct robot_editor_context *rstate, int line)
     line = 1;
 
   move_and_update(rstate, line - rstate->current_line);
+  rstate->current_x = CLAMP(column, 0, rstate->current_rline->line_text_length);
 }
 
 static void goto_position(struct robot_editor_context *rstate)
@@ -1858,10 +1850,7 @@ static void goto_position(struct robot_editor_context *rstate)
   destruct_dialog(&di);
 
   if(dialog_result != -1)
-  {
-    rstate->current_x = column_number - 1;
-    goto_line(rstate, line_number);
-  }
+    goto_line(rstate, line_number, column_number - 1);
 
   // Prevent UI keys from carrying through.
   force_release_all_keys();
@@ -1983,10 +1972,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
        &l_pos, search_wrap_enabled, search_ignore_case_enabled);
 
       if(l_num != -1)
-      {
-        goto_line(rstate, l_num);
-        rstate->current_x = l_pos;
-      }
+        goto_line(rstate, l_num, l_pos);
 
       break;
     }
@@ -2000,8 +1986,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
 
       if(l_num != -1)
       {
-        goto_line(rstate, l_num);
-        rstate->current_x = l_pos;
+        goto_line(rstate, l_num, l_pos);
         replace_current_line(rstate, l_pos, search_string, replace_string);
       }
 
@@ -2057,8 +2042,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
 
         if(l_num != -1 && l_pos <= MAX_COMMAND_LEN)
         {
-          goto_line(rstate, l_num);
-          rstate->current_x = l_pos;
+          goto_line(rstate, l_num, l_pos);
           replace_current_line(rstate, l_pos, search_string, replace_string);
 
           l_pos += r_len;
@@ -3147,7 +3131,7 @@ static void init_robot_lines(struct robot_editor_context *rstate,
       rstate->command_buffer[line_length] = 0;
     }
 
-    add_line(rstate, 1);
+    add_line(rstate, rstate->command_buffer, 1);
     source_pos = newline_pos + 1;
   }
   while(newline_pos);
@@ -3885,7 +3869,7 @@ static boolean robot_editor_key(context *ctx, int *key)
         if(*key == IKEY_HOME)
         {
           // Jump to the first line of the program.
-          goto_line(rstate, 1);
+          goto_line(rstate, 1, 0);
           return true;
         }
         else
@@ -3893,7 +3877,7 @@ static boolean robot_editor_key(context *ctx, int *key)
         if(*key == IKEY_END)
         {
           // Jump to the last line of the program.
-          goto_line(rstate, rstate->total_lines);
+          goto_line(rstate, rstate->total_lines, INT_MAX);
           return true;
         }
       }
@@ -3966,6 +3950,7 @@ static boolean robot_editor_key(context *ctx, int *key)
     {
       if(get_alt_status(keycode_internal))
       {
+        update_current_line(rstate);
         block_action(rstate);
         return true;
       }

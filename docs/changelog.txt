@@ -63,6 +63,14 @@ USERS
   ending with ? to sometimes fail.
 + Fixed a bug where multichar char tile movement could still
   sometimes jump to the -/+/= chars in the main charset.
++ Fixed a bug in the robot editor where Ctrl+Home and Ctrl+End
+  would only set the current line (and not the current column).
++ Fixed a robot editor extended macro crash that would occur:
+    when pasting a line containing a macro from the clipboard;
+    when importing a Robotic source file that invokes macros;
+    when invoking nested extended macros.
++ Invoking an extended macro with enter/return no longer inserts
+  an extra blank line.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS
