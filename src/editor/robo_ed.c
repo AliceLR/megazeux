@@ -917,7 +917,6 @@ static void split_current_line(struct robot_editor_context *rstate)
   memmove(command_buffer, command_buffer + rstate->current_x, remainder_len);
   command_buffer[remainder_len] = '\0';
   rstate->current_x = 0;
-
   update_current_line(rstate);
 }
 
