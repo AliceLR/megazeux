@@ -1013,7 +1013,7 @@ static boolean intake_key(subcontext *sub, int *key)
         if(new_char >= 32)
         {
           last_char = new_char;
-          intake_place_char(intk, new_char);
+          intake_place_char(intk, new_char, true);
         }
         return true;
       }
@@ -1037,7 +1037,7 @@ static boolean intake_key(subcontext *sub, int *key)
     char cur_char = get_key(keycode_text_ascii);
     if(cur_char)
     {
-      intake_place_char(intk, cur_char);
+      intake_place_char(intk, cur_char, true);
       num_placed++;
     }
     else

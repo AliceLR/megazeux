@@ -777,7 +777,7 @@ static void text_edit_start_frame(struct text_edit_context *te)
 }
 
 static void text_edit_intake_callback(void *priv, enum intake_event_type type,
- int old_pos, int new_pos, int value)
+ int old_pos, int new_pos, int value, const char *data)
 {
   struct text_edit_context *te = (struct text_edit_context *)priv;
   struct text_document *td = &(te->td);
@@ -795,6 +795,8 @@ static void text_edit_intake_callback(void *priv, enum intake_event_type type,
     case INTK_DELETE:
     case INTK_BACKSPACE:
     case INTK_CLEAR:
+    case INTK_INSERT_BLOCK:
+    case INTK_OVERWRITE_BLOCK:
       if(te->current_frame_type != type)
       {
         te->current_frame_type = type;
