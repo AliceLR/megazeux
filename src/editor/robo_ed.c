@@ -585,12 +585,20 @@ static void update_program_status(struct robot_editor_context *rstate,
           }
         }
 
-        current_rline->color_codes = crealloc(current_rline->color_codes,
-         num_color_codes * sizeof(struct color_code_pair));
-        current_rline->num_color_codes = num_color_codes;
+        if(num_color_codes)
+        {
+          current_rline->color_codes = crealloc(current_rline->color_codes,
+           num_color_codes * sizeof(struct color_code_pair));
 
-        memcpy(current_rline->color_codes, color_codes,
-         num_color_codes * sizeof(struct color_code_pair));
+          memcpy(current_rline->color_codes, color_codes,
+           num_color_codes * sizeof(struct color_code_pair));
+        }
+        else
+        {
+          free(current_rline->color_codes);
+          current_rline->color_codes = NULL;
+        }
+        current_rline->num_color_codes = num_color_codes;
 
         num_color_codes = 0;
 
