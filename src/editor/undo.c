@@ -1213,6 +1213,24 @@ static void update_text_undo_line(struct text_undo_line_list *list,
   }
 }
 
+static void handle_text_undo_line(struct text_undo_line_list *list,
+ enum text_undo_line_type type, int line, int pos, char *value, size_t length)
+{
+  // If the previous line is TX_SAME_LINE, this line is TX_SAME_LINE, and they
+  // both have the same line number, merge this into the previous line instead
+  // of adding a new line.
+  if(list->count > 0 && type == TX_SAME_LINE)
+  {
+    struct text_undo_line *tl = &(list->lines[list->count - 1]);
+    if(tl->type == TX_SAME_LINE && tl->line == line)
+    {
+      update_text_undo_line(list, value, length);
+      return;
+    }
+  }
+  add_text_undo_line(list, type, line, pos, value, length);
+}
+
 static void shrink_text_undo_line_array(struct text_undo_line_list *list)
 {
   size_t i;
@@ -1459,15 +1477,160 @@ void add_text_editor_undo_line(struct undo_history *h, enum text_undo_line_type 
     current->current_line = line;
     current->current_col = pos;
 
-    if(list->count > 0 && type == TX_SAME_LINE)
+    handle_text_undo_line(list, type, line, pos, value, length);
+  }
+}
+
+/* Robot editor functions. */
+
+struct robot_editor_undo_frame
+{
+  struct undo_frame f;
+  struct robot_editor_context *rstate;
+  struct text_undo_line_list list;
+  // Cursor position info.
+  int prev_line;
+  int prev_col;
+  int current_line;
+  int current_col;
+};
+
+static void apply_robot_editor_undo(struct undo_frame *f)
+{
+  struct robot_editor_undo_frame *current = (struct robot_editor_undo_frame *)f;
+  struct robot_editor_context *rstate = current->rstate;
+  ssize_t i;
+
+  // Apply line operations in reverse.
+  for(i = current->list.count - 1; i >= 0; i--)
+  {
+    struct text_undo_line *tl = &(current->list.lines[i]);
+
+    switch(tl->type)
     {
-      struct text_undo_line *tl = &(list->lines[list->count - 1]);
-      if(tl->type == TX_SAME_LINE)
-      {
-        update_text_undo_line(list, value, length);
-        return;
-      }
+      case TX_OLD_LINE:
+        // FIXME
+        //robo_ed_goto_line(rstate, tl->line, 0);
+        //robo_ed_add_line(rstate, tl->value, -1);
+        break;
+
+      case TX_NEW_LINE:
+      case TX_SAME_LINE:
+        // FIXME
+        //robo_ed_goto_line(rstate, tl->line, 0);
+        //robo_ed_delete_current_line(rstate, -1);
+        break;
     }
-    add_text_undo_line(list, type, line, pos, value, length);
+  }
+
+  // Jump to the start line/column of the frame.
+  // FIXME
+  //robo_ed_goto_line(rstate, current->prev_line, current->prev_col);
+}
+
+static void apply_robot_editor_redo(struct undo_frame *f)
+{
+  struct robot_editor_undo_frame *current = (struct robot_editor_undo_frame *)f;
+  struct robot_editor_context *rstate = current->rstate;
+  size_t i;
+
+  // Apply line operations forward.
+  for(i = 0; i < current->list.count; i++)
+  {
+    struct text_undo_line *tl = &(current->list.lines[i]);
+
+    switch(tl->type)
+    {
+      case TX_OLD_LINE:
+        // FIXME
+        //robo_ed_goto_line(rstate, tl->line, 0);
+        //robo_ed_delete_current_line(rstate, 1);
+        break;
+
+      case TX_NEW_LINE:
+      case TX_SAME_LINE:
+        // FIXME
+        //robo_ed_goto_line(rstate, tl->line, 0);
+        //robo_ed_add_line(rstate, tl->value, -1);
+        break;
+    }
+  }
+
+  // Jump to the end line/column of the frame.
+  // FIXME
+  //robo_ed_goto_line(rstate, current->current_line, current->current_col);
+}
+
+static void apply_robot_editor_update(struct undo_frame *f)
+{
+  struct robot_editor_undo_frame *current = (struct robot_editor_undo_frame *)f;
+  shrink_text_undo_line_array(&current->list);
+}
+
+static void apply_robot_editor_clear(struct undo_frame *f)
+{
+  struct robot_editor_undo_frame *current = (struct robot_editor_undo_frame *)f;
+
+  free_text_undo_line_array(&current->list);
+  free(f);
+}
+
+struct undo_history *construct_robot_editor_undo_history(int max_size)
+{
+  if(max_size)
+  {
+    struct undo_history *h = construct_undo_history(max_size);
+
+    // Note: uses text undo lines instead of standard positions.
+    h->undo_function = apply_robot_editor_undo;
+    h->redo_function = apply_robot_editor_redo;
+    h->update_function = apply_robot_editor_update;
+    h->clear_function = apply_robot_editor_clear;
+    return h;
+  }
+  return NULL;
+}
+
+void add_robot_editor_undo_frame(struct undo_history *h, struct robot_editor_context *rstate)
+{
+  if(h)
+  {
+    struct robot_editor_undo_frame *current =
+     cmalloc(sizeof(struct robot_editor_undo_frame));
+
+    add_undo_frame(h, current);
+    current->f.type = POS_FRAME;
+
+    current->rstate = rstate;
+
+    current->list.lines = NULL;
+    current->list.count = 0;
+    current->list.allocated = 0;
+
+    current->prev_line = -1;
+    current->prev_col = -1;
+    current->current_line = -1;
+    current->current_col = -1;
+  }
+}
+
+void add_robot_editor_undo_line(struct undo_history *h, enum text_undo_line_type type,
+ int line, int pos, char *value, size_t length)
+{
+  if(h && h->current_frame)
+  {
+    struct robot_editor_undo_frame *current =
+     (struct robot_editor_undo_frame *)h->current_frame;
+    struct text_undo_line_list *list = &current->list;
+
+    if(current->prev_line < 0)
+    {
+      current->prev_line = line;
+      current->prev_col = pos;
+    }
+    current->current_line = line;
+    current->current_col = pos;
+
+    handle_text_undo_line(list, type, line, pos, value, length);
   }
 }
