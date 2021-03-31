@@ -882,13 +882,17 @@ static void add_line(struct robot_editor_context *rstate, char *value, int relat
     else
     {
       // Line was consumed by update_current_line (likely because of a macro),
-      // so remove it.
+      // so remove it. Space and bytecode size might have been counted for this
+      // as part of processing the macro.
+#ifndef CONFIG_DEBYTECODE
+      rstate->size -= new_rline->line_bytecode_length;
+#endif
       rstate->current_rline = current_rline;
       if(new_rline->previous)
         new_rline->previous->next = new_rline->next;
       if(new_rline->next)
         new_rline->next->previous = new_rline->previous;
-      free(new_rline);
+      delete_line_contents(new_rline);
     }
 
     rstate->command_buffer = tmp;
