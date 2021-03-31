@@ -33,7 +33,7 @@
 #include <string.h>
 
 #define TEXT_EDIT_BUFFER_MIN 256
-#define TEXT_IDLE_TIMER_MAX 30
+#define TEXT_IDLE_TIMER_MAX 15
 
 struct text_edit_context
 {
