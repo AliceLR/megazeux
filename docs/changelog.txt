@@ -59,6 +59,8 @@ USERS
   Alt+F4 or the window close button.
 + Fixed another bug that would cause string searching in the
   robot editor to sometimes skip matches.
++ Replace all (Ctrl+H) in the robot editor should no longer skip
+  adjacent instances of the search string.
 + Fixed string wildcard matching bug that could cause patterns
   ending with ? to sometimes fail.
 + Fixed a bug where multichar char tile movement could still

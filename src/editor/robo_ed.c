@@ -1894,7 +1894,7 @@ static void replace_current_line(struct robot_editor_context *rstate,
 
 static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
  struct string_search_data *data, int *position, boolean wrap,
- boolean ignore_case)
+ boolean ignore_case, boolean allow_current)
 {
   struct robot_line *current_rline = rstate->current_rline;
   int current_line = rstate->current_line;
@@ -1902,6 +1902,7 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
   const char *pos = NULL;
   size_t text_len;
   size_t str_len = strlen(str);
+  int first_pos;
 
   update_current_line(rstate);
   strcpy(rstate->command_buffer, current_rline->line_text);
@@ -1911,10 +1912,11 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
 
   // Check the first line first
   text_len = strlen(text);
-  if(rstate->current_x + 1 < (int)text_len)
+  first_pos = (allow_current) ? rstate->current_x : rstate->current_x + 1;
+  if(first_pos < (int)text_len)
   {
-    text += rstate->current_x + 1;
-    text_len -= rstate->current_x + 1;
+    text += first_pos;
+    text_len -= first_pos;
     pos = string_search(text, text_len, str, str_len, data, ignore_case);
 
     text = rstate->command_buffer;
@@ -1981,7 +1983,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
       // Find
       int l_pos;
       int l_num = robo_ed_find_string(rstate, search_string, &search_index,
-       &l_pos, search_wrap_enabled, search_ignore_case_enabled);
+       &l_pos, search_wrap_enabled, search_ignore_case_enabled, false);
 
       if(l_num != -1)
         goto_line(rstate, l_num, l_pos);
@@ -1994,7 +1996,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
       // Find & Replace
       int l_pos;
       int l_num = robo_ed_find_string(rstate, search_string, &search_index,
-       &l_pos, search_wrap_enabled, search_ignore_case_enabled);
+       &l_pos, search_wrap_enabled, search_ignore_case_enabled, false);
 
       if(l_num != -1)
       {
@@ -2021,7 +2023,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
       do
       {
         l_num = robo_ed_find_string(rstate, search_string, &search_index,
-         &l_pos, search_wrap_enabled, search_ignore_case_enabled);
+         &l_pos, search_wrap_enabled, search_ignore_case_enabled, true);
 
         // Is it on the starting line and below the starting cursor?
         // If so modify the starting cursor because the line was
