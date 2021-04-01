@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2017 Ian Burgmyer <spectere@gmail.com>
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,10 +19,9 @@
 
 #include "clipboard.h"
 
-void copy_buffer_to_clipboard(char **buffer, int lines, int total_length) {
-  /* no op */
-}
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length) {}
 
-char *get_clipboard_buffer(void) {
+char *get_clipboard_buffer(void)
+{
   return NULL;
 }
