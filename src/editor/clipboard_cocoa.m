@@ -17,7 +17,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <Foundation/Foundation.h>
+#include <AppKit/NSPasteboard.h>
+
+#include <stdlib.h>
+#include <string.h>
+
 #include "clipboard.h"
+
+/**
+ * Native MacOS clipboard handler using AppKit. Unlike the SDL2 clipboard
+ * handler, this handler treats the input text as being encoded in Mac OS Roman
+ * (unlike ISO Latin-1, Windows 1292, etc, all 256 codepoints of Mac OS Roman
+ * will be encoded as valid UTF-8 symbols).
+ */
 
 void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 { @autoreleasepool
@@ -33,11 +46,11 @@ void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
   }
   buf[total_length] = '\0';
 
-  /* Convert to NSString. TODO: this function requires 10.3+, haven't
-   * found a compelling non-UTF8 way to do this for 10.0.
+  /* Convert to NSString. NOTE: this function requires 10.3+, haven't
+   * looked for a compelling way to do this for 10.0.
    */
-  NSString *string = [NSString initWithBytes:buf length:total_length
-   encoding:NSISOLatin1StringEncoding];
+  NSString *string = [[NSString alloc] initWithBytes:buf length:total_length
+   encoding:NSMacOSRomanStringEncoding];
   free(buf);
 
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
@@ -59,29 +72,33 @@ char *get_clipboard_buffer(void)
 { @autoreleasepool
 {
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-  NSArray *chrdata = nil;
 
 #if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1060
 
-  NSArray *values = [[NSArray alloc] initWithObjects:[NSString class], nul];
-  NSArray *copiedItems = [pasteboard readObjects];
-  // FIXME
+  NSArray *for_classes = [[NSArray alloc] initWithObjects:[NSString class], nil];
+  NSArray *items = [pasteboard readObjectsForClasses:for_classes options:nil];
+
+  NSString *string = items && [items count] ? items[0] : nil;
+  if(!string)
+    return NULL;
 
 #else /* VERSION_MIN < 1060 */
 
-  if(![pasteboard availableTypeFromArray:@[NSStringPboardType, nil]])
+  if(![pasteboard availableTypeFromArray:@[NSStringPboardType]])
     return NULL;
 
   NSString *string = [pasteboard stringForType:NSStringPboardType];
-  chrdata = [string dataUsingEncoding:NSISOLatin1StringEncoding allowLossyConversion:true];
+  if(!string)
+    return NULL;
 
 #endif /* VERSION_MIN < 1060 */
 
+  NSData *chrdata = [string dataUsingEncoding:NSMacOSRomanStringEncoding allowLossyConversion:true];
   if(!chrdata)
     return NULL;
 
-  size_t buf_len = [array length] + 1;
-  char *buf = cmalloc(buf_len);
+  size_t buf_len = [chrdata length];
+  char *buf = cmalloc(buf_len + 1);
 
   [chrdata getBytes:buf length:buf_len];
   buf[buf_len] = '\0';
