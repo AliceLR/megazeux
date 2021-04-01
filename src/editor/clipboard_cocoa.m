@@ -58,7 +58,7 @@ void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 #if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1060
 
   [pasteboard clearContents];
-  [pasteboard writeObjects:@[string]];
+  [pasteboard writeObjects:[NSArray arrayWithObject:string]];
 
 #else /* VERSION_MIN < 1060 */
 
@@ -75,7 +75,7 @@ char *get_clipboard_buffer(void)
 
 #if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1060
 
-  NSArray *for_classes = [[NSArray alloc] initWithObjects:[NSString class], nil];
+  NSArray *for_classes = [NSArray arrayWithObject:[NSString class]];
   NSArray *items = [pasteboard readObjectsForClasses:for_classes options:nil];
 
   NSString *string = items && [items count] ? items[0] : nil;
@@ -84,7 +84,8 @@ char *get_clipboard_buffer(void)
 
 #else /* VERSION_MIN < 1060 */
 
-  if(![pasteboard availableTypeFromArray:@[NSStringPboardType]])
+  NSArray *types = [NSArray arrayWithObject:NSStringPboardType];
+  if(![pasteboard availableTypeFromArray:types])
     return NULL;
 
   NSString *string = [pasteboard stringForType:NSStringPboardType];
@@ -93,7 +94,8 @@ char *get_clipboard_buffer(void)
 
 #endif /* VERSION_MIN < 1060 */
 
-  NSData *chrdata = [string dataUsingEncoding:NSMacOSRomanStringEncoding allowLossyConversion:true];
+  NSData *chrdata = [string dataUsingEncoding:NSMacOSRomanStringEncoding
+   allowLossyConversion:true];
   if(!chrdata)
     return NULL;
 
