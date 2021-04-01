@@ -30,11 +30,20 @@
  * handler, this handler treats the input text as being encoded in Mac OS Roman
  * (unlike ISO Latin-1, Windows 1292, etc, all 256 codepoints of Mac OS Roman
  * will be encoded as valid UTF-8 symbols).
+ *
+ * Notes:
+ * - Literal arrays require LLVM 3.1, so explicitly allocate NSArrays.
+ * - @autoreleasepool requires LLVM 3.0, so use NSAutoreleasePool directly.
  */
 
+/**
+ * Send an array of extended ASCII lines to the system clipboard via Cocoa.
+ * These lines will be re-encoded to UTF-8 using Mac OS Roman codepoints.
+ */
 void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
-{ @autoreleasepool
 {
+  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+
   char *buf = cmalloc(total_length + 1);
   char *pos = buf;
   for(int i = 0; i < lines; i++)
@@ -66,11 +75,17 @@ void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
   [pasteboard setString:string forType:NSStringPboardType];
 
 #endif /* VERSION_MIN < 1060 */
-}}
 
+  [pool release];
+}
+
+/**
+ * Fetch an extended ASCII buffer from the system clipboard via Cocoa.
+ * These lines will be re-encoded from UTF-8 using Mac OS Roman codepoints.
+ */
 char *get_clipboard_buffer(void)
-{ @autoreleasepool
 {
+  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
 
 #if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1060
@@ -80,29 +95,34 @@ char *get_clipboard_buffer(void)
 
   NSString *string = items && [items count] ? items[0] : nil;
   if(!string)
-    return NULL;
+    goto err;
 
 #else /* VERSION_MIN < 1060 */
 
   NSArray *types = [NSArray arrayWithObject:NSStringPboardType];
   if(![pasteboard availableTypeFromArray:types])
-    return NULL;
+    goto err;
 
   NSString *string = [pasteboard stringForType:NSStringPboardType];
   if(!string)
-    return NULL;
+    goto err;
 
 #endif /* VERSION_MIN < 1060 */
 
   NSData *chrdata = [string dataUsingEncoding:NSMacOSRomanStringEncoding
    allowLossyConversion:true];
   if(!chrdata)
-    return NULL;
+    goto err;
 
   size_t buf_len = [chrdata length];
   char *buf = cmalloc(buf_len + 1);
 
   [chrdata getBytes:buf length:buf_len];
   buf[buf_len] = '\0';
+  [pool release];
   return buf;
-}}
+
+err:
+  [pool release];
+  return NULL;
+}
