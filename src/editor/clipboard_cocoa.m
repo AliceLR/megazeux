@@ -58,8 +58,8 @@ void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
   /* Convert to NSString. NOTE: this function requires 10.3+, haven't
    * looked for a compelling way to do this for 10.0.
    */
-  NSString *string = [[NSString alloc] initWithBytes:buf length:total_length
-   encoding:NSMacOSRomanStringEncoding];
+  NSString *string = [[[NSString alloc] initWithBytes:buf length:total_length
+   encoding:NSMacOSRomanStringEncoding] autorelease];
   free(buf);
 
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
