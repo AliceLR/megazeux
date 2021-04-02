@@ -93,7 +93,7 @@ char *get_clipboard_buffer(void)
   NSArray *for_classes = [NSArray arrayWithObject:[NSString class]];
   NSArray *items = [pasteboard readObjectsForClasses:for_classes options:nil];
 
-  NSString *string = items && [items count] ? items[0] : nil;
+  NSString *string = items && [items count] ? [items objectAtIndex:0] : nil;
   if(!string)
     goto err;
 
