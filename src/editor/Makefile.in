@@ -49,15 +49,20 @@ editor_objs := \
 ifeq (${PLATFORM},mingw)
 editor_objs += ${editor_obj}/clipboard_win32.o
 
+# Mac OS X clipboard handler via Cocoa
+else ifeq (${PLATFORM},darwin)
+editor_ldflags += -framework Cocoa
+#editor_objs += ${editor_obj}/clipboard_carbon.o
+editor_objs += ${editor_obj}/clipboard_cocoa.o
+
+${editor_obj}/%.o: ${editor_src}/%.m
+	$(if ${V},,@echo "  OBJC    " $<)
+	${CC} -MD ${core_cflags} ${editor_flags} ${editor_spec} -c $< -o $@
+
 # Use the SDL2 clipboard handler
 else ifeq (${BUILD_LIBSDL2},1)
 editor_ldflags += ${SDL_LDFLAGS}
 editor_objs += ${editor_obj}/clipboard_sdl2.o
-
-# Mac OS X clipboard handler via Carbon
-else ifeq (${PLATFORM},darwin)
-editor_ldflags += -framework Cocoa
-editor_objs += ${editor_obj}/clipboard_carbon.o
 
 # X11 clipboard handler (requires SDL 1.2)
 else ifneq (${X11DIR},)
