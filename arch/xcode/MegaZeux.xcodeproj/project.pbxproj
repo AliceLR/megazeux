@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		482C0E8F2617D38E002D9030 /* vio.h in Headers */ = {isa = PBXBuildFile; fileRef = 482C0E8E2617D38E002D9030 /* vio.h */; };
 		482C0E912617D49D002D9030 /* clipboard_cocoa.m in Sources */ = {isa = PBXBuildFile; fileRef = 482C0E902617D49C002D9030 /* clipboard_cocoa.m */; };
+		4836B2DB261860D300F802DD /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4836B2DA261860D300F802DD /* AppKit.framework */; };
+		4836B2E0261860FE00F802DD /* ansi.c in Sources */ = {isa = PBXBuildFile; fileRef = 4836B2DE261860FE00F802DD /* ansi.c */; };
+		4836B2E1261860FE00F802DD /* ansi.h in Headers */ = {isa = PBXBuildFile; fileRef = 4836B2DF261860FE00F802DD /* ansi.h */; };
 		BF10127F1FCCA7C2008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */; };
 		BF1012A61FCCA993008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF1012A51FCCA993008EEDB6 /* Assets.xcassets */; };
 		BF1012BA1FCCABB5008EEDB6 /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; };
@@ -373,6 +376,9 @@
 /* Begin PBXFileReference section */
 		482C0E8E2617D38E002D9030 /* vio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vio.h; path = ../../src/io/vio.h; sourceTree = "<group>"; };
 		482C0E902617D49C002D9030 /* clipboard_cocoa.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = clipboard_cocoa.m; path = ../../src/editor/clipboard_cocoa.m; sourceTree = "<group>"; };
+		4836B2DA261860D300F802DD /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		4836B2DE261860FE00F802DD /* ansi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ansi.c; path = ../../src/editor/ansi.c; sourceTree = "<group>"; };
+		4836B2DF261860FE00F802DD /* ansi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ansi.h; path = ../../src/editor/ansi.h; sourceTree = "<group>"; };
 		BF1012781FCCA7C2008EEDB6 /* MegaZeux.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MegaZeux.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BF1012831FCCA7C2008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -698,6 +704,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4836B2DB261860D300F802DD /* AppKit.framework in Frameworks */,
 				BFFF18A81FCE146E00BDEC58 /* SDL2.framework in Frameworks */,
 				BFFF188A1FCDD2DC00BDEC58 /* libCore.dylib in Frameworks */,
 			);
@@ -776,6 +783,7 @@
 		BF1012B11FCCAB0D008EEDB6 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				4836B2DA261860D300F802DD /* AppKit.framework */,
 				BF1012C61FCCB0F9008EEDB6 /* libz.tbd */,
 			);
 			name = Frameworks;
@@ -1047,6 +1055,8 @@
 		BFFF181C1FCDCEE800BDEC58 /* Editor */ = {
 			isa = PBXGroup;
 			children = (
+				4836B2DE261860FE00F802DD /* ansi.c */,
+				4836B2DF261860FE00F802DD /* ansi.h */,
 				BFFF182E1FCDCF6400BDEC58 /* block.c */,
 				BFFF18461FCDCF6800BDEC58 /* block.h */,
 				BFFF183F1FCDCF6600BDEC58 /* board.c */,
@@ -1223,6 +1233,7 @@
 				BFD5B05B2465B0C400BC91E9 /* stringsearch.h in Headers */,
 				BFFF187B1FCDCF7C00BDEC58 /* robot.h in Headers */,
 				BFFF18671FCDCF7C00BDEC58 /* debug.h in Headers */,
+				4836B2E1261860FE00F802DD /* ansi.h in Headers */,
 				BFFF186B1FCDCF7C00BDEC58 /* edit.h in Headers */,
 				BFFF187D1FCDCF7C00BDEC58 /* select.h in Headers */,
 				BFFF18611FCDCF7C00BDEC58 /* char_ed.h in Headers */,
@@ -1554,6 +1565,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4836B2E0261860FE00F802DD /* ansi.c in Sources */,
 				BFFF18801FCDCF7C00BDEC58 /* undo.c in Sources */,
 				BFFF18741FCDCF7C00BDEC58 /* param.c in Sources */,
 				BFFF186E1FCDCF7C00BDEC58 /* graphics.c in Sources */,
@@ -1727,6 +1739,8 @@
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
 				);
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
 				HEADER_SEARCH_PATHS = (
 					SDL2.framework/Headers,
 					../../contrib/libxmp/include,
@@ -1735,6 +1749,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = net.digitalmzx.MegaZeux;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USE_HEADERMAP = NO;
 			};
 			name = Debug;
 		};
@@ -1750,6 +1765,8 @@
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
 				);
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
 				HEADER_SEARCH_PATHS = (
 					SDL2.framework/Headers,
 					../../contrib/libxmp/include,
@@ -1758,6 +1775,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = net.digitalmzx.MegaZeux;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USE_HEADERMAP = NO;
 			};
 			name = Release;
 		};
@@ -1774,6 +1792,8 @@
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
 				);
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					NEED_PNG_WRITE_SCREEN,
 					"DEBUG=1",
@@ -1790,6 +1810,8 @@
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "../../contrib/libxmp/src ../../contrib/libxmp/src/loaders";
+				USE_HEADERMAP = NO;
 			};
 			name = Debug;
 		};
@@ -1806,6 +1828,8 @@
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
 				);
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					NEED_PNG_WRITE_SCREEN,
 					LIBXMP_NO_DEPACKERS,
@@ -1821,6 +1845,8 @@
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "../../contrib/libxmp/src ../../contrib/libxmp/src/loaders";
+				USE_HEADERMAP = NO;
 			};
 			name = Release;
 		};
@@ -1836,11 +1862,14 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USE_HEADERMAP = NO;
 			};
 			name = Debug;
 		};
@@ -1856,11 +1885,14 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = "";
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USE_HEADERMAP = NO;
 			};
 			name = Release;
 		};
@@ -1875,11 +1907,14 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = MZXRun/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = net.digitalmzx.MZXRun;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USE_HEADERMAP = NO;
 			};
 			name = Debug;
 		};
@@ -1894,11 +1929,14 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				GCC_ENABLE_CPP_EXCEPTIONS = NO;
+				GCC_ENABLE_CPP_RTTI = NO;
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = MZXRun/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = net.digitalmzx.MZXRun;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USE_HEADERMAP = NO;
 			};
 			name = Release;
 		};
