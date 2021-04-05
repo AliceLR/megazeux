@@ -25,6 +25,8 @@ USERS
   positions, these can be configured with the config file option
   "vlayer_position#", and they work identically to board saved
   positions.
++ Fixed a crash bug when attempting to save MZMs over 4MB to an
+  existing string.
 + Fixed a bug where, if a world's title screen music is set but
   fails to load when the world is loaded, the music from another
   world could continue to play.

@@ -1299,17 +1299,23 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
 /**
  * Creates a new string and adds it to the strings list if it doesn't already
  * exist; otherwise, resizes the string to exactly the provided length. Returns
- * NULL if the new string could not be added to the string list.
+ * NULL if the new string could not be added to the string list or if the
+ * requested size is too large.
  */
 struct string *new_string(struct world *mzx_world, const char *name,
  size_t length, int id)
 {
   struct string_list *string_list = &(mzx_world->string_list);
+  size_t actual_length = length;
   struct string *str;
   int next = 0;
 
   str = find_string(string_list, name, &next);
-  if(!force_string_length(string_list, name, next, &str, &length))
+  if(!force_string_length(string_list, name, next, &str, &actual_length))
+    return NULL;
+
+  /* Make sure the string size wasn't bounded... */
+  if(length > actual_length)
     return NULL;
 
   str->length = length;
