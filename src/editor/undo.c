@@ -1509,23 +1509,20 @@ static void apply_robot_editor_undo(struct undo_frame *f)
     switch(tl->type)
     {
       case TX_OLD_LINE:
-        // FIXME
-        //robo_ed_goto_line(rstate, tl->line, 0);
-        //robo_ed_add_line(rstate, tl->value, -1);
+        robo_ed_goto_line(rstate, tl->line, 0);
+        robo_ed_add_line(rstate, tl->value, -1);
         break;
 
       case TX_NEW_LINE:
       case TX_SAME_LINE:
-        // FIXME
-        //robo_ed_goto_line(rstate, tl->line, 0);
-        //robo_ed_delete_current_line(rstate, -1);
+        robo_ed_goto_line(rstate, tl->line, 0);
+        robo_ed_delete_current_line(rstate, -1);
         break;
     }
   }
 
   // Jump to the start line/column of the frame.
-  // FIXME
-  //robo_ed_goto_line(rstate, current->prev_line, current->prev_col);
+  robo_ed_goto_line(rstate, current->prev_line, current->prev_col);
 }
 
 static void apply_robot_editor_redo(struct undo_frame *f)
@@ -1542,23 +1539,20 @@ static void apply_robot_editor_redo(struct undo_frame *f)
     switch(tl->type)
     {
       case TX_OLD_LINE:
-        // FIXME
-        //robo_ed_goto_line(rstate, tl->line, 0);
-        //robo_ed_delete_current_line(rstate, 1);
+        robo_ed_goto_line(rstate, tl->line, 0);
+        robo_ed_delete_current_line(rstate, -1);
         break;
 
       case TX_NEW_LINE:
       case TX_SAME_LINE:
-        // FIXME
-        //robo_ed_goto_line(rstate, tl->line, 0);
-        //robo_ed_add_line(rstate, tl->value, -1);
+        robo_ed_goto_line(rstate, tl->line, 0);
+        robo_ed_add_line(rstate, tl->value, -1);
         break;
     }
   }
 
   // Jump to the end line/column of the frame.
-  // FIXME
-  //robo_ed_goto_line(rstate, current->current_line, current->current_col);
+  robo_ed_goto_line(rstate, current->current_line, current->current_col);
 }
 
 static void apply_robot_editor_update(struct undo_frame *f)

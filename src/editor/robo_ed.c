@@ -55,6 +55,7 @@
 #include "macro_struct.h"
 #include "robo_ed.h"
 #include "stringsearch.h"
+#include "undo.h"
 #include "window.h"
 
 #define combine_colors(a, b)  \
@@ -4209,6 +4210,7 @@ static void robot_editor_destroy(context *ctx)
 #endif
 
   delete_robot_lines(rstate->cur_robot, rstate);
+  destruct_undo_history(rstate->h);
 
   restore_screen();
   cursor_off();
@@ -4249,6 +4251,8 @@ void robot_editor(context *parent, struct robot *cur_robot)
   init_robot_lines(rstate, cur_robot);
   strcpy(rstate->command_buffer, rstate->current_rline->line_text);
 
+  rstate->h = construct_robot_editor_undo_history(editor_conf->undo_history_size);
+
   memset(&spec, 0, sizeof(struct context_spec));
   spec.draw           = robot_editor_draw;
   spec.idle           = robot_editor_idle;
@@ -4270,4 +4274,23 @@ void init_macros(void)
 {
   struct editor_config_info *editor_conf = get_editor_config();
   memcpy(macros, editor_conf->default_macros, 5 * 64);
+}
+
+/**
+ * Exposed internal functions for undo implementation.
+ */
+
+void robo_ed_goto_line(struct robot_editor_context *rstate, int line, int column)
+{
+  goto_line(rstate, line, column);
+}
+
+void robo_ed_delete_current_line(struct robot_editor_context *rstate, int move)
+{
+  delete_current_line(rstate, move);
+}
+
+void robo_ed_add_line(struct robot_editor_context *rstate, char *value, int relation)
+{
+  add_line(rstate, value, relation);
 }
