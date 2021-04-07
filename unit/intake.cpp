@@ -35,6 +35,44 @@ struct int_pairs
   int expected;
 };
 
+static const struct int_pairs pos_data[] =
+{
+  { 0, 0 },
+  { 50, 50 },
+  { 100, 100 },
+  { 1000000, 100 },
+  { -1, 0 },
+  { -12781831, 0 },
+};
+static const struct int_pairs length_data[] =
+{
+  { 0, 0 },
+  { 50, 50 },
+  { 240, 240 },
+  { 1000, 240 },
+  { 1000000, 240 },
+  { -1, 0 },
+  { -4983412, 0 },
+};
+static const char skip_template[256] =
+ "aaa bb`cc~dd!ee@ff#gg$hh%ii^jj&kk*ll(mm)"
+ "nn-oo_pp=qq+rr[ss]tt{uu}vv\\ww|xx;yy:zz'01\""
+ "23,45<67.>89/00??0";
+
+static const int skip_forward_positions[] =
+{
+   0,  3,  6,  9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39,
+  42, 45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81,
+  84, 87, 90, 94, 97, 100
+};
+
+static const int skip_backward_positions[] =
+{
+  100, 99, 95, 92, 88, 85, 82,
+   79, 76, 73, 70, 67, 64, 61, 58, 55, 52, 49, 46, 43, 40,
+   37, 34, 31, 28, 25, 22, 19, 16, 13, 10,  7,  4,  0
+};
+
 /**
  * Test internal and external functions for manipulating the position and
  * current length of the intake editor. A large portion of this is making sure
@@ -42,33 +80,16 @@ struct int_pairs
  */
 UNITTEST(PosLength)
 {
-  static const struct int_pairs pos_data[] =
-  {
-    { 0, 0 },
-    { 50, 50 },
-    { 100, 100 },
-    { 1000000, 100 },
-    { -1, 0 },
-    { -12781831, 0 },
-  };
-  static const struct int_pairs length_data[] =
-  {
-    { 0, 0 },
-    { 50, 50 },
-    { 240, 240 },
-    { 1000, 240 },
-    { 1000000, 240 },
-    { -1, 0 },
-    { -4983412, 0 },
-  };
-
   struct intake_subcontext intk{};
-  char dest[256] = "Test string.";
+  char dest[256];
   char buf[80];
   int ext = 0;
 
   intk.current_length = 100;
   intk.max_length = 240;
+
+  samesize(dest, skip_template);
+  memcpy(dest, skip_template, arraysize(dest));
 
   SECTION(intake_set_pos_no_external)
   {
@@ -232,32 +253,58 @@ UNITTEST(PosLength)
 UNITTEST(EventFixed)
 {
   struct intake_subcontext intk{};
-  char dest[256] = "Test string.";
-//  char buf[80];
+  subcontext *sub = reinterpret_cast<subcontext *>(&intk);
+  char dest[256];
+  char buf[80];
+  boolean result;
 
+  intk.dest = dest;
   intk.max_length = 240;
   intk.current_length = 100;
+  intk.pos = 0;
+
+  samesize(dest, skip_template);
+  memcpy(dest, skip_template, arraysize(dest));
 
   SECTION(intake_skip_back)
   {
-    UNIMPLEMENTED(); // FIXME
+    int ext = 100;
+    intk.pos = 100;
+    intk.pos_external = &ext;
+
+    for(int i : skip_backward_positions)
+    {
+      snprintf(buf, arraysize(buf), "%d", i);
+      ASSERTEQX(intk.pos, i, buf);
+      ASSERTEQX(ext, i, buf);
+      intake_skip_back(&intk);
+    }
   }
 
   SECTION(intake_skip_forward)
   {
-    UNIMPLEMENTED(); // FIXME
+    int ext = 0;
+    intk.pos_external = &ext;
+
+    for(int i : skip_forward_positions)
+    {
+      snprintf(buf, arraysize(buf), "%d", i);
+      ASSERTEQX(intk.pos, i, buf);
+      ASSERTEQX(ext, i, buf);
+      intake_skip_forward(&intk);
+    }
   }
 
   SECTION(intake_apply_event_fixed_errs)
   {
     // Should not crash with a null intake.
-    boolean r = intake_apply_event_fixed(nullptr, INTK_MOVE, 0, 0, nullptr);
-    ASSERTEQ(r, false);
+    result = intake_apply_event_fixed(nullptr, INTK_MOVE, 0, 0, nullptr);
+    ASSERTEQ(result, false);
 
     // Should not crash with a null dest.
     intk.dest = nullptr;
-    r = intake_apply_event_fixed((subcontext *)&intk, INTK_MOVE, 0, 0, nullptr);
-    ASSERTEQ(r, false);
+    result = intake_apply_event_fixed(sub, INTK_MOVE, 0, 0, nullptr);
+    ASSERTEQ(result, false);
     intk.dest = dest;
 
     // Should not crash if intk->pos is somehow invalid.
@@ -265,21 +312,29 @@ UNITTEST(EventFixed)
     for(int i : invalid_pos)
     {
       intk.pos = i;
-      r = intake_apply_event_fixed((subcontext *)&intk, INTK_MOVE, 0, 0, nullptr);
-      ASSERTEQ(r, false);
+      result = intake_apply_event_fixed(sub, INTK_MOVE, 0, 0, nullptr);
+      ASSERTEQ(result, false);
     }
   }
 
   SECTION(INTK_NO_EVENT)
   {
     // Nothing should ever actually send this event (if it does, it's a bug).
-    boolean r = intake_apply_event_fixed((subcontext *)&intk, INTK_NO_EVENT, 0, 0, nullptr);
-    ASSERTEQ(r, false);
+    result = intake_apply_event_fixed(sub, INTK_NO_EVENT, 0, 0, nullptr);
+    ASSERTEQ(result, false);
   }
 
   SECTION(INTK_MOVE)
   {
-    UNIMPLEMENTED(); // FIXME
+    // Applying this moves the cursor, that's it.
+    for(const struct int_pairs &d : pos_data)
+    {
+      snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
+      intk.pos = 25;
+      result = intake_apply_event_fixed(sub, INTK_MOVE, d.input, 0, nullptr);
+      ASSERTEQX(result, true, buf);
+      ASSERTEQX(intk.pos, d.expected, buf);
+    }
   }
 
   SECTION(INTK_MOVE_WORDS)
