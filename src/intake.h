@@ -38,10 +38,12 @@ enum intake_event_type
 {
   INTK_NO_EVENT,
   INTK_MOVE,            /* Cursor moved within the intake line. */
+  INTK_MOVE_WORDS,      /* Cursor moved a number of words within the intake line. */
   INTK_INSERT,          /* Text inserted. */
   INTK_OVERWRITE,       /* Text overwritten. */
   INTK_DELETE,          /* Text deleted with Delete. */
   INTK_BACKSPACE,       /* Text deleted with Backspace. */
+  INTK_BACKSPACE_WORDS, /* Text deleted with Ctrl+Backspace (value=#words). */
   INTK_CLEAR,           /* Text deleted with Alt+Backspace. */
   INTK_INSERT_BLOCK,    /* Text block inserted via intake_input_string. */
   INTK_OVERWRITE_BLOCK, /* Text block overwritten via intake_input_string. */
@@ -59,8 +61,11 @@ CORE_LIBSPEC void intake_set_screen_pos(subcontext *intk, int x, int y);
 CORE_LIBSPEC const char *intake_input_string(subcontext *intk, const char *src,
  char linebreak_char);
 CORE_LIBSPEC void intake_event_callback(subcontext *intk, void *priv,
- void (*event_cb)(void *priv, enum intake_event_type type,
+ boolean (*event_cb)(void *priv, enum intake_event_type type,
  int old_pos, int new_pos, int value, const char *data));
+
+CORE_LIBSPEC boolean intake_apply_event_fixed(subcontext *sub,
+ enum intake_event_type type, int new_pos, int value, const char *data);
 
 __M_END_DECLS
 
