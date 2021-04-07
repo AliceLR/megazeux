@@ -1216,13 +1216,13 @@ static void update_text_undo_line(struct text_undo_line_list *list,
 static void handle_text_undo_line(struct text_undo_line_list *list,
  enum text_undo_line_type type, int line, int pos, char *value, size_t length)
 {
-  // If the previous line is TX_SAME_LINE, this line is TX_SAME_LINE, and they
-  // both have the same line number, merge this into the previous line instead
-  // of adding a new line.
-  if(list->count > 0 && type == TX_SAME_LINE)
+  // If the previous line is TX_SAME_LINE/TX_SAME_BUFFER, this line is the
+  // same, and they both have the same line number, merge this into the
+  // previous line instead of adding a new line.
+  if(list->count > 0 && (type == TX_SAME_LINE || type == TX_SAME_BUFFER))
   {
     struct text_undo_line *tl = &(list->lines[list->count - 1]);
-    if(tl->type == TX_SAME_LINE && tl->line == line)
+    if(tl->type == type && tl->line == line)
     {
       update_text_undo_line(list, value, length);
       return;
@@ -1360,6 +1360,11 @@ static void apply_text_editor_undo(struct undo_frame *f)
         at = safe_adjacent(t, &current_line);
         text_delete_line(td, t);
         break;
+
+      case TX_INVALID_LINE_TYPE:
+      case TX_OLD_BUFFER:
+      case TX_SAME_BUFFER:
+        break;
     }
   }
 
@@ -1399,6 +1404,11 @@ static void apply_text_editor_redo(struct undo_frame *f)
         t = text_insert_line(td, at, tl->length, 1);
         if(t)
           memcpy(t->data, tl->value, tl->length);
+        break;
+
+      case TX_INVALID_LINE_TYPE:
+      case TX_OLD_BUFFER:
+      case TX_SAME_BUFFER:
         break;
     }
   }
@@ -1493,13 +1503,20 @@ struct robot_editor_undo_frame
   int prev_col;
   int current_line;
   int current_col;
+  // Is this entire frame editing a single line as the active buffer?
+  boolean single_buffer;
 };
 
 static void apply_robot_editor_undo(struct undo_frame *f)
 {
   struct robot_editor_undo_frame *current = (struct robot_editor_undo_frame *)f;
   struct robot_editor_context *rstate = current->rstate;
+  boolean goto_final_line = true;
   ssize_t i;
+  int dir;
+
+  if(current->single_buffer)
+    goto_final_line = false;
 
   // Apply line operations in reverse.
   for(i = current->list.count - 1; i >= 0; i--)
@@ -1510,7 +1527,24 @@ static void apply_robot_editor_undo(struct undo_frame *f)
     {
       case TX_OLD_LINE:
         robo_ed_goto_line(rstate, tl->line, 0);
-        robo_ed_add_line(rstate, tl->value, -1);
+        dir = (tl->line > rstate->current_line) ? 1 : -1;
+        if(i == 0)
+        {
+          // Hack: undo macro lines and other things without updating them.
+          char tmp[1] = "";
+          robo_ed_add_line(rstate, tmp, dir);
+          robo_ed_goto_line(rstate, tl->line, 0);
+          snprintf(rstate->command_buffer, 241, "%s", tl->value);
+          rstate->command_buffer[240] = '\0';
+          goto_final_line = false;
+          break;
+        }
+        robo_ed_add_line(rstate, tl->value, dir);
+        if(dir > 0)
+        {
+          snprintf(rstate->command_buffer, 241, "%s", tl->value);
+          rstate->command_buffer[240] = '\0';
+        }
         break;
 
       case TX_NEW_LINE:
@@ -1518,11 +1552,30 @@ static void apply_robot_editor_undo(struct undo_frame *f)
         robo_ed_goto_line(rstate, tl->line, 0);
         robo_ed_delete_current_line(rstate, -1);
         break;
+
+      case TX_OLD_BUFFER:
+        if(rstate->current_line != tl->line)
+          robo_ed_goto_line(rstate, tl->line, 0);
+        snprintf(rstate->command_buffer, 241, "%s", tl->value);
+        rstate->command_buffer[240] = '\0';
+        break;
+
+      case TX_INVALID_LINE_TYPE:
+      case TX_SAME_BUFFER:
+        break;
     }
   }
 
-  // Jump to the start line/column of the frame.
-  robo_ed_goto_line(rstate, current->prev_line, current->prev_col);
+  if(goto_final_line)
+  {
+    // Jump to the start line/column of the frame and update this line.
+    robo_ed_goto_line(rstate, current->prev_line, current->prev_col);
+  }
+  else
+  {
+    // Just set the current column within the line.
+    rstate->current_x = current->prev_col;
+  }
 }
 
 static void apply_robot_editor_redo(struct undo_frame *f)
@@ -1548,11 +1601,30 @@ static void apply_robot_editor_redo(struct undo_frame *f)
         robo_ed_goto_line(rstate, tl->line, 0);
         robo_ed_add_line(rstate, tl->value, -1);
         break;
+
+      case TX_INVALID_LINE_TYPE:
+      case TX_OLD_BUFFER:
+        break;
+
+      case TX_SAME_BUFFER:
+        if(rstate->current_line != tl->line)
+          robo_ed_goto_line(rstate, tl->line, 0);
+        snprintf(rstate->command_buffer, 241, "%s", tl->value);
+        rstate->command_buffer[240] = '\0';
+        break;
     }
   }
 
-  // Jump to the end line/column of the frame.
-  robo_ed_goto_line(rstate, current->current_line, current->current_col);
+  if(!current->single_buffer)
+  {
+    // Jump to the end line/column of the frame and update this line.
+    robo_ed_goto_line(rstate, current->current_line, current->current_col);
+  }
+  else
+  {
+    // Just set the current column within the line.
+    rstate->current_x = current->current_col;
+  }
 }
 
 static void apply_robot_editor_update(struct undo_frame *f)
@@ -1605,6 +1677,8 @@ void add_robot_editor_undo_frame(struct undo_history *h, struct robot_editor_con
     current->prev_col = -1;
     current->current_line = -1;
     current->current_col = -1;
+
+    current->single_buffer = true;
   }
 }
 
@@ -1625,6 +1699,23 @@ void add_robot_editor_undo_line(struct undo_history *h, enum text_undo_line_type
     current->current_line = line;
     current->current_col = pos;
 
+    if((type != TX_OLD_BUFFER && type != TX_SAME_BUFFER) || line != current->prev_line)
+      current->single_buffer = false;
+
     handle_text_undo_line(list, type, line, pos, value, length);
   }
+}
+
+enum text_undo_line_type robot_editor_undo_frame_type(struct undo_history *h)
+{
+  if(h && h->current_frame)
+  {
+    struct robot_editor_undo_frame *current =
+     (struct robot_editor_undo_frame *)h->current_frame;
+    struct text_undo_line_list *list = &current->list;
+
+    if(list->count)
+      return list->lines[list->count - 1].type;
+  }
+  return TX_INVALID_LINE_TYPE;
 }

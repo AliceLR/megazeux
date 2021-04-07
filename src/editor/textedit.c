@@ -776,8 +776,8 @@ static void text_edit_start_frame(struct text_edit_context *te)
    td->current_col, td->edit_buffer, td->edit_buffer_size);
 }
 
-static void text_edit_intake_callback(void *priv, enum intake_event_type type,
- int old_pos, int new_pos, int value, const char *data)
+static boolean text_edit_intake_callback(void *priv, subcontext *sub,
+ enum intake_event_type type, int old_pos, int new_pos, int value, const char *data)
 {
   struct text_edit_context *te = (struct text_edit_context *)priv;
   struct text_document *td = &(te->td);
@@ -789,11 +789,14 @@ static void text_edit_intake_callback(void *priv, enum intake_event_type type,
   {
     case INTK_NO_EVENT:
     case INTK_MOVE:
+    case INTK_MOVE_WORDS:
+      intake_apply_event_fixed(sub, type, new_pos, value, data);
       break;
     case INTK_INSERT:
     case INTK_OVERWRITE:
     case INTK_DELETE:
     case INTK_BACKSPACE:
+    case INTK_BACKSPACE_WORDS:
     case INTK_CLEAR:
     case INTK_INSERT_BLOCK:
     case INTK_OVERWRITE_BLOCK:
@@ -804,12 +807,14 @@ static void text_edit_intake_callback(void *priv, enum intake_event_type type,
         add_text_editor_undo_line(te->u, TX_OLD_LINE, td->current_line,
          old_pos, td->current->data, td->current->size);
       }
+      intake_apply_event_fixed(sub, type, new_pos, value, data);
       add_text_editor_undo_line(te->u, TX_SAME_LINE, td->current_line,
        new_pos, td->edit_buffer, td->edit_buffer_size);
 
       te->idle_timer = TEXT_IDLE_TIMER_MAX;
       break;
   }
+  return true;
 }
 
 static void text_edit_reset_intake(struct text_edit_context *te)
@@ -823,8 +828,7 @@ static void text_edit_reset_intake(struct text_edit_context *te)
 
   te->intk =
    intake2((context *)te, td->edit_buffer, td->edit_buffer_alloc,
-   te->edit_x, te->edit_y + te->intk_row, te->edit_w,
-   te->text_highlight, &(td->current_col), &(td->edit_buffer_size));
+   &(td->current_col), &(td->edit_buffer_size));
 
   intake_event_callback(te->intk, te, text_edit_intake_callback);
 }
@@ -885,6 +889,11 @@ static boolean text_edit_draw(context *ctx)
 
   if(!td->current)
     return true;
+
+  // Current line.
+  t = td->current;
+  for(i = 0; i < t->size && i < te->edit_w; i++)
+    draw_char(t->data[i], active_col, te->edit_x + i, te->edit_y + te->intk_row);
 
   // Lines above.
   t = td->current->prev;

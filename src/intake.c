@@ -873,7 +873,6 @@ static boolean intake_key(subcontext *sub, int *key)
   boolean any_mod = (alt_status || ctrl_status || shift_status);
   boolean place = false;
   Uint32 num_placed = 0;
-  int old_pos = intk->pos;
 
   // Exit-- let the parent context handle.
   if(get_exit_status())
@@ -1013,7 +1012,7 @@ static boolean intake_key(subcontext *sub, int *key)
         if(new_char >= 32)
         {
           last_char = new_char;
-          intake_place_char(intk, new_char, true);
+          intake_place_char(intk, new_char);
         }
         return true;
       }
@@ -1037,7 +1036,7 @@ static boolean intake_key(subcontext *sub, int *key)
     char cur_char = get_key(keycode_text_ascii);
     if(cur_char)
     {
-      intake_place_char(intk, cur_char, true);
+      intake_place_char(intk, cur_char);
       num_placed++;
     }
     else
