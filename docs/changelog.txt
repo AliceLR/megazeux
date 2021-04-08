@@ -84,6 +84,11 @@ DEVELOPERS
 + Board input strings, charset paths, and palette paths are now
   heap allocated on-demand to save RAM for low-memory systems.
 + Refactored the 3DS renderer to use templates. (asie)
++ intake2() now supports custom handling of intake events, i.e.
+  it can now be used without providing a fixed size buffer.
++ The draw and click handlers have been removed from intake2().
+  This should provide more flexibility to the parent context for
+  displaying the string that is being edited.
 
 
 November 22nd, 2020 - MZX 2.92f

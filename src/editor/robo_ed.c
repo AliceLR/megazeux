@@ -3218,10 +3218,16 @@ static boolean robot_editor_draw(context *ctx)
 
   struct editor_config_info *editor_conf = get_editor_config();
   int intk_color = combine_colors(editor_conf->color_codes[0], bg_color);
+  boolean use_mask = get_config()->mask_midchars;
 
   struct robot_line *draw_rline;
   int first_line_draw_position;
   int first_line_count_back;
+  int middle_line_len;
+  int start_offset = 0;
+  int temp_char = 0;
+  int temp_pos = 0;
+  int cursor_x;
   int i;
 
   fill_line(80, 0, 0, top_char, top_color);
@@ -3394,11 +3400,55 @@ static boolean robot_editor_draw(context *ctx)
   else
     draw_char('\xaf', intk_color, 79, rstate->scr_line_middle);
 
-  // Update the intake position and color so it draws correctly.
-  intake_set_screen_pos(rstate->intk, 2, rstate->scr_line_middle);
-  intake_set_color(rstate->intk, intk_color);
+  // Current line.
+  middle_line_len = rstate->current_line_len;
+  cursor_x = rstate->current_x;
+  if(rstate->current_x >= 76)
+  {
+    if(rstate->command_buffer[rstate->current_x])
+    {
+      temp_pos = rstate->current_x + 1;
+      temp_char = rstate->command_buffer[temp_pos];
+      rstate->command_buffer[temp_pos] = 0;
+    }
+    start_offset = rstate->current_x - 76 + 1;
+    middle_line_len = strlen(rstate->command_buffer + start_offset);
+    cursor_x = 75;
+  }
+  else
 
+  if(middle_line_len > 76)
+  {
+    temp_pos = 76;
+    temp_char = rstate->command_buffer[temp_pos];
+    rstate->command_buffer[temp_pos] = 0;
+    middle_line_len = 76;
+  }
+
+  if(intake_get_insert())
+    cursor_underline(cursor_x + 2, rstate->scr_line_middle);
+  else
+    cursor_solid(cursor_x + 2, rstate->scr_line_middle);
+
+  if(use_mask)
+  {
+    write_string_mask(rstate->command_buffer + start_offset,
+     2, rstate->scr_line_middle, intk_color, false);
+  }
+  else
+  {
+    write_string_ext(rstate->command_buffer + start_offset,
+     2, rstate->scr_line_middle, intk_color, false, 0, 16);
+  }
+
+  // Fill non-text portions of the middle line.
+  fill_line(76 + 1 - middle_line_len,
+   2 + middle_line_len, rstate->scr_line_middle, 32, intk_color);
   draw_char(bg_char, intk_color, 1, rstate->scr_line_middle);
+
+  if(temp_pos)
+    rstate->command_buffer[temp_pos] = temp_char;
+
   return true;
 }
 
@@ -3417,7 +3467,7 @@ static boolean robot_editor_idle(context *ctx)
 #endif
 
   // Disable the cursor so it doesn't display over other interfaces.
-  // Intake will enable it again if needed.
+  // The draw function will enable it again if needed.
   cursor_off();
 
   rstate->macro_repeat_level = 0;
@@ -3432,13 +3482,14 @@ static boolean robot_editor_mouse(context *ctx, int *key, int button,
 
   if(button && (button <= MOUSE_BUTTON_RIGHT))
   {
-    // NOTE: let intake handle clicks on scr_line_middle.
     if((y >= rstate->scr_line_start) && (y <= rstate->scr_line_end) &&
-     (y != rstate->scr_line_middle) && (x >= 2) && (x <= 78))
+     (x >= 2) && (x <= 78))
     {
       move_and_update(rstate, y - rstate->scr_line_middle);
       rstate->current_x = x - 2;
-      warp_mouse(x, rstate->scr_line_middle);
+
+      if(y != rstate->scr_line_middle)
+        warp_mouse(x, rstate->scr_line_middle);
       return true;
     }
   }
@@ -4160,6 +4211,7 @@ static void robot_editor_destroy(context *ctx)
   delete_robot_lines(rstate->cur_robot, rstate);
 
   restore_screen();
+  cursor_off();
 }
 
 void robot_editor(context *parent, struct robot *cur_robot)
@@ -4208,7 +4260,7 @@ void robot_editor(context *parent, struct robot *cur_robot)
 
   rstate->intk =
    intake2((context *)rstate, rstate->command_buffer, MAX_COMMAND_LEN,
-   2, 12, 76, line_color, &(rstate->current_x), &(rstate->current_line_len));
+   &(rstate->current_x), &(rstate->current_line_len));
 
   caption_set_robot(parent->world, cur_robot);
   save_screen();
