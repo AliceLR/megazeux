@@ -56,11 +56,9 @@ CORE_LIBSPEC int intake(struct world *mzx_world, char *string, int max_len,
  int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos);
 
 CORE_LIBSPEC subcontext *intake2(context *parent, char *dest, int max_length,
- int x, int y, int width, int color, int *pos_external, int *length_external);
+ int *pos_external, int *length_external);
 
 CORE_LIBSPEC void intake_sync(subcontext *intk);
-CORE_LIBSPEC void intake_set_color(subcontext *intk, int color);
-CORE_LIBSPEC void intake_set_screen_pos(subcontext *intk, int x, int y);
 CORE_LIBSPEC const char *intake_input_string(subcontext *intk, const char *src,
  int linebreak_char);
 CORE_LIBSPEC void intake_event_callback(subcontext *intk, void *priv,

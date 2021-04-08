@@ -25,8 +25,7 @@
 #include "Unit.hpp"
 #include "../src/intake.c"
 
-// TODO shut up the linker as these aren't CORE_LIBSPEC currently.
-void cursor_underline(Uint32 x, Uint32 y) {}
+// TODO shut up the linker as this isn't CORE_LIBSPEC currently.
 boolean has_unicode_input() { return false; }
 
 struct int_pair

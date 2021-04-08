@@ -830,93 +830,11 @@ static boolean intake_place_char(struct intake_subcontext *intk, char chr)
 }
 
 /**
- * Draw the input string and cursor.
- */
-static boolean intake_draw(subcontext *sub)
-{
-  struct intake_subcontext *intk = (struct intake_subcontext *)sub;
-  int use_mask = get_config()->mask_midchars;
-  char temp_char = 0;
-  int temp_pos = 0;
-  int start_offset = 0;
-  int display_length;
-  int cursor_pos;
-
-  intake_sync(sub);
-  display_length = intk->current_length;
-  cursor_pos = intk->pos;
-
-  if(intk->pos >= intk->width)
-  {
-    if(intk->dest[intk->pos])
-    {
-      temp_pos = intk->pos + 1;
-      temp_char = intk->dest[temp_pos];
-      intk->dest[temp_pos] = 0;
-    }
-
-    start_offset = intk->pos - intk->width + 1;
-    display_length = strlen(intk->dest + start_offset);
-    cursor_pos = intk->width - 1;
-  }
-  else
-
-  if(display_length > intk->width)
-  {
-    temp_pos = intk->width;
-    temp_char = intk->dest[temp_pos];
-    intk->dest[temp_pos] = 0;
-    display_length = intk->width;
-  }
-
-  if(insert_on)
-    cursor_underline(intk->x + cursor_pos, intk->y);
-  else
-    cursor_solid(intk->x + cursor_pos, intk->y);
-
-  if(use_mask)
-    write_string_mask(intk->dest + start_offset,
-     intk->x, intk->y, intk->color, false);
-  else
-    write_string_ext(intk->dest + start_offset,
-     intk->x, intk->y, intk->color, false, 0, 16);
-
-  fill_line(intk->width + 1 - display_length,
-   intk->x + display_length, intk->y, 32, intk->color);
-
-  if(temp_pos)
-    intk->dest[temp_pos] = temp_char;
-
-  return true;
-}
-
-/**
  * Make sure the intake values are synchronized before doing anything.
  */
 static boolean intake_idle(subcontext *sub)
 {
   intake_sync(sub);
-  return false;
-}
-
-/**
- * Move the cursor if the user clicks inside of the intake area.
- */
-static boolean intake_click(subcontext *sub, int *key, int button, int x, int y)
-{
-  struct intake_subcontext *intk = (struct intake_subcontext *)sub;
-
-  if(button)
-  {
-    if((y == intk->y) && (x >= intk->x) &&
-     (x <= intk->x + intk->width) && (button <= MOUSE_BUTTON_RIGHT))
-    {
-      int old_pos = intk->pos;
-      intake_set_pos(intk, x - intk->x);
-      intake_event(intk, INTK_MOVE, old_pos, intk->pos);
-      return true;
-    }
-  }
   return false;
 }
 
@@ -1133,21 +1051,17 @@ static boolean intake_key(subcontext *sub, int *key)
 }
 
 /**
- * Disable the cursor so it doesn't persist after closing intake.
- */
-static void intake_destroy(subcontext *sub)
-{
-  cursor_off();
-}
-
-/**
  * Create a text entry subcontext on top of the current context. Will pass all
  * inputs it can't/won't handle through to its parent. An optional external
  * cursor position pointer can be provided to allow intake to return the cursor
  * position and receive outside updates to the cursor position.
+ *
+ * Unlike the original intake(), this intake implementation takes no screen
+ * positioning information, doesn't draw the string being edited, and doesn't
+ * handle mouse clicks. Doing these is the responsibility of the parent context.
  */
 subcontext *intake2(context *parent, char *dest, int max_length,
- int x, int y, int width, int color, int *pos_external, int *length_external)
+ int *pos_external, int *length_external)
 {
   struct intake_subcontext *intk =
    (struct intake_subcontext *)ccalloc(1, sizeof(struct intake_subcontext));
@@ -1157,18 +1071,11 @@ subcontext *intake2(context *parent, char *dest, int max_length,
   intk->max_length = max_length;
   intk->pos_external = pos_external;
   intk->length_external = length_external;
-  intk->x = x;
-  intk->y = y;
-  intk->width = width;
-  intk->color = color;
 
   memset(&spec, 0, sizeof(struct context_spec));
-  spec.draw     = intake_draw;
   spec.idle     = intake_idle;
-  spec.click    = intake_click;
   spec.key      = intake_key;
   spec.joystick = intake_joystick;
-  spec.destroy  = intake_destroy;
 
   intake_sync((subcontext *)intk);
   if(!pos_external)
@@ -1176,25 +1083,6 @@ subcontext *intake2(context *parent, char *dest, int max_length,
 
   create_subcontext((subcontext *)intk, parent, &spec);
   return (subcontext *)intk;
-}
-
-/**
- * Change the draw color of intake.
- */
-void intake_set_color(subcontext *sub, int color)
-{
-  struct intake_subcontext *intk = (struct intake_subcontext *)sub;
-  intk->color = color;
-}
-
-/**
- * Change the draw position of intake.
- */
-void intake_set_screen_pos(subcontext *sub, int x, int y)
-{
-  struct intake_subcontext *intk = (struct intake_subcontext *)sub;
-  intk->x = x;
-  intk->y = y;
 }
 
 /**
