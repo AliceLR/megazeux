@@ -49,6 +49,9 @@ enum intake_event_type
   INTK_OVERWRITE_BLOCK, /* Text block overwritten via intake_input_string. */
 };
 
+CORE_LIBSPEC boolean intake_get_insert(void);
+CORE_LIBSPEC void intake_set_insert(boolean new_insert_state);
+
 CORE_LIBSPEC int intake(struct world *mzx_world, char *string, int max_len,
  int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos);
 
@@ -59,9 +62,9 @@ CORE_LIBSPEC void intake_sync(subcontext *intk);
 CORE_LIBSPEC void intake_set_color(subcontext *intk, int color);
 CORE_LIBSPEC void intake_set_screen_pos(subcontext *intk, int x, int y);
 CORE_LIBSPEC const char *intake_input_string(subcontext *intk, const char *src,
- char linebreak_char);
+ int linebreak_char);
 CORE_LIBSPEC void intake_event_callback(subcontext *intk, void *priv,
- boolean (*event_cb)(void *priv, enum intake_event_type type,
+ boolean (*event_cb)(void *priv, subcontext *sub, enum intake_event_type type,
  int old_pos, int new_pos, int value, const char *data));
 
 CORE_LIBSPEC boolean intake_apply_event_fixed(subcontext *sub,

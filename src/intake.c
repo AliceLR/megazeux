@@ -34,6 +34,22 @@ static boolean insert_on = true;
 
 static char last_char = 0;
 
+/**
+ * Get the current intake insert state.
+ */
+boolean intake_get_insert(void)
+{
+  return insert_on;
+}
+
+/**
+ * Set the current intake insert state.
+ */
+void intake_set_insert(boolean new_insert_state)
+{
+  insert_on = new_insert_state ? true : false;
+}
+
 static inline void intake_old_place_char(char *string, int *currx,
  int *curr_len, Uint32 chr)
 {
@@ -474,7 +490,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
 struct intake_subcontext
 {
   subcontext ctx;
-  boolean (*event_cb)(void *priv, enum intake_event_type type,
+  boolean (*event_cb)(void *priv, subcontext *sub, enum intake_event_type type,
    int old_pos, int new_pos, int value, const char *data);
   void *event_priv;
   char *dest;
@@ -783,8 +799,11 @@ static void intake_event_ext(struct intake_subcontext *intk,
 {
   if(intk->event_cb)
   {
-    if(intk->event_cb(intk->event_priv, type, old_pos, new_pos, value, data))
+    if(intk->event_cb(intk->event_priv, (subcontext *)intk, type, old_pos,
+     new_pos, value, data))
+    {
       intake_set_pos(intk, new_pos);
+    }
   }
   else
     intake_apply_event_fixed((subcontext *)intk, type, new_pos, value, data);
@@ -1184,11 +1203,11 @@ void intake_set_screen_pos(subcontext *sub, int x, int y)
  * position. Otherwise, return NULL when the input string has been exhausted.
  */
 const char *intake_input_string(subcontext *sub, const char *src,
- char linebreak_char)
+ int linebreak_char)
 {
   struct intake_subcontext *intk = (struct intake_subcontext *)sub;
   const char *pos = src;
-  char cur_char;
+  int cur_char;
   int length = 0;
   enum intake_event_type type = insert_on ? INTK_INSERT_BLOCK : INTK_OVERWRITE_BLOCK;
 
@@ -1227,7 +1246,7 @@ const char *intake_input_string(subcontext *sub, const char *src,
  * which can be used to implement an undo stack.
  */
 void intake_event_callback(subcontext *sub, void *priv,
- boolean (*event_cb)(void *priv, enum intake_event_type type,
+ boolean (*event_cb)(void *priv, subcontext *sub, enum intake_event_type type,
  int old_pos, int new_pos, int value, const char *data))
 {
   struct intake_subcontext *intk = (struct intake_subcontext *)sub;

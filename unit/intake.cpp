@@ -51,6 +51,37 @@ struct event_repeat_data
   const char *expected;
 };
 
+struct event_partial_data
+{
+  enum intake_event_type type;
+  const char *base;
+  int old_pos;
+  int new_pos;
+  int value;
+};
+
+struct event_ext_data
+{
+  enum intake_event_type type;
+  const char *base;
+  int old_pos;
+  int new_pos;
+  int value;
+  const char *input;
+  const char *expected;
+};
+
+struct input_string_data
+{
+  const char *base;
+  int start_pos;
+  const char *input;
+  const char *expected;
+  ssize_t retval;
+  int linebreak_char;
+  boolean insert_on;
+};
+
 static const int_pair pos_data[] =
 {
   { 0, 0 },
@@ -89,6 +120,31 @@ static const int skip_backward_positions[] =
   100, 99, 95, 92, 88, 85, 82,
    79, 76, 73, 70, 67, 64, 61, 58, 55, 52, 49, 46, 43, 40,
    37, 34, 31, 28, 25, 22, 19, 16, 13, 10,  7,  4,  0
+};
+
+static const char non_ascii_input_data[] =
+  "sjdhfklsjdfdabc\n\r\n\t\v\bsdfjksdlkfjsdkfkd"
+  "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
+
+static const input_string_data input_data[] =
+{
+  { "put  Solid p00 0 0", 4, "c0f", "put c0f Solid p00 0 0", -1, -1, true },
+  { "put c0f Solid  0 0", 14, "p00", "put c0f Solid p00 0 0", -1, -1, true },
+  { "char edit '@'", 14, " 0 0 0 0 0 0 0 0 0 0 0 0 0 0",
+    "char edit '@' 0 0 0 0 0 0 0 0 0 0 0 0 0 0", -1, -1, true },
+  { "char edit '@'", 4, " 0 0 0 0 0 0 0 0 0 0 0 0 0 0",
+    "char 0 0 0 0 0 0 0 0 0 0 0 0 0 0", -1, -1, false },
+  { ".comment", 0, ": justentered^", ": justentered.comment", 14, '^', true },
+  { "abc\ndef\n", 8, "ghi\njkl\n", "abc\ndef\nghi", 4, '\n', true },
+  { "abc\ndef\n", 8, "ghi\njkl\n", "abc\ndef\nghi\njkl\n", -1, -1, true },
+  { "abc\ndef\n", 0, "ghi\njkl\n", "ghi\ndef\n", 4, '\n', false },
+  { "abc\ndef\n", 0, "ghi\njkl\n", "ghi\njkl\n", -1, -1, false },
+  { "", 0, non_ascii_input_data, non_ascii_input_data, -1, -1, true },
+  { "", 0, non_ascii_input_data, non_ascii_input_data, -1, -1, false },
+  { "", 0, "test\0test", "test", -1, -1, true },
+  { "", 0, "test\0test", "test", -1, -1, false },
+  { "whatever", 4, "", "whatever", -1, -1, true },
+  { "whatever", 4, "", "whatever", -1, -1, false },
 };
 
 /**
@@ -608,6 +664,9 @@ UNITTEST(EventFixed)
       ASSERTEQX(result, true, d.expected);
       ASSERTCMP(dest, d.expected);
     }
+    // Reject null data...
+    result = intake_apply_event_fixed(sub, INTK_INSERT_BLOCK, intk.pos, 0, nullptr);
+    ASSERTEQ(result, false);
   }
 
   SECTION(INTK_OVERWRITE_BLOCK)
@@ -623,7 +682,56 @@ UNITTEST(EventFixed)
       ASSERTEQX(result, true, d.expected);
       ASSERTCMP(dest, d.expected);
     }
+    // Reject null data...
+    result = intake_apply_event_fixed(sub, INTK_OVERWRITE_BLOCK, intk.pos, 0, nullptr);
+    ASSERTEQ(result, false);
   }
+
+  SECTION(intake_input_string)
+  {
+    /**
+     * Test the intake_input_string function with default intake event handling.
+     * This should mostly just invoke INTK_INSERT_BLOCK/INTK_OVERWRITE_BLOCK.
+     */
+    for(const input_string_data &d : input_data)
+    {
+      strcpy(dest, d.base);
+      intake_set_length(&intk, strlen(dest));
+      intake_set_pos(&intk, d.start_pos);
+      intake_set_insert(d.insert_on);
+
+      const char *ret = intake_input_string(sub, d.input, d.linebreak_char);
+      if(d.retval >= 0)
+      {
+        ASSERTX(ret != nullptr, d.expected);
+        ASSERTEQX((ssize_t)(ret - d.input), d.retval, d.expected);
+      }
+      else
+        ASSERTEQX(ret, nullptr, d.expected);
+
+      ASSERTCMP(dest, d.expected);
+    }
+  }
+}
+
+struct event_cb_data
+{
+  const char *expected;
+  int call_count;
+};
+
+boolean event_callback(void *priv, subcontext *sub, enum intake_event_type type,
+ int old_pos, int new_pos, int value, const char *data)
+{
+  struct intake_subcontext *intk = reinterpret_cast<struct intake_subcontext *>(sub);
+  event_cb_data *d = reinterpret_cast<event_cb_data *>(priv);
+
+  ASSERTEQX(old_pos, intk->pos, d->expected);
+  if(intk->dest)
+    ASSERTCMP(intk->dest, d->expected);
+
+  d->call_count++;
+  return true;
 }
 
 /**
@@ -633,18 +741,104 @@ UNITTEST(EventFixed)
  */
 UNITTEST(EventCallback)
 {
+#define na 0
+  static constexpr char dummy_data[] = "whatever";
+  static constexpr int dummy_data_len = arraysize(dummy_data) - 1;
+
+  static const event_partial_data data[] =
+  {
+    { INTK_NO_EVENT,        "no event",       0, 0, na },
+    { INTK_MOVE,            "move",           0, 4, na },
+    { INTK_MOVE_WORDS,      "move words",     0, 0, 2 },
+    { INTK_MOVE_WORDS,      "move words 2",   12, 12, -2 },
+    { INTK_INSERT,          "insert",         3, 4, '$' },
+    { INTK_OVERWRITE,       "overwrite",      4, 5, 'W' },
+    { INTK_DELETE,          "delete",         5, 5, 1 },
+    { INTK_BACKSPACE,       "backspace",      9, 8, 1 },
+    { INTK_BACKSPACE_WORDS, "bkspace words",  13, 13, 1 },
+    { INTK_CLEAR,           "clear string",   0, 0, na },
+    { INTK_INSERT_BLOCK,    "insertblock",    0, dummy_data_len, dummy_data_len },
+    { INTK_OVERWRITE_BLOCK, "overwriteblock", 0, dummy_data_len, dummy_data_len },
+  };
+
+  struct intake_subcontext intk{};
+  subcontext *sub = reinterpret_cast<subcontext *>(&intk);
+  char dest[256];
+  //char buf[80];
+
+  intk.dest = dest;
+  intk.max_length = 240;
+  intk.current_length = 100;
+  intk.event_cb = event_callback;
+
   SECTION(intake_event_ext_no_dest)
   {
-    UNIMPLEMENTED(); // FIXME
+    /**
+     * Call intake_event_ext for an intake with no destination buffer.
+     * Position and length modifications in such an intake will be determined
+     * solely by those properties, max_length, and external pointers.
+     */
+    intk.dest = nullptr;
+
+    for(const event_partial_data &d : data)
+    {
+      event_cb_data priv = { d.base, 0 };
+      intk.event_priv = &priv;
+      intk.pos = d.old_pos;
+      intake_event_ext(&intk, d.type, d.old_pos, d.new_pos, d.value, dummy_data);
+      ASSERTEQX(priv.call_count, 1, d.base);
+      ASSERTEQX(intk.pos, d.new_pos, d.base);
+    }
   }
 
   SECTION(intake_event_ext_dest)
   {
-    UNIMPLEMENTED(); // FIXME
+    /**
+     * Call intake_event_ext for an intake with a destination buffer.
+     * This is entirely just to make sure the destination buffer isn't modified.
+     * Note the new position check after calling intake_event_ext relies on the
+     * current length above being set beyond the actual string length (since
+     * no modification of the buffer is ever actually performed).
+     */
+    for(const event_partial_data &d : data)
+    {
+      event_cb_data priv = { d.base, 0 };
+      intk.event_priv = &priv;
+      intk.pos = d.old_pos;
+      strcpy(dest, d.base);
+      intake_event_ext(&intk, d.type, d.old_pos, d.new_pos, d.value, dummy_data);
+      ASSERTEQX(priv.call_count, 1, d.base);
+      ASSERTEQX(intk.pos, d.new_pos, d.base);
+    }
   }
 
   SECTION(intake_input_string)
   {
-    UNIMPLEMENTED(); // FIXME
+    /**
+     * Test the intake_input_string function with an event callback.
+     */
+    intk.dest = nullptr;
+
+    for(const input_string_data &d : input_data)
+    {
+      event_cb_data priv = { d.expected, 0 };
+      intk.event_priv = &priv;
+
+      intake_set_length(&intk, strlen(d.base));
+      intake_set_pos(&intk, d.start_pos);
+      intake_set_insert(d.insert_on);
+
+      const char *ret = intake_input_string(sub, d.input, d.linebreak_char);
+      if(strlen(d.input))
+        ASSERTEQX(priv.call_count, 1, d.base);
+
+      if(d.retval >= 0)
+      {
+        ASSERTX(ret != nullptr, d.expected);
+        ASSERTEQX((ssize_t)(ret - d.input), d.retval, d.expected);
+      }
+      else
+        ASSERTEQX(ret, nullptr, d.expected);
+    }
   }
 }
