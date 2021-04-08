@@ -712,9 +712,12 @@ boolean intake_apply_event_fixed(subcontext *sub, enum intake_event_type type,
           intake_skip_back(intk);
           value--;
         }
-        memmove(intk->dest + intk->pos, intk->dest + old_pos,
-         intk->current_length - old_pos + 1);
-        intake_set_length(intk, intk->current_length - (old_pos - intk->pos));
+        if(intk->pos < old_pos)
+        {
+          memmove(intk->dest + intk->pos, intk->dest + old_pos,
+           intk->current_length - old_pos + 1);
+          intake_set_length(intk, intk->current_length - (old_pos - intk->pos));
+        }
       }
       break;
     }

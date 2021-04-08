@@ -29,13 +29,29 @@
 void cursor_underline(Uint32 x, Uint32 y) {}
 boolean has_unicode_input() { return false; }
 
-struct int_pairs
+struct int_pair
 {
   int input;
   int expected;
 };
 
-static const struct int_pairs pos_data[] =
+struct event_input_data
+{
+  const char *base;
+  int start_pos;
+  const char *input;
+  const char *expected;
+};
+
+struct event_repeat_data
+{
+  const char *base;
+  int start_pos;
+  int repeat_times;
+  const char *expected;
+};
+
+static const int_pair pos_data[] =
 {
   { 0, 0 },
   { 50, 50 },
@@ -44,7 +60,8 @@ static const struct int_pairs pos_data[] =
   { -1, 0 },
   { -12781831, 0 },
 };
-static const struct int_pairs length_data[] =
+
+static const int_pair length_data[] =
 {
   { 0, 0 },
   { 50, 50 },
@@ -54,6 +71,7 @@ static const struct int_pairs length_data[] =
   { -1, 0 },
   { -4983412, 0 },
 };
+
 static const char skip_template[256] =
  "aaa bb`cc~dd!ee@ff#gg$hh%ii^jj&kk*ll(mm)"
  "nn-oo_pp=qq+rr[ss]tt{uu}vv\\ww|xx;yy:zz'01\""
@@ -93,7 +111,7 @@ UNITTEST(PosLength)
 
   SECTION(intake_set_pos_no_external)
   {
-    for(const struct int_pairs &d : pos_data)
+    for(const int_pair &d : pos_data)
     {
       snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_pos(&intk, d.input);
@@ -105,7 +123,7 @@ UNITTEST(PosLength)
   {
     intk.pos_external = &ext;
 
-    for(const struct int_pairs &d : pos_data)
+    for(const int_pair &d : pos_data)
     {
       snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_pos(&intk, d.input);
@@ -116,7 +134,7 @@ UNITTEST(PosLength)
 
   SECTION(intake_set_length_no_external)
   {
-    for(const struct int_pairs &d : length_data)
+    for(const int_pair &d : length_data)
     {
       snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_length(&intk, d.input);
@@ -128,7 +146,7 @@ UNITTEST(PosLength)
   {
     intk.length_external = &ext;
 
-    for(const struct int_pairs &d : length_data)
+    for(const int_pair &d : length_data)
     {
       snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_length(&intk, d.input);
@@ -149,7 +167,7 @@ UNITTEST(PosLength)
    */
   SECTION(intake_sync_no_data_or_external)
   {
-    for(const struct int_pairs &d : pos_data)
+    for(const int_pair &d : pos_data)
     {
       snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_pos(&intk, d.input);
@@ -157,7 +175,7 @@ UNITTEST(PosLength)
       ASSERTEQX(intk.pos, d.expected, buf);
     }
 
-    for(const struct int_pairs &d : length_data)
+    for(const int_pair &d : length_data)
     {
       snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_length(&intk, d.input);
@@ -175,7 +193,7 @@ UNITTEST(PosLength)
   {
     intk.pos_external = &ext;
 
-    for(const struct int_pairs &d : pos_data)
+    for(const int_pair &d : pos_data)
     {
       snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       ext = d.input;
@@ -196,7 +214,7 @@ UNITTEST(PosLength)
     intk.dest = dest;
     intk.pos = 97;
 
-    for(const struct int_pairs &d : length_data)
+    for(const int_pair &d : length_data)
     {
       dest_len = std::max(0, std::min(dest_len, d.input));
       snprintf(buf, arraysize(buf), "%d -> %d", d.input, dest_len);
@@ -216,7 +234,7 @@ UNITTEST(PosLength)
     intk.length_external = &ext;
     intk.dest = nullptr;
 
-    for(const struct int_pairs &d : length_data)
+    for(const int_pair &d : length_data)
     {
       snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       ext = d.input;
@@ -236,7 +254,7 @@ UNITTEST(PosLength)
     intk.length_external = &ext;
     intk.dest = dest;
 
-    for(const struct int_pairs &d : length_data)
+    for(const int_pair &d : length_data)
     {
       snprintf(buf, arraysize(buf), "%d -> %d", d.input, dest_len);
       ext = d.input;
@@ -252,6 +270,27 @@ UNITTEST(PosLength)
  */
 UNITTEST(EventFixed)
 {
+  static const event_input_data insert_data[] =
+  {
+    { "test string :)", 0,  "Inserted ",                "Inserted test string :)" },
+    { "abcdevwxyz",     5,  " put this in the middle ", "abcde put this in the middle vwxyz" },
+    { "test string :)", 15, " append this.",            "test string :) append this." },
+    { "",               0,  "blank string",             "blank string" },
+    { "whatever",       0,  "",                         "whatever" },
+    { "whatever",       4,  "",                         "whatever" },
+    { "whatever",       8,  "",                         "whatever" },
+  };
+  static const event_input_data overwrite_data[] =
+  {
+    { "test string :)", 0,  "overwritten",              "overwritten :)" },
+    { "abcdevwxyz",     5,  " put this at the end",     "abcde put this at the end" },
+    { "test string :)", 15, " append this.",            "test string :) append this." },
+    { "",               0,  "blank string",             "blank string" },
+    { "whatever",       0,  "",                         "whatever" },
+    { "whatever",       4,  "",                         "whatever" },
+    { "whatever",       8,  "",                         "whatever" },
+  };
+
   struct intake_subcontext intk{};
   subcontext *sub = reinterpret_cast<subcontext *>(&intk);
   char dest[256];
@@ -327,7 +366,7 @@ UNITTEST(EventFixed)
   SECTION(INTK_MOVE)
   {
     // Applying this moves the cursor, that's it.
-    for(const struct int_pairs &d : pos_data)
+    for(const int_pair &d : pos_data)
     {
       snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intk.pos = 25;
@@ -339,47 +378,251 @@ UNITTEST(EventFixed)
 
   SECTION(INTK_MOVE_WORDS)
   {
-    UNIMPLEMENTED(); // FIXME
+    // This just wraps the skip forward/back functions.
+    int ext = 0;
+    intk.pos_external = &ext;
+
+    for(int i : skip_forward_positions)
+    {
+      snprintf(buf, arraysize(buf), "%d (forward)", i);
+      ASSERTEQX(intk.pos, i, buf);
+      ASSERTEQX(ext, i, buf);
+      result = intake_apply_event_fixed(sub, INTK_MOVE_WORDS, intk.pos, 1, nullptr);
+      ASSERTEQX(result, true, buf);
+    }
+
+    ext = 100;
+    intk.pos = 100;
+    for(int i : skip_backward_positions)
+    {
+      snprintf(buf, arraysize(buf), "%d (backward)", i);
+      ASSERTEQX(intk.pos, i, buf);
+      ASSERTEQX(ext, i, buf);
+      result = intake_apply_event_fixed(sub, INTK_MOVE_WORDS, intk.pos, -1, nullptr);
+      ASSERTEQX(result, true, buf);
+    }
   }
 
   SECTION(INTK_INSERT)
   {
-    UNIMPLEMENTED(); // FIXME
+    // Insert text into the buffer.
+    for(const event_input_data &d : insert_data)
+    {
+      int expected_len = strlen(d.expected);
+      strcpy(dest, d.base);
+      intake_set_length(&intk, strlen(dest));
+      intake_set_pos(&intk, d.start_pos);
+
+      for(size_t i = 0, len = strlen(d.input); i < len; i++)
+      {
+        result = intake_apply_event_fixed(sub, INTK_INSERT, intk.pos + 1, d.input[i], nullptr);
+        ASSERTEQX(result, true, d.expected);
+      }
+      ASSERTCMP(dest, d.expected);
+      ASSERTEQ(intk.current_length, expected_len);
+    }
+
+    // Special: prevent inserting beyond the maximum length.
+    intk.max_length = 8;
+    intk.current_length = 7;
+    strcpy(dest, "abcdefg");
+
+    intk.pos = 7;
+    result = intake_apply_event_fixed(sub, INTK_INSERT, intk.pos + 1, 'h', nullptr);
+    ASSERTEQ(result, true);
+    result = intake_apply_event_fixed(sub, INTK_INSERT, intk.pos + 1, 'i', nullptr);
+    ASSERTEQ(result, false);
+    ASSERTEQ(intk.pos, 8);
+    intk.pos = 0;
+    result = intake_apply_event_fixed(sub, INTK_INSERT, intk.pos + 1, 'i', nullptr);
+    ASSERTEQ(result, false);
+    ASSERTEQ(intk.pos, 0);
   }
 
   SECTION(INTK_OVERWRITE)
   {
-    UNIMPLEMENTED(); // FIXME
+    // Overwrite text in the buffer. Can insert at the end of the line.
+    for(const event_input_data &d : overwrite_data)
+    {
+      int expected_len = strlen(d.expected);
+      strcpy(dest, d.base);
+      intake_set_length(&intk, strlen(dest));
+      intake_set_pos(&intk, d.start_pos);
+
+      for(size_t i = 0, len = strlen(d.input); i < len; i++)
+      {
+        result = intake_apply_event_fixed(sub, INTK_OVERWRITE, intk.pos + 1, d.input[i], nullptr);
+        ASSERTEQX(result, true, d.expected);
+      }
+      ASSERTCMP(dest, d.expected);
+      ASSERTEQ(intk.current_length, expected_len);
+    }
+
+    // Special: prevent inserting beyond the maximum length.
+    intk.max_length = 8;
+    intk.current_length = 7;
+    strcpy(dest, "abcdefg");
+
+    intk.pos = 7;
+    result = intake_apply_event_fixed(sub, INTK_OVERWRITE, intk.pos + 1, 'h', nullptr);
+    ASSERTEQ(result, true);
+    result = intake_apply_event_fixed(sub, INTK_OVERWRITE, intk.pos + 1, 'i', nullptr);
+    ASSERTEQ(result, false);
+    ASSERTEQ(intk.pos, 8);
+    // This should work, though.
+    intk.pos = 0;
+    result = intake_apply_event_fixed(sub, INTK_OVERWRITE, intk.pos + 1, 'i', nullptr);
+    ASSERTEQ(result, true);
+    ASSERTCMP(dest, "ibcdefgh");
   }
 
   SECTION(INTK_DELETE)
   {
-    UNIMPLEMENTED(); // FIXME
+    // Delete the char at the cursor.
+    static const event_repeat_data data[] =
+    {
+      { "testing string :)", 8, 7, "testing :)" },
+      { "abcdef", 0, 6, "" },
+      { "abcdef", 1, 4, "af" },
+      { "", 0, 10, "" },
+      { "some stuff", 10, 10, "some stuff" },
+    };
+
+    for(const event_repeat_data &d : data)
+    {
+      int expected_len = strlen(d.expected);
+      strcpy(dest, d.base);
+      intake_set_length(&intk, strlen(dest));
+      intake_set_pos(&intk, d.start_pos);
+
+      for(int i = 0; i < d.repeat_times; i++)
+      {
+        result = intake_apply_event_fixed(sub, INTK_DELETE, intk.pos, 0, nullptr);
+        ASSERTEQX(result, true, d.expected);
+      }
+      ASSERTCMP(dest, d.expected);
+      ASSERTEQ(intk.current_length, expected_len);
+    }
   }
 
   SECTION(INTK_BACKSPACE)
   {
-    UNIMPLEMENTED(); // FIXME
+    // Delete the char before the cursor.
+    static const event_repeat_data data[] =
+    {
+      { "testing string :)", 14, 7, "testing :)" },
+      { "abcdef", 6, 6, "" },
+      { "abcdef", 5, 4, "af" },
+      { "", 0, 10, "" },
+      { "some stuff", 0, 10, "some stuff" },
+    };
+
+    for(const event_repeat_data &d : data)
+    {
+      int expected_len = strlen(d.expected);
+      strcpy(dest, d.base);
+      intake_set_length(&intk, strlen(dest));
+      intake_set_pos(&intk, d.start_pos);
+
+      for(int i = 0; i < d.repeat_times; i++)
+      {
+        result = intake_apply_event_fixed(sub, INTK_BACKSPACE, intk.pos - 1, 0, nullptr);
+        ASSERTEQX(result, true, d.expected);
+      }
+      ASSERTCMP(dest, d.expected);
+      ASSERTEQ(intk.current_length, expected_len);
+    }
   }
 
   SECTION(INTK_BACKSPACE_WORDS)
   {
-    UNIMPLEMENTED(); // FIXME
+    // Delete an entire word before the cursor.
+    // NOTE: old intake() deletes an extra non-alphanumeric char before the
+    // word, which seems like a bug and has not been replicated here.
+    static const event_repeat_data data[] =
+    {
+      { "testing string :)", 17, 1, "testing " },
+      { "testing string :)", 17, 2, "" },
+      { "testing string :)", 15, 2, ":)" },
+      { "testing{string}", 14, 1, "testing{}" },
+      { "abc def ghi", 9, 2, "abc hi" },
+      { "abcdef", 6, 1, "" },
+      { "abcdef", 3, 1, "def" },
+      { "", 0, 2, "" },
+      { "some stuff", 0, 2, "some stuff" },
+      { "whatever", 8, 0, "whatever" },
+      { "whatever", 4, -1, "whatever" },
+    };
+
+    for(const event_repeat_data &d : data)
+    {
+      int expected_len = strlen(d.expected);
+      strcpy(dest, d.base);
+      intake_set_length(&intk, strlen(dest));
+      intake_set_pos(&intk, d.start_pos);
+
+      result = intake_apply_event_fixed(sub, INTK_BACKSPACE_WORDS, intk.pos, d.repeat_times, nullptr);
+      ASSERTEQX(result, true, d.expected);
+      ASSERTCMP(dest, d.expected);
+      ASSERTEQ(intk.current_length, expected_len);
+    }
   }
 
   SECTION(INTK_CLEAR)
   {
-    UNIMPLEMENTED(); // FIXME
+    static const event_repeat_data data[] =
+    {
+      { "testing string :)", 17, 1, nullptr },
+      { "testing string :)", 10, 1, nullptr },
+      { "testing string :)", 0, 1, nullptr },
+      { "abc def ghi", 9, 1, nullptr },
+      { "abcdef", 6, 1, nullptr },
+      { "abcdef", 3, 1, nullptr },
+      { "", 0, 1, nullptr },
+    };
+
+    for(const event_repeat_data &d : data)
+    {
+      snprintf(buf, arraysize(buf), "%s @ %d", d.base, d.start_pos);
+      strcpy(dest, d.base);
+      intake_set_length(&intk, strlen(dest));
+      intake_set_pos(&intk, d.start_pos);
+
+      result = intake_apply_event_fixed(sub, INTK_CLEAR, 0, 0, nullptr);
+      ASSERTEQX(result, true, buf);
+      ASSERTXCMP(dest, "", buf);
+      ASSERTEQX(intk.current_length, 0, buf);
+    }
   }
 
   SECTION(INTK_INSERT_BLOCK)
   {
-    UNIMPLEMENTED(); // FIXME
+    for(const event_input_data &d : insert_data)
+    {
+      strcpy(dest, d.base);
+      intake_set_length(&intk, strlen(dest));
+      intake_set_pos(&intk, d.start_pos);
+
+      int len = strlen(d.input);
+      result = intake_apply_event_fixed(sub, INTK_INSERT_BLOCK, intk.pos + len, len, d.input);
+      ASSERTEQX(result, true, d.expected);
+      ASSERTCMP(dest, d.expected);
+    }
   }
 
   SECTION(INTK_OVERWRITE_BLOCK)
   {
-    UNIMPLEMENTED(); // FIXME
+    for(const event_input_data &d : overwrite_data)
+    {
+      strcpy(dest, d.base);
+      intake_set_length(&intk, strlen(dest));
+      intake_set_pos(&intk, d.start_pos);
+
+      int len = strlen(d.input);
+      result = intake_apply_event_fixed(sub, INTK_OVERWRITE_BLOCK, intk.pos + len, len, d.input);
+      ASSERTEQX(result, true, d.expected);
+      ASSERTCMP(dest, d.expected);
+    }
   }
 }
 
@@ -396,6 +639,11 @@ UNITTEST(EventCallback)
   }
 
   SECTION(intake_event_ext_dest)
+  {
+    UNIMPLEMENTED(); // FIXME
+  }
+
+  SECTION(intake_input_string)
   {
     UNIMPLEMENTED(); // FIXME
   }
