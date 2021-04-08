@@ -4211,6 +4211,7 @@ static void robot_editor_destroy(context *ctx)
   delete_robot_lines(rstate->cur_robot, rstate);
 
   restore_screen();
+  cursor_off();
 }
 
 void robot_editor(context *parent, struct robot *cur_robot)
