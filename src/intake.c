@@ -1130,8 +1130,7 @@ const char *intake_input_string(subcontext *sub, const char *src,
 
 /**
  * Set the intake event callback function. This feature is used to report
- * individual intake events immediately to the parent context as they occur,
- * which can be used to implement an undo stack.
+ * individual intake events immediately to the parent context as they occur.
  */
 void intake_event_callback(subcontext *sub, void *priv,
  boolean (*event_cb)(void *priv, subcontext *sub, enum intake_event_type type,
