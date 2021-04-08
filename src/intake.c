@@ -500,12 +500,6 @@ struct intake_subcontext
   int *pos_external;
   int *length_external;
   boolean select_char;
-
-  // Display info.
-  int x;
-  int y;
-  int width;
-  int color;
 };
 
 /**
