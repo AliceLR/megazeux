@@ -4597,4 +4597,11 @@ void robo_ed_delete_current_line(struct robot_editor_context *rstate, int move)
 void robo_ed_add_line(struct robot_editor_context *rstate, char *value, int relation)
 {
   add_line(rstate, value, relation);
+  // If relation > 0 then the current line is set to the new line, so update
+  // the command buffer as well.
+  if(relation > 0)
+  {
+    snprintf(rstate->command_buffer, COMMAND_BUFFER_LEN, "%s", value);
+    rstate->command_buffer[MAX_COMMAND_LEN] = '\0';
+  }
 }

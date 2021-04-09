@@ -1540,17 +1540,13 @@ static void apply_robot_editor_undo(struct undo_frame *f)
           break;
         }
         robo_ed_add_line(rstate, tl->value, dir);
-        if(dir > 0)
-        {
-          snprintf(rstate->command_buffer, 241, "%s", tl->value);
-          rstate->command_buffer[240] = '\0';
-        }
         break;
 
       case TX_NEW_LINE:
       case TX_SAME_LINE:
         robo_ed_goto_line(rstate, tl->line, 0);
-        robo_ed_delete_current_line(rstate, -1);
+        if(rstate->current_line == tl->line)
+          robo_ed_delete_current_line(rstate, -1);
         break;
 
       case TX_OLD_BUFFER:
@@ -1583,6 +1579,7 @@ static void apply_robot_editor_redo(struct undo_frame *f)
   struct robot_editor_undo_frame *current = (struct robot_editor_undo_frame *)f;
   struct robot_editor_context *rstate = current->rstate;
   size_t i;
+  int dir;
 
   // Apply line operations forward.
   for(i = 0; i < current->list.count; i++)
@@ -1593,13 +1590,15 @@ static void apply_robot_editor_redo(struct undo_frame *f)
     {
       case TX_OLD_LINE:
         robo_ed_goto_line(rstate, tl->line, 0);
-        robo_ed_delete_current_line(rstate, -1);
+        if(rstate->current_line == tl->line)
+          robo_ed_delete_current_line(rstate, -1);
         break;
 
       case TX_NEW_LINE:
       case TX_SAME_LINE:
         robo_ed_goto_line(rstate, tl->line, 0);
-        robo_ed_add_line(rstate, tl->value, -1);
+        dir = (tl->line > rstate->current_line) ? 1 : -1;
+        robo_ed_add_line(rstate, tl->value, dir);
         break;
 
       case TX_INVALID_LINE_TYPE:
