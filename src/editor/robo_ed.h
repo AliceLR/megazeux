@@ -25,6 +25,7 @@
 __M_BEGIN_DECLS
 
 #include "../core.h"
+#include "../intake.h"
 #include "../rasm.h"
 
 #define COMMAND_BUFFER_LEN 512
@@ -80,6 +81,8 @@ struct robot_line
   struct robot_line *previous;
 };
 
+struct undo_history;
+
 struct robot_editor_context
 {
   context ctx;
@@ -114,11 +117,21 @@ struct robot_editor_context
 #else
   enum validity_types default_invalid;
 #endif
+
+  /* Undo history and related variables. */
+  struct undo_history *h;
+  enum intake_event_type current_frame_type;
+  int idle_timer;
 };
 
 void robot_editor(context *parent, struct robot *cur_robot);
 
 EDITOR_LIBSPEC void init_macros(void);
+
+/* Internal functions. */
+void robo_ed_goto_line(struct robot_editor_context *rstate, int line, int column);
+void robo_ed_delete_current_line(struct robot_editor_context *rstate, int move);
+void robo_ed_add_line(struct robot_editor_context *rstate, char *value, int relation);
 
 __M_END_DECLS
 

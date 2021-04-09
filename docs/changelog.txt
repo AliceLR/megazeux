@@ -2,6 +2,11 @@ GIT
 
 USERS
 
++ Added robot editor undo (Ctrl+Z) and redo (Ctrl+Y). Like with
+  board/vlayer/charset editing, the size of the undo stack is
+  defined by the config setting "undo_history_size". Note that
+  extended macro expansion can sometimes clobber undo or redo
+  frames (this is not easily fixable, and prevents worse bugs).
 + Protected worlds are now decrypted to RAM or a temporary file
   when 'auto_decrypt_worlds' is enabled and the original file is
   left unmodified. This setting is now enabled by default.
@@ -77,6 +82,8 @@ USERS
     when invoking nested extended macros.
 + Invoking an extended macro with enter/return no longer inserts
   an extra blank line.
++ Pressing enter at the start of a line with an extended macro
+  now invokes the macro instead of just inserting a line.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS
