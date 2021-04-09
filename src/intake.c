@@ -665,7 +665,6 @@ boolean intake_apply_event_fixed(subcontext *sub, enum intake_event_type type,
       if(intk->current_length >= intk->max_length)
         return false;
       intake_set_length(intk, intk->current_length + 1);
-      type = INTK_INSERT;
 
       if(intk->pos < intk->current_length)
         memmove(intk->dest + intk->pos + 1, intk->dest + intk->pos,
