@@ -2701,6 +2701,108 @@ static void execute_numbered_macro(struct robot_editor_context *rstate, int num)
     insert_string(rstate, macros[num - 1], '^');
 }
 
+static void toggle_current_line_comment(struct robot_editor_context *rstate)
+{
+  /* undo */
+  end_intake_undo_frame(rstate);
+  add_robot_editor_undo_frame(rstate->h, rstate);
+  add_robot_editor_undo_line(rstate->h, TX_OLD_BUFFER, rstate->current_line,
+   rstate->current_x, rstate->command_buffer, strlen(rstate->command_buffer));
+
+#ifdef CONFIG_DEBYTECODE
+
+  if((rstate->command_buffer[0] == '/') && (rstate->command_buffer[1] == '/'))
+  {
+    size_t line_length = strlen(rstate->command_buffer + 2);
+    memmove(rstate->command_buffer, rstate->command_buffer + 2, line_length + 1);
+  }
+  else
+  {
+    size_t line_length = strlen(rstate->command_buffer);
+    memmove(rstate->command_buffer + 2, rstate->command_buffer, line_length + 1);
+    rstate->command_buffer[0] = '/';
+    rstate->command_buffer[1] = '/';
+  }
+  update_current_line(rstate, false);
+
+#else /* !CONFIG_DEBYTECODE */
+
+  if(rstate->command_buffer[0] != '.')
+  {
+    char comment_buffer[COMMAND_BUFFER_LEN];
+    char current_char;
+    char *in_position = rstate->command_buffer;
+    char *out_position = comment_buffer + 3;
+
+    comment_buffer[0] = '.';
+    comment_buffer[1] = ' ';
+    comment_buffer[2] = '"';
+
+    do
+    {
+      current_char = *in_position;
+      if((current_char == '\"') || (current_char == '\\'))
+      {
+        *out_position = '\\';
+        out_position++;
+      }
+
+      *out_position = current_char;
+      out_position++;
+      in_position++;
+    } while(out_position - comment_buffer < MAX_COMMAND_LEN && current_char);
+
+    *(out_position - 1) = '"';
+    *out_position = 0;
+
+    strcpy(rstate->command_buffer, comment_buffer);
+  }
+  else
+
+  if((rstate->command_buffer[0] == '.') &&
+   (rstate->command_buffer[1] == ' ') &&
+   (rstate->command_buffer[2] == '"') &&
+   (rstate->command_buffer[strlen(rstate->command_buffer) - 1] == '"'))
+  {
+    char uncomment_buffer[COMMAND_BUFFER_LEN];
+    char current_char;
+    char *in_position = rstate->command_buffer + 3;
+    char *out_position = uncomment_buffer;
+
+    do
+    {
+      current_char = *in_position;
+      if((current_char == '\\') && (in_position[1] == '"'))
+      {
+        current_char = '"';
+        in_position++;
+      }
+
+      if((current_char == '\\') && (in_position[1] == '\\'))
+      {
+        current_char = '\\';
+        in_position++;
+      }
+
+      *out_position = current_char;
+      out_position++;
+      in_position++;
+    } while(current_char);
+
+    *(out_position - 2) = 0;
+
+    strcpy(rstate->command_buffer, uncomment_buffer);
+  }
+
+#endif /* !CONFIG_DEBYTECODE */
+
+  /* undo */
+  intake_sync(rstate->intk);
+  add_robot_editor_undo_line(rstate->h, TX_SAME_BUFFER, rstate->current_line,
+   rstate->current_x, rstate->command_buffer, strlen(rstate->command_buffer));
+  update_undo_frame(rstate->h);
+}
+
 static boolean robot_editor_intake_callback(void *priv, subcontext *sub,
  enum intake_event_type type, int old_pos, int new_pos, int value, const char *data)
 {
@@ -4053,24 +4155,7 @@ static boolean robot_editor_key(context *ctx, int *key)
     {
       if(get_ctrl_status(keycode_internal))
       {
-        int line_length;
-
-        if((rstate->command_buffer[0] == '/') &&
-         (rstate->command_buffer[1] == '/'))
-        {
-          line_length = strlen(rstate->command_buffer + 2);
-          memmove(rstate->command_buffer, rstate->command_buffer + 2,
-           line_length + 1);
-        }
-        else
-        {
-          line_length = strlen(rstate->command_buffer);
-          memmove(rstate->command_buffer + 2, rstate->command_buffer,
-           line_length + 1);
-          rstate->command_buffer[0] = '/';
-          rstate->command_buffer[1] = '/';
-        }
-        update_current_line(rstate, false);
+        toggle_current_line_comment(rstate);
         return true;
       }
       break;
@@ -4087,74 +4172,8 @@ static boolean robot_editor_key(context *ctx, int *key)
         update_current_line(rstate, true);
       }
       else
+        toggle_current_line_comment(rstate);
 
-      if(rstate->command_buffer[0] != '.')
-      {
-        char comment_buffer[COMMAND_BUFFER_LEN];
-        char current_char;
-        char *in_position = rstate->command_buffer;
-        char *out_position = comment_buffer + 3;
-
-        comment_buffer[0] = '.';
-        comment_buffer[1] = ' ';
-        comment_buffer[2] = '"';
-
-        do
-        {
-          current_char = *in_position;
-          if((current_char == '\"') || (current_char == '\\'))
-          {
-            *out_position = '\\';
-            out_position++;
-          }
-
-          *out_position = current_char;
-          out_position++;
-          in_position++;
-        } while(out_position - comment_buffer < MAX_COMMAND_LEN && current_char);
-
-        *(out_position - 1) = '"';
-        *out_position = 0;
-
-        strcpy(rstate->command_buffer, comment_buffer);
-      }
-      else
-
-      if((rstate->command_buffer[0] == '.') &&
-       (rstate->command_buffer[1] == ' ') &&
-       (rstate->command_buffer[2] == '"') &&
-       (rstate->command_buffer[strlen(rstate->command_buffer) - 1] == '"'))
-      {
-        char uncomment_buffer[COMMAND_BUFFER_LEN];
-        char current_char;
-        char *in_position = rstate->command_buffer + 3;
-        char *out_position = uncomment_buffer;
-
-        do
-        {
-          current_char = *in_position;
-          if((current_char == '\\') && (in_position[1] == '"'))
-          {
-            current_char = '"';
-            in_position++;
-          }
-
-          if((current_char == '\\') && (in_position[1] == '\\'))
-          {
-            current_char = '\\';
-            in_position++;
-          }
-
-
-          *out_position = current_char;
-          out_position++;
-          in_position++;
-        } while(current_char);
-
-        *(out_position - 2) = 0;
-
-        strcpy(rstate->command_buffer, uncomment_buffer);
-      }
       return true;
     }
 
