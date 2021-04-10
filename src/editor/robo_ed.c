@@ -3198,11 +3198,18 @@ static int validate_lines(struct robot_editor_context *rstate, int show_none)
   {
     if(current_rline->validity_status != valid)
     {
+      size_t err_len, i;
       memset(error_messages[num_errors], ' ', 64);
       sprintf(error_messages[num_errors], "%05d: ", line_number + 1);
       legacy_assemble_line(current_rline->line_text, null_buffer,
        error_messages[num_errors] + 7, NULL, NULL);
-      error_messages[num_errors][strlen(error_messages[num_errors])] = ' ';
+      /* Filter out control chars. */
+      err_len = strlen(error_messages[num_errors]);
+      for(i = 0; i < err_len; i++)
+        if(error_messages[num_errors][i] == '\n')
+          error_messages[num_errors][i] = ' ';
+
+      error_messages[num_errors][err_len] = ' ';
       line_pointers[num_errors] = current_rline;
       validity_options[num_errors] = current_rline->validity_status;
 
