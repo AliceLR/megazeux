@@ -3897,7 +3897,7 @@ void run_robot(context *ctx, int id, int x, int y)
         input_buffer[0] = 0;
 
         dialog_fadein();
-        input_window(mzx_world, input_buffer, input_buffer, 70);
+        input_window(mzx_world, title_buffer, input_buffer, 70);
 
         // Due to a faulty check, 2.83 through 2.91f always stay faded in here.
         // If something is found that relies on that, make this conditional.
