@@ -41,6 +41,7 @@ editor_objs := \
   ${editor_obj}/select.o        \
   ${editor_obj}/sfx_edit.o      \
   ${editor_obj}/stringsearch.o  \
+  ${editor_obj}/text.o          \
   ${editor_obj}/textedit.o      \
   ${editor_obj}/undo.o          \
   ${editor_obj}/window.o        \

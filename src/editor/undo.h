@@ -63,13 +63,13 @@ enum text_undo_line_type
   TX_OLD_BUFFER,
   TX_SAME_BUFFER,
 };
-
+/*
 struct text_document;
 struct undo_history *construct_text_editor_undo_history(int max_size);
 void add_text_editor_undo_frame(struct undo_history *h, struct text_document *td);
 void add_text_editor_undo_line(struct undo_history *h, enum text_undo_line_type type,
  int line, int pos, char *value, size_t length);
-
+*/
 struct robot_editor_context;
 struct undo_history *construct_robot_editor_undo_history(int max_size);
 void add_robot_editor_undo_frame(struct undo_history *h, struct robot_editor_context *rstate);

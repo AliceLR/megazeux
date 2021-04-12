@@ -1231,7 +1231,7 @@ static void free_text_undo_line_array(struct text_undo_line_list *list)
 }
 
 /* Text editor functions. */
-
+/*
 struct text_editor_undo_frame
 {
   struct undo_frame f;
@@ -1454,7 +1454,7 @@ void add_text_editor_undo_line(struct undo_history *h, enum text_undo_line_type 
     handle_text_undo_line(list, type, line, pos, value, length);
   }
 }
-
+*/
 /* Robot editor functions. */
 
 struct robot_editor_undo_frame

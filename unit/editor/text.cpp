@@ -17,29 +17,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __EDITOR_TEXTEDIT_H
-#define __EDITOR_TEXTEDIT_H
+#include "../Unit.hpp"
 
-#include "../compat.h"
+#include <stdlib.h>
+#include <string.h>
 
-__M_BEGIN_DECLS
+#include "../../src/editor/text.c"
 
-#include "../core.h"
-
-enum text_edit_type
+UNITTEST(fixme)
 {
-  TE_BOX,
-  TE_DIALOG
-};
-
-void text_editor(context *parent, int x, int y, int w, int h,
- enum text_edit_type type, const char *title, const char *src, size_t src_len,
- void *p, void (*flush_cb)(struct world *, void *, char *, size_t));
-
-void hex_editor(context *parent, int x, int y, int w, int h,
- const char *title, const void *src, size_t src_len, void *p,
- void (*flush_cb)(struct world *, void *, char *, size_t));
-
-__M_END_DECLS
-
-#endif /* __EDITOR_TEXTEDIT_H */
+  UNIMPLEMENTED(); // FIXME
+}

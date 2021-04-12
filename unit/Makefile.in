@@ -35,7 +35,8 @@ unit_objs := \
 ifneq (${BUILD_EDITOR},)
 
 unit_objs += \
-  ${unit_obj_editor}/stringsearch${unit_ext}
+  ${unit_obj_editor}/stringsearch${unit_ext} \
+  ${unit_obj_editor}/text${unit_ext}         \
 
 endif
 
