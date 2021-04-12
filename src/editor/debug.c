@@ -25,6 +25,7 @@
 #include "pal_ed.h"
 #include "robo_debug.h"
 #include "stringsearch.h"
+#include "textedit.h"
 #include "window.h"
 
 #include "../core.h"
@@ -117,11 +118,48 @@ static void copy_name_escaped(char *dest, size_t dest_len, const char *src,
   dest[i] = 0;
 }
 
+// Bounding function for copy_substring_escaped.
+static size_t substring_escape_size(const char *src, size_t src_len,
+ boolean allow_newlines)
+{
+  size_t bound = 0;
+  size_t i;
+  for(i = 0; i < src_len; i++)
+  {
+    switch(src[i])
+    {
+      case '\n':
+      case '\r':
+        if(allow_newlines)
+        {
+          bound++;
+          break;
+        }
+        /* fall-through */
+
+      case '\\':
+      case '\t':
+        bound += 2;
+        break;
+
+      default:
+        if(src[i] < 32 || src[i] > 126)
+          bound += 4;
+        else
+          bound++;
+        break;
+    }
+  }
+  // Space for terminator.
+  bound++;
+  return bound;
+}
+
 // Escape all non-ASCII chars. Use for string values.
 static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
- size_t src_len)
+ size_t src_len, boolean allow_newlines)
 {
-  unsigned int i, j, left;
+  size_t i, j, left;
 
   for(i = 0, j = 0; j < src_len; i++, j++)
   {
@@ -136,7 +174,7 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
     }
     else
 
-    if(src[j] == '\n')
+    if(src[j] == '\n' && !allow_newlines)
     {
       if(left < 3)
         break;
@@ -146,7 +184,7 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
     }
     else
 
-    if(src[j] == '\r')
+    if(src[j] == '\r' && !allow_newlines)
     {
       if(left < 3)
         break;
@@ -166,7 +204,7 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
     }
     else
 
-    if(src[j] < 32 || src[j] > 126)
+    if((src[j] < 32 || src[j] > 126) && src[j] != '\n' && src[j] != '\r')
     {
       if(left < 5)
         break;
@@ -189,7 +227,7 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
 }
 
 // Unescape a string escaped by copy_substring_escaped.
-static void unescape_string(char *buf, int *len)
+static void unescape_string(char *buf, size_t *len)
 {
   size_t i = 0, j, old_len = strlen(buf);
   char tmp[3];
@@ -1048,7 +1086,7 @@ static void read_var(struct world *mzx_world, struct debug_var *v)
     // Add special escaping to string values to match how they're edited.
     const char *src = v->data.string->value;
     size_t src_len = v->data.string->length;
-    copy_substring_escaped(char_dest, SVALUE_SIZE + 1, src, src_len);
+    copy_substring_escaped(char_dest, SVALUE_SIZE + 1, src, src_len, false);
   }
   else
 
@@ -1214,7 +1252,7 @@ static void init_string_var(struct debug_var *v, struct string *src)
   memset(v->text, 32, VAR_LIST_WIDTH);
   memcpy(v->text, buf, strlen(buf));
   copy_substring_escaped(v->text + SVALUE_COL_OFFSET, SVALUE_SIZE + 1,
-   src->value, src->length);
+   src->value, src->length, false);
   v->text[VAR_LIST_WIDTH] = 0;
 }
 
@@ -2580,6 +2618,30 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
 /* Set Counter/String Dialog */
 /*****************************/
 
+static context *ctx_for_pal_char_editors = NULL; // FIXME hack
+
+static void set_string_callback(struct world *mzx_world, void *p,
+ char *src, size_t src_len)
+{
+  struct debug_var *v = (struct debug_var *)p;
+  if(v->type == V_STRING)
+  {
+    struct string *str = v->data.string;
+
+    unescape_string(src, &src_len);
+
+    str = new_string(mzx_world, str->name, src_len, 0);
+    if(str)
+    {
+      src_len = MIN(src_len, str->length);
+      memcpy(str->value, src, src_len);
+      v->data.string = str;
+    }
+
+    read_var(mzx_world, v);
+  }
+}
+
 static void input_counter_value(struct world *mzx_world, struct debug_var *v)
 {
   char new_value[71];
@@ -2605,15 +2667,24 @@ static void input_counter_value(struct world *mzx_world, struct debug_var *v)
 
     case V_STRING:
     {
-      const struct string *src = v->data.string;
+      struct string *src = v->data.string;
       const char *mesg = "Edit: string ";
       char *dest = dialog_name + strlen(mesg);
       size_t dest_len = sizeof(dialog_name) - strlen(mesg);
+      size_t alloc_size = substring_escape_size(src->value, src->length, true);
+      char *edit_buffer = cmalloc(alloc_size);
 
       strcpy(dialog_name, mesg);
       copy_name_escaped(dest, dest_len, src->name, src->name_length);
-      copy_substring_escaped(new_value, 71, src->value, src->length);
-      break;
+      copy_substring_escaped(edit_buffer, alloc_size, src->value, src->length, true);
+
+      text_editor(ctx_for_pal_char_editors, 0, 1, 80, 23, TE_BOX,
+       dialog_name, edit_buffer, strlen(edit_buffer), v, set_string_callback);
+
+      free(edit_buffer);
+      // FIXME
+      core_run(ctx_for_pal_char_editors->root);
+      return;
     }
 
     case V_VAR:
@@ -2676,7 +2747,7 @@ static void input_counter_value(struct world *mzx_world, struct debug_var *v)
   {
     if(v->type == V_STRING)
     {
-      int len;
+      size_t len;
       unescape_string(new_value, &len);
       write_var(mzx_world, v, len, new_value);
     }
@@ -2846,7 +2917,6 @@ static int new_counter_dialog(struct world *mzx_world, char *name)
  * 5 - Export
  */
 static int last_node_selected = 0;
-static context *ctx_for_pal_char_editors = NULL; // FIXME hack
 
 static int counter_debugger_idle_function(struct world *mzx_world,
  struct dialog *di, int key)
@@ -3100,7 +3170,7 @@ void __debug_counters(context *ctx)
         struct debug_node *search_node = NULL;
         struct debug_node *search_targ = &root;
         char search_text_unescaped[VAR_SEARCH_MAX + 1];
-        int search_text_length = 0;
+        size_t search_text_length = 0;
         int search_pos = 0;
 
         // There is a var currently selected.

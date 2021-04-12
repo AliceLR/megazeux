@@ -28,6 +28,7 @@
 #include "graphics.h"
 #include "robo_ed.h"
 #include "robot.h"
+#include "textedit.h"
 #include "undo.h"
 
 #include "../block.h"
@@ -1228,6 +1229,233 @@ static void free_text_undo_line_array(struct text_undo_line_list *list)
   list->count = 0;
   list->allocated = 0;
 }
+
+/* Text editor functions. */
+
+struct text_editor_undo_frame
+{
+  struct undo_frame f;
+  struct text_document *td;
+  struct text_undo_line_list list;
+  // Cursor position info.
+  int prev_line;
+  int prev_col;
+  int current_line;
+  int current_col;
+};
+
+static struct text_line *traverse_lines(struct text_document *td,
+ struct text_line *start, int *_current_line, int target_line)
+{
+  struct text_line *t = start;
+  int current_line = *_current_line;
+  if(t && current_line >= 0)
+  {
+    while(current_line < target_line && t)
+    {
+      t = t->next;
+      current_line++;
+    }
+    while(current_line > target_line && t)
+    {
+      t = t->prev;
+      current_line--;
+    }
+  }
+  else
+  {
+    t = text_get_line(td, target_line);
+    current_line = CLAMP(target_line, 0, td->num_lines);
+  }
+
+  *_current_line = current_line;
+  return t;
+}
+
+static struct text_line *safe_adjacent(struct text_line *start,
+ int *_current_line)
+{
+  if(start)
+  {
+    if(start->next)
+    {
+      // Current line will be deleted, making next this line number.
+      return start->next;
+    }
+    if(start->prev)
+    {
+      (*_current_line)--;
+      return start->prev;
+    }
+  }
+  return NULL;
+}
+
+static void apply_text_editor_undo(struct undo_frame *f)
+{
+  struct text_editor_undo_frame *current = (struct text_editor_undo_frame *)f;
+  struct text_document *td = current->td;
+  struct text_line *at = NULL;
+  int current_line = -1;
+  ssize_t i;
+
+  // Flush the contents of the edit buffer to the document structure.
+  text_update_current(td);
+  td->current = NULL;
+
+  // Apply line operations in reverse.
+  for(i = current->list.count - 1; i >= 0; i--)
+  {
+    struct text_undo_line *tl = &(current->list.lines[i]);
+    struct text_line *t;
+
+    switch(tl->type)
+    {
+      case TX_OLD_LINE:
+        at = traverse_lines(td, at, &current_line, tl->line - 1);
+        t = text_insert_line(td, at, tl->length, 1);
+        if(t)
+          memcpy(t->data, tl->value, tl->length);
+        break;
+
+      case TX_NEW_LINE:
+      case TX_SAME_LINE:
+        t = traverse_lines(td, at, &current_line, tl->line);
+        at = safe_adjacent(t, &current_line);
+        text_delete_line(td, t);
+        break;
+
+      case TX_INVALID_LINE_TYPE:
+      case TX_OLD_BUFFER:
+      case TX_SAME_BUFFER:
+        break;
+    }
+  }
+
+  // Jump to the start line/column of the frame.
+  text_move_to_line(td, current->prev_line, current->prev_col);
+}
+
+static void apply_text_editor_redo(struct undo_frame *f)
+{
+  struct text_editor_undo_frame *current = (struct text_editor_undo_frame *)f;
+  struct text_document *td = current->td;
+  struct text_line *at = NULL;
+  int current_line = -1;
+  size_t i;
+
+  // Flush the contents of the edit buffer to the document structure.
+  text_update_current(td);
+  td->current = NULL;
+
+  // Apply line operations forward.
+  for(i = 0; i < current->list.count; i++)
+  {
+    struct text_undo_line *tl = &(current->list.lines[i]);
+    struct text_line *t;
+
+    switch(tl->type)
+    {
+      case TX_OLD_LINE:
+        t = traverse_lines(td, at, &current_line, tl->line);
+        at = safe_adjacent(t, &current_line);
+        text_delete_line(td, t);
+        break;
+
+      case TX_NEW_LINE:
+      case TX_SAME_LINE:
+        at = traverse_lines(td, at, &current_line, tl->line - 1);
+        t = text_insert_line(td, at, tl->length, 1);
+        if(t)
+          memcpy(t->data, tl->value, tl->length);
+        break;
+
+      case TX_INVALID_LINE_TYPE:
+      case TX_OLD_BUFFER:
+      case TX_SAME_BUFFER:
+        break;
+    }
+  }
+
+  // Jump to the end line/column of the frame.
+  text_move_to_line(td, current->current_line, current->current_col);
+}
+
+static void apply_text_editor_update(struct undo_frame *f)
+{
+  struct text_editor_undo_frame *current = (struct text_editor_undo_frame *)f;
+  shrink_text_undo_line_array(&current->list);
+}
+
+static void apply_text_editor_clear(struct undo_frame *f)
+{
+  struct text_editor_undo_frame *current = (struct text_editor_undo_frame *)f;
+
+  free_text_undo_line_array(&current->list);
+  free(f);
+}
+
+struct undo_history *construct_text_editor_undo_history(int max_size)
+{
+  if(max_size)
+  {
+    struct undo_history *h = construct_undo_history(max_size);
+
+    // Note: uses text undo lines instead of standard positions.
+    h->undo_function = apply_text_editor_undo;
+    h->redo_function = apply_text_editor_redo;
+    h->update_function = apply_text_editor_update;
+    h->clear_function = apply_text_editor_clear;
+    return h;
+  }
+  return NULL;
+}
+
+void add_text_editor_undo_frame(struct undo_history *h, struct text_document *td)
+{
+  if(h)
+  {
+    struct text_editor_undo_frame *current =
+     cmalloc(sizeof(struct text_editor_undo_frame));
+
+    add_undo_frame(h, current);
+    current->f.type = POS_FRAME;
+
+    current->td = td;
+
+    current->list.lines = NULL;
+    current->list.count = 0;
+    current->list.allocated = 0;
+
+    current->prev_line = -1;
+    current->prev_col = -1;
+    current->current_line = -1;
+    current->current_col = -1;
+  }
+}
+
+void add_text_editor_undo_line(struct undo_history *h, enum text_undo_line_type type,
+ int line, int pos, char *value, size_t length)
+{
+  if(h && h->current_frame)
+  {
+    struct text_editor_undo_frame *current =
+     (struct text_editor_undo_frame *)h->current_frame;
+    struct text_undo_line_list *list = &current->list;
+
+    if(current->prev_line < 0)
+    {
+      current->prev_line = line;
+      current->prev_col = pos;
+    }
+    current->current_line = line;
+    current->current_col = pos;
+
+    handle_text_undo_line(list, type, line, pos, value, length);
+  }
+}
+
+/* Robot editor functions. */
 
 struct robot_editor_undo_frame
 {
