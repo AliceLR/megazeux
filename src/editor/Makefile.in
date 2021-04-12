@@ -42,7 +42,7 @@ editor_objs := \
   ${editor_obj}/sfx_edit.o      \
   ${editor_obj}/stringsearch.o  \
   ${editor_obj}/text.o          \
-  ${editor_obj}/textedit.o      \
+  ${editor_obj}/text_ed.o       \
   ${editor_obj}/undo.o          \
   ${editor_obj}/window.o        \
   ${editor_obj}/world.o

@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "textedit.h"
+#include "text_ed.h"
 #include "clipboard.h"
 #include "configure.h"
 #include "text.h"
@@ -72,7 +72,7 @@ static boolean text_edit_flush(struct text_edit_context *te)
   char *dest;
   char *pos;
 
-  trace("--TEXTEDIT-- text_edit_flush\n");
+  trace("--TEXT_ED-- text_edit_flush\n");
 
   /* Precalculate the new size. */
   // FIXME
@@ -91,7 +91,7 @@ static void text_edit_end_frame(struct text_edit_context *te)
 {
   if(te->current_frame_type != INTK_NO_EVENT)
   {
-    trace("--TEXTEDIT-- text_edit_end_frame (type=%d)\n", te->current_frame_type);
+    trace("--TEXT_ED-- text_edit_end_frame (type=%d)\n", te->current_frame_type);
     update_undo_frame(te->u);
     te->current_frame_type = INTK_NO_EVENT;
     te->idle_timer = 0;

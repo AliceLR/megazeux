@@ -28,7 +28,7 @@
 #include "graphics.h"
 #include "robo_ed.h"
 #include "robot.h"
-#include "textedit.h"
+#include "text_ed.h"
 #include "undo.h"
 
 #include "../block.h"

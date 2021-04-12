@@ -25,7 +25,7 @@
 #include "pal_ed.h"
 #include "robo_debug.h"
 #include "stringsearch.h"
-#include "textedit.h"
+#include "text_ed.h"
 #include "window.h"
 
 #include "../core.h"

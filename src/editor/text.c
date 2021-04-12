@@ -38,7 +38,7 @@ static void text_set_edit_buffer(struct text_document *td, size_t size)
 
   if(td->edit_buffer_alloc < size_pw)
   {
-    trace("--TEXTDOC-- text_set_edit_buffer %p size %zu (%zu -> %zu)\n",
+    trace("--TEXT-- text_set_edit_buffer %p size %zu (%zu -> %zu)\n",
      (void *)td, size, td->edit_buffer_alloc, size_pw);
 
     td->edit_buffer = (char *)crealloc(td->edit_buffer, size_pw);
@@ -82,7 +82,7 @@ boolean text_move(struct text_document *td, int amount)
  */
 boolean text_move_to_line(struct text_document *td, int line_number, int pos)
 {
-  trace("--TEXTDOC-- text_move_to_line %p line:%d col:%d\n", (void *)td,
+  trace("--TEXT-- text_move_to_line %p line:%d col:%d\n", (void *)td,
    line_number, pos);
 
   return false; // FIXME
@@ -124,7 +124,7 @@ boolean text_move_end(struct text_document *td)
 
 void text_clear(struct text_document *td)
 {
-  trace("--TEXTDOC-- text_clear %p\n", (void *)td);
+  trace("--TEXT-- text_clear %p\n", (void *)td);
   free(td->edit_buffer);
 
   td->edit_buffer = NULL;
@@ -141,7 +141,7 @@ boolean text_init(struct text_document *td, const char *src, size_t src_len)
   const char *next;
   size_t len;
 
-  trace("--TEXTDOC-- text_init %p (size %zu)\n", (void *)td, src_len);
+  trace("--TEXT-- text_init %p (size %zu)\n", (void *)td, src_len);
   if(td->edit_buffer)
     return false;
 
