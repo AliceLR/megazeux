@@ -716,6 +716,7 @@ UNITTEST(EventFixed)
 struct event_cb_data
 {
   const char *expected;
+  int *pos_external;
   int call_count;
 };
 
@@ -728,6 +729,9 @@ boolean event_callback(void *priv, subcontext *sub, enum intake_event_type type,
   ASSERTEQX(old_pos, intk->pos, d->expected);
   if(intk->dest)
     ASSERTCMP(intk->dest, d->expected);
+
+  if(d->pos_external)
+    *(d->pos_external) = new_pos;
 
   d->call_count++;
   return true;
@@ -763,12 +767,13 @@ UNITTEST(EventCallback)
   struct intake_subcontext intk{};
   subcontext *sub = reinterpret_cast<subcontext *>(&intk);
   char dest[256];
-  //char buf[80];
+  int pos_external;
 
   intk.dest = dest;
   intk.max_length = 240;
   intk.current_length = 100;
   intk.event_cb = event_callback;
+  intk.pos_external = &pos_external;
 
   SECTION(intake_event_ext_no_dest)
   {
@@ -781,7 +786,7 @@ UNITTEST(EventCallback)
 
     for(const event_partial_data &d : data)
     {
-      event_cb_data priv = { d.base, 0 };
+      event_cb_data priv = { d.base, &pos_external, 0 };
       intk.event_priv = &priv;
       intk.pos = d.old_pos;
       intake_event_ext(&intk, d.type, d.old_pos, d.new_pos, d.value, dummy_data);
@@ -801,7 +806,7 @@ UNITTEST(EventCallback)
      */
     for(const event_partial_data &d : data)
     {
-      event_cb_data priv = { d.base, 0 };
+      event_cb_data priv = { d.base, &pos_external, 0 };
       intk.event_priv = &priv;
       intk.pos = d.old_pos;
       strcpy(dest, d.base);
@@ -820,7 +825,7 @@ UNITTEST(EventCallback)
 
     for(const input_string_data &d : input_data)
     {
-      event_cb_data priv = { d.expected, 0 };
+      event_cb_data priv = { d.expected, &pos_external, 0 };
       intk.event_priv = &priv;
 
       intake_set_length(&intk, strlen(d.base));

@@ -796,7 +796,7 @@ static void intake_event_ext(struct intake_subcontext *intk,
     if(intk->event_cb(intk->event_priv, (subcontext *)intk, type, old_pos,
      new_pos, value, data))
     {
-      intake_set_pos(intk, new_pos);
+      intake_sync((subcontext *)intk);
     }
   }
   else
@@ -1125,6 +1125,8 @@ const char *intake_input_string(subcontext *sub, const char *src,
 /**
  * Set the intake event callback function. This feature is used to report
  * individual intake events immediately to the parent context as they occur.
+ * The callback return value should indicate success (`true`) or failure
+ * (`false`). If the callback returns `true`, `intake_sync` will be called.
  */
 void intake_event_callback(subcontext *sub, void *priv,
  boolean (*event_cb)(void *priv, subcontext *sub, enum intake_event_type type,

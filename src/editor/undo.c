@@ -1113,45 +1113,9 @@ void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
 }
 
 
-/****************************/
-/* Text specific functions. */
-/****************************/
-
-/**
- * Notes:
- *    [√] add(text_document or rstate)
- *    [√] position(type, line, pos, char *, len):
- *      [√] line replacement: add old line position, add same line position
- *        (only difference from new is that another same will replace it instead
- *        of adding a new event).
- *        if last frame cursor is at the current position and this is the same
- *        type of line modification, ignore old and send TE_SAME_LINE to replace
- *        previous new.
- *      [√] line split: add old line, add two new lines
- *      [√] line join: add two old lines, add new line
- *      [√] text insert: add old line, add new lines as-needed
- *      [ ] replace (all): for each replace: add old line, add same lines as-needed
- *      [ ] block clear: add old lines
- *      set old cursor position on first line added (always should be an old line),
- *      set new cursor position for every line added.
- *    [√] update():
- *      shrink position array
- *    [√] undo/redo():
- *      text_update_current to make sure all line data is fresh.
- *      for each pos:
- *        get line (text_get_line)
- *        if ((old line && redo) || (same/new line && undo))
- *          remove line (text_delete_line)
- *        if ((old line && undo) || (same/new line && redo))
- *          insert line (text_insert_line)
- *      jump to prev (undo) or current (redo) line/pos (text_move_to_line)
- *
- *    other:
- *      [√] end current frame if the next text modification event is different from
- *        the current modification event (insert, overwrite, delete, backspace, clear).
- *      [√] end current frame if any form of cursor repositioning occurs
- *      [√] end current frame after a certain amount of time passes between inputs
- */
+/************************************/
+/* Robot editor specific functions. */
+/************************************/
 
 struct text_undo_line
 {
