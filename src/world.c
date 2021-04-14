@@ -3236,11 +3236,10 @@ void change_board(struct world *mzx_world, int board_id)
   for (i=0; i<MAX_SPRITES; ++i)
   {
     struct sprite *spr = mzx_world->sprite_list[i];
-    if (spr->flags & SPRITE_AUTO_OFF)
+    if (spr->flags & SPRITE_AUTO_OFF && spr->flags & SPRITE_INITIALIZED)
     {
-      if (spr->flags & SPRITE_INITIALIZED)
-        --mzx_world->active_sprites;
-      spr->flags &= ~(SPRITE_INITIALIZED | SPRITE_AUTO_OFF);
+	  --mzx_world->active_sprites;
+      spr->flags &= ~SPRITE_INITIALIZED;
     }
   }
 
