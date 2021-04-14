@@ -132,6 +132,7 @@ name                      r/w      g/n/f/b    i
 "SPR_COLLISIONS"          r           b       *
 "SPR_NUM"                 r w         b       *
 "SPR_YORDER"                w         f       *
+"SPRn_AUTOOFF"              w         f       *
 "SPRn_CCHECK"               w         f       *
 "SPRn_CHEIGHT"            r w         b       *
 "SPRn_CLIST"                w         f       *
