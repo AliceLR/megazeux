@@ -955,6 +955,16 @@ static void spr_unbound_write(struct world *mzx_world,
   }
 }
 
+static void spr_autooff_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  if(value)
+    (mzx_world->sprite_list[spr_num])->flags |= SPRITE_AUTO_OFF;
+  else
+    (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_AUTO_OFF;
+}
+
 static void spr_height_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
@@ -2730,6 +2740,7 @@ static const struct function_counter builtin_counters[] =
   { "smzx_palette",     V269,   smzx_palette_read,    NULL },
   { "smzx_r!",          V269,   smzx_r_read,          smzx_r_write },
   { "spacelock",        V284,   NULL,                 spacelock_write },
+  { "spr!_autooff",     V292,   NULL,                 spr_autooff_write },
   { "spr!_ccheck",      V265,   NULL,                 spr_ccheck_write },
   { "spr!_cheight",     V265,   spr_cheight_read,     spr_cheight_write },
   { "spr!_clist",       V265,   NULL,                 spr_clist_write },

@@ -37,6 +37,7 @@ enum
   SPRITE_CHAR_CHECK2  = (1 << 5), // CHAR_CHECK flag 2 (see below)
   SPRITE_VLAYER       = (1 << 6), // References the vlayer
   SPRITE_UNBOUND      = (1 << 7), // Uses pixel positioning and collision
+  SPRITE_AUTO_OFF     = (1 << 8), // Turn off sprite when switching to a new board
 
   // Internal flag combination for pixel collision.
   SPRITE_PIXCHECK     = SPRITE_UNBOUND | SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2,

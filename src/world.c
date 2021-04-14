@@ -3209,6 +3209,7 @@ static void v1_load_globals_from_board(struct world *mzx_world)
 
 void change_board(struct world *mzx_world, int board_id)
 {
+  int i;
   // Set the current board during gameplay.
   struct board *cur_board = mzx_world->current_board;
 
@@ -3230,6 +3231,18 @@ void change_board(struct world *mzx_world, int board_id)
   set_current_board_ext(mzx_world, mzx_world->board_list[board_id]);
 
   cur_board = mzx_world->current_board;
+
+  // Turn off any sprites that have the SPRITE_AUTO_OFF flag set
+  for (i=0; i<MAX_SPRITES; ++i)
+  {
+    struct sprite *spr = mzx_world->sprite_list[i];
+    if (spr->flags & SPRITE_AUTO_OFF)
+    {
+      if (spr->flags & SPRITE_INITIALIZED)
+        --mzx_world->active_sprites;
+      spr->flags &= ~(SPRITE_INITIALIZED | SPRITE_AUTO_OFF);
+    }
+  }
 
   // Does this board need a duplicate? (2.90+)
   if(mzx_world->version >= V290 && cur_board->reset_on_entry)
