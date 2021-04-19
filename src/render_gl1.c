@@ -288,15 +288,9 @@ static void gl1_render_graph(struct graphics_data *graphics)
   Uint32 mode = graphics->screen_mode;
 
   if(!mode)
-  {
-    render_graph32(render_data->pixels, render_data->w * 4, graphics,
-     set_colors32[mode]);
-  }
+    render_graph32(render_data->pixels, render_data->w * 4, graphics);
   else
-  {
-    render_graph32s(render_data->pixels, render_data->w * 4, graphics,
-     set_colors32[mode]);
-  }
+    render_graph32s(render_data->pixels, render_data->w * 4, graphics);
 }
 
 static void gl1_render_layer(struct graphics_data *graphics,

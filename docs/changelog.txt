@@ -2,6 +2,11 @@ GIT
 
 USERS
 
++ Added robot editor undo (Ctrl+Z) and redo (Ctrl+Y). Like with
+  board/vlayer/charset editing, the size of the undo stack is
+  defined by the config setting "undo_history_size". Note that
+  extended macro expansion can sometimes clobber undo or redo
+  frames (this is not easily fixable, and prevents worse bugs).
 + Protected worlds are now decrypted to RAM or a temporary file
   when 'auto_decrypt_worlds' is enabled and the original file is
   left unmodified. This setting is now enabled by default.
@@ -13,10 +18,20 @@ USERS
 + Reimplemented ANSi import/export support for the editor. ANSi
   and TXT files can be imported in the editor with Alt+I and can
   be exported by selecting a block (Alt+B).
++ The software fallback renderer functions now support SMZX mode
+  3 indices, fixing graphical bugs in situations where the
+  fallback would be used and display the wrong colors in games
+  using custom indices.
 + Added support for 800x240 mode to the 3DS port. This mode can
   be toggled with the 3DS keyboard. (asie)
 + Added a list of variables related to RAM usage to the counter
   debug window. This list can be found in the "World" list.
++ Added vlayer saved positions to the editor. Like regular saved
+  positions, these can be configured with the config file option
+  "vlayer_position#", and they work identically to board saved
+  positions.
++ Fixed a crash bug when attempting to save MZMs over 4MB to an
+  existing string.
 + Fixed a bug where, if a world's title screen music is set but
   fails to load when the world is loaded, the music from another
   world could continue to play.
@@ -57,6 +72,26 @@ USERS
 + checkres now supports scanning protected worlds.
 + Fixed a standalone mode crash on exit that occurred when using
   Alt+F4 or the window close button.
++ Fixed another bug that would cause string searching in the
+  robot editor to sometimes skip matches.
++ Replace all (Ctrl+H) in the robot editor should no longer skip
+  adjacent instances of the search string.
++ Fixed string wildcard matching bug that could cause patterns
+  ending with ? to sometimes fail.
++ Fixed a bug where multichar char tile movement could still
+  sometimes jump to the -/+/= chars in the main charset.
++ Opening the block action menu in the robot editor now updates
+  the contents of the current line.
++ Fixed a bug in the robot editor where Ctrl+Home and Ctrl+End
+  would only set the current line (and not the current column).
++ Fixed a robot editor extended macro crash that would occur:
+    when pasting a line containing a macro from the clipboard;
+    when importing a Robotic source file that invokes macros;
+    when invoking nested extended macros.
++ Invoking an extended macro with enter/return no longer inserts
+  an extra blank line.
++ Pressing enter at the start of a line with an extended macro
+  now invokes the macro instead of just inserting a line.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS
@@ -69,6 +104,11 @@ DEVELOPERS
 + Board input strings, charset paths, and palette paths are now
   heap allocated on-demand to save RAM for low-memory systems.
 + Refactored the 3DS renderer to use templates. (asie)
++ intake2() now supports custom handling of intake events, i.e.
+  it can now be used without providing a fixed size buffer.
++ The draw and click handlers have been removed from intake2().
+  This should provide more flexibility to the parent context for
+  displaying the string that is being edited.
 
 
 November 22nd, 2020 - MZX 2.92f

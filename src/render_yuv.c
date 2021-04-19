@@ -206,9 +206,9 @@ static void yuv_render_graph(struct graphics_data *graphics)
   else
   {
     if(!mode)
-      render_graph32(pixels, pitch, graphics, set_colors32[mode]);
+      render_graph32(pixels, pitch, graphics);
     else
-      render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
+      render_graph32s(pixels, pitch, graphics);
   }
 
   yuv_unlock_overlay(render_data);

@@ -22,6 +22,8 @@
 
 #include "clipboard.h"
 
+#include "../util.h"
+
 #include <SDL.h>
 
 void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
@@ -43,7 +45,8 @@ void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
   }
 
   dest_ptr[-1] = 0;
-  SDL_SetClipboardText(dest_data);
+  if(SDL_SetClipboardText(dest_data) < 0)
+    warn("SDL_SetClipboardText failed: %s\n", SDL_GetError());
 
   free(dest_data);
 }

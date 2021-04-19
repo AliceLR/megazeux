@@ -127,6 +127,7 @@ struct editor_config_info
 
   // Saved positions
   struct saved_position saved_positions[NUM_SAVED_POSITIONS];
+  struct saved_position vlayer_positions[NUM_SAVED_POSITIONS];
 };
 
 EDITOR_LIBSPEC void default_editor_config(void);

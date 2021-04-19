@@ -32,8 +32,6 @@ extern void (*const set_colors16[4])(const struct graphics_data *graphics,
  Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg);
 extern void (*const set_colors32[4])(const struct graphics_data *graphics,
  Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg);
-extern void (*const set_indices[4])(const struct graphics_data *graphics,
- int * RESTRICT indices, Uint8 bg, Uint8 fg);
 
 void yuy2_subsample_set_colors_mzx(const struct graphics_data *graphics,
  Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg);
@@ -49,11 +47,9 @@ void render_graph16(Uint16 * RESTRICT pixels, Uint32 pitch,
  const struct graphics_data *graphics,
  void (*set_colors)(const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8));
 void render_graph32(Uint32 * RESTRICT pixels, Uint32 pitch,
- const struct graphics_data *graphics,
- void (*set_colors)(const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8));
+ const struct graphics_data *graphics);
 void render_graph32s(Uint32 * RESTRICT pixels, Uint32 pitch,
- const struct graphics_data *graphics,
- void (*set_colors)(const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8));
+ const struct graphics_data *graphics);
 
 void render_cursor(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
  Uint32 color, Uint8 lines, Uint8 offset);

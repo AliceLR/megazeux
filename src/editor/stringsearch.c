@@ -58,12 +58,12 @@ static size_t get_suffix_length(const unsigned char *B, const size_t b_len,
 
   if(ignore_case)
   {
-    for(i = 0; i < pos; i--)
+    for(i = 0; i < pos; i++)
       if(memtolower(B[pos - i]) != memtolower(B[b_len - i - 1]))
         break;
   }
   else
-    for(i = 0; i < pos; i--)
+    for(i = 0; i < pos; i++)
       if(B[pos - i] != B[b_len - i - 1])
         break;
 

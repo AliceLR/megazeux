@@ -874,7 +874,7 @@ static void fix_layer_screen_mode(void)
 void set_screen_mode(Uint32 mode)
 {
   int i;
-  char *pal_idx;
+  Uint8 *pal_idx;
   char bg, fg;
   mode %= 4;
 

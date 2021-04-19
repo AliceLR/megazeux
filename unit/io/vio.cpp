@@ -910,9 +910,11 @@ UNITTEST(Filesystem)
 
   SECTION(UTF8)
   {
+    // NOTE: using the combining encodings of öè here to appease Mac OS X,
+    // which converts some single codepoint encodings to combining encodings.
+    static constexpr char UTF8_DIR[] = u8"\u00e6Ro\u0308e\u0300mMJ\u00b7\u2021\u00b2\u2019\u02c6\u00de\u2018$";
     static constexpr char UTF8_FILE[] = u8"\u00A5\u2014\U0001F970";
     static constexpr char UTF8_FILE2[] = u8"\U0001F970\u2014\u00A5";
-    static constexpr char UTF8_DIR[] = "æRëòmMJ·‡²’ˆÞ‘$"; // : )
     static constexpr int utf8_dir_len = arraysize(UTF8_DIR) - 1;
 
     ret = vstat(UTF8_DIR, &stat_info);
@@ -921,9 +923,7 @@ UNITTEST(Filesystem)
       ret = vchdir(UTF8_DIR);
       ASSERTEQ(ret, 0);
       ret = vunlink(UTF8_FILE);
-      ASSERTEQ(ret, 0);
-      ret =  vunlink(UTF8_FILE2);
-      ASSERTEQ(ret, 0);
+      ret = vunlink(UTF8_FILE2);
       ret = vchdir("..");
       ASSERTEQ(ret, 0);
       ret = vrmdir(UTF8_DIR);
