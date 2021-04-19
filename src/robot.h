@@ -153,6 +153,8 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
  int *lx, int *ly, int robotx, int roboty);
 void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int y);
 void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y);
+void prefix_mid_xy_ext(struct world *mzx_world, struct board *dest_board,
+ int *mx, int *my, int x, int y);
 void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
  int robotx, int roboty, int width, int height);
 void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,

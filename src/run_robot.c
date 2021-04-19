@@ -33,7 +33,6 @@
 #include "error.h"
 #include "event.h"
 #include "expr.h"
-#include "extmem.h"
 #include "game.h"
 #include "game_ops.h"
 #include "game_player.h"
@@ -3819,7 +3818,6 @@ void run_robot(context *ctx, int id, int x, int y)
 
       case ROBOTIC_CMD_TELEPORT: // teleport
       {
-        struct board *cur_board = mzx_world->current_board;
         char board_dest_buffer[ROBOT_MAX_TR];
         char *p2 = next_param_pos(cmd_ptr + 1);
         int teleport_x = parse_param(mzx_world, p2, id);
@@ -3832,11 +3830,9 @@ void run_robot(context *ctx, int id, int x, int y)
 
         if(board_id != NO_BOARD)
         {
-          set_current_board_ext(mzx_world, mzx_world->board_list[board_id]);
-          prefix_mid_xy(mzx_world, &teleport_x, &teleport_y, x, y);
+          prefix_mid_xy_ext(mzx_world, mzx_world->board_list[board_id],
+           &teleport_x, &teleport_y, x, y);
 
-          // And switch back
-          set_current_board_ext(mzx_world, cur_board);
           mzx_world->target_board = board_id;
           mzx_world->target_x = teleport_x;
           mzx_world->target_y = teleport_y;

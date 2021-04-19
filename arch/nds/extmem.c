@@ -166,6 +166,34 @@ static void nds_ext_lock()
     ram_lock();
 }
 
+/* Attempt to allocate a memory mapped buffer in extra RAM. */
+uint32_t *platform_extram_alloc(size_t len)
+{
+  return nds_ext_malloc(len);
+}
+
+/* Attempt to reallocate a memory mapped buffer in extra RAM. */
+uint32_t *platform_extram_resize(void *buffer, size_t len)
+{
+  return nds_ext_realloc(buffer, len);
+}
+
+/* Free a memory mapped buffer in extra RAM. */
+void platform_extram_free(void *buffer)
+{
+  nds_ext_free(buffer);
+}
+
+void platform_extram_lock(void)
+{
+  nds_ext_unlock();
+}
+
+void platform_extram_unlock(void)
+{
+  nds_ext_lock();
+}
+
 // Copy with no 8-bit writes.
 static void nds_ext_copy(void *dest, void *src, size_t size)
 {
