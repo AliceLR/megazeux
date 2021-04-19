@@ -33,7 +33,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TEXT_IDLE_TIMER_MAX 15
+#define TEXT_IDLE_TIMER_MAX     15
+#define TEXT_EDIT_MAXIMUM_SIZE  (1<<30)
 
 struct text_edit_context
 {
@@ -187,7 +188,7 @@ static boolean text_edit_draw(context *ctx)
         fill_line(te->w - 2, te->x + 1, te->edit_y + i, 0, line_col);
       }
       left_chr = (td->current_col >= te->edit_w) ? '\xae' : '\x10';
-      right_chr = (td->current_col < td->edit_buffer_size && td->edit_buffer_size >= te->edit_w) ? '\xaf' : '\x11';
+      right_chr = (td->current_col < td->current_length && td->current_length >= te->edit_w) ? '\xaf' : '\x11';
 
       draw_char(left_chr, active_col, te->x, te->edit_y + te->intk_row);
       draw_char(right_chr, active_col, te->x + te->w - 1, te->edit_y + te->intk_row);
@@ -203,7 +204,7 @@ static boolean text_edit_draw(context *ctx)
       write_string("Col:", te->x + 23, bottom_y, top_col, false);
       draw_char('/', top_col, te->x + 35, bottom_y);
       write_number(td->current_col + 1, stat_col, te->x + 28, bottom_y, 7, false, 10);
-      write_number(td->edit_buffer_size + 1, stat_col, te->x + 36, bottom_y, 7, false, 10);
+      write_number(td->document_size + 1, stat_col, te->x + 36, bottom_y, 7, false, 10);
       break;
 
     case TE_DIALOG:
@@ -251,7 +252,7 @@ static boolean text_edit_mouse(context *ctx, int *key, int button, int x, int y)
       if(amount)
       {
         text_edit_end_frame(te);
-        text_move(td, amount);
+        text_move_lines(td, amount);
         td->current_col = x - te->edit_x;
         warp_mouse(x, te->edit_y + te->intk_row);
         return true;
@@ -263,7 +264,7 @@ static boolean text_edit_mouse(context *ctx, int *key, int button, int x, int y)
   if(button == MOUSE_BUTTON_WHEELUP)
   {
     text_edit_end_frame(te);
-    text_move(td, -3);
+    text_move_lines(td, -3);
     return true;
   }
   else
@@ -271,7 +272,7 @@ static boolean text_edit_mouse(context *ctx, int *key, int button, int x, int y)
   if(button == MOUSE_BUTTON_WHEELDOWN)
   {
     text_edit_end_frame(te);
-    text_move(td, 3);
+    text_move_lines(td, 3);
     return true;
   }
 
@@ -365,7 +366,7 @@ static boolean text_edit_key(context *ctx, int *key)
     {
       // Cursor up.
       text_edit_end_frame(te);
-      text_move(td, -1);
+      text_move_lines(td, -1);
       return true;
     }
 
@@ -373,7 +374,7 @@ static boolean text_edit_key(context *ctx, int *key)
     {
       // Cursor down.
       text_edit_end_frame(te);
-      text_move(td, 1);
+      text_move_lines(td, 1);
       return true;
     }
 
@@ -381,7 +382,7 @@ static boolean text_edit_key(context *ctx, int *key)
     {
       // Cursor up * half edit height.
       text_edit_end_frame(te);
-      text_move(td, -te->edit_h / 2);
+      text_move_lines(td, -te->edit_h / 2);
       return true;
     }
 
@@ -389,7 +390,7 @@ static boolean text_edit_key(context *ctx, int *key)
     {
       // Cursor down * half edit height.
       text_edit_end_frame(te);
-      text_move(td, te->edit_h / 2);
+      text_move_lines(td, te->edit_h / 2);
       return true;
     }
 
@@ -541,6 +542,7 @@ void text_editor(context *parent, int x, int y, int w, int h,
   te->intk_row = te->edit_h / 2;
 
   text_init(td, src, src_len);
+  text_move_to_line(td, 0, 0); // Initialize line mode.
 
   te->current_frame_type = INTK_NO_EVENT;
 
@@ -559,8 +561,8 @@ void text_editor(context *parent, int x, int y, int w, int h,
   //te->u = construct_text_editor_undo_history(editor_conf->undo_history_size);
 
   te->intk =
-   intake2((context *)te, td->edit_buffer, td->edit_buffer_alloc,
-   &(td->current_col), &(td->edit_buffer_size));
+   intake2((context *)te, NULL, TEXT_EDIT_MAXIMUM_SIZE,
+   &(td->document_pos), &(td->document_size));
 
   intake_event_callback(te->intk, te, text_edit_intake_callback);
 

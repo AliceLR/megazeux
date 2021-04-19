@@ -24,18 +24,64 @@
 
 __M_BEGIN_DECLS
 
+enum text_line_end
+{
+  TEXT_LINES_UNIX,
+  TEXT_LINES_DOS,
+  TEXT_LINES_MAC
+};
+
+struct text_region
+{
+  unsigned int length;
+  unsigned int num_lines;
+};
+
 struct text_document
 {
   char *edit_buffer;
   size_t edit_buffer_alloc;
-  int edit_buffer_size;
+
+  // These are provided to intake2().
+  int document_size;
+  int document_pos;
+
+  char *back_ptr;
+  size_t front_size;
+  size_t front_extra;
+  size_t back_size;
+  size_t back_extra;
+
+  /* Region data for less slowly determining the current line number/column and
+   * line numbers of arbitrary positions. Allocated and maintained only after
+   * a line-based function is called.
+   */
+  struct text_region *regions;
+  size_t num_regions;
+  size_t num_regions_alloc;
+  size_t region_min;
+  size_t region_max;
+  size_t region;
+  size_t region_start;
+  size_t region_start_line;
+  enum text_line_end line_type;
   int num_lines;
   int current_line;
   int current_col;
+  int current_length;
 };
 
-boolean text_move(struct text_document *td, int amount);
-boolean text_move_to_line(struct text_document *td, int line_number, int pos);
+struct text_area
+{
+  // NOTE: not guaranteed to be terminated unless it's the full document.
+  const char *text;
+  int length;
+  int document_offset;
+};
+
+boolean text_move_position(struct text_document *td, size_t pos);
+boolean text_move_lines(struct text_document *td, int amount);
+boolean text_move_to_line(struct text_document *td, int line_number, int column);
 boolean text_move_start(struct text_document *td);
 boolean text_move_end(struct text_document *td);
 
