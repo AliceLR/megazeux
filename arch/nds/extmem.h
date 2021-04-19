@@ -28,6 +28,12 @@ __M_BEGIN_DECLS
 
 boolean nds_ram_init(RAM_TYPE type);
 
+uint32_t *platform_extram_alloc(size_t len);
+uint32_t *platform_extram_resize(void *buffer, size_t len);
+void platform_extram_free(void *buffer);
+void platform_extram_lock(void);
+void platform_extram_unlock(void);
+
 __M_END_DECLS
 
 #endif /* NDS_EXTMEM_H */
