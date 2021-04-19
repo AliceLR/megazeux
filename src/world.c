@@ -1952,8 +1952,16 @@ static int save_world_zip(struct world *mzx_world, const char *file,
     cur_board = mzx_world->board_list[i];
 
     if(cur_board)
+    {
+      if(cur_board != mzx_world->current_board)
+        retrieve_board_from_extram(cur_board);
+
       if(save_board(mzx_world, cur_board, zp, savegame, file_version, i))
         goto err_close;
+
+      if(cur_board != mzx_world->current_board)
+        store_board_to_extram(cur_board);
+    }
 
     meter_update_screen(&meter_curr, meter_target);
   }
@@ -3137,7 +3145,7 @@ void clear_world(struct world *mzx_world)
   for(i = 0; i < num_boards; i++)
   {
     if(mzx_world->current_board_id != i)
-      retrieve_board_from_extram(board_list[i]);
+      clear_board_from_extram(board_list[i]);
     clear_board(board_list[i]);
   }
   free(board_list);

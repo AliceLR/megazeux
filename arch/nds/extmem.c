@@ -47,7 +47,7 @@ static boolean has_extmem = false;
 static u16 *base;
 static size_t capacity;
 static mspace nds_mspace;
-
+/*
 enum extram_result
 {
   SUCCESS = 0,
@@ -96,7 +96,7 @@ static void nds_ext_print_info(void)
   else
     info("No RAM expansion detected.\n");
 }
-
+*/
 static void *nds_ext_malloc(size_t bytes)
 {
   void *retval;
@@ -139,8 +139,37 @@ static void nds_ext_lock()
     ram_lock();
 }
 
+/* Attempt to allocate a memory mapped buffer in extra RAM. */
+uint32_t *platform_extram_alloc(size_t len)
+{
+  return nds_ext_malloc(len);
+}
+
+/* Attempt to reallocate a memory mapped buffer in extra RAM. */
+uint32_t *platform_extram_resize(void *buffer, size_t len)
+{
+  return nds_ext_realloc(buffer, len);
+}
+
+/* Free a memory mapped buffer in extra RAM. */
+void platform_extram_free(void *buffer)
+{
+  nds_ext_free(buffer);
+}
+
+void platform_extram_lock(void)
+{
+  nds_ext_unlock();
+}
+
+void platform_extram_unlock(void)
+{
+  nds_ext_lock();
+}
+
 #define ALLOW_32BIT_WRITES
 
+/*
 // Copy with no 8-bit writes.
 static void nds_ext_copy(void *dest, void *src, size_t size)
 {
@@ -264,7 +293,7 @@ static enum extram_result nds_ext_out(void *extra_buffer_ptr, size_t size)
 
   return retval;
 }
-
+*/
 boolean nds_ram_init(RAM_TYPE type)
 {
   boolean retval = false;
@@ -282,7 +311,7 @@ boolean nds_ram_init(RAM_TYPE type)
   }
   return retval;
 }
-
+/*
 // Move the robot's memory from normal RAM to extra RAM.
 static void store_robot_to_extram(struct robot *robot)
 {
@@ -406,3 +435,4 @@ void set_current_board_ext(struct world *mzx_world, struct board *cur_board)
   if(has_extmem)
     retrieve_board_from_extram(cur_board);
 }
+*/

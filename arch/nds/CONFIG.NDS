@@ -3,4 +3,4 @@
 ./config.sh --platform nds --prefix $DEVKITARM --optimize-size \
             --disable-editor --disable-helpsys --disable-utils \
             --disable-libpng --enable-release --enable-meter \
-            --disable-screenshots --enable-stdio-redirect "$@"
+            --enable-extram --disable-screenshots --enable-stdio-redirect "$@"

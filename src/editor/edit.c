@@ -2721,6 +2721,7 @@ static boolean editor_key(context *ctx, int *key)
 
             if(del_board == current_board_id)
             {
+              mzx_world->current_board = NULL;
               editor_set_current_board(editor, 0, true);
             }
             else
