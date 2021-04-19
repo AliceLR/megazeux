@@ -106,6 +106,10 @@ static void nds_ext_free(void *mem)
 {
   int i;
 
+  // Relies on PROCEED_ON_ERROR=1 and FOOTERS=1 in dlmalloc.
+  // This combination means that mspace_free will return on
+  // pointers not originating from its mspace, and deallocate
+  // otherwise.
   for(i = 0; i < MSPACE_COUNT; i++)
     if(nds_has_mspace[i])
       mspace_free(nds_mspace[i], mem);
