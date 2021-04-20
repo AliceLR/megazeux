@@ -179,9 +179,9 @@ __libspec int main(int argc, char *argv[])
 #ifdef CONFIG_STDIO_REDIRECT
   // Do this after platform_init() since, even though platform_init() might
   // log stuff, it actually initializes the filesystem on some platforms.
-  if(!redirect_stdio(startup_dir, true))
-    if(!redirect_stdio(SHAREDIR, false))
-      redirect_stdio(getenv("HOME"), false);
+  if(!redirect_stdio_init(startup_dir, true))
+    if(!redirect_stdio_init(SHAREDIR, false))
+      redirect_stdio_init(getenv("HOME"), false);
 #endif
 
 #ifdef __APPLE__
@@ -370,6 +370,9 @@ err_free_config:
   free_config();
   free_editor_config();
 err_free_res:
+#ifdef CONFIG_STDIO_REDIRECT
+  redirect_stdio_exit();
+#endif
   mzx_res_free();
   platform_quit();
 err_out:
