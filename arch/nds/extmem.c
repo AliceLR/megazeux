@@ -50,7 +50,6 @@ enum extram_mspace
 static u16 *slot2_base;
 static size_t slot2_capacity;
 static boolean has_extmem;
-static boolean nds_has_mspace[MSPACE_COUNT];
 static mspace nds_mspace[MSPACE_COUNT];
 static struct extram_mspace_def nds_mspace_def[MSPACE_COUNT];
 
@@ -61,11 +60,11 @@ static void nds_ext_print_info(void)
   has_printed = true;
 
 #ifdef ALLOW_VRAM_MSPACE
-  if(nds_has_mspace[MSPACE_VRAM])
+  if(nds_mspace_def[MSPACE_VRAM].start != 0)
     info("Using extra VRAM for board storage.\n");
 #endif
 
-  if(nds_has_mspace[MSPACE_SLOT_2])
+  if(nds_mspace_def[MSPACE_SLOT_2].start != 0)
     info("Using '%s' RAM expansion with capacity of %d (base %p).\n",
      ram_type_string(), slot2_capacity, (void *)slot2_base);
   else
@@ -79,7 +78,7 @@ static void *nds_ext_malloc(size_t bytes)
 
   for(i = 0; i < MSPACE_COUNT; i++)
   {
-    if(nds_has_mspace[i])
+    if(nds_mspace_def[i].start != 0)
     {
       retval = mspace_malloc(nds_mspace[i], bytes);
       if(retval != NULL)
@@ -97,7 +96,7 @@ static inline void *nds_ext_realloc(void *mem, size_t bytes)
 
   for(i = 0; i < MSPACE_COUNT; i++)
   {
-    if(nds_has_mspace[i])
+    if(nds_mspace_def[i].start != 0)
     {
       retval = mspace_realloc(nds_mspace[i], mem, bytes);
       if(retval != NULL)
@@ -112,25 +111,20 @@ static void nds_ext_free(void *mem)
 {
   int i;
 
-  // Relies on PROCEED_ON_ERROR=1 and FOOTERS=1 in dlmalloc.
-  // This combination means that mspace_free will return on
-  // pointers not originating from its mspace, and deallocate
-  // otherwise.
   for(i = 0; i < MSPACE_COUNT; i++)
-    if(nds_has_mspace[i])
-      if(((u32) mem) >= nds_mspace_def[i].start && ((u32) mem) <= nds_mspace_def[i].end)
-        mspace_free(nds_mspace[i], mem);
+    if(((u32) mem) >= nds_mspace_def[i].start && ((u32) mem) < nds_mspace_def[i].end)
+      mspace_free(nds_mspace[i], mem);
 }
 
 static void nds_ext_unlock()
 {
-  if(nds_has_mspace[MSPACE_SLOT_2])
+  if(nds_mspace_def[MSPACE_SLOT_2].start != 0)
     ram_unlock();
 }
 
 static void nds_ext_lock()
 {
-  if(nds_has_mspace[MSPACE_SLOT_2])
+  if(nds_mspace_def[MSPACE_SLOT_2].start != 0)
     ram_lock();
 }
 
@@ -166,9 +160,8 @@ void platform_extram_unlock(void)
 static void nds_create_mspace_with_base(enum extram_mspace id, void* base, size_t capacity)
 {
   nds_mspace_def[id].start = (u32) base;
-  nds_mspace_def[id].end = (u32) base + capacity - 1;
+  nds_mspace_def[id].end = (u32) base + capacity;
   nds_mspace[id] = create_mspace_with_base(base, capacity, 0);
-  nds_has_mspace[id] = true;
 }
 
 boolean nds_ram_init(RAM_TYPE type)
@@ -176,7 +169,7 @@ boolean nds_ram_init(RAM_TYPE type)
   int i;
 
   // Clear mspace flags.
-  memset(nds_has_mspace, 0, sizeof(nds_has_mspace));
+  memset(nds_mspace_def, 0, sizeof(nds_mspace_def));
 
   // Allocate VRAM mspace.
 #ifdef ALLOW_VRAM_MSPACE
@@ -203,7 +196,7 @@ boolean nds_ram_init(RAM_TYPE type)
   has_extmem = false;
   for(i = 0; i < MSPACE_COUNT; i++)
   {
-    if(nds_has_mspace[i])
+    if(nds_mspace_def[i].start > 0)
     {
       has_extmem = true;
       break;
