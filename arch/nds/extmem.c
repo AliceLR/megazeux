@@ -89,22 +89,16 @@ static void *nds_ext_malloc(size_t bytes)
   return retval;
 }
 
+// TODO: Support reallocation from one mspace to another?
 static inline void *nds_ext_realloc(void *mem, size_t bytes)
 {
-  void *retval;
   int i;
 
   for(i = 0; i < MSPACE_COUNT; i++)
-  {
-    if(nds_mspace_def[i].start != 0)
-    {
-      retval = mspace_realloc(nds_mspace[i], mem, bytes);
-      if(retval != NULL)
-        break;
-    }
-  }
+    if(((u32) mem) >= nds_mspace_def[i].start && ((u32) mem) < nds_mspace_def[i].end)
+      return mspace_realloc(nds_mspace[i], mem, bytes);
 
-  return retval;
+  return NULL;
 }
 
 static void nds_ext_free(void *mem)
