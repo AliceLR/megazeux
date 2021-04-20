@@ -32,7 +32,12 @@
 #include "extmem.h"
 
 #define ALLOW_VRAM_MSPACE
-#define IS_EXTRAM(ptr) (((u32)(ptr) & 0xFF000000) != 0x02000000)
+
+struct extram_mspace_def
+{
+  u32 start;
+  u32 end;
+};
 
 enum extram_mspace
 {
@@ -47,6 +52,7 @@ static size_t slot2_capacity;
 static boolean has_extmem;
 static boolean nds_has_mspace[MSPACE_COUNT];
 static mspace nds_mspace[MSPACE_COUNT];
+static struct extram_mspace_def nds_mspace_def[MSPACE_COUNT];
 
 static void nds_ext_print_info(void)
 {
@@ -112,7 +118,8 @@ static void nds_ext_free(void *mem)
   // otherwise.
   for(i = 0; i < MSPACE_COUNT; i++)
     if(nds_has_mspace[i])
-      mspace_free(nds_mspace[i], mem);
+      if(((u32) mem) >= nds_mspace_def[i].start && ((u32) mem) <= nds_mspace_def[i].end)
+        mspace_free(nds_mspace[i], mem);
 }
 
 static void nds_ext_unlock()
@@ -156,6 +163,14 @@ void platform_extram_unlock(void)
   nds_ext_lock();
 }
 
+static void nds_create_mspace_with_base(enum extram_mspace id, void* base, size_t capacity)
+{
+  nds_mspace_def[id].start = (u32) base;
+  nds_mspace_def[id].end = (u32) base + capacity - 1;
+  nds_mspace[id] = create_mspace_with_base(base, capacity, 0);
+  nds_has_mspace[id] = true;
+}
+
 boolean nds_ram_init(RAM_TYPE type)
 {
   int i;
@@ -172,8 +187,7 @@ boolean nds_ram_init(RAM_TYPE type)
   vramSetBankE(VRAM_E_LCD);
   vramSetBankF(VRAM_F_LCD);
   vramSetBankG(VRAM_G_LCD);
-  nds_mspace[MSPACE_VRAM] = create_mspace_with_base((u16*) 0x06840000, 0x06898000 - 0x06840000, 0);
-  nds_has_mspace[MSPACE_VRAM] = true;
+  nds_create_mspace_with_base(MSPACE_VRAM, (u16*) 0x06840000, 0x06898000 - 0x06840000);
 #endif
 
   // Check for RAM expansion.
@@ -182,8 +196,7 @@ boolean nds_ram_init(RAM_TYPE type)
     // Initialize an mspace for this RAM.
     slot2_base = (u16 *)ram_unlock();
     slot2_capacity = ram_size();
-    nds_mspace[MSPACE_SLOT_2] = create_mspace_with_base(slot2_base, slot2_capacity, 0);
-    nds_has_mspace[MSPACE_SLOT_2] = true;
+    nds_create_mspace_with_base(MSPACE_SLOT_2, slot2_base, slot2_capacity);
     nds_ext_lock();
   }
 

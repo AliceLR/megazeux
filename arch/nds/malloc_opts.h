@@ -8,7 +8,7 @@
 #define MSPACES			1
 #define LACKS_SYS_MMAN_H 	1
 #define LACKS_SCHED_H		1
-#define FOOTERS			1
+#define FOOTERS			0
 #define NO_MALLOC_STATS		1
 #define PROCEED_ON_ERROR	1
 
