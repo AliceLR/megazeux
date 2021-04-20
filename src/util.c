@@ -385,8 +385,12 @@ FILE *mzxerr_h = NULL;
 
 /**
  * Some platforms may not be able to display console output without extra work.
- * On these platforms redirect STDIO to files so the console output is easier
- * to read. NOTE: this needs to use stdio, don't use vfile here.
+ * On these platforms, open stdout/stderr replacement files instead. The log
+ * macros and any other references to `mzxout` and `mzxerr` will use these
+ * files instead of stdio.
+ *
+ * Previously, this was implemented using `freopen` on stdout/stderr, but
+ * doing this in some console SDKs does not work correctly (NDS, PS Vita).
  */
 boolean redirect_stdio_init(const char *base_path, boolean require_conf)
 {
@@ -433,7 +437,7 @@ boolean redirect_stdio_init(const char *base_path, boolean require_conf)
   fprintf(mzxout, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
   fflush(mzxout);
 
-  // Redirect stderr to stderr.txt.
+  // Redirect mzxerr to stderr.txt.
   dest_path[dest_len] = '\0';
   path_append(dest_path, MAX_PATH, "stderr.txt");
   fp_wr = fopen_unsafe(dest_path, "w");
