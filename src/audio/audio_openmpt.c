@@ -181,7 +181,7 @@ static void omp_log(const char *message, void *data)
   (void)data;
 
   if(message)
-     fprintf(stderr, "%s\n", message);
+     fprintf(mzxerr, "%s\n", message);
 }
 
 static struct audio_stream *construct_openmpt_stream(char *filename,

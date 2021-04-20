@@ -227,6 +227,9 @@ int error(const char *string, enum error_type type, unsigned int options,
   m_show();
   if(ret == ERROR_OPT_EXIT) // Exit the program
   {
+#ifdef CONFIG_STDIO_REDIRECT
+    redirect_stdio_exit();
+#endif
     platform_quit();
     exit(-1);
   }

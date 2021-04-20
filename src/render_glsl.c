@@ -818,11 +818,9 @@ static void glsl_debug_callback(GLenum source, GLenum type, GLuint id,
  GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
 {
   length = length < 0 ? (GLsizei)strlen(message) : length;
-  fprintf(stderr,
-    "GL DEBUG (source 0x%x, type 0x%x, severity 0x%x): %.*s\n",
+  debug("GL (source 0x%x, type 0x%x, severity 0x%x): %.*s\n",
     source, type, severity, length, message
   );
-  fflush(stderr);
 }
 #endif
 

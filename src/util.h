@@ -43,6 +43,16 @@ __M_BEGIN_DECLS
 
 #define SGN(x) ((x > 0) - (x < 0))
 
+#ifdef CONFIG_STDIO_REDIRECT
+CORE_LIBSPEC extern FILE *mzxout_h;
+CORE_LIBSPEC extern FILE *mzxerr_h;
+#define mzxout (mzxout_h ? mzxout_h : stdout)
+#define mzxerr (mzxerr_h ? mzxerr_h : stderr)
+#else
+#define mzxout stdout
+#define mzxerr stderr
+#endif
+
 enum resource_id
 {
   MZX_EXECUTABLE_DIR = 0,
@@ -87,7 +97,10 @@ CORE_LIBSPEC int mzx_res_init(const char *argv0, boolean editor);
 CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC const char *mzx_res_get_by_id(enum resource_id id);
 
-CORE_LIBSPEC boolean redirect_stdio(const char *base_path, boolean require_conf);
+#ifdef CONFIG_STDIO_REDIRECT
+CORE_LIBSPEC boolean redirect_stdio_init(const char *base_path, boolean require_conf);
+CORE_LIBSPEC void redirect_stdio_exit(void);
+#endif
 
 // Code to load multi-byte ints from little endian file
 int fgetw(FILE *fp);
@@ -159,21 +172,21 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 
 #define info(...) \
  do { \
-   fprintf(stdout, "INFO: " __VA_ARGS__); \
-   fflush(stdout); \
+   fprintf(mzxout, "INFO: " __VA_ARGS__); \
+   fflush(mzxout); \
  } while(0)
 
 #define warn(...) \
  do { \
-   fprintf(stderr, "WARNING: " __VA_ARGS__); \
-   fflush(stderr); \
+   fprintf(mzxerr, "WARNING: " __VA_ARGS__); \
+   fflush(mzxerr); \
  } while(0)
 
 #ifdef DEBUG
 #define debug(...) \
  do { \
-   fprintf(stderr, "DEBUG: " __VA_ARGS__); \
-   fflush(stderr); \
+   fprintf(mzxerr, "DEBUG: " __VA_ARGS__); \
+   fflush(mzxerr); \
  } while(0)
 #else
 #define debug(...) do { } while(0)
@@ -181,8 +194,8 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 #if defined(DEBUG) && defined(DEBUG_TRACE)
 #define trace(...) \
  do { \
-    fprintf(stderr, "TRACE: " __VA_ARGS__); \
-    fflush(stderr); \
+    fprintf(mzxerr, "TRACE: " __VA_ARGS__); \
+    fflush(mzxerr); \
  } while(0)
 #else
 #define trace(...) do { } while(0)
