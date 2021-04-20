@@ -92,6 +92,8 @@ USERS
   an extra blank line.
 + Pressing enter at the start of a line with an extended macro
   now invokes the macro instead of just inserting a line.
++ Fixed a bug where stdio redirect could generate corrupted log
+  files on the Nintendo DS due to poor freopen support.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS
@@ -109,6 +111,10 @@ DEVELOPERS
 + The draw and click handlers have been removed from intake2().
   This should provide more flexibility to the parent context for
   displaying the string that is being edited.
++ Added "mzxout" and "mzxerr" streams for printing console
+  messages. In most places these should be used instead of
+  "stdout" and "stderr" to allow debug and warning messages
+  print to the correct log files when stdio redirect is enabled.
 
 
 November 22nd, 2020 - MZX 2.92f

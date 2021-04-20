@@ -535,10 +535,10 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   return VAL_SUCCESS;
 
 err_free:
-  fprintf(stderr,
+  fprintf(mzxerr,
    "load_world_info: expected ID %xh not found (found %xh, last %xh)\n",
    missing_ident, ident, last_ident);
-  fflush(stderr);
+  fflush(mzxerr);
 
   free(buffer);
   mzx_world->raw_world_info = NULL;
@@ -2138,8 +2138,8 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
     if(err != ZIP_SUCCESS)
     {
       zip_skip_file(zp);
-      fprintf(stderr, "ERROR - Read error @ file ID %u\n", file_id);
-      fflush(stderr);
+      fprintf(mzxerr, "ERROR - Read error @ file ID %u\n", file_id);
+      fflush(mzxerr);
     }
   }
 
@@ -2262,10 +2262,10 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
 
   else
   {
-    fprintf(stderr,
+    fprintf(mzxerr,
      "ERROR: Attempted to save incompatible world version %d.%d! Aborting!\n",
      (world_version >> 8) & 0xFF, world_version & 0xFF);
-    fflush(stderr);
+    fflush(mzxerr);
 
     return -1;
   }

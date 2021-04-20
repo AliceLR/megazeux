@@ -1499,8 +1499,8 @@ static boolean wildcard_char_is_escapable(unsigned char c)
 #if 0
 #define WILDCARD_PRINT() do { \
     for(size_t k = 0; k <= str_len; k++) \
-      fprintf(stderr, "%c ", (k+1 < left ? ' ' : str_matched[k] ? 'Y' : 'n')); \
-    fprintf(stderr, "\n"); \
+      fprintf(mzxerr, "%c ", (k+1 < left ? ' ' : str_matched[k] ? 'Y' : 'n')); \
+    fprintf(mzxerr, "\n"); \
 } while(0)
 #endif
 
