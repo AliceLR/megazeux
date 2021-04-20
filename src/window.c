@@ -1344,6 +1344,7 @@ static void draw_radio_button(struct world *mzx_world, struct dialog *di,
 
   for(i = 0; i < src->num_choices; i++)
   {
+    color_line(src->max_length + 4, x, y + i, DI_NONACTIVE);
     if(i != *(src->result))
     {
       write_string(radio_off, x, y + i, DI_NONACTIVE, 0);
