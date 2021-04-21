@@ -1196,7 +1196,9 @@ void real_store_board_to_extram(struct board *board, const char *file, int line)
          cur_robot->program_source_length))
           goto err;
       }
+#endif
 
+#ifdef CONFIG_EDITOR
       if(cur_robot->command_map)
       {
         if(!store_buffer_to_extram(&data, (char **)&cur_robot->command_map,
@@ -1204,6 +1206,8 @@ void real_store_board_to_extram(struct board *board, const char *file, int line)
           goto err;
       }
 #endif
+      // TODO: it would eventually be better to pack and send these to extra
+      // memory instead of doing this.
       clear_label_cache(cur_robot);
     }
   }
@@ -1296,7 +1300,9 @@ void real_retrieve_board_from_extram(struct board *board, boolean free_data,
          cur_robot->program_source_length))
           goto err;
       }
+#endif
 
+#ifdef CONFIG_EDITOR
       if(cur_robot->command_map)
       {
         if(!retrieve_buffer_from_extram(&data, (char **)&cur_robot->command_map,
@@ -1304,6 +1310,8 @@ void real_retrieve_board_from_extram(struct board *board, boolean free_data,
           goto err;
       }
 #endif
+      // TODO: it would eventually be better to pack and send these to extra
+      // memory instead of doing this.
       clear_label_cache(cur_robot);
       cache_robot_labels(cur_robot);
     }

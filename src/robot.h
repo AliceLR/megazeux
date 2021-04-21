@@ -70,7 +70,6 @@ void translate_robot_bytecode_offsets(struct world *mzx_world,
 #else /* !CONFIG_DEBYTECODE */
 
 CORE_LIBSPEC void reallocate_robot(struct robot *robot, int size);
-CORE_LIBSPEC void clear_label_cache(struct robot *cur_robot);
 
 void change_robot_name(struct board *src_board, struct robot *cur_robot,
  char *new_name);
@@ -81,6 +80,7 @@ int find_free_robot(struct board *src_board);
 #endif /* !CONFIG_DEBYTECODE */
 
 CORE_LIBSPEC void cache_robot_labels(struct robot *robot);
+CORE_LIBSPEC void clear_label_cache(struct robot *cur_robot);
 
 CORE_LIBSPEC void clear_robot_contents(struct robot *cur_robot);
 CORE_LIBSPEC void clear_robot_id(struct board *src_board, int id);

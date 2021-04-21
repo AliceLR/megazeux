@@ -159,7 +159,7 @@ core_cobjs += arch/nds/protected_palette.bin.o
 core_cobjs += arch/nds/audio.o
 core_cobjs += arch/nds/platform.o arch/nds/event.o
 core_cobjs += arch/nds/render.o arch/nds/evq.o
-ifneq (${BUILD_DEBYTECODE},1)
+ifeq (${BUILD_EXTRAM},1)
 core_cobjs += arch/nds/dlmalloc.o
 core_cobjs += arch/nds/ram.o arch/nds/extmem.o
 endif
