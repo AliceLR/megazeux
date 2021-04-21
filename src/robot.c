@@ -917,9 +917,6 @@ void cache_robot_labels(struct robot *cur_robot)
   return;
 }
 
-#ifdef CONFIG_DEBYTECODE
-static
-#endif
 void clear_label_cache(struct robot *cur_robot)
 {
   int i;
