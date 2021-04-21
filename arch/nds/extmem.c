@@ -95,7 +95,7 @@ static inline void *nds_ext_realloc(void *mem, size_t bytes)
   int i;
 
   for(i = 0; i < MSPACE_COUNT; i++)
-    if(((u32) mem) >= nds_mspace_def[i].start && ((u32) mem) < nds_mspace_def[i].end)
+    if(((u32)mem) >= nds_mspace_def[i].start && ((u32)mem) < nds_mspace_def[i].end)
       return mspace_realloc(nds_mspace[i], mem, bytes);
 
   return NULL;
@@ -106,7 +106,7 @@ static void nds_ext_free(void *mem)
   int i;
 
   for(i = 0; i < MSPACE_COUNT; i++)
-    if(((u32) mem) >= nds_mspace_def[i].start && ((u32) mem) < nds_mspace_def[i].end)
+    if(((u32)mem) >= nds_mspace_def[i].start && ((u32)mem) < nds_mspace_def[i].end)
       mspace_free(nds_mspace[i], mem);
 }
 
@@ -151,10 +151,10 @@ void platform_extram_unlock(void)
   nds_ext_lock();
 }
 
-static void nds_create_mspace_with_base(enum extram_mspace id, void* base, size_t capacity)
+static void nds_create_mspace_with_base(enum extram_mspace id, void *base, size_t capacity)
 {
-  nds_mspace_def[id].start = (u32) base;
-  nds_mspace_def[id].end = (u32) base + capacity;
+  nds_mspace_def[id].start = (u32)base;
+  nds_mspace_def[id].end = (u32)base + capacity;
   nds_mspace[id] = create_mspace_with_base(base, capacity, 0);
 }
 
@@ -174,7 +174,7 @@ boolean nds_ram_init(RAM_TYPE type)
   vramSetBankE(VRAM_E_LCD);
   vramSetBankF(VRAM_F_LCD);
   vramSetBankG(VRAM_G_LCD);
-  nds_create_mspace_with_base(MSPACE_VRAM, (u16*) 0x06840000, 0x06898000 - 0x06840000);
+  nds_create_mspace_with_base(MSPACE_VRAM, (u16 *)0x06840000, 0x06898000 - 0x06840000);
 #endif
 
   // Check for RAM expansion.

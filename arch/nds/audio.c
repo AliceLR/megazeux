@@ -55,7 +55,7 @@ static inline void nds_pcs_sound(int freq, int volume)
 static inline int nds_mm_get_position(void)
 {
   fifoSendValue32(FIFO_MZX, CMD_MZX_MM_GET_POSITION);
-  while (!fifoCheckValue32(FIFO_MZX));
+  while(!fifoCheckValue32(FIFO_MZX));
   return fifoGetValue32(FIFO_MZX);
 }
 
