@@ -24,6 +24,16 @@ USERS
   using custom indices.
 + Added support for 800x240 mode to the 3DS port. This mode can
   be toggled with the 3DS keyboard. (asie)
++ Added support for using 352kB of previously unused NDS VRAM
+  as board storage. This area can be used for board storage even
+  when a slot 2 expansion cartridge is not present. (asie)
++ Reduced RAM usage by 50k by removing variants of *printf and
+  *scanf with floating point support on the NDS. (asie)
++ The MOD_ORDER counter is now readable on the NDS. (asie)
++ Inactive boards and some robots are now compressed on the NDS,
+  which (combined with asie's VRAM patch) should vastly increase
+  the number of games that can be played on the original DS and
+  DS Lite without a slot 2 expansion cartridge.
 + Added a list of variables related to RAM usage to the counter
   debug window. This list can be found in the "World" list.
 + Added vlayer saved positions to the editor. Like regular saved
