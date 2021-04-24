@@ -109,6 +109,10 @@ USERS
   starting board is the title board.
 + Fixed a crash that could occur when loading a save file with
   the temporary board flag set but no temporary board data.
++ Fixed a bug in the random number generation function that
+  could cause it to rarely return a number outside of the
+  expected range. This unfortunately breaks compatibility for
+  the RANDOM_SEED# counter.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS

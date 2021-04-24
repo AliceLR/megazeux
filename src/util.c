@@ -558,7 +558,7 @@ unsigned int Random(uint64_t range)
   x ^= x << 25; // b
   x ^= x >> 27; // c
   rng_state = x;
-  return ((x * 0x2545F4914F6CDD1D) >> 32) * range / 0xFFFFFFFF;
+  return (((x * 0x2545F4914F6CDD1D) >> 32) * range) >> 32;
 }
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
