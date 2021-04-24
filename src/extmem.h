@@ -89,7 +89,7 @@ static inline void real_retrieve_board_from_extram(struct board *board,
 static inline void real_set_current_board(struct world *mzx_world,
  struct board *cur_board, const char *file, int line)
 {
-  if(mzx_world->current_board)
+  if(mzx_world->current_board && mzx_world->current_board != cur_board)
     real_store_board_to_extram(mzx_world->current_board, file, line);
   mzx_world->current_board = cur_board;
 }
@@ -97,8 +97,11 @@ static inline void real_set_current_board(struct world *mzx_world,
 static inline void real_set_current_board_ext(struct world *mzx_world,
  struct board *cur_board, const char *file, int line)
 {
-  real_set_current_board(mzx_world, cur_board, file, line);
-  real_retrieve_board_from_extram(cur_board, false, file, line);
+  if(mzx_world->current_board != cur_board)
+  {
+    real_set_current_board(mzx_world, cur_board, file, line);
+    real_retrieve_board_from_extram(cur_board, false, file, line);
+  }
 }
 
 __M_END_DECLS

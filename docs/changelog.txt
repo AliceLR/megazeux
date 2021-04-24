@@ -104,6 +104,9 @@ USERS
   now invokes the macro instead of just inserting a line.
 + Fixed a bug where stdio redirect could generate corrupted log
   files on the Nintendo DS due to poor freopen support.
++ Fixed a Reset Board on Entry bug where a temporary board would
+  not be generated when loading the title screen or if the
+  starting board is the title board.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS
