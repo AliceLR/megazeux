@@ -2244,6 +2244,7 @@ static void _decrypt_legacy_world(struct memfile *mf, char *password,
   unsigned char *pos = mf->current;
 
   fprintf(stderr, "xor=%u, password: %s\n", (unsigned int)xor, password);
+  fflush(stderr);
 
   while(pos < mf->end && ((size_t)pos) % sizeof(ALIGN_TYPE))
     *(pos++) ^= xor;
