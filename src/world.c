@@ -2012,6 +2012,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 
   int meter_curr = 0;
   int meter_target = 2;
+  boolean loaded_temp_board = false;
 
   meter_initial_draw(meter_curr, meter_target, "Loading...");
 
@@ -2114,6 +2115,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
            load_board_allocate(mzx_world, zp, savegame, file_version, board_id);
 
           meter_update_screen(&meter_curr, meter_target);
+          loaded_temp_board = true;
         }
         break;
       }
@@ -2165,6 +2167,11 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 
     error_message(E_WORLD_BOARD_MISSING, 0, NULL);
   }
+
+  // Check for missing temporary board; if the temporary board is missing,
+  // clear the temporary flag so the temporary board will be regenerated.
+  if(mzx_world->temporary_board && !loaded_temp_board)
+    mzx_world->temporary_board = false;
 
   meter_update_screen(&meter_curr, meter_target);
 

@@ -107,6 +107,8 @@ USERS
 + Fixed a Reset Board on Entry bug where a temporary board would
   not be generated when loading the title screen or if the
   starting board is the title board.
++ Fixed a crash that could occur when loading a save file with
+  the temporary board flag set but no temporary board data.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS
