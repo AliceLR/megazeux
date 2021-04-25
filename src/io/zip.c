@@ -2376,7 +2376,6 @@ static void zip_init_for_write(struct zip_archive *zp, int num_files)
 static struct zip_archive *zip_new_archive(void)
 {
   struct zip_archive *zp = cmalloc(sizeof(struct zip_archive));
-  size_t i;
   zp->is_memory = false;
 
   zp->files = NULL;
@@ -2400,8 +2399,7 @@ static struct zip_archive *zip_new_archive(void)
 
   zp->stream = NULL;
   zp->stream_data = NULL;
-  for(i = 0; i < ARRAY_SIZE(zp->stream_data_ptrs); i++)
-    zp->stream_data_ptrs[i] = NULL;
+  memset(zp->stream_data_ptrs, 0, sizeof(zp->stream_data_ptrs));
 
   zp->mode = ZIP_S_READ_UNINITIALIZED;
 
