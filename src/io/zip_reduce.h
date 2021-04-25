@@ -45,14 +45,20 @@ struct reduce_stream_data
 };
 
 /**
+ * Allocate an expanding stream.
+ */
+static inline struct zip_stream_data *reduce_ex_create(void)
+{
+  return cmalloc(sizeof(struct reduce_stream_data));
+}
+
+/**
  * Open an expanding stream.
  */
 static inline void reduce_ex_open(struct zip_stream_data *zs, uint16_t method,
  uint16_t flags)
 {
   struct reduce_stream_data *rs = ((struct reduce_stream_data *)zs);
-
-  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct reduce_stream_data));
   memset(zs, 0, sizeof(struct reduce_stream_data));
   rs->factor = CLAMP((method - 2), 0, 3);
 }

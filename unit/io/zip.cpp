@@ -278,22 +278,20 @@ static zip_method_handler *get_stream(zip_compression_method method)
   return zip_method_handlers[method];
 }
 
-static enum zip_error compress(zip_method_handler *stream,
+static enum zip_error compress(zip_method_handler *stream, zip_stream_data *sd,
  zip_compression_method method, uint16_t flags,
  const char *in, size_t in_len, char *out, size_t out_len, size_t *final_out)
 {
-  uint8_t buffer[ZIP_STREAM_DATA_ALLOC_SIZE];
-  zip_stream_data *sd = (zip_stream_data *)buffer;
   enum zip_error result;
 
-  assert(in);
-  assert(out);
-  assert(final_out);
-  assert(stream->compress_open);
-  assert(stream->compress_block);
-  assert(stream->input);
-  assert(stream->output);
-  assert(stream->close);
+  ASSERT(in);
+  ASSERT(out);
+  ASSERT(final_out);
+  ASSERT(stream->compress_open);
+  ASSERT(stream->compress_block);
+  ASSERT(stream->input);
+  ASSERT(stream->output);
+  ASSERT(stream->close);
 
   stream->compress_open(sd, method, flags);
   stream->input(sd, in, in_len);
@@ -305,21 +303,19 @@ static enum zip_error compress(zip_method_handler *stream,
   return result;
 }
 
-static enum zip_error decompress(zip_method_handler *stream,
+static enum zip_error decompress(zip_method_handler *stream, zip_stream_data *sd,
  zip_compression_method method, uint16_t flags,
  const char *in, size_t in_len, char *out, size_t out_len)
 {
-  uint8_t buffer[ZIP_STREAM_DATA_ALLOC_SIZE];
-  zip_stream_data *sd = (zip_stream_data *)buffer;
   enum zip_error result;
 
-  assert(in);
-  assert(out);
-  assert(stream->decompress_open);
-  assert(stream->decompress_block || stream->decompress_file);
-  assert(stream->input);
-  assert(stream->output);
-  assert(stream->close);
+  ASSERT(in);
+  ASSERT(out);
+  ASSERT(stream->decompress_open);
+  ASSERT(stream->decompress_block || stream->decompress_file);
+  ASSERT(stream->input);
+  ASSERT(stream->output);
+  ASSERT(stream->close);
 
   stream->decompress_open(sd, method, flags);
   stream->input(sd, in, in_len);
@@ -376,22 +372,25 @@ static enum zip_error decompress(zip_method_handler *stream,
 #define DECOMPRESS_BOILERPLATE(field,method) \
   do \
   { \
+    ASSERT(stream->create); \
+    ASSERT(stream->destroy); \
+    struct zip_stream_data *sd = stream->create(); \
+    \
     for(int _i = 0; _i < arraysize(data); _i++) \
     { \
       zip_stream_test_data &d = data[_i]; \
       snprintf(desc, arraysize(desc), "%d valid (%zu)", _i, d.expected.len); \
       SET_A(a, a_len, d.expected, d.expected_is_base64); \
       SET_B(b, b_len, d.field, d.compressed_is_base64); \
-      result = decompress(stream, method, flags, b, b_len, \
+      result = decompress(stream, sd, method, flags, b, b_len, \
        buffer, BUFFER_SIZE); \
-      ASSERTEQX(result, ZIP_STREAM_FINISHED, desc); \
       cmp = memcmp(a, buffer, a_len); \
       ASSERTEQX(cmp, 0, desc); \
       for(int _j = 7; _j >= 0; _j--) \
       { \
         snprintf(desc, arraysize(desc), "%d truncated %d/8 (%zu)", _i, _j, d.expected.len); \
         memset(buffer, 0, BUFFER_SIZE); \
-        result = decompress(stream, method, flags, b, b_len * _j / 8, \
+        result = decompress(stream, sd, method, flags, b, b_len * _j / 8, \
          buffer, BUFFER_SIZE); \
         ASSERTX(result != ZIP_OUTPUT_FULL, desc); \
         ASSERTX(result != ZIP_EOF, desc); \
@@ -414,7 +413,7 @@ static enum zip_error decompress(zip_method_handler *stream,
         if(!memcmp(buffer_b + b_pos, a + a_pos, size)) \
           continue;\
         memcpy(buffer_b + b_pos, a + a_pos, size); \
-        result = decompress(stream, method, flags, b, b_len, \
+        result = decompress(stream, sd, method, flags, b, b_len, \
          buffer, BUFFER_SIZE); \
         ASSERTX(result != ZIP_EOF, desc); \
         if(result == ZIP_STREAM_FINISHED) \
@@ -424,6 +423,7 @@ static enum zip_error decompress(zip_method_handler *stream,
         } \
       } \
     } \
+    stream->destroy(sd); \
   } while(0)
 
 
@@ -560,8 +560,13 @@ UNITTEST(Compress)
     FAIL("Failed to get deflate stream!");
 
   ASSERT(buffer_a && buffer_cmp && buffer_dcmp);
+  ASSERT(stream->create);
+  ASSERT(stream->destroy);
 
   check_data();
+
+  struct zip_stream_data *sd = stream->create();
+  ASSERT(sd);
 
   for(i = 0; i < arraysize(data); i++)
   {
@@ -570,17 +575,18 @@ UNITTEST(Compress)
 
     SET_A(a, a_len, d.expected, d.expected_is_base64);
 
-    result = compress(stream, ZIP_M_DEFLATE, 0, a, a_len,
+    result = compress(stream, sd, ZIP_M_DEFLATE, 0, a, a_len,
      buffer_cmp, BUFFER_SIZE, &cmp_len);
     ASSERTEQX(result, ZIP_STREAM_FINISHED, desc);
 
-    result = decompress(stream, ZIP_M_DEFLATE, 0, buffer_cmp, cmp_len,
+    result = decompress(stream, sd, ZIP_M_DEFLATE, 0, buffer_cmp, cmp_len,
      buffer_dcmp, BUFFER_SIZE);
     ASSERTEQX(result, ZIP_STREAM_FINISHED, desc);
 
     int cmp = memcmp(a, buffer_dcmp, a_len);
     ASSERTEQX(cmp, 0, desc);
   }
+  stream->destroy(sd);
 }
 
 enum contents_type
