@@ -27,13 +27,18 @@ __M_BEGIN_DECLS
 #include <inttypes.h>
 #include "zip.h"
 
-#define MAX_SUPPORTED_METHOD ZIP_M_DEFLATE64
-
 /**
  * Describes ZIP stream functions for a particular (de)compresson method.
  */
 struct zip_method_handler
 {
+  // Create a stream data structure for this method handler.
+  struct zip_stream_data *(*create)(void);
+
+  // Destroy a stream data structure for this method handler.
+  // This function will free the provided zip_stream_data pointer.
+  void (*destroy)(struct zip_stream_data *);
+
   // Open a decompression stream.
   void (*decompress_open)(struct zip_stream_data *, uint16_t method,
    uint16_t flags);
@@ -42,7 +47,8 @@ struct zip_method_handler
   void (*compress_open)(struct zip_stream_data *, uint16_t method,
    uint16_t flags);
 
-  // Frees any memory allocated by the stream. Does not free the zip_stream.
+  // Frees any memory allocated by the stream and does any work necessary to
+  // reset the zip_stream_data struct for the next file, if applicable.
   void (*close)(struct zip_stream_data *, size_t *final_input_length,
    size_t *final_output_length);
 
@@ -69,7 +75,7 @@ struct zip_method_handler
  * ZIP stream function registry for supported (de)compression methods.
  */
 UTILS_LIBSPEC
-extern struct zip_method_handler *zip_method_handlers[MAX_SUPPORTED_METHOD + 1];
+extern struct zip_method_handler *zip_method_handlers[ZIP_M_MAX_SUPPORTED + 1];
 
 __M_END_DECLS
 

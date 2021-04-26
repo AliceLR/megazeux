@@ -57,6 +57,8 @@ enum zip_compression_method
   ZIP_M_PPMD                    = 98,
 };
 
+#define ZIP_M_MAX_SUPPORTED ZIP_M_DEFLATE64
+
 enum zip_general_purpose_flag
 {
   ZIP_F_ENCRYPTED           = (1<<0), // Indicates that a file is encrypted.
@@ -186,12 +188,6 @@ struct zip_stream_data
   boolean is_compression_stream;
 };
 
-// zip_stream_data structs should be allocated with at least this much extra
-// space for specific compression method data.
-#define ZIP_STREAM_DATA_PADDING 128
-#define ZIP_STREAM_DATA_ALLOC_SIZE \
- (sizeof(struct zip_stream_data) + ZIP_STREAM_DATA_PADDING)
-
 struct zip_method_handler;
 
 struct zip_archive
@@ -235,8 +231,8 @@ struct zip_archive
   size_t *external_buffer_size;
 
   struct zip_method_handler *stream;
-  struct zip_stream_data stream_data;
-  uint8_t padding[ZIP_STREAM_DATA_PADDING];
+  struct zip_stream_data *stream_data;
+  struct zip_stream_data *stream_data_ptrs[ZIP_M_MAX_SUPPORTED + 1];
 };
 
 UTILS_LIBSPEC int zip_bound_deflate_usage(size_t length);

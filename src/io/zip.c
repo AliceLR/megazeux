@@ -220,7 +220,7 @@ static inline boolean zip_is_ignore_file(const char *filename, size_t len)
  */
 static boolean zip_method_is_supported(uint8_t method)
 {
-  if(method > ZIP_M_NONE && method <= MAX_SUPPORTED_METHOD)
+  if(method > ZIP_M_NONE && method <= ZIP_M_MAX_SUPPORTED)
     return !!zip_method_handlers[method];
 
   return (method == ZIP_M_NONE);
@@ -234,6 +234,7 @@ static enum zip_error zip_get_stream(struct zip_archive *zp, uint8_t method,
  enum zip_internal_state new_mode)
 {
   zp->stream = NULL;
+  zp->stream_data = NULL;
 
   if(method == ZIP_M_NONE)
   {
@@ -241,7 +242,7 @@ static enum zip_error zip_get_stream(struct zip_archive *zp, uint8_t method,
     return ZIP_SUCCESS;
   }
 
-  if(method <= MAX_SUPPORTED_METHOD)
+  if(method <= ZIP_M_MAX_SUPPORTED)
   {
     struct zip_method_handler *result = zip_method_handlers[method];
 
@@ -261,7 +262,11 @@ static enum zip_error zip_get_stream(struct zip_archive *zp, uint8_t method,
       {
         if(result && result->decompress_open)
         {
+          if(!zp->stream_data_ptrs[method])
+            zp->stream_data_ptrs[method] = result->create();
+
           zp->stream = result;
+          zp->stream_data = zp->stream_data_ptrs[method];
           return ZIP_SUCCESS;
         }
         return ZIP_UNSUPPORTED_DECOMPRESSION;
@@ -271,7 +276,11 @@ static enum zip_error zip_get_stream(struct zip_archive *zp, uint8_t method,
       {
         if(result && result->compress_open)
         {
+          if(!zp->stream_data_ptrs[method])
+            zp->stream_data_ptrs[method] = result->create();
+
           zp->stream = result;
+          zp->stream_data = zp->stream_data_ptrs[method];
           return ZIP_SUCCESS;
         }
         return ZIP_UNSUPPORTED_COMPRESSION;
@@ -825,7 +834,7 @@ static void zip_set_stream_buffer_size(struct zip_archive *zp, size_t size)
 static enum zip_error zread_stream(uint8_t *destBuf, size_t readLen,
  size_t *consumed, struct zip_archive *zp)
 {
-  struct zip_stream_data *stream_data = &(zp->stream_data);
+  struct zip_stream_data *stream_data = zp->stream_data;
   boolean direct_write = (readLen == zp->stream_u_left);
   uint8_t *in;
   size_t in_size;
@@ -1180,7 +1189,7 @@ static enum zip_error zip_read_stream_open(struct zip_archive *zp, uint8_t mode)
   zp->stream_crc32 = 0;
 
   if(zp->stream)
-    zp->stream->decompress_open(&(zp->stream_data), method, central_fh->flags);
+    zp->stream->decompress_open(zp->stream_data, method, central_fh->flags);
 
   precalculate_read_errors(zp);
   return ZIP_SUCCESS;
@@ -1276,7 +1285,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
 
   // TODO maybe check final in/out...
   if(zp->stream)
-    zp->stream->close(&(zp->stream_data), NULL, NULL);
+    zp->stream->close(zp->stream_data, NULL, NULL);
 
   expected_crc32 = zp->streaming_file->crc32;
   stream_crc32 = zp->stream_crc32;
@@ -1472,7 +1481,7 @@ static enum zip_error zwrite_out(const void *buffer, size_t len,
 static enum zip_error zwrite_stream_compress(const void *buffer, size_t len,
  size_t *write_len, struct zip_archive *zp)
 {
-  struct zip_stream_data *stream_data = &(zp->stream_data);
+  struct zip_stream_data *stream_data = zp->stream_data;
   uint8_t *out = zp->stream_buffer + ZIP_STREAM_BUFFER_U_SIZE;
   size_t out_len = ZIP_STREAM_BUFFER_C_SIZE;
   enum zip_error result;
@@ -1761,7 +1770,7 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
 
   if(zp->stream)
   {
-    struct zip_stream_data *stream_data = &(zp->stream_data);
+    struct zip_stream_data *stream_data = zp->stream_data;
     zp->stream->compress_open(stream_data, method, 0);
 
     zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
@@ -1837,7 +1846,7 @@ enum zip_error zip_write_close_stream(struct zip_archive *zp)
 
   if(zp->stream)
   {
-    struct zip_stream_data *stream_data = &(zp->stream_data);
+    struct zip_stream_data *stream_data = zp->stream_data;
     size_t final_in = 0;
     size_t final_out = 0;
     size_t write_len = 0;
@@ -1941,6 +1950,10 @@ enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
   enum zip_error result;
 
   // No need to check mode; the functions used here will
+
+  // Attempting to DEFLATE a small file? Store instead...
+  if(srcLen < 256 && method == ZIP_M_DEFLATE)
+    method = ZIP_M_NONE;
 
   result = zip_write_open_file_stream(zp, name, method);
   if(result)
@@ -2229,7 +2242,7 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
 {
   int result = ZIP_SUCCESS;
   int mode;
-  int i;
+  size_t i;
 
   if(!zp)
     return ZIP_NULL;
@@ -2320,6 +2333,10 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
       *final_length = zp->end_in_file;
   }
 
+  for(i = 0; i < ARRAY_SIZE(zp->stream_data_ptrs); i++)
+    if(zip_method_handlers[i] && zp->stream_data_ptrs[i])
+      zip_method_handlers[i]->destroy(zp->stream_data_ptrs[i]);
+
   vfclose(zp->vf);
 
   free(zp->header_buffer);
@@ -2379,6 +2396,10 @@ static struct zip_archive *zip_new_archive(void)
 
   zp->external_buffer = NULL;
   zp->external_buffer_size = NULL;
+
+  zp->stream = NULL;
+  zp->stream_data = NULL;
+  memset(zp->stream_data_ptrs, 0, sizeof(zp->stream_data_ptrs));
 
   zp->mode = ZIP_S_READ_UNINITIALIZED;
 
