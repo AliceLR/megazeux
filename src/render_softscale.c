@@ -102,6 +102,9 @@ static boolean softscale_init_video(struct graphics_data *graphics,
   if(conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
+  snprintf(graphics->sdl_render_driver, ARRAY_SIZE(graphics->sdl_render_driver),
+   "%s", conf->sdl_render_driver);
+
   if(!set_video_mode())
   {
     softscale_free_video(graphics);
@@ -141,9 +144,9 @@ static void find_texture_format(struct graphics_data *graphics)
   Uint32 texture_amask = 0;
   boolean allow_subsampling = false;
   boolean is_yuv = false;
-  SDL_RendererInfo info;
+  SDL_RendererInfo rinfo;
 
-  if(!SDL_GetRendererInfo(render_data->sdl.renderer, &info))
+  if(!SDL_GetRendererInfo(render_data->sdl.renderer, &rinfo))
   {
     Uint32 yuv_priority = 1;
     Uint32 priority = 0;
@@ -155,12 +158,12 @@ static void find_texture_format(struct graphics_data *graphics)
     yuv_priority = 1000000;
 #endif
 
-    debug("Using SDL renderer '%s'\n", info.name);
+    info("SDL render driver: '%s'\n", rinfo.name);
 
     // Try to use a native texture format to improve performance.
-    for(i = 0; i < info.num_texture_formats; i++)
+    for(i = 0; i < rinfo.num_texture_formats; i++)
     {
-      Uint32 format = info.texture_formats[i];
+      Uint32 format = rinfo.texture_formats[i];
 
       debug("%d: %s\n", i, SDL_GetPixelFormatName(format));
 
@@ -327,6 +330,12 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
   // considering both software and GLSL need it...
   SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY, "0");
 #endif
+
+  if(graphics->sdl_render_driver[0])
+  {
+    info("Requesting SDL render driver: '%s'\n", graphics->sdl_render_driver);
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, graphics->sdl_render_driver);
+  }
 
   render_data->sdl.window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,

@@ -36,6 +36,10 @@ USERS
   DS Lite without a slot 2 expansion cartridge.
 + Added a list of variables related to RAM usage to the counter
   debug window. This list can be found in the "World" list.
++ Added an "sdl_render_driver" config setting. This setting can
+  be used to specify the underlying SDL renderer driver used by
+  the softscale renderer. This setting does not affect any other
+  renderers.
 + Added vlayer saved positions to the editor. Like regular saved
   positions, these can be configured with the config file option
   "vlayer_position#", and they work identically to board saved

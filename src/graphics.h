@@ -199,6 +199,7 @@ struct graphics_data
   enum gl_filter_type gl_filter_method;
   int gl_vsync;
   char gl_scaling_shader[32];
+  char sdl_render_driver[16];
 
   Uint8 default_charset[CHAR_SIZE * CHARSET_SIZE];
 

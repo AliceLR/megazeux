@@ -193,8 +193,9 @@ static const struct config_info user_conf_default =
   FORCE_BPP_DEFAULT,            // force_bpp
   VIDEO_RATIO_DEFAULT,          // video_ratio
   CONFIG_GL_FILTER_LINEAR,      // opengl filter method
-  "",                           // opengl default scaling shader
   GL_VSYNC_DEFAULT,             // opengl vsync mode
+  "",                           // opengl default scaling shader
+  "",                           // sdl_render_driver
   CURSOR_MODE_HINT,             // cursor_hint_mode
   true,                         // allow screenshots
 
@@ -983,6 +984,12 @@ static void config_gl_vsync(struct config_info *conf, char *name,
     conf->gl_vsync = result;
 }
 
+static void config_sdl_render_driver(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  config_string(conf->sdl_render_driver, value);
+}
+
 static void config_set_allow_screenshots(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -1120,6 +1127,7 @@ static const struct config_entry config_options[] =
   { "save_slots", config_save_slots, false },
   { "save_slots_ext", config_save_slots_ext, false },
   { "save_slots_name", config_save_slots_name, false },
+  { "sdl_render_driver", config_sdl_render_driver, false },
 #ifdef CONFIG_NETWORK
   { "socks_host", config_set_socks_host, false },
   { "socks_password", config_set_socks_password, false },
