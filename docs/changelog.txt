@@ -120,6 +120,14 @@ USERS
 + Fixed color inaccuracies in the softscale renderer on Mac OS
   caused by using full-swing YUV values instead of the expected
   studio-swing values for GL_YCBCR_422_APPLE textures.
++ Simplified GLSL renderer texture data packing to improve
+  support for OpenGL ES and older OpenGL implementations.
++ The GLSL tilemap fragment shaders will now use highp floats if
+  provided by the OpenGL ES driver. If highp is unavailable and
+  mediump has inadequate precision, MZX will print a warning.
++ Enabled the GLSL renderer for the Android port. The Android
+  port will still use the softscale renderer by default.
+- Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS

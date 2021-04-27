@@ -89,6 +89,7 @@
 
 #ifdef ANDROID
 #define FULLSCREEN_DEFAULT 1
+#define VIDEO_OUTPUT_DEFAULT "softscale"
 #endif
 
 #ifdef __EMSCRIPTEN__

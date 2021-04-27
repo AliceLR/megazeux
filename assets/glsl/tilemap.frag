@@ -22,8 +22,17 @@
 
 #version 110
 
+#ifdef GL_ES
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+#endif
+
 // Keep these the same as in render_glsl.c
 #define CHARSET_COLS      64.0
+#define CHARSET_ROWS_EACH 4.0
 #define TEX_DATA_WIDTH    512.0
 #define TEX_DATA_HEIGHT   1024.0
 #define TEX_DATA_PAL_Y    896.0
@@ -34,7 +43,11 @@
 // with some very old driver/video card combos.
 #define CHAR_H            13.99999
 
+// Relative position of the protected palette seen by this shader.
+#define PROTECTED_PALETTE 16.0
+
 uniform sampler2D baseMap;
+uniform float protected_pal_position;
 
 varying vec2 vTexcoord;
 
@@ -54,43 +67,34 @@ int int_(float v)
 }
 
 // NOTE: Layer data packing scheme
-// (highest two bits currently unused but included as part of the char)
+// This is intentionally wasteful so the components don't interfere with each
+// other on old and embedded cards with poor float precision. The colors are
+// encoded to skip SMZX exclusive colors so they only require one byte each.
+// C = character
+// B = background color (0-15 normal; >=16 protected)
+// F = foreground color (0-15 normal; >=16 protected)
 // w        z        y        x
 // 00000000 00000000 00000000 00000000
-// CCCCCCCC CCCCCCBB BBBBBBBF FFFFFFFF
+// CCCCCCCC CCCCCCCC BBBBBBBB FFFFFFFF
+#define PACK_COLOR_FG  x
+#define PACK_COLOR_BG  y
+#define PACK_CHAR      z
+#define PACK_CHARSET   w
 
-// Some older cards/drivers tend o be slightly off; slight variations
+// Some older cards/drivers tend to be slightly off; slight variations
 // in values here are intentional.
 
-/**
- * Get the char number from packed layer data as (approx.) an int.
- */
-
-float layer_get_char(vec4 layer_data)
+float layer_unpack(float layer_data)
 {
-  return floor_(layer_data.z * 63.75) + (layer_data.w * 255.0) * 64.0;
+  return layer_data * 255.001;
 }
 
-/**
- * Get the foreground color from layer data relative to the texture width.
- */
-
-float layer_get_fg_color(vec4 layer_data)
+float layer_unpack_color(float color_data)
 {
-  return
-   (layer_data.x * 255.001)               / TEX_DATA_WIDTH +
-   fract_(layer_data.y * 127.501) * 512.0 / TEX_DATA_WIDTH;
-}
+  if(color_data * 255.001 >= (PROTECTED_PALETTE - 0.001))
+    return (protected_pal_position - PROTECTED_PALETTE) + color_data * 255.001;
 
-/**
- * Get the background color from layer data relative to the texture width.
- */
-
-float layer_get_bg_color(vec4 layer_data)
-{
-  return
-   floor_(layer_data.y * 127.5)           / TEX_DATA_WIDTH +
-   fract_(layer_data.z * 63.751) * 512.0  / TEX_DATA_WIDTH;
+  return color_data * 255.001;
 }
 
 void main(void)
@@ -98,6 +102,8 @@ void main(void)
   /**
    * Get the packed char/color data for this position from the current layer.
    * vTexcoord will be provided in the range of x=[0..layer.w), y=[0..layer.h).
+   * Note that floor() is not required on vTexcoord since the texture filtering
+   * is set to GL_NEAREST (floor() also causes bugs here on some old drivers).
    */
   float layer_x = (vTexcoord.x + TEX_DATA_LAYER_X) / TEX_DATA_WIDTH;
   float layer_y = (vTexcoord.y + TEX_DATA_LAYER_Y) / TEX_DATA_HEIGHT;
@@ -109,9 +115,10 @@ void main(void)
    * but for the y position it's easier to get the pixel position and
    * normalize afterward.
    */
-  float char_num = layer_get_char(layer_data);
+  float char_num = layer_unpack(layer_data.PACK_CHAR);
+  float char_set = layer_unpack(layer_data.PACK_CHARSET);
   float char_x = fract_(char_num / CHARSET_COLS);
-  float char_y = floor_(char_num / CHARSET_COLS);
+  float char_y = floor_(char_num / CHARSET_COLS) + char_set * CHARSET_ROWS_EACH;
 
   /**
    * Get the current pixel value of the current char from the texture.
@@ -129,13 +136,13 @@ void main(void)
   // We could actually check any component here.
   if(char_pix.x > 0.5)
   {
-    color = layer_get_fg_color(layer_data);
+    color = layer_unpack_color(layer_data.PACK_COLOR_FG);
   }
   else
   {
-    color = layer_get_bg_color(layer_data);
+    color = layer_unpack_color(layer_data.PACK_COLOR_BG);
   }
 
   gl_FragColor = texture2D(baseMap,
-   vec2(color, TEX_DATA_PAL_Y / TEX_DATA_HEIGHT));
+   vec2(color / TEX_DATA_WIDTH, TEX_DATA_PAL_Y / TEX_DATA_HEIGHT));
 }

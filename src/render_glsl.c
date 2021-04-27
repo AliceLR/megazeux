@@ -96,13 +96,21 @@ static const struct gl_version gl_required_version = { 2, 0 };
 #define TEX_DATA_LAYER_Y 901
 
 // NOTE: Layer data packing scheme
-// (highest two bits currently unused but included as part of the char)
+// This is intentionally wasteful so the components don't interfere with each
+// other on old and embedded cards with poor float precision.
+// C = char.
+// B = background color (0-15 normal; >=16 protected)
+// F = foreground color (0-15 normal; >=16 protected)
+// For SMZX, the subpalette number P is sent in place of B and F. If this value
+// is FULL_PAL_SIZE, the char will be treated as transparent. If B or F is sent
+// as PAL_SIZE + PROTECTED_PAL_SIZE, that individual color will be transparent.
 // w        z        y        x
 // 00000000 00000000 00000000 00000000
-// CCCCCCCC CCCCCCBB BBBBBBBF FFFFFFFF
+// CCCCCCCC CCCCCCCC BBBBBBBB FFFFFFFF
+#define LAYER_SUBPALETTE_POS 0
 #define LAYER_FG_POS 0
-#define LAYER_BG_POS 9
-#define LAYER_CHAR_POS 18
+#define LAYER_BG_POS 8
+#define LAYER_CHAR_POS 16
 
 enum
 {
@@ -158,9 +166,6 @@ static struct blacklist_entry auto_glsl_blacklist[] =
     "  It may output a wall of spurious/nonsensical warnings when compiling\n"
     "  the shaders, and it may claim that these shaders compiled\n"
     "  successfully in cases where they actually did not.\n" },
-  { "GL4ES wrapper",
-    "  GL4ES is an OpenGL to GLES translation library that may or may not\n"
-    "  have problems with this renderer.\n" },
 };
 
 static int auto_glsl_blacklist_len = ARRAY_SIZE(auto_glsl_blacklist);
@@ -214,6 +219,12 @@ static struct
   void (GL_APIENTRY *glDeleteProgram)(GLuint program);
   void (GL_APIENTRY *glGetAttachedShaders)(GLuint program, GLsizei maxCount,
    GLsizei *count, GLuint *shaders);
+  GLint (GL_APIENTRY *glGetUniformLocation)(GLuint program, const char *name);
+  void (GL_APIENTRY *glUniform1f)(GLint location, GLfloat v0);
+#ifdef CONFIG_GLES
+  void (GL_APIENTRY *glGetShaderPrecisionFormat)(GLenum shaderType,
+   GLenum precisionType, GLint *range, GLint *precision);
+#endif
 #ifdef ENABLE_GL_DEBUG_OUTPUT
   void (GL_APIENTRY *glDebugMessageCallback)(GLDEBUGPROC callback, void *param);
 #endif
@@ -255,14 +266,19 @@ static const struct dso_syms_map glsl_syms_map[] =
   { "glGetShaderInfoLog",         (fn_ptr *)&glsl.glGetShaderInfoLog },
   { "glGetShaderiv",              (fn_ptr *)&glsl.glGetShaderiv },
   { "glGetString",                (fn_ptr *)&glsl.glGetString },
+  { "glGetUniformLocation",       (fn_ptr *)&glsl.glGetUniformLocation },
   { "glLinkProgram",              (fn_ptr *)&glsl.glLinkProgram },
   { "glShaderSource",             (fn_ptr *)&glsl.glShaderSource },
   { "glTexImage2D",               (fn_ptr *)&glsl.glTexImage2D },
   { "glTexParameterf",            (fn_ptr *)&glsl.glTexParameterf },
   { "glTexSubImage2D",            (fn_ptr *)&glsl.glTexSubImage2D },
+  { "glUniform1f",                (fn_ptr *)&glsl.glUniform1f },
   { "glUseProgram",               (fn_ptr *)&glsl.glUseProgram },
   { "glVertexAttribPointer",      (fn_ptr *)&glsl.glVertexAttribPointer },
   { "glViewport",                 (fn_ptr *)&glsl.glViewport },
+#ifdef CONFIG_GLES
+  { "glGetShaderPrecisionFormat", (fn_ptr *)&glsl.glGetShaderPrecisionFormat },
+#endif
 #ifdef ENABLE_GL_DEBUG_OUTPUT
   { "glDebugMessageCallback",     (fn_ptr *)&glsl.glDebugMessageCallback },
 #endif
@@ -293,6 +309,7 @@ struct glsl_render_data
   Uint32 background_texture[BG_WIDTH * BG_HEIGHT];
   GLuint textures[NUM_TEXTURES];
   GLuint fbos[NUM_FBOS];
+  GLuint uniform_tilemap_pro_pal;
   GLubyte palette[3 * FULL_PAL_SIZE];
   Uint8 remap_texture;
   Uint8 remap_char[FULL_CHARSET_SIZE];
@@ -611,6 +628,9 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl.glLinkProgram(render_data->tilemap_program);
     glsl_verify_link(render_data, render_data->tilemap_program);
     glsl_delete_shaders(render_data->tilemap_program);
+
+    render_data->uniform_tilemap_pro_pal = glsl.glGetUniformLocation(
+     render_data->tilemap_program, "protected_pal_position");
   }
 
   render_data->tilemap_smzx_program = glsl_load_program(graphics,
@@ -843,7 +863,7 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
     return false;
   }
 
-  // We need a specific version of OpenGL; desktop GL must be 2.0.
+  // GLSL needs a specific version of OpenGL; desktop GL must be 2.0.
   // All OpenGL ES 2.0 implementations are supported, so don't do
   // the check with these configurations.
 #ifndef CONFIG_GLES
@@ -872,6 +892,31 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
     {
       debug("Attempting to load FBO syms...\n");
       load_fbo_syms = true;
+    }
+  }
+#else
+  {
+    // All OpenGL ES 2.0 implementations are "technically" supported, but some
+    // may not support highp floats and may not provide adequate precision in
+    // their mediump floats. Print some warnings in this case.
+    GLint range[2];
+    GLint precision;
+
+    glsl.glGetShaderPrecisionFormat(GL_FRAGMENT_SHADER, GL_HIGH_FLOAT,
+     range, &precision);
+    if(precision == 0)
+    {
+      warn("no support for high-precision floats in the fragment shader!\n");
+
+      glsl.glGetShaderPrecisionFormat(GL_FRAGMENT_SHADER, GL_MEDIUM_FLOAT,
+       range, &precision);
+      warn("fragment mediump float range = (2^-%d, 2^%d), precision = 2^-%d\n",
+       range[0], range[1], precision);
+      if(range[0] <= 11 || precision <= 10)
+      {
+        warn("poor medium float precision! "
+         "This renderer may look bad; use \"softscale\" instead.\n");
+      }
     }
   }
 #endif
@@ -909,7 +954,8 @@ static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
     renderer = (const char *)glsl.glGetString(GL_RENDERER);
 
     // Print the full renderer string for reference.
-    info("GL driver: %s\n\n", renderer);
+    info("GL driver: %s\n", renderer);
+    info("GL version: %s\n\n", (const char *)glsl.glGetString(GL_VERSION));
 
     for(i = 0; i < auto_glsl_blacklist_len; i++)
     {
@@ -1029,7 +1075,7 @@ static void glsl_render_layer(struct graphics_data *graphics,
   struct char_element *src = layer->data;
   Uint32 *colorptr, *dest, i, j;
   int width, height;
-  Uint32 char_value, fg_color, bg_color;
+  Uint32 char_value, fg_color, bg_color, subpalette;
 
   int x1 = layer->x;
   int x2 = layer->x + layer->w * CHAR_W;
@@ -1077,7 +1123,13 @@ static void glsl_render_layer(struct graphics_data *graphics,
   gl_check_error();
 
   if(layer->mode == 0)
+  {
     glsl.glUseProgram(render_data->tilemap_program);
+    gl_check_error();
+
+    glsl.glUniform1f(render_data->uniform_tilemap_pro_pal,
+     graphics->protected_pal_position);
+  }
   else
     glsl.glUseProgram(render_data->tilemap_smzx_program);
   gl_check_error();
@@ -1108,31 +1160,32 @@ static void glsl_render_layer(struct graphics_data *graphics,
 
   for(i = 0; i < layer->w * layer->h; i++, dest++, src++)
   {
+    // NOTE: leave the bg_color and fg_color in their current form where the
+    // protected palette starts at 16. This makes it easier to send data to the
+    // shader.
     char_value = src->char_value;
     bg_color = src->bg_color;
     fg_color = src->fg_color;
+    subpalette = ((bg_color & 0xF) << 4) | (fg_color & 0xF);
 
     if(char_value != INVISIBLE_CHAR)
     {
       if(char_value < PROTECTED_CHARSET_POSITION)
         char_value = (char_value + layer->offset) % PROTECTED_CHARSET_POSITION;
-
-      if(bg_color >= 16)
-        bg_color = (bg_color & 0xF) + graphics->protected_pal_position;
-
-      if(fg_color >= 16)
-        fg_color = (fg_color & 0xF) + graphics->protected_pal_position;
     }
     else
     {
-      bg_color = FULL_PAL_SIZE;
-      fg_color = FULL_PAL_SIZE;
+      bg_color = PAL_SIZE + PROTECTED_PAL_SIZE;
+      fg_color = PAL_SIZE + PROTECTED_PAL_SIZE;
+      subpalette = FULL_PAL_SIZE;
     }
 
-    *dest = gl_pack_u32(
-     (char_value << LAYER_CHAR_POS) |
-     (bg_color << LAYER_BG_POS) |
-     (fg_color << LAYER_FG_POS));
+    if(layer->mode == 0)
+      *dest = gl_pack_u32((char_value << LAYER_CHAR_POS) |
+       (bg_color << LAYER_BG_POS) | (fg_color << LAYER_FG_POS));
+    else
+      *dest = gl_pack_u32((char_value << LAYER_CHAR_POS) |
+       (subpalette << LAYER_SUBPALETTE_POS));
   }
 
   glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
@@ -1147,18 +1200,19 @@ static void glsl_render_layer(struct graphics_data *graphics,
   if(render_data->dirty_palette ||
    render_data->last_tcol != layer->transparent_col)
   {
+    Uint32 transparent = graphics->protected_pal_position + PROTECTED_PAL_SIZE;
     render_data->dirty_palette = false;
     render_data->last_tcol = layer->transparent_col;
 
     colorptr = graphics->flat_intensity_palette;
     dest = render_data->background_texture;
 
-    for(i = 0; i < graphics->protected_pal_position + 16; i++, dest++, colorptr++)
-      *dest = *colorptr;
+    for(i = 0; i < graphics->protected_pal_position + PROTECTED_PAL_SIZE; i++)
+      dest[i] = colorptr[i];
 
     if(layer->transparent_col != -1)
       render_data->background_texture[layer->transparent_col] = 0x00000000;
-    render_data->background_texture[FULL_PAL_SIZE] = 0x00000000;
+    render_data->background_texture[transparent] = 0x00000000;
 
     glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
      TEX_DATA_PAL_X, TEX_DATA_PAL_Y, FULL_PAL_SIZE + 1, 1,
