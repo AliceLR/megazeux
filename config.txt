@@ -38,9 +38,9 @@
 # A much faster option for almost anything with a graphics card is the
 # "softscale" renderer. This renderer uses SDL2's built-in rendering API
 # to stream the output of the software renderer to a hardware-accelerated
-# texture (if available) for extremely fast scaling and display. This is
-# usually the fastest scaling renderer for devices using integrated graphics
-# (Intel HD, phones, tablets, Raspberry Pi).
+# texture (if available) for extremely fast scaling and display. This (or
+# "glslscale", see below) is usually the fastest scaling renderer for devices
+# using integrated graphics e.g. Intel HD, phones, tablets, Raspberry Pi.
 #
 # Either 32 bit or 16 bit rendering can be enabled (see force_bpp), but
 # 32 bit is recommended. Nearest neighbor or linear scaling will be chosen
@@ -87,13 +87,19 @@
 # This renderer uses GLSL shaders to render and scale the screen, and several
 # different scaling shaders can be selected at runtime using the settings menu.
 # This renderer is called "glsl". It is the highest quality and best performing
-# renderer for most PCs and games, and is enabled by default.
+# renderer for most PCs with a dedicated video card.
+#
+# A variant of the GLSL renderer called "glslscale" is available that uses the
+# software renderer internally with GLSL shader scaling. This performs better
+# than the original GLSL renderer on PCs and other devices that don't have a
+# video card, and is currently the default renderer for most platforms.
 #
 # Uncomment ONE of the lines below:
 
 # video_output = opengl1
 # video_output = opengl2
 # video_output = glsl
+# video_output = glslscale
 
 # The scaling renderers can be configured to preserve aspect ratio where
 # possible in window and fullscreen modes. The supported ratios are

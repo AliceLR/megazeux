@@ -315,6 +315,7 @@ struct glsl_render_data
   Uint8 remap_char[FULL_CHARSET_SIZE];
   boolean dirty_palette;
   boolean dirty_indices;
+  boolean use_software_renderer;
   int last_tcol;
   GLuint scaler_program;
   GLuint tilemap_program;
@@ -617,6 +618,9 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl_delete_shaders(render_data->scaler_program);
   }
 
+  if(render_data->use_software_renderer)
+    return;
+
   render_data->tilemap_program = glsl_load_program(graphics,
    GLSL_SHADER_TILEMAP_VERT, GLSL_SHADER_TILEMAP_FRAG);
   if(render_data->tilemap_program)
@@ -817,18 +821,21 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   }
 
   // Data texture
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
-  gl_check_error();
+  if(!render_data->use_software_renderer)
+  {
+    glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
+    gl_check_error();
 
-  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, glsl.glTexParameterf);
+    gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, glsl.glTexParameterf);
 
-  glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_DATA_WIDTH, TEX_DATA_HEIGHT,
-   0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-  gl_check_error();
+    glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_DATA_WIDTH, TEX_DATA_HEIGHT,
+    0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    gl_check_error();
 
-  glsl_remap_char_range(graphics, 0, FULL_CHARSET_SIZE);
-  render_data->dirty_palette = true;
-  render_data->dirty_indices = true;
+    glsl_remap_char_range(graphics, 0, FULL_CHARSET_SIZE);
+    render_data->dirty_palette = true;
+    render_data->dirty_indices = true;
+  }
 
   glsl_load_shaders(graphics);
 }
@@ -895,6 +902,7 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
     }
   }
 #else
+  if(!render_data->use_software_renderer)
   {
     // All OpenGL ES 2.0 implementations are "technically" supported, but some
     // may not support highp floats and may not provide adequate precision in
@@ -939,6 +947,14 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
   return true;
 }
 
+static boolean glsl_software_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
+{
+  struct glsl_render_data *render_data = graphics->render_data;
+  render_data->use_software_renderer = true;
+  return glsl_set_video_mode(graphics, width, height, depth, fullscreen, resize);
+}
+
 static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
@@ -946,10 +962,10 @@ static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
   const char *renderer;
   int i;
 
-  if(glsl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+  if(glsl_software_set_video_mode(graphics, width, height, depth, fullscreen, resize))
   {
-    // Driver blacklist. If the renderer is on the blacklist we want to fall
-    // back on software as these renderers have disastrous GLSL performance.
+    // Driver blacklist. If the renderer is on the blacklist, fall back
+    // on software as these renderers have disastrous GLSL performance.
 
     renderer = (const char *)glsl.glGetString(GL_RENDERER);
 
@@ -964,7 +980,8 @@ static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
         warn(
           "Detected blacklisted driver: \"%s\". Disabling glsl. Reason:\n\n"
           "%s\n\n"
-          "Run again with \"video_output=glsl\" to force-enable glsl.\n\n",
+          "Run again with \"video_output=glsl\" or \"video_output=glslscale\" "
+          "to force-enable glsl.\n\n",
           auto_glsl_blacklist[i].match_string,
           auto_glsl_blacklist[i].reason
         );
@@ -973,9 +990,9 @@ static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
       }
     }
 
-    // Switch from auto_glsl to glsl now that we know it works.
-    graphics->renderer.set_video_mode = glsl_set_video_mode;
-    strcpy(render_data->conf->video_output, "glsl");
+    // Switch from auto_glsl to glslscale now that it is known to work.
+    graphics->renderer.set_video_mode = glsl_software_set_video_mode;
+    strcpy(render_data->conf->video_output, "glslscale");
 
     return true;
   }
@@ -1102,6 +1119,12 @@ static void glsl_render_layer(struct graphics_data *graphics,
     layer->w, 0.0f,
     layer->w, layer->h,
   };
+
+  if(render_data->use_software_renderer)
+  {
+    render_layer(render_data->pixels, 32, SCREEN_PIX_W * 4, graphics, layer);
+    return;
+  }
 
   // Clamp draw area to size of screen texture.
   get_context_width_height(graphics, &width, &height);
@@ -1284,6 +1307,13 @@ static void glsl_render_cursor(struct graphics_data *graphics,
     pal_base[0]/255.0f, pal_base[1]/255.0f, pal_base[2]/255.0f,
   };
 
+  if(render_data->use_software_renderer)
+  {
+    render_cursor(render_data->pixels, SCREEN_PIX_W * 4, 32, x, y,
+     graphics->flat_intensity_palette[color], lines, offset);
+    return;
+  }
+
   glsl.glDisable(GL_TEXTURE_2D);
 
   glsl.glUseProgram(render_data->cursor_program);
@@ -1322,6 +1352,13 @@ static void glsl_render_mouse(struct graphics_data *graphics,
     x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y  * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
     x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
   };
+
+  if(render_data->use_software_renderer)
+  {
+    render_mouse(render_data->pixels, SCREEN_PIX_W * 4, 32, x, y, 0xFFFFFFFF,
+     0x0, w, h);
+    return;
+  }
 
   glsl.glEnable(GL_BLEND);
   glsl.glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
@@ -1374,6 +1411,15 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
   gl_check_error();
 
+  if(render_data->use_software_renderer)
+  {
+    // Screen data was software rendered to the pixels buffer.
+    // Stream it to the screen texture.
+    glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SCREEN_PIX_W, SCREEN_PIX_H,
+     GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
+    gl_check_error();
+  }
+
   // If FBOs are enabled, the screen was directly drawn to the screen texture
   // and the window framebuffer needs to be selected. Otherwise, copy the
   // screen off of the window framebuffer to the screen texture.
@@ -1400,13 +1446,25 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   gl_check_error();
 
   {
-    const float tex_coord_array_single[2 * 4] =
+    const float width_f = width / (1.0f * GL_POWER_2_WIDTH);
+    const float height_f = height / (1.0f * GL_POWER_2_HEIGHT);
+    const float tex_coord_array_single_hardware[2 * 4] =
     {
-      0.0f,                              height / (1.0f * GL_POWER_2_HEIGHT),
-      0.0f,                              0.0f,
-      width / (1.0f * GL_POWER_2_WIDTH), height / (1.0f * GL_POWER_2_HEIGHT),
-      width / (1.0f * GL_POWER_2_WIDTH), 0.0f,
+      0.0f,     height_f,
+      0.0f,     0.0f,
+      width_f,  height_f,
+      width_f,  0.0f,
     };
+    // The software rendered origin is at the top (rather than the bottom).
+    const float tex_coord_array_single_software[2 * 4] =
+    {
+      0.0f,     0.0f,
+      0.0f,     height_f,
+      width_f,  0.0f,
+      width_f,  height_f,
+    };
+    const float *tex_coord_array_single = render_data->use_software_renderer ?
+     tex_coord_array_single_software : tex_coord_array_single_hardware;
 
     glsl.glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
      tex_coord_array_single);
@@ -1419,8 +1477,11 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
   glsl.glDisableVertexAttribArray(ATTRIB_TEXCOORD);
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
-  gl_check_error();
+  if(!render_data->use_software_renderer)
+  {
+    glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
+    gl_check_error();
+  }
 
   if(glsl.has_fbo)
   {
@@ -1504,6 +1565,12 @@ void render_glsl_register(struct renderer *renderer)
   renderer->render_mouse = glsl_render_mouse;
   renderer->sync_screen = glsl_sync_screen;
   renderer->switch_shader = glsl_switch_shader;
+}
+
+void render_glsl_software_register(struct renderer *renderer)
+{
+  render_glsl_register(renderer);
+  renderer->set_video_mode = glsl_software_set_video_mode;
 }
 
 void render_auto_glsl_register(struct renderer *renderer)
