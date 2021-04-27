@@ -129,12 +129,35 @@ static inline Uint32 yvyu_subsample(Uint32 a, Uint32 b)
   return yuv_subsample(a, b, YVYU_Y1_MASK, YVYU_Y2_MASK, YVYU_UV_MASK);
 }
 
+// Full-swing RGB to YUV conversion.
 static inline void rgb_to_yuv(Uint8 r, Uint8 g, Uint8 b,
                               Uint8 *y, Uint8 *u, Uint8 *v)
 {
   *y = (9797 * r + 19237 * g + 3734 * b) >> 15;
   *u = ((18492 * (b - *y)) >> 15) + 128;
   *v = ((23372 * (r - *y)) >> 15) + 128;
+}
+
+/**
+ * Studio-swing RGB to YUV/YCbCr converison.
+ * This is required for Apple's OpenGL YUV texture extension.
+ *
+ * Note: an approach like above using B/R - Y' differences requires
+ * computing a full-swing Y' separate from the output Y', which results
+ * in only 1 fewer multiplication than using the matrix (so don't bother).
+ *
+ * Kv = [ 0.299, 0.587, 0.114 ]
+ *
+ * Yv  = Kv * 219 * (1 << 16) / 255
+ * Cbv = (([ 0 0 1 ] - Kv) / (2 * (1 - Kb)) * 224 * (1 << 16) / 255
+ * Crv = (([ 1 0 0 ] - Kv) / (2 * (1 - Kr)) * 224 * (1 << 16) / 255
+ */
+static inline void rgb_to_ycbcr(Uint8 r, Uint8 g, Uint8 b,
+                                Uint8 *y, Uint8 *cb, Uint8 *cr)
+{
+  *y  = ((16829 * r +  33039 * g +  6416 * b + 32768) >> 16) + 16;
+  *cb = ((-9714 * r + -19071 * g + 28784 * b + 32768) >> 16) + 128;
+  *cr = ((28784 * r + -24103 * g + -4681 * b + 32768) >> 16) + 128;
 }
 
 static inline Uint32 rgb_to_yuy2(Uint8 r, Uint8 g, Uint8 b)
@@ -156,6 +179,13 @@ static inline Uint32 rgb_to_yvyu(Uint8 r, Uint8 g, Uint8 b)
   Uint8 y, u, v;
   rgb_to_yuv(r, g, b, &y, &u, &v);
   return yvyu_pack(y, u, y, v);
+}
+
+static inline Uint32 rgb_to_apple_ycbcr_422(Uint8 r, Uint8 g, Uint8 b)
+{
+  Uint8 y, cb, cr;
+  rgb_to_ycbcr(r, g, b, &y, &cb, &cr);
+  return uyvy_pack(y, cb, y, cr);
 }
 
 __M_END_DECLS

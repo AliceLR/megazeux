@@ -117,6 +117,9 @@ USERS
   could cause it to rarely return a number outside of the
   expected range. This unfortunately breaks compatibility for
   the RANDOM_SEED# counter.
++ Fixed color inaccuracies in the softscale renderer on Mac OS
+  caused by using full-swing YUV values instead of the expected
+  studio-swing values for GL_YCBCR_422_APPLE textures.
 - Removed 3DS CIA support. (asie)
 
 DEVELOPERS

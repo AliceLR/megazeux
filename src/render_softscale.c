@@ -279,7 +279,11 @@ static void find_texture_format(struct graphics_data *graphics)
     if(texture_format == SDL_PIXELFORMAT_UYVY)
     {
       render_data->subsample_set_colors = uyvy_subsample_set_colors_mzx;
+#ifdef __MACOSX__
+      render_data->rgb_to_yuv = rgb_to_apple_ycbcr_422;
+#else
       render_data->rgb_to_yuv = rgb_to_uyvy;
+#endif
     }
 
     if(texture_format == SDL_PIXELFORMAT_YVYU)
