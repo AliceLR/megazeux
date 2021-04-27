@@ -166,9 +166,6 @@ static struct blacklist_entry auto_glsl_blacklist[] =
     "  It may output a wall of spurious/nonsensical warnings when compiling\n"
     "  the shaders, and it may claim that these shaders compiled\n"
     "  successfully in cases where they actually did not.\n" },
-  { "GL4ES wrapper",
-    "  GL4ES is an OpenGL to GLES translation library that may or may not\n"
-    "  have problems with this renderer.\n" },
 };
 
 static int auto_glsl_blacklist_len = ARRAY_SIZE(auto_glsl_blacklist);
