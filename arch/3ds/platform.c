@@ -38,7 +38,7 @@
 
 #include "keyboard.h"
 
-static u8 isNot2DS;
+static u8 isNot2DS, consoleModelId;
 
 FILE *popen(const char *command, const char *type)
 {
@@ -63,6 +63,11 @@ boolean ctr_is_2d(void)
   return isNot2DS == 0;
 }
 
+boolean ctr_supports_wide(void)
+{
+  return consoleModelId != 3 /* O2DS */;
+}
+
 Uint32 get_ticks(void)
 {
   return (Uint32)osGetTime();
@@ -73,19 +78,18 @@ boolean platform_init(void)
   cfguInit();
   romfsInit();
   osSetSpeedupEnable(1);
-  APT_SetAppCpuTimeLimit(80);
+  APT_SetAppCpuTimeLimit(30);
 
   gfxInitDefault();
   gfxSet3D(false);
-  C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
 
+  CFGU_GetSystemModel(&consoleModelId);
   CFGU_GetModelNintendo2DS(&isNot2DS);
   return true;
 }
 
 void platform_quit(void)
 {
-  C3D_Fini();
   gfxExit();
 
   romfsExit();

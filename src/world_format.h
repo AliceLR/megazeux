@@ -816,9 +816,7 @@ static inline int next_prop(struct memfile *prop, int *ident, int *length,
   }
 
   *length = len;
-  prop->current = cur;
-  prop->start = cur;
-  prop->end = cur + len;
+  mfopen(cur, len, prop);
 
   mf->current += len;
   return 1;

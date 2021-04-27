@@ -41,15 +41,33 @@ enum mzm_load_mode
   MZM_LOAD_TO_VLAYER  = 2,
 };
 
+enum mzm_storage_mode
+{
+  MZM_STORAGE_MODE_BOARD = 0,
+  MZM_STORAGE_MODE_LAYER = 1,
+};
+
+struct mzm_header
+{
+  int width;
+  int height;
+  int robots_location;
+  int num_robots;
+  enum mzm_storage_mode storage_mode;
+  int savegame_mode;
+  int world_version;
+};
+
 CORE_LIBSPEC void save_mzm(struct world *mzx_world, char *name,
  int start_x, int start_y, int width, int height, int mode, int savegame);
 CORE_LIBSPEC void save_mzm_string(struct world *mzx_world, const char *name,
  int start_x, int start_y, int width, int height, int mode, int savegame, int id);
 CORE_LIBSPEC int load_mzm(struct world *mzx_world, char *name,
- int start_x, int start_y, int mode, int savegame);
+ int start_x, int start_y, int mode, int savegame, enum thing layer_convert_id);
 CORE_LIBSPEC int load_mzm_memory(struct world *mzx_world, char *name, int start_x,
- int start_y, int mode, int savegame, const void *buffer, size_t length);
-CORE_LIBSPEC void load_mzm_size(char *name, int *width, int *height);
+ int start_y, int mode, int savegame, enum thing layer_convert_id,
+ const void *buffer, size_t length);
+CORE_LIBSPEC boolean load_mzm_header(char *name, struct mzm_header *mzm_header);
 
 __M_END_DECLS
 

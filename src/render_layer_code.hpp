@@ -27,6 +27,7 @@
 // stream to a file.
 
 #include "platform.h"
+#include "util.h"
 
 #ifdef IS_CXX_11
 #include <type_traits>
@@ -37,32 +38,32 @@
 #endif
 
 template<typename PIXTYPE>
-static void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int align, int smzx, int ppal, int trans, int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE>
-static void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int smzx, int ppal, int trans, int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX>
-static void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int ppal, int trans, int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL>
-static void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int trans, int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR>
-static void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR, int CLIP>
-static void render_layer_func(void * restrict pixels, Uint32 pitch,
+static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
  const struct graphics_data *graphics, const struct video_layer *layer);
 
 /**
@@ -70,8 +71,8 @@ static void render_layer_func(void * restrict pixels, Uint32 pitch,
  * This always must be >= the current renderer's bits-per-pixel.
  */
 template<>
-inline void render_layer_func<Uint8>(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+inline void render_layer_func<Uint8>(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int align, int smzx, int ppal, int trans, int clip)
 {
   switch(align)
@@ -99,7 +100,7 @@ inline void render_layer_func<Uint8>(void *pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG align=%d (8bpp)\n", align);
+      fprintf(mzxerr, "INVALID RENDERER ARG align=%d (8bpp)\n", align);
       exit(1);
       break;
   }
@@ -110,8 +111,8 @@ inline void render_layer_func<Uint8>(void *pixels, Uint32 pitch,
  * This always must be >= the current renderer's bits-per-pixel.
  */
 template<>
-inline void render_layer_func<Uint16>(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+inline void render_layer_func<Uint16>(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int align, int smzx, int ppal, int trans, int clip)
 {
   switch(align)
@@ -134,7 +135,7 @@ inline void render_layer_func<Uint16>(void *pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG align=%d (16bpp)\n", align);
+      fprintf(mzxerr, "INVALID RENDERER ARG align=%d (16bpp)\n", align);
       exit(1);
       break;
   }
@@ -145,8 +146,8 @@ inline void render_layer_func<Uint16>(void *pixels, Uint32 pitch,
  * This always must be >= the current renderer's bits-per-pixel.
  */
 template<>
-inline void render_layer_func<Uint32>(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+inline void render_layer_func<Uint32>(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int align, int smzx, int ppal, int trans, int clip)
 {
   switch(align)
@@ -164,7 +165,7 @@ inline void render_layer_func<Uint32>(void *pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG align=%d (32bpp)\n", align);
+      fprintf(mzxerr, "INVALID RENDERER ARG align=%d (32bpp)\n", align);
       exit(1);
       break;
   }
@@ -176,8 +177,8 @@ inline void render_layer_func<Uint32>(void *pixels, Uint32 pitch,
  * alignment options, so several platforms disable them altogether to reduce
  * executable size and/or compilation time.
  */
-static inline void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int bpp, int align, int smzx, int ppal, int trans, int clip)
 {
   switch(bpp)
@@ -201,7 +202,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
       break;
 #endif
     default:
-      fprintf(stderr, "INVALID RENDERER ARG bpp=%d\n"
+      fprintf(mzxerr, "INVALID RENDERER ARG bpp=%d\n"
        "(is this bpp enabled for this platform?)\n", bpp);
       exit(1);
       break;
@@ -212,8 +213,8 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
  * Renderer is SMZX (1) or normal MZX (0).
  */
 template<typename PIXTYPE, typename ALIGNTYPE>
-static inline void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int smzx, int ppal, int trans, int clip)
 {
   switch(smzx)
@@ -231,7 +232,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG smzx=%d\n", smzx);
+      fprintf(mzxerr, "INVALID RENDERER ARG smzx=%d\n", smzx);
       exit(1);
       break;
   }
@@ -242,8 +243,8 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
  * 256 is valid for MZX mode, but 16 is invalid for SMZX.
  */
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX>
-static void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int ppal, int trans, int clip)
 {
   switch(ppal)
@@ -273,7 +274,7 @@ static void render_layer_func(void *pixels, Uint32 pitch,
     /* fall-through */
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG ppal=%d (smzx=%d)\n", ppal, SMZX);
+      fprintf(mzxerr, "INVALID RENDERER ARG ppal=%d (smzx=%d)\n", ppal, SMZX);
       exit(1);
       break;
   }
@@ -283,8 +284,8 @@ static void render_layer_func(void *pixels, Uint32 pitch,
  * Layer transparency enabled (1) or disabled (0).
  */
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL>
-static inline void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int trans, int clip)
 {
   switch(trans)
@@ -300,7 +301,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG trans=%d\n", trans);
+      fprintf(mzxerr, "INVALID RENDERER ARG trans=%d\n", trans);
       exit(1);
       break;
   }
@@ -310,8 +311,8 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
  * Renderer should clip the layer at the screen boundaries (1) or not (0).
  */
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR>
-static inline void render_layer_func(void *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer,
+static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
  int clip)
 {
   switch(clip)
@@ -325,7 +326,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG clip=%d\n", clip);
+      fprintf(mzxerr, "INVALID RENDERER ARG clip=%d\n", clip);
       exit(1);
       break;
   }
@@ -495,7 +496,7 @@ static inline ALIGNTYPE get_colors_mzx(ALIGNTYPE (&set_colors)[16],
  * The optimizer will optimize out the unnecessary parts for relevant renderers.
  */
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR, int CLIP>
-static inline void render_layer_func(void * restrict pixels, Uint32 pitch,
+static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
  const struct graphics_data *graphics, const struct video_layer *layer)
 {
 #ifdef IS_CXX_11
@@ -525,8 +526,8 @@ static inline void render_layer_func(void * restrict pixels, Uint32 pitch,
   static boolean printed = false;
   if(!printed)
   {
-    fprintf(stderr, "%s\n", __PRETTY_FUNCTION__);
-    fflush(stderr);
+    fprintf(mzxerr, "%s\n", __PRETTY_FUNCTION__);
+    fflush(mzxerr);
     printed = true;
   }
 #endif

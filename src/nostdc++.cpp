@@ -24,6 +24,7 @@
  */
 
 #include "compat.h"
+#include "util.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,15 +32,15 @@
 
 extern "C" CORE_LIBSPEC void __cxa_pure_virtual()
 {
-  fprintf(stderr, "Attempted to call pure virtual function! Aborting!\n");
-  fflush(stderr);
+  fprintf(mzxerr, "Attempted to call pure virtual function! Aborting!\n");
+  fflush(mzxerr);
   exit(1);
 }
 
 extern "C" CORE_LIBSPEC void __cxa_deleted_virtual()
 {
-  fprintf(stderr, "Attempted to call deleted virtual function! Aborting!\n");
-  fflush(stderr);
+  fprintf(mzxerr, "Attempted to call deleted virtual function! Aborting!\n");
+  fflush(mzxerr);
   exit(1);
 }
 
@@ -49,8 +50,8 @@ CORE_LIBSPEC void *operator new(size_t count) noexcept
   if(!ptr)
   {
     // Allocation failed in thread--abort!
-    fprintf(stderr, "Failed to allocate memory for new! Aborting!\n");
-    fflush(stderr);
+    fprintf(mzxerr, "Failed to allocate memory for new! Aborting!\n");
+    fflush(mzxerr);
     exit(1);
   }
   return ptr;
@@ -62,8 +63,8 @@ CORE_LIBSPEC void *operator new[](size_t count) noexcept
   if(!ptr)
   {
     // Allocation failed in thread--abort!
-    fprintf(stderr, "Failed to allocate memory for new[]! Aborting!\n");
-    fflush(stderr);
+    fprintf(mzxerr, "Failed to allocate memory for new[]! Aborting!\n");
+    fflush(mzxerr);
     exit(1);
   }
   return ptr;

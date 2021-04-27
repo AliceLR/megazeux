@@ -127,7 +127,7 @@ core_cobjs := \
   ${io_obj}/dir.o                 \
   ${io_obj}/fsafeopen.o           \
   ${io_obj}/path.o                \
-  ${io_obj}/vfile.o               \
+  ${io_obj}/vio.o                 \
   ${io_obj}/zip.o                 \
   ${io_obj}/zip_stream.o
 
@@ -159,7 +159,7 @@ core_cobjs += arch/nds/protected_palette.bin.o
 core_cobjs += arch/nds/audio.o
 core_cobjs += arch/nds/platform.o arch/nds/event.o
 core_cobjs += arch/nds/render.o arch/nds/evq.o
-ifneq (${BUILD_DEBYTECODE},1)
+ifeq (${BUILD_EXTRAM},1)
 core_cobjs += arch/nds/dlmalloc.o
 core_cobjs += arch/nds/ram.o arch/nds/extmem.o
 endif
@@ -205,6 +205,10 @@ endif
 
 ifeq (${BUILD_HELPSYS},1)
 core_cobjs += ${core_obj}/helpsys.o
+endif
+
+ifeq (${BUILD_EXTRAM},1)
+core_cobjs += ${core_obj}/extmem.o
 endif
 
 render_layer_software = 0

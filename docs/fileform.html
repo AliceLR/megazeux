@@ -288,7 +288,7 @@
 <div id="container">
   <header>
     <h1>MegaZeux File Format Reference</h1>
-    <h3>MegaZeux 2.92e &mdash; July 20th, 2020</h3>
+    <h3>MegaZeux 2.92f &mdash; November 22nd, 2020</h3>
     <p>
       This guide contains specifications for most MegaZeux file formats.
     </p>
@@ -1852,11 +1852,11 @@ while(i < width * height)
         are loaded in are as follows:
       </p>
       <div class="markdown">
-| Filename  | Description                   | Notes                       | Compressed |
-|-----------|-------------------------------|-----------------------------|------------|
+| Filename  | Description                                                 | Notes                       | Compressed |
+|-----------|-------------------------------------------------------------|-----------------------------|------------|
 | `world`   | <a href="#worldprop290"  >World Properties</a>              |                             | Never
 | `gr`      | <a href="#robot290"      >Global Robot</a>                  |
-| `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled | As of 2.91c
+| `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled  | As of 2.91c
 | `chars`   | <a href="#chars290"      >Character Sets</a>                |                             | Always
 | `pal`     | <a href="#pal290"        >Palette</a>                       |
 | `palidx`  | <a href="#pal290"        >Palette Indices</a>               | Save-only before 2.91, SMZX 3 only
@@ -2546,7 +2546,7 @@ while(i < width * height)
 |------|------|-------------|
 | 0    | s4   | `MZM2`
 | 4    | w    | Width
-| 6    | h    | Height
+| 6    | w    | Height
 | 8    | d    | Location in file of robot table (0 for no robots)
 | 12   | b    | Number of robots (0 for no robots)
 | 13   | b    | Storage mode (0: board, 1: layer)

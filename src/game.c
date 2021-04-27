@@ -48,6 +48,7 @@
 #include "world.h"
 #include "world_struct.h"
 #include "io/fsafeopen.h"
+#include "io/vio.h"
 
 #include "audio/audio.h"
 #include "audio/sfx.h"
@@ -241,9 +242,9 @@ static boolean load_world_gameplay_ext(struct game_context *game, char *name,
       start_board = mzx_world->first_board;
     }
 
-    if(mzx_world->current_board_id != start_board)
-      change_board(mzx_world, start_board);
-
+    // Do this even if it's the current board--this is necessary to set up
+    // the temporary board if the title has Reset Board on Entry set.
+    change_board(mzx_world, start_board);
     cur_board = mzx_world->current_board;
 
     // Send both JUSTENTERED and JUSTLOADED; the JUSTLOADED label will
@@ -304,9 +305,15 @@ static boolean load_world_title(struct game_context *game, char *name)
     // Only send JUSTLOADED on the title screen.
     send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
+    // Do this even though it should be the initial board--this is necessary to
+    // set up the temporary board if the title has Reset Board on Entry set.
+    change_board(mzx_world, 0);
     change_board_set_values(mzx_world);
     change_board_load_assets(mzx_world);
 
+    // Music may be playing from the previous world or from editing. End the
+    // module explicitly first in case the title module fails to load.
+    audio_end_module();
     load_board_module(mzx_world);
     sfx_clear_queue();
 
@@ -372,7 +379,8 @@ static boolean load_world_title_selection(struct game_context *game)
   struct world *mzx_world = ((context *)game)->world;
   char world_name[MAX_PATH] = { 0 };
 
-  if(!choose_file_ch(mzx_world, world_ext, world_name, "Load World", true))
+  if(!choose_file_ch(mzx_world, world_ext, world_name, "Load World",
+   ALLOW_ALL_DIRS))
   {
     return load_world_title(game, world_name);
   }
@@ -401,8 +409,9 @@ static boolean load_savegame_selection(struct game_context *game)
     }
   }
 
-  if(slot_result == SLOTSEL_OK_RESULT || !choose_file_ch(mzx_world, save_ext,
-   save_file_name, "Choose game to restore", true))
+  if(slot_result == SLOTSEL_OK_RESULT ||
+   !choose_file_ch(mzx_world, save_ext, save_file_name,
+    "Choose game to restore", ALLOW_ALL_DIRS))
   {
     return load_savegame(game, save_file_name);
   }
@@ -685,7 +694,8 @@ static boolean game_key(context *ctx, int *key)
           }
 
           if(slot_result == SLOTSEL_OK_RESULT ||
-           !new_file(mzx_world, save_ext, ".sav", save_game, "Save game", 1))
+           !new_file(mzx_world, save_ext, ".sav", save_game, "Save game",
+            ALLOW_ALL_DIRS))
           {
             strcpy(curr_sav, save_game);
             save_world(mzx_world, curr_sav, true, MZX_VERSION);
@@ -760,7 +770,7 @@ static boolean game_key(context *ctx, int *key)
         {
           struct stat file_info;
 
-          if(!stat(curr_sav, &file_info))
+          if(!vstat(curr_sav, &file_info))
             load_savegame(game, curr_sav);
         }
         return true;
@@ -1126,7 +1136,7 @@ static boolean title_key(context *ctx, int *key)
       {
         struct stat file_info;
 
-        if(!stat(curr_sav, &file_info) && load_savegame(title, curr_sav))
+        if(!vstat(curr_sav, &file_info) && load_savegame(title, curr_sav))
         {
           play_game(ctx, &(title->fade_in));
           title->need_reload = true;

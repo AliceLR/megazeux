@@ -1125,7 +1125,7 @@ int add_board(struct world *mzx_world, int current)
 {
   struct board *new_board;
   char name[BOARD_NAME_SIZE];
-  name[0] = 0;
+  memset(name, 0, BOARD_NAME_SIZE);
 
   if(input_window(mzx_world, "Name for new board:", name, BOARD_NAME_SIZE - 1))
     return -1;
@@ -1218,8 +1218,8 @@ int choose_board(struct world *mzx_world, int current, const char *title,
 }
 
 int choose_file(struct world *mzx_world, const char *const *wildcards,
- char *ret, const char *title, int dirs_okay)
+ char *ret, const char *title, enum allow_dirs allow_dirs)
 {
-  return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
-   0, NULL, 0, 0);
+  return file_manager(mzx_world, wildcards, NULL, ret, title, allow_dirs,
+   NO_NEW_FILES, NULL, 0, 0);
 }

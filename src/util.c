@@ -35,13 +35,14 @@
 #include <string.h>
 
 #ifdef __WIN32__
-#include "io/vfile_win32.h" // for windows.h, WIDE_PATHS, and utf16_to_utf8
+#include "io/vio_win32.h" // for windows.h, WIDE_PATHS, and utf16_to_utf8
 #endif
 
 #include "const.h" // for MAX_PATH
 #include "error.h"
 #include "platform.h"
 #include "io/path.h"
+#include "io/vio.h"
 
 struct mzx_resource
 {
@@ -186,8 +187,8 @@ static ssize_t find_executable_dir(char *dest, size_t dest_len, const char *argv
     ssize_t len = path_get_directory(dest, dest_len, argv0);
     if(len > 0)
     {
-      // chdir to it and get it as an absolute path.
-      if(!chdir(dest) && getcwd(dest, dest_len))
+      // Change to the executable dir and get it as an absolute path.
+      if(!vchdir(dest) && vgetcwd(dest, dest_len))
         return strlen(dest);
     }
 
@@ -246,11 +247,11 @@ int mzx_res_init(const char *argv0, boolean editor)
     }
 
     if(i == CONFIG_TXT)
-      chdir(CONFDIR);
+      vchdir(CONFDIR);
     else
-      chdir(SHAREDIR);
+      vchdir(SHAREDIR);
 
-    getcwd(p_dir, MAX_PATH);
+    vgetcwd(p_dir, MAX_PATH);
     p_dir_len = strlen(p_dir);
 
     full_path_len = p_dir_len + base_name_len + 2;
@@ -259,7 +260,7 @@ int mzx_res_init(const char *argv0, boolean editor)
     // The provided buffer should always be big enough, but check anyway.
     if(path_join(full_path, full_path_len, p_dir, mzx_res[i].base_name) > 0)
     {
-      if(!stat(full_path, &file_info))
+      if(!vstat(full_path, &file_info))
       {
         mzx_res[i].path = full_path;
         continue;
@@ -271,8 +272,8 @@ int mzx_res_init(const char *argv0, boolean editor)
     // Try to locate the resource relative to the bin_path
     if(bin_path)
     {
-      chdir(bin_path);
-      if(!stat(mzx_res[i].base_name, &file_info))
+      vchdir(bin_path);
+      if(!vstat(mzx_res[i].base_name, &file_info))
       {
         full_path_len = bin_path_len + base_name_len + 2;
         full_path = cmalloc(full_path_len);
@@ -334,41 +335,41 @@ const char *mzx_res_get_by_id(enum resource_id id)
   static char userconfpath[MAX_PATH];
   if(id == CONFIG_TXT)
   {
-    FILE *fp;
+    vfile *vf;
 
     // Special handling for CONFIG_TXT to allow for user
     // configuration files
     snprintf(userconfpath, MAX_PATH, "%s/%s", getenv("HOME"), USERCONFFILE);
 
     // Check if the file can be opened for reading
-    fp = fopen_unsafe(userconfpath, "rb");
+    vf = vfopen_unsafe(userconfpath, "rb");
 
-    if(fp)
+    if(vf)
     {
-      fclose(fp);
+      vfclose(vf);
       return (char *)userconfpath;
     }
     // Otherwise, try to open the file for writing
-    fp = fopen_unsafe(userconfpath, "wb");
-    if(fp)
+    vf = vfopen_unsafe(userconfpath, "wb");
+    if(vf)
     {
-      FILE *original = fopen_unsafe(mzx_res[id].path, "rb");
+      vfile *original = vfopen_unsafe(mzx_res[id].path, "rb");
       if(original)
       {
         size_t bytes_read;
         for(;;)
         {
-          bytes_read = fread(copy_buffer, 1, COPY_BUFFER_SIZE, original);
+          bytes_read = vfread(copy_buffer, 1, COPY_BUFFER_SIZE, original);
           if(bytes_read)
-            fwrite(copy_buffer, 1, bytes_read, fp);
+            vfwrite(copy_buffer, 1, bytes_read, vf);
           else
             break;
         }
-        fclose(fp);
-        fclose(original);
+        vfclose(vf);
+        vfclose(original);
         return (char *)userconfpath;
       }
-      fclose(fp);
+      vfclose(vf);
     }
 
     // If that's no good, just read the normal config file
@@ -377,12 +378,21 @@ const char *mzx_res_get_by_id(enum resource_id id)
   return mzx_res[id].path;
 }
 
+#ifdef CONFIG_STDIO_REDIRECT
+
+FILE *mzxout_h = NULL;
+FILE *mzxerr_h = NULL;
+
 /**
  * Some platforms may not be able to display console output without extra work.
- * On these platforms redirect STDIO to files so the console output is easier
- * to read.
+ * On these platforms, open stdout/stderr replacement files instead. The log
+ * macros and any other references to `mzxout` and `mzxerr` will use these
+ * files instead of stdio.
+ *
+ * Previously, this was implemented using `freopen` on stdout/stderr, but
+ * doing this in some console SDKs does not work correctly (NDS, PS Vita).
  */
-boolean redirect_stdio(const char *base_path, boolean require_conf)
+boolean redirect_stdio_init(const char *base_path, boolean require_conf)
 {
   char dest_path[MAX_PATH];
   size_t dest_len;
@@ -405,36 +415,64 @@ boolean redirect_stdio(const char *base_path, boolean require_conf)
     dest_path[dest_len] = '\0';
   }
 
+  // Clean up existing handles from a previous attempt.
+  redirect_stdio_exit();
+
   // Test directory for write access.
   path_append(dest_path, MAX_PATH, "stdout.txt");
   fp_wr = fopen_unsafe(dest_path, "w");
-  if(fp_wr)
+  if(!fp_wr)
   {
-    t = (uint64_t)time(NULL);
-
-    // Redirect stdout to stdout.txt.
-    fclose(fp_wr);
-    fprintf(stdout, "Redirecting logs to '%s'...\n", dest_path);
-    if(freopen(dest_path, "w", stdout))
-      fprintf(stdout, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
-    else
-      fprintf(stdout, "Failed to redirect stdout\n");
+    fprintf(stdout, "Failed to redirect stdout\n");
     fflush(stdout);
-
-    // Redirect stderr to stderr.txt.
-    dest_path[dest_len] = '\0';
-    path_append(dest_path, MAX_PATH, "stderr.txt");
-    fprintf(stderr, "Redirecting logs to '%s'...\n", dest_path);
-    if(freopen(dest_path, "w", stderr))
-      fprintf(stderr, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
-    else
-      fprintf(stderr, "Failed to redirect stderr\n");
-    fflush(stderr);
-
-    return true;
+    return false;
   }
-  return false;
+
+  t = (uint64_t)time(NULL);
+
+  // Redirect mzxout to stdout.txt.
+  fprintf(stdout, "Redirecting logs to '%s'...\n", dest_path);
+  fflush(stdout);
+  mzxout_h = fp_wr;
+  fprintf(mzxout, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+  fflush(mzxout);
+
+  // Redirect mzxerr to stderr.txt.
+  dest_path[dest_len] = '\0';
+  path_append(dest_path, MAX_PATH, "stderr.txt");
+  fp_wr = fopen_unsafe(dest_path, "w");
+  if(!fp_wr)
+  {
+    fprintf(stderr, "Failed to redirect stderr\n");
+    fflush(stderr);
+    return false;
+  }
+
+  fprintf(stderr, "Redirecting logs to '%s'...\n", dest_path);
+  fflush(stderr);
+  mzxerr_h = fp_wr;
+  fprintf(mzxerr, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+  fflush(mzxerr);
+
+  return true;
 }
+
+void redirect_stdio_exit(void)
+{
+  if(mzxout_h)
+  {
+    fclose(mzxout_h);
+    mzxout_h = NULL;
+  }
+
+  if(mzxerr_h)
+  {
+    fclose(mzxerr_h);
+    mzxerr_h = NULL;
+  }
+}
+
+#endif /* CONFIG_STDIO_REDIRECT */
 
 // Get 2 bytes, little endian
 
@@ -520,7 +558,7 @@ unsigned int Random(uint64_t range)
   x ^= x << 25; // b
   x ^= x >> 27; // c
   rng_state = x;
-  return ((x * 0x2545F4914F6CDD1D) >> 32) * range / 0xFFFFFFFF;
+  return (((x * 0x2545F4914F6CDD1D) >> 32) * range) >> 32;
 }
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)

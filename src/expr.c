@@ -543,14 +543,15 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
     // Interpolate a counter or string
     if(state & EXPR_STATE_INTERPOLATING)
     {
+      const char *src;
       size_t len;
-      char *src;
       buf_pos = buffer + buf_start;
 
       // Input
       if(!memcasecmp(buf_pos, "INPUT", 6))
       {
         src = mzx_world->current_board->input_string;
+        src = src ? src : "";
         len = strlen(src);
       }
       else

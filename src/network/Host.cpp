@@ -417,9 +417,9 @@ boolean Host::send(const void *buffer, size_t len)
     {
       trace("--HOST-- Host::send    ");
       for(size_t i = pos; i < pos + count; i++)
-        fprintf(stderr, "%02x ", buf[i]);
-      fprintf(stderr, "\n");
-      fflush(stderr);
+        fprintf(mzxerr, "%02x ", buf[i]);
+      fprintf(mzxerr, "\n");
+      fflush(mzxerr);
     }
 #endif
   }
@@ -468,9 +468,9 @@ boolean Host::receive(void *buffer, size_t len)
     {
       trace("--HOST-- Host::receive ");
       for(size_t i = pos; i < pos + count; i++)
-        fprintf(stderr, "%02x ", buf[i]);
-      fprintf(stderr, "\n");
-      fflush(stderr);
+        fprintf(mzxerr, "%02x ", buf[i]);
+      fprintf(mzxerr, "\n");
+      fflush(mzxerr);
     }
 #endif
   }

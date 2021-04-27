@@ -22,7 +22,6 @@
 
 #ifndef LIBXMP_CORE_DISABLE_IT
 
-#include <time.h>
 #include "loader.h"
 #include "it.h"
 #include "period.h"
@@ -41,24 +40,7 @@ const struct format_loader libxmp_loader_it = {
 	it_load
 };
 
-#ifndef LIBXMP_CORE_PLAYER /* */
-#if defined(__WATCOMC__)
-#undef localtime_r
-#define localtime_r _localtime
-
-#elif !defined(HAVE_LOCALTIME_R) || defined(_WIN32)
-#undef localtime_r
-#define localtime_r libxmp_localtime_r
-static struct tm *libxmp_localtime_r(const time_t * timep, struct tm *result)
-{
-	/* Note: Win32 localtime() is thread-safe */
-	memcpy(result, localtime(timep), sizeof(struct tm));
-	return result;
-}
-#endif
-#endif /* ! LIBXMP_CORE_PLAYER */
-
-static int it_test(HIO_HANDLE * f, char *t, const int start)
+static int it_test(HIO_HANDLE *f, char *t, const int start)
 {
 	if (hio_read32b(f) != MAGIC_IMPM)
 		return -1;
@@ -74,7 +56,7 @@ static int it_test(HIO_HANDLE * f, char *t, const int start)
 #define L_CHANNELS 64
 
 
-static const uint8 fx[] = {
+static const uint8 fx[32] = {
 	/*   */ FX_NONE,
 	/* A */ FX_S3M_SPEED,
 	/* B */ FX_JUMP,
@@ -101,7 +83,12 @@ static const uint8 fx[] = {
 	/* W */ FX_GVOL_SLIDE,
 	/* X */ FX_SETPAN,
 	/* Y */ FX_PANBRELLO,
-	/* Z */ FX_FLT_CUTOFF
+	/* Z */ FX_FLT_CUTOFF,
+	/* ? */ FX_NONE,
+	/* ? */ FX_NONE,
+	/* ? */ FX_NONE,
+	/* ? */ FX_NONE,
+	/* ? */ FX_NONE
 };
 
 
@@ -314,7 +301,7 @@ static int read_envelope(struct xmp_envelope *ei, struct it_envelope *env,
 	ei->lps = env->lpb;
 	ei->lpe = env->lpe;
 
-	if (ei->npt > 0 && ei->npt <= 25 /* XMP_MAX_ENV_POINTS */ ) {
+	if (ei->npt > 0 && ei->npt <= 25 /* XMP_MAX_ENV_POINTS */) {
 		for (i = 0; i < ei->npt; i++) {
 			ei->data[i * 2] = env->node[i].x;
 			ei->data[i * 2 + 1] = env->node[i].y;
@@ -373,25 +360,10 @@ static void identify_tracker(struct module_data *m, struct it_file_header *ifh)
 		break;
 	default:
 		switch (ifh->cwt >> 12) {
-		case 0x1:{
-			uint16 cwtv = ifh->cwt & 0x0fff;
-			struct tm version;
-			time_t version_sec;
-
-			if (cwtv > 0x50) {
-				version_sec = ((cwtv - 0x050) * 86400) + 1254355200;
-				if (localtime_r(&version_sec, &version)) {
-					snprintf(tracker_name, 40,
-						 "Schism Tracker %04d-%02d-%02d",
-						 version.tm_year + 1900,
-						 version.tm_mon + 1,
-						 version.tm_mday);
-				}
-			} else {
-				snprintf(tracker_name, 40,
-					 "Schism Tracker 0.%x", cwtv);
-			}
-			break; }
+		case 0x1:
+			libxmp_schism_tracker_string(tracker_name, 40,
+				(ifh->cwt & 0x0fff), ifh->rsvd);
+			break;
 		case 0x5:
 			snprintf(tracker_name, 40, "OpenMPT %d.%02x",
 				 (ifh->cwt & 0x0f00) >> 8, ifh->cwt & 0xff);
@@ -446,13 +418,13 @@ static int load_old_it_instrument(struct xmp_instrument *xxi, HIO_HANDLE *f)
 	memcpy(i1h.name, buf + 32, 26);
 	fix_name(i1h.name, 26);
 
-	if (hio_read(&i1h.keys, 1, 240, f) != 240) {
+	if (hio_read(i1h.keys, 1, 240, f) != 240) {
 		return -1;
 	}
-	if (hio_read(&i1h.epoint, 1, 200, f) != 200) {
+	if (hio_read(i1h.epoint, 1, 200, f) != 200) {
 		return -1;
 	}
-	if (hio_read(&i1h.enode, 1, 50, f) != 50) {
+	if (hio_read(i1h.enode, 1, 50, f) != 50) {
 		return -1;
 	}
 
@@ -549,7 +521,7 @@ static int load_new_it_instrument(struct xmp_instrument *xxi, HIO_HANDLE *f)
 	int inst_map[120], inst_rmap[XMP_MAX_KEYS];
 	struct it_instrument2_header i2h;
 	struct it_envelope env;
-	int dca2nna[] = { 0, 2, 3 };
+	int dca2nna[] = { 0, 2, 3, 3 /* Northern Sky (cj-north.it) has this... */ };
 	int c, k, j;
 	uint8 buf[64];
 
@@ -594,7 +566,7 @@ static int load_new_it_instrument(struct xmp_instrument *xxi, HIO_HANDLE *f)
 	i2h.mpr = buf[61];
 	i2h.mbnk = readmem16l(buf + 62);
 
-	if (hio_read(&i2h.keys, 1, 240, f) != 240) {
+	if (hio_read(i2h.keys, 1, 240, f) != 240) {
 		D_(D_CRIT "key map read error");
 		return -1;
 	}
@@ -815,7 +787,7 @@ static int load_it_sample(struct module_data *m, int i, int start,
 			if (sub->sid == i) {
 				sub->vol = ish.vol;
 				sub->gvl = ish.gvl;
-				sub->vra = ish.vis + 1;	/* sample to sub-instrument vibrato */
+				sub->vra = ish.vis;	/* sample to sub-instrument vibrato */
 				sub->vde = ish.vid << 1;
 				sub->vwf = ish.vit;
 				sub->vsw = (0xff - ish.vir) >> 1;
@@ -925,7 +897,7 @@ static int load_it_pattern(struct module_data *m, int i, int new_fx,
 
 	r = 0;
 
-	memset(last_fxp, 0, 64);
+	memset(last_fxp, 0, sizeof(last_fxp));
 	memset(lastevent, 0, L_CHANNELS * sizeof(struct xmp_event));
 	memset(&dummy, 0, sizeof(struct xmp_event));
 
@@ -1003,7 +975,7 @@ static int load_it_pattern(struct module_data *m, int i, int new_fx,
 		}
 		if (mask[c] & 0x08) {
 			b = hio_read8(f);
-			if (b > 31) {
+			if (b >= ARRAY_SIZE(fx)) {
 				D_(D_WARN "invalid effect %#02x", b);
 				hio_read8(f);
 				
@@ -1122,10 +1094,6 @@ static int it_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 	if (ifh.flags & IT_LINEAR_FREQ) {
 		m->period_type = PERIOD_LINEAR;
-	}
-
-	if (sample_mode || ifh.cmwt >= 0x200) {
-		m->quirk |= QUIRK_INSVOL;
 	}
 
 	for (i = 0; i < 64; i++) {
@@ -1362,7 +1330,7 @@ static int it_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 	/* Format quirks */
 
-	m->quirk |= QUIRKS_IT | QUIRK_ARPMEM;
+	m->quirk |= QUIRKS_IT | QUIRK_ARPMEM | QUIRK_INSVOL;
 
 	if (ifh.flags & IT_LINK_GXX) {
 		m->quirk |= QUIRK_PRENV;

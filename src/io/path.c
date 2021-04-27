@@ -23,7 +23,7 @@
 #include <sys/stat.h>
 
 #include "path.h"
-#include "vfile.h"
+#include "vio.h"
 
 /**
  * Force a given filename path to use the provided file extension. If the
@@ -104,10 +104,65 @@ static ssize_t path_get_filename_offset(const char *path)
 }
 
 /**
+ * Determine if the given path is an absolute path.
+ *
+ * @param  path   Path to test.
+ * @return        length of root token if this is an absolute path, otherwise 0.
+ */
+ssize_t path_is_absolute(const char *path)
+{
+  size_t len;
+  size_t i;
+
+  // Unix-style root.
+  if(isslash(path[0]))
+    return 1;
+
+  // DOS-style root.
+  len = strlen(path);
+  for(i = 0; i < len; i++)
+  {
+    if(isslash(path[i]))
+      break;
+
+    if(path[i] == ':')
+    {
+      if(i == 0)
+        break;
+
+      i++;
+      if(!path[i])
+        return i;
+
+      if(isslash(path[i]))
+      {
+        while(isslash(path[i]))
+          i++;
+        return i;
+      }
+      break;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Determine if the given path is a root path.
+ *
+ * @param  path   Path to test.
+ * @return        `true` if the path is a root path, otherwise `false`.
+ */
+boolean path_is_root(const char *path)
+{
+  ssize_t root_len = path_is_absolute(path);
+  return root_len && !path[root_len];
+}
+
+/**
  * Determine if the given path contains a directory.
  *
  * @param  path   Path to test.
- * @result        True if the path contains a directory, otherwise false.
+ * @return        True if the path contains a directory, otherwise false.
  */
 boolean path_has_directory(const char *path)
 {
@@ -432,6 +487,52 @@ ssize_t path_join(char *dest, size_t dest_len, const char *base, const char *rel
 }
 
 /**
+ * Determine if `path` is prefixed by `prefix`. Returns the index of the first
+ * non-prefix and non-slash char of `path` if `path` is prefixed by `prefix`,
+ * otherwise -1.
+ */
+static ssize_t path_has_prefix(const char *path, size_t buffer_len,
+ const char *prefix, size_t prefix_len)
+{
+  // Normal string compare, but allow different kinds of slashes.
+  size_t i = 0;
+  size_t j = 0;
+  while(i < prefix_len && prefix[i])
+  {
+    if(j >= buffer_len || !path[j])
+      return -1;
+
+    if(isslash(prefix[i]))
+    {
+      if(!isslash(path[j]))
+        return -1;
+
+      // Skip duplicate slashes.
+      while(isslash(prefix[i]))
+        i++;
+      while(isslash(path[j]))
+        j++;
+    }
+    else
+    {
+      if(prefix[i++] != path[j++])
+        return -1;
+    }
+  }
+
+  // Make sure this was actually a valid prefix--the prefix should either have
+  // a trailing slash or the next character of the path should be a slash.
+  if(!isslash(prefix[i - 1]) && !isslash(path[j]))
+    return -1;
+
+  // The prefix likely does not have trailing slashes, so skip them.
+  while(isslash(path[j]))
+    j++;
+
+  return j;
+}
+
+/**
  * Remove a directory prefix from a path if it exists. The prefix does not
  * need trailing slashes, but it must represent a complete directory name.
  *
@@ -446,14 +547,13 @@ ssize_t path_remove_prefix(char *path, size_t buffer_len,
 {
   prefix_len = prefix_len ? prefix_len : strlen(prefix);
 
-  if(prefix_len && prefix_len < buffer_len && !strncmp(prefix, path, prefix_len) &&
-   (isslash(prefix[prefix_len - 1]) || isslash(path[prefix_len])))
+  if(prefix_len)
   {
-    // The prefix likely does not have trailing slashes, so skip them.
-    while(isslash(path[prefix_len]))
-      prefix_len++;
+    ssize_t offset = path_has_prefix(path, buffer_len, prefix, prefix_len);
+    if(offset < 0)
+      return -1;
 
-    return path_clean_slashes_copy(path, buffer_len, path + prefix_len);
+    return path_clean_slashes_copy(path, buffer_len, path + offset);
   }
   return -1;
 }
@@ -496,7 +596,8 @@ ssize_t path_navigate(char *path, size_t path_len, const char *target)
      * Aside from Windows, these are often used by console SDKs (albeit with /
      * instead of \) to distinguish SD cards and the like.
      */
-    if(!isslash(next[1]) && next[1] != '\0')
+    // Make sure this is actually a well-formed absolute path.
+    if(!path_is_absolute(target))
       return -1;
 
     snprintf(buffer, MAX_PATH, "%.*s" DIR_SEPARATOR, (int)(next - target + 1),

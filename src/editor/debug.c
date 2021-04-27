@@ -30,6 +30,7 @@
 #include "../core.h"
 #include "../counter.h"
 #include "../event.h"
+#include "../extmem.h"
 #include "../graphics.h"
 #include "../intake.h"
 #include "../memcasecmp.h"
@@ -43,6 +44,7 @@
 #include "../audio/audio.h"
 
 #include <ctype.h>
+#include <stdint.h>
 #include <string.h>
 
 #define TREE_LIST_X 62
@@ -56,8 +58,10 @@
 #define BUTTONS_X 62
 #define BUTTONS_Y 18
 #define CVALUE_SIZE 11
+#define LVALUE_SIZE 21
 #define SVALUE_SIZE 40
 #define CVALUE_COL_OFFSET (VAR_LIST_WIDTH - CVALUE_SIZE - 1)
+#define LVALUE_COL_OFFSET (VAR_LIST_WIDTH - LVALUE_SIZE - 1)
 #define SVALUE_COL_OFFSET (VAR_LIST_WIDTH - SVALUE_SIZE - 1)
 
 #define VAR_SEARCH_DIALOG_X 4
@@ -79,7 +83,7 @@
 #define VAR_ADD_DIALOG_H 6
 #define VAR_ADD_MAX 30
 
-static char asc[17] = "0123456789ABCDEF";
+static const char asc[17] = "0123456789ABCDEF";
 
 // Escape \n. Use for most debug var name/text fields. This is intended for
 // display only and doesn't escape \. For anything that needs to be edited
@@ -130,7 +134,9 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
       dest[i++] = '\\';
       dest[i] = '\\';
     }
-    else if(src[j] == '\n')
+    else
+
+    if(src[j] == '\n')
     {
       if(left < 3)
         break;
@@ -138,7 +144,9 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
       dest[i++] = '\\';
       dest[i] = 'n';
     }
-    else if(src[j] == '\r')
+    else
+
+    if(src[j] == '\r')
     {
       if(left < 3)
         break;
@@ -146,7 +154,9 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
       dest[i++] = '\\';
       dest[i] = 'r';
     }
-    else if(src[j] == '\t')
+    else
+
+    if(src[j] == '\t')
     {
       if(left < 3)
         break;
@@ -154,7 +164,9 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
       dest[i++] = '\\';
       dest[i] = 't';
     }
-    else if(src[j] < 32 || src[j] > 126)
+    else
+
+    if(src[j] < 32 || src[j] > 126)
     {
       if(left < 5)
         break;
@@ -180,7 +192,7 @@ static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
 static void unescape_string(char *buf, int *len)
 {
   size_t i = 0, j, old_len = strlen(buf);
-  char t;
+  char tmp[3];
 
   for(j = 0; j < old_len; i++, j++)
   {
@@ -195,27 +207,38 @@ static void unescape_string(char *buf, int *len)
     if(j == old_len)
       break;
 
-    if(buf[j] == 'n')
-      buf[i] = '\n';
-    else if(buf[j] == 'r')
-      buf[i] = '\r';
-    else if(buf[j] == 't')
-      buf[i] = '\t';
-    else if(buf[j] == '\\')
-      buf[i] = '\\';
-    else if(buf[j] == 'x')
+    switch(buf[j])
     {
-      if(j + 2 > old_len)
+      case 'n':
+        buf[i] = '\n';
+        break;
+      case 'r':
+        buf[i] = '\r';
+        break;
+      case 't':
+        buf[i] = '\t';
+        break;
+      case '\\':
+        buf[i] = '\\';
         break;
 
-      t = buf[j + 3];
-      buf[j + 3] = '\0';
-      buf[i] = (char)strtol(buf + j + 1, NULL, 16);
-      buf[j + 3] = t;
-      j += 2;
+      case 'x':
+        if(j + 2 >= old_len)
+        {
+          j = old_len;
+          break;
+        }
+        tmp[0] = buf[j + 1];
+        tmp[1] = buf[j + 2];
+        tmp[2] = '\0';
+        buf[i] = strtol(tmp, NULL, 16);
+        j += 2;
+        break;
+
+      default:
+        buf[i] = buf[j];
+        break;
     }
-    else
-      buf[i] = buf[j];
   }
 
   (*len) = i;
@@ -224,6 +247,56 @@ static void unescape_string(char *buf, int *len)
 /***********************
  * Var reading/setting *
  ***********************/
+
+enum virtual_var
+{
+  VIR_RAM_COUNTER_LIST,
+  VIR_RAM_COUNTER_TABLE,
+  VIR_RAM_COUNTERS,
+  VIR_RAM_STRING_LIST,
+  VIR_RAM_STRING_TABLE,
+  VIR_RAM_STRINGS,
+  VIR_RAM_SPRITES,
+  VIR_RAM_VLAYER,
+  VIR_RAM_BOARD_INFO,
+  VIR_RAM_BOARD_DATA,
+  VIR_RAM_BOARD_OVERLAY,
+  VIR_RAM_ROBOT_INFO,
+  VIR_RAM_ROBOT_STACK,
+  VIR_RAM_ROBOT_SOURCE,
+  VIR_RAM_ROBOT_PROGRAMS,
+  VIR_RAM_ROBOT_PROGRAM_LABELS,
+  VIR_RAM_SCROLLS_SENSORS,
+  VIR_RAM_VIDEO_LAYERS,
+  VIR_RAM_DEBUGGER_ROBOTS,
+  VIR_RAM_DEBUGGER_VARIABLES,
+  VIR_RAM_EXTRAM_DELTA,
+};
+
+static const char * const virtual_var_names[] =
+{
+  "Counter list*",
+  "Counter table*",
+  "Counters*",
+  "String list*",
+  "String table*",
+  "Strings*",
+  "Sprites*",
+  "Vlayer*",
+  "Board info*",
+  "Board data*",
+  "Board overlay*",
+  "Robot info*",
+  "Robot stack*",
+  "Robot program source*",
+  "Robot program bytecode*",
+  "Robot program labels*",
+  "Scrolls and sensors*",
+  "Video layers*",
+  "Debug (robots)*",
+  "Debug (variables)*",
+  "ExtRAM compression delta*",
+};
 
 // We'll read off of these when we construct the tree
 static const char *universal_var_list[] =
@@ -265,6 +338,35 @@ static const char *world_var_list[] =
   "vlayer_size*",
   "vlayer_width*",
   "vlayer_height*",
+};
+
+static const enum virtual_var world_ram_var_list[] =
+{
+  VIR_RAM_COUNTER_LIST,
+  VIR_RAM_COUNTER_TABLE,
+  VIR_RAM_COUNTERS,
+  VIR_RAM_STRING_LIST,
+  VIR_RAM_STRING_TABLE,
+  VIR_RAM_STRINGS,
+  VIR_RAM_SPRITES,
+  VIR_RAM_VLAYER,
+  VIR_RAM_BOARD_INFO,
+  VIR_RAM_BOARD_DATA,
+  VIR_RAM_BOARD_OVERLAY,
+  VIR_RAM_ROBOT_INFO,
+  VIR_RAM_ROBOT_STACK,
+#ifdef CONFIG_DEBYTECODE
+  VIR_RAM_ROBOT_SOURCE,
+#endif
+  VIR_RAM_ROBOT_PROGRAMS,
+  VIR_RAM_ROBOT_PROGRAM_LABELS,
+  VIR_RAM_SCROLLS_SENSORS,
+  VIR_RAM_VIDEO_LAYERS,
+  VIR_RAM_DEBUGGER_ROBOTS,
+  VIR_RAM_DEBUGGER_VARIABLES,
+#ifdef CONFIG_EXTRAM
+  VIR_RAM_EXTRAM_DELTA,
+#endif
 };
 
 static const char *board_var_list[] =
@@ -349,19 +451,21 @@ static const char *sensor_var_list[] =
 
 static const char *scroll_text_var = "Scroll text*";
 
-static int num_universal_vars = ARRAY_SIZE(universal_var_list);
-static int num_world_vars = ARRAY_SIZE(world_var_list);
-static int num_board_vars = ARRAY_SIZE(board_var_list);
-static int num_robot_vars = ARRAY_SIZE(robot_var_list);
-static int num_sprite_parent_vars = ARRAY_SIZE(sprite_parent_var_list);
-static int num_sprite_vars = ARRAY_SIZE(sprite_var_list);
-static int num_sensor_vars = ARRAY_SIZE(sensor_var_list);
+static const int num_universal_vars = ARRAY_SIZE(universal_var_list);
+static const int num_world_vars = ARRAY_SIZE(world_var_list);
+static const int num_world_ram_vars = ARRAY_SIZE(world_ram_var_list);
+static const int num_board_vars = ARRAY_SIZE(board_var_list);
+static const int num_robot_vars = ARRAY_SIZE(robot_var_list);
+static const int num_sprite_parent_vars = ARRAY_SIZE(sprite_parent_var_list);
+static const int num_sprite_vars = ARRAY_SIZE(sprite_var_list);
+static const int num_sensor_vars = ARRAY_SIZE(sensor_var_list);
 
 enum debug_var_type
 {
   V_COUNTER,
   V_STRING,
   V_VAR,
+  V_VIRTUAL_VAR,
   V_SPRITE_VAR,
   V_SPRITE_CLIST,
   V_LOCAL_VAR,
@@ -382,11 +486,159 @@ struct debug_var
     struct counter *counter;
     struct string *string;
     const char *var_name;
+    enum virtual_var virtual_var;
     int clist_num;
     int local_num;
   }
   data;
 };
+
+struct debug_ram_data
+{
+  size_t counter_list_size;
+  size_t counter_table_size;
+  size_t counter_struct_size;
+  size_t string_list_size;
+  size_t string_table_size;
+  size_t string_struct_size;
+  size_t sprites_size;
+  size_t vlayer_size;
+  size_t board_list_and_struct_size;
+  size_t board_data_size;
+  size_t board_overlay_size;
+  size_t robot_list_and_struct_size;
+  size_t robot_stack_size;
+  size_t robot_source_size;
+  size_t robot_program_size;
+  size_t robot_program_labels_size;
+  size_t scroll_sensor_total_size;
+  size_t video_layer_size;
+  size_t debug_robot_total_size;
+  size_t debug_variables_total_size;
+  size_t extram_uncompressed_size;
+  size_t extram_compressed_size;
+};
+
+static struct debug_ram_data ram_data;
+
+static void robot_ram_usage(struct robot *robot, struct debug_ram_data *ram_data)
+{
+  if(robot->stack)
+    ram_data->robot_stack_size += robot->stack_size * sizeof(robot->stack[0]);
+
+#ifdef CONFIG_DEBYTECODE
+  if(robot->program_source)
+    ram_data->robot_source_size += robot->program_source_length;
+#else
+  // Count this in debug since it's only used for that...
+  if(robot->program_source)
+    ram_data->debug_robot_total_size += robot->program_source_length;
+#endif /* !CONFIG_DEBYTECODE */
+
+  if(robot->program_bytecode)
+    ram_data->robot_program_size += robot->program_bytecode_length;
+
+  if(robot->command_map)
+  {
+    ram_data->debug_robot_total_size +=
+     robot->command_map_length * sizeof(struct command_mapping);
+  }
+
+  if(robot->label_list)
+  {
+    ram_data->robot_program_labels_size +=
+     robot->num_labels * (sizeof(struct label *) + sizeof(struct label));
+  }
+}
+
+static void update_ram_usage_data(struct world *mzx_world,
+ size_t var_debug_usage)
+{
+  int i, j;
+  size_t u;
+
+  memset(&ram_data, 0, sizeof(struct debug_ram_data));
+
+  counter_list_size(&mzx_world->counter_list, &ram_data.counter_list_size,
+   &ram_data.counter_table_size, &ram_data.counter_struct_size);
+
+  string_list_size(&mzx_world->string_list, &ram_data.string_list_size,
+   &ram_data.string_table_size, &ram_data.string_struct_size);
+
+  ram_data.sprites_size =
+   mzx_world->num_sprites_allocated * sizeof(struct sprite *) +
+   mzx_world->num_sprites * sizeof(struct sprite);
+
+  ram_data.vlayer_size = mzx_world->vlayer_size * 2;
+
+  ram_data.board_list_and_struct_size =
+   mzx_world->num_boards_allocated * sizeof(struct board *) +
+   mzx_world->num_boards * sizeof(struct board);
+
+  robot_ram_usage(&mzx_world->global_robot, &ram_data);
+
+  for(i = 0; i < mzx_world->num_boards; i++)
+  {
+    struct board *b = mzx_world->board_list[i];
+    // Board data.
+    ram_data.board_data_size += b->board_width * b->board_height * 6;
+    if(b->overlay_mode)
+      ram_data.board_overlay_size += b->board_width * b->board_height * 2;
+
+    // Buffers (split off the board struct).
+    ram_data.board_list_and_struct_size +=
+     b->input_allocated + b->charset_path_allocated + b->palette_path_allocated;
+
+    // Robot list (+1) and robot name sorted list.
+    ram_data.robot_list_and_struct_size +=
+     ((b->num_robots_allocated + 1) + b->num_robots_active) * sizeof(struct robot *);
+
+    // Scroll and sensor lists (both +1).
+    ram_data.scroll_sensor_total_size +=
+     (b->num_scrolls_allocated + 1) * sizeof(struct scroll *) +
+     (b->num_sensors_allocated + 1) * sizeof(struct sensor *);
+
+    for(j = 1; j <= b->num_robots; j++)
+    {
+      if(b->robot_list[j])
+      {
+        ram_data.robot_list_and_struct_size += sizeof(struct robot);
+        robot_ram_usage(b->robot_list[j], &ram_data);
+      }
+    }
+
+    for(j = 1; j <= b->num_scrolls; j++)
+      if(b->scroll_list[j])
+        ram_data.scroll_sensor_total_size +=
+         sizeof(struct scroll) + b->scroll_list[j]->mesg_size;
+
+    for(j = 1; j <= b->num_sensors; j++)
+      if(b->sensor_list[j])
+        ram_data.scroll_sensor_total_size += sizeof(struct sensor);
+
+#ifdef CONFIG_EXTRAM
+    {
+      size_t c;
+      size_t u;
+      if(board_extram_usage(b, &c, &u))
+      {
+        ram_data.extram_compressed_size += c;
+        ram_data.extram_uncompressed_size += u;
+      }
+    }
+#endif
+  }
+
+  for(u = 0; u < graphics.layer_count; u++)
+  {
+    struct video_layer *layer = &(graphics.video_layers[u]);
+    if(layer->data)
+      ram_data.video_layer_size +=
+       layer->w * layer->h * sizeof(struct char_element);
+  }
+
+  ram_data.debug_variables_total_size = var_debug_usage;
+}
 
 #define match_counter(_name) (strlen(_name) == len && !strcasecmp(name, _name))
 
@@ -404,7 +656,7 @@ int get_counter_safe(struct world *mzx_world, const char *name, int id)
   return get_counter(mzx_world, name, id);
 }
 
-static void get_var_name(struct debug_var *v, char **name, int *len,
+static void get_var_name(struct debug_var *v, const char **name, int *len,
  char buffer[VAR_LIST_WIDTH + 1])
 {
   switch((enum debug_var_type)v->type)
@@ -422,6 +674,11 @@ static void get_var_name(struct debug_var *v, char **name, int *len,
     case V_VAR:
     case V_SCROLL_TEXT:
       if(name) *name = (char *)v->data.var_name;
+      if(len)  *len = strlen(*name);
+      return;
+
+    case V_VIRTUAL_VAR:
+      if(name) *name = (char *)virtual_var_names[v->data.virtual_var];
       if(len)  *len = strlen(*name);
       return;
 
@@ -449,7 +706,8 @@ static void get_var_name(struct debug_var *v, char **name, int *len,
 
 // The buffer param is used for any vars that need to generate char values.
 static void get_var_value(struct world *mzx_world, struct debug_var *v,
- char **char_value, int *int_value, char buffer[VAR_LIST_WIDTH + 1])
+ const char **char_value, int *int_value, int64_t *long_value,
+ char buffer[VAR_LIST_WIDTH + 1])
 {
   struct board *cur_board = mzx_world->current_board;
   char real_var[32];
@@ -547,7 +805,7 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       if(match_var("input*"))
       {
         // the starred version of input is the input string!
-        *char_value = cur_board->input_string;
+        *char_value = cur_board->input_string ? cur_board->input_string : "";
         *int_value = strlen(*char_value);
       }
       else
@@ -612,6 +870,84 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
 
         *int_value = get_counter_safe(mzx_world, real_var, index);
       }
+      break;
+    }
+
+    // Subset of builtin vars that represent aggregate data or other info that
+    // doesn't actually exist in the world.
+    case V_VIRTUAL_VAR:
+    {
+      enum virtual_var vvar = v->data.virtual_var;
+      int64_t value = 0;
+
+      switch(vvar)
+      {
+        case VIR_RAM_COUNTER_LIST:
+          value = ram_data.counter_list_size;
+          break;
+        case VIR_RAM_COUNTER_TABLE:
+          value = ram_data.counter_table_size;
+          break;
+        case VIR_RAM_COUNTERS:
+          value = ram_data.counter_struct_size;
+          break;
+        case VIR_RAM_STRING_LIST:
+          value = ram_data.string_list_size;
+          break;
+        case VIR_RAM_STRING_TABLE:
+          value = ram_data.string_table_size;
+          break;
+        case VIR_RAM_STRINGS:
+          value = ram_data.string_struct_size;
+          break;
+        case VIR_RAM_VLAYER:
+          value = ram_data.vlayer_size;
+          break;
+        case VIR_RAM_SPRITES:
+          value = ram_data.sprites_size;
+          break;
+        case VIR_RAM_BOARD_INFO:
+          value = ram_data.board_list_and_struct_size;
+          break;
+        case VIR_RAM_BOARD_DATA:
+          value = ram_data.board_data_size;
+          break;
+        case VIR_RAM_BOARD_OVERLAY:
+          value = ram_data.board_overlay_size;
+          break;
+        case VIR_RAM_ROBOT_INFO:
+          value = ram_data.robot_list_and_struct_size;
+          break;
+        case VIR_RAM_ROBOT_STACK:
+          value = ram_data.robot_stack_size;
+          break;
+        case VIR_RAM_ROBOT_SOURCE:
+          value = ram_data.robot_source_size;
+          break;
+        case VIR_RAM_ROBOT_PROGRAMS:
+          value = ram_data.robot_program_size;
+          break;
+        case VIR_RAM_ROBOT_PROGRAM_LABELS:
+          value = ram_data.robot_program_labels_size;
+          break;
+        case VIR_RAM_SCROLLS_SENSORS:
+          value = ram_data.scroll_sensor_total_size;
+          break;
+        case VIR_RAM_VIDEO_LAYERS:
+          value = ram_data.video_layer_size;
+          break;
+        case VIR_RAM_DEBUGGER_ROBOTS:
+          value = ram_data.debug_robot_total_size;
+          break;
+        case VIR_RAM_DEBUGGER_VARIABLES:
+          value = ram_data.debug_variables_total_size;
+          break;
+        case VIR_RAM_EXTRAM_DELTA:
+          value = (int64_t)ram_data.extram_compressed_size -
+           (int64_t)ram_data.extram_uncompressed_size;
+          break;
+      }
+      *long_value = value;
       break;
     }
 
@@ -701,10 +1037,11 @@ static void read_var(struct world *mzx_world, struct debug_var *v)
 {
   char buffer[VAR_LIST_WIDTH + 1];
   char *char_dest = v->text + SVALUE_COL_OFFSET;
-  char *char_value = NULL;
+  const char *char_value = NULL;
+  int64_t long_value = INT64_MIN;
   int int_value = 0;
 
-  get_var_value(mzx_world, v, &char_value, &int_value, buffer);
+  get_var_value(mzx_world, v, &char_value, &int_value, &long_value, buffer);
 
   if(v->type == V_STRING)
   {
@@ -719,6 +1056,12 @@ static void read_var(struct world *mzx_world, struct debug_var *v)
   {
     // Use minimal escaping to avoid display bugs.
     copy_name_escaped(char_dest, SVALUE_SIZE + 1, char_value, int_value);
+  }
+  else
+
+  if(long_value != INT64_MIN)
+  {
+    snprintf(v->text + LVALUE_COL_OFFSET, LVALUE_SIZE + 1, "%"PRId64, long_value);
   }
 
   else
@@ -805,6 +1148,12 @@ static void write_var(struct world *mzx_world, struct debug_var *v, int int_val,
       break;
     }
 
+    case V_VIRTUAL_VAR:
+    {
+      // Virtual vars (read-only)
+      return;
+    };
+
     case V_SPRITE_VAR:
     {
       // Sprite variable
@@ -875,6 +1224,17 @@ static void init_builtin_var(struct debug_var *v, const char *name, int robot)
   v->is_empty = false;
   v->id = (char)robot;
   v->data.var_name = name;
+  memset(v->text, 32, VAR_LIST_WIDTH);
+  memcpy(v->text, name, strlen(name));
+  v->text[VAR_LIST_WIDTH] = 0;
+}
+
+static void init_virtual_var(struct debug_var *v, enum virtual_var virtual_var)
+{
+  const char *name = virtual_var_names[virtual_var];
+  v->type = V_VIRTUAL_VAR;
+  v->is_empty = false;
+  v->data.virtual_var = virtual_var;
   memset(v->text, 32, VAR_LIST_WIDTH);
   memcpy(v->text, name, strlen(name));
   v->text[VAR_LIST_WIDTH] = 0;
@@ -1142,6 +1502,21 @@ static void clear_debug_tree(struct debug_node *node, boolean delete_all)
   }
 }
 
+/**
+ * Get the total size of a debug tree's node and var structs.
+ */
+static size_t get_debug_tree_ram_size(struct debug_node *node)
+{
+  size_t sz = node->num_vars * sizeof(struct debug_var) +
+   node->num_nodes * sizeof(struct debug_node);
+  int i;
+
+  for(i = 0; i < node->num_nodes; i++)
+    sz += get_debug_tree_ram_size(&node->nodes[i]);
+
+  return sz;
+}
+
 /****************************/
 /* Tree Searching functions */
 /****************************/
@@ -1287,7 +1662,7 @@ static boolean search_vars(struct world *mzx_world, struct debug_node *node,
 
   char var_text_buffer[VAR_LIST_WIDTH + 1];
   int var_text_length;
-  char *var_text;
+  const char *var_text;
 
   if(search_flags & VAR_SEARCH_REVERSE)
   {
@@ -1335,12 +1710,17 @@ static boolean search_vars(struct world *mzx_world, struct debug_node *node,
 
     if((search_flags & VAR_SEARCH_VALUES) && !matched)
     {
-      get_var_value(mzx_world, current, &var_text, &var_text_length,
+      int64_t long_value = INT64_MIN;
+      get_var_value(mzx_world, current, &var_text, &var_text_length, &long_value,
        var_text_buffer);
       if(!var_text)
       {
         // Use the number already printed onto the var text area.
-        var_text = current->text + CVALUE_COL_OFFSET;
+        if(long_value != INT64_MIN)
+          var_text = current->text + LVALUE_COL_OFFSET;
+        else
+          var_text = current->text + CVALUE_COL_OFFSET;
+
         var_text_length = strlen(var_text);
       }
 
@@ -1758,6 +2138,24 @@ static void init_builtin_node(struct world *mzx_world,
   dest->vars = vars;
 }
 
+static void init_virtual_node(struct world *mzx_world,
+ struct debug_node *dest, const enum virtual_var *var_list, int num_vars)
+{
+  struct debug_var *vars = cmalloc(num_vars * sizeof(struct debug_var));
+  struct debug_var *current_var;
+  int i;
+
+  for(i = 0; i < num_vars; i++)
+  {
+    current_var = &(vars[i]);
+    init_virtual_var(current_var, var_list[i]);
+    read_var(mzx_world, current_var);
+  }
+
+  dest->num_vars = num_vars;
+  dest->vars = vars;
+}
+
 static void init_universal_node(struct world *mzx_world, struct debug_node *dest)
 {
   init_builtin_node(mzx_world, dest, universal_var_list,
@@ -1767,6 +2165,11 @@ static void init_universal_node(struct world *mzx_world, struct debug_node *dest
 static void init_world_node(struct world *mzx_world, struct debug_node *dest)
 {
   init_builtin_node(mzx_world, dest, world_var_list, num_world_vars, 0);
+}
+
+static void init_world_ram_node(struct world *mzx_world, struct debug_node *dest)
+{
+  init_virtual_node(mzx_world, dest, world_ram_var_list, num_world_ram_vars);
 }
 
 static void init_board_node(struct world *mzx_world, struct debug_node *dest)
@@ -1930,6 +2333,12 @@ enum root_node_ids
   NUM_ROOT_NODES
 };
 
+enum world_node_ids
+{
+  NODE_RAM,
+  NUM_WORLD_NODES
+};
+
 enum board_node_ids
 {
   NODE_SCROLLS,
@@ -1941,7 +2350,9 @@ enum board_node_ids
 // (Re)make the child nodes
 static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 {
+  struct debug_node *world = &(root->nodes[NODE_WORLD]);
   struct debug_node *board = &(root->nodes[NODE_BOARD]);
+  size_t sz;
 
   // Clear the debug tree recursively (but preserve the base structure).
   clear_debug_tree(root, false);
@@ -1959,6 +2370,21 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   {
     init_scroll_node(mzx_world,   &(board->nodes[NODE_SCROLLS]));
     init_sensor_node(mzx_world,   &(board->nodes[NODE_SENSORS]));
+  }
+
+  if(world->nodes)
+  {
+    /**
+     * The RAM node should be done last so the rest of the tree is finished
+     * for the debug variables RAM calculation.
+     *
+     * TODO this doesn't include the size of the var/node list allocations.
+     */
+    sz = get_debug_tree_ram_size(root);
+    sz += num_world_ram_vars * sizeof(struct debug_var);
+    update_ram_usage_data(mzx_world, sz);
+
+    init_world_ram_node(mzx_world,   &(world->nodes[NODE_RAM]));
   }
 }
 
@@ -2051,6 +2477,20 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     NULL
   };
 
+  struct debug_node world_ram =
+  {
+    "RAM",
+    false,
+    true,
+    false,
+    false,
+    0,
+    0,
+    &(nodes[NODE_WORLD]),
+    NULL,
+    NULL
+  };
+
   struct debug_node board =
   {
     "Board",
@@ -2106,6 +2546,11 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     NULL,
     NULL
   };
+
+  struct debug_node *world_n = ccalloc(NUM_WORLD_NODES, sizeof(struct debug_node));
+  world.num_nodes = NUM_WORLD_NODES;
+  world.nodes = world_n;
+  world_n[NODE_RAM] = world_ram;
 
   if(mzx_world->current_board->num_scrolls ||
    mzx_world->current_board->num_sensors)
@@ -2185,6 +2630,12 @@ static void input_counter_value(struct world *mzx_world, struct debug_var *v)
       // Just strcpy it off of the debug_var for simplicity
       strcpy(new_value, v->text + CVALUE_COL_OFFSET);
       break;
+    }
+
+    case V_VIRTUAL_VAR:
+    {
+      // Virtual var (read-only)
+      return;
     }
 
     case V_SPRITE_VAR:
@@ -2785,7 +3236,7 @@ void __debug_counters(context *ctx)
         export_name[0] = 0;
 
         if(!new_file(mzx_world, txt_ext, ".txt", export_name,
-         "Export counters/strings text file...", 1))
+         "Export counters/strings text file...", ALLOW_ALL_DIRS))
         {
           struct counter_list *counter_list = &(mzx_world->counter_list);
           struct string_list *string_list = &(mzx_world->string_list);
@@ -2878,7 +3329,7 @@ void __debug_counters(context *ctx)
   if(var_selected < num_vars)
   {
     char buffer[VAR_LIST_WIDTH + 1];
-    char *var_name;
+    const char *var_name;
     int len;
 
     get_var_name(var_list[var_selected], &var_name, &len, buffer);

@@ -31,6 +31,7 @@
 #include "error.h"
 #include "event.h"
 #include "expr.h"
+#include "extmem.h"
 #include "game_ops.h"
 #include "game_player.h"
 #include "graphics.h"
@@ -916,9 +917,6 @@ void cache_robot_labels(struct robot *cur_robot)
   return;
 }
 
-#ifdef CONFIG_DEBYTECODE
-static
-#endif
 void clear_label_cache(struct robot *cur_robot)
 {
   int i;
@@ -2270,6 +2268,33 @@ void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y)
     *my = board_height - 1;
 }
 
+/**
+ * Apply middle prefixes with respect to a different board than the current.
+ */
+void prefix_mid_xy_ext(struct world *mzx_world, struct board *dest_board,
+ int *mx, int *my, int x, int y)
+{
+  struct board *cur_board = mzx_world->current_board;
+
+  if(!mzx_world->mid_prefix)
+    return;
+
+  if(cur_board != dest_board)
+  {
+    mzx_world->current_board = dest_board;
+    retrieve_board_from_extram(dest_board);
+  }
+
+  prefix_mid_xy(mzx_world, mx, my, x, y);
+
+  if(cur_board != dest_board)
+  {
+    store_board_to_extram(dest_board);
+    mzx_world->current_board = cur_board;
+    find_player(mzx_world);
+  }
+}
+
 // Move an x/y pair in a given direction. Returns non-0 if edge reached.
 int move_dir(struct board *src_board, int *x, int *y, enum dir dir)
 {
@@ -2914,7 +2939,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         if(!strncasecmp(src_ptr, "input)", 6))
         {
           dest_pos += sprintf(buffer + dest_pos, "%s",
-           src_board->input_string);
+           src_board->input_string ? src_board->input_string : "");
           src_ptr += 6;
         }
         else
@@ -3043,12 +3068,12 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         if(!memcasecmp(name_buffer, "INPUT", 6))
         {
           // Input
-          name_length = strlen(src_board->input_string);
+          const char *input_string = src_board->input_string ? src_board->input_string : "";
+          name_length = strlen(input_string);
           if(dest_pos + name_length >= ROBOT_MAX_TR)
             name_length = ROBOT_MAX_TR - dest_pos - 1;
 
-          memcpy(buffer + dest_pos, src_board->input_string,
-           name_length);
+          memcpy(buffer + dest_pos, input_string, name_length);
           dest_pos += name_length;
         }
         else

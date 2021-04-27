@@ -35,6 +35,7 @@
 
 #include <string.h>
 
+#include "event.h"
 #include "render.h"
 #include "platform.h"
 
@@ -49,11 +50,19 @@
 #define SCALED_USE_CELL_CACHE /* 5% penalty on full redraws, up to 20x speed increase on no redraws */
 
 // These variables control the panning along the 1:1 "main" screen.
+DTCM_BSS
 static int cell_pan_x = 0;
+DTCM_BSS
 static int cell_pan_y = 0;
+DTCM_BSS
+static int mainscr_x_33rd = 0;
+DTCM_BSS
+static int mainscr_y_max = 0;
 
 // When set to >= 0, the upper screen will attempt to focus to this position
 // the next  time it is drawn and then reset them to -1.
+static int last_focus_x = -1;
+static int last_focus_y = -1;
 static int focus_x = -1;
 static int focus_y = -1;
 
@@ -66,9 +75,6 @@ static u8 palette_idx_table[256];
 #define PALETTE_NORMAL_START (16)
 #define PALETTE_PROTECTED_START (PALETTE_NORMAL_START + 16 + 120)
 #define palette_protected_idx_table protected_palette_bin
-
-// If we're looking around with the mouse, ignore the next call to focus.
-static boolean mouselook;
 
 // Y offset information for subscreen
 static s16 subscreen_offset_y = 0;
@@ -202,9 +208,10 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
   graphics->resolution_width = 640;
   graphics->resolution_height = 350;
 
-  /* Use bank C for the text screens. */
+  /* Use banks H and I for the text screens. */
   videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE | DISPLAY_BG1_ACTIVE);
-  vramSetBankC(VRAM_C_SUB_BG);
+  vramSetBankH(VRAM_H_SUB_BG);
+  vramSetBankI(VRAM_I_SUB_BG_0x06208000);
 
   /* BG0: foreground characters. */
   REG_BG0CNT_SUB  = BG_64x32 | BG_COLOR_16 | BG_MAP_BASE(0) |
@@ -214,7 +221,7 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
 
   /* BG1: background characters. */
   REG_BG1CNT_SUB  = BG_64x32 | BG_COLOR_16 | BG_MAP_BASE(2) |
-                    BG_TILE_BASE(3);
+                    BG_TILE_BASE(0);
   REG_BG1HOFS_SUB = 0;
   REG_BG1VOFS_SUB = 0;
 
@@ -223,7 +230,7 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
   focus_y = 350/2;
 
   // Add a solid tile for background colors.
-  vram = (u16*)BG_TILE_RAM_SUB(1) + 1024*16;
+  vram = (u16*)BG_TILE_RAM_SUB(0) + 256*16;
   for(i = 0; i < 32; i++)
     *(vram++) = (1 << 12 | 1 << 8 | 1 << 4 | 1) * (1+(i >> 4));
 }
@@ -416,7 +423,6 @@ static boolean nds_init_video(struct graphics_data *graphics,
   // Initialize the 1:1 scaled "main" screen.
   nds_mainscreen_init(graphics);
 
-  mouselook = false;
   transition.state = TRANSITION_NONE;
   transition.time = 0;
 
@@ -446,12 +452,6 @@ static void nds_mainscreen_focus(int x, int y)
   int scroll_x, scroll_y, i, ypos, ycounter;
   u16 *sptr;
 
-  if(mouselook)
-  {
-    // We're mouselooking, don't move the focus.
-    return;
-  }
-
   if(x == old_x && y == old_y)
   {
     // Already focused there, quick abort.
@@ -475,6 +475,9 @@ static void nds_mainscreen_focus(int x, int y)
   scroll_x   = x % 8;
   cell_pan_y = y / 14;
   scroll_y   = y % 14;
+
+  mainscr_x_33rd = scroll_x > 0 ? 1 : 0;
+  mainscr_y_max = scroll_y >= 4 ? 15 : 14;
 
   // Adjust the X scroll registers now.
   REG_BG0HOFS_SUB = scroll_x;
@@ -620,7 +623,7 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
   vram_fg = (u16*)BG_MAP_RAM_SUB(0);
   vram_bg = (u16*)BG_MAP_RAM_SUB(2);
 
-  for(y = 0; y < 15; y++)
+  for(y = 0; y < mainscr_y_max; y++)
   {
     // Draw the top halves of this line for tile_offset=0, then the bottom
     // halves for tile_offset=1.
@@ -639,18 +642,22 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
         fg  = (*text_cell).fg_color;
 
         *vram_fg = (2*chr + tile_offset) | (fg << 12);
-        *vram_bg = (bg << 12) | (chr >> 8);
+        *vram_bg = (bg << 12) | (chr >> 8) | 0x100;
 
         text_cell++;
-        vram_bg++; vram_fg++;
+        vram_bg++;
+        vram_fg++;
       }
 
-      // Plot the 33rd column (in the next plane)
-      chr = (*text_cell).char_value & 0x1FF;
-      bg  = (*text_cell).bg_color;
-      fg  = (*text_cell).fg_color;
-      *(vram_fg+992) = (2*chr + tile_offset) | (fg << 12);
-      *(vram_bg+992) = (bg << 12) | (chr >> 8);
+      if(mainscr_x_33rd)
+      {
+        // Plot the 33rd column (in the next plane)
+        chr = (*text_cell).char_value & 0x1FF;
+        bg  = (*text_cell).bg_color;
+        fg  = (*text_cell).fg_color;
+        *(vram_fg+992) = (2*chr + tile_offset) | (fg << 12);
+        *(vram_bg+992) = (bg << 12) | (chr >> 8) | 0x100;
+      }
 
       // Move back.
       text_cell -= 32;
@@ -802,9 +809,24 @@ static void nds_remap_char_range(struct graphics_data *graphics, Uint16 first,
 
 static void nds_focus_pixel(struct graphics_data *graphics, Uint32 x, Uint32 y)
 {
-  // We want these values to be handled later while render_graph is run.
-  focus_x = (int)x;
-  focus_y = (int)y;
+  switch(get_allow_focus_changes())
+  {
+    case FOCUS_FORBID:
+      return;
+    case FOCUS_ALLOW:
+      if(last_focus_x != (int)x || last_focus_y != (int)y)
+      {
+        last_focus_x = x;
+        last_focus_y = y;
+        focus_x = x;
+        focus_y = y;
+      }
+      break;
+    case FOCUS_PASS:
+      focus_x = x;
+      focus_y = y;
+      break;
+  }
 }
 
 void render_nds_register(struct renderer *renderer)
@@ -845,9 +867,4 @@ void nds_subscreen_switch(void)
   // Call the appropriate init function.
   if(subscreen_mode == SUBSCREEN_KEYBOARD)
     nds_subscreen_keyboard_init();
-}
-
-void nds_mouselook(boolean enabled)
-{
-  mouselook = enabled;
 }

@@ -53,6 +53,7 @@
 #include "io/fsafeopen.h"
 #include "io/memfile.h"
 #include "io/path.h"
+#include "io/vio.h"
 #include "io/zip.h"
 
 #include "audio/audio.h"
@@ -534,10 +535,10 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   return VAL_SUCCESS;
 
 err_free:
-  fprintf(stderr,
+  fprintf(mzxerr,
    "load_world_info: expected ID %xh not found (found %xh, last %xh)\n",
    missing_ident, ident, last_ident);
-  fflush(stderr);
+  fflush(mzxerr);
 
   free(buffer);
   mzx_world->raw_world_info = NULL;
@@ -1695,19 +1696,16 @@ static inline int load_world_strings(struct world *mzx_world,
 
 void save_counters_file(struct world *mzx_world, const char *file)
 {
-  FILE *fp = fopen_unsafe(file, "wb");
+  vfile *vf = vfopen_unsafe_ext(file, "wb", V_LARGE_BUFFER);
   struct zip_archive *zp;
 
-  if(!fp)
+  if(!vf)
     return;
 
-  // TODO temporary fix to improve save times on the embedded platforms.
-  setvbuf(fp, NULL, _IOFBF, 16384);
-
-  if(!fwrite("COUNTERS", 8, 1, fp))
+  if(!vfwrite("COUNTERS", 8, 1, vf))
     goto err;
 
-  zp = zip_open_fp_write(fp);
+  zp = zip_open_vf_write(vf);
   if(!zp)
     goto err;
 
@@ -1718,35 +1716,32 @@ void save_counters_file(struct world *mzx_world, const char *file)
   return;
 
 err:
-  fclose(fp);
+  vfclose(vf);
   return;
 }
 
 
 int load_counters_file(struct world *mzx_world, const char *file)
 {
-  FILE *fp = fopen_unsafe(file, "rb");
+  vfile *vf = vfopen_unsafe_ext(file, "rb", V_LARGE_BUFFER);
   struct zip_archive *zp;
   char magic[8];
 
   unsigned int prop_id;
 
-  if(!fp)
+  if(!vf)
   {
     error_message(E_FILE_DOES_NOT_EXIST, 0, NULL);
     return -1;
   }
 
-  // TODO temporary fix to improve load times on the embedded platforms.
-  setvbuf(fp, NULL, _IOFBF, 16384);
-
-  if(!fread(magic, 8, 1, fp))
+  if(!vfread(magic, 8, 1, vf))
     goto err_close_file;
 
   if(memcmp(magic, "COUNTERS", 8))
     goto err_close_file;
 
-  zp = zip_open_fp_read(fp);
+  zp = zip_open_vf_read(vf);
 
   if(!zp)
     goto err_close_zip;
@@ -1776,11 +1771,11 @@ int load_counters_file(struct world *mzx_world, const char *file)
 
 err_close_zip:
   zip_close(zp, NULL);
-  fp = NULL;
+  vf = NULL;
 
 err_close_file:
-  if(fp)
-    fclose(fp);
+  if(vf)
+    vfclose(vf);
   error_message(E_SAVE_FILE_INVALID, 0, NULL);
   return -1;
 }
@@ -1880,7 +1875,7 @@ err_out:
 static int save_world_zip(struct world *mzx_world, const char *file,
  boolean savegame, int file_version)
 {
-  FILE *fp;
+  vfile *vf;
   struct zip_archive *zp = NULL;
   struct board *cur_board;
   int i;
@@ -1890,45 +1885,42 @@ static int save_world_zip(struct world *mzx_world, const char *file,
 
   meter_initial_draw(meter_curr, meter_target, "Saving...");
 
-  fp = fopen_unsafe(file, "wb");
-  if(!fp)
+  vf = vfopen_unsafe_ext(file, "wb", V_LARGE_BUFFER);
+  if(!vf)
     goto err;
-
-  // TODO temporary fix to improve save times on the embedded platforms.
-  setvbuf(fp, NULL, _IOFBF, 16384);
 
   // Header
   if(!savegame)
   {
     // World name
-    if(!fwrite(mzx_world->name, BOARD_NAME_SIZE, 1, fp))
+    if(!vfwrite(mzx_world->name, BOARD_NAME_SIZE, 1, vf))
       goto err_close;
 
     // Protection method -- always zero
-    fputc(0, fp);
+    vfputc(0, vf);
 
     // Version string
-    fputc('M', fp);
-    fputc((file_version >> 8) & 0xFF, fp);
-    fputc(file_version & 0xFF, fp);
+    vfputc('M', vf);
+    vfputc((file_version >> 8) & 0xFF, vf);
+    vfputc(file_version & 0xFF, vf);
   }
   else
   {
     // Version string
-    if(!fwrite("MZS", 3, 1, fp))
+    if(!vfwrite("MZS", 3, 1, vf))
       goto err_close;
 
-    fputc((file_version >> 8) & 0xFF, fp);
-    fputc(file_version & 0xFF, fp);
+    vfputc((file_version >> 8) & 0xFF, vf);
+    vfputc(file_version & 0xFF, vf);
 
     // MZX world version
-    fputw(mzx_world->version, fp);
+    vfputw(mzx_world->version, vf);
 
     // Current board ID
-    fputc(mzx_world->current_board_id, fp);
+    vfputc(mzx_world->current_board_id, vf);
   }
 
-  zp = zip_open_fp_write(fp);
+  zp = zip_open_vf_write(vf);
   if(!zp)
     goto err_close;
 
@@ -1960,8 +1952,16 @@ static int save_world_zip(struct world *mzx_world, const char *file,
     cur_board = mzx_world->board_list[i];
 
     if(cur_board)
+    {
+      if(cur_board != mzx_world->current_board)
+        retrieve_board_from_extram(cur_board);
+
       if(save_board(mzx_world, cur_board, zp, savegame, file_version, i))
         goto err_close;
+
+      if(cur_board != mzx_world->current_board)
+        store_board_to_extram(cur_board);
+    }
 
     meter_update_screen(&meter_curr, meter_target);
   }
@@ -1986,7 +1986,7 @@ err_close:
   if(zp)
     zip_close(zp, NULL);
   else
-    fclose(fp);
+    vfclose(vf);
 
 err:
   error_message(E_WORLD_IO_SAVING, 0, NULL);
@@ -2012,6 +2012,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 
   int meter_curr = 0;
   int meter_target = 2;
+  boolean loaded_temp_board = false;
 
   meter_initial_draw(meter_curr, meter_target, "Loading...");
 
@@ -2114,6 +2115,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
            load_board_allocate(mzx_world, zp, savegame, file_version, board_id);
 
           meter_update_screen(&meter_curr, meter_target);
+          loaded_temp_board = true;
         }
         break;
       }
@@ -2138,8 +2140,8 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
     if(err != ZIP_SUCCESS)
     {
       zip_skip_file(zp);
-      fprintf(stderr, "ERROR - Read error @ file ID %u\n", file_id);
-      fflush(stderr);
+      fprintf(mzxerr, "ERROR - Read error @ file ID %u\n", file_id);
+      fflush(mzxerr);
     }
   }
 
@@ -2166,6 +2168,11 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
     error_message(E_WORLD_BOARD_MISSING, 0, NULL);
   }
 
+  // Check for missing temporary board; if the temporary board is missing,
+  // clear the temporary flag so the temporary board will be regenerated.
+  if(mzx_world->temporary_board && !loaded_temp_board)
+    mzx_world->temporary_board = false;
+
   meter_update_screen(&meter_curr, meter_target);
 
   meter_restore_screen();
@@ -2179,8 +2186,6 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
  int world_version)
 {
 #ifdef CONFIG_DEBYTECODE
-  FILE *fp;
-
   // TODO we'll cross this bridge when we need to. That shouldn't be
   // until debytecode gets an actual release, though.
 
@@ -2193,13 +2198,13 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
 
   if(!savegame)
   {
-    fp = fopen_unsafe(file, "rb");
-    if(fp)
+    vfile *vf = vfopen_unsafe(file, "rb");
+    if(vf)
     {
-      if(!fseek(fp, 0x1A, SEEK_SET))
+      if(!vfseek(vf, 0x1A, SEEK_SET))
       {
         char tmp[3];
-        if(fread(tmp, 1, 3, fp) == 3)
+        if(vfread(tmp, 1, 3, vf) == 3)
         {
           int old_version = world_magic(tmp);
 
@@ -2207,12 +2212,12 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
           if(old_version < VERSION_SOURCE)
           {
             error_message(E_DBC_WORLD_OVERWRITE_OLD, old_version, NULL);
-            fclose(fp);
+            vfclose(vf);
             return -1;
           }
         }
       }
-      fclose(fp);
+      vfclose(vf);
     }
   }
 #endif /* CONFIG_DEBYTECODE */
@@ -2264,10 +2269,10 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
 
   else
   {
-    fprintf(stderr,
+    fprintf(mzxerr,
      "ERROR: Attempted to save incompatible world version %d.%d! Aborting!\n",
      (world_version >> 8) & 0xFF, world_version & 0xFF);
-    fflush(stderr);
+    fflush(mzxerr);
 
     return -1;
   }
@@ -2503,7 +2508,7 @@ static void convert_sfx_strs(char *sfx_buf)
 
 
 static void load_world(struct world *mzx_world, struct zip_archive *zp,
- FILE *fp, const char *file, boolean savegame, int file_version, char *name,
+ vfile *vf, const char *file, boolean savegame, int file_version, char *name,
  boolean *faded)
 {
   int file_name_len = strlen(file) - 4;
@@ -2512,20 +2517,20 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   char file_path[MAX_PATH];
   struct stat file_info;
 
-  // chdir to game directory
+  // Change to the game (or save) directory.
   if(path_get_directory(file_path, MAX_PATH, file) > 0)
   {
-    getcwd(current_dir, MAX_PATH);
+    vgetcwd(current_dir, MAX_PATH);
 
     if(strcmp(current_dir, file_path))
-      chdir(file_path);
+      vchdir(file_path);
   }
 
   // load world config file
   snprintf(config_file_name, MAX_PATH, "%.*s.cnf", file_name_len, file);
   config_file_name[MAX_PATH - 1] = '\0';
 
-  if(stat(config_file_name, &file_info) >= 0)
+  if(vstat(config_file_name, &file_info) >= 0)
     set_config_from_file(GAME_CNF, config_file_name);
 
   // Some initial setting(s)
@@ -2540,7 +2545,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   }
   else
   {
-    legacy_load_world(mzx_world, fp, file, savegame, file_version, name, faded);
+    legacy_load_world(mzx_world, vf, file, savegame, file_version, name, faded);
   }
 
   update_palette();
@@ -2630,55 +2635,42 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
 
 /**
- * Open the world file and attempt to read the world header.
- * Doesn't validate any read info; only return NULL if there was an IO error.
+ * Read the world header from a file.
+ * Doesn't validate any info; only return false if there was an IO error.
  */
-
-static FILE *try_open_world(const char *file, boolean savegame,
+static boolean read_world_header(vfile *vf, boolean savegame,
  int *file_version, int *protected, char *name)
 {
   char magic[5];
   int pr = 0;
   int v;
 
-  FILE *fp = fopen_unsafe(file, "rb");
-  if(!fp)
-    return NULL;
-
-  // TODO temporary fix to improve load times on the embedded platforms.
-  setvbuf(fp, NULL, _IOFBF, 16384);
-
   if(savegame)
   {
-    if(!fread(magic, 5, 1, fp))
-      goto err_close;
+    if(!vfread(magic, 5, 1, vf))
+      return false;
 
     v = save_magic(magic);
   }
-
   else
   {
-    if(!fread(name, BOARD_NAME_SIZE, 1, fp))
-      goto err_close;
+    if(!vfread(name, BOARD_NAME_SIZE, 1, vf))
+      return false;
 
     // Protection byte
-    pr = fgetc(fp);
+    pr = vfgetc(vf);
     if(protected)
       *protected = pr;
 
-    if(!fread(magic, 3, 1, fp))
-      goto err_close;
+    if(!vfread(magic, 3, 1, vf))
+      return false;
 
     v = world_magic(magic);
   }
 
   if(protected) *protected = pr;
   if(file_version) *file_version = v;
-  return fp;
-
-err_close:
-  fclose(fp);
-  return NULL;
+  return true;
 }
 
 static struct zip_archive *try_load_zip_world(struct world *mzx_world,
@@ -2686,15 +2678,18 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
  char *name)
 {
   struct zip_archive *zp = NULL;
-  FILE *fp;
+  vfile *vf;
   int pr = 0;
-  int v;
+  int v = 0;
 
   int result;
 
-  fp = try_open_world(file, savegame, &v, &pr, name);
-  if(!fp)
+  vf = vfopen_unsafe_ext(file, "rb", V_LARGE_BUFFER);
+  if(!vf)
     return NULL;
+
+  if(!read_world_header(vf, savegame, &v, &pr, name))
+    goto err_close;
 
   *file_version = v;
 
@@ -2716,11 +2711,11 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
   *file_version = 0;
   v = 0;
 
-  zp = zip_open_fp_read(fp);
+  zp = zip_open_vf_read(vf);
 
   if(!zp)
   {
-    fp = NULL;
+    vf = NULL;
     goto err_close;
   }
 
@@ -2794,39 +2789,42 @@ err_protected:
   }
   else
 
-  if(fp)
-    fclose(fp);
+  if(vf)
+    vfclose(vf);
 
   return NULL;
 }
 
-static FILE *try_load_legacy_world(struct world *mzx_world, const char *file,
+static vfile *try_load_legacy_world(struct world *mzx_world, const char *file,
  boolean savegame, int *file_version, char *name)
 {
-  FILE *fp;
-  enum val_result result;
+  vfile *vf;
 
   // Validate the legacy world file and attempt decryption as needed.
-  result = validate_legacy_world_file(mzx_world, file, savegame);
-
-  if(result != VAL_SUCCESS)
+  vf = validate_legacy_world_file(mzx_world, file, savegame);
+  if(!vf)
     return NULL;
 
-  // We don't care about the value of the protected byte since the world
-  // should be decrypted if we've made it this far.
-  fp = try_open_world(file, savegame, file_version, NULL, name);
+  vrewind(vf);
+
+  // Ignore the protected byte since the world should be decrypted by now.
+  if(!read_world_header(vf, savegame, file_version, NULL, name))
+  {
+    vfclose(vf);
+    return NULL;
+  }
 
   reset_error_suppression();
-  return fp;
+  return vf;
 }
 
 __editor_maybe_static
 void try_load_world(struct world *mzx_world, struct zip_archive **zp,
- FILE **fp, const char *file, boolean savegame, int *file_version, char *name)
+ vfile **vf, const char *file, boolean savegame, int *file_version, char *name)
 {
   // Regular worlds use a zip_archive. Legacy worlds use a FILE.
   struct zip_archive *_zp = NULL;
-  FILE *_fp = NULL;
+  vfile *_vf = NULL;
   int protected = 0;
   int v = 0;
 
@@ -2834,10 +2832,10 @@ void try_load_world(struct world *mzx_world, struct zip_archive **zp,
 
   if(!_zp)
     if(protected || (v >= V251 && v <= MZX_LEGACY_FORMAT_VERSION))
-      _fp = try_load_legacy_world(mzx_world, file, savegame, &v, name);
+      _vf = try_load_legacy_world(mzx_world, file, savegame, &v, name);
 
   *zp = _zp;
-  *fp = _fp;
+  *vf = _vf;
   *file_version = v;
 }
 
@@ -2895,7 +2893,7 @@ void change_board_load_assets(struct world *mzx_world)
   char translated_name[MAX_PATH];
 
   // Does this board need a char set loaded? (2.90+)
-  if(mzx_world->version >= V290 && cur_board->charset_path[0])
+  if(mzx_world->version >= V290 && cur_board->charset_path)
   {
     if(fsafetranslate(cur_board->charset_path, translated_name, MAX_PATH) == FSAFE_SUCCESS)
     {
@@ -2908,7 +2906,7 @@ void change_board_load_assets(struct world *mzx_world)
   }
 
   // Does this board need a palette loaded? (2.90+)
-  if(mzx_world->version >= V290 && cur_board->palette_path[0])
+  if(mzx_world->version >= V290 && cur_board->palette_path)
   {
     if(fsafetranslate(cur_board->palette_path, translated_name, MAX_PATH) == FSAFE_SUCCESS)
       load_palette(translated_name);
@@ -2923,6 +2921,7 @@ static void default_sprite_data(struct world *mzx_world)
 
   // Allocate space for sprites and clist
   mzx_world->num_sprites = MAX_SPRITES;
+  mzx_world->num_sprites_allocated = MAX_SPRITES;
   mzx_world->sprite_list = ccalloc(MAX_SPRITES, sizeof(struct sprite *));
 
   for(i = 0; i < MAX_SPRITES; i++)
@@ -3040,11 +3039,11 @@ boolean reload_world(struct world *mzx_world, const char *file, boolean *faded)
   int version;
 
   struct zip_archive *zp;
-  FILE *fp;
+  vfile *vf;
 
-  try_load_world(mzx_world, &zp, &fp, file, false, &version, name);
+  try_load_world(mzx_world, &zp, &vf, file, false, &version, name);
 
-  if(!zp && !fp)
+  if(!zp && !vf)
     return false;
 
   if(mzx_world->active)
@@ -3062,7 +3061,7 @@ boolean reload_world(struct world *mzx_world, const char *file, boolean *faded)
   default_sprite_data(mzx_world);
   default_vlayer(mzx_world);
 
-  load_world(mzx_world, zp, fp, file, false, version, name, faded);
+  load_world(mzx_world, zp, vf, file, false, version, name, faded);
   default_global_data(mzx_world);
   *faded = false;
 
@@ -3071,7 +3070,7 @@ boolean reload_world(struct world *mzx_world, const char *file, boolean *faded)
     char save_name[MAX_PATH];
     path_get_filename(save_name, MAX_PATH, curr_sav);
 
-    getcwd(curr_sav, MAX_PATH);
+    vgetcwd(curr_sav, MAX_PATH);
     path_append(curr_sav, MAX_PATH, save_name);
   }
 
@@ -3085,11 +3084,11 @@ boolean reload_savegame(struct world *mzx_world, const char *file,
   int version;
 
   struct zip_archive *zp;
-  FILE *fp;
+  vfile *vf;
 
-  try_load_world(mzx_world, &zp, &fp, file, true, &version, ignore);
+  try_load_world(mzx_world, &zp, &vf, file, true, &version, ignore);
 
-  if(!zp && !fp)
+  if(!zp && !vf)
     return false;
 
   // It is, so wipe the old world
@@ -3103,7 +3102,7 @@ boolean reload_savegame(struct world *mzx_world, const char *file,
   default_vlayer(mzx_world);
 
   // And load the new one
-  load_world(mzx_world, zp, fp, file, true, version, NULL, faded);
+  load_world(mzx_world, zp, vf, file, true, version, NULL, faded);
   return true;
 }
 
@@ -3114,17 +3113,17 @@ boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded)
   int version;
 
   struct zip_archive *zp;
-  FILE *fp;
+  vfile *vf;
 
-  try_load_world(mzx_world, &zp, &fp, file, false, &version, name);
+  try_load_world(mzx_world, &zp, &vf, file, false, &version, name);
 
-  if(!zp && !fp)
+  if(!zp && !vf)
     return false;
 
   if(mzx_world->active)
     clear_world(mzx_world);
 
-  load_world(mzx_world, zp, fp, file, false, version, name, faded);
+  load_world(mzx_world, zp, vf, file, false, version, name, faded);
 
   // Change to the first board of the new world.
   change_board(mzx_world, mzx_world->first_board);
@@ -3133,7 +3132,7 @@ boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded)
 
   // Give curr_file a full path
   path_get_filename(file_name, MAX_PATH, file);
-  getcwd(curr_file, MAX_PATH);
+  vgetcwd(curr_file, MAX_PATH);
   path_append(curr_file, MAX_PATH, file_name);
 
   return true;
@@ -3153,7 +3152,7 @@ void clear_world(struct world *mzx_world)
   for(i = 0; i < num_boards; i++)
   {
     if(mzx_world->current_board_id != i)
-      retrieve_board_from_extram(board_list[i]);
+      clear_board_from_extram(board_list[i]);
     clear_board(board_list[i]);
   }
   free(board_list);
@@ -3222,6 +3221,7 @@ void clear_global_data(struct world *mzx_world)
   free(sprite_list);
   mzx_world->sprite_list = NULL;
   mzx_world->num_sprites = 0;
+  mzx_world->num_sprites_allocated = 0;
 
   free(mzx_world->collision_list);
   mzx_world->collision_list = NULL;

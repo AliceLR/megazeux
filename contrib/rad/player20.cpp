@@ -27,6 +27,7 @@
 
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -275,6 +276,9 @@ void RADPlayer::Init(const void *tune, void (*opl3)(void *, uint16_t, uint8_t), 
     for (int i = 0; i < kRiffTracks; i++)
         for (int j = 0; j < kChannels; j++)
             Riffs[i][j] = 0;
+
+    // These aren't guaranteed to all be stored in the file...
+    memset(&Instruments, 0, sizeof(Instruments));
 
     if(version == 0x10)
     {

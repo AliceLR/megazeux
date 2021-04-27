@@ -38,6 +38,7 @@
 static int save_board_info(struct board *cur_board, struct zip_archive *zp,
  int savegame, int file_version, const char *name)
 {
+  const char *tmp;
   char *buffer;
   struct memfile mf;
   int result;
@@ -89,11 +90,13 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
   save_prop_c(BPROP_PLAYER_ATTACK_LOCKED, cur_board->player_attack_locked, &mf);
   save_prop_c(BPROP_RESET_ON_ENTRY, cur_board->reset_on_entry, &mf);
 
-  length = strlen(cur_board->charset_path);
-  save_prop_s(BPROP_CHARSET_PATH, cur_board->charset_path, length, 1 , &mf);
+  tmp = cur_board->charset_path ? cur_board->charset_path : "";
+  length = strlen(tmp);
+  save_prop_s(BPROP_CHARSET_PATH, tmp, length, 1, &mf);
 
-  length = strlen(cur_board->palette_path);
-  save_prop_s(BPROP_PALETTE_PATH, cur_board->palette_path, length, 1, &mf);
+  tmp = cur_board->palette_path ? cur_board->palette_path : "";
+  length = strlen(tmp);
+  save_prop_s(BPROP_PALETTE_PATH, tmp, length, 1, &mf);
 
   if(savegame)
   {
@@ -107,8 +110,9 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
     save_prop_d(BPROP_NUM_INPUT, cur_board->num_input, &mf);
     save_prop_d(BPROP_INPUT_SIZE, cur_board->input_size, &mf);
 
-    length = strlen(cur_board->input_string);
-    save_prop_s(BPROP_INPUT_STRING, cur_board->input_string, length, 1, &mf);
+    tmp = cur_board->input_string ? cur_board->input_string : "";
+    length = strlen(tmp);
+    save_prop_s(BPROP_INPUT_STRING, tmp, length, 1, &mf);
 
     length = strlen(cur_board->bottom_mesg);
     save_prop_s(BRPOP_BOTTOM_MESG, cur_board->bottom_mesg, length, 1, &mf);
@@ -268,8 +272,10 @@ static void default_board(struct board *cur_board)
   cur_board->restart_if_zapped = 0;
   cur_board->reset_on_entry = 0;
   cur_board->time_limit = 0;
-  cur_board->charset_path[0] = 0;
-  cur_board->palette_path[0] = 0;
+  cur_board->charset_path = NULL;
+  cur_board->palette_path = NULL;
+  cur_board->charset_path_allocated = 0;
+  cur_board->palette_path_allocated = 0;
 
   cur_board->scroll_x = 0;
   cur_board->scroll_y = 0;
@@ -289,13 +295,14 @@ static void default_board(struct board *cur_board)
   cur_board->last_key = '?';
   cur_board->num_input = 0;
   cur_board->input_size = 0;
-  cur_board->input_string[0] = 0;
+  cur_board->input_allocated = 0;
+  cur_board->input_string = NULL;
   cur_board->bottom_mesg[0] = 0;
   cur_board->b_mesg_timer = 0;
   cur_board->b_mesg_row = 24;
   cur_board->b_mesg_col = -1;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(CONFIG_EXTRAM)
   cur_board->is_extram = false;
 #endif
 }
@@ -330,6 +337,66 @@ void dummy_board(struct board *cur_board)
   cur_board->num_sensors = 0;
   cur_board->num_sensors_allocated = 0;
   cur_board->sensor_list = ccalloc(1, sizeof(struct sensor *));
+}
+
+void board_set_input_string(struct board *cur_board, const char *input, size_t len)
+{
+  if(!len || !input || !input[0])
+  {
+    if(cur_board->input_string)
+      cur_board->input_string[0] = '\0';
+    return;
+  }
+
+  if(len + 1 > cur_board->input_allocated)
+  {
+    size_t size = MAX(len + 1, 81);
+    cur_board->input_string = crealloc(cur_board->input_string, size);
+    cur_board->input_allocated = size;
+  }
+  // The provided input may be a part of the input string!
+  memmove(cur_board->input_string, input, len);
+  cur_board->input_string[len] = '\0';
+}
+
+__editor_maybe_static void board_set_charset_path(struct board *cur_board,
+ const char *path, size_t path_len)
+{
+  if(!path_len || !path || !path[0])
+  {
+    if(cur_board->charset_path)
+      cur_board->charset_path[0] = '\0';
+    return;
+  }
+
+  if(path_len + 1 > cur_board->charset_path_allocated)
+  {
+    size_t size = MAX(path_len + 1, 32);
+    cur_board->charset_path = crealloc(cur_board->charset_path, size);
+    cur_board->charset_path_allocated = size;
+  }
+  memcpy(cur_board->charset_path, path, path_len);
+  cur_board->charset_path[path_len] = '\0';
+}
+
+__editor_maybe_static void board_set_palette_path(struct board *cur_board,
+ const char *path, size_t path_len)
+{
+  if(!path_len || !path || !path[0])
+  {
+    if(cur_board->palette_path)
+      cur_board->palette_path[0] = '\0';
+    return;
+  }
+
+  if(path_len + 1 > cur_board->palette_path_allocated)
+  {
+    size_t size = MAX(path_len + 1, 32);
+    cur_board->palette_path = crealloc(cur_board->palette_path, size);
+    cur_board->palette_path_allocated = size;
+  }
+  memcpy(cur_board->palette_path, path, path_len);
+  cur_board->palette_path[path_len] = '\0';
 }
 
 #define err_if_missing(expected) if(last_ident < expected) { goto err_free; }
@@ -533,14 +600,12 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
       case BPROP_CHARSET_PATH:
         size = MIN(size, MAX_PATH - 1);
-        mfread(cur_board->charset_path, size, 1, &prop);
-        cur_board->charset_path[size] = 0;
+        board_set_charset_path(cur_board, (const char *)prop.start, size);
         break;
 
       case BPROP_PALETTE_PATH:
         size = MIN(size, MAX_PATH - 1);
-        mfread(cur_board->palette_path, size, 1, &prop);
-        cur_board->palette_path[size] = 0;
+        board_set_palette_path(cur_board, (const char *)prop.start, size);
         break;
 
 
@@ -583,8 +648,7 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
       case BPROP_INPUT_STRING:
         size = MIN(size, ROBOT_MAX_TR-1);
-        mfread(cur_board->input_string, size, 1, &prop);
-        cur_board->input_string[size] = 0;
+        board_set_input_string(cur_board, (const char *)prop.start, size);
         break;
 
       case BRPOP_BOTTOM_MESG:
@@ -682,7 +746,6 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
   int has_och = 0;
   int has_oco = 0;
 
-  cur_board->world_version = mzx_world->version;
   default_board(cur_board);
 
   while(ZIP_SUCCESS ==
@@ -1173,12 +1236,37 @@ struct board *duplicate_board(struct world *mzx_world,
     memcpy(dest_board->overlay_color, src_board->overlay_color, size);
   }
 
+  // Buffers
+  if(src_board->input_string)
+  {
+    dest_board->input_string = NULL;
+    dest_board->input_allocated = 0;
+    board_set_input_string(dest_board, src_board->input_string,
+     src_board->input_allocated);
+  }
+
+  if(src_board->charset_path)
+  {
+    dest_board->charset_path = NULL;
+    dest_board->charset_path_allocated = 0;
+    board_set_charset_path(dest_board, src_board->charset_path,
+     src_board->charset_path_allocated);
+  }
+
+  if(src_board->palette_path)
+  {
+    dest_board->palette_path = NULL;
+    dest_board->palette_path_allocated = 0;
+    board_set_palette_path(dest_board, src_board->palette_path,
+     src_board->palette_path_allocated);
+  }
+
   // Robots
   dest_robot_list =
-   ccalloc(src_board->num_robots + 1, sizeof(struct robot *));
+   ccalloc(src_board->num_robots_allocated + 1, sizeof(struct robot *));
 
   dest_robot_name_list =
-   ccalloc(src_board->num_robots, sizeof(struct robot *));
+   ccalloc(src_board->num_robots_allocated, sizeof(struct robot *));
 
   dest_board->robot_list = dest_robot_list;
   dest_board->robot_list_name_sorted = dest_robot_name_list;
@@ -1212,7 +1300,7 @@ struct board *duplicate_board(struct world *mzx_world,
 
   // Scrolls
   dest_scroll_list =
-   ccalloc(src_board->num_scrolls + 1, sizeof(struct scroll *));
+   ccalloc(src_board->num_scrolls_allocated + 1, sizeof(struct scroll *));
 
   dest_board->scroll_list = dest_scroll_list;
 
@@ -1231,7 +1319,7 @@ struct board *duplicate_board(struct world *mzx_world,
 
   // Sensors
   dest_sensor_list =
-   ccalloc(src_board->num_sensors + 1, sizeof(struct sensor *));
+   ccalloc(src_board->num_sensors_allocated + 1, sizeof(struct sensor *));
 
   dest_board->sensor_list = dest_sensor_list;
 
@@ -1268,6 +1356,10 @@ void clear_board(struct board *cur_board)
   free(cur_board->level_under_id);
   free(cur_board->level_under_param);
   free(cur_board->level_under_color);
+
+  free(cur_board->input_string);
+  free(cur_board->charset_path);
+  free(cur_board->palette_path);
 
   if(cur_board->overlay_mode)
   {

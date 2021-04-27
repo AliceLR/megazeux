@@ -408,6 +408,9 @@ exceptions are:
   as C++ (as C++ does not support them).
 * As a general rule, mixed declarations and code should be avoided as well.
   The primary exception to this is when using declarations for RAII in C++.
+* The `restrict` keyword should be used only through the macro `RESTRICT`.
+  This is for intercompatibility with C++. See GNU extensions for more info
+  and restrictions on usage.
 
 ### C standard library functions
 
@@ -437,6 +440,11 @@ compatibility. The following GNU extensions are allowed:
 * `long long` (should usually use inttypes.h and/or `size_t`/`ssize_t` instead).
 * Pragmas to locally disable warnings are acceptable in rare cases.
 * `__PRETTY_FUNCTION__` (C++ only; an MSVC compatibility define is included).
+* The `__restrict` keyword provided for C and C++ by GCC, Clang, ICC, and MSVC
+  may be used via the macro `RESTRICT` defined in compat.h. Since this is an
+  extension in C++, it's probably best to use it only on pointers. `RESTRICT`
+  should generally only be used in places where it's verified to produce a
+  significant performance increase (example: the software renderers).
 
 ### POSIX features
 

@@ -2,6 +2,171 @@ GIT
 
 USERS
 
++ Added robot editor undo (Ctrl+Z) and redo (Ctrl+Y). Like with
+  board/vlayer/charset editing, the size of the undo stack is
+  defined by the config setting "undo_history_size". Note that
+  extended macro expansion can sometimes clobber undo or redo
+  frames (this is not easily fixable, and prevents worse bugs).
++ Protected worlds are now decrypted to RAM or a temporary file
+  when 'auto_decrypt_worlds' is enabled and the original file is
+  left unmodified. This setting is now enabled by default.
++ When loading a layer MZM to the board in the editor, instead
+  of always loading the MZM as CustomBlocks the conversion type
+  can now be selected from CustomBlock, CustomFloor, and Text.
+  Canceling the object type dialog no longer cancels the current
+  block or MZM placement.
++ Reimplemented ANSi import/export support for the editor. ANSi
+  and TXT files can be imported in the editor with Alt+I and can
+  be exported by selecting a block (Alt+B).
++ The software fallback renderer functions now support SMZX mode
+  3 indices, fixing graphical bugs in situations where the
+  fallback would be used and display the wrong colors in games
+  using custom indices.
++ Added support for 800x240 mode to the 3DS port. This mode can
+  be toggled with the 3DS keyboard. (asie)
++ Added support for using 352kB of previously unused NDS VRAM
+  as board storage. This area can be used for board storage even
+  when a slot 2 expansion cartridge is not present. (asie)
++ Reduced RAM usage by 50k by removing variants of *printf and
+  *scanf with floating point support on the NDS. (asie)
++ The MOD_ORDER counter is now readable on the NDS. (asie)
++ Inactive boards and some robots are now compressed on the NDS,
+  which (combined with asie's VRAM patch) should vastly increase
+  the number of games that can be played on the original DS and
+  DS Lite without a slot 2 expansion cartridge.
++ Added a list of variables related to RAM usage to the counter
+  debug window. This list can be found in the "World" list.
++ Added an "sdl_render_driver" config setting. This setting can
+  be used to specify the underlying SDL renderer driver used by
+  the softscale renderer. This setting does not affect any other
+  renderers.
++ Added vlayer saved positions to the editor. Like regular saved
+  positions, these can be configured with the config file option
+  "vlayer_position#", and they work identically to board saved
+  positions.
++ Fixed a crash bug when attempting to save MZMs over 4MB to an
+  existing string.
++ Fixed a bug where, if a world's title screen music is set but
+  fails to load when the world is loaded, the music from another
+  world could continue to play.
++ Fixed a buffer overflow crash that could occur when using LOAD
+  CHAR SET with both a large input file and a large offset.
++ Reading from and writing to extended character sets should no
+  longer display an "advanced graphical features" error message
+  when a renderer without layer rendering support is active.
+  This will, however, display a (new) error message specific to
+  the Nintendo DS port.
++ Fixed crashes in the RAD player that could be caused by
+  references to uninitialized instruments.
++ Fixed a bug where the 3DS and Switch ports would display .. in
+  the file manager when selecting a board module, board charset,
+  or board palette.
++ Fixed a bug where, when a faulty dirent implementation returns
+  .. when listing the contents of a root directory, .. would be
+  displayed despite being meaningless.
++ Fixed a bug where some checks in the file manager could fail
+  when getcwd returns different slashes than expected.
++ Fixed CLIP INPUT and IF FIRST STRING "" "" bug where INPUTSIZE
+  would be used as the bound on the input string without also
+  checking for null chars, potentially allowing heap corruption.
++ Fixed a bug where boards wouldn't be pulled from extra memory
+  before saving, potentially causing save corruption on the NDS.
++ Fixed a hack where the TELEPORT command would temporarily
+  store the current board to extra memory, causing the game
+  update loop to potentially cause memory corruption with stale
+  board pointers on the NDS.
++ Fixed editor extra memory crashes when importing and deleting
+  boards.
++ Fixed a bug where checkres would not check the current dir
+  for files when provided with a MZX filename with no path
+  component.
++ checkres now attempts to scan every board in <=2.84 worlds
+  where a corrupt board/robot is found. Due to old world format
+  limitations, robots after a corrupt robot can not be scanned.
++ checkres now supports scanning protected worlds.
++ Fixed a standalone mode crash on exit that occurred when using
+  Alt+F4 or the window close button.
++ Fixed another bug that would cause string searching in the
+  robot editor to sometimes skip matches.
++ Replace all (Ctrl+H) in the robot editor should no longer skip
+  adjacent instances of the search string.
++ Fixed string wildcard matching bug that could cause patterns
+  ending with ? to sometimes fail.
++ Fixed a bug where multichar char tile movement could still
+  sometimes jump to the -/+/= chars in the main charset.
++ Opening the block action menu in the robot editor now updates
+  the contents of the current line.
++ Fixed a bug in the robot editor where Ctrl+Home and Ctrl+End
+  would only set the current line (and not the current column).
++ Fixed a robot editor extended macro crash that would occur:
+    when pasting a line containing a macro from the clipboard;
+    when importing a Robotic source file that invokes macros;
+    when invoking nested extended macros.
++ Invoking an extended macro with enter/return no longer inserts
+  an extra blank line.
++ Pressing enter at the start of a line with an extended macro
+  now invokes the macro instead of just inserting a line.
++ Fixed a bug where stdio redirect could generate corrupted log
+  files on the Nintendo DS due to poor freopen support.
++ Fixed a Reset Board on Entry bug where a temporary board would
+  not be generated when loading the title screen or if the
+  starting board is the title board.
++ Fixed a crash that could occur when loading a save file with
+  the temporary board flag set but no temporary board data.
++ Fixed a bug in the random number generation function that
+  could cause it to rarely return a number outside of the
+  expected range. This unfortunately breaks compatibility for
+  the RANDOM_SEED# counter.
++ Fixed color inaccuracies in the softscale renderer on Mac OS
+  caused by using full-swing YUV values instead of the expected
+  studio-swing values for GL_YCBCR_422_APPLE textures.
+- Removed 3DS CIA support. (asie)
+
+DEVELOPERS
+
++ Added --enable-extram config.sh flag to enable extra memory
+  hacks on arbitrary platforms. This is enabled by default in
+  CONFIG.NDS and CONFIG.PSP. When enabled, non-active boards are
+  compressed in RAM. Certain platforms can use platform-specific
+  storage, like the NDS.
++ Board input strings, charset paths, and palette paths are now
+  heap allocated on-demand to save RAM for low-memory systems.
++ Refactored the 3DS renderer to use templates. (asie)
++ intake2() now supports custom handling of intake events, i.e.
+  it can now be used without providing a fixed size buffer.
++ The draw and click handlers have been removed from intake2().
+  This should provide more flexibility to the parent context for
+  displaying the string that is being edited.
++ Added "mzxout" and "mzxerr" streams for printing console
+  messages. In most places these should be used instead of
+  "stdout" and "stderr" to allow debug and warning messages
+  print to the correct log files when stdio redirect is enabled.
+
+
+November 22nd, 2020 - MZX 2.92f
+
+Here's another bugfix release. Highlights of this release are
+crash fixes (including the 3DS OGG crash bugs), numerous SAM/WAV
+playback bugfixes, some edge case compatibility fixes, world
+decryption improvements, networking improvements (including
+experimental Wii, 3DS, and Switch support), bugfixes for the
+file manager in Nintendo Switch builds, and too many libxmp
+fixes/improvements to list. Since libxmp development is active
+again, the number of MegaZeux hack patches is down to just two!
+The editor is now enabled for 3DS builds, and some rudimentary
+joystick support has been added to the editor so it will (maybe)
+be (almost) usable.
+
+Of special note are asie's improvements to the NDS port. New
+features include protected character set and palette support,
+improved touchscreen focus, reduced memory consumption, and
+*audio support*. Currently NDS audio requires preconversion of
+music files to .MAS and sample files to .SAM, but that it works
+at all is amazing by itself. Pre-converted .MAS files are
+included with the packed-in copy of Caverns of Zeux.
+
+USERS
+
 + Added audio support to the NDS port. PC speaker effects and
   .SAM files will work out of the box, but .MOD/.S3M/.XM/.IT
   files require preconversion to .MAS using mmutil. All other
@@ -12,6 +177,19 @@ USERS
 
 + Added protected character set and palette support to the NDS
   port and reduced overall RAM usage for the NDS port. (asie)
++ Fixed a bug in the NDS port where MZX would immediately focus
+  the player after a touchscreen press event, preventing the
+  touchscreen from being used to scroll the upper screen. (asie)
++ Fixed a crash that could occur sometimes when duplicating
+  robots on a board with Reset Board on Entry enabled.
++ Added SET RANDOM, INC RANDOM, DEC RANDOM, and TAKE "label"
+  commands to the list of commands that should allow "infinite"
+  loops in pre-2.80 versions.
++ Fixed SET RANDOM # TO # for large ranges on certain platforms
+  (example: Linux) confused by the 32-bit math used to calculate
+  the random range.
++ Fixed crashes that could occur when attempting to run MegaZeux
+  without help.fil.
 + Fixed graphics corruption when using the glsl and opengl2
   renderers on big endian platforms.
 + Fixed a bug that would cause string searches to sometimes skip
@@ -83,8 +261,38 @@ USERS
   the music file for the current board.
 + Fixed multiple libvorbis and tremor crashes related to the
   3DS platform_mutex_lock implementation not blocking.
++ Fixed audio frequency bugs in .SAM file playback.
++ Certain .WAV subtypes handled by SDL_LoadWav should now load
+  properly on big endian machines.
++ Signed 16-bit samples should now work correctly with MOD SAM
+  on big endian machines.
 + Fixed the white border present when using the GLSL renderer in
   HTML5 builds.
++ Added joystick input handlers for most editor interfaces.
+  Only very basic things are supported like navigating boards
+  and robots. This is intended for things like handheld consoles
+  without a keyboard.
++ Fixed a bug where turning off the listening mod would load the
+  mod that was playing when the listening mod was loaded instead
+  of the current board's mod.
++ Fixed a bug where setting a board mod to a partiular mod, then
+  setting the board mod to *, then changing to a different board
+  with the same mod would not restart the board mod.
++ Fixed a bug where libxmp would not ignore zero volume samples
+  in STM files.
++ Restored libxmp support for Soundtracker 2.6/IceTracker .MODs.
+  Currently only libxmp supports this .MOD variant.
++ Fixed a bug where MZX would fail to load Noisetracker,
+  Octalyser, and Mod's Grave .MOD files if they were named using
+  the extensions .NST, .OCT, and .WOW (respectively). These can
+  now be selected with Alt+N/Ctrl+N in the editor.
++ Enabled loading .XM and .AMF files with MikMod. Whatever the
+  issue was with these in 2007 seems to have since been fixed.
++ Fixed loading Soundtracker 15-instrument .MODs with MikMod.
++ Fixed MOD_POSITION and MOD_LENGTH counters for MikMod.
++ MikMod now uses interpolation if module_resample_mode is set.
+- Disabled playing modules using the SAM command with MikMod to
+  avoid crashes due to MikMod using a global player state.
 
 DEVELOPERS
 
@@ -129,8 +337,14 @@ DEVELOPERS
   Amiga, Wii, and PSP network builds force-disable these. Switch
   and 3DS builds currently force-disable IPv6.
 + Added experimental network support for Wii, Switch, and 3DS.
-+ Updated libxmp to git-92313f6, refactored the libxmp patches.
++ Updated libxmp to git-ab70ec9f, refactored libxmp patches.
 + Removed unused libxmp Paula simulator code to save RAM. (asie)
++ SDL is no longer required to build MZX with MikMod enabled.
++ Fixed MikMod static linking on Windows.
++ Added --disable-stack-protector config.sh option. Platforms
+  that previously disabled the stack protector in the Makefile
+  now force disable this config option. These force disable
+  hacks will probably be removed in the near future.
 
 
 July 20th, 2020 - MZX 2.92e

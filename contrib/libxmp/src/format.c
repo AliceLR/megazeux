@@ -24,6 +24,10 @@
 #include <string.h>
 #include "format.h"
 
+#ifndef LIBXMP_NO_PROWIZARD
+#include "loaders/prowizard/prowiz.h"
+#endif
+
 extern const struct format_loader libxmp_loader_xm;
 extern const struct format_loader libxmp_loader_mod;
 extern const struct format_loader libxmp_loader_flt;
@@ -32,6 +36,7 @@ extern const struct format_loader libxmp_loader_it;
 extern const struct format_loader libxmp_loader_s3m;
 extern const struct format_loader libxmp_loader_stm;
 extern const struct format_loader libxmp_loader_mtm;
+extern const struct format_loader libxmp_loader_ice;
 extern const struct format_loader libxmp_loader_ult;
 extern const struct format_loader libxmp_loader_amf;
 extern const struct format_loader libxmp_loader_asylum;
@@ -46,9 +51,11 @@ extern const struct format_loader libxmp_loader_far;
 extern const struct format_loader libxmp_loader_669;
 extern const struct format_loader libxmp_loader_hmn;
 
-extern const struct pw_format *const pw_format[];
+#ifndef LIBXMP_NO_PROWIZARD
+extern const struct pw_format *const pw_formats[];
+#endif
 
-const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
+const struct format_loader *const format_loaders[] = {
 	&libxmp_loader_xm,
 	&libxmp_loader_mod,
 	&libxmp_loader_flt,
@@ -57,6 +64,7 @@ const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
 	&libxmp_loader_s3m,
 	&libxmp_loader_stm,
 	&libxmp_loader_mtm,
+	&libxmp_loader_ice,
 	&libxmp_loader_ult,
 	&libxmp_loader_amf,
 	&libxmp_loader_asylum,
@@ -73,20 +81,29 @@ const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
 	NULL
 };
 
-static const char *_farray[NUM_FORMATS + 1] = { NULL };
+static const char *_farray[ARRAY_SIZE(format_loaders)] = { NULL };
 
-char **format_list()
+const char *const *format_list(void)
 {
 	int count, i;
 
 	if (_farray[0] == NULL) {
-		for (count = i = 0; format_loader[i] != NULL; i++) {
+		for (count = i = 0; format_loaders[i] != NULL; i++) {
+#ifndef LIBXMP_NO_PROWIZARD
+			if (strcmp(format_loaders[i]->name, "prowizard") == 0) {
+				int j;
 
-			_farray[count++] = format_loader[i]->name;
+				for (j = 0; pw_formats[j] != NULL; j++) {
+					_farray[count++] = pw_formats[j]->name;
+				}
+				continue;
+			}
+#endif
+			_farray[count++] = format_loaders[i]->name;
 		}
 
 		_farray[count] = NULL;
 	}
 
-	return (char **)_farray;
+	return _farray;
 }

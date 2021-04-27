@@ -1,0 +1,4 @@
+         . "check out my cool indentation"
+                inc "value" 1
+inc value 1          
+* "&value&"

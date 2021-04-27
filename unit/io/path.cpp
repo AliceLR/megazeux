@@ -166,6 +166,93 @@ UNITTEST(path_force_ext)
   }
 }
 
+struct path_is_abs_result
+{
+  const char *path;
+  ssize_t root_len;
+  boolean is_root;
+};
+
+UNITTEST(path_is_absolute)
+{
+  static const path_is_abs_result data[]
+  {
+    {
+      "",
+      0,
+      false
+    },
+    {
+      "sdhfjkshfjkds",
+      0,
+      false
+    },
+    {
+      "relative/path/here",
+      0,
+      false
+    },
+    {
+      "malformed:dos/path",
+      0,
+      false
+    },
+    {
+      ":/wtf",
+      0,
+      false
+    },
+    {
+      "/",
+      1,
+      true
+    },
+    {
+      "A:",
+      2,
+      true
+    },
+    {
+      "C:\\",
+      3,
+      true
+    },
+    {
+      "sdcard:/",
+      8,
+      true
+    },
+    {
+      "/absolute/but/not/root",
+      1,
+      false
+    },
+    {
+      "C:\\absolute/not\\root",
+      3,
+      false
+    },
+  };
+
+  SECTION(path_is_absolute)
+  {
+    for(int i = 0; i < arraysize(data); i++)
+    {
+      ssize_t len = path_is_absolute(data[i].path);
+      ASSERTEQX(len, data[i].root_len, data[i].path);
+    }
+  }
+
+  SECTION(path_is_root)
+  {
+    for(int i = 0; i < arraysize(data); i++)
+    {
+      boolean is_root = path_is_root(data[i].path);
+      ASSERTEQX(is_root, data[i].is_root, data[i].path);
+    }
+  }
+}
+
 struct path_output_pair
 {
   const char *path;
@@ -272,7 +359,7 @@ struct path_clean_output
   const char *win32_result;
 };
 
-#ifdef __WIN32__
+#if DIR_SEPARATOR_CHAR == '\\'
 #define PATH_CLEAN_RESULT win32_result
 #else
 #define PATH_CLEAN_RESULT posix_result
@@ -402,7 +489,7 @@ struct path_split_data
   boolean dir_and_file_return_value;
 };
 
-#ifdef __WIN32__
+#if DIR_SEPARATOR_CHAR == '\\'
 #define SPLIT_DIRECTORY directory_win32
 #else
 #define SPLIT_DIRECTORY directory_posix
@@ -911,13 +998,6 @@ UNITTEST(path_remove_prefix)
       -1
     },
     {
-      "/dont/mix/slash/styles",
-      "\\dont/mix\\slash",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
       "/some/path/here",
       "/some/path",
       "here",
@@ -948,6 +1028,20 @@ UNITTEST(path_remove_prefix)
     {
       "consume/all/slashes////////////////////////////////////thanks",
       "consume/all/slashes",
+      "thanks",
+      "thanks",
+      6
+    },
+    {
+      "/allow/mixed/slash/styles",
+      "\\allow/mixed\\slash",
+      "styles",
+      "styles",
+      6
+    },
+    {
+      "merge//prefix\\\\slashes//////thanks",
+      "merge/\\//\\\\prefix///////////\\slashes",
       "thanks",
       "thanks",
       6
@@ -1012,6 +1106,13 @@ UNITTEST(path_navigate)
     {
       "",
       "lol",
+      nullptr,
+      nullptr,
+      -1
+    },
+    {
+      "/abc",
+      "malformed/root:/path/",
       nullptr,
       nullptr,
       -1

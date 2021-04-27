@@ -32,6 +32,7 @@
 #include "renderers.h"
 #include "util.h"
 #include "io/path.h"
+#include "io/vio.h"
 
 // Uncomment to enable GL debug output (requires OpenGL 4.3+).
 //#define ENABLE_GL_DEBUG_OUTPUT 1
@@ -367,27 +368,27 @@ static char *glsl_load_string(const char *filename)
 {
   char *buffer = NULL;
   unsigned long size;
-  FILE *f;
+  vfile *vf;
 
-  f = fopen_unsafe(filename, "rb");
-  if(!f)
+  vf = vfopen_unsafe(filename, "rb");
+  if(!vf)
     goto err_out;
 
-  size = ftell_and_rewind(f);
-  if(!size)
+  size = vfilelength(vf, false);
+  if(size <= 0)
     goto err_close;
 
   buffer = cmalloc(size + 1);
   buffer[size] = '\0';
 
-  if(fread(buffer, size, 1, f) != 1)
+  if(vfread(buffer, size, 1, vf) != 1)
   {
     free(buffer);
     buffer = NULL;
   }
 
 err_close:
-  fclose(f);
+  vfclose(vf);
 err_out:
   return buffer;
 }
@@ -840,11 +841,9 @@ static void glsl_debug_callback(GLenum source, GLenum type, GLuint id,
  GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
 {
   length = length < 0 ? (GLsizei)strlen(message) : length;
-  fprintf(stderr,
-    "GL DEBUG (source 0x%x, type 0x%x, severity 0x%x): %.*s\n",
+  debug("GL (source 0x%x, type 0x%x, severity 0x%x): %.*s\n",
     source, type, severity, length, message
   );
-  fflush(stderr);
 }
 #endif
 

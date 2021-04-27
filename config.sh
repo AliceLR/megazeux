@@ -39,69 +39,71 @@ usage() {
 	echo "Supported <option> values (negatives can be used):"
 	echo
 	echo "Optimization and debug options:"
-	echo "  --as-needed-hack        Pass --as-needed through to GNU ld."
-	echo "  --enable-release        Optimize and remove debugging code."
-	echo "  --enable-verbose        Build system is always verbose (V=1)."
-	echo "  --optimize-size         Perform size optimizations (-Os)."
-	echo "  --enable-asan           Enable AddressSanitizer for debug builds."
-	echo "  --enable-msan           Enable MemorySanitizer for debug builds."
-	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds."
-	echo "  --enable-ubsan          Enable UndefinedBehaviorSanitizer for debug builds."
-	echo "  --enable-analyzer       Enable -fanalyzer (requires GCC 10+)."
-	echo "  --enable-trace          Enable trace logging for debug builds."
-	echo "  --enable-stdio-redirect Redirect console logging to stdout.txt/stderr.txt."
+	echo "  --as-needed-hack          Pass --as-needed through to GNU ld."
+	echo "  --enable-release          Optimize and remove debugging code."
+	echo "  --enable-verbose          Build system is always verbose (V=1)."
+	echo "  --optimize-size           Perform size optimizations (-Os)."
+	echo "  --enable-asan             Enable AddressSanitizer for debug builds."
+	echo "  --enable-msan             Enable MemorySanitizer for debug builds."
+	echo "  --enable-tsan             Enable ThreadSanitizer for debug builds."
+	echo "  --enable-ubsan            Enable UndefinedBehaviorSanitizer for debug builds."
+	echo "  --enable-analyzer         Enable -fanalyzer (requires GCC 10+)."
+	echo "  --enable-trace            Enable trace logging for debug builds."
+	echo "  --enable-stdio-redirect   Redirect console logging to stdout.txt/stderr.txt."
+	echo "  --disable-stack-protector Disable stack protector safety checks."
 	echo
 	echo "Platform-dependent options:"
-	echo "  --disable-x11           Disable X11, removing binary dependency."
-	echo "  --disable-pthread       Use SDL's threads/locking instead of pthread."
-	echo "  --disable-icon          Do not try to brand executable."
-	echo "  --disable-modular       Disable dynamically shared objects."
-	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
-	echo "  --disable-sdl           Disables SDL dependencies and features."
-	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
-	echo "  --enable-pledge         Enable experimental OpenBSD pledge(2) support"
+	echo "  --disable-x11             Disable X11, removing binary dependency."
+	echo "  --disable-pthread         Use SDL's threads/locking instead of pthread."
+	echo "  --disable-icon            Do not try to brand executable."
+	echo "  --disable-modular         Disable dynamically shared objects."
+	echo "  --disable-libsdl2         Disable SDL 2.0 support (falls back on 1.2)."
+	echo "  --disable-sdl             Disables SDL dependencies and features."
+	echo "  --enable-egl              Enables EGL backend (if SDL disabled)."
+	echo "  --enable-pledge           Enable experimental OpenBSD pledge(2) support"
 	echo
 	echo "General options:"
-	echo "  --disable-datestamp     Disable adding date to version."
-	echo "  --disable-editor        Disable the built-in editor."
-	echo "  --disable-mzxrun        Disable generation of separate MZXRun."
-	echo "  --disable-helpsys       Disable the built-in help system."
-	echo "  --disable-utils         Disable compilation of utils."
-	echo "  --disable-check-alloc   Disables memory allocator error handling."
-	echo "  --disable-counter-hash  Disables hash tables for counter/string lookups."
-	echo "  --enable-meter          Enable load/save meter display."
-	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
+	echo "  --disable-datestamp       Disable adding date to version."
+	echo "  --disable-editor          Disable the built-in editor."
+	echo "  --disable-mzxrun          Disable generation of separate MZXRun."
+	echo "  --disable-helpsys         Disable the built-in help system."
+	echo "  --disable-utils           Disable compilation of utils."
+	echo "  --disable-check-alloc     Disables memory allocator error handling."
+	echo "  --disable-counter-hash    Disables hash tables for counter/string lookups."
+	echo "  --enable-extram           Enable board memory compression and storage hacks."
+	echo "  --enable-meter            Enable load/save meter display."
+	echo "  --enable-debytecode       Enable experimental 'debytecode' transform."
 	echo
 	echo "Graphics options:"
-	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
-	echo "  --disable-software      Disable software renderer."
-	echo "  --disable-softscale     Disable SDL 2 accelerated software renderer."
-	echo "  --disable-gl            Disable all GL renderers."
-	echo "  --disable-gl-fixed      Disable GL renderers for fixed-function h/w."
-	echo "  --disable-gl-prog       Disable GL renderers for programmable h/w."
-	echo "  --disable-overlay       Disable SDL 1.2 overlay renderers."
-	echo "  --enable-gp2x           Enables half-res software renderer."
-	echo "  --disable-libpng        Disable PNG screendump support."
-	echo "  --disable-screenshots   Disable the screenshot hotkey."
-	echo "  --enable-fps            Enable frames-per-second counter."
+	echo "  --enable-gles             Enable hacks for OpenGL ES platforms."
+	echo "  --disable-software        Disable software renderer."
+	echo "  --disable-softscale       Disable SDL 2 accelerated software renderer."
+	echo "  --disable-gl              Disable all GL renderers."
+	echo "  --disable-gl-fixed        Disable GL renderers for fixed-function h/w."
+	echo "  --disable-gl-prog         Disable GL renderers for programmable h/w."
+	echo "  --disable-overlay         Disable SDL 1.2 overlay renderers."
+	echo "  --enable-gp2x             Enables half-res software renderer."
+	echo "  --disable-libpng          Disable PNG screendump support."
+	echo "  --disable-screenshots     Disable the screenshot hotkey."
+	echo "  --enable-fps              Enable frames-per-second counter."
 	echo
 	echo "Audio options:"
-	echo "  --disable-audio         Disable all audio (sound + music)."
-	echo "  --disable-xmp           Disable XMP music engine."
-	echo "  --enable-modplug        Enables ModPlug music engine."
-	echo "  --enable-mikmod         Enables MikMod music engine."
-	echo "  --enable-openmpt        Enables OpenMPT music engine."
-	echo "  --disable-rad           Disables Reality Adlib Tracker (RAD) support."
-	echo "  --disable-vorbis        Disable ogg/vorbis support."
-	echo "  --enable-tremor         Use libvorbisidec instead of libvorbis."
-	echo "  --enable-tremor-lowmem  Use libvorbisidec (lowmem branch) instead of libvorbis."
+	echo "  --disable-audio           Disable all audio (sound + music)."
+	echo "  --disable-xmp             Disable XMP music engine."
+	echo "  --enable-modplug          Enables ModPlug music engine."
+	echo "  --enable-mikmod           Enables MikMod music engine."
+	echo "  --enable-openmpt          Enables OpenMPT music engine."
+	echo "  --disable-rad             Disables Reality Adlib Tracker (RAD) support."
+	echo "  --disable-vorbis          Disable ogg/vorbis support."
+	echo "  --enable-tremor           Use libvorbisidec instead of libvorbis."
+	echo "  --enable-tremor-lowmem    Use libvorbisidec (lowmem) instead of libvorbis."
 	echo
 	echo "Network options:"
-	echo "  --disable-network       Disable networking abilities."
-	echo "  --disable-updater       Disable built-in updater."
-	echo "  --disable-getaddrinfo   Disable getaddrinfo for name resolution."
-	echo "  --disable-poll          Disable poll for socket monitoring."
-	echo "  --disable-ipv6          Disable IPv6 support."
+	echo "  --disable-network         Disable networking abilities."
+	echo "  --disable-updater         Disable built-in updater."
+	echo "  --disable-getaddrinfo     Disable getaddrinfo for name resolution."
+	echo "  --disable-poll            Disable poll for socket monitoring."
+	echo "  --disable-ipv6            Disable IPv6 support."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -137,6 +139,7 @@ RELEASE="false"
 OPT_SIZE="false"
 SANITIZER="false"
 ANALYZER="false"
+STACK_PROTECTOR="true"
 PLEDGE="false"
 PLEDGE_UTILS="true"
 EDITOR="true"
@@ -168,6 +171,7 @@ GETADDRINFO="true"
 POLL="true"
 IPV6="true"
 VERBOSE="false"
+EXTRAM="false"
 METER="false"
 SDL="true"
 EGL="false"
@@ -273,6 +277,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--enable-analyzer" ] &&  ANALYZER="true"
 	[ "$1" = "--disable-analyzer" ] && ANALYZER="false"
 
+	[ "$1" = "--enable-stack-protector" ]  && STACK_PROTECTOR="true"
+	[ "$1" = "--disable-stack-protector" ] && STACK_PROTECTOR="false"
+
 	[ "$1" = "--enable-pledge" ] &&  PLEDGE="true"  && PLEDGE_UTILS="true"
 	[ "$1" = "--disable-pledge" ] && PLEDGE="false" && PLEDGE_UTILS="false"
 
@@ -374,6 +381,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-verbose" ] && VERBOSE="false"
 	[ "$1" = "--enable-verbose" ]  && VERBOSE="true"
+
+	[ "$1" = "--enable-extram" ]  && EXTRAM="true"
+	[ "$1" = "--disable-extram" ] && EXTRAM="false"
 
 	[ "$1" = "--enable-meter" ]  && METER="true"
 	[ "$1" = "--disable-meter" ] && METER="false"
@@ -643,6 +653,9 @@ if [ "$PLATFORM" = "wii" ]; then
 	echo "#define CONFIG_WII" >> src/config.h
 	echo "BUILD_WII=1" >> platform.inc
 	LIBSDL2="false"
+
+	echo "Force-disabling stack protector on Wii."
+	STACK_PROTECTOR="false"
 fi
 
 if [ "$PLATFORM" = "3ds" -o "$PLATFORM" = "nds" ]; then
@@ -660,11 +673,10 @@ fi
 #
 if [ "$SDL" = "false" ]; then
 	echo "Force-disabling SDL dependent components:"
-	echo " -> SOFTWARE, SOFTSCALE, OVERLAY, MIKMOD"
+	echo " -> SOFTWARE, SOFTSCALE, OVERLAY"
 	SOFTWARE="false"
 	SOFTSCALE="false"
 	OVERLAY="false"
-	MIKMOD="false"
 	LIBSDL2="false"
 else
 	echo "#define CONFIG_SDL" >> src/config.h
@@ -702,11 +714,25 @@ if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
 fi
 
 #
+# The stack protector may cause issues with various C++ features (platform
+# matrix claims it breaks exceptions) in some versions of MinGW. This hasn't
+# been verified (and MZX doesn't use exceptions), but for now just disable it.
+#
+if [ "$PLATFORM" = "mingw" ]; then
+	echo "Force-disabling stack protector on Windows."
+	STACK_PROTECTOR="false"
+fi
+
+#
 # Force-disable features unnecessary on Emscripten.
 #
 if [ "$PLATFORM" = "emscripten" ]; then
 	echo "Enabling Emscripten-specific hacks."
 	echo "BUILD_EMSCRIPTEN=1" >> platform.inc
+
+	echo "Force-disabling stack protector (Emscripten)."
+	STACK_PROTECTOR="false"
+
 	EDITOR="false"
 	SCREENSHOTS="false"
 	UPDATER="false"
@@ -720,13 +746,13 @@ fi
 # If the NDS arch is enabled, some code has to be compile time
 # enabled too.
 #
-# Additionally, AUDIO must be disabled on NDS as it is currently
-# broken (please fix this!).
-#
 if [ "$PLATFORM" = "nds" ]; then
 	echo "Enabling NDS-specific hacks."
 	echo "#define CONFIG_NDS" >> src/config.h
 	echo "BUILD_NDS=1" >> platform.inc
+
+	echo "Force-disabling stack protector on NDS."
+	STACK_PROTECTOR="false"
 
 	echo "Force-disabling software renderer on NDS."
 	echo "Building custom NDS renderer."
@@ -755,6 +781,9 @@ if [ "$PLATFORM" = "3ds" ]; then
 	echo "Enabling 3DS-specific hacks."
 	echo "#define CONFIG_3DS" >> src/config.h
 	echo "BUILD_3DS=1" >> platform.inc
+
+	echo "Force-disabling stack protector on 3DS."
+	STACK_PROTECTOR="false"
 
 	echo "Force-disabling software renderer on 3DS."
 	echo "Building custom 3DS renderer."
@@ -797,6 +826,9 @@ if [ "$PLATFORM" = "psp" ]; then
 	echo "Enabling PSP-specific hacks."
 	echo "#define CONFIG_PSP" >> src/config.h
 	echo "BUILD_PSP=1" >> platform.inc
+
+	echo "Force-disabling stack protector on PSP."
+	STACK_PROTECTOR="false"
 fi
 
 #
@@ -810,6 +842,9 @@ if [ "$PLATFORM" = "gp2x" ]; then
 	echo "Enabling GP2X-specific hacks."
 	echo "#define CONFIG_GP2X" >> src/config.h
 	echo "BUILD_GP2X=1" >> platform.inc
+
+	echo "Force-disabling stack protector on GP2X."
+	STACK_PROTECTOR="false"
 
 	echo "Force disabling software renderer on GP2X."
 	SOFTWARE="false"
@@ -1053,6 +1088,16 @@ else
 		echo "Enabling trace logging."
 		echo "#define DEBUG_TRACE" >> src/config.h
 	fi
+fi
+
+#
+# Enable stack protector.
+#
+if [ "$STACK_PROTECTOR" = "true" ]; then
+	echo "Stack protector enabled."
+	echo "BUILD_STACK_PROTECTOR=1" >> platform.inc
+else
+	echo "Stack protector disabled."
 fi
 
 #
@@ -1461,6 +1506,17 @@ fi
 if [ "$VERBOSE" = "true" ]; then
 	echo "Verbose build system (always)."
 	echo "export V=1" >> platform.inc
+fi
+
+#
+# Enable extra memory hacks and memory compression, if enabled.
+#
+if [ "$EXTRAM" = "true" ]; then
+	echo "Board memory compression and extra memory hacks enabled."
+	echo "#define CONFIG_EXTRAM" >> src/config.h
+	echo "BUILD_EXTRAM=1" >> platform.inc
+else
+	echo "Board memory compression and extra memory hacks disabled."
 fi
 
 #

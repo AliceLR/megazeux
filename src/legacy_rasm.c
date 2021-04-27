@@ -2804,7 +2804,7 @@ static void validate_legacy_bytecode_print(char *bc, int program_length,
 
   if(offset > program_length)
   {
-    fprintf(stderr, "\n");
+    fprintf(mzxerr, "\n");
     debug("Offset exceeded program length\n");
     debug("Prog len: %d    Offset: %d\n", program_length, offset);
     return;

@@ -36,20 +36,26 @@ static char *help;
 
 void help_open(struct world *mzx_world, const char *file_name)
 {
-  mzx_world->help_file = fopen_unsafe(file_name, "rb");
-  if(!mzx_world->help_file)
-    return;
+  if(file_name)
+  {
+    mzx_world->help_file = fopen_unsafe(file_name, "rb");
+    if(!mzx_world->help_file)
+      return;
 
-  help = cmalloc(1024 * 64);
+    help = cmalloc(1024 * 64);
+  }
 }
 
 void help_close(struct world *mzx_world)
 {
-  if(!mzx_world->help_file)
-    return;
+  if(mzx_world->help_file)
+  {
+    fclose(mzx_world->help_file);
+    mzx_world->help_file = NULL;
+  }
 
-  fclose(mzx_world->help_file);
   free(help);
+  help = NULL;
 }
 
 /**

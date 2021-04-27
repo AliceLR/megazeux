@@ -29,8 +29,13 @@
 #define __M_BEGIN_DECLS extern "C" {
 #define __M_END_DECLS   }
 
-#ifndef restrict
-#define restrict __restrict
+/**
+ * Compatibility define for restrict in C++, where it is a (commonly supported)
+ * compiler extension. This has to be defined as 'RESTRICT' because defining
+ * 'restrict' conflicts with MSVC's __declspec(restrict) attribute.
+ */
+#ifndef RESTRICT
+#define RESTRICT __restrict
 #endif
 
 #if __cplusplus >= 201103
@@ -41,7 +46,9 @@
 // Compatibility defines so certain C++11 features can be used without checks.
 // Don't create any variables named "final" or "noexcept"...
 #include <stddef.h>
+#ifndef nullptr
 #define nullptr (NULL)
+#endif
 #define final
 #define noexcept
 #define override
@@ -82,6 +89,14 @@ typedef unsigned char boolean;
 
 #ifdef CONFIG_NDS
 #include <nds.h>
+
+// Use iprintf/iscanf on NDS to save ~50 KB
+#define sscanf siscanf
+#define printf iprintf
+#define fprintf fiprintf
+#define sprintf siprintf
+#define snprintf sniprintf
+#define vsnprintf vsniprintf
 #endif
 
 #ifdef CONFIG_WII
@@ -110,8 +125,8 @@ typedef unsigned char boolean;
 
 #ifdef _MSC_VER
 #include "msvc.h"
-#ifndef restrict
-#define restrict __restrict
+#ifndef RESTRICT
+#define RESTRICT __restrict
 #endif
 #endif
 
@@ -153,6 +168,10 @@ typedef unsigned char boolean;
 
 #ifndef MAX_PATH
 #define MAX_PATH 512
+#endif
+
+#ifndef RESTRICT
+#define RESTRICT restrict
 #endif
 
 #if defined(CONFIG_MODULAR) && defined(__WIN32__)

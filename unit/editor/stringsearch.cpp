@@ -86,6 +86,18 @@ UNITTEST(Search)
       "set \"pf\" to "
       "\"('pldir'*6+('pfatt'>0*3)+('pfwalk'=1 ? 1 : 'pfwalk'=3 ? 2 : 0))\"", 26
     },
+    {
+      "textdone", "set \"macroar_!textdone\" to 0", 14
+    },
+    {
+      "!text", "set \"$macrof_!text:Info\" to \"$\"", 13
+    },
+    {
+      "scripts.txt", "set \"scripts.txt\" to \"FWRITE_OPEN\"", 5
+    },
+    {
+      "$local", "set \"$@\" to \"R&&p_id&&.&$local_('local12')&\"", 24
+    },
   };
   static const string_pair haystack_twice[] =
   {

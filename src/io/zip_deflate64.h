@@ -44,11 +44,18 @@ struct deflate64_stream_data
   void *window;
 };
 
+/**
+ * Allocate an inflate64 stream.
+ */
+static inline struct zip_stream_data *inflate64_create(void)
+{
+  return cmalloc(sizeof(struct deflate64_stream_data));
+}
+
 static inline void inflate64_open(struct zip_stream_data *zs, uint16_t method,
  uint16_t flags)
 {
   struct deflate64_stream_data *d64s = ((struct deflate64_stream_data *)zs);
-  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct deflate64_stream_data));
   memset(zs, 0, sizeof(struct deflate64_stream_data));
 
   d64s->window = cmalloc(1<<16);

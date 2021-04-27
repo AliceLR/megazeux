@@ -1,0 +1,3 @@
+Title: INPUT STRING tests
+Author: Alice Rowan
+Desc: Tests the INPUT STRING family of commands and INPUT interpolation into counter names. Since INPUT STRING requires user input that command is not actually tested: pre-2.83 worlds can preset board input buffers.

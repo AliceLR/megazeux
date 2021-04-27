@@ -127,9 +127,9 @@ static void soft_render_graph(struct graphics_data *graphics)
   else if(bpp == 32)
   {
     if(!mode)
-      render_graph32(pixels, pitch, graphics, set_colors32[mode]);
+      render_graph32(pixels, pitch, graphics);
     else
-      render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
+      render_graph32s(pixels, pitch, graphics);
 
     /* This just adds a 3x3 red box to the top left of the screen
        It's useful for debugging because it indicates when the

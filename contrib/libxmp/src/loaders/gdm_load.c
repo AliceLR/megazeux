@@ -36,7 +36,7 @@ static int gdm_test(HIO_HANDLE *, char *, const int);
 static int gdm_load (struct module_data *, HIO_HANDLE *, const int);
 
 const struct format_loader libxmp_loader_gdm = {
-	"Generic Digital Music",
+	"General Digital Music",
 	gdm_test,
 	gdm_load
 };
@@ -140,7 +140,14 @@ void fix_effect(uint8 *fxt, uint8 *fxp)
 		*fxt = FX_FINE_VIBRATO;
 		break;
 	case 0x1e:			/* special misc */
-		*fxt = *fxp = 0;
+		switch (MSN(*fxp)) {
+		case 0x8:		/* set pan position */
+			*fxt = FX_EXTENDED;
+			break;
+		default:
+			*fxt = *fxp = 0;
+			break;
+		}
 		break;
 	case 0x1f:
 		*fxt = FX_S3M_BPM;

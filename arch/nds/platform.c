@@ -128,6 +128,11 @@ static void mzxExceptionHandler()
   videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE);
   vramSetBankC(VRAM_C_SUB_BG);
 
+#ifdef CONFIG_STDIO_REDIRECT
+  // The log files can get corrupted if they aren't explicitly closed here.
+  redirect_stdio_exit();
+#endif
+
   guruMeditationDump();
   while(1)
   {
@@ -146,7 +151,7 @@ boolean platform_init(void)
     return false;
   }
 
-#if !defined(CONFIG_DEBYTECODE)
+#ifdef CONFIG_EXTRAM
   if(!isDSiMode())
     nds_ram_init(DETECT_RAM);
 #endif

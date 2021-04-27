@@ -181,7 +181,7 @@ static void omp_log(const char *message, void *data)
   (void)data;
 
   if(message)
-     fprintf(stderr, "%s\n", message);
+     fprintf(mzxerr, "%s\n", message);
 }
 
 static struct audio_stream *construct_openmpt_stream(char *filename,
@@ -271,9 +271,12 @@ void init_openmpt(struct config_info *conf)
   audio_ext_register("med", construct_openmpt_stream);
   audio_ext_register("mod", construct_openmpt_stream);
   audio_ext_register("mtm", construct_openmpt_stream);
+  audio_ext_register("nst", construct_openmpt_stream);
+  audio_ext_register("oct", construct_openmpt_stream);
   audio_ext_register("okt", construct_openmpt_stream);
   audio_ext_register("s3m", construct_openmpt_stream);
   audio_ext_register("stm", construct_openmpt_stream);
   audio_ext_register("ult", construct_openmpt_stream);
+  audio_ext_register("wow", construct_openmpt_stream);
   audio_ext_register("xm", construct_openmpt_stream);
 }
