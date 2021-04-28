@@ -829,7 +829,7 @@ static void glsl_resize_screen(struct graphics_data *graphics,
     gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, glsl.glTexParameterf);
 
     glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_DATA_WIDTH, TEX_DATA_HEIGHT,
-    0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+     0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     gl_check_error();
 
     glsl_remap_char_range(graphics, 0, FULL_CHARSET_SIZE);
