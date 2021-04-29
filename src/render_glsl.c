@@ -1419,18 +1419,21 @@ static void glsl_sync_screen(struct graphics_data *graphics)
      GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
     gl_check_error();
   }
+  else
 
-  // If FBOs are enabled, the screen was directly drawn to the screen texture
-  // and the window framebuffer needs to be selected. Otherwise, copy the
-  // screen off of the window framebuffer to the screen texture.
   if(!glsl.has_fbo)
   {
+    // If FBOs are enabled, the screen was rendered to the screen texture
+    // and nothing extra needs to be done here. If FBOs are not enabled, then
+    // the screen needs to be copied to the texture off the window framebuffer.
     glsl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0,
      GL_POWER_2_WIDTH, GL_POWER_2_HEIGHT, 0);
     gl_check_error();
   }
-  else
+
+  if(glsl.has_fbo)
   {
+    // Select the screen framebuffer to draw the scaled screen to.
     glsl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
     gl_check_error();
   }
