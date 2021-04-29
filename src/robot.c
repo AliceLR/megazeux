@@ -779,6 +779,7 @@ void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
 
     save_prop_w(SCRPROP_NUM_LINES, cur_scroll->num_lines, &mf);
     save_prop_s(SCRPROP_MESG, cur_scroll->mesg, scroll_size, 1, &mf);
+    save_prop_eof(&mf);
 
     zip_write_file(zp, name, buffer, actual_size, ZIP_M_NONE);
 
@@ -801,6 +802,7 @@ void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
     save_prop_c(SENPROP_SENSOR_CHAR, cur_sensor->sensor_char, &mf);
     save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg,
      ROBOT_NAME_SIZE, 1, &mf);
+    save_prop_eof(&mf);
 
     zip_write_file(zp, name, buffer, SENSOR_PROPS_SIZE, ZIP_M_NONE);
   }
