@@ -854,6 +854,9 @@ static void glsl_debug_callback(GLenum source, GLenum type, GLuint id,
 static boolean glsl_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
+#ifdef CONFIG_GLES
+  struct glsl_render_data *render_data = graphics->render_data;
+#endif
   boolean load_fbo_syms = true;
 
   gl_set_attributes(graphics);
