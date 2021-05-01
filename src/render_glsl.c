@@ -926,7 +926,7 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
       if(range[0] <= 11 || precision <= 10)
       {
         warn("poor medium float precision! "
-         "This renderer may look bad; use \"softscale\" instead.\n");
+         "This renderer may look bad; use \"glslscale\" or \"softscale\" instead.\n");
       }
     }
   }
