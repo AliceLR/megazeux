@@ -75,6 +75,7 @@ static const struct renderer_data renderers[] =
 #endif
 #if defined(CONFIG_RENDER_GL_PROGRAM)
   { "glsl", render_glsl_register },
+  { "glslscale", render_glsl_software_register },
   { "auto_glsl", render_auto_glsl_register },
 #endif
 #if defined(CONFIG_RENDER_YUV)

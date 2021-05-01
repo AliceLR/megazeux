@@ -2,6 +2,12 @@ GIT
 
 USERS
 
++ Added the "glslscale" renderer. This is the same as the GLSL
+  renderer, but uses software rendering with scaling shaders
+  instead of hardware rendering. This is faster on low end PCs
+  and embedded devices and is the new default renderer selected
+  by auto_glsl. (Hardware rendered GLSL is still available for
+  users with graphics cards by selecting the "glsl" renderer.)
 + Added robot editor undo (Ctrl+Z) and redo (Ctrl+Y). Like with
   board/vlayer/charset editing, the size of the undo stack is
   defined by the config setting "undo_history_size". Note that
@@ -126,7 +132,7 @@ USERS
   provided by the OpenGL ES driver. If highp is unavailable and
   mediump has inadequate precision, MZX will print a warning.
 + Enabled the GLSL renderer for the Android port. The Android
-  port will still use the softscale renderer by default.
+  port now uses the GLSL scaled software renderer by default.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
