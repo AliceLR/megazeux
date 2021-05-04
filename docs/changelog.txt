@@ -156,6 +156,7 @@ DEVELOPERS
   "stdout" and "stderr" to allow debug and warning messages
   print to the correct log files when stdio redirect is enabled.
 + Fixed broken MIPS big endian detection inherited from SDL 1.2.
++ Added architecture width detection for RISC-V RV32 and MIPS64.
 
 
 November 22nd, 2020 - MZX 2.92f
