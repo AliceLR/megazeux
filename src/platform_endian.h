@@ -46,7 +46,7 @@
 #define PLATFORM_BYTE_ORDER PLATFORM_LIL_ENDIAN
 #elif defined(__hppa__) || \
     defined(__m68k__) || defined(mc68000) || defined(_M_M68K) || \
-    (defined(__MIPS__) && defined(__MISPEB__)) || \
+    (defined(__MIPS__) && defined(__MIPSEB__)) || \
     defined(__ppc__) || defined(__POWERPC__) || defined(_M_PPC) || \
     defined(__sparc__)
 #define PLATFORM_BYTE_ORDER PLATFORM_BIG_ENDIAN

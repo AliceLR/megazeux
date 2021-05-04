@@ -155,6 +155,7 @@ DEVELOPERS
   messages. In most places these should be used instead of
   "stdout" and "stderr" to allow debug and warning messages
   print to the correct log files when stdio redirect is enabled.
++ Fixed broken MIPS big endian detection inherited from SDL 1.2.
 
 
 November 22nd, 2020 - MZX 2.92f
