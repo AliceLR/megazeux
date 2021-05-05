@@ -497,6 +497,10 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	elif [ "$MACH" = "ppc" ]; then
 		ARCHNAME=ppc
 		#RAWLIBDIR=lib
+	elif [ "$MACH" = "mips" ]; then
+		ARCHNAME=mips
+	elif [ "$MACH" = "mips64" ]; then
+		ARCHNAME=mips64
 	elif [ "$MACH" = "m68k" ]; then
 		ARCHNAME=m68k
 	elif [ "$MACH" = "alpha" ]; then
