@@ -491,6 +491,8 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
 		ARCHNAME=x86
 		#RAWLIBDIR=lib
+	elif [ "$MACH" = "aarch64" -o "$MACH" = "arm64" ]; then
+		ARCHNAME=aarch64
 	elif [ "`echo $MACH | sed 's,^arm.*,arm,'`" = "arm" ]; then
 		ARCHNAME=arm
 		#RAWLIBDIR=lib
