@@ -509,7 +509,7 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 		ARCHNAME=m68k
 	elif [ "$MACH" = "alpha" ]; then
 		ARCHNAME=alpha
-	elif [ "$MACH" = "hppa" ]; then
+	elif [ "$MACH" = "hppa" -o "$MACH" = "parisc" ]; then
 		ARCHNAME=hppa
 	elif [ "$MACH" = "sparc" ]; then
 		ARCHNAME=sparc
