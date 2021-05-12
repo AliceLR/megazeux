@@ -394,10 +394,6 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 
-  // If SDL_VideoModeOK failed to select a BPP, just force 32-bit.
-  if(depth == BPP_AUTO)
-    graphics->bits_per_pixel = depth = 32;
-
   render_data->screen = SDL_SetVideoMode(width, height, depth,
    sdl_flags(depth, fullscreen, false, resize));
 
@@ -429,10 +425,20 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
   out_depth = SDL_VideoModeOK(width, height, in_depth,
    sdl_flags(depth, fullscreen, false, resize));
 
-  if(depth == BPP_AUTO && out_depth > 0)
+  if(depth == BPP_AUTO)
   {
-    debug("SDL_VideoModeOK recommends BPP=%d\n", out_depth);
-    graphics->bits_per_pixel = out_depth;
+    if(out_depth == 8 || out_depth == 16 || out_depth == 32)
+    {
+      debug("SDL_VideoModeOK recommends BPP=%d\n", out_depth);
+      graphics->bits_per_pixel = out_depth;
+    }
+    else
+
+    if(out_depth > 0)
+    {
+      debug("SDL_VideoModeOK recommends unsupported BPP=%d; using 32bpp\n", out_depth);
+      graphics->bits_per_pixel = 32;
+    }
   }
 
   return !!out_depth;
