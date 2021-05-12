@@ -57,7 +57,8 @@ static boolean soft_init_video(struct graphics_data *graphics,
     graphics->window_height = 350;
 
   // We have 8-bit, 16-bit, and 32-bit software renderers
-  if(conf->force_bpp == 8 || conf->force_bpp == 16 || conf->force_bpp == 32)
+  if(conf->force_bpp == BPP_AUTO || conf->force_bpp == 8 ||
+   conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
   return set_video_mode();
@@ -121,10 +122,18 @@ static void soft_render_graph(struct graphics_data *graphics)
 
   SDL_LockSurface(screen);
   if(bpp == 8)
+  {
     render_graph8((Uint8 *)pixels, pitch, graphics, set_colors8[mode]);
-  else if(bpp == 16)
+  }
+  else
+
+  if(bpp == 16)
+  {
     render_graph16((Uint16 *)pixels, pitch, graphics, set_colors16[mode]);
-  else if(bpp == 32)
+  }
+  else
+
+  if(bpp == 32)
   {
     if(!mode)
       render_graph32(pixels, pitch, graphics);
@@ -224,7 +233,6 @@ static void soft_sync_screen(struct graphics_data *graphics)
   SDL_Flip(render_data->screen);
 #endif
 }
-
 
 static void soft_render_layer(struct graphics_data *graphics,
  struct video_layer *layer)

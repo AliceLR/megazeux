@@ -173,11 +173,18 @@
 # MZX is limited internally to 8bit colour, but it can upmix its
 # rendering to 32bit if your video card has difficulty with 8bit
 # resolutions. Using 32bit colour is slower, but not by much.
-# NOTE: This option may be ignored by one or more of the above
-# renderers, but it is guaranteed to apply to "software". Valid
-# settings are usually '8', '16', or '32'. Default is '32'.
+#
+# NOTE: This option may be ignored by one or more of the above renderers.
+# force_bpp is guaranteed to apply to "software". This might not always be
+# useful, however; SDL 2 picks a native window pixel format automatically
+# and non-native BPPs are handled with an extra surface blit. The "softscale"
+# renderer can use this setting to select different native pixel formats.
+#
+# Valid settings are usually '8', '16', or '32'; a value of '0' or 'auto'
+# will instruct the renderer to automatically pick the best available
+# BPP (if applicable). Default is 'auto'.
 
-# force_bpp = 32
+# force_bpp = auto
 
 # Whether MZX should start up in fullscreen or not.
 # Press ctrl-alt-enter to toggle fullscreen as MZX runs.

@@ -8,6 +8,10 @@ USERS
   and embedded devices and is the new default renderer selected
   by auto_glsl. (Hardware rendered GLSL is still available for
   users with graphics cards by selecting the "glsl" renderer.)
++ Added an "auto" mode for the force_bpp config option. Modern
+  SDL automatically selects a native window pixel format and a
+  fixed value can make the software renderer slower. Detecting
+  the BPP from the created window is more in line with reality.
 + Added robot editor undo (Ctrl+Z) and redo (Ctrl+Y). Like with
   board/vlayer/charset editing, the size of the undo stack is
   defined by the config setting "undo_history_size". Note that

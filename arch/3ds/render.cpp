@@ -376,6 +376,7 @@ static boolean ctr_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   static struct ctr_render_data render_data;
+  Uint32 bits_per_pixel = 16;
 
 #ifdef RDR_DEBUG
   consoleInit(GFX_TOP, NULL);
@@ -391,8 +392,11 @@ static boolean ctr_init_video(struct graphics_data *graphics,
   render_data.rendering_frame = false;
   render_data.checked_frame = false;
 
+  if(conf->force_bpp == 32)
+    bits_per_pixel = conf->force_bpp;
+
   // 1024x512 is the smallest power of two texture which can fit a 640x350 playfield
-  if (conf->force_bpp == 32)
+  if(bits_per_pixel == 32)
     C3D_TexInitVRAM(&render_data.playfield_tex, 1024, 512, GPU_RGBA8);
   else
     C3D_TexInitVRAM(&render_data.playfield_tex, 1024, 512, GPU_RGB565);
@@ -484,7 +488,7 @@ static boolean ctr_init_video(struct graphics_data *graphics,
   C3D_DepthTest(false, GPU_GEQUAL, GPU_WRITE_ALL);
 
   graphics->allow_resize = 0;
-  graphics->bits_per_pixel = 32;
+  graphics->bits_per_pixel = bits_per_pixel;
 
   graphics->resolution_width = 640;
   graphics->resolution_height = 350;

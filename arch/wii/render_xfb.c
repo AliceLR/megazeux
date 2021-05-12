@@ -81,6 +81,7 @@ static boolean xfb_init_video(struct graphics_data *graphics,
   render_data = cmalloc(sizeof(struct xfb_render_data));
   graphics->render_data = render_data;
   graphics->ratio = conf->video_ratio;
+  graphics->bits_per_pixel = 16;
 
   VIDEO_Init();
 

@@ -43,11 +43,21 @@ struct sdl_render_data
   SDL_Surface *shadow;
 };
 
+#ifdef __MACOSX__
+// Mac OS X has a special OpenGL YCbCr native texture mode which is
+// faster than RGB for older machines.
+#define YUV_PRIORITY 1000000
+#else
+#define YUV_PRIORITY 422
+#endif
+
 extern CORE_LIBSPEC Uint32 sdl_window_id;
 
 int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
  boolean resize);
 boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling);
+Uint32 sdl_pixel_format_priority(Uint32 pixel_format,  Uint32 bits_per_pixel,
+ boolean force_rgb);
 void sdl_destruct_window(struct graphics_data *graphics);
 
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,

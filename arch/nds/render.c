@@ -429,6 +429,7 @@ static boolean nds_init_video(struct graphics_data *graphics,
   // Now that we're initialized, install the vblank handler.
   irqSet(IRQ_VBLANK, nds_on_vblank);
 
+  graphics->bits_per_pixel = 8;
   return true;
 }
 

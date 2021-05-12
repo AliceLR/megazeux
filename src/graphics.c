@@ -1801,6 +1801,13 @@ boolean set_video_mode(void)
     set_window_caption(graphics.default_caption);
     set_window_grab(graphics.grab_mouse);
     set_window_icon();
+
+    // Make sure a BPP was selected by the renderer (if applicable).
+    if(graphics.bits_per_pixel == BPP_AUTO)
+    {
+      warn("renderer.check_video_mode or renderer.set_video_mode must "
+       "auto-select BPP! Report this!\n");
+    }
   }
 
   return ret;

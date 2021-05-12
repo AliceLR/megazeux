@@ -276,6 +276,7 @@ static boolean gx_init_video(struct graphics_data *graphics,
   graphics->render_data = render_data;
   graphics->ratio = conf->video_ratio;
   graphics->gl_vsync = conf->gl_vsync;
+  graphics->bits_per_pixel = 16;
 
   VIDEO_Init();
 

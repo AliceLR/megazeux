@@ -99,7 +99,7 @@ static boolean softscale_init_video(struct graphics_data *graphics,
   // This renderer can technically do 8bpp indexed or RGB332. The former is
   // too slow to be worthwhile and the latter requires fixing assumptions in
   // the layer renderer and a new set_colors8 (also, it looks awful).
-  if(conf->force_bpp == 16 || conf->force_bpp == 32)
+  if(conf->force_bpp == BPP_AUTO || conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
   snprintf(graphics->sdl_render_driver, ARRAY_SIZE(graphics->sdl_render_driver),
@@ -148,15 +148,9 @@ static void find_texture_format(struct graphics_data *graphics)
 
   if(!SDL_GetRendererInfo(render_data->sdl.renderer, &rinfo))
   {
-    Uint32 yuv_priority = 1;
+    Uint32 depth = graphics->bits_per_pixel;
     Uint32 priority = 0;
     Uint32 i;
-
-#ifdef __MACOSX__
-    // Mac OS X has a special OpenGL YUV texture mode that is treated as native
-    // and is faster than RGB. SDL 2 supports UYVY specifically right now.
-    yuv_priority = 1000000;
-#endif
 
     info("SDL render driver: '%s'\n", rinfo.name);
 
@@ -164,86 +158,22 @@ static void find_texture_format(struct graphics_data *graphics)
     for(i = 0; i < rinfo.num_texture_formats; i++)
     {
       Uint32 format = rinfo.texture_formats[i];
+      Uint32 format_priority;
 
       debug("%d: %s\n", i, SDL_GetPixelFormatName(format));
 
-      switch(format)
+      if(SDL_ISPIXELFORMAT_INDEXED(texture_format))
+        continue;
+
+      format_priority = sdl_pixel_format_priority(format, depth, false);
+      if(format_priority > priority)
       {
-        case SDL_PIXELFORMAT_RGB444:
-        case SDL_PIXELFORMAT_ARGB4444:
-        case SDL_PIXELFORMAT_RGBA4444:
-        case SDL_PIXELFORMAT_ABGR4444:
-        case SDL_PIXELFORMAT_BGRA4444:
-        {
-          // Favor 16bpp modes with more colors if possible.
-          if((graphics->bits_per_pixel == 16) && (priority < 444))
-          {
-            texture_format = format;
-            priority = 444;
-          }
-          break;
-        }
-
-        case SDL_PIXELFORMAT_RGB555:
-        case SDL_PIXELFORMAT_BGR555:
-        case SDL_PIXELFORMAT_ARGB1555:
-        case SDL_PIXELFORMAT_RGBA5551:
-        case SDL_PIXELFORMAT_ABGR1555:
-        case SDL_PIXELFORMAT_BGRA5551:
-        {
-          if((graphics->bits_per_pixel == 16) && (priority < 555))
-          {
-            texture_format = format;
-            priority = 555;
-          }
-          break;
-        }
-
-        case SDL_PIXELFORMAT_RGB565:
-        case SDL_PIXELFORMAT_BGR565:
-        {
-          if((graphics->bits_per_pixel == 16) && (priority < 565))
-          {
-            texture_format = format;
-            priority = 565;
-          }
-          break;
-        }
-
-        case SDL_PIXELFORMAT_RGBX8888:
-        case SDL_PIXELFORMAT_BGRX8888:
-        case SDL_PIXELFORMAT_ARGB8888:
-        case SDL_PIXELFORMAT_RGBA8888:
-        case SDL_PIXELFORMAT_ABGR8888:
-        case SDL_PIXELFORMAT_BGRA8888:
-        case SDL_PIXELFORMAT_ARGB2101010:
-        {
-          // Any 32-bit RGB format is okay.
-          if((graphics->bits_per_pixel == 32) && (priority < 888))
-          {
-            texture_format = format;
-            priority = 888;
-          }
-          break;
-        }
-
-        case SDL_PIXELFORMAT_YUY2:
-        case SDL_PIXELFORMAT_UYVY:
-        case SDL_PIXELFORMAT_YVYU:
-        {
-          // These can work as either 32-bpp (full encode) or partial 16-bpp
-          // (chroma subsampling for render_graph, full encode for layers).
-          if(priority < yuv_priority)
-          {
-            texture_format = format;
-            priority = yuv_priority;
-          }
-          break;
-        }
+        texture_format = format;
+        priority = format_priority;
       }
     }
 
-    if(priority == yuv_priority)
+    if(priority == YUV_PRIORITY)
       is_yuv = true;
   }
   else
@@ -305,6 +235,9 @@ static void find_texture_format(struct graphics_data *graphics)
     texture_bpp = SDL_BYTESPERPIXEL(texture_format) * 8;
     texture_amask = get_format_amask(texture_format);
   }
+
+  if(graphics->bits_per_pixel == BPP_AUTO)
+    graphics->bits_per_pixel = texture_bpp;
 
   // Initialize the texture data.
   render_data->texture_pixels = NULL;
