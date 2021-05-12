@@ -511,6 +511,8 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 		ARCHNAME=alpha
 	elif [ "$MACH" = "hppa" -o "$MACH" = "parisc" ]; then
 		ARCHNAME=hppa
+	elif [ "$MACH" = "sh4" ]; then
+		ARCHNAME=sh4
 	elif [ "$MACH" = "sparc" ]; then
 		ARCHNAME=sparc
 	elif [ "$MACH" = "sparc64" ]; then
