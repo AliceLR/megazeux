@@ -527,7 +527,6 @@ void render_softscale_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = softscale_init_video;
   renderer->free_video = softscale_free_video;
-  renderer->check_video_mode = sdl_check_video_mode;
   renderer->set_video_mode = softscale_set_video_mode;
   renderer->update_colors = softscale_update_colors;
   renderer->resize_screen = resize_screen_standard;

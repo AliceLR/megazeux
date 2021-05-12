@@ -1701,13 +1701,28 @@ boolean init_video(struct config_info *conf, const char *caption)
   if(!graphics.renderer.init_video(&graphics, conf))
   {
     // Try falling back to the first registered renderer
+    debug("Failed to initialize '%s', attempting fallback.\n", conf->video_output);
     strcpy(conf->video_output, "");
     if(!set_graphics_output(conf))
       return false;
 
-    // Fallback failed; bail out
     if(!graphics.renderer.init_video(&graphics, conf))
-      return false;
+    {
+      // One last attempt with the "safest" settings.
+      // NOTE: this was originally done in set_video_mode.
+      debug("Failed to initialize fallback, trying 640x350.\n");
+      graphics.window_width = 640;
+      graphics.window_height = 350;
+      graphics.fullscreen = false;
+      graphics.allow_resize = false;
+      conf->force_bpp = BPP_AUTO;
+
+      if(!graphics.renderer.init_video(&graphics, conf))
+      {
+        warn("Failed to initialize video.\n");
+        return false;
+      }
+    }
   }
 
 #ifdef CONFIG_SDL
@@ -1777,22 +1792,6 @@ boolean set_video_mode(void)
     target_height = graphics.window_height;
   }
 
-  // If video mode fails, replace it with 'safe' defaults
-  if(!(graphics.renderer.check_video_mode(&graphics,
-   target_width, target_height, target_depth, fullscreen, resize)))
-  {
-    target_width = 640;
-    target_height = 350;
-    target_depth = 8;
-    fullscreen = false;
-    resize = false;
-
-    graphics.resolution_width = target_width;
-    graphics.resolution_height = target_height;
-    graphics.bits_per_pixel = target_depth;
-    graphics.fullscreen = fullscreen;
-  }
-
   ret = graphics.renderer.set_video_mode(&graphics,
    target_width, target_height, target_depth, fullscreen, resize);
 
@@ -1804,10 +1803,7 @@ boolean set_video_mode(void)
 
     // Make sure a BPP was selected by the renderer (if applicable).
     if(graphics.bits_per_pixel == BPP_AUTO)
-    {
-      warn("renderer.check_video_mode or renderer.set_video_mode must "
-       "auto-select BPP! Report this!\n");
-    }
+      warn("renderer.set_video_mode must auto-select BPP! Report this!\n");
   }
 
   return ret;

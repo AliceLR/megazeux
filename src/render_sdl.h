@@ -63,9 +63,6 @@ void sdl_destruct_window(struct graphics_data *graphics);
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize);
 
-boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize);
-
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
 #include "render_gl.h"
@@ -82,8 +79,6 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
 
 boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, boolean fullscreen, boolean resize, struct gl_version req_ver);
-boolean gl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize);
 void gl_set_attributes(struct graphics_data *graphics);
 boolean gl_swap_buffers(struct graphics_data *graphics);
 

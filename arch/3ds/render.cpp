@@ -520,12 +520,6 @@ static void ctr_free_video(struct graphics_data *graphics)
   C3D_Fini();
 }
 
-static boolean ctr_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
-{
-  return true;
-}
-
 static boolean ctr_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize)
 {
@@ -1205,7 +1199,6 @@ void render_ctr_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = ctr_init_video;
   renderer->free_video = ctr_free_video;
-  renderer->check_video_mode = ctr_check_video_mode;
   renderer->set_video_mode = ctr_set_video_mode;
   renderer->update_colors = ctr_update_colors;
   renderer->resize_screen = resize_screen_standard;

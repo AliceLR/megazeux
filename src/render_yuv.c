@@ -55,6 +55,10 @@ static boolean yuv_set_video_mode_size(struct graphics_data *graphics,
 {
   struct yuv_render_data *render_data = graphics->render_data;
 
+  if(SDL_VideoModeOK(width, height, 32,
+   sdl_flags(depth, fullscreen, false, resize) | SDL_ANYFORMAT) <= 0)
+    return false;
+
   // the YUV renderer _requires_ 32bit colour
   render_data->sdl.screen = SDL_SetVideoMode(width, height, 32,
    sdl_flags(depth, fullscreen, false, resize) | SDL_ANYFORMAT);
@@ -148,13 +152,6 @@ static void yuv_free_video(struct graphics_data *graphics)
 
   free(graphics->render_data);
   graphics->render_data = NULL;
-}
-
-static boolean yuv_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
-{
-  return SDL_VideoModeOK(width, height, 32,
-   sdl_flags(depth, fullscreen, false, resize) | SDL_ANYFORMAT);
 }
 
 static void yuv_update_colors(struct graphics_data *graphics,
@@ -283,7 +280,6 @@ void render_yuv1_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = yuv_init_video;
   renderer->free_video = yuv_free_video;
-  renderer->check_video_mode = yuv_check_video_mode;
   renderer->set_video_mode = yuv1_set_video_mode;
   renderer->update_colors = yuv_update_colors;
   renderer->resize_screen = resize_screen_standard;

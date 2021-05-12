@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2007-2008 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2021 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -394,6 +395,35 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 
+  int in_depth = (depth != BPP_AUTO) ? depth : 32;
+  int out_depth;
+
+  out_depth = SDL_VideoModeOK(width, height, in_depth,
+   sdl_flags(depth, fullscreen, false, resize));
+  if(out_depth <= 0)
+  {
+    warn("SDL_VideoModeOK failed.\n");
+    return false;
+  }
+
+  if(depth == BPP_AUTO)
+  {
+    if(out_depth == 8 || out_depth == 16 || out_depth == 32)
+    {
+      debug("SDL_VideoModeOK recommends BPP=%d\n", out_depth);
+      graphics->bits_per_pixel = out_depth;
+      depth = out_depth;
+    }
+    else
+
+    if(out_depth > 0)
+    {
+      debug("SDL_VideoModeOK recommends unsupported BPP=%d; using 32bpp\n", out_depth);
+      graphics->bits_per_pixel = 32;
+      depth = 32;
+    }
+  }
+
   render_data->screen = SDL_SetVideoMode(width, height, depth,
    sdl_flags(depth, fullscreen, false, resize));
 
@@ -411,38 +441,6 @@ err_free:
   sdl_destruct_window(graphics);
   return false;
 #endif // SDL_VERSION_ATLEAST(2,0,0)
-}
-
-boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
-{
-#if SDL_VERSION_ATLEAST(2,0,0)
-  return true;
-#else
-  int in_depth = (depth != BPP_AUTO) ? depth : 32;
-  int out_depth;
-
-  out_depth = SDL_VideoModeOK(width, height, in_depth,
-   sdl_flags(depth, fullscreen, false, resize));
-
-  if(depth == BPP_AUTO)
-  {
-    if(out_depth == 8 || out_depth == 16 || out_depth == 32)
-    {
-      debug("SDL_VideoModeOK recommends BPP=%d\n", out_depth);
-      graphics->bits_per_pixel = out_depth;
-    }
-    else
-
-    if(out_depth > 0)
-    {
-      debug("SDL_VideoModeOK recommends unsupported BPP=%d; using 32bpp\n", out_depth);
-      graphics->bits_per_pixel = 32;
-    }
-  }
-
-  return !!out_depth;
-#endif
 }
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
@@ -516,6 +514,10 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 
+  if(SDL_VideoModeOK(width, height, depth,
+       GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, false, resize))) <= 0)
+    return false;
+
   if(!SDL_SetVideoMode(width, height, depth,
        GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, false, resize))))
     return false;
@@ -532,17 +534,6 @@ err_free:
   sdl_destruct_window(graphics);
   return false;
 #endif // SDL_VERSION_ATLEAST(2,0,0)
-}
-
-boolean gl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
-{
-#if SDL_VERSION_ATLEAST(2,0,0)
-  return true;
-#else
-  return !!SDL_VideoModeOK(width, height, depth,
-   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, false, resize)));
-#endif
 }
 
 void gl_set_attributes(struct graphics_data *graphics)
