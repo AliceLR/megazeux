@@ -430,7 +430,10 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
    sdl_flags(depth, fullscreen, false, resize));
 
   if(depth == BPP_AUTO && out_depth > 0)
+  {
+    debug("SDL_VideoModeOK recommends BPP=%d\n", out_depth);
     graphics->bits_per_pixel = out_depth;
+  }
 
   return !!out_depth;
 #endif
