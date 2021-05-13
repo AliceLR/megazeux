@@ -136,7 +136,7 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   if(egl_render_data->native_display == NULL)
   {
     warn("XOpenDisplay failed\n");
-    return
+    return false;
   }
 
   window = XCreateSimpleWindow(egl_render_data->native_display,
