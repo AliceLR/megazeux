@@ -137,6 +137,9 @@ USERS
   mediump has inadequate precision, MZX will print a warning.
 + Enabled the GLSL renderer for the Android port. The Android
   port now uses the GLSL scaled software renderer by default.
++ Fixed software renderer display issues caused by relying on
+  SDL_PixelFormat::BitsPerPixel instead of BytesPerPixel on
+  platforms with native 15 BPP display modes.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 

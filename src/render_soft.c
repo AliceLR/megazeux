@@ -114,7 +114,7 @@ static void soft_render_graph(struct graphics_data *graphics)
 
   Uint32 *pixels = (Uint32 *)screen->pixels;
   Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BitsPerPixel;
+  Uint32 bpp = screen->format->BytesPerPixel * 8;
   Uint32 mode = graphics->screen_mode;
 
   pixels += pitch * ((screen->h - 350) / 8);
@@ -166,7 +166,7 @@ static void soft_render_cursor(struct graphics_data *graphics,
 
   Uint32 *pixels = (Uint32 *)screen->pixels;
   Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BitsPerPixel;
+  Uint32 bpp = screen->format->BytesPerPixel * 8;
   Uint32 flatcolor;
 
   pixels += pitch * ((screen->h - 350) / 8);
@@ -198,7 +198,7 @@ static void soft_render_mouse(struct graphics_data *graphics,
 
   Uint32 *pixels = (Uint32 *)screen->pixels;
   Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BitsPerPixel;
+  Uint32 bpp = screen->format->BytesPerPixel * 8;
   Uint32 mask, amask;
 
   pixels += pitch * ((screen->h - 350) / 8);
@@ -242,7 +242,7 @@ static void soft_render_layer(struct graphics_data *graphics,
 
   Uint32 *pixels = (Uint32 *)screen->pixels;
   Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BitsPerPixel;
+  Uint32 bpp = screen->format->BytesPerPixel * 8;
 
   pixels += pitch * ((screen->h - 350) / 8);
   pixels += (screen->w - 640) * bpp / 64;
