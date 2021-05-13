@@ -326,7 +326,7 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
    */
 
   fmt = SDL_GetWindowPixelFormat(render_data->window);
-  debug("Window pixel format is: %s\n", SDL_GetPixelFormatName(fmt));
+  debug("Window pixel format: %s\n", SDL_GetPixelFormatName(fmt));
 
   if(!sdl_pixel_format_priority(fmt, depth, true))
   {
@@ -346,6 +346,8 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   }
   else
     matched = true;
+
+  debug("Using pixel format: %s\n", SDL_GetPixelFormatName(fmt));
 
   if(depth == BPP_AUTO)
     graphics->bits_per_pixel = SDL_BYTESPERPIXEL(fmt) * 8;
