@@ -141,8 +141,10 @@ Uint32 sdl_pixel_format_priority(Uint32 pixel_format, Uint32 bits_per_pixel,
       break;
     }
 
-    case SDL_PIXELFORMAT_RGB444:
+#if SDL_VERSION_ATLEAST(2,0,12)
     case SDL_PIXELFORMAT_BGR444:
+#endif
+    case SDL_PIXELFORMAT_RGB444:
     case SDL_PIXELFORMAT_ARGB4444:
     case SDL_PIXELFORMAT_RGBA4444:
     case SDL_PIXELFORMAT_ABGR4444:
