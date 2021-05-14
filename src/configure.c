@@ -71,7 +71,8 @@
 #define VIDEO_OUTPUT_DEFAULT "software"
 #define FULLSCREEN_WIDTH_DEFAULT 640
 #define FULLSCREEN_HEIGHT_DEFAULT 480
-#endif
+#define FORCE_BPP_DEFAULT 16
+#endif /* CONFIG_SDL */
 #endif
 
 #ifdef CONFIG_3DS
