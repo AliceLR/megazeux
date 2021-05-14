@@ -286,6 +286,63 @@ void sdl_destruct_window(struct graphics_data *graphics)
 #endif
 }
 
+#if !SDL_VERSION_ATLEAST(2,0,0)
+/**
+ * Precheck a provided video mode and select a BPP (if requested).
+ */
+boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int *depth, int flags)
+{
+  static int system_bpp = 0;
+  static boolean has_system_bpp = false;
+  int in_depth = *depth;
+  int out_depth;
+
+  if(!has_system_bpp)
+  {
+    // Query the "best" video mode. This might actually be the current video
+    // mode if another renderer has been initialized, so always do this first
+    // (even if the provided depth isn't BPP_AUTO).
+    const SDL_VideoInfo *info = SDL_GetVideoInfo();
+    if(info && info->vfmt)
+    {
+      system_bpp = info->vfmt->BytesPerPixel * 8;
+      has_system_bpp = true;
+      debug("SDL_GetVideoInfo BPP=%d\n", system_bpp);
+    }
+  }
+
+  if(in_depth == BPP_AUTO)
+    in_depth = system_bpp;
+
+  out_depth = SDL_VideoModeOK(width, height, in_depth, flags);
+  if(out_depth <= 0)
+  {
+    debug("SDL_VideoModeOK failed.\n");
+    return false;
+  }
+
+  if(*depth == BPP_AUTO)
+  {
+    if(out_depth == 8 || out_depth == 16 || out_depth == 32)
+    {
+      debug("SDL_VideoModeOK recommends BPP=%d\n", out_depth);
+      graphics->bits_per_pixel = out_depth;
+      *depth = out_depth;
+    }
+    else
+
+    if(out_depth > 0)
+    {
+      debug("SDL_VideoModeOK recommends unsupported BPP=%d; using 32bpp\n", out_depth);
+      graphics->bits_per_pixel = 32;
+      *depth = 32;
+    }
+  }
+  return true;
+}
+#endif /* !SDL_VERSION_ATLEAST(2,0,0) */
+
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize)
 {
@@ -399,34 +456,9 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 
-  int in_depth = (depth != BPP_AUTO) ? depth : 32;
-  int out_depth;
-
-  out_depth = SDL_VideoModeOK(width, height, in_depth,
-   sdl_flags(depth, fullscreen, false, resize));
-  if(out_depth <= 0)
-  {
-    warn("SDL_VideoModeOK failed.\n");
+  if(!sdl_check_video_mode(graphics, width, height, &depth,
+   sdl_flags(depth, fullscreen, false, resize)))
     return false;
-  }
-
-  if(depth == BPP_AUTO)
-  {
-    if(out_depth == 8 || out_depth == 16 || out_depth == 32)
-    {
-      debug("SDL_VideoModeOK recommends BPP=%d\n", out_depth);
-      graphics->bits_per_pixel = out_depth;
-      depth = out_depth;
-    }
-    else
-
-    if(out_depth > 0)
-    {
-      debug("SDL_VideoModeOK recommends unsupported BPP=%d; using 32bpp\n", out_depth);
-      graphics->bits_per_pixel = 32;
-      depth = 32;
-    }
-  }
 
   render_data->screen = SDL_SetVideoMode(width, height, depth,
    sdl_flags(depth, fullscreen, false, resize));
@@ -518,8 +550,8 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 
-  if(SDL_VideoModeOK(width, height, depth,
-       GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, false, resize))) <= 0)
+  if(!sdl_check_video_mode(graphics, width, height, &depth,
+       GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, false, resize))))
     return false;
 
   if(!SDL_SetVideoMode(width, height, depth,

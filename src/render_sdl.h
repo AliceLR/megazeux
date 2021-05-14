@@ -63,6 +63,12 @@ void sdl_destruct_window(struct graphics_data *graphics);
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize);
 
+#if !SDL_VERSION_ATLEAST(2,0,0)
+// Used internally only.
+boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int *depth, int flags);
+#endif
+
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
 #include "render_gl.h"

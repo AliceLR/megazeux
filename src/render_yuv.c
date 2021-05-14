@@ -55,8 +55,8 @@ static boolean yuv_set_video_mode_size(struct graphics_data *graphics,
 {
   struct yuv_render_data *render_data = graphics->render_data;
 
-  if(SDL_VideoModeOK(width, height, 32,
-   sdl_flags(depth, fullscreen, false, resize) | SDL_ANYFORMAT) <= 0)
+  if(!sdl_check_video_mode(graphics, width, height, &depth,
+   sdl_flags(depth, fullscreen, false, resize) | SDL_ANYFORMAT))
     return false;
 
   // the YUV renderer _requires_ 32bit colour
@@ -132,6 +132,7 @@ static boolean yuv_init_video(struct graphics_data *graphics,
 
   memset(render_data, 0, sizeof(struct yuv_render_data));
 
+  graphics->bits_per_pixel = 32;
   graphics->render_data = render_data;
   graphics->allow_resize = conf->allow_resize;
   graphics->ratio = conf->video_ratio;
