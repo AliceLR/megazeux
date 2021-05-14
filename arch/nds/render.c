@@ -429,13 +429,8 @@ static boolean nds_init_video(struct graphics_data *graphics,
   // Now that we're initialized, install the vblank handler.
   irqSet(IRQ_VBLANK, nds_on_vblank);
 
+  graphics->bits_per_pixel = 8;
   return true;
-}
-
-static boolean nds_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
-{
-  return true;  // stub
 }
 
 static boolean nds_set_video_mode(struct graphics_data *graphics,
@@ -833,7 +828,6 @@ void render_nds_register(struct renderer *renderer)
 {
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = nds_init_video;
-  renderer->check_video_mode = nds_check_video_mode;
   renderer->set_video_mode = nds_set_video_mode;
   renderer->update_colors = nds_update_colors;
   renderer->resize_screen = nds_resize_screen;

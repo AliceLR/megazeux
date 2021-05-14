@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2007-2008 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2021 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -117,6 +118,164 @@ boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
   return false;
 }
 
+/**
+ * Determine if MZX supports a particular SDL pixel format. Returns a priority
+ * value if the format is supported or 0 if the format is not supported. Values
+ * returned for separate formats can be compared; higher values correspond to
+ * higher priority.
+ *
+ * A bits_per_pixel value can be provided to filter out pixel formats that do
+ * not correspond to the desired BPP value.
+ */
+Uint32 sdl_pixel_format_priority(Uint32 pixel_format, Uint32 bits_per_pixel,
+ boolean force_rgb)
+{
+#if SDL_VERSION_ATLEAST(2,0,0)
+  switch(pixel_format)
+  {
+    case SDL_PIXELFORMAT_INDEX8:
+    {
+      if(bits_per_pixel == BPP_AUTO || bits_per_pixel == 8)
+        return 256;
+
+      break;
+    }
+
+#if SDL_VERSION_ATLEAST(2,0,12)
+    case SDL_PIXELFORMAT_BGR444:
+#endif
+    case SDL_PIXELFORMAT_RGB444:
+    case SDL_PIXELFORMAT_ARGB4444:
+    case SDL_PIXELFORMAT_RGBA4444:
+    case SDL_PIXELFORMAT_ABGR4444:
+    case SDL_PIXELFORMAT_BGRA4444:
+    {
+      // Favor 16bpp modes with more colors if possible.
+      if(bits_per_pixel == BPP_AUTO || bits_per_pixel == 16)
+        return 444;
+
+      break;
+    }
+
+    case SDL_PIXELFORMAT_RGB555:
+    case SDL_PIXELFORMAT_BGR555:
+    case SDL_PIXELFORMAT_ARGB1555:
+    case SDL_PIXELFORMAT_RGBA5551:
+    case SDL_PIXELFORMAT_ABGR1555:
+    case SDL_PIXELFORMAT_BGRA5551:
+    {
+      if(bits_per_pixel == BPP_AUTO || bits_per_pixel == 16)
+        return 555;
+
+      break;
+    }
+
+    case SDL_PIXELFORMAT_RGB565:
+    case SDL_PIXELFORMAT_BGR565:
+    {
+      if(bits_per_pixel == BPP_AUTO || bits_per_pixel == 16)
+        return 565;
+
+      break;
+    }
+
+    case SDL_PIXELFORMAT_RGB888:
+    case SDL_PIXELFORMAT_BGR888:
+    case SDL_PIXELFORMAT_RGBX8888:
+    case SDL_PIXELFORMAT_BGRX8888:
+    case SDL_PIXELFORMAT_ARGB8888:
+    case SDL_PIXELFORMAT_RGBA8888:
+    case SDL_PIXELFORMAT_ABGR8888:
+    case SDL_PIXELFORMAT_BGRA8888:
+    case SDL_PIXELFORMAT_ARGB2101010:
+    {
+      // Any 32-bit RGB format is okay.
+      if(bits_per_pixel == BPP_AUTO || bits_per_pixel == 32)
+        return 888;
+
+      break;
+    }
+
+    case SDL_PIXELFORMAT_YUY2:
+    case SDL_PIXELFORMAT_UYVY:
+    case SDL_PIXELFORMAT_YVYU:
+    {
+      if(force_rgb)
+        break;
+
+      // These can work as either 32-bpp (full encode) or partial 16-bpp
+      // (chroma subsampling for render_graph, full encode for layers).
+      if(bits_per_pixel == BPP_AUTO || bits_per_pixel == 16 || bits_per_pixel == 32)
+        return YUV_PRIORITY;
+
+      break;
+    }
+  }
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
+
+  return 0;
+}
+
+#if !SDL_VERSION_ATLEAST(2,0,0)
+/**
+ * Precheck a provided video mode and select a BPP (if requested). This
+ * works somewhat opposite to how SDL 2 works: instead of a pixel format
+ * being picked by SDL (which needs to be checked for MZX support), MZX
+ * instead needs to test its preferred pixel format by querying SDL.
+ */
+boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int *depth, int flags)
+{
+  static int system_bpp = 0;
+  static boolean has_system_bpp = false;
+  int in_depth = *depth;
+  int out_depth;
+
+  if(!has_system_bpp)
+  {
+    // Query the "best" video mode. This might actually be the current video
+    // mode if another renderer has been initialized, so always do this first
+    // (even if the provided depth isn't BPP_AUTO).
+    const SDL_VideoInfo *info = SDL_GetVideoInfo();
+    if(info && info->vfmt)
+    {
+      system_bpp = info->vfmt->BytesPerPixel * 8;
+      has_system_bpp = true;
+      debug("SDL_GetVideoInfo BPP=%d\n", system_bpp);
+    }
+  }
+
+  if(in_depth == BPP_AUTO)
+    in_depth = system_bpp;
+
+  out_depth = SDL_VideoModeOK(width, height, in_depth, flags);
+  if(out_depth <= 0)
+  {
+    debug("SDL_VideoModeOK failed.\n");
+    return false;
+  }
+
+  if(*depth == BPP_AUTO)
+  {
+    if(out_depth == 8 || out_depth == 16 || out_depth == 32)
+    {
+      debug("SDL_VideoModeOK recommends BPP=%d\n", out_depth);
+      graphics->bits_per_pixel = out_depth;
+      *depth = out_depth;
+    }
+    else
+
+    if(out_depth > 0)
+    {
+      debug("SDL_VideoModeOK recommends unsupported BPP=%d; using 32bpp\n", out_depth);
+      graphics->bits_per_pixel = 32;
+      *depth = 32;
+    }
+  }
+  return true;
+}
+#endif /* !SDL_VERSION_ATLEAST(2,0,0) */
+
 void sdl_destruct_window(struct graphics_data *graphics)
 {
   struct sdl_render_data *render_data = graphics->render_data;
@@ -229,42 +388,31 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
    */
 
   fmt = SDL_GetWindowPixelFormat(render_data->window);
-  switch(depth)
+  debug("Window pixel format: %s\n", SDL_GetPixelFormatName(fmt));
+
+  if(!sdl_pixel_format_priority(fmt, depth, true))
   {
-    case 8:
-      matched = fmt == SDL_PIXELFORMAT_INDEX8;
-      fmt = SDL_PIXELFORMAT_INDEX8;
-      break;
-    case 16:
-      switch(fmt)
-      {
-        case SDL_PIXELFORMAT_RGB565:
-        case SDL_PIXELFORMAT_BGR565:
-          matched = true;
-          break;
-        default:
-          fmt = SDL_PIXELFORMAT_RGB565;
-          break;
-      }
-      break;
-    case 32:
-      switch(fmt)
-      {
-        case SDL_PIXELFORMAT_RGB888:
-        case SDL_PIXELFORMAT_RGBX8888:
-        case SDL_PIXELFORMAT_RGBA8888:
-        case SDL_PIXELFORMAT_BGRX8888:
-        case SDL_PIXELFORMAT_BGRA8888:
-        case SDL_PIXELFORMAT_ARGB8888:
-        case SDL_PIXELFORMAT_ABGR8888:
-          matched = true;
-          break;
-        default:
-          fmt = SDL_PIXELFORMAT_RGBA8888;
-          break;
-      }
-      break;
+    switch(depth)
+    {
+      case 8:
+        fmt = SDL_PIXELFORMAT_INDEX8;
+        break;
+      case 16:
+        fmt = SDL_PIXELFORMAT_RGB565;
+        break;
+      case 32:
+      default:
+        fmt = SDL_PIXELFORMAT_RGBA8888;
+        break;
+    }
   }
+  else
+    matched = true;
+
+  debug("Using pixel format: %s\n", SDL_GetPixelFormatName(fmt));
+
+  if(depth == BPP_AUTO)
+    graphics->bits_per_pixel = SDL_BYTESPERPIXEL(fmt) * 8;
 
   if(!matched)
   {
@@ -311,6 +459,10 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 
+  if(!sdl_check_video_mode(graphics, width, height, &depth,
+   sdl_flags(depth, fullscreen, false, resize)))
+    return false;
+
   render_data->screen = SDL_SetVideoMode(width, height, depth,
    sdl_flags(depth, fullscreen, false, resize));
 
@@ -328,17 +480,6 @@ err_free:
   sdl_destruct_window(graphics);
   return false;
 #endif // SDL_VERSION_ATLEAST(2,0,0)
-}
-
-boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
-{
-#if SDL_VERSION_ATLEAST(2,0,0)
-  return true;
-#else
-  return SDL_VideoModeOK(width, height, depth,
-   sdl_flags(depth, fullscreen, false, resize));
-#endif
 }
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
@@ -412,6 +553,10 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 
+  if(!sdl_check_video_mode(graphics, width, height, &depth,
+       GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, false, resize))))
+    return false;
+
   if(!SDL_SetVideoMode(width, height, depth,
        GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, false, resize))))
     return false;
@@ -428,17 +573,6 @@ err_free:
   sdl_destruct_window(graphics);
   return false;
 #endif // SDL_VERSION_ATLEAST(2,0,0)
-}
-
-boolean gl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
-{
-#if SDL_VERSION_ATLEAST(2,0,0)
-  return true;
-#else
-  return SDL_VideoModeOK(width, height, depth,
-   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, false, resize)));
-#endif
 }
 
 void gl_set_attributes(struct graphics_data *graphics)

@@ -34,6 +34,11 @@ enum config_type
   NUM_CONFIG_TYPES
 };
 
+enum force_bpp_special
+{
+  BPP_AUTO = 0,
+};
+
 enum ratio_type
 {
   RATIO_CLASSIC_4_3,

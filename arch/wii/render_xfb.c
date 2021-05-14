@@ -81,6 +81,7 @@ static boolean xfb_init_video(struct graphics_data *graphics,
   render_data = cmalloc(sizeof(struct xfb_render_data));
   graphics->render_data = render_data;
   graphics->ratio = conf->video_ratio;
+  graphics->bits_per_pixel = 16;
 
   VIDEO_Init();
 
@@ -125,12 +126,6 @@ static void xfb_free_video(struct graphics_data *graphics)
 {
   free(graphics->render_data);
   graphics->render_data = NULL;
-}
-
-static boolean xfb_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
-{
-  return true;
 }
 
 static boolean xfb_set_video_mode(struct graphics_data *graphics,
@@ -370,7 +365,6 @@ void render_xfb_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = xfb_init_video;
   renderer->free_video = xfb_free_video;
-  renderer->check_video_mode = xfb_check_video_mode;
   renderer->set_video_mode = xfb_set_video_mode;
   renderer->update_colors = xfb_update_colors;
   renderer->resize_screen = resize_screen_standard;

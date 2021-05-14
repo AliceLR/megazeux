@@ -57,7 +57,8 @@ static boolean soft_init_video(struct graphics_data *graphics,
     graphics->window_height = 350;
 
   // We have 8-bit, 16-bit, and 32-bit software renderers
-  if(conf->force_bpp == 8 || conf->force_bpp == 16 || conf->force_bpp == 32)
+  if(conf->force_bpp == BPP_AUTO || conf->force_bpp == 8 ||
+   conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
   return set_video_mode();
@@ -113,7 +114,7 @@ static void soft_render_graph(struct graphics_data *graphics)
 
   Uint32 *pixels = (Uint32 *)screen->pixels;
   Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BitsPerPixel;
+  Uint32 bpp = screen->format->BytesPerPixel * 8;
   Uint32 mode = graphics->screen_mode;
 
   pixels += pitch * ((screen->h - 350) / 8);
@@ -121,10 +122,18 @@ static void soft_render_graph(struct graphics_data *graphics)
 
   SDL_LockSurface(screen);
   if(bpp == 8)
+  {
     render_graph8((Uint8 *)pixels, pitch, graphics, set_colors8[mode]);
-  else if(bpp == 16)
+  }
+  else
+
+  if(bpp == 16)
+  {
     render_graph16((Uint16 *)pixels, pitch, graphics, set_colors16[mode]);
-  else if(bpp == 32)
+  }
+  else
+
+  if(bpp == 32)
   {
     if(!mode)
       render_graph32(pixels, pitch, graphics);
@@ -157,7 +166,7 @@ static void soft_render_cursor(struct graphics_data *graphics,
 
   Uint32 *pixels = (Uint32 *)screen->pixels;
   Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BitsPerPixel;
+  Uint32 bpp = screen->format->BytesPerPixel * 8;
   Uint32 flatcolor;
 
   pixels += pitch * ((screen->h - 350) / 8);
@@ -189,7 +198,7 @@ static void soft_render_mouse(struct graphics_data *graphics,
 
   Uint32 *pixels = (Uint32 *)screen->pixels;
   Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BitsPerPixel;
+  Uint32 bpp = screen->format->BytesPerPixel * 8;
   Uint32 mask, amask;
 
   pixels += pitch * ((screen->h - 350) / 8);
@@ -225,7 +234,6 @@ static void soft_sync_screen(struct graphics_data *graphics)
 #endif
 }
 
-
 static void soft_render_layer(struct graphics_data *graphics,
  struct video_layer *layer)
 {
@@ -234,7 +242,7 @@ static void soft_render_layer(struct graphics_data *graphics,
 
   Uint32 *pixels = (Uint32 *)screen->pixels;
   Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BitsPerPixel;
+  Uint32 bpp = screen->format->BytesPerPixel * 8;
 
   pixels += pitch * ((screen->h - 350) / 8);
   pixels += (screen->w - 640) * bpp / 64;
@@ -249,7 +257,6 @@ void render_soft_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = soft_init_video;
   renderer->free_video = soft_free_video;
-  renderer->check_video_mode = sdl_check_video_mode;
   renderer->set_video_mode = sdl_set_video_mode;
   renderer->update_colors = soft_update_colors;
   renderer->resize_screen = resize_screen_standard;

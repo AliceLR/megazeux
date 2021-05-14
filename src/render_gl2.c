@@ -1018,7 +1018,6 @@ void render_gl2_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gl2_init_video;
   renderer->free_video = gl2_free_video;
-  renderer->check_video_mode = gl_check_video_mode;
   renderer->set_video_mode = gl2_set_video_mode;
   renderer->update_colors = gl2_update_colors;
   renderer->resize_screen = resize_screen_standard;

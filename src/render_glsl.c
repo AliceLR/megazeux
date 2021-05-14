@@ -1317,8 +1317,6 @@ static void glsl_render_cursor(struct graphics_data *graphics,
     return;
   }
 
-  glsl.glDisable(GL_TEXTURE_2D);
-
   glsl.glUseProgram(render_data->cursor_program);
   gl_check_error();
 
@@ -1420,6 +1418,8 @@ static void glsl_sync_screen(struct graphics_data *graphics)
     // Stream it to the screen texture.
     glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SCREEN_PIX_W, SCREEN_PIX_H,
      GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
+    width = SCREEN_PIX_W;
+    height = SCREEN_PIX_H;
     gl_check_error();
   }
   else
@@ -1557,7 +1557,6 @@ void render_glsl_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = glsl_init_video;
   renderer->free_video = glsl_free_video;
-  renderer->check_video_mode = gl_check_video_mode;
   renderer->set_video_mode = glsl_set_video_mode;
   renderer->update_colors = glsl_update_colors;
   renderer->resize_screen = resize_screen_standard;

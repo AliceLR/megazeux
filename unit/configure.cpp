@@ -374,13 +374,15 @@ UNITTEST(Settings)
   {
     static const config_test_single data[] =
     {
+      { "0", BPP_AUTO },
       { "8", 8 },
       { "16", 16 },
       { "32", 32 },
+      { "auto", BPP_AUTO },
       { "-1", DEFAULT },
       { "231", DEFAULT },
-      { "0", DEFAULT },
       { "asdfsdf", DEFAULT },
+      { "autou", DEFAULT },
     };
     TEST_ENUM("force_bpp", conf->force_bpp, data);
   }

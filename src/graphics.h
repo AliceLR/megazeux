@@ -105,8 +105,6 @@ struct renderer
 {
   boolean (*init_video)       (struct graphics_data *, struct config_info *);
   void    (*free_video)       (struct graphics_data *);
-  boolean (*check_video_mode) (struct graphics_data *, int width, int height,
-                                int depth, boolean fullscreen, boolean resize);
   boolean (*set_video_mode)   (struct graphics_data *, int width, int height,
                                 int depth, boolean fullscreen, boolean resize);
   void    (*update_colors)    (struct graphics_data *, struct rgb_color *palette,

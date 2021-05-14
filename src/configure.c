@@ -72,11 +72,10 @@
 #define FULLSCREEN_WIDTH_DEFAULT 640
 #define FULLSCREEN_HEIGHT_DEFAULT 480
 #define FORCE_BPP_DEFAULT 16
-#endif
+#endif /* CONFIG_SDL */
 #endif
 
 #ifdef CONFIG_3DS
-#define FORCE_BPP_DEFAULT 16
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
 #endif
 
@@ -98,7 +97,7 @@
 // End arch-specific config.
 
 #ifndef FORCE_BPP_DEFAULT
-#define FORCE_BPP_DEFAULT 32
+#define FORCE_BPP_DEFAULT BPP_AUTO
 #endif
 
 #ifndef GL_VSYNC_DEFAULT
@@ -282,9 +281,11 @@ static const struct config_enum allow_cheats_values[] =
 
 static const struct config_enum force_bpp_values[] =
 {
+  { "0", BPP_AUTO },
   { "8", 8 },
   { "16", 16 },
-  { "32", 32 }
+  { "32", 32 },
+  { "auto", BPP_AUTO },
 };
 
 static const struct config_enum gl_filter_method_values[] =
