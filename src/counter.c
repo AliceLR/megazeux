@@ -20,6 +20,7 @@
 // New counter.cpp. Sorted lists make for faster searching.
 // Builtins are also cleaned up by being put on a seperate list.
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -1226,7 +1227,7 @@ static int joyn_read(struct world *mzx_world,
   char *dot_ptr;
   int joystick = strtol(name + 3, &dot_ptr, 10) - 1;
   boolean is_active;
-  Sint16 value;
+  int16_t value;
 
   if(*dot_ptr == '.')
   {
@@ -1688,8 +1689,8 @@ static void upr_write(struct world *mzx_world,
 static int char_byte_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  Uint16 char_num = get_counter(mzx_world, "CHAR", id);
-  Uint8 byte_num = get_counter(mzx_world, "BYTE", id);
+  uint16_t char_num = get_counter(mzx_world, "CHAR", id);
+  uint8_t byte_num = get_counter(mzx_world, "BYTE", id);
 
   // Prior to 2.90 char params are clipped.
   if(mzx_world->version < V290)
@@ -1710,8 +1711,8 @@ static int char_byte_read(struct world *mzx_world,
 static void char_byte_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  Uint16 char_num = get_counter(mzx_world, "CHAR", id);
-  Uint8 byte_num = get_counter(mzx_world, "BYTE", id);
+  uint16_t char_num = get_counter(mzx_world, "CHAR", id);
+  uint8_t byte_num = get_counter(mzx_world, "BYTE", id);
 
   // Prior to 2.90 char params are clipped.
   if(mzx_world->version < V290)

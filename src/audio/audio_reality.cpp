@@ -26,6 +26,7 @@
 
 #include "../util.h"
 
+#include <stdint.h>
 #include <cstdio>
 #include <cstdlib>
 #include <new>
@@ -179,7 +180,7 @@ static void rad_destruct(struct audio_stream *a_src)
   sampled_destruct(a_src);
 }
 
-static void rad_player_callback(void *arg, Uint16 reg, Uint8 data)
+static void rad_player_callback(void *arg, uint16_t reg, uint8_t data)
 {
   struct rad_stream_cls *cls = (struct rad_stream_cls *)arg;
   cls->adlib.Port(reg, data);

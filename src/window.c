@@ -1798,7 +1798,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
 
     case IKEY_BACKSPACE:
     {
-      Sint32 result = current_value / 10;
+      int result = current_value / 10;
       if(result == 0 || result < src->lower_limit)
       {
         result = src->lower_limit;

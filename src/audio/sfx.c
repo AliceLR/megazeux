@@ -149,8 +149,8 @@ static int backindex = 0; // Marks bottom of queue
  */
 struct noise
 {
-  Uint16 duration;
-  Uint16 freq;
+  uint16_t duration;
+  uint16_t freq;
 };
 
 // Frequencies of 6C thru 6B
