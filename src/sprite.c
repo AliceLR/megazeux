@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -29,7 +30,7 @@
 #include "world.h"
 #include "world_struct.h"
 
-static inline int is_blank(Uint16 c)
+static inline int is_blank(uint16_t c)
 {
   int cp[4];
   int blank = 0;
@@ -166,7 +167,7 @@ void draw_sprites(struct world *mzx_world)
   struct sprite **sprite_list = mzx_world->sprite_list;
   struct sprite *sorted_list[MAX_SPRITES];
   struct sprite *cur_sprite;
-  Uint16 ch;
+  uint16_t ch;
   char color;
   int viewport_x = src_board->viewport_x;
   int viewport_y = src_board->viewport_y;
@@ -177,7 +178,7 @@ void draw_sprites(struct world *mzx_world)
   char *overlay = src_board->overlay;
   char *src_chars;
   char *src_colors;
-  Uint32 layer;
+  unsigned int layer;
   int draw_layer_order;
   boolean unbound;
   int transparent_color;
@@ -963,10 +964,11 @@ static inline boolean collision_in(struct world *mzx_world,
   return false;
 }
 
-struct mask {
+struct mask
+{
   struct rect dim;
-  Uint8 *mapping;
-  Uint8 *data;
+  uint8_t *mapping;
+  uint8_t *data;
 };
 
 static inline struct mask allocate_mask(const struct sprite *spr)
@@ -1014,8 +1016,8 @@ static inline void mask_alloc_chr(struct world *mzx_world,
   int chr, col;
   int px, py;
   int tcol = spr->transparent_color;
-  Uint8 bitmap_buffer[CHAR_W * CHAR_H];
-  Uint8 *output;
+  uint8_t bitmap_buffer[CHAR_W * CHAR_H];
+  uint8_t *output;
   output = &m.data[ch * CHAR_SIZE];
 
   if(!m.mapping[ch])

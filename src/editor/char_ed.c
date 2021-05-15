@@ -38,6 +38,7 @@
 
 #include <limits.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -67,8 +68,8 @@
 
 #define CHARS_SHOW_WIDTH 22
 
-Uint32 mini_draw_layer = -1;
-Uint32 mini_highlight_layer = -1;
+uint32_t mini_draw_layer = -1;
+uint32_t mini_highlight_layer = -1;
 static char char_copy_buffer[8 * 14 * 32];
 static int char_copy_width = 8;
 static int char_copy_height = 14;
@@ -152,7 +153,7 @@ static void char_editor_default_colors(void)
   set_protected_rgb(13, 7, 21, 49);
 }
 
-static void copy_color_to_protected(int from, int to)
+static void copy_color_to_protected(unsigned int from, unsigned int to)
 {
   // Hack
   memcpy(&(graphics.protected_palette[to]), &(graphics.palette[from]),
@@ -167,18 +168,18 @@ static void char_editor_update_colors(void)
     case 1:
     {
       // Interpolate the middle colors
-      Uint32 upper = (current_palette & 0xF0) >> 4;
-      Uint32 lower = (current_palette & 0x0F);
-      Uint8 r0, g0, b0;
-      Uint8 r3, g3, b3;
+      unsigned int upper = (current_palette & 0xF0) >> 4;
+      unsigned int lower = (current_palette & 0x0F);
+      uint8_t r0, g0, b0;
+      uint8_t r3, g3, b3;
 
       get_rgb(upper, &r0, &g0, &b0);
       get_rgb(lower, &r3, &g3, &b3);
 
-      copy_color_to_protected((int)upper, 2);
+      copy_color_to_protected(upper, 2);
       set_protected_rgb(3, (r3*2 + r0)/3, (g3*2 + g0)/3, (b3*2 + b0)/3);
       set_protected_rgb(4, (r0*2 + r3)/3, (g0*2 + g3)/3, (b0*2 + b3)/3);
-      copy_color_to_protected((int)lower, 5);
+      copy_color_to_protected(lower, 5);
       break;
     }
 
@@ -186,7 +187,7 @@ static void char_editor_update_colors(void)
     case 3:
     {
       // Hack
-      Uint8 *index = graphics.smzx_indices + (current_palette * 4);
+      uint8_t *index = graphics.smzx_indices + (current_palette * 4);
 
       copy_color_to_protected(*(index++), 2);
       copy_color_to_protected(*(index++), 3);
@@ -691,7 +692,7 @@ static void draw_mini_buffer(int info_x, int info_y, int current_charset,
   int chars_show_y;
   int highlight_num;
   int highlight_pos;
-  Uint8 draw_char;
+  uint8_t draw_char;
   int offset;
   int x;
   int y;
@@ -700,7 +701,7 @@ static void draw_mini_buffer(int info_x, int info_y, int current_charset,
   // 0- not highlight, 1- highlight
   char use_color[] = { 0x80, 0x8F };
   char use_offset[] = { 16, 16 };
-  Uint32 use_layer[] = { 0, 0 };
+  uint32_t use_layer[] = { 0, 0 };
   int is_highlight;
 
   mini_draw_layer = create_layer(0, 0, 80, 25, LAYER_DRAWORDER_UI - 10,
@@ -875,8 +876,8 @@ static int char_import_tile(const char *name, int char_offset, int charset,
     data_size = fread(buffer, 1, data_size, fp);
     fclose(fp);
 
-    ec_change_block((Uint8)char_offset, (Uint8)charset,
-     (Uint8)highlight_width, (Uint8)highlight_height, buffer);
+    ec_change_block((uint8_t)char_offset, (uint8_t)charset,
+     (uint8_t)highlight_width, (uint8_t)highlight_height, buffer);
 
     free(buffer);
     return 0;
@@ -893,8 +894,8 @@ static void char_export_tile(const char *name, int char_offset, int charset,
     size_t buffer_size = highlight_width * highlight_height * CHAR_SIZE;
     char *buffer = ccalloc(buffer_size, 1);
 
-    ec_read_block((Uint8)char_offset, (Uint8)charset,
-     (Uint8)highlight_width, (Uint8)highlight_height, buffer);
+    ec_read_block((uint8_t)char_offset, (uint8_t)charset,
+     (uint8_t)highlight_width, (uint8_t)highlight_height, buffer);
 
     fwrite(buffer, 1, buffer_size, fp);
     fclose(fp);

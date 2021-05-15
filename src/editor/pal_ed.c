@@ -20,6 +20,7 @@
 
 /* Palette editor */
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -174,8 +175,8 @@ struct pal_ed_context
     GAME_PALETTE,
     TEMP_PALETTE,
   } current;
-  //Uint32 cursor_fg_layer[5];
-  //Uint32 cursor_bg_layer[5];
+  //uint32_t cursor_fg_layer[5];
+  //uint32_t cursor_bg_layer[5];
   int editing_component;
 };
 
@@ -1035,8 +1036,8 @@ static void menu_buffer_draw(int x, int y, boolean show_indices)
 
   if(mode >= 2 && saved_subpalette_display)
   {
-    Uint8 which = ((timer++) / 60) % 4;
-    Uint8 fg_color;
+    unsigned int which = ((timer++) / 60) % 4;
+    uint8_t fg_color;
     struct color_status *col = &saved_subpal[which];
 
     set_protected_rgb(5, col->r, col->g, col->b);
@@ -1550,7 +1551,7 @@ static subcontext *create_menu_256(struct pal_ed_context *pal_ed)
 // -----------------------------------------------------------------------------
 
 
-static void draw_unbound_cursor_chars(Uint32 layer, int color)
+static void draw_unbound_cursor_chars(uint32_t layer, int color)
 {
   select_layer(layer);
   set_layer_mode(layer, 0);
@@ -1566,7 +1567,7 @@ static void draw_unbound_cursor_chars(Uint32 layer, int color)
 static void draw_unbound_cursor(int x, int y, int fg, int bg, int offset)
 {
   // Cursor for mode 2/3 palette selector
-  Uint32 layer;
+  uint32_t layer;
   int order;
 
   x = x * CHAR_W - 3;

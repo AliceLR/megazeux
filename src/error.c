@@ -104,7 +104,7 @@ int error(const char *string, enum error_type type, unsigned int options,
   x = 40 - (int)strlen(type_name)/2;
   write_string(type_name, x, 10, 78, 0);
 
-  write_string(string, 40 - ((Uint32)strlen(string) / 2), 11, 79, 0);
+  write_string(string, 40 - ((unsigned int)strlen(string) / 2), 11, 79, 0);
 
   // Add options
   write_string("Press", 4, 13, 78, 0);

@@ -767,7 +767,7 @@ static void draw_message(struct world *mzx_world)
 {
   struct board *cur_board = mzx_world->current_board;
   int mesg_y = cur_board->b_mesg_row;
-  Uint8 tmp_color = scroll_color;
+  unsigned char tmp_color = scroll_color;
   char *lines[25];
   int i = 1;
   int j;
@@ -903,7 +903,7 @@ boolean draw_world(context *ctx, boolean is_title)
     write_string(tmp_str, 1, 24, timer_color, 0);
 
     // Border with spaces
-    draw_char(' ', edge_color, (Uint32)strlen(tmp_str) + 1, 24);
+    draw_char(' ', edge_color, (int)strlen(tmp_str) + 1, 24);
     draw_char(' ', edge_color, 0, 24);
   }
 

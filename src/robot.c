@@ -2670,7 +2670,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   else
   {
     write_string_ext(cur_robot->robot_name,
-     40 - (Uint32)strlen(cur_robot->robot_name) / 2, 4,
+     40 - (unsigned int)strlen(cur_robot->robot_name) / 2, 4,
      mzx_world->scroll_title_color, false, 0, 0);
   }
   select_layer(UI_LAYER);

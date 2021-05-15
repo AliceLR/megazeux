@@ -18,6 +18,7 @@
  */
 
 #include <math.h>
+#include <stdint.h>
 
 #include "core.h"
 #include "event.h"
@@ -127,7 +128,7 @@ static boolean intake_num_key(context *ctx, int *key)
 
     while(num_read < KEY_UNICODE_MAX)
     {
-      Uint32 unicode = get_key(keycode_text_ascii);
+      uint32_t unicode = get_key(keycode_text_ascii);
       num_read++;
       if(unicode < '0' || unicode > '9')
         continue;

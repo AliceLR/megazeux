@@ -67,6 +67,7 @@
 #include "window.h"
 #include "world.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -185,7 +186,7 @@ struct editor_context
   int flash_timer;
   int flash_timer_swap;
   int flash_timer_max;
-  Uint32 flash_layer;
+  uint32_t flash_layer;
 
   // ANSi settings
   int ansi_line_wrap_column; // = 80
@@ -883,13 +884,13 @@ static void flash_done(struct editor_context *editor)
  * Determine if a protected palette char flash is required.
  */
 static enum flash_thing_type flash_get_type(struct editor_context *editor,
- struct board *cur_board, Uint8 chr, Uint8 color, Uint8 flash_chr)
+ struct board *cur_board, uint8_t chr, uint8_t color, uint8_t flash_chr)
 {
   int screen_mode = get_screen_mode();
   if(!screen_mode)
   {
-    Uint8 fg = color & 0x0F;
-    Uint8 bg = (color & 0xF0) >> 4;
+    unsigned int fg = color & 0x0F;
+    unsigned int bg = (color & 0xF0) >> 4;
 
     ssize_t diff;
 
@@ -906,7 +907,7 @@ static enum flash_thing_type flash_get_type(struct editor_context *editor,
   // If one of the chars to display is the board char, is it too close to the
   // flash char?
   if(!editor->flash_char_a || !editor->flash_char_b)
-    if(compare_char(chr, (Uint16)flash_chr + PRO_CH) >= (112*3/4))
+    if(compare_char(chr, (uint16_t)flash_chr + PRO_CH) >= (112*3/4))
       return FLASH_THING_CLOSE_CHAR;
 
   // SMZX modes should always display protected...
@@ -928,14 +929,14 @@ static void flash_draw(struct editor_context *editor, struct board *cur_board,
 
   if(id >= editor->flash_start && id < editor->flash_start + editor->flash_len)
   {
-    Uint8 color = get_id_color(cur_board, offset);
-    Uint8 chr = get_id_char(cur_board, offset);
+    uint8_t color = get_id_color(cur_board, offset);
+    uint8_t chr = get_id_char(cur_board, offset);
     enum flash_thing_type type;
 
     type = flash_get_type(editor, cur_board, chr, color, flash_chr);
     if(type != FLASH_THING_NORMAL)
     {
-      Uint32 avg_luma = get_char_average_luma(chr, color, -1, flash_chr + PRO_CH);
+      int avg_luma = get_char_average_luma(chr, color, -1, flash_chr + PRO_CH);
 
       if(!editor->flash_layer)
       {
