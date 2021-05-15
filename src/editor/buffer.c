@@ -32,8 +32,6 @@
 #include "../core.h"
 #include "../data.h"
 #include "../error.h"
-#include "../event.h"
-#include "../graphics.h"
 #include "../idarray.h"
 #include "../idput.h"
 #include "../robot.h"

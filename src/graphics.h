@@ -284,7 +284,7 @@ CORE_LIBSPEC Uint32 get_red_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_green_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_blue_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_color_luma(Uint32 color);
-CORE_LIBSPEC Uint32 get_fade_status(void);
+CORE_LIBSPEC boolean get_fade_status(void);
 CORE_LIBSPEC void vquick_fadeout(void);
 CORE_LIBSPEC void insta_fadein(void);
 CORE_LIBSPEC void insta_fadeout(void);

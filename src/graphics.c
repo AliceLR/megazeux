@@ -408,6 +408,22 @@ void update_palette(void)
   update_colors(new_palette, make_palette(new_palette));
 }
 
+void default_palette(void)
+{
+  memcpy(graphics.palette, default_pal,
+   sizeof(struct rgb_color) * PAL_SIZE);
+  memcpy(graphics.intensity_palette, default_pal,
+   sizeof(struct rgb_color) * PAL_SIZE);
+  graphics.palette_dirty = true;
+}
+
+void default_protected_palette(void)
+{
+  memcpy(graphics.protected_palette, default_pal,
+   sizeof(struct rgb_color) * PAL_SIZE);
+  graphics.palette_dirty = true;
+}
+
 static void init_palette(void)
 {
   Uint32 i;
@@ -424,7 +440,7 @@ static void init_palette(void)
   for(i = 0; i < SMZX_PAL_SIZE; i++)
     graphics.saved_intensity[i] = 100;
 
-  graphics.fade_status = 1;
+  graphics.fade_status = true;
   graphics.palette_dirty = true;
 }
 
@@ -839,29 +855,6 @@ static void swap_palettes(void)
   }
 }
 
-Uint32 get_fade_status(void)
-{
-  return graphics.fade_status;
-}
-
-void dialog_fadein(void)
-{
-  graphics.dialog_fade_status = get_fade_status();
-  if(graphics.dialog_fade_status)
-  {
-    clear_screen();
-    insta_fadein();
-  }
-}
-
-void dialog_fadeout(void)
-{
-  if(graphics.dialog_fade_status)
-  {
-    insta_fadeout();
-  }
-}
-
 static void fix_layer_screen_mode(void)
 {
   // Fix the screen mode for all active layers except the UI_LAYER.
@@ -1169,6 +1162,29 @@ void update_screen(void)
   graphics.renderer.sync_screen(&graphics);
 }
 
+boolean get_fade_status(void)
+{
+  return graphics.fade_status;
+}
+
+void dialog_fadein(void)
+{
+  graphics.dialog_fade_status = get_fade_status();
+  if(graphics.dialog_fade_status)
+  {
+    clear_screen();
+    insta_fadein();
+  }
+}
+
+void dialog_fadeout(void)
+{
+  if(graphics.dialog_fade_status)
+  {
+    insta_fadeout();
+  }
+}
+
 // Very quick fade out. Saves intensity table for fade in. Be sure
 // to use in conjuction with the next function.
 void vquick_fadeout(void)
@@ -1207,7 +1223,7 @@ void vquick_fadeout(void)
       if(ticks <= 16)
         delay(16 - ticks);
     }
-    graphics.fade_status = 1;
+    graphics.fade_status = true;
   }
 }
 
@@ -1227,7 +1243,7 @@ void vquick_fadein(void)
     Uint32 i, i2, num_colors;
     Uint32 ticks;
 
-    graphics.fade_status = 0;
+    graphics.fade_status = false;
 
     if(graphics.screen_mode >= 2)
       num_colors = SMZX_PAL_SIZE;
@@ -1296,22 +1312,6 @@ void insta_fadein(void)
 
   graphics.palette_dirty = true;
   update_screen(); // NOTE: this was called conditionally in 2.81e
-}
-
-void default_palette(void)
-{
-  memcpy(graphics.palette, default_pal,
-   sizeof(struct rgb_color) * PAL_SIZE);
-  memcpy(graphics.intensity_palette, default_pal,
-   sizeof(struct rgb_color) * PAL_SIZE);
-  graphics.palette_dirty = true;
-}
-
-void default_protected_palette(void)
-{
-  memcpy(graphics.protected_palette, default_pal,
-   sizeof(struct rgb_color) * PAL_SIZE);
-  graphics.palette_dirty = true;
 }
 
 static boolean set_graphics_output(struct config_info *conf)
@@ -1615,30 +1615,6 @@ void destruct_layers(void)
   graphics.layer_count = 0;
 }
 
-static void dirty_ui(void)
-{
-  if(graphics.requires_extended) return;
-  if(graphics.current_layer != UI_LAYER) return;
-  if(graphics.screen_mode == 0) return;
-  graphics.requires_extended = true;
-}
-
-static void dirty_current(void)
-{
-  graphics.video_layers[graphics.current_layer].empty = false;
-}
-
-static int offset_adjust(int offset)
-{
-  // Transform the given offset from screen space to layer space
-  struct video_layer *layer;
-  int x, y;
-  layer = &graphics.video_layers[graphics.current_layer];
-  x = (offset % SCREEN_W) - (layer->x / CHAR_W);
-  y = (offset / SCREEN_W) - (layer->y / CHAR_H);
-  return y * layer->w + x;
-}
-
 boolean init_video(struct config_info *conf, const char *caption)
 {
   graphics.screen_mode = 0;
@@ -1923,6 +1899,30 @@ void resize_screen(Uint32 w, Uint32 h)
     }
     graphics.renderer.resize_screen(&graphics, w, h);
   }
+}
+
+static void dirty_ui(void)
+{
+  if(graphics.requires_extended) return;
+  if(graphics.current_layer != UI_LAYER) return;
+  if(graphics.screen_mode == 0) return;
+  graphics.requires_extended = true;
+}
+
+static void dirty_current(void)
+{
+  graphics.video_layers[graphics.current_layer].empty = false;
+}
+
+static int offset_adjust(int offset)
+{
+  // Transform the given offset from screen space to layer space
+  struct video_layer *layer;
+  int x, y;
+  layer = &graphics.video_layers[graphics.current_layer];
+  x = (offset % SCREEN_W) - (layer->x / CHAR_W);
+  y = (offset / SCREEN_W) - (layer->y / CHAR_H);
+  return y * layer->w + x;
 }
 
 void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
