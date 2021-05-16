@@ -617,11 +617,7 @@ boolean update_event_status(void)
 
 boolean peek_exit_input(void)
 {
-  #ifdef CONFIG_SDL
   return __peek_exit_input();
-  #else /* !CONFIG_SDL */
-  return false;
-  #endif /* CONFIG_SDL */
 }
 
 void wait_event(int timeout)

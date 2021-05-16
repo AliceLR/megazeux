@@ -1098,6 +1098,12 @@ boolean __update_event_status(void)
   return rval;
 }
 
+boolean __peek_exit_input(void)
+{
+  /* FIXME stub */
+  return false;
+}
+
 void __wait_event(void)
 {
   mqmsg_t ev;

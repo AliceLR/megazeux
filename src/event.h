@@ -24,13 +24,8 @@
 
 __M_BEGIN_DECLS
 
-#include "configure.h"
 #include "platform.h"
 #include "keysym.h"
-
-#ifdef CONFIG_SDL
-#include <SDL_version.h>
-#endif
 
 #define UPDATE_DELAY 16
 
@@ -51,47 +46,6 @@ __M_BEGIN_DECLS
 
 #define MAX_JOYSTICK_PRESS      16
 #define AXIS_DEFAULT_THRESHOLD  10000
-
-#define MOUSE_BUTTON(x)         (1 << ((x) - 1))
-#define MOUSE_BUTTON_LEFT       1
-#define MOUSE_BUTTON_MIDDLE     2
-#define MOUSE_BUTTON_RIGHT      3
-
-// Extended buttons.
-// SDL 1.2 and SDL 2 both carry through X11 values.
-#ifdef CONFIG_X11
-
-#define MOUSE_BUTTON_WHEELUP    4
-#define MOUSE_BUTTON_WHEELDOWN  5
-#define MOUSE_BUTTON_WHEELLEFT  6
-#define MOUSE_BUTTON_WHEELRIGHT 7
-#define MOUSE_BUTTON_X1         8
-#define MOUSE_BUTTON_X2         9
-
-#elif defined(CONFIG_SDL)
-
-// SDL 2 maps X1 and X2, but has a separate wheel event that we map.
-#if SDL_VERSION_ATLEAST(2,0,0)
-#define MOUSE_BUTTON_X1         4
-#define MOUSE_BUTTON_X2         5
-#define MOUSE_BUTTON_WHEELUP    6
-#define MOUSE_BUTTON_WHEELDOWN  7
-#define MOUSE_BUTTON_WHEELLEFT  8
-#define MOUSE_BUTTON_WHEELRIGHT 9
-#endif //SDL_VERSION_ATLEAST(2,0,0)
-
-#endif //extended buttons
-
-// SDL 1.2 and non-SDL default.
-// Note: SDL 1.2 has no wheel left/right support.
-#ifndef MOUSE_BUTTON_WHEELUP
-#define MOUSE_BUTTON_WHEELUP    4
-#define MOUSE_BUTTON_WHEELDOWN  5
-#define MOUSE_BUTTON_X1         6
-#define MOUSE_BUTTON_X2         7
-#define MOUSE_BUTTON_WHEELLEFT  8
-#define MOUSE_BUTTON_WHEELRIGHT 9
-#endif //defaults
 
 // Capture F12 presses to save screenshots if true.
 extern boolean enable_f12_hack;
@@ -206,6 +160,8 @@ enum keycode_type
 
 #define KEYCODE_IS_ASCII(key) ((key) >= 32 && (key) < 127)
 
+struct config_info;
+
 CORE_LIBSPEC void init_event(struct config_info *conf);
 
 struct buffered_status *store_status(void);
@@ -250,16 +206,11 @@ Uint32 convert_internal_unicode(enum keycode key, boolean caps_lock);
 void initialize_joysticks(void);
 void __wait_event(void);
 boolean __update_event_status(void);
-
-#ifdef CONFIG_SDL
-// Currently only supported by SDL.
 boolean __peek_exit_input(void);
 
-#if SDL_VERSION_ATLEAST(2,0,0)
+// "Driver" functions currently only supported by SDL.
 void gamecontroller_map_sym(const char *sym, const char *value);
 void gamecontroller_add_mapping(const char *mapping);
-#endif
-#endif
 
 #ifdef CONFIG_NDS
 const struct buffered_status *load_status(void);
