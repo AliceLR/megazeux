@@ -19,7 +19,6 @@
 
 #include <stdlib.h>
 
-#include "platform.h"
 #include "graphics.h"
 #include "render.h"
 #include "render_layer.h"

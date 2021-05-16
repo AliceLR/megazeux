@@ -21,7 +21,6 @@
 
 #include "configure.h"
 #include "event.h"
-#include "platform.h"
 #include "graphics.h"
 #include "compat_sdl.h"
 #include "render_sdl.h"

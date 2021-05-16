@@ -37,7 +37,6 @@
 #include <stdlib.h>
 
 #include "graphics.h"
-#include "platform.h"
 #include "render.h"
 #include "render_layer.h"
 #include "render_sdl.h"
