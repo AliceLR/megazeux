@@ -18,6 +18,7 @@
  */
 
 #include <memory>
+#include <stdint.h>
 
 #include "../Unit.hpp"
 
@@ -65,7 +66,7 @@ struct manifestdata
   const char *filename;
   const char *value;
   size_t size;
-  Uint32 sha256[8];
+  uint32_t sha256[8];
 };
 
 // The lines here should match filedata's contents.

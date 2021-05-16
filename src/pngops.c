@@ -18,11 +18,12 @@
  */
 
 #include "graphics.h"
-#include "platform.h"
 #include "pngops.h"
 #include "util.h"
 
+#include <png.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,

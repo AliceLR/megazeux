@@ -21,9 +21,10 @@
 #define __DNS_HPP
 
 #include "../compat.h"
-#include "../platform.h"
 
 #include "Socket.hpp"
+
+#include <stdint.h>
 
 class DNS final
 {
@@ -53,7 +54,7 @@ public:
    * @return a `getaddrinfo` return code (see `getaddrinfo`, `gai_strerror`).
    */
   static int lookup(const char *node, const char *service,
-   const struct addrinfo *hints, struct addrinfo **res, Uint32 timeout);
+   const struct addrinfo *hints, struct addrinfo **res, uint32_t timeout);
 };
 
 #endif /* __DNS_HPP */

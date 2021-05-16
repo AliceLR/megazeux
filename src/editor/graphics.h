@@ -24,7 +24,6 @@
 
 __M_BEGIN_DECLS
 
-#include "../platform.h"
 #include "../graphics.h"
 
 void store_backup_palette(char dest[SMZX_PAL_SIZE * 3]);

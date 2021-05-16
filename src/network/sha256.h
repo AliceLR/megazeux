@@ -24,19 +24,19 @@
 
 __M_BEGIN_DECLS
 
-#include "../platform.h"
+#include <stdint.h>
 
 struct SHA256_ctx
 {
-  Uint32 H[8];
-  Uint32 hbits;
-  Uint32 lbits;
-  Uint8 M[64];
-  Uint8 mlen;
+  uint32_t H[8];
+  uint32_t hbits;
+  uint32_t lbits;
+  uint8_t M[64];
+  uint8_t mlen;
 };
 
 void SHA256_init(struct SHA256_ctx *ctx);
-void SHA256_update(struct SHA256_ctx *ctx, const void *vdata, Uint32 data_len);
+void SHA256_update(struct SHA256_ctx *ctx, const void *vdata, size_t data_len);
 void SHA256_final(struct SHA256_ctx *ctx);
 
 __M_END_DECLS

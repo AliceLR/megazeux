@@ -34,7 +34,6 @@
 #include "../board.h"
 #include "../graphics.h"
 #include "../idarray.h"
-#include "../platform.h"
 #include "../robot.h"
 #include "../util.h"
 #include "../world.h"
