@@ -610,28 +610,46 @@ Uint32 get_blue_component(Uint32 color)
   return ((graphics.palette[color].b * 126) + 255) / 510;
 }
 
-Uint32 get_color_luma(Uint32 color)
+/**
+ * Returns the effective luma in the range of [0,255] of a given color in the
+ * game palette (0-255) or protected palette (256-271).
+ */
+__editor_maybe_static
+int get_color_luma(unsigned int color)
 {
-  int r = graphics.palette[color].r;
-  int g = graphics.palette[color].g;
-  int b = graphics.palette[color].b;
+  struct rgb_color rgb;
+  unsigned int sum;
 
-  return (Uint32)((r * .299) + (g * .587) + (b * .114) + .5);
+  if(color < 256)
+    rgb = graphics.palette[color];
+  else
+    rgb = graphics.protected_palette[color % 16];
+
+  sum = (unsigned int)rgb.r * 306u + /* 1024 * .299 */
+        (unsigned int)rgb.g * 601u + /* 1024 * .587 */
+        (unsigned int)rgb.b * 117u;  /* 1024 * .114 */
+
+  return (int)((sum + 512u) / 1024u);
 }
 
+/**
+ * Returns the average effective luma in the range of [0,255] of a given char
+ * using a given game palette.
+ */
 __editor_maybe_static
-Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_chr)
+int get_char_average_luma(uint16_t chr, uint8_t palette, int mode, int mask_chr)
 {
-  Uint8 char_buffer[CHAR_W * CHAR_H];
-  Uint8 *mask_values = NULL;
+  const uint8_t *char_data = graphics.charset + chr * CHAR_SIZE;
+  const uint8_t *mask_values = NULL;
   boolean use_mask = false;
-  Uint32 count = 0;
-  Uint32 sum = 0;
-  Uint8 mask;
-  Uint32 x;
-  Uint32 y;
+  uint8_t mask;
+  int count = 0;
+  int sum = 0;
+  int x;
+  int y;
 
-  dump_char(chr, palette, graphics.screen_mode, char_buffer);
+  if(chr >= FULL_CHARSET_SIZE)
+    return 0;
 
   if(mask_chr >= 0 && mask_chr < FULL_CHARSET_SIZE)
   {
@@ -644,22 +662,33 @@ Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_ch
 
   if(mode)
   {
+    int lumas[4];
+
+    if(mode == 1)
+    {
+      // Due to quirks in mode 1, the interpolated colors 1 and 2 are not
+      // actually stored in the palette. Conveniently, the stronger-weighted
+      // user color can be derived from the lower bit (1->3, 2->0).
+      lumas[0] = get_color_luma((palette & 0xF0) >> 4);
+      lumas[3] = get_color_luma(palette & 0xF);
+      lumas[1] = lumas[3];
+      lumas[2] = lumas[0];
+    }
+    else
+    {
+      lumas[0] = get_color_luma(graphics.smzx_indices[palette * 4 + 0]);
+      lumas[1] = get_color_luma(graphics.smzx_indices[palette * 4 + 1]);
+      lumas[2] = get_color_luma(graphics.smzx_indices[palette * 4 + 2]);
+      lumas[3] = get_color_luma(graphics.smzx_indices[palette * 4 + 3]);
+    }
+
     for(y = 0; y < CHAR_H; y++)
     {
       for(x = 0, mask = 0xC0; x < CHAR_W; x += 2, mask >>= 2)
       {
         if(!use_mask || (mask_values[y] & mask))
         {
-          Uint32 col = char_buffer[y * CHAR_W + x];
-
-          // Due to quirks in mode 1 and layer rendering, dump_char and
-          // transparent colors and collision treat mode 1 addressing like
-          // mode 2. Conveniently, though, the stronger-weighted of the two
-          // user colors can be derived by just using the lower nibble.
-          if(mode == 1)
-            col &= 0x0F;
-
-          sum += get_color_luma(col);
+          sum += lumas[(char_data[y] & mask) >> (6 - x)];
           count++;
         }
       }
@@ -667,13 +696,19 @@ Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_ch
   }
   else
   {
+    int lumas[2] =
+    {
+      get_color_luma((palette & 0xF0) >> 4),
+      get_color_luma(palette & 0xF),
+    };
+
     for(y = 0; y < CHAR_H; y++)
     {
       for(x = 0, mask = 0x80; x < CHAR_W; x++, mask >>= 1)
       {
         if(!use_mask || (mask_values[y] & mask))
         {
-          sum += get_color_luma(char_buffer[y * CHAR_W + x]);
+          sum += lumas[(char_data[y] & mask) >> (7 - x)];
           count++;
         }
       }

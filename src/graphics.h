@@ -24,24 +24,26 @@
 
 __M_BEGIN_DECLS
 
+#include <stdint.h>
+
 #include "platform.h"
 #include "configure.h"
 
 struct rgb_color
 {
-  Uint8 r;
-  Uint8 g;
-  Uint8 b;
-  Uint8 unused;
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  uint8_t unused;
 };
 
 #define INVISIBLE_CHAR 65535
 
 struct char_element
 {
-  Uint16 char_value;
-  Uint8 bg_color;
-  Uint8 fg_color;
+  uint16_t char_value;
+  uint8_t bg_color;
+  uint8_t fg_color;
 };
 
 #define SCREEN_W 80
@@ -134,7 +136,7 @@ struct renderer
 
 struct video_layer
 {
-  Uint32 w, h, mode;
+  unsigned int w, h;
   int x, y;
   struct char_element *data;
 #if defined(CONFIG_3DS)
@@ -143,6 +145,7 @@ struct video_layer
   int draw_order;
   int transparent_col;
   int offset;
+  uint8_t mode;
   boolean empty;
 };
 
@@ -283,7 +286,6 @@ CORE_LIBSPEC void get_rgb(Uint32 color, Uint8 *r, Uint8 *g, Uint8 *b);
 CORE_LIBSPEC Uint32 get_red_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_green_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_blue_component(Uint32 color);
-CORE_LIBSPEC Uint32 get_color_luma(Uint32 color);
 CORE_LIBSPEC boolean get_fade_status(void);
 CORE_LIBSPEC void vquick_fadeout(void);
 CORE_LIBSPEC void insta_fadein(void);
@@ -354,8 +356,9 @@ void focus_pixel(int x, int y);  // Pixel coordinates
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC extern struct graphics_data graphics;
-CORE_LIBSPEC Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode,
- Sint32 mask_chr);
+CORE_LIBSPEC int get_color_luma(unsigned int color);
+CORE_LIBSPEC int get_char_average_luma(uint16_t chr, uint8_t palette, int mode,
+ int mask_chr);
 CORE_LIBSPEC void ec_load_mzx(void);
 CORE_LIBSPEC void ec_load_set_secondary(const char *name, Uint8 *dest);
 #endif // CONFIG_EDITOR
