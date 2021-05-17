@@ -37,6 +37,10 @@
 #include "io/path.h"
 #include "io/vio.h"
 
+#ifdef CONFIG_SDL
+#include <SDL_version.h>
+#endif
+
 #define MAX_INCLUDE_DEPTH 16
 #define MAX_CONFIG_REGISTERED 2
 

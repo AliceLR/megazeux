@@ -21,10 +21,10 @@
 #include "configure.h"
 #include "event.h"
 #include "graphics.h"
-#include "platform.h"
 #include "util.h"
 
 #include <limits.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -38,11 +38,11 @@
 #define JOYSTICK_REPEAT_START KEY_REPEAT_START
 #define JOYSTICK_REPEAT_RATE  KEY_REPEAT_RATE
 
-static Uint32 last_update_time;
+static uint32_t last_update_time;
 
 struct input_status input;
 
-static Uint8 num_buffered_events = 1;
+static unsigned int num_buffered_events = 1;
 
 boolean enable_f12_hack;
 
@@ -50,7 +50,7 @@ static boolean joystick_legacy_loop_hacks = false;
 static boolean joystick_game_mode = false;
 static boolean joystick_game_bindings = true;
 
-static Sint16 joystick_action_map_default[NUM_JOYSTICK_ACTIONS] =
+static enum keycode joystick_action_map_default[NUM_JOYSTICK_ACTIONS] =
 {
   [JOY_A] = IKEY_SPACE,
   [JOY_B] = IKEY_DELETE,
@@ -78,7 +78,7 @@ static Sint16 joystick_action_map_default[NUM_JOYSTICK_ACTIONS] =
   [JOY_R_RIGHT] = IKEY_RIGHT,
 };
 
-static Sint16 joystick_action_map_ui[NUM_JOYSTICK_ACTIONS] =
+static enum keycode joystick_action_map_ui[NUM_JOYSTICK_ACTIONS] =
 {
   [JOY_A] = IKEY_RETURN,
   [JOY_B] = IKEY_ESCAPE,
@@ -121,7 +121,7 @@ const struct buffered_status *load_status(void)
 
 static void bump_status(void)
 {
-  Uint16 last_store_offset = input.store_offset;
+  unsigned int last_store_offset = input.store_offset;
 
   input.store_offset = (input.store_offset + 1) % num_buffered_events;
   input.load_offset = (input.store_offset + 1) % num_buffered_events;
@@ -164,7 +164,7 @@ void init_event(struct config_info *conf)
   initialize_joysticks();
 }
 
-Uint32 convert_internal_unicode(enum keycode key, boolean caps_lock)
+uint32_t convert_internal_unicode(enum keycode key, boolean caps_lock)
 {
   if(KEYCODE_IS_ASCII(key))
   {
@@ -469,9 +469,9 @@ static boolean update_autorepeat(void)
   boolean rval = false;
 
   // Repeat code
-  Uint8 last_key_state = status->keymap[status_key];
-  Uint8 last_mouse_state = status->mouse_repeat_state;
-  Uint8 last_joystick_state = status->joystick_repeat_state;
+  int last_key_state = status->keymap[status_key];
+  int last_mouse_state = status->mouse_repeat_state;
+  int last_joystick_state = status->joystick_repeat_state;
 
   // If you enable SDL 2.0 key repeat, uncomment these lines:
 //#ifdef CONFIG_SDL
@@ -483,8 +483,8 @@ static boolean update_autorepeat(void)
 
   if(last_key_state)
   {
-    Uint32 new_time = get_ticks();
-    Uint32 ms_difference = new_time - status->keypress_time;
+    uint32_t new_time = get_ticks();
+    uint32_t ms_difference = new_time - status->keypress_time;
 
     if(last_key_state == 1)
     {
@@ -524,8 +524,8 @@ static boolean update_autorepeat(void)
 
   if(last_mouse_state)
   {
-    Uint32 new_time = get_ticks();
-    Uint32 ms_difference = new_time - status->mouse_time;
+    uint32_t new_time = get_ticks();
+    uint32_t ms_difference = new_time - status->mouse_time;
 
     if(status->mouse_drag_state == -1)
       status->mouse_drag_state = 0;
@@ -555,8 +555,8 @@ static boolean update_autorepeat(void)
 
   if(last_joystick_state)
   {
-    Uint32 new_time = get_ticks();
-    Uint32 ms_difference = new_time - status->joystick_time;
+    uint32_t new_time = get_ticks();
+    uint32_t ms_difference = new_time - status->joystick_time;
 
     if(last_joystick_state == 1)
     {
@@ -597,8 +597,8 @@ static void start_frame_event_status(void)
 
   status->mouse_last_x = status->mouse_x;
   status->mouse_last_y = status->mouse_y;
-  status->real_mouse_last_x = status->real_mouse_x;
-  status->real_mouse_last_y = status->real_mouse_y;
+  status->mouse_last_pixel_x = status->mouse_pixel_x;
+  status->mouse_last_pixel_y = status->mouse_pixel_y;
   status->warped_mouse_x = -1;
   status->warped_mouse_y = -1;
 }
@@ -647,7 +647,7 @@ void wait_event(int timeout)
   update_autorepeat();
 }
 
-Uint32 update_event_status_delay(void)
+boolean update_event_status_delay(void)
 {
   int delay_ticks;
 
@@ -772,7 +772,7 @@ static enum keycode reverse_keysym_numlock(enum keycode key)
   return key;
 }
 
-Uint32 get_key(enum keycode_type type)
+uint32_t get_key(enum keycode_type type)
 {
   struct buffered_status *status = (struct buffered_status *)load_status();
 
@@ -791,7 +791,7 @@ Uint32 get_key(enum keycode_type type)
     {
       while(status->unicode_pos < status->unicode_length)
       {
-        Uint32 unicode = status->unicode[status->unicode_pos++];
+        uint32_t unicode = status->unicode[status->unicode_pos++];
         if(KEYCODE_IS_ASCII(unicode))
           return unicode;
       }
@@ -809,10 +809,10 @@ Uint32 get_key(enum keycode_type type)
   return 0;
 }
 
-Uint32 get_key_status(enum keycode_type type, Uint32 index)
+uint32_t get_key_status(enum keycode_type type, uint32_t index)
 {
   const struct buffered_status *status = load_status();
-  index = MIN((Uint32)index, STATUS_NUM_KEYCODES - 1);
+  index = MIN((int)index, STATUS_NUM_KEYCODES - 1);
 
   switch(type)
   {
@@ -835,7 +835,7 @@ Uint32 get_key_status(enum keycode_type type, Uint32 index)
   }
 }
 
-Uint32 get_last_key(enum keycode_type type)
+uint32_t get_last_key(enum keycode_type type)
 {
   const struct buffered_status *status = load_status();
 
@@ -855,7 +855,7 @@ Uint32 get_last_key(enum keycode_type type)
   }
 }
 
-Uint32 get_last_key_released(enum keycode_type type)
+uint32_t get_last_key_released(enum keycode_type type)
 {
   const struct buffered_status *status = load_status();
 
@@ -875,42 +875,42 @@ Uint32 get_last_key_released(enum keycode_type type)
   }
 }
 
-void get_mouse_position(int *x, int *y)
+void get_mouse_position(int *char_x, int *char_y)
 {
   const struct buffered_status *status = load_status();
-  *x = status->mouse_x;
-  *y = status->mouse_y;
+  *char_x = status->mouse_x;
+  *char_y = status->mouse_y;
 }
 
-void get_real_mouse_position(int *x, int *y)
+void get_mouse_pixel_position(int *pixel_x, int *pixel_y)
 {
   const struct buffered_status *status = load_status();
-  *x = status->real_mouse_x;
-  *y = status->real_mouse_y;
+  *pixel_x = status->mouse_pixel_x;
+  *pixel_y = status->mouse_pixel_y;
 }
 
-Uint32 get_mouse_x(void)
+int get_mouse_x(void)
 {
   const struct buffered_status *status = load_status();
   return status->mouse_x;
 }
 
-Uint32 get_mouse_y(void)
+int get_mouse_y(void)
 {
   const struct buffered_status *status = load_status();
   return status->mouse_y;
 }
 
-Uint32 get_real_mouse_x(void)
+int get_mouse_pixel_x(void)
 {
   const struct buffered_status *status = load_status();
-  return status->real_mouse_x;
+  return status->mouse_pixel_x;
 }
 
-Uint32 get_real_mouse_y(void)
+int get_mouse_pixel_y(void)
 {
   const struct buffered_status *status = load_status();
-  return status->real_mouse_y;
+  return status->mouse_pixel_y;
 }
 
 void get_mouse_movement(int *delta_x, int *delta_y)
@@ -920,30 +920,30 @@ void get_mouse_movement(int *delta_x, int *delta_y)
   *delta_y = status->mouse_y - status->mouse_last_y;
 }
 
-void get_real_mouse_movement(int *delta_x, int *delta_y)
+void get_mouse_pixel_movement(int *delta_x, int *delta_y)
 {
   const struct buffered_status *status = load_status();
-  *delta_x = status->real_mouse_x - status->real_mouse_last_x;
-  *delta_y = status->real_mouse_y - status->real_mouse_last_y;
+  *delta_x = status->mouse_pixel_x - status->mouse_last_pixel_x;
+  *delta_y = status->mouse_pixel_y - status->mouse_last_pixel_y;
 }
 
-Uint32 get_mouse_drag(void)
+boolean get_mouse_drag(void)
 {
   const struct buffered_status *status = load_status();
-  return status->mouse_drag_state;
+  return status->mouse_drag_state > 0;
 }
 
-Uint32 get_mouse_press(void)
+enum mouse_button get_mouse_press(void)
 {
   const struct buffered_status *status = load_status();
 
   if(status->mouse_button <= MOUSE_BUTTON_RIGHT)
     return status->mouse_button;
 
-  return 0;
+  return MOUSE_NO_BUTTON;
 }
 
-Uint32 get_mouse_press_ext(void)
+enum mouse_button get_mouse_press_ext(void)
 {
   const struct buffered_status *status = load_status();
   return status->mouse_button;
@@ -960,83 +960,69 @@ boolean get_mouse_held(int button)
   return false;
 }
 
-Uint32 get_mouse_status(void)
+uint32_t get_mouse_status(void)
 {
   const struct buffered_status *status = load_status();
   return status->mouse_button_state;
 }
 
-void warp_mouse(Uint32 x, Uint32 y)
+void warp_mouse(int char_x, int char_y)
 {
-  int mx_real, my_real, mx = (x * 8) + 4, my = (y * 14) + 7;
+  int real_x, real_y;
+  int pixel_x = (char_x * CHAR_W) + CHAR_W / 2;
+  int pixel_y = (char_y * CHAR_H) + CHAR_H / 2;
   struct buffered_status *status = store_status();
 
-  status->mouse_x = x;
-  status->mouse_y = y;
-  status->real_mouse_x = mx;
-  status->real_mouse_y = my;
+  status->mouse_x = char_x;
+  status->mouse_y = char_y;
+  status->mouse_pixel_x = pixel_x;
+  status->mouse_pixel_y = pixel_y;
 
-  set_screen_coords(mx, my, &mx_real, &my_real);
-  status->warped_mouse_x = mx_real;
-  status->warped_mouse_y = my_real;
+  set_screen_coords(pixel_x, pixel_y, &real_x, &real_y);
+  status->warped_mouse_x = real_x;
+  status->warped_mouse_y = real_y;
 
-  real_warp_mouse(mx_real, my_real);
+  __warp_mouse(real_x, real_y);
 }
 
-void warp_mouse_x(Uint32 x)
+void warp_mouse_x(int char_x)
 {
-  struct buffered_status *status = store_status();
-  int mx_real, my_real, mx = (x * 8) + 4;
-
-  status->mouse_x = x;
-  status->real_mouse_x = mx;
-
-  set_screen_coords(mx, status->real_mouse_y, &mx_real, &my_real);
-  status->warped_mouse_x = mx_real;
-
-  real_warp_mouse(mx_real, status->warped_mouse_y);
+  warp_mouse_pixel_x(char_x * CHAR_W + CHAR_W / 2);
 }
 
-void warp_mouse_y(Uint32 y)
+void warp_mouse_y(int char_y)
 {
-  struct buffered_status *status = store_status();
-  int mx_real, my_real, my = (y * 14) + 7;
-
-  status->mouse_y = y;
-  status->real_mouse_y = my;
-
-  set_screen_coords(status->real_mouse_x, my, &mx_real, &my_real);
-  status->warped_mouse_y = my_real;
-
-  real_warp_mouse(status->warped_mouse_x, my_real);
+  warp_mouse_pixel_y(char_y * CHAR_H + CHAR_H / 2);
 }
 
-void warp_real_mouse_x(Uint32 mx)
+void warp_mouse_pixel_x(int pixel_x)
 {
   struct buffered_status *status = store_status();
-  int mx_real, my_real, x = mx / 8;
+  int real_x, real_y;
+  int char_x = pixel_x / CHAR_W;
 
-  status->mouse_x = x;
-  status->real_mouse_x = mx;
+  status->mouse_x = char_x;
+  status->mouse_pixel_x = pixel_x;
 
-  set_screen_coords(mx, status->real_mouse_y, &mx_real, &my_real);
-  status->warped_mouse_x = mx_real;
+  set_screen_coords(pixel_x, status->mouse_pixel_y, &real_x, &real_y);
+  status->warped_mouse_x = real_x;
 
-  real_warp_mouse(mx_real, status->warped_mouse_y);
+  __warp_mouse(real_x, status->warped_mouse_y);
 }
 
-void warp_real_mouse_y(Uint32 my)
+void warp_mouse_pixel_y(int pixel_y)
 {
   struct buffered_status *status = store_status();
-  int mx_real, my_real, y = my / 14;
+  int real_x, real_y;
+  int char_y = pixel_y / CHAR_H;
 
-  status->mouse_y = y;
-  status->real_mouse_y = my;
+  status->mouse_y = char_y;
+  status->mouse_pixel_y = pixel_y;
 
-  set_screen_coords(status->real_mouse_x, my, &mx_real, &my_real);
-  status->warped_mouse_y = my_real;
+  set_screen_coords(status->mouse_pixel_x, pixel_y, &real_x, &real_y);
+  status->warped_mouse_y = real_y;
 
-  real_warp_mouse(status->warped_mouse_x, my_real);
+  __warp_mouse(status->warped_mouse_x, real_y);
 }
 
 void force_last_key(enum keycode_type type, int val)
@@ -1116,7 +1102,7 @@ void set_unfocus_pause(boolean value)
 
 // Nothing uses this right now, but it needs to be settable for networking.
 // TODO: when set this ought to actually reallocate the buffered events.
-void set_num_buffered_events(Uint8 value)
+void set_num_buffered_events(unsigned int value)
 {
   num_buffered_events = MAX(1, value);
 }
@@ -1124,7 +1110,7 @@ void set_num_buffered_events(Uint8 value)
 void key_press(struct buffered_status *status, enum keycode key)
 {
   // Prevent invalid keycodes from writing out-of-bounds.
-  enum keycode map_key = MIN((Uint32)key, STATUS_NUM_KEYCODES - 1);
+  enum keycode map_key = MIN((int)key, STATUS_NUM_KEYCODES - 1);
   status->keymap[map_key] = 1;
   status->key_pressed = key;
   status->key = key;
@@ -1133,7 +1119,7 @@ void key_press(struct buffered_status *status, enum keycode key)
   status->key_release = IKEY_UNKNOWN;
 }
 
-void key_press_unicode(struct buffered_status *status, Uint32 unicode,
+void key_press_unicode(struct buffered_status *status, uint32_t unicode,
  boolean repeating)
 {
   if(unicode)
@@ -1152,7 +1138,7 @@ void key_press_unicode(struct buffered_status *status, Uint32 unicode,
 void key_release(struct buffered_status *status, enum keycode key)
 {
   // Prevent invalid keycodes from writing out-of-bounds.
-  enum keycode map_key = MIN((Uint32)key, STATUS_NUM_KEYCODES - 1);
+  enum keycode map_key = MIN((int)key, STATUS_NUM_KEYCODES - 1);
   status->keymap[map_key] = 0;
   status->key_release = key;
 
@@ -1419,14 +1405,14 @@ struct joystick_map *get_joystick_map(boolean is_global)
  * a key enum string (also a key binding), or to a joystick action enum string
  * (action binding). Read either from an input value string.
  */
-boolean joystick_parse_map_value(const char *value, Sint16 *binding)
+boolean joystick_parse_map_value(const char *value, int16_t *binding)
 {
   char *next;
   enum joystick_action action_value;
-  Uint32 key_value;
+  unsigned int key_value;
 
   key_value = strtoul(value, &next, 10);
-  if((key_value <= SHRT_MAX) && (!next[0]))
+  if((key_value <= INT16_MAX) && (!next[0]))
   {
     *binding = key_value;
     return true;
@@ -1437,7 +1423,7 @@ boolean joystick_parse_map_value(const char *value, Sint16 *binding)
     action_value = find_joystick_action(value + 4);
     if(action_value)
     {
-      *binding = -((Sint16)action_value);
+      *binding = -((int16_t)action_value);
       return true;
     }
   }
@@ -1465,7 +1451,7 @@ void joystick_map_button(int first, int last, int button, const char *value,
   if((first <= last) && (first >= 0) && (first < MAX_JOYSTICKS) &&
    (button >= 0) && (button < MAX_JOYSTICK_BUTTONS))
   {
-    Sint16 binding;
+    int16_t binding;
     int i;
 
     if(joystick_parse_map_value(value, &binding))
@@ -1498,7 +1484,7 @@ void joystick_map_axis(int first, int last, int axis, const char *neg,
   if((first <= last) && (first >= 0) && (first < MAX_JOYSTICKS) &&
    (axis >= 0) && (axis < MAX_JOYSTICK_AXES))
   {
-    Sint16 binding_neg, binding_pos;
+    int16_t binding_neg, binding_pos;
     int i;
 
     if(joystick_parse_map_value(neg, &binding_neg) &&
@@ -1533,7 +1519,7 @@ void joystick_map_hat(int first, int last, const char *up, const char *down,
 {
   if((first <= last) && (first >= 0) && (first < MAX_JOYSTICKS))
   {
-    Sint16 binding_up, binding_down, binding_left, binding_right;
+    int16_t binding_up, binding_down, binding_left, binding_right;
     int i;
 
     if(joystick_parse_map_value(up, &binding_up) &&
@@ -1578,7 +1564,7 @@ void joystick_map_action(int first, int last, const char *action,
   if((first <= last) && (first >= 0) && (first < MAX_JOYSTICKS))
   {
     enum joystick_action action_value = find_joystick_action(action);
-    Sint16 binding;
+    int16_t binding;
     int i;
 
     if(!joystick_parse_map_value(value, &binding) || (binding < 0))
@@ -1669,8 +1655,8 @@ void joystick_set_axis_threshold(Uint16 threshold)
  * Determine which key (if any) a joystick press should bind to
  * within the current context.
  */
-static void joystick_resolve_bindings(int joystick, Sint16 global_binding,
- Sint16 game_binding, enum keycode *key, enum joystick_action *action)
+static void joystick_resolve_bindings(int joystick, int16_t global_binding,
+ int16_t game_binding, enum keycode *key, enum joystick_action *action)
 {
   // Global key bindings
   // HACK: places where the no context hacks are enabled are never gameplay,
@@ -1712,7 +1698,7 @@ enum joy_press_type
  * the global action used by UI contexts where appropriate.
  */
 static void joystick_press(struct buffered_status *status, int joystick,
- enum joy_press_type type, int num, Sint16 global_binding, Sint16 game_binding)
+ enum joy_press_type type, int num, int16_t global_binding, int16_t game_binding)
 {
   int pos = status->joystick_press_count[joystick];
   if(pos < MAX_JOYSTICK_PRESS)
@@ -1735,7 +1721,7 @@ static void joystick_press(struct buffered_status *status, int joystick,
         status->joystick_action_status[joystick][press_action] = true;
       if(press_key)
       {
-        Uint32 unicode = KEYCODE_IS_ASCII(press_key) ? press_key : 0;
+        uint32_t unicode = KEYCODE_IS_ASCII(press_key) ? press_key : 0;
         key_press(status, press_key);
         key_press_unicode(status, unicode, true);
       }
@@ -1758,7 +1744,7 @@ static void joystick_press(struct buffered_status *status, int joystick,
  * the global action used by UI contexts where appropriate.
  */
 static void joystick_release(struct buffered_status *status, int joystick,
- enum joy_press_type type, int num, Sint16 global_binding, Sint16 game_binding)
+ enum joy_press_type type, int num, int16_t global_binding, int16_t game_binding)
 {
   int count = status->joystick_press_count[joystick];
   if(count > 0)
@@ -1789,7 +1775,7 @@ static void joystick_release(struct buffered_status *status, int joystick,
   // Global action release.
   if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS))
   {
-    if((int)status->joystick_repeat_id == joystick &&
+    if(status->joystick_repeat_id == joystick &&
      (int)status->joystick_repeat == -global_binding)
     {
       status->joystick_repeat = JOY_NO_ACTION;
@@ -1808,8 +1794,8 @@ void joystick_button_press(struct buffered_status *status,
    (button >= 0) && (button < MAX_JOYSTICK_BUTTONS) &&
    !status->joystick_button[joystick][button])
   {
-    Sint16 global_binding = input.joystick_global_map.button[joystick][button];
-    Sint16 game_binding = input.joystick_game_map.button[joystick][button];
+    int16_t global_binding = input.joystick_global_map.button[joystick][button];
+    int16_t game_binding = input.joystick_game_map.button[joystick][button];
 
     status->joystick_button[joystick][button] = true;
     joystick_press(status, joystick, JOY_BUTTON, button,
@@ -1826,8 +1812,8 @@ void joystick_button_release(struct buffered_status *status,
   if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
    (button >= 0) && (button < MAX_JOYSTICK_BUTTONS))
   {
-    Sint16 global_binding = input.joystick_global_map.button[joystick][button];
-    Sint16 game_binding = input.joystick_game_map.button[joystick][button];
+    int16_t global_binding = input.joystick_global_map.button[joystick][button];
+    int16_t game_binding = input.joystick_game_map.button[joystick][button];
 
     status->joystick_button[joystick][button] = false;
     joystick_release(status, joystick, JOY_BUTTON, button,
@@ -1845,8 +1831,8 @@ void joystick_hat_update(struct buffered_status *status,
   if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
    (dir < NUM_JOYSTICK_HAT_DIRS))
   {
-    Sint16 global_binding = input.joystick_global_map.hat[joystick][dir];
-    Sint16 game_binding = input.joystick_game_map.hat[joystick][dir];
+    int16_t global_binding = input.joystick_global_map.hat[joystick][dir];
+    int16_t game_binding = input.joystick_game_map.hat[joystick][dir];
 
     if(dir_active)
     {
@@ -1869,7 +1855,7 @@ void joystick_hat_update(struct buffered_status *status,
  * We store analog axis values, but the axis maps are digital. Return
  * the axis map position for an analog axis value or -1 for the dead zone.
  */
-static int joystick_axis_to_digital(Sint16 value)
+static int joystick_axis_to_digital(int16_t value)
 {
   if(value > input.joystick_axis_threshold)
     return 1;
@@ -1884,8 +1870,8 @@ static int joystick_axis_to_digital(Sint16 value)
 static void joystick_axis_press(struct buffered_status *status,
  int joystick, int axis, int dir)
 {
-  Sint16 global_binding = input.joystick_global_map.axis[joystick][axis][dir];
-  Sint16 game_binding = input.joystick_game_map.axis[joystick][axis][dir];
+  int16_t global_binding = input.joystick_global_map.axis[joystick][axis][dir];
+  int16_t game_binding = input.joystick_game_map.axis[joystick][axis][dir];
 
   joystick_press(status, joystick, JOY_AXIS, (axis * 2) + dir,
    global_binding, game_binding);
@@ -1894,8 +1880,8 @@ static void joystick_axis_press(struct buffered_status *status,
 static void joystick_axis_release(struct buffered_status *status,
  int joystick, int axis, int dir)
 {
-  Sint16 global_binding = input.joystick_global_map.axis[joystick][axis][dir];
-  Sint16 game_binding = input.joystick_game_map.axis[joystick][axis][dir];
+  int16_t global_binding = input.joystick_global_map.axis[joystick][axis][dir];
+  int16_t game_binding = input.joystick_game_map.axis[joystick][axis][dir];
 
   joystick_release(status, joystick, JOY_AXIS, (axis * 2) + dir,
    global_binding, game_binding);
@@ -1905,7 +1891,7 @@ static void joystick_axis_release(struct buffered_status *status,
  * Update a joystick axis. Event handlers should use this function.
  */
 void joystick_axis_update(struct buffered_status *status,
- int joystick, int axis, Sint16 value)
+ int joystick, int axis, int16_t value)
 {
   if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
    (axis >= 0) && (axis < MAX_JOYSTICK_AXES))
@@ -1942,7 +1928,7 @@ void joystick_axis_update(struct buffered_status *status,
  * Update the value of a named axis. This usually corresponds to a regular axis.
  */
 void joystick_special_axis_update(struct buffered_status *status,
- int joystick, enum joystick_special_axis axis, Sint16 value)
+ int joystick, enum joystick_special_axis axis, int16_t value)
 {
   if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
    (axis > JOY_NO_AXIS) && (axis < NUM_JOYSTICK_SPECIAL_AXES))
@@ -1991,7 +1977,7 @@ void joystick_clear(struct buffered_status *status, int joystick)
   memset(status->joystick_special_axis_status[joystick], 0,
    sizeof(status->joystick_special_axis_status));
 
-  if((int)status->joystick_repeat_id == joystick)
+  if(status->joystick_repeat_id == joystick)
   {
     status->joystick_action = JOY_NO_ACTION;
     status->joystick_repeat = JOY_NO_ACTION;
@@ -2002,7 +1988,7 @@ void joystick_clear(struct buffered_status *status, int joystick)
 /**
  * Get the current UI joystick action.
  */
-Uint32 get_joystick_ui_action(void)
+enum joystick_action get_joystick_ui_action(void)
 {
   const struct buffered_status *status = load_status();
   return status->joystick_action;
@@ -2013,7 +1999,7 @@ Uint32 get_joystick_ui_action(void)
  * Most places that use joystick actions want similar bindings or only have
  * a few exceptions.
  */
-Uint32 get_joystick_ui_key(void)
+enum keycode get_joystick_ui_key(void)
 {
   const struct buffered_status *status = load_status();
   return joystick_action_map_ui[status->joystick_action];
@@ -2041,7 +2027,7 @@ boolean joystick_is_active(int joystick, boolean *is_active)
  * are both valid, value will be set to the status value of the control and the
  * function will return true.
  */
-boolean joystick_get_status(int joystick, char *name, Sint16 *value)
+boolean joystick_get_status(int joystick, char *name, int16_t *value)
 {
   const struct buffered_status *status = load_status();
 

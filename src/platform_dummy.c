@@ -74,12 +74,18 @@ boolean __update_event_status(void)
   return 0;
 }
 
-void real_warp_mouse(int x, int y)
+boolean __peek_exit_input(void)
+{
+  // stub
+  return 0;
+}
+
+void __wait_event(void)
 {
   // stub
 }
 
-void __wait_event(void)
+void __warp_mouse(int x, int y)
 {
   // stub
 }

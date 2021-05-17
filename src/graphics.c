@@ -1185,7 +1185,7 @@ void update_screen(void)
   if(graphics.mouse_status)
   {
     int mouse_x, mouse_y;
-    get_real_mouse_position(&mouse_x, &mouse_y);
+    get_mouse_pixel_position(&mouse_x, &mouse_y);
 
     mouse_x = (mouse_x / graphics.mouse_width_mul) * graphics.mouse_width_mul;
     mouse_y = (mouse_y / graphics.mouse_height_mul) * graphics.mouse_height_mul;

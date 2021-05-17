@@ -19,7 +19,6 @@
  */
 
 #include "../../src/event.h"
-#include "../../src/platform.h"
 #include "../../src/graphics.h"
 
 #include <nds/arm9/keyboard.h>
@@ -62,15 +61,15 @@ void __wait_event(void)
   process_event(&event);
 }
 
+void __warp_mouse(int x, int y)
+{
+  // Since the touchscreen stylus can't be warped, focus there instead.
+  focus_pixel(x, y);
+}
+
 enum focus_mode get_allow_focus_changes(void)
 {
   return allow_focus_changes;
-}
-
-void real_warp_mouse(int x, int y)
-{
-  // Since we can't warp a touchscreen stylus, focus there instead.
-  focus_pixel(x, y);
 }
 
 void initialize_joysticks(void)
@@ -221,7 +220,7 @@ static boolean process_event(NDSEvent *event)
     // Touchscreen stylus down
     case NDS_EVENT_TOUCH_DOWN:
     {
-      int button = MOUSE_BUTTON_LEFT;
+      enum mouse_button button = MOUSE_BUTTON_LEFT;
       status->mouse_button = button;
       status->mouse_repeat = button;
       status->mouse_button_state |= MOUSE_BUTTON(button);
@@ -235,7 +234,7 @@ static boolean process_event(NDSEvent *event)
     // Touchscreen stylus up
     case NDS_EVENT_TOUCH_UP:
     {
-      int button = MOUSE_BUTTON_LEFT;
+      enum mouse_button button = MOUSE_BUTTON_LEFT;
       status->mouse_button_state &= ~MOUSE_BUTTON(button);
       status->mouse_repeat = 0;
       status->mouse_drag_state = 0;
@@ -253,8 +252,8 @@ static boolean process_event(NDSEvent *event)
         break;
 
       // Update the MZX mouse state.
-      status->real_mouse_x = mx;
-      status->real_mouse_y = my;
+      status->mouse_pixel_x = mx;
+      status->mouse_pixel_y = my;
       status->mouse_x = mx / 8;
       status->mouse_y = my / 14;
       status->mouse_moved = true;

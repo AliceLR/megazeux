@@ -165,7 +165,7 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
   }
 }
 
-static uint32_t convert_SDL_mouse_internal(uint32_t button)
+static enum mouse_button convert_SDL_mouse_internal(uint32_t button)
 {
   switch(button)
   {
@@ -1089,17 +1089,17 @@ static boolean process_event(SDL_Event *event)
         "--EVENT_SDL-- SDL_MOUSEMOTION: (%d,%d) -> (%d,%d)\n",
         mx_real, my_real, mx, my
       );
-      status->real_mouse_x = mx;
-      status->real_mouse_y = my;
-      status->mouse_x = mx / 8;
-      status->mouse_y = my / 14;
+      status->mouse_pixel_x = mx;
+      status->mouse_pixel_y = my;
+      status->mouse_x = mx / CHAR_W;
+      status->mouse_y = my / CHAR_H;
       status->mouse_moved = true;
       break;
     }
 
     case SDL_MOUSEBUTTONDOWN:
     {
-      uint32_t button = convert_SDL_mouse_internal(event->button.button);
+      enum mouse_button button = convert_SDL_mouse_internal(event->button.button);
       trace("--EVENT_SDL-- SDL_MOUSEBUTTONDOWN: %u\n", event->button.button);
       status->mouse_button = button;
       status->mouse_repeat = button;
@@ -1112,10 +1112,10 @@ static boolean process_event(SDL_Event *event)
 
     case SDL_MOUSEBUTTONUP:
     {
-      uint32_t button = convert_SDL_mouse_internal(event->button.button);
+      enum mouse_button button = convert_SDL_mouse_internal(event->button.button);
       trace("--EVENT_SDL-- SDL_MOUSEBUTTONUP: %u\n", event->button.button);
       status->mouse_button_state &= ~MOUSE_BUTTON(button);
-      status->mouse_repeat = 0;
+      status->mouse_repeat = MOUSE_NO_BUTTON;
       status->mouse_drag_state = 0;
       status->mouse_repeat_state = 0;
       break;
@@ -1149,7 +1149,7 @@ static boolean process_event(SDL_Event *event)
       // Wheel "presses" are immediately "released", and don't affect the state
       // bitmask. Just set the current mouse button and clear everything else.
       status->mouse_button = button;
-      status->mouse_repeat = 0;
+      status->mouse_repeat = MOUSE_NO_BUTTON;
       status->mouse_repeat_state = 0;
       status->mouse_drag_state = 0;
       status->mouse_time = SDL_GetTicks();
@@ -1616,7 +1616,7 @@ void __wait_event(void)
     process_event(&event);
 }
 
-void real_warp_mouse(int x, int y)
+void __warp_mouse(int x, int y)
 {
   SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
 

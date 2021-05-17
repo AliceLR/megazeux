@@ -2398,13 +2398,13 @@ static void mousey_write(struct world *mzx_world,
 static int mousepx_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return get_real_mouse_x();
+  return get_mouse_pixel_x();
 }
 
 static int mousepy_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return get_real_mouse_y();
+  return get_mouse_pixel_y();
 }
 
 static void mousepx_write(struct world *mzx_world,
@@ -2416,7 +2416,7 @@ static void mousepx_write(struct world *mzx_world,
   if(value < 0)
     value = 0;
 
-  warp_real_mouse_x(value);
+  warp_mouse_pixel_x(value);
 }
 
 static void mousepy_write(struct world *mzx_world,
@@ -2428,7 +2428,7 @@ static void mousepy_write(struct world *mzx_world,
   if(value < 0)
     value = 0;
 
-  warp_real_mouse_y(value);
+  warp_mouse_pixel_y(value);
 }
 
 static int mboardx_read(struct world *mzx_world,

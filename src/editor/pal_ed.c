@@ -962,7 +962,7 @@ static boolean color_editor_drag(subcontext *ctx, int *key, int button,
     // extra char on each side of the bar past the actual bounds to
     // make setting to the minimum and maximum values easier.
 
-    get_real_mouse_position(&mouse_px, &mouse_py);
+    get_mouse_pixel_position(&mouse_px, &mouse_py);
 
     if(MOUSE_IN(current->x + 7, current->y + 1, 34, 3))
     {
@@ -979,7 +979,7 @@ static boolean color_editor_drag(subcontext *ctx, int *key, int button,
       current_mode->set_function(current_color, component, (int)value);
 
       // Snap the mouse to the center of the bar.
-      warp_real_mouse_y(mouse_y * 14 + 7);
+      warp_mouse_pixel_y(mouse_y * 14 + 7);
       return -1;
     }
   }

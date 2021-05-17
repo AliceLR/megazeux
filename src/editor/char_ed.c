@@ -1412,7 +1412,7 @@ int char_editor(struct world *mzx_world)
         // Grid.
         if(small_chars)
         {
-          get_real_mouse_position(&mouse_x, &mouse_y);
+          get_mouse_pixel_position(&mouse_x, &mouse_y);
 
           x = (mouse_x / 8) - chars_x;
           y = (mouse_y / 7) - (chars_y * 2);
