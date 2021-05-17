@@ -216,7 +216,7 @@ uint32_t convert_internal_unicode(enum keycode key, boolean caps_lock)
   return IKEY_UNKNOWN;
 }
 
-static Uint32 convert_internal_xt(enum keycode key)
+static uint32_t convert_internal_xt(enum keycode key)
 {
   switch(key)
   {
@@ -330,7 +330,7 @@ static Uint32 convert_internal_xt(enum keycode key)
   }
 }
 
-static enum keycode convert_xt_internal(Uint32 key, enum keycode *second)
+static enum keycode convert_xt_internal(uint32_t key, enum keycode *second)
 {
   *second = IKEY_UNKNOWN;
   switch(key)
@@ -1646,7 +1646,7 @@ void joystick_set_legacy_loop_hacks(boolean enable)
  * Set the threshold for joystick mapped axis presses. Higher values require
  * more movement to trigger a press.
  */
-void joystick_set_axis_threshold(Uint16 threshold)
+void joystick_set_axis_threshold(uint16_t threshold)
 {
   input.joystick_axis_threshold = threshold;
 }
@@ -1896,7 +1896,7 @@ void joystick_axis_update(struct buffered_status *status,
   if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
    (axis >= 0) && (axis < MAX_JOYSTICK_AXES))
   {
-    Sint16 last_value = status->joystick_axis[joystick][axis];
+    int16_t last_value = status->joystick_axis[joystick][axis];
     int last_digital_value = joystick_axis_to_digital(last_value);
     int digital_value = joystick_axis_to_digital(value);
 
