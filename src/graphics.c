@@ -2774,50 +2774,6 @@ void dump_screen(void)
 }
 #endif /* CONFIG_ENABLE_SCREENSHOTS */
 
-void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer)
-{
-  // Dumps the specified char into a buffer. Expects CHAR_W * CHAR_H bytes.
-  int x, y;
-  Uint8 cols[4];
-  char_idx = char_idx % PROTECTED_CHARSET_POSITION;
-  color = color % SMZX_PAL_SIZE;
-
-  if(mode == -1)
-    mode = graphics.screen_mode;
-
-  if(mode == 0)
-  {
-    cols[0] = (color & 0xF0) >> 4;
-    cols[1] = color & 0x0F;
-
-    for(y = 0; y < CHAR_H; y++)
-    {
-      char row = graphics.charset[char_idx * CHAR_SIZE + y];
-      for(x = 0; x < CHAR_W; x++)
-      {
-        buffer[y * CHAR_W + x] = cols[(row >> (7-x)) & 0x01];
-      }
-    }
-  }
-  else
-  {
-    cols[0] = graphics.smzx_indices[color * 4 + 0];
-    cols[1] = graphics.smzx_indices[color * 4 + 1];
-    cols[2] = graphics.smzx_indices[color * 4 + 2];
-    cols[3] = graphics.smzx_indices[color * 4 + 3];
-
-    for(y = 0; y < CHAR_H; y++)
-    {
-      char row = graphics.charset[char_idx * CHAR_SIZE + y];
-      for(x = 0; x < CHAR_W; x += 2)
-      {
-        buffer[y * CHAR_W + x] = cols[(row >> (6-x)) & 0x03];
-        buffer[y * CHAR_W + x + 1] = cols[(row >> (6-x)) & 0x03];
-      }
-    }
-  }
-}
-
 /**
  * Generate a bitmask of visible pixels for a character/palette pair using the
  * current screen mode and a given transparent color index. The provided buffer
