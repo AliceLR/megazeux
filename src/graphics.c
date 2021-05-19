@@ -2790,10 +2790,10 @@ void get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
 
   if(graphics.screen_mode == 0)
   {
-    int fg = (palette & 0xF0) >> 4;
-    int bg = (palette & 0x0F);
-    is_transparent[0] = (fg == transparent_color);
-    is_transparent[1] = (bg == transparent_color);
+    int bg = (palette & 0xF0) >> 4;
+    int fg = (palette & 0x0F);
+    is_transparent[0] = (bg == transparent_color);
+    is_transparent[1] = (fg == transparent_color);
 
     for(y = 0; y < CHAR_SIZE; y++)
     {
