@@ -2818,6 +2818,82 @@ void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer)
   }
 }
 
+/**
+ * Generate a bitmask of visible pixels for a character/palette pair using the
+ * current screen mode and a given transparent color index. The provided buffer
+ * must be CHAR_SIZE bytes in length.
+ */
+void get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
+ int transparent_color, uint8_t * RESTRICT buffer)
+{
+  const uint8_t *chrdata = graphics.charset + char_idx * CHAR_SIZE;
+  const uint8_t HI = 0xAA;
+  const uint8_t LO = 0x55;
+  int is_transparent[4];
+  int y;
+
+  if(graphics.screen_mode == 0)
+  {
+    int fg = (palette & 0xF0) >> 4;
+    int bg = (palette & 0x0F);
+    is_transparent[0] = (fg == transparent_color);
+    is_transparent[1] = (bg == transparent_color);
+
+    for(y = 0; y < CHAR_SIZE; y++)
+    {
+      uint8_t base = chrdata[y];
+      uint8_t mask = 0xFF;
+
+      if(is_transparent[0])
+        mask &= base;
+
+      if(is_transparent[1])
+        mask &= ~base;
+
+      buffer[y] = mask;
+    }
+  }
+  else
+  {
+    is_transparent[0] = graphics.smzx_indices[palette * 4 + 0] == transparent_color;
+    is_transparent[1] = graphics.smzx_indices[palette * 4 + 1] == transparent_color;
+    is_transparent[2] = graphics.smzx_indices[palette * 4 + 2] == transparent_color;
+    is_transparent[3] = graphics.smzx_indices[palette * 4 + 3] == transparent_color;
+
+    for(y = 0; y < CHAR_SIZE; y++)
+    {
+      uint8_t base = chrdata[y];
+      uint8_t mask = 0xFF;
+
+      if(is_transparent[0])
+      {
+        uint8_t colmask = (~base & HI) & ((~base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
+      }
+
+      if(is_transparent[1])
+      {
+        uint8_t colmask = (~base & HI) & ((base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
+      }
+
+      if(is_transparent[2])
+      {
+        uint8_t colmask = (base & HI) & ((~base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
+      }
+
+      if(is_transparent[3])
+      {
+        uint8_t colmask = (base & HI) & ((base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
+      }
+
+      buffer[y] = mask;
+    }
+  }
+}
+
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y)
 {
