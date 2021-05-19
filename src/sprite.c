@@ -1010,34 +1010,22 @@ boolean sprite_at_xy(struct sprite *spr, int x, int y)
 static inline void mask_alloc_chr(struct world *mzx_world,
  const struct sprite *spr, struct mask m, int ch)
 {
-  int y = ch / spr->width, x = ch % spr->width;
+  int y = ch / spr->width;
+  int x = ch % spr->width;
   int chr, col;
-  int px, py;
   int tcol = spr->transparent_color;
-  Uint8 bitmap_buffer[CHAR_W * CHAR_H];
-  Uint8 *output;
-  output = &m.data[ch * CHAR_SIZE];
+
+  uint8_t *output = &m.data[ch * CHAR_SIZE];
 
   if(!m.mapping[ch])
   {
     m.mapping[ch] = 1;
     get_sprite_tile(mzx_world, spr, x + spr->ref_x, y + spr->ref_y, &chr, &col);
-    memset(output, 0, CHAR_SIZE);
 
     if(chr != -1)
-    {
-      dump_char((chr + spr->offset) % PROTECTED_CHARSET_POSITION, col, -1,
-       bitmap_buffer);
-
-      for(py = 0; py < CHAR_H; py++)
-      {
-        for(px = 0; px < CHAR_W; px++)
-        {
-          if(bitmap_buffer[py * CHAR_W + px] != tcol)
-            output[py] |= 0x80 >> px;
-        }
-      }
-    }
+      get_char_visible_bitmask((chr + spr->offset) % PRO_CH, col, tcol, output);
+    else
+      memset(output, 0, CHAR_SIZE);
   }
 }
 

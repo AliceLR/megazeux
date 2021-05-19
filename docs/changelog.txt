@@ -140,6 +140,9 @@ USERS
 + Fixed software renderer display issues caused by relying on
   SDL_PixelFormat::BitsPerPixel instead of BytesPerPixel on
   platforms with native 15 BPP display modes.
++ Optimized ccheck 3 sprite collision performance by generating
+  visibility masks for characters directly instead of using an
+  intermediate render.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
