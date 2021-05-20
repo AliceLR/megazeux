@@ -1008,13 +1008,17 @@ static inline void destroy_mask(struct mask m)
   free(m.data);
 }
 
-static inline void mask_alloc_chr(struct world *mzx_world,
- const struct sprite *spr, struct mask m, int ch, int x, int y)
+static inline int mask_get_pixel(struct world *mzx_world,
+ const struct sprite *spr, struct mask m, int pixel_x, int pixel_y)
 {
+  int ch = (pixel_y / CHAR_H * spr->width + pixel_x / CHAR_W);
+
   if(!m.mapping[ch])
   {
     uint8_t *output = &m.data[ch * CHAR_SIZE];
     int tcol = spr->transparent_color;
+    int x = pixel_x / CHAR_W;
+    int y = pixel_y / CHAR_H;
     int chr;
     int col;
 
@@ -1022,26 +1026,22 @@ static inline void mask_alloc_chr(struct world *mzx_world,
     get_sprite_tile(mzx_world, spr, x + spr->ref_x, y + spr->ref_y, &chr, &col);
 
     if(chr != -1)
-      get_char_visible_bitmask((chr + spr->offset) % PRO_CH, col, tcol, output);
-    else
-      memset(output, 0, CHAR_SIZE);
+    {
+      if(get_char_visible_bitmask((chr + spr->offset) % PRO_CH, col, tcol, output))
+        m.mapping[ch] = 2;
+    }
   }
-}
 
-static inline boolean mask_get_pixel(struct mask m, int ch, int px, int py)
-{
-  int data = m.data[ch * CHAR_SIZE + (py % CHAR_H)];
+  if(m.mapping[ch] < 2)
+    return 0;
 
-  if(data & (0x80 >> (px % CHAR_W)))
-    return true;
-
-  return false;
+  return m.data[ch * CHAR_SIZE + (pixel_y % CHAR_H)] & (0x80 >> (pixel_x % CHAR_W));
 }
 
 static inline boolean collision_pix_in(struct world *mzx_world,
  const struct sprite *spr, struct mask m, struct rect c)
 {
-  int x, y, px, py, ch;
+  int x, y, px, py;
 
   if((spr->flags & SPRITE_PIXCHECK) != SPRITE_PIXCHECK)
     return true;
@@ -1053,10 +1053,7 @@ static inline boolean collision_pix_in(struct world *mzx_world,
     for(x = c.x; x < c.x + c.w; x++)
     {
       px = x - m.dim.x;
-      ch = (py / CHAR_H * spr->width + px / CHAR_W);
-      mask_alloc_chr(mzx_world, spr, m, ch, px / CHAR_W, py / CHAR_H);
-
-      if(mask_get_pixel(m, ch, px, py))
+      if(mask_get_pixel(mzx_world, spr, m, px, py))
         return true;
     }
   }
@@ -1090,7 +1087,7 @@ static inline boolean collision_pix_between(struct world *mzx_world,
   else
   {
     // Both sprites need a pixel check
-    int x, y, sx, sy, tx, ty, sch, tch;
+    int x, y, sx, sy, tx, ty;
 
     // Pixel by pixel collision check
     for(y = c.y; y < c.y + c.h; y++)
@@ -1102,14 +1099,8 @@ static inline boolean collision_pix_between(struct world *mzx_world,
       {
         sx = x - spr_m.dim.x;
         tx = x - targ_m.dim.x;
-        sch = (sy / CHAR_H * spr->width + sx / CHAR_W);
-        tch = (ty / CHAR_H * targ->width + tx / CHAR_W);
-
-        mask_alloc_chr(mzx_world, spr, spr_m, sch, sx / CHAR_W, sy / CHAR_H);
-        mask_alloc_chr(mzx_world, targ, targ_m, tch, tx / CHAR_W, sy / CHAR_H);
-
-        if(mask_get_pixel(spr_m, sch, sx, sy) &&
-         mask_get_pixel(targ_m, tch, tx, ty))
+        if(mask_get_pixel(mzx_world, spr, spr_m, sx, sy) &&
+         mask_get_pixel(mzx_world, targ, targ_m, tx, ty))
           return true;
       }
     }
