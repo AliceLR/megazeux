@@ -40,6 +40,7 @@
 #include "renderers.h"
 #include "platform.h"
 #include "error.h"
+#include "io/vio.h"
 
 #ifdef CONFIG_PNG
 #include "pngops.h"
@@ -145,27 +146,27 @@ static inline boolean extended_charsets_check(boolean s, int p, int c)
 }
 #endif
 
-static void remap_charbyte(struct graphics_data *graphics, Uint16 chr,
- Uint8 byte)
+static void remap_charbyte(struct graphics_data *graphics, uint16_t chr,
+ uint8_t byte)
 {
   if(graphics->renderer.remap_charbyte)
     graphics->renderer.remap_charbyte(graphics, chr, byte);
 }
 
-static void remap_char(struct graphics_data *graphics, Uint16 chr)
+static void remap_char(struct graphics_data *graphics, uint16_t chr)
 {
   if(graphics->renderer.remap_char)
     graphics->renderer.remap_char(graphics, chr);
 }
 
-static void remap_char_range(struct graphics_data *graphics, Uint16 first,
- Uint16 len)
+static void remap_char_range(struct graphics_data *graphics, uint16_t first,
+ uint16_t len)
 {
   if(graphics->renderer.remap_char_range)
     graphics->renderer.remap_char_range(graphics, first, len);
 }
 
-void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value)
+void ec_change_byte(uint16_t chr, uint8_t byte, uint8_t new_value)
 {
   extended_charsets_check(true, chr, 1);
 
@@ -175,7 +176,7 @@ void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value)
   remap_charbyte(&graphics, chr, byte);
 }
 
-void ec_change_char(Uint16 chr, char *matrix)
+void ec_change_char(uint16_t chr, const char matrix[CHAR_SIZE])
 {
   extended_charsets_check(true, chr, 1);
 
@@ -185,7 +186,7 @@ void ec_change_char(Uint16 chr, char *matrix)
   remap_char(&graphics, chr);
 }
 
-Uint8 ec_read_byte(Uint16 chr, Uint8 byte)
+uint8_t ec_read_byte(uint16_t chr, uint8_t byte)
 {
   extended_charsets_check(true, chr, 1);
 
@@ -193,7 +194,7 @@ Uint8 ec_read_byte(Uint16 chr, Uint8 byte)
   return graphics.charset[(chr * CHAR_SIZE) + byte];
 }
 
-void ec_read_char(Uint16 chr, char *matrix)
+void ec_read_char(Uint16 chr, char matrix[CHAR_SIZE])
 {
   extended_charsets_check(true, chr, 1);
 
@@ -207,36 +208,32 @@ void ec_clear_set(void)
   remap_char_range(&graphics, 0, FULL_CHARSET_SIZE);
 }
 
-Sint32 ec_load_set(char *name)
+boolean ec_load_set(const char *filename)
 {
-  FILE *fp = fopen_unsafe(name, "rb");
-  Uint16 count;
-
-  if(fp)
+  vfile *vf = vfopen_unsafe(filename, "rb");
+  if(vf)
   {
-    count = fread(graphics.charset, CHAR_SIZE, PROTECTED_CHARSET_POSITION, fp);
-    fclose(fp);
+    int count = vfread(graphics.charset, CHAR_SIZE, PROTECTED_CHARSET_POSITION, vf);
+    vfclose(vf);
 
     if(count > 0)
     {
       // some renderers may want to map charsets to textures
       remap_char_range(&graphics, 0, count);
-      return 0;
+      return true;
     }
   }
-  return -1;
+  return false;
 }
 
-__editor_maybe_static void ec_load_set_secondary(const char *name,
- Uint8 *dest)
+__editor_maybe_static void ec_load_set_secondary(const char *filename,
+ uint8_t dest[CHAR_SIZE * CHARSET_SIZE])
 {
-  FILE *fp = fopen_unsafe(name, "rb");
-  Uint16 count;
-
-  if(fp)
+  vfile *vf = vfopen_unsafe(filename, "rb");
+  if(vf)
   {
-    count = fread(dest, CHAR_SIZE, CHARSET_SIZE, fp);
-    fclose(fp);
+    int count = vfread(dest, CHAR_SIZE, CHARSET_SIZE, vf);
+    vfclose(vf);
 
     // This might have been somewhere in the charset, so
     // some renderers may want to map charsets to textures
@@ -245,47 +242,47 @@ __editor_maybe_static void ec_load_set_secondary(const char *name,
   }
 }
 
-Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
+int ec_load_set_var(const char *filename, uint16_t first_chr, int version)
 {
-  Uint32 size = CHARSET_SIZE;
-  FILE *fp = fopen_unsafe(name, "rb");
-  Uint32 maxChars = PROTECTED_CHARSET_POSITION;
-  Uint16 count;
-
-  if(fp)
+  vfile *vf = vfopen_unsafe(filename, "rb");
+  if(vf)
   {
-    size = ftell_and_rewind(fp) / CHAR_SIZE;
+    int maxchars = PROTECTED_CHARSET_POSITION;
+    int count;
+
+    int size = vfilelength(vf, false) / CHAR_SIZE;
 
     if(version >= V290)
     {
-      extended_charsets_check(true, pos, size);
+      extended_charsets_check(true, first_chr, size);
     }
     else
-      maxChars = 256;
+      maxchars = 256;
 
-    if(pos > maxChars)
+    if(first_chr > maxchars)
       return -1;
 
-    if(size + pos > maxChars)
-      size = maxChars - pos;
+    if(size + first_chr > maxchars)
+      size = maxchars - first_chr;
 
-    count = fread(graphics.charset + (pos * CHAR_SIZE), CHAR_SIZE, size, fp);
-    fclose(fp);
+    count = vfread(graphics.charset + (first_chr * CHAR_SIZE), CHAR_SIZE, size, vf);
+    vfclose(vf);
 
     // some renderers may want to map charsets to textures
     if(count > 0)
-      remap_char_range(&graphics, pos, count);
+      remap_char_range(&graphics, first_chr, count);
 
     return count;
   }
   return -1;
 }
 
-void ec_mem_load_set(Uint8 *chars, size_t len)
+void ec_mem_load_set(const void *buffer, size_t len)
 {
   // This is used only for legacy and ZIP world loading and the default charsets
   // Use ec_clear_set() in conjunction with this for world loads.
-  Uint16 count;
+  const uint8_t *chars = buffer;
+  size_t count;
 
   if(len > CHAR_SIZE * PROTECTED_CHARSET_POSITION)
     len = CHAR_SIZE * PROTECTED_CHARSET_POSITION;
@@ -298,30 +295,27 @@ void ec_mem_load_set(Uint8 *chars, size_t len)
     remap_char_range(&graphics, 0, count);
 }
 
-void ec_mem_save_set(Uint8 *chars)
+void ec_mem_load_set_var(const void *buffer, size_t len, uint16_t first_chr,
+ int version)
 {
-  memcpy(chars, graphics.charset, CHAR_SIZE * CHARSET_SIZE);
-}
-
-void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int version)
-{
-  Uint32 maxChars = PROTECTED_CHARSET_POSITION;
-  Uint32 offset = pos * CHAR_SIZE;
-  Uint16 count = (len + CHAR_SIZE - 1) / CHAR_SIZE;
+  const uint8_t *chars = buffer;
+  size_t maxchars = PROTECTED_CHARSET_POSITION;
+  size_t offset = first_chr * CHAR_SIZE;
+  size_t count = (len + CHAR_SIZE - 1) / CHAR_SIZE;
 
   if(version >= V290)
   {
-    extended_charsets_check(true, pos, count);
+    extended_charsets_check(true, first_chr, count);
   }
   else
-    maxChars = 256;
+    maxchars = 256;
 
-  if(pos > maxChars)
+  if(first_chr > maxchars)
     return;
 
-  if(count > maxChars - pos)
+  if(count > maxchars - first_chr)
   {
-    count = maxChars - pos;
+    count = maxchars - first_chr;
     len = count * CHAR_SIZE;
   }
 
@@ -329,15 +323,16 @@ void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int version)
 
   // some renderers may want to map charsets to textures
   if(count > 0)
-    remap_char_range(&graphics, pos, count);
+    remap_char_range(&graphics, first_chr, count);
 }
 
-void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos)
+void ec_mem_save_set_var(void *buffer, size_t len, uint16_t first_chr)
 {
-  Uint32 offset = pos * CHAR_SIZE;
-  Uint32 size = MIN(PROTECTED_CHARSET_POSITION * CHAR_SIZE - offset, len);
+  uint8_t *chars = buffer;
+  size_t offset = first_chr * CHAR_SIZE;
+  size_t size = MIN(PROTECTED_CHARSET_POSITION * CHAR_SIZE - offset, len);
 
-  if(pos < PROTECTED_CHARSET_POSITION)
+  if(first_chr < PROTECTED_CHARSET_POSITION)
     memcpy(chars, graphics.charset + offset, size);
 }
 
@@ -346,15 +341,15 @@ __editor_maybe_static void ec_load_mzx(void)
   ec_mem_load_set(graphics.default_charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
-static void update_colors(struct rgb_color *palette, Uint32 count)
+static void update_colors(struct rgb_color *palette, unsigned int count)
 {
   graphics.renderer.update_colors(&graphics, palette, count);
 }
 
-static Uint32 make_palette(struct rgb_color *palette)
+static unsigned int make_palette(struct rgb_color *palette)
 {
-  Uint32 i;
-  Uint32 paletteSize;
+  unsigned int paletteSize;
+  int i;
 
   // Is SMZX mode set?
   if(graphics.screen_mode)
@@ -426,7 +421,7 @@ void default_protected_palette(void)
 
 static void init_palette(void)
 {
-  Uint32 i;
+  int i;
 
   memcpy(graphics.palette, default_pal,
    sizeof(struct rgb_color) * PAL_SIZE);
@@ -435,7 +430,7 @@ static void init_palette(void)
   memcpy(graphics.intensity_palette, default_pal,
    sizeof(struct rgb_color) * PAL_SIZE);
   memset(graphics.current_intensity, 0,
-   sizeof(Uint32) * PAL_SIZE);
+   sizeof(uint32_t) * PAL_SIZE);
 
   for(i = 0; i < SMZX_PAL_SIZE; i++)
     graphics.saved_intensity[i] = 100;
@@ -444,7 +439,7 @@ static void init_palette(void)
   graphics.palette_dirty = true;
 }
 
-static int intensity(int component, int percent)
+static int intensity(unsigned int component, unsigned int percent)
 {
   component = (component * percent) / 100;
 
@@ -454,7 +449,7 @@ static int intensity(int component, int percent)
   return component;
 }
 
-void set_color_intensity(Uint32 color, Uint32 percent)
+void set_color_intensity(uint8_t color, unsigned int percent)
 {
   if(graphics.fade_status)
   {
@@ -475,9 +470,9 @@ void set_color_intensity(Uint32 color, Uint32 percent)
   }
 }
 
-void set_palette_intensity(Uint32 percent)
+void set_palette_intensity(unsigned int percent)
 {
-  Uint32 i, num_colors;
+  int i, num_colors;
 
   if(graphics.screen_mode >= 2)
     num_colors = SMZX_PAL_SIZE;
@@ -491,9 +486,9 @@ void set_palette_intensity(Uint32 percent)
   graphics.palette_dirty = true;
 }
 
-void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
+void set_rgb(uint8_t color, unsigned int r, unsigned int g, unsigned int b)
 {
-  int percent = graphics.current_intensity[color];
+  uint32_t percent = graphics.current_intensity[color];
   r = r * 255 / 63;
   g = g * 255 / 63;
   b = b * 255 / 63;
@@ -509,7 +504,8 @@ void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
   graphics.palette_dirty = true;
 }
 
-void set_protected_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
+void set_protected_rgb(uint8_t color, unsigned int r, unsigned int g,
+ unsigned int b)
 {
   r = r * 255 / 63;
   g = g * 255 / 63;
@@ -520,9 +516,9 @@ void set_protected_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
   graphics.palette_dirty = true;
 }
 
-void set_red_component(Uint32 color, Uint32 r)
+void set_red_component(uint8_t color, unsigned int r)
 {
-  int percent = graphics.current_intensity[color];
+  uint32_t percent = graphics.current_intensity[color];
   r = r * 255 / 63;
 
   graphics.palette[color].r = r;
@@ -530,9 +526,9 @@ void set_red_component(Uint32 color, Uint32 r)
   graphics.palette_dirty = true;
 }
 
-void set_green_component(Uint32 color, Uint32 g)
+void set_green_component(uint8_t color, unsigned int g)
 {
-  int percent = graphics.current_intensity[color];
+  uint32_t percent = graphics.current_intensity[color];
   g = g * 255 / 63;
 
   graphics.palette[color].g = g;
@@ -540,9 +536,9 @@ void set_green_component(Uint32 color, Uint32 g)
   graphics.palette_dirty = true;
 }
 
-void set_blue_component(Uint32 color, Uint32 b)
+void set_blue_component(uint8_t color, unsigned int b)
 {
-  int percent = graphics.current_intensity[color];
+  uint32_t percent = graphics.current_intensity[color];
   b = b * 255 / 63;
 
   graphics.palette[color].b = b;
@@ -550,64 +546,66 @@ void set_blue_component(Uint32 color, Uint32 b)
   graphics.palette_dirty = true;
 }
 
-static Uint32 get_smzx_index_offset(Uint32 color, Uint32 index)
-{
-  index %= 4;
-
-  if(index == 1)
-    index = 2;
-  else if(index == 2)
-    index = 1;
-
-  return (color % SMZX_PAL_SIZE) * 4 + index;
-}
-
-Uint32 get_smzx_index(Uint32 col, Uint32 offset)
-{
-  offset = get_smzx_index_offset(col, offset);
-
-  return graphics.smzx_indices[offset];
-}
-
-void set_smzx_index(Uint32 col, Uint32 offset, Uint32 value)
-{
-  // Setting the SMZX index is only supported for mode 3
-  if(graphics.screen_mode != 3)
-    return;
-
-  offset = get_smzx_index_offset(col, offset);
-
-  graphics.smzx_indices[offset] = value % SMZX_PAL_SIZE;
-  graphics.palette_dirty = true;
-}
-
-Uint32 get_color_intensity(Uint32 color)
+unsigned int get_color_intensity(uint8_t color)
 {
   if(graphics.fade_status)
     return graphics.saved_intensity[color];
   return graphics.current_intensity[color];
 }
 
-void get_rgb(Uint32 color, Uint8 *r, Uint8 *g, Uint8 *b)
+void get_rgb(uint8_t color, uint8_t *r, uint8_t *g, uint8_t *b)
 {
   *r = ((graphics.palette[color].r * 126) + 255) / 510;
   *g = ((graphics.palette[color].g * 126) + 255) / 510;
   *b = ((graphics.palette[color].b * 126) + 255) / 510;
 }
 
-Uint32 get_red_component(Uint32 color)
+unsigned int get_red_component(uint8_t color)
 {
   return ((graphics.palette[color].r * 126) + 255) / 510;
 }
 
-Uint32 get_green_component(Uint32 color)
+unsigned int get_green_component(uint8_t color)
 {
   return ((graphics.palette[color].g * 126) + 255) / 510;
 }
 
-Uint32 get_blue_component(Uint32 color)
+unsigned int get_blue_component(uint8_t color)
 {
   return ((graphics.palette[color].b * 126) + 255) / 510;
+}
+
+static unsigned int get_smzx_index_offset(uint8_t palette, unsigned int index)
+{
+  index %= 4;
+
+  if(index == 1)
+    index = 2;
+  else
+
+  if(index == 2)
+    index = 1;
+
+  return (unsigned int)palette * 4 + index;
+}
+
+uint8_t get_smzx_index(uint8_t palette, unsigned int offset)
+{
+  offset = get_smzx_index_offset(palette, offset);
+
+  return graphics.smzx_indices[offset];
+}
+
+void set_smzx_index(uint8_t palette, unsigned int offset, uint8_t color)
+{
+  // Setting the SMZX index is only supported for mode 3
+  if(graphics.screen_mode != 3)
+    return;
+
+  offset = get_smzx_index_offset(palette, offset);
+
+  graphics.smzx_indices[offset] = color % SMZX_PAL_SIZE;
+  graphics.palette_dirty = true;
 }
 
 /**
@@ -717,16 +715,16 @@ int get_char_average_luma(uint16_t chr, uint8_t palette, int mode, int mask_chr)
   return (sum + count / 2) / count;
 }
 
-void load_palette(const char *fname)
+void load_palette(const char *filename)
 {
   int file_size, i, r, g, b;
-  FILE *pal_file;
+  vfile *pal_file;
 
-  pal_file = fopen_unsafe(fname, "rb");
+  pal_file = vfopen_unsafe(filename, "rb");
   if(!pal_file)
     return;
 
-  file_size = ftell_and_rewind(pal_file);
+  file_size = vfilelength(pal_file, false);
 
   switch(graphics.screen_mode)
   {
@@ -743,17 +741,18 @@ void load_palette(const char *fname)
 
   for(i = 0; i < file_size / 3; i++)
   {
-    r = fgetc(pal_file);
-    g = fgetc(pal_file);
-    b = fgetc(pal_file);
+    r = vfgetc(pal_file);
+    g = vfgetc(pal_file);
+    b = vfgetc(pal_file);
     set_rgb(i, r, g, b);
   }
 
-  fclose(pal_file);
+  vfclose(pal_file);
 }
 
-void load_palette_mem(char *pal, size_t len)
+void load_palette_mem(const void *buffer, size_t len)
 {
+  const uint8_t *pal = buffer;
   int size, r, g, b, i, j;
 
   switch(graphics.screen_mode)
@@ -778,32 +777,32 @@ void load_palette_mem(char *pal, size_t len)
   }
 }
 
-void load_index_file(const char *fname)
+void load_index_file(const char *filename)
 {
-  FILE *idx_file;
+  vfile *idx_file;
   int i;
 
   if(get_screen_mode() != 3)
     return;
 
-  idx_file = fopen_unsafe(fname, "rb");
+  idx_file = vfopen_unsafe(filename, "rb");
   if(idx_file)
   {
     for(i = 0; i < SMZX_PAL_SIZE; i++)
     {
-      set_smzx_index(i, 0, fgetc(idx_file));
-      set_smzx_index(i, 1, fgetc(idx_file));
-      set_smzx_index(i, 2, fgetc(idx_file));
-      set_smzx_index(i, 3, fgetc(idx_file));
+      set_smzx_index(i, 0, vfgetc(idx_file));
+      set_smzx_index(i, 1, vfgetc(idx_file));
+      set_smzx_index(i, 2, vfgetc(idx_file));
+      set_smzx_index(i, 3, vfgetc(idx_file));
     }
 
-    fclose(idx_file);
+    vfclose(idx_file);
   }
 }
 
 void save_indices(void *buffer)
 {
-  Uint8 *copy_buffer = buffer;
+  uint8_t *copy_buffer = buffer;
   int i;
 
   if(get_screen_mode() != 3)
@@ -818,19 +817,19 @@ void save_indices(void *buffer)
   }
 }
 
-void load_indices(void *buffer, size_t size)
+void load_indices(const void *buffer, size_t size)
 {
-  Uint8 *copy_buffer = buffer;
+  const uint8_t *copy_buffer = buffer;
   unsigned int i;
 
   if(get_screen_mode() != 3)
     return;
 
-  if(size > SMZX_PAL_SIZE)
-    size = SMZX_PAL_SIZE;
+  if(size > SMZX_PAL_SIZE * 4)
+    size = SMZX_PAL_SIZE * 4;
 
   // Truncate incomplete colors
-  size -= (size & 3);
+  size /= 4;
 
   for(i = 0; i < size; i++)
   {
@@ -841,8 +840,11 @@ void load_indices(void *buffer, size_t size)
   }
 }
 
-void load_indices_direct(void *buffer, size_t size)
+void load_indices_direct(const void *buffer, size_t size)
 {
+  if(size > SMZX_PAL_SIZE * 4)
+    size = SMZX_PAL_SIZE * 4;
+
   memcpy(graphics.smzx_indices, buffer, size);
   graphics.palette_dirty = true;
 }
@@ -864,7 +866,7 @@ static void update_intensity_palette(void)
 static void swap_palettes(void)
 {
   struct rgb_color temp_colors[SMZX_PAL_SIZE];
-  Uint32 temp_intensities[SMZX_PAL_SIZE];
+  uint32_t temp_intensities[SMZX_PAL_SIZE];
   memcpy(temp_colors, graphics.backup_palette,
    sizeof(struct rgb_color) * SMZX_PAL_SIZE);
   memcpy(graphics.backup_palette, graphics.palette,
@@ -872,20 +874,20 @@ static void swap_palettes(void)
   memcpy(graphics.palette, temp_colors,
    sizeof(struct rgb_color) * SMZX_PAL_SIZE);
   memcpy(temp_intensities, graphics.backup_intensity,
-   sizeof(Uint32) * SMZX_PAL_SIZE);
+   sizeof(uint32_t) * SMZX_PAL_SIZE);
   if(graphics.fade_status)
   {
     memcpy(graphics.backup_intensity,
-     graphics.saved_intensity, sizeof(Uint32) * SMZX_PAL_SIZE);
+     graphics.saved_intensity, sizeof(uint32_t) * SMZX_PAL_SIZE);
     memcpy(graphics.saved_intensity, temp_intensities,
-     sizeof(Uint32) * SMZX_PAL_SIZE);
+     sizeof(uint32_t) * SMZX_PAL_SIZE);
   }
   else
   {
     memcpy(graphics.backup_intensity,
-     graphics.current_intensity, sizeof(Uint32) * SMZX_PAL_SIZE);
+     graphics.current_intensity, sizeof(uint32_t) * SMZX_PAL_SIZE);
     memcpy(graphics.current_intensity, temp_intensities,
-     sizeof(Uint32) * SMZX_PAL_SIZE);
+     sizeof(uint32_t) * SMZX_PAL_SIZE);
     update_intensity_palette();
   }
 }
@@ -893,17 +895,17 @@ static void swap_palettes(void)
 static void fix_layer_screen_mode(void)
 {
   // Fix the screen mode for all active layers except the UI_LAYER.
-  Uint32 i;
+  unsigned int i;
   for(i = 0; i < graphics.layer_count; i++)
     graphics.video_layers[i].mode = graphics.screen_mode;
 
   graphics.video_layers[UI_LAYER].mode = 0;
 }
 
-void set_screen_mode(Uint32 mode)
+void set_screen_mode(unsigned int mode)
 {
   int i;
-  Uint8 *pal_idx;
+  uint8_t *pal_idx;
   char bg, fg;
   mode %= 4;
 
@@ -970,7 +972,7 @@ void set_screen_mode(Uint32 mode)
   graphics.palette_dirty = true;
 }
 
-Uint32 get_screen_mode(void)
+unsigned int get_screen_mode(void)
 {
   return graphics.screen_mode;
 }
@@ -1047,10 +1049,13 @@ static Uint16 get_cursor_color(void)
 
     // Offset adjust protected colors if necessary.
     if(cursor_color >= 0x10)
+    {
       cursor_color = graphics.protected_pal_position + (cursor_color & 0x0F);
+    }
+    else
 
     // Offset adjust mode 1 colors if necessary.
-    else if(graphics.screen_mode == 1)
+    if(graphics.screen_mode == 1)
       cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
   }
 

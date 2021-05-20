@@ -151,18 +151,18 @@ struct video_layer
 
 struct graphics_data
 {
-  Uint32 screen_mode;
+  unsigned int screen_mode;
   char default_caption[32];
   struct char_element text_video[SCREEN_W * SCREEN_H];
-  Uint8 charset[CHAR_SIZE * CHARSET_SIZE * NUM_CHARSETS];
+  uint8_t charset[CHAR_SIZE * CHARSET_SIZE * NUM_CHARSETS];
   struct rgb_color palette[SMZX_PAL_SIZE];
   struct rgb_color protected_palette[PAL_SIZE];
   struct rgb_color intensity_palette[SMZX_PAL_SIZE];
   struct rgb_color backup_palette[SMZX_PAL_SIZE];
-  Uint8 smzx_indices[SMZX_PAL_SIZE * 4];
-  Uint32 current_intensity[SMZX_PAL_SIZE];
-  Uint32 saved_intensity[SMZX_PAL_SIZE];
-  Uint32 backup_intensity[SMZX_PAL_SIZE];
+  uint8_t smzx_indices[SMZX_PAL_SIZE * 4];
+  uint32_t current_intensity[SMZX_PAL_SIZE];
+  uint32_t saved_intensity[SMZX_PAL_SIZE];
+  uint32_t backup_intensity[SMZX_PAL_SIZE];
   boolean palette_dirty;
 
   Uint32 layer_count;
@@ -202,10 +202,10 @@ struct graphics_data
   char gl_scaling_shader[32];
   char sdl_render_driver[16];
 
-  Uint8 default_charset[CHAR_SIZE * CHARSET_SIZE];
+  uint8_t default_charset[CHAR_SIZE * CHARSET_SIZE];
 
-  Uint32 flat_intensity_palette[FULL_PAL_SIZE];
-  Uint32 protected_pal_position;
+  uint32_t flat_intensity_palette[FULL_PAL_SIZE];
+  uint32_t protected_pal_position;
   struct renderer renderer;
   void *render_data;
   Uint32 renderer_num;
@@ -259,33 +259,35 @@ CORE_LIBSPEC boolean has_video_initialized(void);
 CORE_LIBSPEC void update_screen(void);
 CORE_LIBSPEC void set_window_caption(const char *caption);
 
-CORE_LIBSPEC void ec_read_char(Uint16 chr, char *matrix);
-CORE_LIBSPEC void ec_change_char(Uint16 chr, char *matrix);
-CORE_LIBSPEC Sint32 ec_load_set_var(char *name, Uint16 pos, int version);
-CORE_LIBSPEC void ec_mem_load_set(Uint8 *chars, size_t len);
-CORE_LIBSPEC void ec_mem_save_set(Uint8 *chars);
-CORE_LIBSPEC void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int v);
-CORE_LIBSPEC void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos);
+CORE_LIBSPEC void ec_read_char(uint16_t chr, char matrix[CHAR_SIZE]);
+CORE_LIBSPEC void ec_change_char(uint16_t chr, const char matrix[CHAR_SIZE]);
+CORE_LIBSPEC int ec_load_set_var(const char *filename, uint16_t first_chr, int ver);
+CORE_LIBSPEC void ec_mem_load_set(const void *buffer, size_t len);
+CORE_LIBSPEC void ec_mem_load_set_var(const void *buffer, size_t len,
+ uint16_t first_chr, int ver);
+CORE_LIBSPEC void ec_mem_save_set_var(void *buffer, size_t len, uint16_t first_chr);
 
 CORE_LIBSPEC void update_palette(void);
-CORE_LIBSPEC void load_palette(const char *fname);
-CORE_LIBSPEC void load_palette_mem(char *pal, size_t len);
-CORE_LIBSPEC void load_index_file(const char *fname);
+CORE_LIBSPEC void load_palette(const char *filename);
+CORE_LIBSPEC void load_palette_mem(const void *buffer, size_t len);
+CORE_LIBSPEC void load_index_file(const char *filename);
 CORE_LIBSPEC void smzx_palette_loaded(int val);
-CORE_LIBSPEC void set_screen_mode(Uint32 mode);
-CORE_LIBSPEC Uint32 get_screen_mode(void);
-CORE_LIBSPEC void set_palette_intensity(Uint32 percent);
-CORE_LIBSPEC void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b);
-CORE_LIBSPEC void set_protected_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b);
-CORE_LIBSPEC Uint32 get_smzx_index(Uint32 col, Uint32 offset);
-CORE_LIBSPEC void set_smzx_index(Uint32 col, Uint32 offset, Uint32 value);
-CORE_LIBSPEC void set_red_component(Uint32 color, Uint32 r);
-CORE_LIBSPEC void set_green_component(Uint32 color, Uint32 g);
-CORE_LIBSPEC void set_blue_component(Uint32 color, Uint32 b);
-CORE_LIBSPEC void get_rgb(Uint32 color, Uint8 *r, Uint8 *g, Uint8 *b);
-CORE_LIBSPEC Uint32 get_red_component(Uint32 color);
-CORE_LIBSPEC Uint32 get_green_component(Uint32 color);
-CORE_LIBSPEC Uint32 get_blue_component(Uint32 color);
+CORE_LIBSPEC void set_screen_mode(unsigned int mode);
+CORE_LIBSPEC unsigned int get_screen_mode(void);
+CORE_LIBSPEC void set_palette_intensity(unsigned int percent);
+CORE_LIBSPEC void set_rgb(uint8_t color, unsigned int r,
+ unsigned int g, unsigned int b);
+CORE_LIBSPEC void set_protected_rgb(uint8_t color, unsigned int r,
+ unsigned int g, unsigned int b);
+CORE_LIBSPEC void set_red_component(uint8_t color, unsigned int r);
+CORE_LIBSPEC void set_green_component(uint8_t color, unsigned int g);
+CORE_LIBSPEC void set_blue_component(uint8_t color, unsigned int b);
+CORE_LIBSPEC void get_rgb(uint8_t color, uint8_t *r, uint8_t *g, uint8_t *b);
+CORE_LIBSPEC unsigned int get_red_component(uint8_t color);
+CORE_LIBSPEC unsigned int get_green_component(uint8_t color);
+CORE_LIBSPEC unsigned int get_blue_component(uint8_t color);
+CORE_LIBSPEC uint8_t get_smzx_index(uint8_t palette, unsigned int offset);
+CORE_LIBSPEC void set_smzx_index(uint8_t palette, unsigned int offset, uint8_t color);
 CORE_LIBSPEC boolean get_fade_status(void);
 CORE_LIBSPEC void vquick_fadeout(void);
 CORE_LIBSPEC void insta_fadein(void);
@@ -327,16 +329,16 @@ void resize_screen(Uint32 w, Uint32 h);
 void set_screen(struct char_element *src);
 void get_screen(struct char_element *dest);
 
-void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value);
-Uint8 ec_read_byte(Uint16 chr, Uint8 byte);
-Sint32 ec_load_set(char *name);
+void ec_change_byte(uint16_t chr, uint8_t byte, uint8_t new_value);
+uint8_t ec_read_byte(uint16_t chr, uint8_t byte);
+boolean ec_load_set(const char *filename);
 void ec_clear_set(void);
 
-void set_color_intensity(Uint32 color, Uint32 percent);
-Uint32 get_color_intensity(Uint32 color);
+void set_color_intensity(uint8_t color, unsigned int percent);
+unsigned int get_color_intensity(uint8_t color);
 void save_indices(void *buffer);
-void load_indices(void *buffer, size_t size);
-void load_indices_direct(void *buffer, size_t size);
+void load_indices(const void *buffer, size_t size);
+void load_indices_direct(const void *buffer, size_t size);
 void vquick_fadein(void);
 boolean get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
  int transparent_color, uint8_t * RESTRICT buffer);
@@ -361,7 +363,8 @@ CORE_LIBSPEC int get_color_luma(unsigned int color);
 CORE_LIBSPEC int get_char_average_luma(uint16_t chr, uint8_t palette, int mode,
  int mask_chr);
 CORE_LIBSPEC void ec_load_mzx(void);
-CORE_LIBSPEC void ec_load_set_secondary(const char *name, Uint8 *dest);
+CORE_LIBSPEC void ec_load_set_secondary(const char *filename,
+ uint8_t dest[CHAR_SIZE * CHARSET_SIZE]);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_ENABLE_SCREENSHOTS

@@ -527,7 +527,7 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
 
   // Save charset
   charset_mem = cmalloc(3584);
-  ec_mem_save_set(charset_mem);
+  ec_mem_save_set_var(charset_mem, 3584, 0);
   fwrite(charset_mem, 3584, 1, fp);
   free(charset_mem);
 
