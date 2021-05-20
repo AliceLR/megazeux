@@ -338,7 +338,7 @@ void save_indices(void *buffer);
 void load_indices(void *buffer, size_t size);
 void load_indices_direct(void *buffer, size_t size);
 void vquick_fadein(void);
-void get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
+boolean get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
  int transparent_color, uint8_t * RESTRICT buffer);
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,

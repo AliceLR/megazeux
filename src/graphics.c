@@ -2777,15 +2777,17 @@ void dump_screen(void)
 /**
  * Generate a bitmask of visible pixels for a character/palette pair using the
  * current screen mode and a given transparent color index. The provided buffer
- * must be CHAR_SIZE bytes in length.
+ * must be CHAR_SIZE bytes in length. Returns `false` if there are no visible
+ * pixels, otherwise `true`.
  */
-void get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
+boolean get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
  int transparent_color, uint8_t * RESTRICT buffer)
 {
   const uint8_t *chrdata = graphics.charset + char_idx * CHAR_SIZE;
   const uint8_t HI = 0xAA;
   const uint8_t LO = 0x55;
   int is_transparent[4];
+  int ret = 0x00;
   int y;
 
   if(graphics.screen_mode == 0)
@@ -2807,6 +2809,7 @@ void get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
         mask &= ~base;
 
       buffer[y] = mask;
+      ret |= mask;
     }
   }
   else
@@ -2846,8 +2849,10 @@ void get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
       }
 
       buffer[y] = mask;
+      ret |= mask;
     }
   }
+  return (ret != 0x00);
 }
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
