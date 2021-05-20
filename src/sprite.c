@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1011,9 +1012,9 @@ static inline void destroy_mask(struct mask m)
 }
 
 static inline int mask_get_pixel(struct world *mzx_world,
- const struct sprite *spr, struct mask m, int pixel_x, int pixel_y)
+ const struct sprite *spr, struct mask m, unsigned int pixel_x, unsigned int pixel_y)
 {
-  int ch = (pixel_y / CHAR_H * spr->width + pixel_x / CHAR_W);
+  unsigned int ch = (pixel_y / CHAR_H * spr->width + pixel_x / CHAR_W);
 
   if(!m.mapping[ch])
   {
@@ -1043,10 +1044,16 @@ static inline int mask_get_pixel(struct world *mzx_world,
 static inline boolean collision_pix_in(struct world *mzx_world,
  const struct sprite *spr, struct mask m, struct rect c)
 {
-  int x, y, px, py;
+  unsigned int px, py;
+  int x, y;
 
   if((spr->flags & SPRITE_PIXCHECK) != SPRITE_PIXCHECK)
     return true;
+
+  // mask_get_pixel relies on these relations being true to speed up its math
+  // with unsigned int params. Furthermore, negative ints would break its math.
+  assert(c.x >= m.dim.x);
+  assert(c.y >= m.dim.y);
 
   // Pixel by pixel collision check
   for(y = c.y; y < c.y + c.h; y++)
