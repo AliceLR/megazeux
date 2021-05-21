@@ -32,6 +32,7 @@
 #include "../intake_num.h"
 #include "../util.h"
 #include "../window.h"
+#include "../io/vio.h"
 
 #include "configure.h"
 #include "graphics.h"
@@ -2297,13 +2298,13 @@ static void init_pal_ed_palettes(struct pal_ed_context *pal_ed)
     else
     {
       // Load the external SMZX palette.
-      FILE *fp = fopen_unsafe(mzx_res_get_by_id(SMZX_PAL), "rb");
-      if(fp)
+      vfile *vf = vfopen_unsafe(mzx_res_get_by_id(SMZX_PAL), "rb");
+      if(vf)
       {
-        if(!fread(temp_palette, sizeof(temp_palette), 1, fp))
+        if(!vfread(temp_palette, sizeof(temp_palette), 1, vf))
           memset(temp_palette, 0, sizeof(temp_palette));
 
-        fclose(fp);
+        vfclose(vf);
       }
     }
 
