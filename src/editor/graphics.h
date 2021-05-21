@@ -27,16 +27,12 @@ __M_BEGIN_DECLS
 #include "../graphics.h"
 
 void store_backup_palette(char dest[SMZX_PAL_SIZE * 3]);
-void load_backup_palette(char src[SMZX_PAL_SIZE * 3]);
+void load_backup_palette(const char src[SMZX_PAL_SIZE * 3]);
 void store_backup_indices(char dest[SMZX_PAL_SIZE * 4]);
-void load_backup_indices(char src[SMZX_PAL_SIZE * 4]);
+void load_backup_indices(const char src[SMZX_PAL_SIZE * 4]);
 
 void save_palette(char *fname);
 void save_index_file(char *fname);
-void draw_char_mixed_pal(Uint8 chr, Uint8 bg_color, Uint8 fg_color,
- Uint32 x, Uint32 y);
-void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset,
- boolean use_protected_pal);
 
 void ec_save_set_var(const char *name, uint16_t first_chr, unsigned int num);
 void ec_change_block(uint8_t offset, uint8_t charset,

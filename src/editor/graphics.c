@@ -54,7 +54,7 @@ void store_backup_palette(char dest[SMZX_PAL_SIZE * 3])
   }
 }
 
-void load_backup_palette(char src[SMZX_PAL_SIZE * 3])
+void load_backup_palette(const char src[SMZX_PAL_SIZE * 3])
 {
   load_palette_mem(src, SMZX_PAL_SIZE * 3);
 }
@@ -64,7 +64,7 @@ void store_backup_indices(char dest[SMZX_PAL_SIZE * 4])
   memcpy(dest, graphics.smzx_indices, SMZX_PAL_SIZE * 4);
 }
 
-void load_backup_indices(char src[SMZX_PAL_SIZE * 4])
+void load_backup_indices(const char src[SMZX_PAL_SIZE * 4])
 {
   memcpy(graphics.smzx_indices, src, SMZX_PAL_SIZE * 4);
 }
@@ -110,18 +110,6 @@ void save_index_file(char *fname)
 
     vfclose(idx_file);
   }
-}
-
-void draw_char_mixed_pal(Uint8 chr, Uint8 bg_color, Uint8 fg_color,
- Uint32 x, Uint32 y)
-{
-  draw_char_mixed_pal_ext(chr, bg_color, fg_color, x, y, PRO_CH);
-}
-
-void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset,
- boolean use_protected_pal)
-{
-  draw_char_linear_ext(color, chr, offset, PRO_CH, use_protected_pal ? 16 : 0);
 }
 
 void ec_save_set_var(const char *name, uint16_t first_chr, unsigned int num)

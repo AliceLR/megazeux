@@ -2382,6 +2382,7 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
   }
 }
 
+#ifdef CONFIG_EDITOR
 void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
  Uint8 fg_color, Uint32 x, Uint32 y, Uint32 offset)
 {
@@ -2398,6 +2399,7 @@ void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
   dirty_ui();
   dirty_current();
 }
+#endif /* CONFIG_EDITOR */
 
 void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset)

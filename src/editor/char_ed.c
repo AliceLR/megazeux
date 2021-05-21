@@ -430,11 +430,10 @@ static void draw_multichar(char *buffer, int start_x, int start_y,
  int highlight_width, int highlight_height)
 {
   char *buffer_ptr = buffer;
-  int offset = start_x + (start_y * 80);
   int buffer_width = width * 8;
   char highlight[2] = { 0x11, 0x1B };
   char colors[2];
-  int protected;
+  int c_offset;
   int color;
   int x, y;
 
@@ -443,29 +442,30 @@ static void draw_multichar(char *buffer, int start_x, int start_y,
     colors[0] = 0x18;
     colors[1] = 0x17;
     color = 0x87;
-    protected = 1;
+    c_offset = 16;
   }
   else
   {
     color = current_palette;
     colors[0] = (color & 0xF0) >> 4;
     colors[1] = (color & 0x0F);
-    protected = 0;
+    c_offset = 0;
   }
 
   if((height == 1) && (width <= 3))
   {
-    int skip = 80 - (buffer_width * 2);
     char chars[2] = { 250, 219 };
     int index;
 
-    for(y = 0; y < 14; y++, offset += skip)
+    for(y = 0; y < 14; y++)
     {
-      for(x = 0; x < (width * 8); x++, offset += 2, buffer_ptr++)
+      for(x = 0; x < (width * 8); x++, buffer_ptr++)
       {
+        int draw_x = start_x + (x * 2);
+        int draw_y = start_y + y;
         index = *buffer_ptr;
-        draw_char_linear(color, chars[index], offset, protected);
-        draw_char_linear(color, chars[index], offset + 1, protected);
+        draw_char_ext(chars[index], color, draw_x,     draw_y, PRO_CH, c_offset);
+        draw_char_ext(chars[index], color, draw_x + 1, draw_y, PRO_CH, c_offset);
       }
     }
 
@@ -478,20 +478,20 @@ static void draw_multichar(char *buffer, int start_x, int start_y,
   else
   {
     char half_chars[4] = { 0x20, 0xDF, 0xDC, 0xDB };
-    int skip = 80 - buffer_width;
     int current_char;
     int upper;
     int lower;
 
-    for(y = 0; y < (height * 7); y++, offset += skip,
-     buffer_ptr += buffer_width)
+    for(y = 0; y < (height * 7); y++, buffer_ptr += buffer_width)
     {
-      for(x = 0; x < buffer_width; x++, offset++, buffer_ptr++)
+      for(x = 0; x < buffer_width; x++, buffer_ptr++)
       {
         upper = *buffer_ptr;
         lower = *(buffer_ptr + buffer_width);
         current_char = (lower << 1) + upper;
-        draw_char_linear(color, half_chars[current_char], offset, protected);
+
+        draw_char_ext(half_chars[current_char], color,
+         start_x + x, start_y + y, PRO_CH, c_offset);
       }
     }
 
@@ -506,8 +506,8 @@ static void draw_multichar(char *buffer, int start_x, int start_y,
         upper = *buffer_ptr;
         lower = *(buffer_ptr + buffer_width);
 
-        draw_char_mixed_pal(half_chars[2], colors[upper], highlight[lower],
-         start_x + x + current_x, start_y + (current_y / 2));
+        draw_char_mixed_pal_ext(half_chars[2], colors[upper], highlight[lower],
+         start_x + x + current_x, start_y + (current_y / 2), PRO_CH);
       }
       current_y++;
       y--;
@@ -531,8 +531,8 @@ static void draw_multichar(char *buffer, int start_x, int start_y,
         upper = *buffer_ptr;
         lower = *(buffer_ptr + buffer_width);
 
-        draw_char_mixed_pal(half_chars[1], colors[lower], highlight[upper],
-         start_x + x + current_x, start_y + (current_y / 2));
+        draw_char_mixed_pal_ext(half_chars[1], colors[lower], highlight[upper],
+         start_x + x + current_x, start_y + (current_y / 2), PRO_CH);
       }
     }
   }
@@ -547,18 +547,17 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
   char base_colors[4] = { 0x2, 0x3, 0x4, 0x5 };
   char highlight_colors[4] = { 0x1, 0x6, 0xD, 0xB };
   int bg_color = (base_colors[0] << 4) + base_colors[3];
-  int offset = start_x + (start_y * 80);
   int buffer_width = width * 4;
 
   int x, y;
+  int draw_x, draw_y;
 
   if((height == 1) && (width <= 3))
   {
-    int skip = 80 - (buffer_width * 4);
-    int skip2 = buffer_width - highlight_width;
+    int skip = buffer_width - highlight_width;
 
     int current_pixel;
-    for(y = 0; y < 14; y++, offset += skip)
+    for(y = 0; y < 14; y++)
     {
       for(x = 0; x < buffer_width; x++, buffer_ptr++)
       {
@@ -579,8 +578,7 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
 
     buffer_ptr = buffer + current_x + ((current_y) * buffer_width);
 
-    for(y = 0; y < highlight_height; y++,
-     buffer_ptr += skip2)
+    for(y = 0; y < highlight_height; y++, buffer_ptr += skip)
     {
       for(x = 0; x < highlight_width; x++, buffer_ptr++)
       {
@@ -603,24 +601,19 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
   }
   else
   {
-    int skip = 80 - (buffer_width * 2);
-    int skip2 = buffer_width - highlight_width;
-    int skip3 = 80 - (highlight_width * 2);
+    int skip = buffer_width - highlight_width;
 
-    for(y = 0; y < (height * 7); y++, offset += skip,
-     buffer_ptr += buffer_width)
+    for(y = 0; y < (height * 7); y++, buffer_ptr += buffer_width)
     {
-      for(x = 0; x < buffer_width; x++, offset += 2, buffer_ptr++)
+      for(x = 0; x < buffer_width; x++, buffer_ptr++)
       {
         current_color = (base_colors[(int)(*buffer_ptr)]) |
          ((base_colors[(int)(*(buffer_ptr + buffer_width))]) << 4);
-        draw_char_linear(current_color, 223, offset, 1);
-        draw_char_linear(current_color, 223, offset + 1, 1);
+
+        draw_char(223, current_color, start_x + (x * 2),     start_y + y);
+        draw_char(223, current_color, start_x + (x * 2) + 1, start_y + y);
       }
     }
-
-    offset = start_x + (current_x * 2) +
-     ((start_y + (current_y / 2)) * 80);
 
     // Start at the top
     y = highlight_height;
@@ -629,17 +622,18 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
       buffer_ptr = buffer + current_x +
        ((current_y & ~1) * buffer_width);
 
-      for(x = 0; x < highlight_width; x++, offset += 2,
-       buffer_ptr++)
+      for(x = 0; x < highlight_width; x++, buffer_ptr++)
       {
         current_color = (base_colors[(int)(*buffer_ptr)]) |
          ((highlight_colors[(int)(*(buffer_ptr + buffer_width))]) << 4);
-        draw_char_linear(current_color, 223, offset, 1);
-        draw_char_linear(current_color, 223, offset + 1, 1);
+
+        draw_x = start_x + (current_x + x) * 2;
+        draw_y = start_y + (current_y / 2);
+        draw_char(223, current_color, draw_x,     draw_y);
+        draw_char(223, current_color, draw_x + 1, draw_y);
       }
 
-      buffer_ptr += (skip2 * 2);
-      offset += skip3;
+      buffer_ptr += (skip * 2);
       y--;
 
       current_y++;
@@ -650,16 +644,17 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
       buffer_ptr = buffer + current_x +
        ((current_y & ~1) * buffer_width);
 
-      for(x = 0; x < highlight_width; x++, offset += 2,
-       buffer_ptr++)
+      for(x = 0; x < highlight_width; x++, buffer_ptr++)
       {
         current_color = (highlight_colors[(int)(*buffer_ptr)]) |
          ((highlight_colors[(int)(*(buffer_ptr + buffer_width))]) << 4);
-        draw_char_linear(current_color, 223, offset, 1);
-        draw_char_linear(current_color, 223, offset + 1, 1);
+
+        draw_x = start_x + (current_x + x) * 2;
+        draw_y = start_y + (current_y / 2);
+        draw_char(223, current_color, draw_x,     draw_y);
+        draw_char(223, current_color, draw_x + 1, draw_y);
       }
-      buffer_ptr += (skip2 * 2);
-      offset += skip3;
+      buffer_ptr += (skip * 2);
       current_y += 2;
       y -= 2;
     }
@@ -669,13 +664,15 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
       buffer_ptr = buffer + current_x +
        ((current_y & ~1) * buffer_width);
 
-      for(x = 0; x < highlight_width; x++, offset += 2,
-       buffer_ptr++)
+      for(x = 0; x < highlight_width; x++, buffer_ptr++)
       {
         current_color = (highlight_colors[(int)(*buffer_ptr)]) |
          ((base_colors[(int)(*(buffer_ptr + buffer_width))]) << 4);
-        draw_char_linear(current_color, 223, offset, 1);
-        draw_char_linear(current_color, 223, offset + 1, 1);
+
+        draw_x = start_x + (current_x + x) * 2;
+        draw_y = start_y + (current_y / 2);
+        draw_char(223, current_color, draw_x,     draw_y);
+        draw_char(223, current_color, draw_x + 1, draw_y);
       }
     }
   }

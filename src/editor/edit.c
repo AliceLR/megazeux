@@ -1052,11 +1052,13 @@ static void draw_vlayer_window(struct editor_context *editor)
  */
 static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
 {
-  int offset = 0;
-  int start;
-  int skip;
-  int x;
+  int after_x;
+  int after_y;
+  int after_width;
   int y;
+
+  if(in_x < 0 || in_x > SCREEN_W || in_y < 0 || in_y > SCREEN_H)
+    return;
 
   if(in_x + in_width > SCREEN_W)
     in_width = SCREEN_W - in_x;
@@ -1064,34 +1066,27 @@ static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
   if(in_y + in_height > SCREEN_H)
     in_height = SCREEN_H - in_y;
 
-  start = in_x + (in_y * in_width);
-  skip = SCREEN_W - in_width;
+  after_x = in_x + in_width;
+  after_y = in_y + in_height;
+  after_width = SCREEN_W - after_x;
 
-  // Clear everything before the in-bounds area
-  while(offset < start)
+  // Clear any lines prior to the first line.
+  for(y = 0; y < in_y; y++)
+    fill_line(SCREEN_W, 0, y, 177, 1);
+
+  // Clear any area before and after the in-bounds area.
+  for(; y < after_y; y++)
   {
-    draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-    offset++;
+    if(in_x > 0)
+      fill_line(in_x, 0, y, 177, 1);
+
+    if(after_width > 0)
+      fill_line(after_width, after_x, y, 177, 1);
   }
 
-  // Clear everything between the in-bounds area
-  for(y = 0; y < in_height; y++)
-  {
-    offset += in_width;
-
-    for(x = 0; x < skip; x++)
-    {
-      draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-      offset++;
-    }
-  }
-
-  // Clear everything after the in-bounds area
-  while(offset < SCREEN_W * SCREEN_H)
-  {
-    draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-    offset++;
-  }
+  // Clear any lines after the last line.
+  for(; y < SCREEN_H; y++)
+    fill_line(SCREEN_W, 0, y, 177, 1);
 }
 
 /**

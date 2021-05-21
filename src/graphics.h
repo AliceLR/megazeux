@@ -226,8 +226,6 @@ CORE_LIBSPEC void erase_area(Uint32 x, Uint32 y, Uint32 x2, Uint32 y2);
 
 CORE_LIBSPEC void write_string_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset, Uint32 c_offset);
-CORE_LIBSPEC void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
- Uint8 fg_color, Uint32 x, Uint32 y, Uint32 offset);
 CORE_LIBSPEC void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset);
 CORE_LIBSPEC void draw_char_linear_ext(Uint8 color, Uint8 chr,
@@ -364,6 +362,8 @@ CORE_LIBSPEC int get_char_average_luma(uint16_t chr, uint8_t palette, int mode,
 CORE_LIBSPEC void ec_load_mzx(void);
 CORE_LIBSPEC void ec_load_set_secondary(const char *filename,
  uint8_t dest[CHAR_SIZE * CHARSET_SIZE]);
+CORE_LIBSPEC void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
+ Uint8 fg_color, Uint32 x, Uint32 y, Uint32 offset);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_ENABLE_SCREENSHOTS
