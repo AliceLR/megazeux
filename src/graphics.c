@@ -849,9 +849,9 @@ void load_indices_direct(const void *buffer, size_t size)
   graphics.palette_dirty = true;
 }
 
-void smzx_palette_loaded(int val)
+void smzx_palette_loaded(boolean is_loaded)
 {
-  graphics.default_smzx_loaded = val;
+  graphics.default_smzx_loaded = is_loaded;
 }
 
 static void update_intensity_palette(void)
@@ -924,7 +924,7 @@ void set_screen_mode(unsigned int mode)
       }
       set_palette_intensity(100);
       load_palette(mzx_res_get_by_id(SMZX_PAL));
-      graphics.default_smzx_loaded = 1;
+      graphics.default_smzx_loaded = true;
     }
   }
   else
@@ -989,14 +989,14 @@ unsigned int get_screen_mode(void)
  * 2 and 3, so always use protected white or black in these modes.
  */
 
-static Uint16 get_cursor_color(void)
+static unsigned int get_cursor_color(void)
 {
   struct char_element *cursor_element =
    graphics.text_video + graphics.cursor_x + (graphics.cursor_y * SCREEN_W);
-  Uint16 cursor_color;
-  Uint32 cursor_char = cursor_element->char_value;
-  Uint32 fg_color = cursor_element->fg_color;
-  Uint32 bg_color = cursor_element->bg_color;
+  unsigned int cursor_char = cursor_element->char_value;
+  unsigned int fg_color = cursor_element->fg_color;
+  unsigned int bg_color = cursor_element->bg_color;
+  unsigned int cursor_color;
   int i;
 
   if(bg_color >= 0x10)
@@ -1015,8 +1015,8 @@ static Uint16 get_cursor_color(void)
     // Modes 0 and 1- use the (modified) classic cursor color logic.
     // NOTE: there was a trick using Uint32 * here before that caused
     // misalignment crashes on some platforms.
-    Uint8 *offset = graphics.charset + cursor_char * CHAR_SIZE;
-    Uint8 cursor_solid = 0xFF;
+    uint8_t *offset = graphics.charset + cursor_char * CHAR_SIZE;
+    int cursor_solid = 0xFF;
 
     // Choose FG by default.
     cursor_color = fg_color;
@@ -1062,8 +1062,8 @@ static Uint16 get_cursor_color(void)
   else
   {
     // Modes 2 and 3- pick protected white or black based on the average luma.
-    Uint32 avg;
-    Uint8 pal;
+    unsigned int pal;
+    int avg;
 
     bg_color &= 0x0F;
     fg_color &= 0x0F;
@@ -1090,10 +1090,7 @@ static int compare_layers(const void *a, const void *b)
 
 void update_screen(void)
 {
-  Uint32 ticks = get_ticks();
-#ifndef CONFIG_NO_LAYER_RENDERING
-  Uint32 layer;
-#endif
+  uint32_t ticks = get_ticks();
 
   if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
   {
@@ -1110,6 +1107,7 @@ void update_screen(void)
 #ifndef CONFIG_NO_LAYER_RENDERING
   if(graphics.requires_extended && graphics.renderer.render_layer)
   {
+    uint32_t layer;
     for(layer = 0; layer < graphics.layer_count; layer++)
     {
       graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];
@@ -1148,10 +1146,10 @@ void update_screen(void)
 
   if(graphics.renderer.render_cursor || graphics.renderer.hardware_cursor)
   {
-    Uint16 cursor_color = get_cursor_color();
+    unsigned int cursor_color = get_cursor_color();
+    unsigned int offset = 0;
+    unsigned int lines = 0;
     boolean enabled = true;
-    Uint32 lines = 0;
-    Uint32 offset = 0;
 
     switch(graphics.cursor_mode)
     {
@@ -1192,11 +1190,11 @@ void update_screen(void)
     int mouse_x, mouse_y;
     get_mouse_pixel_position(&mouse_x, &mouse_y);
 
-    mouse_x = (mouse_x / graphics.mouse_width_mul) * graphics.mouse_width_mul;
-    mouse_y = (mouse_y / graphics.mouse_height_mul) * graphics.mouse_height_mul;
+    mouse_x = (mouse_x / graphics.mouse_width) * graphics.mouse_width;
+    mouse_y = (mouse_y / graphics.mouse_height) * graphics.mouse_height;
 
     graphics.renderer.render_mouse(&graphics, mouse_x, mouse_y,
-     graphics.mouse_width_mul, graphics.mouse_height_mul);
+     graphics.mouse_width, graphics.mouse_height);
   }
 
   graphics.renderer.sync_screen(&graphics);
@@ -1238,8 +1236,7 @@ void vquick_fadeout(void)
 
   if(!graphics.fade_status)
   {
-    Sint32 i, i2, num_colors;
-    Uint32 ticks;
+    int i, i2, num_colors;
 
     if(graphics.screen_mode >= 2)
       num_colors = SMZX_PAL_SIZE;
@@ -1247,11 +1244,11 @@ void vquick_fadeout(void)
       num_colors = PAL_SIZE;
 
     memcpy(graphics.saved_intensity, graphics.current_intensity,
-     sizeof(Uint32) * num_colors);
+     sizeof(uint32_t) * num_colors);
 
     for(i = 10; i >= 0; i--)
     {
-      ticks = get_ticks();
+      uint32_t ticks = get_ticks();
 
       for(i2 = 0; i2 < num_colors; i2++)
         set_color_intensity(i2, (graphics.saved_intensity[i2] * i / 10));
@@ -1280,8 +1277,7 @@ void vquick_fadein(void)
 
   if(graphics.fade_status)
   {
-    Uint32 i, i2, num_colors;
-    Uint32 ticks;
+    unsigned int i, i2, num_colors;
 
     graphics.fade_status = false;
 
@@ -1292,7 +1288,7 @@ void vquick_fadein(void)
 
     for(i = 0; i <= 10; i++)
     {
-      ticks = get_ticks();
+      uint32_t ticks = get_ticks();
 
       for(i2 = 0; i2 < num_colors; i2++)
         set_color_intensity(i2, (graphics.saved_intensity[i2] * i / 10));
@@ -1310,7 +1306,7 @@ void vquick_fadein(void)
 // Instant fade out
 void insta_fadeout(void)
 {
-  Uint32 i, num_colors;
+  unsigned int i, num_colors;
 
   if(graphics.fade_status)
     return;
@@ -1321,7 +1317,7 @@ void insta_fadeout(void)
     num_colors = PAL_SIZE;
 
   memcpy(graphics.saved_intensity, graphics.current_intensity,
-   sizeof(Uint32) * num_colors);
+   sizeof(uint32_t) * num_colors);
 
   for(i = 0; i < num_colors; i++)
     set_color_intensity(i, 0);
@@ -1335,7 +1331,7 @@ void insta_fadeout(void)
 // Instant fade in
 void insta_fadein(void)
 {
-  Uint32 i, num_colors;
+  unsigned int i, num_colors;
 
   if(!graphics.fade_status)
     return;
@@ -1508,8 +1504,8 @@ static void set_window_icon(void)
 #endif // CONFIG_SDL && CONFIG_ICON
 }
 
-static void new_empty_layer(struct video_layer *layer, int x, int y, Uint32 w,
- Uint32 h, int draw_order)
+static void new_empty_layer(struct video_layer *layer, int x, int y,
+ unsigned int w, unsigned int h, int draw_order)
 {
   // Layers are persistent and static
   if(!layer->data || layer->w != w || layer->h != h)
@@ -1525,10 +1521,10 @@ static void new_empty_layer(struct video_layer *layer, int x, int y, Uint32 w,
   layer->offset = 0;
 }
 
-Uint32 create_layer(int x, int y, Uint32 w, Uint32 h, int draw_order, int t_col,
- int offset, boolean unbound)
+uint32_t create_layer(int x, int y, unsigned int w, unsigned int h,
+ int draw_order, int t_col, int offset, boolean unbound)
 {
-  Uint32 layer_idx = graphics.layer_count;
+  uint32_t layer_idx = graphics.layer_count;
   struct video_layer *layer = &graphics.video_layers[layer_idx];
 
   new_empty_layer(layer, x, y, w, h, draw_order);
@@ -1544,19 +1540,19 @@ Uint32 create_layer(int x, int y, Uint32 w, Uint32 h, int draw_order, int t_col,
   return layer_idx;
 }
 
-void set_layer_offset(Uint32 layer, int offset)
+void set_layer_offset(uint32_t layer, int offset)
 {
   graphics.video_layers[layer].offset = offset;
 }
 
-void set_layer_mode(Uint32 layer, int mode)
+void set_layer_mode(uint32_t layer, int mode)
 {
   // In general, we want the layer to use the screen mode, but some
   // UI elements need to be able to change this.
   graphics.video_layers[layer].mode = mode;
 }
 
-void move_layer(Uint32 layer, int x, int y)
+void move_layer(uint32_t layer, int x, int y)
 {
   graphics.video_layers[layer].x = x;
   graphics.video_layers[layer].y = y;
@@ -1582,7 +1578,7 @@ static void init_layers(void)
   blank_layers();
 }
 
-void select_layer(Uint32 layer)
+void select_layer(uint32_t layer)
 {
   graphics.current_layer = layer;
   graphics.current_video = graphics.video_layers[layer].data;
@@ -1613,11 +1609,11 @@ void blank_layers(void)
   fix_layer_screen_mode();
 }
 
-void destruct_extra_layers(Uint32 first)
+void destruct_extra_layers(uint32_t first)
 {
   // Delete layers that have not persisted since the previous frame and
   // make all extra layers available for use.
-  Uint32 i;
+  uint32_t i;
 
   if(first < NUM_DEFAULT_LAYERS)
     first = NUM_DEFAULT_LAYERS;
@@ -1642,7 +1638,7 @@ void destruct_extra_layers(Uint32 first)
 
 void destruct_layers(void)
 {
-  Uint32 i;
+  uint32_t i;
   for(i = 0; i < TEXTVIDEO_LAYERS; i++)
   {
     if(graphics.video_layers[i].data)
@@ -1906,7 +1902,7 @@ int get_available_video_output_list(const char **buffer, int buffer_len)
 
 int get_current_video_output(void)
 {
-  return (int)(graphics.renderer_num);
+  return graphics.renderer_num;
 }
 
 boolean is_fullscreen(void)
@@ -1926,7 +1922,7 @@ void toggle_fullscreen(void)
   update_screen();
 }
 
-void resize_screen(Uint32 w, Uint32 h)
+void resize_screen(unsigned int w, unsigned int h)
 {
   if(!graphics.fullscreen && graphics.allow_resize)
   {
@@ -2548,21 +2544,21 @@ void get_screen(struct char_element *dest)
   memcpy(dest, graphics.text_video, size);
 }
 
-void cursor_underline(Uint32 x, Uint32 y)
+void cursor_underline(unsigned int x, unsigned int y)
 {
   graphics.cursor_mode = CURSOR_MODE_UNDERLINE;
   graphics.cursor_x = x;
   graphics.cursor_y = y;
 }
 
-void cursor_solid(Uint32 x, Uint32 y)
+void cursor_solid(unsigned int x, unsigned int y)
 {
   graphics.cursor_mode = CURSOR_MODE_SOLID;
   graphics.cursor_x = x;
   graphics.cursor_y = y;
 }
 
-void cursor_hint(Uint32 x, Uint32 y)
+void cursor_hint(unsigned int x, unsigned int y)
 {
   graphics.cursor_mode = graphics.cursor_hint_mode;
   graphics.cursor_x = x;
@@ -2586,6 +2582,12 @@ void m_show(void)
     graphics.mouse_status = true;
 }
 
+void mouse_size(unsigned int width, unsigned int height)
+{
+  graphics.mouse_width = width;
+  graphics.mouse_height = height;
+}
+
 #ifdef CONFIG_ENABLE_SCREENSHOTS
 #ifdef CONFIG_PNG
 
@@ -2607,7 +2609,7 @@ static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
 }
 */
 
-static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
+static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
 {
   png_write_screen_32bpp(pix, name);
 }
@@ -2664,13 +2666,13 @@ static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
   fclose(file);
 }
 */
-static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
+static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
 {
   FILE *file;
   int i, x;
-  Uint8 rowbuffer[SCREEN_PIX_W * 3]; // 24bpp
-  Uint8 *rowbuffer_ptr;
-  Uint32 *pix_ptr;
+  uint8_t rowbuffer[SCREEN_PIX_W * 3]; // 24bpp
+  uint8_t *rowbuffer_ptr;
+  uint32_t *pix_ptr;
 
   file = fopen_unsafe(name, "wb");
   if(!file)
@@ -2723,14 +2725,14 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
 void dump_screen(void)
 {
   struct rgb_color palette[FULL_PAL_SIZE];
-  Uint32 backup_palette[FULL_PAL_SIZE];
-  size_t palette_size_bytes = sizeof(Uint32) * FULL_PAL_SIZE;
+  uint32_t backup_palette[FULL_PAL_SIZE];
+  size_t palette_size_bytes = sizeof(uint32_t) * FULL_PAL_SIZE;
   int palette_size;
   char name[MAX_NAME_SIZE];
   struct stat file_info;
-  Uint32 *ss;
+  uint32_t *ss;
   int i;
-  Uint32 layer;
+  uint32_t layer;
 
   for(i = 0; i < 99999; i++)
   {
@@ -2740,7 +2742,7 @@ void dump_screen(void)
       break;
   }
 
-  ss = cmalloc(sizeof(Uint32) * 640 * 350);
+  ss = cmalloc(sizeof(uint32_t) * 640 * 350);
 
   // Unfortunately, render_layer wants flat_intensity_palette set, so we need
   // to back this up, fill it, render the layer to memory, then copy the old
@@ -2767,7 +2769,7 @@ void dump_screen(void)
 
   for(layer = 0; layer < graphics.layer_count; layer++)
   {
-    render_layer(ss, 32, 640 * sizeof(Uint32), &graphics,
+    render_layer(ss, 32, 640 * sizeof(uint32_t), &graphics,
      graphics.sorted_video_layers[layer]);
   }
 
@@ -2870,12 +2872,6 @@ void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y)
 {
   graphics.renderer.set_screen_coords(&graphics, x, y, screen_x, screen_y);
-}
-
-void set_mouse_mul(int width_mul, int height_mul)
-{
-  graphics.mouse_width_mul = width_mul;
-  graphics.mouse_height_mul = height_mul;
 }
 
 void focus_screen(int x, int y)

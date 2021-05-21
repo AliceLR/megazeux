@@ -163,39 +163,39 @@ struct graphics_data
   uint32_t current_intensity[SMZX_PAL_SIZE];
   uint32_t saved_intensity[SMZX_PAL_SIZE];
   uint32_t backup_intensity[SMZX_PAL_SIZE];
+  boolean default_smzx_loaded;
   boolean palette_dirty;
+  boolean fade_status;
+  boolean dialog_fade_status;
+  boolean requires_extended;
 
-  Uint32 layer_count;
-  Uint32 layer_count_prev;
+  uint32_t layer_count;
+  uint32_t layer_count_prev;
   struct video_layer text_video_layer;
   struct video_layer video_layers[TEXTVIDEO_LAYERS];
-  Uint32 current_layer;
+  uint32_t current_layer;
   struct char_element *current_video;
   struct video_layer *sorted_video_layers[TEXTVIDEO_LAYERS];
-  boolean requires_extended;
 
   enum cursor_mode_types cursor_mode;
   enum cursor_mode_types cursor_hint_mode;
-  boolean fade_status;
-  boolean dialog_fade_status;
-  Uint32 cursor_x;
-  Uint32 cursor_y;
-  Uint32 mouse_width_mul;
-  Uint32 mouse_height_mul;
+  unsigned int cursor_x;
+  unsigned int cursor_y;
+  unsigned int cursor_flipflop;
+  uint32_t cursor_timestamp;
+  unsigned int mouse_width;
+  unsigned int mouse_height;
   boolean mouse_status;
   boolean system_mouse;
   boolean grab_mouse;
   boolean fullscreen;
   boolean fullscreen_windowed;
-  Uint32 resolution_width;
-  Uint32 resolution_height;
-  Uint32 window_width;
-  Uint32 window_height;
-  Uint32 bits_per_pixel;
   boolean allow_resize;
-  Uint32 cursor_timestamp;
-  Uint32 cursor_flipflop;
-  Uint32 default_smzx_loaded;
+  unsigned int resolution_width;
+  unsigned int resolution_height;
+  unsigned int window_width;
+  unsigned int window_height;
+  unsigned int bits_per_pixel;
   enum ratio_type ratio;
   enum gl_filter_type gl_filter_method;
   int gl_vsync;
@@ -208,7 +208,7 @@ struct graphics_data
   uint32_t protected_pal_position;
   struct renderer renderer;
   void *render_data;
-  Uint32 renderer_num;
+  int renderer_num;
 };
 
 CORE_LIBSPEC void color_string(const char *string, Uint32 x, Uint32 y,
@@ -239,21 +239,21 @@ CORE_LIBSPEC void write_string_mask(const char *str, Uint32 x, Uint32 y,
 
 CORE_LIBSPEC void clear_screen(void);
 
-CORE_LIBSPEC void cursor_underline(Uint32 x, Uint32 y);
-CORE_LIBSPEC void cursor_solid(Uint32 x, Uint32 y);
-CORE_LIBSPEC void cursor_hint(Uint32 x, Uint32 y);
+CORE_LIBSPEC void cursor_underline(unsigned int x, unsigned int y);
+CORE_LIBSPEC void cursor_solid(unsigned int x, unsigned int y);
+CORE_LIBSPEC void cursor_hint(unsigned int x, unsigned int y);
 CORE_LIBSPEC void cursor_off(void);
 
 CORE_LIBSPEC boolean init_video(struct config_info *conf, const char *caption);
 CORE_LIBSPEC void quit_video(void);
 CORE_LIBSPEC void destruct_layers(void);
-CORE_LIBSPEC void destruct_extra_layers(Uint32 first);
-CORE_LIBSPEC Uint32 create_layer(int x, int y, Uint32 w, Uint32 h,
+CORE_LIBSPEC void destruct_extra_layers(uint32_t first);
+CORE_LIBSPEC uint32_t create_layer(int x, int y, unsigned int w, unsigned int h,
  int draw_order, int t_col, int offset, boolean unbound);
-CORE_LIBSPEC void set_layer_offset(Uint32 layer, int offset);
-CORE_LIBSPEC void set_layer_mode(Uint32 layer, int mode);
-CORE_LIBSPEC void move_layer(Uint32 layer, int x, int y);
-CORE_LIBSPEC void select_layer(Uint32 layer);
+CORE_LIBSPEC void set_layer_offset(uint32_t layer, int offset);
+CORE_LIBSPEC void set_layer_mode(uint32_t layer, int mode);
+CORE_LIBSPEC void move_layer(uint32_t layer, int x, int y);
+CORE_LIBSPEC void select_layer(uint32_t layer);
 CORE_LIBSPEC void blank_layers(void);
 CORE_LIBSPEC boolean has_video_initialized(void);
 CORE_LIBSPEC void update_screen(void);
@@ -271,7 +271,7 @@ CORE_LIBSPEC void update_palette(void);
 CORE_LIBSPEC void load_palette(const char *filename);
 CORE_LIBSPEC void load_palette_mem(const void *buffer, size_t len);
 CORE_LIBSPEC void load_index_file(const char *filename);
-CORE_LIBSPEC void smzx_palette_loaded(int val);
+CORE_LIBSPEC void smzx_palette_loaded(boolean is_loaded);
 CORE_LIBSPEC void set_screen_mode(unsigned int mode);
 CORE_LIBSPEC unsigned int get_screen_mode(void);
 CORE_LIBSPEC void set_palette_intensity(unsigned int percent);
@@ -299,8 +299,7 @@ CORE_LIBSPEC void default_protected_palette(void);
 
 CORE_LIBSPEC void m_hide(void);
 CORE_LIBSPEC void m_show(void);
-
-CORE_LIBSPEC void set_mouse_mul(int width_mul, int height_mul);
+CORE_LIBSPEC void mouse_size(unsigned int width, unsigned int height);
 
 char *get_default_caption(void);
 
@@ -325,7 +324,7 @@ int get_current_video_output(void);
 boolean set_video_mode(void);
 boolean is_fullscreen(void);
 void toggle_fullscreen(void);
-void resize_screen(Uint32 w, Uint32 h);
+void resize_screen(unsigned int w, unsigned int h);
 void set_screen(struct char_element *src);
 void get_screen(struct char_element *dest);
 

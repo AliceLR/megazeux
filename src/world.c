@@ -3058,7 +3058,7 @@ boolean reload_world(struct world *mzx_world, const char *file, boolean *faded)
   // Always switch back to regular mode before loading the world,
   // because we want the world's intrinsic palette to be applied.
   set_screen_mode(0);
-  smzx_palette_loaded(0);
+  smzx_palette_loaded(false);
   set_palette_intensity(100);
 
   default_sprite_data(mzx_world);

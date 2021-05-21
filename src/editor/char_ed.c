@@ -1158,14 +1158,14 @@ int char_editor(struct world *mzx_world)
      (current_width <= 3))
     {
       small_chars = 0;
-      set_mouse_mul(8, 14);
+      mouse_size(8, 14);
       chars_width = buffer_width * 2;
       chars_height = buffer_height;
     }
     else
     {
       small_chars = 1;
-      set_mouse_mul(8, 7);
+      mouse_size(8, 7);
       chars_width = buffer_width;
       chars_height = buffer_height / 2;
     }
@@ -2333,7 +2333,7 @@ int char_editor(struct world *mzx_world)
   // Prevent UI keys from carrying through.
   force_release_all_keys();
 
-  set_mouse_mul(8, 14);
+  mouse_size(8, 14);
 
   restore_screen();
   update_screen();
