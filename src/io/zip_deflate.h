@@ -42,19 +42,39 @@ struct deflate_stream_data
   boolean should_finish;
 };
 
+static inline struct zip_stream_data *deflate_create(void)
+{
+  return ccalloc(1, sizeof(struct deflate_stream_data));
+}
+
+static inline void deflate_destroy(struct zip_stream_data *zs)
+{
+  struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
+
+  if(ds->is_inflate)
+    inflateEnd(&(ds->z));
+
+  if(ds->is_deflate)
+    deflateEnd(&(ds->z));
+
+  free(zs);
+}
+
 static inline void inflate_open(struct zip_stream_data *zs, uint16_t method,
  uint16_t flags)
 {
-  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct deflate_stream_data));
-  memset(zs, 0, sizeof(struct deflate_stream_data));
+  // Only clear the common portion of the stream data.
+  memset(zs, 0, sizeof(struct zip_stream_data));
 }
 
 static inline void deflate_open(struct zip_stream_data *zs, uint16_t method,
  uint16_t flags)
 {
-  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct deflate_stream_data));
-  memset(zs, 0, sizeof(struct deflate_stream_data));
+  struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
+  // Only clear the common portion of the stream data.
+  memset(zs, 0, sizeof(struct zip_stream_data));
   zs->is_compression_stream = true;
+  ds->should_finish = false;
 }
 
 static inline void deflate_close(struct zip_stream_data *zs,
@@ -63,11 +83,12 @@ static inline void deflate_close(struct zip_stream_data *zs,
   struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
   if(!zs->finished)
   {
+    // Reset the stream to be used again.
     if(ds->is_inflate)
-      inflateEnd(&(ds->z));
+      inflateReset(&(ds->z));
 
     if(ds->is_deflate)
-      deflateEnd(&(ds->z));
+      deflateReset(&(ds->z));
 
     zs->finished = true;
   }
@@ -104,12 +125,21 @@ static inline enum zip_error inflate_init(struct zip_stream_data *zs)
   if(zs->is_initialized)
     return ZIP_SUCCESS;
 
+  if(ds->is_deflate)
+  {
+    deflateEnd(&(ds->z));
+    ds->is_deflate = false;
+  }
+
   if(ds->z.avail_in)
   {
     // This is a raw deflate stream, so use -MAX_WBITS.
-    inflateInit2(&(ds->z), -MAX_WBITS);
+    if(!ds->is_inflate)
+    {
+      inflateInit2(&(ds->z), -MAX_WBITS);
+      ds->is_inflate = true;
+    }
     zs->is_initialized = true;
-    ds->is_inflate = true;
     return ZIP_SUCCESS;
   }
   return ZIP_INPUT_EMPTY;
@@ -141,7 +171,7 @@ static inline enum zip_error inflate_block(struct zip_stream_data *zs)
     zs->final_output_length = ds->z.total_out;
     zs->finished = true;
 
-    inflateEnd(&(ds->z));
+    inflateReset(&(ds->z));
     return ZIP_STREAM_FINISHED;
   }
 
@@ -160,15 +190,21 @@ static inline enum zip_error deflate_init(struct zip_stream_data *zs)
 {
   struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
 
-  if(!zs->is_initialized)
+  if(ds->is_inflate)
+  {
+    inflateEnd(&(ds->z));
+    ds->is_inflate = false;
+  }
+
+  if(!ds->is_deflate)
   {
     // This is a raw deflate stream, so use -MAX_WBITS.
     // Note: aside from the windowbits, these are all defaults.
     deflateInit2(&(ds->z), Z_DEFAULT_COMPRESSION, Z_DEFLATED, -MAX_WBITS,
      8, Z_DEFAULT_STRATEGY);
-    zs->is_initialized = true;
     ds->is_deflate = true;
   }
+  zs->is_initialized = true;
   return ZIP_SUCCESS;
 }
 
@@ -207,7 +243,7 @@ static inline enum zip_error deflate_block(struct zip_stream_data *zs,
     zs->final_output_length = ds->z.total_out;
     zs->finished = true;
 
-    deflateEnd(&(ds->z));
+    deflateReset(&(ds->z));
     return ZIP_STREAM_FINISHED;
   }
 

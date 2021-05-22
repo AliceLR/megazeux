@@ -273,6 +273,13 @@ CXXFLAGS += -Wno-format-truncation
 endif
 
 #
+# Old GCC versions emit false positive warnings for C++11 value initializers.
+#
+ifeq (${HAS_BROKEN_W_MISSING_FIELD_INITIALIZERS},1)
+CXXFLAGS += -Wno-missing-field-initializers
+endif
+
+#
 # We enable pedantic warnings here, but this ends up turning on some things
 # we must disable by hand.
 #

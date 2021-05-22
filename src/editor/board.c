@@ -208,6 +208,7 @@ void replace_current_board(struct world *mzx_world, const char *name)
 
       set_update_done_current(mzx_world);
 
+      mzx_world->current_board = NULL;
       set_current_board(mzx_world, src_board);
       mzx_world->board_list[current_board_id] = src_board;
     }

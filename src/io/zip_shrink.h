@@ -290,6 +290,14 @@ static inline enum zip_error LZW_decode(struct LZW_tree *tree, uint16_t code,
 }
 
 /**
+ * Allocate an unshrink stream.
+ */
+static inline struct zip_stream_data *unshrink_create(void)
+{
+  return cmalloc(sizeof(struct shrink_stream_data));
+}
+
+/**
  * Open a unshrink stream.
  */
 static inline void unshrink_open(struct zip_stream_data *zs, uint16_t method,
@@ -299,7 +307,6 @@ static inline void unshrink_open(struct zip_stream_data *zs, uint16_t method,
   struct LZW_tree *tree = &(ss->tree);
   int i;
 
-  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct shrink_stream_data));
   memset(zs, 0, sizeof(struct shrink_stream_data));
 
   tree->nodes = cmalloc(LZW_TREE_ALLOC_DEFAULT * sizeof(struct LZW_node));

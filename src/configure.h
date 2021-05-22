@@ -34,6 +34,11 @@ enum config_type
   NUM_CONFIG_TYPES
 };
 
+enum force_bpp_special
+{
+  BPP_AUTO = 0,
+};
+
 enum ratio_type
 {
   RATIO_CLASSIC_4_3,
@@ -102,8 +107,9 @@ struct config_info
   int force_bpp;
   enum ratio_type video_ratio;
   enum gl_filter_type gl_filter_method;
-  char gl_scaling_shader[32];
   int gl_vsync;
+  char gl_scaling_shader[32];
+  char sdl_render_driver[16];
   enum cursor_mode_types cursor_hint_mode;
   boolean allow_screenshots;
 

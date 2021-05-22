@@ -366,7 +366,6 @@ void render_gp2x_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gp2x_init_video;
   renderer->free_video = gp2x_free_video;
-  renderer->check_video_mode = sdl_check_video_mode;
   renderer->set_video_mode = gp2x_set_video_mode;
   renderer->update_colors = gp2x_update_colors;
   renderer->resize_screen = resize_screen_standard;

@@ -71,6 +71,7 @@ usage() {
 	echo "  --disable-utils           Disable compilation of utils."
 	echo "  --disable-check-alloc     Disables memory allocator error handling."
 	echo "  --disable-counter-hash    Disables hash tables for counter/string lookups."
+	echo "  --enable-extram           Enable board memory compression and storage hacks."
 	echo "  --enable-meter            Enable load/save meter display."
 	echo "  --enable-debytecode       Enable experimental 'debytecode' transform."
 	echo
@@ -171,6 +172,7 @@ GETADDRINFO="true"
 POLL="true"
 IPV6="true"
 VERBOSE="false"
+EXTRAM="false"
 METER="false"
 SDL="true"
 EGL="false"
@@ -381,6 +383,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-verbose" ] && VERBOSE="false"
 	[ "$1" = "--enable-verbose" ]  && VERBOSE="true"
 
+	[ "$1" = "--enable-extram" ]  && EXTRAM="true"
+	[ "$1" = "--disable-extram" ] && EXTRAM="false"
+
 	[ "$1" = "--enable-meter" ]  && METER="true"
 	[ "$1" = "--disable-meter" ] && METER="false"
 
@@ -487,18 +492,28 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
 		ARCHNAME=x86
 		#RAWLIBDIR=lib
+	elif [ "$MACH" = "aarch64" -o "$MACH" = "arm64" ]; then
+		ARCHNAME=aarch64
 	elif [ "`echo $MACH | sed 's,^arm.*,arm,'`" = "arm" ]; then
 		ARCHNAME=arm
 		#RAWLIBDIR=lib
 	elif [ "$MACH" = "ppc" ]; then
 		ARCHNAME=ppc
 		#RAWLIBDIR=lib
+	elif [ "$MACH" = "ppc64" ]; then
+		ARCHNAME=ppc64
+	elif [ "$MACH" = "mips" ]; then
+		ARCHNAME=mips
+	elif [ "$MACH" = "mips64" ]; then
+		ARCHNAME=mips64
 	elif [ "$MACH" = "m68k" ]; then
 		ARCHNAME=m68k
 	elif [ "$MACH" = "alpha" ]; then
 		ARCHNAME=alpha
-	elif [ "$MACH" = "hppa" ]; then
+	elif [ "$MACH" = "hppa" -o "$MACH" = "parisc" ]; then
 		ARCHNAME=hppa
+	elif [ "$MACH" = "sh4" ]; then
+		ARCHNAME=sh4
 	elif [ "$MACH" = "sparc" ]; then
 		ARCHNAME=sparc
 	elif [ "$MACH" = "sparc64" ]; then
@@ -1526,6 +1541,17 @@ fi
 if [ "$VERBOSE" = "true" ]; then
 	echo "Verbose build system (always)."
 	echo "export V=1" >> platform.inc
+fi
+
+#
+# Enable extra memory hacks and memory compression, if enabled.
+#
+if [ "$EXTRAM" = "true" ]; then
+	echo "Board memory compression and extra memory hacks enabled."
+	echo "#define CONFIG_EXTRAM" >> src/config.h
+	echo "BUILD_EXTRAM=1" >> platform.inc
+else
+	echo "Board memory compression and extra memory hacks disabled."
 fi
 
 #

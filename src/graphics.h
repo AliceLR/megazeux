@@ -105,8 +105,6 @@ struct renderer
 {
   boolean (*init_video)       (struct graphics_data *, struct config_info *);
   void    (*free_video)       (struct graphics_data *);
-  boolean (*check_video_mode) (struct graphics_data *, int width, int height,
-                                int depth, boolean fullscreen, boolean resize);
   boolean (*set_video_mode)   (struct graphics_data *, int width, int height,
                                 int depth, boolean fullscreen, boolean resize);
   void    (*update_colors)    (struct graphics_data *, struct rgb_color *palette,
@@ -158,7 +156,7 @@ struct graphics_data
   struct rgb_color protected_palette[PAL_SIZE];
   struct rgb_color intensity_palette[SMZX_PAL_SIZE];
   struct rgb_color backup_palette[SMZX_PAL_SIZE];
-  char smzx_indices[SMZX_PAL_SIZE * 4];
+  Uint8 smzx_indices[SMZX_PAL_SIZE * 4];
   Uint32 current_intensity[SMZX_PAL_SIZE];
   Uint32 saved_intensity[SMZX_PAL_SIZE];
   Uint32 backup_intensity[SMZX_PAL_SIZE];
@@ -199,6 +197,7 @@ struct graphics_data
   enum gl_filter_type gl_filter_method;
   int gl_vsync;
   char gl_scaling_shader[32];
+  char sdl_render_driver[16];
 
   Uint8 default_charset[CHAR_SIZE * CHARSET_SIZE];
 
@@ -237,6 +236,7 @@ CORE_LIBSPEC void write_string_mask(const char *str, Uint32 x, Uint32 y,
 
 CORE_LIBSPEC void clear_screen(void);
 
+CORE_LIBSPEC void cursor_underline(Uint32 x, Uint32 y);
 CORE_LIBSPEC void cursor_solid(Uint32 x, Uint32 y);
 CORE_LIBSPEC void cursor_hint(Uint32 x, Uint32 y);
 CORE_LIBSPEC void cursor_off(void);
@@ -314,8 +314,6 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
 
 Uint8 get_color_linear(Uint32 offset);
 
-void cursor_underline(Uint32 x, Uint32 y);
-
 boolean change_video_output(struct config_info *conf, const char *output);
 int get_available_video_output_list(const char **buffer, int buffer_len);
 int get_current_video_output(void);
@@ -339,6 +337,8 @@ void load_indices(void *buffer, size_t size);
 void load_indices_direct(void *buffer, size_t size);
 void vquick_fadein(void);
 void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer);
+boolean get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
+ int transparent_color, uint8_t * RESTRICT buffer);
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);

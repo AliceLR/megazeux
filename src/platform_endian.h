@@ -46,7 +46,7 @@
 #define PLATFORM_BYTE_ORDER PLATFORM_LIL_ENDIAN
 #elif defined(__hppa__) || \
     defined(__m68k__) || defined(mc68000) || defined(_M_M68K) || \
-    (defined(__MIPS__) && defined(__MISPEB__)) || \
+    ((defined(__mips__) || defined(__mips) || defined(__MIPS__)) && defined(__MIPSEB__)) || \
     defined(__ppc__) || defined(__POWERPC__) || defined(_M_PPC) || \
     defined(__sparc__)
 #define PLATFORM_BYTE_ORDER PLATFORM_BIG_ENDIAN
@@ -69,7 +69,9 @@
  */
 #if defined(_WIN64) || defined(__EMSCRIPTEN__) || \
   (defined(__sparc__) && defined(__arch64__)) || \
-  (defined(__riscv) || defined(__riscv__)) || \
+  ((defined(__riscv) || defined(__riscv__)) && __riscv_xlen >= 64) || \
+  ((defined(__mips__) || defined(__mips) || defined(__MIPS__)) && \
+    defined(_MIPS_SIM) && defined(_ABI64) && _MIPS_SIM == _ABI64) || \
   (defined(__GNUC__) && \
     (defined(__x86_64__) || defined(__powerpc64__) || defined(__PPC64__) || \
      defined(__aarch64__) || defined(__alpha__)))

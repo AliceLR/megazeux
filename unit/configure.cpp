@@ -374,13 +374,15 @@ UNITTEST(Settings)
   {
     static const config_test_single data[] =
     {
+      { "0", BPP_AUTO },
       { "8", 8 },
       { "16", 16 },
       { "32", 32 },
+      { "auto", BPP_AUTO },
       { "-1", DEFAULT },
       { "231", DEFAULT },
-      { "0", DEFAULT },
       { "asdfsdf", DEFAULT },
+      { "autou", DEFAULT },
     };
     TEST_ENUM("force_bpp", conf->force_bpp, data);
   }
@@ -411,12 +413,6 @@ UNITTEST(Settings)
     TEST_ENUM("gl_filter_method", conf->gl_filter_method, data);
   }
 
-  SECTION(gl_scaling_shader)
-  {
-    game_allowed = true;
-    TEST_STRING("gl_scaling_shader", conf->gl_scaling_shader, string_data);
-  }
-
   SECTION(gl_vsync)
   {
     static const config_test_single data[] =
@@ -432,6 +428,17 @@ UNITTEST(Settings)
       { "1a", DEFAULT },
     };
     TEST_ENUM("gl_vsync", conf->gl_vsync, data);
+  }
+
+  SECTION(gl_scaling_shader)
+  {
+    game_allowed = true;
+    TEST_STRING("gl_scaling_shader", conf->gl_scaling_shader, string_data);
+  }
+
+  SECTION(sdl_render_driver)
+  {
+    TEST_STRING("sdl_render_driver", conf->sdl_render_driver, string_data);
   }
 
   SECTION(cursor_hint_mode)

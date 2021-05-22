@@ -2243,7 +2243,8 @@ static void _decrypt_legacy_world(struct memfile *mf, char *password,
   ALIGN_TYPE xor_w = ALIGN_XOR(xor);
   unsigned char *pos = mf->current;
 
-  debug("xor=%u, password: %s\n", (unsigned int)xor, password);
+  fprintf(stderr, "xor=%u, password: %s\n", (unsigned int)xor, password);
+  fflush(stderr);
 
   while(pos < mf->end && ((size_t)pos) % sizeof(ALIGN_TYPE))
     *(pos++) ^= xor;
@@ -2297,7 +2298,7 @@ static enum status parse_legacy_robot(struct memfile *mf,
     // This includes the global robots in Slave Pit and Wes.
     if(ret && !used)
     {
-      warn("Unused robot with corruption detected (this is safe to ignore).\n");
+      warnhere("Unused robot with corruption detected (this is safe to ignore).\n");
       ret = SUCCESS;
     }
   }
@@ -3054,7 +3055,7 @@ static enum status parse_file(const char *file_name,
         buffer = ccalloc(1, actual_size);
         if(ZIP_SUCCESS != zip_read_file(zp, buffer, actual_size, &actual_size))
         {
-          warn("Error processing '%s': %s\n\n", name_buffer,
+          warnhere("Error processing '%s': %s\n\n", name_buffer,
            decode_status(ZIP_FAILED));
           free(buffer);
           continue;
@@ -3076,7 +3077,7 @@ static enum status parse_file(const char *file_name,
         if(ret != SUCCESS)
         {
           // Keep going; other files in the archive may not be corrupt.
-          warn("Error processing '%s': %s\n\n", name_buffer, decode_status(ret));
+          warnhere("Error processing '%s': %s\n\n", name_buffer, decode_status(ret));
           ret = SUCCESS;
         }
         free(buffer);
@@ -3134,13 +3135,13 @@ static enum status parse_file(const char *file_name,
         if(ret != SUCCESS)
         {
           // Keep going; other files in the path may not be corrupt.
-          warn("Error processing '%s': %s\n", current_file->file_name,
+          warnhere("Error processing '%s': %s\n", current_file->file_name,
            decode_status(ret));
           ret = SUCCESS;
         }
       }
       else
-        warn("Failed to open '%s' for reading\n", current_file->file_name);
+        warnhere("Failed to open '%s' for reading\n", current_file->file_name);
     }
   }
 

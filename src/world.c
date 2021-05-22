@@ -535,10 +535,10 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   return VAL_SUCCESS;
 
 err_free:
-  fprintf(stderr,
+  fprintf(mzxerr,
    "load_world_info: expected ID %xh not found (found %xh, last %xh)\n",
    missing_ident, ident, last_ident);
-  fflush(stderr);
+  fflush(mzxerr);
 
   free(buffer);
   mzx_world->raw_world_info = NULL;
@@ -1952,8 +1952,16 @@ static int save_world_zip(struct world *mzx_world, const char *file,
     cur_board = mzx_world->board_list[i];
 
     if(cur_board)
+    {
+      if(cur_board != mzx_world->current_board)
+        retrieve_board_from_extram(cur_board);
+
       if(save_board(mzx_world, cur_board, zp, savegame, file_version, i))
         goto err_close;
+
+      if(cur_board != mzx_world->current_board)
+        store_board_to_extram(cur_board);
+    }
 
     meter_update_screen(&meter_curr, meter_target);
   }
@@ -2004,6 +2012,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 
   int meter_curr = 0;
   int meter_target = 2;
+  boolean loaded_temp_board = false;
 
   meter_initial_draw(meter_curr, meter_target, "Loading...");
 
@@ -2106,6 +2115,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
            load_board_allocate(mzx_world, zp, savegame, file_version, board_id);
 
           meter_update_screen(&meter_curr, meter_target);
+          loaded_temp_board = true;
         }
         break;
       }
@@ -2130,8 +2140,8 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
     if(err != ZIP_SUCCESS)
     {
       zip_skip_file(zp);
-      fprintf(stderr, "ERROR - Read error @ file ID %u\n", file_id);
-      fflush(stderr);
+      fprintf(mzxerr, "ERROR - Read error @ file ID %u\n", file_id);
+      fflush(mzxerr);
     }
   }
 
@@ -2157,6 +2167,11 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 
     error_message(E_WORLD_BOARD_MISSING, 0, NULL);
   }
+
+  // Check for missing temporary board; if the temporary board is missing,
+  // clear the temporary flag so the temporary board will be regenerated.
+  if(mzx_world->temporary_board && !loaded_temp_board)
+    mzx_world->temporary_board = false;
 
   meter_update_screen(&meter_curr, meter_target);
 
@@ -2254,10 +2269,10 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
 
   else
   {
-    fprintf(stderr,
+    fprintf(mzxerr,
      "ERROR: Attempted to save incompatible world version %d.%d! Aborting!\n",
      (world_version >> 8) & 0xFF, world_version & 0xFF);
-    fflush(stderr);
+    fflush(mzxerr);
 
     return -1;
   }
@@ -3137,7 +3152,7 @@ void clear_world(struct world *mzx_world)
   for(i = 0; i < num_boards; i++)
   {
     if(mzx_world->current_board_id != i)
-      retrieve_board_from_extram(board_list[i]);
+      clear_board_from_extram(board_list[i]);
     clear_board(board_list[i]);
   }
   free(board_list);

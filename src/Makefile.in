@@ -159,7 +159,7 @@ core_cobjs += arch/nds/protected_palette.bin.o
 core_cobjs += arch/nds/audio.o
 core_cobjs += arch/nds/platform.o arch/nds/event.o
 core_cobjs += arch/nds/render.o arch/nds/evq.o
-ifneq (${BUILD_DEBYTECODE},1)
+ifeq (${BUILD_EXTRAM},1)
 core_cobjs += arch/nds/dlmalloc.o
 core_cobjs += arch/nds/ram.o arch/nds/extmem.o
 endif
@@ -207,6 +207,10 @@ ifeq (${BUILD_HELPSYS},1)
 core_cobjs += ${core_obj}/helpsys.o
 endif
 
+ifeq (${BUILD_EXTRAM},1)
+core_cobjs += ${core_obj}/extmem.o
+endif
+
 render_layer_software = 0
 
 ifeq (${BUILD_RENDER_SOFT},1)
@@ -234,6 +238,7 @@ endif
 # Shader renderers (OGL>=2, OGLES=2)
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 core_cobjs += ${core_obj}/render_glsl.o
+render_layer_software = 1
 endif
 
 #

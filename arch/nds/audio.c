@@ -52,6 +52,13 @@ static inline void nds_pcs_sound(int freq, int volume)
   fifoSendValue32(FIFO_MZX, CMD_MZX_PCS_TONE | (((freq) & 0xFFFF) << 8) | (NDS_VOLUME(volume) << 24));
 }
 
+static inline int nds_mm_get_position(void)
+{
+  fifoSendValue32(FIFO_MZX, CMD_MZX_MM_GET_POSITION);
+  while(!fifoCheckValue32(FIFO_MZX));
+  return fifoGetValue32(FIFO_MZX);
+}
+
 // PC speaker implementation
 
 #define PCS_DURATION_PER_VBL 9
@@ -145,8 +152,7 @@ void audio_set_module_order(int order)
 
 int audio_get_module_order(void)
 {
-  // TODO
-  return 0;
+  return nds_mm_get_position();
 }
 
 void audio_set_module_position(int position)

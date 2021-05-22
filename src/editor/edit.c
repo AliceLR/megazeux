@@ -1707,19 +1707,31 @@ static boolean editor_key(context *ctx, int *key)
     *key = 0;
 
   // Saved positions
-  // These don't really make sense on the vlayer as-is, but could be adapted.
-  if((*key >= IKEY_0) && (*key <= IKEY_9) && editor->mode != EDIT_VLAYER)
+  if((*key >= IKEY_0) && (*key <= IKEY_9))
   {
     char mesg[80];
 
     int s_num = *key - IKEY_0;
-    struct saved_position *s = &(editor_conf->saved_positions[s_num]);
+    struct saved_position *s;
+
+    if(editor->mode == EDIT_VLAYER)
+      s = &(editor_conf->vlayer_positions[s_num]);
+    else
+      s = &(editor_conf->saved_positions[s_num]);
 
     if(get_ctrl_status(keycode_internal))
     {
-      sprintf(mesg, "Save '%s' @ %d,%d to pos %d?",
-       mzx_world->current_board->board_name, editor->cursor_x,
-       editor->cursor_y, s_num);
+      if(editor->mode == EDIT_VLAYER)
+      {
+        sprintf(mesg, "Save vlayer @ %d,%d to pos %d?",
+         editor->cursor_x, editor->cursor_y, s_num);
+      }
+      else
+      {
+        sprintf(mesg, "Save '%s' @ %d,%d to pos %d?",
+         mzx_world->current_board->board_name, editor->cursor_x,
+         editor->cursor_y, s_num);
+      }
 
       if(!confirm(mzx_world, mesg))
       {
@@ -1739,12 +1751,20 @@ static boolean editor_key(context *ctx, int *key)
     {
       int s_board = s->board_id;
 
-      if(s_board < mzx_world->num_boards &&
-       mzx_world->board_list[s_board])
+      if(editor->mode == EDIT_VLAYER || (s_board < mzx_world->num_boards &&
+       mzx_world->board_list[s_board]))
       {
-        sprintf(mesg, "Go to '%s' @ %d,%d (pos %d)?",
-         mzx_world->board_list[s_board]->board_name,
-         s->cursor_x, s->cursor_y, s_num);
+        if(editor->mode == EDIT_VLAYER)
+        {
+          sprintf(mesg, "Go to vlayer @ %d,%d (pos %d)?",
+           s->cursor_x, s->cursor_y, s_num);
+        }
+        else
+        {
+          sprintf(mesg, "Go to '%s' @ %d,%d (pos %d)?",
+           mzx_world->board_list[s_board]->board_name,
+           s->cursor_x, s->cursor_y, s_num);
+        }
 
         if(!confirm(mzx_world, mesg))
         {
@@ -1754,7 +1774,7 @@ static boolean editor_key(context *ctx, int *key)
           editor->scroll_y = s->scroll_y;
           editor->debug_x = s->debug_x;
 
-          if(mzx_world->current_board_id != s_board)
+          if(editor->mode != EDIT_VLAYER && mzx_world->current_board_id != s_board)
           {
             editor_set_current_board(editor, s_board, true);
           }
@@ -2701,6 +2721,7 @@ static boolean editor_key(context *ctx, int *key)
 
             if(del_board == current_board_id)
             {
+              mzx_world->current_board = NULL;
               editor_set_current_board(editor, 0, true);
             }
             else

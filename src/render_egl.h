@@ -30,8 +30,6 @@ __M_BEGIN_DECLS
 
 boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, boolean fullscreen, boolean resize, struct gl_version req_ver);
-boolean gl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize);
 void gl_set_attributes(struct graphics_data *graphics);
 boolean gl_swap_buffers(struct graphics_data *graphics);
 void gl_cleanup(struct graphics_data *graphics);

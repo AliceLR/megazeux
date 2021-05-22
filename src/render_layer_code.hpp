@@ -27,6 +27,7 @@
 // stream to a file.
 
 #include "platform.h"
+#include "util.h"
 
 #ifdef IS_CXX_11
 #include <type_traits>
@@ -99,7 +100,7 @@ inline void render_layer_func<Uint8>(void * RESTRICT pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG align=%d (8bpp)\n", align);
+      fprintf(mzxerr, "INVALID RENDERER ARG align=%d (8bpp)\n", align);
       exit(1);
       break;
   }
@@ -134,7 +135,7 @@ inline void render_layer_func<Uint16>(void * RESTRICT pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG align=%d (16bpp)\n", align);
+      fprintf(mzxerr, "INVALID RENDERER ARG align=%d (16bpp)\n", align);
       exit(1);
       break;
   }
@@ -164,7 +165,7 @@ inline void render_layer_func<Uint32>(void * RESTRICT pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG align=%d (32bpp)\n", align);
+      fprintf(mzxerr, "INVALID RENDERER ARG align=%d (32bpp)\n", align);
       exit(1);
       break;
   }
@@ -201,7 +202,7 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
       break;
 #endif
     default:
-      fprintf(stderr, "INVALID RENDERER ARG bpp=%d\n"
+      fprintf(mzxerr, "INVALID RENDERER ARG bpp=%d\n"
        "(is this bpp enabled for this platform?)\n", bpp);
       exit(1);
       break;
@@ -231,7 +232,7 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG smzx=%d\n", smzx);
+      fprintf(mzxerr, "INVALID RENDERER ARG smzx=%d\n", smzx);
       exit(1);
       break;
   }
@@ -273,7 +274,7 @@ static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
     /* fall-through */
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG ppal=%d (smzx=%d)\n", ppal, SMZX);
+      fprintf(mzxerr, "INVALID RENDERER ARG ppal=%d (smzx=%d)\n", ppal, SMZX);
       exit(1);
       break;
   }
@@ -300,7 +301,7 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG trans=%d\n", trans);
+      fprintf(mzxerr, "INVALID RENDERER ARG trans=%d\n", trans);
       exit(1);
       break;
   }
@@ -325,7 +326,7 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
       break;
 
     default:
-      fprintf(stderr, "INVALID RENDERER ARG clip=%d\n", clip);
+      fprintf(mzxerr, "INVALID RENDERER ARG clip=%d\n", clip);
       exit(1);
       break;
   }
@@ -525,8 +526,8 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
   static boolean printed = false;
   if(!printed)
   {
-    fprintf(stderr, "%s\n", __PRETTY_FUNCTION__);
-    fflush(stderr);
+    fprintf(mzxerr, "%s\n", __PRETTY_FUNCTION__);
+    fflush(mzxerr);
     printed = true;
   }
 #endif

@@ -140,7 +140,7 @@ void HTTPRequestInfo::clear_response()
 void HTTPRequestInfo::print_response() const
 {
   boolean params = this->content_type_params[0] != '\0';
-  fprintf(stderr,
+  fprintf(mzxerr,
     "  URL               : %s\n"
     "  Status            : %d %s\n"
     "  Content-Type      : %s%s%s\n"
@@ -156,7 +156,7 @@ void HTTPRequestInfo::print_response() const
     this->transfer_encoding,
     this->content_length
   );
-  fflush(stderr);
+  fflush(mzxerr);
 }
 
 const char *HTTPHost::get_error_string(HTTPHostStatus status)

@@ -53,6 +53,7 @@ ifneq (${BUILD_MODULAR},)
 
 unit_objs += \
   ${unit_obj}/configure${unit_ext}     \
+  ${unit_obj}/intake${unit_ext}        \
   ${unit_obj_io}/zip${unit_ext}
 
 unit_ldflags += -L. -lcore
@@ -81,6 +82,13 @@ unit_cflags ?= ${DEBUG_CFLAGS} -g \
 
 unit_cflags += ${SDL_CFLAGS} -Umain
 unit_ldflags +=
+
+#
+# Old GCC versions emit false positive warnings for C++11 value initializers.
+#
+ifeq (${HAS_BROKEN_W_MISSING_FIELD_INITIALIZERS},1)
+unit_cflags += -Wno-missing-field-initializers
+endif
 
 ifeq (${BUILD_F_ANALYZER},1)
 ifeq (${HAS_F_ANALYZER},1)

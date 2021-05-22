@@ -75,6 +75,7 @@ static const struct renderer_data renderers[] =
 #endif
 #if defined(CONFIG_RENDER_GL_PROGRAM)
   { "glsl", render_glsl_register },
+  { "glslscale", render_glsl_software_register },
   { "auto_glsl", render_auto_glsl_register },
 #endif
 #if defined(CONFIG_RENDER_YUV)
@@ -874,7 +875,7 @@ static void fix_layer_screen_mode(void)
 void set_screen_mode(Uint32 mode)
 {
   int i;
-  char *pal_idx;
+  Uint8 *pal_idx;
   char bg, fg;
   mode %= 4;
 
@@ -1700,13 +1701,28 @@ boolean init_video(struct config_info *conf, const char *caption)
   if(!graphics.renderer.init_video(&graphics, conf))
   {
     // Try falling back to the first registered renderer
+    debug("Failed to initialize '%s', attempting fallback.\n", conf->video_output);
     strcpy(conf->video_output, "");
     if(!set_graphics_output(conf))
       return false;
 
-    // Fallback failed; bail out
     if(!graphics.renderer.init_video(&graphics, conf))
-      return false;
+    {
+      // One last attempt with the "safest" settings.
+      // NOTE: this was originally done in set_video_mode.
+      debug("Failed to initialize fallback, trying 640x350.\n");
+      graphics.window_width = 640;
+      graphics.window_height = 350;
+      graphics.fullscreen = false;
+      graphics.allow_resize = false;
+      conf->force_bpp = BPP_AUTO;
+
+      if(!graphics.renderer.init_video(&graphics, conf))
+      {
+        warn("Failed to initialize video.\n");
+        return false;
+      }
+    }
   }
 
 #ifdef CONFIG_SDL
@@ -1776,22 +1792,6 @@ boolean set_video_mode(void)
     target_height = graphics.window_height;
   }
 
-  // If video mode fails, replace it with 'safe' defaults
-  if(!(graphics.renderer.check_video_mode(&graphics,
-   target_width, target_height, target_depth, fullscreen, resize)))
-  {
-    target_width = 640;
-    target_height = 350;
-    target_depth = 8;
-    fullscreen = false;
-    resize = false;
-
-    graphics.resolution_width = target_width;
-    graphics.resolution_height = target_height;
-    graphics.bits_per_pixel = target_depth;
-    graphics.fullscreen = fullscreen;
-  }
-
   ret = graphics.renderer.set_video_mode(&graphics,
    target_width, target_height, target_depth, fullscreen, resize);
 
@@ -1800,6 +1800,10 @@ boolean set_video_mode(void)
     set_window_caption(graphics.default_caption);
     set_window_grab(graphics.grab_mouse);
     set_window_icon();
+
+    // Make sure a BPP was selected by the renderer (if applicable).
+    if(graphics.bits_per_pixel == BPP_AUTO)
+      warn("renderer.set_video_mode must auto-select BPP! Report this!\n");
   }
 
   return ret;
@@ -2777,6 +2781,87 @@ void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer)
       }
     }
   }
+}
+
+/**
+ * Generate a bitmask of visible pixels for a character/palette pair using the
+ * current screen mode and a given transparent color index. The provided buffer
+ * must be CHAR_SIZE bytes in length. Returns `false` if there are no visible
+ * pixels, otherwise `true`.
+ */
+boolean get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
+ int transparent_color, uint8_t * RESTRICT buffer)
+{
+  const uint8_t *chrdata = graphics.charset + char_idx * CHAR_SIZE;
+  const uint8_t HI = 0xAA;
+  const uint8_t LO = 0x55;
+  int is_transparent[4];
+  int ret = 0x00;
+  int y;
+
+  if(graphics.screen_mode == 0)
+  {
+    int fg = (palette & 0xF0) >> 4;
+    int bg = (palette & 0x0F);
+    is_transparent[0] = (fg == transparent_color);
+    is_transparent[1] = (bg == transparent_color);
+
+    for(y = 0; y < CHAR_SIZE; y++)
+    {
+      uint8_t base = chrdata[y];
+      uint8_t mask = 0xFF;
+
+      if(is_transparent[0])
+        mask &= base;
+
+      if(is_transparent[1])
+        mask &= ~base;
+
+      buffer[y] = mask;
+      ret |= mask;
+    }
+  }
+  else
+  {
+    is_transparent[0] = graphics.smzx_indices[palette * 4 + 0] == transparent_color;
+    is_transparent[1] = graphics.smzx_indices[palette * 4 + 1] == transparent_color;
+    is_transparent[2] = graphics.smzx_indices[palette * 4 + 2] == transparent_color;
+    is_transparent[3] = graphics.smzx_indices[palette * 4 + 3] == transparent_color;
+
+    for(y = 0; y < CHAR_SIZE; y++)
+    {
+      uint8_t base = chrdata[y];
+      uint8_t mask = 0xFF;
+
+      if(is_transparent[0])
+      {
+        uint8_t colmask = (~base & HI) & ((~base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
+      }
+
+      if(is_transparent[1])
+      {
+        uint8_t colmask = (~base & HI) & ((base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
+      }
+
+      if(is_transparent[2])
+      {
+        uint8_t colmask = (base & HI) & ((~base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
+      }
+
+      if(is_transparent[3])
+      {
+        uint8_t colmask = (base & HI) & ((base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
+      }
+
+      buffer[y] = mask;
+      ret |= mask;
+    }
+  }
+  return (ret != 0x00);
 }
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,

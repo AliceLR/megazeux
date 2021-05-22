@@ -276,6 +276,7 @@ static boolean gx_init_video(struct graphics_data *graphics,
   graphics->render_data = render_data;
   graphics->ratio = conf->video_ratio;
   graphics->gl_vsync = conf->gl_vsync;
+  graphics->bits_per_pixel = 16;
 
   VIDEO_Init();
 
@@ -376,12 +377,6 @@ static void gx_free_video(struct graphics_data *graphics)
 {
   free(graphics->render_data);
   graphics->render_data = NULL;
-}
-
-static boolean gx_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
-{
-  return true;
 }
 
 static boolean gx_set_video_mode(struct graphics_data *graphics,
@@ -964,7 +959,6 @@ void render_gx_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gx_init_video;
   renderer->free_video = gx_free_video;
-  renderer->check_video_mode = gx_check_video_mode;
   renderer->set_video_mode = gx_set_video_mode;
   renderer->update_colors = gx_update_colors;
   renderer->resize_screen = resize_screen_standard;

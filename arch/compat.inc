@@ -104,7 +104,7 @@ endif
 endif
 
 #
-# C++11 support.
+# C++11 support (GCC).
 # C++11 is optional or unused for all core MegaZeux features, but may be
 # required in the future for optional features (e.g. the network layer).
 #
@@ -112,8 +112,22 @@ ifeq (${COMPILER},gcc)
 GCC_VER_GE_4_8   := ${shell test ${GCC_VER} -ge 40800; echo $$?}
 ifeq (${GCC_VER_GE_4_8},0)
 HAS_CXX_11 ?= 1
+
+#
+# -Wmissing-field-initializers doesn't properly support C++11 value
+# initialization in GCC versions prior to 5 and will emit spurious warnings.
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61489
+#
+GCC_VER_GE_5     := ${shell test ${GCC_VER} -ge 50000; echo $$?}
+ifneq (${GCC_VER_GE_5},0)
+HAS_BROKEN_W_MISSING_FIELD_INITIALIZERS ?= 1
 endif
 endif
+endif # GCC
+
+#
+# C++11 support (clang).
+#
 ifeq (${COMPILER},clang)
 CLANG_VER_GE_3_3 := ${shell test "${CLANG_VER}" -ge 30300; echo $$?}
 ifeq (${CLANG_VER_GE_3_3},0)

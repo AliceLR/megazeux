@@ -38,7 +38,9 @@
 # A much faster option for almost anything with a graphics card is the
 # "softscale" renderer. This renderer uses SDL2's built-in rendering API
 # to stream the output of the software renderer to a hardware-accelerated
-# texture (if available) for extremely fast scaling and display.
+# texture (if available) for extremely fast scaling and display. This (or
+# "glslscale", see below) is usually the fastest scaling renderer for devices
+# using integrated graphics e.g. Intel HD, phones, tablets, Raspberry Pi.
 #
 # Either 32 bit or 16 bit rendering can be enabled (see force_bpp), but
 # 32 bit is recommended. Nearest neighbor or linear scaling will be chosen
@@ -46,6 +48,13 @@
 # renderer is a replacement for the YUV overlay renderer.
 
 # video_output = softscale
+
+# The SDL renderer API used by softscale will use the following underlying
+# drivers by default: Direct3D (Windows), Metal (Mac OS 10.11+), or OpenGL.
+# To request a different driver, the following option can be changed.
+# See https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER for more info.
+
+# sdl_render_driver = opengl
 
 # If you built MegaZeux yourself with SDL 1.2 support enabled, the YUV overlay
 # renderer is available instead of softscale. This renderer is good if you
@@ -78,13 +87,19 @@
 # This renderer uses GLSL shaders to render and scale the screen, and several
 # different scaling shaders can be selected at runtime using the settings menu.
 # This renderer is called "glsl". It is the highest quality and best performing
-# renderer for most PCs and games, and is enabled by default.
+# renderer for most PCs with a dedicated video card.
+#
+# A variant of the GLSL renderer called "glslscale" is available that uses the
+# software renderer internally with GLSL shader scaling. This performs better
+# than the original GLSL renderer on PCs and other devices that don't have a
+# video card, and is currently the default renderer for most platforms.
 #
 # Uncomment ONE of the lines below:
 
 # video_output = opengl1
 # video_output = opengl2
 # video_output = glsl
+# video_output = glslscale
 
 # The scaling renderers can be configured to preserve aspect ratio where
 # possible in window and fullscreen modes. The supported ratios are
@@ -158,11 +173,18 @@
 # MZX is limited internally to 8bit colour, but it can upmix its
 # rendering to 32bit if your video card has difficulty with 8bit
 # resolutions. Using 32bit colour is slower, but not by much.
-# NOTE: This option may be ignored by one or more of the above
-# renderers, but it is guaranteed to apply to "software". Valid
-# settings are usually '8', '16', or '32'. Default is '32'.
+#
+# NOTE: This option may be ignored by one or more of the above renderers.
+# force_bpp is guaranteed to apply to "software". This might not always be
+# useful, however; SDL 2 picks a native window pixel format automatically
+# and non-native BPPs are handled with an extra surface blit. The "softscale"
+# renderer can use this setting to select different native pixel formats.
+#
+# Valid settings are usually '8', '16', or '32'; a value of '0' or 'auto'
+# will instruct the renderer to automatically pick the best available
+# BPP (if applicable). Default is 'auto'.
 
-# force_bpp = 32
+# force_bpp = auto
 
 # Whether MZX should start up in fullscreen or not.
 # Press ctrl-alt-enter to toggle fullscreen as MZX runs.

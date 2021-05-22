@@ -99,8 +99,11 @@ static boolean softscale_init_video(struct graphics_data *graphics,
   // This renderer can technically do 8bpp indexed or RGB332. The former is
   // too slow to be worthwhile and the latter requires fixing assumptions in
   // the layer renderer and a new set_colors8 (also, it looks awful).
-  if(conf->force_bpp == 16 || conf->force_bpp == 32)
+  if(conf->force_bpp == BPP_AUTO || conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
+
+  snprintf(graphics->sdl_render_driver, ARRAY_SIZE(graphics->sdl_render_driver),
+   "%s", conf->sdl_render_driver);
 
   if(!set_video_mode())
   {
@@ -141,106 +144,36 @@ static void find_texture_format(struct graphics_data *graphics)
   Uint32 texture_amask = 0;
   boolean allow_subsampling = false;
   boolean is_yuv = false;
-  SDL_RendererInfo info;
+  SDL_RendererInfo rinfo;
 
-  if(!SDL_GetRendererInfo(render_data->sdl.renderer, &info))
+  if(!SDL_GetRendererInfo(render_data->sdl.renderer, &rinfo))
   {
-    Uint32 yuv_priority = 1;
+    Uint32 depth = graphics->bits_per_pixel;
     Uint32 priority = 0;
     Uint32 i;
 
-#ifdef __MACOSX__
-    // Mac OS X has a special OpenGL YUV texture mode that is treated as native
-    // and is faster than RGB. SDL 2 supports UYVY specifically right now.
-    yuv_priority = 1000000;
-#endif
-
-    debug("Using SDL renderer '%s'\n", info.name);
+    info("SDL render driver: '%s'\n", rinfo.name);
 
     // Try to use a native texture format to improve performance.
-    for(i = 0; i < info.num_texture_formats; i++)
+    for(i = 0; i < rinfo.num_texture_formats; i++)
     {
-      Uint32 format = info.texture_formats[i];
+      Uint32 format = rinfo.texture_formats[i];
+      Uint32 format_priority;
 
       debug("%d: %s\n", i, SDL_GetPixelFormatName(format));
 
-      switch(format)
+      if(SDL_ISPIXELFORMAT_INDEXED(texture_format))
+        continue;
+
+      format_priority = sdl_pixel_format_priority(format, depth, false);
+      if(format_priority > priority)
       {
-        case SDL_PIXELFORMAT_RGB444:
-        case SDL_PIXELFORMAT_ARGB4444:
-        case SDL_PIXELFORMAT_RGBA4444:
-        case SDL_PIXELFORMAT_ABGR4444:
-        case SDL_PIXELFORMAT_BGRA4444:
-        {
-          // Favor 16bpp modes with more colors if possible.
-          if((graphics->bits_per_pixel == 16) && (priority < 444))
-          {
-            texture_format = format;
-            priority = 444;
-          }
-          break;
-        }
-
-        case SDL_PIXELFORMAT_RGB555:
-        case SDL_PIXELFORMAT_BGR555:
-        case SDL_PIXELFORMAT_ARGB1555:
-        case SDL_PIXELFORMAT_RGBA5551:
-        case SDL_PIXELFORMAT_ABGR1555:
-        case SDL_PIXELFORMAT_BGRA5551:
-        {
-          if((graphics->bits_per_pixel == 16) && (priority < 555))
-          {
-            texture_format = format;
-            priority = 555;
-          }
-          break;
-        }
-
-        case SDL_PIXELFORMAT_RGB565:
-        case SDL_PIXELFORMAT_BGR565:
-        {
-          if((graphics->bits_per_pixel == 16) && (priority < 565))
-          {
-            texture_format = format;
-            priority = 565;
-          }
-          break;
-        }
-
-        case SDL_PIXELFORMAT_RGBX8888:
-        case SDL_PIXELFORMAT_BGRX8888:
-        case SDL_PIXELFORMAT_ARGB8888:
-        case SDL_PIXELFORMAT_RGBA8888:
-        case SDL_PIXELFORMAT_ABGR8888:
-        case SDL_PIXELFORMAT_BGRA8888:
-        case SDL_PIXELFORMAT_ARGB2101010:
-        {
-          // Any 32-bit RGB format is okay.
-          if((graphics->bits_per_pixel == 32) && (priority < 888))
-          {
-            texture_format = format;
-            priority = 888;
-          }
-          break;
-        }
-
-        case SDL_PIXELFORMAT_YUY2:
-        case SDL_PIXELFORMAT_UYVY:
-        case SDL_PIXELFORMAT_YVYU:
-        {
-          // These can work as either 32-bpp (full encode) or partial 16-bpp
-          // (chroma subsampling for render_graph, full encode for layers).
-          if(priority < yuv_priority)
-          {
-            texture_format = format;
-            priority = yuv_priority;
-          }
-          break;
-        }
+        texture_format = format;
+        priority = format_priority;
       }
     }
 
-    if(priority == yuv_priority)
+    if(priority == YUV_PRIORITY)
       is_yuv = true;
   }
   else
@@ -276,7 +209,11 @@ static void find_texture_format(struct graphics_data *graphics)
     if(texture_format == SDL_PIXELFORMAT_UYVY)
     {
       render_data->subsample_set_colors = uyvy_subsample_set_colors_mzx;
+#ifdef __MACOSX__
+      render_data->rgb_to_yuv = rgb_to_apple_ycbcr_422;
+#else
       render_data->rgb_to_yuv = rgb_to_uyvy;
+#endif
     }
 
     if(texture_format == SDL_PIXELFORMAT_YVYU)
@@ -298,6 +235,9 @@ static void find_texture_format(struct graphics_data *graphics)
     texture_bpp = SDL_BYTESPERPIXEL(texture_format) * 8;
     texture_amask = get_format_amask(texture_format);
   }
+
+  if(graphics->bits_per_pixel == BPP_AUTO)
+    graphics->bits_per_pixel = texture_bpp;
 
   // Initialize the texture data.
   render_data->texture_pixels = NULL;
@@ -327,6 +267,12 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
   // considering both software and GLSL need it...
   SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY, "0");
 #endif
+
+  if(graphics->sdl_render_driver[0])
+  {
+    info("Requesting SDL render driver: '%s'\n", graphics->sdl_render_driver);
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, graphics->sdl_render_driver);
+  }
 
   render_data->sdl.window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
@@ -495,9 +441,9 @@ static void softscale_render_graph(struct graphics_data *graphics)
   if(bpp == 32)
   {
     if(!mode)
-      render_graph32(pixels, pitch, graphics, set_colors32[mode]);
+      render_graph32(pixels, pitch, graphics);
     else
-      render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
+      render_graph32s(pixels, pitch, graphics);
   }
 }
 
@@ -581,7 +527,6 @@ void render_softscale_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = softscale_init_video;
   renderer->free_video = softscale_free_video;
-  renderer->check_video_mode = sdl_check_video_mode;
   renderer->set_video_mode = softscale_set_video_mode;
   renderer->update_colors = softscale_update_colors;
   renderer->resize_screen = resize_screen_standard;

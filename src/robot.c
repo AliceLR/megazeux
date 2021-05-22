@@ -31,6 +31,7 @@
 #include "error.h"
 #include "event.h"
 #include "expr.h"
+#include "extmem.h"
 #include "game_ops.h"
 #include "game_player.h"
 #include "graphics.h"
@@ -778,6 +779,7 @@ void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
 
     save_prop_w(SCRPROP_NUM_LINES, cur_scroll->num_lines, &mf);
     save_prop_s(SCRPROP_MESG, cur_scroll->mesg, scroll_size, 1, &mf);
+    save_prop_eof(&mf);
 
     zip_write_file(zp, name, buffer, actual_size, ZIP_M_NONE);
 
@@ -800,6 +802,7 @@ void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
     save_prop_c(SENPROP_SENSOR_CHAR, cur_sensor->sensor_char, &mf);
     save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg,
      ROBOT_NAME_SIZE, 1, &mf);
+    save_prop_eof(&mf);
 
     zip_write_file(zp, name, buffer, SENSOR_PROPS_SIZE, ZIP_M_NONE);
   }
@@ -916,9 +919,6 @@ void cache_robot_labels(struct robot *cur_robot)
   return;
 }
 
-#ifdef CONFIG_DEBYTECODE
-static
-#endif
 void clear_label_cache(struct robot *cur_robot)
 {
   int i;
@@ -2268,6 +2268,33 @@ void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y)
     *mx = board_width - 1;
   if(*my >= board_height)
     *my = board_height - 1;
+}
+
+/**
+ * Apply middle prefixes with respect to a different board than the current.
+ */
+void prefix_mid_xy_ext(struct world *mzx_world, struct board *dest_board,
+ int *mx, int *my, int x, int y)
+{
+  struct board *cur_board = mzx_world->current_board;
+
+  if(!mzx_world->mid_prefix)
+    return;
+
+  if(cur_board != dest_board)
+  {
+    mzx_world->current_board = dest_board;
+    retrieve_board_from_extram(dest_board);
+  }
+
+  prefix_mid_xy(mzx_world, mx, my, x, y);
+
+  if(cur_board != dest_board)
+  {
+    store_board_to_extram(dest_board);
+    mzx_world->current_board = cur_board;
+    find_player(mzx_world);
+  }
 }
 
 // Move an x/y pair in a given direction. Returns non-0 if edge reached.

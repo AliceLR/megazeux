@@ -37,7 +37,7 @@ static Uint8 blank_charset[CHAR_SIZE * CHARSET_SIZE];
 static Uint8 smzx_charset[CHAR_SIZE * CHARSET_SIZE];
 static Uint8 smzx_charset2[CHAR_SIZE * CHARSET_SIZE];
 
-void store_backup_palette(char dest[SMZX_PAL_SIZE])
+void store_backup_palette(char dest[SMZX_PAL_SIZE * 3])
 {
   Uint32 i;
   Uint8 *r;
