@@ -175,6 +175,7 @@ struct graphics_data
   struct video_layer video_layers[TEXTVIDEO_LAYERS];
   uint32_t current_layer;
   struct char_element *current_video;
+  struct char_element *current_video_end;
   struct video_layer *sorted_video_layers[TEXTVIDEO_LAYERS];
 
   enum cursor_mode_types cursor_mode;
@@ -211,29 +212,31 @@ struct graphics_data
   int renderer_num;
 };
 
-CORE_LIBSPEC void color_string(const char *string, Uint32 x, Uint32 y,
- Uint8 color);
-CORE_LIBSPEC void write_string(const char *string, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed);
-CORE_LIBSPEC void write_number(int number, char color, int x, int y,
- int minlen, boolean rightalign, int base);
-CORE_LIBSPEC void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color);
-CORE_LIBSPEC void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
- Uint8 color);
-CORE_LIBSPEC void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y);
-CORE_LIBSPEC void erase_char(Uint32 x, Uint32 y);
-CORE_LIBSPEC void erase_area(Uint32 x, Uint32 y, Uint32 x2, Uint32 y2);
+CORE_LIBSPEC void color_string(const char *string, unsigned int x,
+ unsigned int y, uint8_t color);
+CORE_LIBSPEC void write_string(const char *string, unsigned int x,
+ unsigned int y, uint8_t color, boolean tab_allowed);
+CORE_LIBSPEC void write_number(int number, uint8_t color, unsigned int x,
+ unsigned int y, int minlen, boolean rightalign, int base);
+CORE_LIBSPEC void color_line(unsigned int length, unsigned int x,
+ unsigned int y, uint8_t color);
+CORE_LIBSPEC void fill_line(unsigned int length, unsigned int x, unsigned int y,
+ uint8_t chr, uint8_t color);
+CORE_LIBSPEC void draw_char(uint8_t chr, uint8_t color, unsigned int x, unsigned int y);
+CORE_LIBSPEC void erase_char(unsigned int x, unsigned int y);
+CORE_LIBSPEC void erase_area(unsigned int x, unsigned int y,
+ unsigned int x2, unsigned int y2);
 
-CORE_LIBSPEC void write_string_ext(const char *string, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed, Uint32 offset, Uint32 c_offset);
-CORE_LIBSPEC void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
- Uint32 y, Uint32 offset, Uint32 c_offset);
+CORE_LIBSPEC void write_string_ext(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, boolean tab_allowed, unsigned int chr_offset, unsigned int color_offset);
+CORE_LIBSPEC void write_string_mask(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, boolean tab_allowed);
+CORE_LIBSPEC void draw_char_ext(uint8_t chr, uint8_t color, unsigned int x,
+ unsigned int y, unsigned int chr_offset, unsigned int color_offset);
 CORE_LIBSPEC void draw_char_bleedthru_ext(uint8_t chr, uint8_t color,
  unsigned int x, unsigned int y, unsigned int chr_offset, unsigned int color_offset);
 CORE_LIBSPEC void draw_char_to_layer(uint8_t chr, uint8_t color,
  unsigned int x, unsigned int y, unsigned int chr_offset, unsigned int color_offset);
-CORE_LIBSPEC void write_string_mask(const char *str, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed);
 
 CORE_LIBSPEC void clear_screen(void);
 
@@ -301,17 +304,16 @@ CORE_LIBSPEC void mouse_size(unsigned int width, unsigned int height);
 
 char *get_default_caption(void);
 
-void color_string_ext(const char *string, Uint32 x, Uint32 y,
- Uint8 color, Uint32 offset, Uint32 c_offset, boolean respect_newline);
-void color_string_ext_special(const char *string, Uint32 x, Uint32 y,
- Uint8 *color, Uint32 offset, Uint32 c_offset, boolean respect_newline);
-void write_line_ext(const char *string, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed, Uint32 offset,
- Uint32 c_offset);
-void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
- Uint8 chr, Uint8 color, Uint32 offset, Uint32 c_offset);
-void write_line_mask(const char *str, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed);
+void color_string_ext(const char *string, unsigned int x, unsigned int y,
+ uint8_t color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset);
+void color_string_ext_special(const char *string, unsigned int x, unsigned int y,
+ uint8_t *color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset);
+void write_line_ext(const char *string, unsigned int x, unsigned int y,
+ uint8_t color, boolean tab_allowed, unsigned int chr_offset, unsigned int color_offset);
+void write_line_mask(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, boolean tab_allowed);
+void fill_line_ext(unsigned int length, unsigned int x, unsigned int y,
+ uint8_t chr, uint8_t color, unsigned int chr_offset, unsigned int color_offset);
 
 boolean change_video_output(struct config_info *conf, const char *output);
 int get_available_video_output_list(const char **buffer, int buffer_len);
@@ -360,8 +362,8 @@ CORE_LIBSPEC int get_char_average_luma(uint16_t chr, uint8_t palette, int mode,
 CORE_LIBSPEC void ec_load_mzx(void);
 CORE_LIBSPEC void ec_load_set_secondary(const char *filename,
  uint8_t dest[CHAR_SIZE * CHARSET_SIZE]);
-CORE_LIBSPEC void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
- Uint8 fg_color, Uint32 x, Uint32 y, Uint32 offset);
+CORE_LIBSPEC void draw_char_mixed_pal_ext(uint8_t chr, uint8_t bg_color,
+ uint8_t fg_color, unsigned int x, unsigned int y, unsigned int chr_offset);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_ENABLE_SCREENSHOTS

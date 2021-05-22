@@ -25,21 +25,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <sys/stat.h>
 
-#include "graphics.h"
-#include "world.h"
 #include "configure.h"
+#include "error.h"
 #include "event.h"
+#include "graphics.h"
+#include "platform.h"
 #include "render.h"
 #include "render_layer.h"
 #include "renderers.h"
-#include "platform.h"
-#include "error.h"
+#include "world.h"
 #include "io/vio.h"
 
 #ifdef CONFIG_PNG
@@ -194,7 +195,7 @@ uint8_t ec_read_byte(uint16_t chr, uint8_t byte)
   return graphics.charset[(chr * CHAR_SIZE) + byte];
 }
 
-void ec_read_char(Uint16 chr, char matrix[CHAR_SIZE])
+void ec_read_char(uint16_t chr, char matrix[CHAR_SIZE])
 {
   extended_charsets_check(true, chr, 1);
 
@@ -1013,7 +1014,7 @@ static unsigned int get_cursor_color(void)
   if(graphics.screen_mode <= 1)
   {
     // Modes 0 and 1- use the (modified) classic cursor color logic.
-    // NOTE: there was a trick using Uint32 * here before that caused
+    // NOTE: there was a trick using uint32_t * here before that caused
     // misalignment crashes on some platforms.
     uint8_t *offset = graphics.charset + cursor_char * CHAR_SIZE;
     int cursor_solid = 0xFF;
@@ -1534,6 +1535,10 @@ uint32_t create_layer(int x, int y, unsigned int w, unsigned int h,
   layer->offset = offset;
   graphics.layer_count++;
 
+  // This shouldn't ever happen, but just in case...
+  if(graphics.current_layer == layer_idx)
+    select_layer(layer_idx);
+
   if(!graphics.requires_extended && unbound)
     graphics.requires_extended = true;
 
@@ -1578,10 +1583,12 @@ static void init_layers(void)
   blank_layers();
 }
 
-void select_layer(uint32_t layer)
+void select_layer(uint32_t layer_id)
 {
-  graphics.current_layer = layer;
-  graphics.current_video = graphics.video_layers[layer].data;
+  struct video_layer *layer = &graphics.video_layers[layer_id];
+  graphics.current_layer = layer_id;
+  graphics.current_video = layer->data;
+  graphics.current_video_end = layer->data + (layer->w * layer->h);
 }
 
 void blank_layers(void)
@@ -1950,32 +1957,38 @@ static void dirty_current(void)
   graphics.video_layers[graphics.current_layer].empty = false;
 }
 
-static int offset_adjust(int offset)
+static int offset_adjust(int offset, unsigned int x, unsigned int y)
 {
   // Transform the given offset from screen space to layer space
   struct video_layer *layer = &graphics.video_layers[graphics.current_layer];
-  int x, y;
 
   if(layer->w != SCREEN_W || layer->x != 0 || layer->y != 0)
   {
-    x = (offset % SCREEN_W) - (layer->x / CHAR_W);
-    y = (offset / SCREEN_W) - (layer->y / CHAR_H);
+    // NOTE: using the UI drawing functions on non-aligned layers is undefined
+    // behavior. Use draw_char_to_layer instead.
+    assert((int)x >= (layer->x / CHAR_W));
+    assert((int)y >= (layer->y / CHAR_H));
+    assert(x < (layer->x / CHAR_W) + layer->w);
+    assert(y < (layer->y / CHAR_H) + layer->h);
+
+    x -= layer->x / CHAR_W;
+    y -= layer->y / CHAR_H;
     return y * layer->w + x;
   }
   return offset;
 }
 
-void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
- Uint8 *color, Uint32 offset, Uint32 c_offset, boolean respect_newline)
+void color_string_ext_special(const char *str, unsigned int x, unsigned int y,
+ uint8_t *color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
   const char *src = str;
-  Uint8 cur_char = *src;
-  Uint8 next;
-  Uint8 bg_color = (*color >> 4) + c_offset;
-  Uint8 fg_color = (*color & 0x0F) + c_offset;
+  uint8_t cur_char = *src;
+  uint8_t next;
+  uint8_t bg_color = (*color >> 4) + color_offset;
+  uint8_t fg_color = (*color & 0x0F) + color_offset;
 
   char next_str[2];
   next_str[1] = 0;
@@ -1983,7 +1996,7 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
   dirty_ui();
   dirty_current();
 
-  while(cur_char)
+  while(cur_char && dest < graphics.current_video_end)
   {
     switch(cur_char)
     {
@@ -2001,13 +2014,13 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
         if(isxdigit(next))
         {
           next_str[0] = next;
-          bg_color = (Uint8)(strtol(next_str, NULL, 16) + c_offset);
+          bg_color = (uint8_t)(strtol(next_str, NULL, 16) + color_offset);
         }
         else
         {
           if(next == '@')
           {
-            dest->char_value = '@' + offset;
+            dest->char_value = '@' + chr_offset;
             dest->bg_color = bg_color;
             dest->fg_color = fg_color;
             *(dest_copy++) = *dest;
@@ -2035,13 +2048,13 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
         if(isxdigit(next))
         {
           next_str[0] = next;
-          fg_color = (Uint8)(strtol(next_str, NULL, 16) + c_offset);
+          fg_color = (uint8_t)(strtol(next_str, NULL, 16) + color_offset);
         }
         else
         {
           if(next == '~')
           {
-            dest->char_value = '~' + offset;
+            dest->char_value = '~' + chr_offset;
             dest->bg_color = bg_color;
             dest->fg_color = fg_color;
             *(dest_copy++) = *dest;
@@ -2059,10 +2072,10 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
       // Newline
       case '\n':
       {
-        if(respect_newline)
+        if(allow_newline)
         {
           y++;
-          dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+          dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x, x, y);
           dest_copy = graphics.text_video + (y * SCREEN_W) + x;
           break;
         }
@@ -2072,50 +2085,46 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
 
       default:
       {
-        dest->char_value = cur_char + offset;
+        dest->char_value = cur_char + chr_offset;
         dest->bg_color = bg_color;
         dest->fg_color = fg_color;
         *(dest_copy++) = *dest;
         dest++;
       }
     }
-    if(dest >= graphics.current_video + offset_adjust(SCREEN_W * SCREEN_H))
-      break;
 
     str++;
     cur_char = *str;
   }
 
 exit_out:
-  *color = (((bg_color - c_offset) << 4) & 0xF0) |
-           (((fg_color - c_offset) << 0) & 0x0F);
+  *color = (((bg_color - color_offset) << 4) & 0xF0) |
+           (((fg_color - color_offset) << 0) & 0x0F);
 }
 
-void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
- Uint32 offset, Uint32 c_offset, boolean respect_newline)
+void color_string_ext(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset)
 {
-  color_string_ext_special(str, x, y, &color, offset,
-   c_offset, respect_newline);
+  color_string_ext_special(str, x, y, &color, allow_newline, chr_offset, color_offset);
 }
 
 // Write a normal string
 
-void write_string_ext(const char *str, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed, Uint32 offset,
- Uint32 c_offset)
+void write_string_ext(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, boolean tab_allowed, unsigned int chr_offset, unsigned int color_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
   const char *src = str;
-  Uint8 cur_char = *src;
-  Uint8 bg_color = (color >> 4) + c_offset;
-  Uint8 fg_color = (color & 0x0F) + c_offset;
+  uint8_t cur_char = *src;
+  uint8_t bg_color = (color >> 4) + color_offset;
+  uint8_t fg_color = (color & 0x0F) + color_offset;
 
   dirty_ui();
   dirty_current();
 
-  while(cur_char && (cur_char != 0))
+  while(cur_char && (cur_char != 0) && dest < graphics.current_video_end)
   {
     switch(cur_char)
     {
@@ -2123,7 +2132,7 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
       case '\n':
       {
         y++;
-        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x, x, y);
         dest_copy = graphics.text_video + (y * SCREEN_W) + x;
         break;
       }
@@ -2142,36 +2151,33 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
 
       default:
       {
-        dest->char_value = cur_char + offset;
+        dest->char_value = cur_char + chr_offset;
         dest->bg_color = bg_color;
         dest->fg_color = fg_color;
         *(dest_copy++) = *dest;
         dest++;
       }
     }
-    if(dest >= graphics.current_video + offset_adjust(SCREEN_W * SCREEN_H))
-      break;
-
     str++;
     cur_char = *str;
   }
 }
 
-void write_string_mask(const char *str, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed)
+void write_string_mask(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, boolean tab_allowed)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
   const char *src = str;
-  Uint8 cur_char = *src;
-  Uint8 bg_color = (color >> 4) + 16;
-  Uint8 fg_color = (color & 0x0F) + 16;
+  uint8_t cur_char = *src;
+  uint8_t bg_color = (color >> 4) + 16;
+  uint8_t fg_color = (color & 0x0F) + 16;
 
   dirty_ui();
   dirty_current();
 
-  while(cur_char && (cur_char != 0))
+  while(cur_char && (cur_char != 0) && dest < graphics.current_video_end)
   {
     switch(cur_char)
     {
@@ -2179,7 +2185,7 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
       case '\n':
       {
         y++;
-        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x, x, y);
         dest_copy = graphics.text_video + (y * SCREEN_W) + x;
         break;
       }
@@ -2209,9 +2215,6 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
         dest++;
       }
     }
-    if(dest >= graphics.current_video + offset_adjust(SCREEN_W * SCREEN_H))
-      break;
-
     str++;
     cur_char = *str;
   }
@@ -2219,22 +2222,21 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
 
 // Write a normal string, without carriage returns
 
-void write_line_ext(const char *str, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed, Uint32 offset,
- Uint32 c_offset)
+void write_line_ext(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, boolean tab_allowed, unsigned int chr_offset, unsigned int color_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
   const char *src = str;
-  Uint8 cur_char = *src;
-  Uint8 bg_color = (color >> 4) + c_offset;
-  Uint8 fg_color = (color & 0x0F) + c_offset;
+  uint8_t cur_char = *src;
+  uint8_t bg_color = (color >> 4) + color_offset;
+  uint8_t fg_color = (color & 0x0F) + color_offset;
 
   dirty_ui();
   dirty_current();
 
-  while(cur_char && (cur_char != '\n'))
+  while(cur_char && (cur_char != '\n') && dest < graphics.current_video_end)
   {
     switch(cur_char)
     {
@@ -2253,7 +2255,7 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
 
       default:
       {
-        dest->char_value = cur_char + offset;
+        dest->char_value = cur_char + chr_offset;
         dest->bg_color = bg_color;
         dest->fg_color = fg_color;
         *(dest_copy++) = *dest;
@@ -2265,21 +2267,21 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
   }
 }
 
-void write_line_mask(const char *str, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed)
+void write_line_mask(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, boolean tab_allowed)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
   const char *src = str;
-  Uint8 cur_char = *src;
-  Uint8 bg_color = (color >> 4) + 16;
-  Uint8 fg_color = (color & 0x0F) + 16;
+  uint8_t cur_char = *src;
+  uint8_t bg_color = (color >> 4) + 16;
+  uint8_t fg_color = (color & 0x0F) + 16;
 
   dirty_ui();
   dirty_current();
 
-  while(cur_char && (cur_char != '\n'))
+  while(cur_char && (cur_char != '\n') && dest < graphics.current_video_end)
   {
     switch(cur_char)
     {
@@ -2317,7 +2319,7 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
 // Set rightalign to print the rightmost char at xy and proceed to the left
 // minlen is the minimum length to print. Pad with 0.
 
-void write_number(int number, char color, int x, int y,
+void write_number(int number, uint8_t color, unsigned int x, unsigned int y,
  int minlen, boolean rightalign, int base)
 {
   char temp[12];
@@ -2332,28 +2334,30 @@ void write_number(int number, char color, int x, int y,
 
   if(rightalign)
   {
-    x -= strlen(temp) - 1;
-    if(x < 0)
+    unsigned int shift = strlen(temp) - 1;
+    if(shift < x)
+      x -= shift;
+    else
       x = 0;
   }
 
-  write_string(temp, x, y, color, false);
+  write_line_ext(temp, x, y, color, false, PRO_CH, 16);
 }
 
-static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
- Uint8 color, Uint32 offset, Uint32 c_offset)
+static void color_line_ext(unsigned int length, unsigned int x, unsigned int y,
+ uint8_t color, unsigned int color_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
-  Uint8 bg_color = (color >> 4) + c_offset;
-  Uint8 fg_color = (color & 0x0F) + c_offset;
-  Uint32 i;
+  uint8_t bg_color = (color >> 4) + color_offset;
+  uint8_t fg_color = (color & 0x0F) + color_offset;
+  unsigned int i;
 
   dirty_ui();
   dirty_current();
 
-  for(i = 0; i < length; i++)
+  for(i = 0; i < length && dest < graphics.current_video_end; i++)
   {
     dest->char_value = dest_copy->char_value;
     dest->bg_color = bg_color;
@@ -2363,22 +2367,22 @@ static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
   }
 }
 
-void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
- Uint8 chr, Uint8 color, Uint32 offset, Uint32 c_offset)
+void fill_line_ext(unsigned int length, unsigned int x, unsigned int y,
+ uint8_t chr, uint8_t color, unsigned int chr_offset, unsigned int color_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
-  Uint8 bg_color = (color >> 4) + c_offset;
-  Uint8 fg_color = (color & 0x0F) + c_offset;
-  Uint32 i;
+  uint8_t bg_color = (color >> 4) + color_offset;
+  uint8_t fg_color = (color & 0x0F) + color_offset;
+  unsigned int i;
 
   dirty_ui();
   dirty_current();
 
-  for(i = 0; i < length; i++)
+  for(i = 0; i < length && dest < graphics.current_video_end; i++)
   {
-    dest->char_value = chr + offset;
+    dest->char_value = chr + chr_offset;
     dest->bg_color = bg_color;
     dest->fg_color = fg_color;
     *(dest_copy++) = *dest;
@@ -2387,13 +2391,13 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
 }
 
 #ifdef CONFIG_EDITOR
-void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
- Uint8 fg_color, Uint32 x, Uint32 y, Uint32 offset)
+void draw_char_mixed_pal_ext(uint8_t chr, uint8_t bg_color,
+ uint8_t fg_color, unsigned int x, unsigned int y, unsigned int chr_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
-  dest->char_value = chr + offset;
+  dest->char_value = chr + chr_offset;
 
   dest->bg_color = bg_color & 31;
   dest->fg_color = fg_color & 31;
@@ -2405,15 +2409,15 @@ void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
 }
 #endif /* CONFIG_EDITOR */
 
-void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
- Uint32 y, Uint32 offset, Uint32 c_offset)
+void draw_char_ext(uint8_t chr, uint8_t color, unsigned int x, unsigned int y,
+ unsigned int chr_offset, unsigned int color_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
-  dest->char_value = chr + offset;
-  dest->bg_color = (color >> 4) + c_offset;
-  dest->fg_color = (color & 0x0F) + c_offset;
+  dest->char_value = chr + chr_offset;
+  dest->bg_color = (color >> 4) + color_offset;
+  dest->fg_color = (color & 0x0F) + color_offset;
   *(dest_copy++) = *dest;
 
   dirty_ui();
@@ -2429,7 +2433,7 @@ void draw_char_bleedthru_ext(uint8_t chr, uint8_t color,
  unsigned int x, unsigned int y, unsigned int chr_offset, unsigned int color_offset)
 {
   int offset = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(offset);
+  struct char_element *dest = graphics.current_video + offset_adjust(offset, x, y);
   struct char_element *dest_copy = graphics.text_video + offset;
 
   if(!(color & 0xF0))
@@ -2452,49 +2456,52 @@ void draw_char_to_layer(uint8_t chr, uint8_t color,
 {
   int w = graphics.video_layers[graphics.current_layer].w;
   struct char_element *dest = graphics.current_video + (y * w) + x;
+
+  assert(dest < graphics.current_video_end);
+
   dest->char_value = chr + chr_offset;
   dest->bg_color = (color >> 4) + color_offset;
   dest->fg_color = (color & 0x0F) + color_offset;
   dirty_current();
 }
 
-void color_string(const char *string, Uint32 x, Uint32 y, Uint8 color)
+void color_string(const char *string, unsigned int x, unsigned int y, uint8_t color)
 {
-  color_string_ext(string, x, y, color, PRO_CH, 16, false);
+  color_string_ext(string, x, y, color, false, PRO_CH, 16);
 }
 
-void write_string(const char *string, Uint32 x, Uint32 y, Uint8 color,
- Uint32 tab_allowed)
+void write_string(const char *string, unsigned int x, unsigned int y,
+ uint8_t color, boolean tab_allowed)
 {
   write_string_ext(string, x, y, color, tab_allowed, PRO_CH, 16);
 }
 
-void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color)
+void color_line(unsigned int length, unsigned int x, unsigned int y, uint8_t color)
 {
-  color_line_ext(length, x, y, color, PRO_CH, 16);
+  color_line_ext(length, x, y, color, 16);
 }
 
-void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
- Uint8 color)
+void fill_line(unsigned int length, unsigned int x, unsigned int y,
+ uint8_t chr, uint8_t color)
 {
   fill_line_ext(length, x, y, chr, color, PRO_CH, 16);
 }
 
-void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y)
+void draw_char(uint8_t chr, uint8_t color, unsigned int x, unsigned int y)
 {
   draw_char_ext(chr, color, x, y, PRO_CH, 16);
 }
 
-void erase_char(Uint32 x, Uint32 y)
+void erase_char(unsigned int x, unsigned int y)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   dest->char_value = INVISIBLE_CHAR;
 }
 
-void erase_area(Uint32 x, Uint32 y, Uint32 x2, Uint32 y2)
+void erase_area(unsigned int x, unsigned int y, unsigned int x2, unsigned int y2)
 {
-  Uint32 i, j;
+  unsigned int i, j;
 
   for(i = y; i <= y2; i++)
     for(j = x; j <= x2; j++)
@@ -2504,14 +2511,15 @@ void erase_area(Uint32 x, Uint32 y, Uint32 x2, Uint32 y2)
 void clear_screen(void)
 {
   // Hide the game screen by drawing blank chars over the UI.
-  Uint32 i;
-  struct char_element *dest = graphics.current_video;
+  struct char_element *dest;
   struct char_element *dest_copy = graphics.text_video;
-  Uint32 current_layer = graphics.current_layer;
+  uint32_t current_layer = graphics.current_layer;
+  int i;
 
   select_layer(UI_LAYER);
   dirty_current();
 
+  dest = graphics.current_video;
   for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
   {
     dest->char_value = 0;
@@ -2615,7 +2623,7 @@ void mouse_size(unsigned int width, unsigned int height)
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  */
 /*
-static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
+static void dump_screen_real(uint8_t *pix, struct rgb_color *pal, int count,
  const char *name)
 {
   png_write_screen(pix, pal, count, name);
@@ -2632,7 +2640,7 @@ static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
 #define DUMP_FMT_EXT "bmp"
 
 /*
-static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
+static void dump_screen_real(uint8_t *pix, struct rgb_color *pal, int count,
  const char *name)
 {
   FILE *file;
@@ -2673,7 +2681,7 @@ static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
   // Image data
   for(i = 349; i >= 0; i--)
   {
-    fwrite(pix + i * 640, sizeof(Uint8), 640, file);
+    fwrite(pix + i * 640, sizeof(uint8_t), 640, file);
   }
 
   fclose(file);
@@ -2725,7 +2733,7 @@ static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
       pix_ptr++;
     }
     fwrite(rowbuffer, SCREEN_PIX_W * 3, 1, file);
-    //fwrite(pix + i * 640, sizeof(Uint8), 640, file);
+    //fwrite(pix + i * 640, sizeof(uint8_t), 640, file);
   }
 
   fclose(file);

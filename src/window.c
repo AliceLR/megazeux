@@ -1315,7 +1315,7 @@ static void draw_label(struct world *mzx_world, struct dialog *di,
   int y = di->y + e->y;
 
   if(src->respect_colors)
-    color_string_ext(src->text, x, y, DI_TEXT, PRO_CH, 16, true);
+    color_string_ext(src->text, x, y, DI_TEXT, true, PRO_CH, 16);
   else
     write_string_ext(src->text, x, y, DI_TEXT, true, PRO_CH, 16);
 }
@@ -3983,7 +3983,7 @@ void meter(const char *title, unsigned int progress, unsigned int out_of)
   // Add title
   write_string(title, titlex, 10, DI_TITLE, 0);
   draw_char(' ', DI_TITLE, titlex - 1, 10);
-  draw_char(' ', DI_TITLE, titlex + (int)strlen(title), 10);
+  draw_char(' ', DI_TITLE, titlex + (unsigned int)strlen(title), 10);
   meter_interior(progress, out_of);
 }
 
