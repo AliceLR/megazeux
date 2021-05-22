@@ -133,7 +133,7 @@ static void SHA256_transform(struct SHA256_ctx *ctx)
 
 void SHA256_init(struct SHA256_ctx *ctx)
 {
-  memcpy(ctx->H, H_initial, 8 * sizeof(Uint32));
+  memcpy(ctx->H, H_initial, 8 * sizeof(uint32_t));
   ctx->lbits = 0;
   ctx->hbits = 0;
   ctx->mlen = 0;

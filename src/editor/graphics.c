@@ -144,7 +144,7 @@ void ec_change_block(uint8_t offset, uint8_t charset,
 
   skip = 32 - width;
 
-  // No need to bound offset (Uint8)
+  // No need to bound offset (uint8_t)
   for(y = 0; y < height; y++)
   {
     for(x = 0; x < width; x++)
