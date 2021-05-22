@@ -257,6 +257,9 @@ static struct audio_stream *construct_xmp_stream(char *filename,
   if(!fp)
     return NULL;
 
+#if defined(CONFIG_WIIU)
+  setvbuf(fp, NULL, _IOFBF, 32768);
+#endif
   file_len = ftell_and_rewind(fp);
 
   ctx = xmp_create_context();

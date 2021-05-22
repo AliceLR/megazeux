@@ -79,6 +79,12 @@
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
 #endif
 
+#ifdef CONFIG_WIIU
+#define FULLSCREEN_WIDTH_DEFAULT 1280
+#define FULLSCREEN_HEIGHT_DEFAULT 720
+#define FULLSCREEN_DEFAULT 1
+#endif
+
 #ifdef CONFIG_SWITCH
 // Switch SDL needs this resolution or else weird things start happening...
 #define FULLSCREEN_WIDTH_DEFAULT 1920

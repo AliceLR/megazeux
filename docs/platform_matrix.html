@@ -57,6 +57,7 @@ var optional_sdl_wii = std("NO / SDL 1.2", 9);
 var yes_but_8bpp = subopt("YES (8bpp)", 10);
 var no_gl_switch = subopt("NO", 11);
 var no_gl_fixed_android = subopt("NO", 12);
+var no_libpng_wiiu = subopt("NO", 14);
 
 var sdl2 = _yes("SDL 2");
 var sdl1_2 = std("SDL 1.2");
@@ -468,6 +469,32 @@ var archs =
     loadsave_meter:   yes,
   },
 
+  wiiu:
+  {
+    platform:         "wiiu",
+    description:      "Nintendo Wii U",
+    architecture:     "PPC (ELF)",
+    endian:           "Big",
+    toolchain:        "gcc 10.2.0 <br> binutils 2.34 <br> (dk r38)",
+    packaged:         ZIP,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    adlib_engine:     rad,
+    ogg_vorbis:       tremor,
+    optimization:     speed,
+    sdl:              sdl2,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    overlay:          yes,
+    updater:          no_updater,
+    png:              no_libpng_wiiu,
+    hashtables:       yes,
+    loadsave_meter:   yes,
+  },
+
   xcode:
   {
     platform:         "xcode",
@@ -870,6 +897,11 @@ renderers are essentially guaranteed to work with the supported API levels.
 <li id="note13">Networking support is only enabled when some feature that
 requires it is also enabled. The only feature that currently uses networking
 is the updater.
+</li>
+
+<li id="note14">There is currently a toolchain conflict between two versions of
+zlib - one (1.2.5) included in the Wii U operating system, one (1.2.11) included
+in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
 </li>
 </ol>
 

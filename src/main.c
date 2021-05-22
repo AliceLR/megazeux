@@ -206,7 +206,9 @@ __libspec int main(int argc, char *argv[])
 #endif
 
   // argc may be 0 on e.g. some Wii homebrew loaders.
+#ifndef CONFIG_WIIU
   if(argc == 0)
+#endif
   {
     argv = _backup_argv;
     argc = 1;
@@ -244,7 +246,7 @@ __libspec int main(int argc, char *argv[])
   // of the form var=value removed, leaving only unparsed
   // parameters. Interpret the first unparsed parameter
   // as a file to load (overriding startup_file etc.)
-  if(argc > 1)
+  if(argc > 1 && argv != _backup_argv)
   {
     path_get_directory_and_filename(
       conf->startup_path, sizeof(conf->startup_path),

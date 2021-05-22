@@ -1,0 +1,63 @@
+#
+# Nintendo Wii U Makefile
+#
+
+.PHONY: package clean
+
+ifeq ($(strip $(DEVKITPRO)),)
+$(error "DEVKITPRO must be set in your environment.")
+endif
+
+ifeq ($(strip $(DEVKITPPC)),)
+$(error "DEVKITPPC must be set in your environment.")
+endif
+
+#
+# Switch target rules
+#
+
+include $(DEVKITPRO)/wut/share/wut_rules
+
+BINEXT     := .elf
+# overridden by base_tools include
+PREFIX     := $(DEVKITPPC)
+
+#
+# Override library paths.
+#
+
+MACHDEP    := -DESPRESSO -mcpu=750 -meabi -mhard-float
+
+ifeq (${DEBUG},1)
+  WUT := wutd
+else
+  OPTIMIZE_CFLAGS := -O3 -ffunction-sections
+  WUT := wut
+endif
+
+SDL_PREFIX := ${PORTLIBS_PATH}/wiiu
+
+EXTRA_INCLUDES := -isystem ${WUT_ROOT}/include -isystem ${PORTLIBS_PATH}/wiiu/include \
+                  -isystem ${PORTLIBS_PATH}/ppc/include
+EXTRA_LIBS := -L${WUT_ROOT}/lib -L${PORTLIBS_PATH}/wiiu/lib -L${PORTLIBS_PATH}/ppc/lib \
+              -lSDL2 -l${WUT}
+
+ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP}
+ARCH_CXXFLAGS += ${ARCH_CFLAGS} -fno-rtti -fno-exceptions
+ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP} ${RPXSPECS}
+
+package: mzx mzxrun.rpx megazeux.rpx
+
+clean:
+	@rm -f mzxrun.{rpx,elf} megazeux.{rpx,elf}
+
+build := build/${SUBPLATFORM}/wiiu/apps/megazeux
+build: package ${build}
+	${CP} arch/wiiu/pad.config ${build}
+	${CP} megazeux.rpx ${build}
+	${CP} arch/wiiu/icon.png ${build}
+	@sed "s/%VERSION%/${VERSION}/g;s/%DATE%/`date -u +%Y%m%d%H%M`/g" \
+	    arch/wiiu/meta.xml > ${build}/meta.xml
+	${RM} ${build}/${mzxrun} ${build}/${mzx} ${build}/*.debug
+
+include arch/zip.inc

@@ -135,13 +135,10 @@ CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
 #endif // __WIN32__ || __amigaos__
 
 #ifndef __WIN32__
-#if defined(CONFIG_PSP) || defined(CONFIG_GP2X) \
- || defined(CONFIG_NDS) || defined(CONFIG_WII) \
- || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
+// POSIX strcasecmp and strncasecmp are in strings.h,
+// which may or may not be included by string.h
 #include <string.h>
-#else
 #include <strings.h>
-#endif
 #endif // !__WIN32__
 
 #if defined(__amigaos__)
