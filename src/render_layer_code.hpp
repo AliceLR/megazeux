@@ -26,7 +26,7 @@
 // when working on this function it can be good to redirect make's stderr
 // stream to a file.
 
-#include "platform.h"
+#include "platform_endian.h"
 #include "util.h"
 
 #ifdef IS_CXX_11
@@ -38,32 +38,32 @@
 #endif
 
 template<typename PIXTYPE>
-static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int align, int smzx, int ppal, int trans, int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE>
-static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int smzx, int ppal, int trans, int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX>
-static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int ppal, int trans, int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL>
-static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int trans, int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR>
-static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int clip);
 
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR, int CLIP>
-static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer);
 
 /**
@@ -71,7 +71,7 @@ static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
  * This always must be >= the current renderer's bits-per-pixel.
  */
 template<>
-inline void render_layer_func<Uint8>(void * RESTRICT pixels, Uint32 pitch,
+inline void render_layer_func<uint8_t>(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int align, int smzx, int ppal, int trans, int clip)
 {
@@ -79,23 +79,23 @@ inline void render_layer_func<Uint8>(void * RESTRICT pixels, Uint32 pitch,
   {
 #if ARCHITECTURE_BITS >= 64 && !defined(SKIP_64_ALIGN)
     case 64:
-      render_layer_func<Uint8, Uint64>(pixels, pitch, graphics, layer,
+      render_layer_func<uint8_t, uint64_t>(pixels, pitch, graphics, layer,
        smzx, ppal, trans, clip);
       break;
 #endif /* ARCHITECTURE_BITS >= 64 */
 
     case 32:
-      render_layer_func<Uint8, Uint32>(pixels, pitch, graphics, layer,
+      render_layer_func<uint8_t, uint32_t>(pixels, pitch, graphics, layer,
        smzx, ppal, trans, clip);
       break;
 
     case 16:
-      render_layer_func<Uint8, Uint16>(pixels, pitch, graphics, layer,
+      render_layer_func<uint8_t, uint16_t>(pixels, pitch, graphics, layer,
        smzx, ppal, trans, clip);
       break;
 
     case 8:
-      render_layer_func<Uint8, Uint8>(pixels, pitch, graphics, layer,
+      render_layer_func<uint8_t, uint8_t>(pixels, pitch, graphics, layer,
        smzx, ppal, trans, clip);
       break;
 
@@ -111,7 +111,7 @@ inline void render_layer_func<Uint8>(void * RESTRICT pixels, Uint32 pitch,
  * This always must be >= the current renderer's bits-per-pixel.
  */
 template<>
-inline void render_layer_func<Uint16>(void * RESTRICT pixels, Uint32 pitch,
+inline void render_layer_func<uint16_t>(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int align, int smzx, int ppal, int trans, int clip)
 {
@@ -119,18 +119,18 @@ inline void render_layer_func<Uint16>(void * RESTRICT pixels, Uint32 pitch,
   {
 #if ARCHITECTURE_BITS >= 64 && !defined(SKIP_64_ALIGN)
     case 64:
-      render_layer_func<Uint16, Uint64>(pixels, pitch, graphics, layer,
+      render_layer_func<uint16_t, uint64_t>(pixels, pitch, graphics, layer,
        smzx, ppal, trans, clip);
       break;
 #endif /* ARCHITECTURE_BITS >= 64 */
 
     case 32:
-      render_layer_func<Uint16, Uint32>(pixels, pitch, graphics, layer,
+      render_layer_func<uint16_t, uint32_t>(pixels, pitch, graphics, layer,
        smzx, ppal, trans, clip);
       break;
 
     case 16:
-      render_layer_func<Uint16, Uint16>(pixels, pitch, graphics, layer,
+      render_layer_func<uint16_t, uint16_t>(pixels, pitch, graphics, layer,
        smzx, ppal, trans, clip);
       break;
 
@@ -146,7 +146,7 @@ inline void render_layer_func<Uint16>(void * RESTRICT pixels, Uint32 pitch,
  * This always must be >= the current renderer's bits-per-pixel.
  */
 template<>
-inline void render_layer_func<Uint32>(void * RESTRICT pixels, Uint32 pitch,
+inline void render_layer_func<uint32_t>(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int align, int smzx, int ppal, int trans, int clip)
 {
@@ -154,13 +154,13 @@ inline void render_layer_func<Uint32>(void * RESTRICT pixels, Uint32 pitch,
   {
 #if ARCHITECTURE_BITS >= 64 && !defined(SKIP_64_ALIGN)
     case 64:
-      render_layer_func<Uint32, Uint64>(pixels, pitch, graphics, layer,
+      render_layer_func<uint32_t, uint64_t>(pixels, pitch, graphics, layer,
        smzx, ppal, trans, clip);
       break;
 #endif /* ARCHITECTURE_BITS >= 64 */
 
     case 32:
-      render_layer_func<Uint32, Uint32>(pixels, pitch, graphics, layer,
+      render_layer_func<uint32_t, uint32_t>(pixels, pitch, graphics, layer,
        smzx, ppal, trans, clip);
       break;
 
@@ -177,7 +177,7 @@ inline void render_layer_func<Uint32>(void * RESTRICT pixels, Uint32 pitch,
  * alignment options, so several platforms disable them altogether to reduce
  * executable size and/or compilation time.
  */
-static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static inline void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int bpp, int align, int smzx, int ppal, int trans, int clip)
 {
@@ -185,19 +185,19 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
   {
 #ifndef SKIP_8BPP
     case 8:
-      render_layer_func<Uint8>(pixels, pitch, graphics, layer,
+      render_layer_func<uint8_t>(pixels, pitch, graphics, layer,
        align, smzx, ppal, trans, clip);
       break;
 #endif
 #ifndef SKIP_16BPP
     case 16:
-      render_layer_func<Uint16>(pixels, pitch, graphics, layer,
+      render_layer_func<uint16_t>(pixels, pitch, graphics, layer,
        align, smzx, ppal, trans, clip);
       break;
 #endif
 #ifndef SKIP_32BPP
     case 32:
-      render_layer_func<Uint32>(pixels, pitch, graphics, layer,
+      render_layer_func<uint32_t>(pixels, pitch, graphics, layer,
        align, smzx, ppal, trans, clip);
       break;
 #endif
@@ -213,7 +213,7 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
  * Renderer is SMZX (1) or normal MZX (0).
  */
 template<typename PIXTYPE, typename ALIGNTYPE>
-static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static inline void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int smzx, int ppal, int trans, int clip)
 {
@@ -243,7 +243,7 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
  * 256 is valid for MZX mode, but 16 is invalid for SMZX.
  */
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX>
-static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int ppal, int trans, int clip)
 {
@@ -284,7 +284,7 @@ static void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
  * Layer transparency enabled (1) or disabled (0).
  */
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL>
-static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static inline void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int trans, int clip)
 {
@@ -311,7 +311,7 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
  * Renderer should clip the layer at the screen boundaries (1) or not (0).
  */
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR>
-static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static inline void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer,
  int clip)
 {
@@ -337,7 +337,7 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
  * This needs to be done for both colors.
  */
 template<int BPP, int TR, int PPAL>
-static inline int select_color_16(Uint8 color, int tcol)
+static inline int select_color_16(uint8_t color, int tcol)
 {
   // Palette values >= 16, prior to offsetting, are from the protected palette.
   if((BPP > 8 || PPAL < 240) && color >= 16)
@@ -455,10 +455,10 @@ static inline void set_colors_mzx(ALIGNTYPE (&dest)[16], ALIGNTYPE (&cols)[4])
  */
 template<int PPW, typename ALIGNTYPE>
 static inline ALIGNTYPE get_colors_mzx(ALIGNTYPE (&set_colors)[16],
- Uint8 char_byte, int write_pos)
+ uint8_t char_byte, int write_pos)
 {
-  Uint8 mask = ((0xFF) << (8 - PPW)) & 0xFF;
-  Uint8 idx = (char_byte & (mask >> (write_pos * PPW))) << (write_pos * PPW) >> (8 - PPW);
+  unsigned int mask = ((0xFF) << (8 - PPW)) & 0xFF;
+  unsigned int idx = (char_byte & (mask >> (write_pos * PPW))) << (write_pos * PPW) >> (8 - PPW);
 
   switch(PPW)
   {
@@ -472,8 +472,8 @@ static inline ALIGNTYPE get_colors_mzx(ALIGNTYPE (&set_colors)[16],
 
     case 8:
     {
-      Uint8 left = (idx & 0xF0) >> 4;
-      Uint8 right = (idx & 0x0F);
+      unsigned int left = (idx & 0xF0) >> 4;
+      unsigned int right = (idx & 0x0F);
 #if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
       return (set_colors[right] << sizeof(ALIGNTYPE) * 4) | set_colors[left];
 #else
@@ -496,7 +496,7 @@ static inline ALIGNTYPE get_colors_mzx(ALIGNTYPE (&set_colors)[16],
  * The optimizer will optimize out the unnecessary parts for relevant renderers.
  */
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL, int TR, int CLIP>
-static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
+static inline void render_layer_func(void * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer)
 {
 #ifdef IS_CXX_11
@@ -532,8 +532,8 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
   }
 #endif
 
-  Uint32 ch_x, ch_y;
-  Uint16 c;
+  unsigned int ch_x, ch_y;
+  uint16_t c;
 
   const struct char_element *src = layer->data;
   int row;
@@ -543,17 +543,17 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
   ALIGNTYPE bgdata;
   ALIGNTYPE mask = (PIXTYPE)(~0);
 
-  const Uint8 *char_ptr;
-  Uint32 current_char_byte;
-  Uint32 pcol;
+  const uint8_t *char_ptr;
+  unsigned int current_char_byte;
+  unsigned int pcol;
 
   ALIGNTYPE *drawPtr;
   ALIGNTYPE pix;
 
   ALIGNTYPE *outPtr;
-  Uint32 align_pitch = pitch / sizeof(ALIGNTYPE);
-  Uint32 advance_char = CHAR_W * sizeof(PIXTYPE) / sizeof(ALIGNTYPE);
-  Uint32 advance_char_row = align_pitch * CHAR_H - advance_char * layer->w;
+  size_t align_pitch = pitch / sizeof(ALIGNTYPE);
+  size_t advance_char = CHAR_W * sizeof(PIXTYPE) / sizeof(ALIGNTYPE);
+  size_t advance_char_row = align_pitch * CHAR_H - advance_char * layer->w;
 
   int i;
 
@@ -567,11 +567,11 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
   int pixel_y;
 
   ALIGNTYPE set_colors[16];
-  Uint16 last_fg = 0xFFFF;
-  Uint16 last_bg = 0xFFFF;
+  uint16_t last_fg = 0xFFFF;
+  uint16_t last_bg = 0xFFFF;
   boolean has_tcol = false;
   boolean all_tcol = true;
-  Uint32 byte_tcol = 0xFFFF;
+  unsigned int byte_tcol = 0xFFFF;
 
   // Position the output ptr at the location of the first char
   outPtr = (ALIGNTYPE *)pixels;
@@ -616,7 +616,7 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
             byte_tcol = 0xFFFF;
             for(i = 0; i < 4; i++)
             {
-              Uint16 pal = ((src->bg_color & 0xF) << 4) | (src->fg_color & 0xF);
+              unsigned int pal = ((src->bg_color & 0xF) << 4) | (src->fg_color & 0xF);
               char_idx[i] = graphics->smzx_indices[pal * 4 + i];
 
               if(BPP > 8)
@@ -628,7 +628,7 @@ static inline void render_layer_func(void * RESTRICT pixels, Uint32 pitch,
               {
                 if(!has_tcol)
                 {
-                  static const Uint8 tcol_bytes[] = { 0x00, 0x55, 0xAA, 0xFF };
+                  static const uint8_t tcol_bytes[] = { 0x00, 0x55, 0xAA, 0xFF };
                   byte_tcol = tcol_bytes[i];
                 }
                 has_tcol |= char_idx[i] == tcol;

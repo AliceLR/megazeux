@@ -144,8 +144,7 @@ static void gp2x_set_colors_smzx(const struct graphics_data *graphics,
 #endif
 }
 
-static void (*gp2x_set_colors[4])
- (const struct graphics_data *, uint32_t * RESTRICT, uint8_t, uint8_t) =
+static const set_colors_function gp2x_set_colors[4] =
 {
   gp2x_set_colors_mzx,
   gp2x_set_colors_smzx,
@@ -259,7 +258,7 @@ static void gp2x_render_mouse(struct graphics_data *graphics,
  unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  render_mouse((Uint32 *)render_data->buffer, 640, 8, x, y, 0xFFFFFFFF,
+  render_mouse((uint32_t *)render_data->buffer, 640, 8, x, y, 0xFFFFFFFF,
    0x0, w, h);
 }
 

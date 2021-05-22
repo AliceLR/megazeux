@@ -192,7 +192,7 @@ static enum mouse_button convert_SDL_mouse_internal(uint32_t button)
     case 4: return MOUSE_BUTTON_WHEELUP;
     case 5: return MOUSE_BUTTON_WHEELDOWN;
     case 6: return MOUSE_BUTTON_X1;
-    case 7: return MOUSE_BUTTON_Y1;
+    case 7: return MOUSE_BUTTON_X2;
     case 8: return MOUSE_BUTTON_WHEELLEFT;
     case 9: return MOUSE_BUTTON_WHEELRIGHT;
 #else /* CONFIG_X11 */

@@ -20,9 +20,6 @@
  */
 
 #include "../../src/event.h"
-#include "../../src/graphics.h"
-#include "../../src/render.h"
-#include "../../src/renderers.h"
 #include "../../src/util.h"
 
 #include <3ds.h>
@@ -148,7 +145,7 @@ void ctr_keyboard_init(struct ctr_render_data *render_data)
 
 void ctr_keyboard_draw(struct ctr_render_data *render_data)
 {
-  Uint32 i, j;
+  size_t i, j;
 
   ctr_draw_2d_texture(render_data, keyboard_tex, 0, 0, 320, 240, 0, 0, 320, 240,
    4.0f, 0xffffffff, false);
@@ -188,9 +185,9 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
 boolean ctr_keyboard_update(struct buffered_status *status)
 {
   touchPosition pos;
-  Uint32 down, up, i;
+  u32 down, up, i;
   boolean retval = false;
-  Uint32 unicode;
+  u32 unicode;
 
   if(get_bottom_screen_mode() != BOTTOM_SCREEN_MODE_KEYBOARD)
     return retval;

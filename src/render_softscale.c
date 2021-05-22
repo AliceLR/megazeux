@@ -48,8 +48,7 @@ struct softscale_render_data
 {
   struct sdl_render_data sdl;
   uint32_t (*rgb_to_yuv)(uint8_t r, uint8_t g, uint8_t b);
-  void (*subsample_set_colors)(const struct graphics_data *, uint32_t * RESTRICT,
-   uint8_t, uint8_t);
+  set_colors_function subsample_set_colors;
   SDL_PixelFormat *sdl_format;
   SDL_Rect texture_rect;
   uint32_t *texture_pixels;
