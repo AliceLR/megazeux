@@ -282,13 +282,12 @@ void ec_mem_load_set(const void *buffer, size_t len)
 {
   // This is used only for legacy and ZIP world loading and the default charsets
   // Use ec_clear_set() in conjunction with this for world loads.
-  const uint8_t *chars = buffer;
   size_t count;
 
   if(len > CHAR_SIZE * PROTECTED_CHARSET_POSITION)
     len = CHAR_SIZE * PROTECTED_CHARSET_POSITION;
 
-  memcpy(graphics.charset, chars, len);
+  memcpy(graphics.charset, buffer, len);
 
   // some renderers may want to map charsets to textures
   count = len / CHAR_SIZE;
@@ -299,7 +298,6 @@ void ec_mem_load_set(const void *buffer, size_t len)
 void ec_mem_load_set_var(const void *buffer, size_t len, uint16_t first_chr,
  int version)
 {
-  const uint8_t *chars = buffer;
   size_t maxchars = PROTECTED_CHARSET_POSITION;
   size_t offset = first_chr * CHAR_SIZE;
   size_t count = (len + CHAR_SIZE - 1) / CHAR_SIZE;
@@ -320,7 +318,7 @@ void ec_mem_load_set_var(const void *buffer, size_t len, uint16_t first_chr,
     len = count * CHAR_SIZE;
   }
 
-  memcpy(graphics.charset + offset, chars, len);
+  memcpy(graphics.charset + offset, buffer, len);
 
   // some renderers may want to map charsets to textures
   if(count > 0)
@@ -329,12 +327,11 @@ void ec_mem_load_set_var(const void *buffer, size_t len, uint16_t first_chr,
 
 void ec_mem_save_set_var(void *buffer, size_t len, uint16_t first_chr)
 {
-  uint8_t *chars = buffer;
   size_t offset = first_chr * CHAR_SIZE;
   size_t size = MIN(PROTECTED_CHARSET_POSITION * CHAR_SIZE - offset, len);
 
   if(first_chr < PROTECTED_CHARSET_POSITION)
-    memcpy(chars, graphics.charset + offset, size);
+    memcpy(buffer, graphics.charset + offset, size);
 }
 
 __editor_maybe_static void ec_load_mzx(void)
