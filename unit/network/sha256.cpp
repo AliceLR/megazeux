@@ -28,7 +28,7 @@
 struct SHA256_data
 {
   const char *input;
-  Uint32 result[8];
+  uint32_t result[8];
 };
 
 UNITTEST(SHA256String)

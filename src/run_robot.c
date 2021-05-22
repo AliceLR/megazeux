@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -346,7 +347,7 @@ static void send_at_xy(struct world *mzx_world, int id, int x, int y,
 static int get_random_range(int min_value, int max_value)
 {
   int result;
-  Uint64 difference;
+  uint64_t difference;
 
   if(min_value == max_value)
   {
@@ -356,11 +357,11 @@ static int get_random_range(int min_value, int max_value)
   {
     if(max_value > min_value)
     {
-      difference = (Sint64)max_value - (Sint64)min_value;
+      difference = (int64_t)max_value - (int64_t)min_value;
     }
     else
     {
-      difference = (Sint64)min_value - (Sint64)max_value;
+      difference = (int64_t)min_value - (int64_t)max_value;
       min_value = max_value;
     }
 

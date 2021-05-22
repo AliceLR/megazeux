@@ -25,6 +25,7 @@
 #include "event.h"
 #include "graphics.h"
 #include "helpsys.h"
+#include "platform.h"
 #include "updater.h"
 #include "util.h"
 #include "window.h"

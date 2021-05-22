@@ -96,12 +96,6 @@ void platform_quit(void)
   cfguExit();
 }
 
-void real_warp_mouse(int x, int y)
-{
-  // Since we can't warp a touchscreen stylus, focus there instead.
-  focus_pixel(x, y);
-}
-
 #ifdef CONFIG_CHECK_ALLOC
 
 static void out_of_linear_memory_check(void *p, const char *file, int line)

@@ -37,7 +37,6 @@
 #include <stdlib.h>
 
 #include "graphics.h"
-#include "platform.h"
 #include "render.h"
 #include "render_layer.h"
 #include "render_sdl.h"
@@ -48,17 +47,16 @@
 struct softscale_render_data
 {
   struct sdl_render_data sdl;
-  Uint32 (*rgb_to_yuv)(Uint8 r, Uint8 g, Uint8 b);
-  void (*subsample_set_colors)(const struct graphics_data *, Uint32 * RESTRICT,
-   Uint8, Uint8);
+  uint32_t (*rgb_to_yuv)(uint8_t r, uint8_t g, uint8_t b);
+  set_colors_function subsample_set_colors;
   SDL_PixelFormat *sdl_format;
   SDL_Rect texture_rect;
-  Uint32 *texture_pixels;
-  Uint32 texture_pitch;
-  Uint32 texture_format;
-  Uint32 texture_bpp;
-  Uint32 texture_amask;
-  Uint32 texture_width;
+  uint32_t *texture_pixels;
+  uint32_t texture_format;
+  uint32_t texture_amask;
+  unsigned int texture_pitch;
+  unsigned int texture_bpp;
+  unsigned int texture_width;
   boolean allow_subsampling;
   boolean enable_subsampling;
   int w;
@@ -126,7 +124,7 @@ static boolean is_integer_scale(struct graphics_data *graphics, int width,
   return false;
 }
 
-static Uint32 get_format_amask(Uint32 format)
+static uint32_t get_format_amask(uint32_t format)
 {
   Uint32 rmask, gmask, bmask, amask;
   int bpp;
@@ -138,27 +136,27 @@ static Uint32 get_format_amask(Uint32 format)
 static void find_texture_format(struct graphics_data *graphics)
 {
   struct softscale_render_data *render_data = graphics->render_data;
-  Uint32 texture_format = SDL_PIXELFORMAT_UNKNOWN;
-  Uint32 texture_width = SCREEN_PIX_W;
-  Uint32 texture_bpp = 0;
-  Uint32 texture_amask = 0;
+  uint32_t texture_format = SDL_PIXELFORMAT_UNKNOWN;
+  unsigned int texture_width = SCREEN_PIX_W;
+  unsigned int texture_bpp = 0;
+  uint32_t texture_amask = 0;
   boolean allow_subsampling = false;
   boolean is_yuv = false;
   SDL_RendererInfo rinfo;
 
   if(!SDL_GetRendererInfo(render_data->sdl.renderer, &rinfo))
   {
-    Uint32 depth = graphics->bits_per_pixel;
-    Uint32 priority = 0;
-    Uint32 i;
+    unsigned int depth = graphics->bits_per_pixel;
+    unsigned int priority = 0;
+    unsigned int i;
 
     info("SDL render driver: '%s'\n", rinfo.name);
 
     // Try to use a native texture format to improve performance.
     for(i = 0; i < rinfo.num_texture_formats; i++)
     {
-      Uint32 format = rinfo.texture_formats[i];
-      Uint32 format_priority;
+      uint32_t format = rinfo.texture_formats[i];
+      unsigned int format_priority;
 
       debug("%d: %s\n", i, SDL_GetPixelFormatName(format));
 
@@ -338,11 +336,10 @@ err_free:
 }
 
 static void softscale_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
   struct softscale_render_data *render_data = graphics->render_data;
-
-  Uint32 i;
+  unsigned int i;
 
   if(!render_data->rgb_to_yuv)
   {
@@ -368,7 +365,7 @@ static void softscale_update_colors(struct graphics_data *graphics,
  * stored pixels and pitch.
  */
 static void softscale_lock_texture(struct softscale_render_data *render_data,
- boolean is_render_graph, Uint32 **pixels, Uint32 *pitch, Uint32 *bpp)
+ boolean is_render_graph, uint32_t **pixels, unsigned int *pitch, unsigned int *bpp)
 {
   if(!render_data->texture_pixels)
   {
@@ -418,24 +415,24 @@ static void softscale_render_graph(struct graphics_data *graphics)
 {
   struct softscale_render_data *render_data = graphics->render_data;
   int mode = graphics->screen_mode;
-  Uint32 *pixels;
-  Uint32 pitch;
-  Uint32 bpp;
+  uint32_t *pixels;
+  unsigned int pitch;
+  unsigned int bpp;
 
   softscale_lock_texture(render_data, true, &pixels, &pitch, &bpp);
 
   if(render_data->enable_subsampling)
   {
     if(!mode)
-      render_graph16((Uint16 *)pixels, pitch, graphics,
+      render_graph16((uint16_t *)pixels, pitch, graphics,
        render_data->subsample_set_colors);
     else
-      render_graph16((Uint16 *)pixels, pitch, graphics, set_colors32[mode]);
+      render_graph16((uint16_t *)pixels, pitch, graphics, set_colors32[mode]);
   }
   else
 
   if(bpp == 16)
-    render_graph16((Uint16 *)pixels, pitch, graphics, set_colors16[mode]);
+    render_graph16((uint16_t *)pixels, pitch, graphics, set_colors16[mode]);
   else
 
   if(bpp == 32)
@@ -451,22 +448,22 @@ static void softscale_render_layer(struct graphics_data *graphics,
  struct video_layer *layer)
 {
   struct softscale_render_data *render_data = graphics->render_data;
-  Uint32 *pixels;
-  Uint32 pitch;
-  Uint32 bpp;
+  uint32_t *pixels;
+  unsigned int pitch;
+  unsigned int bpp;
 
   softscale_lock_texture(render_data, false, &pixels, &pitch, &bpp);
   render_layer(pixels, bpp, pitch, graphics, layer);
 }
 
-static void softscale_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void softscale_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   struct softscale_render_data *render_data = graphics->render_data;
-  Uint32 flatcolor;
-  Uint32 *pixels;
-  Uint32 pitch;
-  Uint32 bpp;
+  uint32_t flatcolor;
+  uint32_t *pixels;
+  unsigned int pitch;
+  unsigned int bpp;
 
   flatcolor = graphics->flat_intensity_palette[color];
 
@@ -479,13 +476,13 @@ static void softscale_render_cursor(struct graphics_data *graphics,
 }
 
 static void softscale_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   struct softscale_render_data *render_data = graphics->render_data;
-  Uint32 amask = render_data->texture_amask;
-  Uint32 *pixels;
-  Uint32 pitch;
-  Uint32 bpp;
+  uint32_t amask = render_data->texture_amask;
+  uint32_t *pixels;
+  unsigned int pitch;
+  unsigned int bpp;
 
   softscale_lock_texture(render_data, false, &pixels, &pitch, &bpp);
 

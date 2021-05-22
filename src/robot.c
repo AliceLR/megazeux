@@ -2555,7 +2555,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       next = next_param_pos(program + 2);
       tr_msg(mzx_world, next + 1, id, ibuff);
       ibuff[62] = 0; // Clip
-      color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0, true);
+      color_string_ext(ibuff, 10, y, scroll_base_color, true, 0, 0);
       draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
       break;
     }
@@ -2572,7 +2572,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
         next = next_param_pos(next);
         tr_msg(mzx_world, next + 1, id, ibuff);
         ibuff[62] = 0; // Clip
-        color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0, true);
+        color_string_ext(ibuff, 10, y, scroll_base_color, true, 0, 0);
         draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
       }
       break;
@@ -2582,7 +2582,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
     {
       tr_msg(mzx_world, program + 3, id, ibuff);
       ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
-      color_string_ext(ibuff, 8, y, scroll_base_color, 0, 0, true);
+      color_string_ext(ibuff, 8, y, scroll_base_color, true, 0, 0);
       break;
     }
 
@@ -2593,7 +2593,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
       length = strlencolor(ibuff);
       x_position = 40 - (length / 2);
-      color_string_ext(ibuff, x_position, y, scroll_base_color, 0, 0, true);
+      color_string_ext(ibuff, x_position, y, scroll_base_color, true, 0, 0);
       break;
     }
   }
@@ -2670,7 +2670,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   else
   {
     write_string_ext(cur_robot->robot_name,
-     40 - (Uint32)strlen(cur_robot->robot_name) / 2, 4,
+     40 - (unsigned int)strlen(cur_robot->robot_name) / 2, 4,
      mzx_world->scroll_title_color, false, 0, 0);
   }
   select_layer(UI_LAYER);

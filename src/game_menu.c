@@ -636,7 +636,7 @@ static void draw_game_status(struct world *mzx_world)
 static boolean menu_draw(context *ctx)
 {
   struct game_menu_context *game_menu = (struct game_menu_context *)ctx;
-  Uint32 color;
+  unsigned int color;
   int x;
   int y;
   int i;

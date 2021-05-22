@@ -34,7 +34,6 @@
 #include "../idarray.h"
 #include "../idput.h"
 #include "../mzm.h"
-#include "../platform.h"
 #include "../robot.h"
 #include "../scrdisp.h"
 #include "../util.h"
@@ -67,6 +66,7 @@
 #include "window.h"
 #include "world.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -185,7 +185,7 @@ struct editor_context
   int flash_timer;
   int flash_timer_swap;
   int flash_timer_max;
-  Uint32 flash_layer;
+  uint32_t flash_layer;
 
   // ANSi settings
   int ansi_line_wrap_column; // = 80
@@ -883,13 +883,13 @@ static void flash_done(struct editor_context *editor)
  * Determine if a protected palette char flash is required.
  */
 static enum flash_thing_type flash_get_type(struct editor_context *editor,
- struct board *cur_board, Uint8 chr, Uint8 color, Uint8 flash_chr)
+ struct board *cur_board, uint8_t chr, uint8_t color, uint8_t flash_chr)
 {
   int screen_mode = get_screen_mode();
   if(!screen_mode)
   {
-    Uint8 fg = color & 0x0F;
-    Uint8 bg = (color & 0xF0) >> 4;
+    unsigned int fg = color & 0x0F;
+    unsigned int bg = (color & 0xF0) >> 4;
 
     ssize_t diff;
 
@@ -906,7 +906,7 @@ static enum flash_thing_type flash_get_type(struct editor_context *editor,
   // If one of the chars to display is the board char, is it too close to the
   // flash char?
   if(!editor->flash_char_a || !editor->flash_char_b)
-    if(compare_char(chr, (Uint16)flash_chr + PRO_CH) >= (112*3/4))
+    if(compare_char(chr, (uint16_t)flash_chr + PRO_CH) >= (112*3/4))
       return FLASH_THING_CLOSE_CHAR;
 
   // SMZX modes should always display protected...
@@ -928,14 +928,14 @@ static void flash_draw(struct editor_context *editor, struct board *cur_board,
 
   if(id >= editor->flash_start && id < editor->flash_start + editor->flash_len)
   {
-    Uint8 color = get_id_color(cur_board, offset);
-    Uint8 chr = get_id_char(cur_board, offset);
+    uint8_t color = get_id_color(cur_board, offset);
+    uint8_t chr = get_id_char(cur_board, offset);
     enum flash_thing_type type;
 
     type = flash_get_type(editor, cur_board, chr, color, flash_chr);
     if(type != FLASH_THING_NORMAL)
     {
-      Uint32 avg_luma = get_char_average_luma(chr, color, -1, flash_chr + PRO_CH);
+      int avg_luma = get_char_average_luma(chr, color, -1, flash_chr + PRO_CH);
 
       if(!editor->flash_layer)
       {
@@ -1052,11 +1052,13 @@ static void draw_vlayer_window(struct editor_context *editor)
  */
 static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
 {
-  int offset = 0;
-  int start;
-  int skip;
-  int x;
+  int after_x;
+  int after_y;
+  int after_width;
   int y;
+
+  if(in_x < 0 || in_x >= SCREEN_W || in_y < 0 || in_y >= SCREEN_H)
+    return;
 
   if(in_x + in_width > SCREEN_W)
     in_width = SCREEN_W - in_x;
@@ -1064,34 +1066,27 @@ static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
   if(in_y + in_height > SCREEN_H)
     in_height = SCREEN_H - in_y;
 
-  start = in_x + (in_y * in_width);
-  skip = SCREEN_W - in_width;
+  after_x = in_x + in_width;
+  after_y = in_y + in_height;
+  after_width = SCREEN_W - after_x;
 
-  // Clear everything before the in-bounds area
-  while(offset < start)
+  // Clear any lines prior to the first line.
+  for(y = 0; y < in_y; y++)
+    fill_line(SCREEN_W, 0, y, 177, 1);
+
+  // Clear any area before and after the in-bounds area.
+  for(; y < after_y; y++)
   {
-    draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-    offset++;
+    if(in_x > 0)
+      fill_line(in_x, 0, y, 177, 1);
+
+    if(after_width > 0)
+      fill_line(after_width, after_x, y, 177, 1);
   }
 
-  // Clear everything between the in-bounds area
-  for(y = 0; y < in_height; y++)
-  {
-    offset += in_width;
-
-    for(x = 0; x < skip; x++)
-    {
-      draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-      offset++;
-    }
-  }
-
-  // Clear everything after the in-bounds area
-  while(offset < SCREEN_W * SCREEN_H)
-  {
-    draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-    offset++;
-  }
+  // Clear any lines after the last line.
+  for(; y < SCREEN_H; y++)
+    fill_line(SCREEN_W, 0, y, 177, 1);
 }
 
 /**

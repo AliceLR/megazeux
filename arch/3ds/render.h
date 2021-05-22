@@ -26,6 +26,8 @@
 #include <3ds.h>
 #include <citro3d.h>
 
+#include "../../src/compat.h"
+
 __M_BEGIN_DECLS
 
 struct ctr_render_data;

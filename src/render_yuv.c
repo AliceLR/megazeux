@@ -19,7 +19,6 @@
 
 #include <stdlib.h>
 
-#include "platform.h"
 #include "graphics.h"
 #include "render.h"
 #include "render_layer.h"
@@ -41,8 +40,7 @@
 struct yuv_render_data
 {
   struct sdl_render_data sdl;
-  void (*set_colors_mzx)(const struct graphics_data *, Uint32 * RESTRICT,
-   Uint8, Uint8);
+  set_colors_function set_colors_mzx;
   Uint32 (*rgb_to_yuv)(Uint8 r, Uint8 g, Uint8 b);
   Uint32 bpp;
   Uint32 w;
@@ -156,10 +154,10 @@ static void yuv_free_video(struct graphics_data *graphics)
 }
 
 static void yuv_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
   struct yuv_render_data *render_data = graphics->render_data;
-  Uint32 i;
+  unsigned int i;
 
   for(i = 0; i < count; i++)
   {
@@ -227,8 +225,8 @@ static void yuv1_render_layer(struct graphics_data *graphics,
   yuv_unlock_overlay(render_data);
 }
 
-static void yuv_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void yuv_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   struct yuv_render_data *render_data = graphics->render_data;
   Uint32 bpp = render_data->bpp;
@@ -244,7 +242,7 @@ static void yuv_render_cursor(struct graphics_data *graphics,
 }
 
 static void yuv_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   struct yuv_render_data *render_data = graphics->render_data;
   Uint32 bpp = render_data->bpp;

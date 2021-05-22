@@ -343,8 +343,8 @@ __editor_maybe_static int char_select_next_tile(int current_char,
 __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
  int *width_ptr, int *height_ptr, int *select_charset, int selection_pal)
 {
-  Uint32 pal_layer = OVERLAY_LAYER;
-  Uint32 chars_layer = UI_LAYER;
+  uint32_t pal_layer = OVERLAY_LAYER;
+  uint32_t chars_layer = UI_LAYER;
   int allow_multichar = 0;
   int current_charset = 0;
   int screen_mode = 0;
@@ -1023,7 +1023,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
   write_string(di->title, title_x_offset, y, DI_TITLE, 0);
   draw_char(' ', DI_TITLE, title_x_offset - 1, y);
-  draw_char(' ', DI_TITLE, title_x_offset + (Uint32)strlen(di->title), y);
+  draw_char(' ', DI_TITLE, title_x_offset + (unsigned int)strlen(di->title), y);
 
   memset(vid_usage, -1, 2000);
 
@@ -1315,7 +1315,7 @@ static void draw_label(struct world *mzx_world, struct dialog *di,
   int y = di->y + e->y;
 
   if(src->respect_colors)
-    color_string_ext(src->text, x, y, DI_TEXT, PRO_CH, 16, true);
+    color_string_ext(src->text, x, y, DI_TEXT, true, PRO_CH, 16);
   else
     write_string_ext(src->text, x, y, DI_TEXT, true, PRO_CH, 16);
 }
@@ -1382,7 +1382,7 @@ static void draw_button(struct world *mzx_world, struct dialog *di,
 
   write_string(src->label, x + 1, y, color, 0);
   draw_char(' ', color, x, y);
-  draw_char(' ', color, x + (Uint32)strlen(src->label) + 1, y);
+  draw_char(' ', color, x + (unsigned int)strlen(src->label) + 1, y);
 
   if(active)
     cursor_hint(x + 1, y);
@@ -1445,7 +1445,7 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
     else
       sprintf(num_buffer, " ");
     fill_line(7, x, y, 32, DI_NUMERIC);
-    write_string(num_buffer, x + 6 - (Uint32)strlen(num_buffer), y,
+    write_string(num_buffer, x + 6 - (unsigned int)strlen(num_buffer), y,
      DI_NUMERIC, 0);
     // Buttons
     write_string(num_buttons, x + 7, y, DI_ARROWBUTTON, 0);
@@ -1798,7 +1798,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
 
     case IKEY_BACKSPACE:
     {
-      Sint32 result = current_value / 10;
+      int result = current_value / 10;
       if(result == 0 || result < src->lower_limit)
       {
         result = src->lower_limit;
@@ -3983,7 +3983,7 @@ void meter(const char *title, unsigned int progress, unsigned int out_of)
   // Add title
   write_string(title, titlex, 10, DI_TITLE, 0);
   draw_char(' ', DI_TITLE, titlex - 1, 10);
-  draw_char(' ', DI_TITLE, titlex + (int)strlen(title), 10);
+  draw_char(' ', DI_TITLE, titlex + (unsigned int)strlen(title), 10);
   meter_interior(progress, out_of);
 }
 

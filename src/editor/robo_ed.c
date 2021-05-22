@@ -2926,12 +2926,12 @@ static void display_robot_line(struct robot_editor_context *rstate,
       {
         temp_char = line_text[76];
         line_text[76] = 0;
-        write_string_mask(line_text, x, y, line_color, 0);
+        write_string_mask(line_text, x, y, line_color, false);
         line_text[76] = temp_char;
       }
       else
       {
-        write_string_mask(line_text, x, y, line_color, 0);
+        write_string_mask(line_text, x, y, line_color, false);
       }
     }
   }
@@ -2967,7 +2967,7 @@ static void display_robot_line(struct robot_editor_context *rstate,
             temp_char = line_text[76];
             line_text[76] = 0;
 
-            write_string_mask(line_text + offset, x + offset, y, color, 0);
+            write_string_mask(line_text + offset, x + offset, y, color, false);
             line_text[76] = temp_char;
           }
           break;
@@ -2975,7 +2975,7 @@ static void display_robot_line(struct robot_editor_context *rstate,
 
         temp_char = line_text[offset + length];
         line_text[offset + length] = 0;
-        write_string_mask(line_text + offset, x + offset, y, color, 0);
+        write_string_mask(line_text + offset, x + offset, y, color, false);
         line_text[offset + length] = temp_char;
       }
     }
@@ -3019,13 +3019,13 @@ static void display_robot_line(struct robot_editor_context *rstate,
         temp_char = current_rline->line_text[76];
         current_rline->line_text[76] = 0;
         write_string_mask(current_rline->line_text, x,
-         y, current_color, 0);
+         y, current_color, false);
         current_rline->line_text[76] = temp_char;
       }
       else
       {
         write_string_mask(current_rline->line_text, x,
-         y, current_color, 0);
+         y, current_color, false);
       }
     }
     else
@@ -3113,18 +3113,18 @@ static void display_robot_line(struct robot_editor_context *rstate,
 
           if(use_mask)
           {
-            write_string_mask(temp_buffer, x, y, current_color, 0);
+            write_string_mask(temp_buffer, x, y, current_color, false);
           }
           else
           {
             if(current_arg == S_CHARACTER)
             {
               temp_buffer[arg_length - 2] = 0;
-              write_string_mask("'", x, y, current_color, 0);
+              write_string_mask("'", x, y, current_color, false);
               write_string_ext(temp_buffer + 1, x + 1, y, current_color,
-               0, chars_offset, 16);
+               false, chars_offset, 16);
               write_string_mask("'", x + (int)arg_length - 2, y,
-               current_color, 0);
+               current_color, false);
             }
             else
             {

@@ -34,10 +34,11 @@ __M_BEGIN_DECLS
 #ifdef NEED_PNG_WRITE_SCREEN
 
 #include "graphics.h"
+#include <stdint.h>
 
-int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
+int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
  const char *name);
-int png_write_screen_32bpp(Uint32 *pixels, const char *name);
+int png_write_screen_32bpp(uint32_t *pixels, const char *name);
 
 #endif // NEED_PNG_WRITE_SCREEN
 

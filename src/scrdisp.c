@@ -67,9 +67,9 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
   fill_line_ext(64, 8, 12, 32, scroll_base_color, 0, c_offset);
 
   if(mask_chars)
-    write_line_mask(where + pos, 8, 12, scroll_base_color, 1);
+    write_line_mask(where + pos, 8, 12, scroll_base_color, true);
   else
-    write_line_ext(where + pos, 8, 12, scroll_base_color, 1, 0, c_offset);
+    write_line_ext(where + pos, 8, 12, scroll_base_color, true, 0, c_offset);
 
   // Display lines above center line
   for(t1 = 11; t1 >= 6; t1--)
@@ -88,9 +88,9 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
         // At start of prev. line -1. Display.
         pos++;
         if(mask_chars)
-          write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
+          write_line_mask(where + pos, 8, t1, scroll_base_color, true);
         else
-          write_line_ext(where + pos, 8, t1, scroll_base_color, 1, 0, c_offset);
+          write_line_ext(where + pos, 8, t1, scroll_base_color, true, 0, c_offset);
       }
     }
     // Next line...
@@ -108,9 +108,9 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
     if(where[pos])
     {
       if(mask_chars)
-        write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
+        write_line_mask(where + pos, 8, t1, scroll_base_color, true);
       else
-        write_line_ext(where + pos, 8, t1, scroll_base_color, 1, 0, c_offset);
+        write_line_ext(where + pos, 8, t1, scroll_base_color, true, 0, c_offset);
     }
     // Next line...
   }

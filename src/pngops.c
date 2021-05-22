@@ -18,13 +18,15 @@
  */
 
 #include "graphics.h"
-#include "platform.h"
 #include "pngops.h"
 #include "util.h"
 
+#include <png.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
+int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
  const char *name)
 {
   png_structp png_ptr = NULL;
@@ -81,7 +83,7 @@ int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
 
   // and then the surface
   for(i = 0; i < 350; i++)
-    row_ptrs[i] = (png_bytep)(Uint8 *)pixels + i * 640;
+    row_ptrs[i] = (png_bytep)(pixels + i * 640);
   png_write_image(png_ptr, row_ptrs);
   png_write_end(png_ptr, info_ptr);
 
@@ -98,7 +100,7 @@ exit_out:
   return ret;
 }
 
-int png_write_screen_32bpp(Uint32 *pixels, const char *name)
+int png_write_screen_32bpp(uint32_t *pixels, const char *name)
 {
   png_structp png_ptr = NULL;
   png_infop info_ptr = NULL;

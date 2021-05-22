@@ -31,6 +31,7 @@
 #include "game_menu.h"
 #include "graphics.h"
 #include "helpsys.h"
+#include "platform.h"
 #include "settings.h"
 #include "util.h"
 #include "world.h"

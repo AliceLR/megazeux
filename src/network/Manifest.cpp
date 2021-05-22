@@ -25,6 +25,7 @@
 #include "../io/fsafeopen.h"
 #include "../io/memfile.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -33,7 +34,7 @@
 #define BLOCK_SIZE    4096UL
 #define LINE_BUF_LEN  256
 
-void ManifestEntry::init(const Uint32 (&_sha256)[8], size_t _size,
+void ManifestEntry::init(const uint32_t (&_sha256)[8], size_t _size,
  const char *name)
 {
   size_t name_len = strlen(name);
@@ -45,7 +46,7 @@ void ManifestEntry::init(const Uint32 (&_sha256)[8], size_t _size,
   memcpy(this->name, name, name_len + 1);
 }
 
-ManifestEntry::ManifestEntry(const Uint32 (&_sha256)[8], size_t _size,
+ManifestEntry::ManifestEntry(const uint32_t (&_sha256)[8], size_t _size,
  const char *name)
 {
   this->init(_sha256, _size, name);
@@ -109,7 +110,7 @@ boolean ManifestEntry::validate(FILE *fp) const
     return false;
 
   // Verify the digest against the manifest
-  if(memcmp(ctx.H, this->sha256, sizeof(Uint32) * 8) != 0)
+  if(memcmp(ctx.H, this->sha256, sizeof(uint32_t) * 8) != 0)
     return false;
 
   return true;
@@ -177,7 +178,7 @@ void Manifest::clear()
   this->head = nullptr;
 }
 
-static boolean manifest_parse_sha256(const char *p, Uint32 (&sha256)[8])
+static boolean manifest_parse_sha256(const char *p, uint32_t (&sha256)[8])
 {
   int i, j;
 
@@ -186,7 +187,7 @@ static boolean manifest_parse_sha256(const char *p, Uint32 (&sha256)[8])
     return false;
 
   // Walk the sha256 "registers" and decompose 8byte hex chunks
-  for (i = 0, j = 0; i < 8; i++, j += 8)
+  for(i = 0, j = 0; i < 8; i++, j += 8)
   {
     char reg_hex[9], *end_ptr;
 
@@ -195,7 +196,7 @@ static boolean manifest_parse_sha256(const char *p, Uint32 (&sha256)[8])
     reg_hex[8] = 0;
 
     // Convert the hex string into an integer and check for errors
-    sha256[i] = (Uint32)strtoul(reg_hex, &end_ptr, 16);
+    sha256[i] = (uint32_t)strtoul(reg_hex, &end_ptr, 16);
     if(end_ptr[0])
       return false;
   }
@@ -216,7 +217,7 @@ static ManifestEntry *manifest_parse_line(char *buffer)
 {
   if(buffer[0])
   {
-    Uint32 sha256[8];
+    uint32_t sha256[8];
     size_t size;
     char *m = buffer, *line;
 

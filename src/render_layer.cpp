@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "platform.h"
 #include "graphics.h"
 #include "render_layer.h"
 
@@ -43,33 +42,33 @@
 // The renderers in render_layer_code.hpp should generally be used instead.
 // It might be useful to build for tests or benchmarking, though.
 
-static inline void reference_renderer(Uint32 * RESTRICT pixels, Uint32 pitch,
+static inline void reference_renderer(uint32_t * RESTRICT pixels, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer)
 {
-  Uint32 mode = layer->mode;
+  unsigned int mode = layer->mode;
 
-  Uint32 ch_x, ch_y;
-  Uint16 c;
+  unsigned int ch_x, ch_y;
+  uint16_t c;
 
   const struct char_element *src = layer->data;
   int row, col;
   int tcol = layer->transparent_col;
 
-  const Uint8 *char_ptr;
-  Uint8 current_char_byte;
+  const uint8_t *char_ptr;
+  uint8_t current_char_byte;
 
-  Uint32 *drawPtr;
-  Uint32 pix;
+  uint32_t *drawPtr;
+  uint32_t pix;
   int pix_pos;
-  //Uint32 advance = (pitch / 4) - 8;
+  //size_t advance = (pitch / 4) - 8;
 
   int x, y, i;
 
-  Uint32 char_colors[4];
+  uint32_t char_colors[4];
   int char_idx[4];
   int idx;
 
-  Uint32 protected_pal_position = graphics->protected_pal_position;
+  unsigned int protected_pal_position = graphics->protected_pal_position;
 
   for(ch_y = 0; ch_y < layer->h; ch_y++)
   {
@@ -127,7 +126,7 @@ static inline void reference_renderer(Uint32 * RESTRICT pixels, Uint32 pitch,
 
               if(x >= 0 && x < SCREEN_PIX_W && y >= 0 && y < SCREEN_PIX_H)
               {
-                drawPtr = pixels + (pitch / sizeof(Uint32)) * y + x;
+                drawPtr = pixels + (pitch / sizeof(uint32_t)) * y + x;
 
                 pix_pos = (current_char_byte & (0x80 >> col)) << col >> 7;
 
@@ -145,7 +144,7 @@ static inline void reference_renderer(Uint32 * RESTRICT pixels, Uint32 pitch,
 
               if(x >= 0 && x < SCREEN_PIX_W && y >= 0 && y < SCREEN_PIX_H)
               {
-                drawPtr = pixels + (pitch / sizeof(Uint32)) * y + x;
+                drawPtr = pixels + (pitch / sizeof(uint32_t)) * y + x;
 
                 pix_pos = (current_char_byte & (0xC0 >> col)) << col >> 6;
 
@@ -168,10 +167,13 @@ static inline void reference_renderer(Uint32 * RESTRICT pixels, Uint32 pitch,
 }
 #endif
 
-void render_layer(void * RESTRICT pixels, int force_bpp, Uint32 pitch,
+void render_layer(void * RESTRICT pixels, int force_bpp, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer)
 {
-  //reference_renderer(pixels, pitch, graphics, layer); return;
+#ifdef BUILD_REFERENCE_RENDERER
+  reference_renderer((uint32_t * RESTRICT)pixels, pitch, graphics, layer);
+  return;
+#endif
 
   int smzx = layer->mode;
   int trans = layer->transparent_col != -1;
@@ -198,20 +200,20 @@ void render_layer(void * RESTRICT pixels, int force_bpp, Uint32 pitch,
    * will use a 32-bit align if the layer is on an odd horizontal pixel).
    */
 #ifndef SKIP_64_ALIGN
-  if((sizeof(size_t) >= sizeof(Uint64)) && ((drawStart % sizeof(Uint64)) == 0))
+  if((sizeof(size_t) >= sizeof(uint64_t)) && ((drawStart % sizeof(uint64_t)) == 0))
   {
     align = 64;
   }
   else
 #endif
 
-  if((sizeof(size_t) >= sizeof(Uint32)) && ((drawStart % sizeof(Uint32)) == 0))
+  if((sizeof(size_t) >= sizeof(uint32_t)) && ((drawStart % sizeof(uint32_t)) == 0))
   {
     align = 32;
   }
   else
 
-  if((sizeof(size_t) >= sizeof(Uint16)) && ((drawStart % sizeof(Uint16)) == 0))
+  if((sizeof(size_t) >= sizeof(uint16_t)) && ((drawStart % sizeof(uint16_t)) == 0))
   {
     align = 16;
   }

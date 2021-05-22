@@ -26,18 +26,13 @@
 
 #include "../core.h"
 #include "../data.h"
-#include "../error.h"
 #include "../event.h"
-#include "../graphics.h"
 #include "../idput.h"
-#include "../intake.h"
-#include "../rasm.h"
 #include "../robot.h"
 #include "../scrdisp.h"
 #include "../util.h"
 #include "../window.h"
 
-#include "edit.h"
 #include "edit_di.h"
 #include "param.h"
 #include "robo_ed.h"

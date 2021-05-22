@@ -1081,7 +1081,7 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
     // so the .sav one doesn't get overwritten
     if(screen_mode == 2)
     {
-      smzx_palette_loaded(1);
+      smzx_palette_loaded(true);
     }
     set_screen_mode(screen_mode);
 

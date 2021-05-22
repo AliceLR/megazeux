@@ -28,6 +28,7 @@
 #include "../core.h"
 #include "../event.h"
 #include "../graphics.h"
+#include "../platform.h"
 #include "../intake.h"
 #include "../window.h"
 
@@ -92,7 +93,7 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
     // Add title
     write_string(title, xpos + 3, ypos + 2, DI_TITLE, 0);
     draw_char(' ', DI_TITLE, xpos + 2, ypos + 2);
-    draw_char(' ', DI_TITLE, xpos + 3 + (Uint32)strlen(title), ypos + 2);
+    draw_char(' ', DI_TITLE, xpos + 3 + (unsigned int)strlen(title), ypos + 2);
   }
 
   // Add pointer

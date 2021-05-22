@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <string.h>
 
 #include "block.h"
@@ -33,7 +34,6 @@
 #include "../board.h"
 #include "../graphics.h"
 #include "../idarray.h"
-#include "../platform.h"
 #include "../robot.h"
 #include "../util.h"
 #include "../world.h"
@@ -273,10 +273,10 @@ void destruct_undo_history(struct undo_history *h)
 struct charset_undo_frame
 {
   struct undo_frame f;
-  Uint8 offset;
-  Uint8 charset;
-  Uint8 width;
-  Uint8 height;
+  uint8_t offset;
+  uint8_t charset;
+  uint8_t width;
+  uint8_t height;
   char *prev_chars;
   char *current_chars;
 };
@@ -370,8 +370,8 @@ void add_charset_undo_frame(struct undo_history *h, int charset, int first_char,
 // storage_obj is a pointer to a robot, scroll, or sensor
 struct board_undo_pos
 {
-  Sint16 x;
-  Sint16 y;
+  int16_t x;
+  int16_t y;
   char id;
   char color;
   char param;
@@ -844,8 +844,8 @@ void add_block_undo_frame(struct world *mzx_world, struct undo_history *h,
 
 struct layer_undo_pos
 {
-  Sint16 x;
-  Sint16 y;
+  int16_t x;
+  int16_t y;
   char chr;
   char color;
 };

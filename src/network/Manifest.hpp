@@ -22,11 +22,11 @@
 #define __MANIFEST_HPP
 
 #include "../compat.h"
-#include "../platform.h"
 
 #include "sha256.h"
 #include "HTTPHost.hpp"
 
+#include <stdint.h>
 #include <stdio.h>
 
 #define MANIFEST_TXT "manifest.txt"
@@ -37,11 +37,11 @@ class UPDATER_LIBSPEC ManifestEntry
 {
 public:
   ManifestEntry *next;
-  Uint32 sha256[8];
+  uint32_t sha256[8];
   size_t size;
   char *name;
 
-  ManifestEntry(const Uint32 (&_sha256)[8], size_t _size, const char *name);
+  ManifestEntry(const uint32_t (&_sha256)[8], size_t _size, const char *name);
   ManifestEntry(const ManifestEntry &e);
   ManifestEntry &operator=(const ManifestEntry &e);
   ~ManifestEntry();
@@ -81,7 +81,7 @@ public:
   static ManifestEntry *create_from_file(const char *filename);
 
 private:
-  void init(const Uint32 (&_sha256)[8], size_t _size, const char *name);
+  void init(const uint32_t (&_sha256)[8], size_t _size, const char *name);
   static boolean compute_sha256(SHA256_ctx &ctx, FILE *fp, size_t len);
 };
 

@@ -20,6 +20,7 @@
 
 /* Palette editor */
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -31,6 +32,7 @@
 #include "../intake_num.h"
 #include "../util.h"
 #include "../window.h"
+#include "../io/vio.h"
 
 #include "configure.h"
 #include "graphics.h"
@@ -174,8 +176,8 @@ struct pal_ed_context
     GAME_PALETTE,
     TEMP_PALETTE,
   } current;
-  //Uint32 cursor_fg_layer[5];
-  //Uint32 cursor_bg_layer[5];
+  //uint32_t cursor_fg_layer[5];
+  //uint32_t cursor_bg_layer[5];
   int editing_component;
 };
 
@@ -961,7 +963,7 @@ static boolean color_editor_drag(subcontext *ctx, int *key, int button,
     // extra char on each side of the bar past the actual bounds to
     // make setting to the minimum and maximum values easier.
 
-    get_real_mouse_position(&mouse_px, &mouse_py);
+    get_mouse_pixel_position(&mouse_px, &mouse_py);
 
     if(MOUSE_IN(current->x + 7, current->y + 1, 34, 3))
     {
@@ -978,7 +980,7 @@ static boolean color_editor_drag(subcontext *ctx, int *key, int button,
       current_mode->set_function(current_color, component, (int)value);
 
       // Snap the mouse to the center of the bar.
-      warp_real_mouse_y(mouse_y * 14 + 7);
+      warp_mouse_pixel_y(mouse_y * 14 + 7);
       return -1;
     }
   }
@@ -1035,8 +1037,8 @@ static void menu_buffer_draw(int x, int y, boolean show_indices)
 
   if(mode >= 2 && saved_subpalette_display)
   {
-    Uint8 which = ((timer++) / 60) % 4;
-    Uint8 fg_color;
+    unsigned int which = ((timer++) / 60) % 4;
+    uint8_t fg_color;
     struct color_status *col = &saved_subpal[which];
 
     set_protected_rgb(5, col->r, col->g, col->b);
@@ -1550,23 +1552,23 @@ static subcontext *create_menu_256(struct pal_ed_context *pal_ed)
 // -----------------------------------------------------------------------------
 
 
-static void draw_unbound_cursor_chars(Uint32 layer, int color)
+static void draw_unbound_cursor_chars(uint32_t layer, int color)
 {
   select_layer(layer);
   set_layer_mode(layer, 0);
   // Note: mode 0, so offset by 16 (PAL_SIZE) for the protected palette.
-  draw_char_to_layer(color, CHAR_CORNER_TL, 0, 0, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_TR, 2, 0, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_BL, 0, 1, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_BR, 2, 1, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 0, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 1, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_TL,  color, 0, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_TR,  color, 2, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_BL,  color, 0, 1, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_BR,  color, 2, 1, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_LINE_HORIZ, color, 1, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_LINE_HORIZ, color, 1, 1, PRO_CH, PAL_SIZE);
 }
 
 static void draw_unbound_cursor(int x, int y, int fg, int bg, int offset)
 {
   // Cursor for mode 2/3 palette selector
-  Uint32 layer;
+  uint32_t layer;
   int order;
 
   x = x * CHAR_W - 3;
@@ -2296,13 +2298,13 @@ static void init_pal_ed_palettes(struct pal_ed_context *pal_ed)
     else
     {
       // Load the external SMZX palette.
-      FILE *fp = fopen_unsafe(mzx_res_get_by_id(SMZX_PAL), "rb");
-      if(fp)
+      vfile *vf = vfopen_unsafe(mzx_res_get_by_id(SMZX_PAL), "rb");
+      if(vf)
       {
-        if(!fread(temp_palette, sizeof(temp_palette), 1, fp))
+        if(!vfread(temp_palette, sizeof(temp_palette), 1, vf))
           memset(temp_palette, 0, sizeof(temp_palette));
 
-        fclose(fp);
+        vfclose(vf);
       }
     }
 

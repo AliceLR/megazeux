@@ -471,7 +471,7 @@ void create_blank_world(struct world *mzx_world)
   set_update_done(mzx_world);
 
   set_screen_mode(0);
-  smzx_palette_loaded(0);
+  smzx_palette_loaded(false);
   set_palette_intensity(100);
 
   ec_load_mzx();

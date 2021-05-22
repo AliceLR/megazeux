@@ -18,6 +18,7 @@
  */
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -30,7 +31,7 @@
 #include "world.h"
 #include "world_struct.h"
 
-static inline int is_blank(Uint16 c)
+static inline int is_blank(uint16_t c)
 {
   int cp[4];
   int blank = 0;
@@ -110,7 +111,7 @@ static int compare_spr_yorder(const void *dest, const void *src)
   return diff ? diff : (spr_dest->qsort_order - spr_src->qsort_order);
 }
 
-static inline void sort_sprites(struct sprite **sorted_list,
+static inline void sort_sprites(const struct sprite **sorted_list,
  struct sprite **sprite_list, int spr_yorder)
 {
   // Fill the sorted list with the active sprites in the beginning
@@ -155,19 +156,17 @@ void draw_sprites(struct world *mzx_world)
   int start_x, start_y, offset_x, offset_y;
   int i, x, y;
   int src_offset;
-  int screen_offset;
   int overlay_offset;
   int src_skip;
-  int screen_skip;
   int overlay_skip;
   int draw_width, draw_height, ref_x, ref_y, screen_x, screen_y;
   int src_width;
   int src_height;
   boolean use_vlayer;
   struct sprite **sprite_list = mzx_world->sprite_list;
-  struct sprite *sorted_list[MAX_SPRITES];
-  struct sprite *cur_sprite;
-  Uint16 ch;
+  const struct sprite *sorted_list[MAX_SPRITES];
+  const struct sprite *cur_sprite;
+  uint16_t ch;
   char color;
   int viewport_x = src_board->viewport_x;
   int viewport_y = src_board->viewport_y;
@@ -178,7 +177,7 @@ void draw_sprites(struct world *mzx_world)
   char *overlay = src_board->overlay;
   char *src_chars;
   char *src_colors;
-  Uint32 layer;
+  uint32_t layer;
   int draw_layer_order;
   boolean unbound;
   int transparent_color;
@@ -367,10 +366,6 @@ void draw_sprites(struct world *mzx_world)
     src_offset = (ref_y + offset_y) * src_width + ref_x + offset_x;
     src_skip = src_width - draw_width;
 
-    // Offset and skip value for the screen
-    screen_offset = start_x + start_y * SCREEN_W;
-    screen_skip = SCREEN_W - draw_width;
-
     // Offset and skip value for overlay (as it may cover part of a sprite)
     overlay_skip = board_width - draw_width;
     if(overlay_mode == 2)
@@ -404,11 +399,6 @@ void draw_sprites(struct world *mzx_world)
         if(!(cur_sprite->flags & SPRITE_SRC_COLORS))
           color = cur_sprite->color;
 
-        // Legacy sprite "transparency" effect.
-        if(!unbound)
-          if(!(color & 0xF0))
-            color = (color & 0x0F) | (get_color_linear(screen_offset) & 0xF0);
-
         if(unbound || (cur_sprite->flags & SPRITE_OVER_OVERLAY) ||
          !(overlay_mode && overlay_mode != 3 && overlay[overlay_offset] != 32))
         {
@@ -419,18 +409,19 @@ void draw_sprites(struct world *mzx_world)
              !is_blank((ch + cur_sprite->offset) % PROTECTED_CHARSET_POSITION))
             {
               if(!unbound)
-                draw_char_linear_ext(color, ch, screen_offset, 0, 0);
+              {
+                // This implements the legacy sprite "transparency" effect.
+                draw_char_bleedthru_ext(ch, color, x + start_x, y + start_y, 0, 0);
+              }
               else
-                draw_char_to_layer(color, ch, x, y, 0, 0);
+                draw_char_to_layer(ch, color, x, y, 0, 0);
             }
           }
         }
         src_offset++;
-        screen_offset++;
         overlay_offset++;
       }
       src_offset += src_skip;
-      screen_offset += screen_skip;
       overlay_offset += overlay_skip;
     }
 
@@ -982,10 +973,11 @@ static inline boolean collision_in(struct world *mzx_world,
   return false;
 }
 
-struct mask {
+struct mask
+{
   struct rect dim;
-  Uint8 *mapping;
-  Uint8 *data;
+  uint8_t *mapping;
+  uint8_t *data;
 };
 
 static inline struct mask allocate_mask(const struct sprite *spr)

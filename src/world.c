@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -61,11 +62,13 @@
 
 #ifdef CONFIG_LOADSAVE_METER
 
-static Uint32 last_ticks;
+#include "platform.h"
+
+static uint32_t last_ticks;
 
 void meter_update_screen(int *curr, int target)
 {
-  Uint32 ticks = get_ticks();
+  uint32_t ticks = get_ticks();
 
   (*curr)++;
   meter_interior(*curr, target);
@@ -1460,7 +1463,7 @@ err_free:
 static inline int save_world_counters(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
-  Uint8 buffer[8];
+  uint8_t buffer[8];
   struct memfile mf;
   struct counter_list *counter_list = &(mzx_world->counter_list);
   struct counter *src_counter;
@@ -1494,7 +1497,7 @@ static inline int save_world_counters(struct world *mzx_world,
 static inline int load_world_counters(struct world *mzx_world,
  struct zip_archive *zp)
 {
-  Uint8 buffer[8];
+  uint8_t buffer[8];
   struct memfile mf;
   char name_buffer[ROBOT_MAX_TR];
   size_t name_length;
@@ -1574,7 +1577,7 @@ static inline int load_world_counters(struct world *mzx_world,
 static inline int save_world_strings(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
-  Uint8 buffer[8];
+  uint8_t buffer[8];
   struct memfile mf;
   struct string_list *string_list = &(mzx_world->string_list);
   struct string *src_string;
@@ -1611,7 +1614,7 @@ static inline int save_world_strings(struct world *mzx_world,
 static inline int load_world_strings(struct world *mzx_world,
  struct zip_archive *zp)
 {
-  Uint8 buffer[8];
+  uint8_t buffer[8];
   struct memfile mf;
   struct string_list *string_list = &(mzx_world->string_list);
   struct string *src_string;
@@ -3055,7 +3058,7 @@ boolean reload_world(struct world *mzx_world, const char *file, boolean *faded)
   // Always switch back to regular mode before loading the world,
   // because we want the world's intrinsic palette to be applied.
   set_screen_mode(0);
-  smzx_palette_loaded(0);
+  smzx_palette_loaded(false);
   set_palette_intensity(100);
 
   default_sprite_data(mzx_world);

@@ -19,6 +19,7 @@
 
 #include "../../src/event.h"
 #include "../../src/graphics.h"
+#include "../../src/platform.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -807,12 +808,12 @@ static boolean process_event(union event *ev)
       rval = false;
       if((ev->button.pad == 0) && pointing)
       {
-        Uint32 mousebutton;
+        enum mouse_button mousebutton;
         switch(ev->button.button)
         {
           case WPAD_BUTTON_A: mousebutton = MOUSE_BUTTON_LEFT; break;
           case WPAD_BUTTON_B: mousebutton = MOUSE_BUTTON_RIGHT; break;
-          default: mousebutton = 0; break;
+          default: mousebutton = MOUSE_NO_BUTTON; break;
         }
         if(mousebutton)
         {
@@ -848,12 +849,12 @@ static boolean process_event(union event *ev)
       rval = false;
       if((ev->button.pad == 0) && status->mouse_button_state)
       {
-        Uint32 mousebutton;
+        enum mouse_button mousebutton;
         switch(ev->button.button)
         {
           case WPAD_BUTTON_A: mousebutton = MOUSE_BUTTON_LEFT; break;
           case WPAD_BUTTON_B: mousebutton = MOUSE_BUTTON_RIGHT; break;
-          default: mousebutton = 0; break;
+          default: mousebutton = MOUSE_NO_BUTTON; break;
         }
         if(mousebutton &&
          (status->mouse_button_state & MOUSE_BUTTON(mousebutton)))
@@ -896,8 +897,8 @@ static boolean process_event(union event *ev)
     {
       pointing = 1;
       status->mouse_moved = true;
-      status->real_mouse_x = ev->pointer.x;
-      status->real_mouse_y = ev->pointer.y;
+      status->mouse_pixel_x = ev->pointer.x;
+      status->mouse_pixel_y = ev->pointer.y;
       status->mouse_x = ev->pointer.x / 8;
       status->mouse_y = ev->pointer.y / 14;
       break;
@@ -996,8 +997,8 @@ static boolean process_event(union event *ev)
 
     case EVENT_MOUSE_MOVE:
     {
-      int mx = status->real_mouse_x + ev->mmove.dx;
-      int my = status->real_mouse_y + ev->mmove.dy;
+      int mx = status->mouse_pixel_x + ev->mmove.dx;
+      int my = status->mouse_pixel_y + ev->mmove.dy;
 
       if(mx < 0)
         mx = 0;
@@ -1008,8 +1009,8 @@ static boolean process_event(union event *ev)
       if(my >= 350)
         my = 349;
 
-      status->real_mouse_x = mx;
-      status->real_mouse_y = my;
+      status->mouse_pixel_x = mx;
+      status->mouse_pixel_y = my;
       status->mouse_x = mx / 8;
       status->mouse_y = my / 14;
       status->mouse_moved = true;
@@ -1018,7 +1019,7 @@ static boolean process_event(union event *ev)
 
     case EVENT_MOUSE_BUTTON_DOWN:
     {
-      Uint32 button = 0;
+      enum mouse_button button = MOUSE_NO_BUTTON;
       switch (ev->mbutton.button)
       {
         case USB_MOUSE_BTN_LEFT:
@@ -1048,7 +1049,7 @@ static boolean process_event(union event *ev)
 
     case EVENT_MOUSE_BUTTON_UP:
     {
-      Uint32 button = 0;
+      enum mouse_button button = MOUSE_NO_BUTTON;
       switch (ev->mbutton.button)
       {
         case USB_MOUSE_BTN_LEFT:
@@ -1098,6 +1099,12 @@ boolean __update_event_status(void)
   return rval;
 }
 
+boolean __peek_exit_input(void)
+{
+  /* FIXME stub */
+  return false;
+}
+
 void __wait_event(void)
 {
   mqmsg_t ev;
@@ -1112,7 +1119,7 @@ void __wait_event(void)
   }
 }
 
-void real_warp_mouse(int x, int y)
+void __warp_mouse(int x, int y)
 {
   // Mouse warping doesn't work too well with the Wiimote
 }

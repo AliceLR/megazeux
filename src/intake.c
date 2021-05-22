@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -51,7 +52,7 @@ void intake_set_insert(boolean new_insert_state)
 }
 
 static inline void intake_old_place_char(char *string, int *currx,
- int *curr_len, Uint32 chr)
+ int *curr_len, uint32_t chr)
 {
   // Overwrite or insert?
   if(insert_on || (*currx == *curr_len))
@@ -110,9 +111,9 @@ int intake(struct world *mzx_world, char *string, int max_len,
   do
   {
     if(use_mask)
-      write_string_mask(string, x, y, color, 0);
+      write_string_mask(string, x, y, color, false);
     else
-      write_string_ext(string, x, y, color, 0, 0, 16);
+      write_string_ext(string, x, y, color, false, 0, 16);
 
     fill_line(max_len + 1 - curr_len, x + curr_len, y, 32, color);
 
@@ -450,7 +451,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
     if(place)
     {
-      Uint32 num_placed = 0;
+      int num_placed = 0;
 
       if((cur_char != 0) && (cur_char < 32) && (exit_type == INTK_EXIT_ANY))
       {
@@ -461,7 +462,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
       while((curr_len < max_len) && (!done) && num_placed < KEY_UNICODE_MAX)
       {
-        Uint32 cur_char = get_key(keycode_text_ascii);
+        uint32_t cur_char = get_key(keycode_text_ascii);
         if(cur_char)
         {
           intake_old_place_char(string, &currx, &curr_len, cur_char);
@@ -871,7 +872,7 @@ static boolean intake_key(subcontext *sub, int *key)
   boolean shift_status = get_shift_status(keycode_internal);
   boolean any_mod = (alt_status || ctrl_status || shift_status);
   boolean place = false;
-  Uint32 num_placed = 0;
+  int num_placed = 0;
 
   // Exit-- let the parent context handle.
   if(get_exit_status())

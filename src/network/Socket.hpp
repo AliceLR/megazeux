@@ -22,8 +22,6 @@
 #define __SOCKET_HPP
 
 #include "../compat.h"
-#include "../configure.h"
-#include "../platform.h"
 #include "../util.h"
 
 #include <errno.h>
@@ -184,6 +182,8 @@ struct pollfd
 #ifndef POLL_MAYBE_INLINE
 #define POLL_MAYBE_INLINE(x) UNIX_INLINE(x)
 #endif
+
+struct config_info;
 
 /**
  * Low-level abstraction for misc. socket symbols.
