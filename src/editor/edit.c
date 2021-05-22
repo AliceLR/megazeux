@@ -1057,7 +1057,7 @@ static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
   int after_width;
   int y;
 
-  if(in_x < 0 || in_x > SCREEN_W || in_y < 0 || in_y > SCREEN_H)
+  if(in_x < 0 || in_x >= SCREEN_W || in_y < 0 || in_y >= SCREEN_H)
     return;
 
   if(in_x + in_width > SCREEN_W)
