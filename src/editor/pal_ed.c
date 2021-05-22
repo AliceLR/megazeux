@@ -1557,12 +1557,12 @@ static void draw_unbound_cursor_chars(uint32_t layer, int color)
   select_layer(layer);
   set_layer_mode(layer, 0);
   // Note: mode 0, so offset by 16 (PAL_SIZE) for the protected palette.
-  draw_char_to_layer(color, CHAR_CORNER_TL, 0, 0, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_TR, 2, 0, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_BL, 0, 1, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_BR, 2, 1, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 0, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 1, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_TL,  color, 0, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_TR,  color, 2, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_BL,  color, 0, 1, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_BR,  color, 2, 1, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_LINE_HORIZ, color, 1, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_LINE_HORIZ, color, 1, 1, PRO_CH, PAL_SIZE);
 }
 
 static void draw_unbound_cursor(int x, int y, int fg, int bg, int offset)

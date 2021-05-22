@@ -111,7 +111,7 @@ static int compare_spr_yorder(const void *dest, const void *src)
   return diff ? diff : (spr_dest->qsort_order - spr_src->qsort_order);
 }
 
-static inline void sort_sprites(struct sprite **sorted_list,
+static inline void sort_sprites(const struct sprite **sorted_list,
  struct sprite **sprite_list, int spr_yorder)
 {
   // Fill the sorted list with the active sprites in the beginning
@@ -166,8 +166,8 @@ void draw_sprites(struct world *mzx_world)
   int src_height;
   boolean use_vlayer;
   struct sprite **sprite_list = mzx_world->sprite_list;
-  struct sprite *sorted_list[MAX_SPRITES];
-  struct sprite *cur_sprite;
+  const struct sprite *sorted_list[MAX_SPRITES];
+  const struct sprite *cur_sprite;
   uint16_t ch;
   char color;
   int viewport_x = src_board->viewport_x;
@@ -405,11 +405,6 @@ void draw_sprites(struct world *mzx_world)
         if(!(cur_sprite->flags & SPRITE_SRC_COLORS))
           color = cur_sprite->color;
 
-        // Legacy sprite "transparency" effect.
-        if(!unbound)
-          if(!(color & 0xF0))
-            color = (color & 0x0F) | (get_color_linear(screen_offset) & 0xF0);
-
         if(unbound || (cur_sprite->flags & SPRITE_OVER_OVERLAY) ||
          !(overlay_mode && overlay_mode != 3 && overlay[overlay_offset] != 32))
         {
@@ -420,9 +415,12 @@ void draw_sprites(struct world *mzx_world)
              !is_blank((ch + cur_sprite->offset) % PROTECTED_CHARSET_POSITION))
             {
               if(!unbound)
-                draw_char_linear_ext(color, ch, screen_offset, 0, 0);
+              {
+                // This implements the legacy sprite "transparency" effect.
+                draw_char_bleedthru_ext(ch, color, x + start_x, y + start_y, 0, 0);
+              }
               else
-                draw_char_to_layer(color, ch, x, y, 0, 0);
+                draw_char_to_layer(ch, color, x, y, 0, 0);
             }
           }
         }

@@ -228,10 +228,10 @@ CORE_LIBSPEC void write_string_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset, Uint32 c_offset);
 CORE_LIBSPEC void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset);
-CORE_LIBSPEC void draw_char_linear_ext(Uint8 color, Uint8 chr,
- Uint32 offset, Uint32 offset_b, Uint32 c_offset);
-CORE_LIBSPEC void draw_char_to_layer(Uint8 color, Uint8 chr,
- Uint32 x, Uint32 y, Uint32 offset_b, Uint32 c_offset);
+CORE_LIBSPEC void draw_char_bleedthru_ext(uint8_t chr, uint8_t color,
+ unsigned int x, unsigned int y, unsigned int chr_offset, unsigned int color_offset);
+CORE_LIBSPEC void draw_char_to_layer(uint8_t chr, uint8_t color,
+ unsigned int x, unsigned int y, unsigned int chr_offset, unsigned int color_offset);
 CORE_LIBSPEC void write_string_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
 
@@ -312,8 +312,6 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
  Uint8 chr, Uint8 color, Uint32 offset, Uint32 c_offset);
 void write_line_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
-
-Uint8 get_color_linear(Uint32 offset);
 
 boolean change_video_output(struct config_info *conf, const char *output);
 int get_available_video_output_list(const char **buffer, int buffer_len);

@@ -1953,12 +1953,16 @@ static void dirty_current(void)
 static int offset_adjust(int offset)
 {
   // Transform the given offset from screen space to layer space
-  struct video_layer *layer;
+  struct video_layer *layer = &graphics.video_layers[graphics.current_layer];
   int x, y;
-  layer = &graphics.video_layers[graphics.current_layer];
-  x = (offset % SCREEN_W) - (layer->x / CHAR_W);
-  y = (offset / SCREEN_W) - (layer->y / CHAR_H);
-  return y * layer->w + x;
+
+  if(layer->w != SCREEN_W || layer->x != 0 || layer->y != 0)
+  {
+    x = (offset % SCREEN_W) - (layer->x / CHAR_W);
+    y = (offset / SCREEN_W) - (layer->y / CHAR_H);
+    return y * layer->w + x;
+  }
+  return offset;
 }
 
 void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
@@ -2416,28 +2420,41 @@ void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
   dirty_current();
 }
 
-void draw_char_linear_ext(Uint8 color, Uint8 chr,
- Uint32 offset, Uint32 offset_b, Uint32 c_offset)
+/**
+ * draw_char_ext, except if the color being drawn has a background color of 0,
+ * the background color from text_video will bleed through to the new character.
+ * This effect is used by legacy sprites to simulate transparency.
+ */
+void draw_char_bleedthru_ext(uint8_t chr, uint8_t color,
+ unsigned int x, unsigned int y, unsigned int chr_offset, unsigned int color_offset)
 {
+  int offset = (y * SCREEN_W) + x;
   struct char_element *dest = graphics.current_video + offset_adjust(offset);
   struct char_element *dest_copy = graphics.text_video + offset;
-  dest->char_value = chr + offset_b;
-  dest->bg_color = (color >> 4) + c_offset;
-  dest->fg_color = (color & 0x0F) + c_offset;
+
+  if(!(color & 0xF0))
+  {
+    // Bleed-through background color from text_video.
+    color |= (dest_copy->bg_color & 0x0F) << 4;
+  }
+
+  dest->char_value = chr + chr_offset;
+  dest->bg_color = (color >> 4) + color_offset;
+  dest->fg_color = (color & 0x0F) + color_offset;
   *(dest_copy++) = *dest;
 
   dirty_ui();
   dirty_current();
 }
 
-void draw_char_to_layer(Uint8 color, Uint8 chr,
- Uint32 x, Uint32 y, Uint32 offset_b, Uint32 c_offset)
+void draw_char_to_layer(uint8_t chr, uint8_t color,
+ unsigned int x, unsigned int y, unsigned int chr_offset, unsigned int color_offset)
 {
   int w = graphics.video_layers[graphics.current_layer].w;
   struct char_element *dest = graphics.current_video + (y * w) + x;
-  dest->char_value = chr + offset_b;
-  dest->bg_color = (color >> 4) + c_offset;
-  dest->fg_color = (color & 0x0F) + c_offset;
+  dest->char_value = chr + chr_offset;
+  dest->bg_color = (color >> 4) + color_offset;
+  dest->fg_color = (color & 0x0F) + color_offset;
   dirty_current();
 }
 
@@ -2482,12 +2499,6 @@ void erase_area(Uint32 x, Uint32 y, Uint32 x2, Uint32 y2)
   for(i = y; i <= y2; i++)
     for(j = x; j <= x2; j++)
       erase_char(j, i);
-}
-
-Uint8 get_color_linear(Uint32 offset)
-{
-  struct char_element *dest = graphics.text_video + offset;
-  return (dest->bg_color << 4) | (dest->fg_color & 0x0F);
 }
 
 void clear_screen(void)
