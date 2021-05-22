@@ -156,10 +156,8 @@ void draw_sprites(struct world *mzx_world)
   int start_x, start_y, offset_x, offset_y;
   int i, x, y;
   int src_offset;
-  int screen_offset;
   int overlay_offset;
   int src_skip;
-  int screen_skip;
   int overlay_skip;
   int draw_width, draw_height, ref_x, ref_y, screen_x, screen_y;
   int src_width;
@@ -368,10 +366,6 @@ void draw_sprites(struct world *mzx_world)
     src_offset = (ref_y + offset_y) * src_width + ref_x + offset_x;
     src_skip = src_width - draw_width;
 
-    // Offset and skip value for the screen
-    screen_offset = start_x + start_y * SCREEN_W;
-    screen_skip = SCREEN_W - draw_width;
-
     // Offset and skip value for overlay (as it may cover part of a sprite)
     overlay_skip = board_width - draw_width;
     if(overlay_mode == 2)
@@ -425,11 +419,9 @@ void draw_sprites(struct world *mzx_world)
           }
         }
         src_offset++;
-        screen_offset++;
         overlay_offset++;
       }
       src_offset += src_skip;
-      screen_offset += screen_skip;
       overlay_offset += overlay_skip;
     }
 
