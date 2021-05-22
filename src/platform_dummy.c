@@ -71,13 +71,13 @@ void initialize_joysticks(void)
 boolean __update_event_status(void)
 {
   // stub
-  return 0;
+  return false;
 }
 
 boolean __peek_exit_input(void)
 {
   // stub
-  return 0;
+  return false;
 }
 
 void __wait_event(void)
