@@ -25,6 +25,7 @@
 __M_BEGIN_DECLS
 
 #include "graphics.h"
+#include "platform.h" // FIXME
 
 extern void (*const set_colors8[4])(const struct graphics_data *graphics,
  Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg);

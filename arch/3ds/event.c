@@ -19,6 +19,7 @@
 
 #include "../../src/event.h"
 #include "../../src/graphics.h"
+#include "../../src/platform.h"
 #include "../../src/util.h"
 
 #include <3ds.h>

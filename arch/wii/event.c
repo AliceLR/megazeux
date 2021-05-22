@@ -19,6 +19,7 @@
 
 #include "../../src/event.h"
 #include "../../src/graphics.h"
+#include "../../src/platform.h"
 
 #include <stdlib.h>
 #include <stdio.h>

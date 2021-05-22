@@ -20,6 +20,7 @@
 
 #include "../../src/event.h"
 #include "../../src/graphics.h"
+#include "../../src/platform.h"
 
 #include <nds/arm9/keyboard.h>
 #include "event.h"

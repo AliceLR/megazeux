@@ -73,12 +73,12 @@ static void soft_free_video(struct graphics_data *graphics)
 }
 
 static void soft_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
   struct sdl_render_data *render_data = graphics->render_data;
   SDL_Surface *screen = soft_get_screen_surface(render_data);
 
-  Uint32 i;
+  unsigned int i;
 
   if(graphics->bits_per_pixel != 8)
   {
@@ -112,10 +112,10 @@ static void soft_render_graph(struct graphics_data *graphics)
   struct sdl_render_data *render_data = graphics->render_data;
   SDL_Surface *screen = soft_get_screen_surface(render_data);
 
-  Uint32 *pixels = (Uint32 *)screen->pixels;
-  Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BytesPerPixel * 8;
-  Uint32 mode = graphics->screen_mode;
+  uint32_t *pixels = (uint32_t *)screen->pixels;
+  unsigned int pitch = screen->pitch;
+  unsigned int bpp = screen->format->BytesPerPixel * 8;
+  unsigned int mode = graphics->screen_mode;
 
   pixels += pitch * ((screen->h - 350) / 8);
   pixels += (screen->w - 640) * bpp / 64;
@@ -123,13 +123,13 @@ static void soft_render_graph(struct graphics_data *graphics)
   SDL_LockSurface(screen);
   if(bpp == 8)
   {
-    render_graph8((Uint8 *)pixels, pitch, graphics, set_colors8[mode]);
+    render_graph8((uint8_t *)pixels, pitch, graphics, set_colors8[mode]);
   }
   else
 
   if(bpp == 16)
   {
-    render_graph16((Uint16 *)pixels, pitch, graphics, set_colors16[mode]);
+    render_graph16((uint16_t *)pixels, pitch, graphics, set_colors16[mode]);
   }
   else
 
@@ -158,16 +158,16 @@ static void soft_render_graph(struct graphics_data *graphics)
   SDL_UnlockSurface(screen);
 }
 
-static void soft_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void soft_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   struct sdl_render_data *render_data = graphics->render_data;
   SDL_Surface *screen = soft_get_screen_surface(render_data);
 
-  Uint32 *pixels = (Uint32 *)screen->pixels;
-  Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BytesPerPixel * 8;
-  Uint32 flatcolor;
+  uint32_t *pixels = (uint32_t *)screen->pixels;
+  unsigned int pitch = screen->pitch;
+  unsigned int bpp = screen->format->BytesPerPixel * 8;
+  uint32_t flatcolor;
 
   pixels += pitch * ((screen->h - 350) / 8);
   pixels += (screen->w - 640) * bpp / 64;
@@ -191,15 +191,15 @@ static void soft_render_cursor(struct graphics_data *graphics,
 }
 
 static void soft_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   struct sdl_render_data *render_data = graphics->render_data;
   SDL_Surface *screen = soft_get_screen_surface(render_data);
 
-  Uint32 *pixels = (Uint32 *)screen->pixels;
-  Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BytesPerPixel * 8;
-  Uint32 mask, amask;
+  uint32_t *pixels = (uint32_t *)screen->pixels;
+  unsigned int pitch = screen->pitch;
+  unsigned int bpp = screen->format->BytesPerPixel * 8;
+  uint32_t mask, amask;
 
   pixels += pitch * ((screen->h - 350) / 8);
   pixels += (screen->w - 640) * bpp / 64;
@@ -240,9 +240,9 @@ static void soft_render_layer(struct graphics_data *graphics,
   struct sdl_render_data *render_data = graphics->render_data;
   SDL_Surface *screen = soft_get_screen_surface(render_data);
 
-  Uint32 *pixels = (Uint32 *)screen->pixels;
-  Uint32 pitch = screen->pitch;
-  Uint32 bpp = screen->format->BytesPerPixel * 8;
+  uint32_t *pixels = (uint32_t *)screen->pixels;
+  unsigned int pitch = screen->pitch;
+  unsigned int bpp = screen->format->BytesPerPixel * 8;
 
   pixels += pitch * ((screen->h - 350) / 8);
   pixels += (screen->w - 640) * bpp / 64;

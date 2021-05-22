@@ -28,6 +28,7 @@
 #include "../core.h"
 #include "../event.h"
 #include "../graphics.h"
+#include "../platform.h"
 #include "../intake.h"
 #include "../window.h"
 

@@ -304,15 +304,15 @@ struct glsl_render_data
 #ifdef CONFIG_SDL
   struct sdl_render_data sdl;
 #endif
-  Uint32 *pixels;
-  Uint32 charset_texture[CHAR_H * FULL_CHARSET_SIZE * CHAR_W];
-  Uint32 background_texture[BG_WIDTH * BG_HEIGHT];
+  uint32_t *pixels;
+  uint32_t charset_texture[CHAR_H * FULL_CHARSET_SIZE * CHAR_W];
+  uint32_t background_texture[BG_WIDTH * BG_HEIGHT];
   GLuint textures[NUM_TEXTURES];
   GLuint fbos[NUM_FBOS];
   GLuint uniform_tilemap_pro_pal;
   GLubyte palette[3 * FULL_PAL_SIZE];
-  Uint8 remap_texture;
-  Uint8 remap_char[FULL_CHARSET_SIZE];
+  boolean remap_texture;
+  boolean remap_char[FULL_CHARSET_SIZE];
   boolean dirty_palette;
   boolean dirty_indices;
   boolean use_software_renderer;
@@ -703,7 +703,7 @@ static boolean glsl_init_video(struct graphics_data *graphics,
     graphics->bits_per_pixel = conf->force_bpp;
 
   // Buffer for screen texture
-  render_data->pixels = cmalloc(sizeof(Uint32) * GL_POWER_2_WIDTH *
+  render_data->pixels = cmalloc(sizeof(uint32_t) * GL_POWER_2_WIDTH *
    GL_POWER_2_HEIGHT);
   render_data->conf = conf;
   if(!render_data->pixels)
@@ -758,8 +758,8 @@ static void glsl_free_video(struct graphics_data *graphics)
   }
 }
 
-static void glsl_remap_char_range(struct graphics_data *graphics, Uint16 first,
- Uint16 count)
+static void glsl_remap_char_range(struct graphics_data *graphics, uint16_t first,
+ uint16_t count)
 {
   struct glsl_render_data *render_data = graphics->render_data;
 
@@ -768,7 +768,7 @@ static void glsl_remap_char_range(struct graphics_data *graphics, Uint16 first,
 
   // FIXME arbitrary
   if(count <= 256)
-    memset(render_data->remap_char + first, 1, count);
+    memset(render_data->remap_char + first, true, count);
 
   else
     render_data->remap_texture = true;
@@ -798,7 +798,7 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   glsl.glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
 
   memset(render_data->pixels, 255,
-   sizeof(Uint32) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
+   sizeof(uint32_t) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
 
   glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GL_POWER_2_WIDTH,
    GL_POWER_2_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE,
@@ -1002,14 +1002,14 @@ static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
   return false;
 }
 
-static void glsl_remap_char(struct graphics_data *graphics, Uint16 chr)
+static void glsl_remap_char(struct graphics_data *graphics, uint16_t chr)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   render_data->remap_char[chr] = true;
 }
 
 static void glsl_remap_charbyte(struct graphics_data *graphics,
- Uint16 chr, Uint8 byte)
+ uint16_t chr, uint8_t byte)
 {
   glsl_remap_char(graphics, chr);
 }
@@ -1052,7 +1052,7 @@ static inline void glsl_do_remap_charsets(struct graphics_data *graphics)
 }
 
 static inline void glsl_do_remap_char(struct graphics_data *graphics,
- Uint16 chr)
+ uint16_t chr)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   signed char *c = (signed char *)graphics->charset;
@@ -1074,10 +1074,10 @@ static inline void glsl_do_remap_char(struct graphics_data *graphics,
 }
 
 static void glsl_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  Uint32 i;
+  unsigned int i;
   for(i = 0; i < count; i++)
   {
     graphics->flat_intensity_palette[i] = gl_pack_u32((0xFF << 24) |
@@ -1093,9 +1093,11 @@ static void glsl_render_layer(struct graphics_data *graphics,
 {
   struct glsl_render_data *render_data = graphics->render_data;
   struct char_element *src = layer->data;
-  Uint32 *colorptr, *dest, i, j;
+  uint32_t *colorptr;
+  uint32_t *dest;
+  unsigned int char_value, fg_color, bg_color, subpalette;
+  unsigned int i, j;
   int width, height;
-  Uint32 char_value, fg_color, bg_color, subpalette;
 
   int x1 = layer->x;
   int x2 = layer->x + layer->w * CHAR_W;
@@ -1167,7 +1169,7 @@ static void glsl_render_layer(struct graphics_data *graphics,
   {
     glsl_do_remap_charsets(graphics);
     render_data->remap_texture = false;
-    memset(render_data->remap_char, false, sizeof(Uint8) * FULL_CHARSET_SIZE);
+    memset(render_data->remap_char, false, sizeof(uint8_t) * FULL_CHARSET_SIZE);
   }
   else
   {
@@ -1226,7 +1228,7 @@ static void glsl_render_layer(struct graphics_data *graphics,
   if(render_data->dirty_palette ||
    render_data->last_tcol != layer->transparent_col)
   {
-    Uint32 transparent = graphics->protected_pal_position + PROTECTED_PAL_SIZE;
+    unsigned int transparent = graphics->protected_pal_position + PROTECTED_PAL_SIZE;
     render_data->dirty_palette = false;
     render_data->last_tcol = layer->transparent_col;
 
@@ -1283,8 +1285,8 @@ static void glsl_render_layer(struct graphics_data *graphics,
   glsl.glDisable(GL_BLEND);
 }
 
-static void glsl_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void glsl_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   GLubyte *pal_base = &render_data->palette[color * 3];
@@ -1339,7 +1341,7 @@ static void glsl_render_cursor(struct graphics_data *graphics,
 }
 
 static void glsl_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   struct glsl_render_data *render_data = graphics->render_data;
 

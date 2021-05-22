@@ -672,7 +672,7 @@ static void nds_render_graph(struct graphics_data *graphics)
   nds_render_graph_1to1(graphics);
 }
 
-static void nds_update_palette_entry(struct rgb_color *palette, Uint32 idx)
+static void nds_update_palette_entry(struct rgb_color *palette, unsigned int idx)
 {
   struct rgb_color color1 = palette[idx];
   int idx2;
@@ -704,9 +704,9 @@ static void nds_update_palette_entry(struct rgb_color *palette, Uint32 idx)
 }
 
 static void nds_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
-  Uint32 i;
+  unsigned int i;
 
   for(i = 0; i < count; i++)
     nds_update_palette_entry(palette, i);
@@ -717,14 +717,14 @@ static void nds_resize_screen(struct graphics_data *graphics, int w, int h)
   // stub
 }
 
-static void nds_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void nds_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   // stub
 }
 
 static void nds_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   // stub
 }
@@ -734,7 +734,7 @@ static void nds_sync_screen(struct graphics_data *graphics)
   // stub
 }
 
-static void nds_remap_char(struct graphics_data *graphics, Uint16 chr)
+static void nds_remap_char(struct graphics_data *graphics, uint16_t chr)
 {
   if(chr < 512)
   {
@@ -764,8 +764,8 @@ static void nds_remap_char(struct graphics_data *graphics, Uint16 chr)
   }
 }
 
-static void nds_remap_charbyte(struct graphics_data *graphics, Uint16 chr,
- Uint8 byte)
+static void nds_remap_charbyte(struct graphics_data *graphics, uint16_t chr,
+ uint8_t byte)
 {
   if(chr < 512)
   {
@@ -789,8 +789,8 @@ static void nds_remap_charbyte(struct graphics_data *graphics, Uint16 chr,
   }
 }
 
-static void nds_remap_char_range(struct graphics_data *graphics, Uint16 first,
- Uint16 count)
+static void nds_remap_char_range(struct graphics_data *graphics, uint16_t first,
+ uint16_t count)
 {
   int stop = first + count;
   int chr;
@@ -802,7 +802,8 @@ static void nds_remap_char_range(struct graphics_data *graphics, Uint16 first,
     nds_remap_char(graphics, chr);
 }
 
-static void nds_focus_pixel(struct graphics_data *graphics, Uint32 x, Uint32 y)
+static void nds_focus_pixel(struct graphics_data *graphics,
+ unsigned int x, unsigned int y)
 {
   switch(get_allow_focus_changes())
   {

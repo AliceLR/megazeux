@@ -26,7 +26,6 @@ __M_BEGIN_DECLS
 
 #include <stdint.h>
 
-#include "platform.h"
 #include "configure.h"
 
 struct rgb_color
@@ -110,11 +109,11 @@ struct renderer
   boolean (*set_video_mode)   (struct graphics_data *, int width, int height,
                                 int depth, boolean fullscreen, boolean resize);
   void    (*update_colors)    (struct graphics_data *, struct rgb_color *palette,
-                                Uint32 count);
+                                unsigned int count);
   void    (*resize_screen)    (struct graphics_data *, int width, int height);
-  void    (*remap_char_range) (struct graphics_data *, Uint16 first, Uint16 count);
-  void    (*remap_char)       (struct graphics_data *, Uint16 chr);
-  void    (*remap_charbyte)   (struct graphics_data *, Uint16 chr, Uint8 byte);
+  void    (*remap_char_range) (struct graphics_data *, uint16_t first, uint16_t count);
+  void    (*remap_char)       (struct graphics_data *, uint16_t chr);
+  void    (*remap_charbyte)   (struct graphics_data *, uint16_t chr, uint8_t byte);
   void    (*get_screen_coords)(struct graphics_data *, int screen_x,
                                 int screen_y, int *x, int *y, int *min_x,
                                 int *min_y, int *max_x, int *max_y);
@@ -123,15 +122,15 @@ struct renderer
   boolean (*switch_shader)    (struct graphics_data *, const char *name);
   void    (*render_graph)     (struct graphics_data *);
   void    (*render_layer)     (struct graphics_data *, struct video_layer *);
-  void    (*render_cursor)    (struct graphics_data *, Uint32 x, Uint32 y,
-                                Uint16 color, Uint8 lines, Uint8 offset);
-  void    (*hardware_cursor)  (struct graphics_data *, Uint32 x, Uint32 y,
-                                Uint16 color, Uint8 lines, Uint8 offset,
+  void    (*render_cursor)    (struct graphics_data *, unsigned x, unsigned y,
+                                uint16_t color, unsigned lines, unsigned offset);
+  void    (*hardware_cursor)  (struct graphics_data *, unsigned x, unsigned y,
+                                uint16_t color, unsigned lines, unsigned offset,
                                 boolean enable);
-  void    (*render_mouse)     (struct graphics_data *, Uint32 x, Uint32 y,
-                                Uint8 w, Uint8 h);
+  void    (*render_mouse)     (struct graphics_data *, unsigned x, unsigned y,
+                                unsigned w, unsigned h);
   void    (*sync_screen)      (struct graphics_data *);
-  void    (*focus_pixel)      (struct graphics_data *, Uint32 x, Uint32 y);
+  void    (*focus_pixel)      (struct graphics_data *, unsigned x, unsigned y);
 };
 
 struct video_layer

@@ -21,6 +21,7 @@
 #include "configure.h"
 #include "event.h"
 #include "graphics.h"
+#include "platform.h"
 #include "util.h"
 
 #include <limits.h>
