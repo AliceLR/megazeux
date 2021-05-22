@@ -177,7 +177,7 @@ void draw_sprites(struct world *mzx_world)
   char *overlay = src_board->overlay;
   char *src_chars;
   char *src_colors;
-  unsigned int layer;
+  uint32_t layer;
   int draw_layer_order;
   boolean unbound;
   int transparent_color;
