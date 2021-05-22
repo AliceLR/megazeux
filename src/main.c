@@ -246,7 +246,7 @@ __libspec int main(int argc, char *argv[])
   // of the form var=value removed, leaving only unparsed
   // parameters. Interpret the first unparsed parameter
   // as a file to load (overriding startup_file etc.)
-  if(argc > 1)
+  if(argc > 1 && argv != _backup_argv)
   {
     path_get_directory_and_filename(
       conf->startup_path, sizeof(conf->startup_path),
