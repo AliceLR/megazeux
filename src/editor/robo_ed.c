@@ -241,10 +241,10 @@ static void delete_current_line(struct robot_editor_context *rstate, int move)
     if(rstate->mark_mode)
     {
       if(rstate->mark_start_rline == current_rline)
-        rstate->mark_start_rline = current_rline->next;
+        rstate->mark_start_rline = next;
 
       if(rstate->mark_end_rline == current_rline)
-        rstate->mark_end_rline = current_rline->previous;
+        rstate->mark_end_rline = previous;
 
       if(rstate->mark_start > rstate->current_line)
         rstate->mark_start--;
@@ -3976,8 +3976,11 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_RETURN:
     {
+      // Block action menu (also see Alt+B).
       if(get_alt_status(keycode_internal))
       {
+        end_intake_undo_frame(rstate);
+        update_current_line(rstate, true);
         block_action(rstate);
       }
       else
@@ -4293,7 +4296,7 @@ static boolean robot_editor_key(context *ctx, int *key)
       break;
     }
 
-    // Block action menu
+    // Block action menu (also see Alt+Enter).
     case IKEY_b:
     {
       if(get_alt_status(keycode_internal))
