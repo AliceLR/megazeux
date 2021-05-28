@@ -36,7 +36,7 @@ enum config_type
 
 enum force_bpp_special
 {
-  BPP_AUTO = 0,
+  BPP_AUTO = 0
 };
 
 enum ratio_type
