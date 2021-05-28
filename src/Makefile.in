@@ -328,18 +328,21 @@ audio_cobjs := \
  ${audio_obj}/audio_pcs.o      \
  ${audio_obj}/audio_wav.o      \
  ${audio_obj}/ext.o            \
- ${audio_obj}/sampled_stream.o \
  ${audio_obj}/sfx.o
 
+audio_cxxobjs := \
+ ${audio_obj}/sampled_stream.o
+
 ifneq (${VORBIS},)
+core_flags += ${VORBIS_CFLAGS}
+core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
 audio_cobjs += \
  ${audio_obj}/audio_vorbis.o
 endif
-
-core_flags += ${VORBIS_CFLAGS}
-core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
 endif
+
 core_cobjs += ${audio_cobjs}
+core_cxxobjs += ${audio_cxxobjs}
 else
 # The editor needs this for sfx_strs...
 ifeq (${BUILD_EDITOR},1)

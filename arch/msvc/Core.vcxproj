@@ -282,7 +282,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\audio\audio_wav.c" />
     <ClCompile Include="..\..\src\audio\audio_xmp.c" />
     <ClCompile Include="..\..\src\audio\ext.c" />
-    <ClCompile Include="..\..\src\audio\sampled_stream.c" />
+    <ClCompile Include="..\..\src\audio\sampled_stream.cpp" />
     <ClCompile Include="..\..\src\audio\sfx.c" />
     <ClCompile Include="..\..\src\block.c" />
     <ClCompile Include="..\..\src\board.c" />
