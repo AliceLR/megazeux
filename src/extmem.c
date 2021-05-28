@@ -24,6 +24,7 @@
 #include "util.h"
 #include "world_struct.h"
 
+#include <limits.h>
 #include <stdint.h>
 #include <zlib.h>
 
@@ -676,8 +677,14 @@ static void extram_inflate_destroy(struct extram_data *data)
  */
 static uint32_t extram_checksum(const void *src, size_t len)
 {
-  uint32_t checksum = adler32_z(0L, NULL, 0);
-  return adler32_z(checksum, src, len);
+  uint32_t checksum = adler32(0L, NULL, 0);
+  while(len > 0)
+  {
+    unsigned int blocklen = MIN(len, UINT_MAX);
+    checksum = adler32(checksum, src, blocklen);
+    len -= blocklen;
+  }
+  return checksum;
 }
 
 #if defined(__GNUC__) && defined(__arm__)
