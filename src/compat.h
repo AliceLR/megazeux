@@ -101,8 +101,10 @@ typedef unsigned char boolean;
 
 #ifdef CONFIG_WII
 #define BOOL _BOOL
+#include <gcbool.h>
 #include <gctypes.h>
 #undef BOOL
+#undef FIXED
 #endif
 
 #ifdef CONFIG_EDITOR

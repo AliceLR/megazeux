@@ -33,6 +33,7 @@
 #include <ogc/lwp.h>
 #include <ogc/lwp_threads.h>
 #include <ogc/lwp_watchdog.h>
+#include <ogc/message.h> // Suppress unused BOOL warning.
 #include <fat.h>
 #undef BOOL
 
