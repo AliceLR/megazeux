@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-// Definitions for audio.cpp
+// Definitions for audio.c
 
 #ifndef __AUDIO_H
 #define __AUDIO_H
@@ -27,122 +27,16 @@
 
 __M_BEGIN_DECLS
 
-#include "../platform.h"
-#include "../configure.h"
-
 #ifdef CONFIG_AUDIO
 
-#ifdef CONFIG_MODPLUG
-#include "modplug.h"
-#endif
+#include <stdint.h>
 
 // Default period for .SAM files.
 #define SAM_DEFAULT_PERIOD 428
 
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-#define SAMPLE_S16SYS SAMPLE_S16MSB
-#else
-#define SAMPLE_S16SYS SAMPLE_S16LSB
-#endif
-
-enum wav_format
-{
-  SAMPLE_U8,
-  SAMPLE_S8,
-  SAMPLE_S16LSB,
-  SAMPLE_S16MSB
-};
-
-struct wav_info
-{
-  Uint8 *wav_data;
-  Uint32 data_length;
-  Uint32 channels;
-  Uint32 freq;
-  Uint32 loop_start;
-  Uint32 loop_end;
-  enum wav_format format;
-  boolean enable_sam_frequency_hack;
-};
-
-struct audio_stream
-{
-  struct audio_stream *next;
-  struct audio_stream *previous;
-  boolean is_spot_sample;
-  Uint32 volume;
-  Uint32 repeat;
-  Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len);
-  void (* set_volume)(struct audio_stream *a_src, Uint32 volume);
-  void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat);
-  void (* set_order)(struct audio_stream *a_src, Uint32 order);
-  void (* set_position)(struct audio_stream *a_src, Uint32 pos);
-  void (* set_loop_start)(struct audio_stream *a_src, Uint32 pos);
-  void (* set_loop_end)(struct audio_stream *a_src, Uint32 pos);
-  Uint32 (* get_order)(struct audio_stream *a_src);
-  Uint32 (* get_position)(struct audio_stream *a_src);
-  Uint32 (* get_length)(struct audio_stream *a_src);
-  Uint32 (* get_loop_start)(struct audio_stream *a_src);
-  Uint32 (* get_loop_end)(struct audio_stream *a_src);
-  boolean (* get_sample)(struct audio_stream *a_src, Uint32 which,
-   struct wav_info *dest);
-  void (* destruct)(struct audio_stream *a_src);
-};
-
-struct audio_stream_spec
-{
-  Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len);
-  void (* set_volume)(struct audio_stream *a_src, Uint32 volume);
-  void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat);
-  void (* set_order)(struct audio_stream *a_src, Uint32 order);
-  void (* set_position)(struct audio_stream *a_src, Uint32 pos);
-  void (* set_loop_start)(struct audio_stream *a_src, Uint32 pos);
-  void (* set_loop_end)(struct audio_stream *a_src, Uint32 pos);
-  Uint32 (* get_order)(struct audio_stream *a_src);
-  Uint32 (* get_position)(struct audio_stream *a_src);
-  Uint32 (* get_length)(struct audio_stream *a_src);
-  Uint32 (* get_loop_start)(struct audio_stream *a_src);
-  Uint32 (* get_loop_end)(struct audio_stream *a_src);
-  boolean (* get_sample)(struct audio_stream *a_src, Uint32 which,
-   struct wav_info *dest);
-  void (* destruct)(struct audio_stream *a_src);
-};
-
-struct audio
-{
-#ifdef CONFIG_MODPLUG
-  // for config.txt settings only
-  ModPlug_Settings mod_settings;
-#endif
-
-  Sint32 *mix_buffer;
-
-  Uint32 buffer_samples;
-
-  Uint32 output_frequency;
-  Uint32 master_resample_mode;
-  Sint32 max_simultaneous_samples;
-  Sint32 max_simultaneous_samples_config;
-
-  struct audio_stream *primary_stream;
-  struct audio_stream *pcs_stream;
-  struct audio_stream *stream_list_base;
-  struct audio_stream *stream_list_end;
-
-  platform_mutex audio_mutex;
-  platform_mutex audio_sfx_mutex;
-#ifdef DEBUG
-  platform_mutex audio_debug_mutex;
-#endif
-
-  Uint32 music_on;
-  Uint32 pcs_on;
-  Uint32 music_volume;
-  Uint32 sound_volume;
-  Uint32 pcs_volume;
-};
-
-extern struct audio audio;
+struct config_info;
+struct audio_stream;
+struct audio_stream_spec;
 
 CORE_LIBSPEC void init_audio(struct config_info *conf);
 CORE_LIBSPEC void quit_audio(void);
@@ -185,10 +79,10 @@ int audio_legacy_translate(const char *path, char *newpath, size_t buffer_len);
 int audio_get_real_frequency(int period);
 void destruct_audio_stream(struct audio_stream *a_src);
 void initialize_audio_stream(struct audio_stream *a_src,
- struct audio_stream_spec *a_spec, Uint32 volume, Uint32 repeat);
+ struct audio_stream_spec *a_spec, unsigned int volume, boolean repeat);
 
 // Platform-related functions.
-void audio_callback(Sint16 *stream, int len);
+void audio_callback(int16_t *stream, int len);
 void init_audio_platform(struct config_info *conf);
 void quit_audio_platform(void);
 

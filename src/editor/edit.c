@@ -34,6 +34,7 @@
 #include "../idarray.h"
 #include "../idput.h"
 #include "../mzm.h"
+#include "../platform.h"
 #include "../robot.h"
 #include "../scrdisp.h"
 #include "../util.h"

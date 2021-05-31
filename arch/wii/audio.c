@@ -18,6 +18,7 @@
  */
 
 #include "../../src/audio/audio.h"
+#include "../../src/audio/audio_struct.h"
 
 #include <stdlib.h>
 #include <string.h>

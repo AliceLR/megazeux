@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "../../src/configure.h"
 #include "../../src/event.h"
 #include "../../src/platform.h"
 #include "../../src/util.h"

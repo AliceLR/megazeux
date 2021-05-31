@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "audio.h"
+#include "audio_struct.h"
 #include "audio_vorbis.h"
 #include "ext.h"
 #include "sampled_stream.h"
@@ -54,18 +55,18 @@ struct vorbis_stream
   struct sampled_stream s;
   OggVorbis_File vorbis_file_handle;
   vorbis_info *vorbis_file_info;
-  Uint32 loop_start;
-  Uint32 loop_end;
+  uint32_t loop_start;
+  uint32_t loop_end;
 };
 
-static Uint32 vorbis_mix_data(struct audio_stream *a_src, Sint32 *buffer,
- Uint32 len)
+static boolean vorbis_mix_data(struct audio_stream *a_src,
+ int32_t * RESTRICT buffer, size_t len)
 {
-  Uint32 read_len = 0;
+  uint32_t read_len = 0;
   struct vorbis_stream *v_stream = (struct vorbis_stream *)a_src;
-  Uint32 read_wanted = v_stream->s.allocated_data_length -
+  uint32_t read_wanted = v_stream->s.allocated_data_length -
    v_stream->s.stream_offset;
-  Uint32 pos = 0;
+  uint32_t pos = 0;
   char *read_buffer = (char *)v_stream->s.output_data +
    v_stream->s.stream_offset;
   int current_section;
@@ -75,7 +76,7 @@ static Uint32 vorbis_mix_data(struct audio_stream *a_src, Sint32 *buffer,
     read_wanted -= read_len;
 
     if(a_src->repeat && v_stream->loop_end)
-      pos = (Uint32)ov_pcm_tell(&v_stream->vorbis_file_handle);
+      pos = (uint32_t)ov_pcm_tell(&v_stream->vorbis_file_handle);
 
 #ifdef CONFIG_TREMOR
     read_len =
@@ -128,38 +129,38 @@ static Uint32 vorbis_mix_data(struct audio_stream *a_src, Sint32 *buffer,
   sampled_mix_data((struct sampled_stream *)v_stream, buffer, len);
 
   if(read_len == 0)
-    return 1;
+    return true;
 
-  return 0;
+  return false;
 }
 
-static void vorbis_set_volume(struct audio_stream *a_src, Uint32 volume)
+static void vorbis_set_volume(struct audio_stream *a_src, unsigned int volume)
 {
   a_src->volume = volume * 256 / 255;
 }
 
-static void vorbis_set_repeat(struct audio_stream *a_src, Uint32 repeat)
+static void vorbis_set_repeat(struct audio_stream *a_src, boolean repeat)
 {
   a_src->repeat = repeat;
 }
 
-static void vorbis_set_position(struct audio_stream *a_src, Uint32 position)
+static void vorbis_set_position(struct audio_stream *a_src, uint32_t position)
 {
   ov_pcm_seek(&(((struct vorbis_stream *)a_src)->vorbis_file_handle),
    (ogg_int64_t)position);
 }
 
-static void vorbis_set_loop_start(struct audio_stream *a_src, Uint32 position)
+static void vorbis_set_loop_start(struct audio_stream *a_src, uint32_t position)
 {
   ((struct vorbis_stream *)a_src)->loop_start = position;
 }
 
-static void vorbis_set_loop_end(struct audio_stream *a_src, Uint32 position)
+static void vorbis_set_loop_end(struct audio_stream *a_src, uint32_t position)
 {
   ((struct vorbis_stream *)a_src)->loop_end = position;
 }
 
-static void vorbis_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
+static void vorbis_set_frequency(struct sampled_stream *s_src, uint32_t frequency)
 {
   if(frequency == 0)
     frequency = ((struct vorbis_stream *)s_src)->vorbis_file_info->rate;
@@ -169,29 +170,29 @@ static void vorbis_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
   sampled_set_buffer(s_src);
 }
 
-static Uint32 vorbis_get_position(struct audio_stream *a_src)
+static uint32_t vorbis_get_position(struct audio_stream *a_src)
 {
   struct vorbis_stream *v = (struct vorbis_stream *)a_src;
-  return (Uint32)ov_pcm_tell(&v->vorbis_file_handle);
+  return ov_pcm_tell(&v->vorbis_file_handle);
 }
 
-static Uint32 vorbis_get_length(struct audio_stream *a_src)
+static uint32_t vorbis_get_length(struct audio_stream *a_src)
 {
   struct vorbis_stream *v = (struct vorbis_stream *)a_src;
-  return (Uint32)ov_pcm_total(&v->vorbis_file_handle, -1);
+  return ov_pcm_total(&v->vorbis_file_handle, -1);
 }
 
-static Uint32 vorbis_get_loop_start(struct audio_stream *a_src)
+static uint32_t vorbis_get_loop_start(struct audio_stream *a_src)
 {
   return ((struct vorbis_stream *)a_src)->loop_start;
 }
 
-static Uint32 vorbis_get_loop_end(struct audio_stream *a_src)
+static uint32_t vorbis_get_loop_end(struct audio_stream *a_src)
 {
   return ((struct vorbis_stream *)a_src)->loop_end;
 }
 
-static Uint32 vorbis_get_frequency(struct sampled_stream *s_src)
+static uint32_t vorbis_get_frequency(struct sampled_stream *s_src)
 {
   return s_src->frequency;
 }
@@ -204,7 +205,7 @@ static void vorbis_destruct(struct audio_stream *a_src)
 }
 
 static struct audio_stream *construct_vorbis_stream(char *filename,
- Uint32 frequency, Uint32 volume, Uint32 repeat)
+ uint32_t frequency, unsigned int volume, boolean repeat)
 {
   FILE *input_file = fopen_unsafe(filename, "rb");
   struct audio_stream *ret_val = NULL;
@@ -286,7 +287,7 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
         s_spec.get_frequency = vorbis_get_frequency;
 
         initialize_sampled_stream((struct sampled_stream *)v_stream, &s_spec,
-         frequency, v_stream->vorbis_file_info->channels, 1);
+         frequency, v_stream->vorbis_file_info->channels, true);
 
         initialize_audio_stream((struct audio_stream *)v_stream, &a_spec,
          volume, repeat);

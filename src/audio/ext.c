@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "audio.h"
+#include "audio_struct.h"
 #include "ext.h"
 
 #include "../io/path.h"
@@ -66,7 +67,7 @@ void audio_ext_free_registry(void)
 }
 
 struct audio_stream *audio_ext_construct_stream(char *filename,
- Uint32 frequency, Uint32 volume, Uint32 repeat)
+ uint32_t frequency, unsigned int volume, boolean repeat)
 {
   struct audio_stream *a_return = NULL;
   ssize_t ext_pos;

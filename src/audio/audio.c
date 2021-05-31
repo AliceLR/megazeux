@@ -30,6 +30,7 @@
 
 #include "audio.h"
 #include "audio_pcs.h"
+#include "audio_struct.h"
 #include "ext.h"
 #include "sampled_stream.h"
 #include "sfx.h"
@@ -101,7 +102,7 @@ int audio_get_real_frequency(int period)
   return freq_conversion / period;
 }
 
-static int volume_function(int input, int volume_setting)
+static unsigned int volume_function(int input, int volume_setting)
 {
   /* Adjust volume (0-255) exponentially according to a given setting (0-10).
    * 0 is no volume whatsoever and 10 is maximum volume. */
@@ -135,7 +136,7 @@ void destruct_audio_stream(struct audio_stream *a_src)
 }
 
 void initialize_audio_stream(struct audio_stream *a_src,
- struct audio_stream_spec *a_spec, Uint32 volume, Uint32 repeat)
+ struct audio_stream_spec *a_spec, unsigned int volume, boolean repeat)
 {
   // TODO should probably just memcpy into a spec in the audio_stream instead.
   a_src->mix_data = a_spec->mix_data;
@@ -179,9 +180,9 @@ void initialize_audio_stream(struct audio_stream *a_src,
   UNLOCK();
 }
 
-static void clip_buffer(Sint16 *dest, Sint32 *src, int len)
+static void clip_buffer(int16_t *dest, int32_t *src, int len)
 {
-  Sint32 cur_sample;
+  int32_t cur_sample;
   int i;
 
   for(i = 0; i < len; i++)
@@ -197,9 +198,9 @@ static void clip_buffer(Sint16 *dest, Sint32 *src, int len)
   }
 }
 
-void audio_callback(Sint16 *stream, int len)
+void audio_callback(int16_t *stream, int len)
 {
-  Uint32 destroy_flag;
+  boolean destroy_flag;
   struct audio_stream *current_astream;
 
   LOCK();
@@ -448,7 +449,7 @@ static void limit_samples(int max)
 
 void audio_play_sample(char *filename, boolean safely, int period)
 {
-  Uint32 vol = volume_function(255, audio.sound_volume);
+  unsigned int vol = volume_function(255, audio.sound_volume);
   char translated_filename[MAX_PATH];
 
   if(safely)
@@ -492,7 +493,7 @@ void audio_spot_sample(int period, int which)
   // Play a sample from the current playing mod.
   // Currently only works with libxmp (and maybe only ever will).
 
-  Uint32 vol = volume_function(255, audio.sound_volume);
+  unsigned int vol = volume_function(255, audio.sound_volume);
   struct wav_info wav;
   boolean ret = false;
 

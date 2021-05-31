@@ -26,12 +26,15 @@
 
 #include "audio.h"
 #include "audio_modplug.h"
+#include "audio_struct.h"
 #include "ext.h"
 #include "sampled_stream.h"
 
 #include "../const.h"
+#include "../configure.h"
 #include "../util.h"
 #include "../io/fsafeopen.h"
+#include "../io/vio.h"
 
 struct _ModPlugFile
 {
@@ -42,19 +45,65 @@ struct modplug_stream
 {
   struct sampled_stream s;
   ModPlugFile *module_data;
-  Uint32 effective_frequency;
+  size_t effective_frequency;
 };
 
-static Uint32 mp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
- Uint32 len)
+static void init_modplug_settings(void)
 {
-  Uint32 read_len;
+  struct config_info *conf = get_config();
+  ModPlug_Settings mod_settings;
+
+  memset(&mod_settings, 0, sizeof(ModPlug_Settings));
+
+  if(conf->oversampling_on)
+    mod_settings.mFlags = MODPLUG_ENABLE_OVERSAMPLING;
+
+  mod_settings.mFrequency = audio.output_frequency;
+  mod_settings.mChannels = 2;
+  mod_settings.mBits = 16;
+
+  switch(conf->module_resample_mode)
+  {
+    case RESAMPLE_MODE_NONE:
+    {
+      mod_settings.mResamplingMode = MODPLUG_RESAMPLE_NEAREST;
+      break;
+    }
+
+    case RESAMPLE_MODE_LINEAR:
+    {
+      mod_settings.mResamplingMode = MODPLUG_RESAMPLE_LINEAR;
+      break;
+    }
+
+    case RESAMPLE_MODE_CUBIC:
+    {
+      mod_settings.mResamplingMode = MODPLUG_RESAMPLE_SPLINE;
+      break;
+    }
+
+    case RESAMPLE_MODE_FIR:
+    {
+      mod_settings.mResamplingMode = MODPLUG_RESAMPLE_FIR;
+      break;
+    }
+  }
+
+  mod_settings.mLoopCount = -1;
+
+  ModPlug_SetSettings(&mod_settings);
+}
+
+static boolean mp_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer,
+ size_t len)
+{
+  size_t read_len;
   struct modplug_stream *mp_stream = (struct modplug_stream *)a_src;
-  Uint32 read_wanted = mp_stream->s.allocated_data_length -
+  size_t read_wanted = mp_stream->s.allocated_data_length -
    mp_stream->s.stream_offset;
-  Uint8 *read_buffer = (Uint8 *)mp_stream->s.output_data +
+  uint8_t *read_buffer = (uint8_t *)mp_stream->s.output_data +
    mp_stream->s.stream_offset;
-  Uint32 r_val = 0;
+  boolean r_val = false;
 
   read_len =
    ModPlug_Read(mp_stream->module_data, read_buffer, read_wanted);
@@ -83,7 +132,7 @@ static Uint32 mp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
     {
       // FIXME: I think this memset should always be done?
       memset(read_buffer + read_len, 0, read_wanted - read_len);
-      r_val = 1;
+      r_val = true;
     }
 
     read_len = 0;
@@ -94,7 +143,7 @@ static Uint32 mp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
   return r_val;
 }
 
-static void mp_set_volume(struct audio_stream *a_src, Uint32 volume)
+static void mp_set_volume(struct audio_stream *a_src, unsigned int volume)
 {
   ModPlugFile *mp_file = ((struct modplug_stream *)a_src)->module_data;
 
@@ -102,7 +151,7 @@ static void mp_set_volume(struct audio_stream *a_src, Uint32 volume)
   mp_file->mSoundFile.SetMasterVolume(volume);
 }
 
-static void mp_set_repeat(struct audio_stream *a_src, Uint32 repeat)
+static void mp_set_repeat(struct audio_stream *a_src, boolean repeat)
 {
   ModPlugFile *mp_file = ((struct modplug_stream *)a_src)->module_data;
 
@@ -114,19 +163,19 @@ static void mp_set_repeat(struct audio_stream *a_src, Uint32 repeat)
     mp_file->mSoundFile.SetRepeatCount(0);
 }
 
-static void mp_set_order(struct audio_stream *a_src, Uint32 order)
+static void mp_set_order(struct audio_stream *a_src, uint32_t order)
 {
   ((struct modplug_stream *)a_src)->module_data->
    mSoundFile.SetCurrentOrder(order);
 }
 
-static void mp_set_position(struct audio_stream *a_src, Uint32 position)
+static void mp_set_position(struct audio_stream *a_src, uint32_t position)
 {
   ((struct modplug_stream *)a_src)->module_data->
    mSoundFile.SetCurrentPos(position);
 }
 
-static void mp_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
+static void mp_set_frequency(struct sampled_stream *s_src, uint32_t frequency)
 {
   if(frequency == 0)
   {
@@ -136,7 +185,7 @@ static void mp_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
   else
   {
     ((struct modplug_stream *)s_src)->effective_frequency = frequency;
-    frequency = (Uint32)((float)frequency *
+    frequency = (uint32_t)((float)frequency *
      audio.output_frequency / 44100);
   }
 
@@ -145,25 +194,25 @@ static void mp_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
   sampled_set_buffer(s_src);
 }
 
-static Uint32 mp_get_order(struct audio_stream *a_src)
+static uint32_t mp_get_order(struct audio_stream *a_src)
 {
   return ((struct modplug_stream *)a_src)->module_data->
    mSoundFile.GetCurrentOrder();
 }
 
-static Uint32 mp_get_position(struct audio_stream *a_src)
+static uint32_t mp_get_position(struct audio_stream *a_src)
 {
   return ((struct modplug_stream *)a_src)->module_data->
    mSoundFile.GetCurrentPos();
 }
 
-static Uint32 mp_get_length(struct audio_stream *a_src)
+static uint32_t mp_get_length(struct audio_stream *a_src)
 {
   return ((struct modplug_stream *)a_src)->module_data->
    mSoundFile.GetMaxPosition();
 }
 
-static Uint32 mp_get_frequency(struct sampled_stream *s_src)
+static uint32_t mp_get_frequency(struct sampled_stream *s_src)
 {
   return ((struct modplug_stream *)s_src)->effective_frequency;
 }
@@ -176,22 +225,24 @@ static void mp_destruct(struct audio_stream *a_src)
 }
 
 static struct audio_stream *construct_modplug_stream(char *filename,
- Uint32 frequency, Uint32 volume, Uint32 repeat)
+ uint32_t frequency, unsigned int volume, boolean repeat)
 {
   ssize_t ext_pos = (ssize_t)strlen(filename) - 4;
   struct audio_stream *ret_val = NULL;
   char *input_buffer;
-  FILE *input_file;
+  vfile *input_file;
 
-  input_file = fopen_unsafe(filename, "rb");
+  input_file = vfopen_unsafe(filename, "rb");
 
   if(input_file)
   {
-    Uint32 file_size = ftell_and_rewind(input_file);
+    size_t file_size = vfilelength(input_file, false);
     ModPlugFile *open_file;
 
+    init_modplug_settings();
+
     input_buffer = (char *)cmalloc(file_size);
-    fread(input_buffer, file_size, 1, input_file);
+    vfread(input_buffer, file_size, 1, input_file);
     open_file = ModPlug_Load(input_buffer, file_size);
 
     if(open_file)
@@ -227,7 +278,7 @@ static struct audio_stream *construct_modplug_stream(char *filename,
       s_spec.get_frequency = mp_get_frequency;
 
       initialize_sampled_stream((struct sampled_stream *)mp_stream, &s_spec,
-       frequency, 2, 0);
+       frequency, 2, false);
 
       initialize_audio_stream((struct audio_stream *)mp_stream, &a_spec,
        volume, repeat);
@@ -236,14 +287,14 @@ static struct audio_stream *construct_modplug_stream(char *filename,
     }
 
     free(input_buffer);
-    fclose(input_file);
+    vfclose(input_file);
   }
 
   return ret_val;
 }
 
 static struct audio_stream *modplug_convert_gdm(char *filename,
- Uint32 frequency, Uint32 volume, Uint32 repeat)
+ uint32_t frequency, unsigned int volume, boolean repeat)
 {
   /* Wrapper for construct_modplug_stream to convert .GDMs to .S3Ms. */
   char translated_filename_dest[MAX_PATH];
@@ -252,6 +303,13 @@ static struct audio_stream *modplug_convert_gdm(char *filename,
 
   /* We know this file has a .gdm extension. */
   int ext_pos = (int)strlen(filename) - 4;
+
+  // FIXME this is garbage and doesn't work. Add a Modplug GDM loader instead.
+  // fsafetranslate here is being misused to find a case-insensitive copy of
+  // the requested filename, which instantly breaks when the file is requested
+  // through the editor listening mod. Furthermore, this pollutes the current
+  // directory and was never a good idea in the first place.
+  return NULL;
 
   /* Get the name of its .s3m counterpart */
   snprintf(new_file, MAX_PATH, "%.*s.s3m", ext_pos, filename);
@@ -288,44 +346,6 @@ static struct audio_stream *modplug_convert_gdm(char *filename,
 
 void init_modplug(struct config_info *conf)
 {
-  if(conf->oversampling_on)
-    audio.mod_settings.mFlags = MODPLUG_ENABLE_OVERSAMPLING;
-
-  audio.mod_settings.mFrequency = audio.output_frequency;
-  audio.mod_settings.mChannels = 2;
-  audio.mod_settings.mBits = 16;
-
-  switch(conf->module_resample_mode)
-  {
-    case RESAMPLE_MODE_NONE:
-    {
-      audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_NEAREST;
-      break;
-    }
-
-    case RESAMPLE_MODE_LINEAR:
-    {
-      audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_LINEAR;
-      break;
-    }
-
-    case RESAMPLE_MODE_CUBIC:
-    {
-      audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_SPLINE;
-      break;
-    }
-
-    case RESAMPLE_MODE_FIR:
-    {
-      audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_FIR;
-      break;
-    }
-  }
-
-  audio.mod_settings.mLoopCount = -1;
-
-  ModPlug_SetSettings(&audio.mod_settings);
-
   audio_ext_register("669", construct_modplug_stream);
   audio_ext_register("amf", construct_modplug_stream);
   audio_ext_register("dsm", construct_modplug_stream);

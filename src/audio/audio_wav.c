@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "audio.h"
+#include "audio_struct.h"
 #include "audio_wav.h"
 #include "ext.h"
 #include "sampled_stream.h"
@@ -44,32 +45,32 @@
 struct wav_stream
 {
   struct sampled_stream s;
-  Uint8 *wav_data;
-  Uint32 data_offset;
-  Uint32 data_length;
-  Uint32 channels;
-  Uint32 bytes_per_sample;
-  Uint32 natural_frequency;
-  Uint32 loop_start;
-  Uint32 loop_end;
+  uint8_t *wav_data;
+  uint32_t data_offset;
+  uint32_t data_length;
+  uint32_t channels;
+  uint32_t bytes_per_sample;
+  uint32_t natural_frequency;
+  uint32_t loop_start;
+  uint32_t loop_end;
   enum wav_format format;
 };
 
-static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
- Uint32 len, Uint32 repeat)
+static uint32_t wav_read_data(struct wav_stream *w_stream,
+ uint8_t * RESTRICT buffer, uint32_t len, boolean repeat)
 {
-  Uint8 *src = (Uint8 *)w_stream->wav_data + w_stream->data_offset;
-  Uint32 data_read = 0;
-  Uint32 read_len = len;
-  Uint32 new_offset = w_stream->data_offset;
-  Uint32 i;
+  const uint8_t *src = (uint8_t *)w_stream->wav_data + w_stream->data_offset;
+  uint32_t data_read = 0;
+  uint32_t read_len = len;
+  uint32_t new_offset = w_stream->data_offset;
+  uint32_t i;
 
   switch(w_stream->format)
   {
     case SAMPLE_S8:
     case SAMPLE_U8:
     {
-      Sint16 *dest = (Sint16 *)buffer;
+      int16_t *dest = (int16_t *)buffer;
 
       read_len /= 2;
 
@@ -96,12 +97,12 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
       if(w_stream->format == SAMPLE_U8)
       {
         for(i = 0; i < read_len; i++)
-          dest[i] = (Sint16)((src[i] - 128) << 8);
+          dest[i] = (int16_t)((src[i] - 128) << 8);
       }
       else
       {
         for(i = 0; i < read_len; i++)
-          dest[i] = (Sint16)(src[i] << 8);
+          dest[i] = (int16_t)(src[i] << 8);
       }
 
       break;
@@ -110,7 +111,7 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
     case SAMPLE_S16LSB:
     case SAMPLE_S16MSB:
     {
-      Uint8 *dest = (Uint8 *) buffer;
+      uint8_t *dest = (uint8_t *)buffer;
 
       new_offset = w_stream->data_offset + read_len;
 
@@ -152,14 +153,14 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
   return data_read;
 }
 
-static Uint32 wav_mix_data(struct audio_stream *a_src, Sint32 *buffer,
- Uint32 len)
+static boolean wav_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer,
+ size_t len)
 {
-  Uint32 read_len = 0;
+  uint32_t read_len = 0;
   struct wav_stream *w_stream = (struct wav_stream *)a_src;
-  Uint32 read_wanted = w_stream->s.allocated_data_length -
+  uint32_t read_wanted = w_stream->s.allocated_data_length -
    w_stream->s.stream_offset;
-  Uint8 *read_buffer = (Uint8 *)w_stream->s.output_data +
+  uint8_t *read_buffer = (uint8_t *)w_stream->s.output_data +
    w_stream->s.stream_offset;
 
   read_len = wav_read_data(w_stream, read_buffer, read_wanted, a_src->repeat);
@@ -183,22 +184,22 @@ static Uint32 wav_mix_data(struct audio_stream *a_src, Sint32 *buffer,
   sampled_mix_data((struct sampled_stream *)w_stream, buffer, len);
 
   if(read_len == 0)
-    return 1;
+    return true;
 
-  return 0;
+  return false;
 }
 
-static void wav_set_volume(struct audio_stream *a_src, Uint32 volume)
+static void wav_set_volume(struct audio_stream *a_src, unsigned int volume)
 {
   a_src->volume = volume * 256 / 255;
 }
 
-static void wav_set_repeat(struct audio_stream *a_src, Uint32 repeat)
+static void wav_set_repeat(struct audio_stream *a_src, boolean repeat)
 {
   a_src->repeat = repeat;
 }
 
-static void wav_set_position(struct audio_stream *a_src, Uint32 position)
+static void wav_set_position(struct audio_stream *a_src, uint32_t position)
 {
   struct wav_stream *w_stream = (struct wav_stream *)a_src;
 
@@ -206,17 +207,17 @@ static void wav_set_position(struct audio_stream *a_src, Uint32 position)
     w_stream->data_offset = position * w_stream->bytes_per_sample;
 }
 
-static void wav_set_loop_start(struct audio_stream *a_src, Uint32 position)
+static void wav_set_loop_start(struct audio_stream *a_src, uint32_t position)
 {
   ((struct wav_stream *)a_src)->loop_start = position;
 }
 
-static void wav_set_loop_end(struct audio_stream *a_src, Uint32 position)
+static void wav_set_loop_end(struct audio_stream *a_src, uint32_t position)
 {
   ((struct wav_stream *)a_src)->loop_end = position;
 }
 
-static void wav_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
+static void wav_set_frequency(struct sampled_stream *s_src, uint32_t frequency)
 {
   if(frequency == 0)
     frequency = ((struct wav_stream *)s_src)->natural_frequency;
@@ -226,31 +227,31 @@ static void wav_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
   sampled_set_buffer(s_src);
 }
 
-static Uint32 wav_get_position(struct audio_stream *a_src)
+static uint32_t wav_get_position(struct audio_stream *a_src)
 {
   struct wav_stream *w_stream = (struct wav_stream *)a_src;
 
   return w_stream->data_offset / w_stream->bytes_per_sample;
 }
 
-static Uint32 wav_get_length(struct audio_stream *a_src)
+static uint32_t wav_get_length(struct audio_stream *a_src)
 {
   struct wav_stream *w_stream = (struct wav_stream *)a_src;
 
   return w_stream->data_length / w_stream->bytes_per_sample;
 }
 
-static Uint32 wav_get_loop_start(struct audio_stream *a_src)
+static uint32_t wav_get_loop_start(struct audio_stream *a_src)
 {
   return ((struct wav_stream *)a_src)->loop_start;
 }
 
-static Uint32 wav_get_loop_end(struct audio_stream *a_src)
+static uint32_t wav_get_loop_end(struct audio_stream *a_src)
 {
   return ((struct wav_stream *)a_src)->loop_end;
 }
 
-static Uint32 wav_get_frequency(struct sampled_stream *s_src)
+static uint32_t wav_get_frequency(struct sampled_stream *s_src)
 {
   return s_src->frequency;
 }
@@ -430,7 +431,7 @@ static boolean load_wav_file(const char *file, struct wav_info *spec)
 {
   int data_size, filesize, riffsize, channels, srate, sbytes, fmt_size;
   int smpl_size, numloops;
-  Uint32 loop_start, loop_end;
+  size_t loop_start, loop_end;
   char *fmt_chunk, *smpl_chunk, tmp_buf[4];
   size_t file_size;
   boolean ret = false;
@@ -609,7 +610,7 @@ exit_close:
 }
 
 struct audio_stream *construct_wav_stream_direct(struct wav_info *w_info,
- Uint32 frequency, Uint32 volume, Uint32 repeat)
+ uint32_t frequency, unsigned int volume, boolean repeat)
 {
   struct wav_stream *w_stream = cmalloc(sizeof(struct wav_stream));
   struct sampled_stream_spec s_spec;
@@ -655,7 +656,7 @@ struct audio_stream *construct_wav_stream_direct(struct wav_info *w_info,
   s_spec.get_frequency = wav_get_frequency;
 
   initialize_sampled_stream((struct sampled_stream *)w_stream, &s_spec,
-    frequency, w_info->channels, 1);
+    frequency, w_info->channels, true);
 
   initialize_audio_stream((struct audio_stream *)w_stream, &a_spec,
     volume, repeat);
@@ -664,7 +665,7 @@ struct audio_stream *construct_wav_stream_direct(struct wav_info *w_info,
 }
 
 static struct audio_stream *construct_wav_stream(char *filename,
- Uint32 frequency, Uint32 volume, Uint32 repeat)
+ uint32_t frequency, unsigned int volume, boolean repeat)
 {
   struct wav_info w_info;
   memset(&w_info, 0, sizeof(struct wav_info));
@@ -681,7 +682,7 @@ static struct audio_stream *construct_wav_stream(char *filename,
 }
 
 static struct audio_stream *construct_sam_stream(char *filename,
- Uint32 frequency, Uint32 volume, Uint32 repeat)
+ uint32_t frequency, unsigned int volume, boolean repeat)
 {
   struct wav_info w_info;
   memset(&w_info, 0, sizeof(struct wav_info));
