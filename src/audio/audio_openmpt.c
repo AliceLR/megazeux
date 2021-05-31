@@ -28,6 +28,7 @@
 
 #include "../const.h"
 #include "../util.h"
+#include "../io/vio.h"
 
 #include <libopenmpt/libopenmpt.h>
 #include <libopenmpt/libopenmpt_stream_callbacks_file.h>
@@ -203,22 +204,47 @@ static void omp_log(const char *message, void *data)
      fprintf(mzxerr, "%s\n", message);
 }
 
+static size_t omp_read_fn(void *stream, void *dest, size_t bytes)
+{
+  vfile *vf = (vfile *)stream;
+  return vfread(dest, 1, bytes, vf);
+}
+
+static int omp_seek_fn(void *stream, int64_t offset, int whence)
+{
+  vfile *vf = (vfile *)stream;
+  return vfseek(vf, offset, whence);
+}
+
+static int64_t omp_tell_fn(void *stream)
+{
+  vfile *vf = (vfile *)stream;
+  return vftell(vf);
+}
+
+static const struct openmpt_stream_callbacks omp_callbacks =
+{
+  omp_read_fn,
+  omp_seek_fn,
+  omp_tell_fn
+};
+
 static struct audio_stream *construct_openmpt_stream(char *filename,
  uint32_t frequency, unsigned int volume, boolean repeat)
 {
-  struct audio_stream *ret_val = NULL;
-  FILE *input_file;
+  vfile *input_file;
   uint32_t row_pos;
   uint32_t ord;
   uint32_t i;
 
-  input_file = fopen_unsafe(filename, "rb");
+  input_file = vfopen_unsafe(filename, "rb");
 
   if(input_file)
   {
-    openmpt_module *open_file =
-     openmpt_module_create(openmpt_stream_get_file_callbacks(), input_file,
-     &omp_log, NULL, NULL);
+    openmpt_module *open_file = openmpt_module_create2(omp_callbacks, input_file,
+     &omp_log, NULL, NULL, NULL, NULL, NULL, NULL);
+
+    vfclose(input_file);
 
     if(open_file)
     {
@@ -265,13 +291,10 @@ static struct audio_stream *construct_openmpt_stream(char *filename,
       initialize_audio_stream((struct audio_stream *)omp_stream, &a_spec,
        volume, repeat);
 
-      ret_val = (struct audio_stream *)omp_stream;
+      return (struct audio_stream *)omp_stream;
     }
-
-    fclose(input_file);
   }
-
-  return ret_val;
+  return NULL;
 }
 
 void init_openmpt(struct config_info *conf)
