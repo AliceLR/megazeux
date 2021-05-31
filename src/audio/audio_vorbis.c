@@ -29,6 +29,8 @@
 #include "ext.h"
 #include "sampled_stream.h"
 
+#include "../io/vio.h"
+
 #ifdef CONFIG_TREMOR
 #include <tremor/ivorbiscodec.h>
 #include <tremor/ivorbisfile.h>
@@ -204,26 +206,59 @@ static void vorbis_destruct(struct audio_stream *a_src)
   sampled_destruct(a_src);
 }
 
+static size_t vorbis_read_fn(void *ptr, size_t size, size_t count, void *stream)
+{
+  vfile *vf = (vfile *)stream;
+  return vfread(ptr, size, count, vf);
+}
+
+static int vorbis_seek_fn(void *stream, ogg_int64_t offset, int whence)
+{
+  vfile *vf = (vfile *)stream;
+  return vfseek(vf, offset, whence);
+}
+
+static int vorbis_close_fn(void *stream)
+{
+  vfile *vf = (vfile *)stream;
+  return vfclose(vf);
+}
+
+static long vorbis_tell_fn(void *stream)
+{
+  vfile *vf = (vfile *)stream;
+  return vftell(vf);
+}
+
+static const ov_callbacks vorbis_callbacks =
+{
+  vorbis_read_fn,
+  vorbis_seek_fn,
+  vorbis_close_fn,
+  vorbis_tell_fn,
+};
+
 static struct audio_stream *construct_vorbis_stream(char *filename,
  uint32_t frequency, unsigned int volume, boolean repeat)
 {
-  FILE *input_file = fopen_unsafe(filename, "rb");
-  struct audio_stream *ret_val = NULL;
+  vfile *input_file;
   vorbis_comment *comment;
   int loopstart = -1;
   int looplength = -1;
   int loopend = -1;
   int i;
 
+  // Using a large file buffer at minimum is pretty much mandatory for OGGs to
+  // work on the 3DS and Wii U. Since 32k isn't much to ask for most platforms
+  // that can support OGGs in the first place, just unconditionally use it.
+  // TODO: VFS full file caching (useful for 3DS/Wii U, mandatory for DJGPP).
+  input_file = vfopen_unsafe_ext(filename, "rb", V_LARGE_BUFFER);
+
   if(input_file)
   {
     OggVorbis_File open_file;
 
-#if defined(CONFIG_3DS) || defined(CONFIG_WIIU)
-    setvbuf(input_file, NULL, _IOFBF, 32768);
-#endif
-
-    if(!ov_open(input_file, &open_file, NULL, 0))
+    if(!ov_open_callbacks(input_file, &open_file, NULL, 0, vorbis_callbacks))
     {
       vorbis_info *vorbis_file_info = ov_info(&open_file, -1);
 
@@ -292,20 +327,13 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
         initialize_audio_stream((struct audio_stream *)v_stream, &a_spec,
          volume, repeat);
 
-        ret_val = (struct audio_stream *)v_stream;
+        return (struct audio_stream *)v_stream;
       }
-      else
-      {
-        ov_clear(&open_file);
-      }
+      ov_clear(&open_file);
     }
-    else
-    {
-      fclose(input_file);
-    }
+    vfclose(input_file);
   }
-
-  return ret_val;
+  return NULL;
 }
 
 void init_vorbis(struct config_info *conf)
