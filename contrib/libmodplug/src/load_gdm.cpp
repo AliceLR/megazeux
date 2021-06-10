@@ -246,11 +246,11 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 	if (nOrders > MAX_ORDERS) nOrders = MAX_ORDERS;
 	if (nSamples >= MAX_SAMPLES) nSamples = MAX_SAMPLES - 1;
 
-	if ((ordersPos < sizeof(FILEHEADERGDM)) || (ordersPos + nOrders > dwMemLength) ||
-	 (patternsPos < sizeof(FILEHEADERGDM)) || (patternsPos > dwMemLength) ||
-	 (samplesPos < sizeof(FILEHEADERGDM)) || (samplesPos > dwMemLength) ||
+	if ((ordersPos < sizeof(FILEHEADERGDM)) || (ordersPos >= dwMemLength) || (ordersPos + nOrders > dwMemLength) ||
+	 (patternsPos < sizeof(FILEHEADERGDM)) || (patternsPos >= dwMemLength) ||
+	 (samplesPos < sizeof(FILEHEADERGDM)) || (samplesPos >= dwMemLength) ||
 	 (samplesPos + sizeof(SAMPLEGDM) * pfh->nSamples > dwMemLength) ||
-	 (sampleDataPos < sizeof(FILEHEADERGDM)) || (sampleDataPos > dwMemLength))
+	 (sampleDataPos < sizeof(FILEHEADERGDM)) || (sampleDataPos >= dwMemLength))
 		return FALSE;
 
 	// Most GDMs were converted from S3M and BWSB generally behaves like an S3M
