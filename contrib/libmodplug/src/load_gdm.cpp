@@ -30,7 +30,7 @@ typedef struct tagFILEHEADERGDM
 	BYTE tracker_ver_minor;
 	BYTE panning[32];
 	BYTE globalvol;
-	BYTE default_tempo;
+	BYTE default_speed;
 	BYTE default_bpm;
 	BYTE origfmt[2];
 	BYTE ordersPos[4];
@@ -254,8 +254,8 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 	m_nMinPeriod = 64;
 	m_nMaxPeriod = 32767;
 	m_nDefaultGlobalVolume = pfh->globalvol << 2;
-	m_nDefaultTempo = pfh->default_tempo;
-	m_nDefaultSpeed = pfh->default_bpm;
+	m_nDefaultTempo = pfh->default_bpm;
+	m_nDefaultSpeed = pfh->default_speed;
 	m_nChannels = 0;
 	m_nSamples = pfh->nSamples + 1;
 
