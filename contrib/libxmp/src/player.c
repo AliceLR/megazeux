@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -37,8 +37,6 @@
  * Claudio's fix: implementing effect K
  */
 
-#include <stdlib.h>
-#include <string.h>
 #include "virtual.h"
 #include "period.h"
 #include "effects.h"
@@ -530,7 +528,12 @@ static inline void read_row(struct context_data *ctx, int pat, int row)
 		}
 
 		if (check_delay(ctx, &ev, chn) == 0) {
-			if (!f->rowdelay_set || f->rowdelay > 0) {
+			/* rowdelay_set bit 1 is set only in the first tick of the row
+			 * event if the delay causes the tick count resets to 0. We test
+			 * it to read row events only in the start of the row. (see the
+			 * OpenMPT test case FineVolColSlide.it)
+			 */
+			if (!f->rowdelay_set || ((f->rowdelay_set & ROWDELAY_FIRST_FRAME) && f->rowdelay > 0)) {
 				libxmp_read_event(ctx, &ev, chn);
 #ifndef LIBXMP_CORE_PLAYER
 				libxmp_med_hold_hack(ctx, pat, chn, row);
@@ -1110,11 +1113,10 @@ static void update_volume(struct context_data *ctx, int chn)
 			 * ever executed on the first tick -- not on multiples
 			 * of the first tick if there is a pattern delay. 
 			 */
-			if (!f->rowdelay_set || f->rowdelay_set & 2) {
+			if (!f->rowdelay_set || f->rowdelay_set & ROWDELAY_FIRST_FRAME) {
 				xc->volume += xc->vol.fslide2;
 			}
 		}
-		f->rowdelay_set &= ~2;
 #endif
 
 		if (TEST(TRK_FVSLIDE)) {
@@ -1592,9 +1594,11 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
 #ifndef LIBXMP_CORE_PLAYER
     err2:
 	free(p->xc_data);
+	p->xc_data = NULL;
 #endif
     err1:
 	free(f->loop);
+	f->loop = NULL;
     err:
 	return ret;
 }
@@ -1720,6 +1724,8 @@ int xmp_play_frame(xmp_context opaque)
 	for (i = 0; i < p->virt.virt_channels; i++) {
 		play_channel(ctx, i);
 	}
+
+	f->rowdelay_set &= ~ROWDELAY_FIRST_FRAME;
 
 	p->frame_time = m->time_factor * m->rrate / p->bpm;
 	p->current_time += p->frame_time;

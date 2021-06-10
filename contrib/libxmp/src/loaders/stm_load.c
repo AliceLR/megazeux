@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -176,7 +176,7 @@ static int stm_load(struct module_data *m, HIO_HANDLE * f, const int start)
 		sfh.sub.v2.tempo = hio_read8(f);	/* Playback tempo */
 		sfh.sub.v2.patterns = hio_read8(f);	/* Number of patterns */
 		sfh.sub.v2.gvol = hio_read8(f);		/* Global volume */
-		hio_read(&sfh.sub.v2.rsvd2, 13, 1, f);	/* Reserved */
+		hio_read(sfh.sub.v2.rsvd2, 13, 1, f);	/* Reserved */
 		mod->chn = 4;
 		mod->pat = sfh.sub.v2.patterns;
 		mod->spd = (version < 221) ? LSN(sfh.sub.v2.tempo / 10) : MSN(sfh.sub.v2.tempo);
@@ -191,7 +191,10 @@ static int stm_load(struct module_data *m, HIO_HANDLE * f, const int start)
 			D_(D_CRIT "Wrong number of orders: %d (max %d)", sfh.sub.v1.ordnum, XMP_MAX_MOD_LENGTH);
 			return -1;
 		}
-		sfh.sub.v1.patnum = hio_read16l(f);	/* Number of patterns */
+		if ((sfh.sub.v1.patnum = hio_read16l(f)) > XMP_MAX_MOD_LENGTH) {	/* Number of patterns */
+			D_(D_CRIT "Wrong number of patterns: %d (max %d)", sfh.sub.v1.patnum, XMP_MAX_MOD_LENGTH);
+			return -1;
+		}
 		sfh.sub.v1.srate = hio_read16l(f);	/* Sample rate? */
 		sfh.sub.v1.tempo = hio_read8(f);	/* Playback tempo */
 		if ((sfh.sub.v1.channels = hio_read8(f)) != 4) {	/* Number of channels */
@@ -213,7 +216,7 @@ static int stm_load(struct module_data *m, HIO_HANDLE * f, const int start)
 	}
 
 	for (i = 0; i < mod->ins; i++) {
-		hio_read(&sfh.ins[i].name, 12, 1, f);	/* Instrument name */
+		hio_read(sfh.ins[i].name, 12, 1, f);	/* Instrument name */
 		sfh.ins[i].id = hio_read8(f);		/* Id=0 */
 		sfh.ins[i].idisk = hio_read8(f);	/* Instrument disk */
 		sfh.ins[i].rsvd1 = hio_read16l(f);	/* Reserved */
@@ -279,7 +282,8 @@ static int stm_load(struct module_data *m, HIO_HANDLE * f, const int start)
 			      &mod->xxi[i].sub[0].fin);
 	}
 
-	hio_read(mod->xxo, 1, mod->len, f);
+	if (hio_read(mod->xxo, 1, mod->len, f) < mod->len)
+		return -1;
 
 	for (i = 0; i < mod->len; i++)
 		if (mod->xxo[i] >= mod->pat)
@@ -297,6 +301,9 @@ static int stm_load(struct module_data *m, HIO_HANDLE * f, const int start)
 
 	for (i = 0; i < mod->pat; i++) {
 		if (libxmp_alloc_pattern_tracks(mod, i, 64) < 0)
+			return -1;
+
+		if (hio_error(f))
 			return -1;
 
 		for (j = 0; j < 64 * mod->chn; j++) {
@@ -317,7 +324,7 @@ static int stm_load(struct module_data *m, HIO_HANDLE * f, const int start)
 					event->note = 0;
 				else
 					event->note = 1 + LSN(b) + 12 * (3 + MSN(b));
-				
+
 				b = hio_read8(f);
 				event->vol = b & 0x07;
 				event->ins = (b & 0xf8) >> 3;

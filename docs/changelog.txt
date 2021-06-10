@@ -148,6 +148,8 @@ USERS
 + Optimized ccheck 3 sprite collision performance by generating
   visibility masks for characters directly instead of using an
   intermediate render and skipping pixel checks for blank chars.
++ libxmp playback improvements for GDM, AMF, and OctaMED modules
+  as well as general stability improvements.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
@@ -174,6 +176,7 @@ DEVELOPERS
 + Added architecture width detection for RISC-V RV32 and MIPS64.
 + Replaced the macro-based mixers in sampled_stream.c with more
   maintainable template-based mixers.
++ Updated libxmp to 4.5.0.
 
 
 November 22nd, 2020 - MZX 2.92f
