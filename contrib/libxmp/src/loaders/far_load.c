@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -220,7 +220,7 @@ static int far_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 	    if ((j % mod->chn) == 0 && (j / mod->chn) == brk)
 		event->f2t = FX_BREAK;
-	
+
 	    note = hio_read8(f);
 	    ins = hio_read8(f);
 	    vol = hio_read8(f);
@@ -284,10 +284,17 @@ static int far_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		break;
 	    }
 	}
+	if(hio_error(f)) {
+		D_(D_CRIT "read error at pat %d", i);
+		return -1;
+	}
     }
 
     mod->ins = -1;
-    hio_read(sample_map, 1, 8, f);
+    if (hio_read(sample_map, 1, 8, f) < 8) {
+	D_(D_CRIT "read error at sample map");
+	return -1;
+    }
     for (i = 0; i < 64; i++) {
 	if (sample_map[i / 8] & (1 << (i % 8)))
 		mod->ins = i;

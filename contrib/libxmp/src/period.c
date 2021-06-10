@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -23,8 +23,6 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdio.h>
-#include <string.h>
 #include "common.h"
 #include "period.h"
 
@@ -137,7 +135,7 @@ static uint16 pt_period_table[16][36] = {
 #ifndef M_LN2
 #define M_LN2	0.69314718055994530942
 #endif
-#if !defined(HAVE_ROUND) || defined(_MSC_VER) || defined(__WATCOMC__)
+#if !defined(HAVE_ROUND) || defined(_MSC_VER) || defined(__WATCOMC__) || defined(__DJGPP__)
 static inline double libxmp_round(double val)
 {
 	return (val >= 0.0)? floor(val + 0.5) : ceil(val - 0.5);

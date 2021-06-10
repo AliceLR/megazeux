@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,7 +20,6 @@
  * THE SOFTWARE.
  */
 
-#include <stdlib.h>
 #include "common.h"
 #include "player.h"
 #include "virtual.h"
@@ -208,7 +207,6 @@ void libxmp_med_play_extras(struct context_data *ctx, struct channel_data *xc, i
 			ce->vp = temp;
 			loop = 1;
 			goto next_vt;
-			break;
 		case 0xfa:	/* JWS */
 			jws = VT;
 			break;
@@ -237,7 +235,6 @@ void libxmp_med_play_extras(struct context_data *ctx, struct channel_data *xc, i
 		}
 
 	    skip_vol:
-
 		/* volume envelope */
 		if (ce->env_wav >= 0) {
 			int sid = mod->xxi[xc->ins].sub[ce->env_wav].sid;
@@ -328,7 +325,6 @@ void libxmp_med_play_extras(struct context_data *ctx, struct channel_data *xc, i
 		}
 
 	    skip_wav:
-
 		xc->period += ce->wv;
 	}
 
@@ -386,10 +382,10 @@ int libxmp_med_new_module_extras(struct module_data *m)
 
 	me = (struct med_module_extras *)m->extra;
 
-        me->vol_table = calloc(sizeof(uint8 *), mod->ins);
+	me->vol_table = calloc(sizeof(uint8 *), mod->ins);
 	if (me->vol_table == NULL)
 		return -1;
-        me->wav_table = calloc(sizeof(uint8 *), mod->ins);
+	me->wav_table = calloc(sizeof(uint8 *), mod->ins);
 	if (me->wav_table == NULL)
 		return -1;
 
@@ -404,7 +400,7 @@ void libxmp_med_release_module_extras(struct module_data *m)
 
 	me = (struct med_module_extras *)m->extra;
 
-        if (me->vol_table) {
+	if (me->vol_table) {
 		for (i = 0; i < mod->ins; i++)
 			free(me->vol_table[i]);
 		free(me->vol_table);
@@ -414,7 +410,7 @@ void libxmp_med_release_module_extras(struct module_data *m)
 		for (i = 0; i < mod->ins; i++)
 			free(me->wav_table[i]);
 		free(me->wav_table);
-        }
+	}
 
 	free(m->extra);
 	m->extra = NULL;
@@ -424,7 +420,7 @@ void libxmp_med_extras_process_fx(struct context_data *ctx, struct channel_data 
 			int chn, uint8 note, uint8 fxt, uint8 fxp, int fnum)
 {
 	switch (fxt) {
-        case FX_MED_HOLD:
+	case FX_MED_HOLD:
 		MED_CHANNEL_EXTRAS((*xc))->hold_count++;
 		MED_CHANNEL_EXTRAS((*xc))->hold = 1;
 		break;

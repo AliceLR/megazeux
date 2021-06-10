@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -175,7 +175,10 @@ static int ice_load(struct module_data *m, HIO_HANDLE * f, const int start)
 
 		for (j = 0; j < mod->xxt[i]->rows; j++) {
 			event = &mod->xxt[i]->event[j];
-			hio_read(ev, 1, 4, f);
+			if (hio_read(ev, 1, 4, f) < 4) {
+				D_(D_CRIT "read error at track %d", i);
+				return -1;
+			}
 			libxmp_decode_protracker_event(event, ev);
 
 			if (event->fxt == FX_SPEED) {

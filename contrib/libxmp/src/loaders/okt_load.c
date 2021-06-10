@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -63,6 +63,7 @@ struct local_data {
 	int idx[36];
 	int pattern;
 	int sample;
+	int samples;
 	int has_cmod;
 	int has_samp;
 	int has_slen;
@@ -186,6 +187,7 @@ static int get_samp(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 			j++;
 		}
 	}
+	data->samples = j;
 
 	return 0;
 }
@@ -206,7 +208,7 @@ static int get_slen(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	struct local_data *data = (struct local_data *)parm;
 
 	/* Sanity check */
-	if (data->has_slen || size < 2) {
+	if (data->has_slen || !data->has_cmod || size < 2) {
 		return -1;
 	}
 	data->has_slen = 1;
@@ -249,6 +251,11 @@ static int get_pbod(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	struct xmp_event *e;
 	uint16 rows;
 	int j;
+
+	/* Sanity check */
+	if (!data->has_slen || !data->has_cmod) {
+		return -1;
+	}
 
 	if (data->pattern >= mod->pat)
 		return 0;
@@ -317,7 +324,7 @@ static int get_sbod(struct module_data *m, int size, HIO_HANDLE *f, void *parm)
 	int flags = 0;
 	int i, sid;
 
-	if (data->sample >= mod->ins)
+	if (data->sample >= data->samples)
 		return 0;
 
 	D_(D_INFO "Stored samples: %d", mod->smp);

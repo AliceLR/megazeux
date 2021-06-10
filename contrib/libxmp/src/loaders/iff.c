@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,9 +20,6 @@
  * THE SOFTWARE.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "common.h"
 #include "list.h"
 #include "iff.h"
@@ -165,12 +162,18 @@ int libxmp_iff_register(iff_handle opaque, const char *id,
 {
 	struct iff_data *data = (struct iff_data *)opaque;
 	struct iff_info *f;
+	int i = 0;
 
 	f = malloc(sizeof(struct iff_info));
 	if (f == NULL)
 		return -1;
 
-	strncpy(f->id, id, 4);
+	/* Note: previously was an strncpy */
+	for (; i < 4 && id && id[i]; i++)
+		f->id[i] = id[i];
+	for (; i < 4; i++)
+		f->id[i] = '\0';
+
 	f->loader = loader;
 
 	list_add_tail(&f->list, &data->iff_list);

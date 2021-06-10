@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -25,7 +25,6 @@
  * from ftp://ftp.funet.fi/pub/amiga/fish/301-400/ff349
  */
 
-#include <assert.h>
 #include "loader.h"
 
 #define MAGIC_MED3	MAGIC4('M','E','D',3)

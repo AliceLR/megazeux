@@ -1,7 +1,6 @@
 #ifndef LIBXMP_FORMAT_H
 #define LIBXMP_FORMAT_H
 
-#include <stdio.h>
 #include "common.h"
 #include "hio.h"
 
@@ -15,7 +14,7 @@ const char *const *format_list(void);
 
 #ifndef LIBXMP_CORE_PLAYER
 
-#define NUM_FORMATS 52
+#define NUM_FORMATS 53
 #define NUM_PW_FORMATS 43
 
 #ifndef LIBXMP_NO_PROWIZARD

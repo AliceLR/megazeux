@@ -39,6 +39,7 @@ install := \
 	${dest_docs}/CREDITS \
 	${dest_docs}/Changelog \
 	${dest_include}/xmp.h \
+	${dest_src}/callbackio.h \
 	${dest_src}/common.h \
 	${dest_src}/control.c \
 	${dest_src}/dataio.c \
@@ -79,8 +80,6 @@ install := \
 	${dest_src}/tempfile.h \
 	${dest_src}/virtual.c \
 	${dest_src}/virtual.h \
-	${dest_src}/xfnmatch.c \
-	${dest_src}/xfnmatch.h \
 	${dest_loaders}/common.c \
 	${dest_loaders}/iff.c \
 	${dest_loaders}/iff.h \
