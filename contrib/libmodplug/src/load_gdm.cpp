@@ -11,8 +11,6 @@
 #include "stdafx.h"
 #include "sndfile.h"
 
-//#pragma warning(disable:4244)
-
 static const DWORD GDM_SIG = 0xfe4d4447; // GDM\xFE
 static const DWORD GMFS_SIG = 0x53464d47; // GMFS
 
@@ -42,7 +40,7 @@ typedef struct tagFILEHEADERGDM
 	BYTE nSamples;
 	BYTE messagePos[4];
 	BYTE messageLength[4];
-	BYTE ignore[16];
+	BYTE ignore[12];
 } FILEHEADERGDM;
 
 typedef struct tagSAMPLEGDM
@@ -240,12 +238,19 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 	DWORD sampleDataPos = fixu32(pfh->sampleDataPos);
 	DWORD messagePos = fixu32(pfh->messagePos);
 	DWORD messageLen = fixu32(pfh->messageLength);
+	UINT nPatterns = pfh->nPatterns + 1;
+	UINT nOrders = pfh->nOrders + 1;
+	UINT nSamples = pfh->nSamples + 1;
 
-	if ((!ordersPos) || (ordersPos > dwMemLength) ||
-	 (!patternsPos) || (patternsPos > dwMemLength) || (pfh->nPatterns >= 240) ||
-	 (!samplesPos) || (samplesPos > dwMemLength) ||
+	if (nPatterns > MAX_PATTERNS) nPatterns = MAX_PATTERNS;
+	if (nOrders > MAX_ORDERS) nOrders = MAX_ORDERS;
+	if (nSamples >= MAX_SAMPLES) nSamples = MAX_SAMPLES - 1;
+
+	if ((ordersPos < sizeof(FILEHEADERGDM)) || (ordersPos + nOrders > dwMemLength) ||
+	 (patternsPos < sizeof(FILEHEADERGDM)) || (patternsPos > dwMemLength) ||
+	 (samplesPos < sizeof(FILEHEADERGDM)) || (samplesPos > dwMemLength) ||
 	 (samplesPos + sizeof(SAMPLEGDM) * pfh->nSamples > dwMemLength) ||
-	 (!sampleDataPos) || (sampleDataPos > dwMemLength))
+	 (sampleDataPos < sizeof(FILEHEADERGDM)) || (sampleDataPos > dwMemLength))
 		return FALSE;
 
 	// Most GDMs were converted from S3M and BWSB generally behaves like an S3M
@@ -257,7 +262,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 	m_nDefaultTempo = pfh->default_bpm;
 	m_nDefaultSpeed = pfh->default_speed;
 	m_nChannels = 0;
-	m_nSamples = pfh->nSamples + 1;
+	m_nSamples = nSamples;
 
 	// Get initial panning.
 	for (UINT i = 0; i < 32; i++)
@@ -282,7 +287,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 
 	// Samples.
 	psmp = (const SAMPLEGDM *)(lpStream + samplesPos);
-	for (UINT nins = 0; nins < m_nSamples; nins++)
+	for (UINT nins = 0; nins < nSamples; nins++)
 	{
 		const SAMPLEGDM &smp = psmp[nins];
 		MODINSTRUMENT &ins = Ins[nins + 1];
@@ -331,8 +336,9 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 	memcpy(Order, lpStream + ordersPos, pfh->nOrders + 1);
 
 	// Scan patterns to get pattern row counts and the real module channel count.
+	// Also do bounds checks to make sure the patterns can be safely loaded.
 	pos = patternsPos;
-	for (UINT npat = 0; npat <= pfh->nPatterns && pos + 2 < dwMemLength; npat++)
+	for (UINT npat = 0; npat < nPatterns && pos + 2 <= dwMemLength; npat++)
 	{
 		UINT patLen = fixu16(lpStream + pos);
 		DWORD patEnd = pos + patLen;
@@ -358,13 +364,17 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 
 				// Note and sample.
 				if (dat & 0x20)
+				{
+					if (pos + 2 > patEnd) return FALSE;
 					pos += 2;
+				}
 
 				// Effects.
 				if (dat & 0x40)
 				{
 					do
 					{
+						if (pos + 2 > patEnd) return FALSE;
 						dat = lpStream[pos];
 						pos += 2;
 					} while (dat & 0x20);
@@ -372,15 +382,12 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 			}
 		}
 
-		if (rows < 64)
-			rows = 64;
-
 		PatternSize[npat] = rows;
 	}
 
 	// Load patterns.
 	pos = patternsPos;
-	for (UINT npat = 0; npat <= pfh->nPatterns && pos + 2 < dwMemLength; npat++)
+	for (UINT npat = 0; npat < nPatterns && pos + 2 <= dwMemLength; npat++)
 	{
 		UINT patLen = fixu16(lpStream + pos);
 		DWORD patEnd = pos + patLen;
@@ -391,7 +398,6 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 		Patterns[npat] = AllocatePattern(PatternSize[npat], m_nChannels);
 		if (!Patterns[npat]) break;
 
-		// Load the pattern.
 		MODCOMMAND *m = Patterns[npat];
 		while (pos < patEnd)
 		{
@@ -409,7 +415,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 					BYTE note = lpStream[pos++];
 					BYTE smpl = lpStream[pos++];
 
-					if (note) // This can be blank (see STARDSTM.GDM).
+					if (note) // This can be 0, indicating no note (see STARDSTM.GDM).
 					{
 						BYTE octave = (note & 0x70) >> 4;
 						note = octave * 12 + (note & 0x0f) + 12;
@@ -438,7 +444,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 
 	// Reading Samples
 	pos = sampleDataPos;
-	for (UINT n = 0; n < m_nSamples; n++)
+	for (UINT n = 0; n < nSamples; n++)
 	{
 		MODINSTRUMENT &ins = Ins[n + 1];
 		UINT len = ins.nLength;
