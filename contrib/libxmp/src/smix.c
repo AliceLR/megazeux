@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,7 +20,6 @@
  * THE SOFTWARE.
  */
 
-#include <stdlib.h>
 #include "common.h"
 #include "period.h"
 #include "player.h"
@@ -89,6 +88,7 @@ int xmp_start_smix(xmp_context opaque, int chn, int smp)
 
     err1:
 	free(smix->xxi);
+	smix->xxi = NULL;
     err:
 	return -XMP_ERROR_INTERNAL;
 }
@@ -326,4 +326,6 @@ void xmp_end_smix(xmp_context opaque)
 
 	free(smix->xxs);
 	free(smix->xxi);
+	smix->xxs = NULL;
+	smix->xxi = NULL;
 }

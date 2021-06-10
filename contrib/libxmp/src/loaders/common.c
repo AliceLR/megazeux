@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -21,16 +21,14 @@
  */
 
 #include <ctype.h>
-#include <sys/types.h>
-#include <stdarg.h>
 
 #ifndef LIBXMP_CORE_PLAYER
-#include <limits.h>
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include <limits.h>
 #elif defined(__OS2__) || defined(__EMX__)
 #define INCL_DOS
 #define INCL_DOSERRORS
@@ -60,6 +58,12 @@ int libxmp_init_instrument(struct module_data *m)
 
 	if (mod->smp > 0) {
 		int i;
+		/* Sanity check */
+		if (mod->smp > MAX_SAMPLES) {
+			D_(D_CRIT "sample count %d exceeds maximum (%d)",
+			   mod->smp, MAX_SAMPLES);
+			return -1;
+		}
 
 		mod->xxs = calloc(sizeof (struct xmp_sample), mod->smp);
 		if (mod->xxs == NULL)
@@ -73,6 +77,54 @@ int libxmp_init_instrument(struct module_data *m)
 		}
 	}
 
+	return 0;
+}
+
+/* Sample number adjustment (originally by Vitamin/CAIG).
+ * Only use this AFTER a previous usage of libxmp_init_instrument,
+ * and don't use this to free samples that have already been loaded. */
+int libxmp_realloc_samples(struct module_data *m, int new_size)
+{
+	struct xmp_module *mod = &m->mod;
+	struct xmp_sample *xxs;
+	struct extra_sample_data *xtra;
+
+	/* Sanity check */
+	if (new_size < 0)
+		return -1;
+
+	if (new_size == 0) {
+		/* Don't rely on implementation-defined realloc(x,0) behavior. */
+		mod->smp = 0;
+		free(mod->xxs);
+		mod->xxs = NULL;
+		free(m->xtra);
+		m->xtra = NULL;
+		return 0;
+	}
+
+	xxs = realloc(mod->xxs, sizeof(struct xmp_sample) * new_size);
+	if (xxs == NULL)
+		return -1;
+	mod->xxs = xxs;
+
+	xtra = realloc(m->xtra, sizeof(struct extra_sample_data) * new_size);
+	if (xtra == NULL)
+		return -1;
+	m->xtra = xtra;
+
+	if (new_size > mod->smp) {
+		int clear_size = new_size - mod->smp;
+		int i;
+
+		memset(xxs + mod->smp, 0, sizeof(struct xmp_sample) * clear_size);
+		memset(xtra + mod->smp, 0, sizeof(struct extra_sample_data) * clear_size);
+
+		for (i = mod->smp; i < new_size; i++) {
+			m->xtra[i].c5spd = m->c4rate;
+		}
+	}
+	mod->smp = new_size;
 	return 0;
 }
 
@@ -184,19 +236,6 @@ int libxmp_alloc_pattern_tracks_long(struct xmp_module *mod, int num, int rows)
 		return -1;
 
 	return 0;
-}
-
-/* Sample number adjustment by Vitamin/CAIG */
-struct xmp_sample *libxmp_realloc_samples(struct xmp_sample *buf, int *size, int new_size)
-{
-	buf = realloc(buf, sizeof (struct xmp_sample) * new_size);
-	if (buf == NULL)
-		return NULL;
-	if (new_size > *size)
-		memset(buf + *size, 0, sizeof (struct xmp_sample) * (new_size - *size));
-	*size = new_size;
-
-	return buf;
 }
 
 char *libxmp_instrument_name(struct xmp_module *mod, int i, uint8 *r, int n)
