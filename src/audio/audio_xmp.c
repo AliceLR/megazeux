@@ -29,6 +29,7 @@
 
 #include "../const.h"
 #include "../util.h"
+#include "../io/vio.h"
 
 //#ifdef __WIN32__
 //#define BUILDING_STATIC
@@ -242,6 +243,32 @@ static void audio_xmp_destruct(struct audio_stream *a_src)
   sampled_destruct(a_src);
 }
 
+static unsigned long read_func(void *dest, unsigned long len, unsigned long nmemb, void *priv)
+{
+  vfile *vf = (vfile *)priv;
+  return vfread(dest, len, nmemb, vf);
+}
+
+static int seek_func(void *priv, long offset, int whence)
+{
+  vfile *vf = (vfile *)priv;
+  return vfseek(vf, offset, whence);
+}
+
+static long tell_func(void *priv)
+{
+  vfile *vf = (vfile *)priv;
+  return vftell(vf);
+}
+
+static struct xmp_callbacks xmp_callbacks =
+{
+  read_func,
+  seek_func,
+  tell_func,
+  NULL
+};
+
 static struct audio_stream *construct_xmp_stream(char *filename,
  uint32_t frequency, unsigned int volume, boolean repeat)
 {
@@ -251,17 +278,9 @@ static struct audio_stream *construct_xmp_stream(char *filename,
   size_t row_pos;
   int i;
 
-  // Open a file handle here and pass xmp the handle. This is a workaround so
-  // platform-specific MZX path hacks will work without modifying libxmp.
-  FILE *fp = fopen_unsafe(filename, "rb");
-  size_t file_len;
-  if(!fp)
+  vfile *vf = vfopen_unsafe_ext(filename, "rb", V_LARGE_BUFFER);
+  if(!vf)
     return NULL;
-
-#if defined(CONFIG_WIIU)
-  setvbuf(fp, NULL, _IOFBF, 32768);
-#endif
-  file_len = ftell_and_rewind(fp);
 
   ctx = xmp_create_context();
   if(ctx)
@@ -271,7 +290,7 @@ static struct audio_stream *construct_xmp_stream(char *filename,
     /**
      * This function does not close the provided file pointer.
      */
-    if(!xmp_load_module_from_file(ctx, fp, file_len))
+    if(!xmp_load_module_from_callbacks(ctx, vf, xmp_callbacks))
     {
       struct xmp_stream *xmp_stream = ccalloc(1, sizeof(struct xmp_stream));
       struct sampled_stream_spec s_spec;
@@ -324,12 +343,12 @@ static struct audio_stream *construct_xmp_stream(char *filename,
       initialize_audio_stream((struct audio_stream *)xmp_stream, &a_spec,
        volume, repeat);
 
-      fclose(fp);
+      vfclose(vf);
       return (struct audio_stream *)xmp_stream;
     }
     xmp_free_context(ctx);
   }
-  fclose(fp);
+  vfclose(vf);
   return NULL;
 }
 
