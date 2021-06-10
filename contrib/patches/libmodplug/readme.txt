@@ -1,5 +1,6 @@
 Apply the patches in this directory to bring a stock libmodplug-0.8.9.0
-distribution in line with the local copy used by MegaZeux.
+distribution in line with the local copy used by MegaZeux. Additionally,
+load_gdm.cpp needs to be copied from the local MegaZeux libmodplug.
 
 In addition to the patches, the following files should be removed, as
 they are no longer necessary:
