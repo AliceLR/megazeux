@@ -72,7 +72,7 @@ static WORD fixu16(const BYTE *val)
 	return (val[1] << 8) | val[0];
 }
 
-static DWORD fixu32(const BYTE (&val)[4])
+static DWORD fixu32(const BYTE val[4])
 {
 	return (val[3] << 24) | (val[2] << 16) | (val[1] << 8) | val[0];
 }
