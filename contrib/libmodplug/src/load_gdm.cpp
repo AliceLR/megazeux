@@ -230,6 +230,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 	const SAMPLEGDM *psmp;
 	BYTE sflags[256];
 	DWORD pos;
+	UINT npat;
 
 	if ((!lpStream) || (dwMemLength < sizeof(FILEHEADERGDM))) return FALSE;
 	if ((fixu32(pfh->sig) != GDM_SIG) || (fixu32(pfh->sig2) != GMFS_SIG)) return FALSE;
@@ -338,7 +339,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 	// Scan patterns to get pattern row counts and the real module channel count.
 	// Also do bounds checks to make sure the patterns can be safely loaded.
 	pos = patternsPos;
-	for (UINT npat = 0; npat < nPatterns && pos + 2 <= dwMemLength; npat++)
+	for (npat = 0; npat < nPatterns && pos + 2 <= dwMemLength; npat++)
 	{
 		UINT patLen = fixu16(lpStream + pos);
 		DWORD patEnd = pos + patLen;
@@ -387,7 +388,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 
 	// Load patterns.
 	pos = patternsPos;
-	for (UINT npat = 0; npat < nPatterns && pos + 2 <= dwMemLength; npat++)
+	for (npat = 0; npat < nPatterns && pos + 2 <= dwMemLength; npat++)
 	{
 		UINT patLen = fixu16(lpStream + pos);
 		DWORD patEnd = pos + patLen;
