@@ -300,22 +300,20 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 
 		UINT flags = smp.flags;
 
-		if (len > MAX_SAMPLE_LENGTH) len = MAX_SAMPLE_LENGTH;
-		if (loopend > len) loopend = len;
-		if (loopstart > loopend) loopstart = loopend = 0;
-
-		sflags[nins] = 0;
+		// Note: BWSB and 2GDM don't support LZW, stereo samples, sample panning.
 		if (flags & SAMPLEGDM::S_16BIT)
 		{
-			sflags[nins] |= RS_PCM16U;
+			sflags[nins] = RS_PCM16U;
 			// Due to a 2GDM bug, the sample size is halved.
 			// (Note BWSB doesn't even check for these anyway.)
 			len /= 2;
 		}
 		else
-			sflags[nins] |= RS_PCM8U;
+			sflags[nins] = RS_PCM8U;
 
-		// Note: BWSB and 2GDM don't support LZW, stereo samples, sample panning.
+		if (len > MAX_SAMPLE_LENGTH) len = MAX_SAMPLE_LENGTH;
+		if (loopend > len) loopend = len;
+		if (loopstart > loopend) loopstart = loopend = 0;
 
 		ins.nLength = len;
 		ins.nLoopStart = loopstart;
@@ -452,8 +450,11 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 		UINT len = ins.nLength;
 
 		if (pos >= dwMemLength) break;
-		if (len) ReadSample(&ins, sflags[n], (LPSTR)(lpStream + pos), dwMemLength - pos);
-		pos += len;
+		if (len)
+		{
+			len = ReadSample(&ins, sflags[n], (LPSTR)(lpStream + pos), dwMemLength - pos);
+			pos += len;
+		}
 	}
 
 	return TRUE;
