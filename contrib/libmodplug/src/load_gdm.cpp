@@ -252,7 +252,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 	if ((ordersPos < sizeof(FILEHEADERGDM)) || (ordersPos >= dwMemLength) || (ordersPos + nOrders > dwMemLength) ||
 	    (patternsPos < sizeof(FILEHEADERGDM)) || (patternsPos >= dwMemLength) ||
 	    (samplesPos < sizeof(FILEHEADERGDM)) || (samplesPos >= dwMemLength) ||
-	    (samplesPos + sizeof(SAMPLEGDM) * pfh->nSamples > dwMemLength) ||
+	    (samplesPos + sizeof(SAMPLEGDM) * nSamples > dwMemLength) ||
 	    (sampleDataPos < sizeof(FILEHEADERGDM)) || (sampleDataPos >= dwMemLength))
 		return FALSE;
 
