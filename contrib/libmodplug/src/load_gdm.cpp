@@ -134,7 +134,7 @@ static void GDM_TranslateEffect(const FILEHEADERGDM *pfh, MODCOMMAND &ev, UINT c
 		} else
 		{
 			ev.command = CMD_VOLUME;
-			ev.param = param;
+			ev.param = (param > 64) ? 64 : param;
 		}
 		break;
 
@@ -206,11 +206,11 @@ static void GDM_TranslateEffect(const FILEHEADERGDM *pfh, MODCOMMAND &ev, UINT c
 			if (!ev.volcmd && channel == 0)
 			{
 				ev.volcmd = VOLCMD_PANNING;
-				ev.vol = (param << 2) + 2;
+				ev.vol = ((param & 0x0f) << 2) + 2;
 			} else
 			{
 				ev.command = CMD_PANNING8;
-				ev.param = (param << 3) + 4;
+				ev.param = ((param & 0x0f) << 3) + 4;
 			}
 			break;
 		}
