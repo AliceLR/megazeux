@@ -308,6 +308,8 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 			// Due to a 2GDM bug, the sample size is halved.
 			// (Note BWSB doesn't even check for these anyway.)
 			len /= 2;
+			loopstart /= 2;
+			loopend /= 2;
 		}
 		else
 			sflags[nins] = RS_PCM8U;
