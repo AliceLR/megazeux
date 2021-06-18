@@ -19,14 +19,14 @@ index 091e25fd..2a3c3147 100644
  	BOOL ReadABC(LPCBYTE lpStream, DWORD dwMemLength);
  	BOOL TestABC(LPCBYTE lpStream, DWORD dwMemLength);
 diff --git a/src/sndfile.cpp b/src/sndfile.cpp
-index cc84dee6..684f1fcd 100644
---- a/src/sndfile.cpp
-+++ b/src/sndfile.cpp
-@@ -165,6 +165,7 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
+index cc84dee6..d1730910 100644
+--- a/contrib/libmodplug/src/sndfile.cpp
++++ b/contrib/libmodplug/src/sndfile.cpp
+@@ -161,6 +161,7 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
+ 		 && (!ReadUlt(lpStream, dwMemLength))
+ 		 //&& (!ReadDMF(lpStream, dwMemLength))
+ 		 && (!ReadDSM(lpStream, dwMemLength))
++		 && (!ReadGDM(lpStream, dwMemLength))
+ 		 //&& (!ReadUMX(lpStream, dwMemLength))
  		 && (!ReadAMF(lpStream, dwMemLength))
  		 //&& (!ReadPSM(lpStream, dwMemLength))
- 		 //&& (!ReadMT2(lpStream, dwMemLength))
-+		 && (!ReadGDM(lpStream, dwMemLength))
- #endif // MODPLUG_BASIC_SUPPORT
- 		 && (!ReadMod(lpStream, dwMemLength))) m_nType = MOD_TYPE_NONE;
- #ifdef MMCMP_SUPPORT
