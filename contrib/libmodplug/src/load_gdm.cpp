@@ -281,7 +281,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 	memcpy(m_szNames[0], pfh->name, 32);
 	m_szNames[0][31] = '\0';
 
-	if ((messagePos < dwMemLength) && (messagePos + messageLen < dwMemLength))
+	if ((messagePos < dwMemLength) && (messageLen <= dwMemLength - messagePos))
 	{
 		m_lpszSongComments = new char[messageLen + 1];
 		memcpy(m_lpszSongComments, lpStream + messagePos, messageLen);
