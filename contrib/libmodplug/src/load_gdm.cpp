@@ -254,7 +254,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 	    (samplesPos < sizeof(FILEHEADERGDM)) || (samplesPos >= dwMemLength) ||
 	    (samplesPos + sizeof(SAMPLEGDM) * nSamples > dwMemLength) ||
 	    (sampleDataPos < sizeof(FILEHEADERGDM)) || (sampleDataPos >= dwMemLength))
-		return FALSE;
+		return TRUE;
 
 	// Most GDMs were converted from S3M and BWSB generally behaves like an S3M
 	// player, so assuming S3M behavior and quirks is a fairly safe bet.
@@ -348,7 +348,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 		UINT rows = 0;
 		UINT channel;
 
-		if (patEnd > dwMemLength) return FALSE;
+		if (patEnd > dwMemLength) break;
 
 		pos += 2;
 		while (pos < patEnd)
@@ -368,7 +368,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 				// Note and sample.
 				if (dat & 0x20)
 				{
-					if (pos + 2 > patEnd) return FALSE;
+					if (pos + 2 > patEnd) goto BadPattern;
 					pos += 2;
 				}
 
@@ -377,7 +377,7 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 				{
 					do
 					{
-						if (pos + 2 > patEnd) return FALSE;
+						if (pos + 2 > patEnd) goto BadPattern;
 						dat = lpStream[pos];
 						pos += 2;
 					} while (dat & 0x20);
@@ -387,6 +387,10 @@ BOOL CSoundFile::ReadGDM(const BYTE *lpStream, DWORD dwMemLength)
 
 		PatternSize[npat] = rows;
 	}
+BadPattern:
+	// Discard truncated/corrupted patterns (if any).
+	if (npat < nPatterns)
+		nPatterns = npat;
 
 	// Load patterns.
 	pos = patternsPos;
