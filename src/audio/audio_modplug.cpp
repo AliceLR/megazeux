@@ -22,7 +22,6 @@
 #include <modplug.h>
 #include <stdafx.h>
 #include <sndfile.h>
-#include <gdm2s3m.h>
 
 #include "audio.h"
 #include "audio_modplug.h"
@@ -293,64 +292,13 @@ static struct audio_stream *construct_modplug_stream(char *filename,
   return ret_val;
 }
 
-static struct audio_stream *modplug_convert_gdm(char *filename,
- uint32_t frequency, unsigned int volume, boolean repeat)
-{
-  /* Wrapper for construct_modplug_stream to convert .GDMs to .S3Ms. */
-  char translated_filename_dest[MAX_PATH];
-  char new_file[MAX_PATH];
-  int have_s3m = 0;
-
-  /* We know this file has a .gdm extension. */
-  int ext_pos = (int)strlen(filename) - 4;
-
-  // FIXME this is garbage and doesn't work. Add a Modplug GDM loader instead.
-  // fsafetranslate here is being misused to find a case-insensitive copy of
-  // the requested filename, which instantly breaks when the file is requested
-  // through the editor listening mod. Furthermore, this pollutes the current
-  // directory and was never a good idea in the first place.
-  return NULL;
-
-  /* Get the name of its .s3m counterpart */
-  snprintf(new_file, MAX_PATH, "%.*s.s3m", ext_pos, filename);
-  new_file[MAX_PATH - 1] = '\0';
-
-  /* If the destination S3M already exists, check its size. If it's
-   * non-zero in size, we can load it.
-   */
-  if(!fsafetranslate(new_file, translated_filename_dest, MAX_PATH))
-  {
-    FILE *f = fopen_unsafe(translated_filename_dest, "r");
-    long file_len = ftell_and_rewind(f);
-
-    fclose(f);
-    if(file_len > 0)
-      have_s3m = 1;
-  }
-
-  /* In the case we need to convert the GDM, we need to find
-   * the real source path for it. Translate accordingly.
-   */
-  if(!have_s3m && !fsafetranslate(filename, translated_filename_dest, MAX_PATH))
-  {
-    if(!convert_gdm_s3m(translated_filename_dest, new_file))
-      have_s3m = 1;
-  }
-
-  /* If we have an S3M, we can now load it. Otherwise, abort.*/
-  if(have_s3m)
-    return construct_modplug_stream(new_file, frequency, volume, repeat);
-
-  return NULL;
-}
-
 void init_modplug(struct config_info *conf)
 {
   audio_ext_register("669", construct_modplug_stream);
   audio_ext_register("amf", construct_modplug_stream);
   audio_ext_register("dsm", construct_modplug_stream);
   audio_ext_register("far", construct_modplug_stream);
-  audio_ext_register("gdm", modplug_convert_gdm);
+  audio_ext_register("gdm", construct_modplug_stream);
   audio_ext_register("it", construct_modplug_stream);
   audio_ext_register("med", construct_modplug_stream);
   audio_ext_register("mod", construct_modplug_stream);
