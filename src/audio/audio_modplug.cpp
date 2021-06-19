@@ -226,7 +226,7 @@ static void mp_destruct(struct audio_stream *a_src)
 static struct audio_stream *construct_modplug_stream(char *filename,
  uint32_t frequency, unsigned int volume, boolean repeat)
 {
-  char *input_buffer;
+  void *input_buffer;
   vfile *input_file;
 
   input_file = vfopen_unsafe(filename, "rb");
@@ -237,7 +237,7 @@ static struct audio_stream *construct_modplug_stream(char *filename,
 
     init_modplug_settings();
 
-    input_buffer = (char *)cmalloc(file_size);
+    input_buffer = cmalloc(file_size);
     vfread(input_buffer, file_size, 1, input_file);
     open_file = ModPlug_Load(input_buffer, file_size);
 
