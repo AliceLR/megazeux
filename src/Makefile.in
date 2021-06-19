@@ -278,9 +278,6 @@ core_cobjs := ${core_obj}/render_layer.o ${core_cobjs}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
-core_cflags += -I${gdm2s3m_src}
-core_cxxflags += -I${gdm2s3m_src}
-core_cobjs += ${gdm2s3m_objs}
 core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
 core_cxxobjs += ${audio_obj}/audio_modplug.o ${libmodplug_objs}
 endif
