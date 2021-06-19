@@ -226,13 +226,10 @@ static void mp_destruct(struct audio_stream *a_src)
 static struct audio_stream *construct_modplug_stream(char *filename,
  uint32_t frequency, unsigned int volume, boolean repeat)
 {
-  ssize_t ext_pos = (ssize_t)strlen(filename) - 4;
-  struct audio_stream *ret_val = NULL;
   char *input_buffer;
   vfile *input_file;
 
   input_file = vfopen_unsafe(filename, "rb");
-
   if(input_file)
   {
     size_t file_size = vfilelength(input_file, false);
@@ -244,6 +241,9 @@ static struct audio_stream *construct_modplug_stream(char *filename,
     vfread(input_buffer, file_size, 1, input_file);
     open_file = ModPlug_Load(input_buffer, file_size);
 
+    free(input_buffer);
+    vfclose(input_file);
+
     if(open_file)
     {
       struct modplug_stream *mp_stream =
@@ -252,14 +252,6 @@ static struct audio_stream *construct_modplug_stream(char *filename,
       struct audio_stream_spec a_spec;
 
       mp_stream->module_data = open_file;
-
-      if((ext_pos > 0) &&
-       !strcasecmp(filename + ext_pos, ".wav"))
-      {
-        open_file->mSoundFile.Ins[1].nC4Speed = frequency;
-        open_file->mSoundFile.Ins[2].nC4Speed = frequency;
-        frequency = 0;
-      }
 
       memset(&a_spec, 0, sizeof(struct audio_stream_spec));
       a_spec.mix_data     = mp_mix_data;
@@ -282,14 +274,11 @@ static struct audio_stream *construct_modplug_stream(char *filename,
       initialize_audio_stream((struct audio_stream *)mp_stream, &a_spec,
        volume, repeat);
 
-      ret_val = (struct audio_stream *)mp_stream;
+      return (struct audio_stream *)mp_stream;
     }
-
-    free(input_buffer);
-    vfclose(input_file);
   }
 
-  return ret_val;
+  return NULL;
 }
 
 void init_modplug(struct config_info *conf)
