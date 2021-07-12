@@ -177,6 +177,8 @@ DEVELOPERS
 + Replaced the macro-based mixers in sampled_stream.c with more
   maintainable template-based mixers.
 + Updated libxmp to 4.5.0.
++ Relicensed ccv from GPL 3 to GPL 2+ to match the rest of MZX.
+  (Lancer-X)
 
 
 November 22nd, 2020 - MZX 2.92f
