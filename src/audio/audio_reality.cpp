@@ -80,7 +80,7 @@ struct rad_stream
 };
 
 static boolean rad_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer,
- size_t len)
+ size_t frames, unsigned int channels)
 {
   struct rad_stream *rad_stream = (struct rad_stream *)a_src;
   uint32_t read_wanted = rad_stream->s.allocated_data_length -
@@ -107,7 +107,7 @@ static boolean rad_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
     }
   }
 
-  sampled_mix_data((struct sampled_stream *)a_src, buffer, len);
+  sampled_mix_data((struct sampled_stream *)a_src, buffer, frames, channels);
   return rval;
 }
 

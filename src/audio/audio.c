@@ -180,10 +180,10 @@ void initialize_audio_stream(struct audio_stream *a_src,
   UNLOCK();
 }
 
-static void clip_buffer(int16_t *dest, int32_t *src, int len)
+static void clip_buffer(int16_t *dest, int32_t *src, size_t len)
 {
   int32_t cur_sample;
-  int i;
+  size_t i;
 
   for(i = 0; i < len; i++)
   {
@@ -198,7 +198,12 @@ static void clip_buffer(int16_t *dest, int32_t *src, int len)
   }
 }
 
-void audio_callback(int16_t *stream, int len)
+/**
+ * Audio callback for threaded software mixing. The output buffer must be
+ * 16-bit stereo and the length value must be the size of the buffer in bytes
+ * (i.e. the frame count times 4).
+ */
+void audio_callback(int16_t *stream, size_t len)
 {
   boolean destroy_flag;
   struct audio_stream *current_astream;
@@ -209,14 +214,15 @@ void audio_callback(int16_t *stream, int len)
 
   if(current_astream)
   {
-    memset(audio.mix_buffer, 0, len * 2);
+    size_t frames = len / (2 * sizeof(int16_t));
+    memset(audio.mix_buffer, 0, frames * 2 * sizeof(int32_t));
 
     while(current_astream != NULL)
     {
       struct audio_stream *next_astream = current_astream->next;
 
       destroy_flag = current_astream->mix_data(current_astream,
-       audio.mix_buffer, len);
+       audio.mix_buffer, frames, 2);
 
       if(destroy_flag)
       {
@@ -231,7 +237,7 @@ void audio_callback(int16_t *stream, int len)
       current_astream = next_astream;
     }
 
-    clip_buffer(stream, audio.mix_buffer, len / 2);
+    clip_buffer(stream, audio.mix_buffer, frames * 2);
   }
 
   UNLOCK();

@@ -82,7 +82,7 @@ void initialize_audio_stream(struct audio_stream *a_src,
  struct audio_stream_spec *a_spec, unsigned int volume, boolean repeat);
 
 // Platform-related functions.
-void audio_callback(int16_t *stream, int len);
+void audio_callback(int16_t *stream, size_t len);
 void init_audio_platform(struct config_info *conf);
 void quit_audio_platform(void);
 

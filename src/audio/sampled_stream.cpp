@@ -22,6 +22,7 @@
 
 // Common functions for sampled streams.
 
+#include <assert.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -305,15 +306,18 @@ void sampled_set_buffer(struct sampled_stream *s_src)
 }
 
 void sampled_mix_data(struct sampled_stream *s_src,
- int32_t * RESTRICT dest_buffer, size_t len)
+ int32_t * RESTRICT dest_buffer, size_t dest_frames, unsigned int dest_channels)
 {
   uint8_t *output_data = (uint8_t *)s_src->output_data;
   int16_t *src_buffer = (int16_t *)(output_data + s_src->prologue_length);
-  size_t write_len = len / 2;
+  size_t write_len = dest_frames * dest_channels;
   int volume = ((struct audio_stream *)s_src)->volume;
   int resample_mode = audio.master_resample_mode + 1;
   enum mixer_volume   use_volume   = DYNAMIC;
   enum mixer_channels use_channels = STEREO;
+
+  // MZX currently only supports stereo output.
+  assert(dest_channels == 2);
 
   if(s_src->frequency == audio.output_frequency)
     resample_mode = FLAT;

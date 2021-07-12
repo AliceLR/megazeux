@@ -62,7 +62,7 @@ struct vorbis_stream
 };
 
 static boolean vorbis_mix_data(struct audio_stream *a_src,
- int32_t * RESTRICT buffer, size_t len)
+ int32_t * RESTRICT buffer, size_t frames, unsigned int channels)
 {
   uint32_t read_len = 0;
   struct vorbis_stream *v_stream = (struct vorbis_stream *)a_src;
@@ -128,7 +128,7 @@ static boolean vorbis_mix_data(struct audio_stream *a_src,
     read_buffer += read_len;
   } while((read_len < read_wanted) && read_len);
 
-  sampled_mix_data((struct sampled_stream *)v_stream, buffer, len);
+  sampled_mix_data((struct sampled_stream *)v_stream, buffer, frames, channels);
 
   if(read_len == 0)
     return true;

@@ -155,7 +155,7 @@ static uint32_t wav_read_data(struct wav_stream *w_stream,
 }
 
 static boolean wav_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer,
- size_t len)
+ size_t frames, unsigned int channels)
 {
   uint32_t read_len = 0;
   struct wav_stream *w_stream = (struct wav_stream *)a_src;
@@ -182,7 +182,7 @@ static boolean wav_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
     }
   }
 
-  sampled_mix_data((struct sampled_stream *)w_stream, buffer, len);
+  sampled_mix_data((struct sampled_stream *)w_stream, buffer, frames, channels);
 
   if(read_len == 0)
     return true;

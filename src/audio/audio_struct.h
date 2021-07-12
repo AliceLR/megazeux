@@ -64,7 +64,8 @@ struct audio_stream
   unsigned int volume;
   boolean is_spot_sample;
   boolean repeat;
-  boolean   (* mix_data)(struct audio_stream *a_src, int32_t * RESTRICT buffer, size_t len);
+  boolean   (* mix_data)(struct audio_stream *a_src, int32_t * RESTRICT buffer,
+                         size_t dest_frames, unsigned int dest_channels);
   void      (* set_volume)(struct audio_stream *a_src, unsigned int volume);
   void      (* set_repeat)(struct audio_stream *a_src, boolean repeat);
   void      (* set_order)(struct audio_stream *a_src, uint32_t order);
@@ -83,7 +84,8 @@ struct audio_stream
 
 struct audio_stream_spec
 {
-  boolean   (* mix_data)(struct audio_stream *a_src, int32_t * RESTRICT buffer, size_t len);
+  boolean   (* mix_data)(struct audio_stream *a_src, int32_t * RESTRICT buffer,
+                         size_t dest_frames, unsigned int dest_channels);
   void      (* set_volume)(struct audio_stream *a_src, unsigned int volume);
   void      (* set_repeat)(struct audio_stream *a_src, boolean repeat);
   void      (* set_order)(struct audio_stream *a_src, uint32_t order);

@@ -67,7 +67,7 @@ static int get_xmp_resample_mode(void)
 }
 
 static boolean audio_xmp_mix_data(struct audio_stream *a_src,
- int32_t * RESTRICT buffer, size_t len)
+ int32_t * RESTRICT buffer, size_t frames, unsigned int channels)
 {
   struct xmp_stream *stream = (struct xmp_stream *)a_src;
   size_t read_wanted = stream->s.allocated_data_length -
@@ -84,7 +84,7 @@ static boolean audio_xmp_mix_data(struct audio_stream *a_src,
     r_val = true;
   }
 
-  sampled_mix_data((struct sampled_stream *)stream, buffer, len);
+  sampled_mix_data((struct sampled_stream *)stream, buffer, frames, channels);
 
   return r_val;
 }

@@ -27,6 +27,7 @@
 
 #include "../configure.h"
 
+#include <assert.h>
 #include <string.h>
 
 struct pc_speaker_stream
@@ -44,7 +45,7 @@ struct pc_speaker_stream
 };
 
 static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer,
- size_t len)
+ size_t dest_frames, unsigned int dest_channels)
 {
   struct pc_speaker_stream *pcs_stream = (struct pc_speaker_stream *)a_src;
   uint32_t offset = 0, i;
@@ -55,6 +56,9 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
   uint32_t sfx_scale_half = sfx_scale / 2;
   int32_t *mix_dest_ptr = buffer;
   int16_t cur_sample;
+
+  // MZX currently only supports stereo output.
+  assert(dest_channels == 2);
 
   /**
    * Cancel the current playing note if PC speaker effects were turned off or
@@ -67,9 +71,9 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
     sample_duration = 0;
   }
 
-  if(sample_duration >= len / 4)
+  if(sample_duration >= dest_frames)
   {
-    end_duration = len / 4;
+    end_duration = dest_frames;
     pcs_stream->last_duration = sample_duration - end_duration;
     sample_duration = end_duration;
   }
@@ -100,10 +104,10 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
 
   offset += sample_duration;
 
-  if(offset < len / 4)
+  if(offset < dest_frames)
     pcs_stream->last_playing = 0;
 
-  while(offset < len / 4)
+  while(offset < dest_frames)
   {
     int playing, frequency, note_duration;
     sfx_next_note(&playing, &frequency, &note_duration);
@@ -118,9 +122,9 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
     sample_duration = (uint32_t)((float)audio.output_frequency / 500 *
      pcs_stream->note_duration);
 
-    if(offset + sample_duration >= len / 4)
+    if(offset + sample_duration >= dest_frames)
     {
-      end_duration = (len / 4) - offset;
+      end_duration = dest_frames - offset;
       pcs_stream->last_duration = sample_duration - end_duration;
       pcs_stream->last_playing = pcs_stream->playing;
       pcs_stream->last_frequency = pcs_stream->frequency;
@@ -157,7 +161,7 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
   return 0;
 }
 
-static void pcs_set_volume(struct audio_stream *a_src, uint32_t volume)
+static void pcs_set_volume(struct audio_stream *a_src, unsigned int volume)
 {
   ((struct pc_speaker_stream *)a_src)->volume = volume;
 }

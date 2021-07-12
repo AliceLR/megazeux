@@ -55,7 +55,7 @@ struct sampled_stream_spec
 
 void sampled_set_buffer(struct sampled_stream *s_src);
 void sampled_mix_data(struct sampled_stream *s_src,
- int32_t * RESTRICT dest_buffer, size_t len);
+ int32_t * RESTRICT dest_buffer, size_t dest_frames, unsigned int dest_channels);
 void sampled_destruct(struct audio_stream *a_src);
 
 void initialize_sampled_stream(struct sampled_stream *s_src,

@@ -66,7 +66,7 @@ static int omp_get_resample_mode(void)
 }
 
 static boolean omp_mix_data(struct audio_stream *a_src, int32_t *buffer,
- size_t len)
+ size_t frames, unsigned int channels)
 {
   struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
   struct sampled_stream *s = (struct sampled_stream *)a_src;
@@ -85,7 +85,7 @@ static boolean omp_mix_data(struct audio_stream *a_src, int32_t *buffer,
     r_val = true;
   }
 
-  sampled_mix_data(s, buffer, len);
+  sampled_mix_data(s, buffer, frames, channels);
 
   return r_val;
 }

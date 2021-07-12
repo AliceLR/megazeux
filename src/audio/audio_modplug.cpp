@@ -94,7 +94,7 @@ static void init_modplug_settings(void)
 }
 
 static boolean mp_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer,
- size_t len)
+ size_t frames, unsigned int channels)
 {
   size_t read_len;
   struct modplug_stream *mp_stream = (struct modplug_stream *)a_src;
@@ -137,7 +137,7 @@ static boolean mp_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer
     read_len = 0;
   }
 
-  sampled_mix_data((struct sampled_stream *)mp_stream, buffer, len);
+  sampled_mix_data((struct sampled_stream *)mp_stream, buffer, frames, channels);
 
   return r_val;
 }

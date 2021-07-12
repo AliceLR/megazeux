@@ -168,7 +168,7 @@ static boolean mm_position_to_order_row(struct mikmod_stream *mm_stream,
 }
 
 static boolean mm_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer,
- size_t len)
+ size_t frames, unsigned int channels)
 {
   struct mikmod_stream *mm_stream = (struct mikmod_stream *)a_src;
   uint32_t read_wanted = mm_stream->s.allocated_data_length -
@@ -177,7 +177,7 @@ static boolean mm_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer
    mm_stream->s.stream_offset;
 
   VC_WriteBytes((SBYTE *)read_buffer, read_wanted);
-  sampled_mix_data((struct sampled_stream *)mm_stream, buffer, len);
+  sampled_mix_data((struct sampled_stream *)mm_stream, buffer, frames, channels);
   return false;
 }
 
