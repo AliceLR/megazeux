@@ -57,6 +57,7 @@ struct vorbis_stream
   struct sampled_stream s;
   OggVorbis_File vorbis_file_handle;
   vorbis_info *vorbis_file_info;
+  vfile *input_file;
   uint32_t loop_start;
   uint32_t loop_end;
 };
@@ -203,6 +204,7 @@ static void vorbis_destruct(struct audio_stream *a_src)
 {
   struct vorbis_stream *v_stream = (struct vorbis_stream *)a_src;
   ov_clear(&(v_stream->vorbis_file_handle));
+  vfclose(v_stream->input_file);
   sampled_destruct(a_src);
 }
 
@@ -218,12 +220,6 @@ static int vorbis_seek_fn(void *stream, ogg_int64_t offset, int whence)
   return vfseek(vf, offset, whence);
 }
 
-static int vorbis_close_fn(void *stream)
-{
-  vfile *vf = (vfile *)stream;
-  return vfclose(vf);
-}
-
 static long vorbis_tell_fn(void *stream)
 {
   vfile *vf = (vfile *)stream;
@@ -234,7 +230,7 @@ static const ov_callbacks vorbis_callbacks =
 {
   vorbis_read_fn,
   vorbis_seek_fn,
-  vorbis_close_fn,
+  NULL,
   vorbis_tell_fn,
 };
 
@@ -271,6 +267,7 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
 
         v_stream->vorbis_file_handle = open_file;
         v_stream->vorbis_file_info = vorbis_file_info;
+        v_stream->input_file = input_file;
 
         v_stream->loop_start = 0;
         v_stream->loop_end = 0;
