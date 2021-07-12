@@ -18,6 +18,7 @@
  */
 
 #include "audio.h"
+#include "audio_struct.h"
 
 #include "../util.h"
 
@@ -35,7 +36,7 @@ static SDL_AudioDeviceID audio_device;
 
 static void sdl_audio_callback(void *userdata, Uint8 *stream, int len)
 {
-  audio_callback((Sint16 *)stream, len);
+  audio_callback((int16_t *)stream, len);
 }
 
 void init_audio_platform(struct config_info *conf)

@@ -22,38 +22,43 @@
 
 #include "audio.h"
 #include "audio_pcs.h"
+#include "audio_struct.h"
 #include "sfx.h"
 
 #include "../configure.h"
 
+#include <assert.h>
 #include <string.h>
 
 struct pc_speaker_stream
 {
   struct audio_stream a;
-  Uint32 volume;
-  Uint32 playing;
-  Uint32 frequency;
-  Sint32 last_frequency;
-  Uint32 note_duration;
-  Uint32 last_duration;
-  Uint32 last_playing;
-  Uint32 sample_cutoff;
-  Uint32 last_increment_buffer;
+  uint32_t volume;
+  uint32_t playing;
+  uint32_t frequency;
+  uint32_t last_frequency;
+  uint32_t note_duration;
+  uint32_t last_duration;
+  uint32_t last_playing;
+  uint32_t sample_cutoff;
+  uint32_t last_increment_buffer;
 };
 
-static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
- Uint32 len)
+static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer,
+ size_t dest_frames, unsigned int dest_channels)
 {
   struct pc_speaker_stream *pcs_stream = (struct pc_speaker_stream *)a_src;
-  Uint32 offset = 0, i;
-  Uint32 sample_duration = pcs_stream->last_duration;
-  Uint32 end_duration;
-  Uint32 increment_value, increment_buffer;
-  Uint32 sfx_scale = (pcs_stream->volume ? pcs_stream->volume + 1 : 0) * 32;
-  Uint32 sfx_scale_half = sfx_scale / 2;
-  Sint32 *mix_dest_ptr = buffer;
-  Sint16 cur_sample;
+  uint32_t offset = 0, i;
+  uint32_t sample_duration = pcs_stream->last_duration;
+  uint32_t end_duration;
+  uint32_t increment_value, increment_buffer;
+  uint32_t sfx_scale = (pcs_stream->volume ? pcs_stream->volume + 1 : 0) * 32;
+  uint32_t sfx_scale_half = sfx_scale / 2;
+  int32_t *mix_dest_ptr = buffer;
+  int16_t cur_sample;
+
+  // MZX currently only supports stereo output.
+  assert(dest_channels == 2);
 
   /**
    * Cancel the current playing note if PC speaker effects were turned off or
@@ -66,9 +71,9 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
     sample_duration = 0;
   }
 
-  if(sample_duration >= len / 4)
+  if(sample_duration >= dest_frames)
   {
-    end_duration = len / 4;
+    end_duration = dest_frames;
     pcs_stream->last_duration = sample_duration - end_duration;
     sample_duration = end_duration;
   }
@@ -76,14 +81,14 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
   if(pcs_stream->last_playing)
   {
     increment_value =
-     (Uint32)((float)pcs_stream->last_frequency /
+     (uint32_t)((float)pcs_stream->last_frequency /
      (audio.output_frequency) * 4294967296.0);
 
     increment_buffer = pcs_stream->last_increment_buffer;
 
     for(i = 0; i < sample_duration; i++)
     {
-      cur_sample = (Uint32)((increment_buffer & 0x80000000) >> 31) *
+      cur_sample = (uint32_t)((increment_buffer & 0x80000000) >> 31) *
        sfx_scale - sfx_scale_half;
       mix_dest_ptr[0] += cur_sample;
       mix_dest_ptr[1] += cur_sample;
@@ -99,10 +104,10 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
 
   offset += sample_duration;
 
-  if(offset < len / 4)
+  if(offset < dest_frames)
     pcs_stream->last_playing = 0;
 
-  while(offset < len / 4)
+  while(offset < dest_frames)
   {
     int playing, frequency, note_duration;
     sfx_next_note(&playing, &frequency, &note_duration);
@@ -114,12 +119,12 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
     if(pcs_stream->note_duration < 1)
       pcs_stream->note_duration = 1;
 
-    sample_duration = (Uint32)((float)audio.output_frequency / 500 *
+    sample_duration = (uint32_t)((float)audio.output_frequency / 500 *
      pcs_stream->note_duration);
 
-    if(offset + sample_duration >= len / 4)
+    if(offset + sample_duration >= dest_frames)
     {
-      end_duration = (len / 4) - offset;
+      end_duration = dest_frames - offset;
       pcs_stream->last_duration = sample_duration - end_duration;
       pcs_stream->last_playing = pcs_stream->playing;
       pcs_stream->last_frequency = pcs_stream->frequency;
@@ -132,13 +137,13 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
     if(pcs_stream->playing)
     {
       increment_value =
-       (Uint32)((float)pcs_stream->frequency /
+       (uint32_t)((float)pcs_stream->frequency /
        audio.output_frequency * 4294967296.0);
       increment_buffer = 0;
 
       for(i = 0; i < sample_duration; i++)
       {
-        cur_sample = (Uint32)((increment_buffer & 0x80000000) >> 31) *
+        cur_sample = (uint32_t)((increment_buffer & 0x80000000) >> 31) *
          sfx_scale - sfx_scale_half;
         mix_dest_ptr[0] += cur_sample;
         mix_dest_ptr[1] += cur_sample;
@@ -156,7 +161,7 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
   return 0;
 }
 
-static void pcs_set_volume(struct audio_stream *a_src, Uint32 volume)
+static void pcs_set_volume(struct audio_stream *a_src, unsigned int volume)
 {
   ((struct pc_speaker_stream *)a_src)->volume = volume;
 }

@@ -22,12 +22,14 @@
 
 // Common functions for sampled streams.
 
+#include <assert.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "audio.h"
+#include "audio_struct.h"
 #include "sampled_stream.h"
 
 #define FP_SHIFT      13
@@ -249,43 +251,41 @@ static void mixer_function(struct sampled_stream *s_src,
 
 static void sampled_negative_threshold(struct sampled_stream *s_src)
 {
-  Sint32 negative_threshold =
-   ((s_src->frequency_delta + FP_AND) & ~FP_AND);
+  int32_t negative_threshold = ((s_src->frequency_delta + FP_AND) & ~FP_AND);
 
   if(s_src->sample_index < -negative_threshold)
   {
     s_src->sample_index += negative_threshold;
     s_src->negative_comp =
-     (Uint32)(negative_threshold >> FP_SHIFT) * s_src->channels * 2;
+     (size_t)(negative_threshold >> FP_SHIFT) * s_src->channels * 2;
     s_src->stream_offset += s_src->negative_comp;
   }
 }
 
 void sampled_set_buffer(struct sampled_stream *s_src)
 {
-  Uint32 prologue_length = 4;
-  Uint32 epilogue_length = 12;
-  Uint32 bytes_per_sample = 2 * s_src->channels;
-  Uint32 frequency = s_src->frequency;
-  Uint32 data_window_length;
-  Uint32 allocated_data_length;
-  Sint64 frequency_delta;
+  size_t prologue_length = 4;
+  size_t epilogue_length = 12;
+  size_t bytes_per_sample = 2 * s_src->channels;
+  size_t frequency = s_src->frequency;
+  size_t data_window_length;
+  size_t allocated_data_length;
+  int64_t frequency_delta;
 
   if(!frequency)
     frequency = audio.output_frequency;
 
-  frequency_delta =
-   ((Sint64)frequency << FP_SHIFT) / audio.output_frequency;
+  frequency_delta = ((int64_t)frequency << FP_SHIFT) / audio.output_frequency;
 
   s_src->frequency_delta = frequency_delta;
   s_src->negative_comp = 0;
 
   data_window_length =
-   (Uint32)(ceil((double)audio.buffer_samples *
+   (size_t)(ceil((double)audio.buffer_samples *
    frequency / audio.output_frequency) * bytes_per_sample);
 
-  prologue_length +=
-   (Uint32)ceil((double)frequency_delta) * bytes_per_sample;
+  prologue_length += frequency_delta * bytes_per_sample;
+  //(size_t)ceil((double)frequency_delta) * bytes_per_sample;
 
   allocated_data_length = data_window_length + prologue_length +
    epilogue_length;
@@ -305,16 +305,19 @@ void sampled_set_buffer(struct sampled_stream *s_src)
   sampled_negative_threshold(s_src);
 }
 
-void sampled_mix_data(struct sampled_stream *s_src, Sint32 *dest_buffer,
- Uint32 len)
+void sampled_mix_data(struct sampled_stream *s_src,
+ int32_t * RESTRICT dest_buffer, size_t dest_frames, unsigned int dest_channels)
 {
   uint8_t *output_data = (uint8_t *)s_src->output_data;
   int16_t *src_buffer = (int16_t *)(output_data + s_src->prologue_length);
-  size_t write_len = len / 2;
+  size_t write_len = dest_frames * dest_channels;
   int volume = ((struct audio_stream *)s_src)->volume;
   int resample_mode = audio.master_resample_mode + 1;
   enum mixer_volume   use_volume   = DYNAMIC;
   enum mixer_channels use_channels = STEREO;
+
+  // MZX currently only supports stereo output.
+  assert(dest_channels == 2);
 
   if(s_src->frequency == audio.output_frequency)
     resample_mode = FLAT;
@@ -352,8 +355,8 @@ void sampled_destruct(struct audio_stream *a_src)
 }
 
 void initialize_sampled_stream(struct sampled_stream *s_src,
- struct sampled_stream_spec *s_spec, Uint32 frequency, Uint32 channels,
- Uint32 use_volume)
+ struct sampled_stream_spec *s_spec, uint32_t frequency, uint32_t channels,
+ boolean use_volume)
 {
   s_src->set_frequency = s_spec->set_frequency;
   s_src->get_frequency = s_spec->get_frequency;

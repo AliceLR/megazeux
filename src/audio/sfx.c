@@ -26,6 +26,7 @@
 
 #include "audio.h"
 #include "audio_pcs.h"
+#include "audio_struct.h"
 #include "sfx.h"
 
 #include "../data.h"

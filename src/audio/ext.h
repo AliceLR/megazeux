@@ -26,17 +26,16 @@
 
 __M_BEGIN_DECLS
 
-#include "../platform.h"
 #include "audio.h"
 
 typedef struct audio_stream *(*construct_stream_fn)(char *,
- Uint32, Uint32, Uint32);
+ uint32_t, unsigned int, boolean);
 
 void audio_ext_register(const char *ext, construct_stream_fn constructor);
 void audio_ext_free_registry(void);
 
 struct audio_stream *audio_ext_construct_stream(char *filename,
- Uint32 frequency, Uint32 volume, Uint32 repeat);
+ uint32_t frequency, unsigned int volume, boolean repeat);
 
 __M_END_DECLS
 

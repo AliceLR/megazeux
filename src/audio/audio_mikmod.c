@@ -22,6 +22,7 @@
 
 #include "audio.h"
 #include "audio_mikmod.h"
+#include "audio_struct.h"
 #include "ext.h"
 #include "sampled_stream.h"
 
@@ -39,9 +40,9 @@ struct mikmod_stream
 {
   struct sampled_stream s;
   MODULE *module_data;
-  Uint32 effective_frequency;
-  Uint32 num_orders;
-  Uint32 *order_to_pos_table;
+  uint32_t effective_frequency;
+  uint32_t num_orders;
+  uint32_t *order_to_pos_table;
 };
 
 struct LMM_MREADER
@@ -125,17 +126,17 @@ static void mm_set_resample_mode(void)
  */
 static void mm_init_order_table(struct mikmod_stream *mm_stream, MODULE *mm_data)
 {
-  Uint32 current = 0;
-  Uint32 i;
-  Uint32 *tbl;
-  Uint32 num_orders;
+  uint32_t current = 0;
+  uint32_t i;
+  uint32_t *tbl;
+  uint32_t num_orders;
 
   num_orders = mm_data->numpos;
-  tbl = cmalloc((num_orders + 1) * sizeof(Uint32));
+  tbl = cmalloc((num_orders + 1) * sizeof(uint32_t));
 
   for(i = 0; i < num_orders; i++)
   {
-    Uint32 pattern = mm_data->positions[i];
+    uint32_t pattern = mm_data->positions[i];
 
     tbl[i] = current;
 
@@ -149,10 +150,10 @@ static void mm_init_order_table(struct mikmod_stream *mm_stream, MODULE *mm_data
 }
 
 static boolean mm_position_to_order_row(struct mikmod_stream *mm_stream,
- Uint32 position, Uint32 *order, Uint32 *row)
+ uint32_t position, uint32_t *order, uint32_t *row)
 {
-  Uint32 *tbl = mm_stream->order_to_pos_table;
-  Uint32 i;
+  uint32_t *tbl = mm_stream->order_to_pos_table;
+  uint32_t i;
 
   for(i = 0; i < mm_stream->num_orders; i++)
   {
@@ -166,27 +167,27 @@ static boolean mm_position_to_order_row(struct mikmod_stream *mm_stream,
   return false;
 }
 
-static Uint32 mm_mix_data(struct audio_stream *a_src, Sint32 *buffer,
- Uint32 len)
+static boolean mm_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer,
+ size_t frames, unsigned int channels)
 {
   struct mikmod_stream *mm_stream = (struct mikmod_stream *)a_src;
-  Uint32 read_wanted = mm_stream->s.allocated_data_length -
+  uint32_t read_wanted = mm_stream->s.allocated_data_length -
    mm_stream->s.stream_offset;
-  Uint8 *read_buffer = (Uint8 *)mm_stream->s.output_data +
+  uint8_t *read_buffer = (uint8_t *)mm_stream->s.output_data +
    mm_stream->s.stream_offset;
 
-  VC_WriteBytes((SBYTE*)read_buffer, read_wanted);
-  sampled_mix_data((struct sampled_stream *)mm_stream, buffer, len);
-  return 0;
+  VC_WriteBytes((SBYTE *)read_buffer, read_wanted);
+  sampled_mix_data((struct sampled_stream *)mm_stream, buffer, frames, channels);
+  return false;
 }
 
-static void mm_set_volume(struct audio_stream *a_src, Uint32 volume)
+static void mm_set_volume(struct audio_stream *a_src, unsigned int volume)
 {
   a_src->volume = volume;
   Player_SetVolume((SWORD)(volume/2));
 }
 
-static void mm_set_repeat(struct audio_stream *a_src, Uint32 repeat)
+static void mm_set_repeat(struct audio_stream *a_src, boolean repeat)
 {
   MODULE *mm_file = ((struct mikmod_stream *)a_src)->module_data;
 
@@ -198,15 +199,15 @@ static void mm_set_repeat(struct audio_stream *a_src, Uint32 repeat)
     mm_file->wrap = 0;
 }
 
-static void mm_set_order(struct audio_stream *a_src, Uint32 order)
+static void mm_set_order(struct audio_stream *a_src, uint32_t order)
 {
   Player_SetPosition(order);
 }
 
-static void mm_set_position(struct audio_stream *a_src, Uint32 position)
+static void mm_set_position(struct audio_stream *a_src, uint32_t position)
 {
   struct mikmod_stream *mm_stream = (struct mikmod_stream *)a_src;
-  Uint32 order, row;
+  uint32_t order, row;
 
   if(mm_position_to_order_row(mm_stream, position, &order, &row))
   {
@@ -225,7 +226,7 @@ static void mm_set_position(struct audio_stream *a_src, Uint32 position)
   }
 }
 
-static void mm_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
+static void mm_set_frequency(struct sampled_stream *s_src, uint32_t frequency)
 {
   if(frequency == 0)
   {
@@ -235,7 +236,7 @@ static void mm_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
   else
   {
     ((struct mikmod_stream *)s_src)->effective_frequency = frequency;
-    frequency = (Uint32)((float)frequency *
+    frequency = (uint32_t)((float)frequency *
      audio.output_frequency / 44100);
   }
 
@@ -244,28 +245,28 @@ static void mm_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
   sampled_set_buffer(s_src);
 }
 
-static Uint32 mm_get_order(struct audio_stream *a_src)
+static uint32_t mm_get_order(struct audio_stream *a_src)
 {
   struct mikmod_stream *mm_stream = (struct mikmod_stream *)a_src;
   return mm_stream->module_data->sngpos;
 }
 
-static Uint32 mm_get_position(struct audio_stream *a_src)
+static uint32_t mm_get_position(struct audio_stream *a_src)
 {
   struct mikmod_stream *mm_stream = (struct mikmod_stream *)a_src;
   MODULE *mm_data = mm_stream->module_data;
-  Uint32 order = CLAMP(mm_data->sngpos, 0, (Sint32)mm_stream->num_orders);
+  uint32_t order = CLAMP(mm_data->sngpos, 0, (int)mm_stream->num_orders);
 
   return mm_stream->order_to_pos_table[order] + mm_data->patpos;
 }
 
-static Uint32 mm_get_length(struct audio_stream *a_src)
+static uint32_t mm_get_length(struct audio_stream *a_src)
 {
   struct mikmod_stream *mm_stream = (struct mikmod_stream *)a_src;
   return mm_stream->order_to_pos_table[mm_stream->num_orders];
 }
 
-static Uint32 mm_get_frequency(struct sampled_stream *s_src)
+static uint32_t mm_get_frequency(struct sampled_stream *s_src)
 {
   return ((struct mikmod_stream *)s_src)->effective_frequency;
 }
@@ -280,7 +281,7 @@ static void mm_destruct(struct audio_stream *a_src)
 }
 
 static struct audio_stream *construct_mikmod_stream(char *filename,
- Uint32 frequency, Uint32 volume, Uint32 repeat)
+ uint32_t frequency, unsigned int volume, boolean repeat)
 {
   vfile *input_file;
 
@@ -326,7 +327,7 @@ static struct audio_stream *construct_mikmod_stream(char *filename,
       s_spec.get_frequency = mm_get_frequency;
 
       initialize_sampled_stream((struct sampled_stream *)mm_stream, &s_spec,
-       frequency, 2, 0);
+       frequency, 2, false);
 
       initialize_audio_stream((struct audio_stream *)mm_stream, &a_spec,
        volume, repeat);
