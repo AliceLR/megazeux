@@ -492,16 +492,13 @@ ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
-	${CP} ${ccv} ${build}/utils
+	${CP} ${ccv} ${png2smzx} ${build}/utils
 	@if [ -f "${checkres}.debug" ]; then cp ${checkres}.debug ${build}/utils; fi
 	@if [ -f "${downver}.debug" ]; then cp ${downver}.debug ${build}/utils; fi
 	@if [ -f "${hlp2txt}.debug" ]; then cp ${hlp2txt}.debug ${build}/utils; fi
 	@if [ -f "${txt2hlp}.debug" ]; then cp ${txt2hlp}.debug ${build}/utils; fi
 	@if [ -f "${ccv}.debug" ]; then cp ${ccv}.debug ${build}/utils; fi
-ifeq (${LIBPNG},1)
-	${CP} ${png2smzx} ${build}/utils
 	@if [ -f "${png2smzx}.debug" ]; then cp ${png2smzx}.debug ${build}/utils; fi
-endif
 endif
 
 ${build}/docs: ${build}

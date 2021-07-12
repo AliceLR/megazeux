@@ -165,11 +165,27 @@ exit_out:
 
 #ifdef NEED_PNG_READ_FILE
 
-void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
+static boolean png_check_stream(FILE *fp)
+{
+  png_byte header[8];
+
+  if(fread(header, 1, 8, fp) < 8)
+    return false;
+
+  if(png_sig_cmp(header, 0, 8))
+    return false;
+
+  return true;
+}
+
+/**
+ * If `checked` is true, the first 8 bytes of the stream have already been
+ * read and verified to be the PNG signature.
+ */
+void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checked,
  check_w_h_constraint_t constraint, rgba_surface_allocator_t allocator)
 {
   png_uint_32 i, w, h, stride;
-  png_byte header[8];
   png_structp png_ptr = NULL;
   png_infop info_ptr = NULL;
   png_bytep * volatile row_ptrs = NULL;
@@ -177,21 +193,13 @@ void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
   void *pixels;
   int type;
   int bpp;
-  FILE *f;
 
-  f = fopen_unsafe(name, "rb");
-  if(!f)
+  if(!checked && !png_check_stream(fp))
     goto exit_out;
-
-  if(fread(header, 1, 8, f) < 8)
-    goto exit_close;
-
-  if(png_sig_cmp(header, 0, 8))
-    goto exit_close;
 
   png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if(!png_ptr)
-    goto exit_close;
+    goto exit_out;
 
   info_ptr = png_create_info_struct(png_ptr);
   if(!info_ptr)
@@ -200,14 +208,14 @@ void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
   if(setjmp(png_jmpbuf(png_ptr)))
     goto exit_free_close;
 
-  png_init_io(png_ptr, f);
+  png_init_io(png_ptr, fp);
   png_set_sig_bytes(png_ptr, 8);
   png_read_info(png_ptr, info_ptr);
   png_get_IHDR(png_ptr, info_ptr, &w, &h, &bpp, &type, NULL, NULL, NULL);
 
   if(!constraint(w, h))
   {
-    warn("Requested image '%s' failed dimension checks.\n", name);
+    warn("Requested image failed dimension checks.\n");
     goto exit_free_close;
   }
 
@@ -256,9 +264,25 @@ void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
 exit_free_close:
   png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
   free(row_ptrs);
-exit_close:
-  fclose(f);
 exit_out:
+  return s;
+}
+
+void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
+ check_w_h_constraint_t constraint, rgba_surface_allocator_t allocator)
+{
+  void *s;
+
+  FILE *fp = fopen_unsafe(name, "rb");
+  if(!fp)
+    return NULL;
+
+  s = png_read_stream(fp, _w, _h, false, constraint, allocator);
+  fclose(fp);
+
+  if(!s)
+    warn("Failed to load '%s'\n", name);
+
   return s;
 }
 

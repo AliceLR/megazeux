@@ -1,4 +1,6 @@
-/* Copyright (C) 2010 Alan Williams <mralert@gmail.com>
+/* MegaZeux
+ *
+ * Copyright (C) 2021 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -15,30 +17,35 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __SMZXCONV_H
-#define __SMZXCONV_H
+#ifndef __UTILS_IMAGE_FILE_H
+#define __UTILS_IMAGE_FILE_H
 
-struct rgba_color;
+#include "../compat.h"
 
-typedef struct {
-  unsigned char chr;
-  unsigned char clr;
-} mzx_tile;
+__M_BEGIN_DECLS
 
-typedef unsigned char mzx_glyph[14];
+#include <stdint.h>
+#include <stdio.h>
 
-typedef struct {
-  unsigned char r;
-  unsigned char g;
-  unsigned char b;
-} mzx_color;
+struct rgba_color
+{
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+  uint8_t a;
+};
 
-typedef struct _smzx_converter smzx_converter;
+struct image_file
+{
+  uint32_t width;
+  uint32_t height;
+  struct rgba_color *data;
+};
 
-smzx_converter *smzx_convert_init (int w, int h, int chroff, int chrskip,
- int chrlen, int clroff, int clrlen);
-int smzx_convert (smzx_converter *c, const struct rgba_color *img, mzx_tile *tile,
- mzx_glyph *chr, mzx_color *pal);
-void smzx_convert_free (smzx_converter *c);
+boolean load_image_from_file(const char *filename, struct image_file *dest);
+boolean load_image_from_stream(FILE *fp, struct image_file *dest);
+void image_free(struct image_file *dest);
 
-#endif /* __SMZXCONV_H */
+__M_END_DECLS
+
+#endif /* __UTILS_IMAGE_FILE_H */

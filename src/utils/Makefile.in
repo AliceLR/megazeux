@@ -17,6 +17,13 @@ utils_obj = src/utils/.build
 utils_cflags := ${LIBPNG_CFLAGS} -DUTILS_LIBSPEC=
 
 zip_objs  := ${io_obj}/vio.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
+img_objs  := ${utils_obj}/image_file.o
+img_flags :=
+
+ifneq (${LIBPNG},)
+img_objs  += ${core_obj}/pngops.o
+img_flags += ${LIBPNG_LDFLAGS} ${ZLIB_LDFLAGS}
+endif
 
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o \
@@ -39,12 +46,14 @@ txt2hlp_objs := ${utils_obj}/txt2hlp.o
 
 png2smzx := ${utils_src}/png2smzx${BINEXT}
 png2smzx_objs := ${utils_obj}/png2smzx.o ${utils_obj}/smzxconv.o
-png2smzx_objs += ${core_obj}/pngops.o
+png2smzx_objs += ${img_objs}
 png2smzx_objs += ${io_obj}/path.o ${io_obj}/vio.o
-png2smzx_ldflags := ${LIBPNG_LDFLAGS} ${ZLIB_LDFLAGS}
+png2smzx_ldflags := ${img_flags}
 
 ccv := ${utils_src}/ccv${BINEXT}
 ccv_objs := ${utils_obj}/ccv.o
+#ccv_objs += ${img_objs}
+#ccv_ldflags := ${img_flags}
 
 ${utils_obj}/%.o: ${utils_src}/%.c src/config.h
 	$(if ${V},,@echo "  CC      " $<)
@@ -91,19 +100,16 @@ ${png2smzx}: ${png2smzx_objs}
 ${ccv}: ${ccv_objs}
 	$(if ${V},,@echo "  LINK    " ${ccv})
 	${CC} ${ccv_objs} -o ${ccv} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${ccv_ldflags}
 
 utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
 
-utils: ${checkres} ${downver} ${hlp2html} ${hlp2txt} ${txt2hlp} ${ccv}
-
-ifeq (${LIBPNG},1)
-utils: ${png2smzx}
-utils.debug: ${png2smzx}.debug
-endif
+utils: ${checkres} ${downver} ${hlp2html} ${hlp2txt} ${txt2hlp}
+utils: ${ccv} ${png2smzx}
 
 utils.debug: ${checkres}.debug ${downver}.debug ${ccv}.debug
 utils.debug: ${hlp2html}.debug ${hlp2txt}.debug ${txt2hlp}.debug
+utils.debug: ${png2smzx}.debug
 
 utils_clean:
 	$(if ${V},,@echo "  RM      " ${utils_obj})
