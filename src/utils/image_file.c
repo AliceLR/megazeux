@@ -135,7 +135,7 @@ static boolean load_png(FILE *fp, struct image_file *dest)
   return false;
 }
 
-#endif /* !CONFIG_PNG */
+#endif /* CONFIG_PNG */
 
 
 /**
@@ -1308,7 +1308,7 @@ static boolean load_raw(FILE *fp, struct image_file *dest,
   }
 
   memcpy(data, not_magic, 8);
-  if(!fread(data + 8, 1, raw_size - 8, fp) < raw_size - 8)
+  if(fread(data + 8, 1, raw_size - 8, fp) < raw_size - 8)
   {
     debug("failed to read required data for raw image\n");
     goto err_free;
