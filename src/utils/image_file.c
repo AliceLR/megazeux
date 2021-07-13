@@ -260,14 +260,14 @@ static struct rgba_color *bmp_read_color_table(struct bmp_header *bmp, FILE *fp)
       int r = fgetc(fp);
       int g = fgetc(fp);
       int b = fgetc(fp);
-      int a = fgetc(fp);
-      if(r < 0 || g < 0 || b < 0 || a < 0)
+      int x = fgetc(fp);
+      if(r < 0 || g < 0 || b < 0 || x < 0)
         break;
 
       pos->r = r;
       pos->g = g;
       pos->b = b;
-      pos->a = a;
+      pos->a = 255;
       pos++;
     }
 
