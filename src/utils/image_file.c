@@ -509,7 +509,10 @@ static boolean bmp_read_pixarray_uncompressed(const struct bmp_header *bmp,
   return false;
 }
 
-static boolean bmp_read_pixarray_rle8(const struct bmp_header *bmp,
+/**
+ * Microsoft RLE8 and RLE4 compression.
+ */
+static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
  struct image_file * RESTRICT dest, FILE *fp)
 {
   const struct rgba_color *color_table = bmp->color_table;
@@ -518,22 +521,25 @@ static boolean bmp_read_pixarray_rle8(const struct bmp_header *bmp,
   ssize_t i;
   uint8_t d[2];
 
+  if(bmp->bpp != 4 && bmp->bpp != 8) // Should never happen...
+    return false;
+
   while(x < bmp->width && y >= 0)
   {
     struct rgba_color *pos = &(dest->data[y * bmp->width + x]);
-    //debug("RLE8 now at: %zd %zd\n", x, y);
+    //debug("RLE%u now at: %zd %zd\n", bmp->bpp, x, y);
 
     while(true)
     {
       if(!fread(d, 2, 1, fp))
         return false;
 
-      //debug("RLE8 code: %u %u\n", d[0], d[1]);
       if(!d[0])
       {
         if(d[1] == 0)
         {
           // End of line.
+          //debug("RLE%u EOL  : %3u %3u\n", bmp->bpp, d[0], d[1]);
           x = 0;
           y--;
           break;
@@ -543,6 +549,7 @@ static boolean bmp_read_pixarray_rle8(const struct bmp_header *bmp,
         if(d[1] == 1)
         {
           // End of file.
+          //debug("RLE%u EOF  : %3u %3u\n", bmp->bpp, d[0], d[1]);
           return true;
         }
         else
@@ -555,7 +562,7 @@ static boolean bmp_read_pixarray_rle8(const struct bmp_header *bmp,
           if(!fread(d, 2, 1, fp))
             return false;
 
-          //debug("RLE8 delta: %u %u\n", d[0], d[1]);
+          //debug("RLE%u delta: %3u %3u\n", bmp->bpp, d[0], d[1]);
           x += d[0];
           y -= d[1];
           break;
@@ -563,21 +570,47 @@ static boolean bmp_read_pixarray_rle8(const struct bmp_header *bmp,
         else
         {
           // Absolute mode.
-          for(i = 0; i < d[1] && x < bmp->width; i++, x++)
+          //debug("RLE%u abs. : %3u %3u\n", bmp->bpp, d[0], d[1]);
+          if(bmp->bpp == 8)
           {
-            int idx = fgetc(fp);
-            if(idx < 0)
-              return false;
+            for(i = 0; i < d[1] && x < bmp->width; i++, x++)
+            {
+              int idx = fgetc(fp);
+              if(idx < 0)
+                return false;
 
-            *(pos++) = color_table[idx];
+              *(pos++) = color_table[idx];
+            }
+            // Absolute mode runs are padded to word boundaries.
+            if(d[1] & 1)
+              fgetc(fp);
           }
-          // Absolute mode runs are padded to word boundaries.
-          if(d[1] & 1)
-            fgetc(fp);
+          else // bpp == 4
+          {
+            for(i = 0; i < d[1] && x < bmp->width;)
+            {
+              int idx = fgetc(fp);
+              if(idx < 0)
+                return false;
+
+              *(pos++) = color_table[(idx >> 4) & 0x0f];
+              i++, x++;
+
+              if(i < d[1] && x < bmp->width)
+              {
+                *(pos++) = color_table[(idx >> 0) & 0x0f];
+                i++, x++;
+              }
+            }
+            // Absolute mode runs are padded to word boundaries.
+            if((d[1] >> 1) & 1)
+              fgetc(fp);
+          }
 
           if(i < d[1])
           {
-            debug("RLE8 reached x=bmp->width during absolute run (should this be valid)?\n");
+            debug("RLE%u reached x=bmp->width during absolute run (should this be valid)?\n",
+             bmp->bpp);
             return false;
           }
         }
@@ -585,12 +618,33 @@ static boolean bmp_read_pixarray_rle8(const struct bmp_header *bmp,
       else
       {
         // Run.
-        for(i = 0; i < d[0] && x < bmp->width; i++, x++)
-          *(pos++) = color_table[d[1]];
+        //debug("RLE%u run  : %3u %02xh\n", bmp->bpp, d[0], d[1]);
+        if(bmp->bpp == 8)
+        {
+          for(i = 0; i < d[0] && x < bmp->width; i++, x++)
+            *(pos++) = color_table[d[1]];
+        }
+        else // bpp == 4
+        {
+          uint8_t a = (d[1] >> 4) & 0x0f;
+          uint8_t b = (d[1] >> 0) & 0x0f;
+          for(i = 0; i < d[0] && x < bmp->width;)
+          {
+            *(pos++) = color_table[a];
+            i++, x++;
+
+            if(i < d[0] && x < bmp->width)
+            {
+              *(pos++) = color_table[b];
+              i++, x++;
+            }
+          }
+        }
 
         if(i < d[0])
         {
-          debug("RLE8 reached x=bmp->width during encoded run (should this be valid)?\n");
+          debug("RLE%u reached x=bmp->width during encoded run (should this be valid)?\n",
+           bmp->bpp);
           return false;
         }
       }
@@ -601,12 +655,12 @@ static boolean bmp_read_pixarray_rle8(const struct bmp_header *bmp,
   if(x == 0 && y == -1)
   {
     if(!fread(d, 2, 1, fp) || d[0] != 0 || d[1] != 1)
-      debug("RLE8 missing EOF!\n");
+      debug("RLE%u missing EOF!\n", bmp->bpp);
 
     return true;
   }
 
-  debug("RLE8 out of bounds\n");
+  debug("RLE%u out of bounds\n", bmp->bpp);
   return false;
 }
 
@@ -685,7 +739,8 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
     return false;
   }
 
-  if(bmp.compr_method != BI_RGB && bmp.compr_method != BI_RLE8)
+  if(bmp.compr_method != BI_RGB &&
+   bmp.compr_method != BI_RLE8 && bmp.compr_method != BI_RLE4)
   {
     warn("unsupported BMP compression type %zu\n", (size_t)bmp.compr_method);
     return false;
@@ -703,6 +758,12 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
   if(bmp.compr_method == BI_RLE8 && bmp.bpp != 8)
   {
     warn("unsupported BPP %u for RLE8\n", bmp.bpp);
+    return false;
+  }
+
+  if(bmp.compr_method == BI_RLE4 && bmp.bpp != 4)
+  {
+    warn("unsupported BPP %u for RLE4\n", bmp.bpp);
     return false;
   }
 
@@ -755,8 +816,10 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
       break;
 
     // ImageMagick tends to automatically emit this for 8bpp BMPs.
+    // GIMP can emit both types of RLE, though this is turned off by default.
     case BI_RLE8:
-      if(!bmp_read_pixarray_rle8(&bmp, dest, fp))
+    case BI_RLE4:
+      if(!bmp_read_pixarray_rle(&bmp, dest, fp))
         goto err_free_image;
       break;
 
