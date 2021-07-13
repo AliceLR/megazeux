@@ -28,6 +28,7 @@
 #include <limits.h>
 #include "../config.h"
 
+#include "image_file.h"
 #include "utils_alloc.h"
 
 #ifdef CONFIG_PLEDGE_UTILS
@@ -80,6 +81,10 @@
 ".. converts input.bmp to input.chr using the given error-diffusion kernel. Note that you can abbreviate it (i.e. 'floyd', 'jarvis') as it only has to match part of the name. Note that the -threshold value, if supplied, is still used here.\n" \
 "ccv -q input.bmp\n" \
 ".. suppress output to stdout\n" \
+"\n" \
+"If the input file is '-', it will be read from stdin.\n" \
+"Supported image file formats are PNG, BMP, " \
+"NetPBM (.pbm, .pgm, .ppm, .pnm, .pam), farbfeld (.ff), and raw (see above).\n\n"
 
 void Usage()
 {
@@ -254,7 +259,7 @@ Config *LoadConfig(int argc, char **argv)
 
   for (i = 0; i < argc; i++) {
     if (arg_used[i]) continue;
-    if (argv[i][0] == '-') { // Argument
+    if (argv[i][0] == '-' && argv[i][1] != '\0') { // Argument
       int args_left = argc - i - 1;
       if (Option("-q", 0, argv[i], args_left)) {
         cfg->quiet = 1;
@@ -296,7 +301,7 @@ Config *LoadConfig(int argc, char **argv)
       }
       if (Option("-dither", 1, argv[i], args_left)) {
         snprintf(cfg->dither, sizeof(cfg->dither), "%s", argv[i+1]);
-        cfg->output[255] = '\0';
+        cfg->dither[255] = '\0';
         arg_used[i+1] = 1;
         continue;
       }
@@ -383,144 +388,21 @@ Image *CreateImage(int w, int h, int channels)
   return image;
 }
 
-Image *LoadImage_RAW(Config *cfg, const char *path)
+void LoadImage(struct image_file *dest, Config *cfg, const char *path)
 {
-  Image *img;
-  FILE *fp;
-  int i;
-  if ((cfg->w == 0) || (cfg->h == 0)) Error("Nonzero -w # and -h # values must be specified when loading raw images.");
+  struct image_raw_format format;
+  struct image_raw_format *use_format = NULL;
 
-  img = CreateImage(cfg->w, cfg->h, 1);
-
-  fp = fopen_unsafe(path, "rb");
-  if (!fp) Error("Failed to open %s", path);
-  for (i = 0; i < cfg->w * cfg->h; i++) {
-    img->pixels[i] = fgetc(fp) != 0 ? 255 : 0;
-  }
-  fclose(fp);
-
-  return img;
-}
-
-Image *LoadImage_BMP(Config *cfg, const char *path)
-{
-  FILE *fp = fopen_unsafe(path, "rb");
-  Image *img;
-  char sig_a, sig_b;
-  int pixelarray, dibheadersize, w, h, bpp, compression, palette_size;
-  int channels, output_channels, padding;
-  int byte_offset, bit_offset;
-  unsigned char byte_val;
-  int i, x, y, b;
-  struct {
-    unsigned char r, g, b;
-  } palette[256];
-
-  if (!fp) Error("Failed to open %s", path);
-
-  sig_a = fgetc(fp);
-  sig_b = fgetc(fp);
-
-  if ((sig_a != 'B') || (sig_b != 'M')) Error("BMP header corrupt (%s)", path);
-  file_read32(fp);
-  file_read32(fp);
-  pixelarray = file_read32(fp);
-
-  dibheadersize = file_read32(fp);
-  w = file_read32(fp);
-  h = file_read32(fp);
-  file_read16(fp); // planes
-  bpp = file_read16(fp);
-  compression = file_read32(fp);
-  if (compression != 0) Error("Compressed BMPs are not supported");
-  file_read32(fp); // image size
-  file_read32(fp); // h res
-  file_read32(fp); // v res
-  palette_size = file_read32(fp); // colours
-
-  img = NULL;
-
-  if (bpp <= 8) { // Paletted image
-    if (palette_size == 0) palette_size = 1<<bpp;
-
-    fseek(fp, dibheadersize + 14, SEEK_SET);
-
-    for (i = 0; i < palette_size; i++) {
-      palette[i].b = fgetc(fp);
-      palette[i].g = fgetc(fp);
-      palette[i].r = fgetc(fp);
-      fgetc(fp);
-    }
-
-    fseek(fp, pixelarray, SEEK_SET);
-    img = CreateImage(w, h, 3);
-
-    for (y = h-1; y >= 0; y--) {
-      byte_offset = -1;
-      bit_offset = 8;
-      byte_val = -1;
-      for (x = 0; x < w; x++) {
-
-        int v = 0;
-        for (b = 0; b < bpp; b++) {
-          if (bit_offset == 8) {
-            bit_offset = 0;
-            byte_offset++;
-            byte_val = fgetc(fp);
-          }
-          v |= byte_val & (128 >> bit_offset) ? 1 << b : 0;
-          bit_offset++;
-        }
-
-        img->pixels[(y*w+x)*3+0] = palette[v].r;
-        img->pixels[(y*w+x)*3+1] = palette[v].g;
-        img->pixels[(y*w+x)*3+2] = palette[v].b;
-      }
-      byte_offset++;
-      while (byte_offset % 4) {
-        fgetc(fp);
-        byte_offset++;
-      }
-    }
-
-  } else { // Truecolour image
-    channels = bpp / 8;
-    output_channels = channels <= 3 ? channels : 3;
-
-    fseek(fp, pixelarray, SEEK_SET);
-
-    img = CreateImage(w, h, output_channels);
-    padding = (w * channels + 3) / 4 * 4 - (w * channels);
-    for (y = 0; y < h; y++) {
-      for (i = 0; i < w; i++) {
-        img->pixels[(h - y - 1) * w * output_channels + (i * output_channels) + output_channels - 1] = fgetc(fp); // b
-        if (channels >= 2) {
-          img->pixels[(h - y - 1) * w * output_channels + (i * output_channels) + output_channels - 2] = fgetc(fp); // g
-          if (channels >= 3) {
-            img->pixels[(h - y - 1) * w * output_channels + (i * output_channels) + output_channels - 3] = fgetc(fp); // r
-            if (channels >= 4) {
-              fgetc(fp); // a
-            }
-          }
-        }
-      }
-
-      if (padding) fseek(fp, padding, SEEK_CUR);
-    }
+  if((cfg->w > 0) && (cfg->h > 0))
+  {
+    format.width = cfg->w;
+    format.height = cfg->h;
+    format.bytes_per_pixel = 1; // TODO
+    use_format = &format;
   }
 
-  fclose(fp);
-
-  return img;
-}
-
-Image *LoadImage(Config *cfg, const char *path)
-{
-  const char *ext = strrchr(path, '.');
-  if (ext) {
-    if (lc_strcmp(ext, ".bmp") == 0) return LoadImage_BMP(cfg, path);
-  }
-  return LoadImage_RAW(cfg, path);
+  if(!load_image_from_file(path, dest, use_format))
+    Error("Failed to load file '%s'", path);
 }
 
 void FreeImage(Image *img)
@@ -529,16 +411,10 @@ void FreeImage(Image *img)
   free(img);
 }
 
-int Brightness(unsigned char *pixels, int channels)
+int Brightness(const struct image_file *img, uint32_t x, uint32_t y)
 {
-  int sum = 0, i;
-  if (channels == 1) return pixels[0];
-  if (channels == 3) return ((pixels[0] * 30 + pixels[1] * 59 + pixels[2] * 11) + 50) / 100;
-
-  for (i = 0; i < channels; i++) {
-    sum += pixels[i];
-  }
-  return (sum + (channels / 2)) / channels;
+  const struct rgba_color *color = &(img->data[y * img->width + x]);
+  return (color->r * 30 + color->g * 59 + color->b * 11) / 100;
 }
 
 typedef struct {
@@ -572,15 +448,16 @@ Diffuse diffmethods[] = {
                     5,  0,  12, 0,  12, 0,  5}, 7, 4, 200}
 };
 
-void QuantiseDiffuse(Image *img, Image *qimg, int threshold, const char *method)
+void QuantiseDiffuse(struct image_file *img, Image *qimg, int threshold, const char *method)
 {
-  int *err = cmalloc(img->w * img->h * sizeof(int));
+  int *err = cmalloc(img->width * img->height * sizeof(int));
   int method_i = -1;
   unsigned int i;
-  int mx, my, x, y;
+  int mx, my;
+  uint32_t x, y;
   Diffuse D;
   int v_noerr, v, wr;
-  memset(err, 0, img->w * img->h * sizeof(int));
+  memset(err, 0, img->width * img->height * sizeof(int));
 
   for (i = 0; i < sizeof(diffmethods) / sizeof(diffmethods[0]); i++) {
     if (lc_strncmp(method, diffmethods[i].method, strlen(method)) == 0) method_i = i;
@@ -601,22 +478,24 @@ void QuantiseDiffuse(Image *img, Image *qimg, int threshold, const char *method)
       D.diffuse[i] = 0;
     }
   }
-  for (y = 0; y < img->h; y++) {
-    for (x = 0; x < img->w; x++) {
-      v_noerr = Brightness(img->pixels + (y * img->w + x) * img->channels, img->channels);
-      v = v_noerr + err[y * img->w + x] / D.div;
+  for (y = 0; y < img->height; y++) {
+    for (x = 0; x < img->width; x++) {
+      v_noerr = Brightness(img, x, y);
+      v = v_noerr + err[y * img->width + x] / D.div;
       if (v > 255) v = 255;
       if (v < 0) v = 0;
       wr = v >= threshold ? 255 : 0;
-      qimg->pixels[y * img->w + x] = v >= threshold ? 1 : 0;
+      qimg->pixels[y * img->width + x] = v >= threshold ? 1 : 0;
 
       if ((v_noerr - wr) != 0) {
 
         for (i = 0; i < D.w * D.h; i++) {
           int ox = (i % D.w) - mx + x;
           int oy = (i / D.w) - my + y;
-          if ((D.diffuse[i] > 0) && (ox >= 0) && (oy >= 0) && (ox < img->w) && (oy < img->h)) {
-            err[oy * img->w + ox] += D.diffuse[i] * (v - wr);
+          if((D.diffuse[i] > 0) && (ox >= 0) && (oy >= 0) &&
+           ((size_t)ox < img->width) && ((size_t)oy < img->height))
+          {
+            err[oy * img->width + ox] += D.diffuse[i] * (v - wr);
           }
         }
       }
@@ -625,18 +504,23 @@ void QuantiseDiffuse(Image *img, Image *qimg, int threshold, const char *method)
   free(err);
 }
 
-void QuantiseTheshold(Image *img, Image *qimg, int threshold)
+void QuantiseTheshold(struct image_file *img, Image *qimg, int threshold)
 {
-  int i, v;
-  for (i = 0; i < img->w * img->h; i++) {
-    v = Brightness(img->pixels + i * img->channels, img->channels);
-    qimg->pixels[i] = v >= threshold ? 1 : 0;
+  unsigned int i, x, y;
+
+  for(i = 0, y = 0; y < img->height; y++)
+  {
+    for(x = 0; x < img->width; x++, i++)
+    {
+      int v = Brightness(img, x, y);
+      qimg->pixels[i] = v >= threshold ? 1 : 0;
+    }
   }
 }
 
-Image *Quantise(Config *cfg, Image *img)
+Image *Quantise(Config *cfg, struct image_file *img)
 {
-  Image *qimg = CreateImage(img->w, img->h, 1);
+  Image *qimg = CreateImage(img->width, img->height, 1);
 
   if (cfg->dither[0] == '\0') {
     QuantiseTheshold(img, qimg, cfg->threshold);
@@ -748,7 +632,11 @@ char *OutputPath(const char *input, Config *cfg, const char *ext)
   char *buf_e;
   size_t output_len;
   if (cfg->output[0] == '\0') {
-    snprintf(buf, MAX_PATH, "%s", input);
+    if(strcmp(input, "-"))
+      snprintf(buf, MAX_PATH, "%s", input);
+    else
+      strcpy(buf, "out");
+
     buf[MAX_PATH] = '\0';
     buf_e = strrchr(buf, '.');
     if (buf_e) *buf_e = '\0';
@@ -1011,7 +899,7 @@ int main(int argc, char **argv)
 {
   Config *cfg = LoadConfig(argc - 1, argv + 1);
   InputFile *file;
-  Image *image, *qimage;
+  Image *qimage;
   Charset *cset;
   Mzm *mzm;
 
@@ -1024,13 +912,15 @@ int main(int argc, char **argv)
   }
 #endif
 
-  for(file = cfg->files; file != NULL; file = file->hh.next) {
-    image = LoadImage(cfg, file->path);
+  for(file = cfg->files; file != NULL; file = file->hh.next)
+  {
+    struct image_file image;
+    LoadImage(&image, cfg, file->path);
 
-    if (((image->w % 8) != 0) || ((image->h % 14) != 0)) {
+    if (((image.width % 8) != 0) || ((image.height % 14) != 0)) {
       Error("Image dimensions are not divisible by 8x14");
     }
-    qimage = Quantise(cfg, image);
+    qimage = Quantise(cfg, &image);
 
     cset = CreateCharset(qimage);
 
@@ -1059,7 +949,7 @@ int main(int argc, char **argv)
       OffsetMzm(mzm, cfg->offset);
     }
 
-    FreeImage(image);
+    image_free(&image);
     FreeImage(qimage);
 
     { // Output charset
@@ -1068,7 +958,8 @@ int main(int argc, char **argv)
       WriteCharset(filename_chr, cset);
 
       if (!cfg->quiet) {
-        printf("%s -> %s (%d chars)", file->path, filename_chr, cset->chars);
+        const char *in_name = strcmp(file->path, "-") ? file->path : "<stdin>";
+        printf("%s -> %s (%d chars)", in_name, filename_chr, cset->chars);
       }
       free(filename_chr);
     }

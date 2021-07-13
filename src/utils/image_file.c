@@ -1277,6 +1277,89 @@ static boolean load_farbfeld(FILE *fp, struct image_file *dest)
 
 
 /**
+ * Raw format loader.
+ * `not_magic` is the first few bytes of the file read for the purposes of
+ * identifying a file format. For raw files, this is actually pixel data.
+ */
+static boolean load_raw(FILE *fp, struct image_file *dest,
+ const struct image_raw_format *format, const uint8_t not_magic[8])
+{
+  struct rgba_color *dest_pos;
+  uint8_t *src_pos;
+  uint8_t *data;
+  uint64_t size = (uint64_t)format->width * format->height;
+  uint64_t raw_size = size * format->bytes_per_pixel;
+  uint64_t i;
+
+  if(format->bytes_per_pixel < 1 || format->bytes_per_pixel > 4)
+  {
+    debug("unsupported raw bytes per pixel %zu\n", (size_t)format->bytes_per_pixel);
+    return false;
+  }
+
+  debug("checking if this is a raw file with properties: %zu %zu %zu\n",
+   (size_t)format->width, (size_t)format->height, (size_t)format->bytes_per_pixel);
+
+  data = malloc(raw_size);
+  if(!data)
+  {
+    debug("can't allocate memory for raw image with given size\n");
+    return false;
+  }
+
+  memcpy(data, not_magic, 8);
+  if(!fread(data + 8, 1, raw_size - 8, fp) < raw_size - 8)
+  {
+    debug("failed to read required data for raw image\n");
+    goto err_free;
+  }
+
+  debug("Image type: raw\n");
+
+  if(fgetc(fp) != EOF)
+    warn("data exists after expected EOF in raw file\n");
+
+  if(!image_init(format->width, format->height, dest))
+    goto err_free;
+
+  dest_pos = dest->data;
+  src_pos = data;
+  for(i = 0; i < size; i++)
+  {
+    uint8_t r, g, b, a;
+    if(format->bytes_per_pixel < 3)
+    {
+      r = src_pos[0];
+      g = src_pos[0];
+      b = src_pos[0];
+      a = (format->bytes_per_pixel == 2) ? src_pos[1] : 255;
+    }
+    else
+    {
+      r = src_pos[0];
+      g = src_pos[1];
+      b = src_pos[2];
+      a = (format->bytes_per_pixel == 4) ? src_pos[3] : 255;
+    }
+
+    dest_pos->r = r;
+    dest_pos->g = g;
+    dest_pos->b = b;
+    dest_pos->a = a;
+    dest_pos++;
+    src_pos += format->bytes_per_pixel;
+  }
+
+  free(data);
+  return true;
+
+err_free:
+  free(data);
+  return false;
+}
+
+
+/**
  * Common file handling.
  */
 
@@ -1286,7 +1369,8 @@ static boolean load_farbfeld(FILE *fp, struct image_file *dest)
  * Load an image from a stream.
  * Assume this stream can NOT be seeked.
  */
-boolean load_image_from_stream(FILE *fp, struct image_file *dest)
+boolean load_image_from_stream(FILE *fp, struct image_file *dest,
+ const struct image_raw_format *raw_format)
 {
   uint8_t magic[8];
 
@@ -1330,6 +1414,13 @@ boolean load_image_from_stream(FILE *fp, struct image_file *dest)
 
 #endif
 
+  if(raw_format)
+  {
+    boolean res = load_raw(fp, dest, raw_format, magic);
+    if(res)
+      return true;
+  }
+
   debug("unknown format\n");
   return false;
 }
@@ -1337,7 +1428,8 @@ boolean load_image_from_stream(FILE *fp, struct image_file *dest)
 /**
  * Load an image from a file.
  */
-boolean load_image_from_file(const char *filename, struct image_file *dest)
+boolean load_image_from_file(const char *filename, struct image_file *dest,
+ const struct image_raw_format *raw_format)
 {
   FILE *fp;
   boolean ret;
@@ -1350,7 +1442,7 @@ boolean load_image_from_file(const char *filename, struct image_file *dest)
     /* Windows forces stdin to be text mode by default, fix it. */
     _setmode(_fileno(stdin), _O_BINARY);
 #endif
-    return load_image_from_stream(stdin, dest);
+    return load_image_from_stream(stdin, dest, raw_format);
   }
 
   fp = fopen_unsafe(filename, "rb");
@@ -1359,7 +1451,7 @@ boolean load_image_from_file(const char *filename, struct image_file *dest)
 
   setvbuf(fp, NULL, _IOFBF, 32768);
 
-  ret = load_image_from_stream(fp, dest);
+  ret = load_image_from_stream(fp, dest, raw_format);
   fclose(fp);
 
   return ret;

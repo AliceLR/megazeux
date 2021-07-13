@@ -52,8 +52,8 @@ png2smzx_ldflags := ${img_flags}
 
 ccv := ${utils_src}/ccv${BINEXT}
 ccv_objs := ${utils_obj}/ccv.o
-#ccv_objs += ${img_objs}
-#ccv_ldflags := ${img_flags}
+ccv_objs += ${img_objs}
+ccv_ldflags := ${img_flags}
 
 ${utils_obj}/%.o: ${utils_src}/%.c src/config.h
 	$(if ${V},,@echo "  CC      " $<)

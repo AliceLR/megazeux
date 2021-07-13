@@ -42,8 +42,21 @@ struct image_file
   struct rgba_color *data;
 };
 
-boolean load_image_from_file(const char *filename, struct image_file *dest);
-boolean load_image_from_stream(FILE *fp, struct image_file *dest);
+/**
+ * If raw images are allowed, let the caller specify how the raw data should be
+ * interpreted.
+ */
+struct image_raw_format
+{
+  uint32_t width;
+  uint32_t height;
+  uint32_t  bytes_per_pixel;
+};
+
+boolean load_image_from_file(const char *filename, struct image_file *dest,
+ const struct image_raw_format *raw_format);
+boolean load_image_from_stream(FILE *fp, struct image_file *dest,
+ const struct image_raw_format *raw_format);
 void image_free(struct image_file *dest);
 
 __M_END_DECLS

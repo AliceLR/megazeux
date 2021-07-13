@@ -77,7 +77,9 @@ int main(int argc, char **argv)
       "Usage: %s <in.png|-> [<out> | <out.mzm> "
       "[<out.chr] [<out.pal>]] [options]\n\n"
 
-      "If the input file is '-', it will be read from stdin.\n\n"
+      "If the input file is '-', it will be read from stdin.\n"
+      "Supported image file formats are PNG, BMP, "
+      "NetPBM (.pbm, .pgm, .ppm, .pnm, .pam), and farbfeld (.ff).\n\n"
 
       "Options:\n"
 
@@ -173,7 +175,7 @@ int main(int argc, char **argv)
 #endif
 
   // Do stuff
-  if(!load_image_from_file(input_file_name, &img))
+  if(!load_image_from_file(input_file_name, &img, NULL))
   {
     fprintf(stderr, "Error reading image.\n");
     return 1;

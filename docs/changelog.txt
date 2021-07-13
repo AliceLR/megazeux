@@ -150,6 +150,13 @@ USERS
   intermediate render and skipping pixel checks for blank chars.
 + libxmp playback improvements for GDM, AMF, and OctaMED modules
   as well as general stability improvements.
++ ccv and png2smzx now both support the following image formats:
+  PNG (with libpng enabled), BMP (most uncompressed variants),
+  NetPBM (PBM, PGM, PPM, PNM, PAM), farbfeld. png2smzx will now
+  build when libpng support is disabled, though it won't support
+  loading PNGs with this configuration.
++ ccv and png2smzx now both support streaming image data from
+  stdin using the input filename "-".
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
