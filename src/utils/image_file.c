@@ -166,9 +166,9 @@ enum dib_compression
   BI_JPEG,            // JPEG
   BI_PNG,             // PNG
   BI_ALPHABITFIELDS,  // RGBA bitfield masks
-  BI_CMYK,
-  BI_BMYKRLE8,
-  BI_CMYKRLE4,
+  BI_CMYK     = 11,
+  BI_BMYKRLE8 = 12,
+  BI_CMYKRLE4 = 13,
   BI_MAX
 };
 
@@ -300,10 +300,7 @@ static boolean bmp_pixarray_u1(const struct bmp_header *bmp,
     {
       int value = fgetc(fp);
       if(value < 0)
-      {
-        debug("1bpp read error @ x=%zd y=%zd\n", x, y);
         return false;
-      }
 
       for(i = 7; i >= 0 && x < bmp->width; i--, x++)
       {
@@ -313,10 +310,7 @@ static boolean bmp_pixarray_u1(const struct bmp_header *bmp,
     }
 
     if(bmp->rowpadding && !fread(d, bmp->rowpadding, 1, fp))
-    {
-      debug("1bpp padding read error @ y=%zu\n", y);
       return false;
-    }
   }
   return true;
 }
@@ -515,10 +509,113 @@ static boolean bmp_read_pixarray_uncompressed(const struct bmp_header *bmp,
   return false;
 }
 
+static boolean bmp_read_pixarray_rle8(const struct bmp_header *bmp,
+ struct image_file * RESTRICT dest, FILE *fp)
+{
+  const struct rgba_color *color_table = bmp->color_table;
+  ssize_t x = 0;
+  ssize_t y = bmp->height - 1;
+  ssize_t i;
+  uint8_t d[2];
+
+  while(x < bmp->width && y >= 0)
+  {
+    struct rgba_color *pos = &(dest->data[y * bmp->width + x]);
+    //debug("RLE8 now at: %zd %zd\n", x, y);
+
+    while(true)
+    {
+      if(!fread(d, 2, 1, fp))
+        return false;
+
+      //debug("RLE8 code: %u %u\n", d[0], d[1]);
+      if(!d[0])
+      {
+        if(d[1] == 0)
+        {
+          // End of line.
+          x = 0;
+          y--;
+          break;
+        }
+        else
+
+        if(d[1] == 1)
+        {
+          // End of file.
+          return true;
+        }
+        else
+
+        if(d[1] == 2)
+        {
+          // Position delta.
+          // Documentation refers to unsigned y moving the current position
+          // "down", but since this is still OS/2 line order, it means "up".
+          if(!fread(d, 2, 1, fp))
+            return false;
+
+          //debug("RLE8 delta: %u %u\n", d[0], d[1]);
+          x += d[0];
+          y -= d[1];
+          break;
+        }
+        else
+        {
+          // Absolute mode.
+          for(i = 0; i < d[1] && x < bmp->width; i++, x++)
+          {
+            int idx = fgetc(fp);
+            if(idx < 0)
+              return false;
+
+            *(pos++) = color_table[idx];
+          }
+          // Absolute mode runs are padded to word boundaries.
+          if(d[1] & 1)
+            fgetc(fp);
+
+          if(i < d[1])
+          {
+            debug("RLE8 reached x=bmp->width during absolute run (should this be valid)?\n");
+            return false;
+          }
+        }
+      }
+      else
+      {
+        // Run.
+        for(i = 0; i < d[0] && x < bmp->width; i++, x++)
+          *(pos++) = color_table[d[1]];
+
+        if(i < d[0])
+        {
+          debug("RLE8 reached x=bmp->width during encoded run (should this be valid)?\n");
+          return false;
+        }
+      }
+    }
+  }
+
+  // Check for EOF following EOL.
+  if(x == 0 && y == -1)
+  {
+    if(!fread(d, 2, 1, fp) || d[0] != 0 || d[1] != 1)
+      debug("RLE8 missing EOF!\n");
+
+    return true;
+  }
+
+  debug("RLE8 out of bounds\n");
+  return false;
+}
+
 static boolean load_bmp(FILE *fp, struct image_file *dest)
 {
   uint8_t buf[BMP_DIB_MAX_LEN] = { 'B', 'M' };
   struct bmp_header bmp;
+
+  debug("Image type: BMP\n");
 
   // Note: already read magic bytes.
   if(fread(buf + 2, 1, BMP_HEADER_LEN - 2, fp) < BMP_HEADER_LEN - 2)
@@ -588,11 +685,12 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
     return false;
   }
 
-  if(bmp.compr_method != 0)
+  if(bmp.compr_method != BI_RGB && bmp.compr_method != BI_RLE8)
   {
     warn("unsupported BMP compression type %zu\n", (size_t)bmp.compr_method);
     return false;
   }
+  debug("Compression: %zu\n", (size_t)bmp.compr_method);
 
   if(bmp.bpp != 1 && bmp.bpp != 2 && bmp.bpp != 4 && bmp.bpp != 8 &&
    bmp.bpp != 16 && bmp.bpp != 24 && bmp.bpp != 32)
@@ -602,21 +700,28 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
   }
   debug("BPP: %u\n", bmp.bpp);
 
+  if(bmp.compr_method == BI_RLE8 && bmp.bpp != 8)
+  {
+    warn("unsupported BPP %u for RLE8\n", bmp.bpp);
+    return false;
+  }
+
   if(bmp.bpp <= 8)
   {
-    if(bmp.palette_size)
+    // If palette_size == 0, use 2^bpp.
+    if(!bmp.palette_size)
     {
-      // Read color table.
-      bmp.color_table = bmp_read_color_table(&bmp, fp);
-      if(!bmp.color_table)
-      {
-        warn("failed to read BMP color table\n");
-        return false;
-      }
+      bmp.palette_size = (1 << bmp.bpp);
+      debug("Palette size: %zu (default)\n", (size_t)bmp.palette_size);
     }
     else
+      debug("Palette size: %zu\n", (size_t)bmp.palette_size);
+
+    // Read color table.
+    bmp.color_table = bmp_read_color_table(&bmp, fp);
+    if(!bmp.color_table)
     {
-      warn("unsupported non-indexed BMP with BPP %u\n", bmp.bpp);
+      warn("failed to read BMP color table\n");
       return false;
     }
   }
@@ -644,12 +749,15 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
 
   switch(bmp.compr_method)
   {
-    case 0:
+    case BI_RGB:
       if(!bmp_read_pixarray_uncompressed(&bmp, dest, fp))
-      {
-        debug("error reading pixarray\n");
         goto err_free_image;
-      }
+      break;
+
+    // ImageMagick tends to automatically emit this for 8bpp BMPs.
+    case BI_RLE8:
+      if(!bmp_read_pixarray_rle8(&bmp, dest, fp))
+        goto err_free_image;
       break;
 
     default:
@@ -660,6 +768,7 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
   return true;
 
 err_free_image:
+  debug("error reading pixarray\n");
   image_free(dest);
 err_free:
   free(bmp.color_table);
@@ -1210,14 +1319,16 @@ static boolean load_portable_arbitrary_map(FILE *fp, struct image_file *dest)
 
   for(i = 0; i < size; i++)
   {
+    uint32_t j;
     int v[4];
-    for(uint32_t i = 0; i < depth; i++)
+
+    for(j = 0; j < depth; j++)
     {
-      v[i] = fget_value(maxval, fp);
-      if(v[i] < 0)
+      v[j] = fget_value(maxval, fp);
+      if(v[j] < 0)
         return true;
 
-      v[i] = (v[i] * maxscale) >> 32u;
+      v[j] = (v[j] * maxscale) >> 32u;
     }
 
     pos->r = v[tupltype.red_pos];

@@ -84,7 +84,7 @@
 "\n" \
 "If the input file is '-', it will be read from stdin.\n" \
 "Supported image file formats are PNG, BMP, " \
-"NetPBM (.pbm, .pgm, .ppm, .pnm, .pam), farbfeld (.ff), and raw (see above).\n\n"
+"NetPBM (.pbm, .pgm, .ppm, .pnm, .pam), farbfeld (.ff), and raw (see above).\n\n" \
 
 void Usage()
 {
