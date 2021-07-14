@@ -603,7 +603,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
               }
             }
             // Absolute mode runs are padded to word boundaries.
-            if((d[1] >> 1) & 1)
+            if((d[1] & 0x03) == 1 || (d[1] & 0x03) == 2)
               fgetc(fp);
           }
 
