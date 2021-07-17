@@ -223,6 +223,8 @@ static struct rgba_color *bmp_read_color_table(struct bmp_header *bmp, FILE *fp)
   uint32_t palette_alloc = (1 << bmp->bpp);
   uint32_t palette_size = bmp->palette_size;
   uint32_t i;
+  size_t col_len;
+  uint8_t d[4];
 
   struct rgba_color *color_table = calloc(palette_alloc, sizeof(struct rgba_color));
   struct rgba_color *pos = color_table;
@@ -233,46 +235,27 @@ static struct rgba_color *bmp_read_color_table(struct bmp_header *bmp, FILE *fp)
   if(palette_size > palette_alloc)
     palette_size = palette_alloc;
 
+  // OS/2 1.x uses RGB, everything else uses XRGB.
+  // (Bitfields may change this, but currently aren't supported.)
   if(bmp->type == BITMAPCOREHEADER)
   {
-    // OS/2 1.x uses RGB.
-    for(i = 0; i < palette_size; i++)
-    {
-      int r = fgetc(fp);
-      int g = fgetc(fp);
-      int b = fgetc(fp);
-      if(r < 0 || g < 0 || b < 0)
-        break;
-
-      pos->r = r;
-      pos->g = g;
-      pos->b = b;
-      pos->a = 255;
-      pos++;
-    }
-    bmp->streamidx += 3 * palette_size;
+    col_len = 3;
   }
   else
+    col_len = 4;
+
+  for(i = 0; i < palette_size; i++)
   {
-    // Everything else uses RGBA.
-    for(i = 0; i < palette_size; i++)
-    {
-      int r = fgetc(fp);
-      int g = fgetc(fp);
-      int b = fgetc(fp);
-      int x = fgetc(fp);
-      if(r < 0 || g < 0 || b < 0 || x < 0)
-        break;
+    if(fread(d, col_len, 1, fp) < 1)
+      break;
 
-      pos->r = r;
-      pos->g = g;
-      pos->b = b;
-      pos->a = 255;
-      pos++;
-    }
-
-    bmp->streamidx += 4 * palette_size;
+    pos->r = d[2];
+    pos->g = d[1];
+    pos->b = d[0];
+    pos->a = 255;
+    pos++;
   }
+  bmp->streamidx += col_len * palette_size;
 
   if(i < palette_size)
   {
