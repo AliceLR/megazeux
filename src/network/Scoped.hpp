@@ -27,6 +27,9 @@
 #include "../compat.h"
 #include "../util.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #ifdef IS_CXX_11
 #include <type_traits>
 #endif

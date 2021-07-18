@@ -151,7 +151,9 @@ ZLIB_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lz
 ifeq (${LIBPNG},1)
 
 # Check PREFIX for libpng-config.
-ifneq ($(wildcard ${PREFIX}/bin/libpng-config),)
+ifneq ($(and ${LIBPNG_PREFIX},$(wildcard ${LIBPNG_PREFIX}/bin/libpng-config)),)
+LIBPNG_CONFIG  := ${LIBPNG_PREFIX}/bin/libpng-config
+else ifneq ($(wildcard ${PREFIX}/bin/libpng-config),)
 LIBPNG_CONFIG  := ${PREFIX}/bin/libpng-config
 else
 LIBPNG_CONFIG  := libpng-config
