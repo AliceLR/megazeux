@@ -178,6 +178,7 @@ ifeq (${BUILD_UTILS},1)
 		${DESTDIR}${BINDIR}/downver \
 		${DESTDIR}${BINDIR}/hlp2txt \
 		${DESTDIR}${BINDIR}/txt2hlp \
+		${DESTDIR}${BINDIR}/png2smzx \
 		${DESTDIR}${BINDIR}/ccv
 endif
 	@echo Done.

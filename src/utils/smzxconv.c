@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "image_file.h"
 #include "smzxconv.h"
 
 typedef struct {
@@ -40,7 +41,7 @@ struct _smzx_converter {
 	int chroff, chrskip, chrlen;
 	int chrprelen;
 	int clroff, clrlen;
-	rgba_color *src;
+	struct rgba_color *src;
 	unsigned char *dest;
 	unsigned char *hist;
 	int *lerr;
@@ -73,7 +74,7 @@ smzx_converter *smzx_convert_init (int w, int h, int chroff, int chrskip,
 	c->chrprelen = chrprelen;
 	c->clroff = clroff;
 	c->clrlen = clrlen;
-	c->src = malloc(sizeof(rgba_color) * isiz);
+	c->src = malloc(sizeof(struct rgba_color) * isiz);
 	c->dest = malloc(isiz);
 	c->hist = malloc(isiz);
 	c->lerr = malloc(sizeof(int) * (iw + 2) * 2);
@@ -170,13 +171,13 @@ static int gcmp (const void *av, const void *bv) {
 	return 0;
 }
 
-int smzx_convert (smzx_converter *c, const rgba_color *img, mzx_tile *tile,
+int smzx_convert (smzx_converter *c, const struct rgba_color *img, mzx_tile *tile,
 	mzx_glyph *chr, mzx_color *pal) {
 	const mzx_glyph blank = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	const mzx_glyph full = {255, 255, 255, 255, 255, 255, 255, 255, 255,
 		255, 255, 255, 255, 255};
-	const rgba_color *ipx;
-	rgba_color *spx;
+	const struct rgba_color *ipx;
+	struct rgba_color *spx;
 	unsigned char *dpx, *hpx;
 	int *epx;
 	unsigned char gpal[16], rpal[256];
@@ -233,7 +234,7 @@ int smzx_convert (smzx_converter *c, const rgba_color *img, mzx_tile *tile,
 		}
 	}
 	/* Create SMZX interpolated palette from tile histograms */
-	for (i = c->clroff; i < c->clroff + c->clrlen; i++)	
+	for (i = c->clroff; i < c->clroff + c->clrlen; i++)
 		rpal[(i<<4)|i] = gpal[i];
 	for (i = c->clroff; i < c->clroff + c->clrlen - 1; i++) {
 		for (j = i + 1; j < c->clroff + c->clrlen; j++) {
