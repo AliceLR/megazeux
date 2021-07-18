@@ -103,6 +103,16 @@ static const struct image_file_const base_rgba_img
 };
 
 
+static boolean compare_rgb16(const rgba_color &base, const rgba_color &in)
+{
+  // Allow error in 16-bpp conversions...
+  static const int T = 3;
+  int r = (int)base.r - (int)in.r;
+  int g = (int)base.g - (int)in.g;
+  int b = (int)base.b - (int)in.b;
+  return (r >= -T && r <= T) && (g >= -T && g <= T) && (b >= -T && b <= T) && (in.a == 255);
+}
+
 static boolean compare_rgb(const rgba_color &base, const rgba_color &in)
 {
   return (base.r == in.r) && (base.g == in.g) && (base.b == in.b) && (in.a == 255);
@@ -168,8 +178,125 @@ UNITTEST(PNG)
 
 UNITTEST(BMP)
 {
-  // FIXME
-  UNIMPLEMENTED();
+  struct image_file img{};
+  char path[512];
+  char msg[256];
+  boolean ret;
+
+  static const char *bw_inputs[] =
+  {
+    "idx_1bpp.bmp",
+  };
+
+  static const char *gs_inputs[] =
+  {
+    "idx_2bpp.bmp",
+  };
+
+  static const char *rgb_indexed_inputs[] =
+  {
+    "idx_4bpp.bmp",
+    "idx_8bpp.bmp",
+  };
+
+  static const char *rgb_rle_inputs[] =
+  {
+    "rle_4bpp.bmp",
+    "rle_8bpp.bmp",
+  };
+
+  static const char *rgb_truecolor16_inputs[] =
+  {
+    "true_16bpp.bmp",
+  };
+
+  static const char *rgb_truecolor_inputs[] =
+  {
+    "true_24bpp.bmp",
+    "true_32bpp.bmp",
+  };
+
+  SECTION(TrueColor)
+  {
+    for(const char *filename : rgb_truecolor_inputs)
+    {
+      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
+      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
+
+      ret = load_image_from_file(path, &img, NULL);
+      ASSERTX(ret, msg);
+      ret = compare_image<compare_rgb>(base_rgba_img, img, msg + off, sizeof(msg) - off);
+      ASSERTX(ret, msg);
+      image_free(&img);
+    }
+
+    // 16bpp is lossy, needs a special compare...
+    for(const char *filename : rgb_truecolor16_inputs)
+    {
+      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
+      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
+
+      ret = load_image_from_file(path, &img, NULL);
+      ASSERTX(ret, msg);
+      ret = compare_image<compare_rgb16>(base_rgba_img, img, msg + off, sizeof(msg) - off);
+      ASSERTX(ret, msg);
+      image_free(&img);
+    }
+  }
+
+  SECTION(Indexed)
+  {
+    for(const char *filename : rgb_indexed_inputs)
+    {
+      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
+      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
+
+      ret = load_image_from_file(path, &img, NULL);
+      ASSERTX(ret, msg);
+      ret = compare_image<compare_rgb>(base_rgba_img, img, msg + off, sizeof(msg) - off);
+      ASSERTX(ret, msg);
+      image_free(&img);
+    }
+
+    for(const char *filename : bw_inputs)
+    {
+      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
+      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
+
+      ret = load_image_from_file(path, &img, NULL);
+      ASSERTX(ret, msg);
+      ret = compare_image<compare_rgb>(base_bw_img, img, msg + off, sizeof(msg) - off);
+      ASSERTX(ret, msg);
+      image_free(&img);
+    }
+
+    for(const char *filename : gs_inputs)
+    {
+      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
+      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
+
+      ret = load_image_from_file(path, &img, NULL);
+      ASSERTX(ret, msg);
+      ret = compare_image<compare_rgb>(base_gs_img, img, msg + off, sizeof(msg) - off);
+      ASSERTX(ret, msg);
+      image_free(&img);
+    }
+  }
+
+  SECTION(RLE)
+  {
+    for(const char *filename : rgb_rle_inputs)
+    {
+      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
+      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
+
+      ret = load_image_from_file(path, &img, NULL);
+      ASSERTX(ret, msg);
+      ret = compare_image<compare_rgb>(base_rgba_img, img, msg + off, sizeof(msg) - off);
+      ASSERTX(ret, msg);
+      image_free(&img);
+    }
+  }
 }
 
 
