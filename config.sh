@@ -445,11 +445,22 @@ if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
 	# provided. This helps avoid errors that occur when gcc or libs exist in
 	# /usr, which is used by MSYS2 for the MSYS environment.
 	if [ "$PREFIX_IS_SET" = "false" -a -n "$MSYSTEM" \
-	 -a "$(uname -o)" == "Msys" ]; then
-		if [ "$MSYSTEM" = "MINGW32" -o "$MSYSTEM" = "MINGW64" ]; then
+	 -a "$(uname -o)" == "Msys" -a ! "$MSYSTEM" = "MSYS" ]; then
+		case "$MSYSTEM" in
+		  "MINGW32"|"MINGW64")
 			[ "$PLATFORM" = "win32" ] && PREFIX="/mingw32"
 			[ "$PLATFORM" = "win64" ] && PREFIX="/mingw64"
-		fi
+			;;
+		  "CLANG64")
+			[ "$PLATFORM" = "win64" ] && PREFIX="/clang64"
+			;;
+		  "UCRT64")
+			[ "$PLATFORM" = "win64" ] && PREFIX="/ucrt64"
+			;;
+		  *)
+			echo "WARNING: Unknown MSYSTEM '$MSYSTEM'!"
+			;;
+		esac
 	fi
 
 	[ "$PLATFORM" = "win32" -o "$PLATFORM" = "mingw32" ] && ARCHNAME=x86
