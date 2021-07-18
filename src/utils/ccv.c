@@ -15,7 +15,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define CCV_VERSION "v0.074"
+#define CCV_VERSION "v0.075"
 
 // With fix contributed by Lachesis
 
@@ -31,6 +31,10 @@
 #include "image_file.h"
 #include "utils_alloc.h"
 
+#ifndef VERSION_DATE
+#define VERSION_DATE
+#endif
+
 #ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
 #define PROMISES "stdio rpath wpath cpath"
@@ -41,62 +45,137 @@
 
 #include "uthash.h"
 
-#define USAGE  "Usage:\n" \
-"ccv input.bmp\n" \
-".. converts input.bmp to input.chr. The conversion will convert the image to a charset or partial charset containing a quantised representation of the image. No char reuse will be done.\n" \
-"ccv input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm. If the same character would have been used multiple times, it will be reused. Hence while the .chr itself may not match the input image, the combination of the .chr and .mzm will.\n" \
-"ccv input.bmp -reuse\n" \
-".. converts input.bmp to input.chr, reusing chars where possible. This option is implied with -mzm, but can be used for simple charset output with this.\n" \
-"ccv input.bmp -mzm -noreuse\n" \
-".. converts input.bmp to input.chr and input.mzm without reusing characters.\n" \
-"ccv input.bmp -o output\n" \
-".. converts input.bmp to output.chr\n" \
-"ccv input.bmp -mzm -o output\n" \
-".. converts input.bmp to output.chr and output.mzm\n" \
-"ccv input1.bmp input2.bmp -mzm\n" \
-".. converts input1.bmp and input2.bmp to input1.chr, input2.chr, input1.mzm and input2.mzm\n" \
-"ccv input.bmp -mzm -blank 32 \n" \
-".. converts input.bmp to input.chr and input.mzm. Char 32 will be blank and blank parts of the image will be assigned char #32 instead of some other char.\n" \
-"ccv -c 30 input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm, with no more than 30 characters used. If necessary, close characters will be reused. -c implies -reuse.\n" \
-"ccv -offset 128 input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm with the char indices in input.mzm being offset by 128 places. Hence loading the charset with load char set \"@128input.chr\" and placing the MZM should result in accurate graphics.\n" \
-"ccv -exclude 32 input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm. If char #32 would otherwise be used in the conversion, it will be replaced with a blank char instead and will not be referenced in the output -mzm.\n" \
-"ccv -exclude 32-63 input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm. If chars #32 to #63 would otherwise be used in the conversion, they will be replaced with blank chars instead and will not be referenced in the output -mzm.\n" \
-"ccv -exclude 0,32 input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm. If chars #0 or #32 would otherwise be used in the conversion, they will be replaced with blank chars instead and will not be referenced in the output -mzm.\n" \
-"ccv input.raw -w 256 -h 112\n" \
-".. converts input.raw to input.chr. input.raw is assumed to be an 8-bit headerless image of the dimensions given, where zero is black and nonzero is white.\n" \
-"ccv input.bmp -threshold 160\n" \
-".. converts input.bmp to input.chr turning pixels >= 160 brightness white and other pixels black. If not supplied, the default is 127.\n" \
-"ccv input.bmp -dither floyd-steinberg\n" \
-"ccv input.bmp -dither stucki\n" \
-"ccv input.bmp -dither jarvis-judice-ninke\n" \
-"ccv input.bmp -dither burkes\n" \
-"ccv input.bmp -dither sierra\n" \
-"ccv input.bmp -dither stevenson-arce\n" \
-".. converts input.bmp to input.chr using the given error-diffusion kernel. Note that you can abbreviate it (i.e. 'floyd', 'jarvis') as it only has to match part of the name. Note that the -threshold value, if supplied, is still used here.\n" \
-"ccv -q input.bmp\n" \
-".. suppress output to stdout\n" \
-"\n" \
-"If the input file is '-', it will be read from stdin.\n" \
-"Supported image file formats are PNG, BMP, " \
-"NetPBM (.pbm, .pgm, .ppm, .pnm, .pam), farbfeld (.ff), and raw (see above).\n\n" \
+static const char USAGE[] =
+"ccv " CCV_VERSION " :: MegaZeux " VERSION VERSION_DATE "\n"
+"char conversion tool for megazeux by Dr Lancer-X <drlancer@megazeux.org>\n"
+"Usage: ccv <input files...> [options...]\n";
+
+static const char USAGE_DESC[] =
+"\n"
+"  By default, ccv converts input file 'input.fil' to output charset 'input.chr'\n"
+"  with no char reuse.\n\n"
+
+"  If the input file '-' is provided, it will be read from stdin.\n\n"
+
+"  Supported image file formats are:\n\n"
+
+"  * PNG\n"
+"  * BMP (1bpp, 2bpp, 4bpp, 8bpp, 16bpp, 24bpp, 32bpp, RLE8, RLE4)\n"
+"  * Netpbm/PNM (.pbm, .pgm, .ppm, .pnm, .pam)\n"
+"  * farbfeld (.ff)\n"
+"  * raw (see raw format)\n"
+"\n";
+
+static const char USAGE_OPTS[] =
+"Options:\n\n"
+
+"  -blank [#]       Specifies a blank char index (default is -1 for none).\n"
+"  -c [#]           Specifies the maximum number of chars to output, or 0 for\n"
+"                   no maximum char limit (default).\n"
+"  -dither [type]   Specifies a dithering algorithm to apply (default is none).\n"
+"                   Supported values: floyd-steinberg, stucki, jarvis-judice-ninke,\n"
+"                   burkes, sierra, stevenson-arce. These values can be abbreviated,\n"
+"                   e.g. 'floyd' for 'floyd-steinberg'.\n"
+"  -exclude [...]   Exclude a single char or range of chars from conversion.\n"
+"                   The parameter can be a single number (32), a range (128-159),\n"
+"                   or a comma-separated list of numbers and ranges. In the\n"
+"                   output charset, these will be left blank.\n"
+"  -help            Display this message.\n"
+"  -mzm             Output both an MZM and a CHR.\n"
+"  -offset [#]      Specifies the starting char offset for MZMs. Intended for use\n"
+"                   with LOAD CHAR SET \"@###file.chr\", where ### is the offset.\n"
+"  -output [name]   Specifies an output filename prefix. For example, '-output da_bomb'\n"
+"                   will output 'da_bomb.chr' (and 'da_bomb.mzm' if -mzm is specified).\n"
+"                   By default, this is the prefix of the input file, or 'out' if the\n"
+"                   input file is stdin.\n"
+"  -q               Suppress stdout messages.\n"
+"  -reuse -noreuse  Specify whether or not chars should be reused.\n"
+"                   On by default with -mzm or -c, off by default otherwise.\n"
+"  -threshold [#]   Specify the intensity threshold for quantization. This is a value\n"
+"                   from 0 to 255; if the intensity of a pixel is greater-than-or-equal\n"
+"                   to this threshold, it will be considered 'on'; if less than this\n"
+"                   threshold, it will be considered 'off'. Default is 127.\n"
+"  -w [#]           Specify raw format width (see raw format).\n"
+"  -h [#]           Specify raw format height (see raw format).\n"
+"\n";
+
+static const char USAGE_RAW[] =
+"Raw format:\n\n"
+
+"  ccv allows input of raw greyscale images if -w and -h are specified. Each\n"
+"  byte of the input file represents the intensity of one pixel.\n"
+
+"  Prior ccv versions treated these intensities as boolean values (zero for off,\n"
+"  non-zero for on). For equivalent behavior to this, use -threshold 1.\n"
+"\n";
+
+static const char USAGE_EXAMPLES[] =
+"Examples:\n\n"
+
+"  ccv input.bmp\n\n"
+
+"    converts input.bmp to input.chr. The conversion will convert the image to\n"
+"    a charset or partial charset containing a quantised representation of the\n"
+"    image. No char reuse will be done.\n\n"
+
+"  ccv input.png -mzm -output output\n\n"
+
+"    converts input.bmp to output.chr and output.mzm. If the same character would\n"
+"    have been used multiple times, it will be reused. Hence while the .chr\n"
+"    itself may not match the input image, the combination of the .chr and .mzm will.\n\n"
+
+"  ccv input1.bmp input2.bmp -mzm\n\n"
+
+"    converts input1.bmp and input2.bmp to input1.chr, input2.chr,\n"
+"    input1.mzm and input2.mzm.\n\n"
+
+"  ccv input.bmp -mzm -blank 32\n\n"
+
+"    converts input.bmp to input.chr and input.mzm. Char 32 will be blank and blank\n"
+"    parts of the image will be assigned char #32 instead of some other char.\n\n"
+
+"  ccv -c 30 input.bmp -mzm\n\n"
+
+"    converts input.bmp to input.chr and input.mzm, with no more than 30 characters\n"
+"    used. If necessary, close characters will be reused. -c implies -reuse.\n\n"
+
+"  ccv -offset 128 input.bmp -mzm\n\n"
+
+"    converts input.bmp to input.chr and input.mzm with the char indices in\n"
+"    input.mzm being offset by 128 places. Hence loading the charset with\n"
+"    LOAD CHAR SET \"@128input.chr\" and placing the MZM should result in\n"
+"    accurate graphics.\n"
+
+"  ccv -exclude 0,32-63 input.bmp -mzm\n\n"
+
+"    converts input.bmp to input.chr and input.mzm. If char #0 or chars #32 through #63\n"
+"    would otherwise be used in the conversion, they will be replaced with blank\n"
+"    chars instead and will not be referenced in the output -mzm.\n\n"
+
+"  ccv input.raw -w 256 -h 112 -threshold 32\n\n"
+
+"    converts input.raw to input.chr. All bytes >=32 will be treated as white and\n"
+"    bytes <32 will be treated as black.\n\n"
+
+"  ccv input.bmp -dither floyd-steinberg -threshold 160\n\n"
+
+"    converts input.bmp to input.chr using floyd-steinberg dithering and treating\n"
+"    intensities >=160 as white.\n"
+"\n";
 
 void Usage()
 {
-  fprintf(stderr, "ccv " CCV_VERSION " - char conversion tool for megazeux\n");
-  fprintf(stderr, "by Dr Lancer-X <drlancer@megazeux.org>\n");
-  fprintf(stderr, "Usage: ccv [options] input_file [...]\n");
+  fprintf(stderr, USAGE);
   fprintf(stderr, "Type \"ccv -help\" for extended options information\n");
 }
 
 void Help()
 {
   fprintf(stderr, USAGE);
+  fprintf(stderr, USAGE_DESC);
+  fprintf(stderr, USAGE_OPTS);
+  fprintf(stderr, USAGE_RAW);
+  fprintf(stderr, USAGE_EXAMPLES);
 }
 
 void Error(const char *string, ...)
