@@ -408,9 +408,9 @@ static boolean bmp_pixarray_u16(const struct bmp_header *bmp,
 
       value = read16le(d);
 
-      pos->r = ((value >> 10) & 0x1f) * 255u / 31u;
-      pos->g = ((value >>  5) & 0x1f) * 255u / 31u;
-      pos->b = ((value >>  0) & 0x1f) * 255u / 31u;
+      pos->r = (((value >> 10) & 0x1f) * 255u + 16) / 31u;
+      pos->g = (((value >>  5) & 0x1f) * 255u + 16) / 31u;
+      pos->b = (((value >>  0) & 0x1f) * 255u + 16) / 31u;
       pos->a = 255;
       pos++;
     }
@@ -770,7 +770,7 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
     }
   }
 
-  // Padding: round up row size (bpp*width) to a whole number of chars. Padding
+  // Padding: round up row size (bpp*width) to a whole number of bytes. Padding
   // size is 0 to 3 extra bytes required to pad that value to a multiple of 4.
   bmp.rowpadding = (4 - (((bmp.bpp * (uint64_t)bmp.width + 7) / 8))) & 3;
   debug("Row padding: %zu\n", (size_t)bmp.rowpadding);
