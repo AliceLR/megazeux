@@ -14,6 +14,8 @@ unit_src_io     := unit/io
 unit_obj_io     := unit/io/.build
 unit_src_network:= unit/network
 unit_obj_network:= unit/network/.build
+unit_src_utils  := unit/utils
+unit_obj_utils  := unit/utils/.build
 
 ifneq (${BINEXT},)
 unit_ext        := ${BINEXT}
@@ -44,6 +46,13 @@ unit_objs += \
 
 endif
 
+ifneq (${BUILD_UTILS},)
+
+unit_objs += \
+  ${unit_obj_utils}/image_file${unit_ext} \
+
+endif
+
 #
 # Some unit tests only work with modular builds. The reason is usually
 # that the component(s) being tested are far too dependent on other
@@ -66,6 +75,11 @@ ifneq (${BUILD_NETWORK},)
 unit_objs += \
   ${unit_obj_network}/Manifest${unit_ext}
 endif
+endif
+
+ifneq (${LIBPNG},)
+unit_cflags  += ${LIBPNG_CFLAGS}
+unit_ldflags += ${LIBPNG_LDFLAGS}
 endif
 
 #
@@ -121,12 +135,17 @@ ${unit_obj_network}/%${unit_ext}: ${unit_src_network}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
 	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
 
+${unit_obj_utils}/%${unit_ext}: ${unit_src_utils}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
+
 -include ${unit_objs:${unit_ext}=.d}
 
 ${unit_objs}: | $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
 ${unit_objs}: | $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
 ${unit_objs}: | $(filter-out $(wildcard ${unit_obj_io}), ${unit_obj_io})
 ${unit_objs}: | $(filter-out $(wildcard ${unit_obj_network}), ${unit_obj_network})
+${unit_objs}: | $(filter-out $(wildcard ${unit_obj_utils}), ${unit_obj_utils})
 
 unittest: ${unit_objs}
 	@failcount=0; \

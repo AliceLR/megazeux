@@ -61,7 +61,7 @@ int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
    PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
    PNG_FILTER_TYPE_DEFAULT);
 
-  pal_ptr = cmalloc(count * sizeof(png_color));
+  pal_ptr = (png_colorp)cmalloc(count * sizeof(png_color));
   if(!pal_ptr)
     goto exit_free_close;
 
@@ -77,7 +77,7 @@ int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
   png_write_info(png_ptr, info_ptr);
   png_set_packing(png_ptr);
 
-  row_ptrs = cmalloc(sizeof(png_bytep) * 350);
+  row_ptrs = (png_bytep *)cmalloc(sizeof(png_bytep) * 350);
   if(!row_ptrs)
     goto exit_free_close;
 
@@ -137,7 +137,7 @@ int png_write_screen_32bpp(uint32_t *pixels, const char *name)
   png_write_info(png_ptr, info_ptr);
   png_set_packing(png_ptr);
 
-  row_ptrs = cmalloc(sizeof(png_bytep) * 350);
+  row_ptrs = (png_bytep *)cmalloc(sizeof(png_bytep) * 350);
   if(!row_ptrs)
     goto exit_free_close;
 
@@ -243,7 +243,7 @@ void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checke
   png_read_update_info(png_ptr, info_ptr);
   png_get_IHDR(png_ptr, info_ptr, &w, &h, &bpp, &type, NULL, NULL, NULL);
 
-  row_ptrs = cmalloc(sizeof(png_bytep) * h);
+  row_ptrs = (png_bytep *)cmalloc(sizeof(png_bytep) * h);
   if(!row_ptrs)
     goto exit_free_close;
 

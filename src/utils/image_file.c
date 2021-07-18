@@ -68,7 +68,7 @@ static boolean image_init(uint32_t width, uint32_t height, struct image_file *de
    (uint64_t)width * (uint64_t)height > MAXIMUM_PIXELS)
     return false;
 
-  data = calloc(width * height, sizeof(struct rgba_color));
+  data = (struct rgba_color *)calloc(width * height, sizeof(struct rgba_color));
   if(!data)
     return false;
 
@@ -123,8 +123,8 @@ static boolean load_png(FILE *fp, struct image_file *dest)
   png_uint_32 h;
 
   debug("Image type: PNG\n");
-  dest->data = png_read_stream(fp, &w, &h, true, dummy_constraint,
-   dummy_allocator);
+  dest->data = (struct rgba_color *)png_read_stream(fp, &w, &h, true,
+   dummy_constraint, dummy_allocator);
 
   if(dest->data)
   {
@@ -226,7 +226,7 @@ static struct rgba_color *bmp_read_color_table(struct bmp_header *bmp, FILE *fp)
   size_t col_len;
   uint8_t d[4];
 
-  struct rgba_color *color_table = calloc(palette_alloc, sizeof(struct rgba_color));
+  struct rgba_color *color_table = (struct rgba_color *)calloc(palette_alloc, sizeof(struct rgba_color));
   struct rgba_color *pos = color_table;
   if(!color_table)
     return NULL;
@@ -826,6 +826,8 @@ err_free:
  * NetPBM loaders.
  */
 
+#define ROUND_32 (1u << 31u)
+
 #define fget_value(maxval, fp) \
  ((maxval > 255) ? (fgetc(fp) << 8) | fgetc(fp) : fgetc(fp))
 
@@ -1045,7 +1047,7 @@ static boolean load_portable_greymap_plain(FILE *fp, struct image_file *dest)
     if(!next_value(&val, maxval, fp))
       break;
 
-    val = (val * maxscale) >> 32u;
+    val = (val * maxscale + ROUND_32) >> 32u;
     pos->r = val;
     pos->g = val;
     pos->b = val;
@@ -1083,7 +1085,7 @@ static boolean load_portable_greymap_binary(FILE *fp, struct image_file *dest)
     if(val < 0)
       break;
 
-    val = (val * maxscale) >> 32u;
+    val = (val * maxscale + ROUND_32) >> 32u;
     pos->r = val;
     pos->g = val;
     pos->b = val;
@@ -1125,9 +1127,9 @@ static boolean load_portable_pixmap_plain(FILE *fp, struct image_file *dest)
     if(!next_value(&b, maxval, fp))
       break;
 
-    pos->r = (r * maxscale) >> 32u;
-    pos->g = (g * maxscale) >> 32u;
-    pos->b = (b * maxscale) >> 32u;
+    pos->r = (r * maxscale + ROUND_32) >> 32u;
+    pos->g = (g * maxscale + ROUND_32) >> 32u;
+    pos->b = (b * maxscale + ROUND_32) >> 32u;
     pos->a = 255;
     pos++;
   }
@@ -1164,9 +1166,9 @@ static boolean load_portable_pixmap_binary(FILE *fp, struct image_file *dest)
     if(r < 0 || g < 0 || b < 0)
       break;
 
-    pos->r = (r * maxscale) >> 32u;
-    pos->g = (g * maxscale) >> 32u;
-    pos->b = (b * maxscale) >> 32u;
+    pos->r = (r * maxscale + ROUND_32) >> 32u;
+    pos->g = (g * maxscale + ROUND_32) >> 32u;
+    pos->b = (b * maxscale + ROUND_32) >> 32u;
     pos->a = 255;
     pos++;
   }
@@ -1374,7 +1376,7 @@ static boolean load_portable_arbitrary_map(FILE *fp, struct image_file *dest)
       if(v[j] < 0)
         return true;
 
-      v[j] = (v[j] * maxscale) >> 32u;
+      v[j] = (v[j] * maxscale + ROUND_32) >> 32u;
     }
 
     pos->r = v[tupltype.red_pos];
@@ -1393,7 +1395,7 @@ static boolean load_portable_arbitrary_map(FILE *fp, struct image_file *dest)
 
 static uint8_t convert_16b_to_8b(uint16_t component)
 {
-  return (uint32_t)component * 255u / 65535u;
+  return (uint32_t)(component * 255u + 32768u) / 65535u;
 }
 
 static boolean load_farbfeld(FILE *fp, struct image_file *dest)
@@ -1457,7 +1459,7 @@ static boolean load_raw(FILE *fp, struct image_file *dest,
   debug("checking if this is a raw file with properties: %zu %zu %zu\n",
    (size_t)format->width, (size_t)format->height, (size_t)format->bytes_per_pixel);
 
-  data = malloc(raw_size);
+  data = (uint8_t *)malloc(raw_size);
   if(!data)
   {
     debug("can't allocate memory for raw image with given size\n");

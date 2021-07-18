@@ -149,6 +149,7 @@ unit/.build/
 unit/editor/.build/
 unit/io/.build/
 unit/network/.build/
+unit/utils/.build/
 /*.js
 /*.js.mem
 /*.js.orig.js
