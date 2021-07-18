@@ -834,6 +834,8 @@ err_free:
 static boolean skip_whitespace(FILE *fp)
 {
   int value = fgetc(fp);
+  if(value < 0)
+    return false;
 
   if(value == '#')
   {
@@ -851,14 +853,16 @@ static boolean skip_whitespace(FILE *fp)
   return false;
 }
 
-static int next_number(size_t *output, FILE *fp)
+static int next_number(uint32_t *output, FILE *fp)
 {
   int value;
+  int count;
   *output = 0;
 
   while(skip_whitespace(fp));
 
-  while(1)
+  count = 0;
+  for(count = 0; count <= 10; count++)
   {
     value = fgetc(fp);
     if(!isdigit(value))
@@ -868,15 +872,15 @@ static int next_number(size_t *output, FILE *fp)
     }
 
     *output = (*output * 10) + (value - '0');
-
-    if(*output > UINT32_MAX)
-      return EOF;
   }
+
+  // Digit count overflowed the uint32_t return value...
+  return EOF;
 }
 
 static boolean next_value(uint32_t *value, uint32_t maxval, FILE *fp)
 {
-  size_t v;
+  uint32_t v;
   if(next_number(&v, fp) == EOF || v > maxval)
     return false;
 
@@ -903,8 +907,8 @@ static boolean next_bit_value(uint32_t *value, FILE *fp)
 static boolean pbm_header(uint32_t *width, uint32_t *height, FILE *fp)
 {
   // NOTE: already read magic.
-  size_t w = 0;
-  size_t h = 0;
+  uint32_t w = 0;
+  uint32_t h = 0;
 
   if(next_number(&w, fp) == EOF ||
    next_number(&h, fp) == EOF)
@@ -921,9 +925,9 @@ static boolean pbm_header(uint32_t *width, uint32_t *height, FILE *fp)
 static boolean ppm_header(uint32_t *width, uint32_t *height, uint32_t *maxval, FILE *fp)
 {
   // NOTE: already read magic. PGM and PPM use the same header format.
-  size_t w = 0;
-  size_t h = 0;
-  size_t m = 0;
+  uint32_t w = 0;
+  uint32_t h = 0;
+  uint32_t m = 0;
 
   if(next_number(&w, fp) == EOF ||
    next_number(&h, fp) == EOF ||
