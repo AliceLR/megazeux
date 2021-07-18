@@ -77,11 +77,6 @@ unit_objs += \
 endif
 endif
 
-ifneq (${LIBPNG},)
-unit_cflags  += ${LIBPNG_CFLAGS}
-unit_ldflags += ${LIBPNG_LDFLAGS}
-endif
-
 #
 # This may already be set with sanitizer flags.
 #
@@ -108,6 +103,12 @@ ifeq (${BUILD_F_ANALYZER},1)
 ifeq (${HAS_F_ANALYZER},1)
 unit_cflags += -fanalyzer
 endif
+endif
+
+# Required for image_file test.
+ifneq (${LIBPNG},)
+unit_cflags  += ${LIBPNG_CFLAGS}
+unit_ldflags += ${LIBPNG_LDFLAGS}
 endif
 
 ifneq (${HAS_CXX_11},1)
