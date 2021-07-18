@@ -36,11 +36,13 @@ else
 endif
 
 SDL_PREFIX := ${PORTLIBS_PATH}/wiiu
+LIBPNG_PREFIX := ${PORTLIBS_PATH}/ppc
 
-EXTRA_INCLUDES := -isystem ${WUT_ROOT}/include -isystem ${PORTLIBS_PATH}/wiiu/include \
-                  -isystem ${PORTLIBS_PATH}/ppc/include
-EXTRA_LIBS := -L${WUT_ROOT}/lib -L${PORTLIBS_PATH}/wiiu/lib -L${PORTLIBS_PATH}/ppc/lib \
-              -lSDL2 -l${WUT}
+PORTLIBS_INCLUDES := $(foreach dir, $(PORTLIBS), -isystem $(dir)/include)
+PORTLIBS_LIBS     := $(foreach dir, $(PORTLIBS), -L$(dir)/lib)
+
+EXTRA_INCLUDES := -isystem ${WUT_ROOT}/include ${PORTLIBS_INCLUDES}
+EXTRA_LIBS := -L${WUT_ROOT}/lib ${PORTLIBS_LIBS} -lSDL2 -l${WUT}
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP}
 ARCH_CXXFLAGS += ${ARCH_CFLAGS} -fno-rtti -fno-exceptions
