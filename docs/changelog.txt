@@ -148,6 +148,14 @@ USERS
 + Optimized ccheck 3 sprite collision performance by generating
   visibility masks for characters directly instead of using an
   intermediate render and skipping pixel checks for blank chars.
++ Dividing the value -2147483648 by -1, either by the commands
+  DIVIDE and MODULO or through expression operators / and %, no
+  longer crashes MegaZeux.
++ When the right operand to a bitshift operator in an expression
+  is less than 0 or greater than 31, << and >> will return 0,
+  and >>> will return 0 if the left operand is positive or -1 if
+  the left operand is negative. The old behavior of the bitshift
+  operators for these shift values was architecture dependent.
 + libxmp playback improvements for GDM, AMF, and OctaMED modules
   as well as general stability improvements.
 + ccv and png2smzx now both support the following image formats:
