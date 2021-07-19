@@ -18,6 +18,7 @@
  */
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <sys/stat.h>
 
@@ -528,7 +529,7 @@ int vfgetd(vfile *vf)
     if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF))
       return EOF;
 
-    return (d << 24) | (c << 16) | (b << 8) | a;
+    return ((uint32_t)d << 24) | (c << 16) | (b << 8) | a;
   }
 
   return EOF;
