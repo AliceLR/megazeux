@@ -82,9 +82,14 @@ struct config_test_saved_position
 };
 #endif /* CONFIG_EDITOR */
 
+/**
+ * For integer types, use min (if signed) or max (otherwise).
+ * Enum types need to be specialized since numeric_limits doesn't work on them.
+ */
 template<class T>
 static constexpr T INVALID()
 {
+  static_assert(std::numeric_limits<T>::max() > 0, "INVALID<> needs specialization.");
   return std::numeric_limits<T>::is_signed ?
    std::numeric_limits<T>::min() : std::numeric_limits<T>::max();
 }
@@ -111,6 +116,12 @@ template<>
 constexpr resample_mode INVALID<resample_mode>()
 {
   return NUM_RESAMPLE_MODES;
+}
+
+template<>
+constexpr allow_cheats_type INVALID<allow_cheats_type>()
+{
+  return NUM_ALLOW_CHEATS_TYPES;
 }
 
 #ifdef CONFIG_NETWORK
