@@ -35,7 +35,7 @@ jobs:
   #    - name: Install
   #      run: make install
 
-  mingw64:
+  MSYS2:
     runs-on: windows-latest
     defaults:
       run:
@@ -44,40 +44,33 @@ jobs:
       - name: Setup msys2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: "MINGW64"
+          msystem: MINGW64
           update: true
-          install: base-devel git p7zip mingw-w64-x86_64-gcc mingw-w64-x86_64-zlib mingw-w64-x86_64-libpng mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-SDL2
+          install: >-
+            base-devel git p7zip
+            mingw-w64-x86_64-gcc    mingw-w64-x86_64-zlib      mingw-w64-x86_64-libpng
+            mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-SDL2
+            mingw-w64-i686-gcc      mingw-w64-i686-zlib        mingw-w64-i686-libpng
+            mingw-w64-i686-libogg   mingw-w64-i686-libvorbis   mingw-w64-i686-SDL2
       - uses: actions/checkout@v2
-      - name: Configure
+      - name: Configure x64
         run: ./config.sh --platform win64 --enable-release
-      - name: Build
+      - name: Build x64
         run: make
-      - name: Run tests
+      - name: Test x64
         run: make test
       - name: Package x64 .zip
         run: make archive
-
-  mingw32:
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - name: Setup msys2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: "MINGW32"
-          update: true
-          install: base-devel git p7zip mingw-w64-i686-gcc mingw-w64-i686-zlib mingw-w64-i686-libpng mingw-w64-i686-libogg mingw-w64-i686-libvorbis mingw-w64-i686-SDL2
-      - uses: actions/checkout@v2
-      - name: Configure
-        run: ./config.sh --platform win32 --enable-release
-      - name: Build
-        run: make
-      - name: Run tests
-        run: make test
+      - name: Distclean
+        run: make distclean
+      - name: Configure x86
+        run: MSYSTEM=MINGW32 bash -l -c "./config.sh --platform win32 --enable-release"
+      - name: Build x86
+        run: MSYSTEM=MINGW32 bash -l -c "make"
+      - name: Test x86
+        run: MSYSTEM=MINGW32 bash -l -c "make test"
       - name: Package x86 .zip
-        run: make archive
+        run: MSYSTEM=MINGW32 bash -l -c "make archive"
 
   AArch64:
     runs-on: ubuntu-latest
