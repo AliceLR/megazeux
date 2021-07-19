@@ -200,7 +200,10 @@ ifeq (${DEBUG},1)
 ifeq (${SANITIZER},address)
 DEBUG_CFLAGS := -fsanitize=address -O1 -fno-omit-frame-pointer
 else ifeq (${SANITIZER},undefined)
-DEBUG_CFLAGS := -fsanitize=undefined -O0 -fno-omit-frame-pointer
+# Signed integer overflows (shift-base, signed-integer-overflow)
+# are pretty much inevitable in Robotic, so ignore them.
+DEBUG_CFLAGS := -fsanitize=undefined -O0 -fno-omit-frame-pointer \
+ -fno-sanitize-recover=all -fno-sanitize=shift-base,signed-integer-overflow
 else ifeq (${SANITIZER},thread)
 DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE
 ARCH_EXE_LDFLAGS += -pie

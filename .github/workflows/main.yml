@@ -167,3 +167,19 @@ jobs:
         run: make
       - name: Run tests
         run: make test
+
+  UndefinedBehaviorSanitizer:
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
+      - uses: actions/checkout@v2
+      - name: Configure
+        run: ./config.sh --platform unix-devel --enable-ubsan
+      - name: Build
+        run: make
+      - name: Run tests
+        run: make test
