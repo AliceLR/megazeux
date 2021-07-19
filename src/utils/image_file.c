@@ -1356,6 +1356,7 @@ static boolean load_portable_arbitrary_map(FILE *fp, struct image_file *dest)
   uint64_t maxscale;
   uint32_t size;
   uint32_t i;
+  int v[4] = { 0 };
 
   debug("Image type: PAM (P7)\n");
 
@@ -1372,7 +1373,6 @@ static boolean load_portable_arbitrary_map(FILE *fp, struct image_file *dest)
   for(i = 0; i < size; i++)
   {
     uint32_t j;
-    int v[4];
 
     for(j = 0; j < depth; j++)
     {
