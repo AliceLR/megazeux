@@ -64,28 +64,21 @@ static void init_modplug_settings(void)
   switch(conf->module_resample_mode)
   {
     case RESAMPLE_MODE_NONE:
-    {
       mod_settings.mResamplingMode = MODPLUG_RESAMPLE_NEAREST;
       break;
-    }
 
     case RESAMPLE_MODE_LINEAR:
-    {
+    default:
       mod_settings.mResamplingMode = MODPLUG_RESAMPLE_LINEAR;
       break;
-    }
 
     case RESAMPLE_MODE_CUBIC:
-    {
       mod_settings.mResamplingMode = MODPLUG_RESAMPLE_SPLINE;
       break;
-    }
 
     case RESAMPLE_MODE_FIR:
-    {
       mod_settings.mResamplingMode = MODPLUG_RESAMPLE_FIR;
       break;
-    }
   }
 
   mod_settings.mLoopCount = -1;

@@ -115,6 +115,7 @@ static void mm_set_resample_mode(void)
     case RESAMPLE_MODE_LINEAR:
     case RESAMPLE_MODE_CUBIC:
     case RESAMPLE_MODE_FIR:
+    default:
       md_mode |= DMODE_INTERP;
       break;
   }
