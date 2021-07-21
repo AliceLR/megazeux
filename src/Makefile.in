@@ -14,7 +14,7 @@ include contrib/libxmp/Makefile.megazeux
 # Linking with g++ is only necessary if linking the C++ standard library
 # (libstdc++ or libc++) is required; usually it isn't, and gcc can be used.
 #
-LINK_CC := ${CC}
+LINK_CC ?= ${CC}
 
 core_src = src
 core_obj = src/.build
@@ -470,7 +470,7 @@ endif
 ${mzx}: ${core_target} ${editor_target} ${mzx_objs}
 	$(if ${V},,@echo "  LINK    " ${mzx})
 ifeq (${BUILD_MODULAR},1)
-	${CC} ${mzx_objs} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
+	${LINK_CC} ${mzx_objs} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
 	  ${DSORPATH} -L. -lcore -leditor \
 	  ${mzx_ldflags}
 else
@@ -506,7 +506,7 @@ endif
 ${mzxrun}: ${core_target} ${mzxrun_objs}
 	$(if ${V},,@echo "  LINK    " ${mzxrun})
 ifeq (${BUILD_MODULAR},1)
-	${CC} ${mzxrun_objs} -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
+	${LINK_CC} ${mzxrun_objs} -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
 	  ${DSORPATH} -L. -lcore ${mzxrun_ldflags}
 else
 	${LINK_CC} ${mzxrun_objs} ${core_target} \

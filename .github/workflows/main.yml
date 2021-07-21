@@ -157,6 +157,7 @@ jobs:
     env:
       CC: clang
       CXX: clang++
+      LINK_CC: clang++
     steps:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
@@ -173,6 +174,7 @@ jobs:
     env:
       CC: clang
       CXX: clang++
+      LINK_CC: clang++
     steps:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
