@@ -1162,6 +1162,7 @@ void update_screen(void)
       case CURSOR_MODE_HINT:
         break;
       case CURSOR_MODE_INVISIBLE:
+      default:
         enabled = false;
         break;
     }

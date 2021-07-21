@@ -167,7 +167,6 @@ UNITTEST(mfmove)
   ASSERTEQ(mf.start, bufferc);
   ASSERTEQ(mf.end, bufferc + arraysize(bufferc));
   ASSERTEQ(mf.current, bufferc + arraysize(bufferc));
-  ASSERT(mf.current != bufferc + 96);
 }
 
 UNITTEST(mfresize)

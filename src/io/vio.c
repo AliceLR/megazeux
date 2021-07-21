@@ -18,6 +18,7 @@
  */
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <sys/stat.h>
 
@@ -400,7 +401,7 @@ static inline boolean vfile_ensure_space(int amount_to_write, vfile *vf)
     if(!(vf->flags & VF_MEMORY_EXPANDABLE))
       return false;
 
-    new_size = (mf->current - mf->start) + amount_to_write;
+    new_size = (mf->start ? (mf->current - mf->start) : 0) + amount_to_write;
     if(new_size > vf->local_buffer_size)
     {
       size_t new_size_alloc = 32;
@@ -528,7 +529,7 @@ int vfgetd(vfile *vf)
     if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF))
       return EOF;
 
-    return (d << 24) | (c << 16) | (b << 8) | a;
+    return ((uint32_t)d << 24) | (c << 16) | (b << 8) | a;
   }
 
   return EOF;

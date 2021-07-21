@@ -701,7 +701,7 @@ static void config_enable_oversampling(struct config_info *conf, char *name,
 {
   boolean result;
   if(config_boolean(&result, value))
-    conf->oversampling_on = (int)result;
+    conf->oversampling_on = result;
 }
 
 static void config_resample_mode(struct config_info *conf, char *name,

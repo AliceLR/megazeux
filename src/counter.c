@@ -42,6 +42,7 @@
 #include "data.h"
 #include "error.h"
 #include "event.h"
+#include "expr.h"
 #include "game_ops.h"
 #include "graphics.h"
 #include "idarray.h"
@@ -3980,7 +3981,7 @@ void div_counter(struct world *mzx_world, const char *name, int value, int id)
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);
     fdest->function_write(mzx_world, fdest, name,
-     current_value / value, id);
+     safe_divide_32(current_value, value), id);
   }
   else
   {
@@ -3988,7 +3989,7 @@ void div_counter(struct world *mzx_world, const char *name, int value, int id)
 
     if(cdest)
     {
-      value = cdest->value / value;
+      value = safe_divide_32(cdest->value, value);
 
       if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
@@ -4021,14 +4022,14 @@ void mod_counter(struct world *mzx_world, const char *name, int value, int id)
      fdest->function_read(mzx_world, fdest, name, id);
 
     fdest->function_write(mzx_world, fdest, name,
-     current_value % value, id);
+     safe_modulo_32(current_value, value), id);
   }
   else
   {
     cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
-      cdest->value %= value;
+      cdest->value = safe_modulo_32(cdest->value, value);
   }
 }
 

@@ -39,7 +39,6 @@
 #include "../src/editor/robo_ed.h"
 #endif
 
-static const int DEFAULT = 255;
 static const int IGNORE = INT_MAX;
 static boolean game_allowed;
 
@@ -82,6 +81,56 @@ struct config_test_saved_position
   struct saved_position expected;
 };
 #endif /* CONFIG_EDITOR */
+
+/**
+ * For integer types, use min (if signed) or max (otherwise).
+ * Enum types need to be specialized since numeric_limits doesn't work on them.
+ */
+template<class T>
+static constexpr T INVALID()
+{
+  static_assert(std::numeric_limits<T>::max() > 0, "INVALID<> needs specialization.");
+  return std::numeric_limits<T>::is_signed ?
+   std::numeric_limits<T>::min() : std::numeric_limits<T>::max();
+}
+
+template<>
+constexpr ratio_type INVALID<ratio_type>()
+{
+  return NUM_RATIO_TYPES;
+}
+
+template<>
+constexpr gl_filter_type INVALID<gl_filter_type>()
+{
+  return NUM_GL_FILTER_TYPES;
+}
+
+template<>
+constexpr cursor_mode_types INVALID<cursor_mode_types>()
+{
+  return NUM_CURSOR_MODE_TYPES;
+}
+
+template<>
+constexpr resample_mode INVALID<resample_mode>()
+{
+  return NUM_RESAMPLE_MODES;
+}
+
+template<>
+constexpr allow_cheats_type INVALID<allow_cheats_type>()
+{
+  return NUM_ALLOW_CHEATS_TYPES;
+}
+
+#ifdef CONFIG_NETWORK
+template<>
+constexpr host_family INVALID<host_family>()
+{
+  return NUM_HOST_FAMILIES;
+}
+#endif
 
 static void load_arg(char *arg)
 {
@@ -143,13 +192,13 @@ static void load_args(const char * const (&args)[SIZE])
 template<class T>
 void TEST_INT(const char *setting_name, T &setting, ssize_t min, ssize_t max)
 {
-  constexpr T default_value = static_cast<T>(DEFAULT);
+  constexpr T default_value = INVALID<T>();
   char arg[512];
 
   for(int i = -16; i < 32; i++)
   {
     ssize_t tmp = (max - min) * i / 16 + min;
-    ssize_t expected = (tmp >= min && tmp <= max) ? tmp : default_value;
+    ssize_t expected = (tmp >= min && tmp <= max) ? tmp : static_cast<ssize_t>(default_value);
 
     if(tmp < (ssize_t)std::numeric_limits<T>::min() ||
      tmp > (ssize_t)std::numeric_limits<T>::max())
@@ -178,7 +227,7 @@ template<class T, int NUM_TESTS>
 void TEST_ENUM(const char *setting_name, T &setting,
  const config_test_single (&data)[NUM_TESTS])
 {
-  constexpr T default_value = static_cast<T>(DEFAULT);
+  constexpr T default_value = INVALID<T>();
   char arg[512];
 
   for(int i = 0; i < NUM_TESTS; i++)
@@ -206,7 +255,7 @@ template<class T, int NUM_TESTS>
 void TEST_PAIR(const char *setting_name, T &setting_a, T &setting_b,
  const config_test_pair (&data)[NUM_TESTS])
 {
-  constexpr T default_value = static_cast<T>(DEFAULT);
+  constexpr T default_value = INVALID<T>();
   char arg[512];
 
   for(int i = 0; i < NUM_TESTS; i++)
@@ -272,15 +321,15 @@ UNITTEST(Settings)
 
   static const config_test_single boolean_data[] =
   {
-    { "0", false },
-    { "1", true },
-    { "2", DEFAULT },
-    { "23", DEFAULT },
-    { "-12", DEFAULT },
-    { "-1", DEFAULT },
-    { "yes", DEFAULT },
-    { "ABCD", DEFAULT },
-    { "0\\s", DEFAULT },
+    { "0",    false },
+    { "1",    true },
+    { "2",    INVALID<boolean>() },
+    { "23",   INVALID<boolean>() },
+    { "-12",  INVALID<boolean>() },
+    { "-1",   INVALID<boolean>() },
+    { "yes",  INVALID<boolean>() },
+    { "ABCD", INVALID<boolean>() },
+    { "0\\s", INVALID<boolean>() },
   };
 
   static const config_test_pair pair_data[] =
@@ -296,12 +345,12 @@ UNITTEST(Settings)
     { "3840,2160", 3840, 2160 },
     { "640, 350", 640, 350 },
     { "1600,  1200", 1600, 1200 },
-    { "640,a", DEFAULT, DEFAULT },
-    { "a,480", DEFAULT, DEFAULT },
-    { "a,b", DEFAULT, DEFAULT },
-    { "640px,350px", DEFAULT, DEFAULT },
-    { "-2,4154", DEFAULT, DEFAULT },
-    { "1233,-13513", DEFAULT, DEFAULT },
+    { "640,a",        INVALID<int>(), INVALID<int>() },
+    { "a,480",        INVALID<int>(), INVALID<int>() },
+    { "a,b",          INVALID<int>(), INVALID<int>() },
+    { "640px,350px",  INVALID<int>(), INVALID<int>() },
+    { "-2,4154",      INVALID<int>(), INVALID<int>() },
+    { "1233,-13513",  INVALID<int>(), INVALID<int>() },
   };
 
   static const char LONGSTRING[] =
@@ -372,6 +421,7 @@ UNITTEST(Settings)
 
   SECTION(force_bpp)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "0", BPP_AUTO },
@@ -389,6 +439,7 @@ UNITTEST(Settings)
 
   SECTION(video_ratio)
   {
+    constexpr ratio_type DEFAULT = INVALID<ratio_type>();
     static const config_test_single data[] =
     {
       { "classic", RATIO_CLASSIC_4_3 },
@@ -403,6 +454,7 @@ UNITTEST(Settings)
 
   SECTION(gl_filter_method)
   {
+    constexpr gl_filter_type DEFAULT = INVALID<gl_filter_type>();
     static const config_test_single data[] =
     {
       { "nearest", CONFIG_GL_FILTER_NEAREST },
@@ -415,6 +467,7 @@ UNITTEST(Settings)
 
   SECTION(gl_vsync)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "-1", -1 },
@@ -443,6 +496,7 @@ UNITTEST(Settings)
 
   SECTION(cursor_hint_mode)
   {
+    constexpr cursor_mode_types DEFAULT = INVALID<cursor_mode_types>();
     static const config_test_single data[] =
     {
       { "0", CURSOR_MODE_INVISIBLE },
@@ -485,6 +539,7 @@ UNITTEST(Settings)
 
   SECTION(resample_mode)
   {
+    constexpr resample_mode DEFAULT = INVALID<resample_mode>();
     static const config_test_single data[] =
     {
       { "none", RESAMPLE_MODE_NONE },
@@ -500,6 +555,7 @@ UNITTEST(Settings)
 
   SECTION(module_resample_mode)
   {
+    constexpr resample_mode DEFAULT = INVALID<resample_mode>();
     static const config_test_single data[] =
     {
       { "none", RESAMPLE_MODE_NONE },
@@ -582,6 +638,7 @@ UNITTEST(Settings)
 
   SECTION(allow_cheats)
   {
+    constexpr allow_cheats_type DEFAULT = INVALID<allow_cheats_type>();
     static const config_test_single data[] =
     {
       { "0", ALLOW_CHEATS_NEVER },
@@ -668,6 +725,7 @@ UNITTEST(Settings)
 
   SECTION(network_address_family)
   {
+    constexpr host_family DEFAULT = INVALID<host_family>();
     static const config_test_single data[] =
     {
       { "0", HOST_FAMILY_ANY },
@@ -743,6 +801,7 @@ UNITTEST(Settings)
 
   SECTION(update_auto_check)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "0", UPDATE_AUTO_CHECK_OFF },
@@ -969,6 +1028,7 @@ UNITTEST(Settings)
 
   SECTION(explosions_leave)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "space", EXPL_LEAVE_SPACE },
@@ -985,6 +1045,7 @@ UNITTEST(Settings)
 
   SECTION(saving_enabled)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "disabled", CANT_SAVE },
@@ -1001,6 +1062,7 @@ UNITTEST(Settings)
 
   SECTION(overlay_enabled)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "disabled", OVERLAY_OFF },
@@ -1085,6 +1147,7 @@ UNITTEST(Settings)
 #ifndef CONFIG_DEBYTECODE
   SECTION(default_invalid_status)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "ignore", invalid_uncertain },
@@ -1107,6 +1170,7 @@ UNITTEST(Settings)
 
   SECTION(disassemble_base)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "10", 10 },
@@ -1249,6 +1313,7 @@ template<int NUM_TESTS>
 void TEST_JOY_ALIAS(const config_test_single (&data)[NUM_TESTS])
 {
   struct joystick_map *joy_global_map = get_joystick_map(true);
+  constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
   ASSERT(joy_global_map);
@@ -1266,6 +1331,7 @@ template<int NUM_TESTS>
 void TEST_JOY_BUTTON(const config_test_joystick (&data)[NUM_TESTS])
 {
   struct joystick_map *joy_global_map = get_joystick_map(true);
+  constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
   ASSERT(joy_global_map);
@@ -1295,6 +1361,7 @@ template<int NUM_TESTS>
 void TEST_JOY_AXIS(const config_test_joystick (&data)[NUM_TESTS])
 {
   struct joystick_map *joy_global_map = get_joystick_map(true);
+  constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
   ASSERT(joy_global_map);
@@ -1333,6 +1400,7 @@ template<int NUM_TESTS>
 void TEST_JOY_HAT(const config_test_joystick (&data)[NUM_TESTS])
 {
   struct joystick_map *joy_global_map = get_joystick_map(true);
+  constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
   ASSERT(joy_global_map);
@@ -1375,6 +1443,7 @@ template<int NUM_TESTS>
 void TEST_JOY_ACTION(const config_test_joystick (&data)[NUM_TESTS])
 {
   struct joystick_map *joy_global_map = get_joystick_map(true);
+  constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
   ASSERT(joy_global_map);

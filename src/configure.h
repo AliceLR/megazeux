@@ -43,21 +43,24 @@ enum ratio_type
 {
   RATIO_CLASSIC_4_3,
   RATIO_MODERN_64_35,
-  RATIO_STRETCH
+  RATIO_STRETCH,
+  NUM_RATIO_TYPES
 };
 
-enum resample_modes
+enum resample_mode
 {
   RESAMPLE_MODE_NONE,
   RESAMPLE_MODE_LINEAR,
   RESAMPLE_MODE_CUBIC,
-  RESAMPLE_MODE_FIR
+  RESAMPLE_MODE_FIR,
+  NUM_RESAMPLE_MODES
 };
 
 enum gl_filter_type
 {
   CONFIG_GL_FILTER_NEAREST,
-  CONFIG_GL_FILTER_LINEAR
+  CONFIG_GL_FILTER_LINEAR,
+  NUM_GL_FILTER_TYPES
 };
 
 enum cursor_mode_types
@@ -65,14 +68,16 @@ enum cursor_mode_types
   CURSOR_MODE_UNDERLINE,  // Underline for text entry (insert).
   CURSOR_MODE_SOLID,      // Solid for text entry (overwrite) and editing.
   CURSOR_MODE_HINT,       // Hidden cursor for active UI element hints.
-  CURSOR_MODE_INVISIBLE   // Cursor disabled.
+  CURSOR_MODE_INVISIBLE,  // Cursor disabled.
+  NUM_CURSOR_MODE_TYPES
 };
 
 enum allow_cheats_type
 {
   ALLOW_CHEATS_NEVER,
   ALLOW_CHEATS_MZXRUN,
-  ALLOW_CHEATS_ALWAYS
+  ALLOW_CHEATS_ALWAYS,
+  NUM_ALLOW_CHEATS_TYPES
 };
 
 enum host_family
@@ -116,9 +121,9 @@ struct config_info
   // Audio options
   int output_frequency;
   int audio_buffer_samples;
-  int oversampling_on;
-  int resample_mode;
-  int module_resample_mode;
+  boolean oversampling_on;
+  enum resample_mode resample_mode;
+  enum resample_mode module_resample_mode;
   int max_simultaneous_samples;
   int music_volume;
   int sam_volume;

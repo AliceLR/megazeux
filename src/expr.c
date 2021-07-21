@@ -653,27 +653,12 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         break;
 
       case OP_DIVISION:
-      {
-        if(operand_b == 0)
-          operand_a = 0;
-
-        else
-          operand_a /= operand_b;
-
+        operand_a = safe_divide_32(operand_a, operand_b);
         break;
-      }
 
       case OP_MODULUS:
       {
-        int val;
-
-        if(operand_b == 0)
-        {
-          operand_a = 0;
-          break;
-        }
-
-        val = operand_a % operand_b;
+        int val = safe_modulo_32(operand_a, operand_b);
 
         // Converted C99 regulated truncated modulus to
         // the more useful (for us) floored modulus
@@ -733,15 +718,15 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         break;
 
       case OP_BITSHIFT_LEFT:
-        operand_a <<= operand_b;
+        operand_a = safe_left_shift_32(operand_a, operand_b);
         break;
 
       case OP_BITSHIFT_RIGHT:
-        operand_a = ((unsigned int)(operand_a) >> operand_b);
+        operand_a = safe_logical_right_shift_32(operand_a, operand_b);
         break;
 
       case OP_ARITHMETIC_BITSHIFT_RIGHT:
-        operand_a = ((signed int)(operand_a) >> operand_b);
+        operand_a = safe_arithmetic_right_shift_32(operand_a, operand_b);
         break;
 
       case OP_EQUAL:
@@ -1573,21 +1558,11 @@ static int evaluate_operation(int operand_a, enum op c_operator, int operand_b)
       return operand_a * operand_b;
 
     case OP_DIVISION:
-    {
-      if(operand_b == 0)
-        return 0;
-
-      return operand_a / operand_b;
-    }
+      return safe_divide_32(operand_a, operand_b);
 
     case OP_MODULUS:
     {
-      int val;
-
-      if(operand_b == 0)
-        return 0;
-
-      val = operand_a % operand_b;
+      int val = safe_modulo_32(operand_a, operand_b);
 
       // Converted C99 regulated truncated modulus to
       // the more useful (for us) floored modulus
@@ -1637,13 +1612,13 @@ static int evaluate_operation(int operand_a, enum op c_operator, int operand_b)
       return (operand_a ^ operand_b);
 
     case OP_BITSHIFT_LEFT:
-      return operand_a << operand_b;
+      return safe_left_shift_32(operand_a, operand_b);
 
     case OP_BITSHIFT_RIGHT:
-      return (unsigned int)(operand_a) >> operand_b;
+      return safe_logical_right_shift_32(operand_a, operand_b);
 
     case OP_ARITHMETIC_BITSHIFT_RIGHT:
-      return (signed int)(operand_a) >> operand_b;
+      return safe_arithmetic_right_shift_32(operand_a, operand_b);
 
     case OP_EQUAL:
       return operand_a == operand_b;
