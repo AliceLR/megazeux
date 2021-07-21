@@ -174,7 +174,7 @@ jobs:
     env:
       CC: clang
       CXX: clang++
-      LINK_CC: @clang++
+      LINK_CC: "@clang++"
       UBSAN_OPTIONS: print_stacktrace=1
     steps:
       - name: Install dependencies
