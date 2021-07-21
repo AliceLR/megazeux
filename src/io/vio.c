@@ -401,7 +401,7 @@ static inline boolean vfile_ensure_space(int amount_to_write, vfile *vf)
     if(!(vf->flags & VF_MEMORY_EXPANDABLE))
       return false;
 
-    new_size = (mf->current - mf->start) + amount_to_write;
+    new_size = (mf->start ? (mf->current - mf->start) : 0) + amount_to_write;
     if(new_size > vf->local_buffer_size)
     {
       size_t new_size_alloc = 32;

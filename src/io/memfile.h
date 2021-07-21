@@ -94,9 +94,9 @@ static inline void mfsync(void **buf, size_t *len, struct memfile *mf)
 /**
  * Determine if the memfile has at least len space remaining.
  */
-static inline int mfhasspace(size_t len, struct memfile *mf)
+static inline boolean mfhasspace(size_t len, struct memfile *mf)
 {
-  return (len + mf->current) <= mf->end;
+  return mf->current ? (len + mf->current) <= mf->end : false;
 }
 
 /**

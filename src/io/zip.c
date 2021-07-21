@@ -1243,7 +1243,7 @@ err_out:
    result != ZIP_NOT_MEMORY_ARCHIVE &&
    result != ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM)
     zip_error("zip_read_open_mem_stream", result);
-  mfopen(NULL, 0, mf);
+  memset(mf, 0, sizeof(struct memfile));
   return result;
 }
 

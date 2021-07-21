@@ -1116,6 +1116,7 @@ UNITTEST(ZipWrite)
         snprintf(desc2, arraysize(desc2), "%s %d %zu", label, i, j);
 
         result = zip_write_open_mem_stream(zp, &mf, df.filename);
+        ASSERTEQX(result, ZIP_SUCCESS, desc2);
         int res = mfwrite(contents, df.uncompressed_size, 1, &mf);
         ASSERTEQX(res, 1, desc2);
         result = zip_write_close_mem_stream(zp, &mf);
