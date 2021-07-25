@@ -21,6 +21,7 @@
 #include "../../src/graphics.h"
 #include "../../src/platform.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -39,7 +40,7 @@
 // Shut an annoying warning up
 #if WPAD_CLASSIC_BUTTON_RIGHT == (0x8000 << 16)
 #undef WPAD_CLASSIC_BUTTON_RIGHT
-#define WPAD_CLASSIC_BUTTON_RIGHT (((Uint32)0x8000) << 16)
+#define WPAD_CLASSIC_BUTTON_RIGHT (((uint32_t)0x8000) << 16u)
 #endif
 
 #define PTR_BORDER_W 128
@@ -75,56 +76,56 @@ enum event_type
 struct button_event
 {
   enum event_type type;
-  Uint32 pad;
-  Uint32 button;
+  unsigned int pad;
+  uint32_t button;
 };
 
 struct axis_event
 {
   enum event_type type;
-  Uint32 pad;
-  Uint32 axis;
-  Sint16 pos;
+  unsigned int pad;
+  unsigned int axis;
+  int16_t pos;
 };
 
 struct ext_event
 {
   enum event_type type;
-  Uint32 pad;
+  unsigned int pad;
   int ext;
 };
 
 struct pointer_event
 {
   enum event_type type;
-  Sint32 x;
-  Sint32 y;
+  int x;
+  int y;
 };
 
 struct key_event
 {
   enum event_type type;
-  Uint32 key;
-  Uint16 unicode;
+  unsigned int key;
+  uint16_t unicode;
 };
 
 struct locks_event
 {
   enum event_type type;
-  Uint16 locks;
+  uint16_t locks;
 };
 
 struct mouse_move_event
 {
   enum event_type type;
-  Sint32 dx;
-  Sint32 dy;
+  int dx;
+  int dy;
 };
 
 struct mouse_button_event
 {
   enum event_type type;
-  Uint32 button;
+  unsigned int button;
 };
 
 union event
@@ -178,11 +179,11 @@ static int read_eq(union event *ev)
     return false;
 }
 
-static void scan_buttons(Uint32 pad, Uint32 old_btns, Uint32 new_btns)
+static void scan_buttons(unsigned int pad, uint32_t old_btns, uint32_t new_btns)
 {
-  Uint32 chg_btns;
   union event ev;
-  int i;
+  uint32_t chg_btns;
+  uint32_t i;
 
   if(old_btns != new_btns)
   {
@@ -203,9 +204,9 @@ static void scan_buttons(Uint32 pad, Uint32 old_btns, Uint32 new_btns)
   }
 }
 
-static Sint16 adjust_axis(Uint8 pos, Uint8 min, Uint8 cen, Uint8 max)
+static int16_t adjust_axis(int pos, int min, int cen, int max)
 {
-  Sint32 temp;
+  int32_t temp;
   temp = (pos - cen) * 32767 / ((cen - min) + (max - cen) / 2);
   // FIXME hack because Wii stick axis ranges seem to cap out near +-22000
   // universally, but +-32767 is desired.
@@ -215,10 +216,11 @@ static Sint16 adjust_axis(Uint8 pos, Uint8 min, Uint8 cen, Uint8 max)
   return temp;
 }
 
-static void scan_joystick(Uint32 pad, Uint32 xaxis, joystick_t js, Sint16 axes[])
+static void scan_joystick(unsigned int pad, unsigned int xaxis, joystick_t js,
+ int16_t axes[])
 {
   union event ev;
-  Sint16 temp;
+  int16_t temp;
 
   ev.type = EVENT_AXIS_MOVE;
   ev.axis.pad = pad;
@@ -240,20 +242,21 @@ static void scan_joystick(Uint32 pad, Uint32 xaxis, joystick_t js, Sint16 axes[]
   }
 }
 
-static Sint16 adjust_axis_single(float mag, Sint16 minval, Sint16 maxval)
+static int16_t adjust_axis_single(float mag, int16_t minval, int16_t maxval)
 {
-  Sint32 temp = (Sint32)(mag * 32767.0);
+  int32_t temp = (int32_t)(mag * 32767.0);
   temp = (temp - minval) * 32767 / (maxval - minval);
   if(temp < 0) temp = 0;
   if(temp > 32767) temp = 32767;
   return temp;
 }
 
-static void scan_axis_single(Uint32 pad, Uint32 axis, float mag, Sint16 *prev)
+static void scan_axis_single(unsigned int pad, unsigned int axis, float mag,
+ int16_t *prev)
 {
   // NOTE adjusting the range to ignore <3200 because the minimum values
   // received from the triggers seem generally questionable.
-  Sint16 temp = adjust_axis_single(mag, 3200, 32767);
+  int16_t temp = adjust_axis_single(mag, 3200, 32767);
   union event ev;
 
   if(temp != *prev)
@@ -269,20 +272,20 @@ static void scan_axis_single(Uint32 pad, Uint32 axis, float mag, Sint16 *prev)
 
 static void poll_input(void)
 {
-  static Sint32 old_x = 1000, old_y = 1000;
-  static Uint32 old_point = 0;
-  static Uint32 old_btns[4] = {0};
-  static Sint16 old_axes[4][6] = {{0}};
-  static int old_type[4] =
+  static int old_x = 1000, old_y = 1000;
+  static boolean old_point = false;
+  static uint32_t old_btns[4] = {0};
+  static int16_t old_axes[4][6] = {{0}};
+  static u32 old_type[4] =
   {
     WPAD_EXP_NONE, WPAD_EXP_NONE,
     WPAD_EXP_NONE, WPAD_EXP_NONE
   };
-  static Uint32 old_gcbtns[4] = {0};
-  static Sint8 old_gcaxes[4][4] = {{0}};
-  static Uint8 old_gctriggers[4][2] = {{0}};
-  static Uint16 old_modifiers = 0;
-  static Uint8 old_mousebtns = 0;
+  static uint32_t old_gcbtns[4] = {0};
+  static int8_t old_gcaxes[4][4] = {{0}};
+  static int8_t old_gctriggers[4][2] = {{0}};
+  static uint16_t old_modifiers = 0;
+  static uint8_t old_mousebtns = 0;
 
   WPADData *wd;
   PADStatus pad[4];
@@ -290,7 +293,7 @@ static void poll_input(void)
   mouse_event me;
   u32 type;
   union event ev;
-  Uint32 i, j;
+  unsigned int i, j;
 
   WPAD_ScanPads();
   for(i = 0; i < 4; i++)
@@ -298,7 +301,7 @@ static void poll_input(void)
     if(WPAD_Probe(i, &type) == WPAD_ERR_NONE)
     {
       wd = WPAD_Data(i);
-      if((int)type != old_type[i])
+      if(type != old_type[i])
       {
         scan_buttons(i, old_btns[i], 0);
         old_btns[i] = 0;
@@ -316,7 +319,8 @@ static void poll_input(void)
         }
         ev.type = EVENT_CHANGE_EXT;
         ev.ext.pad = i;
-        old_type[i] = ev.ext.ext = type;
+        old_type[i] = type;
+        ev.ext.ext = type;
         write_eq(&ev);
       }
       if(i == 0)
@@ -337,7 +341,7 @@ static void poll_input(void)
           {
             ev.type = EVENT_POINTER_MOVE;
             write_eq(&ev);
-            old_point = 1;
+            old_point = true;
             old_x = ev.pointer.x;
             old_y = ev.pointer.y;
           }
@@ -348,7 +352,7 @@ static void poll_input(void)
           {
             ev.type = EVENT_POINTER_OUT;
             write_eq(&ev);
-            old_point = 0;
+            old_point = false;
             old_x = old_y = 1000;
           }
         }
@@ -557,9 +561,9 @@ static void *wii_poll_thread(void *dud)
   return 0;
 }
 
-static int wii_map_button(Uint32 pad, Uint32 button)
+static int wii_map_button(unsigned int pad, uint32_t button)
 {
-  Uint32 rval = MAX_JOYSTICK_BUTTONS;
+  int rval = -1;
 
   if(pad < 4)
   {
@@ -639,7 +643,7 @@ static int wii_map_button(Uint32 pad, Uint32 button)
 
       default:
         // Unsupported extension controller.
-        rval = MAX_JOYSTICK_BUTTONS;
+        rval = -1;
         break;
     }
   }
@@ -662,13 +666,10 @@ static int wii_map_button(Uint32 pad, Uint32 button)
     }
   }
 
-  if(rval < MAX_JOYSTICK_BUTTONS)
-    return rval;
-
-  return -1;
+  return rval;
 }
 
-static int wii_map_axis(Uint32 pad, Uint32 axis)
+static int wii_map_axis(unsigned int pad, unsigned int axis)
 {
   if(pad < 4)
   {
@@ -683,9 +684,12 @@ static int wii_map_axis(Uint32 pad, Uint32 axis)
   return axis;
 }
 
-static enum keycode convert_USB_internal(Uint32 key)
+/**
+ * Convert generic USB HID keycodes to internal keycodes.
+ */
+static enum keycode convert_USB_internal(unsigned int usb_hid_key)
 {
-  switch(key)
+  switch(usb_hid_key)
   {
     case 0x04: return IKEY_a;
     case 0x05: return IKEY_b;
@@ -798,14 +802,13 @@ static enum keycode convert_USB_internal(Uint32 key)
 static boolean process_event(union event *ev)
 {
   struct buffered_status *status = store_status();
-  boolean rval = true;
 
   switch(ev->type)
   {
     case EVENT_BUTTON_DOWN:
     {
       int button = wii_map_button(ev->button.pad, ev->button.button);
-      rval = false;
+
       if((ev->button.pad == 0) && pointing)
       {
         enum mouse_button mousebutton;
@@ -823,8 +826,7 @@ static boolean process_event(union event *ev)
           status->mouse_repeat_state = 1;
           status->mouse_drag_state = -1;
           status->mouse_time = get_ticks();
-          button = 256;
-          rval = true;
+          return true;
         }
       }
 
@@ -838,7 +840,7 @@ static boolean process_event(union event *ev)
           input.joystick_game_map.button[joystick][button] = 0;
         }
         joystick_button_press(status, ev->button.pad, button);
-        rval = true;
+        return true;
       }
       break;
     }
@@ -846,7 +848,7 @@ static boolean process_event(union event *ev)
     case EVENT_BUTTON_UP:
     {
       int button = wii_map_button(ev->button.pad, ev->button.button);
-      rval = false;
+
       if((ev->button.pad == 0) && status->mouse_button_state)
       {
         enum mouse_button mousebutton;
@@ -863,15 +865,14 @@ static boolean process_event(union event *ev)
           status->mouse_repeat = 0;
           status->mouse_drag_state = 0;
           status->mouse_repeat_state = 0;
-          button = 256;
-          rval = true;
+          return true;
         }
       }
 
       if(button >= 0)
       {
         joystick_button_release(status, ev->button.pad, button);
-        rval = true;
+        return true;
       }
       break;
     }
@@ -880,17 +881,18 @@ static boolean process_event(union event *ev)
     {
       int axis = wii_map_axis(ev->axis.pad, ev->axis.axis);
 
-      if(axis < 0)
-        break;
-
-      joystick_axis_update(status, ev->axis.pad, axis, ev->axis.pos);
+      if(axis > 0)
+      {
+        joystick_axis_update(status, ev->axis.pad, axis, ev->axis.pos);
+        return true;
+      }
       break;
     }
 
     case EVENT_CHANGE_EXT:
     {
       ext_type[ev->ext.pad] = ev->ext.ext;
-      break;
+      return true;
     }
 
     case EVENT_POINTER_MOVE:
@@ -901,13 +903,13 @@ static boolean process_event(union event *ev)
       status->mouse_pixel_y = ev->pointer.y;
       status->mouse_x = ev->pointer.x / 8;
       status->mouse_y = ev->pointer.y / 14;
-      break;
+      return true;
     }
 
     case EVENT_POINTER_OUT:
     {
       pointing = 0;
-      break;
+      return true;
     }
 
     case EVENT_KEY_DOWN:
@@ -918,10 +920,7 @@ static boolean process_event(union event *ev)
         if(ev->key.unicode)
           ckey = IKEY_UNICODE;
         else
-        {
-          rval = false;
           break;
-        }
       }
 
       if((ckey == IKEY_RETURN) &&
@@ -929,14 +928,14 @@ static boolean process_event(union event *ev)
        get_ctrl_status(keycode_internal))
       {
         toggle_fullscreen();
-        break;
+        return true;
       }
 
 #ifdef CONFIG_ENABLE_SCREENSHOTS
       if(ckey == IKEY_F12 && enable_f12_hack)
       {
         dump_screen();
-        break;
+        return true;
       }
 #endif
 
@@ -961,7 +960,7 @@ static boolean process_event(union event *ev)
 
       key_press(status, ckey);
       key_press_unicode(status, ev->key.unicode, true);
-      break;
+      return true;
     }
 
     case EVENT_KEY_UP:
@@ -972,10 +971,7 @@ static boolean process_event(union event *ev)
         if(status->keymap[IKEY_UNICODE])
           ckey = IKEY_UNICODE;
         else
-        {
-          rval = false;
           break;
-        }
       }
 
       status->keymap[ckey] = 0;
@@ -985,14 +981,14 @@ static boolean process_event(union event *ev)
         status->unicode_repeat = 0;
       }
       status->key_release = ckey;
-      break;
+      return true;
     }
 
     case EVENT_KEY_LOCKS:
     {
       status->numlock_status = !!(ev->locks.locks & MOD_NUMLOCK);
       status->caps_status = !!(ev->locks.locks & MOD_CAPSLOCK);
-      break;
+      return true;
     }
 
     case EVENT_MOUSE_MOVE:
@@ -1014,7 +1010,7 @@ static boolean process_event(union event *ev)
       status->mouse_x = mx / 8;
       status->mouse_y = my / 14;
       status->mouse_moved = true;
-      break;
+      return true;
     }
 
     case EVENT_MOUSE_BUTTON_DOWN:
@@ -1044,7 +1040,7 @@ static boolean process_event(union event *ev)
       status->mouse_repeat_state = 1;
       status->mouse_drag_state = -1;
       status->mouse_time = get_ticks();
-      break;
+      return true;
     }
 
     case EVENT_MOUSE_BUTTON_UP:
@@ -1072,17 +1068,11 @@ static boolean process_event(union event *ev)
       status->mouse_repeat = 0;
       status->mouse_drag_state = 0;
       status->mouse_repeat_state = 0;
-      break;
-    }
-
-    default:
-    {
-      rval = false;
-      break;
+      return true;
     }
   }
 
-  return rval;
+  return false;
 }
 
 boolean __update_event_status(void)
