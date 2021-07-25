@@ -261,7 +261,10 @@ int ec_load_set_var(const char *filename, uint16_t first_chr, int version)
       maxchars = 256;
 
     if(first_chr > maxchars)
+    {
+      vfclose(vf);
       return -1;
+    }
 
     if(size + first_chr > maxchars)
       size = maxchars - first_chr;
