@@ -38,6 +38,7 @@ struct event_input_data
 {
   const char *base;
   int start_pos;
+  int new_pos;
   const char *input;
   const char *expected;
 };
@@ -46,6 +47,7 @@ struct event_repeat_data
 {
   const char *base;
   int start_pos;
+  int new_pos;
   int repeat_times;
   const char *expected;
 };
@@ -327,23 +329,23 @@ UNITTEST(EventFixed)
 {
   static const event_input_data insert_data[] =
   {
-    { "test string :)", 0,  "Inserted ",                "Inserted test string :)" },
-    { "abcdevwxyz",     5,  " put this in the middle ", "abcde put this in the middle vwxyz" },
-    { "test string :)", 15, " append this.",            "test string :) append this." },
-    { "",               0,  "blank string",             "blank string" },
-    { "whatever",       0,  "",                         "whatever" },
-    { "whatever",       4,  "",                         "whatever" },
-    { "whatever",       8,  "",                         "whatever" },
+    { "test string :)", 0,  9,  "Inserted ",                "Inserted test string :)" },
+    { "abcdevwxyz",     5,  29, " put this in the middle ", "abcde put this in the middle vwxyz" },
+    { "test string :)", 15, 27, " append this.",            "test string :) append this." },
+    { "",               0,  12, "blank string",             "blank string" },
+    { "whatever",       0,  0,  "",                         "whatever" },
+    { "whatever",       4,  4,  "",                         "whatever" },
+    { "whatever",       8,  8,  "",                         "whatever" },
   };
   static const event_input_data overwrite_data[] =
   {
-    { "test string :)", 0,  "overwritten",              "overwritten :)" },
-    { "abcdevwxyz",     5,  " put this at the end",     "abcde put this at the end" },
-    { "test string :)", 15, " append this.",            "test string :) append this." },
-    { "",               0,  "blank string",             "blank string" },
-    { "whatever",       0,  "",                         "whatever" },
-    { "whatever",       4,  "",                         "whatever" },
-    { "whatever",       8,  "",                         "whatever" },
+    { "test string :)", 0,  11, "overwritten",              "overwritten :)" },
+    { "abcdevwxyz",     5,  26, " put this at the end",     "abcde put this at the end" },
+    { "test string :)", 15, 28, " append this.",            "test string :) append this." },
+    { "",               0,  12, "blank string",             "blank string" },
+    { "whatever",       0,  0,  "",                         "whatever" },
+    { "whatever",       4,  0,  "",                         "whatever" },
+    { "whatever",       8,  0,  "",                         "whatever" },
   };
 
   struct intake_subcontext intk{};
@@ -471,10 +473,11 @@ UNITTEST(EventFixed)
       for(size_t i = 0, len = strlen(d.input); i < len; i++)
       {
         result = intake_apply_event_fixed(sub, INTK_INSERT, intk.pos + 1, d.input[i], nullptr);
-        ASSERTEQX(result, true, d.expected);
+        ASSERTEQ(result, true, "%s", d.expected);
       }
       ASSERTCMP(dest, d.expected);
-      ASSERTEQ(intk.current_length, expected_len);
+      ASSERTEQ(intk.current_length, expected_len, "%s", d.expected);
+      ASSERTEQ(intk.pos, d.new_pos, "%s", d.expected);
     }
 
     // Special: prevent inserting beyond the maximum length.
@@ -536,11 +539,11 @@ UNITTEST(EventFixed)
     // Delete the char at the cursor.
     static const event_repeat_data data[] =
     {
-      { "testing string :)", 8, 7, "testing :)" },
-      { "abcdef", 0, 6, "" },
-      { "abcdef", 1, 4, "af" },
-      { "", 0, 10, "" },
-      { "some stuff", 10, 10, "some stuff" },
+      { "testing string :)",  8,  8,  7,  "testing :)" },
+      { "abcdef",             0,  0,  6,  "" },
+      { "abcdef",             1,  1,  4,  "af" },
+      { "",                   0,  0,  10, "" },
+      { "some stuff",         10, 10, 10, "some stuff" },
     };
 
     for(const event_repeat_data &d : data)
@@ -565,11 +568,11 @@ UNITTEST(EventFixed)
     // Delete the char before the cursor.
     static const event_repeat_data data[] =
     {
-      { "testing string :)", 14, 7, "testing :)" },
-      { "abcdef", 6, 6, "" },
-      { "abcdef", 5, 4, "af" },
-      { "", 0, 10, "" },
-      { "some stuff", 0, 10, "some stuff" },
+      { "testing string :)",  14, 7, 7,  "testing :)" },
+      { "abcdef",             6,  0, 6,  "" },
+      { "abcdef",             5,  1, 4,  "af" },
+      { "",                   0,  0, 10, "" },
+      { "some stuff",         0,  0, 10, "some stuff" },
     };
 
     for(const event_repeat_data &d : data)
@@ -582,10 +585,11 @@ UNITTEST(EventFixed)
       for(int i = 0; i < d.repeat_times; i++)
       {
         result = intake_apply_event_fixed(sub, INTK_BACKSPACE, intk.pos - 1, 0, nullptr);
-        ASSERTEQX(result, true, d.expected);
+        ASSERTEQ(result, true, "%s", d.expected);
       }
       ASSERTCMP(dest, d.expected);
-      ASSERTEQ(intk.current_length, expected_len);
+      ASSERTEQ(intk.current_length, expected_len, "%s", d.expected);
+      ASSERTEQ(intk.pos, d.new_pos, "%s", d.expected);
     }
   }
 
@@ -596,17 +600,17 @@ UNITTEST(EventFixed)
     // word, which seems like a bug and has not been replicated here.
     static const event_repeat_data data[] =
     {
-      { "testing string :)", 17, 1, "testing " },
-      { "testing string :)", 17, 2, "" },
-      { "testing string :)", 15, 2, ":)" },
-      { "testing{string}", 14, 1, "testing{}" },
-      { "abc def ghi", 9, 2, "abc hi" },
-      { "abcdef", 6, 1, "" },
-      { "abcdef", 3, 1, "def" },
-      { "", 0, 2, "" },
-      { "some stuff", 0, 2, "some stuff" },
-      { "whatever", 8, 0, "whatever" },
-      { "whatever", 4, -1, "whatever" },
+      { "testing string :)",  17, 8, 1,  "testing " },
+      { "testing string :)",  17, 0, 2,  "" },
+      { "testing string :)",  15, 0, 2,  ":)" },
+      { "testing{string}",    14, 8, 1,  "testing{}" },
+      { "abc def ghi",        9,  4, 2,  "abc hi" },
+      { "abcdef",             6,  0, 1,  "" },
+      { "abcdef",             3,  0, 1,  "def" },
+      { "",                   0,  0, 2,  "" },
+      { "some stuff",         0,  0, 2,  "some stuff" },
+      { "whatever",           8,  8, 0,  "whatever" },
+      { "whatever",           4,  4, -1, "whatever" },
     };
 
     for(const event_repeat_data &d : data)
@@ -617,9 +621,10 @@ UNITTEST(EventFixed)
       intake_set_pos(&intk, d.start_pos);
 
       result = intake_apply_event_fixed(sub, INTK_BACKSPACE_WORDS, intk.pos, d.repeat_times, nullptr);
-      ASSERTEQX(result, true, d.expected);
+      ASSERTEQ(result, true, "%s", d.expected);
       ASSERTCMP(dest, d.expected);
-      ASSERTEQ(intk.current_length, expected_len);
+      ASSERTEQ(intk.current_length, expected_len, "%s", d.expected);
+      ASSERTEQ(intk.pos, d.new_pos, "%s", d.expected);
     }
   }
 
@@ -627,13 +632,13 @@ UNITTEST(EventFixed)
   {
     static const event_repeat_data data[] =
     {
-      { "testing string :)", 17, 1, nullptr },
-      { "testing string :)", 10, 1, nullptr },
-      { "testing string :)", 0, 1, nullptr },
-      { "abc def ghi", 9, 1, nullptr },
-      { "abcdef", 6, 1, nullptr },
-      { "abcdef", 3, 1, nullptr },
-      { "", 0, 1, nullptr },
+      { "testing string :)",  17, 0, 1, nullptr },
+      { "testing string :)",  10, 0, 1, nullptr },
+      { "testing string :)",  0,  0, 1, nullptr },
+      { "abc def ghi",        9,  0, 1, nullptr },
+      { "abcdef",             6,  0, 1, nullptr },
+      { "abcdef",             3,  0, 1, nullptr },
+      { "",                   0,  0, 1, nullptr },
     };
 
     for(const event_repeat_data &d : data)
@@ -644,9 +649,10 @@ UNITTEST(EventFixed)
       intake_set_pos(&intk, d.start_pos);
 
       result = intake_apply_event_fixed(sub, INTK_CLEAR, 0, 0, nullptr);
-      ASSERTEQX(result, true, buf);
-      ASSERTXCMP(dest, "", buf);
-      ASSERTEQX(intk.current_length, 0, buf);
+      ASSERTEQ(result, true, "%s", buf);
+      ASSERTCMP(dest, "", "%s", buf);
+      ASSERTEQ(intk.current_length, 0, "%s", buf);
+      ASSERTEQ(intk.pos, d.new_pos, "%s", buf);
     }
   }
 

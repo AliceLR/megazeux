@@ -42,18 +42,19 @@
  * The file can contain multiple UNITTEST() {...}. Each must have a unique name.
  * The following macros can be used in tests:
  *
- * ASSERT(t)          t must be non-zero.
- * ASSERTX(t,m)       t must be non-zero. (m = message to display on failure)
- * ASSERTEQ(a,b)      a must equal b.
- * ASSERTEQX(a,b,m)   a must equal b. (m = message to display on failure)
- * ASSERTCMP(a,b)     a and b must be null-terminated C strings and must be
- *                    exactly equal.
- * ASSERTXCMP(a,b,m)  a and b must be null-terminated C strings and must be
- *                    exactly equal. (m = message to display on failure)
- * ASSERTMEM(a,b,l)   the memory pointed to by a and b must be identical for l
- *                    bytes (memcmp).
- * ASSERTXMEM(a,b,l,m) the memory pointed to by a and b must be identical for l
- *                    bytes (memcmp). (m = message to display on failure)
+ * [mfmt,...] = optional message to display on failure, passed to vsnprintf.
+ *              mfmt must be a string literal.
+ *
+ * ASSERT(t[,mfmt,...])         t must be non-zero.
+ * ASSERTEQ(a,b[,mfmt,...])     a must equal b.
+ * ASSERTCMP(a,b[,mfmt,...])    a and b must be null-terminated C strings and must
+ *                              be exactly equal (strcmp).
+ * ASSERTNCMP(a,b,n[,mfmt,...]) a and b must be null-terminated C strings and must
+ *                              be exactly equal for the first n chars (strncmp).
+ * ASSERTMEM(a,b,l,[mfmt,...])  the memory pointed to by a and b must be identical
+ *                              for l bytes (memcmp).
+ * FAIL([mfmt,...])             unconditionally fail the test.
+ * SKIP()                       unconditionally skip the test.
  *
  * Additionally, failed assert() assertions will be detected and print error
  * messages (generally, these should only be used in the code being tested).
@@ -77,6 +78,7 @@
 #include "../src/platform_endian.h"
 
 #include <assert.h>
+#include <stdarg.h>
 #include <string.h>
 
 #include <csignal>
@@ -188,15 +190,16 @@ public:
     throw Unit::exception(__LINE__, "Test is not yet implemented"); \
   } while(0)
 
-#define ASSERT(test) \
+#define ASSERT(test, ...) \
   do\
   {\
     if(!(test)) \
     { \
-      throw Unit::exception(__LINE__, #test); \
+      throw Unit::exception(__LINE__, #test, "" __VA_ARGS__); \
     } \
   } while(0)
 
+// TODO: use ASSERT instead.
 #define ASSERTX(test, reason) \
   do\
   {\
@@ -206,15 +209,16 @@ public:
     }\
   } while(0)
 
-#define ASSERTEQ(a, b) \
+#define ASSERTEQ(a, b, ...) \
   do\
   {\
     if(!((a) == (b)))\
     { \
-      throw Unit::exception(__LINE__, #a " == " #b, (a), (b), nullptr); \
+      throw Unit::exception(__LINE__, #a " == " #b, (a), (b), "" __VA_ARGS__); \
     } \
   } while(0)
 
+// TODO: use ASSERTEQ instead.
 #define ASSERTEQX(a, b, reason) \
   do\
   {\
@@ -224,16 +228,17 @@ public:
     }\
   } while(0)
 
-#define ASSERTCMP(a, b) \
+#define ASSERTCMP(a, b, ...) \
   do\
   {\
     if(strcmp(a,b)) \
     {\
-      throw Unit::exception(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), nullptr); \
+      throw Unit::exception(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), "" __VA_ARGS__); \
     }\
   } while(0)
 
 
+// TODO: use ASSERTCMP instead.
 #define ASSERTXCMP(a, b, reason) \
   do\
   {\
@@ -243,23 +248,25 @@ public:
     }\
   } while(0)
 
-#define ASSERTXNCMP(a, b, n, reason) \
+#define ASSERTNCMP(a, b, n, ...) \
   do\
   {\
     if(strncmp(a,b,n)) \
     {\
-      throw Unit::exception(__LINE__, "strncmp(" #a ", " #b ", " #n ")", (a), (b), reason); \
+      throw Unit::exception(__LINE__, "strncmp(" #a ", " #b ", " #n ")", (a), (b), "" __VA_ARGS__); \
     }\
   } while(0)
 
-#define ASSERTMEM(a, b, l) \
+#define ASSERTMEM(a, b, l, ...) \
   do\
   {\
     if(memcmp(a,b,l)) \
     {\
-      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", (a), (b), (l), nullptr); \
+      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", (a), (b), (l), "" __VA_ARGS__); \
     }\
   } while(0)
+
+// TODO: use ASSERTMEM instead.
 #define ASSERTXMEM(a, b, l, reason) \
   do\
   {\
@@ -269,10 +276,10 @@ public:
     }\
   } while(0)
 
-#define FAIL(reason) \
+#define FAIL(...) \
   do\
   {\
-    throw Unit::exception(__LINE__, nullptr, reason); \
+    throw Unit::exception(__LINE__, nullptr, "" __VA_ARGS__); \
   } while(0)
 
 #define SKIP() \
@@ -322,56 +329,44 @@ namespace Unit
      left(coalesce(nullptr)), right(coalesce(nullptr)), has_values(false) {}
 
     template<class T, class S>
-    exception(int _line, const char *_test, T _left, S _right, const char *_reason):
-     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason)
+    exception(int _line, const char *_test, T _left, S _right, const char *_reason_fmt, ...):
+     line(_line), test(coalesce(_test)), has_reason(false), has_values(false)
     {
-      std::stringstream l;
-      std::stringstream r;
-      l << coalesce(_left);
-      r << coalesce(_right);
-      left = l.str();
-      right = r.str();
-
-      if(!std::is_same<T, std::nullptr_t>::value ||
-       !std::is_same<S, std::nullptr_t>::value)
+      printf("%s\n", __PRETTY_FUNCTION__);
+      if(_reason_fmt && _reason_fmt[0])
       {
-        has_values = true;
+        va_list vl;
+        va_start(vl, _reason_fmt);
+        set_reason_fmt(_reason_fmt, vl);
+        va_end(vl);
       }
       else
-        has_values = false;
+        reason = "NULL";
+
+      set_operand(left, _left);
+      set_operand(right, _right);
     }
 
     template<class T, class E = std::enable_if<std::is_integral<T>::value>>
     exception(int _line, const char *_test, const T *_left, const T *_right,
-     size_t length, const char *_reason):
-     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason)
+     size_t length, const char *_reason_fmt, ...):
+     line(_line), test(coalesce(_test)), has_reason(false)
     {
-      std::stringstream l;
-      std::stringstream r;
+      if(_reason_fmt && _reason_fmt[0])
+      {
+        va_list vl;
+        va_start(vl, _reason_fmt);
+        set_reason_fmt(_reason_fmt, vl);
+        va_end(vl);
+      }
+      else
+        reason = "NULL";
 
       has_values = (_left || _right);
       length /= sizeof(T);
 
-      if(_left)
-      {
-        l << std::hex;
-        for(size_t i = 0; i < length; i++)
-          l << static_cast<uint64_t>(_left[i]) << ' ';
-      }
-      else
-        l << coalesce(_left);
-
-      if(_right)
-      {
-        r << std::hex;
-        for(size_t i = 0; i < length; i++)
-          r << static_cast<uint64_t>(_right[i]) << ' ';
-      }
-      else
-        r << coalesce(_right);
-
-      left = l.str();
-      right = r.str();
+      set_operand_integral_ptr(left, _left, length);
+      set_operand_integral_ptr(right, _right, length);
     }
 
     // Print non-integral memcmp types bytewise.
@@ -379,6 +374,45 @@ namespace Unit
      size_t length, const char *_reason):
      exception(_line, _test, (const uint8_t *)_left, (const uint8_t *)_right,
       length, _reason) {}
+
+  private:
+
+    void set_reason_fmt(const char *_reason_fmt, va_list vl)
+    {
+      char reasonbuf[1024];
+
+      vsnprintf(reasonbuf, sizeof(reasonbuf), _reason_fmt, vl);
+
+      reason = reasonbuf;
+      has_reason = true;
+    }
+
+    template<class T>
+    void set_operand(std::string &op, T _op)
+    {
+      std::stringstream st;
+      st << coalesce(_op);
+      op = st.str();
+      has_values |= !std::is_same<T, std::nullptr_t>::value;
+    }
+
+    template<class T>
+    void set_operand_integral_ptr(std::string &op, const T *_op, size_t length)
+    {
+      std::stringstream st;
+
+      if(_op)
+      {
+        st << std::hex;
+
+        for(size_t i = 0; i < length; i++)
+          st << static_cast<uint64_t>(_op[i]) << ' ';
+      }
+      else
+        st << coalesce(_op);
+
+      op = st.str();
+    }
   };
 
   class unittestrunner_cls final

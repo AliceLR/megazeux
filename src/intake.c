@@ -723,6 +723,7 @@ boolean intake_apply_event_fixed(subcontext *sub, enum intake_event_type type,
           intake_skip_back(intk);
           value--;
         }
+        new_pos = intk->pos;
         if(intk->pos < old_pos)
         {
           memmove(intk->dest + intk->pos, intk->dest + old_pos,
