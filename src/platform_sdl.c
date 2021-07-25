@@ -40,18 +40,18 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
   emscripten_sleep(ms);
 }
 #else
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
   SDL_Delay(ms);
 }
 #endif
 
-Uint32 get_ticks(void)
+uint64_t get_ticks(void)
 {
   return SDL_GetTicks();
 }

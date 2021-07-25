@@ -34,12 +34,12 @@
 #include <stdio.h>
 #include <time.h>
 
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
   usleep(1000 * ms);
 }
 
-Uint32 get_ticks(void)
+uint64_t get_ticks(void)
 {
   struct timeval tv;
 
@@ -49,7 +49,7 @@ Uint32 get_ticks(void)
     return 0;
   }
 
-  return (Uint32)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+  return (uint64_t)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
 
 boolean platform_init(void)
