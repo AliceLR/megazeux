@@ -802,14 +802,13 @@ static enum keycode convert_USB_internal(unsigned int usb_hid_key)
 static boolean process_event(union event *ev)
 {
   struct buffered_status *status = store_status();
-  boolean rval = true;
 
   switch(ev->type)
   {
     case EVENT_BUTTON_DOWN:
     {
       int button = wii_map_button(ev->button.pad, ev->button.button);
-      rval = false;
+
       if((ev->button.pad == 0) && pointing)
       {
         enum mouse_button mousebutton;
@@ -827,8 +826,7 @@ static boolean process_event(union event *ev)
           status->mouse_repeat_state = 1;
           status->mouse_drag_state = -1;
           status->mouse_time = get_ticks();
-          button = 255;
-          rval = true;
+          return true;
         }
       }
 
@@ -842,7 +840,7 @@ static boolean process_event(union event *ev)
           input.joystick_game_map.button[joystick][button] = 0;
         }
         joystick_button_press(status, ev->button.pad, button);
-        rval = true;
+        return true;
       }
       break;
     }
@@ -850,7 +848,7 @@ static boolean process_event(union event *ev)
     case EVENT_BUTTON_UP:
     {
       int button = wii_map_button(ev->button.pad, ev->button.button);
-      rval = false;
+
       if((ev->button.pad == 0) && status->mouse_button_state)
       {
         enum mouse_button mousebutton;
@@ -867,15 +865,14 @@ static boolean process_event(union event *ev)
           status->mouse_repeat = 0;
           status->mouse_drag_state = 0;
           status->mouse_repeat_state = 0;
-          button = 255;
-          rval = true;
+          return true;
         }
       }
 
       if(button >= 0)
       {
         joystick_button_release(status, ev->button.pad, button);
-        rval = true;
+        return true;
       }
       break;
     }
@@ -884,17 +881,18 @@ static boolean process_event(union event *ev)
     {
       int axis = wii_map_axis(ev->axis.pad, ev->axis.axis);
 
-      if(axis < 0)
-        break;
-
-      joystick_axis_update(status, ev->axis.pad, axis, ev->axis.pos);
+      if(axis > 0)
+      {
+        joystick_axis_update(status, ev->axis.pad, axis, ev->axis.pos);
+        return true;
+      }
       break;
     }
 
     case EVENT_CHANGE_EXT:
     {
       ext_type[ev->ext.pad] = ev->ext.ext;
-      break;
+      return true;
     }
 
     case EVENT_POINTER_MOVE:
@@ -905,13 +903,13 @@ static boolean process_event(union event *ev)
       status->mouse_pixel_y = ev->pointer.y;
       status->mouse_x = ev->pointer.x / 8;
       status->mouse_y = ev->pointer.y / 14;
-      break;
+      return true;
     }
 
     case EVENT_POINTER_OUT:
     {
       pointing = 0;
-      break;
+      return true;
     }
 
     case EVENT_KEY_DOWN:
@@ -922,10 +920,7 @@ static boolean process_event(union event *ev)
         if(ev->key.unicode)
           ckey = IKEY_UNICODE;
         else
-        {
-          rval = false;
           break;
-        }
       }
 
       if((ckey == IKEY_RETURN) &&
@@ -933,14 +928,14 @@ static boolean process_event(union event *ev)
        get_ctrl_status(keycode_internal))
       {
         toggle_fullscreen();
-        break;
+        return true;
       }
 
 #ifdef CONFIG_ENABLE_SCREENSHOTS
       if(ckey == IKEY_F12 && enable_f12_hack)
       {
         dump_screen();
-        break;
+        return true;
       }
 #endif
 
@@ -965,7 +960,7 @@ static boolean process_event(union event *ev)
 
       key_press(status, ckey);
       key_press_unicode(status, ev->key.unicode, true);
-      break;
+      return true;
     }
 
     case EVENT_KEY_UP:
@@ -976,10 +971,7 @@ static boolean process_event(union event *ev)
         if(status->keymap[IKEY_UNICODE])
           ckey = IKEY_UNICODE;
         else
-        {
-          rval = false;
           break;
-        }
       }
 
       status->keymap[ckey] = 0;
@@ -989,14 +981,14 @@ static boolean process_event(union event *ev)
         status->unicode_repeat = 0;
       }
       status->key_release = ckey;
-      break;
+      return true;
     }
 
     case EVENT_KEY_LOCKS:
     {
       status->numlock_status = !!(ev->locks.locks & MOD_NUMLOCK);
       status->caps_status = !!(ev->locks.locks & MOD_CAPSLOCK);
-      break;
+      return true;
     }
 
     case EVENT_MOUSE_MOVE:
@@ -1018,7 +1010,7 @@ static boolean process_event(union event *ev)
       status->mouse_x = mx / 8;
       status->mouse_y = my / 14;
       status->mouse_moved = true;
-      break;
+      return true;
     }
 
     case EVENT_MOUSE_BUTTON_DOWN:
@@ -1048,7 +1040,7 @@ static boolean process_event(union event *ev)
       status->mouse_repeat_state = 1;
       status->mouse_drag_state = -1;
       status->mouse_time = get_ticks();
-      break;
+      return true;
     }
 
     case EVENT_MOUSE_BUTTON_UP:
@@ -1076,17 +1068,11 @@ static boolean process_event(union event *ev)
       status->mouse_repeat = 0;
       status->mouse_drag_state = 0;
       status->mouse_repeat_state = 0;
-      break;
-    }
-
-    default:
-    {
-      rval = false;
-      break;
+      return true;
     }
   }
 
-  return rval;
+  return false;
 }
 
 boolean __update_event_status(void)
