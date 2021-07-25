@@ -298,19 +298,19 @@ void TEST_STRING(const char *setting_name, char (&setting)[S],
 
     setting[0] = '\0';
     load_arg(arg);
-    ASSERTXNCMP(setting, data[i].expected, len, arg);
-    ASSERTEQX(setting[len], '\0', arg);
+    ASSERTNCMP(setting, data[i].expected, len, "%s", arg);
+    ASSERTEQ(setting[len], '\0', "%s", arg);
 
     setting[0] = '\0';
     load_arg_file(arg, game_allowed);
-    ASSERTXNCMP(setting, data[i].expected, len, arg);
-    ASSERTEQX(setting[len], '\0', arg);
+    ASSERTNCMP(setting, data[i].expected, len, "%s", arg);
+    ASSERTEQ(setting[len], '\0', "%s", arg);
 
     if(!game_allowed)
     {
       setting[0] = '\0';
       load_arg_file(arg, true);
-      ASSERTEQX(setting[0], '\0', arg);
+      ASSERTEQ(setting[0], '\0', "%s", arg);
     }
   }
 }
