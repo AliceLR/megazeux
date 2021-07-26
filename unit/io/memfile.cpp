@@ -32,10 +32,10 @@ UNITTEST(mfopen)
     struct memfile mf;
 
     mfopen(buffer, arraysize(buffer), &mf);
-    ASSERTEQ(mf.start, buffer);
-    ASSERTEQ(mf.current, buffer);
-    ASSERTEQ(mf.end, mf.start + arraysize(buffer));
-    ASSERTEQ(mf.alloc, false);
+    ASSERTEQ(mf.start, buffer, "");
+    ASSERTEQ(mf.current, buffer, "");
+    ASSERTEQ(mf.end, mf.start + arraysize(buffer), "");
+    ASSERTEQ(mf.alloc, false, "");
   }
 
   SECTION(mfopen_alloc)
@@ -43,14 +43,14 @@ UNITTEST(mfopen)
     struct memfile *mf;
 
     mf = mfopen_alloc(buffer, arraysize(buffer));
-    ASSERT(mf);
-    ASSERTEQ(mf->start, buffer);
-    ASSERTEQ(mf->current, buffer);
-    ASSERTEQ(mf->end, buffer + arraysize(buffer));
-    ASSERTEQ(mf->alloc, true);
+    ASSERT(mf, "");
+    ASSERTEQ(mf->start, buffer, "");
+    ASSERTEQ(mf->current, buffer, "");
+    ASSERTEQ(mf->end, buffer + arraysize(buffer), "");
+    ASSERTEQ(mf->alloc, true, "");
 
     int ret = mf_alloc_free(mf);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
   }
 
   SECTION(mf_alloc_free_on_static_memfile)
@@ -59,10 +59,10 @@ UNITTEST(mfopen)
     mfopen(buffer, arraysize(buffer), &mf);
 
     int ret = mf_alloc_free(&mf);
-    ASSERTEQ(ret, -1);
-    ASSERTEQ(mf.start, buffer);
-    ASSERTEQ(mf.current, buffer);
-    ASSERTEQ(mf.end, buffer + arraysize(buffer));
+    ASSERTEQ(ret, -1, "");
+    ASSERTEQ(mf.start, buffer, "");
+    ASSERTEQ(mf.current, buffer, "");
+    ASSERTEQ(mf.end, buffer + arraysize(buffer), "");
   }
 }
 
@@ -78,18 +78,18 @@ UNITTEST(mfsync)
   for(i = 0; i < arraysize(buffers); i++)
   {
     mfopen(buffers[i], arraysize(buffers[i]), &mf);
-    ASSERTEQ(mf.start, buffers[i]);
-    ASSERTEQ(mf.end, buffers[i] + arraysize(buffers[i]));
+    ASSERTEQ(mf.start, buffers[i], "%d", i);
+    ASSERTEQ(mf.end, buffers[i] + arraysize(buffers[i]), "%d", i);
 
     mfsync(&buf, &len, &mf);
-    ASSERTEQ(buf, (void *)buffers[i]);
-    ASSERTEQ((int)len, arraysize(buffers[i]));
+    ASSERTEQ(buf, (void *)buffers[i], "%d", i);
+    ASSERTEQ((int)len, arraysize(buffers[i]), "%d", i);
 
     mfsync(&buf, nullptr, &mf);
-    ASSERTEQ(buf, (void *)buffers[i]);
+    ASSERTEQ(buf, (void *)buffers[i], "%d", i);
 
     mfsync(nullptr, &len, &mf);
-    ASSERTEQ((int)len, arraysize(buffers[i]));
+    ASSERTEQ((int)len, arraysize(buffers[i]), "%d", i);
 
     mfsync(nullptr, nullptr, &mf);
   }
@@ -129,17 +129,17 @@ UNITTEST(mfhasspace)
   for(i = 0; i < arraysize(pairs); i++)
   {
     mfopen(pairs[i].buffer, pairs[i].buffer_len, &mf);
-    ASSERTEQ(pairs[i].has8,   mfhasspace(8, &mf));
-    ASSERTEQ(pairs[i].has16,  mfhasspace(16, &mf));
-    ASSERTEQ(pairs[i].has32,  mfhasspace(32, &mf));
-    ASSERTEQ(pairs[i].has64,  mfhasspace(64, &mf));
-    ASSERTEQ(pairs[i].has128, mfhasspace(128, &mf));
+    ASSERTEQ(pairs[i].has8,   mfhasspace(8, &mf), "%d", i);
+    ASSERTEQ(pairs[i].has16,  mfhasspace(16, &mf), "%d", i);
+    ASSERTEQ(pairs[i].has32,  mfhasspace(32, &mf), "%d", i);
+    ASSERTEQ(pairs[i].has64,  mfhasspace(64, &mf), "%d", i);
+    ASSERTEQ(pairs[i].has128, mfhasspace(128, &mf), "%d", i);
 
     mf.current = (mf.end - mf.start)/2 + mf.start;
-    ASSERTEQ(pairs[i].has16,  mfhasspace(8, &mf));
-    ASSERTEQ(pairs[i].has32,  mfhasspace(16, &mf));
-    ASSERTEQ(pairs[i].has64,  mfhasspace(32, &mf));
-    ASSERTEQ(pairs[i].has128, mfhasspace(64, &mf));
+    ASSERTEQ(pairs[i].has16,  mfhasspace(8, &mf), "%d", i);
+    ASSERTEQ(pairs[i].has32,  mfhasspace(16, &mf), "%d", i);
+    ASSERTEQ(pairs[i].has64,  mfhasspace(32, &mf), "%d", i);
+    ASSERTEQ(pairs[i].has128, mfhasspace(64, &mf), "%d", i);
   }
 }
 
@@ -156,17 +156,17 @@ UNITTEST(mfmove)
 
   mfopen(buffera, arraysize(buffera), &mf);
   mf.current = mf.start + 96;
-  ASSERTEQ(mf.current, buffera + 96);
+  ASSERTEQ(mf.current, buffera + 96, "");
 
   mfmove(bufferb, arraysize(bufferb), &mf);
-  ASSERTEQ(mf.start, bufferb);
-  ASSERTEQ(mf.end, bufferb + arraysize(bufferb));
-  ASSERTEQ(mf.current, bufferb + 96);
+  ASSERTEQ(mf.start, bufferb, "");
+  ASSERTEQ(mf.end, bufferb + arraysize(bufferb), "");
+  ASSERTEQ(mf.current, bufferb + 96, "");
 
   mfmove(bufferc, arraysize(bufferc), &mf);
-  ASSERTEQ(mf.start, bufferc);
-  ASSERTEQ(mf.end, bufferc + arraysize(bufferc));
-  ASSERTEQ(mf.current, bufferc + arraysize(bufferc));
+  ASSERTEQ(mf.start, bufferc, "");
+  ASSERTEQ(mf.end, bufferc + arraysize(bufferc), "");
+  ASSERTEQ(mf.current, bufferc + arraysize(bufferc), "");
 }
 
 UNITTEST(mfresize)
@@ -177,15 +177,15 @@ UNITTEST(mfresize)
   struct memfile mf;
   size_t size;
 
-  ASSERT(buf);
+  ASSERT(buf, "");
   mfopen(buf, BUFSIZE, &mf);
   mfresize(NEWSIZE, &mf);
   mfsync(&buf, &size, &mf);
-  ASSERTEQ(size, NEWSIZE);
+  ASSERTEQ(size, NEWSIZE, "");
 
   mfresize(BUFSIZE, &mf);
   mfsync(&buf, &size, &mf);
-  ASSERTEQ(size, BUFSIZE);
+  ASSERTEQ(size, BUFSIZE, "");
 
   free(buf);
 }
@@ -200,7 +200,6 @@ struct seq
 UNITTEST(mfseek_mftell)
 {
   unsigned char buffer[256];
-  char msg[64];
   struct memfile mf;
   static const int offs_safe[] =
   {
@@ -227,46 +226,41 @@ UNITTEST(mfseek_mftell)
     9999,
   };
   int ret;
-  int i;
 
   mfopen(buffer, arraysize(buffer), &mf);
 
   SECTION(mftell)
   {
-    for(i = 0; i < arraysize(offs_safe); i++)
+    for(int pos : offs_safe)
     {
-      snprintf(msg, arraysize(msg), "mftell safe %d", i);
-      mf.current = mf.start + offs_safe[i];
-      ASSERTEQX(mftell(&mf), offs_safe[i], msg);
+      mf.current = mf.start + pos;
+      ASSERTEQ(mftell(&mf), pos, "mftell safe %d", pos);
     }
   }
 
   SECTION(seek_set)
   {
-    for(i = 0; i < arraysize(offs_safe); i++)
+    for(int pos : offs_safe)
     {
-      snprintf(msg, arraysize(msg), "seek_set safe %d", i);
-      ret = mfseek(&mf, offs_safe[i], SEEK_SET);
-      ASSERTEQX(ret, 0, msg);
-      ASSERTEQX(mftell(&mf), offs_safe[i], msg);
+      ret = mfseek(&mf, pos, SEEK_SET);
+      ASSERTEQ(ret, 0, "seek_set safe %d", pos);
+      ASSERTEQ(mftell(&mf), pos, "seek_set safe %d", pos);
     }
 
-    ASSERT(!mfseek(&mf, 129, SEEK_SET));
+    ASSERT(!mfseek(&mf, 129, SEEK_SET), "");
 
-    for(i = 0; i < arraysize(offs_unsafe); i++)
+    for(int pos : offs_unsafe)
     {
-      snprintf(msg, arraysize(msg), "seek_set unsafe %d", i);
-      ret = mfseek(&mf, offs_unsafe[i], SEEK_SET);
-      ASSERTEQX(ret, -1, msg);
-      ASSERTEQX(mftell(&mf), 129, msg);
+      ret = mfseek(&mf, pos, SEEK_SET);
+      ASSERTEQ(ret, -1, "seek_set unsafe %d", pos);
+      ASSERTEQ(mftell(&mf), 129, "seek_set unsafe %d", pos);
     }
 
-    for(i = 0; i < arraysize(offs_maybe_safe); i++)
+    for(int pos : offs_maybe_safe)
     {
-      snprintf(msg, arraysize(msg), "seek_set unsafe2 %d", i);
-      ret = mfseek(&mf, offs_maybe_safe[i], SEEK_SET);
-      ASSERTEQX(ret, -1, msg);
-      ASSERTEQX(mftell(&mf), 129, msg);
+      ret = mfseek(&mf, pos, SEEK_SET);
+      ASSERTEQ(ret, -1, "seek_set unsafe2 %d", pos);
+      ASSERTEQ(mftell(&mf), 129, "seek_set unsafe2 %d", pos);
     }
   }
 
@@ -284,39 +278,37 @@ UNITTEST(mfseek_mftell)
       { 197,    0,  0 }
     };
 
-    for(i = 0; i < arraysize(sequence); i++)
+    for(const seq seq : sequence)
     {
-      snprintf(msg, arraysize(msg), "seek_cur sequence %d", i);
-      ASSERTEQX(mftell(&mf), sequence[i].position, msg);
-      ret = mfseek(&mf, sequence[i].next, SEEK_CUR);
-      ASSERTEQX(ret, sequence[i].retval, msg);
+      ASSERTEQ(mftell(&mf), seq.position, "seek_cur sequence %d->%d", seq.position, seq.next);
+      ret = mfseek(&mf, seq.next, SEEK_CUR);
+      ASSERTEQ(ret, seq.retval, "seek_cur sequence %d->%d", seq.position, seq.next);
     }
   }
 
   SECTION(seek_end)
   {
     mfseek(&mf, 0, SEEK_END);
-    ASSERTEQX(mftell(&mf), arraysize(buffer), "seek_end");
+    ASSERTEQ(mftell(&mf), arraysize(buffer), "seek_end");
   }
 
   SECTION(seek_past_end)
   {
     mf.seek_past_end = true;
 
-    for(i = 0; i < arraysize(offs_maybe_safe); i++)
+    for(int pos : offs_maybe_safe)
     {
-      snprintf(msg, arraysize(msg), "seek_set past end %d", i);
-      ret = mfseek(&mf, offs_maybe_safe[i], SEEK_SET);
-      ASSERTEQX(ret, 0, msg);
-      ASSERTEQX(mftell(&mf), offs_maybe_safe[i], msg);
-      ASSERTEQX(mfhasspace(1, &mf), false, msg);
+      ret = mfseek(&mf, pos, SEEK_SET);
+      ASSERTEQ(ret, 0, "seek_set past end %d", pos);
+      ASSERTEQ(mftell(&mf), pos, "seek_set past end %d", pos);
+      ASSERTEQ(mfhasspace(1, &mf), false, "seek_set past end %d", pos);
     }
   }
 }
 
 UNITTEST(read_write)
 {
-  static const unsigned char data8[] =
+  static const uint8_t data8[] =
   {
     0x00, 0x01, 0xFF, 0xFE, 0x7F, 0x53, 0xA3, 0xD8,
     0xFF, 0x00, 0x12, 0x34, 0x45, 0x67, 0x89, 0xAB,
@@ -338,7 +330,7 @@ UNITTEST(read_write)
   };
 
   const int SIZE = arraysize(data8);
-  unsigned char dest[SIZE * 2];
+  uint8_t dest[SIZE * 2];
   struct memfile mf;
   int res;
   int res2;
@@ -359,10 +351,10 @@ UNITTEST(read_write)
 
     // NOTE: this function does not perform bounds checks since when using it
     // it is assumed these have already been performed.
-    for(i = 0; i < arraysize(data8); i++)
+    for(uint8_t value : data8)
     {
       uint8_t tmp = mfgetc(&mf);
-      ASSERTEQ(tmp, data8[i]);
+      ASSERTEQ(tmp, value, "");
     }
   }
 
@@ -372,10 +364,10 @@ UNITTEST(read_write)
     // it is assumed these have already been performed.
     mfopen(data8, SIZE, &mf);
 
-    for(i = 0; i < arraysize(data16); i++)
+    for(uint16_t value : data16)
     {
       uint16_t tmp = mfgetw(&mf);
-      ASSERTEQ(tmp, data16[i]);
+      ASSERTEQ(tmp, value, "");
     }
   }
 
@@ -385,10 +377,10 @@ UNITTEST(read_write)
     // it is assumed these have already been performed.
     mfopen(data8, SIZE, &mf);
 
-    for(i = 0; i < arraysize(data32s); i++)
+    for(int32_t value : data32s)
     {
       int tmp = mfgetd(&mf);
-      ASSERTEQ(tmp, data32s[i]);
+      ASSERTEQ(tmp, value, "");
     }
   }
 
@@ -398,10 +390,10 @@ UNITTEST(read_write)
     // it is assumed these have already been performed.
     mfopen(data8, SIZE, &mf);
 
-    for(i = 0; i < arraysize(data32u); i++)
+    for(uint32_t value : data32u)
     {
       uint32_t tmp = mfgetud(&mf);
-      ASSERTEQ(tmp, data32u[i]);
+      ASSERTEQ(tmp, value);
     }
   }
 
@@ -410,37 +402,34 @@ UNITTEST(read_write)
     mfopen(data8, SIZE, &mf);
 
     res = mfread(dest, SIZE, 1, &mf);
-    ASSERTEQ(res, 1);
-    res = memcmp(data8, dest, SIZE);
-    ASSERTEQ(res, 0);
+    ASSERTEQ(res, 1, "read SIZE x 1");
+    ASSERTMEM(data8, dest, SIZE, "read SIZE x 1");
 
     mf.current = mf.start;
     res = mfread(dest, 1, SIZE, &mf);
-    ASSERTEQ(res, SIZE);
-    res = memcmp(data8, dest, SIZE);
-    ASSERTEQ(res, 0);
+    ASSERTEQ(res, SIZE, "read 1 x SIZE");
+    ASSERTMEM(data8, dest, SIZE, "read 1 x SIZE");
 
     mf.current = mf.start;
     res = mfread(dest, SIZE/2, 1, &mf);
     res2 = mfread(dest + SIZE/2, 1, SIZE/2, &mf);
-    ASSERTEQ(res, 1);
-    ASSERTEQ(res2, SIZE/2);
-    res = memcmp(data8, dest, SIZE);
-    ASSERTEQ(res, 0);
+    ASSERTEQ(res, 1, "read SIZE/2");
+    ASSERTEQ(res2, SIZE/2, "read SIZE/2");
+    ASSERTMEM(data8, dest, SIZE, "read SIZE/2");
 
     mf.current = mf.start;
     res = mfread(dest, SIZE, 2, &mf);
-    ASSERTEQ(res, 1);
+    ASSERTEQ(res, 1, "read SIZE x 2");
 
     mf.current = mf.start;
     res = mfread(dest, 3, SIZE*2/3, &mf);
-    ASSERTEQ(res, SIZE/3);
+    ASSERTEQ(res, SIZE/3, "read 3 x (SIZE * 2/3), past end");
 
     res = mfread(dest, 1, SIZE - SIZE/3*3 + 1, &mf);
-    ASSERTEQ(res, SIZE - SIZE/3*3);
+    ASSERTEQ(res, SIZE - SIZE/3*3, "read 1 x 2, past end");
 
     res = mfread(dest, 1, 1, &mf);
-    ASSERTEQ(res, 0);
+    ASSERTEQ(res, 0, "read 1, past end");
   }
 
   SECTION(mfputc)
@@ -452,8 +441,8 @@ UNITTEST(read_write)
     for(i = 0; i < arraysize(data8); i++)
     {
       res = mfputc(data8[i], &mf);
-      ASSERTEQ((unsigned)res, data8[i]);
-      ASSERTEQ((unsigned)res, dest[i]);
+      ASSERTEQ((unsigned)res, data8[i], "");
+      ASSERTEQ((unsigned)res, dest[i], "");
     }
   }
 
@@ -466,8 +455,8 @@ UNITTEST(read_write)
     for(i = 0; i < arraysize(data16); i++)
     {
       mfputw(data16[i], &mf);
-      ASSERTEQ((uint16_t)dest[i * 2 + 0], data16[i] & 0xFF);
-      ASSERTEQ((uint16_t)dest[i * 2 + 1], (data16[i] >> 8) & 0xFF);
+      ASSERTEQ((uint16_t)dest[i * 2 + 0], data16[i] & 0xFF, "");
+      ASSERTEQ((uint16_t)dest[i * 2 + 1], (data16[i] >> 8) & 0xFF, "");
     }
   }
 
@@ -480,10 +469,10 @@ UNITTEST(read_write)
     for(i = 0; i < arraysize(data32s); i++)
     {
       mfputd(data32s[i], &mf);
-      ASSERTEQ((int)dest[i * 4 + 0], data32s[i] & 0xFF);
-      ASSERTEQ((int)dest[i * 4 + 1], (data32s[i] >> 8) & 0xFF);
-      ASSERTEQ((int)dest[i * 4 + 2], (data32s[i] >> 16) & 0xFF);
-      ASSERTEQ((int)dest[i * 4 + 3], (data32s[i] >> 24) & 0xFF);
+      ASSERTEQ((int)dest[i * 4 + 0], data32s[i] & 0xFF, "");
+      ASSERTEQ((int)dest[i * 4 + 1], (data32s[i] >> 8) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 4 + 2], (data32s[i] >> 16) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 4 + 3], (data32s[i] >> 24) & 0xFF, "");
     }
   }
 
@@ -496,10 +485,10 @@ UNITTEST(read_write)
     for(i = 0; i < arraysize(data32u); i++)
     {
       mfputud(data32u[i], &mf);
-      ASSERTEQ((uint32_t)dest[i * 4 + 0], data32u[i] & 0xFF);
-      ASSERTEQ((uint32_t)dest[i * 4 + 1], (data32u[i] >> 8) & 0xFF);
-      ASSERTEQ((uint32_t)dest[i * 4 + 2], (data32u[i] >> 16) & 0xFF);
-      ASSERTEQ((uint32_t)dest[i * 4 + 3], (data32u[i] >> 24) & 0xFF);
+      ASSERTEQ((uint32_t)dest[i * 4 + 0], data32u[i] & 0xFF, "");
+      ASSERTEQ((uint32_t)dest[i * 4 + 1], (data32u[i] >> 8) & 0xFF, "");
+      ASSERTEQ((uint32_t)dest[i * 4 + 2], (data32u[i] >> 16) & 0xFF, "");
+      ASSERTEQ((uint32_t)dest[i * 4 + 3], (data32u[i] >> 24) & 0xFF, "");
     }
   }
 
@@ -508,23 +497,20 @@ UNITTEST(read_write)
     mfopen(dest, SIZE, &mf);
 
     res = mfwrite(data8, SIZE, 1, &mf);
-    ASSERTEQ(res, 1);
-    res = memcmp(data8, dest, SIZE);
-    ASSERTEQ(res, 0);
+    ASSERTEQ(res, 1, "write SIZE x 1");
+    ASSERTMEM(data8, dest, SIZE, "write SIZE x 1");
 
     mf.current = mf.start;
     res = mfwrite(data8, 1, SIZE, &mf);
-    ASSERTEQ(res, SIZE);
-    res = memcmp(data8, dest, SIZE);
-    ASSERTEQ(res, 0);
+    ASSERTEQ(res, SIZE, "write 1 x SIZE");
+    ASSERTMEM(data8, dest, SIZE, "write 1 x SIZE");
 
     mf.current = mf.start;
     res = mfwrite(data8, SIZE/2, 1, &mf);
     res2 = mfwrite(data8 + SIZE/2, 1, SIZE/2, &mf);
-    ASSERTEQ(res, 1);
-    ASSERTEQ(res2, SIZE/2);
-    res = memcmp(data8, dest, SIZE);
-    ASSERTEQ(res, 0);
+    ASSERTEQ(res, 1, "write SIZE/2");
+    ASSERTEQ(res2, SIZE/2, "write SIZE/2");
+    ASSERTMEM(data8, dest, SIZE, "write SIZE/2");
 
     mf.current = mf.start;
     res = mfwrite(data8, SIZE, 2, &mf);
@@ -532,13 +518,13 @@ UNITTEST(read_write)
 
     mf.current = mf.start;
     res = mfwrite(data8, 3, SIZE*2/3, &mf);
-    ASSERTEQ(res, SIZE/3);
+    ASSERTEQ(res, SIZE/3, "write 3 * (SIZE*2/3), past end");
 
     res = mfwrite(data8, 1, SIZE - SIZE/3*3 + 1, &mf);
-    ASSERTEQ(res, SIZE - SIZE/3*3);
+    ASSERTEQ(res, SIZE - SIZE/3*3, "write 1 x 2, past end");
 
     res = mfwrite(data8, 1, 1, &mf);
-    ASSERTEQ(res, 0);
+    ASSERTEQ(res, 0, "write 1, past end");
   }
 }
 
@@ -641,10 +627,10 @@ UNITTEST(mfsafegets)
         char *result = mfsafegets(buffer, arraysize(buffer), &mf);
         if(result && data[i].output[j])
         {
-          ASSERTCMP(result, data[i].output[j]);
+          ASSERTCMP(result, data[i].output[j], "%d %d", i, j);
         }
         else
-          ASSERTEQ(result, data[i].output[j]);
+          ASSERTEQ(result, data[i].output[j], "%d %d", i, j);
       }
     }
   }
@@ -660,10 +646,10 @@ UNITTEST(mfsafegets)
         char *result = mfsafegets(buffer, SHORT_BUF_LEN, &mf);
         if(result && short_data[i].output[j])
         {
-          ASSERTCMP(result, short_data[i].output[j]);
+          ASSERTCMP(result, short_data[i].output[j], "%d %d", i, j);
         }
         else
-          ASSERTEQ(result, short_data[i].output[j]);
+          ASSERTEQ(result, short_data[i].output[j], "%d %d", i, j);
       }
     }
   }

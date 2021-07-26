@@ -104,75 +104,67 @@ static const char * const vfsafegets_output[][MAX_LINES] =
   static_assert(bytes_from_end < 0, "invalid bytes from end value :("); \
   vfseek(vf, arraysize(test_data) + bytes_from_end - 1, SEEK_SET); \
   int c = vfgetc(vf); \
-  ASSERTEQX(c, test_data[arraysize(test_data) + bytes_from_end - 1], "not eof"); \
+  ASSERTEQ(c, test_data[arraysize(test_data) + bytes_from_end - 1], "not eof"); \
 }
 
 static void test_vfgetc(vfile *vf)
 {
-  char buf[64];
   for(int i = 0; i < arraysize(test_data); i++)
   {
-    snprintf(buf, arraysize(buf), "vfgetc offset=%d", i);
     int c = vfgetc(vf);
-    ASSERTEQX(c, test_data[i], buf);
+    ASSERTEQ(c, test_data[i], "vfgetc offset=%d", i);
   }
   int c = vfgetc(vf);
-  ASSERTEQX(c, EOF, "eof");
+  ASSERTEQ(c, EOF, "eof");
 }
 
 static void test_vfgetw(vfile *vf)
 {
-  char buf[64];
   int expected;
   int c;
 
   for(int i = 0; i < arraysize(test_data); i += 2)
   {
-    snprintf(buf, arraysize(buf), "vfgetw offset=%d", i);
-
     c = vfgetw(vf);
     expected = test_data[i] | (test_data[i + 1] << 8);
-    ASSERTEQX(c, expected, buf);
+    ASSERTEQ(c, expected, "vfgetw offset=%d", i);
   }
   // Both bytes should cause EOF.
   c = vfgetw(vf);
-  ASSERTEQX(c, EOF, "eof (byte 0)");
+  ASSERTEQ(c, EOF, "eof (byte 0)");
 
   back_up(-1, vf);
   c = vfgetw(vf);
-  ASSERTEQX(c, EOF, "eof (byte 1)");
+  ASSERTEQ(c, EOF, "eof (byte 1)");
 }
 
 static void test_vfgetd(vfile *vf)
 {
-  char buf[64];
   int expected;
   int c;
 
   for(int i = 0; i < arraysize(test_data); i += 4)
   {
-    snprintf(buf, arraysize(buf), "vfgetd offset=%d", i);
-
     c = vfgetd(vf);
     expected = static_cast<int>(test_data[i] | (test_data[i + 1] << 8) |
      (test_data[i + 2] << 16) | (test_data[i + 3] << 24));
-    ASSERTEQX(c, expected, buf);
+    ASSERTEQ(c, expected, "vfgetd offset=%d", i);
   }
   // All four bytes should cause EOF.
   c = vfgetd(vf);
-  ASSERTEQX(c, EOF, "eof (byte 0)");
+  ASSERTEQ(c, EOF, "eof (byte 0)");
 
   back_up(-1, vf);
   c = vfgetd(vf);
-  ASSERTEQX(c, EOF, "eof (byte 1)");
+  ASSERTEQ(c, EOF, "eof (byte 1)");
 
   back_up(-2, vf);
   c = vfgetd(vf);
-  ASSERTEQX(c, EOF, "eof (byte 2)");
+  ASSERTEQ(c, EOF, "eof (byte 2)");
 
   back_up(-3, vf);
   c = vfgetd(vf);
-  ASSERTEQX(c, EOF, "eof (byte 3)");
+  ASSERTEQ(c, EOF, "eof (byte 3)");
 }
 
 static void test_vfread(vfile *vf)
@@ -183,25 +175,25 @@ static void test_vfread(vfile *vf)
 
   // One read >length should be refused.
   ret = vfread(buffer, len * 2, 1, vf);
-  ASSERTEQX(ret, 0, "vfread too much data");
+  ASSERTEQ(ret, 0, "vfread too much data");
   vrewind(vf);
 
   // Two reads =length should read exactly length once.
   ret = vfread(buffer, len, 2, vf);
-  ASSERTEQX(ret, 1, "vfread 2x len");
+  ASSERTEQ(ret, 1, "vfread 2x len");
   vrewind(vf);
 
   // More reads...
   ret = vfread(buffer, len / 2, 3, vf);
-  ASSERTEQX(ret, 2, "vfread 1.5x len");
+  ASSERTEQ(ret, 2, "vfread 1.5x len");
   vrewind(vf);
 
   ret = vfread(buffer, len / 4, 5, vf);
-  ASSERTEQX(ret, 4, "vfread 1.25x len");
+  ASSERTEQ(ret, 4, "vfread 1.25x len");
   vrewind(vf);
 
   ret = vfread(buffer, 3, len, vf);
-  ASSERTEQX(ret, len / 3, "vfread len x 3");
+  ASSERTEQ(ret, len / 3, "vfread len x 3");
   // NOTE: seems to be implementation-defined whether this ends up
   // at 255 or 256, so don't bother testing that.
 }
@@ -210,57 +202,57 @@ static void test_write_check(vfile *vf)
 {
   uint8_t tmp[arraysize(test_data)];
   int r = vfread(tmp, arraysize(test_data), 1, vf);
-  ASSERTEQX(r, 1, "test_write_check vfread");
-  ASSERTXMEM(test_data, tmp, arraysize(test_data), "test_write_check memcmp");
+  ASSERTEQ(r, 1, "test_write_check vfread");
+  ASSERTMEM(test_data, tmp, arraysize(test_data), "test_write_check memcmp");
   r = vfgetc(vf);
-  ASSERTEQX(r, EOF, "test_write_check eof");
+  ASSERTEQ(r, EOF, "test_write_check eof");
 }
 
 static void test_vfputc(vfile *vf)
 {
-  char buf[64];
+  //char buf[64];
   long pos = vftell(vf);
 
   for(int i = 0; i < arraysize(test_data); i++)
   {
-    snprintf(buf, arraysize(buf), "vfputc offset=%d", i);
+    //snprintf(buf, arraysize(buf), "vfputc offset=%d", i);
     vfputc(test_data[i], vf);
   }
   int r = vfseek(vf, pos, SEEK_SET);
-  ASSERTEQX(r, 0, "vfseek");
+  ASSERTEQ(r, 0, "vfseek");
   test_write_check(vf);
 }
 
 static void test_vfputw(vfile *vf)
 {
-  char buf[64];
+  //char buf[64];
   long pos = vftell(vf);
 
   for(int i = 0; i < arraysize(test_data); i += 2)
   {
     int d = test_data[i] | (test_data[i + 1] << 8);
-    snprintf(buf, arraysize(buf), "vfputw offset=%d", i);
+    //snprintf(buf, arraysize(buf), "vfputw offset=%d", i);
     vfputw(d, vf);
   }
   int r = vfseek(vf, pos, SEEK_SET);
-  ASSERTEQX(r, 0, "vfseek");
+  ASSERTEQ(r, 0, "vfseek");
   test_write_check(vf);
 }
 
 static void test_vfputd(vfile *vf)
 {
-  char buf[64];
+  //char buf[64];
   long pos = vftell(vf);
 
   for(int i = 0; i < arraysize(test_data); i += 4)
   {
     int d = test_data[i] | (test_data[i + 1] << 8) |
      (test_data[i + 2] << 16) | (test_data[i + 3] << 24);
-    snprintf(buf, arraysize(buf), "vfputw offset=%d", i);
+    //snprintf(buf, arraysize(buf), "vfputw offset=%d", i);
     vfputd(d, vf);
   }
   int r = vfseek(vf, pos, SEEK_SET);
-  ASSERTEQX(r, 0, "vfseek");
+  ASSERTEQ(r, 0, "vfseek");
   test_write_check(vf);
 }
 
@@ -269,10 +261,10 @@ static void test_vfwrite(vfile *vf)
   long pos = vftell(vf);
 
   int r = vfwrite(test_data, 1, arraysize(test_data), vf);
-  ASSERTEQX(r, arraysize(test_data), "vfwrite");
+  ASSERTEQ(r, arraysize(test_data), "vfwrite");
 
   r = vfseek(vf, pos, SEEK_SET);
-  ASSERTEQX(r, 0, "vfseek");
+  ASSERTEQ(r, 0, "vfseek");
   test_write_check(vf);
 }
 
@@ -281,13 +273,13 @@ static void test_vfputs(vfile *vf)
   long pos = vftell(vf);
 
   int r = vfputs(reinterpret_cast<const char *>(test_data), vf);
-  ASSERTEQX(r, 0, "vfputs");
+  ASSERTEQ(r, 0, "vfputs");
 
   r = vfputc(0, vf);
-  ASSERTEQX(r, 0, "vfputc");
+  ASSERTEQ(r, 0, "vfputc");
 
   r = vfseek(vf, pos, SEEK_SET);
-  ASSERTEQX(r, 0, "vfseek");
+  ASSERTEQ(r, 0, "vfseek");
   test_write_check(vf);
 }
 
@@ -300,79 +292,72 @@ static void test_vfseek_vftell_vrewind_read(vfile *vf)
   static constexpr int end_invalid[] = { -257, -2000, -127848, -2391231 };
   static constexpr int len = arraysize(test_data);
 
-  char buf[64];
   long expected;
   long pos;
   int ret;
 
   // SEEK_SET (valid).
-  for(int i = 0; i < arraysize(set_valid); i++)
+  for(int value : set_valid)
   {
-    snprintf(buf, arraysize(buf), "SEEK_SET valid %d", i);
-    ret = vfseek(vf, set_valid[i], SEEK_SET);
+    ret = vfseek(vf, value, SEEK_SET);
     pos = vftell(vf);
-    ASSERTEQX(ret, 0, buf);
-    ASSERTEQX(pos, set_valid[i], buf);
+    ASSERTEQ(ret, 0, "SEEK_SET valid: %d", value);
+    ASSERTEQ(pos, value, "SEEK_SET valid: %d", value);
   }
   vrewind(vf);
   pos = vftell(vf);
-  ASSERTEQX(pos, 0, "vrewind after SEEK_SET");
+  ASSERTEQ(pos, 0, "vrewind after SEEK_SET");
 
   // SEEK_CUR (valid).
   expected = 0;
-  for(int i = 0; i < arraysize(cur_valid); i++)
+  for(int value : cur_valid)
   {
-    snprintf(buf, arraysize(buf), "SEEK_CUR valid %d", i);
-    expected += cur_valid[i];
-    ret = vfseek(vf, cur_valid[i], SEEK_CUR);
+    expected += value;
+    ret = vfseek(vf, value, SEEK_CUR);
     pos = vftell(vf);
-    ASSERTEQX(ret, 0, buf);
-    ASSERTEQX(pos, expected, buf);
+    ASSERTEQ(ret, 0, "SEEK_CUR valid: %d", value);
+    ASSERTEQ(pos, expected, "SEEK_CUR valid: %d", value);
   }
   vrewind(vf);
   pos = vftell(vf);
-  ASSERTEQX(pos, 0, "vrewind after SEEK_CUR");
+  ASSERTEQ(pos, 0, "vrewind after SEEK_CUR");
 
   // SEEK_SET and SEEK_CUR (invalid).
-  for(int i = 0; i < arraysize(set_cur_invalid); i++)
+  for(int value : set_cur_invalid)
   {
-    snprintf(buf, arraysize(buf), "SEEK_SET invalid %d", i);
-    ret = vfseek(vf, set_cur_invalid[i], SEEK_SET);
-    ASSERTX(ret != 0, buf);
+    ret = vfseek(vf, value, SEEK_SET);
+    ASSERT(ret != 0, "SEEK_SET invalid: %d", value);
     vrewind(vf);
     pos = vftell(vf);
-    ASSERTEQX(pos, 0, buf);
+    ASSERTEQ(pos, 0, "SEEK_SET invalid: %d", value);
 
-    snprintf(buf, arraysize(buf), "SEEK_CUR invalid %d", i);
-    ret = vfseek(vf, set_cur_invalid[i], SEEK_CUR);
-    ASSERTX(ret != 0, buf);
+    ret = vfseek(vf, value, SEEK_CUR);
+    ASSERT(ret != 0, "SEEK_CUR invalid: %d", value);
     vrewind(vf);
     pos = vftell(vf);
-    ASSERTEQX(pos, 0, buf);
+    ASSERTEQ(pos, 0, "SEEK_CUR invalid: %d", value);
   }
 
   // SEEK_END (valid).
-  for(int i = 0; i < arraysize(end_valid); i++)
+  for(int value : end_valid)
   {
-    snprintf(buf, arraysize(buf), "SEEK_END valid %d", i);
-    ret = vfseek(vf, end_valid[i], SEEK_END);
+    ret = vfseek(vf, value, SEEK_END);
     pos = vftell(vf);
-    ASSERTEQX(ret, 0, buf);
-    ASSERTEQX(pos, len + end_valid[i], buf);
+    ASSERTEQ(ret, 0, "SEEK_END valid: %d", value);
+    ASSERTEQ(pos, len + value, "SEEK_END valid: %d", value);
   }
   vrewind(vf);
   pos = vftell(vf);
-  ASSERTEQX(pos, 0, "vrewind after SEEK_END");
+  ASSERTEQ(pos, 0, "vrewind after SEEK_END");
 
   // SEEK_END (invalid).
-  for(int i = 0; i < arraysize(end_invalid); i++)
+  for(int value : end_invalid)
   {
-    snprintf(buf, arraysize(buf), "SEEK_END invalid %d", i);
-    ret = vfseek(vf, end_invalid[i], SEEK_END);
-    ASSERTX(ret != 0, buf);
+    ret = vfseek(vf, value, SEEK_END);
+    ASSERT(ret != 0, "SEEK_END invalid: %d", value);
     vrewind(vf);
     pos = vftell(vf);
-    ASSERTEQX(pos, 0, buf);
+    ASSERTEQ(pos, 0, "SEEK_END invalid: %d", value);
   }
 }
 
@@ -382,8 +367,8 @@ static void test_filelength(long expected_len, vfile *vf)
   long len = vfilelength(vf, false);
   long newpos = vftell(vf);
 
-  ASSERTEQX(len, expected_len, "vfilelength");
-  ASSERTEQX(pos, newpos, "vfilelength with no rewind");
+  ASSERTEQ(len, expected_len, "vfilelength");
+  ASSERTEQ(pos, newpos, "vfilelength with no rewind");
 
   if(len >> 1)
   {
@@ -391,8 +376,8 @@ static void test_filelength(long expected_len, vfile *vf)
     len = vfilelength(vf, true);
     newpos = vftell(vf);
 
-    ASSERTEQX(len, expected_len, "vfilelength 2");
-    ASSERTEQX(newpos, 0, "vfilelength with rewind");
+    ASSERTEQ(len, expected_len, "vfilelength 2");
+    ASSERTEQ(newpos, 0, "vfilelength with rewind");
   }
 }
 
@@ -416,115 +401,113 @@ static void test_vungetc(vfile *vf)
   // vungetc should fail if EOF or some other junk is provided.
   // Note: MSVCRT stdio &255s non-EOF values (?).
   ret = vungetc(EOF, vf);
-  ASSERTEQ(ret, EOF);
+  ASSERTEQ(ret, EOF, "vungetc EOF");
   ret = vungetc(-128141, vf);
-  ASSERTEQ(ret, EOF);
+  ASSERTEQ(ret, EOF, "vungetc -128141");
   ret = vungetc(256, vf);
-  ASSERTEQ(ret, EOF);
+  ASSERTEQ(ret, EOF, "vungetc 256");
 
   // vfgetc should read the buffered char.
   ret = vungetc(0xAB, vf);
-  ASSERTEQ(ret, 0xAB);
+  ASSERTEQ(ret, 0xAB, "vungetc 0xAB");
   value = vfgetc(vf);
-  ASSERTEQ(value, 0xAB);
+  ASSERTEQ(value, 0xAB, "vfgetc 0xAB");
 
   // vfgetw should read the buffered char + one char from the data.
   ret = vungetc(0xCD, vf);
-  ASSERTEQ(ret, 0xCD);
+  ASSERTEQ(ret, 0xCD, "vungetc 0xCD");
   value = vfgetw(vf);
-  ASSERTEQ(value, 0xCD | ((first_dword & 0xFF) << 8));
+  ASSERTEQ(value, 0xCD | ((first_dword & 0xFF) << 8), "vfgetw 0xCD ...");
 
   // vfgetd should read the buffered char + three chars from the data.
   ret = vungetc(0xEF, vf);
-  ASSERTEQ(ret, 0xEF);
+  ASSERTEQ(ret, 0xEF, "vungetc 0xEF");
   value = vfgetd(vf);
-  ASSERTEQ(value, 0xEF | (first_dword & ~0xFF));
+  ASSERTEQ(value, 0xEF | (first_dword & ~0xFF), "vfgetd 0xEF ...");
 
   // vfread should read the buffered char + n-1 chars from the data.
   ret = vungetc(0x12, vf);
-  ASSERTEQ(ret, 0x12);
+  ASSERTEQ(ret, 0x12, "vungetc 0x12");
   value = vfread(tmp, 64, 1, vf);
-  ASSERTEQ(value, 1);
-  ASSERTEQ(tmp[0], 0x12);
-  ASSERTMEM(tmp + 1, next_64, 63);
+  ASSERTEQ(value, 1, "vfread 0x12 ...");
+  ASSERTEQ(tmp[0], 0x12, "vfread 0x12 ...");
+  ASSERTMEM(tmp + 1, next_64, 63, "vfread 0x12 ...");
 
   // vfsafegets should read the buffered char + n-1 chars from the data.
   vfseek(vf, arraysize(test_data) - 5, SEEK_SET);
   ret = vungetc(0xFF, vf);
-  ASSERTEQ(ret, 0xFF);
+  ASSERTEQ(ret, 0xFF, "vungetc 0xFF");
   retstr = vfsafegets(tmp, arraysize(tmp), vf);
-  ASSERT(retstr);
-  ASSERTEQ(tmp[0], 0xFF);
-  ASSERTMEM(tmp + 1, last_5, 5);
+  ASSERT(retstr, "vfsafegets 0xFF ...");
+  ASSERTEQ(tmp[0], 0xFF, "vfsafegets 0xFF ...");
+  ASSERTMEM(tmp + 1, last_5, 5, "vfsafegets 0xFF ...");
 
   // If the buffer char is \r and the next char in the stream is \n, consume both.
   vfseek(vf, 0, SEEK_SET);
   ret = vungetc(0x0D, vf);
-  ASSERTEQ(ret, 0x0D);
+  ASSERTEQ(ret, 0x0D, "vungetc 0x0D");
   retstr = vfsafegets(tmp, arraysize(tmp), vf);
-  ASSERT(retstr);
-  ASSERTEQ((int)tmp[0], 0);
+  ASSERT(retstr, "vfsafegets 0x0D ...");
+  ASSERTEQ((int)tmp[0], 0, "vfsafegets 0x0D ...");
   pos = vftell(vf);
-  ASSERTEQ(pos, 1);
+  ASSERTEQ(pos, 1, "vfsafegets 0x0D ...");
 
   // Reading a buffer char from the end of the file should not return NULL.
   vfseek(vf, 0, SEEK_END);
   ret = vungetc('a', vf);
-  ASSERTEQ(ret, 'a');
+  ASSERTEQ(ret, 'a', "vungetc 'a'");
   retstr = vfsafegets(tmp, arraysize(tmp), vf);
-  ASSERT(retstr);
-  ASSERTCMP(retstr, "a");
+  ASSERT(retstr, "vsafegets 'a'");
+  ASSERTCMP(retstr, "a", "vsafegets 'a'");
   pos = vftell(vf);
-  ASSERTEQ(pos, arraysize(test_data));
+  ASSERTEQ(pos, arraysize(test_data), "vsafegets 'a'");
 
   // vseek should discard the buffered char.
   ret = vungetc(0x34, vf);
-  ASSERTEQ(ret, 0x34);
+  ASSERTEQ(ret, 0x34, "vungetc 0x34");
   vfseek(vf, 128, SEEK_SET);
   value = vfgetc(vf);
-  ASSERTEQ(value, test_data[128]);
+  ASSERTEQ(value, test_data[128], "vfgetc NOT 0x34");
 
   // vrewind should discard the buffered char.
   ret = vungetc(0x56, vf);
-  ASSERTEQ(ret, 0x56);
+  ASSERTEQ(ret, 0x56, "vungetc 0x56");
   vrewind(vf);
   value = vfgetd(vf);
-  ASSERTEQ(value, first_dword);
+  ASSERTEQ(value, first_dword, "vfgetd NOT 0x56 ...");
 
   // vfilelength with rewind should discard the buffered char.
   ret = vungetc(0x78, vf);
-  ASSERTEQ(ret, 0x78);
+  ASSERTEQ(ret, 0x78, "vungetc 0x78");
   long len = vfilelength(vf, true);
-  ASSERTEQ(len, arraysize(test_data));
+  ASSERTEQ(len, arraysize(test_data), "vfgetd NOT 0x78");
   value = vfgetd(vf);
-  ASSERTEQ(value, first_dword);
+  ASSERTEQ(value, first_dword, "vfgetd NOT 0x78");
 
   // ftell should subtract the buffered char count from the cursor for binary
   // streams. Calling ftell when (cursor - buffered char count)<0 is undefined.
   ret = vfseek(vf, 128, SEEK_SET);
-  ASSERTEQ(ret, 0);
+  ASSERTEQ(ret, 0, "vfseek");
   ret = vungetc(0x9A, vf);
-  ASSERTEQ(ret, 0x9A);
+  ASSERTEQ(ret, 0x9A, "vungetc 0x9A");
   pos = vftell(vf);
-  ASSERTEQ(pos, 127);
+  ASSERTEQ(pos, 127, "vftell after vungetc");
 }
 
 static void test_vfsafegets(vfile *vf, int i, const char * const (&output)[MAX_LINES])
 {
   char buffer[VFSAFEGETS_BUFFER];
-  char msg[64];
   char *cursor;
   int line = 0;
 
   while((cursor = vfsafegets(buffer, VFSAFEGETS_BUFFER, vf)))
   {
-    snprintf(msg, arraysize(msg), "test=%d, line=%d", i, line);
-    ASSERTX(line < MAX_LINES - 1, msg);
-    ASSERTX(output[line], msg);
-    ASSERTXCMP(buffer, output[line], msg);
+    ASSERT(line < MAX_LINES - 1, "test=%d, line=%d", i, line);
+    ASSERT(output[line], "test=%d, line=%d", i, line);
+    ASSERTCMP(buffer, output[line], "%s", "test=%d, line=%d", i, line);
     line++;
   }
-  ASSERT(!output[line]);
+  ASSERT(!output[line], "");
 }
 
 #define READ_TESTS(vf) do { \
@@ -549,13 +532,13 @@ static void test_vfsafegets(vfile *vf, int i, const char * const (&output)[MAX_L
 UNITTEST(Init)
 {
   FILE *fp = fopen_unsafe(TEST_READ_FILENAME, "wb");
-  ASSERTX(fp, "fopen_unsafe");
+  ASSERT(fp, "fopen_unsafe");
 
   int r = fwrite(test_data, sizeof(test_data), 1, fp);
-  ASSERTEQX(r, 1, "fwrite");
+  ASSERTEQ(r, 1, "fwrite");
 
   r = fclose(fp);
-  ASSERTEQX(r, 0, "fclose");
+  ASSERTEQ(r, 0, "fclose");
 
   samesize(TEST_READ_TEXT_FILENAME, vfsafegets_data);
   samesize(TEST_READ_TEXT_FILENAME, vfsafegets_output);
@@ -563,13 +546,13 @@ UNITTEST(Init)
   for(int i = 0; i < arraysize(TEST_READ_TEXT_FILENAME); i++)
   {
     fp = fopen_unsafe(TEST_READ_TEXT_FILENAME[i], "wb");
-    ASSERTX(fp, "fopen_unsafe");
+    ASSERT(fp, "fopen_unsafe");
 
     r = fwrite(vfsafegets_data[i], strlen(vfsafegets_data[i]), 1, fp);
-    ASSERTEQX(r, 1, "fwrite");
+    ASSERTEQ(r, 1, "fwrite");
 
     r = fclose(fp);
-    ASSERTEQX(r, 0, "fclose");
+    ASSERTEQ(r, 0, "fclose");
   }
 }
 
@@ -577,21 +560,21 @@ UNITTEST(FileRead)
 {
   ScopedFile<vfile, vfclose> vf_in =
    vfopen_unsafe_ext(TEST_READ_FILENAME, "rb", V_SMALL_BUFFER);
-  ASSERT(vf_in);
+  ASSERT(vf_in, "");
   READ_TESTS(vf_in);
 }
 
 UNITTEST(FileWrite)
 {
   ScopedFile<vfile, vfclose> vf_out = vfopen_unsafe(TEST_WRITE_FILENAME, "w+b");
-  ASSERT(vf_out);
+  ASSERT(vf_out, "");
   WRITE_TESTS(vf_out, false);
 }
 
 UNITTEST(FileAppend)
 {
   ScopedFile<vfile, vfclose> vf_out = vfopen_unsafe(TEST_WRITE_FILENAME, "a+b");
-  ASSERT(vf_out);
+  ASSERT(vf_out, "");
   // Align the read cursor with the write cursor.
   vfseek(vf_out, 0, SEEK_END);
   WRITE_TESTS(vf_out, true);
@@ -602,7 +585,7 @@ UNITTEST(MemoryRead)
   char buffer[arraysize(test_data)];
   memcpy(buffer, test_data, arraysize(test_data));
   ScopedFile<vfile, vfclose> vf_in = vfile_init_mem(buffer, arraysize(buffer), "rb");
-  ASSERT(vf_in);
+  ASSERT(vf_in, "");
   READ_TESTS(vf_in);
 }
 
@@ -613,7 +596,7 @@ UNITTEST(MemoryWrite)
   int ret;
 
   ScopedFile<vfile, vfclose> vf_out = vfile_init_mem(buffer, len, "w+b");
-  ASSERT(vf_out);
+  ASSERT(vf_out, "");
   WRITE_TESTS(vf_out, false);
 
   SECTION(NoWritePastEnd)
@@ -621,24 +604,24 @@ UNITTEST(MemoryWrite)
     /* Make sure writes that would exceed a fixed size buffer are refused. */
     vfseek(vf_out, len, SEEK_SET);
     ret = vfputc(0xAB, vf_out);
-    ASSERTEQ(ret, EOF);
+    ASSERTEQ(ret, EOF, "");
 
     vfseek(vf_out, len - 1, SEEK_SET);
     ret = vfputw(0xCD, vf_out);
-    ASSERTEQ(ret, EOF);
+    ASSERTEQ(ret, EOF, "");
 
     vfseek(vf_out, len - 3, SEEK_SET);
     ret = vfputd(0xEF, vf_out);
-    ASSERTEQ(ret, EOF);
+    ASSERTEQ(ret, EOF, "");
 
     static constexpr char tmp[] = "abcdefghij";
     vfseek(vf_out, len - 7, SEEK_SET);
     ret = vfputs(tmp, vf_out);
-    ASSERTEQ(ret, EOF);
+    ASSERTEQ(ret, EOF, "");
 
     vfseek(vf_out, 128, SEEK_SET);
     ret = vfwrite(test_data, len, 1, vf_out);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
   }
 }
 
@@ -649,7 +632,7 @@ UNITTEST(MemoryWriteExt)
   size_t size = 0;
 
   ScopedFile<vfile, vfclose> vf_out = vfile_init_mem_ext(&buffer, &size, "w+b");
-  ASSERT(vf_out);
+  ASSERT(vf_out, "");
   WRITE_TESTS(vf_out, false);
   free(buffer);
 }
@@ -660,18 +643,18 @@ UNITTEST(MemoryAppendExt)
   static constexpr size_t BUF_SIZE = 256;
   void *buffer = malloc(BUF_SIZE);
   size_t size = BUF_SIZE;
-  ASSERT(buffer);
+  ASSERT(buffer, "");
 
   {
     ScopedFile<vfile, vfclose> vf_out = vfile_init_mem_ext(&buffer, &size, "a+b");
-    ASSERT(vf_out);
+    ASSERT(vf_out, "");
     // Align the read cursor with the write cursor.
     vfseek(vf_out, 0, SEEK_END);
     WRITE_TESTS(vf_out, true);
   }
   free(buffer);
   if(this->expected_section)
-    ASSERTEQ(size, arraysize(test_data) + BUF_SIZE);
+    ASSERTEQ(size, arraysize(test_data) + BUF_SIZE, "");
 }
 
 UNITTEST(vfsafegets)
@@ -682,7 +665,7 @@ UNITTEST(vfsafegets)
     {
       ScopedFile<vfile, vfclose> vf =
        vfopen_unsafe_ext(TEST_READ_TEXT_FILENAME[i], "rb", V_SMALL_BUFFER);
-      ASSERT(vf);
+      ASSERT(vf, "");
       test_vfsafegets(vf, i, vfsafegets_output[i]);
     }
   }
@@ -695,7 +678,7 @@ UNITTEST(vfsafegets)
     for(int i = 0; i < arraysize(TEST_READ_TEXT_FILENAME); i++)
     {
       ScopedFile<vfile, vfclose> vf = vfopen_unsafe(TEST_READ_TEXT_FILENAME[i], "r");
-      ASSERT(vf);
+      ASSERT(vf, "");
       test_vfsafegets(vf, i, vfsafegets_output[i]);
     }
   }
@@ -711,7 +694,7 @@ UNITTEST(vfsafegets)
 
       memcpy(tmp.get(), input, len + 1);
       ScopedFile<vfile, vfclose> vf = vfile_init_mem(tmp.get(), len, "rb");
-      ASSERT(vf);
+      ASSERT(vf, "");
       test_vfsafegets(vf, i, vfsafegets_output[i]);
     }
   }
@@ -722,21 +705,21 @@ UNITTEST(vtempfile)
   SECTION(File)
   {
     ScopedFile<vfile, vfclose> vf = vtempfile(0);
-    ASSERT(vf);
+    ASSERT(vf, "");
     test_vfwrite(vf);
   }
 
   SECTION(Memory)
   {
     ScopedFile<vfile, vfclose> vf = vtempfile(arraysize(test_data));
-    ASSERT(vf);
+    ASSERT(vf, "");
     test_vfwrite(vf);
   }
 
   SECTION(MemorySmallInit)
   {
     ScopedFile<vfile, vfclose> vf = vtempfile(1);
-    ASSERT(vf);
+    ASSERT(vf, "");
     test_vfputc(vf);
   }
 }
@@ -746,31 +729,31 @@ UNITTEST(Filesystem)
   static constexpr char TEST_RENAME_FILENAME[] = "VFILE_TEST_dfbdfbshd";
   static constexpr char TEST_RENAME_DIR[] = "VFILE_TEST_DIR_ndfjsdbnfjdfd";
   static char execdir[1024];
-  struct stat stat_info;
+  struct stat stat_info{}; // 0-init to silence MemorySanitizer.
   int ret;
 
   if(!this->expected_section)
   {
     char *t = getcwd(execdir, arraysize(execdir));
-    ASSERTEQ(t, execdir);
+    ASSERTEQ(t, execdir, "");
   }
   else
   {
     ret = vchdir(execdir);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
   }
 
   SECTION(vchdir)
   {
     ret = vchdir("..");
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = vchdir("data");
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     ScopedFile<vfile, vfclose> vf = vfopen_unsafe("CT_LEVEL.MOD", "rb");
-    ASSERT(vf);
+    ASSERT(vf, "");
     long len = vfilelength(vf, false);
-    ASSERTEQ(len, 111885);
+    ASSERTEQ(len, 111885, "");
   }
 
   SECTION(vgetcwd)
@@ -778,45 +761,45 @@ UNITTEST(Filesystem)
     char buffer[1024];
     char buffer2[1024];
     char *t = getcwd(buffer, arraysize(buffer));
-    ASSERTEQ(t, buffer);
+    ASSERTEQ(t, buffer, "");
     ret = vchdir("..");
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     t = getcwd(buffer2, arraysize(buffer2));
-    ASSERTEQ(t, buffer2);
+    ASSERTEQ(t, buffer2, "");
     size_t len = strlen(buffer2);
-    ASSERT(len < arraysize(buffer));
-    ASSERTMEM(buffer, buffer2, len);
+    ASSERT(len < arraysize(buffer), "");
+    ASSERTMEM(buffer, buffer2, len, "");
   }
 
   SECTION(vmkdir)
   {
     ret = vmkdir(TEST_DIR, 0777);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = stat(TEST_DIR, &stat_info);
-    ASSERTEQ(ret, 0);
-    ASSERT(S_ISDIR(stat_info.st_mode));
+    ASSERTEQ(ret, 0, "");
+    ASSERT(S_ISDIR(stat_info.st_mode), "");
   }
 
   SECTION(vunlink)
   {
     ret = stat(TEST_WRITE_FILENAME, &stat_info);
-    ASSERTEQ(ret, 0);
-    ASSERT(S_ISREG(stat_info.st_mode));
+    ASSERTEQ(ret, 0, "");
+    ASSERT(S_ISREG(stat_info.st_mode), "");
     ret = vunlink(TEST_WRITE_FILENAME);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = stat(TEST_WRITE_FILENAME, &stat_info);
-    ASSERT(ret != 0);
+    ASSERT(ret != 0, "");
   }
 
   SECTION(vrmdir)
   {
     ret = stat(TEST_DIR, &stat_info);
-    ASSERTEQ(ret, 0);
-    ASSERT(S_ISDIR(stat_info.st_mode));
+    ASSERTEQ(ret, 0, "");
+    ASSERT(S_ISDIR(stat_info.st_mode), "");
     ret = vrmdir(TEST_DIR);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = stat(TEST_DIR, &stat_info);
-    ASSERT(ret != 0);
+    ASSERT(ret != 0, "");
   }
 
   SECTION(vaccess)
@@ -827,40 +810,40 @@ UNITTEST(Filesystem)
     static constexpr int access_flags = R_OK|W_OK;
 #endif
     ret = access(".", access_flags);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = vaccess(".", R_OK|W_OK|X_OK);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     ret = vchdir("..");
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = vchdir("data");
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = access("CT_LEVEL.MOD", R_OK|W_OK);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = vaccess("CT_LEVEL.MOD", R_OK|W_OK);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
   }
 
   SECTION(vstat)
   {
-    struct stat stat_info2;
+    struct stat stat_info2{};
     ret = stat(".", &stat_info);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = vstat(".", &stat_info2);
-    ASSERTEQ(ret, 0);
-    ASSERT(S_ISDIR(stat_info.st_mode));
-    ASSERT(S_ISDIR(stat_info2.st_mode));
+    ASSERTEQ(ret, 0, "");
+    ASSERT(S_ISDIR(stat_info.st_mode), "");
+    ASSERT(S_ISDIR(stat_info2.st_mode), "");
 
     ret = vchdir("..");
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = vchdir("data");
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = stat("CT_LEVEL.MOD", &stat_info);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     ret = vstat("CT_LEVEL.MOD", &stat_info2);
-    ASSERTEQ(ret, 0);
-    ASSERT(S_ISREG(stat_info.st_mode));
-    ASSERT(S_ISREG(stat_info2.st_mode));
+    ASSERTEQ(ret, 0, "");
+    ASSERT(S_ISREG(stat_info.st_mode), "");
+    ASSERT(S_ISREG(stat_info2.st_mode), "");
   }
 
   SECTION(vrename)
@@ -876,36 +859,36 @@ UNITTEST(Filesystem)
     vrmdir(TEST_DIR);
 
     ret = vmkdir(TEST_DIR, 0777);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     {
       ScopedFile<vfile, vfclose> vf = vfopen_unsafe(TEST_WRITE_FILENAME, "wb");
-      ASSERT(vf);
+      ASSERT(vf, "");
     }
 
     ret = vstat(TEST_WRITE_FILENAME, &stat_info);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     // Rename file.
     ret = vrename(TEST_WRITE_FILENAME, buffer);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     ret = vstat(buffer, &stat_info);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     // Rename dir.
     ret = vrename(TEST_DIR, TEST_RENAME_DIR);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     ret = vstat(TEST_RENAME_DIR, &stat_info);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     // Renamed filename still in dir?
     ret = vchdir(TEST_RENAME_DIR);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     ret = vstat(TEST_RENAME_FILENAME, &stat_info);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
   }
 
   SECTION(UTF8)
@@ -921,61 +904,61 @@ UNITTEST(Filesystem)
     if(!ret)
     {
       ret = vchdir(UTF8_DIR);
-      ASSERTEQ(ret, 0);
+      ASSERTEQ(ret, 0, "");
       ret = vunlink(UTF8_FILE);
       ret = vunlink(UTF8_FILE2);
       ret = vchdir("..");
-      ASSERTEQ(ret, 0);
+      ASSERTEQ(ret, 0, "");
       ret = vrmdir(UTF8_DIR);
-      ASSERTEQ(ret, 0);
+      ASSERTEQ(ret, 0, "");
     }
 
     ret = vmkdir(UTF8_DIR, 0777);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     ret = vstat(UTF8_DIR, &stat_info);
-    ASSERTEQ(ret, 0);
-    ASSERT(S_ISDIR(stat_info.st_mode));
+    ASSERTEQ(ret, 0, "");
+    ASSERT(S_ISDIR(stat_info.st_mode), "");
 
     ret = vchdir(UTF8_DIR);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
     char buffer[1024];
 
     char *t = vgetcwd(buffer, arraysize(buffer));
-    ASSERTEQ(t, buffer);
+    ASSERTEQ(t, buffer, "");
     size_t len = strlen(buffer);
-    ASSERTCMP(buffer + len - utf8_dir_len, UTF8_DIR);
+    ASSERTCMP(buffer + len - utf8_dir_len, UTF8_DIR, "");
 
     {
       ScopedFile<vfile, vfclose> vf = vfopen_unsafe(UTF8_FILE, "wb");
-      ASSERT(vf);
+      ASSERT(vf, "");
       ret = vfwrite(test_data, arraysize(test_data), 1, vf);
-      ASSERTEQ(ret, 1);
+      ASSERTEQ(ret, 1, "");
     }
 
     ret = vstat(UTF8_FILE, &stat_info);
-    ASSERTEQ(ret, 0);
-    ASSERTEQ(stat_info.st_size, arraysize(test_data));
-    ASSERT(S_ISREG(stat_info.st_mode));
+    ASSERTEQ(ret, 0, "");
+    ASSERTEQ(stat_info.st_size, arraysize(test_data), "");
+    ASSERT(S_ISREG(stat_info.st_mode), "");
 
     ret = vaccess(UTF8_FILE, R_OK|W_OK);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     ret = vrename(UTF8_FILE, UTF8_FILE2);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     ret = vstat(UTF8_FILE2, &stat_info);
-    ASSERTEQ(ret, 0);
-    ASSERTEQ(stat_info.st_size, arraysize(test_data));
-    ASSERT(S_ISREG(stat_info.st_mode));
+    ASSERTEQ(ret, 0, "");
+    ASSERTEQ(stat_info.st_size, arraysize(test_data), "");
+    ASSERT(S_ISREG(stat_info.st_mode), "");
 
     ret = vunlink(UTF8_FILE2);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     ret = vchdir("..");
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
 
     ret = vrmdir(UTF8_DIR);
-    ASSERTEQ(ret, 0);
+    ASSERTEQ(ret, 0, "");
   }
 }

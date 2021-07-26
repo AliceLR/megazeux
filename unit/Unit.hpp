@@ -199,16 +199,6 @@ public:
     } \
   } while(0)
 
-// TODO: use ASSERT instead.
-#define ASSERTX(test, reason) \
-  do\
-  {\
-    if(!(test)) \
-    {\
-      throw Unit::exception(__LINE__, #test, reason); \
-    }\
-  } while(0)
-
 #define ASSERTEQ(a, b, ...) \
   do\
   {\
@@ -218,33 +208,12 @@ public:
     } \
   } while(0)
 
-// TODO: use ASSERTEQ instead.
-#define ASSERTEQX(a, b, reason) \
-  do\
-  {\
-    if(!((a) == (b)))\
-    {\
-      throw Unit::exception(__LINE__, #a " == " #b, (a), (b), reason); \
-    }\
-  } while(0)
-
 #define ASSERTCMP(a, b, ...) \
   do\
   {\
     if(strcmp(a,b)) \
     {\
       throw Unit::exception(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), "" __VA_ARGS__); \
-    }\
-  } while(0)
-
-
-// TODO: use ASSERTCMP instead.
-#define ASSERTXCMP(a, b, reason) \
-  do\
-  {\
-    if(strcmp(a,b)) \
-    {\
-      throw Unit::exception(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), reason); \
     }\
   } while(0)
 
@@ -263,16 +232,6 @@ public:
     if(memcmp(a,b,l)) \
     {\
       throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", (a), (b), (l), "" __VA_ARGS__); \
-    }\
-  } while(0)
-
-// TODO: use ASSERTMEM instead.
-#define ASSERTXMEM(a, b, l, reason) \
-  do\
-  {\
-    if(memcmp(a,b,l)) \
-    {\
-      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", (a), (b), (l), reason); \
     }\
   } while(0)
 
@@ -324,15 +283,10 @@ namespace Unit
      line(_line), test(coalesce(_test)), reason(""), has_reason(false),
      left(coalesce(nullptr)), right(coalesce(nullptr)), has_values(false) {}
 
-    exception(int _line, const char *_test, const char *_reason):
-     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason),
-     left(coalesce(nullptr)), right(coalesce(nullptr)), has_values(false) {}
-
-    template<class T, class S>
-    exception(int _line, const char *_test, T _left, S _right, const char *_reason_fmt, ...):
-     line(_line), test(coalesce(_test)), has_reason(false), has_values(false)
+    exception(int _line, const char *_test, const char *_reason_fmt, ...):
+     line(_line), test(coalesce(_test)), has_reason(false),
+     left(coalesce(nullptr)), right(coalesce(nullptr)), has_values(false)
     {
-      printf("%s\n", __PRETTY_FUNCTION__);
       if(_reason_fmt && _reason_fmt[0])
       {
         va_list vl;
@@ -341,7 +295,22 @@ namespace Unit
         va_end(vl);
       }
       else
-        reason = "NULL";
+        reason = coalesce(nullptr);
+    }
+
+    template<class T, class S>
+    exception(int _line, const char *_test, T _left, S _right, const char *_reason_fmt, ...):
+     line(_line), test(coalesce(_test)), has_reason(false), has_values(false)
+    {
+      if(_reason_fmt && _reason_fmt[0])
+      {
+        va_list vl;
+        va_start(vl, _reason_fmt);
+        set_reason_fmt(_reason_fmt, vl);
+        va_end(vl);
+      }
+      else
+        reason = coalesce(nullptr);
 
       set_operand(left, _left);
       set_operand(right, _right);
@@ -360,7 +329,7 @@ namespace Unit
         va_end(vl);
       }
       else
-        reason = "NULL";
+        reason = coalesce(nullptr);
 
       has_values = (_left || _right);
       length /= sizeof(T);

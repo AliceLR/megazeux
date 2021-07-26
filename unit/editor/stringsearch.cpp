@@ -127,86 +127,86 @@ UNITTEST(Search)
 
   SECTION(OneOff)
   {
-    for(int i = 0; i < arraysize(haystack_none); i++)
+    for(const string_pair &d : haystack_none)
     {
-      A = haystack_none[i].haystack;
-      B = haystack_none[i].needle;
+      A = d.haystack;
+      B = d.needle;
 
-      ASSERTX(!string_search(A, strlen(A), B, strlen(B), nullptr, false), A);
+      ASSERT(!string_search(A, strlen(A), B, strlen(B), nullptr, false), "%s", A);
     }
 
-    for(int i = 0; i < arraysize(haystack_once); i++)
+    for(const string_pair_idx &d : haystack_once)
     {
-      A = haystack_once[i].haystack;
-      B = haystack_once[i].needle;
-      ssize_t where = haystack_once[i].where;
+      A = d.haystack;
+      B = d.needle;
+      ssize_t where = d.where;
 
       dest = string_search(A, strlen(A), B, strlen(B), nullptr, false);
-      ASSERTX(dest, A);
-      ASSERT(dest >= A && dest < A + strlen(A));
-      ASSERTEQX((const char *)dest - A, where, A);
+      ASSERT(dest, "%s", A);
+      ASSERT(dest >= A && dest < A + strlen(A), "%s", A);
+      ASSERTEQ((const char *)dest - A, where, "%s", A);
     }
 
-    for(int i = 0; i < arraysize(haystack_twice); i++)
+    for(const string_pair &d : haystack_twice)
     {
-      A = haystack_twice[i].haystack;
-      B = haystack_twice[i].needle;
+      A = d.haystack;
+      B = d.needle;
 
       dest = string_search(A, strlen(A), B, strlen(B), nullptr, false);
-      ASSERTX(dest, A);
-      ASSERT(dest >= A && dest < A + strlen(A));
+      ASSERT(dest, "%s", A);
+      ASSERT(dest >= A && dest < A + strlen(A), "%s", A);
     }
   }
 
   SECTION(Repeating)
   {
-    for(int i = 0; i < arraysize(haystack_once); i++)
+    for(const string_pair_idx &d : haystack_once)
     {
       const char *dest;
-      A = haystack_once[i].haystack;
-      B = haystack_once[i].needle;
-      ssize_t where = haystack_once[i].where;
+      A = d.haystack;
+      B = d.needle;
+      ssize_t where = d.where;
       ssize_t a_len = strlen(A);
       ssize_t b_len = strlen(B);
 
       string_search_index(B, b_len, &data, false);
 
       dest = (const char *)string_search(A, a_len, B, b_len, &data, false);
-      ASSERTX(dest, A);
-      ASSERT(dest >= A && dest < A + a_len);
-      ASSERTEQX((const char *)dest - A, where, A);
+      ASSERT(dest, "%s", A);
+      ASSERT(dest >= A && dest < A + a_len, "%s", A);
+      ASSERTEQ((const char *)dest - A, where, "%s", A);
       dest++;
       a_len -= dest - A;
       A = dest;
 
-      ASSERTX(!string_search(A, a_len, B, b_len, &data, false), A);
+      ASSERT(!string_search(A, a_len, B, b_len, &data, false), "%s", A);
     }
 
-    for(int i = 0; i < arraysize(haystack_twice); i++)
+    for(const string_pair &d : haystack_twice)
     {
       const char *dest;
-      A = haystack_twice[i].haystack;
-      B = haystack_twice[i].needle;
+      A = d.haystack;
+      B = d.needle;
       ssize_t a_len = strlen(A);
       ssize_t b_len = strlen(B);
 
       string_search_index(B, b_len, &data, false);
 
       dest = (const char *)string_search(A, a_len, B, b_len, &data, false);
-      ASSERTX(dest, A);
-      ASSERT(dest >= A && dest < A + a_len);
+      ASSERT(dest, "%s", A);
+      ASSERT(dest >= A && dest < A + a_len, "%s", A);
       dest++;
       a_len -= dest - A;
       A = dest;
 
       dest = (const char *)string_search(A, a_len, B, b_len, &data, false);
-      ASSERTX(dest, A);
-      ASSERT(dest >= A && dest < A + a_len);
+      ASSERT(dest, "%s", A);
+      ASSERT(dest >= A && dest < A + a_len, "%s", A);
       dest++;
       a_len -= dest - A;
       A = dest;
 
-      ASSERTX(!string_search(A, a_len, B, b_len, &data, false), A);
+      ASSERT(!string_search(A, a_len, B, b_len, &data, false), "%s", A);
     }
   }
 }
@@ -283,82 +283,82 @@ UNITTEST(SearchCaseInsensitive)
 
   SECTION(OneOff)
   {
-    for(int i = 0; i < arraysize(haystack_none); i++)
+    for(const string_pair &d : haystack_none)
     {
-      A = haystack_none[i].haystack;
-      B = haystack_none[i].needle;
+      A = d.haystack;
+      B = d.needle;
 
-      ASSERTX(!string_search(A, strlen(A), B, strlen(B), NULL, true), A);
+      ASSERT(!string_search(A, strlen(A), B, strlen(B), NULL, true), "%s", A);
     }
 
-    for(int i = 0; i < arraysize(haystack_once); i++)
+    for(const string_pair &d : haystack_once)
     {
-      A = haystack_once[i].haystack;
-      B = haystack_once[i].needle;
+      A = d.haystack;
+      B = d.needle;
 
       dest = string_search(A, strlen(A), B, strlen(B), NULL, true);
-      ASSERTX(dest, A);
-      ASSERT(dest >= A && dest < A + strlen(A));
+      ASSERT(dest, "%s", A);
+      ASSERT(dest >= A && dest < A + strlen(A), "%s", A);
     }
 
-    for(int i = 0; i < arraysize(haystack_twice); i++)
+    for(const string_pair &d : haystack_twice)
     {
-      A = haystack_twice[i].haystack;
-      B = haystack_twice[i].needle;
+      A = d.haystack;
+      B = d.needle;
 
       dest = string_search(A, strlen(A), B, strlen(B), NULL, true);
-      ASSERTX(dest, A);
-      ASSERT(dest >= A && dest < A + strlen(A));
+      ASSERT(dest, "%s", A);
+      ASSERT(dest >= A && dest < A + strlen(A), "%s", A);
     }
   }
 
   SECTION(Repeating)
   {
-    for(int i = 0; i < arraysize(haystack_once); i++)
+    for(const string_pair &d : haystack_once)
     {
       const char *dest;
-      A = haystack_once[i].haystack;
-      B = haystack_once[i].needle;
+      A = d.haystack;
+      B = d.needle;
       ssize_t a_len = strlen(A);
       ssize_t b_len = strlen(B);
 
       string_search_index(B, b_len, &data, true);
 
       dest = (const char *)string_search(A, a_len, B, b_len, &data, true);
-      ASSERTX(dest, A);
-      ASSERT(dest >= A && dest < A + a_len);
+      ASSERT(dest, "%s", A);
+      ASSERT(dest >= A && dest < A + a_len, "%s", A);
       dest++;
       a_len -= dest - A;
       A = dest;
 
-      ASSERTX(!string_search(A, a_len, B, b_len, &data, true), A);
+      ASSERT(!string_search(A, a_len, B, b_len, &data, true), "%s", A);
     }
 
-    for(int i = 0; i < arraysize(haystack_twice); i++)
+    for(const string_pair &d : haystack_twice)
     {
       const char *dest;
-      A = haystack_twice[i].haystack;
-      B = haystack_twice[i].needle;
+      A = d.haystack;
+      B = d.needle;
       ssize_t a_len = strlen(A);
       ssize_t b_len = strlen(B);
 
       string_search_index(B, b_len, &data, true);
 
       dest = (const char *)string_search(A, a_len, B, b_len, &data, true);
-      ASSERTX(dest, A);
-      ASSERT(dest >= A && dest < A + a_len);
+      ASSERT(dest, "%s", A);
+      ASSERT(dest >= A && dest < A + a_len, "%s", A);
       dest++;
       a_len -= dest - A;
       A = dest;
 
       dest = (const char *)string_search(A, a_len, B, b_len, &data, true);
-      ASSERTX(dest, A);
-      ASSERT(dest >= A && dest < A + a_len);
+      ASSERT(dest, "%s", A);
+      ASSERT(dest >= A && dest < A + a_len, "%s", A);
       dest++;
       a_len -= dest - A;
       A = dest;
 
-      ASSERTX(!string_search(A, a_len, B, b_len, &data, true), A);
+      ASSERT(!string_search(A, a_len, B, b_len, &data, true), "%s", A);
     }
   }
 }
