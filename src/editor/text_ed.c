@@ -303,7 +303,7 @@ static boolean text_edit_joystick(context *ctx, int *key, int action)
 
     default:
     {
-      Uint32 ui_key = get_joystick_ui_key();
+      enum keycode ui_key = get_joystick_ui_key();
       if(ui_key)
       {
         *key = ui_key;

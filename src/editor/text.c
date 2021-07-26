@@ -19,7 +19,6 @@
 
 #include "text.h"
 
-#include "../platform_endian.h"
 #include "../util.h"
 
 #include <stdlib.h>
@@ -30,13 +29,10 @@
 
 static size_t next_power_of_two_cbrt_z(size_t value)
 {
+  const size_t ITER = (sizeof(size_t) >= 8) ? 21 : 10;
   size_t cube = 1;
   size_t i;
-#if ARCHITECTURE_BITS >= 64
-  for(i = 1; i < 21; i++)
-#else
-  for(i = 1; i < 10; i++)
-#endif
+  for(i = 1; i < ITER; i++)
   {
     cube <<= 3;
     if(cube > value)
@@ -53,9 +49,9 @@ static size_t next_power_of_two_z(size_t value)
   value |= value >> 4;
   value |= value >> 8;
   value |= value >> 16;
-#if ARCHITECTURE_BITS >= 64
-  value |= value >> 32;
-#endif
+  if(sizeof(size_t) >= 8)
+    value |= (uint64_t)value >> 32;
+
   return value + 1;
 }
 
