@@ -17,7 +17,7 @@ libmodplug_cflags = -DHAVE_INTTYPES_H -I${libmodplug_src} \
 # Rather than bloat the patches to fix these warnings, just disable them.
 #
 ifneq (${HAS_W_NO_IMPLICIT_FALLTHROUGH},)
-libmodplug_cflags += -Wno-implicit-fallthrough
+libmodplug_cflags += -Wno-implicit-fallthrough -Wno-missing-declarations
 endif
 
 libmodplug_objs = \

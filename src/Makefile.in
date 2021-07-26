@@ -29,8 +29,7 @@ network_src = src/network
 network_obj = src/network/.build
 
 core_flags   += -ffast-math -funsigned-char
-core_flags   += -Wmissing-format-attribute -Wpointer-arith
-core_flags   += -Wwrite-strings
+core_flags   += -Wmissing-format-attribute
 core_cflags  += ${CFLAGS} -Wmissing-prototypes
 core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
 

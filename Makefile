@@ -229,8 +229,8 @@ CFLAGS   += ${OPTIMIZE_CFLAGS} -DNDEBUG
 CXXFLAGS += ${OPTIMIZE_CFLAGS} -DNDEBUG
 endif
 
-CFLAGS   += -Wundef -Wunused-macros
-CXXFLAGS += -Wundef -Wunused-macros
+CFLAGS   += -Wundef -Wunused-macros -Wpointer-arith -Wwrite-strings -Wmissing-declarations
+CXXFLAGS += -Wundef -Wunused-macros -Wpointer-arith -Wwrite-strings -Wmissing-declarations
 
 #
 # Enable C++11 for compilers that support it.

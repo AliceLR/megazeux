@@ -208,7 +208,7 @@ static const char *ui_new_version_available(context *ctx,
  * Either way, the update can't be performed, so explain why and possibly
  * offer some other useful options.
  */
-enum new_version_opts ui_new_version_error(context *ctx,
+static enum new_version_opts ui_new_version_error(context *ctx,
  const char *new_ver, boolean platform_has_remote_manifest)
 {
   char reason[LINE_BUF_LEN];
