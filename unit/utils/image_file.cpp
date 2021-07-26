@@ -152,7 +152,7 @@ UNITTEST(PNG)
   boolean ret;
 
   ret = load_image_from_file(DATA_BASEDIR "rgba.png", &img, NULL);
-  ASSERT(ret, "png load failed");
+  ASSERT(ret, "rgba.png: load failed");
   compare_image<compare_rgba>(base_rgba_img, img, "rgba.png");
   image_free(&img);
 
