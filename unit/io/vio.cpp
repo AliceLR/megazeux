@@ -53,50 +53,54 @@ static const uint8_t test_data[] =
 static constexpr int VFSAFEGETS_BUFFER = 64;
 static constexpr int MAX_LINES = 10;
 
-static const char *TEST_READ_TEXT_FILENAME[] =
+struct vfsafegets_data
 {
-  "VFILE_TEST_DATA_TEXT",
-  "VFILE_TEST_DATA_TEXT2",
-  "VFILE_TEST_DATA_TEXT3",
+  const char *filename;
+  const char *input;
+  const char *output[MAX_LINES];
 };
 
-static const char * const vfsafegets_data[] =
+static const vfsafegets_data vfsafegets_test_data[] =
 {
   // Test 1.
-  "kjflkjsdlfksjdfksdj\r\n"
-  "abcdef\n"
-//"i hope no one is actually using these in 2020 ;-(\r"
-  "use this line to fill past the buffer!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-  "\r\n"
-  "end of file also counts as an end of line",
-
-  // Test 2.
-  "trailing EOL should result in a single line read.\n",
-
-  // Test 3.
-  "trailing EOL should result in a single line read.\r\n"
-};
-
-static const char * const vfsafegets_output[][MAX_LINES] =
-{
   {
-    "kjflkjsdlfksjdfksdj",
-    "abcdef",
-//  "i hope no one is actually using these in 2020 ;-(",
-    "use this line to fill past the buffer!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    "!!!!!!!!!",
-    "",
+    "VFILE_TEST_DATA_TEXT",
+
+    "kjflkjsdlfksjdfksdj\r\n"
+    "abcdef\n"
+    //"i hope no one is actually using these in 2020 ;-(\r"
+    "use this line to fill past the buffer!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    "\r\n"
     "end of file also counts as an end of line",
-    nullptr
+    {
+      "kjflkjsdlfksjdfksdj",
+      "abcdef",
+      //"i hope no one is actually using these in 2020 ;-(",
+      "use this line to fill past the buffer!!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "!!!!!!!!!",
+      "",
+      "end of file also counts as an end of line",
+      nullptr
+    }
   },
+  // Test 2.
   {
-    "trailing EOL should result in a single line read.",
-    nullptr
+    "VFILE_TEST_DATA_TEXT2",
+    "trailing EOL should result in a single line read.\n",
+    {
+      "trailing EOL should result in a single line read.",
+      nullptr
+    }
   },
+  // Test 3.
   {
-    "trailing EOL should result in a single line read.",
-    nullptr
-  }
+    "VFILE_TEST_DATA_TEXT3",
+    "trailing EOL should result in a single line read.\r\n",
+    {
+      "trailing EOL should result in a single line read.",
+      nullptr
+    }
+  },
 };
 
 #define back_up(bytes_from_end, vf) \
@@ -494,7 +498,8 @@ static void test_vungetc(vfile *vf)
   ASSERTEQ(pos, 127, "vftell after vungetc");
 }
 
-static void test_vfsafegets(vfile *vf, int i, const char * const (&output)[MAX_LINES])
+static void test_vfsafegets(vfile *vf, const char *filename,
+ const char * const (&output)[MAX_LINES])
 {
   char buffer[VFSAFEGETS_BUFFER];
   char *cursor;
@@ -502,9 +507,9 @@ static void test_vfsafegets(vfile *vf, int i, const char * const (&output)[MAX_L
 
   while((cursor = vfsafegets(buffer, VFSAFEGETS_BUFFER, vf)))
   {
-    ASSERT(line < MAX_LINES - 1, "test=%d, line=%d", i, line);
-    ASSERT(output[line], "test=%d, line=%d", i, line);
-    ASSERTCMP(buffer, output[line], "%s", "test=%d, line=%d", i, line);
+    ASSERT(line < MAX_LINES - 1, "%s:%d", filename, line);
+    ASSERT(output[line], "%s:%d", filename, line);
+    ASSERTCMP(buffer, output[line], "%s:%d", filename, line);
     line++;
   }
   ASSERT(!output[line], "");
@@ -540,15 +545,12 @@ UNITTEST(Init)
   r = fclose(fp);
   ASSERTEQ(r, 0, "fclose");
 
-  samesize(TEST_READ_TEXT_FILENAME, vfsafegets_data);
-  samesize(TEST_READ_TEXT_FILENAME, vfsafegets_output);
-
-  for(int i = 0; i < arraysize(TEST_READ_TEXT_FILENAME); i++)
+  for(const vfsafegets_data &d : vfsafegets_test_data)
   {
-    fp = fopen_unsafe(TEST_READ_TEXT_FILENAME[i], "wb");
+    fp = fopen_unsafe(d.filename, "wb");
     ASSERT(fp, "fopen_unsafe");
 
-    r = fwrite(vfsafegets_data[i], strlen(vfsafegets_data[i]), 1, fp);
+    r = fwrite(d.input, strlen(d.input), 1, fp);
     ASSERTEQ(r, 1, "fwrite");
 
     r = fclose(fp);
@@ -661,12 +663,11 @@ UNITTEST(vfsafegets)
 {
   SECTION(FileBinary)
   {
-    for(int i = 0; i < arraysize(TEST_READ_TEXT_FILENAME); i++)
+    for(const vfsafegets_data &d : vfsafegets_test_data)
     {
-      ScopedFile<vfile, vfclose> vf =
-       vfopen_unsafe_ext(TEST_READ_TEXT_FILENAME[i], "rb", V_SMALL_BUFFER);
+      ScopedFile<vfile, vfclose> vf = vfopen_unsafe_ext(d.filename, "rb", V_SMALL_BUFFER);
       ASSERT(vf, "");
-      test_vfsafegets(vf, i, vfsafegets_output[i]);
+      test_vfsafegets(vf, d.filename, d.output);
     }
   }
 
@@ -675,27 +676,26 @@ UNITTEST(vfsafegets)
     // In practice, nothing in MZX uses text streams (intentionally) because
     // even most MZX text files can contain binary chars. See:
     // https://www.digitalmzx.com/forums/index.php?app=tracker&showissue=592
-    for(int i = 0; i < arraysize(TEST_READ_TEXT_FILENAME); i++)
+    for(const vfsafegets_data &d : vfsafegets_test_data)
     {
-      ScopedFile<vfile, vfclose> vf = vfopen_unsafe(TEST_READ_TEXT_FILENAME[i], "r");
+      ScopedFile<vfile, vfclose> vf = vfopen_unsafe(d.filename, "r");
       ASSERT(vf, "");
-      test_vfsafegets(vf, i, vfsafegets_output[i]);
+      test_vfsafegets(vf, d.filename, d.output);
     }
   }
 
   SECTION(Memory)
   {
     // Memory vfiles don't bother implementing text mode so just assume binary.
-    for(int i = 0; i < arraysize(vfsafegets_output); i++)
+    for(const vfsafegets_data &d : vfsafegets_test_data)
     {
-      const char *input = vfsafegets_data[i];
-      size_t len = strlen(input);
+      size_t len = strlen(d.input);
       std::unique_ptr<char[]> tmp(new char[len + 1]);
 
-      memcpy(tmp.get(), input, len + 1);
+      memcpy(tmp.get(), d.input, len + 1);
       ScopedFile<vfile, vfclose> vf = vfile_init_mem(tmp.get(), len, "rb");
       ASSERT(vf, "");
-      test_vfsafegets(vf, i, vfsafegets_output[i]);
+      test_vfsafegets(vf, d.filename, d.output);
     }
   }
 }

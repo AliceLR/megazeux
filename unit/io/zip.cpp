@@ -38,6 +38,7 @@ struct pair
 
 struct zip_stream_test_data
 {
+  const char *testname; // For debug output.
   pair expected;
   pair deflate;
   pair deflate64;
@@ -57,6 +58,7 @@ static zip_stream_test_data data[] =
 {
   // WHITE.PAL from Fred the Freak Gaiden was originally shrunk.
   {
+    "WHITE.PAL",
     { "????????????????????????????????????????????????", 48, 0 },
     { "sycRAAA=", 5, 0 },
     { "sycRAAA=", 5, 0 },
@@ -73,6 +75,7 @@ static zip_stream_test_data data[] =
   },
   // FRED_01.PAL from Fred the Freak Gaiden was originally shrunk.
   {
+    "FRED_01.PAL",
     { "AAAAAAAqACoAGz8bBz8HAjQCKhUAKioqFRUVFRU/FT8VFT8/PxUVPxU/MzMJPz8/", 48, 0 },
     { "YwABLSCUtpdmt2dnMmHSEmXQ0tISBQF7IBS1t7cHs4yNOYFMAA==", 37, 0 },
     { "YwABLSCUtpdmt2dnMmHSEmXQ0tISBQF7IBS1t7cHs4yNOYFMAA==", 37, 0 },
@@ -89,6 +92,7 @@ static zip_stream_test_data data[] =
   },
   // FRED_02.PAL from Fred the Freak Gaiden was originally shrunk.
   {
+    "FRED_02.PAL",
     { "AAAAAAAqACoAACoqKgAAKgAqBwcHDw8PCQkJCgoKFT8VFT8/FSoVKhUAPz8VPz8/", 48, 0 },
     { "HYaxEQBACMLsPG2oWIIl2H+r502KpD6KJemuuwHMzO7SpE3FSm0/", 39, 0 },
     { "HYaxEQBACMLsPG2oWIIl2H+r502KpD6KJemuuwHMzO7SpE3FSm0/", 39, 0 },
@@ -105,6 +109,7 @@ static zip_stream_test_data data[] =
   },
   // CN_S.CHR from Dark Nova was originally imploded.
   {
+    "CN_S.CHR",
     { "CN_S.CHR",           3584, 0 },
     { "CN_S.CHR.deflate",   1618, 0 },
     { "CN_S.CHR.deflate",   1618, 0 }, // Result is same as above.
@@ -121,6 +126,7 @@ static zip_stream_test_data data[] =
   },
   // FREAKSOF.MZX from Freaks Collection was originally imploded.
   {
+    "FREAKSOF.MZX",
     { "FREAKSOF.MZX",       16525, 0 },
     { "freaksof.deflate",   6132, 0 },
     { "freaksof.deflate64", 6137, 0 },
@@ -136,6 +142,7 @@ static zip_stream_test_data data[] =
     false
   },
   {
+    "dch1.txt",
     { "dch1.txt",           7045, 0 },
     { "dch1.deflate",       3385, 0 },
     { "dch1.deflate64",     3352, 0 },
@@ -151,6 +158,7 @@ static zip_stream_test_data data[] =
     false
   },
   {
+    "CT_LEVEL.MOD",
     { "CT_LEVEL.MOD",       111885, 0 },
     { "ct_level.deflate",   61105, 0 },
     { "ct_level.deflate64", 61051, 0 },
@@ -267,8 +275,8 @@ static void check_data()
   if(!loaded)
   {
     loaded = true;
-    for(int i = 0; i < arraysize(data); i++)
-      check_data(data[i]);
+    for(zip_stream_test_data &d : data)
+      check_data(d);
   }
 }
 
@@ -345,7 +353,7 @@ static enum zip_error decompress(zip_method_handler *stream, zip_stream_data *sd
 #define SET_A(a,a_len,p,is_b64) \
   a = buffer_a; \
   a_len = p.len; \
-  ASSERT(p.data, "%s", desc); \
+  ASSERT(p.data, "%s: data is null", d.testname); \
   if(is_b64) \
     debase64(buffer_a, BUFFER_SIZE, p.data, strlen(p.data)); \
   else \
@@ -378,7 +386,6 @@ static void decompress_boilerplate(zip_method_handler *stream,
   char *buffer = _buffer.get();
   char *buffer_a = _buffer_a.get();
   char *buffer_b = _buffer_b.get();
-  char desc[64];
   const char *a;
   const char *b;
   size_t a_len;
@@ -386,7 +393,6 @@ static void decompress_boilerplate(zip_method_handler *stream,
   uint16_t flags;
   enum zip_error result;
   int cmp;
-  int i = -1;
 
   ASSERT(buffer && buffer_a && buffer_b, "");
   ASSERT(stream->create, "");
@@ -397,33 +403,29 @@ static void decompress_boilerplate(zip_method_handler *stream,
   for(const zip_stream_test_data &d : data)
   {
     const pair &input = d.*field;
-    i++;
 
-    snprintf(desc, arraysize(desc), "%d valid (%zu)", i, d.expected.len);
     SET_A(a, a_len, d.expected, d.expected_is_base64);
     SET_B(b, b_len, input, d.compressed_is_base64);
     result = decompress(stream, sd, method, flags, b, b_len, buffer, BUFFER_SIZE);
     cmp = memcmp(a, buffer, a_len);
-    ASSERTEQ(cmp, 0, "%s", desc);
+    ASSERTEQ(cmp, 0, "%s: valid", d.testname);
 
     for(int j = 7; j >= 0; j--)
     {
-      snprintf(desc, arraysize(desc), "%d truncated %d/8 (%zu)", i, j, d.expected.len);
       memset(buffer, 0, BUFFER_SIZE);
       result = decompress(stream, sd, method, flags, b, b_len * j / 8, buffer, BUFFER_SIZE);
-      ASSERT(result != ZIP_OUTPUT_FULL, "%s", desc);
-      ASSERT(result != ZIP_EOF, "%s", desc);
+      ASSERT(result != ZIP_OUTPUT_FULL && result != ZIP_EOF,
+       "%s: truncated %d/8", d.testname, j);
 
       if(result == ZIP_STREAM_FINISHED)
       {
         cmp = !memcmp(a, buffer, a_len);
-        ASSERTEQ(cmp, 0, "%s", desc);
+        ASSERTEQ(cmp, 0, "%s: truncated %d/8", d.testname, j);
       }
     }
 
     for(int j = 0; j < 8; j++)
     {
-      snprintf(desc, arraysize(desc), "%d corrupt %d (%zu)", i, j, d.expected.len);
       memset(buffer, 0, BUFFER_SIZE);
       SET_B(b, b_len, input, d.compressed_is_base64);
       size_t size = MAX(b_len / 8, 1);
@@ -437,11 +439,12 @@ static void decompress_boilerplate(zip_method_handler *stream,
 
       memcpy(buffer_b + b_pos, a + a_pos, size);
       result = decompress(stream, sd, method, flags, b, b_len, buffer, BUFFER_SIZE);
-      ASSERT(result != ZIP_EOF, "%s", desc);
+      ASSERT(result != ZIP_EOF, "%s: corrupt %d", d.testname, j);
+
       if(result == ZIP_STREAM_FINISHED)
       {
         cmp = !memcmp(a, buffer, a_len);
-        ASSERTEQ(cmp, 0, "%s", desc);
+        ASSERTEQ(cmp, 0, "%s: corrupt %d", d.testname, j);
       }
     }
   }
@@ -553,12 +556,10 @@ UNITTEST(Compress)
   char *buffer_a = _buffer_a.get();
   char *buffer_cmp = _buffer_cmp.get();
   char *buffer_dcmp = _buffer_dcmp.get();
-  char desc[64];
   const char *a;
   size_t a_len;
   size_t cmp_len;
   enum zip_error result;
-  int i;
 
   zip_method_handler *stream = get_stream(ZIP_M_DEFLATE);
   if(!stream)
@@ -573,23 +574,19 @@ UNITTEST(Compress)
   struct zip_stream_data *sd = stream->create();
   ASSERT(sd, "");
 
-  for(i = 0; i < arraysize(data); i++)
+  for(const zip_stream_test_data &d : data)
   {
-    zip_stream_test_data &d = data[i];
-    snprintf(desc, arraysize(desc), "%d (%zu)", i, d.expected.len);
-
     SET_A(a, a_len, d.expected, d.expected_is_base64);
 
     result = compress(stream, sd, ZIP_M_DEFLATE, 0, a, a_len,
      buffer_cmp, BUFFER_SIZE, &cmp_len);
-    ASSERTEQ(result, ZIP_STREAM_FINISHED, "%s", desc);
+    ASSERTEQ(result, ZIP_STREAM_FINISHED, "%s", d.testname);
 
     result = decompress(stream, sd, ZIP_M_DEFLATE, 0, buffer_cmp, cmp_len,
      buffer_dcmp, BUFFER_SIZE);
-    ASSERTEQ(result, ZIP_STREAM_FINISHED, "%s", desc);
+    ASSERTEQ(result, ZIP_STREAM_FINISHED, "%s", d.testname);
 
-    int cmp = memcmp(a, buffer_dcmp, a_len);
-    ASSERTEQ(cmp, 0, "%s", desc);
+    ASSERTMEM(a, buffer_dcmp, a_len, "%s", d.testname);
   }
   stream->destroy(sd);
 }
@@ -616,6 +613,7 @@ struct zip_test_file_data
 
 struct zip_test_data
 {
+  const char *testname; // For debug output.
   const char *data;
   size_t data_length;
   enum zip_error open_result;
@@ -626,15 +624,18 @@ struct zip_test_data
 static const zip_test_data raw_zip_data[] =
 {
   {
+    "EOCD only",
     "PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
     22, ZIP_SUCCESS, 0, {}
   },
   {
+    "EOCD with prefix",
     "prefixed data here!"
     "PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
     41, ZIP_SUCCESS, 0, {}
   },
   {
+    "abcde.zip",
     "abcde.zip", 0, ZIP_SUCCESS, 3,
     {
       { "abcde/", "",
@@ -649,12 +650,14 @@ static const zip_test_data raw_zip_data[] =
     }
   },
   {
+    "dch1.zip",
     "dch1.zip", 0, ZIP_SUCCESS, 1,
     {{
       "dch1.txt", "dch1.txt",
       0x0000, ZIP_M_DEFLATE, 0xA3898FBE, 7045, 3385, 0, CONTENTS_FILE }},
   },
   {
+    "ct_level.zip",
     "ct_level.zip", 0, ZIP_SUCCESS, 1,
     {{
       "CT_LEVEL.MOD", "CT_LEVEL.MOD",
@@ -665,17 +668,26 @@ static const zip_test_data raw_zip_data[] =
 // The library should refuse to open these...
 static const zip_test_data raw_zip_invalid_data[] =
 {
-  { "", 0, ZIP_NO_EOCD, 0, {} },
-  { "                  PK\x05\x06", 22, ZIP_NO_EOCD, 0, {} },
   {
+    "empty file",
+    "", 0, ZIP_NO_EOCD, 0, {}
+  },
+  {
+    "EOCD truncated to 4 with prefix of 18",
+    "                  PK\x05\x06", 22, ZIP_NO_EOCD, 0, {}
+  },
+  {
+    "EOCD truncated to 21",
     "PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
     21, ZIP_NO_EOCD, 0, {}
   },
   {
+    "Missing central directory",
     "PK\x05\x06\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
     22, ZIP_NO_CENTRAL_DIRECTORY, 0, {}
   },
   {
+    "Multiple disks",
     "PK\x05\x06\x01\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
     22, ZIP_UNSUPPORTED_MULTIPLE_DISKS, 0, {}
   },
@@ -738,26 +750,26 @@ static const char *zip_get_contents(const zip_test_file_data &df, char *buf,
 
 // Check that the zip exists and that its central directory headers match the
 // expected data.
-static void zip_check(const zip_test_data &d, struct zip_archive *zp, size_t test_num)
+static void zip_check(const zip_test_data &d, struct zip_archive *zp)
 {
-  ASSERT(zp, "%zu", test_num);
-  ASSERTEQ(zp->num_files, d.num_files, "%zu", test_num);
+  ASSERT(zp, "%s", d.testname);
+  ASSERTEQ(zp->num_files, d.num_files, "%s", d.testname);
   if(d.num_files)
-    ASSERT(zp->files, "%zu", test_num);
+    ASSERT(zp->files, "%s", d.testname);
 
   for(size_t j = 0; j < d.num_files; j++)
   {
     const zip_test_file_data &df = d.files[j];
     zip_file_header *fh = zp->files[j];
 
-    ASSERT(fh, "%zu file %zu", test_num, j);
-    ASSERTEQ(fh->flags, df.flags, "%zu file %zu", test_num, j);
-    ASSERTEQ(fh->method, df.method, "%zu file %zu", test_num, j);
-    ASSERTEQ(fh->crc32, df.crc32, "%zu file %zu", test_num, j);
-    ASSERTEQ(fh->compressed_size, df.compressed_size, "%zu file %zu", test_num, j);
-    ASSERTEQ(fh->uncompressed_size, df.uncompressed_size, "%zu file %zu", test_num, j);
-    ASSERTCMP(fh->file_name, df.filename, "%zu file %zu", test_num, j);
-    ASSERT(df.uncompressed_size <= BUFFER_SIZE, "%zu file %zu", test_num, j);
+    ASSERT(fh, "%s file %zu", d.testname, j);
+    ASSERTEQ(fh->flags, df.flags, "%s file %zu", d.testname, j);
+    ASSERTEQ(fh->method, df.method, "%s file %zu", d.testname, j);
+    ASSERTEQ(fh->crc32, df.crc32, "%s file %zu", d.testname, j);
+    ASSERTEQ(fh->compressed_size, df.compressed_size, "%s file %zu", d.testname, j);
+    ASSERTEQ(fh->uncompressed_size, df.uncompressed_size, "%s file %zu", d.testname, j);
+    ASSERTCMP(fh->file_name, df.filename, "%s file %zu", d.testname, j);
+    ASSERT(df.uncompressed_size <= BUFFER_SIZE, "%s file %zu", d.testname, j);
   }
 }
 
@@ -783,26 +795,22 @@ UNITTEST(ZipRead)
 
   SECTION(OpenClose)
   {
-    for(int i = 0; i < arraysize(raw_zip_data); i++)
+    for(const zip_test_data &d : raw_zip_data)
     {
-      const zip_test_data &d = raw_zip_data[i];
-
       zp = zip_test_open(d);
-      zip_check(d, zp, i);
+      zip_check(d, zp);
 
       result = zip_close(zp, nullptr);
-      ASSERTEQ(result, ZIP_SUCCESS, "%d", i);
+      ASSERTEQ(result, ZIP_SUCCESS, "%s", d.testname);
     }
   }
 
   SECTION(OpenInvalid)
   {
-    for(int i = 0; i < arraysize(raw_zip_invalid_data); i++)
+    for(const zip_test_data &d : raw_zip_invalid_data)
     {
-      const zip_test_data &d = raw_zip_invalid_data[i];
-
       zp = zip_test_open(d);
-      ASSERTEQ(zp, nullptr, "%d", i);
+      ASSERTEQ(zp, nullptr, "%s", d.testname);
 
       // TODO: can't test the actual error returned from zip_read_directory anymore :(
     }
@@ -810,14 +818,13 @@ UNITTEST(ZipRead)
 
   SECTION(ReadFile)
   {
-    for(int i = 0; i < arraysize(raw_zip_data); i++)
+    for(const zip_test_data &d : raw_zip_data)
     {
-      const zip_test_data &d = raw_zip_data[i];
       if(d.num_files)
       {
         has_files = true;
         zp = zip_test_open(d);
-        zip_check(d, zp, i);
+        zip_check(d, zp);
 
         for(size_t j = 0; j < d.num_files; j++)
         {
@@ -825,18 +832,18 @@ UNITTEST(ZipRead)
           size_t real_length = 0;
 
           result = zip_read_file(zp, buffer, BUFFER_SIZE, &real_length);
-          ASSERTEQ(result, ZIP_SUCCESS, "%d file %zu", i, j);
-          ASSERTEQ(real_length, df.uncompressed_size, "%d file %zu", i, j);
+          ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
+          ASSERTEQ(real_length, df.uncompressed_size, "%s file %zu", d.testname, j);
 
           if(real_length)
           {
             const char *contents = ZIP_GET_CONTENTS(df);
             cmp = memcmp(buffer, contents, real_length);
-            ASSERTEQ(cmp, 0, "%d file %zu", i, j);
+            ASSERTEQ(cmp, 0, "%s file %zu", d.testname, j);
           }
         }
         result = zip_close(zp, nullptr);
-        ASSERTEQ(result, ZIP_SUCCESS, "%d", i);
+        ASSERTEQ(result, ZIP_SUCCESS, "%s", d.testname);
       }
     }
     if(!has_files)
@@ -845,14 +852,13 @@ UNITTEST(ZipRead)
 
   SECTION(ReadStream)
   {
-    for(int i = 0; i < arraysize(raw_zip_data); i++)
+    for(const zip_test_data &d : raw_zip_data)
     {
-      const zip_test_data &d = raw_zip_data[i];
       if(d.num_files)
       {
         has_files = true;
         zp = zip_test_open(d);
-        zip_check(d, zp, i);
+        zip_check(d, zp);
 
         for(size_t j = 0; j < d.num_files; j++)
         {
@@ -860,22 +866,22 @@ UNITTEST(ZipRead)
           size_t real_length = 0;
 
           result = zip_read_open_file_stream(zp, &real_length);
-          ASSERTEQ(result, ZIP_SUCCESS, "%d file %zu", i, j);
+          ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
 
           const char *contents  = ZIP_GET_CONTENTS(df);
           for(size_t k = 0; k < real_length; k += arraysize(small_buffer))
           {
             size_t n = MIN((size_t)arraysize(small_buffer), real_length - k);
             result = zread(small_buffer, n, zp);
-            ASSERTEQ(result, ZIP_SUCCESS, "%d file %zu", i, j);
+            ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
             cmp = memcmp(small_buffer, contents + k, n);
-            ASSERTEQ(cmp, 0, "%d file %zu", i, j);
+            ASSERTEQ(cmp, 0, "%s file %zu", d.testname, j);
           }
           result = zip_read_close_stream(zp);
-          ASSERTEQ(result, ZIP_SUCCESS, "%d file %zu", i, j);
+          ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
         }
         result = zip_close(zp, nullptr);
-        ASSERTEQ(result, ZIP_SUCCESS, "%d", i);
+        ASSERTEQ(result, ZIP_SUCCESS, "%s", d.testname);
       }
     }
     if(!has_files)
@@ -884,15 +890,14 @@ UNITTEST(ZipRead)
 
   SECTION(ReadMemStream)
   {
-    for(int i = 0; i < arraysize(raw_zip_data); i++)
+    for(const zip_test_data &d : raw_zip_data)
     {
-      const zip_test_data &d = raw_zip_data[i];
       if(d.num_files)
       {
         has_files = true;
         zp = zip_test_open(d, file_buffer, BUFFER_SIZE);
-        zip_check(d, zp, i);
-        ASSERTEQ(zp->is_memory, true, "%d", i);
+        zip_check(d, zp);
+        ASSERTEQ(zp->is_memory, true, "%s", d.testname);
 
         for(size_t j = 0; j < d.num_files; j++)
         {
@@ -902,37 +907,37 @@ UNITTEST(ZipRead)
           unsigned int method;
 
           result = zip_get_next_method(zp, &method);
-          ASSERTEQ(result, ZIP_SUCCESS, "%d file %zu", i, j);
+          ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
 
           result = zip_get_next_uncompressed_size(zp, &real_length);
-          ASSERTEQ(result, ZIP_SUCCESS, "%d file %zu", i, j);
+          ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
 
           result = zip_read_open_mem_stream(zp, &mf);
           if(method == ZIP_M_NONE)
           {
             const char *contents  = ZIP_GET_CONTENTS(df);
-            ASSERTEQ(result, ZIP_SUCCESS, "%d file %zu", i, j);
+            ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
 
             for(size_t k = 0; k < real_length; k += arraysize(small_buffer))
             {
               size_t n = MIN((size_t)arraysize(small_buffer), real_length - k);
               cmp = mfread(small_buffer, n, 1, &mf);
-              ASSERTEQ(cmp, 1, "%d file %zu", i, j);
+              ASSERTEQ(cmp, 1, "%s file %zu", d.testname, j);
               cmp = memcmp(small_buffer, contents + k, n);
-              ASSERTEQ(cmp, 0, "%d file %zu", i, j);
+              ASSERTEQ(cmp, 0, "%s file %zu", d.testname, j);
             }
             result = zip_read_close_stream(zp);
-            ASSERTEQ(result, ZIP_SUCCESS, "%d file %zu", i, j);
+            ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
           }
           else
           {
-            ASSERTEQ(result, ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM, "%d file %zu", i, j);
+            ASSERTEQ(result, ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM, "%s file %zu", d.testname, j);
             result = zip_skip_file(zp);
-            ASSERTEQ(result, ZIP_SUCCESS, "%d file %zu", i, j);
+            ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
           }
         }
         result = zip_close(zp, nullptr);
-        ASSERTEQ(result, ZIP_SUCCESS, "%d", i);
+        ASSERTEQ(result, ZIP_SUCCESS, "%s", d.testname);
       }
     }
     if(!has_files)
@@ -941,11 +946,11 @@ UNITTEST(ZipRead)
 }
 
 static void verify_boilerplate(const zip_test_data &d, struct zip_archive *zp,
- const char *label, size_t test_num, char *verify_buffer, char *db64_buffer)
+ const char *label, char *verify_buffer, char *db64_buffer)
 {
   enum zip_error result;
 
-  ASSERTEQ(d.num_files, zp->num_files, "%s %zu", label, test_num);
+  ASSERTEQ(d.num_files, zp->num_files, "%s %s", label, d.testname);
   for(size_t j = 0; j < d.num_files; j++)
   {
     const zip_test_file_data &df = d.files[j];
@@ -953,15 +958,15 @@ static void verify_boilerplate(const zip_test_data &d, struct zip_archive *zp,
 
     size_t real_length = 0;
     result = zip_read_file(zp, verify_buffer, BUFFER_SIZE, &real_length);
-    ASSERTEQ(result, ZIP_SUCCESS, "%s %zu %zu", label, test_num, j);
-    ASSERTEQ(real_length, df.uncompressed_size, "%s %zu %zu", label, test_num, j);
+    ASSERTEQ(result, ZIP_SUCCESS, "%s %s %zu", label, d.testname, j);
+    ASSERTEQ(real_length, df.uncompressed_size, "%s %s %zu", label, d.testname, j);
 
     int cmp = memcmp(contents, verify_buffer, real_length);
-    ASSERTEQ(cmp, 0, "%s %zu %zu", label, test_num, j);
+    ASSERTEQ(cmp, 0, "%s %s %zu", label, d.testname, j);
   }
 
   result = zip_close(zp, nullptr);
-  ASSERTEQ(result, ZIP_SUCCESS, "%s %zu", label, test_num);
+  ASSERTEQ(result, ZIP_SUCCESS, "%s %s", label, d.testname);
 }
 
 UNITTEST(ZipWrite)
@@ -987,16 +992,14 @@ UNITTEST(ZipWrite)
     for(int type = 0; type < 2; type++)
     {
       const char *label = LABEL[type];
-      for(int i = 0; i < arraysize(raw_zip_data); i++)
+      for(const zip_test_data &d : raw_zip_data)
       {
-        const zip_test_data &d = raw_zip_data[i];
-
         if(!type)
           zp = zip_open_file_write(OUTPUT_FILE);
         else
           zp = zip_open_mem_write_ext((void **)&ext_buffer, &ext_buffer_size, 0);
 
-        ASSERT(zp, "%s %d", label, i);
+        ASSERT(zp, "%s %s", label, d.testname);
 
         for(size_t j = 0; j < d.num_files; j++)
         {
@@ -1005,17 +1008,17 @@ UNITTEST(ZipWrite)
           result = zip_write_file(zp, df.filename, (const void *)contents,
            df.uncompressed_size, df.method);
 
-          ASSERTEQ(result, ZIP_SUCCESS, "%s %d %zu", label, i, j);
+          ASSERTEQ(result, ZIP_SUCCESS, "%s %s %zu", label, d.testname, j);
         }
         result = zip_close(zp, &final_size);
-        ASSERTEQ(result, ZIP_SUCCESS, "%s %d", label, i);
+        ASSERTEQ(result, ZIP_SUCCESS, "%s %s", label, d.testname);
 
         if(!type)
           zp = zip_open_file_read(OUTPUT_FILE);
         else
           zp = zip_open_mem_read(ext_buffer, final_size);
 
-        verify_boilerplate(d, zp, label, i, verify_buffer, db64_buffer);
+        verify_boilerplate(d, zp, label, verify_buffer, db64_buffer);
       }
     }
   }
@@ -1025,16 +1028,14 @@ UNITTEST(ZipWrite)
     for(int type = 0; type < 2; type++)
     {
       const char *label = LABEL[type];
-      for(int i = 0; i < arraysize(raw_zip_data); i++)
+      for(const zip_test_data &d : raw_zip_data)
       {
-        const zip_test_data &d = raw_zip_data[i];
-
         if(!type)
           zp = zip_open_file_write(OUTPUT_FILE);
         else
           zp = zip_open_mem_write_ext((void **)&ext_buffer, &ext_buffer_size, 0);
 
-        ASSERT(zp, "%s %d", label, i);
+        ASSERT(zp, "%s %s", label, d.testname);
 
         for(size_t j = 0; j < d.num_files; j++)
         {
@@ -1042,25 +1043,25 @@ UNITTEST(ZipWrite)
           const char *contents = ZIP_GET_CONTENTS(df);
 
           result = zip_write_open_file_stream(zp, df.filename, df.method);
-          ASSERTEQ(result, ZIP_SUCCESS, "%s %d %zu", label, i, j);
+          ASSERTEQ(result, ZIP_SUCCESS, "%s %s %zu", label, d.testname, j);
           for(size_t k = 0; k < df.uncompressed_size; k += 32)
           {
             size_t size = MIN(df.uncompressed_size - k, 32);
             result = zwrite(contents + k, size, zp);
-            ASSERTEQ(result, ZIP_SUCCESS, "%s %d %zu", label, i, j);
+            ASSERTEQ(result, ZIP_SUCCESS, "%s %s %zu", label, d.testname, j);
           }
           result = zip_write_close_stream(zp);
-          ASSERTEQ(result, ZIP_SUCCESS, "%s %d %zu", label, i, j);
+          ASSERTEQ(result, ZIP_SUCCESS, "%s %s %zu", label, d.testname, j);
         }
         result = zip_close(zp, &final_size);
-        ASSERTEQ(result, ZIP_SUCCESS, "%s %d", label, i);
+        ASSERTEQ(result, ZIP_SUCCESS, "%s %s", label, d.testname);
 
         if(!type)
           zp = zip_open_file_read(OUTPUT_FILE);
         else
           zp = zip_open_mem_read(ext_buffer, final_size);
 
-        verify_boilerplate(d, zp, label, i, verify_buffer, db64_buffer);
+        verify_boilerplate(d, zp, label, verify_buffer, db64_buffer);
       }
     }
   }
@@ -1071,10 +1072,8 @@ UNITTEST(ZipWrite)
   SECTION(Memory_WriteMemStream)
   {
     const char *label = "MemoryFixed";
-    for(int i = 0; i < arraysize(raw_zip_data); i++)
+    for(const zip_test_data &d : raw_zip_data)
     {
-      const zip_test_data &d = raw_zip_data[i];
-
       // Precompute likely required size for the archive.
       size_t max_name_size = 8;
       ext_buffer_size = 0;
@@ -1087,7 +1086,7 @@ UNITTEST(ZipWrite)
       ext_buffer = (char *)crealloc(ext_buffer, ext_buffer_size);
 
       zp = zip_open_mem_write(ext_buffer, ext_buffer_size, 0);
-      ASSERT(zp, "%s %d", label, i);
+      ASSERT(zp, "%s %s", label, d.testname);
 
       for(size_t j = 0; j < d.num_files; j++)
       {
@@ -1096,17 +1095,17 @@ UNITTEST(ZipWrite)
         struct memfile mf;
 
         result = zip_write_open_mem_stream(zp, &mf, df.filename);
-        ASSERTEQ(result, ZIP_SUCCESS, "%s %d %zu", label, i, j);
+        ASSERTEQ(result, ZIP_SUCCESS, "%s %s %zu", label, d.testname, j);
         int res = mfwrite(contents, df.uncompressed_size, 1, &mf);
-        ASSERTEQ(res, 1, "%s %d %zu", label, i, j);
+        ASSERTEQ(res, 1, "%s %s %zu", label, d.testname, j);
         result = zip_write_close_mem_stream(zp, &mf);
-        ASSERTEQ(result, ZIP_SUCCESS, "%s %d %zu", label, i, j);
+        ASSERTEQ(result, ZIP_SUCCESS, "%s %s %zu", label, d.testname, j);
       }
       result = zip_close(zp, &final_size);
-      ASSERTEQ(result, ZIP_SUCCESS, "%s %d", label, i);
+      ASSERTEQ(result, ZIP_SUCCESS, "%s %s", label, d.testname);
 
       zp = zip_open_mem_read(ext_buffer, final_size);
-      verify_boilerplate(d, zp, label, i, verify_buffer, db64_buffer);
+      verify_boilerplate(d, zp, label, verify_buffer, db64_buffer);
     }
   }
 

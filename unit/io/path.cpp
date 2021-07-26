@@ -1239,9 +1239,8 @@ template<size_t N>
 static void test_mkdir(const path_mkdir_data (&data)[N],
  enum path_create_error expected)
 {
-  for(size_t i = 0; i < N; i++)
+  for(const path_mkdir_data &cur : data)
   {
-    const path_mkdir_data &cur = data[i];
     enum path_create_error ret = path_create_parent_recursively(cur.path);
     ASSERTEQ(ret, expected, "%s", cur.path);
   }
