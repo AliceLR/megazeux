@@ -68,7 +68,6 @@ UNITTEST(UnShrinkLike)
     43497, 256, 1, 60659,
   };
 
-  char mesg[80];
   struct bitstream b{};
   int out;
   int i;
@@ -79,30 +78,27 @@ UNITTEST(UnShrinkLike)
   for(i = 0; i < arraysize(expected9); i++)
   {
     out = BS_READ(&b, 9);
-    snprintf(mesg, arraysize(mesg), "code size 9, position %u", (unsigned)i);
-    ASSERTEQX(out, expected9[i], mesg);
+    ASSERTEQ(out, expected9[i], "code size 9, position %d", i);
   }
 
   for(i = 0; i < arraysize(expected12); i++)
   {
     out = BS_READ(&b, 12);
-    snprintf(mesg, arraysize(mesg), "code size 12, position %u", (unsigned)i);
-    ASSERTEQX(out, expected12[i], mesg);
+    ASSERTEQ(out, expected12[i], "code size 12, position %d", i);
   }
 
   for(i = 0; i < arraysize(expected16); i++)
   {
     out = BS_READ(&b, 16);
-    snprintf(mesg, arraysize(mesg), "code size 16, position %u", (unsigned)i);
-    ASSERTEQX(out, expected16[i], mesg);
+    ASSERTEQ(out, expected16[i], "code size 16, position %d", i);
   }
 
-  ASSERTEQ(b.input, nullptr);
-  ASSERTEQ(b.input_left, 0);
+  ASSERTEQ(b.input, nullptr, "");
+  ASSERTEQ(b.input_left, 0, "");
 
   // NOTE: this won't always be true as streams are byte-aligned, but this
   // test data has been designed so that this should be true.
-  ASSERTEQ(b.buf_left, 0);
+  ASSERTEQ(b.buf_left, 0, "");
 }
 
 /**
@@ -144,7 +140,6 @@ UNITTEST(ExplodeLike)
     { 1, 1 }, { 8, 0x4F }, { 1, 1 }, { 1, 0 }, { 1, 1 },
   };
 
-  char mesg[80];
   struct bitstream b{};
   int out;
   int i;
@@ -154,19 +149,17 @@ UNITTEST(ExplodeLike)
 
   for(i = 0; i < arraysize(sequence); i++)
   {
-    snprintf(mesg, arraysize(mesg), "position %d, %u bit(s)", i,
-     sequence[i].length);
-
     out = BS_READ(&b, sequence[i].length);
-    ASSERTEQX(out, sequence[i].expected_value, mesg);
+    ASSERTEQ(out, sequence[i].expected_value, "position %d, %u bit(s)", i,
+     sequence[i].length);
   }
 
-  ASSERTEQ(b.input, nullptr);
-  ASSERTEQ(b.input_left, 0);
+  ASSERTEQ(b.input, nullptr, "");
+  ASSERTEQ(b.input_left, 0, "");
 
   // NOTE: this won't always be true as streams are byte-aligned, but this
   // test data has been designed so that this should be true.
-  ASSERTEQ(b.buf_left, 0);
+  ASSERTEQ(b.buf_left, 0, "");
 }
 
 /**
@@ -238,7 +231,6 @@ UNITTEST(OutOfBounds)
   };
   samesize(data, sequence);
 
-  char mesg[80];
   int out;
   int i;
   int j;
@@ -252,15 +244,13 @@ UNITTEST(OutOfBounds)
 
     for(j = 0; i < arraysize(sequence[i]) && sequence[i][j].length; j++)
     {
-      snprintf(mesg, arraysize(mesg), "array %d, position %d, %u bit(s)", i, j,
-       sequence[i][j].length);
-
       out = BS_READ(&b, sequence[i][j].length);
-      ASSERTEQX(out, sequence[i][j].expected_value, mesg);
+      ASSERTEQ(out, sequence[i][j].expected_value,
+       "array %d, position %d, %u bit(s)", i, j, sequence[i][j].length);
     }
 
-    ASSERTEQ(b.input, nullptr);
-    ASSERTEQ(b.input_left, 0);
+    ASSERTEQ(b.input, nullptr, "");
+    ASSERTEQ(b.input_left, 0, "");
 
     // NOTE: may be bits left in this test, so don't try to test it...
   }

@@ -124,33 +124,21 @@ static boolean compare_rgba(const rgba_color &base, const rgba_color &in)
 }
 
 template<boolean (*COMPARE_FN)(const rgba_color &a, const rgba_color &b)>
-static boolean compare_image(const struct image_file_const &base,
- const struct image_file &in, char *msgbuf, size_t buf_size)
+static void compare_image(const struct image_file_const &base,
+ const struct image_file &in, const char *filename)
 {
-  if(in.width != base.width)
-  {
-    snprintf(msgbuf, buf_size, "width mismatch");
-    return false;
-  }
-
-  if(in.height != base.height)
-  {
-    snprintf(msgbuf, buf_size, "height mismatch");
-    return false;
-  }
+  ASSERTEQ(in.width, base.width, "%s: width mismatch", filename);
+  ASSERTEQ(in.height, base.height, "%s: height mismatch", filename);
 
   size_t num = base.width * base.height;
   for(size_t i = 0; i < num; i++)
   {
     if(!COMPARE_FN(base.data[i], in.data[i]))
     {
-      snprintf(msgbuf, buf_size, "pixel mismatch @ %zu - %08x %08x", i,
+      FAIL("%s: pixel mismatch @ %zu - %08x %08x", filename, i,
        *(uint32_t *)(base.data + i), *(uint32_t *)(in.data + i));
-      return false;
     }
   }
-
-  return true;
 }
 
 
@@ -161,15 +149,11 @@ UNITTEST(PNG)
 #else
 
   struct image_file img{};
-  char msg[256];
   boolean ret;
 
-  size_t off = snprintf(msg, sizeof(msg), "png: ");
-
   ret = load_image_from_file(DATA_BASEDIR "rgba.png", &img, NULL);
-  ASSERTX(ret, msg);
-  ret = compare_image<compare_rgba>(base_rgba_img, img, msg + off, sizeof(msg) - off);
-  ASSERTX(ret, msg);
+  ASSERT(ret, "rgba.png: load failed");
+  compare_image<compare_rgba>(base_rgba_img, img, "rgba.png");
   image_free(&img);
 
 #endif /* CONFIG_PNG */
@@ -180,7 +164,6 @@ UNITTEST(BMP)
 {
   struct image_file img{};
   char path[512];
-  char msg[256];
   boolean ret;
 
   static const char *bw_inputs[] =
@@ -220,26 +203,22 @@ UNITTEST(BMP)
   {
     for(const char *filename : rgb_truecolor_inputs)
     {
-      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERTX(ret, msg);
-      ret = compare_image<compare_rgb>(base_rgba_img, img, msg + off, sizeof(msg) - off);
-      ASSERTX(ret, msg);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgb>(base_rgba_img, img, filename);
       image_free(&img);
     }
 
     // 16bpp is lossy, needs a special compare...
     for(const char *filename : rgb_truecolor16_inputs)
     {
-      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERTX(ret, msg);
-      ret = compare_image<compare_rgb16>(base_rgba_img, img, msg + off, sizeof(msg) - off);
-      ASSERTX(ret, msg);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgb16>(base_rgba_img, img, filename);
       image_free(&img);
     }
   }
@@ -248,37 +227,31 @@ UNITTEST(BMP)
   {
     for(const char *filename : rgb_indexed_inputs)
     {
-      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERTX(ret, msg);
-      ret = compare_image<compare_rgb>(base_rgba_img, img, msg + off, sizeof(msg) - off);
-      ASSERTX(ret, msg);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgb>(base_rgba_img, img, filename);
       image_free(&img);
     }
 
     for(const char *filename : bw_inputs)
     {
-      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERTX(ret, msg);
-      ret = compare_image<compare_rgb>(base_bw_img, img, msg + off, sizeof(msg) - off);
-      ASSERTX(ret, msg);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgb>(base_bw_img, img, filename);
       image_free(&img);
     }
 
     for(const char *filename : gs_inputs)
     {
-      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERTX(ret, msg);
-      ret = compare_image<compare_rgb>(base_gs_img, img, msg + off, sizeof(msg) - off);
-      ASSERTX(ret, msg);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgb>(base_gs_img, img, filename);
       image_free(&img);
     }
   }
@@ -287,13 +260,11 @@ UNITTEST(BMP)
   {
     for(const char *filename : rgb_rle_inputs)
     {
-      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERTX(ret, msg);
-      ret = compare_image<compare_rgb>(base_rgba_img, img, msg + off, sizeof(msg) - off);
-      ASSERTX(ret, msg);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgb>(base_rgba_img, img, filename);
       image_free(&img);
     }
   }
@@ -304,7 +275,6 @@ UNITTEST(Netpbm)
 {
   struct image_file img{};
   char path[512];
-  char msg[256];
   boolean ret;
 
   static const char *bw_inputs[] =
@@ -364,13 +334,11 @@ UNITTEST(Netpbm)
   {
     for(const char *filename : bw_inputs)
     {
-      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERTX(ret, msg);
-      ret = compare_image<compare_rgb>(base_bw_img, img, msg + off, sizeof(msg) - off);
-      ASSERTX(ret, msg);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgb>(base_bw_img, img, filename);
       image_free(&img);
     }
   }
@@ -379,13 +347,11 @@ UNITTEST(Netpbm)
   {
     for(const char *filename : grey_inputs)
     {
-      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERTX(ret, msg);
-      ret = compare_image<compare_rgb>(base_gs_img, img, msg + off, sizeof(msg) - off);
-      ASSERTX(ret, msg);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgb>(base_gs_img, img, filename);
       image_free(&img);
     }
   }
@@ -394,13 +360,11 @@ UNITTEST(Netpbm)
   {
     for(const char *filename : rgb_inputs)
     {
-      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERTX(ret, msg);
-      ret = compare_image<compare_rgb>(base_rgba_img, img, msg + off, sizeof(msg) - off);
-      ASSERTX(ret, msg);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgb>(base_rgba_img, img, filename);
       image_free(&img);
     }
   }
@@ -409,25 +373,21 @@ UNITTEST(Netpbm)
   {
     for(const char *filename : greya_inputs)
     {
-      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERTX(ret, msg);
-      ret = compare_image<compare_rgba>(base_gs_img, img, msg + off, sizeof(msg) - off);
-      ASSERTX(ret, msg);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgba>(base_gs_img, img, filename);
       image_free(&img);
     }
 
     for(const char *filename : rgba_inputs)
     {
-      size_t off = snprintf(msg, sizeof(msg), "%s: ", filename);
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERTX(ret, msg);
-      ret = compare_image<compare_rgba>(base_rgba_img, img, msg + off, sizeof(msg) - off);
-      ASSERTX(ret, msg);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgba>(base_rgba_img, img, filename);
       image_free(&img);
     }
   }
@@ -437,15 +397,11 @@ UNITTEST(Netpbm)
 UNITTEST(farbfeld)
 {
   struct image_file img{};
-  char msg[256];
   boolean ret;
 
-  size_t off = snprintf(msg, sizeof(msg), "farbfeld: ");
-
   ret = load_image_from_file(DATA_BASEDIR "farbfeld.ff", &img, NULL);
-  ASSERTX(ret, msg);
-  ret = compare_image<compare_rgba>(base_rgba_img, img, msg + off, sizeof(msg) - off);
-  ASSERTX(ret, msg);
+  ASSERT(ret, "farbfeld.ff: load failed");
+  compare_image<compare_rgba>(base_rgba_img, img, "farbfeld.ff");
   image_free(&img);
 }
 
@@ -453,9 +409,7 @@ UNITTEST(farbfeld)
 UNITTEST(raw)
 {
   struct image_file img{};
-  char msg[256];
   boolean ret;
-  size_t off;
 
   static const struct image_raw_format gs_format = { base_gs_img.width, base_gs_img.height, 1 };
   static const struct image_raw_format gsa_format = { base_gs_img.width, base_gs_img.height, 2 };
@@ -464,45 +418,33 @@ UNITTEST(raw)
 
   SECTION(Greyscale)
   {
-    off = snprintf(msg, sizeof(msg), "raw_gs.raw: ");
-
     ret = load_image_from_file(DATA_BASEDIR "raw_gs.raw", &img, &gs_format);
-    ASSERTX(ret, msg);
-    ret = compare_image<compare_rgb>(base_gs_img, img, msg + off, sizeof(msg) - off);
-    ASSERTX(ret, msg);
+    ASSERT(ret, "raw_gs.raw: load failed");
+    compare_image<compare_rgb>(base_gs_img, img, "raw_gs.raw");
     image_free(&img);
   }
 
   SECTION(GreyscaleAlpha)
   {
-    off = snprintf(msg, sizeof(msg), "raw_gsa.raw: ");
-
     ret = load_image_from_file(DATA_BASEDIR "raw_gsa.raw", &img, &gsa_format);
-    ASSERTX(ret, msg);
-    ret = compare_image<compare_rgba>(base_gs_img, img, msg + off, sizeof(msg) - off);
-    ASSERTX(ret, msg);
+    ASSERT(ret, "raw_gsa.raw: load failed");
+    compare_image<compare_rgba>(base_gs_img, img, "raw_gsa.raw");
     image_free(&img);
   }
 
   SECTION(RGB)
   {
-    off = snprintf(msg, sizeof(msg), "raw_rgb.raw: ");
-
     ret = load_image_from_file(DATA_BASEDIR "raw_rgb.raw", &img, &rgb_format);
-    ASSERTX(ret, msg);
-    ret = compare_image<compare_rgb>(base_rgba_img, img, msg + off, sizeof(msg) - off);
-    ASSERTX(ret, msg);
+    ASSERT(ret, "raw_rgb.raw: load failed");
+    compare_image<compare_rgb>(base_rgba_img, img, "raw_rgb.raw");
     image_free(&img);
   }
 
   SECTION(RGBA)
   {
-    off = snprintf(msg, sizeof(msg), "raw_rgba.raw: ");
-
     ret = load_image_from_file(DATA_BASEDIR "raw_rgba.raw", &img, &rgba_format);
-    ASSERTX(ret, msg);
-    ret = compare_image<compare_rgba>(base_rgba_img, img, msg + off, sizeof(msg) - off);
-    ASSERTX(ret, msg);
+    ASSERT(ret, "raw_rgba.raw: load failed");
+    compare_image<compare_rgba>(base_rgba_img, img, "raw_rgba.raw");
     image_free(&img);
   }
 }

@@ -52,12 +52,12 @@ UNITTEST(SHA256String)
   };
   struct SHA256_ctx ctx;
 
-  for(int i = 0; i < arraysize(data); i++)
+  for(const SHA256_data &d : data)
   {
     SHA256_init(&ctx);
-    SHA256_update(&ctx, data[i].input, strlen(data[i].input));
+    SHA256_update(&ctx, d.input, strlen(d.input));
     SHA256_final(&ctx);
-    ASSERTXMEM(ctx.H, data[i].result, sizeof(ctx.H), data[i].input);
+    ASSERTMEM(ctx.H, d.result, sizeof(ctx.H), "%s", d.input);
   }
 }
 
@@ -111,12 +111,12 @@ UNITTEST(SHA256File)
   struct SHA256_ctx ctx;
   char buffer[8192];
 
-  for(int i = 0; i < arraysize(data); i++)
+  for(const SHA256_data &d : data)
   {
     SHA256_init(&ctx);
 
-    FILE *fp = fopen_unsafe(data[i].input, "rb");
-    ASSERTX(fp, data[i].input);
+    FILE *fp = fopen_unsafe(d.input, "rb");
+    ASSERT(fp, "%s", d.input);
 
     fseek(fp, 0, SEEK_END);
     ssize_t file_len = ftell(fp);
@@ -126,13 +126,14 @@ UNITTEST(SHA256File)
     while(j < file_len)
     {
       ssize_t len = std::min(file_len - j, (ssize_t)arraysize(buffer));
-      ASSERTX(fread(buffer, len, 1, fp), data[i].input);
+      size_t ret = fread(buffer, len, 1, fp);
+      ASSERTEQ(ret, 1, "%s", d.input);
 
       SHA256_update(&ctx, buffer, len);
       j += len;
     }
     fclose(fp);
     SHA256_final(&ctx);
-    ASSERTXMEM(ctx.H, data[i].result, sizeof(ctx.H), data[i].input);
+    ASSERTMEM(ctx.H, d.result, sizeof(ctx.H), "%s", d.input);
   }
 }

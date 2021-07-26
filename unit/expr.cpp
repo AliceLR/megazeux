@@ -56,34 +56,30 @@ static const tr_int_data data[] =
 
 UNITTEST(tr_int_to_string)
 {
-  char sprintf_buf[12];
   char tr_buf[12];
   char *tmp;
   size_t len;
 
-  for(int i = 0; i < arraysize(data); i++)
+  for(const tr_int_data &d : data)
   {
-    sprintf(sprintf_buf, "%d", data[i].value);
-    tmp = tr_int_to_string(tr_buf, data[i].value, &len);
+    tmp = tr_int_to_string(tr_buf, d.value, &len);
 
-    ASSERTEQX(len, strlen(data[i].dec), data[i].dec);
-    ASSERTCMP(tmp, data[i].dec);
+    ASSERTEQ(len, strlen(d.dec), "%s", d.dec);
+    ASSERTCMP(tmp, d.dec, "");
   }
 }
 
 UNITTEST(tr_int_to_hex_string)
 {
-  char sprintf_buf[9];
   char tr_buf[9];
   char *tmp;
   size_t len;
 
-  for(int i = 0; i < arraysize(data); i++)
+  for(const tr_int_data &d : data)
   {
-    sprintf(sprintf_buf, "%x", data[i].value);
-    tmp = tr_int_to_hex_string(tr_buf, data[i].value, &len);
+    tmp = tr_int_to_hex_string(tr_buf, d.value, &len);
 
-    ASSERTEQX(len, strlen(data[i].hex), data[i].hex);
-    ASSERTCMP(tmp, data[i].hex);
+    ASSERTEQ(len, strlen(d.hex), "%s", d.hex);
+    ASSERTCMP(tmp, d.hex, "");
   }
 }

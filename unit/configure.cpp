@@ -208,17 +208,17 @@ void TEST_INT(const char *setting_name, T &setting, ssize_t min, ssize_t max)
 
     setting = default_value;
     load_arg(arg);
-    ASSERTEQX((ssize_t)setting, expected, arg);
+    ASSERTEQ((ssize_t)setting, expected, "%s", arg);
 
     setting = default_value;
     load_arg_file(arg, game_allowed);
-    ASSERTEQX((ssize_t)setting, expected, arg);
+    ASSERTEQ((ssize_t)setting, expected, "%s", arg);
 
     if(!game_allowed)
     {
       setting = default_value;
       load_arg_file(arg, true);
-      ASSERTEQX(setting, default_value, arg);
+      ASSERTEQ(setting, default_value, "%s", arg);
     }
   }
 }
@@ -236,17 +236,17 @@ void TEST_ENUM(const char *setting_name, T &setting,
 
     setting = default_value;
     load_arg(arg);
-    ASSERTEQX((int)setting, data[i].expected, arg);
+    ASSERTEQ((int)setting, data[i].expected, "%s", arg);
 
     setting = default_value;
     load_arg_file(arg, game_allowed);
-    ASSERTEQX((int)setting, data[i].expected, arg);
+    ASSERTEQ((int)setting, data[i].expected, "%s", arg);
 
     if(!game_allowed)
     {
       setting = default_value;
       load_arg_file(arg, true);
-      ASSERTEQX(setting, default_value, arg);
+      ASSERTEQ(setting, default_value, "%s", arg);
     }
   }
 }
@@ -265,22 +265,22 @@ void TEST_PAIR(const char *setting_name, T &setting_a, T &setting_b,
     setting_a = default_value;
     setting_b = default_value;
     load_arg(arg);
-    ASSERTEQX((int)setting_a, data[i].expected_a, arg);
-    ASSERTEQX((int)setting_b, data[i].expected_b, arg);
+    ASSERTEQ((int)setting_a, data[i].expected_a, "%s", arg);
+    ASSERTEQ((int)setting_b, data[i].expected_b, "%s", arg);
 
     setting_a = default_value;
     setting_b = default_value;
     load_arg_file(arg, game_allowed);
-    ASSERTEQX((int)setting_a, data[i].expected_a, arg);
-    ASSERTEQX((int)setting_b, data[i].expected_b, arg);
+    ASSERTEQ((int)setting_a, data[i].expected_a, "%s", arg);
+    ASSERTEQ((int)setting_b, data[i].expected_b, "%s", arg);
 
     if(!game_allowed)
     {
       setting_a = default_value;
       setting_b = default_value;
       load_arg_file(arg, true);
-      ASSERTEQX(setting_a, default_value, arg);
-      ASSERTEQX(setting_b, default_value, arg);
+      ASSERTEQ(setting_a, default_value, "%s", arg);
+      ASSERTEQ(setting_b, default_value, "%s", arg);
     }
   }
 }
@@ -787,9 +787,9 @@ UNITTEST(Settings)
       snprintf(buffer, sizeof(buffer), "%s=%s", option, hosts[i]);
       load_arg(buffer);
 
-      ASSERTEQ(conf->update_host_count, i+1);
+      ASSERTEQ(conf->update_host_count, i+1, "");
       for(int j = 0; j <= i; j++)
-        ASSERTCMP(conf->update_hosts[j], hosts[j]);
+        ASSERTCMP(conf->update_hosts[j], hosts[j], "");
     }
     free_config();
   }
@@ -937,17 +937,17 @@ UNITTEST(Settings)
       load_arg(buffer);
 
       if(current.width != IGNORE)
-        ASSERTEQX(econf->board_width, current.width, buffer);
+        ASSERTEQ(econf->board_width, current.width, "%s", buffer);
       if(current.height != IGNORE)
-        ASSERTEQX(econf->board_height, current.height, buffer);
+        ASSERTEQ(econf->board_height, current.height, "%s", buffer);
       if(current.viewport_x != IGNORE)
-        ASSERTEQX(econf->viewport_x, current.viewport_x, buffer);
+        ASSERTEQ(econf->viewport_x, current.viewport_x, "%s", buffer);
       if(current.viewport_y != IGNORE)
-        ASSERTEQX(econf->viewport_y, current.viewport_y, buffer);
+        ASSERTEQ(econf->viewport_y, current.viewport_y, "%s", buffer);
       if(current.viewport_w != IGNORE)
-        ASSERTEQX(econf->viewport_w, current.viewport_w, buffer);
+        ASSERTEQ(econf->viewport_w, current.viewport_w, "%s", buffer);
       if(current.viewport_h != IGNORE)
-        ASSERTEQX(econf->viewport_h, current.viewport_h, buffer);
+        ASSERTEQ(econf->viewport_h, current.viewport_h, "%s", buffer);
     }
   }
 
@@ -1279,17 +1279,17 @@ UNITTEST(Settings)
       expected = &(data[i].expected);
 
       if(expected->board_id != IGNORE)
-        ASSERTEQX(dest->board_id, expected->board_id, buffer);
+        ASSERTEQ(dest->board_id, expected->board_id, "%s", buffer);
       if(expected->cursor_x != IGNORE)
-        ASSERTEQX(dest->cursor_x, expected->cursor_x, buffer);
+        ASSERTEQ(dest->cursor_x, expected->cursor_x, "%s", buffer);
       if(expected->cursor_y != IGNORE)
-        ASSERTEQX(dest->cursor_y, expected->cursor_y, buffer);
+        ASSERTEQ(dest->cursor_y, expected->cursor_y, "%s", buffer);
       if(expected->scroll_x != IGNORE)
-        ASSERTEQX(dest->scroll_x, expected->scroll_x, buffer);
+        ASSERTEQ(dest->scroll_x, expected->scroll_x, "%s", buffer);
       if(expected->scroll_y != IGNORE)
-        ASSERTEQX(dest->scroll_y, expected->scroll_y, buffer);
+        ASSERTEQ(dest->scroll_y, expected->scroll_y, "%s", buffer);
       if(expected->debug_x != IGNORE)
-        ASSERTEQX(dest->debug_x, expected->debug_x, buffer);
+        ASSERTEQ(dest->debug_x, expected->debug_x, "%s", buffer);
     }
   }
 
@@ -1316,14 +1316,14 @@ void TEST_JOY_ALIAS(const config_test_single (&data)[NUM_TESTS])
   constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
-  ASSERT(joy_global_map);
+  ASSERT(joy_global_map, "");
   for(int i = 0; i < NUM_TESTS; i++)
   {
     joy_global_map->button[0][0] = DEFAULT;
     snprintf(arg, arraysize(arg), "joy1button1=%s", data[i].value);
     load_arg(arg);
 
-    ASSERTEQX(joy_global_map->button[0][0], data[i].expected, arg);
+    ASSERTEQ(joy_global_map->button[0][0], data[i].expected, "%s", arg);
   }
 }
 
@@ -1334,7 +1334,7 @@ void TEST_JOY_BUTTON(const config_test_joystick (&data)[NUM_TESTS])
   constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
-  ASSERT(joy_global_map);
+  ASSERT(joy_global_map, "");
   for(int i = 0; i < NUM_TESTS; i++)
   {
     const config_test_joystick &t = data[i];
@@ -1350,9 +1350,9 @@ void TEST_JOY_BUTTON(const config_test_joystick (&data)[NUM_TESTS])
     for(int j = 0; j < MAX_JOYSTICKS; j++)
     {
       if(j >= t.first - 1 && j <= t.last - 1)
-        ASSERTEQX(joy_global_map->button[j][t.which - 1], t.expected[0], arg);
+        ASSERTEQ(joy_global_map->button[j][t.which - 1], t.expected[0], "%s", arg);
       else
-        ASSERTEQX(joy_global_map->button[j][t.which - 1], DEFAULT, arg);
+        ASSERTEQ(joy_global_map->button[j][t.which - 1], DEFAULT, "%s", arg);
     }
   }
 }
@@ -1364,7 +1364,7 @@ void TEST_JOY_AXIS(const config_test_joystick (&data)[NUM_TESTS])
   constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
-  ASSERT(joy_global_map);
+  ASSERT(joy_global_map, "");
   for(int i = 0; i < NUM_TESTS; i++)
   {
     const config_test_joystick &t = data[i];
@@ -1384,13 +1384,13 @@ void TEST_JOY_AXIS(const config_test_joystick (&data)[NUM_TESTS])
     {
       if(j >= t.first - 1 && j <= t.last - 1)
       {
-        ASSERTEQX(joy_global_map->axis[j][t.which - 1][0], t.expected[0], arg);
-        ASSERTEQX(joy_global_map->axis[j][t.which - 1][1], t.expected[1], arg);
+        ASSERTEQ(joy_global_map->axis[j][t.which - 1][0], t.expected[0], "%s", arg);
+        ASSERTEQ(joy_global_map->axis[j][t.which - 1][1], t.expected[1], "%s", arg);
       }
       else
       {
-        ASSERTEQX(joy_global_map->axis[j][t.which - 1][0], DEFAULT, arg);
-        ASSERTEQX(joy_global_map->axis[j][t.which - 1][1], DEFAULT, arg);
+        ASSERTEQ(joy_global_map->axis[j][t.which - 1][0], DEFAULT, "%s", arg);
+        ASSERTEQ(joy_global_map->axis[j][t.which - 1][1], DEFAULT, "%s", arg);
       }
     }
   }
@@ -1403,7 +1403,7 @@ void TEST_JOY_HAT(const config_test_joystick (&data)[NUM_TESTS])
   constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
-  ASSERT(joy_global_map);
+  ASSERT(joy_global_map, "");
   for(int i = 0; i < NUM_TESTS; i++)
   {
     const config_test_joystick &t = data[i];
@@ -1423,17 +1423,17 @@ void TEST_JOY_HAT(const config_test_joystick (&data)[NUM_TESTS])
     {
       if(j >= t.first - 1 && j <= t.last - 1)
       {
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_UP], t.expected[JOYHAT_UP], arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_DOWN], t.expected[JOYHAT_DOWN], arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_LEFT], t.expected[JOYHAT_LEFT], arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_RIGHT], t.expected[JOYHAT_RIGHT], arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_UP], t.expected[JOYHAT_UP], "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_DOWN], t.expected[JOYHAT_DOWN], "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_LEFT], t.expected[JOYHAT_LEFT], "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_RIGHT], t.expected[JOYHAT_RIGHT], "%s", arg);
       }
       else
       {
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_UP], DEFAULT, arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_DOWN], DEFAULT, arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_LEFT], DEFAULT, arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_RIGHT], DEFAULT, arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_UP], DEFAULT, "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_DOWN], DEFAULT, "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_LEFT], DEFAULT, "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_RIGHT], DEFAULT, "%s", arg);
       }
     }
   }
@@ -1446,7 +1446,7 @@ void TEST_JOY_ACTION(const config_test_joystick (&data)[NUM_TESTS])
   constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
-  ASSERT(joy_global_map);
+  ASSERT(joy_global_map, "");
   for(int i = 0; i < NUM_TESTS; i++)
   {
     const config_test_joystick &t = data[i];
@@ -1462,9 +1462,9 @@ void TEST_JOY_ACTION(const config_test_joystick (&data)[NUM_TESTS])
     for(int j = 0; j < MAX_JOYSTICKS; j++)
     {
       if(j >= t.first - 1 && j <= t.last - 1)
-        ASSERTEQX(joy_global_map->action[j][t.which], t.expected[0], arg);
+        ASSERTEQ(joy_global_map->action[j][t.which], t.expected[0], "%s", arg);
       else
-        ASSERTEQX(joy_global_map->action[j][t.which], DEFAULT, arg);
+        ASSERTEQ(joy_global_map->action[j][t.which], DEFAULT, "%s", arg);
     }
   }
 }
@@ -1725,12 +1725,12 @@ UNITTEST(Include)
     // This version only works from a config file.
     boolean ret = write_config("a.cnf", "include b.cnf");
     ret &= write_config("b.cnf", "mzx_speed = 4");
-    ASSERTEQ(ret, true);
+    ASSERTEQ(ret, true, "");
 
     conf->mzx_speed = 2;
 
     set_config_from_file(SYSTEM_CNF, "a.cnf");
-    ASSERTEQ(conf->mzx_speed, 4);
+    ASSERTEQ(conf->mzx_speed, 4, "");
   }
 
   SECTION(IncludeEquals)
@@ -1738,17 +1738,17 @@ UNITTEST(Include)
     // This version works from both the config file and the command line.
     char include_conf[] = "include=c.cnf";
     boolean ret = write_config("c.cnf", "mzx_speed = 6");
-    ASSERTEQ(ret, true);
+    ASSERTEQ(ret, true, "");
 
     conf->mzx_speed = 1;
 
     load_arg(include_conf);
-    ASSERTEQX(conf->mzx_speed, 6, include_conf);
+    ASSERTEQ(conf->mzx_speed, 6, "%s", include_conf);
 
     conf->mzx_speed = 2;
 
     load_arg_file(include_conf, false);
-    ASSERTEQX(conf->mzx_speed, 6, include_conf);
+    ASSERTEQ(conf->mzx_speed, 6, "%s", include_conf);
   }
 
   SECTION(Recursion)
@@ -1758,7 +1758,7 @@ UNITTEST(Include)
     boolean ret = write_config("a.cnf", "include b.cnf");
     ret &= write_config("b.cnf", "include c.cnf");
     ret &= write_config("c.cnf", "mzx_speed=5\nboard_editor_hide_help=1");
-    ASSERTEQ(ret, true);
+    ASSERTEQ(ret, true, "");
 
     conf->mzx_speed = 1;
 #ifdef CONFIG_EDITOR
@@ -1766,9 +1766,9 @@ UNITTEST(Include)
 #endif
 
     load_arg((char *)"include=a.cnf");
-    ASSERTEQ(conf->mzx_speed, 5);
+    ASSERTEQ(conf->mzx_speed, 5, "");
 #ifdef CONFIG_EDITOR
-    ASSERTEQ(econf->board_editor_hide_help, true);
+    ASSERTEQ(econf->board_editor_hide_help, true, "");
 #endif
   }
 
@@ -1779,7 +1779,7 @@ UNITTEST(Include)
     // of file descriptors prior to running out of stack. This is pretty much
     // a freebie, it just needs to not crash or run out of memory.
     boolean ret = write_config("a.cnf", "include a.cnf");
-    ASSERTEQ(ret, true);
+    ASSERTEQ(ret, true, "");
 
     set_config_from_file(SYSTEM_CNF, "a.cnf");
   }
