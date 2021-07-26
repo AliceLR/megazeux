@@ -393,7 +393,7 @@ UNITTEST(read_write)
     for(uint32_t value : data32u)
     {
       uint32_t tmp = mfgetud(&mf);
-      ASSERTEQ(tmp, value);
+      ASSERTEQ(tmp, value, "");
     }
   }
 
@@ -514,7 +514,7 @@ UNITTEST(read_write)
 
     mf.current = mf.start;
     res = mfwrite(data8, SIZE, 2, &mf);
-    ASSERTEQ(res, 1);
+    ASSERTEQ(res, 1, "");
 
     mf.current = mf.start;
     res = mfwrite(data8, 3, SIZE*2/3, &mf);
