@@ -24,6 +24,7 @@
 
 __M_BEGIN_DECLS
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -125,9 +126,16 @@ static inline void mfresize(size_t new_len, struct memfile *mf)
     mfmove(new_buf, new_len, mf);
 }
 
+/**
+ * The mfget/mfput functions assume bounding has already been performed by
+ * the caller to reduce the amount of code inlined and to improve performance.
+ * If full bounds checks on arbitrary data are needed, use vio instead.
+ * Bounds check asserts are provided to help debug for debug builds.
+ */
 static inline int mfgetc(struct memfile *mf)
 {
   int v;
+  assert(mf->end - mf->current >= 1);
   v =  mf->current[0];
   mf->current += 1;
   return v;
@@ -136,6 +144,7 @@ static inline int mfgetc(struct memfile *mf)
 static inline int mfgetw(struct memfile *mf)
 {
   int v;
+  assert(mf->end - mf->current >= 2);
   v =  mf->current[0];
   v |= mf->current[1] << 8;
   mf->current += 2;
@@ -145,6 +154,7 @@ static inline int mfgetw(struct memfile *mf)
 static inline int mfgetd(struct memfile *mf)
 {
   int v;
+  assert(mf->end - mf->current >= 4);
   v =  mf->current[0];
   v |= mf->current[1] << 8;
   v |= mf->current[2] << 16;
@@ -160,6 +170,7 @@ static inline unsigned int mfgetud(struct memfile *mf)
 
 static inline int mfputc(int ch, struct memfile *mf)
 {
+  assert(mf->end - mf->current >= 1);
   mf->current[0] = ch & 0xFF;
   mf->current += 1;
   return ch & 0xFF;
@@ -167,6 +178,7 @@ static inline int mfputc(int ch, struct memfile *mf)
 
 static inline void mfputw(int ch, struct memfile *mf)
 {
+  assert(mf->end - mf->current >= 2);
   mf->current[0] = ch & 0xFF;
   mf->current[1] = (ch >> 8) & 0xFF;
   mf->current += 2;
@@ -174,6 +186,7 @@ static inline void mfputw(int ch, struct memfile *mf)
 
 static inline void mfputd(int ch, struct memfile *mf)
 {
+  assert(mf->end - mf->current >= 4);
   mf->current[0] = ch & 0xFF;
   mf->current[1] = (ch >> 8) & 0xFF;
   mf->current[2] = (ch >> 16) & 0xFF;
