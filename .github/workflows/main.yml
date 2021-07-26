@@ -35,7 +35,7 @@ jobs:
   #    - name: Install
   #      run: make install
 
-  MSYS2:
+  MSYS2-MINGW64:
     runs-on: windows-latest
     defaults:
       run:
@@ -50,8 +50,6 @@ jobs:
             base-devel git p7zip
             mingw-w64-x86_64-gcc    mingw-w64-x86_64-zlib      mingw-w64-x86_64-libpng
             mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-SDL2
-            mingw-w64-i686-gcc      mingw-w64-i686-zlib        mingw-w64-i686-libpng
-            mingw-w64-i686-libogg   mingw-w64-i686-libvorbis   mingw-w64-i686-SDL2
       - uses: actions/checkout@v2
       - name: Configure x64
         run: ./config.sh --platform win64 --enable-release
@@ -61,18 +59,33 @@ jobs:
         run: make test
       - name: Package x64 .zip
         run: make archive
-      - name: Distclean
-        run: make distclean
-      - name: Configure x86
-        run: MSYSTEM=MINGW32 bash -l -c "./config.sh --platform win32 --enable-release"
-      - name: Build x86
-        run: MSYSTEM=MINGW32 bash -l -c "make"
-      - name: Test x86
-        run: MSYSTEM=MINGW32 bash -l -c "make test"
-      - name: Package x86 .zip
-        run: MSYSTEM=MINGW32 bash -l -c "make archive"
 
-  AArch64:
+  MSYS2-MINGW32:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Setup msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW32
+          update: true
+          install: >-
+            base-devel git p7zip
+            mingw-w64-i686-gcc      mingw-w64-i686-zlib        mingw-w64-i686-libpng
+            mingw-w64-i686-libogg   mingw-w64-i686-libvorbis   mingw-w64-i686-SDL2
+      - uses: actions/checkout@v2
+      - name: Configure x86
+        run: ./config.sh --platform win32 --enable-release
+      - name: Build x86
+        run: make
+      - name: Test x86
+        run: make test
+      - name: Package x86 .zip
+        run: make archive
+
+  AArch64-Switch:
     runs-on: ubuntu-latest
     container: devkitpro/devkita64
     steps:
@@ -87,7 +100,7 @@ jobs:
       - name: Package Switch .zip
         run: make archive
 
-  ARM:
+  ARM-3DS:
     runs-on: ubuntu-latest
     container: devkitpro/devkitarm
     steps:
@@ -101,8 +114,15 @@ jobs:
         run: make
       - name: Package 3DS .zip
         run: make archive
-      - name: Distclean
-        run: make distclean
+
+  ARM-NDS:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
+      - run: echo "PATH=$DEVKITPRO/devkitARM/bin:$PATH" >> $GITHUB_ENV
+      - uses: actions/checkout@v2
       - name: Configure NDS
         run: arch/nds/CONFIG.NDS
       - name: Build NDS
@@ -110,7 +130,7 @@ jobs:
       - name: Package NDS .zip
         run: make archive
 
-  PowerPC:
+  PowerPC-Wii:
     runs-on: ubuntu-latest
     container: devkitpro/devkitppc
     steps:
@@ -124,8 +144,15 @@ jobs:
         run: make
       - name: Package Wii .zip
         run: make archive
-      - name: Distclean
-        run: make distclean
+
+  PowerPC-WiiU:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitppc
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
+      - run: echo "PATH=$DEVKITPRO/devkitPPC/bin:$PATH" >> $GITHUB_ENV
+      - uses: actions/checkout@v2
       - name: Configure Wii U
         run: arch/wiiu/CONFIG.WIIU
       - name: Build Wii U
