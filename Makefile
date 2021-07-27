@@ -229,9 +229,6 @@ CFLAGS   += ${OPTIMIZE_CFLAGS} -DNDEBUG
 CXXFLAGS += ${OPTIMIZE_CFLAGS} -DNDEBUG
 endif
 
-CFLAGS   += -Wundef -Wunused-macros -Wpointer-arith -Wwrite-strings -Wmissing-declarations
-CXXFLAGS += -Wundef -Wunused-macros -Wpointer-arith -Wwrite-strings -Wmissing-declarations
-
 #
 # Enable C++11 for compilers that support it.
 # Anything actually using C++11 should be optional or platform-specific,
@@ -247,15 +244,29 @@ endif
 # Always generate debug information; this may end up being
 # stripped (on embedded platforms) or objcopy'ed out.
 #
-CFLAGS   += -g -W -Wall -Wno-unused-parameter -std=gnu99
-CFLAGS   += -Wdeclaration-after-statement ${ARCH_CFLAGS}
-CXXFLAGS += -g -W -Wall -Wno-unused-parameter ${CXX_STD}
-CXXFLAGS += -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
+CFLAGS   += -std=gnu99 -g ${ARCH_CFLAGS}
+CXXFLAGS += ${CXX_STD} -g -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
+
+#
+# Default warnings.
+# Note: -Wstrict-prototypes was previously turned off for Android/NDS/Wii/PSP.
+#
+warnings := -Wall -Wextra -Wno-unused-parameter -Wwrite-strings
+warnings += -Wundef -Wunused-macros -Wpointer-arith
+CFLAGS   += ${warnings} -Wdeclaration-after-statement -Wmissing-prototypes -Wstrict-prototypes
+CXXFLAGS += ${warnings}
 
 #
 # Optional compile flags.
 #
+
+#
+# Warn against global functions defined without a previous declaration (C++).
+#
+ifeq (${HAS_W_MISSING_DECLARATIONS_CXX},1)
+CXXFLAGS += -Wmissing-declarations
+endif
 
 #
 # Warn against variable-length array (VLA) usage, which is technically valid

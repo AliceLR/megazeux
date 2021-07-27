@@ -163,13 +163,13 @@ static const char USAGE_EXAMPLES[] =
 "    intensities >=160 as white.\n"
 "\n";
 
-static void Usage()
+static void Usage(void)
 {
   fprintf(stderr, USAGE);
   fprintf(stderr, "Type \"ccv -help\" for extended options information\n");
 }
 
-static void Help()
+static void Help(void)
 {
   fprintf(stderr, USAGE);
   fprintf(stderr, USAGE_DESC);
@@ -293,7 +293,7 @@ typedef struct
   char dither[256];
 } Config;
 
-static Config *DefaultConfig()
+static Config *DefaultConfig(void)
 {
   Config *cfg = cmalloc(sizeof(Config));
   cfg->files = NULL;

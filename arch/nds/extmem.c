@@ -110,13 +110,13 @@ static void nds_ext_free(void *mem)
       mspace_free(nds_mspace[i], mem);
 }
 
-static void nds_ext_unlock()
+static void nds_ext_unlock(void)
 {
   if(nds_mspace_def[MSPACE_SLOT_2].start != 0)
     ram_unlock();
 }
 
-static void nds_ext_lock()
+static void nds_ext_lock(void)
 {
   if(nds_mspace_def[MSPACE_SLOT_2].start != 0)
     ram_lock();

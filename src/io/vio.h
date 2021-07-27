@@ -33,7 +33,7 @@ __M_BEGIN_DECLS
 enum vfileflags
 {
   V_SMALL_BUFFER = (1<<29), // setvbuf <= 256 for real files in binary mode.
-  V_LARGE_BUFFER = (1<<30), // setvbuf >= 8192 for real files in binary mode.
+  V_LARGE_BUFFER = (1<<30)  // setvbuf >= 8192 for real files in binary mode.
 };
 
 UTILS_LIBSPEC vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
