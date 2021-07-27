@@ -30,8 +30,8 @@ network_obj = src/network/.build
 
 core_flags   += -ffast-math -funsigned-char
 core_flags   += -Wmissing-format-attribute
-core_cflags  += ${CFLAGS} -Wmissing-prototypes
-core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
+core_cflags  += ${CFLAGS}
+core_cxxflags = ${CXXFLAGS}
 
 ifneq (${PLATFORM},emscripten)
 core_flags   += -I${PREFIX}/include
@@ -135,20 +135,6 @@ core_cobjs := \
 # to build the main binary. Currently there are only optional sources.
 #
 core_cxxobjs :=
-
-#
-# Hack to avoid silly warnings from devkitPro headers
-#
-ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_PSP}),)
-core_cflags += -Wstrict-prototypes
-endif
-
-#
-# Hack to avoid silly warnings from Android headers
-#
-ifeq (${PLATFORM},android)
-core_cflags += -Wno-strict-prototypes
-endif
 
 #
 # These are really just hacks and should be moved elsewhere
@@ -277,7 +263,7 @@ core_cobjs := ${core_obj}/render_layer.o ${core_cobjs}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
-core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
+core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug -DHAVE_INTTYPES_H
 core_cxxobjs += ${audio_obj}/audio_modplug.o ${libmodplug_objs}
 endif
 
