@@ -253,13 +253,20 @@ LDFLAGS  += ${ARCH_LDFLAGS}
 # Note: -Wstrict-prototypes was previously turned off for Android/NDS/Wii/PSP.
 #
 warnings := -Wall -Wextra -Wno-unused-parameter -Wwrite-strings
-warnings += -Wundef -Wunused-macros -Wpointer-arith -Wmissing-declarations
+warnings += -Wundef -Wunused-macros -Wpointer-arith
 CFLAGS   += ${warnings} -Wdeclaration-after-statement -Wmissing-prototypes -Wstrict-prototypes
 CXXFLAGS += ${warnings}
 
 #
 # Optional compile flags.
 #
+
+#
+# Warn against global functions defined without a previous declaration (C++).
+#
+ifeq (${HAS_W_MISSING_DECLARATIONS_CXX},1)
+CXXFLAGS += -Wmissing-declarations
+endif
 
 #
 # Warn against variable-length array (VLA) usage, which is technically valid

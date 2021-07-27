@@ -77,6 +77,7 @@ endif
 
 GCC_VER_GE_4_3   := ${shell test ${GCC_VER} -ge 40300; echo $$?}
 ifeq (${GCC_VER_GE_4_3},0)
+HAS_W_MISSING_DECLARATIONS_CXX ?= 1
 HAS_W_VLA ?= 1
 endif
 endif
