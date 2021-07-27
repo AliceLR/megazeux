@@ -35,13 +35,6 @@
 #define MAX_PATH 512
 #endif
 
-// FIXME: Fix this better
-int error(const char *string, unsigned int type, unsigned int options,
- unsigned int code)
-{
-  return 0;
-}
-
 int main(int argc, char **argv)
 {
   FILE *fp;

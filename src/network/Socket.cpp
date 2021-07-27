@@ -458,7 +458,7 @@ boolean Socket::is_last_error_fatal(void)
  * as a workaround, use Win32 functions instead (these should be safe back to
  * Windows 95).
  */
-void winsock_perror(const char *message, int code)
+static void winsock_perror(const char *message, int code)
 {
   LPSTR err_message = NULL;
 

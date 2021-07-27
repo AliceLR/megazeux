@@ -697,7 +697,7 @@ namespace Unit
   }
 }
 
-void sigabrt_handler(int signal)
+static void sigabrt_handler(int signal)
 {
   if(signal == SIGABRT)
   {

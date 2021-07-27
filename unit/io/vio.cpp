@@ -767,7 +767,7 @@ UNITTEST(Filesystem)
     t = getcwd(buffer2, arraysize(buffer2));
     ASSERTEQ(t, buffer2, "");
     size_t len = strlen(buffer2);
-    ASSERT(len < arraysize(buffer), "");
+    ASSERT(len < sizeof(buffer), "");
     ASSERTMEM(buffer, buffer2, len, "");
   }
 

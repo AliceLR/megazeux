@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <new>
 
+extern "C" CORE_LIBSPEC void __cxa_pure_virtual();
 extern "C" CORE_LIBSPEC void __cxa_pure_virtual()
 {
   fprintf(mzxerr, "Attempted to call pure virtual function! Aborting!\n");
@@ -37,6 +38,7 @@ extern "C" CORE_LIBSPEC void __cxa_pure_virtual()
   exit(1);
 }
 
+extern "C" CORE_LIBSPEC void __cxa_deleted_virtual();
 extern "C" CORE_LIBSPEC void __cxa_deleted_virtual()
 {
   fprintf(mzxerr, "Attempted to call deleted virtual function! Aborting!\n");

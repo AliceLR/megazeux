@@ -192,7 +192,7 @@ UNITTEST(ManifestEntry)
   }
 }
 
-void test_manifest(const Manifest &m, const char *comment)
+static void test_manifest(const Manifest &m, const char *comment)
 {
   const ManifestEntry *e = m.first();
   for(const manifestdata &f : filedata)
