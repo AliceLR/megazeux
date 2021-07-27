@@ -415,6 +415,10 @@ endif
 # external libraries for MinGW and (particularly) Android builds.
 #
 ifneq (${core_cxxobjs},)
+# Exception: force C++ linking when building against sanitizers.
+ifneq (${SANITIZER},)
+LINK_CC := ${CXX}
+endif
 ifneq (${LINK_CC},${CXX})
 core_cxxobjs := ${core_obj}/nostdc++.o ${core_cxxobjs}
 endif

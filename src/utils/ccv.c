@@ -189,6 +189,7 @@ static void Error(const char *string, ...)
   exit(1);
 }
 
+/*
 static inline int lc_strcmp(const char *A, const char *B)
 {
   const char *a = A;
@@ -204,6 +205,8 @@ static inline int lc_strcmp(const char *A, const char *B)
     b++;
   }
 }
+*/
+
 static inline int lc_strncmp(const char *A, const char *B, int n)
 {
   const char *a = A;
@@ -231,6 +234,7 @@ static inline void file_write32(int val, FILE *fp)
   fputc((val >> 24) & 0xFF, fp);
 }
 
+/*
 static inline int file_read32(FILE *fp)
 {
   unsigned int r = 0;
@@ -240,6 +244,7 @@ static inline int file_read32(FILE *fp)
   r |= fgetc(fp) << 24;
   return r;
 }
+*/
 
 static inline void file_write16(int val, FILE *fp)
 {
@@ -247,6 +252,7 @@ static inline void file_write16(int val, FILE *fp)
   fputc((val >> 8) & 0xFF, fp);
 }
 
+/*
 static inline int file_read16(FILE *fp)
 {
   unsigned int r = 0;
@@ -254,6 +260,7 @@ static inline int file_read16(FILE *fp)
   r |= fgetc(fp) << 8;
   return r;
 }
+*/
 
 typedef struct
 {
