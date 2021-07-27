@@ -83,11 +83,13 @@ endif
 DEBUG_CFLAGS ?= -O0
 
 #
+# Use DEBUG_CFLAGS to override any optimization flags in the global flags.
 # Build without -DDEBUG to suppress debug messages,
 # build without -DNDEBUG to allow assert().
+# Turn on exceptions explicitly, since the global CXXFLAGS turn them off.
 #
-unit_cflags ?= ${DEBUG_CFLAGS} -g \
- -Wall -Wextra -pedantic -Wno-unused-parameter -funsigned-char -fno-rtti -std=gnu++11
+unit_cflags ?= ${CXXFLAGS} ${DEBUG_CFLAGS} -UDEBUG -UNDEBUG
+unit_cflags += -fexceptions -funsigned-char -std=gnu++11
 
 unit_cflags += ${SDL_CFLAGS} -Umain
 unit_ldflags +=

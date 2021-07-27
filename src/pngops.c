@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef NEED_PNG_WRITE_SCREEN
+
 int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
  const char *name)
 {
@@ -162,6 +164,8 @@ exit_close:
 exit_out:
   return ret;
 }
+
+#endif /* NEED_PNG_WRITE_SCREEN */
 
 #ifdef NEED_PNG_READ_FILE
 

@@ -708,7 +708,7 @@ struct event_cb_data
   int call_count;
 };
 
-boolean event_callback(void *priv, subcontext *sub, enum intake_event_type type,
+static boolean event_callback(void *priv, subcontext *sub, enum intake_event_type type,
  int old_pos, int new_pos, int value, const char *data)
 {
   struct intake_subcontext *intk = reinterpret_cast<struct intake_subcontext *>(sub);
