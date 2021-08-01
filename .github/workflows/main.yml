@@ -4,6 +4,7 @@ env:
   MZXDEPS_DEBIAN_SDL2:  "zlib1g-dev libpng-dev libogg-dev libvorbis-dev libsdl2-dev"
   MZXDEPS_DEBIAN_SDL1:  "zlib1g-dev libpng-dev libogg-dev libvorbis-dev libsdl1.2-dev"
   MZXDEPS_DEBIAN_CROSS: "p7zip-full"
+  MZX_MAKE:             "make -j4"
 
 on:
   push:
@@ -26,9 +27,9 @@ jobs:
       - name: Configure
         run: ./config.sh --platform unix --enable-release
       - name: Build
-        run: make
+        run: $MZX_MAKE
       - name: Run tests
-        run: make test
+        run: $MZX_MAKE test
       - name: Package source .tar.xz
         run: make source
   # TODO ;-(
@@ -54,9 +55,9 @@ jobs:
       - name: Configure x64
         run: ./config.sh --platform win64 --enable-release
       - name: Build x64
-        run: make
+        run: $MZX_MAKE
       - name: Test x64
-        run: make test
+        run: $MZX_MAKE test
       - name: Package x64 .zip
         run: make archive
 
@@ -79,9 +80,9 @@ jobs:
       - name: Configure x86
         run: ./config.sh --platform win32 --enable-release
       - name: Build x86
-        run: make
+        run: $MZX_MAKE
       - name: Test x86
-        run: make test
+        run: $MZX_MAKE test
       - name: Package x86 .zip
         run: make archive
 
@@ -96,7 +97,7 @@ jobs:
       - name: Configure Switch
         run: arch/switch/CONFIG.SWITCH
       - name: Build Switch
-        run: make
+        run: $MZX_MAKE
       - name: Package Switch .zip
         run: make archive
 
@@ -111,7 +112,7 @@ jobs:
       - name: Configure 3DS
         run: arch/3ds/CONFIG.3DS
       - name: Build 3DS
-        run: make
+        run: $MZX_MAKE
       - name: Package 3DS .zip
         run: make archive
 
@@ -126,7 +127,7 @@ jobs:
       - name: Configure NDS
         run: arch/nds/CONFIG.NDS
       - name: Build NDS
-        run: make
+        run: $MZX_MAKE
       - name: Package NDS .zip
         run: make archive
 
@@ -141,7 +142,7 @@ jobs:
       - name: Configure Wii
         run: arch/wii/CONFIG.WII
       - name: Build Wii
-        run: make
+        run: $MZX_MAKE
       - name: Package Wii .zip
         run: make archive
 
@@ -156,7 +157,7 @@ jobs:
       - name: Configure Wii U
         run: arch/wiiu/CONFIG.WIIU
       - name: Build Wii U
-        run: make
+        run: $MZX_MAKE
       - name: Package Wii U .zip
         run: make archive
 
@@ -172,9 +173,9 @@ jobs:
       - name: Configure
         run: ./config.sh --platform unix-devel --enable-release --disable-libsdl2
       - name: Build
-        run: make
+        run: $MZX_MAKE
       - name: Run tests
-        run: make test
+        run: $MZX_MAKE test
 
   #
   # Sanitizers.
@@ -191,9 +192,9 @@ jobs:
       - name: Configure
         run: ./config.sh --platform unix-devel --enable-asan
       - name: Build
-        run: make
+        run: $MZX_MAKE
       - name: Run tests
-        run: make test
+        run: $MZX_MAKE test
 
   UndefinedBehaviorSanitizer:
     runs-on: ubuntu-latest
@@ -208,6 +209,6 @@ jobs:
       - name: Configure
         run: ./config.sh --platform unix-devel --enable-ubsan
       - name: Build
-        run: make
+        run: $MZX_MAKE
       - name: Run tests
-        run: make test
+        run: $MZX_MAKE test
