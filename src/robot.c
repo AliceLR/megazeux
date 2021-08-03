@@ -615,8 +615,9 @@ static void save_robot_to_memory(struct robot *cur_robot,
  struct memfile *mf, int savegame, int file_version)
 {
   struct memfile prop;
+  size_t len = strlen(cur_robot->robot_name);
 
-  save_prop_s(RPROP_ROBOT_NAME, cur_robot->robot_name, ROBOT_NAME_SIZE, 1, mf);
+  save_prop_s(RPROP_ROBOT_NAME, cur_robot->robot_name, len, 1, mf);
   save_prop_c(RPROP_ROBOT_CHAR, cur_robot->robot_char, mf);
   save_prop_w(RPROP_XPOS, cur_robot->xpos, mf);
   save_prop_w(RPROP_YPOS, cur_robot->ypos, mf);
@@ -792,16 +793,17 @@ void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
 {
   char buffer[SENSOR_PROPS_SIZE];
   struct memfile mf;
+  size_t len;
 
   if(cur_sensor->used)
   {
     mfopen(buffer, SENSOR_PROPS_SIZE, &mf);
 
-    save_prop_s(SENPROP_SENSOR_NAME, cur_sensor->sensor_name,
-     ROBOT_NAME_SIZE, 1, &mf);
+    len = strlen(cur_sensor->sensor_name);
+    save_prop_s(SENPROP_SENSOR_NAME, cur_sensor->sensor_name, len, 1, &mf);
     save_prop_c(SENPROP_SENSOR_CHAR, cur_sensor->sensor_char, &mf);
-    save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg,
-     ROBOT_NAME_SIZE, 1, &mf);
+    len = strlen(cur_sensor->robot_to_mesg);
+    save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg, len, 1, &mf);
     save_prop_eof(&mf);
 
     zip_write_file(zp, name, buffer, SENSOR_PROPS_SIZE, ZIP_M_NONE);
