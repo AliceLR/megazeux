@@ -256,7 +256,7 @@ static inline int save_world_info(struct world *mzx_world,
   struct memfile _prop;
   struct memfile *mf = &_mf;
   struct memfile *prop = &_prop;
-  int size;
+  size_t size;
   int i;
 
   int result;
@@ -271,7 +271,8 @@ static inline int save_world_info(struct world *mzx_world,
   // Save everything sorted.
 
   // Header redundant properties
-  save_prop_s(WPROP_WORLD_NAME, mzx_world->name, BOARD_NAME_SIZE, 1, mf);
+  size = strlen(mzx_world->name);
+  save_prop_s(WPROP_WORLD_NAME, mzx_world->name, size, 1, mf);
   save_prop_w(WPROP_FILE_VERSION, file_version, mf);
 
   if(savegame)
@@ -332,7 +333,7 @@ static inline int save_world_info(struct world *mzx_world,
   if(savegame)
   {
     // Save properties
-    size = strlen(mzx_world->real_mod_playing) + 1;
+    size = strlen(mzx_world->real_mod_playing);
     save_prop_s(WPROP_REAL_MOD_PLAYING, mzx_world->real_mod_playing, size, 1, mf);
 
     save_prop_c(WPROP_MZX_SPEED,        mzx_world->mzx_speed, mf);
@@ -373,12 +374,12 @@ static inline int save_world_info(struct world *mzx_world,
     save_prop_c(WPROP_BI_MESG_STATUS,   mzx_world->bi_mesg_status, mf);
     save_prop_c(WPROP_FADED,            get_fade_status(), mf);
 
-    size = strlen(mzx_world->input_file_name) + 1;
+    size = strlen(mzx_world->input_file_name);
     save_prop_s(WPROP_INPUT_FILE_NAME,  mzx_world->input_file_name, size, 1, mf);
     save_prop_d(WPROP_INPUT_POS,        mzx_world->temp_input_pos, mf);
     save_prop_d(WPROP_FREAD_DELIMITER,  mzx_world->fread_delimiter, mf);
 
-    size = strlen(mzx_world->output_file_name) + 1;
+    size = strlen(mzx_world->output_file_name);
     save_prop_s(WPROP_OUTPUT_FILE_NAME, mzx_world->output_file_name, size, 1, mf);
     save_prop_d(WPROP_OUTPUT_POS,       mzx_world->temp_output_pos, mf);
     save_prop_d(WPROP_FWRITE_DELIMITER, mzx_world->fwrite_delimiter, mf);
@@ -1896,7 +1897,12 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   if(!savegame)
   {
     // World name
-    if(!vfwrite(mzx_world->name, BOARD_NAME_SIZE, 1, vf))
+    // This array is fixed size, so make sure it's zero padded. Previous
+    // versions could save bits of other world titles in the header.
+    char name[BOARD_NAME_SIZE] = { 0 };
+    snprintf(name, BOARD_NAME_SIZE, "%s", mzx_world->name);
+
+    if(!vfwrite(name, BOARD_NAME_SIZE, 1, vf))
       goto err_close;
 
     // Protection method -- always zero

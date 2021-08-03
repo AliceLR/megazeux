@@ -44,7 +44,7 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
   int result;
 
   size_t size = BOARD_PROPS_SIZE;
-  int length;
+  size_t length;
 
   if(savegame)
     size += BOARD_SAVE_PROPS_SIZE;
@@ -53,7 +53,10 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
 
   mfopen(buffer, size, &mf);
 
-  save_prop_s(BPROP_BOARD_NAME, cur_board->board_name, BOARD_NAME_SIZE, 1, &mf);
+  // Note: hack to save null terminator while GIT worlds are still technically
+  // compatible with 2.92f. Remove at world version inc.
+  length = strlen(cur_board->board_name) /* FIXME */ + 1 /* FIXME */;
+  save_prop_s(BPROP_BOARD_NAME, cur_board->board_name, length, 1, &mf);
   save_prop_w(BPROP_BOARD_WIDTH, cur_board->board_width, &mf);
   save_prop_w(BPROP_BOARD_HEIGHT, cur_board->board_height, &mf);
   save_prop_c(BPROP_OVERLAY_MODE, cur_board->overlay_mode, &mf);
@@ -431,9 +434,9 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
       // Essential
       case BPROP_BOARD_NAME:
-        size = MIN(size, BOARD_NAME_SIZE);
+        size = MIN(size, BOARD_NAME_SIZE - 1);
         mfread(cur_board->board_name, size, 1, &prop);
-        cur_board->board_name[BOARD_NAME_SIZE - 1] = 0;
+        cur_board->board_name[size] = 0;
         break;
 
       case BPROP_BOARD_WIDTH:

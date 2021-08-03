@@ -61,6 +61,34 @@
 #include "../io/vio.h"
 #include "../io/zip.h"
 
+/**
+ * 2.93 downver TODO:
+ */
+
+/**
+ * Removal of explicit null terminators and junk data in some string fields.
+ *
+ * + Strings that need to be expanded to BOARD_NAME_SIZE and terminated:
+ *    WPROP_WORLD_NAME (NO loading termination pre-2.92d)
+ *    BPROP_BOARD_NAME (loading termination expects BOARD_NAME_SIZE input pre-2.93)
+ *    (FIXME: remove len+1 board name save hack when the version incs.)
+ *
+ * + Strings that need to be expanded to ROBOT_NAME_SIZE and terminated:
+ *    RPROP_ROBOT_NAME (NO loading termination pre-2.92d)
+ *    SENPROP_SENSOR_NAME (NO loading termination pre-2.92d)
+ *    SENPROP_ROBOT_TO_MESG (NO loading termination pre-2.92d)
+ *
+ * + Strings that, unbelievably, were safely terminated as far back as 2.90:
+ *    WPROP_REAL_MOD_PLAYING (loaded safely; saved with unneeded \0 pre-2.93)
+ *    WPROP_INPUT_FILE_NAME (loaded safely; saved with unneeded \0 pre-2.93)
+ *    WPROP_OUTPUT_FILE_NAME (loaded safely; saved with unneeded \0 pre-2.93)
+ *    BPROP_MOD_PLAYING (loaded safely)
+ *    BPROP_CHARSET_PATH (loaded safely)
+ *    BPROP_PALETTE_PATH (loaded safely)
+ *    BPROP_INPUT_STRING (loaded safely)
+ *    BPROP_BOTTOM_MESG (loaded safely)
+ */
+
 #define DOWNVER_VERSION "2.92"
 #define DOWNVER_EXT ".291"
 
