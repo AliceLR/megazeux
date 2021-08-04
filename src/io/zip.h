@@ -152,7 +152,7 @@ struct zip_file_header
   uint32_t compressed_size;
   uint32_t uncompressed_size;
   uint32_t offset;
-  uint32_t mzx_prop_id;
+  uint32_t mzx_file_id;
   uint8_t mzx_board_id;
   uint8_t mzx_robot_id;
   uint16_t file_name_length;
@@ -244,7 +244,7 @@ UTILS_LIBSPEC enum zip_error zread(void *destBuf, size_t readLen,
 UTILS_LIBSPEC enum zip_error zip_get_next_name(struct zip_archive *zp,
  char *name, int name_buffer_size);
 
-UTILS_LIBSPEC enum zip_error zip_get_next_prop(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_get_next_mzx_file_id(struct zip_archive *zp,
  unsigned int *prop_id, unsigned int *board_id, unsigned int *robot_id);
 
 UTILS_LIBSPEC enum zip_error zip_get_next_method(struct zip_archive *zp,

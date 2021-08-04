@@ -627,7 +627,7 @@ static int load_mzm_common(struct world *mzx_world, struct memfile *mf,
             else
             {
               zp = zip_open_mem_read(mf->start, file_length);
-              assign_fprops(zp, 1);
+              world_assign_file_ids(zp, false);
             }
 
             // If we're loading a "runtime MZM" then it means that we're loading
@@ -693,7 +693,7 @@ static int load_mzm_common(struct world *mzx_world, struct memfile *mf,
               // Search the zip until a robot is found.
               else do
               {
-                result = zip_get_next_prop(zp, &file_id, NULL, &robot_id);
+                result = zip_get_next_mzx_file_id(zp, &file_id, NULL, &robot_id);
 
                 if(result != ZIP_SUCCESS)
                 {
@@ -705,7 +705,7 @@ static int load_mzm_common(struct world *mzx_world, struct memfile *mf,
                 }
                 else
 
-                if(file_id != FPROP_ROBOT || (int)robot_id < i)
+                if(file_id != FILE_ID_ROBOT || (int)robot_id < i)
                 {
                   // Not a robot or is a skipped robot
                   zip_skip_file(zp);

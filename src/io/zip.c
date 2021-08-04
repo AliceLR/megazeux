@@ -1032,9 +1032,10 @@ err_out:
 
 /**
  * Get the MZX properties of the next file in the archive.
+ * These fields need to be initialized externally; see world_format.h.
  */
-enum zip_error zip_get_next_prop(struct zip_archive *zp,
- unsigned int *prop_id, unsigned int *board_id, unsigned int *robot_id)
+enum zip_error zip_get_next_mzx_file_id(struct zip_archive *zp,
+ unsigned int *file_id, unsigned int *board_id, unsigned int *robot_id)
 {
   struct zip_file_header *fh;
   enum zip_error result;
@@ -1050,8 +1051,8 @@ enum zip_error zip_get_next_prop(struct zip_archive *zp,
 
   fh = zp->files[zp->pos];
 
-  if(prop_id)
-    *prop_id = fh->mzx_prop_id;
+  if(file_id)
+    *file_id = fh->mzx_file_id;
 
   if(board_id)
     *board_id = fh->mzx_board_id;
@@ -1063,7 +1064,7 @@ enum zip_error zip_get_next_prop(struct zip_archive *zp,
 
 err_out:
   if(result != ZIP_EOF)
-    zip_error("zip_get_next_prop", result);
+    zip_error("zip_get_next_file_id", result);
   return result;
 }
 

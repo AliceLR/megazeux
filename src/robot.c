@@ -423,7 +423,7 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
   unsigned int id;
   boolean is_stream = false;
 
-  zip_get_next_prop(zp, NULL, &board_id, &id);
+  zip_get_next_mzx_file_id(zp, NULL, &board_id, &id);
   zip_get_next_method(zp, &method);
 
   // We aren't saving or loading null robots.

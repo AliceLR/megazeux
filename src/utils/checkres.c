@@ -2753,7 +2753,7 @@ static enum status parse_sfx_file(struct memfile *mf, struct base_file *file)
 }
 
 static enum status parse_world(struct memfile *mf, struct base_file *file,
- int not_a_world)
+ boolean is_a_world)
 {
   struct zip_archive *zp = zip_open_mem_read(mf->start,
    mf->end - mf->start);
@@ -2774,16 +2774,16 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
     goto err_close;
   }
 
-  assign_fprops(zp, not_a_world);
+  world_assign_file_ids(zp, is_a_world);
 
-  while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, &board_id, &robot_id))
+  while(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &file_id, &board_id, &robot_id))
   {
     switch(file_id)
     {
-      case FPROP_WORLD_GLOBAL_ROBOT:
-      case FPROP_BOARD_INFO:
-      case FPROP_ROBOT:
-      case FPROP_WORLD_SFX:
+      case FILE_ID_WORLD_GLOBAL_ROBOT:
+      case FILE_ID_BOARD_INFO:
+      case FILE_ID_ROBOT:
+      case FILE_ID_WORLD_SFX:
       {
         zip_get_next_uncompressed_size(zp, &actual_size);
         if(allocated_size < actual_size)
@@ -2795,27 +2795,27 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
         zip_read_file(zp, buffer, actual_size, &actual_size);
         mfopen(buffer, actual_size, &buf_file);
 
-        if(file_id == FPROP_BOARD_INFO)
+        if(file_id == FILE_ID_BOARD_INFO)
         {
           trace("Board %u\n", board_id);
           ret = parse_board_info(&buf_file, file, (int)board_id);
         }
         else
 
-        if(file_id == FPROP_ROBOT)
+        if(file_id == FILE_ID_ROBOT)
         {
           ret = parse_robot_info(&buf_file, file, (int)board_id, (int)robot_id);
         }
         else
 
-        if(file_id == FPROP_WORLD_GLOBAL_ROBOT)
+        if(file_id == FILE_ID_WORLD_GLOBAL_ROBOT)
         {
           trace("Global robot\n");
           ret = parse_robot_info(&buf_file, file, NO_BOARD, GLOBAL_ROBOT);
         }
         else
 
-        if(file_id == FPROP_WORLD_SFX)
+        if(file_id == FILE_ID_WORLD_SFX)
         {
           trace("SFX table\n");
           ret = parse_sfx_file(&buf_file, file);
@@ -2866,7 +2866,7 @@ static enum status parse_board_file(struct memfile *mf, struct base_file *file)
     return parse_legacy_board(mf, file, -1);
 
   if(file_version <= MZX_VERSION)
-    return parse_world(mf, file, 1);
+    return parse_world(mf, file, false);
 
   return MAGIC_CHECK_FAILED;
 }
@@ -2936,7 +2936,7 @@ static enum status parse_world_file(struct memfile *mf, struct base_file *file)
     return parse_legacy_world(mf, file, protection_method);
 
   if(file_version <= MZX_VERSION)
-    return parse_world(mf, file, 0);
+    return parse_world(mf, file, true);
 
   return MAGIC_CHECK_FAILED;
 }

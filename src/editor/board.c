@@ -109,14 +109,14 @@ static int find_first_board(struct zip_archive *zp)
 {
   unsigned int file_id;
 
-  assign_fprops(zp, 1);
+  world_assign_file_ids(zp, false);
 
   // The first file after sorting should be the board info for ID 0.
   // If it isn't, this isn't a board file.
 
-  if(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, NULL, NULL))
+  if(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &file_id, NULL, NULL))
   {
-    if(file_id == FPROP_BOARD_INFO)
+    if(file_id == FILE_ID_BOARD_INFO)
     {
       // Loading board ID 0:
       return 0;
