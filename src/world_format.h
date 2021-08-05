@@ -469,9 +469,15 @@ static inline int world_file_id_cmp(const void *a, const void *b)
   int bb = B->mzx_board_id;
   int af = A->mzx_file_id;
   int bf = B->mzx_file_id;
+  int ar = A->mzx_robot_id;
+  int br = B->mzx_robot_id;
+  uint32_t ao = A->offset;
+  uint32_t bo = B->offset;
 
-  return  (ab!=bb) ? (ab-bb) :
-          (af!=bf) ? (af-bf) : (int)A->mzx_robot_id - (int)B->mzx_robot_id;
+  return  (ab - bb) ? (ab - bb) :
+          (af - bf) ? (af - bf) :
+          (ar - br) ? (ar - br) :
+          (ao > bo) ? 1 : (ao < bo) ? -1 : 0;
 }
 
 static inline boolean compression_method_allowed(uint16_t method)
@@ -500,9 +506,9 @@ static inline void world_assign_file_ids_parse_board(const char *next, size_t le
 
   if(next[0])
   {
-    if(next[0] == 'r')
+    if(next[0] == 'r' || next[0] == 'R')
     {
-      robot_id = strtoul(next+1, NULL, 16);
+      robot_id = strtoul(next + 1, NULL, 16);
       if(robot_id != 0)
       {
         *_file_id = FILE_ID_ROBOT;
@@ -512,11 +518,11 @@ static inline void world_assign_file_ids_parse_board(const char *next, size_t le
     }
     else
 
-    if(next[0] == 's')
+    if(next[0] == 's' || next[0] == 'S')
     {
-      if(next[1] == 'c')
+      if(next[1] == 'c' || next[1] == 'C')
       {
-        robot_id = strtoul(next+2, NULL, 16);
+        robot_id = strtoul(next + 2, NULL, 16);
         if(robot_id != 0)
         {
           *_file_id = FILE_ID_SCROLL;
@@ -524,9 +530,9 @@ static inline void world_assign_file_ids_parse_board(const char *next, size_t le
       }
       else
 
-      if(next[1] == 'e')
+      if(next[1] == 'e' || next[1] == 'E')
       {
-        robot_id = strtoul(next+2, NULL, 16);
+        robot_id = strtoul(next + 2, NULL, 16);
         if(robot_id != 0)
         {
           *_file_id = FILE_ID_SENSOR;
@@ -569,11 +575,16 @@ static inline void world_assign_file_ids_parse_board(const char *next, size_t le
   {
     *_file_id = FILE_ID_BOARD_INFO;
   }
+  if(!*_file_id)
+    *_board_id = 0;
 }
 
 /**
  * Assign world file ID values to files in the world ZIP archive.
  * This needs to be done once before every single world, board, and MZM load.
+ *
+ * TODO: maybe count number of misordered files and files with no ID, do an
+ * insertion sort if it's low (<=log2(65536)=16) or no sort if there are none?
  */
 static inline void world_assign_file_ids(struct zip_archive *zp, boolean is_a_world)
 {
@@ -610,16 +621,16 @@ static inline void world_assign_file_ids(struct zip_archive *zp, boolean is_a_wo
       }
       else
 
-      if(next[0] == 'r')
+      if(next[0] == 'r' || next[0] == 'R')
       {
         // Shorthand for robot on board 0
         // Goes first to speed up MZM loads.
-        robot_id = strtoul(next+1, NULL, 16);
+        robot_id = strtoul(next + 1, NULL, 16);
         file_id = FILE_ID_ROBOT;
       }
       else
 
-      if(next[0] == 'b')
+      if(next[0] == 'b' || next[0] == 'B')
       {
         world_assign_file_ids_parse_board(next, len, &file_id, &board_id, &robot_id);
 
@@ -659,7 +670,7 @@ static inline void world_assign_file_ids(struct zip_archive *zp, boolean is_a_wo
       }
       else
 
-      if(next[0] == 'b')
+      if(next[0] == 'b' || next[0] == 'B')
       {
         world_assign_file_ids_parse_board(next, len, &file_id, &board_id, &robot_id);
       }
