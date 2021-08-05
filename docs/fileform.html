@@ -1893,7 +1893,7 @@ while(i < width * height)
         board, <code>b0A</code> for board 10, <code>bF9</code> for
         board 249 (the highest possible regular board number), and
         <code>bFF</code> for the special temporary board that may sometimes
-        exist in save files.
+        exist in save files. This number must be exactly two hex digits long.
       </p>
       <p>
         Extra storage data for robots, scrolls, and sensors is stored in separate
@@ -1902,6 +1902,11 @@ while(i < width * height)
         from <code>01</code> (for robot 1) to <code>FF</code> (for robot 255) are
         valid. The same applies for scrolls and sensors. The robot/scroll/sensor
         must exist on the board for its corresponding properties file to be valid.
+        These numbers must be exactly two hex digits long.
+      </p>
+      <p>
+        Filenames are case-insensitive. Prior to 2.93, they were case-sensitive
+        and had to be all lowercase (aside from board/object numbers).
       </p>
     </section>
 
