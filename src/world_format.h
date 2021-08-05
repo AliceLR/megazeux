@@ -717,8 +717,11 @@ static inline void world_assign_file_ids(struct zip_archive *zp, boolean is_a_wo
   zp->pos = 0;
 }
 
-// These functions are used to save properties files in world saving.
-// There are no safety checks here. USE THE BOUNDING MACROS WHEN ALLOCATING.
+/**
+ * These functions are used to save properties files in world saving. There
+ * are no safety checks aside from the debug asserts in the memfile functions.
+ * USE THE BOUNDING MACROS WHEN ALLOCATING.
+ */
 static inline void save_prop_eof(struct memfile *mf)
 {
   mfputw(0, mf);
@@ -756,6 +759,7 @@ static inline void save_prop_s(int ident, const void *src, size_t len,
 static inline void save_prop_v(int ident, size_t len, struct memfile *prop,
  struct memfile *mf)
 {
+  assert(mfhasspace(len, mf));
   mfputw(ident, mf);
   mfputd(len, mf);
   mfopen(mf->current, len, prop);
@@ -781,34 +785,34 @@ static inline int load_prop_int(int length, struct memfile *prop)
 }
 
 // This function is used to read properties files in world loading.
-static inline int next_prop(struct memfile *prop, int *ident, int *length,
+static inline boolean next_prop(struct memfile *prop, int *ident, int *length,
  struct memfile *mf)
 {
   unsigned char *end = mf->end;
   unsigned char *cur;
   int len;
 
-  if((end - mf->current)<PROP_HEADER_SIZE)
+  if((end - mf->current) < PROP_HEADER_SIZE)
   {
     prop->current = NULL;
-    return 0;
+    return false;
   }
 
   *ident = mfgetw(mf);
   len = mfgetd(mf);
   cur = mf->current;
 
-  if((end - cur)<len)
+  if((end - cur) < len)
   {
     prop->current = NULL;
-    return 0;
+    return false;
   }
 
   *length = len;
   mfopen(cur, len, prop);
 
   mf->current += len;
-  return 1;
+  return true;
 }
 
 __M_END_DECLS

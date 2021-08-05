@@ -138,27 +138,31 @@ int save_magic(const char magic_string[5])
     switch(magic_string[2])
     {
       case 'S':
+        if((magic_string[3] == 'A') && (magic_string[4] == 'V'))
+        {
+          return V100;
+        }
+        else
+
         if((magic_string[3] == 'V') && (magic_string[4] == '2'))
         {
           return V251;
         }
-        else if((magic_string[3] >= 2) && (magic_string[3] <= 10))
-        {
-          return((int)magic_string[3] << 8 ) + magic_string[4];
-        }
         else
+
+        if((magic_string[3] >= 2) && (magic_string[3] <= 10))
         {
-          return 0;
+          return ((int)magic_string[3] << 8) + magic_string[4];
         }
+        return 0;
+
       case 'X':
         if((magic_string[3] == 'S') && (magic_string[4] == 'A'))
         {
           return V251s1;
         }
-        else
-        {
-          return 0;
-        }
+        return 0;
+
       default:
         return 0;
     }

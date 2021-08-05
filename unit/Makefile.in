@@ -63,6 +63,7 @@ ifneq (${BUILD_MODULAR},)
 unit_objs += \
   ${unit_obj}/configure${unit_ext}     \
   ${unit_obj}/intake${unit_ext}        \
+  ${unit_obj}/world${unit_ext}         \
   ${unit_obj_io}/zip${unit_ext}
 
 unit_ldflags += -L. -lcore
