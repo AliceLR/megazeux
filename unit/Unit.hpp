@@ -78,12 +78,12 @@
 #include "../src/platform_endian.h"
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <csignal>
-#include <iostream>
-#include <sstream>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -263,6 +263,9 @@ static testname ## _unittest_inst;\
 \
 inline void testname ## _unittest_impl::run_impl(void)
 
+#define Uerr(...) do{ fprintf(stderr, "" __VA_ARGS__); }while(0)
+#define UerrFlush() do{ fflush(stderr); }while(0)
+
 namespace Unit
 {
   class unittest;
@@ -313,8 +316,8 @@ namespace Unit
       else
         reason = coalesce(nullptr);
 
-      set_operand(left, _left);
-      set_operand(right, _right);
+      has_values |= set_operand(left, _left);
+      has_values |= set_operand(right, _right);
     }
 
     template<class T, class E = std::enable_if<std::is_integral<T>::value>>
@@ -347,6 +350,8 @@ namespace Unit
 
   private:
 
+    char tmpbuf[32];
+
     void set_reason_fmt(const char *_reason_fmt, va_list vl)
     {
       char reasonbuf[1024];
@@ -357,31 +362,114 @@ namespace Unit
       has_reason = true;
     }
 
-    template<class T>
-    void set_operand(std::string &op, T _op)
+    boolean set_operand(std::string &op, std::nullptr_t _op)
     {
-      std::stringstream st;
-      st << coalesce(_op);
-      op = st.str();
-      has_values |= !std::is_same<T, std::nullptr_t>::value;
+      op = coalesce(_op);
+      return false;
     }
 
-    template<class T>
+    boolean set_operand(std::string &op, const char *_op)
+    {
+      op = coalesce(_op);
+      return true;
+    }
+
+    boolean set_operand(std::string &op, const void *_op)
+    {
+      sprintf(tmpbuf, "0x%08zx", reinterpret_cast<size_t>(_op));
+      op = tmpbuf;
+      return true;
+    }
+
+    boolean set_operand(std::string &op, uint8_t _op)
+    {
+      sprintf(tmpbuf, "%u", _op);
+      op = tmpbuf;
+      return true;
+    }
+
+    boolean set_operand(std::string &op, unsigned short _op)
+    {
+      sprintf(tmpbuf, "%u", _op);
+      op = tmpbuf;
+      return true;
+    }
+
+    boolean set_operand(std::string &op, unsigned int _op)
+    {
+      sprintf(tmpbuf, "%d", _op);
+      op = tmpbuf;
+      return true;
+    }
+
+    boolean set_operand(std::string &op, unsigned long _op)
+    {
+      sprintf(tmpbuf, "%lu", _op);
+      op = tmpbuf;
+      return true;
+    }
+
+    boolean set_operand(std::string &op, unsigned long long _op)
+    {
+      sprintf(tmpbuf, "%llu", _op);
+      op = tmpbuf;
+      return true;
+    }
+
+    boolean set_operand(std::string &op, int8_t _op)
+    {
+      sprintf(tmpbuf, "%d", _op);
+      op = tmpbuf;
+      return true;
+    }
+
+    boolean set_operand(std::string &op, short _op)
+    {
+      sprintf(tmpbuf, "%d", _op);
+      op = tmpbuf;
+      return true;
+    }
+
+    boolean set_operand(std::string &op, int _op)
+    {
+      sprintf(tmpbuf, "%d", _op);
+      op = tmpbuf;
+      return true;
+    }
+
+    boolean set_operand(std::string &op, long _op)
+    {
+      sprintf(tmpbuf, "%ld", _op);
+      op = tmpbuf;
+      return true;
+    }
+
+    boolean set_operand(std::string &op, long long _op)
+    {
+      sprintf(tmpbuf, "%lld", _op);
+      op = tmpbuf;
+      return true;
+    }
+
+    template<class T, class E = std::enable_if<std::is_integral<T>::value>>
     void set_operand_integral_ptr(std::string &op, const T *_op, size_t length)
     {
-      std::stringstream st;
-
       if(_op)
       {
-        st << std::hex;
+        size_t pos = 0;
+        op.resize(length * (sizeof(T) * 2 + 1));
 
         for(size_t i = 0; i < length; i++)
-          st << static_cast<uint64_t>(_op[i]) << ' ';
+        {
+          snprintf(tmpbuf, sizeof(tmpbuf), "%0*lx", (int)sizeof(T) * 2, (unsigned long)_op[i]);
+          for(size_t j = 0; j < sizeof(T) * 2; j++)
+            op[pos++] = tmpbuf[j];
+
+          op[pos++] = ' ';
+        }
       }
       else
-        st << coalesce(_op);
-
-      op = st.str();
+        op = coalesce(nullptr);
     }
   };
 
@@ -401,27 +489,26 @@ namespace Unit
     {
       if(!total)
       {
-        std::cerr << "ERROR: no tests defined!\n\n";
+        Uerr("ERROR: no tests defined!\n\n");
         return;
       }
 
       if(total == count && total == passed && !failed && !skipped)
       {
         // Print a shorter summary for the general case...
-        std::cerr << "Passed " << total << " "
-         << (total > 1 ? "tests" : "test") << ".\n";
-        std::cerr << std::endl;
+        Uerr("Passed %u test%s.\n\n", total, (total > 1) ? "s" : "");
+        UerrFlush();
         return;
       }
 
-      std::cerr << "\n"
-        "Summary:\n"
-        "  Tests total: " << total << "\n";
+      Uerr("\nSummary:\n  Tests total: %u\n", total);
 
-      if(passed)  std::cerr << "  Tests passed: " << passed << "\n";
-      if(failed)  std::cerr << "  Tests failed: " << failed << "\n";
-      if(skipped) std::cerr << "  Tests skipped: " << skipped << "\n";
-      std::cerr << std::endl;
+      if(passed)  Uerr("  Tests passed: %u\n", passed);
+      if(failed)  Uerr("  Tests failed: %u\n", failed);
+      if(skipped) Uerr("  Tests skipped: %u\n", skipped);
+
+      Uerr("\n");
+      UerrFlush();
     }
 
   public:
@@ -524,15 +611,17 @@ namespace Unit
       if(this->last_failed_section)
       {
         unsigned int passed = this->passed_sections();
-        std::cerr << "  Failed " << this->failed_sections << " section(s)";
+        Uerr("  Failed %u section(s)", this->failed_sections);
 
         if(this->skipped_sections)
         {
-          std::cerr << " (passed " << passed << ", skipped " <<
-           this->skipped_sections << ").\n";
+          Uerr(" (passed %u, skipped %u).\n", passed, this->skipped_sections);
         }
         else
-          std::cerr << " (passed " << passed << ").\n";
+          Uerr(" (passed %u).\n", passed);
+
+        Uerr("\n");
+        UerrFlush();
         return false;
       }
 
@@ -550,19 +639,21 @@ namespace Unit
       const char *_test_name = coalesce(test_name);
       unsigned int passed = this->passed_sections();
 
-      std::cerr << "Passed test '" << file_name << "::" << _test_name << "'";
+      Uerr("Passed test '%s::%s'", file_name, _test_name);
 
       if(num_sections > 0)
       {
-        std::cerr << " (" << passed << (passed > 1 ? " sections" : " section");
+        Uerr(" (%u section%s", passed, (passed > 1) ? "s" : "");
 
         if(this->skipped_sections)
-          std::cerr << ", " << this->skipped_sections << " skipped)\n";
+          Uerr(", %u skipped)\n", this->skipped_sections);
         else
-          std::cerr << ")\n";
+          Uerr(")\n");
       }
       else
-        std::cerr << "\n";
+        Uerr("\n");
+
+      UerrFlush();
     }
 
     inline void print_test_failed(void)
@@ -571,7 +662,7 @@ namespace Unit
       {
         const char *_test_name = coalesce(test_name);
 
-        std::cerr << "Failed test '" << file_name << "::" << _test_name << "'\n";
+        Uerr("Failed test '%s::%s'\n", file_name, _test_name);
         printed_failed = true;
       }
     }
@@ -579,15 +670,17 @@ namespace Unit
     inline void print_test_skipped(void)
     {
       const char *_test_name = coalesce(test_name);
-      std::cerr << "Skipping test '" << file_name << "::" << _test_name << "'";
+      Uerr("Skipping test '%s::%s'", file_name, _test_name);
 
       if(this->skipped_sections)
       {
-        std::cerr << " (" << this->skipped_sections <<
-         (this->skipped_sections > 0 ? " section)\n" : " sections)\n");
+        Uerr(" (%u section%s)\n", this->skipped_sections,
+         (this->skipped_sections > 0) ? "s" : "");
       }
       else
-        std::cerr << "\n";
+        Uerr("\n");
+
+      UerrFlush();
     }
 
     inline void signal_fail()
@@ -597,13 +690,11 @@ namespace Unit
 
       if(this->expected_section)
       {
-        std::cerr << "Test '" << file_name << "::"
-          << _test_name << "' aborted in section '"
-          << _section_name <<  "' (#" << this->expected_section
-          << " out of " << this->num_sections << ")\n";
+        Uerr("Test '%s::%s' aborted in section '%s' (#%u out of %u)\n",
+         file_name, _test_name, _section_name, this->expected_section, this->num_sections);
       }
       else
-        std::cerr << "Test '" << file_name << "::" << _test_name << "' aborted\n";
+        Uerr("Test '%s::%s' aborted\n", file_name, _test_name);
     }
 
     inline void print_exception(const Unit::exception &e)
@@ -617,29 +708,28 @@ namespace Unit
         if(this->last_failed_section < this->expected_section)
         {
           this->failed_sections++;
-          std::cerr << "  In section '" << _section_name << "': \n";
+          Uerr("  In section '%s': \n", _section_name);
           this->last_failed_section = this->expected_section;
         }
-        std::cerr <<
-         "    Assert failed at line " << e.line << ": " << e.test;
+        Uerr("    Assert failed at line %d: %s", e.line, e.test.c_str());
       }
       else
       {
-        std::cerr << "  Assert failed at line " << e.line << ": " << e.test;
+        Uerr("  Assert failed at line %d: %s", e.line, e.test.c_str());
         this->has_failed_main = true;
       }
 
       if(e.has_reason)
-        std::cerr << " (" << e.reason << ")\n";
+        Uerr(" (%s)\n", e.reason.c_str());
       else
-        std::cerr << "\n";
+        Uerr("\n");
 
       if(e.has_values)
       {
-        std::cerr
-          << "    Left:  " << e.left << "\n"
-          << "    Right: " << e.right << "\n";
+        Uerr("    Left:  %s\n", e.left.c_str());
+        Uerr("    Right: %s\n", e.right.c_str());
       }
+      UerrFlush();
     }
 
     void skip()
@@ -689,7 +779,7 @@ namespace Unit
     if(current_test)
       current_test->signal_fail();
     else
-      std::cerr << "ERROR: NULL test!\n";
+      Uerr("ERROR: NULL test!\n");
 
     failed++;
     skipped += total - count;
@@ -701,10 +791,10 @@ static void sigabrt_handler(int signal)
 {
   if(signal == SIGABRT)
   {
-    std::cerr << "Received SIGABRT: ";
+    Uerr("Received SIGABRT: ");
   }
   else
-    std::cerr << "Unexpected signal " << signal << " received: ";
+    Uerr("Unexpected signal %d received: ", signal);
 
   Unit::unittestrunner.signal_fail();
 }
