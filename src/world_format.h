@@ -738,6 +738,7 @@ static inline void save_prop_eof(struct memfile *mf)
   mfputw(0, mf);
 }
 
+// Write a (u)int8 property.
 static inline void save_prop_c(int ident, int value, struct memfile *mf)
 {
   mfputw(ident, mf);
@@ -745,6 +746,7 @@ static inline void save_prop_c(int ident, int value, struct memfile *mf)
   mfputc(value, mf);
 }
 
+// Write a (u)int16 property.
 static inline void save_prop_w(int ident, int value, struct memfile *mf)
 {
   mfputw(ident, mf);
@@ -752,6 +754,7 @@ static inline void save_prop_w(int ident, int value, struct memfile *mf)
   mfputw(value, mf);
 }
 
+// Write a (u)int32 property.
 static inline void save_prop_d(int ident, int value, struct memfile *mf)
 {
   mfputw(ident, mf);
@@ -759,7 +762,9 @@ static inline void save_prop_d(int ident, int value, struct memfile *mf)
   mfputd(value, mf);
 }
 
-static inline void save_prop_s(int ident, const void *src, size_t len,
+// Write an array property.
+// `src` should point to an array of `count` members of `len` length each.
+static inline void save_prop_a(int ident, const void *src, size_t len,
  size_t count, struct memfile *mf)
 {
   mfputw(ident, mf);
@@ -767,6 +772,23 @@ static inline void save_prop_s(int ident, const void *src, size_t len,
   mfwrite(src, len, count, mf);
 }
 
+// Write a null terminated string property.
+static inline void save_prop_s(int ident, const char *src, struct memfile *mf)
+{
+  save_prop_a(ident, src, strlen(src), 1, mf);
+}
+
+// Some string properties had questionable termination behavior in older
+// versions. This is a convenience macro that saves as a string for 2.93+ and
+// as a block array for <2.93 (to help with downver export).
+#define save_prop_s_293(ident, src, buffer_len, mf) do { \
+  if(file_version > V292) \
+    save_prop_s(ident, src, mf); \
+  else \
+    save_prop_a(ident, src, buffer_len, 1, mf); \
+} while(0)
+
+// Write an arbitrary-sized data property and return a memfile of it.
 static inline void save_prop_v(int ident, size_t len, struct memfile *prop,
  struct memfile *mf)
 {

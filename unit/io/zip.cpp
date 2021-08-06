@@ -1098,7 +1098,8 @@ UNITTEST(ZipWrite)
         result = zip_write_open_mem_stream(zp, &mf, df.filename);
         ASSERTEQ(result, ZIP_SUCCESS, "%s %s %zu", label, d.testname, j);
         int res = mfwrite(contents, df.uncompressed_size, 1, &mf);
-        ASSERTEQ(res, 1, "%s %s %zu", label, d.testname, j);
+        int expected = df.uncompressed_size != 0;
+        ASSERTEQ(res, expected, "%s %s %zu", label, d.testname, j);
         result = zip_write_close_mem_stream(zp, &mf);
         ASSERTEQ(result, ZIP_SUCCESS, "%s %s %zu", label, d.testname, j);
       }

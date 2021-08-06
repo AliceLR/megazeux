@@ -44,7 +44,6 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
   int result;
 
   size_t size = BOARD_PROPS_SIZE;
-  size_t length;
 
   if(savegame)
     size += BOARD_SAVE_PROPS_SIZE;
@@ -53,10 +52,7 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
 
   mfopen(buffer, size, &mf);
 
-  // Note: hack to save null terminator while GIT worlds are still technically
-  // compatible with 2.92f. Remove at world version inc.
-  length = strlen(cur_board->board_name) /* FIXME */ + 1 /* FIXME */;
-  save_prop_s(BPROP_BOARD_NAME, cur_board->board_name, length, 1, &mf);
+  save_prop_s_293(BPROP_BOARD_NAME, cur_board->board_name, BOARD_NAME_SIZE, &mf);
   save_prop_w(BPROP_BOARD_WIDTH, cur_board->board_width, &mf);
   save_prop_w(BPROP_BOARD_HEIGHT, cur_board->board_height, &mf);
   save_prop_c(BPROP_OVERLAY_MODE, cur_board->overlay_mode, &mf);
@@ -65,8 +61,7 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
   save_prop_c(BPROP_NUM_SENSORS, cur_board->num_sensors, &mf);
   save_prop_w(BPROP_FILE_VERSION, file_version, &mf);
 
-  length = strlen(cur_board->mod_playing);
-  save_prop_s(BPROP_MOD_PLAYING, cur_board->mod_playing, length, 1, &mf);
+  save_prop_s(BPROP_MOD_PLAYING, cur_board->mod_playing, &mf);
   save_prop_c(BPROP_VIEWPORT_X, cur_board->viewport_x, &mf);
   save_prop_c(BPROP_VIEWPORT_Y, cur_board->viewport_y, &mf);
   save_prop_c(BPROP_VIEWPORT_WIDTH, cur_board->viewport_width, &mf);
@@ -94,12 +89,10 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
   save_prop_c(BPROP_RESET_ON_ENTRY, cur_board->reset_on_entry, &mf);
 
   tmp = cur_board->charset_path ? cur_board->charset_path : "";
-  length = strlen(tmp);
-  save_prop_s(BPROP_CHARSET_PATH, tmp, length, 1, &mf);
+  save_prop_s(BPROP_CHARSET_PATH, tmp, &mf);
 
   tmp = cur_board->palette_path ? cur_board->palette_path : "";
-  length = strlen(tmp);
-  save_prop_s(BPROP_PALETTE_PATH, tmp, length, 1, &mf);
+  save_prop_s(BPROP_PALETTE_PATH, tmp, &mf);
 
   if(savegame)
   {
@@ -114,11 +107,9 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
     save_prop_d(BPROP_INPUT_SIZE, cur_board->input_size, &mf);
 
     tmp = cur_board->input_string ? cur_board->input_string : "";
-    length = strlen(tmp);
-    save_prop_s(BPROP_INPUT_STRING, tmp, length, 1, &mf);
+    save_prop_s(BPROP_INPUT_STRING, tmp, &mf);
 
-    length = strlen(cur_board->bottom_mesg);
-    save_prop_s(BRPOP_BOTTOM_MESG, cur_board->bottom_mesg, length, 1, &mf);
+    save_prop_s(BRPOP_BOTTOM_MESG, cur_board->bottom_mesg, &mf);
     save_prop_c(BPROP_BOTTOM_MESG_TIMER, cur_board->b_mesg_timer, &mf);
     save_prop_c(BPROP_BOTTOM_MESG_ROW, cur_board->b_mesg_row, &mf);
     save_prop_c(BPROP_BOTTOM_MESG_COL, cur_board->b_mesg_col, &mf);
@@ -222,7 +213,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
       if(cur_scroll)
       {
         sprintf(name+5, "%2.2X", (unsigned char) i);
-        save_scroll(cur_scroll, zp, name);
+        save_scroll(cur_scroll, zp, file_version, name);
       }
     }
   }
@@ -239,7 +230,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
       if(cur_sensor)
       {
         sprintf(name+5, "%2.2X", (unsigned char) i);
-        save_sensor(cur_sensor, zp, name);
+        save_sensor(cur_sensor, zp, file_version, name);
       }
     }
   }

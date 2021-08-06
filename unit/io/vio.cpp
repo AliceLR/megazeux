@@ -200,6 +200,15 @@ static void test_vfread(vfile *vf)
   ASSERTEQ(ret, len / 3, "vfread len x 3");
   // NOTE: seems to be implementation-defined whether this ends up
   // at 255 or 256, so don't bother testing that.
+
+  vrewind(vf);
+  ret = vfread(buffer, 0, len, vf);
+  ASSERTEQ(ret, 0, "vfread 0 x len");
+  ASSERTEQ(vftell(vf), 0, "vfread 0 x len");
+
+  ret = vfread(buffer, len, 0, vf);
+  ASSERTEQ(ret, 0, "vfread len x 0");
+  ASSERTEQ(vftell(vf), 0, "vfread len x 0");
 }
 
 static void test_write_check(vfile *vf)
@@ -270,6 +279,16 @@ static void test_vfwrite(vfile *vf)
   r = vfseek(vf, pos, SEEK_SET);
   ASSERTEQ(r, 0, "vfseek");
   test_write_check(vf);
+
+  pos = vftell(vf);
+
+  r = vfwrite(test_data, 0, 1, vf);
+  ASSERTEQ(r, 0, "vfwrite 0 x 1");
+  ASSERTEQ(vftell(vf), pos, "vfwrite 0 x 1");
+
+  r = vfwrite(test_data, 1, 0, vf);
+  ASSERTEQ(r, 0, "vfwrite 1 x 0");
+  ASSERTEQ(vftell(vf), pos, "vfwrite 1 x 0");
 }
 
 static void test_vfputs(vfile *vf)
