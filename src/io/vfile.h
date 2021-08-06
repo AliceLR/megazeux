@@ -18,7 +18,8 @@
  */
 
 /**
- * Types for vio.h (so it doesn't have to be included in world_struct.h).
+ * Types for vio.h and memfile.h so they don't have to be included in
+ * world_struct.h and other high-traffic headers.
  */
 
 #ifndef __IO_VFILE_H
@@ -29,6 +30,7 @@
 __M_BEGIN_DECLS
 
 typedef struct vfile vfile;
+struct memfile;
 struct stat;
 
 __M_END_DECLS

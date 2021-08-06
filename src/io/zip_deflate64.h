@@ -25,6 +25,7 @@
 __M_BEGIN_DECLS
 
 #include <assert.h>
+#include <stdlib.h>
 #include <zlib.h>
 
 // Not really how you're supposed to do this, oh well... :(

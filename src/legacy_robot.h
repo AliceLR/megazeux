@@ -27,7 +27,6 @@ __M_BEGIN_DECLS
 
 #include "const.h"
 #include "world_struct.h"
-#include "io/memfile.h"
 #include "io/vfile.h"
 
 struct robot *legacy_load_robot_allocate(struct world *mzx_world, vfile *vf,
