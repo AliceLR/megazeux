@@ -801,7 +801,7 @@ static inline boolean next_prop(struct memfile *prop, int *ident, int *length,
 {
   unsigned char *end = mf->end;
   unsigned char *cur;
-  int len;
+  unsigned int len;
 
   if((end - mf->current) < PROP_HEADER_SIZE)
   {
@@ -810,10 +810,10 @@ static inline boolean next_prop(struct memfile *prop, int *ident, int *length,
   }
 
   *ident = mfgetw(mf);
-  len = mfgetd(mf);
+  len = mfgetud(mf);
   cur = mf->current;
 
-  if((end - cur) < len)
+  if((size_t)(end - cur) < len)
   {
     prop->current = NULL;
     return false;

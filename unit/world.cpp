@@ -562,6 +562,16 @@ UNITTEST(Properties)
     mfopen(input, PROP_HEADER_SIZE + 2, &mf);
     ret = next_prop(&prop, &ident, &length, &mf);
     ASSERT(ret == false, "next_prop (truncated value)");
+
+    // Absurd length.
+    static const uint8_t input2[] =
+    {
+      0x01, 0x00, 0x00, 0x00, 0x00, 0x80, 'A', 'B', 'C', 'D', 'E',
+    };
+    mfopen(input2, sizeof(input2), &mf);
+    ret = next_prop(&prop, &ident, &length, &mf);
+    ASSERT(ret == false, "next_prop (large length)");
+    ASSERTEQ((size_t)mftell(&mf), PROP_HEADER_SIZE, "final pos (large length)");
   }
 
   SECTION(load_prop_int)
