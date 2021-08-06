@@ -29,6 +29,7 @@
 __M_BEGIN_DECLS
 
 #include <assert.h>
+#include <stdlib.h>
 #include <zlib.h>
 
 #include "zip.h"

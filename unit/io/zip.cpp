@@ -22,6 +22,7 @@
 #include "../Unit.hpp"
 
 #include "../../src/util.h"
+#include "../../src/io/memfile.h"
 #include "../../src/io/path.h"
 #include "../../src/io/zip.h"
 #include "../../src/io/zip_stream.h"

@@ -29,7 +29,6 @@ __M_BEGIN_DECLS
 // This needs to stay self-sufficient.
 // Don't use core features, don't extern anything.
 
-#include "memfile.h"
 #include "vfile.h"
 
 /**
