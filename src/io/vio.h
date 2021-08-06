@@ -24,7 +24,6 @@
 
 __M_BEGIN_DECLS
 
-#include "memfile.h"
 #include "vfile.h"
 
 #include <stdio.h>
@@ -46,6 +45,7 @@ vfile *vfile_init_mem_ext(void **external_buffer, size_t *external_buffer_size,
 UTILS_LIBSPEC vfile *vtempfile(size_t initial_size);
 UTILS_LIBSPEC int vfclose(vfile *vf);
 
+struct memfile;
 struct memfile *vfile_get_memfile(vfile *vf);
 
 UTILS_LIBSPEC int vchdir(const char *path);

@@ -751,15 +751,14 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
   default_board(cur_board);
 
-  while(ZIP_SUCCESS ==
-   zip_get_next_prop(zp, &file_id, &board_id_read, &robot_id_read))
+  while(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &file_id, &board_id_read, &robot_id_read))
   {
     if(board_id_read != board_id)
       break;
 
     switch(file_id)
     {
-      case FPROP_BOARD_INFO:
+      case FILE_ID_BOARD_INFO:
       {
         if(load_board_info(cur_board, zp, savegame, &file_version))
           goto err_invalid;
@@ -801,7 +800,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_BID:
+      case FILE_ID_BOARD_BID:
       {
         if(!has_base)
           goto err_invalid;
@@ -811,7 +810,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_BPR:
+      case FILE_ID_BOARD_BPR:
       {
         if(!has_base)
           goto err_invalid;
@@ -821,7 +820,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_BCO:
+      case FILE_ID_BOARD_BCO:
       {
         if(!has_base)
           goto err_invalid;
@@ -831,7 +830,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_UID:
+      case FILE_ID_BOARD_UID:
       {
         if(!has_base)
           goto err_invalid;
@@ -841,7 +840,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_UPR:
+      case FILE_ID_BOARD_UPR:
       {
         if(!has_base)
           goto err_invalid;
@@ -851,7 +850,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_UCO:
+      case FILE_ID_BOARD_UCO:
       {
         if(!has_base)
           goto err_invalid;
@@ -861,7 +860,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_OCH:
+      case FILE_ID_BOARD_OCH:
       {
         if(!has_base)
           goto err_invalid;
@@ -879,7 +878,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_OCO:
+      case FILE_ID_BOARD_OCO:
       {
         if(!has_base)
           goto err_invalid;
@@ -897,7 +896,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_ROBOT:
+      case FILE_ID_ROBOT:
       {
         if(!has_base)
           goto err_invalid;
@@ -920,7 +919,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_SCROLL:
+      case FILE_ID_SCROLL:
       {
         if(!has_base)
           goto err_invalid;
@@ -936,7 +935,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_SENSOR:
+      case FILE_ID_SENSOR:
       {
         if(!has_base)
           goto err_invalid;

@@ -97,7 +97,7 @@ static inline void mfsync(void **buf, size_t *len, struct memfile *mf)
  */
 static inline boolean mfhasspace(size_t len, struct memfile *mf)
 {
-  return mf->current ? (len + mf->current) <= mf->end : false;
+  return mf->current && mf->current < mf->end ? (size_t)(mf->end - mf->current) >= len : false;
 }
 
 /**

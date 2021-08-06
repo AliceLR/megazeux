@@ -346,7 +346,7 @@ static boolean append_world_zip(struct world *mzx_world, struct zip_archive *zp,
   {
     while(1)
     {
-      result = zip_get_next_prop(zp, &file_id, &board_id, NULL);
+      result = zip_get_next_mzx_file_id(zp, &file_id, &board_id, NULL);
 
       if(result != ZIP_SUCCESS)
       {
@@ -355,7 +355,7 @@ static boolean append_world_zip(struct world *mzx_world, struct zip_archive *zp,
       }
       else
 
-      if(file_id != FPROP_BOARD_INFO)
+      if(file_id != FILE_ID_BOARD_INFO)
       {
         zip_skip_file(zp);
         continue;

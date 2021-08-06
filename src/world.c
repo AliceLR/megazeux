@@ -138,27 +138,31 @@ int save_magic(const char magic_string[5])
     switch(magic_string[2])
     {
       case 'S':
+        if((magic_string[3] == 'A') && (magic_string[4] == 'V'))
+        {
+          return V100;
+        }
+        else
+
         if((magic_string[3] == 'V') && (magic_string[4] == '2'))
         {
           return V251;
         }
-        else if((magic_string[3] >= 2) && (magic_string[3] <= 10))
-        {
-          return((int)magic_string[3] << 8 ) + magic_string[4];
-        }
         else
+
+        if((magic_string[3] >= 2) && (magic_string[3] <= 10))
         {
-          return 0;
+          return ((int)magic_string[3] << 8) + magic_string[4];
         }
+        return 0;
+
       case 'X':
         if((magic_string[3] == 'S') && (magic_string[4] == 'A'))
         {
           return V251s1;
         }
-        else
-        {
-          return 0;
-        }
+        return 0;
+
       default:
         return 0;
     }
@@ -1750,17 +1754,18 @@ int load_counters_file(struct world *mzx_world, const char *file)
   if(!zp)
     goto err_close_zip;
 
-  assign_fprops(zp, 0);
+  // Treat this like a world file since this contains world file IDs...
+  world_assign_file_ids(zp, true);
 
-  while(ZIP_SUCCESS == zip_get_next_prop(zp, &prop_id, NULL, NULL))
+  while(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &prop_id, NULL, NULL))
   {
     switch(prop_id)
     {
-      case FPROP_WORLD_COUNTERS:
+      case FILE_ID_WORLD_COUNTERS:
         load_world_counters(mzx_world, zp);
         break;
 
-      case FPROP_WORLD_STRINGS:
+      case FILE_ID_WORLD_STRINGS:
         load_world_strings(mzx_world, zp);
         break;
 
@@ -1798,10 +1803,10 @@ static enum val_result validate_world_zip(struct world *mzx_world,
   int has_string = 0;
 
   // The directory has already been read by this point.
-  assign_fprops(zp, 0);
+  world_assign_file_ids(zp, true);
 
   // Step through the directory and make sure the mandatory files exist.
-  while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, NULL, NULL))
+  while(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &file_id, NULL, NULL))
   {
     // Can we stop early?
     if((!savegame && has_pal) || has_string)
@@ -1810,7 +1815,7 @@ static enum val_result validate_world_zip(struct world *mzx_world,
     switch(file_id)
     {
       // Everything needs this, no negotiations.
-      case FPROP_WORLD_INFO:
+      case FILE_ID_WORLD_INFO:
         result = validate_world_info(mzx_world, zp, savegame, file_version);
         if(result != VAL_SUCCESS)
           return result;
@@ -1819,34 +1824,34 @@ static enum val_result validate_world_zip(struct world *mzx_world,
         continue;
 
       // These are pretty much the bare minimum of what counts as a world
-      case FPROP_WORLD_CHARS:
+      case FILE_ID_WORLD_CHARS:
         has_chars = 1;
         break;
 
-      case FPROP_WORLD_PAL:
+      case FILE_ID_WORLD_PAL:
         has_pal = 1;
         break;
 
       // These are pretty much the bare minimum of what counts as a save
-      case FPROP_WORLD_COUNTERS:
+      case FILE_ID_WORLD_COUNTERS:
         has_counter = 1;
         break;
 
-      case FPROP_WORLD_STRINGS:
+      case FILE_ID_WORLD_STRINGS:
         has_string = 1;
         break;
 
-      // Mandatory, but we can recover from not having them.
-      case FPROP_WORLD_GLOBAL_ROBOT:
-      case FPROP_WORLD_PAL_INDEX:
-      case FPROP_WORLD_PAL_INTENSITY:
-      case FPROP_WORLD_VCO:
-      case FPROP_WORLD_VCH:
-      case FPROP_WORLD_SPRITES:
+      // These should exist, but can be replaced with defaults if missing.
+      case FILE_ID_WORLD_GLOBAL_ROBOT:
+      case FILE_ID_WORLD_PAL_INDEX:
+      case FILE_ID_WORLD_PAL_INTENSITY:
+      case FILE_ID_WORLD_VCO:
+      case FILE_ID_WORLD_VCH:
+      case FILE_ID_WORLD_SPRITES:
         break;
 
       // Completely optional.
-      case FPROP_WORLD_SFX:
+      case FILE_ID_WORLD_SFX:
         break;
 
       // Everything else: who knows
@@ -2027,18 +2032,18 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 
   // The directory has already been read by this point, and we're at the start.
 
-  while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, &board_id, NULL))
+  while(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &file_id, &board_id, NULL))
   {
     err = ZIP_SUCCESS;
 
     switch(file_id)
     {
-      case FPROP_NONE:
+      case FILE_ID_NONE:
       default:
         zip_skip_file(zp);
         break;
 
-      case FPROP_WORLD_INFO:
+      case FILE_ID_WORLD_INFO:
       {
         load_world_info(mzx_world, zp, savegame, &file_version, faded);
 
@@ -2051,60 +2056,60 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
         break;
       }
 
-      case FPROP_WORLD_GLOBAL_ROBOT:
+      case FILE_ID_WORLD_GLOBAL_ROBOT:
         err = load_world_global_robot(mzx_world, zp, savegame, file_version);
         loaded_global_robot = 1;
         break;
 
-      case FPROP_WORLD_SFX:
+      case FILE_ID_WORLD_SFX:
         err = load_world_sfx(mzx_world, zp);
         break;
 
-      case FPROP_WORLD_CHARS:
+      case FILE_ID_WORLD_CHARS:
         err = load_world_chars(mzx_world, zp, savegame);
         break;
 
-      case FPROP_WORLD_PAL:
+      case FILE_ID_WORLD_PAL:
         err = load_world_pal(mzx_world, zp);
         break;
 
-      case FPROP_WORLD_PAL_INDEX:
+      case FILE_ID_WORLD_PAL_INDEX:
         if_savegame_or_291
         err = load_world_pal_index(mzx_world, file_version, zp);
         break;
 
-      case FPROP_WORLD_PAL_INTENSITY:
+      case FILE_ID_WORLD_PAL_INTENSITY:
         if_savegame
         err = load_world_pal_inten(mzx_world, zp);
         break;
 
-      case FPROP_WORLD_VCO:
+      case FILE_ID_WORLD_VCO:
         if_savegame_or_291
         err = load_world_vco(mzx_world, zp);
         break;
 
-      case FPROP_WORLD_VCH:
+      case FILE_ID_WORLD_VCH:
         if_savegame_or_291
         err = load_world_vch(mzx_world, zp);
         break;
 
-      case FPROP_WORLD_SPRITES:
+      case FILE_ID_WORLD_SPRITES:
         if_savegame
         err = load_world_sprites(mzx_world, zp);
         break;
 
-      case FPROP_WORLD_COUNTERS:
+      case FILE_ID_WORLD_COUNTERS:
         if_savegame
         err = load_world_counters(mzx_world, zp);
         break;
 
-      case FPROP_WORLD_STRINGS:
+      case FILE_ID_WORLD_STRINGS:
         if_savegame
         err = load_world_strings(mzx_world, zp);
         break;
 
       // Defer to the board loader.
-      case FPROP_BOARD_INFO:
+      case FILE_ID_BOARD_INFO:
       {
         if((int)board_id < mzx_world->num_boards)
         {
@@ -2129,17 +2134,17 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
         break;
       }
 
-      case FPROP_BOARD_BID:
-      case FPROP_BOARD_BPR:
-      case FPROP_BOARD_BCO:
-      case FPROP_BOARD_UID:
-      case FPROP_BOARD_UPR:
-      case FPROP_BOARD_UCO:
-      case FPROP_BOARD_OCH:
-      case FPROP_BOARD_OCO:
-      case FPROP_ROBOT:
-      case FPROP_SCROLL:
-      case FPROP_SENSOR:
+      case FILE_ID_BOARD_BID:
+      case FILE_ID_BOARD_BPR:
+      case FILE_ID_BOARD_BCO:
+      case FILE_ID_BOARD_UID:
+      case FILE_ID_BOARD_UPR:
+      case FILE_ID_BOARD_UCO:
+      case FILE_ID_BOARD_OCH:
+      case FILE_ID_BOARD_OCO:
+      case FILE_ID_ROBOT:
+      case FILE_ID_SCROLL:
+      case FILE_ID_SENSOR:
         // Should never, ever encounter these here.
         zip_skip_file(zp);
         break;

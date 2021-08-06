@@ -34,349 +34,37 @@ __M_BEGIN_DECLS
 /* Files */
 /*********/
 
-enum file_prop
+enum world_file_id
 {
-  FPROP_NONE                      = 0x0000,
-  FPROP_WORLD_INFO                = 0x0001, // properties file
-  FPROP_WORLD_GLOBAL_ROBOT        = 0x0004, // properties file
-  FPROP_WORLD_SFX                 = 0x0007, // data, NUM_SFX * SFX_SIZE
-  FPROP_WORLD_CHARS               = 0x0008, // data, 3584*15
-  FPROP_WORLD_PAL                 = 0x0009, // data, SMZX_PAL_SIZE * 3
-  FPROP_WORLD_PAL_INDEX           = 0x000A, // data, 1024
-  FPROP_WORLD_VCO                 = 0x000C, // data
-  FPROP_WORLD_VCH                 = 0x000D, // data
-  FPROP_WORLD_PAL_INTENSITY       = 0x000E, // data, SMZX_PAL_SIZE * 1
+  FILE_ID_NONE                    = 0x0000,
+  FILE_ID_WORLD_INFO              = 0x0001, // properties file
+  FILE_ID_WORLD_GLOBAL_ROBOT      = 0x0004, // properties file
+  FILE_ID_WORLD_SFX               = 0x0007, // data, NUM_SFX * SFX_SIZE
+  FILE_ID_WORLD_CHARS             = 0x0008, // data, 3584*15
+  FILE_ID_WORLD_PAL               = 0x0009, // data, SMZX_PAL_SIZE * 3
+  FILE_ID_WORLD_PAL_INDEX         = 0x000A, // data, 1024
+  FILE_ID_WORLD_VCO               = 0x000C, // data
+  FILE_ID_WORLD_VCH               = 0x000D, // data
+  FILE_ID_WORLD_PAL_INTENSITY     = 0x000E, // data, SMZX_PAL_SIZE * 1
 
-  FPROP_WORLD_SPRITES             = 0x0080, // properties file
-  FPROP_WORLD_COUNTERS            = 0x0081, // counter format, use stream
-  FPROP_WORLD_STRINGS             = 0x0082, // string format, use stream
+  FILE_ID_WORLD_SPRITES           = 0x0080, // properties file
+  FILE_ID_WORLD_COUNTERS          = 0x0081, // counter format, use stream
+  FILE_ID_WORLD_STRINGS           = 0x0082, // string format, use stream
 
-  FPROP_BOARD_INFO                = 0x0100, // properties file (board_id)
-  FPROP_BOARD_BID                 = 0x0101, // data
-  FPROP_BOARD_BPR                 = 0x0102, // data
-  FPROP_BOARD_BCO                 = 0x0103, // data
-  FPROP_BOARD_UID                 = 0x0104, // data
-  FPROP_BOARD_UPR                 = 0x0105, // data
-  FPROP_BOARD_UCO                 = 0x0106, // data
-  FPROP_BOARD_OCH                 = 0x0107, // data
-  FPROP_BOARD_OCO                 = 0x0108, // data
+  FILE_ID_BOARD_INFO              = 0x0100, // properties file (board_id)
+  FILE_ID_BOARD_BID               = 0x0101, // data
+  FILE_ID_BOARD_BPR               = 0x0102, // data
+  FILE_ID_BOARD_BCO               = 0x0103, // data
+  FILE_ID_BOARD_UID               = 0x0104, // data
+  FILE_ID_BOARD_UPR               = 0x0105, // data
+  FILE_ID_BOARD_UCO               = 0x0106, // data
+  FILE_ID_BOARD_OCH               = 0x0107, // data
+  FILE_ID_BOARD_OCO               = 0x0108, // data
 
-  FPROP_ROBOT                     = 0x1000, // prop. file (board_id + robot_id)
-  FPROP_SCROLL                    = 0x2000, // prop. file (board_id + robot_id)
-  FPROP_SENSOR                    = 0x3000  // prop. file (board_id + robot_id)
+  FILE_ID_ROBOT                   = 0x1000, // prop. file (board_id + robot_id)
+  FILE_ID_SCROLL                  = 0x2000, // prop. file (board_id + robot_id)
+  FILE_ID_SENSOR                  = 0x3000  // prop. file (board_id + robot_id)
 };
-
-#define FPROP_MATCH(str) ((sizeof(str)-1 == len) && !strcmp(str, next))
-
-static inline int __fprop_cmp(const void *a, const void *b)
-{
-  struct zip_file_header *A = *(struct zip_file_header **)a;
-  struct zip_file_header *B = *(struct zip_file_header **)b;
-  int ab = A->mzx_board_id;
-  int bb = B->mzx_board_id;
-  int ap = A->mzx_prop_id;
-  int bp = B->mzx_prop_id;
-
-  return  (ab!=bb) ? (ab-bb) :
-          (ap!=bp) ? (ap-bp) : (int)A->mzx_robot_id - (int)B->mzx_robot_id;
-}
-
-static inline boolean compression_method_allowed(uint16_t method)
-{
-  // Only store and deflate are supported universally in all MZX builds;
-  // any other decompressors may be disabled for platforms that don't use them.
-  // Thus, any file in an MZX/etc that doesn't use store or deflate is invalid.
-  return (method == ZIP_M_NONE) || (method == ZIP_M_DEFLATE);
-}
-
-static inline void assign_fprops_parse_board(char *next, unsigned int *_file_id,
- unsigned int *_board_id, unsigned int *_robot_id)
-{
-  unsigned int robot_id = 0;
-  int len = strlen(next);
-  char temp = 0;
-
-  if(len > 3)
-  {
-    temp = next[3];
-    next[3] = 0;
-  }
-
-  *_board_id = strtoul(next+1, &next, 16);
-  next[0] = temp;
-
-  len = strlen(next);
-
-  if(next[0])
-  {
-    if(next[0] == 'r')
-    {
-      robot_id = strtoul(next+1, &next, 16);
-      if(robot_id != 0)
-      {
-        *_file_id = FPROP_ROBOT;
-      }
-
-      *_robot_id = robot_id;
-    }
-    else
-
-    if(next[0] == 's')
-    {
-      if(next[1] == 'c')
-      {
-        robot_id = strtoul(next+2, &next, 16);
-        if(robot_id != 0)
-        {
-          *_file_id = FPROP_SCROLL;
-        }
-      }
-      else
-
-      if(next[1] == 'e')
-      {
-        robot_id = strtoul(next+2, &next, 16);
-        if(robot_id != 0)
-        {
-          *_file_id = FPROP_SENSOR;
-        }
-      }
-
-      *_robot_id = robot_id;
-    }
-    else
-
-    if(FPROP_MATCH("bid"))
-    {
-      *_file_id = FPROP_BOARD_BID;
-    }
-    else
-
-    if(FPROP_MATCH("bpr"))
-    {
-      *_file_id = FPROP_BOARD_BPR;
-    }
-    else
-
-    if(FPROP_MATCH("bco"))
-    {
-      *_file_id = FPROP_BOARD_BCO;
-    }
-    else
-
-    if(FPROP_MATCH("uid"))
-    {
-      *_file_id = FPROP_BOARD_UID;
-    }
-    else
-
-    if(FPROP_MATCH("upr"))
-    {
-      *_file_id = FPROP_BOARD_UPR;
-    }
-    else
-
-    if(FPROP_MATCH("uco"))
-    {
-      *_file_id = FPROP_BOARD_UCO;
-    }
-    else
-
-    if(FPROP_MATCH("och"))
-    {
-      *_file_id = FPROP_BOARD_OCH;
-    }
-    else
-
-    if(FPROP_MATCH("oco"))
-    {
-      *_file_id = FPROP_BOARD_OCO;
-    }
-  }
-
-  else
-  {
-    *_file_id = FPROP_BOARD_INFO;
-  }
-}
-
-/* This needs to be done once before every single world, board, and MZM load. */
-
-static inline void assign_fprops(struct zip_archive *zp, int not_a_world)
-{
-  // Assign property IDs if they don't already exist
-  struct zip_file_header **fh_list = zp->files;
-  struct zip_file_header *fh;
-  int num_fh = zp->num_files;
-
-  unsigned int file_id;
-  unsigned int board_id;
-  unsigned int robot_id;
-  char *next;
-  int len;
-  int i;
-
-  // Special handling for non-worlds.
-  if(not_a_world)
-  {
-    board_id = 0;
-
-    for(i = 0; i < num_fh; i++)
-    {
-      fh = fh_list[i];
-      next = fh->file_name;
-      len = strlen(next);
-
-      file_id = 0;
-      robot_id = 0;
-
-      if(!compression_method_allowed(fh->method))
-      {
-        fh->mzx_prop_id = FPROP_NONE;
-        continue;
-      }
-      else
-
-      if(next[0] == 'r')
-      {
-        // Shorthand for robot on board 0
-        // Goes first to speed up MZM loads.
-        robot_id = strtoul(next+1, &next, 16);
-        file_id = FPROP_ROBOT;
-      }
-      else
-
-      if(next[0] == 'b')
-      {
-        assign_fprops_parse_board(next, &file_id, &board_id, &robot_id);
-
-        // Non-world files shouldn't boards > 0
-        if(board_id)
-        {
-          file_id = 0;
-          board_id = 0;
-          robot_id = 0;
-        }
-      }
-
-      // Set the properties
-      fh->mzx_prop_id = file_id;
-      fh->mzx_board_id = board_id;
-      fh->mzx_robot_id = robot_id;
-    }
-  }
-
-  // Regular world/save files.
-  else
-  {
-    for(i = 0; i < num_fh; i++)
-    {
-      fh = fh_list[i];
-      next = fh->file_name;
-      len = strlen(next);
-
-      file_id = 0;
-      board_id = 0;
-      robot_id = 0;
-
-      if(!compression_method_allowed(fh->method))
-      {
-        fh->mzx_prop_id = FPROP_NONE;
-        continue;
-      }
-      else
-
-      if(next[0] == 'b')
-      {
-        assign_fprops_parse_board(next, &file_id, &board_id, &robot_id);
-      }
-      else
-
-      if(!not_a_world)
-      {
-        if(FPROP_MATCH("world"))
-        {
-          file_id = FPROP_WORLD_INFO;
-        }
-        else
-
-        if(FPROP_MATCH("gr"))
-        {
-          file_id = FPROP_WORLD_GLOBAL_ROBOT;
-        }
-        else
-
-        if(FPROP_MATCH("sfx"))
-        {
-          file_id = FPROP_WORLD_SFX;
-        }
-        else
-
-        if(FPROP_MATCH("chars"))
-        {
-          file_id = FPROP_WORLD_CHARS;
-        }
-        else
-
-        if(FPROP_MATCH("pal"))
-        {
-          file_id = FPROP_WORLD_PAL;
-        }
-        else
-
-        if(FPROP_MATCH("palidx"))
-        {
-          file_id = FPROP_WORLD_PAL_INDEX;
-        }
-        else
-
-        if(FPROP_MATCH("palint"))
-        {
-          file_id = FPROP_WORLD_PAL_INTENSITY;
-        }
-        else
-
-        if(FPROP_MATCH("vco"))
-        {
-          file_id = FPROP_WORLD_VCO;
-        }
-        else
-
-        if(FPROP_MATCH("vch"))
-        {
-          file_id = FPROP_WORLD_VCH;
-        }
-        else
-
-        if(FPROP_MATCH("spr"))
-        {
-          file_id = FPROP_WORLD_SPRITES;
-        }
-        else
-
-        if(FPROP_MATCH("counter"))
-        {
-          file_id = FPROP_WORLD_COUNTERS;
-        }
-        else
-
-        if(FPROP_MATCH("string"))
-        {
-          file_id = FPROP_WORLD_STRINGS;
-        }
-      }
-
-      // Set the properties
-      fh->mzx_prop_id = file_id;
-      fh->mzx_board_id = board_id;
-      fh->mzx_robot_id = robot_id;
-    }
-  }
-
-  // Sort the archive and reset to the beginning
-  qsort(fh_list, num_fh, sizeof(struct zip_file_header *), __fprop_cmp);
-  zp->pos = 0;
-}
 
 
 /*******************/
@@ -728,8 +416,323 @@ enum sensor_prop
 };
 
 
-// These functions are used to save properties files in world saving.
-// There are no safety checks here. USE THE BOUNDING MACROS WHEN ALLOCATING.
+/**
+ * ZIP world format functions.
+ */
+
+/**
+ * To quickly match world filenames, they are converted to uint64_t. This
+ * works because no internal world format files use names longer than 8 chars
+ * and (hopefully) they won't ever need to. This seems to be a bit faster than
+ * strcmp et al. optimizations even for 32-bit.
+ */
+#define FILE_ID_VALUE(...) FILE_ID_8(__VA_ARGS__,'\0','\0','\0','\0','\0','\0','\0','\0')
+#define FILE_ID_8(a,b,c,d,e,f,g,h,...) \
+ (((uint64_t)a <<  0) | \
+  ((uint64_t)b <<  8) | \
+  ((uint64_t)c << 16) | \
+  ((uint64_t)d << 24) | \
+  ((uint64_t)e << 32) | \
+  ((uint64_t)f << 40) | \
+  ((uint64_t)g << 48) | \
+  ((uint64_t)h << 56))
+
+/**
+ * Since only ASCII values are ever valid IDs, double bit 6 to bit 5 as a
+ * cheap and tacky tolower replacement.
+ */
+#define FILE_ID_VALUE_TOLOWER(...) (FILE_ID_VALUE(__VA_ARGS__) | \
+ ((FILE_ID_VALUE(__VA_ARGS__) & (uint64_t)0x4040404040404040) >> 1))
+
+static inline uint64_t world_file_id_value(const char *filename, size_t len)
+{
+  const char *f = filename;
+  switch(len)
+  {
+    case 1: return FILE_ID_VALUE_TOLOWER(f[0]);
+    case 2: return FILE_ID_VALUE_TOLOWER(f[0],f[1]);
+    case 3: return FILE_ID_VALUE_TOLOWER(f[0],f[1],f[2]);
+    case 4: return FILE_ID_VALUE_TOLOWER(f[0],f[1],f[2],f[3]);
+    case 5: return FILE_ID_VALUE_TOLOWER(f[0],f[1],f[2],f[3],f[4]);
+    case 6: return FILE_ID_VALUE_TOLOWER(f[0],f[1],f[2],f[3],f[4],f[5]);
+    case 7: return FILE_ID_VALUE_TOLOWER(f[0],f[1],f[2],f[3],f[4],f[5],f[6]);
+    // Currently no valid world format filenames with >=8 chars.
+  }
+  return 0;
+}
+
+static inline int world_file_id_cmp(const void *a, const void *b)
+{
+  struct zip_file_header *A = *(struct zip_file_header **)a;
+  struct zip_file_header *B = *(struct zip_file_header **)b;
+  int ab = A->mzx_board_id;
+  int bb = B->mzx_board_id;
+  int af = A->mzx_file_id;
+  int bf = B->mzx_file_id;
+  int ar = A->mzx_robot_id;
+  int br = B->mzx_robot_id;
+  uint32_t ao = A->offset;
+  uint32_t bo = B->offset;
+
+  return  (ab - bb) ? (ab - bb) :
+          (af - bf) ? (af - bf) :
+          (ar - br) ? (ar - br) :
+          (ao > bo) ? 1 : (ao < bo) ? -1 : 0;
+}
+
+static inline boolean compression_method_allowed(uint16_t method)
+{
+  // Only store and deflate are supported universally in all MZX builds;
+  // any other decompressors may be disabled for platforms that don't use them.
+  // Thus, any file in an MZX/etc that doesn't use store or deflate is invalid.
+  return (method == ZIP_M_NONE) || (method == ZIP_M_DEFLATE);
+}
+
+static inline void world_assign_file_ids_parse_board(const char *next, size_t len,
+ unsigned int *_file_id, unsigned int *_board_id, unsigned int *_robot_id)
+{
+  unsigned int robot_id = 0;
+  char temp[3] = { 0 };
+
+  if(len < 3 || len > 7)
+    return;
+
+  temp[0] = next[1];
+  temp[1] = next[2];
+
+  *_board_id = strtoul(temp, NULL, 16);
+  next += 3;
+  len -= 3;
+
+  if(next[0])
+  {
+    if(next[0] == 'r' || next[0] == 'R')
+    {
+      robot_id = strtoul(next + 1, NULL, 16);
+      if(robot_id != 0)
+      {
+        *_file_id = FILE_ID_ROBOT;
+      }
+
+      *_robot_id = robot_id;
+    }
+    else
+
+    if(next[0] == 's' || next[0] == 'S')
+    {
+      if(next[1] == 'c' || next[1] == 'C')
+      {
+        robot_id = strtoul(next + 2, NULL, 16);
+        if(robot_id != 0)
+        {
+          *_file_id = FILE_ID_SCROLL;
+        }
+      }
+      else
+
+      if(next[1] == 'e' || next[1] == 'E')
+      {
+        robot_id = strtoul(next + 2, NULL, 16);
+        if(robot_id != 0)
+        {
+          *_file_id = FILE_ID_SENSOR;
+        }
+      }
+
+      *_robot_id = robot_id;
+    }
+    else
+
+    switch(world_file_id_value(next, len))
+    {
+      case FILE_ID_VALUE('b','i','d'):
+        *_file_id = FILE_ID_BOARD_BID;
+        break;
+      case FILE_ID_VALUE('b','p','r'):
+        *_file_id = FILE_ID_BOARD_BPR;
+        break;
+      case FILE_ID_VALUE('b','c','o'):
+        *_file_id = FILE_ID_BOARD_BCO;
+        break;
+      case FILE_ID_VALUE('u','i','d'):
+        *_file_id = FILE_ID_BOARD_UID;
+        break;
+      case FILE_ID_VALUE('u','p','r'):
+        *_file_id = FILE_ID_BOARD_UPR;
+        break;
+      case FILE_ID_VALUE('u','c','o'):
+        *_file_id = FILE_ID_BOARD_UCO;
+        break;
+      case FILE_ID_VALUE('o','c','h'):
+        *_file_id = FILE_ID_BOARD_OCH;
+        break;
+      case FILE_ID_VALUE('o','c','o'):
+        *_file_id = FILE_ID_BOARD_OCO;
+        break;
+    }
+  }
+  else
+  {
+    *_file_id = FILE_ID_BOARD_INFO;
+  }
+  if(!*_file_id)
+    *_board_id = 0;
+}
+
+/**
+ * Assign world file ID values to files in the world ZIP archive.
+ * This needs to be done once before every single world, board, and MZM load.
+ *
+ * TODO: maybe count number of misordered files and files with no ID, do an
+ * insertion sort if it's low (<=log2(65536)=16) or no sort if there are none?
+ */
+static inline void world_assign_file_ids(struct zip_archive *zp, boolean is_a_world)
+{
+  // Assign world file IDs to zip headers if they don't already exist.
+  struct zip_file_header **fh_list = zp->files;
+  struct zip_file_header *fh;
+  int num_fh = zp->num_files;
+
+  unsigned int file_id;
+  unsigned int board_id;
+  unsigned int robot_id;
+  const char *next;
+  int len;
+  int i;
+
+  // Special handling for non-worlds.
+  if(!is_a_world)
+  {
+    board_id = 0;
+
+    for(i = 0; i < num_fh; i++)
+    {
+      fh = fh_list[i];
+      next = fh->file_name;
+      len = strlen(next);
+
+      file_id = FILE_ID_NONE;
+      robot_id = 0;
+
+      if(len > 8 || !compression_method_allowed(fh->method))
+      {
+        fh->mzx_file_id = FILE_ID_NONE;
+        continue;
+      }
+      else
+
+      if(next[0] == 'r' || next[0] == 'R')
+      {
+        // Shorthand for robot on board 0
+        // Goes first to speed up MZM loads.
+        robot_id = strtoul(next + 1, NULL, 16);
+        file_id = FILE_ID_ROBOT;
+      }
+      else
+
+      if(next[0] == 'b' || next[0] == 'B')
+      {
+        world_assign_file_ids_parse_board(next, len, &file_id, &board_id, &robot_id);
+
+        // Non-world files shouldn't boards > 0
+        if(board_id)
+        {
+          file_id = FILE_ID_NONE;
+          board_id = 0;
+          robot_id = 0;
+        }
+      }
+
+      // Set the properties
+      fh->mzx_file_id = file_id;
+      fh->mzx_board_id = board_id;
+      fh->mzx_robot_id = robot_id;
+    }
+  }
+
+  // Regular world/save files.
+  else
+  {
+    for(i = 0; i < num_fh; i++)
+    {
+      fh = fh_list[i];
+      next = fh->file_name;
+      len = strlen(next);
+
+      file_id = FILE_ID_NONE;
+      board_id = 0;
+      robot_id = 0;
+
+      if(len > 8 || !compression_method_allowed(fh->method))
+      {
+        fh->mzx_file_id = FILE_ID_NONE;
+        continue;
+      }
+      else
+
+      if(next[0] == 'b' || next[0] == 'B')
+      {
+        world_assign_file_ids_parse_board(next, len, &file_id, &board_id, &robot_id);
+      }
+      else
+
+      switch(world_file_id_value(next, len))
+      {
+        case FILE_ID_VALUE('w','o','r','l','d'):
+          file_id = FILE_ID_WORLD_INFO;
+          break;
+        case FILE_ID_VALUE('g','r'):
+          file_id = FILE_ID_WORLD_GLOBAL_ROBOT;
+          break;
+        case FILE_ID_VALUE('s','f','x'):
+          file_id = FILE_ID_WORLD_SFX;
+          break;
+        case FILE_ID_VALUE('c','h','a','r','s'):
+          file_id = FILE_ID_WORLD_CHARS;
+          break;
+        case FILE_ID_VALUE('p','a','l'):
+          file_id = FILE_ID_WORLD_PAL;
+          break;
+        case FILE_ID_VALUE('p','a','l','i','d','x'):
+          file_id = FILE_ID_WORLD_PAL_INDEX;
+          break;
+        case FILE_ID_VALUE('p','a','l','i','n','t'):
+          file_id = FILE_ID_WORLD_PAL_INTENSITY;
+          break;
+        case FILE_ID_VALUE('v','c','o'):
+          file_id = FILE_ID_WORLD_VCO;
+          break;
+        case FILE_ID_VALUE('v','c','h'):
+          file_id = FILE_ID_WORLD_VCH;
+          break;
+        case FILE_ID_VALUE('s','p','r'):
+          file_id = FILE_ID_WORLD_SPRITES;
+          break;
+        case FILE_ID_VALUE('c','o','u','n','t','e','r'):
+          file_id = FILE_ID_WORLD_COUNTERS;
+          break;
+        case FILE_ID_VALUE('s','t','r','i','n','g'):
+          file_id = FILE_ID_WORLD_STRINGS;
+          break;
+      }
+
+      // Set the properties
+      fh->mzx_file_id = file_id;
+      fh->mzx_board_id = board_id;
+      fh->mzx_robot_id = robot_id;
+    }
+  }
+
+  // Sort the archive and reset to the beginning
+  qsort(fh_list, num_fh, sizeof(struct zip_file_header *), world_file_id_cmp);
+  zp->pos = 0;
+}
+
+/**
+ * These functions are used to save properties files in world saving. There
+ * are no safety checks aside from the debug asserts in the memfile functions.
+ * USE THE BOUNDING MACROS WHEN ALLOCATING.
+ */
 static inline void save_prop_eof(struct memfile *mf)
 {
   mfputw(0, mf);
@@ -767,6 +770,7 @@ static inline void save_prop_s(int ident, const void *src, size_t len,
 static inline void save_prop_v(int ident, size_t len, struct memfile *prop,
  struct memfile *mf)
 {
+  assert(mfhasspace(len, mf));
   mfputw(ident, mf);
   mfputd(len, mf);
   mfopen(mf->current, len, prop);
@@ -792,34 +796,34 @@ static inline int load_prop_int(int length, struct memfile *prop)
 }
 
 // This function is used to read properties files in world loading.
-static inline int next_prop(struct memfile *prop, int *ident, int *length,
+static inline boolean next_prop(struct memfile *prop, int *ident, int *length,
  struct memfile *mf)
 {
   unsigned char *end = mf->end;
   unsigned char *cur;
-  int len;
+  unsigned int len;
 
-  if((end - mf->current)<PROP_HEADER_SIZE)
+  if((end - mf->current) < PROP_HEADER_SIZE)
   {
     prop->current = NULL;
-    return 0;
+    return false;
   }
 
   *ident = mfgetw(mf);
-  len = mfgetd(mf);
+  len = mfgetud(mf);
   cur = mf->current;
 
-  if((end - cur)<len)
+  if((size_t)(end - cur) < len)
   {
     prop->current = NULL;
-    return 0;
+    return false;
   }
 
   *length = len;
   mfopen(cur, len, prop);
 
   mf->current += len;
-  return 1;
+  return true;
 }
 
 __M_END_DECLS

@@ -238,17 +238,17 @@ static enum status convert_292_to_291(vfile *out, vfile *in)
     return ARCHIVE_ERROR;
   }
 
-  assign_fprops(inZ, 0);
+  world_assign_file_ids(inZ, true);
 
-  while(ZIP_SUCCESS == zip_get_next_prop(inZ, &file_id, &board_id, &robot_id))
+  while(ZIP_SUCCESS == zip_get_next_mzx_file_id(inZ, &file_id, &board_id, &robot_id))
   {
     switch(file_id)
     {
-      case FPROP_WORLD_INFO:
+      case FILE_ID_WORLD_INFO:
         err = zip_duplicate_file(outZ, inZ, convert_292_to_291_world_info);
         break;
 
-      case FPROP_BOARD_INFO:
+      case FILE_ID_BOARD_INFO:
         err = zip_duplicate_file(outZ, inZ, convert_292_to_291_board_info);
         break;
 
