@@ -80,7 +80,7 @@ __M_BEGIN_DECLS
  *  MZS\x02\x5A - MZX 2.90
  *  MZS\x02\x5B - MZX 2.91
  *  MZS\x02\x5C - MZX 2.92
- *  MZS\x02\x5C - MZX 2.93
+ *  MZS\x02\x5D - MZX 2.93
  *
  * Board files follow a similar pattern to world files. Versions prior to
  * 2.51S1 are "MB2". For versions greater than 2.51S1, they match the
