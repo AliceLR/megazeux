@@ -275,8 +275,7 @@ static inline int save_world_info(struct world *mzx_world,
   // Save everything sorted.
 
   // Header redundant properties
-  size = strlen(mzx_world->name);
-  save_prop_s(WPROP_WORLD_NAME, mzx_world->name, size, 1, mf);
+  save_prop_s_293(WPROP_WORLD_NAME, mzx_world->name, BOARD_NAME_SIZE, mf);
   save_prop_w(WPROP_FILE_VERSION, file_version, mf);
 
   if(savegame)
@@ -293,10 +292,10 @@ static inline int save_world_info(struct world *mzx_world,
   save_prop_c(WPROP_NUM_BOARDS,         mzx_world->num_boards, mf);
 
   // ID Chars
-  save_prop_s(WPROP_ID_CHARS,           id_chars, ID_CHARS_SIZE, 1, mf);
+  save_prop_a(WPROP_ID_CHARS,           id_chars, ID_CHARS_SIZE, 1, mf);
   save_prop_c(WPROP_ID_MISSILE_COLOR,   missile_color, mf);
-  save_prop_s(WPROP_ID_BULLET_COLOR,    bullet_color, ID_BULLET_COLOR_SIZE, 1, mf);
-  save_prop_s(WPROP_ID_DMG,             id_dmg, ID_DMG_SIZE, 1, mf);
+  save_prop_a(WPROP_ID_BULLET_COLOR,    bullet_color, ID_BULLET_COLOR_SIZE, 1, mf);
+  save_prop_a(WPROP_ID_DMG,             id_dmg, ID_DMG_SIZE, 1, mf);
 
   // Status counters
   save_prop_v(WPROP_STATUS_COUNTERS, COUNTER_NAME_SIZE * NUM_STATUS_COUNTERS,
@@ -337,8 +336,7 @@ static inline int save_world_info(struct world *mzx_world,
   if(savegame)
   {
     // Save properties
-    size = strlen(mzx_world->real_mod_playing);
-    save_prop_s(WPROP_REAL_MOD_PLAYING, mzx_world->real_mod_playing, size, 1, mf);
+    save_prop_s(WPROP_REAL_MOD_PLAYING, mzx_world->real_mod_playing, mf);
 
     save_prop_c(WPROP_MZX_SPEED,        mzx_world->mzx_speed, mf);
     save_prop_c(WPROP_LOCK_SPEED,       mzx_world->lock_speed, mf);
@@ -362,7 +360,7 @@ static inline int save_world_info(struct world *mzx_world,
     save_prop_w(WPROP_PLAYER_RESTART_X, mzx_world->player_restart_x, mf);
     save_prop_w(WPROP_PLAYER_RESTART_Y, mzx_world->player_restart_y, mf);
     save_prop_c(WPROP_SAVED_PL_COLOR,   mzx_world->saved_pl_color, mf);
-    save_prop_s(WPROP_KEYS,             mzx_world->keys, NUM_KEYS, 1, mf);
+    save_prop_a(WPROP_KEYS,             mzx_world->keys, NUM_KEYS, 1, mf);
     save_prop_c(WPROP_BLIND_DUR,        mzx_world->blind_dur, mf);
     save_prop_c(WPROP_FIREWALKER_DUR,   mzx_world->firewalker_dur, mf);
     save_prop_c(WPROP_FREEZE_TIME_DUR,  mzx_world->freeze_time_dur, mf);
@@ -378,13 +376,11 @@ static inline int save_world_info(struct world *mzx_world,
     save_prop_c(WPROP_BI_MESG_STATUS,   mzx_world->bi_mesg_status, mf);
     save_prop_c(WPROP_FADED,            get_fade_status(), mf);
 
-    size = strlen(mzx_world->input_file_name);
-    save_prop_s(WPROP_INPUT_FILE_NAME,  mzx_world->input_file_name, size, 1, mf);
+    save_prop_s(WPROP_INPUT_FILE_NAME,  mzx_world->input_file_name, mf);
     save_prop_d(WPROP_INPUT_POS,        mzx_world->temp_input_pos, mf);
     save_prop_d(WPROP_FREAD_DELIMITER,  mzx_world->fread_delimiter, mf);
 
-    size = strlen(mzx_world->output_file_name);
-    save_prop_s(WPROP_OUTPUT_FILE_NAME, mzx_world->output_file_name, size, 1, mf);
+    save_prop_s(WPROP_OUTPUT_FILE_NAME, mzx_world->output_file_name, mf);
     save_prop_d(WPROP_OUTPUT_POS,       mzx_world->temp_output_pos, mf);
     save_prop_d(WPROP_FWRITE_DELIMITER, mzx_world->fwrite_delimiter, mf);
     save_prop_d(WPROP_MULTIPLIER,       mzx_world->multiplier, mf);

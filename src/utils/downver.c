@@ -116,7 +116,7 @@ enum status
 static inline void save_prop_p(int ident, struct memfile *prop,
  struct memfile *mf)
 {
-  save_prop_s(ident, prop->start, (prop->end - prop->start), 1, mf);
+  save_prop_a(ident, prop->start, (prop->end - prop->start), 1, mf);
 }
 
 static enum zip_error zip_duplicate_file(struct zip_archive *dest,

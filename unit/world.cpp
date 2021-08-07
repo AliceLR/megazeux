@@ -71,7 +71,7 @@ UNITTEST(Magic)
     { "M\x02\x5A",  "MZS\x02\x5A",  "2.90",   V290 },
     { "M\x02\x5B",  "MZS\x02\x5B",  "2.91",   V291 },
     { "M\x02\x5C",  "MZS\x02\x5C",  "2.92",   V292 },
-    { "M\x02\x5D",  "MZS\x02\x5D",  "2.93",   0x025D },
+    { "M\x02\x5D",  "MZS\x02\x5D",  "2.93",   V293 },
     { "M\x02\x5E",  "MZS\x02\x5E",  "2.94",   0x025E },
     { "M\x02\x5F",  "MZS\x02\x5F",  "2.95",   0x025F },
     { "M\x03\x00",  "MZS\x03\x00",  "3.00",   0x0300 },
@@ -449,7 +449,7 @@ UNITTEST(Properties)
     ASSERTEQ((size_t)mftell(&mf), sizeof(expected), "");
   }
 
-  SECTION(save_prop_s)
+  SECTION(save_prop_a)
   {
     const char *str = "value! 1234567890";
     static const uint8_t expected[] =
@@ -459,7 +459,7 @@ UNITTEST(Properties)
       '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
     };
 
-    save_prop_s(0x6241, str, strlen(str), 1, &mf);
+    save_prop_a(0x6241, str, strlen(str), 1, &mf);
     ASSERTMEM(buffer, expected, sizeof(expected), "");
     ASSERTEQ((size_t)mftell(&mf), sizeof(expected), "");
 
@@ -477,9 +477,23 @@ UNITTEST(Properties)
       'A', 'b', 0x08, '\0', '\0', '\0',
       1, 2, 3, 4, 5, 6, 7, 8
     };
-    save_prop_s(0x6241, arr, 2, 4, &mf);
+    save_prop_a(0x6241, arr, 2, 4, &mf);
     ASSERTMEM(buffer, expected2, sizeof(expected2), "");
     ASSERTEQ((size_t)mftell(&mf), sizeof(expected2), "");
+  }
+
+  SECTION(save_prop_s)
+  {
+    const char *str = "string_2_save.";
+    static const uint8_t expected[] =
+    {
+      'A', 'b', 0x0e, '\0', '\0', '\0',
+      's', 't', 'r', 'i', 'n', 'g', '_', '2', '_', 's', 'a', 'v', 'e', '.',
+    };
+
+    save_prop_s(0x6241, str, &mf);
+    ASSERTMEM(buffer, expected, sizeof(expected), "");
+    ASSERTEQ((size_t)mftell(&mf), sizeof(expected), "");
   }
 
   SECTION(save_prop_v)

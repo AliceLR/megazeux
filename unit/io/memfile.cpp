@@ -430,6 +430,18 @@ UNITTEST(read_write)
 
     res = mfread(dest, 1, 1, &mf);
     ASSERTEQ(res, 0, "read 1, past end");
+
+    uint8_t noread = 0xef;
+    mf.current = mf.start;
+    res = mfread(&noread, 0, 1, &mf);
+    ASSERTEQ(res, 0, "read 0 x 1");
+    ASSERTEQ(noread, 0xef, "read 0 x 1");
+    ASSERTEQ(mf.start, mf.current, "read 0 x 1");
+
+    res = mfread(&noread, 1, 0, &mf);
+    ASSERTEQ(res, 0, "read 1 x 0");
+    ASSERTEQ(noread, 0xef, "read 1 x 0");
+    ASSERTEQ(mf.start, mf.current, "read 1 x 0");
   }
 
   SECTION(mfputc)
@@ -525,6 +537,18 @@ UNITTEST(read_write)
 
     res = mfwrite(data8, 1, 1, &mf);
     ASSERTEQ(res, 0, "write 1, past end");
+
+    uint8_t nowrite = 0xef;
+    mf.current = mf.start;
+    res = mfwrite(&nowrite, 0, 1, &mf);
+    ASSERTEQ(res, 0, "write 0 x 1");
+    ASSERTEQ(dest[0], data8[0], "write 0 x 1");
+    ASSERTEQ(mf.start, mf.current, "write 0 x 1");
+
+    res = mfwrite(&nowrite, 1, 0, &mf);
+    ASSERTEQ(res, 0, "write 1 x 0");
+    ASSERTEQ(dest[0], data8[0], "write 1 x 0");
+    ASSERTEQ(mf.start, mf.current, "write 1 x 0");
   }
 }
 

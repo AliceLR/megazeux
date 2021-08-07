@@ -620,7 +620,6 @@ namespace Unit
         else
           Uerr(" (passed %u).\n", passed);
 
-        Uerr("\n");
         UerrFlush();
         return false;
       }

@@ -615,9 +615,8 @@ static void save_robot_to_memory(struct robot *cur_robot,
  struct memfile *mf, int savegame, int file_version)
 {
   struct memfile prop;
-  size_t len = strlen(cur_robot->robot_name);
 
-  save_prop_s(RPROP_ROBOT_NAME, cur_robot->robot_name, len, 1, mf);
+  save_prop_s_293(RPROP_ROBOT_NAME, cur_robot->robot_name, ROBOT_NAME_SIZE, mf);
   save_prop_c(RPROP_ROBOT_CHAR, cur_robot->robot_char, mf);
   save_prop_w(RPROP_XPOS, cur_robot->xpos, mf);
   save_prop_w(RPROP_YPOS, cur_robot->ypos, mf);
@@ -762,7 +761,7 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
 }
 
 void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
- const char *name)
+ int file_version, const char *name)
 {
   void *buffer;
   struct memfile mf;
@@ -779,7 +778,7 @@ void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
     mfopen(buffer, actual_size, &mf);
 
     save_prop_w(SCRPROP_NUM_LINES, cur_scroll->num_lines, &mf);
-    save_prop_s(SCRPROP_MESG, cur_scroll->mesg, scroll_size, 1, &mf);
+    save_prop_a(SCRPROP_MESG, cur_scroll->mesg, scroll_size, 1, &mf);
     save_prop_eof(&mf);
 
     zip_write_file(zp, name, buffer, actual_size, ZIP_M_NONE);
@@ -789,21 +788,18 @@ void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
 }
 
 void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
- const char *name)
+ int file_version, const char *name)
 {
   char buffer[SENSOR_PROPS_SIZE];
   struct memfile mf;
-  size_t len;
 
   if(cur_sensor->used)
   {
     mfopen(buffer, SENSOR_PROPS_SIZE, &mf);
 
-    len = strlen(cur_sensor->sensor_name);
-    save_prop_s(SENPROP_SENSOR_NAME, cur_sensor->sensor_name, len, 1, &mf);
+    save_prop_s_293(SENPROP_SENSOR_NAME, cur_sensor->sensor_name, ROBOT_NAME_SIZE, &mf);
     save_prop_c(SENPROP_SENSOR_CHAR, cur_sensor->sensor_char, &mf);
-    len = strlen(cur_sensor->robot_to_mesg);
-    save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg, len, 1, &mf);
+    save_prop_s_293(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg, ROBOT_NAME_SIZE, &mf);
     save_prop_eof(&mf);
 
     zip_write_file(zp, name, buffer, SENSOR_PROPS_SIZE, ZIP_M_NONE);

@@ -202,37 +202,41 @@ static inline void mfputud(size_t ch, struct memfile *mf)
 static inline size_t mfread(void *dest, size_t len, size_t count,
  struct memfile *mf)
 {
-  unsigned int i;
   unsigned char *pos = (unsigned char *)dest;
-  for(i = 0; i < count; i++)
-  {
-    if(mf->current + len > mf->end)
-      break;
+  size_t total = len * count;
 
-    memcpy(pos, mf->current, len);
-    mf->current += len;
-    pos += len;
+  if(!mf->current || len == 0 || count == 0)
+    return 0;
+
+  if(!mfhasspace(total, mf))
+  {
+    count = (mf->end - mf->current) / len;
+    total = len * count;
   }
 
-  return i;
+  memcpy(pos, mf->current, total);
+  mf->current += total;
+  return count;
 }
 
 static inline size_t mfwrite(const void *src, size_t len, size_t count,
  struct memfile *mf)
 {
-  unsigned int i;
   unsigned char *pos = (unsigned char *)src;
-  for(i = 0; i < count; i++)
-  {
-    if(mf->current + len > mf->end)
-      break;
+  size_t total = len * count;
 
-    memcpy(mf->current, pos, len);
-    mf->current += len;
-    pos += len;
+  if(!mf->current || len == 0 || count == 0)
+    return 0;
+
+  if(!mfhasspace(total, mf))
+  {
+    count = (mf->end - mf->current) / len;
+    total = len * count;
   }
 
-  return i;
+  memcpy(mf->current, pos, total);
+  mf->current += total;
+  return count;
 }
 
 /**

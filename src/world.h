@@ -33,7 +33,8 @@ __M_BEGIN_DECLS
  * MINOR version number.
  */
 
-/* READ THIS -- MAGIC INFO
+/**
+ * READ THIS -- MAGIC INFO
  *
  * World files:
  *
@@ -57,6 +58,7 @@ __M_BEGIN_DECLS
  *  M\x02\x5A - MZX 2.90
  *  M\x02\x5B - MZX 2.91
  *  M\x02\x5C - MZX 2.92
+ *  M\x02\x5D - MZX 2.93
  *
  * Save files:
  *
@@ -78,13 +80,14 @@ __M_BEGIN_DECLS
  *  MZS\x02\x5A - MZX 2.90
  *  MZS\x02\x5B - MZX 2.91
  *  MZS\x02\x5C - MZX 2.92
+ *  MZS\x02\x5D - MZX 2.93
  *
  * Board files follow a similar pattern to world files. Versions prior to
  * 2.51S1 are "MB2". For versions greater than 2.51S1, they match the
  * world file magic. For all boards, the first byte is always 0xFF.
  *
  * As of 2.80+, all letters after the name denote bug fixes/minor additions
- * and may have different save formats. If a save format change is
+ * and may NOT have different save formats. If a save format change is
  * necessitated, a numerical change must be enacted.
  */
 
@@ -115,6 +118,7 @@ enum mzx_version
   V290            = 0x025A,
   V291            = 0x025B,
   V292            = 0x025C,
+  V293            = 0x025D,
 #ifdef CONFIG_DEBYTECODE
   VERSION_SOURCE  = 0x0300, // For checks dependent on Robotic source changes
 #endif
