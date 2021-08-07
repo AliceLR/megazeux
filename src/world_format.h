@@ -782,10 +782,8 @@ static inline void save_prop_s(int ident, const char *src, struct memfile *mf)
 // versions. This is a convenience macro that saves as a string for 2.93+ and
 // as a block array for <2.93 (to help with downver export).
 #define save_prop_s_293(ident, src, buffer_len, mf) do { \
-  if(file_version > V292) \
-    save_prop_s(ident, src, mf); \
-  else \
-    save_prop_a(ident, src, buffer_len, 1, mf); \
+  if(file_version >= V293)  save_prop_s(ident, src, mf); \
+  else                      save_prop_a(ident, src, buffer_len, 1, mf); \
 } while(0)
 
 // Write an arbitrary-sized data property and return a memfile of it.
