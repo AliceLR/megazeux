@@ -41,6 +41,7 @@
 #include "../window.h"
 #include "../world.h"
 #include "../io/path.h"
+#include "../io/vio.h"
 
 #include "../audio/audio.h"
 #include "../audio/sfx.h"
@@ -3217,8 +3218,8 @@ static boolean editor_key(context *ctx, int *key)
             char current_dir[MAX_PATH];
             char new_mod[MAX_PATH] = { 0 } ;
 
-            getcwd(current_dir, MAX_PATH);
-            chdir(editor->current_listening_dir);
+            vgetcwd(current_dir, MAX_PATH);
+            vchdir(editor->current_listening_dir);
 
             if(!choose_file(mzx_world, mod_ext, new_mod,
              "Choose a module file (listening only)", ALLOW_ALL_DIRS))
@@ -3230,7 +3231,7 @@ static boolean editor_key(context *ctx, int *key)
               editor->listening_mod_active = true;
             }
 
-            chdir(current_dir);
+            vchdir(current_dir);
           }
           else
           {
@@ -3425,7 +3426,7 @@ static boolean editor_key(context *ctx, int *key)
             save_world(mzx_world, world_name, false, MZX_VERSION);
 
             if(path_get_directory(new_path, MAX_PATH, world_name) > 0)
-              chdir(new_path);
+              vchdir(new_path);
 
             editor->modified = false;
           }
@@ -3458,7 +3459,7 @@ static boolean editor_key(context *ctx, int *key)
 
         if(!save_world(mzx_world, editor->test_reload_file, false, MZX_VERSION))
         {
-          getcwd(editor->test_reload_dir, MAX_PATH);
+          vgetcwd(editor->test_reload_dir, MAX_PATH);
           editor->test_reload_version = mzx_world->version;
           editor->test_reload_board = mzx_world->current_board_id;
           editor->reload_after_testing = true;
@@ -3777,7 +3778,7 @@ static void editor_resume(context *ctx)
   if(editor->reload_after_testing)
   {
     editor->reload_after_testing = false;
-    chdir(editor->test_reload_dir);
+    vchdir(editor->test_reload_dir);
 
     if(!reload_world(mzx_world, editor->test_reload_file, &ignore))
     {
@@ -3812,7 +3813,7 @@ static void editor_resume(context *ctx)
       fix_mod(editor);
     }
 
-    unlink(editor->test_reload_file);
+    vunlink(editor->test_reload_file);
   }
 
   // These may have changed if a robot was edited.
@@ -3875,7 +3876,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
 
   struct stat stat_res;
 
-  getcwd(editor->current_listening_dir, MAX_PATH);
+  vgetcwd(editor->current_listening_dir, MAX_PATH);
 
   if(editor_conf->board_editor_hide_help)
     editor->screen_height = EDIT_SCREEN_MINIMAL;

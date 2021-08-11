@@ -2760,7 +2760,7 @@ void dump_screen(void)
   {
     snprintf(name, MAX_NAME_SIZE - 1, "screen%d.%s", i, DUMP_FMT_EXT);
     name[MAX_NAME_SIZE - 1] = '\0';
-    if(stat(name, &file_info))
+    if(vstat(name, &file_info))
       break;
   }
 

@@ -24,6 +24,7 @@
 #include "../util.h"
 #include "../io/fsafeopen.h"
 #include "../io/memfile.h"
+#include "../io/vio.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -590,7 +591,7 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
   if(!f)
   {
     snprintf(buf, LINE_BUF_LEN, "%s-%u~", e->name, (unsigned int)time(NULL));
-    if(rename(e->name, buf))
+    if(vrename(e->name, buf))
     {
       warn("Failed to rename in-use file '%s' to '%s'\n", e->name, buf);
       return false;

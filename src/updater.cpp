@@ -31,6 +31,7 @@
 #include "window.h"
 #include "io/memfile.h"
 #include "io/path.h"
+#include "io/vio.h"
 
 #include "editor/window.h"
 
@@ -517,7 +518,7 @@ static boolean check_prune_basedir(const char *file)
     return true;
 
   // Attempt to remove the directory.
-  while(!rmdir(path))
+  while(!vrmdir(path))
   {
     ssize_t len = strlen(path);
     info("--UPDATER-- Pruned empty directory '%s'\n", path);
@@ -607,9 +608,9 @@ static boolean swivel_current_dir(boolean have_video)
   }
 
   // Store the user's current directory, so we can get back to it
-  getcwd(previous_dir, MAX_PATH);
+  vgetcwd(previous_dir, MAX_PATH);
 
-  if(chdir(executable_dir))
+  if(vchdir(executable_dir))
   {
     info("--UPDATER-- getcwd(): %s\n", previous_dir);
     info("--UPDATER-- attempted chdir() to: %s\n", base_path);
@@ -626,7 +627,7 @@ static boolean swivel_current_dir(boolean have_video)
 
 static boolean swivel_current_dir_back(boolean have_video)
 {
-  if(chdir(previous_dir))
+  if(vchdir(previous_dir))
   {
     if(have_video)
       error_message(E_UPDATE, 6,
@@ -648,11 +649,11 @@ static boolean replace_manifest(void)
   struct stat s;
 
   // The new manifest should exist...
-  if(stat(REMOTE_MANIFEST_TXT, &s))
+  if(vstat(REMOTE_MANIFEST_TXT, &s))
     return false;
 
   // Remove the old manifest.
-  if(unlink(LOCAL_MANIFEST_TXT))
+  if(vunlink(LOCAL_MANIFEST_TXT))
   {
     error_message(E_UPDATE, 7,
      "Failed to remove " LOCAL_MANIFEST_TXT ". Check permissions.");
@@ -660,7 +661,7 @@ static boolean replace_manifest(void)
   }
 
   // Rename the new manifest.
-  if(rename(REMOTE_MANIFEST_TXT, LOCAL_MANIFEST_TXT))
+  if(vrename(REMOTE_MANIFEST_TXT, LOCAL_MANIFEST_TXT))
   {
     error_message(E_UPDATE, 8,
      "Failed to rename " REMOTE_MANIFEST_TXT ". Check permissions.");
@@ -695,11 +696,11 @@ static void apply_delete_list(Manifest &delete_list)
     e = e_next;
     e_next = e->next;
 
-    if(!stat(e->name, &s))
+    if(!vstat(e->name, &s))
     {
       if(e->validate())
       {
-        if(unlink(e->name))
+        if(vunlink(e->name))
           goto err_delete_failed;
 
         info("--UPDATER-- Deleted '%s'\n", e->name);
@@ -1217,7 +1218,7 @@ err_try_next_host:
   } //end host for loop
 
   if(delete_remote_manifest)
-    unlink(REMOTE_MANIFEST_TXT);
+    vunlink(REMOTE_MANIFEST_TXT);
 
   if(in_exec_dir)
     swivel_current_dir_back(true);
@@ -1268,15 +1269,15 @@ static UpdaterInit::StatusValue updater_init_exec_dir_check()
 {
   struct stat stat_info;
 
-  FILE *fp = fopen_unsafe(REMOTE_MANIFEST_TXT "~", "wb");
-  if(!fp)
+  vfile *vf = vfopen_unsafe(REMOTE_MANIFEST_TXT "~", "wb");
+  if(!vf)
     return UpdaterInit::FAILED_FILE_WRITE;
 
-  fclose(fp);
-  if(unlink(REMOTE_MANIFEST_TXT "~"))
+  vfclose(vf);
+  if(vunlink(REMOTE_MANIFEST_TXT "~"))
     return UpdaterInit::FAILED_FILE_UNLINK;
 
-  if(stat(LOCAL_MANIFEST_TXT, &stat_info))
+  if(vstat(LOCAL_MANIFEST_TXT, &stat_info))
     return UpdaterInit::FAILED_TO_STAT_MANIFEST;
 
   return UpdaterInit::SUCCESS;
@@ -1291,14 +1292,14 @@ static void updater_init_delete_txt_check()
   Manifest delete_list;
   struct stat stat_info;
 
-  if(stat(DELETE_TXT, &stat_info))
+  if(vstat(DELETE_TXT, &stat_info))
     return;
 
   if(!delete_list.create(DELETE_TXT))
     return;
 
   apply_delete_list(delete_list);
-  unlink(DELETE_TXT);
+  vunlink(DELETE_TXT);
 
   if(delete_list.has_entries())
     write_delete_list(delete_list);
