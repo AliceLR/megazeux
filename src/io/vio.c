@@ -937,32 +937,6 @@ struct vdir
 };
 
 /**
- * Rewind the directory to the first file.
- * This is a separate operation since some platforms just don't have a real
- * rewinddir implementation.
- */
-static boolean vdir_rewind(vdir *dir)
-{
-  dir->position = 0;
-  if(!dir->num_real)
-    return true;
-
-#ifdef PLATFORM_NO_REWINDDIR
-  platform_closedir(dir->dh);
-  // TODO archive detection, etc
-  if(!platform_opendir(&(dir->dh), dir->path))
-  {
-    dir->num_total -= dir->num_real;
-    dir->num_real = 0;
-    return false;
-  }
-  return true;
-#else
-  return platform_rewinddir(dir->dh);
-#endif
-}
-
-/**
  * Open a directory for reading.
  */
 vdir *vdir_open(const char *path)
@@ -972,7 +946,7 @@ vdir *vdir_open(const char *path)
   size_t pathlen = strlen(path);
   vdir *dir = (vdir *)malloc(sizeof(vdir) + pathlen);
   if(dir)
-    memcpy(ret->path, path, pathlen + 1);
+    memcpy(dir->path, path, pathlen + 1);
 
 #else
   vdir *dir = (vdir *)malloc(sizeof(vdir));
@@ -1078,6 +1052,32 @@ boolean vdir_seek(vdir *dir, long position)
       break;
 
   return true;
+}
+
+/**
+ * Rewind the directory to the first file.
+ * Some platforms don't have a rewinddir implementation and need special
+ * handling, hence both vdir_open and vdir_seek call this instead of rewinddir.
+ */
+boolean vdir_rewind(vdir *dir)
+{
+  dir->position = 0;
+  if(!dir->num_real)
+    return true;
+
+#ifdef PLATFORM_NO_REWINDDIR
+  platform_closedir(dir->dh);
+  // TODO archive detection, etc
+  if(!platform_opendir(&(dir->dh), dir->path))
+  {
+    dir->num_total -= dir->num_real;
+    dir->num_real = 0;
+    return false;
+  }
+  return true;
+#else
+  return platform_rewinddir(dir->dh);
+#endif
 }
 
 /**

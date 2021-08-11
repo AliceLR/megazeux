@@ -2932,6 +2932,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
         if(mzx_world->input_is_dir)
         {
           vdir_close(mzx_world->input_directory);
+          mzx_world->input_directory = NULL;
           mzx_world->input_is_dir = false;
         }
 

@@ -84,6 +84,7 @@ UTILS_LIBSPEC vdir *vdir_open(const char *path);
 UTILS_LIBSPEC void vdir_close(vdir *dir);
 UTILS_LIBSPEC boolean vdir_read(vdir *dir, char *buffer, size_t len, enum vdir_type *type);
 UTILS_LIBSPEC boolean vdir_seek(vdir *dir, long position);
+UTILS_LIBSPEC boolean vdir_rewind(vdir *dir);
 UTILS_LIBSPEC long vdir_tell(vdir *dir);
 UTILS_LIBSPEC long vdir_length(vdir *dir);
 

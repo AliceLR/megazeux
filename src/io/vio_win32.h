@@ -25,8 +25,7 @@
 __M_BEGIN_DECLS
 
 /**
- * Win32 UTF-8 stdio path function wrappers.
- * dirent equivalents are in dir.c.
+ * Win32 UTF-8 stdio, unistd, and dirent path function wrappers.
  */
 
 #include <dirent.h>

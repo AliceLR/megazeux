@@ -1034,7 +1034,6 @@ void test_dir_contents(const char *dirname, const char * const (&expected)[N])
   // Seek back to start.
   ret = vdir_seek(dir, 0);
   ASSERTEQ(ret, true, "vdir_seek should return true: %s", dirname);
-
   ASSERTEQ(vdir_tell(dir), 0, "vdir_tell after seek back to start should be 0: %s", dirname);
 
   if(length >= 2)
@@ -1055,6 +1054,11 @@ void test_dir_contents(const char *dirname, const char * const (&expected)[N])
     ASSERTEQ(ret, true, "vdir_seek past end should be successful: %s", dirname);
     ASSERTEQ(vdir_tell(dir), length, "vdir_seek past end should seek to end: %s", dirname);
   }
+
+  // Rewind back to start.
+  ret = vdir_rewind(dir);
+  ASSERTEQ(ret, true, "vdir_rewind should return true: %s", dirname);
+  ASSERTEQ(vdir_tell(dir), 0, "vdir_tell after rewind back to start should be 0: %s", dirname);
 
   vdir_close(dir);
 
