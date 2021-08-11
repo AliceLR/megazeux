@@ -42,6 +42,64 @@
 #define VFILE_LARGE_BUFFER_SIZE 32768
 #endif
 
+//#define PLATFORM_NO_CWD
+
+#ifdef PLATFORM_NO_CWD
+#define VIRTUAL_WORKING_DIRECTORY
+#define DEFAULT_VFS_CWD 1
+#endif
+
+#ifdef VIRTUAL_WORKING_DIRECTORY
+#ifndef DEFAULT_VFS_CWD
+#define DEFAULT_VFS_CWD 0
+#endif
+
+#include "path.h"
+
+static char vfs_cwd[MAX_PATH] = "/";
+static boolean vfs_cwd_init = false;
+static boolean vfs_cwd_active = DEFAULT_VFS_CWD;
+
+static void vfs_check_cwd(void)
+{
+  if(!vfs_cwd_init)
+  {
+    // First time usage, initialize CWD.
+    if(!platform_getcwd(vfs_cwd, MAX_PATH))
+      strcpy(vfs_cwd, "/");
+
+    vfs_cwd_init = true;
+  }
+}
+
+static int vfs_chdir(const char *relative)
+{
+  char tmp[MAX_PATH];
+  vfs_check_cwd();
+
+  memcpy(tmp, vfs_cwd, MAX_PATH);
+  if(path_navigate(tmp, MAX_PATH, relative) > 0)
+  {
+    memcpy(vfs_cwd, tmp, MAX_PATH);
+    return 0;
+  }
+  return -1;
+}
+
+static const char *vfs_get_abspath(char *dest, size_t dest_len, const char *relative)
+{
+  vfs_check_cwd();
+
+  if(path_is_absolute(relative) > 0)
+    return relative;
+
+  if(path_join(dest, dest_len, vfs_cwd, relative) < 0)
+    dest[0] = '\0';
+
+  return dest;
+}
+#endif
+
 enum vfileflags_private
 {
   VF_FILE               = (1<<0),
@@ -134,6 +192,12 @@ vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
 {
   int flags = get_vfile_mode_flags(mode);
   vfile *vf = NULL;
+
+#ifdef VIRTUAL_WORKING_DIRECTORY
+  char abspath[MAX_PATH * 2];
+  if(vfs_cwd_active && filename)
+    filename = vfs_get_abspath(abspath, sizeof(abspath), filename);
+#endif
 
   assert(filename && flags);
   flags |= (user_flags & VF_PUBLIC_MASK);
@@ -314,7 +378,26 @@ int vfclose(vfile *vf)
  */
 int vchdir(const char *path)
 {
-  // TODO archive detection, etc
+#ifdef VIRTUAL_WORKING_DIRECTORY
+  int vfs_res = vfs_chdir(path);
+
+#ifndef PLATFORM_NO_CWD
+  int real_res = platform_chdir(path);
+  if(real_res == 0)
+  {
+    vfs_cwd_active = false;
+    return 0;
+  }
+#endif
+
+  if(vfs_res == 0)
+  {
+    vfs_cwd_active = true;
+    return 0;
+  }
+  return -1;
+#endif
+
   return platform_chdir(path);
 }
 
@@ -324,7 +407,18 @@ int vchdir(const char *path)
  */
 char *vgetcwd(char *buf, size_t size)
 {
-  // TODO archive detection, etc
+#ifdef VIRTUAL_WORKING_DIRECTORY
+  vfs_check_cwd();
+  if(vfs_cwd_active)
+  {
+    int out = snprintf(buf, size, "%s", vfs_cwd);
+    if(out > 0 && (size_t)out < size)
+      return buf;
+
+    return NULL;
+  }
+#endif
+
   return platform_getcwd(buf, size);
 }
 
@@ -333,6 +427,12 @@ char *vgetcwd(char *buf, size_t size)
  */
 int vmkdir(const char *path, int mode)
 {
+#ifdef VIRTUAL_WORKING_DIRECTORY
+  char abspath[MAX_PATH * 2];
+  if(vfs_cwd_active)
+    path = vfs_get_abspath(abspath, sizeof(abspath), path);
+#endif
+
   // TODO archive detection, etc
   return platform_mkdir(path, mode);
 }
@@ -342,6 +442,16 @@ int vmkdir(const char *path, int mode)
  */
 int vrename(const char *oldpath, const char *newpath)
 {
+#ifdef VIRTUAL_WORKING_DIRECTORY
+  char absoldpath[MAX_PATH * 2];
+  char absnewpath[MAX_PATH * 2];
+  if(vfs_cwd_active)
+  {
+    oldpath = vfs_get_abspath(absoldpath, sizeof(absoldpath), oldpath);
+    newpath = vfs_get_abspath(absnewpath, sizeof(absnewpath), newpath);
+  }
+#endif
+
   // TODO archive detection, etc
   return platform_rename(oldpath, newpath);
 }
@@ -352,6 +462,12 @@ int vrename(const char *oldpath, const char *newpath)
  */
 int vunlink(const char *path)
 {
+#ifdef VIRTUAL_WORKING_DIRECTORY
+  char abspath[MAX_PATH * 2];
+  if(vfs_cwd_active)
+    path = vfs_get_abspath(abspath, sizeof(abspath), path);
+#endif
+
   // TODO archive detection, cache, etc
   return platform_unlink(path);
 }
@@ -361,6 +477,12 @@ int vunlink(const char *path)
  */
 int vrmdir(const char *path)
 {
+#ifdef VIRTUAL_WORKING_DIRECTORY
+  char abspath[MAX_PATH * 2];
+  if(vfs_cwd_active)
+    path = vfs_get_abspath(abspath, sizeof(abspath), path);
+#endif
+
   // TODO archive detection, etc
   return platform_rmdir(path);
 }
@@ -375,6 +497,12 @@ int vrmdir(const char *path)
  */
 int vaccess(const char *path, int mode)
 {
+#ifdef VIRTUAL_WORKING_DIRECTORY
+  char abspath[MAX_PATH * 2];
+  if(vfs_cwd_active)
+    path = vfs_get_abspath(abspath, sizeof(abspath), path);
+#endif
+
   // TODO archive detection, etc
   return platform_access(path, mode);
 }
@@ -384,6 +512,12 @@ int vaccess(const char *path, int mode)
  */
 int vstat(const char *path, struct stat *buf)
 {
+#ifdef VIRTUAL_WORKING_DIRECTORY
+  char abspath[MAX_PATH * 2];
+  if(vfs_cwd_active)
+    path = vfs_get_abspath(abspath, sizeof(abspath), path);
+#endif
+
   // TODO archive detection, cache, etc
   return platform_stat(path, buf);
 }
@@ -1050,15 +1184,23 @@ struct vdir
  */
 vdir *vdir_open(const char *path)
 {
+  vdir *dir;
+
+#ifdef VIRTUAL_WORKING_DIRECTORY
+  char abspath[MAX_PATH * 2];
+  if(vfs_cwd_active)
+    path = vfs_get_abspath(abspath, sizeof(abspath), path);
+#endif
+
 #ifdef PLATFORM_NO_REWINDDIR
-
-  size_t pathlen = strlen(path);
-  vdir *dir = (vdir *)malloc(sizeof(vdir) + pathlen);
-  if(dir)
-    memcpy(dir->path, path, pathlen + 1);
-
+  {
+    size_t pathlen = strlen(path);
+    dir = (vdir *)malloc(sizeof(vdir) + pathlen);
+    if(dir)
+      memcpy(dir->path, path, pathlen + 1);
+  }
 #else
-  vdir *dir = (vdir *)malloc(sizeof(vdir));
+  dir = (vdir *)malloc(sizeof(vdir));
 #endif
 
   if(dir)

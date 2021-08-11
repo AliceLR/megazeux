@@ -40,6 +40,12 @@ __M_BEGIN_DECLS
 #define PLATFORM_NO_REWINDDIR
 #endif
 
+// Some console SDKs have missing chdir/getcwd implementations and require
+// absolute paths for all filesystem operations.
+#if 0
+#define PLATFORM_NO_CWD
+#endif
+
 
 static inline FILE *platform_fopen_unsafe(const char *path, const char *mode)
 {
@@ -59,12 +65,18 @@ static inline FILE *platform_tmpfile(void)
 
 static inline char *platform_getcwd(char *buf, size_t size)
 {
+#ifndef PLATFORM_NO_CWD
   return getcwd(buf, size);
+#endif
+  return NULL;
 }
 
 static inline int platform_chdir(const char *path)
 {
+#ifndef PLATFORM_NO_CWD
   return chdir(path);
+#endif
+  return -1;
 }
 
 static inline int platform_mkdir(const char *path, int mode)

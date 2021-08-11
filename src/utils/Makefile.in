@@ -16,7 +16,7 @@ utils_obj = src/utils/.build
 # Define UTILS_LIBSPEC so these properly link.
 utils_cflags := ${LIBPNG_CFLAGS} -DUTILS_LIBSPEC=
 
-zip_objs  := ${io_obj}/vio.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
+zip_objs  := ${io_obj}/path.o ${io_obj}/vio.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
 img_objs  := ${io_obj}/vio.o ${utils_obj}/image_file.o
 img_flags :=
 
@@ -28,7 +28,7 @@ endif
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o \
                  ${io_obj}/fsafeopen.o \
-                 ${io_obj}/path.o ${zip_objs}
+                 ${zip_objs}
 checkres_ldflags := ${ZLIB_LDFLAGS}
 
 downver := ${utils_src}/downver${BINEXT}
