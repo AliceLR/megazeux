@@ -963,11 +963,9 @@ vdir *vdir_open(const char *path)
       goto err;
 
     // Get total real files.
+    // TODO get total virtual files with no real backing.
     while(platform_readdir(dir->dh, NULL, 0, NULL))
       dir->num_real++;
-
-
-    // TODO get total virtual files with no real backing.
 
     dir->num_total += dir->num_real;
     vdir_rewind(dir);
