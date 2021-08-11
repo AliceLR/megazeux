@@ -228,7 +228,7 @@ static boolean editor_reload_world(struct editor_context *editor,
   snprintf(config_file_name, MAX_PATH, "%.*s.editor.cnf", file_name_len, file);
   config_file_name[MAX_PATH - 1] = '\0';
 
-  if(stat(config_file_name, &file_info) >= 0)
+  if(vstat(config_file_name, &file_info) >= 0)
     set_config_from_file(GAME_EDITOR_CNF, config_file_name);
 
   edit_menu_show_board_mod(editor->edit_menu);
@@ -248,7 +248,7 @@ static void get_test_world_filename(struct editor_context *editor)
   strcpy(editor->test_reload_file, TEST_WORLD_FILENAME);
 
   // If the regular file exists, attempt numbered names.
-  for(i = 2; !stat(editor->test_reload_file, &file_info); i++)
+  for(i = 2; !vstat(editor->test_reload_file, &file_info); i++)
     snprintf(editor->test_reload_file, MAX_PATH, TEST_WORLD_PATTERN, i);
 }
 
@@ -3916,7 +3916,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   editor->edit_menu = create_edit_menu((context *)editor);
 
   // Reload the current world or create a blank world.
-  if(curr_file[0] && stat(curr_file, &stat_res))
+  if(curr_file[0] && vstat(curr_file, &stat_res))
     curr_file[0] = '\0';
 
   if(reload_curr_file && curr_file[0] &&
