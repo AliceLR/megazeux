@@ -34,6 +34,7 @@
 #include "util.h"
 #include "world.h"
 #include "world_struct.h"
+#include "io/vio.h"
 
 /**
  * TODO: String lookups are currently case-insensitive, which is somewhat of
@@ -969,13 +970,16 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
 
   if(special_name_partial("fread") && mzx_world->input_is_dir)
   {
-    char entry[PATH_BUF_LEN];
+    char entry[MAX_PATH];
 
     while(1)
     {
       // Read entries until there are none left
-      if(!dir_get_next_entry(&mzx_world->input_directory, entry, NULL))
+      if(!vdir_read(mzx_world->input_directory, entry, MAX_PATH, NULL))
+      {
+        entry[0] = '\0';
         break;
+      }
 
       // Ignore . and ..
       if(!strcmp(entry, ".") || !strcmp(entry, ".."))

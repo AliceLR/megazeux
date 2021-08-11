@@ -25,13 +25,21 @@
 __M_BEGIN_DECLS
 
 /**
- * Standard path function wrappers.
+ * Standard path function and dirent wrappers.
  * On most relevant platforms these already support UTF-8.
  */
 
+#include <dirent.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+// pspdev/devkitPSP historically does not have a rewinddir implementation.
+// libctru (3DS) and libnx (Switch) have rewinddir but it doesn't work.
+#if defined(CONFIG_3DS) || defined(CONFIG_PSP) || defined(CONFIG_SWITCH)
+#define PLATFORM_NO_REWINDDIR
+#endif
+
 
 static inline FILE *platform_fopen_unsafe(const char *path, const char *mode)
 {
@@ -87,6 +95,50 @@ static inline int platform_access(const char *path, int mode)
 static inline int platform_stat(const char *path, struct stat *buf)
 {
   return stat(path, buf);
+}
+
+struct dir_handle
+{
+  DIR *dir;
+};
+
+static inline boolean platform_opendir(struct dir_handle *dh, const char *path)
+{
+  dh->dir = opendir(path);
+  return dh->dir != NULL;
+}
+
+static inline void platform_closedir(struct dir_handle dh)
+{
+  closedir(dh.dir);
+}
+
+static inline boolean platform_readdir(struct dir_handle dh, char *buffer,
+ size_t buffer_len, int *d_type)
+{
+  struct dirent *d = readdir(dh.dir);
+  if(!d)
+    return false;
+
+  if(buffer && buffer_len)
+    snprintf(buffer, buffer_len, "%s", d->d_name);
+
+#ifdef DT_UNKNOWN
+  if(d_type)
+    *d_type = d->d_type;
+#endif
+
+  return true;
+}
+
+static inline boolean platform_rewinddir(struct dir_handle dh)
+{
+#ifndef PLATFORM_NO_REWINDDIR
+  rewinddir(dh.dir);
+  return true;
+#endif
+
+  return false;
 }
 
 __M_END_DECLS

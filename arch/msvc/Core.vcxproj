@@ -307,7 +307,6 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\idput.c" />
     <ClCompile Include="..\..\src\intake.c" />
     <ClCompile Include="..\..\src\intake_num.c" />
-    <ClCompile Include="..\..\src\io\dir.c" />
     <ClCompile Include="..\..\src\io\fsafeopen.c" />
     <ClCompile Include="..\..\src\io\path.c" />
     <ClCompile Include="..\..\src\io\vio.c" />
@@ -409,7 +408,6 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\intake.h" />
     <ClInclude Include="..\..\src\intake_num.h" />
     <ClInclude Include="..\..\src\io\bitstream.h" />
-    <ClInclude Include="..\..\src\io\dir.h" />
     <ClInclude Include="..\..\src\io\fsafeopen.h" />
     <ClInclude Include="..\..\src\io\memfile.h" />
     <ClInclude Include="..\..\src\io\path.h" />

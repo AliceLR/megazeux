@@ -54,8 +54,8 @@
 #include "util.h"
 #include "world.h"
 #include "world_struct.h"
-#include "io/dir.h"
 #include "io/fsafeopen.h"
+#include "io/vio.h"
 
 #include "audio/audio.h"
 
@@ -2010,9 +2010,15 @@ static int fread_pos_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   if(!mzx_world->input_is_dir && mzx_world->input_file)
+  {
     return ftell(mzx_world->input_file);
-  else if(mzx_world->input_is_dir)
-    return dir_tell(&mzx_world->input_directory);
+  }
+  else
+
+  if(mzx_world->input_is_dir)
+  {
+    return vdir_tell(mzx_world->input_directory);
+  }
   else
     return -1;
 }
@@ -2030,7 +2036,7 @@ static void fread_pos_write(struct world *mzx_world,
   else if(mzx_world->input_is_dir)
   {
     if(value >= 0)
-      dir_seek(&mzx_world->input_directory, value);
+      vdir_seek(mzx_world->input_directory, value);
   }
 }
 
@@ -2038,7 +2044,7 @@ static int fread_length_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->input_is_dir)
-    return mzx_world->input_directory.entries;
+    return vdir_length(mzx_world->input_directory);
 
   if(mzx_world->input_file)
   {
@@ -2925,7 +2931,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         if(mzx_world->input_is_dir)
         {
-          dir_close(&mzx_world->input_directory);
+          vdir_close(mzx_world->input_directory);
           mzx_world->input_is_dir = false;
         }
 
@@ -2933,10 +2939,13 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         if(err == -FSAFE_MATCHED_DIRECTORY)
         {
-          if(dir_open(&mzx_world->input_directory, translated_path))
+          mzx_world->input_directory = vdir_open(translated_path);
+          if(mzx_world->input_directory)
             mzx_world->input_is_dir = true;
         }
-        else if(err == -FSAFE_SUCCESS)
+        else
+
+        if(err == -FSAFE_SUCCESS)
           mzx_world->input_file = fopen_unsafe(translated_path, "rb");
 
         if(mzx_world->input_file || mzx_world->input_is_dir)
@@ -2954,7 +2963,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         if(mzx_world->input_is_dir)
         {
-          dir_close(&mzx_world->input_directory);
+          vdir_close(mzx_world->input_directory);
+          mzx_world->input_directory = NULL;
           mzx_world->input_is_dir = false;
         }
       }

@@ -31,7 +31,7 @@ __M_BEGIN_DECLS
 #include "counter_struct.h"
 #include "sprite_struct.h"
 
-#include "io/dir.h"
+#include "io/vfile.h"
 #include "audio/sfx.h"
 
 enum change_game_state_value
@@ -124,7 +124,7 @@ struct world
   char input_file_name[MAX_PATH];
   FILE *input_file;
   boolean input_is_dir;
-  struct mzx_dir input_directory;
+  vdir *input_directory;
   int temp_input_pos;
   int temp_output_pos;
   int commands;

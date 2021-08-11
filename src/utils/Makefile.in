@@ -27,7 +27,7 @@ endif
 
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o \
-                 ${io_obj}/dir.o ${io_obj}/fsafeopen.o \
+                 ${io_obj}/fsafeopen.o \
                  ${io_obj}/path.o ${zip_objs}
 checkres_ldflags := ${ZLIB_LDFLAGS}
 

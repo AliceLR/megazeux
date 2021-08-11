@@ -29,6 +29,7 @@ __M_BEGIN_DECLS
  * dirent equivalents are in dir.c.
  */
 
+#include <dirent.h>
 #include <stdio.h>
 #include <sys/stat.h>
 
@@ -236,6 +237,104 @@ static inline int platform_stat(const char *path, struct stat *buf)
 #endif
   return stat(path, buf);
 }
+
+struct dir_handle
+{
+  DIR *dir;
+#ifdef WIDE_PATHS
+  _WDIR *wdir;
+#endif
+};
+
+static inline boolean platform_opendir(struct dir_handle *dh, const char *path)
+{
+#ifdef WIDE_PATHS
+  wchar_t wpath[MAX_PATH];
+
+  dh->dir = NULL;
+  dh->wdir = NULL;
+
+  if(utf8_to_utf16(path, wpath, MAX_PATH))
+  {
+    dh->wdir = _wopendir(wpath);
+    if(dh->wdir)
+      return true;
+  }
+#endif
+
+  dh->dir = opendir(path);
+  return dh->dir != NULL;
+}
+
+static inline void platform_closedir(struct dir_handle dh)
+{
+#ifdef WIDE_PATHS
+  if(dh.wdir)
+  {
+    _wclosedir(dh.wdir);
+    return;
+  }
+#endif
+  closedir(dh.dir);
+}
+
+static inline boolean platform_readdir(struct dir_handle dh, char *buffer,
+ size_t buffer_len, int *d_type)
+{
+  struct dirent *d;
+
+#ifdef WIDE_PATHS
+  if(dh.wdir)
+  {
+    struct _wdirent *wd = _wreaddir(dh.wdir);
+    if(!wd)
+      return false;
+
+    if(buffer && buffer_len)
+      if(!utf16_to_utf8(wd->d_name, buffer, buffer_len))
+        buffer[0] = '\0';
+
+#ifdef DT_UNKNOWN
+    if(d_type)
+      d_type = wd->d_type;
+#endif
+
+    return true;
+  }
+#endif
+
+  d = readdir(dh.dir);
+  if(!d)
+    return false;
+
+  if(buffer && buffer_len)
+  {
+    snprintf(buffer, buffer_len, "%s", d->d_name);
+    buffer[buffer_len - 1] = '\0';
+  }
+
+#ifdef DT_UNKNOWN
+  if(d_type)
+    *d_type = d->d_type;
+#endif
+
+  return true;
+}
+
+static inline boolean platform_rewinddir(struct dir_handle dh)
+{
+#ifdef WIDE_PATHS
+  if(dh.wdir)
+  {
+    _wrewinddir(dh.wdir);
+    return true;
+  }
+#endif
+
+  rewinddir(dh.dir);
+  return true;
+}
+
 
 __M_END_DECLS
 

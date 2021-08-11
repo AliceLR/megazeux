@@ -35,6 +35,14 @@ enum vfileflags
   V_LARGE_BUFFER = (1<<30)  // setvbuf >= 8192 for real files in binary mode.
 };
 
+enum vdir_type
+{
+  DIR_TYPE_UNKNOWN,
+  DIR_TYPE_FILE,
+  DIR_TYPE_DIR,
+  NUM_DIR_TYPES
+};
+
 UTILS_LIBSPEC vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
  int user_flags);
 UTILS_LIBSPEC vfile *vfopen_unsafe(const char *filename, const char *mode);
@@ -71,6 +79,13 @@ UTILS_LIBSPEC int vfseek(vfile *vf, long int offset, int whence);
 UTILS_LIBSPEC long int vftell(vfile *vf);
 UTILS_LIBSPEC void vrewind(vfile *vf);
 UTILS_LIBSPEC long vfilelength(vfile *vf, boolean rewind);
+
+UTILS_LIBSPEC vdir *vdir_open(const char *path);
+UTILS_LIBSPEC void vdir_close(vdir *dir);
+UTILS_LIBSPEC boolean vdir_read(vdir *dir, char *buffer, size_t len, enum vdir_type *type);
+UTILS_LIBSPEC boolean vdir_seek(vdir *dir, long position);
+UTILS_LIBSPEC long vdir_tell(vdir *dir);
+UTILS_LIBSPEC long vdir_length(vdir *dir);
 
 __M_END_DECLS
 

@@ -2237,9 +2237,11 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
   {
     mzx_world->temp_input_pos = ftell(mzx_world->input_file);
   }
-  else if(mzx_world->input_is_dir)
+  else
+
+  if(mzx_world->input_is_dir)
   {
-    mzx_world->temp_input_pos = dir_tell(&mzx_world->input_directory);
+    mzx_world->temp_input_pos = vdir_tell(mzx_world->input_directory);
   }
   else
   {
@@ -2585,9 +2587,10 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
     err = fsafetranslate(mzx_world->input_file_name, translated_path, MAX_PATH);
     if(err == -FSAFE_MATCHED_DIRECTORY)
     {
-      if(dir_open(&mzx_world->input_directory, translated_path))
+      mzx_world->input_directory = vdir_open(translated_path);
+      if(mzx_world->input_directory)
       {
-        dir_seek(&mzx_world->input_directory, mzx_world->temp_input_pos);
+        vdir_seek(mzx_world->input_directory, mzx_world->temp_input_pos);
         mzx_world->input_is_dir = true;
       }
     }
@@ -3185,9 +3188,12 @@ void clear_world(struct world *mzx_world)
     fclose(mzx_world->input_file);
     mzx_world->input_file = NULL;
   }
-  else if(mzx_world->input_is_dir)
+  else
+
+  if(mzx_world->input_is_dir)
   {
-    dir_close(&mzx_world->input_directory);
+    vdir_close(mzx_world->input_directory);
+    mzx_world->input_directory = NULL;
     mzx_world->input_is_dir = false;
   }
 
