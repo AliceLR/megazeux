@@ -18,10 +18,12 @@
  */
 
 #include <assert.h>
+#include <dirent.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/stat.h>
 
+#include "../util.h"
 #include "memfile.h"
 #include "vio.h"
 //#include "zip.h"
@@ -302,6 +304,11 @@ struct memfile *vfile_get_memfile(vfile *vf)
   return &(vf->mf);
 }
 
+
+/************************************************************************
+ * Filesystem function wrappers.
+ */
+
 /**
  * Change the current working directory to path.
  */
@@ -380,6 +387,11 @@ int vstat(const char *path, struct stat *buf)
   // TODO archive detection, cache, etc
   return platform_stat(path, buf);
 }
+
+
+/************************************************************************
+ * stdio function wrappers.
+ */
 
 /**
  * Ensure an amount of space exists in a memory vfile or expand the vfile
@@ -905,4 +917,179 @@ long vfilelength(vfile *vf, boolean rewind)
     vrewind(vf);
 
   return size;
+}
+
+
+/************************************************************************
+ * dirent function wrappers.
+ */
+
+struct vdir
+{
+  struct dir_handle dh;
+  long position;
+  long num_total;
+  long num_real;
+#ifdef PLATFORM_NO_REWINDDIR
+  // Path for dirent implementations with no working rewinddir.
+  char path[1];
+#endif
+};
+
+/**
+ * Open a directory for reading.
+ */
+vdir *vdir_open(const char *path)
+{
+#ifdef PLATFORM_NO_REWINDDIR
+
+  size_t pathlen = strlen(path);
+  vdir *dir = (vdir *)malloc(sizeof(vdir) + pathlen);
+  if(dir)
+    memcpy(dir->path, path, pathlen + 1);
+
+#else
+  vdir *dir = (vdir *)malloc(sizeof(vdir));
+#endif
+
+  if(dir)
+  {
+    dir->position = 0;
+    dir->num_total = 0;
+    dir->num_real = 0;
+
+    // TODO archive detection, etc
+    if(!platform_opendir(&(dir->dh), path))
+      goto err;
+
+    // Get total real files.
+    // TODO get total virtual files with no real backing.
+    while(platform_readdir(dir->dh, NULL, 0, NULL))
+      dir->num_real++;
+
+    dir->num_total += dir->num_real;
+    vdir_rewind(dir);
+    return dir;
+  }
+
+err:
+  free(dir);
+  return NULL;
+}
+
+/**
+ * Close a directory.
+ */
+void vdir_close(vdir *dir)
+{
+  platform_closedir(dir->dh);
+  free(dir);
+}
+
+/**
+ * Read the next file from a directory.
+ * Returns `true` if a file was read, otherwise `false`.
+ */
+boolean vdir_read(vdir *dir, char *buffer, size_t len, enum vdir_type *type)
+{
+  int dirent_type = -1;
+
+  if(dir->position >= dir->num_total)
+    return false;
+
+/*
+  // TODO virtual files with no real backing.
+  if(dir->position >= dir->num_real)
+*/
+
+  if(!platform_readdir(dir->dh, buffer, len, &dirent_type))
+    return false;
+
+  if(type)
+  {
+    switch(dirent_type)
+    {
+  #ifdef DT_UNKNOWN
+      case DT_REG:
+        *type = DIR_TYPE_FILE;
+        break;
+
+      case DT_DIR:
+        *type = DIR_TYPE_DIR;
+        break;
+  #endif
+
+      default:
+        *type = DIR_TYPE_UNKNOWN;
+        break;
+    }
+  }
+
+  dir->position++;
+  return true;
+}
+
+/**
+ * Seek to a position in a directory.
+ */
+boolean vdir_seek(vdir *dir, long position)
+{
+  if(position < 0)
+    return false;
+
+  // If position is before current position, rewind.
+  if(position < dir->position)
+  {
+    if(!vdir_rewind(dir))
+      return false;
+  }
+
+  // Skip files until the current position is the requested position.
+  while(dir->position < position)
+    if(!vdir_read(dir, NULL, 0, NULL))
+      break;
+
+  return true;
+}
+
+/**
+ * Rewind the directory to the first file.
+ * Some platforms don't have a rewinddir implementation and need special
+ * handling, hence both vdir_open and vdir_seek call this instead of rewinddir.
+ */
+boolean vdir_rewind(vdir *dir)
+{
+  dir->position = 0;
+  if(!dir->num_real)
+    return true;
+
+#ifdef PLATFORM_NO_REWINDDIR
+  platform_closedir(dir->dh);
+  // TODO archive detection, etc
+  if(!platform_opendir(&(dir->dh), dir->path))
+  {
+    dir->num_total -= dir->num_real;
+    dir->num_real = 0;
+    return false;
+  }
+  return true;
+#else
+  return platform_rewinddir(dir->dh);
+#endif
+}
+
+/**
+ * Report the current position in a directory.
+ */
+long vdir_tell(vdir *dir)
+{
+  return dir->position;
+}
+
+/**
+ * Report the length of a directory.
+ */
+long vdir_length(vdir *dir)
+{
+  return dir->num_total;
 }

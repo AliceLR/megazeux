@@ -56,7 +56,6 @@
 #include "window.h"
 #include "world.h"
 #include "util.h"
-#include "io/dir.h"
 #include "io/path.h"
 #include "io/vio.h"
 
@@ -3249,24 +3248,25 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
 
 static boolean remove_files(char *directory_name, boolean remove_recursively)
 {
-  struct mzx_dir current_dir;
+  vdir *current_dir;
   char *current_dir_name;
   struct stat file_info;
   char *file_name;
   boolean success = true;
 
-  if(!dir_open(&current_dir, directory_name))
+  current_dir = vdir_open(directory_name);
+  if(!current_dir)
     return false;
 
   current_dir_name = cmalloc(MAX_PATH);
-  file_name = cmalloc(PATH_BUF_LEN);
+  file_name = cmalloc(MAX_PATH);
 
   vgetcwd(current_dir_name, MAX_PATH);
   vchdir(directory_name);
 
   while(1)
   {
-    if(!dir_get_next_entry(&current_dir, file_name, NULL))
+    if(!vdir_read(current_dir, file_name, MAX_PATH, NULL))
       break;
 
     if(vstat(file_name, &file_info) < 0)
@@ -3293,7 +3293,7 @@ static boolean remove_files(char *directory_name, boolean remove_recursively)
   free(file_name);
   free(current_dir_name);
 
-  dir_close(&current_dir);
+  vdir_close(current_dir);
   return success;
 }
 
@@ -3303,7 +3303,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
  struct element **dialog_ext, int num_ext, int ext_height)
 {
   // FIXME no buffer size parameter for ret. this function assumes MAX_PATH.
-  struct mzx_dir current_dir;
+  vdir *current_dir;
   char *file_name;
   struct stat file_info;
   char *current_dir_name;
@@ -3343,7 +3343,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
   // These are stack heavy so put them on the heap
   // This function is not performance sensitive anyway.
-  file_name = cmalloc(PATH_BUF_LEN);
+  file_name = cmalloc(MAX_PATH);
 
   // The current directory the file manager is in.
   current_dir_name = cmalloc(MAX_PATH);
@@ -3394,7 +3394,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
      */
     vchdir(current_dir_name);
 
-    if(!dir_open(&current_dir, current_dir_name))
+    current_dir = vdir_open(current_dir_name);
+    if(!current_dir)
       goto skip_dir;
 
     // Hide .. if changing directories isn't allowed or if the selected file
@@ -3422,8 +3423,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
     while(1)
     {
-      int dir_type;
-      if(!dir_get_next_entry(&current_dir, file_name, &dir_type))
+      enum vdir_type dir_type;
+      if(!vdir_read(current_dir, file_name, MAX_PATH, &dir_type))
         break;
 
       file_name_length = strlen(file_name);
@@ -3497,7 +3498,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       }
     }
 
-    dir_close(&current_dir);
+    vdir_close(current_dir);
 skip_dir:
 
     vchdir(return_dir_name);

@@ -30,6 +30,7 @@
 __M_BEGIN_DECLS
 
 typedef struct vfile vfile;
+typedef struct vdir vdir;
 struct memfile;
 struct stat;
 

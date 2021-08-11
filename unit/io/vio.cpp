@@ -981,3 +981,163 @@ UNITTEST(Filesystem)
     ASSERTEQ(ret, 0, "");
   }
 }
+
+/**
+ * Test dirent replacement functions separately from the other filesystem
+ * functions, including UTF-8 cases.
+ *
+ * Note: files returned by dirent seem fairly platform-dependent, so filter
+ * out anything starting with . for this test. Also, don't rely on the results
+ * being ordered, because Linux doesn't sort them like Windows does.
+ *
+ * FIXME: should test the d_type return value too.
+ */
+
+template<long N>
+void test_dir_contents(const char *dirname, const char * const (&expected)[N])
+{
+  boolean has_expected[N]{};
+  char buffer[1024];
+  boolean ret;
+  long length;
+  long i;
+
+  vdir *dir = vdir_open(dirname);
+  ASSERT(dir != NULL, "vdir_open(%s) failed", dirname);
+
+  length = vdir_length(dir);
+  ASSERTEQ(vdir_tell(dir), 0, "vdir_tell should be 0 after open: %s", dirname);
+
+  while(vdir_read(dir, buffer, sizeof(buffer), NULL))
+  {
+    if(buffer[0] == '.')
+      continue;
+
+    for(i = 0; i < N; i++)
+    {
+      if(expected[i] && !strcmp(buffer, expected[i]))
+      {
+        has_expected[i] = true;
+        break;
+      }
+    }
+    if(i == N)
+      FAIL("unexpected file '%s' found in '%s'!", buffer, dirname);
+  }
+
+  // At EOF-vdir_length and vdir_tell should be equal.
+  ASSERTEQ(vdir_tell(dir), length, "vdir_tell should be length after open: %s", dirname);
+
+  ret = vdir_read(dir, NULL, 0, NULL);
+  ASSERTEQ(ret, false, "vdir_read at directory EOF should return false: %s", dirname);
+
+  // Seek back to start.
+  ret = vdir_seek(dir, 0);
+  ASSERTEQ(ret, true, "vdir_seek should return true: %s", dirname);
+  ASSERTEQ(vdir_tell(dir), 0, "vdir_tell after seek back to start should be 0: %s", dirname);
+
+  if(length >= 2)
+  {
+    ret = vdir_seek(dir, length / 2);
+    ASSERTEQ(ret, true, "vdir_seek should return true: %s", dirname);
+    ASSERTEQ(vdir_tell(dir), length / 2, "vdir_tell failed: %s", dirname);
+
+    ret = vdir_seek(dir, length);
+    ASSERTEQ(ret, true, "vdir_seek should return true: %s", dirname);
+    ASSERTEQ(vdir_tell(dir), length, "vdir_tell failed: %s", dirname);
+
+    ret = vdir_seek(dir, -19824);
+    ASSERTEQ(ret, false, "vdir_seek should reject invalid negative seek value: %s", dirname);
+    ASSERTEQ(vdir_tell(dir), length, "vdir_tell should be unchanged: %s", dirname);
+
+    ret = vdir_seek(dir, length + 10);
+    ASSERTEQ(ret, true, "vdir_seek past end should be successful: %s", dirname);
+    ASSERTEQ(vdir_tell(dir), length, "vdir_seek past end should seek to end: %s", dirname);
+  }
+
+  // Rewind back to start.
+  ret = vdir_rewind(dir);
+  ASSERTEQ(ret, true, "vdir_rewind should return true: %s", dirname);
+  ASSERTEQ(vdir_tell(dir), 0, "vdir_tell after rewind back to start should be 0: %s", dirname);
+
+  vdir_close(dir);
+
+  for(i = 0; i < N; i++)
+  {
+    if(!expected[i])
+      continue;
+
+    if(!has_expected[i])
+      FAIL("missing expected file '%s' from '%s'!", buffer, dirname);
+  }
+}
+
+UNITTEST(dirent)
+{
+  static const char TEST_DIRENT_DIR[]     = "VFILE_TEST_DIRENT";
+  static const char TEST_DIRENT_DIR_UTF[] = u8"VFILE_TEST_DIRENT_\u00e6Ro\u0308e\u0300mMJ\u00b7\u2021\u00b2\u2019\u02c6\u00de\u2018$";
+
+  static const char *TEST_DIRENT_EMPTY[] = { nullptr };
+  static const char *TEST_DIRENT_NONEMPTY[] =
+  {
+    "file1",
+    "file2",
+    u8"\u00A5\u2014\U0001F970",
+    u8"\U0001F970\u2014\u00A5",
+  };
+
+  // Cleanup from prior tests.
+  char buffer[1024];
+  int ret;
+
+  for(const char *filename : TEST_DIRENT_NONEMPTY)
+  {
+    snprintf(buffer, sizeof(buffer), "%s" DIR_SEPARATOR "%s", TEST_DIRENT_DIR, filename);
+    vunlink(buffer);
+    snprintf(buffer, sizeof(buffer), "%s" DIR_SEPARATOR "%s", TEST_DIRENT_DIR_UTF, filename);
+    vunlink(buffer);
+  }
+  vrmdir(TEST_DIRENT_DIR);
+  vrmdir(TEST_DIRENT_DIR_UTF);
+
+  ret = vmkdir(TEST_DIRENT_DIR, 0777);
+  ASSERTEQ(ret, 0, "");
+  ret = vmkdir(TEST_DIRENT_DIR_UTF, 0777);
+  ASSERTEQ(ret, 0, "");
+
+  SECTION(Empty)
+  {
+    test_dir_contents(TEST_DIRENT_DIR, TEST_DIRENT_EMPTY);
+  }
+
+  SECTION(NonEmpty)
+  {
+    for(const char *filename : TEST_DIRENT_NONEMPTY)
+    {
+      snprintf(buffer, sizeof(buffer), "%s" DIR_SEPARATOR "%s", TEST_DIRENT_DIR, filename);
+      vfile *tmp = vfopen_unsafe(buffer, "wb");
+      ASSERT(tmp, "failed to create file '%s'", buffer);
+      vfclose(tmp);
+    }
+
+    test_dir_contents(TEST_DIRENT_DIR, TEST_DIRENT_NONEMPTY);
+  }
+
+  SECTION(EmptyUTF8)
+  {
+    test_dir_contents(TEST_DIRENT_DIR_UTF, TEST_DIRENT_EMPTY);
+  }
+
+  SECTION(NonEmptyUTF8)
+  {
+    for(const char *filename : TEST_DIRENT_NONEMPTY)
+    {
+      snprintf(buffer, sizeof(buffer), "%s" DIR_SEPARATOR "%s", TEST_DIRENT_DIR_UTF, filename);
+      vfile *tmp = vfopen_unsafe(buffer, "wb");
+      ASSERT(tmp, "failed to create file '%s'", buffer);
+      vfclose(tmp);
+    }
+
+    test_dir_contents(TEST_DIRENT_DIR_UTF, TEST_DIRENT_NONEMPTY);
+  }
+}

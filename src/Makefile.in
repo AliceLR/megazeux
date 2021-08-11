@@ -123,7 +123,6 @@ core_cobjs := \
   ${core_obj}/util.o              \
   ${core_obj}/window.o            \
   ${core_obj}/world.o             \
-  ${io_obj}/dir.o                 \
   ${io_obj}/fsafeopen.o           \
   ${io_obj}/path.o                \
   ${io_obj}/vio.o                 \
