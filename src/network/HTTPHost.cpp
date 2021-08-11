@@ -534,7 +534,7 @@ HTTPHostStatus HTTPHost::head(HTTPRequestInfo &request)
   return HOST_SUCCESS;
 }
 
-HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
+HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, vfile *file)
 {
   boolean mid_inflate = false;
   boolean mid_chunk = false;
@@ -824,19 +824,10 @@ HTTPHostStatus HTTPHost::_get(HTTPRequestInfo &request, vfile *file)
   return HOST_SUCCESS;
 }
 
-HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, FILE *file)
-{
-  vfile *vf = vfile_init_fp(file, "wb");
-  HTTPHostStatus result = this->_get(request, vf);
-  // FIXME hack
-  free(vf);
-  return result;
-}
-
 HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, char *buffer, size_t len)
 {
   vfile *vf = vfile_init_mem(buffer, len, "wb");
-  HTTPHostStatus result = this->_get(request, vf);
+  HTTPHostStatus result = this->get(request, vf);
   vfclose(vf);
   return result;
 }

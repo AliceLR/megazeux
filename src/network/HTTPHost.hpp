@@ -114,9 +114,6 @@ struct UPDATER_LIBSPEC HTTPRequestInfo
  */
 class UPDATER_LIBSPEC HTTPHost: public Host
 {
-private:
-  HTTPHostStatus _get(HTTPRequestInfo &request, vfile *file);
-
 protected:
   ssize_t http_receive_line(char *buffer, size_t len);
   ssize_t http_send_line(const char *message);
@@ -159,7 +156,7 @@ public:
    *
    * @return see HTTPHostStatus.
    */
-  HTTPHostStatus get(HTTPRequestInfo &request, FILE *file);
+  HTTPHostStatus get(HTTPRequestInfo &request, vfile *file);
 
   /**
    * Send a GET request and stream the response (if any) to a buffer.
