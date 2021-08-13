@@ -36,7 +36,14 @@
 
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
 
-__editor_maybe_static char sfx_strs[NUM_SFX][SFX_SIZE] =
+/**
+ * The longest built-in SFX is the ring/potion sound, which is 68+1 chars long.
+ *
+ * This is also the legacy maximum SFX length. Custom SFX may potentially be
+ * longer in the future, and/or SFX beyond the 50 built-in SFX may be possible.
+ * Aside from potentially repurposing SFX 49, further built-ins are not likely.
+ */
+__editor_maybe_static char sfx_strs[NUM_BUILTIN_SFX][LEGACY_SFX_SIZE] =
 {
   "5c-gec-gec", // Gem
   "5c-gec-gec", // Magic Gem

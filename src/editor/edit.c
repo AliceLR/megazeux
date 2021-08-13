@@ -85,7 +85,6 @@
 static const char *const world_ext[] = { ".MZX", NULL };
 static const char *const mzb_ext[] = { ".MZB", NULL };
 static const char *const mzm_ext[] = { ".MZM", NULL };
-static const char *const sfx_ext[] = { ".SFX", NULL };
 static const char *const chr_ext[] = { ".CHR", NULL };
 static const char *const ans_ext[] = { ".ANS", ".TXT", NULL };
 static const char *const mod_ext[] =
@@ -2944,20 +2943,7 @@ static boolean editor_key(context *ctx, int *key)
             case 4:
             {
               // Sound effects
-              if(!choose_file(mzx_world, sfx_ext, import_name,
-               "Choose SFX file to import", ALLOW_ALL_DIRS))
-              {
-                FILE *sfx_file;
-
-                sfx_file = fopen_unsafe(import_name, "rb");
-                if(NUM_SFX !=
-                 fread(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file))
-                  error_message(E_IO_READ, 0, NULL);
-
-                mzx_world->custom_sfx_on = 1;
-                fclose(sfx_file);
-                editor->modified = true;
-              }
+              import_sfx(ctx, &editor->modified);
               break;
             }
 
@@ -3590,23 +3576,7 @@ static boolean editor_key(context *ctx, int *key)
             case 3:
             {
               // Sound effects
-              if(!new_file(mzx_world, sfx_ext, ".sfx", export_name,
-               "Export SFX file", ALLOW_ALL_DIRS))
-              {
-                FILE *sfx_file;
-
-                sfx_file = fopen_unsafe(export_name, "wb");
-
-                if(sfx_file)
-                {
-                  if(mzx_world->custom_sfx_on)
-                    fwrite(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file);
-                  else
-                    fwrite(sfx_strs, SFX_SIZE, NUM_SFX, sfx_file);
-
-                  fclose(sfx_file);
-                }
-              }
+              export_sfx(ctx);
               break;
             }
 

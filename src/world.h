@@ -211,6 +211,11 @@ CORE_LIBSPEC void refactor_board_list(struct world *mzx_world,
  struct board **new_board_list, int new_list_size,
  int *board_id_translation_list);
 CORE_LIBSPEC void optimize_null_boards(struct world *mzx_world);
+
+CORE_LIBSPEC void save_sfx_array(struct world *mzx_world,
+ char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE]);
+CORE_LIBSPEC boolean load_sfx_array(struct world *mzx_world,
+ char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE]);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

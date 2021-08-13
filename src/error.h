@@ -90,6 +90,8 @@ enum error_code
   E_ANSI_IMPORT,
   E_ANSI_EXPORT,
   E_TEXT_EXPORT,
+  E_SFX_IMPORT,
+  E_SFX_EXPORT,
 #endif
 #ifdef CONFIG_UPDATER
   E_UPDATE,
