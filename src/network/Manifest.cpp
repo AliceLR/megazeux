@@ -635,14 +635,13 @@ boolean Manifest::write_to_file(const char *filename) const
 {
   if(this->head)
   {
-    /* TODO vio */
-    ScopedFile<FILE, fclose> f = fopen_unsafe(filename, "ab");
-    if(!f)
+    ScopedFile<vfile, vfclose> vf = vfopen_unsafe(filename, "ab");
+    if(!vf)
       return false;
 
     for(ManifestEntry *e = this->head; e; e = e->next)
     {
-      fprintf(f, "%08x%08x%08x%08x%08x%08x%08x%08x %zu %s\n",
+      vf_printf(vf, "%08x%08x%08x%08x%08x%08x%08x%08x %zu %s\n",
        e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
        e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7],
        e->size, e->name);

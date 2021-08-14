@@ -769,6 +769,79 @@ int vfputs(const char *src, vfile *vf)
 }
 
 /**
+ * Print a formatted string with a variable number of parameters to a file.
+ * This function internally uses vfprintf and vsnprintf.
+ */
+int vf_printf(vfile *vf, const char *fmt, ...)
+{
+  va_list args;
+  int ret;
+
+  va_start(args, fmt);
+  ret = vf_vprintf(vf, fmt, args);
+  va_end(args);
+
+  return ret;
+}
+
+/**
+ * Print a formatted string with a variable number of parameters in a va_list
+ * to a file. This function internally uses vfprintf and vsnprintf.
+ */
+int vf_vprintf(vfile *vf, const char *fmt, va_list args)
+{
+  assert(vf);
+  assert(fmt);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_WRITE);
+
+  if(vf->flags & VF_MEMORY)
+  {
+    // Get the expected output length from the format string and args.
+    int length = vsnprintf(NULL, 0, fmt, args);
+    char _buffer[512];
+    void *buffer;
+
+    // Note: vsnprintf will fail if this is actually MSVC's broken _vsnprintf.
+    // This shouldn't happen since only MinGW and MSVC 2015+ are supported.
+    // Alternatively, some errors cause it to return -1.
+    if(length < 0)
+      return -1;
+
+    // Write to a temporary buffer to avoid null terminators overwriting data
+    // and potential side effects of allocating extra vfile space. This is a
+    // little slower but less messy than the alternative.
+    if((size_t)length >= sizeof(_buffer))
+    {
+      buffer = malloc(length + 1);
+      if(!buffer)
+        return -1;
+    }
+    else
+      buffer = _buffer;
+
+    length = vsnprintf((char *)buffer, length + 1, fmt, args);
+
+    if(vfile_ensure_space(length, vf))
+    {
+      mfwrite(buffer, length, 1, &(vf->mf));
+    }
+    else
+      length = -1;
+
+    if(buffer != _buffer)
+      free(buffer);
+
+    return length;
+  }
+
+  if(vf->flags & VF_FILE)
+    return vfprintf(vf->fp, fmt, args);
+
+  return -1;
+}
+
+/**
  * Place a character back into the stream. This can be used once only for
  * memory streams and is only guaranteed to be usable once for files.
  * If chr is EOF or otherwise does not represent a valid char, this function

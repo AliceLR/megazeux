@@ -40,6 +40,7 @@
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+#include "../io/vio.h"
 
 #include "../audio/audio.h"
 
@@ -3240,29 +3241,26 @@ void __debug_counters(context *ctx)
         {
           struct counter_list *counter_list = &(mzx_world->counter_list);
           struct string_list *string_list = &(mzx_world->string_list);
-          FILE *fp;
+          vfile *vf;
           size_t i;
 
-          fp = fopen_unsafe(export_name, "wb");
+          vf = vfopen_unsafe(export_name, "wb");
 
           for(i = 0; i < counter_list->num_counters; i++)
           {
-            fprintf(fp, "set \"%s\" to %"PRId32"\n",
-             counter_list->counters[i]->name, counter_list->counters[i]->value);
+            struct counter *ctr = counter_list->counters[i];
+            vf_printf(vf, "set \"%s\" to %" PRId32 "\n", ctr->name, ctr->value);
           }
 
           for(i = 0; i < string_list->num_strings; i++)
           {
-            fprintf(fp, "set \"%s\" to \"",
-             string_list->strings[i]->name);
-
-            fwrite(string_list->strings[i]->value,
-             string_list->strings[i]->length, 1, fp);
-
-            fprintf(fp, "\"\n");
+            struct string *str = string_list->strings[i];
+            vf_printf(vf, "set \"%s\" to \"", str->name);
+            vfwrite(str->value, str->length, 1, vf);
+            vfputs("\"\n", vf);
           }
 
-          fclose(fp);
+          vfclose(vf);
         }
 
         window_focus = 5;

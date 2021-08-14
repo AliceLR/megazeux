@@ -306,6 +306,23 @@ static void test_vfputs(vfile *vf)
   test_write_check(vf);
 }
 
+// Note: vf_printf is a wrapper for vf_vprintf, so both are tested by this.
+static void test_vf_printf(vfile *vf)
+{
+  long pos = vftell(vf);
+
+  int ret = vf_printf(vf, "%128.128s%.128s", (const char *)test_data, (const char *)test_data + 128);
+  ASSERTEQ(ret, 255, "vf_printf");
+
+  // *printf doesn't write a null terminator.
+  ret = vfputc(0, vf);
+  ASSERTEQ(ret, 0, "vfputc");
+
+  ret = vfseek(vf, pos, SEEK_SET);
+  ASSERTEQ(ret, 0, "vfseek");
+  test_write_check(vf);
+}
+
 static void test_vfseek_vftell_vrewind_read(vfile *vf)
 {
   static constexpr int set_valid[] = { 0, 128, 256, 7, 19, 157, 79, 9999 };
@@ -550,6 +567,7 @@ static void test_vfsafegets(vfile *vf, const char *filename,
   SECTION(write_vfputd)     test_vfputd(vf); \
   SECTION(write_vfwrite)    test_vfwrite(vf); \
   SECTION(write_vfputs)     test_vfputs(vf); \
+  SECTION(write_vf_printf)  test_vf_printf(vf); \
   /*if(!is_append) { SECTION(write_vfseektell)  test_vfseek_vftell_rewind_write(vf); } */ \
 } while(0)
 
