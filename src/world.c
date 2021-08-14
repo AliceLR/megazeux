@@ -2288,7 +2288,7 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
   // Prepare input pos
   if(!mzx_world->input_is_dir && mzx_world->input_file)
   {
-    mzx_world->temp_input_pos = ftell(mzx_world->input_file);
+    mzx_world->temp_input_pos = vftell(mzx_world->input_file);
   }
   else
 
@@ -2304,7 +2304,7 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
   // Prepare output pos
   if(mzx_world->output_file)
   {
-    mzx_world->temp_output_pos = ftell(mzx_world->output_file);
+    mzx_world->temp_output_pos = vftell(mzx_world->output_file);
   }
   else
   {
@@ -2649,9 +2649,9 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
     }
     else if(err == -FSAFE_SUCCESS)
     {
-      mzx_world->input_file = fopen_unsafe(translated_path, "rb");
+      mzx_world->input_file = vfopen_unsafe(translated_path, "rb");
       if(mzx_world->input_file)
-        fseek(mzx_world->input_file, mzx_world->temp_input_pos, SEEK_SET);
+        vfseek(mzx_world->input_file, mzx_world->temp_input_pos, SEEK_SET);
     }
   }
 
@@ -2663,7 +2663,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
     if(mzx_world->output_file)
     {
-      fseek(mzx_world->output_file, mzx_world->temp_output_pos, SEEK_SET);
+      vfseek(mzx_world->output_file, mzx_world->temp_output_pos, SEEK_SET);
     }
   }
 
@@ -3238,7 +3238,7 @@ void clear_world(struct world *mzx_world)
 
   if(!mzx_world->input_is_dir && mzx_world->input_file)
   {
-    fclose(mzx_world->input_file);
+    vfclose(mzx_world->input_file);
     mzx_world->input_file = NULL;
   }
   else
@@ -3252,7 +3252,7 @@ void clear_world(struct world *mzx_world)
 
   if(mzx_world->output_file)
   {
-    fclose(mzx_world->output_file);
+    vfclose(mzx_world->output_file);
     mzx_world->output_file = NULL;
   }
 

@@ -102,14 +102,6 @@ CORE_LIBSPEC boolean redirect_stdio_init(const char *base_path, boolean require_
 CORE_LIBSPEC void redirect_stdio_exit(void);
 #endif
 
-// Code to load multi-byte ints from little endian file
-int fgetw(FILE *fp);
-CORE_LIBSPEC int fgetd(FILE *fp);
-void fputw(int src, FILE *fp);
-void fputd(int src, FILE *fp);
-
-CORE_LIBSPEC long ftell_and_rewind(FILE *f);
-
 CORE_LIBSPEC void rng_seed_init(void);
 uint64_t rng_get_seed(void);
 void rng_set_seed(uint64_t seed);

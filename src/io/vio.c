@@ -110,6 +110,10 @@ static int get_vfile_mode_flags(const char *mode)
         flags |= VF_BINARY;
         break;
 
+      // Explicitly "text" mode. Does nothing, but some libcs support it.
+      case 't':
+        break;
+
       case '+':
         flags |= (VF_READ | VF_WRITE);
         break;

@@ -120,11 +120,11 @@ struct world
   int bi_shoot_status;
   int bi_mesg_status;
   char output_file_name[MAX_PATH];
-  FILE *output_file;
   char input_file_name[MAX_PATH];
-  FILE *input_file;
-  boolean input_is_dir;
+  vfile *output_file;
+  vfile *input_file;
   vdir *input_directory;
+  boolean input_is_dir;
   int temp_input_pos;
   int temp_output_pos;
   int commands;
@@ -228,7 +228,7 @@ struct world
   int raw_world_info_size;
 
   // Keep this open, just once
-  FILE *help_file;
+  vfile *help_file;
 
   // An array for game2.cpp
   char *update_done;
