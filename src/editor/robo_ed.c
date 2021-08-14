@@ -46,6 +46,7 @@
 #include "../world.h"
 #include "../io/fsafeopen.h"
 #include "../io/path.h"
+#include "../io/vio.h"
 
 #include "char_ed.h"
 #include "clipboard.h"
@@ -1681,7 +1682,7 @@ static void export_block(struct robot_editor_context *rstate,
   if(!file_manager(mzx_world, export_ext, NULL, export_name,
    "Export robot", ALLOW_ALL_DIRS, ALLOW_NEW_FILES, elements, num_elements, 3))
   {
-    FILE *export_file;
+    vfile *export_file;
 
     if(!export_region)
     {
@@ -1698,34 +1699,34 @@ static void export_block(struct robot_editor_context *rstate,
     if(export_type)
     {
       path_force_ext(export_name, MAX_PATH, ".bc");
-      export_file = fopen_unsafe(export_name, "wb");
+      export_file = vfopen_unsafe(export_name, "wb");
 
-      fputc(0xFF, export_file);
+      vfputc(0xFF, export_file);
 
       while(current_rline != end_rline)
       {
-        fwrite(current_rline->line_bytecode,
+        vfwrite(current_rline->line_bytecode,
          current_rline->line_bytecode_length, 1, export_file);
         current_rline = current_rline->next;
       }
 
-      fputc(0, export_file);
+      vfputc(0, export_file);
     }
     else
 #endif
     {
       path_force_ext(export_name, MAX_PATH, ".txt");
-      export_file = fopen_unsafe(export_name, "w");
+      export_file = vfopen_unsafe(export_name, "w");
 
       while(current_rline != end_rline)
       {
-        fputs(current_rline->line_text, export_file);
-        fputc('\n', export_file);
+        vfputs(current_rline->line_text, export_file);
+        vfputc('\n', export_file);
         current_rline = current_rline->next;
       }
     }
 
-    fclose(export_file);
+    vfclose(export_file);
   }
 }
 
@@ -1736,7 +1737,7 @@ static void import_block(struct robot_editor_context *rstate)
   const char *txt_ext[] = { ".TXT", NULL, NULL };
   char import_name[MAX_PATH];
   char line_buffer[256];
-  FILE *import_file;
+  vfile *import_file;
   int start_line = rstate->current_line;
 #ifndef CONFIG_DEBYTECODE
   ssize_t ext_pos;
@@ -1760,7 +1761,7 @@ static void import_block(struct robot_editor_context *rstate)
 
 #endif
 
-  import_file = fopen_unsafe(import_name, "rb");
+  import_file = vfopen_unsafe(import_name, "rb");
   if(!import_file)
     return;
 
@@ -1769,7 +1770,7 @@ static void import_block(struct robot_editor_context *rstate)
 
   if(ext_pos >= 1 && !strcasecmp(import_name + ext_pos, ".BC"))
   {
-    long file_size = ftell_and_rewind(import_file);
+    long file_size = vfilelength(import_file, true);
 
     // 0xff + length + cmd + length + 0x00
     if(file_size >= 5)
@@ -1778,10 +1779,10 @@ static void import_block(struct robot_editor_context *rstate)
        size_t ret;
 
        // skip 0xff
-       fgetc(import_file);
+       vfgetc(import_file);
 
        // put the rest in a buffer for disassemble_line()
-       ret = fread(buffer, file_size - 1, 1, import_file);
+       ret = vfread(buffer, file_size - 1, 1, import_file);
 
        // copied to buffer, must now disassemble
        if(ret == 1)
@@ -1819,7 +1820,7 @@ static void import_block(struct robot_editor_context *rstate)
 
     int disasm_length;
 
-    while(fsafegets(line_buffer, 256, import_file) != NULL)
+    while(vfsafegets(line_buffer, 256, import_file) != NULL)
     {
       legacy_assemble_line(line_buffer, bytecode_buffer, errors,
        NULL, NULL);
@@ -1839,11 +1840,11 @@ static void import_block(struct robot_editor_context *rstate)
   else
   {
     // fsafegets ensures that no line terminators are present
-    while(fsafegets(line_buffer, 255, import_file) != NULL)
+    while(vfsafegets(line_buffer, 255, import_file) != NULL)
       add_line(rstate, line_buffer, -1);
   }
 
-  fclose(import_file);
+  vfclose(import_file);
 
   /* undo */
   if(start_line < rstate->current_line)
