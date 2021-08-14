@@ -798,9 +798,16 @@ int vf_vprintf(vfile *vf, const char *fmt, va_list args)
   if(vf->flags & VF_MEMORY)
   {
     // Get the expected output length from the format string and args.
-    int length = vsnprintf(NULL, 0, fmt, args);
+    // This requires a duplicate arglist so vsnprintf can be called twice.
+    // va_copy is supported by MSVC 2015+.
+    va_list tmp_args;
+    int length;
     char _buffer[512];
     void *buffer;
+
+    va_copy(tmp_args, args);
+    length = vsnprintf(NULL, 0, fmt, tmp_args);
+    va_end(tmp_args);
 
     // Note: vsnprintf will fail if this is actually MSVC's broken _vsnprintf.
     // This shouldn't happen since only MinGW and MSVC 2015+ are supported.
