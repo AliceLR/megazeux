@@ -181,7 +181,7 @@ public:
    *
    * @return see HTTPHostStatus.
    */
-  HTTPHostStatus send_file(FILE *file, const char *mime_type);
+  HTTPHostStatus send_file(vfile *file, const char *mime_type);
 
   /**
    * Handle an incoming HTTP request.

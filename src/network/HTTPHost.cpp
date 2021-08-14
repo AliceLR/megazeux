@@ -834,7 +834,7 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, char *buffer, size_t len)
 
 #ifdef NETWORK_DEADCODE
 
-HTTPHostStatus HTTPHost::send_file(FILE *file, const char *mime_type)
+HTTPHostStatus HTTPHost::send_file(vfile *file, const char *mime_type)
 {
   boolean mid_deflate = false;
   char line[LINE_BUF_LEN];
@@ -878,7 +878,7 @@ HTTPHostStatus HTTPHost::send_file(FILE *file, const char *mime_type)
   crc = crc32(0L, Z_NULL, 0);
 
   // Record uncompressed size for GZIP footer
-  size = ftell_and_rewind(file);
+  size = vfilelength(file, true);
   uSize = (uint32_t)size;
   if(size < 0)
     return HOST_FREAD_FAILED;
@@ -893,7 +893,7 @@ HTTPHostStatus HTTPHost::send_file(FILE *file, const char *mime_type)
      * fly. This CRC will be dumped at the end of the deflated data
      * and is required for RFC 1952 compliancy.
      */
-    block_size = fread(block, 1, BLOCK_SIZE, file);
+    block_size = vfread(block, 1, BLOCK_SIZE, file);
     crc = crc32(crc, (Bytef *)block, block_size);
 
     /* The fread() above pretty much guarantees that block_size will
@@ -904,8 +904,10 @@ HTTPHostStatus HTTPHost::send_file(FILE *file, const char *mime_type)
      */
     if(block_size != BLOCK_SIZE)
     {
+      /* FIXME
       if(!feof(file))
         return HOST_FREAD_FAILED;
+      */
       deflate_flag = Z_FINISH;
     }
 
@@ -1036,7 +1038,7 @@ boolean HTTPHost::handle_request()
   char *cmd_type, *path, *proto;
   HTTPHostStatus ret;
   size_t path_len;
-  FILE *f;
+  vfile *f;
 
   trace("--HOST-- HTTPHost::handle_request\n");
 
@@ -1076,7 +1078,7 @@ boolean HTTPHost::handle_request()
   path++;
   trace("Received request for '%s'\n", path);
 
-  f = fopen_unsafe(path, "rb");
+  f = vfopen_unsafe(path, "rb");
   if(!f)
   {
     warn("Failed to open file '%s', sending 404\n", path);
@@ -1103,6 +1105,7 @@ boolean HTTPHost::handle_request()
     mime_type = "text/plain";
 
   ret = this->send_file(f, mime_type);
+  vfclose(f);
   if(ret != HOST_SUCCESS)
   {
     warn("Failed to send file '%s' over HTTP (error %d)\n", path, ret);
