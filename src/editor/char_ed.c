@@ -30,6 +30,7 @@
 #include "../window.h"
 #include "../world.h"
 #include "../io/path.h"
+#include "../io/vio.h"
 
 #include "configure.h"
 #include "graphics.h"
@@ -859,19 +860,19 @@ static int select_export_mode(struct world *mzx_world, const char *title)
 static int char_import_tile(const char *name, int char_offset, int charset,
  int highlight_width, int highlight_height)
 {
-  FILE *fp = fopen_unsafe(name, "rb");
-  if(fp)
+  vfile *vf = vfopen_unsafe(name, "rb");
+  if(vf)
   {
     size_t buffer_size = highlight_width * highlight_height * CHAR_SIZE;
     char *buffer = ccalloc(buffer_size, 1);
 
-    size_t data_size = ftell_and_rewind(fp);
+    size_t data_size = vfilelength(vf, true);
 
     if(data_size > buffer_size)
       data_size = buffer_size;
 
-    data_size = fread(buffer, 1, data_size, fp);
-    fclose(fp);
+    data_size = vfread(buffer, 1, data_size, vf);
+    vfclose(vf);
 
     ec_change_block((uint8_t)char_offset, (uint8_t)charset,
      (uint8_t)highlight_width, (uint8_t)highlight_height, buffer);
@@ -885,8 +886,8 @@ static int char_import_tile(const char *name, int char_offset, int charset,
 static void char_export_tile(const char *name, int char_offset, int charset,
  int highlight_width, int highlight_height)
 {
-  FILE *fp = fopen_unsafe(name, "wb");
-  if(fp)
+  vfile *vf = vfopen_unsafe(name, "wb");
+  if(vf)
   {
     size_t buffer_size = highlight_width * highlight_height * CHAR_SIZE;
     char *buffer = ccalloc(buffer_size, 1);
@@ -894,8 +895,8 @@ static void char_export_tile(const char *name, int char_offset, int charset,
     ec_read_block((uint8_t)char_offset, (uint8_t)charset,
      (uint8_t)highlight_width, (uint8_t)highlight_height, buffer);
 
-    fwrite(buffer, 1, buffer_size, fp);
-    fclose(fp);
+    vfwrite(buffer, 1, buffer_size, vf);
+    vfclose(vf);
 
     free(buffer);
   }

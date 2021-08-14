@@ -165,6 +165,8 @@ USERS
   loading PNGs with this configuration.
 + ccv and png2smzx now both support streaming image data from
   stdin using the input filename "-".
++ Fixed bugs caused by missing validation in the Import SFX
+  feature in the editor.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 

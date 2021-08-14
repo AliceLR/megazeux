@@ -82,6 +82,7 @@ enum sfx_id
   SFX_SCROLL_SIGN       = 47,
   SFX_GOOP              = 48,
   SFX_UNUSED_49         = 49,
+  NUM_BUILTIN_SFX       = 50,
   NUM_SFX               = 50
 };
 
@@ -89,7 +90,7 @@ enum sfx_id
 struct world;
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC extern char sfx_strs[NUM_SFX][SFX_SIZE];
+CORE_LIBSPEC extern char sfx_strs[NUM_BUILTIN_SFX][LEGACY_SFX_SIZE];
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_AUDIO

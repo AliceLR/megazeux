@@ -22,12 +22,12 @@
 #define __MANIFEST_HPP
 
 #include "../compat.h"
+#include "../io/vfile.h"
 
 #include "sha256.h"
 #include "HTTPHost.hpp"
 
 #include <stdint.h>
-#include <stdio.h>
 
 #define MANIFEST_TXT "manifest.txt"
 #define LOCAL_MANIFEST_TXT MANIFEST_TXT
@@ -49,11 +49,11 @@ public:
   /**
    * Check this manifest entry against its corresponding file.
    *
-   * @param fp          File pointer to validate.
+   * @param vf          File pointer to validate.
    *
    * @return `true` if the file exists and is an exact match, otherwise `false`.
    */
-  boolean validate(FILE *fp) const;
+  boolean validate(vfile *vf) const;
 
   /**
    * Check this manifest entry against its corresponding file (indicated by
@@ -82,7 +82,7 @@ public:
 
 private:
   void init(const uint32_t (&_sha256)[8], size_t _size, const char *name);
-  static boolean compute_sha256(SHA256_ctx &ctx, FILE *fp, size_t len);
+  static boolean compute_sha256(SHA256_ctx &ctx, vfile *vf, size_t len);
 };
 
 class UPDATER_LIBSPEC Manifest
@@ -98,7 +98,7 @@ private:
   Manifest &operator=(Manifest &&) { return *this; }
 #endif
 
-  void create(FILE *fp);
+  void create(vfile *vf);
   HTTPHostStatus get_remote(HTTPHost &http, HTTPRequestInfo &request,
    const char *basedir);
   void filter_duplicates(Manifest &local, Manifest &remote);

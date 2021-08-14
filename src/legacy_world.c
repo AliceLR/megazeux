@@ -710,7 +710,7 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
     int sfx_off = vftell(vf);
     int cur_sfx_size;
 
-    for(i = 0; i < NUM_SFX; i++)
+    for(i = 0; i < NUM_BUILTIN_SFX; i++)
     {
       cur_sfx_size = vfgetc(vf);
       if(cur_sfx_size < 0 || cur_sfx_size > LEGACY_SFX_SIZE)
@@ -720,7 +720,7 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
         break;
     }
 
-    if((i != NUM_SFX) || ((vftell(vf) - sfx_off) != sfx_size))
+    if((i != NUM_BUILTIN_SFX) || ((vftell(vf) - sfx_off) != sfx_size))
       goto err_invalid;
 
     num_boards = vfgetc(vf);
@@ -1129,7 +1129,7 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
     vfgetw(vf); // Skip word size
 
     //Read sfx
-    for(i = 0; i < NUM_SFX; i++, sfx_offset += LEGACY_SFX_SIZE)
+    for(i = 0; i < NUM_BUILTIN_SFX; i++, sfx_offset += LEGACY_SFX_SIZE)
     {
       sfx_size = vfgetc(vf);
       if(sfx_size && !vfread(sfx_offset, sfx_size, 1, vf))

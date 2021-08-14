@@ -1017,13 +1017,64 @@ static inline int load_world_global_robot(struct world *mzx_world,
 
 
 // SFX
+/**
+ * Block-SFX style that was used for <=2.92X .SFX files and for worlds
+ * saved between 2.90X and 2.92X.
+ */
+__editor_maybe_static
+void save_sfx_array(struct world *mzx_world, char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE])
+{
+  size_t sfx_offset;
+  size_t i;
+
+  memset(custom_sfx, 0, NUM_BUILTIN_SFX * LEGACY_SFX_SIZE);
+
+  // Ignore everything past the null terminator.
+  sfx_offset = 0;
+  for(i = 0; i < NUM_BUILTIN_SFX; i++, sfx_offset += LEGACY_SFX_SIZE)
+  {
+    size_t len = strlen(mzx_world->custom_sfx + sfx_offset);
+    if(len < LEGACY_SFX_SIZE)
+      memcpy(custom_sfx + sfx_offset, mzx_world->custom_sfx + sfx_offset, len);
+  }
+}
+
+__editor_maybe_static
+boolean load_sfx_array(struct world *mzx_world, char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE])
+{
+  size_t sfx_offset;
+  size_t i;
+  size_t j;
+
+  sfx_offset = 0;
+  for(i = 0; i < NUM_BUILTIN_SFX; i++, sfx_offset += LEGACY_SFX_SIZE)
+  {
+    // Must contain a null terminator within the read block.
+    for(j = 0; j < LEGACY_SFX_SIZE; j++)
+      if((custom_sfx + sfx_offset)[j] == '\0')
+        break;
+
+    if(j >= LEGACY_SFX_SIZE)
+      return false;
+
+    // Zero extra junk.
+    memset(custom_sfx + sfx_offset + j, 0, LEGACY_SFX_SIZE - j);
+  }
+
+  memcpy(mzx_world->custom_sfx, custom_sfx, NUM_BUILTIN_SFX * LEGACY_SFX_SIZE);
+  return true;
+}
+
 static inline int save_world_sfx(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
   // Only save if custom SFX are enabled
   if(mzx_world->custom_sfx_on)
   {
-    return zip_write_file(zp, name, mzx_world->custom_sfx, NUM_SFX * SFX_SIZE,
+    char tmp[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE];
+    save_sfx_array(mzx_world, tmp);
+
+    return zip_write_file(zp, name, tmp, NUM_BUILTIN_SFX * LEGACY_SFX_SIZE,
      ZIP_M_DEFLATE);
   }
 
@@ -1036,16 +1087,18 @@ static inline int load_world_sfx(struct world *mzx_world,
   // No custom SFX loaded yet
   if(!mzx_world->custom_sfx_on)
   {
+    char tmp[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE];
     int ret;
-    int i;
 
-    mzx_world->custom_sfx_on = 1;
-    ret = zip_read_file(zp, mzx_world->custom_sfx, NUM_SFX * SFX_SIZE, NULL);
+    memset(mzx_world->custom_sfx, 0, sizeof(mzx_world->custom_sfx));
 
-    // Don't trust input file null termination...
-    for(i = 0; i < NUM_SFX; i++)
-      mzx_world->custom_sfx[i * SFX_SIZE + SFX_SIZE - 1] = '\0';
+    ret = zip_read_file(zp, tmp, NUM_BUILTIN_SFX * LEGACY_SFX_SIZE, NULL);
 
+    if(ret == ZIP_SUCCESS)
+    {
+      if(load_sfx_array(mzx_world, tmp))
+        mzx_world->custom_sfx_on = 1;
+    }
     return ret;
   }
 

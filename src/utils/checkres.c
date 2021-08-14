@@ -76,12 +76,10 @@
  "\n"
 
 #include <ctype.h>
-#include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 #ifdef __WIN32__
 #include <strings.h>
@@ -99,6 +97,7 @@
 #include "../memcasecmp.h"
 #include "../world_format.h"
 #include "../io/memfile.h"
+#include "../io/vio.h"
 #include "../io/zip.h"
 
 // Contains some CORE_LIBSPEC functions, which should be fine if the object
@@ -582,63 +581,73 @@ static void strcpy_fsafe(char *dest, size_t dest_len, const char *src)
 static boolean path_search(const char *path_name, size_t base_len, int max_depth,
  void *data, void (*found_fn)(void *data, const char *name, size_t name_len))
 {
-  DIR *dir;
-  struct dirent *d;
+  vdir *dir;
   struct stat st;
   boolean join_paths = true;
 
   if(!strlen(path_name) || !strcmp(path_name, "."))
   {
-    dir = opendir(".");
+    dir = vdir_open(".");
     max_depth = MAX_PATH_DEPTH;
     join_paths = false;
     base_len = 0;
   }
   else
-    dir = opendir(path_name);
+    dir = vdir_open(path_name);
 
   if(dir)
   {
+    char buffer[MAX_PATH];
     char *_current = cmalloc(MAX_PATH);
     const char *current = NULL;
+    enum vdir_type type;
 
-    while((d = readdir(dir)) != NULL)
+    while(vdir_read(dir, buffer, MAX_PATH, &type))
     {
-      if(strcmp(d->d_name, ".") && strcmp(d->d_name, ".."))
+      if(strcmp(buffer, ".") && strcmp(buffer, ".."))
       {
         if(join_paths)
         {
-          join_path(_current, path_name, d->d_name);
+          join_path(_current, path_name, buffer);
           current = _current;
         }
         else
-          current = d->d_name;
+          current = buffer;
 
-        if(!stat(current, &st))
+        if(type == DIR_TYPE_UNKNOWN)
         {
-          if(S_ISDIR(st.st_mode))
+          if(!vstat(current, &st))
           {
-            // yolo
-            if(max_depth > 0)
-              path_search(current, base_len, max_depth - 1, data, found_fn);
-          }
-          else
+            if(S_ISREG(st.st_mode))
+              type = DIR_TYPE_FILE;
 
-          if(S_ISREG(st.st_mode))
+            if(S_ISDIR(st.st_mode))
+              type = DIR_TYPE_DIR;
+          }
+        }
+
+        if(type == DIR_TYPE_DIR)
+        {
+          // yolo
+          if(max_depth > 0)
+            path_search(current, base_len, max_depth - 1, data, found_fn);
+        }
+        else
+
+        if(type == DIR_TYPE_FILE)
+        {
+          // Strip off the base path if requested.
+          if(base_len && strlen(current) > base_len)
           {
-            // Strip off the base path if requested.
-            if(base_len && strlen(current) > base_len)
-            {
-              current += base_len;
-              while(*current == '\\' || *current == '/') current++;
-            }
-
-            found_fn(data, current, strlen(current));
+            current += base_len;
+            while(*current == '\\' || *current == '/') current++;
           }
+
+          found_fn(data, current, strlen(current));
         }
       }
     }
-    closedir(dir);
+    vdir_close(dir);
     free(_current);
     return true;
   }
@@ -1175,7 +1184,7 @@ static struct base_path *add_base_path(const char *path_name,
 
   size_t path_name_len = strlen(path_name);
 
-  if(stat(path_name, &st))
+  if(vstat(path_name, &st))
     return NULL;
 
   new_path = ccalloc(1, sizeof(struct base_path));
@@ -1437,7 +1446,7 @@ static void process_requirements(struct base_path **path_list,
         // Try to find an actual file
         join_path(path_buffer, current_path->actual_path, translated_path);
 
-        if(!stat(path_buffer, &stat_info))
+        if(!vstat(path_buffer, &stat_info))
         {
           found = true;
           break;
@@ -2941,16 +2950,13 @@ static enum status parse_world_file(struct memfile *mf, struct base_file *file)
   return MAGIC_CHECK_FAILED;
 }
 
-static char *load_file(FILE *fp, size_t *buf_size)
+static char *load_file(vfile *vf, size_t *buf_size)
 {
   char *buffer;
-
-  fseek(fp, 0, SEEK_END);
-  *buf_size = ftell(fp);
-  rewind(fp);
+  *buf_size = vfilelength(vf, true);
 
   buffer = cmalloc(*buf_size);
-  *buf_size = fread(buffer, 1, *buf_size, fp);
+  *buf_size = vfread(buffer, 1, *buf_size, vf);
 
   return buffer;
 }
@@ -2974,22 +2980,22 @@ static enum status parse_file(const char *file_name,
   struct memfile mf;
   char *buffer = NULL;
   size_t buf_size;
-  FILE *fp;
+  vfile *vf;
   int i;
 
   enum status ret = SUCCESS;
 
-  fp = fopen_unsafe(file_name, "rb");
+  vf = vfopen_unsafe(file_name, "rb");
   len = strlen(file_name);
   ext = len >= 4 ? (char *)file_name + len - 4 : NULL;
 
   if(!_get_path(file_dir, file_name))
     strcpy(file_dir, ".");
 
-  if(fp && ext && !strcasecmp(ext, ".MZX"))
+  if(vf && ext && !strcasecmp(ext, ".MZX"))
   {
-    buffer = load_file(fp, &buf_size);
-    fclose(fp);
+    buffer = load_file(vf, &buf_size);
+    vfclose(vf);
 
     // Add the containing directory as a base path
     add_base_path(file_dir, &path_list, &path_list_size, &path_list_alloc);
@@ -3003,10 +3009,10 @@ static enum status parse_file(const char *file_name,
   }
   else
 
-  if(fp && ext && !strcasecmp(ext, ".MZB"))
+  if(vf && ext && !strcasecmp(ext, ".MZB"))
   {
-    buffer = load_file(fp, &buf_size);
-    fclose(fp);
+    buffer = load_file(vf, &buf_size);
+    vfclose(vf);
 
     // Add the containing directory as a base path
     add_base_path(file_dir, &path_list, &path_list_size, &path_list_alloc);
@@ -3020,7 +3026,7 @@ static enum status parse_file(const char *file_name,
   }
   else
 
-  if(fp && !stat(file_name, &stat_info) && S_ISREG(stat_info.st_mode))
+  if(vf && !vstat(file_name, &stat_info) && S_ISREG(stat_info.st_mode))
   {
     // Is a file but isn't an .mzx or an .mzb? Try to read it as a zip...
     struct base_path *zip_base;
@@ -3029,7 +3035,7 @@ static enum status parse_file(const char *file_name,
     size_t actual_size;
     char name_buffer[MAX_PATH];
 
-    fclose(fp);
+    vfclose(vf);
 
     // Add the zip as a base path
     // This will open the zip and read its directory
@@ -3101,7 +3107,7 @@ static enum status parse_file(const char *file_name,
      &path_list_size, &path_list_alloc);
     char name_buffer[MAX_PATH];
 
-    if(fp) fclose(fp);
+    if(vf) vfclose(vf);
     if(!dir_base)
       return DIRENT_FAILED;
 
@@ -3110,16 +3116,16 @@ static enum status parse_file(const char *file_name,
       current_file = file_list[i];
       join_path(name_buffer, file_name, current_file->file_name);
 
-      fp = fopen_unsafe(name_buffer, "rb");
+      vf = vfopen_unsafe(name_buffer, "rb");
       len = strlen(current_file->file_name);
       ext = len >= 4 ? current_file->file_name + len - 4 : NULL;
-      if(fp)
+      if(vf)
       {
         // NOTE: the relative paths of these are automatically added in
         // add_base_files_from_path. The base file itself doesn't need a
         // relative path because it's being created as the cwd.
-        buffer = load_file(fp, &buf_size);
-        fclose(fp);
+        buffer = load_file(vf, &buf_size);
+        vfclose(vf);
 
         mfopen(buffer, buf_size, &mf);
 

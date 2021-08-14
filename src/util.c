@@ -410,7 +410,7 @@ boolean redirect_stdio_init(const char *base_path, boolean require_conf)
     struct stat stat_info;
 
     path_append(dest_path, MAX_PATH, "config.txt");
-    if(stat(dest_path, &stat_info))
+    if(vstat(dest_path, &stat_info))
       return false;
     dest_path[dest_len] = '\0';
   }

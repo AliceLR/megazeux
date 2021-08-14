@@ -503,6 +503,16 @@ int error_message(enum error_code id, int parameter, const char *string)
       sprintf(error_mesg, "Error exporting text");
       code = 0x1401;
       break;
+
+    case E_SFX_IMPORT:
+      sprintf(error_mesg, "File is invalid or is not an SFX file");
+      code = 0;
+      break;
+
+    case E_SFX_EXPORT:
+      sprintf(error_mesg, "Error exporting SFX file");
+      code = 0;
+      break;
 #endif
 
 #ifdef CONFIG_UPDATER

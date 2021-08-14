@@ -41,6 +41,7 @@
 #include "../window.h"
 #include "../world.h"
 #include "../io/path.h"
+#include "../io/vio.h"
 
 #include "../audio/audio.h"
 #include "../audio/sfx.h"
@@ -84,7 +85,6 @@
 static const char *const world_ext[] = { ".MZX", NULL };
 static const char *const mzb_ext[] = { ".MZB", NULL };
 static const char *const mzm_ext[] = { ".MZM", NULL };
-static const char *const sfx_ext[] = { ".SFX", NULL };
 static const char *const chr_ext[] = { ".CHR", NULL };
 static const char *const ans_ext[] = { ".ANS", ".TXT", NULL };
 static const char *const mod_ext[] =
@@ -227,7 +227,7 @@ static boolean editor_reload_world(struct editor_context *editor,
   snprintf(config_file_name, MAX_PATH, "%.*s.editor.cnf", file_name_len, file);
   config_file_name[MAX_PATH - 1] = '\0';
 
-  if(stat(config_file_name, &file_info) >= 0)
+  if(vstat(config_file_name, &file_info) >= 0)
     set_config_from_file(GAME_EDITOR_CNF, config_file_name);
 
   edit_menu_show_board_mod(editor->edit_menu);
@@ -247,7 +247,7 @@ static void get_test_world_filename(struct editor_context *editor)
   strcpy(editor->test_reload_file, TEST_WORLD_FILENAME);
 
   // If the regular file exists, attempt numbered names.
-  for(i = 2; !stat(editor->test_reload_file, &file_info); i++)
+  for(i = 2; !vstat(editor->test_reload_file, &file_info); i++)
     snprintf(editor->test_reload_file, MAX_PATH, TEST_WORLD_PATTERN, i);
 }
 
@@ -2943,20 +2943,7 @@ static boolean editor_key(context *ctx, int *key)
             case 4:
             {
               // Sound effects
-              if(!choose_file(mzx_world, sfx_ext, import_name,
-               "Choose SFX file to import", ALLOW_ALL_DIRS))
-              {
-                FILE *sfx_file;
-
-                sfx_file = fopen_unsafe(import_name, "rb");
-                if(NUM_SFX !=
-                 fread(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file))
-                  error_message(E_IO_READ, 0, NULL);
-
-                mzx_world->custom_sfx_on = 1;
-                fclose(sfx_file);
-                editor->modified = true;
-              }
+              import_sfx(ctx, &editor->modified);
               break;
             }
 
@@ -3217,8 +3204,8 @@ static boolean editor_key(context *ctx, int *key)
             char current_dir[MAX_PATH];
             char new_mod[MAX_PATH] = { 0 } ;
 
-            getcwd(current_dir, MAX_PATH);
-            chdir(editor->current_listening_dir);
+            vgetcwd(current_dir, MAX_PATH);
+            vchdir(editor->current_listening_dir);
 
             if(!choose_file(mzx_world, mod_ext, new_mod,
              "Choose a module file (listening only)", ALLOW_ALL_DIRS))
@@ -3230,7 +3217,7 @@ static boolean editor_key(context *ctx, int *key)
               editor->listening_mod_active = true;
             }
 
-            chdir(current_dir);
+            vchdir(current_dir);
           }
           else
           {
@@ -3425,7 +3412,7 @@ static boolean editor_key(context *ctx, int *key)
             save_world(mzx_world, world_name, false, MZX_VERSION);
 
             if(path_get_directory(new_path, MAX_PATH, world_name) > 0)
-              chdir(new_path);
+              vchdir(new_path);
 
             editor->modified = false;
           }
@@ -3458,7 +3445,7 @@ static boolean editor_key(context *ctx, int *key)
 
         if(!save_world(mzx_world, editor->test_reload_file, false, MZX_VERSION))
         {
-          getcwd(editor->test_reload_dir, MAX_PATH);
+          vgetcwd(editor->test_reload_dir, MAX_PATH);
           editor->test_reload_version = mzx_world->version;
           editor->test_reload_board = mzx_world->current_board_id;
           editor->reload_after_testing = true;
@@ -3589,23 +3576,7 @@ static boolean editor_key(context *ctx, int *key)
             case 3:
             {
               // Sound effects
-              if(!new_file(mzx_world, sfx_ext, ".sfx", export_name,
-               "Export SFX file", ALLOW_ALL_DIRS))
-              {
-                FILE *sfx_file;
-
-                sfx_file = fopen_unsafe(export_name, "wb");
-
-                if(sfx_file)
-                {
-                  if(mzx_world->custom_sfx_on)
-                    fwrite(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file);
-                  else
-                    fwrite(sfx_strs, SFX_SIZE, NUM_SFX, sfx_file);
-
-                  fclose(sfx_file);
-                }
-              }
+              export_sfx(ctx);
               break;
             }
 
@@ -3777,7 +3748,7 @@ static void editor_resume(context *ctx)
   if(editor->reload_after_testing)
   {
     editor->reload_after_testing = false;
-    chdir(editor->test_reload_dir);
+    vchdir(editor->test_reload_dir);
 
     if(!reload_world(mzx_world, editor->test_reload_file, &ignore))
     {
@@ -3812,7 +3783,7 @@ static void editor_resume(context *ctx)
       fix_mod(editor);
     }
 
-    unlink(editor->test_reload_file);
+    vunlink(editor->test_reload_file);
   }
 
   // These may have changed if a robot was edited.
@@ -3875,7 +3846,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
 
   struct stat stat_res;
 
-  getcwd(editor->current_listening_dir, MAX_PATH);
+  vgetcwd(editor->current_listening_dir, MAX_PATH);
 
   if(editor_conf->board_editor_hide_help)
     editor->screen_height = EDIT_SCREEN_MINIMAL;
@@ -3915,7 +3886,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   editor->edit_menu = create_edit_menu((context *)editor);
 
   // Reload the current world or create a blank world.
-  if(curr_file[0] && stat(curr_file, &stat_res))
+  if(curr_file[0] && vstat(curr_file, &stat_res))
     curr_file[0] = '\0';
 
   if(reload_curr_file && curr_file[0] &&

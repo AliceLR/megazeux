@@ -22,6 +22,7 @@
 
 #include "caption.h"
 #include "graphics.h"
+#include "platform_attribute.h" /* ATTRIBUTE_PRINTF */
 #include "world_struct.h"
 
 // TODO this might benefit from a dirty flag + graphics.c hook and/or
@@ -82,18 +83,7 @@ static boolean strip_caption_string(char *output, const char *input)
 /**
  * Append a string to the caption.
  */
-
-// Make GCC shut up
-#ifdef __GNUC__
-#if __GNUC__ >= 5 || (__GNUC__ == 4 &&  __GNUC_MINOR__ >= 4)
-static inline void caption_append(char caption[MAX_CAPTION_SIZE],
- const char *f, ...) __attribute__((format(gnu_printf, 2, 3)));
-#else
-static inline void caption_append(char caption[MAX_CAPTION_SIZE],
- const char *f, ...) __attribute__((format(printf, 2, 3)));
-#endif
-#endif
-
+ATTRIBUTE_PRINTF(2, 3)
 static inline void caption_append(char caption[MAX_CAPTION_SIZE],
  const char *f, ...)
 {

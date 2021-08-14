@@ -233,36 +233,6 @@ static inline FILE *check_fopen(const char *path, const char *mode)
 
 #define fopen(path, mode) check_fopen(path, mode)
 
-// These functions have the warn_unused_result attribute but in most cases
-// right now we'd just print a warning. So, wrap them and print a warning.
-
-#include <unistd.h>
-
-static inline char *check_getcwd(char *buf, size_t size)
-{
-  char *ret = getcwd(buf, size);
-  if(!ret)
-  {
-    fprintf(stderr, "WARNING: Failed getcwd from %s\n", buf);
-    fflush(stderr);
-  }
-  return ret;
-}
-
-static inline int check_chdir(const char *path)
-{
-  int ret = chdir(path);
-  if(ret)
-  {
-    fprintf(stderr, "WARNING: failed chdir to %s\n", path);
-    fflush(stderr);
-  }
-  return ret;
-}
-
-#define getcwd(buf, size) check_getcwd(buf, size)
-#define chdir(path) check_chdir(path)
-
 // Also deprecate some notoriously bad string functions.
 // strncpy and strncat are unsafe functions that get cargo cult usage as "safe"
 // versions of strcpy and strcat (which they aren't). strtok is non-reentrant.
