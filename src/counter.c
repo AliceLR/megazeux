@@ -2107,18 +2107,8 @@ static int fwrite_length_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->output_file)
-  {
-    // Since this can change without updating the file on disk, the easiest
-    // way to get this value is SEEK_END/ftell.
-    // FIXME this should be fixed to never use fstat for write files in vfilelength + unit test.
-    long current_pos = vftell(mzx_world->output_file);
-    long length;
+    return vfilelength(mzx_world->output_file, false);
 
-    vfseek(mzx_world->output_file, 0, SEEK_END);
-    length = vftell(mzx_world->output_file);
-    vfseek(mzx_world->output_file, current_pos, SEEK_SET);
-    return length;
-  }
   return -1;
 }
 

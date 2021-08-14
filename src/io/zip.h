@@ -276,7 +276,7 @@ UTILS_LIBSPEC enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
 UTILS_LIBSPEC enum zip_error zip_write_close_stream(struct zip_archive *zp);
 
 UTILS_LIBSPEC enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
- struct memfile *mf, const char *name);
+ struct memfile *mf, const char *name, size_t length);
 
 UTILS_LIBSPEC enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
  struct memfile *mf);

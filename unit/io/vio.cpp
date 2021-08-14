@@ -421,6 +421,42 @@ static void test_filelength(long expected_len, vfile *vf)
   }
 }
 
+// Make sure vfilelength accurately updates to match the current file position.
+// NOTE: this may not work on append files...
+static void test_filelength_write(vfile *vf)
+{
+  long pos = vftell(vf);
+  long len;
+  long size;
+  int ret;
+
+  // New file or appending to file, length should be vftell().
+  len = vfilelength(vf, false);
+  ASSERTEQ(len, pos, "vfilelength == vftell (1)");
+
+  // Write first half.
+  size = sizeof(test_data)/2;
+  ret = vfwrite(test_data, size, 1, vf);
+  ASSERTEQ(ret, 1, "vfwrite (1)");
+
+  len = vfilelength(vf, false);
+  ASSERTEQ(len, size + pos, "vfilelength (2)");
+  ASSERTEQ(vftell(vf), size + pos, "vftell (2)");
+
+  // Write some more junk.
+  ret = vfputc(0x12, vf);
+  ASSERTEQ(ret, 0x12, "");
+  ret = vfputc(0x34, vf);
+  ASSERTEQ(ret, 0x34, "");
+  ret = vfputw(0x7856, vf);
+  ASSERTEQ(ret, 0x7856, "");
+
+  size += 4;
+  len = vfilelength(vf, false);
+  ASSERTEQ(len, size + pos, "vfilelength (3)");
+  ASSERTEQ(vftell(vf), size + pos, "vftell (3)");
+}
+
 static void test_vungetc(vfile *vf)
 {
   long pos;
@@ -568,6 +604,7 @@ static void test_vfsafegets(vfile *vf, const char *filename,
   SECTION(write_vfwrite)    test_vfwrite(vf); \
   SECTION(write_vfputs)     test_vfputs(vf); \
   SECTION(write_vf_printf)  test_vf_printf(vf); \
+  SECTION(write_filelength) test_filelength_write(vf); \
   /*if(!is_append) { SECTION(write_vfseektell)  test_vfseek_vftell_rewind_write(vf); } */ \
 } while(0)
 
