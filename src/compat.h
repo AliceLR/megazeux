@@ -237,6 +237,10 @@ static inline FILE *check_fopen(const char *path, const char *mode)
 // strncpy and strncat are unsafe functions that get cargo cult usage as "safe"
 // versions of strcpy and strcat (which they aren't). strtok is non-reentrant.
 
+#ifdef _WIN32
+// Some MinGW headers use these functions inline for some reason...
+#include <io.h>
+#endif
 #include <string.h>
 static inline char *check_strncpy(char *, const char *, size_t)
  __attribute__((deprecated));
