@@ -37,8 +37,10 @@ __M_BEGIN_DECLS
 
 struct rgb_color;
 
+/*
 int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
  const char *name);
+*/
 int png_write_screen_32bpp(uint32_t *pixels, const char *name);
 
 #endif // NEED_PNG_WRITE_SCREEN

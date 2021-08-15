@@ -17,7 +17,7 @@ utils_obj = src/utils/.build
 utils_cflags := ${LIBPNG_CFLAGS} -DUTILS_LIBSPEC=
 
 zip_objs  := ${io_obj}/vio.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
-img_objs  := ${utils_obj}/image_file.o
+img_objs  := ${io_obj}/vio.o ${utils_obj}/image_file.o
 img_flags :=
 
 ifneq (${LIBPNG},)
@@ -47,7 +47,7 @@ txt2hlp_objs := ${utils_obj}/txt2hlp.o
 png2smzx := ${utils_src}/png2smzx${BINEXT}
 png2smzx_objs := ${utils_obj}/png2smzx.o ${utils_obj}/smzxconv.o
 png2smzx_objs += ${img_objs}
-png2smzx_objs += ${io_obj}/path.o ${io_obj}/vio.o
+png2smzx_objs += ${io_obj}/path.o
 png2smzx_ldflags := ${img_flags}
 
 ccv := ${utils_src}/ccv${BINEXT}

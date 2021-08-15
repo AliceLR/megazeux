@@ -2644,81 +2644,81 @@ static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
 static void dump_screen_real(uint8_t *pix, struct rgb_color *pal, int count,
  const char *name)
 {
-  FILE *file;
+  vfile *file;
   int i;
 
-  file = fopen_unsafe(name, "wb");
+  file = vfopen_unsafe(name, "wb");
   if(!file)
     return;
 
   // BMP header
-  fputw(0x4D42, file); // BM
-  fputd(14 + 40 + count * 4 + 640 * 350, file); // BMP + DIB + palette + image
-  fputd(0, file); // Reserved
-  fputd(14, file); // DIB header offset
+  vfputw(0x4D42, file); // BM
+  vfputd(14 + 40 + count * 4 + 640 * 350, file); // BMP + DIB + palette + image
+  vfputd(0, file); // Reserved
+  vfputd(14, file); // DIB header offset
 
   // DIB header
-  fputd(40, file); // DIB header size (Windows 3/BITMAPINFOHEADER)
-  fputd(640, file); // Width in pixels
-  fputd(350, file); // Height in pixels
-  fputw(1, file); // Number of color planes
-  fputw(8, file); // Bits per pixel
-  fputd(0, file); // Compression method (none)
-  fputd(640 * 350, file); // Image data size
-  fputd(3780, file); // Horizontal dots per meter
-  fputd(3780, file); // Vertical dots per meter
-  fputd(count, file); // Number of colors in palette
-  fputd(0, file); // Number of important colors
+  vfputd(40, file); // DIB header size (Windows 3/BITMAPINFOHEADER)
+  vfputd(640, file); // Width in pixels
+  vfputd(350, file); // Height in pixels
+  vfputw(1, file); // Number of color planes
+  vfputw(8, file); // Bits per pixel
+  vfputd(0, file); // Compression method (none)
+  vfputd(640 * 350, file); // Image data size
+  vfputd(3780, file); // Horizontal dots per meter
+  vfputd(3780, file); // Vertical dots per meter
+  vfputd(count, file); // Number of colors in palette
+  vfputd(0, file); // Number of important colors
 
   // Color palette
   for(i = 0; i < count; i++)
   {
-    fputc(pal[i].b, file);
-    fputc(pal[i].g, file);
-    fputc(pal[i].r, file);
-    fputc(0, file);
+    vfputc(pal[i].b, file);
+    vfputc(pal[i].g, file);
+    vfputc(pal[i].r, file);
+    vfputc(0, file);
   }
 
   // Image data
   for(i = 349; i >= 0; i--)
   {
-    fwrite(pix + i * 640, sizeof(uint8_t), 640, file);
+    vfwrite(pix + i * 640, sizeof(uint8_t), 640, file);
   }
 
-  fclose(file);
+  vfclose(file);
 }
 */
 static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
 {
-  FILE *file;
+  vfile *file;
   int i, x;
   uint8_t rowbuffer[SCREEN_PIX_W * 3]; // 24bpp
   uint8_t *rowbuffer_ptr;
   uint32_t *pix_ptr;
 
-  file = fopen_unsafe(name, "wb");
+  file = vfopen_unsafe(name, "wb");
   if(!file)
     return;
 
   // BMP header
-  fputw(0x4D42, file); // BM
+  vfputw(0x4D42, file); // BM
   // BMP + DIB + image
-  fputd(14 + 40 + SCREEN_PIX_W * SCREEN_PIX_H * 3, file);
-  fputd(0, file); // Reserved
-  fputd(14, file); // DIB header offset
+  vfputd(14 + 40 + SCREEN_PIX_W * SCREEN_PIX_H * 3, file);
+  vfputd(0, file); // Reserved
+  vfputd(14, file); // DIB header offset
 
   // DIB header
-  fputd(40, file); // DIB header size (Windows 3/BITMAPINFOHEADER)
-  fputd(SCREEN_PIX_W, file); // Width in pixels
-  fputd(SCREEN_PIX_H, file); // Height in pixels
-  fputw(1, file); // Number of color planes
-  fputw(24, file); // Bits per pixel
-  fputd(0, file); // Compression method (none)
-  fputd(SCREEN_PIX_W * SCREEN_PIX_H * 3, file); // Image data size
-  fputd(3780, file); // Horizontal dots per meter
-  fputd(3780, file); // Vertical dots per meter
-  fputd(0, file); // Number of colors in palette
-  fputd(0, file); // Number of important colors
+  vfputd(40, file); // DIB header size (Windows 3/BITMAPINFOHEADER)
+  vfputd(SCREEN_PIX_W, file); // Width in pixels
+  vfputd(SCREEN_PIX_H, file); // Height in pixels
+  vfputw(1, file); // Number of color planes
+  vfputw(24, file); // Bits per pixel
+  vfputd(0, file); // Compression method (none)
+  vfputd(SCREEN_PIX_W * SCREEN_PIX_H * 3, file); // Image data size
+  vfputd(3780, file); // Horizontal dots per meter
+  vfputd(3780, file); // Vertical dots per meter
+  vfputd(0, file); // Number of colors in palette
+  vfputd(0, file); // Number of important colors
 
   // Image data
   for(i = SCREEN_PIX_H - 1; i >= 0; i--)
@@ -2733,11 +2733,10 @@ static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
       rowbuffer_ptr += 3;
       pix_ptr++;
     }
-    fwrite(rowbuffer, SCREEN_PIX_W * 3, 1, file);
-    //fwrite(pix + i * 640, sizeof(uint8_t), 640, file);
+    vfwrite(rowbuffer, SCREEN_PIX_W * 3, 1, file);
   }
 
-  fclose(file);
+  vfclose(file);
 }
 
 #endif // CONFIG_PNG

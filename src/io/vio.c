@@ -660,7 +660,7 @@ int vfputd(int character, vfile *vf)
 /**
  * Read an array from a file.
  */
-int vfread(void *dest, size_t size, size_t count, vfile *vf)
+size_t vfread(void *dest, size_t size, size_t count, vfile *vf)
 {
   assert(vf);
   assert(dest);
@@ -696,7 +696,7 @@ int vfread(void *dest, size_t size, size_t count, vfile *vf)
 /**
  * Write an array to a file.
  */
-int vfwrite(const void *src, size_t size, size_t count, vfile *vf)
+size_t vfwrite(const void *src, size_t size, size_t count, vfile *vf)
 {
   assert(vf);
   assert(src);
