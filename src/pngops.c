@@ -20,6 +20,7 @@
 #include "graphics.h"
 #include "pngops.h"
 #include "util.h"
+#include "io/vio.h"
 
 #include <png.h>
 #include <stdint.h>
@@ -28,6 +29,16 @@
 
 #ifdef NEED_PNG_WRITE_SCREEN
 
+static void png_write_vfile(png_struct *png_ptr, png_byte *data, png_size_t length)
+{
+  vfile *vf = (vfile *)png_get_io_ptr(png_ptr);
+  if(vfwrite(data, 1, length, vf) < length)
+    png_error(png_ptr, "write error");
+}
+
+static void png_flush_vfile(png_struct *png_ptr) {}
+
+/*
 int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
  const char *name)
 {
@@ -38,10 +49,10 @@ int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
   int volatile ret = false;
   int type;
   int i;
-  FILE *f;
+  vfile *vf;
 
-  f = fopen_unsafe(name, "wb");
-  if(!f)
+  vf = vfopen_unsafe(name, "wb");
+  if(!vf)
     goto exit_out;
 
   png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -55,7 +66,8 @@ int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
   if(setjmp(png_jmpbuf(png_ptr)))
     goto exit_free_close;
 
-  png_init_io(png_ptr, f);
+  //png_init_io(png_ptr, f);
+  png_set_write_fn(png_ptr, vf, png_write_vfile, png_flush_vfile);
 
   // we know we have an 8-bit surface; save a palettized PNG
   type = PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE;
@@ -97,10 +109,11 @@ exit_free_close:
   free(pal_ptr);
   free(row_ptrs);
 exit_close:
-  fclose(f);
+  vfclose(vf);
 exit_out:
   return ret;
 }
+*/
 
 int png_write_screen_32bpp(uint32_t *pixels, const char *name)
 {
@@ -110,10 +123,10 @@ int png_write_screen_32bpp(uint32_t *pixels, const char *name)
   int volatile ret = false;
   int type;
   int i;
-  FILE *f;
+  vfile *vf;
 
-  f = fopen_unsafe(name, "wb");
-  if(!f)
+  vf = vfopen_unsafe(name, "wb");
+  if(!vf)
     goto exit_out;
 
   png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -127,7 +140,8 @@ int png_write_screen_32bpp(uint32_t *pixels, const char *name)
   if(setjmp(png_jmpbuf(png_ptr)))
     goto exit_free_close;
 
-  png_init_io(png_ptr, f);
+  //png_init_io(png_ptr, f);
+  png_set_write_fn(png_ptr, vf, png_write_vfile, png_flush_vfile);
 
   // 24-bit png
   type = PNG_COLOR_TYPE_RGB;
@@ -160,7 +174,7 @@ exit_free_close:
   png_destroy_write_struct(&png_ptr, &info_ptr);
   free(row_ptrs);
 exit_close:
-  fclose(f);
+  vfclose(vf);
 exit_out:
   return ret;
 }
@@ -168,6 +182,8 @@ exit_out:
 #endif /* NEED_PNG_WRITE_SCREEN */
 
 #ifdef NEED_PNG_READ_FILE
+
+/* TODO can vio-ize these, but it involves updating image_file.c. */
 
 static boolean png_check_stream(FILE *fp)
 {

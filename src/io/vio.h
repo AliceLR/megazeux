@@ -72,8 +72,8 @@ UTILS_LIBSPEC int vfgetd(vfile *vf);
 UTILS_LIBSPEC int vfputc(int character, vfile *vf);
 UTILS_LIBSPEC int vfputw(int character, vfile *vf);
 UTILS_LIBSPEC int vfputd(int character, vfile *vf);
-UTILS_LIBSPEC int vfread(void *dest, size_t size, size_t count, vfile *vf);
-UTILS_LIBSPEC int vfwrite(const void *src, size_t size, size_t count, vfile *vf);
+UTILS_LIBSPEC size_t vfread(void *dest, size_t size, size_t count, vfile *vf);
+UTILS_LIBSPEC size_t vfwrite(const void *src, size_t size, size_t count, vfile *vf);
 UTILS_LIBSPEC char *vfsafegets(char *dest, int size, vfile *vf);
 UTILS_LIBSPEC int vfputs(const char *src, vfile *vf);
 UTILS_LIBSPEC int vf_printf(vfile *vf, const char *fmt, ...)
