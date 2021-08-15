@@ -632,6 +632,63 @@ UNITTEST(Init)
   }
 }
 
+UNITTEST(ModeFlags)
+{
+  struct mode_flag_pairs
+  {
+    const char *mode;
+    int expected;
+  };
+
+  static const mode_flag_pairs data[] =
+  {
+    { "r", VF_READ },
+    { "w", VF_WRITE | VF_TRUNCATE },
+    { "a", VF_WRITE | VF_APPEND },
+    { "r+", VF_READ | VF_WRITE },
+    { "w+", VF_READ | VF_WRITE | VF_TRUNCATE },
+    { "a+", VF_READ | VF_WRITE | VF_APPEND },
+    { "rb", VF_READ | VF_BINARY },
+    { "wb", VF_WRITE | VF_TRUNCATE | VF_BINARY },
+    { "ab", VF_WRITE | VF_APPEND | VF_BINARY },
+    // Both orderings of '+' and 'b' are valid.
+    { "r+b", VF_READ | VF_WRITE | VF_BINARY },
+    { "w+b", VF_READ | VF_WRITE | VF_TRUNCATE | VF_BINARY },
+    { "a+b", VF_READ | VF_WRITE | VF_APPEND | VF_BINARY },
+    { "rb+", VF_READ | VF_WRITE | VF_BINARY },
+    { "wb+", VF_READ | VF_WRITE | VF_TRUNCATE | VF_BINARY },
+    { "ab+", VF_READ | VF_WRITE | VF_APPEND | VF_BINARY },
+    // 't' to explicitly state text mode is non-standard but seems to be well-supported.
+    { "rt", VF_READ },
+    { "wt", VF_WRITE | VF_TRUNCATE },
+    { "at", VF_WRITE | VF_APPEND },
+    { "r+t", VF_READ | VF_WRITE },
+    { "w+t", VF_READ | VF_WRITE | VF_TRUNCATE },
+    { "a+t", VF_READ | VF_WRITE | VF_APPEND },
+    // 'r'/'w'/'a' must be first.
+    { "br", 0 },
+    { "bw", 0 },
+    { "ba", 0 },
+    { "+r", 0 },
+    { "+w", 0 },
+    { "+a", 0 },
+    { "tr", 0 },
+    // Other invalid junk.
+    { "+", 0 },
+    { "b", 0 },
+    { "t", 0 },
+    { "    ", 0 },
+    { "fjdskfdj", 0 },
+    { "", 0 },
+  };
+
+  for(const mode_flag_pairs &d : data)
+  {
+    int res = get_vfile_mode_flags(d.mode);
+    ASSERTEQ(res, d.expected, "%s", d.mode);
+  }
+}
+
 UNITTEST(FileRead)
 {
   ScopedFile<vfile, vfclose> vf_in =
