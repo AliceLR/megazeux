@@ -99,6 +99,7 @@ struct buffer_data
 {
   char *buffer;
   size_t buffer_len;
+  boolean has0;
   boolean has8;
   boolean has16;
   boolean has32;
@@ -116,12 +117,12 @@ UNITTEST(mfhasspace)
   char buffere[256];
   struct buffer_data pairs[] =
   {
-    { buffer8, arraysize(buffer8), true, false, false, false, false },
-    { buffera, arraysize(buffera), true, true,  false, false, false },
-    { bufferb, arraysize(bufferb), true, true,  true,  false, false },
-    { bufferc, arraysize(bufferc), true, true,  true,  true,  false },
-    { bufferd, arraysize(bufferd), true, true,  true,  true,  true  },
-    { buffere, arraysize(buffere), true, true,  true,  true,  true  },
+    { buffer8, arraysize(buffer8), true, true, false, false, false, false },
+    { buffera, arraysize(buffera), true, true, true,  false, false, false },
+    { bufferb, arraysize(bufferb), true, true, true,  true,  false, false },
+    { bufferc, arraysize(bufferc), true, true, true,  true,  true,  false },
+    { bufferd, arraysize(bufferd), true, true, true,  true,  true,  true  },
+    { buffere, arraysize(buffere), true, true, true,  true,  true,  true  },
   };
   struct memfile mf;
   int i;
@@ -129,6 +130,7 @@ UNITTEST(mfhasspace)
   for(i = 0; i < arraysize(pairs); i++)
   {
     mfopen(pairs[i].buffer, pairs[i].buffer_len, &mf);
+    ASSERTEQ(pairs[i].has0,   mfhasspace(0, &mf), "%d", i);
     ASSERTEQ(pairs[i].has8,   mfhasspace(8, &mf), "%d", i);
     ASSERTEQ(pairs[i].has16,  mfhasspace(16, &mf), "%d", i);
     ASSERTEQ(pairs[i].has32,  mfhasspace(32, &mf), "%d", i);
@@ -140,7 +142,13 @@ UNITTEST(mfhasspace)
     ASSERTEQ(pairs[i].has32,  mfhasspace(16, &mf), "%d", i);
     ASSERTEQ(pairs[i].has64,  mfhasspace(32, &mf), "%d", i);
     ASSERTEQ(pairs[i].has128, mfhasspace(64, &mf), "%d", i);
+
+    mf.current = mf.end;
+    ASSERTEQ(pairs[i].has0,   mfhasspace(0, &mf), "%d", i);
   }
+
+  struct memfile tmp{};
+  ASSERTEQ(mfhasspace(0, &tmp), false, "NULL memfile->current should return false");
 }
 
 UNITTEST(mfmove)

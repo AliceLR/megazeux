@@ -728,17 +728,16 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
       prepare_robot_bytecode(mzx_world, cur_robot);
 #endif
 
-    // The regular way works with memory zips too, but this is faster.
+    actual_size = save_robot_calculate_size(mzx_world, cur_robot, savegame,
+     file_version);
 
     if(zp->is_memory)
     {
-      zip_write_open_mem_stream(zp, &mf, name);
+      // The regular way works with memory zips too, but this is faster.
+      zip_write_open_mem_stream(zp, &mf, name, actual_size);
     }
-
     else
     {
-      actual_size = save_robot_calculate_size(mzx_world, cur_robot, savegame,
-       file_version);
       buffer = cmalloc(actual_size);
 
       mfopen(buffer, actual_size, &mf);
@@ -750,7 +749,6 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
     {
       zip_write_close_mem_stream(zp, &mf);
     }
-
     else
     {
       zip_write_file(zp, name, buffer, actual_size, ZIP_M_NONE);

@@ -53,6 +53,7 @@ enum vfileflags_private
   VF_WRITE              = (1<<5),
   VF_APPEND             = (1<<6),
   VF_BINARY             = (1<<7),
+  VF_TRUNCATE           = (1<<8),
 
   VF_STORAGE_MASK       = (VF_FILE | VF_MEMORY),
   VF_PUBLIC_MASK        = (V_SMALL_BUFFER | V_LARGE_BUFFER)
@@ -63,7 +64,7 @@ struct vfile
   FILE *fp;
 
   struct memfile mf;
-  // Local copy of pointer/size of expandable vfile buffer.
+  // Local copy of pointer/size of a memory vfile buffer (expandable or not).
   void *local_buffer;
   size_t local_buffer_size;
   // External copy of pointer/size of expandable vfile buffer.
@@ -91,7 +92,7 @@ static int get_vfile_mode_flags(const char *mode)
       break;
 
     case 'w':
-      flags |= VF_WRITE;
+      flags |= VF_WRITE | VF_TRUNCATE;
       break;
 
     case 'a':
@@ -108,6 +109,10 @@ static int get_vfile_mode_flags(const char *mode)
     {
       case 'b':
         flags |= VF_BINARY;
+        break;
+
+      // Explicitly "text" mode. Does nothing, but some libcs support it.
+      case 't':
         break;
 
       case '+':
@@ -200,15 +205,23 @@ vfile *vfile_init_mem(void *buffer, size_t size, const char *mode)
 {
   int flags = get_vfile_mode_flags(mode);
   vfile *vf = NULL;
+  size_t filesize = size;
 
   assert((buffer && size) || (!buffer && !size));
   assert(flags);
 
+  // "w"-based modes should start at size 0 and expand as-needed, either in
+  // their fixed buffer or with an extendable buffer (see vfile_init_mem_ext).
+  if(flags & VF_TRUNCATE)
+    filesize = 0;
+
   vf = (vfile *)ccalloc(1, sizeof(vfile));
-  mfopen(buffer, size, &(vf->mf));
+  mfopen(buffer, filesize, &(vf->mf));
   vf->mf.seek_past_end = true;
   vf->tmp_chr = EOF;
   vf->flags = flags | VF_MEMORY;
+  vf->local_buffer = buffer;
+  vf->local_buffer_size = size;
   return vf;
 }
 
@@ -225,8 +238,6 @@ vfile *vfile_init_mem_ext(void **external_buffer, size_t *external_buffer_size,
   assert(vf->flags & VF_WRITE);
 
   vf->flags |= VF_MEMORY_EXPANDABLE;
-  vf->local_buffer = *external_buffer;
-  vf->local_buffer_size = *external_buffer_size;
   vf->external_buffer = external_buffer;
   vf->external_buffer_size = external_buffer_size;
   return vf;
@@ -291,17 +302,6 @@ int vfclose(vfile *vf)
 
   free(vf);
   return retval;
-}
-
-/**
- * Get the underlying memfile of a memory vfile. This should pretty much
- * not be used, but some things in the zip code already relied on it.
- */
-struct memfile *vfile_get_memfile(vfile *vf)
-{
-  assert(vf);
-  assert(vf->flags & VF_MEMORY);
-  return &(vf->mf);
 }
 
 
@@ -397,7 +397,7 @@ int vstat(const char *path, struct stat *buf)
  * Ensure an amount of space exists in a memory vfile or expand the vfile
  * (if possible). This should be used for writing only.
  */
-static inline boolean vfile_ensure_space(int amount_to_write, vfile *vf)
+static inline boolean vfile_ensure_space(size_t amount_to_write, vfile *vf)
 {
   struct memfile *mf = &(vf->mf);
   size_t new_size;
@@ -410,15 +410,15 @@ static inline boolean vfile_ensure_space(int amount_to_write, vfile *vf)
 
   if(!mfhasspace(amount_to_write, mf))
   {
-    if(!(vf->flags & VF_MEMORY_EXPANDABLE))
-      return false;
-
     new_size = (mf->start ? (mf->current - mf->start) : 0) + amount_to_write;
     if(new_size > vf->local_buffer_size)
     {
       size_t new_size_alloc = 32;
       void *t;
       int i;
+
+      if(!(vf->flags & VF_MEMORY_EXPANDABLE))
+        return false;
 
       for(i = 0; i < 64 && new_size_alloc < new_size; i++)
         new_size_alloc <<= 1;
@@ -442,6 +442,29 @@ static inline boolean vfile_ensure_space(int amount_to_write, vfile *vf)
 
     return (mf->end - mf->start) >= (ptrdiff_t)new_size;
   }
+  return true;
+}
+
+/**
+ * Get a direct memory access memfile of a given length starting at the current
+ * position of a memory vfile. This should pretty much not be used, but some
+ * things in the zip code already relied on it. If dest is NULL, a size check
+ * (and potential expansion) will still be performed.
+ */
+boolean vfile_get_memfile_block(vfile *vf, size_t length, struct memfile *dest)
+{
+  assert(vf);
+  assert(vf->flags & VF_MEMORY);
+  if(vf->flags & VF_WRITE)
+  {
+    if(!vfile_ensure_space(length, vf))
+      return false;
+  }
+  if(!mfhasspace(length, &(vf->mf)))
+    return false;
+
+  if(dest)
+    mfopen(vf->mf.current, length, dest);
   return true;
 }
 
@@ -952,7 +975,8 @@ void vrewind(vfile *vf)
  * If rewind is false, this function is guaranteed to either not modify the
  * current file position or to restore it to its position prior to calling this.
  * This function is not guaranteed to work correctly on streams that have been
- * written to or on memory write streams with fixed buffers.
+ * written to or on memory write streams with fixed buffers, but is probably
+ * safe to use for these cases.
  */
 long vfilelength(vfile *vf, boolean rewind)
 {
@@ -970,6 +994,11 @@ long vfilelength(vfile *vf, boolean rewind)
   {
     struct stat st;
     int fd = fileno(vf->fp);
+
+    // fstat (and maybe _filelength) rely on the copy on-disk being up to date.
+    // The SEEK_END hack works without this, since fseek also flushes the file.
+    if(vf->flags & VF_WRITE)
+      fflush(vf->fp);
 
 #ifdef __WIN32__
     size = _filelength(fd);

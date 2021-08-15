@@ -1095,7 +1095,7 @@ UNITTEST(ZipWrite)
         const char *contents = ZIP_GET_CONTENTS(df);
         struct memfile mf;
 
-        result = zip_write_open_mem_stream(zp, &mf, df.filename);
+        result = zip_write_open_mem_stream(zp, &mf, df.filename, df.uncompressed_size);
         ASSERTEQ(result, ZIP_SUCCESS, "%s %s %zu", label, d.testname, j);
         int res = mfwrite(contents, df.uncompressed_size, 1, &mf);
         int expected = df.uncompressed_size != 0;

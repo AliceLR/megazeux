@@ -28,6 +28,7 @@
 #include "counter.h"
 #include "io/fsafeopen.h"
 #include "io/memfile.h"
+#include "io/vio.h"
 
 #ifdef CONFIG_DEBYTECODE
 
@@ -5860,7 +5861,7 @@ char *legacy_disassemble_program(char *program_bytecode, int bytecode_length,
 char *legacy_convert_file(char *file_name, int *_disasm_length,
  boolean print_ignores, int base)
 {
-  FILE *legacy_source_file = fsafeopen(file_name, "rt");
+  vfile *legacy_source_file = fsafeopen(file_name, "rt");
 
   if(legacy_source_file)
   {
@@ -5876,7 +5877,7 @@ char *legacy_convert_file(char *file_name, int *_disasm_length,
 
     int disasm_line_length;
 
-    while(fsafegets(source_buffer, 256, legacy_source_file))
+    while(vfsafegets(source_buffer, 256, legacy_source_file))
     {
       // Assemble line
       legacy_assemble_line(source_buffer, bytecode_buffer, errors,
@@ -5913,7 +5914,7 @@ char *legacy_convert_file(char *file_name, int *_disasm_length,
     program_disasm[disasm_offset] = 0;
     *_disasm_length = disasm_length;
 
-    fclose(legacy_source_file);
+    vfclose(legacy_source_file);
     return program_disasm;
   }
 

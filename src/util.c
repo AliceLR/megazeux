@@ -474,59 +474,6 @@ void redirect_stdio_exit(void)
 
 #endif /* CONFIG_STDIO_REDIRECT */
 
-// Get 2 bytes, little endian
-
-int fgetw(FILE *fp)
-{
-  int a = fgetc(fp), b = fgetc(fp);
-  if((a == EOF) || (b == EOF))
-    return EOF;
-
-  return (b << 8) | a;
-}
-
-// Get 4 bytes, little endian
-
-int fgetd(FILE *fp)
-{
-  int a = fgetc(fp), b = fgetc(fp), c = fgetc(fp), d = fgetc(fp);
-  if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF))
-    return EOF;
-
-  return ((unsigned int)d << 24) | (c << 16) | (b << 8) | a;
-}
-
-// Put 2 bytes, little endian
-
-void fputw(int src, FILE *fp)
-{
-  fputc(src & 0xFF, fp);
-  fputc(src >> 8, fp);
-}
-
-// Put 4 bytes, little endian
-
-void fputd(int src, FILE *fp)
-{
-  fputc(src & 0xFF, fp);
-  fputc((src >> 8) & 0xFF, fp);
-  fputc((src >> 16) & 0xFF, fp);
-  fputc((src >> 24) & 0xFF, fp);
-}
-
-// Determine file size of an open FILE and rewind it
-
-long ftell_and_rewind(FILE *f)
-{
-  long size;
-
-  fseek(f, 0, SEEK_END);
-  size = ftell(f);
-  rewind(f);
-
-  return size;
-}
-
 // Random function, returns an integer [0-range)
 
 static uint64_t rng_state;

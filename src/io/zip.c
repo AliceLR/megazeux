@@ -1235,8 +1235,12 @@ enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
   if(result)
     goto err_out;
 
-  mfopen(vfile_get_memfile(zp->vf)->current,
-   zp->streaming_file->compressed_size, mf);
+  if(!vfile_get_memfile_block(zp->vf, zp->streaming_file->compressed_size, mf))
+  {
+    result = ZIP_EOF;
+    goto err_out;
+  }
+
   return ZIP_SUCCESS;
 
 err_out:
@@ -1263,12 +1267,16 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   // mem streams need special cleanup but are mostly the same.
   if(zp && zp->mode == ZIP_S_READ_MEMSTREAM)
   {
-    struct memfile *mf = vfile_get_memfile(zp->vf);
+    struct memfile mf;
     uint32_t c_size = zp->streaming_file->compressed_size;
+
+    // If this doesn't work, something modified the zip archive structures.
+    if(!vfile_get_memfile_block(zp->vf, c_size, &mf))
+      assert(0);
 
     zp->read_stream_error = ZIP_SUCCESS;
     zp->stream_u_left = 0;
-    zp->stream_crc32 = crc32(0, mf->current, c_size);
+    zp->stream_crc32 = crc32(0, mf.current, c_size);
   }
 
   result = (zp ? zp->read_stream_error : ZIP_NULL);
@@ -1428,35 +1436,16 @@ err_out:
 /***********/
 
 /**
- * Check if there's enough room in a memory archive to write a number of bytes.
- * If there isn't and the buffer is expandable, expand it to fit the required
- * size. Otherwise, return ZIP_EOF.
+ * Check if there's enough room in a memory archive to write a number of bytes
+ * at the current position in the file. If there isn't, and if the buffer is
+ * expandable, vfile_get_memfile_block will ensure that the buffer is expanded
+ * to allow the requested size. Otherwise, this function will return ZIP_EOF.
  */
 static enum zip_error zip_ensure_capacity(size_t len, struct zip_archive *zp)
 {
-  struct memfile *mf = vfile_get_memfile(zp->vf);
-  void *external_buffer;
-  size_t external_buffer_size;
-  size_t size_required;
-
-  if(mfhasspace(len, mf))
-    return ZIP_SUCCESS;
-
-  if(!zp->external_buffer || !zp->external_buffer_size)
+  if(!vfile_get_memfile_block(zp->vf, len, NULL))
     return ZIP_EOF;
 
-  size_required = mftell(mf) + len;
-  external_buffer = *(zp->external_buffer);
-  external_buffer_size = *(zp->external_buffer_size);
-
-  while(external_buffer_size < size_required)
-    external_buffer_size *= 2;
-
-  external_buffer = crealloc(external_buffer, external_buffer_size);
-  *(zp->external_buffer) = external_buffer;
-  *(zp->external_buffer_size) = external_buffer_size;
-
-  mfmove(external_buffer, external_buffer_size, mf);
   return ZIP_SUCCESS;
 }
 
@@ -1804,25 +1793,25 @@ err_out:
 /**
  * Like zip_write_open_file_stream, but allows the direct writing of
  * uncompressed files to memory (deflate is not supported by this method).
- * This is abusable, but quicker than the alternatives.
+ * This is abusable, but quicker than the alternatives. The exact filesize
+ * of the file to be written must be provided to this function.
  *
  * ZIP_NOT_MEMORY_ARCHIVE will be silently returned if the current archive
  * doesn't support this; use regular functions instead in this case.
  */
 enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
- struct memfile *mf, const char *name)
+ struct memfile *mf, const char *name, size_t length)
 {
   enum zip_error result = zip_write_open_stream(zp, name, ZIP_M_NONE,
    ZIP_S_WRITE_MEMSTREAM);
-  struct memfile *zp_mf;
   if(result)
     goto err_out;
 
-  zp_mf = vfile_get_memfile(zp->vf);
-
-  mf->start = zp_mf->current;
-  mf->end = zp_mf->end;
-  mf->current = mf->start;
+  if(!vfile_get_memfile_block(zp->vf, length, mf))
+  {
+    result = ZIP_EOF;
+    goto err_out;
+  }
   return ZIP_SUCCESS;
 
 err_out:
@@ -2319,6 +2308,10 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
     if(final_length)
       *final_length = end_pos;
 
+    // Just to be sure, close the vfile before attempting any changes to the
+    // external buffer if this is an expandable memory ZIP.
+    vfclose(zp->vf);
+
     // Reduce the size of the buffer if this is an expandable memory zip.
     if(zp->is_memory && zp->external_buffer && zp->external_buffer_size &&
      *(zp->external_buffer_size) > end_pos)
@@ -2327,9 +2320,9 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
       *(zp->external_buffer_size) = end_pos;
     }
   }
-
   else
   {
+    vfclose(zp->vf);
     if(final_length)
       *final_length = zp->end_in_file;
   }
@@ -2337,8 +2330,6 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
   for(i = 0; i < ARRAY_SIZE(zp->stream_data_ptrs); i++)
     if(zip_method_handlers[i] && zp->stream_data_ptrs[i])
       zip_method_handlers[i]->destroy(zp->stream_data_ptrs[i]);
-
-  vfclose(zp->vf);
 
   free(zp->header_buffer);
   free(zp->stream_buffer);
@@ -2551,14 +2542,23 @@ struct zip_archive *zip_open_mem_write(void *src, size_t len, size_t start_pos)
 struct zip_archive *zip_open_mem_write_ext(void **external_buffer,
  size_t *external_buffer_size, size_t start_pos)
 {
-  struct zip_archive *zp =
-   zip_open_mem_write(*external_buffer, *external_buffer_size, start_pos);
-
-  if(zp)
+  if(external_buffer && external_buffer_size)
   {
+    struct zip_archive *zp = zip_new_archive();
+
+    // Allow expansion to be managed by vio.c. The external buffer pointers are
+    // stored here as well, so zip_close can shrink the buffer.
+    zp->vf = vfile_init_mem_ext(external_buffer, external_buffer_size, "wb");
     zp->external_buffer = external_buffer;
     zp->external_buffer_size = external_buffer_size;
-  }
+    zp->is_memory = true;
 
-  return zp;
+    zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES);
+    vfseek(zp->vf, start_pos, SEEK_SET);
+
+    precalculate_read_errors(zp);
+    precalculate_write_errors(zp);
+    return zp;
+  }
+  return NULL;
 }

@@ -887,7 +887,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
   if(special_name_partial("fread") &&
    !mzx_world->input_is_dir && mzx_world->input_file)
   {
-    FILE *input_file = mzx_world->input_file;
+    vfile *input_file = mzx_world->input_file;
 
     if(src_length > 5)
     {
@@ -898,14 +898,8 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
       // You know what would be great, is not trying to allocate 4GB of memory
       read_count = MIN(read_count, MAX_STRING_LEN);
 
-      /* This is hacky, but we don't want to prematurely allocate more space
-       * to the string than can possibly be read from the file. So we save the
-       * old file pointer, figure out the length of the current input file,
-       * and put it back where we found it.
-       */
-      current_pos = ftell(input_file);
-      file_size = ftell_and_rewind(input_file);
-      fseek(input_file, current_pos, SEEK_SET);
+      file_size = vfilelength(input_file, false);
+      current_pos = vftell(input_file);
 
       /* We then truncate the user read to the maximum difference between the
        * current position and the file end; this won't affect normal reads,
@@ -918,7 +912,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
        read_count, offset, offset_specified, &size, size_specified))
         return 0;
 
-      actual_read = fread(dest->value + offset, 1, read_count, input_file);
+      actual_read = vfread(dest->value + offset, 1, read_count, input_file);
       if(offset == 0 && !offset_specified)
         dest->length = actual_read;
     }
@@ -943,7 +937,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
         for(read_allocate = 0; read_allocate < new_allocated;
          read_allocate++, read_pos++)
         {
-          current_char = fgetc(input_file);
+          current_char = vfgetc(input_file);
 
           if((current_char == terminate_char) || (current_char == EOF) ||
            (read_pos + offset == MAX_STRING_LEN))
@@ -1076,7 +1070,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
      */
     if(dest != NULL && dest->length > 0)
     {
-      FILE *output_file = mzx_world->output_file;
+      vfile *output_file = mzx_world->output_file;
       char *dest_value = dest->value;
       size_t dest_length = dest->length;
 
@@ -1092,7 +1086,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
       if(offset + size > dest_length)
         size = dest_length - offset;
 
-      fwrite(dest_value + offset, size, 1, output_file);
+      vfwrite(dest_value + offset, size, 1, output_file);
     }
     else
     {
@@ -1106,7 +1100,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
     }
 
     if(write_delimiter)
-      fputc(mzx_world->fwrite_delimiter, mzx_world->output_file);
+      vfputc(mzx_world->fwrite_delimiter, mzx_world->output_file);
   }
   else
 

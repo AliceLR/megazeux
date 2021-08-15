@@ -421,6 +421,42 @@ static void test_filelength(long expected_len, vfile *vf)
   }
 }
 
+// Make sure vfilelength accurately updates to match the current file position.
+// NOTE: this may not work on append files...
+static void test_filelength_write(vfile *vf)
+{
+  long pos = vftell(vf);
+  long len;
+  long size;
+  int ret;
+
+  // New file or appending to file, length should be vftell().
+  len = vfilelength(vf, false);
+  ASSERTEQ(len, pos, "vfilelength == vftell (1)");
+
+  // Write first half.
+  size = sizeof(test_data)/2;
+  ret = vfwrite(test_data, size, 1, vf);
+  ASSERTEQ(ret, 1, "vfwrite (1)");
+
+  len = vfilelength(vf, false);
+  ASSERTEQ(len, size + pos, "vfilelength (2)");
+  ASSERTEQ(vftell(vf), size + pos, "vftell (2)");
+
+  // Write some more junk.
+  ret = vfputc(0x12, vf);
+  ASSERTEQ(ret, 0x12, "");
+  ret = vfputc(0x34, vf);
+  ASSERTEQ(ret, 0x34, "");
+  ret = vfputw(0x7856, vf);
+  ASSERTEQ(ret, 0x7856, "");
+
+  size += 4;
+  len = vfilelength(vf, false);
+  ASSERTEQ(len, size + pos, "vfilelength (3)");
+  ASSERTEQ(vftell(vf), size + pos, "vftell (3)");
+}
+
 static void test_vungetc(vfile *vf)
 {
   long pos;
@@ -568,6 +604,7 @@ static void test_vfsafegets(vfile *vf, const char *filename,
   SECTION(write_vfwrite)    test_vfwrite(vf); \
   SECTION(write_vfputs)     test_vfputs(vf); \
   SECTION(write_vf_printf)  test_vf_printf(vf); \
+  SECTION(write_filelength) test_filelength_write(vf); \
   /*if(!is_append) { SECTION(write_vfseektell)  test_vfseek_vftell_rewind_write(vf); } */ \
 } while(0)
 
@@ -592,6 +629,63 @@ UNITTEST(Init)
 
     r = fclose(fp);
     ASSERTEQ(r, 0, "fclose");
+  }
+}
+
+UNITTEST(ModeFlags)
+{
+  struct mode_flag_pairs
+  {
+    const char *mode;
+    int expected;
+  };
+
+  static const mode_flag_pairs data[] =
+  {
+    { "r", VF_READ },
+    { "w", VF_WRITE | VF_TRUNCATE },
+    { "a", VF_WRITE | VF_APPEND },
+    { "r+", VF_READ | VF_WRITE },
+    { "w+", VF_READ | VF_WRITE | VF_TRUNCATE },
+    { "a+", VF_READ | VF_WRITE | VF_APPEND },
+    { "rb", VF_READ | VF_BINARY },
+    { "wb", VF_WRITE | VF_TRUNCATE | VF_BINARY },
+    { "ab", VF_WRITE | VF_APPEND | VF_BINARY },
+    // Both orderings of '+' and 'b' are valid.
+    { "r+b", VF_READ | VF_WRITE | VF_BINARY },
+    { "w+b", VF_READ | VF_WRITE | VF_TRUNCATE | VF_BINARY },
+    { "a+b", VF_READ | VF_WRITE | VF_APPEND | VF_BINARY },
+    { "rb+", VF_READ | VF_WRITE | VF_BINARY },
+    { "wb+", VF_READ | VF_WRITE | VF_TRUNCATE | VF_BINARY },
+    { "ab+", VF_READ | VF_WRITE | VF_APPEND | VF_BINARY },
+    // 't' to explicitly state text mode is non-standard but seems to be well-supported.
+    { "rt", VF_READ },
+    { "wt", VF_WRITE | VF_TRUNCATE },
+    { "at", VF_WRITE | VF_APPEND },
+    { "r+t", VF_READ | VF_WRITE },
+    { "w+t", VF_READ | VF_WRITE | VF_TRUNCATE },
+    { "a+t", VF_READ | VF_WRITE | VF_APPEND },
+    // 'r'/'w'/'a' must be first.
+    { "br", 0 },
+    { "bw", 0 },
+    { "ba", 0 },
+    { "+r", 0 },
+    { "+w", 0 },
+    { "+a", 0 },
+    { "tr", 0 },
+    // Other invalid junk.
+    { "+", 0 },
+    { "b", 0 },
+    { "t", 0 },
+    { "    ", 0 },
+    { "fjdskfdj", 0 },
+    { "", 0 },
+  };
+
+  for(const mode_flag_pairs &d : data)
+  {
+    int res = get_vfile_mode_flags(d.mode);
+    ASSERTEQ(res, d.expected, "%s", d.mode);
   }
 }
 
