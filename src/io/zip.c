@@ -1271,7 +1271,8 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
     uint32_t c_size = zp->streaming_file->compressed_size;
 
     // If this doesn't work, something modified the zip archive structures.
-    assert(vfile_get_memfile_block(zp->vf, c_size, &mf));
+    if(!vfile_get_memfile_block(zp->vf, c_size, &mf))
+      assert(0);
 
     zp->read_stream_error = ZIP_SUCCESS;
     zp->stream_u_left = 0;
