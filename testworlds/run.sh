@@ -36,7 +36,7 @@ cd "$TESTS_DIR"
 cd ..
 
 # Unix release builds will try to find this if it isn't installed.
-ln -s config.txt megazeux-config
+cp config.txt megazeux-config
 
 # Give tests.mzx the MZX configuration so it can decide which tests to skip.
 cp src/config.h "$TESTS_DIR"
