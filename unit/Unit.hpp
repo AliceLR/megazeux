@@ -263,12 +263,10 @@ namespace Unit
     exception(const exception &e);
 
     exception(int _line, const char *_test):
-     line(_line), test(coalesce(_test)), reason(""),
-     left(coalesce(nullptr)), right(coalesce(nullptr)) {}
+     line(_line), test(coalesce(_test)), reason("") {}
 
     exception(int _line, const char *_test, const char *_reason_fmt, ...):
-     line(_line), test(coalesce(_test)),
-     left(coalesce(nullptr)), right(coalesce(nullptr))
+     line(_line), test(coalesce(_test))
     {
       if(_reason_fmt && _reason_fmt[0])
       {
