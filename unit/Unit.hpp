@@ -360,7 +360,7 @@ namespace Unit
   /**
    * Class for running all unit tests in the current set of unit tests.
    */
-  class unittestrunner_cls final
+  class unittestrunner final
   {
   private:
 
@@ -374,15 +374,11 @@ namespace Unit
     void print_status();
 
   public:
+    static unittestrunner &get();
     bool run(void);
     void signal_fail();
     void addtest(unittest *t);
   };
-#ifdef UNIT_NO_RUNNER
-  extern unittestrunner_cls unittestrunner;
-#else
-  unittestrunner_cls unittestrunner{};
-#endif
 
   /**
    * Class for an individual unit test. Don't use directly; create individual
@@ -414,7 +410,7 @@ namespace Unit
     unittest(const char *_file, const char *_test_name):
      file_name(_file), test_name(_test_name)
     {
-      unittestrunner.addtest(this);
+      unittestrunner::get().addtest(this);
     };
 
     ~unittest() {};

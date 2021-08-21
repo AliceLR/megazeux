@@ -17,7 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define UNIT_NO_RUNNER
 #include "Unit.hpp"
 
 #include <assert.h>
@@ -65,7 +64,7 @@ static void sigabrt_handler(int signal)
   else
     Uerr("Unexpected signal %d received: ", signal);
 
-  Unit::unittestrunner.signal_fail();
+  Unit::unittestrunner::get().signal_fail();
 }
 
 int main(int argc, char *argv[])
@@ -86,7 +85,7 @@ int main(int argc, char *argv[])
     }
   }
   std::signal(SIGABRT, sigabrt_handler);
-  return !(Unit::unittestrunner.run());
+  return !(Unit::unittestrunner::get().run());
 }
 
 
@@ -462,11 +461,22 @@ namespace Unit
 
   /************************************************************************
    * Unit::unittestrunner_cls and support functions.
+   * Use singletons for globals to force initialization order.
    */
 
-  static std::vector<unittest *> tests;
+  static std::vector<unittest *> &gettests()
+  {
+    static std::vector<unittest *> tests;
+    return tests;
+  }
 
-  void unittestrunner_cls::print_status()
+  unittestrunner &unittestrunner::get()
+  {
+    static unittestrunner inst;
+    return inst;
+  }
+
+  void unittestrunner::print_status()
   {
     if(!total)
     {
@@ -493,15 +503,15 @@ namespace Unit
     UerrFlush();
   }
 
-  bool unittestrunner_cls::run()
+  bool unittestrunner::run()
   {
     count = 0;
     passed = 0;
     failed = 0;
     skipped = 0;
-    total = tests.size();
+    total = gettests().size();
 
-    for(unittest *t : tests)
+    for(unittest *t : gettests())
     {
       count++;
       current_test = t;
@@ -522,7 +532,7 @@ namespace Unit
     return !failed;
   }
 
-  void unittestrunner_cls::signal_fail()
+  void unittestrunner::signal_fail()
   {
     if(current_test)
       current_test->signal_fail();
@@ -534,8 +544,8 @@ namespace Unit
     print_status();
   }
 
-  void unittestrunner_cls::addtest(unittest *t)
+  void unittestrunner::addtest(unittest *t)
   {
-    tests.push_back(t);
+    gettests().push_back(t);
   }
 }
