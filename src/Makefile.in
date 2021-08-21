@@ -232,10 +232,12 @@ endif
 ifeq (${BUILD_EGL},1)
 core_cobjs += ${core_obj}/render_egl.o
 core_ldflags := -lEGL ${core_ldflags}
+endif
+
+# X11 (headers included by SDL_syswm.h).
 ifneq (${X11DIR},)
 core_flags += ${X11_CFLAGS}
 core_ldflags := ${X11_LDFLAGS} ${core_ldflags}
-endif
 endif
 
 # Overlay renderers
