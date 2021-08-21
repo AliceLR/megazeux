@@ -234,12 +234,6 @@ core_cobjs += ${core_obj}/render_egl.o
 core_ldflags := -lEGL ${core_ldflags}
 endif
 
-# X11 (headers included by SDL_syswm.h).
-ifneq (${X11DIR},)
-core_flags += ${X11_CFLAGS}
-core_ldflags := ${X11_LDFLAGS} ${core_ldflags}
-endif
-
 # Overlay renderers
 ifeq (${BUILD_RENDER_YUV},1)
 core_cobjs += ${core_obj}/render_yuv.o
@@ -345,14 +339,9 @@ endif
 core_flags   += $(SDL_CFLAGS)
 core_ldflags += $(SDL_LDFLAGS)
 
-# The MegaZeux and MZXRun targets don't use SDL directly in modular builds.
-# In some cases SDL needs to rename main() to SDL_main() and provide its own
-# main(), so add SDL_LDFLAGS only if it links "SDLmain" or "SDL2main".
 ifeq (${BUILD_MODULAR},1)
-ifneq ($(filter %SDLmain %SDL2main,$(SDL_LDFLAGS)),)
 mzx_ldflags    += $(SDL_LDFLAGS)
 mzxrun_ldflags += $(SDL_LDFLAGS)
-endif
 endif
 
 else
@@ -372,6 +361,12 @@ endif
 
 endif
 
+endif
+
+# X11 (headers included by SDL_syswm.h).
+ifneq (${X11DIR},)
+core_flags += ${X11_CFLAGS}
+core_ldflags += ${X11_LDFLAGS}
 endif
 
 core_cflags := ${ZLIB_CFLAGS} ${core_cflags}
