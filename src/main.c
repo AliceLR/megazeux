@@ -55,7 +55,7 @@
 #include "network/network.h"
 
 #ifdef CONFIG_SDL
-#include <SDL.h>
+#include <SDL.h> /* SDL_main */
 #endif
 
 #ifndef VERSION
