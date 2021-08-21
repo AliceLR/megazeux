@@ -241,6 +241,24 @@ namespace Unit
 {
   class unittest;
 
+  template<class T>
+  constexpr const T &min(const T &a, const T &b)
+  {
+    return (a < b) ? a : b;
+  }
+
+  template<class T>
+  constexpr const T &max(const T &a, const T &b)
+  {
+    return (a > b) ? a : b;
+  }
+
+  template<class T>
+  constexpr const T &clamp(const T &a, const T &_min, const T &_max)
+  {
+    return Unit::max(_min, Unit::min(_max, a));
+  }
+
   class skip final {};
 
   /**
