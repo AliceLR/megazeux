@@ -374,8 +374,8 @@ namespace Unit
     bool run(void);
     void signal_fail();
     void addtest(unittest *t);
-  }
-  static unittestrunner;
+  };
+  extern unittestrunner_cls unittestrunner;
 
   /**
    * Class for an individual unit test. Don't use directly; create individual

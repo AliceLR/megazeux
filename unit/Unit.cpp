@@ -464,12 +464,14 @@ namespace Unit
    */
 
   static std::vector<unittest *> tests;
+  unittestrunner_cls unittestrunner;
 
   void unittestrunner_cls::print_status()
   {
     if(!total)
     {
       Uerr("ERROR: no tests defined!\n\n");
+      failed = 1;
       return;
     }
 
