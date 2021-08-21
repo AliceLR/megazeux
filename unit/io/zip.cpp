@@ -17,8 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <memory>
-
 #include "../Unit.hpp"
 
 #include "../../src/util.h"
@@ -26,6 +24,8 @@
 #include "../../src/io/path.h"
 #include "../../src/io/zip.h"
 #include "../../src/io/zip_stream.h"
+
+#include "../../src/network/Scoped.hpp"
 
 static const size_t BUFFER_SIZE = (1 << 17);
 static const char DATA_DIR[] = "../data";
@@ -381,12 +381,9 @@ static enum zip_error decompress(zip_method_handler *stream, zip_stream_data *sd
 static void decompress_boilerplate(zip_method_handler *stream,
  pair zip_stream_test_data::*field, enum zip_compression_method method)
 {
-  std::unique_ptr<char[]> _buffer(new char[BUFFER_SIZE]);
-  std::unique_ptr<char[]> _buffer_a(new char[BUFFER_SIZE]);
-  std::unique_ptr<char[]> _buffer_b(new char[BUFFER_SIZE]);
-  char *buffer = _buffer.get();
-  char *buffer_a = _buffer_a.get();
-  char *buffer_b = _buffer_b.get();
+  ScopedPtr<char[]> buffer = new char[BUFFER_SIZE];
+  ScopedPtr<char[]> buffer_a = new char[BUFFER_SIZE];
+  ScopedPtr<char[]> buffer_b = new char[BUFFER_SIZE];
   const char *a;
   const char *b;
   size_t a_len;
@@ -551,12 +548,9 @@ UNITTEST(Decompress)
  */
 UNITTEST(Compress)
 {
-  std::unique_ptr<char[]> _buffer_a(new char[BUFFER_SIZE]);
-  std::unique_ptr<char[]> _buffer_cmp(new char[BUFFER_SIZE]);
-  std::unique_ptr<char[]> _buffer_dcmp(new char[BUFFER_SIZE]);
-  char *buffer_a = _buffer_a.get();
-  char *buffer_cmp = _buffer_cmp.get();
-  char *buffer_dcmp = _buffer_dcmp.get();
+  ScopedPtr<char[]> buffer_a = new char[BUFFER_SIZE];
+  ScopedPtr<char[]> buffer_cmp = new char[BUFFER_SIZE];
+  ScopedPtr<char[]> buffer_dcmp = new char[BUFFER_SIZE];
   const char *a;
   size_t a_len;
   size_t cmp_len;
@@ -587,7 +581,7 @@ UNITTEST(Compress)
      buffer_dcmp, BUFFER_SIZE);
     ASSERTEQ(result, ZIP_STREAM_FINISHED, "%s", d.testname);
 
-    ASSERTMEM(a, buffer_dcmp, a_len, "%s", d.testname);
+    ASSERTMEM(a, buffer_dcmp.get(), a_len, "%s", d.testname);
   }
   stream->destroy(sd);
 }
@@ -778,12 +772,9 @@ static void zip_check(const zip_test_data &d, struct zip_archive *zp)
 
 UNITTEST(ZipRead)
 {
-  std::unique_ptr<char[]> buffer_ptr(new char[BUFFER_SIZE]);
-  std::unique_ptr<char[]> db64_ptr(new char[BUFFER_SIZE]);
-  std::unique_ptr<char[]> file_ptr(new char[BUFFER_SIZE]);
-  char *buffer = buffer_ptr.get();
-  char *file_buffer = file_ptr.get();
-  char *db64_buffer = db64_ptr.get();
+  ScopedPtr<char[]> buffer = new char[BUFFER_SIZE];
+  ScopedPtr<char[]> db64_buffer = new char[BUFFER_SIZE];
+  ScopedPtr<char[]> file_buffer = new char[BUFFER_SIZE];
   struct zip_archive *zp;
   enum zip_error result;
   char small_buffer[32];
@@ -972,10 +963,8 @@ static void verify_boilerplate(const zip_test_data &d, struct zip_archive *zp,
 
 UNITTEST(ZipWrite)
 {
-  std::unique_ptr<char[]> verify_ptr(new char[BUFFER_SIZE]);
-  std::unique_ptr<char[]> db64_ptr(new char[BUFFER_SIZE]);
-  char *verify_buffer = verify_ptr.get();
-  char *db64_buffer = db64_ptr.get();
+  ScopedPtr<char[]> verify_buffer = new char[BUFFER_SIZE];
+  ScopedPtr<char[]> db64_buffer = new char[BUFFER_SIZE];
   // This buffer needs to be resized by C code...
   char *ext_buffer = (char *)cmalloc(32);
   size_t ext_buffer_size = 32;

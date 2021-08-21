@@ -29,7 +29,7 @@
 #include "../src/io/memfile.h"
 #include "../src/io/zip.h"
 
-#include <memory>
+#include "../src/network/Scoped.hpp"
 
 /**
  * world.c functions.
@@ -149,7 +149,7 @@ struct world_assign_file_result
 };
 
 static void init_test_archive(struct zip_archive &zp,
- struct zip_file_header **fha, std::unique_ptr<uint8_t[]> *fh_ptrs,
+ struct zip_file_header **fha, ScopedPtr<uint8_t[]> *fh_ptrs,
  const world_assign_file_input *input, size_t NUM_FILES)
 {
   /* This function only needs these zip_archive fields. */
@@ -161,7 +161,7 @@ static void init_test_archive(struct zip_archive &zp,
     const world_assign_file_input &d = input[i];
     size_t name_len = strlen(d.filename);
 
-    fh_ptrs[i] = std::unique_ptr<uint8_t[]>(new uint8_t[sizeof(zip_file_header) + name_len]{});
+    fh_ptrs[i] = new uint8_t[sizeof(zip_file_header) + name_len]{};
     fha[i] = reinterpret_cast<zip_file_header *>(fh_ptrs[i].get());
 
     fha[i]->method = d.method;
@@ -195,7 +195,7 @@ UNITTEST(world_assign_file_ids)
 {
   static const size_t MAX_FILES = 256;
 
-  std::unique_ptr<uint8_t[]> fh_ptrs[MAX_FILES];
+  ScopedPtr<uint8_t[]> fh_ptrs[MAX_FILES];
   struct zip_file_header *fha[MAX_FILES];
   struct zip_archive zp{};
 
@@ -516,7 +516,7 @@ UNITTEST(Properties)
 
     // The following tests won't be writing past the property header,
     // but to protect this against checks/asserts...
-    std::unique_ptr<uint8_t[]> bigbuffer(new uint8_t[0x20000]);
+    ScopedPtr<uint8_t[]> bigbuffer = new uint8_t[0x20000];
     mfopen(bigbuffer.get(), 0x20000, &mf);
 
     static const uint8_t expected2[] = { 0x01, 0x00, 0xff, 0x7f, '\0', '\0' };

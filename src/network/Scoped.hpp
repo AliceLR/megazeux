@@ -181,7 +181,25 @@ public:
     }
   }
 
+#if IS_CXX_11
+  ScopedPtr &operator=(T *&&p)
+  {
+    reset(p);
+    return *this;
+  }
+#endif
+
   operator T *() const
+  {
+    return ptr;
+  }
+
+  T *operator->() const
+  {
+    return ptr;
+  }
+
+  T *get() const
   {
     return ptr;
   }
@@ -224,7 +242,25 @@ public:
     }
   }
 
+#if IS_CXX_11
+  ScopedPtr &operator=(T *&&p)
+  {
+    reset(p);
+    return *this;
+  }
+#endif
+
   operator T *() const
+  {
+    return ptr;
+  }
+
+  T *operator->() const
+  {
+    return ptr;
+  }
+
+  T *get() const
   {
     return ptr;
   }

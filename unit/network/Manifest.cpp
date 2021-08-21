@@ -17,12 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <memory>
 #include <stdint.h>
 
 #include "../Unit.hpp"
 
 #include "../../src/util.h"
+#include "../../src/network/Scoped.hpp"
 #include "../../src/network/Manifest.hpp"
 
 static const char *DATA_DIR = "../data";
@@ -182,7 +182,7 @@ UNITTEST(ManifestEntry)
 
     for(const manifestdata &f : filedata)
     {
-      std::unique_ptr<ManifestEntry> e(ManifestEntry::create_from_file(f.filename));
+      ScopedPtr<ManifestEntry> e = ManifestEntry::create_from_file(f.filename);
       ASSERT(e, "%s", f.filename);
 
       ASSERTMEM(e->sha256, f.sha256, sizeof(f.sha256), "%s", f.filename);

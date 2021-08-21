@@ -17,8 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <memory>
-
 #include "../Unit.hpp"
 #include "../../src/network/Scoped.hpp"
 #include "../../src/io/path.h"
@@ -821,7 +819,7 @@ UNITTEST(vfsafegets)
     for(const vfsafegets_data &d : vfsafegets_test_data)
     {
       size_t len = strlen(d.input);
-      std::unique_ptr<char[]> tmp(new char[len + 1]);
+      ScopedPtr<char[]> tmp = new char[len + 1];
 
       memcpy(tmp.get(), d.input, len + 1);
       ScopedFile<vfile, vfclose> vf = vfile_init_mem(tmp.get(), len, "rb");
