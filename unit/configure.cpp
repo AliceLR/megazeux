@@ -17,9 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <algorithm>
-#include <climits>
-#include <cstdio>
+#include <limits.h>
+#include <stdio.h>
 #include <limits>
 
 #include "Unit.hpp"
@@ -146,13 +145,12 @@ static void load_arg(char *arg)
 static boolean write_config(const char *path, const char *config)
 {
   FILE *fp = fopen_unsafe(path, "wb");
-  assert(fp);
+  ASSERT(fp, "failed to open '%s'", path);
   if(fp)
   {
     int ret = fwrite(config, strlen(config), 1, fp);
-    assert(ret == 1);
+    ASSERT(ret == 1, "write error for '%s'", path);
     ret = fclose(fp);
-    assert(!ret);
     return true;
   }
   return false;
@@ -293,7 +291,7 @@ void TEST_STRING(const char *setting_name, char (&setting)[S],
 
   for(int i = 0; i < NUM_TESTS; i++)
   {
-    size_t len = std::min(strlen(data[i].expected), S - 1);
+    size_t len = Unit::min(strlen(data[i].expected), S - 1);
     snprintf(arg, arraysize(arg), "%s=%s", setting_name, data[i].value);
 
     setting[0] = '\0';

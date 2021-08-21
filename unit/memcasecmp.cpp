@@ -21,7 +21,6 @@
 #include "../src/memcasecmp.h"
 
 #include <string.h>
-#include <tuple>
 
 struct string_pair
 {

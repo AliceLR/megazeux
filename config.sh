@@ -1229,7 +1229,7 @@ if [ "$X11" = "true" ]; then
 
 	# figure out where X11 is prefixed
 	X11PATH=`which $XBIN`
-	X11DIR=`dirname $X11PATH`
+	X11DIR=$(dirname $(dirname $X11PATH))
 
 	# pass this along to the build system
 	echo "X11DIR=${X11DIR}" >> platform.inc

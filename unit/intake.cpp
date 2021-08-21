@@ -265,7 +265,7 @@ UNITTEST(PosLength)
 
     for(const int_pair &d : length_data)
     {
-      dest_len = std::max(0, std::min(dest_len, d.input));
+      dest_len = Unit::clamp(dest_len, 0, d.input);
       intake_set_length(&intk, d.input);
       intake_sync((subcontext *)&intk);
       ASSERTEQ(intk.current_length, dest_len, "%d -> %d", d.input, dest_len);

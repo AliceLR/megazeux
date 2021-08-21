@@ -125,7 +125,7 @@ UNITTEST(SHA256File)
     ssize_t j = 0;
     while(j < file_len)
     {
-      ssize_t len = std::min(file_len - j, (ssize_t)arraysize(buffer));
+      ssize_t len = Unit::min(file_len - j, (ssize_t)arraysize(buffer));
       size_t ret = fread(buffer, len, 1, fp);
       ASSERTEQ(ret, 1, "%s", d.input);
 

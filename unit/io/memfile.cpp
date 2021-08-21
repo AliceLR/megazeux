@@ -21,6 +21,7 @@
 #include "../../src/io/memfile.h"
 
 #include <limits.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 UNITTEST(mfopen)
