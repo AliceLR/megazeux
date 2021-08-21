@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define UNIT_NO_RUNNER
 #include "Unit.hpp"
 
 #include <assert.h>
@@ -464,7 +465,6 @@ namespace Unit
    */
 
   static std::vector<unittest *> tests;
-  unittestrunner_cls unittestrunner;
 
   void unittestrunner_cls::print_status()
   {

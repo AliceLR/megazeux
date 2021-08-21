@@ -375,7 +375,11 @@ namespace Unit
     void signal_fail();
     void addtest(unittest *t);
   };
+#ifdef UNIT_NO_RUNNER
   extern unittestrunner_cls unittestrunner;
+#else
+  unittestrunner_cls unittestrunner{};
+#endif
 
   /**
    * Class for an individual unit test. Don't use directly; create individual
