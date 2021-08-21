@@ -94,7 +94,6 @@ DEBUG_CFLAGS ?= -O0
 #
 unit_cflags ?= ${CXXFLAGS} ${DEBUG_CFLAGS} -UDEBUG -UNDEBUG
 unit_cflags += -fexceptions -funsigned-char -std=gnu++11
-unit_cflags += -Wno-system-headers -Wno-undef -Wno-unused-macros
 
 unit_cflags += ${SDL_CFLAGS} -Umain
 unit_ldflags +=

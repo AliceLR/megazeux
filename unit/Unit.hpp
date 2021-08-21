@@ -71,6 +71,9 @@
 #error "Include Unit.hpp first!"
 #endif
 
+/* Need at least one C++ header to make clang shut up. */
+#include <cstdlib>
+
 #define CORE_LIBSPEC
 #define EDITOR_LIBSPEC
 #define SKIP_SDL
