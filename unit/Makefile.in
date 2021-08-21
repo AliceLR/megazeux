@@ -23,6 +23,9 @@ else
 unit_ext        := .test
 endif
 
+unit_common_objs := \
+  ${unit_obj}/Unit.o                   \
+
 unit_objs := \
   ${unit_obj}/align${unit_ext}         \
   ${unit_obj}/expr${unit_ext}          \
@@ -91,6 +94,7 @@ DEBUG_CFLAGS ?= -O0
 #
 unit_cflags ?= ${CXXFLAGS} ${DEBUG_CFLAGS} -UDEBUG -UNDEBUG
 unit_cflags += -fexceptions -funsigned-char -std=gnu++11
+unit_cflags += -Wno-system-headers -Wno-undef -Wno-unused-macros
 
 unit_cflags += ${SDL_CFLAGS} -Umain
 unit_ldflags +=
@@ -110,33 +114,40 @@ unit_clean:
 
 else
 
+${unit_obj}/%.o: ${unit_src}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${unit_cflags} -c $< -o $@
+
 ${unit_obj}/%${unit_ext}: ${unit_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
+	${CXX} -MD ${unit_cflags} $^ -o $@ ${unit_ldflags}
 
 ${unit_obj_editor}/%${unit_ext}: ${unit_src_editor}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
+	${CXX} -MD ${unit_cflags} $^ -o $@ ${unit_ldflags}
 
 ${unit_obj_io}/%${unit_ext}: ${unit_src_io}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
+	${CXX} -MD ${unit_cflags} $^ -o $@ ${unit_ldflags}
 
 ${unit_obj_network}/%${unit_ext}: ${unit_src_network}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
+	${CXX} -MD ${unit_cflags} $^ -o $@ ${unit_ldflags}
 
 ${unit_obj_utils}/%${unit_ext}: ${unit_src_utils}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
+	${CXX} -MD ${unit_cflags} $^ -o $@ ${unit_ldflags}
 
 -include ${unit_objs:${unit_ext}=.d}
+-include ${unit_common_objs:.o=.d}
 
-${unit_objs}: | $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
-${unit_objs}: | $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
-${unit_objs}: | $(filter-out $(wildcard ${unit_obj_io}), ${unit_obj_io})
-${unit_objs}: | $(filter-out $(wildcard ${unit_obj_network}), ${unit_obj_network})
-${unit_objs}: | $(filter-out $(wildcard ${unit_obj_utils}), ${unit_obj_utils})
+${unit_objs}: ${unit_common_objs}
+
+${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
+${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
+${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_io}), ${unit_obj_io})
+${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_network}), ${unit_obj_network})
+${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_utils}), ${unit_obj_utils})
 
 unittest: ${unit_objs}
 	@failcount=0; \
@@ -152,7 +163,7 @@ unittest: ${unit_objs}
 	fi;
 
 unit_clean:
-	$(if ${V},,@echo "  RM      " ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network})
-	${RM} -r ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network}
+	$(if ${V},,@echo "  RM      " ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network} ${unit_obj_utils})
+	${RM} -r ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network} ${unit_obj_utils}
 
 endif

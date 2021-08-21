@@ -146,13 +146,12 @@ static void load_arg(char *arg)
 static boolean write_config(const char *path, const char *config)
 {
   FILE *fp = fopen_unsafe(path, "wb");
-  assert(fp);
+  ASSERT(fp, "failed to open '%s'", path);
   if(fp)
   {
     int ret = fwrite(config, strlen(config), 1, fp);
-    assert(ret == 1);
+    ASSERT(ret == 1, "write error for '%s'", path);
     ret = fclose(fp);
-    assert(!ret);
     return true;
   }
   return false;

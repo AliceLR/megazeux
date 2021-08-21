@@ -25,6 +25,8 @@
 #include "Unit.hpp"
 #include "../src/intake.c"
 
+#include <algorithm>
+
 // TODO shut up the linker as this isn't CORE_LIBSPEC currently.
 boolean has_unicode_input() { return false; }
 

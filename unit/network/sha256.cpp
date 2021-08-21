@@ -22,6 +22,8 @@
 
 #include "../../src/network/sha256.c"
 
+#include <algorithm>
+
 #define ASSETS_DIR "../../../assets"
 #define IO_DATA_DIR "../../io/data"
 
