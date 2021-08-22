@@ -439,13 +439,13 @@ fi
 
 rm -f platform.inc
 
-if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
-  -o "$PLATFORM" = "mingw32" -o "$PLATFORM" = "mingw64" ]; then
+if [ "$PLATFORM" = "win32"   ] || [ "$PLATFORM" = "win64" ] ||
+   [ "$PLATFORM" = "mingw32" ] || [ "$PLATFORM" = "mingw64" ]; then
 	# Auto-prefix for the MSYS2 MINGW32/MINGW64 environments if a prefix wasn't
 	# provided. This helps avoid errors that occur when gcc or libs exist in
 	# /usr, which is used by MSYS2 for the MSYS environment.
-	if [ "$PREFIX_IS_SET" = "false" -a -n "$MSYSTEM" \
-	 -a "$(uname -o)" == "Msys" -a ! "$MSYSTEM" = "MSYS" ]; then
+	if [ "$PREFIX_IS_SET" = "false" ] && [ -n "$MSYSTEM" ] &&
+	   [ "$(uname -o)" = "Msys" ] && [ "$MSYSTEM" != "MSYS" ]; then
 		case "$MSYSTEM" in
 		  "MINGW32"|"MINGW64")
 			[ "$PLATFORM" = "win32" ] && PREFIX="/mingw32"
@@ -463,8 +463,8 @@ if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
 		esac
 	fi
 
-	[ "$PLATFORM" = "win32" -o "$PLATFORM" = "mingw32" ] && ARCHNAME=x86
-	[ "$PLATFORM" = "win64" -o "$PLATFORM" = "mingw64" ] && ARCHNAME=x64
+	[ "$PLATFORM" = "win32" ] || [ "$PLATFORM" = "mingw32" ] && ARCHNAME=x86
+	[ "$PLATFORM" = "win64" ] || [ "$PLATFORM" = "mingw64" ] && ARCHNAME=x64
 	[ "$PLATFORM" = "mingw32" ] && MINGWBASE=i686-w64-mingw32-
 	[ "$PLATFORM" = "mingw64" ] && MINGWBASE=x86_64-w64-mingw32-
 	PLATFORM="mingw"
@@ -472,9 +472,9 @@ if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
 	echo "SUBPLATFORM=windows-$ARCHNAME"         >> platform.inc
 	echo "PLATFORM=$PLATFORM"                    >> platform.inc
 	echo "MINGWBASE=$MINGWBASE"                  >> platform.inc
-elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
-	OS="`uname -s`"
-	MACH="`uname -m`"
+elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
+	OS="$(uname -s)"
+	MACH="$(uname -m)"
 
 	case "$OS" in
 		"Linux")
@@ -495,17 +495,17 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 			;;
 	esac
 
-	if [ "$MACH" = "x86_64" -o "$MACH" = "amd64" ]; then
+	if [ "$MACH" = "x86_64" ] || [ "$MACH" = "amd64" ]; then
 		ARCHNAME=amd64
 		#RAWLIBDIR=lib64
 		# FreeBSD amd64 hack
 		#[ "$UNIX" = "freebsd" ] && RAWLIBDIR=lib
-	elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
+	elif [ "$(echo "$MACH" | sed 's,i.86,x86,')" = "x86" ]; then
 		ARCHNAME=x86
 		#RAWLIBDIR=lib
-	elif [ "$MACH" = "aarch64" -o "$MACH" = "arm64" ]; then
+	elif [ "$MACH" = "aarch64" ] || [ "$MACH" = "arm64" ]; then
 		ARCHNAME=aarch64
-	elif [ "`echo $MACH | sed 's,^arm.*,arm,'`" = "arm" ]; then
+	elif [ "$(echo "$MACH" | sed 's,^arm.*,arm,')" = "arm" ]; then
 		ARCHNAME=arm
 		#RAWLIBDIR=lib
 	elif [ "$MACH" = "ppc" ]; then
@@ -521,7 +521,7 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 		ARCHNAME=m68k
 	elif [ "$MACH" = "alpha" ]; then
 		ARCHNAME=alpha
-	elif [ "$MACH" = "hppa" -o "$MACH" = "parisc" ]; then
+	elif [ "$MACH" = "hppa" ] || [ "$MACH" = "parisc" ]; then
 		ARCHNAME=hppa
 	elif [ "$MACH" = "sh4" ]; then
 		ARCHNAME=sh4
@@ -540,8 +540,8 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	echo "#define PLATFORM \"$UNIX-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=$UNIX-$ARCHNAME"         >> platform.inc
 	echo "PLATFORM=unix"                       >> platform.inc
-elif [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-devel" \
- -o "$PLATFORM" = "darwin-dist" ]; then
+elif [ "$PLATFORM" = "darwin" ] || [ "$PLATFORM" = "darwin-devel" ] ||
+     [ "$PLATFORM" = "darwin-dist" ]; then
 
 	echo "#define PLATFORM \"darwin\""    > src/config.h
 	echo "SUBPLATFORM=$PLATFORM"         >> platform.inc
@@ -559,7 +559,7 @@ fi
 
 echo "PREFIX:=$PREFIX" >> platform.inc
 
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"
 elif [ "$PLATFORM" = "emscripten" ]; then
 	LIBDIR="/data"
@@ -569,7 +569,7 @@ fi
 
 ### SYSTEM CONFIG DIRECTORY ###################################################
 
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	: # Use default or user-defined SYSCONFDIR
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SYSCONFDIR="../Resources"
@@ -598,7 +598,7 @@ echo "#define VERSION \"$VERSION\"" >> src/config.h
 
 if [ "$DATE_STAMP" = "true" ]; then
 	echo "Stamping version with today's date."
-	echo "#define VERSION_DATE \" (`date -u +%Y%m%d`)\"" >> src/config.h
+	echo "#define VERSION_DATE \" ($(date -u +%Y%m%d))\"" >> src/config.h
 else
 	echo "Not stamping version with today's date."
 fi
@@ -609,7 +609,7 @@ echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 # Some platforms may have filesystem hierarchies they need to fit into
 # FIXME: SHAREDIR should be hardcoded in fewer cases
 #
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	echo "#define CONFFILE \"megazeux-config\""      >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""  >> src/config.h
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
@@ -686,7 +686,7 @@ if [ "$PLATFORM" = "wii" ]; then
 	STACK_PROTECTOR="false"
 fi
 
-if [ "$PLATFORM" = "3ds" -o "$PLATFORM" = "nds" ]; then
+if [ "$PLATFORM" = "3ds" ] || [ "$PLATFORM" = "nds" ]; then
 	echo "Disabling SDL ($PLATFORM)."
 	SDL="false"
 fi
@@ -736,7 +736,7 @@ fi
 #
 # We need either SDL or EGL for OpenGL
 #
-if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
+if [ "$SDL" = "false" ] && [ "$EGL" = "false" ]; then
 	echo "Force-disabling OpenGL (no SDL or EGL backend)."
 	GL="false"
 fi
@@ -903,10 +903,12 @@ fi
 #
 # Force-disable OpenGL and overlay renderers on PSP, GP2X, 3DS, NDS and Wii
 #
-if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "3ds" \
-  -o "$PLATFORM" = "wiiu" \
-  -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
+if [ "$PLATFORM" = "psp" ] ||
+   [ "$PLATFORM" = "gp2x" ] ||
+   [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "3ds" ] ||
+   [ "$PLATFORM" = "wii" ] ||
+   [ "$PLATFORM" = "wiiu" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
 	OVERLAY="false"
@@ -915,7 +917,7 @@ fi
 #
 # Force-disable the softscale renderer for SDL 1.2 (requires SDL_Renderer).
 #
-if [ "$SDL" = "true" -a "$LIBSDL2" = "false" -a "$SOFTSCALE" = "true" ]; then
+if [ "$SDL" = "true" ] && [ "$LIBSDL2" = "false" ] && [ "$SOFTSCALE" = "true" ]; then
 	echo "Force-disabling softscale renderer (requires SDL 2)."
 	SOFTSCALE="false"
 fi
@@ -924,7 +926,7 @@ fi
 # Force-disable overlay renderers for SDL 2. The SDL 2 answer to SDL_Overlay
 # involves planar YUV modes which don't mesh well with MZX's internal rendering.
 #
-if [ "$SDL" = "true" -a "$LIBSDL2" = "true" -a "$OVERLAY" = "true" ]; then
+if [ "$SDL" = "true" ] && [ "$LIBSDL2" = "true" ] && [ "$OVERLAY" = "true" ]; then
 	echo "Force-disabling overlay renderers (requires SDL 1.2)."
 	OVERLAY="false"
 fi
@@ -932,7 +934,7 @@ fi
 #
 # Must have at least one OpenGL renderer enabled
 #
-[ "$GL_FIXED" = "false" -a "$GL_PROGRAM" = "false" ] && GL="false"
+[ "$GL_FIXED" = "false" ] && [ "$GL_PROGRAM" = "false" ] && GL="false"
 
 #
 # If OpenGL is globally disabled, disable all renderers
@@ -948,8 +950,10 @@ fi
 # Force-disable PNG support on platforms without screenshots or utils enabled.
 # The 3DS port requires PNG for other purposes.
 #
-if [ "$SCREENSHOTS" = "false" -a "$UTILS" = "false" \
-  -a "$LIBPNG" = "true" -a "$PLATFORM" != "3ds" ]; then
+if [ "$SCREENSHOTS" = "false" ] &&
+   [ "$UTILS" = "false" ] &&
+   [ "$LIBPNG" = "true" ] &&
+   [ "$PLATFORM" != "3ds" ]; then
 	echo "Force-disabling PNG support (screenshots and utils disabled)"
 	LIBPNG="false"
 fi
@@ -976,8 +980,10 @@ fi
 #
 # Force-disable pthread on non-POSIX platforms
 #
-if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
-  -a "$PLATFORM" != "gp2x" -a "$PLATFORM" != "android" ]; then
+if [ "$PLATFORM" != "unix" ] &&
+   [ "$PLATFORM" != "unix-devel" ] &&
+   [ "$PLATFORM" != "gp2x" ] &&
+   [ "$PLATFORM" != "android" ]; then
 	echo "Force-disabling pthread on non-POSIX platforms."
 	PTHREAD="false"
 fi
@@ -985,11 +991,15 @@ fi
 #
 # Force disable modular DSOs.
 #
-if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
-  -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
-  -o "$PLATFORM" = "wiiu" \
-  -o "$PLATFORM" = "android" -o "$PLATFORM" = "emscripten" \
-  -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
+if [ "$PLATFORM" = "gp2x" ] ||
+   [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "3ds" ] ||
+   [ "$PLATFORM" = "wii" ] ||
+   [ "$PLATFORM" = "wiiu" ] ||
+   [ "$PLATFORM" = "switch" ] ||
+   [ "$PLATFORM" = "android" ] ||
+   [ "$PLATFORM" = "emscripten" ] ||
+   [ "$PLATFORM" = "psp" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
 fi
@@ -997,7 +1007,8 @@ fi
 #
 # Force disable networking (unsupported platform or no editor build)
 #
-if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" ]; then
+if [ "$EDITOR" = "false" ] ||
+   [ "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
 fi
@@ -1021,32 +1032,37 @@ fi
 #
 # Force disable networking (no applications enabled)
 #
-if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
+if [ "$NETWORK" = "true" ] && [ "$UPDATER" = "false" ]; then
 	echo "Force-disabling networking (no network-dependent features enabled)."
 	NETWORK="false"
 fi
 
-#
-# Force disable getaddrinfo and IPv6 (unsupported platform)
-#
-if [ "$NETWORK" = "true" ] && \
- [ "$PLATFORM" = "amiga" -o "$PLATFORM" = "wii" -o "$PLATFORM" = "psp" ]; then
-	echo "Force-disabling getaddrinfo name resolution and IPv6 support (unsupported platform)."
-	GETADDRINFO="false"
-	IPV6="false"
-fi
+if [ "$NETWORK" = "true" ]; then
+	#
+	# Force disable getaddrinfo and IPv6 (unsupported platform)
+	#
+	if [ "$PLATFORM" = "amiga" ] ||
+	   [ "$PLATFORM" = "wii" ] ||
+	   [ "$PLATFORM" = "psp" ]; then
+		echo "Force-disabling getaddrinfo name resolution and IPv6 support (unsupported platform)."
+		GETADDRINFO="false"
+		IPV6="false"
+	fi
 
-#
-# Force disable poll (unsupported platform)
-# PSPSDK doesn't have this function and old versions of Mac OS X have a bugged
-# implementation. Amiga hasn't been verified, but considering the other things
-# missing, it's probably a safe inclusion.
-#
-if [ "$NETWORK" = "true" ] && \
- [ "$PLATFORM" = "amiga" -o "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-dist" \
-  -o "$PLATFORM" = "darwin-devel" -o "$PLATFORM" = "psp" ]; then
-	echo "Force-disabling poll (unsupported platform)."
-	POLL="false"
+	#
+	# Force disable poll (unsupported platform)
+	# PSPSDK doesn't have this function and old versions of Mac OS X have a bugged
+	# implementation. Amiga hasn't been verified, but considering the other things
+	# missing, it's probably a safe inclusion.
+	#
+	if [ "$PLATFORM" = "amiga" ] ||
+	   [ "$PLATFORM" = "darwin" ] ||
+	   [ "$PLATFORM" = "darwin-dist" ] ||
+	   [ "$PLATFORM" = "darwin-devel" ] ||
+	   [ "$PLATFORM" = "psp" ]; then
+		echo "Force-disabling poll (unsupported platform)."
+		POLL="false"
+	fi
 fi
 
 #
@@ -1192,27 +1208,28 @@ fi
 #
 # X11 support (linked against and needs headers installed)
 #
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" \
-  -o "$PLATFORM" = "pandora" ]; then
+if [ "$PLATFORM" = "unix" ] ||
+   [ "$PLATFORM" = "unix-devel" ] ||
+   [ "$PLATFORM" = "pandora" ]; then
 	#
 	# Confirm the user's selection of X11, if they enabled it
 	#
 	if [ "$X11" = "true" ]; then
+		X11="false"
 		for XBIN in X Xorg; do
 			# check if X exists
-			command -v $XBIN >/dev/null 2>&1
-
-			# X/Xorg queried successfully
-			[ "$?" = "0" ] && break
+			if command -v $XBIN >/dev/null 2>&1; then
+				X11="true"
+				break
+			fi
 		done
 
-		if [ "$?" != "0" ]; then
+		if [ "$X11" = "false" ]; then
 			echo "Force-disabling X11 (could not be queried)."
-			X11="false"
 		fi
 	fi
 
-	if [ "$ICON" = "true" -a "$X11" = "false" ]; then
+	if [ "$ICON" = "true" ] && [ "$X11" = "false" ]; then
 		echo "Force-disabling icon branding (X11 disabled)."
 		ICON="false"
 	fi
@@ -1228,8 +1245,8 @@ if [ "$X11" = "true" ]; then
 	echo "#define CONFIG_X11" >> src/config.h
 
 	# figure out where X11 is prefixed
-	X11PATH=`which $XBIN`
-	X11DIR=$(dirname $(dirname $X11PATH))
+	X11PATH=$(command -v $XBIN)
+	X11DIR=$(dirname "$(dirname "$X11PATH")")
 
 	# pass this along to the build system
 	echo "X11DIR=${X11DIR}" >> platform.inc
@@ -1239,10 +1256,13 @@ fi
 # Force disable icon branding.
 #
 if [ "$ICON" = "true" ]; then
-	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-devel" \
-	  -o "$PLATFORM" = "darwin-dist" -o "$PLATFORM" = "gp2x" \
-	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" \
-	  -o "$PLATFORM" = "wii" ]; then
+	if [ "$PLATFORM" = "darwin" ] ||
+	   [ "$PLATFORM" = "darwin-devel" ] ||
+	   [ "$PLATFORM" = "darwin-dist" ] ||
+	   [ "$PLATFORM" = "gp2x" ] ||
+	   [ "$PLATFORM" = "psp" ] ||
+	   [ "$PLATFORM" = "nds" ] ||
+	   [ "$PLATFORM" = "wii" ]; then
 		echo "Force-disabling icon branding (redundant)."
 		ICON="false"
 	fi
@@ -1316,7 +1336,7 @@ fi
 #
 # GX renderer (Wii and GameCube)
 #
-if [ "$PLATFORM" = "wii" -a "$SDL" = "false" ]; then
+if [ "$PLATFORM" = "wii" ] && [ "$SDL" = "false" ]; then
 	echo "Building custom GX renderer."
 	echo "#define CONFIG_RENDER_GX" >> src/config.h
 	echo "BUILD_RENDER_GX=1" >> platform.inc
@@ -1620,7 +1640,7 @@ fi
 #
 # stdio redirect, if enabled
 #
-if [ "$SDL" = "true" -a "$LIBSDL2" = "false" ]; then
+if [ "$SDL" = "true" ] && [ "$LIBSDL2" = "false" ]; then
 	echo "Using SDL 1.x default stdio redirect behavior."
 elif [ "$STDIO_REDIRECT" = "true" ]; then
 	echo "Redirecting stdio to stdout.txt and stderr.txt."
@@ -1632,7 +1652,7 @@ fi
 #
 # SDL_GameControllerDB, if enabled. This depends on SDL 2.
 #
-if [ "$LIBSDL2" = "true" -a "$GAMECONTROLLERDB" = "true" ]; then
+if [ "$LIBSDL2" = "true" ] && [ "$GAMECONTROLLERDB" = "true" ]; then
 	echo "SDL_GameControllerDB enabled."
 	echo "#define CONFIG_GAMECONTROLLERDB" >> src/config.h
 	echo "BUILD_GAMECONTROLLERDB=1" >> platform.inc
