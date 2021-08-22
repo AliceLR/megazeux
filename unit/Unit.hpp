@@ -210,7 +210,7 @@ public:
 #define FAIL(...) \
   do\
   {\
-    throw Unit::exception(__LINE__, nullptr, "" __VA_ARGS__); \
+    throw Unit::exception(__LINE__, -1, "" __VA_ARGS__); \
   } while(0)
 
 #define SKIP() \
@@ -280,6 +280,18 @@ namespace Unit
 
     exception(int _line, const char *_test):
      line(_line), test(coalesce(_test)), reason("") {}
+
+    exception(int _line, int _ignore, const char *_reason_fmt, ...):
+     line(_line), test(coalesce(nullptr))
+    {
+      if(_reason_fmt && _reason_fmt[0])
+      {
+        va_list vl;
+        va_start(vl, _reason_fmt);
+        set_reason_fmt(_reason_fmt, vl);
+        va_end(vl);
+      }
+    }
 
     exception(int _line, const char *_test, const char *_reason_fmt, ...):
      line(_line), test(coalesce(_test))

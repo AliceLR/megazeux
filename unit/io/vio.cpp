@@ -1178,7 +1178,7 @@ void test_dir_contents(const char *dirname, const char * const (&expected)[N])
       continue;
 
     if(!has_expected[i])
-      FAIL("missing expected file '%s' from '%s'!", buffer, dirname);
+      FAIL("missing expected file '%s' from '%s'!", expected[i], dirname);
   }
 }
 
