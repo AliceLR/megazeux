@@ -503,7 +503,7 @@ elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
 	elif [ "$(echo "$MACH" | sed 's,i.86,x86,')" = "x86" ]; then
 		ARCHNAME=x86
 		#RAWLIBDIR=lib
-	elif [ "$MACH" = "aarch64" -o "$MACH" = "arm64" ]; then
+	elif [ "$MACH" = "aarch64" ] || [ "$MACH" = "arm64" ]; then
 		ARCHNAME=aarch64
 	elif [ "$(echo "$MACH" | sed 's,^arm.*,arm,')" = "arm" ]; then
 		ARCHNAME=arm
@@ -559,7 +559,7 @@ fi
 
 echo "PREFIX:=$PREFIX" >> platform.inc
 
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"
 elif [ "$PLATFORM" = "emscripten" ]; then
 	LIBDIR="/data"
@@ -686,7 +686,7 @@ if [ "$PLATFORM" = "wii" ]; then
 	STACK_PROTECTOR="false"
 fi
 
-if [ "$PLATFORM" = "3ds" -o "$PLATFORM" = "nds" ]; then
+if [ "$PLATFORM" = "3ds" ] || [ "$PLATFORM" = "nds" ]; then
 	echo "Disabling SDL ($PLATFORM)."
 	SDL="false"
 fi
@@ -736,7 +736,7 @@ fi
 #
 # We need either SDL or EGL for OpenGL
 #
-if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
+if [ "$SDL" = "false" ] && [ "$EGL" = "false" ]; then
 	echo "Force-disabling OpenGL (no SDL or EGL backend)."
 	GL="false"
 fi
@@ -1032,7 +1032,7 @@ fi
 #
 # Force disable networking (no applications enabled)
 #
-if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
+if [ "$NETWORK" = "true" ] && [ "$UPDATER" = "false" ]; then
 	echo "Force-disabling networking (no network-dependent features enabled)."
 	NETWORK="false"
 fi
