@@ -116,19 +116,43 @@ static inline void platform_closedir(struct dir_handle dh)
 static inline boolean platform_readdir(struct dir_handle dh, char *buffer,
  size_t buffer_len, int *d_type)
 {
-  struct dirent *d = readdir(dh.dir);
-  if(!d)
-    return false;
+  struct dirent *d;
 
-  if(buffer && buffer_len)
-    snprintf(buffer, buffer_len, "%s", d->d_name);
+#ifdef __USE_LARGEFILE64
+  /**
+   * Regular readdir/dirent can cause issues for 32-bit executables running
+   * on large filesystems. This is caused by values for d_ino or d_off
+   * overflowing their respective fields (even though this code doesn't
+   * care about them). Prefer dirent64 if it is enabled.
+   */
+  struct dirent64 *d64 = readdir64(dh.dir);
+  if(d64)
+  {
+    if(buffer && buffer_len)
+      snprintf(buffer, buffer_len, "%s", d64->d_name);
 
 #ifdef DT_UNKNOWN
-  if(d_type)
-    *d_type = d->d_type;
+    if(d_type)
+      *d_type = d64->d_type;
+#endif
+    return true;
+  }
 #endif
 
-  return true;
+  d = readdir(dh.dir);
+  if(d)
+  {
+    if(buffer && buffer_len)
+      snprintf(buffer, buffer_len, "%s", d->d_name);
+
+#ifdef DT_UNKNOWN
+    if(d_type)
+      *d_type = d->d_type;
+#endif
+    return true;
+  }
+
+  return false;
 }
 
 static inline boolean platform_rewinddir(struct dir_handle dh)
