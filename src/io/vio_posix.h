@@ -40,6 +40,22 @@ __M_BEGIN_DECLS
 #define PLATFORM_NO_REWINDDIR
 #endif
 
+#ifdef __USE_LARGEFILE64
+/**
+ * Regular readdir/dirent can cause issues for 32-bit executables running
+ * on large filesystems. This is caused by values for d_ino or d_off
+ * overflowing their respective fields (even though this code doesn't
+ * care about them). Prefer dirent64 if it is available.
+ *
+ * NOTE: __USE_LARGEFILE64 is a glibc-specific internal define, but there
+ * doesn't seem to be a better way to detect this. dirent64 is generally a
+ * glibc extension. Bionic and musl both support dirent64, but their dirent64
+ * structs are identical to their regular dirent structs. Newlib does not
+ * support dirent64, but primarily targets platforms where this is irrelevant.
+ */
+#define PLATFORM_HAS_DIRENT64
+#endif
+
 
 static inline FILE *platform_fopen_unsafe(const char *path, const char *mode)
 {
@@ -116,30 +132,16 @@ static inline void platform_closedir(struct dir_handle dh)
 static inline boolean platform_readdir(struct dir_handle dh, char *buffer,
  size_t buffer_len, int *d_type)
 {
-  struct dirent *d;
+#ifdef PLATFORM_HAS_DIRENT64
 
-#ifdef __USE_LARGEFILE64
-  /**
-   * Regular readdir/dirent can cause issues for 32-bit executables running
-   * on large filesystems. This is caused by values for d_ino or d_off
-   * overflowing their respective fields (even though this code doesn't
-   * care about them). Prefer dirent64 if it is enabled.
-   */
-  struct dirent64 *d64 = readdir64(dh.dir);
-  if(d64)
-  {
-    if(buffer && buffer_len)
-      snprintf(buffer, buffer_len, "%s", d64->d_name);
+  struct dirent64 *d = readdir64(dh.dir);
 
-#ifdef DT_UNKNOWN
-    if(d_type)
-      *d_type = d64->d_type;
-#endif
-    return true;
-  }
+#else
+
+  struct dirent *d = readdir(dh.dir);
+
 #endif
 
-  d = readdir(dh.dir);
   if(d)
   {
     if(buffer && buffer_len)
@@ -151,7 +153,6 @@ static inline boolean platform_readdir(struct dir_handle dh, char *buffer,
 #endif
     return true;
   }
-
   return false;
 }
 
