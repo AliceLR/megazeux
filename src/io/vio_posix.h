@@ -142,18 +142,18 @@ static inline boolean platform_readdir(struct dir_handle dh, char *buffer,
 
 #endif
 
-  if(d)
-  {
-    if(buffer && buffer_len)
-      snprintf(buffer, buffer_len, "%s", d->d_name);
+  if(!d)
+    return false;
+
+  if(buffer && buffer_len)
+    snprintf(buffer, buffer_len, "%s", d->d_name);
 
 #ifdef DT_UNKNOWN
-    if(d_type)
-      *d_type = d->d_type;
+  if(d_type)
+    *d_type = d->d_type;
 #endif
-    return true;
-  }
-  return false;
+
+  return true;
 }
 
 static inline boolean platform_rewinddir(struct dir_handle dh)
