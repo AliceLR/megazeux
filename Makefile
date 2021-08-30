@@ -400,7 +400,7 @@ build/${TARGET}src:
 	@git -c "core.autocrlf=false" checkout-index -a --prefix build/${TARGET}/
 	${RM} -r build/${TARGET}/scripts
 	${RM} build/${TARGET}/.gitignore build/${TARGET}/.gitattributes
-	@cd build/${TARGET} && make distclean
+	@cd build/${TARGET} && ${MAKE} distclean
 	@tar -C build -Jcf build/dist/source/${TARGET}src.tar.xz ${TARGET}
 
 #
