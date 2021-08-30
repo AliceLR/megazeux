@@ -394,9 +394,7 @@ source: build/${TARGET}src
 # Build source target
 # Targetting unix primarily, so turn off autocrlf if necessary
 #
-ifneq ($(shell command -v git),)
-USER_AUTOCRLF=$(shell git config core.autocrlf)
-endif
+USER_AUTOCRLF=$(shell if command -v git; then git config core.autocrlf; fi)
 build/${TARGET}src:
 	${RM} -r build/${TARGET}
 	${MKDIR} -p build/dist/source
