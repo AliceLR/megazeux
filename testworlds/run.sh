@@ -1,19 +1,18 @@
 #!/bin/sh
 
 # Use make test
-if [ -z "$1" ]; then
-	echo "USAGE: ./run.sh {PLATFORM}"
+usage()
+{
+	echo "USAGE: ./run.sh [-q] {PLATFORM}"
 	echo ""
-	echo "OR:    ./run.sh {PLATFORM} /path/to/{libcore.so|libcore.dylib} (if modular enabled and platform is 'unix' or 'darwin'"
+	echo "OR:    ./run.sh [-q] {PLATFORM} /path/to/{libcore.so|libcore.dylib} (if modular enabled and platform is 'unix' or 'darwin'"
 	echo ""
 	echo "OR:    make test"
-	exit 1
-fi
+}
 
 get_asan()
 {
-	libs=$(ldd $1 2>/dev/null)
-	if [ "$?" = "0" ]; then
+	if libs=$(ldd "$1" 2>/dev/null); then
 		ASAN=$(echo "$libs" | grep -i "lib[^ ]*asan" | awk '{print $3}')
 	fi
 }
@@ -21,7 +20,7 @@ get_asan()
 get_preload()
 {
 	preload="$1"
-	get_asan $1
+	get_asan "$1"
 	if [ -z "$ASAN" ]; then
 		# Some compilers may link it to mzxrun but not libcore.so...
 		get_asan "../mzxrun"
@@ -31,17 +30,31 @@ get_preload()
 	fi
 }
 
-TESTS_DIR=`dirname "$0"`
-cd "$TESTS_DIR"
-cd ..
+quiet="no"
+if [ "$1" = "-q" ];
+then
+	quiet="yes"
+	shift
+fi
+
+if [ -z "$1" ];
+then
+	usage
+	exit 1
+fi
+
+TESTS_DIR=$(dirname "$0")
+cd "$TESTS_DIR" || { echo "ERROR: failed to cd to test dir: $TESTS_DIR"; exit 1; }
+(
+cd .. || { echo "ERROR: failed to cd to megazeux dir"; exit 1; }
 
 # Unix release builds will try to find this if it isn't installed.
 cp config.txt megazeux-config
 
 # Give tests.mzx the MZX configuration so it can decide which tests to skip.
 cp src/config.h "$TESTS_DIR"
+)
 
-cd "$TESTS_DIR"
 mkdir -p log
 
 # Clear out any backup files so they aren't mistaken for tests.
@@ -60,9 +73,10 @@ export LD_LIBRARY_PATH="."
 export DYLD_FALLBACK_LIBRARY_PATH="."
 
 preload=""
-if [ -n "$2" ]; then
-	get_preload $2
-	echo "Test worlds preload: $preload"
+if [ -n "$2" ];
+then
+	get_preload "$2"
+	[ "$quiet" = "yes" ] || echo "Test worlds preload: $preload"
 fi
 
 # Coupled with the software renderer, this will disable video in MZX, speeding things up
@@ -75,10 +89,10 @@ export SDL_AUDIODRIVER=dummy
 # simplifies things. Disable auto update checking to save time. Some platforms
 # might have issues detecting libraries and running from this folder, so run from
 # the base folder.
-
+[ "$quiet" = "yes" ] || printf "Running test worlds"
+(
 cd ..
 
-printf "Running test worlds"
 LD_PRELOAD="$preload" \
 ./mzxrun \
   "$TESTS_DIR/tests.mzx" \
@@ -87,8 +101,7 @@ LD_PRELOAD="$preload" \
   standalone_mode=1 \
   no_titlescreen=1 \
   &
-
-cd "$TESTS_DIR"
+)
 
 # Attempt to detect a hang (e.g. an error occurred).
 
@@ -96,11 +109,11 @@ mzxrun_pid=$!
 
 i="0"
 
-while ps -p $mzxrun_pid | grep -q $mzxrun_pid
+while ps | grep -q "$mzxrun_pid .*[m]zxrun"
 do
 	sleep 1
-	i=$(($i+1))
-	printf "."
+	i=$((i+1))
+	[ "$quiet" = "yes" ] || printf "."
 	if [ $i -ge 60 ];
 	then
 		kill -9 $mzxrun_pid
@@ -108,7 +121,7 @@ do
 		break
 	fi
 done
-echo ""
+[ "$quiet" = "yes" ] || echo ""
 
 # Clean up some files that MegaZeux currently can't.
 
@@ -122,30 +135,32 @@ rm -f ../megazeux-config
 rm -f config.h
 rm -f data/audio/drivin.s3m
 
-# Color code PASS/FAIL tags and important numbers.
-
-COL_END="`tput sgr0`"
-COL_RED="`tput bold``tput setaf 1`"
-COL_GREEN="`tput bold``tput setaf 2`"
-COL_YELLOW="`tput bold``tput setaf 3`"
-
-if [ -z $1 ] || [ $1 != "-q" ];
+if [ "$quiet" != "yes" ];
 then
-	echo "$(\
-	  cat log/failures \
-	  | sed -e "s/\[PASS\]/\[${COL_GREEN}PASS${COL_END}\]/g" \
-	  | sed -e "s/\[FAIL\]/\[${COL_RED}FAIL${COL_END}\]/g" \
-	  | sed -e "s/\[\(WARN\|SKIP\)\]/\[${COL_YELLOW}\1${COL_END}\]/g" \
-	  | sed -e "s/passes: \([1-9][0-9]*\)/passes: ${COL_GREEN}\1${COL_END}/g" \
-	  | sed -e "s/failures: \([1-9][0-9]*\)/failures: ${COL_RED}\1${COL_END}/g" \
-	  )"
+	if command -v tput >/dev/null;
+	then
+		# Color code PASS/FAIL tags and important numbers.
+		COL_END=$(tput sgr0)
+		COL_RED=$(tput bold)$(tput setaf 1)
+		COL_GREEN=$(tput bold)$(tput setaf 2)
+		COL_YELLOW=$(tput bold)$(tput setaf 3)
 
-	tput bel
+		cat log/failures \
+		  | sed -e "s/\[PASS\]/\[${COL_GREEN}PASS${COL_END}\]/g" \
+		  | sed -e "s/\[FAIL\]/\[${COL_RED}FAIL${COL_END}\]/g" \
+		  | sed -e "s/\[\(WARN\|SKIP\)\]/\[${COL_YELLOW}\1${COL_END}\]/g" \
+		  | sed -e "s/passes: \([1-9][0-9]*\)/passes: ${COL_GREEN}\1${COL_END}/g" \
+		  | sed -e "s/failures: \([1-9][0-9]*\)/failures: ${COL_RED}\1${COL_END}/g" \
+
+		tput bel
+	else
+		cat log/failures
+	fi
 fi
 
 # Exit 1 if there are any failures.
 
-if [ ! -e log/failures ] || grep -q "FAIL" log/failures;
+if [ ! -e log/failures ] || grep -q "FAIL" log/failures || grep -q "ERROR" log/failures;
 then
 	exit 1
 else

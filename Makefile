@@ -16,7 +16,7 @@ MAKEFLAGS += -r
 endif
 
 .PHONY: all clean help_check mzx mzx.debug build build_clean source
-.PHONY: test unittest test_clean unit_clean
+.PHONY: test testworlds unit unittest test_clean unit_clean
 
 #
 # Define this first so arch-specific rules don't hijack the default target.
@@ -392,20 +392,15 @@ source: build/${TARGET}src
 
 #
 # Build source target
-# Targetting unix primarily, so turn off autocrlf if necessary
+# Targeting unix primarily, so turn off autocrlf if necessary.
 #
-ifneq ($(shell command -v git),)
-USER_AUTOCRLF=$(shell git config core.autocrlf)
-endif
 build/${TARGET}src:
 	${RM} -r build/${TARGET}
 	${MKDIR} -p build/dist/source
-	@git config core.autocrlf false
-	@git checkout-index -a --prefix build/${TARGET}/
-	@git config core.autocrlf ${USER_AUTOCRLF}
+	@git -c "core.autocrlf=false" checkout-index -a --prefix build/${TARGET}/
 	${RM} -r build/${TARGET}/scripts
 	${RM} build/${TARGET}/.gitignore build/${TARGET}/.gitattributes
-	@cd build/${TARGET} && make distclean
+	@cd build/${TARGET} && ${MAKE} distclean
 	@tar -C build -Jcf build/dist/source/${TARGET}src.tar.xz ${TARGET}
 
 #
@@ -573,7 +568,9 @@ help_check: ${hlp2txt} assets/help.fil
 
 -include unit/Makefile.in
 
-test: unittest
+test: unit
+
+test testworlds:
 ifeq (${BUILD_MODULAR},1)
 	@${SHELL} testworlds/run.sh ${PLATFORM} "$(realpath ${core_target})"
 else
