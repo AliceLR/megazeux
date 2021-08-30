@@ -121,23 +121,27 @@ rm -f ../megazeux-config
 rm -f config.h
 rm -f data/audio/drivin.s3m
 
-# Color code PASS/FAIL tags and important numbers.
-
-COL_END=$(tput sgr0)
-COL_RED=$(tput bold)$(tput setaf 1)
-COL_GREEN=$(tput bold)$(tput setaf 2)
-COL_YELLOW=$(tput bold)$(tput setaf 3)
-
 if [ -z "$1" ] || [ "$1" != "-q" ];
 then
-	cat log/failures \
-	  | sed -e "s/\[PASS\]/\[${COL_GREEN}PASS${COL_END}\]/g" \
-	  | sed -e "s/\[FAIL\]/\[${COL_RED}FAIL${COL_END}\]/g" \
-	  | sed -e "s/\[\(WARN\|SKIP\)\]/\[${COL_YELLOW}\1${COL_END}\]/g" \
-	  | sed -e "s/passes: \([1-9][0-9]*\)/passes: ${COL_GREEN}\1${COL_END}/g" \
-	  | sed -e "s/failures: \([1-9][0-9]*\)/failures: ${COL_RED}\1${COL_END}/g" \
+	if command -v tput >/dev/null;
+	then
+		# Color code PASS/FAIL tags and important numbers.
+		COL_END=$(tput sgr0)
+		COL_RED=$(tput bold)$(tput setaf 1)
+		COL_GREEN=$(tput bold)$(tput setaf 2)
+		COL_YELLOW=$(tput bold)$(tput setaf 3)
 
-	tput bel
+		cat log/failures \
+		  | sed -e "s/\[PASS\]/\[${COL_GREEN}PASS${COL_END}\]/g" \
+		  | sed -e "s/\[FAIL\]/\[${COL_RED}FAIL${COL_END}\]/g" \
+		  | sed -e "s/\[\(WARN\|SKIP\)\]/\[${COL_YELLOW}\1${COL_END}\]/g" \
+		  | sed -e "s/passes: \([1-9][0-9]*\)/passes: ${COL_GREEN}\1${COL_END}/g" \
+		  | sed -e "s/failures: \([1-9][0-9]*\)/failures: ${COL_RED}\1${COL_END}/g" \
+
+		tput bel
+	else
+		cat log/failures
+	fi
 fi
 
 # Exit 1 if there are any failures.
