@@ -130,14 +130,12 @@ COL_YELLOW=$(tput bold)$(tput setaf 3)
 
 if [ -z "$1" ] || [ "$1" != "-q" ];
 then
-	echo "$(\
-	  cat log/failures \
+	cat log/failures \
 	  | sed -e "s/\[PASS\]/\[${COL_GREEN}PASS${COL_END}\]/g" \
 	  | sed -e "s/\[FAIL\]/\[${COL_RED}FAIL${COL_END}\]/g" \
 	  | sed -e "s/\[\(WARN\|SKIP\)\]/\[${COL_YELLOW}\1${COL_END}\]/g" \
 	  | sed -e "s/passes: \([1-9][0-9]*\)/passes: ${COL_GREEN}\1${COL_END}/g" \
 	  | sed -e "s/failures: \([1-9][0-9]*\)/failures: ${COL_RED}\1${COL_END}/g" \
-	  )"
 
 	tput bel
 fi
