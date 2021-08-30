@@ -8,6 +8,12 @@ DSOPOST    = .so
 DSORPATH   = -Wl,-rpath,${LIBDIR}
 DSOSONAME  = -Wl,-soname,
 
+# Enable dirent64.
+# This fixes issues with readdir() failing with EOVERFLOW when called from a
+# 32-bit executable running on a large filesystem.
+ARCH_CFLAGS   = -D_LARGEFILE64_SOURCE
+ARCH_CXXFLAGS = -D_LARGEFILE64_SOURCE
+
 include arch/install.inc
 
 # linux os specific install files
