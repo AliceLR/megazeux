@@ -1,14 +1,14 @@
 #!/bin/sh
 
 # Use make test
-if [ -z "$1" ]; then
-	echo "USAGE: ./run.sh {PLATFORM}"
+usage()
+{
+	echo "USAGE: ./run.sh [-q] {PLATFORM}"
 	echo ""
-	echo "OR:    ./run.sh {PLATFORM} /path/to/{libcore.so|libcore.dylib} (if modular enabled and platform is 'unix' or 'darwin'"
+	echo "OR:    ./run.sh [-q] {PLATFORM} /path/to/{libcore.so|libcore.dylib} (if modular enabled and platform is 'unix' or 'darwin'"
 	echo ""
 	echo "OR:    make test"
-	exit 1
-fi
+}
 
 get_asan()
 {
@@ -30,10 +30,23 @@ get_preload()
 	fi
 }
 
+quiet="no"
+if [ "$1" = "-q" ];
+then
+	quiet="yes"
+	shift
+fi
+
+if [ -z "$1" ];
+then
+	usage
+	exit 1
+fi
+
 TESTS_DIR=$(dirname "$0")
-cd "$TESTS_DIR" || { echo "Failed to cd to test dir: $TESTS_DIR"; exit 1; }
+cd "$TESTS_DIR" || { echo "ERROR: failed to cd to test dir: $TESTS_DIR"; exit 1; }
 (
-cd .. || { echo "Failed to cd to megazeux dir"; exit 1; }
+cd .. || { echo "ERROR: failed to cd to megazeux dir"; exit 1; }
 
 # Unix release builds will try to find this if it isn't installed.
 cp config.txt megazeux-config
@@ -60,9 +73,10 @@ export LD_LIBRARY_PATH="."
 export DYLD_FALLBACK_LIBRARY_PATH="."
 
 preload=""
-if [ -n "$2" ]; then
+if [ -n "$2" ];
+then
 	get_preload "$2"
-	echo "Test worlds preload: $preload"
+	[ "$quiet" = "yes" ] || echo "Test worlds preload: $preload"
 fi
 
 # Coupled with the software renderer, this will disable video in MZX, speeding things up
@@ -75,7 +89,7 @@ export SDL_AUDIODRIVER=dummy
 # simplifies things. Disable auto update checking to save time. Some platforms
 # might have issues detecting libraries and running from this folder, so run from
 # the base folder.
-printf "Running test worlds"
+[ "$quiet" = "yes" ] || printf "Running test worlds"
 (
 cd ..
 
@@ -99,7 +113,7 @@ while ps | grep -q "$mzxrun_pid .*[m]zxrun"
 do
 	sleep 1
 	i=$((i+1))
-	printf "."
+	[ "$quiet" = "yes" ] || printf "."
 	if [ $i -ge 60 ];
 	then
 		kill -9 $mzxrun_pid
@@ -107,7 +121,7 @@ do
 		break
 	fi
 done
-echo ""
+[ "$quiet" = "yes" ] || echo ""
 
 # Clean up some files that MegaZeux currently can't.
 
@@ -121,7 +135,7 @@ rm -f ../megazeux-config
 rm -f config.h
 rm -f data/audio/drivin.s3m
 
-if [ -z "$1" ] || [ "$1" != "-q" ];
+if [ "$quiet" != "yes" ];
 then
 	if command -v tput >/dev/null;
 	then
