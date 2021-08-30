@@ -12,8 +12,7 @@ fi
 
 get_asan()
 {
-	libs=$(ldd $1 2>/dev/null)
-	if [ "$?" = "0" ]; then
+	if libs=$(ldd "$1" 2>/dev/null); then
 		ASAN=$(echo "$libs" | grep -i "lib[^ ]*asan" | awk '{print $3}')
 	fi
 }
@@ -21,7 +20,7 @@ get_asan()
 get_preload()
 {
 	preload="$1"
-	get_asan $1
+	get_asan "$1"
 	if [ -z "$ASAN" ]; then
 		# Some compilers may link it to mzxrun but not libcore.so...
 		get_asan "../mzxrun"
@@ -31,17 +30,18 @@ get_preload()
 	fi
 }
 
-TESTS_DIR=`dirname "$0"`
-cd "$TESTS_DIR"
-cd ..
+TESTS_DIR=$(dirname "$0")
+cd "$TESTS_DIR" || { echo "Failed to cd to test dir: $TESTS_DIR"; exit 1; }
+(
+cd .. || { echo "Failed to cd to megazeux dir"; exit 1; }
 
 # Unix release builds will try to find this if it isn't installed.
 cp config.txt megazeux-config
 
 # Give tests.mzx the MZX configuration so it can decide which tests to skip.
 cp src/config.h "$TESTS_DIR"
+)
 
-cd "$TESTS_DIR"
 mkdir -p log
 
 # Clear out any backup files so they aren't mistaken for tests.
@@ -61,7 +61,7 @@ export DYLD_FALLBACK_LIBRARY_PATH="."
 
 preload=""
 if [ -n "$2" ]; then
-	get_preload $2
+	get_preload "$2"
 	echo "Test worlds preload: $preload"
 fi
 
@@ -75,10 +75,10 @@ export SDL_AUDIODRIVER=dummy
 # simplifies things. Disable auto update checking to save time. Some platforms
 # might have issues detecting libraries and running from this folder, so run from
 # the base folder.
-
+printf "Running test worlds"
+(
 cd ..
 
-printf "Running test worlds"
 LD_PRELOAD="$preload" \
 ./mzxrun \
   "$TESTS_DIR/tests.mzx" \
@@ -87,8 +87,7 @@ LD_PRELOAD="$preload" \
   standalone_mode=1 \
   no_titlescreen=1 \
   &
-
-cd "$TESTS_DIR"
+)
 
 # Attempt to detect a hang (e.g. an error occurred).
 
@@ -96,10 +95,10 @@ mzxrun_pid=$!
 
 i="0"
 
-while ps -p $mzxrun_pid | grep -q $mzxrun_pid
+while ps | grep -q "$mzxrun_pid .*[m]zxrun"
 do
 	sleep 1
-	i=$(($i+1))
+	i=$((i+1))
 	printf "."
 	if [ $i -ge 60 ];
 	then
@@ -124,12 +123,12 @@ rm -f data/audio/drivin.s3m
 
 # Color code PASS/FAIL tags and important numbers.
 
-COL_END="`tput sgr0`"
-COL_RED="`tput bold``tput setaf 1`"
-COL_GREEN="`tput bold``tput setaf 2`"
-COL_YELLOW="`tput bold``tput setaf 3`"
+COL_END=$(tput sgr0)
+COL_RED=$(tput bold)$(tput setaf 1)
+COL_GREEN=$(tput bold)$(tput setaf 2)
+COL_YELLOW=$(tput bold)$(tput setaf 3)
 
-if [ -z $1 ] || [ $1 != "-q" ];
+if [ -z "$1" ] || [ "$1" != "-q" ];
 then
 	echo "$(\
 	  cat log/failures \
@@ -145,7 +144,7 @@ fi
 
 # Exit 1 if there are any failures.
 
-if [ ! -e log/failures ] || grep -q "FAIL" log/failures;
+if [ ! -e log/failures ] || grep -q "FAIL" log/failures || grep -q "ERROR" log/failures;
 then
 	exit 1
 else
