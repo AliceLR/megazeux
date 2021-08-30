@@ -392,15 +392,12 @@ source: build/${TARGET}src
 
 #
 # Build source target
-# Targetting unix primarily, so turn off autocrlf if necessary
+# Targeting unix primarily, so turn off autocrlf if necessary.
 #
-USER_AUTOCRLF=$(shell command -v git >/dev/null && git config core.autocrlf)
 build/${TARGET}src:
 	${RM} -r build/${TARGET}
 	${MKDIR} -p build/dist/source
-	@git config core.autocrlf false
-	@git checkout-index -a --prefix build/${TARGET}/
-	@git config core.autocrlf ${USER_AUTOCRLF}
+	@git -c "core.autocrlf=false" checkout-index -a --prefix build/${TARGET}/
 	${RM} -r build/${TARGET}/scripts
 	${RM} build/${TARGET}/.gitignore build/${TARGET}/.gitattributes
 	@cd build/${TARGET} && make distclean
