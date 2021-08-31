@@ -137,14 +137,13 @@ public:
     memcpy(u.arr, str, B);
   }
 
-/*
   alignstr(const char * const str)
   {
     size_t slen = strlen(str);
-    assert(slen + 1 <= A);
+    if(slen + 1 > A)
+      abort();
     memcpy(u.arr, str, slen);
   }
-*/
 
   constexpr const char *c_str() const
   {
