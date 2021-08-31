@@ -89,10 +89,7 @@ int main(int argc, char *argv[])
   }
 
   if(!Unit::self_check())
-  {
-    Uerr("ERROR: self check failed!\n");
     return 1;
-  }
 
   std::signal(SIGABRT, sigabrt_handler);
   return !(Unit::unittestrunner::get().run());
