@@ -289,9 +289,9 @@ UNITTEST(mfseek_mftell)
 
     for(const seq seq : sequence)
     {
-      ASSERTEQ(mftell(&mf), seq.position, "seek_cur sequence %d->%d", seq.position, seq.next);
+      ASSERTEQ(mftell(&mf), seq.position, "seek_cur sequence %ld->%d", seq.position, seq.next);
       ret = mfseek(&mf, seq.next, SEEK_CUR);
-      ASSERTEQ(ret, seq.retval, "seek_cur sequence %d->%d", seq.position, seq.next);
+      ASSERTEQ(ret, seq.retval, "seek_cur sequence %ld->%d", seq.position, seq.next);
     }
   }
 
