@@ -97,16 +97,16 @@ platform(s) are not regularly updated:
 
 ## Credits
 
-| MegaZeux 2.9x     |                                                            |
-| ----------------- | ---------------------------------------------------------- |
-| Alice Rowan       | Development/current maintainer                             |
-| Terryn            | Help file; testing                                         |
-| Lancer X          | Development; testing                                       |
-| Adrian Siekierka  | Development; testing; various ports                        |
-| Insidious         | Development; testing; Ubuntu/Debian/Raspbian/Arch packages |
-| Spectere          | Development; testing; Xcode and MSVC projects              |
-| Alistair Strachan | Development                                                |
-| Others            | Various                                                    |
+| MegaZeux 2.9x           |                                                            |
+| ----------------------- | ---------------------------------------------------------- |
+| Alice Rowan             | Development/current maintainer                             |
+| Terryn                  | Help file; testing                                         |
+| Lancer X                | Development; testing                                       |
+| Adrian Siekierka        | Development; testing; various ports                        |
+| Dizzy O'Malley-Morrison | Development; testing; Ubuntu/Debian/Raspbian/Arch packages |
+| Spectere                | Development; testing; Xcode and MSVC projects              |
+| Alistair Strachan       | Development                                                |
+| Others                  | Various                                                    |
 
 #### MegaZeux Credits
 
@@ -135,7 +135,7 @@ Other past contributors: Spider124, Koji, JZig, Akwende, MenTaLguY.
 
 #### Special Thanks
 
-Insidious (Testing, .deb and Arch packages)
+Dizzy (Testing, .deb and Arch packages)
 Spectere (Testing, OS X Builds, MSVC project)
 Terryn (Testing)
 mzxgiant (MSVC Testing, Bug Fixes)
