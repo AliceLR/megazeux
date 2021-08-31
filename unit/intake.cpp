@@ -631,10 +631,10 @@ UNITTEST(EventFixed)
       intake_set_pos(&intk, d.start_pos);
 
       result = intake_apply_event_fixed(sub, INTK_CLEAR, 0, 0, nullptr);
-      ASSERTEQ(result, true, "%s", "%s @ %d", d.base, d.start_pos);
-      ASSERTCMP(dest, "", "%s", "%s @ %d", d.base, d.start_pos);
-      ASSERTEQ(intk.current_length, 0, "%s", "%s @ %d", d.base, d.start_pos);
-      ASSERTEQ(intk.pos, d.new_pos, "%s", "%s @ %d", d.base, d.start_pos);
+      ASSERTEQ(result, true, "%s @ %d", d.base, d.start_pos);
+      ASSERTCMP(dest, "", "%s @ %d", d.base, d.start_pos);
+      ASSERTEQ(intk.current_length, 0, "%s @ %d", d.base, d.start_pos);
+      ASSERTEQ(intk.pos, d.new_pos, "%s @ %d", d.base, d.start_pos);
     }
   }
 

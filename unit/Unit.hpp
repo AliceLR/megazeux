@@ -75,8 +75,8 @@
 #define EDITOR_LIBSPEC
 #define SKIP_SDL
 #include "../src/compat.h"
+#include "../src/platform_attribute.h"
 
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -137,14 +137,13 @@ public:
     memcpy(u.arr, str, B);
   }
 
-/*
   alignstr(const char * const str)
   {
     size_t slen = strlen(str);
-    assert(slen + 1 <= A);
+    if(slen + 1 > A)
+      abort();
     memcpy(u.arr, str, slen);
   }
-*/
 
   constexpr const char *c_str() const
   {
@@ -167,7 +166,7 @@ public:
   {\
     if(!(test)) \
     { \
-      throw Unit::exception(__LINE__, #test, "" __VA_ARGS__); \
+      throw Unit::exception(__LINE__, #test, "~" __VA_ARGS__); \
     } \
   } while(0)
 
@@ -176,7 +175,8 @@ public:
   {\
     if(!((a) == (b)))\
     { \
-      throw Unit::exception(__LINE__, #a " == " #b, (a), (b), "" __VA_ARGS__); \
+      throw Unit::exception(__LINE__, #a " == " #b, \
+       Unit::arg(a), Unit::arg(b), "~" __VA_ARGS__); \
     } \
   } while(0)
 
@@ -185,7 +185,8 @@ public:
   {\
     if(strcmp(a,b)) \
     {\
-      throw Unit::exception(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), "" __VA_ARGS__); \
+      throw Unit::exception(__LINE__, "strcmp(" #a ", " #b ")", \
+       Unit::arg(a), Unit::arg(b), "~" __VA_ARGS__); \
     }\
   } while(0)
 
@@ -194,7 +195,8 @@ public:
   {\
     if(strncmp(a,b,n)) \
     {\
-      throw Unit::exception(__LINE__, "strncmp(" #a ", " #b ", " #n ")", (a), (b), "" __VA_ARGS__); \
+      throw Unit::exception(__LINE__, "strncmp(" #a ", " #b ", " #n ")", \
+       Unit::arg(a), Unit::arg(b), "~" __VA_ARGS__); \
     }\
   } while(0)
 
@@ -203,14 +205,15 @@ public:
   {\
     if(memcmp(a,b,l)) \
     {\
-      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", (a), (b), (l), "" __VA_ARGS__); \
+      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", \
+       Unit::arg(a, l), Unit::arg(b, l), "~" __VA_ARGS__); \
     }\
   } while(0)
 
 #define FAIL(...) \
   do\
   {\
-    throw Unit::exception(__LINE__, -1, "" __VA_ARGS__); \
+    throw Unit::exception(__LINE__, nullptr, "" __VA_ARGS__); \
   } while(0)
 
 #define SKIP() \
@@ -259,6 +262,52 @@ namespace Unit
     return Unit::max(_min, Unit::min(_max, a));
   }
 
+  /**
+   * Input value to a failed assertion. These are generated for Unit::exception
+   * instances thrown from assertions with multiple operands. This provides a
+   * printable text representation of the operand (i.e. std::string but worse)
+   * and also disambiguates the correct Unit::exception constructor to use.
+   */
+  class arg final
+  {
+    static constexpr int BUF_SIZE = 23;
+    char *allocbuf = nullptr;
+    char tmpbuf[BUF_SIZE] = { '\0' };
+
+  public:
+    boolean has_value = false;
+    const char *op = nullptr;
+
+    arg();
+    arg(arg &&a);
+    arg(const arg &a);
+    ~arg();
+
+    explicit arg(decltype(nullptr) _op);
+    explicit arg(const char *_op);
+    explicit arg(const void *_op);
+    explicit arg(unsigned char _op);
+    explicit arg(unsigned short _op);
+    explicit arg(unsigned int _op);
+    explicit arg(unsigned long _op);
+    explicit arg(unsigned long long _op);
+    explicit arg(signed char _op);
+    explicit arg(short _op);
+    explicit arg(int _op);
+    explicit arg(long _op);
+    explicit arg(long long _op);
+
+    explicit arg(const void *_ptr, size_t length_bytes);
+    explicit arg(const unsigned short *_ptr, size_t length_bytes);
+    explicit arg(const unsigned int *_ptr, size_t length_bytes);
+
+  private:
+    const char *fix_op(const arg &src);
+  };
+
+  /**
+   * Thrown to signal the current test (or test section) has been skipped.
+   */
   class skip final {};
 
   /**
@@ -266,6 +315,11 @@ namespace Unit
    */
   class exception final
   {
+  private:
+    char reasonbuf[1024];
+    Unit::arg leftarg;
+    Unit::arg rightarg;
+
   public:
     int line;
     const char *test      = coalesce(nullptr);
@@ -278,109 +332,12 @@ namespace Unit
     /* A copy constructor is required to be throwable. */
     exception(const exception &e);
 
-    exception(int _line, const char *_test):
-     line(_line), test(coalesce(_test)), reason("") {}
-
-    exception(int _line, int _ignore, const char *_reason_fmt, ...):
-     line(_line), test(coalesce(nullptr))
-    {
-      if(_reason_fmt && _reason_fmt[0])
-      {
-        va_list vl;
-        va_start(vl, _reason_fmt);
-        set_reason_fmt(_reason_fmt, vl);
-        va_end(vl);
-      }
-    }
-
-    exception(int _line, const char *_test, const char *_reason_fmt, ...):
-     line(_line), test(coalesce(_test))
-    {
-      if(_reason_fmt && _reason_fmt[0])
-      {
-        va_list vl;
-        va_start(vl, _reason_fmt);
-        set_reason_fmt(_reason_fmt, vl);
-        va_end(vl);
-      }
-    }
-
-    template<class T, class S>
-    exception(int _line, const char *_test, T _left, S _right, const char *_reason_fmt, ...):
-     line(_line), test(coalesce(_test))
-    {
-      if(_reason_fmt && _reason_fmt[0])
-      {
-        va_list vl;
-        va_start(vl, _reason_fmt);
-        set_reason_fmt(_reason_fmt, vl);
-        va_end(vl);
-      }
-
-      has_values |= set_operand(left, _left);
-      has_values |= set_operand(right, _right);
-    }
-
-    template<class T>
-    exception(int _line, const char *_test, const T *_left, const T *_right,
-     size_t length, const char *_reason_fmt, ...):
-     line(_line), test(coalesce(_test))
-    {
-      if(_reason_fmt && _reason_fmt[0])
-      {
-        va_list vl;
-        va_start(vl, _reason_fmt);
-        set_reason_fmt(_reason_fmt, vl);
-        va_end(vl);
-      }
-
-      has_values = (_left || _right);
-      length /= sizeof(T);
-
-      set_operand_integral_ptr(left, _left, length);
-      set_operand_integral_ptr(right, _right, length);
-    }
-
-    // Print non-integral memcmp types bytewise.
-    exception(int _line, const char *_test, const void *_left, const void *_right,
-     size_t length, const char *_reason):
-     exception(_line, _test, (const unsigned char *)_left, (const unsigned char *)_right,
-      length, _reason) {}
-
-    ~exception()
-    {
-      delete[] allocbuf[0];
-      delete[] allocbuf[1];
-    }
-
-  private:
-
-    static constexpr int BUF_SIZE = 24;
-    char reasonbuf[1024];
-    char tmpbuf[2][BUF_SIZE];
-    char *allocbuf[2] = { nullptr, nullptr };
-    int num = 0;
-
-    void set_reason_fmt(const char *_reason_fmt, va_list vl);
-    boolean set_operand(const char *&op, decltype(nullptr) _op);
-    boolean set_operand(const char *&op, const char *_op);
-    boolean set_operand(const char *&op, const void *_op);
-    boolean set_operand(const char *&op, unsigned char _op);
-    boolean set_operand(const char *&op, unsigned short _op);
-    boolean set_operand(const char *&op, unsigned int _op);
-    boolean set_operand(const char *&op, unsigned long _op);
-    boolean set_operand(const char *&op, unsigned long long _op);
-    boolean set_operand(const char *&op, signed char _op);
-    boolean set_operand(const char *&op, short _op);
-    boolean set_operand(const char *&op, int _op);
-    boolean set_operand(const char *&op, long _op);
-    boolean set_operand(const char *&op, long long _op);
-
-    void set_operand_alloc(const char *&op, char *buf);
-    void set_operand_integral_ptr(const char *&op, const char *_op, size_t length);
-    void set_operand_integral_ptr(const char *&op, const unsigned char *_op, size_t length);
-    void set_operand_integral_ptr(const char *&op, const unsigned short *_op, size_t length);
-    void set_operand_integral_ptr(const char *&op, const unsigned int *_op, size_t length);
+    exception(int _line, const char *_test);
+    ATTRIBUTE_PRINTF(4, 5)
+    exception(int _line, const char *_test, const char *_reason_fmt, ...);
+    ATTRIBUTE_PRINTF(6, 7)
+    exception(int _line, const char *_test, Unit::arg &&_left, Unit::arg &&_right,
+     const char *_reason_fmt, ...);
   };
 
   /**
@@ -401,7 +358,7 @@ namespace Unit
 
   public:
     static unittestrunner &get();
-    bool run(void);
+    bool run();
     void signal_fail();
     void addtest(unittest *t);
   };
@@ -433,24 +390,14 @@ namespace Unit
 
     bool entire_test_skipped;
 
-    unittest(const char *_file, const char *_test_name):
-     file_name(_file), test_name(_test_name)
-    {
-      unittestrunner::get().addtest(this);
-    };
+    unittest(const char *_file, const char *_test_name);
 
-    ~unittest() {};
-
-    inline int passed_sections(void)
-    {
-      return this->count_sections - this->failed_sections - this->skipped_sections;
-    }
-
-    bool run(void);
+    bool run();
     void signal_fail();
 
   private:
     void run_section(void);
+    int passed_sections();
     void print_test_success(void);
     void print_test_failed(void);
     void print_test_skipped(void);
@@ -459,6 +406,11 @@ namespace Unit
 
     virtual void run_impl(void) = 0;
   };
+
+  /**
+   * Check the unit test system before running any tests.
+   */
+  bool self_check();
 }
 
 #endif /* UNIT_HPP */
