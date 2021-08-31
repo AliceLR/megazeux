@@ -109,12 +109,23 @@ namespace Unit
 
   arg::arg() {}
 
+  const char *arg::fix_op(const arg &src)
+  {
+    if(src.op == src.tmpbuf)
+      return tmpbuf;
+
+    if(src.op == src.allocbuf)
+      return allocbuf;
+
+    return src.op;
+  }
+
   arg::arg(arg &&a)
   {
     memcpy(tmpbuf, a.tmpbuf, sizeof(tmpbuf));
     has_value = a.has_value;
-    op = a.op;
     allocbuf = a.allocbuf;
+    op = fix_op(a);
 
     a.has_value = false;
     a.op = nullptr;
@@ -125,7 +136,6 @@ namespace Unit
   {
     memcpy(tmpbuf, a.tmpbuf, sizeof(tmpbuf));
     has_value = a.has_value;
-    op = a.op;
 
     if(a.allocbuf)
     {
@@ -133,6 +143,7 @@ namespace Unit
       allocbuf = new char[len + 1];
       memcpy(allocbuf, a.allocbuf, len + 1);
     }
+    op = fix_op(a);
   }
 
   arg::arg(std::nullptr_t _op)

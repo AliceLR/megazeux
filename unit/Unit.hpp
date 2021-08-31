@@ -300,6 +300,9 @@ namespace Unit
     explicit arg(const void *_ptr, size_t length_bytes);
     explicit arg(const unsigned short *_ptr, size_t length_bytes);
     explicit arg(const unsigned int *_ptr, size_t length_bytes);
+
+  private:
+    const char *fix_op(const arg &src);
   };
 
   /**
