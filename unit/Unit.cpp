@@ -798,9 +798,36 @@ namespace Unit
     if(!match("arg::uint32_t array", alloc32, "0000fedc 0000ab98 00007654 00003210"))
       return false;
 
-    if(!match("arg::move dest", Unit::arg(std::move(alloc8)), "01 02 03 04 05"))
+    Unit::arg src(12345U);
+    if(!match("arg::copy int dest", Unit::arg(src), "12345"))
       return false;
-    if(!match("arg::move src", alloc8, nullptr, false))
+    if(!match("arg::copy int src", src, "12345"))
+      return false;
+
+    Unit::arg str("abcdef");
+    if(!match("arg::copy str dest", Unit::arg(str), "abcdef"))
+      return false;
+    if(!match("arg::copy str src", str, "abcdef"))
+      return false;
+
+    if(!match("arg::copy array dest", Unit::arg(alloc8s), "ff fe fd fc fb"))
+      return false;
+    if(!match("arg::copy array src", alloc8s, "ff fe fd fc fb"))
+      return false;
+
+    if(!match("arg::move int dest", Unit::arg(std::move(src)), "12345"))
+      return false;
+    if(!match("arg::move int src", src, nullptr, false))
+      return false;
+
+    if(!match("arg::move str dest", Unit::arg(std::move(str)), "abcdef"))
+      return false;
+    if(!match("arg::move str src", str, nullptr, false))
+      return false;
+
+    if(!match("arg::move array dest", Unit::arg(std::move(alloc8)), "01 02 03 04 05"))
+      return false;
+    if(!match("arg::move array src", alloc8, nullptr, false))
       return false;
 
     /* Test Unit::exception. */
