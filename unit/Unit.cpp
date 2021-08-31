@@ -657,7 +657,7 @@ namespace Unit
     {
       if(value.op != expected)
       {
-        Uerr("ERROR: self check '%s' failed: %p != %p\n", name, value.op, expected);
+        Uerr("ERROR: self check '%s' failed: %p != %p\n", name, (void *)value.op, (void *)expected);
         return false;
       }
     }
