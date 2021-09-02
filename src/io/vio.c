@@ -25,6 +25,7 @@
 
 #include "../util.h"
 #include "memfile.h"
+#include "vfs.h"
 #include "vio.h"
 //#include "zip.h"
 
@@ -40,6 +41,10 @@
 
 #ifndef VFILE_LARGE_BUFFER_SIZE
 #define VFILE_LARGE_BUFFER_SIZE 32768
+#endif
+
+#ifdef VIRTUAL_FILESYSTEM
+static vfilesystem *vfs;
 #endif
 
 enum vfileflags_private

@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2019 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2021 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,24 +17,34 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * Types for vio.h and memfile.h so they don't have to be included in
- * world_struct.h and other high-traffic headers.
- */
-
-#ifndef __IO_VFILE_H
-#define __IO_VFILE_H
+#ifndef __IO_VFS_H
+#define __IO_VFS_H
 
 #include "../compat.h"
 
 __M_BEGIN_DECLS
 
-typedef struct vfile vfile;
-typedef struct vdir vdir;
-typedef struct vfilesystem vfilesystem;
-struct memfile;
-struct stat;
+#include "vfile.h"
+
+#ifndef CONFIG_NDS
+#define VIRTUAL_FILESYSTEM
+#endif
+
+#if defined(__WIN32__) || defined(__APPLE__)
+#define VIRTUAL_FILESYSTEM_CASE_INSENSITIVE
+#endif
+
+UTILS_LIBSPEC vfilesystem *vfs_init(void);
+UTILS_LIBSPEC void vfs_free(vfilesystem *vfs);
+
+// TODO other vfs external API junk.
+
+/**
+ * Internal functions for vio.c.
+ */
+
+// FIXME
 
 __M_END_DECLS
 
-#endif /* __IO_VFILE_H */
+#endif /* __IO_VFS_H */
