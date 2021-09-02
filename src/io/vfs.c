@@ -408,6 +408,25 @@ static uint32_t vfs_get_inode_in_parent_by_name(vfilesystem *vfs,
 
   assert(parent->length >= 2);
 
+  /* Special case--current and parent dir. */
+  if(name[0] == '.')
+  {
+    if(name[1] == '.' && name[2] == '\0')
+    {
+      if(index)
+        *index = VFS_IDX_PARENT;
+      return parent->contents.inodes[VFS_IDX_PARENT];
+    }
+    else
+
+    if(name[1] == '\0')
+    {
+      if(index)
+        *index = VFS_IDX_SELF;
+      return parent->contents.inodes[VFS_IDX_SELF];
+    }
+  }
+
   while(a <= b)
   {
     current = (b - a) / 2 + a;
@@ -496,19 +515,6 @@ static uint32_t vfs_get_inode_by_path(vfilesystem *vfs, const char *path)
     parent = &(vfs->table[inode]);
     if(VFS_INODE_TYPE(parent) != VFS_INODE_DIR)
       return VFS_ERROR(ENOTDIR);
-
-    if(current[0] == '.')
-    {
-      if(current[1] == '.' && current[2] == '\0')
-      {
-        inode = parent->contents.inodes[VFS_IDX_PARENT];
-        continue;
-      }
-      else
-
-      if(current[1] == '\0')
-        continue;
-    }
 
     inode = vfs_get_inode_in_parent_by_name(vfs, parent, current, NULL);
     if(!inode)
