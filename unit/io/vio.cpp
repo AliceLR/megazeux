@@ -20,7 +20,7 @@
 #include "../Unit.hpp"
 #include "../../src/network/Scoped.hpp"
 #include "../../src/io/path.h"
-#include "../../src/io/vio.c"
+#include "../../src/io/vio.h"
 
 static constexpr char TEST_READ_FILENAME[]  = "VFILE_TEST_DATA";
 static constexpr char TEST_WRITE_FILENAME[] = "VFILE_TEST_WRITE";
@@ -682,7 +682,7 @@ UNITTEST(ModeFlags)
 
   for(const mode_flag_pairs &d : data)
   {
-    int res = get_vfile_mode_flags(d.mode);
+    int res = vfile_get_mode_flags(d.mode);
     ASSERTEQ(res, d.expected, "%s", d.mode);
   }
 }
