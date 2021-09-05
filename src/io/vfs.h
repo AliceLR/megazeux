@@ -37,13 +37,28 @@ __M_BEGIN_DECLS
 UTILS_LIBSPEC vfilesystem *vfs_init(void);
 UTILS_LIBSPEC void vfs_free(vfilesystem *vfs);
 
-// TODO other vfs external API junk.
-
 /**
  * Internal functions for vio.c.
  */
 
-// FIXME
+void vfs_reset(vfilesystem *vfs);
+boolean vfs_cache_at_path(vfilesystem *vfs, const char *path);
+boolean vfs_invalidate_at_path(vfilesystem *vfs, const char *path);
+boolean vfs_create_file_at_path(vfilesystem *vfs, const char *path);
+boolean vfs_sync_file(vfilesystem *vfs, uint32_t inode,
+ void ***data, size_t **data_length, size_t **data_alloc);
+
+uint32_t vfs_open_if_exists(vfilesystem *vfs, const char *path, boolean is_write);
+uint32_t vfs_open_if_exists_or_cacheable(vfilesystem *vfs, const char *path,
+ boolean is_write);
+void vfs_close(vfilesystem *vfs, uint32_t inode);
+int vfs_mkdir(vfilesystem *vfs, const char *path, int mode);
+int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath);
+int vfs_unlink(vfilesystem *vfs, const char *path);
+int vfs_rmdir(vfilesystem *vfs, const char *path);
+int vfs_access(vfilesystem *vfs, const char *path, int mode);
+int vfs_stat(vfilesystem *vfs, const char *path, struct stat *st);
+int vfs_error(vfilesystem *vfs);
 
 __M_END_DECLS
 
