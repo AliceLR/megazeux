@@ -649,6 +649,11 @@ static boolean vfs_get_inode_and_parent_by_path(vfilesystem *vfs, const char *pa
     if(parent)
     {
       p = vfs_get_inode_ptr(vfs, parent);
+      if(VFS_INODE_TYPE(p) != VFS_INODE_DIR)
+      {
+        vfs_seterror(vfs, ENOTDIR);
+        return false;
+      }
       inode = vfs_get_inode_in_parent_by_name(vfs, p, child, NULL);
     }
   }
@@ -825,10 +830,15 @@ static inline void vfs_print(vfilesystem *vfs)
 
 #endif /* VIRTUAL_FILESYSTEM */
 
+/**
+ * Allocate and initialize a VFS.
+ * (This function is enabled even when VIRTUAL_FILESYSTEM is not defined so
+ * -pedantic doesn't complain about ISO C not allowing empty compilation units.)
+ */
 vfilesystem *vfs_init(void)
 {
 #ifdef VIRTUAL_FILESYSTEM
-  vfilesystem *vfs = malloc(sizeof(vfilesystem));
+  vfilesystem *vfs = (vfilesystem *)malloc(sizeof(vfilesystem));
   vfs_setup(vfs);
   return vfs;
 #endif
@@ -843,14 +853,58 @@ void vfs_free(vfilesystem *vfs)
 #endif
 }
 
+#ifdef VIRTUAL_FILESYSTEM
+
 void vfs_reset(vfilesystem *vfs)
 {
   vfs_clear(vfs);
 }
 
-boolean vfs_cache_at_path(vfilesystem *vfs, const char *path); // FIXME
-boolean vfs_invalidate_at_path(vfilesystem *vfs, const char *path); // FIXME
-boolean vfs_create_file_at_path(vfilesystem *vfs, const char *path); // FIXME
+int vfs_cache_at_path(vfilesystem *vfs, const char *path); // FIXME
+int vfs_invalidate_at_path(vfilesystem *vfs, const char *path); // FIXME
+
+/**
+ * Create a file in the VFS at a given path if it doesn't already exist.
+ * If the file does exist, this function will set the error to `EEXIST`, same
+ * as an `open` call with O_CREAT|O_EXCL set.
+ */
+int vfs_create_file_at_path(vfilesystem *vfs, const char *path)
+{
+  struct vfs_inode *p;
+  char buffer[MAX_PATH];
+  uint32_t parent;
+  uint32_t inode;
+
+  if(!vfs_get_inode_and_parent_by_path(vfs, path, &parent, &inode, buffer, sizeof(buffer)))
+    return -1;
+
+  // Parent must exist, but target must not exist.
+  if(inode)
+  {
+    // open() sets a different error depending on the type of the existing file.
+    p = vfs_get_inode_ptr(vfs, inode);
+    if(p && VFS_INODE_TYPE(p) == VFS_INODE_FILE)
+      vfs_seterror(vfs, EEXIST);
+    else
+      vfs_seterror(vfs, EISDIR);
+    return -1;
+  }
+  if(!parent) // Error is set by vfs_get_inode_by_path.
+    return -1;
+
+  // If the parent is cached and times out, ignore this call.
+  p = vfs_get_inode_ptr_invalidate(vfs, parent);
+  if(!p)
+    return -1;
+
+  // Create a virtual (i.e. not real) file.
+  inode = vfs_make_inode(vfs, parent, buffer, 0, VFS_INODE_FILE);
+  if(!inode)
+    return -1;
+
+  vfs_seterror(vfs, 0);
+  return 0;
+}
 
 /**
  * vfiles based on inodes in the VFS don't control their data buffer and may
@@ -861,7 +915,7 @@ boolean vfs_create_file_at_path(vfilesystem *vfs, const char *path); // FIXME
  *
  * TODO: memory vfile buffering to get around this?
  */
-boolean vfs_sync_file(vfilesystem *vfs, uint32_t inode,
+int vfs_sync_file(vfilesystem *vfs, uint32_t inode,
  void ***data, size_t **data_length, size_t **data_alloc)
 {
   if(inode < vfs->table_length)
@@ -872,10 +926,10 @@ boolean vfs_sync_file(vfilesystem *vfs, uint32_t inode,
       *data = (void **)&(n->contents.data);
       *data_length = &(n->length);
       *data_alloc = &(n->length_alloc);
-      return true;
+      return 0;
     }
   }
-  return false;
+  return -1;
 }
 
 uint32_t vfs_open_if_exists(vfilesystem *vfs, const char *path, boolean is_write)
@@ -1140,3 +1194,5 @@ int vfs_error(vfilesystem *vfs)
   vfs->error = 0;
   return error;
 }
+
+#endif /* VIRTUAL_FILESYSTEM */

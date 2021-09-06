@@ -32,11 +32,12 @@ __M_BEGIN_DECLS
 #include <stdint.h>
 #include "vfile.h"
 
+// FIXME CONFIG_VFS or something similar to enable instead
 #ifndef CONFIG_NDS
 #define VIRTUAL_FILESYSTEM
 #endif
 
-#if defined(__WIN32__) || defined(__APPLE__)
+#if defined(__WIN32__) || defined(CONFIG_DJGPP) || defined(__APPLE__)
 #define VIRTUAL_FILESYSTEM_CASE_INSENSITIVE
 #endif
 
@@ -47,11 +48,13 @@ __M_BEGIN_DECLS
 UTILS_LIBSPEC vfilesystem *vfs_init(void);
 UTILS_LIBSPEC void vfs_free(vfilesystem *vfs);
 
+#ifdef VIRTUAL_FILESYSTEM
+
 UTILS_LIBSPEC void vfs_reset(vfilesystem *vfs);
-UTILS_LIBSPEC boolean vfs_cache_at_path(vfilesystem *vfs, const char *path);
-UTILS_LIBSPEC boolean vfs_invalidate_at_path(vfilesystem *vfs, const char *path);
-UTILS_LIBSPEC boolean vfs_create_file_at_path(vfilesystem *vfs, const char *path);
-UTILS_LIBSPEC boolean vfs_sync_file(vfilesystem *vfs, uint32_t inode,
+UTILS_LIBSPEC int vfs_cache_at_path(vfilesystem *vfs, const char *path);
+UTILS_LIBSPEC int vfs_invalidate_at_path(vfilesystem *vfs, const char *path);
+UTILS_LIBSPEC int vfs_create_file_at_path(vfilesystem *vfs, const char *path);
+UTILS_LIBSPEC int vfs_sync_file(vfilesystem *vfs, uint32_t inode,
  void ***data, size_t **data_length, size_t **data_alloc);
 
 UTILS_LIBSPEC uint32_t vfs_open_if_exists(vfilesystem *vfs,
@@ -66,6 +69,26 @@ UTILS_LIBSPEC int vfs_rmdir(vfilesystem *vfs, const char *path);
 UTILS_LIBSPEC int vfs_access(vfilesystem *vfs, const char *path, int mode);
 UTILS_LIBSPEC int vfs_stat(vfilesystem *vfs, const char *path, struct stat *st);
 UTILS_LIBSPEC int vfs_error(vfilesystem *vfs);
+
+#else /* !VIRTUAL_FILESYSTEM */
+
+static inline void vfs_reset(vfilesystem *) {}
+static inline int vfs_cache_at_path(vfilesystem *, const char *) { return -1; }
+static inline int vfs_invalidate_at_path(vfilesystem *, const char *) { return -1; }
+static inline int vfs_create_file_at_path(vfilesystem *, const char *) { return -1; }
+static inline int vfs_sync_file(vfilesystem *, const char *) { return -1; }
+static inline uint32_t vfs_open_if_exists(vfilesystem *, const char *, boolean) { return 0; }
+static inline uint32_t vfs_open_if_exists_or_cacheable(vfilesystem *, const char *, boolean) { return 0; }
+static inline void vfs_close(vfilesystem *, uint32_t) {}
+static inline int vfs_mkdir(vfilesystem *, const char *, int) { return -1; }
+static inline int vfs_rename(vfilesystem *, const char *, const char *) { return -1; }
+static inline int vfs_unlink(vfilesystem *, const char *) { return -1; }
+static inline int vfs_rmdir(vfilesystem *, const char *) { return -1; }
+static inline int vfs_access(vfilesystem *, const char *, int) { return -1; }
+static inline int vfs_stat(vfilesystem *, const char *, struct stat *) { return -1; }
+static inline int vfs_error(vfilesystem *) { return 0; }
+
+#endif /* !VIRTUAL_FILESYSTEM */
 
 __M_END_DECLS
 

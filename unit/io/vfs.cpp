@@ -125,6 +125,64 @@ UNITTEST(vfs_stat)
   }
 }
 
+UNITTEST(vfs_create_file_at_path)
+{
+  static const vfs_stat_result valid_data[] =
+  {
+    { "file.txt", 0, 0,                           2, S_IFREG, 0 },
+    { "abc.def", 0, 0,                            3, S_IFREG, 0 },
+    { "reallylongfilename.reallylongext", 0, 0,   4, S_IFREG, 0 },
+    { "../initrd.img", 0, 0,                      5, S_IFREG, 0 },
+#ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
+    { "C:/dkdfjklsjdf", 0, 0,                     6, S_IFREG, 0 },
+#endif
+  };
+
+  static const vfs_result invalid_data[] =
+  {
+    { "file.txt",           0, 0 },
+    { "file.txt",           -1, EEXIST },
+    { "file.txt/file.txt",  -1, ENOTDIR },
+    { "/",                  -1, EISDIR },
+    { "abchnkdf/file.txt",  -1, ENOENT },
+#ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
+    { "c:\\",               -1, EISDIR },
+#endif
+  };
+
+  ScopedVFS vfs = vfs_init();
+  struct stat st;
+  ASSERT(vfs, "");
+
+  SECTION(Valid)
+  {
+    for(const vfs_stat_result &d : valid_data)
+    {
+      int ret = vfs_create_file_at_path(vfs, d.path);
+      int err = vfs_error(vfs);
+      ASSERTEQ(err, d.expected_error, "%s", d.path);
+      ASSERTEQ(ret, d.expected_ret, "%s", d.path);
+
+      ret = vfs_stat(vfs, d.path, &st);
+      err = vfs_error(vfs);
+      ASSERTEQ(err, 0, "stat %s", d.path);
+      ASSERTEQ(ret, 0, "stat %s", d.path);
+      check_stat(d, st);
+    }
+  }
+
+  SECTION(Invalid)
+  {
+    for(const vfs_result &d : invalid_data)
+    {
+      int ret = vfs_create_file_at_path(vfs, d.path);
+      int err = vfs_error(vfs);
+      ASSERTEQ(err, d.expected_error, "%s", d.path);
+      ASSERTEQ(ret, d.expected_ret, "%s", d.path);
+    }
+  }
+}
+
 UNITTEST(vfs_mkdir)
 {
   static const vfs_stat_result valid_data[] =
@@ -150,7 +208,7 @@ UNITTEST(vfs_mkdir)
     { "/",              -1, EEXIST },
     { "D:\\",           -1, ENOENT },
     { "sdcardsfdfds:/", -1, ENOENT },
-    // FIXME create file (ENOTDIR)
+    { "file.txt/abc",   -1, ENOTDIR },
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
     { "C:\\",           -1, EEXIST },
 #endif
@@ -179,6 +237,9 @@ UNITTEST(vfs_mkdir)
 
   SECTION(Invalid)
   {
+    int r = vfs_create_file_at_path(vfs, "file.txt");
+    ASSERTEQ(r, 0, "");
+
     for(const vfs_result &d : invalid_data)
     {
       int ret = vfs_mkdir(vfs, d.path, 0755);
