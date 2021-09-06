@@ -27,6 +27,7 @@
 #ifdef VIRTUAL_FILESYSTEM
 
 #include "../platform.h" /* get_ticks */
+#include "../util.h"
 #include "path.h"
 
 // Maximum number of seconds a cached file can be considered valid.
@@ -341,7 +342,7 @@ static boolean vfs_setup(vfilesystem *vfs)
   n->timestamp = 0;
   n->flags = VFS_INODE_DIR | VFS_INODE_IS_REAL;
   n->refcount = 0;
-#if defined(__WIN32__)
+#ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
   strcpy(n->name, "C:\\");
 #else
   strcpy(n->name, "/");
@@ -399,6 +400,9 @@ static struct vfs_inode *vfs_get_inode_ptr_invalidate(vfilesystem *vfs, uint32_t
     {
       if(!n->refcount)
       {
+        // FIXME directories: don't release if this (or a child) is the current dir.
+        // FIXME directories: recursively check children for references too.
+        // FIXME anything: remove from parent.
         vfs_release_inode(vfs, inode);
         return NULL;
       }
@@ -457,6 +461,9 @@ static uint32_t vfs_get_inode_in_parent_by_name(vfilesystem *vfs,
   int cmp;
 
   assert(parent->length >= 2);
+
+  if(!name[0])
+    return VFS_NO_INODE;
 
   /* Special case--current and parent dir. */
   if(name[0] == '.')
@@ -518,21 +525,27 @@ static uint32_t vfs_get_path_base_inode(vfilesystem *vfs, const char **path)
   uint32_t inode;
   char buffer[32];
 
+  if(!*path[0])
+    return vfs_seterror(vfs, ENOENT);
+
   if(len >= (ssize_t)sizeof(buffer))
     return vfs_seterror(vfs, ENOENT);
 
   if(len > 0)
   {
+    struct vfs_inode *roots = vfs_get_inode_ptr(vfs, 0);
     memcpy(buffer, *path, len);
     buffer[len] = '\0';
     *path += len;
 
-    inode = vfs_get_inode_in_parent_by_name(vfs, vfs_get_inode_ptr(vfs, 0), buffer, NULL);
+    path_clean_slashes(buffer, sizeof(buffer));
+
+    inode = vfs_get_inode_in_parent_by_name(vfs, roots, buffer, NULL);
     if(inode == VFS_NO_INODE)
     {
-#if defined(__WIN32__)
+#ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
       // Windows and DJGPP: / behaves as the root of the current active drive.
-      if(!strcmp(buffer, "/") || !strcmp(buffer, "\\"))
+      if(!strcmp(buffer, DIR_SEPARATOR))
         return vfs->current_root;
 #endif
 
@@ -552,13 +565,17 @@ static uint32_t vfs_get_path_base_inode(vfilesystem *vfs, const char **path)
 static uint32_t vfs_get_inode_by_relative_path(vfilesystem *vfs, uint32_t inode,
  char *relative_path)
 {
+  struct vfs_inode *parent;
   char *current;
   char *next;
 
   next = relative_path;
   while((current = vfs_tokenize(&next)))
   {
-    struct vfs_inode *parent = vfs_get_inode_ptr(vfs, inode);
+    if(!current[0])
+      continue;
+
+    parent = vfs_get_inode_ptr(vfs, inode);
     if(VFS_INODE_TYPE(parent) != VFS_INODE_DIR)
       return vfs_seterror(vfs, ENOTDIR);
 
@@ -577,15 +594,12 @@ static uint32_t vfs_get_inode_by_path(vfilesystem *vfs, const char *path)
 {
   char buffer[MAX_PATH];
   uint32_t inode;
-  ssize_t length;
 
   inode = vfs_get_path_base_inode(vfs, &path);
   if(!inode)
     return VFS_NO_INODE;
 
-  length = path_clean_slashes_copy(buffer, sizeof(buffer), path);
-  if(length < 0)
-    return VFS_NO_INODE;
+  path_clean_slashes_copy(buffer, sizeof(buffer), path);
 
   return vfs_get_inode_by_relative_path(vfs, inode, buffer);
 }
@@ -603,32 +617,40 @@ static boolean vfs_get_inode_and_parent_by_path(vfilesystem *vfs, const char *pa
   uint32_t inode = VFS_NO_INODE;
   uint32_t parent = VFS_NO_INODE;
   uint32_t base;
-  ssize_t length;
 
   base = vfs_get_path_base_inode(vfs, &path);
   if(!base)
     return false;
 
-  length = path_clean_slashes_copy(buffer, sizeof(buffer), path);
-  if(length < 0)
-    return false;
+  path_clean_slashes_copy(buffer, sizeof(buffer), path);
 
-  child = strrchr(buffer, DIR_SEPARATOR_CHAR);
-  if(child)
-  {
-    *(child++) = '\0';
-    parent = vfs_get_inode_by_relative_path(vfs, base, buffer);
-  }
-  else
+  // If the buffer is empty, the entire path is a root.
+  // The target inode is the root and its parent is itself in this situation.
+  if(!buffer[0])
   {
     child = buffer;
     parent = base;
+    inode = base;
   }
-
-  if(parent)
+  else
   {
-    p = vfs_get_inode_ptr(vfs, parent);
-    inode = vfs_get_inode_in_parent_by_name(vfs, p, child, NULL);
+    child = strrchr(buffer, DIR_SEPARATOR_CHAR);
+    if(child)
+    {
+      *(child++) = '\0';
+      parent = vfs_get_inode_by_relative_path(vfs, base, buffer);
+    }
+    else
+    {
+      child = buffer;
+      parent = base;
+    }
+
+    if(parent)
+    {
+      p = vfs_get_inode_ptr(vfs, parent);
+      inode = vfs_get_inode_in_parent_by_name(vfs, p, child, NULL);
+    }
   }
 
   if(_parent)
@@ -645,26 +667,36 @@ static boolean vfs_get_inode_and_parent_by_path(vfilesystem *vfs, const char *pa
  * Generate an inode in the VFS with a given name. This name should not include
  * path separators.
  */
-static uint32_t vfs_make_inode(vfilesystem *vfs, struct vfs_inode *parent,
+static uint32_t vfs_make_inode(vfilesystem *vfs, uint32_t parent,
  const char *name, size_t init_alloc, int flags)
 {
+  struct vfs_inode *p;
   struct vfs_inode *n;
   uint32_t *inodes;
   uint32_t pos;
   uint32_t pos_in_parent;
 
-  assert(VFS_INODE_TYPE(parent) == VFS_INODE_DIR);
+  p = vfs_get_inode_ptr(vfs, parent);
+
+  assert(VFS_INODE_TYPE(p) == VFS_INODE_DIR);
   assert(flags & VFS_INODE_TYPEMASK);
 
-  pos = vfs_get_inode_in_parent_by_name(vfs, parent, name, &pos_in_parent);
+  if(!name[0])
+    return vfs_seterror(vfs, ENOENT);
+
+  pos = vfs_get_inode_in_parent_by_name(vfs, p, name, &pos_in_parent);
   if(pos != VFS_NO_INODE)
     return vfs_seterror(vfs, EEXIST);
 
+  // This may invalidate all inode pointers.
   pos = vfs_get_next_free_inode(vfs);
   if(!pos)
     return VFS_NO_INODE;
 
-  if(!vfs_inode_expand_directory(parent, 1))
+  // TODO maybe don't block allocate all inodes
+  p = vfs_get_inode_ptr(vfs, parent);
+
+  if(!vfs_inode_expand_directory(p, 1))
     return vfs_seterror(vfs, ENOSPC);
 
   n = vfs_get_inode_ptr(vfs, pos);
@@ -673,6 +705,10 @@ static uint32_t vfs_make_inode(vfilesystem *vfs, struct vfs_inode *parent,
   {
     if(!vfs_inode_init_directory(n, name, init_alloc, !!(flags & VFS_INODE_IS_REAL)))
       return vfs_seterror(vfs, ENOSPC);
+
+    // Init self and parent inodes.
+    n->contents.inodes[VFS_IDX_SELF] = pos;
+    n->contents.inodes[VFS_IDX_PARENT] = p->contents.inodes[VFS_IDX_SELF];
   }
   else
   {
@@ -680,11 +716,14 @@ static uint32_t vfs_make_inode(vfilesystem *vfs, struct vfs_inode *parent,
       return vfs_seterror(vfs, ENOSPC);
   }
 
-  inodes = parent->contents.inodes;
-  if(pos_in_parent < parent->length)
-    memmove(inodes + pos_in_parent + 1, inodes + pos_in_parent, parent->length - pos_in_parent);
+  inodes = p->contents.inodes;
+  if(pos_in_parent < p->length)
+  {
+    memmove(inodes + pos_in_parent + 1, inodes + pos_in_parent,
+     sizeof(uint32_t) * (p->length - pos_in_parent));
+  }
   inodes[pos_in_parent] = pos;
-  parent->length++;
+  p->length++;
 
   return pos;
 }
@@ -717,6 +756,72 @@ static uint32_t vfs_make_inode_recursively(vfilesystem *vfs, const char *path,
   // FIXME
   return VFS_NO_INODE;
 }
+
+#ifdef DEBUG
+static void _vfs_print_str(vfilesystem *vfs, const char *str, int level)
+{
+  fprintf(mzxerr, "%*.*s%s\n", level*2, level*2, "", str);
+  fflush(mzxerr);
+}
+
+static void _vfs_print_len(vfilesystem *vfs, size_t len, int level)
+{
+  fprintf(mzxerr, "%*.*slen: %zu\n", level*2, level*2, "", len);
+  fflush(mzxerr);
+}
+
+static void _vfs_print_name(vfilesystem *vfs, struct vfs_inode *n, int level)
+{
+  _vfs_print_str(vfs, vfs_inode_name(n), level);
+}
+
+static void _vfs_print_dir(vfilesystem *vfs, struct vfs_inode *dir, int level)
+{
+  size_t i;
+  assert(VFS_INODE_TYPE(dir) == VFS_INODE_DIR);
+
+  level++;
+  if(level > 0)
+    _vfs_print_len(vfs, dir->length, level);
+
+  for(i = 0; i < dir->length; i++)
+  {
+    uint32_t inode = dir->contents.inodes[i];
+    struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
+
+    if(i == VFS_IDX_SELF)
+    {
+      assert(n == dir);
+      if(level > 0)
+        _vfs_print_str(vfs, ".", level);
+    }
+    else
+
+    if(i == VFS_IDX_PARENT)
+    {
+      if(level > 0)
+        _vfs_print_str(vfs, "..", level);
+    }
+    else
+
+    if(VFS_INODE_TYPE(n) == VFS_INODE_DIR)
+    {
+      _vfs_print_name(vfs, n, level);
+      _vfs_print_str(vfs, "{", level);
+      _vfs_print_dir(vfs, n, level);
+      _vfs_print_str(vfs, "}", level);
+    }
+    else
+      _vfs_print_name(vfs, n, level);
+  }
+}
+
+static inline void vfs_print(vfilesystem *vfs)
+{
+  struct vfs_inode *roots = vfs_get_inode_ptr(vfs, 0);
+  _vfs_print_dir(vfs, roots, -1);
+}
+#endif /* DEBUG */
 
 #endif /* VIRTUAL_FILESYSTEM */
 
@@ -852,7 +957,7 @@ int vfs_mkdir(vfilesystem *vfs, const char *path, int mode)
     return -1;
 
   // Create a virtual (i.e. not real) directory.
-  inode = vfs_make_inode(vfs, p, buffer, 0, VFS_INODE_DIR);
+  inode = vfs_make_inode(vfs, parent, buffer, 0, VFS_INODE_DIR);
   if(!inode)
     return -1;
 
@@ -988,18 +1093,34 @@ int vfs_access(vfilesystem *vfs, const char *path, int mode)
  */
 int vfs_stat(vfilesystem *vfs, const char *path, struct stat *st)
 {
+  uint32_t inode = vfs_get_inode_by_path(vfs, path);
+  if(inode)
+  {
+    struct vfs_inode *n = vfs_get_inode_ptr_invalidate(vfs, inode);
+    int mode = S_IRWXU|S_IRWXG|S_IRWXO;
+    if(!n)
+      return -1;
+
+    memset(st, 0, sizeof(struct stat));
+    if(VFS_INODE_TYPE(n) == VFS_INODE_FILE)
+    {
+      st->st_mode = S_IFREG | mode;
+      st->st_size = n->length;
+    }
+    else
+      st->st_mode = S_IFDIR | mode;
+
+    // Dummy device value to indicate this is an inode from an MZX VFS.
+    st->st_dev = ('M'<<24) | ('Z'<<16) | ('X'<<8) | ('V');
+    st->st_ino = inode;
+    st->st_nlink = 1;
+    st->st_atime = 0; // TODO
+    st->st_mtime = 0; // TODO
+    st->st_ctime = 0; // TODO
+    return 0;
+  }
   return -1;
-  /*
-  // FIXME make sure it exists and populate this info from the vfs inode.
-  memset(st, 0, sizeof(struct stat));
-  st->st_mode = S_IFDIR; // FIXME
-  st->st_nlink = 1;
-  st->st_size = 0; // FIXME
-  st->st_atime = 0; // TODO
-  st->st_mtime = 0; // TODO
-  st->st_ctime = 0; // TODO
-  return 0;
-  */
+
 }
 
 // FIXME function to get list of ONLY virtual files for dirent
