@@ -46,6 +46,8 @@ __M_BEGIN_DECLS
 #define VIRTUAL_FILESYSTEM_DOS_DRIVE
 #endif
 
+#define VIRTUAL_FILESYSTEM_PARALLEL
+
 UTILS_LIBSPEC vfilesystem *vfs_init(void);
 UTILS_LIBSPEC void vfs_free(vfilesystem *vfs);
 
@@ -56,11 +58,11 @@ UTILS_LIBSPEC int vfs_cache_at_path(vfilesystem *vfs, const char *path);
 UTILS_LIBSPEC int vfs_invalidate_at_path(vfilesystem *vfs, const char *path);
 UTILS_LIBSPEC int vfs_create_file_at_path(vfilesystem *vfs, const char *path);
 
-UTILS_LIBSPEC uint32_t vfs_open_if_exists(vfilesystem *vfs,
- const char *path, boolean is_write);
-UTILS_LIBSPEC uint32_t vfs_open_if_exists_or_cacheable(vfilesystem *vfs,
- const char *path, boolean is_write);
-UTILS_LIBSPEC void vfs_close(vfilesystem *vfs, uint32_t inode);
+UTILS_LIBSPEC int vfs_open_if_exists(vfilesystem *vfs,
+ const char *path, boolean is_write, uint32_t *inode);
+UTILS_LIBSPEC int vfs_open_if_exists_or_cacheable(vfilesystem *vfs,
+ const char *path, boolean is_write, uint32_t *inode);
+UTILS_LIBSPEC int vfs_close(vfilesystem *vfs, uint32_t inode);
 
 UTILS_LIBSPEC int vfs_lock_file_read(vfilesystem *vfs, uint32_t inode,
  const unsigned char **data, size_t *data_length);
@@ -75,7 +77,6 @@ UTILS_LIBSPEC int vfs_unlink(vfilesystem *vfs, const char *path);
 UTILS_LIBSPEC int vfs_rmdir(vfilesystem *vfs, const char *path);
 UTILS_LIBSPEC int vfs_access(vfilesystem *vfs, const char *path, int mode);
 UTILS_LIBSPEC int vfs_stat(vfilesystem *vfs, const char *path, struct stat *st);
-UTILS_LIBSPEC int vfs_error(vfilesystem *vfs);
 
 #else /* !VIRTUAL_FILESYSTEM */
 
@@ -93,7 +94,6 @@ static inline int vfs_unlink(vfilesystem *, const char *) { return -1; }
 static inline int vfs_rmdir(vfilesystem *, const char *) { return -1; }
 static inline int vfs_access(vfilesystem *, const char *, int) { return -1; }
 static inline int vfs_stat(vfilesystem *, const char *, struct stat *) { return -1; }
-static inline int vfs_error(vfilesystem *) { return 0; }
 
 #endif /* !VIRTUAL_FILESYSTEM */
 

@@ -41,14 +41,12 @@ struct vfs_result
 {
   const char *path;
   int expected_ret;
-  int expected_error;
 };
 
 struct vfs_stat_result
 {
   const char *path;
   int expected_ret;
-  int expected_error;
   ino_t inode;
   mode_t filetype;
   off_t size;
@@ -71,27 +69,27 @@ UNITTEST(vfs_stat)
   static const vfs_stat_result valid_data[]
   {
     // These are all the default root since that's the only default file...
-    { "..", 0, 0,       1, S_IFDIR, 0 },
-    { ".", 0, 0,        1, S_IFDIR, 0 },
-    { "./", 0, 0,       1, S_IFDIR, 0 },
-    { "/", 0, 0,        1, S_IFDIR, 0 },
-    { "/./../", 0, 0,   1, S_IFDIR, 0 },
-    { "\\", 0, 0,       1, S_IFDIR, 0 },
-    { "\\..\\.", 0, 0,  1, S_IFDIR, 0 },
+    { "..", 0,        1, S_IFDIR, 0 },
+    { ".", 0,         1, S_IFDIR, 0 },
+    { "./", 0,        1, S_IFDIR, 0 },
+    { "/", 0,         1, S_IFDIR, 0 },
+    { "/./../", 0,    1, S_IFDIR, 0 },
+    { "\\", 0,        1, S_IFDIR, 0 },
+    { "\\..\\.", 0,   1, S_IFDIR, 0 },
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
-    { "C:/", 0, 0,      1, S_IFDIR, 0 },
-    { "C:\\", 0, 0,     1, S_IFDIR, 0 },
-    { "c:\\", 0, 0,     1, S_IFDIR, 0 },
+    { "C:/", 0,       1, S_IFDIR, 0 },
+    { "C:\\", 0,      1, S_IFDIR, 0 },
+    { "c:\\", 0,      1, S_IFDIR, 0 },
 #endif
   };
 
   static const vfs_result invalid_data[]
   {
-    { "", -1, ENOENT },
-    { "jsdjfk", -1, ENOENT },
-    { "sdcard:/", -1, ENOENT },
-    { "verylongrootnamewhywouldyouevennamearootthis:/", -1, ENOENT },
-    { "D:\\", -1, ENOENT },
+    { "", -ENOENT },
+    { "jsdjfk", -ENOENT },
+    { "sdcard:/", -ENOENT },
+    { "verylongrootnamewhywouldyouevennamearootthis:/", -ENOENT },
+    { "D:\\", -ENOENT },
   };
 
   ScopedVFS vfs = vfs_init();
@@ -103,8 +101,6 @@ UNITTEST(vfs_stat)
     for(const vfs_stat_result &d : valid_data)
     {
       int ret = vfs_stat(vfs, d.path, &st);
-      int err = vfs_error(vfs);
-      ASSERTEQ(err, d.expected_error, "%s", d.path);
       ASSERTEQ(ret, d.expected_ret, "%s", d.path);
       check_stat(d, st);
     }
@@ -115,12 +111,7 @@ UNITTEST(vfs_stat)
     for(const vfs_result &d : invalid_data)
     {
       int ret = vfs_stat(vfs, d.path, &st);
-      int err = vfs_error(vfs);
-      ASSERTEQ(err, d.expected_error, "%s", d.path);
       ASSERTEQ(ret, d.expected_ret, "%s", d.path);
-      // vfs_error should return 0 when called again.
-      err = vfs_error(vfs);
-      ASSERTEQ(err, 0, "%s", d.path);
     }
   }
 }
@@ -129,24 +120,24 @@ UNITTEST(vfs_create_file_at_path)
 {
   static const vfs_stat_result valid_data[] =
   {
-    { "file.txt", 0, 0,                           2, S_IFREG, 0 },
-    { "abc.def", 0, 0,                            3, S_IFREG, 0 },
-    { "reallylongfilename.reallylongext", 0, 0,   4, S_IFREG, 0 },
-    { "../initrd.img", 0, 0,                      5, S_IFREG, 0 },
+    { "file.txt", 0,                            2, S_IFREG, 0 },
+    { "abc.def", 0,                             3, S_IFREG, 0 },
+    { "reallylongfilename.reallylongext", 0,    4, S_IFREG, 0 },
+    { "../initrd.img", 0,                       5, S_IFREG, 0 },
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
-    { "C:/dkdfjklsjdf", 0, 0,                     6, S_IFREG, 0 },
+    { "C:/dkdfjklsjdf", 0,                      6, S_IFREG, 0 },
 #endif
   };
 
   static const vfs_result invalid_data[] =
   {
-    { "file.txt",           0, 0 },
-    { "file.txt",           -1, EEXIST },
-    { "file.txt/file.txt",  -1, ENOTDIR },
-    { "/",                  -1, EISDIR },
-    { "abchnkdf/file.txt",  -1, ENOENT },
+    { "file.txt",           0 },
+    { "file.txt",           -EEXIST },
+    { "file.txt/file.txt",  -ENOTDIR },
+    { "/",                  -EISDIR },
+    { "abchnkdf/file.txt",  -ENOENT },
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
-    { "c:\\",               -1, EISDIR },
+    { "c:\\",               -EISDIR },
 #endif
   };
 
@@ -159,13 +150,9 @@ UNITTEST(vfs_create_file_at_path)
     for(const vfs_stat_result &d : valid_data)
     {
       int ret = vfs_create_file_at_path(vfs, d.path);
-      int err = vfs_error(vfs);
-      ASSERTEQ(err, d.expected_error, "%s", d.path);
       ASSERTEQ(ret, d.expected_ret, "%s", d.path);
 
       ret = vfs_stat(vfs, d.path, &st);
-      err = vfs_error(vfs);
-      ASSERTEQ(err, 0, "stat %s", d.path);
       ASSERTEQ(ret, 0, "stat %s", d.path);
       check_stat(d, st);
     }
@@ -176,8 +163,6 @@ UNITTEST(vfs_create_file_at_path)
     for(const vfs_result &d : invalid_data)
     {
       int ret = vfs_create_file_at_path(vfs, d.path);
-      int err = vfs_error(vfs);
-      ASSERTEQ(err, d.expected_error, "%s", d.path);
       ASSERTEQ(ret, d.expected_ret, "%s", d.path);
     }
   }
@@ -187,30 +172,30 @@ UNITTEST(vfs_mkdir)
 {
   static const vfs_stat_result valid_data[] =
   {
-    { "aaa", 0, 0,                        2, S_IFDIR, 0 },
-    { "./aaa/b", 0, 0,                    3, S_IFDIR, 0 },
-    { "/ccc", 0, 0,                       4, S_IFDIR, 0 },
-    { "aaa/..\\ccc/d", 0, 0,              5, S_IFDIR, 0 },
-    { "ccc/d\\.././..\\aaa/b\\e/", 0, 0,  6, S_IFDIR, 0 },
-    { "0", 0, 0,                          7, S_IFDIR, 0 }, // Test inserting before existing.
-    { "1", 0, 0,                          8, S_IFDIR, 0 },
+    { "aaa", 0,                         2, S_IFDIR, 0 },
+    { "./aaa/b", 0,                     3, S_IFDIR, 0 },
+    { "/ccc", 0,                        4, S_IFDIR, 0 },
+    { "aaa/..\\ccc/d", 0,               5, S_IFDIR, 0 },
+    { "ccc/d\\.././..\\aaa/b\\e/", 0,   6, S_IFDIR, 0 },
+    { "0", 0,                           7, S_IFDIR, 0 }, // Test inserting before existing.
+    { "1", 0,                           8, S_IFDIR, 0 },
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
-    { "c:/fff/", 0, 0,                    9, S_IFDIR, 0 },
+    { "c:/fff/", 0,                     9, S_IFDIR, 0 },
 #endif
   };
 
   static const vfs_result invalid_data[] =
   {
-    { "",               -1, ENOENT },
-    { "aaa",            0, 0 },
-    { "aaa",            -1, EEXIST },
-    { "wtf/a",          -1, ENOENT },
-    { "/",              -1, EEXIST },
-    { "D:\\",           -1, ENOENT },
-    { "sdcardsfdfds:/", -1, ENOENT },
-    { "file.txt/abc",   -1, ENOTDIR },
+    { "",               -ENOENT },
+    { "aaa",            0 },
+    { "aaa",            -EEXIST },
+    { "wtf/a",          -ENOENT },
+    { "/",              -EEXIST },
+    { "D:\\",           -ENOENT },
+    { "sdcardsfdfds:/", -ENOENT },
+    { "file.txt/abc",   -ENOTDIR },
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
-    { "C:\\",           -1, EEXIST },
+    { "C:\\",           -EEXIST },
 #endif
   };
 
@@ -223,13 +208,9 @@ UNITTEST(vfs_mkdir)
     for(const vfs_stat_result &d : valid_data)
     {
       int ret = vfs_mkdir(vfs, d.path, 0755);
-      int err = vfs_error(vfs);
-      ASSERTEQ(err, d.expected_error, "%s", d.path);
       ASSERTEQ(ret, d.expected_ret, "%s", d.path);
 
       ret = vfs_stat(vfs, d.path, &st);
-      err = vfs_error(vfs);
-      ASSERTEQ(err, 0, "stat %s", d.path);
       ASSERTEQ(ret, 0, "stat %s", d.path);
       check_stat(d, st);
     }
@@ -243,8 +224,6 @@ UNITTEST(vfs_mkdir)
     for(const vfs_result &d : invalid_data)
     {
       int ret = vfs_mkdir(vfs, d.path, 0755);
-      int err = vfs_error(vfs);
-      ASSERTEQ(err, d.expected_error, "%s", d.path);
       ASSERTEQ(ret, d.expected_ret, "%s", d.path);
     }
   }
