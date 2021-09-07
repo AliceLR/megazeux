@@ -30,6 +30,7 @@
 __M_BEGIN_DECLS
 
 #include <stdint.h>
+#include <stdlib.h>
 #include "vfile.h"
 
 // FIXME CONFIG_VFS or something similar to enable instead
@@ -54,14 +55,20 @@ UTILS_LIBSPEC void vfs_reset(vfilesystem *vfs);
 UTILS_LIBSPEC int vfs_cache_at_path(vfilesystem *vfs, const char *path);
 UTILS_LIBSPEC int vfs_invalidate_at_path(vfilesystem *vfs, const char *path);
 UTILS_LIBSPEC int vfs_create_file_at_path(vfilesystem *vfs, const char *path);
-UTILS_LIBSPEC int vfs_sync_file(vfilesystem *vfs, uint32_t inode,
- void ***data, size_t **data_length, size_t **data_alloc);
 
 UTILS_LIBSPEC uint32_t vfs_open_if_exists(vfilesystem *vfs,
  const char *path, boolean is_write);
 UTILS_LIBSPEC uint32_t vfs_open_if_exists_or_cacheable(vfilesystem *vfs,
  const char *path, boolean is_write);
 UTILS_LIBSPEC void vfs_close(vfilesystem *vfs, uint32_t inode);
+
+UTILS_LIBSPEC int vfs_lock_file_read(vfilesystem *vfs, uint32_t inode,
+ const unsigned char **data, size_t *data_length);
+UTILS_LIBSPEC int vfs_unlock_file_read(vfilesystem *vfs, uint32_t inode);
+UTILS_LIBSPEC int vfs_lock_file_write(vfilesystem *vfs, uint32_t inode,
+ unsigned char ***data, size_t **data_length, size_t **data_alloc);
+UTILS_LIBSPEC int vfs_unlock_file_write(vfilesystem *vfs, uint32_t inode);
+
 UTILS_LIBSPEC int vfs_mkdir(vfilesystem *vfs, const char *path, int mode);
 UTILS_LIBSPEC int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath);
 UTILS_LIBSPEC int vfs_unlink(vfilesystem *vfs, const char *path);

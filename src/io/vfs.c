@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdint.h>
+#include <time.h>
 #include <sys/stat.h>
 
 #include "vfs.h"
@@ -61,7 +62,7 @@ union vfs_inode_contents
 {
   void *has_contents;
   uint32_t *inodes;
-  uint8_t *data;
+  unsigned char *data;
 };
 
 /* `name` buffer is long enough to confortably fit null terminated 8.3 names. */
@@ -71,6 +72,9 @@ struct vfs_inode
   size_t length;
   size_t length_alloc;
   uint32_t timestamp;
+  uint64_t access_time;
+  uint64_t create_time;
+  uint64_t modify_time;
   uint8_t flags; // 0=deleted
   uint8_t refcount; // If 255, refuse creation of new refs.
   char name[14];
@@ -84,6 +88,9 @@ struct vfs_inode_name_alloc
   size_t length;
   size_t length_alloc;
   uint32_t timestamp;
+  uint64_t access_time;
+  uint64_t create_time;
+  uint64_t modify_time;
   uint8_t flags; // 0=deleted
   uint8_t refcount; // If 255, refuse creation of new refs.
   char *name;
@@ -91,7 +98,7 @@ struct vfs_inode_name_alloc
 
 struct vfilesystem
 {
-  struct vfs_inode *table;
+  struct vfs_inode **table;
   uint32_t table_length;
   uint32_t table_alloc;
   uint32_t table_next;
@@ -105,6 +112,13 @@ static uint32_t vfs_get_timestamp(void)
   uint32_t timestamp = (uint32_t)(get_ticks() / 1000);
   return timestamp ? timestamp : 1;
 }
+
+/* FIXME
+static uint64_t vfs_get_date(void)
+{
+  return time(NULL);
+}
+*/
 
 /**
  * strsep but for paths.
@@ -190,13 +204,16 @@ static boolean vfs_inode_init_file(struct vfs_inode *n, const char *name,
   if(init_alloc < VFS_DEFAULT_FILE_SIZE)
     init_alloc = VFS_DEFAULT_FILE_SIZE;
 
-  n->contents.data = malloc(init_alloc);
+  n->contents.data = (unsigned char *)malloc(init_alloc);
   if(!n->contents.data)
     return false;
 
   n->length = 0;
   n->length_alloc = init_alloc;
-  n->timestamp = vfs_get_timestamp();
+  n->timestamp = is_real ? vfs_get_timestamp() : 0;
+  n->access_time = 0;
+  n->create_time = 0;
+  n->modify_time = 0;
   n->flags = VFS_INODE_FILE;
   if(is_real)
     n->flags |= VFS_INODE_IS_REAL;
@@ -222,7 +239,10 @@ static boolean vfs_inode_init_directory(struct vfs_inode *n, const char *name,
 
   n->length = 2;
   n->length_alloc = init_alloc;
-  n->timestamp = vfs_get_timestamp();
+  n->timestamp = is_real ? vfs_get_timestamp() : 0;
+  n->access_time = 0;
+  n->create_time = 0;
+  n->modify_time = 0;
   n->flags = VFS_INODE_DIR;
   if(is_real)
     n->flags |= VFS_INODE_IS_REAL;
@@ -303,8 +323,13 @@ static boolean vfs_setup(vfilesystem *vfs)
 
   memset(vfs, 0, sizeof(vfilesystem));
 
-  vfs->table = calloc(4, sizeof(struct vfs_inode));
+  vfs->table = calloc(4, sizeof(struct vfs_inode *));
   if(!vfs->table)
+    return false;
+
+  vfs->table[VFS_NO_INODE] = (struct vfs_inode *)calloc(1, sizeof(struct vfs_inode));
+  vfs->table[VFS_ROOT_INODE] = (struct vfs_inode *)calloc(1, sizeof(struct vfs_inode));
+  if(!vfs->table[VFS_NO_INODE] || !vfs->table[VFS_ROOT_INODE])
     return false;
 
   vfs->table_length = 2;
@@ -314,7 +339,7 @@ static boolean vfs_setup(vfilesystem *vfs)
   vfs->current_root = VFS_ROOT_INODE;
 
   /* 0: list of roots. */
-  n = &(vfs->table[VFS_NO_INODE]);
+  n = vfs->table[VFS_NO_INODE];
   n->contents.inodes = malloc(3 * sizeof(uint32_t));
   if(!n->contents.has_contents)
     return false;
@@ -330,7 +355,7 @@ static boolean vfs_setup(vfilesystem *vfs)
   n->name[0] = '\0';
 
   /* 1: / or C:\ */
-  n = &(vfs->table[VFS_ROOT_INODE]);
+  n = vfs->table[VFS_ROOT_INODE];
   n->contents.inodes = malloc(4 * sizeof(uint32_t));
   if(!n->contents.has_contents)
     return false;
@@ -358,10 +383,28 @@ static void vfs_clear(vfilesystem *vfs)
 {
   size_t i;
   for(i = 0; i < vfs->table_length; i++)
-    vfs_inode_clear(&(vfs->table[i]));
+  {
+    if(vfs->table[i])
+    {
+      vfs_inode_clear(vfs->table[i]);
+      free(vfs->table[i]);
+    }
+  }
 
   free(vfs->table);
   vfs->table = NULL;
+}
+
+/**
+ * Allocate a given inode.
+ */
+static struct vfs_inode *vfs_allocate_inode(vfilesystem *vfs, uint32_t inode)
+{
+  vfs->table[inode] = (struct vfs_inode *)malloc(sizeof(struct vfs_inode));
+  if(vfs->table[inode])
+    vfs->table[inode]->flags = 0;
+
+  return vfs->table[inode];
 }
 
 /**
@@ -369,7 +412,7 @@ static void vfs_clear(vfilesystem *vfs)
  */
 static void vfs_release_inode(vfilesystem *vfs, uint32_t inode)
 {
-  vfs_inode_clear(&(vfs->table[inode]));
+  vfs_inode_clear(vfs->table[inode]);
   if(inode < vfs->table_next)
     vfs->table_next = inode;
 }
@@ -381,7 +424,7 @@ static void vfs_release_inode(vfilesystem *vfs, uint32_t inode)
 static struct vfs_inode *vfs_get_inode_ptr(vfilesystem *vfs, uint32_t inode)
 {
   assert(inode < vfs->table_length);
-  return &(vfs->table[inode]);
+  return vfs->table[inode];
 }
 
 /**
@@ -422,7 +465,15 @@ static uint32_t vfs_get_next_free_inode(vfilesystem *vfs)
 {
   while(vfs->table_next < vfs->table_length)
   {
-    if(!vfs->table[vfs->table_next].flags)
+    if(!vfs->table[vfs->table_next])
+    {
+      if(!vfs_allocate_inode(vfs, vfs->table_next))
+        return vfs_seterror(vfs, ENOSPC);
+
+      return vfs->table_next;
+    }
+
+    if(!vfs->table[vfs->table_next]->flags)
       return vfs->table_next;
 
     vfs->table_next++;
@@ -430,19 +481,21 @@ static uint32_t vfs_get_next_free_inode(vfilesystem *vfs)
 
   if(vfs->table_length >= vfs->table_alloc)
   {
-    struct vfs_inode *ptr;
+    struct vfs_inode **ptr;
     if(!vfs->table_alloc)
       vfs->table_alloc = 4;
 
     vfs->table_alloc <<= 1;
-    ptr = realloc(vfs->table, vfs->table_alloc * sizeof(struct vfs_inode));
+    ptr = realloc(vfs->table, vfs->table_alloc * sizeof(struct vfs_inode *));
     if(!ptr)
       return vfs_seterror(vfs, ENOSPC);
 
     vfs->table = ptr;
   }
 
-  vfs->table[vfs->table_length].flags = 0;
+  if(!vfs_allocate_inode(vfs, vfs->table_length))
+    return vfs_seterror(vfs, ENOSPC);
+
   return (vfs->table_length++);
 }
 
@@ -693,13 +746,9 @@ static uint32_t vfs_make_inode(vfilesystem *vfs, uint32_t parent,
   if(pos != VFS_NO_INODE)
     return vfs_seterror(vfs, EEXIST);
 
-  // This may invalidate all inode pointers.
   pos = vfs_get_next_free_inode(vfs);
   if(!pos)
     return VFS_NO_INODE;
-
-  // TODO maybe don't block allocate all inodes
-  p = vfs_get_inode_ptr(vfs, parent);
 
   if(!vfs_inode_expand_directory(p, 1))
     return vfs_seterror(vfs, ENOSPC);
@@ -906,32 +955,6 @@ int vfs_create_file_at_path(vfilesystem *vfs, const char *path)
   return 0;
 }
 
-/**
- * vfiles based on inodes in the VFS don't control their data buffer and may
- * lose access to it at any time. If a vfile writes to an inode's buffer and
- * another vfiles reads from it, the buffer pointer may also be stale from
- * reallocation. Each time one of these vfiles performs an operation, it needs
- * to sync with the VFS.
- *
- * TODO: memory vfile buffering to get around this?
- */
-int vfs_sync_file(vfilesystem *vfs, uint32_t inode,
- void ***data, size_t **data_length, size_t **data_alloc)
-{
-  if(inode < vfs->table_length)
-  {
-    struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
-    if(n->refcount)
-    {
-      *data = (void **)&(n->contents.data);
-      *data_length = &(n->length);
-      *data_alloc = &(n->length_alloc);
-      return 0;
-    }
-  }
-  return -1;
-}
-
 uint32_t vfs_open_if_exists(vfilesystem *vfs, const char *path, boolean is_write)
 {
   uint32_t inode = vfs_get_inode_by_path(vfs, path);
@@ -976,6 +999,76 @@ void vfs_close(vfilesystem *vfs, uint32_t inode)
   n->refcount--;
 
   // TODO cache writeback
+}
+
+/**
+ * vfiles based on inodes in the VFS don't control their data buffer and may
+ * lose access to it at any time. If a vfile writes to an inode's buffer and
+ * another vfiles reads from it, the buffer pointer may also be stale from
+ * reallocation. Each time one of these vfiles performs an operation, it needs
+ * to lock the buffer from the VFS.
+ *
+ * TODO: if the single lock model causes too many issues in the future, there
+ * are separate read/write lock/unlock functions so this can transition to a
+ * reader/writer lock model.
+ */
+
+int vfs_lock_file_read(vfilesystem *vfs, uint32_t inode,
+ const unsigned char **data, size_t *data_length)
+{
+  if(inode < vfs->table_length)
+  {
+    struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
+    if(!n || !n->refcount)
+      return -1;
+
+    //if(vfs_lock(vfs))
+    {
+      *data = n->contents.data;
+      *data_length = n->length;
+      return 0;
+    }
+  }
+  return -1;
+}
+
+int vfs_unlock_file_read(vfilesystem *vfs, uint32_t inode)
+{
+  if(inode < vfs->table_length)
+  {
+    struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
+    if(!n || !n->refcount)
+      return -1;
+
+    //if(vfs_unlock(vfs))
+      return 0;
+  }
+  return -1;
+}
+
+int vfs_lock_file_write(vfilesystem *vfs, uint32_t inode,
+ unsigned char ***data, size_t **data_length, size_t **data_alloc)
+{
+  if(inode < vfs->table_length)
+  {
+    struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
+    if(!n || !n->refcount)
+      return -1;
+
+    //if(vfs_lock(vfs))
+    {
+      *data = &(n->contents.data);
+      *data_length = &(n->length);
+      *data_alloc = &(n->length_alloc);
+      return 0;
+    }
+  }
+  return -1;
+}
+
+int vfs_unlock_file_write(vfilesystem *vfs, uint32_t inode)
+{
+  return vfs_unlock_file_read(vfs, inode);
 }
 
 /**
@@ -1168,9 +1261,9 @@ int vfs_stat(vfilesystem *vfs, const char *path, struct stat *st)
     st->st_dev = ('M'<<24) | ('Z'<<16) | ('X'<<8) | ('V');
     st->st_ino = inode;
     st->st_nlink = 1;
-    st->st_atime = 0; // TODO
-    st->st_mtime = 0; // TODO
-    st->st_ctime = 0; // TODO
+    st->st_atime = n->access_time;
+    st->st_mtime = n->modify_time;
+    st->st_ctime = n->create_time;
     return 0;
   }
   return -1;
