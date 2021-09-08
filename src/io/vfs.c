@@ -110,6 +110,7 @@ struct vfilesystem
   platform_cond cond;
   int num_writers;
   int num_readers;
+  int num_promotions;
 #endif
   boolean is_writer;
   int error;
@@ -333,6 +334,7 @@ static boolean vfs_init_lock(vfilesystem *vfs)
   platform_cond_init(&(vfs->cond));
   vfs->num_readers = 0;
   vfs->num_writers = 0;
+  vfs->num_promotions = 0;
   vfs->is_writer = false;
   return true;
 #endif
@@ -371,6 +373,7 @@ static boolean vfs_read_unlock(vfilesystem *vfs)
   if(!platform_mutex_lock(&(vfs->lock)))
     return false;
 
+  assert(vfs->num_readers > 0);
   vfs->num_readers--;
   if(!vfs->num_readers)
     platform_cond_broadcast(&(vfs->cond));
@@ -388,7 +391,7 @@ static boolean vfs_write_lock(vfilesystem *vfs)
 
   vfs->num_writers++;
 
-  while(vfs->num_readers)
+  while(vfs->num_readers || vfs->is_writer)
     platform_cond_wait(&(vfs->cond), &(vfs->lock));
 
   vfs->num_writers--;
@@ -405,8 +408,35 @@ static boolean vfs_write_unlock(vfilesystem *vfs)
   if(!platform_mutex_lock(&(vfs->lock)))
     return false;
 
+  assert(vfs->is_writer);
   vfs->is_writer = false;
   platform_cond_broadcast(&(vfs->cond));
+
+  platform_mutex_unlock(&(vfs->lock));
+#endif
+  return true;
+}
+
+/**
+ * Promote the current thread's reader lock to a writer lock. On failure,
+ * returns `false`, and the current thread will still have a reader lock.
+ */
+static boolean vfs_elevate_lock(vfilesystem *vfs)
+{
+#ifdef VIRTUAL_FILESYSTEM_PARALLEL
+  if(!platform_mutex_lock(&(vfs->lock)))
+    return false;
+
+  vfs->num_writers++;
+  vfs->num_promotions++;
+
+  while(vfs->num_readers > vfs->num_promotions || vfs->is_writer)
+    platform_cond_wait(&(vfs->cond), &(vfs->lock));
+
+  vfs->num_readers--;
+  vfs->num_writers--;
+  vfs->num_promotions--;
+  vfs->is_writer = true;
 
   platform_mutex_unlock(&(vfs->lock));
 #endif
@@ -536,9 +566,6 @@ static struct vfs_inode *vfs_get_inode_ptr(vfilesystem *vfs, uint32_t inode)
 /**
  * Get a pointer to an inode data structure from its index.
  * If the timestamp indicates it is stale, return NULL.
- *
- * If the VFS is under writer lock and no references are left to the stale
- * file, immediately attempt to delete it.
  */
 static struct vfs_inode *vfs_get_inode_ptr_invalidate(vfilesystem *vfs, uint32_t inode)
 {
@@ -550,17 +577,9 @@ static struct vfs_inode *vfs_get_inode_ptr_invalidate(vfilesystem *vfs, uint32_t
     if(n->timestamp == VFS_INVALIDATE_FORCE ||
      (current_time - n->timestamp > VFS_INVALIDATE_S))
     {
-      // If there are no references and this is writer locked, attempt to delete now.
-      if(!n->refcount && vfs->is_writer)
-      {
-        // FIXME directories: don't release if this (or a child) is the current dir.
-        // FIXME directories: recursively check children for references too.
-        // FIXME anything: remove from parent.
-        vfs_release_inode(vfs, inode);
-        return NULL;
-      }
-      // Otherwise, just flag this for immediate deletion later.
+      // Flag this for replacement later.
       n->timestamp = VFS_INVALIDATE_FORCE;
+      return NULL;
     }
   }
   return n;
@@ -1033,9 +1052,9 @@ int vfs_create_file_at_path(vfilesystem *vfs, const char *path)
   char buffer[MAX_PATH];
   uint32_t parent;
   uint32_t inode;
-  int code;
+  int code = 0;
 
-  if(!vfs_write_lock(vfs))
+  if(!vfs_read_lock(vfs))
     return -1;
 
   if(!vfs_get_inode_and_parent_by_path(vfs, path, &parent, &inode, buffer, sizeof(buffer)))
@@ -1060,17 +1079,20 @@ int vfs_create_file_at_path(vfilesystem *vfs, const char *path)
   if(!p)
     goto err;
 
+  if(!vfs_elevate_lock(vfs))
+    goto err;
+
   // Create a virtual (i.e. not real) file.
   inode = vfs_make_inode(vfs, parent, buffer, 0, VFS_INODE_FILE);
   if(!inode)
-    goto err;
+    code = vfs_geterror(vfs);
 
   vfs_write_unlock(vfs);
-  return 0;
+  return -code;
 
 err:
   code = vfs_geterror(vfs);
-  vfs_write_unlock(vfs);
+  vfs_read_unlock(vfs);
   return -code;
 }
 
@@ -1081,7 +1103,7 @@ int vfs_open_if_exists(vfilesystem *vfs, const char *path, boolean is_write,
   uint32_t inode;
   int code;
 
-  if(!vfs_write_lock(vfs))
+  if(!vfs_read_lock(vfs))
     return -1;
 
   inode = vfs_get_inode_by_path(vfs, path);
@@ -1093,7 +1115,7 @@ int vfs_open_if_exists(vfilesystem *vfs, const char *path, boolean is_write,
     goto err;
 
   // Opening directories is nonsensical.
-  if(is_write && VFS_INODE_TYPE(n) == VFS_INODE_DIR)
+  if(VFS_INODE_TYPE(n) == VFS_INODE_DIR)
   {
     vfs_seterror(vfs, EISDIR);
     goto err;
@@ -1109,13 +1131,13 @@ int vfs_open_if_exists(vfilesystem *vfs, const char *path, boolean is_write,
 
   n->refcount++;
 
-  vfs_write_unlock(vfs);
+  vfs_read_unlock(vfs);
   *_inode = inode;
   return 0;
 
 err:
   code = vfs_geterror(vfs);
-  vfs_write_unlock(vfs);
+  vfs_read_unlock(vfs);
   return -code;
 }
 
@@ -1155,18 +1177,22 @@ int vfs_close(vfilesystem *vfs, uint32_t inode)
 int vfs_lock_file_read(vfilesystem *vfs, uint32_t inode,
  const unsigned char **data, size_t *data_length)
 {
+  struct vfs_inode *n;
   if(inode < vfs->table_length)
   {
-    struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
-    if(!n || !n->refcount)
-      return -EBADF;
+    if(!vfs_read_lock(vfs))
+      return -1;
 
-    if(vfs_read_lock(vfs))
+    n = vfs_get_inode_ptr(vfs, inode);
+    if(!n || !n->refcount)
     {
-      *data = n->contents.data;
-      *data_length = n->length;
-      return 0;
+      vfs_read_unlock(vfs);
+      return -EBADF;
     }
+
+    *data = n->contents.data;
+    *data_length = n->length;
+    return 0;
   }
   return -EBADF;
 }
@@ -1188,19 +1214,23 @@ int vfs_unlock_file_read(vfilesystem *vfs, uint32_t inode)
 int vfs_lock_file_write(vfilesystem *vfs, uint32_t inode,
  unsigned char ***data, size_t **data_length, size_t **data_alloc)
 {
+  struct vfs_inode *n;
   if(inode < vfs->table_length)
   {
-    struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
-    if(!n || !n->refcount)
-      return -EBADF;
+    if(!vfs_write_lock(vfs))
+      return -1;
 
-    if(vfs_write_lock(vfs))
+    n = vfs_get_inode_ptr(vfs, inode);
+    if(!n || !n->refcount)
     {
-      *data = &(n->contents.data);
-      *data_length = &(n->length);
-      *data_alloc = &(n->length_alloc);
-      return 0;
+      vfs_write_unlock(vfs);
+      return -EBADF;
     }
+
+    *data = &(n->contents.data);
+    *data_length = &(n->length);
+    *data_alloc = &(n->length_alloc);
+    return 0;
   }
   return -EBADF;
 }
@@ -1233,9 +1263,9 @@ int vfs_mkdir(vfilesystem *vfs, const char *path, int mode)
   char buffer[MAX_PATH];
   uint32_t parent;
   uint32_t inode;
-  int code;
+  int code = 0;
 
-  if(!vfs_write_lock(vfs))
+  if(!vfs_read_lock(vfs))
     return -1;
 
   if(!vfs_get_inode_and_parent_by_path(vfs, path, &parent, &inode, buffer, sizeof(buffer)))
@@ -1255,17 +1285,20 @@ int vfs_mkdir(vfilesystem *vfs, const char *path, int mode)
   if(!p)
     goto err;
 
+  if(!vfs_elevate_lock(vfs))
+    goto err;
+
   // Create a virtual (i.e. not real) directory.
   inode = vfs_make_inode(vfs, parent, buffer, 0, VFS_INODE_DIR);
   if(!inode)
-    goto err;
+    code = vfs_geterror(vfs);
 
   vfs_write_unlock(vfs);
-  return 0;
+  return -code;
 
 err:
   code = vfs_geterror(vfs);
-  vfs_write_unlock(vfs);
+  vfs_read_unlock(vfs);
   return -code;
 }
 
@@ -1299,7 +1332,7 @@ int vfs_unlink(vfilesystem *vfs, const char *path)
   uint32_t inode;
   int code;
 
-  if(!vfs_write_lock(vfs))
+  if(!vfs_read_lock(vfs))
     return -1;
 
   inode = vfs_get_inode_by_path(vfs, path);
@@ -1324,13 +1357,17 @@ int vfs_unlink(vfilesystem *vfs, const char *path)
     vfs_seterror(vfs, EBUSY);
     goto err;
   }
+
+  if(!vfs_elevate_lock(vfs))
+    goto err;
+
   vfs_release_inode(vfs, inode);
   vfs_write_unlock(vfs);
   return 0;
 
 err:
   code = vfs_geterror(vfs);
-  vfs_write_unlock(vfs);
+  vfs_read_unlock(vfs);
   return -code;
 }
 
@@ -1348,7 +1385,7 @@ int vfs_rmdir(vfilesystem *vfs, const char *path)
   uint32_t inode;
   int code;
 
-  if(!vfs_write_lock(vfs))
+  if(!vfs_read_lock(vfs))
     return -1;
 
   inode = vfs_get_inode_by_path(vfs, path);
@@ -1380,13 +1417,17 @@ int vfs_rmdir(vfilesystem *vfs, const char *path)
     vfs_seterror(vfs, EBUSY);
     goto err;
   }
+
+  if(!vfs_elevate_lock(vfs))
+    goto err;
+
   vfs_release_inode(vfs, inode);
   vfs_write_unlock(vfs);
   return 0;
 
 err:
   code = vfs_geterror(vfs);
-  vfs_write_unlock(vfs);
+  vfs_read_unlock(vfs);
   return -code;
 }
 

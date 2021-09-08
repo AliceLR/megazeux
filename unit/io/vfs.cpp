@@ -124,8 +124,9 @@ UNITTEST(vfs_create_file_at_path)
     { "abc.def", 0,                             3, S_IFREG, 0 },
     { "reallylongfilename.reallylongext", 0,    4, S_IFREG, 0 },
     { "../initrd.img", 0,                       5, S_IFREG, 0 },
+    { "é", 0,                                   6, S_IFREG, 0 },
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
-    { "C:/dkdfjklsjdf", 0,                      6, S_IFREG, 0 },
+    { "C:/dkdfjklsjdf", 0,                      7, S_IFREG, 0 },
 #endif
   };
 
@@ -179,8 +180,9 @@ UNITTEST(vfs_mkdir)
     { "ccc/d\\.././..\\aaa/b\\e/", 0,   6, S_IFDIR, 0 },
     { "0", 0,                           7, S_IFDIR, 0 }, // Test inserting before existing.
     { "1", 0,                           8, S_IFDIR, 0 },
+    { "á", 0,                           9, S_IFDIR, 0 },
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
-    { "c:/fff/", 0,                     9, S_IFDIR, 0 },
+    { "c:/fff/", 0,                     10, S_IFDIR, 0 },
 #endif
   };
 
@@ -226,5 +228,104 @@ UNITTEST(vfs_mkdir)
       int ret = vfs_mkdir(vfs, d.path, 0755);
       ASSERTEQ(ret, d.expected_ret, "%s", d.path);
     }
+  }
+}
+
+UNITTEST(FileIO)
+{
+  static const char name[] = "file.ext";
+  static const char *strs[] =
+  {
+    "a test string",
+    "",
+    "asjdfl;kjsd;lfjksdl;fjksdl;fkjsdl;kfmsdl;kfsd;lmkl;mfsdl;mkdsl;kdsm;l",
+  };
+
+  uint32_t inode;
+  int ret;
+
+  // Write lock vars.
+  unsigned char **_data;
+  size_t *_length;
+  size_t *_alloc;
+  // Read lock vars.
+  const unsigned char *data;
+  size_t length;
+
+  ScopedVFS vfs = vfs_init();
+  struct stat st;
+  ASSERT(vfs, "");
+
+  SECTION(Valid)
+  {
+    ret = vfs_create_file_at_path(vfs, name);
+    ASSERTEQ(ret, 0, "create: %s", name);
+
+    ret = vfs_open_if_exists(vfs, name, true, &inode);
+    ASSERTEQ(ret, 0, "open(w): %s", name);
+
+    for(const char *str : strs)
+    {
+      unsigned char *buf = reinterpret_cast<unsigned char *>(strdup(str));
+      size_t len = strlen(str);
+      ASSERT(buf, "strdup: %s", str);
+
+      // 1. write.
+      ret = vfs_lock_file_write(vfs, inode, &_data, &_length, &_alloc);
+      ASSERTEQ(ret, 0, "lock(w): %s", str);
+
+      unsigned char *tmp = *_data;
+      *_data = buf;
+      *_length = len;
+      *_alloc = len + 1;
+
+      ret = vfs_unlock_file_write(vfs, inode);
+      ASSERTEQ(ret, 0, "unlock(w): %s", str);
+      free(tmp);
+
+      // 2. stat, check length.
+      ret = vfs_stat(vfs, name, &st);
+      ASSERTEQ(ret, 0, "stat: %s", str);
+      ASSERTEQ((size_t)st.st_size, len, "length: %s", str);
+
+      // 3. read.
+      ret = vfs_lock_file_read(vfs, inode, &data, &length);
+      ASSERTEQ(ret, 0, "lock(r): %s", str);
+
+      ASSERTMEM(str, data, len, "compare: %s", str);
+
+      ret = vfs_unlock_file_read(vfs, inode);
+      ASSERTEQ(ret, 0, "unlock(r): %s", str);
+    }
+
+    ret = vfs_close(vfs, inode);
+    ASSERTEQ(ret, 0, "close: %s", name);
+  }
+
+  SECTION(Invalid)
+  {
+    // Opening a nonexistant file should fail.
+    ret = vfs_open_if_exists(vfs, "abhjfd", false, &inode);
+    ASSERTEQ(ret, -ENOENT, "");
+
+    // Opening a dir should fail.
+    ret = vfs_open_if_exists(vfs, "/", false, &inode);
+    ASSERTEQ(ret, -EISDIR, "");
+  }
+
+  SECTION(InvalidInode)
+  {
+    // Attempting to lock or unlock a nonexistant file should fail.
+    ret = vfs_lock_file_write(vfs, 12345, &_data, &_length, &_alloc);
+    ASSERTEQ(ret, -EBADF, "lock(w)");
+
+    ret = vfs_unlock_file_write(vfs, 6523);
+    ASSERTEQ(ret, -EBADF, "unlock(w)");
+
+    ret = vfs_lock_file_read(vfs, 12456, &data, &length);
+    ASSERTEQ(ret, -EBADF, "lock(r)");
+
+    ret = vfs_unlock_file_read(vfs, 2222);
+    ASSERTEQ(ret, -EBADF, "unlock(r)");
   }
 }
