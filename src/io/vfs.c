@@ -30,6 +30,7 @@
 #include "../platform.h" /* get_ticks */
 #include "../util.h"
 #include "path.h"
+#include "vio.h"
 
 // Maximum number of seconds a cached file can be considered valid.
 #define VFS_INVALIDATE_S (5*60)
@@ -122,12 +123,10 @@ static uint32_t vfs_get_timestamp(void)
   return timestamp ? timestamp : 1;
 }
 
-/* FIXME
 static uint64_t vfs_get_date(void)
 {
   return time(NULL);
 }
-*/
 
 /**
  * strsep but for paths.
@@ -158,6 +157,11 @@ static int vfs_name_cmp(const char *a, const char *b)
   return strcmp(a, b);
 #endif
 }
+
+
+/**
+ * vfs_inode functions.
+ */
 
 static boolean vfs_inode_init_name(struct vfs_inode *n, const char *name)
 {
@@ -313,6 +317,74 @@ static boolean vfs_inode_expand_directory(struct vfs_inode *n, size_t count)
   n->length_alloc = new_alloc;
   return true;
 }
+
+static boolean vfs_inode_insert_directory(struct vfs_inode *n, uint32_t inode, uint32_t pos)
+{
+  uint32_t *inodes;
+
+  assert(VFS_INODE_TYPE(n) == VFS_INODE_DIR);
+  assert(pos >= 2 && pos <= n->length);
+
+  if(n->length == UINT32_MAX)
+    return false;
+
+  inodes = n->contents.inodes;
+
+  if(pos < n->length)
+    memmove(inodes + pos + 1, inodes + pos, sizeof(uint32_t) * (n->length - pos));
+
+  inodes[pos] = inode;
+  n->length++;
+  return true;
+}
+
+static boolean vfs_inode_delete_directory(struct vfs_inode *n, uint32_t pos)
+{
+  uint32_t *inodes;
+
+  assert(VFS_INODE_TYPE(n) == VFS_INODE_DIR);
+  assert(pos >= 2 && pos < n->length);
+
+  inodes = n->contents.inodes;
+
+  if(pos < n->length - 1)
+    memmove(inodes + pos, inodes + pos + 1, sizeof(uint32_t) * (n->length - pos - 1));
+  n->length--;
+  return true;
+}
+
+static boolean vfs_inode_move_directory(struct vfs_inode *n, uint32_t old_pos,
+ uint32_t new_pos)
+{
+  uint32_t *inodes;
+  uint32_t inode;
+
+  assert(VFS_INODE_TYPE(n) == VFS_INODE_DIR);
+  assert(old_pos >= 2 && old_pos < n->length);
+  assert(new_pos >= 2 && new_pos < n->length);
+
+  inodes = n->contents.inodes;
+  inode = inodes[old_pos];
+
+  if(old_pos < new_pos)
+  {
+    memmove(inodes + old_pos, inodes + old_pos + 1, sizeof(uint32_t) * (new_pos - old_pos));
+    inodes[new_pos] = inode;
+  }
+  else
+
+  if(old_pos > new_pos)
+  {
+    memmove(inodes + new_pos + 1, inodes + new_pos, sizeof(uint32_t) * (old_pos - new_pos));
+    inodes[new_pos] = inode;
+  }
+  return true;
+}
+
+
+/**
+ * vfilesystem functions.
+ */
 
 static int vfs_seterror(vfilesystem *vfs, int e)
 {
@@ -544,16 +616,6 @@ static struct vfs_inode *vfs_allocate_inode(vfilesystem *vfs, uint32_t inode)
 }
 
 /**
- * Clear a given inode and update table_next.
- */
-static void vfs_release_inode(vfilesystem *vfs, uint32_t inode)
-{
-  vfs_inode_clear(vfs->table[inode]);
-  if(inode < vfs->table_next)
-    vfs->table_next = inode;
-}
-
-/**
  * Get a pointer to an inode data structure from its index.
  * This will return a pointer even for cleared inodes.
  */
@@ -565,21 +627,24 @@ static struct vfs_inode *vfs_get_inode_ptr(vfilesystem *vfs, uint32_t inode)
 
 /**
  * Get a pointer to an inode data structure from its index.
- * If the timestamp indicates it is stale, return NULL.
+ * If the timestamp indicates it is stale, mark it to be reloaded.
  */
 static struct vfs_inode *vfs_get_inode_ptr_invalidate(vfilesystem *vfs, uint32_t inode)
 {
   struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
-  uint32_t current_time = vfs_get_timestamp();
 
   if(VFS_IS_CACHED(n))
   {
+    uint32_t current_time = vfs_get_timestamp();
+
     if(n->timestamp == VFS_INVALIDATE_FORCE ||
      (current_time - n->timestamp > VFS_INVALIDATE_S))
     {
       // Flag this for replacement later.
+      // Still return a pointer to this inode, because there's no guarantee
+      // invalidation will occur (depending on children of this inode or
+      // whether a reference is still open for it).
       n->timestamp = VFS_INVALIDATE_FORCE;
-      return NULL;
     }
   }
   return n;
@@ -859,7 +924,6 @@ static uint32_t vfs_make_inode(vfilesystem *vfs, uint32_t parent,
 {
   struct vfs_inode *p;
   struct vfs_inode *n;
-  uint32_t *inodes;
   uint32_t pos;
   uint32_t pos_in_parent;
 
@@ -899,16 +963,88 @@ static uint32_t vfs_make_inode(vfilesystem *vfs, uint32_t parent,
       return vfs_seterror(vfs, ENOSPC);
   }
 
-  inodes = p->contents.inodes;
-  if(pos_in_parent < p->length)
-  {
-    memmove(inodes + pos_in_parent + 1, inodes + pos_in_parent,
-     sizeof(uint32_t) * (p->length - pos_in_parent));
-  }
-  inodes[pos_in_parent] = pos;
-  p->length++;
-
+  vfs_inode_insert_directory(p, pos, pos_in_parent);
   return pos;
+}
+
+/**
+ * Delete an inode in the VFS in a given directory. The inode will be removed
+ * from the parent directory and marked for reuse.
+ */
+static boolean vfs_delete_inode(vfilesystem *vfs, uint32_t parent,
+ uint32_t inode, const char *name)
+{
+  struct vfs_inode *p;
+  struct vfs_inode *n;
+  uint32_t pos_in_parent;
+  uint32_t pos;
+
+  p = vfs_get_inode_ptr(vfs, parent);
+  n = vfs_get_inode_ptr(vfs, inode);
+  assert(VFS_INODE_TYPE(p) == VFS_INODE_DIR);
+
+  // Find in parent.
+  pos = vfs_get_inode_in_parent_by_name(vfs, p, name, &pos_in_parent);
+  if(pos != inode)
+    return vfs_seterror(vfs, ENOENT);
+
+  // Remove from parent.
+  vfs_inode_delete_directory(p, pos_in_parent);
+
+  // Clear.
+  vfs_inode_clear(n);
+  if(inode < vfs->table_next)
+    vfs->table_next = inode;
+
+  return true;
+}
+
+/**
+ * Move an inode in the VFS from one directory to another. The old and new
+ * parent directories may be the same directory.
+ */
+static boolean vfs_move_inode(vfilesystem *vfs, uint32_t old_parent,
+ uint32_t new_parent, uint32_t inode, const char *old_name, const char *new_name)
+{
+  struct vfs_inode *old_p;
+  struct vfs_inode *new_p;
+  struct vfs_inode *n;
+  uint32_t old_pos_in_parent;
+  uint32_t new_pos_in_parent;
+  uint32_t pos;
+
+  n = vfs_get_inode_ptr(vfs, inode);
+  old_p = vfs_get_inode_ptr(vfs, old_parent);
+  new_p = vfs_get_inode_ptr(vfs, new_parent);
+  assert(VFS_INODE_TYPE(old_p) == VFS_INODE_DIR);
+  assert(VFS_INODE_TYPE(new_p) == VFS_INODE_DIR);
+
+  if(old_p != new_p && !vfs_inode_expand_directory(new_p, 1))
+    return vfs_seterror(vfs, ENOSPC);
+
+  // Find in parents.
+  pos = vfs_get_inode_in_parent_by_name(vfs, old_p, old_name, &old_pos_in_parent);
+  if(pos != inode)
+    return vfs_seterror(vfs, ENOENT);
+
+  pos = vfs_get_inode_in_parent_by_name(vfs, new_p, new_name, &new_pos_in_parent);
+  if(pos != VFS_NO_INODE)
+    return vfs_seterror(vfs, EEXIST);
+
+  // Rename.
+  if(!vfs_inode_rename(n, new_name))
+    return vfs_seterror(vfs, ENOSPC);
+
+  // Move from old position to new position.
+  if(old_p != new_p)
+  {
+    vfs_inode_delete_directory(old_p, old_pos_in_parent);
+    vfs_inode_insert_directory(new_p, inode, new_pos_in_parent);
+  }
+  else
+    vfs_inode_move_directory(old_p, old_pos_in_parent, new_pos_in_parent);
+
+  return true;
 }
 
 /**
@@ -1006,32 +1142,10 @@ static inline void vfs_print(vfilesystem *vfs)
 }
 #endif /* DEBUG */
 
-#endif /* VIRTUAL_FILESYSTEM */
 
 /**
- * Allocate and initialize a VFS.
- * (This function is enabled even when VIRTUAL_FILESYSTEM is not defined so
- * -pedantic doesn't complain about ISO C not allowing empty compilation units.)
+ * External functions.
  */
-vfilesystem *vfs_init(void)
-{
-#ifdef VIRTUAL_FILESYSTEM
-  vfilesystem *vfs = (vfilesystem *)malloc(sizeof(vfilesystem));
-  vfs_setup(vfs);
-  return vfs;
-#endif
-  return NULL;
-}
-
-void vfs_free(vfilesystem *vfs)
-{
-#ifdef VIRTUAL_FILESYSTEM
-  vfs_clear(vfs);
-  free(vfs);
-#endif
-}
-
-#ifdef VIRTUAL_FILESYSTEM
 
 void vfs_reset(vfilesystem *vfs)
 {
@@ -1084,7 +1198,13 @@ int vfs_create_file_at_path(vfilesystem *vfs, const char *path)
 
   // Create a virtual (i.e. not real) file.
   inode = vfs_make_inode(vfs, parent, buffer, 0, VFS_INODE_FILE);
-  if(!inode)
+  if(inode)
+  {
+    struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
+    n->create_time = vfs_get_date();
+    n->modify_time = n->create_time;
+  }
+  else
     code = vfs_geterror(vfs);
 
   vfs_write_unlock(vfs);
@@ -1141,13 +1261,6 @@ err:
   return -code;
 }
 
-int vfs_open_if_exists_or_cacheable(vfilesystem *vfs, const char *path,
- boolean is_write, uint32_t *_inode)
-{
-  // FIXME
-  return -1;
-}
-
 int vfs_close(vfilesystem *vfs, uint32_t inode)
 {
   struct vfs_inode *n;
@@ -1161,8 +1274,38 @@ int vfs_close(vfilesystem *vfs, uint32_t inode)
   assert(n->refcount > 0);
   n->refcount--;
 
+  n->modify_time = vfs_get_date();
+
   // TODO cache writeback
   vfs_read_unlock(vfs);
+  return 0;
+}
+
+int vfs_truncate(vfilesystem *vfs, uint32_t inode)
+{
+  struct vfs_inode *n;
+  if(inode >= vfs->table_length)
+    return -EBADF;
+
+  if(!vfs_write_lock(vfs))
+    return -1;
+
+  n = vfs_get_inode_ptr(vfs, inode);
+  if(!n || !n->refcount)
+  {
+    vfs_write_unlock(vfs);
+    return -EBADF;
+  }
+
+  if(n->length_alloc > VFS_DEFAULT_FILE_SIZE)
+  {
+    unsigned char *tmp = (unsigned char *)realloc(n->contents.data, VFS_DEFAULT_FILE_SIZE);
+    if(tmp)
+      n->contents.data = tmp;
+  }
+  n->length = 0;
+
+  vfs_write_unlock(vfs);
   return 0;
 }
 
@@ -1290,7 +1433,13 @@ int vfs_mkdir(vfilesystem *vfs, const char *path, int mode)
 
   // Create a virtual (i.e. not real) directory.
   inode = vfs_make_inode(vfs, parent, buffer, 0, VFS_INODE_DIR);
-  if(!inode)
+  if(inode)
+  {
+    struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
+    n->create_time = vfs_get_date();
+    n->modify_time = n->create_time;
+  }
+  else
     code = vfs_geterror(vfs);
 
   vfs_write_unlock(vfs);
@@ -1313,9 +1462,122 @@ err:
  */
 int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath)
 {
-  // TODO: renaming virtual files raises a few too many questions right now...
-  // this could be particularly bad with virtual file trees from mounted ZIPs.
-  return -1;
+  char buffer[MAX_PATH];
+  char buffer2[MAX_PATH];
+  struct vfs_inode *old_p;
+  struct vfs_inode *old_n;
+  struct vfs_inode *new_p;
+  struct vfs_inode *new_n;
+  uint32_t old_parent;
+  uint32_t new_parent;
+  uint32_t old_inode;
+  uint32_t new_inode;
+  int code = 0;
+
+  if(!vfs_read_lock(vfs))
+    return -1;
+
+  if(!vfs_get_inode_and_parent_by_path(vfs, oldpath, &old_parent, &old_inode, buffer, sizeof(buffer)))
+    goto err;
+
+  // old must have both a parent and an inode and they should be different.
+  if(!old_parent || !old_inode)
+  {
+    vfs_seterror(vfs, ENOENT);
+    goto err;
+  }
+  if(old_parent == old_inode)
+  {
+    vfs_seterror(vfs, EBUSY);
+    goto err;
+  }
+  old_p = vfs_get_inode_ptr(vfs, old_parent);
+  old_n = vfs_get_inode_ptr(vfs, old_inode);
+  // This function is not applicable to cached files.
+  if(VFS_INODE_TYPE(old_p) != VFS_INODE_DIR || VFS_IS_CACHED(old_n))
+    goto err;
+
+  if(!vfs_get_inode_and_parent_by_path(vfs, newpath, &new_parent, &new_inode, buffer2, sizeof(buffer2)))
+    goto err;
+
+  // new must have a parent, and its inode should be different.
+  if(!new_parent)
+  {
+    vfs_seterror(vfs, ENOENT);
+    goto err;
+  }
+  if(new_parent == new_inode)
+  {
+    vfs_seterror(vfs, EBUSY);
+    goto err;
+  }
+  new_p = vfs_get_inode_ptr(vfs, new_parent);
+  new_n = new_inode ? vfs_get_inode_ptr(vfs, new_inode) : NULL;
+  // This function is not applicable to cached files.
+  if(VFS_INODE_TYPE(new_p) != VFS_INODE_DIR || (new_n && VFS_IS_CACHED(new_n)))
+    goto err;
+
+  if(VFS_INODE_TYPE(old_n) == VFS_INODE_DIR)
+  {
+    // FIXME if old is a dir, new should not be prefixed by old. (EINVAL)
+
+    // If old is a dir, new must be an empty dir if it exists.
+    if(new_n)
+    {
+      if(VFS_INODE_TYPE(new_n) != VFS_INODE_DIR)
+      {
+        vfs_seterror(vfs, ENOTDIR);
+        goto err;
+      }
+      if(new_n->length > 2)
+      {
+        vfs_seterror(vfs, EEXIST);
+        goto err;
+      }
+    }
+  }
+  else
+  {
+    if(new_n)
+    {
+      // If old is a file, new must be a file if it exists.
+      if(VFS_INODE_TYPE(new_n) == VFS_INODE_DIR)
+      {
+        vfs_seterror(vfs, EISDIR);
+        goto err;
+      }
+      // New must not have any references if it exists.
+      if(new_n->refcount)
+      {
+        // Might be incorrect, POSIX only mentions dirs.
+        vfs_seterror(vfs, EBUSY);
+        goto err;
+      }
+    }
+  }
+
+  if(!vfs_elevate_lock(vfs))
+    goto err;
+
+  if(new_inode && !vfs_delete_inode(vfs, new_parent, new_inode, buffer2))
+    goto err_write;
+
+  if(!vfs_move_inode(vfs, old_parent, new_parent, old_inode, buffer, buffer2))
+    goto err_write;
+
+  old_n->modify_time = vfs_get_date();
+  vfs_write_unlock(vfs);
+  return -code;
+
+err_write:
+  code = vfs_geterror(vfs);
+  vfs_write_unlock(vfs);
+  return -code;
+
+err:
+  code = vfs_geterror(vfs);
+  vfs_read_unlock(vfs);
+  return -code;
 }
 
 /**
@@ -1328,16 +1590,29 @@ int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath)
  */
 int vfs_unlink(vfilesystem *vfs, const char *path)
 {
+  char buffer[MAX_PATH];
   struct vfs_inode *n;
+  uint32_t parent;
   uint32_t inode;
-  int code;
+  int code = 0;
 
   if(!vfs_read_lock(vfs))
     return -1;
 
-  inode = vfs_get_inode_by_path(vfs, path);
-  if(!inode)
+  if(!vfs_get_inode_and_parent_by_path(vfs, path, &parent, &inode, buffer, sizeof(buffer)))
     goto err;
+
+  // Both must exist and be different.
+  if(!parent || !inode)
+  {
+    vfs_seterror(vfs, ENOENT);
+    goto err;
+  }
+  if(parent == inode)
+  {
+    vfs_seterror(vfs, EBUSY);
+    goto err;
+  }
 
   // This function is not applicable to cached files.
   n = vfs_get_inode_ptr_invalidate(vfs, inode);
@@ -1361,9 +1636,11 @@ int vfs_unlink(vfilesystem *vfs, const char *path)
   if(!vfs_elevate_lock(vfs))
     goto err;
 
-  vfs_release_inode(vfs, inode);
+  if(!vfs_delete_inode(vfs, parent, inode, buffer))
+    code = vfs_geterror(vfs);
+
   vfs_write_unlock(vfs);
-  return 0;
+  return -code;
 
 err:
   code = vfs_geterror(vfs);
@@ -1381,16 +1658,29 @@ err:
  */
 int vfs_rmdir(vfilesystem *vfs, const char *path)
 {
+  char buffer[MAX_PATH];
   struct vfs_inode *n;
+  uint32_t parent;
   uint32_t inode;
-  int code;
+  int code = 0;
 
   if(!vfs_read_lock(vfs))
     return -1;
 
-  inode = vfs_get_inode_by_path(vfs, path);
-  if(!inode)
+  if(!vfs_get_inode_and_parent_by_path(vfs, path, &parent, &inode, buffer, sizeof(buffer)))
     goto err;
+
+  // Both must exist and be different.
+  if(!parent || !inode)
+  {
+    vfs_seterror(vfs, ENOENT);
+    goto err;
+  }
+  if(parent == inode)
+  {
+    vfs_seterror(vfs, EBUSY);
+    goto err;
+  }
 
   // This function is not applicable to cached files.
   n = vfs_get_inode_ptr_invalidate(vfs, inode);
@@ -1421,9 +1711,11 @@ int vfs_rmdir(vfilesystem *vfs, const char *path)
   if(!vfs_elevate_lock(vfs))
     goto err;
 
-  vfs_release_inode(vfs, inode);
+  if(!vfs_delete_inode(vfs, parent, inode, buffer))
+    code = vfs_geterror(vfs);
+
   vfs_write_unlock(vfs);
-  return 0;
+  return -code;
 
 err:
   code = vfs_geterror(vfs);
@@ -1523,7 +1815,166 @@ err:
   return -code;
 }
 
-// FIXME function to get list of ONLY virtual files for dirent
-// this should be performed between vfs_open and vfs_close.
+/**
+ * Get a list of virtual files present in a directory.
+ * The list of virtual files will be allocated to `struct vfs_dir *d`.
+ */
+int vfs_readdir(vfilesystem *vfs, const char *path, struct vfs_dir *d)
+{
+  struct vfs_dir_file **files;
+  struct vfs_inode *p;
+  uint32_t *inodes;
+  uint32_t inode;
+  size_t num_alloc;
+  size_t num_files;
+  size_t i;
+  int code;
+
+  if(!vfs_read_lock(vfs))
+    return -1;
+
+  inode = vfs_get_inode_by_path(vfs, path);
+  if(!inode)
+    goto err;
+
+  p = vfs_get_inode_ptr_invalidate(vfs, inode);
+  if(!p)
+    goto err;
+
+  // This function is only applicable to files.
+  if(VFS_INODE_TYPE(p) != VFS_INODE_DIR)
+  {
+    vfs_seterror(vfs, ENOTDIR);
+    goto err;
+  }
+
+  files = NULL;
+  num_files = 0;
+  num_alloc = 0;
+  inodes = p->contents.inodes;
+
+  for(i = 2; i < p->length; i++)
+  {
+    struct vfs_dir_file *f;
+    struct vfs_inode *n;
+    const char *name;
+    size_t len;
+    int type;
+    inode = inodes[i];
+
+    // Ignore cached files; the caller should be using dirent for them.
+    n = vfs_get_inode_ptr_invalidate(vfs, inode);
+    if(!n || VFS_IS_CACHED(n))
+      continue;
+
+    if(num_files >= num_alloc)
+    {
+      struct vfs_dir_file **t;
+      num_alloc = num_alloc ? num_alloc << 1 : 4;
+
+      t = (struct vfs_dir_file **)realloc(files, num_alloc * sizeof(struct vfs_dir_file *));
+      if(!t)
+      {
+        vfs_seterror(vfs, ENOMEM);
+        goto err_free;
+      }
+      files = t;
+    }
+
+    name = vfs_inode_name(n);
+    len = strlen(name);
+    switch(VFS_INODE_TYPE(n))
+    {
+      case VFS_INODE_DIR:
+        type = DIR_TYPE_DIR;
+        break;
+      case VFS_INODE_FILE:
+        type = DIR_TYPE_FILE;
+        break;
+      default:
+        type = DIR_TYPE_UNKNOWN;
+        break;
+    }
+
+    f = (struct vfs_dir_file *)malloc(sizeof(struct vfs_dir_file) + len);
+    if(!f)
+    {
+      vfs_seterror(vfs, ENOMEM);
+      goto err_free;
+    }
+
+    f->type = type;
+    memcpy(f->name, name, len + 1);
+
+    files[num_files++] = f;
+  }
+
+  if(num_files < num_alloc)
+  {
+    struct vfs_dir_file **t = (struct vfs_dir_file **)realloc(files,
+     num_files * sizeof(struct vfs_dir_file *));
+    if(t)
+      files = t;
+  }
+
+  d->files = files;
+  d->num_files = num_files;
+
+  vfs_read_unlock(vfs);
+  return 0;
+
+err_free:
+  if(files)
+  {
+    for(i = 0; i < num_files; i++)
+      free(files[i]);
+    free(files);
+  }
+err:
+  code = vfs_geterror(vfs);
+  vfs_read_unlock(vfs);
+  return -code;
+}
+
+/**
+ * Free memory allocated to a `struct vfs_dir` by `vfs_readdir`.
+ */
+int vfs_readdir_free(struct vfs_dir *d)
+{
+  size_t i;
+  if(d->files)
+  {
+    for(i = 0; i < d->num_files; i++)
+      free(d->files[i]);
+
+    free(d->files);
+    d->files = NULL;
+  }
+  return 0;
+}
 
 #endif /* VIRTUAL_FILESYSTEM */
+
+/**
+ * Allocate and initialize a VFS.
+ * (This function is enabled even when VIRTUAL_FILESYSTEM is not defined so
+ * -pedantic doesn't complain about ISO C not allowing empty compilation units.)
+ */
+vfilesystem *vfs_init(void)
+{
+#ifdef VIRTUAL_FILESYSTEM
+  vfilesystem *vfs = (vfilesystem *)malloc(sizeof(vfilesystem));
+  if(vfs)
+    vfs_setup(vfs);
+  return vfs;
+#endif
+  return NULL;
+}
+
+void vfs_free(vfilesystem *vfs)
+{
+#ifdef VIRTUAL_FILESYSTEM
+  vfs_clear(vfs);
+  free(vfs);
+#endif
+}

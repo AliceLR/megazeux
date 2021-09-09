@@ -48,6 +48,18 @@ __M_BEGIN_DECLS
 
 #define VIRTUAL_FILESYSTEM_PARALLEL
 
+struct vfs_dir_file
+{
+  char type;
+  char name[1];
+};
+
+struct vfs_dir
+{
+  struct vfs_dir_file **files;
+  size_t num_files;
+};
+
 UTILS_LIBSPEC vfilesystem *vfs_init(void);
 UTILS_LIBSPEC void vfs_free(vfilesystem *vfs);
 
@@ -60,10 +72,8 @@ UTILS_LIBSPEC int vfs_create_file_at_path(vfilesystem *vfs, const char *path);
 
 UTILS_LIBSPEC int vfs_open_if_exists(vfilesystem *vfs,
  const char *path, boolean is_write, uint32_t *inode);
-UTILS_LIBSPEC int vfs_open_if_exists_or_cacheable(vfilesystem *vfs,
- const char *path, boolean is_write, uint32_t *inode);
 UTILS_LIBSPEC int vfs_close(vfilesystem *vfs, uint32_t inode);
-
+UTILS_LIBSPEC int vfs_truncate(vfilesystem *vfs, uint32_t inode);
 UTILS_LIBSPEC int vfs_lock_file_read(vfilesystem *vfs, uint32_t inode,
  const unsigned char **data, size_t *data_length);
 UTILS_LIBSPEC int vfs_unlock_file_read(vfilesystem *vfs, uint32_t inode);
@@ -78,22 +88,36 @@ UTILS_LIBSPEC int vfs_rmdir(vfilesystem *vfs, const char *path);
 UTILS_LIBSPEC int vfs_access(vfilesystem *vfs, const char *path, int mode);
 UTILS_LIBSPEC int vfs_stat(vfilesystem *vfs, const char *path, struct stat *st);
 
+UTILS_LIBSPEC int vfs_readdir(vfilesystem *vfs, const char *path, struct vfs_dir *d);
+UTILS_LIBSPEC int vfs_readdir_free(struct vfs_dir *d);
+
 #else /* !VIRTUAL_FILESYSTEM */
 
 static inline void vfs_reset(vfilesystem *) {}
 static inline int vfs_cache_at_path(vfilesystem *, const char *) { return -1; }
 static inline int vfs_invalidate_at_path(vfilesystem *, const char *) { return -1; }
 static inline int vfs_create_file_at_path(vfilesystem *, const char *) { return -1; }
-static inline int vfs_sync_file(vfilesystem *, const char *) { return -1; }
-static inline uint32_t vfs_open_if_exists(vfilesystem *, const char *, boolean) { return 0; }
-static inline uint32_t vfs_open_if_exists_or_cacheable(vfilesystem *, const char *, boolean) { return 0; }
-static inline void vfs_close(vfilesystem *, uint32_t) {}
+
+static inline int vfs_open_if_exists(vfilesystem *,
+ const char *, boolean, uint32_t *) { return -1; }
+static inline int vfs_close(vfilesystem *, uint32_t) { return -1; }
+static inline int vfs_truncate(vfilesystem *, uint32_t) { return -1; }
+static inline int vfs_lock_file_read(vfilesystem *, uint32_t,
+ const unsigned char **, size_t *) { return -1; }
+static inline int vfs_unlock_file_read(vfilesystem *, uint32_t) { return -1; }
+static inline int vfs_lock_file_write(vfilesystem *, uint32_t,
+ unsigned char ***, size_t **, size_t **) { return -1; }
+static inline int vfs_unlock_file_write(vfilesystem *, uint32_t) { return -1; }
+
 static inline int vfs_mkdir(vfilesystem *, const char *, int) { return -1; }
 static inline int vfs_rename(vfilesystem *, const char *, const char *) { return -1; }
 static inline int vfs_unlink(vfilesystem *, const char *) { return -1; }
 static inline int vfs_rmdir(vfilesystem *, const char *) { return -1; }
 static inline int vfs_access(vfilesystem *, const char *, int) { return -1; }
 static inline int vfs_stat(vfilesystem *, const char *, struct stat *) { return -1; }
+
+static inline int vfs_readdir(vfilesystem *, const char *, struct vfs_dir *) { return -1; }
+static inline int vfs_readdir_free(struct vfs_dir *) { return -1; }
 
 #endif /* !VIRTUAL_FILESYSTEM */
 
