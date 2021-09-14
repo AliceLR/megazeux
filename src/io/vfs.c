@@ -1501,6 +1501,13 @@ int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath)
   if(VFS_INODE_TYPE(new_p) != VFS_INODE_DIR || (new_n && VFS_IS_CACHED(new_n)))
     goto err;
 
+  // Special case: if old and new are the same, return early with success.
+  if(old_n == new_n)
+  {
+    vfs_read_unlock(vfs);
+    return 0;
+  }
+
   if(VFS_INODE_TYPE(old_n) == VFS_INODE_DIR)
   {
     // If old is a dir, the new parent should not be prefixed by old.

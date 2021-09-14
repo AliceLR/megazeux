@@ -340,6 +340,9 @@ UNITTEST(vfs_rename)
     { "dir4/dir3", "dir", DO_RENAME, 0,         0,        { 3, S_IFDIR, 0 }},
     { "dir4/dir3", "", DO_STAT, ignore,         -ENOENT,  {}},
     { "dir2", "", DO_MKDIR, 0,                  0,        { 6, S_IFDIR, 0 }},
+    // Same old/new should return success but change nothing.
+    { "dir", "dir", DO_RENAME, 0,               0,        { 3, S_IFDIR, 0 }},
+    { "file", "file", DO_RENAME, 0,             0,        { 2, S_IFREG, 0 }},
   };
 
   static const vfs_op_result invalid_data[] =
