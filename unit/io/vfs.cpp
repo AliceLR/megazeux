@@ -107,10 +107,10 @@ static void do_op_and_stat(vfilesystem *vfs, const vfs_op_result &d,
       ret = vfs_mkdir(vfs, d.path, 0777);
       break;
     case DO_RENAME:
-      // FIXME
       st_path = d.path2;
-      UNIMPLEMENTED();
-      break;
+      ret = vfs_rename(vfs, d.path, d.path2);
+      ASSERTEQ(ret, d.expected_ret, "%s -> %s", d.path, d.path2);
+      goto do_stat;
     case DO_UNLINK:
       ret = vfs_unlink(vfs, d.path);
       break;
@@ -312,8 +312,102 @@ UNITTEST(vfs_mkdir)
 
 UNITTEST(vfs_rename)
 {
-  //
-  UNIMPLEMENTED();
+  static constexpr int ignore = -10000;
+  static const vfs_op_result valid_data[] =
+  {
+    // No overwrite.
+    { "file1", "", DO_CREATE, 0,                0,        { 2, S_IFREG, 0 }},
+    { "file1", "file2", DO_RENAME, 0,           0,        { 2, S_IFREG, 0 }},
+    { "file1", "", DO_STAT, ignore,             -ENOENT,  {}},
+    { "dir1", "", DO_MKDIR, 0,                  0,        { 3, S_IFDIR, 0 }},
+    { "dir1", "dir2", DO_RENAME, 0,             0,        { 3, S_IFDIR, 0 }},
+    { "file2", "dir2/file", DO_RENAME, 0,       0,        { 2, S_IFREG, 0 }},
+    { "file2", "", DO_STAT, ignore,             -ENOENT,  {}},
+    { "dir2", "dir3", DO_RENAME, 0,             0,        { 3, S_IFDIR, 0 }},
+    { "dir2", "", DO_STAT, ignore,              -ENOENT,  {}},
+    { "dir3/file", "", DO_STAT, ignore,         0,        { 2, S_IFREG, 0 }},
+    { "dir4", "", DO_MKDIR, 0,                  0,        { 4, S_IFDIR, 0 }},
+    { "dir3", "dir4/dir3", DO_RENAME, 0,        0,        { 3, S_IFDIR, 0 }},
+    { "dir3", "", DO_STAT, ignore,              -ENOENT,  {}},
+    { "dir4/dir3/file", "", DO_STAT, ignore,    0,        { 2, S_IFREG, 0 }},
+    // Overwrite file->file.
+    { "file", "", DO_CREATE, 0,                 0,        { 5, S_IFREG, 0 }},
+    { "dir4/dir3/file", "file", DO_RENAME, 0,   0,        { 2, S_IFREG, 0 }},
+    { "dir4/dir3/file", "", DO_STAT, ignore,    -ENOENT,  {}},
+    { "file2", "", DO_CREATE, 0,                0,        { 5, S_IFREG, 0 }},
+    // Overwrite dir->dir.
+    { "dir", "", DO_MKDIR, 0,                   0,        { 6, S_IFDIR, 0 }},
+    { "dir4/dir3", "dir", DO_RENAME, 0,         0,        { 3, S_IFDIR, 0 }},
+    { "dir4/dir3", "", DO_STAT, ignore,         -ENOENT,  {}},
+    { "dir2", "", DO_MKDIR, 0,                  0,        { 6, S_IFDIR, 0 }},
+  };
+
+  static const vfs_op_result invalid_data[] =
+  {
+    { "file", "", DO_CREATE, 0,                   0,        { 2, S_IFREG, 0 }},
+    { "dir", "", DO_MKDIR, 0,                     0,        { 3, S_IFDIR, 0 }},
+    { "dir2", "", DO_MKDIR, 0,                    0,        { 4, S_IFDIR, 0 }},
+    { "dir2/dir3", "", DO_MKDIR, 0,               0,        { 5, S_IFDIR, 0 }},
+
+    { "", "badsf", DO_RENAME, -ENOENT,            -ENOENT,  {}},
+    { "badsf", "", DO_RENAME, -ENOENT,            -ENOENT,  {}},
+    { "/", "asdf", DO_RENAME, -EBUSY,             -ENOENT,  {}},
+    { "dir", "/",  DO_RENAME, -EBUSY,             0,        { 1, S_IFDIR, 0 }},
+    { "dir", "..", DO_RENAME, -EBUSY,             0,        { 1, S_IFDIR, 0 }},
+    { "/noexist", "dir", DO_RENAME, -ENOENT,      0,        { 3, S_IFDIR, 0 }},
+    { "file", "/nodir/file", DO_RENAME, -ENOENT,  -ENOENT,  {}},
+    { "dir", "file/dir", DO_RENAME, -ENOTDIR,     -ENOTDIR, {}},
+
+    // Overwrite dir->file.
+    { "dir", "file", DO_RENAME, -ENOTDIR,         0,        { 2, S_IFREG, 0 }},
+    // Overwrite file->dir.
+    { "file", "dir", DO_RENAME, -EISDIR,          0,        { 3, S_IFDIR, 0 }},
+    // Overwrite non-empty dir.
+    { "dir", "dir2", DO_RENAME, -EEXIST,          0,        { 4, S_IFDIR, 0 }},
+    // Old dir must not be ancestor of new dir.
+    { "dir", "dir/dir", DO_RENAME, -EINVAL,       -ENOENT, {}},
+    { "dir2", "dir2/dir3/dir4", DO_RENAME, -EINVAL, -ENOENT, {}},
+  };
+
+  ScopedVFS vfs = vfs_init();
+  struct stat st;
+  ASSERT(vfs, "");
+
+  time_t init_time = 0;
+  if(!vfs_stat(vfs, "/", &st))
+    init_time = st.st_mtime;
+
+  SECTION(Valid)
+  {
+    for(const vfs_op_result &d : valid_data)
+      do_op_and_stat(vfs, d, init_time, init_time);
+  }
+
+  SECTION(Invalid)
+  {
+    for(const vfs_op_result &d : invalid_data)
+      do_op_and_stat(vfs, d, init_time, init_time);
+  }
+
+  SECTION(BusyFile)
+  {
+    // Special: attempting to overwrite an open file should always fail with EBUSY.
+    uint32_t inode;
+    int ret;
+
+    ret = vfs_create_file_at_path(vfs, "file");
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_create_file_at_path(vfs, "file2");
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_open_if_exists(vfs, "file", true, &inode);
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_rename(vfs, "file2", "file");
+    ASSERTEQ(ret, -EBUSY, "");
+    ret = vfs_close(vfs, inode);
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_rename(vfs, "file2", "file");
+    ASSERTEQ(ret, 0, "");
+  }
 }
 
 UNITTEST(vfs_unlink)

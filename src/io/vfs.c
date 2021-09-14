@@ -547,7 +547,7 @@ static boolean vfs_setup(vfilesystem *vfs)
   /* 0: list of roots. */
   n = vfs->table[VFS_NO_INODE];
   n->contents.inodes = malloc(3 * sizeof(uint32_t));
-  if(!n->contents.has_contents)
+  if(!n->contents.inodes)
     return false;
 
   n->contents.inodes[VFS_IDX_SELF]   = VFS_NO_INODE;
@@ -563,7 +563,7 @@ static boolean vfs_setup(vfilesystem *vfs)
   /* 1: / or C:\ */
   n = vfs->table[VFS_ROOT_INODE];
   n->contents.inodes = malloc(4 * sizeof(uint32_t));
-  if(!n->contents.has_contents)
+  if(!n->contents.inodes)
     return false;
 
   n->contents.inodes[VFS_IDX_SELF]   = VFS_ROOT_INODE;
@@ -1017,9 +1017,45 @@ static boolean vfs_move_inode(vfilesystem *vfs, uint32_t old_parent,
     vfs_inode_insert_directory(new_p, inode, new_pos_in_parent);
   }
   else
+  {
+    // The position determined above assumes this will keep its old position,
+    // so adjust it to account for its own removal.
+    if(new_pos_in_parent > old_pos_in_parent)
+      new_pos_in_parent--;
+
     vfs_inode_move_directory(old_p, old_pos_in_parent, new_pos_in_parent);
+  }
 
   return true;
+}
+
+/**
+ * Determine if inode `A` is the same as or is an ancestor of inode `B`.
+ * Both inodes `A` and `B` MUST be directories currently.
+ */
+static boolean vfs_is_ancestor_inode(vfilesystem *vfs, uint32_t A, uint32_t B)
+{
+  struct vfs_inode *a = vfs_get_inode_ptr(vfs, A);
+  struct vfs_inode *b = vfs_get_inode_ptr(vfs, B);
+  if(!a || !b)
+    return false;
+
+  assert(VFS_INODE_TYPE(a) == VFS_INODE_DIR);
+  assert(VFS_INODE_TYPE(b) == VFS_INODE_DIR);
+
+  // Walk B back to its root.
+  while(true)
+  {
+    if(a == b)
+      return true;
+
+    if(!b->contents.inodes || b->contents.inodes[VFS_IDX_PARENT] == B)
+      return false;
+
+    B = b->contents.inodes[VFS_IDX_PARENT];
+    b = vfs_get_inode_ptr(vfs, B);
+    assert(b && VFS_INODE_TYPE(b) == VFS_INODE_DIR);
+  }
 }
 
 #ifdef DEBUG
@@ -1467,7 +1503,12 @@ int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath)
 
   if(VFS_INODE_TYPE(old_n) == VFS_INODE_DIR)
   {
-    // FIXME if old is a dir, new should not be prefixed by old. (EINVAL)
+    // If old is a dir, the new parent should not be prefixed by old.
+    if(vfs_is_ancestor_inode(vfs, old_inode, new_parent))
+    {
+      vfs_seterror(vfs, EINVAL);
+      goto err;
+    }
 
     // If old is a dir, new must be an empty dir if it exists.
     if(new_n)
@@ -1917,8 +1958,13 @@ vfilesystem *vfs_init(void)
 #ifdef VIRTUAL_FILESYSTEM
   vfilesystem *vfs = (vfilesystem *)malloc(sizeof(vfilesystem));
   if(vfs)
-    vfs_setup(vfs);
-  return vfs;
+  {
+    if(vfs_setup(vfs))
+      return vfs;
+
+    vfs_clear(vfs);
+    free(vfs);
+  }
 #endif
   return NULL;
 }
