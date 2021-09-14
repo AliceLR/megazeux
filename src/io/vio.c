@@ -25,7 +25,6 @@
 
 #include "../util.h"
 #include "memfile.h"
-#include "vfs.h"
 #include "vio.h"
 //#include "zip.h"
 
@@ -43,10 +42,6 @@
 #define VFILE_LARGE_BUFFER_SIZE 32768
 #endif
 
-#ifdef VIRTUAL_FILESYSTEM
-static vfilesystem *vfs;
-#endif
-
 struct vfile
 {
   FILE *fp;
@@ -62,6 +57,8 @@ struct vfile
   // vungetc buffer for memory files.
   int tmp_chr;
   int flags;
+  // To avoid arithmetic on NULL...
+  char dummy[1];
 };
 
 /**
@@ -204,7 +201,7 @@ vfile *vfile_init_mem(void *buffer, size_t size, const char *mode)
     filesize = 0;
 
   vf = (vfile *)ccalloc(1, sizeof(vfile));
-  mfopen(buffer, filesize, &(vf->mf));
+  mfopen(buffer ? buffer : vf->dummy, filesize, &(vf->mf));
   vf->mf.seek_past_end = true;
   vf->tmp_chr = EOF;
   vf->flags = flags | VF_MEMORY;
