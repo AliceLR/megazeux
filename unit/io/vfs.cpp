@@ -20,6 +20,7 @@
 #include "../Unit.hpp"
 
 #include "../../src/io/vfs.h"
+#include "../../src/io/vio.h"
 
 #include <errno.h>
 #include <unistd.h>
@@ -36,6 +37,21 @@ public:
   ~ScopedVFS() { if(vfs) vfs_free(vfs); }
 
   operator vfilesystem *() { return vfs; }
+};
+
+class ScopedVFSDir : public vfs_dir
+{
+public:
+  ScopedVFSDir()
+  {
+    files = nullptr;
+    num_files = 0;
+  }
+
+  ~ScopedVFSDir()
+  {
+    vfs_readdir_free(this);
+  }
 };
 
 struct vfs_result
@@ -568,8 +584,101 @@ UNITTEST(vfs_access)
 
 UNITTEST(vfs_readdir)
 {
-  //
-  UNIMPLEMENTED();
+  struct vfs_readdir_result
+  {
+    const char *path;
+    boolean is_dir;
+  };
+
+  // Keep this sorted.
+  static const vfs_readdir_result valid_files[] =
+  {
+    { "!", true },
+    { "0", false },
+    { "9123125", false },
+    { "@", true },
+#ifndef VIRTUAL_FILESYSTEM_CASE_INSENSITIVE
+    { "AaaaaAAa", true },
+    { "X", true },
+    { "Z", false },
+#endif
+    { "[", true },
+    { "afdsf", false },
+    { "b5455ttyhn", false },
+    { "zzzzzzzz", true },
+    { "~", false },
+  };
+
+  static const vfs_result invalid_data[] =
+  {
+    { "", -ENOENT },
+    { "file", -ENOTDIR },
+    { "file/dir", -ENOTDIR },
+  };
+
+  ScopedVFS vfs = vfs_init();
+  ASSERT(vfs, "");
+
+  ScopedVFSDir vfsd;
+  int ret;
+
+  SECTION(ValidEmpty)
+  {
+    ret = vfs_readdir(vfs, ".", &vfsd);
+    ASSERTEQ(ret, 0, "readdir");
+    ASSERTEQ(vfsd.files, nullptr, "");
+    ASSERTEQ(vfsd.num_files, 0, "");
+  }
+
+  SECTION(ValidFiles)
+  {
+    for(const vfs_readdir_result &d : valid_files)
+    {
+      if(d.is_dir)
+      {
+        ret = vfs_mkdir(vfs, d.path, 0755);
+        ASSERTEQ(ret, 0, "mkdir: %s", d.path);
+      }
+      else
+      {
+        ret = vfs_create_file_at_path(vfs, d.path);
+        ASSERTEQ(ret, 0, "create: %s", d.path);
+      }
+    }
+
+    ret = vfs_readdir(vfs, ".", &vfsd);
+    ASSERTEQ(ret, 0, "readdir");
+    ASSERT(vfsd.files, "");
+    ASSERTEQ(vfsd.num_files, (size_t)arraysize(valid_files), "");
+
+    size_t i = 0;
+    for(const vfs_readdir_result &d : valid_files)
+    {
+      const struct vfs_dir_file *f = vfsd.files[i++];
+      ASSERT(f, "%s", d.path);
+      if(d.is_dir)
+        ASSERT(f->type == DIR_TYPE_DIR, "%s", d.path);
+      else
+        ASSERT(f->type == DIR_TYPE_FILE, "%s", d.path);
+
+      ASSERTCMP(f->name, d.path, "");
+    }
+  }
+
+  SECTION(Invalid)
+  {
+    ret = vfs_create_file_at_path(vfs, "file");
+    ASSERTEQ(ret, 0, "");
+
+    for(const vfs_result &d : invalid_data)
+    {
+      ret = vfs_readdir(vfs, d.path, &vfsd);
+      ASSERTEQ(ret, d.expected_ret, "%s", d.path);
+    }
+  }
+
+  // Make sure double free is safe (destructor will call again).
+  vfs_readdir_free(&vfsd);
 }
 
 UNITTEST(FileIO)
