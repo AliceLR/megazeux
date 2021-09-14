@@ -32,8 +32,6 @@
 #include "path.h"
 #include "vio.h"
 
-// Maximum number of seconds a cached file can be considered valid.
-#define VFS_INVALIDATE_S (5*60)
 // Force invalidation of a cached file.
 #define VFS_INVALIDATE_FORCE UINT32_MAX
 // Maximum reference count for a given VFS inode.
@@ -226,6 +224,7 @@ static boolean vfs_inode_init_file(struct vfs_inode *n, const char *name,
   n->timestamp = is_real ? vfs_get_timestamp() : 0;
   n->create_time = 0;
   n->modify_time = 0;
+  n->refcount = 0;
   n->flags = VFS_INODE_FILE;
   if(is_real)
     n->flags |= VFS_INODE_IS_REAL;
@@ -254,6 +253,7 @@ static boolean vfs_inode_init_directory(struct vfs_inode *n, const char *name,
   n->timestamp = is_real ? vfs_get_timestamp() : 0;
   n->create_time = 0;
   n->modify_time = 0;
+  n->refcount = 0;
   n->flags = VFS_INODE_DIR;
   if(is_real)
     n->flags |= VFS_INODE_IS_REAL;
@@ -623,31 +623,6 @@ static struct vfs_inode *vfs_get_inode_ptr(vfilesystem *vfs, uint32_t inode)
 {
   assert(inode < vfs->table_length);
   return vfs->table[inode];
-}
-
-/**
- * Get a pointer to an inode data structure from its index.
- * If the timestamp indicates it is stale, mark it to be reloaded.
- */
-static struct vfs_inode *vfs_get_inode_ptr_invalidate(vfilesystem *vfs, uint32_t inode)
-{
-  struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
-
-  if(VFS_IS_CACHED(n))
-  {
-    uint32_t current_time = vfs_get_timestamp();
-
-    if(n->timestamp == VFS_INVALIDATE_FORCE ||
-     (current_time - n->timestamp > VFS_INVALIDATE_S))
-    {
-      // Flag this for replacement later.
-      // Still return a pointer to this inode, because there's no guarantee
-      // invalidation will occur (depending on children of this inode or
-      // whether a reference is still open for it).
-      n->timestamp = VFS_INVALIDATE_FORCE;
-    }
-  }
-  return n;
 }
 
 /**
@@ -1047,35 +1022,6 @@ static boolean vfs_move_inode(vfilesystem *vfs, uint32_t old_parent,
   return true;
 }
 
-/**
- * Generate an inode in the VFS at the given path, generating parent directory
- * inodes as-required.
- */
-static uint32_t vfs_make_inode_recursively(vfilesystem *vfs, const char *path,
- boolean is_real)
-{
-  /*
-  int flags = is_real ? VFS_INODE_IS_REAL : 0;
-  char buffer[MAX_PATH];
-  char *current;
-  char *next;
-  */
-  uint32_t inode;
-
-  inode = vfs_get_path_base_inode(vfs, &path);
-  if(!inode)
-    return VFS_NO_INODE;
-
-// FIXME
-/*
-  if((parent->flags & VFS_INODE_TYPE) != VFS_INODE_DIR)
-    return vfs_seterror(vfs, ENOTDIR);
-*/
-
-  // FIXME
-  return VFS_NO_INODE;
-}
-
 #ifdef DEBUG
 static void _vfs_print_str(vfilesystem *vfs, const char *str, int level)
 {
@@ -1189,7 +1135,7 @@ int vfs_create_file_at_path(vfilesystem *vfs, const char *path)
     goto err;
 
   // If the parent is cached and times out, ignore this call.
-  p = vfs_get_inode_ptr_invalidate(vfs, parent);
+  p = vfs_get_inode_ptr(vfs, parent);
   if(!p)
     goto err;
 
@@ -1203,6 +1149,7 @@ int vfs_create_file_at_path(vfilesystem *vfs, const char *path)
     struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
     n->create_time = vfs_get_date();
     n->modify_time = n->create_time;
+    p->modify_time = n->create_time;
   }
   else
     code = vfs_geterror(vfs);
@@ -1230,7 +1177,7 @@ int vfs_open_if_exists(vfilesystem *vfs, const char *path, boolean is_write,
   if(!inode)
     goto err;
 
-  n = vfs_get_inode_ptr_invalidate(vfs, inode);
+  n = vfs_get_inode_ptr(vfs, inode);
   if(!n || n->refcount >= VFS_MAX_REFCOUNT)
     goto err;
 
@@ -1424,7 +1371,7 @@ int vfs_mkdir(vfilesystem *vfs, const char *path, int mode)
     goto err;
 
   // If the parent is cached and times out, ignore this call.
-  p = vfs_get_inode_ptr_invalidate(vfs, parent);
+  p = vfs_get_inode_ptr(vfs, parent);
   if(!p)
     goto err;
 
@@ -1438,6 +1385,7 @@ int vfs_mkdir(vfilesystem *vfs, const char *path, int mode)
     struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
     n->create_time = vfs_get_date();
     n->modify_time = n->create_time;
+    p->modify_time = n->create_time;
   }
   else
     code = vfs_geterror(vfs);
@@ -1565,7 +1513,8 @@ int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath)
   if(!vfs_move_inode(vfs, old_parent, new_parent, old_inode, buffer, buffer2))
     goto err_write;
 
-  old_n->modify_time = vfs_get_date();
+  old_p->modify_time = vfs_get_date();
+  new_p->modify_time = old_p->modify_time;
   vfs_write_unlock(vfs);
   return -code;
 
@@ -1615,7 +1564,7 @@ int vfs_unlink(vfilesystem *vfs, const char *path)
   }
 
   // This function is not applicable to cached files.
-  n = vfs_get_inode_ptr_invalidate(vfs, inode);
+  n = vfs_get_inode_ptr(vfs, inode);
   if(!n || VFS_IS_CACHED(n))
     goto err;
 
@@ -1636,7 +1585,12 @@ int vfs_unlink(vfilesystem *vfs, const char *path)
   if(!vfs_elevate_lock(vfs))
     goto err;
 
-  if(!vfs_delete_inode(vfs, parent, inode, buffer))
+  if(vfs_delete_inode(vfs, parent, inode, buffer))
+  {
+    struct vfs_inode *p = vfs_get_inode_ptr(vfs, parent);
+    p->modify_time = vfs_get_date();
+  }
+  else
     code = vfs_geterror(vfs);
 
   vfs_write_unlock(vfs);
@@ -1683,7 +1637,7 @@ int vfs_rmdir(vfilesystem *vfs, const char *path)
   }
 
   // This function is not applicable to cached files.
-  n = vfs_get_inode_ptr_invalidate(vfs, inode);
+  n = vfs_get_inode_ptr(vfs, inode);
   if(!n || VFS_IS_CACHED(n))
     goto err;
 
@@ -1701,17 +1655,15 @@ int vfs_rmdir(vfilesystem *vfs, const char *path)
     goto err;
   }
 
-  // If the inode is currently in use, this call should be ignored.
-  if(n->refcount)
-  {
-    vfs_seterror(vfs, EBUSY);
-    goto err;
-  }
-
   if(!vfs_elevate_lock(vfs))
     goto err;
 
-  if(!vfs_delete_inode(vfs, parent, inode, buffer))
+  if(vfs_delete_inode(vfs, parent, inode, buffer))
+  {
+    struct vfs_inode *p = vfs_get_inode_ptr(vfs, parent);
+    p->modify_time = vfs_get_date();
+  }
+  else
     code = vfs_geterror(vfs);
 
   vfs_write_unlock(vfs);
@@ -1782,7 +1734,7 @@ int vfs_stat(vfilesystem *vfs, const char *path, struct stat *st)
   if(!inode)
     goto err;
 
-  n = vfs_get_inode_ptr_invalidate(vfs, inode);
+  n = vfs_get_inode_ptr(vfs, inode);
   if(!n)
     goto err;
 
@@ -1837,7 +1789,7 @@ int vfs_readdir(vfilesystem *vfs, const char *path, struct vfs_dir *d)
   if(!inode)
     goto err;
 
-  p = vfs_get_inode_ptr_invalidate(vfs, inode);
+  p = vfs_get_inode_ptr(vfs, inode);
   if(!p)
     goto err;
 
@@ -1863,7 +1815,7 @@ int vfs_readdir(vfilesystem *vfs, const char *path, struct vfs_dir *d)
     inode = inodes[i];
 
     // Ignore cached files; the caller should be using dirent for them.
-    n = vfs_get_inode_ptr_invalidate(vfs, inode);
+    n = vfs_get_inode_ptr(vfs, inode);
     if(!n || VFS_IS_CACHED(n))
       continue;
 

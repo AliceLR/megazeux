@@ -22,6 +22,7 @@
 #include "../../src/io/vfs.h"
 
 #include <errno.h>
+#include <unistd.h>
 #include <sys/stat.h>
 
 static constexpr dev_t MZX_DEVICE = ('M'<<24) | ('Z'<<16) | ('X'<<8) | ('V');
@@ -43,21 +44,91 @@ struct vfs_result
   int expected_ret;
 };
 
-struct vfs_stat_result
+enum op
 {
-  const char *path;
-  int expected_ret;
+  DO_STAT,
+  DO_CREATE,
+  DO_MKDIR,
+  DO_RENAME,
+  DO_UNLINK,
+  DO_RMDIR,
+  DO_ACCESS,
+} op;
+
+struct vfs_stat_data
+{
   ino_t inode;
   mode_t filetype;
   off_t size;
 };
 
-static void check_stat(const vfs_stat_result &d, struct stat &st)
+struct vfs_stat_result
 {
-  ASSERTEQ(st.st_dev, MZX_DEVICE, "%s", d.path);
-  ASSERTEQ(st.st_ino, d.inode, "%s", d.path);
-  ASSERTEQ(st.st_mode & S_IFMT, d.filetype, "%s", d.path);
-  ASSERTEQ(st.st_size, d.size, "%s", d.path);
+  const char *path;
+  int expected_ret;
+  vfs_stat_data st;
+};
+
+struct vfs_op_result
+{
+  const char *path;
+  const char *path2;
+  enum op op;
+  int expected_ret;
+  int stat_ret;
+  vfs_stat_data st;
+};
+
+static void check_stat(const char *path, const vfs_stat_data &d, struct stat &st,
+ time_t create_time = -1, time_t modify_time = -1)
+{
+  ASSERTEQ(st.st_dev, MZX_DEVICE, "%s", path);
+  ASSERTEQ(st.st_ino, d.inode, "%s", path);
+  ASSERTEQ(st.st_mode & S_IFMT, d.filetype, "%s", path);
+  ASSERTEQ(st.st_size, d.size, "%s", path);
+  ASSERT(st.st_atime >= create_time, "%s", path);
+  ASSERT(st.st_mtime >= modify_time, "%s", path);
+  ASSERT(st.st_ctime >= modify_time, "%s", path);
+}
+
+static void do_op_and_stat(vfilesystem *vfs, const vfs_op_result &d,
+ time_t create_time = -1, time_t modify_time = -1)
+{
+  const char *st_path = d.path;
+  int ret;
+  switch(d.op)
+  {
+    case DO_STAT:
+      goto do_stat;
+    case DO_CREATE:
+      ret = vfs_create_file_at_path(vfs, d.path);
+      break;
+    case DO_MKDIR:
+      ret = vfs_mkdir(vfs, d.path, 0777);
+      break;
+    case DO_RENAME:
+      // FIXME
+      st_path = d.path2;
+      UNIMPLEMENTED();
+      break;
+    case DO_UNLINK:
+      ret = vfs_unlink(vfs, d.path);
+      break;
+    case DO_RMDIR:
+      ret = vfs_rmdir(vfs, d.path);
+      break;
+    case DO_ACCESS:
+      ret = vfs_access(vfs, d.path, R_OK);
+      break;
+  }
+  ASSERTEQ(ret, d.expected_ret, "%s", d.path);
+
+do_stat:
+  struct stat st;
+  ret = vfs_stat(vfs, st_path, &st);
+  ASSERTEQ(ret, d.stat_ret, "%s", d.path);
+  if(!ret)
+    check_stat(d.path, d.st, st, create_time, modify_time);
 }
 
 UNITTEST(vfs_stat)
@@ -69,17 +140,17 @@ UNITTEST(vfs_stat)
   static const vfs_stat_result valid_data[]
   {
     // These are all the default root since that's the only default file...
-    { "..", 0,        1, S_IFDIR, 0 },
-    { ".", 0,         1, S_IFDIR, 0 },
-    { "./", 0,        1, S_IFDIR, 0 },
-    { "/", 0,         1, S_IFDIR, 0 },
-    { "/./../", 0,    1, S_IFDIR, 0 },
-    { "\\", 0,        1, S_IFDIR, 0 },
-    { "\\..\\.", 0,   1, S_IFDIR, 0 },
+    { "..", 0,        { 1, S_IFDIR, 0 }},
+    { ".", 0,         { 1, S_IFDIR, 0 }},
+    { "./", 0,        { 1, S_IFDIR, 0 }},
+    { "/", 0,         { 1, S_IFDIR, 0 }},
+    { "/./../", 0,    { 1, S_IFDIR, 0 }},
+    { "\\", 0,        { 1, S_IFDIR, 0 }},
+    { "\\..\\.", 0,   { 1, S_IFDIR, 0 }},
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
-    { "C:/", 0,       1, S_IFDIR, 0 },
-    { "C:\\", 0,      1, S_IFDIR, 0 },
-    { "c:\\", 0,      1, S_IFDIR, 0 },
+    { "C:/", 0,       { 1, S_IFDIR, 0 }},
+    { "C:\\", 0,      { 1, S_IFDIR, 0 }},
+    { "c:\\", 0,      { 1, S_IFDIR, 0 }},
 #endif
   };
 
@@ -102,7 +173,7 @@ UNITTEST(vfs_stat)
     {
       int ret = vfs_stat(vfs, d.path, &st);
       ASSERTEQ(ret, d.expected_ret, "%s", d.path);
-      check_stat(d, st);
+      check_stat(d.path, d.st, st);
     }
   }
 
@@ -120,13 +191,13 @@ UNITTEST(vfs_create_file_at_path)
 {
   static const vfs_stat_result valid_data[] =
   {
-    { "file.txt", 0,                            2, S_IFREG, 0 },
-    { "abc.def", 0,                             3, S_IFREG, 0 },
-    { "reallylongfilename.reallylongext", 0,    4, S_IFREG, 0 },
-    { "../initrd.img", 0,                       5, S_IFREG, 0 },
-    { "é", 0,                                   6, S_IFREG, 0 },
+    { "file.txt", 0,                            { 2, S_IFREG, 0 }},
+    { "abc.def", 0,                             { 3, S_IFREG, 0 }},
+    { "reallylongfilename.reallylongext", 0,    { 4, S_IFREG, 0 }},
+    { "../initrd.img", 0,                       { 5, S_IFREG, 0 }},
+    { "é", 0,                                   { 6, S_IFREG, 0 }},
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
-    { "C:/dkdfjklsjdf", 0,                      7, S_IFREG, 0 },
+    { "C:/dkdfjklsjdf", 0,                      { 7, S_IFREG, 0 }},
 #endif
   };
 
@@ -146,6 +217,10 @@ UNITTEST(vfs_create_file_at_path)
   struct stat st;
   ASSERT(vfs, "");
 
+  time_t init_time = 0;
+  if(!vfs_stat(vfs, "/", &st))
+    init_time = st.st_mtime;
+
   SECTION(Valid)
   {
     for(const vfs_stat_result &d : valid_data)
@@ -155,7 +230,7 @@ UNITTEST(vfs_create_file_at_path)
 
       ret = vfs_stat(vfs, d.path, &st);
       ASSERTEQ(ret, 0, "stat %s", d.path);
-      check_stat(d, st);
+      check_stat(d.path, d.st, st, init_time, init_time);
     }
   }
 
@@ -173,16 +248,16 @@ UNITTEST(vfs_mkdir)
 {
   static const vfs_stat_result valid_data[] =
   {
-    { "aaa", 0,                         2, S_IFDIR, 0 },
-    { "./aaa/b", 0,                     3, S_IFDIR, 0 },
-    { "/ccc", 0,                        4, S_IFDIR, 0 },
-    { "aaa/..\\ccc/d", 0,               5, S_IFDIR, 0 },
-    { "ccc/d\\.././..\\aaa/b\\e/", 0,   6, S_IFDIR, 0 },
-    { "0", 0,                           7, S_IFDIR, 0 }, // Test inserting before existing.
-    { "1", 0,                           8, S_IFDIR, 0 },
-    { "á", 0,                           9, S_IFDIR, 0 },
+    { "aaa", 0,                         { 2, S_IFDIR, 0 }},
+    { "./aaa/b", 0,                     { 3, S_IFDIR, 0 }},
+    { "/ccc", 0,                        { 4, S_IFDIR, 0 }},
+    { "aaa/..\\ccc/d", 0,               { 5, S_IFDIR, 0 }},
+    { "ccc/d\\.././..\\aaa/b\\e/", 0,   { 6, S_IFDIR, 0 }},
+    { "0", 0,                           { 7, S_IFDIR, 0 }}, // Test inserting before existing.
+    { "1", 0,                           { 8, S_IFDIR, 0 }},
+    { "á", 0,                           { 9, S_IFDIR, 0 }},
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
-    { "c:/fff/", 0,                     10, S_IFDIR, 0 },
+    { "c:/fff/", 0,                     { 10, S_IFDIR, 0 }},
 #endif
   };
 
@@ -205,6 +280,10 @@ UNITTEST(vfs_mkdir)
   struct stat st;
   ASSERT(vfs, "");
 
+  time_t init_time = 0;
+  if(!vfs_stat(vfs, "/", &st))
+    init_time = st.st_mtime;
+
   SECTION(Valid)
   {
     for(const vfs_stat_result &d : valid_data)
@@ -214,7 +293,7 @@ UNITTEST(vfs_mkdir)
 
       ret = vfs_stat(vfs, d.path, &st);
       ASSERTEQ(ret, 0, "stat %s", d.path);
-      check_stat(d, st);
+      check_stat(d.path, d.st, st, init_time, init_time);
     }
   }
 
@@ -229,6 +308,171 @@ UNITTEST(vfs_mkdir)
       ASSERTEQ(ret, d.expected_ret, "%s", d.path);
     }
   }
+}
+
+UNITTEST(vfs_rename)
+{
+  //
+  UNIMPLEMENTED();
+}
+
+UNITTEST(vfs_unlink)
+{
+  static const vfs_op_result valid_data[] =
+  {
+    { "file1", "", DO_CREATE, 0,              0,        { 2, S_IFREG, 0 }},
+    { "file1", "", DO_UNLINK, 0,              -ENOENT,  {}},
+    { "dir", "", DO_MKDIR, 0,                 0,        { 2, S_IFDIR, 0 }},
+    { "dir/file2", "", DO_CREATE, 0,          0,        { 3, S_IFREG, 0 }},
+    { "dir/file2", "", DO_UNLINK, 0,          -ENOENT,  {}},
+    { "file3", "", DO_CREATE, 0,              0,        { 3, S_IFREG, 0 }},
+  };
+
+  static const vfs_op_result invalid_data[] =
+  {
+    { "dir", "", DO_MKDIR, 0,                 0,        { 2, S_IFDIR, 0 }},
+    { "file", "", DO_CREATE, 0,               0,        { 3, S_IFREG, 0 }},
+
+    { "", "", DO_UNLINK, -ENOENT,             -ENOENT,  {}},
+    { "/", "", DO_UNLINK, -EBUSY,             0,        { 1, S_IFDIR, 0 }},
+    { "/noexist", "", DO_UNLINK, -ENOENT,     -ENOENT,  {}},
+    { "/nodir/a", "", DO_UNLINK, -ENOENT,     -ENOENT,  {}},
+    { "file/file", "", DO_UNLINK, -ENOTDIR,   -ENOTDIR, {}},
+    { "dir", "", DO_UNLINK, -EPERM,           0,        { 2, S_IFDIR, 0 }},
+  };
+
+  ScopedVFS vfs = vfs_init();
+  struct stat st;
+  ASSERT(vfs, "");
+
+  time_t init_time = 0;
+  if(!vfs_stat(vfs, "/", &st))
+    init_time = st.st_mtime;
+
+  SECTION(Valid)
+  {
+    for(const vfs_op_result &d : valid_data)
+      do_op_and_stat(vfs, d, init_time, init_time);
+  }
+
+  SECTION(Invalid)
+  {
+    for(const vfs_op_result &d : invalid_data)
+      do_op_and_stat(vfs, d, init_time, init_time);
+  }
+
+  SECTION(BusyFile)
+  {
+    // Special: attempting to unlink an open file should always fail with EBUSY.
+    uint32_t inode;
+    int ret;
+
+    ret = vfs_create_file_at_path(vfs, "file");
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_open_if_exists(vfs, "file", true, &inode);
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_unlink(vfs, "file");
+    ASSERTEQ(ret, -EBUSY, "");
+    ret = vfs_close(vfs, inode);
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_unlink(vfs, "file");
+    ASSERTEQ(ret, 0, "");
+  }
+}
+
+UNITTEST(vfs_rmdir)
+{
+  static const vfs_op_result valid_data[] =
+  {
+    { "file1", "", DO_CREATE, 0,              0,        { 2, S_IFREG, 0 }},
+    { "dir", "", DO_MKDIR, 0,                 0,        { 3, S_IFDIR, 0 }},
+    { "dir", "", DO_RMDIR, 0,                 -ENOENT,  {}},
+    { "dir", "", DO_MKDIR, 0,                 0,        { 3, S_IFDIR, 0 }},
+    { "dir/dir2", "", DO_MKDIR, 0,            0,        { 4, S_IFDIR, 0 }},
+    { "dir", "", DO_RMDIR, -ENOTEMPTY,        0,        { 3, S_IFDIR, 0 }},
+    { "dir/dir2", "", DO_RMDIR, 0,            -ENOENT,  {}},
+    { "dir", "", DO_RMDIR, 0,                 -ENOENT,  {}},
+  };
+
+  static const vfs_op_result invalid_data[] =
+  {
+    { "file", "", DO_CREATE, 0,               0,        { 2, S_IFREG, 0 }},
+
+    { "", "", DO_RMDIR, -ENOENT,              -ENOENT,  {}},
+    { "/", "", DO_RMDIR, -EBUSY,              0,        { 1, S_IFDIR, 0 }},
+    { "file", "", DO_RMDIR, -ENOTDIR,         0,        { 2, S_IFREG, 0 }},
+    { "/noexist", "", DO_RMDIR, -ENOENT,      -ENOENT,  {}},
+    { "/nodir/a", "", DO_RMDIR, -ENOENT,      -ENOENT,  {}},
+    { "file/dir", "", DO_RMDIR, -ENOTDIR,     -ENOTDIR, {}},
+  };
+
+  ScopedVFS vfs = vfs_init();
+  struct stat st;
+  ASSERT(vfs, "");
+
+  time_t init_time = 0;
+  if(!vfs_stat(vfs, "/", &st))
+    init_time = st.st_mtime;
+
+  SECTION(Valid)
+  {
+    for(const vfs_op_result &d : valid_data)
+      do_op_and_stat(vfs, d, init_time, init_time);
+  }
+
+  SECTION(Invalid)
+  {
+    for(const vfs_op_result &d : invalid_data)
+      do_op_and_stat(vfs, d, init_time, init_time);
+  }
+}
+
+UNITTEST(vfs_access)
+{
+  static const vfs_op_result valid_data[] =
+  {
+    { "/", "", DO_ACCESS, 0,                  0,        { 1, S_IFDIR, 0 }},
+    { "file", "", DO_CREATE, 0,               0,        { 2, S_IFREG, 0 }},
+    { "file", "", DO_ACCESS, 0,               0,        { 2, S_IFREG, 0 }},
+    { "dir", "", DO_MKDIR, 0,                 0,        { 3, S_IFDIR, 0 }},
+    { "dir", "", DO_ACCESS, 0,                0,        { 3, S_IFDIR, 0 }},
+  };
+
+  static const vfs_op_result invalid_data[] =
+  {
+    { "file", "", DO_CREATE, 0,               0,        { 2, S_IFREG, 0 }},
+
+    { "", "", DO_RMDIR, -ENOENT,              -ENOENT,  {}},
+    { "/noexist", "", DO_RMDIR, -ENOENT,      -ENOENT,  {}},
+    { "/nodir/a", "", DO_RMDIR, -ENOENT,      -ENOENT,  {}},
+    { "file/file", "", DO_RMDIR, -ENOTDIR,    -ENOTDIR, {}},
+  };
+
+  ScopedVFS vfs = vfs_init();
+  struct stat st;
+  ASSERT(vfs, "");
+
+  time_t init_time = 0;
+  if(!vfs_stat(vfs, "/", &st))
+    init_time = st.st_mtime;
+
+  SECTION(Valid)
+  {
+    for(const vfs_op_result &d : valid_data)
+      do_op_and_stat(vfs, d, init_time, init_time);
+  }
+
+  SECTION(Invalid)
+  {
+    for(const vfs_op_result &d : invalid_data)
+      do_op_and_stat(vfs, d, init_time, init_time);
+  }
+}
+
+UNITTEST(vfs_readdir)
+{
+  //
+  UNIMPLEMENTED();
 }
 
 UNITTEST(FileIO)
