@@ -105,6 +105,7 @@ struct vfilesystem
   uint32_t current;
   uint32_t current_root;
 #ifdef VIRTUAL_FILESYSTEM_PARALLEL
+  platform_thread_id origin;
   platform_mutex lock;
   platform_cond cond;
   int num_writers;
@@ -113,6 +114,7 @@ struct vfilesystem
 #endif
   boolean is_writer;
   int error;
+  char current_path[MAX_PATH];
 };
 
 static uint32_t vfs_get_timestamp(void)
@@ -404,6 +406,7 @@ static boolean vfs_init_lock(vfilesystem *vfs)
 #ifdef VIRTUAL_FILESYSTEM_PARALLEL
   platform_mutex_init(&(vfs->lock));
   platform_cond_init(&(vfs->cond));
+  vfs->origin = platform_get_thread_id();
   vfs->num_readers = 0;
   vfs->num_writers = 0;
   vfs->num_promotions = 0;
@@ -579,6 +582,7 @@ static boolean vfs_setup(vfilesystem *vfs)
   strcpy(n->name, "/");
 #endif
 
+  strcpy(vfs->current_path, n->name);
   return true;
 }
 
@@ -1134,9 +1138,6 @@ void vfs_reset(vfilesystem *vfs)
   vfs_clear(vfs);
 }
 
-int vfs_cache_at_path(vfilesystem *vfs, const char *path); // FIXME
-int vfs_invalidate_at_path(vfilesystem *vfs, const char *path); // FIXME
-
 /**
  * Create a file in the VFS at a given path if it doesn't already exist.
  * If the file does exist, this function will set the error to `EEXIST`, same
@@ -1376,6 +1377,127 @@ int vfs_unlock_file_write(vfilesystem *vfs, uint32_t inode)
 }
 
 /**
+ * Set the current working directory of a VFS. This operation currently can
+ * only be performed by the thread that created this VFS.
+ */
+int vfs_chdir(vfilesystem *vfs, const char *path)
+{
+  struct vfs_inode *n;
+  uint32_t inode;
+  uint32_t inode2;
+  uint32_t root;
+  int code;
+  char buffer[MAX_PATH * 2];
+  ssize_t len;
+
+  if(!vfs_read_lock(vfs))
+    return -1;
+
+#ifdef VIRTUAL_FILESYSTEM_PARALLEL
+  // TODO: for now, only allow chdir from the thread that created this VFS.
+  if(!platform_is_same_thread(vfs->origin, platform_get_thread_id()))
+  {
+    vfs_seterror(vfs, EACCES);
+    goto err;
+  }
+#endif
+
+  // Navigate the data structure first to get better errors than path_navigate.
+  inode = vfs_get_inode_by_path(vfs, path);
+  if(!inode)
+    goto err;
+
+  // If this is the same as the current inode, exit early.
+  if(inode == vfs->current)
+  {
+    vfs_read_unlock(vfs);
+    return 0;
+  }
+
+  n = vfs_get_inode_ptr(vfs, inode);
+  if(!n)
+    goto err;
+
+  if(VFS_INODE_TYPE(n) != VFS_INODE_DIR)
+  {
+    vfs_seterror(vfs, ENOTDIR);
+    goto err;
+  }
+
+  // Make sure the string version of the CWD can also be navigated.
+  // TODO this sucks, generate the string from the inode probably.
+  snprintf(buffer, sizeof(buffer), "%s", vfs->current_path);
+  len = path_navigate_no_check(buffer, sizeof(buffer), path);
+  if(len < 0 || (size_t)len >= sizeof(vfs->current_path))
+  {
+    vfs_seterror(vfs, ENAMETOOLONG);
+    goto err;
+  }
+  inode2 = vfs_get_inode_by_path(vfs, buffer);
+  if(inode != inode2)
+  {
+    vfs_seterror(vfs, ENAMETOOLONG);
+    goto err;
+  }
+
+  // Find the root this directory exists in.
+  root = inode;
+  while(true)
+  {
+    uint32_t next;
+    if(!root || !n || !n->contents.inodes)
+      goto err;
+
+    next = n->contents.inodes[VFS_IDX_PARENT];
+    if(next == root)
+      break;
+
+    root = next;
+    n = vfs_get_inode_ptr(vfs, root);
+  }
+
+  if(!vfs_elevate_lock(vfs))
+    goto err;
+
+  memcpy(vfs->current_path, buffer, len + 1);
+  vfs->current = inode;
+  vfs->current_root = root;
+  vfs_write_unlock(vfs);
+  return 0;
+
+err:
+  code = vfs_geterror(vfs);
+  vfs_read_unlock(vfs);
+  return -code;
+}
+
+/**
+ * Get the current working directory of a VFS as a path string.
+ */
+int vfs_getcwd(vfilesystem *vfs, char *dest, size_t dest_len)
+{
+  size_t total_length;
+
+  if(!dest || !dest_len)
+    return -EINVAL;
+
+  if(!vfs_read_lock(vfs))
+    return -1;
+
+  total_length = strlen(vfs->current_path);
+  if(total_length >= dest_len)
+  {
+    vfs_read_unlock(vfs);
+    return -ERANGE;
+  }
+  // This should already have been cleaned by vfs_chdir, so copy directly.
+  memcpy(dest, vfs->current_path, total_length + 1);
+
+  vfs_read_unlock(vfs);
+  return 0;
+}
+
+/**
  * Create a virtual directory (i.e. not a cached copy of a real directory).
  * If this virtual directory is being created on a real path, that path must
  * be cached via `vfs_cache_at_path` prior to calling this function.
@@ -1406,7 +1528,6 @@ int vfs_mkdir(vfilesystem *vfs, const char *path, int mode)
   if(!parent) // Error is set by vfs_get_inode_by_path.
     goto err;
 
-  // If the parent is cached and times out, ignore this call.
   p = vfs_get_inode_ptr(vfs, parent);
   if(!p)
     goto err;

@@ -19,6 +19,7 @@
 
 #include "../Unit.hpp"
 
+#include "../../src/io/path.h"
 #include "../../src/io/vfs.h"
 #include "../../src/io/vio.h"
 
@@ -27,6 +28,8 @@
 #include <sys/stat.h>
 
 static constexpr dev_t MZX_DEVICE = ('M'<<24) | ('Z'<<16) | ('X'<<8) | ('V');
+static constexpr size_t GETCWD_BUF = 32;
+static constexpr int ignore = -10000;
 
 class ScopedVFS
 {
@@ -63,6 +66,8 @@ struct vfs_result
 enum op
 {
   DO_STAT,
+  DO_CHDIR,
+  DO_GETCWD,
   DO_CREATE,
   DO_MKDIR,
   DO_RENAME,
@@ -115,31 +120,46 @@ static void do_op_and_stat(vfilesystem *vfs, const vfs_op_result &d,
   switch(d.op)
   {
     case DO_STAT:
-      goto do_stat;
+      break;
+    case DO_CHDIR:
+      st_path = ".";
+      ret = vfs_chdir(vfs, d.path);
+      ASSERTEQ(ret, d.expected_ret, "chdir: %s", d.path);
+      break;
+    case DO_GETCWD:
+      char buffer[GETCWD_BUF];
+      ret = vfs_getcwd(vfs, buffer, sizeof(buffer));
+      ASSERTEQ(ret, d.expected_ret, "getcwd: %s", d.path);
+      if(!ret)
+        ASSERTCMP(buffer, d.path, "getcwd");
+      break;
     case DO_CREATE:
       ret = vfs_create_file_at_path(vfs, d.path);
+      ASSERTEQ(ret, d.expected_ret, "create: %s", d.path);
       break;
     case DO_MKDIR:
       ret = vfs_mkdir(vfs, d.path, 0777);
+      ASSERTEQ(ret, d.expected_ret, "mkdir: %s", d.path);
       break;
     case DO_RENAME:
       st_path = d.path2;
       ret = vfs_rename(vfs, d.path, d.path2);
-      ASSERTEQ(ret, d.expected_ret, "%s -> %s", d.path, d.path2);
-      goto do_stat;
+      ASSERTEQ(ret, d.expected_ret, "rename: %s -> %s", d.path, d.path2);
+      break;
     case DO_UNLINK:
       ret = vfs_unlink(vfs, d.path);
+      ASSERTEQ(ret, d.expected_ret, "unlink: %s", d.path);
       break;
     case DO_RMDIR:
       ret = vfs_rmdir(vfs, d.path);
+      ASSERTEQ(ret, d.expected_ret, "rmdir: %s", d.path);
       break;
     case DO_ACCESS:
       ret = vfs_access(vfs, d.path, R_OK);
+      ASSERTEQ(ret, d.expected_ret, "access: %s", d.path);
       break;
   }
-  ASSERTEQ(ret, d.expected_ret, "%s", d.path);
 
-do_stat:
   struct stat st;
   ret = vfs_stat(vfs, st_path, &st);
   ASSERTEQ(ret, d.stat_ret, "%s", d.path);
@@ -326,9 +346,94 @@ UNITTEST(vfs_mkdir)
   }
 }
 
+UNITTEST(vfs_chdir_getcwd)
+{
+#ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
+#define BASE "C:\\"
+#else
+#define BASE "/"
+#endif
+#define NAME32 "0123456789.0123456789.0123456789"
+#define NAME128 NAME32 "." NAME32 "." NAME32 "." NAME32
+#define NAME512 NAME128 "." NAME128 "." NAME128 "." NAME128
+  static const vfs_op_result valid_data[] =
+  {
+    { BASE, "", DO_GETCWD, 0,             0,        { 1, S_IFDIR, 0 }},
+    { ".", "", DO_CHDIR, 0,               0,        { 1, S_IFDIR, 0 }},
+    { "dir", "", DO_MKDIR, 0,             0,        { 2, S_IFDIR, 0 }},
+    { "file", "", DO_CREATE, 0,           0,        { 3, S_IFREG, 0 }},
+    { "dir", "", DO_CHDIR, 0,             0,        { 2, S_IFDIR, 0 }},
+    { BASE "dir", "", DO_GETCWD, 0,       0,        { 2, S_IFDIR, 0 }},
+    { ".", "", DO_STAT, ignore,           0,        { 2, S_IFDIR, 0 }},
+    { "..", "", DO_STAT, ignore,          0,        { 1, S_IFDIR, 0 }},
+    { "../dir", "", DO_STAT, ignore,      0,        { 2, S_IFDIR, 0 }},
+    { "../file", "", DO_STAT, ignore,     0,        { 3, S_IFREG, 0 }},
+    { "dir2", "", DO_MKDIR, 0,            0,        { 4, S_IFDIR, 0 }},
+    { "file2", "", DO_CREATE, 0,          0,        { 5, S_IFREG, 0 }},
+    { "/dir/dir2", "", DO_STAT, ignore,   0,        { 4, S_IFDIR, 0 }},
+    { "/dir/file2", "", DO_STAT, ignore,  0,        { 5, S_IFREG, 0 }},
+    { "dir2", "", DO_CHDIR, 0,            0,        { 4, S_IFDIR, 0 }},
+    { BASE "dir" DIR_SEPARATOR "dir2", "", DO_GETCWD, 0, 0, { 4, S_IFDIR, 0 }},
+    { "../../file", "", DO_STAT, ignore,  0,        { 3, S_IFREG, 0 }},
+    { "/", "", DO_CHDIR, 0,               0,        { 1, S_IFDIR, 0 }},
+    { DIR_SEPARATOR, "", DO_GETCWD, 0,    0,        { 1, S_IFDIR, 0 }},
+  };
+
+  static const vfs_op_result invalid_data[] =
+  {
+    { "dir", "", DO_MKDIR, 0,             0,        { 2, S_IFDIR, 0 }},
+    { "file", "", DO_CREATE, 0,           0,        { 3, S_IFREG, 0 }},
+
+    // Invalid chdir.
+    { "", "", DO_CHDIR, -ENOENT,          0,        { 1, S_IFDIR, 0 }},
+    { "/nodir", "", DO_CHDIR, -ENOENT,    0,        { 1, S_IFDIR, 0 }},
+    { "/nodir/a", "", DO_CHDIR, -ENOENT,  0,        { 1, S_IFDIR, 0 }},
+    { "file", "", DO_CHDIR, -ENOTDIR,     0,        { 1, S_IFDIR, 0 }},
+    { "file/dir", "", DO_CHDIR, -ENOTDIR, 0,        { 1, S_IFDIR, 0 }},
+    // The above shouldn't change the cwd...
+    { BASE, "", DO_GETCWD, 0,             0,        { 1, S_IFDIR, 0 }},
+    // Path too big for chdir (512).
+    { NAME512, "", DO_MKDIR, 0,           0,        { 4, S_IFDIR, 0 }},
+    { BASE NAME512, "", DO_CHDIR, -ENAMETOOLONG, 0, { 1, S_IFDIR, 0 }},
+    // Path too big for small getcwd buffer (see GETCWD_BUF).
+    { NAME32, "", DO_MKDIR, 0,            0,        { 5, S_IFDIR, 0 }},
+    { NAME32, "", DO_CHDIR, 0,            0,        { 5, S_IFDIR, 0 }},
+    { "", "", DO_GETCWD, -ERANGE,         -ENOENT,  {}},
+  };
+
+  ScopedVFS vfs = vfs_init();
+  struct stat st;
+  ASSERT(vfs, "");
+
+  time_t init_time = 0;
+  if(!vfs_stat(vfs, "/", &st))
+    init_time = st.st_mtime;
+
+  SECTION(Valid)
+  {
+    for(const vfs_op_result &d : valid_data)
+      do_op_and_stat(vfs, d, init_time, init_time);
+  }
+
+  SECTION(Invalid)
+  {
+    for(const vfs_op_result &d : invalid_data)
+      do_op_and_stat(vfs, d, init_time, init_time);
+  }
+
+  SECTION(getcwdInvalid)
+  {
+    char buffer[1];
+    int ret;
+    ret = vfs_getcwd(vfs, nullptr, 1235);
+    ASSERTEQ(ret, -EINVAL, "");
+    ret = vfs_getcwd(vfs, buffer, 0);
+    ASSERTEQ(ret, -EINVAL, "");
+  }
+}
+
 UNITTEST(vfs_rename)
 {
-  static constexpr int ignore = -10000;
   static const vfs_op_result valid_data[] =
   {
     // No overwrite.

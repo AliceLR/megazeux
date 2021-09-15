@@ -66,8 +66,6 @@ UTILS_LIBSPEC void vfs_free(vfilesystem *vfs);
 #ifdef VIRTUAL_FILESYSTEM
 
 UTILS_LIBSPEC void vfs_reset(vfilesystem *vfs);
-UTILS_LIBSPEC int vfs_cache_at_path(vfilesystem *vfs, const char *path);
-UTILS_LIBSPEC int vfs_invalidate_at_path(vfilesystem *vfs, const char *path);
 UTILS_LIBSPEC int vfs_create_file_at_path(vfilesystem *vfs, const char *path);
 
 UTILS_LIBSPEC int vfs_open_if_exists(vfilesystem *vfs,
@@ -81,6 +79,8 @@ UTILS_LIBSPEC int vfs_lock_file_write(vfilesystem *vfs, uint32_t inode,
  unsigned char ***data, size_t **data_length, size_t **data_alloc);
 UTILS_LIBSPEC int vfs_unlock_file_write(vfilesystem *vfs, uint32_t inode);
 
+UTILS_LIBSPEC int vfs_chdir(vfilesystem *vfs, const char *path);
+UTILS_LIBSPEC int vfs_getcwd(vfilesystem *vfs, char *dest, size_t dest_len);
 UTILS_LIBSPEC int vfs_mkdir(vfilesystem *vfs, const char *path, int mode);
 UTILS_LIBSPEC int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath);
 UTILS_LIBSPEC int vfs_unlink(vfilesystem *vfs, const char *path);

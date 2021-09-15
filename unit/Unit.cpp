@@ -161,8 +161,13 @@ namespace Unit
 
   arg::arg(const char *_op)
   {
-    op = coalesce(_op);
     has_value = !!_op;
+    _op = coalesce(_op);
+
+    size_t len = strlen(_op);
+    allocbuf = new char[len + 1];
+    memcpy(allocbuf, _op, len + 1);
+    op = allocbuf;
   }
 
   arg::arg(const void *_op)
