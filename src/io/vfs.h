@@ -94,8 +94,6 @@ UTILS_LIBSPEC int vfs_readdir_free(struct vfs_dir *d);
 #else /* !VIRTUAL_FILESYSTEM */
 
 static inline void vfs_reset(vfilesystem *) {}
-static inline int vfs_cache_at_path(vfilesystem *, const char *) { return -1; }
-static inline int vfs_invalidate_at_path(vfilesystem *, const char *) { return -1; }
 static inline int vfs_create_file_at_path(vfilesystem *, const char *) { return -1; }
 
 static inline int vfs_open_if_exists(vfilesystem *,
@@ -109,6 +107,8 @@ static inline int vfs_lock_file_write(vfilesystem *, uint32_t,
  unsigned char ***, size_t **, size_t **) { return -1; }
 static inline int vfs_unlock_file_write(vfilesystem *, uint32_t) { return -1; }
 
+static inline int vfs_chdir(vfilesystem *, const char *) { return -1; }
+static inline int vfs_getcwd(vfilesystem *, char *, size_t) { return -1; }
 static inline int vfs_mkdir(vfilesystem *, const char *, int) { return -1; }
 static inline int vfs_rename(vfilesystem *, const char *, const char *) { return -1; }
 static inline int vfs_unlink(vfilesystem *, const char *) { return -1; }

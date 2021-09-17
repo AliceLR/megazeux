@@ -36,6 +36,8 @@
 #define VFS_INVALIDATE_FORCE UINT32_MAX
 // Maximum reference count for a given VFS inode.
 #define VFS_MAX_REFCOUNT 255
+// Maximum name length.
+#define VFS_MAX_NAME UINT16_MAX
 
 #define VFS_DEFAULT_FILE_SIZE 32
 #define VFS_DEFAULT_DIR_SIZE 4
@@ -74,11 +76,12 @@ struct vfs_inode
   size_t length;
   size_t length_alloc;
   uint32_t timestamp;
-  uint64_t create_time;
-  uint64_t modify_time;
+  int64_t create_time;
+  int64_t modify_time;
   uint8_t flags; // 0=deleted
   uint8_t refcount; // If 255, refuse creation of new refs.
-  char name[14];
+  uint16_t name_length;
+  char name[20];
 };
 
 /* If `flags` & VFS_INODE_NAME_ALLOC, `name` is a pointer instead of a buffer.
@@ -89,10 +92,11 @@ struct vfs_inode_name_alloc
   size_t length;
   size_t length_alloc;
   uint32_t timestamp;
-  uint64_t create_time;
-  uint64_t modify_time;
+  int64_t create_time;
+  int64_t modify_time;
   uint8_t flags; // 0=deleted
   uint8_t refcount; // If 255, refuse creation of new refs.
+  uint16_t name_length;
   char *name;
 };
 
@@ -123,7 +127,7 @@ static uint32_t vfs_get_timestamp(void)
   return timestamp ? timestamp : 1;
 }
 
-static uint64_t vfs_get_date(void)
+static int64_t vfs_get_date(void)
 {
   return time(NULL);
 }
@@ -166,6 +170,9 @@ static int vfs_name_cmp(const char *a, const char *b)
 static boolean vfs_inode_init_name(struct vfs_inode *n, const char *name)
 {
   size_t name_len = strlen(name);
+  if(name_len > VFS_MAX_NAME)
+    return false;
+
   if(name_len >= sizeof(n->name))
   {
     struct vfs_inode_name_alloc *_n = (struct vfs_inode_name_alloc *)n;
@@ -180,6 +187,7 @@ static boolean vfs_inode_init_name(struct vfs_inode *n, const char *name)
   else
     memcpy(n->name, name, name_len + 1);
 
+  n->name_length = name_len;
   return true;
 }
 
@@ -561,7 +569,7 @@ static boolean vfs_setup(vfilesystem *vfs)
   n->timestamp = 0;
   n->flags = VFS_INODE_DIR;
   n->refcount = 255;
-  n->name[0] = '\0';
+  vfs_inode_init_name(n, "");
 
   /* 1: / or C:\ */
   n = vfs->table[VFS_ROOT_INODE];
@@ -577,9 +585,9 @@ static boolean vfs_setup(vfilesystem *vfs)
   n->flags = VFS_INODE_DIR | VFS_INODE_IS_REAL;
   n->refcount = 0;
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
-  strcpy(n->name, "C:\\");
+  vfs_inode_init_name(n, "C:\\");
 #else
-  strcpy(n->name, "/");
+  vfs_inode_init_name(n, "/");
 #endif
 
   strcpy(vfs->current_path, n->name);
@@ -891,6 +899,63 @@ static boolean vfs_get_inode_and_parent_by_path(vfilesystem *vfs, const char *pa
   if(name)
     snprintf(name, name_length, "%s", child);
 
+  return true;
+}
+
+/**
+ * Get the path for a given directory inode.
+ */
+static boolean vfs_get_inode_path(vfilesystem *vfs, uint32_t inode,
+ char *buffer, size_t buffer_length)
+{
+  struct vfs_inode *n;
+  uint32_t current;
+  uint32_t next;
+  size_t needed = 0;
+
+  // 1. Get the required size for this string.
+  current = inode;
+  while(true)
+  {
+    n = vfs_get_inode_ptr(vfs, current);
+    if(!n || !n->contents.inodes || VFS_INODE_TYPE(n) != VFS_INODE_DIR)
+      return false;
+
+    next = n->contents.inodes[VFS_IDX_PARENT];
+
+    // Dir separator, except for the root since it already has one.
+    if(needed && next != current)
+      needed++;
+
+    needed += n->name_length;
+
+    if(next == current)
+      break;
+
+    current = next;
+  }
+
+  if(needed + 1 >= buffer_length)
+    return false;
+
+  // 2. Copy name into the buffer.
+  buffer[needed] = '\0';
+  current = inode;
+  while(true)
+  {
+    n = vfs_get_inode_ptr(vfs, current);
+
+    next = n->contents.inodes[VFS_IDX_PARENT];
+    if(next == current)
+      break;
+
+    needed -= n->name_length;
+    memcpy(buffer + needed, vfs_inode_name(n), n->name_length);
+    buffer[--needed] = DIR_SEPARATOR_CHAR;
+    current = next;
+  }
+  // Add root name into buffer separately.
+  memcpy(buffer, vfs_inode_name(n), n->name_length);
   return true;
 }
 
@@ -1384,11 +1449,10 @@ int vfs_chdir(vfilesystem *vfs, const char *path)
 {
   struct vfs_inode *n;
   uint32_t inode;
-  uint32_t inode2;
   uint32_t root;
   int code;
   char buffer[MAX_PATH * 2];
-  ssize_t len;
+  size_t len;
 
   if(!vfs_read_lock(vfs))
     return -1;
@@ -1424,17 +1488,14 @@ int vfs_chdir(vfilesystem *vfs, const char *path)
     goto err;
   }
 
-  // Make sure the string version of the CWD can also be navigated.
-  // TODO this sucks, generate the string from the inode probably.
-  snprintf(buffer, sizeof(buffer), "%s", vfs->current_path);
-  len = path_navigate_no_check(buffer, sizeof(buffer), path);
-  if(len < 0 || (size_t)len >= sizeof(vfs->current_path))
+  // Get the new working directory path string.
+  if(!vfs_get_inode_path(vfs, inode, buffer, sizeof(buffer)))
   {
     vfs_seterror(vfs, ENAMETOOLONG);
     goto err;
   }
-  inode2 = vfs_get_inode_by_path(vfs, buffer);
-  if(inode != inode2)
+  len = strlen(buffer);
+  if(len >= sizeof(vfs->current_path))
   {
     vfs_seterror(vfs, ENAMETOOLONG);
     goto err;
@@ -2003,7 +2064,7 @@ int vfs_readdir(vfilesystem *vfs, const char *path, struct vfs_dir *d)
     }
 
     name = vfs_inode_name(n);
-    len = strlen(name);
+    len = n->name_length;
     switch(VFS_INODE_TYPE(n))
     {
       case VFS_INODE_DIR:

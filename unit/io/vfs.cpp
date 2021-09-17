@@ -376,7 +376,7 @@ UNITTEST(vfs_chdir_getcwd)
     { BASE "dir" DIR_SEPARATOR "dir2", "", DO_GETCWD, 0, 0, { 4, S_IFDIR, 0 }},
     { "../../file", "", DO_STAT, ignore,  0,        { 3, S_IFREG, 0 }},
     { "/", "", DO_CHDIR, 0,               0,        { 1, S_IFDIR, 0 }},
-    { DIR_SEPARATOR, "", DO_GETCWD, 0,    0,        { 1, S_IFDIR, 0 }},
+    { BASE, "", DO_GETCWD, 0,             0,        { 1, S_IFDIR, 0 }},
   };
 
   static const vfs_op_result invalid_data[] =
