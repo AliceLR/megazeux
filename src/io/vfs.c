@@ -132,27 +132,6 @@ static int64_t vfs_get_date(void)
   return time(NULL);
 }
 
-/**
- * strsep but for paths.
- * TODO: move to path.c.
- */
-static char *vfs_tokenize(char **next)
-{
-  char *src = *next;
-  if(src)
-  {
-    char *current = strpbrk(src, "\\/");
-    if(current)
-    {
-      *current = '\0';
-      *next = current + 1;
-    }
-    else
-      *next = NULL;
-  }
-  return src;
-}
-
 static int vfs_name_cmp(const char *a, const char *b)
 {
 #ifdef VIRTUAL_FILESYSTEM_CASE_INSENSITIVE
@@ -582,6 +561,8 @@ static boolean vfs_setup(vfilesystem *vfs)
   n->length = 2;
   n->length_alloc = 4;
   n->timestamp = 0;
+  n->create_time = vfs_get_date();
+  n->modify_time = n->create_time;
   n->flags = VFS_INODE_DIR | VFS_INODE_IS_REAL;
   n->refcount = 0;
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
@@ -804,7 +785,7 @@ static uint32_t vfs_get_inode_by_relative_path(vfilesystem *vfs, uint32_t inode,
   char *next;
 
   next = relative_path;
-  while((current = vfs_tokenize(&next)))
+  while((current = path_tokenize(&next)))
   {
     if(!current[0])
       continue;
@@ -1127,7 +1108,7 @@ static boolean vfs_is_ancestor_inode(vfilesystem *vfs, uint32_t A, uint32_t B)
   }
 }
 
-#ifdef DEBUG
+#if 0
 static void _vfs_print_str(vfilesystem *vfs, const char *str, int level)
 {
   fprintf(mzxerr, "%*.*s%s\n", level*2, level*2, "", str);
@@ -1198,15 +1179,16 @@ static inline void vfs_print(vfilesystem *vfs)
  * External functions.
  */
 
-void vfs_reset(vfilesystem *vfs)
-{
-  vfs_clear(vfs);
-}
-
 /**
  * Create a file in the VFS at a given path if it doesn't already exist.
  * If the file does exist, this function will set the error to `EEXIST`, same
  * as an `open` call with O_CREAT|O_EXCL set.
+ *
+ * @param vfs   VFS handle.
+ * @param path  path of file within `vfs` to create.
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
  */
 int vfs_create_file_at_path(vfilesystem *vfs, const char *path)
 {
@@ -1265,6 +1247,20 @@ err:
   return -code;
 }
 
+/**
+ * "Open" a file in a VFS, obtaining a file descriptor for the file and
+ * incrementing its reference count by one. This is meaningless for directories,
+ * and calls where the path is a directory will return `-EISDIR`
+ * (use `vfs_readdir` instead).
+ *
+ * @param vfs       VFS handle.
+ * @param path      path of file within `vfs` to "open".
+ * @param is_write  should be `true` if write operations are to be performed.
+ * @param inode     a pointer for the file descriptor to be written to.
+ * @return          0 on success, otherwise a negative number corresponding to the
+ *                  relevant `errno` code (-255 for unknown error). This function
+ *                  does not set `errno`.
+ */
 int vfs_open_if_exists(vfilesystem *vfs, const char *path, boolean is_write,
  uint32_t *_inode)
 {
@@ -1310,6 +1306,15 @@ err:
   return -code;
 }
 
+/**
+ * "Close" a file in a VFS, decrementing its reference count by one.
+ *
+ * @param vfs   VFS handle.
+ * @param inode file descriptor to "close".
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
+ */
 int vfs_close(vfilesystem *vfs, uint32_t inode)
 {
   struct vfs_inode *n;
@@ -1330,6 +1335,15 @@ int vfs_close(vfilesystem *vfs, uint32_t inode)
   return 0;
 }
 
+/**
+ * Truncate an "open" VFS file to length 0.
+ *
+ * @param vfs   VFS handle.
+ * @param inode file descriptor to the file to truncate.
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
+ */
 int vfs_truncate(vfilesystem *vfs, uint32_t inode)
 {
   struct vfs_inode *n;
@@ -1359,13 +1373,19 @@ int vfs_truncate(vfilesystem *vfs, uint32_t inode)
 }
 
 /**
- * vfiles based on inodes in the VFS don't control their data buffer and may
- * lose access to it at any time. If a vfile writes to an inode's buffer and
- * another vfiles reads from it, the buffer pointer may also be stale from
- * reallocation. Each time one of these vfiles performs an operation, it needs
- * to acquire read or write access to the VFS.
+ * Lock an "open" VFS file for reading and retrieve its underlying data buffer.
+ * Multiple reading locks can be acquired on a VFS handle simultaneously, but
+ * a reading lock will block if a writing lock is held. To avoid deadlocks,
+ * only one lock should ever be acquired per thread simultaneously.
+ *
+ * @param vfs         VFS handle.
+ * @param inode       file descriptor to the file to read.
+ * @param data        pointer to store a pointer to the underlying data to.
+ * @param data_length pointer to store the length of the underlying data to.
+ * @return            0 on success, otherwise a negative number corresponding to the
+ *                    relevant `errno` code (-255 for unknown error). This function
+ *                    does not set `errno`.
  */
-
 int vfs_lock_file_read(vfilesystem *vfs, uint32_t inode,
  const unsigned char **data, size_t *data_length)
 {
@@ -1389,6 +1409,15 @@ int vfs_lock_file_read(vfilesystem *vfs, uint32_t inode,
   return -EBADF;
 }
 
+/**
+ * Release a held reading lock on a VFS handle.
+ *
+ * @param vfs   VFS handle.
+ * @param inode file descriptor to the file to read.
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
+ */
 int vfs_unlock_file_read(vfilesystem *vfs, uint32_t inode)
 {
   if(inode < vfs->table_length)
@@ -1403,6 +1432,21 @@ int vfs_unlock_file_read(vfilesystem *vfs, uint32_t inode)
   return -EBADF;
 }
 
+/**
+ * Lock an "open" VFS file for writing and retrieve its underlying data buffer.
+ * Only one writing lock can be acquired on a VFS handle at any given time.
+ * To avoid deadlocks, only one lock should ever be acquired per thread
+ * simultaneously.
+ *
+ * @param vfs         VFS handle.
+ * @param inode       file descriptor to the file to write.
+ * @param data        pointer to store a pointer to the pointer to the underlying data to.
+ * @param data_length pointer to store a pointer to the the length of the underlying data to.
+ * @param data_alloc  pointer to store a pointer to the the allocation size of the underlying data to.
+ * @return            0 on success, otherwise a negative number corresponding to the
+ *                    relevant `errno` code (-255 for unknown error). This function
+ *                    does not set `errno`.
+ */
 int vfs_lock_file_write(vfilesystem *vfs, uint32_t inode,
  unsigned char ***data, size_t **data_length, size_t **data_alloc)
 {
@@ -1427,6 +1471,15 @@ int vfs_lock_file_write(vfilesystem *vfs, uint32_t inode,
   return -EBADF;
 }
 
+/**
+ * Release a held writing lock on a VFS handle.
+ *
+ * @param vfs   VFS handle.
+ * @param inode file descriptor to the file to write.
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
+ */
 int vfs_unlock_file_write(vfilesystem *vfs, uint32_t inode)
 {
   if(inode < vfs->table_length)
@@ -1444,6 +1497,12 @@ int vfs_unlock_file_write(vfilesystem *vfs, uint32_t inode)
 /**
  * Set the current working directory of a VFS. This operation currently can
  * only be performed by the thread that created this VFS.
+ *
+ * @param vfs   VFS handle.
+ * @param path  path of directory to set as the current working directory.
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
  */
 int vfs_chdir(vfilesystem *vfs, const char *path)
 {
@@ -1534,6 +1593,13 @@ err:
 
 /**
  * Get the current working directory of a VFS as a path string.
+ *
+ * @param vfs       VFS handle.
+ * @param dest      buffer to store the current working directory path to.
+ * @param dest_len  size of `dest` in bytes.
+ * @return          0 on success, otherwise a negative number corresponding to the
+ *                  relevant `errno` code (-255 for unknown error). This function
+ *                  does not set `errno`.
  */
 int vfs_getcwd(vfilesystem *vfs, char *dest, size_t dest_len)
 {
@@ -1563,8 +1629,12 @@ int vfs_getcwd(vfilesystem *vfs, char *dest, size_t dest_len)
  * If this virtual directory is being created on a real path, that path must
  * be cached via `vfs_cache_at_path` prior to calling this function.
  *
- * This function does not set `errno`, but the equivalent `errno` code can be
- * retrieved with `vfs_error` after a failed call.
+ * @param vfs   VFS handle.
+ * @param path  path to create a directory at within `vfs`.
+ * @param mode  permission bits for the created directory (ignored).
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
  */
 int vfs_mkdir(vfilesystem *vfs, const char *path, int mode)
 {
@@ -1623,8 +1693,12 @@ err:
  * and invalidated with `vfs_invalidate_at_path` (and possibly recached with
  * `vfs_cache_at_path`).
  *
- * This function does not set `errno`, but the equivalent `errno` code can be
- * retrieved with `vfs_error` after a failed call.
+ * @param vfs     VFS handle.
+ * @param oldpath path of a file or directory within `vfs` to rename.
+ * @param newpath new path to rename the file or directory to.
+ * @return        0 on success, otherwise a negative number corresponding to the
+ *                relevant `errno` code (-255 for unknown error). This function
+ *                does not set `errno`.
  */
 int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath)
 {
@@ -1762,10 +1836,14 @@ err:
 /**
  * Remove a virtual file (i.e. not a cached copy of a real file).
  * If this is a cached real file, it should be unlinked separately and
- * invalidated with `vfs_invalidate_at_path`.
+ * invalidated with `vfs_invalidate_at_path`. This function does not work on
+ * directories (use `vfs_rmdir` instead).
  *
- * This function does not set `errno`, but the equivalent `errno` code can be
- * retrieved with `vfs_error` after a failed call.
+ * @param vfs   VFS handle.
+ * @param path  path of file within `vfs` to remove.
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
  */
 int vfs_unlink(vfilesystem *vfs, const char *path)
 {
@@ -1837,8 +1915,11 @@ err:
  * If this is a cached directory, it should be removed separately and
  * invalidated with `vfs_invalidate_at_path`.
  *
- * This function does not set `errno`, but the equivalent `errno` code can be
- * retrieved with `vfs_error` after a failed call.
+ * @param vfs   VFS handle.
+ * @param path  path of directory within `vfs` to remove.
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
  */
 int vfs_rmdir(vfilesystem *vfs, const char *path)
 {
@@ -1911,8 +1992,12 @@ err:
  * Currently, the VFS system doesn't bother with permissions, so this works
  * as long as the file exists and isn't cached.
  *
- * This function does not set `errno`, but the equivalent `errno` code can be
- * retrieved with `vfs_error` after a failed call.
+ * @param vfs   VFS handle.
+ * @param path  path within `vfs` to query.
+ * @param mode  permissions to query (ignored; always treated as `F_OK`).
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
  */
 int vfs_access(vfilesystem *vfs, const char *path, int mode)
 {
@@ -1947,8 +2032,12 @@ err:
  * This function allows usage on cached files since `stat` calls can be very
  * slow and do not modify the filesystem.
  *
- * This function does not set `errno`, but the equivalent `errno` code can be
- * retrieved with `vfs_error` after a failed call.
+ * @param vfs   VFS handle.
+ * @param path  path within `vfs` to query.
+ * @param st    destination to store queried `stat` data to.
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
  */
 int vfs_stat(vfilesystem *vfs, const char *path, struct stat *st)
 {
@@ -2000,6 +2089,13 @@ err:
 /**
  * Get a list of virtual files present in a directory.
  * The list of virtual files will be allocated to `struct vfs_dir *d`.
+ *
+ * @param vfs   VFS handle.
+ * @param path  path within `vfs` to query.
+ * @param d     destination to store queried directory data to.
+ * @return      0 on success, otherwise a negative number corresponding to the
+ *              relevant `errno` code (-255 for unknown error). This function
+ *              does not set `errno`.
  */
 int vfs_readdir(vfilesystem *vfs, const char *path, struct vfs_dir *d)
 {
@@ -2120,6 +2216,9 @@ err:
 
 /**
  * Free memory allocated to a `struct vfs_dir` by `vfs_readdir`.
+ *
+ * @param d   `vfs_dir` struct to free data from.
+ * @return    0 on success, otherwise a negative value.
  */
 int vfs_readdir_free(struct vfs_dir *d)
 {
@@ -2141,6 +2240,9 @@ int vfs_readdir_free(struct vfs_dir *d)
  * Allocate and initialize a VFS.
  * (This function is enabled even when VIRTUAL_FILESYSTEM is not defined so
  * -pedantic doesn't complain about ISO C not allowing empty compilation units.)
+ *
+ * @return a `vfilesystem` handle on success, otherwise `NULL`. If VFS support
+ *         is disabled, this function will always return `NULL`.
  */
 vfilesystem *vfs_init(void)
 {
@@ -2158,6 +2260,11 @@ vfilesystem *vfs_init(void)
   return NULL;
 }
 
+/**
+ * Free a VFS handle created by `vfs_init`.
+ *
+ * @param vfs   VFS handle to free.
+ */
 void vfs_free(vfilesystem *vfs)
 {
 #ifdef VIRTUAL_FILESYSTEM

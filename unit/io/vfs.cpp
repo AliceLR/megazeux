@@ -107,6 +107,9 @@ static void check_stat(const char *path, const vfs_stat_data &d, struct stat &st
   ASSERTEQ(st.st_ino, d.inode, "%s", path);
   ASSERTEQ(st.st_mode & S_IFMT, d.filetype, "%s", path);
   ASSERTEQ(st.st_size, d.size, "%s", path);
+  ASSERT(st.st_atime, "%s", path);
+  ASSERT(st.st_mtime, "%s", path);
+  ASSERT(st.st_ctime, "%s", path);
   ASSERT(st.st_atime >= create_time, "%s", path);
   ASSERT(st.st_mtime >= modify_time, "%s", path);
   ASSERT(st.st_ctime >= modify_time, "%s", path);

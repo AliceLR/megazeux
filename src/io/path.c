@@ -30,6 +30,39 @@
 #include "vio.h"
 
 /**
+ * Tokenize a null terminated path string. This is a special implementation
+ * of `strsep` for paths.
+ *
+ * Note this function currently isn't aware of absolute paths, so "C:/a" will
+ * tokenize to "C:" followed by "a". If this behavior isn't desired, use the
+ * return value of `path_is_absolute` before tokenizing to skip the root. This
+ * function also does not skip duplicate slashes or trailing slashes
+ * (see `path_clean_slashes`).
+ *
+ * @param next  pointer to the current position in the path string.
+ *              The value will be updated to the location of the next token or
+ *              to `NULL` if there are no further tokens.
+ * @return      the initial value of `next` if it represents a token (i.e. is
+ *              not `NULL`), otherwise `NULL`.
+ */
+char *path_tokenize(char **next)
+{
+  char *src = *next;
+  if(src)
+  {
+    char *current = strpbrk(src, "\\/");
+    if(current)
+    {
+      *current = '\0';
+      *next = current + 1;
+    }
+    else
+      *next = NULL;
+  }
+  return src;
+}
+
+/**
  * Force a given filename path to use the provided file extension. If the
  * filename already has the given extension, the string will not be modified.
  *

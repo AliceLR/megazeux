@@ -27,6 +27,7 @@
 __M_BEGIN_DECLS
 
 #include <stddef.h>
+#include <string.h>
 
 #ifndef DIR_SEPARATOR
 #ifdef __WIN32__
@@ -56,6 +57,8 @@ static inline boolean isslash(const char chr)
 {
   return (chr == '\\') || (chr == '/');
 }
+
+UTILS_LIBSPEC char *path_tokenize(char **next);
 
 UTILS_LIBSPEC boolean path_force_ext(char *path, size_t buffer_len, const char *ext);
 UTILS_LIBSPEC ssize_t path_get_ext_offset(const char *path);

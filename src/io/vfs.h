@@ -65,7 +65,6 @@ UTILS_LIBSPEC void vfs_free(vfilesystem *vfs);
 
 #ifdef VIRTUAL_FILESYSTEM
 
-UTILS_LIBSPEC void vfs_reset(vfilesystem *vfs);
 UTILS_LIBSPEC int vfs_create_file_at_path(vfilesystem *vfs, const char *path);
 
 UTILS_LIBSPEC int vfs_open_if_exists(vfilesystem *vfs,

@@ -47,6 +47,55 @@ UNITTEST(Init)
   vfclose(vf);
 }
 
+UNITTEST(path_tokenize)
+{
+  struct path_tokenize_result
+  {
+    const char *input;
+    const char *expected[8];
+  };
+
+  static const path_tokenize_result data[] =
+  {
+    { nullptr,        { nullptr }},
+    { "",             { "", nullptr }},
+    { "shdfkjshdf",   { "shdfkjshdf", nullptr }},
+    { "/",            { "", "", nullptr }},
+    { "C:\\a",        { "C:", "a", nullptr }},
+    { "sdcard:/bees", { "sdcard:", "bees", nullptr }},
+    { "a\\lomg/path", { "a", "lomg", "path", nullptr }},
+    { "test///path",  { "test", "", "", "path", nullptr }},
+    { "trailing/",    { "trailing", "", nullptr }},
+    {
+      u8"/home/\u00C8śŚ/megazeux/DE/saved.sav",
+      { "", "home", u8"\u00C8śŚ", "megazeux", "DE", "saved.sav", nullptr }
+    },
+  };
+
+  for(const path_tokenize_result &d : data)
+  {
+    char buffer[256];
+    char *cursor;
+    char *current;
+    int pos = 0;
+
+    if(d.input)
+    {
+      snprintf(buffer, sizeof(buffer), "%s", d.input);
+      cursor = buffer;
+    }
+    else
+      cursor = nullptr;
+
+    while((current = path_tokenize(&cursor)))
+    {
+      ASSERTCMP(current, d.expected[pos], "%s : %d", d.input, pos);
+      pos++;
+    }
+    ASSERTEQ(current, d.expected[pos], "%s : %d", d.input, pos);
+  }
+}
+
 struct path_ext_result
 {
   const char *path;
