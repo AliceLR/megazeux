@@ -92,31 +92,31 @@ UTILS_LIBSPEC int vfs_readdir_free(struct vfs_dir *d);
 
 #else /* !VIRTUAL_FILESYSTEM */
 
-static inline void vfs_reset(vfilesystem *) {}
-static inline int vfs_create_file_at_path(vfilesystem *, const char *) { return -1; }
+static inline void vfs_reset(vfilesystem *v) {}
+static inline int vfs_create_file_at_path(vfilesystem *v, const char *p) { return -1; }
 
-static inline int vfs_open_if_exists(vfilesystem *,
- const char *, boolean, uint32_t *) { return -1; }
-static inline int vfs_close(vfilesystem *, uint32_t) { return -1; }
-static inline int vfs_truncate(vfilesystem *, uint32_t) { return -1; }
-static inline int vfs_lock_file_read(vfilesystem *, uint32_t,
- const unsigned char **, size_t *) { return -1; }
-static inline int vfs_unlock_file_read(vfilesystem *, uint32_t) { return -1; }
-static inline int vfs_lock_file_write(vfilesystem *, uint32_t,
- unsigned char ***, size_t **, size_t **) { return -1; }
-static inline int vfs_unlock_file_write(vfilesystem *, uint32_t) { return -1; }
+static inline int vfs_open_if_exists(vfilesystem *v,
+ const char *p, boolean w, uint32_t *i) { return -1; }
+static inline int vfs_close(vfilesystem *v, uint32_t i) { return -1; }
+static inline int vfs_truncate(vfilesystem *v, uint32_t i) { return -1; }
+static inline int vfs_lock_file_read(vfilesystem *v, uint32_t i,
+ const unsigned char **d, size_t *l) { return -1; }
+static inline int vfs_unlock_file_read(vfilesystem *v, uint32_t i) { return -1; }
+static inline int vfs_lock_file_write(vfilesystem * v, uint32_t i,
+ unsigned char ***d, size_t **l, size_t **a) { return -1; }
+static inline int vfs_unlock_file_write(vfilesystem *v, uint32_t i) { return -1; }
 
-static inline int vfs_chdir(vfilesystem *, const char *) { return -1; }
-static inline int vfs_getcwd(vfilesystem *, char *, size_t) { return -1; }
-static inline int vfs_mkdir(vfilesystem *, const char *, int) { return -1; }
-static inline int vfs_rename(vfilesystem *, const char *, const char *) { return -1; }
-static inline int vfs_unlink(vfilesystem *, const char *) { return -1; }
-static inline int vfs_rmdir(vfilesystem *, const char *) { return -1; }
-static inline int vfs_access(vfilesystem *, const char *, int) { return -1; }
-static inline int vfs_stat(vfilesystem *, const char *, struct stat *) { return -1; }
+static inline int vfs_chdir(vfilesystem *v, const char *p) { return -1; }
+static inline int vfs_getcwd(vfilesystem *v, char *d, size_t l) { return -1; }
+static inline int vfs_mkdir(vfilesystem *v, const char *p, int m) { return -1; }
+static inline int vfs_rename(vfilesystem *v, const char *o, const char *n) { return -1; }
+static inline int vfs_unlink(vfilesystem *v, const char *p) { return -1; }
+static inline int vfs_rmdir(vfilesystem *v, const char *p) { return -1; }
+static inline int vfs_access(vfilesystem *v, const char *p, int m) { return -1; }
+static inline int vfs_stat(vfilesystem *v, const char *p, struct stat *s) { return -1; }
 
-static inline int vfs_readdir(vfilesystem *, const char *, struct vfs_dir *) { return -1; }
-static inline int vfs_readdir_free(struct vfs_dir *) { return -1; }
+static inline int vfs_readdir(vfilesystem *v, const char *p, struct vfs_dir *d) { return -1; }
+static inline int vfs_readdir_free(struct vfs_dir *d) { return -1; }
 
 #endif /* !VIRTUAL_FILESYSTEM */
 
