@@ -92,7 +92,6 @@ UTILS_LIBSPEC int vfs_readdir_free(struct vfs_dir *d);
 
 #else /* !VIRTUAL_FILESYSTEM */
 
-static inline void vfs_reset(vfilesystem *v) {}
 static inline int vfs_create_file_at_path(vfilesystem *v, const char *p) { return -1; }
 
 static inline int vfs_open_if_exists(vfilesystem *v,
