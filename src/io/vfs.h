@@ -33,8 +33,7 @@ __M_BEGIN_DECLS
 #include <stdlib.h>
 #include "vfile.h"
 
-// FIXME CONFIG_VFS or something similar to enable instead
-#ifndef CONFIG_NDS
+#ifdef CONFIG_VFS
 #define VIRTUAL_FILESYSTEM
 #endif
 

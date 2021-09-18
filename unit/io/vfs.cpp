@@ -176,6 +176,10 @@ UNITTEST(vfs_stat)
   // This function will be further tested in other tests that use it to fetch
   // info to verify other calls worked.
 
+#ifndef CONFIG_VFS
+  SKIP();
+#endif
+
   static const vfs_stat_result valid_data[]
   {
     // These are all the default root since that's the only default file...
@@ -228,6 +232,10 @@ UNITTEST(vfs_stat)
 
 UNITTEST(vfs_create_file_at_path)
 {
+#ifndef CONFIG_VFS
+  SKIP();
+#endif
+
   static const vfs_stat_result valid_data[] =
   {
     { "file.txt", 0,                            { 2, S_IFREG, 0 }},
@@ -285,6 +293,10 @@ UNITTEST(vfs_create_file_at_path)
 
 UNITTEST(vfs_mkdir)
 {
+#ifndef CONFIG_VFS
+  SKIP();
+#endif
+
   static const vfs_stat_result valid_data[] =
   {
     { "aaa", 0,                         { 2, S_IFDIR, 0 }},
@@ -351,6 +363,10 @@ UNITTEST(vfs_mkdir)
 
 UNITTEST(vfs_chdir_getcwd)
 {
+#ifndef CONFIG_VFS
+  SKIP();
+#endif
+
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
 #define BASE "C:\\"
 #else
@@ -437,6 +453,10 @@ UNITTEST(vfs_chdir_getcwd)
 
 UNITTEST(vfs_rename)
 {
+#ifndef CONFIG_VFS
+  SKIP();
+#endif
+
   static const vfs_op_result valid_data[] =
   {
     // No overwrite.
@@ -539,6 +559,10 @@ UNITTEST(vfs_rename)
 
 UNITTEST(vfs_unlink)
 {
+#ifndef CONFIG_VFS
+  SKIP();
+#endif
+
   static const vfs_op_result valid_data[] =
   {
     { "file1", "", DO_CREATE, 0,              0,        { 2, S_IFREG, 0 }},
@@ -603,6 +627,10 @@ UNITTEST(vfs_unlink)
 
 UNITTEST(vfs_rmdir)
 {
+#ifndef CONFIG_VFS
+  SKIP();
+#endif
+
   static const vfs_op_result valid_data[] =
   {
     { "file1", "", DO_CREATE, 0,              0,        { 2, S_IFREG, 0 }},
@@ -650,6 +678,10 @@ UNITTEST(vfs_rmdir)
 
 UNITTEST(vfs_access)
 {
+#ifndef CONFIG_VFS
+  SKIP();
+#endif
+
   static const vfs_op_result valid_data[] =
   {
     { "/", "", DO_ACCESS, 0,                  0,        { 1, S_IFDIR, 0 }},
@@ -692,6 +724,10 @@ UNITTEST(vfs_access)
 
 UNITTEST(vfs_readdir)
 {
+#ifndef CONFIG_VFS
+  SKIP();
+#endif
+
   struct vfs_readdir_result
   {
     const char *path;
@@ -791,6 +827,10 @@ UNITTEST(vfs_readdir)
 
 UNITTEST(FileIO)
 {
+#ifndef CONFIG_VFS
+  SKIP();
+#endif
+
   static const char name[] = "file.ext";
   static const char *strs[] =
   {
