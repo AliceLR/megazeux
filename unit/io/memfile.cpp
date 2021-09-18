@@ -32,10 +32,10 @@ UNITTEST(mfopen)
   {
     struct memfile mf;
 
-    mfopen(buffer, arraysize(buffer), &mf);
+    mfopen(buffer, sizeof(buffer), &mf);
     ASSERTEQ(mf.start, buffer, "");
     ASSERTEQ(mf.current, buffer, "");
-    ASSERTEQ(mf.end, mf.start + arraysize(buffer), "");
+    ASSERTEQ(mf.end, mf.start + sizeof(buffer), "");
     ASSERTEQ(mf.alloc, false, "");
   }
 
@@ -43,11 +43,11 @@ UNITTEST(mfopen)
   {
     struct memfile *mf;
 
-    mf = mfopen_alloc(buffer, arraysize(buffer));
+    mf = mfopen_alloc(buffer, sizeof(buffer));
     ASSERT(mf, "");
     ASSERTEQ(mf->start, buffer, "");
     ASSERTEQ(mf->current, buffer, "");
-    ASSERTEQ(mf->end, buffer + arraysize(buffer), "");
+    ASSERTEQ(mf->end, buffer + sizeof(buffer), "");
     ASSERTEQ(mf->alloc, true, "");
 
     int ret = mf_alloc_free(mf);
@@ -57,13 +57,13 @@ UNITTEST(mfopen)
   SECTION(mf_alloc_free_on_static_memfile)
   {
     struct memfile mf;
-    mfopen(buffer, arraysize(buffer), &mf);
+    mfopen(buffer, sizeof(buffer), &mf);
 
     int ret = mf_alloc_free(&mf);
     ASSERTEQ(ret, -1, "");
     ASSERTEQ(mf.start, buffer, "");
     ASSERTEQ(mf.current, buffer, "");
-    ASSERTEQ(mf.end, buffer + arraysize(buffer), "");
+    ASSERTEQ(mf.end, buffer + sizeof(buffer), "");
   }
 }
 
@@ -78,19 +78,19 @@ UNITTEST(mfsync)
 
   for(i = 0; i < arraysize(buffers); i++)
   {
-    mfopen(buffers[i], arraysize(buffers[i]), &mf);
+    mfopen(buffers[i], sizeof(buffers[i]), &mf);
     ASSERTEQ(mf.start, buffers[i], "%d", i);
-    ASSERTEQ(mf.end, buffers[i] + arraysize(buffers[i]), "%d", i);
+    ASSERTEQ(mf.end, buffers[i] + sizeof(buffers[i]), "%d", i);
 
     mfsync(&buf, &len, &mf);
     ASSERTEQ(buf, (void *)buffers[i], "%d", i);
-    ASSERTEQ((int)len, arraysize(buffers[i]), "%d", i);
+    ASSERTEQ((int)len, sizeof(buffers[i]), "%d", i);
 
     mfsync(&buf, nullptr, &mf);
     ASSERTEQ(buf, (void *)buffers[i], "%d", i);
 
     mfsync(nullptr, &len, &mf);
-    ASSERTEQ((int)len, arraysize(buffers[i]), "%d", i);
+    ASSERTEQ((int)len, sizeof(buffers[i]), "%d", i);
 
     mfsync(nullptr, nullptr, &mf);
   }
@@ -118,12 +118,12 @@ UNITTEST(mfhasspace)
   char buffere[256];
   struct buffer_data pairs[] =
   {
-    { buffer8, arraysize(buffer8), true, true, false, false, false, false },
-    { buffera, arraysize(buffera), true, true, true,  false, false, false },
-    { bufferb, arraysize(bufferb), true, true, true,  true,  false, false },
-    { bufferc, arraysize(bufferc), true, true, true,  true,  true,  false },
-    { bufferd, arraysize(bufferd), true, true, true,  true,  true,  true  },
-    { buffere, arraysize(buffere), true, true, true,  true,  true,  true  },
+    { buffer8, sizeof(buffer8), true, true, false, false, false, false },
+    { buffera, sizeof(buffera), true, true, true,  false, false, false },
+    { bufferb, sizeof(bufferb), true, true, true,  true,  false, false },
+    { bufferc, sizeof(bufferc), true, true, true,  true,  true,  false },
+    { bufferd, sizeof(bufferd), true, true, true,  true,  true,  true  },
+    { buffere, sizeof(buffere), true, true, true,  true,  true,  true  },
   };
   struct memfile mf;
   int i;
@@ -160,22 +160,22 @@ UNITTEST(mfmove)
   unsigned char bufferc[64];
   struct memfile mf;
 
-  static_assert(arraysize(bufferc) < OFFSET,
+  static_assert(sizeof(bufferc) < OFFSET,
    "OFFSET should be larger than the size of bufferc.");
 
-  mfopen(buffera, arraysize(buffera), &mf);
+  mfopen(buffera, sizeof(buffera), &mf);
   mf.current = mf.start + 96;
   ASSERTEQ(mf.current, buffera + 96, "");
 
-  mfmove(bufferb, arraysize(bufferb), &mf);
+  mfmove(bufferb, sizeof(bufferb), &mf);
   ASSERTEQ(mf.start, bufferb, "");
-  ASSERTEQ(mf.end, bufferb + arraysize(bufferb), "");
+  ASSERTEQ(mf.end, bufferb + sizeof(bufferb), "");
   ASSERTEQ(mf.current, bufferb + 96, "");
 
-  mfmove(bufferc, arraysize(bufferc), &mf);
+  mfmove(bufferc, sizeof(bufferc), &mf);
   ASSERTEQ(mf.start, bufferc, "");
-  ASSERTEQ(mf.end, bufferc + arraysize(bufferc), "");
-  ASSERTEQ(mf.current, bufferc + arraysize(bufferc), "");
+  ASSERTEQ(mf.end, bufferc + sizeof(bufferc), "");
+  ASSERTEQ(mf.current, bufferc + sizeof(bufferc), "");
 }
 
 UNITTEST(mfresize)
@@ -230,13 +230,13 @@ UNITTEST(mfseek_mftell)
   };
   static const int offs_maybe_safe[] =
   {
-    arraysize(buffer) + 1,
+    sizeof(buffer) + 1,
     1024,
     9999,
   };
   int ret;
 
-  mfopen(buffer, arraysize(buffer), &mf);
+  mfopen(buffer, sizeof(buffer), &mf);
 
   SECTION(mftell)
   {
@@ -298,7 +298,7 @@ UNITTEST(mfseek_mftell)
   SECTION(seek_end)
   {
     mfseek(&mf, 0, SEEK_END);
-    ASSERTEQ(mftell(&mf), arraysize(buffer), "seek_end");
+    ASSERTEQ(mftell(&mf), sizeof(buffer), "seek_end");
   }
 
   SECTION(seek_past_end)
@@ -338,7 +338,7 @@ UNITTEST(read_write)
     0x341200FF, 0xAB896745,
   };
 
-  const int SIZE = arraysize(data8);
+  const int SIZE = sizeof(data8);
   uint8_t dest[SIZE * 2];
   struct memfile mf;
   int res;
@@ -457,7 +457,7 @@ UNITTEST(read_write)
   {
     // NOTE: this function does not perform bounds checks since when using it
     // it is assumed these have already been performed.
-    mfopen(dest, arraysize(dest), &mf);
+    mfopen(dest, sizeof(dest), &mf);
 
     for(i = 0; i < arraysize(data8); i++)
     {
@@ -471,7 +471,7 @@ UNITTEST(read_write)
   {
     // NOTE: this function does not perform bounds checks since when using it
     // it is assumed these have already been performed.
-    mfopen(dest, arraysize(dest), &mf);
+    mfopen(dest, sizeof(dest), &mf);
 
     for(i = 0; i < arraysize(data16); i++)
     {
@@ -485,7 +485,7 @@ UNITTEST(read_write)
   {
     // NOTE: this function does not perform bounds checks since when using it
     // it is assumed these have already been performed.
-    mfopen(dest, arraysize(dest), &mf);
+    mfopen(dest, sizeof(dest), &mf);
 
     for(i = 0; i < arraysize(data32s); i++)
     {
@@ -501,7 +501,7 @@ UNITTEST(read_write)
   {
     // NOTE: this function does not perform bounds checks since when using it
     // it is assumed these have already been performed.
-    mfopen(dest, arraysize(dest), &mf);
+    mfopen(dest, sizeof(dest), &mf);
 
     for(i = 0; i < arraysize(data32u); i++)
     {
@@ -646,43 +646,42 @@ UNITTEST(mfsafegets)
   };
   struct memfile mf;
   char buffer[512];
-  int i;
   int j;
 
   SECTION(NormalData)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const memsafegets_data &d : data)
     {
-      mfopen(data[i].input, strlen(data[i].input), &mf);
+      mfopen(d.input, strlen(d.input), &mf);
 
-      for(j = 0; j < arraysize(data[i].output); j++)
+      for(j = 0; j < arraysize(d.output); j++)
       {
-        char *result = mfsafegets(buffer, arraysize(buffer), &mf);
-        if(result && data[i].output[j])
+        char *result = mfsafegets(buffer, sizeof(buffer), &mf);
+        if(result && d.output[j])
         {
-          ASSERTCMP(result, data[i].output[j], "%d %d", i, j);
+          ASSERTCMP(result, d.output[j], "%s: %d", d.input, j);
         }
         else
-          ASSERTEQ(result, data[i].output[j], "%d %d", i, j);
+          ASSERTEQ(result, d.output[j], "%s: %d", d.input, j);
       }
     }
   }
 
   SECTION(SmallData)
   {
-    for(i = 0; i < arraysize(short_data); i++)
+    for(const memsafegets_data &d : short_data)
     {
-      mfopen(short_data[i].input, strlen(short_data[i].input), &mf);
+      mfopen(d.input, strlen(d.input), &mf);
 
-      for(j = 0; j < arraysize(short_data[i].output); j++)
+      for(j = 0; j < arraysize(d.output); j++)
       {
         char *result = mfsafegets(buffer, SHORT_BUF_LEN, &mf);
-        if(result && short_data[i].output[j])
+        if(result && d.output[j])
         {
-          ASSERTCMP(result, short_data[i].output[j], "%d %d", i, j);
+          ASSERTCMP(result, d.output[j], "%s: %d", d.input, j);
         }
         else
-          ASSERTEQ(result, short_data[i].output[j], "%d %d", i, j);
+          ASSERTEQ(result, d.output[j], "%s: %d", d.input, j);
       }
     }
   }

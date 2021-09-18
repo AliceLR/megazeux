@@ -30,6 +30,39 @@
 #include "vio.h"
 
 /**
+ * Tokenize a null terminated path string. This is a special implementation
+ * of `strsep` for paths.
+ *
+ * Note this function currently isn't aware of absolute paths, so "C:/a" will
+ * tokenize to "C:" followed by "a". If this behavior isn't desired, use the
+ * return value of `path_is_absolute` before tokenizing to skip the root. This
+ * function also does not skip duplicate slashes or trailing slashes
+ * (see `path_clean_slashes`).
+ *
+ * @param next  pointer to the current position in the path string.
+ *              The value will be updated to the location of the next token or
+ *              to `NULL` if there are no further tokens.
+ * @return      the initial value of `next` if it represents a token (i.e. is
+ *              not `NULL`), otherwise `NULL`.
+ */
+char *path_tokenize(char **next)
+{
+  char *src = *next;
+  if(src)
+  {
+    char *current = strpbrk(src, "\\/");
+    if(current)
+    {
+      *current = '\0';
+      *next = current + 1;
+    }
+    else
+      *next = NULL;
+  }
+  return src;
+}
+
+/**
  * Force a given filename path to use the provided file extension. If the
  * filename already has the given extension, the string will not be modified.
  *
@@ -563,20 +596,10 @@ ssize_t path_remove_prefix(char *path, size_t buffer_len,
 }
 
 /**
- * Navigate a directory path to a target like chdir. The provided directory
- * path must be a valid directory. The target may be a relative path or an
- * absolute path in either Unix or Windows style. If "." or ".." is found in
- * the target, it will be handled appropriately. If the final resulting path
- * successfully stats, the provided path will be overwritten with the
- * destination. If the final path is not valid or if an error occurs, the
- * provided path will not be modified.
- *
- * @param  path       Directory path to navigate from.
- * @param  path_len   Size of path buffer.
- * @param  target     Target to navigate to.
- * @return            The new length of the path, or -1 on error.
+ * Internal common implementation for `path_navigate` and `path_navigate_no_check`.
  */
-ssize_t path_navigate(char *path, size_t path_len, const char *target)
+static ssize_t path_navigate_internal(char *path, size_t path_len, const char *target,
+ boolean allow_checks)
 {
   struct stat stat_info;
   char buffer[MAX_PATH];
@@ -608,7 +631,7 @@ ssize_t path_navigate(char *path, size_t path_len, const char *target)
      target);
     buffer[MAX_PATH - 1] = '\0';
 
-    if(vstat(buffer, &stat_info) < 0)
+    if(allow_checks && vstat(buffer, &stat_info) < 0)
       return -1;
 
     current = next + 1;
@@ -692,15 +715,53 @@ ssize_t path_navigate(char *path, size_t path_len, const char *target)
 
   // This needs to be done before the stat for some platforms (e.g. 3DS)
   len = path_clean_slashes(buffer, MAX_PATH);
-  if(len < path_len && vstat(buffer, &stat_info) >= 0 &&
-   S_ISDIR(stat_info.st_mode) && !vaccess(buffer, R_OK|X_OK))
+  if(len < path_len)
   {
+    if(allow_checks)
+    {
+      if(vstat(buffer, &stat_info) < 0 || !S_ISDIR(stat_info.st_mode) ||
+       vaccess(buffer, R_OK|X_OK) < 0)
+        return -1;
+    }
     memcpy(path, buffer, len + 1);
     path[path_len - 1] = '\0';
     return len;
   }
 
   return -1;
+}
+
+/**
+ * Navigate a directory path to a target like chdir. The provided directory
+ * path must be a valid directory. The target may be a relative path or an
+ * absolute path in either Unix or Windows style. If "." or ".." is found in
+ * the target, it will be handled appropriately. If the final resulting path
+ * successfully stats, the provided path will be overwritten with the
+ * destination. If the final path is not valid or if an error occurs, the
+ * provided path will not be modified.
+ *
+ * @param  path       Directory path to navigate from.
+ * @param  path_len   Size of path buffer.
+ * @param  target     Target to navigate to.
+ * @return            The new length of the path, or -1 on error.
+ */
+ssize_t path_navigate(char *path, size_t path_len, const char *target)
+{
+  return path_navigate_internal(path, path_len, target, true);
+}
+
+/**
+ * Like `path_navigate`, but no `vstat` or `vaccess` call will be performed to
+ * check the resulting path. See `path_navigate` for more info.
+ *
+ * @param  path       Directory path to navigate from.
+ * @param  path_len   Size of path buffer.
+ * @param  target     Target to navigate to.
+ * @return            The new length of the path, or -1 on error.
+ */
+ssize_t path_navigate_no_check(char *path, size_t path_len, const char *target)
+{
+  return path_navigate_internal(path, path_len, target, false);
 }
 
 /**

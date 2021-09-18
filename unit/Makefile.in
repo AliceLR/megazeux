@@ -33,7 +33,9 @@ unit_objs := \
   ${unit_obj_io}/bitstream${unit_ext}  \
   ${unit_obj_io}/memfile${unit_ext}    \
   ${unit_obj_io}/path${unit_ext}       \
+  ${unit_obj_io}/vfs${unit_ext}        \
   ${unit_obj_io}/vio${unit_ext}        \
+  ${unit_obj_io}/zip${unit_ext}        \
 
 ifneq (${BUILD_EDITOR},)
 
@@ -67,7 +69,6 @@ unit_objs += \
   ${unit_obj}/configure${unit_ext}     \
   ${unit_obj}/intake${unit_ext}        \
   ${unit_obj}/world${unit_ext}         \
-  ${unit_obj_io}/zip${unit_ext}
 
 unit_ldflags += -L. -lcore
 
@@ -79,6 +80,20 @@ ifneq (${BUILD_NETWORK},)
 unit_objs += \
   ${unit_obj_network}/Manifest${unit_ext}
 endif
+
+else # !BUILD_MODULAR
+
+#
+# Certain tests that don't rely on many core MZX features can be patched in
+# by directly linking their objects.
+#
+unit_common_objs += \
+  ${io_obj}/path.o        \
+  ${io_obj}/vfs.o         \
+  ${io_obj}/vio.o         \
+  ${io_obj}/zip.o         \
+  ${io_obj}/zip_stream.o  \
+
 endif
 
 #

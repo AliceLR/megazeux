@@ -71,6 +71,7 @@ usage() {
 	echo "  --disable-utils           Disable compilation of utils."
 	echo "  --disable-check-alloc     Disables memory allocator error handling."
 	echo "  --disable-counter-hash    Disables hash tables for counter/string lookups."
+	echo "  --disable-vfs             Disables MZX's built-in virtual filesystem."
 	echo "  --enable-extram           Enable board memory compression and storage hacks."
 	echo "  --enable-meter            Enable load/save meter display."
 	echo "  --enable-debytecode       Enable experimental 'debytecode' transform."
@@ -186,6 +187,7 @@ STDIO_REDIRECT="false"
 GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
 LAYER_RENDERING="true"
+VFS="true"
 
 #
 # User may override above settings
@@ -403,6 +405,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-counter-hash" ]  && COUNTER_HASH="true"
 	[ "$1" = "--disable-counter-hash" ] && COUNTER_HASH="false"
+
+	[ "$1" = "--enable-vfs" ]  && VFS="true"
+	[ "$1" = "--disable-vfs" ] && VFS="false"
 
 	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
 	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
@@ -761,6 +766,9 @@ if [ "$PLATFORM" = "emscripten" ]; then
 	echo "Force-disabling stack protector (Emscripten)."
 	STACK_PROTECTOR="false"
 
+	echo "Force-disabling virtual filesystem (Emscripten)."
+	VFS="false"
+
 	EDITOR="false"
 	SCREENSHOTS="false"
 	UPDATER="false"
@@ -791,6 +799,9 @@ if [ "$PLATFORM" = "nds" ]; then
 
 	echo "Force-disabling layer rendering on NDS."
 	LAYER_RENDERING="false"
+
+	echo "Force-disabling virtual filesystem on NDS."
+	VFS="false"
 
 	echo "Force-disabling existing music playback libraries on NDS."
 	MODPLUG="false"
@@ -1614,6 +1625,16 @@ if [ "$COUNTER_HASH" = "true" ]; then
 	echo "BUILD_COUNTER_HASH_TABLES=1" >> platform.inc
 else
 	echo "Hash table counter/string lookups disabled (using binary search)."
+fi
+
+#
+# Virtual filesystem, if enabled
+#
+if [ "$VFS" = "true" ]; then
+	echo "Virtual filesystem enabled."
+	echo "#define CONFIG_VFS" >> src/config.h
+else
+	echo "Virtual filesystem disabled."
 fi
 
 #

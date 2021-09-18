@@ -42,23 +42,6 @@
 #define VFILE_LARGE_BUFFER_SIZE 32768
 #endif
 
-enum vfileflags_private
-{
-  VF_FILE               = (1<<0),
-  VF_MEMORY             = (1<<1),
-  VF_MEMORY_EXPANDABLE  = (1<<2),
-  VF_MEMORY_FREE        = (1<<3), // Free memory buffer on vfclose.
-//VF_IN_ARCHIVE         = (1<<3),
-  VF_READ               = (1<<4),
-  VF_WRITE              = (1<<5),
-  VF_APPEND             = (1<<6),
-  VF_BINARY             = (1<<7),
-  VF_TRUNCATE           = (1<<8),
-
-  VF_STORAGE_MASK       = (VF_FILE | VF_MEMORY),
-  VF_PUBLIC_MASK        = (V_SMALL_BUFFER | V_LARGE_BUFFER)
-};
-
 struct vfile
 {
   FILE *fp;
@@ -74,12 +57,14 @@ struct vfile
   // vungetc buffer for memory files.
   int tmp_chr;
   int flags;
+  // To avoid arithmetic on NULL...
+  char dummy[1];
 };
 
 /**
  * Parse vfile mode flags from a standard fopen mode string.
  */
-static int get_vfile_mode_flags(const char *mode)
+int vfile_get_mode_flags(const char *mode)
 {
   int flags = 0;
 
@@ -132,7 +117,7 @@ static int get_vfile_mode_flags(const char *mode)
 vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
  int user_flags)
 {
-  int flags = get_vfile_mode_flags(mode);
+  int flags = vfile_get_mode_flags(mode);
   vfile *vf = NULL;
 
   assert(filename && flags);
@@ -186,7 +171,7 @@ vfile *vfopen_unsafe(const char *filename, const char *mode)
  */
 vfile *vfile_init_fp(FILE *fp, const char *mode)
 {
-  int flags = get_vfile_mode_flags(mode);
+  int flags = vfile_get_mode_flags(mode);
   vfile *vf = NULL;
 
   assert(fp && flags);
@@ -203,7 +188,7 @@ vfile *vfile_init_fp(FILE *fp, const char *mode)
  */
 vfile *vfile_init_mem(void *buffer, size_t size, const char *mode)
 {
-  int flags = get_vfile_mode_flags(mode);
+  int flags = vfile_get_mode_flags(mode);
   vfile *vf = NULL;
   size_t filesize = size;
 
@@ -216,7 +201,7 @@ vfile *vfile_init_mem(void *buffer, size_t size, const char *mode)
     filesize = 0;
 
   vf = (vfile *)ccalloc(1, sizeof(vfile));
-  mfopen(buffer, filesize, &(vf->mf));
+  mfopen(buffer ? buffer : vf->dummy, filesize, &(vf->mf));
   vf->mf.seek_past_end = true;
   vf->tmp_chr = EOF;
   vf->flags = flags | VF_MEMORY;
@@ -229,6 +214,10 @@ vfile *vfile_init_mem(void *buffer, size_t size, const char *mode)
  * Create a vfile from an existing memory buffer.
  * This vfile will be resizable and, when resized, the source pointer and size
  * will be updated to match.
+ *
+  // vfs_init_mem_ext needs to be modified to allow readable files from
+  // external buffers. attempt to sync vfile to external buffer for each op
+  // also need a way to insert the inode into the vfile from here.
  */
 vfile *vfile_init_mem_ext(void **external_buffer, size_t *external_buffer_size,
  const char *mode)

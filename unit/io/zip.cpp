@@ -210,7 +210,7 @@ static void debase64(char *dest, size_t dest_len, const char *_src, size_t src_l
 static char *load_file(const char *path)
 {
   char buffer[MAX_PATH];
-  if(path_join(buffer, arraysize(buffer), DATA_DIR, path) < 1)
+  if(path_join(buffer, sizeof(buffer), DATA_DIR, path) < 1)
     return nullptr;
 
   FILE *fp = fopen_unsafe(buffer, "rb");
@@ -232,7 +232,7 @@ static char *load_file(const char *path)
 static char *load_file(const char *path, char *buffer, size_t *buffer_len)
 {
   char path_buffer[MAX_PATH];
-  if(path_join(path_buffer, arraysize(path_buffer), DATA_DIR, path) < 1)
+  if(path_join(path_buffer, sizeof(path_buffer), DATA_DIR, path) < 1)
     return nullptr;
 
   FILE *fp = fopen_unsafe(path_buffer, "rb");
@@ -693,7 +693,7 @@ static zip_archive *zip_test_open(const zip_test_data &d)
   if(!d.data_length)
   {
     char buffer[MAX_PATH];
-    if(path_join(buffer, arraysize(buffer), DATA_DIR, d.data) < 0)
+    if(path_join(buffer, sizeof(buffer), DATA_DIR, d.data) < 0)
       return nullptr;
 
     return zip_open_file_read(buffer);
@@ -861,9 +861,9 @@ UNITTEST(ZipRead)
           ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
 
           const char *contents  = ZIP_GET_CONTENTS(df);
-          for(size_t k = 0; k < real_length; k += arraysize(small_buffer))
+          for(size_t k = 0; k < real_length; k += sizeof(small_buffer))
           {
-            size_t n = MIN((size_t)arraysize(small_buffer), real_length - k);
+            size_t n = MIN(sizeof(small_buffer), real_length - k);
             result = zread(small_buffer, n, zp);
             ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
             cmp = memcmp(small_buffer, contents + k, n);
@@ -910,9 +910,9 @@ UNITTEST(ZipRead)
             const char *contents  = ZIP_GET_CONTENTS(df);
             ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
 
-            for(size_t k = 0; k < real_length; k += arraysize(small_buffer))
+            for(size_t k = 0; k < real_length; k += sizeof(small_buffer))
             {
-              size_t n = MIN((size_t)arraysize(small_buffer), real_length - k);
+              size_t n = MIN(sizeof(small_buffer), real_length - k);
               cmp = mfread(small_buffer, n, 1, &mf);
               ASSERTEQ(cmp, 1, "%s file %zu", d.testname, j);
               cmp = memcmp(small_buffer, contents + k, n);
@@ -1154,7 +1154,7 @@ UNITTEST(ZipWrite)
     zp = zip_open_mem_write_ext(reinterpret_cast<void **>(&ext_buffer), &ext_buffer_size, 0);
     ASSERT(zp, "");
 
-    result = zip_write_file(zp, "", tmp, arraysize(tmp), ZIP_M_NONE);
+    result = zip_write_file(zp, "", tmp, sizeof(tmp), ZIP_M_NONE);
     ASSERTEQ(result, ZIP_SUCCESS, "Failed to write dummy file.");
 
     // This is the bad thing you shouldn't do!

@@ -31,6 +31,7 @@ __M_BEGIN_DECLS
 
 typedef struct vfile vfile;
 typedef struct vdir vdir;
+typedef struct vfilesystem vfilesystem;
 struct memfile;
 struct stat;
 

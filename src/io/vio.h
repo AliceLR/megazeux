@@ -33,8 +33,23 @@ __M_BEGIN_DECLS
 
 enum vfileflags
 {
+  /* Internal flags. */
+  VF_FILE               = (1<<0),
+  VF_MEMORY             = (1<<1),
+  VF_MEMORY_EXPANDABLE  = (1<<2),
+  VF_MEMORY_FREE        = (1<<3), // Free memory buffer on vfclose.
+  VF_READ               = (1<<4),
+  VF_WRITE              = (1<<5),
+  VF_APPEND             = (1<<6),
+  VF_BINARY             = (1<<7),
+  VF_TRUNCATE           = (1<<8),
+
+  /* Public flags. */
   V_SMALL_BUFFER = (1<<29), // setvbuf <= 256 for real files in binary mode.
-  V_LARGE_BUFFER = (1<<30)  // setvbuf >= 8192 for real files in binary mode.
+  V_LARGE_BUFFER = (1<<30), // setvbuf >= 8192 for real files in binary mode.
+
+  VF_STORAGE_MASK       = (VF_FILE | VF_MEMORY),
+  VF_PUBLIC_MASK        = (V_SMALL_BUFFER | V_LARGE_BUFFER)
 };
 
 enum vdir_type
@@ -48,13 +63,14 @@ enum vdir_type
 UTILS_LIBSPEC vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
  int user_flags);
 UTILS_LIBSPEC vfile *vfopen_unsafe(const char *filename, const char *mode);
-vfile *vfile_init_fp(FILE *fp, const char *mode);
-vfile *vfile_init_mem(void *buffer, size_t size, const char *mode);
-vfile *vfile_init_mem_ext(void **external_buffer, size_t *external_buffer_size,
- const char *mode);
+UTILS_LIBSPEC vfile *vfile_init_fp(FILE *fp, const char *mode);
+UTILS_LIBSPEC vfile *vfile_init_mem(void *buffer, size_t size, const char *mode);
+UTILS_LIBSPEC vfile *vfile_init_mem_ext(void **external_buffer,
+ size_t *external_buffer_size, const char *mode);
 UTILS_LIBSPEC vfile *vtempfile(size_t initial_size);
 UTILS_LIBSPEC int vfclose(vfile *vf);
 
+UTILS_LIBSPEC int vfile_get_mode_flags(const char *mode);
 boolean vfile_get_memfile_block(vfile *vf, size_t length, struct memfile *dest);
 
 UTILS_LIBSPEC int vchdir(const char *path);

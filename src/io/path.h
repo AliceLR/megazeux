@@ -57,6 +57,8 @@ static inline boolean isslash(const char chr)
   return (chr == '\\') || (chr == '/');
 }
 
+UTILS_LIBSPEC char *path_tokenize(char **next);
+
 UTILS_LIBSPEC boolean path_force_ext(char *path, size_t buffer_len, const char *ext);
 UTILS_LIBSPEC ssize_t path_get_ext_offset(const char *path);
 
@@ -82,6 +84,8 @@ UTILS_LIBSPEC ssize_t path_remove_prefix(char *path, size_t buffer_len,
  const char *prefix, size_t prefix_len);
 
 UTILS_LIBSPEC ssize_t path_navigate(char *path, size_t path_len,
+ const char *target);
+UTILS_LIBSPEC ssize_t path_navigate_no_check(char *path, size_t path_len,
  const char *target);
 
 UTILS_LIBSPEC enum path_create_error path_create_parent_recursively(

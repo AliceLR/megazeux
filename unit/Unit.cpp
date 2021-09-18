@@ -18,11 +18,13 @@
  */
 
 #include "Unit.hpp"
+#include "../src/platform.h"
 
 #include <assert.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <csignal>
@@ -54,6 +56,12 @@ void *check_realloc(void *ptr, size_t size, const char *file,
   ptr = realloc(ptr, size);
   assert(ptr);
   return ptr;
+}
+
+static const clock_t get_ticks_base = clock();
+uint64_t get_ticks()
+{
+  return clock() - get_ticks_base;
 }
 
 /* Main functions. */
@@ -153,8 +161,13 @@ namespace Unit
 
   arg::arg(const char *_op)
   {
-    op = coalesce(_op);
     has_value = !!_op;
+    _op = coalesce(_op);
+
+    size_t len = strlen(_op);
+    allocbuf = new char[len + 1];
+    memcpy(allocbuf, _op, len + 1);
+    op = allocbuf;
   }
 
   arg::arg(const void *_op)

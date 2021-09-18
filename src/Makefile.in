@@ -125,6 +125,7 @@ core_cobjs := \
   ${core_obj}/world.o             \
   ${io_obj}/fsafeopen.o           \
   ${io_obj}/path.o                \
+  ${io_obj}/vfs.o                 \
   ${io_obj}/vio.o                 \
   ${io_obj}/zip.o                 \
   ${io_obj}/zip_stream.o
