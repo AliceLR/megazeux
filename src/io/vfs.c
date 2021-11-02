@@ -2068,7 +2068,7 @@ int vfs_stat(vfilesystem *vfs, const char *path, struct stat *st)
     st->st_mode = S_IFDIR | mode;
 
   // Dummy device value to indicate this is an inode from an MZX VFS.
-  st->st_dev = ('M'<<24) | ('Z'<<16) | ('X'<<8) | ('V');
+  st->st_dev = (dev_t)(('M'<<24) | ('Z'<<16) | ('X'<<8) | ('V'));
   st->st_ino = inode;
   st->st_nlink = 1;
   // This is cheating a little--atime is the access time but noatime can
