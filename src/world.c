@@ -270,7 +270,7 @@ static inline int save_world_info(struct world *mzx_world,
 
   buffer = cmalloc(buf_size);
 
-  mfopen(buffer, buf_size, mf);
+  mfopen_wr(buffer, buf_size, mf);
 
   // Save everything sorted.
 
@@ -1323,7 +1323,7 @@ static inline int save_world_sprites(struct world *mzx_world,
   int i;
 
   buffer = cmalloc(buf_size);
-  mfopen(buffer, buf_size, &mf);
+  mfopen_wr(buffer, buf_size, &mf);
 
   // For each
   for(i = 0; i < MAX_SPRITES; i++)
@@ -1529,7 +1529,7 @@ static inline int save_world_counters(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     return result;
 
-  mfopen(buffer, 8, &mf);
+  mfopen_wr(buffer, 8, &mf);
   mfputud(counter_list->num_counters, &mf);
   zwrite(buffer, 4, zp);
 
@@ -1644,7 +1644,7 @@ static inline int save_world_strings(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     return result;
 
-  mfopen(buffer, 8, &mf);
+  mfopen_wr(buffer, 8, &mf);
   mfputud(string_list->num_strings, &mf);
   zwrite(buffer, 4, zp);
 

@@ -793,7 +793,7 @@ static inline void save_prop_v(int ident, size_t len, struct memfile *prop,
   assert(mfhasspace(len, mf));
   mfputw(ident, mf);
   mfputd(len, mf);
-  mfopen(mf->current, len, prop);
+  mfopen_wr(mf->current, len, prop);
   mf->current += len;
 }
 

@@ -414,7 +414,7 @@ UNITTEST(Properties)
   struct memfile mf;
   struct memfile prop;
 
-  mfopen(buffer, sizeof(buffer), &mf);
+  mfopen_wr(buffer, sizeof(buffer), &mf);
   memset(buffer, '\xff', sizeof(buffer));
 
   SECTION(save_prop_eof)
@@ -517,7 +517,7 @@ UNITTEST(Properties)
     // The following tests won't be writing past the property header,
     // but to protect this against checks/asserts...
     ScopedPtr<uint8_t[]> bigbuffer = new uint8_t[0x20000];
-    mfopen(bigbuffer.get(), 0x20000, &mf);
+    mfopen_wr(bigbuffer.get(), 0x20000, &mf);
 
     static const uint8_t expected2[] = { 0x01, 0x00, 0xff, 0x7f, '\0', '\0' };
     save_prop_v(0x0001, 0x7fff, &prop, &mf);

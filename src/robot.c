@@ -740,7 +740,7 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
     {
       buffer = cmalloc(actual_size);
 
-      mfopen(buffer, actual_size, &mf);
+      mfopen_wr(buffer, actual_size, &mf);
     }
 
     save_robot_to_memory(cur_robot, &mf, savegame, file_version);
@@ -773,7 +773,7 @@ void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
 
     buffer = cmalloc(actual_size);
 
-    mfopen(buffer, actual_size, &mf);
+    mfopen_wr(buffer, actual_size, &mf);
 
     save_prop_w(SCRPROP_NUM_LINES, cur_scroll->num_lines, &mf);
     save_prop_a(SCRPROP_MESG, cur_scroll->mesg, scroll_size, 1, &mf);
@@ -793,7 +793,7 @@ void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
 
   if(cur_sensor->used)
   {
-    mfopen(buffer, SENSOR_PROPS_SIZE, &mf);
+    mfopen_wr(buffer, SENSOR_PROPS_SIZE, &mf);
 
     save_prop_s_293(SENPROP_SENSOR_NAME, cur_sensor->sensor_name, ROBOT_NAME_SIZE, &mf);
     save_prop_c(SENPROP_SENSOR_CHAR, cur_sensor->sensor_char, &mf);

@@ -201,7 +201,7 @@ vfile *vfile_init_mem(void *buffer, size_t size, const char *mode)
     filesize = 0;
 
   vf = (vfile *)ccalloc(1, sizeof(vfile));
-  mfopen(buffer ? buffer : vf->dummy, filesize, &(vf->mf));
+  mfopen_wr(buffer ? buffer : vf->dummy, filesize, &(vf->mf));
   vf->mf.seek_past_end = true;
   vf->tmp_chr = EOF;
   vf->flags = flags | VF_MEMORY;
@@ -453,7 +453,7 @@ boolean vfile_get_memfile_block(vfile *vf, size_t length, struct memfile *dest)
     return false;
 
   if(dest)
-    mfopen(vf->mf.current, length, dest);
+    mfopen_wr(vf->mf.current, length, dest);
   return true;
 }
 
