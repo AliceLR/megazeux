@@ -316,7 +316,7 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
      height, mode, savegame, &storage_mode);
 
     buffer = cmalloc(mzm_size);
-    mfopen(buffer, mzm_size, &mf);
+    mfopen_wr(buffer, mzm_size, &mf);
 
     mzm_size = save_mzm_common(mzx_world, start_x, start_y, width, height, mode,
      savegame, storage_mode, &mf);
@@ -341,7 +341,7 @@ void save_mzm_string(struct world *mzx_world, const char *name, int start_x,
   str = new_string(mzx_world, name, mzm_size, id);
   if(str)
   {
-    mfopen(str->value, mzm_size, &mf);
+    mfopen_wr(str->value, mzm_size, &mf);
 
     mzm_size = save_mzm_common(mzx_world, start_x, start_y, width, height, mode,
      savegame, storage_mode, &mf);

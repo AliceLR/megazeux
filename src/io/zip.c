@@ -734,7 +734,7 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
     zp->header_buffer_alloc = header_size;
   }
 
-  mfopen(zp->header_buffer, header_size, &mf);
+  mfopen_wr(zp->header_buffer, header_size, &mf);
 
   // Signature
   for(i = 0; i<4; i++)
@@ -1655,7 +1655,7 @@ static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
   char buffer[12];
   struct memfile mf;
 
-  mfopen(buffer, 12, &mf);
+  mfopen_wr(buffer, 12, &mf);
   mfputd(fh->crc32, &mf);
   mfputd(fh->compressed_size, &mf);
   mfputd(fh->uncompressed_size, &mf);
@@ -2188,7 +2188,7 @@ static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
   if(zp->is_memory && zip_ensure_capacity(EOCD_RECORD_LEN, zp))
     return ZIP_EOF;
 
-  mfopen(buffer, EOCD_RECORD_LEN, &mf);
+  mfopen_wr(buffer, EOCD_RECORD_LEN, &mf);
 
   // Signature                                          4
   for(i = 0; i<4; i++)

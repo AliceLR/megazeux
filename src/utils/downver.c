@@ -153,7 +153,7 @@ static enum zip_error zip_duplicate_file(struct zip_archive *dest,
     void *buffer2 = malloc(actual_size);
 
     mfopen(buffer, actual_size, &mf_in);
-    mfopen(buffer2, actual_size, &mf_out);
+    mfopen_wr(buffer2, actual_size, &mf_out);
 
     handler(&mf_out, &mf_in);
 

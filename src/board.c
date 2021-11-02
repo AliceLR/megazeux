@@ -50,7 +50,7 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
 
   buffer = cmalloc(size);
 
-  mfopen(buffer, size, &mf);
+  mfopen_wr(buffer, size, &mf);
 
   save_prop_s_293(BPROP_BOARD_NAME, cur_board->board_name, BOARD_NAME_SIZE, &mf);
   save_prop_w(BPROP_BOARD_WIDTH, cur_board->board_width, &mf);

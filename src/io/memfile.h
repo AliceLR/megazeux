@@ -39,6 +39,7 @@ struct memfile
    * wrappers with safety checks (vfile.c), it is useful to seek past the end.
    */
   boolean seek_past_end;
+  boolean is_write;
 };
 
 /**
@@ -51,6 +52,20 @@ static inline void mfopen(const void *src, size_t len, struct memfile *mf)
   mf->end = (unsigned char *)src + len;
   mf->alloc = false;
   mf->seek_past_end = false;
+  mf->is_write = false;
+}
+
+/**
+ * Open a memory buffer for writing.
+ */
+static inline void mfopen_wr(void *dest, size_t len, struct memfile *mf)
+{
+  mf->start = (unsigned char *)dest;
+  mf->current = mf->start;
+  mf->end = mf->start + len;
+  mf->alloc = false;
+  mf->seek_past_end = false;
+  mf->is_write = true;
 }
 
 /**
@@ -66,6 +81,7 @@ static inline struct memfile *mfopen_alloc(const void *src, size_t len)
   mf->end = (unsigned char *)src + len;
   mf->alloc = true;
   mf->seek_past_end = false;
+  mf->is_write = false;
   return mf;
 }
 
@@ -170,7 +186,7 @@ static inline unsigned int mfgetud(struct memfile *mf)
 
 static inline int mfputc(int ch, struct memfile *mf)
 {
-  assert(mf->end - mf->current >= 1);
+  assert(mf->is_write && mf->end - mf->current >= 1);
   mf->current[0] = ch & 0xFF;
   mf->current += 1;
   return ch & 0xFF;
@@ -178,7 +194,7 @@ static inline int mfputc(int ch, struct memfile *mf)
 
 static inline void mfputw(int ch, struct memfile *mf)
 {
-  assert(mf->end - mf->current >= 2);
+  assert(mf->is_write && mf->end - mf->current >= 2);
   mf->current[0] = ch & 0xFF;
   mf->current[1] = (ch >> 8) & 0xFF;
   mf->current += 2;
@@ -186,7 +202,7 @@ static inline void mfputw(int ch, struct memfile *mf)
 
 static inline void mfputd(int ch, struct memfile *mf)
 {
-  assert(mf->end - mf->current >= 4);
+  assert(mf->is_write && mf->end - mf->current >= 4);
   mf->current[0] = ch & 0xFF;
   mf->current[1] = (ch >> 8) & 0xFF;
   mf->current[2] = (ch >> 16) & 0xFF;
@@ -225,7 +241,7 @@ static inline size_t mfwrite(const void *src, size_t len, size_t count,
   unsigned char *pos = (unsigned char *)src;
   size_t total = len * count;
 
-  if(!mf->current || len == 0 || count == 0)
+  if(!mf->current || len == 0 || count == 0 || !mf->is_write)
     return 0;
 
   if(!mfhasspace(total, mf))

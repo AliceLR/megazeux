@@ -37,6 +37,21 @@ UNITTEST(mfopen)
     ASSERTEQ(mf.current, buffer, "");
     ASSERTEQ(mf.end, mf.start + sizeof(buffer), "");
     ASSERTEQ(mf.alloc, false, "");
+    ASSERTEQ(mf.seek_past_end, false, "");
+    ASSERTEQ(mf.is_write, false, "");
+  }
+
+  SECTION(mfopen_wr)
+  {
+    struct memfile mf;
+
+    mfopen_wr(buffer, sizeof(buffer), &mf);
+    ASSERTEQ(mf.start, buffer, "");
+    ASSERTEQ(mf.current, buffer, "");
+    ASSERTEQ(mf.end, mf.start + sizeof(buffer), "");
+    ASSERTEQ(mf.alloc, false, "");
+    ASSERTEQ(mf.seek_past_end, false, "");
+    ASSERTEQ(mf.is_write, true, "");
   }
 
   SECTION(mfopen_alloc)
@@ -49,6 +64,8 @@ UNITTEST(mfopen)
     ASSERTEQ(mf->current, buffer, "");
     ASSERTEQ(mf->end, buffer + sizeof(buffer), "");
     ASSERTEQ(mf->alloc, true, "");
+    ASSERTEQ(mf->seek_past_end, false, "");
+    ASSERTEQ(mf->is_write, false, "");
 
     int ret = mf_alloc_free(mf);
     ASSERTEQ(ret, 0, "");
@@ -163,7 +180,7 @@ UNITTEST(mfmove)
   static_assert(sizeof(bufferc) < OFFSET,
    "OFFSET should be larger than the size of bufferc.");
 
-  mfopen(buffera, sizeof(buffera), &mf);
+  mfopen_wr(buffera, sizeof(buffera), &mf);
   mf.current = mf.start + 96;
   ASSERTEQ(mf.current, buffera + 96, "");
 
@@ -236,7 +253,7 @@ UNITTEST(mfseek_mftell)
   };
   int ret;
 
-  mfopen(buffer, sizeof(buffer), &mf);
+  mfopen_wr(buffer, sizeof(buffer), &mf);
 
   SECTION(mftell)
   {
@@ -457,7 +474,7 @@ UNITTEST(read_write)
   {
     // NOTE: this function does not perform bounds checks since when using it
     // it is assumed these have already been performed.
-    mfopen(dest, sizeof(dest), &mf);
+    mfopen_wr(dest, sizeof(dest), &mf);
 
     for(i = 0; i < arraysize(data8); i++)
     {
@@ -471,7 +488,7 @@ UNITTEST(read_write)
   {
     // NOTE: this function does not perform bounds checks since when using it
     // it is assumed these have already been performed.
-    mfopen(dest, sizeof(dest), &mf);
+    mfopen_wr(dest, sizeof(dest), &mf);
 
     for(i = 0; i < arraysize(data16); i++)
     {
@@ -485,7 +502,7 @@ UNITTEST(read_write)
   {
     // NOTE: this function does not perform bounds checks since when using it
     // it is assumed these have already been performed.
-    mfopen(dest, sizeof(dest), &mf);
+    mfopen_wr(dest, sizeof(dest), &mf);
 
     for(i = 0; i < arraysize(data32s); i++)
     {
@@ -501,7 +518,7 @@ UNITTEST(read_write)
   {
     // NOTE: this function does not perform bounds checks since when using it
     // it is assumed these have already been performed.
-    mfopen(dest, sizeof(dest), &mf);
+    mfopen_wr(dest, sizeof(dest), &mf);
 
     for(i = 0; i < arraysize(data32u); i++)
     {
@@ -515,7 +532,7 @@ UNITTEST(read_write)
 
   SECTION(mfwrite)
   {
-    mfopen(dest, SIZE, &mf);
+    mfopen_wr(dest, SIZE, &mf);
 
     res = mfwrite(data8, SIZE, 1, &mf);
     ASSERTEQ(res, 1, "write SIZE x 1");
