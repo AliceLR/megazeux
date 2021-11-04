@@ -158,9 +158,6 @@ USERS
   operators for these shift values was architecture dependent.
 + libxmp playback improvements for GDM, AMF, and OctaMED modules
   as well as general stability improvements.
-+ Fixed bug where libxmp doubles the output volume by default,
-  causing music to be too loud and some modules to clip that
-  otherwise shouldn't have.
 + ccv and png2smzx now both support the following image formats:
   PNG (with libpng enabled), BMP (uncompressed, RLE8, RLE4),
   NetPBM (PBM, PGM, PPM, PNM, PAM), farbfeld. png2smzx will now
