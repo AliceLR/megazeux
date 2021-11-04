@@ -299,6 +299,8 @@ static struct audio_stream *construct_xmp_stream(char *filename,
 
       xmp_stream->ctx = ctx;
       xmp_start_player(ctx, audio.output_frequency, 0);
+      // libxmp doubles the output by default?!
+      xmp_set_player(ctx, XMP_PLAYER_AMP, 0);
       xmp_set_player(ctx, XMP_PLAYER_INTERP, get_xmp_resample_mode());
 
       xmp_get_module_info(ctx, &info);
