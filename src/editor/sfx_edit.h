@@ -24,9 +24,12 @@
 
 __M_BEGIN_DECLS
 
-#include "../world_struct.h"
+#include "../core.h"
 
 void sfx_edit(struct world *mzx_world);
+
+void import_sfx(context *parent, boolean *modified);
+void export_sfx(context *parent);
 
 __M_END_DECLS
 

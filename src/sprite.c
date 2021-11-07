@@ -17,6 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -29,7 +31,7 @@
 #include "world.h"
 #include "world_struct.h"
 
-static inline int is_blank(Uint16 c)
+static inline int is_blank(uint16_t c)
 {
   int cp[4];
   int blank = 0;
@@ -109,7 +111,7 @@ static int compare_spr_yorder(const void *dest, const void *src)
   return diff ? diff : (spr_dest->qsort_order - spr_src->qsort_order);
 }
 
-static inline void sort_sprites(struct sprite **sorted_list,
+static inline void sort_sprites(const struct sprite **sorted_list,
  struct sprite **sprite_list, int spr_yorder)
 {
   // Fill the sorted list with the active sprites in the beginning
@@ -154,19 +156,17 @@ void draw_sprites(struct world *mzx_world)
   int start_x, start_y, offset_x, offset_y;
   int i, x, y;
   int src_offset;
-  int screen_offset;
   int overlay_offset;
   int src_skip;
-  int screen_skip;
   int overlay_skip;
   int draw_width, draw_height, ref_x, ref_y, screen_x, screen_y;
   int src_width;
   int src_height;
   boolean use_vlayer;
   struct sprite **sprite_list = mzx_world->sprite_list;
-  struct sprite *sorted_list[MAX_SPRITES];
-  struct sprite *cur_sprite;
-  Uint16 ch;
+  const struct sprite *sorted_list[MAX_SPRITES];
+  const struct sprite *cur_sprite;
+  uint16_t ch;
   char color;
   int viewport_x = src_board->viewport_x;
   int viewport_y = src_board->viewport_y;
@@ -177,7 +177,7 @@ void draw_sprites(struct world *mzx_world)
   char *overlay = src_board->overlay;
   char *src_chars;
   char *src_colors;
-  Uint32 layer;
+  uint32_t layer;
   int draw_layer_order;
   boolean unbound;
   int transparent_color;
@@ -366,10 +366,6 @@ void draw_sprites(struct world *mzx_world)
     src_offset = (ref_y + offset_y) * src_width + ref_x + offset_x;
     src_skip = src_width - draw_width;
 
-    // Offset and skip value for the screen
-    screen_offset = start_x + start_y * SCREEN_W;
-    screen_skip = SCREEN_W - draw_width;
-
     // Offset and skip value for overlay (as it may cover part of a sprite)
     overlay_skip = board_width - draw_width;
     if(overlay_mode == 2)
@@ -403,11 +399,6 @@ void draw_sprites(struct world *mzx_world)
         if(!(cur_sprite->flags & SPRITE_SRC_COLORS))
           color = cur_sprite->color;
 
-        // Legacy sprite "transparency" effect.
-        if(!unbound)
-          if(!(color & 0xF0))
-            color = (color & 0x0F) | (get_color_linear(screen_offset) & 0xF0);
-
         if(unbound || (cur_sprite->flags & SPRITE_OVER_OVERLAY) ||
          !(overlay_mode && overlay_mode != 3 && overlay[overlay_offset] != 32))
         {
@@ -418,18 +409,19 @@ void draw_sprites(struct world *mzx_world)
              !is_blank((ch + cur_sprite->offset) % PROTECTED_CHARSET_POSITION))
             {
               if(!unbound)
-                draw_char_linear_ext(color, ch, screen_offset, 0, 0);
+              {
+                // This implements the legacy sprite "transparency" effect.
+                draw_char_bleedthru_ext(ch, color, x + start_x, y + start_y, 0, 0);
+              }
               else
-                draw_char_to_layer(color, ch, x, y, 0, 0);
+                draw_char_to_layer(ch, color, x, y, 0, 0);
             }
           }
         }
         src_offset++;
-        screen_offset++;
         overlay_offset++;
       }
       src_offset += src_skip;
-      screen_offset += screen_skip;
       overlay_offset += overlay_skip;
     }
 
@@ -449,9 +441,11 @@ void draw_sprites(struct world *mzx_world)
   }
 }
 
-// This is legacy sprite-checking code.
-// We'll use it in worlds <=2.84 for maximum compat
-
+/**
+ * This is legacy sprite-checking code.
+ * Use it in worlds <=2.84 for maximum compat. (The real reason it was left
+ * alone is because it's a dumpster fire and no one wants to touch it.)
+ */
 static int sprite_colliding_xy_old(struct world *mzx_world,
  struct sprite *check_sprite, int x, int y)
 {
@@ -878,6 +872,23 @@ static inline struct rect board_rectangle(struct rect r)
   );
 }
 
+boolean sprite_at_xy(struct sprite *spr, int x, int y)
+{
+  struct rect sprite_rect;
+  struct rect pos_rect;
+
+  // If the sprite isn't on, this instantly fails
+  if(!(spr->flags & SPRITE_INITIALIZED))
+    return false;
+
+  sprite_rect = sprite_rectangle(spr);
+  pos_rect = rectangle(x * CHAR_W, y * CHAR_H, CHAR_W, CHAR_H);
+
+  if(rectangle_overlap(sprite_rect, pos_rect))
+    return true;
+  return false;
+}
+
 static inline void get_sprite_tile(struct world *mzx_world,
  const struct sprite *spr, int x, int y, int *ch, int *col)
 {
@@ -940,12 +951,11 @@ static inline boolean collision_char(struct world *mzx_world,
 static inline boolean collision_in(struct world *mzx_world,
  const struct sprite *spr, char flags, struct rect c)
 {
-  char pixcheck = SPRITE_UNBOUND | SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2;
   int cx, cy, c2x, c2y;
   //debug("spr collision_in(%d,%d,%d,%d)\n", c.x, c.y, c.w, c.h);
 
   if(!(flags & (SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2))) return true;
-  if((flags & pixcheck) == pixcheck) return true;
+  if((flags & SPRITE_PIXCHECK) == SPRITE_PIXCHECK) return true;
 
   cx = c.x / CHAR_W + spr->ref_x;
   cy = c.y / CHAR_H + spr->ref_y;
@@ -963,10 +973,11 @@ static inline boolean collision_in(struct world *mzx_world,
   return false;
 }
 
-struct mask {
+struct mask
+{
   struct rect dim;
-  Uint8 *mapping;
-  Uint8 *data;
+  uint8_t *mapping;
+  uint8_t *data;
 };
 
 static inline struct mask allocate_mask(const struct sprite *spr)
@@ -990,75 +1001,49 @@ static inline void destroy_mask(struct mask m)
   free(m.data);
 }
 
-boolean sprite_at_xy(struct sprite *spr, int x, int y)
+static inline int mask_get_pixel(struct world *mzx_world,
+ const struct sprite *spr, struct mask m, unsigned int pixel_x, unsigned int pixel_y)
 {
-  struct rect sprite_rect;
-  struct rect pos_rect;
-
-  // If the sprite isn't on, this instantly fails
-  if(!(spr->flags & SPRITE_INITIALIZED))
-    return false;
-
-  sprite_rect = sprite_rectangle(spr);
-  pos_rect = rectangle(x * CHAR_W, y * CHAR_H, CHAR_W, CHAR_H);
-
-  if(rectangle_overlap(sprite_rect, pos_rect))
-    return true;
-  return false;
-}
-
-static inline void mask_alloc_chr(struct world *mzx_world,
- const struct sprite *spr, struct mask m, int ch)
-{
-  int y = ch / spr->width, x = ch % spr->width;
-  int chr, col;
-  int px, py;
-  int tcol = spr->transparent_color;
-  Uint8 bitmap_buffer[CHAR_W * CHAR_H];
-  Uint8 *output;
-  output = &m.data[ch * CHAR_SIZE];
+  unsigned int ch = (pixel_y / CHAR_H * spr->width + pixel_x / CHAR_W);
 
   if(!m.mapping[ch])
   {
+    uint8_t *output = &m.data[ch * CHAR_SIZE];
+    int tcol = spr->transparent_color;
+    int x = pixel_x / CHAR_W;
+    int y = pixel_y / CHAR_H;
+    int chr;
+    int col;
+
     m.mapping[ch] = 1;
     get_sprite_tile(mzx_world, spr, x + spr->ref_x, y + spr->ref_y, &chr, &col);
-    memset(output, 0, CHAR_SIZE);
 
     if(chr != -1)
     {
-      dump_char((chr + spr->offset) % PROTECTED_CHARSET_POSITION, col, -1,
-       bitmap_buffer);
-
-      for(py = 0; py < CHAR_H; py++)
-      {
-        for(px = 0; px < CHAR_W; px++)
-        {
-          if(bitmap_buffer[py * CHAR_W + px] != tcol)
-            output[py] |= 0x80 >> px;
-        }
-      }
+      if(get_char_visible_bitmask((chr + spr->offset) % PRO_CH, col, tcol, output))
+        m.mapping[ch] = 2;
     }
   }
-}
 
-static inline boolean mask_get_pixel(struct mask m, int ch, int px, int py)
-{
-  int data = m.data[ch * CHAR_SIZE + (py % CHAR_H)];
+  if(m.mapping[ch] < 2)
+    return 0;
 
-  if(data & (0x80 >> (px % CHAR_W)))
-    return true;
-
-  return false;
+  return m.data[ch * CHAR_SIZE + (pixel_y % CHAR_H)] & (0x80 >> (pixel_x % CHAR_W));
 }
 
 static inline boolean collision_pix_in(struct world *mzx_world,
  const struct sprite *spr, struct mask m, struct rect c)
 {
-  char pixcheck = SPRITE_UNBOUND | SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2;
-  int x, y, px, py, ch;
+  unsigned int px, py;
+  int x, y;
 
-  if((spr->flags & pixcheck) != pixcheck)
+  if((spr->flags & SPRITE_PIXCHECK) != SPRITE_PIXCHECK)
     return true;
+
+  // mask_get_pixel relies on these relations being true to speed up its math
+  // with unsigned int params. Furthermore, negative ints would break its math.
+  assert(c.x >= m.dim.x);
+  assert(c.y >= m.dim.y);
 
   // Pixel by pixel collision check
   for(y = c.y; y < c.y + c.h; y++)
@@ -1067,10 +1052,7 @@ static inline boolean collision_pix_in(struct world *mzx_world,
     for(x = c.x; x < c.x + c.w; x++)
     {
       px = x - m.dim.x;
-      ch = (py / CHAR_H * spr->width + px / CHAR_W);
-      mask_alloc_chr(mzx_world, spr, m, ch);
-
-      if(mask_get_pixel(m, ch, px, py))
+      if(mask_get_pixel(mzx_world, spr, m, px, py))
         return true;
     }
   }
@@ -1083,12 +1065,11 @@ static inline boolean collision_pix_between(struct world *mzx_world,
 {
   // Determine if there is a collision between two sprites with
   // overlapping chars. Unbound sprites in CCHECK mode 3 require pixel checking.
-  char pixcheck = SPRITE_UNBOUND | SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2;
 
-  if((spr->flags & pixcheck) != pixcheck)
+  if((spr->flags & SPRITE_PIXCHECK) != SPRITE_PIXCHECK)
   {
     // Automatic success, since we know chars are overlapping
-    if((targ->flags & pixcheck) != pixcheck)
+    if((targ->flags & SPRITE_PIXCHECK) != SPRITE_PIXCHECK)
       return true;
 
     // Only target sprite does a pixel check
@@ -1096,7 +1077,7 @@ static inline boolean collision_pix_between(struct world *mzx_world,
   }
   else
 
-  if((targ->flags & pixcheck) != pixcheck)
+  if((targ->flags & SPRITE_PIXCHECK) != SPRITE_PIXCHECK)
   {
     // Only the checked sprite does a pixel check
     return collision_pix_in(mzx_world, spr, spr_m, c);
@@ -1105,7 +1086,7 @@ static inline boolean collision_pix_between(struct world *mzx_world,
   else
   {
     // Both sprites need a pixel check
-    int x, y, sx, sy, tx, ty, sch, tch;
+    int x, y, sx, sy, tx, ty;
 
     // Pixel by pixel collision check
     for(y = c.y; y < c.y + c.h; y++)
@@ -1117,14 +1098,8 @@ static inline boolean collision_pix_between(struct world *mzx_world,
       {
         sx = x - spr_m.dim.x;
         tx = x - targ_m.dim.x;
-        sch = (sy / CHAR_H * spr->width + sx / CHAR_W);
-        tch = (ty / CHAR_H * targ->width + tx / CHAR_W);
-
-        mask_alloc_chr(mzx_world, spr, spr_m, sch);
-        mask_alloc_chr(mzx_world, targ, targ_m, tch);
-
-        if(mask_get_pixel(spr_m, sch, sx, sy) &&
-         mask_get_pixel(targ_m, tch, tx, ty))
+        if(mask_get_pixel(mzx_world, spr, spr_m, sx, sy) &&
+         mask_get_pixel(mzx_world, targ, targ_m, tx, ty))
           return true;
       }
     }
@@ -1200,9 +1175,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
     if(!constrain_rectangle(board_full_rect, &col_rect))
       return -1;
 
-  if(spr->flags & SPRITE_UNBOUND &&
-   spr->flags & SPRITE_CHAR_CHECK &&
-   spr->flags & SPRITE_CHAR_CHECK2)
+  if((spr->flags & SPRITE_PIXCHECK) == SPRITE_PIXCHECK)
   {
     if(!constrain_rectangle(sprite_rect, &col_rect))
       return -1;
@@ -1219,25 +1192,26 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
     {
       for(bx = col_board_rect.x; bx < col_board_rect.x + col_board_rect.w; bx++)
       {
-        if(level_id[by * board_width + bx] == CUSTOM_BLOCK)
-        {
-          check_rect = rectangle(bx * CHAR_W, by * CHAR_H, CHAR_W, CHAR_H);
+        if(level_id[by * board_width + bx] != CUSTOM_BLOCK)
+          continue;
 
-          if(constrain_rectangle(col_rect, &check_rect))
-          {
-            check_rect_tr = check_rect;
-            check_rect_tr.x -= sprite_rect.x;
-            check_rect_tr.y -= sprite_rect.y;
-            if(collision_in(mzx_world, spr, spr->flags, check_rect_tr))
-            {
-              if(collision_pix_in(mzx_world, spr, spr_mask, check_rect))
-              {
-                collision_list[(*collisions)++] = -1;
-                break;
-              }
-            }
-          }
-        }
+        check_rect = rectangle(bx * CHAR_W, by * CHAR_H, CHAR_W, CHAR_H);
+
+        if(!constrain_rectangle(col_rect, &check_rect))
+          continue;
+
+        check_rect_tr = check_rect;
+        check_rect_tr.x -= sprite_rect.x;
+        check_rect_tr.y -= sprite_rect.y;
+
+        if(!collision_in(mzx_world, spr, spr->flags, check_rect_tr))
+          continue;
+
+        if(!collision_pix_in(mzx_world, spr, spr_mask, check_rect))
+          continue;
+
+        collision_list[(*collisions)++] = -1;
+        break;
       }
 
       if(*collisions)
@@ -1266,8 +1240,6 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
       if(!constrain_rectangle(board_full_rect, &target_col_rect))
         continue;
 
-    sprite_collided = false;
-
     // ccheck between bound sprites works by looking at the flags of the
     // sprite doing the collision checking only. This is to maintain backwards
     // compatibility with code that expects this.
@@ -1288,9 +1260,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
 
     // Look closer to see if these sprites are actually colliding.
     target_mask_allocated = false;
-    if(target_spr->flags & SPRITE_UNBOUND &&
-     target_spr->flags & SPRITE_CHAR_CHECK &&
-     target_spr->flags & SPRITE_CHAR_CHECK2)
+    if((target_spr->flags & SPRITE_PIXCHECK) == SPRITE_PIXCHECK)
     {
       // In unbound sprite CCHECK mode 3, we're checking for a collision against
       // the sprite's visible pixels. Make sure the collision is in the sprite's
@@ -1302,36 +1272,38 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
       target_mask_allocated = true;
     }
 
+    sprite_collided = false;
+
     for(cy = col_rect.y; cy < col_rect.y + col_rect.h; cy += CHAR_H)
     {
       for(cx = col_rect.x; cx < col_rect.x + col_rect.w; cx += CHAR_W)
       {
         check_rect = rectangle(cx, cy, CHAR_W, CHAR_H);
 
-        if(constrain_rectangle(target_col_rect, &check_rect))
-        {
-          check_rect_tr = check_rect;
-          check_rect_tr.x -= sprite_rect.x;
-          check_rect_tr.y -= sprite_rect.y;
+        if(!constrain_rectangle(target_col_rect, &check_rect))
+          continue;
 
-          if(collision_in(mzx_world, spr, spr->flags, check_rect_tr))
-          {
-            check_rect_tr = check_rect;
-            check_rect_tr.x -= target_spr_rect.x;
-            check_rect_tr.y -= target_spr_rect.y;
+        check_rect_tr = check_rect;
+        check_rect_tr.x -= sprite_rect.x;
+        check_rect_tr.y -= sprite_rect.y;
 
-            if(collision_in(mzx_world, target_spr, target_flags, check_rect_tr))
-            {
-              if(collision_pix_between(mzx_world, spr, spr_mask,
-               target_spr, target_mask, check_rect))
-              {
-                collision_list[(*collisions)++] = sprite_idx;
-                sprite_collided = true;
-                break; // This breaks out of the cx loop
-              }
-            }
-          }
-        }
+        if(!collision_in(mzx_world, spr, spr->flags, check_rect_tr))
+          continue;
+
+        check_rect_tr = check_rect;
+        check_rect_tr.x -= target_spr_rect.x;
+        check_rect_tr.y -= target_spr_rect.y;
+
+        if(!collision_in(mzx_world, target_spr, target_flags, check_rect_tr))
+          continue;
+
+        if(!collision_pix_between(mzx_world, spr, spr_mask,
+         target_spr, target_mask, check_rect))
+          continue;
+
+        collision_list[(*collisions)++] = sprite_idx;
+        sprite_collided = true;
+        break;
       }
 
       // We've already seen a collision with this sprite

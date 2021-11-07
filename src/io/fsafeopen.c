@@ -25,8 +25,8 @@
 #include <sys/stat.h>
 
 #include "fsafeopen.h"
-#include "dir.h"
 #include "path.h"
+#include "vio.h"
 
 #include "../util.h"
 
@@ -289,24 +289,25 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
 {
   int ret = -FSAFE_BRUTE_FORCE_FAILED;
   int dirlen = string - path;
-  struct mzx_dir wd;
+  vdir *wd;
   char *newpath;
 
-  newpath = cmalloc(PATH_BUF_LEN);
+  newpath = cmalloc(MAX_PATH);
 
   // prepend the working directory
-  snprintf(newpath, PATH_BUF_LEN, "./");
+  snprintf(newpath, MAX_PATH, "./");
 
   // copy everything sans last token
   if(dirlen > 0)
   {
-    if(dirlen + 2 >= PATH_BUF_LEN)
-      dirlen = PATH_BUF_LEN - 2;
+    if(dirlen + 2 >= MAX_PATH)
+      dirlen = MAX_PATH - 2;
     memcpy(newpath + 2, path, dirlen - 1);
     newpath[dirlen + 2 - 1] = 0;
   }
 
-  if(dir_open(&wd, newpath))
+  wd = vdir_open(newpath);
+  if(wd)
   {
     const char *string_cmp = string;
     char string_sfn[SFN_BUFFER_LEN];
@@ -330,7 +331,7 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
     }
 #endif
 
-    while(dir_get_next_entry(&wd, newpath, NULL))
+    while(vdir_read(wd, newpath, MAX_PATH, NULL))
     {
       // okay, we got something, but does it match?
       if(strcasecmp(string_cmp, newpath) == 0)
@@ -398,7 +399,7 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
       }
     }
 
-    dir_close(&wd);
+    vdir_close(wd);
   }
 
   free(newpath);
@@ -433,7 +434,7 @@ static int match(char *path, size_t buffer_len)
         for(i = 0; i < 5; i++)
         {
           // check file
-          if(stat(path, &inode) == 0)
+          if(vstat(path, &inode) == 0)
             break;
 
           // try normal cases, then try brute force
@@ -471,7 +472,7 @@ static int match(char *path, size_t buffer_len)
       for(i = 0; i < 3; i++)
       {
         // check directory
-        if(stat(path, &inode) == 0)
+        if(vstat(path, &inode) == 0)
           break;
 
         // try normal cases, then try brute force
@@ -583,7 +584,7 @@ int fsafetranslate(const char *path, char *newpath, size_t buffer_len)
   if(ret == FSAFE_SUCCESS)
   {
     // see if file is already there
-    if(stat(newpath, &file_info) != 0)
+    if(vstat(newpath, &file_info) != 0)
     {
 #ifdef ENABLE_DOS_COMPAT_TRANSLATIONS
       // it isn't, so try harder..
@@ -591,7 +592,7 @@ int fsafetranslate(const char *path, char *newpath, size_t buffer_len)
       if(ret == FSAFE_SUCCESS)
       {
         // ..and update the stat information for the new path
-        if(stat(newpath, &file_info) != 0)
+        if(vstat(newpath, &file_info) != 0)
           ret = -FSAFE_MATCH_FAILED;
       }
       else
@@ -629,11 +630,11 @@ int fsafetranslate(const char *path, char *newpath, size_t buffer_len)
   return ret;
 }
 
-FILE *fsafeopen(const char *path, const char *mode)
+vfile *fsafeopen(const char *path, const char *mode)
 {
   char *newpath;
   int i, ret;
-  FILE *f;
+  vfile *f;
 
   newpath = cmalloc(MAX_PATH);
 
@@ -653,7 +654,9 @@ FILE *fsafeopen(const char *path, const char *mode)
       }
     }
   }
-  else if(ret < 0)
+  else
+
+  if(ret < 0)
   {
     // bad name, or security checks failed
     free(newpath);
@@ -661,7 +664,7 @@ FILE *fsafeopen(const char *path, const char *mode)
   }
 
   // _TRY_ opening the file
-  f = fopen_unsafe(newpath, mode);
+  f = vfopen_unsafe(newpath, mode);
   free(newpath);
   return f;
 }
@@ -675,6 +678,7 @@ FILE *fsafeopen(const char *path, const char *mode)
  * endings from the buffer, and should work at least until somebody invents
  * a new three byte string terminator ;-(
  */
+/*
 char *fsafegets(char *s, int size, FILE *stream)
 {
   char *ret = fgets(s, size, stream);
@@ -694,4 +698,4 @@ char *fsafegets(char *s, int size, FILE *stream)
 
   return ret;
 }
-
+*/

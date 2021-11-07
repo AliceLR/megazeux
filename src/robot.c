@@ -31,6 +31,7 @@
 #include "error.h"
 #include "event.h"
 #include "expr.h"
+#include "extmem.h"
 #include "game_ops.h"
 #include "game_player.h"
 #include "graphics.h"
@@ -422,7 +423,7 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
   unsigned int id;
   boolean is_stream = false;
 
-  zip_get_next_prop(zp, NULL, &board_id, &id);
+  zip_get_next_mzx_file_id(zp, NULL, &board_id, &id);
   zip_get_next_method(zp, &method);
 
   // We aren't saving or loading null robots.
@@ -615,7 +616,7 @@ static void save_robot_to_memory(struct robot *cur_robot,
 {
   struct memfile prop;
 
-  save_prop_s(RPROP_ROBOT_NAME, cur_robot->robot_name, ROBOT_NAME_SIZE, 1, mf);
+  save_prop_s_293(RPROP_ROBOT_NAME, cur_robot->robot_name, ROBOT_NAME_SIZE, mf);
   save_prop_c(RPROP_ROBOT_CHAR, cur_robot->robot_char, mf);
   save_prop_w(RPROP_XPOS, cur_robot->xpos, mf);
   save_prop_w(RPROP_YPOS, cur_robot->ypos, mf);
@@ -727,20 +728,19 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
       prepare_robot_bytecode(mzx_world, cur_robot);
 #endif
 
-    // The regular way works with memory zips too, but this is faster.
+    actual_size = save_robot_calculate_size(mzx_world, cur_robot, savegame,
+     file_version);
 
     if(zp->is_memory)
     {
-      zip_write_open_mem_stream(zp, &mf, name);
+      // The regular way works with memory zips too, but this is faster.
+      zip_write_open_mem_stream(zp, &mf, name, actual_size);
     }
-
     else
     {
-      actual_size = save_robot_calculate_size(mzx_world, cur_robot, savegame,
-       file_version);
       buffer = cmalloc(actual_size);
 
-      mfopen(buffer, actual_size, &mf);
+      mfopen_wr(buffer, actual_size, &mf);
     }
 
     save_robot_to_memory(cur_robot, &mf, savegame, file_version);
@@ -749,7 +749,6 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
     {
       zip_write_close_mem_stream(zp, &mf);
     }
-
     else
     {
       zip_write_file(zp, name, buffer, actual_size, ZIP_M_NONE);
@@ -760,7 +759,7 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
 }
 
 void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
- const char *name)
+ int file_version, const char *name)
 {
   void *buffer;
   struct memfile mf;
@@ -774,10 +773,11 @@ void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
 
     buffer = cmalloc(actual_size);
 
-    mfopen(buffer, actual_size, &mf);
+    mfopen_wr(buffer, actual_size, &mf);
 
     save_prop_w(SCRPROP_NUM_LINES, cur_scroll->num_lines, &mf);
-    save_prop_s(SCRPROP_MESG, cur_scroll->mesg, scroll_size, 1, &mf);
+    save_prop_a(SCRPROP_MESG, cur_scroll->mesg, scroll_size, 1, &mf);
+    save_prop_eof(&mf);
 
     zip_write_file(zp, name, buffer, actual_size, ZIP_M_NONE);
 
@@ -786,20 +786,19 @@ void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
 }
 
 void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
- const char *name)
+ int file_version, const char *name)
 {
   char buffer[SENSOR_PROPS_SIZE];
   struct memfile mf;
 
   if(cur_sensor->used)
   {
-    mfopen(buffer, SENSOR_PROPS_SIZE, &mf);
+    mfopen_wr(buffer, SENSOR_PROPS_SIZE, &mf);
 
-    save_prop_s(SENPROP_SENSOR_NAME, cur_sensor->sensor_name,
-     ROBOT_NAME_SIZE, 1, &mf);
+    save_prop_s_293(SENPROP_SENSOR_NAME, cur_sensor->sensor_name, ROBOT_NAME_SIZE, &mf);
     save_prop_c(SENPROP_SENSOR_CHAR, cur_sensor->sensor_char, &mf);
-    save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg,
-     ROBOT_NAME_SIZE, 1, &mf);
+    save_prop_s_293(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg, ROBOT_NAME_SIZE, &mf);
+    save_prop_eof(&mf);
 
     zip_write_file(zp, name, buffer, SENSOR_PROPS_SIZE, ZIP_M_NONE);
   }
@@ -916,9 +915,6 @@ void cache_robot_labels(struct robot *cur_robot)
   return;
 }
 
-#ifdef CONFIG_DEBYTECODE
-static
-#endif
 void clear_label_cache(struct robot *cur_robot)
 {
   int i;
@@ -2270,6 +2266,33 @@ void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y)
     *my = board_height - 1;
 }
 
+/**
+ * Apply middle prefixes with respect to a different board than the current.
+ */
+void prefix_mid_xy_ext(struct world *mzx_world, struct board *dest_board,
+ int *mx, int *my, int x, int y)
+{
+  struct board *cur_board = mzx_world->current_board;
+
+  if(!mzx_world->mid_prefix)
+    return;
+
+  if(cur_board != dest_board)
+  {
+    mzx_world->current_board = dest_board;
+    retrieve_board_from_extram(dest_board);
+  }
+
+  prefix_mid_xy(mzx_world, mx, my, x, y);
+
+  if(cur_board != dest_board)
+  {
+    store_board_to_extram(dest_board);
+    mzx_world->current_board = cur_board;
+    find_player(mzx_world);
+  }
+}
+
 // Move an x/y pair in a given direction. Returns non-0 if edge reached.
 int move_dir(struct board *src_board, int *x, int *y, enum dir dir)
 {
@@ -2528,7 +2551,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       next = next_param_pos(program + 2);
       tr_msg(mzx_world, next + 1, id, ibuff);
       ibuff[62] = 0; // Clip
-      color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0, true);
+      color_string_ext(ibuff, 10, y, scroll_base_color, true, 0, 0);
       draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
       break;
     }
@@ -2545,7 +2568,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
         next = next_param_pos(next);
         tr_msg(mzx_world, next + 1, id, ibuff);
         ibuff[62] = 0; // Clip
-        color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0, true);
+        color_string_ext(ibuff, 10, y, scroll_base_color, true, 0, 0);
         draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
       }
       break;
@@ -2555,7 +2578,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
     {
       tr_msg(mzx_world, program + 3, id, ibuff);
       ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
-      color_string_ext(ibuff, 8, y, scroll_base_color, 0, 0, true);
+      color_string_ext(ibuff, 8, y, scroll_base_color, true, 0, 0);
       break;
     }
 
@@ -2566,7 +2589,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
       length = strlencolor(ibuff);
       x_position = 40 - (length / 2);
-      color_string_ext(ibuff, x_position, y, scroll_base_color, 0, 0, true);
+      color_string_ext(ibuff, x_position, y, scroll_base_color, true, 0, 0);
       break;
     }
   }
@@ -2643,7 +2666,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   else
   {
     write_string_ext(cur_robot->robot_name,
-     40 - (Uint32)strlen(cur_robot->robot_name) / 2, 4,
+     40 - (unsigned int)strlen(cur_robot->robot_name) / 2, 4,
      mzx_world->scroll_title_color, false, 0, 0);
   }
   select_layer(UI_LAYER);
@@ -2914,7 +2937,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         if(!strncasecmp(src_ptr, "input)", 6))
         {
           dest_pos += sprintf(buffer + dest_pos, "%s",
-           src_board->input_string);
+           src_board->input_string ? src_board->input_string : "");
           src_ptr += 6;
         }
         else
@@ -3043,12 +3066,12 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         if(!memcasecmp(name_buffer, "INPUT", 6))
         {
           // Input
-          name_length = strlen(src_board->input_string);
+          const char *input_string = src_board->input_string ? src_board->input_string : "";
+          name_length = strlen(input_string);
           if(dest_pos + name_length >= ROBOT_MAX_TR)
             name_length = ROBOT_MAX_TR - dest_pos - 1;
 
-          memcpy(buffer + dest_pos, src_board->input_string,
-           name_length);
+          memcpy(buffer + dest_pos, input_string, name_length);
           dest_pos += name_length;
         }
         else

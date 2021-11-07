@@ -29,6 +29,7 @@
 #include "util.h"
 #include "io/fsafeopen.h"
 #include "io/memfile.h"
+#include "io/vio.h"
 
 #define IMM_U16            (1 << 0)
 #define IMM_S16            (1 << 0)
@@ -2030,7 +2031,7 @@ err_buffer:
 
 char *assemble_file(char *name, int *size)
 {
-  FILE *input_file = fsafeopen(name, "rb");
+  vfile *input_file = fsafeopen(name, "rb");
   char line_buffer[256];
   char bytecode_buffer[256];
   char error_buffer[256];
@@ -2047,7 +2048,7 @@ char *assemble_file(char *name, int *size)
   buffer[0] = 0xFF;
 
   // fsafegets ensures no line terminators are present
-  while(fsafegets(line_buffer, 255, input_file))
+  while(vfsafegets(line_buffer, 255, input_file))
   {
     line_bytecode_length =
      legacy_assemble_line(line_buffer, bytecode_buffer, error_buffer, NULL, NULL);
@@ -2078,7 +2079,7 @@ char *assemble_file(char *name, int *size)
   *size = current_size + 1;
 
 exit_out:
-  fclose(input_file);
+  vfclose(input_file);
   return buffer;
 }
 
@@ -2592,7 +2593,7 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
 void disassemble_file(char *name, char *program, int program_length,
  int allow_ignores, int base)
 {
-  FILE *output_file = fsafeopen(name, "wb");
+  vfile *output_file = fsafeopen(name, "wb");
   char command_buffer[256];
   char error_buffer[256];
   char *current_robot_pos = program + 1;
@@ -2611,14 +2612,14 @@ void disassemble_file(char *name, char *program, int program_length,
 
     if(new_line)
     {
-      fwrite(command_buffer, line_text_length, 1, output_file);
-      fputc('\n', output_file);
+      vfwrite(command_buffer, line_text_length, 1, output_file);
+      vfputc('\n', output_file);
     }
 
     current_robot_pos = next;
   } while(new_line);
 
-  fclose(output_file);
+  vfclose(output_file);
 }
 
 static inline int get_program_line_count(char *program, int program_length)
@@ -2804,7 +2805,7 @@ static void validate_legacy_bytecode_print(char *bc, int program_length,
 
   if(offset > program_length)
   {
-    fprintf(stderr, "\n");
+    fprintf(mzxerr, "\n");
     debug("Offset exceeded program length\n");
     debug("Prog len: %d    Offset: %d\n", program_length, offset);
     return;

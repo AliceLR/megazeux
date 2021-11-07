@@ -24,9 +24,8 @@
 
 __M_BEGIN_DECLS
 
-#include <stdio.h>
-
 #include "world_struct.h"
+#include "io/vfile.h"
 
 /* When making new versions, change the number below, and
  * change the number in the version strings to follow. From now on,
@@ -34,7 +33,8 @@ __M_BEGIN_DECLS
  * MINOR version number.
  */
 
-/* READ THIS -- MAGIC INFO
+/**
+ * READ THIS -- MAGIC INFO
  *
  * World files:
  *
@@ -58,6 +58,7 @@ __M_BEGIN_DECLS
  *  M\x02\x5A - MZX 2.90
  *  M\x02\x5B - MZX 2.91
  *  M\x02\x5C - MZX 2.92
+ *  M\x02\x5D - MZX 2.93
  *
  * Save files:
  *
@@ -79,13 +80,14 @@ __M_BEGIN_DECLS
  *  MZS\x02\x5A - MZX 2.90
  *  MZS\x02\x5B - MZX 2.91
  *  MZS\x02\x5C - MZX 2.92
+ *  MZS\x02\x5D - MZX 2.93
  *
  * Board files follow a similar pattern to world files. Versions prior to
  * 2.51S1 are "MB2". For versions greater than 2.51S1, they match the
  * world file magic. For all boards, the first byte is always 0xFF.
  *
  * As of 2.80+, all letters after the name denote bug fixes/minor additions
- * and may have different save formats. If a save format change is
+ * and may NOT have different save formats. If a save format change is
  * necessitated, a numerical change must be enacted.
  */
 
@@ -116,6 +118,7 @@ enum mzx_version
   V290            = 0x025A,
   V291            = 0x025B,
   V292            = 0x025C,
+  V293            = 0x025D,
 #ifdef CONFIG_DEBYTECODE
   VERSION_SOURCE  = 0x0300, // For checks dependent on Robotic source changes
 #endif
@@ -192,10 +195,12 @@ void meter_initial_draw(int curr, int target, const char *title);
 #endif
 
 #ifdef CONFIG_EDITOR
+
+#include <stdio.h>
 struct zip_archive;
 
 CORE_LIBSPEC void try_load_world(struct world *mzx_world,
- struct zip_archive **zp, FILE **fp, const char *file, boolean savegame,
+ struct zip_archive **zp, vfile **vf, const char *file, boolean savegame,
  int *file_version, char *name);
 
 CORE_LIBSPEC void default_vlayer(struct world *mzx_world);
@@ -206,6 +211,11 @@ CORE_LIBSPEC void refactor_board_list(struct world *mzx_world,
  struct board **new_board_list, int new_list_size,
  int *board_id_translation_list);
 CORE_LIBSPEC void optimize_null_boards(struct world *mzx_world);
+
+CORE_LIBSPEC void save_sfx_array(struct world *mzx_world,
+ char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE]);
+CORE_LIBSPEC boolean load_sfx_array(struct world *mzx_world,
+ char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE]);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

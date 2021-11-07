@@ -18,13 +18,28 @@
  */
 
 #include "graphics.h"
-#include "platform.h"
 #include "pngops.h"
 #include "util.h"
+#include "io/vio.h"
 
+#include <png.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
+#ifdef NEED_PNG_WRITE_SCREEN
+
+static void png_write_vfile(png_struct *png_ptr, png_byte *data, png_size_t length)
+{
+  vfile *vf = (vfile *)png_get_io_ptr(png_ptr);
+  if(vfwrite(data, 1, length, vf) < length)
+    png_error(png_ptr, "write error");
+}
+
+static void png_flush_vfile(png_struct *png_ptr) {}
+
+/*
+int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
  const char *name)
 {
   png_structp png_ptr = NULL;
@@ -34,10 +49,10 @@ int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
   int volatile ret = false;
   int type;
   int i;
-  FILE *f;
+  vfile *vf;
 
-  f = fopen_unsafe(name, "wb");
-  if(!f)
+  vf = vfopen_unsafe(name, "wb");
+  if(!vf)
     goto exit_out;
 
   png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -51,7 +66,8 @@ int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
   if(setjmp(png_jmpbuf(png_ptr)))
     goto exit_free_close;
 
-  png_init_io(png_ptr, f);
+  //png_init_io(png_ptr, f);
+  png_set_write_fn(png_ptr, vf, png_write_vfile, png_flush_vfile);
 
   // we know we have an 8-bit surface; save a palettized PNG
   type = PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE;
@@ -59,7 +75,7 @@ int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
    PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
    PNG_FILTER_TYPE_DEFAULT);
 
-  pal_ptr = cmalloc(count * sizeof(png_color));
+  pal_ptr = (png_colorp)cmalloc(count * sizeof(png_color));
   if(!pal_ptr)
     goto exit_free_close;
 
@@ -75,13 +91,13 @@ int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
   png_write_info(png_ptr, info_ptr);
   png_set_packing(png_ptr);
 
-  row_ptrs = cmalloc(sizeof(png_bytep) * 350);
+  row_ptrs = (png_bytep *)cmalloc(sizeof(png_bytep) * 350);
   if(!row_ptrs)
     goto exit_free_close;
 
   // and then the surface
   for(i = 0; i < 350; i++)
-    row_ptrs[i] = (png_bytep)(Uint8 *)pixels + i * 640;
+    row_ptrs[i] = (png_bytep)(pixels + i * 640);
   png_write_image(png_ptr, row_ptrs);
   png_write_end(png_ptr, info_ptr);
 
@@ -93,12 +109,13 @@ exit_free_close:
   free(pal_ptr);
   free(row_ptrs);
 exit_close:
-  fclose(f);
+  vfclose(vf);
 exit_out:
   return ret;
 }
+*/
 
-int png_write_screen_32bpp(Uint32 *pixels, const char *name)
+int png_write_screen_32bpp(uint32_t *pixels, const char *name)
 {
   png_structp png_ptr = NULL;
   png_infop info_ptr = NULL;
@@ -106,10 +123,10 @@ int png_write_screen_32bpp(Uint32 *pixels, const char *name)
   int volatile ret = false;
   int type;
   int i;
-  FILE *f;
+  vfile *vf;
 
-  f = fopen_unsafe(name, "wb");
-  if(!f)
+  vf = vfopen_unsafe(name, "wb");
+  if(!vf)
     goto exit_out;
 
   png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -123,7 +140,8 @@ int png_write_screen_32bpp(Uint32 *pixels, const char *name)
   if(setjmp(png_jmpbuf(png_ptr)))
     goto exit_free_close;
 
-  png_init_io(png_ptr, f);
+  //png_init_io(png_ptr, f);
+  png_set_write_fn(png_ptr, vf, png_write_vfile, png_flush_vfile);
 
   // 24-bit png
   type = PNG_COLOR_TYPE_RGB;
@@ -135,7 +153,7 @@ int png_write_screen_32bpp(Uint32 *pixels, const char *name)
   png_write_info(png_ptr, info_ptr);
   png_set_packing(png_ptr);
 
-  row_ptrs = cmalloc(sizeof(png_bytep) * 350);
+  row_ptrs = (png_bytep *)cmalloc(sizeof(png_bytep) * 350);
   if(!row_ptrs)
     goto exit_free_close;
 
@@ -156,18 +174,38 @@ exit_free_close:
   png_destroy_write_struct(&png_ptr, &info_ptr);
   free(row_ptrs);
 exit_close:
-  fclose(f);
+  vfclose(vf);
 exit_out:
   return ret;
 }
 
+#endif /* NEED_PNG_WRITE_SCREEN */
+
 #ifdef NEED_PNG_READ_FILE
 
-void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
+/* TODO can vio-ize these, but it involves updating image_file.c. */
+
+static boolean png_check_stream(FILE *fp)
+{
+  png_byte header[8];
+
+  if(fread(header, 1, 8, fp) < 8)
+    return false;
+
+  if(png_sig_cmp(header, 0, 8))
+    return false;
+
+  return true;
+}
+
+/**
+ * If `checked` is true, the first 8 bytes of the stream have already been
+ * read and verified to be the PNG signature.
+ */
+void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checked,
  check_w_h_constraint_t constraint, rgba_surface_allocator_t allocator)
 {
   png_uint_32 i, w, h, stride;
-  png_byte header[8];
   png_structp png_ptr = NULL;
   png_infop info_ptr = NULL;
   png_bytep * volatile row_ptrs = NULL;
@@ -175,21 +213,13 @@ void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
   void *pixels;
   int type;
   int bpp;
-  FILE *f;
 
-  f = fopen_unsafe(name, "rb");
-  if(!f)
+  if(!checked && !png_check_stream(fp))
     goto exit_out;
-
-  if(fread(header, 1, 8, f) < 8)
-    goto exit_close;
-
-  if(png_sig_cmp(header, 0, 8))
-    goto exit_close;
 
   png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if(!png_ptr)
-    goto exit_close;
+    goto exit_out;
 
   info_ptr = png_create_info_struct(png_ptr);
   if(!info_ptr)
@@ -198,14 +228,14 @@ void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
   if(setjmp(png_jmpbuf(png_ptr)))
     goto exit_free_close;
 
-  png_init_io(png_ptr, f);
+  png_init_io(png_ptr, fp);
   png_set_sig_bytes(png_ptr, 8);
   png_read_info(png_ptr, info_ptr);
   png_get_IHDR(png_ptr, info_ptr, &w, &h, &bpp, &type, NULL, NULL, NULL);
 
   if(!constraint(w, h))
   {
-    warn("Requested image '%s' failed dimension checks.\n", name);
+    warn("Requested image failed dimension checks.\n");
     goto exit_free_close;
   }
 
@@ -233,7 +263,7 @@ void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
   png_read_update_info(png_ptr, info_ptr);
   png_get_IHDR(png_ptr, info_ptr, &w, &h, &bpp, &type, NULL, NULL, NULL);
 
-  row_ptrs = cmalloc(sizeof(png_bytep) * h);
+  row_ptrs = (png_bytep *)cmalloc(sizeof(png_bytep) * h);
   if(!row_ptrs)
     goto exit_free_close;
 
@@ -254,9 +284,25 @@ void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
 exit_free_close:
   png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
   free(row_ptrs);
-exit_close:
-  fclose(f);
 exit_out:
+  return s;
+}
+
+void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
+ check_w_h_constraint_t constraint, rgba_surface_allocator_t allocator)
+{
+  void *s;
+
+  FILE *fp = fopen_unsafe(name, "rb");
+  if(!fp)
+    return NULL;
+
+  s = png_read_stream(fp, _w, _h, false, constraint, allocator);
+  fclose(fp);
+
+  if(!s)
+    warn("Failed to load '%s'\n", name);
+
   return s;
 }
 

@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -50,7 +50,7 @@ static int mmd_convert_tempo(int tempo, int bpm_on, int med_8ch)
 		195, 97, 65, 49, 39, 32, 28, 24, 22, 20
 	};
 	const int tempos_8ch[10] = {
-		47, 43, 40, 37, 35, 32, 30, 29, 27, 26
+		179, 164, 152, 141, 131, 123, 116, 110, 104, 99
 	};
 
 	if (tempo > 0) {
@@ -60,6 +60,11 @@ static int mmd_convert_tempo(int tempo, int bpm_on, int med_8ch)
 		 * accurately (to techies: by changing the size of the mix buffer).
 		 * This can be done with the left tempo gadget (values 1-10; the
 		 * lower, the faster). Values 11-240 are equivalent to 10.
+		 *
+		 * NOTE: the tempos used for this are directly from OctaMED
+		 * Soundstudio 2, but in older versions the playback speeds
+		 * differed slightly between NTSC and PAL. This table seems to
+		 * have been intended to be a compromise between the two.
 		 */
 		if (med_8ch) {
 			tempo = tempo > 10 ? 10 : tempo;
@@ -621,12 +626,12 @@ int mmd_load_sampled_instrument(HIO_HANDLE *f, struct module_data *m, int i,
 		for (j = 0; j < 9; j++) {
 			for (k = 0; k < 12; k++) {
 				int xpo = 0;
-	
+
 				if (j < 1)
 					xpo = 12 * (1 - j);
 				else if (j > 3)
 					xpo = -12 * (j - 3);
-	
+
 				xxi->map[12 * j + k].xpo = xpo;
 			}
 		}
@@ -693,24 +698,24 @@ int mmd_load_iffoct_instrument(HIO_HANDLE *f, struct module_data *m, int i,
 
 	for (j = 0; j < num_oct; j++) {
 		sub = &xxi->sub[j];
-	
+
 		sub->vol = sample->svol;
 		sub->pan = 0x80;
 		sub->xpo = 24 + sample->strans;
 		sub->sid = smp_idx;
 		sub->fin = exp_smp->finetune << 4;
-	
+
 		xxs = &mod->xxs[smp_idx];
-	
+
 		xxs->len = size;
 		xxs->lps = rep;
 		xxs->lpe = rep + replen;
 		xxs->flg = 0;
-	
+
 		if (sample->replen > 1) {
 			xxs->flg |= XMP_SAMPLE_LOOP;
 		}
-	
+
 		if (libxmp_load_sample(m, f, SAMPLE_FLAG_BIGEND, xxs, NULL) < 0) {
 			return -1;
 		}
@@ -741,10 +746,12 @@ void mmd_set_bpm(struct module_data *m, int med_8ch, int deftempo,
 
 	mod->bpm = mmd_convert_tempo(deftempo, bpm_on, med_8ch);
 
-	/* 8-channel mode completely overrides BPM mode timing.
+	/* 8-channel mode completely overrides regular timing.
 	 * See mmd_convert_tempo for more info.
 	 */
-	if (bpm_on && !med_8ch) {
+	if (med_8ch) {
+		m->time_factor = DEFAULT_TIME_FACTOR;
+	} else if (bpm_on) {
 		m->time_factor = DEFAULT_TIME_FACTOR * 4 / bpmlen;
 	}
 }
@@ -758,9 +765,11 @@ void mmd_info_text(HIO_HANDLE *f, struct module_data *m, int offset)
 	hio_read32b(f);		/* skip next */
 	hio_read16b(f);		/* skip reserved */
 	type = hio_read16b(f);
+	D_(D_INFO "mmdinfo type=%d", type);
 	if (type == 1) {	/* 1 = ASCII */
 		len = hio_read32b(f);
-		if (len != 0 && len < 0x7fffffff) {
+		D_(D_INFO "mmdinfo length=%d", len);
+		if (len > 0 && len < hio_size(f)) {
 			m->comment = malloc(len + 1);
 			if (m->comment == NULL)
 				return;

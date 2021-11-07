@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 // For use by audio_spot_sample.
 struct audio_stream *construct_wav_stream_direct(struct wav_info *w_info,
- Uint32 frequency, Uint32 volume, Uint32 repeat);
+ uint32_t frequency, unsigned int volume, boolean repeat);
 
 void init_wav(struct config_info *conf);
 

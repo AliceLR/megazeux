@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "../../src/configure.h"
 #include "../../src/event.h"
 #include "../../src/platform.h"
 #include "../../src/util.h"
@@ -50,6 +51,13 @@ static inline void nds_sound_volume(int volume)
 static inline void nds_pcs_sound(int freq, int volume)
 {
   fifoSendValue32(FIFO_MZX, CMD_MZX_PCS_TONE | (((freq) & 0xFFFF) << 8) | (NDS_VOLUME(volume) << 24));
+}
+
+static inline int nds_mm_get_position(void)
+{
+  fifoSendValue32(FIFO_MZX, CMD_MZX_MM_GET_POSITION);
+  while(!fifoCheckValue32(FIFO_MZX));
+  return fifoGetValue32(FIFO_MZX);
 }
 
 // PC speaker implementation
@@ -145,8 +153,7 @@ void audio_set_module_order(int order)
 
 int audio_get_module_order(void)
 {
-  // TODO
-  return 0;
+  return nds_mm_get_position();
 }
 
 void audio_set_module_position(int position)

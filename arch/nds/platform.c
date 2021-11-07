@@ -40,15 +40,15 @@ extern void nds_update_input(void);
 #define timers2ms(tlow,thigh) ((tlow) | ((thigh)<<16)) >> 7
 #define timers2ticks(tlow,thigh) ((tlow) | ((thigh)<<16))
 
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
-  Uint32 now;
+  uint32_t now;
   now = timers2ms(TIMER0_DATA, TIMER1_DATA);
-  while((Uint32)timers2ms(TIMER0_DATA, TIMER1_DATA) < now + ms)
+  while((uint32_t)timers2ms(TIMER0_DATA, TIMER1_DATA) < now + ms)
     ;
 }
 
-Uint32 get_ticks(void)
+uint64_t get_ticks(void)
 {
   return timers2ms(TIMER0_DATA, TIMER1_DATA);
 }
@@ -112,7 +112,7 @@ void profile_end(void)
 // graphics changes
 extern void guruMeditationDump(void);
 
-static void mzxExceptionHandler()
+static void mzxExceptionHandler(void)
 {
   // stop vblank handler
   irqClear(IRQ_VBLANK);
@@ -127,6 +127,11 @@ static void mzxExceptionHandler()
 
   videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE);
   vramSetBankC(VRAM_C_SUB_BG);
+
+#ifdef CONFIG_STDIO_REDIRECT
+  // The log files can get corrupted if they aren't explicitly closed here.
+  redirect_stdio_exit();
+#endif
 
   guruMeditationDump();
   while(1)
@@ -146,7 +151,7 @@ boolean platform_init(void)
     return false;
   }
 
-#if !defined(CONFIG_DEBYTECODE)
+#ifdef CONFIG_EXTRAM
   if(!isDSiMode())
     nds_ram_init(DETECT_RAM);
 #endif

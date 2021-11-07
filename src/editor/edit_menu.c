@@ -32,6 +32,8 @@
 #include "edit_menu.h"
 #include "window.h"
 
+#include <stdint.h>
+
 #define NUM_MENUS 6
 
 #define ROBOT_MEMORY_TIMER_MAX  120
@@ -113,24 +115,26 @@ static const char *const minimal_help_mode_mesg[3] =
   "Alt+H : Vlayer Menu",
 };
 
-static const char cursor_mode_names[6][10] =
+static const char cursor_mode_names[MAX_CURSOR_MODE][10] =
 {
   " Current:",
   " Drawing:",
   "    Text:",
   "   Block:",
   "   Block:",
-  "  Import:"
+  "  Import:",
+  "  Import:",
 };
 
-static const char cursor_mode_help[6][32] =
+static const char cursor_mode_help[MAX_CURSOR_MODE][32] =
 {
   "",
   "",
   "Type to place text",
   "Press ENTER on other corner",
   "Press ENTER to place block",
-  "Press ENTER to place MZM"
+  "Press ENTER to place MZM",
+  "Press ENTER to place ANSi",
 };
 
 #define num2hex(x) ((x) > 9 ? 87 + (x) : 48 + (x))
@@ -151,7 +155,7 @@ static void draw_menu_status(struct edit_menu_subcontext *edit_menu, int line)
   struct world *mzx_world = ((context *)edit_menu)->world;
   struct board *cur_board = mzx_world->current_board;
   struct buffer_info *buffer = edit_menu->buffer;
-  int display_next_pos;
+  unsigned int display_next_pos;
   const char *str;
 
   str = cursor_mode_names[edit_menu->cursor_mode];
@@ -160,13 +164,17 @@ static void draw_menu_status(struct edit_menu_subcontext *edit_menu, int line)
 
   switch(edit_menu->cursor_mode)
   {
+    case MAX_CURSOR_MODE:
+      return;
+
     case CURSOR_TEXT:
     case CURSOR_BLOCK_SELECT:
     case CURSOR_BLOCK_PLACE:
     case CURSOR_MZM_PLACE:
+    case CURSOR_ANSI_PLACE:
     {
       write_string(cursor_mode_help[edit_menu->cursor_mode],
-       (Uint32)display_next_pos, line, EC_MODE_HELP, false);
+       display_next_pos, line, EC_MODE_HELP, false);
       break;
     }
 
@@ -215,11 +223,10 @@ static void draw_menu_status(struct edit_menu_subcontext *edit_menu, int line)
       }
 
       draw_char(' ', 7, display_next_pos, line);
-      erase_char(display_next_pos+1, line);
+      erase_char(display_next_pos + 1, line);
 
       select_layer(GAME_UI_LAYER);
-      draw_char_ext(display_char, display_color,
-      display_next_pos + 1, line, 0, 0);
+      draw_char_ext(display_char, display_color, display_next_pos + 1, line, 0, 0);
       select_layer(UI_LAYER);
 
       draw_char(' ', 7, display_next_pos + 2, line);

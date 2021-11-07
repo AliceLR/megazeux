@@ -151,14 +151,14 @@ struct gl2_render_data
 #ifdef CONFIG_SDL
   struct sdl_render_data sdl;
 #endif
-  Uint32 *pixels;
-  Uint8 charset_texture[CHAR_2W * CHAR_H * FULL_CHARSET_SIZE];
-  Uint32 background_texture[TEX_BG_WIDTH * TEX_BG_HEIGHT];
+  uint32_t *pixels;
+  uint8_t charset_texture[CHAR_2W * CHAR_H * FULL_CHARSET_SIZE];
+  uint32_t background_texture[TEX_BG_WIDTH * TEX_BG_HEIGHT];
   GLuint textures[NUM_TEXTURES];
   GLubyte palette[3 * FULL_PAL_SIZE];
-  Uint8 remap_texture;
-  Uint8 remap_char[FULL_CHARSET_SIZE];
-  Uint8 ignore_linear;
+  boolean remap_texture;
+  boolean remap_char[FULL_CHARSET_SIZE];
+  boolean ignore_linear;
   GLubyte color_array[TEX_BG_WIDTH * TEX_BG_HEIGHT * 4 * 4];
   float tex_coord_array[TEX_BG_WIDTH * TEX_BG_HEIGHT * 8];
   float vertex_array[TEX_BG_WIDTH * TEX_BG_HEIGHT * 8];
@@ -200,7 +200,7 @@ static boolean gl2_init_video(struct graphics_data *graphics,
     graphics->bits_per_pixel = conf->force_bpp;
 
   // We want to deal internally with 32bit surfaces
-  render_data->pixels = cmalloc(sizeof(Uint32) * GL_POWER_2_WIDTH *
+  render_data->pixels = cmalloc(sizeof(uint32_t) * GL_POWER_2_WIDTH *
    GL_POWER_2_HEIGHT);
 
   if(!render_data->pixels)
@@ -233,8 +233,8 @@ static void gl2_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static void gl2_remap_char_range(struct graphics_data *graphics, Uint16 first,
- Uint16 count)
+static void gl2_remap_char_range(struct graphics_data *graphics, uint16_t first,
+ uint16_t count)
 {
   struct gl2_render_data *render_data = graphics->render_data;
 
@@ -249,14 +249,14 @@ static void gl2_remap_char_range(struct graphics_data *graphics, Uint16 first,
     render_data->remap_texture = true;
 }
 
-static void gl2_remap_char(struct graphics_data *graphics, Uint16 chr)
+static void gl2_remap_char(struct graphics_data *graphics, uint16_t chr)
 {
   struct gl2_render_data *render_data = graphics->render_data;
   render_data->remap_char[chr] = true;
 }
 
 static void gl2_remap_charbyte(struct graphics_data *graphics,
- Uint16 chr, Uint8 byte)
+ uint16_t chr, uint8_t byte)
 {
   gl2_remap_char(graphics, chr);
 }
@@ -313,7 +313,7 @@ static void gl2_resize_screen(struct graphics_data *graphics,
   gl_check_error();
 
   memset(render_data->pixels, 255,
-   sizeof(Uint32) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
+   sizeof(uint32_t) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
 
   gl2.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GL_POWER_2_WIDTH,
    GL_POWER_2_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE,
@@ -399,10 +399,10 @@ static boolean gl2_set_video_mode(struct graphics_data *graphics,
 }
 
 static void gl2_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
   struct gl2_render_data *render_data = graphics->render_data;
-  Uint32 i;
+  unsigned int i;
   for(i = 0; i < count; i++)
   {
     graphics->flat_intensity_palette[i] = gl_pack_u32((0xFF << 24) |
@@ -458,7 +458,7 @@ static inline void gl2_do_remap_charsets(struct graphics_data *graphics)
 }
 
 static inline void gl2_do_remap_char(struct graphics_data *graphics,
- Uint16 chr)
+ uint16_t chr)
 {
   struct gl2_render_data *render_data = graphics->render_data;
   signed char *c = (signed char *)graphics->charset;
@@ -507,7 +507,7 @@ static void gl2_check_remap_chars(struct graphics_data *graphics)
     gl2_do_remap_char(graphics, FULL_CHARSET_SIZE);
 
     render_data->remap_texture = false;
-    memset(render_data->remap_char, false, sizeof(Uint8) * FULL_CHARSET_SIZE);
+    memset(render_data->remap_char, false, sizeof(uint8_t) * FULL_CHARSET_SIZE);
   }
   else
   {
@@ -531,8 +531,8 @@ static int gl2_linear_filter_method(struct graphics_data *graphics)
   return graphics->gl_filter_method == CONFIG_GL_FILTER_LINEAR;
 }
 
-static inline Uint32 translate_layer_color(struct graphics_data *graphics,
- Uint32 color)
+static inline int translate_layer_color(struct graphics_data *graphics,
+ uint8_t color)
 {
   if(color >= 16)
     return (color & 0xF) + graphics->protected_pal_position;
@@ -540,7 +540,7 @@ static inline Uint32 translate_layer_color(struct graphics_data *graphics,
   return color;
 }
 
-static inline Uint16 translate_layer_char(Uint16 chr, Uint16 offset)
+static inline uint16_t translate_layer_char(uint16_t chr, uint16_t offset)
 {
   if(chr == INVISIBLE_CHAR)
     return FULL_CHARSET_SIZE;
@@ -556,9 +556,9 @@ static void gl2_render_layer(struct graphics_data *graphics,
 {
   struct gl2_render_data *render_data = graphics->render_data;
   struct char_element *src = layer->data;
-  Sint32 i, i2, i3, layer_w = layer->w, layer_h = layer->h;
-  Uint32 *dest;
-  Uint16 char_value;
+  int i, i2, i3, layer_w = layer->w, layer_h = layer->h;
+  uint32_t *dest;
+  uint16_t char_value;
   int fg_color, bg_color;
 
   if(gl2_linear_filter_method(graphics))
@@ -890,8 +890,8 @@ static void gl2_render_layer(struct graphics_data *graphics,
   }
 }
 
-static void gl2_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void gl2_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   struct gl2_render_data *render_data = graphics->render_data;
   GLubyte *pal_base = &render_data->palette[color * 3];
@@ -929,7 +929,7 @@ static void gl2_render_cursor(struct graphics_data *graphics,
 }
 
 static void gl2_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   const float vertex_array[2 * 4] =
   {
@@ -1018,7 +1018,6 @@ void render_gl2_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gl2_init_video;
   renderer->free_video = gl2_free_video;
-  renderer->check_video_mode = gl_check_video_mode;
   renderer->set_video_mode = gl2_set_video_mode;
   renderer->update_colors = gl2_update_colors;
   renderer->resize_screen = resize_screen_standard;

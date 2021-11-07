@@ -24,9 +24,12 @@
 #include <string.h>
 
 #include "audio.h"
+#include "audio_struct.h"
 #include "audio_vorbis.h"
 #include "ext.h"
 #include "sampled_stream.h"
+
+#include "../io/vio.h"
 
 #ifdef CONFIG_TREMOR
 #include <tremor/ivorbiscodec.h>
@@ -54,18 +57,19 @@ struct vorbis_stream
   struct sampled_stream s;
   OggVorbis_File vorbis_file_handle;
   vorbis_info *vorbis_file_info;
-  Uint32 loop_start;
-  Uint32 loop_end;
+  vfile *input_file;
+  uint32_t loop_start;
+  uint32_t loop_end;
 };
 
-static Uint32 vorbis_mix_data(struct audio_stream *a_src, Sint32 *buffer,
- Uint32 len)
+static boolean vorbis_mix_data(struct audio_stream *a_src,
+ int32_t * RESTRICT buffer, size_t frames, unsigned int channels)
 {
-  Uint32 read_len = 0;
+  uint32_t read_len = 0;
   struct vorbis_stream *v_stream = (struct vorbis_stream *)a_src;
-  Uint32 read_wanted = v_stream->s.allocated_data_length -
+  uint32_t read_wanted = v_stream->s.allocated_data_length -
    v_stream->s.stream_offset;
-  Uint32 pos = 0;
+  uint32_t pos = 0;
   char *read_buffer = (char *)v_stream->s.output_data +
    v_stream->s.stream_offset;
   int current_section;
@@ -75,7 +79,7 @@ static Uint32 vorbis_mix_data(struct audio_stream *a_src, Sint32 *buffer,
     read_wanted -= read_len;
 
     if(a_src->repeat && v_stream->loop_end)
-      pos = (Uint32)ov_pcm_tell(&v_stream->vorbis_file_handle);
+      pos = (uint32_t)ov_pcm_tell(&v_stream->vorbis_file_handle);
 
 #ifdef CONFIG_TREMOR
     read_len =
@@ -125,41 +129,41 @@ static Uint32 vorbis_mix_data(struct audio_stream *a_src, Sint32 *buffer,
     read_buffer += read_len;
   } while((read_len < read_wanted) && read_len);
 
-  sampled_mix_data((struct sampled_stream *)v_stream, buffer, len);
+  sampled_mix_data((struct sampled_stream *)v_stream, buffer, frames, channels);
 
   if(read_len == 0)
-    return 1;
+    return true;
 
-  return 0;
+  return false;
 }
 
-static void vorbis_set_volume(struct audio_stream *a_src, Uint32 volume)
+static void vorbis_set_volume(struct audio_stream *a_src, unsigned int volume)
 {
   a_src->volume = volume * 256 / 255;
 }
 
-static void vorbis_set_repeat(struct audio_stream *a_src, Uint32 repeat)
+static void vorbis_set_repeat(struct audio_stream *a_src, boolean repeat)
 {
   a_src->repeat = repeat;
 }
 
-static void vorbis_set_position(struct audio_stream *a_src, Uint32 position)
+static void vorbis_set_position(struct audio_stream *a_src, uint32_t position)
 {
   ov_pcm_seek(&(((struct vorbis_stream *)a_src)->vorbis_file_handle),
    (ogg_int64_t)position);
 }
 
-static void vorbis_set_loop_start(struct audio_stream *a_src, Uint32 position)
+static void vorbis_set_loop_start(struct audio_stream *a_src, uint32_t position)
 {
   ((struct vorbis_stream *)a_src)->loop_start = position;
 }
 
-static void vorbis_set_loop_end(struct audio_stream *a_src, Uint32 position)
+static void vorbis_set_loop_end(struct audio_stream *a_src, uint32_t position)
 {
   ((struct vorbis_stream *)a_src)->loop_end = position;
 }
 
-static void vorbis_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
+static void vorbis_set_frequency(struct sampled_stream *s_src, uint32_t frequency)
 {
   if(frequency == 0)
     frequency = ((struct vorbis_stream *)s_src)->vorbis_file_info->rate;
@@ -169,29 +173,29 @@ static void vorbis_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
   sampled_set_buffer(s_src);
 }
 
-static Uint32 vorbis_get_position(struct audio_stream *a_src)
+static uint32_t vorbis_get_position(struct audio_stream *a_src)
 {
   struct vorbis_stream *v = (struct vorbis_stream *)a_src;
-  return (Uint32)ov_pcm_tell(&v->vorbis_file_handle);
+  return ov_pcm_tell(&v->vorbis_file_handle);
 }
 
-static Uint32 vorbis_get_length(struct audio_stream *a_src)
+static uint32_t vorbis_get_length(struct audio_stream *a_src)
 {
   struct vorbis_stream *v = (struct vorbis_stream *)a_src;
-  return (Uint32)ov_pcm_total(&v->vorbis_file_handle, -1);
+  return ov_pcm_total(&v->vorbis_file_handle, -1);
 }
 
-static Uint32 vorbis_get_loop_start(struct audio_stream *a_src)
+static uint32_t vorbis_get_loop_start(struct audio_stream *a_src)
 {
   return ((struct vorbis_stream *)a_src)->loop_start;
 }
 
-static Uint32 vorbis_get_loop_end(struct audio_stream *a_src)
+static uint32_t vorbis_get_loop_end(struct audio_stream *a_src)
 {
   return ((struct vorbis_stream *)a_src)->loop_end;
 }
 
-static Uint32 vorbis_get_frequency(struct sampled_stream *s_src)
+static uint32_t vorbis_get_frequency(struct sampled_stream *s_src)
 {
   return s_src->frequency;
 }
@@ -200,29 +204,57 @@ static void vorbis_destruct(struct audio_stream *a_src)
 {
   struct vorbis_stream *v_stream = (struct vorbis_stream *)a_src;
   ov_clear(&(v_stream->vorbis_file_handle));
+  vfclose(v_stream->input_file);
   sampled_destruct(a_src);
 }
 
-static struct audio_stream *construct_vorbis_stream(char *filename,
- Uint32 frequency, Uint32 volume, Uint32 repeat)
+static size_t vorbis_read_fn(void *ptr, size_t size, size_t count, void *stream)
 {
-  FILE *input_file = fopen_unsafe(filename, "rb");
-  struct audio_stream *ret_val = NULL;
+  vfile *vf = (vfile *)stream;
+  return vfread(ptr, size, count, vf);
+}
+
+static int vorbis_seek_fn(void *stream, ogg_int64_t offset, int whence)
+{
+  vfile *vf = (vfile *)stream;
+  return vfseek(vf, offset, whence);
+}
+
+static long vorbis_tell_fn(void *stream)
+{
+  vfile *vf = (vfile *)stream;
+  return vftell(vf);
+}
+
+static const ov_callbacks vorbis_callbacks =
+{
+  vorbis_read_fn,
+  vorbis_seek_fn,
+  NULL,
+  vorbis_tell_fn,
+};
+
+static struct audio_stream *construct_vorbis_stream(char *filename,
+ uint32_t frequency, unsigned int volume, boolean repeat)
+{
+  vfile *input_file;
   vorbis_comment *comment;
   int loopstart = -1;
   int looplength = -1;
   int loopend = -1;
   int i;
 
+  // Using a large file buffer at minimum is pretty much mandatory for OGGs to
+  // work on the 3DS and Wii U. Since 32k isn't much to ask for most platforms
+  // that can support OGGs in the first place, just unconditionally use it.
+  // TODO: VFS full file caching (useful for 3DS/Wii U, mandatory for DJGPP).
+  input_file = vfopen_unsafe_ext(filename, "rb", V_LARGE_BUFFER);
+
   if(input_file)
   {
     OggVorbis_File open_file;
 
-#ifdef CONFIG_3DS
-    setvbuf(input_file, NULL, _IOFBF, 32768);
-#endif
-
-    if(!ov_open(input_file, &open_file, NULL, 0))
+    if(!ov_open_callbacks(input_file, &open_file, NULL, 0, vorbis_callbacks))
     {
       vorbis_info *vorbis_file_info = ov_info(&open_file, -1);
 
@@ -235,6 +267,7 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
 
         v_stream->vorbis_file_handle = open_file;
         v_stream->vorbis_file_info = vorbis_file_info;
+        v_stream->input_file = input_file;
 
         v_stream->loop_start = 0;
         v_stream->loop_end = 0;
@@ -286,25 +319,18 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
         s_spec.get_frequency = vorbis_get_frequency;
 
         initialize_sampled_stream((struct sampled_stream *)v_stream, &s_spec,
-         frequency, v_stream->vorbis_file_info->channels, 1);
+         frequency, v_stream->vorbis_file_info->channels, true);
 
         initialize_audio_stream((struct audio_stream *)v_stream, &a_spec,
          volume, repeat);
 
-        ret_val = (struct audio_stream *)v_stream;
+        return (struct audio_stream *)v_stream;
       }
-      else
-      {
-        ov_clear(&open_file);
-      }
+      ov_clear(&open_file);
     }
-    else
-    {
-      fclose(input_file);
-    }
+    vfclose(input_file);
   }
-
-  return ret_val;
+  return NULL;
 }
 
 void init_vorbis(struct config_info *conf)

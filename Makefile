@@ -16,7 +16,7 @@ MAKEFLAGS += -r
 endif
 
 .PHONY: all clean help_check mzx mzx.debug build build_clean source
-.PHONY: test unittest test_clean unit_clean
+.PHONY: test testworlds unit unittest test_clean unit_clean
 
 #
 # Define this first so arch-specific rules don't hijack the default target.
@@ -151,7 +151,9 @@ ZLIB_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lz
 ifeq (${LIBPNG},1)
 
 # Check PREFIX for libpng-config.
-ifneq ($(wildcard ${PREFIX}/bin/libpng-config),)
+ifneq ($(and ${LIBPNG_PREFIX},$(wildcard ${LIBPNG_PREFIX}/bin/libpng-config)),)
+LIBPNG_CONFIG  := ${LIBPNG_PREFIX}/bin/libpng-config
+else ifneq ($(wildcard ${PREFIX}/bin/libpng-config),)
 LIBPNG_CONFIG  := ${PREFIX}/bin/libpng-config
 else
 LIBPNG_CONFIG  := libpng-config
@@ -170,8 +172,8 @@ endif
 #
 
 ifneq (${X11DIR},)
-X11_CFLAGS  ?= -I${X11DIR}/../include
-X11_LDFLAGS ?= -L${X11DIR}/../lib -lX11
+X11_CFLAGS  ?= -I${X11DIR}/include
+X11_LDFLAGS ?= -L${X11DIR}/lib -Wl,-rpath,${X11DIR}/lib -lX11
 # Make these immediate
 X11_CFLAGS := $(X11_CFLAGS)
 X11_LDFLAGS := $(X11_LDFLAGS)
@@ -198,7 +200,10 @@ ifeq (${DEBUG},1)
 ifeq (${SANITIZER},address)
 DEBUG_CFLAGS := -fsanitize=address -O1 -fno-omit-frame-pointer
 else ifeq (${SANITIZER},undefined)
-DEBUG_CFLAGS := -fsanitize=undefined -O0 -fno-omit-frame-pointer
+# Signed integer overflows (shift-base, signed-integer-overflow)
+# are pretty much inevitable in Robotic, so ignore them.
+DEBUG_CFLAGS := -fsanitize=undefined -O0 -fno-omit-frame-pointer \
+ -fno-sanitize-recover=all -fno-sanitize=shift-base,signed-integer-overflow
 else ifeq (${SANITIZER},thread)
 DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE
 ARCH_EXE_LDFLAGS += -pie
@@ -224,9 +229,6 @@ CFLAGS   += ${OPTIMIZE_CFLAGS} -DNDEBUG
 CXXFLAGS += ${OPTIMIZE_CFLAGS} -DNDEBUG
 endif
 
-CFLAGS   += -Wundef -Wunused-macros
-CXXFLAGS += -Wundef -Wunused-macros
-
 #
 # Enable C++11 for compilers that support it.
 # Anything actually using C++11 should be optional or platform-specific,
@@ -242,15 +244,29 @@ endif
 # Always generate debug information; this may end up being
 # stripped (on embedded platforms) or objcopy'ed out.
 #
-CFLAGS   += -g -W -Wall -Wno-unused-parameter -std=gnu99
-CFLAGS   += -Wdeclaration-after-statement ${ARCH_CFLAGS}
-CXXFLAGS += -g -W -Wall -Wno-unused-parameter ${CXX_STD}
-CXXFLAGS += -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
+CFLAGS   += -std=gnu99 -g ${ARCH_CFLAGS}
+CXXFLAGS += ${CXX_STD} -g -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
+
+#
+# Default warnings.
+# Note: -Wstrict-prototypes was previously turned off for Android/NDS/Wii/PSP.
+#
+warnings := -Wall -Wextra -Wno-unused-parameter -Wwrite-strings
+warnings += -Wundef -Wunused-macros -Wpointer-arith
+CFLAGS   += ${warnings} -Wdeclaration-after-statement -Wmissing-prototypes -Wstrict-prototypes
+CXXFLAGS += ${warnings}
 
 #
 # Optional compile flags.
 #
+
+#
+# Warn against global functions defined without a previous declaration (C++).
+#
+ifeq (${HAS_W_MISSING_DECLARATIONS_CXX},1)
+CXXFLAGS += -Wmissing-declarations
+endif
 
 #
 # Warn against variable-length array (VLA) usage, which is technically valid
@@ -270,6 +286,13 @@ endif
 ifeq (${HAS_W_NO_FORMAT_TRUNCATION},1)
 CFLAGS   += -Wno-format-truncation
 CXXFLAGS += -Wno-format-truncation
+endif
+
+#
+# Old GCC versions emit false positive warnings for C++11 value initializers.
+#
+ifeq (${HAS_BROKEN_W_MISSING_FIELD_INITIALIZERS},1)
+CXXFLAGS += -Wno-missing-field-initializers
 endif
 
 #
@@ -371,20 +394,15 @@ source: build/${TARGET}src
 
 #
 # Build source target
-# Targetting unix primarily, so turn off autocrlf if necessary
+# Targeting unix primarily, so turn off autocrlf if necessary.
 #
-ifneq ($(shell which git),)
-USER_AUTOCRLF=$(shell git config core.autocrlf)
-endif
 build/${TARGET}src:
 	${RM} -r build/${TARGET}
 	${MKDIR} -p build/dist/source
-	@git config core.autocrlf false
-	@git checkout-index -a --prefix build/${TARGET}/
-	@git config core.autocrlf ${USER_AUTOCRLF}
+	@git -c "core.autocrlf=false" checkout-index -a --prefix build/${TARGET}/
 	${RM} -r build/${TARGET}/scripts
 	${RM} build/${TARGET}/.gitignore build/${TARGET}/.gitattributes
-	@cd build/${TARGET} && make distclean
+	@cd build/${TARGET} && ${MAKE} distclean
 	@tar -C build -Jcf build/dist/source/${TARGET}src.tar.xz ${TARGET}
 
 #
@@ -487,16 +505,13 @@ ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
-	${CP} ${ccv} ${build}/utils
+	${CP} ${ccv} ${png2smzx} ${build}/utils
 	@if [ -f "${checkres}.debug" ]; then cp ${checkres}.debug ${build}/utils; fi
 	@if [ -f "${downver}.debug" ]; then cp ${downver}.debug ${build}/utils; fi
 	@if [ -f "${hlp2txt}.debug" ]; then cp ${hlp2txt}.debug ${build}/utils; fi
 	@if [ -f "${txt2hlp}.debug" ]; then cp ${txt2hlp}.debug ${build}/utils; fi
 	@if [ -f "${ccv}.debug" ]; then cp ${ccv}.debug ${build}/utils; fi
-ifeq (${LIBPNG},1)
-	${CP} ${png2smzx} ${build}/utils
 	@if [ -f "${png2smzx}.debug" ]; then cp ${png2smzx}.debug ${build}/utils; fi
-endif
 endif
 
 ${build}/docs: ${build}
@@ -555,7 +570,9 @@ help_check: ${hlp2txt} assets/help.fil
 
 -include unit/Makefile.in
 
-test: unittest
+test: unit
+
+test testworlds:
 ifeq (${BUILD_MODULAR},1)
 	@${SHELL} testworlds/run.sh ${PLATFORM} "$(realpath ${core_target})"
 else

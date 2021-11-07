@@ -192,6 +192,7 @@ int import_type(struct world *mzx_world)
     "World file (MZX)",
     "Palette (PAL)",
     "Sound effects (SFX)",
+    "ANSi (choose pos.)",
     "MZM (choose pos.)"
   };
 
@@ -200,8 +201,8 @@ int import_type(struct world *mzx_world)
 
   set_context(CTX_IMPORTEXPORT_TYPE);
 
-  elements[0] = construct_radio_button(2, 3, radio_strings,
-   6, 19, &import_choice);
+  elements[0] = construct_radio_button(2, 2, radio_strings,
+   ARRAY_SIZE(radio_strings), 19, &import_choice);
   elements[1] = construct_button(5, 10, "OK", 0);
   elements[2] = construct_button(15, 10, "Cancel", -1);
 

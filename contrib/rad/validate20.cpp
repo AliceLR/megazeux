@@ -16,6 +16,10 @@
 
 
 
+const char *RADValidate(const void *data, size_t data_size);
+
+
+
 //==================================================================================================
 // The error strings are all supplied here in case you want to translate them to another language
 // (or supply your own more descriptive error messages).

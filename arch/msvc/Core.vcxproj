@@ -282,7 +282,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\audio\audio_wav.c" />
     <ClCompile Include="..\..\src\audio\audio_xmp.c" />
     <ClCompile Include="..\..\src\audio\ext.c" />
-    <ClCompile Include="..\..\src\audio\sampled_stream.c" />
+    <ClCompile Include="..\..\src\audio\sampled_stream.cpp" />
     <ClCompile Include="..\..\src\audio\sfx.c" />
     <ClCompile Include="..\..\src\block.c" />
     <ClCompile Include="..\..\src\board.c" />
@@ -307,10 +307,9 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\idput.c" />
     <ClCompile Include="..\..\src\intake.c" />
     <ClCompile Include="..\..\src\intake_num.c" />
-    <ClCompile Include="..\..\src\io\dir.c" />
     <ClCompile Include="..\..\src\io\fsafeopen.c" />
     <ClCompile Include="..\..\src\io\path.c" />
-    <ClCompile Include="..\..\src\io\vfile.c" />
+    <ClCompile Include="..\..\src\io\vio.c" />
     <ClCompile Include="..\..\src\io\zip.c" />
     <ClCompile Include="..\..\src\io\zip_stream.c" />
     <ClCompile Include="..\..\src\legacy_board.c" />
@@ -409,12 +408,12 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\intake.h" />
     <ClInclude Include="..\..\src\intake_num.h" />
     <ClInclude Include="..\..\src\io\bitstream.h" />
-    <ClInclude Include="..\..\src\io\dir.h" />
     <ClInclude Include="..\..\src\io\fsafeopen.h" />
     <ClInclude Include="..\..\src\io\memfile.h" />
     <ClInclude Include="..\..\src\io\path.h" />
     <ClInclude Include="..\..\src\io\vfile.h" />
-    <ClInclude Include="..\..\src\io\vfile_win32.h" />
+    <ClInclude Include="..\..\src\io\vio.h" />
+    <ClInclude Include="..\..\src\io\vio_win32.h" />
     <ClInclude Include="..\..\src\io\zip.h" />
     <ClInclude Include="..\..\src\io\zip_deflate.h" />
     <ClInclude Include="..\..\src\io\zip_deflate64.h" />

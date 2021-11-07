@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -212,7 +212,10 @@ static int mod_test(HIO_HANDLE * f, char *t, const int start)
 	/* validate pattern data in an attempt to catch UNICs with MOD size */
 	for (count = i = 0; i < num_pat; i++) {
 		hio_seek(f, start + 1084 + 1024 * i, SEEK_SET);
-		hio_read(pat_buf, 1024, 1, f);
+		if (!hio_read(pat_buf, 1024, 1, f)) {
+			D_(D_WARN "pattern %d: failed to read pattern data", i);
+			return -1;
+		}
 		if (validate_pattern(pat_buf) < 0) {
 			D_(D_WARN "pattern %d: error in pattern data", i);
 			/* Allow a few errors, "lexstacy" has 0x52 */
@@ -357,8 +360,8 @@ static int get_tracker_id(struct module_data *m, struct mod_header *mh, int id)
 		}
 	} else { /* Has loops with size 0 */
 		for (i = 15; i < 31; i++) {
-			if (strlen((char *)mh->ins[i].name)
-			    || mh->ins[i].size > 0)
+			/* Is the name or size set? */
+			if (mh->ins[i].name[0] || mh->ins[i].size > 0)
 				break;
 		}
 		if (i == 31 && is_st_ins((char *)mh->ins[14].name)) {
@@ -525,7 +528,7 @@ static int mod_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
     /*
      * Experimental tracker-detection routine
-     */ 
+     */
 
     if (detected)
 	goto skip_test;
@@ -626,10 +629,12 @@ skip_test:
 	}
 
 	for (j = 0; j < (64 * mod->chn); j++) {
-            int period;
+	    int period;
 
 	    event = &EVENT(i, j % mod->chn, j / mod->chn);
-	    hio_read(mod_event, 1, 4, f);
+	    if (hio_read(mod_event, 1, 4, f) < 4) {
+		return -1;
+	    }
 
 	    period = ((int)(LSN(mod_event[0])) << 8) | mod_event[1];
 	    if (period != 0 && (period < 108 || period > 907)) {
@@ -641,38 +646,41 @@ skip_test:
 		unsigned char fxt = LSN(mod_event[2]);
 		unsigned char fxp = LSN(mod_event[3]);
 
-        	if ((fxt > 0x06 && fxt < 0x0a) || (fxt == 0x0e && fxp > 1)) {
+		if ((fxt > 0x06 && fxt < 0x0a) || (fxt == 0x0e && fxp > 1)) {
 		    tracker_id = TRACKER_UNKNOWN;
 		}
 	    }
 	}
 
         if (out_of_range) {
-            if (tracker_id == TRACKER_UNKNOWN && mh.restart == 0x7f) {
-	        tracker_id = TRACKER_SCREAMTRACKER3;
-            }
+	    if (tracker_id == TRACKER_UNKNOWN && mh.restart == 0x7f) {
+		tracker_id = TRACKER_SCREAMTRACKER3;
+	    }
 
 	    /* Check out-of-range notes in Amiga trackers */
-            if (tracker_id == TRACKER_PROTRACKER ||
-                    tracker_id == TRACKER_NOISETRACKER ||
-                    tracker_id == TRACKER_PROBABLY_NOISETRACKER ||
-                    tracker_id == TRACKER_SOUNDTRACKER) {   /* note > B-3 */
-                tracker_id = TRACKER_UNKNOWN;
-            }
-        }
+	    if (tracker_id == TRACKER_PROTRACKER ||
+		tracker_id == TRACKER_NOISETRACKER ||
+		tracker_id == TRACKER_PROBABLY_NOISETRACKER ||
+		tracker_id == TRACKER_SOUNDTRACKER) {   /* note > B-3 */
+
+		tracker_id = TRACKER_UNKNOWN;
+	    }
+	}
 
 	hio_seek(f, pos, SEEK_SET);
 
 	for (j = 0; j < (64 * mod->chn); j++) {
 	    event = &EVENT(i, j % mod->chn, j / mod->chn);
-	    hio_read(mod_event, 1, 4, f);
+	    if (hio_read(mod_event, 1, 4, f) < 4) {
+		return -1;
+	    }
 
 	    switch (tracker_id) {
 	    case TRACKER_PROBABLY_NOISETRACKER:
 	    case TRACKER_NOISETRACKER:
 	    	libxmp_decode_noisetracker_event(event, mod_event);
 		break;
-	    default:	
+	    default:
 	        libxmp_decode_protracker_event(event, mod_event);
 	    }
 	}
@@ -749,7 +757,6 @@ skip_test:
 
     MODULE_INFO();
 
-
     /* Load samples */
 
     D_(D_INFO "Stored samples: %d", mod->smp);
@@ -785,13 +792,13 @@ skip_test:
 	    }
 	} else {
 	    uint8 buf[5];
-            long pos;
-            int num;
+	    long pos;
+	    int num;
 
 	    if ((pos = hio_tell(f)) < 0) {
-                return -1;
-            }
-            num = hio_read(buf, 1, 5, f);
+		return -1;
+	    }
+	    num = hio_read(buf, 1, 5, f);
 
 	    if (num == 5 && !memcmp(buf, "ADPCM", 5)) {
 		flags |= SAMPLE_FLAG_ADPCM;

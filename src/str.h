@@ -45,6 +45,8 @@ CORE_LIBSPEC struct string *new_string(struct world *mzx_world,
  const char *name, size_t length, int id);
 CORE_LIBSPEC boolean is_string(char *buffer);
 CORE_LIBSPEC void sort_string_list(struct string_list *string_list);
+CORE_LIBSPEC void string_list_size(struct string_list *string_list,
+ size_t *list_size, size_t *table_size, size_t *strings_size);
 
 int string_read_as_counter(struct world *mzx_world,
  char *name_buffer, int id);

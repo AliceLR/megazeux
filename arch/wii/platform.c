@@ -33,6 +33,7 @@
 #include <ogc/lwp.h>
 #include <ogc/lwp_threads.h>
 #include <ogc/lwp_watchdog.h>
+#include <ogc/message.h> // Suppress unused BOOL warning.
 #include <fat.h>
 #undef BOOL
 
@@ -66,13 +67,13 @@ static void reset_callback(u32 irq, void *ctx)
 
 static u64 timebase_offset;
 
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
   // TODO use nanosleep instead?
   usleep(ms * 1000);
 }
 
-Uint32 get_ticks(void)
+uint64_t get_ticks(void)
 {
   return ticks_to_millisecs(gettime() - timebase_offset);
 }

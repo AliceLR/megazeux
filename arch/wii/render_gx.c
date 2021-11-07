@@ -19,7 +19,6 @@
  */
 
 #include "../../src/graphics.h"
-#include "../../src/platform.h"
 #include "../../src/render.h"
 #include "../../src/renderers.h"
 
@@ -276,6 +275,7 @@ static boolean gx_init_video(struct graphics_data *graphics,
   graphics->render_data = render_data;
   graphics->ratio = conf->video_ratio;
   graphics->gl_vsync = conf->gl_vsync;
+  graphics->bits_per_pixel = 16;
 
   VIDEO_Init();
 
@@ -378,12 +378,6 @@ static void gx_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static boolean gx_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
-{
-  return true;
-}
-
 static boolean gx_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
@@ -436,10 +430,10 @@ static boolean gx_set_video_mode(struct graphics_data *graphics,
 }
 
 static void gx_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
   struct gx_render_data *render_data = graphics->render_data;
-  Uint32 i;
+  unsigned int i;
 
   render_data->paldirty = 1;
   for(i = 0; i < count; i++)
@@ -458,8 +452,8 @@ static void gx_update_colors(struct graphics_data *graphics,
   }
 }
 
-static void gx_remap_char_range(struct graphics_data *graphics, Uint16 first,
- Uint16 count)
+static void gx_remap_char_range(struct graphics_data *graphics, uint16_t first,
+ uint16_t count)
 {
   struct gx_render_data *render_data = graphics->render_data;
 
@@ -475,7 +469,7 @@ static void gx_remap_char_range(struct graphics_data *graphics, Uint16 first,
   render_data->chrdirty_set = 1;
 }
 
-static void gx_remap_char(struct graphics_data *graphics, Uint16 chr)
+static void gx_remap_char(struct graphics_data *graphics, uint16_t chr)
 {
   struct gx_render_data *render_data = graphics->render_data;
   render_data->chrdirty[chr] = 1;
@@ -483,7 +477,7 @@ static void gx_remap_char(struct graphics_data *graphics, Uint16 chr)
 }
 
 static void gx_remap_charbyte(struct graphics_data *graphics,
- Uint16 chr, Uint8 byte)
+ uint16_t chr, uint8_t byte)
 {
   struct gx_render_data *render_data = graphics->render_data;
   render_data->chrdirty[chr] = 1;
@@ -496,10 +490,10 @@ static void gx_remap_charbyte(struct graphics_data *graphics,
  * eight lines of the char, then skip ahead to the next row in the texture.
  */
 
-static void gx_draw_char(struct graphics_data *graphics, Uint16 chr)
+static void gx_draw_char(struct graphics_data *graphics, uint16_t chr)
 {
   struct gx_render_data *render_data = graphics->render_data;
-  Uint8 *src = graphics->charset;
+  uint8_t *src = graphics->charset;
   u32 *dest = render_data->charimg;
   int byte;
 
@@ -536,7 +530,7 @@ static void gx_draw_char(struct graphics_data *graphics, Uint16 chr)
 static void gx_draw_charsets(struct graphics_data *graphics)
 {
   struct gx_render_data *render_data = graphics->render_data;
-  Uint8 *src = graphics->charset;
+  uint8_t *src = graphics->charset;
   u32 *dest = render_data->charimg;
   int x;
   int y;
@@ -621,7 +615,7 @@ static void gx_check_remap_palettes(struct graphics_data *graphics)
 }
 
 static int gx_get_tlut_id_mzx(struct graphics_data *graphics,
- struct video_layer *layer, Uint8 bg_color, Uint8 fg_color)
+ struct video_layer *layer, uint8_t bg_color, uint8_t fg_color)
 {
   int tcol = layer->transparent_col;
   int tlut_id;
@@ -654,7 +648,7 @@ static int gx_get_tlut_id_mzx(struct graphics_data *graphics,
 }
 
 static int gx_get_tlut_id_smzx(struct graphics_data *graphics,
- struct video_layer *layer, Uint8 bg_color, Uint8 fg_color)
+ struct video_layer *layer, uint8_t bg_color, uint8_t fg_color)
 {
   int palette_id = ((bg_color & 0xF) << 4) | (fg_color & 0xF);
   int idx0 = graphics->smzx_indices[palette_id * 4 + 0];
@@ -718,7 +712,7 @@ static void gx_set_tlut_smzx(struct graphics_data *graphics,
 }
 
 
-static Uint16 gx_get_char_value(struct video_layer *layer, Uint16 char_value)
+static uint16_t gx_get_char_value(struct video_layer *layer, uint16_t char_value)
 {
   if(char_value == INVISIBLE_CHAR)
     return INVISIBLE_CHAR;
@@ -737,11 +731,11 @@ static void gx_render_layer(struct graphics_data *graphics,
   struct ci4tlut *tlut;
   int last_tlut_id;
   int cur_tlut_id;
-  Uint16 char_value;
-  Uint8 bg_color;
-  Uint8 fg_color;
+  uint16_t char_value;
+  uint8_t bg_color;
+  uint8_t fg_color;
 
-  Uint32 x, y;
+  unsigned int x, y;
   int x1, x2, y1, y2;
   float u, v;
   float u2, v2;
@@ -878,8 +872,8 @@ static void gx_render_layer(struct graphics_data *graphics,
   GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 }
 
-static void gx_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void gx_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   struct gx_render_data *render_data = graphics->render_data;
   GXColor *pal = render_data->palette;
@@ -898,7 +892,7 @@ static void gx_render_cursor(struct graphics_data *graphics,
 }
 
 static void gx_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   const GXColor white = {255, 255, 255, 255};
 
@@ -964,7 +958,6 @@ void render_gx_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gx_init_video;
   renderer->free_video = gx_free_video;
-  renderer->check_video_mode = gx_check_video_mode;
   renderer->set_video_mode = gx_set_video_mode;
   renderer->update_colors = gx_update_colors;
   renderer->resize_screen = resize_screen_standard;

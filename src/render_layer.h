@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 #include "graphics.h"
 
-void render_layer(void * RESTRICT pixels, int force_bpp, Uint32 pitch,
+void render_layer(void * RESTRICT pixels, int force_bpp, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer);
 
 __M_END_DECLS

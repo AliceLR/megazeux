@@ -56,9 +56,8 @@
 #include "window.h"
 #include "world.h"
 #include "util.h"
-#include "io/dir.h"
 #include "io/path.h"
-#include "io/vfile.h"
+#include "io/vio.h"
 
 #include "audio/sfx.h"
 
@@ -348,8 +347,8 @@ __editor_maybe_static int char_select_next_tile(int current_char,
 __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
  int *width_ptr, int *height_ptr, int *select_charset, int selection_pal)
 {
-  Uint32 pal_layer = OVERLAY_LAYER;
-  Uint32 chars_layer = UI_LAYER;
+  uint32_t pal_layer = OVERLAY_LAYER;
+  uint32_t chars_layer = UI_LAYER;
   int allow_multichar = 0;
   int current_charset = 0;
   int screen_mode = 0;
@@ -774,7 +773,8 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
           {
             // Ignore text from these keys in situations where they are used
             // for tile movement instead...
-            if(get_key_status(keycode_internal, IKEY_MINUS) ||
+            if(key_char == '=' || key_char == '+' || key_char == '-' ||
+             get_key_status(keycode_internal, IKEY_MINUS) ||
              get_key_status(keycode_internal, IKEY_EQUALS) ||
              get_key_status(keycode_internal, IKEY_KP_MINUS) ||
              get_key_status(keycode_internal, IKEY_KP_PLUS))
@@ -1027,7 +1027,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
   write_string(di->title, title_x_offset, y, DI_TITLE, 0);
   draw_char(' ', DI_TITLE, title_x_offset - 1, y);
-  draw_char(' ', DI_TITLE, title_x_offset + (Uint32)strlen(di->title), y);
+  draw_char(' ', DI_TITLE, title_x_offset + (unsigned int)strlen(di->title), y);
 
   memset(vid_usage, -1, 2000);
 
@@ -1319,7 +1319,7 @@ static void draw_label(struct world *mzx_world, struct dialog *di,
   int y = di->y + e->y;
 
   if(src->respect_colors)
-    color_string_ext(src->text, x, y, DI_TEXT, PRO_CH, 16, true);
+    color_string_ext(src->text, x, y, DI_TEXT, true, PRO_CH, 16);
   else
     write_string_ext(src->text, x, y, DI_TEXT, true, PRO_CH, 16);
 }
@@ -1386,7 +1386,7 @@ static void draw_button(struct world *mzx_world, struct dialog *di,
 
   write_string(src->label, x + 1, y, color, 0);
   draw_char(' ', color, x, y);
-  draw_char(' ', color, x + (Uint32)strlen(src->label) + 1, y);
+  draw_char(' ', color, x + (unsigned int)strlen(src->label) + 1, y);
 
   if(active)
     cursor_hint(x + 1, y);
@@ -1449,7 +1449,7 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
     else
       sprintf(num_buffer, " ");
     fill_line(7, x, y, 32, DI_NUMERIC);
-    write_string(num_buffer, x + 6 - (Uint32)strlen(num_buffer), y,
+    write_string(num_buffer, x + 6 - (unsigned int)strlen(num_buffer), y,
      DI_NUMERIC, 0);
     // Buttons
     write_string(num_buttons, x + 7, y, DI_ARROWBUTTON, 0);
@@ -1802,7 +1802,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
 
     case IKEY_BACKSPACE:
     {
-      Sint32 result = current_value / 10;
+      int result = current_value / 10;
       if(result == 0 || result < src->lower_limit)
       {
         result = src->lower_limit;
@@ -1967,7 +1967,7 @@ static int key_file_selector(struct world *mzx_world, struct dialog *di,
       strcpy(new_path, src->base_path);
 
       if(!choose_file_ch(mzx_world, src->file_manager_exts, new_path,
-       src->file_manager_title, 2))
+       src->file_manager_title, ALLOW_SUBDIRS))
       {
         strcpy(src->result, new_path);
         di->done = 1;
@@ -2301,7 +2301,7 @@ static boolean slot_save_exists(const char *file, int slot)
 
   snprintf(path, MAX_PATH, "%s%i%s",
    cur_slot_prefix, slot, get_config()->save_slots_ext);
-  return !stat(path, &s);
+  return !vstat(path, &s);
 }
 
 static int click_slot_selector(struct world *mzx_world, struct dialog *di,
@@ -3023,8 +3023,6 @@ int slot_manager(struct world *mzx_world, char *ret,
 }
 
 // Shell for list_menu() (copies file chosen to ret and returns -1 for ESC)
-// dirs_okay of 1 means drive and directory changing is allowed.
-// dirs_okay of 2 means only subdirectories of the current dir are allowed
 
 #define FILESEL_MAX_ELEMENTS  64
 #define FILESEL_BASE_ELEMENTS 7
@@ -3056,16 +3054,16 @@ struct file_list_entry
  */
 static void file_list_get_mzx_world_name(struct file_list_entry *entry)
 {
-  FILE *mzx_file = fopen_unsafe(entry->filename, "rb");
+  vfile *mzx_file = vfopen_unsafe(entry->filename, "rb");
   char *world_name = entry->display + MAX_FILE_LIST_DISPLAY_MZX;
 
-  if(!fread(world_name, 24, 1, mzx_file))
+  if(!vfread(world_name, 24, 1, mzx_file))
     strcpy(world_name, "@0~c\x10 name read failed \x11");
   else
   if(!memcmp(world_name, "PK\x03\x04", 4))
     strcpy(world_name, "@0~c\x10 rearchived world \x11");
 
-  fclose(mzx_file);
+  vfclose(mzx_file);
 
   entry->display[MAX_FILE_LIST_DISPLAY - 1] = '\0';
   entry->loaded_world_name = true;
@@ -3255,33 +3253,34 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
 
 static boolean remove_files(char *directory_name, boolean remove_recursively)
 {
-  struct mzx_dir current_dir;
+  vdir *current_dir;
   char *current_dir_name;
   struct stat file_info;
   char *file_name;
   boolean success = true;
 
-  if(!dir_open(&current_dir, directory_name))
+  current_dir = vdir_open(directory_name);
+  if(!current_dir)
     return false;
 
   current_dir_name = cmalloc(MAX_PATH);
-  file_name = cmalloc(PATH_BUF_LEN);
+  file_name = cmalloc(MAX_PATH);
 
-  getcwd(current_dir_name, MAX_PATH);
-  chdir(directory_name);
+  vgetcwd(current_dir_name, MAX_PATH);
+  vchdir(directory_name);
 
   while(1)
   {
-    if(!dir_get_next_entry(&current_dir, file_name, NULL))
+    if(!vdir_read(current_dir, file_name, MAX_PATH, NULL))
       break;
 
-    if(stat(file_name, &file_info) < 0)
+    if(vstat(file_name, &file_info) < 0)
       continue;
 
     if(!S_ISDIR(file_info.st_mode))
     {
       // Only attempt to remove contents if remove_recursively is set...
-      if(!remove_recursively || unlink(file_name))
+      if(!remove_recursively || vunlink(file_name))
         success = false;
     }
     else
@@ -3289,28 +3288,27 @@ static boolean remove_files(char *directory_name, boolean remove_recursively)
     if(strcmp(file_name, ".") && strcmp(file_name, ".."))
     {
       if(!remove_recursively ||
-       !remove_files(file_name, true) || rmdir(file_name))
+       !remove_files(file_name, true) || vrmdir(file_name))
         success = false;
     }
   }
 
-  chdir(current_dir_name);
+  vchdir(current_dir_name);
 
   free(file_name);
   free(current_dir_name);
 
-  dir_close(&current_dir);
+  vdir_close(current_dir);
   return success;
 }
 
 __editor_maybe_static int file_manager(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
- const char *title, int dirs_okay, int allow_new, struct element **dialog_ext,
- int num_ext, int ext_height)
+ const char *title, enum allow_dirs allow_dirs, enum allow_new allow_new,
+ struct element **dialog_ext, int num_ext, int ext_height)
 {
   // FIXME no buffer size parameter for ret. this function assumes MAX_PATH.
-  // dirs_okay -- 0:none -- 1:all -- 2:subdirsonly
-  struct mzx_dir current_dir;
+  vdir *current_dir;
   char *file_name;
   struct stat file_info;
   char *current_dir_name;
@@ -3333,6 +3331,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   struct element *elements[FILESEL_MAX_ELEMENTS];
   int list_length = 17 - ext_height;
   int last_element = FILESEL_FILE_LIST;
+  boolean return_dir_is_base_dir = true;
+  boolean show_parent_dir;
   int i;
 
 #ifdef __WIN32__
@@ -3348,7 +3348,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
   // These are stack heavy so put them on the heap
   // This function is not performance sensitive anyway.
-  file_name = cmalloc(PATH_BUF_LEN);
+  file_name = cmalloc(MAX_PATH);
 
   // The current directory the file manager is in.
   current_dir_name = cmalloc(MAX_PATH);
@@ -3359,10 +3359,13 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   // Where the file manager needs to return on exit.
   return_dir_name = cmalloc(MAX_PATH);
 
-  if(allow_new)
+  if(allow_new != NO_NEW_FILES)
     last_element = FILESEL_FILENAME;
 
-  getcwd(return_dir_name, MAX_PATH);
+  // TODO: some platforms don't return this in the format MZX needs it.
+  vgetcwd(return_dir_name, MAX_PATH);
+  path_clean_slashes(return_dir_name, MAX_PATH);
+
   snprintf(current_dir_name, MAX_PATH, "%s", return_dir_name);
   current_dir_name[MAX_PATH - 1] = '\0';
 
@@ -3370,7 +3373,10 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   // to the input, that should be used as the base directory.
   // TODO: this is a bad way to do this. The base dir should be a param instead.
   if(path_get_directory(ret_path, MAX_PATH, ret) > 0)
+  {
     path_navigate(current_dir_name, MAX_PATH, ret_path);
+    return_dir_is_base_dir = false;
+  }
 
   snprintf(base_dir_name, MAX_PATH, "%s", current_dir_name);
   base_dir_name[MAX_PATH - 1] = '\0';
@@ -3387,14 +3393,30 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     chosen_file = 0;
     chosen_dir = 0;
 
-    //FIXME: something relies on being chdired here
-    chdir(current_dir_name);
+    /**
+     * Change to the current directory to make things like reading MZX files
+     * to display world names a little easier.
+     */
+    vchdir(current_dir_name);
 
-    if(!dir_open(&current_dir, current_dir_name))
+    current_dir = vdir_open(current_dir_name);
+    if(!current_dir)
       goto skip_dir;
 
-#if defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
-    if(dirs_okay == 1 && strlen(current_dir_name) > 1)
+    // Hide .. if changing directories isn't allowed or if the selected file
+    // should be in the current directory or a subdirectory of it. Also hide it
+    // if this is a root directory.
+    if(allow_dirs == NO_DIRS ||
+     (allow_dirs == ALLOW_SUBDIRS && !strcmp(current_dir_name, base_dir_name)) ||
+     path_is_root(current_dir_name))
+    {
+      show_parent_dir = false;
+    }
+    else
+      show_parent_dir = true;
+
+#if defined(CONFIG_3DS) || defined(CONFIG_SWITCH) || defined(CONFIG_WIIU)
+    if(show_parent_dir)
     {
       dir_list[num_dirs] = cmalloc(3);
       dir_list[num_dirs][0] = '.';
@@ -3406,8 +3428,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
     while(1)
     {
-      int dir_type;
-      if(!dir_get_next_entry(&current_dir, file_name, &dir_type))
+      enum vdir_type dir_type;
+      if(!vdir_read(current_dir, file_name, MAX_PATH, &dir_type))
         break;
 
       file_name_length = strlen(file_name);
@@ -3420,7 +3442,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       // need to use stat instead.
       if(dir_type == DIR_TYPE_UNKNOWN)
       {
-        if(stat(file_name, &file_info) < 0)
+        if(vstat(file_name, &file_info) < 0)
           continue;
 
         if(S_ISDIR(file_info.st_mode))
@@ -3434,9 +3456,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       if(dir_type == DIR_TYPE_DIR)
       {
         // Exclude .. from base dir in subdirsonly mode
-        if(dirs_okay &&
-         !(dirs_okay == 2 && !strcmp(file_name, "..") &&
-          !strcmp(current_dir_name, base_dir_name) ))
+        if(allow_dirs != NO_DIRS &&
+         !(!show_parent_dir && !strcmp(file_name, "..")))
         {
           dir_list[num_dirs] = cmalloc(file_name_length + 1);
           memcpy(dir_list[num_dirs], file_name, file_name_length + 1);
@@ -3482,16 +3503,16 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       }
     }
 
-    dir_close(&current_dir);
+    vdir_close(current_dir);
 skip_dir:
 
-    chdir(return_dir_name);
+    vchdir(return_dir_name);
 
     qsort(file_list, num_files, sizeof(char *), sort_function);
     qsort(dir_list, num_dirs, sizeof(char *), sort_function);
 
 #ifdef __WIN32__
-    if(dirs_okay == 1)
+    if(allow_dirs == ALLOW_ALL_DIRS)
     {
       drive_letter_bitmap = GetLogicalDrives();
 
@@ -3518,7 +3539,7 @@ skip_dir:
 #endif
 
 #ifdef CONFIG_DJGPP
-    if(dirs_okay == 1)
+    if(allow_dirs == ALLOW_ALL_DIRS)
     {
       int current_disk = getdisk();
       int max_disk = setdisk(current_disk);
@@ -3546,7 +3567,7 @@ skip_dir:
 #endif
 
 #ifdef CONFIG_WII
-    if(dirs_okay == 1)
+    if(allow_dirs == ALLOW_ALL_DIRS)
     {
       for(i = 0; i < STD_MAX; i++)
       {
@@ -3635,9 +3656,9 @@ skip_dir:
           strcpy(ret + ret_len, DIR_SEPARATOR);
 
         // TODO: for reliable results this needs to happen from the current dir.
-        chdir(current_dir_name);
+        vchdir(current_dir_name);
         path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
-        chdir(return_dir_name);
+        vchdir(return_dir_name);
 
         if(ret_path[0])
         {
@@ -3697,7 +3718,7 @@ skip_dir:
         if(default_ext)
           path_force_ext(ret, MAX_PATH, default_ext);
 
-        stat_result = stat(ret, &file_info);
+        stat_result = vstat(ret, &file_info);
 
         // It's actually a dir, oops!
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
@@ -3710,10 +3731,10 @@ skip_dir:
         }
 
         // We're creating a new file
-        if(allow_new)
+        if(allow_new != NO_NEW_FILES)
         {
           // File Exists
-          if((stat_result >= 0) && (allow_new == 1))
+          if((stat_result >= 0) && (allow_new == ALLOW_NEW_FILES))
           {
             char confirm_string[512];
             snprintf(confirm_string, 512, "%s already exists, overwrite?",
@@ -3763,7 +3784,7 @@ skip_dir:
         {
           path_join(full_name, MAX_PATH, current_dir_name, new_name);
 
-          if(stat(full_name, &file_info) < 0)
+          if(vstat(full_name, &file_info) < 0)
           {
             vmkdir(full_name, 0777);
           }
@@ -3782,7 +3803,7 @@ skip_dir:
       // Delete file
       case 4:
       {
-        if((stat(ret, &file_info) >= 0) &&
+        if((vstat(ret, &file_info) >= 0) &&
          strcmp(ret, "..") && strcmp(ret, "."))
         {
           char *confirm_string;
@@ -3792,7 +3813,7 @@ skip_dir:
            "Delete %s - are you sure?", ret_file);
 
           if(!confirm(mzx_world, confirm_string))
-            if(unlink(ret))
+            if(vunlink(ret))
               error("File could not be deleted.",
                ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 
@@ -3819,7 +3840,7 @@ skip_dir:
           path_join(new_path, MAX_PATH, current_dir_name, new_name);
 
           if(strcmp(old_path, new_path))
-            if(rename(old_path, new_path))
+            if(vrename(old_path, new_path))
               error("File rename failed.",
                ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 
@@ -3851,13 +3872,13 @@ skip_dir:
             if(!ask_yes_no(mzx_world,
              (char *)"Delete subdirectories recursively?"))
             {
-              if(!remove_files(file_name_ch, true) || rmdir(file_name_ch))
+              if(!remove_files(file_name_ch, true) || vrmdir(file_name_ch))
                 error("Directory could not be deleted.",
                  ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
             }
             else
             {
-              if(!remove_files(file_name_ch, false) || rmdir(file_name_ch))
+              if(!remove_files(file_name_ch, false) || vrmdir(file_name_ch))
                 error("Directory contains files or could not be deleted.",
                  ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
             }
@@ -3886,7 +3907,7 @@ skip_dir:
             path_join(new_path, MAX_PATH, current_dir_name, new_name);
 
             if(strcmp(old_path, new_path))
-              if(rename(old_path, new_path))
+              if(vrename(old_path, new_path))
                 error("Directory rename failed.",
                  ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 
@@ -3900,8 +3921,8 @@ skip_dir:
       }
     }
 
-    // No unallowed paths kthx
-    if(dirs_okay != 1)
+    // Filter out paths that violate the allowed directories mode.
+    if(allow_dirs != ALLOW_ALL_DIRS)
     {
       size_t base_dir_len = strlen(base_dir_name);
 
@@ -3910,7 +3931,7 @@ skip_dir:
        strstr(current_dir_name, "..") ||
 
       // or if there's an unallowed subdirectory
-       (!dirs_okay && path_has_directory(current_dir_name + base_dir_len)))
+       (allow_dirs == NO_DIRS && path_has_directory(current_dir_name + base_dir_len)))
       {
         memcpy(current_dir_name, base_dir_name, base_dir_len + 1);
         return_value = 1;
@@ -3923,7 +3944,7 @@ skip_dir:
       // for files selected for use in a game from the editor.
       // TODO should maybe do this regardless of the return path. The only
       // thing that would be affected is probably GLSL shader selection.
-      if(!strcmp(base_dir_name, return_dir_name))
+      if(return_dir_is_base_dir)
       {
         path_remove_prefix(ret, MAX_PATH, base_dir_name, base_dir_len);
       }
@@ -3970,17 +3991,17 @@ skip_dir:
 }
 
 int choose_file_ch(struct world *mzx_world, const char *const *wildcards,
- char *ret, const char *title, int dirs_okay)
+ char *ret, const char *title, enum allow_dirs allow_dirs)
 {
-  return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
-   0, NULL, 0, 0);
+  return file_manager(mzx_world, wildcards, NULL, ret, title, allow_dirs,
+   NO_NEW_FILES, NULL, 0, 0);
 }
 
 int new_file(struct world *mzx_world, const char *const *wildcards,
- const char *default_ext, char *ret, const char *title, int dirs_okay)
+ const char *default_ext, char *ret, const char *title, enum allow_dirs allow_dirs)
 {
-  return file_manager(mzx_world, wildcards, default_ext, ret, title, dirs_okay,
-   1, NULL, 0, 0);
+  return file_manager(mzx_world, wildcards, default_ext, ret, title, allow_dirs,
+   ALLOW_NEW_FILES, NULL, 0, 0);
 }
 
 #if defined(CONFIG_UPDATER) || defined(CONFIG_LOADSAVE_METER)
@@ -3996,7 +4017,7 @@ void meter(const char *title, unsigned int progress, unsigned int out_of)
   // Add title
   write_string(title, titlex, 10, DI_TITLE, 0);
   draw_char(' ', DI_TITLE, titlex - 1, 10);
-  draw_char(' ', DI_TITLE, titlex + (int)strlen(title), 10);
+  draw_char(' ', DI_TITLE, titlex + (unsigned int)strlen(title), 10);
   meter_interior(progress, out_of);
 }
 

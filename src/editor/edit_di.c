@@ -26,12 +26,8 @@
 #include "../const.h"
 #include "../core.h"
 #include "../counter.h"
-#include "../data.h"
-#include "../error.h"
 #include "../event.h"
-#include "../graphics.h"
 #include "../idput.h"
-#include "../intake.h"
 #include "../robot.h"
 #include "../util.h"
 #include "../window.h"
@@ -40,7 +36,6 @@
 
 #include "board.h"
 #include "configure.h"
-#include "edit.h"
 #include "edit_di.h"
 #include "param.h"
 #include "window.h"
@@ -939,8 +934,19 @@ void board_info(struct world *mzx_world)
   set_context(CTX_BOARD_INFO);
 
   strcpy(title_string, src_board->board_name);
-  strcpy(charset_string, src_board->charset_path);
-  strcpy(palette_string, src_board->palette_path);
+
+  charset_string[0] = '\0';
+  palette_string[0] = '\0';
+  if(src_board->charset_path)
+  {
+    snprintf(charset_string, MAX_PATH, "%s", src_board->charset_path);
+    charset_string[MAX_PATH - 1] = '\0';
+  }
+  if(src_board->palette_path)
+  {
+    snprintf(palette_string, MAX_PATH, "%s", src_board->palette_path);
+    palette_string[MAX_PATH - 1] = '\0';
+  }
 
   do
   {
@@ -1039,9 +1045,8 @@ void board_info(struct world *mzx_world)
     }
 
     src_board->time_limit = time_limit;
-
-    strcpy(src_board->charset_path, charset_string);
-    strcpy(src_board->palette_path, palette_string);
+    board_set_charset_path(src_board, charset_string, strlen(charset_string));
+    board_set_palette_path(src_board, palette_string, strlen(palette_string));
   }
 
   pop_context();

@@ -24,6 +24,7 @@
 
 __M_BEGIN_DECLS
 
+#include <limits.h>
 #include <stddef.h>
 #include "world_struct.h"
 
@@ -34,6 +35,43 @@ int parse_expression(struct world *mzx_world, char **expression, int *error,
 int parse_string_expression(struct world *mzx_world, char **_expression,
  int id, char *output, size_t output_left);
 #endif
+
+/* Guard against division by 0 and dividing INT_MIN by -1. */
+static inline int safe_divide_32(int a, int b)
+{
+  if(b == 0 || (a == INT_MIN && b == -1))
+    return 0;
+
+  return a / b;
+}
+
+/* Guard against division by 0 and dividing INT_MIN by -1. */
+static inline int safe_modulo_32(int a, int b)
+{
+  if(b == 0 || (a == INT_MIN && b == -1))
+    return 0;
+
+  return a % b;
+}
+
+/* Guard against shift by values under 0 and over 31. */
+static inline int safe_left_shift_32(int a, int b)
+{
+  return ((unsigned int)b < 32) ? a << b : 0;
+}
+
+/* Guard against shift by values under 0 and over 31. */
+static inline int safe_logical_right_shift_32(int a, int b)
+{
+  return ((unsigned int)b < 32) ? (unsigned int)a >> b : 0;
+}
+
+/* Guard against shift by values under 0 and over 31. */
+static inline int safe_arithmetic_right_shift_32(int a, int b)
+{
+  // Preserve sign for invalid exponents.
+  return ((unsigned int)b < 32) ? (signed int)a >> b : (signed int)a >> 31;
+}
 
 static inline char *tr_int_to_string(char dest[12], int value, size_t *len)
 {

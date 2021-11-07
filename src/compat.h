@@ -89,12 +89,22 @@ typedef unsigned char boolean;
 
 #ifdef CONFIG_NDS
 #include <nds.h>
+
+// Use iprintf/iscanf on NDS to save ~50 KB
+#define sscanf siscanf
+#define printf iprintf
+#define fprintf fiprintf
+#define sprintf siprintf
+#define snprintf sniprintf
+#define vsnprintf vsniprintf
 #endif
 
 #ifdef CONFIG_WII
 #define BOOL _BOOL
+#include <gcbool.h>
 #include <gctypes.h>
 #undef BOOL
+#undef FIXED
 #endif
 
 #ifdef CONFIG_EDITOR
@@ -223,40 +233,14 @@ static inline FILE *check_fopen(const char *path, const char *mode)
 
 #define fopen(path, mode) check_fopen(path, mode)
 
-// These functions have the warn_unused_result attribute but in most cases
-// right now we'd just print a warning. So, wrap them and print a warning.
-
-#include <unistd.h>
-
-static inline char *check_getcwd(char *buf, size_t size)
-{
-  char *ret = getcwd(buf, size);
-  if(!ret)
-  {
-    fprintf(stderr, "WARNING: Failed getcwd from %s\n", buf);
-    fflush(stderr);
-  }
-  return ret;
-}
-
-static inline int check_chdir(const char *path)
-{
-  int ret = chdir(path);
-  if(ret)
-  {
-    fprintf(stderr, "WARNING: failed chdir to %s\n", path);
-    fflush(stderr);
-  }
-  return ret;
-}
-
-#define getcwd(buf, size) check_getcwd(buf, size)
-#define chdir(path) check_chdir(path)
-
 // Also deprecate some notoriously bad string functions.
 // strncpy and strncat are unsafe functions that get cargo cult usage as "safe"
 // versions of strcpy and strcat (which they aren't). strtok is non-reentrant.
 
+#ifdef _WIN32
+// Some MinGW headers use these functions inline for some reason...
+#include <io.h>
+#endif
 #include <string.h>
 static inline char *check_strncpy(char *, const char *, size_t)
  __attribute__((deprecated));

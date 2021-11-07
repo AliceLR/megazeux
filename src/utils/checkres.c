@@ -23,6 +23,10 @@
 
 #include "../config.h"
 
+#ifndef VERSION_DATE
+#define VERSION_DATE
+#endif
+
 #define USAGE \
  "checkres :: MegaZeux " VERSION VERSION_DATE "\n" \
  "Usage: checkres [options] " \
@@ -72,12 +76,10 @@
  "\n"
 
 #include <ctype.h>
-#include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 #ifdef __WIN32__
 #include <strings.h>
@@ -95,6 +97,7 @@
 #include "../memcasecmp.h"
 #include "../world_format.h"
 #include "../io/memfile.h"
+#include "../io/vio.h"
 #include "../io/zip.h"
 
 // Contains some CORE_LIBSPEC functions, which should be fine if the object
@@ -220,7 +223,7 @@ static const char *decode_status(enum status status)
   }
 }
 
-static void _get_path(char *dest, const char *src)
+static boolean _get_path(char *dest, const char *src)
 {
   int i;
 
@@ -230,8 +233,13 @@ static void _get_path(char *dest, const char *src)
     i--;
 
   if(i > 0)
+  {
     memcpy(dest, src, i);
-  dest[i] = 0;
+    dest[i] = '\0';
+    return true;
+  }
+  dest[0] = '\0';
+  return false;
 }
 
 static void join_path(char *dest, const char *dir, const char *file)
@@ -573,63 +581,73 @@ static void strcpy_fsafe(char *dest, size_t dest_len, const char *src)
 static boolean path_search(const char *path_name, size_t base_len, int max_depth,
  void *data, void (*found_fn)(void *data, const char *name, size_t name_len))
 {
-  DIR *dir;
-  struct dirent *d;
+  vdir *dir;
   struct stat st;
   boolean join_paths = true;
 
   if(!strlen(path_name) || !strcmp(path_name, "."))
   {
-    dir = opendir(".");
+    dir = vdir_open(".");
     max_depth = MAX_PATH_DEPTH;
     join_paths = false;
     base_len = 0;
   }
   else
-    dir = opendir(path_name);
+    dir = vdir_open(path_name);
 
   if(dir)
   {
+    char buffer[MAX_PATH];
     char *_current = cmalloc(MAX_PATH);
     const char *current = NULL;
+    enum vdir_type type;
 
-    while((d = readdir(dir)) != NULL)
+    while(vdir_read(dir, buffer, MAX_PATH, &type))
     {
-      if(strcmp(d->d_name, ".") && strcmp(d->d_name, ".."))
+      if(strcmp(buffer, ".") && strcmp(buffer, ".."))
       {
         if(join_paths)
         {
-          join_path(_current, path_name, d->d_name);
+          join_path(_current, path_name, buffer);
           current = _current;
         }
         else
-          current = d->d_name;
+          current = buffer;
 
-        if(!stat(current, &st))
+        if(type == DIR_TYPE_UNKNOWN)
         {
-          if(S_ISDIR(st.st_mode))
+          if(!vstat(current, &st))
           {
-            // yolo
-            if(max_depth > 0)
-              path_search(current, base_len, max_depth - 1, data, found_fn);
-          }
-          else
+            if(S_ISREG(st.st_mode))
+              type = DIR_TYPE_FILE;
 
-          if(S_ISREG(st.st_mode))
+            if(S_ISDIR(st.st_mode))
+              type = DIR_TYPE_DIR;
+          }
+        }
+
+        if(type == DIR_TYPE_DIR)
+        {
+          // yolo
+          if(max_depth > 0)
+            path_search(current, base_len, max_depth - 1, data, found_fn);
+        }
+        else
+
+        if(type == DIR_TYPE_FILE)
+        {
+          // Strip off the base path if requested.
+          if(base_len && strlen(current) > base_len)
           {
-            // Strip off the base path if requested.
-            if(base_len && strlen(current) > base_len)
-            {
-              current += base_len;
-              while(*current == '\\' || *current == '/') current++;
-            }
-
-            found_fn(data, current, strlen(current));
+            current += base_len;
+            while(*current == '\\' || *current == '/') current++;
           }
+
+          found_fn(data, current, strlen(current));
         }
       }
     }
-    closedir(dir);
+    vdir_close(dir);
     free(_current);
     return true;
   }
@@ -1166,7 +1184,7 @@ static struct base_path *add_base_path(const char *path_name,
 
   size_t path_name_len = strlen(path_name);
 
-  if(stat(path_name, &st))
+  if(vstat(path_name, &st))
     return NULL;
 
   new_path = ccalloc(1, sizeof(struct base_path));
@@ -1428,7 +1446,7 @@ static void process_requirements(struct base_path **path_list,
         // Try to find an actual file
         join_path(path_buffer, current_path->actual_path, translated_path);
 
-        if(!stat(path_buffer, &stat_info))
+        if(!vstat(path_buffer, &stat_info))
         {
           found = true;
           break;
@@ -2158,6 +2176,98 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 /* Legacy Worlds */
 /*****************/
 
+#define MAX_PASSWORD_LENGTH 15
+
+// From legacy_world.c
+static uint8_t get_pw_xor_code(char *password, int pro_method)
+{
+  static const char magic_code[16] =
+   "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
+
+  int work = 85; // Start with 85... (01010101)
+  size_t i;
+
+  // First, normalize password...
+  for(i = 0; i < MAX_PASSWORD_LENGTH; i++)
+  {
+    password[i] ^= magic_code[i];
+    password[i] -= 0x12 + pro_method;
+    password[i] ^= 0x8D;
+  }
+
+  // Clear pw after first null
+  for(i = strlen(password); i < MAX_PASSWORD_LENGTH; i++)
+  {
+    password[i] = 0;
+  }
+
+  for(i = 0; i < MAX_PASSWORD_LENGTH; i++)
+  {
+    //For each byte, roll once to the left and xor in pw byte if it
+    //is an odd character, or add in pw byte if it is an even character.
+    work <<= 1;
+    if(work > 255)
+      work ^= 257; // Wraparound from roll
+
+    if(i & 1)
+    {
+      work += (signed char)password[i]; // Add (even byte)
+      if(work > 255)
+        work ^= 257; // Wraparound from add
+    }
+    else
+    {
+      work ^= (signed char)password[i]; // XOR (odd byte);
+    }
+  }
+  // To factor in protection method, add it in and roll one last time
+  work += pro_method;
+  if(work > 255)
+    work ^= 257;
+
+  work <<= 1;
+  if(work > 255)
+    work ^= 257;
+
+  // Can't be 0-
+  if(work == 0)
+    work = 86; // (01010110)
+  // Done!
+  return work;
+}
+
+#if ARCHITECTURE_BITS == 64
+#define ALIGN_TYPE uint64_t
+#define ALIGN_XOR(x) ((x) | (x << 8) | (x << 16) | (x << 24) | \
+ (x << 32) | (x << 40) | (x << 48) | (x << 56))
+#else
+#define ALIGN_TYPE uint32_t
+#define ALIGN_XOR(x) ((x) | (x << 8) | (x << 16) | (x << 24))
+#endif
+
+static void _decrypt_legacy_world(struct memfile *mf, char *password,
+ int protection_method)
+{
+  ALIGN_TYPE xor = get_pw_xor_code(password, protection_method);
+  ALIGN_TYPE xor_w = ALIGN_XOR(xor);
+  unsigned char *pos = mf->current;
+
+  fprintf(stderr, "xor=%u, password: %s\n", (unsigned int)xor, password);
+  fflush(stderr);
+
+  while(pos < mf->end && ((size_t)pos) % sizeof(ALIGN_TYPE))
+    *(pos++) ^= xor;
+
+  while(mf->end - pos >= (ptrdiff_t)sizeof(ALIGN_TYPE))
+  {
+    *((ALIGN_TYPE *)pos) ^= xor_w;
+    pos += sizeof(ALIGN_TYPE);
+  }
+
+  while(pos < mf->end)
+    *(pos++) ^= xor;
+}
+
 static enum status parse_legacy_robot(struct memfile *mf,
  struct base_file *file, int board_num, int robot_num)
 {
@@ -2197,7 +2307,7 @@ static enum status parse_legacy_robot(struct memfile *mf,
     // This includes the global robots in Slave Pit and Wes.
     if(ret && !used)
     {
-      warn("Unused robot with corruption detected (this is safe to ignore).\n");
+      warnhere("Unused robot with corruption detected (this is safe to ignore).\n");
       ret = SUCCESS;
     }
   }
@@ -2400,7 +2510,7 @@ static enum status parse_legacy_board(struct memfile *mf,
     ret = parse_legacy_robot(mf, file, board_num, i + 1);
     if(ret != SUCCESS)
     {
-      warnhere("Failed processing robot %d\n", i + 1);
+      warnhere("Error processing robot %d\n", i + 1);
       break;
     }
   }
@@ -2414,7 +2524,7 @@ struct legacy_board {
 };
 
 static enum status parse_legacy_world(struct memfile *mf,
- struct base_file *file)
+ struct base_file *file, int protection_method)
 {
   int global_robot_offset;
   struct legacy_board board_list[MAX_BOARDS];
@@ -2429,6 +2539,9 @@ static enum status parse_legacy_world(struct memfile *mf,
     warnhere("couldn't seek to global robot position (truncated)\n");
     return CORRUPT_WORLD;
   }
+  // Protected worlds: everything is offset 15 bytes.
+  if(protection_method)
+    mfseek(mf, MAX_PASSWORD_LENGTH, SEEK_CUR);
 
   // Absolute offset (in bytes) of global robot
   global_robot_offset = mfgetd(mf);
@@ -2515,15 +2628,15 @@ static enum status parse_legacy_world(struct memfile *mf,
     if(mfseek(mf, board->offset, SEEK_SET) != 0)
     {
       warnhere("Failed to seek to position of board %d\n", i);
-      return CORRUPT_WORLD;
+      continue;
     }
 
     // parse this board atomically
     ret = parse_legacy_board(mf, file, i);
     if(ret != SUCCESS)
     {
-      warnhere("Failed processing board %d\n", i);
-      goto err_out;
+      warnhere("Error processing board %d\n", i);
+      continue;
     }
   }
 
@@ -2540,7 +2653,6 @@ static enum status parse_legacy_world(struct memfile *mf,
   if(ret != SUCCESS)
     warnhere("Failed processing global robot\n");
 
-err_out:
   return ret;
 }
 
@@ -2650,7 +2762,7 @@ static enum status parse_sfx_file(struct memfile *mf, struct base_file *file)
 }
 
 static enum status parse_world(struct memfile *mf, struct base_file *file,
- int not_a_world)
+ boolean is_a_world)
 {
   struct zip_archive *zp = zip_open_mem_read(mf->start,
    mf->end - mf->start);
@@ -2671,16 +2783,16 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
     goto err_close;
   }
 
-  assign_fprops(zp, not_a_world);
+  world_assign_file_ids(zp, is_a_world);
 
-  while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, &board_id, &robot_id))
+  while(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &file_id, &board_id, &robot_id))
   {
     switch(file_id)
     {
-      case FPROP_WORLD_GLOBAL_ROBOT:
-      case FPROP_BOARD_INFO:
-      case FPROP_ROBOT:
-      case FPROP_WORLD_SFX:
+      case FILE_ID_WORLD_GLOBAL_ROBOT:
+      case FILE_ID_BOARD_INFO:
+      case FILE_ID_ROBOT:
+      case FILE_ID_WORLD_SFX:
       {
         zip_get_next_uncompressed_size(zp, &actual_size);
         if(allocated_size < actual_size)
@@ -2692,27 +2804,27 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
         zip_read_file(zp, buffer, actual_size, &actual_size);
         mfopen(buffer, actual_size, &buf_file);
 
-        if(file_id == FPROP_BOARD_INFO)
+        if(file_id == FILE_ID_BOARD_INFO)
         {
           trace("Board %u\n", board_id);
           ret = parse_board_info(&buf_file, file, (int)board_id);
         }
         else
 
-        if(file_id == FPROP_ROBOT)
+        if(file_id == FILE_ID_ROBOT)
         {
           ret = parse_robot_info(&buf_file, file, (int)board_id, (int)robot_id);
         }
         else
 
-        if(file_id == FPROP_WORLD_GLOBAL_ROBOT)
+        if(file_id == FILE_ID_WORLD_GLOBAL_ROBOT)
         {
           trace("Global robot\n");
           ret = parse_robot_info(&buf_file, file, NO_BOARD, GLOBAL_ROBOT);
         }
         else
 
-        if(file_id == FPROP_WORLD_SFX)
+        if(file_id == FILE_ID_WORLD_SFX)
         {
           trace("SFX table\n");
           ret = parse_sfx_file(&buf_file, file);
@@ -2763,23 +2875,57 @@ static enum status parse_board_file(struct memfile *mf, struct base_file *file)
     return parse_legacy_board(mf, file, -1);
 
   if(file_version <= MZX_VERSION)
-    return parse_world(mf, file, 1);
+    return parse_world(mf, file, false);
 
   return MAGIC_CHECK_FAILED;
 }
 
 static enum status parse_world_file(struct memfile *mf, struct base_file *file)
 {
-  unsigned char magic[3];
+  unsigned char magic[4];
+  int protection_method;
   int file_version;
+
+  // Truncation safety check.
+  if(!mfhasspace(64, mf))
+    return FREAD_FAILED;
 
   // skip to protected byte; don't care about world name
   if(mfseek(mf, LEGACY_WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
     return FSEEK_FAILED;
 
-  // can't yet support protected worlds
-  if(mfgetc(mf) != 0)
-    return PROTECTED_WORLD;
+  protection_method = mfgetc(mf);
+  if(protection_method != 0)
+  {
+    // World is probably protected (or possibly junk).
+    char password[16];
+    long magic_pos;
+
+    if(protection_method < 0 || protection_method > 3)
+      return MAGIC_CHECK_FAILED;
+
+    if(mfread(password, 1, MAX_PASSWORD_LENGTH, mf) != MAX_PASSWORD_LENGTH)
+      return FREAD_FAILED;
+    password[MAX_PASSWORD_LENGTH] = '\0';
+
+    magic_pos = mftell(mf);
+    if(mfread(magic, 1, 4, mf) != 4)
+      return FREAD_FAILED;
+
+    file_version = _world_magic(magic);
+    if(file_version <= 0)
+    {
+      // 1.xx world magic is located one byte further in the file.
+      file_version = _world_magic(magic + 1);
+      if(file_version != V100)
+        return MAGIC_CHECK_FAILED;
+
+      return MZX_100_NOT_SUPPORTED;
+    }
+    mfseek(mf, magic_pos + 3, SEEK_SET);
+    _decrypt_legacy_world(mf, password, protection_method);
+    mfseek(mf, magic_pos, SEEK_SET);
+  }
 
   // read in world magic (version)
   if(mfread(magic, 1, 3, mf) != 3)
@@ -2796,24 +2942,21 @@ static enum status parse_world_file(struct memfile *mf, struct base_file *file)
   file->world_version = file_version;
 
   if(file_version <= MZX_LEGACY_FORMAT_VERSION)
-    return parse_legacy_world(mf, file);
+    return parse_legacy_world(mf, file, protection_method);
 
   if(file_version <= MZX_VERSION)
-    return parse_world(mf, file, 0);
+    return parse_world(mf, file, true);
 
   return MAGIC_CHECK_FAILED;
 }
 
-static char *load_file(FILE *fp, size_t *buf_size)
+static char *load_file(vfile *vf, size_t *buf_size)
 {
   char *buffer;
-
-  fseek(fp, 0, SEEK_END);
-  *buf_size = ftell(fp);
-  rewind(fp);
+  *buf_size = vfilelength(vf, true);
 
   buffer = cmalloc(*buf_size);
-  *buf_size = fread(buffer, 1, *buf_size, fp);
+  *buf_size = vfread(buffer, 1, *buf_size, vf);
 
   return buffer;
 }
@@ -2837,21 +2980,22 @@ static enum status parse_file(const char *file_name,
   struct memfile mf;
   char *buffer = NULL;
   size_t buf_size;
-  FILE *fp;
+  vfile *vf;
   int i;
 
   enum status ret = SUCCESS;
 
-  fp = fopen_unsafe(file_name, "rb");
+  vf = vfopen_unsafe(file_name, "rb");
   len = strlen(file_name);
   ext = len >= 4 ? (char *)file_name + len - 4 : NULL;
 
-  _get_path(file_dir, file_name);
+  if(!_get_path(file_dir, file_name))
+    strcpy(file_dir, ".");
 
-  if(fp && ext && !strcasecmp(ext, ".MZX"))
+  if(vf && ext && !strcasecmp(ext, ".MZX"))
   {
-    buffer = load_file(fp, &buf_size);
-    fclose(fp);
+    buffer = load_file(vf, &buf_size);
+    vfclose(vf);
 
     // Add the containing directory as a base path
     add_base_path(file_dir, &path_list, &path_list_size, &path_list_alloc);
@@ -2865,10 +3009,10 @@ static enum status parse_file(const char *file_name,
   }
   else
 
-  if(fp && ext && !strcasecmp(ext, ".MZB"))
+  if(vf && ext && !strcasecmp(ext, ".MZB"))
   {
-    buffer = load_file(fp, &buf_size);
-    fclose(fp);
+    buffer = load_file(vf, &buf_size);
+    vfclose(vf);
 
     // Add the containing directory as a base path
     add_base_path(file_dir, &path_list, &path_list_size, &path_list_alloc);
@@ -2882,7 +3026,7 @@ static enum status parse_file(const char *file_name,
   }
   else
 
-  if(fp && !stat(file_name, &stat_info) && S_ISREG(stat_info.st_mode))
+  if(vf && !vstat(file_name, &stat_info) && S_ISREG(stat_info.st_mode))
   {
     // Is a file but isn't an .mzx or an .mzb? Try to read it as a zip...
     struct base_path *zip_base;
@@ -2891,7 +3035,7 @@ static enum status parse_file(const char *file_name,
     size_t actual_size;
     char name_buffer[MAX_PATH];
 
-    fclose(fp);
+    vfclose(vf);
 
     // Add the zip as a base path
     // This will open the zip and read its directory
@@ -2917,7 +3061,7 @@ static enum status parse_file(const char *file_name,
         buffer = ccalloc(1, actual_size);
         if(ZIP_SUCCESS != zip_read_file(zp, buffer, actual_size, &actual_size))
         {
-          warn("Error processing '%s': %s\n\n", name_buffer,
+          warnhere("Error processing '%s': %s\n\n", name_buffer,
            decode_status(ZIP_FAILED));
           free(buffer);
           continue;
@@ -2939,7 +3083,7 @@ static enum status parse_file(const char *file_name,
         if(ret != SUCCESS)
         {
           // Keep going; other files in the archive may not be corrupt.
-          warn("Error processing '%s': %s\n\n", name_buffer, decode_status(ret));
+          warnhere("Error processing '%s': %s\n\n", name_buffer, decode_status(ret));
           ret = SUCCESS;
         }
         free(buffer);
@@ -2963,7 +3107,7 @@ static enum status parse_file(const char *file_name,
      &path_list_size, &path_list_alloc);
     char name_buffer[MAX_PATH];
 
-    if(fp) fclose(fp);
+    if(vf) vfclose(vf);
     if(!dir_base)
       return DIRENT_FAILED;
 
@@ -2972,16 +3116,16 @@ static enum status parse_file(const char *file_name,
       current_file = file_list[i];
       join_path(name_buffer, file_name, current_file->file_name);
 
-      fp = fopen_unsafe(name_buffer, "rb");
+      vf = vfopen_unsafe(name_buffer, "rb");
       len = strlen(current_file->file_name);
       ext = len >= 4 ? current_file->file_name + len - 4 : NULL;
-      if(fp)
+      if(vf)
       {
         // NOTE: the relative paths of these are automatically added in
         // add_base_files_from_path. The base file itself doesn't need a
         // relative path because it's being created as the cwd.
-        buffer = load_file(fp, &buf_size);
-        fclose(fp);
+        buffer = load_file(vf, &buf_size);
+        vfclose(vf);
 
         mfopen(buffer, buf_size, &mf);
 
@@ -2997,13 +3141,13 @@ static enum status parse_file(const char *file_name,
         if(ret != SUCCESS)
         {
           // Keep going; other files in the path may not be corrupt.
-          warn("Error processing '%s': %s\n", current_file->file_name,
+          warnhere("Error processing '%s': %s\n", current_file->file_name,
            decode_status(ret));
           ret = SUCCESS;
         }
       }
       else
-        warn("Failed to open '%s' for reading\n", current_file->file_name);
+        warnhere("Failed to open '%s' for reading\n", current_file->file_name);
     }
   }
 

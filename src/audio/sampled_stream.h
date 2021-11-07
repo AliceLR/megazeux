@@ -31,36 +31,36 @@ __M_BEGIN_DECLS
 struct sampled_stream
 {
   struct audio_stream a;
-  Uint32 frequency;
-  Sint16 *output_data;
-  Uint32 data_window_length;
-  Uint32 allocated_data_length;
-  Uint32 prologue_length;
-  Uint32 epilogue_length;
-  Uint32 stream_offset;
-  Uint32 channels;
-  Uint32 negative_comp;
-  Uint32 use_volume;
-  Sint64 frequency_delta;
-  Sint64 sample_index;
-  void (* set_frequency)(struct sampled_stream *s_src, Uint32 frequency);
-  Uint32 (* get_frequency)(struct sampled_stream *s_src);
+  size_t frequency;
+  int16_t *output_data;
+  size_t data_window_length;
+  size_t allocated_data_length;
+  size_t prologue_length;
+  size_t epilogue_length;
+  size_t stream_offset;
+  size_t negative_comp;
+  size_t channels;
+  boolean use_volume;
+  int64_t frequency_delta;
+  int64_t sample_index;
+  void      (* set_frequency)(struct sampled_stream *s_src, uint32_t frequency);
+  uint32_t  (* get_frequency)(struct sampled_stream *s_src);
 };
 
 struct sampled_stream_spec
 {
-  void (* set_frequency)(struct sampled_stream *s_src, Uint32 frequency);
-  Uint32 (* get_frequency)(struct sampled_stream *s_src);
+  void      (* set_frequency)(struct sampled_stream *s_src, uint32_t frequency);
+  uint32_t  (* get_frequency)(struct sampled_stream *s_src);
 };
 
 void sampled_set_buffer(struct sampled_stream *s_src);
-void sampled_mix_data(struct sampled_stream *s_src, Sint32 *dest_buffer,
- Uint32 len);
+void sampled_mix_data(struct sampled_stream *s_src,
+ int32_t * RESTRICT dest_buffer, size_t dest_frames, unsigned int dest_channels);
 void sampled_destruct(struct audio_stream *a_src);
 
 void initialize_sampled_stream(struct sampled_stream *s_src,
- struct sampled_stream_spec *s_spec, Uint32 frequency, Uint32 channels,
- Uint32 use_volume);
+ struct sampled_stream_spec *s_spec, uint32_t frequency, uint32_t channels,
+ boolean use_volume);
 
 __M_END_DECLS
 

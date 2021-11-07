@@ -14,7 +14,7 @@ include contrib/libxmp/Makefile.megazeux
 # Linking with g++ is only necessary if linking the C++ standard library
 # (libstdc++ or libc++) is required; usually it isn't, and gcc can be used.
 #
-LINK_CC := ${CC}
+LINK_CC ?= ${CC}
 
 core_src = src
 core_obj = src/.build
@@ -29,10 +29,9 @@ network_src = src/network
 network_obj = src/network/.build
 
 core_flags   += -ffast-math -funsigned-char
-core_flags   += -Wmissing-format-attribute -Wpointer-arith
-core_flags   += -Wwrite-strings
-core_cflags  += ${CFLAGS} -Wmissing-prototypes
-core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
+core_flags   += -Wmissing-format-attribute
+core_cflags  += ${CFLAGS}
+core_cxxflags = ${CXXFLAGS}
 
 ifneq (${PLATFORM},emscripten)
 core_flags   += -I${PREFIX}/include
@@ -124,10 +123,10 @@ core_cobjs := \
   ${core_obj}/util.o              \
   ${core_obj}/window.o            \
   ${core_obj}/world.o             \
-  ${io_obj}/dir.o                 \
   ${io_obj}/fsafeopen.o           \
   ${io_obj}/path.o                \
-  ${io_obj}/vfile.o               \
+  ${io_obj}/vfs.o                 \
+  ${io_obj}/vio.o                 \
   ${io_obj}/zip.o                 \
   ${io_obj}/zip_stream.o
 
@@ -138,20 +137,6 @@ core_cobjs := \
 core_cxxobjs :=
 
 #
-# Hack to avoid silly warnings from devkitPro headers
-#
-ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_PSP}),)
-core_cflags += -Wstrict-prototypes
-endif
-
-#
-# Hack to avoid silly warnings from Android headers
-#
-ifeq (${PLATFORM},android)
-core_cflags += -Wno-strict-prototypes
-endif
-
-#
 # These are really just hacks and should be moved elsewhere
 #
 ifeq (${BUILD_NDS},1)
@@ -159,7 +144,7 @@ core_cobjs += arch/nds/protected_palette.bin.o
 core_cobjs += arch/nds/audio.o
 core_cobjs += arch/nds/platform.o arch/nds/event.o
 core_cobjs += arch/nds/render.o arch/nds/evq.o
-ifneq (${BUILD_DEBYTECODE},1)
+ifeq (${BUILD_EXTRAM},1)
 core_cobjs += arch/nds/dlmalloc.o
 core_cobjs += arch/nds/ram.o arch/nds/extmem.o
 endif
@@ -216,6 +201,10 @@ ifeq (${BUILD_HELPSYS},1)
 core_cobjs += ${core_obj}/helpsys.o
 endif
 
+ifeq (${BUILD_EXTRAM},1)
+core_cobjs += ${core_obj}/extmem.o
+endif
+
 render_layer_software = 0
 
 ifeq (${BUILD_RENDER_SOFT},1)
@@ -247,6 +236,7 @@ endif
 # Shader renderers (OGL>=2, OGLES=2)
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 core_cobjs += ${core_obj}/render_glsl.o
+render_layer_software = 1
 endif
 
 #
@@ -256,10 +246,6 @@ endif
 ifeq (${BUILD_EGL},1)
 core_cobjs += ${core_obj}/render_egl.o
 core_ldflags := -lEGL ${core_ldflags}
-ifneq (${X11DIR},)
-core_flags += ${X11_CFLAGS}
-core_ldflags := ${X11_LDFLAGS} ${core_ldflags}
-endif
 endif
 
 # Overlay renderers
@@ -286,10 +272,7 @@ core_cobjs := ${core_obj}/render_layer.o ${core_cobjs}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
-core_cflags += -I${gdm2s3m_src}
-core_cxxflags += -I${gdm2s3m_src}
-core_cobjs += ${gdm2s3m_objs}
-core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
+core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug -DHAVE_INTTYPES_H
 core_cxxobjs += ${audio_obj}/audio_modplug.o ${libmodplug_objs}
 endif
 
@@ -336,18 +319,21 @@ audio_cobjs := \
  ${audio_obj}/audio_pcs.o      \
  ${audio_obj}/audio_wav.o      \
  ${audio_obj}/ext.o            \
- ${audio_obj}/sampled_stream.o \
  ${audio_obj}/sfx.o
 
+audio_cxxobjs := \
+ ${audio_obj}/sampled_stream.o
+
 ifneq (${VORBIS},)
+core_flags += ${VORBIS_CFLAGS}
+core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
 audio_cobjs += \
  ${audio_obj}/audio_vorbis.o
 endif
-
-core_flags += ${VORBIS_CFLAGS}
-core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
 endif
+
 core_cobjs += ${audio_cobjs}
+core_cxxobjs += ${audio_cxxobjs}
 else
 # The editor needs this for sfx_strs...
 ifeq (${BUILD_EDITOR},1)
@@ -391,6 +377,12 @@ endif
 
 endif
 
+# X11 (headers included by SDL_syswm.h).
+ifneq (${X11DIR},)
+core_flags += ${X11_CFLAGS}
+core_ldflags += ${X11_LDFLAGS}
+endif
+
 core_cflags := ${ZLIB_CFLAGS} ${core_cflags}
 core_ldflags := ${ZLIB_LDFLAGS} ${core_ldflags}
 
@@ -424,6 +416,10 @@ endif
 # external libraries for MinGW and (particularly) Android builds.
 #
 ifneq (${core_cxxobjs},)
+# Exception: force C++ linking when building against sanitizers.
+ifneq (${SANITIZER},)
+LINK_CC := ${CXX}
+endif
 ifneq (${LINK_CC},${CXX})
 core_cxxobjs := ${core_obj}/nostdc++.o ${core_cxxobjs}
 endif
@@ -478,7 +474,7 @@ endif
 ${mzx}: ${core_target} ${editor_target} ${mzx_objs}
 	$(if ${V},,@echo "  LINK    " ${mzx})
 ifeq (${BUILD_MODULAR},1)
-	${CC} ${mzx_objs} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
+	${LINK_CC} ${mzx_objs} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
 	  ${DSORPATH} -L. -lcore -leditor \
 	  ${mzx_ldflags}
 else
@@ -514,7 +510,7 @@ endif
 ${mzxrun}: ${core_target} ${mzxrun_objs}
 	$(if ${V},,@echo "  LINK    " ${mzxrun})
 ifeq (${BUILD_MODULAR},1)
-	${CC} ${mzxrun_objs} -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
+	${LINK_CC} ${mzxrun_objs} -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
 	  ${DSORPATH} -L. -lcore ${mzxrun_ldflags}
 else
 	${LINK_CC} ${mzxrun_objs} ${core_target} \

@@ -22,12 +22,21 @@
 
 #version 110
 
+#ifdef GL_ES
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+#endif
+
 uniform sampler2D baseMap;
 
 varying vec2 vTexcoord;
 
 // Keep these the same as in render_glsl.c
 #define CHARSET_COLS      64.0
+#define CHARSET_ROWS_EACH 4.0
 #define TEX_DATA_WIDTH    512.0
 #define TEX_DATA_HEIGHT   1024.0
 #define TEX_DATA_PAL_Y    896.0
@@ -65,44 +74,25 @@ int int_(float v)
   return int(v + 0.01);
 }
 
-// NOTE: Layer data packing scheme
-// (highest two bits currently unused but included as part of the char)
+// NOTE: Layer data packing scheme.
+// This is intentionally wasteful so the components don't interfere with each
+// other on old and embedded cards with poor float precision.
+// C = char.
+// P = subpalette (or a fully transparent char if any high bits are set).
 // w        z        y        x
 // 00000000 00000000 00000000 00000000
-// CCCCCCCC CCCCCCBB BBBBBBBF FFFFFFFF
+// CCCCCCCC CCCCCCCC PPPPPPPP PPPPPPPP
+#define PACK_SUBPAL_LO x
+#define PACK_SUBPAL_HI y
+#define PACK_CHAR      z
+#define PACK_CHARSET   w
 
 // Some older cards/drivers tend to be slightly off; slight variations
 // in values here are intentional.
 
-/**
- * Get the char number from packed layer data as (approx.) an int.
- */
-
-float layer_get_char(vec4 layer_data)
+float layer_unpack(float layer_data)
 {
-  return floor_(layer_data.z * 63.75) + (layer_data.w * 255.0) * 64.0;
-}
-
-/**
- * Get the foreground color from layer data as (approx.) an int.
- */
-
-float layer_get_fg_color(vec4 layer_data)
-{
-  return
-   (layer_data.x * 255.001) +
-   fract_(layer_data.y * 127.501) * 512.0;
-}
-
-/**
- * Get the background color from layer data as (approx.) an int.
- */
-
-float layer_get_bg_color(vec4 layer_data)
-{
-  return
-   floor_(layer_data.y * 127.5) +
-   fract_(layer_data.z * 63.751) * 512.0;
+  return layer_data * 255.001;
 }
 
 void main( void )
@@ -110,15 +100,15 @@ void main( void )
   /**
    * Get the packed char/color data for this position from the current layer.
    * vTexcoord will be provided in the range of x=[0..layer.w), y=[0..layer.h).
+   * Note that floor() is not required on vTexcoord since the texture filtering
+   * is set to GL_NEAREST (floor() also causes bugs here on some old drivers).
    */
   float layer_x = (vTexcoord.x + TEX_DATA_LAYER_X) / TEX_DATA_WIDTH;
   float layer_y = (vTexcoord.y + TEX_DATA_LAYER_Y) / TEX_DATA_HEIGHT;
   vec4 layer_data = texture2D(baseMap, vec2(layer_x, layer_y));
 
-  float fg_color = layer_get_fg_color(layer_data);
-  float bg_color = layer_get_bg_color(layer_data);
-
-  if(fg_color >= COLOR_TRANSPARENT || bg_color >= COLOR_TRANSPARENT)
+  // If any of the high subpalette bits are set, display a transparent pixel...
+  if(layer_unpack(layer_data.PACK_SUBPAL_HI) >= 0.999)
   {
     gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
   }
@@ -138,20 +128,20 @@ void main( void )
      * 2) Calculate the position on the texture in pixel scale where the
      * current char is and add the offset from step 1.
      */
-    float char_num = layer_get_char(layer_data);
+    float char_num = layer_unpack(layer_data.PACK_CHAR);
+    float char_set = layer_unpack(layer_data.PACK_CHARSET);
 
     int px = int_(fract_(vTexcoord.x) * CHAR_W) / 2 * 2;
-    int py = int_(fract_(vTexcoord.y) * CHAR_H);
 
     int char_x = int_(mod_(char_num, CHARSET_COLS) * CHAR_W) + px;
-    int char_y = int_(char_num / CHARSET_COLS) * CHAR_H_I + py;
+    float char_y = floor_(char_num / CHARSET_COLS) + (char_set * CHARSET_ROWS_EACH);
 
     /**
      * Get the current pixels of the current char from the texture.
      * Together, these determine which color of the current subpalette to use.
      */
     float char_tex_x = float(char_x) / TEX_DATA_WIDTH;
-    float char_tex_y = float(char_y) / TEX_DATA_HEIGHT;
+    float char_tex_y = (char_y + fract_(vTexcoord.y)) * CHAR_H / TEX_DATA_HEIGHT;
 
     vec4 char_pix_l = texture2D(baseMap, vec2(char_tex_x, char_tex_y));
     vec4 char_pix_r = texture2D(baseMap, vec2(char_tex_x + PIXEL_X, char_tex_y));
@@ -187,9 +177,8 @@ void main( void )
       }
     }
 
-    float subpal = mod_(floor_(bg_color), 16.0) * 16.0 + mod_(fg_color, 16.0);
-
-    float smzx_tex_x = subpal / TEX_DATA_WIDTH;
+    float subpalette = layer_unpack(layer_data.PACK_SUBPAL_LO);
+    float smzx_tex_x = subpalette / TEX_DATA_WIDTH;
     float smzx_tex_y = (float(smzx_col) + TEX_DATA_IDX_Y) / TEX_DATA_HEIGHT;
 
     // NOTE: This must use the x component.

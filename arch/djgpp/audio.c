@@ -28,6 +28,7 @@
 #include <sys/nearptr.h>
 #undef delay
 #include "../../src/audio/audio.h"
+#include "../../src/audio/audio_struct.h"
 #include "platform_djgpp.h"
 
 #ifdef CONFIG_AUDIO
@@ -35,17 +36,17 @@
 struct sb_config
 {
   // from environment variable, config, ...
-  Uint16 port;
-  Uint8 irq, dma8, dma16, type;
+  uint16_t port;
+  uint8_t irq, dma8, dma16, type;
   // from DSP
-  Uint8 version_major, version_minor;
+  uint8_t version_major, version_minor;
   // from allocation
   int buffer_selector, buffer_segment;
-  Uint8 *buffer;
-  Uint8 buffer_block;
+  uint8_t *buffer;
+  uint8_t buffer_block;
   // driver-specific:
   // - to restore on deinit
-  Uint8 old_21h;
+  uint8_t old_21h;
   _go32_dpmi_seginfo old_irq_handler;
   // - if nearptr enabled
   boolean nearptr_buffer_enabled;
@@ -59,7 +60,7 @@ static void audio_sb_fill_block(void)
   int block_size_bytes = audio.buffer_samples << 2;
   int offset = (sb_cfg.buffer_block != 0) ? block_size_bytes : 0;
 
-  audio_callback((Sint16*) (sb_cfg.buffer + offset), block_size_bytes);
+  audio_callback((int16_t*) (sb_cfg.buffer + offset), block_size_bytes);
   if(!sb_cfg.nearptr_buffer_enabled)
     dosmemput(sb_cfg.buffer + offset, block_size_bytes, (sb_cfg.buffer_segment << 4) + offset);
 }
@@ -104,14 +105,14 @@ static void audio_sb_parse_env(struct sb_config *conf, char *env)
   }
 }
 
-static Uint8 audio_sb_dsp_read(void)
+static uint8_t audio_sb_dsp_read(void)
 {
   while(!(inportb(sb_cfg.port + 0xE) & 0x80))
     ;
   return inportb(sb_cfg.port + 0xA);
 }
 
-static void audio_sb_dsp_write(Uint8 val)
+static void audio_sb_dsp_write(uint8_t val)
 {
   while(inportb(sb_cfg.port + 0xC) & 0x80)
     ;
@@ -120,7 +121,7 @@ static void audio_sb_dsp_write(Uint8 val)
 
 static boolean audio_sb_dsp_detect(void)
 {
-  Uint16 i;
+  uint16_t i;
   outportb(sb_cfg.port + 0x6, 1);
   usleep(3);
   outportb(sb_cfg.port + 0x6, 0);
@@ -176,7 +177,7 @@ void init_audio_platform(struct config_info *conf)
     }
     /* else // pre-SB16
     {
-      Uint8 time_constant = 256 - (500000 / audio.output_frequency);
+      uint8_t time_constant = 256 - (500000 / audio.output_frequency);
       audio.output_frequency = 500000 / (256 - time_constant);
       audio_sb_dsp_write(0x40); // set time constant
       audio_sb_dsp_write(time_constant);
@@ -207,7 +208,7 @@ void init_audio_platform(struct config_info *conf)
       }
       else
       {
-        sb_cfg.buffer = (Uint8*)(sb_cfg.nearptr_buffer_mapping.address + __djgpp_conventional_base);
+        sb_cfg.buffer = (uint8_t*)(sb_cfg.nearptr_buffer_mapping.address + __djgpp_conventional_base);
         memset(sb_cfg.buffer, 0, buffer_size_bytes);
       }
     }

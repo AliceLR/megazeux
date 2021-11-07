@@ -29,7 +29,6 @@ __M_BEGIN_DECLS
 // This needs to stay self-sufficient.
 // Don't use core features, don't extern anything.
 
-#include "memfile.h"
 #include "vfile.h"
 
 /**
@@ -56,6 +55,8 @@ enum zip_compression_method
   ZIP_M_WAVPACK                 = 97,
   ZIP_M_PPMD                    = 98,
 };
+
+#define ZIP_M_MAX_SUPPORTED ZIP_M_DEFLATE64
 
 enum zip_general_purpose_flag
 {
@@ -150,7 +151,7 @@ struct zip_file_header
   uint32_t compressed_size;
   uint32_t uncompressed_size;
   uint32_t offset;
-  uint32_t mzx_prop_id;
+  uint32_t mzx_file_id;
   uint8_t mzx_board_id;
   uint8_t mzx_robot_id;
   uint16_t file_name_length;
@@ -185,12 +186,6 @@ struct zip_stream_data
   // Is this a compression stream? (false for a decompression stream)
   boolean is_compression_stream;
 };
-
-// zip_stream_data structs should be allocated with at least this much extra
-// space for specific compression method data.
-#define ZIP_STREAM_DATA_PADDING 128
-#define ZIP_STREAM_DATA_ALLOC_SIZE \
- (sizeof(struct zip_stream_data) + ZIP_STREAM_DATA_PADDING)
 
 struct zip_method_handler;
 
@@ -235,8 +230,8 @@ struct zip_archive
   size_t *external_buffer_size;
 
   struct zip_method_handler *stream;
-  struct zip_stream_data stream_data;
-  uint8_t padding[ZIP_STREAM_DATA_PADDING];
+  struct zip_stream_data *stream_data;
+  struct zip_stream_data *stream_data_ptrs[ZIP_M_MAX_SUPPORTED + 1];
 };
 
 UTILS_LIBSPEC int zip_bound_deflate_usage(size_t length);
@@ -248,7 +243,7 @@ UTILS_LIBSPEC enum zip_error zread(void *destBuf, size_t readLen,
 UTILS_LIBSPEC enum zip_error zip_get_next_name(struct zip_archive *zp,
  char *name, int name_buffer_size);
 
-UTILS_LIBSPEC enum zip_error zip_get_next_prop(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_get_next_mzx_file_id(struct zip_archive *zp,
  unsigned int *prop_id, unsigned int *board_id, unsigned int *robot_id);
 
 UTILS_LIBSPEC enum zip_error zip_get_next_method(struct zip_archive *zp,
@@ -281,7 +276,7 @@ UTILS_LIBSPEC enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
 UTILS_LIBSPEC enum zip_error zip_write_close_stream(struct zip_archive *zp);
 
 UTILS_LIBSPEC enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
- struct memfile *mf, const char *name);
+ struct memfile *mf, const char *name, size_t length);
 
 UTILS_LIBSPEC enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
  struct memfile *mf);
@@ -292,8 +287,8 @@ UTILS_LIBSPEC enum zip_error zip_write_file(struct zip_archive *zp,
 UTILS_LIBSPEC enum zip_error zip_close(struct zip_archive *zp,
  size_t *final_length);
 
-UTILS_LIBSPEC struct zip_archive *zip_open_fp_read(FILE *fp);
-UTILS_LIBSPEC struct zip_archive *zip_open_fp_write(FILE *fp);
+UTILS_LIBSPEC struct zip_archive *zip_open_vf_read(vfile *vf);
+UTILS_LIBSPEC struct zip_archive *zip_open_vf_write(vfile *vf);
 UTILS_LIBSPEC struct zip_archive *zip_open_file_read(const char *file_name);
 UTILS_LIBSPEC struct zip_archive *zip_open_file_write(const char *file_name);
 UTILS_LIBSPEC struct zip_archive *zip_open_mem_read(const void *src, size_t len);

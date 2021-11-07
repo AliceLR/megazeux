@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -20,20 +20,14 @@
  * THE SOFTWARE.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdarg.h>
-
 #include "format.h"
 #include "virtual.h"
 #include "mixer.h"
 
-const char *xmp_version = XMP_VERSION;
-const unsigned int xmp_vercode = XMP_VERCODE;
+const char *xmp_version LIBXMP_EXPORT_VAR = XMP_VERSION;
+const unsigned int xmp_vercode LIBXMP_EXPORT_VAR = XMP_VERCODE;
 
-xmp_context xmp_create_context()
+xmp_context xmp_create_context(void)
 {
 	struct context_data *ctx;
 
@@ -52,10 +46,12 @@ xmp_context xmp_create_context()
 void xmp_free_context(xmp_context opaque)
 {
 	struct context_data *ctx = (struct context_data *)opaque;
+	struct module_data *m = &ctx->m;
 
 	if (ctx->state > XMP_STATE_UNLOADED)
 		xmp_release_module(opaque);
 
+	free(m->instrument_path);
 	free(opaque);
 }
 
@@ -124,6 +120,10 @@ static void set_position(struct context_data *ctx, int pos, int dir)
 			f->jumpline = 0;
 			f->jump = -1;
 			f->pbreak = 0;
+			f->loop_chn = 0;
+			f->delay = 0;
+			f->rowdelay = 0;
+			f->rowdelay_set = 0;
 		}
 	}
 }
@@ -575,7 +575,7 @@ int xmp_set_tempo_factor(xmp_context opaque, double val)
 	}
 
 	val *= 10;
-	ticksize = s->freq * m->time_factor * m->rrate / p->bpm / 1000 * sizeof(int);
+	ticksize = s->freq * val * m->rrate / p->bpm / 1000 * sizeof(int);
 	if (ticksize > XMP_MAX_FRAMESIZE) {
 		return -1;
 	}

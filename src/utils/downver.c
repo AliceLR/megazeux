@@ -58,7 +58,36 @@
 #include "../world.h"
 #include "../world_format.h"
 #include "../io/memfile.h"
+#include "../io/vio.h"
 #include "../io/zip.h"
+
+/**
+ * 2.93 downver TODO:
+ */
+
+/**
+ * Removal of explicit null terminators and junk data in some string fields.
+ *
+ * + Strings that need to be expanded to BOARD_NAME_SIZE and terminated:
+ *    WPROP_WORLD_NAME (NO loading termination pre-2.92d)
+ *    BPROP_BOARD_NAME (loading termination expects BOARD_NAME_SIZE input pre-2.93)
+ *    (FIXME: remove len+1 board name save hack when the version incs.)
+ *
+ * + Strings that need to be expanded to ROBOT_NAME_SIZE and terminated:
+ *    RPROP_ROBOT_NAME (NO loading termination pre-2.92d)
+ *    SENPROP_SENSOR_NAME (NO loading termination pre-2.92d)
+ *    SENPROP_ROBOT_TO_MESG (NO loading termination pre-2.92d)
+ *
+ * + Strings that, unbelievably, were safely terminated as far back as 2.90:
+ *    WPROP_REAL_MOD_PLAYING (loaded safely; saved with unneeded \0 pre-2.93)
+ *    WPROP_INPUT_FILE_NAME (loaded safely; saved with unneeded \0 pre-2.93)
+ *    WPROP_OUTPUT_FILE_NAME (loaded safely; saved with unneeded \0 pre-2.93)
+ *    BPROP_MOD_PLAYING (loaded safely)
+ *    BPROP_CHARSET_PATH (loaded safely)
+ *    BPROP_PALETTE_PATH (loaded safely)
+ *    BPROP_INPUT_STRING (loaded safely)
+ *    BPROP_BOTTOM_MESG (loaded safely)
+ */
 
 #define DOWNVER_VERSION "2.92"
 #define DOWNVER_EXT ".291"
@@ -87,7 +116,7 @@ enum status
 static inline void save_prop_p(int ident, struct memfile *prop,
  struct memfile *mf)
 {
-  save_prop_s(ident, prop->start, (prop->end - prop->start), 1, mf);
+  save_prop_a(ident, prop->start, (prop->end - prop->start), 1, mf);
 }
 
 static enum zip_error zip_duplicate_file(struct zip_archive *dest,
@@ -124,7 +153,7 @@ static enum zip_error zip_duplicate_file(struct zip_archive *dest,
     void *buffer2 = malloc(actual_size);
 
     mfopen(buffer, actual_size, &mf_in);
-    mfopen(buffer2, actual_size, &mf_out);
+    mfopen_wr(buffer2, actual_size, &mf_out);
 
     handler(&mf_out, &mf_in);
 
@@ -193,10 +222,10 @@ static void convert_292_to_291_board_info(struct memfile *dest,
   mfresize(mftell(dest), dest);
 }
 
-static enum status convert_292_to_291(FILE *out, FILE *in)
+static enum status convert_292_to_291(vfile *out, vfile *in)
 {
-  struct zip_archive *inZ = zip_open_fp_read(in);
-  struct zip_archive *outZ = zip_open_fp_write(out);
+  struct zip_archive *inZ = zip_open_vf_read(in);
+  struct zip_archive *outZ = zip_open_vf_write(out);
   enum zip_error err = ZIP_SUCCESS;
   unsigned int file_id;
   unsigned int board_id;
@@ -209,17 +238,17 @@ static enum status convert_292_to_291(FILE *out, FILE *in)
     return ARCHIVE_ERROR;
   }
 
-  assign_fprops(inZ, 0);
+  world_assign_file_ids(inZ, true);
 
-  while(ZIP_SUCCESS == zip_get_next_prop(inZ, &file_id, &board_id, &robot_id))
+  while(ZIP_SUCCESS == zip_get_next_mzx_file_id(inZ, &file_id, &board_id, &robot_id))
   {
     switch(file_id)
     {
-      case FPROP_WORLD_INFO:
+      case FILE_ID_WORLD_INFO:
         err = zip_duplicate_file(outZ, inZ, convert_292_to_291_world_info);
         break;
 
-      case FPROP_BOARD_INFO:
+      case FILE_ID_BOARD_INFO:
         err = zip_duplicate_file(outZ, inZ, convert_292_to_291_board_info);
         break;
 
@@ -248,8 +277,8 @@ int main(int argc, char *argv[])
   long ext_pos;
   int world;
   int byte;
-  FILE *in;
-  FILE *out;
+  vfile *in;
+  vfile *out;
 
   if(strcmp(VERSION, DOWNVER_VERSION) < 0)
   {
@@ -306,18 +335,18 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  in = fopen_unsafe(argv[1], "rb");
+  in = vfopen_unsafe(argv[1], "rb");
   if(!in)
   {
     error("Could not open '%s' for read.\n", argv[1]);
     goto exit_out;
   }
 
-  out = fopen_unsafe(fname, "wb");
+  out = vfopen_unsafe(fname, "wb");
   if(!out)
   {
     error("Could not open '%s' for write.\n", fname);
-    fclose(in);
+    vfclose(in);
     goto exit_out;
   }
 
@@ -333,16 +362,16 @@ int main(int argc, char *argv[])
     size_t len;
 
     // Duplicate the world name
-    len = fread(name, BOARD_NAME_SIZE, 1, in);
+    len = vfread(name, BOARD_NAME_SIZE, 1, in);
     if(len != 1)
       goto err_read;
 
-    len = fwrite(name, BOARD_NAME_SIZE, 1, out);
+    len = vfwrite(name, BOARD_NAME_SIZE, 1, out);
     if(len != 1)
       goto err_write;
 
     // Check protection isn't enabled
-    byte = fgetc(in);
+    byte = vfgetc(in);
     if(byte < 0)
     {
       goto err_read;
@@ -353,11 +382,11 @@ int main(int argc, char *argv[])
       error("Protected worlds are not supported.\n");
       goto exit_close;
     }
-    fputc(0, out);
+    vfputc(0, out);
   }
   else
   {
-    byte = fgetc(in);
+    byte = vfgetc(in);
     if(byte < 0)
     {
       goto err_read;
@@ -368,12 +397,12 @@ int main(int argc, char *argv[])
       error("Board file is corrupt or unsupported.\n");
       goto exit_close;
     }
-    fputc(0xFF, out);
+    vfputc(0xFF, out);
   }
 
   // Validate version is current
 
-  byte = fgetc(in);
+  byte = vfgetc(in);
   if(byte < 0)
   {
     goto err_read;
@@ -385,7 +414,7 @@ int main(int argc, char *argv[])
     goto exit_close;
   }
 
-  byte = fgetc(in);
+  byte = vfgetc(in);
   if(byte < 0)
   {
     goto err_read;
@@ -398,7 +427,7 @@ int main(int argc, char *argv[])
     goto exit_close;
   }
 
-  byte = fgetc(in);
+  byte = vfgetc(in);
   if(byte < 0)
   {
     goto err_read;
@@ -413,13 +442,13 @@ int main(int argc, char *argv[])
 
   // Write previous version's magic
 
-  fputc('M', out);
+  vfputc('M', out);
 
-  byte = fputc(MZX_VERSION_PREV_HI, out);
+  byte = vfputc(MZX_VERSION_PREV_HI, out);
   if(byte == EOF)
     goto err_write;
 
-  byte = fputc(MZX_VERSION_PREV_LO, out);
+  byte = vfputc(MZX_VERSION_PREV_LO, out);
   if(byte == EOF)
     goto err_write;
 
@@ -447,9 +476,9 @@ int main(int argc, char *argv[])
 
 exit_close:
   if(out)
-    fclose(out);
+    vfclose(out);
   if(in)
-    fclose(in);
+    vfclose(in);
 
 exit_out:
   return 0;

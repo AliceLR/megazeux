@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -34,8 +35,24 @@ static boolean insert_on = true;
 
 static char last_char = 0;
 
+/**
+ * Get the current intake insert state.
+ */
+boolean intake_get_insert(void)
+{
+  return insert_on;
+}
+
+/**
+ * Set the current intake insert state.
+ */
+void intake_set_insert(boolean new_insert_state)
+{
+  insert_on = new_insert_state ? true : false;
+}
+
 static inline void intake_old_place_char(char *string, int *currx,
- int *curr_len, Uint32 chr)
+ int *curr_len, uint32_t chr)
 {
   // Overwrite or insert?
   if(insert_on || (*currx == *curr_len))
@@ -94,9 +111,9 @@ int intake(struct world *mzx_world, char *string, int max_len,
   do
   {
     if(use_mask)
-      write_string_mask(string, x, y, color, 0);
+      write_string_mask(string, x, y, color, false);
     else
-      write_string_ext(string, x, y, color, 0, 0, 16);
+      write_string_ext(string, x, y, color, false, 0, 16);
 
     fill_line(max_len + 1 - curr_len, x + curr_len, y, 32, color);
 
@@ -434,7 +451,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
     if(place)
     {
-      Uint32 num_placed = 0;
+      int num_placed = 0;
 
       if((cur_char != 0) && (cur_char < 32) && (exit_type == INTK_EXIT_ANY))
       {
@@ -445,7 +462,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
       while((curr_len < max_len) && (!done) && num_placed < KEY_UNICODE_MAX)
       {
-        Uint32 cur_char = get_key(keycode_text_ascii);
+        uint32_t cur_char = get_key(keycode_text_ascii);
         if(cur_char)
         {
           intake_old_place_char(string, &currx, &curr_len, cur_char);
@@ -474,6 +491,9 @@ int intake(struct world *mzx_world, char *string, int max_len,
 struct intake_subcontext
 {
   subcontext ctx;
+  boolean (*event_cb)(void *priv, subcontext *sub, enum intake_event_type type,
+   int old_pos, int new_pos, int value, const char *data);
+  void *event_priv;
   char *dest;
   int current_length;
   int max_length;
@@ -481,20 +501,16 @@ struct intake_subcontext
   int *pos_external;
   int *length_external;
   boolean select_char;
-
-  // Display info.
-  int x;
-  int y;
-  int width;
-  int color;
 };
 
 /**
  * Set the current cursor position within the editing string.
+ * This should be used mainly by intake_sync and intake_apply_event_fixed.
  */
-
 static void intake_set_pos(struct intake_subcontext *intk, int new_pos)
 {
+  if(new_pos < 0)
+    new_pos = 0;
   if(new_pos > intk->current_length)
     new_pos = intk->current_length;
 
@@ -505,12 +521,17 @@ static void intake_set_pos(struct intake_subcontext *intk, int new_pos)
 
 /**
  * Set the editing string length.
+ * This should be used mainly by intake_sync and intake_apply_event_fixed.
  */
-
 static void intake_set_length(struct intake_subcontext *intk, int new_length)
 {
+  if(new_length < 0)
+    new_length = 0;
   if(new_length > intk->max_length)
     new_length = intk->max_length;
+
+  if(intk->dest)
+    intk->dest[new_length] = '\0';
 
   intk->current_length = new_length;
   if(intk->length_external)
@@ -520,23 +541,29 @@ static void intake_set_length(struct intake_subcontext *intk, int new_length)
 /**
  * Sync the current pos/length values with their external duplicates.
  */
-
 void intake_sync(subcontext *sub)
 {
   struct intake_subcontext *intk = (struct intake_subcontext *)sub;
+  if(!intk)
+    return;
 
-  // TODO we can't really rely on the external length yet, so use strlen even
-  // if there is an external length pointer provided.
-  intake_set_length(intk, strlen(intk->dest));
+  // If using a fixed buffer, calculate from it instead of the external length.
+  if(intk->dest)
+  {
+    intake_set_length(intk, strlen(intk->dest));
+  }
+  else
+
+  if(intk->length_external)
+    intake_set_length(intk, *(intk->length_external));
 
   if(intk->pos_external)
     intake_set_pos(intk, *(intk->pos_external));
 }
 
 /**
- * Find the start of the word preceeding the cursor and place the cursor there.
+ * Find the start of the word preceding the cursor and place the cursor there.
  */
-
 static void intake_skip_back(struct intake_subcontext *intk)
 {
   char *current_position;
@@ -574,7 +601,6 @@ static void intake_skip_back(struct intake_subcontext *intk)
 /**
  * Find the end of the word following the cursor and place the cursor there.
  */
-
 static void intake_skip_forward(struct intake_subcontext *intk)
 {
   char *current_position;
@@ -604,96 +630,204 @@ static void intake_skip_forward(struct intake_subcontext *intk)
 }
 
 /**
+ * Apply intake events to the fixed-size buffer supplied with the original
+ * intake2() call. If no event callback is provided, this function will always
+ * be used as the event callback. If an event callback is provided, the event
+ * callback must call this function manually if it is required.
+ */
+boolean intake_apply_event_fixed(subcontext *sub, enum intake_event_type type,
+ int new_pos, int value, const char *data)
+{
+  struct intake_subcontext *intk = (struct intake_subcontext *)sub;
+
+  if(!intk || !intk->dest || intk->pos < 0 || intk->pos > intk->current_length)
+    return false;
+
+  switch(type)
+  {
+    case INTK_NO_EVENT:
+      return false;
+
+    case INTK_MOVE:
+      break;
+
+    case INTK_MOVE_WORDS:
+    {
+      while(value < 0)
+        intake_skip_back(intk), value++;
+      while(value > 0)
+        intake_skip_forward(intk), value--;
+      new_pos = intk->pos;
+      break;
+    }
+
+    case INTK_INSERT:
+    {
+      if(intk->current_length >= intk->max_length)
+        return false;
+      intake_set_length(intk, intk->current_length + 1);
+
+      if(intk->pos < intk->current_length)
+        memmove(intk->dest + intk->pos + 1, intk->dest + intk->pos,
+         intk->current_length - intk->pos);
+
+      if(intk->pos <= intk->current_length)
+        intk->dest[intk->pos] = value;
+      break;
+    }
+
+    case INTK_OVERWRITE:
+    {
+      if(intk->pos == intk->current_length)
+      {
+        if(intk->current_length >= intk->max_length)
+          return false;
+
+        intake_set_length(intk, intk->current_length + 1);
+      }
+
+      if(intk->pos <= intk->current_length)
+        intk->dest[intk->pos] = value;
+      break;
+    }
+
+    case INTK_DELETE:
+    {
+      if(intk->pos < intk->current_length)
+      {
+        memmove(intk->dest + intk->pos, intk->dest + intk->pos + 1,
+         intk->current_length - intk->pos);
+        intake_set_length(intk, intk->current_length - 1);
+      }
+      break;
+    }
+
+    case INTK_BACKSPACE:
+    {
+      if(intk->pos > 0)
+      {
+        memmove(intk->dest + intk->pos - 1, intk->dest + intk->pos,
+         intk->current_length - intk->pos + 1);
+        intake_set_length(intk, intk->current_length - 1);
+      }
+      break;
+    }
+
+    case INTK_BACKSPACE_WORDS:
+    {
+      if(intk->pos > 0)
+      {
+        int old_pos = intk->pos;
+        while(value > 0 && intk->pos > 0)
+        {
+          intake_skip_back(intk);
+          value--;
+        }
+        new_pos = intk->pos;
+        if(intk->pos < old_pos)
+        {
+          memmove(intk->dest + intk->pos, intk->dest + old_pos,
+           intk->current_length - old_pos + 1);
+          intake_set_length(intk, intk->current_length - (old_pos - intk->pos));
+        }
+      }
+      break;
+    }
+
+    case INTK_CLEAR:
+    {
+      intk->dest[0] = 0;
+      intake_set_length(intk, 0);
+      break;
+    }
+
+    case INTK_INSERT_BLOCK:
+    {
+      if(!data)
+        return false;
+
+      if(intk->current_length + value > intk->max_length)
+      {
+        value = intk->max_length - intk->current_length;
+        new_pos = intk->pos + value;
+        if(!value)
+          return false;
+      }
+
+      if(intk->pos < intk->current_length)
+        memmove(intk->dest + intk->pos + value, intk->dest + intk->pos,
+         intk->current_length - intk->pos + 1);
+
+      memcpy(intk->dest + intk->pos, data, value);
+      intake_set_length(intk, intk->current_length + value);
+      break;
+    }
+
+    case INTK_OVERWRITE_BLOCK:
+    {
+      if(!data)
+        return false;
+
+      if(intk->pos + value > intk->max_length)
+      {
+        value = intk->max_length - intk->pos;
+        new_pos = intk->pos + value;
+        if(!value)
+          return false;
+      }
+
+      memcpy(intk->dest + intk->pos, data, value);
+
+      if(intk->pos + value > intk->current_length)
+        intake_set_length(intk, intk->pos + value);
+      break;
+    }
+  }
+  intake_set_pos(intk, new_pos);
+  return true;
+}
+
+/**
+ * Send an intake event to the parent context, if applicable.
+ */
+static void intake_event_ext(struct intake_subcontext *intk,
+ enum intake_event_type type, int old_pos, int new_pos, int value, const char *data)
+{
+  if(intk->event_cb)
+  {
+    if(intk->event_cb(intk->event_priv, (subcontext *)intk, type, old_pos,
+     new_pos, value, data))
+    {
+      intake_sync((subcontext *)intk);
+    }
+  }
+  else
+    intake_apply_event_fixed((subcontext *)intk, type, new_pos, value, data);
+}
+
+static void intake_event(struct intake_subcontext *intk,
+ enum intake_event_type type, int old_pos, int new_pos)
+{
+  intake_event_ext(intk, type, old_pos, new_pos, 0, NULL);
+}
+
+/**
  * Place a new char inside of the string.
  */
-
 static boolean intake_place_char(struct intake_subcontext *intk, char chr)
 {
   if(chr && (intk->current_length != intk->max_length))
   {
-    // Overwrite or insert?
-    if(insert_on || (intk->pos == intk->current_length))
-    {
-      // Insert char
-      intake_set_length(intk, intk->current_length + 1);
-
-      memmove(intk->dest + intk->pos + 1, intk->dest + intk->pos,
-       intk->current_length - intk->pos);
-    }
-    // Add character and move forward one
-    intk->dest[intk->pos] = chr;
-    intake_set_pos(intk, intk->pos + 1);
+    enum intake_event_type type = insert_on ? INTK_INSERT : INTK_OVERWRITE;
+    intake_event_ext(intk, type, intk->pos, intk->pos + 1, chr, NULL);
     return true;
   }
   return false;
 }
 
 /**
- * Draw the input string and cursor.
- */
-
-static boolean intake_draw(subcontext *sub)
-{
-  struct intake_subcontext *intk = (struct intake_subcontext *)sub;
-  int use_mask = get_config()->mask_midchars;
-  char temp_char = 0;
-  int temp_pos = 0;
-  int start_offset = 0;
-  int display_length;
-  int cursor_pos;
-
-  intake_sync(sub);
-  display_length = intk->current_length;
-  cursor_pos = intk->pos;
-
-  if(intk->pos >= intk->width)
-  {
-    if(intk->dest[intk->pos])
-    {
-      temp_pos = intk->pos + 1;
-      temp_char = intk->dest[temp_pos];
-      intk->dest[temp_pos] = 0;
-    }
-
-    start_offset = intk->pos - intk->width + 1;
-    display_length = strlen(intk->dest + start_offset);
-    cursor_pos = intk->width - 1;
-  }
-  else
-
-  if(display_length > intk->width)
-  {
-    temp_pos = intk->width;
-    temp_char = intk->dest[temp_pos];
-    intk->dest[temp_pos] = 0;
-    display_length = intk->width;
-  }
-
-  if(insert_on)
-    cursor_underline(intk->x + cursor_pos, intk->y);
-  else
-    cursor_solid(intk->x + cursor_pos, intk->y);
-
-  if(use_mask)
-    write_string_mask(intk->dest + start_offset,
-     intk->x, intk->y, intk->color, false);
-  else
-    write_string_ext(intk->dest + start_offset,
-     intk->x, intk->y, intk->color, false, 0, 16);
-
-  fill_line(intk->width + 1 - display_length,
-   intk->x + display_length, intk->y, 32, intk->color);
-
-  if(temp_pos)
-    intk->dest[temp_pos] = temp_char;
-
-  return true;
-}
-
-/**
  * Make sure the intake values are synchronized before doing anything.
  */
-
 static boolean intake_idle(subcontext *sub)
 {
   intake_sync(sub);
@@ -701,29 +835,8 @@ static boolean intake_idle(subcontext *sub)
 }
 
 /**
- * Move the cursor if the user clicks inside of the intake area.
- */
-
-static boolean intake_click(subcontext *sub, int *key, int button, int x, int y)
-{
-  struct intake_subcontext *intk = (struct intake_subcontext *)sub;
-
-  if(button)
-  {
-    if((y == intk->y) && (x >= intk->x) &&
-     (x <= intk->x + intk->width) && (button <= MOUSE_BUTTON_RIGHT))
-    {
-      intake_set_pos(intk, x - intk->x);
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
  * Joystick input. Can't do much here; pass most input through to the parent.
  */
-
 static boolean intake_joystick(subcontext *sub, int *key, int action)
 {
   switch(action)
@@ -752,7 +865,6 @@ static boolean intake_joystick(subcontext *sub, int *key, int action)
 /**
  * Input/delete text, move the cursor, or pass input on to the parent context.
  */
-
 static boolean intake_key(subcontext *sub, int *key)
 {
   struct intake_subcontext *intk = (struct intake_subcontext *)sub;
@@ -761,7 +873,7 @@ static boolean intake_key(subcontext *sub, int *key)
   boolean shift_status = get_shift_status(keycode_internal);
   boolean any_mod = (alt_status || ctrl_status || shift_status);
   boolean place = false;
-  Uint32 num_placed = 0;
+  int num_placed = 0;
 
   // Exit-- let the parent context handle.
   if(get_exit_status())
@@ -774,7 +886,7 @@ static boolean intake_key(subcontext *sub, int *key)
       if(!any_mod)
       {
         // Home
-        intake_set_pos(intk, 0);
+        intake_event(intk, INTK_MOVE, intk->pos, 0);
         return true;
       }
       break;
@@ -785,7 +897,7 @@ static boolean intake_key(subcontext *sub, int *key)
       if(!any_mod)
       {
         // End
-        intake_set_pos(intk, intk->current_length);
+        intake_event(intk, INTK_MOVE, intk->pos, intk->current_length);
         return true;
       }
       break;
@@ -795,8 +907,8 @@ static boolean intake_key(subcontext *sub, int *key)
     {
       if(get_ctrl_status(keycode_internal))
       {
-        // Find nearest space to the left
-        intake_skip_back(intk);
+        // Move one word backward.
+        intake_event_ext(intk, INTK_MOVE_WORDS, intk->pos, intk->pos, -1, NULL);
         return true;
       }
       else
@@ -805,7 +917,7 @@ static boolean intake_key(subcontext *sub, int *key)
       {
         // Left
         if(intk->pos > 0)
-          intake_set_pos(intk, intk->pos - 1);
+          intake_event(intk, INTK_MOVE, intk->pos, intk->pos - 1);
 
         return true;
       }
@@ -816,8 +928,8 @@ static boolean intake_key(subcontext *sub, int *key)
     {
       if(get_ctrl_status(keycode_internal))
       {
-        // Find nearest space to the right
-        intake_skip_forward(intk);
+        // Move one word forward.
+        intake_event_ext(intk, INTK_MOVE_WORDS, intk->pos, intk->pos, 1, NULL);
         return true;
       }
       else
@@ -826,7 +938,7 @@ static boolean intake_key(subcontext *sub, int *key)
       {
         // Right
         if(intk->pos < intk->current_length)
-          intake_set_pos(intk, intk->pos + 1);
+          intake_event(intk, INTK_MOVE, intk->pos, intk->pos + 1);
 
         return true;
       }
@@ -849,9 +961,7 @@ static boolean intake_key(subcontext *sub, int *key)
       if(get_alt_status(keycode_internal))
       {
         // Alt-backspace, erase input
-        intk->dest[0] = 0;
-        intake_set_pos(intk, 0);
-        intake_set_length(intk, 0);
+        intake_event(intk, INTK_CLEAR, intk->pos, 0);
         return true;
       }
       else
@@ -860,14 +970,7 @@ static boolean intake_key(subcontext *sub, int *key)
       {
         // Delete word
         if(intk->pos)
-        {
-          int old_pos = intk->pos;
-          intake_skip_back(intk);
-          intake_set_length(intk, intk->current_length - (old_pos - intk->pos));
-
-          memmove(intk->dest + intk->pos, intk->dest + old_pos,
-           strlen(intk->dest + old_pos) + 1);
-        }
+          intake_event_ext(intk, INTK_BACKSPACE_WORDS, intk->pos, intk->pos, 1, NULL);
         return true;
       }
       else
@@ -875,12 +978,7 @@ static boolean intake_key(subcontext *sub, int *key)
       if(intk->pos > 0)
       {
         // Backspace previous char.
-        // If at position 0, let the parent handle this instead.
-        intake_set_pos(intk, intk->pos - 1);
-        intake_set_length(intk, intk->current_length - 1);
-
-        memmove(intk->dest + intk->pos, intk->dest + intk->pos + 1,
-         intk->current_length - intk->pos + 1);
+        intake_event(intk, INTK_BACKSPACE, intk->pos, intk->pos - 1);
         return true;
       }
       break;
@@ -892,10 +990,7 @@ static boolean intake_key(subcontext *sub, int *key)
       // If at the end of the string, let the parent handle this instead.
       if(intk->current_length && intk->pos < intk->current_length)
       {
-        memmove(intk->dest + intk->pos, intk->dest + intk->pos + 1,
-         intk->current_length - intk->pos);
-
-        intake_set_length(intk, intk->current_length - 1);
+        intake_event(intk, INTK_DELETE, intk->pos, intk->pos);
         return true;
       }
       break;
@@ -952,70 +1047,38 @@ static boolean intake_key(subcontext *sub, int *key)
 }
 
 /**
- * Disable the cursor so it doesn't persist after closing intake.
- */
-
-static void intake_destroy(subcontext *sub)
-{
-  cursor_off();
-}
-
-/**
  * Create a text entry subcontext on top of the current context. Will pass all
  * inputs it can't/won't handle through to its parent. An optional external
  * cursor position pointer can be provided to allow intake to return the cursor
  * position and receive outside updates to the cursor position.
+ *
+ * Unlike the original intake(), this intake implementation takes no screen
+ * positioning information, doesn't draw the string being edited, and doesn't
+ * handle mouse clicks. Doing these is the responsibility of the parent context.
  */
-
 subcontext *intake2(context *parent, char *dest, int max_length,
- int x, int y, int width, int color, int *pos_external, int *length_external)
+ int *pos_external, int *length_external)
 {
-  struct intake_subcontext *intk = ccalloc(1, sizeof(struct intake_subcontext));
+  struct intake_subcontext *intk =
+   (struct intake_subcontext *)ccalloc(1, sizeof(struct intake_subcontext));
   struct context_spec spec;
 
   intk->dest = dest;
   intk->max_length = max_length;
   intk->pos_external = pos_external;
   intk->length_external = length_external;
-  intk->x = x;
-  intk->y = y;
-  intk->width = width;
-  intk->color = color;
 
   memset(&spec, 0, sizeof(struct context_spec));
-  spec.draw     = intake_draw;
   spec.idle     = intake_idle;
-  spec.click    = intake_click;
   spec.key      = intake_key;
   spec.joystick = intake_joystick;
-  spec.destroy  = intake_destroy;
 
-  intake_set_length(intk, strlen(dest));
-  intake_set_pos(intk, (pos_external ? *pos_external : intk->current_length));
+  intake_sync((subcontext *)intk);
+  if(!pos_external)
+    intake_set_pos(intk, intk->current_length);
 
   create_subcontext((subcontext *)intk, parent, &spec);
   return (subcontext *)intk;
-}
-
-/**
- * Change the draw color of intake.
- */
-
-void intake_set_color(subcontext *sub, int color)
-{
-  struct intake_subcontext *intk = (struct intake_subcontext *)sub;
-  intk->color = color;
-}
-
-/**
- * Change the draw position of intake.
- */
-
-void intake_set_screen_pos(subcontext *sub, int x, int y)
-{
-  struct intake_subcontext *intk = (struct intake_subcontext *)sub;
-  intk->x = x;
-  intk->y = y;
 }
 
 /**
@@ -1023,13 +1086,14 @@ void intake_set_screen_pos(subcontext *sub, int x, int y)
  * provided which will cause this loop to terminate and return the next char
  * position. Otherwise, return NULL when the input string has been exhausted.
  */
-
 const char *intake_input_string(subcontext *sub, const char *src,
- char linebreak_char)
+ int linebreak_char)
 {
   struct intake_subcontext *intk = (struct intake_subcontext *)sub;
   const char *pos = src;
-  char cur_char;
+  int cur_char;
+  int length = 0;
+  enum intake_event_type type = insert_on ? INTK_INSERT_BLOCK : INTK_OVERWRITE_BLOCK;
 
   intake_sync(sub);
 
@@ -1039,13 +1103,41 @@ const char *intake_input_string(subcontext *sub, const char *src,
 
     // Linebreak char? Skip and request a line break.
     if(cur_char == linebreak_char)
+    {
+      if(length > 0)
+        intake_event_ext(intk, type, intk->pos, intk->pos + length, length, src);
+
       return (pos + 1);
+    }
 
     // Otherwise, attempt to place until no more space is left.
-    if(!intake_place_char(intk, cur_char))
-      return NULL;
+    length++;
+    if(intk->current_length + length >= intk->max_length)
+      break;
 
     pos++;
   }
+
+  if(length > 0)
+    intake_event_ext(intk, type, intk->pos, intk->pos + length, length, src);
+
   return NULL;
+}
+
+/**
+ * Set the intake event callback function. This feature is used to report
+ * individual intake events immediately to the parent context as they occur.
+ * The callback return value should indicate success (`true`) or failure
+ * (`false`). If the callback returns `true`, `intake_sync` will be called.
+ */
+void intake_event_callback(subcontext *sub, void *priv,
+ boolean (*event_cb)(void *priv, subcontext *sub, enum intake_event_type type,
+ int old_pos, int new_pos, int value, const char *data))
+{
+  struct intake_subcontext *intk = (struct intake_subcontext *)sub;
+  if(intk)
+  {
+    intk->event_cb = event_cb;
+    intk->event_priv = priv;
+  }
 }

@@ -18,32 +18,27 @@
 #ifndef __SMZXCONV_H
 #define __SMZXCONV_H
 
-typedef struct {
-	unsigned char r;
-	unsigned char g;
-	unsigned char b;
-	unsigned char a;
-} rgba_color;
+struct rgba_color;
 
 typedef struct {
-	unsigned char chr;
-	unsigned char clr;
+  unsigned char chr;
+  unsigned char clr;
 } mzx_tile;
 
 typedef unsigned char mzx_glyph[14];
 
 typedef struct {
-	unsigned char r;
-	unsigned char g;
-	unsigned char b;
+  unsigned char r;
+  unsigned char g;
+  unsigned char b;
 } mzx_color;
 
 typedef struct _smzx_converter smzx_converter;
 
 smzx_converter *smzx_convert_init (int w, int h, int chroff, int chrskip,
-	int chrlen, int clroff, int clrlen);
-int smzx_convert (smzx_converter *c, const rgba_color *img, mzx_tile *tile,
-	mzx_glyph *chr, mzx_color *pal);
+ int chrlen, int clroff, int clrlen);
+int smzx_convert (smzx_converter *c, const struct rgba_color *img, mzx_tile *tile,
+ mzx_glyph *chr, mzx_color *pal);
 void smzx_convert_free (smzx_converter *c);
 
 #endif /* __SMZXCONV_H */

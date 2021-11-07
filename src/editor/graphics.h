@@ -24,33 +24,29 @@
 
 __M_BEGIN_DECLS
 
-#include "../platform.h"
 #include "../graphics.h"
 
 void store_backup_palette(char dest[SMZX_PAL_SIZE * 3]);
-void load_backup_palette(char src[SMZX_PAL_SIZE * 3]);
+void load_backup_palette(const char src[SMZX_PAL_SIZE * 3]);
 void store_backup_indices(char dest[SMZX_PAL_SIZE * 4]);
-void load_backup_indices(char src[SMZX_PAL_SIZE * 4]);
+void load_backup_indices(const char src[SMZX_PAL_SIZE * 4]);
 
 void save_palette(char *fname);
 void save_index_file(char *fname);
-void draw_char_mixed_pal(Uint8 chr, Uint8 bg_color, Uint8 fg_color,
- Uint32 x, Uint32 y);
-void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset,
- boolean use_protected_pal);
-void ec_save_set_var(char *name, Uint16 offset, Uint32 size);
-void ec_change_block(Uint8 offset, Uint8 charset,
- Uint8 width, Uint8 height, char *matrix);
-void ec_read_block(Uint8 offset, Uint8 charset,
- Uint8 width, Uint8 height, char *matrix);
+
+void ec_save_set_var(const char *name, uint16_t first_chr, unsigned int num);
+void ec_change_block(uint8_t offset, uint8_t charset,
+ uint8_t width, uint8_t height, const char *matrix);
+void ec_read_block(uint8_t offset, uint8_t charset,
+ uint8_t width, uint8_t height, char *matrix);
 void load_editor_charsets(void);
 void ec_load_smzx(void);
 void ec_load_smzx2(void);
 void ec_load_blank(void);
 void ec_load_ascii(void);
-void ec_load_char_ascii(Uint32 char_number);
-void ec_load_char_mzx(Uint32 char_number);
-Uint8 compare_char(Uint16 chr_a, Uint16 chr_b);
+void ec_load_char_ascii(uint16_t char_number);
+void ec_load_char_mzx(uint16_t char_number);
+unsigned int compare_char(uint16_t chr_a, uint16_t chr_b);
 
 __M_END_DECLS
 

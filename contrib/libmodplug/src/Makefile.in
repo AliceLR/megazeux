@@ -13,6 +13,8 @@ libmodplug_cflags = -DHAVE_INTTYPES_H -I${libmodplug_src} \
                     -I${libmodplug_src}/libmodplug \
                     -include src/platform_endian.h
 
+libmodplug_cflags += -Wno-missing-declarations
+
 #
 # Rather than bloat the patches to fix these warnings, just disable them.
 #
@@ -21,17 +23,29 @@ libmodplug_cflags += -Wno-implicit-fallthrough
 endif
 
 libmodplug_objs = \
-    ${libmodplug_obj}/fastmix.o ${libmodplug_obj}/load_669.o \
-    ${libmodplug_obj}/load_amf.o ${libmodplug_obj}/load_dsm.o \
-    ${libmodplug_obj}/load_far.o ${libmodplug_obj}/load_it.o \
-    ${libmodplug_obj}/load_med.o ${libmodplug_obj}/load_mod.o \
-    ${libmodplug_obj}/load_mtm.o ${libmodplug_obj}/load_okt.o \
-    ${libmodplug_obj}/load_s3m.o ${libmodplug_obj}/load_stm.o \
-    ${libmodplug_obj}/load_ult.o ${libmodplug_obj}/load_wav.o \
-    ${libmodplug_obj}/load_xm.o ${libmodplug_obj}/mmcmp.o \
-    ${libmodplug_obj}/modplug.o ${libmodplug_obj}/snd_dsp.o \
-    ${libmodplug_obj}/sndfile.o ${libmodplug_obj}/snd_flt.o \
-    ${libmodplug_obj}/snd_fx.o ${libmodplug_obj}/sndmix.o
+    ${libmodplug_obj}/fastmix.o \
+    ${libmodplug_obj}/load_669.o \
+    ${libmodplug_obj}/load_amf.o \
+    ${libmodplug_obj}/load_dsm.o \
+    ${libmodplug_obj}/load_far.o \
+    ${libmodplug_obj}/load_gdm.o \
+    ${libmodplug_obj}/load_it.o \
+    ${libmodplug_obj}/load_med.o \
+    ${libmodplug_obj}/load_mod.o \
+    ${libmodplug_obj}/load_mtm.o \
+    ${libmodplug_obj}/load_okt.o \
+    ${libmodplug_obj}/load_s3m.o \
+    ${libmodplug_obj}/load_stm.o \
+    ${libmodplug_obj}/load_ult.o \
+    ${libmodplug_obj}/load_wav.o \
+    ${libmodplug_obj}/load_xm.o \
+    ${libmodplug_obj}/mmcmp.o \
+    ${libmodplug_obj}/modplug.o \
+    ${libmodplug_obj}/snd_dsp.o \
+    ${libmodplug_obj}/sndfile.o \
+    ${libmodplug_obj}/snd_flt.o \
+    ${libmodplug_obj}/snd_fx.o \
+    ${libmodplug_obj}/sndmix.o
 
 ${libmodplug_obj}/%.o: ${libmodplug_src}/%.cpp src/config.h
 	$(if ${V},,@echo "  CXX     " $<)

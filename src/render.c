@@ -21,15 +21,15 @@
 
 #include <stdlib.h>
 
-#include "platform.h"
 #include "graphics.h"
+#include "platform_endian.h"
 #include "render.h"
 #include "render_layer.h"
 #include "util.h"
 #include "yuv.h"
 
 static void set_colors8_mzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg)
 {
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
   char_colors[0] = (bg << 24) | (bg << 16) | (bg << 8) | bg;
@@ -69,15 +69,19 @@ static void set_colors8_mzx(const struct graphics_data *graphics,
 }
 
 static void set_colors8_smzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg)
 {
-  Uint32 bb, bf, fb, ff;
+  const uint8_t *indices = graphics->smzx_indices;
+  uint32_t bb, bf, fb, ff;
   bg &= 0x0F;
   fg &= 0x0F;
-  bb = (bg << 4) | bg;
-  bf = (bg << 4) | fg;
-  fb = (fg << 4) | bg;
-  ff = (fg << 4) | fg;
+  indices += ((bg << 4) | fg) << 2;
+
+  bb = indices[0];
+  bf = indices[1];
+  fb = indices[2];
+  ff = indices[3];
+
   bb |= bb << 8;
   bf |= bf << 8;
   fb |= fb << 8;
@@ -120,61 +124,10 @@ static void set_colors8_smzx(const struct graphics_data *graphics,
 #endif
 }
 
-static void set_colors8_smzx3(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
-{
-  Uint32 c0, c1, c2, c3;
-  c0 = ((bg << 4) | (fg & 0x0F)) & 0xFF;
-  c1 = (c0 + 1) & 0xFF;
-  c2 = (c0 + 2) & 0xFF;
-  c3 = (c0 + 3) & 0xFF;
-
-  c0 |= c0 << 8;
-  c1 |= c1 << 8;
-  c2 |= c2 << 8;
-  c3 |= c3 << 8;
-
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-  char_colors[0] = (c0 << 16) | c0;
-  char_colors[1] = (c0 << 16) | c2;
-  char_colors[2] = (c0 << 16) | c1;
-  char_colors[3] = (c0 << 16) | c3;
-  char_colors[4] = (c2 << 16) | c0;
-  char_colors[5] = (c2 << 16) | c2;
-  char_colors[6] = (c2 << 16) | c1;
-  char_colors[7] = (c2 << 16) | c3;
-  char_colors[8] = (c1 << 16) | c0;
-  char_colors[9] = (c1 << 16) | c2;
-  char_colors[10] = (c1 << 16) | c1;
-  char_colors[11] = (c1 << 16) | c3;
-  char_colors[12] = (c3 << 16) | c0;
-  char_colors[13] = (c3 << 16) | c2;
-  char_colors[14] = (c3 << 16) | c1;
-  char_colors[15] = (c3 << 16) | c3;
-#else
-  char_colors[0] = (c0 << 16) | c0;
-  char_colors[1] = (c2 << 16) | c0;
-  char_colors[2] = (c1 << 16) | c0;
-  char_colors[3] = (c3 << 16) | c0;
-  char_colors[4] = (c0 << 16) | c2;
-  char_colors[5] = (c2 << 16) | c2;
-  char_colors[6] = (c1 << 16) | c2;
-  char_colors[7] = (c3 << 16) | c2;
-  char_colors[8] = (c0 << 16) | c1;
-  char_colors[9] = (c2 << 16) | c1;
-  char_colors[10] = (c1 << 16) | c1;
-  char_colors[11] = (c3 << 16) | c1;
-  char_colors[12] = (c0 << 16) | c3;
-  char_colors[13] = (c2 << 16) | c3;
-  char_colors[14] = (c1 << 16) | c3;
-  char_colors[15] = (c3 << 16) | c3;
-#endif
-}
-
 static void set_colors16_mzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg)
 {
-  Uint32 cb_bg, cb_fg;
+  uint32_t cb_bg, cb_fg;
 
   cb_bg = graphics->flat_intensity_palette[bg];
   cb_fg = graphics->flat_intensity_palette[fg];
@@ -193,33 +146,17 @@ static void set_colors16_mzx(const struct graphics_data *graphics,
 }
 
 static void set_colors16_smzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg)
 {
+  const uint8_t *indices = graphics->smzx_indices;
   bg &= 0x0F;
   fg &= 0x0F;
+  indices += ((bg << 4) | fg) << 2;
 
-  char_colors[0] = graphics->flat_intensity_palette[(bg << 4) | bg];
-  char_colors[1] = graphics->flat_intensity_palette[(bg << 4) | fg];
-  char_colors[2] = graphics->flat_intensity_palette[(fg << 4) | bg];
-  char_colors[3] = graphics->flat_intensity_palette[(fg << 4) | fg];
-
-  char_colors[0] = (char_colors[0] << 16) | char_colors[0];
-  char_colors[1] = (char_colors[1] << 16) | char_colors[1];
-  char_colors[2] = (char_colors[2] << 16) | char_colors[2];
-  char_colors[3] = (char_colors[3] << 16) | char_colors[3];
-}
-
-static void set_colors16_smzx3(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
-{
-  Uint8 base;
-
-  base = (bg << 4) | (fg & 0x0F);
-
-  char_colors[0] = graphics->flat_intensity_palette[base];
-  char_colors[1] = graphics->flat_intensity_palette[(base + 2) & 0xFF];
-  char_colors[2] = graphics->flat_intensity_palette[(base + 1) & 0xFF];
-  char_colors[3] = graphics->flat_intensity_palette[(base + 3) & 0xFF];
+  char_colors[0] = graphics->flat_intensity_palette[indices[0]];
+  char_colors[1] = graphics->flat_intensity_palette[indices[1]];
+  char_colors[2] = graphics->flat_intensity_palette[indices[2]];
+  char_colors[3] = graphics->flat_intensity_palette[indices[3]];
 
   char_colors[0] = (char_colors[0] << 16) | char_colors[0];
   char_colors[1] = (char_colors[1] << 16) | char_colors[1];
@@ -228,114 +165,61 @@ static void set_colors16_smzx3(const struct graphics_data *graphics,
 }
 
 static void set_colors32_mzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg)
 {
   char_colors[0] = graphics->flat_intensity_palette[bg];
   char_colors[1] = graphics->flat_intensity_palette[fg];
 }
 
 static void set_colors32_smzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg)
 {
+  const uint8_t *indices = graphics->smzx_indices;
   bg &= 0x0F;
   fg &= 0x0F;
+  indices += ((bg << 4) | fg) << 2;
 
-  char_colors[0] = graphics->flat_intensity_palette[(bg << 4) | bg];
-  char_colors[1] = graphics->flat_intensity_palette[(bg << 4) | fg];
-  char_colors[2] = graphics->flat_intensity_palette[(fg << 4) | bg];
-  char_colors[3] = graphics->flat_intensity_palette[(fg << 4) | fg];
+  char_colors[0] = graphics->flat_intensity_palette[indices[0]];
+  char_colors[1] = graphics->flat_intensity_palette[indices[1]];
+  char_colors[2] = graphics->flat_intensity_palette[indices[2]];
+  char_colors[3] = graphics->flat_intensity_palette[indices[3]];
 }
 
-static void set_colors32_smzx3(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
-{
-  Uint8 base;
-
-  base = (bg << 4) | (fg & 0x0F);
-
-  char_colors[0] = graphics->flat_intensity_palette[base];
-  char_colors[1] = graphics->flat_intensity_palette[(base + 2) & 0xFF];
-  char_colors[2] = graphics->flat_intensity_palette[(base + 1) & 0xFF];
-  char_colors[3] = graphics->flat_intensity_palette[(base + 3) & 0xFF];
-}
-
-static void set_indices_mzx(const struct graphics_data *graphics,
- int * RESTRICT indices, Uint8 bg, Uint8 fg)
-{
-  indices[0] = bg;
-  indices[1] = fg;
-}
-static void set_indices_smzx(const struct graphics_data *graphics,
- int * RESTRICT indices, Uint8 bg, Uint8 fg)
-{
-  indices[0] = bg;
-  indices[1] = -2;
-  indices[2] = -2;
-  indices[3] = fg;
-}
-static void set_indices_smzx2(const struct graphics_data *graphics,
- int * RESTRICT indices, Uint8 bg, Uint8 fg)
-{
-  bg &= 0x0F;
-  fg &= 0x0F;
-  indices[0] = (bg << 4) | bg;
-  indices[1] = (bg << 4) | fg;
-  indices[2] = (fg << 4) | bg;
-  indices[3] = (fg << 4) | fg;
-}
-static void set_indices_smzx3(const struct graphics_data *graphics,
- int * RESTRICT indices, Uint8 bg, Uint8 fg)
-{
-  Uint8 base;
-
-  base = (bg << 4) | (fg & 0x0F);
-  indices[0] = base;
-  indices[1] = (base + 2) & 0xFF;
-  indices[2] = (base + 1) & 0xFF;
-  indices[3] = (base + 3) & 0xFF;
-}
-
-void (*const set_colors8[4])
- (const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8) =
+const set_colors_function set_colors8[4] =
 {
   set_colors8_mzx,
   set_colors8_smzx,
   set_colors8_smzx,
-  set_colors8_smzx3
+  set_colors8_smzx
 };
 
-void (*const set_colors16[4])
- (const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8) =
+const set_colors_function set_colors16[4] =
 {
   set_colors16_mzx,
   set_colors16_smzx,
   set_colors16_smzx,
-  set_colors16_smzx3
+  set_colors16_smzx
 };
 
-void (*const set_colors32[4])
- (const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8) =
+/* The 32-bit set colors functions should be inlined in render_graph32 and
+ * render_graph32s, but they may be needed by non-32 bit render_graph
+ * implementations (e.g. SMZX with chroma subsampling in render_graph16), so
+ * also provide them as an array.
+ */
+const set_colors_function set_colors32[4] =
 {
   set_colors32_mzx,
   set_colors32_smzx,
   set_colors32_smzx,
-  set_colors32_smzx3
+  set_colors32_smzx
 };
 
-void (*const set_indices[4])
- (const struct graphics_data *, int * RESTRICT, Uint8, Uint8) =
-{
-  set_indices_mzx,
-  set_indices_smzx,
-  set_indices_smzx2,
-  set_indices_smzx3
-};
-
+/* YUY2 chroma subsampling set_colors function for use with render_graph16. */
 void yuy2_subsample_set_colors_mzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg)
 {
-  Uint32 yuv_bg = graphics->flat_intensity_palette[bg];
-  Uint32 yuv_fg = graphics->flat_intensity_palette[fg];
+  uint32_t yuv_bg = graphics->flat_intensity_palette[bg];
+  uint32_t yuv_fg = graphics->flat_intensity_palette[fg];
 
   char_colors[0] = yuv_bg;
   char_colors[1] = yuy2_subsample(yuv_bg, yuv_fg);
@@ -343,11 +227,12 @@ void yuy2_subsample_set_colors_mzx(const struct graphics_data *graphics,
   char_colors[3] = yuv_fg;
 }
 
+/* UYVY chroma subsampling set_colors function for use with render_graph16. */
 void uyvy_subsample_set_colors_mzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg)
 {
-  Uint32 yuv_bg = graphics->flat_intensity_palette[bg];
-  Uint32 yuv_fg = graphics->flat_intensity_palette[fg];
+  uint32_t yuv_bg = graphics->flat_intensity_palette[bg];
+  uint32_t yuv_fg = graphics->flat_intensity_palette[fg];
 
   char_colors[0] = yuv_bg;
   char_colors[1] = uyvy_subsample(yuv_bg, yuv_fg);
@@ -355,11 +240,12 @@ void uyvy_subsample_set_colors_mzx(const struct graphics_data *graphics,
   char_colors[3] = yuv_fg;
 }
 
+/* YVYU chroma subsampling set_colors function for use with render_graph16. */
 void yvyu_subsample_set_colors_mzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg)
 {
-  Uint32 yuv_bg = graphics->flat_intensity_palette[bg];
-  Uint32 yuv_fg = graphics->flat_intensity_palette[fg];
+  uint32_t yuv_bg = graphics->flat_intensity_palette[bg];
+  uint32_t yuv_fg = graphics->flat_intensity_palette[fg];
 
   char_colors[0] = yuv_bg;
   char_colors[1] = yvyu_subsample(yuv_bg, yuv_fg);
@@ -368,23 +254,22 @@ void yvyu_subsample_set_colors_mzx(const struct graphics_data *graphics,
 }
 
 // Nominally 8-bit (Character graphics 8 bytes wide)
-void render_graph8(Uint8 * RESTRICT pixels, Uint32 pitch,
- const struct graphics_data *graphics,
- void (*set_colors)(const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8))
+void render_graph8(uint8_t * RESTRICT pixels, size_t pitch,
+ const struct graphics_data *graphics, set_colors_function set_colors)
 {
-  Uint32 *dest;
-  Uint32 *ldest, *ldest2;
+  uint32_t *dest;
+  uint32_t *ldest, *ldest2;
   const struct char_element *src = graphics->text_video;
-  Uint8 old_bg = 255;
-  Uint8 old_fg = 255;
-  const Uint8 *char_ptr;
-  Uint32 char_colors[16];
-  Uint32 current_char_byte;
-  Uint32 i, i2, i3;
-  Uint32 line_advance = pitch / 4;
-  Uint32 row_advance = line_advance * 14;
+  const uint8_t *char_ptr;
+  uint32_t char_colors[16];
+  unsigned int old_bg = 255;
+  unsigned int old_fg = 255;
+  unsigned int current_char_byte;
+  unsigned int i, i2, i3;
+  size_t line_advance = pitch / 4;
+  size_t row_advance = line_advance * 14;
 
-  dest = (Uint32 *)pixels;
+  dest = (uint32_t *)pixels;
 
   for(i = 0; i < 25; i++)
   {
@@ -417,23 +302,22 @@ void render_graph8(Uint8 * RESTRICT pixels, Uint32 pitch,
 }
 
 // Nominally 16-bit (Character graphics 16 bytes wide)
-void render_graph16(Uint16 * RESTRICT pixels, Uint32 pitch,
- const struct graphics_data *graphics,
- void (*set_colors)(const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8))
+void render_graph16(uint16_t * RESTRICT pixels, size_t pitch,
+ const struct graphics_data *graphics, set_colors_function set_colors)
 {
-  Uint32 *dest;
-  Uint32 *ldest, *ldest2;
+  uint32_t *dest;
+  uint32_t *ldest, *ldest2;
   const struct char_element *src = graphics->text_video;
-  Uint8 old_bg = 255;
-  Uint8 old_fg = 255;
-  const Uint8 *char_ptr;
-  Uint32 char_colors[4];
-  Uint32 current_char_byte;
-  Uint32 i, i2, i3;
-  Uint32 line_advance = pitch / 4;
-  Uint32 row_advance = line_advance * 14;
+  const uint8_t *char_ptr;
+  uint32_t char_colors[4];
+  unsigned int old_bg = 255;
+  unsigned int old_fg = 255;
+  unsigned int current_char_byte;
+  unsigned int i, i2, i3;
+  size_t line_advance = pitch / 4;
+  size_t row_advance = line_advance * 14;
 
-  dest = (Uint32 *)pixels;
+  dest = (uint32_t *)pixels;
 
   for(i = 0; i < 25; i++)
   {
@@ -467,24 +351,27 @@ void render_graph16(Uint16 * RESTRICT pixels, Uint32 pitch,
   }
 }
 
-// Nominally 32-bit (Character graphics 32 bytes wide)
-void render_graph32(Uint32 * RESTRICT pixels, Uint32 pitch,
- const struct graphics_data *graphics,
- void (*set_colors)(const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8))
+/* Nominally 32-bit (Character graphics 32 bytes wide)
+ * Because the render_graph32 functions are guaranteed to map a single pixel to
+ * a single 32-bit color they can used fixed set_colors functions, hopefully
+ * saving time on platforms where that would actually matter.
+ */
+void render_graph32(uint32_t * RESTRICT pixels, size_t pitch,
+ const struct graphics_data *graphics)
 {
-  Uint32 *dest;
-  Uint32 *ldest, *ldest2;
+  uint32_t *dest;
+  uint32_t *ldest, *ldest2;
   const struct char_element *src = graphics->text_video;
-  Uint8 old_bg = 255;
-  Uint8 old_fg = 255;
-  const Uint8 *char_ptr;
-  Uint32 char_colors[2];
-  Uint32 current_char_byte;
-  Uint32 i, i2, i3;
-  Sint32 i4;
-  Uint32 line_advance = pitch / 4;
-  Uint32 line_advance_sub = line_advance - 8;
-  Uint32 row_advance = line_advance * 14;
+  const uint8_t *char_ptr;
+  uint32_t char_colors[2];
+  unsigned int old_bg = 255;
+  unsigned int old_fg = 255;
+  unsigned int current_char_byte;
+  unsigned int i, i2, i3;
+  int i4;
+  size_t line_advance = pitch / 4;
+  size_t line_advance_sub = line_advance - 8;
+  size_t row_advance = line_advance * 14;
 
   dest = pixels;
 
@@ -496,7 +383,7 @@ void render_graph32(Uint32 * RESTRICT pixels, Uint32 pitch,
       ldest = dest;
       if((src->bg_color != old_bg) || (src->fg_color != old_fg))
       {
-        set_colors(graphics, char_colors, src->bg_color, src->fg_color);
+        set_colors32_mzx(graphics, char_colors, src->bg_color, src->fg_color);
         old_bg = src->bg_color;
         old_fg = src->fg_color;
       }
@@ -520,24 +407,23 @@ void render_graph32(Uint32 * RESTRICT pixels, Uint32 pitch,
   }
 }
 
-void render_graph32s(Uint32 * RESTRICT pixels, Uint32 pitch,
- const struct graphics_data *graphics,
- void (*set_colors)(const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8))
+void render_graph32s(uint32_t * RESTRICT pixels, size_t pitch,
+ const struct graphics_data *graphics)
 {
-  Uint32 *dest;
-  Uint32 *ldest, *ldest2;
+  uint32_t *dest;
+  uint32_t *ldest, *ldest2;
   const struct char_element *src = graphics->text_video;
-  Uint8 old_bg = 255;
-  Uint8 old_fg = 255;
-  const Uint8 *char_ptr;
-  Uint32 char_colors[4];
-  Uint32 current_char_byte;
-  Uint32 current_color;
-  Uint32 i, i2, i3;
-  Sint32 i4;
-  Uint32 line_advance = pitch / 4;
-  Uint32 line_advance_sub = line_advance - 8;
-  Uint32 row_advance = line_advance * 14;
+  const uint8_t *char_ptr;
+  uint32_t char_colors[4];
+  uint32_t current_color;
+  unsigned int old_bg = 255;
+  unsigned int old_fg = 255;
+  unsigned int current_char_byte;
+  unsigned int i, i2, i3;
+  int i4;
+  size_t line_advance = pitch / 4;
+  size_t line_advance_sub = line_advance - 8;
+  size_t row_advance = line_advance * 14;
 
   dest = pixels;
 
@@ -549,7 +435,7 @@ void render_graph32s(Uint32 * RESTRICT pixels, Uint32 pitch,
       ldest = dest;
       if((src->bg_color != old_bg) || (src->fg_color != old_fg))
       {
-        set_colors(graphics, char_colors, src->bg_color, src->fg_color);
+        set_colors32_smzx(graphics, char_colors, src->bg_color, src->fg_color);
         old_bg = src->bg_color;
         old_fg = src->fg_color;
       }
@@ -575,32 +461,36 @@ void render_graph32s(Uint32 * RESTRICT pixels, Uint32 pitch,
   }
 }
 
-void render_cursor(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
- Uint32 color, Uint8 lines, Uint8 offset)
+void render_cursor(uint32_t *pixels, size_t pitch, uint8_t bpp, unsigned int x,
+ unsigned int y, uint32_t flatcolor, uint8_t lines, uint8_t offset)
 {
-  int i,j;
-  Uint8 size = bpp / 4;
-  Uint32 line_advance = pitch / 4;
-  Uint32 line_advance_sub = line_advance - size;
-  Uint32 row_advance = line_advance * 14;
-  Uint32 *dest = pixels + (x * size) + (y * row_advance) +
-   (offset * line_advance);
+  unsigned int i, j;
+  unsigned int size = bpp / 4;
+  size_t line_advance = pitch / 4;
+  size_t line_advance_sub = line_advance - size;
+  size_t row_advance = line_advance * 14;
+
+  uint32_t *dest = pixels + (x * size) + (y * row_advance) + (offset * line_advance);
+
   for(i = 0; i < lines; i++)
   {
     for(j = 0; j < size; j++)
-      *(dest++) = color;
+      *(dest++) = flatcolor;
+
     dest += line_advance_sub;
   }
 }
 
-void render_mouse(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
- Uint32 mask, Uint32 amask, Uint8 w, Uint8 h)
+void render_mouse(uint32_t *pixels, size_t pitch, uint8_t bpp, unsigned int x,
+ unsigned int y, uint32_t mask, uint32_t amask, uint8_t w, uint8_t h)
 {
-  int i,j;
-  Uint8 size = w * bpp / 32;
-  Uint32 line_advance = pitch / 4;
-  Uint32 line_advance_sub = line_advance - size;
-  Uint32 *dest = pixels + (x * bpp / 32) + (y * line_advance);
+  unsigned int i, j;
+  unsigned int size = w * bpp / 32;
+  size_t line_advance = pitch / 4;
+  size_t line_advance_sub = line_advance - size;
+
+  uint32_t *dest = pixels + (x * bpp / 32) + (y * line_advance);
+
   for(i = 0; i < h; i++)
   {
     for(j = 0; j < size; j++)

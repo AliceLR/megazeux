@@ -40,6 +40,8 @@ CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,
 CORE_LIBSPEC void new_counter(struct world *mzx_world, const char *name,
  int value, int id);
 CORE_LIBSPEC void sort_counter_list(struct counter_list *counter_list);
+CORE_LIBSPEC void counter_list_size(struct counter_list *counter_list,
+ size_t *list_size, size_t *table_size, size_t *counters_size);
 
 void initialize_gateway_functions(struct world *mzx_world);
 void inc_counter(struct world *mzx_world, const char *name, int value, int id);

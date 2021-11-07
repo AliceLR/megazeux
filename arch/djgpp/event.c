@@ -31,9 +31,9 @@ extern struct input_status input;
 // Defined in interrupt.S
 extern int kbd_handler;
 extern __dpmi_paddr kbd_old_handler;
-extern volatile Uint8 kbd_buffer[256];
-extern volatile Uint8 kbd_read;
-extern volatile Uint8 kbd_write;
+extern volatile uint8_t kbd_buffer[256];
+extern volatile uint8_t kbd_read;
+extern volatile uint8_t kbd_write;
 
 static enum
 {
@@ -41,7 +41,7 @@ static enum
   KBD_PRESSING,
   KBD_PRESSED
 } kbd_statmap[0x80] = {0};
-static Uint16 kbd_unicode[0x80] = {0};
+static uint16_t kbd_unicode[0x80] = {0};
 static boolean kbd_init = false;
 
 static int read_kbd(void)
@@ -120,7 +120,7 @@ static const enum keycode extended_xt_to_internal[0x80] =
   IKEY_RSUPER, IKEY_MENU, IKEY_UNKNOWN
 };
 
-static enum keycode convert_ext_internal(Uint8 key)
+static enum keycode convert_ext_internal(uint8_t key)
 {
   if(key & 0x80)
     return extended_xt_to_internal[key & 0x7F];
@@ -158,7 +158,7 @@ static void update_lock_status(struct buffered_status *status)
   status->caps_status = !!(res & 0x40);
 }
 
-static Uint8 convert_bios_xt(Uint8 key)
+static uint8_t convert_bios_xt(uint8_t key)
 {
   switch(key)
   {
@@ -250,8 +250,8 @@ static Uint8 convert_bios_xt(Uint8 key)
 static void poll_keyboard_bios(void)
 {
   unsigned short res;
-  Uint8 scancode;
-  Uint16 unicode;
+  uint8_t scancode;
+  uint16_t unicode;
 
   while(extbioskey(1))
   {
@@ -264,7 +264,7 @@ static void poll_keyboard_bios(void)
   }
 }
 
-static Uint16 convert_ext_unicode(Uint8 key)
+static uint16_t convert_ext_unicode(uint8_t key)
 {
   poll_keyboard_bios();
   return kbd_unicode[key & 0x7F];
@@ -280,7 +280,7 @@ static void set_keystat(int key, int stat)
   kbd_statmap[key & 0x7F] = stat;
 }
 
-static boolean non_bios_key(Uint8 key)
+static boolean non_bios_key(uint8_t key)
 {
   switch(key)
   {
@@ -311,7 +311,7 @@ static boolean process_keypress(int key)
 {
   struct buffered_status *status = store_status();
   enum keycode ikey = convert_ext_internal(key);
-  Uint16 unicode = convert_ext_unicode(key);
+  uint16_t unicode = convert_ext_unicode(key);
 
   if((get_keystat(key) != KBD_PRESSING) && !non_bios_key(key))
     return false;
@@ -423,13 +423,13 @@ extern void mouse_handler(__dpmi_regs *reg);
 extern _go32_dpmi_registers mouse_regs;
 extern volatile struct mouse_event
 {
-  Uint16 cond;
-  Uint16 button;
-  Sint16 dx;
-  Sint16 dy;
+  uint16_t cond;
+  uint16_t button;
+  int16_t dx;
+  int16_t dy;
 } mouse_buffer[256];
-extern volatile Uint8 mouse_read;
-extern volatile Uint8 mouse_write;
+extern volatile uint8_t mouse_read;
+extern volatile uint8_t mouse_write;
 
 static struct mouse_event mouse_last = { 0, 0, 0, 0 };
 static boolean mouse_init = false;
@@ -449,8 +449,8 @@ static boolean process_mouse(struct mouse_event *mev)
 
   if(mev->cond & 0x01)
   {
-    int mx = status->real_mouse_x + mev->dx - mouse_last.dx;
-    int my = status->real_mouse_y + mev->dy - mouse_last.dy;
+    int mx = status->mouse_pixel_x + mev->dx - mouse_last.dx;
+    int my = status->mouse_pixel_y + mev->dy - mouse_last.dy;
 
     if(mx < 0)
       mx = 0;
@@ -461,8 +461,8 @@ static boolean process_mouse(struct mouse_event *mev)
     if(my >= 350)
       my = 349;
 
-    status->real_mouse_x = mx;
-    status->real_mouse_y = my;
+    status->mouse_pixel_x = mx;
+    status->mouse_pixel_y = my;
     status->mouse_x = mx / 8;
     status->mouse_y = my / 14;
     status->mouse_moved = true;
@@ -474,7 +474,7 @@ static boolean process_mouse(struct mouse_event *mev)
 
   if(mev->cond & 0x7E)
   {
-    const Uint32 buttons[] =
+    const uint32_t buttons[] =
     {
       MOUSE_BUTTON_LEFT,
       MOUSE_BUTTON_RIGHT,
@@ -540,8 +540,15 @@ void __wait_event(void)
     process_mouse(&mev);
 }
 
-void real_warp_mouse(int x, int y)
+void __warp_mouse(int x, int y)
 {
+  // TODO?
+}
+
+boolean __peek_exit_input(void)
+{
+  // TODO stub
+  return false;
 }
 
 static void init_kbd(void)

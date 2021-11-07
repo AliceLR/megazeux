@@ -35,6 +35,11 @@
 #include "util.h"
 #include "io/fsafeopen.h"
 #include "io/path.h"
+#include "io/vio.h"
+
+#ifdef CONFIG_SDL
+#include <SDL_version.h>
+#endif
 
 #define MAX_INCLUDE_DEPTH 16
 #define MAX_CONFIG_REGISTERED 2
@@ -71,12 +76,17 @@
 #define FULLSCREEN_WIDTH_DEFAULT 640
 #define FULLSCREEN_HEIGHT_DEFAULT 480
 #define FORCE_BPP_DEFAULT 16
-#endif
+#endif /* CONFIG_SDL */
 #endif
 
 #ifdef CONFIG_3DS
-#define FORCE_BPP_DEFAULT 16
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
+#endif
+
+#ifdef CONFIG_WIIU
+#define FULLSCREEN_WIDTH_DEFAULT 1280
+#define FULLSCREEN_HEIGHT_DEFAULT 720
+#define FULLSCREEN_DEFAULT 1
 #endif
 
 #ifdef CONFIG_SWITCH
@@ -92,7 +102,6 @@
 
 #ifdef __EMSCRIPTEN__
 #define AUDIO_SAMPLE_RATE 48000
-#define AUTO_DECRYPT_WORLDS true
 #endif
 
 #ifdef CONFIG_DJGPP
@@ -103,7 +112,7 @@
 // End arch-specific config.
 
 #ifndef FORCE_BPP_DEFAULT
-#define FORCE_BPP_DEFAULT 32
+#define FORCE_BPP_DEFAULT BPP_AUTO
 #endif
 
 #ifndef GL_VSYNC_DEFAULT
@@ -153,7 +162,7 @@
 #endif
 
 #ifndef AUTO_DECRYPT_WORLDS
-#define AUTO_DECRYPT_WORLDS false
+#define AUTO_DECRYPT_WORLDS true
 #endif
 
 #ifdef CONFIG_UPDATER
@@ -206,8 +215,9 @@ static const struct config_info user_conf_default =
   FORCE_BPP_DEFAULT,            // force_bpp
   VIDEO_RATIO_DEFAULT,          // video_ratio
   CONFIG_GL_FILTER_LINEAR,      // opengl filter method
-  "",                           // opengl default scaling shader
   GL_VSYNC_DEFAULT,             // opengl vsync mode
+  "",                           // opengl default scaling shader
+  "",                           // sdl_render_driver
   CURSOR_MODE_HINT,             // cursor_hint_mode
   true,                         // allow screenshots
 
@@ -294,9 +304,11 @@ static const struct config_enum allow_cheats_values[] =
 
 static const struct config_enum force_bpp_values[] =
 {
+  { "0", BPP_AUTO },
   { "8", 8 },
   { "16", 16 },
-  { "32", 32 }
+  { "32", 32 },
+  { "auto", BPP_AUTO },
 };
 
 static const struct config_enum gl_filter_method_values[] =
@@ -647,7 +659,7 @@ static void config_startup_file(struct config_info *conf, char *name,
 
     // Make sure the startup path actually exists.
     if(conf->startup_path[0] &&
-     (stat(conf->startup_path, &stat_info) < 0 || !S_ISDIR(stat_info.st_mode)))
+     (vstat(conf->startup_path, &stat_info) < 0 || !S_ISDIR(stat_info.st_mode)))
       conf->startup_path[0] = '\0';
   }
   else
@@ -658,7 +670,7 @@ static void config_startup_path(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   struct stat stat_info;
-  if(stat(value, &stat_info) || !S_ISDIR(stat_info.st_mode))
+  if(vstat(value, &stat_info) || !S_ISDIR(stat_info.st_mode))
     return;
 
   snprintf(conf->startup_path, 256, "%s", value);
@@ -702,7 +714,7 @@ static void config_enable_oversampling(struct config_info *conf, char *name,
 {
   boolean result;
   if(config_boolean(&result, value))
-    conf->oversampling_on = (int)result;
+    conf->oversampling_on = result;
 }
 
 static void config_resample_mode(struct config_info *conf, char *name,
@@ -996,6 +1008,12 @@ static void config_gl_vsync(struct config_info *conf, char *name,
     conf->gl_vsync = result;
 }
 
+static void config_sdl_render_driver(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  config_string(conf->sdl_render_driver, value);
+}
+
 static void config_set_allow_screenshots(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -1133,6 +1151,7 @@ static const struct config_entry config_options[] =
   { "save_slots", config_save_slots, false },
   { "save_slots_ext", config_save_slots_ext, false },
   { "save_slots_name", config_save_slots_name, false },
+  { "sdl_render_driver", config_sdl_render_driver, false },
 #ifdef CONFIG_NETWORK
   { "socks_host", config_set_socks_host, false },
   { "socks_password", config_set_socks_password, false },
@@ -1210,19 +1229,19 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
   char *extended_buffer;
   char *equals_position, *value;
   char *output_end_position = line_buffer + LINE_BUFFER_SIZE;
-  FILE *conf_file;
+  vfile *conf_file;
   int i;
 
   if(type >= NUM_CONFIG_TYPES)
     return;
 
-  conf_file = fopen_unsafe(conf_file_name, "rb");
+  conf_file = vfopen_unsafe(conf_file_name, "rb");
   if(!conf_file)
     return;
 
   extended_buffer = (char *)cmalloc(extended_allocate_size);
 
-  while(fsafegets(line_buffer_alternate, LINE_BUFFER_SIZE, conf_file))
+  while(vfsafegets(line_buffer_alternate, LINE_BUFFER_SIZE, conf_file))
   {
     if(line_buffer_alternate[0] != '#')
     {
@@ -1270,7 +1289,7 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
       if(line_buffer[0])
       {
         // There might be extended information too - get it.
-        peek_char = fgetc(conf_file);
+        peek_char = vfgetc(conf_file);
         extended_size = 1;
         extended_buffer_offset = 0;
         use_extended_buffer = NULL;
@@ -1280,7 +1299,7 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
         {
           // Extended data line
           use_extended_buffer = extended_buffer;
-          if(fsafegets(line_buffer_alternate, 254, conf_file))
+          if(vfsafegets(line_buffer_alternate, 254, conf_file))
           {
             // Skip any extra whitespace at the start of the line...
             char *line_buffer_pos = line_buffer_alternate;
@@ -1304,9 +1323,9 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
             extended_buffer_offset += line_size;
           }
 
-          peek_char = fgetc(conf_file);
+          peek_char = vfgetc(conf_file);
         }
-        ungetc(peek_char, conf_file);
+        vungetc(peek_char, conf_file);
 
         for(i = 0; i < config_registry[type].num_registered; i++)
         {
@@ -1320,7 +1339,7 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
   }
 
   free(extended_buffer);
-  fclose(conf_file);
+  vfclose(conf_file);
 }
 
 void set_config_from_command_line(int *argc, char *argv[])

@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -80,7 +80,7 @@ struct c669_instrument_header {
 
 /* Effects bug fixed by Miod Vallat <miodrag@multimania.com> */
 
-static const uint8 fx[] = {
+static const uint8 fx[6] = {
     FX_669_PORTA_UP,
     FX_669_PORTA_DN,
     FX_669_TPORTA,
@@ -144,7 +144,7 @@ static int c669_load(struct module_data *m, HIO_HANDLE *f, const int start)
     m->comment = malloc(109);
     memcpy(m->comment, sfh.message, 108);
     m->comment[108] = 0;
-    
+
     /* Read and convert instruments and samples */
 
     if (libxmp_init_instrument(m) < 0)
@@ -215,7 +215,10 @@ static int c669_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 	for (j = 0; j < 64 * 8; j++) {
 	    event = &EVENT(i, j % 8, j / 8);
-	    hio_read(ev, 1, 3, f);
+	    if(hio_read(ev, 1, 3, f) < 3) {
+		D_(D_CRIT "read error at pat %d", i);
+		return -1;
+	    }
 
 	    if ((ev[0] & 0xfe) != 0xfe) {
 		event->note = 1 + 36 + (ev[0] >> 2);
@@ -226,7 +229,7 @@ static int c669_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		event->vol = (LSN(ev[1]) << 2) + 1;
 
 	    if (ev[2] != 0xff) {
-		if (MSN(ev[2]) > 5)
+		if (MSN(ev[2]) >= ARRAY_SIZE(fx))
 		    continue;
 
 		event->fxt = fx[MSN(ev[2])];

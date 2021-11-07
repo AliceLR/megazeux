@@ -39,10 +39,10 @@
 struct svga_render_data
 {
   __dpmi_meminfo mapping;
-  Uint8 *ptr, *ptr2;
-  Uint16 line, line2;
-  Uint16 mode, pitch;
-  Uint8 display;
+  uint8_t *ptr, *ptr2;
+  uint16_t line, line2;
+  uint16_t mode, pitch;
+  uint8_t display;
   boolean page_flip_ok;
   int update_colors;
 };
@@ -53,7 +53,7 @@ static void ega_vsync(void)
     ;
 }
 
-static boolean svga_try_mode(struct graphics_data *graphics, Uint16 mode, Uint16 width, Uint16 height, Uint16 bpp)
+static boolean svga_try_mode(struct graphics_data *graphics, uint16_t mode, uint16_t width, uint16_t height, uint16_t bpp)
 {
   struct svga_render_data *render_data = graphics->render_data;
   __dpmi_regs reg;
@@ -155,7 +155,7 @@ static boolean svga_init_video(struct graphics_data *graphics,
   x_offset = (graphics->resolution_width - 640) / 2;
   y_offset = (graphics->resolution_height - 350) / 2;
 
-  render_data.ptr = (Uint8*)(render_data.mapping.address + __djgpp_conventional_base) + (vbe.pitch * y_offset) + ((vbe.bpp >> 3) * x_offset);
+  render_data.ptr = (uint8_t*)(render_data.mapping.address + __djgpp_conventional_base) + (vbe.pitch * y_offset) + ((vbe.bpp >> 3) * x_offset);
   render_data.pitch = vbe.pitch;
   if(render_data.page_flip_ok)
   {
@@ -164,7 +164,7 @@ static boolean svga_init_video(struct graphics_data *graphics,
     render_data.line2 = graphics->resolution_height;
   }
 
-  memset((Uint8*)(render_data.mapping.address + __djgpp_conventional_base), 0, vbe.pitch * vbe.height);
+  memset((uint8_t*)(render_data.mapping.address + __djgpp_conventional_base), 0, vbe.pitch * vbe.height);
 
   return set_video_mode();
 }
@@ -176,19 +176,13 @@ static void svga_free_video(struct graphics_data *graphics)
   djgpp_pop_enable_nearptr();
 }
 
-static boolean svga_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
-{
-  return true;
-}
-
 static boolean svga_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }
 
-static void svga_upload_colors(Uint32 *palette, Uint32 count)
+static void svga_upload_colors(uint32_t *palette, uint32_t count)
 {
   __dpmi_regs reg;
 
@@ -215,9 +209,9 @@ static void svga_upload_colors(Uint32 *palette, Uint32 count)
 }
 
 static void svga_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
-  Uint32 i;
+  uint32_t i;
   struct svga_render_data *render_data = graphics->render_data;
 
   if(graphics->bits_per_pixel == 16)
@@ -245,9 +239,9 @@ static void svga_render_graph(struct graphics_data *graphics)
 {
   struct svga_render_data *render_data = graphics->render_data;
   if(graphics->bits_per_pixel == 16)
-    render_graph16((Uint16*)render_data->ptr, render_data->pitch, graphics, set_colors16[graphics->screen_mode]);
+    render_graph16((uint16_t*)render_data->ptr, render_data->pitch, graphics, set_colors16[graphics->screen_mode]);
   else if(graphics->bits_per_pixel == 8)
-    render_graph8((Uint8*)render_data->ptr, render_data->pitch, graphics, set_colors8[graphics->screen_mode]);
+    render_graph8((uint8_t*)render_data->ptr, render_data->pitch, graphics, set_colors8[graphics->screen_mode]);
 }
 
 static void svga_render_layer(struct graphics_data *graphics,
@@ -257,39 +251,39 @@ static void svga_render_layer(struct graphics_data *graphics,
   render_layer(render_data->ptr, graphics->bits_per_pixel, render_data->pitch, graphics, vlayer);
 }
 
-static void svga_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void svga_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   struct svga_render_data *render_data = graphics->render_data;
-  Uint32 flatcolor = 0;
+  uint32_t flatcolor = 0;
 
   if(graphics->bits_per_pixel == 16)
     flatcolor = graphics->flat_intensity_palette[color] * 0x00010001;
   else if(graphics->bits_per_pixel == 8)
     flatcolor = color * 0x01010101;
 
-  render_cursor((Uint32*)render_data->ptr, render_data->pitch, graphics->bits_per_pixel, x, y, flatcolor, lines, offset);
+  render_cursor((uint32_t*)render_data->ptr, render_data->pitch, graphics->bits_per_pixel, x, y, flatcolor, lines, offset);
 }
 
 static void svga_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   struct svga_render_data *render_data = graphics->render_data;
-  Uint32 mask;
+  uint32_t mask;
   if((graphics->bits_per_pixel == 8) && !graphics->screen_mode)
     mask = 0x0F0F0F0F;
   else
     mask = 0xFFFFFFFF;
 
-  render_mouse((Uint32*)render_data->ptr, render_data->pitch, graphics->bits_per_pixel, x, y, mask, 0, w, h);
+  render_mouse((uint32_t*)render_data->ptr, render_data->pitch, graphics->bits_per_pixel, x, y, mask, 0, w, h);
 }
 
 static void svga_sync_screen(struct graphics_data *graphics)
 {
   struct svga_render_data *render_data = graphics->render_data;
   __dpmi_regs reg;
-  Uint8 *ptr;
-  Uint16 line;
+  uint8_t *ptr;
+  uint16_t line;
 
   if(render_data->update_colors > 0 || render_data->page_flip_ok)
     ega_vsync();
@@ -331,7 +325,6 @@ void render_svga_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = svga_init_video;
   renderer->free_video = svga_free_video;
-  renderer->check_video_mode = svga_check_video_mode;
   renderer->set_video_mode = svga_set_video_mode;
   renderer->update_colors = svga_update_colors;
   renderer->resize_screen = resize_screen_standard;

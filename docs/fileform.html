@@ -20,6 +20,11 @@
 <head>
 <meta charset="UTF-8">
 <title>MegaZeux File Formats</title>
+<meta name="title" content="MegaZeux File Format Reference">
+<meta name="description" content="Information about various file formats defined by MegaZeux.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MegaZeux File Format Reference">
+<meta name="twitter:description" content="Information about various file formats defined by MegaZeux.">
 <style>
   #container
   {
@@ -1852,11 +1857,11 @@ while(i < width * height)
         are loaded in are as follows:
       </p>
       <div class="markdown">
-| Filename  | Description                   | Notes                       | Compressed |
-|-----------|-------------------------------|-----------------------------|------------|
+| Filename  | Description                                                 | Notes                       | Compressed |
+|-----------|-------------------------------------------------------------|-----------------------------|------------|
 | `world`   | <a href="#worldprop290"  >World Properties</a>              |                             | Never
 | `gr`      | <a href="#robot290"      >Global Robot</a>                  |
-| `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled | As of 2.91c
+| `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled  | As of 2.91c
 | `chars`   | <a href="#chars290"      >Character Sets</a>                |                             | Always
 | `pal`     | <a href="#pal290"        >Palette</a>                       |
 | `palidx`  | <a href="#pal290"        >Palette Indices</a>               | Save-only before 2.91, SMZX 3 only
@@ -1888,7 +1893,7 @@ while(i < width * height)
         board, <code>b0A</code> for board 10, <code>bF9</code> for
         board 249 (the highest possible regular board number), and
         <code>bFF</code> for the special temporary board that may sometimes
-        exist in save files.
+        exist in save files. This number must be exactly two hex digits long.
       </p>
       <p>
         Extra storage data for robots, scrolls, and sensors is stored in separate
@@ -1897,6 +1902,11 @@ while(i < width * height)
         from <code>01</code> (for robot 1) to <code>FF</code> (for robot 255) are
         valid. The same applies for scrolls and sensors. The robot/scroll/sensor
         must exist on the board for its corresponding properties file to be valid.
+        These numbers must be exactly two hex digits long.
+      </p>
+      <p>
+        Filenames are case-insensitive. Prior to 2.93, they were case-sensitive
+        and had to be all lowercase (aside from board/object numbers).
       </p>
     </section>
 
@@ -1969,7 +1979,7 @@ while(i < width * height)
       <div class="markdown">
 | ID       | Property                             | Data Type               | Notes |
 |----------|--------------------------------------|-------------------------|-------|
-| `0x0001` | World name                           | string(25) (with \0)    |
+| `0x0001` | World name                           | string                  | <a href="#world290note1">(1)</a>
 | `0x0002` | World version                        | int(w)                  |
 | `0x0003` | File version                         | int(w)                  |
 | `0x0004` | Save start board #                   | int(b)                  | 255: temporary board
@@ -2043,6 +2053,14 @@ while(i < width * height)
 | `0x8091` | SMZX message enabled in SMZX mode?   | int(b)                  | Save-only, 2.91+
 | `0x8092` | Joystick presses simulate keypresses?| int(b)                  | Save-only, 2.92+
       </div>
+      <ol>
+        <li id="world290note1">
+          World name maximum length is currently 24 characters; extra data
+          will be ignored. Versions prior to 2.92d expect this field to be null
+          terminated, and may leave parts of previous world names in the loaded
+          name if it is not.
+        </li>
+      </ol>
     </section>
 
     <section id="sfx290" class="inner">
@@ -2220,14 +2238,14 @@ while(i < width * height)
       <div class="markdown">
 | ID       | Property               | Data Type             | Notes |
 |----------|------------------------|-----------------------|-------|
-| `0x0001` | Board name             | string(25) (with \0)  | Strict<a href="#board290note1">(1)</a>
+| `0x0001` | Board name             | string                | Strict<a href="#board290note1">(1)</a><a href="#board290note2">(2)</a>
 | `0x0002` | Board width            | int(w)                | Strict
 | `0x0003` | Board height           | int(w)                | Strict
 | `0x0004` | Overlay mode           | int(b)                | Strict
 | `0x0005` | Robot count            | int(b)                | Strict
 | `0x0006` | Scroll count           | int(b)                | Strict
 | `0x0007` | Sensor count           | int(b)                | Strict
-| `0x0008` | File version           | int(w)                | Strict<a href="#board290note2">(2)</a>
+| `0x0008` | File version           | int(w)                | Strict<a href="#board290note3">(3)</a>
 | `0x0010` | Mod playing            | string
 | `0x0011` | Viewport X             | int(b)
 | `0x0012` | Viewport Y             | int(b)
@@ -2282,6 +2300,11 @@ while(i < width * height)
           out.
         </li>
         <li id="board290note2">
+          Board name maximum length is currently 24 characters; extra data
+          will be ignored. Versions prior to 2.93 expect this field to be null
+          terminated and may append garbage to the name if it is not.
+        </li>
+        <li id="board290note3">
           This field exists mainly to provide redundancy for the
           <a href="#mzb">.MZB</a> file header. In world and save files, this
           field should be redundant with the file version field derived from
@@ -2308,7 +2331,7 @@ while(i < width * height)
       <div class="markdown">
 | ID       | Property                     | Data Type             | Notes |
 |----------|------------------------------|-----------------------|-------|
-| `0x0001` | Robot name                   | string(15) (with \0)  | Strict<a href="#robot290note1">(1)</a>
+| `0x0001` | Robot name                   | string                | Strict<a href="#robot290note1">(1)</a><a href="#robot290note1">(2)</a>
 | `0x0002` | Robot char                   | int(b)                | Strict
 | `0x0003` | X position                   | int(ws)               | Strict
 | `0x0004` | Y position                   | int(ws)               | Strict
@@ -2335,6 +2358,12 @@ while(i < width * height)
           Properties marked "strict" must be present and in the order specified
           in the table for the robot data to be considered valid.
         </li>
+        <li id="robot290note2">
+          Robot name maximum length is currently 14 characters; extra data
+          will be ignored. Versions prior to 2.92d expect this field to be
+          exactly 15 bytes long and to contain a null terminator, and may behave
+          unexpectedly if it does not.
+        </li>
       </ol>
     </section>
 
@@ -2357,12 +2386,20 @@ while(i < width * height)
         Sensor data is stored in a properties file with the following properties:
       </p>
       <div class="markdown">
-| ID       | Property         | Data Type |
-|----------|------------------|-----------|
-| `0x0001` | Sensor name      | string(15) (with \0)
+| ID       | Property         | Data Type | Notes |
+|----------|------------------|-----------|-------|
+| `0x0001` | Sensor name      | string    | <a href="#sensor290note1">(1)</a>
 | `0x0002` | Sensor char      | int(b)
-| `0x0003` | Robot to message | string(15) (with \0)
+| `0x0003` | Robot to message | string    | <a href="#sensor290note1">(1)</a>
       </div>
+      <ol>
+        <li id="sensor290note1">
+          Robot/sensor name maximum length is currently 14 characters; extra data
+          will be ignored. Versions prior to 2.92d expect these fields to be
+          exactly 15 bytes long and to contain a null terminator, and may behave
+          unexpectedly if they do not.
+        </li>
+      </ol>
     </section>
   </section>
 
@@ -2546,7 +2583,7 @@ while(i < width * height)
 |------|------|-------------|
 | 0    | s4   | `MZM2`
 | 4    | w    | Width
-| 6    | h    | Height
+| 6    | w    | Height
 | 8    | d    | Location in file of robot table (0 for no robots)
 | 12   | b    | Number of robots (0 for no robots)
 | 13   | b    | Storage mode (0: board, 1: layer)

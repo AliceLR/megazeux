@@ -1,23 +1,21 @@
-/*
+/* Copyright (C) 2017 Dr Lancer-X <drlancer@megazeux.org>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
 
-Copyright (C) 2017  Dr Lancer-X (drlancer@megazeux.org)
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-#define CCV_VERSION "v0.074"
+#define CCV_VERSION "v0.075"
 
 // With fix contributed by Lachesis
 
@@ -30,7 +28,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <limits.h>
 #include "../config.h"
 
+#include "image_file.h"
 #include "utils_alloc.h"
+
+#ifndef VERSION_DATE
+#define VERSION_DATE
+#endif
 
 #ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
@@ -42,61 +45,140 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "uthash.h"
 
-#define USAGE  "Usage:\n" \
-"ccv input.bmp\n" \
-".. converts input.bmp to input.chr. The conversion will convert the image to a charset or partial charset containing a quantised representation of the image. No char reuse will be done.\n" \
-"ccv input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm. If the same character would have been used multiple times, it will be reused. Hence while the .chr itself may not match the input image, the combination of the .chr and .mzm will.\n" \
-"ccv input.bmp -reuse\n" \
-".. converts input.bmp to input.chr, reusing chars where possible. This option is implied with -mzm, but can be used for simple charset output with this.\n" \
-"ccv input.bmp -mzm -noreuse\n" \
-".. converts input.bmp to input.chr and input.mzm without reusing characters.\n" \
-"ccv input.bmp -o output\n" \
-".. converts input.bmp to output.chr\n" \
-"ccv input.bmp -mzm -o output\n" \
-".. converts input.bmp to output.chr and output.mzm\n" \
-"ccv input1.bmp input2.bmp -mzm\n" \
-".. converts input1.bmp and input2.bmp to input1.chr, input2.chr, input1.mzm and input2.mzm\n" \
-"ccv input.bmp -mzm -blank 32 \n" \
-".. converts input.bmp to input.chr and input.mzm. Char 32 will be blank and blank parts of the image will be assigned char #32 instead of some other char.\n" \
-"ccv -c 30 input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm, with no more than 30 characters used. If necessary, close characters will be reused. -c implies -reuse.\n" \
-"ccv -offset 128 input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm with the char indices in input.mzm being offset by 128 places. Hence loading the charset with load char set \"@128input.chr\" and placing the MZM should result in accurate graphics.\n" \
-"ccv -exclude 32 input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm. If char #32 would otherwise be used in the conversion, it will be replaced with a blank char instead and will not be referenced in the output -mzm.\n" \
-"ccv -exclude 32-63 input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm. If chars #32 to #63 would otherwise be used in the conversion, they will be replaced with blank chars instead and will not be referenced in the output -mzm.\n" \
-"ccv -exclude 0,32 input.bmp -mzm\n" \
-".. converts input.bmp to input.chr and input.mzm. If chars #0 or #32 would otherwise be used in the conversion, they will be replaced with blank chars instead and will not be referenced in the output -mzm.\n" \
-"ccv input.raw -w 256 -h 112\n" \
-".. converts input.raw to input.chr. input.raw is assumed to be an 8-bit headerless image of the dimensions given, where zero is black and nonzero is white.\n" \
-"ccv input.bmp -threshold 160\n" \
-".. converts input.bmp to input.chr turning pixels >= 160 brightness white and other pixels black. If not supplied, the default is 127.\n" \
-"ccv input.bmp -dither floyd-steinberg\n" \
-"ccv input.bmp -dither stucki\n" \
-"ccv input.bmp -dither jarvis-judice-ninke\n" \
-"ccv input.bmp -dither burkes\n" \
-"ccv input.bmp -dither sierra\n" \
-"ccv input.bmp -dither stevenson-arce\n" \
-".. converts input.bmp to input.chr using the given error-diffusion kernel. Note that you can abbreviate it (i.e. 'floyd', 'jarvis') as it only has to match part of the name. Note that the -threshold value, if supplied, is still used here.\n" \
-"ccv -q input.bmp\n" \
-".. suppress output to stdout\n" \
+static const char USAGE[] =
+"ccv " CCV_VERSION " :: MegaZeux " VERSION VERSION_DATE "\n"
+"char conversion tool for megazeux by Dr Lancer-X <drlancer@megazeux.org>\n"
+"Usage: ccv <input files...> [options...]\n";
 
-void Usage()
+static const char USAGE_DESC[] =
+"\n"
+"  By default, ccv converts input file 'input.fil' to output charset 'input.chr'\n"
+"  with no char reuse.\n\n"
+
+"  If the input file '-' is provided, it will be read from stdin.\n\n"
+
+"  Supported image file formats are:\n\n"
+
+"  * PNG\n"
+"  * BMP (1bpp, 2bpp, 4bpp, 8bpp, 16bpp, 24bpp, 32bpp, RLE8, RLE4)\n"
+"  * Netpbm/PNM (.pbm, .pgm, .ppm, .pnm, .pam)\n"
+"  * farbfeld (.ff)\n"
+"  * raw (see raw format)\n"
+"\n";
+
+static const char USAGE_OPTS[] =
+"Options:\n\n"
+
+"  -blank [#]       Specifies a blank char index (default is -1 for none).\n"
+"  -c [#]           Specifies the maximum number of chars to output, or 0 for\n"
+"                   no maximum char limit (default).\n"
+"  -dither [type]   Specifies a dithering algorithm to apply (default is none).\n"
+"                   Supported values: floyd-steinberg, stucki, jarvis-judice-ninke,\n"
+"                   burkes, sierra, stevenson-arce. These values can be abbreviated,\n"
+"                   e.g. 'floyd' for 'floyd-steinberg'.\n"
+"  -exclude [...]   Exclude a single char or range of chars from conversion.\n"
+"                   The parameter can be a single number (32), a range (128-159),\n"
+"                   or a comma-separated list of numbers and ranges. In the\n"
+"                   output charset, these will be left blank.\n"
+"  -help            Display this message.\n"
+"  -mzm             Output both an MZM and a CHR.\n"
+"  -offset [#]      Specifies the starting char offset for MZMs. Intended for use\n"
+"                   with LOAD CHAR SET \"@###file.chr\", where ### is the offset.\n"
+"  -output [name]   Specifies an output filename prefix. For example, '-output da_bomb'\n"
+"                   will output 'da_bomb.chr' (and 'da_bomb.mzm' if -mzm is specified).\n"
+"                   By default, this is the prefix of the input file, or 'out' if the\n"
+"                   input file is stdin.\n"
+"  -q               Suppress stdout messages.\n"
+"  -reuse -noreuse  Specify whether or not chars should be reused.\n"
+"                   On by default with -mzm or -c, off by default otherwise.\n"
+"  -threshold [#]   Specify the intensity threshold for quantization. This is a value\n"
+"                   from 0 to 255; if the intensity of a pixel is greater-than-or-equal\n"
+"                   to this threshold, it will be considered 'on'; if less than this\n"
+"                   threshold, it will be considered 'off'. Default is 127.\n"
+"  -w [#]           Specify raw format width (see raw format).\n"
+"  -h [#]           Specify raw format height (see raw format).\n"
+"\n";
+
+static const char USAGE_RAW[] =
+"Raw format:\n\n"
+
+"  ccv allows input of raw greyscale images if -w and -h are specified. Each\n"
+"  byte of the input file represents the intensity of one pixel.\n"
+
+"  Prior ccv versions treated these intensities as boolean values (zero for off,\n"
+"  non-zero for on). For equivalent behavior to this, use -threshold 1.\n"
+"\n";
+
+static const char USAGE_EXAMPLES[] =
+"Examples:\n\n"
+
+"  ccv input.bmp\n\n"
+
+"    converts input.bmp to input.chr. The conversion will convert the image to\n"
+"    a charset or partial charset containing a quantised representation of the\n"
+"    image. No char reuse will be done.\n\n"
+
+"  ccv input.png -mzm -output output\n\n"
+
+"    converts input.bmp to output.chr and output.mzm. If the same character would\n"
+"    have been used multiple times, it will be reused. Hence while the .chr\n"
+"    itself may not match the input image, the combination of the .chr and .mzm will.\n\n"
+
+"  ccv input1.bmp input2.bmp -mzm\n\n"
+
+"    converts input1.bmp and input2.bmp to input1.chr, input2.chr,\n"
+"    input1.mzm and input2.mzm.\n\n"
+
+"  ccv input.bmp -mzm -blank 32\n\n"
+
+"    converts input.bmp to input.chr and input.mzm. Char 32 will be blank and blank\n"
+"    parts of the image will be assigned char #32 instead of some other char.\n\n"
+
+"  ccv -c 30 input.bmp -mzm\n\n"
+
+"    converts input.bmp to input.chr and input.mzm, with no more than 30 characters\n"
+"    used. If necessary, close characters will be reused. -c implies -reuse.\n\n"
+
+"  ccv -offset 128 input.bmp -mzm\n\n"
+
+"    converts input.bmp to input.chr and input.mzm with the char indices in\n"
+"    input.mzm being offset by 128 places. Hence loading the charset with\n"
+"    LOAD CHAR SET \"@128input.chr\" and placing the MZM should result in\n"
+"    accurate graphics.\n"
+
+"  ccv -exclude 0,32-63 input.bmp -mzm\n\n"
+
+"    converts input.bmp to input.chr and input.mzm. If char #0 or chars #32 through #63\n"
+"    would otherwise be used in the conversion, they will be replaced with blank\n"
+"    chars instead and will not be referenced in the output -mzm.\n\n"
+
+"  ccv input.raw -w 256 -h 112 -threshold 32\n\n"
+
+"    converts input.raw to input.chr. All bytes >=32 will be treated as white and\n"
+"    bytes <32 will be treated as black.\n\n"
+
+"  ccv input.bmp -dither floyd-steinberg -threshold 160\n\n"
+
+"    converts input.bmp to input.chr using floyd-steinberg dithering and treating\n"
+"    intensities >=160 as white.\n"
+"\n";
+
+static void Usage(void)
 {
-  fprintf(stderr, "ccv " CCV_VERSION " - char conversion tool for megazeux\n");
-  fprintf(stderr, "by Dr Lancer-X <drlancer@megazeux.org>\n");
-  fprintf(stderr, "Usage: ccv [options] input_file [...]\n");
+  fprintf(stderr, USAGE);
   fprintf(stderr, "Type \"ccv -help\" for extended options information\n");
 }
 
-void Help()
+static void Help(void)
 {
   fprintf(stderr, USAGE);
+  fprintf(stderr, USAGE_DESC);
+  fprintf(stderr, USAGE_OPTS);
+  fprintf(stderr, USAGE_RAW);
+  fprintf(stderr, USAGE_EXAMPLES);
 }
 
-void Error(const char *string, ...)
+static void Error(const char *string, ...)
 {
   va_list vaList;
   va_start(vaList, string);
@@ -107,7 +189,8 @@ void Error(const char *string, ...)
   exit(1);
 }
 
-inline static int lc_strcmp(const char *A, const char *B)
+/*
+static inline int lc_strcmp(const char *A, const char *B)
 {
   const char *a = A;
   const char *b = B;
@@ -122,7 +205,9 @@ inline static int lc_strcmp(const char *A, const char *B)
     b++;
   }
 }
-inline static int lc_strncmp(const char *A, const char *B, int n)
+*/
+
+static inline int lc_strncmp(const char *A, const char *B, int n)
 {
   const char *a = A;
   const char *b = B;
@@ -141,7 +226,7 @@ inline static int lc_strncmp(const char *A, const char *B, int n)
   }
 }
 
-inline static void file_write32(int val, FILE *fp)
+static inline void file_write32(int val, FILE *fp)
 {
   fputc((val >> 0) & 0xFF, fp);
   fputc((val >> 8) & 0xFF, fp);
@@ -149,7 +234,8 @@ inline static void file_write32(int val, FILE *fp)
   fputc((val >> 24) & 0xFF, fp);
 }
 
-inline static int file_read32(FILE *fp)
+/*
+static inline int file_read32(FILE *fp)
 {
   unsigned int r = 0;
   r |= fgetc(fp);
@@ -158,27 +244,32 @@ inline static int file_read32(FILE *fp)
   r |= fgetc(fp) << 24;
   return r;
 }
+*/
 
-inline static void file_write16(int val, FILE *fp)
+static inline void file_write16(int val, FILE *fp)
 {
   fputc((val >> 0) & 0xFF, fp);
   fputc((val >> 8) & 0xFF, fp);
 }
 
-inline static int file_read16(FILE *fp)
+/*
+static inline int file_read16(FILE *fp)
 {
   unsigned int r = 0;
   r |= fgetc(fp);
   r |= fgetc(fp) << 8;
   return r;
 }
+*/
 
-typedef struct {
+typedef struct
+{
   char path[MAX_PATH+1];
   UT_hash_handle hh;
 } InputFile;
 
-typedef struct {
+typedef struct
+{
   InputFile *files;
 
   int w;
@@ -202,7 +293,7 @@ typedef struct {
   char dither[256];
 } Config;
 
-Config *DefaultConfig()
+static Config *DefaultConfig(void)
 {
   Config *cfg = cmalloc(sizeof(Config));
   cfg->files = NULL;
@@ -231,93 +322,106 @@ Config *DefaultConfig()
   return cfg;
 }
 
-int Option(const char *option_name, int arguments, char *argument, int args_left)
+static int Option(const char *option_name, int arguments, char *argument, int args_left)
 {
-  if (strcmp(argument, option_name) != 0) return 0;
-  if (args_left < arguments) {
+  if(strcmp(argument, option_name) != 0)
+    return 0;
+
+  if(args_left < arguments)
     Error("Insufficient arguments for %s", option_name);
-  }
+
   return 1;
 }
 
-Config *LoadConfig(int argc, char **argv)
+static Config *LoadConfig(int argc, char **argv)
 {
   Config *cfg = DefaultConfig();
-
-  char arg_used[argc];
   int i;
 
-  memset(arg_used, 0, argc);
-
-  if (argc >= 1 && strcmp(argv[0], "-help") == 0) {
+  if(argc >= 1 && strcmp(argv[0], "-help") == 0)
+  {
     Help();
     exit(0);
   }
 
-  for (i = 0; i < argc; i++) {
-    if (arg_used[i]) continue;
-    if (argv[i][0] == '-') { // Argument
+  for(i = 0; i < argc; i++)
+  {
+    if(argv[i][0] == '-' && argv[i][1] != '\0') // Argument
+    {
       int args_left = argc - i - 1;
-      if (Option("-q", 0, argv[i], args_left)) {
+      if(Option("-q", 0, argv[i], args_left))
+      {
         cfg->quiet = 1;
         continue;
       }
-      if (Option("-w", 1, argv[i], args_left)) {
+      if(Option("-w", 1, argv[i], args_left))
+      {
         cfg->w = atoi(argv[i+1]);
-        arg_used[i+1] = 1;
+        i++;
         continue;
       }
-      if (Option("-h", 1, argv[i], args_left)) {
+      if(Option("-h", 1, argv[i], args_left))
+      {
         cfg->h = atoi(argv[i+1]);
-        arg_used[i+1] = 1;
+        i++;
         continue;
       }
-      if (Option("-mzm", 0, argv[i], args_left)) {
+      if(Option("-mzm", 0, argv[i], args_left))
+      {
         cfg->mzm = 1;
         cfg->reuse = 1;
         continue;
       }
-      if (Option("-reuse", 0, argv[i], args_left)) {
+      if(Option("-reuse", 0, argv[i], args_left))
+      {
         cfg->reuse = 1;
         continue;
       }
-      if (Option("-noreuse", 0, argv[i], args_left)) {
+      if(Option("-noreuse", 0, argv[i], args_left))
+      {
         cfg->noreuse = 1;
         continue;
       }
-      if (Option("-output", 1, argv[i], args_left)) {
+      if(Option("-output", 1, argv[i], args_left))
+      {
         snprintf(cfg->output, MAX_PATH - 4, "%s", argv[i+1]);
         cfg->output[MAX_PATH-4] = '\0';
-        arg_used[i+1] = 1;
+        i++;
         continue;
       }
-      if (Option("-c", 1, argv[i], args_left)) {
+      if(Option("-c", 1, argv[i], args_left))
+      {
         cfg->c = atoi(argv[i+1]);
-        arg_used[i+1] = 1;
+        i++;
         continue;
       }
-      if (Option("-dither", 1, argv[i], args_left)) {
+      if(Option("-dither", 1, argv[i], args_left))
+      {
         snprintf(cfg->dither, sizeof(cfg->dither), "%s", argv[i+1]);
-        cfg->output[255] = '\0';
-        arg_used[i+1] = 1;
+        cfg->dither[255] = '\0';
+        i++;
         continue;
       }
-      if (Option("-threshold", 1, argv[i], args_left)) {
+      if(Option("-threshold", 1, argv[i], args_left))
+      {
         cfg->threshold = atoi(argv[i+1]);
-        arg_used[i+1] = 1;
+        i++;
         continue;
       }
-      if (Option("-offset", 1, argv[i], args_left)) {
+      if(Option("-offset", 1, argv[i], args_left))
+      {
         cfg->offset = atoi(argv[i+1]);
-        arg_used[i+1] = 1;
+        i++;
         continue;
       }
-      if (Option("-blank", 1, argv[i], args_left)) {
+      if(Option("-blank", 1, argv[i], args_left))
+      {
         cfg->blank = atoi(argv[i+1]);
-        arg_used[i+1] = 1;
+        i++;
         continue;
       }
-      if (Option("-exclude", 1, argv[i], args_left)) {
+      if(Option("-exclude", 1, argv[i], args_left))
+      {
         char *s = argv[i+1];
         char tok[256];
         char op;
@@ -327,33 +431,40 @@ Config *LoadConfig(int argc, char **argv)
 
         cfg->exclude_on = 1;
 
-        while (*s) {
-          if (sscanf(s, "%[0-9]", tok) == 0) break;
+        while(*s)
+        {
+          if(sscanf(s, "%[0-9]", tok) == 0)
+            break;
           s += strlen(tok);
 
           cfg->exclude[atoi(tok)] = 1;
 
-          if (curr == 1) {
+          if(curr == 1)
+          {
             curr = 0;
             range_ed = atoi(tok);
 
-            for (int ch = range_st; range_st <= range_ed ? ch <= range_ed : ch >= range_ed; range_st <= range_ed ? ch++ : ch--) {
+            for(int ch = range_st; range_st <= range_ed ? ch <= range_ed : ch >= range_ed; range_st <= range_ed ? ch++ : ch--)
               cfg->exclude[ch] = 1;
-            }
           }
 
           op = s[0];
-          if (op) s++;
-          if (op == '-') {
+          if(op)
+            s++;
+
+          if(op == '-')
+          {
             range_st = atoi(tok);
             curr = 1;
           }
         }
 
-        arg_used[i+1] = 1;
+        i++;
         continue;
       }
-    } else { // Filename
+    }
+    else // Filename
+    {
       InputFile *file = cmalloc(sizeof(InputFile));
       snprintf(file->path, MAX_PATH + 1, "%s", argv[i]);
       file->path[MAX_PATH] = 0;
@@ -361,7 +472,8 @@ Config *LoadConfig(int argc, char **argv)
     }
   }
 
-  if (cfg->files == NULL) {
+  if(cfg->files == NULL)
+  {
     Usage();
     exit(1);
   }
@@ -369,13 +481,14 @@ Config *LoadConfig(int argc, char **argv)
   return cfg;
 }
 
-typedef struct {
+typedef struct
+{
   int w, h;
   int channels;
   unsigned char *pixels;
 } Image;
 
-Image *CreateImage(int w, int h, int channels)
+static Image *CreateImage(int w, int h, int channels)
 {
   Image *image = cmalloc(sizeof(Image));
   image->pixels = cmalloc(w * h * channels);
@@ -385,171 +498,43 @@ Image *CreateImage(int w, int h, int channels)
   return image;
 }
 
-Image *LoadImage_RAW(Config *cfg, const char *path)
+static void LoadImage(struct image_file *dest, Config *cfg, const char *path)
 {
-  Image *img;
-  FILE *fp;
-  int i;
-  if ((cfg->w == 0) || (cfg->h == 0)) Error("Nonzero -w # and -h # values must be specified when loading raw images.");
+  struct image_raw_format format;
+  struct image_raw_format *use_format = NULL;
 
-  img = CreateImage(cfg->w, cfg->h, 1);
-
-  fp = fopen_unsafe(path, "rb");
-  if (!fp) Error("Failed to open %s", path);
-  for (i = 0; i < cfg->w * cfg->h; i++) {
-    img->pixels[i] = fgetc(fp) != 0 ? 255 : 0;
-  }
-  fclose(fp);
-
-  return img;
-}
-
-Image *LoadImage_BMP(Config *cfg, const char *path)
-{
-  FILE *fp = fopen_unsafe(path, "rb");
-  Image *img;
-  char sig_a, sig_b;
-  int pixelarray, dibheadersize, w, h, bpp, compression, palette_size;
-  int channels, output_channels, padding;
-  int byte_offset, bit_offset;
-  unsigned char byte_val;
-  int i, x, y, b;
-  struct {
-    unsigned char r, g, b;
-  } palette[256];
-
-  if (!fp) Error("Failed to open %s", path);
-
-  sig_a = fgetc(fp);
-  sig_b = fgetc(fp);
-
-  if ((sig_a != 'B') || (sig_b != 'M')) Error("BMP header corrupt (%s)", path);
-  file_read32(fp);
-  file_read32(fp);
-  pixelarray = file_read32(fp);
-
-  dibheadersize = file_read32(fp);
-  w = file_read32(fp);
-  h = file_read32(fp);
-  file_read16(fp); // planes
-  bpp = file_read16(fp);
-  compression = file_read32(fp);
-  if (compression != 0) Error("Compressed BMPs are not supported");
-  file_read32(fp); // image size
-  file_read32(fp); // h res
-  file_read32(fp); // v res
-  palette_size = file_read32(fp); // colours
-
-  img = NULL;
-
-  if (bpp <= 8) { // Paletted image
-    if (palette_size == 0) palette_size = 1<<bpp;
-
-    fseek(fp, dibheadersize + 14, SEEK_SET);
-
-    for (i = 0; i < palette_size; i++) {
-      palette[i].b = fgetc(fp);
-      palette[i].g = fgetc(fp);
-      palette[i].r = fgetc(fp);
-      fgetc(fp);
-    }
-
-    fseek(fp, pixelarray, SEEK_SET);
-    img = CreateImage(w, h, 3);
-
-    for (y = h-1; y >= 0; y--) {
-      byte_offset = -1;
-      bit_offset = 8;
-      byte_val = -1;
-      for (x = 0; x < w; x++) {
-
-        int v = 0;
-        for (b = 0; b < bpp; b++) {
-          if (bit_offset == 8) {
-            bit_offset = 0;
-            byte_offset++;
-            byte_val = fgetc(fp);
-          }
-          v |= byte_val & (128 >> bit_offset) ? 1 << b : 0;
-          bit_offset++;
-        }
-
-        img->pixels[(y*w+x)*3+0] = palette[v].r;
-        img->pixels[(y*w+x)*3+1] = palette[v].g;
-        img->pixels[(y*w+x)*3+2] = palette[v].b;
-      }
-      byte_offset++;
-      while (byte_offset % 4) {
-        fgetc(fp);
-        byte_offset++;
-      }
-    }
-
-  } else { // Truecolour image
-    channels = bpp / 8;
-    output_channels = channels <= 3 ? channels : 3;
-
-    fseek(fp, pixelarray, SEEK_SET);
-
-    img = CreateImage(w, h, output_channels);
-    padding = (w * channels + 3) / 4 * 4 - (w * channels);
-    for (y = 0; y < h; y++) {
-      for (i = 0; i < w; i++) {
-        img->pixels[(h - y - 1) * w * output_channels + (i * output_channels) + output_channels - 1] = fgetc(fp); // b
-        if (channels >= 2) {
-          img->pixels[(h - y - 1) * w * output_channels + (i * output_channels) + output_channels - 2] = fgetc(fp); // g
-          if (channels >= 3) {
-            img->pixels[(h - y - 1) * w * output_channels + (i * output_channels) + output_channels - 3] = fgetc(fp); // r
-            if (channels >= 4) {
-              fgetc(fp); // a
-            }
-          }
-        }
-      }
-
-      if (padding) fseek(fp, padding, SEEK_CUR);
-    }
+  if((cfg->w > 0) && (cfg->h > 0))
+  {
+    format.width = cfg->w;
+    format.height = cfg->h;
+    format.bytes_per_pixel = 1; // TODO
+    use_format = &format;
   }
 
-  fclose(fp);
-
-  return img;
+  if(!load_image_from_file(path, dest, use_format))
+    Error("Failed to load file '%s'", path);
 }
 
-Image *LoadImage(Config *cfg, const char *path)
-{
-  const char *ext = strrchr(path, '.');
-  if (ext) {
-    if (lc_strcmp(ext, ".bmp") == 0) return LoadImage_BMP(cfg, path);
-  }
-  return LoadImage_RAW(cfg, path);
-}
-
-void FreeImage(Image *img)
+static void FreeImage(Image *img)
 {
   free(img->pixels);
   free(img);
 }
 
-int Brightness(unsigned char *pixels, int channels)
+static int Brightness(const struct image_file *img, uint32_t x, uint32_t y)
 {
-  int sum = 0, i;
-  if (channels == 1) return pixels[0];
-  if (channels == 3) return ((pixels[0] * 30 + pixels[1] * 59 + pixels[2] * 11) + 50) / 100;
-
-  for (i = 0; i < channels; i++) {
-    sum += pixels[i];
-  }
-  return (sum + (channels / 2)) / channels;
+  const struct rgba_color *color = &(img->data[y * img->width + x]);
+  return (color->r * 30 + color->g * 59 + color->b * 11) / 100;
 }
 
-typedef struct {
+typedef struct
+{
   char method[256];
   int diffuse[1024];
   unsigned w, h, div;
 } Diffuse;
 
-Diffuse diffmethods[] = {
+static const Diffuse diffmethods[] = {
 {"Floyd-Steinberg", {0, -1, 7,
                     3, 5, 1}, 3, 2, 16},
 
@@ -574,51 +559,60 @@ Diffuse diffmethods[] = {
                     5,  0,  12, 0,  12, 0,  5}, 7, 4, 200}
 };
 
-void QuantiseDiffuse(Image *img, Image *qimg, int threshold, const char *method)
+static void QuantiseDiffuse(struct image_file *img, Image *qimg, int threshold, const char *method)
 {
-  int *err = cmalloc(img->w * img->h * sizeof(int));
+  int *err = cmalloc(img->width * img->height * sizeof(int));
   int method_i = -1;
   unsigned int i;
-  int mx, my, x, y;
+  int mx, my;
+  uint32_t x, y;
   Diffuse D;
   int v_noerr, v, wr;
-  memset(err, 0, img->w * img->h * sizeof(int));
+  memset(err, 0, img->width * img->height * sizeof(int));
 
-  for (i = 0; i < sizeof(diffmethods) / sizeof(diffmethods[0]); i++) {
-    if (lc_strncmp(method, diffmethods[i].method, strlen(method)) == 0) method_i = i;
+  for(i = 0; i < sizeof(diffmethods) / sizeof(diffmethods[0]); i++)
+  {
+    if(lc_strncmp(method, diffmethods[i].method, strlen(method)) == 0)
+      method_i = i;
   }
-  if (method_i == -1) {
+  if(method_i == -1)
     Error("-dither method '%s' not found. Try another setting", method);
-  }
 
   D = diffmethods[method_i];
   mx = 0;
   my = 0;
-  for (i = 0; i < D.w * D.h; i++) {
+  for(i = 0; i < D.w * D.h; i++)
+  {
     x = i % D.w;
     y = i / D.w;
-    if (D.diffuse[i] == -1) {
+    if(D.diffuse[i] == -1)
+    {
       mx = x;
       my = y;
       D.diffuse[i] = 0;
     }
   }
-  for (y = 0; y < img->h; y++) {
-    for (x = 0; x < img->w; x++) {
-      v_noerr = Brightness(img->pixels + (y * img->w + x) * img->channels, img->channels);
-      v = v_noerr + err[y * img->w + x] / D.div;
+  for(y = 0; y < img->height; y++)
+  {
+    for(x = 0; x < img->width; x++)
+    {
+      v_noerr = Brightness(img, x, y);
+      v = v_noerr + err[y * img->width + x] / D.div;
       if (v > 255) v = 255;
       if (v < 0) v = 0;
       wr = v >= threshold ? 255 : 0;
-      qimg->pixels[y * img->w + x] = v >= threshold ? 1 : 0;
+      qimg->pixels[y * img->width + x] = v >= threshold ? 1 : 0;
 
-      if ((v_noerr - wr) != 0) {
-
-        for (i = 0; i < D.w * D.h; i++) {
+      if((v_noerr - wr) != 0)
+      {
+        for(i = 0; i < D.w * D.h; i++)
+        {
           int ox = (i % D.w) - mx + x;
           int oy = (i / D.w) - my + y;
-          if ((D.diffuse[i] > 0) && (ox >= 0) && (oy >= 0) && (ox < img->w) && (oy < img->h)) {
-            err[oy * img->w + ox] += D.diffuse[i] * (v - wr);
+          if((D.diffuse[i] > 0) && (ox >= 0) && (oy >= 0) &&
+           ((size_t)ox < img->width) && ((size_t)oy < img->height))
+          {
+            err[oy * img->width + ox] += D.diffuse[i] * (v - wr);
           }
         }
       }
@@ -627,33 +621,41 @@ void QuantiseDiffuse(Image *img, Image *qimg, int threshold, const char *method)
   free(err);
 }
 
-void QuantiseTheshold(Image *img, Image *qimg, int threshold)
+static void QuantiseTheshold(struct image_file *img, Image *qimg, int threshold)
 {
-  int i, v;
-  for (i = 0; i < img->w * img->h; i++) {
-    v = Brightness(img->pixels + i * img->channels, img->channels);
-    qimg->pixels[i] = v >= threshold ? 1 : 0;
+  unsigned int i, x, y;
+
+  for(i = 0, y = 0; y < img->height; y++)
+  {
+    for(x = 0; x < img->width; x++, i++)
+    {
+      int v = Brightness(img, x, y);
+      qimg->pixels[i] = v >= threshold ? 1 : 0;
+    }
   }
 }
 
-Image *Quantise(Config *cfg, Image *img)
+static Image *Quantise(Config *cfg, struct image_file *img)
 {
-  Image *qimg = CreateImage(img->w, img->h, 1);
+  Image *qimg = CreateImage(img->width, img->height, 1);
 
-  if (cfg->dither[0] == '\0') {
+  if(cfg->dither[0] == '\0')
+  {
     QuantiseTheshold(img, qimg, cfg->threshold);
-  } else {
-    QuantiseDiffuse(img, qimg, cfg->threshold, cfg->dither);
   }
+  else
+    QuantiseDiffuse(img, qimg, cfg->threshold, cfg->dither);
+
   return qimg;
 }
 
-typedef struct {
+typedef struct
+{
   int chars;
   unsigned char *data;
 } Charset;
 
-Charset *CreateCharset(Image *img)
+static Charset *CreateCharset(Image *img)
 {
   Charset *cset = cmalloc(sizeof(Charset));
   int cset_size = (img->w / 8) * (img->h / 14);
@@ -664,10 +666,14 @@ Charset *CreateCharset(Image *img)
   cset->chars = cset_size;
 
   chr = 0;
-  for (cy = 0; cy < img->h / 14; cy++) {
-    for (cx = 0; cx < img->w / 8; cx++) {
-      for (py = 0; py < 14; py++) {
-        for (px = 0; px < 8; px++) {
+  for(cy = 0; cy < img->h / 14; cy++)
+  {
+    for(cx = 0; cx < img->w / 8; cx++)
+    {
+      for(py = 0; py < 14; py++)
+      {
+        for(px = 0; px < 8; px++)
+        {
           cset->data[chr * 14 + py] |= img->pixels[(cy * 14 + py) * img->w + (cx * 8 + px)] ? 128 >> px : 0;
         }
       }
@@ -678,79 +684,92 @@ Charset *CreateCharset(Image *img)
   return cset;
 }
 
-typedef struct {
+typedef struct
+{
   int w, h;
   int *data;
 } Mzm;
 
-Mzm *CreateMzm(int w, int h)
+static Mzm *CreateMzm(int w, int h)
 {
   Mzm *mzm = cmalloc(sizeof(Mzm));
   int i;
   mzm->w = w;
   mzm->h = h;
   mzm->data = cmalloc(w * h * sizeof(int));
-  for (i = 0; i < w * h; i++) {
+
+  for(i = 0; i < w * h; i++)
     mzm->data[i] = i;
-  }
+
   return mzm;
 }
 
-void FreeMzm(Mzm *mzm)
+static void FreeMzm(Mzm *mzm)
 {
   free(mzm->data);
   free(mzm);
 }
 
-typedef struct {
+typedef struct
+{
   unsigned char data[14];
   int i;
   UT_hash_handle hh;
 } Char;
 
-void Reuse(Charset *cset, Mzm *mzm)
+static void Reuse(Charset *cset, Mzm *mzm)
 {
   Char *clist = NULL;
   Char *c, *tmp;
   int out_chars = 0;
   int i;
   unsigned char *cdata;
-  for (i = 0; i < cset->chars; i++) {
+  for(i = 0; i < cset->chars; i++)
+  {
     cdata = cset->data + i * 14;
 
     HASH_FIND(hh, clist, cdata, sizeof(clist->data), c);
-    if (!c) {
+    if(!c)
+    {
       c = cmalloc(sizeof(Char));
       memcpy(c->data, cdata, 14);
-      if (mzm) {
+
+      if(mzm)
         c->i = mzm->data[i] = out_chars;
-      }
+
       memmove(cset->data + out_chars * 14, cset->data + i * 14, 14);
       HASH_ADD(hh, clist, data, sizeof(clist->data), c);
       out_chars++;
-    } else {
-      if (mzm) {
+    }
+    else
+    {
+      if(mzm)
         mzm->data[i] = c->i;
-      }
     }
   }
   cset->chars = out_chars;
   cset->data = realloc(cset->data, cset->chars * 14);
 
-  HASH_ITER(hh, clist, c, tmp) {
+  HASH_ITER(hh, clist, c, tmp)
+  {
     HASH_DEL(clist, c);
     free(c);
   }
 }
 
-char *OutputPath(const char *input, Config *cfg, const char *ext)
+static char *OutputPath(const char *input, Config *cfg, const char *ext)
 {
   char *output_path = NULL;
   char buf[MAX_PATH+1];
   char *buf_e;
   size_t output_len;
-  if (cfg->output[0] == '\0') {
-    snprintf(buf, MAX_PATH, "%s", input);
+  if(cfg->output[0] == '\0')
+  {
+    if(strcmp(input, "-"))
+      snprintf(buf, MAX_PATH, "%s", input);
+    else
+      strcpy(buf, "out");
+
     buf[MAX_PATH] = '\0';
     buf_e = strrchr(buf, '.');
     if (buf_e) *buf_e = '\0';
@@ -759,7 +778,9 @@ char *OutputPath(const char *input, Config *cfg, const char *ext)
     output_path = cmalloc(output_len);
     snprintf(output_path, output_len, "%s%s", buf, ext);
     output_path[output_len - 1] = '\0';
-  } else {
+  }
+  else
+  {
     output_len = strlen(cfg->output) + strlen(ext) + 1;
     output_path = cmalloc(output_len);
     snprintf(output_path, output_len, "%s%s", cfg->output, ext);
@@ -768,14 +789,14 @@ char *OutputPath(const char *input, Config *cfg, const char *ext)
   return output_path;
 }
 
-void WriteCharset(const char *path, Charset *cset)
+static void WriteCharset(const char *path, Charset *cset)
 {
   FILE *fp = fopen_unsafe(path, "wb");
   fwrite(cset->data, 14, cset->chars, fp);
   fclose(fp);
 }
 
-void WriteMzm(const char *path, Mzm *mzm)
+static void WriteMzm(const char *path, Mzm *mzm)
 {
   FILE *fp = fopen_unsafe(path, "wb");
   int i;
@@ -789,7 +810,8 @@ void WriteMzm(const char *path, Mzm *mzm)
   fputc(0, fp); // robot storage mode
   fputc(0, fp); // reserved
 
-  for (i = 0; i < mzm->w * mzm->h; i++) {
+  for(i = 0; i < mzm->w * mzm->h; i++)
+  {
     fputc(mzm->data[i] & 0xFF, fp);
     fputc(15, fp);
   }
@@ -803,11 +825,13 @@ static inline int CountBits(const unsigned char *A)
   unsigned int v;
   unsigned int count;
   unsigned char val;
-  if (sizeof(unsigned int) == 4) {
+  if(sizeof(unsigned int) == 4)
+  {
     c = 0;
 
     a = (const unsigned int*)A;
-    for (i = 0; i < 3; i++) {
+    for(i = 0; i < 3; i++)
+    {
       v = *a;
       v = v - ((v >> 1) & 0x55555555);
       v = (v & 0x33333333) + ((v >> 2) & 0x33333333);
@@ -820,14 +844,15 @@ static inline int CountBits(const unsigned char *A)
     c += (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
 
     return c;
-  } else {
+  }
+  else
+  {
     count = 0;
-    for (int i = 0; i < 14; i++) {
+    for(int i = 0; i < 14; i++)
+    {
       val = A[i];
-      for (; val; count++)
-      {
+      for(; val; count++)
         val &= val - 1; // clear the least significant bit set
-      }
     }
     return count;
   }
@@ -838,33 +863,36 @@ static inline int CharDist(const unsigned char *A, const unsigned char *B)
 {
   unsigned char v[14];
   int i;
-  for (i = 0; i < 14; i++) {
+  for(i = 0; i < 14; i++)
     v[i] = A[i] ^ B[i];
-  }
+
   return CountBits(v);
 }
 
 // Simple quantisation- combine the two closest pairs of chars until the right number of chars are available
-void Reduce_Simple(Charset *cset, int chars)
+static void Reduce_Simple(Charset *cset, int chars)
 {
   int pair_i, pair_j, pair_dist, data_dist;
   int i, j;
   unsigned char *data_i, *data_j;
   int bits;
 
-  while (cset->chars > chars)
+  while(cset->chars > chars)
   {
     pair_i = -1;
     pair_j = -1;
     pair_dist = INT_MAX;
 
-    for (i = 0; i < cset->chars; i++) {
+    for(i = 0; i < cset->chars; i++)
+    {
       data_i = cset->data + i * 14;
-      for (j = i + 1; j < cset->chars; j++) {
+      for(j = i + 1; j < cset->chars; j++)
+      {
         data_j = cset->data + j * 14;
 
         data_dist = CharDist(data_i, data_j);
-        if (data_dist < pair_dist) {
+        if(data_dist < pair_dist)
+        {
           pair_dist = data_dist;
           pair_i = i;
           pair_j = j;
@@ -875,15 +903,18 @@ void Reduce_Simple(Charset *cset, int chars)
     data_i = cset->data + pair_i * 14;
     data_j = cset->data + pair_j * 14;
     bits = CountBits(data_i) + CountBits(data_j);
-    if (bits >= 112) {
-      for (i = 0; i < 14; i++) {
+    if(bits >= 112)
+    {
+      for(i = 0; i < 14; i++)
+      {
         //data_i[i] = data_i[i] > data_j[i] ? data_i[i] : data_j[i];
         data_i[i] = data_i[i] | data_j[i];
       }
-    } else {
-      for (i = 0; i < 14; i++) {
+    }
+    else
+    {
+      for(i = 0; i < 14; i++)
         data_i[i] = ~(~data_i[i] | ~data_j[i]);
-      }
     }
 
     memmove(data_j, data_j + 14, (cset->chars - pair_j - 1) * 14);
@@ -893,12 +924,14 @@ void Reduce_Simple(Charset *cset, int chars)
   cset->data = realloc(cset->data, cset->chars * 14);
 }
 
-int ChrImageDist(const unsigned char *cdata, Image *img, int xoff, int yoff)
+static int ChrImageDist(const unsigned char *cdata, Image *img, int xoff, int yoff)
 {
   int tdist = 0;
   int x, y, px, py, chr_lightness, img_lightness;
-  for (y = 0; y < 14; y++) {
-    for (x = 0; x < 8; x++) {
+  for(y = 0; y < 14; y++)
+  {
+    for(x = 0; x < 8; x++)
+    {
       px = xoff + x;
       py = yoff + y;
       chr_lightness = cdata[y] & (128 >> x) ? 1 : 0;
@@ -909,7 +942,7 @@ int ChrImageDist(const unsigned char *cdata, Image *img, int xoff, int yoff)
   return tdist;
 }
 
-void RemapMzm(Charset *cset, Mzm *mzm, Image *qimage)
+static void RemapMzm(Charset *cset, Mzm *mzm, Image *qimage)
 {
   // Remap the MZM to the charset to create the closest approximation of the quantised image.
   int x, y, c;
@@ -930,33 +963,36 @@ void RemapMzm(Charset *cset, Mzm *mzm, Image *qimage)
   }
 }
 
-void Reduce(Charset *cset, Mzm *mzm, Image *original, int chars, Config *cfg)
+static void Reduce(Charset *cset, Mzm *mzm, Image *original, int chars, Config *cfg)
 {
-  if (cset->chars <= chars) return;
+  if(cset->chars <= chars)
+    return;
 
   Reduce_Simple(cset, chars);
   RemapMzm(cset, mzm, original);
 }
 
-void OffsetMzm(Mzm *mzm, int offset)
+static void OffsetMzm(Mzm *mzm, int offset)
 {
   int i;
-  if (mzm) {
-    for (i = 0; i < mzm->w * mzm->h; i++) {
+  if(mzm)
+  {
+    for(i = 0; i < mzm->w * mzm->h; i++)
       mzm->data[i] += offset;
-    }
   }
 }
 
-void ExcludeChars(Charset *cset, Mzm *mzm, char *exclude, int offset)
+static void ExcludeChars(Charset *cset, Mzm *mzm, char *exclude, int offset)
 {
   int remap[256];
   int remap_offset = 0;
   int ci, i;
-  for (i = 0; i < cset->chars && i < 256; i++) {
+  for(i = 0; i < cset->chars && i < 256; i++)
+  {
     remap[i] = i;
     ci = i + remap_offset + offset;
-    if ((ci >= 0) && (ci < 256) && (exclude[ci])) {
+    if((ci >= 0) && (ci < 256) && (exclude[ci]))
+    {
       cset->data = realloc(cset->data, (cset->chars + 1) * 14);
       remap[i] = cset->chars;
       memmove(cset->data + (remap[i])*14, cset->data + i * 14, 14);
@@ -966,42 +1002,55 @@ void ExcludeChars(Charset *cset, Mzm *mzm, char *exclude, int offset)
     }
   }
 
-  if (mzm) {
-    for (i = 0; i < mzm->w * mzm->h; i++) {
-      while ((mzm->data[i] != remap[mzm->data[i]])) {
+  if(mzm)
+  {
+    for(i = 0; i < mzm->w * mzm->h; i++)
+    {
+      while((mzm->data[i] != remap[mzm->data[i]]))
         mzm->data[i] = remap[mzm->data[i]];
-      }
     }
   }
 }
 
-void SwapBlank(Charset *cset, Mzm *mzm, int blank)
+static void SwapBlank(Charset *cset, Mzm *mzm, int blank)
 {
   int current_blank = -1;
   int i, j, isblank;
   unsigned char tmp[14];
-  for (i = 0; i < cset->chars; i++) {
+  for(i = 0; i < cset->chars; i++)
+  {
     isblank = 1;
-    for (j = 0; j < 14; j++) {
-      if (cset->data[i * 14 + j] != 0) {
+    for(j = 0; j < 14; j++)
+    {
+      if(cset->data[i * 14 + j] != 0)
+      {
         isblank = 0;
         break;
       }
     }
 
-    if (isblank) current_blank = i;
+    if(isblank)
+      current_blank = i;
     break;
   }
-  if (current_blank != -1) {
+  if(current_blank != -1)
+  {
     memcpy(tmp, cset->data + current_blank*14, 14);
     memcpy(cset->data + current_blank*14, cset->data + blank*14, 14);
     memcpy(cset->data + blank*14, tmp, 14);
 
-    if (mzm) {
-      for (i = 0; i < mzm->w * mzm->h; i++) {
-        if (mzm->data[i] == current_blank) {
+    if(mzm)
+    {
+      for(i = 0; i < mzm->w * mzm->h; i++)
+      {
+        if(mzm->data[i] == current_blank)
+        {
           mzm->data[i] = blank;
-        } else if (mzm->data[i] == blank) {
+        }
+        else
+
+        if(mzm->data[i] == blank)
+        {
           mzm->data[i] = current_blank;
         }
       }
@@ -1013,7 +1062,7 @@ int main(int argc, char **argv)
 {
   Config *cfg = LoadConfig(argc - 1, argv + 1);
   InputFile *file;
-  Image *image, *qimage;
+  Image *qimage;
   Charset *cset;
   Mzm *mzm;
 
@@ -1026,42 +1075,38 @@ int main(int argc, char **argv)
   }
 #endif
 
-  for(file = cfg->files; file != NULL; file = file->hh.next) {
-    image = LoadImage(cfg, file->path);
+  for(file = cfg->files; file != NULL; file = file->hh.next)
+  {
+    struct image_file image;
+    LoadImage(&image, cfg, file->path);
 
-    if (((image->w % 8) != 0) || ((image->h % 14) != 0)) {
+    if(((image.width % 8) != 0) || ((image.height % 14) != 0))
       Error("Image dimensions are not divisible by 8x14");
-    }
-    qimage = Quantise(cfg, image);
+
+    qimage = Quantise(cfg, &image);
 
     cset = CreateCharset(qimage);
 
     mzm = NULL;
-    if (cfg->mzm) {
+    if(cfg->mzm)
       mzm = CreateMzm(qimage->w / 8, qimage->h / 14);
-    }
 
-    if (cfg->reuse && !cfg->noreuse) {
+    if(cfg->reuse && !cfg->noreuse)
       Reuse(cset, mzm);
-    }
 
-    if (cfg->c) {
+    if(cfg->c)
       Reduce(cset, mzm, qimage, cfg->c, cfg);
-    }
 
-    if (cfg->blank != -1) {
+    if(cfg->blank != -1)
       SwapBlank(cset, mzm, cfg->blank);
-    }
 
-    if (cfg->exclude_on) {
+    if(cfg->exclude_on)
       ExcludeChars(cset, mzm, cfg->exclude, cfg->offset);
-    }
 
-    if (cfg->offset) {
+    if(cfg->offset)
       OffsetMzm(mzm, cfg->offset);
-    }
 
-    FreeImage(image);
+    image_free(&image);
     FreeImage(qimage);
 
     { // Output charset
@@ -1070,24 +1115,26 @@ int main(int argc, char **argv)
       WriteCharset(filename_chr, cset);
 
       if (!cfg->quiet) {
-        printf("%s -> %s (%d chars)", file->path, filename_chr, cset->chars);
+        const char *in_name = strcmp(file->path, "-") ? file->path : "<stdin>";
+        printf("%s -> %s (%d chars)", in_name, filename_chr, cset->chars);
       }
       free(filename_chr);
     }
 
-    if (cfg->mzm) { // Output MZM
+    if(cfg->mzm)
+    { // Output MZM
       char *filename_mzm = OutputPath(file->path, cfg, ".mzm");
       WriteMzm(filename_mzm, mzm);
       FreeMzm(mzm);
 
-      if (!cfg->quiet) {
+      if(!cfg->quiet)
         printf(", %s", filename_mzm);
-      }
 
       free(filename_mzm);
     }
 
-    if (!cfg->quiet) printf("\n");
+    if(!cfg->quiet)
+      printf("\n");
   }
 
   return 0;

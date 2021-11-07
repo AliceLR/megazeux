@@ -1,0 +1,22 @@
+VRAM layout
+--
+NOTE: This is for memory usage planning. All addresses given in ARM9 access.
+
+VRAM banks A, B (sub screen)
+
+06800000 - 0680F7FF => keyboard data; 45056/63488 bytes used
+0680F800 - 06813FFF => console data; most space used
+06814000 - 0683FBFF => 512x350 8-bit bitmap for scaled screen; 320 bytes per each 512 byte block used)
+0683FC00 - 0683FFFF => unused
+
+VRAM banks C, D, E, F, G
+
+06840000 - 06897FFF => unused
+
+VRAM banks H, I (main screen)
+
+06898000 - 06898FFF => foreground character map
+06899000 - 06899FFF => background character map
+0689A000 - 0689A03F => background character tiles (1 x 2 tiles - mind the offset)
+0689A040 - 0689BFFF => unused
+0689C000 - 068A3FFF => foreground character tiles (512 x 2 tiles)

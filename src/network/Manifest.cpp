@@ -24,7 +24,9 @@
 #include "../util.h"
 #include "../io/fsafeopen.h"
 #include "../io/memfile.h"
+#include "../io/vio.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -33,7 +35,7 @@
 #define BLOCK_SIZE    4096UL
 #define LINE_BUF_LEN  256
 
-void ManifestEntry::init(const Uint32 (&_sha256)[8], size_t _size,
+void ManifestEntry::init(const uint32_t (&_sha256)[8], size_t _size,
  const char *name)
 {
   size_t name_len = strlen(name);
@@ -45,7 +47,7 @@ void ManifestEntry::init(const Uint32 (&_sha256)[8], size_t _size,
   memcpy(this->name, name, name_len + 1);
 }
 
-ManifestEntry::ManifestEntry(const Uint32 (&_sha256)[8], size_t _size,
+ManifestEntry::ManifestEntry(const uint32_t (&_sha256)[8], size_t _size,
  const char *name)
 {
   this->init(_sha256, _size, name);
@@ -70,7 +72,7 @@ ManifestEntry::~ManifestEntry()
   delete[] this->name;
 }
 
-boolean ManifestEntry::compute_sha256(SHA256_ctx &ctx, FILE *fp, size_t len)
+boolean ManifestEntry::compute_sha256(SHA256_ctx &ctx, vfile *vf, size_t len)
 {
   unsigned long pos = 0;
 
@@ -83,7 +85,7 @@ boolean ManifestEntry::compute_sha256(SHA256_ctx &ctx, FILE *fp, size_t len)
   {
     unsigned long block_size = MIN(BLOCK_SIZE, len - pos);
 
-    if(fread(block, block_size, 1, fp) != 1)
+    if(vfread(block, block_size, 1, vf) != 1)
       return false;
 
     SHA256_update(&ctx, block, block_size);
@@ -94,22 +96,22 @@ boolean ManifestEntry::compute_sha256(SHA256_ctx &ctx, FILE *fp, size_t len)
   return true;
 }
 
-boolean ManifestEntry::validate(FILE *fp) const
+boolean ManifestEntry::validate(vfile *vf) const
 {
   SHA256_ctx ctx;
 
   // It must be the same length
-  if((size_t)ftell_and_rewind(fp) != this->size)
+  if((size_t)vfilelength(vf, true) != this->size)
     return false;
 
   /* Compute the SHA256 digest for this file. Do it block-wise so as to
   * conserve RAM and scale to enormously large files.
   */
-  if(!ManifestEntry::compute_sha256(ctx, fp, this->size))
+  if(!ManifestEntry::compute_sha256(ctx, vf, this->size))
     return false;
 
   // Verify the digest against the manifest
-  if(memcmp(ctx.H, this->sha256, sizeof(Uint32) * 8) != 0)
+  if(memcmp(ctx.H, this->sha256, sizeof(uint32_t) * 8) != 0)
     return false;
 
   return true;
@@ -121,11 +123,11 @@ boolean ManifestEntry::validate() const
   if(!ManifestEntry::validate_filename(this->name))
     return false;
 
-  ScopedFile<FILE, fclose> f = fopen_unsafe(this->name, "rb");
-  if(!f)
+  ScopedFile<vfile, vfclose> vf = vfopen_unsafe(this->name, "rb");
+  if(!vf)
     return false;
 
-  return this->validate(f);
+  return this->validate(vf);
 }
 
 boolean ManifestEntry::validate_filename(const char *filename)
@@ -146,13 +148,13 @@ ManifestEntry *ManifestEntry::create_from_file(const char *filename)
   if(!ManifestEntry::validate_filename(filename))
     return nullptr;
 
-  ScopedFile<FILE, fclose> fp = fopen_unsafe(filename, "rb");
-  if(!fp)
+  ScopedFile<vfile, vfclose> vf = vfopen_unsafe(filename, "rb");
+  if(!vf)
     return nullptr;
 
-  size = ftell_and_rewind(fp);
+  size = vfilelength(vf, false);
 
-  boolean ret = ManifestEntry::compute_sha256(ctx, fp, size);
+  boolean ret = ManifestEntry::compute_sha256(ctx, vf, size);
   if(!ret)
     return nullptr;
 
@@ -177,7 +179,7 @@ void Manifest::clear()
   this->head = nullptr;
 }
 
-static boolean manifest_parse_sha256(const char *p, Uint32 (&sha256)[8])
+static boolean manifest_parse_sha256(const char *p, uint32_t (&sha256)[8])
 {
   int i, j;
 
@@ -186,7 +188,7 @@ static boolean manifest_parse_sha256(const char *p, Uint32 (&sha256)[8])
     return false;
 
   // Walk the sha256 "registers" and decompose 8byte hex chunks
-  for (i = 0, j = 0; i < 8; i++, j += 8)
+  for(i = 0, j = 0; i < 8; i++, j += 8)
   {
     char reg_hex[9], *end_ptr;
 
@@ -195,7 +197,7 @@ static boolean manifest_parse_sha256(const char *p, Uint32 (&sha256)[8])
     reg_hex[8] = 0;
 
     // Convert the hex string into an integer and check for errors
-    sha256[i] = (Uint32)strtoul(reg_hex, &end_ptr, 16);
+    sha256[i] = (uint32_t)strtoul(reg_hex, &end_ptr, 16);
     if(end_ptr[0])
       return false;
   }
@@ -216,7 +218,7 @@ static ManifestEntry *manifest_parse_line(char *buffer)
 {
   if(buffer[0])
   {
-    Uint32 sha256[8];
+    uint32_t sha256[8];
     size_t size;
     char *m = buffer, *line;
 
@@ -254,7 +256,7 @@ static ManifestEntry *manifest_parse_line(char *buffer)
   return nullptr;
 }
 
-void Manifest::create(FILE *f)
+void Manifest::create(vfile *vf)
 {
   char buffer[LINE_BUF_LEN];
   boolean has_errors = false;
@@ -262,7 +264,7 @@ void Manifest::create(FILE *f)
   this->clear();
 
   // Walk the manifest line by line
-  while(fsafegets(buffer, LINE_BUF_LEN, f))
+  while(vfsafegets(buffer, LINE_BUF_LEN, vf))
   {
     ManifestEntry *next = manifest_parse_line(buffer);
     if(!next)
@@ -284,14 +286,14 @@ void Manifest::create(FILE *f)
 
 boolean Manifest::create(const char *filename)
 {
-  ScopedFile<FILE, fclose> f = fopen_unsafe(filename, "rb");
-  if(!f)
+  ScopedFile<vfile, vfclose> vf = vfopen_unsafe(filename, "rb");
+  if(!vf)
   {
     warn("Failed to open manifest file '%s'!\n", filename);
     return false;
   }
 
-  this->create(f);
+  this->create(vf);
   return true;
 }
 
@@ -400,14 +402,14 @@ HTTPHostStatus Manifest::get_remote(HTTPHost &http, HTTPRequestInfo &request,
   snprintf(request.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, basedir);
   request.allowed_types = HTTPRequestInfo::plaintext_types;
 
-  ScopedFile<FILE, fclose> f = fopen_unsafe(REMOTE_MANIFEST_TXT, "w+b");
-  if(!f)
+  ScopedFile<vfile, vfclose> vf = vfopen_unsafe(REMOTE_MANIFEST_TXT, "w+b");
+  if(!vf)
   {
     warn("Failed to open local " REMOTE_MANIFEST_TXT " for writing\n");
     return HOST_FWRITE_FAILED;
   }
 
-  ret = http.get(request, f);
+  ret = http.get(request, vf);
   if(ret != HOST_SUCCESS)
   {
     warn("Processing " REMOTE_MANIFEST_TXT " failed (code %d; error: %s)\n",
@@ -416,8 +418,8 @@ HTTPHostStatus Manifest::get_remote(HTTPHost &http, HTTPRequestInfo &request,
     return ret;
   }
 
-  rewind(f);
-  this->create(f);
+  vrewind(vf);
+  this->create(vf);
   return ret;
 }
 
@@ -496,10 +498,10 @@ void Manifest::filter_existing_files()
   {
     e_next = e->next;
 
-    ScopedFile<FILE, fclose> f = fopen_unsafe(e->name, "rb");
-    if(f)
+    ScopedFile<vfile, vfclose> vf = vfopen_unsafe(e->name, "rb");
+    if(vf)
     {
-      if(e->validate(f))
+      if(e->validate(vf))
       {
         trace("Local file '%s' matches the remote manifest; ignoring.\n", e->name);
         if(prev)
@@ -585,11 +587,11 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
    * write protected or in-use. In this case, it may be possible to
    * rename the original file out of the way. Try this trick first.
    */
-  ScopedFile<FILE, fclose> f = fopen_unsafe(e->name, "w+b");
-  if(!f)
+  ScopedFile<vfile, vfclose> vf = vfopen_unsafe(e->name, "w+b");
+  if(!vf)
   {
     snprintf(buf, LINE_BUF_LEN, "%s-%u~", e->name, (unsigned int)time(NULL));
-    if(rename(e->name, buf))
+    if(vrename(e->name, buf))
     {
       warn("Failed to rename in-use file '%s' to '%s'\n", e->name, buf);
       return false;
@@ -597,8 +599,8 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
 
     delete_list.append(ManifestEntry::create_from_file(buf));
 
-    f.reset(fopen_unsafe(e->name, "w+b"));
-    if(!f)
+    vf.reset(vfopen_unsafe(e->name, "w+b"));
+    if(!vf)
     {
       warn("Unable to open file '%s' for writing\n", e->name);
       return false;
@@ -611,7 +613,7 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
     e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
     e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7]);
 
-  ret = http.get(request, f);
+  ret = http.get(request, vf);
   if(ret != HOST_SUCCESS)
   {
     warn("File '%s' could not be downloaded (code %d; error: %s)\n", e->name,
@@ -619,8 +621,8 @@ boolean Manifest::download_and_replace_entry(HTTPHost &http,
     return false;
   }
 
-  rewind(f);
-  if(!e->validate(f))
+  vrewind(vf);
+  if(!e->validate(vf))
   {
     warn("File '%s' failed validation\n", e->name);
     return false;
@@ -633,13 +635,13 @@ boolean Manifest::write_to_file(const char *filename) const
 {
   if(this->head)
   {
-    ScopedFile<FILE, fclose> f = fopen_unsafe(filename, "ab");
-    if(!f)
+    ScopedFile<vfile, vfclose> vf = vfopen_unsafe(filename, "ab");
+    if(!vf)
       return false;
 
     for(ManifestEntry *e = this->head; e; e = e->next)
     {
-      fprintf(f, "%08x%08x%08x%08x%08x%08x%08x%08x %zu %s\n",
+      vf_printf(vf, "%08x%08x%08x%08x%08x%08x%08x%08x %zu %s\n",
        e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
        e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7],
        e->size, e->name);

@@ -31,6 +31,7 @@
 #include "game_menu.h"
 #include "graphics.h"
 #include "helpsys.h"
+#include "platform.h"
 #include "settings.h"
 #include "util.h"
 #include "world.h"
@@ -262,7 +263,7 @@ static void print_ctx_line(context_data *ctx_data)
   if(ctx_data->functions.click == ctx_data->functions.drag)
     click_drag_same = true;
 
-  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s %3s | %-3s %3s %s\n",
+  fprintf(mzxerr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s %3s | %-3s %3s %s\n",
     16, 16, name,
     ctx_data->functions.resume    ? "Yes" : "",
     ctx_data->functions.draw      ? "Yes" : "",
@@ -293,26 +294,26 @@ static void __print_core_stack(context *_ctx, const char *file, int line)
   int i2;
 
   if(file)
-    fprintf(stderr, "%s line %d:\n", file, line);
+    fprintf(mzxerr, "%s line %d:\n", file, line);
 
   if(!_ctx)
   {
-    fprintf(stderr, "Context is NULL!\n");
-    fflush(stderr);
+    fprintf(mzxerr, "Context is NULL!\n");
+    fflush(mzxerr);
     return;
   }
   else
 
   if(!_ctx->root)
   {
-    fprintf(stderr, "Context root is NULL!\n");
-    fflush(stderr);
+    fprintf(mzxerr, "Context root is NULL!\n");
+    fflush(mzxerr);
     return;
   }
 
   root = _ctx->root;
 
-  fprintf(stderr,
+  fprintf(mzxerr,
    "CONTEXT STACK    | Res Drw Idl Key Joy Clk Drg Dst | Fr. CbQ Pri\n"
    "-----------------|---------------------------------|-------------\n");
 
@@ -328,8 +329,8 @@ static void __print_core_stack(context *_ctx, const char *file, int line)
 
     print_ctx_line(ctx_data);
   }
-  fprintf(stderr, "\n");
-  fflush(stderr);
+  fprintf(mzxerr, "\n");
+  fflush(mzxerr);
 }
 
 /**

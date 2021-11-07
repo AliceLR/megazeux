@@ -32,6 +32,7 @@
 #include "util.h"
 #include "world.h"
 #include "world_struct.h"
+#include "io/vio.h"
 
 /* 13 (not NULL terminated in format) */
 #define LEGACY_MOD_FILENAME_MAX 13
@@ -50,7 +51,7 @@ static int cmp_robots(const void *dest, const void *src)
   return strcasecmp(rdest->robot_name, rsrc->robot_name);
 }
 
-static int load_RLE2_plane(char *plane, FILE *fp, int size)
+static int load_RLE2_plane(char *plane, vfile *vf, int size)
 {
   int i, runsize;
   int current_char;
@@ -60,7 +61,7 @@ static int load_RLE2_plane(char *plane, FILE *fp, int size)
 
   for(i = 0; i < size; i++)
   {
-    current_char = fgetc(fp);
+    current_char = vfgetc(vf);
     if(current_char == EOF)
     {
       return -1;
@@ -77,7 +78,7 @@ static int load_RLE2_plane(char *plane, FILE *fp, int size)
       if((i + runsize) > size)
         return -2;
 
-      current_char = fgetc(fp);
+      current_char = vfgetc(vf);
       if(current_char == EOF)
         return -1;
 
@@ -90,8 +91,9 @@ static int load_RLE2_plane(char *plane, FILE *fp, int size)
 }
 
 int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
- FILE *fp, int data_size, int savegame, int file_version)
+ vfile *vf, int data_size, int savegame, int file_version)
 {
+  char input_string[ROBOT_MAX_TR];
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, size, board_width, board_height, i;
   int viewport_x, viewport_y, viewport_width, viewport_height;
@@ -101,7 +103,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   struct scroll *cur_scroll;
   struct sensor *cur_sensor;
 
-  int board_location = ftell(fp);
+  int board_location = vftell(vf);
 
   cur_board->num_robots = 0;
   cur_board->num_robots_allocated = 0;
@@ -121,7 +123,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->last_key = '?';
   cur_board->num_input = 0;
   cur_board->input_size = 0;
-  cur_board->input_string[0] = 0;
+  cur_board->input_allocated = 0;
+  cur_board->input_string = NULL;
   cur_board->player_last_dir = 0x10;
   cur_board->bottom_mesg[0] = 0;
   cur_board->b_mesg_timer = 0;
@@ -136,30 +139,32 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->volume_inc = 0;
   cur_board->volume_target = 255;
   cur_board->reset_on_entry = 0;
-  cur_board->charset_path[0] = 0;
-  cur_board->palette_path[0] = 0;
+  cur_board->charset_path = NULL;
+  cur_board->palette_path = NULL;
+  cur_board->charset_path_allocated = 0;
+  cur_board->palette_path_allocated = 0;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(CONFIG_EXTRAM)
   cur_board->is_extram = false;
 #endif
 
   // board_mode, unused
-  if(fgetc(fp) == EOF)
+  if(vfgetc(vf) == EOF)
   {
     error_message(E_WORLD_BOARD_MISSING, board_location, NULL);
     return VAL_MISSING;
   }
 
-  overlay_mode = fgetc(fp);
+  overlay_mode = vfgetc(vf);
 
   if(!overlay_mode)
   {
     int overlay_width;
     int overlay_height;
 
-    overlay_mode = fgetc(fp);
-    overlay_width = fgetw(fp);
-    overlay_height = fgetw(fp);
+    overlay_mode = vfgetc(vf);
+    overlay_width = vfgetw(vf);
+    overlay_height = vfgetw(vf);
 
     size = overlay_width * overlay_height;
 
@@ -169,25 +174,25 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     cur_board->overlay = cmalloc(size);
     cur_board->overlay_color = cmalloc(size);
 
-    if(load_RLE2_plane(cur_board->overlay, fp, size))
+    if(load_RLE2_plane(cur_board->overlay, vf, size))
       goto err_freeoverlay;
 
     // Skip sizes
-    if(fgetd(fp) == EOF ||
-     load_RLE2_plane(cur_board->overlay_color, fp, size))
+    if(vfgetd(vf) == EOF ||
+     load_RLE2_plane(cur_board->overlay_color, vf, size))
       goto err_freeoverlay;
   }
   else
   {
     overlay_mode = 0;
     // Undo that last get
-    fseek(fp, -1, SEEK_CUR);
+    vfseek(vf, -1, SEEK_CUR);
   }
 
   cur_board->overlay_mode = overlay_mode;
 
-  board_width = fgetw(fp);
-  board_height = fgetw(fp);
+  board_width = vfgetw(vf);
+  board_height = vfgetw(vf);
   cur_board->board_width = board_width;
   cur_board->board_height = board_height;
 
@@ -203,54 +208,54 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->level_under_color = cmalloc(size);
   cur_board->level_under_param = cmalloc(size);
 
-  if(load_RLE2_plane(cur_board->level_id, fp, size))
+  if(load_RLE2_plane(cur_board->level_id, vf, size))
     goto err_freeboard;
 
-  if(fgetd(fp) == EOF ||
-   load_RLE2_plane(cur_board->level_color, fp, size))
+  if(vfgetd(vf) == EOF ||
+   load_RLE2_plane(cur_board->level_color, vf, size))
     goto err_freeboard;
 
-  if(fgetd(fp) == EOF ||
-   load_RLE2_plane(cur_board->level_param, fp, size))
+  if(vfgetd(vf) == EOF ||
+   load_RLE2_plane(cur_board->level_param, vf, size))
     goto err_freeboard;
 
-  if(fgetd(fp) == EOF ||
-   load_RLE2_plane(cur_board->level_under_id, fp, size))
+  if(vfgetd(vf) == EOF ||
+   load_RLE2_plane(cur_board->level_under_id, vf, size))
     goto err_freeboard;
 
-  if(fgetd(fp) == EOF ||
-   load_RLE2_plane(cur_board->level_under_color, fp, size))
+  if(vfgetd(vf) == EOF ||
+   load_RLE2_plane(cur_board->level_under_color, vf, size))
     goto err_freeboard;
 
-  if(fgetd(fp) == EOF ||
-   load_RLE2_plane(cur_board->level_under_param, fp, size))
+  if(vfgetd(vf) == EOF ||
+   load_RLE2_plane(cur_board->level_under_param, vf, size))
     goto err_freeboard;
 
   // Load board parameters
 
   if(file_version < V283)
   {
-    if(!fread(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX, 1, fp))
+    if(!vfread(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX, 1, vf))
       cur_board->mod_playing[0] = 0;
 
     cur_board->mod_playing[LEGACY_MOD_FILENAME_MAX] = 0;
   }
   else
   {
-    size_t len = fgetw(fp);
+    size_t len = vfgetw(vf);
     if(len >= MAX_PATH)
       len = MAX_PATH - 1;
 
-    if(!fread(cur_board->mod_playing, len, 1, fp))
+    if(!vfread(cur_board->mod_playing, len, 1, vf))
       len = 0;
 
     cur_board->mod_playing[len] = 0;
   }
 
-  viewport_x = fgetc(fp);
-  viewport_y = fgetc(fp);
-  viewport_width = fgetc(fp);
-  viewport_height = fgetc(fp);
+  viewport_x = vfgetc(vf);
+  viewport_y = vfgetc(vf);
+  viewport_width = vfgetc(vf);
+  viewport_height = vfgetc(vf);
 
   if(
    (viewport_x < 0) || (viewport_x > 79) ||
@@ -263,103 +268,107 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->viewport_y = viewport_y;
   cur_board->viewport_width = viewport_width;
   cur_board->viewport_height = viewport_height;
-  cur_board->can_shoot = fgetc(fp);
-  cur_board->can_bomb = fgetc(fp);
-  cur_board->fire_burn_brown = fgetc(fp);
-  cur_board->fire_burn_space = fgetc(fp);
-  cur_board->fire_burn_fakes = fgetc(fp);
-  cur_board->fire_burn_trees = fgetc(fp);
-  cur_board->explosions_leave = fgetc(fp);
-  cur_board->save_mode = fgetc(fp);
-  cur_board->forest_becomes = fgetc(fp);
-  cur_board->collect_bombs = fgetc(fp);
-  cur_board->fire_burns = fgetc(fp);
+  cur_board->can_shoot = vfgetc(vf);
+  cur_board->can_bomb = vfgetc(vf);
+  cur_board->fire_burn_brown = vfgetc(vf);
+  cur_board->fire_burn_space = vfgetc(vf);
+  cur_board->fire_burn_fakes = vfgetc(vf);
+  cur_board->fire_burn_trees = vfgetc(vf);
+  cur_board->explosions_leave = vfgetc(vf);
+  cur_board->save_mode = vfgetc(vf);
+  cur_board->forest_becomes = vfgetc(vf);
+  cur_board->collect_bombs = vfgetc(vf);
+  cur_board->fire_burns = vfgetc(vf);
 
   for(i = 0; i < 4; i++)
   {
-    cur_board->board_dir[i] = fgetc(fp);
+    cur_board->board_dir[i] = vfgetc(vf);
   }
 
-  cur_board->restart_if_zapped = fgetc(fp);
-  cur_board->time_limit = fgetw(fp);
+  cur_board->restart_if_zapped = vfgetc(vf);
+  cur_board->time_limit = vfgetw(vf);
 
   if(file_version < V283)
   {
-    cur_board->last_key = fgetc(fp);
-    cur_board->num_input = fgetw(fp);
-    cur_board->input_size = fgetc(fp);
+    cur_board->last_key = vfgetc(vf);
+    cur_board->num_input = vfgetw(vf);
+    cur_board->input_size = vfgetc(vf);
 
-    if(!fread(cur_board->input_string, LEGACY_INPUT_STRING_MAX + 1, 1, fp))
-      cur_board->input_string[0] = 0;
-    cur_board->input_string[LEGACY_INPUT_STRING_MAX] = 0;
+    if(!vfread(input_string, LEGACY_INPUT_STRING_MAX + 1, 1, vf))
+      input_string[0] = 0;
+    input_string[LEGACY_INPUT_STRING_MAX] = 0;
+    board_set_input_string(cur_board, input_string, LEGACY_INPUT_STRING_MAX);
 
-    cur_board->player_last_dir = fgetc(fp);
+    cur_board->player_last_dir = vfgetc(vf);
 
-    if(!fread(cur_board->bottom_mesg, LEGACY_BOTTOM_MESG_MAX + 1, 1, fp))
+    if(!vfread(cur_board->bottom_mesg, LEGACY_BOTTOM_MESG_MAX + 1, 1, vf))
       cur_board->bottom_mesg[0] = 0;
     cur_board->bottom_mesg[LEGACY_BOTTOM_MESG_MAX] = 0;
 
-    cur_board->b_mesg_timer = fgetc(fp);
-    cur_board->lazwall_start = fgetc(fp);
-    cur_board->b_mesg_row = fgetc(fp);
-    cur_board->b_mesg_col = (signed char)fgetc(fp);
-    cur_board->scroll_x = (signed short)fgetw(fp);
-    cur_board->scroll_y = (signed short)fgetw(fp);
-    cur_board->locked_x = (signed short)fgetw(fp);
-    cur_board->locked_y = (signed short)fgetw(fp);
+    cur_board->b_mesg_timer = vfgetc(vf);
+    cur_board->lazwall_start = vfgetc(vf);
+    cur_board->b_mesg_row = vfgetc(vf);
+    cur_board->b_mesg_col = (signed char)vfgetc(vf);
+    cur_board->scroll_x = (signed short)vfgetw(vf);
+    cur_board->scroll_y = (signed short)vfgetw(vf);
+    cur_board->locked_x = (signed short)vfgetw(vf);
+    cur_board->locked_y = (signed short)vfgetw(vf);
   }
-  else if(savegame)
+  else
+
+  if(savegame)
   {
     size_t len;
 
-    cur_board->last_key = fgetc(fp);
-    cur_board->num_input = fgetw(fp);
-    cur_board->input_size = fgetw(fp);
+    cur_board->last_key = vfgetc(vf);
+    cur_board->num_input = vfgetw(vf);
+    cur_board->input_size = vfgetw(vf);
 
-    len = fgetw(fp);
+    len = vfgetw(vf);
     if(len >= ROBOT_MAX_TR)
       len = ROBOT_MAX_TR - 1;
 
-    if(!fread(cur_board->input_string, len, 1, fp))
+    if(!vfread(input_string, len, 1, vf))
       len = 0;
-    cur_board->input_string[len] = 0;
+    input_string[len] = 0;
+    board_set_input_string(cur_board, input_string, len);
 
-    cur_board->player_last_dir = fgetc(fp);
+    cur_board->player_last_dir = vfgetc(vf);
 
-    len = fgetw(fp);
+    len = vfgetw(vf);
     if(len >= ROBOT_MAX_TR)
       len = ROBOT_MAX_TR - 1;
 
-    if(!fread(cur_board->bottom_mesg, len, 1, fp))
+    if(!vfread(cur_board->bottom_mesg, len, 1, vf))
       len = 0;
     cur_board->bottom_mesg[len] = 0;
 
-    cur_board->b_mesg_timer = fgetc(fp);
-    cur_board->lazwall_start = fgetc(fp);
-    cur_board->b_mesg_row = fgetc(fp);
-    cur_board->b_mesg_col = (signed char)fgetc(fp);
-    cur_board->scroll_x = (signed short)fgetw(fp);
-    cur_board->scroll_y = (signed short)fgetw(fp);
-    cur_board->locked_x = (signed short)fgetw(fp);
-    cur_board->locked_y = (signed short)fgetw(fp);
+    cur_board->b_mesg_timer = vfgetc(vf);
+    cur_board->lazwall_start = vfgetc(vf);
+    cur_board->b_mesg_row = vfgetc(vf);
+    cur_board->b_mesg_col = (signed char)vfgetc(vf);
+    cur_board->scroll_x = (signed short)vfgetw(vf);
+    cur_board->scroll_y = (signed short)vfgetw(vf);
+    cur_board->locked_x = (signed short)vfgetw(vf);
+    cur_board->locked_y = (signed short)vfgetw(vf);
   }
 
-  cur_board->player_ns_locked = fgetc(fp);
-  cur_board->player_ew_locked = fgetc(fp);
-  cur_board->player_attack_locked = fgetc(fp);
+  cur_board->player_ns_locked = vfgetc(vf);
+  cur_board->player_ew_locked = vfgetc(vf);
+  cur_board->player_attack_locked = vfgetc(vf);
 
   if(file_version < V283 || savegame)
   {
-    cur_board->volume = fgetc(fp);
-    cur_board->volume_inc = fgetc(fp);
-    cur_board->volume_target = fgetc(fp);
+    cur_board->volume = vfgetc(vf);
+    cur_board->volume_inc = vfgetc(vf);
+    cur_board->volume_target = vfgetc(vf);
   }
 
 
   /***************/
   /* Load robots */
   /***************/
-  num_robots = fgetc(fp);
+  num_robots = vfgetc(vf);
   num_robots_active = 0;
 
   if(num_robots == EOF)
@@ -385,7 +394,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
       if(truncated)
         break;
 
-      cur_robot = legacy_load_robot_allocate(mzx_world, fp, savegame,
+      cur_robot = legacy_load_robot_allocate(mzx_world, vf, savegame,
        file_version, &truncated);
 
       if(cur_robot->used)
@@ -428,7 +437,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   /****************/
   /* Load scrolls */
   /****************/
-  num_scrolls = fgetc(fp);
+  num_scrolls = vfgetc(vf);
 
   if(num_scrolls == EOF)
     truncated = 1;
@@ -442,7 +451,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   {
     for(i = 1; i <= num_scrolls; i++)
     {
-      cur_scroll = legacy_load_scroll_allocate(fp);
+      cur_scroll = legacy_load_scroll_allocate(vf);
       if(cur_scroll->used)
         cur_board->scroll_list[i] = cur_scroll;
       else
@@ -457,7 +466,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   /****************/
   /* Load sensors */
   /****************/
-  num_sensors = fgetc(fp);
+  num_sensors = vfgetc(vf);
 
   if(num_sensors == EOF)
     truncated = 1;
@@ -472,7 +481,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   {
     for(i = 1; i <= num_sensors; i++)
     {
-      cur_sensor = legacy_load_sensor_allocate(fp);
+      cur_sensor = legacy_load_sensor_allocate(vf);
       if(cur_sensor->used)
         cur_board->sensor_list[i] = cur_sensor;
       else
@@ -641,7 +650,7 @@ err_invalid:
 }
 
 
-struct board *legacy_load_board_allocate(struct world *mzx_world, FILE *fp,
+struct board *legacy_load_board_allocate(struct world *mzx_world, vfile *vf,
  int data_offset, int data_size, int savegame, int file_version)
 {
   struct board *cur_board;
@@ -653,9 +662,9 @@ struct board *legacy_load_board_allocate(struct world *mzx_world, FILE *fp,
 
   // Should generally be at this position after reading the previous
   // board, but don't count on that being true...
-  if(ftell(fp) != data_offset)
+  if(vftell(vf) != data_offset)
   {
-    if(fseek(fp, data_offset, SEEK_SET))
+    if(vfseek(vf, data_offset, SEEK_SET))
     {
       error_message(E_WORLD_BOARD_MISSING, data_offset, NULL);
       return NULL;
@@ -663,8 +672,7 @@ struct board *legacy_load_board_allocate(struct world *mzx_world, FILE *fp,
   }
 
   cur_board = cmalloc(sizeof(struct board));
-  cur_board->world_version = mzx_world->version;
-  result = legacy_load_board_direct(mzx_world, cur_board, fp, data_size,
+  result = legacy_load_board_direct(mzx_world, cur_board, vf, data_size,
    savegame, file_version);
 
   if(result != VAL_SUCCESS)

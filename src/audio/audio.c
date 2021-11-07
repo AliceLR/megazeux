@@ -30,6 +30,7 @@
 
 #include "audio.h"
 #include "audio_pcs.h"
+#include "audio_struct.h"
 #include "ext.h"
 #include "sampled_stream.h"
 #include "sfx.h"
@@ -101,7 +102,7 @@ int audio_get_real_frequency(int period)
   return freq_conversion / period;
 }
 
-static int volume_function(int input, int volume_setting)
+static unsigned int volume_function(int input, int volume_setting)
 {
   /* Adjust volume (0-255) exponentially according to a given setting (0-10).
    * 0 is no volume whatsoever and 10 is maximum volume. */
@@ -135,7 +136,7 @@ void destruct_audio_stream(struct audio_stream *a_src)
 }
 
 void initialize_audio_stream(struct audio_stream *a_src,
- struct audio_stream_spec *a_spec, Uint32 volume, Uint32 repeat)
+ struct audio_stream_spec *a_spec, unsigned int volume, boolean repeat)
 {
   // TODO should probably just memcpy into a spec in the audio_stream instead.
   a_src->mix_data = a_spec->mix_data;
@@ -179,10 +180,10 @@ void initialize_audio_stream(struct audio_stream *a_src,
   UNLOCK();
 }
 
-static void clip_buffer(Sint16 *dest, Sint32 *src, int len)
+static void clip_buffer(int16_t *dest, int32_t *src, size_t len)
 {
-  Sint32 cur_sample;
-  int i;
+  int32_t cur_sample;
+  size_t i;
 
   for(i = 0; i < len; i++)
   {
@@ -197,9 +198,14 @@ static void clip_buffer(Sint16 *dest, Sint32 *src, int len)
   }
 }
 
-void audio_callback(Sint16 *stream, int len)
+/**
+ * Audio callback for threaded software mixing. The output buffer must be
+ * 16-bit stereo and the length value must be the size of the buffer in bytes
+ * (i.e. the frame count times 4).
+ */
+void audio_callback(int16_t *stream, size_t len)
 {
-  Uint32 destroy_flag;
+  boolean destroy_flag;
   struct audio_stream *current_astream;
 
   LOCK();
@@ -208,14 +214,15 @@ void audio_callback(Sint16 *stream, int len)
 
   if(current_astream)
   {
-    memset(audio.mix_buffer, 0, len * 2);
+    size_t frames = len / (2 * sizeof(int16_t));
+    memset(audio.mix_buffer, 0, frames * 2 * sizeof(int32_t));
 
     while(current_astream != NULL)
     {
       struct audio_stream *next_astream = current_astream->next;
 
       destroy_flag = current_astream->mix_data(current_astream,
-       audio.mix_buffer, len);
+       audio.mix_buffer, frames, 2);
 
       if(destroy_flag)
       {
@@ -230,7 +237,7 @@ void audio_callback(Sint16 *stream, int len)
       current_astream = next_astream;
     }
 
-    clip_buffer(stream, audio.mix_buffer, len / 2);
+    clip_buffer(stream, audio.mix_buffer, frames * 2);
   }
 
   UNLOCK();
@@ -448,7 +455,7 @@ static void limit_samples(int max)
 
 void audio_play_sample(char *filename, boolean safely, int period)
 {
-  Uint32 vol = volume_function(255, audio.sound_volume);
+  unsigned int vol = volume_function(255, audio.sound_volume);
   char translated_filename[MAX_PATH];
 
   if(safely)
@@ -492,7 +499,7 @@ void audio_spot_sample(int period, int which)
   // Play a sample from the current playing mod.
   // Currently only works with libxmp (and maybe only ever will).
 
-  Uint32 vol = volume_function(255, audio.sound_volume);
+  unsigned int vol = volume_function(255, audio.sound_volume);
   struct wav_info wav;
   boolean ret = false;
 

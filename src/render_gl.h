@@ -98,7 +98,7 @@ enum gl_lib_type
  *
  * TODO: bswap32 here if compatibility defines for it are added.
  */
-static inline Uint32 gl_pack_u32(Uint32 x)
+static inline uint32_t gl_pack_u32(uint32_t x)
 {
   return
    ((x & 0xFF000000) >> 24) |

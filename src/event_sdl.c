@@ -21,7 +21,6 @@
 
 #include "configure.h"
 #include "event.h"
-#include "platform.h"
 #include "graphics.h"
 #include "compat_sdl.h"
 #include "render_sdl.h"
@@ -29,7 +28,12 @@
 
 #include <SDL.h>
 #include <ctype.h>
+#include <stdint.h>
 #include <stdlib.h>
+
+#ifdef CONFIG_WIIU
+#include <whb/proc.h>
+#endif
 
 extern struct input_status input;
 
@@ -165,6 +169,50 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
   }
 }
 
+static enum mouse_button convert_SDL_mouse_internal(uint32_t button)
+{
+  switch(button)
+  {
+    case SDL_BUTTON_LEFT:   return MOUSE_BUTTON_LEFT;
+    case SDL_BUTTON_MIDDLE: return MOUSE_BUTTON_MIDDLE;
+    case SDL_BUTTON_RIGHT:  return MOUSE_BUTTON_RIGHT;
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+    case SDL_BUTTON_X1:     return MOUSE_BUTTON_X1;
+    case SDL_BUTTON_X2:     return MOUSE_BUTTON_X2;
+
+    // Some SDL 2 versions have a bug where these values are carried through
+    // from X11.
+#ifdef CONFIG_X11
+    case 8:                 return MOUSE_BUTTON_X1;
+    case 9:                 return MOUSE_BUTTON_X2;
+#endif /* CONFIG_X11 */
+
+#else /* !SDL_VERSION_ATLEAST(2,0,0) */
+
+    // SDL 1.2 didn't get the defines until 1.2.13.
+    // Also, the wheel is handled here, and X11 does its own thing.
+#ifndef CONFIG_X11
+    case 4: return MOUSE_BUTTON_WHEELUP;
+    case 5: return MOUSE_BUTTON_WHEELDOWN;
+    case 6: return MOUSE_BUTTON_X1;
+    case 7: return MOUSE_BUTTON_X2;
+    case 8: return MOUSE_BUTTON_WHEELLEFT;
+    case 9: return MOUSE_BUTTON_WHEELRIGHT;
+#else /* CONFIG_X11 */
+    case 4: return MOUSE_BUTTON_WHEELUP;
+    case 5: return MOUSE_BUTTON_WHEELDOWN;
+    case 6: return MOUSE_BUTTON_WHEELLEFT;
+    case 7: return MOUSE_BUTTON_WHEELRIGHT;
+    case 8: return MOUSE_BUTTON_X1;
+    case 9: return MOUSE_BUTTON_X2;
+#endif
+
+#endif /* !SDL_VERSION_ATLEAST(2,0,0) */
+  }
+  return MOUSE_NO_BUTTON;
+}
+
 #ifdef CONFIG_PANDORA
 static int get_pandora_joystick_button(SDL_Keycode key)
 {
@@ -212,7 +260,7 @@ static enum joystick_special_axis sdl_axis_map[SDL_CONTROLLER_AXIS_MAX] =
   [SDL_CONTROLLER_AXIS_TRIGGERRIGHT]  = JOY_AXIS_RIGHT_TRIGGER
 };
 
-static Sint16 sdl_axis_action_map[SDL_CONTROLLER_AXIS_MAX][2] =
+static int16_t sdl_axis_action_map[SDL_CONTROLLER_AXIS_MAX][2] =
 {
   [SDL_CONTROLLER_AXIS_LEFTX]         = { -JOY_L_LEFT,  -JOY_L_RIGHT },
   [SDL_CONTROLLER_AXIS_LEFTY]         = { -JOY_L_UP,    -JOY_L_DOWN },
@@ -222,7 +270,7 @@ static Sint16 sdl_axis_action_map[SDL_CONTROLLER_AXIS_MAX][2] =
   [SDL_CONTROLLER_AXIS_TRIGGERRIGHT]  = { 0,            -JOY_RTRIGGER },
 };
 
-static Sint16 sdl_action_map[SDL_CONTROLLER_BUTTON_MAX] =
+static int16_t sdl_action_map[SDL_CONTROLLER_BUTTON_MAX] =
 {
   [SDL_CONTROLLER_BUTTON_A]             = -JOY_A,
   [SDL_CONTROLLER_BUTTON_B]             = -JOY_B,
@@ -252,9 +300,9 @@ enum
 struct gc_map
 {
   char *dbg;
-  Uint8 feature;
-  Uint8 which;
-  Uint8 pos;
+  uint8_t feature;
+  uint8_t which;
+  uint8_t pos;
 };
 
 struct gc_axis_map
@@ -301,7 +349,7 @@ static void parse_gamecontroller_read_value(char *key, char *value,
       // Axis- a# or a#~
       unsigned int axis;
 
-      if(!isdigit((Uint8)value[1]))
+      if(!isdigit((uint8_t)value[1]))
         break;
 
       axis = strtoul(value + 1, &value, 10);
@@ -357,7 +405,7 @@ static void parse_gamecontroller_read_value(char *key, char *value,
       // Button- b#
       unsigned int button;
 
-      if(!isdigit((Uint8)value[1]))
+      if(!isdigit((uint8_t)value[1]))
         break;
 
       button = strtoul(value + 1, NULL, 10);
@@ -383,11 +431,11 @@ static void parse_gamecontroller_read_value(char *key, char *value,
       unsigned int hat_mask;
       int dir;
 
-      if(!isdigit((Uint8)value[1]))
+      if(!isdigit((uint8_t)value[1]))
         break;
 
       hat = strtoul(value + 1, &value, 10);
-      if(hat != 0 || !value[0] || !isdigit((Uint8)value[1]))
+      if(hat != 0 || !value[0] || !isdigit((uint8_t)value[1]))
         break;
 
       hat_mask = strtoul(value + 1, NULL, 10);
@@ -502,11 +550,11 @@ static void parse_gamecontroller_read_string(char *map,
   }
 }
 
-static void parse_gamecontroller_apply(int joy, Sint16 mapping,
+static void parse_gamecontroller_apply(int joy, int16_t mapping,
  struct gc_map *target, boolean *select_mapped, boolean *select_used)
 {
-  Uint8 which = target->which;
-  Uint8 pos = target->pos;
+  uint8_t which = target->which;
+  uint8_t pos = target->pos;
 
   if(mapping == -JOY_SELECT || mapping == -JOY_START)
     *select_mapped = true;
@@ -739,7 +787,7 @@ void gamecontroller_map_sym(const char *sym, const char *value)
 {
   SDL_GameControllerAxis a;
   SDL_GameControllerButton b;
-  Sint16 binding = 0;
+  int16_t binding = 0;
 
   if(joystick_parse_map_value(value, &binding))
   {
@@ -856,10 +904,10 @@ static void close_joystick(int joystick_index)
 }
 #endif
 
-static inline Uint32 utf8_next_char(Uint8 **_src)
+static inline uint32_t utf8_next_char(uint8_t **_src)
 {
-  Uint8 *src = *_src;
-  Uint32 unicode;
+  uint8_t *src = *_src;
+  uint32_t unicode;
 
   if(!*src)
     return 0;
@@ -868,9 +916,9 @@ static inline Uint32 utf8_next_char(Uint8 **_src)
 
   if(unicode & 0x80)
   {
-    Uint32 extra = 1;
-    Uint32 next;
-    Uint32 i;
+    uint32_t extra = 1;
+    uint32_t next;
+    uint32_t i;
 
     if(!(unicode & 0x40))
       goto err_invalid;
@@ -1045,20 +1093,21 @@ static boolean process_event(SDL_Event *event)
         "--EVENT_SDL-- SDL_MOUSEMOTION: (%d,%d) -> (%d,%d)\n",
         mx_real, my_real, mx, my
       );
-      status->real_mouse_x = mx;
-      status->real_mouse_y = my;
-      status->mouse_x = mx / 8;
-      status->mouse_y = my / 14;
+      status->mouse_pixel_x = mx;
+      status->mouse_pixel_y = my;
+      status->mouse_x = mx / CHAR_W;
+      status->mouse_y = my / CHAR_H;
       status->mouse_moved = true;
       break;
     }
 
     case SDL_MOUSEBUTTONDOWN:
     {
+      enum mouse_button button = convert_SDL_mouse_internal(event->button.button);
       trace("--EVENT_SDL-- SDL_MOUSEBUTTONDOWN: %u\n", event->button.button);
-      status->mouse_button = event->button.button;
-      status->mouse_repeat = event->button.button;
-      status->mouse_button_state |= SDL_BUTTON(event->button.button);
+      status->mouse_button = button;
+      status->mouse_repeat = button;
+      status->mouse_button_state |= MOUSE_BUTTON(button);
       status->mouse_repeat_state = 1;
       status->mouse_drag_state = -1;
       status->mouse_time = SDL_GetTicks();
@@ -1067,9 +1116,10 @@ static boolean process_event(SDL_Event *event)
 
     case SDL_MOUSEBUTTONUP:
     {
+      enum mouse_button button = convert_SDL_mouse_internal(event->button.button);
       trace("--EVENT_SDL-- SDL_MOUSEBUTTONUP: %u\n", event->button.button);
-      status->mouse_button_state &= ~SDL_BUTTON(event->button.button);
-      status->mouse_repeat = 0;
+      status->mouse_button_state &= ~MOUSE_BUTTON(button);
+      status->mouse_repeat = MOUSE_NO_BUTTON;
       status->mouse_drag_state = 0;
       status->mouse_repeat_state = 0;
       break;
@@ -1079,49 +1129,41 @@ static boolean process_event(SDL_Event *event)
     // emulate the X11-style "wheel is a button" that SDL 1.2 used
     case SDL_MOUSEWHEEL:
     {
-      SDL_Event fake_event;
-
+      uint32_t button;
       trace(
         "--EVENT_SDL-- SDL_MOUSEWHEEL: x=%d y=%d\n",
         event->wheel.x, event->wheel.y
       );
 
-      fake_event.type = SDL_MOUSEBUTTONDOWN;
-      fake_event.button.windowID = event->wheel.windowID;
-      fake_event.button.which = event->wheel.which;
-      fake_event.button.state = SDL_PRESSED;
-      fake_event.button.x = 0;
-      fake_event.button.y = 0;
-
       if(abs(event->wheel.x) > abs(event->wheel.y))
       {
         if(event->wheel.x < 0)
-          fake_event.button.button = MOUSE_BUTTON_WHEELLEFT;
+          button = MOUSE_BUTTON_WHEELLEFT;
         else
-          fake_event.button.button = MOUSE_BUTTON_WHEELRIGHT;
+          button = MOUSE_BUTTON_WHEELRIGHT;
       }
-
       else
       {
         if(event->wheel.y < 0)
-          fake_event.button.button = MOUSE_BUTTON_WHEELDOWN;
+          button = MOUSE_BUTTON_WHEELDOWN;
         else
-          fake_event.button.button = MOUSE_BUTTON_WHEELUP;
+          button = MOUSE_BUTTON_WHEELUP;
       }
 
-      SDL_PushEvent(&fake_event);
-
-      fake_event.type = SDL_MOUSEBUTTONUP;
-      fake_event.button.state = SDL_RELEASED;
-
-      SDL_PushEvent(&fake_event);
+      // Wheel "presses" are immediately "released", and don't affect the state
+      // bitmask. Just set the current mouse button and clear everything else.
+      status->mouse_button = button;
+      status->mouse_repeat = MOUSE_NO_BUTTON;
+      status->mouse_repeat_state = 0;
+      status->mouse_drag_state = 0;
+      status->mouse_time = SDL_GetTicks();
       break;
     }
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 
     case SDL_KEYDOWN:
     {
-      Uint32 unicode = 0;
+      uint32_t unicode = 0;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
       // SDL 2.0 uses proper key repeat, but derives its timing from the OS.
@@ -1299,7 +1341,7 @@ static boolean process_event(SDL_Event *event)
      */
     case SDL_TEXTINPUT:
     {
-      Uint8 *text = (Uint8 *)event->text.text;
+      uint8_t *text = (uint8_t *)event->text.text;
 
       trace("--EVENT_SDL-- SDL_TEXTINPUT: %s\n", text);
 
@@ -1314,7 +1356,7 @@ static boolean process_event(SDL_Event *event)
       // Decode the input UTF-8 string into UTF-32 for the event buffer.
       while(*text)
       {
-        Uint32 unicode = utf8_next_char(&text);
+        uint32_t unicode = utf8_next_char(&text);
 
         if(unicode)
           key_press_unicode(status, unicode, false);
@@ -1486,8 +1528,12 @@ static boolean process_event(SDL_Event *event)
 
 boolean __update_event_status(void)
 {
-  Uint32 rval = false;
+  boolean rval = false;
   SDL_Event event;
+
+#ifdef CONFIG_WIIU
+  WHBProcIsRunning();
+#endif
 
   while(SDL_PollEvent(&event))
     rval |= process_event(&event);
@@ -1578,7 +1624,7 @@ void __wait_event(void)
     process_event(&event);
 }
 
-void real_warp_mouse(int x, int y)
+void __warp_mouse(int x, int y)
 {
   SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
 

@@ -126,11 +126,19 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   struct egl_render_data *egl_render_data = graphics->render_data;
   const EGLint *attribs = gles_v1_attribs;
   EGLNativeWindowType window = 0;
+  EGLint num_configs;
   EGLint w, h;
 
   assert(egl_render_data != NULL);
 
 #ifdef CONFIG_X11
+  egl_render_data->native_display = XOpenDisplay(NULL);
+  if(egl_render_data->native_display == NULL)
+  {
+    warn("XOpenDisplay failed\n");
+    return false;
+  }
+
   window = XCreateSimpleWindow(egl_render_data->native_display,
                                RootWindow(egl_render_data->native_display, 0),
                                0, 0, 640, 350, 0,
@@ -139,6 +147,27 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   XMapWindow(egl_render_data->native_display, window);
   XFlush(egl_render_data->native_display);
 #endif
+
+  egl_render_data->display = eglGetDisplay(egl_render_data->native_display);
+  if(egl_render_data->display == EGL_NO_DISPLAY)
+  {
+    warn("eglGetDisplay failed\n");
+    return false;
+  }
+
+  if(!eglInitialize(egl_render_data->display, NULL, NULL))
+  {
+    warn("eglInitialize failed\n");
+    return false;
+  }
+
+  if(!eglChooseConfig(egl_render_data->display,
+                      get_current_config(depth),
+                      &egl_render_data->config, 1, &num_configs))
+  {
+    warn("eglChooseConfig failed\n");
+    return false;
+  }
 
   egl_render_data->surface = eglCreateWindowSurface(egl_render_data->display,
                                                     egl_render_data->config,
@@ -207,42 +236,6 @@ err_cleanup:
   return false;
 }
 
-boolean gl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
-{
-  struct egl_render_data *egl_render_data = graphics->render_data;
-  EGLint num_configs;
-
-  assert(egl_render_data != NULL);
-
-#ifdef CONFIG_X11
-  egl_render_data->native_display = XOpenDisplay(NULL);
-#endif
-
-  egl_render_data->display = eglGetDisplay(egl_render_data->native_display);
-  if(egl_render_data->display == EGL_NO_DISPLAY)
-  {
-    warn("eglGetDisplay failed\n");
-    return false;
-  }
-
-  if(!eglInitialize(egl_render_data->display, NULL, NULL))
-  {
-    warn("eglInitialize failed\n");
-    return false;
-  }
-
-  if(!eglChooseConfig(egl_render_data->display,
-                      get_current_config(depth),
-                      &egl_render_data->config, 1, &num_configs))
-  {
-    warn("eglChooseConfig failed\n");
-    return false;
-  }
-
-  return true;
-}
-
 void gl_set_attributes(struct graphics_data *graphics)
 {
   // Note that this function is called twice- both before and after
@@ -297,7 +290,10 @@ void gl_cleanup(struct graphics_data *graphics)
   }
 
 #ifdef CONFIG_X11
-  XCloseDisplay(egl_render_data->native_display);
-  egl_render_data->native_display = 0;
+  if(egl_render_data->native_display)
+  {
+    XCloseDisplay(egl_render_data->native_display);
+    egl_render_data->native_display = NULL;
+  }
 #endif
 }

@@ -108,9 +108,9 @@ struct gl1_render_data
 #ifdef CONFIG_SDL
   struct sdl_render_data sdl;
 #endif
-  Uint32 *pixels;
-  Uint32 w;
-  Uint32 h;
+  uint32_t *pixels;
+  unsigned int w;
+  unsigned int h;
   GLuint texture_number;
 };
 
@@ -237,7 +237,7 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
   }
 #endif
 
-  render_data->pixels = cmalloc(sizeof(Uint32) * SCREEN_PIX_W * SCREEN_PIX_H);
+  render_data->pixels = cmalloc(sizeof(uint32_t) * SCREEN_PIX_W * SCREEN_PIX_H);
   if(!render_data->pixels)
   {
     gl_cleanup(graphics);
@@ -267,9 +267,9 @@ static void gl1_free_video(struct graphics_data *graphics)
 }
 
 static void gl1_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
-  Uint32 i;
+  unsigned int i;
   for(i = 0; i < count; i++)
   {
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
@@ -285,18 +285,12 @@ static void gl1_update_colors(struct graphics_data *graphics,
 static void gl1_render_graph(struct graphics_data *graphics)
 {
   struct gl1_render_data *render_data = graphics->render_data;
-  Uint32 mode = graphics->screen_mode;
+  unsigned int mode = graphics->screen_mode;
 
   if(!mode)
-  {
-    render_graph32(render_data->pixels, render_data->w * 4, graphics,
-     set_colors32[mode]);
-  }
+    render_graph32(render_data->pixels, render_data->w * 4, graphics);
   else
-  {
-    render_graph32s(render_data->pixels, render_data->w * 4, graphics,
-     set_colors32[mode]);
-  }
+    render_graph32s(render_data->pixels, render_data->w * 4, graphics);
 }
 
 static void gl1_render_layer(struct graphics_data *graphics,
@@ -307,8 +301,8 @@ static void gl1_render_layer(struct graphics_data *graphics,
   render_layer(render_data->pixels, 32, render_data->w * 4, graphics, layer);
 }
 
-static void gl1_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void gl1_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   struct gl1_render_data *render_data = graphics->render_data;
 
@@ -317,7 +311,7 @@ static void gl1_render_cursor(struct graphics_data *graphics,
 }
 
 static void gl1_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   struct gl1_render_data *render_data = graphics->render_data;
 
@@ -363,7 +357,6 @@ void render_gl1_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gl1_init_video;
   renderer->free_video = gl1_free_video;
-  renderer->check_video_mode = gl_check_video_mode;
   renderer->set_video_mode = gl1_set_video_mode;
   renderer->update_colors = gl1_update_colors;
   renderer->resize_screen = gl1_resize_screen;

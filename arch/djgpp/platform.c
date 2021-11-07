@@ -136,7 +136,7 @@ int djgpp_malloc_boundary(int len_bytes, int boundary_bytes, int *selector)
   return segment;
 }
 
-static void djgpp_enable_dma16(Uint8 port, Uint8 mode, int offset, int bytes)
+static void djgpp_enable_dma16(uint8_t port, uint8_t mode, int offset, int bytes)
 {
   int words = (bytes + 1) >> 1;
   outportb(0xD4, 0x04 | (port & 3));
@@ -161,7 +161,7 @@ static void djgpp_enable_dma16(Uint8 port, Uint8 mode, int offset, int bytes)
   outportb(0xD4, (port & 3));
 }
 
-static void djgpp_enable_dma8(Uint8 port, Uint8 mode, int offset, int bytes)
+static void djgpp_enable_dma8(uint8_t port, uint8_t mode, int offset, int bytes)
 {
   outportb(0x0A, 0x04 | (port & 3));
   outportb(0x0C, 0x00);
@@ -188,7 +188,7 @@ static void djgpp_enable_dma8(Uint8 port, Uint8 mode, int offset, int bytes)
   outportb(0x0A, (port & 3));
 }
 
-void djgpp_enable_dma(Uint8 port, Uint8 mode, int offset, int bytes)
+void djgpp_enable_dma(uint8_t port, uint8_t mode, int offset, int bytes)
 {
   if (port >= 4)
     djgpp_enable_dma16(port, mode, offset, bytes);
@@ -196,7 +196,7 @@ void djgpp_enable_dma(Uint8 port, Uint8 mode, int offset, int bytes)
     djgpp_enable_dma8(port, mode, offset, bytes);
 }
 
-void djgpp_disable_dma(Uint8 port)
+void djgpp_disable_dma(uint8_t port)
 {
   if (port >= 4)
     outportb(0xD4, 0x04 | (port & 3));
@@ -215,17 +215,17 @@ extern unsigned short int_ds;
 
 extern int timer_handler;
 extern __dpmi_paddr timer_old_handler;
-extern volatile Uint32 timer_ticks;
-extern volatile Uint32 timer_offset;
-extern Uint32 timer_length;
-extern Uint32 timer_count;
-extern Uint32 timer_normal;
+extern volatile uint32_t timer_ticks;
+extern volatile uint32_t timer_offset;
+extern uint32_t timer_length;
+extern uint32_t timer_count;
+extern uint32_t timer_normal;
 
 extern __dpmi_paddr kbd_old_handler;
 
 static boolean yieldable;
 
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
   ms += timer_ticks;
   while(timer_ticks < ms)
@@ -235,12 +235,12 @@ void delay(Uint32 ms)
   }
 }
 
-Uint32 get_ticks(void)
+uint64_t get_ticks(void)
 {
   return timer_ticks;
 }
 
-static void set_timer(Uint32 count)
+static void set_timer(uint32_t count)
 {
   outportb(0x43, 0x34);
   outportb(0x40, count & 0xFF);

@@ -33,19 +33,28 @@ __M_BEGIN_DECLS
 
 #ifdef NEED_PNG_WRITE_SCREEN
 
-#include "graphics.h"
+#include <stdint.h>
 
-int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
+struct rgb_color;
+
+/*
+int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
  const char *name);
-int png_write_screen_32bpp(Uint32 *pixels, const char *name);
+*/
+int png_write_screen_32bpp(uint32_t *pixels, const char *name);
 
 #endif // NEED_PNG_WRITE_SCREEN
 
 #ifdef NEED_PNG_READ_FILE
 
+#include <stdio.h>
+
 typedef boolean (*check_w_h_constraint_t)(png_uint_32 w, png_uint_32 h);
 typedef void *(*rgba_surface_allocator_t)(png_uint_32 w, png_uint_32 h,
                                           png_uint_32 *stride, void **pixels);
+
+void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checked,
+ check_w_h_constraint_t constraint, rgba_surface_allocator_t allocator);
 
 void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
  check_w_h_constraint_t constraint, rgba_surface_allocator_t allocator);

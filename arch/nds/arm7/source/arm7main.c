@@ -33,6 +33,7 @@
 #define FIFO_MZX FIFO_USER_01
 #define CMD_MZX_PCS_TONE 0x01
 #define CMD_MZX_SOUND_VOLUME 0x02
+#define CMD_MZX_MM_GET_POSITION 0x03
 #define MZX_PCS_CHANNEL 8
 
 void mzxFifoCommandHandler(u32 command, void *userdata) {
@@ -49,6 +50,9 @@ void mzxFifoCommandHandler(u32 command, void *userdata) {
 			} else {
 				SCHANNEL_CR(MZX_PCS_CHANNEL) = 0;
 			}
+		} break;
+		case CMD_MZX_MM_GET_POSITION: {
+			fifoSendValue32(FIFO_MZX, mmLayerMain.position);
 		} break;
 	}
 }

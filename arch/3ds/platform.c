@@ -38,7 +38,7 @@
 
 #include "keyboard.h"
 
-static u8 isNot2DS;
+static u8 isNot2DS, consoleModelId;
 
 FILE *popen(const char *command, const char *type)
 {
@@ -50,7 +50,7 @@ int pclose(FILE *stream)
   return 0;
 }
 
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
   if(ms > 0)
   {
@@ -63,9 +63,14 @@ boolean ctr_is_2d(void)
   return isNot2DS == 0;
 }
 
-Uint32 get_ticks(void)
+boolean ctr_supports_wide(void)
 {
-  return (Uint32)osGetTime();
+  return consoleModelId != 3 /* O2DS */;
+}
+
+uint64_t get_ticks(void)
+{
+  return osGetTime();
 }
 
 boolean platform_init(void)
@@ -73,29 +78,22 @@ boolean platform_init(void)
   cfguInit();
   romfsInit();
   osSetSpeedupEnable(1);
-  APT_SetAppCpuTimeLimit(80);
+  APT_SetAppCpuTimeLimit(30);
 
   gfxInitDefault();
   gfxSet3D(false);
-  C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
 
+  CFGU_GetSystemModel(&consoleModelId);
   CFGU_GetModelNintendo2DS(&isNot2DS);
   return true;
 }
 
 void platform_quit(void)
 {
-  C3D_Fini();
   gfxExit();
 
   romfsExit();
   cfguExit();
-}
-
-void real_warp_mouse(int x, int y)
-{
-  // Since we can't warp a touchscreen stylus, focus there instead.
-  focus_pixel(x, y);
 }
 
 #ifdef CONFIG_CHECK_ALLOC

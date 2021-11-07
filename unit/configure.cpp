@@ -17,9 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <algorithm>
-#include <climits>
-#include <cstdio>
+#include <limits.h>
+#include <stdio.h>
 #include <limits>
 
 #include "Unit.hpp"
@@ -39,7 +38,6 @@
 #include "../src/editor/robo_ed.h"
 #endif
 
-static const int DEFAULT = 255;
 static const int IGNORE = INT_MAX;
 static boolean game_allowed;
 
@@ -83,6 +81,56 @@ struct config_test_saved_position
 };
 #endif /* CONFIG_EDITOR */
 
+/**
+ * For integer types, use min (if signed) or max (otherwise).
+ * Enum types need to be specialized since numeric_limits doesn't work on them.
+ */
+template<class T>
+static constexpr T INVALID()
+{
+  static_assert(std::numeric_limits<T>::max() > 0, "INVALID<> needs specialization.");
+  return std::numeric_limits<T>::is_signed ?
+   std::numeric_limits<T>::min() : std::numeric_limits<T>::max();
+}
+
+template<>
+constexpr ratio_type INVALID<ratio_type>()
+{
+  return NUM_RATIO_TYPES;
+}
+
+template<>
+constexpr gl_filter_type INVALID<gl_filter_type>()
+{
+  return NUM_GL_FILTER_TYPES;
+}
+
+template<>
+constexpr cursor_mode_types INVALID<cursor_mode_types>()
+{
+  return NUM_CURSOR_MODE_TYPES;
+}
+
+template<>
+constexpr resample_mode INVALID<resample_mode>()
+{
+  return NUM_RESAMPLE_MODES;
+}
+
+template<>
+constexpr allow_cheats_type INVALID<allow_cheats_type>()
+{
+  return NUM_ALLOW_CHEATS_TYPES;
+}
+
+#ifdef CONFIG_NETWORK
+template<>
+constexpr host_family INVALID<host_family>()
+{
+  return NUM_HOST_FAMILIES;
+}
+#endif
+
 static void load_arg(char *arg)
 {
   char *tmp_args[2];
@@ -97,13 +145,12 @@ static void load_arg(char *arg)
 static boolean write_config(const char *path, const char *config)
 {
   FILE *fp = fopen_unsafe(path, "wb");
-  assert(fp);
+  ASSERT(fp, "failed to open '%s'", path);
   if(fp)
   {
     int ret = fwrite(config, strlen(config), 1, fp);
-    assert(ret == 1);
+    ASSERT(ret == 1, "write error for '%s'", path);
     ret = fclose(fp);
-    assert(!ret);
     return true;
   }
   return false;
@@ -143,13 +190,13 @@ static void load_args(const char * const (&args)[SIZE])
 template<class T>
 void TEST_INT(const char *setting_name, T &setting, ssize_t min, ssize_t max)
 {
-  constexpr T default_value = static_cast<T>(DEFAULT);
+  constexpr T default_value = INVALID<T>();
   char arg[512];
 
   for(int i = -16; i < 32; i++)
   {
     ssize_t tmp = (max - min) * i / 16 + min;
-    ssize_t expected = (tmp >= min && tmp <= max) ? tmp : default_value;
+    ssize_t expected = (tmp >= min && tmp <= max) ? tmp : static_cast<ssize_t>(default_value);
 
     if(tmp < (ssize_t)std::numeric_limits<T>::min() ||
      tmp > (ssize_t)std::numeric_limits<T>::max())
@@ -159,17 +206,17 @@ void TEST_INT(const char *setting_name, T &setting, ssize_t min, ssize_t max)
 
     setting = default_value;
     load_arg(arg);
-    ASSERTEQX((ssize_t)setting, expected, arg);
+    ASSERTEQ((ssize_t)setting, expected, "%s", arg);
 
     setting = default_value;
     load_arg_file(arg, game_allowed);
-    ASSERTEQX((ssize_t)setting, expected, arg);
+    ASSERTEQ((ssize_t)setting, expected, "%s", arg);
 
     if(!game_allowed)
     {
       setting = default_value;
       load_arg_file(arg, true);
-      ASSERTEQX(setting, default_value, arg);
+      ASSERTEQ(setting, default_value, "%s", arg);
     }
   }
 }
@@ -178,7 +225,7 @@ template<class T, int NUM_TESTS>
 void TEST_ENUM(const char *setting_name, T &setting,
  const config_test_single (&data)[NUM_TESTS])
 {
-  constexpr T default_value = static_cast<T>(DEFAULT);
+  constexpr T default_value = INVALID<T>();
   char arg[512];
 
   for(int i = 0; i < NUM_TESTS; i++)
@@ -187,17 +234,17 @@ void TEST_ENUM(const char *setting_name, T &setting,
 
     setting = default_value;
     load_arg(arg);
-    ASSERTEQX((int)setting, data[i].expected, arg);
+    ASSERTEQ((int)setting, data[i].expected, "%s", arg);
 
     setting = default_value;
     load_arg_file(arg, game_allowed);
-    ASSERTEQX((int)setting, data[i].expected, arg);
+    ASSERTEQ((int)setting, data[i].expected, "%s", arg);
 
     if(!game_allowed)
     {
       setting = default_value;
       load_arg_file(arg, true);
-      ASSERTEQX(setting, default_value, arg);
+      ASSERTEQ(setting, default_value, "%s", arg);
     }
   }
 }
@@ -206,7 +253,7 @@ template<class T, int NUM_TESTS>
 void TEST_PAIR(const char *setting_name, T &setting_a, T &setting_b,
  const config_test_pair (&data)[NUM_TESTS])
 {
-  constexpr T default_value = static_cast<T>(DEFAULT);
+  constexpr T default_value = INVALID<T>();
   char arg[512];
 
   for(int i = 0; i < NUM_TESTS; i++)
@@ -216,22 +263,22 @@ void TEST_PAIR(const char *setting_name, T &setting_a, T &setting_b,
     setting_a = default_value;
     setting_b = default_value;
     load_arg(arg);
-    ASSERTEQX((int)setting_a, data[i].expected_a, arg);
-    ASSERTEQX((int)setting_b, data[i].expected_b, arg);
+    ASSERTEQ((int)setting_a, data[i].expected_a, "%s", arg);
+    ASSERTEQ((int)setting_b, data[i].expected_b, "%s", arg);
 
     setting_a = default_value;
     setting_b = default_value;
     load_arg_file(arg, game_allowed);
-    ASSERTEQX((int)setting_a, data[i].expected_a, arg);
-    ASSERTEQX((int)setting_b, data[i].expected_b, arg);
+    ASSERTEQ((int)setting_a, data[i].expected_a, "%s", arg);
+    ASSERTEQ((int)setting_b, data[i].expected_b, "%s", arg);
 
     if(!game_allowed)
     {
       setting_a = default_value;
       setting_b = default_value;
       load_arg_file(arg, true);
-      ASSERTEQX(setting_a, default_value, arg);
-      ASSERTEQX(setting_b, default_value, arg);
+      ASSERTEQ(setting_a, default_value, "%s", arg);
+      ASSERTEQ(setting_b, default_value, "%s", arg);
     }
   }
 }
@@ -244,24 +291,24 @@ void TEST_STRING(const char *setting_name, char (&setting)[S],
 
   for(int i = 0; i < NUM_TESTS; i++)
   {
-    size_t len = std::min(strlen(data[i].expected), S - 1);
+    size_t len = Unit::min(strlen(data[i].expected), S - 1);
     snprintf(arg, arraysize(arg), "%s=%s", setting_name, data[i].value);
 
     setting[0] = '\0';
     load_arg(arg);
-    ASSERTXNCMP(setting, data[i].expected, len, arg);
-    ASSERTEQX(setting[len], '\0', arg);
+    ASSERTNCMP(setting, data[i].expected, len, "%s", arg);
+    ASSERTEQ(setting[len], '\0', "%s", arg);
 
     setting[0] = '\0';
     load_arg_file(arg, game_allowed);
-    ASSERTXNCMP(setting, data[i].expected, len, arg);
-    ASSERTEQX(setting[len], '\0', arg);
+    ASSERTNCMP(setting, data[i].expected, len, "%s", arg);
+    ASSERTEQ(setting[len], '\0', "%s", arg);
 
     if(!game_allowed)
     {
       setting[0] = '\0';
       load_arg_file(arg, true);
-      ASSERTEQX(setting[0], '\0', arg);
+      ASSERTEQ(setting[0], '\0', "%s", arg);
     }
   }
 }
@@ -272,15 +319,15 @@ UNITTEST(Settings)
 
   static const config_test_single boolean_data[] =
   {
-    { "0", false },
-    { "1", true },
-    { "2", DEFAULT },
-    { "23", DEFAULT },
-    { "-12", DEFAULT },
-    { "-1", DEFAULT },
-    { "yes", DEFAULT },
-    { "ABCD", DEFAULT },
-    { "0\\s", DEFAULT },
+    { "0",    false },
+    { "1",    true },
+    { "2",    INVALID<boolean>() },
+    { "23",   INVALID<boolean>() },
+    { "-12",  INVALID<boolean>() },
+    { "-1",   INVALID<boolean>() },
+    { "yes",  INVALID<boolean>() },
+    { "ABCD", INVALID<boolean>() },
+    { "0\\s", INVALID<boolean>() },
   };
 
   static const config_test_pair pair_data[] =
@@ -296,12 +343,12 @@ UNITTEST(Settings)
     { "3840,2160", 3840, 2160 },
     { "640, 350", 640, 350 },
     { "1600,  1200", 1600, 1200 },
-    { "640,a", DEFAULT, DEFAULT },
-    { "a,480", DEFAULT, DEFAULT },
-    { "a,b", DEFAULT, DEFAULT },
-    { "640px,350px", DEFAULT, DEFAULT },
-    { "-2,4154", DEFAULT, DEFAULT },
-    { "1233,-13513", DEFAULT, DEFAULT },
+    { "640,a",        INVALID<int>(), INVALID<int>() },
+    { "a,480",        INVALID<int>(), INVALID<int>() },
+    { "a,b",          INVALID<int>(), INVALID<int>() },
+    { "640px,350px",  INVALID<int>(), INVALID<int>() },
+    { "-2,4154",      INVALID<int>(), INVALID<int>() },
+    { "1233,-13513",  INVALID<int>(), INVALID<int>() },
   };
 
   static const char LONGSTRING[] =
@@ -372,21 +419,25 @@ UNITTEST(Settings)
 
   SECTION(force_bpp)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
+      { "0", BPP_AUTO },
       { "8", 8 },
       { "16", 16 },
       { "32", 32 },
+      { "auto", BPP_AUTO },
       { "-1", DEFAULT },
       { "231", DEFAULT },
-      { "0", DEFAULT },
       { "asdfsdf", DEFAULT },
+      { "autou", DEFAULT },
     };
     TEST_ENUM("force_bpp", conf->force_bpp, data);
   }
 
   SECTION(video_ratio)
   {
+    constexpr ratio_type DEFAULT = INVALID<ratio_type>();
     static const config_test_single data[] =
     {
       { "classic", RATIO_CLASSIC_4_3 },
@@ -401,6 +452,7 @@ UNITTEST(Settings)
 
   SECTION(gl_filter_method)
   {
+    constexpr gl_filter_type DEFAULT = INVALID<gl_filter_type>();
     static const config_test_single data[] =
     {
       { "nearest", CONFIG_GL_FILTER_NEAREST },
@@ -411,14 +463,9 @@ UNITTEST(Settings)
     TEST_ENUM("gl_filter_method", conf->gl_filter_method, data);
   }
 
-  SECTION(gl_scaling_shader)
-  {
-    game_allowed = true;
-    TEST_STRING("gl_scaling_shader", conf->gl_scaling_shader, string_data);
-  }
-
   SECTION(gl_vsync)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "-1", -1 },
@@ -434,8 +481,20 @@ UNITTEST(Settings)
     TEST_ENUM("gl_vsync", conf->gl_vsync, data);
   }
 
+  SECTION(gl_scaling_shader)
+  {
+    game_allowed = true;
+    TEST_STRING("gl_scaling_shader", conf->gl_scaling_shader, string_data);
+  }
+
+  SECTION(sdl_render_driver)
+  {
+    TEST_STRING("sdl_render_driver", conf->sdl_render_driver, string_data);
+  }
+
   SECTION(cursor_hint_mode)
   {
+    constexpr cursor_mode_types DEFAULT = INVALID<cursor_mode_types>();
     static const config_test_single data[] =
     {
       { "0", CURSOR_MODE_INVISIBLE },
@@ -478,6 +537,7 @@ UNITTEST(Settings)
 
   SECTION(resample_mode)
   {
+    constexpr resample_mode DEFAULT = INVALID<resample_mode>();
     static const config_test_single data[] =
     {
       { "none", RESAMPLE_MODE_NONE },
@@ -493,6 +553,7 @@ UNITTEST(Settings)
 
   SECTION(module_resample_mode)
   {
+    constexpr resample_mode DEFAULT = INVALID<resample_mode>();
     static const config_test_single data[] =
     {
       { "none", RESAMPLE_MODE_NONE },
@@ -575,6 +636,7 @@ UNITTEST(Settings)
 
   SECTION(allow_cheats)
   {
+    constexpr allow_cheats_type DEFAULT = INVALID<allow_cheats_type>();
     static const config_test_single data[] =
     {
       { "0", ALLOW_CHEATS_NEVER },
@@ -661,6 +723,7 @@ UNITTEST(Settings)
 
   SECTION(network_address_family)
   {
+    constexpr host_family DEFAULT = INVALID<host_family>();
     static const config_test_single data[] =
     {
       { "0", HOST_FAMILY_ANY },
@@ -722,9 +785,9 @@ UNITTEST(Settings)
       snprintf(buffer, sizeof(buffer), "%s=%s", option, hosts[i]);
       load_arg(buffer);
 
-      ASSERTEQ(conf->update_host_count, i+1);
+      ASSERTEQ(conf->update_host_count, i+1, "");
       for(int j = 0; j <= i; j++)
-        ASSERTCMP(conf->update_hosts[j], hosts[j]);
+        ASSERTCMP(conf->update_hosts[j], hosts[j], "");
     }
     free_config();
   }
@@ -736,6 +799,7 @@ UNITTEST(Settings)
 
   SECTION(update_auto_check)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "0", UPDATE_AUTO_CHECK_OFF },
@@ -871,17 +935,17 @@ UNITTEST(Settings)
       load_arg(buffer);
 
       if(current.width != IGNORE)
-        ASSERTEQX(econf->board_width, current.width, buffer);
+        ASSERTEQ(econf->board_width, current.width, "%s", buffer);
       if(current.height != IGNORE)
-        ASSERTEQX(econf->board_height, current.height, buffer);
+        ASSERTEQ(econf->board_height, current.height, "%s", buffer);
       if(current.viewport_x != IGNORE)
-        ASSERTEQX(econf->viewport_x, current.viewport_x, buffer);
+        ASSERTEQ(econf->viewport_x, current.viewport_x, "%s", buffer);
       if(current.viewport_y != IGNORE)
-        ASSERTEQX(econf->viewport_y, current.viewport_y, buffer);
+        ASSERTEQ(econf->viewport_y, current.viewport_y, "%s", buffer);
       if(current.viewport_w != IGNORE)
-        ASSERTEQX(econf->viewport_w, current.viewport_w, buffer);
+        ASSERTEQ(econf->viewport_w, current.viewport_w, "%s", buffer);
       if(current.viewport_h != IGNORE)
-        ASSERTEQX(econf->viewport_h, current.viewport_h, buffer);
+        ASSERTEQ(econf->viewport_h, current.viewport_h, "%s", buffer);
     }
   }
 
@@ -962,6 +1026,7 @@ UNITTEST(Settings)
 
   SECTION(explosions_leave)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "space", EXPL_LEAVE_SPACE },
@@ -978,6 +1043,7 @@ UNITTEST(Settings)
 
   SECTION(saving_enabled)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "disabled", CANT_SAVE },
@@ -994,6 +1060,7 @@ UNITTEST(Settings)
 
   SECTION(overlay_enabled)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "disabled", OVERLAY_OFF },
@@ -1078,6 +1145,7 @@ UNITTEST(Settings)
 #ifndef CONFIG_DEBYTECODE
   SECTION(default_invalid_status)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "ignore", invalid_uncertain },
@@ -1100,6 +1168,7 @@ UNITTEST(Settings)
 
   SECTION(disassemble_base)
   {
+    constexpr int DEFAULT = INVALID<int>();
     static const config_test_single data[] =
     {
       { "10", 10 },
@@ -1208,17 +1277,17 @@ UNITTEST(Settings)
       expected = &(data[i].expected);
 
       if(expected->board_id != IGNORE)
-        ASSERTEQX(dest->board_id, expected->board_id, buffer);
+        ASSERTEQ(dest->board_id, expected->board_id, "%s", buffer);
       if(expected->cursor_x != IGNORE)
-        ASSERTEQX(dest->cursor_x, expected->cursor_x, buffer);
+        ASSERTEQ(dest->cursor_x, expected->cursor_x, "%s", buffer);
       if(expected->cursor_y != IGNORE)
-        ASSERTEQX(dest->cursor_y, expected->cursor_y, buffer);
+        ASSERTEQ(dest->cursor_y, expected->cursor_y, "%s", buffer);
       if(expected->scroll_x != IGNORE)
-        ASSERTEQX(dest->scroll_x, expected->scroll_x, buffer);
+        ASSERTEQ(dest->scroll_x, expected->scroll_x, "%s", buffer);
       if(expected->scroll_y != IGNORE)
-        ASSERTEQX(dest->scroll_y, expected->scroll_y, buffer);
+        ASSERTEQ(dest->scroll_y, expected->scroll_y, "%s", buffer);
       if(expected->debug_x != IGNORE)
-        ASSERTEQX(dest->debug_x, expected->debug_x, buffer);
+        ASSERTEQ(dest->debug_x, expected->debug_x, "%s", buffer);
     }
   }
 
@@ -1242,16 +1311,17 @@ template<int NUM_TESTS>
 void TEST_JOY_ALIAS(const config_test_single (&data)[NUM_TESTS])
 {
   struct joystick_map *joy_global_map = get_joystick_map(true);
+  constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
-  ASSERT(joy_global_map);
+  ASSERT(joy_global_map, "");
   for(int i = 0; i < NUM_TESTS; i++)
   {
     joy_global_map->button[0][0] = DEFAULT;
     snprintf(arg, arraysize(arg), "joy1button1=%s", data[i].value);
     load_arg(arg);
 
-    ASSERTEQX(joy_global_map->button[0][0], data[i].expected, arg);
+    ASSERTEQ(joy_global_map->button[0][0], data[i].expected, "%s", arg);
   }
 }
 
@@ -1259,9 +1329,10 @@ template<int NUM_TESTS>
 void TEST_JOY_BUTTON(const config_test_joystick (&data)[NUM_TESTS])
 {
   struct joystick_map *joy_global_map = get_joystick_map(true);
+  constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
-  ASSERT(joy_global_map);
+  ASSERT(joy_global_map, "");
   for(int i = 0; i < NUM_TESTS; i++)
   {
     const config_test_joystick &t = data[i];
@@ -1277,9 +1348,9 @@ void TEST_JOY_BUTTON(const config_test_joystick (&data)[NUM_TESTS])
     for(int j = 0; j < MAX_JOYSTICKS; j++)
     {
       if(j >= t.first - 1 && j <= t.last - 1)
-        ASSERTEQX(joy_global_map->button[j][t.which - 1], t.expected[0], arg);
+        ASSERTEQ(joy_global_map->button[j][t.which - 1], t.expected[0], "%s", arg);
       else
-        ASSERTEQX(joy_global_map->button[j][t.which - 1], DEFAULT, arg);
+        ASSERTEQ(joy_global_map->button[j][t.which - 1], DEFAULT, "%s", arg);
     }
   }
 }
@@ -1288,9 +1359,10 @@ template<int NUM_TESTS>
 void TEST_JOY_AXIS(const config_test_joystick (&data)[NUM_TESTS])
 {
   struct joystick_map *joy_global_map = get_joystick_map(true);
+  constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
-  ASSERT(joy_global_map);
+  ASSERT(joy_global_map, "");
   for(int i = 0; i < NUM_TESTS; i++)
   {
     const config_test_joystick &t = data[i];
@@ -1310,13 +1382,13 @@ void TEST_JOY_AXIS(const config_test_joystick (&data)[NUM_TESTS])
     {
       if(j >= t.first - 1 && j <= t.last - 1)
       {
-        ASSERTEQX(joy_global_map->axis[j][t.which - 1][0], t.expected[0], arg);
-        ASSERTEQX(joy_global_map->axis[j][t.which - 1][1], t.expected[1], arg);
+        ASSERTEQ(joy_global_map->axis[j][t.which - 1][0], t.expected[0], "%s", arg);
+        ASSERTEQ(joy_global_map->axis[j][t.which - 1][1], t.expected[1], "%s", arg);
       }
       else
       {
-        ASSERTEQX(joy_global_map->axis[j][t.which - 1][0], DEFAULT, arg);
-        ASSERTEQX(joy_global_map->axis[j][t.which - 1][1], DEFAULT, arg);
+        ASSERTEQ(joy_global_map->axis[j][t.which - 1][0], DEFAULT, "%s", arg);
+        ASSERTEQ(joy_global_map->axis[j][t.which - 1][1], DEFAULT, "%s", arg);
       }
     }
   }
@@ -1326,9 +1398,10 @@ template<int NUM_TESTS>
 void TEST_JOY_HAT(const config_test_joystick (&data)[NUM_TESTS])
 {
   struct joystick_map *joy_global_map = get_joystick_map(true);
+  constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
-  ASSERT(joy_global_map);
+  ASSERT(joy_global_map, "");
   for(int i = 0; i < NUM_TESTS; i++)
   {
     const config_test_joystick &t = data[i];
@@ -1348,17 +1421,17 @@ void TEST_JOY_HAT(const config_test_joystick (&data)[NUM_TESTS])
     {
       if(j >= t.first - 1 && j <= t.last - 1)
       {
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_UP], t.expected[JOYHAT_UP], arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_DOWN], t.expected[JOYHAT_DOWN], arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_LEFT], t.expected[JOYHAT_LEFT], arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_RIGHT], t.expected[JOYHAT_RIGHT], arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_UP], t.expected[JOYHAT_UP], "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_DOWN], t.expected[JOYHAT_DOWN], "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_LEFT], t.expected[JOYHAT_LEFT], "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_RIGHT], t.expected[JOYHAT_RIGHT], "%s", arg);
       }
       else
       {
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_UP], DEFAULT, arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_DOWN], DEFAULT, arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_LEFT], DEFAULT, arg);
-        ASSERTEQX(joy_global_map->hat[j][JOYHAT_RIGHT], DEFAULT, arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_UP], DEFAULT, "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_DOWN], DEFAULT, "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_LEFT], DEFAULT, "%s", arg);
+        ASSERTEQ(joy_global_map->hat[j][JOYHAT_RIGHT], DEFAULT, "%s", arg);
       }
     }
   }
@@ -1368,9 +1441,10 @@ template<int NUM_TESTS>
 void TEST_JOY_ACTION(const config_test_joystick (&data)[NUM_TESTS])
 {
   struct joystick_map *joy_global_map = get_joystick_map(true);
+  constexpr int16_t DEFAULT = INVALID<int16_t>();
   char arg[512];
 
-  ASSERT(joy_global_map);
+  ASSERT(joy_global_map, "");
   for(int i = 0; i < NUM_TESTS; i++)
   {
     const config_test_joystick &t = data[i];
@@ -1386,9 +1460,9 @@ void TEST_JOY_ACTION(const config_test_joystick (&data)[NUM_TESTS])
     for(int j = 0; j < MAX_JOYSTICKS; j++)
     {
       if(j >= t.first - 1 && j <= t.last - 1)
-        ASSERTEQX(joy_global_map->action[j][t.which], t.expected[0], arg);
+        ASSERTEQ(joy_global_map->action[j][t.which], t.expected[0], "%s", arg);
       else
-        ASSERTEQX(joy_global_map->action[j][t.which], DEFAULT, arg);
+        ASSERTEQ(joy_global_map->action[j][t.which], DEFAULT, "%s", arg);
     }
   }
 }
@@ -1649,12 +1723,12 @@ UNITTEST(Include)
     // This version only works from a config file.
     boolean ret = write_config("a.cnf", "include b.cnf");
     ret &= write_config("b.cnf", "mzx_speed = 4");
-    ASSERTEQ(ret, true);
+    ASSERTEQ(ret, true, "");
 
     conf->mzx_speed = 2;
 
     set_config_from_file(SYSTEM_CNF, "a.cnf");
-    ASSERTEQ(conf->mzx_speed, 4);
+    ASSERTEQ(conf->mzx_speed, 4, "");
   }
 
   SECTION(IncludeEquals)
@@ -1662,17 +1736,17 @@ UNITTEST(Include)
     // This version works from both the config file and the command line.
     char include_conf[] = "include=c.cnf";
     boolean ret = write_config("c.cnf", "mzx_speed = 6");
-    ASSERTEQ(ret, true);
+    ASSERTEQ(ret, true, "");
 
     conf->mzx_speed = 1;
 
     load_arg(include_conf);
-    ASSERTEQX(conf->mzx_speed, 6, include_conf);
+    ASSERTEQ(conf->mzx_speed, 6, "%s", include_conf);
 
     conf->mzx_speed = 2;
 
     load_arg_file(include_conf, false);
-    ASSERTEQX(conf->mzx_speed, 6, include_conf);
+    ASSERTEQ(conf->mzx_speed, 6, "%s", include_conf);
   }
 
   SECTION(Recursion)
@@ -1682,7 +1756,7 @@ UNITTEST(Include)
     boolean ret = write_config("a.cnf", "include b.cnf");
     ret &= write_config("b.cnf", "include c.cnf");
     ret &= write_config("c.cnf", "mzx_speed=5\nboard_editor_hide_help=1");
-    ASSERTEQ(ret, true);
+    ASSERTEQ(ret, true, "");
 
     conf->mzx_speed = 1;
 #ifdef CONFIG_EDITOR
@@ -1690,9 +1764,9 @@ UNITTEST(Include)
 #endif
 
     load_arg((char *)"include=a.cnf");
-    ASSERTEQ(conf->mzx_speed, 5);
+    ASSERTEQ(conf->mzx_speed, 5, "");
 #ifdef CONFIG_EDITOR
-    ASSERTEQ(econf->board_editor_hide_help, true);
+    ASSERTEQ(econf->board_editor_hide_help, true, "");
 #endif
   }
 
@@ -1703,7 +1777,7 @@ UNITTEST(Include)
     // of file descriptors prior to running out of stack. This is pretty much
     // a freebie, it just needs to not crash or run out of memory.
     boolean ret = write_config("a.cnf", "include a.cnf");
-    ASSERTEQ(ret, true);
+    ASSERTEQ(ret, true, "");
 
     set_config_from_file(SYSTEM_CNF, "a.cnf");
   }

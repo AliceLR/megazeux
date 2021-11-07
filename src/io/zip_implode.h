@@ -278,6 +278,14 @@ static inline void expl_SF_free(struct SF_tree *tree)
 }
 
 /**
+ * Allocate an explode stream.
+ */
+static inline struct zip_stream_data *expl_create(void)
+{
+  return cmalloc(sizeof(struct explode_stream_data));
+}
+
+/**
  * Open an explode stream.
  */
 static inline void expl_open(struct zip_stream_data *zs, uint16_t method,
@@ -285,7 +293,6 @@ static inline void expl_open(struct zip_stream_data *zs, uint16_t method,
 {
   struct explode_stream_data *xs = ((struct explode_stream_data *)zs);
 
-  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct explode_stream_data));
   memset(zs, 0, sizeof(struct explode_stream_data));
   xs->has_8k_dictionary = !!(flags & ZIP_F_COMPRESSION_1);
   xs->has_literal_tree = !!(flags & ZIP_F_COMPRESSION_2);

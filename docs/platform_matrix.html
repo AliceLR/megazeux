@@ -2,6 +2,12 @@
 <html>
 <head>
 <title>MegaZeux Platform Support Matrix</title>
+<meta charset="UTF-8">
+<meta name="title" content="MegaZeux Platform Support Matrix">
+<meta name="description" content="Information about platforms supported by MegaZeux and their configuration/toolchain details.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MegaZeux Platform Support Matrix">
+<meta name="twitter:description" content="Information about platforms supported by MegaZeux and their configuration/toolchain details.">
 <script language="JavaScript">
 
 function note_link(note) {
@@ -50,6 +56,8 @@ var no_sdl_3ds = std("NO", 8);
 var optional_sdl_wii = std("NO / SDL 1.2", 9);
 var yes_but_8bpp = subopt("YES (8bpp)", 10);
 var no_gl_switch = subopt("NO", 11);
+var no_gl_fixed_android = subopt("NO", 12);
+var no_libpng_wiiu = subopt("NO", 14);
 
 var sdl2 = _yes("SDL 2");
 var sdl1_2 = std("SDL 1.2");
@@ -98,7 +106,7 @@ var fields =
   overlay:          "SOFTSCALE",
   gl:               "GL",
   glsl:             "GLSL",
-  network:          "NETWORK" + note_link(12),
+  network:          "NETWORK" + note_link(13),
   updater:          "UPDATER",
   modular:          "MODULAR",
   png:              "PNG",
@@ -151,7 +159,7 @@ var archs =
     description:      "Nintendo 3DS",
     architecture:     "ARM11 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 10.2.0 <br> binutils 2.34 <br> (dk r55)",
+    toolchain:        "gcc 11.1.0 <br> binutils 2.36.1 <br> (dk r56)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -177,7 +185,7 @@ var archs =
     description:      "Android",
     architecture:     "ARMv7-a (ELF) <br> AArch64 (ELF) <br> i686 (ELF) <br> x86_64 (ELF)",
     endian:           "Little",
-    toolchain:        "clang 9.0.8 <br> binutils 2.27 <br> (ndk r21b)",
+    toolchain:        "clang 11.0.5 <br> binutils 2.27 <br> (ndk r22b)",
     packaged:         APK,
     visibility:       yes,
     stack_protector:  yes,
@@ -191,9 +199,9 @@ var archs =
     helpsys:          yes,
     audio:            yes,
     software:         yes,
-    gl:               _FAULTY("NO"),
     overlay:          yes,
-    glsl:             _FAULTY("NO"),
+    gl:               no_gl_fixed_android,
+    glsl:             yes,
     network:          yes,
     updater:          no_updater,
     png:              yes,
@@ -268,7 +276,7 @@ var archs =
     description:      "Windows <br> (GNU toolchain)",
     architecture:     "x64 (PE+ COFF) <br> x86 (PE COFF)",
     endian:           "Little",
-    toolchain:        "gcc 10.2.0 <br> binutils 2.35.1",
+    toolchain:        "gcc 10.3.0 <br> binutils 2.36.1",
     packaged:         ZIP,
     visibility:       yes,
     stack_protector:  no_mingw_stack_protector,
@@ -330,7 +338,7 @@ var archs =
     description:      "Nintendo DS",
     architecture:     "ARM9 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 10.2.0 <br> binutils 2.34 <br> (dk r55)",
+    toolchain:        "gcc 11.1.0 <br> binutils 2.36.1 <br> (dk r56)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
@@ -380,7 +388,7 @@ var archs =
     description:      "Nintendo Switch",
     architecture:     "ARMv8/AArch64 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 10.2.0 <br> binutils 2.32 <br> (dk r16)",
+    toolchain:        "gcc 11.1.0 <br> binutils 2.32 <br> (dk r17)",
     packaged:         ZIP,
     stack_protector:  yes,
     layer_rendering:  yes,
@@ -407,7 +415,7 @@ var archs =
   {
     platform:         "unix",
     description:      "Linux, BSD, Solaris, HaikuOS, etc.",
-    architecture:     "AMD64 (ELF) <br> i386 (ELF) <br> PPC64 (ELF) <br> PPC (ELF)",
+    architecture:     "AMD64 (ELF) <br> i386 (ELF) <br> AArch64 (ELF) <br> " + note_link("Others"),
     endian:           "Varies",
     toolchain:        "Various",
     packaged:         _yes("Various"),
@@ -457,6 +465,32 @@ var archs =
     network:          yes,
     updater:          no_updater,
     png:              yes,
+    hashtables:       yes,
+    loadsave_meter:   yes,
+  },
+
+  wiiu:
+  {
+    platform:         "wiiu",
+    description:      "Nintendo Wii U",
+    architecture:     "PPC (ELF)",
+    endian:           "Big",
+    toolchain:        "gcc 10.2.0 <br> binutils 2.34 <br> (dk r38)",
+    packaged:         ZIP,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    adlib_engine:     rad,
+    ogg_vorbis:       tremor,
+    optimization:     speed,
+    sdl:              sdl2,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    overlay:          yes,
+    updater:          no_updater,
+    png:              no_libpng_wiiu,
     hashtables:       yes,
     loadsave_meter:   yes,
   },
@@ -785,7 +819,9 @@ li {
 
 <table id="matrix"></table>
 
-<h3>Platform Notes</h3>
+<hr>
+
+<h2>Platform Notes</h2>
 
 <ol>
 
@@ -853,17 +889,61 @@ disabled because they cause system crashes when exiting MegaZeux. They generally
 seem to perform worse than softscale, so there isn't much reason to fix this.
 </li>
 
-<li id="note12">Networking support is only enabled when some feature that
+<li id="note12">The GL fixed-function renderers currently do not work with
+Android. This hasn't been investigated because the softscale and GLSL based
+renderers are essentially guaranteed to work with the supported API levels.
+</li>
+
+<li id="note13">Networking support is only enabled when some feature that
 requires it is also enabled. The only feature that currently uses networking
 is the updater.
 </li>
+
+<li id="note14">There is currently a toolchain conflict between two versions of
+zlib - one (1.2.5) included in the Wii U operating system, one (1.2.11) included
+in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
+</li>
 </ol>
 
-<h3>Copyright</h3>
+<hr>
+
+<h2 id="noteOthers">Other Unix Architectures</h2>
+<p>
+  MegaZeux is regularly tested with Linux/BSD on hardware for the
+  following architectures:
+</p>
+<ul>
+  <li><b>AMD64</b> / <b>x86_64</b></li>
+  <li><b>i386</b> / <b>i686</b> / etc.</li>
+  <li><b>ARMhf</b></li>
+  <li><b>AArch64</b></li>
+</ul>
+<p>
+  More niche architectures are only tested via non-Linux ports or are
+  semi-regularly tested with Linux/BSD via QEMU emulation:
+</p>
+<ul>
+  <li><b>DEC Alpha</b> (qemu-system-alpha)</li>
+  <li><b>MIPSeb</b> (qemu-system-mips)</li>
+  <li><b>MIPSel</b> (qemu-system-mipsel, PlayStation Portable)</li>
+  <li><b>MIPS64el</b> (qemu-system-mips64)</li>
+  <li><b>Motorola 68000</b> (qemu-system-m68k)</li>
+  <li><b>PA-RISC</b> (qemu-system-hppa)</li>
+  <li><b>PowerPC</b> (qemu-system-ppc, Nintendo Wii, Nintendo Wii U, Mac OS X)</li>
+  <li><b>PowerPC 64</b> (qemu-system-ppc64, Mac OS X)</li>
+  <li><b>RISC-V RV64GC</b> (qemu-system-riscv64)</li>
+  <li><b>SPARC</b> (qemu-system-sparc)</li>
+  <li><b>SPARC64</b> (qemu-system-sparc64)</li>
+  <li><b>SuperH SH-4</b> (qemu-sh4-static, Sega Dreamcast)</li>
+</ul>
+
+<hr>
+
+<h2>Copyright</h2>
 
 <p>This document may be copied and redistributed without limitation
 or reservation.</p>
-
+<br><br>
 </body>
 
 </html>

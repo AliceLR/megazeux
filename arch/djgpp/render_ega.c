@@ -38,7 +38,7 @@
 // Limit  : 0x03FFF
 // Type   : 0x3
 // Flags  : Application, Ring 3, Present, 32-bit
-static Uint8 ega_vb_desc[8] =
+static uint8_t ega_vb_desc[8] =
 {
   0xFF, 0x3F, 0x00, 0x80, 0x0B, 0xF3, 0x40, 0x00
 };
@@ -48,7 +48,7 @@ static Uint8 ega_vb_desc[8] =
 // Limit  : 0x0FFFF
 // Type   : 0x3
 // Flags  : Application, Ring 3, Present, 32-bit
-static const Uint8 ega_vb_desc[8] =
+static const uint8_t ega_vb_desc[8] =
 {
   0xFF, 0xFF, 0x00, 0x00, 0x0A, 0xF3, 0x40, 0x00
 }
@@ -72,11 +72,11 @@ struct ega_render_data
   unsigned char flags;
   unsigned char oldmode;
   unsigned short vbsel;
-  Uint8 lines;
-  Uint8 offset;
+  uint8_t lines;
+  uint8_t offset;
   unsigned char curpages;
-  Uint32 x;
-  Uint32 y;
+  uint32_t x;
+  uint32_t y;
 };
 
 static void ega_set_14p(void)
@@ -141,7 +141,7 @@ static void ega_cursor_off(void)
   __dpmi_int(0x10, &reg);
 }
 
-static void ega_set_cursor_shape(Uint8 lines, Uint8 offset)
+static void ega_set_cursor_shape(uint8_t lines, uint8_t offset)
 {
   __dpmi_regs reg;
   if(!lines)
@@ -155,7 +155,7 @@ static void ega_set_cursor_shape(Uint8 lines, Uint8 offset)
   __dpmi_int(0x10, &reg);
 }
 
-static void ega_set_cursor_pos(int page, Uint32 x, Uint32 y)
+static void ega_set_cursor_pos(int page, uint32_t x, uint32_t y)
 {
   __dpmi_regs reg;
   reg.h.ah = 0x02;
@@ -270,12 +270,6 @@ static void ega_free_video(struct graphics_data *graphics)
   free(render_data);
 }
 
-static boolean ega_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
-{
-  return true;
-}
-
 static boolean ega_is_ati_card(void)
 {
   // TODO: I don't know if this actually works!
@@ -332,27 +326,27 @@ static boolean ega_set_video_mode(struct graphics_data *graphics,
   return true;
 }
 
-static void ega_remap_char_range(struct graphics_data *graphics, Uint16 first, Uint16 count)
+static void ega_remap_char_range(struct graphics_data *graphics, uint16_t first, uint16_t count)
 {
   struct ega_render_data *render_data = graphics->render_data;
   render_data->flags |= TEXT_FLAGS_CHR;
 }
 
-static void ega_remap_char(struct graphics_data *graphics, Uint16 chr)
+static void ega_remap_char(struct graphics_data *graphics, uint16_t chr)
 {
   struct ega_render_data *render_data = graphics->render_data;
   render_data->flags |= TEXT_FLAGS_CHR;
 }
 
-static void ega_remap_charbyte(struct graphics_data *graphics, Uint16 chr,
- Uint8 byte)
+static void ega_remap_charbyte(struct graphics_data *graphics, uint16_t chr,
+ uint8_t byte)
 {
   struct ega_render_data *render_data = graphics->render_data;
   render_data->flags |= TEXT_FLAGS_CHR;
 }
 
 static void ega_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
   struct ega_render_data *render_data = graphics->render_data;
   unsigned int i, j, c, step;
@@ -413,7 +407,7 @@ static void ega_render_graph(struct graphics_data *graphics)
 }
 
 static void ega_hardware_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset, boolean enable)
+ unsigned x, unsigned y, uint16_t color, unsigned lines, unsigned offset, boolean enable)
 {
   struct ega_render_data *render_data = graphics->render_data;
   unsigned long dest = ega_vb_page[render_data->page];
@@ -451,7 +445,7 @@ static void ega_hardware_cursor(struct graphics_data *graphics,
 }
 
 static void ega_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned x, unsigned y, unsigned w, unsigned h)
 {
   struct ega_render_data *render_data = graphics->render_data;
   unsigned long dest = ega_vb_page[render_data->page];
@@ -464,7 +458,7 @@ static void ega_render_mouse(struct graphics_data *graphics,
 static void ega_sync_screen(struct graphics_data *graphics)
 {
   struct ega_render_data *render_data = graphics->render_data;
-  Uint8 *src = graphics->charset;
+  uint8_t *src = graphics->charset;
   unsigned int dest = 0;
   int i;
   if(render_data->flags & TEXT_FLAGS_CHR)
@@ -485,7 +479,6 @@ void render_ega_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = ega_init_video;
   renderer->free_video = ega_free_video;
-  renderer->check_video_mode = ega_check_video_mode;
   renderer->set_video_mode = ega_set_video_mode;
   renderer->update_colors = ega_update_colors;
   renderer->resize_screen = resize_screen_standard;

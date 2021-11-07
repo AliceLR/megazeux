@@ -157,7 +157,7 @@ void Socket::getaddrinfo_perror(const char *message, int errcode)
 
 #if defined(__WIN32__) || !defined(CONFIG_POLL)
 
-static void reset_timeout(struct timeval *tv, Uint32 timeout)
+static void reset_timeout(struct timeval *tv, int timeout)
 {
   /* Because of the way select() works on Unix platforms, this needs to
    * be reset every time select() is used on it. */
@@ -458,7 +458,7 @@ boolean Socket::is_last_error_fatal(void)
  * as a workaround, use Win32 functions instead (these should be safe back to
  * Windows 95).
  */
-void winsock_perror(const char *message, int code)
+static void winsock_perror(const char *message, int code)
 {
   LPSTR err_message = NULL;
 

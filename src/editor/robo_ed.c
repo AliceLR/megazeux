@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2021 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -24,6 +25,7 @@
 // robot assembly/disassembly code is in rasm.cpp.
 
 #include <ctype.h>
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,6 +46,7 @@
 #include "../world.h"
 #include "../io/fsafeopen.h"
 #include "../io/path.h"
+#include "../io/vio.h"
 
 #include "char_ed.h"
 #include "clipboard.h"
@@ -54,6 +57,7 @@
 #include "macro_struct.h"
 #include "robo_ed.h"
 #include "stringsearch.h"
+#include "undo.h"
 #include "window.h"
 
 #define combine_colors(a, b)  \
@@ -62,6 +66,7 @@
 #define MAX_COMMAND_LEN 240
 #define MAX_MACRO_RECURSION 16
 #define MAX_MACRO_REPEAT 128
+#define MAX_IDLE_TIMER 15
 
 enum search_option
 {
@@ -212,7 +217,13 @@ static void delete_line_contents(struct robot_line *delete_rline)
 
 static void delete_current_line(struct robot_editor_context *rstate, int move)
 {
-  if(rstate->total_lines != 1)
+  if(rstate->total_lines == 1)
+  {
+    add_blank_line(rstate, -1);
+    move = -1;
+  }
+
+  if(rstate->total_lines > 1)
   {
     struct robot_line *current_rline = rstate->current_rline;
     struct robot_line *next = current_rline->next;
@@ -231,10 +242,10 @@ static void delete_current_line(struct robot_editor_context *rstate, int move)
     if(rstate->mark_mode)
     {
       if(rstate->mark_start_rline == current_rline)
-        rstate->mark_start_rline = current_rline->next;
+        rstate->mark_start_rline = next;
 
       if(rstate->mark_end_rline == current_rline)
-        rstate->mark_end_rline = current_rline->previous;
+        rstate->mark_end_rline = previous;
 
       if(rstate->mark_start > rstate->current_line)
         rstate->mark_start--;
@@ -374,6 +385,48 @@ static void macro_default_values(struct robot_editor_context *rstate,
   }
 }
 
+/**
+ * Finish the current intake-based undo frame (if any).
+ */
+static void end_intake_undo_frame(struct robot_editor_context *rstate)
+{
+  if(rstate->current_frame_type != INTK_NO_EVENT)
+  {
+    update_undo_frame(rstate->h);
+    rstate->current_frame_type = INTK_NO_EVENT;
+    rstate->idle_timer = 0;
+  }
+}
+
+/**
+ * Add a sequence of lines to a line-based undo frame.
+ * The type should be either TX_NEW_LINE or TX_SAME_LINE.
+ */
+static void add_undo_frame_lines(struct robot_editor_context *rstate,
+ enum text_undo_line_type type, int start_line, int end_line)
+{
+  struct robot_line *rline = rstate->current_rline;
+  int current_line = rstate->current_line;
+
+  if(start_line > end_line)
+    return;
+
+  while(current_line > start_line && rline)
+    current_line--, rline = rline->previous;
+  while(current_line < start_line && rline)
+    current_line++, rline = rline->next;
+
+  while(current_line <= end_line && rline)
+  {
+    int pos = (current_line == rstate->current_line) ? rstate->current_x : 0;
+    add_robot_editor_undo_line(rstate->h, type, current_line, pos,
+     rline->line_text, rline->line_text_length);
+
+    rline = rline->next;
+    current_line++;
+  }
+}
+
 #ifdef CONFIG_DEBYTECODE
 
 static char *package_program(struct robot_line *start_rline,
@@ -392,7 +445,7 @@ static char *package_program(struct robot_line *start_rline,
   }
 
   if(source_size)
-    packaged_program = realloc(existing_source, source_size);
+    packaged_program = crealloc(existing_source, source_size);
 
   if(packaged_program != NULL)
   {
@@ -493,7 +546,7 @@ static void update_program_status(struct robot_editor_context *rstate,
       // The number of color codes for any given line is at most the number
       // of tokens.
       color_codes =
-       malloc(sizeof(struct color_code_pair) * num_parse_tokens);
+       cmalloc(sizeof(struct color_code_pair) * num_parse_tokens);
 
       // Where the current program line begins.
       line_start = command_start;
@@ -584,12 +637,20 @@ static void update_program_status(struct robot_editor_context *rstate,
           }
         }
 
-        current_rline->color_codes = realloc(current_rline->color_codes,
-         num_color_codes * sizeof(struct color_code_pair));
-        current_rline->num_color_codes = num_color_codes;
+        if(num_color_codes)
+        {
+          current_rline->color_codes = crealloc(current_rline->color_codes,
+           num_color_codes * sizeof(struct color_code_pair));
 
-        memcpy(current_rline->color_codes, color_codes,
-         num_color_codes * sizeof(struct color_code_pair));
+          memcpy(current_rline->color_codes, color_codes,
+           num_color_codes * sizeof(struct color_code_pair));
+        }
+        else
+        {
+          free(current_rline->color_codes);
+          current_rline->color_codes = NULL;
+        }
+        current_rline->num_color_codes = num_color_codes;
 
         num_color_codes = 0;
 
@@ -622,7 +683,8 @@ static void update_program_status(struct robot_editor_context *rstate,
   free(source_block);
 }
 
-static int update_current_line(struct robot_editor_context *rstate)
+static boolean update_current_line(struct robot_editor_context *rstate,
+ boolean ignore)
 {
   char *command_buffer = rstate->command_buffer;
   int line_text_length = strlen(command_buffer);
@@ -634,7 +696,7 @@ static int update_current_line(struct robot_editor_context *rstate)
    strcmp(current_rline->line_text, command_buffer))
   {
     current_rline->line_text =
-     realloc(current_rline->line_text, line_text_length + 1);
+     crealloc(current_rline->line_text, line_text_length + 1);
 
     current_rline->line_text_length = line_text_length;
     memcpy(current_rline->line_text, command_buffer, line_text_length + 1);
@@ -642,7 +704,7 @@ static int update_current_line(struct robot_editor_context *rstate)
     rstate->program_modified = true;
   }
 
-  return 0;
+  return true;
 }
 
 #else /* !CONFIG_DEBYTECODE */
@@ -671,11 +733,35 @@ static void trim_whitespace(char *buffer, int length)
 
 #ifndef CONFIG_DEBYTECODE
 // fix cyclic dependency (could be done in several ways)
-static int execute_named_macro(struct robot_editor_context *rstate,
+static boolean execute_named_macro(struct robot_editor_context *rstate,
  char *macro_name);
+
+static boolean named_macro_exists(struct robot_editor_context *rstate,
+ char *macro_name)
+{
+  struct editor_config_info *editor_conf = get_editor_config();
+  struct ext_macro *macro_src;
+  char *line_pos;
+  char *lone_name;
+  int next;
+
+  line_pos = skip_to_next(macro_name, ',', '(', 0);
+
+  // extract just the name of the macro, if valid
+  lone_name = cmalloc(line_pos - macro_name + 1);
+  memcpy(lone_name, macro_name, line_pos - macro_name);
+  lone_name[line_pos - macro_name] = 0;
+
+  // see if such a macro exists
+  macro_src = find_macro(editor_conf, lone_name, &next);
+  free(lone_name);
+
+  return macro_src != NULL;
+}
 #endif
 
-static int update_current_line(struct robot_editor_context *rstate)
+static boolean update_current_line(struct robot_editor_context *rstate,
+ boolean allow_macro_undo_frame)
 {
   struct editor_config_info *editor_conf = get_editor_config();
   char bytecode_buffer[COMMAND_BUFFER_LEN];
@@ -691,17 +777,44 @@ static int update_current_line(struct robot_editor_context *rstate)
   enum validity_types use_type = rstate->default_invalid;
   int line_text_length;
 
-  command_buffer[MAX_COMMAND_LEN] = 0;
   line_text_length = (int)strlen(command_buffer);
+  if(line_text_length > MAX_COMMAND_LEN)
+  {
+    line_text_length = MAX_COMMAND_LEN;
+    command_buffer[MAX_COMMAND_LEN] = 0;
+  }
   trim_whitespace(command_buffer, line_text_length);
 
   bytecode_length = legacy_assemble_line(command_buffer, bytecode_buffer,
    error_buffer, arg_types, &arg_count);
 
-  // Trigger macro expansion; if the macro doesn't exist, do nothing
-  if(command_buffer[0] == '#')
-    if(!execute_named_macro(rstate, command_buffer + 1))
-      return -1;
+  // Trigger macro expansion; if the macro exists, return false to let the
+  // caller know this line can be discarded if necessary.
+  if(command_buffer[0] == '#' && named_macro_exists(rstate, command_buffer + 1))
+  {
+    int start_line = rstate->current_line;
+    boolean macro_success;
+
+    if(allow_macro_undo_frame)
+    {
+      int command_buffer_len = strlen(command_buffer);
+      end_intake_undo_frame(rstate);
+      add_robot_editor_undo_frame(rstate->h, rstate);
+      add_robot_editor_undo_line(rstate->h, TX_OLD_LINE, rstate->current_line,
+       command_buffer_len, command_buffer, command_buffer_len);
+    }
+
+    macro_success = execute_named_macro(rstate, command_buffer + 1);
+
+    if(allow_macro_undo_frame)
+    {
+      add_undo_frame_lines(rstate, TX_NEW_LINE, start_line, rstate->current_line);
+      update_undo_frame(rstate->h);
+    }
+
+    if(macro_success)
+      return false;
+  }
 
   if((bytecode_length != -1) &&
    (current_size + bytecode_length - last_bytecode_length) <=
@@ -790,7 +903,7 @@ static int update_current_line(struct robot_editor_context *rstate)
     }
   }
 
-  return 0;
+  return true;
 }
 
 #endif /* !CONFIG_DEBYTECODE */
@@ -799,16 +912,16 @@ static int update_current_line(struct robot_editor_context *rstate)
 // unfortunately that just isn't working that well right now. Needs to
 // be very carefully modularized down.
 
-static void add_line(struct robot_editor_context *rstate, int relation)
+static void add_line(struct robot_editor_context *rstate, char *value, int relation)
 {
 #ifndef CONFIG_DEBYTECODE
-  if(rstate->size + 3 + (int)strlen(rstate->command_buffer) < rstate->max_size)
+  if(rstate->size + 3 + (int)strlen(value) < rstate->max_size)
 #endif
   {
     struct robot_line *new_rline = cmalloc(sizeof(struct robot_line));
     struct robot_line *current_rline = rstate->current_rline;
-    struct robot_line *old_previous = current_rline->previous;
-    struct robot_line *old_next = current_rline->next;
+    char *tmp = rstate->command_buffer;
+    rstate->command_buffer = value;
 
     new_rline->line_text_length = 0;
     new_rline->line_text = NULL;
@@ -842,15 +955,14 @@ static void add_line(struct robot_editor_context *rstate, int relation)
       current_rline->previous = new_rline;
     }
 
-    if(update_current_line(rstate) != -1)
+    if(update_current_line(rstate, false))
     {
       int current_line = rstate->current_line;
 
       if(relation < 0)
-      {
-        rstate->current_line++;
         rstate->current_rline = current_rline;
-      }
+
+      rstate->current_line++;
 
       if(rstate->mark_mode)
       {
@@ -876,52 +988,74 @@ static void add_line(struct robot_editor_context *rstate, int relation)
     }
     else
     {
-      current_rline->previous = old_previous;
-      current_rline->next = old_next;
+      // Line was consumed by update_current_line (likely because of a macro),
+      // so remove it. Space and bytecode size might have been counted for this
+      // as part of processing the macro.
+#ifndef CONFIG_DEBYTECODE
+      rstate->size -= new_rline->line_bytecode_length;
+#endif
       rstate->current_rline = current_rline;
-      free(new_rline);
+      if(new_rline->previous)
+        new_rline->previous->next = new_rline->next;
+      if(new_rline->next)
+        new_rline->next->previous = new_rline->previous;
+      delete_line_contents(new_rline);
     }
+
+    rstate->command_buffer = tmp;
   }
 }
 
 static void split_current_line(struct robot_editor_context *rstate)
 {
   char *command_buffer = rstate->command_buffer;
-  char line_remainder[MAX_COMMAND_LEN + 1];
+  int start_line = rstate->current_line;
   size_t remainder_len;
+  char tmp;
+
+  /* undo */
+  {
+    end_intake_undo_frame(rstate);
+    add_robot_editor_undo_frame(rstate->h, rstate);
+    add_robot_editor_undo_line(rstate->h, TX_OLD_LINE, start_line,
+     rstate->current_x, command_buffer, strlen(command_buffer));
+  }
 
   remainder_len = strlen(command_buffer + rstate->current_x);
   if(remainder_len > MAX_COMMAND_LEN)
     remainder_len = MAX_COMMAND_LEN;
 
-  memcpy(line_remainder, command_buffer + rstate->current_x, remainder_len);
-  line_remainder[remainder_len] = 0;
-  command_buffer[rstate->current_x] = 0;
+  tmp = command_buffer[rstate->current_x];
+  command_buffer[rstate->current_x] = '\0';
+  add_line(rstate, command_buffer, -1);
+  command_buffer[rstate->current_x] = tmp;
 
-#ifdef CONFIG_DEBYTECODE
-  add_line(rstate, -1);
-#else
-  update_current_line(rstate);
-  add_blank_line(rstate, 1);
-#endif
-
-  memcpy(command_buffer, line_remainder, remainder_len);
-  command_buffer[remainder_len] = 0;
+  if(rstate->current_x)
+    memmove(command_buffer, command_buffer + rstate->current_x, remainder_len);
+  command_buffer[remainder_len] = '\0';
   rstate->current_x = 0;
-  update_current_line(rstate);
+  update_current_line(rstate, false);
+
+  /* undo */
+  {
+    add_undo_frame_lines(rstate, TX_NEW_LINE, start_line, rstate->current_line);
+    update_undo_frame(rstate->h);
+  }
 }
 
 static void combine_current_line(struct robot_editor_context *rstate, int move)
 {
-  struct robot_line *rline = rstate->current_rline;
+  struct robot_line *rline;
   char *command_buffer = rstate->command_buffer;
   char line_buffer[MAX_COMMAND_LEN + 1];
   size_t line_len;
   size_t command_buffer_len;
+  int start_line;
 
-  update_current_line(rstate);
+  update_current_line(rstate, true);
   line_len = strlen(command_buffer);
 
+  rline = rstate->current_rline;
   if(move > 0)
     rline = rline->next;
   else
@@ -935,10 +1069,24 @@ static void combine_current_line(struct robot_editor_context *rstate, int move)
   // Only attempt to merge lines if there is space.
   if(line_len + command_buffer_len <= MAX_COMMAND_LEN)
   {
+    /* undo */
+    {
+      struct robot_line *current_rline = rstate->current_rline;
+      end_intake_undo_frame(rstate);
+      add_robot_editor_undo_frame(rstate->h, rstate);
+      add_robot_editor_undo_line(rstate->h, TX_OLD_LINE, rstate->current_line,
+       rstate->current_x, current_rline->line_text, current_rline->line_text_length);
+
+      start_line = rstate->current_line + ((move > 0) ? 0 : -1);
+      add_robot_editor_undo_line(rstate->h, TX_OLD_LINE, start_line, 0,
+       rline->line_text, rline->line_text_length);
+    }
+
     memcpy(line_buffer, command_buffer, line_len);
     line_buffer[line_len] = 0;
 
     delete_current_line(rstate, move);
+    start_line = rstate->current_line;
 
     if(move > 0)
     {
@@ -955,7 +1103,13 @@ static void combine_current_line(struct robot_editor_context *rstate, int move)
     }
 
     command_buffer[command_buffer_len + line_len] = 0;
-    update_current_line(rstate);
+    update_current_line(rstate, false);
+
+    /* undo */
+    {
+      add_undo_frame_lines(rstate, TX_NEW_LINE, start_line, rstate->current_line);
+      update_undo_frame(rstate->h);
+    }
   }
 }
 
@@ -977,7 +1131,6 @@ static void output_macro(struct robot_editor_context *rstate,
   char line_buffer[COMMAND_BUFFER_LEN];
   char number_buffer[16];
   char *line_pos, *line_pos_old;
-  char *old_buffer_space = rstate->command_buffer;
   struct macro_variable_reference *current_reference;
   int i, i2;
   size_t len;
@@ -986,7 +1139,7 @@ static void output_macro(struct robot_editor_context *rstate,
    rstate->macro_repeat_level == MAX_MACRO_REPEAT)
   {
     rstate->command_buffer[0] = 0;
-    update_current_line(rstate);
+    update_current_line(rstate, false);
     return;
   }
 
@@ -994,8 +1147,6 @@ static void output_macro(struct robot_editor_context *rstate,
   rstate->macro_repeat_level++;
 
   // OK, output the lines
-
-  rstate->command_buffer = line_buffer;
 
   for(i = 0; i < num_lines; i++)
   {
@@ -1096,16 +1247,15 @@ static void output_macro(struct robot_editor_context *rstate,
 
 err_cancel_expansion:
     *line_pos = 0;
-    add_line(rstate, -1);
+    add_line(rstate, line_buffer, -1);
   }
 
-  rstate->command_buffer = old_buffer_space;
   rstate->macro_recurse_level--;
 }
 
 #ifndef CONFIG_DEBYTECODE
 
-static int execute_named_macro(struct robot_editor_context *rstate,
+static boolean execute_named_macro(struct robot_editor_context *rstate,
  char *macro_name)
 {
   struct editor_config_info *editor_conf = get_editor_config();
@@ -1128,7 +1278,7 @@ static int execute_named_macro(struct robot_editor_context *rstate,
 
   // it doesn't, carefully abort
   if(!macro_src)
-    return 1;
+    return false;
 
   last_char = *line_pos;
 
@@ -1261,11 +1411,11 @@ static int execute_named_macro(struct robot_editor_context *rstate,
 
   // Wipe any existing buffered content for this line
   rstate->command_buffer[0] = '\0';
-  update_current_line(rstate);
+  update_current_line(rstate, false);
 
   // And replace it with the macro contents
   output_macro(rstate, macro_src);
-  return 0;
+  return true;
 }
 
 #endif /* !CONFIG_DEBYTECODE */
@@ -1331,7 +1481,7 @@ static void copy_block_to_buffer(struct robot_editor_context *rstate)
   for(i = 0; i < num_lines; i++)
   {
     line_length = current_rline->line_text_length + 1;
-    copy_buffer[i] = cmalloc(COMMAND_BUFFER_LEN);
+    copy_buffer[i] = cmalloc(line_length);
     memcpy(copy_buffer[i], current_rline->line_text, line_length);
     current_rline = current_rline->next;
 
@@ -1348,17 +1498,17 @@ static void copy_block_to_buffer(struct robot_editor_context *rstate)
 static void paste_buffer(struct robot_editor_context *rstate)
 {
   char *ext_buffer = get_clipboard_buffer();
+  int start_line = rstate->current_line;
   int i;
 
   // If we can use an OS buffer, do so
   if(ext_buffer)
   {
-    char line_buffer[COMMAND_BUFFER_LEN];
     char *src_ptr;
     int line_length;
     int copy_length;
+    char tmp;
 
-    rstate->command_buffer = line_buffer;
     src_ptr = ext_buffer;
 
     while(*src_ptr)
@@ -1369,9 +1519,10 @@ static void paste_buffer(struct robot_editor_context *rstate)
       if(copy_length >= COMMAND_BUFFER_LEN)
         copy_length = COMMAND_BUFFER_LEN - 1;
 
-      memcpy(line_buffer, src_ptr, copy_length);
-      line_buffer[copy_length] = 0;
-      add_line(rstate, -1);
+      tmp = src_ptr[copy_length];
+      src_ptr[copy_length] = '\0';
+      add_line(rstate, src_ptr, -1);
+      src_ptr[copy_length] = tmp;
       src_ptr += line_length;
 
 #ifdef __WIN32__
@@ -1393,13 +1544,17 @@ static void paste_buffer(struct robot_editor_context *rstate)
   if(copy_buffer)
   {
     for(i = 0; i < copy_buffer_lines; i++)
-    {
-      rstate->command_buffer = copy_buffer[i];
-      add_line(rstate, -1);
-    }
+      add_line(rstate, copy_buffer[i], -1);
   }
 
-  rstate->command_buffer = rstate->command_buffer_space;
+  /* undo */
+  if(start_line < rstate->current_line)
+  {
+    end_intake_undo_frame(rstate);
+    add_robot_editor_undo_frame(rstate->h, rstate);
+    add_undo_frame_lines(rstate, TX_NEW_LINE, start_line, rstate->current_line - 1);
+    update_undo_frame(rstate->h);
+  }
 }
 
 static void clear_block(struct robot_editor_context *rstate)
@@ -1411,6 +1566,9 @@ static void clear_block(struct robot_editor_context *rstate)
   int num_lines = rstate->mark_end - rstate->mark_start + 1;
   int i;
 
+  end_intake_undo_frame(rstate);
+  add_robot_editor_undo_frame(rstate->h, rstate);
+
   for(i = 0; i < num_lines; i++)
   {
     next_rline = current_rline->next;
@@ -1419,10 +1577,16 @@ static void clear_block(struct robot_editor_context *rstate)
     rstate->size -= current_rline->line_bytecode_length;
 #endif
 
+    add_robot_editor_undo_line(rstate->h, TX_OLD_LINE, rstate->mark_start,
+     current_rline->line_text_length, current_rline->line_text,
+     current_rline->line_text_length);
+
     delete_line_contents(current_rline);
 
     current_rline = next_rline;
   }
+
+  update_undo_frame(rstate->h);
 
   line_before->next = line_after;
   if(line_after)
@@ -1516,9 +1680,9 @@ static void export_block(struct robot_editor_context *rstate,
   export_name[0] = 0;
 
   if(!file_manager(mzx_world, export_ext, NULL, export_name,
-   "Export robot", 1, 1, elements, num_elements, 3))
+   "Export robot", ALLOW_ALL_DIRS, ALLOW_NEW_FILES, elements, num_elements, 3))
   {
-    FILE *export_file;
+    vfile *export_file;
 
     if(!export_region)
     {
@@ -1535,34 +1699,34 @@ static void export_block(struct robot_editor_context *rstate,
     if(export_type)
     {
       path_force_ext(export_name, MAX_PATH, ".bc");
-      export_file = fopen_unsafe(export_name, "wb");
+      export_file = vfopen_unsafe(export_name, "wb");
 
-      fputc(0xFF, export_file);
+      vfputc(0xFF, export_file);
 
       while(current_rline != end_rline)
       {
-        fwrite(current_rline->line_bytecode,
+        vfwrite(current_rline->line_bytecode,
          current_rline->line_bytecode_length, 1, export_file);
         current_rline = current_rline->next;
       }
 
-      fputc(0, export_file);
+      vfputc(0, export_file);
     }
     else
 #endif
     {
       path_force_ext(export_name, MAX_PATH, ".txt");
-      export_file = fopen_unsafe(export_name, "w");
+      export_file = vfopen_unsafe(export_name, "w");
 
       while(current_rline != end_rline)
       {
-        fputs(current_rline->line_text, export_file);
-        fputc('\n', export_file);
+        vfputs(current_rline->line_text, export_file);
+        vfputc('\n', export_file);
         current_rline = current_rline->next;
       }
     }
 
-    fclose(export_file);
+    vfclose(export_file);
   }
 }
 
@@ -1573,13 +1737,14 @@ static void import_block(struct robot_editor_context *rstate)
   const char *txt_ext[] = { ".TXT", NULL, NULL };
   char import_name[MAX_PATH];
   char line_buffer[256];
-  FILE *import_file;
+  vfile *import_file;
+  int start_line = rstate->current_line;
 #ifndef CONFIG_DEBYTECODE
   ssize_t ext_pos;
 
   txt_ext[1] = ".BC";
 
-  if(choose_file(mzx_world, txt_ext, import_name, "Import Robot", 1))
+  if(choose_file(mzx_world, txt_ext, import_name, "Import Robot", ALLOW_ALL_DIRS))
     return;
 
 #else // CONFIG_DEBYTECODE
@@ -1590,22 +1755,22 @@ static void import_block(struct robot_editor_context *rstate)
     construct_check_box(21, 20, label, 1, strlen(label[0]), &is_legacy)
   };
 
-  if(file_manager(mzx_world, txt_ext, NULL, import_name, "Import Robot", 1,
-   0, elements, 1, 2))
+  if(file_manager(mzx_world, txt_ext, NULL, import_name, "Import Robot",
+   ALLOW_ALL_DIRS, NO_NEW_FILES, elements, 1, 2))
     return;
 
 #endif
 
-  import_file = fopen_unsafe(import_name, "rb");
-
-  rstate->command_buffer = line_buffer;
+  import_file = vfopen_unsafe(import_name, "rb");
+  if(!import_file)
+    return;
 
 #ifndef CONFIG_DEBYTECODE
   ext_pos = (ssize_t)strlen(import_name) - 3;
 
   if(ext_pos >= 1 && !strcasecmp(import_name + ext_pos, ".BC"))
   {
-    long file_size = ftell_and_rewind(import_file);
+    long file_size = vfilelength(import_file, true);
 
     // 0xff + length + cmd + length + 0x00
     if(file_size >= 5)
@@ -1614,10 +1779,10 @@ static void import_block(struct robot_editor_context *rstate)
        size_t ret;
 
        // skip 0xff
-       fgetc(import_file);
+       vfgetc(import_file);
 
        // put the rest in a buffer for disassemble_line()
-       ret = fread(buffer, file_size - 1, 1, import_file);
+       ret = vfread(buffer, file_size - 1, 1, import_file);
 
        // copied to buffer, must now disassemble
        if(ret == 1)
@@ -1634,7 +1799,7 @@ static void import_block(struct robot_editor_context *rstate)
             editor_conf->disassemble_base);
 
            if(new_line)
-             add_line(rstate, -1);
+             add_line(rstate, line_buffer, -1);
            else
              break;
 
@@ -1655,9 +1820,7 @@ static void import_block(struct robot_editor_context *rstate)
 
     int disasm_length;
 
-    rstate->command_buffer = command_buffer;
-
-    while(fsafegets(line_buffer, 256, import_file) != NULL)
+    while(vfsafegets(line_buffer, 256, import_file) != NULL)
     {
       legacy_assemble_line(line_buffer, bytecode_buffer, errors,
        NULL, NULL);
@@ -1669,7 +1832,7 @@ static void import_block(struct robot_editor_context *rstate)
 
       command_buffer[disasm_length] = 0;
 
-      add_line(rstate,-1);
+      add_line(rstate, command_buffer, -1);
     }
   }
 
@@ -1677,13 +1840,20 @@ static void import_block(struct robot_editor_context *rstate)
   else
   {
     // fsafegets ensures that no line terminators are present
-    while(fsafegets(line_buffer, 255, import_file) != NULL)
-      add_line(rstate, -1);
+    while(vfsafegets(line_buffer, 255, import_file) != NULL)
+      add_line(rstate, line_buffer, -1);
   }
 
-  rstate->command_buffer = rstate->command_buffer_space;
+  vfclose(import_file);
 
-  fclose(import_file);
+  /* undo */
+  if(start_line < rstate->current_line)
+  {
+    end_intake_undo_frame(rstate);
+    add_robot_editor_undo_frame(rstate->h, rstate);
+    add_undo_frame_lines(rstate, TX_NEW_LINE, start_line, rstate->current_line - 1);
+    update_undo_frame(rstate->h);
+  }
 }
 
 static void edit_single_line_macros(struct robot_editor_context *rstate)
@@ -1772,6 +1942,7 @@ static void move_line_up(struct robot_editor_context *rstate, int count)
 {
   int i;
 
+  end_intake_undo_frame(rstate);
   for(i = 0; (i < count); i++)
   {
     if(rstate->current_rline->previous == &(rstate->base))
@@ -1787,6 +1958,7 @@ static void move_line_down(struct robot_editor_context *rstate, int count)
 {
   int i;
 
+  end_intake_undo_frame(rstate);
   for(i = 0; (i < count); i++)
   {
     if(rstate->current_rline->next == NULL)
@@ -1806,7 +1978,7 @@ static void move_line_down(struct robot_editor_context *rstate, int count)
 
 static void move_and_update(struct robot_editor_context *rstate, int count)
 {
-  update_current_line(rstate);
+  update_current_line(rstate, true);
   if(count < 0)
   {
     move_line_up(rstate, -count);
@@ -1819,7 +1991,7 @@ static void move_and_update(struct robot_editor_context *rstate, int count)
   strcpy(rstate->command_buffer, rstate->current_rline->line_text);
 }
 
-static void goto_line(struct robot_editor_context *rstate, int line)
+static void goto_line(struct robot_editor_context *rstate, int line, int column)
 {
   if(line > rstate->total_lines)
     line = rstate->total_lines;
@@ -1828,6 +2000,7 @@ static void goto_line(struct robot_editor_context *rstate, int line)
     line = 1;
 
   move_and_update(rstate, line - rstate->current_line);
+  rstate->current_x = CLAMP(column, 0, rstate->current_rline->line_text_length);
 }
 
 static void goto_position(struct robot_editor_context *rstate)
@@ -1858,10 +2031,7 @@ static void goto_position(struct robot_editor_context *rstate)
   destruct_dialog(&di);
 
   if(dialog_result != -1)
-  {
-    rstate->current_x = column_number - 1;
-    goto_line(rstate, line_number);
-  }
+    goto_line(rstate, line_number, column_number - 1);
 
   // Prevent UI keys from carrying through.
   force_release_all_keys();
@@ -1874,6 +2044,11 @@ static void replace_current_line(struct robot_editor_context *rstate,
   char new_buffer[COMMAND_BUFFER_LEN];
   size_t replace_size = strlen(replace);
   size_t str_size = strlen(str);
+  int start_line = rstate->current_line;
+
+  /* undo (NOTE: frame must be set up externally). */
+  add_robot_editor_undo_line(rstate->h, TX_OLD_LINE, start_line, r_pos,
+   current_rline->line_text, current_rline->line_text_length);
 
   snprintf(new_buffer, COMMAND_BUFFER_LEN, "%s", current_rline->line_text);
   new_buffer[COMMAND_BUFFER_LEN - 1] = '\0';
@@ -1884,16 +2059,19 @@ static void replace_current_line(struct robot_editor_context *rstate,
   new_buffer[MAX_COMMAND_LEN] = '\0';
 
   rstate->command_buffer = new_buffer;
-  update_current_line(rstate);
+  update_current_line(rstate, false);
 
   memcpy(rstate->command_buffer_space, new_buffer, COMMAND_BUFFER_LEN);
   rstate->command_buffer_space[COMMAND_BUFFER_LEN - 1] = '\0';
   rstate->command_buffer = rstate->command_buffer_space;
+
+  /* undo */
+  add_undo_frame_lines(rstate, TX_SAME_LINE, start_line, rstate->current_line);
 }
 
 static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
  struct string_search_data *data, int *position, boolean wrap,
- boolean ignore_case)
+ boolean ignore_case, boolean allow_current)
 {
   struct robot_line *current_rline = rstate->current_rline;
   int current_line = rstate->current_line;
@@ -1901,8 +2079,9 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
   const char *pos = NULL;
   size_t text_len;
   size_t str_len = strlen(str);
+  int first_pos;
 
-  update_current_line(rstate);
+  update_current_line(rstate, true);
   strcpy(rstate->command_buffer, current_rline->line_text);
 
   if(!str_len)
@@ -1910,10 +2089,11 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
 
   // Check the first line first
   text_len = strlen(text);
-  if(rstate->current_x + 1 < (int)text_len)
+  first_pos = (allow_current) ? rstate->current_x : rstate->current_x + 1;
+  if(first_pos < (int)text_len)
   {
-    text += rstate->current_x + 1;
-    text_len -= rstate->current_x + 1;
+    text += first_pos;
+    text_len -= first_pos;
     pos = string_search(text, text_len, str, str_len, data, ignore_case);
 
     text = rstate->command_buffer;
@@ -1980,13 +2160,10 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
       // Find
       int l_pos;
       int l_num = robo_ed_find_string(rstate, search_string, &search_index,
-       &l_pos, search_wrap_enabled, search_ignore_case_enabled);
+       &l_pos, search_wrap_enabled, search_ignore_case_enabled, false);
 
       if(l_num != -1)
-      {
-        goto_line(rstate, l_num);
-        rstate->current_x = l_pos;
-      }
+        goto_line(rstate, l_num, l_pos);
 
       break;
     }
@@ -1996,13 +2173,18 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
       // Find & Replace
       int l_pos;
       int l_num = robo_ed_find_string(rstate, search_string, &search_index,
-       &l_pos, search_wrap_enabled, search_ignore_case_enabled);
+       &l_pos, search_wrap_enabled, search_ignore_case_enabled, false);
 
       if(l_num != -1)
       {
-        goto_line(rstate, l_num);
-        rstate->current_x = l_pos;
+        goto_line(rstate, l_num, l_pos);
+
+        end_intake_undo_frame(rstate);
+        add_robot_editor_undo_frame(rstate->h, rstate);
+
         replace_current_line(rstate, l_pos, search_string, replace_string);
+
+        update_undo_frame(rstate->h);
       }
 
       break;
@@ -2020,11 +2202,12 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
       int last_pos = start_pos;
       int dif = r_len - s_len;
       int wrapped = 0;
+      boolean undo_started = false;
 
       do
       {
         l_num = robo_ed_find_string(rstate, search_string, &search_index,
-         &l_pos, search_wrap_enabled, search_ignore_case_enabled);
+         &l_pos, search_wrap_enabled, search_ignore_case_enabled, true);
 
         // Is it on the starting line and below the starting cursor?
         // If so modify the starting cursor because the line was
@@ -2057,8 +2240,15 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
 
         if(l_num != -1 && l_pos <= MAX_COMMAND_LEN)
         {
-          goto_line(rstate, l_num);
-          rstate->current_x = l_pos;
+          goto_line(rstate, l_num, l_pos);
+
+          if(!undo_started)
+          {
+            end_intake_undo_frame(rstate);
+            add_robot_editor_undo_frame(rstate->h, rstate);
+            undo_started = true;
+          }
+
           replace_current_line(rstate, l_pos, search_string, replace_string);
 
           l_pos += r_len;
@@ -2072,6 +2262,9 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
           break;
         }
       } while(1);
+
+      if(undo_started)
+        update_undo_frame(rstate->h);
 
       break;
     }
@@ -2208,6 +2401,7 @@ static void execute_macro(struct robot_editor_context *rstate,
   int dialog_value;
   int label_size = (int)strlen(macro_src->label) + 1;
   int subwidths[3];
+  int start_line = rstate->current_line;
 
   // No variables? Just print bare lines...
   if(!num_types)
@@ -2481,6 +2675,16 @@ exit_free:
   free(nominal_column_subwidths);
   free(nominal_column_widths);
   free(elements);
+
+  /* undo */
+  if(start_line < rstate->current_line)
+  {
+    end_intake_undo_frame(rstate);
+    add_robot_editor_undo_frame(rstate->h, rstate);
+    add_undo_frame_lines(rstate, TX_NEW_LINE, start_line,
+     rstate->current_line - 1);
+    update_undo_frame(rstate->h);
+  }
 }
 
 static void execute_numbered_macro(struct robot_editor_context *rstate, int num)
@@ -2497,6 +2701,148 @@ static void execute_numbered_macro(struct robot_editor_context *rstate, int num)
     execute_macro(rstate, macro_src);
   else
     insert_string(rstate, macros[num - 1], '^');
+}
+
+static void toggle_current_line_comment(struct robot_editor_context *rstate)
+{
+  /* undo */
+  end_intake_undo_frame(rstate);
+  add_robot_editor_undo_frame(rstate->h, rstate);
+  add_robot_editor_undo_line(rstate->h, TX_OLD_BUFFER, rstate->current_line,
+   rstate->current_x, rstate->command_buffer, strlen(rstate->command_buffer));
+
+#ifdef CONFIG_DEBYTECODE
+
+  if((rstate->command_buffer[0] == '/') && (rstate->command_buffer[1] == '/'))
+  {
+    size_t line_length = strlen(rstate->command_buffer + 2);
+    memmove(rstate->command_buffer, rstate->command_buffer + 2, line_length + 1);
+  }
+  else
+  {
+    size_t line_length = strlen(rstate->command_buffer);
+    memmove(rstate->command_buffer + 2, rstate->command_buffer, line_length + 1);
+    rstate->command_buffer[0] = '/';
+    rstate->command_buffer[1] = '/';
+  }
+  update_current_line(rstate, false);
+
+#else /* !CONFIG_DEBYTECODE */
+
+  if(rstate->command_buffer[0] != '.')
+  {
+    char comment_buffer[COMMAND_BUFFER_LEN];
+    char current_char;
+    char *in_position = rstate->command_buffer;
+    char *out_position = comment_buffer + 3;
+
+    comment_buffer[0] = '.';
+    comment_buffer[1] = ' ';
+    comment_buffer[2] = '"';
+
+    do
+    {
+      current_char = *in_position;
+      if((current_char == '\"') || (current_char == '\\'))
+      {
+        *out_position = '\\';
+        out_position++;
+      }
+
+      *out_position = current_char;
+      out_position++;
+      in_position++;
+    } while(out_position - comment_buffer < MAX_COMMAND_LEN && current_char);
+
+    *(out_position - 1) = '"';
+    *out_position = 0;
+
+    strcpy(rstate->command_buffer, comment_buffer);
+  }
+  else
+
+  if((rstate->command_buffer[0] == '.') &&
+   (rstate->command_buffer[1] == ' ') &&
+   (rstate->command_buffer[2] == '"') &&
+   (rstate->command_buffer[strlen(rstate->command_buffer) - 1] == '"'))
+  {
+    char uncomment_buffer[COMMAND_BUFFER_LEN];
+    char current_char;
+    char *in_position = rstate->command_buffer + 3;
+    char *out_position = uncomment_buffer;
+
+    do
+    {
+      current_char = *in_position;
+      if((current_char == '\\') && (in_position[1] == '"'))
+      {
+        current_char = '"';
+        in_position++;
+      }
+
+      if((current_char == '\\') && (in_position[1] == '\\'))
+      {
+        current_char = '\\';
+        in_position++;
+      }
+
+      *out_position = current_char;
+      out_position++;
+      in_position++;
+    } while(current_char);
+
+    *(out_position - 2) = 0;
+
+    strcpy(rstate->command_buffer, uncomment_buffer);
+  }
+
+#endif /* !CONFIG_DEBYTECODE */
+
+  /* undo */
+  intake_sync(rstate->intk);
+  add_robot_editor_undo_line(rstate->h, TX_SAME_BUFFER, rstate->current_line,
+   rstate->current_x, rstate->command_buffer, strlen(rstate->command_buffer));
+  update_undo_frame(rstate->h);
+}
+
+static boolean robot_editor_intake_callback(void *priv, subcontext *sub,
+ enum intake_event_type type, int old_pos, int new_pos, int value, const char *data)
+{
+  struct robot_editor_context *rstate = (struct robot_editor_context *)priv;
+
+  if(rstate->current_frame_type != type)
+    end_intake_undo_frame(rstate);
+
+  switch(type)
+  {
+    case INTK_NO_EVENT:
+    case INTK_MOVE:
+    case INTK_MOVE_WORDS:
+      intake_apply_event_fixed(sub, type, new_pos, value, data);
+      break;
+    case INTK_INSERT:
+    case INTK_OVERWRITE:
+    case INTK_DELETE:
+    case INTK_BACKSPACE:
+    case INTK_BACKSPACE_WORDS:
+    case INTK_CLEAR:
+    case INTK_INSERT_BLOCK:
+    case INTK_OVERWRITE_BLOCK:
+      if(rstate->current_frame_type != type)
+      {
+        rstate->current_frame_type = type;
+        add_robot_editor_undo_frame(rstate->h, rstate);
+        add_robot_editor_undo_line(rstate->h, TX_OLD_BUFFER, rstate->current_line,
+         old_pos, rstate->command_buffer, strlen(rstate->command_buffer));
+      }
+      intake_apply_event_fixed(sub, type, new_pos, value, data);
+      add_robot_editor_undo_line(rstate->h, TX_SAME_BUFFER, rstate->current_line,
+       new_pos, rstate->command_buffer, strlen(rstate->command_buffer));
+
+      rstate->idle_timer = MAX_IDLE_TIMER;
+      break;
+  }
+  return true;
 }
 
 #ifdef CONFIG_DEBYTECODE
@@ -2581,12 +2927,12 @@ static void display_robot_line(struct robot_editor_context *rstate,
       {
         temp_char = line_text[76];
         line_text[76] = 0;
-        write_string_mask(line_text, x, y, line_color, 0);
+        write_string_mask(line_text, x, y, line_color, false);
         line_text[76] = temp_char;
       }
       else
       {
-        write_string_mask(line_text, x, y, line_color, 0);
+        write_string_mask(line_text, x, y, line_color, false);
       }
     }
   }
@@ -2622,7 +2968,7 @@ static void display_robot_line(struct robot_editor_context *rstate,
             temp_char = line_text[76];
             line_text[76] = 0;
 
-            write_string_mask(line_text + offset, x + offset, y, color, 0);
+            write_string_mask(line_text + offset, x + offset, y, color, false);
             line_text[76] = temp_char;
           }
           break;
@@ -2630,7 +2976,7 @@ static void display_robot_line(struct robot_editor_context *rstate,
 
         temp_char = line_text[offset + length];
         line_text[offset + length] = 0;
-        write_string_mask(line_text + offset, x + offset, y, color, 0);
+        write_string_mask(line_text + offset, x + offset, y, color, false);
         line_text[offset + length] = temp_char;
       }
     }
@@ -2674,13 +3020,13 @@ static void display_robot_line(struct robot_editor_context *rstate,
         temp_char = current_rline->line_text[76];
         current_rline->line_text[76] = 0;
         write_string_mask(current_rline->line_text, x,
-         y, current_color, 0);
+         y, current_color, false);
         current_rline->line_text[76] = temp_char;
       }
       else
       {
         write_string_mask(current_rline->line_text, x,
-         y, current_color, 0);
+         y, current_color, false);
       }
     }
     else
@@ -2768,18 +3114,18 @@ static void display_robot_line(struct robot_editor_context *rstate,
 
           if(use_mask)
           {
-            write_string_mask(temp_buffer, x, y, current_color, 0);
+            write_string_mask(temp_buffer, x, y, current_color, false);
           }
           else
           {
             if(current_arg == S_CHARACTER)
             {
               temp_buffer[arg_length - 2] = 0;
-              write_string_mask("'", x, y, current_color, 0);
+              write_string_mask("'", x, y, current_color, false);
               write_string_ext(temp_buffer + 1, x + 1, y, current_color,
-               0, chars_offset, 16);
+               false, chars_offset, 16);
               write_string_mask("'", x + (int)arg_length - 2, y,
-               current_color, 0);
+               current_color, false);
             }
             else
             {
@@ -2853,11 +3199,18 @@ static int validate_lines(struct robot_editor_context *rstate, int show_none)
   {
     if(current_rline->validity_status != valid)
     {
+      size_t err_len, i;
       memset(error_messages[num_errors], ' ', 64);
       sprintf(error_messages[num_errors], "%05d: ", line_number + 1);
       legacy_assemble_line(current_rline->line_text, null_buffer,
        error_messages[num_errors] + 7, NULL, NULL);
-      error_messages[num_errors][strlen(error_messages[num_errors])] = ' ';
+      /* Filter out control chars. */
+      err_len = strlen(error_messages[num_errors]);
+      for(i = 0; i < err_len; i++)
+        if(error_messages[num_errors][i] == '\n')
+          error_messages[num_errors][i] = ' ';
+
+      error_messages[num_errors][err_len] = ' ';
       line_pointers[num_errors] = current_rline;
       validity_options[num_errors] = current_rline->validity_status;
 
@@ -3099,7 +3452,7 @@ static int validate_lines(struct robot_editor_context *rstate, int show_none)
   // Prevent UI keys from carrying through.
   force_release_all_keys();
 
-  update_current_line(rstate);
+  update_current_line(rstate, false);
   return num_ignore;
 }
 
@@ -3147,7 +3500,7 @@ static void init_robot_lines(struct robot_editor_context *rstate,
       rstate->command_buffer[line_length] = 0;
     }
 
-    add_line(rstate, 1);
+    add_line(rstate, rstate->command_buffer, 1);
     source_pos = newline_pos + 1;
   }
   while(newline_pos);
@@ -3220,10 +3573,16 @@ static boolean robot_editor_draw(context *ctx)
 
   struct editor_config_info *editor_conf = get_editor_config();
   int intk_color = combine_colors(editor_conf->color_codes[0], bg_color);
+  boolean use_mask = get_config()->mask_midchars;
 
   struct robot_line *draw_rline;
   int first_line_draw_position;
   int first_line_count_back;
+  int middle_line_len;
+  int start_offset = 0;
+  int temp_char = 0;
+  int temp_pos = 0;
+  int cursor_x;
   int i;
 
   fill_line(80, 0, 0, top_char, top_color);
@@ -3396,17 +3755,69 @@ static boolean robot_editor_draw(context *ctx)
   else
     draw_char('\xaf', intk_color, 79, rstate->scr_line_middle);
 
-  // Update the intake position and color so it draws correctly.
-  intake_set_screen_pos(rstate->intk, 2, rstate->scr_line_middle);
-  intake_set_color(rstate->intk, intk_color);
+  // Current line.
+  middle_line_len = rstate->current_line_len;
+  cursor_x = rstate->current_x;
+  if(rstate->current_x >= 76)
+  {
+    if(rstate->command_buffer[rstate->current_x])
+    {
+      temp_pos = rstate->current_x + 1;
+      temp_char = rstate->command_buffer[temp_pos];
+      rstate->command_buffer[temp_pos] = 0;
+    }
+    start_offset = rstate->current_x - 76 + 1;
+    middle_line_len = strlen(rstate->command_buffer + start_offset);
+    cursor_x = 75;
+  }
+  else
 
+  if(middle_line_len > 76)
+  {
+    temp_pos = 76;
+    temp_char = rstate->command_buffer[temp_pos];
+    rstate->command_buffer[temp_pos] = 0;
+    middle_line_len = 76;
+  }
+
+  if(intake_get_insert())
+    cursor_underline(cursor_x + 2, rstate->scr_line_middle);
+  else
+    cursor_solid(cursor_x + 2, rstate->scr_line_middle);
+
+  if(use_mask)
+  {
+    write_string_mask(rstate->command_buffer + start_offset,
+     2, rstate->scr_line_middle, intk_color, false);
+  }
+  else
+  {
+    write_string_ext(rstate->command_buffer + start_offset,
+     2, rstate->scr_line_middle, intk_color, false, 0, 16);
+  }
+
+  // Fill non-text portions of the middle line.
+  fill_line(76 + 1 - middle_line_len,
+   2 + middle_line_len, rstate->scr_line_middle, 32, intk_color);
   draw_char(bg_char, intk_color, 1, rstate->scr_line_middle);
+
+  if(temp_pos)
+    rstate->command_buffer[temp_pos] = temp_char;
+
   return true;
 }
 
 static boolean robot_editor_idle(context *ctx)
 {
   struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
+
+  /* Time out the current editing undo frame if no text has been entered. */
+  if(rstate->idle_timer > 0)
+  {
+    rstate->idle_timer--;
+    if(!rstate->idle_timer)
+      end_intake_undo_frame(rstate);
+  }
 
 #ifdef CONFIG_DEBYTECODE
   // Update program status if it has been modified.
@@ -3419,7 +3830,7 @@ static boolean robot_editor_idle(context *ctx)
 #endif
 
   // Disable the cursor so it doesn't display over other interfaces.
-  // Intake will enable it again if needed.
+  // The draw function will enable it again if needed.
   cursor_off();
 
   rstate->macro_repeat_level = 0;
@@ -3434,13 +3845,14 @@ static boolean robot_editor_mouse(context *ctx, int *key, int button,
 
   if(button && (button <= MOUSE_BUTTON_RIGHT))
   {
-    // NOTE: let intake handle clicks on scr_line_middle.
     if((y >= rstate->scr_line_start) && (y <= rstate->scr_line_end) &&
-     (y != rstate->scr_line_middle) && (x >= 2) && (x <= 78))
+     (x >= 2) && (x <= 78))
     {
       move_and_update(rstate, y - rstate->scr_line_middle);
       rstate->current_x = x - 2;
-      warp_mouse(x, rstate->scr_line_middle);
+
+      if(y != rstate->scr_line_middle)
+        warp_mouse(x, rstate->scr_line_middle);
       return true;
     }
   }
@@ -3565,20 +3977,26 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_RETURN:
     {
+      // Block action menu (also see Alt+B).
       if(get_alt_status(keycode_internal))
+      {
+        end_intake_undo_frame(rstate);
+        update_current_line(rstate, true);
         block_action(rstate);
+      }
+      else
 
       // Split line into two
-      else if(rstate->current_x && editor_conf->editor_enter_splits)
+      // NOTE: versions prior to 2.93 always inserted a blank line at column 0.
+      // That behavior was merged into this to simplify the undo code.
+      if(rstate->current_x == 0 || editor_conf->editor_enter_splits)
+      {
         split_current_line(rstate);
+      }
 
       // Old way, just navigate down a line
-      else if(rstate->current_x)
-        move_and_update(rstate, 1);
-
-      // If we're right at the start of a line, always make a new one
       else
-        add_blank_line(rstate, -1);
+        move_and_update(rstate, 1);
 
       return true;
     }
@@ -3736,7 +4154,8 @@ static boolean robot_editor_key(context *ctx, int *key)
     {
       if(get_alt_status(keycode_internal))
       {
-        update_current_line(rstate);
+        end_intake_undo_frame(rstate);
+        update_current_line(rstate, true);
         validate_lines(rstate, 1);
         return true;
       }
@@ -3748,24 +4167,7 @@ static boolean robot_editor_key(context *ctx, int *key)
     {
       if(get_ctrl_status(keycode_internal))
       {
-        int line_length;
-
-        if((rstate->command_buffer[0] == '/') &&
-         (rstate->command_buffer[1] == '/'))
-        {
-          line_length = strlen(rstate->command_buffer + 2);
-          memmove(rstate->command_buffer, rstate->command_buffer + 2,
-           line_length + 1);
-        }
-        else
-        {
-          line_length = strlen(rstate->command_buffer);
-          memmove(rstate->command_buffer + 2, rstate->command_buffer,
-           line_length + 1);
-          rstate->command_buffer[0] = '/';
-          rstate->command_buffer[1] = '/';
-        }
-        update_current_line(rstate);
+        toggle_current_line_comment(rstate);
         return true;
       }
       break;
@@ -3779,77 +4181,11 @@ static boolean robot_editor_key(context *ctx, int *key)
       if(rstate->current_rline->validity_status != valid)
       {
         rstate->current_rline->validity_status = invalid_comment;
-        update_current_line(rstate);
+        update_current_line(rstate, true);
       }
       else
+        toggle_current_line_comment(rstate);
 
-      if(rstate->command_buffer[0] != '.')
-      {
-        char comment_buffer[COMMAND_BUFFER_LEN];
-        char current_char;
-        char *in_position = rstate->command_buffer;
-        char *out_position = comment_buffer + 3;
-
-        comment_buffer[0] = '.';
-        comment_buffer[1] = ' ';
-        comment_buffer[2] = '"';
-
-        do
-        {
-          current_char = *in_position;
-          if((current_char == '\"') || (current_char == '\\'))
-          {
-            *out_position = '\\';
-            out_position++;
-          }
-
-          *out_position = current_char;
-          out_position++;
-          in_position++;
-        } while(out_position - comment_buffer < MAX_COMMAND_LEN && current_char);
-
-        *(out_position - 1) = '"';
-        *out_position = 0;
-
-        strcpy(rstate->command_buffer, comment_buffer);
-      }
-      else
-
-      if((rstate->command_buffer[0] == '.') &&
-       (rstate->command_buffer[1] == ' ') &&
-       (rstate->command_buffer[2] == '"') &&
-       (rstate->command_buffer[strlen(rstate->command_buffer) - 1] == '"'))
-      {
-        char uncomment_buffer[COMMAND_BUFFER_LEN];
-        char current_char;
-        char *in_position = rstate->command_buffer + 3;
-        char *out_position = uncomment_buffer;
-
-        do
-        {
-          current_char = *in_position;
-          if((current_char == '\\') && (in_position[1] == '"'))
-          {
-            current_char = '"';
-            in_position++;
-          }
-
-          if((current_char == '\\') && (in_position[1] == '\\'))
-          {
-            current_char = '\\';
-            in_position++;
-          }
-
-
-          *out_position = current_char;
-          out_position++;
-          in_position++;
-        } while(current_char);
-
-        *(out_position - 2) = 0;
-
-        strcpy(rstate->command_buffer, uncomment_buffer);
-      }
       return true;
     }
 
@@ -3860,7 +4196,7 @@ static boolean robot_editor_key(context *ctx, int *key)
         if(rstate->current_rline->validity_status != valid)
         {
           rstate->current_rline->validity_status = invalid_discard;
-          update_current_line(rstate);
+          update_current_line(rstate, true);
         }
         return true;
       }
@@ -3885,7 +4221,7 @@ static boolean robot_editor_key(context *ctx, int *key)
         if(*key == IKEY_HOME)
         {
           // Jump to the first line of the program.
-          goto_line(rstate, 1);
+          goto_line(rstate, 1, 0);
           return true;
         }
         else
@@ -3893,7 +4229,7 @@ static boolean robot_editor_key(context *ctx, int *key)
         if(*key == IKEY_END)
         {
           // Jump to the last line of the program.
-          goto_line(rstate, rstate->total_lines);
+          goto_line(rstate, rstate->total_lines, INT_MAX);
           return true;
         }
       }
@@ -3903,7 +4239,7 @@ static boolean robot_editor_key(context *ctx, int *key)
       {
         int mark_switch;
 
-        update_current_line(rstate);
+        update_current_line(rstate, true);
 
         if(rstate->mark_mode == 2)
         {
@@ -3961,11 +4297,13 @@ static boolean robot_editor_key(context *ctx, int *key)
       break;
     }
 
-    // Block action menu
+    // Block action menu (also see Alt+Enter).
     case IKEY_b:
     {
       if(get_alt_status(keycode_internal))
       {
+        end_intake_undo_frame(rstate);
+        update_current_line(rstate, true);
         block_action(rstate);
         return true;
       }
@@ -4114,11 +4452,39 @@ static boolean robot_editor_key(context *ctx, int *key)
       }
       break;
     }
+
+    case IKEY_y:
+    {
+      if(get_ctrl_status(keycode_internal))
+      {
+        // Update the current line here to avoid repeat macro expansion bugs.
+        // Unfortunately, this means macro expansion here will clobber the
+        // redo stack.
+        update_current_line(rstate, true);
+        end_intake_undo_frame(rstate);
+        apply_redo(rstate->h);
+      }
+      break;
+    }
+
+    case IKEY_z:
+    {
+      if(get_ctrl_status(keycode_internal))
+      {
+        // See above. If the current frame is a buffer-based modification,
+        // it will not trigger macro expansion and should be safe.
+        if(robot_editor_undo_frame_type(rstate->h) != TX_SAME_BUFFER)
+          update_current_line(rstate, true);
+        end_intake_undo_frame(rstate);
+        apply_undo(rstate->h);
+      }
+      break;
+    }
   }
 
   if(exit_status)
   {
-    update_current_line(rstate);
+    update_current_line(rstate, true);
 
 #ifdef CONFIG_DEBYTECODE
     if(rstate->confirm_changes)
@@ -4159,8 +4525,10 @@ static void robot_editor_destroy(context *ctx)
 #endif
 
   delete_robot_lines(rstate->cur_robot, rstate);
+  destruct_undo_history(rstate->h);
 
   restore_screen();
+  cursor_off();
 }
 
 void robot_editor(context *parent, struct robot *cur_robot)
@@ -4198,6 +4566,8 @@ void robot_editor(context *parent, struct robot *cur_robot)
   init_robot_lines(rstate, cur_robot);
   strcpy(rstate->command_buffer, rstate->current_rline->line_text);
 
+  rstate->h = construct_robot_editor_undo_history(editor_conf->undo_history_size);
+
   memset(&spec, 0, sizeof(struct context_spec));
   spec.draw           = robot_editor_draw;
   spec.idle           = robot_editor_idle;
@@ -4209,7 +4579,8 @@ void robot_editor(context *parent, struct robot *cur_robot)
 
   rstate->intk =
    intake2((context *)rstate, rstate->command_buffer, MAX_COMMAND_LEN,
-   2, 12, 76, line_color, &(rstate->current_x), &(rstate->current_line_len));
+   &(rstate->current_x), &(rstate->current_line_len));
+  intake_event_callback(rstate->intk, rstate, robot_editor_intake_callback);
 
   caption_set_robot(parent->world, cur_robot);
   save_screen();
@@ -4219,4 +4590,30 @@ void init_macros(void)
 {
   struct editor_config_info *editor_conf = get_editor_config();
   memcpy(macros, editor_conf->default_macros, 5 * 64);
+}
+
+/**
+ * Exposed internal functions for undo implementation.
+ */
+
+void robo_ed_goto_line(struct robot_editor_context *rstate, int line, int column)
+{
+  goto_line(rstate, line, column);
+}
+
+void robo_ed_delete_current_line(struct robot_editor_context *rstate, int move)
+{
+  delete_current_line(rstate, move);
+}
+
+void robo_ed_add_line(struct robot_editor_context *rstate, char *value, int relation)
+{
+  add_line(rstate, value, relation);
+  // If relation > 0 then the current line is set to the new line, so update
+  // the command buffer as well.
+  if(relation > 0)
+  {
+    snprintf(rstate->command_buffer, COMMAND_BUFFER_LEN, "%s", value);
+    rstate->command_buffer[MAX_COMMAND_LEN] = '\0';
+  }
 }

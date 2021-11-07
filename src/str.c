@@ -34,6 +34,7 @@
 #include "util.h"
 #include "world.h"
 #include "world_struct.h"
+#include "io/vio.h"
 
 /**
  * TODO: String lookups are currently case-insensitive, which is somewhat of
@@ -322,7 +323,7 @@ static boolean force_string_splice(struct string_list *string_list,
 static boolean force_string_copy(struct string_list *string_list,
  const char *name, int next, struct string **str, size_t s_length,
  size_t offset, boolean offset_specified, size_t *size, boolean size_specified,
- char *src)
+ const char *src)
 {
   if(!force_string_splice(string_list, name, next, str, s_length,
    offset, offset_specified, size, size_specified))
@@ -345,7 +346,7 @@ static boolean force_string_copy(struct string_list *string_list,
 static boolean force_string_move(struct string_list *string_list,
  const char *name, int next, struct string **str, size_t s_length,
  size_t offset, boolean offset_specified, size_t *size, boolean size_specified,
- char *src)
+ const char *src)
 {
   boolean src_dest_match = false;
   ptrdiff_t off = 0;
@@ -886,7 +887,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
   if(special_name_partial("fread") &&
    !mzx_world->input_is_dir && mzx_world->input_file)
   {
-    FILE *input_file = mzx_world->input_file;
+    vfile *input_file = mzx_world->input_file;
 
     if(src_length > 5)
     {
@@ -897,14 +898,8 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
       // You know what would be great, is not trying to allocate 4GB of memory
       read_count = MIN(read_count, MAX_STRING_LEN);
 
-      /* This is hacky, but we don't want to prematurely allocate more space
-       * to the string than can possibly be read from the file. So we save the
-       * old file pointer, figure out the length of the current input file,
-       * and put it back where we found it.
-       */
-      current_pos = ftell(input_file);
-      file_size = ftell_and_rewind(input_file);
-      fseek(input_file, current_pos, SEEK_SET);
+      file_size = vfilelength(input_file, false);
+      current_pos = vftell(input_file);
 
       /* We then truncate the user read to the maximum difference between the
        * current position and the file end; this won't affect normal reads,
@@ -917,7 +912,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
        read_count, offset, offset_specified, &size, size_specified))
         return 0;
 
-      actual_read = fread(dest->value + offset, 1, read_count, input_file);
+      actual_read = vfread(dest->value + offset, 1, read_count, input_file);
       if(offset == 0 && !offset_specified)
         dest->length = actual_read;
     }
@@ -942,7 +937,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
         for(read_allocate = 0; read_allocate < new_allocated;
          read_allocate++, read_pos++)
         {
-          current_char = fgetc(input_file);
+          current_char = vfgetc(input_file);
 
           if((current_char == terminate_char) || (current_char == EOF) ||
            (read_pos + offset == MAX_STRING_LEN))
@@ -969,13 +964,16 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
 
   if(special_name_partial("fread") && mzx_world->input_is_dir)
   {
-    char entry[PATH_BUF_LEN];
+    char entry[MAX_PATH];
 
     while(1)
     {
       // Read entries until there are none left
-      if(!dir_get_next_entry(&mzx_world->input_directory, entry, NULL))
+      if(!vdir_read(mzx_world->input_directory, entry, MAX_PATH, NULL))
+      {
+        entry[0] = '\0';
         break;
+      }
 
       // Ignore . and ..
       if(!strcmp(entry, ".") || !strcmp(entry, ".."))
@@ -1022,8 +1020,13 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
 
   if(special_name("input"))
   {
-    char *input_string = mzx_world->current_board->input_string;
-    size_t str_length = strlen(input_string);
+    const char *input_string = mzx_world->current_board->input_string;
+    size_t str_length;
+
+    if(!input_string)
+      input_string = "";
+
+    str_length = strlen(input_string);
     force_string_copy(string_list, name, next, &dest, str_length,
      offset, offset_specified, &size, size_specified, input_string);
   }
@@ -1067,7 +1070,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
      */
     if(dest != NULL && dest->length > 0)
     {
-      FILE *output_file = mzx_world->output_file;
+      vfile *output_file = mzx_world->output_file;
       char *dest_value = dest->value;
       size_t dest_length = dest->length;
 
@@ -1083,7 +1086,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
       if(offset + size > dest_length)
         size = dest_length - offset;
 
-      fwrite(dest_value + offset, size, 1, output_file);
+      vfwrite(dest_value + offset, size, 1, output_file);
     }
     else
     {
@@ -1097,7 +1100,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
     }
 
     if(write_delimiter)
-      fputc(mzx_world->fwrite_delimiter, mzx_world->output_file);
+      vfputc(mzx_world->fwrite_delimiter, mzx_world->output_file);
   }
   else
 
@@ -1294,17 +1297,23 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
 /**
  * Creates a new string and adds it to the strings list if it doesn't already
  * exist; otherwise, resizes the string to exactly the provided length. Returns
- * NULL if the new string could not be added to the string list.
+ * NULL if the new string could not be added to the string list or if the
+ * requested size is too large.
  */
 struct string *new_string(struct world *mzx_world, const char *name,
  size_t length, int id)
 {
   struct string_list *string_list = &(mzx_world->string_list);
+  size_t actual_length = length;
   struct string *str;
   int next = 0;
 
   str = find_string(string_list, name, &next);
-  if(!force_string_length(string_list, name, next, &str, &length))
+  if(!force_string_length(string_list, name, next, &str, &actual_length))
+    return NULL;
+
+  /* Make sure the string size wasn't bounded... */
+  if(length > actual_length)
     return NULL;
 
   str->length = length;
@@ -1485,6 +1494,14 @@ static boolean wildcard_char_is_escapable(unsigned char c)
   return (c == '%') || (c == '?') || (c == '\\');
 }
 
+#if 0
+#define WILDCARD_PRINT() do { \
+    for(size_t k = 0; k <= str_len; k++) \
+      fprintf(mzxerr, "%c ", (k+1 < left ? ' ' : str_matched[k] ? 'Y' : 'n')); \
+    fprintf(mzxerr, "\n"); \
+} while(0)
+#endif
+
 // Slower wildcard compare algorithm that manipulates an array of booleans to
 // determine the match state of the entire source string at once.
 // This approach seems to perform a bit better than a stack.
@@ -1511,7 +1528,10 @@ static int compare_wildcard_slow(const char *str, size_t str_len,
   char next = 0;
   int res = -1;
 
-  //info("Slow: %.*s ?=%s %.*s\n", str_len, str, exact_case?"=":"", pat_len, pat);
+#ifdef WILDCARD_PRINT
+  debug("--WILDCARD-- Slow: %.*s ?=%s %.*s\n",
+   (int)str_len, str, exact_case?"=":"", (int)pat_len, pat);
+#endif
 
   str_matched[0] = 1;
 
@@ -1519,6 +1539,10 @@ static int compare_wildcard_slow(const char *str, size_t str_len,
   {
     next = exact_case ? pat[i] : memtolower(pat[i]);
     i++;
+
+#ifdef WILDCARD_PRINT
+    WILDCARD_PRINT();
+#endif
 
     switch(next)
     {
@@ -1542,8 +1566,9 @@ static int compare_wildcard_slow(const char *str, size_t str_len,
 
           if(next == '?')
           {
-            new_left++;
-            if(new_right < str_len)
+            if(new_left <= str_len)
+              new_left++;
+            if(new_right <= str_len)
               new_right++;
           }
           else
@@ -1630,6 +1655,10 @@ static int compare_wildcard_slow(const char *str, size_t str_len,
   while(i < pat_len && pat[i] == '%')
     i++;
 
+#ifdef WILDCARD_PRINT
+    WILDCARD_PRINT();
+#endif
+
   if(str_matched[str_len] && i == pat_len)
     res = 0;
 
@@ -1646,7 +1675,10 @@ static int compare_wildcard(const char *str, size_t str_len,
   size_t s = 0;
   size_t w = 0;
 
-  //info("Fast: %.*s ?=%s %.*s\n", str_len, str, exact_case?"=":"", pat_len, pat);
+#ifdef WILDCARD_PRINT
+  debug("--WILDCARD-- Fast: %.*s ?=%s %.*s\n",
+   (int)str_len, str, exact_case?"=":"", (int)pat_len, pat);
+#endif
 
   // Pattern is length 0: match if str is length 0, otherwise not a match.
   if(pat_len == 0)
@@ -1661,6 +1693,8 @@ static int compare_wildcard(const char *str, size_t str_len,
         // Consume extra wildcards.
         size_t oldw = w;
         size_t olds = s;
+        size_t left = 0;
+        size_t i;
         char lookahead;
         w++;
         while(w < pat_len)
@@ -1687,6 +1721,24 @@ static int compare_wildcard(const char *str, size_t str_len,
         // End of the pattern and >=0 characters left? Match.
         if(w == pat_len)
           return 0;
+
+        // No % wildcards present in the rest of the pattern? Align with the
+        // end of the string and keep going.
+        for(i = w; i < pat_len; i++)
+        {
+          if(pat[i] == '%')
+            break;
+          else
+          if(pat[i] == '\\' && i+1 < pat_len)
+            if(wildcard_char_is_escapable(pat[i+1]))
+              i++;
+          left++;
+        }
+        if(i == pat_len)
+        {
+          s = MAX(s, str_len - left);
+          break;
+        }
 
         // Lookahead char not present anywhere in the source? Not a match.
         // This is a good opportunity to reduce the size of the source if it
@@ -1880,3 +1932,39 @@ void clear_string_list(struct string_list *string_list)
   string_list->num_strings_allocated = 0;
   string_list->strings = NULL;
 }
+
+#ifdef CONFIG_EDITOR
+
+void string_list_size(struct string_list *string_list,
+ size_t *list_size, size_t *table_size, size_t *strings_size)
+{
+  if(list_size)
+    *list_size = string_list->num_strings_allocated * sizeof(struct string *);
+
+  if(table_size)
+  {
+    *table_size = 0;
+#ifdef CONFIG_COUNTER_HASH_TABLES
+    HASH_MEMORY_USAGE(STRING, string_list->hash_table, *table_size);
+#endif
+  }
+
+  if(strings_size)
+  {
+    size_t total = 0;
+    size_t i;
+
+    if(string_list->strings)
+    {
+      for(i = 0; i < string_list->num_strings; i++)
+      {
+        struct string *s = string_list->strings[i];
+        if(s)
+          total += get_string_alloc_size(s->name_length, s->allocated_length);
+      }
+    }
+    *strings_size = total;
+  }
+}
+
+#endif /* CONFIG_EDITOR */

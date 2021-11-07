@@ -17,11 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <memory>
+#include <stdint.h>
 
 #include "../Unit.hpp"
 
 #include "../../src/util.h"
+#include "../../src/network/Scoped.hpp"
 #include "../../src/network/Manifest.hpp"
 
 static const char *DATA_DIR = "../data";
@@ -43,6 +44,9 @@ public:
     if(getcwd(prev, MAX_PATH))
       if(!chdir(new_dir))
         success = true;
+
+    if(!success)
+      FAIL("chdir failed");
   }
 
   ~pushd()
@@ -53,11 +57,6 @@ public:
       chdir(prev);
     }
   }
-
-  explicit operator bool()
-  {
-    return success;
-  }
 };
 
 struct manifestdata
@@ -65,7 +64,7 @@ struct manifestdata
   const char *filename;
   const char *value;
   size_t size;
-  Uint32 sha256[8];
+  uint32_t sha256[8];
 };
 
 // The lines here should match filedata's contents.
@@ -111,50 +110,43 @@ UNITTEST(ManifestEntry)
 {
   SECTION(ManifestEntry)
   {
-    for(int i = 0; i < arraysize(filedata); i++)
+    for(const manifestdata &f : filedata)
     {
-      const manifestdata &f = filedata[i];
-
       ManifestEntry e(f.sha256, f.size, f.filename);
-      ASSERTXMEM(e.sha256, f.sha256, sizeof(f.sha256), f.filename);
-      ASSERTEQX(e.size, f.size, f.filename);
-      ASSERTCMP(e.name, f.filename);
+      ASSERTMEM(e.sha256, f.sha256, sizeof(f.sha256), "%s", f.filename);
+      ASSERTEQ(e.size, f.size, "%s", f.filename);
+      ASSERTCMP(e.name, f.filename, "");
 
       ManifestEntry e2(e);
-      ASSERTXMEM(e2.sha256, f.sha256, sizeof(f.sha256), f.filename);
-      ASSERTEQX(e2.size, f.size, f.filename);
-      ASSERTCMP(e2.name, f.filename);
+      ASSERTMEM(e2.sha256, f.sha256, sizeof(f.sha256), "%s", f.filename);
+      ASSERTEQ(e2.size, f.size, "%s", f.filename);
+      ASSERTCMP(e2.name, f.filename, "");
     }
   }
 
   SECTION(operator=)
   {
-    for(int i = 0; i < arraysize(filedata); i++)
+    for(const manifestdata &f : filedata)
     {
-      const manifestdata &f = filedata[i];
-
       ManifestEntry e(dummy_file.sha256, dummy_file.size, dummy_file.filename);
       ManifestEntry e2(f.sha256, f.size, f.filename);
       e = e2;
 
-      ASSERTXMEM(e.sha256, f.sha256, sizeof(f.sha256), f.filename);
-      ASSERTEQX(e.size, f.size, f.filename);
-      ASSERTCMP(e.name, f.filename);
+      ASSERTMEM(e.sha256, f.sha256, sizeof(f.sha256), "%s", f.filename);
+      ASSERTEQ(e.size, f.size, "%s", f.filename);
+      ASSERTCMP(e.name, f.filename, "");
     }
   }
 
   SECTION(validate)
   {
     pushd ch(DATA_DIR);
-    ASSERT(ch);
 
-    for(int i = 0; i < arraysize(filedata); i++)
+    for(const manifestdata &f : filedata)
     {
-      const manifestdata &f = filedata[i];
-
       ManifestEntry e(f.sha256, f.size, f.filename);
       boolean valid = e.validate();
-      ASSERTX(valid, f.filename);
+      ASSERT(valid, "%s", f.filename);
     }
   }
 
@@ -177,49 +169,42 @@ UNITTEST(ManifestEntry)
       "\\dev",
     };
 
-    for(int i = 0; i < arraysize(valid); i++)
-      ASSERTX(ManifestEntry::validate_filename(valid[i]), valid[i]);
+    for(const char *filename : valid)
+      ASSERT(ManifestEntry::validate_filename(filename), "%s", filename);
 
-    for(int i = 0; i < arraysize(invalid); i++)
-      ASSERTX(!ManifestEntry::validate_filename(invalid[i]), invalid[i]);
+    for(const char *filename : invalid)
+      ASSERT(!ManifestEntry::validate_filename(filename), "%s", filename);
   }
 
   SECTION(create_from_file)
   {
     pushd ch(DATA_DIR);
-    ASSERT(ch);
 
-    for(int i = 0; i < arraysize(filedata); i++)
+    for(const manifestdata &f : filedata)
     {
-      const manifestdata &f = filedata[i];
+      ScopedPtr<ManifestEntry> e = ManifestEntry::create_from_file(f.filename);
+      ASSERT(e, "%s", f.filename);
 
-      std::unique_ptr<ManifestEntry> e(ManifestEntry::create_from_file(f.filename));
-      ASSERTX(e, f.filename);
-
-      ASSERTXMEM(e->sha256, f.sha256, sizeof(f.sha256), f.filename);
-      ASSERTEQX(e->size, f.size, f.filename);
-      ASSERTCMP(e->name, f.filename);
+      ASSERTMEM(e->sha256, f.sha256, sizeof(f.sha256), "%s", f.filename);
+      ASSERTEQ(e->size, f.size, "%s", f.filename);
+      ASSERTCMP(e->name, f.filename, "");
     }
   }
 }
 
-void test_manifest(const Manifest &m, const char *comment)
+static void test_manifest(const Manifest &m, const char *comment)
 {
-  char buffer[256];
   const ManifestEntry *e = m.first();
-  for(int i = 0; i < arraysize(filedata); i++)
+  for(const manifestdata &f : filedata)
   {
-    const manifestdata &f = filedata[i];
-    snprintf(buffer, arraysize(buffer), "%s, %s", f.filename, comment);
-
-    ASSERTX(e, buffer);
-    ASSERTXMEM(e->sha256, f.sha256, sizeof(f.sha256), buffer);
-    ASSERTEQX(e->size, f.size, buffer);
-    ASSERTXCMP(e->name, f.filename, buffer);
-    ASSERTX(e->validate(), buffer);
+    ASSERT(e, "%s, %s", f.filename, comment);
+    ASSERTMEM(e->sha256, f.sha256, sizeof(f.sha256), "%s, %s", f.filename, comment);
+    ASSERTEQ(e->size, f.size, "%s, %s", f.filename, comment);
+    ASSERTCMP(e->name, f.filename, "%s, %s", f.filename, comment);
+    ASSERT(e->validate(), "%s, %s", f.filename, comment);
     e = e->next;
   }
-  ASSERT(!e);
+  ASSERT(!e, "unexpected data at end of Manifest");
 }
 
 UNITTEST(Manifest)
@@ -227,13 +212,12 @@ UNITTEST(Manifest)
   SECTION(create)
   {
     pushd ch(DATA_DIR);
-    ASSERT(ch);
 
     Manifest m;
     m.create("manifest.txt");
     test_manifest(m, "create(filename)");
     m.clear();
-    ASSERT(!m.head);
+    ASSERT(!m.head, "clear failed");
 
     m.create(manifest_str, arraysize(manifest_str));
     test_manifest(m, "create(buffer, size)");
@@ -251,7 +235,7 @@ UNITTEST(Manifest)
 
     // append(Manifest &) consumes the source Manifest's data.
     m1.append(m2);
-    ASSERT(!m2.head);
+    ASSERT(!m2.head, "append failed to clear source Manifest");
 
     ManifestEntry *tmp =
      new ManifestEntry(dummy_file.sha256, dummy_file.size, dummy_file.filename);
@@ -260,31 +244,29 @@ UNITTEST(Manifest)
     const ManifestEntry *e = m1.first();
     for(int j = 0; j < 2; j++)
     {
-      for(int i = 0; i < arraysize(filedata); i++)
+      for(const manifestdata &f : filedata)
       {
-        const manifestdata &f = filedata[i];
-        ASSERTX(e, f.filename);
-        ASSERTCMP(e->name, f.filename);
+        ASSERT(e, "%s", f.filename);
+        ASSERTCMP(e->name, f.filename, "");
         e = e->next;
       }
     }
 
-    ASSERTX(e, dummy_file.filename);
-    ASSERTCMP(e->name, dummy_file.filename);
+    ASSERT(e, "%s", dummy_file.filename);
+    ASSERTCMP(e->name, dummy_file.filename, "");
     e = e->next;
-    ASSERT(!e);
+    ASSERT(!e, "unexpected data at end of Manifest");
   }
 
   SECTION(write_to_file)
   {
     pushd ch(DATA_DIR);
-    ASSERT(ch);
 
     Manifest m;
     m.create(manifest_str, arraysize(manifest_str));
     m.write_to_file(TEMP_FILE);
     m.clear();
-    ASSERT(!m.head);
+    ASSERT(!m.head, "clear failed");
 
     m.create(TEMP_FILE);
     test_manifest(m, "create(filename)");

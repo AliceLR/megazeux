@@ -28,9 +28,6 @@ __M_BEGIN_DECLS
 
 struct board
 {
-  int size;
-  int world_version;
-
   char board_name[32];
 
   int board_width;
@@ -69,7 +66,8 @@ struct board
   int last_key;
   int num_input;
   size_t input_size;
-  char input_string[ROBOT_MAX_TR];
+  size_t input_allocated;
+  char *input_string;
   int player_last_dir;
   char bottom_mesg[ROBOT_MAX_TR];
   int b_mesg_timer;
@@ -86,8 +84,10 @@ struct board
   int volume;
   int volume_inc;
   int volume_target;
-  char charset_path[MAX_PATH];
-  char palette_path[MAX_PATH];
+  char *charset_path;
+  char *palette_path;
+  size_t charset_path_allocated;
+  size_t palette_path_allocated;
 
   int num_robots;
   int num_robots_active;
@@ -100,7 +100,7 @@ struct board
   int num_sensors;
   int num_sensors_allocated;
   struct sensor **sensor_list;
-#ifdef DEBUG
+#if defined(DEBUG) || defined(CONFIG_EXTRAM)
   boolean is_extram;
 #endif
 };

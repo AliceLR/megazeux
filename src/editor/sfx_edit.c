@@ -25,14 +25,18 @@
 
 #include "../core.h"
 #include "../data.h"
+#include "../error.h"
 #include "../event.h"
 #include "../window.h"
+#include "../world.h"
+#include "../io/vio.h"
 
 #include "sfx_edit.h"
+#include "window.h"
 
 // 8 char names per sfx
 
-static const char *const sfx_names[NUM_SFX] =
+static const char *const sfx_names[NUM_BUILTIN_SFX] =
 {
   "Gem      ",
   "MagicGem ",
@@ -85,6 +89,8 @@ static const char *const sfx_names[NUM_SFX] =
   "Goop     ",
   "Unused   "
 };
+
+static const char *const sfx_ext[] = { ".SFX", NULL };
 
 //--------------------------
 //
@@ -163,7 +169,7 @@ void sfx_edit(struct world *mzx_world)
     if((!old_sfx_mode) && (mzx_world->custom_sfx_on))
     {
       char *offset = mzx_world->custom_sfx;
-      for(i = 0; i < NUM_SFX; i++, offset += SFX_SIZE)
+      for(i = 0; i < NUM_BUILTIN_SFX; i++, offset += SFX_SIZE)
       {
         strcpy(offset, sfx_strs[i]);
       }
@@ -232,4 +238,70 @@ void sfx_edit(struct world *mzx_world)
 
   // Done!
   pop_context();
+}
+
+/**
+ * Import world SFX strings.
+ */
+void import_sfx(context *parent, boolean *modified)
+{
+  struct world *mzx_world = parent->world;
+  char import_name[MAX_PATH];
+  import_name[0] = '\0';
+
+  if(!choose_file(mzx_world, sfx_ext, import_name,
+   "Choose SFX file to import", ALLOW_ALL_DIRS))
+  {
+    char tmp[LEGACY_SFX_SIZE * NUM_BUILTIN_SFX];
+    vfile *sfx_file;
+    size_t n;
+
+    sfx_file = vfopen_unsafe(import_name, "rb");
+
+    n = vfread(tmp, LEGACY_SFX_SIZE, NUM_BUILTIN_SFX, sfx_file);
+    vfclose(sfx_file);
+
+    if(n == NUM_BUILTIN_SFX && load_sfx_array(mzx_world, tmp))
+    {
+      mzx_world->custom_sfx_on = 1;
+      *modified = true;
+    }
+    else
+      error_message(E_SFX_IMPORT, 0, NULL);
+  }
+}
+
+/**
+ * Export world SFX strings.
+ */
+void export_sfx(context *parent)
+{
+  struct world *mzx_world = parent->world;
+  char export_name[MAX_PATH];
+  export_name[0] = '\0';
+
+  if(!new_file(mzx_world, sfx_ext, ".sfx", export_name,
+   "Export SFX file", ALLOW_ALL_DIRS))
+  {
+    char tmp[LEGACY_SFX_SIZE * NUM_BUILTIN_SFX];
+    vfile *sfx_file;
+
+    sfx_file = vfopen_unsafe(export_name, "wb");
+    if(sfx_file)
+    {
+      // TODO: replace this hack
+      const char *sfx_array = (const char *)sfx_strs;
+      if(mzx_world->custom_sfx_on)
+      {
+        sfx_array = tmp;
+        save_sfx_array(mzx_world, tmp);
+      }
+      if(vfwrite(sfx_array, LEGACY_SFX_SIZE, NUM_BUILTIN_SFX, sfx_file) < NUM_BUILTIN_SFX)
+        error_message(E_IO_WRITE, 0, NULL);
+
+      vfclose(sfx_file);
+    }
+    else
+      error_message(E_SFX_EXPORT, 0, NULL);
+  }
 }

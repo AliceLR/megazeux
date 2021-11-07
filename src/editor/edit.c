@@ -41,10 +41,12 @@
 #include "../window.h"
 #include "../world.h"
 #include "../io/path.h"
+#include "../io/vio.h"
 
 #include "../audio/audio.h"
 #include "../audio/sfx.h"
 
+#include "ansi.h"
 #include "block.h"
 #include "board.h"
 #include "buffer.h"
@@ -66,6 +68,7 @@
 #include "window.h"
 #include "world.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,8 +85,8 @@
 static const char *const world_ext[] = { ".MZX", NULL };
 static const char *const mzb_ext[] = { ".MZB", NULL };
 static const char *const mzm_ext[] = { ".MZM", NULL };
-static const char *const sfx_ext[] = { ".SFX", NULL };
 static const char *const chr_ext[] = { ".CHR", NULL };
+static const char *const ans_ext[] = { ".ANS", ".TXT", NULL };
 static const char *const mod_ext[] =
 { ".ogg", ".mod", ".s3m", ".xm", ".it",
   ".669", ".amf", ".dsm", ".far", ".gdm",
@@ -183,7 +186,14 @@ struct editor_context
   int flash_timer;
   int flash_timer_swap;
   int flash_timer_max;
-  Uint32 flash_layer;
+  uint32_t flash_layer;
+
+  // ANSi settings
+  int ansi_line_wrap_column; // = 80
+  boolean ansi_line_wrap;
+  boolean ansi_save_text_only;
+  char ansi_save_title[36];
+  char ansi_save_author[21];
 
   // Testing
   int test_reload_board;
@@ -217,7 +227,7 @@ static boolean editor_reload_world(struct editor_context *editor,
   snprintf(config_file_name, MAX_PATH, "%.*s.editor.cnf", file_name_len, file);
   config_file_name[MAX_PATH - 1] = '\0';
 
-  if(stat(config_file_name, &file_info) >= 0)
+  if(vstat(config_file_name, &file_info) >= 0)
     set_config_from_file(GAME_EDITOR_CNF, config_file_name);
 
   edit_menu_show_board_mod(editor->edit_menu);
@@ -237,7 +247,7 @@ static void get_test_world_filename(struct editor_context *editor)
   strcpy(editor->test_reload_file, TEST_WORLD_FILENAME);
 
   // If the regular file exists, attempt numbered names.
-  for(i = 2; !stat(editor->test_reload_file, &file_info); i++)
+  for(i = 2; !vstat(editor->test_reload_file, &file_info); i++)
     snprintf(editor->test_reload_file, MAX_PATH, TEST_WORLD_PATTERN, i);
 }
 
@@ -874,13 +884,13 @@ static void flash_done(struct editor_context *editor)
  * Determine if a protected palette char flash is required.
  */
 static enum flash_thing_type flash_get_type(struct editor_context *editor,
- struct board *cur_board, Uint8 chr, Uint8 color, Uint8 flash_chr)
+ struct board *cur_board, uint8_t chr, uint8_t color, uint8_t flash_chr)
 {
   int screen_mode = get_screen_mode();
   if(!screen_mode)
   {
-    Uint8 fg = color & 0x0F;
-    Uint8 bg = (color & 0xF0) >> 4;
+    unsigned int fg = color & 0x0F;
+    unsigned int bg = (color & 0xF0) >> 4;
 
     ssize_t diff;
 
@@ -897,7 +907,7 @@ static enum flash_thing_type flash_get_type(struct editor_context *editor,
   // If one of the chars to display is the board char, is it too close to the
   // flash char?
   if(!editor->flash_char_a || !editor->flash_char_b)
-    if(compare_char(chr, (Uint16)flash_chr + PRO_CH) >= (112*3/4))
+    if(compare_char(chr, (uint16_t)flash_chr + PRO_CH) >= (112*3/4))
       return FLASH_THING_CLOSE_CHAR;
 
   // SMZX modes should always display protected...
@@ -919,14 +929,14 @@ static void flash_draw(struct editor_context *editor, struct board *cur_board,
 
   if(id >= editor->flash_start && id < editor->flash_start + editor->flash_len)
   {
-    Uint8 color = get_id_color(cur_board, offset);
-    Uint8 chr = get_id_char(cur_board, offset);
+    uint8_t color = get_id_color(cur_board, offset);
+    uint8_t chr = get_id_char(cur_board, offset);
     enum flash_thing_type type;
 
     type = flash_get_type(editor, cur_board, chr, color, flash_chr);
     if(type != FLASH_THING_NORMAL)
     {
-      Uint32 avg_luma = get_char_average_luma(chr, color, -1, flash_chr + PRO_CH);
+      int avg_luma = get_char_average_luma(chr, color, -1, flash_chr + PRO_CH);
 
       if(!editor->flash_layer)
       {
@@ -1043,11 +1053,13 @@ static void draw_vlayer_window(struct editor_context *editor)
  */
 static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
 {
-  int offset = 0;
-  int start;
-  int skip;
-  int x;
+  int after_x;
+  int after_y;
+  int after_width;
   int y;
+
+  if(in_x < 0 || in_x >= SCREEN_W || in_y < 0 || in_y >= SCREEN_H)
+    return;
 
   if(in_x + in_width > SCREEN_W)
     in_width = SCREEN_W - in_x;
@@ -1055,34 +1067,27 @@ static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
   if(in_y + in_height > SCREEN_H)
     in_height = SCREEN_H - in_y;
 
-  start = in_x + (in_y * in_width);
-  skip = SCREEN_W - in_width;
+  after_x = in_x + in_width;
+  after_y = in_y + in_height;
+  after_width = SCREEN_W - after_x;
 
-  // Clear everything before the in-bounds area
-  while(offset < start)
+  // Clear any lines prior to the first line.
+  for(y = 0; y < in_y; y++)
+    fill_line(SCREEN_W, 0, y, 177, 1);
+
+  // Clear any area before and after the in-bounds area.
+  for(; y < after_y; y++)
   {
-    draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-    offset++;
+    if(in_x > 0)
+      fill_line(in_x, 0, y, 177, 1);
+
+    if(after_width > 0)
+      fill_line(after_width, after_x, y, 177, 1);
   }
 
-  // Clear everything between the in-bounds area
-  for(y = 0; y < in_height; y++)
-  {
-    offset += in_width;
-
-    for(x = 0; x < skip; x++)
-    {
-      draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-      offset++;
-    }
-  }
-
-  // Clear everything after the in-bounds area
-  while(offset < SCREEN_W * SCREEN_H)
-  {
-    draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-    offset++;
-  }
+  // Clear any lines after the last line.
+  for(; y < SCREEN_H; y++)
+    fill_line(SCREEN_W, 0, y, 177, 1);
 }
 
 /**
@@ -1698,19 +1703,31 @@ static boolean editor_key(context *ctx, int *key)
     *key = 0;
 
   // Saved positions
-  // These don't really make sense on the vlayer as-is, but could be adapted.
-  if((*key >= IKEY_0) && (*key <= IKEY_9) && editor->mode != EDIT_VLAYER)
+  if((*key >= IKEY_0) && (*key <= IKEY_9))
   {
     char mesg[80];
 
     int s_num = *key - IKEY_0;
-    struct saved_position *s = &(editor_conf->saved_positions[s_num]);
+    struct saved_position *s;
+
+    if(editor->mode == EDIT_VLAYER)
+      s = &(editor_conf->vlayer_positions[s_num]);
+    else
+      s = &(editor_conf->saved_positions[s_num]);
 
     if(get_ctrl_status(keycode_internal))
     {
-      sprintf(mesg, "Save '%s' @ %d,%d to pos %d?",
-       mzx_world->current_board->board_name, editor->cursor_x,
-       editor->cursor_y, s_num);
+      if(editor->mode == EDIT_VLAYER)
+      {
+        sprintf(mesg, "Save vlayer @ %d,%d to pos %d?",
+         editor->cursor_x, editor->cursor_y, s_num);
+      }
+      else
+      {
+        sprintf(mesg, "Save '%s' @ %d,%d to pos %d?",
+         mzx_world->current_board->board_name, editor->cursor_x,
+         editor->cursor_y, s_num);
+      }
 
       if(!confirm(mzx_world, mesg))
       {
@@ -1730,12 +1747,20 @@ static boolean editor_key(context *ctx, int *key)
     {
       int s_board = s->board_id;
 
-      if(s_board < mzx_world->num_boards &&
-       mzx_world->board_list[s_board])
+      if(editor->mode == EDIT_VLAYER || (s_board < mzx_world->num_boards &&
+       mzx_world->board_list[s_board]))
       {
-        sprintf(mesg, "Go to '%s' @ %d,%d (pos %d)?",
-         mzx_world->board_list[s_board]->board_name,
-         s->cursor_x, s->cursor_y, s_num);
+        if(editor->mode == EDIT_VLAYER)
+        {
+          sprintf(mesg, "Go to vlayer @ %d,%d (pos %d)?",
+           s->cursor_x, s->cursor_y, s_num);
+        }
+        else
+        {
+          sprintf(mesg, "Go to '%s' @ %d,%d (pos %d)?",
+           mzx_world->board_list[s_board]->board_name,
+           s->cursor_x, s->cursor_y, s_num);
+        }
 
         if(!confirm(mzx_world, mesg))
         {
@@ -1745,7 +1770,7 @@ static boolean editor_key(context *ctx, int *key)
           editor->scroll_y = s->scroll_y;
           editor->debug_x = s->debug_x;
 
-          if(mzx_world->current_board_id != s_board)
+          if(editor->mode != EDIT_VLAYER && mzx_world->current_board_id != s_board)
           {
             editor_set_current_board(editor, s_board, true);
           }
@@ -2422,7 +2447,7 @@ static boolean editor_key(context *ctx, int *key)
             strcpy(export_name, editor->mzm_name_buffer);
 
             if(!new_file(mzx_world, mzm_ext, ".mzm", export_name,
-             "Export MZM", 1))
+             "Export MZM", ALLOW_ALL_DIRS))
             {
               enum mzm_save_mode save_mode;
 
@@ -2450,7 +2475,48 @@ static boolean editor_key(context *ctx, int *key)
             break;
           }
 
+          case BLOCK_CMD_SAVE_ANSI:
+          {
+            // Save as ANSi.
+            char title[ARRAY_SIZE(editor->ansi_save_title)];
+            char author[ARRAY_SIZE(editor->ansi_save_author)];
+            char export_name[MAX_PATH];
+            int text_only = editor->ansi_save_text_only;
+            static const char *radio_strings[] =
+            {
+              "Save ANSi",
+              "Save TXT"
+            };
+            struct element *elements[] =
+            {
+              construct_radio_button(4, 19, radio_strings, ARRAY_SIZE(radio_strings),
+               9, &text_only),
+              construct_input_box(23, 19, "Title (ANSi):", ARRAY_SIZE(title) - 1, title),
+              construct_input_box(22, 20, "Author (ANSi):", ARRAY_SIZE(author) - 1, author),
+            };
+
+            memcpy(export_name, editor->mzm_name_buffer, MAX_PATH);
+            memcpy(title, editor->ansi_save_title, ARRAY_SIZE(title));
+            memcpy(author, editor->ansi_save_author, ARRAY_SIZE(author));
+
+            if(!file_manager(mzx_world, ans_ext, NULL, export_name,
+             "Export ANSi or TXT", 1, 1, elements, ARRAY_SIZE(elements), 3))
+            {
+              memcpy(editor->mzm_name_buffer, export_name, MAX_PATH);
+              memcpy(editor->ansi_save_title, title, ARRAY_SIZE(title));
+              memcpy(editor->ansi_save_author, author, ARRAY_SIZE(author));
+              editor->ansi_save_text_only = text_only;
+
+              export_ansi(mzx_world, export_name, editor->mode, block->src_x,
+               block->src_y, block->width, block->height, text_only, title, author);
+            }
+            block->selected = false;
+            editor->cursor_mode = CURSOR_PLACE;
+            break;
+          }
+
           case BLOCK_CMD_LOAD_MZM:
+          case BLOCK_CMD_LOAD_ANSI:
           {
             // ignore
             break;
@@ -2460,12 +2526,21 @@ static boolean editor_key(context *ctx, int *key)
       else
 
       if(editor->cursor_mode == CURSOR_BLOCK_PLACE ||
-       editor->cursor_mode == CURSOR_MZM_PLACE)
+       editor->cursor_mode == CURSOR_MZM_PLACE ||
+       editor->cursor_mode == CURSOR_ANSI_PLACE)
       {
         // Block placement
         block->dest_board = cur_board;
         block->dest_x = editor->cursor_x;
         block->dest_y = editor->cursor_y;
+        block->convert_id = CUSTOM_BLOCK;
+
+        if(block->dest_mode == EDIT_BOARD && block->src_mode != EDIT_BOARD)
+        {
+          block->convert_id = layer_to_board_object_type(mzx_world);
+          if(block->convert_id == NO_ID)
+            break;
+        }
 
         do_block_command(mzx_world, block, editor->cur_history,
          editor->mzm_name_buffer, 0);
@@ -2642,6 +2717,7 @@ static boolean editor_key(context *ctx, int *key)
 
             if(del_board == current_board_id)
             {
+              mzx_world->current_board = NULL;
               editor_set_current_board(editor, 0, true);
             }
             else
@@ -2781,7 +2857,7 @@ static boolean editor_key(context *ctx, int *key)
             {
               strcpy(import_name, editor->mzb_name_buffer);
               if(!choose_file(mzx_world, mzb_ext, import_name,
-               "Choose board to import", 1))
+               "Choose board to import", ALLOW_ALL_DIRS))
               {
                 strcpy(editor->mzb_name_buffer, import_name);
                 replace_current_board(mzx_world, import_name);
@@ -2827,7 +2903,7 @@ static boolean editor_key(context *ctx, int *key)
 
               strcpy(import_name, editor->chr_name_buffer);
               if(!file_manager(mzx_world, chr_ext, NULL, import_name,
-               "Choose character set to import", 1, 0,
+               "Choose character set to import", ALLOW_ALL_DIRS, NO_NEW_FILES,
                elements, ARRAY_SIZE(elements), 2))
               {
                 strcpy(editor->chr_name_buffer, import_name);
@@ -2841,7 +2917,7 @@ static boolean editor_key(context *ctx, int *key)
             {
               // World file
               if(!choose_file(mzx_world, world_ext, import_name,
-               "Choose world to import", 1))
+               "Choose world to import", ALLOW_ALL_DIRS))
               {
                 // FIXME: Check retval?
                 append_world(mzx_world, import_name);
@@ -2867,40 +2943,74 @@ static boolean editor_key(context *ctx, int *key)
             case 4:
             {
               // Sound effects
-              if(!choose_file(mzx_world, sfx_ext, import_name,
-               "Choose SFX file to import", 1))
-              {
-                FILE *sfx_file;
-
-                sfx_file = fopen_unsafe(import_name, "rb");
-                if(NUM_SFX !=
-                 fread(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file))
-                  error_message(E_IO_READ, 0, NULL);
-
-                mzx_world->custom_sfx_on = 1;
-                fclose(sfx_file);
-                editor->modified = true;
-              }
+              import_sfx(ctx, &editor->modified);
               break;
             }
 
             case 5:
             {
+              // ANSi file.
+              int wrap_width = editor->ansi_line_wrap_column;
+              int enable_wrap = editor->ansi_line_wrap;
+              static const char *labels[] = { "Force wrap" };
+              struct element *elements[] =
+              {
+                construct_check_box(14, 20, labels, 1, strlen(labels[0]), &enable_wrap),
+                construct_number_box(37, 20, "Wrap width: ", 1, 32767, NUMBER_BOX, &wrap_width)
+              };
+
+              strcpy(import_name, editor->mzm_name_buffer);
+              if(!file_manager(mzx_world, ans_ext, NULL, import_name,
+               "Choose ANSi file to import", 1, 0, elements, ARRAY_SIZE(elements), 2))
+              {
+                int width = -1;
+                int height = -1;
+                editor->ansi_line_wrap = enable_wrap;
+                editor->ansi_line_wrap_column = wrap_width;
+
+                if(validate_ansi(import_name, enable_wrap ? wrap_width : -1,
+                 &width, &height) && width > 0 && height > 0)
+                {
+                  strcpy(editor->mzm_name_buffer, import_name);
+                  editor->cursor_mode = CURSOR_ANSI_PLACE;
+                  block->command = BLOCK_CMD_LOAD_ANSI;
+                  block->selected = true;
+                  block->src_board = NULL;
+                  block->src_mode = EDIT_OVERLAY; // Force ID selection for board.
+                  block->dest_mode = editor->mode;
+                  block->width = width;
+                  block->height = height;
+                }
+              }
+              break;
+            }
+
+            case 6:
+            {
               // MZM file
               strcpy(import_name, editor->mzm_name_buffer);
               if(!choose_file(mzx_world, mzm_ext, import_name,
-               "Choose image file to import", 1))
+               "Choose image file to import", ALLOW_ALL_DIRS))
               {
-                strcpy(editor->mzm_name_buffer, import_name);
-                editor->cursor_mode = CURSOR_MZM_PLACE;
-                block->command = BLOCK_CMD_LOAD_MZM;
-                block->selected = true;
-                block->src_board = NULL;
-                block->src_mode = editor->mode;
-                block->dest_mode = editor->mode;
-                load_mzm_size(import_name, &block->width, &block->height);
-              }
+                struct mzm_header mzm;
+                if(load_mzm_header(import_name, &mzm))
+                {
+                  strcpy(editor->mzm_name_buffer, import_name);
+                  editor->cursor_mode = CURSOR_MZM_PLACE;
+                  block->command = BLOCK_CMD_LOAD_MZM;
+                  block->selected = true;
+                  block->src_board = NULL;
+                  block->src_mode = editor->mode;
+                  block->dest_mode = editor->mode;
+                  block->width = mzm.width;
+                  block->height = mzm.height;
 
+                  // Enable conversion ID selection menu upon placement.
+                  if(editor->mode == EDIT_BOARD &&
+                   mzm.storage_mode == MZM_STORAGE_MODE_LAYER)
+                    block->src_mode = EDIT_OVERLAY;
+                }
+              }
               break;
             }
           }
@@ -2941,7 +3051,7 @@ static boolean editor_key(context *ctx, int *key)
         char test_wav[MAX_PATH] = { 0, };
 
         if(!choose_file(mzx_world, sam_ext, test_wav,
-         "Choose a wav file", 1))
+         "Choose a wav file", ALLOW_ALL_DIRS))
         {
           audio_play_sample(test_wav, false, 0);
         }
@@ -2959,7 +3069,7 @@ static boolean editor_key(context *ctx, int *key)
           strcpy(load_world, editor->current_world);
 
           if(!choose_file_ch(mzx_world, world_ext, load_world,
-           "Load World", 1))
+           "Load World", ALLOW_ALL_DIRS))
           {
             // Load world curr_file
             strcpy(editor->current_world, load_world);
@@ -3061,7 +3171,7 @@ static boolean editor_key(context *ctx, int *key)
             char new_mod[MAX_PATH] = { 0 };
 
             if(!choose_file(mzx_world, mod_ext, new_mod,
-             "Choose a module file", 2)) // 2:subdirsonly
+             "Choose a module file", ALLOW_SUBDIRS))
             {
               const char *ext_pos = new_mod + strlen(new_mod) - 4;
               if(ext_pos >= new_mod && !strcasecmp(ext_pos, ".WAV"))
@@ -3094,11 +3204,11 @@ static boolean editor_key(context *ctx, int *key)
             char current_dir[MAX_PATH];
             char new_mod[MAX_PATH] = { 0 } ;
 
-            getcwd(current_dir, MAX_PATH);
-            chdir(editor->current_listening_dir);
+            vgetcwd(current_dir, MAX_PATH);
+            vchdir(editor->current_listening_dir);
 
             if(!choose_file(mzx_world, mod_ext, new_mod,
-             "Choose a module file (listening only)", 1))
+             "Choose a module file (listening only)", ALLOW_ALL_DIRS))
             {
               audio_play_module(new_mod, false, 255);
               strcpy(editor->current_listening_mod, new_mod);
@@ -3107,7 +3217,7 @@ static boolean editor_key(context *ctx, int *key)
               editor->listening_mod_active = true;
             }
 
-            chdir(current_dir);
+            vchdir(current_dir);
           }
           else
           {
@@ -3289,7 +3399,7 @@ static boolean editor_key(context *ctx, int *key)
           char new_path[MAX_PATH];
           strcpy(world_name, editor->current_world);
           if(!new_file(mzx_world, world_ext, ".mzx", world_name,
-           "Save world", 1))
+           "Save world", ALLOW_ALL_DIRS))
           {
             debug("Save path: %s\n", world_name);
 
@@ -3302,7 +3412,7 @@ static boolean editor_key(context *ctx, int *key)
             save_world(mzx_world, world_name, false, MZX_VERSION);
 
             if(path_get_directory(new_path, MAX_PATH, world_name) > 0)
-              chdir(new_path);
+              vchdir(new_path);
 
             editor->modified = false;
           }
@@ -3335,7 +3445,7 @@ static boolean editor_key(context *ctx, int *key)
 
         if(!save_world(mzx_world, editor->test_reload_file, false, MZX_VERSION))
         {
-          getcwd(editor->test_reload_dir, MAX_PATH);
+          vgetcwd(editor->test_reload_dir, MAX_PATH);
           editor->test_reload_version = mzx_world->version;
           editor->test_reload_board = mzx_world->current_board_id;
           editor->reload_after_testing = true;
@@ -3422,7 +3532,7 @@ static boolean editor_key(context *ctx, int *key)
               // Board file
               strcpy(export_name, editor->mzb_name_buffer);
               if(!new_file(mzx_world, mzb_ext, ".mzb", export_name,
-               "Export board file", 1))
+               "Export board file", ALLOW_ALL_DIRS))
               {
                 strcpy(editor->mzb_name_buffer, export_name);
                 save_board_file(mzx_world, cur_board, export_name);
@@ -3445,7 +3555,8 @@ static boolean editor_key(context *ctx, int *key)
 
               strcpy(export_name, editor->chr_name_buffer);
               if(!file_manager(mzx_world, chr_ext, NULL, export_name,
-               "Export character set", 1, 1, elements, ARRAY_SIZE(elements), 2))
+               "Export character set", ALLOW_ALL_DIRS, ALLOW_NEW_FILES,
+               elements, ARRAY_SIZE(elements), 2))
               {
                 path_force_ext(export_name, MAX_PATH, ".chr");
                 ec_save_set_var(export_name, char_offset, char_size);
@@ -3465,23 +3576,7 @@ static boolean editor_key(context *ctx, int *key)
             case 3:
             {
               // Sound effects
-              if(!new_file(mzx_world, sfx_ext, ".sfx", export_name,
-               "Export SFX file", 1))
-              {
-                FILE *sfx_file;
-
-                sfx_file = fopen_unsafe(export_name, "wb");
-
-                if(sfx_file)
-                {
-                  if(mzx_world->custom_sfx_on)
-                    fwrite(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file);
-                  else
-                    fwrite(sfx_strs, SFX_SIZE, NUM_SFX, sfx_file);
-
-                  fclose(sfx_file);
-                }
-              }
+              export_sfx(ctx);
               break;
             }
 
@@ -3494,7 +3589,7 @@ static boolean editor_key(context *ctx, int *key)
                (MZX_VERSION_PREV >> 8) & 0xFF, MZX_VERSION_PREV & 0xFF);
 
               if(!new_file(mzx_world, world_ext, ".mzx", export_name,
-               title, 1))
+               title, ALLOW_ALL_DIRS))
               {
                 save_world(mzx_world, export_name, false, MZX_VERSION_PREV);
               }
@@ -3653,7 +3748,7 @@ static void editor_resume(context *ctx)
   if(editor->reload_after_testing)
   {
     editor->reload_after_testing = false;
-    chdir(editor->test_reload_dir);
+    vchdir(editor->test_reload_dir);
 
     if(!reload_world(mzx_world, editor->test_reload_file, &ignore))
     {
@@ -3688,7 +3783,7 @@ static void editor_resume(context *ctx)
       fix_mod(editor);
     }
 
-    unlink(editor->test_reload_file);
+    vunlink(editor->test_reload_file);
   }
 
   // These may have changed if a robot was edited.
@@ -3751,7 +3846,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
 
   struct stat stat_res;
 
-  getcwd(editor->current_listening_dir, MAX_PATH);
+  vgetcwd(editor->current_listening_dir, MAX_PATH);
 
   if(editor_conf->board_editor_hide_help)
     editor->screen_height = EDIT_SCREEN_MINIMAL;
@@ -3762,6 +3857,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   editor->show_board_under_overlay = true;
   editor->backup_timestamp = get_ticks();
   editor->debug_x = 60;
+  editor->ansi_line_wrap_column = 80;
 
   buffer->robot = &(editor->buffer_robot);
   buffer->scroll = &(editor->buffer_scroll);
@@ -3790,7 +3886,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   editor->edit_menu = create_edit_menu((context *)editor);
 
   // Reload the current world or create a blank world.
-  if(curr_file[0] && stat(curr_file, &stat_res))
+  if(curr_file[0] && vstat(curr_file, &stat_res))
     curr_file[0] = '\0';
 
   if(reload_curr_file && curr_file[0] &&

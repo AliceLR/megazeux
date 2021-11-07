@@ -26,39 +26,33 @@ __M_BEGIN_DECLS
 
 #include "graphics.h"
 
-extern void (*const set_colors8[4])(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg);
-extern void (*const set_colors16[4])(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg);
-extern void (*const set_colors32[4])(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg);
-extern void (*const set_indices[4])(const struct graphics_data *graphics,
- int * RESTRICT indices, Uint8 bg, Uint8 fg);
+typedef void (*set_colors_function)(const struct graphics_data *graphics,
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg);
+
+extern const set_colors_function set_colors8[4];
+extern const set_colors_function set_colors16[4];
+extern const set_colors_function set_colors32[4];
 
 void yuy2_subsample_set_colors_mzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg);
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg);
 void uyvy_subsample_set_colors_mzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg);
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg);
 void yvyu_subsample_set_colors_mzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg);
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg);
 
-void render_graph8(Uint8 * RESTRICT pixels, Uint32 pitch,
- const struct graphics_data *graphics,
- void (*set_colors)(const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8));
-void render_graph16(Uint16 * RESTRICT pixels, Uint32 pitch,
- const struct graphics_data *graphics,
- void (*set_colors)(const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8));
-void render_graph32(Uint32 * RESTRICT pixels, Uint32 pitch,
- const struct graphics_data *graphics,
- void (*set_colors)(const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8));
-void render_graph32s(Uint32 * RESTRICT pixels, Uint32 pitch,
- const struct graphics_data *graphics,
- void (*set_colors)(const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8));
+void render_graph8(uint8_t * RESTRICT pixels, size_t pitch,
+ const struct graphics_data *graphics, set_colors_function set_colors);
+void render_graph16(uint16_t * RESTRICT pixels, size_t pitch,
+ const struct graphics_data *graphics, set_colors_function set_colors);
+void render_graph32(uint32_t * RESTRICT pixels, size_t pitch,
+ const struct graphics_data *graphics);
+void render_graph32s(uint32_t * RESTRICT pixels, size_t pitch,
+ const struct graphics_data *graphics);
 
-void render_cursor(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
- Uint32 color, Uint8 lines, Uint8 offset);
-void render_mouse(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
- Uint32 mask, Uint32 amask, Uint8 w, Uint8 h);
+void render_cursor(uint32_t *pixels, size_t pitch, uint8_t bpp, unsigned int x,
+ unsigned int y, uint32_t flatcolor, uint8_t lines, uint8_t offset);
+void render_mouse(uint32_t *pixels, size_t pitch, uint8_t bpp, unsigned int x,
+ unsigned int y, uint32_t mask, uint32_t amask, uint8_t w, uint8_t h);
 
 void get_screen_coords_centered(struct graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
