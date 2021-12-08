@@ -2740,10 +2740,23 @@ static boolean read_world_header(vfile *vf, boolean savegame,
     if(protected)
       *protected = pr;
 
-    if(!vfread(magic, 3, 1, vf))
-      return false;
+    if(pr)
+    {
+      vfseek(vf, 15, SEEK_CUR);
+      if(!vfread(magic, 4, 1, vf))
+        return false;
 
-    v = world_magic(magic);
+      v = world_magic(magic);
+      if(v < V200)
+        v = world_magic(magic + 1);
+    }
+    else
+    {
+      if(!vfread(magic, 3, 1, vf))
+        return false;
+
+      v = world_magic(magic);
+    }
   }
 
   if(protected) *protected = pr;
@@ -2847,7 +2860,7 @@ err_close:
     }
     else
 
-    if(v > 0 && v < V251)
+    if(v > 0 && v < V100)
     {
       error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
     }
@@ -2909,7 +2922,7 @@ void try_load_world(struct world *mzx_world, struct zip_archive **zp,
   _zp = try_load_zip_world(mzx_world, file, savegame, &v, &protected, name);
 
   if(!_zp)
-    if(protected || (v >= V251 && v <= MZX_LEGACY_FORMAT_VERSION))
+    if(protected || (v >= V100 && v <= MZX_LEGACY_FORMAT_VERSION))
       _vf = try_load_legacy_world(mzx_world, file, savegame, &v, name);
 
   *zp = _zp;

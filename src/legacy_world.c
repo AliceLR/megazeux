@@ -48,6 +48,7 @@
 #include "audio/sfx.h"
 
 #define WORLD_GLOBAL_OFFSET_OFFSET 4230
+#define WORLD_V1_BOARD_NUM_OFFSET 4009
 #define WORLD_BLOCK_1_SIZE 4129
 #define WORLD_BLOCK_2_SIZE 72
 #define DECRYPT_BUFFER_SIZE 8192
@@ -613,7 +614,9 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
       goto err_invalid;
     }
 
-    /* now we should be at the global robot pointer! */
+    /* Global robot pointer */
+    if(vfgetd(vf) < 0)
+      goto err_invalid;
   }
 
   else /* !savegame */
@@ -651,11 +654,11 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
         if(v != V100)
           goto err_invalid;
 
-        // Can't actually handle 1.x files right now...
-        error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
-        return VAL_VERSION;
+        vfseek(vf, -3, SEEK_CUR);
       }
-      return VAL_PROTECTED;
+      /* 2.x encrypts locked worlds. */
+      else
+        return VAL_PROTECTED;
     }
 
     /* TEST 5:  Test the magic */
@@ -669,7 +672,7 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
     }
     else
 
-    if(v < V200)
+    if(v < V100)
     {
       error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
       return VAL_VERSION;
@@ -682,29 +685,40 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
       return VAL_VERSION;
     }
 
-    /* TEST 6:  Attempt to eliminate invalid files by
-     * testing the palette for impossible values.
-     */
-    vfseek(vf, WORLD_GLOBAL_OFFSET_OFFSET - 48, SEEK_SET);
-    for(i = 0; i < 48; i++)
+    if(v >= V200)
     {
-      int val = vfgetc(vf);
-      if((val < 0) || (val > 63))
+      /* TEST 6:  Attempt to eliminate invalid files by
+       * testing the palette for impossible values.
+       */
+      vfseek(vf, WORLD_GLOBAL_OFFSET_OFFSET - 48, SEEK_SET);
+      for(i = 0; i < 48; i++)
+      {
+        int val = vfgetc(vf);
+        if((val < 0) || (val > 63))
+          goto err_invalid;
+      }
+
+      /* Global robot pointer */
+      if(vfgetd(vf) < 0)
         goto err_invalid;
     }
+    else
+    {
+      /* 1.x doesn't have a palette or global robot pointer to check. */
+      long offset = WORLD_V1_BOARD_NUM_OFFSET;
+      if(protection_method)
+        offset += MAX_PASSWORD_LENGTH + 1;
 
-    /* now we should be at the global robot pointer! */
+      if(vfseek(vf, offset, SEEK_SET))
+        goto err_invalid;
+    }
   }
 
-  /* TEST 7:  Either branch should be at the global robot pointer now.
+  /* TEST 7:  All branches should be at the board count now.
    * Test for valid SFX structure, if applicable, and board information.
    */
-  if(vfgetd(vf) < 0)
-    goto err_invalid;
-
-  // Do the sfx
   num_boards = vfgetc(vf);
-  if(num_boards == 0)
+  if(num_boards == 0 && v >= V200)
   {
     int sfx_size = vfgetw(vf);
     int sfx_off = vftell(vf);
@@ -814,6 +828,231 @@ vfile *validate_legacy_world_file(struct world *mzx_world,
 }
 
 /**
+ * Common v1 and v2 board list loader.
+ */
+static void legacy_load_world_boards(struct world *mzx_world, vfile *vf,
+ boolean savegame, int file_version, int num_boards)
+{
+  unsigned int *board_offsets;
+  unsigned int *board_sizes;
+  long board_names_pos;
+  int i;
+
+  int meter_target = 2 + num_boards;
+  int meter_curr = 0;
+
+  meter_update_screen(&meter_curr, meter_target);
+
+  mzx_world->num_boards = num_boards;
+  mzx_world->num_boards_allocated = num_boards;
+  mzx_world->board_list = cmalloc(sizeof(struct board *) * num_boards);
+
+  // Skip the names for now
+  board_names_pos = vftell(vf);
+  vfseek(vf, num_boards * LEGACY_BOARD_NAME_SIZE, SEEK_CUR);
+
+  // Read the board offsets/sizes preemptively to reduce the amount of seeking.
+  board_offsets = cmalloc(sizeof(int) * num_boards);
+  board_sizes = cmalloc(sizeof(int) * num_boards);
+  for(i = 0; i < num_boards; i++)
+  {
+    board_sizes[i] = vfgetd(vf);
+    board_offsets[i] = vfgetd(vf);
+  }
+
+  for(i = 0; i < num_boards; i++)
+  {
+    mzx_world->board_list[i] =
+     legacy_load_board_allocate(mzx_world, vf, board_offsets[i], board_sizes[i],
+      savegame, file_version);
+
+    if(mzx_world->board_list[i])
+    {
+      // Also patch a pointer to the global robot
+      if(mzx_world->board_list[i]->robot_list)
+        (mzx_world->board_list[i])->robot_list[0] = &mzx_world->global_robot;
+
+      // Also optimize out null objects
+      optimize_null_objects(mzx_world->board_list[i]);
+
+      store_board_to_extram(mzx_world->board_list[i]);
+    }
+
+    meter_update_screen(&meter_curr, meter_target);
+  }
+
+  free(board_offsets);
+  free(board_sizes);
+
+  // Go back to where the names are
+  vfseek(vf, board_names_pos, SEEK_SET);
+  for(i = 0; i < num_boards; i++)
+  {
+    char ignore[LEGACY_BOARD_NAME_SIZE];
+    char *board_name = ignore;
+
+    if(mzx_world->board_list[i])
+      board_name = mzx_world->board_list[i]->board_name;
+
+    if(!vfread(board_name, LEGACY_BOARD_NAME_SIZE, 1, vf))
+      board_name[0] = 0;
+
+    board_name[LEGACY_BOARD_NAME_SIZE - 1] = '\0';
+  }
+}
+
+/**
+ * Load a world in the extremely legacy 1.x world format.
+ */
+static void legacy_load_world_v1(struct world *mzx_world, vfile *vf, const char *file,
+ boolean savegame, int file_version, char *name, boolean *faded)
+{
+  static const uint8_t v1_id_dmg[ID_DMG_SIZE] =
+  {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, /* 0x0? */
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,100,  0,  0,  0,  0,  0, /* 0x1? */
+    0,  0,  0,  0,  0,  0,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0, /* 0x2? */
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 10,  0, 10,  5,  5, /* 0x3? */
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 10, 10,  0, 10, 10, /* 0x4? */
+    10, 0,  0, 10, 10, 10, 10, 10, 10, 10, 10, 10,  0,  0, 10, 10, /* 0x5? */
+  };
+
+  // TODO: savegame support if it's REALLY necessary :(
+  unsigned char *charset_mem;
+  int protection_method;
+  int num_boards;
+  long offset;
+  int i;
+  char buf[4];
+
+  int meter_target = 2, meter_curr = 0;
+
+  strcpy(mzx_world->name, name);
+  mzx_world->version = file_version;
+  mzx_world->current_board_id = 0;
+
+  vfseek(vf, BOARD_NAME_SIZE, SEEK_SET);
+  protection_method = vfgetc(vf);
+
+  offset = BOARD_NAME_SIZE + 1 + 3;
+  if(protection_method)
+    offset += MAX_PASSWORD_LENGTH + 1;
+  vfseek(vf, offset, SEEK_SET);
+
+  meter_initial_draw(meter_curr, meter_target, "Loading...");
+
+  charset_mem = cmalloc(CHAR_SIZE * CHARSET_SIZE);
+  if(!vfread(charset_mem, CHAR_SIZE * CHARSET_SIZE, 1, vf))
+    goto err_close;
+  ec_clear_set();
+  ec_mem_load_set(charset_mem, CHAR_SIZE * CHARSET_SIZE);
+  free(charset_mem);
+
+  // id_chars.
+  memset(id_chars, 0, ID_CHARS_SIZE);
+  memcpy(id_dmg, v1_id_dmg, ID_DMG_SIZE);
+  memset(bullet_color, 0, ID_BULLET_COLOR_SIZE);
+
+  if(!vfread(id_chars, 306, 1, vf))
+    goto err_close;
+  // Goop didn't exist in 1.x.
+  id_chars[GOOP] = 176;
+
+  // TODO: keys go here for savegames
+
+  // Status counters.
+  if(vfread((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE, 4, vf) != 4)
+    goto err_close;
+
+  for(i = 0; i < 4; i++)
+    mzx_world->status_counters_shown[i][COUNTER_NAME_SIZE - 1] = '\0';
+  for(; i < NUM_STATUS_COUNTERS; i++)
+    mzx_world->status_counters_shown[i][0] = '\0';
+
+  // Junk that was later moved to id_chars.
+  if(!vfread(buf, 4, 1, vf))
+    goto err_close;
+  memcpy(id_chars + bullet_char, buf, 4);
+  memcpy(id_chars + bullet_char + 4, buf, 4);
+  memcpy(id_chars + bullet_char + 8, buf, 4);
+  buf[0] = vfgetc(vf);
+  memset(id_chars + player_char, buf[0], 4);
+
+  // Saved position.
+  memset(mzx_world->pl_saved_x, 0, sizeof(mzx_world->pl_saved_x));
+  memset(mzx_world->pl_saved_y, 0, sizeof(mzx_world->pl_saved_y));
+  memset(mzx_world->pl_saved_board, 0, sizeof(mzx_world->pl_saved_board));
+  mzx_world->pl_saved_x[0] = vfgetc(vf);
+  mzx_world->pl_saved_y[0] = vfgetc(vf);
+  mzx_world->pl_saved_board[0] = vfgetc(vf);
+
+  // Global info.
+  mzx_world->edge_color = vfgetc(vf);
+
+  // More junk that was later moved to id_chars.
+  id_chars[player_color] = vfgetc(vf);
+  i = vfgetc(vf);
+  memset(bullet_color, i, sizeof(bullet_color));
+  missile_color = vfgetc(vf);
+
+  // TODO: message box colors and score go here for savegames
+
+  // Global info.
+  mzx_world->first_board = vfgetc(vf);
+  mzx_world->endgame_board = vfgetc(vf);
+  mzx_world->death_board = vfgetc(vf);
+  mzx_world->endgame_x = vfgetc(vf);
+  mzx_world->endgame_y = vfgetc(vf);
+  mzx_world->death_x = vfgetc(vf);
+  mzx_world->death_y = vfgetc(vf);
+  mzx_world->starting_lives = vfgetw(vf);
+  mzx_world->lives_limit = vfgetw(vf);
+  mzx_world->starting_health = vfgetw(vf);
+  mzx_world->health_limit = vfgetw(vf);
+  mzx_world->enemy_hurt_enemy = vfgetc(vf);
+  mzx_world->clear_on_exit = 0;
+  mzx_world->only_from_swap = 0;
+  mzx_world->game_over_sfx = vfgetc(vf);
+  vfgetc(vf); // unused
+
+  // Fix special values for these.
+  if(mzx_world->endgame_board >= 128)
+    mzx_world->endgame_board = NO_ENDGAME_BOARD;
+
+  if(mzx_world->death_board >= 129)
+    mzx_world->death_board = DEATH_SAME_POS;
+  else
+  if(mzx_world->death_board == 128)
+    mzx_world->death_board = NO_DEATH_BOARD;
+
+  // TODO: counters go here for savegames
+
+  // No custom palette or global robot in 1.x.
+  *faded = 0;
+  default_palette();
+  create_blank_robot(&mzx_world->global_robot);
+  create_blank_robot_program(&mzx_world->global_robot);
+
+  // Board list is the same as 2.x, though the board structs are different.
+  num_boards = vfgetc(vf);
+  legacy_load_world_boards(mzx_world, vf, savegame, file_version, num_boards);
+
+  meter_restore_screen();
+  vfclose(vf);
+  return;
+
+err_close:
+  // Note that this file had already been successfully validated for length
+  // and opened with no issue before this error occurred, and that the only
+  // way to reach this error is a failed fread before any board/robot data
+  // was loaded. Something seriously went wrong somewhere.
+
+  error_message(E_IO_READ, 0, NULL);
+  meter_restore_screen();
+  vfclose(vf);
+}
+
+/**
  * Load a world or save file from the legacy world format.
  * This will close the provided vfile handle.
  */
@@ -822,15 +1061,20 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
 {
   int i;
   int num_boards;
-  int global_robot_pos, board_names_pos;
+  int global_robot_pos;
   unsigned char *charset_mem;
   unsigned char r, g, b;
   struct counter_list *counter_list;
   struct string_list *string_list;
-  unsigned int *board_offsets;
-  unsigned int *board_sizes;
 
   int meter_target = 2, meter_curr = 0;
+
+  if(file_version < V200)
+  {
+    /* Too many differences to properly version here :( */
+    legacy_load_world_v1(mzx_world, vf, file, savegame, file_version, name, faded);
+    return;
+  }
 
   if(savegame)
   {
@@ -1144,49 +1388,7 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
     mzx_world->custom_sfx_on = 0;
   }
 
-  meter_target += num_boards;
-  meter_update_screen(&meter_curr, meter_target);
-
-  mzx_world->num_boards = num_boards;
-  mzx_world->num_boards_allocated = num_boards;
-  mzx_world->board_list = cmalloc(sizeof(struct board *) * num_boards);
-
-  // Skip the names for now
-  board_names_pos = vftell(vf);
-  vfseek(vf, num_boards * LEGACY_BOARD_NAME_SIZE, SEEK_CUR);
-
-  // Read the board offsets/sizes preemptively to reduce the amount of seeking.
-  board_offsets = cmalloc(sizeof(int) * num_boards);
-  board_sizes = cmalloc(sizeof(int) * num_boards);
-  for(i = 0; i < num_boards; i++)
-  {
-    board_sizes[i] = vfgetd(vf);
-    board_offsets[i] = vfgetd(vf);
-  }
-
-  for(i = 0; i < num_boards; i++)
-  {
-    mzx_world->board_list[i] =
-     legacy_load_board_allocate(mzx_world, vf, board_offsets[i], board_sizes[i],
-      savegame, file_version);
-
-    if(mzx_world->board_list[i])
-    {
-      // Also patch a pointer to the global robot
-      if(mzx_world->board_list[i]->robot_list)
-        (mzx_world->board_list[i])->robot_list[0] = &mzx_world->global_robot;
-
-      // Also optimize out null objects
-      optimize_null_objects(mzx_world->board_list[i]);
-
-      store_board_to_extram(mzx_world->board_list[i]);
-    }
-
-    meter_update_screen(&meter_curr, meter_target);
-  }
-
-  free(board_offsets);
-  free(board_sizes);
+  legacy_load_world_boards(mzx_world, vf, savegame, file_version, num_boards);
 
   // Read global robot
   vfseek(vf, global_robot_pos, SEEK_SET); //don't worry if this fails
@@ -1196,23 +1398,6 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
   // Some old worlds have the global_robot marked unused. Always mark it used.
   mzx_world->global_robot.used = 1;
 
-  // Go back to where the names are
-  vfseek(vf, board_names_pos, SEEK_SET);
-  for(i = 0; i < num_boards; i++)
-  {
-    char ignore[LEGACY_BOARD_NAME_SIZE];
-    char *board_name = ignore;
-
-    if(mzx_world->board_list[i])
-      board_name = mzx_world->board_list[i]->board_name;
-
-    if(!vfread(board_name, LEGACY_BOARD_NAME_SIZE, 1, vf))
-      board_name[0] = 0;
-
-    board_name[LEGACY_BOARD_NAME_SIZE - 1] = '\0';
-  }
-
-  meter_update_screen(&meter_curr, meter_target);
   meter_restore_screen();
   vfclose(vf);
   return;

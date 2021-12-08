@@ -88,6 +88,9 @@ CORE_LIBSPEC void disassemble_program(char *program, int program_length,
  char **_source, int *_source_length, struct command_mapping **_command_map,
  int *_command_map_length);
 
+boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
+ const char *src, int src_len);
+
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC int legacy_assemble_line(char *cpos, char *output_buffer,
  char *error_buffer, char *param_listing, int *arg_count_ext);

@@ -28,6 +28,7 @@ USERS
 + Protected worlds are now decrypted to RAM or a temporary file
   when 'auto_decrypt_worlds' is enabled and the original file is
   left unmodified. This setting is now enabled by default.
++ Added experimental support for loading MZX 1.x worlds.
 + When loading a layer MZM to the board in the editor, instead
   of always loading the MZM as CustomBlocks the conversion type
   can now be selected from CustomBlock, CustomFloor, and Text.
@@ -105,6 +106,7 @@ USERS
   where a corrupt board/robot is found. Due to old world format
   limitations, robots after a corrupt robot can not be scanned.
 + checkres now supports scanning protected worlds.
++ Added experimental checkres support for MZX 1.x worlds.
 + Fixed a standalone mode crash on exit that occurred when using
   Alt+F4 or the window close button.
 + Fixed another bug that would cause string searching in the

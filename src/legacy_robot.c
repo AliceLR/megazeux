@@ -36,6 +36,104 @@
 #include "io/memfile.h"
 #include "io/vio.h"
 
+static boolean legacy_load_robot_v1(struct world *mzx_world, struct robot *cur_robot,
+ vfile *vf, int savegame, int file_version)
+{
+  int robot_location = vftell(vf);
+  char *program_v1 = NULL;
+  char *program_v2 = NULL;
+  int program_v1_length;
+  int program_v2_length;
+
+  create_blank_robot(cur_robot);
+
+  program_v1_length = vfgetw(vf);
+  vfgetw(vf); // Unused high bytes
+  vfgetd(vf); // Junk
+
+  if(!vfread(cur_robot->robot_name, LEGACY_ROBOT_NAME_SIZE, 1, vf))
+    return false;
+
+  cur_robot->robot_name[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
+
+  cur_robot->robot_char = vfgetc(vf);
+  cur_robot->cur_prog_line = vfgetw(vf);
+  vfgetw(vf); // Unused high bytes
+  cur_robot->pos_within_line = vfgetc(vf);
+  cur_robot->robot_cycle = vfgetc(vf);
+  cur_robot->cycle_count = vfgetc(vf);
+  cur_robot->bullet_type = vfgetc(vf);
+  cur_robot->is_locked = vfgetc(vf);
+  cur_robot->can_lavawalk = vfgetc(vf);
+  cur_robot->walk_dir = (enum dir)vfgetc(vf);
+  cur_robot->last_touch_dir = (enum dir)vfgetc(vf);
+  cur_robot->last_shot_dir = (enum dir)vfgetc(vf);
+
+  if(!program_v1_length)
+  {
+    create_blank_robot_program(cur_robot);
+    return true;
+  }
+
+  program_v1 = cmalloc(program_v1_length);
+  if(!vfread(program_v1, program_v1_length, 1, vf))
+  {
+    trace("failed to read v1 program (len %d) @ %d\n", program_v1_length, robot_location);
+    goto err;
+  }
+
+  // Convert v1 program to v2.
+  if(!legacy_convert_v1_program(&program_v2, &program_v2_length,
+   program_v1, program_v1_length))
+  {
+    trace("legacy convert v1 program failed @ %d\n", robot_location);
+    goto err;
+  }
+
+  free(program_v1);
+  program_v1 = NULL;
+
+  if(!validate_legacy_bytecode(&program_v2, &program_v2_length))
+  {
+    trace("validate legacy bytecode failed @ %d\n", robot_location);
+    goto err;
+  }
+
+#ifdef CONFIG_DEBYTECODE
+
+  // TODO: now convert v2 to source. This multi-step conversion
+  // mess should be replaced with a v1 bytecode frontend.
+  cur_robot->program_source =
+   legacy_disassemble_program(program_v2, program_v2_length,
+   &(cur_robot->program_source_length), true, 10);
+
+  if(savegame)
+  {
+    // Translate the legacy current bytecode offset and stack bytecode offsets
+    // into usable new bytecode offsets. This may compile the robot program.
+    translate_robot_bytecode_offsets(mzx_world, cur_robot, version);
+  }
+  free(program_v2);
+  program_v2 = NULL;
+
+#else
+
+  cur_robot->program_bytecode = program_v2;
+  cur_robot->program_bytecode_length = program_v2_length;
+  cache_robot_labels(cur_robot);
+
+#endif
+
+  return true;
+
+err:
+  error_message(E_BOARD_ROBOT_CORRUPT, robot_location, NULL);
+  free(program_v1);
+  free(program_v2);
+  cur_robot->used = 0;
+  return false;
+}
+
 struct robot *legacy_load_robot_allocate(struct world *mzx_world, vfile *vf,
  int savegame, int file_version, boolean *truncated)
 {
@@ -46,6 +144,13 @@ struct robot *legacy_load_robot_allocate(struct world *mzx_world, vfile *vf,
   cur_robot->program_bytecode = NULL;
   cur_robot->program_source = NULL;
   cur_robot->num_labels = 0;
+
+  if(file_version < V200)
+  {
+    if(!legacy_load_robot_v1(mzx_world, cur_robot, vf, savegame, file_version))
+      *truncated = true;
+  }
+  else
 
   if(!legacy_load_robot(mzx_world, cur_robot, vf, savegame, file_version))
     *truncated = true;
@@ -287,13 +392,8 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
 
   // First, read the program length (0 bytes in)
   mfopen(buffer, robot_size, &mf);
-  program_length = mfgetd(&mf);
-
-  // Prior to DBC / VERSION_SOURCE the last two bytes are junk
-  #ifdef CONFIG_DEBYTECODE
-  if(version < VERSION_SOURCE)
-  #endif
-    program_length &= 0xFFFF;
+  program_length = mfgetw(&mf);
+  mfgetw(&mf);
 
   // Next, if this is a savegame robot, read the stack size
   if(savegame)
@@ -347,20 +447,30 @@ boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
   return !truncated;
 }
 
-static void legacy_load_scroll(struct scroll *cur_scroll, vfile *vf)
+static void legacy_load_scroll(struct scroll *cur_scroll, vfile *vf, int file_version)
 {
   int scroll_size;
 
   cur_scroll->mesg = NULL;
   cur_scroll->num_lines = vfgetw(vf);
-  vfgetw(vf); // Skip junk
-  scroll_size = vfgetw(vf);
-  cur_scroll->mesg_size = scroll_size;
-  cur_scroll->used = vfgetc(vf);
 
-  if(scroll_size < 0)
+  if(file_version >= V200)
+  {
+    vfgetw(vf); // Skip junk
+    scroll_size = vfgetw(vf);
+    cur_scroll->used = vfgetc(vf);
+  }
+  else
+  {
+    vfgetd(vf); // Skip junk
+    scroll_size = vfgetd(vf);
+    cur_scroll->used = 1;
+  }
+
+  if(scroll_size < 0 || scroll_size > 65535)
     goto scroll_err;
 
+  cur_scroll->mesg_size = scroll_size;
   cur_scroll->mesg = cmalloc(scroll_size);
   if(!vfread(cur_scroll->mesg, scroll_size, 1, vf))
     goto scroll_err;
@@ -382,14 +492,14 @@ scroll_err:
   strcpy(cur_scroll->mesg, "\x01\x0A");
 }
 
-struct scroll *legacy_load_scroll_allocate(vfile *vf)
+struct scroll *legacy_load_scroll_allocate(vfile *vf, int file_version)
 {
   struct scroll *cur_scroll = cmalloc(sizeof(struct scroll));
-  legacy_load_scroll(cur_scroll, vf);
+  legacy_load_scroll(cur_scroll, vf, file_version);
   return cur_scroll;
 }
 
-static void legacy_load_sensor(struct sensor *cur_sensor, vfile *vf)
+static void legacy_load_sensor(struct sensor *cur_sensor, vfile *vf, int file_version)
 {
   if(!vfread(cur_sensor->sensor_name, LEGACY_ROBOT_NAME_SIZE, 1, vf))
     goto sensor_err;
@@ -401,7 +511,11 @@ static void legacy_load_sensor(struct sensor *cur_sensor, vfile *vf)
 
   cur_sensor->sensor_name[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
   cur_sensor->robot_to_mesg[LEGACY_ROBOT_NAME_SIZE - 1] = '\0';
-  cur_sensor->used = vfgetc(vf);
+
+  if(file_version >= V200)
+    cur_sensor->used = vfgetc(vf);
+  else
+    cur_sensor->used = 1;
 
   return;
 
@@ -413,9 +527,9 @@ sensor_err:
   cur_sensor->used = 1;
 }
 
-struct sensor *legacy_load_sensor_allocate(vfile *vf)
+struct sensor *legacy_load_sensor_allocate(vfile *vf, int file_version)
 {
   struct sensor *cur_sensor = cmalloc(sizeof(struct sensor));
-  legacy_load_sensor(cur_sensor, vf);
+  legacy_load_sensor(cur_sensor, vf, file_version);
   return cur_sensor;
 }

@@ -309,7 +309,7 @@ int error_message(enum error_code id, int parameter, const char *string)
 
     case E_WORLD_FILE_VERSION_OLD:
       sprintf(error_mesg,
-       "World is from old version (%s); use converter",
+       "Invalid world version (%s)",
        version_string);
       code = 0x0D02;
       break;
