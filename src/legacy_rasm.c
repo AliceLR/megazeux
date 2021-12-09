@@ -2962,6 +2962,12 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
     int len = 1;
     int j;
 
+    if(next_cmd >= src_len)
+    {
+      trace("invalid 1.x command: length extends past program, truncating\n");
+      break;
+    }
+
     // Note: invalid commands default to 0 and translate to ROBOTIC_CMD_END.
     buf[len++] = v1_command_translation[cmd][0];
 
@@ -3130,8 +3136,15 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
       }
     }
 
-    if(i >= src_len || i >= next_cmd || src[next_cmd - 1] != cmd_len)
-      goto err;
+    if(i >= src_len || i >= next_cmd)
+    {
+      trace("invalid 1.x command: params too long, truncating.\n");
+      break;
+    }
+    // Chronos Stasis 1.01 has some unusual corrupted robots with broken
+    // trailing length bytes. This is safe to quietly fix.
+    if(src[next_cmd - 1] != cmd_len)
+      trace("invalid 1.x command: trailing length != starting length.\n");
 
     i = next_cmd;
 
