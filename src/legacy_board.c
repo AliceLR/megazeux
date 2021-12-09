@@ -105,7 +105,7 @@ static int load_RLE2_plane(char *plane, vfile *vf, int size, boolean skip_size)
     if(vfgetd(vf) == EOF)
       return -1;
 
-  for(i = 0; i < size; i++)
+  for(i = 0; i < size;)
   {
     current_char = vfgetc(vf);
     if(current_char < 0)
@@ -114,7 +114,7 @@ static int load_RLE2_plane(char *plane, vfile *vf, int size, boolean skip_size)
     if(~current_char & 0x80)
     {
       // Regular character
-      plane[i] = current_char;
+      plane[i++] = current_char;
     }
     else
     {
@@ -128,7 +128,7 @@ static int load_RLE2_plane(char *plane, vfile *vf, int size, boolean skip_size)
         return -1;
 
       memset(plane + i, current_char, runsize);
-      i += (runsize - 1);
+      i += runsize;
     }
   }
 
@@ -196,7 +196,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   if(file_version >= V200)
   {
     // board_mode, unused
-    if(vfgetc(vf) == EOF)
+    if(vfgetc(vf) < 0)
     {
       error_message(E_WORLD_BOARD_MISSING, board_location, NULL);
       return VAL_MISSING;

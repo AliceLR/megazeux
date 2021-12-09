@@ -694,7 +694,7 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
       for(i = 0; i < 48; i++)
       {
         int val = vfgetc(vf);
-        if((val < 0) || (val > 63))
+        if(val < 0 || val > 63)
           goto err_invalid;
       }
 
@@ -721,7 +721,7 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
   if(num_boards == 0 && v >= V200)
   {
     int sfx_size = vfgetw(vf);
-    int sfx_off = vftell(vf);
+    int sfx_read = 0;
     int cur_sfx_size;
 
     for(i = 0; i < NUM_BUILTIN_SFX; i++)
@@ -732,9 +732,11 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
 
       if(vfseek(vf, cur_sfx_size, SEEK_CUR))
         break;
+
+      sfx_read += cur_sfx_size + 1;
     }
 
-    if((i != NUM_BUILTIN_SFX) || ((vftell(vf) - sfx_off) != sfx_size))
+    if(i != NUM_BUILTIN_SFX || sfx_read != sfx_size)
       goto err_invalid;
 
     num_boards = vfgetc(vf);
@@ -742,16 +744,14 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
   if(num_boards <= 0)
     goto err_invalid;
 
-  board_name_offset = vftell(vf);
+  // Read the last board size and pointer to make sure the board table exists.
+  board_name_offset = num_boards * (LEGACY_BOARD_NAME_SIZE + 8) - 8;
 
-  //Make sure board name and pointer data exists
-  if(
-   vfseek(vf, num_boards * LEGACY_BOARD_NAME_SIZE, SEEK_CUR) ||
-   vfseek(vf, num_boards * 8, SEEK_CUR) ||
-   ((vftell(vf) - board_name_offset) != num_boards * (LEGACY_BOARD_NAME_SIZE + 8)))
+  if(vfseek(vf, board_name_offset, SEEK_CUR))
     goto err_invalid;
 
-  //todo: maybe have a complete fail when N number of pointers fail?
+  if(vfgetd(vf) == EOF || vfgetd(vf) == EOF)
+    goto err_invalid;
 
   return VAL_SUCCESS;
 
