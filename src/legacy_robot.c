@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -447,6 +448,122 @@ boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
   return !truncated;
 }
 
+/**
+ * Convert v1 scroll text to scroll text with color code support.
+ *
+ * 1.x uses a bizarre color code hack where lines can start with ![byte].
+ * The entire line will be colored [byte] (including non-text areas) and the
+ * color code will be displayed at two spaces.
+ *
+ * Convert these to Robotic ~@-style color codes, pad their affected lines with
+ * spaces so they display correctly, and escape existing ~@s.
+ */
+static boolean legacy_convert_scroll_v1(struct scroll *cur_scroll)
+{
+  char *old_text = cur_scroll->mesg;
+  char *new_text;
+  size_t old_size = cur_scroll->mesg_size;
+  size_t new_size;
+  size_t new_pos;
+  size_t i;
+
+  new_text = malloc(old_size * 2);
+  new_size = old_size * 2;
+  if(!new_text)
+    goto err;
+
+  new_text[0] = 0x01;
+  new_pos = 1;
+
+  for(i = 1; i < old_size && old_text[i];)
+  {
+    // Start of line.
+    char linebuf[150];
+    int pad = 0;
+    size_t j = 0;
+
+    if(old_text[i] == '!')
+    {
+      // Legacy v1 color code.
+      static const char hex[] = "0123456789abcdef";
+      uint8_t color = old_text[i + 1];
+      char hi = hex[color >> 4];
+      char lo = hex[color & 0xf];
+
+      linebuf[j++] = '~';
+      linebuf[j++] = lo;
+      linebuf[j++] = '@';
+      linebuf[j++] = hi;
+      linebuf[j++] = ' ';
+      linebuf[j++] = ' ';
+      i += 2;
+      pad = 61;
+    }
+
+    // Direct line copy with escapes for ~ and @.
+    while(old_text[i])
+    {
+      if(old_text[i] == '\n')
+      {
+        i++;
+        break;
+      }
+
+      if(old_text[i] == '~')
+        linebuf[j++] = '~';
+
+      if(old_text[i] == '@')
+        linebuf[j++] = '@';
+
+      linebuf[j++] = old_text[i++];
+      pad--;
+    }
+
+    if(pad > 0)
+    {
+      // Space pad end of line for v1 color codes.
+      memset(linebuf + j, ' ', pad);
+      j += pad;
+    }
+    linebuf[j++] = '\n';
+
+    // Append line (+1 for scroll terminator).
+    if(j + new_pos + 1 > new_size)
+    {
+      char *t;
+      while(j + new_pos + 1 > new_size)
+      {
+        if(new_size > INT_MAX)
+          goto err;
+
+        new_size *= 2;
+      }
+      t = realloc(new_text, new_size);
+      if(!t)
+        goto err;
+
+      new_text = t;
+    }
+    memcpy(new_text + new_pos, linebuf, j);
+    new_pos += j;
+  }
+  new_text[new_pos++] = '\0';
+
+  cur_scroll->mesg = realloc(new_text, new_pos);
+  cur_scroll->mesg_size = new_pos;
+  if(!cur_scroll->mesg)
+    goto err;
+
+  free(old_text);
+  return true;
+
+err:
+  free(old_text);
+  free(new_text);
+  cur_scroll->mesg = NULL;
+  return false;
+}
+
 static void legacy_load_scroll(struct scroll *cur_scroll, vfile *vf, int file_version)
 {
   int scroll_size;
@@ -478,7 +595,15 @@ static void legacy_load_scroll(struct scroll *cur_scroll, vfile *vf, int file_ve
   if(scroll_size < 3)
     goto scroll_err;
 
-  cur_scroll->mesg[scroll_size - 1] = '\0';
+
+  if(file_version < V200)
+  {
+    if(!legacy_convert_scroll_v1(cur_scroll))
+      goto scroll_err;
+  }
+  else
+    cur_scroll->mesg[scroll_size - 1] = '\0';
+
   return;
 
 scroll_err:
