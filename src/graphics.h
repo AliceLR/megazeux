@@ -99,6 +99,15 @@ enum default_video_layers
   NUM_DEFAULT_LAYERS  = 4
 };
 
+enum write_string_flags
+{
+  W_ALLOW_TAB     = (1 << 0), /* If set, tab will draw 5 spaces. */
+  W_ALLOW_NEWLINE = (1 << 1), /* If set, \n will act line a newline. */
+  W_LINE          = (1 << 2), /* If set, stop if \n is encountered. */
+  W_COLOR         = (1 << 3), /* If set, allow ~@ color codes. */
+  W_MASK_MIDCHARS = (1 << 4), /* If set, use the protected charset for 32-126. */
+};
+
 struct graphics_data;
 struct video_layer;
 
@@ -216,7 +225,7 @@ struct graphics_data
 CORE_LIBSPEC void color_string(const char *string, unsigned int x,
  unsigned int y, uint8_t color);
 CORE_LIBSPEC void write_string(const char *string, unsigned int x,
- unsigned int y, uint8_t color, boolean tab_allowed);
+ unsigned int y, uint8_t color, int flags);
 CORE_LIBSPEC void write_number(int number, uint8_t color, unsigned int x,
  unsigned int y, int minlen, boolean rightalign, int base);
 CORE_LIBSPEC void color_line(unsigned int length, unsigned int x,
@@ -229,9 +238,7 @@ CORE_LIBSPEC void erase_area(unsigned int x, unsigned int y,
  unsigned int x2, unsigned int y2);
 
 CORE_LIBSPEC void write_string_ext(const char *str, unsigned int x, unsigned int y,
- uint8_t color, boolean tab_allowed, unsigned int chr_offset, unsigned int color_offset);
-CORE_LIBSPEC void write_string_mask(const char *str, unsigned int x, unsigned int y,
- uint8_t color, boolean tab_allowed);
+ uint8_t color, int flags, unsigned int chr_offset, unsigned int color_offset);
 CORE_LIBSPEC void draw_char_ext(uint8_t chr, uint8_t color, unsigned int x,
  unsigned int y, unsigned int chr_offset, unsigned int color_offset);
 CORE_LIBSPEC void draw_char_bleedthru_ext(uint8_t chr, uint8_t color,
