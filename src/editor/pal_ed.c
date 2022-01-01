@@ -1033,7 +1033,7 @@ static void menu_buffer_draw(int x, int y, boolean show_indices)
   );
 
   write_string("Buffer", x + 2, y + 1, DI_GREY_TEXT, false);
-  write_string("     \n     \n     ", x + 9, y + 1, 0x55, false);
+  write_string("     \n     \n     ", x + 9, y + 1, 0x55, W_NEWLINES);
 
   if(mode >= 2 && saved_subpalette_display)
   {
@@ -1059,7 +1059,7 @@ static void menu_buffer_draw(int x, int y, boolean show_indices)
     int x2;
     int y2;
 
-    write_string("1    3\n2    4", x + 2, y + 2, DI_GREY_CORNER, false);
+    write_string("1    3\n2    4", x + 2, y + 2, DI_GREY_CORNER, W_NEWLINES);
     for(i = 0; i < 4; i++)
     {
       x2 = x + 3 + (i/2*2);
@@ -1116,7 +1116,7 @@ static boolean menu_16_draw(subcontext *ctx)
     menu->x,
     menu->y,
     DI_GREY_TEXT,
-    false
+    W_NEWLINES
   );
 
   write_string(palette_labels[!pal_ed->current], menu->x + 49, menu->y + 6,
@@ -1436,7 +1436,7 @@ static boolean menu_256_draw(subcontext *ctx)
     menu->x,
     menu->y,
     DI_GREY_TEXT,
-    1
+    W_NEWLINES
   );
 
   write_string(palette_labels[!pal_ed->current], menu->x + 5, menu->y + 10,
@@ -1459,7 +1459,7 @@ static boolean menu_256_draw(subcontext *ctx)
       menu->x + 19,
       menu->y + 5,
       DI_GREY_TEXT,
-      false
+      W_NEWLINES
     );
   }
   else
@@ -1483,7 +1483,7 @@ static boolean menu_256_draw(subcontext *ctx)
       menu->x,
       menu->y + 15,
       DI_GREY_TEXT,
-      false
+      W_NEWLINES
     );
   }
 
@@ -1514,7 +1514,7 @@ static boolean menu_256_draw(subcontext *ctx)
       menu->x,
       menu->y + 4,
       DI_GREY_TEXT,
-      1
+      false
     );
   }
 
@@ -1857,7 +1857,7 @@ static boolean subpalette_256_draw(subcontext *ctx)
    spal->x,
    spal->y,
    DI_GREY_TEXT,
-   0
+   W_NEWLINES
   );
 
   write_string(
@@ -1865,7 +1865,7 @@ static boolean subpalette_256_draw(subcontext *ctx)
    spal->x + 9,
    spal->y,
    DI_GREY_CORNER,
-   0
+   false
   );
 
   // Erase spots where palette colors will go

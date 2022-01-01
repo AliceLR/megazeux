@@ -2537,7 +2537,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       // On the off-chance something actually relies on this bug...
       int flags = 0;
       if((mzx_world->version >= VERSION_PORT) && (mzx_world->version < V291))
-        flags |= W_ALLOW_TAB;
+        flags |= W_TABS;
 
       tr_msg(mzx_world, program + 3, id, ibuff);
       ibuff[64] = 0; // Clip

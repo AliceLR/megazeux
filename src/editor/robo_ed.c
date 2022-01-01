@@ -3587,14 +3587,14 @@ static boolean robot_editor_draw(context *ctx)
 
   if(rstate->scr_hide_mode)
   {
-    write_string(key_help_hide, 0, 24, bottom_text_color, false);
+    write_string(key_help_hide, 0, 24, bottom_text_color, W_NEWLINES);
     rstate->scr_line_start = 1;
     rstate->scr_line_middle = 12;
     rstate->scr_line_end = 23;
   }
   else
   {
-    write_string(key_help, 0, 22, bottom_text_color, false);
+    write_string(key_help, 0, 22, bottom_text_color, W_NEWLINES);
     rstate->scr_line_start = 2;
     rstate->scr_line_middle = 11;
     rstate->scr_line_end = 20;

@@ -3377,7 +3377,7 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
     "X/Y:        /     \n"
     "Board:            \n"
     "Robot mem:      kb\n",
-    x + 1, y + 1, DI_DEBUG_LABEL, 0
+    x + 1, y + 1, DI_DEBUG_LABEL, W_NEWLINES
   );
 
   version_string_len = get_version_string(version_string, mzx_world->version);

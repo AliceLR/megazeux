@@ -41,7 +41,7 @@ static const char scr_nm_strs[5][12] =
 static int scroll_draw_flags(struct world *mzx_world, boolean mask_chars,
  boolean mask_colors)
 {
-  int flags = W_ALLOW_TAB | W_LINE;
+  int flags = W_LINE;
 
   if(mask_chars)
     flags |= W_MASK_MIDCHARS;

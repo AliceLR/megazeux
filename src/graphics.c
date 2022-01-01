@@ -2032,10 +2032,11 @@ static int write_string_intl(const char *str, unsigned int x, unsigned int y,
     {
       if(allow_tabs)
       {
-        // The write_line functions used 10 here!?!?
-        int tab = (end_newline) ? 10 : 5;
-        dest += tab;
-        dest_copy += tab;
+        // Note: the write_line functions used 10 here, but they were used
+        // only for scrolls, which don't allow control codes. 1.x allowed
+        // char 9 but displayed them as char 9.
+        dest += 5;
+        dest_copy += 5;
         continue;
       }
     }
@@ -2101,8 +2102,8 @@ static int write_string_intl(const char *str, unsigned int x, unsigned int y,
 void write_string_ext(const char *str, unsigned int x, unsigned int y,
  uint8_t color, int flags, unsigned int chr_offset, unsigned int color_offset)
 {
-  boolean allow_tabs      = (flags & W_ALLOW_TAB) != 0;
-  boolean allow_newlines  = (flags & W_ALLOW_NEWLINE) != 0;
+  boolean allow_tabs      = (flags & W_TABS) != 0;
+  boolean allow_newlines  = (flags & W_NEWLINES) != 0;
   boolean end_newline     = (flags & W_LINE) != 0;
   boolean allow_colors    = (flags & W_COLOR) != 0;
   boolean mask_midchars   = (flags & W_MASK_MIDCHARS) && !chr_offset;
