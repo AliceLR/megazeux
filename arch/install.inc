@@ -38,6 +38,10 @@ endif
 ifeq (${SHAREDIR},.)
 	$(error ${ERROR_PLATFORM} (SHAREDIR))
 endif
+	@echo LICENSEDIR: ${LICENSEDIR}
+ifeq (${LICENSEDIR},.)
+	$(error ${ERROR_PLATFORM} (LICENSEDIR))
+endif
 ifneq (${BUILD_MODULAR},)
 	@echo LIBDIR: ${LIBDIR}
 ifeq (${LIBDIR},.)
@@ -54,6 +58,10 @@ endif
 #
 # Install the current build to the system.
 #
+# Note regarding EXTRA_LICENSES: library licenses from Makefile aren't included
+# here as they're generally linked dynamically and have their own licenses
+# available for platforms that support make install.
+#
 
 install: install-check install-arch
 	@echo Installing...
@@ -63,10 +71,17 @@ install: install-check install-arch
 		${DESTDIR}${SHAREDIR}/doc \
 		${DESTDIR}${SHAREDIR}/doc/megazeux \
 		${DESTDIR}${SHAREDIR}/megazeux \
-		${DESTDIR}${SHAREDIR}/megazeux/assets && \
-	 ${install} -m 0644 assets/default.chr assets/edit.chr \
-		assets/smzx.pal ${DESTDIR}${SHAREDIR}/megazeux/assets && \
-	 ${install} -m 0644 config.txt ${DESTDIR}${SYSCONFDIR}/megazeux-config
+		${DESTDIR}${SHAREDIR}/megazeux/assets \
+		${DESTDIR}${LICENSEDIR} \
+		${DESTDIR}${LICENSEDIR}/megazeux
+	@${install} -m 0644 \
+		assets/default.chr \
+		assets/edit.chr \
+		assets/smzx.pal \
+		${DESTDIR}${SHAREDIR}/megazeux/assets
+	@${install} -m 0644 \
+		config.txt \
+		${DESTDIR}${SYSCONFDIR}/megazeux-config
 	@gzip -c docs/changelog.txt > docs/changelog.txt.gz
 	@gzip -c9 docs/mzxhelp.html > docs/mzxhelp.html.gz
 	@${install} -m 0644 \
@@ -79,6 +94,11 @@ install: install-check install-arch
 		docs/joystick.html \
 		docs/cycles_and_commands.txt \
 		${DESTDIR}${SHAREDIR}/doc/megazeux/
+	@${install} -m 0644 \
+		LICENSE \
+		LICENSE.3rd \
+		${EXTRA_LICENSES} \
+		${DESTDIR}${LICENSEDIR}/megazeux/
 	@${RM} -f docs/changelog.txt.gz
 	@${RM} -f docs/mzxhelp.html.gz
 ifeq (${BUILD_HELPSYS},1)
@@ -143,7 +163,6 @@ endif
 ifeq (${BUILD_GAMECONTROLLERDB},1)
 	@${install} -m 0644 \
 		assets/gamecontrollerdb.txt \
-		assets/gamecontrollerdb.LICENSE \
 		${DESTDIR}${SHAREDIR}/megazeux/assets/
 endif
 	@echo Done.
@@ -158,6 +177,7 @@ uninstall: install-check uninstall-arch
 		${DESTDIR}${SHAREDIR}/megazeux \
 		${DESTDIR}${SHAREDIR}/megazeux/assets \
 		${DESTDIR}${SHAREDIR}/doc/megazeux \
+		${DESTDIR}${LICENSEDIR}/megazeux \
 		${DESTDIR}${SYSCONFDIR}/megazeux-config
 ifeq (${BUILD_MODULAR},1)
 	@${RM} -f \

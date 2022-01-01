@@ -4,6 +4,8 @@
 
 .PHONY: package-pbp
 
+EXTRA_LICENSES += ${LICENSE_NEWLIB}
+
 #
 # PSP toolchain overrides
 #

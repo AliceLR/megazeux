@@ -5,7 +5,8 @@
 usage() {
 	echo "usage: ./config.sh --platform [platform] <--prefix [dir]> <--sysconfdir [dir]>"
 	echo "                                         <--gamesdir [dir]> <--bindir [dir]>"
-	echo "                                         <--sharedir [dir]> <options..>"
+	echo "                                         <--sharedir [dir]> <--licensedir [dir]>"
+	echo "                                         <options..>"
 	echo
 	echo "  --prefix       Where dependencies should be found."
 	echo "  --sysconfdir   Where the config should be read from."
@@ -13,6 +14,7 @@ usage() {
 	echo "  --libdir       Where libraries should be installed."
 	echo "  --bindir       Where utilities should be installed."
 	echo "  --sharedir     Where resources should be installed."
+	echo "  --licensedir   Where licenses should be installed."
 	echo
 	echo "Supported [platform] values:"
 	echo
@@ -135,6 +137,9 @@ BINDIR="${PREFIX}${BINDIR_IN_PREFIX}"
 SHAREDIR_IS_SET="false"
 SHAREDIR_IN_PREFIX="/share"
 SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
+LICENSEDIR_IS_SET="false"
+LICENSEDIR_IN_PREFIX="/share/doc"
+LICENSEDIR="${PREFIX}${LICENSEDIR_IN_PREFIX}"
 DATE_STAMP="true"
 AS_NEEDED="false"
 RELEASE="false"
@@ -220,6 +225,10 @@ while [ "$1" != "" ]; do
 		if [ "$SHAREDIR_IS_SET" = "false" ]; then
 			SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
 		fi
+
+		if [ "$LICENSEDIR_IS_SET" = "false" ]; then
+			LICENSEDIR="${PREFIX}${LICENSEDIR_IN_PREFIX}"
+		fi
 	fi
 
 	# e.g. --sysconfdir /etc
@@ -255,6 +264,13 @@ while [ "$1" != "" ]; do
 		shift
 		SHAREDIR="$1"
 		SHAREDIR_IS_SET="true"
+	fi
+
+	# e.g. --licensedir /usr/share/license
+	if [ "$1" = "--licensedir" ]; then
+		shift
+		LICENSEDIR="$1"
+		LICENSEDIR_IS_SET="true"
 	fi
 
 	[ "$1" = "--as-needed-hack" ] && AS_NEEDED="true"
@@ -620,36 +636,42 @@ if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
 	SHAREDIR=/games/megazeux
+	LICENSEDIR=$SHAREDIR
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "3ds" ]; then
 	SHAREDIR=/3ds/megazeux
+	LICENSEDIR=$SHAREDIR
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "wii" ]; then
 	SHAREDIR=/apps/megazeux
+	LICENSEDIR=$SHAREDIR
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "wiiu" ]; then
 	SHAREDIR=fs:/vol/external01/wiiu/apps/megazeux
+	LICENSEDIR=$SHAREDIR
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "switch" ]; then
 	SHAREDIR=/switch/megazeux
+	LICENSEDIR=$SHAREDIR
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SHAREDIR=../Resources
+	LICENSEDIR=$SHAREDIR
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\""           >> src/config.h
@@ -657,12 +679,14 @@ elif [ "$PLATFORM" = "darwin-dist" ]; then
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "emscripten" ]; then
 	SHAREDIR=/data
-	GAMESDIR=/data/game
-	BINDIR=/data
+	LICENSEDIR=$SHAREDIR
+	GAMESDIR=$SHAREDIR/game
+	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 else
 	SHAREDIR=.
+	LICENSEDIR=.
 	GAMESDIR=.
 	BINDIR=.
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
@@ -678,6 +702,7 @@ echo "GAMESDIR=$GAMESDIR"     >> platform.inc
 echo "LIBDIR=$LIBDIR"         >> platform.inc
 echo "BINDIR=$BINDIR"         >> platform.inc
 echo "SHAREDIR=$SHAREDIR"     >> platform.inc
+echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
 
 #
 # Platform-specific libraries, or SDL?
