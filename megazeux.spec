@@ -44,7 +44,7 @@ See https://www.digitalmzx.com/ for more information.
 
 %install
 rm -rf "$RPM_BUILD_ROOT"
-make install DESTDIR=${RPM_BUILD_ROOT}
+%make_install V=1
 
 %check
 %make_build test

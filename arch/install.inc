@@ -11,10 +11,16 @@
 
 .PHONY: install install-arch uninstall uninstall-arch install-check
 
+gzip = gzip
 ifeq (${USER},root)
 install = install -o root
 else
 install = install
+endif
+
+ifneq (${V},1)
+install = @${install}
+gzip    = @${gzip}
 endif
 
 #
@@ -65,7 +71,7 @@ endif
 
 install: install-check install-arch
 	@echo Installing...
-	@${install} -m 0755 -d \
+	${install} -m 0755 -d \
 		${DESTDIR}${SYSCONFDIR} \
 		${DESTDIR}${SHAREDIR} \
 		${DESTDIR}${SHAREDIR}/doc \
@@ -74,17 +80,17 @@ install: install-check install-arch
 		${DESTDIR}${SHAREDIR}/megazeux/assets \
 		${DESTDIR}${LICENSEDIR} \
 		${DESTDIR}${LICENSEDIR}/megazeux
-	@${install} -m 0644 \
+	${install} -m 0644 \
 		assets/default.chr \
 		assets/edit.chr \
 		assets/smzx.pal \
 		${DESTDIR}${SHAREDIR}/megazeux/assets
-	@${install} -m 0644 \
+	${install} -m 0644 \
 		config.txt \
 		${DESTDIR}${SYSCONFDIR}/megazeux-config
-	@gzip -c docs/changelog.txt > docs/changelog.txt.gz
-	@gzip -c9 docs/mzxhelp.html > docs/mzxhelp.html.gz
-	@${install} -m 0644 \
+	${gzip} -c docs/changelog.txt > docs/changelog.txt.gz
+	${gzip} -c9 docs/mzxhelp.html > docs/mzxhelp.html.gz
+	${install} -m 0644 \
 		README.md \
 		docs/changelog.txt.gz \
 		docs/mzxhelp.html.gz \
@@ -94,45 +100,51 @@ install: install-check install-arch
 		docs/joystick.html \
 		docs/cycles_and_commands.txt \
 		${DESTDIR}${SHAREDIR}/doc/megazeux/
-	@${install} -m 0644 \
+	${install} -m 0644 \
 		LICENSE \
 		LICENSE.3rd \
 		${EXTRA_LICENSES} \
 		${DESTDIR}${LICENSEDIR}/megazeux/
-	@${RM} -f docs/changelog.txt.gz
-	@${RM} -f docs/mzxhelp.html.gz
+	${RM} docs/changelog.txt.gz
+	${RM} docs/mzxhelp.html.gz
 ifeq (${BUILD_HELPSYS},1)
-	@${install} -m 0644 assets/help.fil \
+	${install} -m 0644 assets/help.fil \
 		${DESTDIR}${SHAREDIR}/megazeux/assets
 endif
 ifeq (${BUILD_MODULAR},1)
-	@${install} -m 0755 -d ${DESTDIR}${LIBDIR} && \
-	 ${install} -m 0755 ${core_target} ${DESTDIR}${LIBDIR} && \
-	 ${install} -m 0755 ${editor_target} ${DESTDIR}${LIBDIR}
+	${install} -m 0755 -d ${DESTDIR}${LIBDIR}
+	${install} -m 0755 ${core_target} ${DESTDIR}${LIBDIR}
+	${install} -m 0755 ${editor_target} ${DESTDIR}${LIBDIR}
 endif
 ifeq (${BUILD_MZXRUN},1)
-	@${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
-	 ${install} -m 0755 ${mzxrun} ${DESTDIR}${GAMESDIR}/
+	${install} -m 0755 -d ${DESTDIR}${GAMESDIR}
+	${install} -m 0755 ${mzxrun} ${DESTDIR}${GAMESDIR}/
 endif
 ifeq (${BUILD_EDITOR},1)
-	@${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
-	 ${install} -m 0755 ${mzx} ${DESTDIR}${GAMESDIR}/ && \
-	 ${install} -m 0644 assets/ascii.chr assets/blank.chr \
-		assets/smzx.chr assets/smzx2.chr ${DESTDIR}${SHAREDIR}/megazeux/assets
+	${install} -m 0755 -d ${DESTDIR}${GAMESDIR}
+	${install} -m 0755 ${mzx} ${DESTDIR}${GAMESDIR}/
+	${install} -m 0644 \
+		assets/ascii.chr \
+		assets/blank.chr \
+		assets/smzx.chr \
+		assets/smzx2.chr \
+		${DESTDIR}${SHAREDIR}/megazeux/assets
 endif
 ifeq (${BUILD_UTILS},1)
-	@${install} -m 0755 -d ${DESTDIR}${BINDIR} && \
-	 ${install} -m 0755 ${checkres} ${DESTDIR}${BINDIR}/ && \
-	 ${install} -m 0755 ${downver} ${DESTDIR}${BINDIR}/ && \
-	 ${install} -m 0755 ${hlp2txt} ${DESTDIR}${BINDIR}/ && \
-	 ${install} -m 0755 ${txt2hlp} ${DESTDIR}${BINDIR}/ && \
-	 ${install} -m 0755 ${png2smzx} ${DESTDIR}${BINDIR}/ && \
-	 ${install} -m 0755 ${ccv} ${DESTDIR}${BINDIR}/
+	${install} -m 0755 -d ${DESTDIR}${BINDIR}
+	${install} -m 0755 \
+		${checkres} \
+		${downver} \
+		${hlp2txt} \
+		${txt2hlp} \
+		${png2smzx} \
+		${ccv} \
+		${DESTDIR}${BINDIR}/
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
-	@${install} -m 0755 -d \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl && \
-	 ${install} -m 0644 assets/glsl/cursor.frag \
+	${install} -m 0755 -d \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl
+	${install} -m 0644 assets/glsl/cursor.frag \
 		assets/glsl/cursor.vert \
 		assets/glsl/mouse.frag \
 		assets/glsl/mouse.vert \
@@ -144,9 +156,9 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl/
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
-	@${install} -m 0755 -d \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl/scalers && \
-	 ${install} -m 0644 \
+	${install} -m 0755 -d \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl/scalers
+	${install} -m 0644 \
 		assets/glsl/scalers/crt-wave.frag \
 		assets/glsl/scalers/crt.frag \
 		assets/glsl/scalers/emboss.frag \
@@ -161,7 +173,7 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl/scalers/
 endif
 ifeq (${BUILD_GAMECONTROLLERDB},1)
-	@${install} -m 0644 \
+	${install} -m 0644 \
 		assets/gamecontrollerdb.txt \
 		${DESTDIR}${SHAREDIR}/megazeux/assets/
 endif
@@ -173,27 +185,27 @@ endif
 
 uninstall: install-check uninstall-arch
 	@echo Uninstalling...
-	 ${RM} -rf \
+	${RM} -r \
 		${DESTDIR}${SHAREDIR}/megazeux \
 		${DESTDIR}${SHAREDIR}/megazeux/assets \
 		${DESTDIR}${SHAREDIR}/doc/megazeux \
 		${DESTDIR}${LICENSEDIR}/megazeux \
 		${DESTDIR}${SYSCONFDIR}/megazeux-config
 ifeq (${BUILD_MODULAR},1)
-	@${RM} -f \
+	${RM} \
 		${DESTDIR}${LIBDIR}/${core_target} \
 		${DESTDIR}${LIBDIR}/${editor_target}
 endif
 ifeq (${BUILD_MZXRUN},1)
-	@${RM} -f \
+	${RM} \
 		${DESTDIR}${GAMESDIR}/${mzxrun}
 endif
 ifeq (${BUILD_EDITOR},1)
-	@${RM} -f \
+	${RM} \
 		${DESTDIR}${GAMESDIR}/${mzx}
 endif
 ifeq (${BUILD_UTILS},1)
-	@${RM} -f \
+	${RM} \
 		${DESTDIR}${BINDIR}/checkres \
 		${DESTDIR}${BINDIR}/downver \
 		${DESTDIR}${BINDIR}/hlp2txt \
