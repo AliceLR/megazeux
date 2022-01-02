@@ -1251,14 +1251,35 @@ if [ "$PLATFORM" = "unix" ] ||
 	# Confirm the user's selection of X11, if they enabled it
 	#
 	if [ "$X11" = "true" ]; then
+		#
+		# Locate X11 binary path.
+		#
 		X11="false"
 		for XBIN in X Xorg; do
 			# check if X exists
-			if command -v $XBIN >/dev/null 2>&1; then
+			X11PATH=$(command -v "$XBIN" 2>/dev/null)
+			if [ -n "$X11PATH" ]; then
 				X11="true"
 				break
 			fi
 		done
+
+		#
+		# Locate X11 lib dir. "*/lib" should be the last element in the
+		# list so it will be used as the default in case of failure.
+		#
+		if [ "$X11" = "true" ]; then
+			X11DIR=$(dirname "$(dirname "$X11PATH")")
+
+			for X11LIBDIR in "$X11DIR/lib64" "$X11DIR/lib"; do
+				for EXT in "so" "dylib"; do
+					if [ -f "$X11LIBDIR/libX11.$EXT" ] || \
+					   [ -L "$X11LIBDIR/libX11.$EXT" ]; then
+						break 2
+					fi
+				done
+			done
+		fi
 
 		if [ "$X11" = "false" ]; then
 			echo "Force-disabling X11 (could not be queried)."
@@ -1276,16 +1297,9 @@ fi
 
 if [ "$X11" = "true" ]; then
 	echo "X11 support enabled."
-
-	# enable the C++ bits
 	echo "#define CONFIG_X11" >> src/config.h
-
-	# figure out where X11 is prefixed
-	X11PATH=$(command -v $XBIN)
-	X11DIR=$(dirname "$(dirname "$X11PATH")")
-
-	# pass this along to the build system
 	echo "X11DIR=${X11DIR}" >> platform.inc
+	echo "X11LIBDIR=${X11LIBDIR}" >> platform.inc
 fi
 
 #

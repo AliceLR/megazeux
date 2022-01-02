@@ -183,8 +183,12 @@ endif
 #
 
 ifneq (${X11DIR},)
+# BSD needs this but Fedora rpmbuild will whine about it and fail.
+ifneq (${X11DIR},/usr)
+X11RPATH    ?= -Wl,-rpath,${X11LIBDIR}
+endif
 X11_CFLAGS  ?= -I${X11DIR}/include
-X11_LDFLAGS ?= -L${X11DIR}/lib -Wl,-rpath,${X11DIR}/lib -lX11
+X11_LDFLAGS ?= -L${X11LIBDIR} -lX11 ${X11RPATH}
 # Make these immediate
 X11_CFLAGS := $(X11_CFLAGS)
 X11_LDFLAGS := $(X11_LDFLAGS)
