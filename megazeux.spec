@@ -37,13 +37,14 @@ See https://www.digitalmzx.com/ for more information.
             --libdir %{_libdir} \
             --gamesdir %{_bindir} \
             --sharedir %{_datadir} \
+            --licensedir %{_datadir}/license \
             --bindir %{_datadir}/megazeux/bin \
             --sysconfdir %{_sysconfdir}
 %make_build
 
 %install
 rm -rf "$RPM_BUILD_ROOT"
-make install DESTDIR=${RPM_BUILD_ROOT}
+%make_install V=1
 
 %check
 %make_build test
@@ -61,6 +62,7 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_datadir}/applications/megazeux.desktop
 %{_datadir}/applications/mzxrun.desktop
 %{_datadir}/doc/megazeux
+%{_datadir}/license/megazeux
 %{_datadir}/icons/megazeux.png
 %{_sysconfdir}/megazeux-config
 

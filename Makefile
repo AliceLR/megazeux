@@ -36,6 +36,12 @@ include version.inc
 build_root := build/${SUBPLATFORM}
 build := ${build_root}
 
+EXTRA_LICENSES ?=
+LICENSE_CC0    ?= arch/LICENSE.CC0
+LICENSE_LGPL2  ?= arch/LICENSE.LGPL2
+LICENSE_MPL2   ?= arch/LICENSE.MPL2
+LICENSE_NEWLIB ?= arch/LICENSE.Newlib
+
 -include arch/${PLATFORM}/Makefile.in
 
 CC      ?= gcc
@@ -88,6 +94,8 @@ endif
 
 ifeq (${BUILD_LIBSDL2},)
 
+EXTRA_LICENSES += ${LICENSE_LGPL2}
+
 # Check PREFIX for sdl-config.
 ifneq ($(and ${SDL_PREFIX},$(wildcard ${SDL_PREFIX}/bin/sdl-config)),)
 SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl-config
@@ -128,6 +136,9 @@ endif
 
 MIKMOD_CFLAGS  ?= -I${PREFIX}/include
 MIKMOD_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lmikmod
+ifneq (${BUILD_MIKMOD},)
+EXTRA_LICENSES += ${LICENSE_LGPL2}
+endif
 
 #
 # libopenmpt (optional mod engine)
@@ -172,8 +183,12 @@ endif
 #
 
 ifneq (${X11DIR},)
+# BSD needs this but Fedora rpmbuild will whine about it and fail.
+ifneq (${X11DIR},/usr)
+X11RPATH    ?= -Wl,-rpath,${X11LIBDIR}
+endif
 X11_CFLAGS  ?= -I${X11DIR}/include
-X11_LDFLAGS ?= -L${X11DIR}/lib -Wl,-rpath,${X11DIR}/lib -lX11
+X11_LDFLAGS ?= -L${X11LIBDIR} -lX11 ${X11RPATH}
 # Make these immediate
 X11_CFLAGS := $(X11_CFLAGS)
 X11_LDFLAGS := $(X11_LDFLAGS)
@@ -475,7 +490,7 @@ build: ${build} ${build}/assets ${build}/docs
 ${build}:
 	${RM} -r ${build_root}
 	${MKDIR} -p ${build}
-	${CP} config.txt LICENSE ${build}
+	${CP} config.txt LICENSE LICENSE.3rd ${EXTRA_LICENSES} ${build}
 	@if test -f ${mzxrun}; then \
 		cp ${mzxrun} ${build}; \
 	fi
@@ -539,7 +554,7 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 		${build}/assets/glsl/scalers
 endif
 ifeq (${BUILD_GAMECONTROLLERDB},1)
-	${CP} assets/gamecontrollerdb.txt assets/gamecontrollerdb.LICENSE \
+	${CP} assets/gamecontrollerdb.txt \
 	 ${build}/assets
 endif
 

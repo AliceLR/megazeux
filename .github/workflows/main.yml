@@ -30,11 +30,16 @@ jobs:
         run: $MZX_MAKE
       - name: Run tests
         run: $MZX_MAKE test
+      - name: Install
+        run: sudo $MZX_MAKE install V=1
+      - name: Check install
+        run: command -v megazeux && [ -f "/usr/share/doc/megazeux/LICENSE" ] && [ -f "/etc/megazeux-config" ]
+      - name: Uninstall
+        run: sudo $MZX_MAKE uninstall V=1
+      - name: Check uninstall
+        run: true && [ ! -f "/usr/bin/megazeux" ] && [ ! -f "/usr/share/doc/megazeux/LICENSE" ] && [ ! -f "/etc/megazeux-config" ]
       - name: Package source .tar.xz
         run: make source
-  # TODO ;-(
-  #    - name: Install
-  #      run: make install
 
   MSYS2-MINGW64:
     runs-on: windows-latest

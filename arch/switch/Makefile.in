@@ -8,6 +8,8 @@ ifeq ($(strip $(DEVKITPRO)),)
 $(error "DEVKITPRO must be set in your environment.")
 endif
 
+EXTRA_LICENSES += ${LICENSE_MPL2} ${LICENSE_NEWLIB}
+
 # NOTE: there is no $DEVKITA64. Don't use it.
 
 #

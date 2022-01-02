@@ -35,4 +35,10 @@ You may also want to make sure the "build" and "archive" targets do something
 for your platform. These targets make auto-builds and shipping binary
 packages much easier.
 
---ajs.
+LICENSES
+
+If your port requires reporting extra software licenses, you should put a
+notification in LICENSE.3rd. If the boilerplate isn't reasonably small, it
+should go in this folder named in the format "LICENSE.[license here]". In this
+situation, add the license filename to EXTRA_LICENSES so it will be shipped
+with relevant builds.

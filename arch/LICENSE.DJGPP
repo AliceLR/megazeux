@@ -1,0 +1,218 @@
+Licenses for DJGPP, including most licenses in the relevant source code.
+This *should* be all of them aside from slightly different copyright
+dates, but there are quite a few and some have very minor differences.
+
+Note "COPYING" is available as "LICENSE" and "COPYING.LIB" is available
+as "LICENSE.LGPL2" as-distributed by MegaZeux.
+
+DJGPP and its source code are available here: http://www.delorie.com/djgpp/
+
+
+1) copying.dj (crt0, libc, libm)
+
+This is the file "copying.dj".  It does NOT apply to any sources or
+binaries copyrighted by UCB Berkeley, the Free Software Foundation, or
+any other agency besides DJ Delorie and others who have agreed to
+allow their sources to be distributed under these terms.
+
+   Copyright Information for sources and executables that are marked
+   Copyright (C) DJ Delorie
+                 334 North Rd
+                 Deerfield NH 03037-1110
+
+This document is Copyright (C) DJ Delorie and may be distributed
+verbatim, but changing it is not allowed.
+
+Source code copyright DJ Delorie is distributed under the terms of the
+GNU General Public Licence, with the following exceptions:
+
+* Sources used to build crt0.o, gcrt0.o, libc.a, libdbg.a, and
+  libemu.a are distributed under the terms of the GNU Library General
+  Public License, rather than the GNU GPL.
+
+* Any existing copyright or authorship information in any given source
+  file must remain intact.  If you modify a source file, a notice to that
+  effect must be added to the authorship information in the source file. 
+
+* Runtime binaries, as provided by DJ in DJGPP, may be distributed
+  without sources ONLY if the recipient is given sufficient information
+  to obtain a copy of djgpp themselves.  This primarily applies to
+  go32-v2.exe, emu387.dxe, and stubedit.exe.
+
+* Runtime objects and libraries, as provided by DJ in DJGPP, when
+  linked into an application, may be distributed without sources ONLY
+  if the recipient is given sufficient information to obtain a copy of
+  djgpp themselves.  This primarily applies to crt0.o and libc.a.
+
+-----
+
+Changes to source code copyright BSD, FSF, or others, by DJ Delorie
+fall under the terms of the original copyright.  Such files usually
+have multiple copyright notices in them.
+
+A copy of the files "COPYING" and "COPYING.LIB" are included with this
+document.  If you did not receive a copy of these files, you may
+obtain one from whence this document was obtained, or by writing:
+
+      Free Software Foundation
+      51 Franklin Street, Fifth Floor
+      Boston, MA 02110-1301
+      USA
+
+
+2) Sun Microsystems (libm)
+
+/*
+ * ====================================================
+ * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+ *
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
+ * Permission to use, copy, modify, and distribute this
+ * software is freely granted, provided that this notice 
+ * is preserved.
+ * ====================================================
+ */
+
+
+3) Alexander S. Aganichev (locale)
+
+/*
+ * setlocal.c: Set or read international environment
+ *
+ * Copyright (C) 2002, 2005 Alexander S. Aganichev <asa@users.sf.net>
+ *
+ * This software may be used freely so long as this copyright notice is
+ * left intact.  There is no warranty on this software.
+ */
+
+
+4) Regents of the University of California (stdlib)
+
+/*
+ * Copyright (c) 1983 Regents of the University of California.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms are permitted
+ * provided that: (1) source distributions retain this entire copyright
+ * notice and comment, and (2) distributions including binaries display
+ * the following acknowledgement:  ``This product includes software
+ * developed by the University of California, Berkeley and its contributors''
+ * in the documentation or other materials provided with the distribution
+ * and in all advertising materials mentioning features or use of this
+ * software. Neither the name of the University nor the names of its
+ * contributors may be used to endorse or promote products derived
+ * from this software without specific prior written permission.
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+
+5) Regents of the University of California (ctime)
+
+/*
+ * Copyright (c) 1987, 1989 Regents of the University of California.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to Berkeley by
+ * Arthur David Olson of the National Cancer Institute.
+ *
+ * Redistribution and use in source and binary forms are permitted provided
+ * that: (1) source distributions retain this entire copyright notice and
+ * comment, and (2) distributions including binaries display the following
+ * acknowledgement:  ``This product includes software developed by the
+ * University of California, Berkeley and its contributors'' in the
+ * documentation or other materials provided with the distribution and in
+ * all advertising materials mentioning features or use of this software.
+ * Neither the name of the University nor the names of its contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+
+6) Martin Strömberg (libc)
+
+ * Copyright (C) 2003 Martin Str@"omberg <ams@ludd.luth.se>.
+ *
+ * This software may be used freely so long as this copyright notice is
+ * left intact. There is no warranty on this software.
+
+
+7) Eli Zaretskii (libc)
+
+ * Copyright (c) 1995-98 Eli Zaretskii <eliz@is.elta.co.il>
+ *
+ * This software may be used freely so long as this copyright notice is
+ * left intact.  There is no warranty on this software.
+
+
+8) Morten Welinder (libc)
+
+   Copyright 1995 by Morten Welinder
+   This file maybe freely distributed and modified as long as the
+   copyright notice remains.
+
+
+9) Borca Daniel and Andrew Zabolotny (libc)
+
+/* Copyright (C) 2003 Borca Daniel <dborca@yahoo.com>
+ * Copyright (C) 2000 Andrew Zabolotny <bit@eltech.ru>
+ * Partly based on work by Charles Sandmann and DJ Delorie.
+ * Usage of this library is not restricted in any way.  
+ * ABSOLUTELY no warranties.  Contributed to the DJGPP project.
+ */
+
+
+10) Charles Sandmann (libc)
+
+/* Copyright (C) 1995 Charles Sandmann (sandmann@clio.rice.edu)
+   This software may be freely distributed with above copyright, no warranty.
+   Based on code by DJ Delorie, it's really his, enhanced, bugs fixed. */
+
+/* Copyright (C) 1994, 1995 Charles Sandmann (sandmann@clio.rice.edu)
+ * ...
+ * This file maybe freely distributed, no warranty. */
+
+/* Copyright (C) 1994, 1995 Charles Sandmann (sandmann@clio.rice.edu)
+ * This file maybe freely distributed and modified as long as copyright remains.
+ */
+
+/* Copyright (C) 1995 Charles Sandmann (sandmann@clio.rice.edu)
+   This software may be freely distributed, no warranty.
+
+
+11) Henry Spencer (regex)
+
+Copyright 1992, 1993, 1994, 1997 Henry Spencer.  All rights reserved.
+This software is not subject to any license of the American Telephone
+and Telegraph Company or of the Regents of the University of California.
+
+Permission is granted to anyone to use this software for any purpose on
+any computer system, and to alter it and redistribute it, subject
+to the following restrictions:
+
+1. The author is not responsible for the consequences of use of this
+   software, no matter how awful, even if they arise from flaws in it.
+
+2. The origin of this software must not be misrepresented, either by
+   explicit claim or by omission.  Since few users ever read sources,
+   credits must appear in the documentation.
+
+3. Altered versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.  Since few users
+   ever read sources, credits must appear in the documentation.
+
+4. This notice may not be removed or altered.
+
+
+12) Eric Backus (xstat)
+
+/*
+  (c) Copyright 1992 Eric Backus
+
+  This software may be used freely so long as this copyright notice is
+  left intact.  There is no warranty on this software.
+*/

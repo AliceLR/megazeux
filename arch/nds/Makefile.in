@@ -14,6 +14,8 @@ endif
 
 include ${DEVKITARM}/ds_rules
 
+EXTRA_LICENSES += ${LICENSE_CC0} ${LICENSE_MPL2} ${LICENSE_NEWLIB}
+
 #
 # NDS target rules
 #

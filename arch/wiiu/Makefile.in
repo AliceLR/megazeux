@@ -12,6 +12,8 @@ ifeq ($(strip $(DEVKITPPC)),)
 $(error "DEVKITPPC must be set in your environment.")
 endif
 
+EXTRA_LICENSES += ${LICENSE_MPL2} ${LICENSE_NEWLIB}
+
 #
 # Switch target rules
 #
