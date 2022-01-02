@@ -19,7 +19,7 @@ For MegaZeux's license, see LICENSE.
 ----------------------------------------------------------------
 
 glibc is available under the GNU Lesser General Public License 2.1.
-See LICENSE.LGPL or /usr/share/licenses/glibc for more information.
+See LICENSE.LGPL2 or /usr/share/licenses/glibc for more information.
 
 Used by ports: Most Linux distributions.
 Home page:     https://www.gnu.org/software/libc/
@@ -55,7 +55,8 @@ License URL:   https://opensource.apple.com/license/apsl/
 Newlib is available under a collection of BSD-like licenses.
 See LICENSE.Newlib or for more information.
 
-Used by ports: NDS, 3DS, Wii, Wii U, Switch, PSP, PS Vita, some OSes.
+Used by ports: NDS, 3DS, Wii, Wii U, Switch, PSP, PS Vita,
+               Dreamcast, AmigaOS 4.
 Home page:     https://sourceware.org/newlib/
 License URL:   https://sourceware.org/newlib/COPYING.NEWLIB
 
@@ -104,6 +105,21 @@ License URL:   https://android.googlesource.com/platform/bionic/+/master/libc/NO
 
 
 ----------------------------------------------------------------
+  DJGPP libc, libm, and crt0
+----------------------------------------------------------------
+
+DJGPP libc and crt0 are available under the GNU Lesser General
+Public License 2.1. DJGPP libm is *probably* available under the
+GNU General Public License 2.0. DJGPP also contains contributed
+code under various permissive licenses. See LICENSE.DJGPP,
+LICENSE.LGPL2, and LICENSE for more information.
+
+Used by ports: DJGPP.
+Home page:     http://www.delorie.com/djgpp/
+Source URL:    http://www.delorie.com/pub/djgpp/ (djlsr205.zip)
+
+
+----------------------------------------------------------------
   SDL 2
 ----------------------------------------------------------------
 
@@ -137,9 +153,9 @@ freely, subject to the following restrictions:
 ----------------------------------------------------------------
 
 SDL 1.2 is available under the GNU Lesser General Public License 2.1.
-See LICENSE.LGPL or /usr/share/licenses/SDL for more information.
+See LICENSE.LGPL2 or /usr/share/licenses/SDL for more information.
 
-Used by ports: Mac OS X PowerPC, PSP, GP2X, Pandora, AmigaOS.
+Used by ports: Mac OS X PowerPC, PSP, GP2X, Pandora, AmigaOS 4.
 Home page:     https://www.libsdl.org/
 License URL:   https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
 
@@ -309,7 +325,7 @@ Home page:     https://github.com/Konstanty/libmodplug
 ----------------------------------------------------------------
 
 libmikmod is available under the GNU Lesser General Public License 2.1.
-See LICENSE.LGPL for more information. (Supported as a non-default
+See LICENSE.LGPL2 for more information. (Supported as a non-default
 compile-time option.)
 
 Used by ports: None (non-default compile-time option).
