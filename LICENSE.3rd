@@ -198,7 +198,7 @@ Home page:     https://zlib.net/
   libpng
 ----------------------------------------------------------------
 
-libpng uses a zlib-like license.
+libpng is available under a zlib-like license.
 
 Used by ports: Most.
 Home page:     https://www.libpng.org/
@@ -325,8 +325,7 @@ Home page:     https://github.com/Konstanty/libmodplug
 ----------------------------------------------------------------
 
 libmikmod is available under the GNU Lesser General Public License 2.1.
-See LICENSE.LGPL2 for more information. (Supported as a non-default
-compile-time option.)
+See LICENSE.LGPL2 for more information.
 
 Used by ports: None (non-default compile-time option).
 Home page:     http://mikmod.sourceforge.net/
@@ -338,7 +337,6 @@ License URL:   https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
 ----------------------------------------------------------------
 
 libopenmpt is available under the BSD-3-clause license.
-(Currently unsupported, but allowed as a non-default compile-time option.)
 
 Used by ports: None (non-default compile-time option).
 Home page:     https://lib.openmpt.org/libopenmpt/
@@ -421,7 +419,7 @@ Home page:     https://maxmod.org
 Some MegaZeux ports use a crt0 available under the Mozilla Public License 2.0.
 See LICENSE.MPL2 for more information.
 
-Used by ports: NDS, 3DS, Wii, Wii U, Switch.
+Used by ports: NDS, 3DS.
 Home page:     https://github.com/devkitPro/devkitarm-crtls
 License URL:   https://mozilla.org/MPL/2.0/
 
@@ -483,11 +481,13 @@ SOFTWARE.
   Nouveau
 ----------------------------------------------------------------
 
-Nouveau is available under the MIT license.
+libdrm_nouveau is available under the MIT license.
 
 Used by ports: Linux (dynamic linked, optional), Switch (static linked).
 Home page:     https://nouveau.freedesktop.org/
 
+ * Copyright 2012 Red Hat Inc.
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
  * to deal in the Software without restriction, including without limitation
