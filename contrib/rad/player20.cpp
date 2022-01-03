@@ -1059,6 +1059,7 @@ void RADPlayer::TickRiff(int channum, CChannel::CRiff &riff, bool chan_riff) {
     if (!trk || (*trk++ & 0x7F) != riff.Line)
         return;
 
+    lineid = 0; // silence warning
     UnpackNote(trk, lineid); // lineid is just a dummy here
     if (EffectNum == cmJumpToLine && Param < kTrackLines) {
         riff.Line = Param;

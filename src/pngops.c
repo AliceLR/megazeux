@@ -240,23 +240,38 @@ void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checke
   }
 
   if(type == PNG_COLOR_TYPE_PALETTE)
+  {
     png_set_palette_to_rgb(png_ptr);
+  }
+  else
 
-  else if(type == PNG_COLOR_TYPE_GRAY_ALPHA || !(type & PNG_COLOR_MASK_COLOR))
+  if(type == PNG_COLOR_TYPE_GRAY_ALPHA || !(type & PNG_COLOR_MASK_COLOR))
+  {
     png_set_gray_to_rgb(png_ptr);
+  }
+#if PNG_LIBPNG_VER >= 10209
+  else
 
-  else if(!(type & PNG_COLOR_MASK_COLOR) && bpp < 8)
+  if(!(type & PNG_COLOR_MASK_COLOR) && bpp < 8)
     png_set_expand_gray_1_2_4_to_8(png_ptr);
+#endif
 
   if(bpp == 16)
+  {
     png_set_strip_16(png_ptr);
+  }
+  else
 
-  else if(bpp < 8)
+  if(bpp < 8)
     png_set_packing(png_ptr);
 
   if(png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+  {
     png_set_tRNS_to_alpha(png_ptr);
-  else if(!(type & PNG_COLOR_MASK_ALPHA))
+  }
+  else
+
+  if(!(type & PNG_COLOR_MASK_ALPHA))
     png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);
 
   // FIXME: Are these necessary?
