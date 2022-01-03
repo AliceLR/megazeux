@@ -88,7 +88,7 @@ boolean gl_load_syms(const struct dso_syms_map *map)
 
   for(i = 0; map[i].name != NULL; i++)
   {
-    void **sym_ptr = (void **)map[i].sym_ptr;
+    dso_fn **sym_ptr = map[i].sym_ptr.value;
     *sym_ptr = GL_GetProcAddress(map[i].name);
     if(!*sym_ptr)
     {
