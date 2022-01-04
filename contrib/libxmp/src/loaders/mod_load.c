@@ -81,7 +81,7 @@ const struct mod_magic mod_magic[] = {
 	{"FA06", 1, TRACKER_DIGITALTRACKER, 6},	/* Atari Falcon */
 	{"FA08", 1, TRACKER_DIGITALTRACKER, 8},	/* Atari Falcon */
 	{"NSMS", 1, TRACKER_UNKNOWN, 4},	/* in Kingdom.mod */
-	{"", 0}
+	{"", 0, 0, 0}
 };
 
 static int mod_test(HIO_HANDLE *, char *, const int);

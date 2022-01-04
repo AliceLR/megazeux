@@ -112,13 +112,23 @@ uint64_t rng_get_seed(void);
 void rng_set_seed(uint64_t seed);
 unsigned int Random(uint64_t range);
 
-typedef void (*fn_ptr)(void);
+/* Use as (dso_fn **) to store a loaded (void *) to a function pointer. */
+typedef void dso_fn;
+
+/* Initialize a (dso_fn **) via (void *) to avoid strict aliasing warnings. */
+union dso_fn_ptr_ptr
+{
+  void *in;
+  dso_fn **value;
+};
 
 struct dso_syms_map
 {
   const char *name;
-  fn_ptr *sym_ptr;
+  union dso_fn_ptr_ptr sym_ptr;
 };
+
+#define DSO_MAP_END { NULL, { NULL }}
 
 #include <sys/types.h>
 

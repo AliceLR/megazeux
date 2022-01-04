@@ -24,7 +24,7 @@ libxmp_cflags := \
 #
 libxmp_cflags += \
  -Wno-missing-prototypes -Wno-unused-macros -Wno-sign-compare \
- -Wno-missing-field-initializers -Wno-missing-declarations
+ -Wno-missing-declarations
 
 ifeq (${HAS_W_NO_UNUSED_BUT_SET_VARIABLE},1)
 libxmp_cflags += -Wno-unused-but-set-variable

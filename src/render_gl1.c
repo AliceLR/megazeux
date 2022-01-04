@@ -79,23 +79,23 @@ gl1;
 
 static const struct dso_syms_map gl1_syms_map[] =
 {
-  { "glBindTexture",        (fn_ptr *)&gl1.glBindTexture },
-  { "glClear",              (fn_ptr *)&gl1.glClear },
-  { "glDeleteTextures",     (fn_ptr *)&gl1.glDeleteTextures },
-  { "glDisableClientState", (fn_ptr *)&gl1.glDisableClientState },
-  { "glDrawArrays",         (fn_ptr *)&gl1.glDrawArrays },
-  { "glEnable",             (fn_ptr *)&gl1.glEnable },
-  { "glEnableClientState",  (fn_ptr *)&gl1.glEnableClientState },
-  { "glGenTextures",        (fn_ptr *)&gl1.glGenTextures },
-  { "glGetError",           (fn_ptr *)&gl1.glGetError },
-  { "glGetString",          (fn_ptr *)&gl1.glGetString },
-  { "glTexCoordPointer",    (fn_ptr *)&gl1.glTexCoordPointer },
-  { "glTexImage2D",         (fn_ptr *)&gl1.glTexImage2D },
-  { "glTexParameterf",      (fn_ptr *)&gl1.glTexParameterf },
-  { "glTexSubImage2D",      (fn_ptr *)&gl1.glTexSubImage2D },
-  { "glVertexPointer",      (fn_ptr *)&gl1.glVertexPointer },
-  { "glViewport",           (fn_ptr *)&gl1.glViewport },
-  { NULL, NULL }
+  { "glBindTexture",        { &gl1.glBindTexture }},
+  { "glClear",              { &gl1.glClear }},
+  { "glDeleteTextures",     { &gl1.glDeleteTextures }},
+  { "glDisableClientState", { &gl1.glDisableClientState }},
+  { "glDrawArrays",         { &gl1.glDrawArrays }},
+  { "glEnable",             { &gl1.glEnable }},
+  { "glEnableClientState",  { &gl1.glEnableClientState }},
+  { "glGenTextures",        { &gl1.glGenTextures }},
+  { "glGetError",           { &gl1.glGetError }},
+  { "glGetString",          { &gl1.glGetString }},
+  { "glTexCoordPointer",    { &gl1.glTexCoordPointer }},
+  { "glTexImage2D",         { &gl1.glTexImage2D }},
+  { "glTexParameterf",      { &gl1.glTexParameterf }},
+  { "glTexSubImage2D",      { &gl1.glTexSubImage2D }},
+  { "glVertexPointer",      { &gl1.glVertexPointer }},
+  { "glViewport",           { &gl1.glViewport }},
+  DSO_MAP_END
 };
 
 #define gl_check_error() gl_error(__FILE__, __LINE__, gl1.glGetError)

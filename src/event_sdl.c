@@ -1587,7 +1587,7 @@ boolean __peek_exit_input(void)
 
     if(events[i].type == SDL_KEYDOWN)
     {
-      SDL_KeyboardEvent *ev = (SDL_KeyboardEvent *) &events[i];
+      SDL_KeyboardEvent *ev = &(events[i].key);
 
       if(ev->keysym.sym == SDLK_ESCAPE)
         return true;
