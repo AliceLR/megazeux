@@ -707,23 +707,9 @@ echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
 #
 # Platform-specific libraries, or SDL?
 #
-if [ "$PLATFORM" = "wii" ]; then
-	echo "#define CONFIG_WII" >> src/config.h
-	echo "BUILD_WII=1" >> platform.inc
-	LIBSDL2="false"
-
-	echo "Force-disabling stack protector on Wii."
-	STACK_PROTECTOR="false"
-fi
-
 if [ "$PLATFORM" = "3ds" ] || [ "$PLATFORM" = "nds" ]; then
 	echo "Disabling SDL ($PLATFORM)."
 	SDL="false"
-fi
-
-if [ "$PLATFORM" = "pandora" ]; then
-	echo "#define CONFIG_PANDORA" >> src/config.h
-	echo "BUILD_PANDORA=1" >> platform.inc
 fi
 
 #
@@ -731,8 +717,7 @@ fi
 #
 if [ "$SDL" = "false" ]; then
 	echo "Force-disabling SDL dependent components:"
-	echo " -> SOFTWARE, SOFTSCALE, OVERLAY"
-	SOFTWARE="false"
+	echo " -> SOFTSCALE, OVERLAY"
 	SOFTSCALE="false"
 	OVERLAY="false"
 	LIBSDL2="false"
@@ -750,6 +735,9 @@ fi
 if [ "$EGL" = "true" ]; then
 	echo "#define CONFIG_EGL" >> src/config.h
 	echo "BUILD_EGL=1" >> platform.inc
+
+	echo "Force-disabling software renderer (EGL)."
+	SOFTWARE="false"
 
 	echo "Force-enabling OpenGL ES support (EGL)."
 	GLES="true"
@@ -853,11 +841,36 @@ if [ "$PLATFORM" = "3ds" ]; then
 	echo "Building custom 3DS renderer."
 	SOFTWARE="false"
 
-	echo "Disabling utils on 3DS (silly)."
+	echo "Disabling utils on 3DS."
 	UTILS="false"
 
 	echo "Force-disabling IPv6 on 3DS (not implemented)."
 	IPV6="false"
+fi
+
+#
+# If the Wii arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "wii" ]; then
+	echo "Enabling Wii-specific hacks."
+	echo "#define CONFIG_WII" >> src/config.h
+	echo "BUILD_WII=1" >> platform.inc
+
+	if [ "$SDL" = "false" ]; then
+		echo "Force-disabling software renderer on Wii."
+		echo "Building custom Wii renderers."
+		SOFTWARE="false"
+	fi
+
+	# No SDL 2 support currently.
+	LIBSDL2="false"
+
+	echo "Force-disabling utils on Wii."
+	UTILS="false"
+
+	echo "Force-disabling stack protector on Wii."
+	STACK_PROTECTOR="false"
 fi
 
 #
@@ -869,7 +882,7 @@ if [ "$PLATFORM" = "wiiu" ]; then
 	echo "#define CONFIG_WIIU" >> src/config.h
 	echo "BUILD_WIIU=1" >> platform.inc
 
-	echo "Disabling utils on Wii U (silly)."
+	echo "Disabling utils on Wii U."
 	UTILS="false"
 
 	# Doesn't seem to be fully populated on the Wii U.
@@ -885,7 +898,7 @@ if [ "$PLATFORM" = "switch" ]; then
 	echo "#define CONFIG_SWITCH" >> src/config.h
 	echo "BUILD_SWITCH=1" >> platform.inc
 
-	echo "Disabling utils on Switch (silly)."
+	echo "Disabling utils on Switch."
 	UTILS="false"
 
 	echo "Force-enabling OpenGL ES support (Switch)."
@@ -934,6 +947,15 @@ if [ "$PLATFORM" = "gp2x" ]; then
 
 	echo "Force-disabling Modplug audio."
 	MODPLUG="false"
+fi
+
+#
+# If the Pandora arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "pandora" ]; then
+	echo "#define CONFIG_PANDORA" >> src/config.h
+	echo "BUILD_PANDORA=1" >> platform.inc
 fi
 
 #

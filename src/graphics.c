@@ -1776,7 +1776,11 @@ boolean has_video_initialized(void)
   // Dummy SDL driver should act as headless.
   const char *sdl_driver = SDL_GetCurrentVideoDriver();
   if(sdl_driver && !strcmp(sdl_driver, "dummy")) return false;
-#endif /* CONFIG_SDL */
+#elif defined(CONFIG_RENDER_SOFT)
+  // Non-SDL software renderer is always headless.
+  if(renderers[graphics.renderer_num].reg == render_soft_register)
+    return false;
+#endif /* CONFIG_RENDER_SOFT */
 
   return graphics_was_initialized;
 }
