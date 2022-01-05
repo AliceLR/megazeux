@@ -235,11 +235,11 @@ DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE
 ARCH_EXE_LDFLAGS += -pie
 endif
 ifeq (${SANITIZER},memory)
-# FIXME I don't think there's a way to make this one work properly right now.
-# SDL_Init generates an error immediately and if sanitize-recover is used it
-# seems to get stuck printing endless errors.
-DEBUG_CFLAGS := -fsanitize=memory -O1 -fno-omit-frame-pointer -fPIE \
- -fsanitize-recover=memory -fsanitize-memory-track-origins
+# Note: to be useful, this requires a fairly special build with most
+# external libraries turned off or re-built with instrumentation.
+# This sanitizer is only implemented by clang.
+DEBUG_CFLAGS := -fsanitize=memory -O1 -fno-omit-frame-pointer -fPIC \
+ -fsanitize-recover=memory -fsanitize-memory-track-origins=2
 ARCH_EXE_LDFLAGS += -pie
 endif
 
