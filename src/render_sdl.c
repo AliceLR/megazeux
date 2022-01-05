@@ -63,8 +63,9 @@ boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
   SDL_DisplayMode display_mode;
-  int ret = -1;
+  boolean have_mode = false;
   int count;
+  int ret;
 
   if(scaling)
   {
@@ -77,6 +78,8 @@ boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
       if(count)
         ret = SDL_GetDisplayMode(0, 0, &display_mode);
     }
+    if(!ret)
+      have_mode = true;
   }
   else
   {
@@ -101,11 +104,12 @@ boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
       {
         min_size = mode.w * mode.h;
         display_mode = mode;
+        have_mode = true;
       }
     }
   }
 
-  if(!ret)
+  if(have_mode)
   {
     *width = display_mode.w;
     *height = display_mode.h;

@@ -1562,7 +1562,11 @@ void run_robot(context *ctx, int id, int x, int y)
             if(is_string(src_buffer))
             {
               // Is it another string?
-              get_string(mzx_world, src_buffer, &dest, id);
+              if(!get_string(mzx_world, src_buffer, &dest, id))
+              {
+                dest.value = src_buffer;
+                src_buffer[0] = '\0';
+              }
             }
             else
             {
