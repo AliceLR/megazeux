@@ -146,6 +146,7 @@ static boolean soft_set_video_mode(struct graphics_data *graphics,
   render_data->pitch = (graphics->bits_per_pixel / 8) * SCREEN_PIX_W;
   render_data->bpp = graphics->bits_per_pixel;
 
+  graphics->renderer_is_headless = true;
   return true;
 
 #endif /* !CONFIG_SDL */

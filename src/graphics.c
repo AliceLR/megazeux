@@ -61,7 +61,6 @@
 #define CURSOR_BLINK_RATE 115
 
 __editor_maybe_static struct graphics_data graphics;
-static boolean graphics_was_initialized;
 
 static const struct renderer_data renderers[] =
 {
@@ -1396,6 +1395,7 @@ static boolean set_graphics_output(struct config_info *conf)
 
   renderer->reg(&graphics.renderer);
   graphics.renderer_num = i;
+  graphics.renderer_is_headless = false;
 
   debug("Video: using '%s' renderer.\n", renderer->name);
   return true;
@@ -1758,7 +1758,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   ec_clear_set();
   ec_load_mzx();
   init_palette();
-  graphics_was_initialized = true;
+  graphics.is_initialized = true;
   return true;
 }
 
@@ -1776,13 +1776,13 @@ boolean has_video_initialized(void)
   // Dummy SDL driver should act as headless.
   const char *sdl_driver = SDL_GetCurrentVideoDriver();
   if(sdl_driver && !strcmp(sdl_driver, "dummy")) return false;
-#elif defined(CONFIG_RENDER_SOFT)
-  // Non-SDL software renderer is always headless.
-  if(renderers[graphics.renderer_num].reg == render_soft_register)
-    return false;
-#endif /* CONFIG_RENDER_SOFT */
+#endif /* CONFIG_SDL */
 
-  return graphics_was_initialized;
+  // Renderers can also report as headless.
+  if(graphics.renderer_is_headless)
+    return false;
+
+  return graphics.is_initialized;
 }
 
 boolean set_video_mode(void)

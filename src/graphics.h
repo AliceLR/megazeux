@@ -162,6 +162,8 @@ struct graphics_data
   uint32_t current_intensity[SMZX_PAL_SIZE];
   uint32_t saved_intensity[SMZX_PAL_SIZE];
   uint32_t backup_intensity[SMZX_PAL_SIZE];
+  boolean is_initialized;
+  boolean renderer_is_headless;
   boolean default_smzx_loaded;
   boolean palette_dirty;
   boolean fade_status;
