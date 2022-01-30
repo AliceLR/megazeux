@@ -81,6 +81,7 @@ int error(const char *string, enum error_type type, unsigned int options,
     int scode = code ? (int)code : -1;
 
     fprintf(stderr, "%s%s\n", type_name, string);
+    fflush(stderr);
 
     // Attempt to automatically handle this error if possible.
     if(options & ERROR_OPT_EXIT) exit(scode);

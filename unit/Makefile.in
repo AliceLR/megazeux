@@ -94,6 +94,8 @@ unit_common_objs += \
   ${io_obj}/zip.o         \
   ${io_obj}/zip_stream.o  \
 
+unit_ldflags += ${ZLIB_LDFLAGS}
+
 endif
 
 #
