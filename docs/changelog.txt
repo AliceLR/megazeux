@@ -167,6 +167,7 @@ USERS
   stdin using the input filename "-".
 + Fixed bugs caused by missing validation in the Import SFX
   feature in the editor.
++ Scrolls can now display standard message ~@ color codes.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 

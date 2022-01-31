@@ -38,6 +38,21 @@
 static const char scr_nm_strs[5][12] =
  { "  Scroll   ", "   Sign    ", "Edit Scroll", "   Help    ", "" };
 
+static int scroll_draw_flags(struct world *mzx_world, boolean mask_chars,
+ boolean mask_colors)
+{
+  int flags = WR_LINE;
+
+  if(mask_chars)
+    flags |= WR_MASK;
+
+  if(!mask_colors)
+    if(mzx_world->version < V200 || mzx_world->version >= V293)
+      flags |= WR_COLOR;
+
+  return flags;
+}
+
 static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
  int pos, boolean mask_chars, boolean mask_colors)
 {
@@ -49,6 +64,7 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
   char *where;
   int scroll_base_color = mzx_world->scroll_base_color;
   int c_offset = 16;
+  int flags = scroll_draw_flags(mzx_world, mask_chars, mask_colors);
 
   where = scroll->mesg;
 
@@ -65,11 +81,7 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
 
   // Display center line
   fill_line_ext(64, 8, 12, 32, scroll_base_color, 0, c_offset);
-
-  if(mask_chars)
-    write_line_mask(where + pos, 8, 12, scroll_base_color, true);
-  else
-    write_line_ext(where + pos, 8, 12, scroll_base_color, true, 0, c_offset);
+  write_string_ext(where + pos, 8, 12, scroll_base_color, flags, 0, c_offset);
 
   // Display lines above center line
   for(t1 = 11; t1 >= 6; t1--)
@@ -87,14 +99,11 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
         } while((where[pos] != '\n') && (where[pos] != 1));
         // At start of prev. line -1. Display.
         pos++;
-        if(mask_chars)
-          write_line_mask(where + pos, 8, t1, scroll_base_color, true);
-        else
-          write_line_ext(where + pos, 8, t1, scroll_base_color, true, 0, c_offset);
+        write_string_ext(where + pos, 8, t1, scroll_base_color, flags, 0, c_offset);
       }
     }
-    // Next line...
   }
+
   // Display lines below center line
   pos = old_pos;
   for(t1 = 13; t1 <= 18; t1++)
@@ -103,16 +112,10 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
     if(where[pos] == 0) continue;
     // Go forward to next line
     while(where[pos] != '\n') pos++;
-    // At end of current. If next is a 0, don't show nuthin'.
+    // At end of current. If next is a 0, it's the end of the scroll.
     pos++;
     if(where[pos])
-    {
-      if(mask_chars)
-        write_line_mask(where + pos, 8, t1, scroll_base_color, true);
-      else
-        write_line_ext(where + pos, 8, t1, scroll_base_color, true, 0, c_offset);
-    }
-    // Next line...
+      write_string_ext(where + pos, 8, t1, scroll_base_color, flags, 0, c_offset);
   }
 
   select_layer(UI_LAYER);
@@ -471,13 +474,13 @@ void scroll_edging_ext(struct world *mzx_world, int type, boolean mask)
   draw_char_ext(16, scroll_pointer_color, 6, 12, offset, c_offset);
   draw_char_ext(17, scroll_pointer_color, 73, 12, offset, c_offset);
   // Write title
-  write_string_ext(scr_nm_strs[type], 34, 4, scroll_title_color, 0,
+  write_string_ext(scr_nm_strs[type], 34, 4, scroll_title_color, WR_NONE,
    offset, c_offset);
   // Write key reminders
   if(type == 2)
   {
     write_string_ext("\x12\x1d: Move cursor   Alt+C: Character "
-     "  Esc: Done editing", 13, 20, scroll_corner_color, 0,
+     "  Esc: Done editing", 13, 20, scroll_corner_color, WR_NONE,
      offset, c_offset);
   }
   else
@@ -485,23 +488,21 @@ void scroll_edging_ext(struct world *mzx_world, int type, boolean mask)
   if(type < 2)
   {
     write_string_ext("\x12: Scroll text   Esc/Enter: End reading",
-     21, 20, scroll_corner_color, 0, offset, c_offset);
+     21, 20, scroll_corner_color, WR_NONE, offset, c_offset);
   }
   else
 
   if(type == 3)
   {
-    write_string_ext("\x12:Scroll text  Esc:Exit help"
-     "  Enter:Select  Alt+P:Print", 13, 20,
-     scroll_corner_color, 0, offset, c_offset);
-    write_string_ext("F1:Help on Help "
-     " Alt+F1:Table of Contents", 20, 21,
-     scroll_corner_color, 0, offset, c_offset);
+    write_string_ext(
+     "\x12:Scroll text  Esc:Exit help  Enter:Select  Alt+P:Print\n"
+     "\t  F1:Help on Help  Alt+F1:Table of Contents",
+     13, 20, scroll_corner_color, WR_TAB | WR_NEWLINE, offset, c_offset);
   }
   else
   {
-    write_string_ext("\x12:Scroll text  Esc:Exit "
-     "  Enter:Select", 21, 20, scroll_corner_color, 0, offset, c_offset);
+    write_string_ext("\x12:Scroll text  Esc:Exit  Enter:Select",
+     21, 20, scroll_corner_color, WR_NONE, offset, c_offset);
   }
   select_layer(UI_LAYER);
   update_screen();

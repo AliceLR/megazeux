@@ -567,12 +567,12 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
         if(current_pixel)
         {
           write_string("\xDB\xDB\xDB\xDB", start_x + (x * 4),
-           start_y + y, base_colors[current_pixel], 1);
+           start_y + y, base_colors[current_pixel], WR_NONE);
         }
         else
         {
           write_string("\xFA\xFA\xFA\xFA", start_x + (x * 4),
-           start_y + y, bg_color, 1);
+           start_y + y, bg_color, WR_NONE);
         }
       }
     }
@@ -589,13 +589,13 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
         {
           write_string("\xDB\xDB\xDB\xDB", start_x +
            ((x + current_x) * 4), start_y + current_y + y,
-           highlight_colors[current_pixel], 1);
+           highlight_colors[current_pixel], WR_NONE);
         }
         else
         {
           write_string("\xFA\xFA\xFA\xFA", start_x +
            ((x + current_x) * 4), start_y + y + current_y,
-           0x1B, 1);
+           0x1B, WR_NONE);
         }
       }
     }
@@ -1210,39 +1210,39 @@ int char_editor(struct world *mzx_world)
      128, 143, 135, 0, 0);
 
     // Current character
-    write_string("Current char-\t(#000)", info_x, info_y, 0x8F, 1);
+    write_string("Current char-\t(#000)", info_x, info_y, 0x8F, WR_TAB);
     write_number(current_char + (current_charset * 256), 0x8F,
      info_x + 22, info_y, 3, 3, 10);
 
     // Help
     write_string(help_text[help_page],
-     info_x, info_y + pad_height + 2, 0x8F, 1);
+     info_x, info_y + pad_height + 2, 0x8F, WR_TAB | WR_NEWLINE);
 
     if(screen_mode)
     {
       // Correct "Toggle pixel" to "Place pixel"
       if(help_page == 0)
         write_string("Place pixel ",
-         info_x + 8, info_y + pad_height + 4, 0x8F, 1);
+         info_x + 8, info_y + pad_height + 4, 0x8F, WR_TAB);
 
       // Correct F5 to "SMZX"
       if(help_page == 1)
         write_string("SMZX",
-         info_x + 18, info_y + pad_height + 8, 0x8F, 1);
+         info_x + 18, info_y + pad_height + 8, 0x8F, WR_TAB);
 
       // 1-4 Select
       write_string(help_text_smzx,
-       info_x, info_y + pad_height + 14, 0x8F, 1);
+       info_x, info_y + pad_height + 14, 0x8F, WR_TAB);
 
       if(current_pixel)
       {
         write_string("\xDB\xDB\xDB\xDB", info_x + 16,
-         info_y + pad_height + 14, smzx_colors[current_pixel], 1);
+         info_y + pad_height + 14, smzx_colors[current_pixel], WR_NONE);
       }
       else
       {
         write_string("\xFA\xFA\xFA\xFA", info_x + 16,
-         info_y + pad_height + 14, (smzx_colors[0] << 4) + smzx_colors[3], 1);
+         info_y + pad_height + 14, (smzx_colors[0] << 4) + smzx_colors[3], WR_NONE);
       }
     }
 
@@ -1253,17 +1253,17 @@ int char_editor(struct world *mzx_world)
     {
       case 0:
         write_string("(off)   ", info_x + 16,
-         info_y + pad_height + 13, 0x8F, 0);
+         info_y + pad_height + 13, 0x8F, WR_NONE);
         break;
 
       case 1:
         write_string("(set)   ", info_x + 16,
-         info_y + pad_height + 13, 0x8F, 0);
+         info_y + pad_height + 13, 0x8F, WR_NONE);
         break;
 
       case 2:
         write_string("(clear) ", info_x + 16,
-         info_y + pad_height + 13, 0x8F, 0);
+         info_y + pad_height + 13, 0x8F, WR_NONE);
         break;
     }
 
