@@ -3,20 +3,39 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="net.digitalmzx.megazeux"
     android:installLocation="auto">
+
     <!-- OpenGL ES 2.0 -->
-    <uses-feature android:glEsVersion="0x00020000" /> <!-- Touchscreen support -->
+    <uses-feature android:glEsVersion="0x00020000" />
+
+    <!-- Touchscreen support -->
     <uses-feature
         android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <!-- Game controller support -->
+    <uses-feature
+        android:name="android.hardware.bluetooth"
         android:required="false" />
     <uses-feature
         android:name="android.hardware.gamepad"
         android:required="false" />
     <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="false" />
+
+    <!-- External mouse input events -->
+    <uses-feature
         android:name="android.hardware.type.pc"
         android:required="false" />
+
+    <!-- Allow writing to external storage -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- Currently this is just for Steam Controller support and requires setting SDL_HINT_JOYSTICK_HIDAPI_STEAM -->
+    <!-- <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" /> -->
+    <!-- <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" /> -->
+    <!-- Allow access to the vibrator -->
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
+
 
     <application
         android:allowBackup="true"
@@ -26,11 +45,13 @@
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
         tools:ignore="GoogleAppIndexingWarning">
         <activity
-            android:alwaysRetainTaskState="true"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:name=".GameActivity"
+            android:alwaysRetainTaskState="true"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:exported="false"
             android:screenOrientation="sensorLandscape"
             android:label="MegaZeux"
+            android:preferMinimalPostProcessing="true"
             android:launchMode="singleInstance">
 
         </activity>
@@ -41,8 +62,10 @@
         <activity
             android:name=".MainActivity"
             android:alwaysRetainTaskState="true"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:exported="true"
             android:label="@string/app_name"
+            android:preferMinimalPostProcessing="true"
             android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
