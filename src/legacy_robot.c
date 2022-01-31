@@ -478,7 +478,7 @@ static boolean legacy_convert_scroll_v1(struct scroll *cur_scroll)
   for(i = 1; i < old_size && old_text[i];)
   {
     // Start of line.
-    char linebuf[150];
+    char linebuf[256];
     int pad = 0;
     size_t j = 0;
 
@@ -487,22 +487,25 @@ static boolean legacy_convert_scroll_v1(struct scroll *cur_scroll)
       // Legacy v1 color code.
       static const char hex[] = "0123456789abcdef";
       uint8_t color = old_text[i + 1];
-      char hi = hex[color >> 4];
-      char lo = hex[color & 0xf];
+      if(!color)
+        goto err;
 
       linebuf[j++] = '~';
-      linebuf[j++] = lo;
+      linebuf[j++] = hex[color & 0xf];
       linebuf[j++] = '@';
-      linebuf[j++] = hi;
+      linebuf[j++] = hex[color >> 4];
       linebuf[j++] = ' ';
       linebuf[j++] = ' ';
       i += 2;
-      pad = 61;
+      pad = 62;
     }
 
     // Direct line copy with escapes for ~ and @.
     while(old_text[i])
     {
+      if(j >= sizeof(linebuf) - 3)
+        goto err;
+
       if(old_text[i] == '\n')
       {
         i++;
@@ -518,13 +521,9 @@ static boolean legacy_convert_scroll_v1(struct scroll *cur_scroll)
       linebuf[j++] = old_text[i++];
       pad--;
     }
+    for(; pad > 0; pad--)
+      linebuf[j++] = ' ';
 
-    if(pad > 0)
-    {
-      // Space pad end of line for v1 color codes.
-      memset(linebuf + j, ' ', pad);
-      j += pad;
-    }
     linebuf[j++] = '\n';
 
     // Append line (+1 for scroll terminator).
@@ -594,7 +593,6 @@ static void legacy_load_scroll(struct scroll *cur_scroll, vfile *vf, int file_ve
 
   if(scroll_size < 3)
     goto scroll_err;
-
 
   if(file_version < V200)
   {
