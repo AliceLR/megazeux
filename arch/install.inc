@@ -102,7 +102,7 @@ install: install-check install-arch
 		${DESTDIR}${SHAREDIR}/doc/megazeux/
 	${install} -m 0644 \
 		LICENSE \
-		LICENSE.3rd \
+		arch/LICENSE.3rd \
 		${EXTRA_LICENSES} \
 		${DESTDIR}${LICENSEDIR}/megazeux/
 	${RM} docs/changelog.txt.gz

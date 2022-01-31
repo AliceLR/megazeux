@@ -500,7 +500,7 @@ build: ${build} ${build}/assets ${build}/docs
 ${build}:
 	${RM} -r ${build_root}
 	${MKDIR} -p ${build}
-	${CP} config.txt LICENSE LICENSE.3rd ${EXTRA_LICENSES} ${build}
+	${CP} config.txt LICENSE arch/LICENSE.3rd ${EXTRA_LICENSES} ${build}
 	@if test -f ${mzxrun}; then \
 		cp ${mzxrun} ${build}; \
 	fi
