@@ -41,14 +41,14 @@ static const char scr_nm_strs[5][12] =
 static int scroll_draw_flags(struct world *mzx_world, boolean mask_chars,
  boolean mask_colors)
 {
-  int flags = W_LINE;
+  int flags = WR_LINE;
 
   if(mask_chars)
-    flags |= W_MASK_MIDCHARS;
+    flags |= WR_MASK;
 
   if(!mask_colors)
     if(mzx_world->version < V200 || mzx_world->version >= V293)
-      flags |= W_COLOR;
+      flags |= WR_COLOR;
 
   return flags;
 }
@@ -474,13 +474,13 @@ void scroll_edging_ext(struct world *mzx_world, int type, boolean mask)
   draw_char_ext(16, scroll_pointer_color, 6, 12, offset, c_offset);
   draw_char_ext(17, scroll_pointer_color, 73, 12, offset, c_offset);
   // Write title
-  write_string_ext(scr_nm_strs[type], 34, 4, scroll_title_color, false,
+  write_string_ext(scr_nm_strs[type], 34, 4, scroll_title_color, WR_NONE,
    offset, c_offset);
   // Write key reminders
   if(type == 2)
   {
     write_string_ext("\x12\x1d: Move cursor   Alt+C: Character "
-     "  Esc: Done editing", 13, 20, scroll_corner_color, false,
+     "  Esc: Done editing", 13, 20, scroll_corner_color, WR_NONE,
      offset, c_offset);
   }
   else
@@ -488,23 +488,21 @@ void scroll_edging_ext(struct world *mzx_world, int type, boolean mask)
   if(type < 2)
   {
     write_string_ext("\x12: Scroll text   Esc/Enter: End reading",
-     21, 20, scroll_corner_color, false, offset, c_offset);
+     21, 20, scroll_corner_color, WR_NONE, offset, c_offset);
   }
   else
 
   if(type == 3)
   {
-    write_string_ext("\x12:Scroll text  Esc:Exit help"
-     "  Enter:Select  Alt+P:Print", 13, 20,
-     scroll_corner_color, false, offset, c_offset);
-    write_string_ext("F1:Help on Help "
-     " Alt+F1:Table of Contents", 20, 21,
-     scroll_corner_color, false, offset, c_offset);
+    write_string_ext(
+     "\x12:Scroll text  Esc:Exit help  Enter:Select  Alt+P:Print\n"
+     "\t  F1:Help on Help  Alt+F1:Table of Contents",
+     13, 20, scroll_corner_color, WR_TAB | WR_NEWLINE, offset, c_offset);
   }
   else
   {
-    write_string_ext("\x12:Scroll text  Esc:Exit "
-     "  Enter:Select", 21, 20, scroll_corner_color, false, offset, c_offset);
+    write_string_ext("\x12:Scroll text  Esc:Exit  Enter:Select",
+     21, 20, scroll_corner_color, WR_NONE, offset, c_offset);
   }
   select_layer(UI_LAYER);
   update_screen();

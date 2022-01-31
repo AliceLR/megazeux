@@ -2085,7 +2085,9 @@ static int write_string_intl(const char *str, unsigned int x, unsigned int y,
     if(mask_midchars)
     {
       if(cur_char >= 32 && cur_char <= 126)
-        cur_char += PRO_CH;
+        chr_offset = PRO_CH;
+      else
+        chr_offset = 0;
     }
 
     /* Draw char */
@@ -2102,11 +2104,11 @@ static int write_string_intl(const char *str, unsigned int x, unsigned int y,
 void write_string_ext(const char *str, unsigned int x, unsigned int y,
  uint8_t color, int flags, unsigned int chr_offset, unsigned int color_offset)
 {
-  boolean allow_tabs      = (flags & W_TABS) != 0;
-  boolean allow_newlines  = (flags & W_NEWLINES) != 0;
-  boolean end_newline     = (flags & W_LINE) != 0;
-  boolean allow_colors    = (flags & W_COLOR) != 0;
-  boolean mask_midchars   = (flags & W_MASK_MIDCHARS) && !chr_offset;
+  boolean allow_tabs      = (flags & WR_TAB) != 0;
+  boolean allow_newlines  = (flags & WR_NEWLINE) != 0;
+  boolean end_newline     = (flags & WR_LINE) != 0;
+  boolean allow_colors    = (flags & WR_COLOR) != 0;
+  boolean mask_midchars   = (flags & WR_MASK) != 0;
 
   write_string_intl(str, x, y, color, allow_tabs, allow_newlines,
    end_newline, allow_colors, mask_midchars, chr_offset, color_offset);

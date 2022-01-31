@@ -2927,12 +2927,12 @@ static void display_robot_line(struct robot_editor_context *rstate,
       {
         temp_char = line_text[76];
         line_text[76] = 0;
-        write_string(line_text, x, y, line_color, W_MASK_MIDCHARS);
+        write_string(line_text, x, y, line_color, WR_MASK);
         line_text[76] = temp_char;
       }
       else
       {
-        write_string(line_text, x, y, line_color, W_MASK_MIDCHARS);
+        write_string(line_text, x, y, line_color, WR_MASK);
       }
     }
   }
@@ -2968,7 +2968,7 @@ static void display_robot_line(struct robot_editor_context *rstate,
             temp_char = line_text[76];
             line_text[76] = 0;
 
-            write_string(line_text + offset, x + offset, y, color, W_MASK_MIDCHARS);
+            write_string(line_text + offset, x + offset, y, color, WR_MASK);
             line_text[76] = temp_char;
           }
           break;
@@ -2976,7 +2976,7 @@ static void display_robot_line(struct robot_editor_context *rstate,
 
         temp_char = line_text[offset + length];
         line_text[offset + length] = 0;
-        write_string(line_text + offset, x + offset, y, color, W_MASK_MIDCHARS);
+        write_string(line_text + offset, x + offset, y, color, WR_MASK);
         line_text[offset + length] = temp_char;
       }
     }
@@ -3019,12 +3019,12 @@ static void display_robot_line(struct robot_editor_context *rstate,
       {
         temp_char = current_rline->line_text[76];
         current_rline->line_text[76] = 0;
-        write_string(current_rline->line_text, x, y, current_color, W_MASK_MIDCHARS);
+        write_string(current_rline->line_text, x, y, current_color, WR_MASK);
         current_rline->line_text[76] = temp_char;
       }
       else
       {
-        write_string(current_rline->line_text, x, y, current_color, W_MASK_MIDCHARS);
+        write_string(current_rline->line_text, x, y, current_color, WR_MASK);
       }
     }
     else
@@ -3045,7 +3045,7 @@ static void display_robot_line(struct robot_editor_context *rstate,
       memcpy(temp_buffer, line_pos, arg_length);
       temp_buffer[arg_length] = 0;
 
-      write_string(temp_buffer, x, y, current_color, false);
+      write_string(temp_buffer, x, y, current_color, WR_NONE);
 
       line_pos += arg_length;
       x += (int)arg_length;
@@ -3112,18 +3112,17 @@ static void display_robot_line(struct robot_editor_context *rstate,
 
           if(use_mask)
           {
-            write_string(temp_buffer, x, y, current_color, W_MASK_MIDCHARS);
+            write_string(temp_buffer, x, y, current_color, WR_MASK);
           }
           else
           {
             if(current_arg == S_CHARACTER)
             {
               temp_buffer[arg_length - 2] = 0;
-              write_string("'", x, y, current_color, W_MASK_MIDCHARS);
+              write_string("'", x, y, current_color, WR_MASK);
               write_string_ext(temp_buffer + 1, x + 1, y, current_color,
-               false, chars_offset, 16);
-              write_string("'", x + (int)arg_length - 2, y,
-               current_color, W_MASK_MIDCHARS);
+               WR_NONE, chars_offset, 16);
+              write_string("'", x + (int)arg_length - 2, y, current_color, WR_MASK);
             }
             else
             {
@@ -3587,14 +3586,14 @@ static boolean robot_editor_draw(context *ctx)
 
   if(rstate->scr_hide_mode)
   {
-    write_string(key_help_hide, 0, 24, bottom_text_color, W_NEWLINES);
+    write_string(key_help_hide, 0, 24, bottom_text_color, WR_NEWLINE);
     rstate->scr_line_start = 1;
     rstate->scr_line_middle = 12;
     rstate->scr_line_end = 23;
   }
   else
   {
-    write_string(key_help, 0, 22, bottom_text_color, W_NEWLINES);
+    write_string(key_help, 0, 22, bottom_text_color, WR_NEWLINE);
     rstate->scr_line_start = 2;
     rstate->scr_line_middle = 11;
     rstate->scr_line_end = 20;
@@ -3625,26 +3624,26 @@ static boolean robot_editor_draw(context *ctx)
   // Make sure the line length and current char are up-to-date.
   intake_sync(rstate->intk);
 
-  write_string("Line:", 2, 0, top_highlight_color, false);
-  write_string("/", 14, 0, top_highlight_color, false);
+  write_string("Line:", 2, 0, top_highlight_color, WR_NONE);
+  write_string("/", 14, 0, top_highlight_color, WR_NONE);
   write_number(rstate->current_line, top_text_color, 8, 0, 6, false, 10);
   write_number(rstate->total_lines, top_text_color, 15, 0, 6, false, 10);
 
-  write_string("Col:", 23, 0, top_highlight_color, false);
-  write_string("/", 31, 0, top_highlight_color, false);
+  write_string("Col:", 23, 0, top_highlight_color, WR_NONE);
+  write_string("/", 31, 0, top_highlight_color, WR_NONE);
   write_number(rstate->current_x + 1, top_text_color, 28, 0, 3, false, 10);
   write_number(rstate->current_line_len + 1, top_text_color, 32, 0, 3, false,
    10);
 
-  write_string("Size:", 37, 0, top_highlight_color, false);
-  write_string("/", 50, 0, top_highlight_color, false);
+  write_string("Size:", 37, 0, top_highlight_color, WR_NONE);
+  write_string("/", 50, 0, top_highlight_color, WR_NONE);
   write_number(rstate->size, top_text_color, 43, 0, 7, false, 10);
   write_number(rstate->max_size, top_text_color, 51, 0, 7, false, 10);
 
-  write_string("X:", 60, 0, top_highlight_color, false);
+  write_string("X:", 60, 0, top_highlight_color, WR_NONE);
   write_number(rstate->cur_robot->xpos, top_text_color, 63, 0, 5, false, 10);
 
-  write_string("Y:", 70, 0, top_highlight_color, false);
+  write_string("Y:", 70, 0, top_highlight_color, WR_NONE);
   write_number(rstate->cur_robot->ypos, top_text_color, 73, 0, 5, false, 10);
 
   // Now, draw the lines. Start with 9 back from the current.
@@ -3786,12 +3785,12 @@ static boolean robot_editor_draw(context *ctx)
   if(use_mask)
   {
     write_string(rstate->command_buffer + start_offset,
-     2, rstate->scr_line_middle, intk_color, W_MASK_MIDCHARS);
+     2, rstate->scr_line_middle, intk_color, WR_MASK);
   }
   else
   {
     write_string_ext(rstate->command_buffer + start_offset,
-     2, rstate->scr_line_middle, intk_color, false, 0, 16);
+     2, rstate->scr_line_middle, intk_color, WR_NONE, 0, 16);
   }
 
   // Fill non-text portions of the middle line.

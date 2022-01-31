@@ -101,11 +101,14 @@ enum default_video_layers
 
 enum write_string_flags
 {
-  W_TABS          = (1 << 0), /* If set, tab will draw 5 spaces. */
-  W_NEWLINES      = (1 << 1), /* If set, \n will act line a newline. */
-  W_LINE          = (1 << 2), /* If set, stop if \n is encountered. */
-  W_COLOR         = (1 << 3), /* If set, allow ~@ color codes. */
-  W_MASK_MIDCHARS = (1 << 4), /* If set, use the protected charset for 32-126. */
+  WR_NONE     = 0,
+  WR_TAB      = (1 << 0), /* If set, tab will draw 5 spaces. */
+  WR_NEWLINE  = (1 << 1), /* If set, \n will act line a newline. */
+  WR_LINE     = (1 << 2), /* If set, stop if \n is encountered. */
+  WR_COLOR    = (1 << 3), /* If set, allow ~@ color codes. */
+  WR_MASK     = (1 << 4)  /* If set, use the protected charset for 32-126
+                           * and use the user charset for all other chars.
+                           * Overrides the provided chars offset. */
 };
 
 struct graphics_data;
