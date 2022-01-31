@@ -3127,7 +3127,7 @@ static void display_robot_line(struct robot_editor_context *rstate,
             else
             {
               write_string_ext(temp_buffer, x, y, current_color,
-               false, chars_offset, 16);
+               WR_NONE, chars_offset, 16);
             }
           }
 

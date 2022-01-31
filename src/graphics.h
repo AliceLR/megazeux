@@ -319,10 +319,6 @@ void color_string_ext(const char *string, unsigned int x, unsigned int y,
  uint8_t color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset);
 void color_string_ext_special(const char *string, unsigned int x, unsigned int y,
  uint8_t *color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset);
-void write_line_ext(const char *string, unsigned int x, unsigned int y,
- uint8_t color, boolean tab_allowed, unsigned int chr_offset, unsigned int color_offset);
-void write_line_mask(const char *str, unsigned int x, unsigned int y,
- uint8_t color, boolean tab_allowed);
 void fill_line_ext(unsigned int length, unsigned int x, unsigned int y,
  uint8_t chr, uint8_t color, unsigned int chr_offset, unsigned int color_offset);
 
