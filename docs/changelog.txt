@@ -168,6 +168,8 @@ USERS
 + Fixed bugs caused by missing validation in the Import SFX
   feature in the editor.
 + Scrolls can now display standard message ~@ color codes.
++ Creating a new world using N from the title screen or Alt+R
+  in the editor now clears the extended character sets.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 

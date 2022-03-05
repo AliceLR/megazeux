@@ -278,6 +278,7 @@ CORE_LIBSPEC void ec_mem_load_set(const void *buffer, size_t len);
 CORE_LIBSPEC void ec_mem_load_set_var(const void *buffer, size_t len,
  uint16_t first_chr, int ver);
 CORE_LIBSPEC void ec_mem_save_set_var(void *buffer, size_t len, uint16_t first_chr);
+CORE_LIBSPEC void ec_clear_set(void);
 
 CORE_LIBSPEC void update_palette(void);
 CORE_LIBSPEC void load_palette(const char *filename);
@@ -336,7 +337,6 @@ void get_screen(struct char_element *dest);
 void ec_change_byte(uint16_t chr, uint8_t byte, uint8_t new_value);
 uint8_t ec_read_byte(uint16_t chr, uint8_t byte);
 boolean ec_load_set(const char *filename);
-void ec_clear_set(void);
 
 void set_color_intensity(uint8_t color, unsigned int percent);
 unsigned int get_color_intensity(uint8_t color);
