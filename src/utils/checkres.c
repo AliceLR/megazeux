@@ -1763,7 +1763,7 @@ static ssize_t param_string(char *dest, size_t dest_len,
       return -1;
 
     // Don't trust the program's null termination.
-    TERMINATE(dest, dest_len);
+    TERMINATE(dest, len);
   }
   else
   {
