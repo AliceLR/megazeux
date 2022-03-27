@@ -170,6 +170,9 @@ USERS
 + Scrolls can now display standard message ~@ color codes.
 + Creating a new world using N from the title screen or Alt+R
   in the editor now clears the extended character sets.
++ Fixed PrintScreen/SysRq and Menu/"Right Click" keycodes.
++ Unsupported keys no longer return a KEY_PRESSED value of 1
+  for SDL 2 builds.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
