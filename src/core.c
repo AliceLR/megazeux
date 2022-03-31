@@ -1016,7 +1016,7 @@ void core_run(core_context *root)
   // this doesn't break MZX, this function stops once the number of contexts
   // on the stack has dropped below the initial value.
   int initial_stack_size = root->stack.size;
-  int start_ticks = get_ticks();
+  int start_ticks;
   int delta_ticks;
   int total_ticks;
   boolean need_update_screen = true;
@@ -1049,6 +1049,14 @@ void core_run(core_context *root)
       core_resume(root);
       continue;
     }
+
+    // Gameplay framerate timing starts immediately before the board update,
+    // which must be done in the draw function!
+    start_ticks = get_ticks();
+
+#ifdef CONFIG_FPS
+    update_fps(start_ticks);
+#endif
 
     need_update_screen = core_draw(root);
 
@@ -1132,12 +1140,6 @@ void core_run(core_context *root)
     joystick_set_legacy_loop_hacks(true);
     enable_f12_hack = conf->allow_screenshots;
     // FIXME end legacy loop hacks
-
-    start_ticks = get_ticks();
-
-#ifdef CONFIG_FPS
-    update_fps(start_ticks);
-#endif
 
     core_update(root);
   }
