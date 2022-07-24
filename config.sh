@@ -472,8 +472,12 @@ if [ "$PLATFORM" = "win32"   ] || [ "$PLATFORM" = "win64" ] ||
 			[ "$PLATFORM" = "win32" ] && PREFIX="/mingw32"
 			[ "$PLATFORM" = "win64" ] && PREFIX="/mingw64"
 			;;
-		  "CLANG64")
+		  "CLANG32"|"CLANG64")
+			[ "$PLATFORM" = "win32" ] && PREFIX="/clang32"
 			[ "$PLATFORM" = "win64" ] && PREFIX="/clang64"
+			;;
+		  "CLANGARM64")
+			[ "$PLATFORM" = "win64" ] && PREFIX="/clangarm64"
 			;;
 		  "UCRT64")
 			[ "$PLATFORM" = "win64" ] && PREFIX="/ucrt64"
