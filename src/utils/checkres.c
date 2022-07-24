@@ -2268,16 +2268,22 @@ static void _decrypt_legacy_world(struct memfile *mf, struct base_file *file)
   ALIGN_TYPE xor_w = ALIGN_XOR(xor);
   unsigned char *pos = mf->current;
 
-  fprintf(stderr, "password: %s\n", file->password);
-  fprintf(stderr, "--------  %.*s\n", (int)strlen(file->password), "----------------");
-  fflush(stderr);
+  if(!display_first_only)
+  {
+    fprintf(stderr, "password: %s\n", file->password);
+    fprintf(stderr, "--------  %.*s\n", (int)strlen(file->password), "----------------");
+    fflush(stderr);
+  }
 
   /* 1.x doesn't actually encrypt anything... */
   if(file->file_version < V200)
     return;
 
-  fprintf(stderr, "xor: %u\n", (unsigned int)xor);
-  fflush(stderr);
+  if(!display_first_only)
+  {
+    fprintf(stderr, "xor: %u\n", (unsigned int)xor);
+    fflush(stderr);
+  }
 
   while(pos < mf->end && ((size_t)pos) % sizeof(ALIGN_TYPE))
     *(pos++) ^= xor;
