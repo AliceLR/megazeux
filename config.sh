@@ -675,7 +675,7 @@ elif [ "$PLATFORM" = "switch" ]; then
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "psvita" ]; then
-	SHAREDIR="ux0:/data/MegaZeux"
+	SHAREDIR="app0:/"
 	LICENSEDIR=$SHAREDIR
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR

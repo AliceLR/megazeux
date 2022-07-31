@@ -3297,6 +3297,16 @@ static boolean remove_files(char *directory_name, boolean remove_recursively)
   return success;
 }
 
+#ifdef CONFIG_PSVITA
+static const char *psvita_drives[] = {
+  "app0:",
+  "imc0:",
+  "uma0:",
+  "ux0:"
+};
+#define PSVITA_DRIVES_COUNT 4
+#endif
+
 __editor_maybe_static int file_manager(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
  const char *title, enum allow_dirs allow_dirs, enum allow_new allow_new,
@@ -3542,6 +3552,31 @@ skip_dir:
         {
           dir_list[num_dirs] = cmalloc(strlen(devoptab_list[i]->name + 3));
           sprintf(dir_list[num_dirs], "%s:/", devoptab_list[i]->name);
+
+          num_dirs++;
+
+          if(num_dirs == total_dirnames_allocated)
+          {
+            dir_list = crealloc(dir_list, sizeof(char *) *
+             total_dirnames_allocated * 2);
+            memset(dir_list + total_dirnames_allocated, 0,
+             sizeof(char *) * total_dirnames_allocated);
+            total_dirnames_allocated *= 2;
+          }
+        }
+      }
+    }
+#endif
+
+#ifdef CONFIG_PSVITA
+    if(allow_dirs == ALLOW_ALL_DIRS)
+    {
+      for(i = 0; i < PSVITA_DRIVES_COUNT; i++)
+      {
+        if(vstat(psvita_drives[i], &file_info) >= 0)
+        {
+          dir_list[num_dirs] = cmalloc(strlen(psvita_drives[i]) + 2);
+          sprintf(dir_list[num_dirs], "%s/", psvita_drives[i]);
 
           num_dirs++;
 
