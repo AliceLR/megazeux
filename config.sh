@@ -34,6 +34,7 @@ usage() {
 	echo "  switch         Experimental Switch port"
 	echo "  wii            Experimental Wii port"
 	echo "  wiiu           Experimental Wii U port"
+	echo "  vita           Experimental PS Vita port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
@@ -673,6 +674,13 @@ elif [ "$PLATFORM" = "switch" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "psvita" ]; then
+	SHAREDIR="ux0:/data/MegaZeux"
+	LICENSEDIR=$SHAREDIR
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
+	echo "#define CONFFILE \"config.txt\""      >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""       >> src/config.h
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SHAREDIR=../Resources
 	LICENSEDIR=$SHAREDIR
@@ -954,6 +962,22 @@ if [ "$PLATFORM" = "gp2x" ]; then
 fi
 
 #
+# If the PS Vita arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "psvita" ]; then
+	echo "Enabling PS Vita-specific hacks."
+	echo "#define CONFIG_PSVITA" >> src/config.h
+	echo "BUILD_PSVITA=1" >> platform.inc
+
+	echo "Force-disabling utils on PS Vita."
+	UTILS="false"
+
+	echo "Force-disabling stack protector on PS Vita."
+	STACK_PROTECTOR="false"
+fi
+
+#
 # If the Pandora arch is enabled, some code has to be compile time
 # enabled too.
 #
@@ -1059,6 +1083,7 @@ if [ "$PLATFORM" = "gp2x" ] ||
    [ "$PLATFORM" = "wii" ] ||
    [ "$PLATFORM" = "wiiu" ] ||
    [ "$PLATFORM" = "switch" ] ||
+   [ "$PLATFORM" = "psvita" ] ||
    [ "$PLATFORM" = "android" ] ||
    [ "$PLATFORM" = "emscripten" ] ||
    [ "$PLATFORM" = "psp" ]; then

@@ -43,6 +43,8 @@ arch/nds/*.d
 arch/nds/*.o
 arch/psp/*.d
 arch/psp/*.o
+arch/psvita/*.d
+arch/psvita/*.o
 arch/wii/*.d
 arch/wii/*.o
 arch/xcode/version.h
@@ -65,6 +67,7 @@ core.dll
 libcore.so
 libcore.dylib
 EBOOT.PBP
+eboot.bin
 Editor.exp
 Editor.ilk
 Editor.iobj
@@ -92,6 +95,8 @@ megazeux.nso
 MegaZeux.pdb
 megazeux.rpx
 megazeux.smdh
+megazeux.velf
+megazeux.vpk
 /megazeux
 mzxrun.3dsx
 mzxrun.cia
@@ -113,10 +118,13 @@ mzxrun.nso
 mzxrun.pdb
 mzxrun.rpx
 mzxrun.smdh
+mzxrun.velf
+mzxrun.vpk
 mzxrun.wasm
 mzxrun.wasm.map
 /mzxrun
 PARAM.SFO
+param.sfo
 platform.inc
 SDL.dll
 SDL2.dll

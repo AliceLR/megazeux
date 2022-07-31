@@ -1,0 +1,91 @@
+.PHONY: clean package build
+
+CC      = arm-vita-eabi-gcc
+CXX     = arm-vita-eabi-g++
+AR      = arm-vita-eabi-ar
+OBJCOPY = arm-vita-eabi-objcopy
+STRIP   = arm-vita-eabi-strip
+
+VITA_TITLEID = VMZX00001
+VITA_TITLE = MegaZeux
+
+VITA_MKSFOEX_FLAGS = -d PARENTAL_LEVEL=1
+
+VITA_INCLUDES = -Iarch/psvita
+
+VITA_LIBS = -lSDL2 \
+            -lvita2d \
+            -lSceDisplay_stub \
+            -lSceCtrl_stub \
+            -lSceAudio_stub \
+            -lSceAudioIn_stub \
+            -lSceMotion_stub \
+            -lSceSysmodule_stub \
+            -lSceGxm_stub \
+            -lSceCommonDialog_stub \
+            -lSceTouch_stub \
+            -lSceHid_stub \
+            -lc
+
+VITA_CFLAGS = -DPATH_MAX=4096 -DOV_EXCLUDE_STATIC_CALLBACKS
+VITA_LDFLAGS = -L${PREFIX}/arm-vita-eabi/lib -Wl,-q -Wl,-z,nocopyreloc
+
+SDL_CFLAGS = -I${PREFIX}/arm-vita-eabi/include/SDL2
+SDL_LDFLAGS = ${VITA_LDFLAGS} ${VITA_LIBS}
+
+ARCH_CFLAGS += ${VITA_CFLAGS} ${VITA_INCLUDES}
+ARCH_CXXFLAGS += ${VITA_CFLAGS} ${VITA_INCLUDES}
+ARCH_LDFLAGS += ${VITA_LDFLAGS} ${VITA_LIBS}
+
+SCE_SYS = "arch/psvita/sce_sys"
+
+package: mzx
+ifneq ($(BUILD_EDITOR),)
+	${CP} ${mzx} ${mzx}.elf
+	${STRIP} -g ${mzx}.elf
+	vita-elf-create ${mzx}.elf ${mzx}.velf
+	vita-make-fself -s -c ${mzx}.velf eboot.bin
+	vita-mksfoex ${VITA_MKSFOEX_FLAGS} -s TITLE_ID="${VITA_TITLEID}" \
+		"${VITA_TITLE}" param.sfo
+	vita-pack-vpk -s param.sfo -b eboot.bin \
+		--add ${SCE_SYS}/icon0.png=sce_sys/icon0.png \
+		--add ${SCE_SYS}/livearea/contents/bg.png=sce_sys/livearea/contents/bg.png \
+		--add ${SCE_SYS}/livearea/contents/startup.png=sce_sys/livearea/contents/startup.png \
+		--add ${SCE_SYS}/livearea/contents/template.xml=sce_sys/livearea/contents/template.xml \
+		megazeux.vpk
+endif
+
+	${CP} ${mzxrun} ${mzxrun}.elf
+	${STRIP} -g ${mzxrun}.elf
+	vita-elf-create ${mzxrun}.elf ${mzxrun}.velf
+	vita-make-fself -s -c ${mzxrun}.velf eboot.bin
+	vita-mksfoex ${VITA_MKSFOEX_FLAGS} -s TITLE_ID="${VITA_TITLEID}" \
+		"${VITA_TITLE}" param.sfo
+	vita-pack-vpk -s param.sfo -b eboot.bin \
+		--add ${SCE_SYS}/icon0.png=sce_sys/icon0.png \
+		--add ${SCE_SYS}/livearea/contents/bg.png=sce_sys/livearea/contents/bg.png \
+		--add ${SCE_SYS}/livearea/contents/startup.png=sce_sys/livearea/contents/startup.png \
+		--add ${SCE_SYS}/livearea/contents/template.xml=sce_sys/livearea/contents/template.xml \
+		mzxrun.vpk
+
+clean:
+	@${RM} -f arch/psvita/*.{o,d} mzxrun mzxrun.elf mzxrun.velf mzxrun.vpk \
+		megazeux megazeux.elf megazeux.velf megazeux.vpk eboot.bin param.sfo
+
+build: package ${build}
+	${CP} ${mzx}.vpk ${build}
+	${CP} ${mzxrun}.vpk ${build}
+	${CP} arch/psvita/README.md ${build}/VITA-README.txt
+	${RM} ${build}/${mzxrun} \
+	      ${build}/${mzxrun}.debug \
+	      ${build}/${mzx} \
+	      ${build}/${mzx}.debug
+
+#
+# Vile hack, remove me ASAP
+#
+arch/psvita/%.o: arch/psvita/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
+
+include arch/zip.inc

@@ -38,6 +38,12 @@ __M_BEGIN_DECLS
 #endif
 #endif /* DIR_SEPARATOR */
 
+#ifdef CONFIG_PSVITA
+#include <psp2/io/stat.h>
+#undef S_ISDIR
+#define S_ISDIR SCE_S_ISDIR
+#endif /* CONFIG_PSVITA */
+
 enum path_create_error
 {
   PATH_CREATE_SUCCESS,
