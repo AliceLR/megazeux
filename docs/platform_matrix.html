@@ -382,6 +382,33 @@ var archs =
     loadsave_meter:   yes,
   },
 
+  psvita:
+  {
+    platform:         "psvita",
+    description:      "PlayStation Vita",
+    architecture:     "ARMv7 (ELF)",
+    endian:           "Little",
+    toolchain:        "gcc 10.3.0 <br> binutils 2.34",
+    packaged:         ZIP,
+    stack_protector:  yes,
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    adlib_engine:     rad,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              sdl2,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    overlay:          yes,
+    network:          yes,
+    updater:          no_updater,
+    png:              yes,
+    hashtables:       yes,
+    loadsave_meter:   yes,
+  },
+
   switch:
   {
     platform:         "switch",
