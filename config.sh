@@ -681,6 +681,8 @@ elif [ "$PLATFORM" = "psvita" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\""      >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""       >> src/config.h
+	echo "#define STARTUPDIR \"ux0:/data/megazeux\"" >> src/config.h
+	echo "#define USERCONFFILE \"ux0:/data/megazeux/config.txt\"" >> src/config.h
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SHAREDIR=../Resources
 	LICENSEDIR=$SHAREDIR
@@ -703,6 +705,10 @@ else
 	BINDIR=.
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+fi
+
+if [ "$PLATFORM" = "android" ]; then
+	echo "#define STARTUPDIR \"/storage/emulated/0\"" >> src/config.h
 fi
 
 #
