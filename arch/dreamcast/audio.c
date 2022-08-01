@@ -22,19 +22,20 @@
 #include "../../src/platform.h"
 #include "../../src/graphics.h"
 #include "../../src/audio/audio.h"
+#include "../../src/audio/audio_struct.h"
 
 #include <kos.h>
 #include <string.h>
 
 #ifdef CONFIG_AUDIO
 
-static Sint16* sound_buffer;
+static int16_t *sound_buffer;
 static snd_stream_hnd_t stream;
 static int buffer_size;
 static boolean running;
 static kthread_t *sound_thread;
 
-static void* dc_audio_callback(snd_stream_hnd_t hnd, int smp_req, int *smp_recv)
+static void *dc_audio_callback(snd_stream_hnd_t hnd, int smp_req, int *smp_recv)
 {
   int actual = smp_req;
   if(actual > buffer_size)

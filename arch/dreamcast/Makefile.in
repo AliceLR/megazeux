@@ -4,24 +4,32 @@
 
 .PHONY: package clean
 
+ifeq ($(strip ${KOS_BASE}),)
+$(error "KOS_BASE must be set in your environment.")
+endif
+
+ifeq ($(strip ${KOS_PORTS}),)
+$(error "KOS_PORTS must be set in your environment.")
+endif
+
 CC      := kos-cc
 CXX     := kos-c++
 AR      := kos-ar
 OBJCOPY := kos-objcopy
 STRIP   := kos-strip
 
-SDL_CFLAGS := -I/opt/toolchains/dc/kos-ports/SDL/inst/include
-SDL_LDFLAGS := -L/opt/toolchains/dc/kos-ports/SDL/inst/lib -lSDL
+SDL_CFLAGS := -I"${KOS_PORTS}"/SDL/inst/include
+SDL_LDFLAGS := -L"${KOS_PORTS}"/SDL/inst/lib -lSDL
 
-ZLIB_CFLAGS := -I/opt/toolchains/dc/kos-ports/zlib/inst/include
-ZLIB_LDFLAGS := -L/opt/toolchains/dc/kos-ports/zlib/inst/lib -lz
+ZLIB_CFLAGS := -I"${KOS_PORTS}"/zlib/inst/include
+ZLIB_LDFLAGS := -L"${KOS_PORTS}"/zlib/inst/lib -lz
 
-VORBIS_CFLAGS := -I/opt/toolchains/dc/kos-ports/libtremor/inst/include \
-  -I/opt/toolchains/dc/kos-ports/libogg/inst/include -DOV_EXCLUDE_STATIC_CALLBACKS
-VORBIS_LDFLAGS := -L/opt/toolchains/dc/kos-ports/libtremor/inst/lib -ltremor
+VORBIS_CFLAGS := -I"${KOS_PORTS}"/libtremor/inst/include \
+  -I"${KOS_PORTS}"/libogg/inst/include -DOV_EXCLUDE_STATIC_CALLBACKS
+VORBIS_LDFLAGS := -L"${KOS_PORTS}"/libtremor/inst/lib -ltremor
 
-ARCH_CFLAGS += -fno-stack-protector
-ARCH_CXXFLAGS += -fno-stack-protector
+ARCH_CFLAGS   =
+ARCH_CXXFLAGS =
 ARCH_LDFLAGS += -lkosext2fs
 
 #
@@ -36,3 +44,17 @@ arch/dreamcast/romdisk.img:
 
 arch/dreamcast/romdisk.o: arch/dreamcast/romdisk.img
 	$(KOS_BASE)/utils/bin2o/bin2o arch/dreamcast/romdisk.img romdisk arch/dreamcast/romdisk.o
+
+package: mzx
+	${OBJCOPY} -O binary ${mzxrun} ${mzxrun}.bin
+	${KOS_BASE}/utils/scramble/scramble ${mzxrun}.bin 1ST_READ.BIN
+
+clean:
+	@rm -f ${mzxrun}.bin 1ST_READ.BIN arch/dreamcast/*.{d,o}
+
+build: package ${build}
+	${CP} 1ST_READ.BIN ${build}
+	${CP} arch/dreamcast/pad.config ${build}
+	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
+
+include arch/zip.inc

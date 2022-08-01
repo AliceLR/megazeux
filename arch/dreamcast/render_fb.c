@@ -50,7 +50,7 @@ static boolean dc_fb_init_video(struct graphics_data *graphics,
   return set_video_mode();
 }
 
-static inline Uint16 *dc_fb_vram_ptr()
+static inline uint16_t *dc_fb_vram_ptr()
 {
   return vram_s + (640*65); // 0,65 - 639,415
 }
@@ -60,12 +60,6 @@ static void dc_fb_free_video(struct graphics_data *graphics)
 //  struct dc_fb_render_data *render_data = graphics->render_data;
 }
 
-static boolean dc_fb_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
-{
-  return true;
-}
-
 static boolean dc_fb_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize)
 {
@@ -73,9 +67,9 @@ static boolean dc_fb_set_video_mode(struct graphics_data *graphics, int width,
 }
 
 static void dc_fb_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned count)
 {
-  Uint32 i;
+  unsigned i;
 
   for(i = 0; i < count; i++)
   {
@@ -100,19 +94,19 @@ static void dc_fb_render_layer(struct graphics_data *graphics,
 }
 
 static void dc_fb_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+ unsigned x, unsigned y, uint16_t color, unsigned lines, unsigned offset)
 {
 //  struct dc_fb_render_data *render_data = graphics->render_data;
-  Uint32 flatcolor = graphics->flat_intensity_palette[color] * 0x10001;
+  uint32_t flatcolor = graphics->flat_intensity_palette[color] * 0x10001;
 
-  render_cursor((Uint32*)dc_fb_vram_ptr(), 640*2, 16, x, y, flatcolor, lines, offset);
+  render_cursor((uint32_t *)dc_fb_vram_ptr(), 640*2, 16, x, y, flatcolor, lines, offset);
 }
 
 static void dc_fb_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned x, unsigned y, unsigned w, unsigned h)
 {
 //  struct dc_fb_render_data *render_data = graphics->render_data;
-  render_mouse((Uint32*)dc_fb_vram_ptr(), 640*2, 16, x, y, 0xFFFFFFFF, 0, w, h);
+  render_mouse((uint32_t *)dc_fb_vram_ptr(), 640*2, 16, x, y, 0xFFFFFFFF, 0, w, h);
 }
 
 static void dc_fb_sync_screen(struct graphics_data *graphics)
@@ -126,7 +120,6 @@ void render_dc_fb_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = dc_fb_init_video;
   renderer->free_video = dc_fb_free_video;
-  renderer->check_video_mode = dc_fb_check_video_mode;
   renderer->set_video_mode = dc_fb_set_video_mode;
   renderer->update_colors = dc_fb_update_colors;
   renderer->resize_screen = resize_screen_standard;

@@ -31,14 +31,14 @@ KOS_INIT_ROMDISK(KOS_INIT_ROMDISK_NONE);
 // extern uint8 romdisk[];
 // KOS_INIT_ROMDISK(romdisk);
 
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
   thd_sleep(ms);
 }
 
-Uint32 get_ticks(void)
+uint64_t get_ticks(void)
 {
-  return (Uint32) timer_ms_gettime64();
+  return timer_ms_gettime64();
 }
 
 boolean platform_init(void)

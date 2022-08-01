@@ -338,6 +338,14 @@ endif
 endif
 
 #
+# KallistiOS has a pretty dire header situation
+#
+ifeq (${BUILD_DREAMCAST},1)
+CFLAGS   += -Wno-strict-prototypes -Wno-pedantic
+CXXFLAGS += -Wno-pedantic
+endif
+
+#
 # The following flags are not applicable to mingw builds.
 #
 ifneq (${PLATFORM},mingw)

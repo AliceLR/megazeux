@@ -76,12 +76,6 @@ static void dc_free_video(struct graphics_data *graphics)
   pvr_mem_free(render_data->texture);
 }
 
-static boolean dc_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
-{
-  return true;
-}
-
 static boolean dc_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize)
 {
@@ -89,9 +83,9 @@ static boolean dc_set_video_mode(struct graphics_data *graphics, int width,
 }
 
 static void dc_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned count)
 {
-  Uint32 i;
+  unsigned i;
 
   for(i = 0; i < count; i++)
   {
@@ -116,19 +110,19 @@ static void dc_render_layer(struct graphics_data *graphics,
 }
 
 static void dc_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+ unsigned x, unsigned y, uint16_t color, unsigned lines, unsigned offset)
 {
   struct dc_render_data *render_data = graphics->render_data;
-  Uint32 flatcolor = graphics->flat_intensity_palette[color] * 0x10001;
+  uint32_t flatcolor = graphics->flat_intensity_palette[color] * 0x10001;
 
-  render_cursor((Uint32*)render_data->texture, 1024*2, 16, x, y, flatcolor, lines, offset);
+  render_cursor((uint32_t *)render_data->texture, 1024*2, 16, x, y, flatcolor, lines, offset);
 }
 
 static void dc_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned x, unsigned y, unsigned w, unsigned h)
 {
   struct dc_render_data *render_data = graphics->render_data;
-  render_mouse((Uint32*)render_data->texture, 1024*2, 16, x, y, 0xFFFFFFFF, 0, w, h);
+  render_mouse((uint32_t *)render_data->texture, 1024*2, 16, x, y, 0xFFFFFFFF, 0, w, h);
 }
 
 static void dc_sync_screen(struct graphics_data *graphics)
@@ -181,7 +175,6 @@ void render_dc_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = dc_init_video;
   renderer->free_video = dc_free_video;
-  renderer->check_video_mode = dc_check_video_mode;
   renderer->set_video_mode = dc_set_video_mode;
   renderer->update_colors = dc_update_colors;
   renderer->resize_screen = resize_screen_standard;

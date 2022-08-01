@@ -32,7 +32,7 @@ void initialize_joysticks(void)
 {
 }
 
-void real_warp_mouse(int x, int y)
+void __warp_mouse(int x, int y)
 {
 }
 
@@ -45,6 +45,12 @@ boolean __update_event_status(void)
   return retval;
 }
 
+boolean __peek_exit_input(void)
+{
+  /* FIXME stub */
+  return false;
+}
+
 void __wait_event(void)
 {
   while(!__update_event_status())
@@ -52,7 +58,7 @@ void __wait_event(void)
 }
 
 static inline boolean check_hat(struct buffered_status *status,
- Uint32 down, Uint32 up, Uint32 key, enum joystick_hat dir)
+ uint32_t down, uint32_t up, uint32_t key, enum joystick_hat dir)
 {
   if(down & key)
   {
@@ -71,7 +77,7 @@ static inline boolean check_hat(struct buffered_status *status,
 }
 
 static inline boolean check_joy(struct buffered_status *status,
-  Uint32 down, Uint32 up, Uint32 key, Uint32 code)
+  uint32_t down, uint32_t up, uint32_t key, int code)
 {
   if(down & key)
   {
@@ -92,19 +98,19 @@ static inline boolean check_joy(struct buffered_status *status,
   }
 }
 
-static Uint32 last_buttons;
-static Uint32 last_ltrig, last_rtrig;
+static uint32_t last_buttons;
+static uint32_t last_ltrig, last_rtrig;
 
 boolean dc_update_input(void)
 {
   struct buffered_status *status = store_status();
   maple_device_t *maple_pad, *maple_kbd;
   cont_state_t *pad;
-  Uint32 down, held, up;
+  uint32_t down, held, up;
   boolean retval = false;
 
   maple_pad = maple_enum_type(0, MAPLE_FUNC_CONTROLLER);
-  if(maple_pad && (pad = (cont_state_t*) maple_dev_status(maple_pad)))
+  if(maple_pad && (pad = (cont_state_t *) maple_dev_status(maple_pad)))
   {
     down = (pad->buttons ^ last_buttons) & pad->buttons;
     held = (pad->buttons & last_buttons);
