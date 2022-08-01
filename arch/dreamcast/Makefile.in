@@ -30,8 +30,8 @@ VORBIS_CFLAGS := -I"${KOS_PORTS}"/libtremor/inst/include \
   -I"${KOS_PORTS}"/libogg/inst/include -DOV_EXCLUDE_STATIC_CALLBACKS
 VORBIS_LDFLAGS := -L"${KOS_PORTS}"/libtremor/inst/lib -ltremor
 
-ARCH_CFLAGS   =
-ARCH_CXXFLAGS =
+ARCH_CFLAGS  +=
+ARCH_CXXFLAGS+=
 ARCH_LDFLAGS += -lkosext2fs
 
 #

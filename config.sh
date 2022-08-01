@@ -720,13 +720,10 @@ echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
 #
 # Platform-specific libraries, or SDL?
 #
-if [ "$PLATFORM" = "3ds" ] || [ "$PLATFORM" = "nds" ]; then
+if [ "$PLATFORM" = "3ds" ] ||
+   [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "dreamcast" ]; then
 	echo "Disabling SDL ($PLATFORM)."
-	SDL="false"
-fi
-
-if [ "$PLATFORM" = "dreamcast" ]; then
-	echo "Disabling SDL (Dreamcast)."
 	SDL="false"
 fi
 
