@@ -3540,7 +3540,7 @@ skip_dir:
       {
         if(devoptab_list[i] && devoptab_list[i]->chdir_r)
         {
-          dir_list[num_dirs] = cmalloc(strlen(devoptab_list[i]->name + 3));
+          dir_list[num_dirs] = cmalloc(strlen(devoptab_list[i]->name) + 3);
           sprintf(dir_list[num_dirs], "%s:/", devoptab_list[i]->name);
 
           num_dirs++;
