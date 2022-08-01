@@ -12,6 +12,8 @@ ifeq ($(strip ${KOS_PORTS}),)
 $(error "KOS_PORTS must be set in your environment.")
 endif
 
+EXTRA_LICENSES += ${LICENSE_NEWLIB}
+
 CC      := kos-cc
 CXX     := kos-c++
 AR      := kos-ar
@@ -39,11 +41,11 @@ arch/dreamcast/%.o: arch/dreamcast/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
 
-arch/dreamcast/romdisk.img:
-	$(KOS_GENROMFS) -f arch/dreamcast/romdisk.img -d arch/dreamcast/romdisk -v
+#arch/dreamcast/romdisk.img:
+#	$(KOS_GENROMFS) -f arch/dreamcast/romdisk.img -d arch/dreamcast/romdisk -v
 
-arch/dreamcast/romdisk.o: arch/dreamcast/romdisk.img
-	$(KOS_BASE)/utils/bin2o/bin2o arch/dreamcast/romdisk.img romdisk arch/dreamcast/romdisk.o
+#arch/dreamcast/romdisk.o: arch/dreamcast/romdisk.img
+#	$(KOS_BASE)/utils/bin2o/bin2o arch/dreamcast/romdisk.img romdisk arch/dreamcast/romdisk.o
 
 package: mzx
 	${OBJCOPY} -O binary ${mzxrun} ${mzxrun}.bin
