@@ -1,0 +1,3 @@
+./config.sh --platform dreamcast --prefix $KOS_BASE --optimize-size \
+            --disable-editor --disable-helpsys --disable-utils \
+            --enable-meter --disable-libpng --enable-tremor --enable-release

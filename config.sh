@@ -34,6 +34,7 @@ usage() {
 	echo "  switch         Experimental Switch port"
 	echo "  wii            Experimental Wii port"
 	echo "  wiiu           Experimental Wii U port"
+	echo "  dreamcast      Experimental Dreamcast port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
@@ -588,6 +589,8 @@ if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"
 elif [ "$PLATFORM" = "emscripten" ]; then
 	LIBDIR="/data"
+elif [ "$PLATFORM" = "dreamcast" ]; then
+	LIBDIR="/cd/megazeux"
 else
 	LIBDIR="."
 fi
@@ -648,6 +651,12 @@ elif [ "$PLATFORM" = "nds" ]; then
 elif [ "$PLATFORM" = "3ds" ]; then
 	SHAREDIR=/3ds/megazeux
 	LICENSEDIR=$SHAREDIR
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "dreamcast" ]; then
+	SHAREDIR=/cd/megazeux
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
@@ -713,6 +722,11 @@ echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
 #
 if [ "$PLATFORM" = "3ds" ] || [ "$PLATFORM" = "nds" ]; then
 	echo "Disabling SDL ($PLATFORM)."
+	SDL="false"
+fi
+
+if [ "$PLATFORM" = "dreamcast" ]; then
+	echo "Disabling SDL (Dreamcast)."
 	SDL="false"
 fi
 
@@ -929,6 +943,16 @@ if [ "$PLATFORM" = "psp" ]; then
 fi
 
 #
+# If the Dreamcast arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "dreamcast" ]; then
+	echo "Enabling Dreamcast-specific hacks."
+	echo "#define CONFIG_DREAMCAST" >> src/config.h
+	echo "BUILD_DREAMCAST=1" >> platform.inc
+fi
+
+#
 # If the GP2X arch is enabled, some code has to be compile time
 # enabled too.
 #
@@ -970,7 +994,8 @@ if [ "$PLATFORM" = "psp" ] ||
    [ "$PLATFORM" = "nds" ] ||
    [ "$PLATFORM" = "3ds" ] ||
    [ "$PLATFORM" = "wii" ] ||
-   [ "$PLATFORM" = "wiiu" ]; then
+   [ "$PLATFORM" = "wiiu" ] ||
+   [ "$PLATFORM" = "dreamcast" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
 	OVERLAY="false"
@@ -1061,7 +1086,8 @@ if [ "$PLATFORM" = "gp2x" ] ||
    [ "$PLATFORM" = "switch" ] ||
    [ "$PLATFORM" = "android" ] ||
    [ "$PLATFORM" = "emscripten" ] ||
-   [ "$PLATFORM" = "psp" ]; then
+   [ "$PLATFORM" = "psp" ] ||
+   [ "$PLATFORM" = "dreamcast" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
 fi
@@ -1338,7 +1364,8 @@ if [ "$ICON" = "true" ]; then
 	   [ "$PLATFORM" = "gp2x" ] ||
 	   [ "$PLATFORM" = "psp" ] ||
 	   [ "$PLATFORM" = "nds" ] ||
-	   [ "$PLATFORM" = "wii" ]; then
+	   [ "$PLATFORM" = "wii" ] ||
+	   [ "$PLATFORM" = "dreamcast" ]; then
 		echo "Force-disabling icon branding (redundant)."
 		ICON="false"
 	fi

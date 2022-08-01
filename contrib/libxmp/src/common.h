@@ -33,6 +33,8 @@
 #  include <SupportDefs.h>
 #elif defined __amigaos4__
 #  include <exec/types.h>
+#elif defined __ARCH_TYPES_H
+/* KallistiOS */
 #else
 typedef signed char int8;
 typedef signed short int int16;
