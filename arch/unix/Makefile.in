@@ -18,13 +18,13 @@ include arch/install.inc
 
 # linux os specific install files
 install-arch: install-check
-	@${install} -m 0755 -d \
+	${install} -m 0755 -d \
 		${DESTDIR}${SHAREDIR} \
-		${DESTDIR}${SHAREDIR}/icons \
-		${DESTDIR}${SHAREDIR}/applications && \
-	 ${install} -m 0644 contrib/icons/quantump.png \
-		${DESTDIR}${SHAREDIR}/icons/megazeux.png && \
-	 ${install} -m 0644 arch/unix/megazeux.desktop \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/128x128/apps \
+		${DESTDIR}${SHAREDIR}/applications
+	${install} -m 0644 contrib/icons/quantump.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/128x128/apps/megazeux.png
+	${install} -m 0644 arch/unix/megazeux.desktop \
 		${DESTDIR}${SHAREDIR}/applications/megazeux.desktop
 ifeq (${BUILD_MZXRUN},1)
 	@${install} -m 0644 arch/unix/mzxrun.desktop \
@@ -34,7 +34,7 @@ endif
 # linux os specific install files
 uninstall-arch: install-check
 	@${RM} -f \
-		${DESTDIR}${SHAREDIR}/icons/megazeux.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/128x128/apps/megazeux.png \
 		${DESTDIR}${SHAREDIR}/applications/megazeux.desktop
 ifeq (${BUILD_MZXRUN},1)
 	@${RM} -f \
