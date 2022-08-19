@@ -722,9 +722,16 @@ echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
 #
 if [ "$PLATFORM" = "3ds" ] ||
    [ "$PLATFORM" = "nds" ] ||
-   [ "$PLATFORM" = "dreamcast" ]; then
+   [ "$PLATFORM" = "dreamcast" ] ||
+   [ "$PLATFORM" = "egl" ]; then
 	echo "Disabling SDL ($PLATFORM)."
 	SDL="false"
+
+	# The SDL software renderer works as a dummy renderer without
+	# SDL, which is not desired for these platforms. Wii also
+	# needs to do this conditionally if SDL is disabled.
+	echo "Force-disabling software renderer (SDL or dummy only)."
+	SOFTWARE="false"
 fi
 
 #
@@ -739,7 +746,6 @@ if [ "$SDL" = "false" ]; then
 else
 	echo "#define CONFIG_SDL" >> src/config.h
 	echo "BUILD_SDL=1" >> platform.inc
-	EGL="false"
 fi
 
 #
@@ -750,9 +756,6 @@ fi
 if [ "$EGL" = "true" ]; then
 	echo "#define CONFIG_EGL" >> src/config.h
 	echo "BUILD_EGL=1" >> platform.inc
-
-	echo "Force-disabling software renderer (EGL)."
-	SOFTWARE="false"
 
 	echo "Force-enabling OpenGL ES support (EGL)."
 	GLES="true"
@@ -818,9 +821,7 @@ if [ "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling stack protector on NDS."
 	STACK_PROTECTOR="false"
 
-	echo "Force-disabling software renderer on NDS."
 	echo "Building custom NDS renderer."
-	SOFTWARE="false"
 
 	echo "Force-disabling hash tables on NDS."
 	COUNTER_HASH="false"
@@ -852,9 +853,7 @@ if [ "$PLATFORM" = "3ds" ]; then
 	echo "Force-disabling stack protector on 3DS."
 	STACK_PROTECTOR="false"
 
-	echo "Force-disabling software renderer on 3DS."
 	echo "Building custom 3DS renderer."
-	SOFTWARE="false"
 
 	echo "Disabling utils on 3DS."
 	UTILS="false"
@@ -1600,7 +1599,7 @@ if [ "$ICON" = "true" ]; then
 		if [ "$SHAREDIR" = "." ]; then
 			ICONFILE="contrib/icons/quantump.png"
 		else
-			ICONFILE="$SHAREDIR/icons/megazeux.png"
+			ICONFILE="$SHAREDIR/icons/hicolor/128x128/apps/megazeux.png"
 		fi
 		echo "#define ICONFILE \"$ICONFILE\"" >> src/config.h
 	fi

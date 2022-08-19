@@ -19,8 +19,8 @@ install = install
 endif
 
 ifneq (${V},1)
-install = @${install}
-gzip    = @${gzip}
+install := @${install}
+gzip    := @${gzip}
 endif
 
 #
