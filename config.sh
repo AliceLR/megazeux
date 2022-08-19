@@ -1576,7 +1576,7 @@ if [ "$ICON" = "true" ]; then
 		if [ "$SHAREDIR" = "." ]; then
 			ICONFILE="contrib/icons/quantump.png"
 		else
-			ICONFILE="$SHAREDIR/icons/megazeux.png"
+			ICONFILE="$SHAREDIR/icons/hicolor/128x128/apps/megazeux.png"
 		fi
 		echo "#define ICONFILE \"$ICONFILE\"" >> src/config.h
 	fi
