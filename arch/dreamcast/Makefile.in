@@ -59,4 +59,18 @@ build: package ${build}
 	${CP} arch/dreamcast/pad.config ${build}
 	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
 
+# TODO: this needs to be integrated into the packaging step.
+MAKEIP ?= "${KOS_BASE}"/utils3rd/mksdiso/src/makeip
+CDI4DC ?= "${KOS_BASE}"/utils3rd/img4dc/cdi4dc
+
+cdi: build
+	${RM} -r build/dist/${SUBPLATFORM}
+	${MKDIR} -p build/dist/${SUBPLATFORM}
+	cp "${MAKEIP}"/IP.TMPL "${MAKEIP}"/ip.txt ${build}
+	cd ${build} && "${MAKEIP}"/makeip ip.txt IP.BIN
+	genisoimage -V MegaZeux -G IP.BIN -joliet -rock -l -o build/dist/${SUBPLATFORM}/${TARGET}-${SUBARCH}.iso ${build}
+	"${CDI4DC}"/cdi4dc \
+		build/dist/${SUBPLATFORM}/${TARGET}-${SUBARCH}.iso \
+		build/dist/${SUBPLATFORM}/${TARGET}-${SUBARCH}.cdi -d
+
 include arch/zip.inc
