@@ -27,7 +27,6 @@
 #include "../../src/util.h"
 
 #include <kos.h>
-#include "render.h"
 
 /*
  * Eventually, this file will house a PVR-accelerated renderer.
@@ -35,7 +34,15 @@
  * TODO
  */
 
-static pvr_init_params_t pvr_params = {
+struct dc_render_data
+{
+  pvr_ptr_t texture;
+  pvr_poly_hdr_t header;
+};
+
+
+static pvr_init_params_t pvr_params =
+{
   { PVR_BINSIZE_8, PVR_BINSIZE_0, PVR_BINSIZE_8, PVR_BINSIZE_0, PVR_BINSIZE_0 },
   32 * 32768,
   0, 0, 1
@@ -56,7 +63,8 @@ static boolean dc_init_video(struct graphics_data *graphics,
   render_data.texture = pvr_mem_malloc(1024 * 512 * 2);
 
   // generate polygon header
-  pvr_poly_cxt_txr(&cxt, PVR_LIST_OP_POLY, PVR_TXRFMT_NONTWIDDLED | PVR_TXRFMT_RGB565, 1024, 512, render_data.texture, PVR_FILTER_NEAREST);
+  pvr_poly_cxt_txr(&cxt, PVR_LIST_OP_POLY, PVR_TXRFMT_NONTWIDDLED | PVR_TXRFMT_RGB565,
+   1024, 512, render_data.texture, PVR_FILTER_NEAREST);
   pvr_poly_compile(&(render_data.header), &cxt);
 
   graphics->allow_resize = 0;
@@ -99,14 +107,15 @@ static void dc_update_colors(struct graphics_data *graphics,
 static void dc_render_graph(struct graphics_data *graphics)
 {
   struct dc_render_data *render_data = graphics->render_data;
-  render_graph16(render_data->texture, 1024*2, graphics, set_colors16[graphics->screen_mode]);
+  render_graph16(render_data->texture, 1024 * 2, graphics,
+   set_colors16[graphics->screen_mode]);
 }
 
 static void dc_render_layer(struct graphics_data *graphics,
  struct video_layer *vlayer)
 {
   struct dc_render_data *render_data = graphics->render_data;
-  render_layer(render_data->texture, 16, 1024*2, graphics, vlayer);
+  render_layer(render_data->texture, 16, 1024 * 2, graphics, vlayer);
 }
 
 static void dc_render_cursor(struct graphics_data *graphics,
@@ -115,14 +124,16 @@ static void dc_render_cursor(struct graphics_data *graphics,
   struct dc_render_data *render_data = graphics->render_data;
   uint32_t flatcolor = graphics->flat_intensity_palette[color] * 0x10001;
 
-  render_cursor((uint32_t *)render_data->texture, 1024*2, 16, x, y, flatcolor, lines, offset);
+  render_cursor((uint32_t *)render_data->texture, 1024 * 2, 16, x, y,
+   flatcolor, lines, offset);
 }
 
 static void dc_render_mouse(struct graphics_data *graphics,
  unsigned x, unsigned y, unsigned w, unsigned h)
 {
   struct dc_render_data *render_data = graphics->render_data;
-  render_mouse((uint32_t *)render_data->texture, 1024*2, 16, x, y, 0xFFFFFFFF, 0, w, h);
+  render_mouse((uint32_t *)render_data->texture, 1024 * 2, 16, x, y,
+   0xFFFFFFFF, 0, w, h);
 }
 
 static void dc_sync_screen(struct graphics_data *graphics)

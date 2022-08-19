@@ -24,8 +24,6 @@
 
 #include <kos.h>
 
-#include "event.h"
-
 extern struct input_status input;
 
 void initialize_joysticks(void)
@@ -139,7 +137,9 @@ boolean dc_update_input(void)
     last_buttons = pad->buttons;
     last_ltrig = pad->ltrig;
     last_rtrig = pad->rtrig;
-  } else {
+  }
+  else
+  {
     last_buttons = last_ltrig = last_rtrig = 0;
   }
 

@@ -27,7 +27,10 @@
 #include "../../src/util.h"
 
 #include <kos.h>
-#include "render_fb.h"
+
+struct dc_fb_render_data
+{
+};
 
 static boolean dc_fb_init_video(struct graphics_data *graphics,
  struct config_info *conf)
@@ -52,7 +55,7 @@ static boolean dc_fb_init_video(struct graphics_data *graphics,
 
 static inline uint16_t *dc_fb_vram_ptr()
 {
-  return vram_s + (640*65); // 0,65 - 639,415
+  return vram_s + (640 * 65); // 0,65 - 639,415
 }
 
 static void dc_fb_free_video(struct graphics_data *graphics)
@@ -83,14 +86,15 @@ static void dc_fb_update_colors(struct graphics_data *graphics,
 static void dc_fb_render_graph(struct graphics_data *graphics)
 {
 //  struct dc_fb_render_data *render_data = graphics->render_data;
-  render_graph16(dc_fb_vram_ptr(), 640*2, graphics, set_colors16[graphics->screen_mode]);
+  render_graph16(dc_fb_vram_ptr(), 640 * 2, graphics,
+   set_colors16[graphics->screen_mode]);
 }
 
 static void dc_fb_render_layer(struct graphics_data *graphics,
  struct video_layer *vlayer)
 {
 //  struct dc_fb_render_data *render_data = graphics->render_data;
-  render_layer(dc_fb_vram_ptr(), 16, 640*2, graphics, vlayer);
+  render_layer(dc_fb_vram_ptr(), 16, 640 * 2, graphics, vlayer);
 }
 
 static void dc_fb_render_cursor(struct graphics_data *graphics,
@@ -99,14 +103,16 @@ static void dc_fb_render_cursor(struct graphics_data *graphics,
 //  struct dc_fb_render_data *render_data = graphics->render_data;
   uint32_t flatcolor = graphics->flat_intensity_palette[color] * 0x10001;
 
-  render_cursor((uint32_t *)dc_fb_vram_ptr(), 640*2, 16, x, y, flatcolor, lines, offset);
+  render_cursor((uint32_t *)dc_fb_vram_ptr(), 640 * 2, 16, x, y,
+   flatcolor, lines, offset);
 }
 
 static void dc_fb_render_mouse(struct graphics_data *graphics,
  unsigned x, unsigned y, unsigned w, unsigned h)
 {
 //  struct dc_fb_render_data *render_data = graphics->render_data;
-  render_mouse((uint32_t *)dc_fb_vram_ptr(), 640*2, 16, x, y, 0xFFFFFFFF, 0, w, h);
+  render_mouse((uint32_t *)dc_fb_vram_ptr(), 640 * 2, 16, x, y,
+   0xFFFFFFFF, 0, w, h);
 }
 
 static void dc_fb_sync_screen(struct graphics_data *graphics)
