@@ -589,8 +589,6 @@ if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"
 elif [ "$PLATFORM" = "emscripten" ]; then
 	LIBDIR="/data"
-elif [ "$PLATFORM" = "dreamcast" ]; then
-	LIBDIR="/cd/megazeux"
 else
 	LIBDIR="."
 fi
@@ -656,7 +654,7 @@ elif [ "$PLATFORM" = "3ds" ]; then
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "dreamcast" ]; then
-	SHAREDIR=/cd/megazeux
+	SHAREDIR=/cd
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
