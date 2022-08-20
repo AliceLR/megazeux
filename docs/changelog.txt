@@ -3,6 +3,7 @@ GIT
 USERS
 
 + Added an experimental Wii U port (asie).
++ Added an experimental Dreamcast port (asie, Lachesis).
 + Added the "glslscale" renderer. This is the same as the GLSL
   renderer, but uses software rendering with scaling shaders
   instead of hardware rendering. This is faster on low end PCs
@@ -55,6 +56,9 @@ USERS
   positions, these can be configured with the config file option
   "vlayer_position#", and they work identically to board saved
   positions.
++ Fixed bug where the second cycle of a board when entering from
+  a board edge or entrance would be shortened due to incorrect
+  gameplay framerate timing introduced in 2.91g.
 + Fixed a crash bug when attempting to save MZMs over 4MB to an
   existing string.
 + Fixed a bug where, if a world's title screen music is set but
@@ -167,6 +171,12 @@ USERS
   stdin using the input filename "-".
 + Fixed bugs caused by missing validation in the Import SFX
   feature in the editor.
++ Scrolls can now display standard message ~@ color codes.
++ Creating a new world using N from the title screen or Alt+R
+  in the editor now clears the extended character sets.
++ Fixed PrintScreen/SysRq and Menu/"Right Click" keycodes.
++ Unsupported keys no longer return a KEY_PRESSED value of 1
+  for SDL 2 builds.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
@@ -193,6 +203,8 @@ DEVELOPERS
 + Added architecture width detection for RISC-V RV32 and MIPS64.
 + Replaced the macro-based mixers in sampled_stream.c with more
   maintainable template-based mixers.
++ Fixed the DSO -Wstrict-aliasing warnings in Socket.cpp and the
+  OpenGL renderers for GCC versions using -Wstrict-aliasing=2.
 + Updated libxmp to 4.5.0.
 + Relicensed ccv from GPL 3 to GPL 2+ to match the rest of MZX.
   (Lancer-X)

@@ -5,3 +5,5 @@ Icon=megazeux
 Terminal=false
 Type=Application
 Categories=Game;
+GenericName=Game Creation System
+Comment=A simple, cross-platform game creation system.

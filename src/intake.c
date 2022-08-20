@@ -110,10 +110,8 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
   do
   {
-    if(use_mask)
-      write_string_mask(string, x, y, color, false);
-    else
-      write_string_ext(string, x, y, color, false, 0, 16);
+    int flags = use_mask ? WR_MASK : 0;
+    write_string_ext(string, x, y, color, flags, 0, 16);
 
     fill_line(max_len + 1 - curr_len, x + curr_len, y, 32, color);
 

@@ -159,6 +159,11 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_SYSREQ: return IKEY_SYSREQ;
     case SDLK_PAUSE: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
+#if SDL_VERSION_ATLEAST(2,0,0)
+    // SDL 2.0 leaves the old keysyms around but doesn't use them?
+    case SDLK_PRINTSCREEN: return IKEY_SYSREQ;
+    case SDLK_APPLICATION: return IKEY_MENU;
+#endif
 #ifdef __WIN32__
 #if SDL_VERSION_ATLEAST(2,0,6) && !SDL_VERSION_ATLEAST(2,0,10)
     // Dumb hack for a Windows virtual keycode bug. TODO remove.
@@ -1199,10 +1204,10 @@ static boolean process_event(SDL_Event *event)
       if(!ckey)
       {
 #if !SDL_VERSION_ATLEAST(2,0,0)
-        if(!event->key.keysym.unicode)
-          break;
-#endif
         ckey = IKEY_UNICODE;
+        if(!event->key.keysym.unicode)
+#endif
+          break;
       }
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
@@ -1309,10 +1314,10 @@ static boolean process_event(SDL_Event *event)
       if(!ckey)
       {
 #if !SDL_VERSION_ATLEAST(2,0,0)
-        if(!status->keymap[IKEY_UNICODE])
-          break;
-#endif
         ckey = IKEY_UNICODE;
+        if(!status->keymap[IKEY_UNICODE])
+#endif
+          break;
       }
 
       if(ckey == IKEY_NUMLOCK)
@@ -1587,7 +1592,7 @@ boolean __peek_exit_input(void)
 
     if(events[i].type == SDL_KEYDOWN)
     {
-      SDL_KeyboardEvent *ev = (SDL_KeyboardEvent *) &events[i];
+      SDL_KeyboardEvent *ev = &(events[i].key);
 
       if(ev->keysym.sym == SDLK_ESCAPE)
         return true;

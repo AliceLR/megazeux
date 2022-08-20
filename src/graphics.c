@@ -61,7 +61,6 @@
 #define CURSOR_BLINK_RATE 115
 
 __editor_maybe_static struct graphics_data graphics;
-static boolean graphics_was_initialized;
 
 static const struct renderer_data renderers[] =
 {
@@ -104,6 +103,10 @@ static const struct renderer_data renderers[] =
   { "svga", render_svga_register },
 #endif
   { "ega", render_ega_register },
+#endif
+#if defined(CONFIG_DREAMCAST)
+  { "dreamcast", render_dc_register },
+  { "dreamcast_fb", render_dc_fb_register },
 #endif
   { NULL, NULL }
 };
@@ -1402,6 +1405,7 @@ static boolean set_graphics_output(struct config_info *conf)
 
   renderer->reg(&graphics.renderer);
   graphics.renderer_num = i;
+  graphics.renderer_is_headless = false;
 
   debug("Video: using '%s' renderer.\n", renderer->name);
   return true;
@@ -1764,7 +1768,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   ec_clear_set();
   ec_load_mzx();
   init_palette();
-  graphics_was_initialized = true;
+  graphics.is_initialized = true;
   return true;
 }
 
@@ -1784,7 +1788,11 @@ boolean has_video_initialized(void)
   if(sdl_driver && !strcmp(sdl_driver, "dummy")) return false;
 #endif /* CONFIG_SDL */
 
-  return graphics_was_initialized;
+  // Renderers can also report as headless.
+  if(graphics.renderer_is_headless)
+    return false;
+
+  return graphics.is_initialized;
 }
 
 boolean set_video_mode(void)
@@ -1985,342 +1993,148 @@ static int offset_adjust(int offset, unsigned int x, unsigned int y)
   return offset;
 }
 
-void color_string_ext_special(const char *str, unsigned int x, unsigned int y,
- uint8_t *color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset)
+static int hexdigit(uint8_t hex)
+{
+  if(hex >= '0' && hex <= '9')
+    return hex - '0';
+  if(hex >= 'A' && hex <= 'F')
+    return hex - 'A' + 10;
+  if(hex >= 'a' && hex <= 'f')
+    return hex - 'a' + 10;
+  return -1;
+}
+
+static int write_string_intl(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, boolean allow_tabs, boolean allow_newline, boolean end_newline,
+ boolean allow_colors, boolean mask_midchars, int chr_offset, int color_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
   struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
-  const char *src = str;
-  uint8_t cur_char = *src;
-  uint8_t next;
-  uint8_t bg_color = (*color >> 4) + color_offset;
-  uint8_t fg_color = (*color & 0x0F) + color_offset;
 
-  char next_str[2];
-  next_str[1] = 0;
+  int bg_color = (color >> 4) + color_offset;
+  int fg_color = (color & 0x0F) + color_offset;
+  int code;
 
   dirty_ui();
   dirty_current();
 
-  while(cur_char && dest < graphics.current_video_end)
+  while(*str && dest < graphics.current_video_end)
   {
-    switch(cur_char)
+    int cur_char = *str++;
+
+    if(cur_char == '\n')
     {
-      // Color character
-      case '@':
-      {
-        str++;
-        next = *str;
-
-        // If 0, stop right there
-        if(!next)
-          goto exit_out;
-
-        // If the next isn't hex, count as one
-        if(isxdigit(next))
-        {
-          next_str[0] = next;
-          bg_color = (uint8_t)(strtol(next_str, NULL, 16) + color_offset);
-        }
-        else
-        {
-          if(next == '@')
-          {
-            dest->char_value = '@' + chr_offset;
-            dest->bg_color = bg_color;
-            dest->fg_color = fg_color;
-            *(dest_copy++) = *dest;
-            dest++;
-          }
-          else
-          {
-            str--;
-          }
-        }
-
+      if(end_newline)
         break;
-      }
 
-      case '~':
+      if(allow_newline)
       {
-        str++;
-        next = *str;
-
-        // If 0, stop right there
-        if(!next)
-          goto exit_out;
-
-        // If the next isn't hex, count as one
-        if(isxdigit(next))
-        {
-          next_str[0] = next;
-          fg_color = (uint8_t)(strtol(next_str, NULL, 16) + color_offset);
-        }
-        else
-        {
-          if(next == '~')
-          {
-            dest->char_value = '~' + chr_offset;
-            dest->bg_color = bg_color;
-            dest->fg_color = fg_color;
-            *(dest_copy++) = *dest;
-            dest++;
-          }
-          else
-          {
-            str--;
-          }
-        }
-
-        break;
+        y++;
+        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x, x, y);
+        dest_copy = graphics.text_video + (y * SCREEN_W) + x;
+        continue;
       }
+    }
+    else
 
-      // Newline
-      case '\n':
+    if(cur_char == '\t')
+    {
+      if(allow_tabs)
       {
-        if(allow_newline)
-        {
-          y++;
-          dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x, x, y);
-          dest_copy = graphics.text_video + (y * SCREEN_W) + x;
+        // Note: the write_line functions used 10 here, but they were used
+        // only for scrolls, which don't allow control codes. 1.x allowed
+        // char 9 but displayed them as char 9.
+        dest += 5;
+        dest_copy += 5;
+        continue;
+      }
+    }
+    else
+
+    if(allow_colors)
+    {
+      if(cur_char == '@')
+      {
+        if(!*str)
           break;
+
+        code = hexdigit(*str);
+        if(code >= 0)
+        {
+          bg_color = code + color_offset;
+          str++;
+          continue;
         }
+        else
+
+        if(*str == '@')
+          str++;
       }
+      else
 
-      /* fallthrough */
-
-      default:
+      if(cur_char == '~')
       {
-        dest->char_value = cur_char + chr_offset;
-        dest->bg_color = bg_color;
-        dest->fg_color = fg_color;
-        *(dest_copy++) = *dest;
-        dest++;
+        if(!*str)
+          break;
+
+        code = hexdigit(*str);
+        if(code >= 0)
+        {
+          fg_color = code + color_offset;
+          str++;
+          continue;
+        }
+        else
+
+        if(*str == '~')
+          str++;
       }
     }
 
-    str++;
-    cur_char = *str;
+    if(mask_midchars)
+    {
+      if(cur_char >= 32 && cur_char <= 126)
+        chr_offset = PRO_CH;
+      else
+        chr_offset = 0;
+    }
+
+    /* Draw char */
+    dest->char_value = cur_char + chr_offset;
+    dest->bg_color = bg_color;
+    dest->fg_color = fg_color;
+    *(dest_copy++) = *dest;
+    dest++;
   }
 
-exit_out:
-  *color = (((bg_color - color_offset) << 4) & 0xF0) |
-           (((fg_color - color_offset) << 0) & 0x0F);
+  return ((bg_color & 0xf) << 4) | (fg_color & 0xf);
+}
+
+void write_string_ext(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, int flags, unsigned int chr_offset, unsigned int color_offset)
+{
+  boolean allow_tabs      = (flags & WR_TAB) != 0;
+  boolean allow_newlines  = (flags & WR_NEWLINE) != 0;
+  boolean end_newline     = (flags & WR_LINE) != 0;
+  boolean allow_colors    = (flags & WR_COLOR) != 0;
+  boolean mask_midchars   = (flags & WR_MASK) != 0;
+
+  write_string_intl(str, x, y, color, allow_tabs, allow_newlines,
+   end_newline, allow_colors, mask_midchars, chr_offset, color_offset);
+}
+
+void color_string_ext_special(const char *str, unsigned int x, unsigned int y,
+ uint8_t *color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset)
+{
+  *color = write_string_intl(str, x, y, *color,
+   false, allow_newline, false, true, false, chr_offset, color_offset);
 }
 
 void color_string_ext(const char *str, unsigned int x, unsigned int y,
  uint8_t color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset)
 {
   color_string_ext_special(str, x, y, &color, allow_newline, chr_offset, color_offset);
-}
-
-// Write a normal string
-
-void write_string_ext(const char *str, unsigned int x, unsigned int y,
- uint8_t color, boolean tab_allowed, unsigned int chr_offset, unsigned int color_offset)
-{
-  int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
-  struct char_element *dest_copy = graphics.text_video + scr_off;
-  const char *src = str;
-  uint8_t cur_char = *src;
-  uint8_t bg_color = (color >> 4) + color_offset;
-  uint8_t fg_color = (color & 0x0F) + color_offset;
-
-  dirty_ui();
-  dirty_current();
-
-  while(cur_char && (cur_char != 0) && dest < graphics.current_video_end)
-  {
-    switch(cur_char)
-    {
-      // Newline
-      case '\n':
-      {
-        y++;
-        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x, x, y);
-        dest_copy = graphics.text_video + (y * SCREEN_W) + x;
-        break;
-      }
-
-      case '\t':
-      {
-        if(tab_allowed)
-        {
-          dest += 5;
-          dest_copy += 5;
-          break;
-        }
-      }
-
-      /* fallthrough */
-
-      default:
-      {
-        dest->char_value = cur_char + chr_offset;
-        dest->bg_color = bg_color;
-        dest->fg_color = fg_color;
-        *(dest_copy++) = *dest;
-        dest++;
-      }
-    }
-    str++;
-    cur_char = *str;
-  }
-}
-
-void write_string_mask(const char *str, unsigned int x, unsigned int y,
- uint8_t color, boolean tab_allowed)
-{
-  int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
-  struct char_element *dest_copy = graphics.text_video + scr_off;
-  const char *src = str;
-  uint8_t cur_char = *src;
-  uint8_t bg_color = (color >> 4) + 16;
-  uint8_t fg_color = (color & 0x0F) + 16;
-
-  dirty_ui();
-  dirty_current();
-
-  while(cur_char && (cur_char != 0) && dest < graphics.current_video_end)
-  {
-    switch(cur_char)
-    {
-      // Newline
-      case '\n':
-      {
-        y++;
-        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x, x, y);
-        dest_copy = graphics.text_video + (y * SCREEN_W) + x;
-        break;
-      }
-
-      case '\t':
-      {
-        if(tab_allowed)
-        {
-          dest += 5;
-          dest_copy += 5;
-          break;
-        }
-      }
-
-      /* fallthrough */
-
-      default:
-      {
-        if((cur_char >= 32) && (cur_char <= 126))
-          dest->char_value = cur_char + PRO_CH;
-        else
-          dest->char_value = cur_char;
-
-        dest->bg_color = bg_color;
-        dest->fg_color = fg_color;
-        *(dest_copy++) = *dest;
-        dest++;
-      }
-    }
-    str++;
-    cur_char = *str;
-  }
-}
-
-// Write a normal string, without carriage returns
-
-void write_line_ext(const char *str, unsigned int x, unsigned int y,
- uint8_t color, boolean tab_allowed, unsigned int chr_offset, unsigned int color_offset)
-{
-  int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
-  struct char_element *dest_copy = graphics.text_video + scr_off;
-  const char *src = str;
-  uint8_t cur_char = *src;
-  uint8_t bg_color = (color >> 4) + color_offset;
-  uint8_t fg_color = (color & 0x0F) + color_offset;
-
-  dirty_ui();
-  dirty_current();
-
-  while(cur_char && (cur_char != '\n') && dest < graphics.current_video_end)
-  {
-    switch(cur_char)
-    {
-      // Color character
-      case '\t':
-      {
-        if(tab_allowed)
-        {
-          dest += 10;
-          dest_copy += 10;
-          break;
-        }
-      }
-
-      /* fallthrough */
-
-      default:
-      {
-        dest->char_value = cur_char + chr_offset;
-        dest->bg_color = bg_color;
-        dest->fg_color = fg_color;
-        *(dest_copy++) = *dest;
-        dest++;
-      }
-    }
-    str++;
-    cur_char = *str;
-  }
-}
-
-void write_line_mask(const char *str, unsigned int x, unsigned int y,
- uint8_t color, boolean tab_allowed)
-{
-  int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
-  struct char_element *dest_copy = graphics.text_video + scr_off;
-  const char *src = str;
-  uint8_t cur_char = *src;
-  uint8_t bg_color = (color >> 4) + 16;
-  uint8_t fg_color = (color & 0x0F) + 16;
-
-  dirty_ui();
-  dirty_current();
-
-  while(cur_char && (cur_char != '\n') && dest < graphics.current_video_end)
-  {
-    switch(cur_char)
-    {
-      // Color character
-      case '\t':
-      {
-        if(tab_allowed)
-        {
-          dest += 10;
-          dest_copy += 10;
-          break;
-        }
-      }
-
-      /* fallthrough */
-
-      default:
-      {
-        if((cur_char >= 32) && (cur_char <= 127))
-          dest->char_value = cur_char + PRO_CH;
-        else
-          dest->char_value = cur_char;
-
-        dest->bg_color = bg_color;
-        dest->fg_color = fg_color;
-        *(dest_copy++) = *dest;
-        dest++;
-      }
-    }
-    str++;
-    cur_char = *str;
-  }
 }
 
 // Set rightalign to print the rightmost char at xy and proceed to the left
@@ -2348,7 +2162,8 @@ void write_number(int number, uint8_t color, unsigned int x, unsigned int y,
       x = 0;
   }
 
-  write_line_ext(temp, x, y, color, false, PRO_CH, 16);
+  write_string_intl(temp, x, y, color,
+   false, false, false, false, false, PRO_CH, 16);
 }
 
 static void color_line_ext(unsigned int length, unsigned int x, unsigned int y,
@@ -2478,9 +2293,9 @@ void color_string(const char *string, unsigned int x, unsigned int y, uint8_t co
 }
 
 void write_string(const char *string, unsigned int x, unsigned int y,
- uint8_t color, boolean tab_allowed)
+ uint8_t color, int flags)
 {
-  write_string_ext(string, x, y, color, tab_allowed, PRO_CH, 16);
+  write_string_ext(string, x, y, color, flags, PRO_CH, 16);
 }
 
 void color_line(unsigned int length, unsigned int x, unsigned int y, uint8_t color)

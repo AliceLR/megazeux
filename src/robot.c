@@ -2535,12 +2535,13 @@ static void display_robot_line(struct world *mzx_world, char *program,
     case ROBOTIC_CMD_MESSAGE_BOX_LINE: // Normal message
     {
       // On the off-chance something actually relies on this bug...
-      boolean allow_tabs =
-       ((mzx_world->version >= VERSION_PORT) && (mzx_world->version < V291));
+      int flags = 0;
+      if((mzx_world->version >= VERSION_PORT) && (mzx_world->version < V291))
+        flags |= WR_TAB;
 
       tr_msg(mzx_world, program + 3, id, ibuff);
       ibuff[64] = 0; // Clip
-      write_string_ext(ibuff, 8, y, scroll_base_color, allow_tabs, 0, 0);
+      write_string_ext(ibuff, 8, y, scroll_base_color, flags, 0, 0);
       break;
     }
 

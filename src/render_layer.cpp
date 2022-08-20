@@ -34,6 +34,10 @@
 #define SKIP_16BPP
 #endif
 
+#if defined(CONFIG_DREAMCAST)
+#define SKIP_8BPP
+#endif
+
 // Not exactly clear how much Emscripten benefits from these and they're
 // doubling the number of renderers.
 #if defined(__EMSCRIPTEN__)

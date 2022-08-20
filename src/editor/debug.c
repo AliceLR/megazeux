@@ -3377,11 +3377,11 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
     "X/Y:        /     \n"
     "Board:            \n"
     "Robot mem:      kb\n",
-    x + 1, y + 1, DI_DEBUG_LABEL, 0
+    x + 1, y + 1, DI_DEBUG_LABEL, WR_NEWLINE
   );
 
   version_string_len = get_version_string(version_string, mzx_world->version);
-  write_string(version_string, x + 19 - version_string_len, y, DI_DEBUG_BOX, 0);
+  write_string(version_string, x + 19 - version_string_len, y, DI_DEBUG_BOX, WR_NONE);
 
   if(show_keys)
   {
@@ -3391,7 +3391,7 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
     {
       sprintf(key_string, "%d", key);
       write_string(key_string, x + 15 - strlen(key_string), y + 5,
-       DI_DEBUG_BOX_DARK + 0x0A, 0);
+       DI_DEBUG_BOX_DARK + 0x0A, WR_NONE);
     }
 
     // key_pressed
@@ -3408,7 +3408,7 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
     {
       sprintf(key_string, "%d", key);
       write_string(key_string, x + 19 - strlen(key_string), y + 5,
-       DI_DEBUG_BOX_DARK + 0x0D, 0);
+       DI_DEBUG_BOX_DARK + 0x0D, WR_NONE);
     }
   }
 
@@ -3437,17 +3437,17 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
       char tempc = src_board->mod_playing[18];
       src_board->mod_playing[18] = 0;
       write_string(src_board->mod_playing, x + 1, y + 4,
-       DI_DEBUG_NUMBER, 0);
+       DI_DEBUG_NUMBER, WR_NONE);
       src_board->mod_playing[18] = tempc;
     }
     else
     {
       write_string(src_board->mod_playing, x + 1, y + 4,
-       DI_DEBUG_NUMBER, 0);
+       DI_DEBUG_NUMBER, WR_NONE);
     }
   }
   else
   {
-    write_string("(no module)", x + 2, y + 4, DI_DEBUG_NUMBER, 0);
+    write_string("(no module)", x + 2, y + 4, DI_DEBUG_NUMBER, WR_NONE);
   }
 }

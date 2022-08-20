@@ -150,6 +150,12 @@ core_cobjs += arch/nds/ram.o arch/nds/extmem.o
 endif
 endif
 
+ifeq (${BUILD_DREAMCAST},1)
+core_cobjs += arch/dreamcast/platform.o arch/dreamcast/render_fb.o
+core_cobjs += arch/dreamcast/audio.o arch/dreamcast/event.o
+core_cobjs += arch/dreamcast/render.o
+endif
+
 ifeq (${BUILD_3DS},1)
 core_cobjs += arch/3ds/shader_2d.shbin.o arch/3ds/shader_playfield.shbin.o
 core_cobjs += arch/3ds/platform.o arch/3ds/render.o
@@ -206,6 +212,10 @@ core_cobjs += ${core_obj}/extmem.o
 endif
 
 render_layer_software = 0
+
+ifeq (${BUILD_DREAMCAST},1)
+render_layer_software = 1
+endif
 
 ifeq (${BUILD_RENDER_SOFT},1)
 core_cobjs += ${core_obj}/render_soft.o
@@ -360,7 +370,7 @@ endif
 
 else
 
-ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_3DS},${BUILD_DJGPP}),)
+ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_3DS},${BUILD_DJGPP},${BUILD_DREAMCAST}),)
 
 core_cobjs += ${core_obj}/platform_dummy.o
 

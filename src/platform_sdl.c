@@ -73,7 +73,9 @@ static void set_dpi_aware(void)
   handle = SDL_LoadObject("User32.dll");
   if(handle)
   {
-    void **dest = (void **)&_SetProcessDPIAware;
+    union dso_fn_ptr_ptr sym_ptr = { &_SetProcessDPIAware };
+    dso_fn **dest = sym_ptr.value;
+
     *dest = SDL_LoadFunction(handle, "SetProcessDPIAware");
 
     if(_SetProcessDPIAware && !_SetProcessDPIAware())

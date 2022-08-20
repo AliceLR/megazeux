@@ -1,0 +1,76 @@
+#
+# Dreamcast Makefile
+#
+
+.PHONY: package clean
+
+ifeq ($(strip ${KOS_BASE}),)
+$(error "KOS_BASE must be set in your environment.")
+endif
+
+ifeq ($(strip ${KOS_PORTS}),)
+$(error "KOS_PORTS must be set in your environment.")
+endif
+
+EXTRA_LICENSES += ${LICENSE_NEWLIB}
+
+CC      := kos-cc
+CXX     := kos-c++
+AR      := kos-ar
+OBJCOPY := kos-objcopy
+STRIP   := kos-strip
+
+SDL_CFLAGS := -I"${KOS_PORTS}"/SDL/inst/include
+SDL_LDFLAGS := -L"${KOS_PORTS}"/SDL/inst/lib -lSDL
+
+ZLIB_CFLAGS := -I"${KOS_PORTS}"/zlib/inst/include
+ZLIB_LDFLAGS := -L"${KOS_PORTS}"/zlib/inst/lib -lz
+
+VORBIS_CFLAGS := -I"${KOS_PORTS}"/libtremor/inst/include \
+  -I"${KOS_PORTS}"/libogg/inst/include -DOV_EXCLUDE_STATIC_CALLBACKS
+VORBIS_LDFLAGS := -L"${KOS_PORTS}"/libtremor/inst/lib -ltremor
+
+ARCH_CFLAGS  +=
+ARCH_CXXFLAGS+=
+ARCH_LDFLAGS += -lkosext2fs
+
+#
+# Vile hack, remove me ASAP
+#
+arch/dreamcast/%.o: arch/dreamcast/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
+
+#arch/dreamcast/romdisk.img:
+#	$(KOS_GENROMFS) -f arch/dreamcast/romdisk.img -d arch/dreamcast/romdisk -v
+
+#arch/dreamcast/romdisk.o: arch/dreamcast/romdisk.img
+#	$(KOS_BASE)/utils/bin2o/bin2o arch/dreamcast/romdisk.img romdisk arch/dreamcast/romdisk.o
+
+package: mzx
+	${OBJCOPY} -O binary ${mzxrun} ${mzxrun}.bin
+	${KOS_BASE}/utils/scramble/scramble ${mzxrun}.bin 1ST_READ.BIN
+
+clean:
+	@rm -f ${mzxrun}.bin 1ST_READ.BIN arch/dreamcast/*.{d,o}
+
+build: package ${build}
+	${CP} 1ST_READ.BIN ${build}
+	${CP} arch/dreamcast/pad.config ${build}
+	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
+
+# TODO: this needs to be integrated into the packaging step.
+MAKEIP ?= "${KOS_BASE}"/utils3rd/mksdiso/src/makeip
+CDI4DC ?= "${KOS_BASE}"/utils3rd/img4dc/cdi4dc
+
+cdi: build
+	${RM} -r build/dist/${SUBPLATFORM}
+	${MKDIR} -p build/dist/${SUBPLATFORM}
+	cp "${MAKEIP}"/IP.TMPL "${MAKEIP}"/ip.txt ${build}
+	cd ${build} && "${MAKEIP}"/makeip ip.txt IP.BIN
+	genisoimage -V MegaZeux -G IP.BIN -joliet -rock -l -o build/dist/${SUBPLATFORM}/${TARGET}-${SUBARCH}.iso ${build}
+	"${CDI4DC}"/cdi4dc \
+		build/dist/${SUBPLATFORM}/${TARGET}-${SUBARCH}.iso \
+		build/dist/${SUBPLATFORM}/${TARGET}-${SUBARCH}.cdi -d
+
+include arch/zip.inc

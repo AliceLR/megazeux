@@ -30,11 +30,16 @@ jobs:
         run: $MZX_MAKE
       - name: Run tests
         run: $MZX_MAKE test
+      - name: Install
+        run: sudo $MZX_MAKE install V=1
+      - name: Check install
+        run: command -v megazeux && [ -f "/usr/share/doc/megazeux/LICENSE" ] && [ -f "/etc/megazeux-config" ]
+      - name: Uninstall
+        run: sudo $MZX_MAKE uninstall V=1
+      - name: Check uninstall
+        run: true && [ ! -f "/usr/bin/megazeux" ] && [ ! -f "/usr/share/doc/megazeux/LICENSE" ] && [ ! -f "/etc/megazeux-config" ]
       - name: Package source .tar.xz
         run: make source
-  # TODO ;-(
-  #    - name: Install
-  #      run: make install
 
   MSYS2-MINGW64:
     runs-on: windows-latest
@@ -195,6 +200,37 @@ jobs:
         run: $MZX_MAKE
       - name: Run tests
         run: $MZX_MAKE test
+
+  # Note: requires all non-system/libc calls to be from instrumented libraries.
+  # For the regression tests, MZX can get away with just zlib.
+  #
+  # - actions/checkout will delete the work directory(!?), do it first.
+  # - The MSan zlib needs to be built static to prevent linking the system zlib.
+  # - ZLIB_LDFLAGS needs to be overridden to prevent linking the system zlib.
+  MemorySanitizer:
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+      ZLIB_LDFLAGS: DEPS/lib/libz.a
+    steps:
+      - uses: actions/checkout@v2
+      - name: 🙄
+        run: sudo sed -i '/deb-src/s/^# //' /etc/apt/sources.list
+      - name: Fetch dependency sources
+        run: mkdir DEPS && sudo apt update && apt source zlib
+      - name: Build zlib
+        run: |
+          (cd zlib-*;
+          CC=clang CXX=clang++ CFLAGS="-O3 -fsanitize=memory -g -fPIC -Wno-pointer-sign" LDFLAGS="-fsanitize=memory" \
+            ./configure --prefix "$(pwd)/../DEPS" --static;
+          $MZX_MAKE && make install)
+      - name: Configure
+        run: ./config.sh --platform unix-devel --prefix DEPS --enable-msan --disable-sdl --disable-libpng --disable-vorbis --disable-x11
+      - name: Build
+        run: $MZX_MAKE V=1
+      - name: Run tests
+        run: $MZX_MAKE V=1 test
 
   UndefinedBehaviorSanitizer:
     runs-on: ubuntu-latest

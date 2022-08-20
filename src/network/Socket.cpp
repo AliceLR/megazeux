@@ -320,35 +320,35 @@ socksyms;
 
 static const struct dso_syms_map socksyms_map[] =
 {
-  { "accept",                (fn_ptr *)&socksyms.accept },
-  { "bind",                  (fn_ptr *)&socksyms.bind },
-  { "closesocket",           (fn_ptr *)&socksyms.closesocket },
-  { "connect",               (fn_ptr *)&socksyms.connect },
-  { "gethostbyname",         (fn_ptr *)&socksyms.gethostbyname },
-  { "getsockopt",            (fn_ptr *)&socksyms.getsockopt },
-  { "htons",                 (fn_ptr *)&socksyms.htons },
-  { "ioctlsocket",           (fn_ptr *)&socksyms.ioctlsocket },
-  { "listen",                (fn_ptr *)&socksyms.listen },
-  { "select",                (fn_ptr *)&socksyms.select },
-  { "send",                  (fn_ptr *)&socksyms.send },
-  { "sendto",                (fn_ptr *)&socksyms.sendto },
-  { "setsockopt",            (fn_ptr *)&socksyms.setsockopt },
-  { "socket",                (fn_ptr *)&socksyms.socket },
-  { "recv",                  (fn_ptr *)&socksyms.recv },
-  { "recvfrom",              (fn_ptr *)&socksyms.recvfrom },
+  { "accept",                { &socksyms.accept }},
+  { "bind",                  { &socksyms.bind }},
+  { "closesocket",           { &socksyms.closesocket }},
+  { "connect",               { &socksyms.connect }},
+  { "gethostbyname",         { &socksyms.gethostbyname }},
+  { "getsockopt",            { &socksyms.getsockopt }},
+  { "htons",                 { &socksyms.htons }},
+  { "ioctlsocket",           { &socksyms.ioctlsocket }},
+  { "listen",                { &socksyms.listen }},
+  { "select",                { &socksyms.select }},
+  { "send",                  { &socksyms.send }},
+  { "sendto",                { &socksyms.sendto }},
+  { "setsockopt",            { &socksyms.setsockopt }},
+  { "socket",                { &socksyms.socket }},
+  { "recv",                  { &socksyms.recv }},
+  { "recvfrom",              { &socksyms.recvfrom }},
 
-  { "WSACancelBlockingCall", (fn_ptr *)&socksyms.WSACancelBlockingCall },
-  { "WSACleanup",            (fn_ptr *)&socksyms.WSACleanup },
-  { "WSAGetLastError",       (fn_ptr *)&socksyms.WSAGetLastError },
-  { "WSAStartup",            (fn_ptr *)&socksyms.WSAStartup },
-  { "__WSAFDIsSet",          (fn_ptr *)&socksyms.__WSAFDIsSet },
+  { "WSACancelBlockingCall", { &socksyms.WSACancelBlockingCall }},
+  { "WSACleanup",            { &socksyms.WSACleanup }},
+  { "WSAGetLastError",       { &socksyms.WSAGetLastError }},
+  { "WSAStartup",            { &socksyms.WSAStartup }},
+  { "__WSAFDIsSet",          { &socksyms.__WSAFDIsSet }},
 
-  { "freeaddrinfo",          (fn_ptr *)&socksyms.freeaddrinfo },
-  { "getaddrinfo",           (fn_ptr *)&socksyms.getaddrinfo },
+  { "freeaddrinfo",          { &socksyms.freeaddrinfo }},
+  { "getaddrinfo",           { &socksyms.getaddrinfo }},
 
-  { "WSAPoll",               (fn_ptr *)&socksyms.WSAPoll },
+  { "WSAPoll",               { &socksyms.WSAPoll }},
 
-  { NULL, NULL }
+  DSO_MAP_END
 };
 
 #define WINSOCK2 "ws2_32.dll"
@@ -381,7 +381,7 @@ static boolean socket_load_syms(void)
 
   for(i = 0; socksyms_map[i].name; i++)
   {
-    void **sym_ptr = (void **)socksyms_map[i].sym_ptr;
+    dso_fn **sym_ptr = socksyms_map[i].sym_ptr.value;
     *sym_ptr = SDL_LoadFunction(socksyms.handle, socksyms_map[i].name);
 
     if(!*sym_ptr)

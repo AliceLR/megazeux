@@ -1004,6 +1004,9 @@ static boolean vfs_delete_inode(vfilesystem *vfs, uint32_t parent,
   uint32_t pos_in_parent;
   uint32_t pos;
 
+  if(inode == VFS_NO_INODE)
+    return vfs_seterror(vfs, ENOENT);
+
   p = vfs_get_inode_ptr(vfs, parent);
   n = vfs_get_inode_ptr(vfs, inode);
   assert(VFS_INODE_TYPE(p) == VFS_INODE_DIR);
@@ -1037,6 +1040,9 @@ static boolean vfs_move_inode(vfilesystem *vfs, uint32_t old_parent,
   uint32_t old_pos_in_parent;
   uint32_t new_pos_in_parent;
   uint32_t pos;
+
+  if(inode == VFS_NO_INODE)
+    return vfs_seterror(vfs, ENOENT);
 
   n = vfs_get_inode_ptr(vfs, inode);
   old_p = vfs_get_inode_ptr(vfs, old_parent);

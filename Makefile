@@ -36,6 +36,12 @@ include version.inc
 build_root := build/${SUBPLATFORM}
 build := ${build_root}
 
+EXTRA_LICENSES ?=
+LICENSE_CC0    ?= arch/LICENSE.CC0
+LICENSE_LGPL2  ?= arch/LICENSE.LGPL2
+LICENSE_MPL2   ?= arch/LICENSE.MPL2
+LICENSE_NEWLIB ?= arch/LICENSE.Newlib
+
 -include arch/${PLATFORM}/Makefile.in
 
 CC      ?= gcc
@@ -71,10 +77,12 @@ ifneq (${BUILD_LIBSDL2},)
 # Check PREFIX for sdl2-config.
 ifneq ($(and ${SDL_PREFIX},$(wildcard ${SDL_PREFIX}/bin/sdl2-config)),)
 SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl2-config
-else ifneq ($(wildcard ${PREFIX}/bin/sdl2-config),)
+else
+ifneq ($(wildcard ${PREFIX}/bin/sdl2-config),)
 SDL_CONFIG  := ${PREFIX}/bin/sdl2-config
 else
 SDL_CONFIG  := sdl2-config
+endif
 endif
 
 SDL_PREFIX  ?= $(shell ${SDL_CONFIG} --prefix)
@@ -88,13 +96,17 @@ endif
 
 ifeq (${BUILD_LIBSDL2},)
 
+EXTRA_LICENSES += ${LICENSE_LGPL2}
+
 # Check PREFIX for sdl-config.
 ifneq ($(and ${SDL_PREFIX},$(wildcard ${SDL_PREFIX}/bin/sdl-config)),)
 SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl-config
-else ifneq ($(wildcard ${PREFIX}/bin/sdl-config),)
+else
+ifneq ($(wildcard ${PREFIX}/bin/sdl-config),)
 SDL_CONFIG  := ${PREFIX}/bin/sdl-config
 else
 SDL_CONFIG  := sdl-config
+endif
 endif
 
 SDL_PREFIX  ?= $(shell ${SDL_CONFIG} --prefix)
@@ -116,9 +128,11 @@ endif
 VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
 ifeq (${VORBIS},vorbis)
 VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
-else ifeq (${VORBIS},tremor)
+endif
+ifeq (${VORBIS},tremor)
 VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisidec -logg
-else ifeq (${VORBIS},tremor-lowmem)
+endif
+ifeq (${VORBIS},tremor-lowmem)
 VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisidec
 endif
 
@@ -128,6 +142,9 @@ endif
 
 MIKMOD_CFLAGS  ?= -I${PREFIX}/include
 MIKMOD_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lmikmod
+ifneq (${BUILD_MIKMOD},)
+EXTRA_LICENSES += ${LICENSE_LGPL2}
+endif
 
 #
 # libopenmpt (optional mod engine)
@@ -153,10 +170,12 @@ ifeq (${LIBPNG},1)
 # Check PREFIX for libpng-config.
 ifneq ($(and ${LIBPNG_PREFIX},$(wildcard ${LIBPNG_PREFIX}/bin/libpng-config)),)
 LIBPNG_CONFIG  := ${LIBPNG_PREFIX}/bin/libpng-config
-else ifneq ($(wildcard ${PREFIX}/bin/libpng-config),)
+else
+ifneq ($(wildcard ${PREFIX}/bin/libpng-config),)
 LIBPNG_CONFIG  := ${PREFIX}/bin/libpng-config
 else
 LIBPNG_CONFIG  := libpng-config
+endif
 endif
 
 LIBPNG_CFLAGS  ?= $(shell ${LIBPNG_CONFIG} --cflags)
@@ -172,8 +191,12 @@ endif
 #
 
 ifneq (${X11DIR},)
+# BSD needs this but Fedora rpmbuild will whine about it and fail.
+ifneq (${X11DIR},/usr)
+X11RPATH    ?= -Wl,-rpath,${X11LIBDIR}
+endif
 X11_CFLAGS  ?= -I${X11DIR}/include
-X11_LDFLAGS ?= -L${X11DIR}/lib -Wl,-rpath,${X11DIR}/lib -lX11
+X11_LDFLAGS ?= -L${X11LIBDIR} -lX11 ${X11RPATH}
 # Make these immediate
 X11_CFLAGS := $(X11_CFLAGS)
 X11_LDFLAGS := $(X11_LDFLAGS)
@@ -189,6 +212,7 @@ PTHREAD_LDFLAGS ?= -lpthread
 # Set up general CFLAGS/LDFLAGS
 #
 OPTIMIZE_CFLAGS ?= -O3
+DEBUG_CFLAGS    ?= -O0
 
 ifeq (${DEBUG},1)
 #
@@ -199,23 +223,24 @@ ifeq (${DEBUG},1)
 #
 ifeq (${SANITIZER},address)
 DEBUG_CFLAGS := -fsanitize=address -O1 -fno-omit-frame-pointer
-else ifeq (${SANITIZER},undefined)
+endif
+ifeq (${SANITIZER},undefined)
 # Signed integer overflows (shift-base, signed-integer-overflow)
 # are pretty much inevitable in Robotic, so ignore them.
 DEBUG_CFLAGS := -fsanitize=undefined -O0 -fno-omit-frame-pointer \
  -fno-sanitize-recover=all -fno-sanitize=shift-base,signed-integer-overflow
-else ifeq (${SANITIZER},thread)
+endif
+ifeq (${SANITIZER},thread)
 DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE
 ARCH_EXE_LDFLAGS += -pie
-else ifeq (${SANITIZER},memory)
-# FIXME I don't think there's a way to make this one work properly right now.
-# SDL_Init generates an error immediately and if sanitize-recover is used it
-# seems to get stuck printing endless errors.
-DEBUG_CFLAGS := -fsanitize=memory -O1 -fno-omit-frame-pointer -fPIE \
- -fsanitize-recover=memory -fsanitize-memory-track-origins
+endif
+ifeq (${SANITIZER},memory)
+# Note: to be useful, this requires a fairly special build with most
+# external libraries turned off or re-built with instrumentation.
+# This sanitizer is only implemented by clang.
+DEBUG_CFLAGS := -fsanitize=memory -O1 -fno-omit-frame-pointer -fPIC \
+ -fsanitize-recover=memory -fsanitize-memory-track-origins=2
 ARCH_EXE_LDFLAGS += -pie
-else
-DEBUG_CFLAGS ?= -O0
 endif
 
 CFLAGS   = ${DEBUG_CFLAGS} -DDEBUG
@@ -310,6 +335,14 @@ ifeq (${HAS_W_NO_VARIADIC_MACROS},1)
 CFLAGS   += -Wno-variadic-macros
 CXXFLAGS += -Wno-variadic-macros
 endif
+endif
+
+#
+# KallistiOS has a pretty dire header situation
+#
+ifeq (${BUILD_DREAMCAST},1)
+CFLAGS   += -Wno-strict-prototypes -Wno-pedantic
+CXXFLAGS += -Wno-pedantic
 endif
 
 #
@@ -477,7 +510,7 @@ build: ${build} ${build}/assets ${build}/docs
 ${build}:
 	${RM} -r ${build_root}
 	${MKDIR} -p ${build}
-	${CP} config.txt LICENSE ${build}
+	${CP} config.txt LICENSE arch/LICENSE.3rd ${EXTRA_LICENSES} ${build}
 	@if test -f ${mzxrun}; then \
 		cp ${mzxrun} ${build}; \
 	fi
@@ -541,7 +574,7 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 		${build}/assets/glsl/scalers
 endif
 ifeq (${BUILD_GAMECONTROLLERDB},1)
-	${CP} assets/gamecontrollerdb.txt assets/gamecontrollerdb.LICENSE \
+	${CP} assets/gamecontrollerdb.txt \
 	 ${build}/assets
 endif
 

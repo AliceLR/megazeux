@@ -1,7 +1,5 @@
 #include "dlmalloc.h"
 
-#pragma GCC diagnostic ignored "-Wexpansion-to-defined"
-
 /*
   This is a version (aka dlmalloc) of malloc/free/realloc written by
   Doug Lea and released to the public domain, as explained at
@@ -2823,7 +2821,8 @@ static size_t traverse_and_check(mstate m);
 #define MIN_SMALL_INDEX     (small_index(MIN_CHUNK_SIZE))
 
 /* addressing by index. See above about smallbin repositioning */
-#define smallbin_at(M, i)   ((sbinptr)((char*)&((M)->smallbins[(i)<<1])))
+/* MegaZeux: use offset instead of subscript+address to suppress -Wstrict-aliasing=2. */
+#define smallbin_at(M, i)   ((sbinptr)((char*)((M)->smallbins + ((i)<<1))))
 #define treebin_at(M,i)     (&((M)->treebins[i]))
 
 /* assign tree index for size S to variable I. Use x86 asm if possible  */
@@ -3914,7 +3913,8 @@ static void init_bins(mstate m) {
 
 /* default corruption action */
 static void reset_on_error(mstate m) {
-  int i;
+  /* MegaZeux: use size_t instead of int to suppress -Wsign-compare. */
+  size_t i;
   ++malloc_corruption_error_count;
   /* Reinitialize fields to forget about all memory */
   m->smallmap = m->treemap = 0;

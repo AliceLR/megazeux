@@ -1,0 +1,583 @@
+----------------------------------------------------------------
+  Third party software licenses for MegaZeux
+----------------------------------------------------------------
+
+The licenses here applicable to a given build of MegaZeux will
+vary. Typically one C standard library (glibc/Newlib/musl/etc.),
+one module playback library (libxmp/libmodplug/MikMod/Maxmod),
+SDL, and several other libraries will be linked. The ports that
+use each library by default will be indicated below. Not all
+libcs are accounted for here, but the ones most often linked by
+MegaZeux are.
+
+Some particularly verbose licenses are only provided as URL.
+For MegaZeux's license, see LICENSE.
+
+
+----------------------------------------------------------------
+  glibc
+----------------------------------------------------------------
+
+glibc is available under the GNU Lesser General Public License 2.1.
+See LICENSE.LGPL2 or /usr/share/licenses/glibc for more information.
+
+Used by ports: Most Linux distributions.
+Home page:     https://www.gnu.org/software/libc/
+License URL:   https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+
+----------------------------------------------------------------
+  MSVCRT.DLL, WS2_32.DLL, WSOCK.DLL
+----------------------------------------------------------------
+
+These Microsoft Windows libraries are proprietary software.
+Linking them is permitted under the GPL system library exception.
+
+Used by ports: MinGW and MSVC.
+Home page:     https://www.microsoft.com/
+
+
+----------------------------------------------------------------
+  Apple libc
+----------------------------------------------------------------
+
+Apple libc is available under the Apple Public Source License 2.0.
+
+Used by ports: Darwin and Xcode.
+Home page:     https://opensource.apple.com/source/Libc/
+License URL:   https://opensource.apple.com/license/apsl/
+
+
+----------------------------------------------------------------
+  Newlib
+----------------------------------------------------------------
+
+Newlib is available under a collection of BSD-like licenses.
+See LICENSE.Newlib or for more information.
+
+Used by ports: NDS, 3DS, Wii, Wii U, Switch, PSP, PS Vita,
+               Dreamcast, AmigaOS 4.
+Home page:     https://sourceware.org/newlib/
+License URL:   https://sourceware.org/newlib/COPYING.NEWLIB
+
+
+----------------------------------------------------------------
+  musl
+----------------------------------------------------------------
+
+musl is available under the MIT license.
+
+Used by ports: Emscripten (also the default libc on some distributions).
+Home page:     https://musl.libc.org/
+License URL:   https://git.musl-libc.org/cgit/musl/tree/COPYRIGHT
+
+Copyright © 2005-2020 Rich Felker, et al.
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+----------------------------------------------------------------
+  Bionic libc
+----------------------------------------------------------------
+
+Bionic is available under a collection of BSD-like licenses.
+
+Used by ports: Android.
+Home page:     https://android.googlesource.com/platform/bionic/
+License URL:   https://android.googlesource.com/platform/bionic/+/master/libc/NOTICE
+
+
+----------------------------------------------------------------
+  DJGPP libc, libm, and crt0
+----------------------------------------------------------------
+
+DJGPP libc and crt0 are available under the GNU Lesser General
+Public License 2.1. DJGPP libm is *probably* available under the
+GNU General Public License 2.0. DJGPP also contains contributed
+code under various permissive licenses. See LICENSE.DJGPP,
+LICENSE.LGPL2, and LICENSE for more information.
+
+Used by ports: DJGPP.
+Home page:     http://www.delorie.com/djgpp/
+Source URL:    http://www.delorie.com/pub/djgpp/ (djlsr205.zip)
+
+
+----------------------------------------------------------------
+  SDL 2
+----------------------------------------------------------------
+
+SDL 2 is available under the zlib license.
+gamecontrollerdb.txt is available under an identical license.
+
+Used by ports: Most.
+Home page:     https://www.libsdl.org/
+
+Copyright (C) 1997-2021 Sam Lantinga <slouken@libsdl.org>
+  
+This software is provided 'as-is', without any express or implied
+warranty.  In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+  
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required. 
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+
+
+----------------------------------------------------------------
+  SDL 1.2
+----------------------------------------------------------------
+
+SDL 1.2 is available under the GNU Lesser General Public License 2.1.
+See LICENSE.LGPL2 or /usr/share/licenses/SDL for more information.
+
+Used by ports: Mac OS X PowerPC, PSP, GP2X, Pandora, AmigaOS 4.
+Home page:     https://www.libsdl.org/
+License URL:   https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+
+----------------------------------------------------------------
+  khash
+----------------------------------------------------------------
+
+MZX uses a heavily modified khash which is available under the MIT license.
+
+Used by ports: All.
+Home page:     https://attractivechaos.github.io/klib/
+
+   The MIT License
+
+   Copyright (c) 2008, 2009, 2011 by Attractive Chaos <attractor@live.co.uk>
+
+   Permission is hereby granted, free of charge, to any person obtaining
+   a copy of this software and associated documentation files (the
+   "Software"), to deal in the Software without restriction, including
+   without limitation the rights to use, copy, modify, merge, publish,
+   distribute, sublicense, and/or sell copies of the Software, and to
+   permit persons to whom the Software is furnished to do so, subject to
+   the following conditions:
+
+   The above copyright notice and this permission notice shall be
+   included in all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+   BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+   ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+
+----------------------------------------------------------------
+  zlib
+----------------------------------------------------------------
+
+zlib is available under the zlib license.
+
+Used by ports: All.
+Home page:     https://zlib.net/
+
+  zlib.h -- interface of the 'zlib' general purpose compression library
+  version 1.2.11, January 15th, 2017
+
+  Copyright (C) 1995-2017 Jean-loup Gailly and Mark Adler
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+
+  Jean-loup Gailly        Mark Adler
+  jloup@gzip.org          madler@alumni.caltech.edu
+
+
+----------------------------------------------------------------
+  libpng
+----------------------------------------------------------------
+
+libpng is available under a zlib-like license.
+
+Used by ports: Most.
+Home page:     https://www.libpng.org/
+
+PNG Reference Library License version 2
+---------------------------------------
+
+ * Copyright (c) 1995-2019 The PNG Reference Library Authors.
+ * Copyright (c) 2018-2019 Cosmin Truta.
+ * Copyright (c) 2000-2002, 2004, 2006-2018 Glenn Randers-Pehrson.
+ * Copyright (c) 1996-1997 Andreas Dilger.
+ * Copyright (c) 1995-1996 Guy Eric Schalnat, Group 42, Inc.
+
+The software is supplied "as is", without warranty of any kind,
+express or implied, including, without limitation, the warranties
+of merchantability, fitness for a particular purpose, title, and
+non-infringement.  In no event shall the Copyright owners, or
+anyone distributing the software, be liable for any damages or
+other liability, whether in contract, tort or otherwise, arising
+from, out of, or in connection with the software, or the use or
+other dealings in the software, even if advised of the possibility
+of such damage.
+
+Permission is hereby granted to use, copy, modify, and distribute
+this software, or portions hereof, for any purpose, without fee,
+subject to the following restrictions:
+
+ 1. The origin of this software must not be misrepresented; you
+    must not claim that you wrote the original software.  If you
+    use this software in a product, an acknowledgment in the product
+    documentation would be appreciated, but is not required.
+
+ 2. Altered source versions must be plainly marked as such, and must
+    not be misrepresented as being the original software.
+
+ 3. This Copyright notice may not be removed or altered from any
+    source or altered source distribution.
+
+
+----------------------------------------------------------------
+  libogg, libvorbis, and Tremor
+----------------------------------------------------------------
+
+libogg, libvorbis, and Tremor are all available under the
+BSD-3-clause license.
+
+Used by ports: All except NDS.
+Home page:     https://xiph.org/ogg/
+Home page:     https://xiph.org/vorbis/
+
+Copyright (c) 2002-2020 Xiph.org Foundation
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of the Xiph.org Foundation nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+----------------------------------------------------------------
+  libxmp
+----------------------------------------------------------------
+
+The subset of libxmp used by MegaZeux is available under the MIT license.
+
+Used by ports: All except NDS.  
+Home page:     http://xmp.sourceforge.net/
+
+Extended Module Player
+Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+
+----------------------------------------------------------------
+  libmodplug
+----------------------------------------------------------------
+
+libmodplug is available in the public domain.
+
+Used by ports: None (non-default compile-time option).
+Home page:     https://github.com/Konstanty/libmodplug
+
+
+----------------------------------------------------------------
+  MikMod
+----------------------------------------------------------------
+
+libmikmod is available under the GNU Lesser General Public License 2.1.
+See LICENSE.LGPL2 for more information.
+
+Used by ports: None (non-default compile-time option).
+Home page:     http://mikmod.sourceforge.net/
+License URL:   https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+
+----------------------------------------------------------------
+  OpenMPT
+----------------------------------------------------------------
+
+libopenmpt is available under the BSD-3-clause license.
+
+Used by ports: None (non-default compile-time option).
+Home page:     https://lib.openmpt.org/libopenmpt/
+
+Copyright (c) 2004-2022, OpenMPT Project Developers and Contributors
+Copyright (c) 1997-2003, Olivier Lapicque
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * Neither the name of the OpenMPT project nor the
+      names of its contributors may be used to endorse or promote products
+      derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+----------------------------------------------------------------
+  Reality Adlib Tracker v2
+----------------------------------------------------------------
+
+The Reality Adlib Tracker v2 playercode is available in the public domain.
+
+Used by ports: All except NDS.
+Home page:     https://www.3eality.com/productions/reality-adlib-tracker
+
+
+----------------------------------------------------------------
+  Maxmod
+----------------------------------------------------------------
+
+Maxmod is available under the ISC license.
+
+Used by ports: NDS.
+Home page:     https://maxmod.org
+
+/****************************************************************************
+ *                                                          __              *
+ *                ____ ___  ____ __  ______ ___  ____  ____/ /              *
+ *               / __ `__ \/ __ `/ |/ / __ `__ \/ __ \/ __  /               *
+ *              / / / / / / /_/ />  </ / / / / / /_/ / /_/ /                *
+ *             /_/ /_/ /_/\__,_/_/|_/_/ /_/ /_/\____/\__,_/                 *
+ *                                                                          *
+ *               Nintendo DS & Gameboy Advance Sound System                 *
+ *                                                                          *
+ *         Copyright (c) 2008, Mukunda Johnson (mukunda@maxmod.org)         *
+ *                                                                          *
+ * Permission to use, copy, modify, and/or distribute this software for any *
+ * purpose with or without fee is hereby granted, provided that the above   *
+ * copyright notice and this permission notice appear in all copies.        *
+ *                                                                          *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES *
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF         *
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR  *
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES   *
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN    *
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF  *
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.           *
+ ****************************************************************************/
+
+
+----------------------------------------------------------------
+  crt0
+----------------------------------------------------------------
+
+Some MegaZeux ports use a crt0 available under the Mozilla Public License 2.0.
+See LICENSE.MPL2 for more information.
+
+Used by ports: NDS, 3DS.
+Home page:     https://github.com/devkitPro/devkitarm-crtls
+License URL:   https://mozilla.org/MPL/2.0/
+
+
+----------------------------------------------------------------
+  dlmalloc
+----------------------------------------------------------------
+
+dlmalloc is available under the Creative Commons CC0 1.0 License.
+See LICENSE.CC0 for more information.
+
+Used by ports: NDS.
+Home page:     http://gee.cs.oswego.edu/dl/html/malloc.html (?)
+License URL:   https://creativecommons.org/publicdomain/zero/1.0/
+
+
+----------------------------------------------------------------
+  KallistiOS
+----------------------------------------------------------------
+
+The KallistiOS SDK (libkallisti et al.) is available under the
+BSD-3-clause license.
+
+Used by ports: Dreamcast
+Home page:     https://sourceforge.net/projects/cadcdev/
+
+All of the documentation and software included in the KallistiOS Releases
+is copyrighted (C) 1997-2020 by Dan Potter, Lawrence Sebald, and others (as
+noted in each file).
+
+Copyright (C) 1997-2020 KallistiOS Contributors. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. Neither the name of Cryptic Allusion nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHORS AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+
+----------------------------------------------------------------
+  Xlib
+----------------------------------------------------------------
+
+Xlib is available under a collection of MIT-like licenses.
+
+Used by ports: Linux/BSD/Unix (optional).
+Home page:     https://www.x.org/
+License URL:   https://gitlab.freedesktop.org/xorg/lib/libx11/-/blob/master/COPYING
+
+
+----------------------------------------------------------------
+  Mesa
+----------------------------------------------------------------
+
+Mesa is available under the MIT license.
+
+Used by ports: Linux (dynamic linked, optional), Switch (static linked).
+Home page:     https://www.mesa3d.org/
+
+Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+----------------------------------------------------------------
+  Nouveau
+----------------------------------------------------------------
+
+libdrm_nouveau is available under the MIT license.
+
+Used by ports: Linux (dynamic linked, optional), Switch (static linked).
+Home page:     https://nouveau.freedesktop.org/
+
+ * Copyright 2012 Red Hat Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.

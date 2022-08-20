@@ -14,6 +14,8 @@ endif
 
 include ${DEVKITARM}/ds_rules
 
+EXTRA_LICENSES += ${LICENSE_CC0} ${LICENSE_MPL2} ${LICENSE_NEWLIB}
+
 #
 # NDS target rules
 #
@@ -56,6 +58,8 @@ arch/nds/%.bin.o arch/nds/%_bin.h : arch/nds/%.bin
 	$(if ${V},,@echo "  AS      " $<)
 	@bin2s -a 32 -H arch/nds/`(echo $(<F) | tr . _)`.h $< > $<.S
 	$(AS) $<.S -o arch/nds/$(<F).o
+	@# Remove dkP's badly constructed macro (-Wundef):
+	@sed -i 's/^#if __cplusplus >= 201103L$$/#if 0/g' arch/nds/*_bin.h
 
 package: mzx
 	${MAKE} -C arch/nds TARGET=${mzxrun}

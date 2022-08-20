@@ -33,6 +33,11 @@ __M_BEGIN_DECLS
 #include <unistd.h>
 #endif
 
+/* Fix redefinition warnings from some libraries (examples: musl, DirectFB) */
+#undef MIN
+#undef MAX
+#undef CLAMP
+
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
@@ -107,13 +112,23 @@ uint64_t rng_get_seed(void);
 void rng_set_seed(uint64_t seed);
 unsigned int Random(uint64_t range);
 
-typedef void (*fn_ptr)(void);
+/* Use as (dso_fn **) to store a loaded (void *) to a function pointer. */
+typedef void dso_fn;
+
+/* Initialize a (dso_fn **) via (void *) to avoid strict aliasing warnings. */
+union dso_fn_ptr_ptr
+{
+  void *in;
+  dso_fn **value;
+};
 
 struct dso_syms_map
 {
   const char *name;
-  fn_ptr *sym_ptr;
+  union dso_fn_ptr_ptr sym_ptr;
 };
+
+#define DSO_MAP_END { NULL, { NULL }}
 
 #include <sys/types.h>
 
@@ -153,6 +168,42 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 
 #if defined(DEBUG) && defined(DEBUG_TRACE)
 #define trace(...)  __android_log_print(ANDROID_LOG_VERBOSE, "MegaZeux", __VA_ARGS__)
+#else
+#define trace(...) do { } while(0)
+#endif
+
+#elif defined(CONFIG_DREAMCAST)
+
+#include <kos.h>
+
+#define info(...) \
+ do { \
+   dbgio_printf("INFO: " __VA_ARGS__); \
+   dbgio_flush(); \
+ } while(0)
+
+#define warn(...) \
+ do { \
+   dbgio_printf("WARNING: " __VA_ARGS__); \
+   dbgio_flush(); \
+ } while(0)
+
+#ifdef DEBUG
+#define debug(...) \
+ do { \
+   dbgio_printf("DEBUG: " __VA_ARGS__); \
+   dbgio_flush(); \
+ } while(0)
+#else
+#define debug(...) do { } while(0)
+#endif
+
+#if defined(DEBUG) && defined(DEBUG_TRACE)
+#define trace(...) \
+  do { \
+    dbgio_printf("TRACE: " __VA_ARGS__); \
+    dbgio_flush(); \
+  } while(0)
 #else
 #define trace(...) do { } while(0)
 #endif
