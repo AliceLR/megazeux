@@ -270,6 +270,31 @@ var archs =
     loadsave_meter:   no,
   },
 
+  dreamcast:
+  {
+    platform:         "dreamcast",
+    description:      "Sega Dreamcast",
+    architecture:     "SH-4 (ELF)",
+    endian:           "Little",
+    toolchain:        "gcc 9.3.0 <br /> binutils 2.34 <br /> (KallistiOS)",
+    packaged:         _FAULTY(),
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       tremor,
+    optimization:     size,
+    sdl:              no,
+    editor:           no_low_memory,
+    helpsys:          no_low_memory,
+    audio:            yes,
+    software:         yes,
+    updater:          no_updater,
+    png:              subopt(),
+    uthash:           yes,
+    loadsave_meter:   yes,
+  },
+
+
   mingw:
   {
     platform:         "mingw",

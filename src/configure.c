@@ -54,6 +54,10 @@
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
 #endif
 
+#ifdef CONFIG_DREAMCAST
+#define VIDEO_OUTPUT_DEFAULT "dreamcast"
+#endif
+
 #ifdef CONFIG_GP2X
 #define VIDEO_OUTPUT_DEFAULT "gp2x"
 #define AUDIO_BUFFER_SAMPLES 128

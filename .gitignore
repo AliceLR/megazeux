@@ -22,6 +22,8 @@ arch/android/project/app/*.iml
 arch/android/project/build
 arch/android/project/keystore.properties
 arch/android/project/local.properties
+arch/dreamcast/*.d
+arch/dreamcast/*.o
 arch/emscripten/web/mzxrun_web.js
 arch/emscripten/web/node_modules
 arch/emscripten/web/package-lock.json
@@ -54,6 +56,7 @@ contrib/libxmp/src/.build/
 contrib/libxmp/src/win32/.build/
 contrib/libxmp/src/loaders/.build/
 contrib/unzip/src/.build/
+1ST_READ.BIN
 boot.dol
 Core.exp
 Core.ilk
@@ -78,6 +81,7 @@ libeditor.so
 libeditor.dylib
 megazeux-cia.*
 megazeux.3dsx
+megazeux.bin
 megazeux.dol
 megazeux.elf
 megazeux.exe
@@ -94,6 +98,7 @@ megazeux.rpx
 megazeux.smdh
 /megazeux
 mzxrun.3dsx
+mzxrun.bin
 mzxrun.cia
 mzxrun.dol
 mzxrun.elf

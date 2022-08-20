@@ -1,0 +1,7 @@
+#!/bin/sh
+
+[ -z "$KOS_BASE" ] && { echo "\$KOS_BASE is unset. Aborting"; exit 1; }
+
+./config.sh --platform dreamcast --prefix "$KOS_BASE" --optimize-size \
+            --disable-editor --disable-helpsys --disable-utils --disable-stack-protector \
+            --enable-meter --disable-libpng --enable-tremor --enable-release
