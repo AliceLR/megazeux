@@ -1014,9 +1014,9 @@ if [ "$PLATFORM" = "psp" ] ||
    [ "$PLATFORM" = "gp2x" ] ||
    [ "$PLATFORM" = "nds" ] ||
    [ "$PLATFORM" = "3ds" ] ||
-   [ "$PLATFORM" = "djgpp" ] ||
    [ "$PLATFORM" = "wii" ] ||
    [ "$PLATFORM" = "wiiu" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
    [ "$PLATFORM" = "dreamcast" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
