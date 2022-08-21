@@ -108,6 +108,12 @@
 #define AUDIO_SAMPLE_RATE 48000
 #endif
 
+#ifdef CONFIG_DJGPP
+#define VIDEO_OUTPUT_DEFAULT "svga"
+#define RESAMPLE_MODE_DEFAULT RESAMPLE_MODE_NONE
+#define MOD_RESAMPLE_MODE_DEFAULT RESAMPLE_MODE_NONE
+#endif
+
 // End arch-specific config.
 
 #ifndef FORCE_BPP_DEFAULT
@@ -134,6 +140,14 @@
 
 #ifndef AUDIO_SAMPLE_RATE
 #define AUDIO_SAMPLE_RATE 44100
+#endif
+
+#ifndef RESAMPLE_MODE_DEFAULT
+#define RESAMPLE_MODE_DEFAULT RESAMPLE_MODE_LINEAR
+#endif
+
+#ifndef MOD_RESAMPLE_MODE_DEFAULT
+#define MOD_RESAMPLE_MODE_DEFAULT RESAMPLE_MODE_CUBIC
 #endif
 
 #ifndef FULLSCREEN_WIDTH_DEFAULT
@@ -216,8 +230,8 @@ static const struct config_info user_conf_default =
   AUDIO_SAMPLE_RATE,            // output_frequency
   AUDIO_BUFFER_SAMPLES,         // audio_buffer_samples
   0,                            // oversampling_on
-  RESAMPLE_MODE_LINEAR,         // resample_mode
-  RESAMPLE_MODE_CUBIC,          // module_resample_mode
+  RESAMPLE_MODE_DEFAULT,        // resample_mode
+  MOD_RESAMPLE_MODE_DEFAULT,    // module_resample_mode
   -1,                           // max_simultaneous_samples
   8,                            // music_volume
   8,                            // sam_volume

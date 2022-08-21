@@ -61,6 +61,11 @@
 
 #include "audio/sfx.h"
 
+#ifdef CONFIG_DJGPP
+// Required for getdisk()/setdisk()
+#include <dir.h>
+#endif
+
 #ifdef CONFIG_WII
 #include <sys/iosupport.h>
 #endif
@@ -3530,6 +3535,34 @@ skip_dir:
           }
         }
       }
+    }
+#endif
+
+#ifdef CONFIG_DJGPP
+    if(allow_dirs == ALLOW_ALL_DIRS)
+    {
+      int current_disk = getdisk();
+      int max_disk = setdisk(current_disk);
+      for(i = 0; i < max_disk; i++)
+      {
+        setdisk(i);
+        if(getdisk() != i)
+          continue;
+
+        dir_list[num_dirs] = cmalloc(3);
+        sprintf(dir_list[num_dirs], "%c:", 'A' + i);
+        num_dirs++;
+
+        if(num_dirs == total_dirnames_allocated)
+        {
+          dir_list = crealloc(dir_list, sizeof(char *) *
+           total_dirnames_allocated * 2);
+          memset(dir_list + total_dirnames_allocated, 0,
+           sizeof(char *) * total_dirnames_allocated);
+          total_dirnames_allocated *= 2;
+        }
+      }
+      setdisk(current_disk);
     }
 #endif
 

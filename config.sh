@@ -39,6 +39,7 @@ usage() {
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
 	echo "  emscripten     Experimental HTML5 (Emscripten) port"
+	echo "  djgpp          Experimental DOS port"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -88,6 +89,7 @@ usage() {
 	echo "  --disable-gl-prog         Disable GL renderers for programmable h/w."
 	echo "  --disable-overlay         Disable SDL 1.2 overlay renderers."
 	echo "  --enable-gp2x             Enables half-res software renderer."
+	echo "  --disable-dos-svga        On the DOS platform, disable SVGA software renderer."
 	echo "  --disable-libpng          Disable PNG screendump support."
 	echo "  --disable-screenshots     Disable the screenshot hotkey."
 	echo "  --enable-fps              Enable frames-per-second counter."
@@ -193,6 +195,7 @@ STDIO_REDIRECT="false"
 GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
 LAYER_RENDERING="true"
+DOS_SVGA="true"
 VFS="true"
 
 #
@@ -440,6 +443,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-fps" ]  && FPSCOUNTER="true"
 	[ "$1" = "--disable-fps" ] && FPSCOUNTER="false"
+
+	[ "$1" = "--enable-dos-svga" ]  && DOS_SVGA="true"
+	[ "$1" = "--disable-dos-svga" ] && DOS_SVGA="false"
 
 	if [ "$1" = "--help" ]; then
 		usage
@@ -720,6 +726,7 @@ echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
 #
 if [ "$PLATFORM" = "3ds" ] ||
    [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
    [ "$PLATFORM" = "dreamcast" ] ||
    [ "$PLATFORM" = "egl" ]; then
 	echo "Disabling SDL ($PLATFORM)."
@@ -937,6 +944,26 @@ if [ "$PLATFORM" = "psp" ]; then
 fi
 
 #
+# If the DJGPP arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "djgpp" ]; then
+	echo "#define CONFIG_DJGPP" >> src/config.h
+	echo "BUILD_DJGPP=1" >> platform.inc
+
+	echo "Force-disabling stack protector (DOS)."
+	STACK_PROTECTOR="false"
+
+	if [ "$DOS_SVGA" = "true" ]; then
+		echo "#define CONFIG_DOS_SVGA" >> src/config.h
+		echo "BUILD_DOS_SVGA=1" >> platform.inc
+		echo "SVGA software renderer enabled."
+	else
+		echo "SVGA software renderer disabled."
+	fi
+fi
+
+#
 # If the Dreamcast arch is enabled, some code has to be compile time
 # enabled too.
 #
@@ -989,6 +1016,7 @@ if [ "$PLATFORM" = "psp" ] ||
    [ "$PLATFORM" = "3ds" ] ||
    [ "$PLATFORM" = "wii" ] ||
    [ "$PLATFORM" = "wiiu" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
    [ "$PLATFORM" = "dreamcast" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
@@ -1081,6 +1109,7 @@ if [ "$PLATFORM" = "gp2x" ] ||
    [ "$PLATFORM" = "android" ] ||
    [ "$PLATFORM" = "emscripten" ] ||
    [ "$PLATFORM" = "psp" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
    [ "$PLATFORM" = "dreamcast" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
@@ -1090,6 +1119,7 @@ fi
 # Force disable networking (unsupported platform or no editor build)
 #
 if [ "$EDITOR" = "false" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
    [ "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
@@ -1359,6 +1389,7 @@ if [ "$ICON" = "true" ]; then
 	   [ "$PLATFORM" = "psp" ] ||
 	   [ "$PLATFORM" = "nds" ] ||
 	   [ "$PLATFORM" = "wii" ] ||
+	   [ "$PLATFORM" = "djgpp" ] ||
 	   [ "$PLATFORM" = "dreamcast" ]; then
 		echo "Force-disabling icon branding (redundant)."
 		ICON="false"

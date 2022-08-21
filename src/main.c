@@ -378,5 +378,8 @@ err_free_res:
   mzx_res_free();
   platform_quit();
 err_out:
+#ifdef CONFIG_DJGPP
+  chdir(startup_dir);
+#endif
   return err;
 }
