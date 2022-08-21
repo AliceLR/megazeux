@@ -50,7 +50,7 @@ int real_main(int argc, char *argv[]);
 #elif defined(CONFIG_3DS)
 #include "../arch/3ds/thread.h"
 #elif defined(CONFIG_DJGPP)
-#include "../arch/djgpp/mutex.h"
+#include "../arch/djgpp/thread.h"
 #elif defined(CONFIG_DREAMCAST)
 #include "../arch/dreamcast/thread.h"
 #elif defined(CONFIG_SDL)

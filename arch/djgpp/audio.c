@@ -60,7 +60,7 @@ static void audio_sb_fill_block(void)
   int block_size_bytes = audio.buffer_samples << 2;
   int offset = (sb_cfg.buffer_block != 0) ? block_size_bytes : 0;
 
-  audio_callback((int16_t*) (sb_cfg.buffer + offset), block_size_bytes);
+  audio_callback((int16_t *)(sb_cfg.buffer + offset), block_size_bytes);
   if(!sb_cfg.nearptr_buffer_enabled)
     dosmemput(sb_cfg.buffer + offset, block_size_bytes, (sb_cfg.buffer_segment << 4) + offset);
 }
@@ -155,19 +155,20 @@ void init_audio_platform(struct config_info *conf)
 
     if(sb_cfg.version_major < 4)
       sb_cfg.port = 0;
-    else if(sb_cfg.irq >= 8) // TODO: support IRQ8-15?
+    else
+
+    if(sb_cfg.irq >= 8) // TODO: support IRQ8-15?
       sb_cfg.port = 0;
-    else if(sb_cfg.dma16 < 5 || sb_cfg.dma16 >= 8)
+    else
+
+    if(sb_cfg.dma16 < 5 || sb_cfg.dma16 >= 8)
       sb_cfg.port = 0;
   }
 
   if(sb_cfg.port != 0)
   {
     // configure sample rate
-    if(audio.output_frequency < 5000)
-      audio.output_frequency = 5000;
-    else if(audio.output_frequency > 44100)
-      audio.output_frequency = 44100;
+    CLAMP(audio.output_frequency, 5000, 44100);
 
     if(sb_cfg.version_major >= 4) // SB16
     {
@@ -187,7 +188,9 @@ void init_audio_platform(struct config_info *conf)
     // each sample is 4 bytes
     if(audio.buffer_samples > 4096)
       audio.buffer_samples = 4096;
-    else if(audio.buffer_samples <= 0)
+    else
+
+    if(audio.buffer_samples <= 0)
       audio.buffer_samples = 2048;
 
     buffer_size_bytes = audio.buffer_samples << 3;
@@ -208,7 +211,7 @@ void init_audio_platform(struct config_info *conf)
       }
       else
       {
-        sb_cfg.buffer = (uint8_t*)(sb_cfg.nearptr_buffer_mapping.address + __djgpp_conventional_base);
+        sb_cfg.buffer = (uint8_t *)(sb_cfg.nearptr_buffer_mapping.address + __djgpp_conventional_base);
         memset(sb_cfg.buffer, 0, buffer_size_bytes);
       }
     }

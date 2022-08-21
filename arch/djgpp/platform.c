@@ -75,8 +75,11 @@ int djgpp_display_adapter_detect(void)
     {
       if(vbe.version >= 0x300)
         return DISPLAY_ADAPTER_VBE30;
-      else if(vbe.version >= 0x200)
+      else
+
+      if(vbe.version >= 0x200)
         return DISPLAY_ADAPTER_VBE20;
+
       return DISPLAY_ADAPTER_SVGA;
     }
   }
@@ -190,7 +193,7 @@ static void djgpp_enable_dma8(uint8_t port, uint8_t mode, int offset, int bytes)
 
 void djgpp_enable_dma(uint8_t port, uint8_t mode, int offset, int bytes)
 {
-  if (port >= 4)
+  if(port >= 4)
     djgpp_enable_dma16(port, mode, offset, bytes);
   else
     djgpp_enable_dma8(port, mode, offset, bytes);
@@ -198,7 +201,7 @@ void djgpp_enable_dma(uint8_t port, uint8_t mode, int offset, int bytes)
 
 void djgpp_disable_dma(uint8_t port)
 {
-  if (port >= 4)
+  if(port >= 4)
     outportb(0xD4, 0x04 | (port & 3));
   else
     outportb(0x0A, 0x04 | (port & 3));
