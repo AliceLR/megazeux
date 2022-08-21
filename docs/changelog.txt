@@ -4,6 +4,8 @@ USERS
 
 + Added an experimental Wii U port (asie).
 + Added an experimental Dreamcast port (asie, Lachesis).
++ Added an experimental MS-DOS 32-bit port based on DJGPP
+  (Mr_Alert, asie, Lachesis).
 + Added the "glslscale" renderer. This is the same as the GLSL
   renderer, but uses software rendering with scaling shaders
   instead of hardware rendering. This is faster on low end PCs
