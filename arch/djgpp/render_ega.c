@@ -248,6 +248,7 @@ static boolean ega_init_video(struct graphics_data *graphics,
   graphics->resolution_height = 350;
   graphics->window_width = 640;
   graphics->window_height = 350;
+  graphics->bits_per_pixel = 1;
 
   if(display >= DISPLAY_ADAPTER_VGA)
     render_data->flags = TEXT_FLAGS_VGA;

@@ -25,6 +25,7 @@
 #undef delay
 #include "../../src/event.h"
 #include "../../src/graphics.h"
+#include "../../src/platform.h"
 
 extern struct input_status input;
 

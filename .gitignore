@@ -22,6 +22,8 @@ arch/android/project/app/*.iml
 arch/android/project/build
 arch/android/project/keystore.properties
 arch/android/project/local.properties
+arch/djgpp/*.d
+arch/djgpp/*.o
 arch/dreamcast/*.d
 arch/dreamcast/*.o
 arch/emscripten/web/mzxrun_web.js

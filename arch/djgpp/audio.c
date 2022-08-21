@@ -29,6 +29,7 @@
 #undef delay
 #include "../../src/audio/audio.h"
 #include "../../src/audio/audio_struct.h"
+#include "../../src/util.h"
 #include "platform_djgpp.h"
 
 #ifdef CONFIG_AUDIO
@@ -168,7 +169,7 @@ void init_audio_platform(struct config_info *conf)
   if(sb_cfg.port != 0)
   {
     // configure sample rate
-    CLAMP(audio.output_frequency, 5000, 44100);
+    audio.output_frequency = CLAMP(audio.output_frequency, 5000, 44100);
 
     if(sb_cfg.version_major >= 4) // SB16
     {
