@@ -207,6 +207,7 @@ static void svga_upload_colors(uint32_t *palette, uint32_t count)
   reg.x.di = __tb & 0xF;
   reg.x.es = (__tb >> 4);
   __dpmi_int(0x10, &reg);
+
   if(reg.x.ax != 0x004F)
   {
     reg.h.bl = 0x00;
@@ -221,6 +222,7 @@ static void svga_update_colors(struct graphics_data *graphics,
   uint32_t i;
 
   if(graphics->bits_per_pixel == 16)
+  {
     for(i = 0; i < count; i++)
     {
       graphics->flat_intensity_palette[i] =
@@ -228,6 +230,7 @@ static void svga_update_colors(struct graphics_data *graphics,
         | ((palette[i].g & 0xFC) << 3)
         | ((palette[i].b & 0xF8) >> 3);
     }
+  }
   else
   {
     for(i = 0; i < count; i++)
@@ -289,6 +292,7 @@ static void svga_render_mouse(struct graphics_data *graphics,
 {
   struct svga_render_data *render_data = graphics->render_data;
   uint32_t mask;
+
   if((graphics->bits_per_pixel == 8) && !graphics->screen_mode)
     mask = 0x0F0F0F0F;
   else

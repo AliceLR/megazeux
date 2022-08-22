@@ -109,9 +109,9 @@
 #endif
 
 #ifdef CONFIG_DJGPP
-#define VIDEO_OUTPUT_DEFAULT "svga"
 #define RESAMPLE_MODE_DEFAULT RESAMPLE_MODE_NONE
 #define MOD_RESAMPLE_MODE_DEFAULT RESAMPLE_MODE_NONE
+#define FULLSCREEN_DEFAULT 1
 #endif
 
 // End arch-specific config.

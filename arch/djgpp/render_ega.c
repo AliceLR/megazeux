@@ -254,6 +254,7 @@ static boolean ega_init_video(struct graphics_data *graphics,
     render_data->flags = TEXT_FLAGS_VGA;
   else
     render_data->flags = 0;
+
   render_data->oldmode = ega_get_mode();
 
   graphics->render_data = render_data;
@@ -295,6 +296,7 @@ static boolean ega_set_video_mode(struct graphics_data *graphics,
 
   if(render_data->flags & TEXT_FLAGS_VGA)
     ega_set_14p();
+
   ega_set_mode(0x03);
   if(graphics->screen_mode)
   {
@@ -355,6 +357,7 @@ static void ega_update_colors(struct graphics_data *graphics,
   if(render_data->flags & TEXT_FLAGS_VGA)
   {
     if(graphics->screen_mode && render_data->smzx_swap_nibbles)
+    {
       for(i = 0; i < count; i++)
       {
         outportb(0x03C8, (i >> 4) | ((i & 0x0F) << 4));
@@ -362,7 +365,9 @@ static void ega_update_colors(struct graphics_data *graphics,
         outportb(0x03C9, palette[i].g >> 2);
         outportb(0x03C9, palette[i].b >> 2);
       }
+    }
     else
+    {
       for(i = 0; i < count; i++)
       {
         outportb(0x03C8, i);
@@ -370,6 +375,7 @@ static void ega_update_colors(struct graphics_data *graphics,
         outportb(0x03C9, palette[i].g >> 2);
         outportb(0x03C9, palette[i].b >> 2);
       }
+    }
   }
   else
   {
@@ -377,6 +383,7 @@ static void ega_update_colors(struct graphics_data *graphics,
       step = 17;
     else
       step = 1;
+
     // Reset index/data flip-flop
     inportb(0x03DA);
     for(i = j = 0; i < 16 && j < count; i++, j += step)
@@ -401,10 +408,14 @@ static void ega_render_graph(struct graphics_data *graphics)
   struct char_element *src = graphics->text_video;
   unsigned long dest = ega_vb_page[render_data->page];
   int i;
+
   _farsetsel(render_data->vbsel);
+
   for(i = 0; i < (SCREEN_W * SCREEN_H); i++, src++, dest += 2)
+  {
     _farnspokew(dest, (src->bg_color << 12) | ((src->fg_color & 0x0F) << 8)
                  | (src->char_value & 0xFF));
+  }
 }
 
 static void ega_hardware_cursor(struct graphics_data *graphics,
@@ -412,8 +423,10 @@ static void ega_hardware_cursor(struct graphics_data *graphics,
 {
   struct ega_render_data *render_data = graphics->render_data;
   unsigned long dest = ega_vb_page[render_data->page];
+
   dest += x * 2 + 1;
   dest += y * 160;
+
   if((lines != render_data->lines) || (offset != render_data->offset))
   {
     ega_set_cursor_shape(lines, offset);
@@ -421,6 +434,7 @@ static void ega_hardware_cursor(struct graphics_data *graphics,
     render_data->offset = offset;
     render_data->curpages = 4;
   }
+
   if(enable)
   {
     if((x != render_data->x) || (y != render_data->y))
@@ -462,6 +476,7 @@ static void ega_sync_screen(struct graphics_data *graphics)
   uint8_t *src = graphics->charset;
   unsigned int dest = 0;
   int i;
+
   if(render_data->flags & TEXT_FLAGS_CHR)
   {
     ega_bank_char();
@@ -470,6 +485,7 @@ static void ega_sync_screen(struct graphics_data *graphics)
     ega_bank_text();
     render_data->flags &= ~TEXT_FLAGS_CHR;
   }
+
   // TODO: Character set page flips.
   ega_set_page(render_data->page);
   render_data->page = (render_data->page + 1) & 3;
