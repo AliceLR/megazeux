@@ -35,10 +35,12 @@ usage() {
 	echo "  wii            Experimental Wii port"
 	echo "  wiiu           Experimental Wii U port"
 	echo "  vita           Experimental PS Vita port"
+	echo "  dreamcast      Experimental Dreamcast port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
 	echo "  emscripten     Experimental HTML5 (Emscripten) port"
+	echo "  djgpp          Experimental DOS port"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -88,6 +90,7 @@ usage() {
 	echo "  --disable-gl-prog         Disable GL renderers for programmable h/w."
 	echo "  --disable-overlay         Disable SDL 1.2 overlay renderers."
 	echo "  --enable-gp2x             Enables half-res software renderer."
+	echo "  --disable-dos-svga        On the DOS platform, disable SVGA software renderer."
 	echo "  --disable-libpng          Disable PNG screendump support."
 	echo "  --disable-screenshots     Disable the screenshot hotkey."
 	echo "  --enable-fps              Enable frames-per-second counter."
@@ -193,6 +196,7 @@ STDIO_REDIRECT="false"
 GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
 LAYER_RENDERING="true"
+DOS_SVGA="true"
 VFS="true"
 
 #
@@ -441,6 +445,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--enable-fps" ]  && FPSCOUNTER="true"
 	[ "$1" = "--disable-fps" ] && FPSCOUNTER="false"
 
+	[ "$1" = "--enable-dos-svga" ]  && DOS_SVGA="true"
+	[ "$1" = "--disable-dos-svga" ] && DOS_SVGA="false"
+
 	if [ "$1" = "--help" ]; then
 		usage
 		exit 0
@@ -653,6 +660,12 @@ elif [ "$PLATFORM" = "3ds" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "dreamcast" ]; then
+	SHAREDIR=/cd
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "wii" ]; then
 	SHAREDIR=/apps/megazeux
 	LICENSEDIR=$SHAREDIR
@@ -725,9 +738,19 @@ echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
 #
 # Platform-specific libraries, or SDL?
 #
-if [ "$PLATFORM" = "3ds" ] || [ "$PLATFORM" = "nds" ]; then
+if [ "$PLATFORM" = "3ds" ] ||
+   [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
+   [ "$PLATFORM" = "dreamcast" ] ||
+   [ "$PLATFORM" = "egl" ]; then
 	echo "Disabling SDL ($PLATFORM)."
 	SDL="false"
+
+	# The SDL software renderer works as a dummy renderer without
+	# SDL, which is not desired for these platforms. Wii also
+	# needs to do this conditionally if SDL is disabled.
+	echo "Force-disabling software renderer (SDL or dummy only)."
+	SOFTWARE="false"
 fi
 
 #
@@ -742,7 +765,6 @@ if [ "$SDL" = "false" ]; then
 else
 	echo "#define CONFIG_SDL" >> src/config.h
 	echo "BUILD_SDL=1" >> platform.inc
-	EGL="false"
 fi
 
 #
@@ -753,9 +775,6 @@ fi
 if [ "$EGL" = "true" ]; then
 	echo "#define CONFIG_EGL" >> src/config.h
 	echo "BUILD_EGL=1" >> platform.inc
-
-	echo "Force-disabling software renderer (EGL)."
-	SOFTWARE="false"
 
 	echo "Force-enabling OpenGL ES support (EGL)."
 	GLES="true"
@@ -821,9 +840,7 @@ if [ "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling stack protector on NDS."
 	STACK_PROTECTOR="false"
 
-	echo "Force-disabling software renderer on NDS."
 	echo "Building custom NDS renderer."
-	SOFTWARE="false"
 
 	echo "Force-disabling hash tables on NDS."
 	COUNTER_HASH="false"
@@ -855,9 +872,7 @@ if [ "$PLATFORM" = "3ds" ]; then
 	echo "Force-disabling stack protector on 3DS."
 	STACK_PROTECTOR="false"
 
-	echo "Force-disabling software renderer on 3DS."
 	echo "Building custom 3DS renderer."
-	SOFTWARE="false"
 
 	echo "Disabling utils on 3DS."
 	UTILS="false"
@@ -943,6 +958,36 @@ if [ "$PLATFORM" = "psp" ]; then
 fi
 
 #
+# If the DJGPP arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "djgpp" ]; then
+	echo "#define CONFIG_DJGPP" >> src/config.h
+	echo "BUILD_DJGPP=1" >> platform.inc
+
+	echo "Force-disabling stack protector (DOS)."
+	STACK_PROTECTOR="false"
+
+	if [ "$DOS_SVGA" = "true" ]; then
+		echo "#define CONFIG_DOS_SVGA" >> src/config.h
+		echo "BUILD_DOS_SVGA=1" >> platform.inc
+		echo "SVGA software renderer enabled."
+	else
+		echo "SVGA software renderer disabled."
+	fi
+fi
+
+#
+# If the Dreamcast arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "dreamcast" ]; then
+	echo "Enabling Dreamcast-specific hacks."
+	echo "#define CONFIG_DREAMCAST" >> src/config.h
+	echo "BUILD_DREAMCAST=1" >> platform.inc
+fi
+
+#
 # If the GP2X arch is enabled, some code has to be compile time
 # enabled too.
 #
@@ -1000,7 +1045,9 @@ if [ "$PLATFORM" = "psp" ] ||
    [ "$PLATFORM" = "nds" ] ||
    [ "$PLATFORM" = "3ds" ] ||
    [ "$PLATFORM" = "wii" ] ||
-   [ "$PLATFORM" = "wiiu" ]; then
+   [ "$PLATFORM" = "wiiu" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
+   [ "$PLATFORM" = "dreamcast" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
 	OVERLAY="false"
@@ -1092,7 +1139,9 @@ if [ "$PLATFORM" = "gp2x" ] ||
    [ "$PLATFORM" = "psvita" ] ||
    [ "$PLATFORM" = "android" ] ||
    [ "$PLATFORM" = "emscripten" ] ||
-   [ "$PLATFORM" = "psp" ]; then
+   [ "$PLATFORM" = "psp" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
+   [ "$PLATFORM" = "dreamcast" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
 fi
@@ -1101,6 +1150,7 @@ fi
 # Force disable networking (unsupported platform or no editor build)
 #
 if [ "$EDITOR" = "false" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
    [ "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
@@ -1369,7 +1419,9 @@ if [ "$ICON" = "true" ]; then
 	   [ "$PLATFORM" = "gp2x" ] ||
 	   [ "$PLATFORM" = "psp" ] ||
 	   [ "$PLATFORM" = "nds" ] ||
-	   [ "$PLATFORM" = "wii" ]; then
+	   [ "$PLATFORM" = "wii" ] ||
+	   [ "$PLATFORM" = "djgpp" ] ||
+	   [ "$PLATFORM" = "dreamcast" ]; then
 		echo "Force-disabling icon branding (redundant)."
 		ICON="false"
 	fi
@@ -1607,7 +1659,7 @@ if [ "$ICON" = "true" ]; then
 		if [ "$SHAREDIR" = "." ]; then
 			ICONFILE="contrib/icons/quantump.png"
 		else
-			ICONFILE="$SHAREDIR/icons/megazeux.png"
+			ICONFILE="$SHAREDIR/icons/hicolor/128x128/apps/megazeux.png"
 		fi
 		echo "#define ICONFILE \"$ICONFILE\"" >> src/config.h
 	fi

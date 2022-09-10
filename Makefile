@@ -338,9 +338,18 @@ endif
 endif
 
 #
-# The following flags are not applicable to mingw builds.
+# KallistiOS has a pretty dire header situation
+#
+ifeq (${BUILD_DREAMCAST},1)
+CFLAGS   += -Wno-strict-prototypes -Wno-pedantic
+CXXFLAGS += -Wno-pedantic
+endif
+
+#
+# The following flags are not applicable to mingw or djgpp builds.
 #
 ifneq (${PLATFORM},mingw)
+ifneq (${PLATFORM},djgpp)
 
 #
 # Symbols in COFF binaries are implicitly hidden unless exported; this
@@ -351,6 +360,7 @@ CFLAGS   += -fvisibility=hidden
 CXXFLAGS += -fvisibility=hidden
 endif
 
+endif # PLATFORM=djgpp
 endif # PLATFORM=mingw
 
 #

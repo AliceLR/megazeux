@@ -61,6 +61,11 @@
 
 #include "audio/sfx.h"
 
+#ifdef CONFIG_DJGPP
+// Required for getdisk()/setdisk()
+#include <dir.h>
+#endif
+
 #ifdef CONFIG_WII
 #include <sys/iosupport.h>
 #endif
@@ -3420,7 +3425,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     else
       show_parent_dir = true;
 
-#if defined(CONFIG_3DS) || defined(CONFIG_SWITCH) || defined(CONFIG_WIIU) || defined(CONFIG_PSVITA)
+#if defined(CONFIG_3DS) || defined(CONFIG_SWITCH) || defined(CONFIG_WIIU) \
+  || defined(CONFIG_PSVITA) || defined(CONFIG_DREAMCAST)
     if(show_parent_dir)
     {
       dir_list[num_dirs] = cmalloc(3);
@@ -3543,6 +3549,34 @@ skip_dir:
     }
 #endif
 
+#ifdef CONFIG_DJGPP
+    if(allow_dirs == ALLOW_ALL_DIRS)
+    {
+      int current_disk = getdisk();
+      int max_disk = setdisk(current_disk);
+      for(i = 0; i < max_disk; i++)
+      {
+        setdisk(i);
+        if(getdisk() != i)
+          continue;
+
+        dir_list[num_dirs] = cmalloc(3);
+        sprintf(dir_list[num_dirs], "%c:", 'A' + i);
+        num_dirs++;
+
+        if(num_dirs == total_dirnames_allocated)
+        {
+          dir_list = crealloc(dir_list, sizeof(char *) *
+           total_dirnames_allocated * 2);
+          memset(dir_list + total_dirnames_allocated, 0,
+           sizeof(char *) * total_dirnames_allocated);
+          total_dirnames_allocated *= 2;
+        }
+      }
+      setdisk(current_disk);
+    }
+#endif
+
 #ifdef CONFIG_WII
     if(allow_dirs == ALLOW_ALL_DIRS)
     {
@@ -3550,7 +3584,7 @@ skip_dir:
       {
         if(devoptab_list[i] && devoptab_list[i]->chdir_r)
         {
-          dir_list[num_dirs] = cmalloc(strlen(devoptab_list[i]->name + 3));
+          dir_list[num_dirs] = cmalloc(strlen(devoptab_list[i]->name) + 3);
           sprintf(dir_list[num_dirs], "%s:/", devoptab_list[i]->name);
 
           num_dirs++;

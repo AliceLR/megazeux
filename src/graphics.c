@@ -98,6 +98,16 @@ static const struct renderer_data renderers[] =
 #endif
   { "xfb", render_xfb_register },
 #endif
+#if defined(CONFIG_DJGPP)
+  { "ega", render_ega_register },
+#if defined(CONFIG_DOS_SVGA)
+  { "svga", render_svga_register },
+#endif
+#endif
+#if defined(CONFIG_DREAMCAST)
+  { "dreamcast", render_dc_register },
+  { "dreamcast_fb", render_dc_fb_register },
+#endif
   { NULL, NULL }
 };
 

@@ -29,10 +29,10 @@ __M_BEGIN_DECLS
 #include <stddef.h>
 
 #ifndef DIR_SEPARATOR
-#ifdef __WIN32__
+#if defined(__WIN32__) || defined(CONFIG_DJGPP)
 #define DIR_SEPARATOR "\\"
 #define DIR_SEPARATOR_CHAR '\\'
-#else /* !__WIN32__ */
+#else /* !__WIN32__ && !CONFIG_DJGPP */
 #define DIR_SEPARATOR "/"
 #define DIR_SEPARATOR_CHAR '/'
 #endif

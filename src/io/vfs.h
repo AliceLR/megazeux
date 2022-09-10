@@ -45,7 +45,9 @@ __M_BEGIN_DECLS
 #define VIRTUAL_FILESYSTEM_DOS_DRIVE
 #endif
 
+#if !defined(CONFIG_DJGPP)
 #define VIRTUAL_FILESYSTEM_PARALLEL
+#endif
 
 struct vfs_dir_file
 {

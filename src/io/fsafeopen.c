@@ -312,17 +312,24 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
     const char *string_cmp = string;
     char string_sfn[SFN_BUFFER_LEN];
     char newpath_sfn[SFN_BUFFER_LEN];
-    boolean string_is_wildcard_sfn = false;
     boolean has_sfn_match = false;
+    enum sfn_type type;
 
     // If the input path is a truncated SFN, it may need to be aggressively
     // checked against generated SFNs from files in the directory.
-    if(check_sfn && is_sfn(string, strlen(string)) == SFN_TRUNCATED)
+    type = is_sfn(string, strlen(string));
+    if(check_sfn && type == SFN_TRUNCATED)
     {
       memcpy(string_sfn, string, strlen(string) + 1);
-      string_is_wildcard_sfn = true;
       string_cmp = string_sfn;
     }
+
+#ifdef CONFIG_DJGPP
+    if(type == NOT_AN_SFN)
+    {
+      get_sfn(string_sfn, SFN_BUFFER_LEN, string);
+    }
+#endif
 
     while(vdir_read(wd, newpath, MAX_PATH, NULL))
     {
@@ -335,7 +342,23 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
       }
       else
 
-      if(string_is_wildcard_sfn)
+#ifdef CONFIG_DJGPP
+      // Is there a file matching the generated SFN for the requested LFN?
+      if(type == NOT_AN_SFN)
+      {
+        if(!strcasecmp(string_sfn, newpath))
+        {
+          trace("%s:%d: truncated LFN '%s' to '%s'\n",
+           __FILE__, __LINE__, string, newpath);
+          memcpy(string, newpath, strlen(newpath) + 1);
+          ret = FSAFE_SUCCESS;
+          break;
+        }
+      }
+      else
+#endif
+
+      if(type == SFN_TRUNCATED)
       {
         const char *newpath_cmp = get_sfn(newpath_sfn, SFN_BUFFER_LEN, newpath);
         if(!strcasecmp(string_cmp, newpath_cmp))

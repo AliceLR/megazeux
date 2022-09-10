@@ -172,6 +172,42 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 #define trace(...) do { } while(0)
 #endif
 
+#elif defined(CONFIG_DREAMCAST)
+
+#include <kos.h>
+
+#define info(...) \
+ do { \
+   dbgio_printf("INFO: " __VA_ARGS__); \
+   dbgio_flush(); \
+ } while(0)
+
+#define warn(...) \
+ do { \
+   dbgio_printf("WARNING: " __VA_ARGS__); \
+   dbgio_flush(); \
+ } while(0)
+
+#ifdef DEBUG
+#define debug(...) \
+ do { \
+   dbgio_printf("DEBUG: " __VA_ARGS__); \
+   dbgio_flush(); \
+ } while(0)
+#else
+#define debug(...) do { } while(0)
+#endif
+
+#if defined(DEBUG) && defined(DEBUG_TRACE)
+#define trace(...) \
+  do { \
+    dbgio_printf("TRACE: " __VA_ARGS__); \
+    dbgio_flush(); \
+  } while(0)
+#else
+#define trace(...) do { } while(0)
+#endif
+
 #else /* ANDROID */
 
 #define info(...) \

@@ -105,7 +105,12 @@ static inline int platform_rmdir(const char *path)
 
 static inline int platform_access(const char *path, int mode)
 {
+#if defined(CONFIG_DREAMCAST)
+  // KallistiOS doesn't have access() :(
+  return 0;
+#else
   return access(path, mode);
+#endif
 }
 
 static inline int platform_stat(const char *path, struct stat *buf)

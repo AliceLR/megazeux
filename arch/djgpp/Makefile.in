@@ -1,0 +1,44 @@
+#
+# DJGPP Makefile
+#
+
+DJGPPBASE ?= i586-pc-msdosdjgpp
+CC = ${DJGPPBASE}-gcc
+CXX = ${DJGPPBASE}-g++
+AS = ${DJGPPBASE}-as
+AR = ${DJGPPBASE}-ar
+OBJCOPY = ${DJGPPBASE}-objcopy
+STRIP = ${DJGPPBASE}-strip
+
+BINEXT = .exe
+
+# 387 emulation for FPU not have
+EXTRA_LIBS = -lemu
+
+# pc.h and sys/farptr.h have functions declared extern __inline__
+# Use -fgnu89-inline to avoid multiple-definition errors
+#-fgnu89-inline
+ARCH_LDFLAGS  += ${EXTRA_LIBS}
+
+clean:
+	${RM} -f arch/djgpp/*.d arch/djgpp/*.o
+
+#
+# The return of the revenge of the vile hack! remove me ASAP
+#
+arch/djgpp/%.o: arch/djgpp/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
+
+arch/djgpp/%.o: arch/djgpp/%.S
+	$(if ${V},,@echo "  AS      " $<)
+	${AS} $< -o $@
+
+arch/djgpp/CWSDPMI.EXE:
+	@echo You must copy CWSDPMI.EXE to arch/djgpp for packaging.
+	@false
+
+build: ${build} arch/djgpp/CWSDPMI.EXE
+	${CP} arch/djgpp/CWSDPMI.EXE ${build}
+
+include arch/zip.inc
