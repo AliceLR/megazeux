@@ -52,7 +52,8 @@ The build process for the MegaZeux port is as follows:
 
 1. Install the latest version of both the Android SDK and NDK. The easiest way
   to do this is to install these through Android Studio. MegaZeux requires
-  version 19 of the NDK or higher.
+  a version of the NDK between r19 and r23 (version r24 and above drop support
+  for Jelly Bean - APIs 16, 17, 18 - which we continue to support).
 2. `export NDK_PATH=[the NDK path]`. As a hint, the directory should contain "ndk-build", among others.
   * For Android Studio users, this will be `/home/.../Android/Sdk/ndk-bundle/`
     Create the file `arch/android/project/local.properties` with the following lines:
