@@ -11,8 +11,6 @@ VITA_TITLE = MegaZeux
 
 VITA_MKSFOEX_FLAGS = -d PARENTAL_LEVEL=1
 
-VITA_INCLUDES = -Iarch/psvita
-
 VITA_LIBS = -lSDL2 \
             -lSceDisplay_stub \
             -lSceCtrl_stub \
@@ -29,7 +27,7 @@ VITA_LIBS = -lSDL2 \
 VITA_CFLAGS = -DPATH_MAX=4096 -DOV_EXCLUDE_STATIC_CALLBACKS
 VITA_LDFLAGS = -L${PREFIX}/arm-vita-eabi/lib -Wl,-q -Wl,-z,nocopyreloc
 
-SDL_CFLAGS = -I${PREFIX}/arm-vita-eabi/include/SDL2
+SDL_CFLAGS = -isystem ${PREFIX}/arm-vita-eabi/include/SDL2
 SDL_LDFLAGS = ${VITA_LDFLAGS} ${VITA_LIBS}
 
 ARCH_CFLAGS += ${VITA_CFLAGS} ${VITA_INCLUDES}
