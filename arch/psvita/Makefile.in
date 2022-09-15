@@ -14,7 +14,6 @@ VITA_MKSFOEX_FLAGS = -d PARENTAL_LEVEL=1
 VITA_INCLUDES = -Iarch/psvita
 
 VITA_LIBS = -lSDL2 \
-            -lvita2d \
             -lSceDisplay_stub \
             -lSceCtrl_stub \
             -lSceAudio_stub \
