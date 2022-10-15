@@ -257,6 +257,7 @@ UNITTEST(GIF)
       ASSERT(ret, "%s: load failed", in.filename);
       uint32_t chk = crc32(0ul, reinterpret_cast<uint8_t *>(img.data), img.width * img.height * 4);
       ASSERTEQ(chk, in.crc, "crc32 mismatch");
+      image_free(&img);
     }
   }
 }

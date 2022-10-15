@@ -687,9 +687,11 @@ end_of_stream:
   if(has_control)
     gif->control_after_final_image = GIF_TRUE;
 
+  free(unpack_tree);
   return GIF_OK;
 
 error:
+  free(unpack_tree);
   gif_close(gif);
   return ret;
 }
@@ -705,7 +707,12 @@ void gif_close(struct gif_info *gif)
   if(gif->images)
   {
     for(i = 0; i < gif->num_images; i++)
+    {
+      if(gif->images[i])
+        free(gif->images[i]->color_table);
+
       free(gif->images[i]);
+    }
     free(gif->images);
     gif->images = NULL;
   }
