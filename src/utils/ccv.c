@@ -60,6 +60,8 @@ static const char USAGE_DESC[] =
 "  Supported image file formats are:\n\n"
 
 "  * PNG\n"
+"  * GIF (multi-image GIFs will be flattened into a single image;\n"
+"         non-square pixel aspect ratios are supported via upscaling)\n"
 "  * BMP (1bpp, 2bpp, 4bpp, 8bpp, 16bpp, 24bpp, 32bpp, RLE8, RLE4)\n"
 "  * Netpbm/PNM (.pbm, .pgm, .ppm, .pnm, .pam)\n"
 "  * farbfeld (.ff)\n"

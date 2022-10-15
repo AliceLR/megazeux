@@ -17,7 +17,7 @@ utils_obj = src/utils/.build
 utils_cflags := ${LIBPNG_CFLAGS} -DUTILS_LIBSPEC=
 
 zip_objs  := ${io_obj}/vio.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
-img_objs  := ${io_obj}/vio.o ${utils_obj}/image_file.o
+img_objs  := ${io_obj}/vio.o ${utils_obj}/image_file.o ${utils_obj}/image_gif.o
 img_flags :=
 
 ifneq (${LIBPNG},)
