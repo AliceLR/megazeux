@@ -45,10 +45,13 @@ enum gif_error
   GIF_SIGNATURE
 };
 
-enum gif_image_type
+enum gif_block_type
 {
+  GIF_CONTROL,
   GIF_IMAGE,
-  GIF_PLAINTEXT
+  GIF_PLAINTEXT,
+  GIF_COMMENT,
+  GIF_APPLICATION,
 };
 
 /* The loader does not normalize color tables to 24bpp.
@@ -75,21 +78,35 @@ struct gif_color_table
   struct gif_color entries[1];  /* All color entries in table (flexible array member). */
 };
 
+struct gif_block
+{
+  /* Use this field to determine the correct struct type. */
+  enum gif_block_type type;
+};
+
+/**
+ * Graphics Control Extension
+ * This affects the IMMEDIATELY following graphic-rendering block (either
+ * an Image Descriptor or Plain Text Extension block). Certain libraries too
+ * good to follow the standard only respect/generate a Graphics Control block
+ * at the very end of the file (currently unsupported by gif_composite).
+ */
 struct gif_graphics_control
 {
-  /* Graphics Control Extension */
+  struct gif_block base;
 
   /*pack*/ uint8_t  disposal_method;    /* Image disposal method after display (0 to 7). */
   /*pack*/ uint8_t  input_required;     /* Image requires user input to advance (0 or 1). */
-  /*  1 */ uint16_t delay_time;         /* Image display duration in ms. */
+  /*  1 */ uint16_t delay_time;         /* Image delay duration in 10 ms increments. */
   /*  3 */ int16_t  transparent_color;  /* Image transparent color (0 to 255, or -1 for none). */
 };
 
+/**
+ * Image Descriptor
+ */
 struct gif_image
 {
-  /* Image Descriptor
-   * This struct is also used to store other graphics rendering blocks. */
-  enum gif_image_type type;
+  struct gif_block base;
 
   /*  0 */ uint16_t left;               /* Left corner X position on canvas. */
   /*  2 */ uint16_t top;                /* Top corner Y position on canvas. */
@@ -97,26 +114,42 @@ struct gif_image
   /*  6 */ uint16_t height;             /* Height of image. */
   /*pack*/ gif_bool is_interlaced;      /* GIF_TRUE if this image was stored interlaced. */
 
-  /* Plaintext fields. */
+  /* Local Color Table */
+  struct gif_color_table *color_table;
+
+  /* Data (uncompressed, deinterlaced, flexible array member). */
+  uint8_t pixels[1];
+};
+
+/**
+ * Plain Text Extension
+ */
+struct gif_plaintext
+{
+  struct gif_block base;
+
+  /*  0 */ uint16_t left;               /* Left corner X position on canvas. */
+  /*  2 */ uint16_t top;                /* Top corner Y position on canvas. */
+  /*  4 */ uint16_t width;              /* Width of image. */
+  /*  6 */ uint16_t height;             /* Height of image. */
   /*  8 */ uint8_t  char_width;         /* Width of characters, in pixels. */
   /*  9 */ uint8_t  char_height;        /* Height of characters, in pixels. */
   /* 10 */ uint8_t  fg_color;           /* Text foreground color (global table). */
   /* 11 */ uint8_t  bg_color;           /* Text background color (global table). */
 
-  /* Graphic Control Extension */
-  struct gif_graphics_control control;
-
-  /* Local Color Table */
-  struct gif_color_table *color_table;
-
-  /* Data (uncompressed, deinterlaced, flexible array member). */
+  /* Data (flexible array member, \0 added, can contain any byte value). */
   unsigned length;
   unsigned length_alloc;
-  uint8_t pixels[1];
+  char text[1];
 };
 
+/**
+ * Comment Extension
+ */
 struct gif_comment
 {
+  struct gif_block base;
+
   unsigned length;                      /* Length of comment */
   unsigned length_alloc;
   char comment[1];                      /* Comment (\0 terminator appended). */
@@ -124,8 +157,23 @@ struct gif_comment
 
 struct gif_appdata
 {
-  uint8_t length;                       /* Length of application subblock. */
-  uint8_t appdata[1];                   /* Application data subblock. */
+  uint8_t length;                       /* Length of application data. */
+  uint8_t appdata[1];                   /* Application data (\0 appended). */
+};
+
+/**
+ * Application Extension
+ */
+struct gif_application
+{
+  struct gif_block base;
+
+  char application[12];                 /* Application string (8) and code (3),
+                                         * ex. "NETSCAPE2.0" (\0 appended). */
+
+  unsigned length;                      /* Number of application data blocks */
+  unsigned length_alloc;
+  struct gif_appdata **appdata;         /* Application data blocks (NULL if none) */
 };
 
 struct gif_info
@@ -144,32 +192,18 @@ struct gif_info
   /* Global Color Table */
   struct gif_color_table *global_color_table; /* NULL if not present. */
 
-  /* Graphics Control Extension
-   * This contains the most recently loaded Graphics Control Extension data.
-   * This is intended to populate the following image with this data as it
-   * is meant to preceed its corresponding image. Certain libraries too good
-   * to follow the standard only respect/generate a Graphics Control block
-   * at the very end of the file, so this can be used to recover that info if
-   * needed. */
-  struct gif_graphics_control control;
-  gif_bool control_after_final_image;
+  /* Blocks */
+  unsigned num_blocks_alloc;
+  unsigned num_blocks;                  /* Number of blocks in GIF. */
+  struct gif_block **blocks;            /* Array of blocks, or NULL if none. */
 
-  /* Images */
-  unsigned num_images_alloc;
-  unsigned num_images;                  /* Number of images in GIF. */
-  struct gif_image **images;            /* Array of images, or NULL if none. */
-
-  /* Comments */
-  unsigned num_comments_alloc;
-  unsigned num_comments;                /* Number of comments. */
-  struct gif_comment **comments;        /* Array of comments, or NULL if none. */
-
-  /* Application */
-  char application[9];                  /* Application string (\0 appended). */
-  uint8_t application_code[3];          /* Application code. */
-  unsigned num_appdata_alloc;
-  unsigned num_appdata;                 /* Number of application data subblocks. */
-  struct gif_appdata **appdata;         /* Application data subblocks, or NULL if none. */
+  /* Useful block offsets - graphical blocks need to be processed sequentially
+   * but these might be useful to access directly. There may be unrelated
+   * blocks between the block offsets. If end <= start, none are present. */
+  unsigned comments_start;              /* Index of first comment. */
+  unsigned comments_end;                /* Index of last comment + 1. */
+  unsigned application_start;           /* Index of first application. */
+  unsigned application_end;             /* Index of last application + 1. */
 };
 
 
