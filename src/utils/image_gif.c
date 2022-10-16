@@ -18,6 +18,7 @@
  */
 
 #include <limits.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,7 +55,9 @@ static void gifnodbg(...) {}
 #endif
 #endif
 
+#undef GIF_MAX
 #undef GIF_MIN
+#define GIF_MAX(a,b) ((a) > (b) ? (a) : (b))
 #define GIF_MIN(a,b) ((a) < (b) ? (a) : (b))
 
 static inline uint16_t gif_u16(const void *_buf)
@@ -92,8 +95,8 @@ static const struct gif_graphics_control default_control =
 {
   1,                  /* do not dispose */
   0,                  /* no user input */
-  GIF_DEFAULT_DELAY,  /* 5ms */
-  -1                   /* no transparent color */
+  0,                  /* no delay */
+  -1                  /* no transparent color */
 };
 
 struct gif_lzw_node
@@ -354,15 +357,38 @@ static void gif_deinterlace(uint8_t * GIF_RESTRICT out, const uint8_t *in,
     memcpy(pos, in, width);
 }
 
-#define RESIZE(type, ptr, old_size) \
+static unsigned gif_next_power_of_two(unsigned sz)
+{
+  sz |= sz >> 1;
+  sz |= sz >> 2;
+  sz |= sz >> 4;
+  sz |= sz >> 8;
+  sz |= sz >> 16;
+  return sz + 1;
+}
+
+static unsigned gif_ptr_size(unsigned sz)
+{
+  return sz * sizeof(void *);
+}
+
+#define RESIZE(type, ptr, alloc, target, size_fn) \
   do { \
-    size_t new_size = !ptr ? 4 : old_size << 1; \
-    type p = (type)realloc(ptr, new_size * sizeof(*ptr)); \
-    if(!p) \
+    unsigned tmp = GIF_MAX((alloc), (target)); \
+    unsigned new_size = gif_next_power_of_two(tmp); \
+    unsigned a_size = size_fn(new_size); \
+    void *buf; \
+    if(new_size < tmp || a_size < new_size) \
       return GIF_MEM; \
-    ptr = p; \
-    old_size = new_size; \
+    buf = realloc((ptr), a_size); \
+    if(!buf) \
+      return GIF_MEM; \
+    ptr = (type)buf; \
+    alloc = new_size; \
   } while(0)
+
+#define RESIZE_LIST(type, ptr, alloc, target) \
+ RESIZE(type, ptr, alloc, target, gif_ptr_size)
 
 static struct gif_color_table *gif_alloc_color_table(unsigned num_entries)
 {
@@ -372,39 +398,91 @@ static struct gif_color_table *gif_alloc_color_table(unsigned num_entries)
   return (struct gif_color_table *)malloc(sz);
 }
 
-static enum gif_error gif_add_image(struct gif_info *gif, unsigned width,
- unsigned height, struct gif_image **_layer)
+static unsigned gif_add_image_size(unsigned size)
+{
+  return GIF_MAX(sizeof(struct gif_image),
+   offsetof(struct gif_image, pixels) + size + 1);
+}
+
+static enum gif_error gif_add_image(struct gif_info *gif, unsigned size,
+ struct gif_image **_layer)
 {
   struct gif_image *layer;
 
   if(gif->num_images >= gif->num_images_alloc)
-    RESIZE(struct gif_image **, gif->images, gif->num_images_alloc);
+  {
+    RESIZE_LIST(struct gif_image **, gif->images, gif->num_images_alloc,
+     gif->num_images + 1);
+  }
 
-  layer = (struct gif_image *)calloc(1, sizeof(struct gif_image) + width * height);
+  layer = (struct gif_image *)calloc(1, gif_add_image_size(size));
   if(!layer)
     return GIF_MEM;
+
+  layer->length_alloc = size;
 
   gif->images[gif->num_images++] = layer;
   *_layer = layer;
   return GIF_OK;
 }
 
-static enum gif_error gif_add_comment(struct gif_info *gif, uint8_t *comment, uint8_t length)
+static enum gif_error gif_add_image_append(struct gif_image **_layer,
+ uint8_t *data, uint8_t length)
+{
+  struct gif_image *layer = *_layer;
+  if(layer->length_alloc - layer->length < length)
+  {
+    RESIZE(struct gif_image *, layer, layer->length_alloc,
+     layer->length + length, gif_add_image_size);
+    *_layer = layer;
+  }
+  memcpy(layer->pixels + layer->length, data, length);
+  layer->length += length;
+  layer->pixels[layer->length] = '\0';
+  return GIF_OK;
+}
+
+static unsigned gif_add_comment_size(unsigned size)
+{
+  return GIF_MAX(sizeof(struct gif_comment),
+   offsetof(struct gif_comment, comment) + size + 1);
+}
+
+static enum gif_error gif_add_comment(struct gif_info *gif, uint8_t length)
 {
   struct gif_comment *c;
 
   if(gif->num_comments >= gif->num_comments_alloc)
-    RESIZE(struct gif_comment **, gif->comments, gif->num_comments_alloc);
+  {
+    RESIZE_LIST(struct gif_comment **, gif->comments, gif->num_comments_alloc,
+     gif->num_comments + 1);
+  }
 
-  c = (struct gif_comment *)malloc(sizeof(struct gif_comment) + length);
+  c = (struct gif_comment *)malloc(gif_add_comment_size(length));
   if(!c)
     return GIF_MEM;
 
-  c->length = length;
-  memcpy(c->comment, comment, length);
-  c->comment[length] = '\0';
+  c->length = 0;
+  c->length_alloc = length;
+  c->comment[0] = '\0';
 
   gif->comments[gif->num_comments++] = c;
+  return GIF_OK;
+}
+
+static enum gif_error gif_add_comment_append(struct gif_comment **_comment,
+ uint8_t *data, uint8_t length)
+{
+  struct gif_comment *c = *_comment;
+  if(c->length_alloc - c->length < length)
+  {
+    RESIZE(struct gif_comment *, c, c->length_alloc, c->length + length,
+     gif_add_comment_size);
+    *_comment = c;
+  }
+  memcpy(c->comment + c->length, data, length);
+  c->length += length;
+  c->comment[c->length] = '\0';
   return GIF_OK;
 }
 
@@ -413,7 +491,10 @@ static enum gif_error gif_add_appdata(struct gif_info *gif, uint8_t *appdata, ui
   struct gif_appdata *a;
 
   if(gif->num_appdata >= gif->num_appdata_alloc)
-    RESIZE(struct gif_appdata **, gif->appdata, gif->num_appdata_alloc);
+  {
+    RESIZE_LIST(struct gif_appdata **, gif->appdata, gif->num_appdata_alloc,
+     gif->num_appdata + 1);
+  }
 
   a = (struct gif_appdata *)malloc(sizeof(struct gif_appdata) + length);
   if(!a)
@@ -434,6 +515,7 @@ enum gif_error gif_read(struct gif_info *gif, void *handle,
   struct gif_color_table *table;
   uint8_t buffer[256];
   enum gif_error ret;
+  unsigned current = 0;
   int has_control = 0;
 
   memset(gif, 0, sizeof(*gif));
@@ -546,22 +628,38 @@ enum gif_error gif_read(struct gif_info *gif, void *handle,
                sz, gif->control.disposal_method, gif->control.input_required,
                gif->control.delay_time, gif->control.transparent_color);
 
-              if(gif->control.delay_time == 0)
-                gif->control.delay_time = GIF_DEFAULT_DELAY;
-
               type += 0x100; // Only read one.
               break;
             }
 
             case 0xFE:  /* Comment */
             {
-              gifdbg("  Comment\t\t\t size:%u text:%*.*s\n", sz, (int)sz, (int)sz, buffer);
-              gif_add_comment(gif, buffer, sz); // Ignore failures.
+              gifdbg("  Comment\t\t\t size:%u\n", sz);
+              current = gif->num_comments;
+              if(gif_add_comment(gif, sz) != GIF_OK)
+              {
+                type = 0; // Skip everything else
+                break;
+              }
+            }
+            /* fall-through */
+
+            case 0x1FE: /* Comment (data blocks) */
+            {
+              if(gif_add_comment_append(&(gif->comments[current]), buffer, sz) != GIF_OK)
+                type = 0; // Skip everything else
+
+              gifdbg("    text: %*.*s\n", (int)sz, (int)sz, buffer);
               break;
             }
 
             case 0xFF:  /* Application */
             {
+              if(sz < 11)
+              {
+                type = 0; // Skip everything else
+                break;
+              }
               memcpy(gif->application, buffer, 8);
               memcpy(gif->application_code, buffer + 8, 3);
               gif->application[8] = '\0';
@@ -582,8 +680,47 @@ enum gif_error gif_read(struct gif_info *gif, void *handle,
 
             case 0x01:  /* Plain Text */
             {
-              // FIXME: implement
-              gifdbg("  Plain text\t\t\t size:%u\n", sz);
+              struct gif_image *layer;
+              if(sz < 12)
+              {
+                type = 0; // Skip everything else
+                continue;
+              }
+              current = gif->num_images;
+
+              ret = gif_add_image(gif, 32, &layer);
+              if(ret != GIF_OK)
+                continue;
+
+              layer->type         = GIF_PLAINTEXT;
+              layer->left         = gif_u16(buffer + 0);
+              layer->top          = gif_u16(buffer + 2);
+              layer->width        = gif_u16(buffer + 4);
+              layer->height       = gif_u16(buffer + 6);
+              layer->char_width   = buffer[8];
+              layer->char_height  = buffer[9];
+              layer->fg_color     = buffer[10];
+              layer->bg_color     = buffer[11];
+
+              layer->control = has_control ? gif->control : default_control;
+              has_control = 0;
+
+              gifdbg("  Plain text\t\t size:%u width:%u height:%u\n", sz,
+               layer->width, layer->height);
+              gifdbg("\t\t\t\t left:%d top:%d charw:%d charh:%d fg:%d bg:%d\n",
+               layer->left, layer->top, layer->char_width, layer->char_height,
+               layer->fg_color, layer->bg_color);
+              type += 0x100;
+              break;
+            }
+
+            case 0x101:  /* Plain Text (data blocks) */
+            {
+              if(current >= gif->num_images || gif->images[current]->type != GIF_PLAINTEXT)
+                continue;
+
+              gif_add_image_append(&(gif->images[current]), buffer, sz);
+              gifdbg("  Plain text data\t\t size:%u\n", sz);
               break;
             }
           }
@@ -609,10 +746,11 @@ enum gif_error gif_read(struct gif_info *gif, void *handle,
 
         gifdbg("Image Descriptor\t\t width:%u height:%u\n", width, height);
 
-        ret = gif_add_image(gif, width, height, &layer);
+        ret = gif_add_image(gif, width * height, &layer);
         if(ret != GIF_OK)
           goto error;
 
+        layer->type           = GIF_IMAGE;
         layer->left           = gif_u16(buffer + 0);
         layer->top            = gif_u16(buffer + 2);
         layer->width          = width;
@@ -993,7 +1131,7 @@ enum gif_error gif_composite(struct gif_rgba **_pixels,
     const struct gif_image *layer = gif->images[i];
     struct gif_rgba *palette = global_palette;
 
-    if(!layer)
+    if(!layer || layer->type != GIF_IMAGE)
       continue;
 
     if(layer->color_table)

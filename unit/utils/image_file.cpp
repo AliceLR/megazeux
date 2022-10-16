@@ -211,6 +211,7 @@ UNITTEST(GIF)
     uint32_t crc;
   } complex_inputs[] =
   {
+    { "example.gif", 0x733D9484 },
     { "tesseract.gif", 0xC56E4F50 },
     { "truecolor.gif", 0xE3064823 },
   };

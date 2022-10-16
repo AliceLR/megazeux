@@ -23,8 +23,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define GIF_DEFAULT_DELAY 5
-
 /* Read up to `num` bytes from `handle` into the buffer pointed to by `dest`.
  * Returns the number of bytes actually read from `handle`. */
 typedef size_t (*gif_read_function)(void *dest, size_t num, void *handle);
@@ -45,6 +43,12 @@ enum gif_error
   GIF_MEM,
   GIF_INVALID,
   GIF_SIGNATURE
+};
+
+enum gif_image_type
+{
+  GIF_IMAGE,
+  GIF_PLAINTEXT
 };
 
 /* The loader does not normalize color tables to 24bpp.
@@ -75,39 +79,46 @@ struct gif_graphics_control
 {
   /* Graphics Control Extension */
 
-  /*  0 */ // 0x21
-  /*  1 */ // 0xF9
-  /*  2 */ // 4                         /* Size of GCE block. */
   /*pack*/ uint8_t  disposal_method;    /* Image disposal method after display (0 to 7). */
   /*pack*/ uint8_t  input_required;     /* Image requires user input to advance (0 or 1). */
-  /*  4 */ uint16_t delay_time;         /* Image display duration in ms. */
-  /*  6 */ int16_t  transparent_color;  /* Image transparent color (0 to 255, or -1 for none). */
+  /*  1 */ uint16_t delay_time;         /* Image display duration in ms. */
+  /*  3 */ int16_t  transparent_color;  /* Image transparent color (0 to 255, or -1 for none). */
 };
 
 struct gif_image
 {
-  /* Image Descriptor */
+  /* Image Descriptor
+   * This struct is also used to store other graphics rendering blocks. */
+  enum gif_image_type type;
 
-  /*  0 */ // 0x2C
-  /*  1 */ uint16_t left;               /* Left corner X position on canvas. */
-  /*  3 */ uint16_t top;                /* Top corner Y position on canvas. */
-  /*  5 */ uint16_t width;              /* Width of image. */
-  /*  7 */ uint16_t height;             /* Height of image. */
+  /*  0 */ uint16_t left;               /* Left corner X position on canvas. */
+  /*  2 */ uint16_t top;                /* Top corner Y position on canvas. */
+  /*  4 */ uint16_t width;              /* Width of image. */
+  /*  6 */ uint16_t height;             /* Height of image. */
   /*pack*/ gif_bool is_interlaced;      /* GIF_TRUE if this image was stored interlaced. */
 
-  /* Local Color Table */
-  struct gif_color_table *color_table;
+  /* Plaintext fields. */
+  /*  8 */ uint8_t  char_width;         /* Width of characters, in pixels. */
+  /*  9 */ uint8_t  char_height;        /* Height of characters, in pixels. */
+  /* 10 */ uint8_t  fg_color;           /* Text foreground color (global table). */
+  /* 11 */ uint8_t  bg_color;           /* Text background color (global table). */
 
   /* Graphic Control Extension */
   struct gif_graphics_control control;
 
+  /* Local Color Table */
+  struct gif_color_table *color_table;
+
   /* Data (uncompressed, deinterlaced, flexible array member). */
+  unsigned length;
+  unsigned length_alloc;
   uint8_t pixels[1];
 };
 
 struct gif_comment
 {
-  uint8_t length;                       /* Length of comment subblock. */
+  unsigned length;                      /* Length of comment */
+  unsigned length_alloc;
   char comment[1];                      /* Comment (\0 terminator appended). */
 };
 
@@ -159,8 +170,6 @@ struct gif_info
   unsigned num_appdata_alloc;
   unsigned num_appdata;                 /* Number of application data subblocks. */
   struct gif_appdata **appdata;         /* Application data subblocks, or NULL if none. */
-
-  /* TODO: Plain Text */
 };
 
 
