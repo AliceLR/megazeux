@@ -230,7 +230,7 @@ static enum gif_error gif_decode(uint8_t *out, struct gif_lzw_node **_tree,
       uint16_t code = gif_read_code(&b, code_len);
       int kwkwk = 0;
       giflzwdbg("    %d\n", code);
-      if(code > next_code || code == end_code)
+      if(code >= GIF_MAX_CODES || code > next_code || code == end_code)
         break;
 
       /* NOTE: clear is supposed to reset the entire table, so no encoder
@@ -247,8 +247,11 @@ static enum gif_error gif_decode(uint8_t *out, struct gif_lzw_node **_tree,
       }
 
       /* Add (kwkwk) */
-      if(code == next_code && prev_code < GIF_NO_CODE && next_code < GIF_MAX_CODES)
+      if(code == next_code && next_code < GIF_MAX_CODES)
       {
+        if(prev_code >= GIF_NO_CODE) /* This should never be emitted first. */
+          break;
+
         giflzwdbg("      add:%d prev:%d prevlen:%d (kwkwk)\n",
          next_code, prev_code, tree[prev_code].len);
 
@@ -942,6 +945,11 @@ void gif_close(struct gif_info *gif)
 /* Multi-image GIF compositor for GrafX2 GIFs. */
 /***********************************************/
 
+#define FP_SHIFT    13
+#define FP_1        (1 << FP_SHIFT)
+#define FP_AND      ((FP_1) - 1)
+#define FP_CEIL(x)  (((x) + FP_AND) & ~FP_AND)
+
 static const struct gif_graphics_control default_control =
 {
   { GIF_CONTROL },    /* base */
@@ -957,21 +965,21 @@ struct gif_composite
   unsigned width;
   unsigned height;
   unsigned scale;
-  double scalex;
-  double scaley;
+  uint32_t scalex;
+  uint32_t scaley;
 };
 
-static void gif_composite_scale(double *x, double *y, const struct gif_info *gif)
+static void gif_composite_scale(uint32_t *x, uint32_t *y, const struct gif_info *gif)
 {
   if(gif->pixel_ratio < (64 - 15))
   {
-    *x = 1.0;
-    *y = 64.0 / (gif->pixel_ratio + 15);
+    *x = FP_1;
+    *y = FP_1 * 64 / (gif->pixel_ratio + 15);
   }
   else
   {
-    *x = (gif->pixel_ratio + 15) * 0.015625; /* 1/64 */
-    *y = 1.0;
+    *x = FP_1 * (gif->pixel_ratio + 15) / 64;
+    *y = FP_1;
   }
 }
 
@@ -979,10 +987,10 @@ void gif_composite_size(unsigned *w, unsigned *h, const struct gif_info *gif)
 {
   if(gif->pixel_ratio)
   {
-    double x, y;
+    uint32_t x, y;
     gif_composite_scale(&x, &y, gif);
-    *w = (unsigned)(gif->width * x);
-    *h = (unsigned)(gif->height * y);
+    *w = FP_CEIL((uint32_t)gif->width * x) >> FP_SHIFT;
+    *h = FP_CEIL((uint32_t)gif->height * y) >> FP_SHIFT;
   }
   else
   {
@@ -1069,32 +1077,34 @@ static void gif_composite_line_tr(struct gif_rgba * GIF_RESTRICT dest,
 
 static void gif_composite_line_sc(struct gif_rgba * GIF_RESTRICT dest,
  const struct gif_rgba *palette, const uint8_t *line, size_t length,
- double scalex)
+ unsigned left_offset, uint32_t scalex)
 {
-  double scale_stop = 0.0;
-  double scale_pos = 0.0;
+  // Align the FP counters to the starting position to avoid overflow.
+  uint32_t scale_stop = scalex * left_offset;
+  uint32_t scale_pos = FP_CEIL(scale_stop);
   size_t x;
 
   for(x = 0; x < length; x++)
   {
     struct gif_rgba col = palette[line[x]];
-    for(scale_stop += scalex; scale_pos < scale_stop; scale_pos += 1.0)
+    for(scale_stop += scalex; scale_pos < scale_stop; scale_pos += FP_1)
       *(dest++) = col;
   }
 }
 
 static void gif_composite_line_sc_tr(struct gif_rgba * GIF_RESTRICT dest,
  const struct gif_rgba *palette, const uint8_t *line, size_t length,
- double scalex, unsigned tcol)
+ unsigned left_offset, uint32_t scalex, unsigned tcol)
 {
-  double scale_stop = 0.0;
-  double scale_pos = 0.0;
+  // Align the FP counters to the starting position to avoid overflow.
+  uint32_t scale_stop = scalex * left_offset;
+  uint32_t scale_pos = FP_CEIL(scale_stop);
   size_t x;
 
   for(x = 0; x < length; x++)
   {
     struct gif_rgba col = palette[line[x]];
-    for(scale_stop += scalex; scale_pos < scale_stop; scale_pos += 1.0)
+    for(scale_stop += scalex; scale_pos < scale_stop; scale_pos += FP_1)
     {
       if(line[x] != tcol)
         *dest = col;
@@ -1107,59 +1117,59 @@ static void gif_composite_image(struct gif_composite * GIF_RESTRICT image,
  const struct gif_rgba *palette, const struct gif_info *gif,
  const struct gif_image *layer, const struct gif_graphics_control *control)
 {
-  /* FIXME: this is not going to interact well with non-integer scaling */
-  const int left = GIF_MIN(gif->width, layer->left);
-  const int top = GIF_MIN(gif->height, layer->top);
-  const int width = GIF_MIN(gif->width - left, layer->width);
-  const int height = GIF_MIN(gif->height - top, layer->height);
-  const int layer_pitch = layer->width;
+  const unsigned left = GIF_MIN(gif->width, layer->left);
+  const unsigned top = GIF_MIN(gif->height, layer->top);
+  const unsigned width = GIF_MIN(gif->width - left, layer->width);
+  const unsigned height = GIF_MIN(gif->height - top, layer->height);
+  const unsigned layer_pitch = layer->width;
 
-  const int output_left = image->scale ? (int)(left * image->scalex) : left;
-  const int output_top = image->scale ? (int)(top * image->scaley) : top;
-  const int output_pitch = image->width;
+  const unsigned output_left = image->scale ? FP_CEIL(left * image->scalex) >> FP_SHIFT : left;
+  const unsigned output_top = image->scale ? FP_CEIL(top * image->scaley) >> FP_SHIFT : top;
 
   struct gif_rgba *pixels = image->pixels + output_left + (image->width * output_top);
   const uint8_t *line = layer->pixels;
 
-  /* pls unswitch gcc */
   const int scale = image->scale;
   const int tcol = control->transparent_color;
 
-  double scale_stop = 0.0;
-  double scale_pos = 0.0;
-  int y;
+  unsigned y;
 
-  for(y = 0; y < height; y++)
+  if(!width || !height)
+    return;
+
+  if(scale)
   {
-    if(tcol >= 0)
+    // Align the FP counters to the starting position to avoid overflow.
+    uint32_t scale_stop = image->scaley * top;
+    uint32_t scale_pos = FP_CEIL(scale_stop);
+
+    for(y = 0; y < height; y++)
     {
-      if(scale)
-        gif_composite_line_sc_tr(pixels, palette, line, width, image->scalex, tcol);
-      else
-        gif_composite_line_tr(pixels, palette, line, width, tcol);
+      // Draw each row multiple times :( it sucks, oh well.
+      for(scale_stop += image->scaley; scale_pos < scale_stop; scale_pos += FP_1)
+      {
+        if(tcol >= 0)
+          gif_composite_line_sc_tr(pixels, palette, line, width, left, image->scalex, tcol);
+        else
+          gif_composite_line_sc(pixels, palette, line, width, left, image->scalex);
+
+        pixels += image->width;
+      }
+      line += layer_pitch;
     }
-    else
+  }
+  else
+  {
+    for(y = 0; y < height; y++)
     {
-      if(scale)
-        gif_composite_line_sc(pixels, palette, line, width, image->scalex);
+      if(tcol >= 0)
+        gif_composite_line_tr(pixels, palette, line, width, tcol);
       else
         gif_composite_line(pixels, palette, line, width);
-    }
 
-    if(scale)
-    {
-      scale_stop += image->scaley;
-      scale_pos += 1.0;
-      while(scale_pos < scale_stop)
-      {
-        /* Duplicate line */
-        memcpy(pixels + image->width, pixels, image->width * sizeof(struct gif_rgba));
-        pixels += image->width;
-        scale_pos += 1.0;
-      }
+      pixels += image->width;
+      line += layer_pitch;
     }
-    pixels += output_pitch;
-    line += layer_pitch;
   }
 }
 

@@ -917,14 +917,20 @@ static int next_number(uint32_t *output, FILE *fp)
     value = fgetc(fp);
     if(!isdigit(value))
     {
-      ungetc(value, fp);
+      if(value == '#')
+        skip_whitespace(fp);
+      else
+
+      if(!isspace(value))
+        break;
+
       return value;
     }
 
     *output = (*output * 10) + (value - '0');
   }
 
-  // Digit count overflowed the uint32_t return value...
+  // Digit count overflowed the uint32_t return value, or invalid character.
   return EOF;
 }
 
