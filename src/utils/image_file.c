@@ -21,6 +21,7 @@
  */
 
 #include "image_file.h"
+#include "image_gif.h"
 #include "../util.h"
 
 #include <ctype.h>
@@ -58,21 +59,32 @@ static uint32_t read32le(const uint8_t in[4])
 }
 
 /**
+ * Image dimensions check for image_init and PNG/GIF loaders.
+ */
+static boolean image_constraint(uint32_t width, uint32_t height)
+{
+  debug("Image constraint: %zu by %zu\n", (size_t)width, (size_t)height);
+  if(!width || !height || width > MAXIMUM_WIDTH || height > MAXIMUM_HEIGHT ||
+   (uint64_t)width * (uint64_t)height > MAXIMUM_PIXELS)
+    return false;
+
+  return true;
+}
+
+/**
  * Initialize an image file's pixel array and other values.
  */
 static boolean image_init(uint32_t width, uint32_t height, struct image_file *dest)
 {
   struct rgba_color *data;
 
-  if(!width || !height || width > MAXIMUM_WIDTH || height > MAXIMUM_HEIGHT ||
-   (uint64_t)width * (uint64_t)height > MAXIMUM_PIXELS)
+  if(!image_constraint(width, height))
     return false;
 
   data = (struct rgba_color *)calloc(width * height, sizeof(struct rgba_color));
   if(!data)
     return false;
 
-  debug("Size: %zu by %zu\n", (size_t)width, (size_t)height);
   dest->width = width;
   dest->height = height;
   dest->data = data;
@@ -97,17 +109,6 @@ void image_free(struct image_file *dest)
 
 #include "../pngops.h"
 
-static boolean dummy_constraint(png_uint_32 _w, png_uint_32 _h)
-{
-  uint64_t w = _w;
-  uint64_t h = _h;
-
-  if(!w || !h || w > MAXIMUM_WIDTH || h > MAXIMUM_HEIGHT || w * h > MAXIMUM_PIXELS)
-    return false;
-
-  return true;
-}
-
 static void *dummy_allocator(png_uint_32 w, png_uint_32 h,
  png_uint_32 *stride, void **pixels)
 {
@@ -124,7 +125,7 @@ static boolean load_png(FILE *fp, struct image_file *dest)
 
   debug("Image type: PNG\n");
   dest->data = (struct rgba_color *)png_read_stream(fp, &w, &h, true,
-   dummy_constraint, dummy_allocator);
+   image_constraint, dummy_allocator);
 
   if(dest->data)
   {
@@ -136,6 +137,55 @@ static boolean load_png(FILE *fp, struct image_file *dest)
 }
 
 #endif /* CONFIG_PNG */
+
+
+/**
+ * GIF loader.
+ */
+
+static size_t gif_read_func(void *dest, size_t num, void *handle)
+{
+  return fread(dest, 1, num, (FILE *)handle);
+}
+
+static boolean load_gif(FILE *fp, struct image_file *dest)
+{
+  struct gif_info gif;
+  struct gif_rgba *pixels;
+  enum gif_error ret;
+  unsigned width;
+  unsigned height;
+
+  debug("Image type: GIF\n");
+
+  ret = gif_read(&gif, fp, gif_read_func, true);
+  if(ret != GIF_OK)
+  {
+    debug("read failed: %s\n", gif_error_string(ret));
+    return false;
+  }
+
+  gif_composite_size(&width, &height, &gif);
+
+  if(!image_constraint(width, height))
+  {
+    gif_close(&gif);
+    return false;
+  }
+
+  ret = gif_composite(&pixels, &gif, malloc);
+  if(ret == GIF_OK)
+  {
+    dest->data = (struct rgba_color *)pixels;
+    dest->width = width;
+    dest->height = height;
+  }
+  else
+    debug("composite failed: %s\n", gif_error_string(ret));
+
+  gif_close(&gif);
+  return (ret == GIF_OK);
+}
 
 
 /**
@@ -867,14 +917,20 @@ static int next_number(uint32_t *output, FILE *fp)
     value = fgetc(fp);
     if(!isdigit(value))
     {
-      ungetc(value, fp);
+      if(value == '#')
+        skip_whitespace(fp);
+      else
+
+      if(!isspace(value))
+        break;
+
       return value;
     }
 
     *output = (*output * 10) + (value - '0');
   }
 
-  // Digit count overflowed the uint32_t return value...
+  // Digit count overflowed the uint32_t return value, or invalid character.
   return EOF;
 }
 
@@ -1557,7 +1613,14 @@ boolean load_image_from_stream(FILE *fp, struct image_file *dest,
     case MAGIC('P','7'): return load_portable_arbitrary_map(fp, dest);
   }
 
-  if(fread(magic + 2, 1, 6, fp) < 6)
+  if(fread(magic + 2, 1, 1, fp) < 1)
+    return false;
+
+  /* GIF */
+  if(!memcmp(magic, "GIF", 3))
+    return load_gif(fp, dest);
+
+  if(fread(magic + 3, 1, 5, fp) < 5)
     return false;
 
   /* farbfeld */

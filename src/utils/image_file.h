@@ -50,7 +50,7 @@ struct image_raw_format
 {
   uint32_t width;
   uint32_t height;
-  uint32_t  bytes_per_pixel;
+  uint32_t bytes_per_pixel;
 };
 
 boolean load_image_from_file(const char *filename, struct image_file *dest,

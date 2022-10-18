@@ -19,11 +19,14 @@
 
 #include "../Unit.hpp"
 
+#include <zlib.h>
+
 #ifdef CONFIG_PNG
 #include "../../src/pngops.c"
 #endif
 
 #include "../../src/utils/image_file.c"
+#include "../../src/utils/image_gif.c"
 
 #define DATA_BASEDIR "../image_file/"
 
@@ -102,6 +105,32 @@ static const struct image_file_const base_rgba_img
   8, 6, raw_rgba
 };
 
+/********** RGB(A) template for 2x scaling formats. **********/
+
+static const struct rgba_color raw_rgba_2x[] =
+{
+  // R G B A; 4 x 4
+  { 255, 0, 0, 255 }, { 255, 0, 0, 255 }, { 0, 255, 0, 255 }, { 0, 255, 0, 255 },
+  { 255, 0, 0, 255 }, { 255, 0, 0, 255 }, { 0, 255, 0, 255 }, { 0, 255, 0, 255 },
+  { 0, 0, 255, 255 }, { 0, 0, 255, 255 }, { 255, 255, 255, 255 }, { 255, 255, 255, 255 },
+  { 0, 0, 255, 255 }, { 0, 0, 255, 255 }, { 255, 255, 255, 255 }, { 255, 255, 255, 255 },
+  // Only present in 1x1_interlaced.gif
+  { 0, 0, 0, 255}, { 0, 0, 0, 255}, { 0, 0, 0, 255}, { 0, 0, 0, 255},
+  { 0, 0, 0, 255}, { 0, 0, 0, 255}, { 0, 0, 0, 255}, { 0, 0, 0, 255},
+  { 0, 0, 0, 255}, { 0, 0, 0, 255}, { 0, 0, 0, 255}, { 0, 0, 0, 255},
+  { 0, 0, 0, 255}, { 0, 0, 0, 255}, { 0, 0, 0, 255}, { 0, 0, 0, 255},
+};
+
+static const struct image_file_const base_scaling_img
+{
+  4, 4, raw_rgba_2x
+};
+
+static const struct image_file_const base_scaling_img_interlaced
+{
+  4, 8, raw_rgba_2x
+};
+
 
 static boolean compare_rgb16(const rgba_color &base, const rgba_color &in)
 {
@@ -157,6 +186,81 @@ UNITTEST(PNG)
   image_free(&img);
 
 #endif /* CONFIG_PNG */
+}
+
+
+UNITTEST(GIF)
+{
+  struct image_file img{};
+  char path[512];
+  boolean ret;
+
+  static constexpr const char *simple_inputs[] =
+  {
+    "1x1.gif",
+    "1x1_layer.gif",
+    "1x1_topleft.gif",
+    "1x2.gif",
+    "1x2_layer.gif",
+    "2x1.gif",
+    "2x1_layer.gif"
+  };
+
+  static constexpr struct {
+    const char *filename;
+    uint32_t crc;
+  } complex_inputs[] =
+  {
+    { "example.gif", 0x733D9484 },
+    { "tesseract.gif", 0xC56E4F50 },
+    { "truecolor.gif", 0xE3064823 },
+  };
+
+  /* struct rgba_color and struct gif_rgba must be 100% interchangeable. */
+  static_assert(sizeof(struct rgba_color) == sizeof(struct gif_rgba), "size mismatch");
+  static_assert(offsetof(struct rgba_color, r) == offsetof(struct gif_rgba, r), "r offset mismatch");
+  static_assert(offsetof(struct rgba_color, g) == offsetof(struct gif_rgba, g), "g offset mismatch");
+  static_assert(offsetof(struct rgba_color, b) == offsetof(struct gif_rgba, b), "b offset mismatch");
+  static_assert(offsetof(struct rgba_color, a) == offsetof(struct gif_rgba, a), "a offset mismatch");
+
+  /* Simple inputs to test basic loading, as well as the scaling and
+   * layer functionality of the compositor. */
+  SECTION(Simple)
+  {
+    for(const char *filename : simple_inputs)
+    {
+      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
+
+      ret = load_image_from_file(path, &img, NULL);
+      ASSERT(ret, "%s: load failed", filename);
+      compare_image<compare_rgb>(base_scaling_img, img, filename);
+      image_free(&img);
+    }
+  }
+
+  /* GIMP refused to interlace a 4x4 GIF... */
+  SECTION(Interlaced)
+  {
+    ret = load_image_from_file(DATA_BASEDIR "1x1_interlaced.gif", &img, NULL);
+    ASSERT(ret, "1x1_interlaced.gif: load failed");
+    compare_image<compare_rgb>(base_scaling_img_interlaced, img, "1x1_interlaced.gif");
+    image_free(&img);
+  }
+
+  /* More complex testing of the LZW depacking algorithm. */
+  SECTION(Complex)
+  {
+    for(const auto &in : complex_inputs)
+    {
+      snprintf(path, sizeof(path), DATA_BASEDIR "%s", in.filename);
+
+      ret = load_image_from_file(path, &img, NULL);
+      ASSERT(ret, "%s: load failed", in.filename);
+      uint32_t chk = crc32(0ul, reinterpret_cast<uint8_t *>(img.data), img.width * img.height * 4);
+      ASSERTEQ(chk, in.crc, "crc32 mismatch");
+      image_free(&img);
+    }
+  }
 }
 
 

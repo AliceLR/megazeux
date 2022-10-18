@@ -165,7 +165,7 @@ USERS
 + libxmp playback improvements for GDM, AMF, and OctaMED modules
   as well as general stability improvements.
 + ccv and png2smzx now both support the following image formats:
-  PNG (with libpng enabled), BMP (uncompressed, RLE8, RLE4),
+  PNG (libpng builds only), GIF, BMP (uncompressed, RLE8, RLE4),
   NetPBM (PBM, PGM, PPM, PNM, PAM), farbfeld. png2smzx will now
   build when libpng support is disabled, though it won't support
   loading PNGs with this configuration.
