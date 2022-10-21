@@ -20,6 +20,10 @@
 #ifndef __UTILS_IMAGE_GIF_H
 #define __UTILS_IMAGE_GIF_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -262,5 +266,9 @@ enum gif_error gif_composite(struct gif_rgba **pixels, const struct gif_info *gi
  const gif_alloc_function allocfn);
 
 #endif /* !GIF_NO_COMPOSITOR */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __UTILS_IMAGE_GIF_H */

@@ -25,7 +25,11 @@
 __M_BEGIN_DECLS
 
 #include <stdint.h>
-#include <stdio.h>
+#include <stdlib.h>
+
+/* Read up to `num` bytes from `handle` into the buffer pointed to by `dest`.
+ * Returns the number of bytes actually read from `handle`. */
+typedef size_t (*image_read_function)(void *dest, size_t num, void *handle);
 
 struct rgba_color
 {
@@ -55,8 +59,8 @@ struct image_raw_format
 
 boolean load_image_from_file(const char *filename, struct image_file *dest,
  const struct image_raw_format *raw_format);
-boolean load_image_from_stream(FILE *fp, struct image_file *dest,
- const struct image_raw_format *raw_format);
+boolean load_image_from_stream(void *handle, image_read_function readfn,
+ struct image_file *dest, const struct image_raw_format *raw_format);
 void image_free(struct image_file *dest);
 
 __M_END_DECLS
