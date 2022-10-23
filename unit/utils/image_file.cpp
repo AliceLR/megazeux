@@ -21,10 +21,6 @@
 
 #include <zlib.h>
 
-#ifdef CONFIG_PNG
-#include "../../src/pngops.c"
-#endif
-
 #include "../../src/utils/image_file.c"
 #include "../../src/utils/image_gif.c"
 
@@ -170,6 +166,21 @@ static void compare_image(const struct image_file_const &base,
   }
 }
 
+template<boolean (*COMPARE_FN)(const rgba_color &a, const rgba_color &b)>
+static void load_and_compare_image(const struct image_file_const &base,
+ const char *filename)
+{
+  struct image_file img{};
+  char path[512];
+
+  snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
+
+  boolean ret = load_image_from_file(path, &img, NULL);
+  ASSERT(ret, "%s: load failed", filename);
+  compare_image<COMPARE_FN>(base, img, filename);
+  image_free(&img);
+}
+
 
 UNITTEST(PNG)
 {
@@ -177,13 +188,64 @@ UNITTEST(PNG)
   SKIP();
 #else
 
-  struct image_file img{};
-  boolean ret;
+  /* TODO: all indexed greyscale */
+  static constexpr const char *inputs_bw[] =
+  {
+    "rgb1.png", // Indexed RGB
+  };
+  static constexpr const char *inputs_gs[] =
+  {
+    "gs8.png",  // Greyscale (GIMP only saves greyscale non-indexed...)
+    "rgb2.png", // Indexed RGB
+  };
+  static constexpr const char *inputs_gsa[] =
+  {
+    "gsa8.png", // Greyscale with alpha
+  };
+  static constexpr const char *inputs_rgb[] =
+  {
+    "rgb4.png", // Indexed RGB
+    "rgb8.png", // Indexed RGB
+    "rgb24.png",
+    "rgb24_adam7.png", // With interlacing
+    "rgb48.png",
+  };
+  static constexpr const char *inputs_rgba[] =
+  {
+    "rgba8.png",  // Indexed RGB with tRNS alpha
+    "rgba.png",
+    "rgba64.png",
+  };
 
-  ret = load_image_from_file(DATA_BASEDIR "rgba.png", &img, NULL);
-  ASSERT(ret, "rgba.png: load failed");
-  compare_image<compare_rgba>(base_rgba_img, img, "rgba.png");
-  image_free(&img);
+  SECTION(1bpp)
+  {
+    for(const char *filename : inputs_bw)
+      load_and_compare_image<compare_rgb>(base_bw_img, filename);
+  }
+
+  SECTION(Greyscale)
+  {
+    for(const char *filename : inputs_gs)
+      load_and_compare_image<compare_rgb>(base_gs_img, filename);
+  }
+
+  SECTION(GreyscaleAlpha)
+  {
+    for(const char *filename : inputs_gsa)
+      load_and_compare_image<compare_rgba>(base_gs_img, filename);
+  }
+
+  SECTION(RGB)
+  {
+    for(const char *filename : inputs_rgb)
+      load_and_compare_image<compare_rgb>(base_rgba_img, filename);
+  }
+
+  SECTION(RGBA)
+  {
+    for(const char *filename : inputs_rgba)
+      load_and_compare_image<compare_rgba>(base_rgba_img, filename);
+  }
 
 #endif /* CONFIG_PNG */
 }
@@ -191,10 +253,6 @@ UNITTEST(PNG)
 
 UNITTEST(GIF)
 {
-  struct image_file img{};
-  char path[512];
-  boolean ret;
-
   static constexpr const char *simple_inputs[] =
   {
     "1x1.gif",
@@ -228,28 +286,22 @@ UNITTEST(GIF)
   SECTION(Simple)
   {
     for(const char *filename : simple_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgb>(base_scaling_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgb>(base_scaling_img, filename);
   }
 
   /* GIMP refused to interlace a 4x4 GIF... */
   SECTION(Interlaced)
   {
-    ret = load_image_from_file(DATA_BASEDIR "1x1_interlaced.gif", &img, NULL);
-    ASSERT(ret, "1x1_interlaced.gif: load failed");
-    compare_image<compare_rgb>(base_scaling_img_interlaced, img, "1x1_interlaced.gif");
-    image_free(&img);
+    load_and_compare_image<compare_rgb>(base_scaling_img_interlaced, "1x1_interlaced.gif");
   }
 
   /* More complex testing of the LZW depacking algorithm. */
   SECTION(Complex)
   {
+    struct image_file img{};
+    char path[512];
+    boolean ret;
+
     for(const auto &in : complex_inputs)
     {
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", in.filename);
@@ -266,10 +318,6 @@ UNITTEST(GIF)
 
 UNITTEST(BMP)
 {
-  struct image_file img{};
-  char path[512];
-  boolean ret;
-
   static const char *bw_inputs[] =
   {
     "idx_1bpp.bmp",
@@ -306,81 +354,35 @@ UNITTEST(BMP)
   SECTION(TrueColor)
   {
     for(const char *filename : rgb_truecolor_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgb>(base_rgba_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgb>(base_rgba_img, filename);
 
     // 16bpp is lossy, needs a special compare...
     for(const char *filename : rgb_truecolor16_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgb16>(base_rgba_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgb16>(base_rgba_img, filename);
   }
 
   SECTION(Indexed)
   {
     for(const char *filename : rgb_indexed_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgb>(base_rgba_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgb>(base_rgba_img, filename);
 
     for(const char *filename : bw_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgb>(base_bw_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgb>(base_bw_img, filename);
 
     for(const char *filename : gs_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgb>(base_gs_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgb>(base_gs_img, filename);
   }
 
   SECTION(RLE)
   {
     for(const char *filename : rgb_rle_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgb>(base_rgba_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgb>(base_rgba_img, filename);
   }
 }
 
 
 UNITTEST(Netpbm)
 {
-  struct image_file img{};
-  char path[512];
-  boolean ret;
-
   static const char *bw_inputs[] =
   {
     /* PBM */
@@ -437,76 +439,35 @@ UNITTEST(Netpbm)
   SECTION(Bitmap)
   {
     for(const char *filename : bw_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgb>(base_bw_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgb>(base_bw_img, filename);
   }
 
   SECTION(Greymap)
   {
     for(const char *filename : grey_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgb>(base_gs_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgb>(base_gs_img, filename);
   }
 
   SECTION(Pixmap)
   {
     for(const char *filename : rgb_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgb>(base_rgba_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgb>(base_rgba_img, filename);
   }
 
   SECTION(Alpha)
   {
     for(const char *filename : greya_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgba>(base_gs_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgba>(base_gs_img, filename);
 
     for(const char *filename : rgba_inputs)
-    {
-      snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
-
-      ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", filename);
-      compare_image<compare_rgba>(base_rgba_img, img, filename);
-      image_free(&img);
-    }
+      load_and_compare_image<compare_rgba>(base_rgba_img, filename);
   }
 }
 
 
 UNITTEST(farbfeld)
 {
-  struct image_file img{};
-  boolean ret;
-
-  ret = load_image_from_file(DATA_BASEDIR "farbfeld.ff", &img, NULL);
-  ASSERT(ret, "farbfeld.ff: load failed");
-  compare_image<compare_rgba>(base_rgba_img, img, "farbfeld.ff");
-  image_free(&img);
+  load_and_compare_image<compare_rgba>(base_rgba_img, "farbfeld.ff");
 }
 
 

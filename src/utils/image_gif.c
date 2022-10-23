@@ -24,41 +24,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "image_common.h"
 #include "image_gif.h"
 
-#if defined(_MSC_VER) && _MSC_VER < 1400
-static void gifnodbg(...) {}
+#if 0
+#define gifdbg(...) imagedbg("GIF: " __VA_ARGS__)
 #else
-#define gifnodbg(...) do {} while(0)
+#define gifdbg imagenodbg
 #endif
 
 #if 0
-#define gifdbg(...) \
- do { fprintf(stderr, "GIF: " __VA_ARGS__); fflush(stderr); } while(0)
+#define giflzwdbg(...) imagedbg("GIF: " __VA_ARGS__)
 #else
-#define gifdbg gifnodbg
+#define giflzwdbg imagenodbg
 #endif
-
-#if 0
-#define giflzwdbg gifdbg
-#else
-#define giflzwdbg gifnodbg
-#endif
-
-#ifndef GIF_RESTRICT
-#if (defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))) || \
-    (defined(_MSC_VER) && (_MSC_VER >= 1400)) || \
-    (defined(__WATCOMC__) && (__WATCOMC__ >= 1250) && !defined(__cplusplus))
-#define GIF_RESTRICT __restrict
-#else
-#define GIF_RESTRICT
-#endif
-#endif
-
-#undef GIF_MAX
-#undef GIF_MIN
-#define GIF_MAX(a,b) ((a) > (b) ? (a) : (b))
-#define GIF_MIN(a,b) ((a) < (b) ? (a) : (b))
 
 static inline uint16_t gif_u16(const void *_buf)
 {
@@ -111,7 +90,7 @@ struct gif_bitstream
 static gif_bool gif_fill_buffer(struct gif_bitstream *b)
 {
   unsigned bytes_free = (sizeof(size_t) > 4 ? 64 - b->bits_left : 32 - b->bits_left) >> 3;
-  unsigned to_read = GIF_MIN(bytes_free, b->in_left);
+  unsigned to_read = IMAGE_MIN(bytes_free, b->in_left);
 
   if(to_read >= 4 && sizeof(size_t) > 4) /* rarely useful for 32-bit buffers */
   {
@@ -330,7 +309,7 @@ static enum gif_error gif_decode(uint8_t *out, struct gif_lzw_node **_tree,
  * 3) Every 4th row starting from row 2.
  * 4) Every 2nd row starting from row 1.
  */
-static void gif_deinterlace(uint8_t * GIF_RESTRICT out, const uint8_t *in,
+static void gif_deinterlace(uint8_t * RESTRICT out, const uint8_t *in,
  unsigned width, unsigned height)
 {
   uint8_t *pos;
@@ -369,7 +348,7 @@ static unsigned gif_ptr_size(unsigned sz)
 
 #define RESIZE(type, ptr, alloc, target, size_fn) \
   do { \
-    unsigned tmp = GIF_MAX((alloc), (target)); \
+    unsigned tmp = IMAGE_MAX((alloc), (target)); \
     unsigned new_size = gif_next_power_of_two(tmp); \
     unsigned a_size = size_fn(new_size); \
     void *buf; \
@@ -428,7 +407,7 @@ static enum gif_error gif_add_control(struct gif_info *gif,
 
 static unsigned gif_add_image_size(unsigned size)
 {
-  return GIF_MAX(sizeof(struct gif_image),
+  return IMAGE_MAX(sizeof(struct gif_image),
    offsetof(struct gif_image, pixels) + size);
 }
 
@@ -448,7 +427,7 @@ static enum gif_error gif_add_image(struct gif_info *gif, unsigned size,
 
 static unsigned gif_add_plaintext_size(unsigned size)
 {
-  return GIF_MAX(sizeof(struct gif_plaintext),
+  return IMAGE_MAX(sizeof(struct gif_plaintext),
    offsetof(struct gif_plaintext, text) + size + 1);
 }
 
@@ -487,7 +466,7 @@ static enum gif_error gif_add_plaintext_append(struct gif_block **_layer,
 
 static unsigned gif_add_comment_size(unsigned size)
 {
-  return GIF_MAX(sizeof(struct gif_comment),
+  return IMAGE_MAX(sizeof(struct gif_comment),
    offsetof(struct gif_comment, comment) + size + 1);
 }
 
@@ -999,7 +978,7 @@ void gif_composite_size(unsigned *w, unsigned *h, const struct gif_info *gif)
   }
 }
 
-static enum gif_error gif_composite_init(struct gif_composite * GIF_RESTRICT image,
+static enum gif_error gif_composite_init(struct gif_composite * RESTRICT image,
  const struct gif_info *gif, const gif_alloc_function allocfn)
 {
   uint64_t size;
@@ -1040,7 +1019,7 @@ static void gif_composite_palette(struct gif_rgba palette[256],
     return;
 
   in = table->entries;
-  count = GIF_MIN(table->num_entries, 256);
+  count = IMAGE_MIN(table->num_entries, 256);
 
   for(i = 0; i < count; i++)
   {
@@ -1054,7 +1033,7 @@ static void gif_composite_palette(struct gif_rgba palette[256],
   }
 }
 
-static void gif_composite_line(struct gif_rgba * GIF_RESTRICT dest,
+static void gif_composite_line(struct gif_rgba * RESTRICT dest,
  const struct gif_rgba *palette, const uint8_t *line, size_t length)
 {
   size_t x;
@@ -1062,7 +1041,7 @@ static void gif_composite_line(struct gif_rgba * GIF_RESTRICT dest,
     *(dest++) = palette[line[x]];
 }
 
-static void gif_composite_line_tr(struct gif_rgba * GIF_RESTRICT dest,
+static void gif_composite_line_tr(struct gif_rgba * RESTRICT dest,
  const struct gif_rgba *palette, const uint8_t *line, size_t length,
  unsigned tcol)
 {
@@ -1075,7 +1054,7 @@ static void gif_composite_line_tr(struct gif_rgba * GIF_RESTRICT dest,
   }
 }
 
-static void gif_composite_line_sc(struct gif_rgba * GIF_RESTRICT dest,
+static void gif_composite_line_sc(struct gif_rgba * RESTRICT dest,
  const struct gif_rgba *palette, const uint8_t *line, size_t length,
  unsigned left_offset, uint32_t scalex)
 {
@@ -1092,7 +1071,7 @@ static void gif_composite_line_sc(struct gif_rgba * GIF_RESTRICT dest,
   }
 }
 
-static void gif_composite_line_sc_tr(struct gif_rgba * GIF_RESTRICT dest,
+static void gif_composite_line_sc_tr(struct gif_rgba * RESTRICT dest,
  const struct gif_rgba *palette, const uint8_t *line, size_t length,
  unsigned left_offset, uint32_t scalex, unsigned tcol)
 {
@@ -1113,14 +1092,14 @@ static void gif_composite_line_sc_tr(struct gif_rgba * GIF_RESTRICT dest,
   }
 }
 
-static void gif_composite_image(struct gif_composite * GIF_RESTRICT image,
+static void gif_composite_image(struct gif_composite * RESTRICT image,
  const struct gif_rgba *palette, const struct gif_info *gif,
  const struct gif_image *layer, const struct gif_graphics_control *control)
 {
-  const unsigned left = GIF_MIN(gif->width, layer->left);
-  const unsigned top = GIF_MIN(gif->height, layer->top);
-  const unsigned width = GIF_MIN(gif->width - left, layer->width);
-  const unsigned height = GIF_MIN(gif->height - top, layer->height);
+  const unsigned left = IMAGE_MIN(gif->width, layer->left);
+  const unsigned top = IMAGE_MIN(gif->height, layer->top);
+  const unsigned width = IMAGE_MIN(gif->width - left, layer->width);
+  const unsigned height = IMAGE_MIN(gif->height - top, layer->height);
   const unsigned layer_pitch = layer->width;
 
   const unsigned output_left = image->scale ? FP_CEIL(left * image->scalex) >> FP_SHIFT : left;
@@ -1173,7 +1152,7 @@ static void gif_composite_image(struct gif_composite * GIF_RESTRICT image,
   }
 }
 
-static void gif_composite_background(struct gif_composite * GIF_RESTRICT image,
+static void gif_composite_background(struct gif_composite * RESTRICT image,
  const struct gif_rgba *palette, const struct gif_info *gif)
 {
   struct gif_rgba *dest = image->pixels;

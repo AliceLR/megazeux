@@ -20,6 +20,10 @@
 #ifndef __UTILS_IMAGE_GIF_H
 #define __UTILS_IMAGE_GIF_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -28,7 +32,7 @@
 typedef size_t (*gif_read_function)(void *dest, size_t num, void *handle);
 /* Allocate user-managed memory. Used for pixel buffers returned by gif_composite. */
 typedef void *(*gif_alloc_function)(size_t sz);
-typedef uint8_t gif_bool;
+typedef unsigned char gif_bool;
 
 enum gif_bool_values
 {
@@ -262,5 +266,9 @@ enum gif_error gif_composite(struct gif_rgba **pixels, const struct gif_info *gi
  const gif_alloc_function allocfn);
 
 #endif /* !GIF_NO_COMPOSITOR */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __UTILS_IMAGE_GIF_H */

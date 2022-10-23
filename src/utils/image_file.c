@@ -2,9 +2,6 @@
  *
  * Copyright (C) 2021 Alice Rowan <petrifiedrowan@gmail.com>
  *
- * PNG boilerplate (from png2smzx):
- * Copyright (C) 2010 Alan Williams <mralert@gmail.com>
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 2 of
@@ -20,23 +17,51 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "image_common.h"
 #include "image_file.h"
 #include "image_gif.h"
-#include "../util.h"
 
 #include <ctype.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #ifdef _WIN32
 #include <fcntl.h>
 #endif
 
+#if 0
+#define debug(...) imagedbg("IMG: " __VA_ARGS__)
+#else
+#define debug imagenodbg
+#endif
+
+/* TODO: hack for MegaZeux fopen_unsafe */
+#undef fopen
+
+/* Internal compat for MegaZeux boolean type. */
+typedef image_bool boolean;
+#undef true
+#undef false
+#define true IMAGE_TRUE
+#define false IMAGE_FALSE
+
 // These constraints are determined by the maximum size of a board/vlayer/MZM,
 // multiplied by the number of pixels per char in a given dimension.
 #define MAXIMUM_WIDTH  (32767u * 8u)
 #define MAXIMUM_HEIGHT (32767u * 14u)
 #define MAXIMUM_PIXELS ((16u << 20u) * 8u * 14u)
+
+#define IMAGE_EOF -1
+
+typedef struct imageinfo
+{
+  struct image_file *out;
+  void *in;
+  image_read_function readfn;
+  int unget_chr;
+}
+imageinfo;
 
 static uint16_t read16be(const uint8_t in[2])
 {
@@ -107,32 +132,89 @@ void image_free(struct image_file *dest)
  * PNG loader.
  */
 
-#include "../pngops.h"
+#include <setjmp.h>
+#include <png.h>
 
-static void *dummy_allocator(png_uint_32 w, png_uint_32 h,
- png_uint_32 *stride, void **pixels)
+#if PNG_LIBPNG_VER < 10504
+#define png_set_scale_16(p) png_set_strip_16(p)
+#endif
+
+static void png_read_fn(png_struct *png, png_byte *dest, size_t count)
 {
-  void *p = malloc(w * h * 4);
-  *stride = w * 4;
-  *pixels = p;
-  return p;
+  imageinfo *s = (imageinfo *)png_get_io_ptr(png);
+  if(s->readfn(dest, count, s->in) < count)
+    png_error(png, "eof");
 }
 
-static boolean load_png(FILE *fp, struct image_file *dest)
+static boolean load_png(imageinfo *s)
 {
+  struct image_file *dest = s->out;
+  png_struct *png = NULL;
+  png_info *info = NULL;
+  png_byte ** volatile row_ptrs = NULL;
   png_uint_32 w;
   png_uint_32 h;
+  png_uint_32 i;
+  png_uint_32 j;
+  int bit_depth;
+  int color_type;
 
   debug("Image type: PNG\n");
-  dest->data = (struct rgba_color *)png_read_stream(fp, &w, &h, true,
-   image_constraint, dummy_allocator);
+  dest->data = NULL;
 
-  if(dest->data)
-  {
-    dest->width = w;
-    dest->height = h;
-    return true;
-  }
+  png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  if(!png)
+    return false;
+  info = png_create_info_struct(png);
+  if(!info)
+    goto error;
+
+  if(setjmp(png_jmpbuf(png)))
+    goto error;
+
+  png_set_read_fn(png, s, png_read_fn);
+  png_set_sig_bytes(png, 8);
+
+  png_read_info(png, info);
+  png_get_IHDR(png, info, &w, &h, &bit_depth, &color_type, NULL, NULL, NULL);
+
+  if(!image_init(w, h, dest))
+    goto error;
+
+  row_ptrs = (png_byte **)malloc(sizeof(png_byte *) * h);
+  if(!row_ptrs)
+    goto error;
+
+  for(i = 0, j = 0; i < h; i++, j += w)
+    row_ptrs[i] = (png_byte *)(dest->data + j);
+
+  /* This SHOULD convert everything to RGBA32.
+   * See the far too complicated table in libpng-manual.txt for more info. */
+  if(bit_depth == 16)
+    png_set_scale_16(png);
+  if(color_type & PNG_COLOR_MASK_PALETTE)
+    png_set_palette_to_rgb(png);
+  if(!(color_type == PNG_COLOR_MASK_COLOR))
+    png_set_gray_to_rgb(png);
+  if(!(color_type & PNG_COLOR_MASK_ALPHA))
+    png_set_add_alpha(png, 0xff, PNG_FILLER_AFTER);
+  if(png_get_valid(png, info, PNG_INFO_tRNS))
+    png_set_tRNS_to_alpha(png);
+
+  png_read_image(png, row_ptrs);
+  png_read_end(png, NULL);
+  png_destroy_read_struct(&png, &info, NULL);
+
+  free(row_ptrs);
+  dest->width = w;
+  dest->height = h;
+  return true;
+
+error:
+  png_destroy_read_struct(&png, info ? &info : NULL, NULL);
+
+  free(dest->data);
+  free(row_ptrs);
   return false;
 }
 
@@ -143,13 +225,9 @@ static boolean load_png(FILE *fp, struct image_file *dest)
  * GIF loader.
  */
 
-static size_t gif_read_func(void *dest, size_t num, void *handle)
+static boolean load_gif(imageinfo *s)
 {
-  return fread(dest, 1, num, (FILE *)handle);
-}
-
-static boolean load_gif(FILE *fp, struct image_file *dest)
-{
+  struct image_file *dest = s->out;
   struct gif_info gif;
   struct gif_rgba *pixels;
   enum gif_error ret;
@@ -158,7 +236,7 @@ static boolean load_gif(FILE *fp, struct image_file *dest)
 
   debug("Image type: GIF\n");
 
-  ret = gif_read(&gif, fp, gif_read_func, true);
+  ret = gif_read(&gif, s->in, s->readfn, true);
   if(ret != GIF_OK)
   {
     debug("read failed: %s\n", gif_error_string(ret));
@@ -268,7 +346,7 @@ static enum dib_type bmp_get_dib_type(uint32_t length)
   }
 }
 
-static struct rgba_color *bmp_read_color_table(struct bmp_header *bmp, FILE *fp)
+static struct rgba_color *bmp_read_color_table(struct bmp_header *bmp, imageinfo *s)
 {
   uint32_t palette_alloc = (1 << bmp->bpp);
   uint32_t palette_size = bmp->palette_size;
@@ -296,7 +374,7 @@ static struct rgba_color *bmp_read_color_table(struct bmp_header *bmp, FILE *fp)
 
   for(i = 0; i < palette_size; i++)
   {
-    if(fread(d, col_len, 1, fp) < 1)
+    if(s->readfn(d, col_len, s->in) < col_len)
       break;
 
     pos->r = d[2];
@@ -316,10 +394,10 @@ static struct rgba_color *bmp_read_color_table(struct bmp_header *bmp, FILE *fp)
   return color_table;
 }
 
-static boolean bmp_pixarray_u1(const struct bmp_header *bmp,
- struct image_file * RESTRICT dest, FILE *fp)
+static boolean bmp_pixarray_u1(const struct bmp_header *bmp, imageinfo * RESTRICT s)
 {
   const struct rgba_color *color_table = bmp->color_table;
+  struct image_file *dest = s->out;
   uint8_t d[4];
   ssize_t y;
   ssize_t x;
@@ -331,27 +409,28 @@ static boolean bmp_pixarray_u1(const struct bmp_header *bmp,
 
     for(x = 0; x < bmp->width;)
     {
-      int value = fgetc(fp);
-      if(value < 0)
+      char v;
+      int value;
+      if(s->readfn(&v, 1, s->in) < 1)
         return false;
 
-      for(i = 7; i >= 0 && x < bmp->width; i--, x++)
+      for(value = v, i = 7; i >= 0 && x < bmp->width; i--, x++)
       {
         int idx = (value >> i) & 0x01;
         *(pos++) = color_table[idx];
       }
     }
 
-    if(bmp->rowpadding && !fread(d, bmp->rowpadding, 1, fp))
+    if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
       return false;
   }
   return true;
 }
 
-static boolean bmp_pixarray_u2(const struct bmp_header *bmp,
- struct image_file * RESTRICT dest, FILE *fp)
+static boolean bmp_pixarray_u2(const struct bmp_header *bmp, imageinfo * RESTRICT s)
 {
   const struct rgba_color *color_table = bmp->color_table;
+  struct image_file *dest = s->out;
   uint8_t d[4];
   ssize_t y;
   ssize_t x;
@@ -363,27 +442,28 @@ static boolean bmp_pixarray_u2(const struct bmp_header *bmp,
 
     for(x = 0; x < bmp->width;)
     {
-      int value = fgetc(fp);
-      if(value < 0)
+      char v;
+      int value;
+      if(s->readfn(&v, 1, s->in) < 1)
         return false;
 
-      for(i = 6; i >= 0 && x < bmp->width; i -= 2, x++)
+      for(value = v, i = 6; i >= 0 && x < bmp->width; i -= 2, x++)
       {
         int idx = (value >> i) & 0x03;
         *(pos++) = color_table[idx];
       }
     }
 
-    if(bmp->rowpadding && !fread(d, bmp->rowpadding, 1, fp))
+    if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
       return false;
   }
   return true;
 }
 
-static boolean bmp_pixarray_u4(const struct bmp_header *bmp,
- struct image_file * RESTRICT dest, FILE *fp)
+static boolean bmp_pixarray_u4(const struct bmp_header *bmp, imageinfo * RESTRICT s)
 {
   const struct rgba_color *color_table = bmp->color_table;
+  struct image_file *dest = s->out;
   uint8_t d[4];
   ssize_t y;
   ssize_t x;
@@ -394,8 +474,8 @@ static boolean bmp_pixarray_u4(const struct bmp_header *bmp,
 
     for(x = 0; x < bmp->width; x += 2)
     {
-      int value = fgetc(fp);
-      if(value < 0)
+      char value;
+      if(s->readfn(&value, 1, s->in) < 1)
         return false;
 
       d[0] = (value >> 0) & 0x0f;
@@ -406,16 +486,16 @@ static boolean bmp_pixarray_u4(const struct bmp_header *bmp,
         *(pos++) = color_table[d[1]];
     }
 
-    if(bmp->rowpadding && !fread(d, bmp->rowpadding, 1, fp))
+    if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
       return false;
   }
   return true;
 }
 
-static boolean bmp_pixarray_u8(const struct bmp_header *bmp,
- struct image_file * RESTRICT dest, FILE *fp)
+static boolean bmp_pixarray_u8(const struct bmp_header *bmp, imageinfo * RESTRICT s)
 {
   const struct rgba_color *color_table = bmp->color_table;
+  struct image_file *dest = s->out;
   uint8_t d[4];
   ssize_t y;
   ssize_t x;
@@ -426,22 +506,23 @@ static boolean bmp_pixarray_u8(const struct bmp_header *bmp,
 
     for(x = 0; x < bmp->width; x++)
     {
-      int value = fgetc(fp);
-      if(value < 0)
+      uint8_t value;
+      if(s->readfn(&value, 1, s->in) < 1)
         return false;
 
       *(pos++) = color_table[value];
     }
 
-    if(bmp->rowpadding && !fread(d, bmp->rowpadding, 1, fp))
+    if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
       return false;
   }
   return true;
 }
 
 static boolean bmp_pixarray_u16(const struct bmp_header *bmp,
- struct image_file * RESTRICT dest, FILE *fp)
+ imageinfo * RESTRICT s)
 {
+  struct image_file *dest = s->out;
   uint8_t d[4];
   ssize_t y;
   ssize_t x;
@@ -453,7 +534,7 @@ static boolean bmp_pixarray_u16(const struct bmp_header *bmp,
     for(x = 0; x < bmp->width; x++)
     {
       uint16_t value;
-      if(!fread(d, 2, 1, fp))
+      if(s->readfn(d, 2, s->in) < 2)
         return false;
 
       value = read16le(d);
@@ -465,15 +546,15 @@ static boolean bmp_pixarray_u16(const struct bmp_header *bmp,
       pos++;
     }
 
-    if(bmp->rowpadding && !fread(d, bmp->rowpadding, 1, fp))
+    if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
       return false;
   }
   return true;
 }
 
-static boolean bmp_pixarray_u24(const struct bmp_header *bmp,
- struct image_file * RESTRICT dest, FILE *fp)
+static boolean bmp_pixarray_u24(const struct bmp_header *bmp, imageinfo * RESTRICT s)
 {
+  struct image_file *dest = s->out;
   uint8_t d[4];
   ssize_t y;
   ssize_t x;
@@ -484,7 +565,7 @@ static boolean bmp_pixarray_u24(const struct bmp_header *bmp,
 
     for(x = 0; x < bmp->width; x++)
     {
-      if(!fread(d, 3, 1, fp))
+      if(s->readfn(d, 3, s->in) < 3)
         return false;
 
       pos->r = d[2];
@@ -493,15 +574,16 @@ static boolean bmp_pixarray_u24(const struct bmp_header *bmp,
       pos->a = 255;
       pos++;
     }
-    if(bmp->rowpadding && !fread(d, bmp->rowpadding, 1, fp))
+
+    if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
       return false;
   }
   return true;
 }
 
-static boolean bmp_pixarray_u32(const struct bmp_header *bmp,
- struct image_file * RESTRICT dest, FILE *fp)
+static boolean bmp_pixarray_u32(const struct bmp_header *bmp, imageinfo * RESTRICT s)
 {
+  struct image_file *dest = s->out;
   uint8_t d[4];
   ssize_t y;
   ssize_t x;
@@ -512,7 +594,7 @@ static boolean bmp_pixarray_u32(const struct bmp_header *bmp,
 
     for(x = 0; x < bmp->width; x++)
     {
-      if(!fread(d, 4, 1, fp))
+      if(s->readfn(d, 4, s->in) < 4)
         return false;
 
       pos->r = d[2];
@@ -527,17 +609,17 @@ static boolean bmp_pixarray_u32(const struct bmp_header *bmp,
 }
 
 static boolean bmp_read_pixarray_uncompressed(const struct bmp_header *bmp,
- struct image_file * RESTRICT dest, FILE *fp)
+ imageinfo * RESTRICT s)
 {
   switch(bmp->bpp)
   {
-    case 1:   return bmp_pixarray_u1(bmp, dest, fp);
-    case 2:   return bmp_pixarray_u2(bmp, dest, fp);
-    case 4:   return bmp_pixarray_u4(bmp, dest, fp);
-    case 8:   return bmp_pixarray_u8(bmp, dest, fp);
-    case 16:  return bmp_pixarray_u16(bmp, dest, fp);
-    case 24:  return bmp_pixarray_u24(bmp, dest, fp);
-    case 32:  return bmp_pixarray_u32(bmp, dest, fp);
+    case 1:   return bmp_pixarray_u1(bmp, s);
+    case 2:   return bmp_pixarray_u2(bmp, s);
+    case 4:   return bmp_pixarray_u4(bmp, s);
+    case 8:   return bmp_pixarray_u8(bmp, s);
+    case 16:  return bmp_pixarray_u16(bmp, s);
+    case 24:  return bmp_pixarray_u24(bmp, s);
+    case 32:  return bmp_pixarray_u32(bmp, s);
   }
   return false;
 }
@@ -546,9 +628,10 @@ static boolean bmp_read_pixarray_uncompressed(const struct bmp_header *bmp,
  * Microsoft RLE8 and RLE4 compression.
  */
 static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
- struct image_file * RESTRICT dest, FILE *fp)
+ imageinfo * RESTRICT s)
 {
   const struct rgba_color *color_table = bmp->color_table;
+  struct image_file *dest = s->out;
   ssize_t x = 0;
   ssize_t y = bmp->height - 1;
   ssize_t i;
@@ -564,7 +647,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
 
     while(true)
     {
-      if(!fread(d, 2, 1, fp))
+      if(s->readfn(d, 2, s->in) < 2)
         return false;
 
       if(!d[0])
@@ -592,7 +675,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
           // Position delta.
           // Documentation refers to unsigned y moving the current position
           // "down", but since this is still OS/2 line order, it means "up".
-          if(!fread(d, 2, 1, fp))
+          if(s->readfn(d, 2, s->in) < 2)
             return false;
 
           //debug("RLE%u delta: %3u %3u\n", bmp->bpp, d[0], d[1]);
@@ -603,27 +686,26 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
         else
         {
           // Absolute mode.
+          uint8_t idx;
           //debug("RLE%u abs. : %3u %3u\n", bmp->bpp, d[0], d[1]);
           if(bmp->bpp == 8)
           {
             for(i = 0; i < d[1] && x < bmp->width; i++, x++)
             {
-              int idx = fgetc(fp);
-              if(idx < 0)
+              if(s->readfn(&idx, 1, s->in) < 1)
                 return false;
 
               *(pos++) = color_table[idx];
             }
             // Absolute mode runs are padded to word boundaries.
             if(d[1] & 1)
-              fgetc(fp);
+              s->readfn(&idx, 1, s->in);
           }
           else // bpp == 4
           {
             for(i = 0; i < d[1] && x < bmp->width;)
             {
-              int idx = fgetc(fp);
-              if(idx < 0)
+              if(s->readfn(&idx, 1, s->in) < 1)
                 return false;
 
               *(pos++) = color_table[(idx >> 4) & 0x0f];
@@ -637,7 +719,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
             }
             // Absolute mode runs are padded to word boundaries.
             if((d[1] & 0x03) == 1 || (d[1] & 0x03) == 2)
-              fgetc(fp);
+              s->readfn(&idx, 1, s->in);
           }
 
           if(i < d[1])
@@ -687,7 +769,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
   // Check for EOF following EOL.
   if(x == 0 && y == -1)
   {
-    if(!fread(d, 2, 1, fp) || d[0] != 0 || d[1] != 1)
+    if(s->readfn(d, 2, s->in) < 2 || d[0] != 0 || d[1] != 1)
       debug("RLE%u missing EOF!\n", bmp->bpp);
 
     return true;
@@ -697,15 +779,16 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
   return false;
 }
 
-static boolean load_bmp(FILE *fp, struct image_file *dest)
+static boolean load_bmp(imageinfo *s)
 {
+  struct image_file *dest = s->out;
   uint8_t buf[BMP_DIB_MAX_LEN] = { 'B', 'M' };
   struct bmp_header bmp;
 
   debug("Image type: BMP\n");
 
   // Note: already read magic bytes.
-  if(fread(buf + 2, 1, BMP_HEADER_LEN - 2, fp) < BMP_HEADER_LEN - 2)
+  if(s->readfn(buf + 2, BMP_HEADER_LEN - 2, s->in) < BMP_HEADER_LEN - 2)
     return false;
 
   memset(&bmp, 0, sizeof(bmp));
@@ -717,7 +800,7 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
   bmp.streamidx = 14;
 
   // DIB header size.
-  if(fread(buf, 1, 4, fp) < 4)
+  if(s->readfn(buf, 4, s->in) < 4)
     return false;
 
   bmp.dibsize = read32le(buf + 0);
@@ -725,11 +808,11 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
 
   if(bmp.type == DIB_UNKNOWN)
   {
-    warn("Unknown BMP DIB header size %zu!\n", (size_t)bmp.dibsize);
+    debug("Unknown BMP DIB header size %zu!\n", (size_t)bmp.dibsize);
     return false;
   }
 
-  if(fread(buf + 4, 1, bmp.dibsize - 4, fp) < bmp.dibsize - 4)
+  if(s->readfn(buf + 4, bmp.dibsize - 4, s->in) < bmp.dibsize - 4)
     return false;
 
   if(bmp.type == BITMAPCOREHEADER)
@@ -762,20 +845,20 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
 
   if(bmp.width < 0 || bmp.height < 0)
   {
-    warn("invalid BMP dimensions %zd x %zd", (ssize_t)bmp.width, (ssize_t)bmp.height);
+    debug("invalid BMP dimensions %zd x %zd", (ssize_t)bmp.width, (ssize_t)bmp.height);
     return false;
   }
 
   if(bmp.planes != 1)
   {
-    warn("invalid BMP planes %u\n", bmp.planes);
+    debug("invalid BMP planes %u\n", bmp.planes);
     return false;
   }
 
   if(bmp.compr_method != BI_RGB &&
    bmp.compr_method != BI_RLE8 && bmp.compr_method != BI_RLE4)
   {
-    warn("unsupported BMP compression type %zu\n", (size_t)bmp.compr_method);
+    debug("unsupported BMP compression type %zu\n", (size_t)bmp.compr_method);
     return false;
   }
   debug("Compression: %zu\n", (size_t)bmp.compr_method);
@@ -783,20 +866,20 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
   if(bmp.bpp != 1 && bmp.bpp != 2 && bmp.bpp != 4 && bmp.bpp != 8 &&
    bmp.bpp != 16 && bmp.bpp != 24 && bmp.bpp != 32)
   {
-    warn("unsupported BMP BPP %u\n", bmp.bpp);
+    debug("unsupported BMP BPP %u\n", bmp.bpp);
     return false;
   }
   debug("BPP: %u\n", bmp.bpp);
 
   if(bmp.compr_method == BI_RLE8 && bmp.bpp != 8)
   {
-    warn("unsupported BPP %u for RLE8\n", bmp.bpp);
+    debug("unsupported BPP %u for RLE8\n", bmp.bpp);
     return false;
   }
 
   if(bmp.compr_method == BI_RLE4 && bmp.bpp != 4)
   {
-    warn("unsupported BPP %u for RLE4\n", bmp.bpp);
+    debug("unsupported BPP %u for RLE4\n", bmp.bpp);
     return false;
   }
 
@@ -812,10 +895,10 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
       debug("Palette size: %zu\n", (size_t)bmp.palette_size);
 
     // Read color table.
-    bmp.color_table = bmp_read_color_table(&bmp, fp);
+    bmp.color_table = bmp_read_color_table(&bmp, s);
     if(!bmp.color_table)
     {
-      warn("failed to read BMP color table\n");
+      debug("failed to read BMP color table\n");
       return false;
     }
   }
@@ -831,10 +914,10 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
   // Assume non-seeking stream, skip everything prior to pixarray with fread.
   while(bmp.streamidx < bmp.pixarray)
   {
-    size_t r = MIN(bmp.pixarray - bmp.streamidx, sizeof(buf));
+    size_t r = IMAGE_MIN(bmp.pixarray - bmp.streamidx, sizeof(buf));
     bmp.streamidx += r;
 
-    if(fread(buf, r, 1, fp) < 1)
+    if(s->readfn(buf, 1, s->in) < 1)
       goto err_free;
   }
 
@@ -844,7 +927,7 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
   switch(bmp.compr_method)
   {
     case BI_RGB:
-      if(!bmp_read_pixarray_uncompressed(&bmp, dest, fp))
+      if(!bmp_read_pixarray_uncompressed(&bmp, s))
         goto err_free_image;
       break;
 
@@ -852,7 +935,7 @@ static boolean load_bmp(FILE *fp, struct image_file *dest)
     // GIMP can emit both types of RLE, though this is turned off by default.
     case BI_RLE8:
     case BI_RLE4:
-      if(!bmp_read_pixarray_rle(&bmp, dest, fp))
+      if(!bmp_read_pixarray_rle(&bmp, s))
         goto err_free_image;
       break;
 
@@ -878,12 +961,25 @@ err_free:
 
 #define ROUND_32 (1u << 31u)
 
-#define fget_value(maxval, fp) \
- ((maxval > 255) ? (fgetc(fp) << 8) | fgetc(fp) : fgetc(fp))
-
-static boolean skip_whitespace(FILE *fp)
+static int next_byte(imageinfo *s)
 {
-  int value = fgetc(fp);
+  uint8_t chr;
+  if(s->unget_chr >= 0)
+  {
+    int tmp = s->unget_chr;
+    s->unget_chr = -1;
+    return tmp;
+  }
+
+  if(s->readfn(&chr, 1, s->in) < 1)
+    return IMAGE_EOF;
+
+  return chr;
+}
+
+static boolean skip_whitespace(imageinfo *s)
+{
+  int value = next_byte(s);
   if(value < 0)
     return false;
 
@@ -891,7 +987,7 @@ static boolean skip_whitespace(FILE *fp)
   {
     // Skip line comment...
     while(value != '\n' && value >= 0)
-      value = fgetc(fp);
+      value = next_byte(s);
 
     return true;
   }
@@ -899,26 +995,26 @@ static boolean skip_whitespace(FILE *fp)
   if(isspace(value))
     return true;
 
-  ungetc(value, fp);
+  s->unget_chr = value;
   return false;
 }
 
-static int next_number(uint32_t *output, FILE *fp)
+static int next_number(uint32_t *output, imageinfo *s)
 {
   int value;
   int count;
   *output = 0;
 
-  while(skip_whitespace(fp));
+  while(skip_whitespace(s));
 
   count = 0;
   for(count = 0; count <= 10; count++)
   {
-    value = fgetc(fp);
+    value = next_byte(s);
     if(!isdigit(value))
     {
       if(value == '#')
-        skip_whitespace(fp);
+        skip_whitespace(s);
       else
 
       if(!isspace(value))
@@ -931,67 +1027,107 @@ static int next_number(uint32_t *output, FILE *fp)
   }
 
   // Digit count overflowed the uint32_t return value, or invalid character.
-  return EOF;
+  return IMAGE_EOF;
 }
 
-static boolean next_value(uint32_t *value, uint32_t maxval, FILE *fp)
+static int next_value(uint32_t maxval, imageinfo *s)
 {
   uint32_t v;
-  if(next_number(&v, fp) == EOF || v > maxval)
-    return false;
+  if(next_number(&v, s) < 0 || v > maxval)
+    return IMAGE_EOF;
 
-  *value = v;
-  return true;
+  return v;
 }
 
-static boolean next_bit_value(uint32_t *value, FILE *fp)
+static int next_bit_value(imageinfo *s)
 {
   int v;
 
   // Unlike plaintext PGM and PPM, plaintext PBM doesn't require whitespace to
   // separate components--each component is always a single digit character.
-  while(skip_whitespace(fp));
+  while(skip_whitespace(s));
 
-  v = fgetc(fp);
+  v = next_byte(s);
   if(v != '0' && v != '1')
-    return false;
+    return IMAGE_EOF;
 
-  *value = (v - '0');
-  return true;
+  return (v - '0');
 }
 
-static boolean pbm_header(uint32_t *width, uint32_t *height, FILE *fp)
+static int next_binary(uint32_t maxval, imageinfo *s)
+{
+  uint32_t v;
+  if(maxval > 255)
+    v = (next_byte(s) << 8) | next_byte(s);
+  else
+    v = next_byte(s);
+
+  return (v > maxval) ? IMAGE_EOF : (int)v;
+}
+
+static char *next_line(char *dest, int dest_len, imageinfo *s)
+{
+  char *pos = dest;
+  int num = 1;
+  int v = -1;
+  while(num < dest_len)
+  {
+    v = next_byte(s);
+    if(v < 0)
+    {
+      if(num == 1)
+        return NULL;
+      break;
+    }
+    if(v == '\r' || v == '\n')
+      break;
+
+    *(pos++) = v;
+    num++;
+  }
+  if(v == '\r')
+  {
+    v = next_byte(s);
+    if(v != '\n')
+      s->unget_chr = v;
+  }
+  *pos = '\0';
+  return dest;
+}
+
+static boolean pbm_header(uint32_t *width, uint32_t *height, imageinfo *s)
 {
   // NOTE: already read magic.
   uint32_t w = 0;
   uint32_t h = 0;
 
-  if(next_number(&w, fp) == EOF ||
-   next_number(&h, fp) == EOF)
+  if(next_number(&w, s) < 0 ||
+   next_number(&h, s) < 0)
     return false;
 
   // Skip exactly one whitespace (for binary files).
-  skip_whitespace(fp);
+  skip_whitespace(s);
 
   *width = w;
   *height = h;
   return true;
 }
 
-static boolean ppm_header(uint32_t *width, uint32_t *height, uint32_t *maxval, FILE *fp)
+static boolean ppm_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
+ imageinfo *s)
 {
   // NOTE: already read magic. PGM and PPM use the same header format.
   uint32_t w = 0;
   uint32_t h = 0;
   uint32_t m = 0;
 
-  if(next_number(&w, fp) == EOF ||
-   next_number(&h, fp) == EOF ||
-   next_number(&m, fp) == EOF)
+  if(next_number(&w, s) < 0 ||
+   next_number(&h, s) < 0 ||
+   next_number(&m, s) < 0)
     return false;
 
   // Skip exactly one whitespace (for binary files).
-  skip_whitespace(fp);
+  skip_whitespace(s);
 
   if(!m || m > 65535)
     return false;
@@ -1002,8 +1138,9 @@ static boolean ppm_header(uint32_t *width, uint32_t *height, uint32_t *maxval, F
   return true;
 }
 
-static boolean load_portable_bitmap_plain(FILE *fp, struct image_file *dest)
+static boolean load_portable_bitmap_plain(imageinfo *s)
 {
+  struct image_file *dest = s->out;
   struct rgba_color *pos;
   uint32_t width;
   uint32_t height;
@@ -1012,7 +1149,7 @@ static boolean load_portable_bitmap_plain(FILE *fp, struct image_file *dest)
 
   debug("Image type: PBM (P1)\n");
 
-  if(!pbm_header(&width, &height, fp))
+  if(!pbm_header(&width, &height, s))
     return false;
 
   if(!image_init(width, height, dest))
@@ -1023,8 +1160,8 @@ static boolean load_portable_bitmap_plain(FILE *fp, struct image_file *dest)
 
   for(i = 0; i < size; i++)
   {
-    uint32_t val;
-    if(!next_bit_value(&val, fp))
+    int val = next_bit_value(s);
+    if(val < 0)
       break;
 
     val = val ? 0 : 255;
@@ -1037,8 +1174,9 @@ static boolean load_portable_bitmap_plain(FILE *fp, struct image_file *dest)
   return true;
 }
 
-static boolean load_portable_bitmap_binary(FILE *fp, struct image_file *dest)
+static boolean load_portable_bitmap_binary(imageinfo *s)
 {
+  struct image_file *dest = s->out;
   struct rgba_color *pos;
   uint32_t width;
   uint32_t height;
@@ -1047,7 +1185,7 @@ static boolean load_portable_bitmap_binary(FILE *fp, struct image_file *dest)
 
   debug("Image type: PBM (P4)\n");
 
-  if(!pbm_header(&width, &height, fp))
+  if(!pbm_header(&width, &height, s))
     return false;
 
   if(!image_init(width, height, dest))
@@ -1060,7 +1198,7 @@ static boolean load_portable_bitmap_binary(FILE *fp, struct image_file *dest)
   {
     for(x = 0; x < width;)
     {
-      int val = fgetc(fp);
+      int val = next_byte(s);
       int mask;
       if(val < 0)
         break;
@@ -1079,8 +1217,9 @@ static boolean load_portable_bitmap_binary(FILE *fp, struct image_file *dest)
   return true;
 }
 
-static boolean load_portable_greymap_plain(FILE *fp, struct image_file *dest)
+static boolean load_portable_greymap_plain(imageinfo *s)
 {
+  struct image_file *dest = s->out;
   struct rgba_color *pos;
   uint32_t width;
   uint32_t height;
@@ -1091,7 +1230,7 @@ static boolean load_portable_greymap_plain(FILE *fp, struct image_file *dest)
 
   debug("Image type: PGM (P2)\n");
 
-  if(!ppm_header(&width, &height, &maxval, fp))
+  if(!ppm_header(&width, &height, &maxval, s))
     return false;
 
   if(!image_init(width, height, dest))
@@ -1103,45 +1242,7 @@ static boolean load_portable_greymap_plain(FILE *fp, struct image_file *dest)
 
   for(i = 0; i < size; i++)
   {
-    uint32_t val;
-    if(!next_value(&val, maxval, fp))
-      break;
-
-    val = (val * maxscale + ROUND_32) >> 32u;
-    pos->r = val;
-    pos->g = val;
-    pos->b = val;
-    pos->a = 255;
-    pos++;
-  }
-  return true;
-}
-
-static boolean load_portable_greymap_binary(FILE *fp, struct image_file *dest)
-{
-  struct rgba_color *pos;
-  uint32_t width;
-  uint32_t height;
-  uint32_t maxval;
-  uint64_t maxscale;
-  uint32_t size;
-  uint32_t i;
-
-  debug("Image type: PGM (P5)\n");
-
-  if(!ppm_header(&width, &height, &maxval, fp))
-    return false;
-
-  if(!image_init(width, height, dest))
-    return false;
-
-  pos = dest->data;
-  size = dest->width * dest->height;
-  maxscale = ((uint64_t)255 << 32u) / maxval;
-
-  for(i = 0; i < size; i++)
-  {
-    int val = fget_value(maxval, fp);
+    int val = next_value(maxval, s);
     if(val < 0)
       break;
 
@@ -1155,8 +1256,9 @@ static boolean load_portable_greymap_binary(FILE *fp, struct image_file *dest)
   return true;
 }
 
-static boolean load_portable_pixmap_plain(FILE *fp, struct image_file *dest)
+static boolean load_portable_greymap_binary(imageinfo *s)
 {
+  struct image_file *dest = s->out;
   struct rgba_color *pos;
   uint32_t width;
   uint32_t height;
@@ -1165,9 +1267,9 @@ static boolean load_portable_pixmap_plain(FILE *fp, struct image_file *dest)
   uint32_t size;
   uint32_t i;
 
-  debug("Image type: PPM (P3)\n");
+  debug("Image type: PGM (P5)\n");
 
-  if(!ppm_header(&width, &height, &maxval, fp))
+  if(!ppm_header(&width, &height, &maxval, s))
     return false;
 
   if(!image_init(width, height, dest))
@@ -1179,12 +1281,49 @@ static boolean load_portable_pixmap_plain(FILE *fp, struct image_file *dest)
 
   for(i = 0; i < size; i++)
   {
-    uint32_t r, g, b;
-    if(!next_value(&r, maxval, fp))
+    int val = next_binary(maxval, s);
+    if(val < 0)
       break;
-    if(!next_value(&g, maxval, fp))
-      break;
-    if(!next_value(&b, maxval, fp))
+
+    val = (val * maxscale + ROUND_32) >> 32u;
+    pos->r = val;
+    pos->g = val;
+    pos->b = val;
+    pos->a = 255;
+    pos++;
+  }
+  return true;
+}
+
+static boolean load_portable_pixmap_plain(imageinfo *s)
+{
+  struct image_file *dest = s->out;
+  struct rgba_color *pos;
+  uint32_t width;
+  uint32_t height;
+  uint32_t maxval;
+  uint64_t maxscale;
+  uint32_t size;
+  uint32_t i;
+
+  debug("Image type: PPM (P3)\n");
+
+  if(!ppm_header(&width, &height, &maxval, s))
+    return false;
+
+  if(!image_init(width, height, dest))
+    return false;
+
+  pos = dest->data;
+  size = dest->width * dest->height;
+  maxscale = ((uint64_t)255 << 32u) / maxval;
+
+  for(i = 0; i < size; i++)
+  {
+    int r = next_value(maxval, s);
+    int g = next_value(maxval, s);
+    int b = next_value(maxval, s);
+    if(r < 0 || g < 0 || b < 0)
       break;
 
     pos->r = (r * maxscale + ROUND_32) >> 32u;
@@ -1196,8 +1335,9 @@ static boolean load_portable_pixmap_plain(FILE *fp, struct image_file *dest)
   return true;
 }
 
-static boolean load_portable_pixmap_binary(FILE *fp, struct image_file *dest)
+static boolean load_portable_pixmap_binary(imageinfo *s)
 {
+  struct image_file *dest = s->out;
   struct rgba_color *pos;
   uint32_t width;
   uint32_t height;
@@ -1208,7 +1348,7 @@ static boolean load_portable_pixmap_binary(FILE *fp, struct image_file *dest)
 
   debug("Image type: PPM (P6)\n");
 
-  if(!ppm_header(&width, &height, &maxval, fp))
+  if(!ppm_header(&width, &height, &maxval, s))
     return false;
 
   if(!image_init(width, height, dest))
@@ -1220,9 +1360,9 @@ static boolean load_portable_pixmap_binary(FILE *fp, struct image_file *dest)
 
   for(i = 0; i < size; i++)
   {
-    int r = fget_value(maxval, fp);
-    int g = fget_value(maxval, fp);
-    int b = fget_value(maxval, fp);
+    int r = next_binary(maxval, s);
+    int g = next_binary(maxval, s);
+    int b = next_binary(maxval, s);
     if(r < 0 || g < 0 || b < 0)
       break;
 
@@ -1266,12 +1406,12 @@ static boolean pam_set_tupltype(struct pam_tupl *dest, const char *tuplstr)
       return true;
     }
   }
-  warn("unsupported TUPLTYPE '%s'!\n", tuplstr);
+  debug("unsupported TUPLTYPE '%s'!\n", tuplstr);
   return false;
 }
 
 static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
- uint32_t *depth, struct pam_tupl *tupltype, FILE *fp)
+ uint32_t *depth, struct pam_tupl *tupltype, imageinfo *s)
 {
   char linebuf[256];
   char tuplstr[256];
@@ -1284,12 +1424,8 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
   boolean has_e = false;
   boolean has_tu = false;
 
-  while(fgets(linebuf, 256, fp))
+  while(next_line(linebuf, 256, s))
   {
-    size_t len = strlen(linebuf);
-    while(len > 0 && (linebuf[len - 1] == '\r' || linebuf[len - 1] == '\n'))
-      len--, linebuf[len] = '\0';
-
     value = linebuf;
     while(isspace(*value))
       value++;
@@ -1357,7 +1493,8 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
       if(!*value || has_tu)
         return false;
 
-      snprintf(tuplstr, sizeof(tuplstr), "%s", value);
+      // NOTE: tuplstr size MUST be >= linebuf size.
+      strcpy(tuplstr, value);
       has_tu = true;
     }
   }
@@ -1367,13 +1504,13 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
 
   if(*depth < 1 || *depth > 4)
   {
-    warn("invalid depth '%u'!\n", (unsigned int)*depth);
+    debug("invalid depth '%u'!\n", (unsigned int)*depth);
     return false;
   }
 
   if(*maxval < 1 || *maxval > 65535)
   {
-    warn("invalid maxval '%u'!\n", (unsigned int)*maxval);
+    debug("invalid maxval '%u'!\n", (unsigned int)*maxval);
     return false;
   }
 
@@ -1401,8 +1538,9 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
   return true;
 }
 
-static boolean load_portable_arbitrary_map(FILE *fp, struct image_file *dest)
+static boolean load_portable_arbitrary_map(imageinfo *s)
 {
+  struct image_file *dest = s->out;
   struct rgba_color *pos;
   struct pam_tupl tupltype;
   uint32_t width;
@@ -1416,7 +1554,7 @@ static boolean load_portable_arbitrary_map(FILE *fp, struct image_file *dest)
 
   debug("Image type: PAM (P7)\n");
 
-  if(!pam_header(&width, &height, &maxval, &depth, &tupltype, fp))
+  if(!pam_header(&width, &height, &maxval, &depth, &tupltype, s))
     return false;
 
   if(!image_init(width, height, dest))
@@ -1432,7 +1570,7 @@ static boolean load_portable_arbitrary_map(FILE *fp, struct image_file *dest)
 
     for(j = 0; j < depth; j++)
     {
-      v[j] = fget_value(maxval, fp);
+      v[j] = next_binary(maxval, s);
       if(v[j] < 0)
         return true;
 
@@ -1458,8 +1596,9 @@ static uint8_t convert_16b_to_8b(uint16_t component)
   return (uint32_t)(component * 255u + 32768u) / 65535u;
 }
 
-static boolean load_farbfeld(FILE *fp, struct image_file *dest)
+static boolean load_farbfeld(imageinfo *s)
 {
+  struct image_file *dest = s->out;
   struct rgba_color *pos;
   uint8_t buf[8];
   uint32_t width;
@@ -1469,7 +1608,7 @@ static boolean load_farbfeld(FILE *fp, struct image_file *dest)
 
   debug("Image type: farbfeld\n");
 
-  if(fread(buf, 1, 8, fp) < 8)
+  if(s->readfn(buf, 8, s->in) < 8)
     return false;
 
   width  = read32be(buf + 0);
@@ -1482,7 +1621,7 @@ static boolean load_farbfeld(FILE *fp, struct image_file *dest)
 
   for(i = 0; i < size; i++)
   {
-    if(fread(buf, 1, 8, fp) < 8)
+    if(s->readfn(buf, 8, s->in) < 8)
       break;
 
     pos->r = convert_16b_to_8b(read16be(buf + 0));
@@ -1500,15 +1639,17 @@ static boolean load_farbfeld(FILE *fp, struct image_file *dest)
  * `not_magic` is the first few bytes of the file read for the purposes of
  * identifying a file format. For raw files, this is actually pixel data.
  */
-static boolean load_raw(FILE *fp, struct image_file *dest,
+static boolean load_raw(imageinfo *s,
  const struct image_raw_format *format, const uint8_t not_magic[8])
 {
+  struct image_file *dest = s->out;
   struct rgba_color *dest_pos;
   uint8_t *src_pos;
   uint8_t *data;
   uint64_t size = (uint64_t)format->width * format->height;
   uint64_t raw_size = size * format->bytes_per_pixel;
   uint64_t i;
+  char tmp;
 
   if(format->bytes_per_pixel < 1 || format->bytes_per_pixel > 4)
   {
@@ -1527,7 +1668,7 @@ static boolean load_raw(FILE *fp, struct image_file *dest,
   }
 
   memcpy(data, not_magic, 8);
-  if(fread(data + 8, 1, raw_size - 8, fp) < raw_size - 8)
+  if(s->readfn(data + 8, raw_size - 8, s->in) < raw_size - 8)
   {
     debug("failed to read required data for raw image\n");
     goto err_free;
@@ -1535,8 +1676,8 @@ static boolean load_raw(FILE *fp, struct image_file *dest,
 
   debug("Image type: raw\n");
 
-  if(fgetc(fp) != EOF)
-    warn("data exists after expected EOF in raw file\n");
+  if(s->readfn(&tmp, 1, s->in) != 0)
+    debug("data exists after expected EOF in raw file\n");
 
   if(!image_init(format->width, format->height, dest))
     goto err_free;
@@ -1588,67 +1729,73 @@ err_free:
  * Load an image from a stream.
  * Assume this stream can NOT be seeked.
  */
-boolean load_image_from_stream(FILE *fp, struct image_file *dest,
- const struct image_raw_format *raw_format)
+boolean load_image_from_stream(void *fp, image_read_function readfn,
+ struct image_file *dest, const struct image_raw_format *raw_format)
 {
+  imageinfo s = { dest, fp, readfn, -1 };
   uint8_t magic[8];
 
   memset(dest, 0, sizeof(struct image_file));
 
-  if(fread(magic, 1, 2, fp) < 2)
+  if(readfn(magic, 2, fp) < 2)
     return false;
 
   switch(MAGIC(magic[0], magic[1]))
   {
     /* BMP */
-    case MAGIC('B','M'): return load_bmp(fp, dest);
+    case MAGIC('B','M'): return load_bmp(&s);
 
     /* NetPBM */
-    case MAGIC('P','1'): return load_portable_bitmap_plain(fp, dest);
-    case MAGIC('P','2'): return load_portable_greymap_plain(fp, dest);
-    case MAGIC('P','3'): return load_portable_pixmap_plain(fp, dest);
-    case MAGIC('P','4'): return load_portable_bitmap_binary(fp, dest);
-    case MAGIC('P','5'): return load_portable_greymap_binary(fp, dest);
-    case MAGIC('P','6'): return load_portable_pixmap_binary(fp, dest);
-    case MAGIC('P','7'): return load_portable_arbitrary_map(fp, dest);
+    case MAGIC('P','1'): return load_portable_bitmap_plain(&s);
+    case MAGIC('P','2'): return load_portable_greymap_plain(&s);
+    case MAGIC('P','3'): return load_portable_pixmap_plain(&s);
+    case MAGIC('P','4'): return load_portable_bitmap_binary(&s);
+    case MAGIC('P','5'): return load_portable_greymap_binary(&s);
+    case MAGIC('P','6'): return load_portable_pixmap_binary(&s);
+    case MAGIC('P','7'): return load_portable_arbitrary_map(&s);
   }
 
-  if(fread(magic + 2, 1, 1, fp) < 1)
+  if(readfn(magic + 2, 1, fp) < 1)
     return false;
 
   /* GIF */
   if(!memcmp(magic, "GIF", 3))
-    return load_gif(fp, dest);
+    return load_gif(&s);
 
-  if(fread(magic + 3, 1, 5, fp) < 5)
+  if(readfn(magic + 3, 5, fp) < 5)
     return false;
 
   /* farbfeld */
   if(!memcmp(magic, "farbfeld", 8))
-    return load_farbfeld(fp, dest);
+    return load_farbfeld(&s);
 
 #ifdef CONFIG_PNG
 
   /* PNG (via libpng). */
   if(png_sig_cmp(magic, 0, 8) == 0)
-    return load_png(fp, dest);
+    return load_png(&s);
 
 #else
 
   if(!memcmp(magic, "\x89PNG\r\n\x1A\n", 8))
-    warn("MegaZeux utils were compiled without PNG support--is this a PNG?\n");
+    debug("MegaZeux utils were compiled without PNG support--is this a PNG?\n");
 
 #endif
 
   if(raw_format)
   {
-    boolean res = load_raw(fp, dest, raw_format, magic);
+    boolean res = load_raw(&s, raw_format, magic);
     if(res)
       return true;
   }
 
   debug("unknown format\n");
   return false;
+}
+
+static size_t stdio_read_fn(void *dest, size_t num, void *handle)
+{
+  return fread(dest, 1, num, (FILE *)handle);
 }
 
 /**
@@ -1660,24 +1807,22 @@ boolean load_image_from_file(const char *filename, struct image_file *dest,
   FILE *fp;
   boolean ret;
 
-  memset(dest, 0, sizeof(struct image_file));
-
   if(!strcmp(filename, "-"))
   {
 #ifdef _WIN32
     /* Windows forces stdin to be text mode by default, fix it. */
     _setmode(_fileno(stdin), _O_BINARY);
 #endif
-    return load_image_from_stream(stdin, dest, raw_format);
+    return load_image_from_stream(stdin, stdio_read_fn, dest, raw_format);
   }
 
-  fp = fopen_unsafe(filename, "rb");
+  fp = fopen(filename, "rb");
   if(!fp)
     return false;
 
   setvbuf(fp, NULL, _IOFBF, 32768);
 
-  ret = load_image_from_stream(fp, dest, raw_format);
+  ret = load_image_from_stream(fp, stdio_read_fn, dest, raw_format);
   fclose(fp);
 
   return ret;
