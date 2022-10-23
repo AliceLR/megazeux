@@ -17,17 +17,34 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "image_common.h"
 #include "image_file.h"
 #include "image_gif.h"
-#include "../util.h"
 
 #include <ctype.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #ifdef _WIN32
 #include <fcntl.h>
 #endif
+
+#if 0
+#define debug(...) imagedbg("IMG: " __VA_ARGS__)
+#else
+#define debug imagenodbg
+#endif
+
+/* TODO: hack for MegaZeux fopen_unsafe */
+#undef fopen
+
+/* Internal compat for MegaZeux boolean type. */
+typedef image_bool boolean;
+#undef true
+#undef false
+#define true IMAGE_TRUE
+#define false IMAGE_FALSE
 
 // These constraints are determined by the maximum size of a board/vlayer/MZM,
 // multiplied by the number of pixels per char in a given dimension.
@@ -791,7 +808,7 @@ static boolean load_bmp(imageinfo *s)
 
   if(bmp.type == DIB_UNKNOWN)
   {
-    warn("Unknown BMP DIB header size %zu!\n", (size_t)bmp.dibsize);
+    debug("Unknown BMP DIB header size %zu!\n", (size_t)bmp.dibsize);
     return false;
   }
 
@@ -828,20 +845,20 @@ static boolean load_bmp(imageinfo *s)
 
   if(bmp.width < 0 || bmp.height < 0)
   {
-    warn("invalid BMP dimensions %zd x %zd", (ssize_t)bmp.width, (ssize_t)bmp.height);
+    debug("invalid BMP dimensions %zd x %zd", (ssize_t)bmp.width, (ssize_t)bmp.height);
     return false;
   }
 
   if(bmp.planes != 1)
   {
-    warn("invalid BMP planes %u\n", bmp.planes);
+    debug("invalid BMP planes %u\n", bmp.planes);
     return false;
   }
 
   if(bmp.compr_method != BI_RGB &&
    bmp.compr_method != BI_RLE8 && bmp.compr_method != BI_RLE4)
   {
-    warn("unsupported BMP compression type %zu\n", (size_t)bmp.compr_method);
+    debug("unsupported BMP compression type %zu\n", (size_t)bmp.compr_method);
     return false;
   }
   debug("Compression: %zu\n", (size_t)bmp.compr_method);
@@ -849,20 +866,20 @@ static boolean load_bmp(imageinfo *s)
   if(bmp.bpp != 1 && bmp.bpp != 2 && bmp.bpp != 4 && bmp.bpp != 8 &&
    bmp.bpp != 16 && bmp.bpp != 24 && bmp.bpp != 32)
   {
-    warn("unsupported BMP BPP %u\n", bmp.bpp);
+    debug("unsupported BMP BPP %u\n", bmp.bpp);
     return false;
   }
   debug("BPP: %u\n", bmp.bpp);
 
   if(bmp.compr_method == BI_RLE8 && bmp.bpp != 8)
   {
-    warn("unsupported BPP %u for RLE8\n", bmp.bpp);
+    debug("unsupported BPP %u for RLE8\n", bmp.bpp);
     return false;
   }
 
   if(bmp.compr_method == BI_RLE4 && bmp.bpp != 4)
   {
-    warn("unsupported BPP %u for RLE4\n", bmp.bpp);
+    debug("unsupported BPP %u for RLE4\n", bmp.bpp);
     return false;
   }
 
@@ -881,7 +898,7 @@ static boolean load_bmp(imageinfo *s)
     bmp.color_table = bmp_read_color_table(&bmp, s);
     if(!bmp.color_table)
     {
-      warn("failed to read BMP color table\n");
+      debug("failed to read BMP color table\n");
       return false;
     }
   }
@@ -897,7 +914,7 @@ static boolean load_bmp(imageinfo *s)
   // Assume non-seeking stream, skip everything prior to pixarray with fread.
   while(bmp.streamidx < bmp.pixarray)
   {
-    size_t r = MIN(bmp.pixarray - bmp.streamidx, sizeof(buf));
+    size_t r = IMAGE_MIN(bmp.pixarray - bmp.streamidx, sizeof(buf));
     bmp.streamidx += r;
 
     if(s->readfn(buf, 1, s->in) < 1)
@@ -1389,7 +1406,7 @@ static boolean pam_set_tupltype(struct pam_tupl *dest, const char *tuplstr)
       return true;
     }
   }
-  warn("unsupported TUPLTYPE '%s'!\n", tuplstr);
+  debug("unsupported TUPLTYPE '%s'!\n", tuplstr);
   return false;
 }
 
@@ -1476,7 +1493,8 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
       if(!*value || has_tu)
         return false;
 
-      snprintf(tuplstr, sizeof(tuplstr), "%s", value);
+      // NOTE: tuplstr size MUST be >= linebuf size.
+      strcpy(tuplstr, value);
       has_tu = true;
     }
   }
@@ -1486,13 +1504,13 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
 
   if(*depth < 1 || *depth > 4)
   {
-    warn("invalid depth '%u'!\n", (unsigned int)*depth);
+    debug("invalid depth '%u'!\n", (unsigned int)*depth);
     return false;
   }
 
   if(*maxval < 1 || *maxval > 65535)
   {
-    warn("invalid maxval '%u'!\n", (unsigned int)*maxval);
+    debug("invalid maxval '%u'!\n", (unsigned int)*maxval);
     return false;
   }
 
@@ -1659,7 +1677,7 @@ static boolean load_raw(imageinfo *s,
   debug("Image type: raw\n");
 
   if(s->readfn(&tmp, 1, s->in) != 0)
-    warn("data exists after expected EOF in raw file\n");
+    debug("data exists after expected EOF in raw file\n");
 
   if(!image_init(format->width, format->height, dest))
     goto err_free;
@@ -1760,7 +1778,7 @@ boolean load_image_from_stream(void *fp, image_read_function readfn,
 #else
 
   if(!memcmp(magic, "\x89PNG\r\n\x1A\n", 8))
-    warn("MegaZeux utils were compiled without PNG support--is this a PNG?\n");
+    debug("MegaZeux utils were compiled without PNG support--is this a PNG?\n");
 
 #endif
 
@@ -1798,7 +1816,7 @@ boolean load_image_from_file(const char *filename, struct image_file *dest,
     return load_image_from_stream(stdin, stdio_read_fn, dest, raw_format);
   }
 
-  fp = fopen_unsafe(filename, "rb");
+  fp = fopen(filename, "rb");
   if(!fp)
     return false;
 

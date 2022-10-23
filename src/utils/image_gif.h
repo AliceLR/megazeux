@@ -32,7 +32,7 @@ extern "C" {
 typedef size_t (*gif_read_function)(void *dest, size_t num, void *handle);
 /* Allocate user-managed memory. Used for pixel buffers returned by gif_composite. */
 typedef void *(*gif_alloc_function)(size_t sz);
-typedef uint8_t gif_bool;
+typedef unsigned char gif_bool;
 
 enum gif_bool_values
 {

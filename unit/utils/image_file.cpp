@@ -21,10 +21,6 @@
 
 #include <zlib.h>
 
-#ifdef CONFIG_PNG
-#include "../../src/pngops.c"
-#endif
-
 #include "../../src/utils/image_file.c"
 #include "../../src/utils/image_gif.c"
 
