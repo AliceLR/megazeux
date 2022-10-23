@@ -195,12 +195,12 @@ UNITTEST(PNG)
   };
   static constexpr const char *inputs_gs[] =
   {
-    "gs8.png",  // Indexed greyscale (GIMP only saves greyscale in 8bpp...)
+    "gs8.png",  // Greyscale (GIMP only saves greyscale non-indexed...)
     "rgb2.png", // Indexed RGB
   };
   static constexpr const char *inputs_gsa[] =
   {
-    "gsa8.png", // Indexed greyscale with alpha
+    "gsa8.png", // Greyscale with alpha
   };
   static constexpr const char *inputs_rgb[] =
   {
