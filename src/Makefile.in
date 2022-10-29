@@ -36,7 +36,6 @@ core_cxxflags = ${CXXFLAGS}
 ifneq (${PLATFORM},emscripten)
 core_flags   += -I${PREFIX}/include
 endif
-core_ldflags := -lm ${core_ldflags}
 
 ifeq (${PLATFORM},mingw)
 core_spec := -DCORE_LIBSPEC="__declspec(dllexport)"
@@ -250,7 +249,7 @@ endif
 #
 ifeq (${BUILD_EGL},1)
 core_cobjs += ${core_obj}/render_egl.o
-core_ldflags := -lEGL ${core_ldflags}
+core_ldflags += -lEGL
 endif
 
 # Overlay renderers
@@ -283,13 +282,13 @@ endif
 
 ifeq (${BUILD_MIKMOD},1)
 core_flags += ${MIKMOD_CFLAGS}
-core_ldflags := ${MIKMOD_LDFLAGS} ${core_ldflags}
+core_ldflags += ${MIKMOD_LDFLAGS}
 core_cobjs += ${audio_obj}/audio_mikmod.o
 endif
 
 ifeq (${BUILD_XMP},1)
 core_cflags += ${XMP_CFLAGS}
-core_ldflags := ${XMP_LDFLAGS} ${core_ldflags}
+core_ldflags += ${XMP_LDFLAGS}
 core_cobjs += ${audio_obj}/audio_xmp.o
 core_flags += ${libxmp_include}
 core_cobjs += ${libxmp_objs}
@@ -297,7 +296,7 @@ endif
 
 ifeq (${BUILD_OPENMPT},1)
 core_flags += ${OPENMPT_CFLAGS}
-core_ldflags := ${OPENMPT_LDFLAGS} ${core_ldflags}
+core_ldflags += ${OPENMPT_LDFLAGS}
 core_cobjs += ${audio_obj}/audio_openmpt.o
 endif
 
@@ -307,7 +306,7 @@ endif
 
 ifeq (${LIBPNG},1)
 core_flags += $(LIBPNG_CFLAGS) -DNEED_PNG_WRITE_SCREEN
-core_ldflags := $(LIBPNG_LDFLAGS) ${core_ldflags}
+core_ldflags += $(LIBPNG_LDFLAGS)
 core_cobjs += ${core_obj}/pngops.o
 endif
 
@@ -331,7 +330,7 @@ audio_cxxobjs := \
 
 ifneq (${VORBIS},)
 core_flags += ${VORBIS_CFLAGS}
-core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
+core_ldflags += ${VORBIS_LDFLAGS}
 audio_cobjs += \
  ${audio_obj}/audio_vorbis.o
 endif
@@ -375,7 +374,7 @@ core_cobjs += ${core_obj}/platform_dummy.o
 # we must link pthread ourselves.
 #
 ifeq (${PTHREAD},1)
-core_ldflags := ${PTHREAD_LDFLAGS} ${core_ldflags}
+core_ldflags += ${PTHREAD_LDFLAGS}
 endif
 
 endif
@@ -387,9 +386,6 @@ ifneq (${X11DIR},)
 core_flags += ${X11_CFLAGS}
 core_ldflags += ${X11_LDFLAGS}
 endif
-
-core_cflags := ${ZLIB_CFLAGS} ${core_cflags}
-core_ldflags := ${ZLIB_LDFLAGS} ${core_ldflags}
 
 ifeq (${BUILD_NETWORK},1)
 core_cobjs += ${network_obj}/sha256.o
@@ -406,10 +402,16 @@ mzx_objs += ${core_obj}/updater.o
 endif
 
 ifeq (${PLATFORM},amiga)
-core_ldflags := ${core_ldflags} -lnet
+core_ldflags += -lnet
 endif
 
 endif
+
+#
+# Append mandatory libraries last.
+#
+core_cflags := ${core_cflags} ${ZLIB_CFLAGS}
+core_ldflags := ${core_ldflags} ${ZLIB_LDFLAGS} -lm
 
 ifeq (${BUILD_DEBYTECODE},1)
 core_cobjs += ${core_obj}/rasm.o

@@ -1,8 +1,8 @@
 name: Regression tests
 
 env:
-  MZXDEPS_DEBIAN_SDL2:  "zlib1g-dev libpng-dev libogg-dev libvorbis-dev libsdl2-dev"
-  MZXDEPS_DEBIAN_SDL1:  "zlib1g-dev libpng-dev libogg-dev libvorbis-dev libsdl1.2-dev"
+  MZXDEPS_DEBIAN_SDL2:  "zlib1g-dev libpng-dev libogg-dev libvorbis-dev libsdl2-dev libc6-dev"
+  MZXDEPS_DEBIAN_MISC:  "libsdl1.2-dev libmikmod-dev libopenmpt-dev"
   MZXDEPS_DEBIAN_CROSS: "p7zip-full"
   MZX_MAKE:             "make -j4"
 
@@ -169,18 +169,56 @@ jobs:
   #
   # Configuration variants.
   #
-  SDL1-2:
+  unix-misc:
     runs-on: ubuntu-latest
     steps:
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL1
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2 $MZXDEPS_DEBIAN_MISC
+      - uses: actions/checkout@v2
+      - name: Configure (SDL 1.2)
+        run: ./config.sh --platform unix-devel --enable-release --disable-libsdl2
+      - name: Build (SDL 1.2)
+        run: $MZX_MAKE
+      - name: Run tests (SDL 1.2)
+        run: $MZX_MAKE test
+      - name: Distclean (SDL 1.2)
+        run: $MZX_MAKE distclean
+      - name: Configure (ModPlug)
+        run: ./config.sh --platform unix-devel --enable-release --enable-modplug
+      - name: Build (Modplug)
+        run: $MZX_MAKE
+      - name: Run tests (Modplug)
+        run: $MZX_MAKE test
+      - name: Distclean (Modplug)
+        run: $MZX_MAKE distclean
+      - name: Configure (MikMod)
+        run: ./config.sh --platform unix-devel --enable-release --enable-mikmod
+      - name: Build (MikMod)
+        run: $MZX_MAKE
+      - name: Run tests (MikMod)
+        run: $MZX_MAKE test
+      - name: Distclean (MikMod)
+        run: $MZX_MAKE distclean
+      - name: Configure (OpenMPT)
+        run: ./config.sh --platform unix-devel --enable-release --enable-openmpt
+      - name: Build (OpenMPT)
+        run: $MZX_MAKE
+      - name: Run tests (OpenMPT)
+        run: $MZX_MAKE test
+      - name: Distclean (OpenMPT)
+        run: $MZX_MAKE distclean
+
+  unix-static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
       - uses: actions/checkout@v2
       - name: Configure
-        run: ./config.sh --platform unix-devel --enable-release --disable-libsdl2
+        run: ./config.sh --platform unix-devel --enable-release --disable-modular --disable-x11
       - name: Build
-        run: $MZX_MAKE
-      - name: Run tests
-        run: $MZX_MAKE test
+        run: LDFLAGS="-static" $MZX_MAKE
+        # TODO: tests. SDL2-static currently SEGFAULTS in Fedora...
 
   #
   # Sanitizers.
