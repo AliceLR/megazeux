@@ -208,14 +208,17 @@ jobs:
       - name: Distclean (OpenMPT)
         run: $MZX_MAKE distclean
 
+  # Ubuntu static SDL2 seems to expect static X11 and Alsa? wth?
+  # Fedora has no static libvorbis package.
   unix-static:
     runs-on: ubuntu-latest
+    container: fedora:latest
     steps:
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
+        run: sudo dnf install -y make gcc gcc-c++ binutils glibc-static zlib-static libpng-static SDL2-static
       - uses: actions/checkout@v2
       - name: Configure
-        run: ./config.sh --platform unix-devel --enable-release --disable-modular --disable-x11
+        run: ./config.sh --platform unix-devel --enable-release --disable-modular --disable-x11 --disable-vorbis
       - name: Build
         run: LDFLAGS="-static" $MZX_MAKE
         # TODO: tests. SDL2-static currently SEGFAULTS in Fedora...
