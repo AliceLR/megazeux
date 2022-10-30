@@ -40,7 +40,8 @@ __M_BEGIN_DECLS
 // Data types
 
 typedef SDLKey SDL_Keycode;
-typedef void   SDL_Window;
+// Use a macro because sdl1.2-compat typedefs SDL_Window...
+#define SDL_Window void
 
 // Macros / enumerants
 

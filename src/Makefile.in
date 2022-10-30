@@ -382,9 +382,12 @@ endif
 endif
 
 # X11 (headers included by SDL_syswm.h).
+# Libraries are only required for EGL, pre-SDL2 clipboard (see editor).
 ifneq (${X11DIR},)
 core_flags += ${X11_CFLAGS}
+ifeq (${BUILD_EGL},1)
 core_ldflags += ${X11_LDFLAGS}
+endif
 endif
 
 ifeq (${BUILD_NETWORK},1)

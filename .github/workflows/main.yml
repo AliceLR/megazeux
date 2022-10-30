@@ -2,7 +2,7 @@ name: Regression tests
 
 env:
   MZXDEPS_DEBIAN_SDL2:  "zlib1g-dev libpng-dev libogg-dev libvorbis-dev libsdl2-dev libc6-dev"
-  MZXDEPS_DEBIAN_MISC:  "libsdl1.2-dev libmikmod-dev libopenmpt-dev"
+  MZXDEPS_DEBIAN_MISC:  "libsdl1.2-dev libegl1-mesa-dev libmikmod-dev libopenmpt-dev"
   MZXDEPS_DEBIAN_CROSS: "p7zip-full"
   MZX_MAKE:             "make -j4"
 
@@ -182,6 +182,14 @@ jobs:
       - name: Run tests (SDL 1.2)
         run: $MZX_MAKE test
       - name: Distclean (SDL 1.2)
+        run: $MZX_MAKE distclean
+      - name: Configure (EGL/X11)
+        run: ./config.sh --platform unix-devel --enable-release --disable-sdl --enable-egl
+      - name: Build (EGL/X11)
+        run: $MZX_MAKE
+      - name: Run tests (EGL/X11)
+        run: $MZX_MAKE test
+      - name: Distclean (EGL/X11)
         run: $MZX_MAKE distclean
       - name: Configure (ModPlug)
         run: ./config.sh --platform unix-devel --enable-release --enable-modplug
