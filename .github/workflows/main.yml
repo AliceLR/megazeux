@@ -216,20 +216,34 @@ jobs:
       - name: Distclean (OpenMPT)
         run: $MZX_MAKE distclean
 
-  # Ubuntu static SDL2 seems to expect static X11 and Alsa? wth?
-  # Fedora has no static libvorbis package.
+  # Ubuntu static SDL2 expects a bunch of other static junk, so build a -static SDL.
+  # Everything else should be suitable. Either way, SDL2 crashes on startup.
   unix-static:
     runs-on: ubuntu-latest
-    container: fedora:latest
     steps:
-      - name: Install dependencies
-        run: sudo dnf install -y make gcc gcc-c++ binutils glibc-static zlib-static libpng-static SDL2-static
       - uses: actions/checkout@v2
+      - name: 🙄
+        run: sudo sed -i '/deb-src/s/^# //' /etc/apt/sources.list
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
+      - name: Fetch dependency sources
+        run: mkdir DEPS && sudo apt update && apt source libsdl2
+#        run: mkdir DEPS && sudo apt update && apt source zlib libpng1.6 libogg libvorbis libsdl2
+#      - name: Build zlib
+#        run: (cd zlib-*; ./configure --prefix "$(pwd)/../DEPS" --static && $MZX_MAKE && make install)
+#      - name: Build libpng
+#        run: (cd libpng*; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
+#      - name: Build libogg
+#        run: (cd libogg-*; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
+#      - name: Build libvorbis
+#        run: (cd libvorbis-*; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
+      - name: Build SDL2
+        run: (cd libsdl2-*; ./configure --prefix="$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
       - name: Configure
-        run: ./config.sh --platform unix-devel --enable-release --disable-modular --disable-x11 --disable-vorbis
+        run: ./config.sh --platform unix-devel --prefix DEPS --enable-release --disable-modular
       - name: Build
         run: LDFLAGS="-static" $MZX_MAKE
-        # TODO: tests. SDL2-static currently SEGFAULTS in Fedora...
+        # TODO: tests
 
   #
   # Sanitizers.
