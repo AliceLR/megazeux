@@ -1,7 +1,7 @@
 name: Regression tests
 
 env:
-  MZXDEPS_DEBIAN_SDL2:  "zlib1g-dev libpng-dev libogg-dev libvorbis-dev libsdl2-dev libc6-dev"
+  MZXDEPS_DEBIAN_SDL2:  "zlib1g-dev libpng-dev libogg-dev libvorbis-dev libsdl2-dev"
   MZXDEPS_DEBIAN_MISC:  "libsdl1.2-dev libegl1-mesa-dev libmikmod-dev libopenmpt-dev"
   MZXDEPS_DEBIAN_CROSS: "p7zip-full"
   MZX_MAKE:             "make -j4"
