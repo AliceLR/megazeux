@@ -230,15 +230,15 @@ jobs:
 #        run: mkdir DEPS && sudo apt update && apt source libsdl2
         run: mkdir DEPS && sudo apt update && apt source zlib libpng1.6 libogg libvorbis libsdl2
       - name: Build zlib
-        run: (cd zlib-*; ./configure --prefix "$(pwd)/../DEPS" --static && $MZX_MAKE && make install)
+        run: (cd zlib-*/; ./configure --prefix "$(pwd)/../DEPS" --static && $MZX_MAKE && make install)
       - name: Build libpng
-        run: (cd libpng*; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
+        run: (cd libpng1.6-*/; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
       - name: Build libogg
-        run: (cd libogg-*; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
+        run: (cd libogg-*/; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
       - name: Build libvorbis
-        run: (cd libvorbis-*; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
+        run: (cd libvorbis-*/; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
       - name: Build SDL2
-        run: (cd libsdl2-*; ./configure --prefix="$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
+        run: (cd libsdl2-*/; ./configure --prefix="$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
       - name: Configure
         run: ./config.sh --platform unix-devel --prefix DEPS --enable-release --disable-modular
       - name: Build
