@@ -14,6 +14,8 @@ DSOSONAME  = -Wl,-soname,
 ARCH_CFLAGS   = -D_LARGEFILE64_SOURCE
 ARCH_CXXFLAGS = -D_LARGEFILE64_SOURCE
 
+# Allow ZIP for portable unix-devel packages.
+include arch/zip.inc
 include arch/install.inc
 
 # linux os specific install files

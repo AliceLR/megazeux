@@ -22,7 +22,7 @@ img_flags :=
 
 ifneq (${LIBPNG},)
 img_objs  += ${core_obj}/pngops.o
-img_flags += ${LIBPNG_LDFLAGS} ${ZLIB_LDFLAGS}
+img_flags += ${LIBPNG_LDFLAGS} ${ZLIB_LDFLAGS} -lm
 endif
 
 checkres := ${utils_src}/checkres${BINEXT}
