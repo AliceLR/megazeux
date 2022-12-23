@@ -342,10 +342,14 @@ uint8_t ec_read_byte(uint16_t chr, uint8_t byte);
 boolean ec_load_set(const char *filename);
 
 void set_color_intensity(uint8_t color, unsigned int percent);
+void set_color_intensity_mzx(uint8_t color, unsigned int percent);
 unsigned int get_color_intensity(uint8_t color);
+unsigned int get_color_intensity_mzx(uint8_t color);
 void save_indices(void *buffer);
 void load_indices(const void *buffer, size_t size);
 void load_indices_direct(const void *buffer, size_t size);
+void set_rgb_mzx(uint8_t color, unsigned int r, unsigned int g, unsigned int b);
+void get_rgb_mzx(uint8_t color, uint8_t *r, uint8_t *g, uint8_t *b);
 void vquick_fadein(void);
 boolean get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
  int transparent_color, uint8_t * RESTRICT buffer);

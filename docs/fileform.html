@@ -361,7 +361,10 @@
         <li><a href="#worldprop290">World Properties</a></li>
         <li><a href="#sfx290">Custom SFX Table</a></li>
         <li><a href="#chars290">Character Sets</a></li>
-        <li><a href="#pal290">Palette, Palette Indices, and Palette Intensities</a></li>
+        <li><a href="#pal290">Palettes, Palette Indices, and Palette Intensities</a></li>
+        <ol type="a">
+          <li><a href="#pal290old">Prior to 2.93</a></li>
+        </ol>
         <li><a href="#vlayer290">Vlayer Planes</a></li>
         <li><a href="#sprites290">Sprite Properties (.SAV only)</a></li>
         <li><a href="#counters290">Counter and String Lists (.SAV only)</a></li>
@@ -2312,13 +2315,15 @@ while(i &lt; size)
 | `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled  | As of 2.91c
 | `chars`   | <a href="#chars290"      >Character Sets</a>                |                             | Always
 | `pal`     | <a href="#pal290"        >Palette</a>                       |
+| `palsmzx` | <a href="#pal290"        >Palette (SMZX)</a>                | SMZX 2 and 3 only
 | `palidx`  | <a href="#pal290"        >Palette Indices</a>               | Save-only before 2.91, SMZX 3 only
 | `vco`     | <a href="#vlayer290"     >Vlayer Colors Plane</a>           | Save-only before 2.91       | Always
 | `vch`     | <a href="#vlayer290"     >Vlayer Chars Plane</a>            | Save-only before 2.91       | Always
 | `palint`  | <a href="#pal290"        >Palette Intensities</a>           | Save-only
+| `palints` | <a href="#pal290"        >Palette Intensities (SMZX)</a>    | Save-only, SMZX 2 and 3 only
 | `spr`     | <a href="#spriteprop290" >Sprite Properties</a>             | Save-only                   | Always
-| `counter` | <a href="#counters290"   >Counters List</a>                 | Save-only
-| `string`  | <a href="#counters290"   >Strings List</a>                  | Save-only
+| `counter` | <a href="#counters290"   >Counters List</a>                 | Save-only                   | As of 2.93
+| `string`  | <a href="#counters290"   >Strings List</a>                  | Save-only                   | As of 2.93
 | `b##`     | <a href="#boardprop290"  >Board Properties</a>              | See below.
 | `b##bid`  | <a href="#boardplanes290">Board level_id Plane</a>          |                             | Always
 | `b##bpr`  | <a href="#boardplanes290">Board level_param Plane</a>       |                             | Always
@@ -2541,19 +2546,42 @@ while(i &lt; size)
     </section>
 
     <section id="pal290" class="inner">
-      <h3>Palette, Palette Indices, and Palette Intensities</h3>
+      <h3>Palettes, Palette Indices, and Palette Intensities</h3>
       <p>
-        The world palette is saved as a raw <a href="#pal">palette file</a>
-        containing 256 colors (regardless of the current SMZX mode). If SMZX
-        mode 3 is enabled, the palette indices will also be saved as a raw
-        <a href="#palidx">palette indices file</a> in 2.90+ save files and
-        2.91+ world files.
+        The world palettes are saved as raw <a href="#pal">palette files</a>.
+        In 2.93 and up, the file <code>pal</code> always contains the 16
+        color palette corresponding to MZX mode and SMZX mode 1. If SMZX
+        modes 2 or 3 are active, an additional 256 color palette will be saved
+        to <code>palsmzx</code>. If SMZX mode 3 is enabled, the palette indices
+        will also be saved as a raw <a href="#palidx">palette indices file</a>
+        in 2.90+ save files and 2.91+ world files.
       </p>
       <p>
-        In save files, the palette intensities are saved as a third file. All
-        256 palette intensities are saved regardless of the current SMZX mode
-        in an array of 256 bytes (note: this will truncate extreme intensity
-        values and was probably a bad idea).
+        In save files, the palette intensities are also saved. The file
+        <code>palint</code> contains a raw array of 16 unsigned little endian
+        dwords representing the MZX and SMZX mode 1 palette intensities. If
+        SMZX modes 2 or 3 are active, an additional file <code>palints</code>
+        containing the SMZX modes 2 and 3 will be saved. This file contains 256
+        unsigned little endian dwords.
+      </p>
+      <h4 id="pal290old">Prior to 2.93</h4>
+      <p>
+        Only one <code>pal</code> and <code>palint</code> file were saved.
+        These files always contained 256 entries, and always represented the
+        current active screen mode. The palette intensities were stored as
+        <i>bytes</i>, which corrupted larger intensity values.
+      </p>
+      <p>
+        In SMZX modes 2 and 3, the MZX palette and palette intensities were NOT
+        saved. For worlds/saves from these versions with SMZX modes 2 or 3 active,
+        the MZX palette should be derived from the first 16 entries of the SMZX
+        palette (same as 2.84X and prior) and the MZX intensities should default
+        to 100.
+      </p>
+      <p>
+        In 2.90X save files, the palette intensities file was stored using the
+        internal indices order, and was incompatible with palette indices
+        files. For each color, the two middle indices are in reverse order.
       </p>
     </section>
 

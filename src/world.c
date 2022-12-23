@@ -1176,11 +1176,80 @@ static inline int load_world_chars(struct world *mzx_world,
 
 // Palette
 static inline int save_world_pal(struct world *mzx_world,
+ struct zip_archive *zp, int file_version, const char *name)
+{
+  unsigned char buffer[SMZX_PAL_SIZE * 3];
+  unsigned char *cur = buffer;
+  size_t size;
+  int i;
+
+  if(file_version >= V293)
+  {
+    // Always save the 16 color MZX palette, even in SMZX mode.
+    size = PAL_SIZE;
+    for(i = 0; i < PAL_SIZE; i++)
+    {
+      get_rgb_mzx(i, cur, cur+1, cur+2);
+      cur += 3;
+    }
+  }
+  else
+  {
+    // Prior versions store all 256 entries of the active palette.
+    size = SMZX_PAL_SIZE;
+    for(i = 0; i < SMZX_PAL_SIZE; i++)
+    {
+      get_rgb(i, cur, cur+1, cur+2);
+      cur += 3;
+    }
+  }
+  return zip_write_file(zp, name, buffer, size * 3, ZIP_M_NONE);
+}
+
+static inline int load_world_pal(struct world *mzx_world,
+ struct zip_archive *zp, int file_version)
+{
+  unsigned char buffer[SMZX_PAL_SIZE * 3];
+  unsigned char *cur;
+  unsigned int i;
+  size_t size;
+  int result;
+  int mode = get_screen_mode();
+
+  result = zip_read_file(zp, buffer, SMZX_PAL_SIZE*3, &size);
+  if(result == ZIP_SUCCESS)
+  {
+    cur = buffer;
+    size /= 3;
+
+    for(i = 0; i < size; i++)
+    {
+      // In <2.93 files in SMZX mode, this stores the SMZX palette.
+      // Always load to the MZX palette anyway, even in SMZX mode in <2.93.
+      if(i < PAL_SIZE)
+        set_rgb_mzx(i, cur[0], cur[1], cur[2]);
+
+      if(mode >= 2 && file_version < V293)
+        set_rgb(i, cur[0], cur[1], cur[2]);
+      cur += 3;
+    }
+  }
+  return result;
+}
+
+
+// Palette (SMZX) (2.93+ only)
+// The MZX palette has already been loaded and SMZX is already enabled.
+static inline int save_world_pal_smzx(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
   unsigned char buffer[SMZX_PAL_SIZE * 3];
   unsigned char *cur = buffer;
   int i;
+
+  /* Only save in 256 color SMZX modes. */
+  if(get_screen_mode() < 2)
+    return 0;
 
   for(i = 0; i < SMZX_PAL_SIZE; i++)
   {
@@ -1188,10 +1257,10 @@ static inline int save_world_pal(struct world *mzx_world,
     cur += 3;
   }
 
-  return zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 3, ZIP_M_NONE);
+  return zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 3, ZIP_M_DEFLATE);
 }
 
-static inline int load_world_pal(struct world *mzx_world,
+static inline int load_world_pal_smzx(struct world *mzx_world,
  struct zip_archive *zp)
 {
   unsigned char buffer[SMZX_PAL_SIZE * 3];
@@ -1199,6 +1268,10 @@ static inline int load_world_pal(struct world *mzx_world,
   unsigned int i;
   size_t size;
   int result;
+
+  /* Only load in 256 color SMZX modes. */
+  if(get_screen_mode() < 2)
+    return 0;
 
   result = zip_read_file(zp, buffer, SMZX_PAL_SIZE*3, &size);
   if(result == ZIP_SUCCESS)
@@ -1212,7 +1285,6 @@ static inline int load_world_pal(struct world *mzx_world,
       cur += 3;
     }
   }
-
   return result;
 }
 
@@ -1229,7 +1301,7 @@ static inline int save_world_pal_index(struct world *mzx_world,
     char *buffer = cmalloc(SMZX_PAL_SIZE * 4);
     save_indices(buffer);
 
-    result = zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 4, ZIP_M_NONE);
+    result = zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 4, ZIP_M_DEFLATE);
 
     free(buffer);
   }
@@ -1237,7 +1309,7 @@ static inline int save_world_pal_index(struct world *mzx_world,
 }
 
 static inline int load_world_pal_index(struct world *mzx_world,
- int file_version, struct zip_archive *zp)
+ struct zip_archive *zp, int file_version)
 {
   char *buffer = cmalloc(SMZX_PAL_SIZE * 4);
   size_t actual_size;
@@ -1260,25 +1332,42 @@ static inline int load_world_pal_index(struct world *mzx_world,
 }
 
 
-// Palette intensities
+/**
+ * Palette intensities
+ * As of MZX 2.93, this file contains the 16 32-bit MZX palette intensities.
+ * Older versions stored the 256 active palette intensities as bytes.
+ */
 static inline int save_world_pal_inten(struct world *mzx_world,
- struct zip_archive *zp, const char *name)
+ struct zip_archive *zp, int file_version, const char *name)
 {
   char buffer[SMZX_PAL_SIZE];
-  char *cur = buffer;
+  struct memfile mf;
   int i;
+  size_t size;
 
-  for(i = 0; i < SMZX_PAL_SIZE; i++, cur++)
-    *cur = get_color_intensity(i);
+  mfopen_wr(buffer, sizeof(buffer), &mf);
 
-  return zip_write_file(zp, name, buffer, SMZX_PAL_SIZE, ZIP_M_NONE);
+  if(file_version >= V293)
+  {
+    size = PAL_SIZE * 4;
+    for(i = 0; i < PAL_SIZE; i++)
+      mfputud(get_color_intensity_mzx(i), &mf);
+  }
+  else
+  {
+    size = SMZX_PAL_SIZE;
+    for(i = 0; i < SMZX_PAL_SIZE; i++)
+      mfputc(get_color_intensity(i), &mf);
+  }
+
+  return zip_write_file(zp, name, buffer, size, ZIP_M_NONE);
 }
 
 static inline int load_world_pal_inten(struct world *mzx_world,
- struct zip_archive *zp)
+ struct zip_archive *zp, int file_version)
 {
   char buffer[SMZX_PAL_SIZE];
-  char *cur;
+  struct memfile mf;
   size_t size;
   unsigned int i;
   int result;
@@ -1286,12 +1375,69 @@ static inline int load_world_pal_inten(struct world *mzx_world,
   result = zip_read_file(zp, buffer, SMZX_PAL_SIZE, &size);
   if(result == ZIP_SUCCESS)
   {
-    cur = buffer;
+    mfopen(buffer, size, &mf);
 
-    for(i = 0; i < size; i++, cur++)
-      set_color_intensity(i, *cur);
+    if(file_version >= V293)
+    {
+      size >>= 2;
+      for(i = 0; i < size; i++)
+        set_color_intensity_mzx(i, mfgetud(&mf));
+    }
+    else
+    {
+      for(i = 0; i < size; i++)
+        set_color_intensity(i, mfgetc(&mf));
+    }
   }
+  return result;
+}
 
+
+/**
+ * Palette intensities (SMZX) (2.93+ only)
+ * This stores the 256 32-bit SMZX palette intensities when modes 2 or 3 are active.
+ */
+static inline int save_world_pal_inten_smzx(struct world *mzx_world,
+ struct zip_archive *zp, const char *name)
+{
+  char buffer[SMZX_PAL_SIZE * 4];
+  struct memfile mf;
+  int i;
+
+  /* Only save in 256 color SMZX modes. */
+  if(get_screen_mode() < 2)
+    return 0;
+
+  mfopen_wr(buffer, sizeof(buffer), &mf);
+
+  for(i = 0; i < SMZX_PAL_SIZE; i++)
+    mfputud(get_color_intensity(i), &mf);
+
+  return zip_write_file(zp, name, buffer, sizeof(buffer), ZIP_M_DEFLATE);
+}
+
+static inline int load_world_pal_inten_smzx(struct world *mzx_world,
+ struct zip_archive *zp)
+{
+  char buffer[SMZX_PAL_SIZE * 4];
+  struct memfile mf;
+  size_t size;
+  unsigned int i;
+  int result;
+
+  /* Only load in 256 color SMZX modes. */
+  if(get_screen_mode() < 2)
+    return 0;
+
+  result = zip_read_file(zp, buffer, sizeof(buffer), &size);
+  if(result == ZIP_SUCCESS)
+  {
+    mfopen(buffer, size, &mf);
+    size >>= 2;
+
+    for(i = 0; i < size; i++)
+      set_color_intensity(i, mfgetud(&mf));
+  }
   return result;
 }
 
@@ -1544,7 +1690,7 @@ static inline int save_world_counters(struct world *mzx_world,
   size_t i;
   int result;
 
-  result = zip_write_open_file_stream(zp, name, ZIP_M_NONE);
+  result = zip_write_open_file_stream(zp, name, ZIP_M_DEFLATE);
   if(result != ZIP_SUCCESS)
     return result;
 
@@ -1659,7 +1805,7 @@ static inline int save_world_strings(struct world *mzx_world,
   size_t i;
   int result;
 
-  result = zip_write_open_file_stream(zp, name, ZIP_M_NONE);
+  result = zip_write_open_file_stream(zp, name, ZIP_M_DEFLATE);
   if(result != ZIP_SUCCESS)
     return result;
 
@@ -1925,6 +2071,7 @@ static enum val_result validate_world_zip(struct world *mzx_world,
       case FILE_ID_WORLD_GLOBAL_ROBOT:
       case FILE_ID_WORLD_PAL_INDEX:
       case FILE_ID_WORLD_PAL_INTENSITY:
+      case FILE_ID_WORLD_PAL_INTENSITY_SMZX:
       case FILE_ID_WORLD_VCO:
       case FILE_ID_WORLD_VCH:
       case FILE_ID_WORLD_SPRITES:
@@ -2026,14 +2173,16 @@ static int save_world_zip(struct world *mzx_world, const char *file,
 
   if(save_world_sfx(mzx_world, zp,              "sfx"))     goto err_close;
   if(save_world_chars(mzx_world, zp, savegame,  "chars"))   goto err_close;
-  if(save_world_pal(mzx_world, zp,              "pal"))     goto err_close;
+  if(save_world_pal(mzx_world, zp, file_version,"pal"))     goto err_close;
+  if(save_world_pal_smzx(mzx_world, zp,         "palsmzx")) goto err_close;
   if(save_world_pal_index(mzx_world, zp,        "palidx"))  goto err_close;
   if(save_world_vco(mzx_world, zp,              "vco"))     goto err_close;
   if(save_world_vch(mzx_world, zp,              "vch"))     goto err_close;
 
   if(savegame)
   {
-    if(save_world_pal_inten(mzx_world, zp,     "palint"))   goto err_close;
+    if(save_world_pal_inten(mzx_world, zp, file_version, "palint"))   goto err_close;
+    if(save_world_pal_inten_smzx(mzx_world, zp,"palints"))  goto err_close;
     if(save_world_sprites(mzx_world, zp,       "spr"))      goto err_close;
     if(save_world_counters(mzx_world, zp,      "counter"))  goto err_close;
     if(save_world_strings(mzx_world, zp,       "string"))   goto err_close;
@@ -2150,17 +2299,26 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
         break;
 
       case FILE_ID_WORLD_PAL:
-        err = load_world_pal(mzx_world, zp);
+        err = load_world_pal(mzx_world, zp, file_version);
+        break;
+
+      case FILE_ID_WORLD_PAL_SMZX:
+        err = load_world_pal_smzx(mzx_world, zp);
         break;
 
       case FILE_ID_WORLD_PAL_INDEX:
         if_savegame_or_291
-        err = load_world_pal_index(mzx_world, file_version, zp);
+        err = load_world_pal_index(mzx_world, zp, file_version);
         break;
 
       case FILE_ID_WORLD_PAL_INTENSITY:
         if_savegame
-        err = load_world_pal_inten(mzx_world, zp);
+        err = load_world_pal_inten(mzx_world, zp, file_version);
+        break;
+
+      case FILE_ID_WORLD_PAL_INTENSITY_SMZX:
+        if_savegame
+        err = load_world_pal_inten_smzx(mzx_world, zp);
         break;
 
       case FILE_ID_WORLD_VCO:
@@ -2653,6 +2811,8 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   mzx_world->custom_sfx_on = 0;
   mzx_world->max_samples = -1;
   mzx_world->joystick_simulate_keys = true;
+
+  default_palette();
 
   // If we're here, there's either a zip (regular) or a file (legacy).
   if(zp)

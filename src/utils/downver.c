@@ -66,6 +66,13 @@
  */
 
 /**
+ * Undo backup MZX palette bugfix:
+ *
+ * MZX mode: drop "palsmzx" if present, save "pal" as-is.
+ * SMZX mode: drop "pal" and save "palsmzx" as "pal" ONLY if "palsmzx" present.
+ */
+
+/**
  * Removal of explicit null terminators and junk data in some string fields.
  *
  * + Strings that need to be expanded to BOARD_NAME_SIZE and terminated:

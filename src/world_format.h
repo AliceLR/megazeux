@@ -42,11 +42,13 @@ enum world_file_id
   FILE_ID_WORLD_GLOBAL_ROBOT      = 0x0004, // properties file
   FILE_ID_WORLD_SFX               = 0x0007, // data, NUM_SFX * SFX_SIZE
   FILE_ID_WORLD_CHARS             = 0x0008, // data, 3584*15
-  FILE_ID_WORLD_PAL               = 0x0009, // data, SMZX_PAL_SIZE * 3
-  FILE_ID_WORLD_PAL_INDEX         = 0x000A, // data, 1024
+  FILE_ID_WORLD_PAL               = 0x0009, // data, PAL_SIZE * 3
+  FILE_ID_WORLD_PAL_SMZX          = 0x000A, // data, SMZX_PAL_SIZE * 3
+  FILE_ID_WORLD_PAL_INDEX         = 0x000B, // data, 1024
   FILE_ID_WORLD_VCO               = 0x000C, // data
   FILE_ID_WORLD_VCH               = 0x000D, // data
-  FILE_ID_WORLD_PAL_INTENSITY     = 0x000E, // data, SMZX_PAL_SIZE * 1
+  FILE_ID_WORLD_PAL_INTENSITY     = 0x000E, // data, PAL_SIZE * 4
+  FILE_ID_WORLD_PAL_INTENSITY_SMZX= 0x000F, // data, SMZX_PAL_SIZE * 4
 
   FILE_ID_WORLD_SPRITES           = 0x0080, // properties file
   FILE_ID_WORLD_COUNTERS          = 0x0081, // counter format, use stream
@@ -699,11 +701,17 @@ static inline void world_assign_file_ids(struct zip_archive *zp, boolean is_a_wo
         case FILE_ID_VALUE('p','a','l'):
           file_id = FILE_ID_WORLD_PAL;
           break;
+        case FILE_ID_VALUE('p','a','l','s','m','z','x'):
+          file_id = FILE_ID_WORLD_PAL_SMZX;
+          break;
         case FILE_ID_VALUE('p','a','l','i','d','x'):
           file_id = FILE_ID_WORLD_PAL_INDEX;
           break;
         case FILE_ID_VALUE('p','a','l','i','n','t'):
           file_id = FILE_ID_WORLD_PAL_INTENSITY;
+          break;
+        case FILE_ID_VALUE('p','a','l','i','n','t','s'):
+          file_id = FILE_ID_WORLD_PAL_INTENSITY_SMZX;
           break;
         case FILE_ID_VALUE('v','c','o'):
           file_id = FILE_ID_WORLD_VCO;

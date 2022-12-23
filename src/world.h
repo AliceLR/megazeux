@@ -129,7 +129,7 @@ enum mzx_version
  * such as altering semantics or actually changing the binary format, this
  * value MUST be bumped.
  */
-#define MZX_VERSION      (V292)
+#define MZX_VERSION      (V293)
 
 /* The world version that worlds will be saved as when Export Downver. World
  * is used from the editor. This function is also fulfilled by the downver util.
@@ -138,7 +138,7 @@ enum mzx_version
  * previous value; this way, users can always downgrade their work to an
  * older version (if it at all makes sense to do so).
  */
-#define MZX_VERSION_PREV (V291)
+#define MZX_VERSION_PREV (V292)
 
 // This is the last version of MegaZeux to use the legacy world format.
 #define MZX_LEGACY_FORMAT_VERSION (V284)
@@ -146,7 +146,7 @@ enum mzx_version
 // FIXME: hack
 #ifdef CONFIG_DEBYTECODE
 #undef  MZX_VERSION_PREV
-#define MZX_VERSION_PREV (V292)
+#define MZX_VERSION_PREV (V293)
 #undef  MZX_VERSION
 #define MZX_VERSION      (VERSION_SOURCE)
 #endif

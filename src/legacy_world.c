@@ -1316,6 +1316,7 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
   mzx_world->only_from_swap = vfgetc(vf);
 
   // Palette...
+  // Note: always loaded to the MZX mode palette as SMZX hasn't been set yet.
   for(i = 0; i < 16; i++)
   {
     r = vfgetc(vf);
