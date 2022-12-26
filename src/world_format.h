@@ -332,8 +332,8 @@ enum board_prop
 };
 
 
-#define COUNT_ROBOT_PROPS (              1 + 3 + 1)
-#define BOUND_ROBOT_PROPS (ROBOT_NAME_SIZE + 5 + 0) // +prog OR source
+#define COUNT_ROBOT_PROPS (1 + 3 + 1)
+#define BOUND_ROBOT_PROPS (0 + 5 + 0) // +name, +prog OR source
 
 #define COUNT_ROBOT_SAVE_PROPS (11 + 2 +    1 + 1 + 1)
 #define BOUND_ROBOT_SAVE_PROPS (17 + 8 + 4*32 + 0 + 1) // +stack

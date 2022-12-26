@@ -610,6 +610,9 @@ size_t save_robot_calculate_size(struct world *mzx_world,
 {
   int size = ROBOT_PROPS_SIZE;
 
+  /* Saved name field size is version dependent, see save_prop_s_293. */
+  size += (file_version >= V293) ? strlen(cur_robot->robot_name) : ROBOT_NAME_SIZE;
+
   if(savegame)
   {
     size += ROBOT_SAVE_PROPS_SIZE;
@@ -819,7 +822,7 @@ void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
     save_prop_s_293(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg, ROBOT_NAME_SIZE, &mf);
     save_prop_eof(&mf);
 
-    zip_write_file(zp, name, buffer, SENSOR_PROPS_SIZE, ZIP_M_NONE);
+    zip_write_file(zp, name, buffer, mftell(&mf), ZIP_M_NONE);
   }
 }
 
