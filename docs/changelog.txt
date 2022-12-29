@@ -198,6 +198,7 @@ USERS
   original frontend from 2010. This uses a custom y4m loader
   rather than MJPEG Tools for now, so it may be buggy. Usage:
   ffmpeg -i input -f yuv4mpegpipe pipe:1 | y4m2smzx - out.mzv
++ The downver utility now supports save files.
 + Fixed bugs caused by missing validation in the Import SFX
   feature in the editor.
 + The Robotic message box commands now properly display char 10.
