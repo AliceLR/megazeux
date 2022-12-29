@@ -101,7 +101,7 @@
 
   td
   {
-    padding: 1px 8px;
+    padding: 1px 6px;
     border: 4px solid transparent;
   }
 
@@ -359,6 +359,9 @@
         <li><a href="#files290">Files List</a></li>
         <li><a href="#properties">Properties Format</a></li>
         <li><a href="#worldprop290">World Properties</a></li>
+        <ol type="a">
+          <li><a href="#statctrprop290">Status Counter Properties</a></li>
+        </ol>
         <li><a href="#sfx290">Custom SFX Table</a></li>
         <li><a href="#chars290">Character Sets</a></li>
         <li><a href="#pal290">Palettes, Palette Indices, and Palette Intensities</a></li>
@@ -2398,7 +2401,8 @@ while(i &lt; size)
         The file ends immediately when a property ID of <code>0x0000</code> is
         encountered indicating the end of the file. This value is the same for
         all different properties files. Unrecognized properties IDs are usually
-        skipped unless noted otherwise.
+        skipped unless noted otherwise. The EOF ID should always be present at
+        the end of the file and there should be no data after the EOF ID.
       </p>
       <p>
         It is possible to nest properties files to create a file with a more
@@ -2444,7 +2448,7 @@ while(i &lt; size)
 | `0x0012` | ID Chars bullet colors               | array(b * 3)            |
 | `0x0013` | ID Chars block 3 (damage)            | array(b * 128)          |
 
-| `0x0018` | Status counters                      | array(s15 with \0 * 6)  |
+| `0x0018` | Status counters                      | Properties (2.93+)<br>array(s15 with \0 * 6) |
 
 | `0x0020` | Edge color                           | int(b)
 | `0x0021` | First board #                        | int(b)
@@ -2514,6 +2518,19 @@ while(i &lt; size)
           name if it is not.
         </li>
       </ol>
+      <h4 id="statctrprop290">Status Counter Properties</h4>
+      As of 2.93, the status counters are a nested properties file. Status
+      counters not present in the properties file are unused/blank.
+      <div class="markdown">
+| ID       | Property                             | Data Type               | Notes |
+|----------|--------------------------------------|-------------------------|-------|
+| `0x0001` | Set current status counter ID        | int(b)                  | Counters >=6 are ignored
+| `0x0002` | Status counter name                  | string                  | Max. length 14
+      </div>
+      Prior to 2.93, the status counters were a fixed size array of 6 15-byte
+      ASCIIZ strings (total size 90 bytes). In 2.93+ worlds, if the status
+      counters are 90 bytes long <i>and</i> are not a valid properties file,
+      they will be loaded as the old format.
     </section>
 
     <section id="sfx290" class="inner">

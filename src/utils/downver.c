@@ -93,8 +93,6 @@ struct downver_state
 
   /* 2.93 conversion vars */
   int screen_mode;
-  uint8_t *smzx_colors;
-  uint8_t *smzx_intensities;
 };
 
 static inline void save_prop_p(int ident, struct memfile *prop,
@@ -171,6 +169,40 @@ err_free:
   return result;
 }
 
+static void convert_293_to_292_status_counters(struct downver_state *dv,
+ struct memfile *dest, struct memfile *src)
+{
+  char counters[NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE];
+  struct memfile prop;
+  int ident;
+  int len;
+  int num = 0;
+
+  memset(counters, 0, sizeof(counters));
+
+  while(next_prop(&prop, &ident, &len, src))
+  {
+    switch(ident)
+    {
+      case STATCTRPROP_SET_ID:
+        num = load_prop_int(&prop);
+        break;
+
+      case STATCTRPROP_NAME:
+        if(num < NUM_STATUS_COUNTERS)
+        {
+          char *pos = counters + num * COUNTER_NAME_SIZE;
+          len = MIN(len, COUNTER_NAME_SIZE - 1);
+          len = mfread(pos, 1, len, &prop);
+          pos[len] = '\0';
+        }
+        break;
+    }
+  }
+  save_prop_a(WPROP_STATUS_COUNTERS, counters,
+   COUNTER_NAME_SIZE, NUM_STATUS_COUNTERS, dest);
+}
+
 static void convert_293_to_292_world_info(struct downver_state *dv,
  struct memfile *dest, struct memfile *src)
 {
@@ -191,6 +223,10 @@ static void convert_293_to_292_world_info(struct downver_state *dv,
       case WPROP_WORLD_NAME:
         /* NO loading termination pre-2.92d */
         save_prop_s_to_asciiz(ident, BOARD_NAME_SIZE, &prop, dest);
+        break;
+
+      case WPROP_STATUS_COUNTERS:
+        convert_293_to_292_status_counters(dv, dest, &prop);
         break;
 
       case WPROP_SMZX_MODE:

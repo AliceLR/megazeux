@@ -255,6 +255,7 @@ DEVELOPERS
   storage, like the NDS.
 + Board input strings, charset paths, and palette paths are now
   heap allocated on-demand to save RAM for low-memory systems.
++ Status counters are now saved as a nested properties file.
 + Refactored the 3DS renderer to use templates. (asie)
 + intake2() now supports custom handling of intake events, i.e.
   it can now be used without providing a fixed size buffer.

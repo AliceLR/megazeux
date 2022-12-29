@@ -298,12 +298,30 @@ static inline int save_world_info(struct world *mzx_world,
   save_prop_a(WPROP_ID_DMG,             id_dmg, ID_DMG_SIZE, 1, mf);
 
   // Status counters
-  save_prop_v(WPROP_STATUS_COUNTERS, COUNTER_NAME_SIZE * NUM_STATUS_COUNTERS,
-   prop, mf);
-
-  for(i = 0; i < NUM_STATUS_COUNTERS; i++)
+  if(file_version >= V293)
   {
-    mfwrite(mzx_world->status_counters_shown[i], COUNTER_NAME_SIZE, 1, prop);
+    char counters[STATCTR_PROP_SIZE];
+    mfopen_wr(counters, sizeof(counters), prop);
+
+    for(i = 0; i < NUM_STATUS_COUNTERS; i++)
+    {
+      char *ctr = mzx_world->status_counters_shown[i];
+      if(ctr[0])
+      {
+        save_prop_c(STATCTRPROP_SET_ID, i, prop);
+        save_prop_s(STATCTRPROP_NAME, ctr, prop);
+      }
+    }
+    save_prop_eof(prop);
+    save_prop_a(WPROP_STATUS_COUNTERS, counters, mftell(prop), 1, mf);
+  }
+  else
+  {
+    save_prop_v(WPROP_STATUS_COUNTERS, COUNTER_NAME_SIZE * NUM_STATUS_COUNTERS,
+     prop, mf);
+
+    for(i = 0; i < NUM_STATUS_COUNTERS; i++)
+      mfwrite(mzx_world->status_counters_shown[i], COUNTER_NAME_SIZE, 1, prop);
   }
 
   // Global properties
@@ -580,6 +598,58 @@ err_free:
   return VAL_INVALID;
 }
 
+static inline void load_status_counter_info(struct world *mzx_world,
+ int *file_version, struct memfile *mf)
+{
+  struct memfile prop;
+  int ident;
+  int len;
+  size_t num = 0;
+  boolean load_properties = false;
+  int i;
+
+  if(*file_version >= V293)
+  {
+    // Allow old format status counters in 2.93 worlds for convenience.
+    // The old format is 90 bytes long and should fail the properties file check.
+    if(mf->end - mf->start != NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE ||
+     check_properties_file(mf, STATCTRPROP_NAME))
+    {
+      load_properties = true;
+    }
+  }
+
+  if(load_properties)
+  {
+    while(next_prop(&prop, &ident, &len, mf))
+    {
+      switch(ident)
+      {
+        case STATCTRPROP_SET_ID:
+          num = load_prop_int(&prop);
+          break;
+
+        case STATCTRPROP_NAME:
+          if(num < ARRAY_SIZE(mzx_world->status_counters_shown))
+          {
+            len = MIN((size_t)len, sizeof(mzx_world->status_counters_shown[num]) - 1);
+            len = mfread(mzx_world->status_counters_shown[num], 1, len, &prop);
+            mzx_world->status_counters_shown[num][len] = '\0';
+          }
+          break;
+      }
+    }
+  }
+  else
+  {
+    for(i = 0; i < NUM_STATUS_COUNTERS; i++)
+    {
+      mfread(mzx_world->status_counters_shown[i], COUNTER_NAME_SIZE, 1, mf);
+      mzx_world->status_counters_shown[i][COUNTER_NAME_SIZE - 1] = '\0';
+    }
+  }
+}
+
 #define if_savegame         if(!savegame) { break; }
 #define if_savegame_or_291  if(!savegame && *file_version < V291) { break; }
 
@@ -694,11 +764,7 @@ static inline void load_world_info(struct world *mzx_world,
 
       // Status counters
       case WPROP_STATUS_COUNTERS:
-        for(i = 0; i < NUM_STATUS_COUNTERS; i++)
-        {
-          mfread(mzx_world->status_counters_shown[i], COUNTER_NAME_SIZE, 1, prop);
-          mzx_world->status_counters_shown[i][COUNTER_NAME_SIZE - 1] = '\0';
-        }
+        load_status_counter_info(mzx_world, file_version, prop);
         break;
 
       // Global properties
@@ -3467,6 +3533,8 @@ void clear_world(struct world *mzx_world)
   int i;
   int num_boards = mzx_world->num_boards;
   struct board **board_list = mzx_world->board_list;
+
+  memset(mzx_world->status_counters_shown, 0, NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE);
 
   for(i = 0; i < num_boards; i++)
   {

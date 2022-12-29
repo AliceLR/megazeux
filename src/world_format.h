@@ -77,12 +77,26 @@ enum world_file_id
 #define PROP_HEADER_SIZE  6
 #define PROP_EOF_SIZE     2
 
-#define STATS_SIZE NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE
+#define COUNT_STATCTR_PROPS (NUM_STATUS_COUNTERS * (2))
+#define BOUND_STATCTR_PROPS (NUM_STATUS_COUNTERS * (1 + COUNTER_NAME_SIZE))
+
+#define STATCTR_PROP_SIZE                   \
+(                                           \
+  BOUND_STATCTR_PROPS +                     \
+  COUNT_STATCTR_PROPS * PROP_HEADER_SIZE +  \
+  PROP_EOF_SIZE                             \
+)
+
+enum status_counters_prop
+{
+  STATCTRPROP_SET_ID              = 0x0001, //  1
+  STATCTRPROP_NAME                = 0x0002, //  COUNTER_NAME_SIZE
+};
 
 // IF YOU ADD ANYTHING, MAKE SURE THIS GETS UPDATED!
 
-#define COUNT_WORLD_PROPS (              1 + 3 +   4 + 16 + 4 +          1)
-#define BOUND_WORLD_PROPS (BOARD_NAME_SIZE + 5 + 455 + 24 + 9 + STATS_SIZE)
+#define COUNT_WORLD_PROPS (              1 + 3 +   4 + 16 + 4 +                 1)
+#define BOUND_WORLD_PROPS (BOARD_NAME_SIZE + 5 + 455 + 24 + 9 + STATCTR_PROP_SIZE)
 
 #define COUNT_SAVE_PROPS  ( 2 +  32 +          3 +        1)
 #define BOUND_SAVE_PROPS  ( 2 + 120 + 3*MAX_PATH + NUM_KEYS)
@@ -917,6 +931,40 @@ static inline boolean next_prop(struct memfile *prop, int *ident, int *length,
 
   mf->current += len;
   return true;
+}
+
+/**
+ * Returns true if the properties file in `mf` is valid.
+ * This can be used to distinguish whether or not an ambiguous file or field
+ * actually contains properties.
+ */
+static inline boolean check_properties_file(struct memfile *mf,
+ int maximum_ident)
+{
+  int ident;
+  unsigned length;
+  while(mf->end - mf->current >= 6)
+  {
+    ident = mfgetw(mf);
+    length = mfgetud(mf);
+    if(ident == 0 || ident > maximum_ident)
+      goto err;
+
+    if((unsigned)(mf->end - mf->current) < length)
+      goto err;
+
+    mf->current += length;
+  }
+
+  if((mf->end - mf->current == 2) && mfgetw(mf) == 0x0000) // EOF
+  {
+    mf->current = mf->start;
+    return true;
+  }
+
+err:
+  mf->current = mf->start;
+  return false;
 }
 
 __M_END_DECLS
