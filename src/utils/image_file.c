@@ -41,10 +41,12 @@
 
 /* Internal compat for MegaZeux boolean type. */
 typedef image_bool boolean;
+#ifndef __cplusplus
 #undef true
 #undef false
 #define true IMAGE_TRUE
 #define false IMAGE_FALSE
+#endif
 
 // These constraints are determined by the maximum size of a board/vlayer/MZM,
 // multiplied by the number of pixels per char in a given dimension.
@@ -194,7 +196,7 @@ static boolean load_png(imageinfo *s)
     png_set_scale_16(png);
   if(color_type & PNG_COLOR_MASK_PALETTE)
     png_set_palette_to_rgb(png);
-  if(!(color_type == PNG_COLOR_MASK_COLOR))
+  if(!(color_type & PNG_COLOR_MASK_COLOR))
     png_set_gray_to_rgb(png);
   if(!(color_type & PNG_COLOR_MASK_ALPHA))
     png_set_add_alpha(png, 0xff, PNG_FILLER_AFTER);
