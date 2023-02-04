@@ -841,7 +841,7 @@ ex:
 int strlencolor(char *str)
 {
   int len = 0;
-  char cur_char = *str;\
+  char cur_char = *str;
 
   while(cur_char != 0)
   {
@@ -859,7 +859,7 @@ int strlencolor(char *str)
           return len;
 
         // If the next isn't hex, count as one
-        if(!isxdigit((int)cur_char))
+        if(!isxdigit((uint8_t)cur_char))
         {
           len++;
         }
