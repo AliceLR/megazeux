@@ -2508,10 +2508,9 @@ static void clip_color_string(char *buf, size_t len, size_t pos)
 
     if((current_char == '~') || (current_char == '@'))
     {
-      idx++;
-      if(idx < len && isxdigit((uint8_t)buf[idx]))
+      if(idx + 1 < len && isxdigit((uint8_t)buf[idx + 1]))
       {
-        idx++;
+        idx += 2;
         continue;
       }
     }
