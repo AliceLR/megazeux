@@ -173,6 +173,11 @@ USERS
   stdin using the input filename "-".
 + Fixed bugs caused by missing validation in the Import SFX
   feature in the editor.
++ The Robotic message box commands now properly display char 10.
++ The Robotic command ? now correctly accounts for color codes
+  in its length bounding.
++ Fixed crashes in the & Robotic command caused by bad color
+  string length calculations.
 + Scrolls can now display standard message ~@ color codes.
 + Creating a new world using N from the title screen or Alt+R
   in the editor now clears the extended character sets.
