@@ -25,14 +25,18 @@
 #include <assert.h>
 #include <dlfcn.h>
 
+#ifdef CONFIG_X11
+#include <X11/Xlib.h>
+#endif
+
 static void *glso;
 static enum gl_lib_type gl_type;
 
 #ifdef ANDROID
 
-fn_ptr GL_GetProcAddress(const char *proc)
+dso_fn *GL_GetProcAddress(const char *proc)
 {
-  return (fn_ptr)dlsym(glso, proc);
+  return (dso_fn *)dlsym(glso, proc);
 }
 
 #endif /* ANDROID */

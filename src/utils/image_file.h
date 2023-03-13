@@ -20,12 +20,23 @@
 #ifndef __UTILS_IMAGE_FILE_H
 #define __UTILS_IMAGE_FILE_H
 
-#include "../compat.h"
-
-__M_BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdint.h>
-#include <stdio.h>
+#include <stdlib.h>
+
+/* Read up to `num` bytes from `handle` into the buffer pointed to by `dest`.
+ * Returns the number of bytes actually read from `handle`. */
+typedef size_t (*image_read_function)(void *dest, size_t num, void *handle);
+typedef unsigned char image_bool;
+
+enum image_bool_values
+{
+  IMAGE_FALSE,
+  IMAGE_TRUE
+};
 
 struct rgba_color
 {
@@ -50,15 +61,17 @@ struct image_raw_format
 {
   uint32_t width;
   uint32_t height;
-  uint32_t  bytes_per_pixel;
+  uint32_t bytes_per_pixel;
 };
 
-boolean load_image_from_file(const char *filename, struct image_file *dest,
+image_bool load_image_from_file(const char *filename, struct image_file *dest,
  const struct image_raw_format *raw_format);
-boolean load_image_from_stream(FILE *fp, struct image_file *dest,
- const struct image_raw_format *raw_format);
+image_bool load_image_from_stream(void *handle, image_read_function readfn,
+ struct image_file *dest, const struct image_raw_format *raw_format);
 void image_free(struct image_file *dest);
 
-__M_END_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __UTILS_IMAGE_FILE_H */

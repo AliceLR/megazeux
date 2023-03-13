@@ -94,8 +94,6 @@ unit_common_objs += \
   ${io_obj}/zip.o         \
   ${io_obj}/zip_stream.o  \
 
-unit_ldflags += ${ZLIB_LDFLAGS}
-
 endif
 
 #
@@ -113,7 +111,7 @@ unit_cflags ?= ${CXXFLAGS} ${DEBUG_CFLAGS} -UDEBUG -UNDEBUG
 unit_cflags += -fexceptions -funsigned-char -std=gnu++11
 
 unit_cflags += ${SDL_CFLAGS} -Umain
-unit_ldflags +=
+unit_ldflags += ${ZLIB_LDFLAGS}
 
 # Required for image_file test.
 ifneq (${LIBPNG},)

@@ -65,20 +65,26 @@ int main(int argc, char **argv)
   if(argc < 2 || (argv[1][0] == '-' && argv[1][1] != '\0'))
   {
     fprintf(stderr,
-      "png2smzx Image Conversion Utility\n\n"
+"png2smzx Image Conversion Utility\n\n"
 
-      "Usage: %s <in.png|-> [<out> | <out.mzm> "
-      "[<out.chr] [<out.pal>]] [options]\n\n"
+"Usage: %s <in.png|-> [<out> | <out.mzm> "
+"[<out.chr] [<out.pal>]] [options]\n\n"
 
-      "If the input file is '-', it will be read from stdin.\n"
-      "Supported image file formats are PNG, BMP, "
-      "NetPBM (.pbm, .pgm, .ppm, .pnm, .pam), and farbfeld (.ff).\n\n"
+"  If the input file is '-', it will be read from stdin.\n\n"
 
-      "Options:\n"
+"  Supported file formats are:\n\n"
 
-      "--skip-char=[value 0-255]	Skip this "
-      "char in the conversion process.\n"
-      "\n",
+"  * PNG\n"
+"  * GIF (multi-image GIFs will be flattened into a single image;\n"
+"         non-square pixel aspect ratios are supported via upscaling)\n"
+"  * BMP (1bpp, 2bpp, 4bpp, 8bpp, 16bpp, 24bpp, 32bpp, RLE8, RLE4)\n"
+"  * Netpbm/PNM (.pbm, .pgm, .ppm, .pnm, .pam)\n"
+"  * farbfeld (.ff)\n"
+"\n"
+"Options:\n\n"
+
+"  --skip-char=[value 0-255]	Skip this char in the conversion process.\n"
+"\n",
 
       argv[0]
     );

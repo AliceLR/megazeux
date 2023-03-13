@@ -165,7 +165,7 @@ USERS
 + libxmp playback improvements for GDM, AMF, and OctaMED modules
   as well as general stability improvements.
 + ccv and png2smzx now both support the following image formats:
-  PNG (with libpng enabled), BMP (uncompressed, RLE8, RLE4),
+  PNG (libpng builds only), GIF, BMP (uncompressed, RLE8, RLE4),
   NetPBM (PBM, PGM, PPM, PNM, PAM), farbfeld. png2smzx will now
   build when libpng support is disabled, though it won't support
   loading PNGs with this configuration.
@@ -173,6 +173,11 @@ USERS
   stdin using the input filename "-".
 + Fixed bugs caused by missing validation in the Import SFX
   feature in the editor.
++ The Robotic message box commands now properly display char 10.
++ The Robotic command ? now correctly accounts for color codes
+  in its length bounding.
++ Fixed crashes in the & Robotic command caused by bad color
+  string length calculations.
 + Scrolls can now display standard message ~@ color codes.
 + Creating a new world using N from the title screen or Alt+R
   in the editor now clears the extended character sets.

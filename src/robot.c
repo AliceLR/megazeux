@@ -2496,30 +2496,33 @@ static int robot_box_up(char *program, int pos, int count)
   return pos;
 }
 
-static int num_ccode_chars(char *str)
+static void clip_color_string(char *buf, size_t len, size_t pos)
 {
-  char current_char = *str;
-  char *str_pos = str;
-  int count = 0;
+  size_t idx = 0;
 
-  while(current_char)
+  while(idx < len)
   {
+    char current_char = buf[idx];
+    if(current_char == '\0')
+      break;
+
     if((current_char == '~') || (current_char == '@'))
     {
-      count++;
-
-      if(isxdigit((int)str_pos[1]))
+      if(idx + 1 < len && isxdigit((uint8_t)buf[idx + 1]))
       {
-        count++;
-        str_pos++;
+        idx += 2;
+        continue;
       }
     }
 
-    str_pos++;
-    current_char = *str_pos;
+    if(pos == 0) // Clip here
+    {
+      buf[idx] = '\0';
+      return;
+    }
+    pos--;
+    idx++;
   }
-
-  return count;
 }
 
 static void display_robot_line(struct world *mzx_world, char *program,
@@ -2551,8 +2554,8 @@ static void display_robot_line(struct world *mzx_world, char *program,
       // next is pos of string
       next = next_param_pos(program + 2);
       tr_msg(mzx_world, next + 1, id, ibuff);
-      ibuff[62] = 0; // Clip
-      color_string_ext(ibuff, 10, y, scroll_base_color, true, 0, 0);
+      clip_color_string(ibuff, ROBOT_MAX_TR, 62); // Clip
+      color_string_ext(ibuff, 10, y, scroll_base_color, false, 0, 0);
       draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
       break;
     }
@@ -2568,8 +2571,8 @@ static void display_robot_line(struct world *mzx_world, char *program,
         next = next_param_pos(program + 2);
         next = next_param_pos(next);
         tr_msg(mzx_world, next + 1, id, ibuff);
-        ibuff[62] = 0; // Clip
-        color_string_ext(ibuff, 10, y, scroll_base_color, true, 0, 0);
+        clip_color_string(ibuff, ROBOT_MAX_TR, 62); // Clip
+        color_string_ext(ibuff, 10, y, scroll_base_color, false, 0, 0);
         draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
       }
       break;
@@ -2578,8 +2581,8 @@ static void display_robot_line(struct world *mzx_world, char *program,
     case ROBOTIC_CMD_MESSAGE_BOX_COLOR_LINE: // Colored message
     {
       tr_msg(mzx_world, program + 3, id, ibuff);
-      ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
-      color_string_ext(ibuff, 8, y, scroll_base_color, true, 0, 0);
+      clip_color_string(ibuff, ROBOT_MAX_TR, 64); // Clip
+      color_string_ext(ibuff, 8, y, scroll_base_color, false, 0, 0);
       break;
     }
 
@@ -2587,10 +2590,11 @@ static void display_robot_line(struct world *mzx_world, char *program,
     {
       int length, x_position;
       tr_msg(mzx_world, program + 3, id, ibuff);
-      ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
+      clip_color_string(ibuff, ROBOT_MAX_TR, 64); // Clip
       length = strlencolor(ibuff);
       x_position = 40 - (length / 2);
-      color_string_ext(ibuff, x_position, y, scroll_base_color, true, 0, 0);
+      assert(x_position >= 0);
+      color_string_ext(ibuff, x_position, y, scroll_base_color, false, 0, 0);
       break;
     }
   }
