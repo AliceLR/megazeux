@@ -90,6 +90,7 @@ typedef unsigned char boolean;
 #ifdef CONFIG_NDS
 #include <nds.h>
 
+#ifndef CONFIG_NDS_BLOCKSDS
 // Use iprintf/iscanf on NDS to save ~50 KB
 #define sscanf siscanf
 #define printf iprintf
@@ -97,6 +98,7 @@ typedef unsigned char boolean;
 #define sprintf siprintf
 #define snprintf sniprintf
 #define vsnprintf vsniprintf
+#endif
 #endif
 
 #ifdef CONFIG_WII

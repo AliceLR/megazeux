@@ -1,0 +1,113 @@
+#
+# Nintendo DS Makefile
+#
+
+.PHONY: package clean
+
+ifeq ($(strip $(BLOCKSDS)),)
+$(error "BLOCKSDS must be set in your environment.")
+endif
+
+EXTRA_LICENSES += ${LICENSE_CC0} ${LICENSE_MPL2} ${LICENSE_NEWLIB}
+
+#
+# NDS target rules
+#
+CROSS_PREFIX	:= arm-none-eabi-
+CC		:= $(CROSS_PREFIX)gcc
+CXX		:= $(CROSS_PREFIX)g++
+OBJDUMP		:= $(CROSS_PREFIX)objdump
+STRIP		:= /bin/true
+
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
+#
+# Override library paths.
+#
+
+EXTRA_LIBS_DIRS	:= $(BLOCKSDS)/libs/maxmod \
+		   $(BLOCKSDS)/libs/zlib \
+		   $(BLOCKSDS)/libs/libsysnds \
+		   $(BLOCKSDS)/libs/libnds \
+		   $(BLOCKSDS)/libs/libc9
+EXTRA_LIBS_NAMES := -lmm9 -lsysnds9 -lnds9 -lc -lgcc
+
+EXTRA_INCLUDES := $(foreach path,$(EXTRA_LIBS_DIRS),-I$(path)/include)
+
+EXTRA_LIBS := $(foreach path,$(EXTRA_LIBS_DIRS),-L$(path)/lib) \
+              -Wl,--start-group $(EXTRA_LIBS_NAMES) -Wl,--end-group
+
+ARCH_CFLAGS   += -marm -mthumb-interwork -march=armv5te -mtune=arm946e-s
+ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds -ffunction-sections -fdata-sections
+ARCH_CXXFLAGS += ${ARCH_CFLAGS}
+ARCH_LDFLAGS  += $(BLOCKSDS)/sys/crts/ds_arm9_crt0.o ${EXTRA_LIBS} -Wl,--gc-sections -nostdlib \
+                   -T$(BLOCKSDS)/sys/crts/ds_arm9.mem \
+                   -T$(BLOCKSDS)/sys/crts/ds_arm9.ld
+#
+# Vile hack, remove me ASAP
+#
+arch/nds/%.o: arch/nds/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
+
+arch/nds/render.o: arch/nds/protected_palette.bin.o
+
+arch/nds/%.bin.o arch/nds/%_bin.h : arch/nds/%.bin
+	$(if ${V},,@echo "  CC      " $<)
+	@$(BLOCKSDS)/tools/bin2c/bin2c $< $(@D)
+	@$(CC) $(CFLAGS) -MMD -MP -c -o arch/nds/$*.bin.o arch/nds/$*_bin.c
+
+package: mzx arch/nds-blocksds/megazeux.arm7.elf
+	$(BLOCKSDS)/tools/ndstool/ndstool -c ${mzxrun}.nds -7 arch/nds-blocksds/megazeux.arm7.elf -9 ${mzxrun} -b arch/nds/icon.bmp "MegaZeux ${VERSION} (B)"
+
+#
+# Build the ARM7 binary.
+#
+ARM7_SOURCE_FILES := $(shell find -L arch/nds/arm7/source -name "*.c")
+ARM7_DEPEND_FILES := $(addsuffix .d,$(ARM7_SOURCE_FILES))
+ARM7_OBJECT_FILES := $(addsuffix .o,$(ARM7_SOURCE_FILES))
+
+ARM7_LIBS_DIRS	:= $(BLOCKSDS)/libs/maxmod \
+		   $(BLOCKSDS)/libs/libsysnds \
+		   $(BLOCKSDS)/libs/libnds \
+		   $(BLOCKSDS)/libs/libc7
+ARM7_LIBS_NAMES := -lmm7 -lsysnds7 -lnds7 -lc -lgcc
+
+ARM7_INCLUDES := $(foreach path,$(ARM7_LIBS_DIRS),-I$(path)/include)
+
+ARM7_LIBS := $(foreach path,$(ARM7_LIBS_DIRS),-L$(path)/lib) \
+              -Wl,--start-group $(ARM7_LIBS_NAMES) -Wl,--end-group
+
+arch/nds-blocksds/megazeux.arm7.elf: $(ARM7_OBJECT_FILES)
+	$(if ${V},,@echo "  LD.7    " $@)
+	${CC} -o $@ $< $(BLOCKSDS)/sys/crts/ds_arm7_crt0.o \
+		-mthumb -mthumb-interwork -Wl,--gc-sections -nostdlib \
+		-T$(BLOCKSDS)/sys/crts/ds_arm7.ld \
+		-Wl,--start-group $(ARM7_LIBS) -Wl,--end-group \
+
+arch/nds/arm7/source/%.c.o: arch/nds/arm7/source/%.c
+	$(if ${V},,@echo "  CC.7    " $<)
+	${CC} -MD -Os -std=gnu11 -D__NDS__ -DARM7 \
+		-Wall -Wno-unused-macros -mcpu=arm7tdmi -mtune=arm7tdmi \
+		-mthumb -mthumb-interwork $(ARM7_INCLUDES) \
+		-ffunction-sections -fdata-sections -fomit-frame-pointer \
+		-c $< -o $@
+#
+# Misc. helpers.
+#
+clean:
+	@${MAKE} -C arch/nds TARGET=${mzxrun} clean
+	@rm -f ${mzxrun}.nds arch/nds/*.{d,o} ${ARM7_DEPEND_FILES} ${ARM7_OBJECT_FILES}
+	@rm -f arch/nds/protected_palette.bin.S arch/nds/protected_palette_bin.h
+
+#
+# We're only interested in our packaged binary; remove the ELF intermediaries
+#
+build := ${build_root}/games/megazeux
+build: package ${build}
+	${CP} arch/nds/pad.config ${build}
+	${CP} ${mzxrun}.nds ${build}
+	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
+
+include arch/zip.inc

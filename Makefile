@@ -346,6 +346,14 @@ CXXFLAGS += -Wno-pedantic
 endif
 
 #
+# As does BlocksDS, currently
+#
+ifeq (${BUILD_NDS_BLOCKSDS},1)
+CFLAGS   += -Wno-strict-prototypes -Wno-pedantic -Wno-undef -Wno-declaration-after-statement
+CXXFLAGS += -Wno-pedantic
+endif
+
+#
 # The following flags are not applicable to mingw or djgpp builds.
 #
 ifneq (${PLATFORM},mingw)
