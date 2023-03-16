@@ -41,6 +41,7 @@ EXTRA_LIBS := $(foreach path,$(EXTRA_LIBS_DIRS),-L$(path)/lib) \
 ARCH_CFLAGS   += -marm -mthumb-interwork -march=armv5te -mtune=arm946e-s
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds -ffunction-sections -fdata-sections
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
+ARCH_LDFLAGS += -Wl,--defsym=vfprintf=__i_vfprintf -Wl,--defsym=vfscanf=__i_vfscanf 
 ARCH_LDFLAGS  += $(BLOCKSDS)/sys/crts/ds_arm9_crt0.o ${EXTRA_LIBS} -Wl,--gc-sections -nostdlib \
                    -T$(BLOCKSDS)/sys/crts/ds_arm9.mem \
                    -T$(BLOCKSDS)/sys/crts/ds_arm9.ld
