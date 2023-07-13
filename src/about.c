@@ -110,7 +110,7 @@ static char **about_text(int *num_lines)
     if(memcmp(&compiled, &ver, sizeof(SDL_version)))
     {
       lines[i++] = about_line("SDL: %u.%u.%u (compiled: %u.%u.%u)",
-        ver.major, ver.minor, ver.patch, compiled.major, compiled.minor, compiled.patch);
+       ver.major, ver.minor, ver.patch, compiled.major, compiled.minor, compiled.patch);
     }
     else
       lines[i++] = about_line("SDL: %u.%u.%u", ver.major, ver.minor, ver.patch);
@@ -132,8 +132,8 @@ static char **about_text(int *num_lines)
     if(compiled != ver)
     {
       lines[i++] = about_line("MikMod: %ld.%ld.%ld (compiled: %ld.%ld.%ld)",
-        ver >> 16, (ver >> 8) & 0xff, ver & 0xff,
-        compiled >> 16, (compiled >> 8) & 0xff, compiled & 0xff);
+       ver >> 16, (ver >> 8) & 0xff, ver & 0xff,
+       compiled >> 16, (compiled >> 8) & 0xff, compiled & 0xff);
     }
     else
       lines[i++] = about_line("MikMod: %ld.%ld.%ld", ver >> 16, (ver >> 8) & 0xff, ver & 0xff);
@@ -263,14 +263,19 @@ static void destroy_license_list(char *names[MAX_FILES], char *files[MAX_FILES])
 }
 
 // TODO: text editor element would be preferable here.
+// please kill this entire function with fire in a future release
 static char **load_license(const char *filename, int *_lines)
 {
   vfile *fp;
   char **arr = (char **)malloc(32 * sizeof(char *));
   char **tmp;
+  boolean tab;
   size_t lines_alloc = 32;
   size_t lines = 0;
+  size_t len;
   size_t sz;
+  size_t i;
+  size_t j;
 
   if(!arr)
     return NULL;
@@ -290,12 +295,39 @@ static char **load_license(const char *filename, int *_lines)
           break;
         arr = tmp;
       }
-      sz = strlen(buf) + 1;
+      tab = false;
+      len = strlen(buf);
+      sz = len + 1;
+      for(i = 0; i < len; i++)
+      {
+        if(buf[i] == '\t')
+        {
+          sz += 7;
+          tab = true;
+        }
+      }
+
       arr[lines] = (char *)malloc(sz);
       if(!arr[lines])
         break;
 
-      memcpy(arr[lines], buf, sz);
+      if(tab)
+      {
+        for(i = 0, j = 0; i < len && j < sz - 1; i++)
+        {
+          if(buf[i] == '\t')
+          {
+            memset(arr[lines] + j, ' ', 8);
+            j += 8;
+          }
+          else
+            arr[lines][j++] = buf[i];
+        }
+        arr[lines][j] = '\0';
+      }
+      else
+        memcpy(arr[lines], buf, sz);
+
       lines++;
     }
     vfclose(fp);
@@ -358,7 +390,7 @@ void about_megazeux(context *parent)
 
     elements[0] = construct_button(74, 1, "OK", 0);
     elements[1] = construct_list_box(1, 3, (const char **)current, current_lines, 19,
-      ABOUT_WIDTH - 2, show, &list_pos, &list_scroll, false);
+     ABOUT_WIDTH - 2, show, &list_pos, &list_scroll, false);
     elements[2] = construct_button(2, 1, "About", 1);
 
     num_elements = 3;
@@ -381,7 +413,7 @@ void about_megazeux(context *parent)
     }
 
     construct_dialog(&src, "About MegaZeux",
-      ABOUT_X, ABOUT_Y, ABOUT_WIDTH, ABOUT_HEIGHT, elements, num_elements, 1);
+     ABOUT_X, ABOUT_Y, ABOUT_WIDTH, ABOUT_HEIGHT, elements, num_elements, 1);
 
     show = run_dialog(parent->world, &src);
     destruct_dialog(&src);
