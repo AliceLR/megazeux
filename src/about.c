@@ -30,6 +30,9 @@
 #ifdef CONFIG_XMP
 #include <xmp.h>
 #endif
+#ifdef CONFIG_MIKMOD
+#include <mikmod.h>
+#endif
 #ifdef CONFIG_OPENMPT
 #include <libopenmpt/libopenmpt.h>
 #endif
