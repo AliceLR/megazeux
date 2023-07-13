@@ -12,6 +12,8 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "DEVKITARM must be set in your environment.")
 endif
 
+# ds_rules may rely on this variable that was removed...
+PORTLIBS_PATH := $(DEVKITPRO)/portlibs
 include ${DEVKITARM}/ds_rules
 
 EXTRA_LICENSES += ${LICENSE_CC0} ${LICENSE_MPL2} ${LICENSE_NEWLIB}
