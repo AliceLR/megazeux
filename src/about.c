@@ -18,6 +18,7 @@
  */
 
 #include "about.h"
+#include "platform_attribute.h" /* ATTRIBUTE_PRINTF */
 #include "util.h"
 #include "window.h"
 #include "io/vio.h"
@@ -52,11 +53,7 @@
 #define MAX_FILES     32
 #define MAX_VERSIONS  32
 
-#ifdef __GNUC__
-static char *about_line(const char *fmt, ...)
- __attribute__((format(gnu_printf, 1, 2)));
-#endif
-
+ATTRIBUTE_PRINTF(1, 2)
 static char *about_line(const char *fmt, ...)
 {
   va_list args;
@@ -134,12 +131,12 @@ static char **about_text(int *num_lines)
 
     if(compiled != ver)
     {
-      lines[i++] = about_line("MikMod: %d.%d.%d (compiled: %d.%d.%d)",
+      lines[i++] = about_line("MikMod: %ld.%ld.%ld (compiled: %ld.%ld.%ld)",
         ver >> 16, (ver >> 8) & 0xff, ver & 0xff,
         compiled >> 16, (compiled >> 8) & 0xff, compiled & 0xff);
     }
     else
-      lines[i++] = about_line("MikMod: %d.%d.%d", ver >> 16, (ver >> 8) & 0xff, ver & 0xff);
+      lines[i++] = about_line("MikMod: %ld.%ld.%ld", ver >> 16, (ver >> 8) & 0xff, ver & 0xff);
   }
 #endif
 
@@ -238,7 +235,7 @@ static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES])
       if(!strncasecmp(buf, "LICENSE.", 8) && strcasecmp(buf, "LICENSE.3rd") && buf[9])
       {
         names[num_files] = about_line("%-.16s", buf + 8);
-        files[num_files++] = about_line(buf);
+        files[num_files++] = about_line("%s", buf);
       }
 #ifdef CONFIG_DJGPP
       else
@@ -246,7 +243,7 @@ static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES])
       if(strncasecmp(buf, "LICENS~1.", 9) && buf[10])
       {
         names[num_files] = about_line("%-.16s", buf + 9);
-        files[num_files++] = about_line(buf);
+        files[num_files++] = about_line("%s", buf);
       }
 #endif
     }
