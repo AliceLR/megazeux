@@ -37,11 +37,7 @@
 #include <png.h>
 #endif
 #ifdef CONFIG_VORBIS
-#ifdef CONFIG_TREMOR
-#define LIBVORBIS_NAME "libtremor"
-#include <tremor/ivorbiscodec.h>
-#else
-#define LIBVORBIS_NAME "libvorbis"
+#ifndef CONFIG_TREMOR
 #include <vorbis/codec.h>
 #endif
 #endif
@@ -145,7 +141,7 @@ static char **about_text(int *num_lines)
 #endif
 
 #ifdef CONFIG_MODPLUG
-  lines[i++] = about_line("libmodplug: 0.8.9.0 (probably...)");
+  lines[i++] = about_line("libmodplug");
 #endif
 
 #ifdef CONFIG_OPENMPT
@@ -170,7 +166,11 @@ static char **about_text(int *num_lines)
 #endif
 
 #ifdef CONFIG_VORBIS
-  lines[i++] = about_line(LIBVORBIS_NAME ": %s", vorbis_version_string());
+#ifndef CONFIG_TREMOR
+  lines[i++] = about_line("libvorbis: %s", vorbis_version_string());
+#else
+  lines[i++] = about_line("libtremor");
+#endif
 #endif
 
   lines[i++] = about_line(" ");
