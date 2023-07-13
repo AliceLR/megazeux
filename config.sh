@@ -8,13 +8,16 @@ usage() {
 	echo "                                         <--sharedir [dir]> <--licensedir [dir]>"
 	echo "                                         <options..>"
 	echo
-	echo "  --prefix       Where dependencies should be found."
-	echo "  --sysconfdir   Where the config should be read from."
-	echo "  --gamesdir     Where binaries should be installed."
-	echo "  --libdir       Where libraries should be installed."
-	echo "  --bindir       Where utilities should be installed."
-	echo "  --sharedir     Where resources should be installed."
-	echo "  --licensedir   Where licenses should be installed."
+	echo "  --prefix       Install prefix and where dependencies should be found. (/usr)"
+	echo "  --sysconfdir   Where the config should be read from. (/etc)"
+	echo "  --gamesdir     Where binaries should be installed. (/usr/games)"
+	echo "  --libdir       Where libraries should be installed. (/usr/lib)"
+	echo "  --bindir       Where utilities should be installed. (/usr/bin)"
+	echo "  --sharedir     Where resources should be installed. (/usr/share)"
+	echo "  --licensedir   Where licenses should be installed. (/usr/share/doc)"
+	echo
+	echo "  Install directories can be disregarded for builds for platforms"
+	echo "  with a monolithic directory structure e.g. Windows."
 	echo
 	echo "Supported [platform] values:"
 	echo
@@ -143,6 +146,7 @@ SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
 LICENSEDIR_IS_SET="false"
 LICENSEDIR_IN_PREFIX="/share/doc"
 LICENSEDIR="${PREFIX}${LICENSEDIR_IN_PREFIX}"
+USERCONFFILE=""
 DATE_STAMP="true"
 AS_NEEDED="false"
 RELEASE="false"
@@ -646,76 +650,50 @@ fi
 echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 
 #
-# Some platforms may have filesystem hierarchies they need to fit into
-# FIXME: SHAREDIR should be hardcoded in fewer cases
+# Some platforms (currently "unix", "darwin") are system installations.
+# Their assets and licenses are located in subdirectories of their
+# respective filesystem hierarchies. For other platforms, these files are
+# located in the base directory of the archive (the executable location).
+# This location needs to be hardcoded for various console platforms.
 #
 if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
-	echo "#define CONFFILE \"megazeux-config\""      >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""  >> src/config.h
-	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
+	USERCONFFILE=".megazeux-config"
 elif [ "$PLATFORM" = "nds" ]; then
 	SHAREDIR=/games/megazeux
-	LICENSEDIR=$SHAREDIR
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "3ds" ]; then
 	SHAREDIR=/3ds/megazeux
-	LICENSEDIR=$SHAREDIR
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "dreamcast" ]; then
 	SHAREDIR=/cd
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "wii" ]; then
 	SHAREDIR=/apps/megazeux
-	LICENSEDIR=$SHAREDIR
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "wiiu" ]; then
 	SHAREDIR=fs:/vol/external01/wiiu/apps/megazeux
-	LICENSEDIR=$SHAREDIR
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "switch" ]; then
 	SHAREDIR=/switch/megazeux
-	LICENSEDIR=$SHAREDIR
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SHAREDIR=../Resources
+	USERCONFFILE=".megazeux-config"
+elif [ "$PLATFORM" = "emscripten" ]; then
+	SHAREDIR=/data
+else
+	SHAREDIR=.
+fi
+
+if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
+	echo "#define CONFFILE \"megazeux-config\""		>> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""		>> src/config.h
+	echo "#define LICENSEDIR \"$LICENSEDIR/megazeux/\""	>> src/config.h
+else
 	LICENSEDIR=$SHAREDIR
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\""           >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""            >> src/config.h
-	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
-elif [ "$PLATFORM" = "emscripten" ]; then
-	SHAREDIR=/data
-	LICENSEDIR=$SHAREDIR
-	GAMESDIR=$SHAREDIR/game
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
-else
-	SHAREDIR=.
-	LICENSEDIR=.
-	GAMESDIR=.
-	BINDIR=.
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+	echo "#define CONFFILE \"config.txt\""			>> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""			>> src/config.h
+	echo "#define LICENSEDIR \"$LICENSEDIR\""		>> src/config.h
+fi
+
+if [ -n "$USERCONFFILE" ]; then
+	echo "#define USERCONFFILE \"$USERCONFFILE\""		>> src/config.h
 fi
 
 #
@@ -728,7 +706,6 @@ echo "LIBDIR=$LIBDIR"         >> platform.inc
 echo "BINDIR=$BINDIR"         >> platform.inc
 echo "SHAREDIR=$SHAREDIR"     >> platform.inc
 echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
-echo "#define LICENSEDIR \"$LICENSEDIR\"" >> src/config.h
 
 #
 # Platform-specific libraries, or SDL?
