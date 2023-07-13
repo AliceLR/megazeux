@@ -6,6 +6,10 @@ USERS
 + Added an experimental Dreamcast port (asie, Lachesis).
 + Added an experimental MS-DOS 32-bit port based on DJGPP
   (Mr_Alert, asie, Lachesis).
++ Added an "About MegaZeux" dialog, accessible from the main
+  menu. This menu contains extended version information, and
+  displays license information for MegaZeux and the 3rd party
+  software it uses.
 + Added the "glslscale" renderer. This is the same as the GLSL
   renderer, but uses software rendering with scaling shaders
   instead of hardware rendering. This is faster on low end PCs

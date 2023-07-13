@@ -86,6 +86,7 @@ ${core_obj}/%.o: ${core_src}/%.cpp
 # to build the main binary. Please keep this sorted alphabetically.
 #
 core_cobjs := \
+  ${core_obj}/about.o             \
   ${core_obj}/block.o             \
   ${core_obj}/board.o             \
   ${core_obj}/caption.o           \

@@ -635,6 +635,14 @@ else
 	echo "Not stamping version with today's date."
 fi
 
+if command -v git && git rev-parse --short HEAD 2>/dev/null; then
+	echo "#define VERSION_HEAD \"$(git rev-parse --short HEAD)\"" >> src/config.h
+fi
+
+if [ "$PRERELEASE" = "1" ]; then
+	echo "#define VERSION_PRERELEASE" >> src/config.h
+fi
+
 echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 
 #
@@ -720,6 +728,7 @@ echo "LIBDIR=$LIBDIR"         >> platform.inc
 echo "BINDIR=$BINDIR"         >> platform.inc
 echo "SHAREDIR=$SHAREDIR"     >> platform.inc
 echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
+echo "#define LICENSEDIR \"$LICENSEDIR\"" >> src/config.h
 
 #
 # Platform-specific libraries, or SDL?
