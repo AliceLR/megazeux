@@ -52,6 +52,7 @@
 #define ABOUT_HEIGHT  23
 #define MAX_FILES     32
 #define MAX_VERSIONS  32
+#define MAX_LICENSE   (1 << 18) /* 256k should be enough for a license... */
 
 ATTRIBUTE_PRINTF(1, 2)
 static char *about_line(const char *fmt, ...)
@@ -232,7 +233,7 @@ static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES])
       if(type == DIR_TYPE_DIR)
         continue;
 
-      if(!strncasecmp(buf, "LICENSE.", 8) && strcasecmp(buf, "LICENSE.3rd") && buf[9])
+      if(!strncasecmp(buf, "LICENSE.", 8) && strcasecmp(buf, "LICENSE.3rd") && buf[8])
       {
         names[num_files] = about_line("%-.16s", buf + 8);
         files[num_files++] = about_line("%s", buf);
@@ -272,6 +273,7 @@ static char **load_license(const char *filename, int *_lines)
   boolean tab;
   size_t lines_alloc = 32;
   size_t lines = 0;
+  size_t total = 0;
   size_t len;
   size_t sz;
   size_t i;
@@ -306,6 +308,9 @@ static char **load_license(const char *filename, int *_lines)
           tab = true;
         }
       }
+      total += sz;
+      if(sz > MAX_LICENSE)
+        break;
 
       arr[lines] = (char *)malloc(sz);
       if(!arr[lines])
@@ -406,6 +411,8 @@ void about_megazeux(context *parent)
         {
           x = 2;
           y++;
+          if(y >= 3)
+            break;
         }
         elements[num_elements++] = construct_button(x, y, names[i], i + 2);
         x += sz;
