@@ -177,7 +177,7 @@ static char **about_text(int *num_lines)
   lines[i++] = about_line(" ");
   lines[i++] = about_line("CONFDIR: " CONFDIR);
   lines[i++] = about_line("CONFFILE: " CONFFILE);
-  lines[i++] = about_line("SHAREDIR: " CONFDIR);
+  lines[i++] = about_line("SHAREDIR: " SHAREDIR);
   lines[i++] = about_line("LICENSEDIR: " LICENSEDIR);
 
   *num_lines = i;
