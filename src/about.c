@@ -241,7 +241,7 @@ static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES])
 #ifdef CONFIG_DJGPP
       else
 
-      if(strncasecmp(buf, "LICENS~1.", 9) && buf[10])
+      if(!strncasecmp(buf, "LICENS~1.", 9) && buf[9])
       {
         names[num_files] = about_line("%-.16s", buf + 9);
         files[num_files++] = about_line("%s", buf);
