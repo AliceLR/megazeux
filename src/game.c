@@ -1256,5 +1256,13 @@ void title_screen(context *parent)
     edit_world((context *)title, true);
   }
 
+#ifdef VERSION_PRERELEASE
+  if(has_video_initialized())
+  {
+    error("Pre-release: created saves/worlds may be incompatible with future versions.",
+     ERROR_T_WARNING, ERROR_OPT_OK, 0);
+  }
+#endif
+
   clear_screen();
 }

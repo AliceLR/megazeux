@@ -101,7 +101,8 @@ Bionic is available under a collection of BSD-like licenses.
 
 Used by ports: Android.
 Home page:     https://android.googlesource.com/platform/bionic/
-License URL:   https://android.googlesource.com/platform/bionic/+/master/libc/NOTICE
+License URL:
+  https://android.googlesource.com/platform/bionic/+/master/libc/NOTICE
 
 
 ----------------------------------------------------------------
@@ -450,7 +451,7 @@ Home page:     https://maxmod.org
   crt0
 ----------------------------------------------------------------
 
-Some MegaZeux ports use a crt0 available under the Mozilla Public License 2.0.
+Some MZX ports use a crt0 licensed under the Mozilla Public License 2.0.
 See LICENSE.MPL2 for more information.
 
 Used by ports: NDS, 3DS.
@@ -519,7 +520,8 @@ Xlib is available under a collection of MIT-like licenses.
 
 Used by ports: Linux/BSD/Unix (optional).
 Home page:     https://www.x.org/
-License URL:   https://gitlab.freedesktop.org/xorg/lib/libx11/-/blob/master/COPYING
+License URL:
+  https://gitlab.freedesktop.org/xorg/lib/libx11/-/blob/master/COPYING
 
 
 ----------------------------------------------------------------

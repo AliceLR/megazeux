@@ -289,7 +289,7 @@ __libspec int main(int argc, char *argv[])
       if(updater_init())
       {
         // No auto update checks on repo builds.
-        if(!strcmp(VERSION, "GIT") &&
+        if((strstr(VERSION, "GIT") || strstr(VERSION, "PRE")) &&
          !strcmp(conf->update_branch_pin, "Stable"))
           conf->update_auto_check = UPDATE_AUTO_CHECK_OFF;
 
