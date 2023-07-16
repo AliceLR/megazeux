@@ -65,7 +65,6 @@ int main(int argc, char **argv)
   size_t total = 0;
   int ret = 2;
 
-  uint8_t mzm_head[16];
   unsigned mzm_size;
   unsigned width_chars;
   unsigned height_chars;
@@ -110,7 +109,9 @@ int main(int argc, char **argv)
 "    fpal     [palette:len bytes]\n"
 "    fidx     [indices:len bytes]\n"
 "    fchr     [charset:len bytes]\n"
-"    fmzm     [mzm:len bytes] (frame displays upon parsing)\n"
+"    f1ch     [char_plane:len bytes] (frame displays upon parsing)\n"
+"    f1co     [color_plane:len bytes] (frame displays upon parsing)\n"
+"    f2in     [interleaved_planes:len bytes] (frame displays upon parsing)\n"
 "\n",
       argv[0]
     );
@@ -225,15 +226,8 @@ int main(int argc, char **argv)
     framerate_d = y4m.framerate_d;
   }
 
-  mzm_size = sizeof(mzm_head) + 2 * width_chars * height_chars;
-  mfopen_wr(mzm_head, sizeof(mzm_head), &mf);
-  mfwrite("MZM2", 4, 1, &mf);
-  mfputw(width_chars, &mf);
-  mfputw(height_chars, &mf);
-  mfputud(0, &mf);
-  mfputc(0, &mf);
-  mfputc(1, &mf);
-  mfputw(0, &mf);
+  /* Headerless mode 1 MZM output. */
+  mzm_size = 2 * width_chars * height_chars;
 
   mfopen_wr(buffer, sizeof(buffer), &mf);
   fourcc("MZXV", 0, &mf);
@@ -274,9 +268,8 @@ int main(int argc, char **argv)
     total += 8 + 3 * SMZX_PAL_SIZE;
 
     mfseek(&mf, 0, SEEK_SET);
-    fourcc("fmzm", mzm_size, &mf);
+    fourcc("f2in", mzm_size, &mf);
     fwrite(buffer, 8, 1, out);
-    fwrite(mzm_head, sizeof(mzm_head), 1, out);
     fwrite(tile, 2, width_chars * height_chars, out);
     total += 8 + mzm_size;
   }
