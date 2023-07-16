@@ -175,6 +175,11 @@ USERS
   loading PNGs with this configuration.
 + ccv and png2smzx now both support streaming image data from
   stdin using the input filename "-".
++ Added y4m2smzx, a video converter frontend for the same image
+  converter that png2smzx uses. This is a rewrite of Mr_Alert's
+  original frontend from 2010. This uses a custom y4m loader
+  rather than MJPEG Tools for now, so it may be buggy. Usage:
+  ffmpeg -i input -f yuv4mpegpipe pipe:1 | y4m2smzx - out.mzv
 + Fixed bugs caused by missing validation in the Import SFX
   feature in the editor.
 + The Robotic message box commands now properly display char 10.

@@ -138,6 +138,7 @@ ifeq (${BUILD_UTILS},1)
 		${hlp2txt} \
 		${txt2hlp} \
 		${png2smzx} \
+		${y4m2smzx} \
 		${ccv} \
 		${DESTDIR}${BINDIR}/
 endif
@@ -211,6 +212,7 @@ ifeq (${BUILD_UTILS},1)
 		${DESTDIR}${BINDIR}/hlp2txt \
 		${DESTDIR}${BINDIR}/txt2hlp \
 		${DESTDIR}${BINDIR}/png2smzx \
+		${DESTDIR}${BINDIR}/y4m2smzx \
 		${DESTDIR}${BINDIR}/ccv
 endif
 	@echo Done.
