@@ -160,7 +160,7 @@ static void create_dns_thread(struct dns_data *data)
 
   LOCK(data);
 
-  if(platform_thread_create(&(data->thread),
+  if(!platform_thread_create(&(data->thread),
    (platform_thread_fn)run_dns_thread, (void *)data))
   {
     UNLOCK(data);
