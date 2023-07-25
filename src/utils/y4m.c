@@ -38,16 +38,6 @@ static boolean unsigned_value(uint32_t *v, const char *buf)
   return true;
 }
 
-static boolean signed_value(int32_t *v, const char *buf)
-{
-  char *end;
-  *v = strtol(buf, &end, 10);
-  if(end == buf || end[0] != '\0')
-    return false;
-
-  return true;
-}
-
 static boolean ratio_value(uint32_t *n, uint32_t *d, const char *buf)
 {
   char *end;
@@ -277,29 +267,41 @@ boolean y4m_init(struct y4m_data *y4m, FILE *fp)
       break;
   }
 
-  y4m->rgba_buffer_size = y4m->y_size * sizeof(struct y4m_rgba_color);
+  y4m->ram_per_frame = y4m->y_size;
+  if(y4m->c_size)
+    y4m->ram_per_frame += 2 * y4m->c_size;
+  if(y4m->subsampling == Y4M_SUB_444ALPHA)
+    y4m->ram_per_frame += y4m->y_size;
 
-  y4m->y = (uint8_t *)malloc(y4m->y_size);
-  if(!y4m->y)
+  y4m->rgba_buffer_size = y4m->y_size * sizeof(struct y4m_rgba_color);
+  return true;
+}
+
+boolean y4m_init_frame(const struct y4m_data *y4m, struct y4m_frame_data *yf)
+{
+  memset(yf, 0, sizeof(*yf));
+
+  yf->y = (uint8_t *)malloc(y4m->y_size);
+  if(!yf->y)
     return false;
 
   if(y4m->c_size)
   {
-    y4m->pb = (uint8_t *)malloc(y4m->c_size);
-    y4m->pr = (uint8_t *)malloc(y4m->c_size);
-    if(!y4m->pb || !y4m->pr)
+    yf->pb = (uint8_t *)malloc(y4m->c_size);
+    yf->pr = (uint8_t *)malloc(y4m->c_size);
+    if(!yf->pb || !yf->pr)
     {
-      y4m_free(y4m);
+      y4m_free_frame(yf);
       return false;
     }
   }
 
   if(y4m->subsampling == Y4M_SUB_444ALPHA)
   {
-    y4m->a = (uint8_t *)malloc(y4m->y_size);
-    if(!y4m->a)
+    yf->a = (uint8_t *)malloc(y4m->y_size);
+    if(!yf->a)
     {
-      y4m_free(y4m);
+      y4m_free_frame(yf);
       return false;
     }
   }
@@ -307,7 +309,7 @@ boolean y4m_init(struct y4m_data *y4m, FILE *fp)
   return true;
 }
 
-boolean y4m_init_frame(struct y4m_data *y4m, FILE *fp)
+boolean y4m_begin_frame(const struct y4m_data *y4m, struct y4m_frame_data *yf, FILE *fp)
 {
   char buf[256];
 
@@ -332,33 +334,34 @@ boolean y4m_init_frame(struct y4m_data *y4m, FILE *fp)
   return true;
 }
 
-boolean y4m_read_frame(struct y4m_data *y4m, FILE *fp)
+boolean y4m_read_frame(const struct y4m_data *y4m, struct y4m_frame_data *yf, FILE *fp)
 {
-  if(fread(y4m->y, 1, y4m->y_size, fp) < y4m->y_size)
+  if(fread(yf->y, 1, y4m->y_size, fp) < y4m->y_size)
     return false;
 
   if(y4m->c_size)
   {
-    if(fread(y4m->pb, 1, y4m->c_size, fp) < y4m->c_size ||
-     fread(y4m->pr, 1, y4m->c_size, fp) < y4m->c_size)
+    if(fread(yf->pb, 1, y4m->c_size, fp) < y4m->c_size ||
+     fread(yf->pr, 1, y4m->c_size, fp) < y4m->c_size)
       return false;
   }
-  if(y4m->a)
+  if(yf->a)
   {
-    if(fread(y4m->a, 1, y4m->y_size, fp) < y4m->y_size)
+    if(fread(yf->a, 1, y4m->y_size, fp) < y4m->y_size)
       return false;
   }
   return true;
 }
 
-void y4m_convert_frame_rgba(struct y4m_data *y4m, struct y4m_rgba_color *dest)
+void y4m_convert_frame_rgba(const struct y4m_data *y4m,
+ const struct y4m_frame_data *yf, struct y4m_rgba_color *dest)
 {
   // TODO: siting?
   // TODO: interlacing?
-  const uint8_t *y = y4m->y;
-  const uint8_t *pb = y4m->pb;
-  const uint8_t *pr = y4m->pr;
-  const uint8_t *a = y4m->a;
+  const uint8_t *y = yf->y;
+  const uint8_t *pb = yf->pb;
+  const uint8_t *pr = yf->pr;
+  const uint8_t *a = yf->a;
   size_t shift = y4m->c_x_shift;
   size_t max_sub = 1 << y4m->c_y_shift;
   size_t row_sub = 0;
@@ -409,11 +412,16 @@ void y4m_convert_frame_rgba(struct y4m_data *y4m, struct y4m_rgba_color *dest)
   }
 }
 
+void y4m_free_frame(struct y4m_frame_data *yf)
+{
+  free(yf->y);
+  free(yf->pb);
+  free(yf->pr);
+  free(yf->a);
+  yf->y = yf->pb = yf->pr = yf->a = NULL;
+}
+
 void y4m_free(struct y4m_data *y4m)
 {
-  free(y4m->y);
-  free(y4m->pb);
-  free(y4m->pr);
-  free(y4m->a);
-  y4m->y = y4m->pb = y4m->pr = y4m->a = NULL;
+  // nop
 }

@@ -24,7 +24,10 @@
 #include "smzxconv.h"
 #include "y4m.h"
 
+#define SKIP_SDL
 #include "../graphics.h"
+#include "../platform.h"
+#include "../util.h"
 #include "../io/memfile.h"
 
 #ifdef _WIN32
@@ -36,9 +39,49 @@
 #define PROMISES "stdio rpath wpath cpath"
 #endif
 
+//#define Y4M_DEBUG
+
+#if !defined(__THREAD_DUMMY_H) /* FIXME: hack */
+#define MAX_WORKERS 256
+#endif
+
+#define STDIO_BUFFER_SIZE (1 << 15)
+
 #define DEFAULT_MZX_SPEED   4
 #define DEFAULT_FRAMERATE_N 125
 #define DEFAULT_FRAMERATE_D (2 * (DEFAULT_MZX_SPEED - 1))
+
+struct y4m_convert_data
+{
+  const struct y4m_data *y4m;
+  struct y4m_frame_data yf;
+  struct rgba_color *rgba_buffer;
+  smzx_converter *conv;
+  mzx_tile *tile;
+  mzx_glyph chr[256];
+  mzx_color pal[256];
+  size_t tile_size;
+  boolean init;
+  boolean ready;
+};
+
+#ifdef MAX_WORKERS
+static platform_mutex worker_lock;
+static platform_sem worker_sem;
+static platform_sem main_sem;
+static platform_thread workers[MAX_WORKERS];
+static boolean worker_exit = false;
+static boolean sync_init = false;
+static int num_workers_allocated = 0;
+static int queue_worker_head = 0;
+static int queue_main_head = 0;
+#endif
+static int num_workers = 0;
+
+static struct y4m_convert_data *queue = NULL;
+static int queue_size = 0;
+static int mzm_size = 0;
+static size_t ram_usage = 0;
 
 static void fourcc(const char *fourcc, size_t len, struct memfile *mf)
 {
@@ -46,32 +89,393 @@ static void fourcc(const char *fourcc, size_t len, struct memfile *mf)
   mfputud(len, mf);
 }
 
+static boolean y4m_queue_init(const struct y4m_data *y4m, int num,
+ int width_chars, int height_chars)
+{
+  int i;
+  if(queue)
+  {
+    fprintf(stderr, "ERROR: conversion data already initialized!\n");
+    return false;
+  }
+
+  queue = (struct y4m_convert_data *)calloc(num, sizeof(struct y4m_convert_data));
+  if(!queue)
+  {
+    fprintf(stderr, "ERROR: failed to conversion data!\n");
+    return false;
+  }
+  ram_usage += num * sizeof(struct y4m_convert_data);
+  queue_size = num;
+  mzm_size = sizeof(mzx_tile) * width_chars * height_chars;
+
+  for(i = 0; i < queue_size; i++)
+  {
+    queue[i].y4m = y4m;
+    queue[i].ready = true;
+    if(!y4m_init_frame(y4m, &(queue[i].yf)))
+    {
+      fprintf(stderr, "ERROR: failed to initialize y4m frame buffer %d.\n", i);
+      return false;
+    }
+    ram_usage += y4m->ram_per_frame;
+
+    queue[i].conv = smzx_convert_init(width_chars, height_chars, 0, -1, 256, 0, 16);
+    if(!queue[i].conv)
+    {
+      fprintf(stderr, "ERROR: failed to initialize converter %d.\n", i);
+      return false;
+    }
+    // TODO: smzx converter RAM
+
+    queue[i].tile = (mzx_tile *)malloc(mzm_size);
+    if(!queue[i].tile)
+    {
+      fprintf(stderr, "ERROR: failed to allocate tile buffer %d.\n", i);
+      return false;
+    }
+    ram_usage += mzm_size;
+
+    queue[i].rgba_buffer = (struct rgba_color *)malloc(y4m->rgba_buffer_size);
+    if(!queue[i].rgba_buffer)
+    {
+      fprintf(stderr, "ERROR: failed to allocate frame buffer %d.\n", i);
+      return false;
+    }
+    ram_usage += y4m->rgba_buffer_size;
+  }
+  return true;
+}
+
+static void y4m_queue_destroy(void)
+{
+  int i;
+  if(!queue)
+    return;
+
+  for(i = 0; i < queue_size; i++)
+  {
+    y4m_free_frame(&(queue[i].yf));
+
+    if(queue[i].conv)
+      smzx_convert_free(queue[i].conv);
+
+    free(queue[i].tile);
+    free(queue[i].rgba_buffer);
+  }
+  free(queue);
+  queue = NULL;
+}
+
+static void y4m_smzx_convert(struct y4m_convert_data *d)
+{
+  y4m_convert_frame_rgba(d->y4m, &(d->yf), (struct y4m_rgba_color *)d->rgba_buffer);
+  smzx_convert(d->conv, d->rgba_buffer, d->tile, d->chr, d->pal);
+}
+
+#ifdef MAX_WORKERS
+static THREAD_RES y4m_worker_function(void *opaque)
+{
+  struct y4m_convert_data *d = NULL;
+#ifdef Y4M_DEBUG
+  int n;
+#endif
+
+  platform_mutex_lock(&worker_lock);
+  while(!worker_exit)
+  {
+    platform_mutex_unlock(&worker_lock);
+    platform_sem_wait(&worker_sem);
+    platform_mutex_lock(&worker_lock);
+    if(worker_exit)
+      break;
+
+#ifdef Y4M_DEBUG
+    n = queue_worker_head;
+    fprintf(stderr, "convert at %d\n", n);
+    fflush(stderr);
+#endif
+
+    d = &queue[queue_worker_head];
+    queue_worker_head++;
+    if(queue_worker_head >= queue_size)
+      queue_worker_head = 0;
+
+    platform_mutex_unlock(&worker_lock);
+
+    y4m_smzx_convert(d);
+
+    platform_mutex_lock(&worker_lock);
+    platform_sem_post(&main_sem);
+    d->ready = true;
+#ifdef Y4M_DEBUG
+    fprintf(stderr, "done at %d\n", n);
+    fflush(stderr);
+#endif
+  }
+  platform_mutex_unlock(&worker_lock);
+  THREAD_RETURN;
+}
+#endif
+
+static boolean y4m_workers_init(int num)
+{
+#ifdef MAX_WORKERS
+  int i;
+  if(num < 1)
+    return true;
+
+  if(sync_init || num_workers_allocated > 0)
+    return false;
+
+  if(!platform_mutex_init(&worker_lock) ||
+     !platform_sem_init(&worker_sem, 0) ||
+     !platform_sem_init(&main_sem, queue_size))
+      return false;
+  sync_init = true;
+
+  for(i = 0; i < num; i++)
+  {
+    if(!platform_thread_create(&workers[i], y4m_worker_function, NULL))
+    {
+      fprintf(stderr, "ERROR: failed to initialize worker %d.\n", i);
+      return false;
+    }
+  }
+  num_workers_allocated = num;
+#endif
+
+  return true;
+}
+
+static void y4m_workers_destroy(void)
+{
+#ifdef MAX_WORKERS
+  if(num_workers_allocated)
+  {
+    int i;
+    platform_mutex_lock(&worker_lock);
+    worker_exit = true;
+    platform_mutex_unlock(&worker_lock);
+
+    for(i = 0; i < num_workers_allocated; i++)
+      platform_sem_post(&worker_sem);
+
+    for(i = 0; i < num_workers_allocated; i++)
+      platform_thread_join(&workers[i]);
+
+    num_workers_allocated = 0;
+  }
+
+  if(sync_init)
+  {
+    platform_sem_destroy(&main_sem);
+    platform_sem_destroy(&worker_sem);
+    platform_mutex_destroy(&worker_lock);
+    sync_init = false;
+  }
+#endif
+}
+
+static void y4m_write_frame(struct y4m_convert_data *d, FILE *out)
+{
+  struct memfile mf;
+  uint8_t buffer[8];
+
+  mfopen_wr(buffer, sizeof(buffer), &mf);
+  fourcc("fchr", CHAR_SIZE * CHARSET_SIZE, &mf);
+  fwrite(buffer, 8, 1, out);
+  fwrite(d->chr, CHAR_SIZE, CHARSET_SIZE, out);
+
+  mfseek(&mf, 0, SEEK_SET);
+  fourcc("fpal", SMZX_PAL_SIZE * 3, &mf);
+  fwrite(buffer, 8, 1, out);
+  fwrite(d->pal, SMZX_PAL_SIZE, 3, out);
+
+  mfseek(&mf, 0, SEEK_SET);
+  fourcc("f2in", mzm_size, &mf);
+  fwrite(buffer, 8, 1, out);
+  fwrite(d->tile, mzm_size, 1, out);
+}
+
+static boolean y4m_do_conversion(struct y4m_data *y4m,
+ int width_chars, int height_chars, FILE *in, FILE *out)
+{
+  struct memfile mf;
+  uint8_t buffer[256];
+
+  struct y4m_convert_data *d;
+  int framerate_n = DEFAULT_FRAMERATE_N;
+  int framerate_d = DEFAULT_FRAMERATE_D;
+#ifdef Y4M_DEBUG
+  int n = 0;
+#endif
+
+  size_t frames_in = 0;
+  size_t frames_out = 0;
+  boolean input_done = false;
+  int pending = 0;
+
+  if(y4m->framerate_n && y4m->framerate_d)
+  {
+    framerate_n = y4m->framerate_n;
+    framerate_d = y4m->framerate_d;
+  }
+
+  /* Headerless mode 1 MZM output. */
+  mzm_size = 2 * width_chars * height_chars;
+
+  mfopen_wr(buffer, sizeof(buffer), &mf);
+  fourcc("MZXV", 0, &mf);
+  fourcc("fwid", 4, &mf);
+  mfputud(width_chars, &mf);
+  fourcc("fhei", 4, &mf);
+  mfputud(height_chars, &mf);
+  fourcc("smzx", 4, &mf);
+  mfputud(2, &mf);
+  fourcc("rate", 8, &mf);
+  mfputud(framerate_n, &mf);
+  mfputud(framerate_d, &mf);
+
+  if(!fwrite(buffer, mftell(&mf), 1, out))
+    return false;
+
+  while(!input_done || frames_out < frames_in)
+  {
+#ifdef MAX_WORKERS
+    if(num_workers)
+    {
+      platform_mutex_lock(&worker_lock);
+      d = &queue[queue_main_head];
+      if(pending == 0 || !d->ready)
+      {
+        platform_mutex_unlock(&worker_lock);
+        platform_sem_wait(&main_sem);
+        pending++;
+        continue;
+      }
+
+#ifdef Y4M_DEBUG
+      n = queue_main_head;
+#endif
+      queue_main_head++;
+      if(queue_main_head >= queue_size)
+        queue_main_head = 0;
+
+      platform_mutex_unlock(&worker_lock);
+    }
+    else
+#endif
+      d = queue;
+
+    if(d->init)
+    {
+#ifdef Y4M_DEBUG
+      fprintf(stderr, "write from %d\n", n);
+      fflush(stderr);
+#endif
+      if(!(frames_out & 0xff))
+      {
+        fprintf(stderr, ".");
+        fflush(stderr);
+      }
+      y4m_write_frame(d, out);
+      frames_out++;
+      pending--;
+    }
+
+    if(input_done)
+      continue;
+
+    if(!y4m_begin_frame(y4m, &(d->yf), in))
+    {
+      input_done = true;
+      continue;
+    }
+
+    if(!y4m_read_frame(y4m, &(d->yf), in))
+    {
+      fprintf(stderr, "ERROR: failed to process frame\n");
+      return false;
+    }
+    d->ready = false;
+    d->init = true;
+    frames_in++;
+
+#ifdef Y4M_DEBUG
+    fprintf(stderr, "input to %d\n", n);
+    fflush(stderr);
+#endif
+
+#ifdef MAX_WORKERS
+    if(num_workers)
+      platform_sem_post(&worker_sem);
+    else
+#endif
+      y4m_smzx_convert(d);
+  }
+
+  fprintf(stderr, "\n%zu frames in, %zu frames out\n", frames_in, frames_out);
+  return true;
+}
+
+
 int main(int argc, char **argv)
 {
   struct y4m_data y4m;
-  struct memfile mf;
-  uint8_t buffer[256];
-  mzx_tile *tile = NULL;
-  mzx_glyph chr[256];
-  mzx_color pal[256];
+  int num_queue;
 
-  smzx_converter *conv = NULL;
-  struct rgba_color *rgba_buffer = NULL;
   const char *input_file_name = NULL;
   const char *output_file_name = NULL;
   FILE *in = NULL;
   FILE *out = NULL;
   boolean init = false;
-  size_t total = 0;
+  boolean noopt = false;
   int ret = 2;
+  int i;
 
-  unsigned mzm_size;
   unsigned width_chars;
   unsigned height_chars;
-  unsigned framerate_n = DEFAULT_FRAMERATE_N;
-  unsigned framerate_d = DEFAULT_FRAMERATE_D;
 
-  if(argc < 3)
+  for(i = 1; i < argc; i++)
+  {
+    if(argv[i][0] == '-' && argv[i][1] && argv[i][1] != '-' && !noopt)
+    {
+      char *end;
+      if(!strcmp(argv[i], "--"))
+      {
+        noopt = true;
+        continue;
+      }
+      switch(argv[i][1])
+      {
+        case 'j':
+          num_workers = strtoul(argv[i] + 2, &end, 10);
+          if(*end == '\0')
+            continue;
+          break;
+      }
+    }
+    else
+
+    if(!input_file_name)
+    {
+      input_file_name = argv[i];
+      continue;
+    }
+    else
+
+    if(!output_file_name)
+    {
+      output_file_name = argv[i];
+      continue;
+    }
+
+    fprintf(stderr, "ERROR: invalid parameter '%s'\n", argv[i]);
+    return 1;
+  }
+
+  if(!input_file_name || !output_file_name)
   {
     fprintf(stderr,
 "y4m2smzx Image Conversion Utility\n\n"
@@ -82,6 +486,12 @@ int main(int argc, char **argv)
 
 "  If the input file is '-', it will be read from stdin.\n\n"
 "  If the output file is '-', it will be written to stdout.\n\n"
+
+"  Options:\n\n"
+
+"    -j#      Set the number of worker threads (0=synchronous, default).\n"
+"    --       Do not parse any of the following arguments as options.\n"
+"\n"
 
 "  The binary output format is an unpadded IFF-like:\n\n"
 
@@ -119,8 +529,18 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  if(!strcmp(argv[1], "-"))
+#ifdef MAX_WORKERS
+  num_workers = CLAMP(num_workers, 0, MAX_WORKERS);
+  num_queue = num_workers * 2;
+#else
+  num_workers = 0;
+#endif
+  if(num_workers < 1)
+    num_queue = 1;
+
+  if(!strcmp(input_file_name, "-"))
   {
+    input_file_name = NULL;
     in = stdin;
 #ifdef _WIN32
     /* Windows forces stdin to be text mode by default, fix it. */
@@ -130,8 +550,9 @@ int main(int argc, char **argv)
   else
     input_file_name = argv[1];
 
-  if(!strcmp(argv[2], "-"))
+  if(!strcmp(output_file_name, "-"))
   {
+    output_file_name = NULL;
     out = stdout;
 #ifdef _WIN32
     /* Windows forces stdout to be text mode by default, fix it. */
@@ -167,7 +588,8 @@ int main(int argc, char **argv)
       fprintf(stderr, "ERROR: failed to open input file.\n");
       goto err;
     }
-    setvbuf(in, NULL, _IOFBF, 1 << 15);
+    setvbuf(in, NULL, _IOFBF, STDIO_BUFFER_SIZE);
+    ram_usage += STDIO_BUFFER_SIZE;
   }
   if(!y4m_init(&y4m, in))
   {
@@ -188,26 +610,11 @@ int main(int argc, char **argv)
   width_chars = y4m.width / 8;
   height_chars = y4m.height / 14;
 
-  conv = smzx_convert_init(width_chars, height_chars, 0, -1, 256, 0, 16);
-  if(!conv)
-  {
-    fprintf(stderr, "ERROR: failed to initialize converter.\n");
+  if(!y4m_queue_init(&y4m, num_queue, width_chars, height_chars))
     goto err;
-  }
 
-  tile = (mzx_tile *)malloc(sizeof(mzx_tile) * width_chars * height_chars);
-  if(!tile)
-  {
-    fprintf(stderr, "ERROR: failed to allocate tile buffer.\n");
+  if(!y4m_workers_init(num_workers))
     goto err;
-  }
-
-  rgba_buffer = (struct rgba_color *)malloc(y4m.rgba_buffer_size);
-  if(!rgba_buffer)
-  {
-    fprintf(stderr, "ERROR: failed to allocate frame buffer.\n");
-    goto err;
-  }
 
   if(output_file_name)
   {
@@ -217,89 +624,41 @@ int main(int argc, char **argv)
       fprintf(stderr, "ERROR: failed to open output file.\n");
       goto err;
     }
-    setvbuf(in, NULL, _IOFBF, 1 << 15);
+    setvbuf(in, NULL, _IOFBF, STDIO_BUFFER_SIZE);
+    ram_usage += STDIO_BUFFER_SIZE;
   }
 
-  if(y4m.framerate_n && y4m.framerate_d)
-  {
-    framerate_n = y4m.framerate_n;
-    framerate_d = y4m.framerate_d;
-  }
+  fprintf(stderr, "Converter ready - allocated %zu of buffers.\n", ram_usage);
+  fflush(stderr);
 
-  /* Headerless mode 1 MZM output. */
-  mzm_size = 2 * width_chars * height_chars;
-
-  mfopen_wr(buffer, sizeof(buffer), &mf);
-  fourcc("MZXV", 0, &mf);
-  fourcc("fwid", 4, &mf);
-  mfputud(width_chars, &mf);
-  fourcc("fhei", 4, &mf);
-  mfputud(height_chars, &mf);
-  fourcc("smzx", 4, &mf);
-  mfputud(2, &mf);
-  fourcc("rate", 8, &mf);
-  mfputud(framerate_n, &mf);
-  mfputud(framerate_d, &mf);
-
-  total = mftell(&mf) - 8;
-  if(!fwrite(buffer, total + 8, 1, out))
+  if(!y4m_do_conversion(&y4m, width_chars, height_chars, in, out))
     goto err;
-
-  while(y4m_init_frame(&y4m, in))
-  {
-    if(!y4m_read_frame(&y4m, in))
-    {
-      fprintf(stderr, "ERROR: failed to process frame\n");
-      goto err;
-    }
-    y4m_convert_frame_rgba(&y4m, (struct y4m_rgba_color *)rgba_buffer);
-    smzx_convert(conv, rgba_buffer, tile, chr, pal);
-
-    mfseek(&mf, 0, SEEK_SET);
-    fourcc("fchr", CHAR_SIZE * CHARSET_SIZE, &mf);
-    fwrite(buffer, 8, 1, out);
-    fwrite(chr, CHAR_SIZE, CHARSET_SIZE, out);
-    total += 8 + CHAR_SIZE * CHARSET_SIZE;
-
-    mfseek(&mf, 0, SEEK_SET);
-    fourcc("fpal", SMZX_PAL_SIZE * 3, &mf);
-    fwrite(buffer, 8, 1, out);
-    fwrite(pal, SMZX_PAL_SIZE, 3, out);
-    total += 8 + 3 * SMZX_PAL_SIZE;
-
-    mfseek(&mf, 0, SEEK_SET);
-    fourcc("f2in", mzm_size, &mf);
-    fwrite(buffer, 8, 1, out);
-    fwrite(tile, 2, width_chars * height_chars, out);
-    total += 8 + mzm_size;
-  }
 
   // Insert total output file length (if not stdout).
   if(output_file_name)
   {
-    if(fseek(out, 4, SEEK_SET) == 0)
+    long total = ftell(out) - 8;
+    if(total > 0 && fseek(out, 4, SEEK_SET) == 0)
     {
-      mfseek(&mf, 0, SEEK_SET);
-      mfputud(total, &mf);
-      fwrite(buffer, 4, 1, out);
+      fputc(total & 0xff, out);
+      fputc((total >> 8) & 0xff, out);
+      fputc((total >> 16) & 0xff, out);
+      fputc((total >> 24) & 0xff, out);
     }
   }
   ret = 0;
 
 err:
+  y4m_workers_destroy();
+  y4m_queue_destroy();
+
   if(init)
     y4m_free(&y4m);
 
-  if(conv)
-    smzx_convert_free(conv);
-
-  free(tile);
-  free(rgba_buffer);
-
-  if(input_file_name)
+  if(input_file_name && in)
     fclose(in);
 
-  if(output_file_name)
+  if(output_file_name && out)
     fclose(out);
 
   return ret;

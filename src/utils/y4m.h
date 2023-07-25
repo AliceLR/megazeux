@@ -81,11 +81,8 @@ enum y4m_frame_subsampling
 
 struct y4m_data
 {
-  uint8_t *y;
-  uint8_t *pb;
-  uint8_t *pr;
-  uint8_t *a;
   size_t rgba_buffer_size;
+  size_t ram_per_frame;
 
   uint32_t width;
   uint32_t height;
@@ -97,16 +94,24 @@ struct y4m_data
   uint32_t pixel_n;
   uint32_t pixel_d;
 
-  enum y4m_frame_interlacing frame_interlacing;
-  enum y4m_frame_temporal_sampling frame_temporal_sampling;
-  enum y4m_frame_subsampling frame_subsampling;
-
   size_t y_size;
   size_t c_size;
   uint32_t c_width;
   uint32_t c_height;
   unsigned c_x_shift;
   unsigned c_y_shift;
+};
+
+struct y4m_frame_data
+{
+  uint8_t *y;
+  uint8_t *pb;
+  uint8_t *pr;
+  uint8_t *a;
+
+  enum y4m_frame_interlacing frame_interlacing;
+  enum y4m_frame_temporal_sampling frame_temporal_sampling;
+  enum y4m_frame_subsampling frame_subsampling;
 };
 
 struct y4m_rgba_color
@@ -118,9 +123,12 @@ struct y4m_rgba_color
 };
 
 boolean y4m_init(struct y4m_data *y4m, FILE *fp);
-boolean y4m_init_frame(struct y4m_data *y4m, FILE *fp);
-boolean y4m_read_frame(struct y4m_data *y4m, FILE *fp);
-void y4m_convert_frame_rgba(struct y4m_data *y4m, struct y4m_rgba_color *dest);
+boolean y4m_init_frame(const struct y4m_data *y4m, struct y4m_frame_data *yf);
+boolean y4m_begin_frame(const struct y4m_data *y4m, struct y4m_frame_data *yf, FILE *fp);
+boolean y4m_read_frame(const struct y4m_data *y4m, struct y4m_frame_data *yf, FILE *fp);
+void y4m_convert_frame_rgba(const struct y4m_data *y4m,
+ const struct y4m_frame_data *yf, struct y4m_rgba_color *dest);
+void y4m_free_frame(struct y4m_frame_data *yf);
 void y4m_free(struct y4m_data *y4m);
 
 __M_END_DECLS
