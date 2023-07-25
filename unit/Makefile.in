@@ -58,6 +58,11 @@ unit_objs += \
 
 endif
 
+ifeq (${PLATFORM},mingw)
+unit_objs += \
+  ${unit_obj}/thread_win32${unit_ext}
+endif
+
 #
 # Some unit tests only work with modular builds. The reason is usually
 # that the component(s) being tested are far too dependent on other
@@ -68,6 +73,7 @@ ifneq (${BUILD_MODULAR},)
 unit_objs += \
   ${unit_obj}/configure${unit_ext}     \
   ${unit_obj}/intake${unit_ext}        \
+  ${unit_obj}/thread${unit_ext}        \
   ${unit_obj}/world${unit_ext}         \
 
 unit_ldflags += -L. -lcore
@@ -109,9 +115,10 @@ DEBUG_CFLAGS ?= -O0
 #
 unit_cflags ?= ${CXXFLAGS} ${DEBUG_CFLAGS} -UDEBUG -UNDEBUG
 unit_cflags += -fexceptions -funsigned-char -std=gnu++11
+unit_ldflags += ${DEBUG_CFLAGS}
 
 unit_cflags += ${SDL_CFLAGS} -Umain
-unit_ldflags += ${ZLIB_LDFLAGS}
+unit_ldflags += ${SDL_LDFLAGS} ${ZLIB_LDFLAGS}
 
 # Required for image_file test.
 ifneq (${LIBPNG},)
