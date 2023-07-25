@@ -29,27 +29,35 @@ __M_BEGIN_DECLS
 #include <SDL_version.h>
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
-typedef int(*SDL_ThreadFunction)(void *);
+typedef int (*SDL_ThreadFunction)(void *);
 typedef Uint32 SDL_threadID;
 #endif
 
 #define THREAD_RES int
 #define THREAD_RETURN do { return 0; } while(0)
 
-typedef SDL_cond* platform_cond;
-typedef SDL_mutex* platform_mutex;
-typedef SDL_Thread* platform_thread;
+typedef SDL_cond *platform_cond;
+typedef SDL_mutex *platform_mutex;
+typedef SDL_sem *platform_sem;
+typedef SDL_Thread *platform_thread;
 typedef SDL_threadID platform_thread_id;
 typedef SDL_ThreadFunction platform_thread_fn;
 
-static inline void platform_mutex_init(platform_mutex *mutex)
+static inline boolean platform_mutex_init(platform_mutex *mutex)
 {
-  *mutex = SDL_CreateMutex();
+  platform_mutex m = SDL_CreateMutex();
+  if(m)
+  {
+    *mutex = m;
+    return true;
+  }
+  return false;
 }
 
-static inline void platform_mutex_destroy(platform_mutex *mutex)
+static inline boolean platform_mutex_destroy(platform_mutex *mutex)
 {
   SDL_DestroyMutex(*mutex);
+  return true;
 }
 
 static inline boolean platform_mutex_lock(platform_mutex *mutex)
@@ -66,14 +74,21 @@ static inline boolean platform_mutex_unlock(platform_mutex *mutex)
   return true;
 }
 
-static inline void platform_cond_init(platform_cond *cond)
+static inline boolean platform_cond_init(platform_cond *cond)
 {
-  *cond = SDL_CreateCond();
+  platform_cond c = SDL_CreateCond();
+  if(c)
+  {
+    *cond = c;
+    return true;
+  }
+  return false;
 }
 
-static inline void platform_cond_destroy(platform_cond *cond)
+static inline boolean platform_cond_destroy(platform_cond *cond)
 {
   SDL_DestroyCond(*cond);
+  return true;
 }
 
 static inline boolean platform_cond_wait(platform_cond *cond,
@@ -106,23 +121,58 @@ static inline boolean platform_cond_broadcast(platform_cond *cond)
   return true;
 }
 
-static inline int platform_thread_create(platform_thread *thread,
+static inline boolean platform_sem_init(platform_sem *sem, unsigned init_value)
+{
+  SDL_sem *ret = SDL_CreateSemaphore(init_value);
+  if(ret)
+  {
+    *sem = ret;
+    return true;
+  }
+  return false;
+}
+
+static inline boolean platform_sem_destroy(platform_sem *sem)
+{
+  SDL_DestroySemaphore(*sem);
+  return true;
+}
+
+static inline boolean platform_sem_wait(platform_sem *sem)
+{
+  if(SDL_SemWait(*sem))
+    return false;
+  return true;
+}
+
+static inline boolean platform_sem_post(platform_sem *sem)
+{
+  if(SDL_SemPost(*sem))
+    return false;
+  return true;
+}
+
+static inline boolean platform_thread_create(platform_thread *thread,
  platform_thread_fn start_function, void *data)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
-  *thread = SDL_CreateThread(start_function, "", data);
+  platform_thread t = SDL_CreateThread(start_function, "", data);
 #else
-  *thread = SDL_CreateThread(start_function, data);
+  platform_thread t = SDL_CreateThread(start_function, data);
 #endif
 
-  if(*thread)
-    return 0;
-  return -1;
+  if(t)
+  {
+    *thread = t;
+    return true;
+  }
+  return false;
 }
 
-static inline void platform_thread_join(platform_thread *thread)
+static inline boolean platform_thread_join(platform_thread *thread)
 {
   SDL_WaitThread(*thread, NULL);
+  return true;
 }
 
 static inline platform_thread_id platform_get_thread_id(void)
@@ -134,11 +184,6 @@ static inline boolean platform_is_same_thread(platform_thread_id a,
  platform_thread_id b)
 {
   return a == b;
-}
-
-static inline void platform_yield(void)
-{
-  // FIXME
 }
 
 __M_END_DECLS
