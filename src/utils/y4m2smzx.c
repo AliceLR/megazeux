@@ -547,8 +547,6 @@ int main(int argc, char **argv)
     _setmode(_fileno(stdin), _O_BINARY);
 #endif
   }
-  else
-    input_file_name = argv[1];
 
   if(!strcmp(output_file_name, "-"))
   {
@@ -559,8 +557,6 @@ int main(int argc, char **argv)
     _setmode(_fileno(stdout), _O_BINARY);
 #endif
   }
-  else
-    output_file_name = argv[2];
 
 #ifdef CONFIG_PLEDGE_UTILS
 #ifdef PLEDGE_HAS_UNVEIL
@@ -624,7 +620,7 @@ int main(int argc, char **argv)
       fprintf(stderr, "ERROR: failed to open output file.\n");
       goto err;
     }
-    setvbuf(in, NULL, _IOFBF, STDIO_BUFFER_SIZE);
+    setvbuf(out, NULL, _IOFBF, STDIO_BUFFER_SIZE);
     ram_usage += STDIO_BUFFER_SIZE;
   }
 
