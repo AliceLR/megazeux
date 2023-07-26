@@ -51,6 +51,55 @@
 #define DEFAULT_FRAMERATE_N 125
 #define DEFAULT_FRAMERATE_D (2 * (DEFAULT_MZX_SPEED - 1))
 
+static const char USAGE[] =
+{
+"y4m2smzx Image Conversion Utility\n\n"
+
+"Usage: %s <in.y4m|-> <out.dat|-> [options]\n\n"
+
+"  Converts a .y4m input file to "
+
+"  If the input file is '-', it will be read from stdin.\n\n"
+"  If the output file is '-', it will be written to stdout.\n\n"
+
+"  Options:\n\n"
+
+"    -j#      Set the number of worker threads (0=synchronous, default).\n"
+"    --       Do not parse any of the following arguments as options.\n"
+"\n"
+
+"  The binary output format is an unpadded IFF-like:\n\n"
+
+"    Head:  MZXV [len:u32le] [chunks...] (len may be zero)\n"
+"    Chunk: [FOURCC identifier] [len:u32le] [data...]\n\n"
+
+"  Supported header chunk FOURCCs (must preceed frame data):\n\n"
+
+"    fwid     [display_width_in_chars:u32le] (required)\n"
+"    fhei     [display_height_in_chars:u32le] (required)\n"
+"    bwid     [buffer_width_in_chars:u32le] (default fwid)\n"
+"    bhei     [buffer_height_in_chars:u32le] (default fhei)\n"
+"    sprx     [sprite_x_pitch:u32le] (default 0)\n"
+"    spry     [sprite_y_pitch:u32le] (default 0)\n"
+"    sprw     [sprites_per_row:u32le] (default 1)\n"
+"    sprh     [sprites_per_column:u32le] (default 1)\n"
+"    spru     [sprites_unbound:u32le] (default 0)\n"
+"    spro     [sprite_offset_per_sprite:u32le] (default 0)\n"
+"    sprt     [sprite_tcol:s32le] (default -1, bottom sprite always -1)\n"
+"\n"
+"  Supported frame chunk FOURCCs (omitted data persists between frames):\n\n"
+
+"    smzx     [smzxmode:u32le] (default 0)\n"
+"    rate     [numerator:u32le] [denominator:u32le] (default 125/6)\n"
+"    fpal     [palette:len bytes]\n"
+"    fidx     [indices:len bytes]\n"
+"    fchr     [charset:len bytes]\n"
+"    f1ch     [char_plane:len bytes] (frame displays upon parsing)\n"
+"    f1co     [color_plane:len bytes] (frame displays upon parsing)\n"
+"    f2in     [interleaved_planes:len bytes] (frame displays upon parsing)\n"
+"\n"
+};
+
 struct y4m_convert_data
 {
   const struct y4m_data *y4m;
@@ -477,55 +526,7 @@ int main(int argc, char **argv)
 
   if(!input_file_name || !output_file_name)
   {
-    fprintf(stderr,
-"y4m2smzx Image Conversion Utility\n\n"
-
-"Usage: %s <in.y4m|-> <out.dat|-> [options]\n\n"
-
-"  Converts a .y4m input file to "
-
-"  If the input file is '-', it will be read from stdin.\n\n"
-"  If the output file is '-', it will be written to stdout.\n\n"
-
-"  Options:\n\n"
-
-"    -j#      Set the number of worker threads (0=synchronous, default).\n"
-"    --       Do not parse any of the following arguments as options.\n"
-"\n"
-
-"  The binary output format is an unpadded IFF-like:\n\n"
-
-"    Head:  MZXV [len:u32le] [chunks...] (len may be zero)\n"
-"    Chunk: [FOURCC identifier] [len:u32le] [data...]\n\n"
-
-"  Supported header chunk FOURCCs (must preceed frame data):\n\n"
-
-"    fwid     [display_width_in_chars:u32le] (required)\n"
-"    fhei     [display_height_in_chars:u32le] (required)\n"
-"    bwid     [buffer_width_in_chars:u32le] (default fwid)\n"
-"    bhei     [buffer_height_in_chars:u32le] (default fhei)\n"
-"    sprx     [sprite_x_pitch:u32le] (default 0)\n"
-"    spry     [sprite_y_pitch:u32le] (default 0)\n"
-"    sprw     [sprites_per_row:u32le] (default 1)\n"
-"    sprh     [sprites_per_column:u32le] (default 1)\n"
-"    spru     [sprites_unbound:u32le] (default 0)\n"
-"    spro     [sprite_offset_per_sprite:u32le] (default 0)\n"
-"    sprt     [sprite_tcol:s32le] (default -1, bottom sprite always -1)\n"
-"\n"
-"  Supported frame chunk FOURCCs (omitted data persists between frames):\n\n"
-
-"    smzx     [smzxmode:u32le] (default 0)\n"
-"    rate     [numerator:u32le] [denominator:u32le] (default 125/6)\n"
-"    fpal     [palette:len bytes]\n"
-"    fidx     [indices:len bytes]\n"
-"    fchr     [charset:len bytes]\n"
-"    f1ch     [char_plane:len bytes] (frame displays upon parsing)\n"
-"    f1co     [color_plane:len bytes] (frame displays upon parsing)\n"
-"    f2in     [interleaved_planes:len bytes] (frame displays upon parsing)\n"
-"\n",
-      argv[0]
-    );
-
+    fprintf(stderr, USAGE, argv[0]);
     return 1;
   }
 
