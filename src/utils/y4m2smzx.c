@@ -57,15 +57,18 @@ static const char USAGE[] =
 
 "Usage: %s <in.y4m|-> <out.dat|-> [options]\n\n"
 
-"  Converts a .y4m input file to "
+"  Converts a .y4m input file to a custom video format easily loaded by Robotic.\n\n"
 
-"  If the input file is '-', it will be read from stdin.\n\n"
+"  If the input file is '-', it will be read from stdin.\n"
 "  If the output file is '-', it will be written to stdout.\n\n"
 
 "  Options:\n\n"
 
-"    -j#      Set the number of worker threads (0=synchronous, default).\n"
-"    --       Do not parse any of the following arguments as options.\n"
+"    --             Do not parse any of the following arguments as options.\n"
+"    -f#:#          Set the framerate ratio of the output. The default is the\n"
+"                   framerate specified in the input .y4m, or 125:6 if none.\n"
+"    -j#            Set the number of worker threads (0=synchronous, default).\n"
+"    --skip-char=#  Set the character to skip (one max, -1=none, default).\n"
 "\n"
 
 "  The binary output format is an unpadded IFF-like:\n\n"
@@ -130,6 +133,9 @@ static int num_workers = 0;
 static struct y4m_convert_data *queue = NULL;
 static int queue_size = 0;
 static int mzm_size = 0;
+static int framerate_n = -1;
+static int framerate_d = -1;
+static int skip_char = -1;
 static size_t ram_usage = 0;
 
 static void fourcc(const char *fourcc, size_t len, struct memfile *mf)
@@ -169,7 +175,7 @@ static boolean y4m_queue_init(const struct y4m_data *y4m, int num,
     }
     ram_usage += y4m->ram_per_frame;
 
-    queue[i].conv = smzx_convert_init(width_chars, height_chars, 0, -1, 256, 0, 16);
+    queue[i].conv = smzx_convert_init(width_chars, height_chars, 0, skip_char, 256, 0, 16);
     if(!queue[i].conv)
     {
       fprintf(stderr, "ERROR: failed to initialize converter %d.\n", i);
@@ -354,8 +360,6 @@ static boolean y4m_do_conversion(struct y4m_data *y4m,
   uint8_t buffer[256];
 
   struct y4m_convert_data *d;
-  int framerate_n = DEFAULT_FRAMERATE_N;
-  int framerate_d = DEFAULT_FRAMERATE_D;
 #ifdef Y4M_DEBUG
   int n = 0;
 #endif
@@ -365,10 +369,18 @@ static boolean y4m_do_conversion(struct y4m_data *y4m,
   boolean input_done = false;
   int pending = 0;
 
-  if(y4m->framerate_n && y4m->framerate_d)
+  if(framerate_n <= 0 || framerate_d <= 0)
   {
-    framerate_n = y4m->framerate_n;
-    framerate_d = y4m->framerate_d;
+    if(y4m->framerate_n && y4m->framerate_d)
+    {
+      framerate_n = y4m->framerate_n;
+      framerate_d = y4m->framerate_d;
+    }
+    else
+    {
+      framerate_n = DEFAULT_FRAMERATE_N;
+      framerate_d = DEFAULT_FRAMERATE_D;
+    }
   }
 
   /* Headerless mode 1 MZM output. */
@@ -481,6 +493,7 @@ int main(int argc, char **argv)
   boolean init = false;
   boolean noopt = false;
   int ret = 2;
+  char *end;
   int i;
 
   unsigned width_chars;
@@ -488,21 +501,49 @@ int main(int argc, char **argv)
 
   for(i = 1; i < argc; i++)
   {
-    if(argv[i][0] == '-' && argv[i][1] && argv[i][1] != '-' && !noopt)
+    if(argv[i][0] == '-' && argv[i][1] == '-' && !noopt)
     {
-      char *end;
       if(!strcmp(argv[i], "--"))
       {
         noopt = true;
-        continue;
       }
-      switch(argv[i][1])
+      else
+
+      if(!strncmp(argv[i], "--skip-char=", 12))
       {
-        case 'j':
-          num_workers = strtoul(argv[i] + 2, &end, 10);
-          if(*end == '\0')
-            continue;
+        skip_char = strtol(argv[i] + 12, &end, 10);
+        if(skip_char < -1 || skip_char >= 256 || *end != '\0')
+          goto err_param;
+      }
+    }
+    else
+
+    if(argv[i][0] == '-' && argv[i][1] != '\0' && !noopt)
+    {
+      int j;
+      for(j = 1; argv[i][j]; j++)
+      {
+        if(argv[i][j] == 'f')
+        {
+          framerate_n = strtoul(argv[i] + 2, &end, 10);
+          if(*end != ':' || framerate_n <= 0)
+            goto err_param;
+          framerate_d = strtoul(end + 1, &end, 10);
+          if(*end != '\0' || framerate_d <= 0)
+            goto err_param;
           break;
+        }
+        else
+
+        if(argv[i][j] == 'j')
+        {
+          num_workers = strtoul(argv[i] + 2, &end, 10);
+          if(*end != '\0')
+            goto err_param;
+          break;
+        }
+        else
+          goto err_param;
       }
     }
     else
@@ -510,16 +551,16 @@ int main(int argc, char **argv)
     if(!input_file_name)
     {
       input_file_name = argv[i];
-      continue;
     }
     else
 
     if(!output_file_name)
     {
       output_file_name = argv[i];
-      continue;
     }
+    continue;
 
+err_param:
     fprintf(stderr, "ERROR: invalid parameter '%s'\n", argv[i]);
     return 1;
   }
