@@ -53,7 +53,11 @@ void delay(uint32_t ms)
 
 uint64_t get_ticks(void)
 {
+#if SDL_VERSION_ATLEAST(2,0,18)
+  return SDL_GetTicks64();
+#else
   return SDL_GetTicks();
+#endif
 }
 
 #ifdef __WIN32__

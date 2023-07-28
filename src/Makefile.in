@@ -113,6 +113,7 @@ core_cobjs := \
   ${core_obj}/legacy_robot.o      \
   ${core_obj}/legacy_world.o      \
   ${core_obj}/mzm.o               \
+  ${core_obj}/platform_time.o     \
   ${core_obj}/render.o            \
   ${core_obj}/robot.o             \
   ${core_obj}/run_robot.o         \

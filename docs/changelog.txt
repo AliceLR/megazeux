@@ -166,6 +166,10 @@ USERS
   and >>> will return 0 if the left operand is positive or -1 if
   the left operand is negative. The old behavior of the bitshift
   operators for these shift values was architecture dependent.
++ The date and time for the Robotic date and time counters is
+  now sampled once per command maximum. When multiple date/time
+  counters are read in the same command, they are guaranteed to
+  represent the same time.
 + libxmp playback improvements for GDM, AMF, and OctaMED modules
   as well as general stability improvements.
 + ccv and png2smzx now both support the following image formats:
@@ -219,6 +223,9 @@ DEVELOPERS
 + Updated libxmp to 4.5.0.
 + Relicensed ccv from GPL 3 to GPL 2+ to match the rest of MZX.
   (Lancer-X)
++ If available, GetSystemTimePreciseAsFileTime and clock_gettime
+  are now used to calculate the system clock time.
++ If available, SDL_GetTicks64 is now used by get_ticks().
 
 
 November 22nd, 2020 - MZX 2.92f

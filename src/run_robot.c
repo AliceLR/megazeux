@@ -1121,6 +1121,9 @@ void run_robot(context *ctx, int id, int x, int y)
   int cmd; // Command to run
   int lines_run = 0;
   int gotoed;
+#ifdef CONFIG_EDITOR
+  int robot_debug = 0;
+#endif
 
   int old_pos; // Old position to verify gotos DID something
   int last_label = -1;
@@ -1145,6 +1148,7 @@ void run_robot(context *ctx, int id, int x, int y)
   mzx_world->first_prefix = 0;
   mzx_world->mid_prefix = 0;
   mzx_world->last_prefix = 0;
+  mzx_world->command_cache = 0;
 
   if(id < 0)
   {
@@ -1266,6 +1270,12 @@ void run_robot(context *ctx, int id, int x, int y)
     return;
   }
 
+#ifdef CONFIG_EDITOR
+  // If playing from the editor, enable some extra debug code.
+  if(mzx_world->editing && debug_robot_watch != NULL)
+    robot_debug = true;
+#endif
+
   // Figure blocked vars (accurate until robot program ends OR a put
   // or change command is issued)
 
@@ -1287,8 +1297,9 @@ void run_robot(context *ctx, int id, int x, int y)
     // Get command number
     cmd = cmd_ptr[0];
 
+#ifdef CONFIG_EDITOR
     // Check to see if the current command triggers a breakpoint.
-    if(mzx_world->editing && debug_robot_break)
+    if(robot_debug)
     {
       switch(debug_robot_break(ctx, cur_robot, id, lines_run))
       {
@@ -1306,6 +1317,7 @@ void run_robot(context *ctx, int id, int x, int y)
           return;
       }
     }
+#endif
 
     // Act according to command
     switch(cmd)
@@ -5974,6 +5986,7 @@ void run_robot(context *ctx, int id, int x, int y)
     mzx_world->first_prefix = 0;
     mzx_world->mid_prefix = 0;
     mzx_world->last_prefix = 0;
+    mzx_world->command_cache = 0;
 
     next_cmd_prefix:
     // Next line
@@ -5985,8 +5998,9 @@ void run_robot(context *ctx, int id, int x, int y)
       break;
     }
 
+#ifdef CONFIG_EDITOR
     // Check to see if a watchpoint triggered before incrementing the program.
-    if(mzx_world->editing && debug_robot_watch)
+    if(robot_debug)
     {
       // Returns 1 if the user chose to stop the program.
       switch(debug_robot_watch(ctx, cur_robot, id, lines_run))
@@ -6005,6 +6019,7 @@ void run_robot(context *ctx, int id, int x, int y)
           return;
       }
     }
+#endif
 
     // If we're returning from a subroutine, we don't want to set the
     // pos_within_line. Other sends will set it to zero anyway.
@@ -6026,7 +6041,7 @@ void run_robot(context *ctx, int id, int x, int y)
 
     // Some commands can decrement lines_run, putting it at -1 here,
     // so add 2 to lines_run for the check.
-    if((lines_run + 2) % 1000000 == 0)
+    if(((lines_run + 2) & 0xfffff) == 0)
     {
       if(peek_exit_input())
       {
