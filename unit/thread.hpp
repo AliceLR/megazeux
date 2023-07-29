@@ -293,19 +293,21 @@ static THREAD_RES semaphore_worker_fn(void *opaque)
 {
   struct semaphore_data *d = reinterpret_cast<struct semaphore_data *>(opaque);
   int i;
-  for(;;)
+
+  if(!platform_mutex_lock(&(d->lock)))
+    d->lock_ret_false = true;
+
+  while(!d->need_exit)
   {
+    if(!platform_mutex_unlock(&(d->lock)))
+      d->unlock_ret_false = true;
     if(!platform_sem_wait(&(d->worker_sem)))
       d->wait_ret_false = true;
-
     if(!platform_mutex_lock(&(d->lock)))
       d->lock_ret_false = true;
 
     if(d->need_exit)
-    {
-      platform_mutex_unlock(&(d->lock));
-      THREAD_RETURN;
-    }
+      break;
 
     int idx = d->next_idx;
     d->next_idx++;
@@ -324,58 +326,61 @@ static THREAD_RES semaphore_worker_fn(void *opaque)
 
     d->ready[idx] = true;
 
-    if(!platform_mutex_unlock(&(d->lock)))
-      d->unlock_ret_false = true;
-
     if(!platform_sem_post(&(d->ctrl_sem)))
       d->post_ret_false = true;
   }
+  platform_mutex_unlock(&(d->lock));
+  THREAD_RETURN;
 }
 
 static THREAD_RES semaphore_ctrl_fn(void *opaque)
 {
   struct semaphore_data *d = reinterpret_cast<struct semaphore_data *>(opaque);
-  int pending = 0;
+  int num_out = 0;
+  int num_in = 0;
   int i;
 
-  for(i = 0; i < NUM_WORK * REPEAT_TIMES; i++)
+  while(num_out < NUM_WORK * REPEAT_TIMES)
   {
-    if(!platform_sem_wait(&(d->ctrl_sem)))
-      d->wait_ret_false = true;
+    if(!platform_mutex_lock(&d->lock))
+      d->lock_ret_false = true;
 
     // Consume finished work in-order (y4m2smzx does this)
-    pending++;
-    while(pending > 0)
+    int idx = d->input_idx;
+    boolean ready = d->ready[idx];
+
+    if(num_in >= NUM_WORK && !ready)
     {
-      if(!platform_mutex_lock(&(d->lock)))
-        d->lock_ret_false = true;
-
-      boolean ready = d->ready[d->input_idx];
-
       if(!platform_mutex_unlock(&(d->lock)))
         d->unlock_ret_false = true;
-
-      if(!ready)
-        break;
-
-      // Consume and prepare new "work"
-      d->buffer[d->input_idx]++;
-      d->ready[d->input_idx] = false;
-      d->input_idx++;
-      if(d->input_idx >= NUM_WORK)
-        d->input_idx = 0;
-
-      if(!platform_sem_post(&(d->worker_sem)))
-        d->post_ret_false = true;
-
-      pending--;
+      if(!platform_sem_wait(&(d->ctrl_sem)))
+        d->wait_ret_false = true;
+      continue;
     }
-  }
-  // Wait for all workers to finish.
-  for(i = 0; i < NUM_WORK; i++)
-  {
-    if(!platform_sem_wait(&(d->ctrl_sem)))
-      d->wait_ret_false = true;
+
+    d->input_idx++;
+    if(d->input_idx >= NUM_WORK)
+      d->input_idx = 0;
+
+    if(!platform_mutex_unlock(&(d->lock)))
+      d->unlock_ret_false = true;
+
+    if(num_in >= NUM_WORK)
+    {
+      // Consume
+      num_out++;
+    }
+
+    if(num_in >= NUM_WORK * REPEAT_TIMES)
+      continue;
+
+    // Prepare new "work"
+    d->buffer[idx]++;
+    d->ready[idx] = false;
+    num_in++;
+
+    if(!platform_sem_post(&(d->worker_sem)))
+      d->post_ret_false = true;
   }
 
   if(!platform_mutex_lock(&(d->lock)))
@@ -404,7 +409,7 @@ UNITTEST(Semaphore)
   ASSERT(ret, "failed to init lock");
   ret = platform_sem_init(&(d.worker_sem), 0);
   ASSERT(ret, "failed to init worker semaphore");
-  ret = platform_sem_init(&(d.ctrl_sem), NUM_WORK);
+  ret = platform_sem_init(&(d.ctrl_sem), 0);
   ASSERT(ret, "failed to init ctrl semaphore");
 
   for(i = 0; i < NUM_THREADS; i++)
