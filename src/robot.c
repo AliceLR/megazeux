@@ -2532,6 +2532,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
   char *next;
   int scroll_base_color = mzx_world->scroll_base_color;
   int scroll_arrow_color = mzx_world->scroll_arrow_color;
+  mzx_world->command_cache = 0;
 
   switch(program[1])
   {
