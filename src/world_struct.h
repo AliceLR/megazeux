@@ -25,6 +25,8 @@
 __M_BEGIN_DECLS
 
 #include <stdio.h>
+#include <stdint.h>
+#include <time.h>
 
 #include "board_struct.h"
 #include "robot_struct.h"
@@ -33,6 +35,8 @@ __M_BEGIN_DECLS
 
 #include "io/vfile.h"
 #include "audio/sfx.h"
+
+#define COMMAND_CACHE_CURRENT_TIME (1 << 0)
 
 enum change_game_state_value
 {
@@ -196,6 +200,8 @@ struct world
   int mid_prefix;
   // 1-3 normal 5-7 is 1-3 but from a REL LAST cmd
   int last_prefix;
+  // Flags for data that persists during a command (keep in the prefix cache line).
+  int command_cache;
 
   // Lets the get counter routines indiciate to the caller
   // that the result is not a typical counter but something
@@ -233,6 +239,11 @@ struct world
   // An array for game2.cpp
   char *update_done;
   int update_done_size;
+
+  // Cached time for the current robot command.
+  struct tm current_time;
+  int64_t current_time_epoch;
+  int32_t current_time_nano;
 };
 
 __M_END_DECLS
