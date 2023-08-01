@@ -141,6 +141,9 @@ ifeq (${BUILD_UTILS},1)
 		${y4m2smzx} \
 		${ccv} \
 		${DESTDIR}${BINDIR}/
+	${install} -m 0644 \
+		assets/mzvplay.txt \
+		${DESTDIR}${SHAREDIR}/megazeux/assets
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	${install} -m 0755 -d \
