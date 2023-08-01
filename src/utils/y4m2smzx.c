@@ -525,7 +525,7 @@ int main(int argc, char **argv)
       {
         if(argv[i][j] == 'f')
         {
-          framerate_n = strtoul(argv[i] + 2, &end, 10);
+          framerate_n = strtoul(argv[i] + j + 1, &end, 10);
           if(*end != ':' || framerate_n <= 0)
             goto err_param;
           framerate_d = strtoul(end + 1, &end, 10);
@@ -537,7 +537,7 @@ int main(int argc, char **argv)
 
         if(argv[i][j] == 'j')
         {
-          num_workers = strtoul(argv[i] + 2, &end, 10);
+          num_workers = strtoul(argv[i] + j + 1, &end, 10);
           if(*end != '\0')
             goto err_param;
           break;
