@@ -580,8 +580,8 @@ ifeq (${BUILD_GAMECONTROLLERDB},1)
 	 ${build}/assets
 endif
 ifeq (${BUILD_UTILS},1)
-	${CP} assets/mzvplay.txt \
-	 ${build}/assets
+	${CP} contrib/mzvplay/mzvplay.txt \
+	 ${build}/utils
 endif
 
 endif # !SUPPRESS_BUILD_TARGETS
