@@ -138,8 +138,12 @@ ifeq (${BUILD_UTILS},1)
 		${hlp2txt} \
 		${txt2hlp} \
 		${png2smzx} \
+		${y4m2smzx} \
 		${ccv} \
 		${DESTDIR}${BINDIR}/
+	${install} -m 0644 \
+		contrib/mzvplay/mzvplay.txt \
+		${DESTDIR}${SHAREDIR}/megazeux
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	${install} -m 0755 -d \
@@ -211,6 +215,7 @@ ifeq (${BUILD_UTILS},1)
 		${DESTDIR}${BINDIR}/hlp2txt \
 		${DESTDIR}${BINDIR}/txt2hlp \
 		${DESTDIR}${BINDIR}/png2smzx \
+		${DESTDIR}${BINDIR}/y4m2smzx \
 		${DESTDIR}${BINDIR}/ccv
 endif
 	@echo Done.

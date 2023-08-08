@@ -148,6 +148,8 @@ src/utils/txt2hlp.exe
 src/utils/txt2hlp
 src/utils/png2smzx.exe
 src/utils/png2smzx
+src/utils/y4m2smzx.exe
+src/utils/y4m2smzx
 src/utils/*.debug
 stdout.txt
 stderr.txt

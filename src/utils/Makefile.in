@@ -48,6 +48,9 @@ png2smzx_objs := ${utils_obj}/png2smzx.o ${utils_obj}/smzxconv.o
 png2smzx_objs += ${img_objs}
 png2smzx_ldflags := ${img_flags}
 
+y4m2smzx := ${utils_src}/y4m2smzx${BINEXT}
+y4m2smzx_objs := ${utils_obj}/y4m2smzx.o ${utils_obj}/smzxconv.o ${utils_obj}/y4m.o
+
 ccv := ${utils_src}/ccv${BINEXT}
 ccv_objs := ${utils_obj}/ccv.o
 ccv_objs += ${img_objs}
@@ -64,6 +67,7 @@ ${utils_obj}/%.o: ${utils_src}/%.c src/config.h
 -include $(hlp2txt_objs:.o=.d)
 -include $(txt2hlp_objs:.o=.d)
 -include $(png2smzx_objs:.o=.d)
+-include $(y4m2smzx_objs:.o=.d)
 -include $(ccv_objs:.o=.d)
 
 ${checkres}: ${checkres_objs}
@@ -96,6 +100,11 @@ ${png2smzx}: ${png2smzx_objs}
 	${CC} ${png2smzx_objs} -o ${png2smzx} \
 	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${png2smzx_ldflags}
 
+${y4m2smzx}: ${y4m2smzx_objs}
+	$(if ${V},,@echo "  LINK    " ${y4m2smzx})
+	${CC} ${y4m2smzx_objs} -o ${y4m2smzx} \
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+
 ${ccv}: ${ccv_objs}
 	$(if ${V},,@echo "  LINK    " ${ccv})
 	${CC} ${ccv_objs} -o ${ccv} \
@@ -104,11 +113,11 @@ ${ccv}: ${ccv_objs}
 utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
 
 utils: ${checkres} ${downver} ${hlp2html} ${hlp2txt} ${txt2hlp}
-utils: ${ccv} ${png2smzx}
+utils: ${ccv} ${png2smzx} ${y4m2smzx}
 
 utils.debug: ${checkres}.debug ${downver}.debug ${ccv}.debug
 utils.debug: ${hlp2html}.debug ${hlp2txt}.debug ${txt2hlp}.debug
-utils.debug: ${png2smzx}.debug
+utils.debug: ${png2smzx}.debug ${y4m2smzx}.debug
 
 utils_clean:
 	$(if ${V},,@echo "  RM      " ${utils_obj})
@@ -125,5 +134,7 @@ utils_clean:
 	${RM} ${txt2hlp} ${txt2hlp}.debug
 	$(if ${V},,@echo "  RM      " ${png2smzx} ${png2smzx}.debug)
 	${RM} ${png2smzx} ${png2smzx}.debug
+	$(if ${V},,@echo "  RM      " ${y4m2smzx} ${y4m2smzx}.debug)
+	${RM} ${y4m2smzx} ${y4m2smzx}.debug
 	$(if ${V},,@echo "  RM      " ${ccv} ${ccv}.debug)
 	${RM} ${ccv} ${ccv}.debug

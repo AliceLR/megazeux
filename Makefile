@@ -539,13 +539,14 @@ ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
-	${CP} ${ccv} ${png2smzx} ${build}/utils
+	${CP} ${ccv} ${png2smzx} ${y4m2smzx} ${build}/utils
 	@if [ -f "${checkres}.debug" ]; then cp ${checkres}.debug ${build}/utils; fi
 	@if [ -f "${downver}.debug" ]; then cp ${downver}.debug ${build}/utils; fi
 	@if [ -f "${hlp2txt}.debug" ]; then cp ${hlp2txt}.debug ${build}/utils; fi
 	@if [ -f "${txt2hlp}.debug" ]; then cp ${txt2hlp}.debug ${build}/utils; fi
 	@if [ -f "${ccv}.debug" ]; then cp ${ccv}.debug ${build}/utils; fi
 	@if [ -f "${png2smzx}.debug" ]; then cp ${png2smzx}.debug ${build}/utils; fi
+	@if [ -f "${y4m2smzx}.debug" ]; then cp ${y4m2smzx}.debug ${build}/utils; fi
 endif
 
 ${build}/docs: ${build}
@@ -577,6 +578,10 @@ endif
 ifeq (${BUILD_GAMECONTROLLERDB},1)
 	${CP} assets/gamecontrollerdb.txt \
 	 ${build}/assets
+endif
+ifeq (${BUILD_UTILS},1)
+	${CP} contrib/mzvplay/mzvplay.txt \
+	 ${build}/utils
 endif
 
 endif # !SUPPRESS_BUILD_TARGETS
