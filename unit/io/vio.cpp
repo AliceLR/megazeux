@@ -169,6 +169,53 @@ static void test_vfgetd(vfile *vf)
   ASSERTEQ(c, EOF, "eof (byte 3)");
 }
 
+static void test_vfgetq(vfile *vf)
+{
+  int64_t expected;
+  int64_t c;
+
+  for(size_t i = 0; i < sizeof(test_data); i += 8)
+  {
+    c = vfgetq(vf);
+    expected = static_cast<int64_t>(test_data[i] | (test_data[i + 1] << 8) |
+     ((uint64_t)test_data[i + 2] << 16) | ((uint64_t)test_data[i + 3] << 24) |
+     ((uint64_t)test_data[i + 4] << 32) | ((uint64_t)test_data[i + 5] << 40) |
+     ((uint64_t)test_data[i + 6] << 48) | ((uint64_t)test_data[i + 7] << 56));
+    ASSERTEQ(c, expected, "vfgetq offset=%zu", i);
+  }
+  // All eight bytes should cause EOF.
+  c = vfgetq(vf);
+  ASSERTEQ(c, EOF, "eof (byte 0)");
+
+  back_up(-1, vf);
+  c = vfgetq(vf);
+  ASSERTEQ(c, EOF, "eof (byte 1)");
+
+  back_up(-2, vf);
+  c = vfgetq(vf);
+  ASSERTEQ(c, EOF, "eof (byte 2)");
+
+  back_up(-3, vf);
+  c = vfgetq(vf);
+  ASSERTEQ(c, EOF, "eof (byte 3)");
+
+  back_up(-4, vf);
+  c = vfgetq(vf);
+  ASSERTEQ(c, EOF, "eof (byte 4)");
+
+  back_up(-5, vf);
+  c = vfgetq(vf);
+  ASSERTEQ(c, EOF, "eof (byte 5)");
+
+  back_up(-6, vf);
+  c = vfgetq(vf);
+  ASSERTEQ(c, EOF, "eof (byte 6)");
+
+  back_up(-7, vf);
+  c = vfgetq(vf);
+  ASSERTEQ(c, EOF, "eof (byte 7)");
+}
+
 static void test_vfread(vfile *vf)
 {
   static constexpr int len = sizeof(test_data);
@@ -261,6 +308,25 @@ static void test_vfputd(vfile *vf)
      (test_data[i + 2] << 16) | (test_data[i + 3] << 24);
     //snprintf(buf, sizeof(buf), "vfputw offset=%zu, i);
     vfputd(d, vf);
+  }
+  int r = vfseek(vf, pos, SEEK_SET);
+  ASSERTEQ(r, 0, "vfseek");
+  test_write_check(vf);
+}
+
+static void test_vfputq(vfile *vf)
+{
+  //char buf[64];
+  long pos = vftell(vf);
+
+  for(size_t i = 0; i < sizeof(test_data); i += 8)
+  {
+    int64_t d = static_cast<int64_t>(test_data[i] | (test_data[i + 1] << 8) |
+     ((uint64_t)test_data[i + 2] << 16) | ((uint64_t)test_data[i + 3] << 24) |
+     ((uint64_t)test_data[i + 4] << 32) | ((uint64_t)test_data[i + 5] << 40) |
+     ((uint64_t)test_data[i + 6] << 48) | ((uint64_t)test_data[i + 7] << 56));
+    //snprintf(buf, sizeof(buf), "vfputw offset=%zu, i);
+    vfputq(d, vf);
   }
   int r = vfseek(vf, pos, SEEK_SET);
   ASSERTEQ(r, 0, "vfseek");
@@ -589,6 +655,7 @@ static void test_vfsafegets(vfile *vf, const char *filename,
   SECTION(read_vfgetc)      test_vfgetc(vf); \
   SECTION(read_vfgetw)      test_vfgetw(vf); \
   SECTION(read_vfgetd)      test_vfgetd(vf); \
+  SECTION(read_vfgetq)      test_vfgetq(vf); \
   SECTION(read_vfread)      test_vfread(vf); \
   SECTION(read_vfseektell)  test_vfseek_vftell_vrewind_read(vf); \
   SECTION(read_filelength)  test_filelength(sizeof(test_data), vf); \
@@ -599,6 +666,7 @@ static void test_vfsafegets(vfile *vf, const char *filename,
   SECTION(write_vfputc)     test_vfputc(vf); \
   SECTION(write_vfputw)     test_vfputw(vf); \
   SECTION(write_vfputd)     test_vfputd(vf); \
+  SECTION(write_vfputq)     test_vfputq(vf); \
   SECTION(write_vfwrite)    test_vfwrite(vf); \
   SECTION(write_vfputs)     test_vfputs(vf); \
   SECTION(write_vf_printf)  test_vf_printf(vf); \

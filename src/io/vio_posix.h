@@ -30,6 +30,8 @@ __M_BEGIN_DECLS
  */
 
 #include <dirent.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -169,6 +171,55 @@ static inline boolean platform_rewinddir(struct dir_handle dh)
 #endif
 
   return false;
+}
+
+static inline int platform_fseek(FILE *fp, int64_t offset, int whence)
+{
+#ifdef PLATFORM_HAS_DIRENT64
+  return fseeko64(fp, offset, whence);
+#else
+  if(offset >= LONG_MAX)
+    return -1;
+  return fseek(fp, offset, whence);
+#endif
+}
+
+static inline int64_t platform_ftell(FILE *fp)
+{
+#ifdef PLATFORM_HAS_DIRENT64
+  return ftello64(fp);
+#else
+  return ftell(fp);
+#endif
+}
+
+static inline int64_t platform_filelength(FILE *fp)
+{
+#ifdef PLATFORM_HAS_DIRENT64
+
+  struct stat64 st;
+  int fd = fileno(fp);
+
+  if(fd < 0)
+    return -1;
+  if(fstat64(fd, &st) < 0)
+    return -1;
+
+  return st.st_size;
+
+#else
+
+  struct stat st;
+  int fd = fileno(fp);
+
+  if(fd < 0)
+    return -1;
+  if(fstat(fd, &st) < 0)
+    return -1;
+
+  return st.st_size;
+
+#endif
 }
 
 __M_END_DECLS

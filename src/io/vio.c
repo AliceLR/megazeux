@@ -374,6 +374,7 @@ int vaccess(const char *path, int mode)
 int vstat(const char *path, struct stat *buf)
 {
   // TODO archive detection, cache, etc
+  // TODO custom struct for 64-bit file sizes, 64-bit timestamps.
   return platform_stat(path, buf);
 }
 
@@ -560,6 +561,55 @@ int vfgetd(vfile *vf)
 }
 
 /**
+ * Read eight bytes from a file as a signed integer (little endian).
+ */
+int64_t vfgetq(vfile *vf)
+{
+  assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_READ);
+
+  if(vf->flags & VF_MEMORY)
+  {
+    int tmp = vf->tmp_chr;
+    if(tmp != EOF)
+    {
+      if(!mfhasspace(7, &(vf->mf)))
+        return EOF;
+
+      vf->tmp_chr = EOF;
+      return tmp | (mfgetc(&(vf->mf)) << 8) |
+       ((uint64_t)mfgetw(&(vf->mf)) << 16) |
+       ((uint64_t)mfgetud(&(vf->mf)) << 32);
+    }
+
+    return mfhasspace(8, &(vf->mf)) ? mfgetq(&(vf->mf)) : EOF;
+  }
+
+  if(vf->flags & VF_FILE)
+  {
+    FILE *fp = vf->fp;
+    int a = fgetc(fp);
+    int b = fgetc(fp);
+    int c = fgetc(fp);
+    int d = fgetc(fp);
+    int e = fgetc(fp);
+    int f = fgetc(fp);
+    int g = fgetc(fp);
+    int h = fgetc(fp);
+
+    if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF) ||
+     (e == EOF) || (f == EOF) || (g == EOF) || (h == EOF))
+      return EOF;
+
+    return ((uint64_t)h << 56) | ((uint64_t)g << 48) | ((uint64_t)f << 40) |
+     ((uint64_t)e << 32) | ((uint32_t)d << 24) | (c << 16) | (b << 8) | a;
+  }
+
+  return EOF;
+}
+
+/**
  * Write a single byte to a file.
  */
 int vfputc(int character, vfile *vf)
@@ -638,6 +688,46 @@ int vfputd(int character, vfile *vf)
     int d = fputc((character >> 24) & 0xFF, fp);
 
     if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF))
+      return EOF;
+
+    return character;
+  }
+
+  return EOF;
+}
+
+/**
+ * Write a signed 64-bit integer to a file (little endian).
+ */
+int64_t vfputq(int64_t character, vfile *vf)
+{
+  assert(vf);
+  assert(vf->flags & VF_STORAGE_MASK);
+  assert(vf->flags & VF_WRITE);
+
+  if(vf->flags & VF_MEMORY)
+  {
+    if(!vfile_ensure_space(8, vf))
+      return EOF;
+
+    mfputq(character, &(vf->mf));
+    return character;
+  }
+
+  if(vf->flags & VF_FILE)
+  {
+    FILE *fp = vf->fp;
+    int a = fputc(character & 0xFF, fp);
+    int b = fputc((character >> 8) & 0xFF, fp);
+    int c = fputc((character >> 16) & 0xFF, fp);
+    int d = fputc((character >> 24) & 0xFF, fp);
+    int e = fputc((character >> 32) & 0xFF, fp);
+    int f = fputc((character >> 40) & 0xFF, fp);
+    int g = fputc((character >> 48) & 0xFF, fp);
+    int h = fputc((character >> 56) & 0xFF, fp);
+
+    if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF) ||
+     (e == EOF) || (f == EOF) || (g == EOF) || (h == EOF))
       return EOF;
 
     return character;
@@ -894,7 +984,7 @@ int vungetc(int chr, vfile *vf)
 /**
  * Seek to a position in a file.
  */
-int vfseek(vfile *vf, long int offset, int whence)
+int vfseek(vfile *vf, int64_t offset, int whence)
 {
   assert(vf);
   assert(vf->flags & VF_STORAGE_MASK);
@@ -904,7 +994,7 @@ int vfseek(vfile *vf, long int offset, int whence)
     return mfseek(&(vf->mf), offset, whence);
 
   if(vf->flags & VF_FILE)
-    return fseek(vf->fp, offset, whence);
+    return platform_fseek(vf->fp, offset, whence);
 
   return -1;
 }
@@ -912,7 +1002,7 @@ int vfseek(vfile *vf, long int offset, int whence)
 /**
  * Return the current position in a file.
  */
-long int vftell(vfile *vf)
+int64_t vftell(vfile *vf)
 {
   assert(vf);
   assert(vf->flags & VF_STORAGE_MASK);
@@ -932,7 +1022,7 @@ long int vftell(vfile *vf)
   }
 
   if(vf->flags & VF_FILE)
-    return ftell(vf->fp);
+    return platform_ftell(vf->fp);
 
   return -1;
 }
@@ -967,9 +1057,9 @@ void vrewind(vfile *vf)
  * written to or on memory write streams with fixed buffers, but is probably
  * safe to use for these cases.
  */
-long vfilelength(vfile *vf, boolean rewind)
+int64_t vfilelength(vfile *vf, boolean rewind)
 {
-  long size = -1;
+  int64_t size = -1;
 
   assert(vf);
   assert(vf->flags & VF_STORAGE_MASK);
@@ -981,33 +1071,21 @@ long vfilelength(vfile *vf, boolean rewind)
 
   if(vf->flags & VF_FILE)
   {
-    struct stat st;
-    int fd = fileno(vf->fp);
-
     // fstat (and maybe _filelength) rely on the copy on-disk being up to date.
     // The SEEK_END hack works without this, since fseek also flushes the file.
     if(vf->flags & VF_WRITE)
       fflush(vf->fp);
 
-#ifdef __WIN32__
-    size = _filelength(fd);
+    size = platform_filelength(vf->fp);
     if(size < 0)
-#endif
     {
-      if(!fstat(fd, &st))
-      {
-        size = st.st_size;
-      }
-      else
-      {
-        long current_pos = vftell(vf);
+      int64_t current_pos = vftell(vf);
 
-        vfseek(vf, 0, SEEK_END);
-        size = vftell(vf);
+      vfseek(vf, 0, SEEK_END);
+      size = vftell(vf);
 
-        if(!rewind)
-          vfseek(vf, current_pos, SEEK_SET);
-      }
+      if(!rewind)
+        vfseek(vf, current_pos, SEEK_SET);
     }
   }
 

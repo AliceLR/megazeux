@@ -334,6 +334,23 @@ static inline boolean platform_rewinddir(struct dir_handle dh)
   return true;
 }
 
+static inline int platform_fseek(FILE *fp, int64_t offset, int whence)
+{
+  int fd = fileno(fp);
+  return fd >= 0 ? _lseeki64(fd, offset, whence) : -1;
+}
+
+static inline int64_t platform_ftell(FILE *fp)
+{
+  int fd = fileno(fp);
+  return fd >= 0 ? _telli64(fd) : -1;
+}
+
+static inline int64_t platform_filelength(FILE *fp)
+{
+  int fd = fileno(fp);
+  return fd >= 0 ? _filelengthi64(fd) : -1;
+}
 
 __M_END_DECLS
 
