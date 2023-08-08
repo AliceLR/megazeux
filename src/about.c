@@ -21,6 +21,7 @@
 #include "platform_attribute.h" /* ATTRIBUTE_PRINTF */
 #include "util.h"
 #include "window.h"
+#include "io/path.h"
 #include "io/vio.h"
 
 #include <zlib.h>
@@ -185,9 +186,27 @@ static char **about_text(int *num_lines)
 }
 
 /**
- * Scan LICENSEDIR for all applicable license files.
+ * Get the license directory.
  */
-static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES])
+static const char *get_license_dir(void)
+{
+  if(!strcmp(LICENSEDIR, "."))
+  {
+    const char *exec_dir = mzx_res_get_by_id(MZX_EXECUTABLE_DIR);
+    if(!exec_dir)
+      return "";
+
+    return exec_dir;
+  }
+  else
+    return LICENSEDIR;
+}
+
+/**
+ * Scan license_dir for all applicable license files.
+ */
+static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES],
+ const char *license_dir)
 {
   vdir *dir;
   enum vdir_type type;
@@ -197,7 +216,7 @@ static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES])
   int num_files = 0;
   int i = 0;
 
-  dir = vdir_open(LICENSEDIR);
+  dir = vdir_open(license_dir);
   if(dir)
   {
     // Pass 1: find LICENSE (or LICENSE.) and LICENCE.3rd.
@@ -362,6 +381,8 @@ void about_megazeux(context *parent)
   char **current = NULL;
   char *names[MAX_FILES];
   char *files[MAX_FILES];
+  const char *license_dir;
+  char path[MAX_PATH];
   int current_lines = 0;
   int num_elements;
   int list_pos = 0;
@@ -372,9 +393,11 @@ void about_megazeux(context *parent)
   int y = 1;
   int i;
 
+  license_dir = get_license_dir();
+
   memset(names, 0, sizeof(names));
   memset(files, 0, sizeof(files));
-  load_license_list(names, files);
+  load_license_list(names, files, license_dir);
 
   while(show > 0)
   {
@@ -386,9 +409,16 @@ void about_megazeux(context *parent)
     }
 
     if(show == 1)
+    {
       current = about_text(&current_lines);
+    }
     else
-      current = load_license(files[show - 2], &current_lines);
+    {
+      if(path_join(path, sizeof(path), license_dir, files[show - 2]) < 0)
+        path[0] = '\0';
+
+      current = load_license(path, &current_lines);
+    }
 
     if(!current)
       current_lines = 0;
