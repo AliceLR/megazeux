@@ -197,6 +197,7 @@ USERS
 + Fixed PrintScreen/SysRq and Menu/"Right Click" keycodes.
 + Unsupported keys no longer return a KEY_PRESSED value of 1
   for SDL 2 builds.
++ Fixed warning messages caused by SDL controller CRCs.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
