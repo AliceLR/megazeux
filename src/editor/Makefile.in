@@ -97,7 +97,7 @@ editor_target := ${DSOPRE}editor${DSOPOST}
 ${editor_target}: ${editor_objs} ${core_target}
 	$(if ${V},,@echo "  LINK    " $@)
 	${CC} ${DSOLDFLAGS} -o $@ ${editor_objs} ${editor_ldflags} \
-	  ${LDFLAGS} ${DSOSONAME}$@ ${DSORPATH} $(LINK_DYNAMIC_IF_MIXED) -L. -lcore
+	  ${LDFLAGS} ${DSOSONAME}$@ ${DSORPATH} $(LINK_DYNAMIC_IF_MIXED) -L. -lcore ${ARCH_LIBS}
 
 editor_target_clean:
 	$(if ${V},,@echo "  RM      " ${editor_target} ${editor_target}.debug)
