@@ -2768,7 +2768,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
    mf->end - mf->start);
 
   char *buffer = NULL;
-  size_t actual_size;
+  uint64_t actual_size;
   size_t allocated_size = 0;
   struct memfile buf_file;
   unsigned int file_id;
@@ -2795,6 +2795,9 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
       case FILE_ID_WORLD_SFX:
       {
         zip_get_next_uncompressed_size(zp, &actual_size);
+        if(actual_size >= SIZE_MAX)
+          return MALLOC_FAILED;
+
         if(allocated_size < actual_size)
         {
           allocated_size = actual_size;
@@ -3032,7 +3035,7 @@ static enum status parse_file(const char *file_name,
     struct base_path *zip_base;
     struct zip_archive *zp;
 
-    size_t actual_size;
+    uint64_t actual_size;
     char name_buffer[MAX_PATH];
 
     vfclose(vf);
@@ -3051,6 +3054,12 @@ static enum status parse_file(const char *file_name,
     // Iterate the ZIP
     while(ZIP_SUCCESS == zip_get_next_uncompressed_size(zp, &actual_size))
     {
+      if(actual_size >= SIZE_MAX)
+      {
+        zip_skip_file(zp);
+        continue;
+      }
+
       zip_get_next_name(zp, name_buffer, MAX_PATH-1);
 
       len = strlen(name_buffer);
@@ -3088,7 +3097,6 @@ static enum status parse_file(const char *file_name,
         }
         free(buffer);
       }
-
       else
       {
         zip_skip_file(zp);

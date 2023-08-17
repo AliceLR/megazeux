@@ -126,7 +126,7 @@ static enum zip_error zip_duplicate_file(struct zip_archive *dest,
   unsigned int method;
   char name[9];
   void *buffer;
-  size_t actual_size;
+  uint64_t actual_size;
 
   result = zip_get_next_name(src, name, 9);
   if(result)
@@ -139,8 +139,12 @@ static enum zip_error zip_duplicate_file(struct zip_archive *dest,
   result = zip_get_next_uncompressed_size(src, &actual_size);
   if(result)
     return result;
+  if(actual_size >= SIZE_MAX)
+    return ZIP_ALLOC_ERROR;
 
   buffer = malloc(actual_size);
+  if(!buffer)
+    return ZIP_ALLOC_ERROR;
 
   result = zip_read_file(src, buffer, actual_size, &actual_size);
   if(result)

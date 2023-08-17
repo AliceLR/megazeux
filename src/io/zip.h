@@ -110,6 +110,7 @@ enum zip_error
   ZIP_EOF,
   ZIP_NULL,
   ZIP_NULL_BUF,
+  ZIP_ALLOC_ERROR,
   ZIP_STAT_ERROR,
   ZIP_SEEK_ERROR,
   ZIP_READ_ERROR,
@@ -123,8 +124,11 @@ enum zip_error
   ZIP_INVALID_STREAM_WRITE,
   ZIP_NOT_MEMORY_ARCHIVE,
   ZIP_NO_EOCD,
+  ZIP_NO_EOCD_ZIP64,
   ZIP_NO_CENTRAL_DIRECTORY,
   ZIP_INCOMPLETE_CENTRAL_DIRECTORY,
+  ZIP_UNSUPPORTED_VERSION,
+  ZIP_UNSUPPORTED_NUMBER_OF_ENTRIES,
   ZIP_UNSUPPORTED_MULTIPLE_DISKS,
   ZIP_UNSUPPORTED_FLAGS,
   ZIP_UNSUPPORTED_DECOMPRESSION,
@@ -132,7 +136,8 @@ enum zip_error
   ZIP_UNSUPPORTED_DECOMPRESSION_STREAM,
   ZIP_UNSUPPORTED_COMPRESSION_STREAM,
   ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM,
-  ZIP_UNSUPPORTED_ZIP64,
+  ZIP_NO_ZIP64_EXTRA_DATA,
+  ZIP_INVALID_ZIP64,
   ZIP_MISSING_LOCAL_HEADER,
   ZIP_HEADER_MISMATCH,
   ZIP_CRC32_MISMATCH,
@@ -148,9 +153,9 @@ struct zip_file_header
   uint16_t flags;
   uint16_t method;
   uint32_t crc32;
-  uint32_t compressed_size;
-  uint32_t uncompressed_size;
-  uint32_t offset;
+  uint64_t compressed_size;
+  uint64_t uncompressed_size;
+  uint64_t offset;
   uint32_t mzx_file_id;
   uint8_t mzx_board_id;
   uint8_t mzx_robot_id;
@@ -193,11 +198,11 @@ struct zip_archive
 {
   uint8_t mode;
 
-  uint16_t pos;
-  uint16_t num_files;
-  uint16_t files_alloc;
-  uint32_t size_central_directory;
-  uint32_t offset_central_directory;
+  size_t pos;
+  size_t num_files; // ZIP supports 2^64-1 files, but this needs to fit in RAM.
+  size_t files_alloc;
+  uint64_t size_central_directory;
+  uint64_t offset_central_directory;
 
   uint8_t *header_buffer;
   uint32_t header_buffer_alloc;
@@ -210,13 +215,14 @@ struct zip_archive
   uint32_t stream_buffer_pos;
   uint32_t stream_buffer_end;
   uint32_t stream_buffer_alloc;
-  uint32_t stream_crc_position;
-  uint32_t stream_u_left;
-  uint32_t stream_left;
+  uint64_t stream_crc_position;
+  uint64_t stream_zip64_position;
+  uint64_t stream_u_left;
+  uint64_t stream_left;
   uint32_t stream_crc32;
 
   uint32_t start_in_file;
-  uint32_t end_in_file;
+  uint64_t end_in_file;
 
   enum zip_error read_file_error;
   enum zip_error read_stream_error;
@@ -226,6 +232,7 @@ struct zip_archive
   vfile *vf;
 
   boolean is_memory;
+  boolean zip64_enabled; // Zip64 is allowed for the current file.
   void **external_buffer;
   size_t *external_buffer_size;
 
@@ -250,7 +257,7 @@ UTILS_LIBSPEC enum zip_error zip_get_next_method(struct zip_archive *zp,
  unsigned int *method);
 
 UTILS_LIBSPEC enum zip_error zip_get_next_uncompressed_size(
- struct zip_archive *zp, size_t *u_size);
+ struct zip_archive *zp, uint64_t *u_size);
 
 UTILS_LIBSPEC enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
  size_t *destLen);
@@ -269,6 +276,9 @@ UTILS_LIBSPEC enum zip_error zip_read_file(struct zip_archive *zp,
 
 UTILS_LIBSPEC enum zip_error zwrite(const void *src, size_t srcLen,
  struct zip_archive *zp);
+
+UTILS_LIBSPEC enum zip_error zip_set_zip64_enabled(struct zip_archive *zp,
+ boolean enable_zip64);
 
 UTILS_LIBSPEC enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
  const char *name, int method);

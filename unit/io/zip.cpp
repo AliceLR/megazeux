@@ -586,6 +586,15 @@ UNITTEST(Compress)
   stream->destroy(sd);
 }
 
+static const char long_content[] =
+{
+  "1234567890 1234567890 1234567890\r\n"
+  "1234567890 1234567890 1234567890\r\n"
+  "1234567890 1234567890 1234567890"
+};
+static constexpr uint32_t long_len = sizeof(long_content) - 1;
+static constexpr uint32_t long_crc = 0xE3046765;
+
 enum contents_type
 {
   CONTENTS_RAW,
@@ -614,6 +623,15 @@ struct zip_test_data
   enum zip_error open_result;
   uint32_t num_files;
   zip_test_file_data files[16];
+
+  static constexpr zip_test_data long_content_from_file(const char *filename,
+   const char *internal_filename, uint16_t flags)
+  {
+    return zip_test_data{ filename, filename,
+        0, ZIP_SUCCESS, 1,
+        {{ internal_filename, long_content,
+          flags, ZIP_M_NONE, long_crc, long_len, long_len, 0, CONTENTS_RAW }}};
+  }
 };
 
 static const zip_test_data raw_zip_data[] =
@@ -637,11 +655,8 @@ static const zip_test_data raw_zip_data[] =
         0x0000, ZIP_M_NONE, 0x00000000, 0, 0, 0, CONTENTS_RAW },
       { "abcde/a.txt", "abcde",
         0x0000, ZIP_M_NONE, 0x8587D865, 5, 5, 36, CONTENTS_RAW },
-      { "abcde/b.txt",
-        "1234567890 1234567890 1234567890\r\n"
-        "1234567890 1234567890 1234567890\r\n"
-        "1234567890 1234567890 1234567890",
-        0x0000, ZIP_M_DEFLATE, 0xE3046765, 100, 32, 82, CONTENTS_RAW },
+      { "abcde/b.txt", long_content,
+        0x0000, ZIP_M_DEFLATE, long_crc, 100, 32, 82, CONTENTS_RAW },
     }
   },
   {
@@ -658,6 +673,36 @@ static const zip_test_data raw_zip_data[] =
       "CT_LEVEL.MOD", "CT_LEVEL.MOD",
       0x0000, ZIP_M_DEFLATE, 0x2AF73EBE, 111885, 61105, 0, CONTENTS_FILE }},
   },
+  /* Zip64 */
+  {
+    "EOCD (Zip64)",
+    "PK\x06\x06\x2c\0\0\0\0\0\0\0\x2d\0\x2d\0\0\0\0\0\0\0\0\0"
+      "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+    "PK\x06\x07\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0"
+    "PK\x05\x06\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\0\0",
+    98, ZIP_SUCCESS, 0, {}
+  },
+  {
+    "dch1.zip64",
+    "dch1.zip64", 0, ZIP_SUCCESS, 1,
+    {{ "-", "dch1.txt",
+      0x0002, ZIP_M_DEFLATE, 0xA3898FBE, 7045, 3435, 0, CONTENTS_FILE }},
+  },
+  /* Zip64 format variants which all contain the uncompressed long text. */
+  zip_test_data::long_content_from_file("zip64/local64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/localdd64.zip", "test", ZIP_F_DATA_DESCRIPTOR),
+  zip_test_data::long_content_from_file("zip64/localcd64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/localcddd64.zip", "test", ZIP_F_DATA_DESCRIPTOR),
+  zip_test_data::long_content_from_file("zip64/cd64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/cduncomp64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/cdcomp64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/cdoffset64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/eocd64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/eocd64rc.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/eocd64sz.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/eocd64of.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/all64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/alldd64.zip", "test", ZIP_F_DATA_DESCRIPTOR),
 };
 
 // The library should refuse to open these...

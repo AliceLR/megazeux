@@ -415,7 +415,7 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
  struct zip_archive *zp, int savegame, int file_version)
 {
   char *buffer = NULL;
-  size_t actual_size;
+  uint64_t actual_size;
   struct memfile mf;
 
   unsigned int method;
@@ -471,7 +471,7 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
 {
   struct scroll *cur_scroll = ccalloc(1, sizeof(struct scroll));
 
-  size_t actual_size;
+  uint64_t actual_size;
   void *buffer;
   struct memfile mf;
   struct memfile prop;
@@ -532,7 +532,7 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
 {
   struct sensor *cur_sensor = ccalloc(1, sizeof(struct sensor));
 
-  size_t actual_size;
+  uint64_t actual_size;
   void *buffer;
   struct memfile mf;
   struct memfile prop;

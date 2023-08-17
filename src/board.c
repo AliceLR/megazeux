@@ -399,7 +399,7 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
  int savegame, int *file_version)
 {
   char *buffer;
-  size_t actual_size;
+  uint64_t actual_size;
   struct memfile mf;
   struct memfile prop;
   int last_ident = -1;
@@ -408,6 +408,8 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
   int v;
 
   zip_get_next_uncompressed_size(zp, &actual_size);
+  if(actual_size >= SIZE_MAX)
+    return -1;
 
   buffer = cmalloc(actual_size);
 

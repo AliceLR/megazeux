@@ -421,7 +421,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   char *buffer;
   struct memfile mf;
   struct memfile prop;
-  size_t actual_size;
+  uint64_t actual_size;
 
   int missing_ident;
   int last_ident = -1;
@@ -429,6 +429,8 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   int size = 0;
 
   zip_get_next_uncompressed_size(zp, &actual_size);
+  if(actual_size >= SIZE_MAX)
+    return VAL_INVALID;
 
   buffer = cmalloc(actual_size);
 
