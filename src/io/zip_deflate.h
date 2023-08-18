@@ -45,7 +45,7 @@ struct deflate_stream_data
 
 static inline struct zip_stream_data *deflate_create(void)
 {
-  return ccalloc(1, sizeof(struct deflate_stream_data));
+  return (struct zip_stream_data *)calloc(1, sizeof(struct deflate_stream_data));
 }
 
 static inline void deflate_destroy(struct zip_stream_data *zs)

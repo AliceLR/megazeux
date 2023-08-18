@@ -280,32 +280,33 @@ static enum zip_error zip_get_stream(struct zip_archive *zp, uint8_t method,
 
       case ZIP_S_READ_STREAM:
       {
-        if(result && result->decompress_open)
-        {
-          if(!zp->stream_data_ptrs[method])
-            zp->stream_data_ptrs[method] = result->create();
+        if(!result || !result->decompress_open)
+          return ZIP_UNSUPPORTED_DECOMPRESSION;
 
-          zp->stream = result;
-          zp->stream_data = zp->stream_data_ptrs[method];
-          return ZIP_SUCCESS;
-        }
-        return ZIP_UNSUPPORTED_DECOMPRESSION;
+        break;
       }
 
       case ZIP_S_WRITE_STREAM:
       {
-        if(result && result->compress_open)
-        {
-          if(!zp->stream_data_ptrs[method])
-            zp->stream_data_ptrs[method] = result->create();
+        if(!result || !result->compress_open)
+          return ZIP_UNSUPPORTED_COMPRESSION;
 
-          zp->stream = result;
-          zp->stream_data = zp->stream_data_ptrs[method];
-          return ZIP_SUCCESS;
-        }
-        return ZIP_UNSUPPORTED_COMPRESSION;
+        break;
       }
     }
+
+    if(!zp->stream_data_ptrs[method])
+    {
+      struct zip_stream_data *tmp = result->create();
+      if(!tmp)
+        return ZIP_ALLOC_ERROR;
+
+      zp->stream_data_ptrs[method] = tmp;
+    }
+
+    zp->stream = result;
+    zp->stream_data = zp->stream_data_ptrs[method];
+    return ZIP_SUCCESS;
   }
   return -1;
 }
@@ -427,7 +428,7 @@ static struct zip_file_header *zip_allocate_file_header(uint16_t filename_len)
   size_t size = MAX(sizeof(struct zip_file_header),
    offsetof(struct zip_file_header, file_name) + filename_len + 1);
 
-  return cmalloc(size);
+  return (struct zip_file_header *)malloc(size);
 }
 
 /**
@@ -650,6 +651,9 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   mfseek(&mf, 0, SEEK_SET);
 
   central_fh = zip_allocate_file_header(file_name_length);
+  if(!central_fh)
+    return ZIP_ALLOC_ERROR;
+
   *_central_fh = central_fh;
 
   // Version made by              2
@@ -1043,15 +1047,20 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
  * Allocate or resize the stream buffer. A single buffer is used across the
  * entire zip read/write session to reduce the number of allocations/frees.
  */
-static void zip_set_stream_buffer_size(struct zip_archive *zp, size_t size)
+static enum zip_error zip_set_stream_buffer_size(struct zip_archive *zp, size_t size)
 {
   size = MAX(size, ZIP_STREAM_BUFFER_SIZE);
 
   if(!zp->stream_buffer || zp->stream_buffer_alloc < size)
   {
-    zp->stream_buffer = crealloc(zp->stream_buffer, size);
+    uint8_t *tmp = (uint8_t *)realloc(zp->stream_buffer, size);
+    if(!tmp)
+      return ZIP_ALLOC_ERROR;
+
+    zp->stream_buffer = tmp;
     zp->stream_buffer_alloc = size;
   }
+  return ZIP_SUCCESS;
 }
 
 /**
@@ -1090,7 +1099,10 @@ static enum zip_error zread_stream(uint8_t *destBuf, size_t readLen,
 
     if(zp->stream->decompress_block)
     {
-      zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
+      result = zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
+      if(result != ZIP_SUCCESS)
+        return result;
+
       decompress_fn = zp->stream->decompress_block;
 
       in = zp->stream_buffer;
@@ -1114,7 +1126,10 @@ static enum zip_error zread_stream(uint8_t *destBuf, size_t readLen,
       if(!direct_write)
         size += out_size;
 
-      zip_set_stream_buffer_size(zp, size);
+      result = zip_set_stream_buffer_size(zp, size);
+      if(result != ZIP_SUCCESS)
+        return result;
+
       decompress_fn = zp->stream->decompress_file;
 
       in = zp->stream_buffer;
@@ -1991,8 +2006,23 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
   if(result)
     return result;
 
+  // If needed, expand the files list so the file can be added to it.
+  if(zp->pos == zp->files_alloc)
+  {
+    size_t count = zp->files_alloc * 2;
+    struct zip_file_header **tmp = (struct zip_file_header **)realloc(zp->files,
+     count * sizeof(struct zip_file_header *));
+    if(!tmp)
+      return ZIP_ALLOC_ERROR;
+
+    zp->files = tmp;
+    zp->files_alloc = count;
+  }
+
   file_name_len = strlen(name);
   fh = zip_allocate_file_header(file_name_len);
+  if(!fh)
+    return ZIP_ALLOC_ERROR;
 
   // Set up the header
 #ifdef ZIP_WRITE_DATA_DESCRIPTOR
@@ -2017,6 +2047,11 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
     return result;
   }
 
+  // Now that the header is written, it can be added to the files list.
+  zp->running_file_name_length += file_name_len;
+  zp->files[zp->pos] = fh;
+  zp->num_files++;
+
   // Set up the stream
   zp->mode = mode;
   zp->streaming_file = fh;
@@ -2030,7 +2065,10 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
     struct zip_stream_data *stream_data = zp->stream_data;
     zp->stream->compress_open(stream_data, method, false);
 
-    zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
+    result = zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
+    if(result != ZIP_SUCCESS)
+      return result;
+
     zp->stream->output(stream_data, zp->stream_buffer + ZIP_STREAM_BUFFER_U_SIZE,
      ZIP_STREAM_BUFFER_C_SIZE);
   }
@@ -2133,16 +2171,6 @@ enum zip_error zip_write_close_stream(struct zip_archive *zp)
   if(result)
     goto err_out;
 
-  // Put the file header into the zip archive
-  if(zp->pos == zp->files_alloc)
-  {
-    int count = zp->files_alloc * 2;
-    zp->files = crealloc(zp->files, count * sizeof(struct zip_file_header *));
-    zp->files_alloc = count;
-  }
-  zp->running_file_name_length += fh->file_name_length;
-  zp->files[zp->pos] = fh;
-  zp->num_files++;
   zp->pos++;
 
   // Clean up the stream
@@ -2875,8 +2903,12 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
     if(zp->is_memory && zp->external_buffer && zp->external_buffer_size &&
      *(zp->external_buffer_size) > end_pos)
     {
-      *(zp->external_buffer) = crealloc(*(zp->external_buffer), end_pos);
-      *(zp->external_buffer_size) = end_pos;
+      void *tmp = realloc(*(zp->external_buffer), end_pos);
+      if(tmp)
+      {
+        *(zp->external_buffer) = tmp;
+        *(zp->external_buffer_size) = end_pos;
+      }
     }
   }
   else

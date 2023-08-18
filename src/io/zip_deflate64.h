@@ -42,7 +42,7 @@ struct deflate64_stream_data
 {
   struct zip_stream_data zs;
   z_stream z;
-  void *window;
+  uint8_t window[1 << 16];
 };
 
 /**
@@ -50,25 +50,20 @@ struct deflate64_stream_data
  */
 static inline struct zip_stream_data *inflate64_create(void)
 {
-  return cmalloc(sizeof(struct deflate64_stream_data));
+  return (struct zip_stream_data *)malloc(sizeof(struct deflate64_stream_data));
 }
 
 static inline void inflate64_open(struct zip_stream_data *zs, uint16_t method,
  uint16_t flags)
 {
   struct deflate64_stream_data *d64s = ((struct deflate64_stream_data *)zs);
-  memset(zs, 0, sizeof(struct deflate64_stream_data));
-
-  d64s->window = cmalloc(1<<16);
+  memset(zs, 0, sizeof(struct zip_stream_data));
+  memset(&(d64s->z), 0, sizeof(z_stream));
 }
 
 static inline void inflate64_close(struct zip_stream_data *zs,
  size_t *final_input_length, size_t *final_output_length)
 {
-  struct deflate64_stream_data *d64s = ((struct deflate64_stream_data *)zs);
-  free(d64s->window);
-  d64s->window = NULL;
-
   if(final_input_length)
     *final_input_length = zs->final_input_length;
 
