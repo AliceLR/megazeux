@@ -40,6 +40,7 @@
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
+#include "memcasecmp.h"
 #include "platform.h"
 #include "rasm.h"
 #include "robot.h"
@@ -2841,7 +2842,7 @@ int match_function_counter(const char *dest, const char *src)
 static const struct function_counter *find_function_counter(const char *name)
 {
   const struct function_counter *base = builtin_counters;
-  int first_letter = tolower((int)name[0]) * 2;
+  int first_letter = memtolower((unsigned char)name[0]) * 2;
   int bottom, top, middle;
   int cmpval;
 

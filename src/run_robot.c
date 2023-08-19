@@ -1121,9 +1121,6 @@ void run_robot(context *ctx, int id, int x, int y)
   int cmd; // Command to run
   int lines_run = 0;
   int gotoed;
-#ifdef CONFIG_EDITOR
-  int robot_debug = 0;
-#endif
 
   int old_pos; // Old position to verify gotos DID something
   int last_label = -1;
@@ -1270,12 +1267,6 @@ void run_robot(context *ctx, int id, int x, int y)
     return;
   }
 
-#ifdef CONFIG_EDITOR
-  // If playing from the editor, enable some extra debug code.
-  if(mzx_world->editing && debug_robot_watch != NULL)
-    robot_debug = true;
-#endif
-
   // Figure blocked vars (accurate until robot program ends OR a put
   // or change command is issued)
 
@@ -1299,7 +1290,7 @@ void run_robot(context *ctx, int id, int x, int y)
 
 #ifdef CONFIG_EDITOR
     // Check to see if the current command triggers a breakpoint.
-    if(robot_debug)
+    if(mzx_world->editing && debug_robot_break)
     {
       switch(debug_robot_break(ctx, cur_robot, id, lines_run))
       {
@@ -6000,7 +5991,7 @@ void run_robot(context *ctx, int id, int x, int y)
 
 #ifdef CONFIG_EDITOR
     // Check to see if a watchpoint triggered before incrementing the program.
-    if(robot_debug)
+    if(mzx_world->editing && debug_robot_watch)
     {
       // Returns 1 if the user chose to stop the program.
       switch(debug_robot_watch(ctx, cur_robot, id, lines_run))
@@ -6040,10 +6031,13 @@ void run_robot(context *ctx, int id, int x, int y)
     find_player(mzx_world);
 
     // Some commands can decrement lines_run, putting it at -1 here,
-    // so add 2 to lines_run for the check.
-    if(((lines_run + 2) & 0xfffff) == 0)
+    // so add 2 to lines_run for the check. Originally this checked every 1 mil
+    // commands, but it turns out checking every 64k commands is faster due to
+    // better x86 optimizations using the lower word of lines_run.
+    if(((lines_run + 2) & 0xffff) == 0)
     {
-      if(peek_exit_input())
+      // Only check after 1 mil commands to reduce false positives.
+      if(lines_run >= 1000000 && peek_exit_input())
       {
         update_event_status();
 
