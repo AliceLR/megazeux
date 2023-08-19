@@ -1465,30 +1465,6 @@ void dec_string_int(struct world *mzx_world, const char *name, int value,
   }
 }
 
-boolean is_string(char *buffer)
-{
-  size_t namelen, i;
-
-  // String doesn't start with $, that's an immediate reject
-  if(buffer[0] != '$')
-    return false;
-
-  // We need to stub out any part of the buffer that describes a
-  // string offset or size constraint. This is because after the
-  // offset or size characters, there may be an expression which
-  // may use the .length operator on the same (or different)
-  // string. We must not consider such composites to be invalid.
-  namelen = strcspn(buffer, "#+");
-
-  // For something to be a string it must not have a . in its name
-  for(i = 0; i < namelen; i++)
-    if(buffer[i] == '.')
-      return false;
-
-  // Valid string
-  return true;
-}
-
 static boolean wildcard_char_is_escapable(unsigned char c)
 {
   return (c == '%') || (c == '?') || (c == '\\');

@@ -232,6 +232,8 @@ DEVELOPERS
 + If available, GetSystemTimePreciseAsFileTime and clock_gettime
   are now used to calculate the system clock time.
 + If available, SDL_GetTicks64 is now used by get_ticks().
++ Minor performance improvements for run_robot, is_string, and
+  find_function_counter.
 
 
 November 22nd, 2020 - MZX 2.92f
