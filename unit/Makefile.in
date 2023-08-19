@@ -126,6 +126,12 @@ unit_cflags  += ${LIBPNG_CFLAGS}
 unit_ldflags += ${LIBPNG_LDFLAGS}
 endif
 
+# Required for threading test.
+ifeq (${PTHREAD},1)
+unit_cflags  += ${PTHREAD_CFLAGS}
+unit_ldflags += ${PTHREAD_LDFLAGS}
+endif
+
 # System libs need to be last in the search order.
 unit_ldflags += ${ARCH_LIBS}
 
