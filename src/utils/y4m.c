@@ -148,7 +148,7 @@ static boolean color_range_value(enum y4m_color_range *range, const char *buf)
 static boolean read_field(char *buf, size_t sz, FILE *fp)
 {
   size_t i;
-  char c;
+  int c;
 
   c = fgetc(fp);
   if(c != ' ')
