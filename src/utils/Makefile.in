@@ -14,7 +14,7 @@ utils_obj = src/utils/.build
 
 # Some core objects are required for file format purposes.
 # Define UTILS_LIBSPEC so these properly link.
-utils_cflags := ${LIBPNG_CFLAGS} -DUTILS_LIBSPEC=
+utils_cflags := ${LIBPNG_CFLAGS} ${PTHREAD_CFLAGS} -DUTILS_LIBSPEC=
 
 zip_objs  := ${io_obj}/vio.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
 img_objs  := ${utils_obj}/image_file.o ${utils_obj}/image_gif.o
@@ -50,6 +50,10 @@ png2smzx_ldflags := ${img_flags}
 
 y4m2smzx := ${utils_src}/y4m2smzx${BINEXT}
 y4m2smzx_objs := ${utils_obj}/y4m2smzx.o ${utils_obj}/smzxconv.o ${utils_obj}/y4m.o
+y4m2smzx_ldflags :=
+ifeq (${PTHREAD},1)
+y4m2smzx_ldflags += ${PTHREAD_LDFLAGS}
+endif
 
 ccv := ${utils_src}/ccv${BINEXT}
 ccv_objs := ${utils_obj}/ccv.o
@@ -73,42 +77,42 @@ ${utils_obj}/%.o: ${utils_src}/%.c src/config.h
 ${checkres}: ${checkres_objs}
 	$(if ${V},,@echo "  LINK    " ${checkres})
 	${CC} ${checkres_objs} -o ${checkres} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${checkres_ldflags}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${checkres_ldflags} ${ARCH_LIBS}
 
 ${downver}: ${downver_objs}
 	$(if ${V},,@echo "  LINK    " ${downver})
 	${CC} ${downver_objs} -o ${downver} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${downver_ldflags}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${downver_ldflags} ${ARCH_LIBS}
 
 ${hlp2html}: ${hlp2html_objs}
 	$(if ${V},,@echo "  LINK    " ${hlp2html})
 	${CC} ${hlp2html_objs} -o ${hlp2html} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${ARCH_LIBS}
 
 ${hlp2txt}: ${hlp2txt_objs}
 	$(if ${V},,@echo "  LINK    " ${hlp2txt})
 	${CC} ${hlp2txt_objs} -o ${hlp2txt} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${ARCH_LIBS}
 
 ${txt2hlp}: ${txt2hlp_objs}
 	$(if ${V},,@echo "  LINK    " ${txt2hlp})
 	${CC} ${txt2hlp_objs} -o ${txt2hlp} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${ARCH_LIBS}
 
 ${png2smzx}: ${png2smzx_objs}
 	$(if ${V},,@echo "  LINK    " ${png2smzx})
 	${CC} ${png2smzx_objs} -o ${png2smzx} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${png2smzx_ldflags}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${png2smzx_ldflags} ${ARCH_LIBS}
 
 ${y4m2smzx}: ${y4m2smzx_objs}
 	$(if ${V},,@echo "  LINK    " ${y4m2smzx})
 	${CC} ${y4m2smzx_objs} -o ${y4m2smzx} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${y4m2smzx_ldflags} ${ARCH_LIBS}
 
 ${ccv}: ${ccv_objs}
 	$(if ${V},,@echo "  LINK    " ${ccv})
 	${CC} ${ccv_objs} -o ${ccv} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${ccv_ldflags}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${ccv_ldflags} ${ARCH_LIBS}
 
 utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
 

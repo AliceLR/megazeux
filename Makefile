@@ -366,14 +366,20 @@ endif # PLATFORM=mingw
 
 #
 # The stack protector is optional and is generally only built for Linux/BSD and
-# Mac OS X. Windows and most embedded platforms currently disable this.
+# Mac OS X. It also works on Windows. GCC's -fstack-protector-strong is
+# preferred when available due to better performance.
 #
 ifeq (${BUILD_STACK_PROTECTOR},1)
+ifeq (${HAS_F_STACK_PROTECTOR_STRONG},1)
+CFLAGS   += -fstack-protector-strong
+CXXFLAGS += -fstack-protector-strong
+else
 ifeq (${HAS_F_STACK_PROTECTOR},1)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
 else
 $(warning stack protector not supported, ignoring.)
+endif
 endif
 endif
 

@@ -92,6 +92,11 @@ ifeq ($(GCC_VER_GE_4_6),0)
 HAS_W_NO_UNUSED_BUT_SET_VARIABLE ?= 1
 endif
 
+GCC_VER_GE_4_9   := ${shell test ${GCC_VER} -ge 40900; echo $$?}
+ifeq (${GCC_VER_GE_4_9},0)
+HAS_F_STACK_PROTECTOR_STRONG ?= 1
+endif
+
 GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 ifeq ($(GCC_VER_GE_7),0)
 HAS_W_NO_FORMAT_TRUNCATION ?= 1
@@ -134,4 +139,9 @@ CLANG_VER_GE_3_3 := ${shell test "${CLANG_VER}" -ge 30300; echo $$?}
 ifeq (${CLANG_VER_GE_3_3},0)
 HAS_CXX_11 ?= 1
 endif
+
+CLANG_VER_GE_3_5 := ${shell test "${CLANG_VER}" -ge 30500; echo $$?}
+ifeq (${CLANG_VER_GE_3_3},0)
+HAS_F_STACK_PROTECTOR_STRONG ?= 1
 endif
+endif # clang
