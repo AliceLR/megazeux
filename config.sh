@@ -769,16 +769,6 @@ if [ "$SDL" = "false" ] && [ "$EGL" = "false" ]; then
 fi
 
 #
-# The stack protector may cause issues with various C++ features (platform
-# matrix claims it breaks exceptions) in some versions of MinGW. This hasn't
-# been verified (and MZX doesn't use exceptions), but for now just disable it.
-#
-if [ "$PLATFORM" = "mingw" ]; then
-	echo "Force-disabling stack protector on Windows."
-	STACK_PROTECTOR="false"
-fi
-
-#
 # Force-disable features unnecessary on Emscripten.
 #
 if [ "$PLATFORM" = "emscripten" ]; then
