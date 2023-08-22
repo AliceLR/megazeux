@@ -525,14 +525,14 @@ static void test_vungetc(vfile *vf)
 {
   long pos;
   int ret;
-  int value;
-  int first_dword;
+  int64_t value;
+  int64_t first_qword;
   char next_64[64];
   char last_5[5];
   char tmp[64];
   char *retstr;
 
-  first_dword = vfgetd(vf);
+  first_qword = vfgetq(vf);
   vfread(next_64, 64, 1, vf);
   vfseek(vf, sizeof(test_data) - 5, SEEK_SET);
   vfread(last_5, 5, 1, vf);
@@ -557,13 +557,21 @@ static void test_vungetc(vfile *vf)
   ret = vungetc(0xCD, vf);
   ASSERTEQ(ret, 0xCD, "vungetc 0xCD");
   value = vfgetw(vf);
-  ASSERTEQ(value, 0xCD | ((first_dword & 0xFF) << 8), "vfgetw 0xCD ...");
+  ASSERTEQ(value, 0xCD | ((first_qword & 0xFF) << 8), "vfgetw 0xCD ...");
 
   // vfgetd should read the buffered char + three chars from the data.
   ret = vungetc(0xEF, vf);
   ASSERTEQ(ret, 0xEF, "vungetc 0xEF");
   value = vfgetd(vf);
-  ASSERTEQ(value, 0xEF | (first_dword & ~0xFF), "vfgetd 0xEF ...");
+  ASSERTEQ(value, 0xEF | (first_qword & 0xFFFFFF00), "vfgetd 0xEF ...");
+
+  // vfgetq should read the buffered char + seven chars from the data.
+  ret = vfseek(vf, 1, SEEK_SET);
+  ASSERTEQ(ret, 0, "vungetc 0x69");
+  ret = vungetc(0x69, vf);
+  ASSERTEQ(ret, 0x69, "vungetc 0x69");
+  value = vfgetq(vf);
+  ASSERTEQ(value, 0x69 | (first_qword & ~0xFF), "vfgetq 0x69 ...");
 
   // vfread should read the buffered char + n-1 chars from the data.
   ret = vungetc(0x12, vf);
@@ -613,16 +621,16 @@ static void test_vungetc(vfile *vf)
   ret = vungetc(0x56, vf);
   ASSERTEQ(ret, 0x56, "vungetc 0x56");
   vrewind(vf);
-  value = vfgetd(vf);
-  ASSERTEQ(value, first_dword, "vfgetd NOT 0x56 ...");
+  value = vfgetq(vf);
+  ASSERTEQ(value, first_qword, "vfgetd NOT 0x56 ...");
 
   // vfilelength with rewind should discard the buffered char.
   ret = vungetc(0x78, vf);
   ASSERTEQ(ret, 0x78, "vungetc 0x78");
   long len = vfilelength(vf, true);
   ASSERTEQ(len, sizeof(test_data), "vfgetd NOT 0x78");
-  value = vfgetd(vf);
-  ASSERTEQ(value, first_dword, "vfgetd NOT 0x78");
+  value = vfgetq(vf);
+  ASSERTEQ(value, first_qword, "vfgetd NOT 0x78");
 
   // ftell should subtract the buffered char count from the cursor for binary
   // streams. Calling ftell when (cursor - buffered char count)<0 is undefined.

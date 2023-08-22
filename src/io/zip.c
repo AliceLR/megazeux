@@ -754,7 +754,7 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
   enum zip_error result;
   char buffer[LOCAL_FILE_HEADER_LEN];
   struct memfile mf;
-  boolean local_is_zip64;
+  boolean local_is_zip64 = false;
 
   uint32_t crc32;
   uint64_t compressed_size;

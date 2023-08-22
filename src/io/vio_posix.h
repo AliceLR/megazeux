@@ -61,7 +61,11 @@ __M_BEGIN_DECLS
 
 static inline FILE *platform_fopen_unsafe(const char *path, const char *mode)
 {
+#ifdef PLATFORM_HAS_DIRENT64
+  return fopen64(path, mode);
+#else
   return fopen_unsafe(path, mode);
+#endif
 }
 
 static inline FILE *platform_tmpfile(void)
