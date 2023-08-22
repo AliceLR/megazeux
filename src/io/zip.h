@@ -179,6 +179,9 @@ struct zip_stream_data
   uint8_t *output_buffer;
   size_t output_length;
 
+  // Final input and output size. zlib only supports up to 32-bit
+  // sizes on 32-bit systems and the legacy methods shouldn't be big
+  // enough to matter, so size_t is fine here for now.
   size_t final_input_length;
   size_t final_output_length;
 
