@@ -1784,6 +1784,7 @@ int load_counters_file(struct world *mzx_world, const char *file)
 {
   vfile *vf = vfopen_unsafe_ext(file, "rb", V_LARGE_BUFFER);
   struct zip_archive *zp;
+  enum zip_error err;
   char magic[8];
 
   unsigned int prop_id;
@@ -1810,18 +1811,29 @@ int load_counters_file(struct world *mzx_world, const char *file)
 
   while(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &prop_id, NULL, NULL))
   {
+    err = ZIP_SUCCESS;
+
     switch(prop_id)
     {
       case FILE_ID_WORLD_COUNTERS:
-        load_world_counters(mzx_world, zp);
+        err = load_world_counters(mzx_world, zp);
         break;
 
       case FILE_ID_WORLD_STRINGS:
-        load_world_strings(mzx_world, zp);
+        err = load_world_strings(mzx_world, zp);
         break;
 
       default:
-        zip_skip_file(zp);
+        err = zip_skip_file(zp);
+        break;
+    }
+
+    // File failed to load? Skip it
+    if(err != ZIP_SUCCESS)
+    {
+      fprintf(mzxerr, "ERROR - Read error @ file ID %u\n", prop_id);
+      fflush(mzxerr);
+      if(zip_skip_file(zp) != ZIP_SUCCESS)
         break;
     }
   }

@@ -198,6 +198,7 @@ USERS
 + Unsupported keys no longer return a KEY_PRESSED value of 1
   for SDL 2 builds.
 + Fixed warning messages caused by SDL controller CRCs.
++ Fixed hangs that could be caused by malformed counters files.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
