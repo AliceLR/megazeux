@@ -235,7 +235,8 @@ struct zip_archive
   vfile *vf;
 
   boolean is_memory;
-  boolean zip64_enabled; // Zip64 is allowed for the current file.
+  boolean zip64_enabled; // Zip64 should be used as-needed.
+  boolean zip64_current; // Zip64 is active for current file.
   void **external_buffer;
   size_t *external_buffer_size;
 
@@ -298,7 +299,7 @@ UTILS_LIBSPEC enum zip_error zip_write_file(struct zip_archive *zp,
  const char *name, const void *src, size_t srcLen, int method);
 
 UTILS_LIBSPEC enum zip_error zip_close(struct zip_archive *zp,
- size_t *final_length);
+ uint64_t *final_length);
 
 UTILS_LIBSPEC struct zip_archive *zip_open_vf_read(vfile *vf);
 UTILS_LIBSPEC struct zip_archive *zip_open_vf_write(vfile *vf);

@@ -1012,29 +1012,31 @@ UNITTEST(ZipWrite)
   ScopedPtr<char[]> db64_buffer = new char[BUFFER_SIZE];
   // This buffer needs to be resized by C code...
   char *ext_buffer = (char *)cmalloc(32);
-  size_t ext_buffer_size = 32;
+  uint64_t ext_buffer_size = 32;
 
   static const char OUTPUT_FILE[] = "_output_file.zip";
-  static const char LABEL[2][16] = { "File", "MemoryExt" };
+  static const char LABEL[4][20] = { "File", "File(Zip64)", "MemoryExt", "MemoryExt(Zip64)" };
   struct zip_archive *zp;
   enum zip_error result;
-  size_t final_size;
+  uint64_t final_size;
 
   ASSERT(verify_buffer && db64_buffer, "");
 
   SECTION(WriteFile)
   {
-    for(int type = 0; type < 2; type++)
+    for(int type = 0; type < 4; type++)
     {
       const char *label = LABEL[type];
       for(const zip_test_data &d : raw_zip_data)
       {
-        if(!type)
+        if(type < 2)
           zp = zip_open_file_write(OUTPUT_FILE);
         else
           zp = zip_open_mem_write_ext((void **)&ext_buffer, &ext_buffer_size, 0);
 
         ASSERT(zp, "%s %s", label, d.testname);
+
+        zip_set_zip64_enabled(zp, type & 1);
 
         for(size_t j = 0; j < d.num_files; j++)
         {
@@ -1048,7 +1050,7 @@ UNITTEST(ZipWrite)
         result = zip_close(zp, &final_size);
         ASSERTEQ(result, ZIP_SUCCESS, "%s %s", label, d.testname);
 
-        if(!type)
+        if(type < 2)
           zp = zip_open_file_read(OUTPUT_FILE);
         else
           zp = zip_open_mem_read(ext_buffer, final_size);
@@ -1060,17 +1062,19 @@ UNITTEST(ZipWrite)
 
   SECTION(WriteStream)
   {
-    for(int type = 0; type < 2; type++)
+    for(int type = 0; type < 4; type++)
     {
       const char *label = LABEL[type];
       for(const zip_test_data &d : raw_zip_data)
       {
-        if(!type)
+        if(type < 2)
           zp = zip_open_file_write(OUTPUT_FILE);
         else
           zp = zip_open_mem_write_ext((void **)&ext_buffer, &ext_buffer_size, 0);
 
         ASSERT(zp, "%s %s", label, d.testname);
+
+        zip_set_zip64_enabled(zp, type & 1);
 
         for(size_t j = 0; j < d.num_files; j++)
         {
@@ -1091,7 +1095,7 @@ UNITTEST(ZipWrite)
         result = zip_close(zp, &final_size);
         ASSERTEQ(result, ZIP_SUCCESS, "%s %s", label, d.testname);
 
-        if(!type)
+        if(type < 2)
           zp = zip_open_file_read(OUTPUT_FILE);
         else
           zp = zip_open_mem_read(ext_buffer, final_size);
@@ -1166,6 +1170,7 @@ UNITTEST(ZipWrite)
     // EOF during file contents write.
     zp = zip_open_mem_write(buffer, 48, 0);
     ASSERT(zp, "");
+    zip_set_zip64_enabled(zp, false);
     result = zip_write_open_file_stream(zp, "filename.ext", ZIP_M_NONE);
     ASSERTEQ(result, ZIP_SUCCESS, "Failed to open write stream.");
     result = zwrite("abcdefghij", 10, zp);

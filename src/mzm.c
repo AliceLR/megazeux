@@ -195,7 +195,7 @@ static size_t save_mzm_common(struct world *mzx_world,
       if(num_robots)
       {
         struct robot **robot_list = src_board->robot_list;
-        size_t total_size;
+        uint64_t total_size;
         char name[4];
 
         // Now we're at the position we want to start writing robots.
