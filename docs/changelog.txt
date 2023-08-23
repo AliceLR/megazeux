@@ -234,6 +234,8 @@ DEVELOPERS
 + If available, SDL_GetTicks64 is now used by get_ticks().
 + Minor performance improvements for run_robot, is_string, and
   find_function_counter.
++ _FILE_OFFSET_BITS=64 is now used for 64-bit fseeko, ftello,
+  readdir, and stat/fstat support for 32-bit Linux builds.
 
 
 November 22nd, 2020 - MZX 2.92f

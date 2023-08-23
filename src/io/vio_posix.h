@@ -42,30 +42,18 @@ __M_BEGIN_DECLS
 #define PLATFORM_NO_REWINDDIR
 #endif
 
-#ifdef __USE_LARGEFILE64
 /**
  * Regular readdir/dirent can cause issues for 32-bit executables running
  * on large filesystems. This is caused by values for d_ino or d_off
  * overflowing their respective fields (even though this code doesn't
- * care about them). Prefer dirent64 if it is available.
- *
- * NOTE: __USE_LARGEFILE64 is a glibc-specific internal define, but there
- * doesn't seem to be a better way to detect this. dirent64 is generally a
- * glibc extension. Bionic and musl both support dirent64, but their dirent64
- * structs are identical to their regular dirent structs. Newlib does not
- * support dirent64, but primarily targets platforms where this is irrelevant.
+ * care about them). An example of this is running 32-bit ARM executables
+ * using qemu-arm-static on an AMD64 host. For POSIX systems, please define
+ * _FILE_OFFSET_BITS=64 if it is available (see the *nix Makefile fragment).
  */
-#define PLATFORM_HAS_DIRENT64
-#endif
-
 
 static inline FILE *platform_fopen_unsafe(const char *path, const char *mode)
 {
-#ifdef PLATFORM_HAS_DIRENT64
-  return fopen64(path, mode);
-#else
   return fopen_unsafe(path, mode);
-#endif
 }
 
 static inline FILE *platform_tmpfile(void)
@@ -143,16 +131,8 @@ static inline void platform_closedir(struct dir_handle dh)
 static inline boolean platform_readdir(struct dir_handle dh, char *buffer,
  size_t buffer_len, int *d_type)
 {
-#ifdef PLATFORM_HAS_DIRENT64
-
-  struct dirent64 *d = readdir64(dh.dir);
-
-#else
-
+  // Note: ino_t may cause issues unless _FILE_OFFSET_BITS=64 is defined.
   struct dirent *d = readdir(dh.dir);
-
-#endif
-
   if(!d)
     return false;
 
@@ -179,8 +159,8 @@ static inline boolean platform_rewinddir(struct dir_handle dh)
 
 static inline int platform_fseek(FILE *fp, int64_t offset, int whence)
 {
-#ifdef PLATFORM_HAS_DIRENT64
-  return fseeko64(fp, offset, whence);
+#if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
+  return fseeko(fp, offset, whence);
 #else
   if(offset >= LONG_MAX)
     return -1;
@@ -190,8 +170,8 @@ static inline int platform_fseek(FILE *fp, int64_t offset, int whence)
 
 static inline int64_t platform_ftell(FILE *fp)
 {
-#ifdef PLATFORM_HAS_DIRENT64
-  return ftello64(fp);
+#if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
+  return ftello(fp);
 #else
   return ftell(fp);
 #endif
@@ -199,20 +179,7 @@ static inline int64_t platform_ftell(FILE *fp)
 
 static inline int64_t platform_filelength(FILE *fp)
 {
-#ifdef PLATFORM_HAS_DIRENT64
-
-  struct stat64 st;
-  int fd = fileno(fp);
-
-  if(fd < 0)
-    return -1;
-  if(fstat64(fd, &st) < 0)
-    return -1;
-
-  return st.st_size;
-
-#else
-
+  // Note: off_t, ino_t may cause issues unless _FILE_OFFSET_BITS=64 is defined.
   struct stat st;
   int fd = fileno(fp);
 
@@ -222,8 +189,6 @@ static inline int64_t platform_filelength(FILE *fp)
     return -1;
 
   return st.st_size;
-
-#endif
 }
 
 __M_END_DECLS

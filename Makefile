@@ -158,8 +158,7 @@ OPENMPT_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lopenmpt
 # zlib
 #
 
-ZLIB_CFLAGS  ?= -I${PREFIX}/include \
-                -D_FILE_OFFSET_BITS=32 -U_LARGEFILE64_SOURCE
+ZLIB_CFLAGS  ?= -I${PREFIX}/include
 ZLIB_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lz
 
 #

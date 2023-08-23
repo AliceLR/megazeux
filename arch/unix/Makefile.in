@@ -8,11 +8,12 @@ DSOPOST    = .so
 DSORPATH   = -Wl,-rpath,${LIBDIR}
 DSOSONAME  = -Wl,-soname,
 
-# Enable dirent64.
+# Enable 64-bit off_t and ino_t types for fseeko, ftello, readdir, and *stat.
 # This fixes issues with readdir() failing with EOVERFLOW when called from a
 # 32-bit executable running on a large filesystem.
-ARCH_CFLAGS   = -D_LARGEFILE64_SOURCE
-ARCH_CXXFLAGS = -D_LARGEFILE64_SOURCE
+# This also enables 64-bit file support on 32-bit platforms.
+ARCH_CFLAGS   = -D_FILE_OFFSET_BITS=64
+ARCH_CXXFLAGS = -D_FILE_OFFSET_BITS=64
 
 # Allow ZIP for portable unix-devel packages.
 include arch/zip.inc
