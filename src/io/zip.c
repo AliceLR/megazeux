@@ -55,6 +55,7 @@
 
 #define ZIP_VERSION_MINIMUM 20
 #define ZIP64_VERSION_MINIMUM 45
+#define ZIP_VERSION(x) ((x) & 0x00ff)
 
 #define DATA_DESCRIPTOR_LEN 12
 #define ZIP64_DATA_DESCRIPTOR_LEN 20
@@ -660,7 +661,7 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   // Version needed to extract    2
   mf.current += 2;
   extract_version = mfgetw(&mf);
-  if(extract_version > ZIP64_VERSION_MINIMUM)
+  if(ZIP_VERSION(extract_version) > ZIP64_VERSION_MINIMUM)
     return ZIP_UNSUPPORTED_VERSION;
 
   // General purpose bit flag     2
@@ -724,7 +725,8 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   central_fh->file_name[file_name_length] = 0;
 
   // Version 4.5 and up: if one of several fields is maximum value, it's Zip64.
-  if(extract_version >= ZIP64_VERSION_MINIMUM && zip_file_is_zip64(central_fh))
+  if(ZIP_VERSION(extract_version) >= ZIP64_VERSION_MINIMUM &&
+   zip_file_is_zip64(central_fh))
   {
     enum zip_error r = zip_read_file_header_extra_fields(zp, central_fh,
      extra_length, true);
@@ -777,7 +779,7 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
 
   // Version required to extract  2
   version = mfgetw(&mf);
-  if(version > ZIP64_VERSION_MINIMUM)
+  if(ZIP_VERSION(version) > ZIP64_VERSION_MINIMUM)
     return ZIP_UNSUPPORTED_VERSION;
 
   // General purpose bit flag     2
@@ -802,7 +804,7 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
 
   // If there is a data descriptor, or if one of the size fields suggests
   // there is a Zip64 extra field, then search for the Zip64 extra field.
-  if(version >= ZIP64_VERSION_MINIMUM &&
+  if(ZIP_VERSION(version) >= ZIP64_VERSION_MINIMUM &&
    (compressed_size >= 0xfffffffful || uncompressed_size >= 0xfffffffful ||
    (flags & ZIP_F_DATA_DESCRIPTOR)))
   {
@@ -1437,7 +1439,7 @@ static enum zip_error zip_read_stream_open(struct zip_archive *zp, uint8_t mode)
  * will be the uncompressed size of the file on return (or 0 upon error).
  */
 enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
- size_t *destLen)
+ uint64_t *destLen)
 {
   enum zip_error result = zip_read_stream_open(zp, ZIP_S_READ_STREAM);
   if(result)
@@ -2491,6 +2493,7 @@ static enum zip_error zip_read_zip64_eocd(struct zip_archive *zp,
   uint8_t buffer[ZIP64_EOCD_RECORD_LEN];
   struct memfile mf;
   uint64_t sz;
+  uint16_t ver;
 
   if(!vfread(buffer, ZIP64_EOCD_RECORD_LEN, 1, zp->vf))
     return ZIP_READ_ERROR;
@@ -2507,7 +2510,8 @@ static enum zip_error zip_read_zip64_eocd(struct zip_archive *zp,
   // Version made by                                    2
   // Version needed to extract                          2
   mf.current += 2;
-  if(mfgetw(&mf) != ZIP64_VERSION_MINIMUM)
+  ver = mfgetw(&mf);
+  if(ZIP_VERSION(ver) != ZIP64_VERSION_MINIMUM)
     return ZIP_UNSUPPORTED_VERSION;
 
   // Number of this disk                                4

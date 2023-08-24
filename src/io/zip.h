@@ -264,7 +264,7 @@ UTILS_LIBSPEC enum zip_error zip_get_next_uncompressed_size(
  struct zip_archive *zp, uint64_t *u_size);
 
 UTILS_LIBSPEC enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
- size_t *destLen);
+ uint64_t *destLen);
 
 UTILS_LIBSPEC enum zip_error zip_read_close_stream(struct zip_archive *zp);
 

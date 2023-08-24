@@ -733,6 +733,15 @@ static const zip_test_data raw_zip_invalid_data[] =
   },
 };
 
+static zip_archive *zip_test_open(const char *filename)
+{
+  char buffer[MAX_PATH];
+  if(path_join(buffer, sizeof(buffer), DATA_DIR, filename) < 0)
+    return nullptr;
+
+  return zip_open_file_read(buffer);
+}
+
 static zip_archive *zip_test_open(const zip_test_data &d)
 {
   if(!d.data_length)
@@ -1228,4 +1237,79 @@ UNITTEST(ZipWrite)
   }
 
   free(ext_buffer);
+}
+
+UNITTEST(Zip64)
+{
+  // Special case test files for Zip64.
+  struct zip_archive *zp;
+  enum zip_error result;
+  uint64_t sz;
+
+  SECTION(Zip64FileCount)
+  {
+    // This archive contains an MZX 2.92f format world with over 65535 files,
+    // which requires an EOCD64 record and Zip64 support. The internal archive
+    // is about 8.5 MB in size.
+    zp = zip_test_open("zip64_file_count.zip");
+    ASSERT(zp);
+
+    result = zip_get_next_uncompressed_size(zp, &sz);
+    ASSERTEQ(result, ZIP_SUCCESS);
+
+    ScopedPtr<uint8_t[]> buffer{ new uint8_t[sz] };
+    ASSERT(buffer.get());
+
+    result = zip_read_file(zp, buffer.get(), sz, &sz);
+    ASSERTEQ(result, ZIP_SUCCESS);
+
+    zip_close(zp, NULL);
+
+    // Open and verify inner archive.
+    zp = zip_open_mem_read(buffer.get(), sz);
+    ASSERT(zp);
+    for(size_t i = 0; i < zp->num_files; i++)
+    {
+      result = zip_read_open_file_stream(zp, NULL);
+      ASSERTEQ(result, ZIP_SUCCESS);
+      // Close file to perform a CRC check.
+      result = zip_read_close_stream(zp);
+      ASSERTEQ(result, ZIP_SUCCESS);
+    }
+    zip_close(zp, NULL);
+  }
+
+  SECTION(Zip64Content)
+  {
+    // This double zipped archive contains an MZX counters file with a string
+    // file over 4GB. Extract the outer archive to RAM, then stream the inner
+    // archive to verify the uncompressed size works. For practical reasons
+    // the counters file archive can't really be tested against zip.c since
+    // vio.c can't transparently stream large files out of another archive.
+    // The inner archive is about 5 MB in size.
+    zp = zip_test_open("zip64_file_size.zip");
+    ASSERT(zp);
+
+    result = zip_get_next_uncompressed_size(zp, &sz);
+    ASSERTEQ(result, ZIP_SUCCESS);
+
+    ScopedPtr<uint8_t[]> buffer{ new uint8_t[sz] };
+    ASSERT(buffer.get());
+
+    result = zip_read_file(zp, buffer.get(), sz, &sz);
+    ASSERTEQ(result, ZIP_SUCCESS);
+
+    zip_close(zp, NULL);
+
+    zp = zip_open_mem_read(buffer.get(), sz);
+    ASSERT(zp);
+
+    // Verifying the CRC of the internal file is too slow, just check the header.
+    ASSERTEQ(zp->num_files, 1);
+    ASSERTEQ(zp->files[0]->uncompressed_size, 4299174197ull);
+    ASSERTEQ(zp->files[0]->compressed_size, 5062173);
+    ASSERTEQ(zp->files[0]->crc32, 0x3cf11c4f);
+
+    zip_close(zp, NULL);
+  }
 }
