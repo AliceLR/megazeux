@@ -139,6 +139,8 @@ static const char *zip_error_string(enum zip_error code)
       return "could not read from position";
     case ZIP_WRITE_ERROR:
       return "could not write to position";
+    case ZIP_BOUND_ERROR:
+      return "value exceeds bound of provided field";
     case ZIP_INVALID_READ_IN_WRITE_MODE:
       return "can't read in write mode";
     case ZIP_INVALID_WRITE_IN_READ_MODE:
@@ -1271,21 +1273,35 @@ err_out:
 /**
  * Get the MZX properties of the next file in the archive.
  * These fields need to be initialized externally; see world_format.h.
+ *
+ * @param zp        zip archive structure.
+ * @param file_id   pointer to variable to store the file type ID to, or null.
+ * @param board_id  pointer to variable to store the board number to, or null.
+ * @param robot_id  pointer to variable to store the object number to, or null.
+ * @return          `ZIP_SUCCESS` on success;
+ *                  `ZIP_EOF` if the end of archive has been reached;
+ *                  `ZIP_NULL` if `zp` is a null pointer;
+ *                  `ZIP_INVALID_READ_IN_WRITE_MODE` if `zp` is a write archive.
+ *                  `ZIP_INVALID_FILE_READ_UNINITIALIZED` if the central
+ *                  directory has not been read yet;
+ *                  `ZIP_INVALID_FILE_READ_IN_STREAM_MODE` if `zp` has opened
+ *                  the current file for reading.
  */
 enum zip_error zip_get_next_mzx_file_id(struct zip_archive *zp,
  unsigned int *file_id, unsigned int *board_id, unsigned int *robot_id)
 {
   struct zip_file_header *fh;
-  enum zip_error result;
+  enum zip_error result = ZIP_NULL;
+
+  if(!zp)
+    goto err_out;
 
   result = zp->read_file_error;
   if(result)
     goto err_out;
 
   if(zp->pos >= zp->num_files)
-  {
     return ZIP_EOF;
-  }
 
   fh = zp->files[zp->pos];
 
@@ -1307,21 +1323,70 @@ err_out:
 }
 
 /**
- * Get the uncompressed length of the next file in the archive.
+ * Get the uncompressed length of the next file in the archive within the
+ * range of `size_t`. This should be used when reading whole files to memory.
+ *
+ * @param zp      zip archive structure.
+ * @param u_size  pointer to `size_t` variable to store uncompressed size to.
+ *                If null, no size will be stored.
+ * @return        `ZIP_SUCCESS` on success;
+ *                `ZIP_EOF` if the end of the archive has been reached;
+ *                `ZIP_BOUND_ERROR` if the uncompressed size is greater than
+ *                or equal to `SIZE_MAX`;
+ *                `ZIP_NULL` if `zp` is a null pointer;
+ *                `ZIP_INVALID_READ_IN_WRITE_MODE` if `zp` is a write archive.
+ *                `ZIP_INVALID_FILE_READ_UNINITIALIZED` if the central
+ *                directory has not been read yet;
+ *                `ZIP_INVALID_FILE_READ_IN_STREAM_MODE` if `zp` has opened
+ *                the current file for reading.
  */
 enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
+ size_t *u_size)
+{
+  uint64_t tmp;
+  enum zip_error result = zip_get_next_uncompressed_size64(zp, &tmp);
+  if(result)
+    return result;
+
+  if(tmp >= SIZE_MAX)
+    return ZIP_BOUND_ERROR;
+
+  if(u_size)
+    *u_size = tmp;
+
+  return ZIP_SUCCESS;
+}
+
+/**
+ * Get the uncompressed length of the next file in the archive. This should
+ * be used when the entire file does not need to fit into memory.
+ *
+ * @param zp      zip archive structure.
+ * @param u_size  pointer to `uint64_t` variable to store uncompressed size to.
+ *                If null, no size will be stored.
+ * @return        `ZIP_SUCCESS` on success;
+ *                `ZIP_EOF` if the end of the archive has been reached;
+ *                `ZIP_NULL` if `zp` is a null pointer;
+ *                `ZIP_INVALID_READ_IN_WRITE_MODE` if `zp` is a write archive.
+ *                `ZIP_INVALID_FILE_READ_UNINITIALIZED` if the central
+ *                directory has not been read yet;
+ *                `ZIP_INVALID_FILE_READ_IN_STREAM_MODE` if `zp` has opened
+ *                the current file for reading.
+ */
+enum zip_error zip_get_next_uncompressed_size64(struct zip_archive *zp,
  uint64_t *u_size)
 {
-  enum zip_error result;
+  enum zip_error result = ZIP_NULL;
+
+  if(!zp)
+    goto err_out;
 
   result = zp->read_file_error;
   if(result)
     goto err_out;
 
   if(zp->pos >= zp->num_files)
-  {
     return ZIP_EOF;
-  }
 
   if(u_size)
     *u_size = zp->files[zp->pos]->uncompressed_size;
@@ -1915,15 +1980,15 @@ static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
 
 #ifdef ZIP_WRITE_DATA_DESCRIPTOR
   {
-    if(zip_file_is_zip64(fh))
+    if(zp->zip64_current)
     {
       if(zp->is_memory && zip_ensure_capacity(ZIP64_DATA_DESCRIPTOR_LEN, zp))
         return ZIP_EOF;
 
       mfopen_wr(buffer, ZIP64_DATA_DESCRIPTOR_LEN, &mf);
       mfseek(&mf, 4, SEEK_SET);
-      mfputuq(fh->compressed_size);
-      mfputuq(fh->uncompressed_size);
+      mfputuq(fh->compressed_size, &mf);
+      mfputuq(fh->uncompressed_size, &mf);
       vfwrite(buffer, ZIP64_DATA_DESCRIPTOR_LEN, 1, zp->vf);
     }
     else
@@ -2852,7 +2917,7 @@ static enum zip_error zip_write_zip64_eocd_record(struct zip_archive *zp)
  * directory and EOCD record. Upon returning ZIP_SUCCESS, *final_length will be
  * set to the final length of the file.
  */
-enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
+enum zip_error zip_close(struct zip_archive *zp, uint64_t *final_length)
 {
   int result = ZIP_SUCCESS;
   int mode;
@@ -2862,7 +2927,8 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
     return ZIP_NULL;
 
   // On the off chance someone actually tries this...
-  if(zp->is_memory && final_length && final_length == zp->external_buffer_size)
+  if(zp->is_memory && final_length &&
+   (void *)final_length == (void *)zp->external_buffer_size)
   {
     warn(
       "zip_close: Detected use of external buffer size pointer as final_length "

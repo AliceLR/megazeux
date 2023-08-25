@@ -909,7 +909,7 @@ UNITTEST(ZipRead)
         for(size_t j = 0; j < d.num_files; j++)
         {
           const zip_test_file_data &df = d.files[j];
-          size_t real_length = 0;
+          uint64_t real_length = 0;
 
           result = zip_read_open_file_stream(zp, &real_length);
           ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
@@ -1021,7 +1021,7 @@ UNITTEST(ZipWrite)
   ScopedPtr<char[]> db64_buffer = new char[BUFFER_SIZE];
   // This buffer needs to be resized by C code...
   char *ext_buffer = (char *)cmalloc(32);
-  uint64_t ext_buffer_size = 32;
+  size_t ext_buffer_size = 32;
 
   static const char OUTPUT_FILE[] = "_output_file.zip";
   static const char LABEL[4][20] = { "File", "File(Zip64)", "MemoryExt", "MemoryExt(Zip64)" };
@@ -1217,23 +1217,13 @@ UNITTEST(ZipWrite)
     ASSERTEQ(result, ZIP_SUCCESS, "Failed to write dummy file.");
 
     // This is the bad thing you shouldn't do!
-    result = zip_close(zp, &ext_buffer_size);
+    result = zip_close(zp, reinterpret_cast<uint64_t *>(&ext_buffer_size));
     ASSERTEQ(result, ZIP_SUCCESS, "Failed write central directory.");
 
     // Final size = local header (30) + data (32) + central header (46) + eocd (22).
-    ASSERTEQ(ext_buffer_size, 130, "Incorrect final size.");
-
-    // :)
-    static const char eocd[22] =
-    {
-      'P', 'K', 5, 6,
-      0, 0, 0, 0,
-      1, 0, 1, 0,
-      46, 0, 0, 0,
-      62, 0, 0, 0,
-      0, 0
-    };
-    ASSERTMEM(ext_buffer + 108, eocd, 22, "EOCD data incorrect.");
+    // If data descriptors are enabled, it will be 142 instead (+12).
+    ASSERT(ext_buffer_size == 130 || ext_buffer_size == 142,
+     "Incorrect final size: %zu", ext_buffer_size);
   }
 
   free(ext_buffer);
@@ -1244,7 +1234,7 @@ UNITTEST(Zip64)
   // Special case test files for Zip64.
   struct zip_archive *zp;
   enum zip_error result;
-  uint64_t sz;
+  size_t sz;
 
   SECTION(Zip64FileCount)
   {
@@ -1252,29 +1242,29 @@ UNITTEST(Zip64)
     // which requires an EOCD64 record and Zip64 support. The internal archive
     // is about 8.5 MB in size.
     zp = zip_test_open("zip64_file_count.zip");
-    ASSERT(zp);
+    ASSERT(zp, "");
 
     result = zip_get_next_uncompressed_size(zp, &sz);
-    ASSERTEQ(result, ZIP_SUCCESS);
+    ASSERTEQ(result, ZIP_SUCCESS, "");
 
     ScopedPtr<uint8_t[]> buffer{ new uint8_t[sz] };
-    ASSERT(buffer.get());
+    ASSERT(buffer.get(), "");
 
     result = zip_read_file(zp, buffer.get(), sz, &sz);
-    ASSERTEQ(result, ZIP_SUCCESS);
+    ASSERTEQ(result, ZIP_SUCCESS, "");
 
     zip_close(zp, NULL);
 
     // Open and verify inner archive.
     zp = zip_open_mem_read(buffer.get(), sz);
-    ASSERT(zp);
+    ASSERT(zp, "");
     for(size_t i = 0; i < zp->num_files; i++)
     {
       result = zip_read_open_file_stream(zp, NULL);
-      ASSERTEQ(result, ZIP_SUCCESS);
+      ASSERTEQ(result, ZIP_SUCCESS, "");
       // Close file to perform a CRC check.
       result = zip_read_close_stream(zp);
-      ASSERTEQ(result, ZIP_SUCCESS);
+      ASSERTEQ(result, ZIP_SUCCESS, "");
     }
     zip_close(zp, NULL);
   }
@@ -1288,27 +1278,27 @@ UNITTEST(Zip64)
     // vio.c can't transparently stream large files out of another archive.
     // The inner archive is about 5 MB in size.
     zp = zip_test_open("zip64_file_size.zip");
-    ASSERT(zp);
+    ASSERT(zp, "");
 
     result = zip_get_next_uncompressed_size(zp, &sz);
-    ASSERTEQ(result, ZIP_SUCCESS);
+    ASSERTEQ(result, ZIP_SUCCESS, "");
 
     ScopedPtr<uint8_t[]> buffer{ new uint8_t[sz] };
-    ASSERT(buffer.get());
+    ASSERT(buffer.get(), "");
 
     result = zip_read_file(zp, buffer.get(), sz, &sz);
-    ASSERTEQ(result, ZIP_SUCCESS);
+    ASSERTEQ(result, ZIP_SUCCESS, "");
 
     zip_close(zp, NULL);
 
     zp = zip_open_mem_read(buffer.get(), sz);
-    ASSERT(zp);
+    ASSERT(zp, "");
 
     // Verifying the CRC of the internal file is too slow, just check the header.
-    ASSERTEQ(zp->num_files, 1);
-    ASSERTEQ(zp->files[0]->uncompressed_size, 4299174197ull);
-    ASSERTEQ(zp->files[0]->compressed_size, 5062173);
-    ASSERTEQ(zp->files[0]->crc32, 0x3cf11c4f);
+    ASSERTEQ(zp->num_files, 1, "");
+    ASSERTEQ(zp->files[0]->uncompressed_size, 4299174197ull, "");
+    ASSERTEQ(zp->files[0]->compressed_size, 5062173, "");
+    ASSERTEQ(zp->files[0]->crc32, 0x3cf11c4f, "");
 
     zip_close(zp, NULL);
   }

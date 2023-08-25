@@ -199,6 +199,10 @@ USERS
   for SDL 2 builds.
 + Fixed warning messages caused by SDL controller CRCs.
 + Fixed hangs that could be caused by malformed counters files.
++ Fixed world/save/counters file corruption in rare edge cases
+  where the aforementioned files could break the zip format's
+  internal field bounds.
++ Fixed loading of world/save/counters files over 4 GB.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 

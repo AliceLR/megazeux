@@ -421,15 +421,14 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   char *buffer;
   struct memfile mf;
   struct memfile prop;
-  uint64_t actual_size;
+  size_t actual_size;
 
   int missing_ident;
   int last_ident = -1;
   int ident = 0;
   int size = 0;
 
-  zip_get_next_uncompressed_size(zp, &actual_size);
-  if(actual_size >= SIZE_MAX)
+  if(zip_get_next_uncompressed_size(zp, &actual_size) != ZIP_SUCCESS)
     return VAL_INVALID;
 
   buffer = cmalloc(actual_size);
@@ -573,12 +572,10 @@ static inline void load_world_info(struct world *mzx_world,
   if(!mzx_world->raw_world_info)
   {
     zip_get_next_uncompressed_size(zp, &actual_size);
-
     buffer = cmalloc(actual_size);
 
     zip_read_file(zp, buffer, actual_size, NULL);
   }
-
   else
   {
     zip_skip_file(zp);
@@ -1138,6 +1135,7 @@ static inline int load_world_chars(struct world *mzx_world,
   int result;
 
   zip_get_next_uncompressed_size(zp, &actual_size);
+  actual_size = MIN(actual_size, NUM_CHARSETS * CHAR_SIZE * CHARSET_SIZE);
 
   buffer = cmalloc(actual_size);
   result = zip_read_file(zp, buffer, actual_size, &actual_size);

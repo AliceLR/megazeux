@@ -115,6 +115,7 @@ enum zip_error
   ZIP_SEEK_ERROR,
   ZIP_READ_ERROR,
   ZIP_WRITE_ERROR,
+  ZIP_BOUND_ERROR,
   ZIP_INVALID_READ_IN_WRITE_MODE,
   ZIP_INVALID_WRITE_IN_READ_MODE,
   ZIP_INVALID_FILE_READ_UNINITIALIZED,
@@ -261,6 +262,8 @@ UTILS_LIBSPEC enum zip_error zip_get_next_method(struct zip_archive *zp,
  unsigned int *method);
 
 UTILS_LIBSPEC enum zip_error zip_get_next_uncompressed_size(
+ struct zip_archive *zp, size_t *u_size);
+UTILS_LIBSPEC enum zip_error zip_get_next_uncompressed_size64(
  struct zip_archive *zp, uint64_t *u_size);
 
 UTILS_LIBSPEC enum zip_error zip_read_open_file_stream(struct zip_archive *zp,

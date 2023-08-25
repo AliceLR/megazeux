@@ -415,7 +415,7 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
  struct zip_archive *zp, int savegame, int file_version)
 {
   char *buffer = NULL;
-  uint64_t actual_size;
+  size_t actual_size;
   struct memfile mf;
 
   unsigned int method;
@@ -436,7 +436,6 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
     zip_read_open_mem_stream(zp, &mf);
     is_stream = true;
   }
-
   else
   {
     zip_get_next_uncompressed_size(zp, &actual_size);
@@ -471,7 +470,7 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
 {
   struct scroll *cur_scroll = ccalloc(1, sizeof(struct scroll));
 
-  uint64_t actual_size;
+  size_t actual_size;
   void *buffer;
   struct memfile mf;
   struct memfile prop;
@@ -532,7 +531,7 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
 {
   struct sensor *cur_sensor = ccalloc(1, sizeof(struct sensor));
 
-  uint64_t actual_size;
+  size_t actual_size;
   void *buffer;
   struct memfile mf;
   struct memfile prop;
