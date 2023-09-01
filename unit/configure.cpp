@@ -118,6 +118,12 @@ constexpr resample_mode INVALID<resample_mode>()
 }
 
 template<>
+constexpr screensaver_disable_mode INVALID<screensaver_disable_mode>()
+{
+  return NUM_SCREENSAVER_MODES;
+}
+
+template<>
 constexpr allow_cheats_type INVALID<allow_cheats_type>()
 {
   return NUM_ALLOW_CHEATS_TYPES;
@@ -678,6 +684,20 @@ UNITTEST(Settings)
   SECTION(grab_mouse)
   {
     TEST_ENUM("grab_mouse", conf->grab_mouse, boolean_data);
+  }
+
+  SECTION(disable_screensaver)
+  {
+    constexpr screensaver_disable_mode DEFAULT = INVALID<screensaver_disable_mode>();
+    static const config_test_single data[] =
+    {
+      { "0", SCREENSAVER_ENABLE },
+      { "1", SCREENSAVER_DISABLE },
+      { "ingame", DEFAULT },
+      { "fgdjiogjf", DEFAULT },
+      { "", DEFAULT },
+    };
+    TEST_ENUM("disable_screensaver", conf->disable_screensaver, data);
   }
 
   SECTION(save_slots)

@@ -72,6 +72,14 @@ enum cursor_mode_types
   NUM_CURSOR_MODE_TYPES
 };
 
+enum screensaver_disable_mode
+{
+  SCREENSAVER_ENABLE,
+  SCREENSAVER_DISABLE,
+  SCREENSAVER_DISABLE_IN_GAME,
+  NUM_SCREENSAVER_MODES
+};
+
 enum allow_cheats_type
 {
   ALLOW_CHEATS_NEVER,
@@ -116,6 +124,7 @@ struct config_info
   char gl_scaling_shader[32];
   char sdl_render_driver[16];
   enum cursor_mode_types cursor_hint_mode;
+  enum screensaver_disable_mode disable_screensaver;
   boolean allow_screenshots;
 
   // Audio options

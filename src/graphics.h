@@ -215,6 +215,7 @@ struct graphics_data
   int gl_vsync;
   char gl_scaling_shader[32];
   char sdl_render_driver[16];
+  enum screensaver_disable_mode disable_screensaver;
 
   uint8_t default_charset[CHAR_SIZE * CHARSET_SIZE];
 

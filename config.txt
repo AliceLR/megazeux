@@ -191,6 +191,12 @@
 
 # fullscreen = 1
 
+# Whether MZX should disable the screensaver (or similar) while running.
+# By default, MZX will instruct SDL to leave the screensaver on. This setting
+# currently only affects SDL 2+ ports.
+
+# disable_screensaver = 0
+
 # MZX can optionally display the text cursor to hint at the currently selected
 # UI element when applicable. Valid settings are 0 or "off" (doesn't display
 # or update the cursor position), 1 or "hidden" (doesn't display, but updates
