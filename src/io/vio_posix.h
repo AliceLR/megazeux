@@ -42,6 +42,15 @@ __M_BEGIN_DECLS
 #define PLATFORM_NO_REWINDDIR
 #endif
 
+/* clang has broken MemorySanitizer instrumentation for *stat, leading to false
+ * positives. Use this define to enable memset() in the functions that use them.
+ */
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer)
+#define STAT_NEEDS_MEMSET 1
+#endif
+#endif
+
 /**
  * Regular readdir/dirent can cause issues for 32-bit executables running
  * on large filesystems. This is caused by values for d_ino or d_off
@@ -109,6 +118,9 @@ static inline int platform_access(const char *path, int mode)
 
 static inline int platform_stat(const char *path, struct stat *buf)
 {
+#ifdef STAT_NEEDS_MEMSET
+  memset(buf, 0, sizeof(struct stat));
+#endif
   return stat(path, buf);
 }
 
@@ -182,6 +194,10 @@ static inline int64_t platform_filelength(FILE *fp)
   // Note: off_t, ino_t may cause issues unless _FILE_OFFSET_BITS=64 is defined.
   struct stat st;
   int fd = fileno(fp);
+
+#ifdef STAT_NEEDS_MEMSET
+  memset(&st, 0, sizeof(struct stat));
+#endif
 
   if(fd < 0)
     return -1;
