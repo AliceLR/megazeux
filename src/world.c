@@ -428,7 +428,8 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   int ident = 0;
   int size = 0;
 
-  zip_get_next_uncompressed_size(zp, &actual_size);
+  if(zip_get_next_uncompressed_size(zp, &actual_size) != ZIP_SUCCESS)
+    return VAL_INVALID;
 
   buffer = cmalloc(actual_size);
 
@@ -571,12 +572,10 @@ static inline void load_world_info(struct world *mzx_world,
   if(!mzx_world->raw_world_info)
   {
     zip_get_next_uncompressed_size(zp, &actual_size);
-
     buffer = cmalloc(actual_size);
 
     zip_read_file(zp, buffer, actual_size, NULL);
   }
-
   else
   {
     zip_skip_file(zp);
@@ -1136,6 +1135,7 @@ static inline int load_world_chars(struct world *mzx_world,
   int result;
 
   zip_get_next_uncompressed_size(zp, &actual_size);
+  actual_size = MIN(actual_size, NUM_CHARSETS * CHAR_SIZE * CHARSET_SIZE);
 
   buffer = cmalloc(actual_size);
   result = zip_read_file(zp, buffer, actual_size, &actual_size);
@@ -1782,6 +1782,7 @@ int load_counters_file(struct world *mzx_world, const char *file)
 {
   vfile *vf = vfopen_unsafe_ext(file, "rb", V_LARGE_BUFFER);
   struct zip_archive *zp;
+  enum zip_error err;
   char magic[8];
 
   unsigned int prop_id;
@@ -1808,18 +1809,29 @@ int load_counters_file(struct world *mzx_world, const char *file)
 
   while(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &prop_id, NULL, NULL))
   {
+    err = ZIP_SUCCESS;
+
     switch(prop_id)
     {
       case FILE_ID_WORLD_COUNTERS:
-        load_world_counters(mzx_world, zp);
+        err = load_world_counters(mzx_world, zp);
         break;
 
       case FILE_ID_WORLD_STRINGS:
-        load_world_strings(mzx_world, zp);
+        err = load_world_strings(mzx_world, zp);
         break;
 
       default:
-        zip_skip_file(zp);
+        err = zip_skip_file(zp);
+        break;
+    }
+
+    // File failed to load? Skip it
+    if(err != ZIP_SUCCESS)
+    {
+      fprintf(mzxerr, "ERROR - Read error @ file ID %u\n", prop_id);
+      fflush(mzxerr);
+      if(zip_skip_file(zp) != ZIP_SUCCESS)
         break;
     }
   }

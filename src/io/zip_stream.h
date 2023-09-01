@@ -69,6 +69,10 @@ struct zip_method_handler
   // Can be called multiple times. Provide "true" to the second parameter
   // to finish the stream.
   enum zip_error (*compress_block)(struct zip_stream_data *, boolean);
+
+  // Bound final compressed stream length based on input stream length.
+  enum zip_error (*compress_bound)(struct zip_stream_data *, size_t src_len,
+   size_t *bound_len);
 };
 
 /**

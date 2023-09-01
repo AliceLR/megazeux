@@ -2008,7 +2008,8 @@ static int fread_pos_read(struct world *mzx_world,
 {
   if(!mzx_world->input_is_dir && mzx_world->input_file)
   {
-    return vftell(mzx_world->input_file);
+    int64_t pos = vftell(mzx_world->input_file);
+    return CLAMP(pos, -1, INT_MAX);
   }
   else
 
@@ -2044,7 +2045,10 @@ static int fread_length_read(struct world *mzx_world,
     return vdir_length(mzx_world->input_directory);
 
   if(mzx_world->input_file)
-    return vfilelength(mzx_world->input_file, false);
+  {
+    int64_t len = vfilelength(mzx_world->input_file, false);
+    return CLAMP(len, -1, INT_MAX);
+  }
 
   return -1;
 }
@@ -2065,7 +2069,10 @@ static int fwrite_pos_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->output_file)
-    return vftell(mzx_world->output_file);
+  {
+    int64_t pos = vftell(mzx_world->output_file);
+    return CLAMP(pos, -1, INT_MAX);
+  }
   else
     return -1;
 }
@@ -2105,8 +2112,10 @@ static int fwrite_length_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->output_file)
-    return vfilelength(mzx_world->output_file, false);
-
+  {
+    int64_t len = vfilelength(mzx_world->output_file, false);
+    return CLAMP(len, -1, INT_MAX);
+  }
   return -1;
 }
 

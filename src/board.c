@@ -407,7 +407,8 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
   int size;
   int v;
 
-  zip_get_next_uncompressed_size(zp, &actual_size);
+  if(zip_get_next_uncompressed_size(zp, &actual_size) != ZIP_SUCCESS)
+    return -1;
 
   buffer = cmalloc(actual_size);
 

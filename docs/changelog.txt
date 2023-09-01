@@ -198,6 +198,11 @@ USERS
 + Unsupported keys no longer return a KEY_PRESSED value of 1
   for SDL 2 builds.
 + Fixed warning messages caused by SDL controller CRCs.
++ Fixed hangs that could be caused by malformed counters files.
++ Fixed world/save/counters file corruption in rare edge cases
+  where the aforementioned files could break the zip format's
+  internal field bounds.
++ Fixed loading of world/save/counters files over 4 GB.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
@@ -234,6 +239,8 @@ DEVELOPERS
 + If available, SDL_GetTicks64 is now used by get_ticks().
 + Minor performance improvements for run_robot, is_string, and
   find_function_counter.
++ _FILE_OFFSET_BITS=64 is now used for 64-bit fseeko, ftello,
+  readdir, and stat/fstat support for 32-bit Linux builds.
 
 
 November 22nd, 2020 - MZX 2.92f

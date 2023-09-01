@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017-2023 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -39,9 +39,6 @@
 #include "zip.h"
 #include "zip_stream.h"
 
-#define ZIP_VERSION 20
-#define ZIP_VERSION_MINIMUM 20
-
 // Data descriptors are short areas after the compressed file containing the
 // uncompressed size, compressed size, and CRC-32 checksum of the file, and
 // are useful for platforms where seeking backward is impossible/infeasible.
@@ -54,10 +51,18 @@
 
 #if defined(CONFIG_NDS) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
 #define ZIP_WRITE_DATA_DESCRIPTOR
-#define DATA_DESCRIPTOR_LEN 12
 #endif
 
+#define ZIP_VERSION_MINIMUM 20
+#define ZIP64_VERSION_MINIMUM 45
+#define ZIP_VERSION(x) ((x) & 0x00ff)
+
+#define DATA_DESCRIPTOR_LEN 12
+#define ZIP64_DATA_DESCRIPTOR_LEN 20
+
 #define ZIP_DEFAULT_NUM_FILES 4
+#define ZIP_MAX_NUM_FILES MIN(1u << 24u, SIZE_MAX)
+
 #define ZIP_STREAM_BUFFER_SIZE 65536
 #define ZIP_STREAM_BUFFER_U_SIZE (ZIP_STREAM_BUFFER_SIZE * 3 / 4)
 #define ZIP_STREAM_BUFFER_C_SIZE (ZIP_STREAM_BUFFER_SIZE / 4)
@@ -66,7 +71,13 @@
 #define CENTRAL_FILE_HEADER_LEN 46
 #define EOCD_RECORD_LEN 22
 
-#define ZIP_DEFAULT_HEADER_BUFFER (CENTRAL_FILE_HEADER_LEN + 8)
+#define ZIP64_EOCD_RECORD_LEN 56
+#define ZIP64_LOCATOR_LEN 20
+#define ZIP64_LOCAL_EXTRA_LEN 20 /* Fixed size for LOCAL only. */
+#define ZIP64_MAX_EXTRA_LEN 32 /* Variable size in CENTRAL only. */
+
+#define ZIP_DEFAULT_HEADER_BUFFER \
+ (CENTRAL_FILE_HEADER_LEN + ZIP64_MAX_EXTRA_LEN + 8)
 
 /**
  * This zip reader/writer was designed:
@@ -118,6 +129,8 @@ static const char *zip_error_string(enum zip_error code)
       return "function received null archive";
     case ZIP_NULL_BUF:
       return "function received null buffer";
+    case ZIP_ALLOC_ERROR:
+      return "out of memory";
     case ZIP_STAT_ERROR:
       return "fstat failed for input file";
     case ZIP_SEEK_ERROR:
@@ -126,6 +139,8 @@ static const char *zip_error_string(enum zip_error code)
       return "could not read from position";
     case ZIP_WRITE_ERROR:
       return "could not write to position";
+    case ZIP_BOUND_ERROR:
+      return "value exceeds bound of provided field";
     case ZIP_INVALID_READ_IN_WRITE_MODE:
       return "can't read in write mode";
     case ZIP_INVALID_WRITE_IN_READ_MODE:
@@ -144,10 +159,16 @@ static const char *zip_error_string(enum zip_error code)
       return "archive isn't a memory archive";
     case ZIP_NO_EOCD:
       return "file is not a zip archive";
+    case ZIP_NO_EOCD_ZIP64:
+      return "Zip64 EOCD locator or Zip64 EOCD not found or invalid";
     case ZIP_NO_CENTRAL_DIRECTORY:
       return "could not find or read central directory";
     case ZIP_INCOMPLETE_CENTRAL_DIRECTORY:
       return "central directory is missing records";
+    case ZIP_UNSUPPORTED_VERSION:
+      return "unsupported minimum version to extract";
+    case ZIP_UNSUPPORTED_NUMBER_OF_ENTRIES:
+      return "unsupported number of files in archive";
     case ZIP_UNSUPPORTED_MULTIPLE_DISKS:
       return "unsupported multiple volume archive";
     case ZIP_UNSUPPORTED_FLAGS:
@@ -156,14 +177,16 @@ static const char *zip_error_string(enum zip_error code)
       return "unsupported method for decompression";
     case ZIP_UNSUPPORTED_COMPRESSION:
       return "unsupported method; use DEFLATE or none";
-    case ZIP_UNSUPPORTED_ZIP64:
-      return "unsupported ZIP64 data";
     case ZIP_UNSUPPORTED_DECOMPRESSION_STREAM:
       return "method does not support partial decompression";
     case ZIP_UNSUPPORTED_COMPRESSION_STREAM:
       return "method does not support partial compression";
     case ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM:
       return "can not open compressed files for direct memory read/write";
+    case ZIP_NO_ZIP64_EXTRA_DATA:
+      return "missing  extra data field";
+    case ZIP_INVALID_ZIP64:
+      return "invalid Zip64 extra data field";
     case ZIP_MISSING_LOCAL_HEADER:
       return "could not find file header";
     case ZIP_HEADER_MISMATCH:
@@ -260,32 +283,33 @@ static enum zip_error zip_get_stream(struct zip_archive *zp, uint8_t method,
 
       case ZIP_S_READ_STREAM:
       {
-        if(result && result->decompress_open)
-        {
-          if(!zp->stream_data_ptrs[method])
-            zp->stream_data_ptrs[method] = result->create();
+        if(!result || !result->decompress_open)
+          return ZIP_UNSUPPORTED_DECOMPRESSION;
 
-          zp->stream = result;
-          zp->stream_data = zp->stream_data_ptrs[method];
-          return ZIP_SUCCESS;
-        }
-        return ZIP_UNSUPPORTED_DECOMPRESSION;
+        break;
       }
 
       case ZIP_S_WRITE_STREAM:
       {
-        if(result && result->compress_open)
-        {
-          if(!zp->stream_data_ptrs[method])
-            zp->stream_data_ptrs[method] = result->create();
+        if(!result || !result->compress_open)
+          return ZIP_UNSUPPORTED_COMPRESSION;
 
-          zp->stream = result;
-          zp->stream_data = zp->stream_data_ptrs[method];
-          return ZIP_SUCCESS;
-        }
-        return ZIP_UNSUPPORTED_COMPRESSION;
+        break;
       }
     }
+
+    if(!zp->stream_data_ptrs[method])
+    {
+      struct zip_stream_data *tmp = result->create();
+      if(!tmp)
+        return ZIP_ALLOC_ERROR;
+
+      zp->stream_data_ptrs[method] = tmp;
+    }
+
+    zp->stream = result;
+    zp->stream_data = zp->stream_data_ptrs[method];
+    return ZIP_SUCCESS;
   }
   return -1;
 }
@@ -323,14 +347,16 @@ int zip_bound_total_header_usage(int num_files, int max_name_size)
   int extra = 0;
 
 #ifdef ZIP_WRITE_DATA_DESCRIPTOR
-  extra = num_files * DATA_DESCRIPTOR_LEN;      // data descriptor size
+  extra = num_files * ZIP64_DATA_DESCRIPTOR_LEN;    // data descriptor size
 #endif
 
   return num_files *
    // base + file name
-   (LOCAL_FILE_HEADER_LEN + max_name_size +     // Local
-    CENTRAL_FILE_HEADER_LEN + max_name_size) +  // Central directory
-    EOCD_RECORD_LEN + extra;                    // EOCD record
+   (LOCAL_FILE_HEADER_LEN + max_name_size +         // Local
+    CENTRAL_FILE_HEADER_LEN + max_name_size +       // Central directory
+    ZIP64_LOCAL_EXTRA_LEN + ZIP64_MAX_EXTRA_LEN) +  // Zip64 extra field
+    ZIP64_EOCD_RECORD_LEN + ZIP64_LOCATOR_LEN +     // Zip64 EOCD record
+    EOCD_RECORD_LEN + extra;                        // EOCD record
 }
 
 
@@ -405,7 +431,7 @@ static struct zip_file_header *zip_allocate_file_header(uint16_t filename_len)
   size_t size = MAX(sizeof(struct zip_file_header),
    offsetof(struct zip_file_header, file_name) + filename_len + 1);
 
-  return cmalloc(size);
+  return (struct zip_file_header *)malloc(size);
 }
 
 /**
@@ -417,6 +443,47 @@ static void zip_free_file_header(struct zip_file_header *fh)
   // Filename is now allocated as part of the base struct, so no need to
   // explicitly free it...
   free(fh);
+}
+
+/**
+ * @return `true` if the current file header is Zip64, otherwise `false`.
+ *         When writing, this must be called AFTER a file is written.
+ */
+static boolean zip_file_is_zip64(struct zip_file_header *fh)
+{
+  if(fh->compressed_size >= 0xfffffffful ||
+   fh->uncompressed_size >= 0xfffffffful ||
+   fh->offset >= 0xfffffffful)
+    return true;
+  return false;
+}
+
+/**
+ * Ensure the size of the zip archive header buffer is at least
+ * the provided value.
+ */
+static boolean zip_ensure_header_buffer_size(struct zip_archive *zp,
+ size_t new_size)
+{
+  if(zp->header_buffer_alloc >= new_size)
+    return true;
+
+  if(zp->header_buffer)
+  {
+    uint8_t *tmp = (uint8_t *)realloc(zp->header_buffer, new_size);
+    if(!tmp)
+      return false;
+
+    zp->header_buffer = tmp;
+  }
+  else
+  {
+    zp->header_buffer = (uint8_t *)malloc(new_size);
+    if(!zp->header_buffer)
+      return false;
+  }
+  zp->header_buffer_alloc = new_size;
+  return true;
 }
 
 static char file_sig_local[] =
@@ -474,6 +541,83 @@ static enum zip_error zip_read_file_header_signature(struct zip_archive *zp,
   return ZIP_SUCCESS;
 }
 
+// Search extra fields for Zip64 info.
+static enum zip_error zip_read_file_header_extra_fields(struct zip_archive *zp,
+ struct zip_file_header *fh, int extra_length, boolean is_central)
+{
+  struct memfile mf;
+  int tag;
+  int sz;
+
+  if(!zip_ensure_header_buffer_size(zp, extra_length))
+    return ZIP_ALLOC_ERROR;
+
+  if(!vfread(zp->header_buffer, extra_length, 1, zp->vf))
+    return ZIP_READ_ERROR;
+
+  mfopen(zp->header_buffer, extra_length, &mf);
+
+  while(extra_length >= 4)
+  {
+    extra_length -= 4;
+    tag = mfgetw(&mf);
+    sz = mfgetw(&mf);
+    if(sz > extra_length)
+      return ZIP_NO_ZIP64_EXTRA_DATA;
+
+    if(tag == 0x0001) /* Zip64 extra data field. */
+    {
+      if(is_central)
+      {
+        // Central headers only contain the used fields (fixed order).
+        if(fh->uncompressed_size >= 0xfffffffful)
+        {
+          if(sz < 8)
+            return ZIP_INVALID_ZIP64;
+
+          fh->uncompressed_size = mfgetuq(&mf);
+        }
+        if(fh->compressed_size >= 0xfffffffful)
+        {
+          if(sz < 8)
+            return ZIP_INVALID_ZIP64;
+
+          fh->compressed_size = mfgetuq(&mf);
+        }
+        if(fh->offset >= 0xfffffffful)
+        {
+          if(sz < 8)
+            return ZIP_INVALID_ZIP64;
+
+          fh->offset = mfgetuq(&mf);
+        }
+        // Ignore start disk.
+      }
+      else
+      {
+        // Local headers always contain both length fields and nothing else.
+        if(sz < ZIP64_LOCAL_EXTRA_LEN - 4)
+          return ZIP_INVALID_ZIP64;
+
+        if(fh->uncompressed_size >= 0xfffffffful)
+          fh->uncompressed_size = mfgetuq(&mf);
+        else
+          mf.current += 8;
+
+        if(fh->compressed_size >= 0xfffffffful)
+          fh->compressed_size = mfgetuq(&mf);
+        else
+          mf.current += 8;
+      }
+      return ZIP_SUCCESS;
+    }
+
+    extra_length -= sz;
+    mfseek(&mf, sz, SEEK_CUR);
+  }
+  return ZIP_NO_ZIP64_EXTRA_DATA;
+}
+
 /**
  * Read a zip file header from the central directory. This function will
  * allocate a new zip_file_header struct at the provided destination.
@@ -486,7 +630,9 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   char buffer[CENTRAL_FILE_HEADER_LEN];
   struct memfile mf;
 
+  int extract_version;
   int file_name_length;
+  int extra_length;
   int skip_length;
   int method;
   int flags;
@@ -508,11 +654,17 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   mfseek(&mf, 0, SEEK_SET);
 
   central_fh = zip_allocate_file_header(file_name_length);
+  if(!central_fh)
+    return ZIP_ALLOC_ERROR;
+
   *_central_fh = central_fh;
 
   // Version made by              2
   // Version needed to extract    2
-  mf.current += 4;
+  mf.current += 2;
+  extract_version = mfgetw(&mf);
+  if(ZIP_VERSION(extract_version) > ZIP64_VERSION_MINIMUM)
+    return ZIP_UNSUPPORTED_VERSION;
 
   // General purpose bit flag     2
 
@@ -549,15 +701,9 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
 
   // CRC-32, sizes                12
 
-  central_fh->crc32 = mfgetd(&mf);
-  central_fh->compressed_size = mfgetd(&mf);
-  central_fh->uncompressed_size = mfgetd(&mf);
-
-  if(central_fh->compressed_size == 0xFFFFFFFF)
-    return ZIP_UNSUPPORTED_ZIP64;
-
-  if(central_fh->uncompressed_size == 0xFFFFFFFF)
-    return ZIP_UNSUPPORTED_ZIP64;
+  central_fh->crc32 = mfgetud(&mf);
+  central_fh->compressed_size = mfgetud(&mf);
+  central_fh->uncompressed_size = mfgetud(&mf);
 
   // File name length             2
   // Extra field length           2
@@ -565,7 +711,8 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
 
   file_name_length = mfgetw(&mf);
   central_fh->file_name_length = file_name_length;
-  skip_length = mfgetw(&mf) + mfgetw(&mf);
+  extra_length = mfgetw(&mf);
+  skip_length =  mfgetw(&mf);
 
   // Disk number of file start    2
   // Internal file attributes     2
@@ -573,11 +720,23 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   mf.current += 8;
 
   // Offset to local header       4 (from start of file)
-  central_fh->offset = mfgetd(&mf);
+  central_fh->offset = mfgetud(&mf);
 
   // File name (n)
   vfread(central_fh->file_name, file_name_length, 1, zp->vf);
   central_fh->file_name[file_name_length] = 0;
+
+  // Version 4.5 and up: if one of several fields is maximum value, it's Zip64.
+  if(ZIP_VERSION(extract_version) >= ZIP64_VERSION_MINIMUM &&
+   zip_file_is_zip64(central_fh))
+  {
+    enum zip_error r = zip_read_file_header_extra_fields(zp, central_fh,
+     extra_length, true);
+    if(r != ZIP_SUCCESS)
+      return r;
+  }
+  else
+    skip_length += extra_length;
 
   // Done. Skip to the position where the next header should be.
   if(skip_length && vfseek(zp->vf, skip_length, SEEK_CUR))
@@ -599,11 +758,15 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
   enum zip_error result;
   char buffer[LOCAL_FILE_HEADER_LEN];
   struct memfile mf;
+  boolean local_is_zip64 = false;
 
   uint32_t crc32;
-  uint32_t compressed_size;
-  uint32_t uncompressed_size;
+  uint64_t compressed_size;
+  uint64_t uncompressed_size;
+  int file_name_length;
+  int extra_length;
   int data_position;
+  int version;
   int flags;
 
   result = zip_read_file_header_signature(zp, false);
@@ -616,8 +779,10 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
 
   mfopen(buffer, LOCAL_FILE_HEADER_LEN - 4, &mf);
 
-  // Version made by              2
-  mf.current += 2;
+  // Version required to extract  2
+  version = mfgetw(&mf);
+  if(ZIP_VERSION(version) > ZIP64_VERSION_MINIMUM)
+    return ZIP_UNSUPPORTED_VERSION;
 
   // General purpose bit flag     2
   flags = mfgetw(&mf);
@@ -627,63 +792,83 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
   // File last modification date  2
   mf.current += 6;
 
-  if(!(flags & ZIP_F_DATA_DESCRIPTOR))
+  // CRC-32, sizes              12
+  crc32 = mfgetud(&mf);
+  compressed_size = mfgetud(&mf);
+  uncompressed_size = mfgetud(&mf);
+
+  // File name length           2
+  // Extra field length         2
+  file_name_length = mfgetw(&mf);
+  extra_length = mfgetw(&mf);
+
+  data_position = vftell(zp->vf) + file_name_length + extra_length;
+
+  // If there is a data descriptor, or if one of the size fields suggests
+  // there is a Zip64 extra field, then search for the Zip64 extra field.
+  if(ZIP_VERSION(version) >= ZIP64_VERSION_MINIMUM &&
+   (compressed_size >= 0xfffffffful || uncompressed_size >= 0xfffffffful ||
+   (flags & ZIP_F_DATA_DESCRIPTOR)))
   {
-    // Normal.
+    struct zip_file_header tmp;
+    enum zip_error res;
 
-    // CRC-32, sizes              12
-    crc32 = mfgetd(&mf);
-    compressed_size = mfgetd(&mf);
-    uncompressed_size = mfgetd(&mf);
+    tmp.compressed_size = compressed_size;
+    tmp.uncompressed_size = uncompressed_size;
 
-    // File name length           2
-    // Extra field length         2
+    // Skip filename
+    if(vfseek(zp->vf, file_name_length, SEEK_CUR))
+      return ZIP_SEEK_ERROR;
 
-    data_position = vftell(zp->vf) + mfgetw(&mf) + mfgetw(&mf);
+    res = zip_read_file_header_extra_fields(zp, &tmp, extra_length, false);
+    if(res == ZIP_SUCCESS)
+    {
+      local_is_zip64 = true;
+      compressed_size = tmp.compressed_size;
+      uncompressed_size = tmp.uncompressed_size;
+    }
+    else
 
-    // Done.
+    if(res != ZIP_NO_ZIP64_EXTRA_DATA)
+      return res;
   }
 
-  else
+  if(flags & ZIP_F_DATA_DESCRIPTOR)
   {
     // With data descriptor.
-    char dd_buffer[16];
+    char dd_buffer[24];
     struct memfile dd_mf;
+    uint32_t peek;
+    int sz = (local_is_zip64 ? ZIP64_DATA_DESCRIPTOR_LEN : DATA_DESCRIPTOR_LEN) + 4;
 
-    // CRC-32, sizes              12
-    mf.current += 12;
-
-    // File name length           2
-    // Extra field length         2
-
-    data_position = vftell(zp->vf) + mfgetw(&mf) + mfgetw(&mf);
-
-    // CRC-32, sizes              12
+    // Signature (optional)       4
+    // CRC-32, sizes              12 (regular) or 20 (Zip64)
 
     vfseek(zp->vf, data_position + central_fh->compressed_size, SEEK_SET);
-    vfread(dd_buffer, 16, 1, zp->vf);
-    mfopen(dd_buffer, 16, &dd_mf);
+    vfread(dd_buffer, sz, 1, zp->vf);
+    mfopen(dd_buffer, sz, &dd_mf);
 
     // The data descriptor may or may not have an optional signature field,
-    // meaning it may be either 12 or 16 bytes long.
-    crc32 = mfgetd(&dd_mf);
-    compressed_size = mfgetd(&dd_mf);
-    uncompressed_size = mfgetd(&dd_mf);
+    // meaning it may be either 12 or 16 bytes long (20 or 24 for Zip64).
+    // If the CRC-32 is equal to the magic and the next four bytes are equal
+    // to the CRC-32, this is probably why.
+    crc32 = mfgetud(&dd_mf);
+    peek = mfgetud(&dd_mf);
+    if(crc32 == data_descriptor_sig && peek == central_fh->crc32)
+      crc32 = peek;
+    else
+      dd_mf.current -= 4;
 
-    if(crc32 == data_descriptor_sig &&
-     compressed_size == central_fh->crc32 &&
-     uncompressed_size == central_fh->compressed_size)
+    if(local_is_zip64)
     {
-      // If the first value is the data descriptor signature and we can verify
-      // that we've read the expected crc32 and compressed size where they
-      // should be, it's safe to assume this is a 16-byte data descriptor.
-      // In this case, shift the values.
-      crc32 = compressed_size;
-      compressed_size = uncompressed_size;
-      uncompressed_size = mfgetd(&dd_mf);
+      compressed_size = mfgetuq(&dd_mf);
+      uncompressed_size = mfgetuq(&dd_mf);
     }
-
-    // Done.
+    else
+    {
+      compressed_size = mfgetud(&dd_mf);
+      uncompressed_size = mfgetud(&dd_mf);
+    }
   }
 
   // Verify values are correct.
@@ -704,33 +889,63 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
  * The provided zip file header struct's data should be fully initialized.
  */
 static enum zip_error zip_write_file_header(struct zip_archive *zp,
- struct zip_file_header *fh, int is_central)
+ struct zip_file_header *fh, boolean is_central)
 {
   enum zip_error result = ZIP_SUCCESS;
+  boolean zip64_uncompressed = (fh->uncompressed_size >= 0xfffffffful);
+  boolean zip64_compressed = (fh->compressed_size >= 0xfffffffful);
+  boolean zip64_offset = (fh->offset >= 0xfffffffful);
+  boolean zip64_extra = false;
 
   char *magic;
   struct memfile mf;
   size_t header_size;
+  size_t extra_size = 0;
+  uint16_t ver;
   int i;
 
   if(is_central)
   {
-    header_size = fh->file_name_length + CENTRAL_FILE_HEADER_LEN;
+    zip64_extra = zip_file_is_zip64(fh);
+    if(zip64_extra)
+    {
+      extra_size = 4;
+      if(zip64_uncompressed)
+        extra_size += 8;
+      if(zip64_compressed)
+        extra_size += 8;
+      if(zip64_offset)
+        extra_size += 8;
+      // Multi-disk not supported; extra disk field won't be present.
+      assert(extra_size < ZIP64_MAX_EXTRA_LEN);
+    }
+    header_size = fh->file_name_length + CENTRAL_FILE_HEADER_LEN + extra_size;
     magic = file_sig_central;
   }
   else
   {
 #ifndef ZIP_WRITE_DATA_DESCRIPTOR
     // Position to write CRC, sizes after file write
-    zp->stream_crc_position = vftell(zp->vf) + 14;
+    int64_t header_start = vftell(zp->vf);
+    zp->stream_crc_position = header_start + 14;
+    zp->stream_zip64_position = header_start + LOCAL_FILE_HEADER_LEN +
+     fh->file_name_length + 4;
 #endif
-    header_size = fh->file_name_length + LOCAL_FILE_HEADER_LEN;
+    zip64_extra = zp->zip64_current;
+    if(zip64_extra)
+      extra_size = ZIP64_LOCAL_EXTRA_LEN;
+
+    header_size = fh->file_name_length + LOCAL_FILE_HEADER_LEN + extra_size;
     magic = file_sig_local;
   }
 
   if(header_size > zp->header_buffer_alloc)
   {
-    zp->header_buffer = crealloc(zp->header_buffer, header_size);
+    uint8_t *tmp = (uint8_t *)realloc(zp->header_buffer, header_size);
+    if(!tmp)
+      return ZIP_ALLOC_ERROR;
+
+    zp->header_buffer = tmp;
     zp->header_buffer_alloc = header_size;
   }
 
@@ -738,16 +953,14 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
 
   // Signature
   for(i = 0; i<4; i++)
-  {
     mfputc(magic[i], &mf);
-  }
 
-  // Version made by
-  mfputw(ZIP_VERSION, &mf);
-
-  // Version needed to extract (central directory only)
+  // Version made by (central directory only)
+  // Version needed to extract
+  ver = zip64_extra ? ZIP64_VERSION_MINIMUM : ZIP_VERSION_MINIMUM;
+  mfputw(ver, &mf);
   if(is_central)
-    mfputw(ZIP_VERSION_MINIMUM, &mf);
+    mfputw(ver, &mf);
 
   // General purpose bit flag
   mfputw(fh->flags, &mf);
@@ -762,19 +975,19 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
   // note: zp->stream_crc_position should be here.
 
   // CRC-32
-  mfputd(fh->crc32, &mf);
+  mfputud(fh->crc32, &mf);
 
   // Compressed size
-  mfputd(fh->compressed_size, &mf);
+  mfputud(zip64_compressed ? 0xfffffffful : fh->compressed_size, &mf);
 
   // Uncompressed size
-  mfputd(fh->uncompressed_size, &mf);
+  mfputud(zip64_uncompressed ? 0xfffffffful : fh->uncompressed_size, &mf);
 
   // File name length
   mfputw(fh->file_name_length, &mf);
 
   // Extra field length
-  mfputw(0, &mf);
+  mfputw(extra_size, &mf);
 
   // (central directory only fields)
   if(is_central)
@@ -792,13 +1005,29 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
     mfputd(0, &mf);
 
     // Relative offset of local file header
-    mfputd(fh->offset, &mf);
+    mfputd(zip64_offset ? 0xfffffffful : fh->offset, &mf);
   }
 
   // File name
   mfwrite(fh->file_name, fh->file_name_length, 1, &mf);
 
-  // Extra field (zero bytes)
+  // Extra field (zero bytes or 32 bytes if Zip64)
+  if(zip64_extra)
+  {
+    // Tag: Zip64 Extra field
+    mfputw(0x0001, &mf);
+    // Length of extra field
+    mfputw(extra_size - 4, &mf);
+    // Uncompressed size
+    if(!is_central || zip64_uncompressed)
+      mfputuq(fh->uncompressed_size, &mf);
+    // Compressed size
+    if(!is_central || zip64_compressed)
+      mfputuq(fh->compressed_size, &mf);
+    // Local header offset
+    if(is_central && zip64_offset)
+      mfputuq(fh->offset, &mf);
+  }
 
   // File comment (zero bytes)
 
@@ -816,15 +1045,20 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
  * Allocate or resize the stream buffer. A single buffer is used across the
  * entire zip read/write session to reduce the number of allocations/frees.
  */
-static void zip_set_stream_buffer_size(struct zip_archive *zp, size_t size)
+static enum zip_error zip_set_stream_buffer_size(struct zip_archive *zp, size_t size)
 {
   size = MAX(size, ZIP_STREAM_BUFFER_SIZE);
 
   if(!zp->stream_buffer || zp->stream_buffer_alloc < size)
   {
-    zp->stream_buffer = crealloc(zp->stream_buffer, size);
+    uint8_t *tmp = (uint8_t *)realloc(zp->stream_buffer, size);
+    if(!tmp)
+      return ZIP_ALLOC_ERROR;
+
+    zp->stream_buffer = tmp;
     zp->stream_buffer_alloc = size;
   }
+  return ZIP_SUCCESS;
 }
 
 /**
@@ -863,7 +1097,10 @@ static enum zip_error zread_stream(uint8_t *destBuf, size_t readLen,
 
     if(zp->stream->decompress_block)
     {
-      zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
+      result = zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
+      if(result != ZIP_SUCCESS)
+        return result;
+
       decompress_fn = zp->stream->decompress_block;
 
       in = zp->stream_buffer;
@@ -887,7 +1124,10 @@ static enum zip_error zread_stream(uint8_t *destBuf, size_t readLen,
       if(!direct_write)
         size += out_size;
 
-      zip_set_stream_buffer_size(zp, size);
+      result = zip_set_stream_buffer_size(zp, size);
+      if(result != ZIP_SUCCESS)
+        return result;
+
       decompress_fn = zp->stream->decompress_file;
 
       in = zp->stream_buffer;
@@ -1033,21 +1273,35 @@ err_out:
 /**
  * Get the MZX properties of the next file in the archive.
  * These fields need to be initialized externally; see world_format.h.
+ *
+ * @param zp        zip archive structure.
+ * @param file_id   pointer to variable to store the file type ID to, or null.
+ * @param board_id  pointer to variable to store the board number to, or null.
+ * @param robot_id  pointer to variable to store the object number to, or null.
+ * @return          `ZIP_SUCCESS` on success;
+ *                  `ZIP_EOF` if the end of archive has been reached;
+ *                  `ZIP_NULL` if `zp` is a null pointer;
+ *                  `ZIP_INVALID_READ_IN_WRITE_MODE` if `zp` is a write archive.
+ *                  `ZIP_INVALID_FILE_READ_UNINITIALIZED` if the central
+ *                  directory has not been read yet;
+ *                  `ZIP_INVALID_FILE_READ_IN_STREAM_MODE` if `zp` has opened
+ *                  the current file for reading.
  */
 enum zip_error zip_get_next_mzx_file_id(struct zip_archive *zp,
  unsigned int *file_id, unsigned int *board_id, unsigned int *robot_id)
 {
   struct zip_file_header *fh;
-  enum zip_error result;
+  enum zip_error result = ZIP_NULL;
+
+  if(!zp)
+    goto err_out;
 
   result = zp->read_file_error;
   if(result)
     goto err_out;
 
   if(zp->pos >= zp->num_files)
-  {
     return ZIP_EOF;
-  }
 
   fh = zp->files[zp->pos];
 
@@ -1069,21 +1323,70 @@ err_out:
 }
 
 /**
- * Get the uncompressed length of the next file in the archive.
+ * Get the uncompressed length of the next file in the archive within the
+ * range of `size_t`. This should be used when reading whole files to memory.
+ *
+ * @param zp      zip archive structure.
+ * @param u_size  pointer to `size_t` variable to store uncompressed size to.
+ *                If null, no size will be stored.
+ * @return        `ZIP_SUCCESS` on success;
+ *                `ZIP_EOF` if the end of the archive has been reached;
+ *                `ZIP_BOUND_ERROR` if the uncompressed size is greater than
+ *                or equal to `SIZE_MAX`;
+ *                `ZIP_NULL` if `zp` is a null pointer;
+ *                `ZIP_INVALID_READ_IN_WRITE_MODE` if `zp` is a write archive.
+ *                `ZIP_INVALID_FILE_READ_UNINITIALIZED` if the central
+ *                directory has not been read yet;
+ *                `ZIP_INVALID_FILE_READ_IN_STREAM_MODE` if `zp` has opened
+ *                the current file for reading.
  */
 enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
  size_t *u_size)
 {
-  enum zip_error result;
+  uint64_t tmp;
+  enum zip_error result = zip_get_next_uncompressed_size64(zp, &tmp);
+  if(result)
+    return result;
+
+  if(tmp >= SIZE_MAX)
+    return ZIP_BOUND_ERROR;
+
+  if(u_size)
+    *u_size = tmp;
+
+  return ZIP_SUCCESS;
+}
+
+/**
+ * Get the uncompressed length of the next file in the archive. This should
+ * be used when the entire file does not need to fit into memory.
+ *
+ * @param zp      zip archive structure.
+ * @param u_size  pointer to `uint64_t` variable to store uncompressed size to.
+ *                If null, no size will be stored.
+ * @return        `ZIP_SUCCESS` on success;
+ *                `ZIP_EOF` if the end of the archive has been reached;
+ *                `ZIP_NULL` if `zp` is a null pointer;
+ *                `ZIP_INVALID_READ_IN_WRITE_MODE` if `zp` is a write archive.
+ *                `ZIP_INVALID_FILE_READ_UNINITIALIZED` if the central
+ *                directory has not been read yet;
+ *                `ZIP_INVALID_FILE_READ_IN_STREAM_MODE` if `zp` has opened
+ *                the current file for reading.
+ */
+enum zip_error zip_get_next_uncompressed_size64(struct zip_archive *zp,
+ uint64_t *u_size)
+{
+  enum zip_error result = ZIP_NULL;
+
+  if(!zp)
+    goto err_out;
 
   result = zp->read_file_error;
   if(result)
     goto err_out;
 
   if(zp->pos >= zp->num_files)
-  {
     return ZIP_EOF;
-  }
 
   if(u_size)
     *u_size = zp->files[zp->pos]->uncompressed_size;
@@ -1131,11 +1434,11 @@ static enum zip_error zip_read_stream_open(struct zip_archive *zp, uint8_t mode)
 {
   struct zip_file_header *central_fh;
 
-  uint32_t c_size;
-  uint32_t u_size;
+  uint64_t c_size;
+  uint64_t u_size;
   uint16_t method;
 
-  uint32_t read_pos;
+  uint64_t read_pos;
   enum zip_error result;
 
   result = (zp ? zp->read_file_error : ZIP_NULL);
@@ -1201,7 +1504,7 @@ static enum zip_error zip_read_stream_open(struct zip_archive *zp, uint8_t mode)
  * will be the uncompressed size of the file on return (or 0 upon error).
  */
 enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
- size_t *destLen)
+ uint64_t *destLen)
 {
   enum zip_error result = zip_read_stream_open(zp, ZIP_S_READ_STREAM);
   if(result)
@@ -1268,7 +1571,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   if(zp && zp->mode == ZIP_S_READ_MEMSTREAM)
   {
     struct memfile mf;
-    uint32_t c_size = zp->streaming_file->compressed_size;
+    size_t c_size = zp->streaming_file->compressed_size;
 
     // If this doesn't work, something modified the zip archive structures.
     if(!vfile_get_memfile_block(zp->vf, c_size, &mf))
@@ -1387,7 +1690,7 @@ err_out:
 enum zip_error zip_read_file(struct zip_archive *zp,
  void *destBuf, size_t destLen, size_t *readLen)
 {
-  size_t u_size;
+  uint64_t u_size;
   enum zip_error result;
 
   // No need to check mode; the functions used here will
@@ -1495,7 +1798,7 @@ static enum zip_error zwrite_stream_compress(const void *buffer, size_t len,
 
   if(finish)
   {
-    size_t total_written = zp->stream_left + *write_len;
+    uint64_t total_written = zp->stream_left + *write_len;
     if(result != ZIP_STREAM_FINISHED)
       return ZIP_COMPRESS_FAILED;
 
@@ -1646,38 +1949,78 @@ static enum zip_error zwrite_direct(const void *src, size_t srcLen,
 }
 
 /**
+ * Enable/disable Zip64 for the next file to be written.
+ */
+enum zip_error zip_set_zip64_enabled(struct zip_archive *zp,
+ boolean enable_zip64)
+{
+  if(!zp)
+    return ZIP_NULL;
+
+  zp->zip64_enabled = enable_zip64;
+  return ZIP_SUCCESS;
+}
+
+/**
  * Writes the data descriptor for a file. If data descriptors are turned
  * off, this function will seek back and add the data into the local header.
  */
 static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
  struct zip_file_header *fh)
 {
-  char buffer[12];
+  char buffer[ZIP64_DATA_DESCRIPTOR_LEN];
   struct memfile mf;
+  uint32_t c_size = MIN(fh->compressed_size, 0xfffffffful);
+  uint32_t u_size = MIN(fh->uncompressed_size, 0xfffffffful);
 
-  mfopen_wr(buffer, 12, &mf);
-  mfputd(fh->crc32, &mf);
-  mfputd(fh->compressed_size, &mf);
-  mfputd(fh->uncompressed_size, &mf);
+  mfopen_wr(buffer, DATA_DESCRIPTOR_LEN, &mf);
+  mfputud(fh->crc32, &mf);
+  mfputud(c_size, &mf);
+  mfputud(u_size, &mf);
 
 #ifdef ZIP_WRITE_DATA_DESCRIPTOR
   {
-    // Write data descriptor
-    if(zp->is_memory && zip_ensure_capacity(DATA_DESCRIPTOR_LEN, zp))
-      return ZIP_EOF;
+    if(zp->zip64_current)
+    {
+      if(zp->is_memory && zip_ensure_capacity(ZIP64_DATA_DESCRIPTOR_LEN, zp))
+        return ZIP_EOF;
 
-    vfwrite(buffer, 12, 1, zp->vf);
+      mfopen_wr(buffer, ZIP64_DATA_DESCRIPTOR_LEN, &mf);
+      mfseek(&mf, 4, SEEK_SET);
+      mfputuq(fh->compressed_size, &mf);
+      mfputuq(fh->uncompressed_size, &mf);
+      vfwrite(buffer, ZIP64_DATA_DESCRIPTOR_LEN, 1, zp->vf);
+    }
+    else
+    {
+      // Write data descriptor
+      if(zp->is_memory && zip_ensure_capacity(DATA_DESCRIPTOR_LEN, zp))
+        return ZIP_EOF;
+
+      vfwrite(buffer, 12, 1, zp->vf);
+    }
   }
 #else
   {
     // Go back and write sizes and CRC32
-    int return_position = vftell(zp->vf);
+    int64_t return_position = vftell(zp->vf);
 
     if(vfseek(zp->vf, zp->stream_crc_position, SEEK_SET))
       return ZIP_SEEK_ERROR;
 
-    if(!vfwrite(buffer, 12, 1, zp->vf))
+    if(!vfwrite(buffer, DATA_DESCRIPTOR_LEN, 1, zp->vf))
       return ZIP_WRITE_ERROR;
+
+    if(zp->zip64_current)
+    {
+      // Write the Zip64 copies of the sizes.
+      // Both are always present in the local header.
+      if(vfseek(zp->vf, zp->stream_zip64_position, SEEK_SET))
+        return ZIP_SEEK_ERROR;
+
+      vfputq(fh->uncompressed_size, zp->vf);
+      vfputq(fh->compressed_size, zp->vf);
+    }
 
     if(vfseek(zp->vf, return_position, SEEK_SET))
       return ZIP_SEEK_ERROR;
@@ -1724,8 +2067,23 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
   if(result)
     return result;
 
+  // If needed, expand the files list so the file can be added to it.
+  if(zp->pos == zp->files_alloc)
+  {
+    size_t count = zp->files_alloc * 2;
+    struct zip_file_header **tmp = (struct zip_file_header **)realloc(zp->files,
+     count * sizeof(struct zip_file_header *));
+    if(!tmp)
+      return ZIP_ALLOC_ERROR;
+
+    zp->files = tmp;
+    zp->files_alloc = count;
+  }
+
   file_name_len = strlen(name);
   fh = zip_allocate_file_header(file_name_len);
+  if(!fh)
+    return ZIP_ALLOC_ERROR;
 
   // Set up the header
 #ifdef ZIP_WRITE_DATA_DESCRIPTOR
@@ -1750,6 +2108,11 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
     return result;
   }
 
+  // Now that the header is written, it can be added to the files list.
+  zp->running_file_name_length += file_name_len;
+  zp->files[zp->pos] = fh;
+  zp->num_files++;
+
   // Set up the stream
   zp->mode = mode;
   zp->streaming_file = fh;
@@ -1761,9 +2124,12 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
   if(zp->stream)
   {
     struct zip_stream_data *stream_data = zp->stream_data;
-    zp->stream->compress_open(stream_data, method, 0);
+    zp->stream->compress_open(stream_data, method, false);
 
-    zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
+    result = zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
+    if(result != ZIP_SUCCESS)
+      return result;
+
     zp->stream->output(stream_data, zp->stream_buffer + ZIP_STREAM_BUFFER_U_SIZE,
      ZIP_STREAM_BUFFER_C_SIZE);
   }
@@ -1773,13 +2139,53 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
 }
 
 /**
+ * Enable or disable Zip64 based on a fixed input file size and known
+ * compression mode.
+ */
+static enum zip_error zip_write_autodetect_zip64(struct zip_archive *zp,
+ int method, uint8_t mode, size_t src_len)
+{
+  enum zip_error result;
+
+  zp->zip64_current = false;
+  if(!zp->zip64_enabled)
+    return ZIP_SUCCESS;
+
+  if(src_len >= 0xfffffffful)
+  {
+    zp->zip64_current = true;
+    return ZIP_SUCCESS;
+  }
+
+  // Hack--set up the stream early so its compress_bound function can be used.
+  result = zip_get_stream(zp, method, mode);
+  if(result)
+    return result;
+
+  if(zp->stream != NULL && zp->stream->compress_bound != NULL)
+  {
+    size_t bound_len = 0;
+    result = zp->stream->compress_bound(zp->stream_data, src_len, &bound_len);
+    if(result)
+      return result;
+
+    if(bound_len >= 0xfffffffful)
+      zp->zip64_current = true;
+  }
+  return ZIP_SUCCESS;
+}
+
+/**
  * Open a file writing stream to write the next file in the zip archive.
+ * If Zip64 is enabled, this file will always be written with Zip64 data.
  */
 enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
  const char *name, int method)
 {
-  enum zip_error result = zip_write_open_stream(zp, name, method,
-   ZIP_S_WRITE_STREAM);
+  enum zip_error result;
+
+  zp->zip64_current = zp->zip64_enabled;
+  result = zip_write_open_stream(zp, name, method, ZIP_S_WRITE_STREAM);
   if(result)
     goto err_out;
 
@@ -1802,8 +2208,12 @@ err_out:
 enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
  struct memfile *mf, const char *name, size_t length)
 {
-  enum zip_error result = zip_write_open_stream(zp, name, ZIP_M_NONE,
-   ZIP_S_WRITE_MEMSTREAM);
+  enum zip_error result = zip_write_autodetect_zip64(zp, ZIP_M_NONE,
+   ZIP_S_WRITE_MEMSTREAM, length);
+  if(result)
+    goto err_out;
+
+  result = zip_write_open_stream(zp, name, ZIP_M_NONE, ZIP_S_WRITE_MEMSTREAM);
   if(result)
     goto err_out;
 
@@ -1866,16 +2276,6 @@ enum zip_error zip_write_close_stream(struct zip_archive *zp)
   if(result)
     goto err_out;
 
-  // Put the file header into the zip archive
-  if(zp->pos == zp->files_alloc)
-  {
-    int count = zp->files_alloc * 2;
-    zp->files = crealloc(zp->files, count * sizeof(struct zip_file_header *));
-    zp->files_alloc = count;
-  }
-  zp->running_file_name_length += fh->file_name_length;
-  zp->files[zp->pos] = fh;
-  zp->num_files++;
   zp->pos++;
 
   // Clean up the stream
@@ -1902,7 +2302,7 @@ enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
 {
   unsigned char *start = mf->start;
   unsigned char *end = mf->current;
-  uint32_t length = end - start;
+  size_t length = end - start;
 
   enum zip_error result =
    !zp ? ZIP_NULL :
@@ -1933,6 +2333,9 @@ err_out:
 /**
  * Write a file to a zip archive.
  * Currently handled methods: ZIP_M_NONE, ZIP_M_DEFLATE
+ *
+ * If Zip64 is enabled, then Zip64 will be automatically selected for this
+ * file based on its total length and its compressed size bound (if applicable).
  */
 enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
  const void *src, size_t srcLen, int method)
@@ -1945,7 +2348,11 @@ enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
   if(srcLen < 256 && method == ZIP_M_DEFLATE)
     method = ZIP_M_NONE;
 
-  result = zip_write_open_file_stream(zp, name, method);
+  result = zip_write_autodetect_zip64(zp, method, ZIP_S_WRITE_STREAM, srcLen);
+  if(result)
+    goto err_out;
+
+  result = zip_write_open_stream(zp, name, method, ZIP_S_WRITE_STREAM);
   if(result)
     goto err_out;
 
@@ -1973,11 +2380,39 @@ err_out:
  * is probably not actually a zip archive or uses features we don't support.
  */
 
-static char eocd_sig[] = {
+struct zip_eocd
+{
+  uint32_t disk_start_of_central_directory;
+  uint32_t disk_eocd;
+  uint64_t records_on_disk;
+  uint64_t records_total;
+  uint64_t size_central_directory;
+  uint64_t offset_central_directory;
+  uint64_t zip64_eocd_offset;
+};
+
+static char eocd_sig[] =
+{
   0x50,
   0x4b,
   0x05,
   0x06
+};
+
+static char zip64_eocd_sig[] =
+{
+  0x50,
+  0x4b,
+  0x06,
+  0x06,
+};
+
+static char zip64_locator_sig[] =
+{
+  0x50,
+  0x4b,
+  0x06,
+  0x07
 };
 
 static enum zip_error zip_find_eocd(struct zip_archive *zp)
@@ -1988,7 +2423,7 @@ static enum zip_error zip_find_eocd(struct zip_archive *zp)
   int n;
 
   // Go to the latest position the EOCD might be.
-  if(vfseek(vf, (long int)(zp->end_in_file - EOCD_RECORD_LEN), SEEK_SET))
+  if(vfseek(vf, (int64_t)(zp->end_in_file - EOCD_RECORD_LEN), SEEK_SET))
   {
     return ZIP_NO_EOCD;
   }
@@ -2037,6 +2472,131 @@ static enum zip_error zip_find_eocd(struct zip_archive *zp)
     return ZIP_NO_EOCD;
   }
 
+  // Found the EOCD record signature                    4
+  return ZIP_SUCCESS;
+}
+
+/**
+ * Read the standard 22 byte EOCD record, minus the signature bytes.
+ */
+static enum zip_error zip_read_eocd(struct zip_archive *zp,
+ struct zip_eocd *eocd)
+{
+  char buffer[EOCD_RECORD_LEN - 4];
+  struct memfile mf;
+
+  // Already read the first 4 signature bytes.
+  if(!vfread(buffer, EOCD_RECORD_LEN - 4, 1, zp->vf))
+    return ZIP_READ_ERROR;
+
+  mfopen(buffer, EOCD_RECORD_LEN - 4, &mf);
+
+  // Number of this disk                                2
+  // Disk where central directory starts                2
+  // Number of central directory records on this disk   2
+  // Total number of central directory records          2
+  eocd->disk_eocd                       = mfgetw(&mf);
+  eocd->disk_start_of_central_directory = mfgetw(&mf);
+  eocd->records_on_disk                 = mfgetw(&mf);
+  eocd->records_total                   = mfgetw(&mf);
+
+  // Size of central directory (bytes)                  4
+  eocd->size_central_directory = mfgetud(&mf);
+
+  // Offset to central directory from start of file     4
+  eocd->offset_central_directory = mfgetud(&mf);
+
+  // Comment length (ignore)                            2
+  return ZIP_SUCCESS;
+}
+
+/**
+ * Read the Zip64 EOCD record locator from the current position in the
+ * stream, if it exists.
+ */
+static enum zip_error zip_read_zip64_eocd_locator(struct zip_archive *zp,
+ struct zip_eocd *eocd)
+{
+  uint8_t buffer[ZIP64_LOCATOR_LEN];
+  uint32_t disk_start_of_zip64_eocd;
+  uint32_t disk_total;
+  struct memfile mf;
+
+  if(!vfread(buffer, ZIP64_LOCATOR_LEN, 1, zp->vf))
+    return ZIP_READ_ERROR;
+
+  if(memcmp(buffer, zip64_locator_sig, 4))
+    return ZIP_NO_EOCD_ZIP64;
+
+  mfopen(buffer + 4, ZIP64_LOCATOR_LEN - 4, &mf);
+
+  // Disk where central directory starts                4
+  disk_start_of_zip64_eocd = mfgetud(&mf);
+  // Relative offset of the zip64 EOCD                  8
+  eocd->zip64_eocd_offset = mfgetuq(&mf);
+  // Total number of disks                              4
+  disk_total = mfgetud(&mf);
+
+  if(disk_start_of_zip64_eocd != 0 || disk_total != 1)
+    return ZIP_UNSUPPORTED_MULTIPLE_DISKS;
+
+  // Impossible to support with 64-bit stdio.
+  if(eocd->zip64_eocd_offset > INT64_MAX)
+    return ZIP_INVALID_ZIP64;
+
+  return ZIP_SUCCESS;
+}
+
+/**
+ * Read the Zip64 EOCD record. Despite APPNOTE.TXT implying that only the
+ * fields dummied in the EOCD should be used, PKZIP 6.0 unconditionally
+ * prefers ALL fields from this structure over the old fields when present.
+ */
+static enum zip_error zip_read_zip64_eocd(struct zip_archive *zp,
+ struct zip_eocd *eocd)
+{
+  uint8_t buffer[ZIP64_EOCD_RECORD_LEN];
+  struct memfile mf;
+  uint64_t sz;
+  uint16_t ver;
+
+  if(!vfread(buffer, ZIP64_EOCD_RECORD_LEN, 1, zp->vf))
+    return ZIP_READ_ERROR;
+
+  if(memcmp(buffer, zip64_eocd_sig, 4))
+    return ZIP_NO_EOCD_ZIP64;
+
+  mfopen(buffer + 4, ZIP64_EOCD_RECORD_LEN - 4, &mf);
+  // Size of Zip64 EOCD record                          8
+  sz = mfgetuq(&mf);
+  if(sz < ZIP64_EOCD_RECORD_LEN - 12)
+    return ZIP_INVALID_ZIP64;
+
+  // Version made by                                    2
+  // Version needed to extract                          2
+  mf.current += 2;
+  ver = mfgetw(&mf);
+  if(ZIP_VERSION(ver) != ZIP64_VERSION_MINIMUM)
+    return ZIP_UNSUPPORTED_VERSION;
+
+  // Number of this disk                                4
+  eocd->disk_eocd = mfgetud(&mf);
+
+  // Disk where central directory starts                4
+  eocd->disk_start_of_central_directory = mfgetud(&mf);
+
+  // Central directory entries on this disk             8
+  // Total number of central directory entries          8
+  eocd->records_on_disk = mfgetuq(&mf);
+  eocd->records_total = mfgetuq(&mf);
+
+  // Size of the central directory                      8
+  eocd->size_central_directory = mfgetuq(&mf);
+
+  // Offset of the central directory                    8
+  eocd->offset_central_directory = mfgetuq(&mf);
+
+  // Zip64 extensible data sector (ignore)
   return ZIP_SUCCESS;
 }
 
@@ -2046,54 +2606,90 @@ static enum zip_error zip_find_eocd(struct zip_archive *zp)
  */
 static enum zip_error zip_read_directory(struct zip_archive *zp)
 {
-  char buffer[EOCD_RECORD_LEN];
-  struct memfile mf;
-  int i, j;
-  int n;
+  struct zip_eocd eocd;
+  int64_t eocd_pos;
+  size_t i, j;
   int result;
 
-  // Find the EOCD record signature                     4
   result = zip_find_eocd(zp);
   if(result)
     goto err_out;
 
-  // Already read the first 4 signature bytes.
-  if(!vfread(buffer, EOCD_RECORD_LEN - 4, 1, zp->vf))
+  eocd_pos = vftell(zp->vf) - 4;
+  if(eocd_pos < 0)
   {
-    result = ZIP_READ_ERROR;
+    result = ZIP_SEEK_ERROR;
     goto err_out;
   }
-  mfopen(buffer, EOCD_RECORD_LEN - 4, &mf);
 
-  // Number of this disk                                2
-  n = mfgetw(&mf);
-  if(n > 0)
+  result = zip_read_eocd(zp, &eocd);
+  if(result != ZIP_SUCCESS)
+    goto err_out;
+
+  // Check for zip64 locator.
+  if(eocd.records_total && eocd_pos >= ZIP64_LOCATOR_LEN)
+  {
+    if(vfseek(zp->vf, eocd_pos - ZIP64_LOCATOR_LEN, SEEK_SET))
+    {
+      result = ZIP_SEEK_ERROR;
+      goto err_out;
+    }
+
+    result = zip_read_zip64_eocd_locator(zp, &eocd);
+    if(result == ZIP_SUCCESS && (uint64_t)eocd_pos >= eocd.zip64_eocd_offset)
+    {
+      if(vfseek(zp->vf, eocd.zip64_eocd_offset, SEEK_SET))
+      {
+        result = ZIP_SEEK_ERROR;
+        goto err_out;
+      }
+
+      result = zip_read_zip64_eocd(zp, &eocd);
+      if(result != ZIP_SUCCESS)
+        goto err_out;
+    }
+    else
+
+    if(result != ZIP_NO_EOCD_ZIP64)
+      goto err_out;
+  }
+
+  // Test for unsupported features like multiple disks.
+  if(eocd.disk_eocd != 0 || eocd.disk_start_of_central_directory != 0 ||
+   eocd.records_on_disk != eocd.records_total)
   {
     result = ZIP_UNSUPPORTED_MULTIPLE_DISKS;
     goto err_out;
   }
 
-  // Disk where central directory starts                2
-  // Number of central directory records on this disk   2
-  mf.current += 4;
+  if(eocd.records_total >= ZIP_MAX_NUM_FILES)
+  {
+    result = ZIP_UNSUPPORTED_NUMBER_OF_ENTRIES;
+    goto err_out;
+  }
 
-  // Total number of central directory records          2
-  n = mfgetw(&mf);
-  zp->num_files = n;
+  if((uint64_t)eocd_pos < eocd.offset_central_directory)
+  {
+    result = ZIP_NO_CENTRAL_DIRECTORY;
+    goto err_out;
+  }
 
-  // Size of central directory (bytes)                  4
-  zp->size_central_directory = mfgetd(&mf);
-
-  // Offset to central directory from start of file     4
-  zp->offset_central_directory = mfgetd(&mf);
-
-  // Comment length (ignore)                            2
+  zp->num_files = eocd.records_total;
+  zp->size_central_directory = eocd.size_central_directory;
+  zp->offset_central_directory = eocd.offset_central_directory;
 
   // Load central directory records
-  if(n)
+  if(zp->num_files)
   {
-    struct zip_file_header **f = ccalloc(n, sizeof(struct zip_file_header *));
+    size_t n = zp->num_files;
+    struct zip_file_header **f =
+     (struct zip_file_header **)calloc(n, sizeof(struct zip_file_header *));
     zp->files = f;
+    if(!f)
+    {
+      result = ZIP_ALLOC_ERROR;
+      goto err_out;
+    }
 
     // Go to the start of the central directory.
     if(vfseek(zp->vf, zp->offset_central_directory, SEEK_SET))
@@ -2109,7 +2705,7 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
       {
         zip_free_file_header(f[j]);
         f[j] = NULL;
-        if(result == ZIP_IGNORE_FILE)
+        if(result == ZIP_IGNORE_FILE || result == ZIP_UNSUPPORTED_VERSION)
         {
           zp->num_files--;
           continue;
@@ -2130,16 +2726,19 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
 
     if(zp->files_alloc < zp->num_files)
     {
-      warn("expected %d central directory records but only found %d\n",
+      warn("expected %zu central directory records but only found %zu\n",
        n, zp->files_alloc);
       result = ZIP_INCOMPLETE_CENTRAL_DIRECTORY;
       goto err_realloc;
     }
 
+    // Shrink file header array.
     if(zp->files_alloc < n)
     {
-      zp->files =
-       crealloc(zp->files, zp->files_alloc * sizeof(struct zip_file_header *));
+      f = (struct zip_file_header **)realloc(zp->files,
+       zp->files_alloc * sizeof(struct zip_file_header *));
+      if(f)
+        zp->files = f;
     }
   }
 
@@ -2154,12 +2753,14 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
 err_realloc:
   zp->num_files = zp->files_alloc;
 
+  // Shrink file header array.
   if(zp->files_alloc)
   {
-    zp->files =
-     crealloc(zp->files, zp->files_alloc * sizeof(struct zip_file_header *));
+    struct zip_file_header **f = (struct zip_file_header **)realloc(zp->files,
+     zp->files_alloc * sizeof(struct zip_file_header *));
+    if(f)
+      zp->files = f;
   }
-
   else
   {
     free(zp->files);
@@ -2182,11 +2783,19 @@ static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
 {
   char buffer[EOCD_RECORD_LEN];
   struct memfile mf;
+  uint32_t size;
+  uint32_t offset;
+  uint16_t num_files;
   int i;
 
   // Memfiles: make sure there's enough space
   if(zp->is_memory && zip_ensure_capacity(EOCD_RECORD_LEN, zp))
     return ZIP_EOF;
+
+  // Clamp these values for Zip64.
+  num_files = MIN(zp->num_files, 0xffff);
+  size = MIN(zp->size_central_directory, 0xfffffffful);
+  offset = MIN(zp->offset_central_directory, 0xfffffffful);
 
   mfopen_wr(buffer, EOCD_RECORD_LEN, &mf);
 
@@ -2201,16 +2810,16 @@ static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
   mfputw(0, &mf);
 
   // Number of central directory records on this disk   2
-  mfputw(zp->num_files, &mf);
+  mfputw(num_files, &mf);
 
   // Total number of central directory records          2
-  mfputw(zp->num_files, &mf);
+  mfputw(num_files, &mf);
 
   // Size of central directory                          4
-  mfputd(zp->size_central_directory, &mf);
+  mfputud(size, &mf);
 
   // Offset of central directory                        4
-  mfputd(zp->offset_central_directory, &mf);
+  mfputud(offset, &mf);
 
   // Comment length                                     2
   mfputw(0, &mf);
@@ -2224,11 +2833,91 @@ static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
 }
 
 /**
+ * Test if a Zip64 EOCD needs to be emitted.
+ * An archive can use Zip64 extra data features without needing a Zip64 EOCD.
+ */
+static boolean zip_write_zip64_is_required(struct zip_archive *zp)
+{
+  if(zp->num_files >= 0xffff)
+    return true;
+  if(zp->size_central_directory >= 0xfffffffful)
+    return true;
+  if(zp->offset_central_directory >= 0xfffffffful)
+    return true;
+
+  return false;
+}
+
+/**
+ * Write the Zip64 EOCD and locator during the archive close.
+ */
+static enum zip_error zip_write_zip64_eocd_record(struct zip_archive *zp)
+{
+  char buffer[ZIP64_EOCD_RECORD_LEN + ZIP64_LOCATOR_LEN];
+  struct memfile mf;
+  int64_t zip64_eocd_offset = vftell(zp->vf);
+
+  if(zp->is_memory && zip_ensure_capacity(sizeof(buffer), zp))
+    return ZIP_EOF;
+
+  if(zip64_eocd_offset < 0)
+    return ZIP_SEEK_ERROR;
+
+  mfopen_wr(buffer, sizeof(buffer), &mf);
+
+  // Signature                                          4
+  mfwrite(zip64_eocd_sig, 4, 1, &mf);
+
+  // Size of Zip64 end of central directory record      8
+  mfputuq(ZIP64_EOCD_RECORD_LEN - 12, &mf);
+
+  // Version made by                                    2
+  // Version needed to extract                          2
+  mfputw(ZIP64_VERSION_MINIMUM, &mf);
+  mfputw(ZIP64_VERSION_MINIMUM, &mf);
+
+  // Number of this disk                                4
+  // Disk where central directory starts                4
+  mfputud(0, &mf);
+  mfputud(0, &mf);
+
+  // Number of central directory records on this disk   8
+  // Total number of central directory records          8
+  mfputuq(zp->num_files, &mf);
+  mfputuq(zp->num_files, &mf);
+
+  // Size of the central directory                      8
+  // Offset of start of central directory               8
+  mfputuq(zp->size_central_directory, &mf);
+  mfputuq(zp->offset_central_directory, &mf);
+
+  // Extensible data sector                             0
+
+  // Signature                                          4
+  mfwrite(zip64_locator_sig, 4, 1, &mf);
+
+  // Disk where the Zip64 EOCD is located               4
+  mfputud(0, &mf);
+
+  // Offset of the Zip64 EOCD record                    8
+  mfputq(zip64_eocd_offset, &mf);
+
+  // Total number of disks                              4
+  mfputud(1, &mf);
+
+  assert(mftell(&mf) == sizeof(buffer));
+  if(!vfwrite(buffer, sizeof(buffer), 1, zp->vf))
+    return ZIP_WRITE_ERROR;
+
+  return ZIP_SUCCESS;
+}
+
+/**
  * Attempts to close the zip archive, and when writing, constructs the central
  * directory and EOCD record. Upon returning ZIP_SUCCESS, *final_length will be
  * set to the final length of the file.
  */
-enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
+enum zip_error zip_close(struct zip_archive *zp, uint64_t *final_length)
 {
   int result = ZIP_SUCCESS;
   int mode;
@@ -2238,7 +2927,8 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
     return ZIP_NULL;
 
   // On the off chance someone actually tries this...
-  if(zp->is_memory && final_length && final_length == zp->external_buffer_size)
+  if(zp->is_memory && final_length &&
+   (void *)final_length == (void *)zp->external_buffer_size)
   {
     warn(
       "zip_close: Detected use of external buffer size pointer as final_length "
@@ -2259,16 +2949,43 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
 
   if(mode == ZIP_S_WRITE_FILES)
   {
-    int expected_size = 22 + 46 * zp->num_files + zp->running_file_name_length;
+    uint64_t size_cd = zp->running_file_name_length;
+    size_t size_eocd = EOCD_RECORD_LEN;
+
+    for(i = 0; i < zp->num_files; i++)
+    {
+      struct zip_file_header *fh = zp->files[i];
+      boolean is_zip64 = false;
+      if(fh->uncompressed_size >= 0xfffffffful)
+      {
+        is_zip64 = true;
+        size_cd += 8;
+      }
+      if(fh->compressed_size >= 0xfffffffful)
+      {
+        is_zip64 = true;
+        size_cd += 8;
+      }
+      if(fh->offset >= 0xfffffffful)
+      {
+        is_zip64 = true;
+        size_cd += 8;
+      }
+      size_cd += CENTRAL_FILE_HEADER_LEN + (is_zip64 ? 4 : 0);
+    }
 
     zp->offset_central_directory = vftell(zp->vf);
+    zp->size_central_directory = size_cd;
+
+    if(zip_write_zip64_is_required(zp))
+      size_eocd += ZIP64_EOCD_RECORD_LEN + ZIP64_LOCATOR_LEN;
 
     // Calculate projected file size in case more space is needed
     if(final_length)
-      *final_length = zp->offset_central_directory + expected_size;
+      *final_length = zp->offset_central_directory + size_cd + size_eocd;
 
     // Ensure there's enough space to close the file
-    if(zp->is_memory && zip_ensure_capacity(expected_size, zp))
+    if(zp->is_memory && zip_ensure_capacity(size_cd + size_eocd, zp))
     {
       result = ZIP_EOF;
       mode = ZIP_S_ERROR;
@@ -2285,7 +3002,7 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
       // Write the central directory
       if(mode == ZIP_S_WRITE_FILES)
       {
-        result = zip_write_file_header(zp, fh, 1);
+        result = zip_write_file_header(zp, fh, true);
         if(result)
         {
           // Not much that can be done at this point.
@@ -2300,7 +3017,13 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
   if(mode == ZIP_S_WRITE_FILES || mode == ZIP_S_WRITE_UNINITIALIZED)
   {
     size_t end_pos;
-    zp->size_central_directory = vftell(zp->vf) - zp->offset_central_directory;
+    uint64_t actual_size_cd = vftell(zp->vf) - zp->offset_central_directory;
+    if(mode == ZIP_S_WRITE_FILES)
+      assert(actual_size_cd == zp->size_central_directory);
+    zp->size_central_directory = actual_size_cd;
+
+    if(zip_write_zip64_is_required(zp))
+      zip_write_zip64_eocd_record(zp);
 
     result = zip_write_eocd_record(zp);
     end_pos = vftell(zp->vf);
@@ -2316,8 +3039,12 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
     if(zp->is_memory && zp->external_buffer && zp->external_buffer_size &&
      *(zp->external_buffer_size) > end_pos)
     {
-      *(zp->external_buffer) = crealloc(*(zp->external_buffer), end_pos);
-      *(zp->external_buffer_size) = end_pos;
+      void *tmp = realloc(*(zp->external_buffer), end_pos);
+      if(tmp)
+      {
+        *(zp->external_buffer) = tmp;
+        *(zp->external_buffer_size) = end_pos;
+      }
     }
   }
   else
@@ -2345,21 +3072,29 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
 /**
  * Perform additional setup for write mode.
  */
-static void zip_init_for_write(struct zip_archive *zp, int num_files)
+static boolean zip_init_for_write(struct zip_archive *zp, int num_files)
 {
-  struct zip_file_header **f;
-
-  f = cmalloc(num_files * sizeof(struct zip_file_header *));
-
   zp->files_alloc = num_files;
-  zp->files = f;
+  zp->files = (struct zip_file_header **)malloc(num_files *
+   sizeof(struct zip_file_header *));
 
-  zp->header_buffer = cmalloc(ZIP_DEFAULT_HEADER_BUFFER);
+  if(!zp->files)
+    return false;
+
+  zp->header_buffer = (uint8_t *)malloc(ZIP_DEFAULT_HEADER_BUFFER);
   zp->header_buffer_alloc = ZIP_DEFAULT_HEADER_BUFFER;
   zp->header_timestamp = zip_get_dos_date_time();
   zp->running_file_name_length = 0;
+  zp->zip64_enabled = true;
+
+  if(!zp->header_buffer)
+  {
+    free(zp->files);
+    return false;
+  }
 
   zp->mode = ZIP_S_WRITE_UNINITIALIZED;
+  return true;
 }
 
 /**
@@ -2367,34 +3102,10 @@ static void zip_init_for_write(struct zip_archive *zp, int num_files)
  */
 static struct zip_archive *zip_new_archive(void)
 {
-  struct zip_archive *zp = cmalloc(sizeof(struct zip_archive));
-  zp->is_memory = false;
-
-  zp->files = NULL;
-  zp->header_buffer = NULL;
-
-  zp->start_in_file = 0;
-  zp->files_alloc = 0;
-  zp->pos = 0;
-
-  zp->num_files = 0;
-  zp->size_central_directory = 0;
-  zp->offset_central_directory = 0;
-
-  zp->streaming_file = NULL;
-  zp->stream_buffer = NULL;
-  zp->stream_left = 0;
-  zp->stream_crc32 = 0;
-
-  zp->external_buffer = NULL;
-  zp->external_buffer_size = NULL;
-
-  zp->stream = NULL;
-  zp->stream_data = NULL;
-  memset(zp->stream_data_ptrs, 0, sizeof(zp->stream_data_ptrs));
+  struct zip_archive *zp =
+   (struct zip_archive *)calloc(1, sizeof(struct zip_archive));
 
   zp->mode = ZIP_S_READ_UNINITIALIZED;
-
   return zp;
 }
 
@@ -2408,28 +3119,23 @@ struct zip_archive *zip_open_vf_read(vfile *vf)
   if(vf)
   {
     struct zip_archive *zp = zip_new_archive();
-    long int file_len;
+    int64_t file_len;
+
+    if(!zp)
+      return NULL;
 
     zp->vf = vf;
     file_len = vfilelength(zp->vf, false);
 
     if(file_len < 0)
     {
-      zip_error("zip_open_fp_read", ZIP_STAT_ERROR);
+      zip_error("zip_open_vf_read", ZIP_STAT_ERROR);
       vfclose(vf);
       free(zp);
       return NULL;
     }
 
-    if(file_len > INT_MAX)
-    {
-      zip_error("zip_open_fp_read", ZIP_UNSUPPORTED_ZIP64);
-      vfclose(vf);
-      free(zp);
-      return NULL;
-    }
-
-    zp->end_in_file = (uint32_t)file_len;
+    zp->end_in_file = file_len;
 
     if(ZIP_SUCCESS != zip_read_directory(zp))
     {
@@ -2461,10 +3167,16 @@ struct zip_archive *zip_open_vf_write(vfile *vf)
   if(vf)
   {
     struct zip_archive *zp = zip_new_archive();
+    if(!zp)
+      return NULL;
 
     zp->vf = vf;
 
-    zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES);
+    if(!zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES))
+    {
+      free(zp);
+      return NULL;
+    }
 
     precalculate_read_errors(zp);
     precalculate_write_errors(zp);
@@ -2490,6 +3202,8 @@ struct zip_archive *zip_open_mem_read(const void *src, size_t len)
   if(src && len > 0)
   {
     struct zip_archive *zp = zip_new_archive();
+    if(!zp)
+      return NULL;
 
     zp->vf = vfile_init_mem((void *)src, len, "rb");
     zp->is_memory = true;
@@ -2518,11 +3232,23 @@ struct zip_archive *zip_open_mem_write(void *src, size_t len, size_t start_pos)
   if(src && len > 0 && start_pos < len)
   {
     struct zip_archive *zp = zip_new_archive();
+    if(!zp)
+      return NULL;
 
     zp->vf = vfile_init_mem(src, len, "wb");
     zp->is_memory = true;
+    if(!zp->vf)
+    {
+      free(zp);
+      return NULL;
+    }
 
-    zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES);
+    if(!zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES))
+    {
+      vfclose(zp->vf);
+      free(zp);
+      return NULL;
+    }
     vfseek(zp->vf, start_pos, SEEK_SET);
 
     precalculate_read_errors(zp);
@@ -2545,6 +3271,8 @@ struct zip_archive *zip_open_mem_write_ext(void **external_buffer,
   if(external_buffer && external_buffer_size)
   {
     struct zip_archive *zp = zip_new_archive();
+    if(!zp)
+      return NULL;
 
     // Allow expansion to be managed by vio.c. The external buffer pointers are
     // stored here as well, so zip_close can shrink the buffer.
@@ -2553,7 +3281,18 @@ struct zip_archive *zip_open_mem_write_ext(void **external_buffer,
     zp->external_buffer_size = external_buffer_size;
     zp->is_memory = true;
 
-    zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES);
+    if(!zp->vf)
+    {
+      free(zp);
+      return NULL;
+    }
+
+    if(!zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES))
+    {
+      vfclose(zp->vf);
+      free(zp);
+      return NULL;
+    }
     vfseek(zp->vf, start_pos, SEEK_SET);
 
     precalculate_read_errors(zp);

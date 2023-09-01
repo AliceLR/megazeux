@@ -436,7 +436,6 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
     zip_read_open_mem_stream(zp, &mf);
     is_stream = true;
   }
-
   else
   {
     zip_get_next_uncompressed_size(zp, &actual_size);

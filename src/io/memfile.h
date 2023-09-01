@@ -25,6 +25,7 @@
 __M_BEGIN_DECLS
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -184,6 +185,27 @@ static inline unsigned int mfgetud(struct memfile *mf)
   return (unsigned int)mfgetd(mf);
 }
 
+static inline int64_t mfgetq(struct memfile *mf)
+{
+  int64_t v;
+  assert(mf->end - mf->current >= 8);
+  v =  (int64_t)mf->current[0];
+  v |= (int64_t)mf->current[1] << 8;
+  v |= (int64_t)mf->current[2] << 16;
+  v |= (int64_t)mf->current[3] << 24;
+  v |= (int64_t)mf->current[4] << 32;
+  v |= (int64_t)mf->current[5] << 40;
+  v |= (int64_t)mf->current[6] << 48;
+  v |= (int64_t)mf->current[7] << 56;
+  mf->current += 8;
+  return v;
+}
+
+static inline uint64_t mfgetuq(struct memfile *mf)
+{
+  return (uint64_t)mfgetq(mf);
+}
+
 static inline int mfputc(int ch, struct memfile *mf)
 {
   assert(mf->is_write && mf->end - mf->current >= 1);
@@ -213,6 +235,25 @@ static inline void mfputd(int ch, struct memfile *mf)
 static inline void mfputud(size_t ch, struct memfile *mf)
 {
   mfputd((unsigned int)ch, mf);
+}
+
+static inline void mfputq(int64_t v, struct memfile *mf)
+{
+  assert(mf->is_write && mf->end - mf->current >= 8);
+  mf->current[0] = v & 0xFF;
+  mf->current[1] = (v >> 8) & 0xFF;
+  mf->current[2] = (v >> 16) & 0xFF;
+  mf->current[3] = (v >> 24) & 0xFF;
+  mf->current[4] = (v >> 32) & 0xFF;
+  mf->current[5] = (v >> 40) & 0xFF;
+  mf->current[6] = (v >> 48) & 0xFF;
+  mf->current[7] = (v >> 56) & 0xFF;
+  mf->current += 8;
+}
+
+static inline void mfputuq(uint64_t v, struct memfile *mf)
+{
+  mfputq((int64_t)v, mf);
 }
 
 static inline size_t mfread(void *dest, size_t len, size_t count,
@@ -298,7 +339,7 @@ static inline char *mfsafegets(char *dest, int len, struct memfile *mf)
   return dest;
 }
 
-static inline int mfseek(struct memfile *mf, long int offs, int code)
+static inline int mfseek(struct memfile *mf, ptrdiff_t offs, int code)
 {
   unsigned char *ptr;
   ptrdiff_t pos;
@@ -333,9 +374,10 @@ static inline int mfseek(struct memfile *mf, long int offs, int code)
   return -1;
 }
 
-static inline long int mftell(struct memfile *mf)
+static inline ptrdiff_t mftell(struct memfile *mf)
 {
-  return (long int)(mf->current - mf->start);
+  assert(mf->current >= mf->start);
+  return mf->current - mf->start;
 }
 
 __M_END_DECLS
