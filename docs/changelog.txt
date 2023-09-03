@@ -206,6 +206,9 @@ USERS
 + Added disable_screensaver configuration option. MegaZeux now
   leaves the screensaver enabled by default (fixes regression
   caused by SDL 2.0.2+).
++ editor_show_thing_toggles is now enabled by default.
+- board_editor_hide_help and robot_editor_hide_help are no
+  longer enabled by default for accessibility.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
