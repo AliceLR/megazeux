@@ -281,10 +281,13 @@ static void mm_destruct(struct audio_stream *a_src)
   sampled_destruct(a_src);
 }
 
-static struct audio_stream *construct_mikmod_stream(char *filename,
- uint32_t frequency, unsigned int volume, boolean repeat)
+static struct audio_stream *construct_mikmod_stream(vfile *vf,
+ const char *filename, uint32_t frequency, unsigned int volume, boolean repeat)
 {
-  vfile *input_file;
+  struct mikmod_stream *mm_stream;
+  struct sampled_stream_spec s_spec;
+  struct audio_stream_spec a_spec;
+  MODULE *open_file;
 
   /**
    * FIXME since MikMod uses a global player state, attempting to play
@@ -294,52 +297,49 @@ static struct audio_stream *construct_mikmod_stream(char *filename,
   if(!repeat)
     return NULL;
 
-  input_file = vfopen_unsafe(filename, "rb");
-
-  if(input_file)
+  open_file = mm_load_vfile(vf, 64);
+  if(!open_file)
   {
-    MODULE *open_file = mm_load_vfile(input_file, 64);
-    vfclose(input_file);
-
-    if(open_file)
-    {
-      struct mikmod_stream *mm_stream = cmalloc(sizeof(struct mikmod_stream));
-      struct sampled_stream_spec s_spec;
-      struct audio_stream_spec a_spec;
-      mm_stream->module_data = open_file;
-      Player_Start(mm_stream->module_data);
-
-      mm_init_order_table(mm_stream, open_file);
-      mm_set_resample_mode();
-
-      memset(&a_spec, 0, sizeof(struct audio_stream_spec));
-      a_spec.mix_data     = mm_mix_data;
-      a_spec.set_volume   = mm_set_volume;
-      a_spec.set_repeat   = mm_set_repeat;
-      a_spec.set_order    = mm_set_order;
-      a_spec.set_position = mm_set_position;
-      a_spec.get_order    = mm_get_order;
-      a_spec.get_position = mm_get_position;
-      a_spec.get_length   = mm_get_length;
-      a_spec.destruct     = mm_destruct;
-
-      memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
-      s_spec.set_frequency = mm_set_frequency;
-      s_spec.get_frequency = mm_get_frequency;
-
-      initialize_sampled_stream((struct sampled_stream *)mm_stream, &s_spec,
-       frequency, 2, false);
-
-      initialize_audio_stream((struct audio_stream *)mm_stream, &a_spec,
-       volume, repeat);
-
-      return (struct audio_stream *)mm_stream;
-    }
-    else
-      debug("MikMod failed to open '%s': %s\n", filename,
-       MikMod_strerror(MikMod_errno));
+    debug("MikMod failed to open: %s\n", MikMod_strerror(MikMod_errno));
+    return NULL;
   }
-  return NULL;
+
+  mm_stream = (struct mikmod_stream *)malloc(sizeof(struct mikmod_stream));
+  if(!mm_stream)
+  {
+    Player_Free(open_file);
+    return NULL;
+  }
+
+  mm_stream->module_data = open_file;
+  Player_Start(mm_stream->module_data);
+
+  mm_init_order_table(mm_stream, open_file);
+  mm_set_resample_mode();
+
+  memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+  a_spec.mix_data     = mm_mix_data;
+  a_spec.set_volume   = mm_set_volume;
+  a_spec.set_repeat   = mm_set_repeat;
+  a_spec.set_order    = mm_set_order;
+  a_spec.set_position = mm_set_position;
+  a_spec.get_order    = mm_get_order;
+  a_spec.get_position = mm_get_position;
+  a_spec.get_length   = mm_get_length;
+  a_spec.destruct     = mm_destruct;
+
+  memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+  s_spec.set_frequency = mm_set_frequency;
+  s_spec.get_frequency = mm_get_frequency;
+
+  initialize_sampled_stream((struct sampled_stream *)mm_stream, &s_spec,
+   frequency, 2, false);
+
+  initialize_audio_stream((struct audio_stream *)mm_stream, &a_spec,
+   volume, repeat);
+
+  vfclose(vf);
+  return (struct audio_stream *)mm_stream;
 }
 
 void init_mikmod(struct config_info *conf)
@@ -379,25 +379,10 @@ void init_mikmod(struct config_info *conf)
   MikMod_RegisterLoader(&load_xm);
   MikMod_RegisterLoader(&load_m15); // Soundtracker .MOD
 
-  // FIXME: Should break a lot more here
-  if(MikMod_Init(NULL))
+  if(MikMod_Init(NULL) == 0)
+  {
+    audio_ext_register(NULL, construct_mikmod_stream);
+  }
+  else
     warn("MikMod Init failed: %s\n", MikMod_strerror(MikMod_errno));
-
-  audio_ext_register("669", construct_mikmod_stream);
-  audio_ext_register("amf", construct_mikmod_stream);
-  audio_ext_register("dsm", construct_mikmod_stream);
-  audio_ext_register("far", construct_mikmod_stream);
-  audio_ext_register("gdm", construct_mikmod_stream);
-  audio_ext_register("it", construct_mikmod_stream);
-  audio_ext_register("med", construct_mikmod_stream);
-  audio_ext_register("mod", construct_mikmod_stream);
-  audio_ext_register("mtm", construct_mikmod_stream);
-  audio_ext_register("nst", construct_mikmod_stream);
-  audio_ext_register("oct", construct_mikmod_stream);
-  audio_ext_register("okt", construct_mikmod_stream);
-  audio_ext_register("s3m", construct_mikmod_stream);
-  audio_ext_register("stm", construct_mikmod_stream);
-  audio_ext_register("ult", construct_mikmod_stream);
-  audio_ext_register("wow", construct_mikmod_stream);
-  audio_ext_register("xm", construct_mikmod_stream);
 }
