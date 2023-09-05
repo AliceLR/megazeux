@@ -1,9 +1,9 @@
 diff --git a/src/common.h b/src/common.h
-index 643e3f62..78d6f587 100644
+index 04754cf6..01324288 100644
 --- a/src/common.h
 +++ b/src/common.h
-@@ -41,10 +41,6 @@ typedef unsigned long long uint64;
- typedef signed long long int64;
+@@ -120,10 +120,6 @@ typedef int tst_uint64[2 * (8 == sizeof(uint64)) - 1];
+ #pragma warning(disable:4100) /* unreferenced formal parameter */
  #endif
  
 -#ifndef LIBXMP_CORE_PLAYER
@@ -14,81 +14,20 @@ index 643e3f62..78d6f587 100644
  #define PAL_RATE	250.0		/* 1 / (50Hz * 80us)		  */
  #define NTSC_RATE	208.0		/* 1 / (60Hz * 80us)		  */
 diff --git a/src/format.c b/src/format.c
-index 0a243776..619bea5d 100644
+index 593ace13..aecde7b5 100644
 --- a/src/format.c
 +++ b/src/format.c
-@@ -22,7 +22,6 @@
- 
- #include <stdlib.h>
- #include <string.h>
--#include "loaders/prowizard/prowiz.h"
- #include "format.h"
- 
- extern const struct format_loader libxmp_loader_xm;
-@@ -32,19 +31,9 @@ extern const struct format_loader libxmp_loader_st;
- extern const struct format_loader libxmp_loader_it;
- extern const struct format_loader libxmp_loader_s3m;
- extern const struct format_loader libxmp_loader_stm;
--extern const struct format_loader libxmp_loader_stx;
- extern const struct format_loader libxmp_loader_mtm;
- extern const struct format_loader libxmp_loader_ice;
--extern const struct format_loader libxmp_loader_imf;
--extern const struct format_loader libxmp_loader_ptm;
--extern const struct format_loader libxmp_loader_mdl;
- extern const struct format_loader libxmp_loader_ult;
--extern const struct format_loader libxmp_loader_liq;
--extern const struct format_loader libxmp_loader_no;
--extern const struct format_loader libxmp_loader_masi;
--extern const struct format_loader libxmp_loader_gal5;
--extern const struct format_loader libxmp_loader_gal4;
--extern const struct format_loader libxmp_loader_psm;
- extern const struct format_loader libxmp_loader_amf;
- extern const struct format_loader libxmp_loader_asylum;
- extern const struct format_loader libxmp_loader_gdm;
-@@ -53,40 +42,10 @@ extern const struct format_loader libxmp_loader_mmd3;
- extern const struct format_loader libxmp_loader_med2;
- extern const struct format_loader libxmp_loader_med3;
- extern const struct format_loader libxmp_loader_med4;
--/* extern const struct format_loader libxmp_loader_dmf; */
--extern const struct format_loader libxmp_loader_rtm;
--extern const struct format_loader libxmp_loader_pt3;
--/* extern const struct format_loader libxmp_loader_tcb; */
--extern const struct format_loader libxmp_loader_dt;
--/* extern const struct format_loader libxmp_loader_gtk; */
--/* extern const struct format_loader libxmp_loader_dtt; */
--extern const struct format_loader libxmp_loader_mgt;
--extern const struct format_loader libxmp_loader_arch;
--extern const struct format_loader libxmp_loader_sym;
--extern const struct format_loader libxmp_loader_digi;
--extern const struct format_loader libxmp_loader_dbm;
--extern const struct format_loader libxmp_loader_emod;
- extern const struct format_loader libxmp_loader_okt;
--extern const struct format_loader libxmp_loader_sfx;
- extern const struct format_loader libxmp_loader_far;
--extern const struct format_loader libxmp_loader_umx;
--extern const struct format_loader libxmp_loader_stim;
--/* extern const struct format_loader libxmp_loader_coco; */
--/* extern const struct format_loader libxmp_loader_mtp; */
--extern const struct format_loader libxmp_loader_ims;
- extern const struct format_loader libxmp_loader_669;
--extern const struct format_loader libxmp_loader_fnk;
--/* extern const struct format_loader libxmp_loader_amd; */
--/* extern const struct format_loader libxmp_loader_rad; */
--/* extern const struct format_loader libxmp_loader_hsc; */
--extern const struct format_loader libxmp_loader_mfp;
--/* extern const struct format_loader libxmp_loader_alm; */
--/* extern const struct format_loader libxmp_loader_polly; */
--/* extern const struct format_loader libxmp_loader_stc; */
--extern const struct format_loader libxmp_loader_pw;
- extern const struct format_loader libxmp_loader_hmn;
--extern const struct format_loader libxmp_loader_chip;
--extern const struct format_loader libxmp_loader_abk;
- 
- extern const struct pw_format *const pw_formats[];
- 
-@@ -98,19 +57,9 @@ const struct format_loader *const format_loaders[NUM_FORMATS + 2] = {
+@@ -28,28 +28,14 @@
+ const struct format_loader *const format_loaders[NUM_FORMATS + 2] = {
+ 	&libxmp_loader_xm,
+ 	&libxmp_loader_mod,
+-#ifndef LIBXMP_CORE_DISABLE_IT
  	&libxmp_loader_it,
+-#endif
  	&libxmp_loader_s3m,
+-#ifndef LIBXMP_CORE_PLAYER
+ 	&libxmp_loader_flt,
+ 	&libxmp_loader_st,
  	&libxmp_loader_stm,
 -	&libxmp_loader_stx,
  	&libxmp_loader_mtm,
@@ -100,13 +39,14 @@ index 0a243776..619bea5d 100644
 -	&libxmp_loader_liq,
 -	&libxmp_loader_no,
 -	&libxmp_loader_masi,
+-	&libxmp_loader_masi16,
+-	&libxmp_loader_muse,
 -	&libxmp_loader_gal5,
 -	&libxmp_loader_gal4,
--	&libxmp_loader_psm,
  	&libxmp_loader_amf,
  	&libxmp_loader_asylum,
  	&libxmp_loader_gdm,
-@@ -119,44 +68,14 @@ const struct format_loader *const format_loaders[NUM_FORMATS + 2] = {
+@@ -58,44 +44,10 @@ const struct format_loader *const format_loaders[NUM_FORMATS + 2] = {
  	&libxmp_loader_med2,
  	&libxmp_loader_med3,
  	&libxmp_loader_med4,
@@ -130,7 +70,7 @@ index 0a243776..619bea5d 100644
 -	&libxmp_loader_umx,
  	&libxmp_loader_hmn,
 -	&libxmp_loader_stim,
--	/* &libxmp_loader_coco, */
+-	&libxmp_loader_coco,
 -	/* &libxmp_loader_mtp, */
 -	&libxmp_loader_ims,
  	&libxmp_loader_669,
@@ -143,65 +83,42 @@ index 0a243776..619bea5d 100644
 -	/* &libxmp_loader_alm, */
 -	/* &libxmp_loader_polly, */
 -	/* &libxmp_loader_stc, */
+-	&libxmp_loader_xmf,
+-#ifndef LIBXMP_NO_PROWIZARD
 -	&libxmp_loader_pw,
- 	NULL
+-#endif
+-#endif /* LIBXMP_CORE_PLAYER */
+ 	NULL /* list teminator */
  };
  
--static const char *_farray[NUM_FORMATS + NUM_PW_FORMATS + 1] = { NULL };
-+static const char *_farray[NUM_FORMATS + 1] = { NULL };
+diff --git a/src/loaders/xm_load.c b/src/loaders/xm_load.c
+index 72189600..bcc677ca 100644
+--- a/src/loaders/xm_load.c
++++ b/src/loaders/xm_load.c
+@@ -35,7 +35,7 @@
  
- const char *const *format_list(void)
- {
-@@ -164,15 +83,7 @@ const char *const *format_list(void)
- 
- 	if (_farray[0] == NULL) {
- 		for (count = i = 0; format_loaders[i] != NULL; i++) {
--			if (strcmp(format_loaders[i]->name, "prowizard") == 0) {
--				int j;
--
--				for (j = 0; pw_formats[j] != NULL; j++) {
--					_farray[count++] = pw_formats[j]->name;
--				}
--			} else {
--				_farray[count++] = format_loaders[i]->name;
--			}
-+			_farray[count++] = format_loaders[i]->name;
- 		}
- 
- 		_farray[count] = NULL;
-diff --git a/src/format.h b/src/format.h
-index dd001795..a31e1189 100644
---- a/src/format.h
-+++ b/src/format.h
-@@ -14,11 +14,8 @@ struct format_loader {
- const char *const *format_list(void);
- 
- #ifndef LIBXMP_CORE_PLAYER
--
--#define NUM_FORMATS 52
-+#define NUM_FORMATS 22
- #define NUM_PW_FORMATS 43
--
--int pw_test_format(HIO_HANDLE *, char *, const int, struct xmp_test_info *);
+ #include "loader.h"
+ #include "xm.h"
+-#ifndef LIBXMP_CORE_PLAYER
++#if 0
+ #include "vorbis.h"
  #endif
  
- #endif
-diff --git a/src/load.c b/src/load.c
-index af653573..43c9f655 100644
---- a/src/load.c
-+++ b/src/load.c
-@@ -314,14 +314,6 @@ static int test_module(struct xmp_test_info *info, HIO_HANDLE *h)
- 		if (format_loaders[i]->test(h, buf, 0) == 0) {
- 			int is_prowizard = 0;
+@@ -373,7 +373,7 @@ err:
+  * for more details. */
+ #define XM_MAX_SAMPLES_PER_INST 32
  
 -#ifndef LIBXMP_CORE_PLAYER
--			if (strcmp(format_loaders[i]->name, "prowizard") == 0) {
--				hio_seek(h, 0, SEEK_SET);
--				pw_test_format(h, buf, 0, info);
--				is_prowizard = 1;
--			}
--#endif
--
- 			if (info != NULL && !is_prowizard) {
- 				strncpy(info->name, buf, XMP_NAME_SIZE - 1);
- 				info->name[XMP_NAME_SIZE - 1] = '\0';
++#if 0
+ #define MAGIC_OGGS	0x4f676753
+ 
+ static int is_ogg_sample(HIO_HANDLE *f, struct xmp_sample *xxs)
+@@ -721,7 +721,7 @@ static int load_instruments(struct module_data *m, int version, HIO_HANDLE *f)
+ 			if (version > 0x0103) {
+ 			        D_(D_INFO "  read sample: index:%d sample id:%d", j, sub->sid);
+ 
+-#ifndef LIBXMP_CORE_PLAYER
++#if 0
+ 				if (is_ogg_sample(f, xxs)) {
+ 					if (oggdec(m, f, xxs, xsh[j].length) < 0) {
+ 						return -1;

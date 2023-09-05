@@ -123,17 +123,6 @@ Powerpack depacker
  Based on code by Stuart Caie <kyzer@4u.net>
  Modified by Michael Doering and Claudio Matsuoka
  This software is in the Public Domain
- 
-
-YM3812 emulator
-
- fmopl.c -- software implementation of FM sound generator
- This version of fmopl.c is a fork of the MAME one, relicensed under the LGPL.
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
 
 
 XZ decompressor
@@ -147,15 +136,30 @@ XZ decompressor
  You can do whatever you want with this file.
 
 
-Zip decompressor
+Zip decompressor and DEFLATE decoder
 
- This code is Copyright 2005-2006 by Michael Kohn
+ Copyright 2013-2014 RAD Game Tools and Valve Software
+ Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
 
- This package is licensed under the LGPL. You are free to use this library
- in both commercial and non-commercial applications as long as you dynamically
- link to it. If you statically link this library you must also release your
- software under the LGPL. If you need more flexibility in the license email
- and we can work something out. 
+ All Rights Reserved.
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
 
 
 Stonecracker decompressor
@@ -166,52 +170,45 @@ Stonecracker decompressor
 
 Bzip2 decompressor
 
- Small bzip2 deflate implementation, by Rob Landley (rob@landley.net).
+ Copyright 2003, 2007 Rob Landley <rob@landley.net>
 
- Based on bzip2 decompression code by Julian R Seward (jseward@acm.org),
- which also acknowledges contributions by Mike Burrows, David Wheeler,
- Peter Fenwick, Alistair Moffat, Radford Neal, Ian H. Witten,
- Robert Sedgewick, and Jon L. Bentley.
+ Based on a close reading (but not the actual code) of the original bzip2
+ decompression code by Julian R Seward (jseward@acm.org), which also
+ acknowledges contributions by Mike Burrows, David Wheeler, Peter Fenwick,
+ Alistair Moffat, Radford Neal, Ian H. Witten, Robert Sedgewick, and
+ Jon L. Bentley.
 
- This code is licensed under the LGPLv2:
-     LGPL (http://www.gnu.org/copyleft/lgpl.html)
+ This is 0BSD-licensed code from https://github.com/landley/toybox:
 
- Size and speed optimizations by Manuel Novoa III  (mjn3@codepoet.org)
+ Permission to use, copy, modify, and/or distribute this software for any
+ purpose with or without fee is hereby granted.
 
-
-Arc decompressor
-
- nomarch 1.4 - extract old `.arc' archives.
- Copyright (C) 2001-2006 Russell Marks.
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
+ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-LHA decompressor
+LHASA backend for LHA decompressor
 
- LhA file archiver client
- XAD library system for archive handling
- Copyright (C) 1998 and later by Dirk Stoecker <soft@dstoecker.de>
+ Copyright (c) 2011-2023, Simon Howard.
 
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
+ Permission to use, copy, modify, and/or distribute this software
+ for any purpose with or without fee is hereby granted, provided
+ that the above copyright notice and this permission notice appear
+ in all copies.
 
-
-LZX decompressor
-
- LZX file archiver client
- XAD library system for archive handling
- Copyright (C) 1998 and later by Dirk Stöcker <soft@dstoecker.de>
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
+ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+ WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+ AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR
+ CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+ NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+ CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
 DMF sample decompressor
@@ -234,8 +231,14 @@ MED2 module loading code
 
 Vorbis decoder
 
- Ogg Vorbis I audio decoder  -- version 0.99996
- Written in April 2007 by Sean Barrett, sponsored by RAD Game Tools.
+ Ogg Vorbis audio decoder - v1.22 - public domain
+ http://nothings.org/stb_vorbis/
+
+ Original version written by Sean Barrett in 2007.
+
+ Originally sponsored by RAD Game Tools. Seeking implementation
+ sponsored by Phillip Bennefall, Marc Andersen, Aaron Baker,
+ Elias Software, Aras Pranckevicius, and Sean Barrett.
 
  Placed in the public domain April 2007 by the author: no copyright is
  claimed, and you may use it for any purpose you like.
@@ -260,18 +263,16 @@ mkstemp implementation
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions
  are met:
- 
+
  1. Redistributions of source code must retain the above copyright
     notice, this list of conditions and the following disclaimer.
- 
  2. Redistributions in binary form must reproduce the above copyright
     notice, this list of conditions and the following disclaimer in the
     documentation and/or other materials provided with the distribution.
- 
  3. Neither the name of the Institute nor the names of its contributors
     may be used to endorse or promote products derived from this software
     without specific prior written permission.
- 
+
  THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -299,11 +300,9 @@ fnmatch implementation
 
  1. Redistributions of source code must retain the above copyright
     notice, this list of conditions and the following disclaimer.
-
  2. Redistributions in binary form must reproduce the above copyright
     notice, this list of conditions and the following disclaimer in the
     documentation and/or other materials provided with the distribution.
-
  3. Neither the name of the University nor the names of its contributors
     may be used to endorse or promote products derived from this software
     without specific prior written permission.
