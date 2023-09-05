@@ -318,9 +318,9 @@ static struct audio_stream *construct_xmp_stream(vfile *vf,
   }
   xmp_stream->total_rows = row_pos;
 
-  // xmp tries to be clever and uses "sequences" to make certain mods loop
-  // to orders that aren't the start of the mod. This breaks legacy mods
-  // that rely on looping to the start, so zero all of their entry points.
+  // xmp uses sequences to make secondary loops in modules playable, but this
+  // breaks looping from the end of the module to the start. Since MZX doesn't
+  // use sequences and games rely on normal looping, zero all entry points.
   for(i = 0; i < info.num_sequences; i++)
   {
     info.seq_data[i].entry_point = 0;

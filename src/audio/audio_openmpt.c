@@ -255,6 +255,7 @@ static struct audio_stream *construct_openmpt_stream(vfile *vf,
   {
     openmpt_module_destroy(open_file);
     free(omp_stream);
+    free(row_tbl);
     return NULL;
   }
 
