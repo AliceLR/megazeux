@@ -206,8 +206,8 @@ static void rad_player_callback(void *arg, uint16_t reg, uint8_t data)
   cls->adlib.Port(reg, data);
 }
 
-static struct audio_stream *construct_rad_stream(char *filename,
- uint32_t frequency, unsigned int volume, boolean repeat)
+static struct audio_stream *construct_rad_stream(vfile *vf,
+ const char *filename, uint32_t frequency, unsigned int volume, boolean repeat)
 {
   struct rad_stream *rad_stream = NULL;
   struct rad_stream_cls *cls;
@@ -217,80 +217,86 @@ static struct audio_stream *construct_rad_stream(char *filename,
   size_t length;
   uint8_t *data;
   uint32_t rate;
-  vfile *vf;
 
-  vf = vfopen_unsafe(filename, "rb");
-  if(vf)
+  /**
+   * NOTE: some legacy RAD files in the Reality public archive have a single
+   * byte truncated off of the end for no apparent reason. These files load
+   * and play normally otherwise. Allocate an extra null byte so they load.
+   */
+  length = vfilelength(vf, false);
+  data = (uint8_t *)malloc(length + 1);
+  if(!data)
+    return NULL;
+
+  data[length] = 0;
+
+  if(!vfread(data, length, 1, vf))
   {
-    /**
-     * NOTE: some legacy RAD files in the Reality public archive have a single
-     * byte truncated off of the end for no apparent reason. These files load
-     * and play normally otherwise. Allocate an extra null byte so they load.
-     */
-    length = vfilelength(vf, false);
-    data = (uint8_t *)cmalloc(length + 1);
-    data[length] = 0;
-
-    if(!vfread(data, length, 1, vf))
-    {
-      free(data);
-      data = NULL;
-    }
-
-    vfclose(vf);
-
-    if(data)
-    {
-      validate = RADValidate(data, length);
-
-      if(!validate)
-      {
-        rad_stream = (struct rad_stream *)cmalloc(sizeof(struct rad_stream));
-        cls = new rad_stream_cls();
-
-        cls->player.Init(data, rad_player_callback, cls);
-        rate = cls->player.GetHertz();
-
-        memset(rad_stream, 0, sizeof(struct rad_stream));
-        rad_stream->cls = cls;
-        rad_stream->data_length = length;
-        rad_stream->data = data;
-        rad_stream->sample_update_timer = 0;
-        rad_stream->sample_update_max = OPL_FREQUENCY / rate;
-
-        memset(&a_spec, 0, sizeof(struct audio_stream_spec));
-        a_spec.mix_data     = rad_mix_data;
-        a_spec.set_volume   = rad_set_volume;
-        a_spec.set_repeat   = rad_set_repeat;
-        a_spec.set_order    = rad_set_order;
-        a_spec.set_position = rad_set_position;
-        a_spec.get_order    = rad_get_order;
-        a_spec.get_position = rad_get_position;
-        a_spec.get_length   = rad_get_length;
-        a_spec.destruct     = rad_destruct;
-
-        memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
-        s_spec.set_frequency = rad_set_frequency;
-        s_spec.get_frequency = rad_get_frequency;
-
-        initialize_sampled_stream((struct sampled_stream *)rad_stream, &s_spec,
-         frequency, 2, true);
-
-        initialize_audio_stream((struct audio_stream *)rad_stream, &a_spec,
-         volume, repeat);
-      }
-      else
-      {
-        debug("RAD: %s -- %s\n", filename, validate);
-        free(data);
-      }
-    }
+    free(data);
+    return NULL;
   }
 
+  validate = RADValidate(data, length);
+  if(validate != NULL)
+  {
+    debug("RAD failed to load module '%s': %s\n", filename, validate);
+    free(data);
+    return NULL;
+  }
+
+  rad_stream = (struct rad_stream *)calloc(1, sizeof(struct rad_stream));
+  if(!rad_stream)
+  {
+    free(data);
+    return NULL;
+  }
+
+  cls = new rad_stream_cls();
+
+  cls->player.Init(data, rad_player_callback, cls);
+  rate = cls->player.GetHertz();
+
+  rad_stream->cls = cls;
+  rad_stream->data_length = length;
+  rad_stream->data = data;
+  rad_stream->sample_update_timer = 0;
+  rad_stream->sample_update_max = OPL_FREQUENCY / rate;
+
+  memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+  a_spec.mix_data     = rad_mix_data;
+  a_spec.set_volume   = rad_set_volume;
+  a_spec.set_repeat   = rad_set_repeat;
+  a_spec.set_order    = rad_set_order;
+  a_spec.set_position = rad_set_position;
+  a_spec.get_order    = rad_get_order;
+  a_spec.get_position = rad_get_position;
+  a_spec.get_length   = rad_get_length;
+  a_spec.destruct     = rad_destruct;
+
+  memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+  s_spec.set_frequency = rad_set_frequency;
+  s_spec.get_frequency = rad_get_frequency;
+
+  initialize_sampled_stream((struct sampled_stream *)rad_stream, &s_spec,
+   frequency, 2, true);
+
+  initialize_audio_stream((struct audio_stream *)rad_stream, &a_spec,
+   volume, repeat);
+
+  vfclose(vf);
   return (struct audio_stream *)rad_stream;
+}
+
+static boolean test_rad_stream(vfile *vf, const char *filename)
+{
+  char tmp[16];
+  if(!vfread(tmp, 16, 1, vf))
+    return false;
+
+  return memcmp(tmp, "RAD by REALiTY!!", 16) == 0;
 }
 
 void init_reality(struct config_info *conf)
 {
-  audio_ext_register("rad", construct_rad_stream);
+  audio_ext_register(test_rad_stream, construct_rad_stream);
 }

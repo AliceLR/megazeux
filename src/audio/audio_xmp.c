@@ -269,106 +269,90 @@ static struct xmp_callbacks xmp_callbacks =
   NULL
 };
 
-static struct audio_stream *construct_xmp_stream(char *filename,
- uint32_t frequency, unsigned int volume, boolean repeat)
+static struct audio_stream *construct_xmp_stream(vfile *vf,
+ const char *filename, uint32_t frequency, unsigned int volume, boolean repeat)
 {
+  struct xmp_stream *xmp_stream;
+  struct sampled_stream_spec s_spec;
+  struct audio_stream_spec a_spec;
   struct xmp_module_info info;
   xmp_context ctx;
   unsigned char ord;
   size_t row_pos;
+  int num_orders;
   int i;
 
-  vfile *vf = vfopen_unsafe_ext(filename, "rb", V_LARGE_BUFFER);
-  if(!vf)
+  ctx = xmp_create_context();
+  if(!ctx)
     return NULL;
 
-  ctx = xmp_create_context();
-  if(ctx)
+  xmp_set_player(ctx, XMP_PLAYER_DEFPAN, 50);
+
+  /* This function does not close the provided file pointer. */
+  if(xmp_load_module_from_callbacks(ctx, vf, xmp_callbacks) < 0)
   {
-    xmp_set_player(ctx, XMP_PLAYER_DEFPAN, 50);
-
-    /**
-     * This function does not close the provided file pointer.
-     */
-    if(!xmp_load_module_from_callbacks(ctx, vf, xmp_callbacks))
-    {
-      struct xmp_stream *xmp_stream = ccalloc(1, sizeof(struct xmp_stream));
-      struct sampled_stream_spec s_spec;
-      struct audio_stream_spec a_spec;
-      int num_orders;
-
-      xmp_stream->ctx = ctx;
-      xmp_start_player(ctx, audio.output_frequency, 0);
-      xmp_set_player(ctx, XMP_PLAYER_INTERP, get_xmp_resample_mode());
-
-      xmp_get_module_info(ctx, &info);
-      num_orders = info.mod->len;
-
-      for(i = 0, row_pos = 0; i < num_orders; i++)
-      {
-        xmp_stream->row_tbl[i] = row_pos;
-        ord = info.mod->xxo[i];
-        if(ord < info.mod->pat)
-          row_pos += info.mod->xxp[ord]->rows;
-      }
-      xmp_stream->total_rows = row_pos;
-
-      // xmp tries to be clever and uses "sequences" to make certain mods loop
-      // to orders that aren't the start of the mod. This breaks legacy mods
-      // that rely on looping to the start, so zero all of their entry points.
-      for(i = 0; i < info.num_sequences; i++)
-      {
-        info.seq_data[i].entry_point = 0;
-      }
-
-      memset(&a_spec, 0, sizeof(struct audio_stream_spec));
-      a_spec.mix_data     = audio_xmp_mix_data;
-      a_spec.set_volume   = audio_xmp_set_volume;
-      a_spec.set_repeat   = audio_xmp_set_repeat;
-      a_spec.set_order    = audio_xmp_set_order;
-      a_spec.set_position = audio_xmp_set_position;
-      a_spec.get_order    = audio_xmp_get_order;
-      a_spec.get_position = audio_xmp_get_position;
-      a_spec.get_length   = audio_xmp_get_length;
-      a_spec.get_sample   = audio_xmp_get_sample;
-      a_spec.destruct     = audio_xmp_destruct;
-
-      memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
-      s_spec.set_frequency = audio_xmp_set_frequency;
-      s_spec.get_frequency = audio_xmp_get_frequency;
-
-      initialize_sampled_stream((struct sampled_stream *)xmp_stream, &s_spec,
-       frequency, 2, false);
-
-      initialize_audio_stream((struct audio_stream *)xmp_stream, &a_spec,
-       volume, repeat);
-
-      vfclose(vf);
-      return (struct audio_stream *)xmp_stream;
-    }
     xmp_free_context(ctx);
+    return NULL;
   }
+
+  xmp_stream = (struct xmp_stream *)ccalloc(1, sizeof(struct xmp_stream));
+  if(!xmp_stream)
+  {
+    xmp_free_context(ctx);
+    return NULL;
+  }
+
+  xmp_stream->ctx = ctx;
+  xmp_start_player(ctx, audio.output_frequency, 0);
+  xmp_set_player(ctx, XMP_PLAYER_INTERP, get_xmp_resample_mode());
+
+  xmp_get_module_info(ctx, &info);
+  num_orders = info.mod->len;
+
+  for(i = 0, row_pos = 0; i < num_orders; i++)
+  {
+    xmp_stream->row_tbl[i] = row_pos;
+    ord = info.mod->xxo[i];
+    if(ord < info.mod->pat)
+      row_pos += info.mod->xxp[ord]->rows;
+  }
+  xmp_stream->total_rows = row_pos;
+
+  // xmp uses sequences to make secondary loops in modules playable, but this
+  // breaks looping from the end of the module to the start. Since MZX doesn't
+  // use sequences and games rely on normal looping, zero all entry points.
+  for(i = 0; i < info.num_sequences; i++)
+  {
+    info.seq_data[i].entry_point = 0;
+  }
+
+  memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+  a_spec.mix_data     = audio_xmp_mix_data;
+  a_spec.set_volume   = audio_xmp_set_volume;
+  a_spec.set_repeat   = audio_xmp_set_repeat;
+  a_spec.set_order    = audio_xmp_set_order;
+  a_spec.set_position = audio_xmp_set_position;
+  a_spec.get_order    = audio_xmp_get_order;
+  a_spec.get_position = audio_xmp_get_position;
+  a_spec.get_length   = audio_xmp_get_length;
+  a_spec.get_sample   = audio_xmp_get_sample;
+  a_spec.destruct     = audio_xmp_destruct;
+
+  memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+  s_spec.set_frequency = audio_xmp_set_frequency;
+  s_spec.get_frequency = audio_xmp_get_frequency;
+
+  initialize_sampled_stream((struct sampled_stream *)xmp_stream, &s_spec,
+   frequency, 2, false);
+
+  initialize_audio_stream((struct audio_stream *)xmp_stream, &a_spec,
+   volume, repeat);
+
   vfclose(vf);
-  return NULL;
+  return (struct audio_stream *)xmp_stream;
 }
 
 void init_xmp(struct config_info *conf)
 {
-  audio_ext_register("669", construct_xmp_stream);
-  audio_ext_register("amf", construct_xmp_stream);
-  //audio_ext_register("dsm", construct_xmp_stream);
-  audio_ext_register("far", construct_xmp_stream);
-  audio_ext_register("gdm", construct_xmp_stream);
-  audio_ext_register("it", construct_xmp_stream);
-  audio_ext_register("med", construct_xmp_stream);
-  audio_ext_register("mod", construct_xmp_stream);
-  audio_ext_register("mtm", construct_xmp_stream);
-  audio_ext_register("nst", construct_xmp_stream);
-  audio_ext_register("oct", construct_xmp_stream);
-  audio_ext_register("okt", construct_xmp_stream);
-  audio_ext_register("s3m", construct_xmp_stream);
-  audio_ext_register("stm", construct_xmp_stream);
-  audio_ext_register("ult", construct_xmp_stream);
-  audio_ext_register("wow", construct_xmp_stream);
-  audio_ext_register("xm", construct_xmp_stream);
+  audio_ext_register(NULL, construct_xmp_stream);
 }

@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -27,33 +28,42 @@
 #include "audio_struct.h"
 #include "ext.h"
 
-#include "../io/path.h"
+#include "../util.h"
+#include "../io/vio.h"
 
 struct registry_entry
 {
-  const char *ext;
+  filter_stream_fn test;
   construct_stream_fn constructor;
 };
 
 static struct registry_entry *registry = NULL;
-static int registry_size = 0;
-static int registry_alloc = 0;
+static size_t registry_size = 0;
+static size_t registry_alloc = 0;
 
-void audio_ext_register(const char *ext, construct_stream_fn constructor)
+void audio_ext_register(filter_stream_fn test, construct_stream_fn constructor)
 {
+  assert(constructor);
   if(registry_alloc <= registry_size)
   {
-    if(!registry_alloc)
-      registry_alloc = 4;
+    struct registry_entry *tmp;
 
+    if(!registry_alloc)
+      registry_alloc = 8;
     else
       registry_alloc <<= 1;
 
-    registry = crealloc(registry,
+    tmp = (struct registry_entry *)realloc(registry,
      registry_alloc * sizeof(struct registry_entry));
+    if(!tmp)
+    {
+      warn("failed to allocate memory for audio format registry.\n");
+      return;
+    }
+    registry = tmp;
   }
 
-  registry[registry_size].ext = ext;
+  registry[registry_size].test = test;
   registry[registry_size].constructor = constructor;
   registry_size++;
 }
@@ -66,35 +76,44 @@ void audio_ext_free_registry(void)
   registry_alloc = 0;
 }
 
-struct audio_stream *audio_ext_construct_stream(char *filename,
+struct audio_stream *audio_ext_construct_stream(const char *filename,
  uint32_t frequency, unsigned int volume, boolean repeat)
 {
   struct audio_stream *a_return = NULL;
-  ssize_t ext_pos;
-  int i;
+  vfile *vf;
+  unsigned i;
 
   if(!audio.music_on)
     return NULL;
 
-  ext_pos = path_get_ext_offset(filename);
-
-  // Must contain a valid ext
-  if(ext_pos < 0 || ext_pos >= (int)strlen(filename))
+  // Using a buffer vastly improves module load times on some architectures.
+  vf = vfopen_unsafe_ext(filename, "rb", V_LARGE_BUFFER);
+  if(!vf)
     return NULL;
 
   // Find a constructor in the registry
   for(i = 0; i < registry_size; i++)
   {
-    if(!strcasecmp(filename + ext_pos + 1, registry[i].ext))
+    construct_stream_fn constructor = registry[i].constructor;
+    if(registry[i].test)
     {
-      construct_stream_fn constructor = registry[i].constructor;
-
-      a_return = constructor(filename, frequency, volume, repeat);
-
-      if(a_return)
-        break;
+      boolean result = registry[i].test(vf, filename);
+      vrewind(vf);
+      if(!result)
+        continue;
     }
+
+    a_return = constructor(vf, filename, frequency, volume, repeat);
+    if(a_return)
+      break;
+
+    vrewind(vf);
   }
+
+  // The constructor function is responsible for closing or
+  // retaining the file handle on successful loads.
+  if(!a_return)
+    vfclose(vf);
 
   return a_return;
 }

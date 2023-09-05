@@ -31,6 +31,7 @@
 #include "sampled_stream.h"
 
 #include "../util.h"
+#include "../io/path.h"
 #include "../io/vio.h"
 
 // For WAV loader fallback
@@ -307,9 +308,11 @@ static void *get_riff_chunk(vfile *vf, size_t filesize, char *id, uint32_t *size
   if(*size > maxsize)
     *size = maxsize;
 
-  buf = cmalloc(*size);
+  buf = malloc(*size);
+  if(!buf)
+    return NULL;
 
-  if((size_t)vfread(buf, 1, *size, vf) < *size)
+  if(vfread(buf, 1, *size, vf) < *size)
   {
     free(buf);
     return NULL;
@@ -392,22 +395,17 @@ static void *get_riff_chunk_by_id(vfile *vf, size_t filesize,
 
 // Simple SAM loader.
 
-static boolean load_sam_file(const char *file, struct wav_info *spec)
+static boolean load_sam_file(vfile *vf, const char *filename, struct wav_info *spec)
 {
   size_t source_length;
   size_t read_length;
   void *buf;
-  vfile *vf;
-
-  vf = vfopen_unsafe(file, "rb");
-  if(!vf)
-    return false;
 
   source_length = vfilelength(vf, false);
   if(source_length > WARN_FILESIZE)
   {
     trace("Size of SAM file '%s' is %zu; OGG should be used instead.\n",
-     file, source_length);
+     filename, source_length);
   }
 
   // Default to no loop
@@ -418,10 +416,11 @@ static boolean load_sam_file(const char *file, struct wav_info *spec)
   spec->loop_end = 0;
   spec->enable_sam_frequency_hack = true;
 
-  buf = cmalloc(source_length);
-  read_length = vfread(buf, 1, source_length, vf);
-  vfclose(vf);
+  buf = malloc(source_length);
+  if(!buf)
+    return false;
 
+  read_length = vfread(buf, 1, source_length, vf);
   if(read_length < source_length)
   {
     free(buf);
@@ -432,54 +431,100 @@ static boolean load_sam_file(const char *file, struct wav_info *spec)
   return true;
 }
 
+#ifdef CONFIG_SDL
+// SDL-based WAV loader, used as a fallback if the regular loader fails.
+// It supports more formats than the regular loader.
+
+static boolean load_wav_file_sdl(const char *filename, struct wav_info *spec)
+{
+  SDL_AudioSpec sdlspec;
+  void *copy_buf;
+
+  if(!SDL_LoadWAV(filename, &sdlspec, &(spec->wav_data), &(spec->data_length)))
+    return false;
+
+  copy_buf = malloc(spec->data_length);
+  if(!copy_buf)
+  {
+    SDL_FreeWAV(spec->wav_data);
+    return false;
+  }
+
+  memcpy(copy_buf, spec->wav_data, spec->data_length);
+  SDL_FreeWAV(spec->wav_data);
+
+  spec->wav_data = copy_buf;
+  spec->channels = sdlspec.channels;
+  spec->freq = sdlspec.freq;
+  switch(sdlspec.format)
+  {
+    case AUDIO_U8:
+      spec->format = SAMPLE_U8;
+      break;
+    case AUDIO_S8:
+      spec->format = SAMPLE_S8;
+      break;
+    case AUDIO_S16LSB:
+      spec->format = SAMPLE_S16LSB;
+      break;
+    // May be returned by SDL on big endian machines.
+    case AUDIO_S16MSB:
+      spec->format = SAMPLE_S16MSB;
+      break;
+    /**
+     * TODO: SDL 2.0 can technically return AUDIO_S32LSB or AUDIO_F32LSB.
+     * Support for these would be trivial to add but might encourage worse
+     * abuse of .WAV support (as those formats are twice the size of S16).
+     */
+    default:
+      warn("Unsupported WAV SDL_AudioFormat 0x%x! Report this!\n", sdlspec.format);
+      free(copy_buf);
+      return false;
+  }
+
+  return true;
+}
+#endif
+
 // More lenient than SDL's WAV loader, but only supports
 // uncompressed PCM files (for now.)
 
-static boolean load_wav_file(const char *file, struct wav_info *spec)
+static boolean load_wav_file(vfile *vf, const char *filename, struct wav_info *spec)
 {
   int channels, srate, sbytes, numloops;
   uint32_t riffsize, data_size, fmt_size, smpl_size;
   size_t loop_start, loop_end;
   char *fmt_chunk, *smpl_chunk, tmp_buf[4];
   size_t file_size;
-  boolean ret = false;
-  vfile *vf;
-#ifdef CONFIG_SDL
-  SDL_AudioSpec sdlspec;
-#endif
-
-  vf = vfopen_unsafe(file, "rb");
-  if(!vf)
-    return false;
 
   file_size = vfilelength(vf, false);
   if(file_size > WARN_FILESIZE)
   {
     trace("This WAV is too big sempai OwO;;;\n");
     trace("Size of WAV file '%s' is %zu; OGG should be used instead.\n",
-     file, file_size);
+     filename, file_size);
   }
 
   // If it doesn't start with "RIFF", it's not a WAV file.
   if(vfread(tmp_buf, 1, 4, vf) < 4)
-    goto exit_close;
+    return false;
 
   if(memcmp(tmp_buf, "RIFF", 4))
-    goto exit_close;
+    return false;
 
   // Read reported file size (if the file turns out to be larger, this will be
   // used instead of the real file size.)
   if(vfread(tmp_buf, 1, 4, vf) < 4)
-    goto exit_close;
+    return false;
 
   riffsize = read_little_endian32(tmp_buf) + 8;
 
   // If the RIFF type isn't "WAVE", it's not a WAV file.
   if(vfread(tmp_buf, 1, 4, vf) < 4)
-    goto exit_close;
+    return false;
 
   if(memcmp(tmp_buf, "WAVE", 4))
-    goto exit_close;
+    return false;
 
   vrewind(vf);
   if(file_size > riffsize)
@@ -490,7 +535,10 @@ static boolean load_wav_file(const char *file, struct wav_info *spec)
   // If there's no "fmt " chunk, or it's less than 16 bytes, it's not a valid
   // WAV file.
   if(!fmt_chunk || (fmt_size < 16))
-    goto exit_close;
+  {
+    free(fmt_chunk);
+    return false;
+  }
 
   // Default to no loop
   spec->loop_start = 0;
@@ -503,45 +551,13 @@ static boolean load_wav_file(const char *file, struct wav_info *spec)
   if(read_little_endian16(fmt_chunk) != 1)
   {
     free(fmt_chunk);
-#ifdef CONFIG_SDL
-    if(SDL_LoadWAV(file, &sdlspec, &(spec->wav_data), &(spec->data_length)))
-    {
-      void *copy_buf = cmalloc(spec->data_length);
-      memcpy(copy_buf, spec->wav_data, spec->data_length);
-      SDL_FreeWAV(spec->wav_data);
-      spec->wav_data = copy_buf;
-      spec->channels = sdlspec.channels;
-      spec->freq = sdlspec.freq;
-      switch(sdlspec.format)
-      {
-        case AUDIO_U8:
-          spec->format = SAMPLE_U8;
-          break;
-        case AUDIO_S8:
-          spec->format = SAMPLE_S8;
-          break;
-        case AUDIO_S16LSB:
-          spec->format = SAMPLE_S16LSB;
-          break;
-        // May be returned by SDL on big endian machines.
-        case AUDIO_S16MSB:
-          spec->format = SAMPLE_S16MSB;
-          break;
-        /**
-         * TODO: SDL 2.0 can technically return AUDIO_S32LSB or AUDIO_F32LSB.
-         * Support for these would be trivial to add but might encourage worse
-         * abuse of .WAV support (as those formats are twice the size of S16).
-         */
-        default:
-          warn("Unsupported WAV SDL_AudioFormat 0x%x! Report this!\n", sdlspec.format);
-          free(copy_buf);
-          goto exit_close;
-      }
 
-      goto exit_close_success;
-    }
-#endif // CONFIG_SDL
-    goto exit_close;
+#ifdef CONFIG_SDL
+    if(load_wav_file_sdl(filename, spec))
+      return true;
+#endif
+
+    return false;
   }
 
   // Get the data we need from the "fmt " chunk.
@@ -558,7 +574,7 @@ static boolean load_wav_file(const char *file, struct wav_info *spec)
   // isn't valid.  We can't do anything past 16-bit either, and 0-bit isn't
   // valid. 0Hz sample rate is invalid too.
   if(!channels || (channels > 2) || !sbytes || (sbytes > 2) || !srate)
-    goto exit_close;
+    return false;
 
   // Everything seems to check out, so let's load the "data" chunk.
   spec->wav_data = get_riff_chunk_by_id(vf, file_size, "data", &data_size);
@@ -566,13 +582,13 @@ static boolean load_wav_file(const char *file, struct wav_info *spec)
 
   // No "data" chunk?! FAIL!
   if(!spec->wav_data)
-    goto exit_close;
+    return false;
 
   // Empty "data" chunk?! ALSO FAIL!
   if(!data_size)
   {
     free(spec->wav_data);
-    goto exit_close;
+    return false;
   }
 
   spec->freq = srate;
@@ -588,7 +604,10 @@ static boolean load_wav_file(const char *file, struct wav_info *spec)
   // If there's no "smpl" chunk or it's less than 60 bytes, there's no valid
   // loop data
   if(!smpl_chunk || (smpl_size < 60))
-    goto exit_close_success;
+  {
+    free(smpl_chunk);
+    return true;
+  }
 
   numloops = read_little_endian32(smpl_chunk + 28);
   // First loop is at 36
@@ -598,29 +617,31 @@ static boolean load_wav_file(const char *file, struct wav_info *spec)
 
   // If the number of loops is less than 1, the loop data's invalid
   if(numloops < 1)
-    goto exit_close_success;
+    return true;
 
   // Boundary check loop points
   if((loop_start >= spec->data_length) || (loop_end > spec->data_length)
    || (loop_start >= loop_end))
-    goto exit_close_success;
+    return true;
 
   spec->loop_start = loop_start;
   spec->loop_end = loop_end;
-
-exit_close_success:
-  ret = true;
-exit_close:
-  vfclose(vf);
-  return ret;
+  return true;
 }
 
 struct audio_stream *construct_wav_stream_direct(struct wav_info *w_info,
  uint32_t frequency, unsigned int volume, boolean repeat)
 {
-  struct wav_stream *w_stream = cmalloc(sizeof(struct wav_stream));
+  struct wav_stream *w_stream;
   struct sampled_stream_spec s_spec;
   struct audio_stream_spec a_spec;
+
+  w_stream = (struct wav_stream *)malloc(sizeof(struct wav_stream));
+  if(!w_stream)
+  {
+    free(w_info->wav_data);
+    return NULL;
+  }
 
   w_stream->wav_data = w_info->wav_data;
   w_stream->data_length = w_info->data_length;
@@ -662,45 +683,77 @@ struct audio_stream *construct_wav_stream_direct(struct wav_info *w_info,
   s_spec.get_frequency = wav_get_frequency;
 
   initialize_sampled_stream((struct sampled_stream *)w_stream, &s_spec,
-    frequency, w_info->channels, true);
+   frequency, w_info->channels, true);
 
   initialize_audio_stream((struct audio_stream *)w_stream, &a_spec,
-    volume, repeat);
+   volume, repeat);
 
   return (struct audio_stream *)w_stream;
 }
 
-static struct audio_stream *construct_wav_stream(char *filename,
- uint32_t frequency, unsigned int volume, boolean repeat)
+static struct audio_stream *construct_wav_stream(vfile *vf,
+ const char *filename, uint32_t frequency, unsigned int volume, boolean repeat)
 {
+  struct audio_stream *a_src;
   struct wav_info w_info;
   memset(&w_info, 0, sizeof(struct wav_info));
 
-  if(load_wav_file(filename, &w_info))
-  {
-    // Surround WAVs not supported yet..
-    if(w_info.channels <= 2)
-      return construct_wav_stream_direct(&w_info, frequency, volume, repeat);
+  if(!load_wav_file(vf, filename, &w_info))
+    return NULL;
 
-    free(w_info.wav_data);
-  }
-  return NULL;
+  // Surround WAVs not supported yet..
+  if(w_info.channels > 2)
+    return NULL;
+
+  a_src = construct_wav_stream_direct(&w_info, frequency, volume, repeat);
+  if(a_src)
+    vfclose(vf);
+
+  return a_src;
 }
 
-static struct audio_stream *construct_sam_stream(char *filename,
- uint32_t frequency, unsigned int volume, boolean repeat)
+static struct audio_stream *construct_sam_stream(vfile *vf,
+ const char *filename, uint32_t frequency, unsigned int volume, boolean repeat)
 {
+  struct audio_stream *a_src;
   struct wav_info w_info;
   memset(&w_info, 0, sizeof(struct wav_info));
 
-  if(load_sam_file(filename, &w_info))
-    return construct_wav_stream_direct(&w_info, frequency, volume, repeat);
+  if(!load_sam_file(vf, filename, &w_info))
+    return NULL;
 
-  return NULL;
+  a_src = construct_wav_stream_direct(&w_info, frequency, volume, repeat);
+  if(a_src)
+    vfclose(vf);
+
+  return a_src;
+}
+
+static boolean test_wav_stream(vfile *vf, const char *filename)
+{
+  char buf[12];
+  if(!vfread(buf, 12, 1, vf))
+    return false;
+
+  if(memcmp(buf, "RIFF", 4) != 0 || memcmp(buf + 8, "WAVE", 4) != 0)
+    return false;
+
+  return true;
+}
+
+static boolean test_sam_stream(vfile *vf, const char *filename)
+{
+  // .SAM files are raw 8363Hz signed 8-bit samples and can only be identified
+  // by their .SAM extension.
+  ssize_t ext_pos = path_get_ext_offset(filename);
+  if(ext_pos < 0)
+    return false;
+
+  return strcasecmp(filename + ext_pos, ".sam") == 0;
 }
 
 void init_wav(struct config_info *conf)
 {
-  audio_ext_register("sam", construct_sam_stream);
-  audio_ext_register("wav", construct_wav_stream);
+  audio_ext_register(test_sam_stream, construct_sam_stream);
+  audio_ext_register(test_wav_stream, construct_wav_stream);
 }
