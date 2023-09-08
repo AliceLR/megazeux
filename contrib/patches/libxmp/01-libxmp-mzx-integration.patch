@@ -1,11 +1,13 @@
 diff --git a/include/xmp.h b/include/xmp.h
-index 8ec6deeb..38a07af1 100644
+index 22db2a3d..a9b06218 100644
 --- a/include/xmp.h
 +++ b/include/xmp.h
-@@ -1,6 +1,22 @@
+@@ -1,6 +1,26 @@
  #ifndef XMP_H
  #define XMP_H
  
++/**** Start MZX-specific hacks. *****/
++
 +/* Suppress unwanted debug messages */
 +#ifdef DEBUG
 +#undef DEBUG
@@ -13,8 +15,8 @@ index 8ec6deeb..38a07af1 100644
 +#endif
 +
 +/* Force libxmp to build static */
-+#ifndef BUILDING_STATIC
-+#define BUILDING_STATIC
++#ifndef LIBXMP_STATIC
++#define LIBXMP_STATIC
 +#endif
 +
 +/* Force libxmp to not use versioned symbols on Linux */
@@ -22,15 +24,8 @@ index 8ec6deeb..38a07af1 100644
 +#undef XMP_SYM_VISIBILITY
 +#endif
 +
- #ifdef __cplusplus
- extern "C" {
- #endif
-@@ -25,8 +41,6 @@ extern "C" {
- # define LIBXMP_EXPORT __attribute__((visibility ("default")))
- #elif defined(__SUNPRO_C) && defined(XMP_LDSCOPE_GLOBAL)
- # define LIBXMP_EXPORT __global
--#elif defined(EMSCRIPTEN)
--# define LIBXMP_EXPORT EMSCRIPTEN_KEEPALIVE
- #else
- # define LIBXMP_EXPORT
++/***** End MZX-specific hacks. *****/
++
+ #if defined(EMSCRIPTEN)
+ # include <emscripten.h>
  #endif
