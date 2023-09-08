@@ -1330,7 +1330,7 @@ int vfs_make_root(vfilesystem *vfs, const char *name)
     if(!isalnum((unsigned char)name[i]))
       return -EINVAL;
 
-  snprintf(buffer, MAX_PATH, "%s:/", name);
+  snprintf(buffer, MAX_PATH, "%s:" DIR_SEPARATOR, name);
 
   if(!vfs_write_lock(vfs))
     return -vfs_geterror(vfs);

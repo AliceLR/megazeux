@@ -146,7 +146,7 @@ static inline int vfs_cache_directory(vfilesystem *v, const char *p,
 static inline int vfs_cache_file(vfilesystem *v, const char *p,
  unsigned char *d, size_t l) { return -1; }
 static inline size_t vfs_get_cache_total_size(vfilesystem *v) { return 0; }
-static inline void vfs_set_timestamps_enabled(vfilesystem *v, boolean e) { return -1; }
+static inline void vfs_set_timestamps_enabled(vfilesystem *v, boolean e) { }
 
 #endif /* !VIRTUAL_FILESYSTEM */
 
