@@ -41,7 +41,7 @@
 
 //#define Y4M_DEBUG
 
-#if !defined(__THREAD_DUMMY_H) /* FIXME: hack */
+#ifndef PLATFORM_NO_THREADING
 #define MAX_WORKERS 256
 #endif
 

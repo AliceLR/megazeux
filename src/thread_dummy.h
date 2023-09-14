@@ -30,6 +30,8 @@
 
 __M_BEGIN_DECLS
 
+#define PLATFORM_NO_THREADING
+
 #define THREAD_ERROR_MSG "Provide a valid thread.h implementation for this platform!"
 
 #if defined(__clang__) && defined(__has_extension) && !defined(THREAD_ERROR)
