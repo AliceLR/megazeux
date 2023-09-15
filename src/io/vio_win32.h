@@ -272,16 +272,13 @@ static inline boolean platform_opendir(struct dir_handle *dh, const char *path)
   return dh->dir != NULL;
 }
 
-static inline void platform_closedir(struct dir_handle dh)
+static inline int platform_closedir(struct dir_handle dh)
 {
 #ifdef WIDE_PATHS
   if(dh.wdir)
-  {
-    _wclosedir(dh.wdir);
-    return;
-  }
+    return _wclosedir(dh.wdir);
 #endif
-  closedir(dh.dir);
+  return closedir(dh.dir);
 }
 
 static inline boolean platform_readdir(struct dir_handle dh, char *buffer,

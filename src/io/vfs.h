@@ -33,7 +33,7 @@ __M_BEGIN_DECLS
 #include <stdlib.h>
 #include "vfile.h"
 
-#ifdef CONFIG_VFS
+#if defined(CONFIG_VFS) && !defined(NO_VIRTUAL_FILESYSTEM)
 #define VIRTUAL_FILESYSTEM
 #endif
 

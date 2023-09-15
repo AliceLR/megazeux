@@ -97,7 +97,8 @@ char *path_reverse_tokenize(char **_base, size_t *_base_len)
     if(isslash(*pos))
     {
       if(_base_len)
-        *_base_len = pos - base - 1;
+        *_base_len = (pos > base) ? pos - base - 1 : 0;
+
       *pos = '\0';
       return pos + 1;
     }
