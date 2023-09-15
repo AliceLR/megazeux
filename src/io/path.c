@@ -773,7 +773,8 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
     }
     else
 
-    if(current_char == '.' && current[1] == '.')
+    if(current_char == '.' && current[1] == '.' &&
+     (current[2] == '\0' || isslash(current[2])))
     {
       // Skip the rightmost separator (current level) and look for the
       // previous separator. If found, truncate the path to it.

@@ -1284,7 +1284,14 @@ UNITTEST(path_navigate)
       "/.yeah/.actually/.dotfiles/.work",
       "\\.yeah\\.actually\\.dotfiles\\.work",
       32
-    }
+    },
+    {
+      "look/more/nonsense",
+      ".../lol",
+      "look/more/nonsense/.../lol",
+      "look\\more\\nonsense\\...\\lol",
+      26
+    },
   };
   static const path_target_output with_check[] =
   {
