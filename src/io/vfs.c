@@ -125,6 +125,7 @@ struct vfilesystem
   boolean disable_timestamp;
   int error;
   char current_path[MAX_PATH];
+  size_t current_path_len;
 };
 
 static time_t vfs_get_date(void)
@@ -170,7 +171,10 @@ static boolean vfs_inode_init_name(struct vfs_inode *n, const char *name)
     memcpy(_n->name, name, name_len + 1);
   }
   else
+  {
+    n->flags &= ~VFS_INODE_NAME_ALLOC;
     memcpy(n->name, name, name_len + 1);
+  }
 
   n->name_length = name_len;
   return true;
@@ -188,7 +192,7 @@ static boolean vfs_inode_rename(struct vfs_inode *n, const char *name)
       _n->name = prev_name;
       return false;
     }
-    free(_n->name);
+    free(prev_name);
     return true;
   }
   return vfs_inode_init_name(n, name);
@@ -600,6 +604,7 @@ static boolean vfs_setup(vfilesystem *vfs)
 #endif
 
   strcpy(vfs->current_path, n->name);
+  vfs->current_path_len = strlen(n->name);
   return true;
 }
 
@@ -1058,7 +1063,8 @@ static boolean vfs_delete_inode(vfilesystem *vfs, uint32_t inode)
     assert(VFS_INODE_TYPE(p) == VFS_INODE_DIR);
 
     // Find in parent.
-    pos = vfs_get_inode_in_parent_by_name(vfs, p, n->name, &pos_in_parent);
+    pos = vfs_get_inode_in_parent_by_name(vfs, p, vfs_inode_name(n),
+     &pos_in_parent);
     if(pos != inode)
       return vfs_seterror(vfs, ENOENT);
 
@@ -1184,7 +1190,7 @@ static boolean vfs_is_ancestor_inode(vfilesystem *vfs, uint32_t A, uint32_t B)
 static boolean vfs_invalidate_inode(vfilesystem *vfs, uint32_t inode)
 {
   struct vfs_inode *n = vfs_get_inode_ptr(vfs, inode);
-  boolean ret = true;
+  boolean is_empty_or_file = true;
   size_t i;
   if(!n)
     return true;
@@ -1206,7 +1212,7 @@ static boolean vfs_invalidate_inode(vfilesystem *vfs, uint32_t inode)
           i--;
         }
         else
-          ret = false;
+          is_empty_or_file = false;
       }
       else
       {
@@ -1216,12 +1222,12 @@ static boolean vfs_invalidate_inode(vfilesystem *vfs, uint32_t inode)
           i--;
         }
         else
-          ret = false;
+          is_empty_or_file = false;
       }
     }
   }
 
-  if(ret && VFS_IS_CACHED(n))
+  if(is_empty_or_file && VFS_IS_CACHED(n) && inode != vfs->current)
   {
     vfs_delete_inode(vfs, inode);
     return true;
@@ -1371,6 +1377,7 @@ int vfs_create_file_at_path(vfilesystem *vfs, const char *path)
   char buffer[MAX_PATH];
   uint32_t parent;
   uint32_t inode;
+  boolean need_unlink = false;
   int code = 0;
 
   if(!vfs_read_lock(vfs))
@@ -1385,10 +1392,20 @@ int vfs_create_file_at_path(vfilesystem *vfs, const char *path)
     // open() sets a different error depending on the type of the existing file.
     p = vfs_get_inode_ptr(vfs, inode);
     if(p && VFS_INODE_TYPE(p) == VFS_INODE_FILE)
-      vfs_seterror(vfs, EEXIST);
+    {
+      if(!VFS_IS_CACHED(p))
+      {
+        vfs_seterror(vfs, EEXIST);
+        goto err;
+      }
+      // Special: creating a virtual file can mask a real filesystem file.
+      need_unlink = true;
+    }
     else
+    {
       vfs_seterror(vfs, EISDIR);
-    goto err;
+      goto err;
+    }
   }
   if(!parent) // Error is set by vfs_get_inode_by_path.
     goto err;
@@ -1400,6 +1417,13 @@ int vfs_create_file_at_path(vfilesystem *vfs, const char *path)
 
   if(!vfs_elevate_lock(vfs))
     goto err;
+
+  // If there's a cached file that needs to be removed, do that first.
+  if(need_unlink)
+  {
+    if(!vfs_delete_inode(vfs, inode))
+      goto err;
+  }
 
   // Create a virtual (i.e. not real) file.
   inode = vfs_make_inode(vfs, parent, buffer, 0, VFS_INODE_FILE);
@@ -1434,13 +1458,15 @@ err:
  * @param inode     a pointer for the file descriptor to be written to.
  * @return          0 on success, otherwise a negative number corresponding to a
  *                  relevant `errno` code. This function does not set `errno`.
+ *                  If the file is cached, this function will behave as
+ *                  normal but instead return -`VFS_ERR_IS_CACHED`.
  */
 int vfs_open_if_exists(vfilesystem *vfs, const char *path, boolean is_write,
  uint32_t *_inode)
 {
   struct vfs_inode *n;
   uint32_t inode;
-  int code;
+  int code = 0;
 
   if(!vfs_read_lock(vfs))
     return -vfs_geterror(vfs);
@@ -1461,10 +1487,12 @@ int vfs_open_if_exists(vfilesystem *vfs, const char *path, boolean is_write,
   }
 
   n->refcount++;
+  if(VFS_IS_CACHED(n))
+    code = VFS_ERR_IS_CACHED;
 
   vfs_read_unlock(vfs);
   *_inode = inode;
-  return 0;
+  return -code;
 
 err:
   code = vfs_geterror(vfs);
@@ -1477,9 +1505,8 @@ err:
  *
  * @param vfs   VFS handle.
  * @param inode file descriptor to "close".
- * @return      0 on success, otherwise a negative number corresponding to the
- *              relevant `errno` code (-255 for unknown error). This function
- *              does not set `errno`.
+ * @return      0 on success, otherwise a negative number corresponding to a
+ *              relevant `errno` code. This function does not set `errno`.
  */
 int vfs_close(vfilesystem *vfs, uint32_t inode)
 {
@@ -1558,6 +1585,42 @@ int vfs_truncate(vfilesystem *vfs, uint32_t inode)
 
   vfs_write_unlock(vfs);
   return 0;
+}
+
+/**
+ * Get the length of an open VFS inode.
+ * This function should NOT be called while a file is locked for read/write.
+ *
+ * @param vfs   VFS handle.
+ * @param inode file descriptor to the file to write.
+ * @return      the length of the file, or a negative number corresponding to a
+ *              relevant `errno` code. This function does not set `errno`.
+ */
+ssize_t vfs_filelength(vfilesystem *vfs, uint32_t inode)
+{
+  struct vfs_inode *n;
+  ssize_t ret;
+
+  if(!vfs_read_lock(vfs))
+    return -vfs_geterror(vfs);
+
+  if(inode >= vfs->table_length)
+    goto err;
+
+  n = vfs_get_inode_ptr(vfs, inode);
+  if(!n || !n->refcount)
+    goto err;
+
+  ret = n->length;
+  if(ret < 0)
+    goto err;
+
+  vfs_read_unlock(vfs);
+  return ret;
+
+err:
+  vfs_read_unlock(vfs);
+  return -EBADF;
 }
 
 /**
@@ -1697,15 +1760,17 @@ int vfs_unlock_file_write(vfilesystem *vfs, uint32_t inode)
  * @param path  path of directory to set as the current working directory.
  * @return      0 on success, otherwise a negative number corresponding to a
  *              relevant `errno` code. This function does not set `errno`.
+ *              If the directory is cached, this function will behave as
+ *              normal but instead return -`VFS_ERR_IS_CACHED`.
  */
 int vfs_chdir(vfilesystem *vfs, const char *path)
 {
   struct vfs_inode *n;
   uint32_t inode;
   uint32_t root;
-  int code;
   char buffer[MAX_PATH * 2];
   size_t len;
+  int code = 0;
 
   if(!vfs_read_lock(vfs))
     return -vfs_geterror(vfs);
@@ -1724,16 +1789,19 @@ int vfs_chdir(vfilesystem *vfs, const char *path)
   if(!inode)
     goto err;
 
+  n = vfs_get_inode_ptr(vfs, inode);
+  if(!n)
+    goto err;
+
+  if(VFS_IS_CACHED(n))
+    code = VFS_ERR_IS_CACHED;
+
   // If this is the same as the current inode, exit early.
   if(inode == vfs->current)
   {
     vfs_read_unlock(vfs);
-    return 0;
+    return -code;
   }
-
-  n = vfs_get_inode_ptr(vfs, inode);
-  if(!n)
-    goto err;
 
   if(VFS_INODE_TYPE(n) != VFS_INODE_DIR)
   {
@@ -1774,10 +1842,11 @@ int vfs_chdir(vfilesystem *vfs, const char *path)
     goto err;
 
   memcpy(vfs->current_path, buffer, len + 1);
+  vfs->current_path_len = len;
   vfs->current = inode;
   vfs->current_root = root;
   vfs_write_unlock(vfs);
-  return 0;
+  return -code;
 
 err:
   code = vfs_geterror(vfs);
@@ -1793,10 +1862,13 @@ err:
  * @param dest_len  size of `dest` in bytes.
  * @return          0 on success, otherwise a negative number corresponding to a
  *                  relevant `errno` code. This function does not set `errno`.
+ *                  If the directory is cached, this function will behave as
+ *                  normal but instead return -`VFS_ERR_IS_CACHED`.
  */
 int vfs_getcwd(vfilesystem *vfs, char *dest, size_t dest_len)
 {
-  size_t total_length;
+  struct vfs_inode *n;
+  int code = 0;
 
   if(!dest || !dest_len)
     return -EINVAL;
@@ -1804,17 +1876,20 @@ int vfs_getcwd(vfilesystem *vfs, char *dest, size_t dest_len)
   if(!vfs_read_lock(vfs))
     return -vfs_geterror(vfs);
 
-  total_length = strlen(vfs->current_path);
-  if(total_length >= dest_len)
+  if(vfs->current_path_len >= dest_len)
   {
     vfs_read_unlock(vfs);
     return -ERANGE;
   }
   // This should already have been cleaned by vfs_chdir, so copy directly.
-  memcpy(dest, vfs->current_path, total_length + 1);
+  memcpy(dest, vfs->current_path, vfs->current_path_len + 1);
+
+  n = vfs_get_inode_ptr(vfs, vfs->current);
+  if(n && VFS_IS_CACHED(n))
+    code = VFS_ERR_IS_CACHED;
 
   vfs_read_unlock(vfs);
-  return 0;
+  return -code;
 }
 
 /**
@@ -1880,17 +1955,16 @@ err:
 }
 
 /**
- * Rename a virtual file or directory (i.e. not a cached file or directory).
- * If this is a cached real file or directory, it should be renamed separately
- * and invalidated with `vfs_invalidate_at_path` (and possibly recached with
- * `vfs_cache_at_path`).
+ * Rename a virtual or cached file or directory. If a file is moved, the
+ * destination either must not exist or must be a file. If a directory is moved,
+ * the destination either must not exist or must be an empty directory.
  *
  * @param vfs     VFS handle.
  * @param oldpath path of a file or directory within `vfs` to rename.
  * @param newpath new path to rename the file or directory to.
  * @return        0 on success, otherwise a negative number corresponding to a
  *                relevant `errno` code. This function does not set `errno`.
- *                If the file/directory exists and is cached, -`VFS_ERR_IS_CACHED`.
+ *                Returns -`VFS_ERR_IS_CACHED` if a cached file was renamed.
  */
 int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath)
 {
@@ -1928,12 +2002,9 @@ int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath)
   if(VFS_INODE_TYPE(old_p) != VFS_INODE_DIR)
     goto err;
 
-  // This function is not applicable to cached files.
+  // If the file being moved is cached, let the caller know.
   if(VFS_IS_CACHED(old_n))
-  {
-    vfs_seterror(vfs, VFS_ERR_IS_CACHED);
-    goto err;
-  }
+    code = VFS_ERR_IS_CACHED;
 
   if(!vfs_get_inode_and_parent_by_path(vfs, newpath, &new_parent, &new_inode, buffer2, sizeof(buffer2)))
     goto err;
@@ -1954,18 +2025,11 @@ int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath)
   if(VFS_INODE_TYPE(new_p) != VFS_INODE_DIR)
     goto err;
 
-  // This function is not applicable to cached files.
-  if(new_n && VFS_IS_CACHED(new_n))
-  {
-    vfs_seterror(vfs, VFS_ERR_IS_CACHED);
-    goto err;
-  }
-
   // Special case: if old and new are the same, return early with success.
   if(old_n == new_n)
   {
     vfs_read_unlock(vfs);
-    return 0;
+    return -code;
   }
 
   if(VFS_INODE_TYPE(old_n) == VFS_INODE_DIR)
@@ -1987,9 +2051,17 @@ int vfs_rename(vfilesystem *vfs, const char *oldpath, const char *newpath)
       }
       if(new_n->length > 2)
       {
-        vfs_seterror(vfs, EEXIST);
+        vfs_seterror(vfs, ENOTEMPTY);
         goto err;
       }
+    }
+
+    // Also, neither of them can be the current directory or an ancestor.
+    if(vfs_is_ancestor_inode(vfs, old_inode, vfs->current) ||
+       vfs_is_ancestor_inode(vfs, new_inode, vfs->current))
+    {
+      vfs_seterror(vfs, EBUSY);
+      goto err;
     }
   }
   else
@@ -2164,7 +2236,12 @@ int vfs_rmdir(vfilesystem *vfs, const char *path)
   // This function is not applicable to cached files.
   if(VFS_IS_CACHED(n))
   {
-    vfs_seterror(vfs, VFS_ERR_IS_CACHED);
+    // ...unless there are virtual children somewhere. A full check could
+    // be slow so just check for any children and hope cached files are correct.
+    if(VFS_INODE_TYPE(n) == VFS_INODE_DIR && n->length > 2)
+      vfs_seterror(vfs, ENOTEMPTY);
+    else
+      vfs_seterror(vfs, VFS_ERR_IS_CACHED);
     goto err;
   }
 
@@ -2179,6 +2256,13 @@ int vfs_rmdir(vfilesystem *vfs, const char *path)
   if(n->length > 2)
   {
     vfs_seterror(vfs, ENOTEMPTY);
+    goto err;
+  }
+
+  // If the inode is the CWD, this call should be ignored.
+  if(inode == vfs->current)
+  {
+    vfs_seterror(vfs, EBUSY);
     goto err;
   }
 
@@ -2255,7 +2339,8 @@ err:
  *
  * @param vfs   VFS handle.
  * @param path  path within `vfs` to query.
- * @param st    destination to store queried `stat` data to.
+ * @param st    destination to store queried `stat` data to. If the call is
+ *              successful, every field of this struct will be initialized.
  * @return      0 on success, otherwise a negative number corresponding to a
  *              relevant `errno` code. This function does not set `errno`.
  *              If the file/directory exists and is cached, -`VFS_ERR_IS_CACHED`.
@@ -2289,7 +2374,7 @@ int vfs_stat(vfilesystem *vfs, const char *path, struct stat *st)
     st->st_mode = S_IFDIR | mode;
 
   // Dummy device value to indicate this is an inode from an MZX VFS.
-  st->st_dev = (dev_t)(('M'<<24) | ('Z'<<16) | ('X'<<8) | ('V'));
+  st->st_dev = (dev_t)VFS_MZX_DEVICE;
   st->st_ino = inode;
   st->st_nlink = 1;
   // This is cheating a little--atime is the access time but noatime can
@@ -2846,6 +2931,43 @@ size_t vfs_get_cache_total_size(vfilesystem *vfs)
   if(vfs_read_lock(vfs))
   {
     sz = vfs->cache_total;
+    vfs_read_unlock(vfs);
+  }
+  return sz;
+}
+
+/**
+ * Get the total memory usage for the entire VFS.
+ * This may be a slow operation.
+ *
+ * @param vfs         VFS handle.
+ * @return            the total amount of RAM used.
+ */
+size_t vfs_get_total_memory_usage(vfilesystem *vfs)
+{
+  size_t sz = 0;
+  size_t i;
+
+  if(vfs_read_lock(vfs))
+  {
+    sz += sizeof(vfilesystem);
+    sz += vfs->table_alloc * sizeof(struct vfs_inode *);
+
+    for(i = 0; i < vfs->table_length; i++)
+    {
+      struct vfs_inode *n = vfs->table[i];
+      if(!n)
+        continue;
+
+      sz += MAX(sizeof(struct vfs_inode), sizeof(struct vfs_inode_name_alloc));
+      if(n->flags & VFS_INODE_NAME_ALLOC)
+        sz += n->name_length + 1;
+
+      if(n->flags & VFS_INODE_DIR)
+        sz += n->length_alloc * sizeof(uint32_t);
+      else
+        sz += n->length_alloc;
+    }
     vfs_read_unlock(vfs);
   }
   return sz;

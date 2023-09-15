@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2019 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2019-2023 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -44,13 +44,15 @@ enum vfileflags
   VF_APPEND             = (1<<6),
   VF_BINARY             = (1<<7),
   VF_TRUNCATE           = (1<<8),
+  VF_VIRTUAL            = (1<<9), // Virtual or cached file.
 
   /* Public flags. */
+  V_FORCE_CACHE  = (1<<28), // ignore the auto cache settings, always cache.
   V_SMALL_BUFFER = (1<<29), // setvbuf <= 256 for real files in binary mode.
   V_LARGE_BUFFER = (1<<30), // setvbuf >= 8192 for real files in binary mode.
 
   VF_STORAGE_MASK       = (VF_FILE | VF_MEMORY),
-  VF_PUBLIC_MASK        = (V_SMALL_BUFFER | V_LARGE_BUFFER)
+  VF_PUBLIC_MASK        = (V_FORCE_CACHE | V_SMALL_BUFFER | V_LARGE_BUFFER)
 };
 
 enum vdir_type
@@ -61,6 +63,16 @@ enum vdir_type
   NUM_DIR_TYPES
 };
 
+UTILS_LIBSPEC boolean vio_filesystem_init(size_t max_size, size_t max_file_size,
+ boolean enable_auto_cache);
+UTILS_LIBSPEC boolean vio_filesystem_exit(void);
+UTILS_LIBSPEC size_t vio_filesystem_total_cached_usage(void);
+UTILS_LIBSPEC size_t vio_filesystem_total_memory_usage(void);
+UTILS_LIBSPEC boolean vio_virtual_file(const char *path);
+UTILS_LIBSPEC boolean vio_virtual_directory(const char *path);
+UTILS_LIBSPEC boolean vio_invalidate_at_least(size_t *amount_to_free);
+UTILS_LIBSPEC boolean vio_invalidate_all(void);
+
 UTILS_LIBSPEC vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
  int user_flags);
 UTILS_LIBSPEC vfile *vfopen_unsafe(const char *filename, const char *mode);
@@ -69,9 +81,11 @@ UTILS_LIBSPEC vfile *vfile_init_mem(void *buffer, size_t size, const char *mode)
 UTILS_LIBSPEC vfile *vfile_init_mem_ext(void **external_buffer,
  size_t *external_buffer_size, const char *mode);
 UTILS_LIBSPEC vfile *vtempfile(size_t initial_size);
+UTILS_LIBSPEC boolean vfile_force_to_memory(vfile *vf);
 UTILS_LIBSPEC int vfclose(vfile *vf);
 
 UTILS_LIBSPEC int vfile_get_mode_flags(const char *mode);
+UTILS_LIBSPEC int vfile_get_flags(vfile *vf);
 boolean vfile_get_memfile_block(vfile *vf, size_t length, struct memfile *dest);
 
 UTILS_LIBSPEC int vchdir(const char *path);
@@ -106,7 +120,7 @@ UTILS_LIBSPEC void vrewind(vfile *vf);
 UTILS_LIBSPEC int64_t vfilelength(vfile *vf, boolean rewind);
 
 UTILS_LIBSPEC vdir *vdir_open(const char *path);
-UTILS_LIBSPEC void vdir_close(vdir *dir);
+UTILS_LIBSPEC int vdir_close(vdir *dir);
 UTILS_LIBSPEC boolean vdir_read(vdir *dir, char *buffer, size_t len, enum vdir_type *type);
 UTILS_LIBSPEC boolean vdir_seek(vdir *dir, long position);
 UTILS_LIBSPEC boolean vdir_rewind(vdir *dir);

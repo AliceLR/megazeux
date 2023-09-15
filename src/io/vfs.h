@@ -33,7 +33,7 @@ __M_BEGIN_DECLS
 #include <stdlib.h>
 #include "vfile.h"
 
-#ifdef CONFIG_VFS
+#if defined(CONFIG_VFS) && !defined(NO_VIRTUAL_FILESYSTEM)
 #define VIRTUAL_FILESYSTEM
 #endif
 
@@ -78,6 +78,7 @@ UTILS_LIBSPEC int vfs_open_if_exists(vfilesystem *vfs,
  const char *path, boolean is_write, uint32_t *inode);
 UTILS_LIBSPEC int vfs_close(vfilesystem *vfs, uint32_t inode);
 UTILS_LIBSPEC int vfs_truncate(vfilesystem *vfs, uint32_t inode);
+UTILS_LIBSPEC ssize_t vfs_filelength(vfilesystem *vfs, uint32_t inode);
 UTILS_LIBSPEC int vfs_lock_file_read(vfilesystem *vfs, uint32_t inode,
  const unsigned char **data, size_t *data_length);
 UTILS_LIBSPEC int vfs_unlock_file_read(vfilesystem *vfs, uint32_t inode);
@@ -108,6 +109,7 @@ UTILS_LIBSPEC int vfs_cache_file_callback(vfilesystem *vfs, const char *path,
  size_t (*readfn)(void * RESTRICT, size_t, void * RESTRICT),
  void *priv, size_t data_length);
 UTILS_LIBSPEC size_t vfs_get_cache_total_size(vfilesystem *vfs);
+UTILS_LIBSPEC size_t vfs_get_total_memory_usage(vfilesystem *vfs);
 UTILS_LIBSPEC void vfs_set_timestamps_enabled(vfilesystem *vfs, boolean enable);
 
 #else /* !VIRTUAL_FILESYSTEM */
@@ -119,6 +121,7 @@ static inline int vfs_open_if_exists(vfilesystem *v,
  const char *p, boolean w, uint32_t *i) { return -1; }
 static inline int vfs_close(vfilesystem *v, uint32_t i) { return -1; }
 static inline int vfs_truncate(vfilesystem *v, uint32_t i) { return -1; }
+static inline ssize_t vfs_filelength(vfilesystem *v, uint32_t i) { return -1; }
 static inline int vfs_lock_file_read(vfilesystem *v, uint32_t i,
  const unsigned char **d, size_t *l) { return -1; }
 static inline int vfs_unlock_file_read(vfilesystem *v, uint32_t i) { return -1; }
@@ -144,8 +147,12 @@ static inline int vfs_invalidate_all(vfilesystem *v) { return -1; }
 static inline int vfs_cache_directory(vfilesystem *v, const char *p,
  const struct stat *st) { return -1; }
 static inline int vfs_cache_file(vfilesystem *v, const char *p,
- unsigned char *d, size_t l) { return -1; }
+ const void *d, size_t l) { return -1; }
+static inline int vfs_cache_file_callback(vfilesystem *v, const char *p,
+ size_t (*r)(void * RESTRICT, size_t, void * RESTRICT),
+ void *pr, size_t l) { return -1; }
 static inline size_t vfs_get_cache_total_size(vfilesystem *v) { return 0; }
+static inline size_t vfs_get_total_memory_usage(vfilesystem *vfs) { return 0; }
 static inline void vfs_set_timestamps_enabled(vfilesystem *v, boolean e) { }
 
 #endif /* !VIRTUAL_FILESYSTEM */

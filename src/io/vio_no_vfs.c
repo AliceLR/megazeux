@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2019 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2023 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,27 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * Types for vio.h and memfile.h so they don't have to be included in
- * world_struct.h and other high-traffic headers.
- */
-
-#ifndef __IO_VFILE_H
-#define __IO_VFILE_H
-
-#include "../compat.h"
-
-__M_BEGIN_DECLS
-
-typedef struct vfile vfile;
-typedef struct vdir vdir;
-typedef struct vfilesystem vfilesystem;
-struct memfile;
-struct stat;
-
-/* Dummy device for stat on a virtual file. */
-#define VFS_MZX_DEVICE (('M'<<24u) | ('Z'<<16u) | ('X'<<8u) | ('V'))
-
-__M_END_DECLS
-
-#endif /* __IO_VFILE_H */
+/* Hack so the utilities can build without SDL threading functions. */
+#define NO_VIRTUAL_FILESYSTEM
+#include "vio.c"

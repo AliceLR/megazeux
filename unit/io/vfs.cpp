@@ -27,7 +27,6 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-static constexpr dev_t MZX_DEVICE = ('M'<<24) | ('Z'<<16) | ('X'<<8) | ('V');
 static constexpr size_t GETCWD_BUF = 32;
 static constexpr int ignore = -10000;
 
@@ -104,7 +103,7 @@ struct vfs_op_result
 static void check_stat(const char *path, const vfs_stat_data &d, struct stat &st,
  time_t create_time = -1, time_t modify_time = -1)
 {
-  ASSERTEQ(st.st_dev, MZX_DEVICE, "%s", path);
+  ASSERTEQ(st.st_dev, VFS_MZX_DEVICE, "%s", path);
   ASSERTEQ(st.st_ino, d.inode, "%s", path);
   ASSERTEQ(st.st_mode & S_IFMT, d.filetype, "%s", path);
   ASSERTEQ(st.st_size, d.size, "%s", path);
@@ -184,7 +183,7 @@ UNITTEST(vfs_stat)
   // This function will be further tested in other tests that use it to fetch
   // info to verify other calls worked.
 
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -240,7 +239,7 @@ UNITTEST(vfs_stat)
 
 UNITTEST(vfs_make_root)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -307,7 +306,7 @@ UNITTEST(vfs_make_root)
 
 UNITTEST(vfs_create_file_at_path)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -378,7 +377,7 @@ UNITTEST(vfs_create_file_at_path)
 
 UNITTEST(vfs_mkdir)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -457,7 +456,7 @@ UNITTEST(vfs_mkdir)
 
 UNITTEST(vfs_chdir_getcwd)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -558,7 +557,7 @@ UNITTEST(vfs_chdir_getcwd)
 
 UNITTEST(vfs_rename)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -592,6 +591,9 @@ UNITTEST(vfs_rename)
     // Same old/new should return success but change nothing.
     { "dir", "dir", DO_RENAME, 0,               0,        { 3, S_IFDIR, 0 }},
     { "file", "file", DO_RENAME, 0,             0,        { 2, S_IFREG, 0 }},
+    // Long names that are over the threshold to switch to name allocation.
+    { "file", "abcdefghijklmnopqrstuvwxyz", DO_RENAME, 0, 0, { 2, S_IFREG, 0 }},
+    { "abcdefghijklmnopqrstuvwxyz", "file", DO_RENAME, 0, 0, { 2, S_IFREG, 0 }},
   };
 
   static const vfs_op_result invalid_data[] =
@@ -615,10 +617,16 @@ UNITTEST(vfs_rename)
     // Overwrite file->dir.
     { "file", "dir", DO_RENAME, -EISDIR,          0,        { 3, S_IFDIR, 0 }},
     // Overwrite non-empty dir.
-    { "dir", "dir2", DO_RENAME, -EEXIST,          0,        { 4, S_IFDIR, 0 }},
+    { "dir", "dir2", DO_RENAME, -ENOTEMPTY,       0,        { 4, S_IFDIR, 0 }},
     // Old dir must not be ancestor of new dir.
     { "dir", "dir/dir", DO_RENAME, -EINVAL,       -ENOENT, {}},
     { "dir2", "dir2/dir3/dir4", DO_RENAME, -EINVAL, -ENOENT, {}},
+    // Don't allow renaming CWD or overwriting CWD.
+    { "dir", "", DO_CHDIR, 0,                       0,        { 3, S_IFDIR, 0 }},
+    { ".", "deez", DO_RENAME, -EBUSY,               -2,       {}},
+    { "../dir", "../deez", DO_RENAME, -EBUSY,       -2,       {}},
+    { "../dir2", ".", DO_RENAME, -EBUSY,            0,        { 3, S_IFDIR, 0 }},
+    { "../dir2", "../dir", DO_RENAME, -EBUSY,       0,        { 3, S_IFDIR, 0 }},
   };
 
   ScopedVFS vfs = vfs_init();
@@ -664,7 +672,7 @@ UNITTEST(vfs_rename)
 
 UNITTEST(vfs_unlink)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -732,7 +740,7 @@ UNITTEST(vfs_unlink)
 
 UNITTEST(vfs_rmdir)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -758,6 +766,11 @@ UNITTEST(vfs_rmdir)
     { "/noexist", "", DO_RMDIR, -ENOENT,      -ENOENT,  {}},
     { "/nodir/a", "", DO_RMDIR, -ENOENT,      -ENOENT,  {}},
     { "file/dir", "", DO_RMDIR, -ENOTDIR,     -ENOTDIR, {}},
+    // Can't remove the CWD.
+    { "dir", "", DO_MKDIR, 0,                 0,        { 3, S_IFDIR, 0 }},
+    { "dir", "", DO_CHDIR, 0,                 0,        { 3, S_IFDIR, 0 }},
+    { ".", "", DO_RMDIR, -EBUSY,              0,        { 3, S_IFDIR, 0 }},
+    { "../dir", "", DO_RMDIR, -EBUSY,        0,        { 3, S_IFDIR, 0 }},
   };
 
   ScopedVFS vfs = vfs_init();
@@ -783,7 +796,7 @@ UNITTEST(vfs_rmdir)
 
 UNITTEST(vfs_access)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -829,7 +842,7 @@ UNITTEST(vfs_access)
 
 UNITTEST(vfs_readdir)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -932,7 +945,7 @@ UNITTEST(vfs_readdir)
 
 UNITTEST(FileIO)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -954,6 +967,7 @@ UNITTEST(FileIO)
   // Read lock vars.
   const unsigned char *data;
   size_t length;
+  ssize_t length_ret;
 
   ScopedVFS vfs = vfs_init();
   struct stat st;
@@ -990,6 +1004,10 @@ UNITTEST(FileIO)
       ret = vfs_stat(vfs, name, &st);
       ASSERTEQ(ret, 0, "stat: %s", str);
       ASSERTEQ((size_t)st.st_size, len, "length: %s", str);
+      // vfs_filelength should return the same thing.
+      length_ret = vfs_filelength(vfs, inode);
+      ASSERT(length_ret >= 0, "vfs_filelength: %s", str);
+      ASSERTEQ((size_t)length_ret, len, "vfs_filelength: %s", str);
 
       // 3. read.
       ret = vfs_lock_file_read(vfs, inode, &data, &length);
@@ -1006,6 +1024,8 @@ UNITTEST(FileIO)
       ret = vfs_stat(vfs, name, &st);
       ASSERTEQ(ret, 0, "stat: %s", str);
       ASSERTEQ(st.st_size, 0, "length: %s", str);
+      length_ret = vfs_filelength(vfs, inode);
+      ASSERTEQ(length_ret, 0, "vfs_filelength: %s", str);
     }
 
     ret = vfs_close(vfs, inode);
@@ -1062,7 +1082,7 @@ struct vfs_cache_content
 
 UNITTEST(vfs_cache_directory)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -1127,12 +1147,6 @@ UNITTEST(vfs_cache_directory)
     ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "%s", d.path);
     ASSERTEQ(st.st_mtime, d.modified_time, "%s", d.path);
 
-    // vfs_rename should detect an existing cached file and do nothing.
-    ret = vfs_rename(vfs, d.path, "newdir");
-    ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "rename %s", d.path);
-    ret = vfs_stat(vfs, d.path, &st);
-    ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "rename %s", d.path);
-
     // vfs_unlink should detect an existing cached file and do nothing.
     ret = vfs_unlink(vfs, d.path);
     ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "unlink %s", d.path);
@@ -1161,6 +1175,59 @@ UNITTEST(vfs_cache_directory)
     for(auto &d : invalid_data)
       do_test(d);
   }
+
+  SECTION(vfs_rename)
+  {
+    // vfs_rename should detect an existing cached file, but still *work*.
+    static constexpr const char *targets[] =
+    {
+      "dirC",
+      "dirB/dirA",
+      "dirV",
+      "dirA",
+      "dirA",
+    };
+    struct stat st{};
+    ret = vfs_cache_directory(vfs, "dirA", &st);
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_cache_directory(vfs, "dirB", &st);
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_mkdir(vfs, "dirV", 0755);
+    ASSERTEQ(ret, 0, "");
+
+    const char *prev = "dirA";
+    for(const char *t : targets)
+    {
+      ret = vfs_rename(vfs, prev, t);
+      ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "%s -> %s", prev, t);
+      ret = vfs_stat(vfs, t, &st);
+      ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "%s -> %s", prev, t);
+      prev = t;
+    }
+
+    // Virtual should be moveable over cached too.
+    ret = vfs_mkdir(vfs, "dirX", 0755);
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_rename(vfs, "dirX", "dirA");
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_stat(vfs, "dirA", &st);
+    ASSERTEQ(ret, 0, "");
+  }
+
+  SECTION(rmdirCachedNotEmpty)
+  {
+    // Special: vfs_rmdir should return -ENOTEMPTY even for cached
+    // directories (to signal to the caller not to delete a real directory
+    // with virtual files inside of it).
+    struct stat st{};
+    ret = vfs_cache_directory(vfs, "dirA", &st);
+    ASSERTEQ(ret, 0, "cache directory");
+    ret = vfs_create_file_at_path(vfs, "dirA/child");
+    ASSERTEQ(ret, 0, "create virtual file in cached dir");
+    ret = vfs_rmdir(vfs, "dirA");
+    ASSERTEQ(ret, -ENOTEMPTY,
+     "vfs_rmdir on non-empty cached dir should return -ENOTEMPTY");
+  }
 }
 
 struct read_fn_data
@@ -1185,7 +1252,7 @@ static size_t read_fn(void * RESTRICT dest, size_t nbytes, void * RESTRICT priv)
 
 UNITTEST(vfs_cache_file)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -1238,7 +1305,7 @@ UNITTEST(vfs_cache_file)
     size_t content_len = d.content ? strlen(d.content) : 0;
     uint32_t inode;
     int ret = vfs_open_if_exists(vfs, d.path, false, &inode);
-    ASSERTEQ(ret, 0, "%s", d.path);
+    ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "%s", d.path);
 
     const unsigned char *in;
     size_t in_len;
@@ -1258,13 +1325,7 @@ UNITTEST(vfs_cache_file)
     struct stat st{};
     ret = vfs_stat(vfs, d.path, &st);
     ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "stat %s", d.path);
-    ASSERTEQ(st.st_dev, MZX_DEVICE, "stat %s", d.path);
-
-    // vfs_rename should detect an existing cached file and do nothing.
-    ret = vfs_rename(vfs, d.path, "newfile");
-    ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "rename %s", d.path);
-    ret = vfs_stat(vfs, d.path, &st);
-    ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "rename %s", d.path);
+    ASSERTEQ(st.st_dev, VFS_MZX_DEVICE, "stat %s", d.path);
 
     // vfs_unlink should detect an existing cached file and do nothing.
     ret = vfs_unlink(vfs, d.path);
@@ -1328,6 +1389,62 @@ UNITTEST(vfs_cache_file)
   {
     for(auto &d : invalid_data)
       do_test_cb(d);
+  }
+
+  SECTION(vfs_rename)
+  {
+    // vfs_rename should detect an existing cached file, but still *work*.
+    static constexpr const char *targets[] =
+    {
+      "fileC",
+      "dirB/fileA",
+      "dirV/fileA",
+      "fileV",
+      "fileA",
+      "fileA",
+    };
+    struct stat st{};
+    ret = vfs_cache_file(vfs, "fileA", NULL, 0);
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_cache_directory(vfs, "dirB", &st);
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_mkdir(vfs, "dirV", 0755);
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_create_file_at_path(vfs, "fileV");
+    ASSERTEQ(ret, 0, "");
+
+    const char *prev = "fileA";
+    for(const char *t : targets)
+    {
+      ret = vfs_rename(vfs, prev, t);
+      ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "%s -> %s", prev, t);
+      ret = vfs_stat(vfs, t, &st);
+      ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "%s -> %s", prev, t);
+      prev = t;
+    }
+
+    // Virtual should be moveable over cached too.
+    ret = vfs_create_file_at_path(vfs, "fileX");
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_rename(vfs, "fileX", "fileA");
+    ASSERTEQ(ret, 0, "");
+    ret = vfs_stat(vfs, "fileA", &st);
+    ASSERTEQ(ret, 0, "");
+  }
+
+  SECTION(vfs_create_file_at_path)
+  {
+    // vfs_create_file_at_path should be able to unlink a cache entry.
+    static constexpr char data[] = "lol";
+    struct stat st{};
+
+    ret = vfs_cache_file(vfs, "fileA", data, sizeof(data));
+    ASSERTEQ(ret, 0, "create cached file");
+    ret = vfs_create_file_at_path(vfs, "fileA");
+    ASSERTEQ(ret, 0, "create virtual file over cached file");
+    ret = vfs_stat(vfs, "fileA", &st);
+    ASSERTEQ(ret, 0, "should be virtual i.e. 0");
+    ASSERTEQ(st.st_size, 0, "new virtual file should be length 0");
   }
 }
 
@@ -1411,7 +1528,7 @@ static uint32_t fileopen_prologue(ScopedVFS &vfs)
 {
   uint32_t inode;
   int ret = vfs_open_if_exists(vfs, "fileopen", false, &inode);
-  ASSERTEQ(ret, 0, "");
+  ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "");
   return inode;
 }
 
@@ -1443,9 +1560,65 @@ static void fileopen_epilogue(ScopedVFS &vfs, uint32_t inode)
   ASSERTEQ(sz, 0, "");
 }
 
+template<typename T>
+static void test_invalidate_current_dir(ScopedVFS &vfs, T invalidate)
+{
+  // The current working directory should NEVER be invalidated, but
+  // descendents should be.
+  static const struct
+  {
+    const char *path;
+    boolean is_dir;
+    int expected_ret;
+  } data[] =
+  {
+    { "/dirA",                  true,   -VFS_ERR_IS_CACHED },
+    { "/dirA/dirB",             true,   -VFS_ERR_IS_CACHED },
+    { "/dirA/dirB/dirC",        true,   -ENOENT },
+    { "/dirA/dirD",             true,   -ENOENT },
+    { "/dirA/file1",            false,  -ENOENT },
+    { "/dirA/dirB/file2",       false,  -ENOENT },
+    { "/dirA/dirB/dirC/file3",  false,  -ENOENT },
+    { "/dirA/dirD/file4",       false,  -ENOENT },
+  };
+
+  static const char file_buf[32]{};
+  int ret;
+
+  for(auto &d : data)
+  {
+    if(d.is_dir)
+    {
+      struct stat st{};
+      ret = vfs_cache_directory(vfs, d.path, &st);
+    }
+    else
+      ret = vfs_cache_file(vfs, d.path, file_buf, 32);
+
+    ASSERTEQ(ret, 0, "%s", d.path);
+  }
+
+  ret = vfs_chdir(vfs, "/dirA/dirB");
+  ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "");
+  char buffer[MAX_PATH];
+  ret = vfs_getcwd(vfs, buffer, MAX_PATH);
+  ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "");
+  ASSERTCMP(buffer, BASE "dirA" DIR_SEPARATOR "dirB", "");
+
+  ret = invalidate(vfs, "/dirA");
+  ASSERTEQ(ret, 0, "");
+
+  for(auto &d : data)
+  {
+    struct stat st{};
+    ret = vfs_stat(vfs, d.path, &st);
+    ASSERTEQ(ret, d.expected_ret, "%s", d.path);
+  }
+}
+
 UNITTEST(vfs_get_cache_total_size)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -1473,7 +1646,7 @@ UNITTEST(vfs_get_cache_total_size)
 
   uint32_t inode;
   ret = vfs_open_if_exists(vfs, "file1", true, &inode);
-  ASSERTEQ(ret, 0, "");
+  ASSERTEQ(ret, -VFS_ERR_IS_CACHED, "");
 
   // Size should update after a truncation.
   // This function forces a minimum allocation size.
@@ -1520,7 +1693,7 @@ UNITTEST(vfs_get_cache_total_size)
 
 UNITTEST(vfs_invalidate_at_path)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -1571,11 +1744,15 @@ UNITTEST(vfs_invalidate_at_path)
   }
 
   fileopen_epilogue(vfs, inode);
+
+  auto fn = [](vfilesystem *v, const char *p)
+   { return vfs_invalidate_at_path(v, p); };
+  test_invalidate_current_dir(vfs, fn);
 }
 
 UNITTEST(vfs_invalidate_at_least)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -1662,7 +1839,7 @@ UNITTEST(vfs_invalidate_at_least)
 
 UNITTEST(vfs_invalidate_all)
 {
-#ifndef CONFIG_VFS
+#ifndef VIRTUAL_FILESYSTEM
   SKIP();
 #endif
 
@@ -1680,4 +1857,8 @@ UNITTEST(vfs_invalidate_all)
   ASSERTEQ(total, fileopen_len, "");
 
   fileopen_epilogue(vfs, inode);
+
+  auto fn = [](vfilesystem *v, const char *p)
+   { return vfs_invalidate_all(v); };
+  test_invalidate_current_dir(vfs, fn);
 }
