@@ -272,6 +272,8 @@ enum virtual_var
   VIR_RAM_DEBUGGER_ROBOTS,
   VIR_RAM_DEBUGGER_VARIABLES,
   VIR_RAM_EXTRAM_DELTA,
+  VIR_RAM_VIRTUAL_FILESYSTEM,
+  VIR_RAM_VIRTUAL_FILESYSTEM_CACHED_ONLY,
 };
 
 static const char * const virtual_var_names[] =
@@ -297,6 +299,8 @@ static const char * const virtual_var_names[] =
   "Debug (robots)*",
   "Debug (variables)*",
   "ExtRAM compression delta*",
+  "Virtual filesystem (total)*",
+  "Virtual filesystem (cached only)*",
 };
 
 // We'll read off of these when we construct the tree
@@ -368,6 +372,8 @@ static const enum virtual_var world_ram_var_list[] =
 #ifdef CONFIG_EXTRAM
   VIR_RAM_EXTRAM_DELTA,
 #endif
+  VIR_RAM_VIRTUAL_FILESYSTEM,
+  VIR_RAM_VIRTUAL_FILESYSTEM_CACHED_ONLY,
 };
 
 static const char *board_var_list[] =
@@ -518,6 +524,8 @@ struct debug_ram_data
   size_t debug_variables_total_size;
   size_t extram_uncompressed_size;
   size_t extram_compressed_size;
+  size_t virtual_filesystem_size;
+  size_t virtual_filesystem_cached_size;
 };
 
 static struct debug_ram_data ram_data;
@@ -639,6 +647,9 @@ static void update_ram_usage_data(struct world *mzx_world,
   }
 
   ram_data.debug_variables_total_size = var_debug_usage;
+
+  ram_data.virtual_filesystem_size = vio_filesystem_total_memory_usage();
+  ram_data.virtual_filesystem_cached_size = vio_filesystem_total_cached_usage();
 }
 
 #define match_counter(_name) (strlen(_name) == len && !strcasecmp(name, _name))
@@ -946,6 +957,12 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
         case VIR_RAM_EXTRAM_DELTA:
           value = (int64_t)ram_data.extram_compressed_size -
            (int64_t)ram_data.extram_uncompressed_size;
+          break;
+        case VIR_RAM_VIRTUAL_FILESYSTEM:
+          value = ram_data.virtual_filesystem_size;
+          break;
+        case VIR_RAM_VIRTUAL_FILESYSTEM_CACHED_ONLY:
+          value = ram_data.virtual_filesystem_cached_size;
           break;
       }
       *long_value = value;

@@ -598,7 +598,7 @@ vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
   vf->fp = fp;
   vf->flags |= VF_FILE;
 
-  if(vfs_base && !vf->inode)
+  if(vfs_base && !vf->inode && (~flags & V_DONT_CACHE))
   {
     if(vfs_enable_auto_cache || (flags & V_FORCE_CACHE))
     {

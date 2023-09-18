@@ -263,6 +263,14 @@ __libspec int main(int argc, char *argv[])
 
   vchdir(current_dir);
 
+  // Initialize the VFS in the final startup directory.
+  if(conf->vfs_enable)
+  {
+    if(!vio_filesystem_init(conf->vfs_max_cache_size,
+     conf->vfs_max_cache_file_size, conf->vfs_enable_auto_cache))
+      warn("failed to initialize virtual filesystem!\n");
+  }
+
   counter_fsg();
 
   rng_seed_init();
@@ -369,6 +377,7 @@ err_free_config:
   // FIXME maybe shouldn't be here...?
   if(mzx_world.update_done)
     free(mzx_world.update_done);
+  vio_filesystem_exit();
   free_config();
   free_editor_config();
 err_free_res:

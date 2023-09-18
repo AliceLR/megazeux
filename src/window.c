@@ -3054,7 +3054,8 @@ struct file_list_entry
  */
 static void file_list_get_mzx_world_name(struct file_list_entry *entry)
 {
-  vfile *mzx_file = vfopen_unsafe(entry->filename, "rb");
+  // Don't add this file to the cache as there may be a LOT of these.
+  vfile *mzx_file = vfopen_unsafe_ext(entry->filename, "rb", V_DONT_CACHE);
   char *world_name = entry->display + MAX_FILE_LIST_DISPLAY_MZX;
 
   if(!vfread(world_name, 24, 1, mzx_file))

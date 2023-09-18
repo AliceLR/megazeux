@@ -2122,7 +2122,7 @@ UNITTEST(CacheFilesystem)
 }
 
 static void generate_cached_file(const char *path, const void *data, size_t len,
- boolean ignore_size_limits = false)
+ int flags = 0)
 {
   // Generate the file using regular filesystem commands and then cache it.
   // This shouldn't be done with vio since the file will be created at 0
@@ -2136,17 +2136,26 @@ static void generate_cached_file(const char *path, const void *data, size_t len,
 
   // Now *try* to cache the file.
   struct stat st{};
-  int flags = ignore_size_limits ? V_FORCE_CACHE : 0;
   int ret = stat(path, &st);
   ASSERTEQ(ret, 0, "%s", path);
   ScopedFile<vfile, vfclose> vf = vfopen_unsafe_ext(path, "rb", flags);
   ASSERT(vf, "%s", path);
 
-  // In this case, the file should ALWAYS be cached.
-  if(ignore_size_limits)
+  flags = vfile_get_flags(vf);
+  ASSERT(flags & VF_FILE, "%s", path);
+
+  // In this case, the file should NEVER be cached.
+  // Takes precedence over V_FORCE_CACHE.
+  if(flags & V_DONT_CACHE)
   {
-    flags = vfile_get_flags(vf);
-    ASSERT(flags & VF_FILE, "%s", path);
+    ASSERT(~flags & VF_MEMORY, "%s", path);
+    ASSERT(~flags & VF_VIRTUAL, "%s", path);
+  }
+  else
+
+  // In this case, the file should ALWAYS be cached.
+  if(flags & V_FORCE_CACHE)
+  {
     ASSERT(flags & VF_MEMORY, "%s", path);
     ASSERT(flags & VF_VIRTUAL, "%s", path);
   }
@@ -2205,6 +2214,22 @@ UNITTEST(CacheMemoryLimit)
     ASSERTEQ(total, single_usage, "oversize file should be rejected");
   }
 
+  SECTION(DontCache)
+  {
+    // The vio flag V_DONT_CACHE can be used to prevent files from being
+    // added to the cache by the current operation.
+    generate_cached_file(filename1, data, file_size);
+    single_usage = vio_filesystem_total_cached_usage();
+
+    generate_cached_file(filename2, data, file_size, V_DONT_CACHE);
+    total = vio_filesystem_total_cached_usage();
+    ASSERTEQ(single_usage, total, "V_DONT_CACHE");
+
+    generate_cached_file(filename3, data, file_size, V_DONT_CACHE|V_FORCE_CACHE);
+    total = vio_filesystem_total_cached_usage();
+    ASSERTEQ(single_usage, total, "V_DONT_CACHE precedence over V_FORCE_CACHE");
+  }
+
   SECTION(ForceCache)
   {
     // The vio flag V_FORCE_CACHE can be used to cache oversize files
@@ -2212,11 +2237,11 @@ UNITTEST(CacheMemoryLimit)
     generate_cached_file(filename1, data, file_size);
     single_usage = vio_filesystem_total_cached_usage();
 
-    generate_cached_file(filename2, data, file_oversize, true);
+    generate_cached_file(filename2, data, file_oversize, V_FORCE_CACHE);
     size_t second = vio_filesystem_total_cached_usage();
     ASSERT(second > single_usage, "V_FORCE_CACHE overrides file size limit");
 
-    generate_cached_file(filename3, data, file_overmax, true);
+    generate_cached_file(filename3, data, file_overmax, V_FORCE_CACHE);
     size_t third = vio_filesystem_total_cached_usage();
     ASSERT(third > cache_max_size,
      "V_FORCE_CACHE overrides total size limit (%zu > %zu)",

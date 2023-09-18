@@ -136,6 +136,12 @@ struct config_info
   boolean pause_on_unfocus;
   int num_buffered_events;
 
+  // Virtual filesystem options
+  boolean vfs_enable;
+  boolean vfs_enable_auto_cache;
+  long long vfs_max_cache_size;
+  long long vfs_max_cache_file_size;
+
   // Game options
   char startup_path[256];
   char startup_file[256];

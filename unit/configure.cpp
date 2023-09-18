@@ -192,10 +192,17 @@ void TEST_INT(const char *setting_name, T &setting, ssize_t min, ssize_t max)
 {
   constexpr T default_value = INVALID<T>();
   char arg[512];
+  int lower_bound = (min >= -SSIZE_MAX / 2) ? -16 : 0;
+  int upper_bound = (max < SSIZE_MAX / 2) ? 32 : 16;
 
-  for(int i = -16; i < 32; i++)
+  for(int i = lower_bound; i < upper_bound; i++)
   {
-    ssize_t tmp = (max - min) * i / 16 + min;
+    ssize_t tmp;
+    if(max >= SSIZE_MAX / 16)
+      tmp = (max - min) / 16 * i + min;
+    else
+      tmp = (max - min) * i / 16 + min;
+
     ssize_t expected = (tmp >= min && tmp <= max) ? tmp : static_cast<ssize_t>(default_value);
 
     if(tmp < (ssize_t)std::numeric_limits<T>::min() ||
@@ -616,6 +623,27 @@ UNITTEST(Settings)
   SECTION(num_buffered_events)
   {
     TEST_INT("num_buffered_events", conf->num_buffered_events, 1, 256);
+  }
+
+  // Virtual filesystem options.
+  SECTION(vfs_enable)
+  {
+    TEST_ENUM("vfs_enable", conf->vfs_enable, boolean_data);
+  }
+
+  SECTION(vfs_enable_auto_cache)
+  {
+    TEST_ENUM("vfs_enable_auto_cache", conf->vfs_enable_auto_cache, boolean_data);
+  }
+
+  SECTION(vfs_max_cache_size)
+  {
+    TEST_INT("vfs_max_cache_size", conf->vfs_max_cache_size, 0, SSIZE_MAX);
+  }
+
+  SECTION(vfs_max_cache_file_size)
+  {
+    TEST_INT("vfs_max_cache_file_size", conf->vfs_max_cache_file_size, 0, SSIZE_MAX);
   }
 
   // Game options.

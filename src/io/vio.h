@@ -47,12 +47,14 @@ enum vfileflags
   VF_VIRTUAL            = (1<<9), // Virtual or cached file.
 
   /* Public flags. */
+  V_DONT_CACHE   = (1<<27), // do not add this file to the cache.
   V_FORCE_CACHE  = (1<<28), // ignore the auto cache settings, always cache.
   V_SMALL_BUFFER = (1<<29), // setvbuf <= 256 for real files in binary mode.
   V_LARGE_BUFFER = (1<<30), // setvbuf >= 8192 for real files in binary mode.
 
   VF_STORAGE_MASK       = (VF_FILE | VF_MEMORY),
-  VF_PUBLIC_MASK        = (V_FORCE_CACHE | V_SMALL_BUFFER | V_LARGE_BUFFER)
+  VF_PUBLIC_MASK        = (V_DONT_CACHE | V_FORCE_CACHE |
+                           V_SMALL_BUFFER | V_LARGE_BUFFER)
 };
 
 enum vdir_type
