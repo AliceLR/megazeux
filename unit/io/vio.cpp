@@ -1186,7 +1186,8 @@ UNITTEST(Filesystem)
  */
 
 template<long N>
-void test_dir_contents(const char *dirname, const char * const (&expected)[N])
+void test_dir_contents(const char *dirname, const char * const (&expected)[N],
+ int flags = 0)
 {
   boolean has_expected[N]{};
   char buffer[1024];
@@ -1194,7 +1195,7 @@ void test_dir_contents(const char *dirname, const char * const (&expected)[N])
   long length;
   long i;
 
-  ScopedFile<vdir, vdir_close> dir = vdir_open(dirname);
+  ScopedFile<vdir, vdir_close> dir = vdir_open_ext(dirname, flags);
   ASSERT(dir != NULL, "vdir_open(%s) failed", dirname);
 
   length = vdir_length(dir);
@@ -1216,6 +1217,8 @@ void test_dir_contents(const char *dirname, const char * const (&expected)[N])
     if(i == N)
       FAIL("unexpected file '%s' found in '%s'!", buffer, dirname);
   }
+  if(flags & VDIR_NO_SCAN)
+    goto skip_scan_checks;
 
   // At EOF-vdir_length and vdir_tell should be equal.
   ASSERTEQ(vdir_tell(dir), length, "vdir_tell should be length after open: %s", dirname);
@@ -1252,6 +1255,7 @@ void test_dir_contents(const char *dirname, const char * const (&expected)[N])
   ASSERTEQ(ret, true, "vdir_rewind should return true: %s", dirname);
   ASSERTEQ(vdir_tell(dir), 0, "vdir_tell after rewind back to start should be 0: %s", dirname);
 
+skip_scan_checks:
   for(i = 0; i < N; i++)
   {
     if(!expected[i])
@@ -1300,6 +1304,11 @@ UNITTEST(dirent)
     test_dir_contents(TEST_DIRENT_DIR, TEST_DIRENT_EMPTY);
   }
 
+  SECTION(EmptyNoScan)
+  {
+    test_dir_contents(TEST_DIRENT_DIR, TEST_DIRENT_EMPTY, VDIR_NO_SCAN);
+  }
+
   SECTION(NonEmpty)
   {
     for(const char *filename : TEST_DIRENT_NONEMPTY)
@@ -1311,6 +1320,18 @@ UNITTEST(dirent)
     }
 
     test_dir_contents(TEST_DIRENT_DIR, TEST_DIRENT_NONEMPTY);
+  }
+
+  SECTION(NonEmptyNoScan)
+  {
+    for(const char *filename : TEST_DIRENT_NONEMPTY)
+    {
+      snprintf(buffer, sizeof(buffer), "%s" DIR_SEPARATOR "%s", TEST_DIRENT_DIR, filename);
+      vfile *tmp = vfopen_unsafe(buffer, "wb");
+      ASSERT(tmp, "failed to create file '%s'", buffer);
+      vfclose(tmp);
+    }
+    test_dir_contents(TEST_DIRENT_DIR, TEST_DIRENT_NONEMPTY, VDIR_NO_SCAN);
   }
 
   SECTION(EmptyUTF8)
@@ -1845,9 +1866,10 @@ UNITTEST(VirtualFilesystem)
     ret = rmdir(dir_real);
     ASSERTEQ(ret, 0, "use unistd rmdir to delete the real dir");
 
+    vio_invalidate_all();
+
     ret = vstat(dir_real, &st);
-    ASSERTEQ(ret, -1, "real dir stat should fail");
-    ASSERTEQ(errno, ENOENT, "real dir stat should fail with ENOENT");
+    ASSERTEQ(ret, 0, "real dir stat still works (cached, can't invalidate)");
 
     ret = vstat(buf, &st);
     ASSERTEQ(ret, 0, "virtual file stat should still work");
@@ -1961,7 +1983,10 @@ static void force_cached(const char *filename, const char *message)
   ScopedFile<vfile, vfclose> vf = vfopen_unsafe(filename, "rb");
   ASSERT(vf, "%s - %s", filename, message);
   int flags = vfile_get_flags(vf);
-  ASSERT(flags & VF_FILE, "%s - %s", filename, message);
+
+  // Only write mode cached files are guaranteed to have FILE handles.
+  //ASSERT(flags & VF_FILE, "%s - %s", filename, message);
+
   ASSERT(flags & VF_MEMORY, "%s - %s", filename, message);
   ASSERT(flags & VF_VIRTUAL, "%s - %s", filename, message);
 }
@@ -2079,7 +2104,6 @@ UNITTEST(CacheFilesystem)
     ASSERTEQ(ret, 0, "vaccess should work on a cached file");
   }
 
-/* TODO: uncomment this test when cached stat is enabled.
   SECTION(vstat)
   {
     // This should work on cached files, and currently returns a limited amount
@@ -2089,7 +2113,6 @@ UNITTEST(CacheFilesystem)
     ASSERTEQ(st.st_dev, VFS_MZX_DEVICE, "cached vstat should have virtual device");
     ASSERTEQ(st.st_size, sizeof(test_data), "cached vstat should have correct size");
   }
-*/
 
   SECTION(VirtualCreateOverCached)
   {
@@ -2142,7 +2165,10 @@ static void generate_cached_file(const char *path, const void *data, size_t len,
   ASSERT(vf, "%s", path);
 
   flags = vfile_get_flags(vf);
-  ASSERT(flags & VF_FILE, "%s", path);
+
+  // Not guaranteed to have a FILE unless it is in write mode.
+  if(flags & VF_WRITE)
+    ASSERT(flags & VF_FILE, "%s", path);
 
   // In this case, the file should NEVER be cached.
   // Takes precedence over V_FORCE_CACHE.
