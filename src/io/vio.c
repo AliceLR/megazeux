@@ -2024,11 +2024,11 @@ vdir *vdir_open_ext(const char *path, int flags)
     path = vio_normalize_virtual_path(vfs_base, buffer, MAX_PATH, path);
 #endif
 
-  flags &= VDIR_PUBLIC_MASK;
-  dir->flags = flags;
-
   if(dir)
   {
+    flags &= VDIR_PUBLIC_MASK;
+    dir->flags = flags;
+
     // There may be virtual files in this directory, or this directory
     // may also be virtual. Both real and virtual files need to be listed.
     // TODO: overlaid files should replace the real file somehow? ugh
