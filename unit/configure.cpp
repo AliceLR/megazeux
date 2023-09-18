@@ -28,6 +28,7 @@
 #include "../src/event.h"
 #include "../src/keysym.h"
 #include "../src/util.h"
+#include "../src/io/vio.h"
 
 #ifdef CONFIG_SDL
 #include <SDL_version.h>
@@ -144,13 +145,16 @@ static void load_arg(char *arg)
 
 static boolean write_config(const char *path, const char *config)
 {
-  FILE *fp = fopen_unsafe(path, "wb");
-  ASSERT(fp, "failed to open '%s'", path);
-  if(fp)
+  // This vastly improves the performance in builds that support it.
+  vio_virtual_file(path);
+
+  vfile *vf = vfopen_unsafe(path, "wb");
+  ASSERT(vf, "failed to open '%s'", path);
+  if(vf)
   {
-    int ret = fwrite(config, strlen(config), 1, fp);
+    size_t ret = vfwrite(config, strlen(config), 1, vf);
     ASSERT(ret == 1, "write error for '%s'", path);
-    ret = fclose(fp);
+    ret = vfclose(vf);
     return true;
   }
   return false;
@@ -323,6 +327,12 @@ void TEST_STRING(const char *setting_name, char (&setting)[S],
 UNITTEST(Settings)
 {
   struct config_info *conf = get_config();
+
+  vio_filesystem_init(0, 0, false);
+  const struct vfsclose
+  {
+    ~vfsclose() { vio_filesystem_exit(); }
+  } a;
 
   static const config_test_single boolean_data[] =
   {
