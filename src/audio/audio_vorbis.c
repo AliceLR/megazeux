@@ -220,6 +220,12 @@ static int vorbis_seek_fn(void *stream, ogg_int64_t offset, int whence)
   return vfseek(vf, offset, whence);
 }
 
+static int vorbis_close_fn(void *stream)
+{
+  // Do nothing; tremor lowmem will CRASH if this function isn't provided.
+  return 0;
+}
+
 static long vorbis_tell_fn(void *stream)
 {
   vfile *vf = (vfile *)stream;
@@ -230,7 +236,7 @@ static const ov_callbacks vorbis_callbacks =
 {
   vorbis_read_fn,
   vorbis_seek_fn,
-  NULL,
+  vorbis_close_fn,
   vorbis_tell_fn,
 };
 
@@ -283,8 +289,15 @@ static struct audio_stream *construct_vorbis_stream(vfile *vf,
 
   OggVorbis_File open_file;
 
-  // FIXME: the vfile must be forced into memory for DJGPP so that filesystem
-  // operations will not occur during the audio interrupt.
+#ifdef CONFIG_DJGPP
+  // DJGPP may have instability related to filesystem IO in the audio interrupt.
+  // TODO: this might have been entirely the tremor lowmem close function crash,
+  // so reenable this and use V_FORCE_CACHE in ext.c if problems continue.
+  /*
+  if(!vfile_force_to_memory(vf))
+    return NULL;
+  */
+#endif
 
   if(ov_open_callbacks(vf, &open_file, NULL, 0, vorbis_callbacks) != 0)
     return NULL;
