@@ -30,7 +30,7 @@
  */
 
 #include "loader.h"
-#include "period.h"
+#include "../period.h"
 
 
 static int amf_test(HIO_HANDLE *, char *, const int);
@@ -78,7 +78,9 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	hio_read(buf, 1, 3, f);
 	ver = hio_read8(f);
 
-	hio_read(buf, 1, 32, f);
+	if (hio_read(buf, 1, 32, f) != 32)
+		return -1;
+
 	memcpy(mod->name, buf, 32);
 	mod->name[32] = '\0';
 	libxmp_set_type(m, "DSMI %d.%d AMF", ver / 10, ver % 10);
@@ -105,7 +107,9 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		hio_read(buf, 1, 16, f);	/* channel remap table */
 
 	if (ver >= 0x0d) {
-		hio_read(buf, 1, 32, f);	/* panning table */
+		if (hio_read(buf, 1, 32, f) != 32)	/* panning table */
+			return -1;
+
 		for (i = 0; i < 32; i++) {
 			mod->xxc->pan = 0x80 + 2 * (int8)buf[i];
 		}
@@ -140,7 +144,7 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 	D_(D_INFO "Stored patterns: %d", mod->pat);
 
-	mod->xxp = calloc(sizeof(struct xmp_pattern *), mod->pat);
+	mod->xxp = (struct xmp_pattern **) calloc(mod->pat, sizeof(struct xmp_pattern *));
 	if (mod->xxp == NULL)
 		return -1;
 
@@ -176,7 +180,7 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	 */
 	if (ver == 0x0a) {
 		uint8 b;
-		uint32 len, start, end;
+		uint32 len, val;
 		long pos = hio_tell(f);
 		if (pos < 0) {
 			return -1;
@@ -205,13 +209,13 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 				no_loopend = 1;
 				break;
 			}
-			start = hio_read32l(f);
-			if (start > len) {		/* check loop start */
+			val = hio_read32l(f);		/* check loop start */
+			if (val > len) {
 				no_loopend = 1;
 				break;
 			}
-			end = hio_read32l(f);
-			if (end > len) {		/* check loop end */
+			val = hio_read32l(f);		/* check loop end */
+			if (val > len) {
 				no_loopend = 1;
 				break;
 			}
@@ -302,7 +306,7 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	 * breaking modules that directly reference the empty track in the
 	 * order table (see "cosmos st.amf").
 	 */
-	trkmap = calloc(sizeof(int), mod->trk + 1);
+	trkmap = (int *) calloc(mod->trk + 1, sizeof(int));
 	if (trkmap == NULL)
 		return -1;
 	newtrk = 0;
@@ -335,7 +339,7 @@ static int amf_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 	D_(D_INFO "Stored tracks: %d", mod->trk - 1);
 
-	mod->xxt = calloc (sizeof (struct xmp_track *), mod->trk);
+	mod->xxt = (struct xmp_track **) calloc(mod->trk, sizeof(struct xmp_track *));
 	if (mod->xxt == NULL)
 		return -1;
 

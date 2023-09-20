@@ -29,12 +29,6 @@
 #include <limits.h>
 #include <time.h>
 
-#ifdef _MSC_VER
-#include "win32time.h"
-#else
-#include <sys/time.h>
-#endif /* _MSC_VER */
-
 #include "board.h"
 #include "configure.h"
 #include "counter.h"
@@ -46,6 +40,8 @@
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
+#include "memcasecmp.h"
+#include "platform.h"
 #include "rasm.h"
 #include "robot.h"
 #include "sprite.h"
@@ -1292,66 +1288,68 @@ static void timereset_write(struct world *mzx_world,
   mzx_world->current_board->time_limit = CLAMP(value, 0, 32767);
 }
 
-static struct tm *system_time(void)
+static void refresh_time(struct world *mzx_world)
 {
-  static struct tm err;
-  struct timeval tv;
-  time_t e_time;
-  struct tm *t;
+  if(!(mzx_world->command_cache & COMMAND_CACHE_CURRENT_TIME))
+  {
+    mzx_world->command_cache |= COMMAND_CACHE_CURRENT_TIME;
 
-  if(!gettimeofday(&tv, NULL))
-    e_time = tv.tv_sec;
-  else
-    e_time = time(NULL);
+    memset(&(mzx_world->current_time), 0, sizeof(mzx_world->current_time));
+    mzx_world->current_time_epoch = 0;
+    mzx_world->current_time_nano = 0;
 
-  // If localtime returns NULL, return a tm with all zeros instead of crashing.
-  t = localtime(&e_time);
-  return t ? t : &err;
+    platform_system_time(&(mzx_world->current_time),
+     &(mzx_world->current_time_epoch), &(mzx_world->current_time_nano));
+  }
 }
 
 static int date_day_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_mday;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_mday;
 }
 
 static int date_year_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_year + 1900;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_year + 1900;
 }
 
 static int date_month_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_mon + 1;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_mon + 1;
 }
 
 static int time_hours_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_hour;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_hour;
 }
 
 static int time_minutes_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_min;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_min;
 }
 
 static int time_seconds_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_sec;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_sec;
 }
 
 static int time_millis_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  struct timeval tv;
-  if(!gettimeofday(&tv, NULL))
-    return (tv.tv_usec / 1000) % 1000;
-  return 0;
+  refresh_time(mzx_world);
+  return mzx_world->current_time_nano / 1000000;
 }
 
 static int random_seed_read(struct world *mzx_world,
@@ -2010,7 +2008,8 @@ static int fread_pos_read(struct world *mzx_world,
 {
   if(!mzx_world->input_is_dir && mzx_world->input_file)
   {
-    return vftell(mzx_world->input_file);
+    int64_t pos = vftell(mzx_world->input_file);
+    return CLAMP(pos, -1, INT_MAX);
   }
   else
 
@@ -2046,7 +2045,10 @@ static int fread_length_read(struct world *mzx_world,
     return vdir_length(mzx_world->input_directory);
 
   if(mzx_world->input_file)
-    return vfilelength(mzx_world->input_file, false);
+  {
+    int64_t len = vfilelength(mzx_world->input_file, false);
+    return CLAMP(len, -1, INT_MAX);
+  }
 
   return -1;
 }
@@ -2067,7 +2069,10 @@ static int fwrite_pos_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->output_file)
-    return vftell(mzx_world->output_file);
+  {
+    int64_t pos = vftell(mzx_world->output_file);
+    return CLAMP(pos, -1, INT_MAX);
+  }
   else
     return -1;
 }
@@ -2107,8 +2112,10 @@ static int fwrite_length_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->output_file)
-    return vfilelength(mzx_world->output_file, false);
-
+  {
+    int64_t len = vfilelength(mzx_world->output_file, false);
+    return CLAMP(len, -1, INT_MAX);
+  }
   return -1;
 }
 
@@ -2844,7 +2851,7 @@ int match_function_counter(const char *dest, const char *src)
 static const struct function_counter *find_function_counter(const char *name)
 {
   const struct function_counter *base = builtin_counters;
-  int first_letter = tolower((int)name[0]) * 2;
+  int first_letter = memtolower((unsigned char)name[0]) * 2;
   int bottom, top, middle;
   int cmpval;
 

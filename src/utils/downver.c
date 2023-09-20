@@ -141,6 +141,8 @@ static enum zip_error zip_duplicate_file(struct zip_archive *dest,
     return result;
 
   buffer = malloc(actual_size);
+  if(!buffer)
+    return ZIP_ALLOC_ERROR;
 
   result = zip_read_file(src, buffer, actual_size, &actual_size);
   if(result)
@@ -151,6 +153,11 @@ static enum zip_error zip_duplicate_file(struct zip_archive *dest,
     struct memfile mf_in;
     struct memfile mf_out;
     void *buffer2 = malloc(actual_size);
+    if(!buffer2)
+    {
+      result = ZIP_ALLOC_ERROR;
+      goto err_free;
+    }
 
     mfopen(buffer, actual_size, &mf_in);
     mfopen_wr(buffer2, actual_size, &mf_out);

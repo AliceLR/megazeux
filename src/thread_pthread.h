@@ -26,6 +26,7 @@
 __M_BEGIN_DECLS
 
 #include <sched.h>
+#include <semaphore.h>
 #include <time.h>
 #include "pthread.h"
 
@@ -34,18 +35,23 @@ __M_BEGIN_DECLS
 
 typedef pthread_cond_t platform_cond;
 typedef pthread_mutex_t platform_mutex;
+typedef sem_t platform_sem;
 typedef pthread_t platform_thread;
 typedef pthread_t platform_thread_id;
 typedef THREAD_RES (*platform_thread_fn)(void *);
 
-static inline void platform_mutex_init(platform_mutex *mutex)
+static inline boolean platform_mutex_init(platform_mutex *mutex)
 {
-  pthread_mutex_init(mutex, NULL);
+  if(pthread_mutex_init(mutex, NULL))
+    return false;
+  return true;
 }
 
-static inline void platform_mutex_destroy(platform_mutex *mutex)
+static inline boolean platform_mutex_destroy(platform_mutex *mutex)
 {
-  pthread_mutex_destroy(mutex);
+  if(pthread_mutex_destroy(mutex))
+    return false;
+  return true;
 }
 
 static inline boolean platform_mutex_lock(platform_mutex *mutex)
@@ -62,14 +68,18 @@ static inline boolean platform_mutex_unlock(platform_mutex *mutex)
   return true;
 }
 
-static inline void platform_cond_init(platform_cond *cond)
+static inline boolean platform_cond_init(platform_cond *cond)
 {
-  pthread_cond_init(cond, NULL);
+  if(pthread_cond_init(cond, NULL))
+    return false;
+  return true;
 }
 
-static inline void platform_cond_destroy(platform_cond *cond)
+static inline boolean platform_cond_destroy(platform_cond *cond)
 {
-  pthread_cond_destroy(cond);
+  if(pthread_cond_destroy(cond))
+    return false;
+  return true;
 }
 
 static inline boolean platform_cond_wait(platform_cond *cond,
@@ -108,15 +118,47 @@ static inline boolean platform_cond_broadcast(platform_cond *cond)
   return true;
 }
 
-static inline int platform_thread_create(platform_thread *thread,
- platform_thread_fn start_function, void *data)
+static inline boolean platform_sem_init(platform_sem *sem, unsigned init_value)
 {
-  return pthread_create(thread, NULL, start_function, data);
+  if(sem_init(sem, 0, init_value))
+    return false;
+  return true;
 }
 
-static inline void platform_thread_join(platform_thread *thread)
+static inline boolean platform_sem_destroy(platform_sem *sem)
 {
-  pthread_join(*thread, NULL);
+  if(sem_destroy(sem))
+    return false;
+  return true;
+}
+
+static inline boolean platform_sem_wait(platform_sem *sem)
+{
+  if(sem_wait(sem))
+    return false;
+  return true;
+}
+
+static inline boolean platform_sem_post(platform_sem *sem)
+{
+  if(sem_post(sem))
+    return false;
+  return true;
+}
+
+static inline boolean platform_thread_create(platform_thread *thread,
+ platform_thread_fn start_function, void *data)
+{
+  if(pthread_create(thread, NULL, start_function, data))
+    return false;
+  return true;
+}
+
+static inline boolean platform_thread_join(platform_thread *thread)
+{
+  if(pthread_join(*thread, NULL))
+    return false;
+  return true;
 }
 
 static inline platform_thread_id platform_get_thread_id(void)

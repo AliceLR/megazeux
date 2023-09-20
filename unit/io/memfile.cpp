@@ -354,6 +354,16 @@ UNITTEST(read_write)
     0xFEFF0100, 0xD8A3537F,
     0x341200FF, 0xAB896745,
   };
+  static const int64_t data64s[] =
+  {
+    static_cast<int64_t>(0xD8A3537FFEFF0100ULL),
+    static_cast<int64_t>(0xAB896745341200FFULL),
+  };
+  static const uint64_t data64u[] =
+  {
+    0xD8A3537FFEFF0100ULL,
+    0xAB896745341200FFULL,
+  };
 
   const int SIZE = sizeof(data8);
   uint8_t dest[SIZE * 2];
@@ -367,9 +377,13 @@ UNITTEST(read_write)
 
   static_assert(arraysize(data32s) * 4 == SIZE,
    "input array size doesn't match s32 output array size!");
-
   static_assert(arraysize(data32u) * 4 == SIZE,
    "input array size doesn't match u32 output array size!");
+
+  static_assert(arraysize(data64s) * 8 == SIZE,
+   "input array size doesn't match s64 output array size!");
+  static_assert(arraysize(data64u) * 8 == SIZE,
+   "input array size doesn't match u64 output array size!");
 
   SECTION(mfgetc)
   {
@@ -419,6 +433,32 @@ UNITTEST(read_write)
     for(uint32_t value : data32u)
     {
       uint32_t tmp = mfgetud(&mf);
+      ASSERTEQ(tmp, value, "");
+    }
+  }
+
+  SECTION(mfgetq)
+  {
+    // NOTE: this function does not perform bounds checks since when using it
+    // it is assumed these have already been performed.
+    mfopen(data8, SIZE, &mf);
+
+    for(int64_t value : data64s)
+    {
+      int64_t tmp = mfgetq(&mf);
+      ASSERTEQ(tmp, value, "");
+    }
+  }
+
+  SECTION(mfgetuq)
+  {
+    // NOTE: this function does not perform bounds checks since when using it
+    // it is assumed these have already been performed.
+    mfopen(data8, SIZE, &mf);
+
+    for(uint64_t value : data64u)
+    {
+      uint64_t tmp = mfgetuq(&mf);
       ASSERTEQ(tmp, value, "");
     }
   }
@@ -527,6 +567,46 @@ UNITTEST(read_write)
       ASSERTEQ((uint32_t)dest[i * 4 + 1], (data32u[i] >> 8) & 0xFF, "");
       ASSERTEQ((uint32_t)dest[i * 4 + 2], (data32u[i] >> 16) & 0xFF, "");
       ASSERTEQ((uint32_t)dest[i * 4 + 3], (data32u[i] >> 24) & 0xFF, "");
+    }
+  }
+
+  SECTION(mfputq)
+  {
+    // NOTE: this function does not perform bounds checks since when using it
+    // it is assumed these have already been performed.
+    mfopen_wr(dest, sizeof(dest), &mf);
+
+    for(i = 0; i < arraysize(data64s); i++)
+    {
+      mfputq(data64s[i], &mf);
+      ASSERTEQ((int)dest[i * 8 + 0], data64s[i] & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 1], (data64s[i] >> 8) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 2], (data64s[i] >> 16) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 3], (data64s[i] >> 24) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 4], (data64s[i] >> 32) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 5], (data64s[i] >> 40) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 6], (data64s[i] >> 48) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 7], (data64s[i] >> 56) & 0xFF, "");
+    }
+  }
+
+  SECTION(mfputuq)
+  {
+    // NOTE: this function does not perform bounds checks since when using it
+    // it is assumed these have already been performed.
+    mfopen_wr(dest, sizeof(dest), &mf);
+
+    for(i = 0; i < arraysize(data64u); i++)
+    {
+      mfputq(data64u[i], &mf);
+      ASSERTEQ((int)dest[i * 8 + 0], data64u[i] & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 1], (data64u[i] >> 8) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 2], (data64u[i] >> 16) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 3], (data64u[i] >> 24) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 4], (data64u[i] >> 32) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 5], (data64u[i] >> 40) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 6], (data64u[i] >> 48) & 0xFF, "");
+      ASSERTEQ((int)dest[i * 8 + 7], (data64u[i] >> 56) & 0xFF, "");
     }
   }
 

@@ -33,13 +33,20 @@ __M_BEGIN_DECLS
 
 typedef CondVar platform_cond;
 typedef LightLock platform_mutex;
+typedef LightSemaphore platform_sem;
 typedef Thread platform_thread;
 typedef Thread platform_thread_id;
 typedef ThreadFunc platform_thread_fn;
 
-static inline void platform_mutex_init(platform_mutex *mutex)
+static inline boolean platform_mutex_init(platform_mutex *mutex)
 {
   LightLock_Init(mutex);
+  return true;
+}
+
+static inline boolean platform_mutex_destroy(platform_mutex *mutex)
+{
+  return true;
 }
 
 static inline boolean platform_mutex_lock(platform_mutex *mutex)
@@ -54,20 +61,15 @@ static inline boolean platform_mutex_unlock(platform_mutex *mutex)
   return true;
 }
 
-static inline boolean platform_mutex_destroy(platform_mutex *mutex)
-{
-  return true;
-}
-
 static inline boolean platform_cond_init(platform_cond *cond)
 {
   CondVar_Init(cond);
   return true;
 }
 
-static inline void platform_cond_destroy(platform_cond *cond)
+static inline boolean platform_cond_destroy(platform_cond *cond)
 {
-  return;
+  return true;
 }
 
 static inline boolean platform_cond_wait(platform_cond *cond,
@@ -98,21 +100,53 @@ static inline boolean platform_cond_broadcast(platform_cond *cond)
   return true;
 }
 
-static inline int platform_thread_create(platform_thread *thread,
+static inline boolean platform_sem_init(platform_sem *sem, unsigned init_value)
+{
+  if(init_value > INT16_MAX)
+    return false;
+  LightSemaphore_Init(sem, init_value, INT16_MAX);
+  return true;
+}
+
+static inline boolean platform_sem_destroy(platform_sem *sem)
+{
+  return true;
+}
+
+static inline boolean platform_sem_wait(platform_sem *sem)
+{
+  LightSemaphore_Acquire(sem, 1);
+  return true;
+}
+
+static inline boolean platform_sem_post(platform_sem *sem)
+{
+  LightSemaphore_Release(sem, 1);
+  return true;
+}
+
+static inline boolean platform_thread_create(platform_thread *thread,
  platform_thread_fn start_function, void *data)
 {
+  Thread t;
   s32 priority;
 
   svcGetThreadPriority(&priority, CUR_THREAD_HANDLE);
-  *thread = threadCreate(start_function, data, STACK_SIZE_CTR, priority-1, -1,
+  t = threadCreate(start_function, data, STACK_SIZE_CTR, priority-1, -1,
    true);
-
-  return (*thread == NULL) ? 1 : 0;
+  if(t)
+  {
+    *thread = t;
+    return true;
+  }
+  return false;
 }
 
-static inline void platform_thread_join(platform_thread *thread)
+static inline boolean platform_thread_join(platform_thread *thread)
 {
+  // Return value not documented...
   threadJoin(*thread, U64_MAX);
+  return true;
 }
 
 static inline platform_thread_id platform_get_thread_id(void)

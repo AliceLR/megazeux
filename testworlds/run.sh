@@ -109,6 +109,10 @@ mzxrun_pid=$!
 
 i="0"
 
+# In some versions of MSYS2, mzxrun doesn't always appear in ps right away. :(
+sleep 1
+[ "$quiet" = "yes" ] || printf "."
+
 while ps | grep -q "$mzxrun_pid .*[m]zxrun"
 do
 	sleep 1

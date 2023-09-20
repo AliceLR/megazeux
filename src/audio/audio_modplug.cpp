@@ -216,81 +216,70 @@ static void mp_destruct(struct audio_stream *a_src)
   sampled_destruct(a_src);
 }
 
-static struct audio_stream *construct_modplug_stream(char *filename,
- uint32_t frequency, unsigned int volume, boolean repeat)
+static struct audio_stream *construct_modplug_stream(vfile *vf,
+ const char *filename, uint32_t frequency, unsigned int volume, boolean repeat)
 {
+  struct modplug_stream *mp_stream;
+  struct sampled_stream_spec s_spec;
+  struct audio_stream_spec a_spec;
   void *input_buffer;
-  vfile *input_file;
 
-  input_file = vfopen_unsafe(filename, "rb");
-  if(input_file)
+  size_t file_size = vfilelength(vf, false);
+  ModPlugFile *open_file;
+
+  init_modplug_settings();
+
+  input_buffer = malloc(file_size);
+  if(!input_buffer)
+    return NULL;
+
+  if(!vfread(input_buffer, file_size, 1, vf))
   {
-    size_t file_size = vfilelength(input_file, false);
-    ModPlugFile *open_file;
-
-    init_modplug_settings();
-
-    input_buffer = cmalloc(file_size);
-    vfread(input_buffer, file_size, 1, input_file);
-    open_file = ModPlug_Load(input_buffer, file_size);
-
     free(input_buffer);
-    vfclose(input_file);
-
-    if(open_file)
-    {
-      struct modplug_stream *mp_stream =
-       (struct modplug_stream *)cmalloc(sizeof(struct modplug_stream));
-      struct sampled_stream_spec s_spec;
-      struct audio_stream_spec a_spec;
-
-      mp_stream->module_data = open_file;
-
-      memset(&a_spec, 0, sizeof(struct audio_stream_spec));
-      a_spec.mix_data     = mp_mix_data;
-      a_spec.set_volume   = mp_set_volume;
-      a_spec.set_repeat   = mp_set_repeat;
-      a_spec.set_order    = mp_set_order;
-      a_spec.set_position = mp_set_position;
-      a_spec.get_order    = mp_get_order;
-      a_spec.get_position = mp_get_position;
-      a_spec.get_length   = mp_get_length;
-      a_spec.destruct     = mp_destruct;
-
-      memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
-      s_spec.set_frequency = mp_set_frequency;
-      s_spec.get_frequency = mp_get_frequency;
-
-      initialize_sampled_stream((struct sampled_stream *)mp_stream, &s_spec,
-       frequency, 2, false);
-
-      initialize_audio_stream((struct audio_stream *)mp_stream, &a_spec,
-       volume, repeat);
-
-      return (struct audio_stream *)mp_stream;
-    }
+    return NULL;
   }
 
-  return NULL;
+  open_file = ModPlug_Load(input_buffer, file_size);
+  free(input_buffer);
+
+  if(!open_file)
+    return NULL;
+
+  mp_stream = (struct modplug_stream *)malloc(sizeof(struct modplug_stream));
+  if(!mp_stream)
+  {
+    ModPlug_Unload(open_file);
+    return NULL;
+  }
+
+  mp_stream->module_data = open_file;
+
+  memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+  a_spec.mix_data     = mp_mix_data;
+  a_spec.set_volume   = mp_set_volume;
+  a_spec.set_repeat   = mp_set_repeat;
+  a_spec.set_order    = mp_set_order;
+  a_spec.set_position = mp_set_position;
+  a_spec.get_order    = mp_get_order;
+  a_spec.get_position = mp_get_position;
+  a_spec.get_length   = mp_get_length;
+  a_spec.destruct     = mp_destruct;
+
+  memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+  s_spec.set_frequency = mp_set_frequency;
+  s_spec.get_frequency = mp_get_frequency;
+
+  initialize_sampled_stream((struct sampled_stream *)mp_stream, &s_spec,
+   frequency, 2, false);
+
+  initialize_audio_stream((struct audio_stream *)mp_stream, &a_spec,
+   volume, repeat);
+
+  vfclose(vf);
+  return (struct audio_stream *)mp_stream;
 }
 
 void init_modplug(struct config_info *conf)
 {
-  audio_ext_register("669", construct_modplug_stream);
-  audio_ext_register("amf", construct_modplug_stream);
-  audio_ext_register("dsm", construct_modplug_stream);
-  audio_ext_register("far", construct_modplug_stream);
-  audio_ext_register("gdm", construct_modplug_stream);
-  audio_ext_register("it", construct_modplug_stream);
-  audio_ext_register("med", construct_modplug_stream);
-  audio_ext_register("mod", construct_modplug_stream);
-  audio_ext_register("mtm", construct_modplug_stream);
-  audio_ext_register("nst", construct_modplug_stream);
-  audio_ext_register("oct", construct_modplug_stream);
-  audio_ext_register("okt", construct_modplug_stream);
-  audio_ext_register("s3m", construct_modplug_stream);
-  audio_ext_register("stm", construct_modplug_stream);
-  audio_ext_register("ult", construct_modplug_stream);
-  audio_ext_register("wow", construct_modplug_stream);
-  audio_ext_register("xm", construct_modplug_stream);
+  audio_ext_register(NULL, construct_modplug_stream);
 }

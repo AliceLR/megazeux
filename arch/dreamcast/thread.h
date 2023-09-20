@@ -33,13 +33,23 @@ __M_BEGIN_DECLS
 
 typedef condvar_t platform_cond;
 typedef mutex_t platform_mutex;
+typedef semaphore_t platform_sem;
 typedef kthread_t *platform_thread;
 typedef kthread_t *platform_thread_id;
 typedef void *(*platform_thread_fn)(void *);
 
-static inline void platform_mutex_init(platform_mutex *mutex)
+static inline boolean platform_mutex_init(platform_mutex *mutex)
 {
-  mutex_init(mutex, MUTEX_TYPE_NORMAL);
+  if(mutex_init(mutex, MUTEX_TYPE_NORMAL))
+    return false;
+  return true;
+}
+
+static inline boolean platform_mutex_destroy(platform_mutex *mutex)
+{
+  if(mutex_destroy(mutex))
+    return false;
+  return true;
 }
 
 static inline bool platform_mutex_lock(platform_mutex *mutex)
@@ -56,19 +66,18 @@ static inline bool platform_mutex_unlock(platform_mutex *mutex)
   return true;
 }
 
-static inline bool platform_mutex_destroy(platform_mutex *mutex)
+static inline boolean platform_cond_init(platform_cond *cond)
 {
+  if(cond_init(cond))
+    return false;
   return true;
 }
 
-static inline void platform_cond_init(platform_cond *cond)
+static inline boolean platform_cond_destroy(platform_cond *cond)
 {
-  cond_init(cond);
-}
-
-static inline void platform_cond_destroy(platform_cond *cond)
-{
-  cond_destroy(cond);
+  if(cond_destroy(cond))
+    return false;
+  return true;
 }
 
 static inline boolean platform_cond_wait(platform_cond *cond,
@@ -101,19 +110,51 @@ static inline boolean platform_cond_broadcast(platform_cond *cond)
   return true;
 }
 
-static inline int platform_thread_create(platform_thread *thread,
+static inline boolean platform_sem_init(platform_sem *sem, unsigned init_value)
+{
+  if(sem_init(sem, init_value))
+    return false;
+  return true;
+}
+
+static inline boolean platform_sem_destroy(platform_sem *sem)
+{
+  if(sem_destroy(sem))
+    return false;
+  return true;
+}
+
+static inline boolean platform_sem_wait(platform_sem *sem)
+{
+  if(sem_wait(sem))
+    return false;
+  return true;
+}
+
+static inline boolean platform_sem_post(platform_sem *sem)
+{
+  if(sem_signal(sem))
+    return false;
+  return true;
+}
+
+static inline boolean platform_thread_create(platform_thread *thread,
  platform_thread_fn start_function, void *data)
 {
   platform_thread ret = thd_create(0, start_function, data);
-  *thread = ret;
   if(ret)
-    return 0;
-  return -1;
+  {
+    *thread = ret;
+    return true;
+  }
+  return false;
 }
 
-static inline void platform_thread_join(platform_thread *thread)
+static inline boolean platform_thread_join(platform_thread *thread)
 {
-  thd_join(*thread, NULL);
+  if(thd_join(*thread, NULL))
+    return false;
+  return true;
 }
 
 static inline platform_thread_id platform_get_thread_id(void)

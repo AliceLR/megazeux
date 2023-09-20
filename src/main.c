@@ -203,7 +203,7 @@ __libspec int main(int argc, char *argv[])
 #endif
 
 #ifdef STARTUPDIR
-  // Always try to start in a predefined startup path to save some headaches.
+  // Some ports (Android and Vita) require a custom startup directory.
   path_navigate(current_dir, MAX_PATH, STARTUPDIR);
 #endif
 
@@ -265,6 +265,14 @@ __libspec int main(int argc, char *argv[])
 
   vchdir(current_dir);
 
+  // Initialize the VFS in the final startup directory.
+  if(conf->vfs_enable)
+  {
+    if(!vio_filesystem_init(conf->vfs_max_cache_size,
+     conf->vfs_max_cache_file_size, conf->vfs_enable_auto_cache))
+      warn("failed to initialize virtual filesystem!\n");
+  }
+
   counter_fsg();
 
   rng_seed_init();
@@ -291,7 +299,7 @@ __libspec int main(int argc, char *argv[])
       if(updater_init())
       {
         // No auto update checks on repo builds.
-        if(!strcmp(VERSION, "GIT") &&
+        if((strstr(VERSION, "GIT") || strstr(VERSION, "PRE")) &&
          !strcmp(conf->update_branch_pin, "Stable"))
           conf->update_auto_check = UPDATE_AUTO_CHECK_OFF;
 
@@ -371,6 +379,7 @@ err_free_config:
   // FIXME maybe shouldn't be here...?
   if(mzx_world.update_done)
     free(mzx_world.update_done);
+  vio_filesystem_exit();
   free_config();
   free_editor_config();
 err_free_res:

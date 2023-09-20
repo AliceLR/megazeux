@@ -24,13 +24,8 @@
  * MED 1.12 is in Fish disk #255
  */
 
-#ifdef __native_client__
-#include <sys/syslimits.h>
-#else
-#include <limits.h>
-#endif
 #include "loader.h"
-#include "period.h"
+#include "../period.h"
 
 #define MAGIC_MED2	MAGIC4('M','E','D',2)
 
@@ -49,13 +44,12 @@ static int med2_test(HIO_HANDLE *f, char *t, const int start)
 	if (hio_read32b(f) !=  MAGIC_MED2)
 		return -1;
 
-        libxmp_read_title(f, t, 0);
+	libxmp_read_title(f, t, 0);
 
-        return 0;
+	return 0;
 }
 
-
-int med2_load(struct module_data *m, HIO_HANDLE *f, const int start)
+static int med2_load(struct module_data *m, HIO_HANDLE *f, const int start)
 {
 	struct xmp_module *mod = &m->mod;
 	int i, j, k;
@@ -78,8 +72,10 @@ int med2_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	/* read instrument names */
 	hio_read(buf, 1, 40, f);	/* skip 0 */
 	for (i = 0; i < 31; i++) {
-		hio_read(buf, 1, 40, f);
-		libxmp_instrument_name(mod, i, buf, 32);
+		if (hio_read(buf, 1, 40, f) != 40)
+			return -1;
+
+		libxmp_instrument_name(mod, i, buf, 40);
 		if (libxmp_alloc_subinstrument(mod, i, 1) < 0)
 			return -1;
 	}
@@ -188,18 +184,30 @@ int med2_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	D_(D_INFO "Instruments    : %d ", mod->ins);
 
 	for (i = 0; i < 31; i++) {
-		char path[PATH_MAX];
+		char path[XMP_MAXPATH];
 		char ins_path[256];
+		char ins_name[32];
 		char name[256];
 		HIO_HANDLE *s = NULL;
-		int found;
+		int found = 0;
+
+		if (libxmp_copy_name_for_fopen(ins_name, mod->xxi[i].name, 32) != 0)
+			continue;
 
 		libxmp_get_instrument_path(m, ins_path, 256);
-		found = libxmp_check_filename_case(ins_path,
-					mod->xxi[i].name, name, 256);
+		if (libxmp_check_filename_case(ins_path, ins_name, name, 256)) {
+			snprintf(path, XMP_MAXPATH, "%s/%s", ins_path, name);
+			found = 1;
+		}
+
+		/* Try the module dir if the instrument path didn't work. */
+		if (!found && m->dirname != NULL &&
+		    libxmp_check_filename_case(m->dirname, ins_name, name, 256)) {
+			snprintf(path, XMP_MAXPATH, "%s%s", m->dirname, name);
+			found = 1;
+		}
 
 		if (found) {
-			snprintf(path, PATH_MAX, "%s/%s", ins_path, name);
 			if ((s = hio_open(path,"rb")) != NULL) {
 				mod->xxs[i].len = hio_size(s);
 			}

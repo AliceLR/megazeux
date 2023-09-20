@@ -263,6 +263,16 @@ void init_audio(struct config_info *conf)
   init_vorbis(conf);
 #endif
 
+#ifdef CONFIG_REALITY
+  init_reality(conf);
+#endif
+
+  // Generic module players may misidentify files due to the ambiguity of
+  // formats like Soundtracker MOD, so register them last.
+#ifdef CONFIG_XMP
+  init_xmp(conf);
+#endif
+
 #ifdef CONFIG_MODPLUG
   init_modplug(conf);
 #endif
@@ -271,16 +281,8 @@ void init_audio(struct config_info *conf)
   init_mikmod(conf);
 #endif
 
-#ifdef CONFIG_XMP
-  init_xmp(conf);
-#endif
-
 #ifdef CONFIG_OPENMPT
   init_openmpt(conf);
-#endif
-
-#ifdef CONFIG_REALITY
-  init_reality(conf);
 #endif
 
   audio_set_music_volume(conf->music_volume);

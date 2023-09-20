@@ -92,6 +92,8 @@
 
 #ifdef CONFIG_3DS
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
+#define VFS_ENABLE_DEFAULT true
+#define VFS_MAX_CACHE_SIZE_DEFAULT (1 << 25) /* 32 MiB */
 #endif
 
 #ifdef CONFIG_WIIU
@@ -119,6 +121,8 @@
 #define RESAMPLE_MODE_DEFAULT RESAMPLE_MODE_NONE
 #define MOD_RESAMPLE_MODE_DEFAULT RESAMPLE_MODE_NONE
 #define FULLSCREEN_DEFAULT 1
+#define VFS_ENABLE_DEFAULT true
+#define VFS_ENABLE_AUTO_CACHE_DEFAULT false
 #endif
 
 // End arch-specific config.
@@ -171,6 +175,22 @@
 
 #ifndef VIDEO_RATIO_DEFAULT
 #define VIDEO_RATIO_DEFAULT RATIO_MODERN_64_35
+#endif
+
+#ifndef VFS_ENABLE_DEFAULT
+#define VFS_ENABLE_DEFAULT false
+#endif
+
+#ifndef VFS_ENABLE_AUTO_CACHE_DEFAULT
+#define VFS_ENABLE_AUTO_CACHE_DEFAULT true
+#endif
+
+#ifndef VFS_MAX_CACHE_SIZE_DEFAULT
+#define VFS_MAX_CACHE_SIZE_DEFAULT (1 << 24)
+#endif
+
+#ifndef VFS_MAX_CACHE_FILE_SIZE_DEFAULT
+#define VFS_MAX_CACHE_FILE_SIZE_DEFAULT (VFS_MAX_CACHE_SIZE_DEFAULT >> 2)
 #endif
 
 #ifndef AUTO_DECRYPT_WORLDS
@@ -231,6 +251,7 @@ static const struct config_info user_conf_default =
   "",                           // opengl default scaling shader
   "",                           // sdl_render_driver
   CURSOR_MODE_HINT,             // cursor_hint_mode
+  SCREENSAVER_ENABLE,           // disable_screensaver
   true,                         // allow screenshots
 
   // Audio options
@@ -250,6 +271,12 @@ static const struct config_info user_conf_default =
   true,                         // allow_gamecontroller
   false,                        // pause_on_unfocus
   1,                            // num_buffered_events
+
+  // Virtual filesystem options
+  VFS_ENABLE_DEFAULT,           // vfs_enable
+  VFS_ENABLE_AUTO_CACHE_DEFAULT,// vfs_enable_auto_cache
+  VFS_MAX_CACHE_SIZE_DEFAULT,   // vfs_max_cache_size_default
+  VFS_MAX_CACHE_FILE_SIZE_DEFAULT, // vfs_max_cache_file_size_default
 
   // Game options
   "",                           // startup_path
@@ -368,6 +395,13 @@ static const struct config_enum system_mouse_values[] =
   { "1", 1 }
 };
 
+static const struct config_enum screensaver_disable_values[] =
+{
+  { "0", SCREENSAVER_ENABLE },
+  { "1", SCREENSAVER_DISABLE },
+  //{ "ingame", SCREENSAVER_DISABLE_IN_GAME }
+};
+
 #ifdef CONFIG_NETWORK
 static const struct config_enum network_address_family_values[] =
 {
@@ -432,6 +466,22 @@ boolean config_int(int *dest, char *value, int min, int max)
   int n;
 
   if(sscanf(value, "%d%n", &result, &n) != 1 || value[n] != 0)
+    return false;
+
+  if(result < min || result > max)
+    return false;
+
+  *dest = result;
+  return true;
+}
+
+static boolean config_long_long(long long *dest, char *value, long long min,
+ long long max)
+{
+  long long result;
+  int n;
+
+  if(sscanf(value, "%lld%n", &result, &n) != 1 || value[n] != 0)
     return false;
 
   if(result < min || result > max)
@@ -701,6 +751,14 @@ static void config_grab_mouse(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   config_boolean(&conf->grab_mouse, value);
+}
+
+static void config_disable_screensaver(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  int result;
+  if(config_enum(&result, value, screensaver_disable_values))
+    conf->disable_screensaver = result;
 }
 
 static void config_save_slots(struct config_info *conf, char *name,
@@ -1102,6 +1160,34 @@ static void config_test_mode_start_board(struct config_info *conf,
     conf->test_mode_start_board = result;
 }
 
+static void config_set_vfs_enable(struct config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  config_boolean(&conf->vfs_enable, value);
+}
+
+static void config_set_vfs_enable_auto_cache(struct config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  config_boolean(&conf->vfs_enable_auto_cache, value);
+}
+
+static void config_set_vfs_max_cache_size(struct config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  long long result;
+  if(config_long_long(&result, value, 0, LLONG_MAX))
+    conf->vfs_max_cache_size = result;
+}
+
+static void config_set_vfs_max_cache_file_size(struct config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  long long result;
+  if(config_long_long(&result, value, 0, LLONG_MAX))
+    conf->vfs_max_cache_file_size = result;
+}
+
 /* NOTE: This is searched as a binary tree, the nodes must be
  *       sorted alphabetically, or they risk being ignored.
  */
@@ -1114,6 +1200,7 @@ static const struct config_entry config_options[] =
   { "audio_sample_rate", config_set_audio_freq, false },
   { "auto_decrypt_worlds", config_set_auto_decrypt_worlds, false },
   { "dialog_cursor_hints", config_set_dialog_cursor_hints, false },
+  { "disable_screensaver", config_disable_screensaver, false },
   { "enable_oversampling", config_enable_oversampling, false },
   { "enable_resizing", config_enable_resizing, false },
   { "force_bpp", config_force_bpp, false },
@@ -1183,6 +1270,10 @@ static const struct config_entry config_options[] =
   { "update_branch_pin", config_update_branch_pin, false },
   { "update_host", config_update_host, false },
 #endif
+  { "vfs_enable", config_set_vfs_enable, false },
+  { "vfs_enable_auto_cache", config_set_vfs_enable_auto_cache, false },
+  { "vfs_max_cache_file_size", config_set_vfs_max_cache_file_size, false },
+  { "vfs_max_cache_size", config_set_vfs_max_cache_size, false },
   { "video_output", config_set_video_output, false },
   { "video_ratio", config_set_video_ratio, false },
   { "window_resolution", config_window_resolution, false }

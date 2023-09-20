@@ -86,6 +86,7 @@ ${core_obj}/%.o: ${core_src}/%.cpp
 # to build the main binary. Please keep this sorted alphabetically.
 #
 core_cobjs := \
+  ${core_obj}/about.o             \
   ${core_obj}/block.o             \
   ${core_obj}/board.o             \
   ${core_obj}/caption.o           \
@@ -112,6 +113,7 @@ core_cobjs := \
   ${core_obj}/legacy_robot.o      \
   ${core_obj}/legacy_world.o      \
   ${core_obj}/mzm.o               \
+  ${core_obj}/platform_time.o     \
   ${core_obj}/render.o            \
   ${core_obj}/robot.o             \
   ${core_obj}/run_robot.o         \
@@ -451,7 +453,7 @@ core_target := ${DSOPRE}core${DSOPOST}
 ${core_target}: ${core_objs}
 	$(if ${V},,@echo "  LINK    " $@)
 	${LINK_CC} ${DSOLDFLAGS} -o $@ ${core_objs} ${LDFLAGS} \
-	  ${DSOSONAME}$@ ${core_ldflags}
+	  ${DSOSONAME}$@ ${core_ldflags} ${ARCH_LIBS}
 
 core_target_clean:
 	$(if ${V},,@echo "  RM      " ${core_target} ${core_target}.debug)
@@ -486,11 +488,11 @@ ${mzx}: ${core_target} ${editor_target} ${mzx_objs}
 ifeq (${BUILD_MODULAR},1)
 	${LINK_CC} ${mzx_objs} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
 	  ${DSORPATH} -L. -lcore -leditor \
-	  ${mzx_ldflags}
+	  ${mzx_ldflags} ${ARCH_LIBS}
 else
 	${LINK_CC} ${mzx_objs} ${core_target} ${editor_target} \
 	  -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
-	  ${core_ldflags} ${editor_ldflags}
+	  ${core_ldflags} ${editor_ldflags} ${ARCH_LIBS}
 endif
 
 mzx_clean: editor_clean
@@ -521,10 +523,10 @@ ${mzxrun}: ${core_target} ${mzxrun_objs}
 	$(if ${V},,@echo "  LINK    " ${mzxrun})
 ifeq (${BUILD_MODULAR},1)
 	${LINK_CC} ${mzxrun_objs} -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
-	  ${DSORPATH} -L. -lcore ${mzxrun_ldflags}
+	  ${DSORPATH} -L. -lcore ${mzxrun_ldflags} ${ARCH_LIBS}
 else
 	${LINK_CC} ${mzxrun_objs} ${core_target} \
-	  -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${core_ldflags}
+	  -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${core_ldflags} ${ARCH_LIBS}
 endif
 
 else

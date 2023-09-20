@@ -507,7 +507,7 @@ static void parse_gamecontroller_read_entry(char *key, char *value,
   }
   else
 
-  if(!strcasecmp(key, "platform"))
+  if(!strcasecmp(key, "platform") || !strcasecmp(key, "crc"))
   {
     // ignore- field used by SDL.
     return;
@@ -515,7 +515,7 @@ static void parse_gamecontroller_read_entry(char *key, char *value,
 
   else
   {
-    warn("--JOYSTICK-- Invalid control '%s'! Report this!\n", key);
+    debug("--JOYSTICK-- Invalid control '%s'! Report this!\n", key);
     return;
   }
 

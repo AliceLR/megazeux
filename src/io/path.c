@@ -2,7 +2,7 @@
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
- * Copyright (C) 2012, 2020 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2012, 2020-2023 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -60,6 +60,55 @@ char *path_tokenize(char **next)
       *next = NULL;
   }
   return src;
+}
+
+/**
+ * Similar to `path_tokenize`, but strips one path token off of the end of the
+ * provided path.
+ *
+ * This function is not aware of absolute paths; if the token returned is a
+ * root, the directory separator portion of the root will be replaced with nul.
+ *
+ * @param  base       Pointer to the path to reverse tokenize. If there is only
+ *                    one token in this path, NULL will be stored to *`base`.
+ *                    Otherwise, this value will not be modified.
+ * @param  base_len   Pointer to the current length of the path pointed to by
+ *                    `base`. If there is only one token in the path, 0 will be
+ *                    stored to *`base_len`. This field MUST be initialized
+ *                    properly if provided. If not provided, each call will
+ *                    perform one `strlen` call.
+ * @return            A pointer to the token removed from *`base`, or NULL if
+ *                    *`base` is NULL or `base` is NULL.
+ */
+char *path_reverse_tokenize(char **_base, size_t *_base_len)
+{
+  size_t base_len;
+  char *base;
+  char *pos;
+  if(!_base || !*_base)
+    return NULL;
+
+  base = *_base;
+  base_len = _base_len ? *_base_len : strlen(base);
+  pos = base + base_len;
+
+  while(pos >= base)
+  {
+    if(isslash(*pos))
+    {
+      if(_base_len)
+        *_base_len = (pos > base) ? pos - base - 1 : 0;
+
+      *pos = '\0';
+      return pos + 1;
+    }
+    pos--;
+  }
+
+  *_base = NULL;
+  if(_base_len)
+    *_base_len = 0;
+  return base;
 }
 
 /**
@@ -388,6 +437,43 @@ boolean path_get_directory_and_filename(char *d_dest, size_t d_len,
 }
 
 /**
+ * Get the parent directory of a provided path string if the path string
+ * contains a parent component.
+ *
+ * @param  dest       Destination buffer for the parent.
+ * @param  dest_len   Size of the destination buffer.
+ * @return            Length of the parent string, -1 if the path string is
+ *                    invalid or doesn't fit in the provided buffer, or 0
+ *                    if the path contains no parent directory.
+ */
+ssize_t path_get_parent(char *dest, size_t dest_len, const char *path)
+{
+  ssize_t path_len;
+  ssize_t i;
+  if(!path || !path[0])
+    return -1;
+
+  // Find last slash without respect to vstat.
+  path_len = strlen(path);
+  for(i = path_len - 1; i >= 0; i--)
+    if(isslash(path[i]))
+      break;
+  // Include the separator.
+  i++;
+
+  if((size_t)i >= dest_len)
+    return -1;
+
+  dest[i] = '\0';
+  if(i > 0)
+  {
+    memcpy(dest, path, i);
+    i = path_clean_slashes(dest, dest_len);
+  }
+  return i;
+}
+
+/**
  * Clean duplicate directory separators out of a path and normalize them to
  * the correct slash for the current platform.
  *
@@ -681,24 +767,28 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
     else      next++;
 
     // . does nothing, .. goes back one level
-    if(current_char == '.')
+    if(current_char == '.' && (current[1] == '\0' || isslash(current[1])))
     {
-      if(current[1] == '.')
-      {
-        // Skip the rightmost separator (current level) and look for the
-        // previous separator. If found, truncate the path to it.
-        char *pos = buffer + len - 1;
-        do
-        {
-          pos--;
-        }
-        while(pos >= buffer && !isslash(*pos));
+      // current directory, don't do anything.
+    }
+    else
 
-        if(pos >= buffer)
-        {
-          pos[1] = '\0';
-          len = strlen(buffer);
-        }
+    if(current_char == '.' && current[1] == '.' &&
+     (current[2] == '\0' || isslash(current[2])))
+    {
+      // Skip the rightmost separator (current level) and look for the
+      // previous separator. If found, truncate the path to it.
+      char *pos = buffer + len - 1;
+      do
+      {
+        pos--;
+      }
+      while(pos >= buffer && !isslash(*pos));
+
+      if(pos >= buffer)
+      {
+        pos[1] = '\0';
+        len = strlen(buffer);
       }
     }
     else

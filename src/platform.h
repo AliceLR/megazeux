@@ -53,8 +53,10 @@ int real_main(int argc, char *argv[]);
 #include "../arch/djgpp/thread.h"
 #elif defined(CONFIG_DREAMCAST)
 #include "../arch/dreamcast/thread.h"
-#elif defined(CONFIG_SDL)
+#elif defined(CONFIG_SDL) && !defined(SKIP_SDL)
 #include "thread_sdl.h"
+#elif defined(_WIN32) /* Fallback, prefer SDL when possible. */
+#include "thread_win32.h"
 #else
 #if defined(CONFIG_NDS)
 #define THREAD_DUMMY_ALLOW_MUTEX
@@ -63,11 +65,14 @@ int real_main(int argc, char *argv[]);
 #endif
 
 #include <stdint.h>
+#include <time.h>
 
 CORE_LIBSPEC void delay(uint32_t ms);
 CORE_LIBSPEC uint64_t get_ticks(void);
 CORE_LIBSPEC boolean platform_init(void);
 CORE_LIBSPEC void platform_quit(void);
+CORE_LIBSPEC boolean platform_system_time(struct tm *tm,
+ int64_t *epoch, int32_t *nano);
 
 __M_END_DECLS
 

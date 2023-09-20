@@ -30,6 +30,8 @@ __M_BEGIN_DECLS
  */
 
 #include <dirent.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -40,22 +42,23 @@ __M_BEGIN_DECLS
 #define PLATFORM_NO_REWINDDIR
 #endif
 
-#ifdef __USE_LARGEFILE64
+/* clang has broken MemorySanitizer instrumentation for *stat, leading to false
+ * positives. Use this define to enable memset() in the functions that use them.
+ */
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer)
+#define STAT_NEEDS_MEMSET 1
+#endif
+#endif
+
 /**
  * Regular readdir/dirent can cause issues for 32-bit executables running
  * on large filesystems. This is caused by values for d_ino or d_off
  * overflowing their respective fields (even though this code doesn't
- * care about them). Prefer dirent64 if it is available.
- *
- * NOTE: __USE_LARGEFILE64 is a glibc-specific internal define, but there
- * doesn't seem to be a better way to detect this. dirent64 is generally a
- * glibc extension. Bionic and musl both support dirent64, but their dirent64
- * structs are identical to their regular dirent structs. Newlib does not
- * support dirent64, but primarily targets platforms where this is irrelevant.
+ * care about them). An example of this is running 32-bit ARM executables
+ * using qemu-arm-static on an AMD64 host. For POSIX systems, please define
+ * _FILE_OFFSET_BITS=64 if it is available (see the *nix Makefile fragment).
  */
-#define PLATFORM_HAS_DIRENT64
-#endif
-
 
 static inline FILE *platform_fopen_unsafe(const char *path, const char *mode)
 {
@@ -115,6 +118,9 @@ static inline int platform_access(const char *path, int mode)
 
 static inline int platform_stat(const char *path, struct stat *buf)
 {
+#ifdef STAT_NEEDS_MEMSET
+  memset(buf, 0, sizeof(struct stat));
+#endif
   return stat(path, buf);
 }
 
@@ -129,24 +135,16 @@ static inline boolean platform_opendir(struct dir_handle *dh, const char *path)
   return dh->dir != NULL;
 }
 
-static inline void platform_closedir(struct dir_handle dh)
+static inline int platform_closedir(struct dir_handle dh)
 {
-  closedir(dh.dir);
+  return closedir(dh.dir);
 }
 
 static inline boolean platform_readdir(struct dir_handle dh, char *buffer,
  size_t buffer_len, int *d_type)
 {
-#ifdef PLATFORM_HAS_DIRENT64
-
-  struct dirent64 *d = readdir64(dh.dir);
-
-#else
-
+  // Note: ino_t may cause issues unless _FILE_OFFSET_BITS=64 is defined.
   struct dirent *d = readdir(dh.dir);
-
-#endif
-
   if(!d)
     return false;
 
@@ -169,6 +167,44 @@ static inline boolean platform_rewinddir(struct dir_handle dh)
 #endif
 
   return false;
+}
+
+static inline int platform_fseek(FILE *fp, int64_t offset, int whence)
+{
+#if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
+  return fseeko(fp, offset, whence);
+#else
+  if(offset >= LONG_MAX)
+    return -1;
+  return fseek(fp, offset, whence);
+#endif
+}
+
+static inline int64_t platform_ftell(FILE *fp)
+{
+#if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
+  return ftello(fp);
+#else
+  return ftell(fp);
+#endif
+}
+
+static inline int64_t platform_filelength(FILE *fp)
+{
+  // Note: off_t, ino_t may cause issues unless _FILE_OFFSET_BITS=64 is defined.
+  struct stat st;
+  int fd = fileno(fp);
+
+#ifdef STAT_NEEDS_MEMSET
+  memset(&st, 0, sizeof(struct stat));
+#endif
+
+  if(fd < 0)
+    return -1;
+  if(fstat(fd, &st) < 0)
+    return -1;
+
+  return st.st_size;
 }
 
 __M_END_DECLS

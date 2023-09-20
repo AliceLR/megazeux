@@ -28,6 +28,17 @@
 
 CORE_LIBSPEC Uint32 sdl_window_id;
 
+#if SDL_VERSION_ATLEAST(2,0,0)
+static void sdl_set_screensaver_enabled(boolean enable)
+{
+  debug("SDL %s screensaver.\n", enable ? "enabling" : "disabling");
+  if(enable)
+    SDL_EnableScreenSaver();
+  else
+    SDL_DisableScreenSaver();
+}
+#endif
+
 int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
  boolean resize)
 {
@@ -460,6 +471,7 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   }
 
   sdl_window_id = SDL_GetWindowID(render_data->window);
+  sdl_set_screensaver_enabled(graphics->disable_screensaver == SCREENSAVER_ENABLE);
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 
@@ -554,6 +566,7 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   }
 
   sdl_window_id = SDL_GetWindowID(render_data->window);
+  sdl_set_screensaver_enabled(graphics->disable_screensaver == SCREENSAVER_ENABLE);
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 

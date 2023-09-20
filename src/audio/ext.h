@@ -27,14 +27,16 @@
 __M_BEGIN_DECLS
 
 #include "audio.h"
+#include "../io/vfile.h"
 
-typedef struct audio_stream *(*construct_stream_fn)(char *,
- uint32_t, unsigned int, boolean);
+typedef boolean (*filter_stream_fn)(vfile *vf, const char *filename);
+typedef struct audio_stream *(*construct_stream_fn)(vfile *vf, const char *,
+ uint32_t frequency, unsigned int volume, boolean repeat);
 
-void audio_ext_register(const char *ext, construct_stream_fn constructor);
+void audio_ext_register(filter_stream_fn test, construct_stream_fn constructor);
 void audio_ext_free_registry(void);
 
-struct audio_stream *audio_ext_construct_stream(char *filename,
+struct audio_stream *audio_ext_construct_stream(const char *filename,
  uint32_t frequency, unsigned int volume, boolean repeat);
 
 __M_END_DECLS

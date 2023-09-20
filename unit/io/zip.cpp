@@ -586,6 +586,15 @@ UNITTEST(Compress)
   stream->destroy(sd);
 }
 
+static const char long_content[] =
+{
+  "1234567890 1234567890 1234567890\r\n"
+  "1234567890 1234567890 1234567890\r\n"
+  "1234567890 1234567890 1234567890"
+};
+static constexpr uint32_t long_len = sizeof(long_content) - 1;
+static constexpr uint32_t long_crc = 0xE3046765;
+
 enum contents_type
 {
   CONTENTS_RAW,
@@ -614,6 +623,15 @@ struct zip_test_data
   enum zip_error open_result;
   uint32_t num_files;
   zip_test_file_data files[16];
+
+  static constexpr zip_test_data long_content_from_file(const char *filename,
+   const char *internal_filename, uint16_t flags)
+  {
+    return zip_test_data{ filename, filename,
+        0, ZIP_SUCCESS, 1,
+        {{ internal_filename, long_content,
+          flags, ZIP_M_NONE, long_crc, long_len, long_len, 0, CONTENTS_RAW }}};
+  }
 };
 
 static const zip_test_data raw_zip_data[] =
@@ -637,11 +655,8 @@ static const zip_test_data raw_zip_data[] =
         0x0000, ZIP_M_NONE, 0x00000000, 0, 0, 0, CONTENTS_RAW },
       { "abcde/a.txt", "abcde",
         0x0000, ZIP_M_NONE, 0x8587D865, 5, 5, 36, CONTENTS_RAW },
-      { "abcde/b.txt",
-        "1234567890 1234567890 1234567890\r\n"
-        "1234567890 1234567890 1234567890\r\n"
-        "1234567890 1234567890 1234567890",
-        0x0000, ZIP_M_DEFLATE, 0xE3046765, 100, 32, 82, CONTENTS_RAW },
+      { "abcde/b.txt", long_content,
+        0x0000, ZIP_M_DEFLATE, long_crc, 100, 32, 82, CONTENTS_RAW },
     }
   },
   {
@@ -658,6 +673,36 @@ static const zip_test_data raw_zip_data[] =
       "CT_LEVEL.MOD", "CT_LEVEL.MOD",
       0x0000, ZIP_M_DEFLATE, 0x2AF73EBE, 111885, 61105, 0, CONTENTS_FILE }},
   },
+  /* Zip64 */
+  {
+    "EOCD (Zip64)",
+    "PK\x06\x06\x2c\0\0\0\0\0\0\0\x2d\0\x2d\0\0\0\0\0\0\0\0\0"
+      "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+    "PK\x06\x07\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0"
+    "PK\x05\x06\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\0\0",
+    98, ZIP_SUCCESS, 0, {}
+  },
+  {
+    "dch1.zip64",
+    "dch1.zip64", 0, ZIP_SUCCESS, 1,
+    {{ "-", "dch1.txt",
+      0x0002, ZIP_M_DEFLATE, 0xA3898FBE, 7045, 3435, 0, CONTENTS_FILE }},
+  },
+  /* Zip64 format variants which all contain the uncompressed long text. */
+  zip_test_data::long_content_from_file("zip64/local64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/localdd64.zip", "test", ZIP_F_DATA_DESCRIPTOR),
+  zip_test_data::long_content_from_file("zip64/localcd64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/localcddd64.zip", "test", ZIP_F_DATA_DESCRIPTOR),
+  zip_test_data::long_content_from_file("zip64/cd64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/cduncomp64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/cdcomp64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/cdoffset64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/eocd64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/eocd64rc.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/eocd64sz.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/eocd64of.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/all64.zip", "test", 0x0000),
+  zip_test_data::long_content_from_file("zip64/alldd64.zip", "test", ZIP_F_DATA_DESCRIPTOR),
 };
 
 // The library should refuse to open these...
@@ -687,6 +732,15 @@ static const zip_test_data raw_zip_invalid_data[] =
     22, ZIP_UNSUPPORTED_MULTIPLE_DISKS, 0, {}
   },
 };
+
+static zip_archive *zip_test_open(const char *filename)
+{
+  char buffer[MAX_PATH];
+  if(path_join(buffer, sizeof(buffer), DATA_DIR, filename) < 0)
+    return nullptr;
+
+  return zip_open_file_read(buffer);
+}
 
 static zip_archive *zip_test_open(const zip_test_data &d)
 {
@@ -855,7 +909,7 @@ UNITTEST(ZipRead)
         for(size_t j = 0; j < d.num_files; j++)
         {
           const zip_test_file_data &df = d.files[j];
-          size_t real_length = 0;
+          uint64_t real_length = 0;
 
           result = zip_read_open_file_stream(zp, &real_length);
           ASSERTEQ(result, ZIP_SUCCESS, "%s file %zu", d.testname, j);
@@ -970,26 +1024,28 @@ UNITTEST(ZipWrite)
   size_t ext_buffer_size = 32;
 
   static const char OUTPUT_FILE[] = "_output_file.zip";
-  static const char LABEL[2][16] = { "File", "MemoryExt" };
+  static const char LABEL[4][20] = { "File", "File(Zip64)", "MemoryExt", "MemoryExt(Zip64)" };
   struct zip_archive *zp;
   enum zip_error result;
-  size_t final_size;
+  uint64_t final_size;
 
   ASSERT(verify_buffer && db64_buffer, "");
 
   SECTION(WriteFile)
   {
-    for(int type = 0; type < 2; type++)
+    for(int type = 0; type < 4; type++)
     {
       const char *label = LABEL[type];
       for(const zip_test_data &d : raw_zip_data)
       {
-        if(!type)
+        if(type < 2)
           zp = zip_open_file_write(OUTPUT_FILE);
         else
           zp = zip_open_mem_write_ext((void **)&ext_buffer, &ext_buffer_size, 0);
 
         ASSERT(zp, "%s %s", label, d.testname);
+
+        zip_set_zip64_enabled(zp, type & 1);
 
         for(size_t j = 0; j < d.num_files; j++)
         {
@@ -1003,7 +1059,7 @@ UNITTEST(ZipWrite)
         result = zip_close(zp, &final_size);
         ASSERTEQ(result, ZIP_SUCCESS, "%s %s", label, d.testname);
 
-        if(!type)
+        if(type < 2)
           zp = zip_open_file_read(OUTPUT_FILE);
         else
           zp = zip_open_mem_read(ext_buffer, final_size);
@@ -1015,17 +1071,19 @@ UNITTEST(ZipWrite)
 
   SECTION(WriteStream)
   {
-    for(int type = 0; type < 2; type++)
+    for(int type = 0; type < 4; type++)
     {
       const char *label = LABEL[type];
       for(const zip_test_data &d : raw_zip_data)
       {
-        if(!type)
+        if(type < 2)
           zp = zip_open_file_write(OUTPUT_FILE);
         else
           zp = zip_open_mem_write_ext((void **)&ext_buffer, &ext_buffer_size, 0);
 
         ASSERT(zp, "%s %s", label, d.testname);
+
+        zip_set_zip64_enabled(zp, type & 1);
 
         for(size_t j = 0; j < d.num_files; j++)
         {
@@ -1046,7 +1104,7 @@ UNITTEST(ZipWrite)
         result = zip_close(zp, &final_size);
         ASSERTEQ(result, ZIP_SUCCESS, "%s %s", label, d.testname);
 
-        if(!type)
+        if(type < 2)
           zp = zip_open_file_read(OUTPUT_FILE);
         else
           zp = zip_open_mem_read(ext_buffer, final_size);
@@ -1121,6 +1179,7 @@ UNITTEST(ZipWrite)
     // EOF during file contents write.
     zp = zip_open_mem_write(buffer, 48, 0);
     ASSERT(zp, "");
+    zip_set_zip64_enabled(zp, false);
     result = zip_write_open_file_stream(zp, "filename.ext", ZIP_M_NONE);
     ASSERTEQ(result, ZIP_SUCCESS, "Failed to open write stream.");
     result = zwrite("abcdefghij", 10, zp);
@@ -1158,24 +1217,89 @@ UNITTEST(ZipWrite)
     ASSERTEQ(result, ZIP_SUCCESS, "Failed to write dummy file.");
 
     // This is the bad thing you shouldn't do!
-    result = zip_close(zp, &ext_buffer_size);
+    result = zip_close(zp, reinterpret_cast<uint64_t *>(&ext_buffer_size));
     ASSERTEQ(result, ZIP_SUCCESS, "Failed write central directory.");
 
     // Final size = local header (30) + data (32) + central header (46) + eocd (22).
-    ASSERTEQ(ext_buffer_size, 130, "Incorrect final size.");
-
-    // :)
-    static const char eocd[22] =
-    {
-      'P', 'K', 5, 6,
-      0, 0, 0, 0,
-      1, 0, 1, 0,
-      46, 0, 0, 0,
-      62, 0, 0, 0,
-      0, 0
-    };
-    ASSERTMEM(ext_buffer + 108, eocd, 22, "EOCD data incorrect.");
+    // If data descriptors are enabled, it will be 142 instead (+12).
+    ASSERT(ext_buffer_size == 130 || ext_buffer_size == 142,
+     "Incorrect final size: %zu", ext_buffer_size);
   }
 
   free(ext_buffer);
+}
+
+UNITTEST(Zip64)
+{
+  // Special case test files for Zip64.
+  struct zip_archive *zp;
+  enum zip_error result;
+  size_t sz;
+
+  SECTION(Zip64FileCount)
+  {
+    // This archive contains an MZX 2.92f format world with over 65535 files,
+    // which requires an EOCD64 record and Zip64 support. The internal archive
+    // is about 8.5 MB in size.
+    zp = zip_test_open("zip64_file_count.zip");
+    ASSERT(zp, "");
+
+    result = zip_get_next_uncompressed_size(zp, &sz);
+    ASSERTEQ(result, ZIP_SUCCESS, "");
+
+    ScopedPtr<uint8_t[]> buffer{ new uint8_t[sz] };
+    ASSERT(buffer.get(), "");
+
+    result = zip_read_file(zp, buffer.get(), sz, &sz);
+    ASSERTEQ(result, ZIP_SUCCESS, "");
+
+    zip_close(zp, NULL);
+
+    // Open and verify inner archive.
+    zp = zip_open_mem_read(buffer.get(), sz);
+    ASSERT(zp, "");
+    for(size_t i = 0; i < zp->num_files; i++)
+    {
+      result = zip_read_open_file_stream(zp, NULL);
+      ASSERTEQ(result, ZIP_SUCCESS, "");
+      // Close file to perform a CRC check.
+      result = zip_read_close_stream(zp);
+      ASSERTEQ(result, ZIP_SUCCESS, "");
+    }
+    zip_close(zp, NULL);
+  }
+
+  SECTION(Zip64Content)
+  {
+    // This double zipped archive contains an MZX counters file with a string
+    // file over 4GB. Extract the outer archive to RAM, then stream the inner
+    // archive to verify the uncompressed size works. For practical reasons
+    // the counters file archive can't really be tested against zip.c since
+    // vio.c can't transparently stream large files out of another archive.
+    // The inner archive is about 5 MB in size.
+    zp = zip_test_open("zip64_file_size.zip");
+    ASSERT(zp, "");
+
+    result = zip_get_next_uncompressed_size(zp, &sz);
+    ASSERTEQ(result, ZIP_SUCCESS, "");
+
+    ScopedPtr<uint8_t[]> buffer{ new uint8_t[sz] };
+    ASSERT(buffer.get(), "");
+
+    result = zip_read_file(zp, buffer.get(), sz, &sz);
+    ASSERTEQ(result, ZIP_SUCCESS, "");
+
+    zip_close(zp, NULL);
+
+    zp = zip_open_mem_read(buffer.get(), sz);
+    ASSERT(zp, "");
+
+    // Verifying the CRC of the internal file is too slow, just check the header.
+    ASSERTEQ(zp->num_files, 1, "");
+    ASSERTEQ(zp->files[0]->uncompressed_size, 4299174197ull, "");
+    ASSERTEQ(zp->files[0]->compressed_size, 5062173, "");
+    ASSERTEQ(zp->files[0]->crc32, 0x3cf11c4f, "");
+
+    zip_close(zp, NULL);
+  }
 }

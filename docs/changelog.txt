@@ -6,6 +6,10 @@ USERS
 + Added an experimental Dreamcast port (asie, Lachesis).
 + Added an experimental MS-DOS 32-bit port based on DJGPP
   (Mr_Alert, asie, Lachesis).
++ Added an "About MegaZeux" dialog, accessible from the main
+  menu. This menu contains extended version information, and
+  displays license information for MegaZeux and the 3rd party
+  software it uses.
 + Added the "glslscale" renderer. This is the same as the GLSL
   renderer, but uses software rendering with scaling shaders
   instead of hardware rendering. This is faster on low end PCs
@@ -162,6 +166,10 @@ USERS
   and >>> will return 0 if the left operand is positive or -1 if
   the left operand is negative. The old behavior of the bitshift
   operators for these shift values was architecture dependent.
++ The date and time for the Robotic date and time counters is
+  now sampled once per command maximum. When multiple date/time
+  counters are read in the same command, they are guaranteed to
+  represent the same time.
 + libxmp playback improvements for GDM, AMF, and OctaMED modules
   as well as general stability improvements.
 + ccv and png2smzx now both support the following image formats:
@@ -171,6 +179,11 @@ USERS
   loading PNGs with this configuration.
 + ccv and png2smzx now both support streaming image data from
   stdin using the input filename "-".
++ Added y4m2smzx, a video converter frontend for the same image
+  converter that png2smzx uses. This is a rewrite of Mr_Alert's
+  original frontend from 2010. This uses a custom y4m loader
+  rather than MJPEG Tools for now, so it may be buggy. Usage:
+  ffmpeg -i input -f yuv4mpegpipe pipe:1 | y4m2smzx - out.mzv
 + Fixed bugs caused by missing validation in the Import SFX
   feature in the editor.
 + The Robotic message box commands now properly display char 10.
@@ -184,6 +197,18 @@ USERS
 + Fixed PrintScreen/SysRq and Menu/"Right Click" keycodes.
 + Unsupported keys no longer return a KEY_PRESSED value of 1
   for SDL 2 builds.
++ Fixed warning messages caused by SDL controller CRCs.
++ Fixed hangs that could be caused by malformed counters files.
++ Fixed world/save/counters file corruption in rare edge cases
+  where the aforementioned files could break the zip format's
+  internal field bounds.
++ Fixed loading of world/save/counters files over 4 GB.
++ Added disable_screensaver configuration option. MegaZeux now
+  leaves the screensaver enabled by default (fixes regression
+  caused by SDL 2.0.2+).
++ editor_show_thing_toggles is now enabled by default.
+- board_editor_hide_help and robot_editor_hide_help are no
+  longer enabled by default for accessibility.
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
@@ -212,9 +237,17 @@ DEVELOPERS
   maintainable template-based mixers.
 + Fixed the DSO -Wstrict-aliasing warnings in Socket.cpp and the
   OpenGL renderers for GCC versions using -Wstrict-aliasing=2.
-+ Updated libxmp to 4.5.0.
++ Updated libxmp to 4.6.0+ceb2d025.
 + Relicensed ccv from GPL 3 to GPL 2+ to match the rest of MZX.
   (Lancer-X)
++ If available, GetSystemTimePreciseAsFileTime and clock_gettime
+  are now used to calculate the system clock time.
++ If available, SDL_GetTicks64 is now used by get_ticks().
++ Minor performance improvements for run_robot, is_string, and
+  find_function_counter.
++ _FILE_OFFSET_BITS=64 is now used for 64-bit fseeko, ftello,
+  readdir, and stat/fstat support for 32-bit Linux builds.
++ Applied various Opal fixes from OpenMPT.
 
 
 November 22nd, 2020 - MZX 2.92f

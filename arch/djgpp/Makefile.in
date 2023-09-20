@@ -12,6 +12,8 @@ STRIP = ${DJGPPBASE}-strip
 
 BINEXT = .exe
 
+EXTRA_LICENSES += ${LICENSE_DJGPP} ${LICENSE_LGPL2}
+
 # 387 emulation for FPU not have
 EXTRA_LIBS = -lemu
 

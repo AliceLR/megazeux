@@ -40,12 +40,19 @@ __M_BEGIN_DECLS
 #include <windows.h>
 #include <wchar.h>
 
+#ifndef _WIN32_WINNT_WIN2K
+#define _WIN32_WINNT_WIN2K 0x500
+#endif
+#ifndef _WIN32_WINNT_WINXP
+#define _WIN32_WINNT_WINXP 0x501
+#endif
+
 /**
  * The wide char conversion functions were added in Windows 2000 and generally
  * the wide versions of the stdio functions just don't appear to work in older
  * OSes (tested Win98 with KernelEx using tdm-gcc 5.1.0).
  */
-#if WINVER >= 0x500 /* _WIN32_WINNT_WIN2K */
+#if WINVER >= _WIN32_WINNT_WIN2K
 #define WIDE_PATHS 1
 #endif
 
@@ -265,16 +272,13 @@ static inline boolean platform_opendir(struct dir_handle *dh, const char *path)
   return dh->dir != NULL;
 }
 
-static inline void platform_closedir(struct dir_handle dh)
+static inline int platform_closedir(struct dir_handle dh)
 {
 #ifdef WIDE_PATHS
   if(dh.wdir)
-  {
-    _wclosedir(dh.wdir);
-    return;
-  }
+    return _wclosedir(dh.wdir);
 #endif
-  closedir(dh.dir);
+  return closedir(dh.dir);
 }
 
 static inline boolean platform_readdir(struct dir_handle dh, char *buffer,
@@ -334,6 +338,49 @@ static inline boolean platform_rewinddir(struct dir_handle dh)
   return true;
 }
 
+static inline int platform_fseek(FILE *fp, int64_t offset, int whence)
+{
+#if WINVER >= _WIN32_WINNT_WINXP
+  return _fseeki64(fp, offset, whence);
+#else
+  fpos_t pos;
+  int fd = fileno(fp);
+  if(fd < 0)
+    return -1;
+
+  // _lseeki64 works at a lower level than stdio functions.
+  // This forces MSVCRT to synchronize any buffered data.
+  if(fgetpos(fp, &pos) < 0 || fsetpos(fp, &pos) < 0)
+    return -1;
+
+  return _lseeki64(fd, offset, whence) >= 0 ? 0 : -1;
+#endif
+}
+
+static inline int64_t platform_ftell(FILE *fp)
+{
+#if WINVER >= _WIN32_WINNT_WINXP
+  return _ftelli64(fp);
+#else
+  fpos_t pos;
+  int fd = _fileno(fp);
+  if(fd < 0)
+    return -1;
+
+  // _telli64 works at a lower level than stdio functions.
+  // This forces MSVCRT to synchronize any buffered data.
+  if(fgetpos(fp, &pos) < 0 || fsetpos(fp, &pos) < 0)
+    return -1;
+
+  return _telli64(fd);
+#endif
+}
+
+static inline int64_t platform_filelength(FILE *fp)
+{
+  int fd = fileno(fp);
+  return fd >= 0 ? _filelengthi64(fd) : -1;
+}
 
 __M_END_DECLS
 

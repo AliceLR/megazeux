@@ -11,9 +11,9 @@
 #define WSIZE 65536UL
 
 // Older versions of zlib may not expose zcalloc and zcfree, causing linking
-// to fail. Replace them with wrappers for MZX check_calloc and stdlib free...
+// to fail. Replace them with wrappers for calloc and stdlib free...
 static inline voidpf _zcalloc(voidpf opaque, unsigned nmemb, unsigned size)
-{ return ccalloc(nmemb, size); }
+{ return (voidpf)calloc(nmemb, size); }
 static inline void _zcfree(voidpf opaque, voidpf ptr) { free(ptr); }
 
 /*
@@ -22,12 +22,8 @@ static inline void _zcfree(voidpf opaque, voidpf ptr) { free(ptr); }
 
    window is a user-supplied window and output buffer that is 64K bytes.
  */
-int ZEXPORT inflateBack9Init_(strm, window, version, stream_size)
-z_stream FAR *strm;
-unsigned char FAR *window;
-const char *version;
-int stream_size;
-{
+int ZEXPORT inflateBack9Init_(z_stream FAR *strm, unsigned char FAR *window,
+                              const char *version, int stream_size) {
     struct inflate_state FAR *state;
 
     if (version == Z_NULL || version[0] != ZLIB_VERSION[0] ||
@@ -57,8 +53,7 @@ int stream_size;
 #ifdef MAKEFIXED
 #include <stdio.h>
 
-void makefixed9(void)
-{
+void makefixed9(void) {
     unsigned sym, bits, low, size;
     code *next, *lenfix, *distfix;
     struct inflate_state state;
@@ -220,13 +215,8 @@ void makefixed9(void)
    inflateBack() can also return Z_STREAM_ERROR if the input parameters
    are not correct, i.e. strm is Z_NULL or the state was not initialized.
  */
-int ZEXPORT inflateBack9(strm, in, in_desc, out, out_desc)
-z_stream FAR *strm;
-in_func in;
-void FAR *in_desc;
-out_func out;
-void FAR *out_desc;
-{
+int ZEXPORT inflateBack9(z_stream FAR *strm, in_func in, void FAR *in_desc,
+                         out_func out, void FAR *out_desc) {
     struct inflate_state FAR *state;
     z_const unsigned char FAR *next;    /* next input */
     unsigned char FAR *put;     /* next output */
@@ -610,9 +600,7 @@ void FAR *out_desc;
     return ret;
 }
 
-int ZEXPORT inflateBack9End(strm)
-z_stream FAR *strm;
-{
+int ZEXPORT inflateBack9End(z_stream FAR *strm) {
     if (strm == Z_NULL || strm->state == Z_NULL || strm->zfree == (free_func)0)
         return Z_STREAM_ERROR;
     ZFREE(strm, strm->state);

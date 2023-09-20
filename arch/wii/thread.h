@@ -24,12 +24,14 @@
 
 __M_BEGIN_DECLS
 
+#include <limits.h>
 #include <time.h>
 
 #define BOOL _BOOL
 #include <gctypes.h>
 #include <ogc/mutex.h>
 #include <ogc/cond.h>
+#include <ogc/semaphore.h>
 #include <ogc/lwp.h>
 #include <ogc/lwp_watchdog.h>
 #undef BOOL
@@ -39,19 +41,23 @@ __M_BEGIN_DECLS
 
 typedef cond_t platform_cond;
 typedef mutex_t platform_mutex;
+typedef sem_t platform_sem;
 typedef lwp_t platform_thread;
 typedef lwp_t platform_thread_id;
 typedef THREAD_RES (*platform_thread_fn)(void *);
 
-static inline void platform_mutex_init(platform_mutex *mutex)
+static inline boolean platform_mutex_init(platform_mutex *mutex)
 {
-  // FIXME: Okay to ignore retval?
-  LWP_MutexInit(mutex, false);
+  if(LWP_MutexInit(mutex, false))
+    return false;
+  return true;
 }
 
-static inline void platform_mutex_destroy(platform_mutex *mutex)
+static inline boolean platform_mutex_destroy(platform_mutex *mutex)
 {
-  LWP_MutexDestroy(*mutex);
+  if(LWP_MutexDestroy(*mutex))
+    return false;
+  return true;
 }
 
 static inline boolean platform_mutex_lock(platform_mutex *mutex)
@@ -68,14 +74,18 @@ static inline boolean platform_mutex_unlock(platform_mutex *mutex)
   return true;
 }
 
-static inline void platform_cond_init(platform_cond *cond)
+static inline boolean platform_cond_init(platform_cond *cond)
 {
-  LWP_CondInit(cond);
+  if(LWP_CondInit(cond))
+    return false;
+  return true;
 }
 
-static inline void platform_cond_destroy(platform_cond *cond)
+static inline boolean platform_cond_destroy(platform_cond *cond)
 {
-  LWP_CondDestroy(*cond);
+  if(LWP_CondDestroy(*cond))
+    return false;
+  return true;
 }
 
 static inline boolean platform_cond_wait(platform_cond *cond,
@@ -127,15 +137,47 @@ static inline boolean platform_cond_broadcast(platform_cond *cond)
   return true;
 }
 
-static inline int platform_thread_create(platform_thread *thread,
- platform_thread_fn start_function, void *data)
+static inline boolean platform_sem_init(platform_sem *sem, unsigned init_value)
 {
-  return LWP_CreateThread(thread, start_function, data, NULL, 0, 64);
+  if(LWP_SemInit(sem, init_value, INT_MAX))
+    return false;
+  return true;
 }
 
-static inline void platform_thread_join(platform_thread *thread)
+static inline boolean platform_sem_destroy(platform_sem *sem)
 {
-  LWP_JoinThread(*thread, NULL);
+  if(LWP_SemDestroy(*sem))
+    return false;
+  return true;
+}
+
+static inline boolean platform_sem_wait(platform_sem *sem)
+{
+  if(LWP_SemWait(*sem))
+    return false;
+  return true;
+}
+
+static inline boolean platform_sem_post(platform_sem *sem)
+{
+  if(LWP_SemPost(*sem))
+    return false;
+  return true;
+}
+
+static inline boolean platform_thread_create(platform_thread *thread,
+ platform_thread_fn start_function, void *data)
+{
+  if(LWP_CreateThread(thread, start_function, data, NULL, 0, 64))
+    return false;
+  return true;
+}
+
+static inline boolean platform_thread_join(platform_thread *thread)
+{
+  if(LWP_JoinThread(*thread, NULL))
+    return false;
+  return true;
 }
 
 static inline platform_thread_id platform_get_thread_id(void)

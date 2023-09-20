@@ -30,6 +30,8 @@
 
 __M_BEGIN_DECLS
 
+#define PLATFORM_NO_THREADING
+
 typedef int platform_mutex;
 typedef int platform_thread_id;
 

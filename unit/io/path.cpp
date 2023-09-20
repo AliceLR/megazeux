@@ -47,14 +47,14 @@ UNITTEST(Init)
   vfclose(vf);
 }
 
+struct path_tokenize_result
+{
+  const char *input;
+  const char *expected[8];
+};
+
 UNITTEST(path_tokenize)
 {
-  struct path_tokenize_result
-  {
-    const char *input;
-    const char *expected[8];
-  };
-
   static const path_tokenize_result data[] =
   {
     { nullptr,        { nullptr }},
@@ -93,6 +93,81 @@ UNITTEST(path_tokenize)
       pos++;
     }
     ASSERTEQ(current, d.expected[pos], "%s : %d", d.input, pos);
+  }
+}
+
+UNITTEST(path_reverse_tokenize)
+{
+  static constexpr path_tokenize_result data[] =
+  {
+    { nullptr,          { nullptr }},
+    { "",               { "" }},
+    { "abcde",          { "abcde" }},
+    { "path1/path2",    { "path2", "path1" }},
+    { "p1\\p2\\p3",     { "p3", "p2", "p1" }},
+    { "m1/m2\\m3/m4",   { "m4", "m3", "m2", "m1" }},
+    { "clean///first",  { "first", "", "", "clean" }},
+    { "../duhh/./",     { "", ".", "duhh", ".." }},
+    { "/",              { "", "" }},
+    { "/dir",           { "dir", "" }},
+    { "/dir1/dir2",     { "dir2", "dir1", "" }},
+    { "C:\\",           { "", "C:" }},
+    { "C:\\WINDOWS",    { "WINDOWS", "C:" }},
+    { "C:\\a\\b",       { "b", "a", "C:" }},
+    { "sdcard:/butt",   { "butt", "sdcard:" }},
+    {
+      u8"/home/\u00C8śŚ/megazeux/DE/saved.sav",
+      { "saved.sav", "DE", "megazeux", u8"\u00C8śŚ", "home", "" }
+    },
+  };
+
+  size_t base_length;
+  char *base;
+  char *token;
+
+  token = path_reverse_tokenize(nullptr, nullptr);
+  ASSERTEQ(token, nullptr, "");
+  token = path_reverse_tokenize(nullptr, &base_length);
+  ASSERTEQ(token, nullptr, "");
+
+  for(auto &d : data)
+  {
+    char buffer[256];
+    int pos = 0;
+
+    const auto &init = [&]()
+    {
+      if(d.input)
+      {
+        base_length = snprintf(buffer, sizeof(buffer), "%s", d.input);
+        base = buffer;
+        ASSERT(base_length < sizeof(buffer), "");
+      }
+      else
+      {
+        base_length = 0xbaad; // Some junk, should be ignored.
+        base = nullptr;
+      }
+      pos = 0;
+    };
+
+    init();
+    while((token = path_reverse_tokenize(&base, &base_length)))
+    {
+      ASSERTCMP(token, d.expected[pos], "%s : %d", d.input, pos);
+      pos++;
+    }
+    ASSERTEQ(token, d.expected[pos], "%s : %d", d.input, pos);
+
+    // Should work identically without base_length, it's just slower.
+    init();
+    while((token = path_reverse_tokenize(&base, nullptr)))
+    {
+      ASSERT(d.expected[pos], "%s : %d", d.input, pos);
+      ASSERTCMP(token, d.expected[pos], "%s : %d", d.input, pos);
+      pos++;
+    }
+    ASSERTEQ(token, d.expected[pos], "%s : %d", d.input, pos);
   }
 }
 
@@ -617,6 +692,42 @@ UNITTEST(path_split_functions)
       16,
       true
     },
+    {
+      "/",
+      "/",
+      "\\",
+      "",
+      1,
+      0,
+      true
+    },
+    {
+      "C:\\",
+      "C:/",
+      "C:\\",
+      "",
+      3,
+      0,
+      true
+    },
+    {
+      "/sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
+      "/",
+      "\\",
+      "sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
+      1,
+      42,
+      true
+    },
+    {
+      "C:\\sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
+      "C:/",
+      "C:\\",
+      "sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
+      3,
+      42,
+      true
+    },
     // Internally all of these functions may stat the provided directory to
     // determine how much of it is/isn't a path. These paths all assume that
     // a directory stat succeeds for the input path.
@@ -719,6 +830,33 @@ UNITTEST(path_split_functions)
         if(d.filename)
           ASSERTCMP(file_buffer, d.filename, "%s", d.path);
       }
+    }
+  }
+
+  SECTION(path_get_parent)
+  {
+    for(auto &d : data)
+    {
+      // Special: the tests that expect stat() are different.
+      if(!strcmp(d.path, PATH_DIR_EXISTS))
+      {
+        result = path_get_parent(dir_buffer, MAX_PATH, PATH_DIR_EXISTS);
+        ASSERTEQ(result, 0, "%s", PATH_DIR_EXISTS);
+        continue;
+      }
+      if(!strcmp(d.path, PATH_DIR_EXISTS_2))
+      {
+        result = path_get_parent(dir_buffer, MAX_PATH, PATH_DIR_EXISTS_2);
+        ASSERTEQ(result, strlen(PATH_DIR_EXISTS), "%s", PATH_DIR_EXISTS_2);
+        ASSERTCMP(dir_buffer, PATH_DIR_EXISTS, "%s", PATH_DIR_EXISTS_2);
+        continue;
+      }
+
+      // The rest behave exactly like path_get_directory.
+      result = path_get_parent(dir_buffer, MAX_PATH, d.path);
+      ASSERTEQ(result, d.dir_return_value, "%s", d.path);
+      if(result >= 0 && d.SPLIT_DIRECTORY)
+        ASSERTCMP(dir_buffer, d.SPLIT_DIRECTORY, "%s", d.path);
     }
   }
 }
@@ -1139,6 +1277,20 @@ UNITTEST(path_navigate)
       "/skdlfjlskdjfklsd/i/am/someone/on/this",
       "\\skdlfjlskdjfklsd\\i\\am\\someone\\on\\this",
       38
+    },
+    {
+      "/.yeah/.actually/.dotfiles/.should/.work",
+      "../../.work",
+      "/.yeah/.actually/.dotfiles/.work",
+      "\\.yeah\\.actually\\.dotfiles\\.work",
+      32
+    },
+    {
+      "look/more/nonsense",
+      ".../lol",
+      "look/more/nonsense/.../lol",
+      "look\\more\\nonsense\\...\\lol",
+      26
     },
   };
   static const path_target_output with_check[] =

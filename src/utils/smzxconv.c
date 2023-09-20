@@ -49,6 +49,9 @@ struct _smzx_converter {
 	glyph_dist *cset;
 };
 
+static int gdist_table[256][256];
+static int grdist_table[256][256];
+
 smzx_converter *smzx_convert_init (int w, int h, int chroff, int chrskip,
 	int chrlen, int clroff, int clrlen) {
 	smzx_converter *c;
@@ -100,49 +103,42 @@ static int ccmp (const void *av, const void *bv) {
 	return 0;
 }
 
-static int gdist (const mzx_glyph a, const mzx_glyph b) {
-	int i, x, y, res;
+static void init_gdist_tables(void)
+{
 	static int init = 0;
-	static int dist[256][256];
 	const unsigned char swap[4] = {0, 2, 1, 3};
+	int x, y;
+
 	if (!init) {
 		for (y = 0; y < 4; y++)
 			for (x = 0; x < 4; x++)
-				dist[x][y] = (swap[x] - swap[y]) * (swap[x] - swap[y]);
+				gdist_table[x][y] = (swap[x] - swap[y]) * (swap[x] - swap[y]);
 		for (y = 0; y < 256; y++) {
 			for (x = 0; x < 256; x++) {
-				dist[x][y] = dist[x&3][y&3] + dist[(x>>2)&3][(y>>2)&3]
-					+ dist[(x>>4)&3][(y>>4)&3] + dist[x>>6][y>>6];
+				gdist_table[x][y] = gdist_table[x&3][y&3] + gdist_table[(x>>2)&3][(y>>2)&3]
+					+ gdist_table[(x>>4)&3][(y>>4)&3] + gdist_table[x>>6][y>>6];
+				grdist_table[x][y ^ 0xff] = gdist_table[x][y];
 			}
 		}
 		init = 1;
 	}
+}
+
+static int gdist (const mzx_glyph a, const mzx_glyph b) {
+	int i, res;
 	res = 0;
+	init_gdist_tables();
 	for (i = 0; i < 14; i++)
-		res += dist[a[i]][b[i]];
+		res += gdist_table[a[i]][b[i]];
 	return res;
 }
 
 static int grdist (const mzx_glyph a, const mzx_glyph b) {
-	int i, x, y, res;
-	static int init = 0;
-	static int dist[256][256];
-	const unsigned char swap[4] = {0, 2, 1, 3};
-	if (!init) {
-		for (y = 0; y < 4; y++)
-			for (x = 0; x < 4; x++)
-				dist[x][y] = (swap[x] - swap[y]) * (swap[x] - swap[y]);
-		for (y = 0; y < 256; y++) {
-			for (x = 0; x < 256; x++) {
-				dist[x][y] = dist[x&3][y&3] + dist[(x>>2)&3][(y>>2)&3]
-					+ dist[(x>>4)&3][(y>>4)&3] + dist[x>>6][y>>6];
-			}
-		}
-		init = 1;
-	}
+	int i, res;
 	res = 0;
+	init_gdist_tables();
 	for (i = 0; i < 14; i++)
-		res += dist[a[i]][b[i]^0xFF];
+		res += grdist_table[a[i]][b[i]];
 	return res;
 }
 

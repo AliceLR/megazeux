@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "about.h"
 #include "configure.h"
 #include "const.h"
 #include "core.h"
@@ -75,6 +76,7 @@ enum main_menu_opts
   M_NEW_WORLD,
   M_EDIT_WORLD,
   M_QUICKLOAD,
+  M_ABOUT,
   M_MAX_OPTS
 };
 
@@ -90,7 +92,8 @@ const char *main_menu_labels[] =
   [M_UPDATER]       = "F7/U - Updater",
   [M_NEW_WORLD]     = "F8/N - New world",
   [M_EDIT_WORLD]    = "F9/E - Edit world",
-  [M_QUICKLOAD]     = "F10  - Quickload"
+  [M_QUICKLOAD]     = "F10  - Quickload",
+  [M_ABOUT]         = "-= About MegaZeux =-",
 };
 
 // Keys to pass to the parent key handler, or 0 if none.
@@ -107,6 +110,7 @@ const enum keycode main_menu_keys[] =
   [M_NEW_WORLD]     = IKEY_F8,
   [M_EDIT_WORLD]    = IKEY_F9,
   [M_QUICKLOAD]     = IKEY_F10,
+  [M_ABOUT]         = 0,
 };
 
 static const char game_menu_title[] = "Game Menu";
@@ -423,6 +427,9 @@ static void construct_main_menu(struct world *mzx_world, struct menu_opt *menu,
     menu_length++;
   }
 
+  set_main_menu_opt(menu++, M_ABOUT);
+  menu_length++;
+
   *_menu_length = menu_length;
 }
 
@@ -532,7 +539,7 @@ static void draw_menu_box(int x, int y, int width, int height,
     int title_width = strlen(title);
     int title_x = (width - title_width)/2 + x;
 
-    write_string(title, title_x, y, MENU_COL_TITLE, false);
+    write_string(title, title_x, y, MENU_COL_TITLE, WR_NONE);
     draw_char(' ', MENU_COL_TITLE, title_x - 1, y);
     draw_char(' ', MENU_COL_TITLE, title_x + title_width, y);
   }
@@ -831,6 +838,13 @@ static boolean main_menu_activate(struct game_menu_context *game_menu, int *key)
       return false;
     }
 
+    case M_ABOUT:
+    {
+      // Special: display "About MegaZeux".
+      about_megazeux(&game_menu->ctx);
+      return true;
+    }
+
     case M_EXIT:
     {
       // Special: if the exit menu isn't available, set the exit status.
@@ -1099,8 +1113,6 @@ static boolean menu_click(context *ctx, int *key, int button, int x, int y)
 {
   struct game_menu_context *game_menu = (struct game_menu_context *)ctx;
 
-  // FIXME select option
-  // FIXME activate option if same option is already selected
   if((x >= game_menu->x + 1) && (x < game_menu->x + game_menu->width - 1) &&
    (y >= game_menu->y + 1) && (y < game_menu->y + game_menu->height - 1))
   {

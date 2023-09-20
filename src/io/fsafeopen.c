@@ -30,7 +30,20 @@
 
 #include "../util.h"
 
-#ifndef __WIN32__
+#if defined(CONFIG_3DS)
+// Enable hacks to reduce the number of filesystem operations on platforms
+// with extremely slow filesystem access.
+#define SLOW_FILESYSTEM_HACKS
+#endif
+
+#if defined(SLOW_FILESYSTEM_HACKS) || defined(_WIN32) || defined(CONFIG_DJGPP)
+// Skip the extra all caps/lower case checks, either because the current
+// platform will always be case-insensitive, or because they are slower than
+// just scanning the directory.
+#define NO_EXTRA_CASE_CHECKS
+#endif
+
+#ifndef _WIN32
 #define ENABLE_DOS_COMPAT_TRANSLATIONS
 #endif
 
@@ -306,7 +319,7 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
     newpath[dirlen + 2 - 1] = 0;
   }
 
-  wd = vdir_open(newpath);
+  wd = vdir_open_ext(newpath, VDIR_FAST);
   if(wd)
   {
     const char *string_cmp = string;
@@ -437,6 +450,11 @@ static int match(char *path, size_t buffer_len)
           if(vstat(path, &inode) == 0)
             break;
 
+#ifdef NO_EXTRA_CASE_CHECKS
+          // Skip the "normal" cases.
+          i = 4;
+#endif
+
           // try normal cases, then try brute force
           switch(i)
           {
@@ -474,6 +492,11 @@ static int match(char *path, size_t buffer_len)
         // check directory
         if(vstat(path, &inode) == 0)
           break;
+
+#ifdef NO_EXTRA_CASE_CHECKS
+        // Skip the "normal" cases.
+        i = 2;
+#endif
 
         // try normal cases, then try brute force
         switch(i)

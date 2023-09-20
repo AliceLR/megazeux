@@ -4,4 +4,4 @@
 
 ./config.sh --platform psvita --prefix $VITASDK \
             --disable-utils --enable-release --enable-stdio-redirect \
-            --enable-meter --disable-gl -- "$@"
+            --enable-meter --disable-gl "$@"

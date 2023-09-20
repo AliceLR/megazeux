@@ -45,7 +45,7 @@ struct deflate_stream_data
 
 static inline struct zip_stream_data *deflate_create(void)
 {
-  return ccalloc(1, sizeof(struct deflate_stream_data));
+  return (struct zip_stream_data *)calloc(1, sizeof(struct deflate_stream_data));
 }
 
 static inline void deflate_destroy(struct zip_stream_data *zs)
@@ -257,6 +257,21 @@ static inline enum zip_error deflate_block(struct zip_stream_data *zs,
       return ZIP_INPUT_EMPTY;
   }
   return ZIP_COMPRESS_FAILED;
+}
+
+static inline enum zip_error deflate_bound(struct zip_stream_data *zs,
+ size_t src_len, size_t *bound_len)
+{
+  struct deflate_stream_data *ds = (struct deflate_stream_data *)zs;
+  enum zip_error result = deflate_init(zs);
+
+  if(!bound_len)
+    return ZIP_NULL;
+  if(result)
+    return result;
+
+  *bound_len = deflateBound(&(ds->z), src_len);
+  return ZIP_SUCCESS;
 }
 
 __M_END_DECLS

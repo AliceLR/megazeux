@@ -38,6 +38,7 @@ build := ${build_root}
 
 EXTRA_LICENSES ?=
 LICENSE_CC0    ?= arch/LICENSE.CC0
+LICENSE_DJGPP  ?= arch/LICENSE.DJGPP
 LICENSE_LGPL2  ?= arch/LICENSE.LGPL2
 LICENSE_MPL2   ?= arch/LICENSE.MPL2
 LICENSE_NEWLIB ?= arch/LICENSE.Newlib
@@ -157,8 +158,7 @@ OPENMPT_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lopenmpt
 # zlib
 #
 
-ZLIB_CFLAGS  ?= -I${PREFIX}/include \
-                -D_FILE_OFFSET_BITS=32 -U_LARGEFILE64_SOURCE
+ZLIB_CFLAGS  ?= -I${PREFIX}/include
 ZLIB_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lz
 
 #
@@ -365,14 +365,20 @@ endif # PLATFORM=mingw
 
 #
 # The stack protector is optional and is generally only built for Linux/BSD and
-# Mac OS X. Windows and most embedded platforms currently disable this.
+# Mac OS X. It also works on Windows. GCC's -fstack-protector-strong is
+# preferred when available due to better performance.
 #
 ifeq (${BUILD_STACK_PROTECTOR},1)
+ifeq (${HAS_F_STACK_PROTECTOR_STRONG},1)
+CFLAGS   += -fstack-protector-strong
+CXXFLAGS += -fstack-protector-strong
+else
 ifeq (${HAS_F_STACK_PROTECTOR},1)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
 else
 $(warning stack protector not supported, ignoring.)
+endif
 endif
 endif
 
@@ -538,13 +544,14 @@ ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
-	${CP} ${ccv} ${png2smzx} ${build}/utils
+	${CP} ${ccv} ${png2smzx} ${y4m2smzx} ${build}/utils
 	@if [ -f "${checkres}.debug" ]; then cp ${checkres}.debug ${build}/utils; fi
 	@if [ -f "${downver}.debug" ]; then cp ${downver}.debug ${build}/utils; fi
 	@if [ -f "${hlp2txt}.debug" ]; then cp ${hlp2txt}.debug ${build}/utils; fi
 	@if [ -f "${txt2hlp}.debug" ]; then cp ${txt2hlp}.debug ${build}/utils; fi
 	@if [ -f "${ccv}.debug" ]; then cp ${ccv}.debug ${build}/utils; fi
 	@if [ -f "${png2smzx}.debug" ]; then cp ${png2smzx}.debug ${build}/utils; fi
+	@if [ -f "${y4m2smzx}.debug" ]; then cp ${y4m2smzx}.debug ${build}/utils; fi
 endif
 
 ${build}/docs: ${build}
@@ -576,6 +583,10 @@ endif
 ifeq (${BUILD_GAMECONTROLLERDB},1)
 	${CP} assets/gamecontrollerdb.txt \
 	 ${build}/assets
+endif
+ifeq (${BUILD_UTILS},1)
+	${CP} contrib/mzvplay/mzvplay.txt \
+	 ${build}/utils
 endif
 
 endif # !SUPPRESS_BUILD_TARGETS

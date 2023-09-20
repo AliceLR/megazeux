@@ -35,7 +35,7 @@ install := \
 	${dest_base}/Makefile.megazeux \
 	${dest_base}/Makefile.megazeux-gen \
 	${dest_base}/mzx-gen.sh \
-	${dest_docs}/COPYING.LIB \
+	${dest_docs}/COPYING \
 	${dest_docs}/CREDITS \
 	${dest_docs}/Changelog \
 	${dest_include}/xmp.h \
@@ -47,6 +47,9 @@ install := \
 	${dest_src}/effects.h \
 	${dest_src}/extras.c \
 	${dest_src}/extras.h \
+	${dest_src}/far_extras.c \
+	${dest_src}/far_extras.h \
+	${dest_src}/filetype.c \
 	${dest_src}/filter.c \
 	${dest_src}/format.c \
 	${dest_src}/format.h \

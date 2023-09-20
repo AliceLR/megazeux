@@ -2794,7 +2794,12 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
       case FILE_ID_ROBOT:
       case FILE_ID_WORLD_SFX:
       {
-        zip_get_next_uncompressed_size(zp, &actual_size);
+        if(zip_get_next_uncompressed_size(zp, &actual_size) != ZIP_SUCCESS)
+        {
+          zip_skip_file(zp);
+          continue;
+        }
+
         if(allocated_size < actual_size)
         {
           allocated_size = actual_size;
@@ -3088,7 +3093,6 @@ static enum status parse_file(const char *file_name,
         }
         free(buffer);
       }
-
       else
       {
         zip_skip_file(zp);
