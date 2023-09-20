@@ -47,12 +47,14 @@ enum vfileflags
   VF_VIRTUAL            = (1<<9), // Virtual or cached file.
 
   /* Public flags. */
+  V_DONT_CACHE   = (1<<27), // do not add this file to the cache.
   V_FORCE_CACHE  = (1<<28), // ignore the auto cache settings, always cache.
   V_SMALL_BUFFER = (1<<29), // setvbuf <= 256 for real files in binary mode.
   V_LARGE_BUFFER = (1<<30), // setvbuf >= 8192 for real files in binary mode.
 
   VF_STORAGE_MASK       = (VF_FILE | VF_MEMORY),
-  VF_PUBLIC_MASK        = (V_FORCE_CACHE | V_SMALL_BUFFER | V_LARGE_BUFFER)
+  VF_PUBLIC_MASK        = (V_DONT_CACHE | V_FORCE_CACHE |
+                           V_SMALL_BUFFER | V_LARGE_BUFFER)
 };
 
 enum vdir_type
@@ -61,6 +63,14 @@ enum vdir_type
   DIR_TYPE_FILE,
   DIR_TYPE_DIR,
   NUM_DIR_TYPES
+};
+
+enum vdirflags
+{
+  VDIR_NO_SCAN          = (1<<0), // Don't scan the directory to get its length.
+                                  // This will break seek, tell, and length.
+  VDIR_FAST             = VDIR_NO_SCAN, // Enable all speed hacks.
+  VDIR_PUBLIC_MASK      = VDIR_NO_SCAN,
 };
 
 UTILS_LIBSPEC boolean vio_filesystem_init(size_t max_size, size_t max_file_size,
@@ -120,6 +130,7 @@ UTILS_LIBSPEC void vrewind(vfile *vf);
 UTILS_LIBSPEC int64_t vfilelength(vfile *vf, boolean rewind);
 
 UTILS_LIBSPEC vdir *vdir_open(const char *path);
+UTILS_LIBSPEC vdir *vdir_open_ext(const char *path, int flags);
 UTILS_LIBSPEC int vdir_close(vdir *dir);
 UTILS_LIBSPEC boolean vdir_read(vdir *dir, char *buffer, size_t len, enum vdir_type *type);
 UTILS_LIBSPEC boolean vdir_seek(vdir *dir, long position);

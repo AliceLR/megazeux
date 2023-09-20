@@ -28,6 +28,7 @@
 #include "../src/event.h"
 #include "../src/keysym.h"
 #include "../src/util.h"
+#include "../src/io/vio.h"
 
 #ifdef CONFIG_SDL
 #include <SDL_version.h>
@@ -144,13 +145,16 @@ static void load_arg(char *arg)
 
 static boolean write_config(const char *path, const char *config)
 {
-  FILE *fp = fopen_unsafe(path, "wb");
-  ASSERT(fp, "failed to open '%s'", path);
-  if(fp)
+  // This vastly improves the performance in builds that support it.
+  vio_virtual_file(path);
+
+  vfile *vf = vfopen_unsafe(path, "wb");
+  ASSERT(vf, "failed to open '%s'", path);
+  if(vf)
   {
-    int ret = fwrite(config, strlen(config), 1, fp);
+    size_t ret = vfwrite(config, strlen(config), 1, vf);
     ASSERT(ret == 1, "write error for '%s'", path);
-    ret = fclose(fp);
+    ret = vfclose(vf);
     return true;
   }
   return false;
@@ -192,10 +196,17 @@ void TEST_INT(const char *setting_name, T &setting, ssize_t min, ssize_t max)
 {
   constexpr T default_value = INVALID<T>();
   char arg[512];
+  int lower_bound = (min >= -SSIZE_MAX / 2) ? -16 : 0;
+  int upper_bound = (max < SSIZE_MAX / 2) ? 32 : 16;
 
-  for(int i = -16; i < 32; i++)
+  for(int i = lower_bound; i < upper_bound; i++)
   {
-    ssize_t tmp = (max - min) * i / 16 + min;
+    ssize_t tmp;
+    if(max >= SSIZE_MAX / 16)
+      tmp = (max - min) / 16 * i + min;
+    else
+      tmp = (max - min) * i / 16 + min;
+
     ssize_t expected = (tmp >= min && tmp <= max) ? tmp : static_cast<ssize_t>(default_value);
 
     if(tmp < (ssize_t)std::numeric_limits<T>::min() ||
@@ -316,6 +327,12 @@ void TEST_STRING(const char *setting_name, char (&setting)[S],
 UNITTEST(Settings)
 {
   struct config_info *conf = get_config();
+
+  vio_filesystem_init(0, 0, false);
+  const struct vfsclose
+  {
+    ~vfsclose() { vio_filesystem_exit(); }
+  } a;
 
   static const config_test_single boolean_data[] =
   {
@@ -616,6 +633,27 @@ UNITTEST(Settings)
   SECTION(num_buffered_events)
   {
     TEST_INT("num_buffered_events", conf->num_buffered_events, 1, 256);
+  }
+
+  // Virtual filesystem options.
+  SECTION(vfs_enable)
+  {
+    TEST_ENUM("vfs_enable", conf->vfs_enable, boolean_data);
+  }
+
+  SECTION(vfs_enable_auto_cache)
+  {
+    TEST_ENUM("vfs_enable_auto_cache", conf->vfs_enable_auto_cache, boolean_data);
+  }
+
+  SECTION(vfs_max_cache_size)
+  {
+    TEST_INT("vfs_max_cache_size", conf->vfs_max_cache_size, 0, SSIZE_MAX);
+  }
+
+  SECTION(vfs_max_cache_file_size)
+  {
+    TEST_INT("vfs_max_cache_file_size", conf->vfs_max_cache_file_size, 0, SSIZE_MAX);
   }
 
   // Game options.

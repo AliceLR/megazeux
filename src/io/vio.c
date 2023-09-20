@@ -561,8 +561,9 @@ vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
     // File is 100% virtual? Can exit now.
     if(ret == 0)
       return vf;
-    // TODO: optionally allow non-write cached to exit too, since
-    // stdio is just a rare fallback in that situation?
+    // Non-write and cached? Don't need a FILE handle for that either...
+    if(ret == -VFS_ERR_IS_CACHED && (~flags & VF_WRITE))
+      return vf;
   }
 
   // Open the vfile as a normal file.
@@ -598,7 +599,7 @@ vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
   vf->fp = fp;
   vf->flags |= VF_FILE;
 
-  if(vfs_base && !vf->inode)
+  if(vfs_base && !vf->inode && (~flags & V_DONT_CACHE))
   {
     if(vfs_enable_auto_cache || (flags & V_FORCE_CACHE))
     {
@@ -1045,10 +1046,8 @@ int vstat(const char *path, struct stat *buf)
 
     path = vio_normalize_virtual_path(vfs_base, buffer, MAX_PATH, path);
     // Pass through success only.
-    // TODO: may be beneficial to pass through cached as success eventually, but
-    // everything that cares about performance already uses dirent d_type.
     ret = vfs_stat(vfs_base, path, &tmp);
-    if(ret == 0)
+    if(ret == 0 || ret == -VFS_ERR_IS_CACHED)
     {
       memcpy(buf, &tmp, sizeof(struct stat));
       return 0;
@@ -1977,6 +1976,7 @@ struct vdir
   long position;
   long num_total;
   long num_real;
+  int flags;
   boolean has_real;
 #ifdef PLATFORM_NO_REWINDDIR
   // Path for dirent implementations with no working rewinddir.
@@ -1986,8 +1986,13 @@ struct vdir
 
 /**
  * Open a directory for reading.
+ *
+ * @param path        path to directory to open.
+ * @param skip_scan   if `true`, skip the inital directory read to count
+ *                    files. This breaks the read, seek, and tell functions.
+ * @return            `vdir` handle on success, otherwise NULL.
  */
-vdir *vdir_open(const char *path)
+vdir *vdir_open_ext(const char *path, int flags)
 {
   char buffer[MAX_PATH];
   boolean virt_okay = false;
@@ -2021,6 +2026,9 @@ vdir *vdir_open(const char *path)
 
   if(dir)
   {
+    flags &= VDIR_PUBLIC_MASK;
+    dir->flags = flags;
+
     // There may be virtual files in this directory, or this directory
     // may also be virtual. Both real and virtual files need to be listed.
     // TODO: overlaid files should replace the real file somehow? ugh
@@ -2034,22 +2042,34 @@ vdir *vdir_open(const char *path)
     {
       // Get total real files.
       dir->has_real = true;
-      while(platform_readdir(dir->dh, NULL, 0, NULL))
-        dir->num_real++;
+      if(~flags & VDIR_NO_SCAN)
+      {
+        while(platform_readdir(dir->dh, NULL, 0, NULL))
+          dir->num_real++;
+
+        dir->num_total += dir->num_real;
+        vdir_rewind(dir);
+      }
     }
     else
 
     if(!virt_okay)
       goto err;
 
-    dir->num_total += dir->num_real;
-    vdir_rewind(dir);
     return dir;
   }
 
 err:
   free(dir);
   return NULL;
+}
+
+/**
+ * Open a directory for reading.
+ */
+vdir *vdir_open(const char *path)
+{
+  return vdir_open_ext(path, false);
 }
 
 /**
@@ -2074,11 +2094,11 @@ boolean vdir_read(vdir *dir, char *buffer, size_t len, enum vdir_type *type)
 {
   int dirent_type = -1;
 
-  if(dir->position >= dir->num_total)
+  if(dir->position >= dir->num_total && (~dir->flags & VDIR_NO_SCAN))
     return false;
 
   /* Return a virtual file. */
-  if(dir->position >= dir->num_real)
+  if(dir->position >= dir->num_real && dir->position < dir->num_total)
   {
     size_t i = dir->position - dir->num_real;
     struct vfs_dir_file *f = dir->virt.files[i];
@@ -2099,6 +2119,9 @@ boolean vdir_read(vdir *dir, char *buffer, size_t len, enum vdir_type *type)
     dir->position++;
     return true;
   }
+
+  if(!dir->has_real)
+    return false;
 
   if(!platform_readdir(dir->dh, buffer, len, &dirent_type))
     return false;
@@ -2169,6 +2192,7 @@ boolean vdir_rewind(vdir *dir)
   {
     dir->num_total -= dir->num_real;
     dir->num_real = 0;
+    dir->flags &= ~VDIR_NO_SCAN;
     return false;
   }
   return true;
