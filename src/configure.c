@@ -244,6 +244,7 @@ static const struct config_info user_conf_default =
   "",                           // opengl default scaling shader
   "",                           // sdl_render_driver
   CURSOR_MODE_HINT,             // cursor_hint_mode
+  SCREENSAVER_ENABLE,           // disable_screensaver
   true,                         // allow screenshots
 
   // Audio options
@@ -385,6 +386,13 @@ static const struct config_enum system_mouse_values[] =
 {
   { "0", 0 },
   { "1", 1 }
+};
+
+static const struct config_enum screensaver_disable_values[] =
+{
+  { "0", SCREENSAVER_ENABLE },
+  { "1", SCREENSAVER_DISABLE },
+  //{ "ingame", SCREENSAVER_DISABLE_IN_GAME }
 };
 
 #ifdef CONFIG_NETWORK
@@ -736,6 +744,14 @@ static void config_grab_mouse(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   config_boolean(&conf->grab_mouse, value);
+}
+
+static void config_disable_screensaver(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  int result;
+  if(config_enum(&result, value, screensaver_disable_values))
+    conf->disable_screensaver = result;
 }
 
 static void config_save_slots(struct config_info *conf, char *name,
@@ -1177,6 +1193,7 @@ static const struct config_entry config_options[] =
   { "audio_sample_rate", config_set_audio_freq, false },
   { "auto_decrypt_worlds", config_set_auto_decrypt_worlds, false },
   { "dialog_cursor_hints", config_set_dialog_cursor_hints, false },
+  { "disable_screensaver", config_disable_screensaver, false },
   { "enable_oversampling", config_enable_oversampling, false },
   { "enable_resizing", config_enable_resizing, false },
   { "force_bpp", config_force_bpp, false },

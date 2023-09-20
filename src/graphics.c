@@ -1684,6 +1684,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   graphics.cursor_flipflop = 1;
   graphics.system_mouse = conf->system_mouse;
   graphics.grab_mouse = conf->grab_mouse;
+  graphics.disable_screensaver = conf->disable_screensaver;
 
   memset(&(graphics.text_video_layer), 0, sizeof(struct video_layer));
   graphics.text_video_layer.w = SCREEN_W;

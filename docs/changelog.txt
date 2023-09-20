@@ -203,6 +203,9 @@ USERS
   where the aforementioned files could break the zip format's
   internal field bounds.
 + Fixed loading of world/save/counters files over 4 GB.
++ Added disable_screensaver configuration option. MegaZeux now
+  leaves the screensaver enabled by default (fixes regression
+  caused by SDL 2.0.2+).
 - Removed GL4ES from the GLSL blacklist.
 - Removed 3DS CIA support. (asie)
 
