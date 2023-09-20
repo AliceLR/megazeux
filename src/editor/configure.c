@@ -37,12 +37,12 @@ static struct editor_config_info editor_conf_backup;
 static const struct editor_config_info editor_conf_default =
 {
   // Board editor options
-  true,                         // board_editor_hide_help
+  false,                        // board_editor_hide_help
   false,                        // editor_space_toggles
   false,                        // editor_tab_focuses_view
   false,                        // editor_load_board_assets
   true,                         // editor_thing_menu_places
-  false,                        // editor_show_thing_toggles
+  true,                         // editor_show_thing_toggles
   4,                            // editor_show_thing_blink_speed
   100,                          // Undo history size
 
@@ -84,7 +84,7 @@ static const struct editor_config_info editor_conf_default =
   1,                            // default_invalid_status
   true,                         // disassemble_extras
   10,                           // disassemble_base
-  true,                         // robot_editor_hide_help
+  false,                        // robot_editor_hide_help
 
   // Backup options
   3,                            // backup_count
