@@ -3294,6 +3294,10 @@ void clear_global_data(struct world *mzx_world)
   // Clear all strings out of the string list
   clear_string_list(&(mzx_world->string_list));
 
+  // This needs to be done whenever the counters/strings are cleared.
+  if(debug_robot_reset)
+    debug_robot_reset(mzx_world);
+
   for(i = 0; i < MAX_SPRITES; i++)
   {
     free(sprite_list[i]);

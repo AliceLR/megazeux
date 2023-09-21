@@ -3680,10 +3680,12 @@ static size_t get_counter_alloc_size(int name_length)
    offsetof(struct counter, name) + name_length + 1);
 }
 
-static struct counter *allocate_new_counter(const char *name, int name_length,
+static struct counter *allocate_new_counter(const char *name, size_t name_length,
  int value)
 {
-  struct counter *dest = cmalloc(get_counter_alloc_size(name_length));
+  struct counter *dest = (struct counter *)cmalloc(get_counter_alloc_size(name_length));
+  if(!dest)
+    return NULL;
 
   memcpy(dest->name, name, name_length);
   dest->name[name_length] = 0;
@@ -3717,7 +3719,10 @@ static void add_counter(struct counter_list *counter_list, const char *name,
     else
       allocated = MIN_COUNTER_ALLOCATE;
 
-    base = crealloc(base, sizeof(struct counter *) * allocated);
+    base = (struct counter **)crealloc(base, sizeof(struct counter *) * allocated);
+    if(!base)
+      return;
+
     counter_list->counters = base;
     counter_list->num_counters_allocated = allocated;
   }
@@ -3732,6 +3737,8 @@ static void add_counter(struct counter_list *counter_list, const char *name,
   }
 
   dest = allocate_new_counter(name, name_length, value);
+  if(!dest)
+    return;
 
   counter_list->counters[position] = dest;
   counter_list->num_counters = count + 1;
@@ -3836,6 +3843,26 @@ int get_counter(struct world *mzx_world, const char *name, int id)
     return cdest->value;
 
   return 0;
+}
+
+/**
+ * Get a counter by name and return a pointer to it. This function does not
+ * work with function counters or other special counters; use get_string or
+ * get_string_safe (editor) instead. The pointer this function returns is
+ * guaranteed to be stable for the duration of the gameplay session.
+ *
+ * @param mzx_world   World data.
+ * @param name        Name of counter to look up.
+ * @param id          Current robot ID or 0 for global.
+ * @return            counter pointer if found, otherwise NULL.
+ */
+const struct counter *get_counter_pointer(struct world *mzx_world,
+ const char *name, int id)
+{
+  struct counter_list *counter_list = &(mzx_world->counter_list);
+  int next;
+
+  return find_counter(counter_list, name, &next);
 }
 
 void inc_counter(struct world *mzx_world, const char *name, int value, int id)

@@ -295,6 +295,7 @@ CORE_LIBSPEC extern int (*debug_robot_break)(context *ctx,
 CORE_LIBSPEC extern int (*debug_robot_watch)(context *ctx,
  struct robot *cur_robot, int id, int lines_run);
 CORE_LIBSPEC extern void (*debug_robot_config)(struct world *mzx_world);
+CORE_LIBSPEC extern void (*debug_robot_reset)(struct world *mzx_world);
 
 // Network external function pointers.
 

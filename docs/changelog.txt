@@ -206,6 +206,11 @@ USERS
 + Added disable_screensaver configuration option. MegaZeux now
   leaves the screensaver enabled by default (fixes regression
   caused by SDL 2.0.2+).
++ Improved the performance of Robotic debugger watchpoints,
+  especially for non-built-in counters and non-spliced strings.
++ Robotic debugger watchpoints can now watch for particular
+  counter or string values. Leaving the value field blank will
+  still check for any value.
 + editor_show_thing_toggles is now enabled by default.
 - board_editor_hide_help and robot_editor_hide_help are no
   longer enabled by default for accessibility.
@@ -248,6 +253,10 @@ DEVELOPERS
 + _FILE_OFFSET_BITS=64 is now used for 64-bit fseeko, ftello,
   readdir, and stat/fstat support for 32-bit Linux builds.
 + Applied various Opal fixes from OpenMPT.
+- String values are now allocated separately from the string
+  struct and name. This may make strings very slightly slower,
+  but means string pointers are now stable through an entire
+  gameplay session.
 
 
 November 22nd, 2020 - MZX 2.92f
