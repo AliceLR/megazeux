@@ -248,6 +248,8 @@ static struct audio_stream *construct_openmpt_stream(vfile *vf,
     return NULL;
 
   row_tbl_size = openmpt_module_get_num_orders(open_file) + 1;
+  if(row_tbl_size < 1)
+    row_tbl_size = 1;
 
   omp_stream = (struct openmpt_stream *)malloc(sizeof(struct openmpt_stream));
   row_tbl = (uint32_t *)malloc(row_tbl_size * sizeof(uint32_t));
@@ -263,11 +265,11 @@ static struct audio_stream *construct_openmpt_stream(vfile *vf,
   omp_stream->row_tbl = row_tbl;
   omp_stream->row_tbl_size = row_tbl_size;
 
-  for(i = 0, row_pos = 0; i < row_tbl_size; i++)
+  for(i = 0, row_pos = 0; i < (uint32_t)row_tbl_size; i++)
   {
     row_tbl[i] = row_pos;
     ord = openmpt_module_get_order_pattern(open_file, i);
-    if(i < row_tbl_size - 1)
+    if(i < (uint32_t)row_tbl_size - 1)
       row_pos += openmpt_module_get_pattern_num_rows(open_file, ord);
   }
 

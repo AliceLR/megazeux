@@ -36,6 +36,11 @@
 #define SLOW_FILESYSTEM_HACKS
 #endif
 
+#ifndef _WIN32
+#define ENABLE_DOS_COMPAT_TRANSLATIONS
+#endif
+
+#ifdef ENABLE_DOS_COMPAT_TRANSLATIONS
 #if defined(SLOW_FILESYSTEM_HACKS) || defined(_WIN32) || defined(CONFIG_DJGPP)
 // Skip the extra all caps/lower case checks, either because the current
 // platform will always be case-insensitive, or because they are slower than
@@ -43,11 +48,6 @@
 #define NO_EXTRA_CASE_CHECKS
 #endif
 
-#ifndef _WIN32
-#define ENABLE_DOS_COMPAT_TRANSLATIONS
-#endif
-
-#ifdef ENABLE_DOS_COMPAT_TRANSLATIONS
 enum sfn_type
 {
   NOT_AN_SFN,
