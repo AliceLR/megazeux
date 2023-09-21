@@ -125,9 +125,29 @@ static void out_of_memory_check(void *p, const char *file, int line)
   }
 }
 
+// Attempt to free buffered memory from the virtual filesystem for reuse.
+static boolean check_free_buffered(size_t amount, boolean *retry)
+{
+  if(!*retry || !amount)
+    return false;
+
+  if(!vio_invalidate_at_least(&amount))
+  {
+    vio_invalidate_all();
+    *retry = false;
+  }
+  return true;
+}
+
 void *check_calloc(size_t nmemb, size_t size, const char *file, int line)
 {
   void *result = calloc(nmemb, size);
+  if(!result && nmemb * size >= size)
+  {
+    boolean retry = true;
+    while(!result && check_free_buffered(nmemb * size, &retry))
+      result = calloc(nmemb, size);
+  }
   out_of_memory_check(result, file, line);
   return result;
 }
@@ -135,6 +155,12 @@ void *check_calloc(size_t nmemb, size_t size, const char *file, int line)
 void *check_malloc(size_t size, const char *file, int line)
 {
   void *result = malloc(size);
+  if(!result)
+  {
+    boolean retry = true;
+    while(!result && check_free_buffered(size, &retry))
+      result = malloc(size);
+  }
   out_of_memory_check(result, file, line);
   return result;
 }
@@ -142,6 +168,12 @@ void *check_malloc(size_t size, const char *file, int line)
 void *check_realloc(void *ptr, size_t size, const char *file, int line)
 {
   void *result = realloc(ptr, size);
+  if(!result)
+  {
+    boolean retry = true;
+    while(!result && check_free_buffered(size, &retry))
+      result = realloc(ptr, size);
+  }
   out_of_memory_check(result, file, line);
   return result;
 }
