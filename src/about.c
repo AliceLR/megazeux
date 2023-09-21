@@ -328,7 +328,7 @@ static char **load_license(const char *filename, int *_lines)
         }
       }
       total += sz;
-      if(sz > MAX_LICENSE)
+      if(total > MAX_LICENSE)
         break;
 
       arr[lines] = (char *)malloc(sz);
