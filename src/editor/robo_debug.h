@@ -27,13 +27,13 @@ __M_BEGIN_DECLS
 #include "../core.h"
 
 EDITOR_LIBSPEC void __debug_robot_config(struct world *mzx_world);
+EDITOR_LIBSPEC void __debug_robot_reset(struct world *mzx_world);
 
 EDITOR_LIBSPEC int __debug_robot_break(context *ctx,
  struct robot *cur_robot, int id, int lines_run);
 EDITOR_LIBSPEC int __debug_robot_watch(context *ctx,
  struct robot *cur_robot, int id, int lines_run);
 
-EDITOR_LIBSPEC void reset_robot_debugger(void);
 EDITOR_LIBSPEC void free_breakpoints(void);
 
 void update_watchpoint_last_values(struct world *mzx_world);

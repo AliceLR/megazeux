@@ -53,7 +53,14 @@ struct breakpoint
 struct watchpoint
 {
   char match_name[MATCH_STRING_MAX];
+  char match_value[MATCH_STRING_MAX];
+  boolean is_string;
+  boolean tried_lookup;
+  boolean watch_value;
+  const struct counter *ctr;
+  const struct string *str;
   int last_value;
+  int match_value_i;
 };
 
 static int num_breakpoints = 0;
@@ -84,7 +91,7 @@ static int selected = 0;
 static int position = 1;
 
 
-static inline int hash_string(char *data, size_t length)
+static inline int hash_string(const char *data, size_t length)
 {
   unsigned int i;
   int x = length ? *data : 0;
@@ -99,7 +106,7 @@ static inline int hash_string(char *data, size_t length)
 }
 
 static inline int get_watchpoint_value(struct world *mzx_world,
- struct watchpoint *wt)
+ struct watchpoint *wt, struct string *dest)
 {
   /**
    * TODO maybe find a way to make watchpoints that rely on the robot ID to
@@ -111,24 +118,58 @@ static inline int get_watchpoint_value(struct world *mzx_world,
    * assume every local counter access is done by the global robot.
    */
 
-  if(is_string(wt->match_name))
+  if(wt->is_string)
   {
     struct string src_string;
     char tmp[MATCH_STRING_MAX];
-    memcpy(tmp, wt->match_name, MATCH_STRING_MAX);
 
-    if(get_string(mzx_world, tmp, &src_string, 0))
+    if(!dest)
+      dest = &src_string;
+
+    if(wt->str)
     {
-      return hash_string(src_string.value, src_string.length);
+      dest->value = wt->str->value;
+      dest->length = wt->str->length;
+      return hash_string(wt->str->value, wt->str->length);
     }
-  }
 
+    memcpy(tmp, wt->match_name, MATCH_STRING_MAX);
+    if(!get_string(mzx_world, tmp, dest, 0))
+    {
+      dest->value = NULL;
+      dest->length = 0;
+      return 0;
+    }
+
+    if(!wt->tried_lookup)
+    {
+      wt->str = get_string_pointer(mzx_world, wt->match_name, 0);
+      wt->tried_lookup = true;
+    }
+
+    return hash_string(dest->value, dest->length);
+  }
   else
   {
-    return get_counter_safe(mzx_world, wt->match_name, 0);
-  }
+    int value;
 
-  return 0;
+    if(wt->ctr)
+      return wt->ctr->value;
+
+    value = get_counter_safe(mzx_world, wt->match_name, 0);
+    if(!value)
+      return 0;
+
+    // Counter isn't guaranteed to exist unless the value is non-zero!
+    // This might also be a function counter, so only attempt once.
+    if(!wt->tried_lookup)
+    {
+      wt->ctr = get_counter_pointer(mzx_world, wt->match_name, 0);
+      wt->tried_lookup = true;
+    }
+
+    return value;
+  }
 }
 
 void update_watchpoint_last_values(struct world *mzx_world)
@@ -139,7 +180,7 @@ void update_watchpoint_last_values(struct world *mzx_world)
   for(i = 0; i < num_watchpoints; i++)
   {
     wt = watchpoints[i];
-    wt->last_value = get_watchpoint_value(mzx_world, wt);
+    wt->last_value = get_watchpoint_value(mzx_world, wt, NULL);
   }
 }
 
@@ -202,8 +243,9 @@ static int edit_watchpoint_dialog(struct world *mzx_world,
  struct watchpoint *wt, const char *title)
 {
   char match_name[MATCH_STRING_MAX];
+  char match_value[MATCH_STRING_MAX];
 
-  struct element *elements[3];
+  struct element *elements[4];
   struct dialog di;
   int result;
 
@@ -211,12 +253,15 @@ static int edit_watchpoint_dialog(struct world *mzx_world,
   force_release_all_keys();
 
   memcpy(match_name, wt->match_name, MATCH_STRING_MAX);
+  memcpy(match_value, wt->match_value, MATCH_STRING_MAX);
 
   elements[0] = construct_input_box(3, 1,
    "Variable:", 60, match_name);
+  elements[1] = construct_input_box(3, 2,
+   "Value:   ", 60, match_value);
 
-  elements[1] = construct_button(22, 3, "Confirm", 0);
-  elements[2] = construct_button(45, 3, "Cancel", -1);
+  elements[2] = construct_button(22, 4, "Confirm", 0);
+  elements[3] = construct_button(45, 4, "Cancel", -1);
 
   construct_dialog(&di, title, 2, 8, 76, 5, elements, ARRAY_SIZE(elements), 0);
 
@@ -225,7 +270,19 @@ static int edit_watchpoint_dialog(struct world *mzx_world,
 
   if(!result)
   {
+    memset(wt, 0, sizeof(struct watchpoint));
     memcpy(wt->match_name, match_name, MATCH_STRING_MAX);
+    memcpy(wt->match_value, match_value, MATCH_STRING_MAX);
+    wt->is_string = is_string(match_name);
+
+    if(match_value[0])
+    {
+      wt->watch_value = true;
+      if(wt->is_string)
+        wt->match_value_i = strlen(match_value);
+      else
+        wt->match_value_i = strtol(match_value, NULL, 10);
+    }
   }
 
   // Prevent UI keys from carrying through.
@@ -236,14 +293,14 @@ static int edit_watchpoint_dialog(struct world *mzx_world,
 
 static void new_breakpoint(struct world *mzx_world)
 {
-  struct breakpoint *br = ccalloc(sizeof(struct breakpoint), 1);
+  struct breakpoint *br = (struct breakpoint *)ccalloc(1, sizeof(struct breakpoint));
 
   if(!edit_breakpoint_dialog(mzx_world, br, "New Breakpoint"))
   {
     if(num_breakpoints == num_breakpoints_allocated)
     {
       num_breakpoints_allocated = MAX(32, num_breakpoints_allocated * 2);
-      breakpoints = crealloc(breakpoints,
+      breakpoints = (struct breakpoint **)crealloc(breakpoints,
        num_breakpoints_allocated * sizeof(struct breakpoint *));
     }
 
@@ -265,14 +322,14 @@ static void new_breakpoint(struct world *mzx_world)
 
 static void new_watchpoint(struct world *mzx_world)
 {
-  struct watchpoint *wt = ccalloc(sizeof(struct watchpoint), 1);
+  struct watchpoint *wt = (struct watchpoint *)ccalloc(1, sizeof(struct watchpoint));
 
   if(!edit_watchpoint_dialog(mzx_world, wt, "New Watchpoint"))
   {
     if(num_watchpoints == num_watchpoints_allocated)
     {
       num_watchpoints_allocated = MAX(32, num_watchpoints_allocated * 2);
-      watchpoints = crealloc(watchpoints,
+      watchpoints = (struct watchpoint **)crealloc(watchpoints,
        num_watchpoints_allocated * sizeof(struct watchpoint *));
     }
 
@@ -573,16 +630,20 @@ void __debug_robot_config(struct world *mzx_world)
   pop_context();
 }
 
-// Turn off the debugger without clearing the breakpoints.
-// For now we'll just have this disable the step, since starting
-// with the debugger on may have very useful applications.
-// Also, reset the watchpoint values.
-void reset_robot_debugger(void)
+// Reset the debugger without clearing the breakpoints/watchpoints.
+// For now, this just resets the step status and cached watchpoint values
+// (so MegaZeux doesn't crash).
+void __debug_robot_reset(struct world *mzx_world)
 {
   int i;
 
   for(i = 0; i < num_watchpoints; i++)
+  {
     watchpoints[i]->last_value = 0;
+    watchpoints[i]->tried_lookup = false;
+    watchpoints[i]->ctr = NULL;
+    watchpoints[i]->str = NULL;
+  }
 
   step = false;
 }
@@ -1249,8 +1310,10 @@ int __debug_robot_watch(context *ctx, struct robot *cur_robot,
   char *src_ptr = NULL;
 
   struct watchpoint *wt;
+  struct string src_string;
   boolean match = false;
   int value = 0;
+  int prev = 0;
   int i;
 
   if(!robo_debugger_enabled)
@@ -1262,27 +1325,27 @@ int __debug_robot_watch(context *ctx, struct robot *cur_robot,
   {
     wt = watchpoints[i];
 
-    value = get_watchpoint_value(mzx_world, wt);
-
-    // String
-    if(is_string(wt->match_name))
-    {
-      snprintf(info, 77, "~a@0 changed ~9@1: watch ~c`%.47s`", wt->match_name);
-      info[76] = 0;
-    }
-
-    // Counter
-    else
-    {
-      snprintf(info, 77, "~a@0 %d ~8\x1A ~a%d ~9@1: watch ~c`%.45s`",
-       wt->last_value, value, wt->match_name);
-
-      info[76] = 0;
-    }
-
+    value = get_watchpoint_value(mzx_world, wt, &src_string);
     if(value != wt->last_value)
     {
+      prev = wt->last_value;
       wt->last_value = value;
+
+      if(wt->watch_value)
+      {
+        // Only match if the variable is exactly the requested value.
+        if(wt->is_string)
+        {
+          if((size_t)wt->match_value_i != src_string.length ||
+           (src_string.value && memcmp(wt->match_value, src_string.value, src_string.length)))
+            continue;
+        }
+        else
+        {
+          if(wt->match_value_i != value)
+            continue;
+        }
+      }
       match = true;
       break;
     }
@@ -1290,6 +1353,18 @@ int __debug_robot_watch(context *ctx, struct robot *cur_robot,
 
   if(!match)
     return 0;
+
+  if(wt->is_string)
+  {
+    snprintf(info, sizeof(info), "~a@0 changed ~9@1: watch ~c`%.47s`",
+     wt->match_name);
+  }
+  else
+  {
+    snprintf(info, sizeof(info), "~a@0 %d ~8\x1A ~a%d ~9@1: watch ~c`%.45s`",
+     prev, value, wt->match_name);
+  }
+  info[sizeof(info) - 1] = '\0';
 
   // Get the current line.
   get_src_line(cur_robot, &src_ptr, &src_length, &line_number);

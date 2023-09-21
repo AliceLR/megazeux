@@ -1104,22 +1104,14 @@ static void write_var(struct world *mzx_world, struct debug_var *v, int int_val,
     {
       //set string -- int_val is the length here
       char buffer[ROBOT_MAX_TR];
-      int list_index;
-
       struct string temp;
+
       memset(&temp, '\0', sizeof(struct string));
       temp.length = int_val;
       temp.value = char_val;
 
-      // This may reallocate the string, so we want to save the list index.
-      // We also want to back up the name so its pointer doesn't get changed
-      // in the middle of setting the string.
       memcpy(buffer, v->data.string->name, v->data.string->name_length + 1);
-      list_index = v->data.string->list_ind;
-
       set_string(mzx_world, buffer, &temp, 0);
-
-      v->data.string = mzx_world->string_list.strings[list_index];
       break;
     }
 

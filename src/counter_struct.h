@@ -55,12 +55,13 @@ struct counter_list
 #endif
 };
 
-// Name and storage share space. It's messy, but fast and
-// space efficient.
+// Like counters, string names are allocated as part of the struct.
+// The storage space is ALWAYS allocated separately from the rest
+// of the string in normal strings, which allows string struct
+// pointers to remain stable throughout their entire lifetime.
+// The storage space must always be allocated for normal strings.
 
-// The storage space doesn't actually have to have anything,
-// however (in fact, neither does name). Strings can
-// be used as pointers to hold intermediate or immediate
+// Strings can also be used as pointers to hold intermediate or immediate
 // values. For instance, string literals and spliced
 // strings. Anyone who uses strings in this way has a few
 // responsibilities, however:
@@ -90,10 +91,6 @@ struct string
   uint32_t length;
   uint32_t allocated_length;
 
-  // Back reference to the string's position in the main list, mandatory as
-  // a hash table search needs to be able to determine this value.
-  uint32_t list_ind;
-
 #ifdef CONFIG_COUNTER_HASH_TABLES
   uint32_t hash;
 #endif
@@ -103,9 +100,9 @@ struct string
   uint8_t unused2;
 
   /**
-   * This struct will be allocated with extra space to contain the string name
-   * and string value. This field MUST be at least 4-aligned and must be the
-   * last field in the struct (any extra padding after it will be used).
+   * This struct will be allocated with extra space to contain the entire
+   * string name, null-terminated. This field MUST be at least 4-aligned and
+   * it must be the last field (any extra padding after it will be used).
    */
   char name[1];
 };
