@@ -114,8 +114,9 @@
 #define RESAMPLE_MODE_DEFAULT RESAMPLE_MODE_NONE
 #define MOD_RESAMPLE_MODE_DEFAULT RESAMPLE_MODE_NONE
 #define FULLSCREEN_DEFAULT 1
-#define VFS_ENABLE_DEFAULT true
-#define VFS_ENABLE_AUTO_CACHE_DEFAULT false
+// Uncomment if Ogg Vorbis files need to be forced into memory.
+//#define VFS_ENABLE_DEFAULT true
+//#define VFS_ENABLE_AUTO_CACHE_DEFAULT false
 #endif
 
 // End arch-specific config.
@@ -268,8 +269,8 @@ static const struct config_info user_conf_default =
   // Virtual filesystem options
   VFS_ENABLE_DEFAULT,           // vfs_enable
   VFS_ENABLE_AUTO_CACHE_DEFAULT,// vfs_enable_auto_cache
-  VFS_MAX_CACHE_SIZE_DEFAULT,   // vfs_max_cache_size_default
-  VFS_MAX_CACHE_FILE_SIZE_DEFAULT, // vfs_max_cache_file_size_default
+  VFS_MAX_CACHE_SIZE_DEFAULT,   // vfs_max_cache_size
+  VFS_MAX_CACHE_FILE_SIZE_DEFAULT, // vfs_max_cache_file_size
 
   // Game options
   "",                           // startup_path

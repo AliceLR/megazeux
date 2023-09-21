@@ -206,6 +206,12 @@ USERS
 + Added disable_screensaver configuration option. MegaZeux now
   leaves the screensaver enabled by default (fixes regression
   caused by SDL 2.0.2+).
++ Added virtual filesystem support to MegaZeux. Currently, this
+  is only used for caching files, and is only enabled by default
+  on platforms with slow or buggy file IO (3DS, Vita). This
+  feature may be optionally configured with the config options
+  vfs_enable, vfs_enable_auto_cache, vfs_max_cache_size, and
+  vfs_max_cache_file_size.
 + Improved the performance of Robotic debugger watchpoints,
   especially for non-built-in counters and non-spliced strings.
 + Robotic debugger watchpoints can now watch for particular
