@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,10 +55,12 @@ static int cmp_robots(const void *dest, const void *src)
 /* Due to some 1.x RLE jank the dimensions need special handling. */
 static int load_RLE_dimensions(vfile *vf, int *w, int *h)
 {
-  /* Some streams may have a run of 0 appended, but not all of them? */
+  /* Some streams may have a run of 0 appended, but not all of them?
+   * No known 1.xx worlds actually contain these; this comes from VER1TO2. */
   int tmp = vfgetc(vf);
   if(!tmp)
   {
+    debug("Board plane ending in run of length 0 @ %" PRId64 "\n", vftell(vf) - 1);
     vfgetc(vf);
     *w = vfgetc(vf);
   }
@@ -379,10 +382,19 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     input_string[LEGACY_INPUT_STRING_MAX] = 0;
     board_set_input_string(cur_board, input_string, LEGACY_INPUT_STRING_MAX);
 
-    // TODO: Timers and unused junk in 1.x:
-    // Blind, firewalker, ?, freezetime, slowtime, ?, ?, ?, wind.
     if(file_version < V200)
-      vfseek(vf, 9, SEEK_CUR);
+    {
+      // Effects and unused junk in 1.x :(
+      unsigned char tmp[9];
+      memset(tmp, 0, sizeof(tmp));
+      vfread(tmp, 1, 9, vf);
+
+      cur_board->blind_dur_v1 = tmp[0];
+      cur_board->firewalker_dur_v1 = tmp[1];
+      cur_board->freeze_time_dur_v1 = tmp[3];
+      cur_board->slow_time_dur_v1 = tmp[4];
+      cur_board->wind_dur_v1 = tmp[8];
+    }
 
     cur_board->player_last_dir = vfgetc(vf);
 

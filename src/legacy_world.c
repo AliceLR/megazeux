@@ -62,31 +62,93 @@ static inline void meter_initial_draw(int curr, int target, const char *title) {
 #endif //!CONFIG_LOADSAVE_METER
 
 static inline boolean legacy_load_counter(struct world *mzx_world,
- vfile *vf, struct counter_list *counter_list, int index)
+ vfile *vf, struct counter_list *counter_list, int index, int file_version)
 {
   char name_buffer[ROBOT_MAX_TR];
-  int value = vfgetd(vf);
-  int name_length = vfgetd(vf);
+  int name_length;
+  int value;
 
-  name_buffer[0] = 0;
-  if(name_length && !vfread(name_buffer, name_length, 1, vf))
-    return false;
-
-  // Stupid legacy hacks
-  if(!strncasecmp(name_buffer, "mzx_speed", name_length))
+  if(file_version >= V281)
   {
-    mzx_world->mzx_speed = value;
-    return false;
+    value = vfgetd(vf);
+    name_length = vfgetd(vf);
+
+    name_buffer[0] = 0;
+    if(name_length && !vfread(name_buffer, name_length, 1, vf))
+      return false;
+
+    if(file_version >= V284)
+    {
+      // Stupid legacy hacks
+      if(!strncasecmp(name_buffer, "mzx_speed", name_length))
+      {
+        mzx_world->mzx_speed = value;
+        return false;
+      }
+
+      if(!strncasecmp(name_buffer, "_____lock_speed", name_length))
+      {
+        mzx_world->lock_speed = value;
+        return false;
+      }
+    }
   }
-
-  if(!strncasecmp(name_buffer, "_____lock_speed", name_length))
+  else
   {
-    mzx_world->lock_speed = value;
-    return false;
+    name_length = vfread(name_buffer, 1, 15, vf);
+    name_buffer[name_length] = '\0';
+
+    if(file_version == V280)
+    {
+      // MegaZeux 2.80 used a hacked DOS counter list with dwords.
+      value = vfgetd(vf);
+    }
+    else
+
+    if(file_version >= V200)
+    {
+      // Counters are signed words in DOS 2.x.
+      value = (signed short)vfgetw(vf);
+    }
+    else
+    {
+      // Counters are unsigned words in 1.x.
+      value = vfgetw(vf);
+    }
   }
 
   load_new_counter(counter_list, index, name_buffer, name_length, value);
   return true;
+}
+
+static void legacy_load_counter_list(struct world *mzx_world, vfile *vf,
+ int file_version, int extra)
+{
+  struct counter_list *counter_list;
+  int num_counters;
+  int i;
+  int j;
+
+  num_counters = vfgetd(vf);
+  counter_list = &(mzx_world->counter_list);
+  counter_list->num_counters = num_counters;
+  counter_list->num_counters_allocated = num_counters + extra;
+  counter_list->counters = ccalloc(num_counters + extra, sizeof(struct counter *));
+
+  for(i = 0, j = 0; i < num_counters; i++)
+  {
+    if(!legacy_load_counter(mzx_world, vf, counter_list, j, file_version))
+    {
+      // Remove 2.84 special counters and counters that failed to load.
+      counter_list->num_counters--;
+      continue;
+    }
+    j++;
+  }
+#ifndef CONFIG_COUNTER_HASH_TABLES
+  // Versions without the hash table require these to be sorted at all times.
+  sort_counter_list(counter_list);
+#endif
 }
 
 static inline void legacy_load_string(vfile *vf,
@@ -107,6 +169,28 @@ static inline void legacy_load_string(vfile *vf,
 
   if(str_length && !vfread(src_string->value, str_length, 1, vf))
     return;
+}
+
+static void legacy_load_string_list(struct world *mzx_world, vfile *vf,
+ int file_version)
+{
+  struct string_list *string_list;
+  int num_strings;
+  int i;
+
+  num_strings = vfgetd(vf);
+  string_list = &(mzx_world->string_list);
+  string_list->num_strings = num_strings;
+  string_list->num_strings_allocated = num_strings;
+  string_list->strings = ccalloc(num_strings, sizeof(struct string *));
+
+  for(i = 0; i < num_strings; i++)
+    legacy_load_string(vf, string_list, i);
+
+#ifndef CONFIG_COUNTER_HASH_TABLES
+  // Versions without the hash table require these to be sorted at all times.
+  sort_string_list(string_list);
+#endif
 }
 
 static const char magic_code[16] =
@@ -512,8 +596,9 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
     else
 
     // This enables 2.84 save loading.
-    // If we ever want to remove this, change this check.
-    //if (v < MZX_VERSION)
+    // This can be expanded to even older save files in the future:
+    // 2.00-2.83 saves require various types of surgery to the load functions.
+    // 1.xx saves are fully implemented. FIXME: Robo-P cur_prog_line conversion.
     if(v < MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_OLD, v, NULL);
@@ -917,33 +1002,46 @@ static void legacy_load_world_v1(struct world *mzx_world, vfile *vf, const char 
     10, 0,  0, 10, 10, 10, 10, 10, 10, 10, 10, 10,  0,  0, 10, 10, /* 0x5? */
   };
 
-  // TODO: savegame support if it's REALLY necessary :(
   unsigned char *charset_mem;
   int protection_method;
   int num_boards;
   long offset;
+  int score;
   int i;
   char buf[4];
 
   int meter_target = 2, meter_curr = 0;
 
-  strcpy(mzx_world->name, name);
   mzx_world->version = file_version;
   mzx_world->current_board_id = 0;
 
-  vfseek(vf, BOARD_NAME_SIZE, SEEK_SET);
-  protection_method = vfgetc(vf);
+  if(savegame)
+  {
+    vfseek(vf, 5, SEEK_SET);
+    mzx_world->version = file_version;
+    mzx_world->current_board_id = vfgetc(vf);
+  }
+  else
+  {
+    strcpy(mzx_world->name, name);
 
-  offset = BOARD_NAME_SIZE + 1 + 3;
-  if(protection_method)
-    offset += MAX_PASSWORD_LENGTH + 1;
-  vfseek(vf, offset, SEEK_SET);
+    vfseek(vf, BOARD_NAME_SIZE, SEEK_SET);
+    protection_method = vfgetc(vf);
+
+    offset = BOARD_NAME_SIZE + 1 + 3;
+    if(protection_method)
+      offset += MAX_PASSWORD_LENGTH + 1;
+    vfseek(vf, offset, SEEK_SET);
+  }
 
   meter_initial_draw(meter_curr, meter_target, "Loading...");
 
   charset_mem = cmalloc(CHAR_SIZE * CHARSET_SIZE);
   if(!vfread(charset_mem, CHAR_SIZE * CHARSET_SIZE, 1, vf))
+  {
+    free(charset_mem);
     goto err_close;
+  }
   ec_clear_set();
   ec_mem_load_set(charset_mem, CHAR_SIZE * CHARSET_SIZE);
   free(charset_mem);
@@ -958,7 +1056,11 @@ static void legacy_load_world_v1(struct world *mzx_world, vfile *vf, const char 
   // Goop didn't exist in 1.x.
   id_chars[GOOP] = 176;
 
-  // TODO: keys go here for savegames
+  if(savegame)
+  {
+    if(!vfread(mzx_world->keys, NUM_KEYS, 1, vf))
+      goto err_close;
+  }
 
   // Status counters.
   if(vfread((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE, 4, vf) != 4)
@@ -995,7 +1097,15 @@ static void legacy_load_world_v1(struct world *mzx_world, vfile *vf, const char 
   memset(bullet_color, i, sizeof(bullet_color));
   missile_color = vfgetc(vf);
 
-  // TODO: message box colors and score go here for savegames
+  if(savegame)
+  {
+    mzx_world->scroll_base_color = vfgetc(vf);
+    mzx_world->scroll_corner_color = vfgetc(vf);
+    mzx_world->scroll_pointer_color = vfgetc(vf);
+    mzx_world->scroll_title_color = vfgetc(vf);
+    mzx_world->scroll_arrow_color = vfgetc(vf);
+    score = vfgetd(vf);
+  }
 
   // Global info.
   mzx_world->first_board = vfgetc(vf);
@@ -1025,7 +1135,15 @@ static void legacy_load_world_v1(struct world *mzx_world, vfile *vf, const char 
   if(mzx_world->death_board == 128)
     mzx_world->death_board = NO_DEATH_BOARD;
 
-  // TODO: counters go here for savegames
+  if(savegame)
+  {
+    // Counter list.
+    // Allocate 1 extra for the score.
+    legacy_load_counter_list(mzx_world, vf, file_version, 1);
+
+    // Patch in the score.
+    set_counter(mzx_world, "SCORE", score, 0);
+  }
 
   // No custom palette or global robot in 1.x.
   *faded = 0;
@@ -1036,6 +1154,17 @@ static void legacy_load_world_v1(struct world *mzx_world, vfile *vf, const char 
   // Board list is the same as 2.x, though the board structs are different.
   num_boards = vfgetc(vf);
   legacy_load_world_boards(mzx_world, vf, savegame, file_version, num_boards);
+
+  // Fetch the effect durations from the current board...
+  if(savegame && mzx_world->current_board_id < mzx_world->num_boards)
+  {
+    struct board *cur_board = mzx_world->board_list[mzx_world->current_board_id];
+    mzx_world->blind_dur = cur_board->blind_dur_v1;
+    mzx_world->firewalker_dur = cur_board->firewalker_dur_v1;
+    mzx_world->freeze_time_dur = cur_board->freeze_time_dur_v1;
+    mzx_world->slow_time_dur = cur_board->slow_time_dur_v1;
+    mzx_world->wind_dur = cur_board->wind_dur_v1;
+  }
 
   meter_restore_screen();
   vfclose(vf);
@@ -1064,8 +1193,6 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
   int global_robot_pos;
   unsigned char *charset_mem;
   unsigned char r, g, b;
-  struct counter_list *counter_list;
-  struct string_list *string_list;
 
   int meter_target = 2, meter_curr = 0;
 
@@ -1094,7 +1221,10 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
 
   charset_mem = cmalloc(CHAR_SIZE * CHARSET_SIZE);
   if(!vfread(charset_mem, CHAR_SIZE * CHARSET_SIZE, 1, vf))
+  {
+    free(charset_mem);
     goto err_close;
+  }
   ec_clear_set();
   ec_mem_load_set(charset_mem, CHAR_SIZE * CHARSET_SIZE);
   free(charset_mem);
@@ -1195,9 +1325,7 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
   if(savegame)
   {
     int vlayer_size;
-    int num_counters, num_strings;
     int screen_mode;
-    int j;
 
     for(i = 0; i < 16; i++)
     {
@@ -1213,45 +1341,11 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
     mzx_world->under_player_param = vfgetc(vf);
 
     // Read counters
-    num_counters = vfgetd(vf);
-    counter_list = &(mzx_world->counter_list);
-    counter_list->num_counters = num_counters;
-    counter_list->num_counters_allocated = num_counters;
-    counter_list->counters = ccalloc(num_counters, sizeof(struct counter *));
+    legacy_load_counter_list(mzx_world, vf, file_version, 0);
 
-    for(i = 0, j = 0; i < num_counters; i++)
-    {
-      boolean counter = legacy_load_counter(mzx_world, vf, counter_list, j);
-
-      /* We loaded a special counter, this doesn't need to be
-       * loaded into the regular list.
-       */
-      if(!counter)
-      {
-        counter_list->num_counters--;
-        continue;
-      }
-
-      j++;
-    }
-
-    // Read strings
-    num_strings = vfgetd(vf);
-    string_list = &(mzx_world->string_list);
-    string_list->num_strings = num_strings;
-    string_list->num_strings_allocated = num_strings;
-    string_list->strings = ccalloc(num_strings, sizeof(struct string *));
-
-    for(i = 0; i < num_strings; i++)
-    {
-      legacy_load_string(vf, string_list, i);
-    }
-
-#ifndef CONFIG_COUNTER_HASH_TABLES
-    // Versions without the hash table require these to be sorted at all times
-    sort_counter_list(counter_list);
-    sort_string_list(string_list);
-#endif
+    // Read strings (2.80 and up; DOS handled this differently)
+    if(file_version >= V280)
+      legacy_load_string_list(mzx_world, vf, file_version);
 
     // Sprite data
     for(i = 0; i < MAX_SPRITES; i++)

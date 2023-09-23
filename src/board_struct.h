@@ -88,6 +88,11 @@ struct board
   char *palette_path;
   size_t charset_path_allocated;
   size_t palette_path_allocated;
+  char blind_dur_v1;
+  char firewalker_dur_v1;
+  char freeze_time_dur_v1;
+  char slow_time_dur_v1;
+  char wind_dur_v1;
 
   int num_robots;
   int num_robots_active;
