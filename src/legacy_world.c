@@ -897,8 +897,22 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
       mzx_world->pl_saved_y[i] = vfgetw(vf);
     }
 
-    if(!vfread(mzx_world->pl_saved_board, 8, 1, vf))
-      goto err_close;
+    if(file_version >= V280)
+    {
+      // Saved positions 3-8 were broken due to a bug and 1-2 were
+      // saved as endian-dependent dwords.
+      mzx_world->pl_saved_board[0] = vfgetd(vf) & 0xff;
+      mzx_world->pl_saved_board[1] = vfgetd(vf) & 0xff;
+
+      for(i = 2; i < 8; i++)
+        mzx_world->pl_saved_board[i] = 0;
+    }
+    else
+    {
+      for(i = 0; i < 8; i++)
+        mzx_world->pl_saved_board[i] = vfgetc(vf);
+    }
+
     mzx_world->saved_pl_color = vfgetc(vf);
     mzx_world->under_player_id = vfgetc(vf);
     mzx_world->under_player_color = vfgetc(vf);

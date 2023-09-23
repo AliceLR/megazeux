@@ -26,6 +26,7 @@ __M_BEGIN_DECLS
 
 #include "io/memfile.h"
 #include "io/zip.h"
+#include "util.h" // CLAMP
 
 // Data and functions for the ZIP-based world/board/robot format.
 
@@ -762,6 +763,14 @@ static inline void save_prop_d(int ident, int value, struct memfile *mf)
   mfputd(value, mf);
 }
 
+// Write a (u)int64 property.
+static inline void save_prop_q(int ident, int64_t value, struct memfile *mf)
+{
+  mfputw(ident, mf);
+  mfputd(8, mf);
+  mfputq(value, mf);
+}
+
 // Write an array property.
 // `src` should point to an array of `count` members of `len` length each.
 static inline void save_prop_a(int ident, const void *src, size_t len,
@@ -797,22 +806,73 @@ static inline void save_prop_v(int ident, size_t len, struct memfile *prop,
   mf->current += len;
 }
 
-static inline int load_prop_int(int length, struct memfile *prop)
+static inline int load_prop_int(struct memfile *prop)
 {
-  switch(length)
+  switch(prop->end - prop->start)
   {
     case 1:
       return mfgetc(prop);
-
     case 2:
       return mfgetw(prop);
-
     case 4:
       return mfgetd(prop);
-
     default:
       return 0;
   }
+}
+
+// Unsigned clamp.
+static inline unsigned load_prop_int_u(struct memfile *prop, unsigned min, unsigned max)
+{
+  unsigned tmp = load_prop_int(prop);
+  return CLAMP(tmp, min, max);
+}
+
+// Forces sign extension of byte and word values, signed clamp.
+static inline int load_prop_int_s(struct memfile *prop, int min, int max)
+{
+  int tmp = 0;
+  switch(prop->end - prop->start)
+  {
+    case 1:
+      tmp = (signed char)mfgetc(prop);
+      break;
+    case 2:
+      tmp = (signed short)mfgetw(prop);
+      break;
+    case 4:
+      tmp = mfgetd(prop);
+      break;
+  }
+  return CLAMP(tmp, min, max);
+}
+
+// Forces sign extension of byte and word values, signed clamp.
+static inline int64_t load_prop_int_s64(struct memfile *prop, int64_t min, int64_t max)
+{
+  int64_t tmp = 0;
+  switch(prop->end - prop->start)
+  {
+    case 1:
+      tmp = (signed char)mfgetc(prop);
+      break;
+    case 2:
+      tmp = (signed short)mfgetw(prop);
+      break;
+    case 4:
+      tmp = mfgetd(prop);
+      break;
+    case 8:
+      tmp = mfgetq(prop);
+      break;
+  }
+  return CLAMP(tmp, min, max);
+}
+
+// All non-zero values -> 1.
+static inline boolean load_prop_boolean(struct memfile *prop)
+{
+  return !!load_prop_int(prop);
 }
 
 // This function is used to read properties files in world loading.

@@ -414,7 +414,7 @@ static void limit_samples(int max)
   struct audio_stream *next_astream;
 
   // Don't limit samples if the max samples setting is -1.
-  if(max == -1)
+  if(max < 0)
     return;
 
   LOCK();
