@@ -417,8 +417,12 @@ void default_palette(void)
 {
   memcpy(graphics.palette, default_pal,
    sizeof(struct rgb_color) * PAL_SIZE);
-  memcpy(graphics.intensity_palette, default_pal,
-   sizeof(struct rgb_color) * PAL_SIZE);
+
+  if(!graphics.fade_status)
+  {
+    memcpy(graphics.intensity_palette, default_pal,
+     sizeof(struct rgb_color) * PAL_SIZE);
+  }
   graphics.palette_dirty = true;
 }
 
