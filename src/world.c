@@ -788,20 +788,12 @@ static inline void load_world_info(struct world *mzx_world,
         if_savegame_or_291
 
         vlayer_size = load_prop_int(prop);
-        vlayer_size = MAX(1, vlayer_size);
+        vlayer_size = CLAMP(vlayer_size, 1, MAX_BOARD_SIZE);
 
         mzx_world->vlayer_size = vlayer_size;
 
-        if(mzx_world->vlayer_chars)
-        {
-          mzx_world->vlayer_chars = crealloc(mzx_world->vlayer_chars, vlayer_size);
-          mzx_world->vlayer_colors = crealloc(mzx_world->vlayer_colors, vlayer_size);
-        }
-        else
-        {
-          mzx_world->vlayer_chars = cmalloc(vlayer_size);
-          mzx_world->vlayer_colors = cmalloc(vlayer_size);
-        }
+        mzx_world->vlayer_chars = crealloc(mzx_world->vlayer_chars, vlayer_size);
+        mzx_world->vlayer_colors = crealloc(mzx_world->vlayer_colors, vlayer_size);
         break;
       }
 
