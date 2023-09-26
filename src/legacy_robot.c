@@ -245,10 +245,13 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
       stack_skip = ROBOT_MAX_STACK - stack_size;
       stack_size = ROBOT_MAX_STACK;
     }
+    else
+
+    if(stack_size < 0)
+      stack_size = 0;
 
     // Also don't allow stack positions beyond the size of the stack.
-    if(cur_robot->stack_pointer > stack_size)
-      cur_robot->stack_pointer = stack_size;
+    cur_robot->stack_pointer = CLAMP(cur_robot->stack_pointer, 0, stack_size);
 
     cur_robot->stack = ccalloc(stack_size, sizeof(int));
     for(i = 0; i < stack_size; i += 2)
@@ -341,6 +344,11 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     // Now create a label cache IF the robot is in use
     if(cur_robot->used)
       cache_robot_labels(cur_robot);
+
+    // Reject out-of-bounds program offsets.
+    if(cur_robot->cur_prog_line < 0 ||
+     cur_robot->cur_prog_line > cur_robot->program_bytecode_length - 2)
+      cur_robot->cur_prog_line = 0;
   }
 #endif /* !CONFIG_DEBYTECODE */
 

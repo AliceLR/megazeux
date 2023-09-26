@@ -2887,11 +2887,11 @@ static enum status parse_robot_info(struct memfile *mf, struct base_file *file,
       // These vars are more reliable in ZIP worlds than they were prior,
       // and can be trusted instead of scanning the board data.
       case RPROP_XPOS:
-        robot_xpos[(unsigned char)robot_num] = load_prop_int(len, &prop);
+        robot_xpos[(unsigned char)robot_num] = load_prop_int_s(&prop, -1, 32767);
         break;
 
       case RPROP_YPOS:
-        robot_ypos[(unsigned char)robot_num] = load_prop_int(len, &prop);
+        robot_ypos[(unsigned char)robot_num] = load_prop_int_s(&prop, -1, 32767);
         break;
 
       case RPROP_PROGRAM_BYTECODE:

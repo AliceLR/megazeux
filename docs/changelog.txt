@@ -214,6 +214,11 @@ USERS
   feature may be optionally configured with the config options
   vfs_enable, vfs_enable_auto_cache, vfs_max_cache_size, and
   vfs_max_cache_file_size.
++ Fixed crashes when loading world or save files that contain
+  invalid current board IDs (both loaders), saved position
+  board IDs (both), start/death/game over board IDs (zip), board
+  exit board IDs (zip), robot program positions (both), robot
+  stack pointers (both), or robot stack sizes (legacy).
 + Improved the performance of Robotic debugger watchpoints,
   especially for non-built-in counters and non-spliced strings.
 + Robotic debugger watchpoints can now watch for particular

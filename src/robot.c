@@ -151,69 +151,69 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 
       case RPROP_ROBOT_CHAR:
         err_if_skipped(RPROP_ROBOT_NAME);
-        cur_robot->robot_char = load_prop_int(size, &prop);
+        cur_robot->robot_char = load_prop_int(&prop);
         break;
 
       case RPROP_XPOS:
         err_if_skipped(RPROP_ROBOT_CHAR);
-        cur_robot->xpos = (signed short)load_prop_int(size, &prop);
+        cur_robot->xpos = load_prop_int_s(&prop, -1, 32767);
         cur_robot->compat_xpos = cur_robot->xpos;
         break;
 
       case RPROP_YPOS:
         err_if_skipped(RPROP_XPOS);
-        cur_robot->ypos = (signed short) load_prop_int(size, &prop);
+        cur_robot->ypos = load_prop_int_s(&prop, -1, 32767);
         cur_robot->compat_ypos = cur_robot->ypos;
         break;
 
       // Legacy world, now save
       case RPROP_CUR_PROG_LINE:
-        cur_robot->cur_prog_line = load_prop_int(size, &prop);
+        cur_robot->cur_prog_line = load_prop_int(&prop);
         break;
 
       case RPROP_POS_WITHIN_LINE:
-        cur_robot->pos_within_line = load_prop_int(size, &prop);
+        cur_robot->pos_within_line = load_prop_int(&prop);
         break;
 
       case RPROP_ROBOT_CYCLE:
-        cur_robot->robot_cycle = load_prop_int(size, &prop);
+        cur_robot->robot_cycle = load_prop_int(&prop);
         break;
 
       case RPROP_CYCLE_COUNT:
-        cur_robot->cycle_count = load_prop_int(size, &prop);
+        cur_robot->cycle_count = load_prop_int(&prop);
         break;
 
       case RPROP_BULLET_TYPE:
-        cur_robot->bullet_type = load_prop_int(size, &prop);
+        cur_robot->bullet_type = load_prop_int(&prop) & 255;
         break;
 
       case RPROP_IS_LOCKED:
-        cur_robot->is_locked = load_prop_int(size, &prop);
+        cur_robot->is_locked = load_prop_boolean(&prop);
         break;
 
       case RPROP_CAN_LAVAWALK:
-        cur_robot->can_lavawalk = load_prop_int(size, &prop);
+        cur_robot->can_lavawalk = load_prop_int(&prop) & 255;
         break;
 
       case RPROP_WALK_DIR:
-        cur_robot->walk_dir = load_prop_int(size, &prop);
+        cur_robot->walk_dir = load_prop_int(&prop);
         break;
 
       case RPROP_LAST_TOUCH_DIR:
-        cur_robot->last_touch_dir = load_prop_int(size, &prop);
+        cur_robot->last_touch_dir = load_prop_int(&prop);
         break;
 
       case RPROP_LAST_SHOT_DIR:
-        cur_robot->last_shot_dir = load_prop_int(size, &prop);
+        cur_robot->last_shot_dir = load_prop_int(&prop);
         break;
 
       case RPROP_STATUS:
-        cur_robot->status = load_prop_int(size, &prop);
+        cur_robot->status = load_prop_int(&prop);
         break;
 
       // Legacy save
       case RPROP_LOOP_COUNT:
-        cur_robot->loop_count = load_prop_int(size, &prop);
+        cur_robot->loop_count = load_prop_int(&prop);
         break;
 
       case RPROP_LOCALS:
@@ -222,7 +222,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         break;
 
       case RPROP_STACK_POINTER:
-        cur_robot->stack_pointer = load_prop_int(size, &prop);
+        cur_robot->stack_pointer = load_prop_int(&prop) & ~1;
         break;
 
       case RPROP_STACK:
@@ -238,7 +238,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 
       // New
       case RPROP_CAN_GOOPWALK:
-        cur_robot->can_goopwalk = load_prop_int(size, &prop);
+        cur_robot->can_goopwalk = load_prop_int(&prop) & 255;
         break;
 
       // Source/bytecode are slated for separation from these files.
@@ -342,7 +342,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
   // Check the stack for invalid states...
   if(savegame && cur_robot->stack_pointer)
   {
-    if(!cur_robot->stack || !cur_robot->stack_size)
+    if(!cur_robot->stack || !cur_robot->stack_size || cur_robot->stack_pointer < 0)
     {
       cur_robot->stack_pointer = 0;
     }
@@ -388,6 +388,11 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 
   if(!cur_robot->program_bytecode)
     goto err_invalid;
+
+  // Reject out-of-bounds program offsets.
+  if(cur_robot->cur_prog_line < 0 ||
+   cur_robot->cur_prog_line > cur_robot->program_bytecode_length - 2)
+    cur_robot->cur_prog_line = 0;
 
 #endif
 
@@ -496,7 +501,7 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
         break;
 
       case SCRPROP_NUM_LINES:
-        cur_scroll->num_lines = load_prop_int(size, &prop);
+        cur_scroll->num_lines = load_prop_int(&prop);
         break;
 
       case SCRPROP_MESG:
@@ -563,7 +568,7 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
         break;
 
       case SENPROP_SENSOR_CHAR:
-        cur_sensor->sensor_char = load_prop_int(size, &prop);
+        cur_sensor->sensor_char = load_prop_int(&prop);
         break;
 
       case SENPROP_ROBOT_TO_MESG:

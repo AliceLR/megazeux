@@ -165,13 +165,14 @@ static const unsigned char def_id_dmg[ID_DMG_SIZE] =
 };
 
 
-static void append_world_refactor_board(struct board *cur_board,
- int old_num_boards)
+static void append_world_refactor_board(struct world *mzx_world,
+ struct board *cur_board, int old_num_boards)
 {
   int board_width = cur_board->board_width;
   int board_height = cur_board->board_height;
   char *level_id = cur_board->level_id;
   char *level_param = cur_board->level_param;
+  int board_dir;
   int offset;
   int d_flag;
   int i;
@@ -180,17 +181,27 @@ static void append_world_refactor_board(struct board *cur_board,
   for(offset = 0; offset < board_width * board_height; offset++)
   {
     d_flag = flags[(int)level_id[offset]];
+    board_dir = level_param[offset];
 
-    if((d_flag & A_ENTRANCE) && (level_param[offset] != NO_BOARD))
+    if((d_flag & A_ENTRANCE) && (board_dir != NO_BOARD))
     {
-      level_param[offset] += old_num_boards;
+      if(board_dir + old_num_boards < mzx_world->num_boards)
+        level_param[offset] += old_num_boards;
+      else
+        level_param[offset] = NO_BOARD;
     }
   }
 
   for(i = 0; i < 4; i++)
   {
-    if(cur_board->board_dir[i] != NO_BOARD)
-      cur_board->board_dir[i] += old_num_boards;
+    board_dir = cur_board->board_dir[i];
+    if(board_dir != NO_BOARD)
+      board_dir += old_num_boards;
+
+    if(board_dir >= mzx_world->num_boards)
+      board_dir = NO_BOARD;
+
+    cur_board->board_dir[i] = board_dir;
   }
 }
 
@@ -265,7 +276,7 @@ static boolean append_world_legacy(struct world *mzx_world, vfile *vf,
       optimize_null_objects(cur_board);
 
       // Fix exits
-      append_world_refactor_board(cur_board, old_num_boards);
+      append_world_refactor_board(mzx_world, cur_board, old_num_boards);
 
       store_board_to_extram(cur_board);
     }
@@ -305,7 +316,7 @@ static int append_world_zip_get_num_boards(const void *buffer, int buf_size)
 
   while(next_prop(&prop, &ident, &size, &mf))
     if(ident == WPROP_NUM_BOARDS)
-      return load_prop_int(size, &prop);
+      return load_prop_int_u(&prop, 0, MAX_BOARDS);
 
   return 0;
 }
@@ -371,7 +382,7 @@ static boolean append_world_zip(struct world *mzx_world, struct zip_archive *zp,
         if(cur_board)
         {
           // Fix exits.
-          append_world_refactor_board(cur_board, old_num_boards);
+          append_world_refactor_board(mzx_world, cur_board, old_num_boards);
 
           store_board_to_extram(cur_board);
         }

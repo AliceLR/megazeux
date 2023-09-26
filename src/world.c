@@ -402,13 +402,16 @@ static inline int save_world_info(struct world *mzx_world,
 }
 
 #define check(id) {                                                           \
-  while(next_prop(&prop, &ident, &size, &mf))                                 \
+  while(true)                                                                 \
   {                                                                           \
-    if(ident == id) break;                                                    \
-    else if(ident > id || ident == WPROP_EOF) {                               \
+    boolean ret = next_prop(&prop, &ident, &size, &mf);                       \
+    if(!ret || ident > id || ident == WPROP_EOF)                              \
+    {                                                                         \
       missing_ident = id;                                                     \
       goto err_free;                                                          \
     }                                                                         \
+    if(ident == id)                                                           \
+      break;                                                                  \
   }                                                                           \
   last_ident = ident;                                                         \
 }
@@ -427,6 +430,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   int last_ident = -1;
   int ident = 0;
   int size = 0;
+  int info_file_version;
 
   if(zip_get_next_uncompressed_size(zp, &actual_size) != ZIP_SUCCESS)
     return VAL_INVALID;
@@ -442,11 +446,36 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
 
   // Get the file version out of order.
   check(WPROP_FILE_VERSION);
-  *file_version = load_prop_int(size, &prop);
+  info_file_version = load_prop_int(&prop);
+  if(*file_version)
+  {
+    if(*file_version != info_file_version)
+    {
+      warn("validate_world_info: header/internal file version mismatch: %04x %04x\n",
+       *file_version, info_file_version);
+      return VAL_VERSION;
+    }
+  }
+  else
+  {
+    // This should be reached by rearchived worlds only...
+    if(info_file_version < V290 || info_file_version > MZX_VERSION)
+    {
+      warn("validate_world_info: bad file version %04x\n", info_file_version);
+      return VAL_VERSION;
+    }
+    *file_version = info_file_version;
+  }
 
   // Check everything else sorted.
   check(WPROP_WORLD_VERSION);
-  world_version = load_prop_int(size, &prop);
+  world_version = load_prop_int(&prop);
+  if(world_version < V100 || world_version > *file_version)
+  {
+    warn("validate_world_info: bad compat version %04x (file: %04x)\n",
+     world_version, *file_version);
+    return VAL_VERSION;
+  }
 
   // World data.
   check(WPROP_NUM_BOARDS);
@@ -565,7 +594,6 @@ static inline void load_world_info(struct world *mzx_world,
   size_t actual_size;
   int ident = -1;
   int size;
-  int v;
   int i;
 
   // This should absolutely be set, but just in case it isn't...
@@ -603,7 +631,8 @@ static inline void load_world_info(struct world *mzx_world,
         break;
 
       case WPROP_WORLD_VERSION:
-        mzx_world->version = load_prop_int(size, prop);
+        // Already bounds checked.
+        mzx_world->version = load_prop_int(prop);
         break;
 
       case WPROP_FILE_VERSION:
@@ -614,17 +643,16 @@ static inline void load_world_info(struct world *mzx_world,
 
       case WPROP_SAVE_START_BOARD:
         if(savegame)
-        mzx_world->current_board_id = load_prop_int(size, prop);
+        mzx_world->current_board_id = load_prop_int_u(prop, 0, MAX_BOARDS - 1);
         break;
 
       case WPROP_SAVE_TEMPORARY_BOARD:
         if(savegame)
-        mzx_world->temporary_board = load_prop_int(size, prop);
+        mzx_world->temporary_board = load_prop_boolean(prop);
         break;
 
       case WPROP_NUM_BOARDS:
-        v = load_prop_int(size, prop);
-        mzx_world->num_boards = CLAMP(v, 1, MAX_BOARDS);
+        mzx_world->num_boards = load_prop_int_u(prop, 1, MAX_BOARDS);
         break;
 
       // ID Chars
@@ -640,7 +668,7 @@ static inline void load_world_info(struct world *mzx_world,
 
       case WPROP_ID_MISSILE_COLOR:
       {
-        missile_color = load_prop_int(size, prop);
+        missile_color = load_prop_int(prop) & 255;
         break;
       }
 
@@ -675,83 +703,83 @@ static inline void load_world_info(struct world *mzx_world,
 
       // Global properties
       case WPROP_EDGE_COLOR:
-        mzx_world->edge_color = load_prop_int(size, prop);
+        mzx_world->edge_color = load_prop_int(prop) & 255;
         break;
 
       case WPROP_FIRST_BOARD:
-        mzx_world->first_board = load_prop_int(size, prop);
+        mzx_world->first_board = load_prop_int_u(prop, 0, NO_BOARD);
         break;
 
       case WPROP_ENDGAME_BOARD:
-        mzx_world->endgame_board = load_prop_int(size, prop);
+        mzx_world->endgame_board = load_prop_int_u(prop, 0, NO_BOARD);
         break;
 
       case WPROP_DEATH_BOARD:
-        mzx_world->death_board = load_prop_int(size, prop);
+        mzx_world->death_board = load_prop_int_u(prop, 0, NO_BOARD);
         break;
 
       case WPROP_ENDGAME_X:
-        mzx_world->endgame_x = load_prop_int(size, prop);
+        mzx_world->endgame_x = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_ENDGAME_Y:
-        mzx_world->endgame_y = load_prop_int(size, prop);
+        mzx_world->endgame_y = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_GAME_OVER_SFX:
-        mzx_world->game_over_sfx = load_prop_int(size, prop);
+        mzx_world->game_over_sfx = load_prop_boolean(prop);
         break;
 
       case WPROP_DEATH_X:
-        mzx_world->death_x = load_prop_int(size, prop);
+        mzx_world->death_x = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_DEATH_Y:
-        mzx_world->death_y = load_prop_int(size, prop);
+        mzx_world->death_y = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_STARTING_LIVES:
-        mzx_world->starting_lives = load_prop_int(size, prop);
+        mzx_world->starting_lives = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_LIVES_LIMIT:
-        mzx_world->lives_limit = load_prop_int(size, prop);
+        mzx_world->lives_limit = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_STARTING_HEALTH:
-        mzx_world->starting_health = load_prop_int(size, prop);
+        mzx_world->starting_health = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_HEALTH_LIMIT:
-        mzx_world->health_limit = load_prop_int(size, prop);
+        mzx_world->health_limit = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_ENEMY_HURT_ENEMY:
-        mzx_world->enemy_hurt_enemy = load_prop_int(size, prop);
+        mzx_world->enemy_hurt_enemy = load_prop_boolean(prop);
         break;
 
       case WPROP_CLEAR_ON_EXIT:
-        mzx_world->clear_on_exit = load_prop_int(size, prop);
+        mzx_world->clear_on_exit = load_prop_boolean(prop);
         break;
 
       case WPROP_ONLY_FROM_SWAP:
-        mzx_world->only_from_swap = load_prop_int(size, prop);
+        mzx_world->only_from_swap = load_prop_boolean(prop);
         break;
 
       // Global properties II
       case WPROP_SMZX_MODE:
         if_savegame_or_291
-        set_screen_mode(load_prop_int(size, prop));
+        set_screen_mode(load_prop_int(prop));
         break;
 
       case WPROP_VLAYER_WIDTH:
         if_savegame_or_291
-        mzx_world->vlayer_width = load_prop_int(size, prop);
+        mzx_world->vlayer_width = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_VLAYER_HEIGHT:
         if_savegame_or_291
-        mzx_world->vlayer_height = load_prop_int(size, prop);
+        mzx_world->vlayer_height = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_VLAYER_SIZE:
@@ -759,22 +787,13 @@ static inline void load_world_info(struct world *mzx_world,
         unsigned int vlayer_size;
         if_savegame_or_291
 
-        vlayer_size = load_prop_int(size, prop);
-        vlayer_size = MAX(1, vlayer_size);
+        vlayer_size = load_prop_int(prop);
+        vlayer_size = CLAMP(vlayer_size, 1, MAX_BOARD_SIZE);
 
         mzx_world->vlayer_size = vlayer_size;
 
-        if(mzx_world->vlayer_chars)
-        {
-          mzx_world->vlayer_chars = crealloc(mzx_world->vlayer_chars, vlayer_size);
-          mzx_world->vlayer_colors = crealloc(mzx_world->vlayer_colors, vlayer_size);
-        }
-
-        else
-        {
-          mzx_world->vlayer_chars = cmalloc(vlayer_size);
-          mzx_world->vlayer_colors = cmalloc(vlayer_size);
-        }
+        mzx_world->vlayer_chars = crealloc(mzx_world->vlayer_chars, vlayer_size);
+        mzx_world->vlayer_colors = crealloc(mzx_world->vlayer_colors, vlayer_size);
         break;
       }
 
@@ -788,22 +807,22 @@ static inline void load_world_info(struct world *mzx_world,
 
       case WPROP_MZX_SPEED:
         if_savegame
-        mzx_world->mzx_speed = load_prop_int(size, prop);
+        mzx_world->mzx_speed = load_prop_int_u(prop, 1, 16);
         break;
 
       case WPROP_LOCK_SPEED:
         if_savegame
-        mzx_world->lock_speed = load_prop_int(size, prop);
+        mzx_world->lock_speed = load_prop_boolean(prop);
         break;
 
       case WPROP_COMMANDS:
         if_savegame
-        mzx_world->commands = load_prop_int(size, prop);
+        mzx_world->commands = load_prop_int(prop);
         break;
 
       case WPROP_COMMANDS_STOP:
         if_savegame
-        mzx_world->commands_stop = load_prop_int(size, prop);
+        mzx_world->commands_stop = load_prop_int(prop);
         break;
 
       case WPROP_SAVED_POSITIONS:
@@ -831,17 +850,17 @@ static inline void load_world_info(struct world *mzx_world,
 
       case WPROP_PLAYER_RESTART_X:
         if_savegame
-        mzx_world->player_restart_x = load_prop_int(size, prop);
+        mzx_world->player_restart_x = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_PLAYER_RESTART_Y:
         if_savegame
-        mzx_world->player_restart_y = load_prop_int(size, prop);
+        mzx_world->player_restart_y = load_prop_int_u(prop, 0, 32767);
         break;
 
       case WPROP_SAVED_PL_COLOR:
         if_savegame
-        mzx_world->saved_pl_color = load_prop_int(size, prop);
+        mzx_world->saved_pl_color = load_prop_int(prop) & 255;
         break;
 
       case WPROP_KEYS:
@@ -851,72 +870,72 @@ static inline void load_world_info(struct world *mzx_world,
 
       case WPROP_BLIND_DUR:
         if_savegame
-        mzx_world->blind_dur = load_prop_int(size, prop);
+        mzx_world->blind_dur = load_prop_int(prop);
         break;
 
       case WPROP_FIREWALKER_DUR:
         if_savegame
-        mzx_world->firewalker_dur = load_prop_int(size, prop);
+        mzx_world->firewalker_dur = load_prop_int(prop);
         break;
 
       case WPROP_FREEZE_TIME_DUR:
         if_savegame
-        mzx_world->freeze_time_dur = load_prop_int(size, prop);
+        mzx_world->freeze_time_dur = load_prop_int(prop);
         break;
 
       case WPROP_SLOW_TIME_DUR:
         if_savegame
-        mzx_world->slow_time_dur = load_prop_int(size, prop);
+        mzx_world->slow_time_dur = load_prop_int(prop);
         break;
 
       case WPROP_WIND_DUR:
         if_savegame
-        mzx_world->wind_dur = load_prop_int(size, prop);
+        mzx_world->wind_dur = load_prop_int(prop);
         break;
 
       case WPROP_SCROLL_BASE_COLOR:
         if_savegame
-        mzx_world->scroll_base_color = load_prop_int(size, prop);
+        mzx_world->scroll_base_color = load_prop_int(prop) & 255;
         break;
 
       case WPROP_SCROLL_CORNER_COLOR:
         if_savegame
-        mzx_world->scroll_corner_color = load_prop_int(size, prop);
+        mzx_world->scroll_corner_color = load_prop_int(prop) & 255;
         break;
 
       case WPROP_SCROLL_POINTER_COLOR:
         if_savegame
-        mzx_world->scroll_pointer_color = load_prop_int(size, prop);
+        mzx_world->scroll_pointer_color = load_prop_int(prop) & 255;
         break;
 
       case WPROP_SCROLL_TITLE_COLOR:
         if_savegame
-        mzx_world->scroll_title_color = load_prop_int(size, prop);
+        mzx_world->scroll_title_color = load_prop_int(prop) & 255;
         break;
 
       case WPROP_SCROLL_ARROW_COLOR:
         if_savegame
-        mzx_world->scroll_arrow_color = load_prop_int(size, prop);
+        mzx_world->scroll_arrow_color = load_prop_int(prop) & 255;
         break;
 
       case WPROP_MESG_EDGES:
         if_savegame
-        mzx_world->mesg_edges = load_prop_int(size, prop);
+        mzx_world->mesg_edges = load_prop_boolean(prop);
         break;
 
       case WPROP_BI_SHOOT_STATUS:
         if_savegame
-        mzx_world->bi_shoot_status = load_prop_int(size, prop);
+        mzx_world->bi_shoot_status = load_prop_boolean(prop);
         break;
 
       case WPROP_BI_MESG_STATUS:
         if_savegame
-        mzx_world->bi_mesg_status = load_prop_int(size, prop);
+        mzx_world->bi_mesg_status = load_prop_boolean(prop);
         break;
 
       case WPROP_FADED:
         if_savegame
-        *faded = load_prop_int(size, prop);
+        *faded = load_prop_boolean(prop);
         break;
 
       case WPROP_INPUT_FILE_NAME:
@@ -928,12 +947,12 @@ static inline void load_world_info(struct world *mzx_world,
 
       case WPROP_INPUT_POS:
         if_savegame
-        mzx_world->temp_input_pos = load_prop_int(size, prop);
+        mzx_world->temp_input_pos = load_prop_int(prop);
         break;
 
       case WPROP_FREAD_DELIMITER:
         if_savegame
-        mzx_world->fread_delimiter = load_prop_int(size, prop);
+        mzx_world->fread_delimiter = load_prop_int(prop) & 255;
         break;
 
       case WPROP_OUTPUT_FILE_NAME:
@@ -945,47 +964,47 @@ static inline void load_world_info(struct world *mzx_world,
 
       case WPROP_OUTPUT_POS:
         if_savegame
-        mzx_world->temp_output_pos = load_prop_int(size, prop);
+        mzx_world->temp_output_pos = load_prop_int(prop);
         break;
 
       case WPROP_FWRITE_DELIMITER:
         if_savegame
-        mzx_world->fwrite_delimiter = load_prop_int(size, prop);
+        mzx_world->fwrite_delimiter = load_prop_int(prop) & 255;
         break;
 
       case WPROP_MULTIPLIER:
         if_savegame
-        mzx_world->multiplier = load_prop_int(size, prop);
+        mzx_world->multiplier = load_prop_int(prop);
         break;
 
       case WPROP_DIVIDER:
         if_savegame
-        mzx_world->divider = load_prop_int(size, prop);
+        mzx_world->divider = load_prop_int(prop);
         break;
 
       case WPROP_C_DIVISIONS:
         if_savegame
-        mzx_world->c_divisions = load_prop_int(size, prop);
+        mzx_world->c_divisions = load_prop_int(prop);
         break;
 
       // Added in 2.91
       case WPROP_MAX_SAMPLES:
         if_savegame
         if(mzx_world->version >= V291)
-        mzx_world->max_samples = load_prop_int(size, prop);
+          mzx_world->max_samples = load_prop_int(prop);
         break;
 
       case WPROP_SMZX_MESSAGE:
         if_savegame
         if(mzx_world->version >= V291)
-        mzx_world->smzx_message = load_prop_int(size, prop);
+          mzx_world->smzx_message = load_prop_boolean(prop);
         break;
 
       // Added in 2.92
       case WPROP_JOY_SIMULATE_KEYS:
         if_savegame
         if(mzx_world->version >= V292)
-          mzx_world->joystick_simulate_keys = !!load_prop_int(size, prop);
+          mzx_world->joystick_simulate_keys = load_prop_boolean(prop);
         break;
 
       default:
@@ -1399,7 +1418,7 @@ static inline int load_world_sprites(struct world *mzx_world,
   while(next_prop(&prop, &ident, &length, &mf))
   {
     // Mostly numeric values here, and anything that isn't can seek back.
-    value = load_prop_int(length, &prop);
+    value = load_prop_int(&prop);
 
     switch(ident)
     {
@@ -2501,6 +2520,16 @@ void refactor_board_list(struct world *mzx_world,
     mzx_world->death_board = d_param;
   }
 
+  for(i = 0; i < 8; i++)
+  {
+    d_param = mzx_world->pl_saved_board[i];
+    if(d_param >= num_boards)
+      d_param = num_boards - 1;
+
+    d_param = board_id_translation_list[d_param];
+    mzx_world->pl_saved_board[i] = d_param;
+  }
+
   mzx_world->board_list = board_list;
 }
 
@@ -2543,6 +2572,10 @@ void optimize_null_boards(struct world *mzx_world)
 
   if(mzx_world->endgame_board >= num_boards)
     mzx_world->endgame_board = NO_BOARD;
+
+  for(i = 0; i < 8; i++)
+    if(mzx_world->pl_saved_board[i] >= num_boards)
+      mzx_world->pl_saved_board[i] = 0;
 
   if(i2 < num_boards)
   {
@@ -2679,8 +2712,12 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
     }
   }
 
-  // This pointer is now invalid. Clear it before we try to
-  // send it back to extra RAM.
+  // Set up the initial current board (which might have a junk ID).
+  // If the current board is a temporary board, then nothing needs to be done.
+  // For worlds, this should always be 0 (title screen).
+  if(mzx_world->current_board_id >= mzx_world->num_boards)
+    mzx_world->current_board_id = 0;
+
   if(!mzx_world->temporary_board)
   {
     mzx_world->current_board = NULL;
@@ -2702,6 +2739,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   mzx_world->active = 1;
 
   // Remove any null boards
+  // Also bounds checks the start, death, game over, and board exit board IDs.
   optimize_null_boards(mzx_world);
 
   // Resize this array if necessary
@@ -2798,18 +2836,14 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
   if(v > 0 && v <= MZX_LEGACY_FORMAT_VERSION)
     goto err_close;
 
-  // Get the actual file version out of the world metadata
-  *file_version = 0;
-  v = 0;
-
   zp = zip_open_vf_read(vf);
-
   if(!zp)
   {
     vf = NULL;
     goto err_close;
   }
 
+  // This may contain a different file format version...
   result = validate_world_zip(mzx_world, zp, savegame, file_version);
 
   if(result != VAL_SUCCESS)
@@ -2851,7 +2885,6 @@ err_close:
       error_message(E_SAVE_FILE_INVALID, 0, NULL);
     }
   }
-
   else
   {
     if(v > MZX_VERSION)

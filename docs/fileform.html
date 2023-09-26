@@ -1042,7 +1042,7 @@ while(i &lt; size)
 | 20    | b     | Wind timer
 | 21    | w * 8 | Saved player X positions
 | 37    | w * 8 | Saved player Y positions
-| 53    | b * 8 | Saved player board numbers
+| 53    | b * 8 | Saved player board numbers <a href="#global200save1note3">(3)</a>
 | 61    | b     | Player color
 | 62    | b * 3 | Under player ID/color/param <a href="#global200save1note1">(1)</a>
 | 65    | b     | Message edges enabled (1) or disabled (0)
@@ -1072,6 +1072,11 @@ while(i &lt; size)
           Prior to MZX 2.51s2, the current playing mod was not saved at all
           (as it was always the same as the current board mod) (total block
           length 71 bytes).
+        </li>
+        <li id="global200save1note3">
+          Due to a bug, MegaZeux 2.80 through 2.84c instead save the board
+          numbers of the first two saved positions as endian-dependent dwords
+          (4 bytes) and ignore the last six.
         </li>
       </ol>
 
@@ -1731,11 +1736,11 @@ while(i &lt; size)
 | 202  | b    | Bottom message timer
 | 203  | b    | Lazerwall timer
 | 204  | b    | Bottom message row
-| 205  | b    | Bottom message column
-| 206  | w    | Scroll X
-| 208  | w    | Scroll Y
-| 210  | w    | Scroll locked X
-| 212  | w    | Scroll locked Y
+| 205  | bs   | Bottom message column (-1: center)
+| 206  | ws   | Scroll relative X offset
+| 208  | ws   | Scroll relative Y offset
+| 210  | ws   | Scroll locked X (-1: no lock)
+| 212  | ws   | Scroll locked Y (-1: no lock)
 | 214  | b    | Player locked NS?
 | 215  | b    | Player locked EW?
 | 216  | b    | Player attack locked?
@@ -1807,11 +1812,11 @@ while(i &lt; size)
 | 10+x+y  | b    | Bottom message timer
 | 11+x+y  | b    | Lazerwall timer
 | 12+x+y  | b    | Bottom message row
-| 13+x+y  | b    | Bottom message column
-| 14+x+y  | w    | Scroll X
-| 16+x+y  | w    | Scroll Y
-| 18+x+y  | w    | Scroll locked X
-| 20+x+y  | w    | Scroll locked Y
+| 13+x+y  | bs   | Bottom message column (-1: center)
+| 14+x+y  | ws   | Scroll relative X offset
+| 16+x+y  | ws   | Scroll relative Y offset
+| 18+x+y  | ws   | Scroll locked X (-1: no lock)
+| 20+x+y  | ws   | Scroll locked Y (-1: no lock)
       </div>
 
       <p>
@@ -2540,10 +2545,10 @@ while(i &lt; size)
 | `0x0029` | Reset board on entry?  | int(b)
 | `0x002A` | Board charset path     | string
 | `0x002B` | Board palette path     | string
-| `0x0100` | Scroll X               | int(w)  | Save-only
-| `0x0101` | Scroll Y               | int(w)  | Save-only
-| `0x0102` | Scroll locked X        | int(w)  | Save-only
-| `0x0103` | Scroll locked Y        | int(w)  | Save-only
+| `0x0100` | Scroll relative X offset | int(ws) | Save-only
+| `0x0101` | Scroll relative Y offset | int(ws) | Save-only
+| `0x0102` | Scroll locked X        | int(ws) | Save-only (-1: no lock)
+| `0x0103` | Scroll locked Y        | int(ws) | Save-only (-1: no lock)
 | `0x0104` | Last player direction  | int(b)  | Save-only
 | `0x010A` | Lazerwall timer        | int(b)  | Save-only
 | `0x010B` | Last key pressed       | int(b)  | Save-only
@@ -2553,7 +2558,7 @@ while(i &lt; size)
 | `0x0110` | Bottom message         | string  | Save-only
 | `0x0111` | Bottom message timer   | int(b)  | Save-only
 | `0x0112` | Bottom message row     | int(b)  | Save-only
-| `0x0113` | Bottom message column  | int(b)  | Save-only
+| `0x0113` | Bottom message column  | int(bs) | Save-only (-1: center)
 | `0x0114` | Volume                 | int(b)  | Save-only
 | `0x0115` | Volume increment       | int(b)  | Save-only
 | `0x0116` | Volume target          | int(b)  | Save-only
