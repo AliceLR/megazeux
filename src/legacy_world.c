@@ -897,8 +897,22 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
       mzx_world->pl_saved_y[i] = vfgetw(vf);
     }
 
-    if(!vfread(mzx_world->pl_saved_board, 8, 1, vf))
-      goto err_close;
+    if(file_version >= V280)
+    {
+      // Saved positions 3-8 were broken due to a bug and 1-2 were
+      // saved as endian-dependent dwords.
+      mzx_world->pl_saved_board[0] = vfgetd(vf) & 0xff;
+      mzx_world->pl_saved_board[1] = vfgetd(vf) & 0xff;
+
+      for(i = 2; i < 8; i++)
+        mzx_world->pl_saved_board[i] = 0;
+    }
+    else
+    {
+      for(i = 0; i < 8; i++)
+        mzx_world->pl_saved_board[i] = vfgetc(vf);
+    }
+
     mzx_world->saved_pl_color = vfgetc(vf);
     mzx_world->under_player_id = vfgetc(vf);
     mzx_world->under_player_color = vfgetc(vf);
@@ -950,7 +964,7 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
 
   if(savegame)
   {
-    int vlayer_size;
+    unsigned int vlayer_size;
     int num_counters, num_strings;
     int screen_mode;
     int j;
@@ -1101,6 +1115,7 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
     mzx_world->commands = vfgetd(vf);
 
     vlayer_size = vfgetd(vf);
+    vlayer_size = CLAMP(vlayer_size, 1, MAX_BOARD_SIZE);
     mzx_world->vlayer_width = vfgetw(vf);
     mzx_world->vlayer_height = vfgetw(vf);
     mzx_world->vlayer_size = vlayer_size;
@@ -1109,9 +1124,8 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
     mzx_world->vlayer_chars = crealloc(mzx_world->vlayer_chars, vlayer_size);
     mzx_world->vlayer_colors = crealloc(mzx_world->vlayer_colors, vlayer_size);
 
-    if(vlayer_size &&
-     (!vfread(mzx_world->vlayer_chars, vlayer_size, 1, vf) ||
-      !vfread(mzx_world->vlayer_colors, vlayer_size, 1, vf)))
+    if(vfread(mzx_world->vlayer_chars, 1, vlayer_size, vf) != vlayer_size ||
+     vfread(mzx_world->vlayer_colors, 1, vlayer_size, vf) != vlayer_size)
       goto err_close;
   }
 

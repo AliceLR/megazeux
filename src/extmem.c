@@ -432,6 +432,9 @@ static size_t RLE3_pack(uint8_t * RESTRICT data, size_t data_len,
       {
         // Emit the head and tail of the block as literal chars.
         size_t k = 0;
+        if(j + block_len > data_len)
+          return 0;
+
         while(block[k] <= RLE3_MAX_CHAR && k < block_len)
         {
           RLE3_PACK_CHAR(block[k]);
@@ -448,6 +451,10 @@ static size_t RLE3_pack(uint8_t * RESTRICT data, size_t data_len,
           j += middle_len;
           k += middle_len;
         }
+
+        if(j + block_len > data_len)
+          return 0;
+
         while(k < block_len)
         {
           RLE3_PACK_CHAR(block[k]);

@@ -31,6 +31,8 @@
 
 #include "../src/network/Scoped.hpp"
 
+#include <limits.h>
+
 /**
  * world.c functions.
  */
@@ -449,6 +451,15 @@ UNITTEST(Properties)
     ASSERTEQ((size_t)mftell(&mf), sizeof(expected), "");
   }
 
+  SECTION(save_prop_q)
+  {
+    static constexpr uint8_t expected[] =
+     { 'A', 'b', 0x08, '\0', '\0', '\0', 0xf0, 0xde, 0xbc, 0x9a, 0x78, 0x56, 0x34, 0x12 };
+    save_prop_q(0x6241, 0x123456789abcdef0ll, &mf);
+    ASSERTMEM(buffer, expected, sizeof(expected), "");
+    ASSERTEQ((size_t)mftell(&mf), sizeof(expected), "");
+  }
+
   SECTION(save_prop_a)
   {
     const char *str = "value! 1234567890";
@@ -588,42 +599,66 @@ UNITTEST(Properties)
     ASSERTEQ((size_t)mftell(&mf), PROP_HEADER_SIZE, "final pos (large length)");
   }
 
-  SECTION(load_prop_int)
+  struct load_prop_int_data
   {
-    struct load_prop_int_data
-    {
-      int ident;
-      int length;
-      int value;
-    };
-
-    static const uint8_t input[] =
-    {
-      0x00, 0xff, 0x00, 0x00, 0x00, 0x00,
-      0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 'a',
-      0x02, 0x02, 0x02, 0x00, 0x00, 0x00, 'b', 'b',
-      0x03, 0x03, 0x03, 0x00, 0x00, 0x00, 'c', 'c', 'c',
-      0x04, 0x04, 0x04, 0x00, 0x00, 0x00, 'd', 'd', 'd', 'd',
-      0x05, 0x05, 0x05, 0x00, 0x00, 0x00, 'e', 'e', 'e', 'e', 'e',
-      0x00, 0x00,
-    };
-    static const struct load_prop_int_data expected[] =
-    {
-      { 0xff00, 0, 0 },
-      { 0x0101, 1, 'a' },
-      { 0x0202, 2, ('b' << 8) | 'b' },
-      { 0x0303, 3, 0 },
-      { 0x0404, 4, ('d' << 24) | ('d' << 16) | ('d' << 8) | 'd', },
-      { 0x0505, 5, 0 },
-    };
-    boolean ret;
     int ident;
     int length;
-    int value;
+    int value_u32;
+    int value_s32;
+    int64_t value_s64;
+    boolean value_b;
+  };
 
-    mfopen(input, sizeof(input), &mf);
+  static constexpr uint8_t load_prop_int_input[] =
+  {
+    0x00, 0xff, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 'a',
+    0x02, 0x02, 0x02, 0x00, 0x00, 0x00, 'b', 'b',
+    0x03, 0x03, 0x03, 0x00, 0x00, 0x00, 'c', 'c', 'c',
+    0x04, 0x04, 0x04, 0x00, 0x00, 0x00, 'd', 'd', 'd', 'd',
+    0x05, 0x05, 0x05, 0x00, 0x00, 0x00, 'e', 'e', 'e', 'e', 'e',
+    0x06, 0x06, 0x06, 0x00, 0x00, 0x00, 'f', 'f', 'f', 'f', 'f', 'f',
+    0x07, 0x07, 0x07, 0x00, 0x00, 0x00, 'g', 'g', 'g', 'g', 'g', 'g', 'g',
+    0x08, 0x08, 0x08, 0x00, 0x00, 0x00, 'h', 'h', 'h', 'h', 'h', 'h', 'h', 'h',
+    0x09, 0x09, 0x09, 0x00, 0x00, 0x00, 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i', 'i',
+    0x0a, 0x0a, 0x01, 0x00, 0x00, 0x00, 255,
+    0x0b, 0x0b, 0x02, 0x00, 0x00, 0x00, 255, 255,
+    0x00, 0x00,
+  };
 
-    for(const load_prop_int_data &d : expected)
+  static constexpr int b16 = ('b' << 8) | 'b';
+  static constexpr int d32 = ('d' << 24) | ('d' << 16) | ('d' << 8) | 'd';
+  static constexpr int64_t h64 =
+   ((int64_t)'h' << 56) | ((int64_t)'h' << 48) |
+   ((int64_t)'h' << 40) | ((int64_t)'h' << 32) |
+   ('h' << 24) | ('h' << 16) | ('h' << 8) | 'h';
+
+  static constexpr struct load_prop_int_data expected[] =
+  {
+    //            u32     s32     s64     boolean
+    { 0xff00, 0,  0,      0,      0,      false },
+    { 0x0101, 1,  'a',    'a',    'a',    true },
+    { 0x0202, 2,  b16,    b16,    b16,    true },
+    { 0x0303, 3,  0,      0,      0,      false },
+    { 0x0404, 4,  d32,    d32,    d32,    true },
+    { 0x0505, 5,  0,      0,      0,      false },
+    { 0x0606, 6,  0,      0,      0,      false },
+    { 0x0707, 7,  0,      0,      0,      false },
+    { 0x0808, 8,  0,      0,      h64,    false },
+    { 0x0909, 9,  0,      0,      0,      false },
+    { 0x0a0a, 1,  255,    -1,     -1,     true },
+    { 0x0b0b, 2,  65535,  -1,     -1,     true },
+  };
+  boolean ret;
+  int ident;
+  int length;
+  int64_t value;
+
+  SECTION(load_prop_int)
+  {
+    mfopen(load_prop_int_input, sizeof(load_prop_int_input), &mf);
+
+    for(auto &d : expected)
     {
       ret = next_prop(&prop, &ident, &length, &mf);
       ASSERT(ret, "%04x", d.ident);
@@ -631,8 +666,96 @@ UNITTEST(Properties)
       ASSERTEQ(ident, d.ident, "%04x", d.ident);
       ASSERTEQ(length, d.length, "%04x", d.ident);
 
-      value = load_prop_int(length, &prop);
-      ASSERTEQ(value, d.value, "%04x", d.ident);
+      value = load_prop_int(&prop);
+      ASSERTEQ(value, d.value_u32, "%04x", d.ident);
+    }
+
+    ret = next_prop(&prop, &ident, &length, &mf);
+    ASSERT(ret == false, "EOF");
+    value = mfgetw(&mf);
+    ASSERTEQ(value, 0x0000, "ident (EOF)");
+  }
+
+  SECTION(load_prop_int_u)
+  {
+    mfopen(load_prop_int_input, sizeof(load_prop_int_input), &mf);
+
+    for(auto &d : expected)
+    {
+      ret = next_prop(&prop, &ident, &length, &mf);
+      ASSERT(ret, "%04x", d.ident);
+
+      ASSERTEQ(ident, d.ident, "%04x", d.ident);
+      ASSERTEQ(length, d.length, "%04x", d.ident);
+
+      value = load_prop_int_u(&prop, 0, INT_MAX);
+      ASSERTEQ(value, d.value_u32, "%04x", d.ident);
+    }
+
+    ret = next_prop(&prop, &ident, &length, &mf);
+    ASSERT(ret == false, "EOF");
+    value = mfgetw(&mf);
+    ASSERTEQ(value, 0x0000, "ident (EOF)");
+  }
+
+  SECTION(load_prop_int_s)
+  {
+    mfopen(load_prop_int_input, sizeof(load_prop_int_input), &mf);
+
+    for(auto &d : expected)
+    {
+      ret = next_prop(&prop, &ident, &length, &mf);
+      ASSERT(ret, "%04x", d.ident);
+
+      ASSERTEQ(ident, d.ident, "%04x", d.ident);
+      ASSERTEQ(length, d.length, "%04x", d.ident);
+
+      value = load_prop_int_s(&prop, -255, INT_MAX);
+      ASSERTEQ(value, d.value_s32, "%04x", d.ident);
+    }
+
+    ret = next_prop(&prop, &ident, &length, &mf);
+    ASSERT(ret == false, "EOF");
+    value = mfgetw(&mf);
+    ASSERTEQ(value, 0x0000, "ident (EOF)");
+  }
+
+  SECTION(load_prop_boolean)
+  {
+    mfopen(load_prop_int_input, sizeof(load_prop_int_input), &mf);
+
+    for(auto &d : expected)
+    {
+      ret = next_prop(&prop, &ident, &length, &mf);
+      ASSERT(ret, "%04x", d.ident);
+
+      ASSERTEQ(ident, d.ident, "%04x", d.ident);
+      ASSERTEQ(length, d.length, "%04x", d.ident);
+
+      value = load_prop_boolean(&prop);
+      ASSERTEQ(value, d.value_b, "%04x", d.ident);
+    }
+
+    ret = next_prop(&prop, &ident, &length, &mf);
+    ASSERT(ret == false, "EOF");
+    value = mfgetw(&mf);
+    ASSERTEQ(value, 0x0000, "ident (EOF)");
+  }
+
+  SECTION(load_prop_int_s64)
+  {
+    mfopen(load_prop_int_input, sizeof(load_prop_int_input), &mf);
+
+    for(auto &d : expected)
+    {
+      ret = next_prop(&prop, &ident, &length, &mf);
+      ASSERT(ret, "%04x", d.ident);
+
+      ASSERTEQ(ident, d.ident, "%04x", d.ident);
+      ASSERTEQ(length, d.length, "%04x", d.ident);
+
+      value = load_prop_int_s64(&prop, INT64_MIN, INT64_MAX);
+      ASSERTEQ(value, d.value_s64, "%04x", d.ident);
     }
 
     ret = next_prop(&prop, &ident, &length, &mf);
