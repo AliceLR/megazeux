@@ -323,6 +323,9 @@
         <li><a href="#board100">Boards and Board RLE Planes</a></li>
         <li><a href="#boardparams100">Board Parameters</a></li>
         <li><a href="#boardobjs100">Board Objects</a></li>
+        <li><a href="#robot100">Robots</a></li>
+        <li><a href="#scroll100">Scrolls</a></li>
+        <li><a href="#sensor100">Sensors</a></li>
       </ol>
       <li><a href="#world200">World and Save Format (2.00 through 2.84X)</a></li>
       <ol type="i">
@@ -963,7 +966,7 @@ while(i &lt; size)
   runsize = *(stream++);
   current_char = *(stream++);
 
-  if(runsize > size - i)
+  if(runsize &gt; size - i)
     runsize = size - i; // MegaZeux emits an error if this occurs.
 
   for(int j = 0; j &lt; runsize; j++)
@@ -987,6 +990,178 @@ while(i &lt; size)
           handles these. I have never seen this in practice. -Lachesis)
         </li>
       </ol>
+    </section>
+
+    <section id="boardparams100" class="inner">
+      <h3>Board Parameters</h3>
+      <p>
+        The board parameters block follows the board RLE planes.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s13  | Mod playing (null terminated)
+| 13   | b    | Viewport X
+| 14   | b    | Viewport Y
+| 15   | b    | Viewport width
+| 16   | b    | Viewport height
+| 17   | b    | Can shoot?
+| 18   | b    | Can bomb?
+| 19   | b    | Fire burns brown?
+| 20   | b    | Fire burns space?
+| 21   | b    | Fire burns fakes?
+| 22   | b    | Fire burns trees?
+| 23   | b    | Explosions leave (0: space, 1: ash, 2: fire)
+| 24   | b    | Save mode (0: enabled, 1: disabled, 2: sensor only)
+| 25   | b    | Forest to floor?
+| 26   | b    | Collect bombs?
+| 27   | b    | Fire burns forever?
+| 28   | b    | Board # to north
+| 29   | b    | Board # to south
+| 30   | b    | Board # to east
+| 31   | b    | Board # to west
+| 32   | b    | Restart if zapped?
+| 33   | w    | Time limit
+| 35   | b    | Last key pressed
+| 36   | ws   | Input (numeric value)
+| 38   | b    | Inputsize
+| 39   | b    | Volume
+| 40   | b    | Player locked NS?
+| 41   | b    | Player locked EW?
+| 42   | b    | Player attack locked?
+| 43   | s81  | Input (string value) (null terminated)
+| 124  | b    | Blind duration <a href="#boardparams100note1">(1)</a>
+| 125  | b    | Firewalker duration
+| 126  | b    | Unused
+| 127  | b    | Freeze time duration
+| 128  | b    | Slow time duration
+| 129  | b    | Unused
+| 130  | b    | Unused
+| 131  | b    | Unused
+| 132  | b    | Wind duration
+| 133  | b    | Last player direction
+| 134  | s81  | Bottom message (null terminated)
+| 215  | b    | Bottom message timer
+| 216  | b    | Lazerwall timer
+| 217  | b    | Bottom message row
+| 218  | b    | Bottom message column (0: center) <a href="#boardparams100note2">(2)</a>
+| 219  | bs   | Scroll relative X offset
+| 220  | bs   | Scroll relative Y offset
+      </div>
+
+      <h5>Notes</h5>
+      <ol>
+        <li id="boardparams100note1">
+          All 5 status durations are board variables in MegaZeux 1.x. This
+          can be observed most easily in the "Flame Cavern" board of Caverns.
+        </li>
+        <li id="boardparams100note2">
+          There is no way to display the message at column 0 in MegaZeux 1.x.
+        </li>
+      </ol>
+    </section>
+
+    <section id="boardobjs100" class="inner">
+      <h3>Board Objects</h3>
+      <p>
+        Following the board parameters are the robot, scroll, and sensor lists.
+        Each list is stored as a single byte <code>N</code> indicating the
+        number of robots, scrolls, or sensors on the board (0 to 255), followed
+        by <code>N</code> stored objects of that type. Each object in its
+        respective list immediately follows the prior, and the next list starts
+        immediately following the last object in the previous list. The board
+        data ends after all three lists and their objects have been read.
+      </p>
+      <p>
+        The board robots/scrolls/sensors in the list count from ID 1 upward, as
+        ID 0 is the global robot and is invalid for scrolls and sensors. Since
+        objects in the file are sequential, robot/scroll/sensor IDs may have to
+        be reassigned when saving worlds or saves in these versions to optimize
+        out gaps in the list.
+      </p>
+    </section>
+
+    <section id="robot100" class="inner">
+      <h3>Robots</h3>
+      <p>
+        Each robot is 37 bytes plus the length of the robot program long.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Default | Description |
+|------|------|---------|-------------|
+| 0    | d    |         | Program length in bytes. FILEFORM.TXT claims signed...
+| 4    | d    |         | unused <a href="#robot100note1">(1)</a>
+| 8    | s15  |         | Robot name (null-terminated)
+| 23   | b    | 2       | Robot char
+| 24   | d    | 1       | Current position in program
+| 28   | b    | 0       | Position within current line (for <code>WAIT</code>/<code>GO</code>/etc)
+| 29   | b    | 1       | Robot cycle
+| 30   | b    | 0       | Cycle counter
+| 31   | b    | 1       | Bullet type (0: player, 1: neutral, 2: enemy)
+| 32   | b    | 0       | Locked status (0: unlocked, 1: locked)
+| 33   | b    | 0       | Can lavawalk (0: no, 1: yes)
+| 34   | b    | 0       | Walk direction (0: idle)
+| 35   | b    | 0       | Last touch direction
+| 36   | b    | 0       | Last shot direction
+| 37   | s... |         | Robot program
+      </div>
+
+      <h4>Notes</h4>
+      <ol>
+        <li id="robot100note1">
+          DOS MZX versions wrote robot, scroll, and sensor structs directly to
+          world or save files. The unused 4-byte field at offset 4 probably
+          corresponds to the program memory pointer in these versions, if
+          MegaZeux 2.x is any indication. Scrolls likewise have an unused 4
+          byte field.
+        </li>
+      </ol>
+    </section>
+
+    <section id="scroll100" class="inner">
+      <h3>Scrolls</h3>
+      <p>
+        Each scroll block is 10 bytes plus the length of the scroll text long.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | w    | Number of lines
+| 2    | d    | unused
+| 6    | d    | Scroll text length in bytes
+| 10   | s... | Scroll text <a href="#scroll100note1">(1)</a>
+      </div>
+
+      <h4>Notes</h4>
+      <ol>
+        <li id="scroll100note1">
+          Scrolls in MegaZeux 1.x have a unique form of color coding that is
+          not available in versions after. If the first character of a line is
+          '!', the byte immediately following it will be used to apply the
+          palette corresponding to that byte to the entire line. For example,
+          if a line begins with <code>33 8e</code> hex, the line will use
+          color 8 as the background color and color 14 as the foreground color.
+          Unlike 2.x scrolls, the scroll text does not begin with <code>01</code>.
+        </li>
+      </ol>
+    </section>
+
+    <section id="sensor100" class="inner">
+      <h3>Sensors</h3>
+      <p>
+        Each sensor block is 31 bytes long.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s15  | Sensor name (null-terminated)
+| 15   | b    | Sensor char
+| 16   | s15  | Robot to message (null-terminated)
+      </div>
     </section>
   </section>
 
@@ -1035,11 +1210,11 @@ while(i &lt; size)
 | Pos.  | Size  | Description |
 |-------|-------|-------------|
 | 0     | b * 16| Keys
-| 16    | b     | Blind timer
-| 17    | b     | Firewalker timer
-| 18    | b     | Freeze time timer
-| 19    | b     | Slow time timer
-| 20    | b     | Wind timer
+| 16    | b     | Blind duration
+| 17    | b     | Firewalker duration
+| 18    | b     | Freeze time duration
+| 19    | b     | Slow time duration
+| 20    | b     | Wind duration
 | 21    | w * 8 | Saved player X positions
 | 37    | w * 8 | Saved player Y positions
 | 53    | b * 8 | Saved player board numbers <a href="#global200save1note3">(3)</a>
@@ -1678,7 +1853,7 @@ while(i &lt; size)
     int runsize = current_char & 0x7F;
     current_char = *(stream++);
 
-    if(runsize > size - i)
+    if(runsize &gt; size - i)
       runsize = size - i; // MegaZeux emits an error if this occurs.
 
     for(int j = 0; j &lt; runsize; j++)
@@ -2297,11 +2472,11 @@ while(i &lt; size)
 | `0x804B` | Player restart Y                     | int(w)                  | Save-only
 | `0x804C` | Player color                         | int(b)                  | Save-only
 | `0x804D` | Keys                                 | array(b * 16)           | Save-only
-| `0x8050` | Blind timer                          | int(b)                  | Save-only
-| `0x8051` | Firewalker timer                     | int(b)                  | Save-only
-| `0x8052` | Freeze time timer                    | int(b)                  | Save-only
-| `0x8053` | Slow time timer                      | int(b)                  | Save-only
-| `0x8054` | Wind timer                           | int(b)                  | Save-only
+| `0x8050` | Blind duration                       | int(d)                  | Save-only
+| `0x8051` | Firewalker duration                  | int(d)                  | Save-only
+| `0x8052` | Freeze time duration                 | int(d)                  | Save-only
+| `0x8053` | Slow time duration                   | int(d)                  | Save-only
+| `0x8054` | Wind duration                        | int(d)                  | Save-only
 | `0x8058` | Scroll base color                    | int(b)                  | Save-only
 | `0x8059` | Scroll corner color                  | int(b)                  | Save-only
 | `0x805A` | Scroll pointer color                 | int(b)                  | Save-only
@@ -2562,6 +2737,11 @@ while(i &lt; size)
 | `0x0114` | Volume                 | int(b)  | Save-only
 | `0x0115` | Volume increment       | int(b)  | Save-only
 | `0x0116` | Volume target          | int(b)  | Save-only
+| `0x0117` | Blind duration         | int(b)  | Save-only, 1.x only
+| `0x0118` | Firewalker duration    | int(b)  | Save-only, 1.x only
+| `0x0119` | Freeze time duration   | int(b)  | Save-only, 1.x only
+| `0x011a` | Slow time duration     | int(b)  | Save-only, 1.x only
+| `0x011b` | Wind duration          | int(b)  | Save-only, 1.x only
       </div>
       <ol>
         <li id="board290note1">
@@ -2688,6 +2868,17 @@ while(i &lt; size)
 | 0    | b    | Always hex <code>FF</code>
 | 1    | s3   | Magic (<code>MB2</code> for 2.00 through 2.51s1, same as <a href="#worldheader">world magic</a> after)
     </div>
+
+    <section id="mzb100" class="inner">
+      <h3>Board Files for MegaZeux 1.x</h3>
+      <p>
+        These board files actually do not contain the above header; they begin
+        exactly at the first RLE plane. See the <a href="#board100">world format
+        documentation for boards</a> for more info. Due to this, if you're
+        trying to import MegaZeux 1.x boards, you're probably better off
+        putting the board in its own world file and importing that instead.
+      </p>
+    </section>
 
     <section id="mzb200" class="inner">
       <h3>Board Files for 2.00 through 2.84X</h3>
