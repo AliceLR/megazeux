@@ -76,7 +76,7 @@ static boolean legacy_load_robot_v1(struct world *mzx_world, struct robot *cur_r
     return true;
   }
 
-  program_v1 = cmalloc(program_v1_length);
+  program_v1 = (char *)cmalloc(program_v1_length);
   if(!vfread(program_v1, program_v1_length, 1, vf))
   {
     trace("failed to read v1 program (len %d) @ %d\n", program_v1_length, robot_location);
@@ -138,7 +138,7 @@ err:
 struct robot *legacy_load_robot_allocate(struct world *mzx_world, vfile *vf,
  int savegame, int file_version, boolean *truncated)
 {
-  struct robot *cur_robot = cmalloc(sizeof(struct robot));
+  struct robot *cur_robot = (struct robot *)cmalloc(sizeof(struct robot));
 
   cur_robot->stack = NULL;
   cur_robot->label_list = NULL;
@@ -253,7 +253,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     // Also don't allow stack positions beyond the size of the stack.
     cur_robot->stack_pointer = CLAMP(cur_robot->stack_pointer, 0, stack_size);
 
-    cur_robot->stack = ccalloc(stack_size, sizeof(int));
+    cur_robot->stack = (int *)ccalloc(stack_size, sizeof(int));
     for(i = 0; i < stack_size; i += 2)
     {
       cur_robot->stack[i] = mfgetd(mf);
@@ -288,7 +288,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
 
   if((cur_robot->used) || (program_length >= 2))
   {
-    char *program_legacy_bytecode = cmalloc(program_length);
+    char *program_legacy_bytecode = (char *)cmalloc(program_length);
     mfread(program_legacy_bytecode, program_length, 1, mf);
 
     if(!validate_legacy_bytecode(&program_legacy_bytecode, &program_length))
@@ -323,7 +323,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   cur_robot->program_bytecode_length = program_length;
   if(program_length > 0)
   {
-    cur_robot->program_bytecode = cmalloc(program_length);
+    cur_robot->program_bytecode = (char *)cmalloc(program_length);
     mfread(cur_robot->program_bytecode, program_length, 1, mf);
 
     if(!validate_legacy_bytecode(&cur_robot->program_bytecode, &program_length))
@@ -422,7 +422,7 @@ boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
 {
   int robot_location = vftell(vf);
   size_t partial_size = legacy_calculate_partial_robot_size(savegame, version);
-  char *buffer = cmalloc(partial_size);
+  char *buffer = (char *)cmalloc(partial_size);
   boolean truncated = true;
   size_t full_size;
 
@@ -461,7 +461,7 @@ boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
  *
  * 1.x uses a bizarre color code hack where lines can start with ![byte].
  * The entire line will be colored [byte] (including non-text areas) and the
- * color code will be displayed at two spaces.
+ * color code will be displayed as two spaces.
  *
  * Convert these to Robotic ~@-style color codes, pad their affected lines with
  * spaces so they display correctly, and escape existing ~@s.
@@ -475,7 +475,7 @@ static boolean legacy_convert_scroll_v1(struct scroll *cur_scroll)
   size_t new_pos;
   size_t i;
 
-  new_text = malloc(old_size * 2);
+  new_text = (char *)cmalloc(old_size * 2);
   new_size = old_size * 2;
   if(!new_text)
     goto err;
@@ -545,7 +545,7 @@ static boolean legacy_convert_scroll_v1(struct scroll *cur_scroll)
 
         new_size *= 2;
       }
-      t = realloc(new_text, new_size);
+      t = (char *)crealloc(new_text, new_size);
       if(!t)
         goto err;
 
@@ -556,7 +556,7 @@ static boolean legacy_convert_scroll_v1(struct scroll *cur_scroll)
   }
   new_text[new_pos++] = '\0';
 
-  cur_scroll->mesg = realloc(new_text, new_pos);
+  cur_scroll->mesg = (char *)crealloc(new_text, new_pos);
   cur_scroll->mesg_size = new_pos;
   if(!cur_scroll->mesg)
     goto err;
@@ -595,7 +595,7 @@ static void legacy_load_scroll(struct scroll *cur_scroll, vfile *vf, int file_ve
     goto scroll_err;
 
   cur_scroll->mesg_size = scroll_size;
-  cur_scroll->mesg = cmalloc(scroll_size);
+  cur_scroll->mesg = (char *)cmalloc(scroll_size);
   if(!vfread(cur_scroll->mesg, scroll_size, 1, vf))
     goto scroll_err;
 
@@ -619,13 +619,13 @@ scroll_err:
   cur_scroll->used = 1;
 
   free(cur_scroll->mesg);
-  cur_scroll->mesg = cmalloc(3);
+  cur_scroll->mesg = (char *)cmalloc(3);
   strcpy(cur_scroll->mesg, "\x01\x0A");
 }
 
 struct scroll *legacy_load_scroll_allocate(vfile *vf, int file_version)
 {
-  struct scroll *cur_scroll = cmalloc(sizeof(struct scroll));
+  struct scroll *cur_scroll = (struct scroll *)cmalloc(sizeof(struct scroll));
   legacy_load_scroll(cur_scroll, vf, file_version);
   return cur_scroll;
 }
@@ -660,7 +660,7 @@ sensor_err:
 
 struct sensor *legacy_load_sensor_allocate(vfile *vf, int file_version)
 {
-  struct sensor *cur_sensor = cmalloc(sizeof(struct sensor));
+  struct sensor *cur_sensor = (struct sensor *)cmalloc(sizeof(struct sensor));
   legacy_load_sensor(cur_sensor, vf, file_version);
   return cur_sensor;
 }
