@@ -36,7 +36,7 @@
 
 
 static int save_board_info(struct board *cur_board, struct zip_archive *zp,
- int savegame, int file_version, const char *name)
+ int savegame, int file_version, int world_version, const char *name)
 {
   const char *tmp;
   char *buffer;
@@ -116,6 +116,16 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
     save_prop_c(BPROP_VOLUME, cur_board->volume, &mf);
     save_prop_c(BPROP_VOLUME_INC, cur_board->volume_inc, &mf);
     save_prop_c(BPROP_VOLUME_TARGET, cur_board->volume_target, &mf);
+
+    // Don't bother saving these compatibility fields unless they're needed.
+    if(file_version >= V293 && world_version == V100)
+    {
+      save_prop_c(BPROP_BLIND_DUR, cur_board->blind_dur_v1, &mf);
+      save_prop_c(BPROP_FIREWALKER_DUR, cur_board->firewalker_dur_v1, &mf);
+      save_prop_c(BPROP_FREEZE_TIME_DUR, cur_board->freeze_time_dur_v1, &mf);
+      save_prop_c(BPROP_SLOW_TIME_DUR, cur_board->slow_time_dur_v1, &mf);
+      save_prop_c(BPROP_WIND_DUR, cur_board->wind_dur_v1, &mf);
+    }
   }
 
   save_prop_eof(&mf);
@@ -138,7 +148,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
 
   sprintf(name, "b%2.2X", (unsigned char)board_id);
 
-  if(save_board_info(cur_board, zp, savegame, file_version, name))
+  if(save_board_info(cur_board, zp, savegame, file_version, mzx_world->version, name))
     goto err;
 
   sprintf(name+3, "bid");
@@ -295,6 +305,11 @@ static void default_board(struct board *cur_board)
   cur_board->b_mesg_timer = 0;
   cur_board->b_mesg_row = 24;
   cur_board->b_mesg_col = -1;
+  cur_board->blind_dur_v1 = 0;
+  cur_board->firewalker_dur_v1 = 0;
+  cur_board->freeze_time_dur_v1 = 0;
+  cur_board->slow_time_dur_v1 = 0;
+  cur_board->wind_dur_v1 = 0;
 
 #if defined(DEBUG) || defined(CONFIG_EXTRAM)
   cur_board->is_extram = false;
@@ -678,6 +693,31 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
       case BPROP_VOLUME_TARGET:
         cur_board->volume_target = load_prop_int_u(&prop, 0, 255);
+        break;
+
+      case BPROP_BLIND_DUR:
+        if(*file_version >= V293)
+          cur_board->blind_dur_v1 = load_prop_int_u(&prop, 0, 255);
+        break;
+
+      case BPROP_FIREWALKER_DUR:
+        if(*file_version >= V293)
+          cur_board->firewalker_dur_v1 = load_prop_int_u(&prop, 0, 255);
+        break;
+
+      case BPROP_FREEZE_TIME_DUR:
+        if(*file_version >= V293)
+          cur_board->freeze_time_dur_v1 = load_prop_int_u(&prop, 0, 255);
+        break;
+
+      case BPROP_SLOW_TIME_DUR:
+        if(*file_version >= V293)
+          cur_board->slow_time_dur_v1 = load_prop_int_u(&prop, 0, 255);
+        break;
+
+      case BPROP_WIND_DUR:
+        if(*file_version >= V293)
+          cur_board->wind_dur_v1 = load_prop_int_u(&prop, 0, 255);
         break;
 
       default:

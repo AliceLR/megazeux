@@ -1155,17 +1155,6 @@ static void legacy_load_world_v1(struct world *mzx_world, vfile *vf, const char 
   num_boards = vfgetc(vf);
   legacy_load_world_boards(mzx_world, vf, savegame, file_version, num_boards);
 
-  // Fetch the effect durations from the current board...
-  if(savegame && mzx_world->current_board_id < mzx_world->num_boards)
-  {
-    struct board *cur_board = mzx_world->board_list[mzx_world->current_board_id];
-    mzx_world->blind_dur = cur_board->blind_dur_v1;
-    mzx_world->firewalker_dur = cur_board->firewalker_dur_v1;
-    mzx_world->freeze_time_dur = cur_board->freeze_time_dur_v1;
-    mzx_world->slow_time_dur = cur_board->slow_time_dur_v1;
-    mzx_world->wind_dur = cur_board->wind_dur_v1;
-  }
-
   meter_restore_screen();
   vfclose(vf);
   return;

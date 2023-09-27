@@ -191,6 +191,11 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->palette_path = NULL;
   cur_board->charset_path_allocated = 0;
   cur_board->palette_path_allocated = 0;
+  cur_board->blind_dur_v1 = 0;
+  cur_board->firewalker_dur_v1 = 0;
+  cur_board->freeze_time_dur_v1 = 0;
+  cur_board->slow_time_dur_v1 = 0;
+  cur_board->wind_dur_v1 = 0;
 
 #if defined(DEBUG) || defined(CONFIG_EXTRAM)
   cur_board->is_extram = false;
@@ -416,8 +421,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     }
     else
     {
-      cur_board->scroll_x = vfgetc(vf);
-      cur_board->scroll_y = vfgetc(vf);
+      cur_board->scroll_x = (signed char)vfgetc(vf);
+      cur_board->scroll_y = (signed char)vfgetc(vf);
 
       // Fix centered value for message column...
       if(cur_board->b_mesg_col <= 0 || cur_board->b_mesg_col >= 80)
