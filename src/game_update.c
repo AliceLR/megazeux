@@ -772,6 +772,12 @@ static void draw_message(struct world *mzx_world)
   int i = 1;
   int j;
 
+  /* Safety check: bad values can get into these vars from
+   * old worlds/saves and cause out-of-bounds draws. */
+  if(mesg_y < 0 || mesg_y >= SCREEN_H ||
+   cur_board->b_mesg_col < -1 || cur_board->b_mesg_col >= SCREEN_W)
+    return;
+
   /* Always at least one line.. */
   lines[0] = cur_board->bottom_mesg;
 
