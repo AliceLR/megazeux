@@ -112,7 +112,7 @@ static boolean legacy_load_robot_v1(struct world *mzx_world, struct robot *cur_r
   {
     // Translate the legacy current bytecode offset and stack bytecode offsets
     // into usable new bytecode offsets. This may compile the robot program.
-    translate_robot_bytecode_offsets(mzx_world, cur_robot, version);
+    translate_robot_bytecode_offsets(mzx_world, cur_robot, file_version);
   }
   free(program_v2);
   program_v2 = NULL;

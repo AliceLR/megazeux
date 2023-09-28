@@ -71,6 +71,8 @@ extern const char special_first_char[256];
 
 // This command will reallocate the program as-needed, but it won't free it.
 boolean validate_legacy_bytecode(char **_bc, int *_program_length);
+boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
+ const char *src, int src_len);
 
 #ifdef CONFIG_DEBYTECODE
 
@@ -87,9 +89,6 @@ void disassemble_file(char *name, char *program, int program_length,
 CORE_LIBSPEC void disassemble_program(char *program, int program_length,
  char **_source, int *_source_length, struct command_mapping **_command_map,
  int *_command_map_length);
-
-boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
- const char *src, int src_len);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC int legacy_assemble_line(char *cpos, char *output_buffer,
