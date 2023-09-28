@@ -118,7 +118,7 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
     save_prop_c(BPROP_VOLUME_TARGET, cur_board->volume_target, &mf);
 
     // Don't bother saving these compatibility fields unless they're needed.
-    if(file_version >= V293 && world_version == V100)
+    if(file_version >= V293 && world_version < V200)
     {
       save_prop_c(BPROP_BLIND_DUR, cur_board->blind_dur_v1, &mf);
       save_prop_c(BPROP_FIREWALKER_DUR, cur_board->firewalker_dur_v1, &mf);

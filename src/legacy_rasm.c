@@ -2732,7 +2732,7 @@ void disassemble_program(char *program, int program_length,
 enum v1_params
 {
   V1_NO_PARAM,
-  V1_16,              // signed or unsigned
+  V1_16,              // unsigned
   V1_U8,              // unsigned
   V1_STRING,
   V1_CHAR,
@@ -2740,7 +2740,7 @@ enum v1_params
   V1_COLOR_UNUSED,    // unused in ver1to2, handled in V1_COLOR here.
   V1_DIRECTION,
   V1_ITEM,
-  V1_CONDITIONAL,
+  V1_EQUALITY,
   V1_CONDITION,
   V1_THING,
   V1_PARAM,
@@ -2770,8 +2770,8 @@ static const uint8_t v1_command_translation[256][8] =
   { ROBOTIC_CMD_SET,                V1_STRING, V1_STRING }, // cvt
   { ROBOTIC_CMD_INC,                V1_STRING, V1_STRING }, // cvt
   { ROBOTIC_CMD_DEC,                V1_STRING, V1_STRING }, // cvt
-  { ROBOTIC_CMD_IF,                 V1_STRING, V1_CONDITIONAL, V1_16, V1_STRING },
-  { ROBOTIC_CMD_IF,                 V1_STRING, V1_CONDITIONAL, V1_STRING, V1_STRING }, // cvt
+  { ROBOTIC_CMD_IF,                 V1_STRING, V1_EQUALITY, V1_16, V1_STRING },
+  { ROBOTIC_CMD_IF,                 V1_STRING, V1_EQUALITY, V1_STRING, V1_STRING }, // cvt
   { ROBOTIC_CMD_IF_CONDITION,       V1_CONDITION, V1_STRING },
   { ROBOTIC_CMD_IF_NOT_CONDITION,   V1_CONDITION, V1_STRING },
   { ROBOTIC_CMD_IF_ANY,             V1_COLOR, V1_THING, V1_ADD_PARAM, V1_STRING },
@@ -2991,7 +2991,7 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
         case V1_CHAR:
         case V1_DIRECTION:
         case V1_ITEM:
-        case V1_CONDITIONAL:
+        case V1_EQUALITY:
         {
           if(i >= src_len || len + 3 > 255)
             goto err;
