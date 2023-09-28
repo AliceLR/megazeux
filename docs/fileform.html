@@ -760,11 +760,6 @@ for(i = 0; i &lt; 15; i++)
       so they are documented together here. This format is sufficiently different
       enough from the 2.00 format that it has been given its own section.
     </p>
-    <p>
-      Note that 1.00 worlds do not contain ID chars damage, a palette, or a global
-      robot. Default values and a blank global robot should be used for these.
-      Also, ID char 34 (goop in 2.00+) should be overwritten with 176.
-    </p>
 
     <section id="global100" class="inner">
       <h3>Global Data</h3>
@@ -780,12 +775,18 @@ for(i = 0; i &lt; 15; i++)
 | Pos.  | Size     | Description |
 |-------|----------|-------------|
 | 0     | b * 3584 | Character set (see <a href="#chr">Character Sets</a>)
-| 3584  | b * 128  | ID Chars block 1 (thing chars)
-| 3712  | b * 178  | ID Chars block 2 (animations and colors) <a href="#global100note1">(1)</a>
+| 3584  | b * 128  | ID Chars block 1 (thing chars) <a href="#global100note1">(1)</a>
+| 3712  | b * 178  | ID Chars block 2 (animations and colors) <a href="#global100note2">(2)</a>
       </div>
       <h5>Notes</h5>
       <ol>
         <li id="global100note1">
+          Worlds in this format do not contain ID chars block 3 (damages),
+          so the 1.x default damages should be substituted for these instead.
+          Likewise, goop (ID 34) didn't exist in 1.x, so char 176 should should
+          be patched in for its character.
+        </li>
+        <li id="global100note2">
           This is the first 178 bytes of the 2.00 ID chars block 2. The missing
           values are bullet chars (306-317), player chars (318-321), player
           color (322), missile color (323), and bullet colors (324-326).
@@ -1045,7 +1046,7 @@ while(i &lt; size)
 | 215  | b    | Bottom message timer
 | 216  | b    | Lazerwall timer
 | 217  | b    | Bottom message row
-| 218  | b    | Bottom message column (0: center) <a href="#boardparams100note2">(2)</a>
+| 218  | b    | Bottom message column (-1: center) <a href="#boardparams100note2">(2)</a>
 | 219  | bs   | Scroll relative X offset
 | 220  | bs   | Scroll relative Y offset
       </div>
@@ -1057,7 +1058,8 @@ while(i &lt; size)
           can be observed most easily in the "Flame Cavern" board of Caverns.
         </li>
         <li id="boardparams100note2">
-          There is no way to display the message at column 0 in MegaZeux 1.x.
+          The default behavior is centered, but 1.x world files contain 0 here by
+          default. A value of 0 needs to be corrected to -1 when loading worlds.
         </li>
       </ol>
     </section>
@@ -2872,11 +2874,12 @@ while(i &lt; size)
     <section id="mzb100" class="inner">
       <h3>Board Files for MegaZeux 1.x</h3>
       <p>
-        These board files actually do not contain the above header; they begin
+        A MegaZeux 1.x board file contains the raw data for a single board in
+        the world format (including robots, scrolls, and sensors as-needed).
+        These board files actually do NOT contain the above header; they begin
         exactly at the first RLE plane. See the <a href="#board100">world format
-        documentation for boards</a> for more info. Due to this, if you're
-        trying to import MegaZeux 1.x boards, you're probably better off
-        putting the board in its own world file and importing that instead.
+        documentation for boards</a> for more info. A 25-byte null terminated
+        board name follows the board data.
       </p>
     </section>
 
@@ -2886,7 +2889,8 @@ while(i &lt; size)
         The header is immediately followed by the raw data for a single board
         in the world format (including robots, scrolls, and sensors as-needed).
         See the <a href="#board200">world format documentation for boards</a>
-        for more info.
+        for more info. A 25-byte null terminated board name follows the board
+        data.
       </p>
     </section>
 
