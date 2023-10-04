@@ -3164,11 +3164,23 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           vfile *vf = fsafeopen(char_value, "rb");
           if(vf)
           {
-            new_length = vfilelength(vf, true);
+            int64_t vf_len = vfilelength(vf, true);
+            if(vf_len < 0 || vf_len > INT_MAX)
+            {
+              vfclose(vf);
+              break;
+            }
+
+            new_length = (int)vf_len;
             new_source = cmalloc(new_length + 1);
+            if(!new_source)
+            {
+              vfclose(vf);
+              break;
+            }
             new_source[new_length] = 0;
 
-            if(!vfread(new_source, new_length, 1, vf))
+            if(vfread(new_source, 1, new_length, vf) != (size_t)new_length)
             {
               free(new_source);
               new_source = NULL;
@@ -3226,14 +3238,27 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         if(cur_robot)
         {
-          int program_bytecode_length = vfilelength(bc_file, true);
-          char *program_legacy_bytecode = malloc(program_bytecode_length + 1);
+          int64_t bc_len = vfilelength(bc_file, true);
+          char *program_legacy_bytecode;
+          int program_bytecode_length;
 
-          vfread(program_legacy_bytecode, program_bytecode_length, 1,
-           bc_file);
+          if(bc_len < 0 || bc_len > MAX_OBJ_SIZE)
+            break;
+
+          program_bytecode_length = (int)bc_len;
+          program_legacy_bytecode = cmalloc(program_bytecode_length + 1);
+          if(!program_legacy_bytecode)
+            break;
+
+          if(vfread(program_legacy_bytecode, 1, program_bytecode_length,
+           bc_file) != (size_t)program_bytecode_length)
+          {
+            free(program_legacy_bytecode);
+            break;
+          }
 
           if(!validate_legacy_bytecode(&program_legacy_bytecode,
-           &program_bytecode_length))
+           &program_bytecode_length, NULL))
           {
             error_message(E_LOAD_BC_CORRUPT, 0, char_value);
             free(program_legacy_bytecode);
@@ -3365,16 +3390,25 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         if(cur_robot)
         {
-          int new_size = vfilelength(bc_file, true);
-          char *program_bytecode = malloc(new_size + 1);
+          int64_t bc_len = vfilelength(bc_file, true);
+          char *program_bytecode;
+          int new_size;
 
-          if(!vfread(program_bytecode, new_size, 1, bc_file))
+          if(bc_len < 0 || bc_len > MAX_OBJ_SIZE)
+            break;
+
+          new_size = (int)bc_len;
+          program_bytecode = cmalloc(new_size + 1);
+          if(!program_bytecode)
+            break;
+
+          if(vfread(program_bytecode, 1, new_size, bc_file) != (size_t)new_size)
           {
             free(program_bytecode);
             break;
           }
 
-          if(!validate_legacy_bytecode(&program_bytecode, &new_size))
+          if(!validate_legacy_bytecode(&program_bytecode, &new_size, NULL))
           {
             error_message(E_LOAD_BC_CORRUPT, 0, char_value);
             free(program_bytecode);
