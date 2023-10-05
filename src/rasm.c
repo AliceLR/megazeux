@@ -4242,8 +4242,8 @@ __editor_maybe_static struct token *parse_command(char *src, char **_next,
       {
         tokens[arg_in_match].arg_type_indexed = best_match_types[arg_in_match];
       }
-      free(best_match_types);
     }
+    free(best_match_types);
 
     if(_next)
       *_next = best_match_next;

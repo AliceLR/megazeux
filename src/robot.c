@@ -124,11 +124,13 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 {
 #ifdef CONFIG_DEBYTECODE
   char *program_legacy_bytecode = NULL;
+  size_t program_legacy_bytecode_length = 0;
   char *saved_label_zaps = NULL;
   int num_label_zaps = 0;
 #endif
   struct memfile prop;
   int last_ident = -1;
+  int v_size;
   int ident;
   int size;
   int i;
@@ -260,8 +262,11 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
       {
         err_if_skipped(RPROP_YPOS);
 
-        if(cur_robot->program_source)
+        if(cur_robot->program_source || program_legacy_bytecode)
           break;
+
+        if(size > MAX_OBJ_SIZE)
+          goto err_invalid;
 
         // This program is source.
         cur_robot->program_source = cmalloc(size + 1);
@@ -276,30 +281,19 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
       {
         err_if_skipped(RPROP_YPOS);
 
-        if(cur_robot->program_source)
+        if(cur_robot->program_source || program_legacy_bytecode)
           break;
 
-        // Load and translate legacy bytecode to modern source.
+        if(size > MAX_OBJ_SIZE)
+          goto err_invalid;
+
         // This field should never be found in files saved in >= VERSION_SOURCE.
         if(file_version < VERSION_SOURCE)
         {
-          int v_size = size;
           program_legacy_bytecode = cmalloc(size);
+          program_legacy_bytecode_length = size;
 
           mfread(program_legacy_bytecode, size, 1, &prop);
-
-          if(!validate_legacy_bytecode(&program_legacy_bytecode, &v_size))
-          {
-            free(program_legacy_bytecode);
-            goto err_invalid;
-          }
-
-          cur_robot->program_bytecode = NULL;
-          cur_robot->program_bytecode_length = 0;
-
-          cur_robot->program_source =
-           legacy_disassemble_program(program_legacy_bytecode, v_size,
-            &(cur_robot->program_source_length), true, 10);
         }
         break;
       }
@@ -313,20 +307,15 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         if(cur_robot->program_bytecode)
           break;
 
+        if(size > MAX_OBJ_SIZE)
+          goto err_invalid;
+
         if(size > 0)
         {
-          int v_size = size;
           cur_robot->program_bytecode = cmalloc(size);
+          cur_robot->program_bytecode_length = size;
 
           mfread(cur_robot->program_bytecode, size, 1, &prop);
-
-          if(!validate_legacy_bytecode(&cur_robot->program_bytecode, &v_size))
-            goto err_invalid;
-
-          cur_robot->program_bytecode_length = v_size;
-
-          // Create the label cache for this robot
-          cache_robot_labels(cur_robot);
         }
         break;
       }
@@ -353,6 +342,22 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
   }
 
 #ifdef CONFIG_DEBYTECODE
+
+  if(program_legacy_bytecode)
+  {
+    // Load and translate legacy bytecode to modern source.
+    v_size = (int)program_legacy_bytecode_length;
+    if(!validate_legacy_bytecode(&program_legacy_bytecode, &v_size,
+     &cur_robot->cur_prog_line))
+    {
+      free(program_legacy_bytecode);
+      goto err_invalid;
+    }
+
+    cur_robot->program_source =
+     legacy_disassemble_program(program_legacy_bytecode, v_size,
+      &(cur_robot->program_source_length), true, 10);
+  }
 
   if(!cur_robot->program_source)
   {
@@ -389,10 +394,16 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
   if(!cur_robot->program_bytecode)
     goto err_invalid;
 
-  // Reject out-of-bounds program offsets.
-  if(cur_robot->cur_prog_line < 0 ||
-   cur_robot->cur_prog_line > cur_robot->program_bytecode_length - 2)
-    cur_robot->cur_prog_line = 0;
+  // Validate to fix trash programs or out-of-bounds program offsets.
+  v_size = cur_robot->program_bytecode_length;
+  if(!validate_legacy_bytecode(&cur_robot->program_bytecode, &v_size,
+   &(cur_robot->cur_prog_line)))
+    goto err_invalid;
+
+  cur_robot->program_bytecode_length = v_size;
+
+  // Create the label cache for this robot
+  cache_robot_labels(cur_robot);
 
 #endif
 

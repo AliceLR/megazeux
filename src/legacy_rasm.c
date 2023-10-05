@@ -2930,8 +2930,9 @@ static const uint8_t v1_command_translation[256][8] =
 };
 
 boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
- const char *src, int src_len)
+ int *_cur_prog_line, const char *src, int src_len)
 {
+  // FIXME: cur_prog_line
   uint8_t buf[257];
   size_t dest_len;
   size_t dest_alloc;
@@ -3405,10 +3406,12 @@ static enum bytecode_fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
   return BC_COULDNT_FIX;
 }
 
-boolean validate_legacy_bytecode(char **_bc, int *_program_length)
+boolean validate_legacy_bytecode(char **_bc, int *_program_length,
+ int *_cur_prog_line)
 {
   char *bc = *_bc;
   int program_length = *_program_length;
+  int cur_prog_line = _cur_prog_line ? *_cur_prog_line : 0;
   int cur_command_start = 0, cur_command_length = 0, cur_param_length = 0;
   int cur_command, p;
   int i = 1;
@@ -3487,6 +3490,16 @@ boolean validate_legacy_bytecode(char **_bc, int *_program_length)
       continue;
     }
 
+    // Now that the command is known to be roughly valid: cur_prog_line anywhere
+    // between the command byte and the second length byte is invalid.
+    if(cur_prog_line >= cur_command_start &&
+     cur_prog_line <= cur_command_start + cur_command_length)
+    {
+      debug("Robot has invalid cur_prog_line %d @ offset %d (len: %d)\n",
+       cur_prog_line, cur_command_start - 1, *_program_length);
+      cur_prog_line = 0;
+    }
+
     i = cur_command_start + cur_command_length + 1;
   }
 
@@ -3504,6 +3517,17 @@ boolean validate_legacy_bytecode(char **_bc, int *_program_length)
 
   if((status == BC_COULDNT_FIX) || (i > program_length))
     return false;
+
+  // Fix out-of-bounds cur_prog_line too.
+  if(cur_prog_line < 0 || cur_prog_line >= program_length)
+  {
+    debug("Robot has out-of-bounds cur_prog_line %d (old len:%d new len:%d)\n",
+     cur_prog_line, *_program_length, program_length);
+    cur_prog_line = 0;
+  }
+
+  if(_cur_prog_line)
+    *_cur_prog_line = cur_prog_line;
 
   return true;
 }

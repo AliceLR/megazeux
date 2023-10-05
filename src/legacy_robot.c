@@ -85,7 +85,7 @@ static boolean legacy_load_robot_v1(struct world *mzx_world, struct robot *cur_r
 
   // Convert v1 program to v2.
   if(!legacy_convert_v1_program(&program_v2, &program_v2_length,
-   program_v1, program_v1_length))
+   &cur_robot->cur_prog_line, program_v1, program_v1_length))
   {
     trace("legacy convert v1 program failed @ %d\n", robot_location);
     goto err;
@@ -94,7 +94,8 @@ static boolean legacy_load_robot_v1(struct world *mzx_world, struct robot *cur_r
   free(program_v1);
   program_v1 = NULL;
 
-  if(!validate_legacy_bytecode(&program_v2, &program_v2_length))
+  if(!validate_legacy_bytecode(&program_v2, &program_v2_length,
+   &cur_robot->cur_prog_line))
   {
     trace("validate legacy bytecode failed @ %d\n", robot_location);
     goto err;
@@ -291,7 +292,8 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     char *program_legacy_bytecode = (char *)cmalloc(program_length);
     mfread(program_legacy_bytecode, program_length, 1, mf);
 
-    if(!validate_legacy_bytecode(&program_legacy_bytecode, &program_length))
+    if(!validate_legacy_bytecode(&program_legacy_bytecode, &program_length,
+     &(cur_robot->cur_prog_line)))
     {
       free(program_legacy_bytecode);
       goto err_invalid;
@@ -326,7 +328,8 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     cur_robot->program_bytecode = (char *)cmalloc(program_length);
     mfread(cur_robot->program_bytecode, program_length, 1, mf);
 
-    if(!validate_legacy_bytecode(&cur_robot->program_bytecode, &program_length))
+    if(!validate_legacy_bytecode(&cur_robot->program_bytecode, &program_length,
+     &(cur_robot->cur_prog_line)))
     {
       // Only error for used robots; unused robots don't really matter and
       // in some games (Slave Pit, Wes) may have garbage programs.
@@ -337,6 +340,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
       clear_robot_contents(cur_robot);
       create_blank_robot(cur_robot);
       create_blank_robot_program(cur_robot);
+      cur_robot->cur_prog_line = 0;
     }
     else
       cur_robot->program_bytecode_length = program_length;
@@ -344,11 +348,6 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     // Now create a label cache IF the robot is in use
     if(cur_robot->used)
       cache_robot_labels(cur_robot);
-
-    // Reject out-of-bounds program offsets.
-    if(cur_robot->cur_prog_line < 0 ||
-     cur_robot->cur_prog_line > cur_robot->program_bytecode_length - 2)
-      cur_robot->cur_prog_line = 0;
   }
 #endif /* !CONFIG_DEBYTECODE */
 

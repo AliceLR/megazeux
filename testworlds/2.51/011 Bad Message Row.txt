@@ -1,0 +1,3 @@
+Title: Bad Message Row/Col Crash
+Author: Alice Rowan
+Desc: Invalid message rows and columns caused out-of-bounds message drawing in some port versions. The preset values in this board corresponded to text_video_layer.data in 2.92f.
