@@ -2932,31 +2932,48 @@ static const uint8_t v1_command_translation[256][8] =
 boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
  int *_cur_prog_line, const char *src, int src_len)
 {
-  // FIXME: cur_prog_line
   uint8_t buf[257];
   size_t dest_len;
   size_t dest_alloc;
+  int cur_prog_line = *_cur_prog_line;
   int i;
   char *dest;
+  char *tmp;
 
   // Special case- replace very short programs with FF 00.
   if(src_len <= 2)
   {
-    *_dest = cmalloc(2);
+    dest = (char *)cmalloc(2);
+    if(!dest)
+      return false;
+
+    *_dest = dest;
     *_dest_len = 2;
     *_dest[0] = 0xff;
     *_dest[1] = 0;
+    *_cur_prog_line = 0;
     return true;
   }
 
+  // Fix out-of-bounds cur_prog_line.
+  if(cur_prog_line < 0 || cur_prog_line >= src_len)
+  {
+    debug("Robot has out-of-bounds v1 cur_prog_line %d (len: %d)\n",
+     cur_prog_line, src_len);
+    cur_prog_line = 0;
+  }
+
   dest_alloc = src_len * 2;
-  dest = cmalloc(dest_alloc);
+  dest = (char *)cmalloc(dest_alloc);
+  if(!dest)
+    return false;
 
   dest[0] = 0xff;
   dest_len = 1;
 
   for(i = 1; i + 3 < src_len && *src;)
   {
+    int cmd_off = i;
     int cmd_len = src[i++];
     int cmd = src[i++];
     int next_cmd = i + cmd_len;
@@ -3147,6 +3164,17 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
     if(src[next_cmd - 1] != cmd_len)
       trace("invalid 1.x command: trailing length != starting length.\n");
 
+    // Convert v1 cur_prog_line to v2 cur_prog_line.
+    // Any value in the middle of a command is junk and should be filtered.
+    if(cur_prog_line > cmd_off && cur_prog_line < next_cmd)
+    {
+      debug("Robot has invalid v1 cur_prog_line %d @ offset %d (len: %d)\n",
+       cur_prog_line, cmd_off, src_len);
+      cur_prog_line = 0;
+    }
+    if(cur_prog_line == cmd_off)
+      cur_prog_line = dest_len;
+
     i = next_cmd;
 
     buf[0] = len - 1;
@@ -3163,7 +3191,11 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
 
         dest_alloc *= 2;
       }
-      dest = crealloc(dest, dest_alloc);
+      tmp = (char *)crealloc(dest, dest_alloc);
+      if(!tmp)
+        goto err;
+
+      dest = tmp;
     }
     memcpy(dest + dest_len, buf, len);
     dest_len += len;
@@ -3171,9 +3203,13 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
 
   dest[dest_len++] = '\0';
 
-  dest = crealloc(dest, dest_len);
+  tmp = (char *)crealloc(dest, dest_len);
+  if(tmp)
+    dest = tmp;
+
   *_dest = dest;
   *_dest_len = dest_len;
+  *_cur_prog_line = cur_prog_line;
   return true;
 
 err:

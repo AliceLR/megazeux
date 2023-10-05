@@ -1,0 +1,3 @@
+Title: bad cur_prog_line
+Author: Alice Rowan
+Desc: These robots have bad cur_prog_line values, don't crash.

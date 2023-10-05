@@ -598,7 +598,7 @@ static enum val_result __validate_legacy_world_file(vfile *vf, boolean savegame)
     // This enables 2.84 save loading.
     // This can be expanded to even older save files in the future:
     // 2.00-2.83 saves require various types of surgery to the load functions.
-    // 1.xx saves are fully implemented. FIXME: Robo-P cur_prog_line conversion.
+    // TODO: 1.xx saves are implemented but this function needs an overhaul.
     if(v < MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_OLD, v, NULL);
