@@ -3016,7 +3016,7 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
             {
               // Convert & to &&. ver1to2 did this conditionally for (mainly)
               // text displaying commands, but it really ought to be applied
-              // unconditionally. (FIXME: testing...)
+              // unconditionally.
               buf[len++] = '&';
               str_len++;
 
