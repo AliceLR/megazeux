@@ -2722,35 +2722,35 @@ while(i &lt; size)
 | `0x0029` | Reset board on entry?  | int(b)
 | `0x002A` | Board charset path     | string
 | `0x002B` | Board palette path     | string
-| `0x0100` | Scroll relative X offset | int(ws) | Save
-| `0x0101` | Scroll relative Y offset | int(ws) | Save
-| `0x0102` | Scroll locked X        | int(ws) | Save (-1: no lock)
-| `0x0103` | Scroll locked Y        | int(ws) | Save (-1: no lock)
-| `0x0104` | Last player direction  | int(b)  | Save
-| `0x010A` | Lazerwall timer        | int(b)  | Save
-| `0x010B` | Last key pressed       | int(b)  | Save
-| `0x010C` | Input (numeric value)  | int(ds) | Save
-| `0x010D` | Inputsize              | int(ds) | Save
-| `0x010E` | Input (string value)   | string  | Save
-| `0x0110` | Bottom message         | string  | Save
-| `0x0111` | Bottom message timer   | int(b)  | Save
-| `0x0112` | Bottom message row     | int(b)  | Save
-| `0x0113` | Bottom message column  | int(bs) | Save (-1: center)
-| `0x0114` | Volume                 | int(b)  | Save
-| `0x0115` | Volume increment       | int(b)  | Save
-| `0x0116` | Volume target          | int(b)  | Save
-| `0x0117` | Blind duration         | int(b)  | Save, 1.x only
-| `0x0118` | Firewalker duration    | int(b)  | Save, 1.x only
-| `0x0119` | Freeze time duration   | int(b)  | Save, 1.x only
-| `0x011a` | Slow time duration     | int(b)  | Save, 1.x only
-| `0x011b` | Wind duration          | int(b)  | Save, 1.x only
+| `0x0100` | Scroll relative X offset | int(ws) | Save-only
+| `0x0101` | Scroll relative Y offset | int(ws) | Save-only
+| `0x0102` | Scroll locked X        | int(ws) | Save-only (-1: no lock)
+| `0x0103` | Scroll locked Y        | int(ws) | Save-only (-1: no lock)
+| `0x0104` | Last player direction  | int(b)  | Save-only
+| `0x010A` | Lazerwall timer        | int(b)  | Save-only
+| `0x010B` | Last key pressed       | int(b)  | Save-only
+| `0x010C` | Input (numeric value)  | int(ds) | Save-only
+| `0x010D` | Inputsize              | int(ds) | Save-only
+| `0x010E` | Input (string value)   | string  | Save-only
+| `0x0110` | Bottom message         | string  | Save-only
+| `0x0111` | Bottom message timer   | int(b)  | Save-only
+| `0x0112` | Bottom message row     | int(b)  | Save-only
+| `0x0113` | Bottom message column  | int(bs) | Save-only (-1: center)
+| `0x0114` | Volume                 | int(b)  | Save-only
+| `0x0115` | Volume increment       | int(b)  | Save-only
+| `0x0116` | Volume target          | int(b)  | Save-only
+| `0x0117` | Blind duration         | int(b)  | Save-only, 1.x only
+| `0x0118` | Firewalker duration    | int(b)  | Save-only, 1.x only
+| `0x0119` | Freeze time duration   | int(b)  | Save-only, 1.x only
+| `0x011a` | Slow time duration     | int(b)  | Save-only, 1.x only
+| `0x011b` | Wind duration          | int(b)  | Save-only, 1.x only
       </div>
       <ol>
         <li id="board290note1">
           Properties marked "strict" must be present and in the order specified
           in the table for the board data to be considered valid. If the board
           properties file is invalid, the entire board contents will be dummied
-          out. Properties marked "save" are saved to save files only, but will
+          out. Properties marked "save-only" are saved to save files only, but will
           be respected if loaded from a world file. Properties marked "1.x only"
           are saved/loaded only if the world compatibility version is 1.x.
         </li>
@@ -2791,29 +2791,29 @@ while(i &lt; size)
 | `0x0003` | X position                   | int(ws)               | Strict
 | `0x0004` | Y position                   | int(ws)               | Strict
 | `0x00FF` | Program bytecode             | array(b * N)          | Strict
-| `0x0100` | Current position in program  | int(d)                | Save
-| `0x0101` | Position within current line | int(d)                | Save
-| `0x0102` | Robot cycle                  | int(b)                | Save
-| `0x0103` | Cycle counter                | int(b)                | Save
-| `0x0104` | Bullet type                  | int(b)                | Save
-| `0x0105` | Locked status                | int(b)                | Save
-| `0x0106` | Can lavawalk                 | int(b)                | Save
-| `0x0107` | Walk direction               | int(b)                | Save
-| `0x0108` | Last touch direction         | int(b)                | Save
-| `0x0109` | Last shot direction          | int(b)                | Save
-| `0x010A` | Status                       | int(b)                | Save
-| `0x010B` | Loopcount                    | int(ds)               | Save
-| `0x010C` | Locals                       | array(ds * 32)        | Save
-| `0x0110` | Current position in stack    | int(d)                | Save
-| `0x0111` | Robot stack                  | array(d * N)          | Save
-| `0x0120` | Can goopwalk                 | int(b)                | Save
+| `0x0100` | Current position in program  | int(d)                | Save-only
+| `0x0101` | Position within current line | int(d)                | Save-only
+| `0x0102` | Robot cycle                  | int(b)                | Save-only
+| `0x0103` | Cycle counter                | int(b)                | Save-only
+| `0x0104` | Bullet type                  | int(b)                | Save-only
+| `0x0105` | Locked status                | int(b)                | Save-only
+| `0x0106` | Can lavawalk                 | int(b)                | Save-only
+| `0x0107` | Walk direction               | int(b)                | Save-only
+| `0x0108` | Last touch direction         | int(b)                | Save-only
+| `0x0109` | Last shot direction          | int(b)                | Save-only
+| `0x010A` | Status                       | int(b)                | Save-only
+| `0x010B` | Loopcount                    | int(ds)               | Save-only
+| `0x010C` | Locals                       | array(ds * 32)        | Save-only
+| `0x0110` | Current position in stack    | int(d)                | Save-only
+| `0x0111` | Robot stack                  | array(d * N)          | Save-only
+| `0x0120` | Can goopwalk                 | int(b)                | Save-only
       </div>
       <ol>
         <li id="robot290note1">
           Properties marked "strict" must be present and in the order specified
           in the table for the robot data to be considered valid. Properties
-          marked "save" are saved to save files only, but will be respected if
-          loaded from a world file.
+          marked "save-only" are saved to save files only, but will be respected
+          if loaded from a world file.
         </li>
         <li id="robot290note2">
           Robot name maximum length is currently 14 characters; extra data
