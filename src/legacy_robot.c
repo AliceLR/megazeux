@@ -303,13 +303,11 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
      legacy_disassemble_program(program_legacy_bytecode, program_length,
      &(cur_robot->program_source_length), true, 10);
 
-    if(savegame)
-    {
-      // Translate the legacy current bytecode offset and stack bytecode offsets
-      // into usable new bytecode offsets. This may compile the robot program.
-      translate_robot_bytecode_offsets(mzx_world, cur_robot, version);
-    }
     free(program_legacy_bytecode);
+
+    // Translate the legacy current bytecode offset and stack bytecode offsets
+    // into usable new bytecode offsets. This may compile the robot program.
+    translate_robot_bytecode_offsets(mzx_world, cur_robot, version);
   }
   else
   {
@@ -344,6 +342,9 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     }
     else
       cur_robot->program_bytecode_length = program_length;
+
+    // The stack must also be checked for invalid offsets.
+    fix_robot_stack_offsets(cur_robot);
 
     // Now create a label cache IF the robot is in use
     if(cur_robot->used)
