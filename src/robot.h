@@ -77,6 +77,8 @@ void add_robot_name_entry(struct board *src_board, struct robot *cur_robot,
  char *name);
 int find_free_robot(struct board *src_board);
 
+void fix_robot_stack_offsets(struct robot *cur_robot);
+
 #endif /* !CONFIG_DEBYTECODE */
 
 CORE_LIBSPEC void cache_robot_labels(struct robot *robot);

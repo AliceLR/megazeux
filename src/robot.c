@@ -252,6 +252,11 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
       {
         err_if_skipped(RPROP_YPOS);
 
+        // This does not need to be supported in the world format--zaps
+        // in world files should be expressed directly in the source code.
+        if(!savegame)
+          break;
+
         // These have to be handled after loading the program.
         saved_label_zaps = (char *)prop.start;
         num_label_zaps = size;
@@ -366,8 +371,6 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
     cur_robot->cur_prog_line = 0;
   }
   else
-
-  if(savegame)
   {
     // The saved robot bytecode offsets are actually command numbers (3.00+)
     // or legacy bytecode offsets (<3.00). Translate the loaded offsets into
@@ -401,6 +404,9 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
     goto err_invalid;
 
   cur_robot->program_bytecode_length = v_size;
+
+  // The stack must also be checked for invalid offsets.
+  fix_robot_stack_offsets(cur_robot);
 
   // Create the label cache for this robot
   cache_robot_labels(cur_robot);
@@ -638,8 +644,6 @@ static void save_robot_to_memory(struct robot *cur_robot,
 
 #ifdef CONFIG_DEBYTECODE
 
-  // FIXME because we always save source, this means zapped labels AREN'T
-  // being saved anymore. This needs to happen!
   if(cur_robot->program_source)
   {
     int src_len = cur_robot->program_source_length;
@@ -3703,6 +3707,58 @@ void optimize_null_objects(struct board *src_board)
   free(sensor_id_translation_list);
 }
 
+#ifndef CONFIG_DEBYTECODE
+/* Fix nonsense robot stack values, 2.x edition.
+ * This should eventually be merged into translate_robot_bytecode_offsets
+ * for 3.x.
+ */
+void fix_robot_stack_offsets(struct robot *cur_robot)
+{
+  const char *bc;
+  int program_length;
+  int *stack_start;
+  int *stack_pos;
+  int *stack;
+  int i = 1;
+
+  if(!cur_robot->stack || !cur_robot->stack_pointer)
+    return;
+
+  bc = cur_robot->program_bytecode;
+  program_length = cur_robot->program_bytecode_length;
+  stack = cur_robot->stack;
+  stack_start = stack + cur_robot->stack_pointer - 2;
+
+  for(stack_pos = stack_start; stack_pos >= stack; stack_pos -= 2)
+  {
+    if(*stack_pos < 0 || *stack_pos >= program_length)
+    {
+      debug("Robot has out-of-bounds stack frame %zd: %d (len: %d)\n",
+       (stack_pos - stack) >> 1, *stack_pos, program_length);
+      *stack_pos = 0;
+    }
+  }
+
+  while(i < program_length)
+  {
+    int cmd_pos = i;
+    int cmd_next = i + (unsigned char)bc[i] + 2;
+
+    for(stack_pos = stack_start; stack_pos >= stack; stack_pos -= 2)
+    {
+      if(*stack_pos > cmd_pos && *stack_pos < cmd_next)
+      {
+        debug("Robot has invalid stack frame %zd: %d @ offset %d (len: %d)\n",
+         (stack_pos - stack) >> 1, *stack_pos, cmd_pos, program_length);
+        *stack_pos = 0;
+      }
+    }
+
+    i = cmd_next;
+  }
+}
+#endif
+
 #ifdef CONFIG_DEBYTECODE
 
 void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot)
@@ -3777,14 +3833,28 @@ static int get_legacy_bytecode_command_num(char *legacy_bc, int pos_in_bc)
     return 0;
 
   legacy_bc++;
-  while(*legacy_bc)
+  while(1)
   {
-    if(legacy_bc >= end)
+    // Only exact positions are valid.
+    // Offsets in the middle of the command previously executed arbitrary
+    // Robotic and could easily run past the end of the program. In newer
+    // versions, the robot is simply stopped if this is ever found.
+    if(legacy_bc == end)
       return i;
+
+    if(legacy_bc > end)
+    {
+      debug("invalid legacy bytecode position %d ignored\n", pos_in_bc);
+      return 0;
+    }
+
+    if(*legacy_bc == 0)
+      break;
 
     legacy_bc += *legacy_bc + 2;
     i++;
   }
+  debug("out-of-bounds legacy bytecode position %d ignored\n", pos_in_bc);
   return 0;
 }
 
@@ -3799,7 +3869,7 @@ static int get_legacy_bytecode_command_num(char *legacy_bc, int pos_in_bc)
  * first command) it does not need to be translated, and if the robot stack
  * doesn't exist or the robot is currently at the bottom of it then the stack
  * doesn't need to be translated. Checking for these cases is necessary to
- * avoid compiling every robot in the entire save on load.
+ * avoid compiling every robot in the entire world/save on load.
  */
 void translate_robot_bytecode_offsets(struct world *mzx_world,
  struct robot *cur_robot, int file_version)
