@@ -28,7 +28,9 @@ USERS
 + Protected worlds are now decrypted to RAM or a temporary file
   when 'auto_decrypt_worlds' is enabled and the original file is
   left unmodified. This setting is now enabled by default.
-+ Added experimental support for loading MZX 1.x worlds.
++ Added experimental support for loading MZX 1.x worlds. Support
+  is not fully implemented yet, but all currently known 1.x
+  worlds are playable.
 + When loading a layer MZM to the board in the editor, instead
   of always loading the MZM as CustomBlocks the conversion type
   can now be selected from CustomBlock, CustomFloor, and Text.
