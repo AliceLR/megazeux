@@ -227,6 +227,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
       overlay_mode = vfgetc(vf);
       overlay_width = vfgetw(vf);
       overlay_height = vfgetw(vf);
+      cur_board->board_width = overlay_width;
+      cur_board->board_height = overlay_height;
 
       size = overlay_width * overlay_height;
 
@@ -235,8 +237,6 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
 
       cur_board->overlay = (char *)cmalloc(size);
       cur_board->overlay_color = (char *)cmalloc(size);
-      cur_board->board_width = overlay_width;
-      cur_board->board_height = overlay_height;
 
       if(!cur_board->overlay || !cur_board->overlay_color)
         goto err_freeoverlay;
