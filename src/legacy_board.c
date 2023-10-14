@@ -72,13 +72,19 @@ static int load_RLE_dimensions(vfile *vf, int *w, int *h)
 }
 
 /* Stream position should be after the dimensions. */
-static int load_RLE_plane(char *plane, vfile *vf, int size, boolean skip_size)
+static int load_RLE_plane(struct board *cur_board, char *plane, vfile *vf,
+ int size, boolean check_size)
 {
   int i, runsize, byte;
 
-  if(skip_size)
-    if(load_RLE_dimensions(vf, &runsize, &byte))
+  if(check_size)
+  {
+    int w, h;
+    if(load_RLE_dimensions(vf, &w, &h))
       return -1;
+    if(w != cur_board->board_width || h != cur_board->board_height)
+      return -1;
+  }
 
   for(i = 0; i < size;)
   {
@@ -96,17 +102,19 @@ static int load_RLE_plane(char *plane, vfile *vf, int size, boolean skip_size)
   return 0;
 }
 
-static int load_RLE2_plane(char *plane, vfile *vf, int size, boolean skip_size)
+static int load_RLE2_plane(struct board *cur_board, char *plane, vfile *vf,
+ int size, boolean check_size)
 {
   int i, runsize;
   int current_char;
 
-  if(size < 0)
-    return -3;
-
-  if(skip_size)
-    if(vfgetd(vf) == EOF)
+  if(check_size)
+  {
+    int w = vfgetw(vf);
+    int h = vfgetw(vf);
+    if(h < 0 || w != cur_board->board_width || h != cur_board->board_height)
       return -1;
+  }
 
   for(i = 0; i < size;)
   {
@@ -145,6 +153,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, size, board_width, board_height, i;
   int viewport_x, viewport_y, viewport_width, viewport_height;
+  int overlay_width;
+  int overlay_height;
   boolean truncated = false;
 
   struct robot *cur_robot;
@@ -214,9 +224,6 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
 
     if(!overlay_mode)
     {
-      int overlay_width;
-      int overlay_height;
-
       overlay_mode = vfgetc(vf);
       overlay_width = vfgetw(vf);
       overlay_height = vfgetw(vf);
@@ -226,14 +233,17 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
       if(size < 1 || size > MAX_BOARD_SIZE)
         goto err_invalid;
 
-      cur_board->overlay = cmalloc(size);
-      cur_board->overlay_color = cmalloc(size);
+      cur_board->overlay = (char *)cmalloc(size);
+      cur_board->overlay_color = (char *)cmalloc(size);
+      cur_board->board_width = overlay_width;
+      cur_board->board_height = overlay_height;
 
-      if(load_RLE2_plane(cur_board->overlay, vf, size, false))
+      if(!cur_board->overlay || !cur_board->overlay_color)
         goto err_freeoverlay;
 
-      // Skip sizes
-      if(load_RLE2_plane(cur_board->overlay_color, vf, size, true))
+      if(load_RLE2_plane(cur_board, cur_board->overlay, vf, size, false))
+        goto err_freeoverlay;
+      if(load_RLE2_plane(cur_board, cur_board->overlay_color, vf, size, true))
         goto err_freeoverlay;
     }
     else
@@ -254,25 +264,32 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
 
     if(size < 1 || size > MAX_BOARD_SIZE)
       goto err_freeoverlay;
+    if(overlay_mode && (board_width != overlay_width || board_height != overlay_height))
+      goto err_freeoverlay;
 
-    cur_board->level_id = cmalloc(size);
-    cur_board->level_color = cmalloc(size);
-    cur_board->level_param = cmalloc(size);
-    cur_board->level_under_id = cmalloc(size);
-    cur_board->level_under_color = cmalloc(size);
-    cur_board->level_under_param = cmalloc(size);
+    cur_board->level_id = (char *)cmalloc(size);
+    cur_board->level_color = (char *)cmalloc(size);
+    cur_board->level_param = (char *)cmalloc(size);
+    cur_board->level_under_id = (char *)cmalloc(size);
+    cur_board->level_under_color = (char *)cmalloc(size);
+    cur_board->level_under_param = (char *)cmalloc(size);
 
-    if(load_RLE2_plane(cur_board->level_id, vf, size, false))
+    if(!cur_board->level_id || !cur_board->level_color ||
+     !cur_board->level_param || !cur_board->level_under_id ||
+     !cur_board->level_under_color || !cur_board->level_under_param)
       goto err_freeboard;
-    if(load_RLE2_plane(cur_board->level_color, vf, size, true))
+
+    if(load_RLE2_plane(cur_board, cur_board->level_id, vf, size, false))
       goto err_freeboard;
-    if(load_RLE2_plane(cur_board->level_param, vf, size, true))
+    if(load_RLE2_plane(cur_board, cur_board->level_color, vf, size, true))
       goto err_freeboard;
-    if(load_RLE2_plane(cur_board->level_under_id, vf, size, true))
+    if(load_RLE2_plane(cur_board, cur_board->level_param, vf, size, true))
       goto err_freeboard;
-    if(load_RLE2_plane(cur_board->level_under_color, vf, size, true))
+    if(load_RLE2_plane(cur_board, cur_board->level_under_id, vf, size, true))
       goto err_freeboard;
-    if(load_RLE2_plane(cur_board->level_under_param, vf, size, true))
+    if(load_RLE2_plane(cur_board, cur_board->level_under_color, vf, size, true))
+      goto err_freeboard;
+    if(load_RLE2_plane(cur_board, cur_board->level_under_param, vf, size, true))
       goto err_freeboard;
   }
   else
@@ -292,24 +309,29 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     if(size < 1 || size > MAX_BOARD_SIZE)
       goto err_invalid;
 
-    cur_board->level_id = cmalloc(size);
-    cur_board->level_color = cmalloc(size);
-    cur_board->level_param = cmalloc(size);
-    cur_board->level_under_id = cmalloc(size);
-    cur_board->level_under_color = cmalloc(size);
-    cur_board->level_under_param = cmalloc(size);
+    cur_board->level_id = (char *)cmalloc(size);
+    cur_board->level_color = (char *)cmalloc(size);
+    cur_board->level_param = (char *)cmalloc(size);
+    cur_board->level_under_id = (char *)cmalloc(size);
+    cur_board->level_under_color = (char *)cmalloc(size);
+    cur_board->level_under_param = (char *)cmalloc(size);
 
-    if(load_RLE_plane(cur_board->level_id, vf, size, false))
+    if(!cur_board->level_id || !cur_board->level_color ||
+     !cur_board->level_param || !cur_board->level_under_id ||
+     !cur_board->level_under_color || !cur_board->level_under_param)
       goto err_freeboard;
-    if(load_RLE_plane(cur_board->level_color, vf, size, true))
+
+    if(load_RLE_plane(cur_board, cur_board->level_id, vf, size, false))
       goto err_freeboard;
-    if(load_RLE_plane(cur_board->level_param, vf, size, true))
+    if(load_RLE_plane(cur_board, cur_board->level_color, vf, size, true))
       goto err_freeboard;
-    if(load_RLE_plane(cur_board->level_under_id, vf, size, true))
+    if(load_RLE_plane(cur_board, cur_board->level_param, vf, size, true))
       goto err_freeboard;
-    if(load_RLE_plane(cur_board->level_under_color, vf, size, true))
+    if(load_RLE_plane(cur_board, cur_board->level_under_id, vf, size, true))
       goto err_freeboard;
-    if(load_RLE_plane(cur_board->level_under_param, vf, size, true))
+    if(load_RLE_plane(cur_board, cur_board->level_under_color, vf, size, true))
+      goto err_freeboard;
+    if(load_RLE_plane(cur_board, cur_board->level_under_param, vf, size, true))
       goto err_freeboard;
   }
 
@@ -424,8 +446,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
       cur_board->scroll_x = (signed char)vfgetc(vf);
       cur_board->scroll_y = (signed char)vfgetc(vf);
 
-      // Fix centered value for message column...
-      if(cur_board->b_mesg_col <= 0 || cur_board->b_mesg_col >= 80)
+      // Fix world default centered value for message column...
+      if(!savegame && cur_board->b_mesg_col == 0)
         cur_board->b_mesg_col = -1;
     }
   }
