@@ -1,0 +1,3 @@
+Title: v1 Counter Symbol Escape Test
+Author: Alice Rowan
+Desc: Make sure various important symbols in modern Robotic are escaped when a v1 program is converted, or otherwise have no side effects when interpreted.

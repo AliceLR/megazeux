@@ -83,7 +83,7 @@ enum world_file_id
 #define BOUND_WORLD_PROPS (BOARD_NAME_SIZE + 5 + 455 + 24 + 9 + STATS_SIZE)
 
 #define COUNT_SAVE_PROPS  ( 2 +  32 +          3 +        1)
-#define BOUND_SAVE_PROPS  ( 2 + 105 + 3*MAX_PATH + NUM_KEYS)
+#define BOUND_SAVE_PROPS  ( 2 + 120 + 3*MAX_PATH + NUM_KEYS)
 
 // For world files, use WORLD_PROP_SIZE
 // For save files, use WORLD_PROP_SIZE + SAVE_PROP_SIZE
@@ -158,11 +158,11 @@ enum world_prop
   WPROP_PLAYER_RESTART_Y          = 0x804B, //   2
   WPROP_SAVED_PL_COLOR            = 0x804C, //   1
   WPROP_KEYS                      = 0x804D, // NUM_KEYS
-  WPROP_BLIND_DUR                 = 0x8050, //   1
-  WPROP_FIREWALKER_DUR            = 0x8051, //   1
-  WPROP_FREEZE_TIME_DUR           = 0x8052, //   1
-  WPROP_SLOW_TIME_DUR             = 0x8053, //   1
-  WPROP_WIND_DUR                  = 0x8054, //   1
+  WPROP_BLIND_DUR                 = 0x8050, //   4
+  WPROP_FIREWALKER_DUR            = 0x8051, //   4
+  WPROP_FREEZE_TIME_DUR           = 0x8052, //   4
+  WPROP_SLOW_TIME_DUR             = 0x8053, //   4
+  WPROP_WIND_DUR                  = 0x8054, //   4
   WPROP_SCROLL_BASE_COLOR         = 0x8058, //   1
   WPROP_SCROLL_CORNER_COLOR       = 0x8059, //   1
   WPROP_SCROLL_POINTER_COLOR      = 0x805A, //   1
@@ -241,8 +241,8 @@ enum sprite_prop
 #define COUNT_BOARD_PROPS (              1 +  7 +          3 + 25)
 #define BOUND_BOARD_PROPS (BOARD_NAME_SIZE + 10 + 3*MAX_PATH + 26)
 
-#define COUNT_BOARD_SAVE_PROPS (             2 + 15)
-#define BOUND_BOARD_SAVE_PROPS (2*ROBOT_MAX_TR + 25)
+#define COUNT_BOARD_SAVE_PROPS (             2 + 20)
+#define BOUND_BOARD_SAVE_PROPS (2*ROBOT_MAX_TR + 30)
 
 // For world files, use BOARD_PROPS_SIZE
 // For save files, use BOARD_PROPS_SIZE + BOARD_SAVE_PROPS_SIZE
@@ -322,6 +322,11 @@ enum board_prop
   BPROP_VOLUME                    = 0x0114, // 1
   BPROP_VOLUME_INC                = 0x0115, // 1
   BPROP_VOLUME_TARGET             = 0x0116, // 1
+  BPROP_BLIND_DUR                 = 0x0117, // 1
+  BPROP_FIREWALKER_DUR            = 0x0118, // 1
+  BPROP_FREEZE_TIME_DUR           = 0x0119, // 1
+  BPROP_SLOW_TIME_DUR             = 0x011a, // 1
+  BPROP_WIND_DUR                  = 0x011b, // 1
 };
 
 

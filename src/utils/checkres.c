@@ -127,6 +127,7 @@
 
 #define LEGACY_WORLD_PROTECTED_OFFSET      BOARD_NAME_SIZE
 #define LEGACY_WORLD_GLOBAL_OFFSET_OFFSET  4230
+#define LEGACY_WORLD_BOARD_COUNT_100       4009
 
 #define MAX_PATH_DEPTH 10
 
@@ -175,7 +176,7 @@ enum status
   MALLOC_FAILED,
   PROTECTED_WORLD,
   MAGIC_CHECK_FAILED,
-  MZX_100_NOT_SUPPORTED,
+  BAD_100_PASSWORD,
   DIRENT_FAILED,
   ZIP_FAILED,
   NO_WORLD,
@@ -209,9 +210,9 @@ static const char *decode_status(enum status status)
     case PROTECTED_WORLD:
       return "Protected worlds currently unsupported.";
     case MAGIC_CHECK_FAILED:
-      return "File magic not consistent with 2.00 world or board.";
-    case MZX_100_NOT_SUPPORTED:
-      return "Worlds from MegaZeux 1.xx are not supported by this utility.";
+      return "File magic not consistent with MZX world or board.";
+    case BAD_100_PASSWORD:
+      return "Invalid version 1.x password length.";
     case DIRENT_FAILED:
       return "Failed to read a required directory.";
     case ZIP_FAILED:
@@ -925,7 +926,11 @@ struct base_file
 {
   char file_name[MAX_PATH];
   char relative_path[MAX_PATH];
+  char password[16];
+  int password_length;
+  int protection_method;
   int world_version;
+  int file_version;
 };
 
 struct resource
@@ -1706,7 +1711,7 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file,
     *start = 0;
     *end = 0;
 
-    trace("SFX (class): %s\n", start + 1);
+    trace("  SFX: %s\n", start + 1);
     add_requirement_sfx(start + 1, file, board_num, robot_num, line_num);
   }
 
@@ -1714,13 +1719,77 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file,
 }
 
 #define match(s, reqv) ((world_version >= reqv) && \
- (fn_len == sizeof(s)-1) && (!strcasecmp(function_counter, s)))
+ (fn_len == (ssize_t)sizeof(s)-1) && (!strcasecmp(function_counter, s)))
 
 #define match_partial(s, reqv) ((world_version >= reqv) && \
- (fn_len >= sizeof(s)-1) && (!strncasecmp(function_counter, s, sizeof(s)-1)))
+ (fn_len >= (ssize_t)sizeof(s)-1) && (!strncasecmp(function_counter, s, sizeof(s)-1)))
 
 #define TERMINATE(s,slen) \
  do{ if(slen && s[slen - 1] == '\0') slen--; else s[slen]='\0'; }while(0)
+
+/* Get an int16 param (1.x and 2.x). */
+static int param_int(struct memfile *mf, struct base_file *file)
+{
+  if(file->file_version >= V200)
+  {
+    size_t len = mfgetc(mf);
+    if(len != 0)
+    {
+      mfseek(mf, len, SEEK_CUR);
+      return INT_MIN;
+    }
+  }
+  return mfgetw(mf);
+}
+
+/* Get a null-terminated string param (1.x and 2.x). */
+static ssize_t param_string(char *dest, size_t dest_len,
+ struct memfile *mf, struct base_file *file)
+{
+  size_t len;
+
+  if(file->file_version >= V200)
+  {
+    len = mfgetc(mf);
+    if(len == 0)
+    {
+      // Skip int.
+      mfgetw(mf);
+      dest[0] = '\0';
+      return 0;
+    }
+
+    if(!mfread(dest, len, 1, mf))
+      return -1;
+
+    // Don't trust the program's null termination.
+    TERMINATE(dest, len);
+  }
+  else
+  {
+    // Null-terminated string parameter with no prefixed length.
+    unsigned char *pos;
+
+    for(pos = mf->current; pos < mf->end && *pos; pos++);
+    len = pos - mf->current;
+
+    if(pos >= mf->end || len + 1 > dest_len)
+      return -1;
+
+    if(!mfread(dest, len + 1, 1, mf))
+      return -1;
+
+    dest[len] = '\0';
+  }
+  return len;
+}
+
+/* Skip a param (2.x only). */
+static void param_skip(struct memfile *mf, struct base_file *file)
+{
+  int len = mfgetc(mf);
+  mfseek(mf, len ? len : 2, SEEK_CUR);
+}
 
 static enum status parse_legacy_bytecode(struct memfile *mf,
  unsigned int program_size, struct base_file *file, int board_num, int robot_num)
@@ -1732,10 +1801,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
   int line_num = 0;
 
   char function_counter[256];
-  size_t fn_len;
+  ssize_t fn_len;
 
   char src[256];
-  size_t src_len;
+  ssize_t src_len;
 
   // skip 0xff marker
   if(mfgetc(mf) != 0xff)
@@ -1765,34 +1834,30 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
     {
       case 10: // ROBOTIC_CMD_SET
       {
-        src_len = mfgetc(mf);
-
-        if(mfread(src, 1, src_len, mf) != src_len)
+        // File-based SET commands were introduced starting in MegaZeux 2.6.
+        if(file->world_version < V260)
         {
-          warnhere("Truncated command\n");
-          return CORRUPT_WORLD;
-        }
-        // Don't trust null termination from data read in
-        TERMINATE(src, src_len);
-
-        fn_len = mfgetc(mf);
-
-        // Int parameter
-        if(fn_len == 0)
-        {
-          mfgetw(mf);
+          mfseek(mf, command_length - 1, SEEK_CUR);
           break;
         }
 
-        // String parameter
-        if(mfread(function_counter, 1, fn_len, mf) != fn_len)
+        // Destination
+        src_len = param_string(src, sizeof(src), mf, file);
+        if(src_len < 0)
         {
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
-        // Don't trust null termination from data read in
-        TERMINATE(function_counter, fn_len);
 
+        // Parameter
+        fn_len = param_string(function_counter, sizeof(function_counter), mf, file);
+        if(fn_len < 0)
+        {
+          warnhere("Truncated command\n");
+          return CORRUPT_WORLD;
+        }
+
+        // Parameter is integer or empty string?
         if(fn_len == 0)
           break;
 
@@ -1804,7 +1869,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
          || match_partial("LOAD_BC", V270)
          || match_partial("LOAD_ROBOT", V270))
         {
-          trace("SET: %s (%s)\n", src, function_counter);
+          trace("  SET: %s (%s)\n", src, function_counter);
           add_requirement_robot(src, file, board_num, robot_num, line_num);
           break;
         }
@@ -1817,7 +1882,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
          || match_partial("SAVE_BC", V270)
          || match_partial("SAVE_ROBOT", V270))
         {
-          trace("SET: %s (%s)\n", src, function_counter);
+          trace("  SET: %s (%s)\n", src, function_counter);
           add_resource(src, file);
           break;
         }
@@ -1827,7 +1892,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           // Maximum version
           if(world_version < V290)
           {
-            trace("SET: %s (%s)\n", src, function_counter);
+            trace("  SET: %s (%s)\n", src, function_counter);
             add_resource(src, file);
           }
           break;
@@ -1839,15 +1904,12 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
       case 38: // ROBOTIC_CMD_MOD
       {
         // Filename
-        src_len = mfgetc(mf);
-
-        if(mfread(src, 1, src_len, mf) != src_len)
+        src_len = param_string(src, sizeof(src), mf, file);
+        if(src_len < 0)
         {
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
-        // Don't trust null termination from data read in
-        TERMINATE(src, src_len);
 
         // ignore MOD "", MOD "*"
         if(!src_len || !strcmp(src, "*"))
@@ -1857,33 +1919,25 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         if(src[src_len - 1] == '*')
           src[src_len - 1] = 0;
 
-        trace("MOD: %s\n", src);
+        trace("  MOD: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
 
       case 39: // ROBOTIC_CMD_SAM
       {
-        // Frequency
-        src_len = mfgetc(mf);
-
-        if(src_len == 0)
-          mfgetw(mf);
-        else
-          mfseek(mf, src_len, SEEK_CUR);
+        // Period
+        param_int(mf, file);
 
         // Filename
-        src_len = mfgetc(mf);
-
-        if(mfread(src, 1, src_len, mf) != src_len)
+        src_len = param_string(src, sizeof(src), mf, file);
+        if(src_len < 0)
         {
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
-        // Don't trust null termination from data read in
-        TERMINATE(src, src_len);
 
-        trace("SAM: %s\n", src);
+        trace("  SAM: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
@@ -1893,15 +1947,12 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
       case 49: // ROBOTIC_CMD_PLAY_IF_SILENT
       {
         // Play string
-        src_len = mfgetc(mf);
-
-        if(mfread(src, 1, src_len, mf) != src_len)
+        src_len = param_string(src, sizeof(src), mf, file);
+        if(src_len < 0)
         {
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
-        // Don't trust null termination from data read in
-        TERMINATE(src, src_len);
 
         ret = parse_sfx(src, file, board_num, robot_num, line_num);
         if(ret != SUCCESS)
@@ -1911,71 +1962,56 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 
       case 79: // ROBOTIC_CMD_PUT_XY
       {
-        // Filename... maybe.
-        src_len = mfgetc(mf);
+        int id;
+        // MZMs were introduced in MegaZeux 2.68.
+        if(file->world_version < V268)
+        {
+          mfseek(mf, command_length - 1, SEEK_CUR);
+          break;
+        }
 
+        // Filename... maybe.
+        src_len = param_string(src, sizeof(src), mf, file);
         if(src_len != 0)
         {
-          if(mfread(src, 1, src_len, mf) != src_len)
+          if(src_len < 0)
           {
             warnhere("Truncated command\n");
             return CORRUPT_WORLD;
           }
-          // Don't trust null termination from data read in
-          TERMINATE(src, src_len);
-
-          fn_len = mfgetc(mf);
 
           // Thing
-          if(fn_len == 0)
+          id = param_int(mf, file);
+          if(id < 0)
           {
-            if(mfgetw(mf) == IMAGE_FILE && src[0] == '@')
-            {
-              trace("PUT @file: %s\n", src + 1);
-              add_requirement_robot(src + 1, file, board_num, robot_num,
-               line_num);
-            }
+            warnhere("Invalid parameter\n");
+            return CORRUPT_WORLD;
           }
-          else
+
+          if(id == IMAGE_FILE && src[0] == '@')
           {
-            mfseek(mf, fn_len, SEEK_CUR);
+            trace("  PUT @file: %s\n", src + 1);
+            add_requirement_robot(src + 1, file, board_num, robot_num, line_num);
           }
         }
         else
-        {
-          mfgetw(mf);
+          param_skip(mf, file); // thing
 
-          // Thing
-          src_len = mfgetc(mf);
-          mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
-        }
-
-        // Param
-        src_len = mfgetc(mf);
-        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
-
-        // x
-        src_len = mfgetc(mf);
-        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
-
-        // y
-        src_len = mfgetc(mf);
-        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
+        param_skip(mf, file); // param
+        param_skip(mf, file); // x
+        param_skip(mf, file); // y
         break;
       }
 
       case 200: // ROBOTIC_CMD_MOD_FADE_IN
       {
         // Filename
-        src_len = mfgetc(mf);
-
-        if(mfread(src, 1, src_len, mf) != src_len)
+        src_len = param_string(src, sizeof(src), mf, file);
+        if(src_len < 0)
         {
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
-        // Don't trust null termination from data read in
-        TERMINATE(src, src_len);
 
         // ignore MOD "", MOD "*"
         if(!src_len || !strcmp(src, "*"))
@@ -1985,55 +2021,43 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         if(src[src_len - 1] == '*')
           src[src_len - 1] = 0;
 
-        trace("MOD FADE IN: %s\n", src);
+        trace("  MOD FADE IN: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
 
       case 201: // ROBOTIC_CMD_COPY_BLOCK
       {
-        // x1
-        src_len = mfgetc(mf);
-        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
+        // MZMs were introduced in MegaZeux 2.68.
+        if(file->world_version < V268)
+        {
+          mfseek(mf, command_length - 1, SEEK_CUR);
+          break;
+        }
 
-        // y1
-        src_len = mfgetc(mf);
-        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
-
-        // w
-        src_len = mfgetc(mf);
-        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
-
-        // h
-        src_len = mfgetc(mf);
-        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
+        param_skip(mf, file); // x1
+        param_skip(mf, file); // y1
+        param_skip(mf, file); // w
+        param_skip(mf, file); // h
 
         // x2 or @filename
-        src_len = mfgetc(mf);
+        src_len = param_string(src, sizeof(src), mf, file);
         if(src_len != 0)
         {
-          if(mfread(src, 1, src_len, mf) != src_len)
+          if(src_len < 0)
           {
             warnhere("Truncated command\n");
             return CORRUPT_WORLD;
           }
-          // Don't trust null termination from data read in
-          TERMINATE(src, src_len);
 
           if(src[0] == '@')
           {
-            trace("COPY BLOCK @file: %s\n", src + 1);
+            trace("  COPY BLOCK @file: %s\n", src + 1);
             add_resource(src + 1, file);
           }
         }
-        else
-        {
-          mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
-        }
 
-        // y2
-        src_len = mfgetc(mf);
-        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
+        param_skip(mf, file); // y2
         break;
       }
 
@@ -2042,15 +2066,12 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         const char *rest = src;
 
         // Filename
-        src_len = mfgetc(mf);
-
-        if(mfread(src, 1, src_len, mf) != src_len)
+        src_len = param_string(src, sizeof(src), mf, file);
+        if(src_len < 0)
         {
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
-        // Don't trust null termination from data read in
-        TERMINATE(src, src_len);
 
         if(src[0] == '+')
         {
@@ -2106,7 +2127,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
             rest = src;
         }
 
-        trace("LOAD CHAR SET: %s\n", rest);
+        trace("  LOAD CHAR SET: %s\n", rest);
         add_requirement_robot(rest, file, board_num, robot_num, line_num);
         break;
       }
@@ -2114,17 +2135,14 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
       case 222: // ROBOTIC_CMD_LOAD_PALETTE
       {
         // Filename
-        src_len = mfgetc(mf);
-
-        if(mfread(src, 1, src_len, mf) != src_len)
+        src_len = param_string(src, sizeof(src), mf, file);
+        if(src_len < 0)
         {
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
-        // Don't trust null termination from data read in
-        TERMINATE(src, src_len);
 
-        trace("LOAD PALETTE: %s\n", src);
+        trace("  LOAD PALETTE: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
@@ -2132,17 +2150,14 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
       case 226: // ROBOTIC_CMD_SWAP_WORLD
       {
         // Filename
-        src_len = mfgetc(mf);
-
-        if(mfread(src, 1, src_len, mf) != src_len)
+        src_len = param_string(src, sizeof(src), mf, file);
+        if(src_len < 0)
         {
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
-        // Don't trust null termination from data read in
-        TERMINATE(src, src_len);
 
-        trace("SWAP WORLD: %s\n", src);
+        trace("  SWAP WORLD: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
@@ -2163,7 +2178,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 
     if(mfgetc(mf) != command_length)
     {
-      warnhere("Command start length != end length\n");
+      warnhere("Command start length != end length (%d)\n", command);
       return CORRUPT_WORLD;
     }
   }
@@ -2179,7 +2194,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 #define MAX_PASSWORD_LENGTH 15
 
 // From legacy_world.c
-static uint8_t get_pw_xor_code(char *password, int pro_method)
+static uint8_t get_pw_xor_code(char *password, int password_length, int pro_method)
 {
   static const char magic_code[16] =
    "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
@@ -2194,6 +2209,8 @@ static uint8_t get_pw_xor_code(char *password, int pro_method)
     password[i] -= 0x12 + pro_method;
     password[i] ^= 0x8D;
   }
+  // 1.x passwords store a length instead of a terminator.
+  password[password_length] = '\0';
 
   // Clear pw after first null
   for(i = strlen(password); i < MAX_PASSWORD_LENGTH; i++)
@@ -2245,15 +2262,28 @@ static uint8_t get_pw_xor_code(char *password, int pro_method)
 #define ALIGN_XOR(x) ((x) | (x << 8) | (x << 16) | (x << 24))
 #endif
 
-static void _decrypt_legacy_world(struct memfile *mf, char *password,
- int protection_method)
+static void _decrypt_legacy_world(struct memfile *mf, struct base_file *file)
 {
-  ALIGN_TYPE xor = get_pw_xor_code(password, protection_method);
+  ALIGN_TYPE xor = get_pw_xor_code(file->password, file->password_length, file->protection_method);
   ALIGN_TYPE xor_w = ALIGN_XOR(xor);
   unsigned char *pos = mf->current;
 
-  fprintf(stderr, "xor=%u, password: %s\n", (unsigned int)xor, password);
-  fflush(stderr);
+  if(!display_first_only)
+  {
+    fprintf(stderr, "password: %s\n", file->password);
+    fprintf(stderr, "--------  %.*s\n", (int)strlen(file->password), "----------------");
+    fflush(stderr);
+  }
+
+  /* 1.x doesn't actually encrypt anything... */
+  if(file->file_version < V200)
+    return;
+
+  if(!display_first_only)
+  {
+    fprintf(stderr, "xor: %u\n", (unsigned int)xor);
+    fflush(stderr);
+  }
 
   while(pos < mf->end && ((size_t)pos) % sizeof(ALIGN_TYPE))
     *(pos++) ^= xor;
@@ -2268,6 +2298,33 @@ static void _decrypt_legacy_world(struct memfile *mf, char *password,
     *(pos++) ^= xor;
 }
 
+static enum status parse_legacy_robot_100(struct memfile *mf,
+ struct base_file *file, int board_num, int robot_num)
+{
+  uint32_t program_size;
+  struct memfile prog;
+  enum status ret = SUCCESS;
+
+  // program_length (4),
+  program_size = mfgetd(mf);
+
+  // program_location (4), robot_name (15), robot char (1),
+  // cur_prog_line (4), pos_within_line (1), robot_cycle (1), cycle_count (1),
+  // bullet_type (1), is_locked (1), can_lavawalk (1), walk_dir (1),
+  // last_touch_dir (1), last_shot_dir (1)
+  if(mfseek(mf, 33, SEEK_CUR) != 0)
+    return FSEEK_FAILED;
+
+  if(program_size > 2)
+  {
+    mfopen(mf->current, program_size, &prog);
+    ret = parse_legacy_bytecode(&prog, program_size, file, board_num, robot_num);
+  }
+
+  mfseek(mf, program_size, SEEK_CUR);
+  return ret;
+}
+
 static enum status parse_legacy_robot(struct memfile *mf,
  struct base_file *file, int board_num, int robot_num)
 {
@@ -2276,6 +2333,9 @@ static enum status parse_legacy_robot(struct memfile *mf,
 
   enum status ret = SUCCESS;
   boolean used = false;
+
+  if(file->file_version < V200)
+    return parse_legacy_robot_100(mf, file, board_num, robot_num);
 
   // program_length (2),
   program_size = mfgetw(mf);
@@ -2316,7 +2376,99 @@ static enum status parse_legacy_robot(struct memfile *mf,
   return ret;
 }
 
+/* Version 1.x RLE. */
 static boolean skip_rle(struct memfile *mf)
+{
+  uint16_t w;
+  uint16_t h;
+  size_t size;
+  size_t pos = 0;
+
+  // There may be a terminating 0-length run prefixed(?!).
+  if(mf->current + 1 < mf->end)
+  {
+    uint8_t count = mfgetc(mf);
+    if(count == 0)
+      mf->current++;
+    else
+      mf->current--;
+  }
+  if(mf->current + 1 >= mf->end)
+    return false;
+
+  w = mfgetc(mf);
+  h = mfgetc(mf);
+  size = w * h;
+  if(size < 1)
+    return false;
+
+  while(pos < size && mf->current + 1 < mf->end)
+  {
+    uint8_t count = mfgetc(mf);
+    mf->current++;
+    pos += count;
+  }
+  return mf->current < mf->end;
+}
+
+static boolean load_rle(char **dest, uint16_t *width, uint16_t *height,
+ struct memfile *mf)
+{
+  uint16_t w;
+  uint16_t h;
+  size_t size;
+  size_t pos = 0;
+  char *plane;
+
+  // There may be a terminating 0-length run prefixed(?!).
+  if(mf->current + 1 < mf->end)
+  {
+    uint8_t count = mfgetc(mf);
+    if(count == 0)
+      mf->current++;
+    else
+      mf->current--;
+  }
+  if(mf->current + 1 >= mf->end)
+    return false;
+
+  w = mfgetc(mf);
+  h = mfgetc(mf);
+  size = w * h;
+  if(size < 1)
+    return false;
+
+  plane = cmalloc(size);
+
+  while(pos < size && mf->current + 1 < mf->end)
+  {
+    uint8_t count = mfgetc(mf);
+    uint8_t byte = mfgetc(mf);
+
+    if(pos + count > size)
+    {
+      free(plane);
+      return false;
+    }
+
+    memset(plane + pos, byte, count);
+    pos += count;
+  }
+
+  if(mf->current < mf->end)
+  {
+    *dest = plane;
+    *width = w;
+    *height = h;
+    return true;
+  }
+
+  free(plane);
+  return false;
+}
+
+/* Version 2.x RLE. */
+static boolean skip_rle2(struct memfile *mf)
 {
   uint16_t w = mfgetw(mf);
   uint16_t h = mfgetw(mf);
@@ -2339,7 +2491,7 @@ static boolean skip_rle(struct memfile *mf)
   return (mf->current < mf->end);
 }
 
-static boolean load_rle(char **dest, uint16_t *width, uint16_t *height,
+static boolean load_rle2(char **dest, uint16_t *width, uint16_t *height,
  struct memfile *mf)
 {
   uint16_t w = mfgetw(mf);
@@ -2402,48 +2554,69 @@ static enum status parse_legacy_board(struct memfile *mf,
   char *level_param = NULL;
   uint16_t width;
   uint16_t height;
+  boolean rle_success;
 
-  // junk the undocumented (and unused) board_mode
-  mfgetc(mf);
-
-  // whether the overlay is enabled or not
-  if(mfgetc(mf))
+  if(file->file_version >= V200)
   {
-    // not enabled, so rewind this last read
-    if(mfseek(mf, -1, SEEK_CUR) != 0)
-      return FSEEK_FAILED;
+    // Skip legacy board_mode, which was used to control maximum board dimensions.
+    mfgetc(mf);
+
+    // whether the overlay is enabled or not
+    if(mfgetc(mf))
+    {
+      // not enabled, so rewind this last read
+      if(mfseek(mf, -1, SEEK_CUR) != 0)
+        return FSEEK_FAILED;
+    }
+    else
+    {
+      // junk overlay_mode
+      mfgetc(mf);
+
+      // Skip overlay char and color RLE blocks.
+      if(!skip_rle2(mf) || !skip_rle2(mf))
+      {
+        warnhere("Failed to unpack overlay RLE\n");
+        return CORRUPT_WORLD;
+      }
+    }
+
+    // NOTE: Robot xpos and ypos variables were always set to 0 in DOS-era worlds
+    // and can't be trusted. Instead, the level_id/level_param arrays need to be
+    // unpacked and scanned.
+
+    // level_id, level_color, level_param,
+    // level_under_id, level_under_color, level_under_param
+    rle_success =
+      load_rle2(&level_id, &width, &height, mf) &&
+      skip_rle2(mf) &&
+      load_rle2(&level_param, &width, &height, mf) &&
+      skip_rle2(mf) &&
+      skip_rle2(mf) &&
+      skip_rle2(mf);
   }
   else
   {
-    // junk overlay_mode
-    mfgetc(mf);
-
-    // Skip overlay char and color RLE blocks.
-    if(!skip_rle(mf) || !skip_rle(mf))
-    {
-      warnhere("Failed to unpack overlay RLE\n");
-      return CORRUPT_WORLD;
-    }
+    // Version 1.x worlds start immediately with the RLE,
+    // i.e. no board_mode or overlay support.
+    rle_success =
+      load_rle(&level_id, &width, &height, mf) &&
+      skip_rle(mf) &&
+      load_rle(&level_param, &width, &height, mf) &&
+      skip_rle(mf) &&
+      skip_rle(mf) &&
+      skip_rle(mf);
   }
 
-  // NOTE: Robot xpos and ypos variables were always set to 0 in DOS-era worlds
-  // and can't be trusted. Instead, the level_id/level_param arrays need to be
-  // unpacked and scanned.
-
-  // level_id, level_color, level_param,
-  // level_under_id, level_under_color, level_under_param
-  if( !load_rle(&level_id, &width, &height, mf)
-   || !skip_rle(mf)
-   || !load_rle(&level_param, &width, &height, mf)
-   || !skip_rle(mf)
-   || !skip_rle(mf)
-   || !skip_rle(mf))
+  if(!rle_success)
   {
     warnhere("Failed to unpack board RLE\n");
     free(level_id);
     free(level_param);
     return CORRUPT_WORLD;
   }
+  trace("  width  %d\n", width);
+  trace("  height %d\n", height);
 
   if(level_id && level_param)
   {
@@ -2487,12 +2660,20 @@ static enum status parse_legacy_board(struct memfile *mf,
   // check the board MOD exists
   if(strlen(board_mod) > 0 && strcmp(board_mod, "*"))
   {
-    trace("BOARD MOD: %s\n", board_mod);
+    trace("  BOARD MOD: %s\n", board_mod);
     add_requirement_board(board_mod, file, board_num, IS_BOARD_MOD);
   }
 
-  if(file->world_version < V283)
+  if(file->file_version < V200)
+  {
+    skip_bytes = 208;
+  }
+  else
+
+  if(file->file_version < V283)
+  {
     skip_bytes = 207;
+  }
   else
     skip_bytes = 25;
 
@@ -2505,6 +2686,7 @@ static enum status parse_legacy_board(struct memfile *mf,
 
   // walk the robot list, scan the robotic
   num_robots = mfgetc(mf);
+  trace("  robots %d\n", num_robots);
   for(i = 0; i < num_robots; i++)
   {
     ret = parse_legacy_robot(mf, file, board_num, i + 1);
@@ -2523,34 +2705,51 @@ struct legacy_board {
   int size;
 };
 
-static enum status parse_legacy_world(struct memfile *mf,
- struct base_file *file, int protection_method)
+static enum status parse_legacy_world(struct memfile *mf, struct base_file *file)
 {
-  int global_robot_offset;
   struct legacy_board board_list[MAX_BOARDS];
+  int global_robot_offset;
   int num_boards;
   int i;
 
   enum status ret = SUCCESS;
 
-  // Jump to the global robot offset
-  if(mfseek(mf, LEGACY_WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
+  if(file->file_version >= V200)
   {
-    warnhere("couldn't seek to global robot position (truncated)\n");
-    return CORRUPT_WORLD;
+    // Jump to the global robot offset
+    if(mfseek(mf, LEGACY_WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
+    {
+      warnhere("couldn't seek to global robot position (truncated)\n");
+      return CORRUPT_WORLD;
+    }
+    // Protected worlds: everything is offset 15 bytes.
+    if(file->protection_method)
+      mfseek(mf, MAX_PASSWORD_LENGTH, SEEK_CUR);
+
+    // Absolute offset (in bytes) of global robot
+    global_robot_offset = mfgetd(mf);
   }
-  // Protected worlds: everything is offset 15 bytes.
-  if(protection_method)
-    mfseek(mf, MAX_PASSWORD_LENGTH, SEEK_CUR);
+  else
+  {
+    // Jump to the board count (1.x doesn't have a global robot).
+    if(mfseek(mf, LEGACY_WORLD_BOARD_COUNT_100, SEEK_SET) != 0)
+    {
+      warnhere("couldn't seek to board count position (truncated)\n");
+      return CORRUPT_WORLD;
+    }
+    // Protected worlds: everything is offset 16 bytes.
+    if(file->protection_method)
+      mfseek(mf, MAX_PASSWORD_LENGTH + 1, SEEK_CUR);
 
-  // Absolute offset (in bytes) of global robot
-  global_robot_offset = mfgetd(mf);
+    global_robot_offset = 0;
+  }
 
-  // num_boards doubles as the check for custom sfx, if zero
+  // num_boards doubles as the check for custom sfx, if zero.
   num_boards = mfgetc(mf);
 
-  // if we have custom sfx, check them for resources
-  if(num_boards == 0)
+  // If the world has custom sfx, check them for resources.
+  // 1.x worlds don't have custom sfx and are limited to 127 boards.
+  if(num_boards == 0 && file->file_version >= V200)
   {
     unsigned short sfx_len_total = mfgetw(mf);
     char sfx_buf[LEGACY_SFX_SIZE + 1];
@@ -2599,6 +2798,11 @@ static enum status parse_legacy_world(struct memfile *mf,
     num_boards = mfgetc(mf);
   }
 
+  if(num_boards == 0)
+    warnhere("File contains 0 boards\n");
+  if(file->file_version < V200 && num_boards > 127)
+    warnhere("Version 1.x file contains more than 127 boards\n");
+
   // skip board names; we simply don't care
   if(mfseek(mf, num_boards * BOARD_NAME_SIZE, SEEK_CUR) != 0)
   {
@@ -2624,6 +2828,9 @@ static enum status parse_legacy_world(struct memfile *mf,
     if(board->size == 0)
       continue;
 
+    trace("  size   %d\n", board->size);
+    trace("  offset %d\n", board->offset);
+
     // seek to board offset within world
     if(mfseek(mf, board->offset, SEEK_SET) != 0)
     {
@@ -2640,18 +2847,23 @@ static enum status parse_legacy_world(struct memfile *mf,
     }
   }
 
-  trace("Global robot\n");
-
-  // Do the global robot too..
-  if(mfseek(mf, global_robot_offset, SEEK_SET) != 0)
+  if(global_robot_offset)
   {
-    warnhere("Failed to seek to global robot position\n");
-    return CORRUPT_WORLD;
-  }
+    trace("Global robot\n");
 
-  ret = parse_legacy_robot(mf, file, NO_BOARD, GLOBAL_ROBOT);
-  if(ret != SUCCESS)
-    warnhere("Failed processing global robot\n");
+    // Do the global robot too..
+    if(mfseek(mf, global_robot_offset, SEEK_SET) != 0)
+    {
+      warnhere("Failed to seek to global robot position\n");
+      return CORRUPT_WORLD;
+    }
+
+    ret = parse_legacy_robot(mf, file, NO_BOARD, GLOBAL_ROBOT);
+    if(ret != SUCCESS)
+      warnhere("Failed processing global robot\n");
+  }
+  else
+    trace("No global robot\n");
 
   return ret;
 }
@@ -2875,6 +3087,7 @@ static enum status parse_board_file(struct memfile *mf, struct base_file *file)
     return MAGIC_CHECK_FAILED;
 
   file->world_version = file_version;
+  file->file_version = file_version;
 
   if(file_version <= MZX_LEGACY_FORMAT_VERSION)
     return parse_legacy_board(mf, file, -1);
@@ -2888,7 +3101,6 @@ static enum status parse_board_file(struct memfile *mf, struct base_file *file)
 static enum status parse_world_file(struct memfile *mf, struct base_file *file)
 {
   unsigned char magic[4];
-  int protection_method;
   int file_version;
 
   // Truncation safety check.
@@ -2899,19 +3111,21 @@ static enum status parse_world_file(struct memfile *mf, struct base_file *file)
   if(mfseek(mf, LEGACY_WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
     return FSEEK_FAILED;
 
-  protection_method = mfgetc(mf);
-  if(protection_method != 0)
+  file->protection_method = mfgetc(mf);
+  if(file->protection_method != 0)
   {
     // World is probably protected (or possibly junk).
-    char password[16];
+    long password_pos;
     long magic_pos;
 
-    if(protection_method < 0 || protection_method > 3)
+    if(file->protection_method < 0 || file->protection_method > 3)
       return MAGIC_CHECK_FAILED;
 
-    if(mfread(password, 1, MAX_PASSWORD_LENGTH, mf) != MAX_PASSWORD_LENGTH)
+    password_pos = mftell(mf);
+    if(mfread(file->password, 1, MAX_PASSWORD_LENGTH, mf) != MAX_PASSWORD_LENGTH)
       return FREAD_FAILED;
-    password[MAX_PASSWORD_LENGTH] = '\0';
+    file->password[MAX_PASSWORD_LENGTH] = '\0';
+    file->password_length = MAX_PASSWORD_LENGTH;
 
     magic_pos = mftell(mf);
     if(mfread(magic, 1, 4, mf) != 4)
@@ -2925,10 +3139,19 @@ static enum status parse_world_file(struct memfile *mf, struct base_file *file)
       if(file_version != V100)
         return MAGIC_CHECK_FAILED;
 
-      return MZX_100_NOT_SUPPORTED;
+      // 1.x passwords are stored with a length, not an obfuscated nul.
+      mfseek(mf, password_pos, SEEK_SET);
+      file->password_length = mfgetc(mf);
+      if(file->password_length > MAX_PASSWORD_LENGTH)
+        return BAD_100_PASSWORD;
+
+      mfread(file->password, 1, file->password_length, mf);
+      magic_pos++;
     }
+
+    file->file_version = file_version;
     mfseek(mf, magic_pos + 3, SEEK_SET);
-    _decrypt_legacy_world(mf, password, protection_method);
+    _decrypt_legacy_world(mf, file);
     mfseek(mf, magic_pos, SEEK_SET);
   }
 
@@ -2941,13 +3164,13 @@ static enum status parse_world_file(struct memfile *mf, struct base_file *file)
   if(file_version <= 0)
     return MAGIC_CHECK_FAILED;
 
-  if(file_version < V200)
-    return MZX_100_NOT_SUPPORTED;
-
   file->world_version = file_version;
+  file->file_version = file_version;
+
+  trace("File version: %03x\n", file->file_version);
 
   if(file_version <= MZX_LEGACY_FORMAT_VERSION)
-    return parse_legacy_world(mf, file, protection_method);
+    return parse_legacy_world(mf, file);
 
   if(file_version <= MZX_VERSION)
     return parse_world(mf, file, true);

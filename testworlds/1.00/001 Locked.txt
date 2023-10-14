@@ -1,0 +1,3 @@
+Title: 1.XX locked world test.
+Author: Alice Rowan
+Desc: 1.xx locked worlds are NOT encrypted, just password protected. Loading these should work.

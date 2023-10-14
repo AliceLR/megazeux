@@ -361,11 +361,11 @@ static inline int save_world_info(struct world *mzx_world,
     save_prop_w(WPROP_PLAYER_RESTART_Y, mzx_world->player_restart_y, mf);
     save_prop_c(WPROP_SAVED_PL_COLOR,   mzx_world->saved_pl_color, mf);
     save_prop_a(WPROP_KEYS,             mzx_world->keys, NUM_KEYS, 1, mf);
-    save_prop_c(WPROP_BLIND_DUR,        mzx_world->blind_dur, mf);
-    save_prop_c(WPROP_FIREWALKER_DUR,   mzx_world->firewalker_dur, mf);
-    save_prop_c(WPROP_FREEZE_TIME_DUR,  mzx_world->freeze_time_dur, mf);
-    save_prop_c(WPROP_SLOW_TIME_DUR,    mzx_world->slow_time_dur, mf);
-    save_prop_c(WPROP_WIND_DUR,         mzx_world->wind_dur, mf);
+    save_prop_d(WPROP_BLIND_DUR,        mzx_world->blind_dur, mf);
+    save_prop_d(WPROP_FIREWALKER_DUR,   mzx_world->firewalker_dur, mf);
+    save_prop_d(WPROP_FREEZE_TIME_DUR,  mzx_world->freeze_time_dur, mf);
+    save_prop_d(WPROP_SLOW_TIME_DUR,    mzx_world->slow_time_dur, mf);
+    save_prop_d(WPROP_WIND_DUR,         mzx_world->wind_dur, mf);
     save_prop_c(WPROP_SCROLL_BASE_COLOR,    mzx_world->scroll_base_color, mf);
     save_prop_c(WPROP_SCROLL_CORNER_COLOR,  mzx_world->scroll_corner_color, mf);
     save_prop_c(WPROP_SCROLL_POINTER_COLOR, mzx_world->scroll_pointer_color, mf);
@@ -2276,6 +2276,9 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 }
 
 
+// Hack- forward declaration since this should stay near change_board.
+static void synchronize_current_board(struct world *mzx_world);
+
 int save_world(struct world *mzx_world, const char *file, boolean savegame,
  int world_version)
 {
@@ -2341,6 +2344,9 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
   {
     mzx_world->temp_output_pos = 0;
   }
+
+  // Synchronize global variables in the current board.
+  synchronize_current_board(mzx_world);
 
 #ifdef CONFIG_EDITOR
   if(world_version == MZX_VERSION_PREV)
@@ -2778,10 +2784,23 @@ static boolean read_world_header(vfile *vf, boolean savegame,
     if(protected)
       *protected = pr;
 
-    if(!vfread(magic, 3, 1, vf))
-      return false;
+    if(pr)
+    {
+      vfseek(vf, 15, SEEK_CUR);
+      if(!vfread(magic, 4, 1, vf))
+        return false;
 
-    v = world_magic(magic);
+      v = world_magic(magic);
+      if(v < V200)
+        v = world_magic(magic + 1);
+    }
+    else
+    {
+      if(!vfread(magic, 3, 1, vf))
+        return false;
+
+      v = world_magic(magic);
+    }
   }
 
   if(protected) *protected = pr;
@@ -2880,7 +2899,7 @@ err_close:
     }
     else
 
-    if(v > 0 && v < V251)
+    if(v > 0 && v < V100)
     {
       error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
     }
@@ -2942,7 +2961,7 @@ void try_load_world(struct world *mzx_world, struct zip_archive **zp,
   _zp = try_load_zip_world(mzx_world, file, savegame, &v, &protected, name);
 
   if(!_zp)
-    if(protected || (v >= V251 && v <= MZX_LEGACY_FORMAT_VERSION))
+    if(protected || (v >= V100 && v <= MZX_LEGACY_FORMAT_VERSION))
       _vf = try_load_legacy_world(mzx_world, file, savegame, &v, name);
 
   *zp = _zp;
@@ -2951,10 +2970,28 @@ void try_load_world(struct world *mzx_world, struct zip_archive **zp,
 }
 
 
+static void synchronize_current_board(struct world *mzx_world)
+{
+  struct board *cur_board = mzx_world->current_board;
+
+  // MegaZeux 1.x- status durations were local to each board and need to be
+  // backed up to the current board.
+  if(mzx_world->version < V200 && cur_board)
+  {
+    cur_board->blind_dur_v1 = mzx_world->blind_dur;
+    cur_board->firewalker_dur_v1 = mzx_world->firewalker_dur;
+    cur_board->freeze_time_dur_v1 = mzx_world->freeze_time_dur;
+    cur_board->slow_time_dur_v1 = mzx_world->slow_time_dur;
+    cur_board->wind_dur_v1 = mzx_world->wind_dur;
+  }
+}
+
 void change_board(struct world *mzx_world, int board_id)
 {
   // Set the current board during gameplay.
   struct board *cur_board = mzx_world->current_board;
+
+  synchronize_current_board(mzx_world);
 
   // Is this board temporary? Clear it
   if(mzx_world->temporary_board)
@@ -2980,6 +3017,17 @@ void change_board(struct world *mzx_world, int board_id)
 
     mzx_world->current_board = dup_board;
     mzx_world->temporary_board = 1;
+    cur_board = dup_board;
+  }
+
+  // MegaZeux 1.x- status durations were board local, restore the saved copies.
+  if(mzx_world->version < V200)
+  {
+    mzx_world->blind_dur = cur_board->blind_dur_v1;
+    mzx_world->firewalker_dur = cur_board->firewalker_dur_v1;
+    mzx_world->freeze_time_dur = cur_board->freeze_time_dur_v1;
+    mzx_world->slow_time_dur = cur_board->slow_time_dur_v1;
+    mzx_world->wind_dur = cur_board->wind_dur_v1;
   }
 }
 
