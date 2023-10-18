@@ -45,6 +45,11 @@
 #define VFILE_LARGE_BUFFER_SIZE 32768
 #endif
 
+// https://github.com/blocksds/sdk/issues/23
+#ifdef CONFIG_NDS_BLOCKSDS
+#define VFILE_NO_SETVBUF
+#endif
+
 // If 0 is provided as a cache maximum size, use this value instead.
 #define DEFAULT_MAX_SIZE (1<<22)
 
