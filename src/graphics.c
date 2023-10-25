@@ -984,6 +984,7 @@ void set_screen_mode(unsigned int mode)
 
   fix_layer_screen_mode();
   graphics.palette_dirty = true;
+  graphics.smzx_dirty = true;
 }
 
 unsigned int get_screen_mode(void)
@@ -1110,6 +1111,16 @@ void update_screen(void)
   {
     graphics.cursor_flipflop ^= 1;
     graphics.cursor_timestamp = ticks;
+  }
+
+  if(graphics.smzx_dirty)
+  {
+    /* Request an SMZX mode change from the renderer, if applicable (EGA).
+     * Hardware SMZX may reset various text mode settings, so do it first.
+     */
+    graphics.smzx_dirty = false;
+    if(graphics.renderer.set_screen_mode)
+      graphics.renderer.set_screen_mode(&graphics, graphics.screen_mode);
   }
 
   if(graphics.palette_dirty)

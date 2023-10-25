@@ -120,6 +120,7 @@ struct renderer
   void    (*free_video)       (struct graphics_data *);
   boolean (*set_video_mode)   (struct graphics_data *, int width, int height,
                                 int depth, boolean fullscreen, boolean resize);
+  boolean (*set_screen_mode)  (struct graphics_data *, unsigned mode);
   void    (*update_colors)    (struct graphics_data *, struct rgb_color *palette,
                                 unsigned int count);
   void    (*resize_screen)    (struct graphics_data *, int width, int height);
@@ -178,6 +179,7 @@ struct graphics_data
   boolean renderer_is_headless;
   boolean default_smzx_loaded;
   boolean palette_dirty;
+  boolean smzx_dirty;
   boolean fade_status;
   boolean dialog_fade_status;
   boolean requires_extended;
