@@ -446,8 +446,11 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
       cur_board->scroll_x = (signed char)vfgetc(vf);
       cur_board->scroll_y = (signed char)vfgetc(vf);
 
-      // Fix world default centered value for message column...
-      if(!savegame && cur_board->b_mesg_col == 0)
+      // World files have different values to indicate centered messages,
+      // typically -128. VER1TO2 fixes values <=0 and >=80. However, in save
+      // files 0 corresponds to column 0 (as with later versions).
+      if(cur_board->b_mesg_col < 0 || cur_board->b_mesg_col >= 80 ||
+       (!savegame && cur_board->b_mesg_col == 0))
         cur_board->b_mesg_col = -1;
     }
   }
