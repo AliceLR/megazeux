@@ -24,6 +24,7 @@
 #include "io/path.h"
 #include "io/vio.h"
 
+#include <ctype.h>
 #include <zlib.h>
 
 #ifdef CONFIG_SDL
@@ -260,7 +261,10 @@ static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES],
 #ifdef CONFIG_DJGPP
       else
 
-      if(!strncasecmp(buf, "LICENS~1.", 9) && buf[9])
+      /* Even if the extensions are completely different, having multiple of
+       * these licenses might cause SFN numbers greater than 1. */
+      if(!strncasecmp(buf, "LICENS~", 7) && isdigit((unsigned char)buf[7]) &&
+       buf[8] == '.' && buf[9] != '\0')
       {
         names[num_files] = about_line("%-.16s", buf + 9);
         files[num_files++] = about_line("%s", buf);
