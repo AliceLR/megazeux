@@ -235,7 +235,7 @@
 
 # enable_oversampling = 0
 
-# Set master resample mode. This affects how OGGs, SAMs, WAVs, and
+# Set global resample mode. This affects how OGGs, SAMs, WAVs, RADs, and
 # frequency shifted modules sound. Choices are:
 # none (fastest, poor quality)
 # linear (fast, good quality)

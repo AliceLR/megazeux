@@ -24,6 +24,7 @@
 #include "io/path.h"
 #include "io/vio.h"
 
+#include <ctype.h>
 #include <zlib.h>
 
 #ifdef CONFIG_SDL
@@ -211,8 +212,8 @@ static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES],
   vdir *dir;
   enum vdir_type type;
   char buf[MAX_PATH];
-  int license = -1;
-  int license_3rd = -1;
+  char *license = NULL;
+  char *license_3rd = NULL;
   int num_files = 0;
   int i = 0;
 
@@ -227,20 +228,27 @@ static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES],
       if(type == DIR_TYPE_DIR)
         continue;
 
-      if((!strcasecmp(buf, "LICENSE") || !strcasecmp(buf, "LICENSE.")) && license == -1)
+      if((!strcasecmp(buf, "LICENSE") || !strcasecmp(buf, "LICENSE.")) && !license)
       {
-        names[num_files] = about_line("License");
-        files[num_files++] = about_line("%s", buf);
-        license = i;
+        license = about_line("%s", buf);
       }
       else
 
-      if(!strcasecmp(buf, "LICENSE.3rd") && license_3rd == -1)
+      if(!strcasecmp(buf, "LICENSE.3rd") && !license_3rd)
       {
-        names[num_files] = about_line("3rd Party");
-        files[num_files++] = about_line("%s", buf);
-        license_3rd = i;
+        license_3rd = about_line("%s", buf);
       }
+    }
+    // MegaZeux's license should always go first.
+    if(license)
+    {
+      names[num_files] = about_line("License");
+      files[num_files++] = license;
+    }
+    if(license_3rd)
+    {
+      names[num_files] = about_line("3rd Party");
+      files[num_files++] = license_3rd;
     }
 
     // Pass 2: add all other license files.
@@ -260,7 +268,10 @@ static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES],
 #ifdef CONFIG_DJGPP
       else
 
-      if(!strncasecmp(buf, "LICENS~1.", 9) && buf[9])
+      /* Even if the extensions are completely different, having multiple of
+       * these licenses might cause SFN numbers greater than 1. */
+      if(!strncasecmp(buf, "LICENS~", 7) && isdigit((unsigned char)buf[7]) &&
+       buf[8] == '.' && buf[9] != '\0')
       {
         names[num_files] = about_line("%-.16s", buf + 9);
         files[num_files++] = about_line("%s", buf);

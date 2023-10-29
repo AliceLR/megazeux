@@ -108,7 +108,7 @@ struct audio
   size_t buffer_samples;
 
   size_t output_frequency;
-  unsigned int master_resample_mode;
+  unsigned int global_resample_mode;
   int max_simultaneous_samples;
   int max_simultaneous_samples_config;
 

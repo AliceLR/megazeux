@@ -2356,6 +2356,15 @@ enum board_node_ids
   NUM_BOARD_NODES
 };
 
+/**
+ * Some variable values may be cached, such as the clock time.
+ * This resets those values so they will update when the var list refreshes.
+ */
+static void clear_cached_data(struct world *mzx_world)
+{
+  mzx_world->command_cache = 0;
+}
+
 // Create new counter lists.
 // (Re)make the child nodes
 static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
@@ -2366,6 +2375,8 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 
   // Clear the debug tree recursively (but preserve the base structure).
   clear_debug_tree(root, false);
+
+  clear_cached_data(mzx_world);
 
   // Initialize the tree.
   init_counters_node(mzx_world,   &(root->nodes[NODE_COUNTERS]));
@@ -3277,8 +3288,11 @@ void __debug_counters(context *ctx)
       }
     }
     if(focus->refresh_on_focus)
+    {
+      clear_cached_data(mzx_world);
       for(i = 0; i < focus->num_vars; i++)
         read_var(mzx_world, &(focus->vars[i]));
+    }
 
     // If the current position in the tree was changed by a search, bring it
     // to focus in the tree list. This should only be used after a search.

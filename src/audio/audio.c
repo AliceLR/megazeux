@@ -252,7 +252,7 @@ void init_audio(struct config_info *conf)
 #endif
 
   audio.output_frequency = conf->output_frequency;
-  audio.master_resample_mode = conf->resample_mode;
+  audio.global_resample_mode = conf->resample_mode;
 
   audio.max_simultaneous_samples = -1;
   audio.max_simultaneous_samples_config = conf->max_simultaneous_samples;
