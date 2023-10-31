@@ -215,13 +215,12 @@ static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES],
   char *license = NULL;
   char *license_3rd = NULL;
   int num_files = 0;
-  int i = 0;
 
   dir = vdir_open(license_dir);
   if(dir)
   {
     // Pass 1: find LICENSE (or LICENSE.) and LICENCE.3rd.
-    for(i = 0; num_files < MAX_FILES; i++)
+    while(num_files < MAX_FILES)
     {
       if(!vdir_read(dir, buf, sizeof(buf), &type))
         break;
@@ -253,7 +252,7 @@ static void load_license_list(char *names[MAX_FILES], char *files[MAX_FILES],
 
     // Pass 2: add all other license files.
     vdir_rewind(dir);
-    for(i = 0; num_files < MAX_FILES; i++)
+    while(num_files < MAX_FILES)
     {
       if(!vdir_read(dir, buf, sizeof(buf), &type))
         break;
