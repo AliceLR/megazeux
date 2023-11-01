@@ -25,6 +25,8 @@ android {
             keyPassword keystoreProperties['keyPassword']
         }
     }
+    // TODO: Gradle automatically installs whatever version it wants unless this is specified.
+    ndkVersion "23.2.8568313"
     compileSdkVersion 31
     buildToolsVersion "30.0.3"
     defaultConfig {
