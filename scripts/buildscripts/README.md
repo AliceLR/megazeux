@@ -10,11 +10,14 @@ The following platforms can currently be built by this script:
 - Nintendo DS
 - Nintendo 3DS
 - Nintendo Wii
+- Nintendo Wii U
 - Nintendo Switch
 - PlayStation Portable
+- PlayStation Vita
+- Sega Dreamcast
 - HTML5/Emscripten
 - Android
-- DJGPP
+- DOS (DJGPP)
 - Source package
 
 Any platforms requiring chroots (Debian, Ubuntu, Raspbian), rpmbuild (Fedora),
