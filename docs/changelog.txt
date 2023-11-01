@@ -268,6 +268,9 @@ DEVELOPERS
 + _FILE_OFFSET_BITS=64 is now used for 64-bit fseeko, ftello,
   readdir, and stat/fstat support for 32-bit Linux builds.
 + Applied various Opal fixes from OpenMPT.
++ Updated Android SDL to 2.28.2. (asie)
++ Updated Android NDK to r23c. (asie)
++ Fixed Android build system handling of missing libraries.
 - String values are now allocated separately from the string
   struct and name. This may make strings very slightly slower,
   but means string pointers are now stable through an entire
