@@ -58,7 +58,6 @@ The build process for the MegaZeux port is as follows:
   * For Android Studio users, this will be `/home/.../Android/Sdk/ndk-bundle/`
     Create the file `arch/android/project/local.properties` with the following lines:
 ```
-ndk.dir=[NDK path here]
 sdk.dir=[SDK path here]
 ```
 3. If you haven't done so already, use `./config.sh --platform android` (or use
