@@ -13,10 +13,12 @@ EXTRA_LICENSES += ${LICENSE_CC0} ${LICENSE_MPL2} ${LICENSE_NEWLIB}
 #
 # NDS target rules
 #
+WONDERFUL_TOOLCHAIN	?= /opt/wonderful
+ARM_NONE_EABI_PATH	?= $(WONDERFUL_TOOLCHAIN)/toolchain/gcc-arm-none-eabi/bin/
 CROSS_PREFIX	:= arm-none-eabi-
-CC		:= $(CROSS_PREFIX)gcc
-CXX		:= $(CROSS_PREFIX)g++
-OBJDUMP		:= $(CROSS_PREFIX)objdump
+CC		:= $(ARM_NONE_EABI_PATH)$(CROSS_PREFIX)gcc
+CXX		:= $(ARM_NONE_EABI_PATH)$(CROSS_PREFIX)g++
+OBJDUMP		:= $(ARM_NONE_EABI_PATH)$(CROSS_PREFIX)objdump
 STRIP		:= /bin/true
 
 # Disable rules that require target code to run natively.
