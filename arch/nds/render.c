@@ -533,12 +533,16 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
     if(graph_cache[chars] != key)
     {
       graph_cache[chars] = key;
+      // Avoid reading from RAM to cache twice.
+      chr = key & 0x1FF;
+      bg  = (key >> 16) & 0x0F;
+      fg  = (key >> 24) & 0x0F;
 #else
     {
-#endif
       chr = (*text_cell).char_value & 0x1FF;
       bg  = (*text_cell).bg_color   & 0x0F;
       fg  = (*text_cell).fg_color   & 0x0F;
+#endif
 
       // Construct a table mapping charset two-bit pairs to palette entries.
       if(chr & 0x100) // Protected palette
