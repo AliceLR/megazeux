@@ -260,6 +260,19 @@ void nds_video_jitter(void)
 void nds_video_rasterhack(void)
 {
   /* Prepare DMA transfer. */
+#ifdef CONFIG_NDS_BLOCKSDS
+  dmaStopSafe(1);
+  REG_BG0VOFS_SUB = scroll_table[0];
+  dmaSetParams(1, (scroll_table + 1), (void*) &REG_BG0VOFS_SUB,
+                    DMA_DST_FIX | DMA_SRC_INC | DMA_REPEAT | DMA_16_BIT |
+                    DMA_START_HBL | DMA_ENABLE | 1);
+
+  dmaStopSafe(2);
+  REG_BG1VOFS_SUB = scroll_table[0];
+  dmaSetParams(2, (scroll_table + 1), (void*) &REG_BG1VOFS_SUB,
+                    DMA_DST_FIX | DMA_SRC_INC | DMA_REPEAT | DMA_16_BIT |
+                    DMA_START_HBL | DMA_ENABLE | 1);
+#else
   DMA1_CR         = 0;
   REG_BG0VOFS_SUB = scroll_table[0];
   DMA1_SRC        = (u32)(scroll_table + 1);
@@ -273,6 +286,7 @@ void nds_video_rasterhack(void)
   DMA2_DEST       = (u32)&REG_BG1VOFS_SUB;
   DMA2_CR         = DMA_DST_FIX | DMA_SRC_INC | DMA_REPEAT | DMA_16_BIT |
                     DMA_START_HBL | DMA_ENABLE | 1;
+#endif
 }
 
 // Handle the transition animation.
@@ -367,8 +381,13 @@ void nds_sleep_check(void)
   if(keysDown() & KEY_LID)
   {
     // Cancel DMA from raster effects.
+#ifdef CONFIG_NDS_BLOCKSDS
+    dmaStopSafe(1);
+    dmaStopSafe(2);
+#else
     DMA1_CR = 0;
     DMA2_CR = 0;
+#endif
 
     // Power everything off.
     powerOff(POWER_ALL);
