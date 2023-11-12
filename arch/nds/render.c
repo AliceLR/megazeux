@@ -141,8 +141,8 @@ static void palette_idx_table_init(void)
 
 static void nds_subscreen_scaled_init(void)
 {
-  int xscale = (int)(320.0/256.0 * 256.0);
-  int yscale = (int)(350.0/subscreen_height * 256.0);
+  int xscale = (int)(320 * 256 / 256);
+  int yscale = (int)(350 * 256 / subscreen_height);
 
   /* Use banks A and B for the MZX screen. */
   videoSetMode(MODE_5_2D | DISPLAY_BG0_ACTIVE | DISPLAY_BG1_ACTIVE | DISPLAY_BG2_ACTIVE | DISPLAY_BG3_ACTIVE);
