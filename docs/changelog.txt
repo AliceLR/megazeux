@@ -226,6 +226,9 @@ USERS
 + Robotic debugger watchpoints can now watch for particular
   counter or string values. Leaving the value field blank will
   still check for any value.
++ The NDS, PSP, and DOS ports now write zip archives with the
+  fastest zlib compression level. This makes saved files that
+  use compression (worlds, saves, etc.) slightly larger.
 + editor_show_thing_toggles is now enabled by default.
 - board_editor_hide_help and robot_editor_hide_help are no
   longer enabled by default for accessibility.
