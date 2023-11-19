@@ -153,7 +153,7 @@ boolean platform_init(void)
 
 #ifdef CONFIG_EXTRAM
   if(!isDSiMode())
-    nds_ram_init(DETECT_RAM);
+    nds_ram_init();
 #endif
   timer_init();
 

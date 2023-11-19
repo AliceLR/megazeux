@@ -24,9 +24,7 @@
 
 __M_BEGIN_DECLS
 
-#include "ram.h"
-
-boolean nds_ram_init(RAM_TYPE type);
+boolean nds_ram_init(void);
 
 uint32_t *platform_extram_alloc(size_t len);
 uint32_t *platform_extram_resize(void *buffer, size_t len);
