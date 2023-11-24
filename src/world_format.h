@@ -40,7 +40,7 @@ enum world_file_id
   FILE_ID_NONE                    = 0x0000,
   FILE_ID_WORLD_INFO              = 0x0001, // properties file
   FILE_ID_WORLD_GLOBAL_ROBOT      = 0x0004, // properties file
-  FILE_ID_WORLD_SFX               = 0x0007, // data, NUM_SFX * SFX_SIZE
+  FILE_ID_WORLD_SFX               = 0x0007, // properties file or data, 50 * 69
   FILE_ID_WORLD_CHARS             = 0x0008, // data, 3584*15
   FILE_ID_WORLD_PAL               = 0x0009, // data, PAL_SIZE * 3
   FILE_ID_WORLD_PAL_SMZX          = 0x000A, // data, SMZX_PAL_SIZE * 3
@@ -200,6 +200,25 @@ enum world_prop
   WPROP_MAX_SAMPLES               = 0x8090, //   4
   WPROP_SMZX_MESSAGE              = 0x8091, //   1
   WPROP_JOY_SIMULATE_KEYS         = 0x8092, //   1
+};
+
+
+#define COUNT_SFX_PROPS           (MAX_NUM_SFX * 3)
+#define BOUND_SFX_PROPS           (MAX_NUM_SFX * (1 + 11 + MAX_SFX_SIZE))
+
+#define SFX_PROPS_SIZE                  \
+(                                       \
+  BOUND_SFX_PROPS +                     \
+  COUNT_SFX_PROPS * PROP_HEADER_SIZE +  \
+  PROP_EOF_SIZE                         \
+)
+
+enum sfx_prop
+{
+  SFXPROP_EOF                     = 0x0000,
+  SFXPROP_SET_ID                  = 0x0001, // 1
+  SFXPROP_STRING                  = 0x0002, // MAX_SFX_SIZE
+  SFXPROP_LABEL                   = 0x0003, // 11
 };
 
 

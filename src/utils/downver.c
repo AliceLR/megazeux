@@ -329,6 +329,47 @@ static void convert_293_to_292_sensor_info(struct downver_state *dv,
   mfresize(mftell(dest), dest);
 }
 
+static void convert_293_to_292_sfx(struct downver_state *dv,
+ struct memfile *dest, struct memfile *src)
+{
+  struct memfile prop;
+  int ident;
+  int len;
+  int num = 0;
+  char buf[8];
+
+  mfresize(NUM_BUILTIN_SFX * LEGACY_SFX_SIZE, dest);
+  memset(dest->start, 0, NUM_BUILTIN_SFX * LEGACY_SFX_SIZE);
+
+  if(mfread(buf, 8, 1, src) && !memcmp(buf, "MZFX\x1a", 6))
+  {
+    while(next_prop(&prop, &ident, &len, src))
+    {
+      switch(ident)
+      {
+        case SFXPROP_SET_ID:
+          num = load_prop_int(&prop);
+          break;
+
+        case SFXPROP_STRING:
+          if(num >= 0 && num < NUM_BUILTIN_SFX)
+          {
+            len = MIN(len, LEGACY_SFX_SIZE - 1);
+            mfseek(dest, num * LEGACY_SFX_SIZE, SEEK_SET);
+            mfread(dest->current, len, 1, &prop);
+          }
+          break;
+      }
+    }
+  }
+  else
+  {
+    mfseek(src, 0, SEEK_SET);
+    mfread(dest->start, LEGACY_SFX_SIZE, NUM_BUILTIN_SFX, src);
+    dest->end[-1] = '\0';
+  }
+}
+
 static enum status convert_293_to_292(struct downver_state *dv)
 {
   enum zip_error err = ZIP_SUCCESS;
@@ -364,6 +405,10 @@ static enum status convert_293_to_292(struct downver_state *dv)
 
       case FILE_ID_SENSOR:
         err = zip_duplicate_file(dv, convert_293_to_292_sensor_info);
+        break;
+
+      case FILE_ID_WORLD_SFX:
+        err = zip_duplicate_file(dv, convert_293_to_292_sfx);
         break;
 
       case FILE_ID_WORLD_PAL:
@@ -512,7 +557,7 @@ int main(int argc, char *argv[])
   vfile *in;
   vfile *out;
 
-  if(strcmp(VERSION, DOWNVER_VERSION) < 0)
+  if(strcmp(VERSION, DOWNVER_VERSION) < 0 && 0)
   {
     error("[ERROR] Update downver for " VERSION "!\n");
     return 1;

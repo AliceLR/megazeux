@@ -1464,26 +1464,27 @@ void legacy_load_world(struct world *mzx_world, vfile *vf, const char *file,
 
   if(num_boards == 0)
   {
-    int sfx_size;
-    char *sfx_offset = mzx_world->custom_sfx;
+    struct sfx_list *custom_sfx = &mzx_world->custom_sfx;
+    char sfx_buf[LEGACY_SFX_SIZE];
+    size_t sfx_size;
     // Sfx
-    mzx_world->custom_sfx_on = 1;
     vfgetw(vf); // Skip word size
 
     //Read sfx
-    for(i = 0; i < NUM_BUILTIN_SFX; i++, sfx_offset += LEGACY_SFX_SIZE)
+    for(i = 0; i < NUM_BUILTIN_SFX; i++)
     {
+      // Already bound checked...
       sfx_size = vfgetc(vf);
-      if(sfx_size && !vfread(sfx_offset, sfx_size, 1, vf))
+      if(vfread(sfx_buf, 1, sfx_size, vf) < sfx_size)
         goto err_close;
 
-      sfx_offset[LEGACY_SFX_SIZE - 1] = '\0';
+      sfx_set_string(custom_sfx, i, sfx_buf, sfx_size);
     }
     num_boards = vfgetc(vf);
   }
   else
   {
-    mzx_world->custom_sfx_on = 0;
+    sfx_free(&mzx_world->custom_sfx);
   }
 
   legacy_load_world_boards(mzx_world, vf, savegame, file_version, num_boards);

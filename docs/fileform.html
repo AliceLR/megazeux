@@ -385,6 +385,7 @@
         <li><a href="#mzmx">MZMX</a></li>
       </ol>
       <li><a href="#counters">Counters File</a></li>
+      <li><a href="#sfx">Custom SFX Table File (.SFX)</a></li>
       <li><a href="#bytecode">Robotic Bytecode (.BC)</a></li>
       <li><a href="#license">License</a></li>
     </ol>
@@ -2536,18 +2537,39 @@ while(i &lt; size)
     <section id="sfx290" class="inner">
       <h3>Custom SFX Table</h3>
       <p>
-        The custom SFX table is saved as a raw data file of
-        <code>(NUM_SFX * LEGACY_SFX_SIZE</code> bytes, where
-        <code>NUM_SFX = 50</code> and <code>LEGACY_SFX_SIZE = 69</code> (for a
-        total of <code>3450</code> bytes prior to compression). If this file
-        is present, custom SFX will be enabled for the world. If this file is
-        absent, custom SFX will be disabled.
+        If this file is present, custom SFX will be enabled for the world. If
+        this file is absent, custom SFX will be disabled.
       </p>
       <p>
-        This data block is loaded directly over the custom SFX string data and
-        each SFX string is expected to be null terminated within the block.
-        This was a bad idea and will likely be replaced with a properties file
-        in the near future.
+        In versions 2.93 and up, the sound effects are stored as a properties file
+        with a 8-byte header:
+        <div class="markdown">
+| Pos. | Size  | Description |
+|------|-------|-------------|
+| 0    | s6    | `MZFX\x1a\0`
+| 6    | w(BE) | MegaZeux version in big endian, same as last two bytes of <a href="#worldheader">world magic</a>.
+        </div>
+        Versions less than 2.93 (<code>025Dh</code>) are invalid. The properties
+        follow immediately:
+        <div class="markdown">
+| ID       | Property                             | Data Type               | Notes |
+|----------|--------------------------------------|-------------------------|-------|
+| `0x0001` | Set current sound effect ID          | int(b)                  | SFX >= 50 are ignored
+| `0x0002` | Sound effect string                  | string                  | Max. length 68
+        </div>
+        Prior to 2.93, the custom SFX table is saved as a raw array of
+        <code>(NUM_BUILTIN_SFX * LEGACY_SFX_SIZE</code> bytes, where
+        <code>NUM_BUILTIN_SFX = 50</code> and <code>LEGACY_SFX_SIZE = 69</code>
+        (for a total of <code>3450</code> bytes prior to compression). Each
+        individual sound effect must be null terminated. This format is still
+        allowed in 2.93+ version world files. If loaded into a 2.93+ world, all
+        custom sound effects past 50 will be cleared.
+      </p>
+      <p>
+        This file is identical in format to the
+        <a href="#sfx">exported custom SFX file format</a>, and files in 2.90+
+        world and save files can be used interchangeably with files created by
+        SFX export.
       </p>
     </section>
 
@@ -3160,6 +3182,19 @@ while(i &lt; size)
     <p>
       This header is followed by a ZIP archive containing only the
       <code>counter</code> and <code>string</code> files.
+    </p>
+  </section>
+
+  <hr>
+
+  <section id="sfx" class="main">
+    <h2>Custom SFX Table File (.SFX)</h2>
+    <p>
+      The custom SFX table file format is exactly the same as the
+      <a href="#sfx290">custom SFX table described in the 2.90+ world format</a>.
+      MegaZeux 2.93 and up can save sound effects in either the new format or in
+      the old raw array format. All prior versions of MegaZeux that support sound
+      effects export (2.00 through 2.92f) use the raw array format.
     </p>
   </section>
 

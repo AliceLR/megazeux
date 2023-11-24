@@ -43,6 +43,16 @@ USERS
   3 indices, fixing graphical bugs in situations where the
   fallback would be used and display the wrong colors in games
   using custom indices.
++ Up to 256 custom sound effects are now supported instead of
+  50, and custom sound effects can be up to 255 chars in length.
+  Currently, the sound effects editor is restricted to 100 SFX
+  of length 68; the CHANGE SFX # to "" command may be used as a
+  temporary workaround.
++ Custom sound effects can now be given custom names in the
+  sound effects editor. Currently names are limited to 9 chars
+  and are only useful when editing.
++ Fixed crash bugs caused by using CHANGE SFX # to "" with an
+  invalid sound effect number.
 + Added support for 800x240 mode to the 3DS port. This mode can
   be toggled with the 3DS keyboard. (asie)
 + Added support for using 352kB of previously unused NDS VRAM

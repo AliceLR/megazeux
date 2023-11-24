@@ -1101,91 +1101,84 @@ static inline int load_world_global_robot(struct world *mzx_world,
 
 
 // SFX
-/**
- * Block-SFX style that was used for <=2.92X .SFX files and for worlds
- * saved between 2.90X and 2.92X.
- */
-__editor_maybe_static
-void save_sfx_array(struct world *mzx_world, char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE])
-{
-  size_t sfx_offset;
-  size_t i;
-
-  memset(custom_sfx, 0, NUM_BUILTIN_SFX * LEGACY_SFX_SIZE);
-
-  // Ignore everything past the null terminator.
-  sfx_offset = 0;
-  for(i = 0; i < NUM_BUILTIN_SFX; i++, sfx_offset += LEGACY_SFX_SIZE)
-  {
-    size_t len = strlen(mzx_world->custom_sfx + sfx_offset);
-    if(len < LEGACY_SFX_SIZE)
-      memcpy(custom_sfx + sfx_offset, mzx_world->custom_sfx + sfx_offset, len);
-  }
-}
-
-__editor_maybe_static
-boolean load_sfx_array(struct world *mzx_world, char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE])
-{
-  size_t sfx_offset;
-  size_t i;
-  size_t j;
-
-  sfx_offset = 0;
-  for(i = 0; i < NUM_BUILTIN_SFX; i++, sfx_offset += LEGACY_SFX_SIZE)
-  {
-    // Must contain a null terminator within the read block.
-    for(j = 0; j < LEGACY_SFX_SIZE; j++)
-      if((custom_sfx + sfx_offset)[j] == '\0')
-        break;
-
-    if(j >= LEGACY_SFX_SIZE)
-      return false;
-
-    // Zero extra junk.
-    memset(custom_sfx + sfx_offset + j, 0, LEGACY_SFX_SIZE - j);
-  }
-
-  memcpy(mzx_world->custom_sfx, custom_sfx, NUM_BUILTIN_SFX * LEGACY_SFX_SIZE);
-  return true;
-}
-
 static inline int save_world_sfx(struct world *mzx_world,
- struct zip_archive *zp, const char *name)
+ struct zip_archive *zp, int file_version, const char *name)
 {
-  // Only save if custom SFX are enabled
-  if(mzx_world->custom_sfx_on)
-  {
-    char tmp[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE];
-    save_sfx_array(mzx_world, tmp);
+  struct sfx_list *custom_sfx = &mzx_world->custom_sfx;
 
-    return zip_write_file(zp, name, tmp, NUM_BUILTIN_SFX * LEGACY_SFX_SIZE,
-     ZIP_M_DEFLATE);
+  // Only save if custom SFX are enabled
+  if(custom_sfx->list)
+  {
+    char *tmp;
+    size_t size;
+    size_t required;
+    int ret;
+
+    size = sfx_save_to_memory(custom_sfx, file_version, NULL, 0, &required);
+    if(size || !required)
+      return -1;
+
+    tmp = (char *)cmalloc(required);
+    if(!tmp)
+      return -2;
+
+    size = sfx_save_to_memory(custom_sfx, file_version, tmp, required, NULL);
+    if(!size)
+    {
+      free(tmp);
+      return -3;
+    }
+
+    ret = zip_write_file(zp, name, tmp, size, ZIP_M_DEFLATE);
+    free(tmp);
+    return ret;
   }
 
   return ZIP_SUCCESS;
 }
 
 static inline int load_world_sfx(struct world *mzx_world,
- struct zip_archive *zp)
+ struct zip_archive *zp, int file_version)
 {
+  struct sfx_list *custom_sfx = &mzx_world->custom_sfx;
+
   // No custom SFX loaded yet
-  if(!mzx_world->custom_sfx_on)
+  if(!custom_sfx->list)
   {
-    char tmp[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE];
+    char *tmp;
+    size_t size;
     int ret;
 
-    memset(mzx_world->custom_sfx, 0, sizeof(mzx_world->custom_sfx));
-
-    ret = zip_read_file(zp, tmp, NUM_BUILTIN_SFX * LEGACY_SFX_SIZE, NULL);
-
-    if(ret == ZIP_SUCCESS)
+    ret = zip_get_next_uncompressed_size(zp, &size);
+    if(ret != ZIP_SUCCESS)
     {
-      if(load_sfx_array(mzx_world, tmp))
-        mzx_world->custom_sfx_on = 1;
+      zip_skip_file(zp);
+      return ret;
     }
-    return ret;
-  }
 
+    tmp = (char *)cmalloc(size);
+    if(!tmp)
+    {
+      zip_skip_file(zp);
+      return -1;
+    }
+
+    ret = zip_read_file(zp, tmp, size, NULL);
+    if(ret != ZIP_SUCCESS)
+    {
+      free(tmp);
+      return ret;
+    }
+
+    if(!sfx_load_from_memory(custom_sfx, file_version, tmp, size))
+    {
+      free(tmp);
+      return -2;
+    }
+
+    free(tmp);
+    return ZIP_SUCCESS;
+  }
   // Already loaded custom SFX; skip
   else
   {
@@ -2237,7 +2230,7 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   if(save_world_global_robot(mzx_world, zp, savegame, file_version, "gr"))
     goto err_close;
 
-  if(save_world_sfx(mzx_world, zp,              "sfx"))     goto err_close;
+  if(save_world_sfx(mzx_world, zp, file_version,"sfx"))     goto err_close;
   if(save_world_chars(mzx_world, zp, savegame,  "chars"))   goto err_close;
   if(save_world_pal(mzx_world, zp, file_version,"pal"))     goto err_close;
   if(save_world_pal_smzx(mzx_world, zp,         "palsmzx")) goto err_close;
@@ -2357,7 +2350,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
         break;
 
       case FILE_ID_WORLD_SFX:
-        err = load_world_sfx(mzx_world, zp);
+        err = load_world_sfx(mzx_world, zp, file_version);
         break;
 
       case FILE_ID_WORLD_CHARS:
@@ -2820,32 +2813,6 @@ void optimize_null_boards(struct world *mzx_world)
   free(board_id_translation_list);
 }
 
-#ifdef CONFIG_DEBYTECODE
-
-static void convert_sfx_strs(char *sfx_buf)
-{
-  char *start, *end = sfx_buf - 1, str_buf_len = strlen(sfx_buf);
-
-  while(true)
-  {
-    // no starting & was found
-    start = strchr(end + 1, '&');
-    if(!start || start - sfx_buf + 1 > str_buf_len)
-      break;
-
-    // no ending & was found
-    end = strchr(start + 1, '&');
-    if(!end || end - sfx_buf + 1 > str_buf_len)
-      break;
-
-    // Wipe out the &s to get a token
-    *start = '(';
-    *end = ')';
-  }
-}
-
-#endif /* CONFIG_DEBYTECODE */
-
 
 static void load_world(struct world *mzx_world, struct zip_archive *zp,
  vfile *vf, const char *file, boolean savegame, int file_version, char *name,
@@ -2874,7 +2841,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
     set_config_from_file(GAME_CNF, config_file_name);
 
   // Some initial setting(s)
-  mzx_world->custom_sfx_on = 0;
+  sfx_free(&mzx_world->custom_sfx);
   mzx_world->max_samples = -1;
   mzx_world->joystick_simulate_keys = true;
 
@@ -2893,18 +2860,6 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   update_palette();
 
   initialize_gateway_functions(mzx_world);
-
-#ifdef CONFIG_DEBYTECODE
-  // Convert SFX strings if needed
-  if(file_version < VERSION_SOURCE)
-  {
-    char *sfx_offset = mzx_world->custom_sfx;
-    int i;
-
-    for(i = 0; i < NUM_SFX; i++, sfx_offset += SFX_SIZE)
-      convert_sfx_strs(sfx_offset);
-  }
-#endif
 
   // Open input file
   if(mzx_world->input_file_name[0])
@@ -3633,8 +3588,7 @@ void clear_global_data(struct world *mzx_world)
 
   mzx_world->robotic_save_type = SAVE_NONE;
 
-  memset(mzx_world->custom_sfx, 0, NUM_SFX * SFX_SIZE);
-  mzx_world->custom_sfx_on = 0;
+  sfx_free(&mzx_world->custom_sfx);
 
   mzx_world->max_samples = -1;
   audio_set_max_samples(mzx_world->max_samples);
