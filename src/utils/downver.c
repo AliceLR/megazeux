@@ -235,6 +235,10 @@ static void convert_293_to_292_world_info(struct downver_state *dv,
         save_prop_c(ident, dv->screen_mode, dest);
         break;
 
+      case WPROP_OUTPUT_MODE:
+        /* Added in 2.93 */
+        break;
+
       default:
         save_prop_p(ident, &prop, dest);
         break;

@@ -2887,6 +2887,30 @@ static struct robot *get_robot_by_id(struct world *mzx_world, int id)
     return NULL;
 }
 
+static void fread_close(struct world *mzx_world)
+{
+  if(!mzx_world->input_is_dir && mzx_world->input_file)
+    vfclose(mzx_world->input_file);
+
+  if(mzx_world->input_is_dir && mzx_world->input_directory)
+    vdir_close(mzx_world->input_directory);
+
+  mzx_world->input_file_name[0] = '\0';
+  mzx_world->input_file = NULL;
+  mzx_world->input_directory = NULL;
+  mzx_world->input_is_dir = false;
+}
+
+static void fwrite_close(struct world *mzx_world)
+{
+  if(mzx_world->output_file)
+    vfclose(mzx_world->output_file);
+
+  mzx_world->output_file_name[0] = '\0';
+  mzx_world->output_file = NULL;
+  mzx_world->output_mode = FWRITE_MODE_UNKNOWN;
+}
+
 int set_counter_special(struct world *mzx_world, char *char_value,
  int value, int id)
 {
@@ -2899,25 +2923,15 @@ int set_counter_special(struct world *mzx_world, char *char_value,
   {
     case FOPEN_FREAD:
     {
-      mzx_world->input_file_name[0] = 0;
+      fread_close(mzx_world);
 
       if(char_value[0])
       {
-        char *translated_path = cmalloc(MAX_PATH);
+        char *translated_path = (char *)cmalloc(MAX_PATH);
         int err;
 
-        if(!mzx_world->input_is_dir && mzx_world->input_file)
-        {
-          vfclose(mzx_world->input_file);
-          mzx_world->input_file = NULL;
-        }
-
-        if(mzx_world->input_is_dir)
-        {
-          vdir_close(mzx_world->input_directory);
-          mzx_world->input_directory = NULL;
-          mzx_world->input_is_dir = false;
-        }
+        if(!translated_path)
+          return 0;
 
         err = fsafetranslate(char_value, translated_path, MAX_PATH);
 
@@ -2937,97 +2951,54 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         free(translated_path);
       }
-      else
-      {
-        if(!mzx_world->input_is_dir && mzx_world->input_file)
-        {
-          vfclose(mzx_world->input_file);
-          mzx_world->input_file = NULL;
-        }
-
-        if(mzx_world->input_is_dir)
-        {
-          vdir_close(mzx_world->input_directory);
-          mzx_world->input_directory = NULL;
-          mzx_world->input_is_dir = false;
-        }
-      }
-
       break;
     }
 
     case FOPEN_FWRITE:
     {
-      mzx_world->output_file_name[0] = 0;
+      fwrite_close(mzx_world);
 
       if(char_value[0])
       {
-        if(mzx_world->output_file)
-          vfclose(mzx_world->output_file);
-
         mzx_world->output_file = fsafeopen(char_value, "wb");
         if(mzx_world->output_file)
-          strcpy(mzx_world->output_file_name, char_value);
-      }
-      else
-      {
-        if(mzx_world->output_file)
         {
-          vfclose(mzx_world->output_file);
-          mzx_world->output_file = NULL;
+          strcpy(mzx_world->output_file_name, char_value);
+          mzx_world->output_mode = FWRITE_MODE_TRUNCATE;
         }
       }
-
       break;
     }
 
     case FOPEN_FAPPEND:
     {
-      mzx_world->output_file_name[0] = 0;
+      fwrite_close(mzx_world);
 
       if(char_value[0])
       {
-        if(mzx_world->output_file)
-          vfclose(mzx_world->output_file);
-
         mzx_world->output_file = fsafeopen(char_value, "ab");
         if(mzx_world->output_file)
-          strcpy(mzx_world->output_file_name, char_value);
-      }
-      else
-      {
-        if(mzx_world->output_file)
         {
-          vfclose(mzx_world->output_file);
-          mzx_world->output_file = NULL;
+          strcpy(mzx_world->output_file_name, char_value);
+          mzx_world->output_mode = FWRITE_MODE_APPEND;
         }
       }
-
       break;
     }
 
     case FOPEN_FMODIFY:
     {
-      mzx_world->output_file_name[0] = 0;
+      fwrite_close(mzx_world);
 
       if(char_value[0])
       {
-        if(mzx_world->output_file)
-          vfclose(mzx_world->output_file);
-
         mzx_world->output_file = fsafeopen(char_value, "r+b");
         if(mzx_world->output_file)
-          strcpy(mzx_world->output_file_name, char_value);
-      }
-      else
-      {
-        if(mzx_world->output_file)
         {
-          vfclose(mzx_world->output_file);
-          mzx_world->output_file = NULL;
+          strcpy(mzx_world->output_file_name, char_value);
+          mzx_world->output_mode = FWRITE_MODE_MODIFY;
         }
       }
-
       break;
     }
 

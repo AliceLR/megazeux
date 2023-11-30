@@ -401,6 +401,9 @@ static inline int save_world_info(struct world *mzx_world,
     save_prop_s(WPROP_OUTPUT_FILE_NAME, mzx_world->output_file_name, mf);
     save_prop_d(WPROP_OUTPUT_POS,       mzx_world->temp_output_pos, mf);
     save_prop_d(WPROP_FWRITE_DELIMITER, mzx_world->fwrite_delimiter, mf);
+    if(file_version >= V293)
+      save_prop_c(WPROP_OUTPUT_MODE,    mzx_world->output_mode, mf);
+
     save_prop_d(WPROP_MULTIPLIER,       mzx_world->multiplier, mf);
     save_prop_d(WPROP_DIVIDER,          mzx_world->divider, mf);
     save_prop_d(WPROP_C_DIVISIONS,      mzx_world->c_divisions, mf);
@@ -567,6 +570,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   check(WPROP_OUTPUT_FILE_NAME);
   check(WPROP_OUTPUT_POS);
   check(WPROP_FWRITE_DELIMITER);
+  // ignore optional WPROP_OUTPUT_MODE (2.93)
   check(WPROP_MULTIPLIER);
   check(WPROP_DIVIDER);
   check(WPROP_C_DIVISIONS);
@@ -1036,6 +1040,16 @@ static inline void load_world_info(struct world *mzx_world,
       case WPROP_FWRITE_DELIMITER:
         if_savegame
         mzx_world->fwrite_delimiter = load_prop_int(prop) & 255;
+        break;
+
+      case WPROP_OUTPUT_MODE:
+        if_savegame
+        if(*file_version >= V293)
+        {
+          int tmp = load_prop_int_u(prop, FWRITE_MODE_UNKNOWN, FWRITE_MODE_MAX);
+          mzx_world->output_mode =
+           tmp < FWRITE_MODE_MAX ? (enum fwrite_mode)tmp : FWRITE_MODE_UNKNOWN;
+        }
         break;
 
       case WPROP_MULTIPLIER:
@@ -2890,8 +2904,12 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   // Open output file
   if(mzx_world->output_file_name[0])
   {
-    mzx_world->output_file =
-     fsafeopen(mzx_world->output_file_name, "ab");
+    // Truncation occurred during the initial FWRITE_APPEND,
+    // so wb and r+b should both be reopened as r+b.
+    if(mzx_world->output_mode == FWRITE_MODE_APPEND)
+      mzx_world->output_file = fsafeopen(mzx_world->output_file_name, "ab");
+    else
+      mzx_world->output_file = fsafeopen(mzx_world->output_file_name, "r+b");
 
     if(mzx_world->output_file)
     {
@@ -3531,6 +3549,7 @@ void clear_world(struct world *mzx_world)
     vfclose(mzx_world->output_file);
     mzx_world->output_file = NULL;
   }
+  mzx_world->output_mode = FWRITE_MODE_UNKNOWN;
 
   mzx_world->current_cycle_odd = false;
   mzx_world->current_cycle_frozen = false;

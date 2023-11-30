@@ -2504,6 +2504,7 @@ while(i &lt; size)
 | `0x8078` | Output filename                      | string                  | Save-only
 | `0x807C` | Output file position                 | int(d)                  | Save-only
 | `0x807D` | Output file delimiter                | int(ds)                 | Save-only
+| `0x807E` | Output file mode                     | int(b)                  | Save-only, 2.93+ <a href="#world290note1">(2)</a>
 | `0x8080` | Multiplier                           | int(ds)                 | Save-only
 | `0x8081` | Divider                              | int(ds)                 | Save-only
 | `0x8082` | Circle divisions                     | int(ds)                 | Save-only
@@ -2517,6 +2518,21 @@ while(i &lt; size)
           will be ignored. Versions prior to 2.92d expect this field to be null
           terminated, and may leave parts of previous world names in the loaded
           name if it is not.
+        </li>
+        <li id="world290note2">
+          This field may be omitted. Valid output file mode values:
+<div class="markdown">
+| Value | Mode         |
+|-------|--------------|
+| 0     | none/unknown
+| 1     | `w+b`
+| 2     | `r+b`
+| 3     | `a+b`
+</div>
+          Files opened in mode <code>w+b</code> should be reopened in mode
+          <code>r+b</code>. The output file is currently write-only, so
+          <code>wb</code> and <code>ab</code> are used in Robotic instead
+          of <code>w+b</code> and <code>a+b</code> for now.
         </li>
       </ol>
       <h4 id="statctrprop290">Status Counter Properties</h4>

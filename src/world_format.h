@@ -98,8 +98,8 @@ enum status_counters_prop
 #define COUNT_WORLD_PROPS (              1 + 3 +   4 + 16 + 4 +                 1)
 #define BOUND_WORLD_PROPS (BOARD_NAME_SIZE + 5 + 455 + 24 + 9 + STATCTR_PROP_SIZE)
 
-#define COUNT_SAVE_PROPS  ( 2 +  32 +          3 +        1)
-#define BOUND_SAVE_PROPS  ( 2 + 120 + 3*MAX_PATH + NUM_KEYS)
+#define COUNT_SAVE_PROPS  ( 2 +  33 +          3 +        1)
+#define BOUND_SAVE_PROPS  ( 2 + 121 + 3*MAX_PATH + NUM_KEYS)
 
 // For world files, use WORLD_PROP_SIZE
 // For save files, use WORLD_PROP_SIZE + SAVE_PROP_SIZE
@@ -194,6 +194,7 @@ enum world_prop
   WPROP_OUTPUT_FILE_NAME          = 0x8078, // MAX_PATH
   WPROP_OUTPUT_POS                = 0x807C, //   4
   WPROP_FWRITE_DELIMITER          = 0x807D, //   4
+  WPROP_OUTPUT_MODE               = 0x807E, //   1
   WPROP_MULTIPLIER                = 0x8080, //   4
   WPROP_DIVIDER                   = 0x8081, //   4
   WPROP_C_DIVISIONS               = 0x8082, //   4

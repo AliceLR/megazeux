@@ -250,6 +250,10 @@ USERS
 + The NDS, PSP, and DOS ports now write zip archives with the
   fastest zlib compression level. This makes saved files that
   use compression (worlds, saves, etc.) slightly larger.
++ The output file mode (FWRITE_OPEN, FWRITE_MODIFY, or
+  FWRITE_APPEND) is now stored in save files. This fixes a bug
+  where the output file would be reopened in the wrong mode (ab)
+  when reloading a saved game.
 + editor_show_thing_toggles is now enabled by default.
 - board_editor_hide_help and robot_editor_hide_help are no
   longer enabled by default for accessibility.
