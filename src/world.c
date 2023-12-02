@@ -2508,7 +2508,8 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 
 
 // Hack- forward declaration since this should stay near change_board.
-static void synchronize_current_board(struct world *mzx_world);
+static void v1_store_globals_to_board(struct world *mzx_world);
+static void v1_load_globals_from_board(struct world *mzx_world);
 
 int save_world(struct world *mzx_world, const char *file, boolean savegame,
  int world_version)
@@ -2577,7 +2578,7 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
   }
 
   // Synchronize global variables in the current board.
-  synchronize_current_board(mzx_world);
+  v1_store_globals_to_board(mzx_world);
 
 #ifdef CONFIG_EDITOR
   if(world_version == MZX_VERSION_PREV)
@@ -2928,6 +2929,8 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
     mzx_world->current_board = NULL;
     set_current_board_ext(mzx_world,
      mzx_world->board_list[mzx_world->current_board_id]);
+    // change_board expects this to have been done, if applicable.
+    v1_load_globals_from_board(mzx_world);
   }
 
   // If this is a pre-port world, limit the number of samples
@@ -3169,7 +3172,7 @@ void try_load_world(struct world *mzx_world, struct zip_archive **zp,
 }
 
 
-static void synchronize_current_board(struct world *mzx_world)
+static void v1_store_globals_to_board(struct world *mzx_world)
 {
   struct board *cur_board = mzx_world->current_board;
 
@@ -3185,12 +3188,28 @@ static void synchronize_current_board(struct world *mzx_world)
   }
 }
 
+static void v1_load_globals_from_board(struct world *mzx_world)
+{
+  struct board *cur_board = mzx_world->current_board;
+
+  // MegaZeux 1.x- status durations were board local, restore the saved copies.
+  if(mzx_world->version < V200 && cur_board)
+  {
+    mzx_world->blind_dur = cur_board->blind_dur_v1;
+    mzx_world->firewalker_dur = cur_board->firewalker_dur_v1;
+    mzx_world->freeze_time_dur = cur_board->freeze_time_dur_v1;
+    mzx_world->slow_time_dur = cur_board->slow_time_dur_v1;
+    mzx_world->wind_dur = cur_board->wind_dur_v1;
+  }
+}
+
 void change_board(struct world *mzx_world, int board_id)
 {
   // Set the current board during gameplay.
   struct board *cur_board = mzx_world->current_board;
 
-  synchronize_current_board(mzx_world);
+  // Save globals back to the current board.
+  v1_store_globals_to_board(mzx_world);
 
   // Is this board temporary? Clear it
   if(mzx_world->temporary_board)
@@ -3219,15 +3238,8 @@ void change_board(struct world *mzx_world, int board_id)
     cur_board = dup_board;
   }
 
-  // MegaZeux 1.x- status durations were board local, restore the saved copies.
-  if(mzx_world->version < V200)
-  {
-    mzx_world->blind_dur = cur_board->blind_dur_v1;
-    mzx_world->firewalker_dur = cur_board->firewalker_dur_v1;
-    mzx_world->freeze_time_dur = cur_board->freeze_time_dur_v1;
-    mzx_world->slow_time_dur = cur_board->slow_time_dur_v1;
-    mzx_world->wind_dur = cur_board->wind_dur_v1;
-  }
+  // Load globals from the current board.
+  v1_load_globals_from_board(mzx_world);
 }
 
 void change_board_set_values(struct world *mzx_world)
@@ -3422,6 +3434,9 @@ boolean reload_world(struct world *mzx_world, const char *file, boolean *faded)
   load_world(mzx_world, zp, vf, file, false, version, name, faded);
   default_global_data(mzx_world);
   *faded = false;
+
+  // Hack: 1.x seems to not clear some things...
+  v1_load_globals_from_board(mzx_world);
 
   // Now that the world's loaded, fix the save path.
   {

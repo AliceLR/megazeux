@@ -1,0 +1,3 @@
+Title: Wind Duration Test
+Author: Alice Rowan
+Desc: Make sure the board wind duration value is loaded.

@@ -270,6 +270,14 @@ static void convert_293_to_292_board_info(struct downver_state *dv,
         save_prop_s_to_asciiz(ident, BOARD_NAME_SIZE, &prop, dest);
         break;
 
+      case BPROP_BLIND_DUR:
+      case BPROP_FIREWALKER_DUR:
+      case BPROP_FREEZE_TIME_DUR:
+      case BPROP_SLOW_TIME_DUR:
+      case BPROP_WIND_DUR:
+        /* Added in 2.93 */
+        break;
+
       default:
         save_prop_p(ident, &prop, dest);
         break;
