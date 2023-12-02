@@ -36,12 +36,13 @@ EXTRA_INCLUDES := $(foreach path,$(EXTRA_LIBS_DIRS),-I$(path)/include)
 EXTRA_LIBS := $(foreach path,$(EXTRA_LIBS_DIRS),-L$(path)/lib) \
               -Wl,--start-group $(EXTRA_LIBS_NAMES) -Wl,--end-group
 
-ARCH_CFLAGS   += -marm -mthumb-interwork -march=armv5te -mtune=arm946e-s
+ARCH_CFLAGS   += -marm -mthumb-interwork -mcpu=arm946e-s+nofp
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds -ffunction-sections -fdata-sections
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
 
+ARCH_LDFLAGS  += -marm -mthumb-interwork -mcpu=arm946e-s+nofp
 ARCH_LDFLAGS  += -Wl,--defsym=vfprintf=__i_vfprintf -Wl,--defsym=vfscanf=__i_vfscanf
-ARCH_LDFLAGS  += -Wl,--no-warn-rwx-segments
+ARCH_LDFLAGS  += -Wl,--no-warn-rwx-segments -Wl,--use-blx
 ARCH_LDFLAGS  += $(BLOCKSDS)/sys/crts/ds_arm9_crt0.o ${EXTRA_LIBS} -Wl,--gc-sections -nostdlib \
                    -T$(BLOCKSDS)/sys/crts/ds_arm9.mem \
                    -T$(BLOCKSDS)/sys/crts/ds_arm9.ld
@@ -91,7 +92,7 @@ $(ARM7_BINARY): $(ARM7_OBJECT_FILES)
 arch/nds/arm7/source/%.c.o: arch/nds/arm7/source/%.c
 	$(if ${V},,@echo "  CC.7    " $<)
 	${CC} -MD -Os -std=gnu11 -D__NDS__ -DARM7 \
-		-Wall -Wno-unused-macros -mcpu=arm7tdmi -mtune=arm7tdmi \
+		-Wall -Wno-unused-macros -mcpu=arm7tdmi \
 		-mthumb -mthumb-interwork $(ARM7_INCLUDES) \
 		-ffunction-sections -fdata-sections -fomit-frame-pointer \
 		-c $< -o $@
