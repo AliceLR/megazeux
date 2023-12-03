@@ -2238,6 +2238,10 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   if(!zp)
     goto err_close;
 
+  // Zip64 support was added in 2.93.
+  if(file_version < V293)
+    zip_set_zip64_enabled(zp, false);
+
   if(save_world_info(mzx_world, zp, savegame, file_version, "world"))
     goto err_close;
 

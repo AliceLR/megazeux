@@ -739,6 +739,10 @@ int main(int argc, char *argv[])
   dv.in  = zip_open_vf_read(in);
   dv.out = zip_open_vf_write(out);
 
+  // Zip64 support was added in 2.93.
+  if(MZX_VERSION_PREV < V293)
+    zip_set_zip64_enabled(dv.out, false);
+
   ret = convert_293_to_292(&dv);
   out = NULL;
   in = NULL;
