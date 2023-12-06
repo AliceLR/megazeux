@@ -484,6 +484,17 @@ void set_color_intensity(uint8_t color, unsigned int percent)
   }
 }
 
+/** Set a color intensity in the MZX palette, even if SMZX is enabled. */
+void set_color_intensity_mzx(uint8_t color, unsigned int percent)
+{
+  if(graphics.screen_mode >= 2)
+  {
+    graphics.backup_intensity[color] = percent;
+  }
+  else
+    set_color_intensity(color, percent);
+}
+
 void set_palette_intensity(unsigned int percent)
 {
   int i, num_colors;
@@ -516,6 +527,22 @@ void set_rgb(uint8_t color, unsigned int r, unsigned int g, unsigned int b)
   graphics.palette[color].b = b;
   graphics.intensity_palette[color].b = intensity(b, percent);
   graphics.palette_dirty = true;
+}
+
+/** Set a color in the MZX palette, even if SMZX is enabled. */
+void set_rgb_mzx(uint8_t color, unsigned int r, unsigned int g, unsigned int b)
+{
+  if(graphics.screen_mode >= 2)
+  {
+    r = r * 255 / 63;
+    g = g * 255 / 63;
+    b = b * 255 / 63;
+    graphics.backup_palette[color].r = r;
+    graphics.backup_palette[color].g = g;
+    graphics.backup_palette[color].b = b;
+  }
+  else
+    set_rgb(color, r, g, b);
 }
 
 void set_protected_rgb(uint8_t color, unsigned int r, unsigned int g,
@@ -567,11 +594,35 @@ unsigned int get_color_intensity(uint8_t color)
   return graphics.current_intensity[color];
 }
 
+/** Get a color intensity from the MZX palette, even if SMZX is enabled. */
+unsigned int get_color_intensity_mzx(uint8_t color)
+{
+  if(graphics.screen_mode >= 2)
+  {
+    return graphics.backup_intensity[color];
+  }
+  else
+    return get_color_intensity(color);
+}
+
 void get_rgb(uint8_t color, uint8_t *r, uint8_t *g, uint8_t *b)
 {
   *r = ((graphics.palette[color].r * 126) + 255) / 510;
   *g = ((graphics.palette[color].g * 126) + 255) / 510;
   *b = ((graphics.palette[color].b * 126) + 255) / 510;
+}
+
+/** Get a color from the MZX palette, even if SMZX is enabled. */
+void get_rgb_mzx(uint8_t color, uint8_t *r, uint8_t *g, uint8_t *b)
+{
+  if(graphics.screen_mode >= 2)
+  {
+    *r = ((graphics.backup_palette[color].r * 126) + 255) / 510;
+    *g = ((graphics.backup_palette[color].g * 126) + 255) / 510;
+    *b = ((graphics.backup_palette[color].b * 126) + 255) / 510;
+  }
+  else
+    get_rgb(color, r, g, b);
 }
 
 unsigned int get_red_component(uint8_t color)

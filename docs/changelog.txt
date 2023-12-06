@@ -43,6 +43,16 @@ USERS
   3 indices, fixing graphical bugs in situations where the
   fallback would be used and display the wrong colors in games
   using custom indices.
++ Up to 256 custom sound effects are now supported instead of
+  50, and custom sound effects can be up to 255 chars in length.
+  Currently, the sound effects editor is restricted to 100 SFX
+  of length 68; the CHANGE SFX # to "" command may be used as a
+  temporary workaround.
++ Custom sound effects can now be given custom names in the
+  sound effects editor. Currently names are limited to 9 chars
+  and are only useful when editing.
++ Fixed crash bugs caused by using CHANGE SFX # to "" with an
+  invalid sound effect number.
 + Added support for 800x240 mode to the 3DS port. This mode can
   be toggled with the 3DS keyboard. (asie)
 + Added support for using 352kB of previously unused NDS VRAM
@@ -174,6 +184,16 @@ USERS
   now sampled once per command maximum. When multiple date/time
   counters are read in the same command, they are guaranteed to
   represent the same time.
++ Fixed a bug where worlds with SMZX mode selected would display
+  the previous world's palette after switching back to MZX mode.
++ World and save files now save the MZX mode palette when in
+  SMZX modes 2 or 3. Save files now save the MZX mode palette
+  intensities when in SMZX modes 2 or 3. The palette and palette
+  intensities for SMZX modes 2 and 3 are now saved as "palsmzx"
+  and "palints" when one of these modes is active.
++ Save files now save palette intensities for all modes as a raw
+  array of little endian DWORDs instead of bytes. The 2.92 and
+  2.93 intensities file formats are mutually incompatible.
 + libxmp playback improvements for GDM, AMF, and OctaMED modules
   as well as general stability improvements.
 + ccv and png2smzx now both support the following image formats:
@@ -188,6 +208,7 @@ USERS
   original frontend from 2010. This uses a custom y4m loader
   rather than MJPEG Tools for now, so it may be buggy. Usage:
   ffmpeg -i input -f yuv4mpegpipe pipe:1 | y4m2smzx - out.mzv
++ The downver utility now supports save files.
 + Fixed bugs caused by missing validation in the Import SFX
   feature in the editor.
 + The Robotic message box commands now properly display char 10.
@@ -229,6 +250,10 @@ USERS
 + The NDS, PSP, and DOS ports now write zip archives with the
   fastest zlib compression level. This makes saved files that
   use compression (worlds, saves, etc.) slightly larger.
++ The output file mode (FWRITE_OPEN, FWRITE_MODIFY, or
+  FWRITE_APPEND) is now stored in save files. This fixes a bug
+  where the output file would be reopened in the wrong mode (ab)
+  when reloading a saved game.
 + editor_show_thing_toggles is now enabled by default.
 - board_editor_hide_help and robot_editor_hide_help are no
   longer enabled by default for accessibility.
@@ -244,6 +269,7 @@ DEVELOPERS
   storage, like the NDS.
 + Board input strings, charset paths, and palette paths are now
   heap allocated on-demand to save RAM for low-memory systems.
++ Status counters are now saved as a nested properties file.
 + Refactored the 3DS renderer to use templates. (asie)
 + intake2() now supports custom handling of intake events, i.e.
   it can now be used without providing a fixed size buffer.

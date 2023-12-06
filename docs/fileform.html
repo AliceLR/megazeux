@@ -101,7 +101,7 @@
 
   td
   {
-    padding: 1px 8px;
+    padding: 1px 6px;
     border: 4px solid transparent;
   }
 
@@ -359,9 +359,15 @@
         <li><a href="#files290">Files List</a></li>
         <li><a href="#properties">Properties Format</a></li>
         <li><a href="#worldprop290">World Properties</a></li>
+        <ol type="a">
+          <li><a href="#statctrprop290">Status Counter Properties</a></li>
+        </ol>
         <li><a href="#sfx290">Custom SFX Table</a></li>
         <li><a href="#chars290">Character Sets</a></li>
-        <li><a href="#pal290">Palette, Palette Indices, and Palette Intensities</a></li>
+        <li><a href="#pal290">Palettes, Palette Indices, and Palette Intensities</a></li>
+        <ol type="a">
+          <li><a href="#pal290old">Prior to 2.93</a></li>
+        </ol>
         <li><a href="#vlayer290">Vlayer Planes</a></li>
         <li><a href="#sprites290">Sprite Properties (.SAV only)</a></li>
         <li><a href="#counters290">Counter and String Lists (.SAV only)</a></li>
@@ -379,6 +385,7 @@
         <li><a href="#mzmx">MZMX</a></li>
       </ol>
       <li><a href="#counters">Counters File</a></li>
+      <li><a href="#sfx">Custom SFX Table File (.SFX)</a></li>
       <li><a href="#bytecode">Robotic Bytecode (.BC)</a></li>
       <li><a href="#license">License</a></li>
     </ol>
@@ -2312,13 +2319,15 @@ while(i &lt; size)
 | `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled  | As of 2.91c
 | `chars`   | <a href="#chars290"      >Character Sets</a>                |                             | Always
 | `pal`     | <a href="#pal290"        >Palette</a>                       |
+| `palsmzx` | <a href="#pal290"        >Palette (SMZX)</a>                | SMZX 2 and 3 only
 | `palidx`  | <a href="#pal290"        >Palette Indices</a>               | Save-only before 2.91, SMZX 3 only
 | `vco`     | <a href="#vlayer290"     >Vlayer Colors Plane</a>           | Save-only before 2.91       | Always
 | `vch`     | <a href="#vlayer290"     >Vlayer Chars Plane</a>            | Save-only before 2.91       | Always
 | `palint`  | <a href="#pal290"        >Palette Intensities</a>           | Save-only
+| `palints` | <a href="#pal290"        >Palette Intensities (SMZX)</a>    | Save-only, SMZX 2 and 3 only
 | `spr`     | <a href="#spriteprop290" >Sprite Properties</a>             | Save-only                   | Always
-| `counter` | <a href="#counters290"   >Counters List</a>                 | Save-only
-| `string`  | <a href="#counters290"   >Strings List</a>                  | Save-only
+| `counter` | <a href="#counters290"   >Counters List</a>                 | Save-only                   | As of 2.93
+| `string`  | <a href="#counters290"   >Strings List</a>                  | Save-only                   | As of 2.93
 | `b##`     | <a href="#boardprop290"  >Board Properties</a>              | See below.
 | `b##bid`  | <a href="#boardplanes290">Board level_id Plane</a>          |                             | Always
 | `b##bpr`  | <a href="#boardplanes290">Board level_param Plane</a>       |                             | Always
@@ -2393,7 +2402,8 @@ while(i &lt; size)
         The file ends immediately when a property ID of <code>0x0000</code> is
         encountered indicating the end of the file. This value is the same for
         all different properties files. Unrecognized properties IDs are usually
-        skipped unless noted otherwise.
+        skipped unless noted otherwise. The EOF ID should always be present at
+        the end of the file and there should be no data after the EOF ID.
       </p>
       <p>
         It is possible to nest properties files to create a file with a more
@@ -2439,7 +2449,7 @@ while(i &lt; size)
 | `0x0012` | ID Chars bullet colors               | array(b * 3)            |
 | `0x0013` | ID Chars block 3 (damage)            | array(b * 128)          |
 
-| `0x0018` | Status counters                      | array(s15 with \0 * 6)  |
+| `0x0018` | Status counters                      | Properties (2.93+)<br>array(s15 with \0 * 6) |
 
 | `0x0020` | Edge color                           | int(b)
 | `0x0021` | First board #                        | int(b)
@@ -2494,6 +2504,7 @@ while(i &lt; size)
 | `0x8078` | Output filename                      | string                  | Save-only
 | `0x807C` | Output file position                 | int(d)                  | Save-only
 | `0x807D` | Output file delimiter                | int(ds)                 | Save-only
+| `0x807E` | Output file mode                     | int(b)                  | Save-only, 2.93+ <a href="#world290note1">(2)</a>
 | `0x8080` | Multiplier                           | int(ds)                 | Save-only
 | `0x8081` | Divider                              | int(ds)                 | Save-only
 | `0x8082` | Circle divisions                     | int(ds)                 | Save-only
@@ -2508,24 +2519,73 @@ while(i &lt; size)
           terminated, and may leave parts of previous world names in the loaded
           name if it is not.
         </li>
+        <li id="world290note2">
+          This field may be omitted. Valid output file mode values:
+<div class="markdown">
+| Value | Mode         |
+|-------|--------------|
+| 0     | none/unknown
+| 1     | `w+b`
+| 2     | `r+b`
+| 3     | `a+b`
+</div>
+          Files opened in mode <code>w+b</code> should be reopened in mode
+          <code>r+b</code>. The output file is currently write-only, so
+          <code>wb</code> and <code>ab</code> are used in Robotic instead
+          of <code>w+b</code> and <code>a+b</code> for now.
+        </li>
       </ol>
+      <h4 id="statctrprop290">Status Counter Properties</h4>
+      As of 2.93, the status counters are a nested properties file. Status
+      counters not present in the properties file are unused/blank.
+      <div class="markdown">
+| ID       | Property                             | Data Type               | Notes |
+|----------|--------------------------------------|-------------------------|-------|
+| `0x0001` | Set current status counter ID        | int(b)                  | Counters >=6 are ignored
+| `0x0002` | Status counter name                  | string                  | Max. length 14
+      </div>
+      Prior to 2.93, the status counters were a fixed size array of 6 15-byte
+      ASCIIZ strings (total size 90 bytes). In 2.93+ worlds, if the status
+      counters are 90 bytes long <i>and</i> are not a valid properties file,
+      they will be loaded as the old format.
     </section>
 
     <section id="sfx290" class="inner">
       <h3>Custom SFX Table</h3>
       <p>
-        The custom SFX table is saved as a raw data file of
-        <code>(NUM_SFX * LEGACY_SFX_SIZE</code> bytes, where
-        <code>NUM_SFX = 50</code> and <code>LEGACY_SFX_SIZE = 69</code> (for a
-        total of <code>3450</code> bytes prior to compression). If this file
-        is present, custom SFX will be enabled for the world. If this file is
-        absent, custom SFX will be disabled.
+        If this file is present, custom SFX will be enabled for the world. If
+        this file is absent, custom SFX will be disabled.
       </p>
       <p>
-        This data block is loaded directly over the custom SFX string data and
-        each SFX string is expected to be null terminated within the block.
-        This was a bad idea and will likely be replaced with a properties file
-        in the near future.
+        In versions 2.93 and up, the sound effects are stored as a properties file
+        with a 8-byte header:
+        <div class="markdown">
+| Pos. | Size  | Description |
+|------|-------|-------------|
+| 0    | s6    | `MZFX\x1a\0`
+| 6    | w(BE) | MegaZeux version in big endian, same as last two bytes of <a href="#worldheader">world magic</a>.
+        </div>
+        Versions less than 2.93 (<code>025Dh</code>) are invalid. The properties
+        follow immediately:
+        <div class="markdown">
+| ID       | Property                             | Data Type               | Notes |
+|----------|--------------------------------------|-------------------------|-------|
+| `0x0001` | Set current sound effect ID          | int(b)                  | SFX >= 50 are ignored
+| `0x0002` | Sound effect string                  | string                  | Max. length 68
+        </div>
+        Prior to 2.93, the custom SFX table is saved as a raw array of
+        <code>(NUM_BUILTIN_SFX * LEGACY_SFX_SIZE</code> bytes, where
+        <code>NUM_BUILTIN_SFX = 50</code> and <code>LEGACY_SFX_SIZE = 69</code>
+        (for a total of <code>3450</code> bytes prior to compression). Each
+        individual sound effect must be null terminated. This format is still
+        allowed in 2.93+ version world files. If loaded into a 2.93+ world, all
+        custom sound effects past 50 will be cleared.
+      </p>
+      <p>
+        This file is identical in format to the
+        <a href="#sfx">exported custom SFX file format</a>, and files in 2.90+
+        world and save files can be used interchangeably with files created by
+        SFX export.
       </p>
     </section>
 
@@ -2541,19 +2601,42 @@ while(i &lt; size)
     </section>
 
     <section id="pal290" class="inner">
-      <h3>Palette, Palette Indices, and Palette Intensities</h3>
+      <h3>Palettes, Palette Indices, and Palette Intensities</h3>
       <p>
-        The world palette is saved as a raw <a href="#pal">palette file</a>
-        containing 256 colors (regardless of the current SMZX mode). If SMZX
-        mode 3 is enabled, the palette indices will also be saved as a raw
-        <a href="#palidx">palette indices file</a> in 2.90+ save files and
-        2.91+ world files.
+        The world palettes are saved as raw <a href="#pal">palette files</a>.
+        In 2.93 and up, the file <code>pal</code> always contains the 16
+        color palette corresponding to MZX mode and SMZX mode 1. If SMZX
+        modes 2 or 3 are active, an additional 256 color palette will be saved
+        to <code>palsmzx</code>. If SMZX mode 3 is enabled, the palette indices
+        will also be saved as a raw <a href="#palidx">palette indices file</a>
+        in 2.90+ save files and 2.91+ world files.
       </p>
       <p>
-        In save files, the palette intensities are saved as a third file. All
-        256 palette intensities are saved regardless of the current SMZX mode
-        in an array of 256 bytes (note: this will truncate extreme intensity
-        values and was probably a bad idea).
+        In save files, the palette intensities are also saved. The file
+        <code>palint</code> contains a raw array of 16 unsigned little endian
+        dwords representing the MZX and SMZX mode 1 palette intensities. If
+        SMZX modes 2 or 3 are active, an additional file <code>palints</code>
+        containing the SMZX modes 2 and 3 will be saved. This file contains 256
+        unsigned little endian dwords.
+      </p>
+      <h4 id="pal290old">Prior to 2.93</h4>
+      <p>
+        Only one <code>pal</code> and <code>palint</code> file were saved.
+        These files always contained 256 entries, and always represented the
+        current active screen mode. The palette intensities were stored as
+        <i>bytes</i>, which corrupted larger intensity values.
+      </p>
+      <p>
+        In SMZX modes 2 and 3, the MZX palette and palette intensities were NOT
+        saved. For worlds/saves from these versions with SMZX modes 2 or 3 active,
+        the MZX palette should be derived from the first 16 entries of the SMZX
+        palette (same as 2.84X and prior) and the MZX intensities should default
+        to 100.
+      </p>
+      <p>
+        In 2.90X save files, the palette intensities file was stored using the
+        internal indices order, and was incompatible with palette indices
+        files. For each color, the two middle indices are in reverse order.
       </p>
     </section>
 
@@ -3115,6 +3198,19 @@ while(i &lt; size)
     <p>
       This header is followed by a ZIP archive containing only the
       <code>counter</code> and <code>string</code> files.
+    </p>
+  </section>
+
+  <hr>
+
+  <section id="sfx" class="main">
+    <h2>Custom SFX Table File (.SFX)</h2>
+    <p>
+      The custom SFX table file format is exactly the same as the
+      <a href="#sfx290">custom SFX table described in the 2.90+ world format</a>.
+      MegaZeux 2.93 and up can save sound effects in either the new format or in
+      the old raw array format. All prior versions of MegaZeux that support sound
+      effects export (2.00 through 2.92f) use the raw array format.
     </p>
   </section>
 

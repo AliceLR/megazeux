@@ -257,6 +257,7 @@ enum virtual_var
   VIR_RAM_STRING_LIST,
   VIR_RAM_STRING_TABLE,
   VIR_RAM_STRINGS,
+  VIR_RAM_SFX,
   VIR_RAM_SPRITES,
   VIR_RAM_VLAYER,
   VIR_RAM_BOARD_INFO,
@@ -284,6 +285,7 @@ static const char * const virtual_var_names[] =
   "String list*",
   "String table*",
   "Strings*",
+  "Custom SFX*",
   "Sprites*",
   "Vlayer*",
   "Board info*",
@@ -353,6 +355,7 @@ static const enum virtual_var world_ram_var_list[] =
   VIR_RAM_STRING_LIST,
   VIR_RAM_STRING_TABLE,
   VIR_RAM_STRINGS,
+  VIR_RAM_SFX,
   VIR_RAM_SPRITES,
   VIR_RAM_VLAYER,
   VIR_RAM_BOARD_INFO,
@@ -508,6 +511,7 @@ struct debug_ram_data
   size_t string_list_size;
   size_t string_table_size;
   size_t string_struct_size;
+  size_t sfx_size;
   size_t sprites_size;
   size_t vlayer_size;
   size_t board_list_and_struct_size;
@@ -573,6 +577,8 @@ static void update_ram_usage_data(struct world *mzx_world,
 
   string_list_size(&mzx_world->string_list, &ram_data.string_list_size,
    &ram_data.string_table_size, &ram_data.string_struct_size);
+
+  ram_data.sfx_size = sfx_ram_usage(&mzx_world->custom_sfx);
 
   ram_data.sprites_size =
    mzx_world->num_sprites_allocated * sizeof(struct sprite *) +
@@ -914,6 +920,9 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
           break;
         case VIR_RAM_VLAYER:
           value = ram_data.vlayer_size;
+          break;
+        case VIR_RAM_SFX:
+          value = ram_data.sfx_size;
           break;
         case VIR_RAM_SPRITES:
           value = ram_data.sprites_size;

@@ -122,8 +122,10 @@
 #define IMAGE_FILE 100
 
 // From sfx.h
-#define NUM_SFX 50
+#define NUM_BUILTIN_SFX 50
+//#define MAX_NUM_SFX 256
 #define LEGACY_SFX_SIZE 69
+#define MAX_SFX_SIZE 256
 
 #define LEGACY_WORLD_PROTECTED_OFFSET      BOARD_NAME_SIZE
 #define LEGACY_WORLD_GLOBAL_OFFSET_OFFSET  4230
@@ -2757,7 +2759,7 @@ static enum status parse_legacy_world(struct memfile *mf, struct base_file *file
 
     trace("SFX table (input length: %d)\n", sfx_len_total);
 
-    for(i = 0; i < NUM_SFX; i++)
+    for(i = 0; i < NUM_BUILTIN_SFX; i++)
     {
       sfx_len = mfgetc(mf);
       if(sfx_len > LEGACY_SFX_SIZE)
@@ -2951,26 +2953,56 @@ static enum status parse_board_info(struct memfile *mf, struct base_file *file,
 
 static enum status parse_sfx_file(struct memfile *mf, struct base_file *file)
 {
-  char sfx_buf[LEGACY_SFX_SIZE + 1];
+  char sfx_buf[MAX_SFX_SIZE];
+  struct memfile prop;
+  int ident;
+  int len;
   int i;
 
   enum status ret = SUCCESS;
 
-  trace("SFX table found\n");
-
-  for(i = 0; i < NUM_SFX; i++)
+  if(mfread(sfx_buf, 8, 1, mf) && !memcmp(sfx_buf, "MZFX\x1a", 6))
   {
-    if(!mfread(sfx_buf, LEGACY_SFX_SIZE, 1, mf))
-      return FREAD_FAILED;
+    trace("SFX properties found\n");
 
-    sfx_buf[LEGACY_SFX_SIZE] = 0;
+    i = 0;
+    while(next_prop(&prop, &ident, &len, mf))
+    {
+      switch(ident)
+      {
+        case SFXPROP_SET_ID:
+          i = load_prop_int(&prop);
+          break;
 
-    ret = parse_sfx(sfx_buf, file, IS_SFX, i, -1);
-    if(ret != SUCCESS)
-      return ret;
+        case SFXPROP_STRING:
+          len = MIN(len, MAX_SFX_SIZE - 1);
+          mfread(sfx_buf, len, 1, &prop);
+          sfx_buf[len] = '\0';
+
+          ret = parse_sfx(sfx_buf, file, IS_SFX, i, -1);
+          if(ret != SUCCESS)
+            return ret;
+          break;
+      }
+    }
   }
+  else
+  {
+    trace("SFX array found\n");
 
-  return SUCCESS;
+    for(i = 0; i < NUM_BUILTIN_SFX; i++)
+    {
+      if(!mfread(sfx_buf, LEGACY_SFX_SIZE, 1, mf))
+        return FREAD_FAILED;
+
+      sfx_buf[LEGACY_SFX_SIZE] = 0;
+
+      ret = parse_sfx(sfx_buf, file, IS_SFX, i, -1);
+      if(ret != SUCCESS)
+        return ret;
+    }
+  }
+  return ret;
 }
 
 static enum status parse_world(struct memfile *mf, struct base_file *file,

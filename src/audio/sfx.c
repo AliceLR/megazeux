@@ -2,6 +2,7 @@
  *
  * Copyright (C) 1996  Greg Janson
  * Copyright (C) 2004  Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2023  Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -31,6 +32,8 @@
 
 #include "../data.h"
 #include "../platform.h"
+#include "../world.h"
+#include "../world_format.h"
 #include "../world_struct.h"
 #include "../util.h"
 
@@ -42,6 +45,10 @@
  * This is also the legacy maximum SFX length. Custom SFX may potentially be
  * longer in the future, and/or SFX beyond the 50 built-in SFX may be possible.
  * Aside from potentially repurposing SFX 49, further built-ins are not likely.
+ *
+ * FIXME: make const
+ * TODO: move the queue into the audio system and move the rest of this back to
+ * the main source folder, as it is otherwise game behavior and file format.
  */
 __editor_maybe_static char sfx_strs[NUM_BUILTIN_SFX][LEGACY_SFX_SIZE] =
 {
@@ -215,18 +222,21 @@ static void play_note(int note, int octave, int delay)
   submit_sound(note_freq[note - 1] >> (6 - octave), delay);
 }
 
-void play_sfx(struct world *mzx_world, enum sfx_id sfxn)
+void play_sfx(struct world *mzx_world, int sfxn)
 {
-  if(sfxn < NUM_SFX)
+  // TODO: pass the sfx_list here directly?
+  struct sfx_list *sfx_list = &mzx_world->custom_sfx;
+  if(sfx_list->list)
   {
-    if(mzx_world->custom_sfx_on)
-    {
-      play_string(mzx_world->custom_sfx + (sfxn * SFX_SIZE), 1);
-    }
-    else
-    {
-      play_string(sfx_strs[sfxn], 1);
-    }
+    const struct custom_sfx *sfx = sfx_get(sfx_list, sfxn);
+    if(sfx)
+      play_string((char *)sfx->string, 1);
+  }
+  else
+
+  if(sfxn >= 0 && sfxn < NUM_BUILTIN_SFX)
+  {
+    play_string(sfx_strs[sfxn], 1);
   }
 }
 
@@ -549,3 +559,426 @@ int sfx_length_left(void)
 }
 
 #endif // CONFIG_AUDIO
+
+#ifdef CONFIG_DEBYTECODE
+
+static void convert_sfx_strs(char *sfx_buf)
+{
+  char *start, *end = sfx_buf - 1, str_buf_len = strlen(sfx_buf);
+
+  while(true)
+  {
+    // no starting & was found
+    start = strchr(end + 1, '&');
+    if(!start || start - sfx_buf + 1 > str_buf_len)
+      break;
+
+    // no ending & was found
+    end = strchr(start + 1, '&');
+    if(!end || end - sfx_buf + 1 > str_buf_len)
+      break;
+
+    // Wipe out the &s to get a token
+    *start = '(';
+    *end = ')';
+  }
+}
+
+static void legacy_convert_sfx(struct sfx_list *sfx_list)
+{
+  int i;
+  for(i = 0; i < sfx_list->num_alloc; i++)
+  {
+    const struct custom_sfx *sfx = sfx_get(sfx_list, i);
+    if(sfx)
+      convert_sfx_strs((char *)sfx->string);
+  }
+}
+
+#endif /* CONFIG_DEBYTECODE */
+
+static size_t sfx_alloc_size(size_t src_len)
+{
+  return MAX(sizeof(struct custom_sfx),
+   offsetof(struct custom_sfx, string) + src_len + 1);
+}
+
+static boolean sfx_alloc_at_pos(struct sfx_list *sfx_list, int num,
+ size_t src_len)
+{
+  struct custom_sfx **tmp;
+  struct custom_sfx *tmp2;
+  size_t sz;
+
+  if(!sfx_list->list || num >= sfx_list->num_alloc)
+  {
+    int num_alloc = 32;
+    int i;
+
+    for(i = 0; i < 16 && num >= num_alloc; i++)
+      num_alloc <<= 1;
+
+    num_alloc = MAX(num_alloc, NUM_BUILTIN_SFX);
+    tmp = (struct custom_sfx **)
+     crealloc(sfx_list->list, num_alloc * sizeof(struct custom_sfx *));
+    if(!tmp)
+      return false;
+
+    memset(tmp + sfx_list->num_alloc, 0,
+     sizeof(struct custom_sfx *) * (num_alloc - sfx_list->num_alloc));
+
+    sfx_list->list = (struct custom_sfx **)tmp;
+    sfx_list->num_alloc = num_alloc;
+  }
+
+  if(sfx_list->list[num] && src_len == 0)
+    return true;
+
+  sz = sfx_alloc_size(src_len);
+  tmp2 = (struct custom_sfx *)crealloc(sfx_list->list[num], sz);
+  if(!tmp2)
+    return false;
+
+  if(!sfx_list->list[num])
+  {
+    tmp2->string[0] = '\0';
+    tmp2->label[0] = '\0';
+  }
+
+  sfx_list->list[num] = tmp2;
+  return true;
+}
+
+const struct custom_sfx *sfx_get(const struct sfx_list *sfx_list, int num)
+{
+  if(num < 0 || num >= sfx_list->num_alloc)
+    return NULL;
+
+  return sfx_list->list[num];
+}
+
+boolean sfx_set_string(struct sfx_list *sfx_list, int num,
+ const char *src, size_t src_len)
+{
+  struct custom_sfx *sfx;
+
+  if(num < 0 || num >= MAX_NUM_SFX)
+    return false;
+
+  sfx = (struct custom_sfx *)sfx_get(sfx_list, num);
+  if(src_len == 0 && (!sfx || !sfx->label[0]))
+  {
+    sfx_unset(sfx_list, num);
+    return true;
+  }
+
+  if(!sfx_alloc_at_pos(sfx_list, num, src_len))
+    return false;
+
+  sfx = sfx_list->list[num];
+
+  src_len = MIN(src_len, MAX_SFX_SIZE - 1);
+  memcpy(sfx->string, src, src_len);
+  sfx->string[src_len] = '\0';
+  return true;
+}
+
+boolean sfx_set_label(struct sfx_list *sfx_list, int num,
+ const char *src, size_t src_len)
+{
+  struct custom_sfx *sfx;
+
+  if(num < 0 || num >= MAX_NUM_SFX)
+    return false;
+  if(!sfx_alloc_at_pos(sfx_list, num, 0))
+    return false;
+
+  sfx = sfx_list->list[num];
+  src_len = MIN(src_len, sizeof(sfx->label) - 1);
+  memcpy(sfx->label, src, src_len);
+  sfx->label[src_len] = '\0';
+  return true;
+}
+
+void sfx_unset(struct sfx_list *custom_sfx, int num)
+{
+  if(num < 0 || num >= custom_sfx->num_alloc)
+    return;
+
+  free(custom_sfx->list[num]);
+  custom_sfx->list[num] = NULL;
+  return;
+}
+
+void sfx_free(struct sfx_list *custom_sfx)
+{
+  if(custom_sfx->list)
+  {
+    int i;
+    for(i = 0; i < custom_sfx->num_alloc; i++)
+      free(custom_sfx->list[i]);
+
+    free(custom_sfx->list);
+    custom_sfx->list = NULL;
+  }
+  custom_sfx->num_alloc = 0;
+}
+
+/**
+ * Block-SFX style that was used for <=2.92X .SFX files and for worlds
+ * saved between 2.90X and 2.92X.
+ */
+static void save_sfx_array(const struct sfx_list *sfx_list,
+ char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE])
+{
+  const struct custom_sfx *sfx;
+  char *dest;
+  size_t i;
+
+  memset(custom_sfx, 0, NUM_BUILTIN_SFX * LEGACY_SFX_SIZE);
+
+  // Ignore everything past the null terminator.
+  dest = custom_sfx;
+  for(i = 0; i < NUM_BUILTIN_SFX; i++, dest += LEGACY_SFX_SIZE)
+  {
+    sfx = sfx_get(sfx_list, i);
+    if(sfx)
+    {
+      size_t len = strlen(sfx->string);
+      len = MIN(len, LEGACY_SFX_SIZE - 1);
+      memcpy(dest, sfx->string, len);
+    }
+  }
+}
+
+static boolean load_sfx_array(struct sfx_list *sfx_list,
+ const char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE])
+{
+  uint8_t lens[NUM_BUILTIN_SFX];
+  const char *src;
+  size_t i;
+  size_t j;
+
+  src = custom_sfx;
+  for(i = 0; i < NUM_BUILTIN_SFX; i++)
+  {
+    // Must contain a null terminator within the read block.
+    // It's possible for a malicious file to contain no terminator.
+    for(j = 0; j < LEGACY_SFX_SIZE; j++)
+      if(src[j] == '\0')
+        break;
+
+    if(j >= LEGACY_SFX_SIZE)
+      return false;
+
+    lens[i] = j;
+    src += LEGACY_SFX_SIZE;
+  }
+
+  src = custom_sfx;
+  for(i = 0; i < NUM_BUILTIN_SFX; i++)
+  {
+    sfx_set_string(sfx_list, i, src, lens[i]);
+    src += LEGACY_SFX_SIZE;
+  }
+  return true;
+}
+
+static size_t save_sfx_properties(const struct sfx_list *sfx_list,
+ int file_version, char *dest, size_t dest_len)
+{
+  struct memfile mf;
+  const struct custom_sfx *sfx;
+  size_t label_len;
+  size_t str_len;
+  int i;
+
+  // Bounding was already verified in `save_sfx_memory`.
+  mfopen_wr(dest, dest_len, &mf);
+
+  for(i = 0; i < sfx_list->num_alloc; i++)
+  {
+    sfx = sfx_list->list[i];
+    if(sfx && (sfx->label[0] || sfx->string[0]))
+    {
+      label_len = strlen(sfx->label);
+      str_len = strlen(sfx->string);
+      save_prop_c(SFXPROP_SET_ID, i, &mf);
+      if(str_len)
+        save_prop_a(SFXPROP_STRING, sfx->string, str_len, 1, &mf);
+      if(label_len)
+        save_prop_a(SFXPROP_LABEL, sfx->label, label_len, 1, &mf);
+    }
+  }
+  save_prop_eof(&mf);
+  return mftell(&mf);
+}
+
+static boolean load_sfx_properties(struct sfx_list *sfx_list,
+ int file_version, const char *src, size_t src_len)
+{
+  struct memfile mf;
+  struct memfile prop;
+  int ident;
+  int len;
+  unsigned num = 0;
+
+  sfx_free(sfx_list);
+
+  mfopen(src, src_len, &mf);
+  if(!check_properties_file(&mf, SFXPROP_LABEL))
+    return false;
+
+  while(next_prop(&prop, &ident, &len, &mf))
+  {
+    switch(ident)
+    {
+      case SFXPROP_SET_ID:
+        num = load_prop_int(&prop);
+        break;
+
+      case SFXPROP_STRING:
+        sfx_set_string(sfx_list, num, (char *)prop.start, len);
+        break;
+
+      case SFXPROP_LABEL:
+        sfx_set_label(sfx_list, num, (char *)prop.start, len);
+        break;
+    }
+  }
+  return true;
+}
+
+/**
+ * Save the world custom SFX to a memory buffer for file export.
+ *
+ * @param mzx_world     world data.
+ * @param file_version  MegaZeux version for compatibility.
+ *                      `V293`+ writes a properties file with header that can
+ *                      be loaded by the specified MZX version and up; lower
+ *                      writes the legacy fixed size array format.
+ * @param dest          buffer to write SFX to.
+ * @param dest_len      size of `dest`.
+ * @param required      if non-`NULL`, the minimum buffer size is returned here.
+ * @return              number of bytes written to `dest`, or 0 on failure.
+ */
+size_t sfx_save_to_memory(const struct sfx_list *sfx_list,
+ int file_version, char *dest, size_t dest_len, size_t *required)
+{
+  if(!sfx_list->list)
+  {
+    if(required)
+      *required = 0;
+    return 0;
+  }
+
+  if(file_version >= V293)
+  {
+    const struct custom_sfx *sfx;
+    size_t size = 0;
+    int i;
+
+    for(i = 0; i < sfx_list->num_alloc; i++)
+    {
+      sfx = sfx_list->list[i];
+      if(sfx && (sfx->label[0] || sfx->string[0]))
+      {
+        size += PROP_HEADER_SIZE + 1;
+        if(sfx->label[0])
+          size += PROP_HEADER_SIZE + strlen(sfx->label);
+        if(sfx->string[0])
+          size += PROP_HEADER_SIZE + strlen(sfx->string);
+      }
+    }
+    size += 2 + 8; // eof + header
+
+    if(required)
+      *required = size;
+    if(dest_len < size || !dest)
+      return 0;
+
+    memcpy(dest, "MZFX\x1a", 6);
+    dest[6] = file_version >> 8;
+    dest[7] = file_version & 0xff;
+
+    return save_sfx_properties(sfx_list, file_version, dest + 8, dest_len - 8) + 8;
+  }
+  else
+  {
+    if(required)
+      *required = NUM_BUILTIN_SFX * LEGACY_SFX_SIZE;
+    if(dest_len < NUM_BUILTIN_SFX * LEGACY_SFX_SIZE || !dest)
+      return 0;
+
+    save_sfx_array(sfx_list, dest);
+    return NUM_BUILTIN_SFX * LEGACY_SFX_SIZE;
+  }
+}
+
+/**
+ * Import the world custom SFX from a memory buffer.
+ *
+ * @param mzx_world     world data.
+ * @param file_version  MegaZeux version for compatibility.
+ *                      `V293`+ allows loading either a legacy file or a
+ *                      properties file, in which case the embedded header
+ *                      will override this version; lower reads a legacy file.
+ * @param src           buffer to read SFX data from.
+ * @param src_len       length of `src` in bytes.
+ * @return              `true` on success, otherwise `false`. The world data
+ *                      will not be modified if `false` is returned.
+ */
+boolean sfx_load_from_memory(struct sfx_list *sfx_list,
+ int file_version, const char *src, size_t src_len)
+{
+  if(file_version >= V293 && src_len >= 8 && !memcmp(src, "MZFX\x1a", 6))
+  {
+    // Currently make an attempt at loading any plausible future version file.
+    // Due to the nature of this format, a breaking change is unlikely.
+    file_version = ((uint8_t)src[6] << 8) | (uint8_t)src[7];
+    if(file_version < V293)
+      return false;
+
+    if(!load_sfx_properties(sfx_list, file_version, src + 8, src_len - 8))
+      return false;
+  }
+  else
+  {
+    if(src_len != NUM_BUILTIN_SFX * LEGACY_SFX_SIZE)
+      return false;
+
+    if(!load_sfx_array(sfx_list, src))
+      return false;
+  }
+
+#ifdef CONFIG_DEBYTECODE
+  if(file_version < VERSION_SOURCE)
+    legacy_convert_sfx(sfx_list);
+#endif
+
+  return true;
+}
+
+#ifdef CONFIG_EDITOR
+
+size_t sfx_ram_usage(const struct sfx_list *sfx_list)
+{
+  const struct custom_sfx *sfx;
+  size_t total = 0;
+  int i;
+
+  if(sfx_list->list)
+  {
+    total = sfx_list->num_alloc * sizeof(struct custom_sfx *);
+
+    for(i = 0; i < sfx_list->num_alloc; i++)
+    {
+      sfx = sfx_list->list[i];
+      if(sfx)
+        total += sfx_alloc_size(strlen(sfx->string));
+    }
+  }
+  return total;
+}
+
+#endif /* CONFIG_EDITOR */

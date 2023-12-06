@@ -48,6 +48,15 @@ enum change_game_state_value
   CHANGE_STATE_REQUEST_EXIT
 };
 
+enum fwrite_mode
+{
+  FWRITE_MODE_UNKNOWN,
+  FWRITE_MODE_TRUNCATE,
+  FWRITE_MODE_MODIFY,
+  FWRITE_MODE_APPEND,
+  FWRITE_MODE_MAX
+};
+
 struct world
 {
   // 0 if a world has been loaded, 1 if it hasn't
@@ -129,6 +138,7 @@ struct world
   vfile *input_file;
   vdir *input_directory;
   boolean input_is_dir;
+  enum fwrite_mode output_mode;
   int temp_input_pos;
   int temp_output_pos;
   int commands;
@@ -148,8 +158,7 @@ struct world
 
   struct robot global_robot;
 
-  int custom_sfx_on;
-  char custom_sfx[NUM_SFX * SFX_SIZE];
+  struct sfx_list custom_sfx;
 
   // Not part of world/save files, but runtime globals
   int player_x;

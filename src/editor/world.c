@@ -243,7 +243,7 @@ static boolean append_world_legacy(struct world *mzx_world, vfile *vf,
     vfseek(vf, 2, SEEK_CUR);
 
     // Skip sfx
-    for(i = 0; i < NUM_SFX; i++)
+    for(i = 0; i < NUM_BUILTIN_SFX; i++)
     {
       sfx_size = vfgetc(vf);
       vfseek(vf, sfx_size, SEEK_CUR);
@@ -497,7 +497,7 @@ void create_blank_world(struct world *mzx_world)
   memset(mzx_world->name, 0, sizeof(mzx_world->name));
 
   // Defaults for things set by load_world
-  mzx_world->custom_sfx_on = 0;
+  sfx_free(&mzx_world->custom_sfx);
   mzx_world->max_samples = -1;
   mzx_world->joystick_simulate_keys = true;
 

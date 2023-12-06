@@ -40,13 +40,15 @@ enum world_file_id
   FILE_ID_NONE                    = 0x0000,
   FILE_ID_WORLD_INFO              = 0x0001, // properties file
   FILE_ID_WORLD_GLOBAL_ROBOT      = 0x0004, // properties file
-  FILE_ID_WORLD_SFX               = 0x0007, // data, NUM_SFX * SFX_SIZE
+  FILE_ID_WORLD_SFX               = 0x0007, // properties file or data, 50 * 69
   FILE_ID_WORLD_CHARS             = 0x0008, // data, 3584*15
-  FILE_ID_WORLD_PAL               = 0x0009, // data, SMZX_PAL_SIZE * 3
-  FILE_ID_WORLD_PAL_INDEX         = 0x000A, // data, 1024
+  FILE_ID_WORLD_PAL               = 0x0009, // data, PAL_SIZE * 3
+  FILE_ID_WORLD_PAL_SMZX          = 0x000A, // data, SMZX_PAL_SIZE * 3
+  FILE_ID_WORLD_PAL_INDEX         = 0x000B, // data, 1024
   FILE_ID_WORLD_VCO               = 0x000C, // data
   FILE_ID_WORLD_VCH               = 0x000D, // data
-  FILE_ID_WORLD_PAL_INTENSITY     = 0x000E, // data, SMZX_PAL_SIZE * 1
+  FILE_ID_WORLD_PAL_INTENSITY     = 0x000E, // data, PAL_SIZE * 4
+  FILE_ID_WORLD_PAL_INTENSITY_SMZX= 0x000F, // data, SMZX_PAL_SIZE * 4
 
   FILE_ID_WORLD_SPRITES           = 0x0080, // properties file
   FILE_ID_WORLD_COUNTERS          = 0x0081, // counter format, use stream
@@ -75,15 +77,29 @@ enum world_file_id
 #define PROP_HEADER_SIZE  6
 #define PROP_EOF_SIZE     2
 
-#define STATS_SIZE NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE
+#define COUNT_STATCTR_PROPS (NUM_STATUS_COUNTERS * (2))
+#define BOUND_STATCTR_PROPS (NUM_STATUS_COUNTERS * (1 + COUNTER_NAME_SIZE))
+
+#define STATCTR_PROP_SIZE                   \
+(                                           \
+  BOUND_STATCTR_PROPS +                     \
+  COUNT_STATCTR_PROPS * PROP_HEADER_SIZE +  \
+  PROP_EOF_SIZE                             \
+)
+
+enum status_counters_prop
+{
+  STATCTRPROP_SET_ID              = 0x0001, //  1
+  STATCTRPROP_NAME                = 0x0002, //  COUNTER_NAME_SIZE
+};
 
 // IF YOU ADD ANYTHING, MAKE SURE THIS GETS UPDATED!
 
-#define COUNT_WORLD_PROPS (              1 + 3 +   4 + 16 + 4 +          1)
-#define BOUND_WORLD_PROPS (BOARD_NAME_SIZE + 5 + 455 + 24 + 9 + STATS_SIZE)
+#define COUNT_WORLD_PROPS (              1 + 3 +   4 + 16 + 4 +                 1)
+#define BOUND_WORLD_PROPS (BOARD_NAME_SIZE + 5 + 455 + 24 + 9 + STATCTR_PROP_SIZE)
 
-#define COUNT_SAVE_PROPS  ( 2 +  32 +          3 +        1)
-#define BOUND_SAVE_PROPS  ( 2 + 120 + 3*MAX_PATH + NUM_KEYS)
+#define COUNT_SAVE_PROPS  ( 2 +  33 +          3 +        1)
+#define BOUND_SAVE_PROPS  ( 2 + 121 + 3*MAX_PATH + NUM_KEYS)
 
 // For world files, use WORLD_PROP_SIZE
 // For save files, use WORLD_PROP_SIZE + SAVE_PROP_SIZE
@@ -178,12 +194,32 @@ enum world_prop
   WPROP_OUTPUT_FILE_NAME          = 0x8078, // MAX_PATH
   WPROP_OUTPUT_POS                = 0x807C, //   4
   WPROP_FWRITE_DELIMITER          = 0x807D, //   4
+  WPROP_OUTPUT_MODE               = 0x807E, //   1
   WPROP_MULTIPLIER                = 0x8080, //   4
   WPROP_DIVIDER                   = 0x8081, //   4
   WPROP_C_DIVISIONS               = 0x8082, //   4
   WPROP_MAX_SAMPLES               = 0x8090, //   4
   WPROP_SMZX_MESSAGE              = 0x8091, //   1
   WPROP_JOY_SIMULATE_KEYS         = 0x8092, //   1
+};
+
+
+#define COUNT_SFX_PROPS           (MAX_NUM_SFX * 3)
+#define BOUND_SFX_PROPS           (MAX_NUM_SFX * (1 + 11 + MAX_SFX_SIZE))
+
+#define SFX_PROPS_SIZE                  \
+(                                       \
+  BOUND_SFX_PROPS +                     \
+  COUNT_SFX_PROPS * PROP_HEADER_SIZE +  \
+  PROP_EOF_SIZE                         \
+)
+
+enum sfx_prop
+{
+  SFXPROP_EOF                     = 0x0000,
+  SFXPROP_SET_ID                  = 0x0001, // 1
+  SFXPROP_STRING                  = 0x0002, // MAX_SFX_SIZE
+  SFXPROP_LABEL                   = 0x0003, // 11
 };
 
 
@@ -330,8 +366,8 @@ enum board_prop
 };
 
 
-#define COUNT_ROBOT_PROPS (              1 + 3 + 1)
-#define BOUND_ROBOT_PROPS (ROBOT_NAME_SIZE + 5 + 0) // +prog OR source
+#define COUNT_ROBOT_PROPS (1 + 3 + 1)
+#define BOUND_ROBOT_PROPS (0 + 5 + 0) // +name, +prog OR source
 
 #define COUNT_ROBOT_SAVE_PROPS (11 + 2 +    1 + 1 + 1)
 #define BOUND_ROBOT_SAVE_PROPS (17 + 8 + 4*32 + 0 + 1) // +stack
@@ -699,11 +735,17 @@ static inline void world_assign_file_ids(struct zip_archive *zp, boolean is_a_wo
         case FILE_ID_VALUE('p','a','l'):
           file_id = FILE_ID_WORLD_PAL;
           break;
+        case FILE_ID_VALUE('p','a','l','s','m','z','x'):
+          file_id = FILE_ID_WORLD_PAL_SMZX;
+          break;
         case FILE_ID_VALUE('p','a','l','i','d','x'):
           file_id = FILE_ID_WORLD_PAL_INDEX;
           break;
         case FILE_ID_VALUE('p','a','l','i','n','t'):
           file_id = FILE_ID_WORLD_PAL_INTENSITY;
+          break;
+        case FILE_ID_VALUE('p','a','l','i','n','t','s'):
+          file_id = FILE_ID_WORLD_PAL_INTENSITY_SMZX;
           break;
         case FILE_ID_VALUE('v','c','o'):
           file_id = FILE_ID_WORLD_VCO;
@@ -909,6 +951,40 @@ static inline boolean next_prop(struct memfile *prop, int *ident, int *length,
 
   mf->current += len;
   return true;
+}
+
+/**
+ * Returns true if the properties file in `mf` is valid.
+ * This can be used to distinguish whether or not an ambiguous file or field
+ * actually contains properties.
+ */
+static inline boolean check_properties_file(struct memfile *mf,
+ int maximum_ident)
+{
+  int ident;
+  unsigned length;
+  while(mf->end - mf->current >= 6)
+  {
+    ident = mfgetw(mf);
+    length = mfgetud(mf);
+    if(ident == 0 || ident > maximum_ident)
+      goto err;
+
+    if((unsigned)(mf->end - mf->current) < length)
+      goto err;
+
+    mf->current += length;
+  }
+
+  if((mf->end - mf->current == 2) && mfgetw(mf) == 0x0000) // EOF
+  {
+    mf->current = mf->start;
+    return true;
+  }
+
+err:
+  mf->current = mf->start;
+  return false;
 }
 
 __M_END_DECLS

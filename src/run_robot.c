@@ -5297,9 +5297,7 @@ void run_robot(context *ctx, int id, int x, int y)
         int fx_num = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
 
-        if(strlen(p2 + 1) >= SFX_SIZE)
-          p2[SFX_SIZE] = 0;
-        strcpy(mzx_world->custom_sfx + (fx_num * SFX_SIZE), p2 + 1);
+        sfx_set_string(&mzx_world->custom_sfx, fx_num, p2, strlen(p2));
         break;
       }
 
