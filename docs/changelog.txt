@@ -7,6 +7,9 @@ USERS
 + Added an experimental Dreamcast port (asie, Lachesis).
 + Added an experimental MS-DOS 32-bit port based on DJGPP
   (Mr_Alert, asie, Lachesis).
++ Added new counters VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH,
+  and VIEWPORT_HEIGHT to read the current board's viewport
+  settings. (Sparkette)
 + Added an "About MegaZeux" dialog, accessible from the main
   menu. This menu contains extended version information, and
   displays license information for MegaZeux and the 3rd party
