@@ -52,15 +52,18 @@
 #ifdef CONFIG_NDS
 #define VIDEO_OUTPUT_DEFAULT "nds"
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
+#define SAVE_SLOTS_DEFAULT true
 #endif
 
 #ifdef CONFIG_DREAMCAST
 #define VIDEO_OUTPUT_DEFAULT "dreamcast"
+#define SAVE_SLOTS_DEFAULT true
 #endif
 
 #ifdef CONFIG_GP2X
 #define VIDEO_OUTPUT_DEFAULT "gp2x"
 #define AUDIO_BUFFER_SAMPLES 128
+#define SAVE_SLOTS_DEFAULT true
 #endif
 
 #ifdef CONFIG_PSP
@@ -68,6 +71,7 @@
 #define FULLSCREEN_HEIGHT_DEFAULT 363
 #define FORCE_BPP_DEFAULT 8
 #define FULLSCREEN_DEFAULT 1
+#define SAVE_SLOTS_DEFAULT true
 #endif
 
 #ifdef CONFIG_PSVITA
@@ -77,6 +81,7 @@
 #define FULLSCREEN_DEFAULT 1
 #define VFS_ENABLE_DEFAULT true
 #define VFS_MAX_CACHE_SIZE_DEFAULT (1 << 27) /* 128 MiB */
+#define SAVE_SLOTS_DEFAULT true
 #endif
 
 #ifdef CONFIG_WII
@@ -84,6 +89,7 @@
 #define FULLSCREEN_DEFAULT 1
 #define GL_VSYNC_DEFAULT 1
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
+#define SAVE_SLOTS_DEFAULT true
 #ifdef CONFIG_SDL
 #define VIDEO_OUTPUT_DEFAULT "software"
 #define FULLSCREEN_WIDTH_DEFAULT 640
@@ -96,12 +102,14 @@
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
 #define VFS_ENABLE_DEFAULT true
 #define VFS_MAX_CACHE_SIZE_DEFAULT (1 << 25) /* 32 MiB */
+#define SAVE_SLOTS_DEFAULT true
 #endif
 
 #ifdef CONFIG_WIIU
 #define FULLSCREEN_WIDTH_DEFAULT 1280
 #define FULLSCREEN_HEIGHT_DEFAULT 720
 #define FULLSCREEN_DEFAULT 1
+#define SAVE_SLOTS_DEFAULT true
 #endif
 
 #ifdef CONFIG_SWITCH
@@ -109,6 +117,7 @@
 #define FULLSCREEN_WIDTH_DEFAULT 1920
 #define FULLSCREEN_HEIGHT_DEFAULT 1080
 #define FULLSCREEN_DEFAULT 1
+#define SAVE_SLOTS_DEFAULT true
 #endif
 
 #ifdef ANDROID
@@ -198,6 +207,10 @@
 
 #ifndef AUTO_DECRYPT_WORLDS
 #define AUTO_DECRYPT_WORLDS true
+#endif
+
+#ifndef SAVE_SLOTS_DEFAULT
+#define SAVE_SLOTS_DEFAULT false
 #endif
 
 #ifdef CONFIG_UPDATER
@@ -293,7 +306,7 @@ static const struct config_info user_conf_default =
   false,                        // no_titlescreen
   false,                        // system_mouse
   false,                        // grab_mouse
-  false,                        // save_slots
+  SAVE_SLOTS_DEFAULT,           // save_slots
   "%w.",                        // save_slots_name
   ".sav",                       // save_slots_ext
 
