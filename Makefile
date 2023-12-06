@@ -349,7 +349,7 @@ endif
 # As does BlocksDS, currently
 #
 ifeq (${BUILD_NDS_BLOCKSDS},1)
-CFLAGS   += -Wno-strict-prototypes -Wno-pedantic -Wno-undef -Wno-declaration-after-statement
+CFLAGS   += -Wno-strict-prototypes -Wno-pedantic -Wno-declaration-after-statement
 CXXFLAGS += -Wno-pedantic
 endif
 
