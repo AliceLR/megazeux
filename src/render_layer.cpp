@@ -24,7 +24,8 @@
 #include "render_layer.h"
 
 // Skip unused variants to reduce compile time on these platforms.
-#if defined(CONFIG_WII) || defined(ANDROID) || defined(__EMSCRIPTEN__)
+#if defined(CONFIG_WII) || defined(ANDROID) || defined(__EMSCRIPTEN__) || \
+ defined(CONFIG_PSVITA)
 #define SKIP_8BPP
 #define SKIP_16BPP
 #endif

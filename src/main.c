@@ -200,13 +200,15 @@ __libspec int main(int argc, char *argv[])
     argv++;
     argc--;
   }
+#endif
 
-  // Always try to start in /storage/emulated/0 to save some headaches.
-  path_navigate(current_dir, MAX_PATH, "/storage/emulated/0");
+#ifdef STARTUPDIR
+  // Some ports (Android and Vita) require a custom startup directory.
+  path_navigate(current_dir, MAX_PATH, STARTUPDIR);
 #endif
 
   // argc may be 0 on e.g. some Wii homebrew loaders.
-#ifndef CONFIG_WIIU
+#if !defined(CONFIG_WIIU) && !defined(CONFIG_PSVITA)
   if(argc == 0)
 #endif
   {

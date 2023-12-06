@@ -37,6 +37,7 @@ usage() {
 	echo "  switch         Experimental Switch port"
 	echo "  wii            Experimental Wii port"
 	echo "  wiiu           Experimental Wii U port"
+	echo "  psvita         Experimental PS Vita port"
 	echo "  dreamcast      Experimental Dreamcast port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
@@ -670,11 +671,18 @@ elif [ "$PLATFORM" = "wiiu" ]; then
 	SHAREDIR=fs:/vol/external01/wiiu/apps/megazeux
 elif [ "$PLATFORM" = "switch" ]; then
 	SHAREDIR=/switch/megazeux
+elif [ "$PLATFORM" = "psvita" ]; then
+	SHAREDIR="app0:/"
+	STARTUPDIR="ux0:/data/megazeux"
+	USERCONFFILE="ux0:/data/megazeux/config.txt"
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SHAREDIR=../Resources
 	USERCONFFILE=".megazeux-config"
 elif [ "$PLATFORM" = "emscripten" ]; then
 	SHAREDIR=/data
+elif [ "$PLATFORM" = "android" ]; then
+	SHAREDIR=.
+	STARTUPDIR="/storage/emulated/0"
 else
 	SHAREDIR=.
 fi
@@ -694,6 +702,10 @@ fi
 
 if [ -n "$USERCONFFILE" ]; then
 	echo "#define USERCONFFILE \"$USERCONFFILE\""		>> src/config.h
+fi
+
+if [ -n "$STARTUPDIR" ]; then
+	echo "#define STARTUPDIR \"$STARTUPDIR\""		>> src/config.h
 fi
 
 #
@@ -920,6 +932,22 @@ if [ "$PLATFORM" = "psp" ]; then
 fi
 
 #
+# If the PS Vita arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "psvita" ]; then
+	echo "Enabling PS Vita-specific hacks."
+	echo "#define CONFIG_PSVITA" >> src/config.h
+	echo "BUILD_PSVITA=1" >> platform.inc
+
+	echo "Force-disabling utils on PS Vita."
+	UTILS="false"
+
+	echo "Force-disabling stack protector on PS Vita."
+	STACK_PROTECTOR="false"
+fi
+
+#
 # If the DJGPP arch is enabled, some code has to be compile time
 # enabled too.
 #
@@ -1085,6 +1113,7 @@ if [ "$PLATFORM" = "gp2x" ] ||
    [ "$PLATFORM" = "android" ] ||
    [ "$PLATFORM" = "emscripten" ] ||
    [ "$PLATFORM" = "psp" ] ||
+   [ "$PLATFORM" = "psvita" ] ||
    [ "$PLATFORM" = "djgpp" ] ||
    [ "$PLATFORM" = "dreamcast" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."

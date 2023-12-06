@@ -371,7 +371,11 @@ const char *mzx_res_get_by_id(enum resource_id id)
 
     // Special handling for CONFIG_TXT to allow for user
     // configuration files
+#ifdef CONFIG_PSVITA
+    snprintf(userconfpath, MAX_PATH, "%s", USERCONFFILE);
+#else
     snprintf(userconfpath, MAX_PATH, "%s/%s", getenv("HOME"), USERCONFFILE);
+#endif
 
     // Check if the file can be opened for reading
     vf = vfopen_unsafe(userconfpath, "rb");
