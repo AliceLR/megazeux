@@ -59,6 +59,8 @@ static inline boolean is_string(const char *buffer)
 
 CORE_LIBSPEC int get_string(struct world *mzx_world, char *name_buffer,
  struct string *dest, int id);
+CORE_LIBSPEC const struct string *get_string_pointer(struct world *mzx_world,
+ const char *name, int id);
 CORE_LIBSPEC int set_string(struct world *mzx_world, char *name_buffer,
  struct string *src, int id);
 CORE_LIBSPEC struct string *new_string(struct world *mzx_world,

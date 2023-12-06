@@ -2,5 +2,7 @@
 
 # TODO: GL fixed renderers don't work. Probably not worth fixing.
 
+[ -z "$NDK_PATH" ] && { echo "Must define NDK_PATH!"; exit 1; }
+
 ./config.sh --platform android --enable-release --disable-utils \
   --disable-libpng --disable-gl-fixed "$@"

@@ -3464,7 +3464,7 @@ static boolean editor_key(context *ctx, int *key)
           send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
           send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
-          reset_robot_debugger();
+          debug_robot_reset(mzx_world);
 
           play_game(ctx, NULL);
         }
@@ -3939,6 +3939,7 @@ void editor_init(void)
   debug_robot_break = __debug_robot_break;
   debug_robot_watch = __debug_robot_watch;
   debug_robot_config = __debug_robot_config;
+  debug_robot_reset = __debug_robot_reset;
   load_editor_charsets();
 }
 

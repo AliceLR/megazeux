@@ -539,7 +539,7 @@ void init_audio_platform(struct config_info *conf)
   pcs_frequency = 0;
   pcs_duration = 0;
 
-  // master volume init
+  // global volume init
   nds_sound_volume(10);
 
   // maxmod init

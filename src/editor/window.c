@@ -27,6 +27,7 @@
 #include "../board.h"
 #include "../core.h"
 #include "../event.h"
+#include "../extmem.h"
 #include "../graphics.h"
 #include "../platform.h"
 #include "../intake.h"
@@ -1201,6 +1202,11 @@ int choose_board(struct world *mzx_world, int current, const char *title,
    ((current >= 0) && (mzx_world->board_list[current] == NULL)))
   {
     current = add_board(mzx_world, current);
+    if(current >= 0)
+    {
+      // This board is expected to reside in extra memory (if applicable).
+      store_board_to_extram(mzx_world->board_list[current]);
+    }
   }
 
   for(i = 0; i < num_boards + 1; i++)

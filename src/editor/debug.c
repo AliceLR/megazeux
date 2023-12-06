@@ -257,6 +257,7 @@ enum virtual_var
   VIR_RAM_STRING_LIST,
   VIR_RAM_STRING_TABLE,
   VIR_RAM_STRINGS,
+  VIR_RAM_SFX,
   VIR_RAM_SPRITES,
   VIR_RAM_VLAYER,
   VIR_RAM_BOARD_INFO,
@@ -284,6 +285,7 @@ static const char * const virtual_var_names[] =
   "String list*",
   "String table*",
   "Strings*",
+  "Custom SFX*",
   "Sprites*",
   "Vlayer*",
   "Board info*",
@@ -353,6 +355,7 @@ static const enum virtual_var world_ram_var_list[] =
   VIR_RAM_STRING_LIST,
   VIR_RAM_STRING_TABLE,
   VIR_RAM_STRINGS,
+  VIR_RAM_SFX,
   VIR_RAM_SPRITES,
   VIR_RAM_VLAYER,
   VIR_RAM_BOARD_INFO,
@@ -508,6 +511,7 @@ struct debug_ram_data
   size_t string_list_size;
   size_t string_table_size;
   size_t string_struct_size;
+  size_t sfx_size;
   size_t sprites_size;
   size_t vlayer_size;
   size_t board_list_and_struct_size;
@@ -573,6 +577,8 @@ static void update_ram_usage_data(struct world *mzx_world,
 
   string_list_size(&mzx_world->string_list, &ram_data.string_list_size,
    &ram_data.string_table_size, &ram_data.string_struct_size);
+
+  ram_data.sfx_size = sfx_ram_usage(&mzx_world->custom_sfx);
 
   ram_data.sprites_size =
    mzx_world->num_sprites_allocated * sizeof(struct sprite *) +
@@ -915,6 +921,9 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
         case VIR_RAM_VLAYER:
           value = ram_data.vlayer_size;
           break;
+        case VIR_RAM_SFX:
+          value = ram_data.sfx_size;
+          break;
         case VIR_RAM_SPRITES:
           value = ram_data.sprites_size;
           break;
@@ -1104,22 +1113,14 @@ static void write_var(struct world *mzx_world, struct debug_var *v, int int_val,
     {
       //set string -- int_val is the length here
       char buffer[ROBOT_MAX_TR];
-      int list_index;
-
       struct string temp;
+
       memset(&temp, '\0', sizeof(struct string));
       temp.length = int_val;
       temp.value = char_val;
 
-      // This may reallocate the string, so we want to save the list index.
-      // We also want to back up the name so its pointer doesn't get changed
-      // in the middle of setting the string.
       memcpy(buffer, v->data.string->name, v->data.string->name_length + 1);
-      list_index = v->data.string->list_ind;
-
       set_string(mzx_world, buffer, &temp, 0);
-
-      v->data.string = mzx_world->string_list.strings[list_index];
       break;
     }
 
@@ -2364,6 +2365,15 @@ enum board_node_ids
   NUM_BOARD_NODES
 };
 
+/**
+ * Some variable values may be cached, such as the clock time.
+ * This resets those values so they will update when the var list refreshes.
+ */
+static void clear_cached_data(struct world *mzx_world)
+{
+  mzx_world->command_cache = 0;
+}
+
 // Create new counter lists.
 // (Re)make the child nodes
 static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
@@ -2374,6 +2384,8 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 
   // Clear the debug tree recursively (but preserve the base structure).
   clear_debug_tree(root, false);
+
+  clear_cached_data(mzx_world);
 
   // Initialize the tree.
   init_counters_node(mzx_world,   &(root->nodes[NODE_COUNTERS]));
@@ -3285,8 +3297,11 @@ void __debug_counters(context *ctx)
       }
     }
     if(focus->refresh_on_focus)
+    {
+      clear_cached_data(mzx_world);
       for(i = 0; i < focus->num_vars; i++)
         read_var(mzx_world, &(focus->vars[i]));
+    }
 
     // If the current position in the tree was changed by a search, bring it
     // to focus in the tree list. This should only be used after a search.

@@ -120,6 +120,7 @@ struct renderer
   void    (*free_video)       (struct graphics_data *);
   boolean (*set_video_mode)   (struct graphics_data *, int width, int height,
                                 int depth, boolean fullscreen, boolean resize);
+  boolean (*set_screen_mode)  (struct graphics_data *, unsigned mode);
   void    (*update_colors)    (struct graphics_data *, struct rgb_color *palette,
                                 unsigned int count);
   void    (*resize_screen)    (struct graphics_data *, int width, int height);
@@ -178,6 +179,7 @@ struct graphics_data
   boolean renderer_is_headless;
   boolean default_smzx_loaded;
   boolean palette_dirty;
+  boolean smzx_dirty;
   boolean fade_status;
   boolean dialog_fade_status;
   boolean requires_extended;
@@ -340,10 +342,14 @@ uint8_t ec_read_byte(uint16_t chr, uint8_t byte);
 boolean ec_load_set(const char *filename);
 
 void set_color_intensity(uint8_t color, unsigned int percent);
+void set_color_intensity_mzx(uint8_t color, unsigned int percent);
 unsigned int get_color_intensity(uint8_t color);
+unsigned int get_color_intensity_mzx(uint8_t color);
 void save_indices(void *buffer);
 void load_indices(const void *buffer, size_t size);
 void load_indices_direct(const void *buffer, size_t size);
+void set_rgb_mzx(uint8_t color, unsigned int r, unsigned int g, unsigned int b);
+void get_rgb_mzx(uint8_t color, uint8_t *r, uint8_t *g, uint8_t *b);
 void vquick_fadein(void);
 boolean get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
  int transparent_color, uint8_t * RESTRICT buffer);

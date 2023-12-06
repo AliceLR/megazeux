@@ -312,7 +312,7 @@ void sampled_mix_data(struct sampled_stream *s_src,
   int16_t *src_buffer = (int16_t *)(output_data + s_src->prologue_length);
   size_t write_len = dest_frames * dest_channels;
   int volume = ((struct audio_stream *)s_src)->volume;
-  int resample_mode = audio.master_resample_mode + 1;
+  int resample_mode = audio.global_resample_mode + 1;
   enum mixer_volume   use_volume   = DYNAMIC;
   enum mixer_channels use_channels = STEREO;
 

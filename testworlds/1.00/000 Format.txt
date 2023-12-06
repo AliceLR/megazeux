@@ -1,0 +1,3 @@
+Title: 1.XX format test and swap hack test.
+Author: Alice Rowan
+Desc: Tests loading of 1.xx world files and of hacked SWAP WORLD commands. MegaZeux 1.xx does not support SWAP WORLD, but modern MZX allows it so that the regression tests can test 1.xx worlds.

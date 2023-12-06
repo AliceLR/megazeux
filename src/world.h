@@ -121,6 +121,7 @@ enum mzx_version
   V293            = 0x025D,
 #ifdef CONFIG_DEBYTECODE
   VERSION_SOURCE  = 0x0300, // For checks dependent on Robotic source changes
+  V300            = 0x0300,
 #endif
 };
 
@@ -129,7 +130,7 @@ enum mzx_version
  * such as altering semantics or actually changing the binary format, this
  * value MUST be bumped.
  */
-#define MZX_VERSION      (V292)
+#define MZX_VERSION      (V293)
 
 /* The world version that worlds will be saved as when Export Downver. World
  * is used from the editor. This function is also fulfilled by the downver util.
@@ -138,7 +139,7 @@ enum mzx_version
  * previous value; this way, users can always downgrade their work to an
  * older version (if it at all makes sense to do so).
  */
-#define MZX_VERSION_PREV (V291)
+#define MZX_VERSION_PREV (V292)
 
 // This is the last version of MegaZeux to use the legacy world format.
 #define MZX_LEGACY_FORMAT_VERSION (V284)
@@ -146,7 +147,7 @@ enum mzx_version
 // FIXME: hack
 #ifdef CONFIG_DEBYTECODE
 #undef  MZX_VERSION_PREV
-#define MZX_VERSION_PREV (V292)
+#define MZX_VERSION_PREV (V293)
 #undef  MZX_VERSION
 #define MZX_VERSION      (VERSION_SOURCE)
 #endif
@@ -212,10 +213,6 @@ CORE_LIBSPEC void refactor_board_list(struct world *mzx_world,
  int *board_id_translation_list);
 CORE_LIBSPEC void optimize_null_boards(struct world *mzx_world);
 
-CORE_LIBSPEC void save_sfx_array(struct world *mzx_world,
- char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE]);
-CORE_LIBSPEC boolean load_sfx_array(struct world *mzx_world,
- char custom_sfx[NUM_BUILTIN_SFX * LEGACY_SFX_SIZE]);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

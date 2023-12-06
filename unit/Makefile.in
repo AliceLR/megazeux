@@ -73,6 +73,7 @@ ifneq (${BUILD_MODULAR},)
 unit_objs += \
   ${unit_obj}/configure${unit_ext}     \
   ${unit_obj}/intake${unit_ext}        \
+  ${unit_obj}/sfx${unit_ext}           \
   ${unit_obj}/thread${unit_ext}        \
   ${unit_obj}/world${unit_ext}         \
 

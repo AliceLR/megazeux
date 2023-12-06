@@ -2887,6 +2887,30 @@ static struct robot *get_robot_by_id(struct world *mzx_world, int id)
     return NULL;
 }
 
+static void fread_close(struct world *mzx_world)
+{
+  if(!mzx_world->input_is_dir && mzx_world->input_file)
+    vfclose(mzx_world->input_file);
+
+  if(mzx_world->input_is_dir && mzx_world->input_directory)
+    vdir_close(mzx_world->input_directory);
+
+  mzx_world->input_file_name[0] = '\0';
+  mzx_world->input_file = NULL;
+  mzx_world->input_directory = NULL;
+  mzx_world->input_is_dir = false;
+}
+
+static void fwrite_close(struct world *mzx_world)
+{
+  if(mzx_world->output_file)
+    vfclose(mzx_world->output_file);
+
+  mzx_world->output_file_name[0] = '\0';
+  mzx_world->output_file = NULL;
+  mzx_world->output_mode = FWRITE_MODE_UNKNOWN;
+}
+
 int set_counter_special(struct world *mzx_world, char *char_value,
  int value, int id)
 {
@@ -2899,25 +2923,15 @@ int set_counter_special(struct world *mzx_world, char *char_value,
   {
     case FOPEN_FREAD:
     {
-      mzx_world->input_file_name[0] = 0;
+      fread_close(mzx_world);
 
       if(char_value[0])
       {
-        char *translated_path = cmalloc(MAX_PATH);
+        char *translated_path = (char *)cmalloc(MAX_PATH);
         int err;
 
-        if(!mzx_world->input_is_dir && mzx_world->input_file)
-        {
-          vfclose(mzx_world->input_file);
-          mzx_world->input_file = NULL;
-        }
-
-        if(mzx_world->input_is_dir)
-        {
-          vdir_close(mzx_world->input_directory);
-          mzx_world->input_directory = NULL;
-          mzx_world->input_is_dir = false;
-        }
+        if(!translated_path)
+          return 0;
 
         err = fsafetranslate(char_value, translated_path, MAX_PATH);
 
@@ -2937,97 +2951,54 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         free(translated_path);
       }
-      else
-      {
-        if(!mzx_world->input_is_dir && mzx_world->input_file)
-        {
-          vfclose(mzx_world->input_file);
-          mzx_world->input_file = NULL;
-        }
-
-        if(mzx_world->input_is_dir)
-        {
-          vdir_close(mzx_world->input_directory);
-          mzx_world->input_directory = NULL;
-          mzx_world->input_is_dir = false;
-        }
-      }
-
       break;
     }
 
     case FOPEN_FWRITE:
     {
-      mzx_world->output_file_name[0] = 0;
+      fwrite_close(mzx_world);
 
       if(char_value[0])
       {
-        if(mzx_world->output_file)
-          vfclose(mzx_world->output_file);
-
         mzx_world->output_file = fsafeopen(char_value, "wb");
         if(mzx_world->output_file)
-          strcpy(mzx_world->output_file_name, char_value);
-      }
-      else
-      {
-        if(mzx_world->output_file)
         {
-          vfclose(mzx_world->output_file);
-          mzx_world->output_file = NULL;
+          strcpy(mzx_world->output_file_name, char_value);
+          mzx_world->output_mode = FWRITE_MODE_TRUNCATE;
         }
       }
-
       break;
     }
 
     case FOPEN_FAPPEND:
     {
-      mzx_world->output_file_name[0] = 0;
+      fwrite_close(mzx_world);
 
       if(char_value[0])
       {
-        if(mzx_world->output_file)
-          vfclose(mzx_world->output_file);
-
         mzx_world->output_file = fsafeopen(char_value, "ab");
         if(mzx_world->output_file)
-          strcpy(mzx_world->output_file_name, char_value);
-      }
-      else
-      {
-        if(mzx_world->output_file)
         {
-          vfclose(mzx_world->output_file);
-          mzx_world->output_file = NULL;
+          strcpy(mzx_world->output_file_name, char_value);
+          mzx_world->output_mode = FWRITE_MODE_APPEND;
         }
       }
-
       break;
     }
 
     case FOPEN_FMODIFY:
     {
-      mzx_world->output_file_name[0] = 0;
+      fwrite_close(mzx_world);
 
       if(char_value[0])
       {
-        if(mzx_world->output_file)
-          vfclose(mzx_world->output_file);
-
         mzx_world->output_file = fsafeopen(char_value, "r+b");
         if(mzx_world->output_file)
-          strcpy(mzx_world->output_file_name, char_value);
-      }
-      else
-      {
-        if(mzx_world->output_file)
         {
-          vfclose(mzx_world->output_file);
-          mzx_world->output_file = NULL;
+          strcpy(mzx_world->output_file_name, char_value);
+          mzx_world->output_mode = FWRITE_MODE_MODIFY;
         }
       }
-
       break;
     }
 
@@ -3164,11 +3135,23 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           vfile *vf = fsafeopen(char_value, "rb");
           if(vf)
           {
-            new_length = vfilelength(vf, true);
+            int64_t vf_len = vfilelength(vf, true);
+            if(vf_len < 0 || vf_len > INT_MAX)
+            {
+              vfclose(vf);
+              break;
+            }
+
+            new_length = (int)vf_len;
             new_source = cmalloc(new_length + 1);
+            if(!new_source)
+            {
+              vfclose(vf);
+              break;
+            }
             new_source[new_length] = 0;
 
-            if(!vfread(new_source, new_length, 1, vf))
+            if(vfread(new_source, 1, new_length, vf) != (size_t)new_length)
             {
               free(new_source);
               new_source = NULL;
@@ -3226,14 +3209,27 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         if(cur_robot)
         {
-          int program_bytecode_length = vfilelength(bc_file, true);
-          char *program_legacy_bytecode = malloc(program_bytecode_length + 1);
+          int64_t bc_len = vfilelength(bc_file, true);
+          char *program_legacy_bytecode;
+          int program_bytecode_length;
 
-          vfread(program_legacy_bytecode, program_bytecode_length, 1,
-           bc_file);
+          if(bc_len < 0 || bc_len > MAX_OBJ_SIZE)
+            break;
+
+          program_bytecode_length = (int)bc_len;
+          program_legacy_bytecode = cmalloc(program_bytecode_length + 1);
+          if(!program_legacy_bytecode)
+            break;
+
+          if(vfread(program_legacy_bytecode, 1, program_bytecode_length,
+           bc_file) != (size_t)program_bytecode_length)
+          {
+            free(program_legacy_bytecode);
+            break;
+          }
 
           if(!validate_legacy_bytecode(&program_legacy_bytecode,
-           &program_bytecode_length))
+           &program_bytecode_length, NULL))
           {
             error_message(E_LOAD_BC_CORRUPT, 0, char_value);
             free(program_legacy_bytecode);
@@ -3365,16 +3361,25 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         if(cur_robot)
         {
-          int new_size = vfilelength(bc_file, true);
-          char *program_bytecode = malloc(new_size + 1);
+          int64_t bc_len = vfilelength(bc_file, true);
+          char *program_bytecode;
+          int new_size;
 
-          if(!vfread(program_bytecode, new_size, 1, bc_file))
+          if(bc_len < 0 || bc_len > MAX_OBJ_SIZE)
+            break;
+
+          new_size = (int)bc_len;
+          program_bytecode = cmalloc(new_size + 1);
+          if(!program_bytecode)
+            break;
+
+          if(vfread(program_bytecode, 1, new_size, bc_file) != (size_t)new_size)
           {
             free(program_bytecode);
             break;
           }
 
-          if(!validate_legacy_bytecode(&program_bytecode, &new_size))
+          if(!validate_legacy_bytecode(&program_bytecode, &new_size, NULL))
           {
             error_message(E_LOAD_BC_CORRUPT, 0, char_value);
             free(program_bytecode);
@@ -3680,10 +3685,12 @@ static size_t get_counter_alloc_size(int name_length)
    offsetof(struct counter, name) + name_length + 1);
 }
 
-static struct counter *allocate_new_counter(const char *name, int name_length,
+static struct counter *allocate_new_counter(const char *name, size_t name_length,
  int value)
 {
-  struct counter *dest = cmalloc(get_counter_alloc_size(name_length));
+  struct counter *dest = (struct counter *)cmalloc(get_counter_alloc_size(name_length));
+  if(!dest)
+    return NULL;
 
   memcpy(dest->name, name, name_length);
   dest->name[name_length] = 0;
@@ -3717,7 +3724,10 @@ static void add_counter(struct counter_list *counter_list, const char *name,
     else
       allocated = MIN_COUNTER_ALLOCATE;
 
-    base = crealloc(base, sizeof(struct counter *) * allocated);
+    base = (struct counter **)crealloc(base, sizeof(struct counter *) * allocated);
+    if(!base)
+      return;
+
     counter_list->counters = base;
     counter_list->num_counters_allocated = allocated;
   }
@@ -3732,6 +3742,8 @@ static void add_counter(struct counter_list *counter_list, const char *name,
   }
 
   dest = allocate_new_counter(name, name_length, value);
+  if(!dest)
+    return;
 
   counter_list->counters[position] = dest;
   counter_list->num_counters = count + 1;
@@ -3836,6 +3848,26 @@ int get_counter(struct world *mzx_world, const char *name, int id)
     return cdest->value;
 
   return 0;
+}
+
+/**
+ * Get a counter by name and return a pointer to it. This function does not
+ * work with function counters or other special counters; use get_string or
+ * get_string_safe (editor) instead. The pointer this function returns is
+ * guaranteed to be stable for the duration of the gameplay session.
+ *
+ * @param mzx_world   World data.
+ * @param name        Name of counter to look up.
+ * @param id          Current robot ID or 0 for global.
+ * @return            counter pointer if found, otherwise NULL.
+ */
+const struct counter *get_counter_pointer(struct world *mzx_world,
+ const char *name, int id)
+{
+  struct counter_list *counter_list = &(mzx_world->counter_list);
+  int next;
+
+  return find_counter(counter_list, name, &next);
 }
 
 void inc_counter(struct world *mzx_world, const char *name, int value, int id)

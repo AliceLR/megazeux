@@ -416,6 +416,9 @@ boolean vio_virtual_directory(const char *path)
  */
 boolean vio_invalidate_at_least(size_t *amount_to_free)
 {
+#ifdef DEBUG
+  size_t init = amount_to_free ? *amount_to_free : 0;
+#endif
   int err;
   if(!vfs_base || !amount_to_free)
     return false;
@@ -424,6 +427,7 @@ boolean vio_invalidate_at_least(size_t *amount_to_free)
   if(err)
     return false;
 
+  debug("vio_invalidate_at_least freed >= %zu buffered\n", init - *amount_to_free);
   if(*amount_to_free > 0)
     return false;
 
@@ -438,6 +442,7 @@ boolean vio_invalidate_all(void)
   if(!vfs_base)
     return false;
 
+  debug("vio_invalidate_all\n");
   if(vfs_invalidate_all(vfs_base) < 0)
     return false;
 
@@ -1133,7 +1138,7 @@ static inline boolean virt_writeback(vfile *vf)
 static inline boolean virt_read(vfile *vf)
 {
   const unsigned char *tmp;
-  size_t len;
+  size_t len = 0;
   int ret = -1;
   if(!vf->inode)
     return false;

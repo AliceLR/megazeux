@@ -235,7 +235,7 @@
 
 # enable_oversampling = 0
 
-# Set master resample mode. This affects how OGGs, SAMs, WAVs, and
+# Set global resample mode. This affects how OGGs, SAMs, WAVs, RADs, and
 # frequency shifted modules sound. Choices are:
 # none (fastest, poor quality)
 # linear (fast, good quality)
@@ -743,6 +743,31 @@
 
 # test_mode = 0
 # test_mode_start_board = 0
+
+# Set to 1 to enable MegaZeux's virtual filesystem (VFS). Currently, this
+# feature is used only to implement file caching in memory. This is disabled by
+# default for all platforms except 3DS and Vita. This feature is not available
+# on the NDS.
+
+# vfs_enable = 0
+
+# Set to 0 to disable file caching in memory when the VFS is active.
+# This will make MegaZeux use more memory. For platforms where the stdlib
+# memory allocation functions properly return NULL, MegaZeux will attempt to
+# reclaim memory from the file cache before an out of memory error occurs.
+# Enabled by default, but only takes effect if the VFS is also enabled.
+
+# vfs_enable_auto_cache = 1
+
+# This setting controls the total amount of memory that can be used by the
+# VFS file cache. This is a soft limit and can be exceeded in some situations.
+
+# vfs_max_cache_size = 16777216
+
+# This setting controls the largest size of an individual file that can be
+# cached within the VFS file cache. Larger files will not be cached to memory.
+
+# vfs_max_cache_file_size = 4194304
 
 
 ###################

@@ -692,7 +692,7 @@ if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""		>> src/config.h
 	echo "#define LICENSEDIR \"$LICENSEDIR/megazeux/\""	>> src/config.h
 else
-	LICENSEDIR=$SHAREDIR
+	LICENSEDIR="."
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\""			>> src/config.h

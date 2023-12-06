@@ -90,6 +90,10 @@ enum zip_general_purpose_flag
 #define ZIP_F_UNUSED (ZIP_F_UNUSED_7 | ZIP_F_UNUSED_8 | ZIP_F_UNUSED_9 |\
  ZIP_F_UNUSED_10 | ZIP_F_UNUSED_12 | ZIP_F_UNUSED_14 | ZIP_F_UNUSED_15)
 
+// DEFLATE-specific compression flags.
+#define ZIP_F_DEFLATE_MAXIMUM   ZIP_F_COMPRESSION_1
+#define ZIP_F_DEFLATE_FAST      ZIP_F_COMPRESSION_2
+
 enum zip_internal_state
 {
   ZIP_S_READ_UNINITIALIZED,

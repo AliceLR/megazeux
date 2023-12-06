@@ -27,7 +27,8 @@
 __M_BEGIN_DECLS
 
 // Number of unique sound effects and length of sound effects
-#define SFX_SIZE        69
+// SFX sizes include the \0 terminator.
+#define MAX_SFX_SIZE    256
 #define LEGACY_SFX_SIZE 69
 
 enum sfx_id
@@ -83,14 +84,28 @@ enum sfx_id
   SFX_GOOP              = 48,
   SFX_UNUSED_49         = 49,
   NUM_BUILTIN_SFX       = 50,
-  NUM_SFX               = 50
+  MAX_NUM_SFX           = 256
 };
 
-// Requires NUM_SFX/SFX_SIZE, so don't include.
+struct custom_sfx
+{
+  char label[12];
+  char string[1]; // Flexible array member
+};
+
+struct sfx_list
+{
+  struct custom_sfx **list;
+  int num_alloc;
+};
+
+// Requires struct custom_sfx, so don't include.
 struct world;
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC extern char sfx_strs[NUM_BUILTIN_SFX][LEGACY_SFX_SIZE];
+
+CORE_LIBSPEC size_t sfx_ram_usage(const struct sfx_list *sfx_list);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_AUDIO
@@ -99,7 +114,7 @@ CORE_LIBSPEC extern char sfx_strs[NUM_BUILTIN_SFX][LEGACY_SFX_SIZE];
 void sfx_next_note(int *is_playing, int *freq, int *duration);
 boolean sfx_should_cancel_note(void);
 
-void play_sfx(struct world *mzx_world, enum sfx_id sfx);
+void play_sfx(struct world *mzx_world, int sfx);
 void play_string(char *str, int sfx_play);
 void sfx_clear_queue(void);
 boolean sfx_is_playing(void);
@@ -114,6 +129,19 @@ static inline boolean sfx_is_playing(void) { return false; }
 static inline int sfx_length_left(void) { return 0; }
 
 #endif // CONFIG_AUDIO
+
+CORE_LIBSPEC const struct custom_sfx *sfx_get(
+ const struct sfx_list *sfx_list, int num);
+CORE_LIBSPEC boolean sfx_set_string(struct sfx_list *sfx_list, int num,
+ const char *src, size_t src_len);
+CORE_LIBSPEC boolean sfx_set_label(struct sfx_list *sfx_list, int num,
+ const char *src, size_t src_len);
+CORE_LIBSPEC void sfx_unset(struct sfx_list *sfx_list, int num);
+CORE_LIBSPEC void sfx_free(struct sfx_list *sfx_list);
+CORE_LIBSPEC size_t sfx_save_to_memory(const struct sfx_list *sfx_list,
+ int file_version, char *dest, size_t dest_len, size_t *required);
+CORE_LIBSPEC boolean sfx_load_from_memory(struct sfx_list *sfx_list,
+ int file_version, const char *src, size_t src_len);
 
 __M_END_DECLS
 

@@ -27,10 +27,6 @@ ifeq (${NDK_PATH},)
 $(error "Must define $$NDK_PATH!")
 endif
 
-${JNI_LIB_DIR}/%:
-	$(if ${V},,@echo "  MKDIR   " $@)
-	@${MKDIR} -p "$@"
-
 #
 # Determine ${TOOLCHAIN} (the common NDK toolchain path) if not provided.
 # Requires determining ${HOST} since currently the NDK toolchain path relies on it.
@@ -148,6 +144,10 @@ LIBPNG_LDFLAGS := -L${JNI_LIBS} -lpng16
 
 VORBIS_CFLAGS  := -I${JNI_INCLUDES}
 VORBIS_LDFLAGS := -L${JNI_LIBS} -logg -lvorbis -lvorbisfile
+
+${JNI_LIB_DIR}/${ABI}:
+	$(if ${V},,@echo "  MKDIR   " $@)
+	${MKDIR} -p "$@"
 
 package: all | ${JNI_LIB_DIR}/${ABI}
 ifneq (${BUILD_EDITOR},)

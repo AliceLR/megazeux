@@ -48,9 +48,17 @@
 // The 3DS has incredibly slow file access that seems to be negatively impacted
 // by backwards seeks in particular, so enable data descriptors for it too.
 // The Switch may similarly benefit with this.
+// DJGPP may be running on exceptionally slow hardware.
 
-#if defined(CONFIG_NDS) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH) || defined(CONFIG_PSVITA)
+#if defined(CONFIG_NDS) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH) || \
+ defined(CONFIG_PSVITA) || defined(CONFIG_DJGPP)
 #define ZIP_WRITE_DATA_DESCRIPTOR
+#endif
+
+// Similarly, some platforms are slow and need faster compression.
+// TODO: these should probably be runtime configurable instead.
+#if defined(CONFIG_NDS) || defined(CONFIG_PSP) || defined(CONFIG_DJGPP)
+#define ZIP_WRITE_DEFLATE_FAST
 #endif
 
 #define ZIP_VERSION_MINIMUM 20
@@ -2086,10 +2094,13 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
     return ZIP_ALLOC_ERROR;
 
   // Set up the header
-#ifdef ZIP_WRITE_DATA_DESCRIPTOR
-  fh->flags = ZIP_F_DATA_DESCRIPTOR;
-#else
   fh->flags = 0;
+#ifdef ZIP_WRITE_DATA_DESCRIPTOR
+  fh->flags |= ZIP_F_DATA_DESCRIPTOR;
+#endif
+#ifdef ZIP_WRITE_DEFLATE_FAST
+  if(method == ZIP_M_DEFLATE)
+    fh->flags |= ZIP_F_DEFLATE_FAST;
 #endif
   fh->method = method;
   fh->crc32 = 0;
@@ -2124,7 +2135,7 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
   if(zp->stream)
   {
     struct zip_stream_data *stream_data = zp->stream_data;
-    zp->stream->compress_open(stream_data, method, false);
+    zp->stream->compress_open(stream_data, method, fh->flags);
 
     result = zip_set_stream_buffer_size(zp, ZIP_STREAM_BUFFER_SIZE);
     if(result != ZIP_SUCCESS)
@@ -2165,6 +2176,16 @@ static enum zip_error zip_write_autodetect_zip64(struct zip_archive *zp,
   if(zp->stream != NULL && zp->stream->compress_bound != NULL)
   {
     size_t bound_len = 0;
+    int flags = 0;
+
+    // Bounding requires initializing the zstream, so initialize first
+    // using the correct compression level.
+#ifdef ZIP_WRITE_DEFLATE_FAST
+    if(method == ZIP_M_DEFLATE)
+      flags |= ZIP_F_DEFLATE_FAST;
+#endif
+
+    zp->stream->compress_open(zp->stream_data, method, flags);
     result = zp->stream->compress_bound(zp->stream_data, src_len, &bound_len);
     if(result)
       return result;

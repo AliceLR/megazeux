@@ -165,13 +165,14 @@ static const unsigned char def_id_dmg[ID_DMG_SIZE] =
 };
 
 
-static void append_world_refactor_board(struct board *cur_board,
- int old_num_boards)
+static void append_world_refactor_board(struct world *mzx_world,
+ struct board *cur_board, int old_num_boards)
 {
   int board_width = cur_board->board_width;
   int board_height = cur_board->board_height;
   char *level_id = cur_board->level_id;
   char *level_param = cur_board->level_param;
+  int board_dir;
   int offset;
   int d_flag;
   int i;
@@ -180,17 +181,27 @@ static void append_world_refactor_board(struct board *cur_board,
   for(offset = 0; offset < board_width * board_height; offset++)
   {
     d_flag = flags[(int)level_id[offset]];
+    board_dir = level_param[offset];
 
-    if((d_flag & A_ENTRANCE) && (level_param[offset] != NO_BOARD))
+    if((d_flag & A_ENTRANCE) && (board_dir != NO_BOARD))
     {
-      level_param[offset] += old_num_boards;
+      if(board_dir + old_num_boards < mzx_world->num_boards)
+        level_param[offset] += old_num_boards;
+      else
+        level_param[offset] = NO_BOARD;
     }
   }
 
   for(i = 0; i < 4; i++)
   {
-    if(cur_board->board_dir[i] != NO_BOARD)
-      cur_board->board_dir[i] += old_num_boards;
+    board_dir = cur_board->board_dir[i];
+    if(board_dir != NO_BOARD)
+      board_dir += old_num_boards;
+
+    if(board_dir >= mzx_world->num_boards)
+      board_dir = NO_BOARD;
+
+    cur_board->board_dir[i] = board_dir;
   }
 }
 
@@ -205,24 +216,44 @@ static boolean append_world_legacy(struct world *mzx_world, vfile *vf,
   unsigned int *board_offsets;
   unsigned int *board_sizes;
 
-  vfseek(vf, 4234, SEEK_SET);
+  // The board list is 100% compatible between 1.x and 2.x, so the only
+  // differences that need to be handled here are the location and custom SFX.
+  if(file_version >= V200)
+  {
+    vfseek(vf, 4234, SEEK_SET);
+  }
+  else
+  {
+    int protection_method = 0;
+
+    vfseek(vf, LEGACY_BOARD_NAME_SIZE, SEEK_SET);
+    protection_method = vfgetc(vf);
+
+    vfseek(vf, 4009, SEEK_SET);
+    if(protection_method)
+      vfseek(vf, 16, SEEK_CUR);
+  }
 
   num_boards = vfgetc(vf);
 
-  if(num_boards == 0)
+  if(num_boards == 0 && file_version >= V200)
   {
     int sfx_size;
     // Sfx skip word size
     vfseek(vf, 2, SEEK_CUR);
 
     // Skip sfx
-    for(i = 0; i < NUM_SFX; i++)
+    for(i = 0; i < NUM_BUILTIN_SFX; i++)
     {
       sfx_size = vfgetc(vf);
       vfseek(vf, sfx_size, SEEK_CUR);
     }
     num_boards = vfgetc(vf);
   }
+
+  // Shouldn't happen...
+  if(num_boards < 1)
+    return false;
 
   // Skip the names for now
   board_names_pos = vftell(vf);
@@ -234,12 +265,12 @@ static boolean append_world_legacy(struct world *mzx_world, vfile *vf,
   mzx_world->num_boards += num_boards;
   mzx_world->num_boards_allocated += num_boards;
   mzx_world->board_list =
-   crealloc(mzx_world->board_list,
-   sizeof(struct board *) * (old_num_boards + num_boards));
+   (struct board **)crealloc(mzx_world->board_list,
+    sizeof(struct board *) * (old_num_boards + num_boards));
 
   // Read the board offsets/sizes preemptively to reduce the amount of seeking.
-  board_offsets = cmalloc(sizeof(int) * num_boards);
-  board_sizes = cmalloc(sizeof(int) * num_boards);
+  board_offsets = (unsigned int *)cmalloc(sizeof(int) * num_boards);
+  board_sizes = (unsigned int *)cmalloc(sizeof(int) * num_boards);
   for(i = 0; i < num_boards; i++)
   {
     board_sizes[i] = vfgetd(vf);
@@ -265,7 +296,7 @@ static boolean append_world_legacy(struct world *mzx_world, vfile *vf,
       optimize_null_objects(cur_board);
 
       // Fix exits
-      append_world_refactor_board(cur_board, old_num_boards);
+      append_world_refactor_board(mzx_world, cur_board, old_num_boards);
 
       store_board_to_extram(cur_board);
     }
@@ -286,7 +317,9 @@ static boolean append_world_legacy(struct world *mzx_world, vfile *vf,
       dest = cur_board->board_name;
 
     if(!vfread(dest, BOARD_NAME_SIZE, 1, vf))
-      dest[0] = 0;
+      dest[0] = '\0';
+
+    dest[BOARD_NAME_SIZE - 1] = '\0';
   }
 
   vfclose(vf);
@@ -305,7 +338,7 @@ static int append_world_zip_get_num_boards(const void *buffer, int buf_size)
 
   while(next_prop(&prop, &ident, &size, &mf))
     if(ident == WPROP_NUM_BOARDS)
-      return load_prop_int(size, &prop);
+      return load_prop_int_u(&prop, 0, MAX_BOARDS);
 
   return 0;
 }
@@ -339,8 +372,8 @@ static boolean append_world_zip(struct world *mzx_world, struct zip_archive *zp,
   mzx_world->num_boards += num_boards;
   mzx_world->num_boards_allocated += num_boards;
   mzx_world->board_list =
-   crealloc(mzx_world->board_list,
-   sizeof(struct board *) * (old_num_boards + num_boards));
+   (struct board **)crealloc(mzx_world->board_list,
+    sizeof(struct board *) * (old_num_boards + num_boards));
 
   for(i = old_num_boards; i < old_num_boards + num_boards; i++)
   {
@@ -371,7 +404,7 @@ static boolean append_world_zip(struct world *mzx_world, struct zip_archive *zp,
         if(cur_board)
         {
           // Fix exits.
-          append_world_refactor_board(cur_board, old_num_boards);
+          append_world_refactor_board(mzx_world, cur_board, old_num_boards);
 
           store_board_to_extram(cur_board);
         }
@@ -464,7 +497,7 @@ void create_blank_world(struct world *mzx_world)
   memset(mzx_world->name, 0, sizeof(mzx_world->name));
 
   // Defaults for things set by load_world
-  mzx_world->custom_sfx_on = 0;
+  sfx_free(&mzx_world->custom_sfx);
   mzx_world->max_samples = -1;
   mzx_world->joystick_simulate_keys = true;
 

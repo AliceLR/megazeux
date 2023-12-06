@@ -3426,8 +3426,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     else
       show_parent_dir = true;
 
-#if defined(CONFIG_3DS) || defined(CONFIG_SWITCH) || defined(CONFIG_WIIU) \
-  || defined(CONFIG_PSVITA) || defined(CONFIG_DREAMCAST)
+#if defined(CONFIG_3DS) || defined(CONFIG_SWITCH) || defined(CONFIG_WIIU) || \
+ defined(CONFIG_PSVITA) || defined(CONFIG_DREAMCAST)
     if(show_parent_dir)
     {
       dir_list[num_dirs] = cmalloc(3);

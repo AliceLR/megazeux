@@ -72,9 +72,10 @@ struct ega_render_data
   unsigned char flags;
   unsigned char oldmode;
   unsigned short vbsel;
+  unsigned char curpages;
+  boolean is_ati_card;
   uint8_t lines;
   uint8_t offset;
-  unsigned char curpages;
   uint32_t x;
   uint32_t y;
 };
@@ -94,7 +95,7 @@ static void ega_set_page(int page)
   __dpmi_int(0x10, &reg);
 }
 
-static void ega_set_smzx(void)
+static void ega_set_smzx(boolean is_ati)
 {
   // Super MegaZeux mode:
   // In a nutshell, this sets bit 6 of the VGA Mode Control Register.
@@ -107,6 +108,13 @@ static void ega_set_smzx(void)
   // and require a weird horizontal pixel shift value - see below.
   outportb(0x3C0, 0x10);
   outportb(0x3C0, 0x4C);
+
+  if(is_ati)
+  {
+    // set horizontal pixel shift to Undefined (0.5 pixels, in theory)
+    outportb(0x3C0, 0x13);
+    outportb(0x3C0, 0x01);
+  }
 }
 
 static void ega_set_16p(void)
@@ -218,6 +226,14 @@ static void ega_vsync(void)
     ;
 }
 
+static boolean ega_is_ati_card(void)
+{
+  // TODO: untested.
+  char ati_magic[9];
+  dosmemget(0xC0031, 9, ati_magic);
+  return memcmp("761295520", ati_magic, 9) == 0;
+}
+
 static boolean ega_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
@@ -256,6 +272,8 @@ static boolean ega_init_video(struct graphics_data *graphics,
     render_data->flags = 0;
 
   render_data->oldmode = ega_get_mode();
+  render_data->is_ati_card = ega_is_ati_card();
+  render_data->smzx_swap_nibbles = render_data->is_ati_card;
 
   graphics->render_data = render_data;
   return set_video_mode();
@@ -272,23 +290,12 @@ static void ega_free_video(struct graphics_data *graphics)
   free(render_data);
 }
 
-static boolean ega_is_ati_card(void)
-{
-  // TODO: I don't know if this actually works!
-  char ati_magic[9];
-  dosmemget(0xC0031, 9, ati_magic);
-  return memcmp("761295520", ati_magic, 9) == 0;
-}
-
-static boolean ega_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean ega_set_screen_mode(struct graphics_data *graphics, unsigned mode)
 {
   struct ega_render_data *render_data = graphics->render_data;
   int i;
-  boolean ati_card = ega_is_ati_card();
 
   render_data->page = 0;
-  render_data->smzx_swap_nibbles = ati_card;
   render_data->lines = 255;
   render_data->offset = 255;
   render_data->x = 65535;
@@ -298,16 +305,8 @@ static boolean ega_set_video_mode(struct graphics_data *graphics,
     ega_set_14p();
 
   ega_set_mode(0x03);
-  if(graphics->screen_mode)
-  {
-    ega_set_smzx();
-    if(ati_card)
-    {
-      // set horizontal pixel shift to Undefined (0.5 pixels, in theory)
-      outportb(0x3C0, 0x13);
-      outportb(0x3C0, 0x01);
-    }
-  }
+  if(mode > 0)
+    ega_set_smzx(render_data->is_ati_card);
   ega_blink_off();
   ega_cursor_off();
 
@@ -326,6 +325,18 @@ static boolean ega_set_video_mode(struct graphics_data *graphics,
 
   render_data->flags |= TEXT_FLAGS_CHR;
 
+  // Unless someone makes a cursed VGA card specifically for MegaZeux,
+  // mode 3 does not exist in hardware and never has.
+  if(mode > 2)
+    return false;
+
+  return true;
+}
+
+static boolean ega_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
+{
+  ega_set_screen_mode(graphics, graphics->screen_mode);
   return true;
 }
 
@@ -497,6 +508,7 @@ void render_ega_register(struct renderer *renderer)
   renderer->init_video = ega_init_video;
   renderer->free_video = ega_free_video;
   renderer->set_video_mode = ega_set_video_mode;
+  renderer->set_screen_mode = ega_set_screen_mode;
   renderer->update_colors = ega_update_colors;
   renderer->resize_screen = resize_screen_standard;
   renderer->remap_char_range = ega_remap_char_range;

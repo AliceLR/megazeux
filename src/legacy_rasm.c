@@ -19,10 +19,10 @@
  */
 
 #include <ctype.h>
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
 
 #include "rasm.h"
 #include "data.h"
@@ -2729,6 +2729,494 @@ void disassemble_program(char *program, int program_length,
 }
 #endif // !CONFIG_DEBYTECODE
 
+enum v1_params
+{
+  V1_NO_PARAM,
+  V1_16,              // unsigned
+  V1_U8,              // unsigned
+  V1_STRING,
+  V1_CHAR,
+  V1_COLOR,           // bit 8 is stored as bit 7 of the next byte(!).
+  V1_COLOR_UNUSED,    // unused in ver1to2, handled in V1_COLOR here.
+  V1_DIRECTION,
+  V1_ITEM,
+  V1_EQUALITY,
+  V1_CONDITION,
+  V1_THING,
+  V1_PARAM,
+  V1_ADD_PARAM,       // param was not present in the original command, use 256.
+  V1_8,               // signed
+
+  V1_SPECIAL_CHAR_EDIT,     // translate 14 type-2 parameters
+  V1_SPECIAL_TOUCHING_DIR,  // convert direction to condition: touching [dir]
+};
+
+static const uint8_t v1_command_translation[256][8] =
+{
+  // cvt=convert to a different command.
+  { ROBOTIC_CMD_END },
+  { ROBOTIC_CMD_DIE },
+  { ROBOTIC_CMD_WAIT,               V1_U8 },
+  { ROBOTIC_CMD_CYCLE,              V1_U8 },
+  { ROBOTIC_CMD_GO,                 V1_DIRECTION, V1_U8 },
+  { ROBOTIC_CMD_WALK,               V1_DIRECTION },
+  { ROBOTIC_CMD_BECOME,             V1_COLOR, V1_THING, V1_PARAM },
+  { ROBOTIC_CMD_CHAR,               V1_CHAR },
+  { ROBOTIC_CMD_COLOR,              V1_COLOR },
+  { ROBOTIC_CMD_GOTOXY,             V1_8, V1_8 },
+  { ROBOTIC_CMD_SET,                V1_STRING, V1_16 },
+  { ROBOTIC_CMD_INC,                V1_STRING, V1_16 },
+  { ROBOTIC_CMD_DEC,                V1_STRING, V1_16 },
+  { ROBOTIC_CMD_SET,                V1_STRING, V1_STRING }, // cvt
+  { ROBOTIC_CMD_INC,                V1_STRING, V1_STRING }, // cvt
+  { ROBOTIC_CMD_DEC,                V1_STRING, V1_STRING }, // cvt
+  { ROBOTIC_CMD_IF,                 V1_STRING, V1_EQUALITY, V1_16, V1_STRING },
+  { ROBOTIC_CMD_IF,                 V1_STRING, V1_EQUALITY, V1_STRING, V1_STRING }, // cvt
+  { ROBOTIC_CMD_IF_CONDITION,       V1_CONDITION, V1_STRING },
+  { ROBOTIC_CMD_IF_NOT_CONDITION,   V1_CONDITION, V1_STRING },
+  { ROBOTIC_CMD_IF_ANY,             V1_COLOR, V1_THING, V1_ADD_PARAM, V1_STRING },
+  { ROBOTIC_CMD_IF_NO,              V1_COLOR, V1_THING, V1_ADD_PARAM, V1_STRING },
+  { ROBOTIC_CMD_IF_THING_DIR,       V1_COLOR, V1_THING, V1_ADD_PARAM, V1_DIRECTION, V1_STRING },
+  { ROBOTIC_CMD_IF_NOT_THING_DIR,   V1_COLOR, V1_THING, V1_ADD_PARAM, V1_DIRECTION, V1_STRING },
+  { ROBOTIC_CMD_IF_THING_XY,        V1_COLOR, V1_THING, V1_ADD_PARAM, V1_8, V1_8, V1_STRING },
+  { ROBOTIC_CMD_IF_AT,              V1_8, V1_8, V1_STRING },
+  { ROBOTIC_CMD_IF_DIR_OF_PLAYER,   V1_DIRECTION, V1_COLOR, V1_THING, V1_ADD_PARAM, V1_STRING },
+  { ROBOTIC_CMD_DOUBLE,             V1_STRING },
+  { ROBOTIC_CMD_HALF,               V1_STRING },
+  { ROBOTIC_CMD_GOTO,               V1_STRING },
+  { ROBOTIC_CMD_SEND,               V1_STRING, V1_STRING },
+  { ROBOTIC_CMD_EXPLODE,            V1_U8 },
+  { ROBOTIC_CMD_PUT_DIR,            V1_COLOR, V1_THING, V1_PARAM, V1_DIRECTION },
+  { ROBOTIC_CMD_GIVE,               V1_16, V1_ITEM },
+  { ROBOTIC_CMD_TAKE,               V1_16, V1_ITEM },
+  { ROBOTIC_CMD_TAKE_OR,            V1_16, V1_ITEM, V1_STRING },
+  { ROBOTIC_CMD_ENDGAME },
+  { ROBOTIC_CMD_ENDLIFE },
+  { ROBOTIC_CMD_MOD,                V1_STRING },
+  { ROBOTIC_CMD_SAM,                V1_16, V1_STRING },
+  { ROBOTIC_CMD_VOLUME,             V1_U8 },
+  { ROBOTIC_CMD_END_MOD },
+  { ROBOTIC_CMD_END_SAM },
+  { ROBOTIC_CMD_PLAY,               V1_STRING },
+  { ROBOTIC_CMD_END_PLAY },
+  { ROBOTIC_CMD_WAIT_THEN_PLAY,     V1_STRING },
+  { ROBOTIC_CMD_WAIT_PLAY },
+  { ROBOTIC_CMD_BLANK_LINE },
+  { ROBOTIC_CMD_SFX,                V1_U8 },
+  { ROBOTIC_CMD_PLAY_IF_SILENT,     V1_STRING },
+  { ROBOTIC_CMD_OPEN,               V1_DIRECTION },
+  { ROBOTIC_CMD_LOCKSELF },
+  { ROBOTIC_CMD_UNLOCKSELF },
+  { ROBOTIC_CMD_SEND_DIR,           V1_DIRECTION, V1_STRING },
+  { ROBOTIC_CMD_ZAP,                V1_STRING, V1_U8 },
+  { ROBOTIC_CMD_RESTORE,            V1_STRING, V1_U8 },
+  { ROBOTIC_CMD_LOCKPLAYER },
+  { ROBOTIC_CMD_UNLOCKPLAYER },
+  { ROBOTIC_CMD_LOCKPLAYER_NS },
+  { ROBOTIC_CMD_LOCKPLAYER_EW },
+  { ROBOTIC_CMD_LOCKPLAYER_ATTACK },
+  { ROBOTIC_CMD_MOVE_PLAYER_DIR,    V1_DIRECTION },
+  { ROBOTIC_CMD_MOVE_PLAYER_DIR_OR, V1_DIRECTION, V1_STRING },
+  { ROBOTIC_CMD_PUT_PLAYER_XY,      V1_8, V1_8, },
+  { ROBOTIC_CMD_IF_CONDITION,       V1_SPECIAL_TOUCHING_DIR, V1_STRING }, // cvt
+  { ROBOTIC_CMD_IF_NOT_CONDITION,   V1_SPECIAL_TOUCHING_DIR, V1_STRING }, // cvt
+  { ROBOTIC_CMD_IF_PLAYER_XY,       V1_8, V1_8, V1_STRING },
+  { ROBOTIC_CMD_PUT_PLAYER_DIR,     V1_DIRECTION },
+  { ROBOTIC_CMD_TRY_DIR,            V1_DIRECTION, V1_STRING },
+  { ROBOTIC_CMD_ROTATECW },
+  { ROBOTIC_CMD_ROTATECCW },
+  { ROBOTIC_CMD_SWITCH,             V1_DIRECTION, V1_DIRECTION },
+  { ROBOTIC_CMD_SHOOT,              V1_DIRECTION },
+  { ROBOTIC_CMD_LAYBOMB,            V1_DIRECTION },
+  { ROBOTIC_CMD_LAYBOMB_HIGH,       V1_DIRECTION },
+  { ROBOTIC_CMD_SHOOTMISSILE,       V1_DIRECTION },
+  { ROBOTIC_CMD_SHOOTSEEKER,        V1_DIRECTION },
+  { ROBOTIC_CMD_SPITFIRE,           V1_DIRECTION },
+  { ROBOTIC_CMD_LAZERWALL,          V1_DIRECTION, V1_U8 },
+  { ROBOTIC_CMD_PUT_XY,             V1_COLOR, V1_THING, V1_PARAM, V1_8, V1_8 },
+  { ROBOTIC_CMD_DIE_ITEM },
+  { ROBOTIC_CMD_SEND_XY,            V1_8, V1_8, V1_STRING },
+  { ROBOTIC_CMD_COPYROBOT_NAMED,    V1_STRING },
+  { ROBOTIC_CMD_COPYROBOT_XY,       V1_8, V1_8 },
+  { ROBOTIC_CMD_COPYROBOT_DIR,      V1_DIRECTION },
+  { ROBOTIC_CMD_DUPLICATE_SELF_DIR, V1_DIRECTION },
+  { ROBOTIC_CMD_DUPLICATE_SELF_XY,  V1_8, V1_8 },
+  { ROBOTIC_CMD_BULLETN,            V1_CHAR },
+  { ROBOTIC_CMD_BULLETS,            V1_CHAR },
+  { ROBOTIC_CMD_BULLETE,            V1_CHAR },
+  { ROBOTIC_CMD_BULLETW,            V1_CHAR },
+  { ROBOTIC_CMD_GIVEKEY,            V1_COLOR },
+  { ROBOTIC_CMD_GIVEKEY_OR,         V1_COLOR, V1_STRING },
+  { ROBOTIC_CMD_TAKEKEY,            V1_COLOR },
+  { ROBOTIC_CMD_TAKEKEY_OR,         V1_COLOR, V1_STRING },
+  { ROBOTIC_CMD_INC_RANDOM,         V1_STRING, V1_16, V1_16 },
+  { ROBOTIC_CMD_DEC_RANDOM,         V1_STRING, V1_16, V1_16 },
+  { ROBOTIC_CMD_SET_RANDOM,         V1_STRING, V1_16, V1_16 },
+  { ROBOTIC_CMD_TRADE,              V1_16, V1_ITEM, V1_16, V1_ITEM, V1_STRING },
+  { ROBOTIC_CMD_SEND_DIR_PLAYER,    V1_DIRECTION, V1_STRING },
+  { ROBOTIC_CMD_PUT_DIR_PLAYER,     V1_COLOR, V1_THING, V1_PARAM, V1_DIRECTION },
+  { ROBOTIC_CMD_SLASH,              V1_STRING },
+  { ROBOTIC_CMD_MESSAGE_LINE,       V1_STRING },
+  { ROBOTIC_CMD_MESSAGE_BOX_LINE,   V1_STRING },
+  { ROBOTIC_CMD_MESSAGE_BOX_OPTION, V1_STRING, V1_STRING },
+  { ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION, V1_STRING, V1_STRING, V1_STRING },
+  { ROBOTIC_CMD_LABEL,              V1_STRING },
+  { ROBOTIC_CMD_COMMENT,            V1_STRING },
+  { ROBOTIC_CMD_ZAPPED_LABEL,       V1_STRING },
+  { ROBOTIC_CMD_TELEPORT,           V1_STRING, V1_8, V1_8 },
+  { ROBOTIC_CMD_SCROLLVIEW,         V1_DIRECTION, V1_U8 },
+  { ROBOTIC_CMD_INPUT,              V1_STRING },
+  { ROBOTIC_CMD_IF_INPUT,           V1_STRING, V1_STRING },
+  { ROBOTIC_CMD_IF_INPUT_NOT,       V1_STRING, V1_STRING },
+  { ROBOTIC_CMD_IF_INPUT_MATCHES,   V1_STRING, V1_STRING },
+  { ROBOTIC_CMD_PLAYER_CHAR,        V1_CHAR },
+  { ROBOTIC_CMD_MESSAGE_BOX_COLOR_LINE, V1_STRING },
+  { ROBOTIC_CMD_MESSAGE_BOX_CENTER_LINE, V1_STRING },
+  { ROBOTIC_CMD_MOVE_ALL,           V1_COLOR, V1_THING, V1_ADD_PARAM, V1_DIRECTION },
+  { ROBOTIC_CMD_COPY,               V1_8, V1_8, V1_8, V1_8 },
+  { ROBOTIC_CMD_SET_EDGE_COLOR,     V1_COLOR },
+  { ROBOTIC_CMD_BOARD,              V1_DIRECTION, V1_STRING },
+  { ROBOTIC_CMD_BOARD_IS_NONE,      V1_DIRECTION },
+  { ROBOTIC_CMD_CHAR_EDIT,          V1_CHAR, V1_SPECIAL_CHAR_EDIT },
+  { ROBOTIC_CMD_BECOME_PUSHABLE },
+  { ROBOTIC_CMD_BECOME_NONPUSHABLE },
+  { ROBOTIC_CMD_BLIND,              V1_U8 },
+  { ROBOTIC_CMD_FIREWALKER,         V1_U8 },
+  { ROBOTIC_CMD_FREEZETIME,         V1_U8 },
+  { ROBOTIC_CMD_SLOWTIME,           V1_U8 },
+  { ROBOTIC_CMD_WIND,               V1_U8 },
+  { ROBOTIC_CMD_AVALANCHE },
+  { ROBOTIC_CMD_COPY_DIR,           V1_DIRECTION, V1_DIRECTION },
+  { ROBOTIC_CMD_BECOME_LAVAWALKER },
+  { ROBOTIC_CMD_BECOME_NONLAVAWALKER },
+  { ROBOTIC_CMD_CHANGE,             V1_COLOR, V1_THING, V1_ADD_PARAM,
+                                    V1_COLOR, V1_THING, V1_PARAM },
+  { ROBOTIC_CMD_PLAYERCOLOR,        V1_COLOR },
+  { ROBOTIC_CMD_BULLETCOLOR,        V1_COLOR },
+  { ROBOTIC_CMD_MISSILECOLOR,       V1_COLOR },
+  { ROBOTIC_CMD_MESSAGE_ROW,        V1_U8 },
+  { ROBOTIC_CMD_REL_SELF },
+  { ROBOTIC_CMD_REL_PLAYER },
+  { ROBOTIC_CMD_REL_COUNTERS },
+  { ROBOTIC_CMD_SET_ID_CHAR,        V1_16, V1_CHAR },
+  { ROBOTIC_CMD_JUMP_MOD_ORDER,     V1_U8 },
+  { ROBOTIC_CMD_ASK,                V1_STRING },
+  { ROBOTIC_CMD_FILLHEALTH },
+  { ROBOTIC_CMD_THICK_ARROW,        V1_DIRECTION, V1_CHAR },
+  { ROBOTIC_CMD_THIN_ARROW,         V1_DIRECTION, V1_CHAR },
+  { ROBOTIC_CMD_SET_MAX_HEALTH,     V1_16 },
+  { ROBOTIC_CMD_SAVE_PLAYER_POSITION },
+  { ROBOTIC_CMD_RESTORE_PLAYER_POSITION },
+  { ROBOTIC_CMD_EXCHANGE_PLAYER_POSITION },
+  { ROBOTIC_CMD_MESSAGE_COLUMN,     V1_U8 },
+  { ROBOTIC_CMD_CENTER_MESSAGE },
+  { ROBOTIC_CMD_CLEAR_MESSAGE },
+  { ROBOTIC_CMD_RESETVIEW },
+  { ROBOTIC_CMD_MOD_SAM,            V1_16, V1_U8 },
+  { ROBOTIC_CMD_VOLUME,             V1_STRING }, // cvt
+  { ROBOTIC_CMD_SCROLLBASE,         V1_COLOR },
+  { ROBOTIC_CMD_SCROLLCORNER,       V1_COLOR },
+  { ROBOTIC_CMD_SCROLLTITLE,        V1_COLOR },
+  { ROBOTIC_CMD_SCROLLPOINTER,      V1_COLOR },
+  { ROBOTIC_CMD_SCROLLARROW,        V1_COLOR },
+  { ROBOTIC_CMD_VIEWPORT,           V1_U8, V1_U8 },
+  { ROBOTIC_CMD_VIEWPORT_WIDTH,     V1_U8, V1_U8 },
+  { ROBOTIC_CMD_MESSAGE_COLUMN,     V1_STRING }, // cvt
+  { ROBOTIC_CMD_MESSAGE_ROW,        V1_STRING }, // cvt
+
+  /* The following future commands aren't supported by MegaZeux 1.x, but
+   * are allowed to make automated testing of 1.x worlds possible. */
+  [ROBOTIC_CMD_SWAP_WORLD] = { ROBOTIC_CMD_SWAP_WORLD, V1_STRING },
+};
+
+boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
+ int *_cur_prog_line, const char *src, int src_len)
+{
+  uint8_t buf[257];
+  size_t dest_len;
+  size_t dest_alloc;
+  int cur_prog_line = *_cur_prog_line;
+  int i;
+  char *dest;
+  char *tmp;
+
+  // Special case- replace very short programs with FF 00.
+  if(src_len <= 2)
+  {
+    dest = (char *)cmalloc(2);
+    if(!dest)
+      return false;
+
+    *_dest = dest;
+    *_dest_len = 2;
+    *_dest[0] = 0xff;
+    *_dest[1] = 0;
+    *_cur_prog_line = 0;
+    return true;
+  }
+
+  // Fix out-of-bounds cur_prog_line.
+  if(cur_prog_line < 0 || cur_prog_line >= src_len)
+  {
+    debug("Robot has out-of-bounds v1 cur_prog_line %d (len: %d)\n",
+     cur_prog_line, src_len);
+    cur_prog_line = 0;
+  }
+
+  dest_alloc = src_len * 2;
+  dest = (char *)cmalloc(dest_alloc);
+  if(!dest)
+    return false;
+
+  dest[0] = 0xff;
+  dest_len = 1;
+
+  for(i = 1; i + 3 < src_len && *src;)
+  {
+    int cmd_off = i;
+    int cmd_len = src[i++];
+    int cmd = src[i++];
+    int next_cmd = i + cmd_len;
+    int len = 1;
+    int j;
+
+    if(next_cmd >= src_len)
+    {
+      trace("invalid 1.x command: length extends past program, truncating\n");
+      break;
+    }
+
+    // Note: invalid commands default to 0 and translate to ROBOTIC_CMD_END.
+    buf[len++] = v1_command_translation[cmd][0];
+
+    for(j = 1; v1_command_translation[cmd][j]; j++)
+    {
+      switch(v1_command_translation[cmd][j])
+      {
+        case V1_16:
+        case V1_CONDITION:
+        {
+          if(i + 2 > src_len || len + 3 > 255)
+            goto err;
+
+          buf[len++] = 0;
+          buf[len++] = src[i++];
+          buf[len++] = src[i++];
+          break;
+        }
+
+        case V1_U8:
+        case V1_CHAR:
+        case V1_DIRECTION:
+        case V1_ITEM:
+        case V1_EQUALITY:
+        {
+          if(i >= src_len || len + 3 > 255)
+            goto err;
+
+          buf[len++] = 0;
+          buf[len++] = src[i++];
+          buf[len++] = 0;
+          break;
+        }
+
+        case V1_STRING:
+        {
+          int start = len;
+          int str_len = 0;
+          // Reserve length byte.
+          len++;
+
+          while(len < 255 && i < src_len && src[i])
+          {
+            if(src[i] == '&')
+            {
+              // Convert & to &&. ver1to2 did this conditionally for (mainly)
+              // text displaying commands, but it really ought to be applied
+              // unconditionally.
+              buf[len++] = '&';
+              str_len++;
+
+              if(len >= 255)
+                goto err;
+            }
+            buf[len++] = src[i++];
+            str_len++;
+          }
+          if(len >= 255 || i >= src_len)
+            goto err;
+
+          buf[start] = str_len + 1;
+          buf[len++] = '\0';
+          i++;
+          break;
+        }
+
+        case V1_COLOR:
+        {
+          if(i >= src_len || len + 3 > 255)
+            goto err;
+
+          buf[len++] = 0;
+          buf[len++] = src[i++];
+
+          if(i + 1 <= src_len && v1_command_translation[cmd][j + 1] == V1_THING)
+            buf[len++] = src[i] >> 7;
+          else
+            buf[len++] = 0;
+          break;
+        }
+
+        case V1_THING:
+        {
+          if(i >= src_len || len + 3 > 255)
+            goto err;
+
+          // Bit 7 is used to store color bit 8 in some cases.
+          buf[len++] = 0;
+          buf[len++] = src[i++] & 0x7f;
+          buf[len++] = 0;
+          break;
+        }
+
+        case V1_PARAM:
+        {
+          int param;
+          if(i >= src_len || len + 3 > 255)
+            goto err;
+
+          // p?? encodes to a value of 0(!), convert to 256.
+          buf[len++] = 0;
+          buf[len++] = param = src[i++];
+          buf[len++] = param ? 0 : 1;
+          break;
+        }
+
+        case V1_ADD_PARAM:
+        {
+          if(len + 3 > 255)
+            goto err;
+
+          buf[len++] = 0;
+          buf[len++] = 0;
+          buf[len++] = (256 >> 8);
+          break;
+        }
+
+        case V1_8:
+        {
+          int16_t param;
+          if(i >= src_len || len + 3 > 255)
+            goto err;
+
+          param = (int8_t)src[i++];
+
+          buf[len++] = 0;
+          buf[len++] = param & 0xff;
+          buf[len++] = param >> 8;
+          break;
+        }
+
+        case V1_SPECIAL_CHAR_EDIT:
+        {
+          // Hack so the parameter type mapping table doesn't need to be huge.
+          int k;
+          for(k = 0; k < 14; k++)
+          {
+            if(i >= src_len || len + 3 > 255)
+              goto err;
+
+            buf[len++] = 0;
+            buf[len++] = src[i++];
+            buf[len++] = 0;
+          }
+          break;
+        }
+
+        case V1_SPECIAL_TOUCHING_DIR:
+        {
+          // Input is the DIR parameter of IF [NOT] PLAYER DIR "label".
+          // This gets converted to IF [NOT] TOUCHING DIR "label".
+          if(i >= src_len || len + 3 > 255)
+            goto err;
+
+          buf[len++] = 0;
+          buf[len++] = TOUCHING;
+          buf[len++] = src[i++];
+          break;
+        }
+
+        default:
+        {
+          warn("unhandled 1.x parameter type! FIXME!!!\n");
+          break;
+        }
+      }
+    }
+
+    if(i >= src_len || i >= next_cmd)
+    {
+      trace("invalid 1.x command: params too long, truncating.\n");
+      break;
+    }
+    // Chronos Stasis 1.01 has some unusual corrupted robots with broken
+    // trailing length bytes. This is safe to quietly fix.
+    if(src[next_cmd - 1] != cmd_len)
+      trace("invalid 1.x command: trailing length != starting length.\n");
+
+    // Convert v1 cur_prog_line to v2 cur_prog_line.
+    // Any value in the middle of a command is junk and should be filtered.
+    if(cur_prog_line > cmd_off && cur_prog_line < next_cmd)
+    {
+      debug("Robot has invalid v1 cur_prog_line %d @ offset %d (len: %d)\n",
+       cur_prog_line, cmd_off, src_len);
+      cur_prog_line = 0;
+    }
+    if(cur_prog_line == cmd_off)
+      cur_prog_line = dest_len;
+
+    i = next_cmd;
+
+    buf[0] = len - 1;
+    buf[len] = len - 1;
+    len++;
+
+    // +1 for program terminating 0.
+    if(dest_len + len + 1 > dest_alloc)
+    {
+      while(dest_len + len + 1 > dest_alloc)
+      {
+        if(dest_alloc > INT_MAX)
+          goto err;
+
+        dest_alloc *= 2;
+      }
+      tmp = (char *)crealloc(dest, dest_alloc);
+      if(!tmp)
+        goto err;
+
+      dest = tmp;
+    }
+    memcpy(dest + dest_len, buf, len);
+    dest_len += len;
+  }
+
+  dest[dest_len++] = '\0';
+
+  tmp = (char *)crealloc(dest, dest_len);
+  if(tmp)
+    dest = tmp;
+
+  *_dest = dest;
+  *_dest_len = dest_len;
+  *_cur_prog_line = cur_prog_line;
+  return true;
+
+err:
+  free(dest);
+  return false;
+}
+
 enum bytecode_fix_status
 {
   BC_NO_ERROR,
@@ -2954,10 +3442,12 @@ static enum bytecode_fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
   return BC_COULDNT_FIX;
 }
 
-boolean validate_legacy_bytecode(char **_bc, int *_program_length)
+boolean validate_legacy_bytecode(char **_bc, int *_program_length,
+ int *_cur_prog_line)
 {
   char *bc = *_bc;
   int program_length = *_program_length;
+  int cur_prog_line = _cur_prog_line ? *_cur_prog_line : 0;
   int cur_command_start = 0, cur_command_length = 0, cur_param_length = 0;
   int cur_command, p;
   int i = 1;
@@ -2984,11 +3474,8 @@ boolean validate_legacy_bytecode(char **_bc, int *_program_length)
     status = BC_COULDNT_FIX;
 
   // One iteration should be a single command.
-  while(1)
+  while(status != BC_COULDNT_FIX)
   {
-    if(status == BC_COULDNT_FIX)
-      break;
-
     cur_command_length = bc[i];
     i++;
     if(cur_command_length == 0)
@@ -2996,14 +3483,8 @@ boolean validate_legacy_bytecode(char **_bc, int *_program_length)
 
     cur_command_start = i;
 
-    if((i + cur_command_length) > program_length)
-    {
-      i--;
-      status = validate_legacy_bytecode_attempt_fix(&bc, &program_length, i);
-      continue;
-    }
-
-    if(bc[i + cur_command_length] != cur_command_length)
+    if(i + cur_command_length >= program_length ||
+     bc[i + cur_command_length] != cur_command_length)
     {
       i--;
       status = validate_legacy_bytecode_attempt_fix(&bc, &program_length, i);
@@ -3045,6 +3526,16 @@ boolean validate_legacy_bytecode(char **_bc, int *_program_length)
       continue;
     }
 
+    // Now that the command is known to be roughly valid: cur_prog_line anywhere
+    // between the command byte and the second length byte is invalid.
+    if(cur_prog_line >= cur_command_start &&
+     cur_prog_line <= cur_command_start + cur_command_length)
+    {
+      debug("Robot has invalid cur_prog_line %d @ offset %d (len: %d)\n",
+       cur_prog_line, cur_command_start - 1, *_program_length);
+      cur_prog_line = 0;
+    }
+
     i = cur_command_start + cur_command_length + 1;
   }
 
@@ -3062,6 +3553,17 @@ boolean validate_legacy_bytecode(char **_bc, int *_program_length)
 
   if((status == BC_COULDNT_FIX) || (i > program_length))
     return false;
+
+  // Fix out-of-bounds cur_prog_line too.
+  if(cur_prog_line < 0 || cur_prog_line >= program_length)
+  {
+    debug("Robot has out-of-bounds cur_prog_line %d (old len:%d new len:%d)\n",
+     cur_prog_line, *_program_length, program_length);
+    cur_prog_line = 0;
+  }
+
+  if(_cur_prog_line)
+    *_cur_prog_line = cur_prog_line;
 
   return true;
 }
