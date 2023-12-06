@@ -255,6 +255,7 @@ USERS
   FWRITE_APPEND) is now stored in save files. This fixes a bug
   where the output file would be reopened in the wrong mode (ab)
   when reloading a saved game.
++ save_slots is now enabled by default for consoles. (Spectere)
 + editor_show_thing_toggles is now enabled by default.
 - board_editor_hide_help and robot_editor_hide_help are no
   longer enabled by default for accessibility.
