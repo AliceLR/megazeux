@@ -2,6 +2,7 @@ GIT
 
 USERS
 
++ Added an experimental PlayStation Vita port. (Spectere)
 + Added an experimental Wii U port (asie).
 + Added an experimental Dreamcast port (asie, Lachesis).
 + Added an experimental MS-DOS 32-bit port based on DJGPP
