@@ -167,6 +167,10 @@ name                      r/w      g/n/f/b    i
 "VCHn,n"                  r w         b       *
 "VCOn,n"                  r w         b       *
 "VERTPLD"                 r           b       *
+"VIEWPORT_HEIGHT"         r           b       *
+"VIEWPORT_WIDTH"          r           b       *
+"VIEWPORT_X"              r           b       *
+"VIEWPORT_Y"              r           b       *
 "VLAYER_HEIGHT"           r w         b       *
 "VLAYER_SIZE"             r w         b       *
 "VLAYER_WIDTH"            r w         b       *

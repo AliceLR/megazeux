@@ -2191,6 +2191,30 @@ static void r_write(struct world *mzx_world,
   }
 }
 
+static int viewport_x_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return mzx_world->current_board->viewport_x;
+}
+
+static int viewport_y_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return mzx_world->current_board->viewport_y;
+}
+
+static int viewport_width_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return mzx_world->current_board->viewport_width;
+}
+
+static int viewport_height_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return mzx_world->current_board->viewport_height;
+}
+
 static int vlayer_size_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2735,6 +2759,10 @@ static const struct function_counter builtin_counters[] =
   { "vch!,!",           V269c,  vch_read,             vch_write },
   { "vco!,!",           V269c,  vco_read,             vco_write },
   { "vertpld",          V100,   vertpld_read,         NULL },
+  { "viewport_height",  V293,   viewport_height_read, NULL },
+  { "viewport_width",   V293,   viewport_width_read,  NULL },
+  { "viewport_x",       V293,   viewport_x_read,      NULL },
+  { "viewport_y",       V293,   viewport_y_read,      NULL },
   { "vlayer_height",    V269c,  vlayer_height_read,   vlayer_height_write },
   { "vlayer_size",      V281,   vlayer_size_read,     vlayer_size_write },
   { "vlayer_width",     V269c,  vlayer_width_read,    vlayer_width_write },
