@@ -567,7 +567,6 @@ void render_sdl2accel_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = sdl2_init_video;
   renderer->free_video = sdl2_free_video;
-  renderer->check_video_mode = sdl_check_video_mode;
   renderer->set_video_mode = sdl2_set_video_mode;
   renderer->update_colors = sdl2_update_colors;
   renderer->resize_screen = resize_screen_standard;

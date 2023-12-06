@@ -14,7 +14,7 @@ include contrib/libxmp/Makefile.megazeux
 # Linking with g++ is only necessary if linking the C++ standard library
 # (libstdc++ or libc++) is required; usually it isn't, and gcc can be used.
 #
-LINK_CC := ${CC}
+LINK_CC ?= ${CC}
 
 core_src = src
 core_obj = src/.build
@@ -29,15 +29,13 @@ network_src = src/network
 network_obj = src/network/.build
 
 core_flags   += -ffast-math -funsigned-char
-core_flags   += -Wmissing-format-attribute -Wpointer-arith
-core_flags   += -Wwrite-strings
-core_cflags  += ${CFLAGS} -Wmissing-prototypes
-core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
+core_flags   += -Wmissing-format-attribute
+core_cflags  += ${CFLAGS}
+core_cxxflags = ${CXXFLAGS}
 
 ifneq (${PLATFORM},emscripten)
 core_flags   += -I${PREFIX}/include
 endif
-core_ldflags := -lm ${core_ldflags}
 
 ifeq (${PLATFORM},mingw)
 core_spec := -DCORE_LIBSPEC="__declspec(dllexport)"
@@ -88,6 +86,7 @@ ${core_obj}/%.o: ${core_src}/%.cpp
 # to build the main binary. Please keep this sorted alphabetically.
 #
 core_cobjs := \
+  ${core_obj}/about.o             \
   ${core_obj}/block.o             \
   ${core_obj}/board.o             \
   ${core_obj}/caption.o           \
@@ -114,6 +113,7 @@ core_cobjs := \
   ${core_obj}/legacy_robot.o      \
   ${core_obj}/legacy_world.o      \
   ${core_obj}/mzm.o               \
+  ${core_obj}/platform_time.o     \
   ${core_obj}/render.o            \
   ${core_obj}/robot.o             \
   ${core_obj}/run_robot.o         \
@@ -124,9 +124,9 @@ core_cobjs := \
   ${core_obj}/util.o              \
   ${core_obj}/window.o            \
   ${core_obj}/world.o             \
-  ${io_obj}/dir.o                 \
   ${io_obj}/fsafeopen.o           \
   ${io_obj}/path.o                \
+  ${io_obj}/vfs.o                 \
   ${io_obj}/vio.o                 \
   ${io_obj}/zip.o                 \
   ${io_obj}/zip_stream.o
@@ -137,19 +137,7 @@ core_cobjs := \
 #
 core_cxxobjs :=
 
-#
-# Hack to avoid silly warnings from devkitPro headers
-#
-ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_PSP}),)
-core_cflags += -Wstrict-prototypes
-endif
-
-#
-# Hack to avoid silly warnings from Android headers
-#
-ifeq (${PLATFORM},android)
-core_cflags += -Wno-strict-prototypes
-endif
+render_layer_software = 0
 
 #
 # These are really just hacks and should be moved elsewhere
@@ -159,7 +147,7 @@ core_cobjs += arch/nds/protected_palette.bin.o
 core_cobjs += arch/nds/audio.o
 core_cobjs += arch/nds/platform.o arch/nds/event.o
 core_cobjs += arch/nds/render.o arch/nds/evq.o
-ifneq (${BUILD_DEBYTECODE},1)
+ifeq (${BUILD_EXTRAM},1)
 core_cobjs += arch/nds/dlmalloc.o
 core_cobjs += arch/nds/ram.o arch/nds/extmem.o
 endif
@@ -172,16 +160,12 @@ core_cobjs += arch/3ds/event.o arch/3ds/audio.o
 core_cobjs += arch/3ds/keyboard.o
 endif
 
-ifeq (${BUILD_SWITCH},1)
-# Switch libraries require C++
-LINK_CC := ${CXX}
-endif
-
 ifeq (${BUILD_WII},1)
 # SDL and platform_sdl.c takes care of all of this when enabled.
 ifeq (${BUILD_SDL},)
 core_cobjs += arch/wii/event.o arch/wii/platform.o
 core_cobjs += arch/wii/render_xfb.o
+render_layer_software = 1
 ifeq (${BUILD_RENDER_GX},1)
 core_cobjs += arch/wii/render_gx.o
 endif
@@ -195,8 +179,30 @@ core_cxxobjs += arch/wii/network.o
 endif
 endif
 
+ifeq (${BUILD_SWITCH},1)
+# Switch libraries require C++
+LINK_CC := ${CXX}
+endif
+
 ifeq (${BUILD_PSP},1)
 core_cobjs += arch/psp/platform.o
+endif
+
+ifeq (${BUILD_DJGPP},1)
+core_cobjs += arch/djgpp/event.o arch/djgpp/interrupt.o arch/djgpp/platform.o
+core_cobjs += arch/djgpp/audio.o
+core_cobjs += arch/djgpp/render_ega.o
+ifeq (${BUILD_DOS_SVGA},1)
+core_cobjs += arch/djgpp/render_svga.o
+render_layer_software = 1
+endif
+endif
+
+ifeq (${BUILD_DREAMCAST},1)
+core_cobjs += arch/dreamcast/platform.o arch/dreamcast/render_fb.o
+core_cobjs += arch/dreamcast/audio.o arch/dreamcast/event.o
+core_cobjs += arch/dreamcast/render.o
+render_layer_software = 1
 endif
 
 #
@@ -207,7 +213,9 @@ ifeq (${BUILD_HELPSYS},1)
 core_cobjs += ${core_obj}/helpsys.o
 endif
 
-render_layer_software = 0
+ifeq (${BUILD_EXTRAM},1)
+core_cobjs += ${core_obj}/extmem.o
+endif
 
 ifeq (${BUILD_RENDER_SOFT},1)
 core_cobjs += ${core_obj}/render_soft.o
@@ -234,6 +242,7 @@ endif
 # Shader renderers (OGL>=2, OGLES=2)
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 core_cobjs += ${core_obj}/render_glsl.o
+render_layer_software = 1
 endif
 
 #
@@ -242,11 +251,7 @@ endif
 #
 ifeq (${BUILD_EGL},1)
 core_cobjs += ${core_obj}/render_egl.o
-core_ldflags := -lEGL ${core_ldflags}
-ifneq (${X11DIR},)
-core_flags += ${X11_CFLAGS}
-core_ldflags := ${X11_LDFLAGS} ${core_ldflags}
-endif
+core_ldflags += -lEGL
 endif
 
 # Overlay renderers
@@ -273,22 +278,19 @@ core_cobjs := ${core_obj}/render_layer.o ${core_cobjs}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
-core_cflags += -I${gdm2s3m_src}
-core_cxxflags += -I${gdm2s3m_src}
-core_cobjs += ${gdm2s3m_objs}
-core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
+core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug -DHAVE_INTTYPES_H
 core_cxxobjs += ${audio_obj}/audio_modplug.o ${libmodplug_objs}
 endif
 
 ifeq (${BUILD_MIKMOD},1)
 core_flags += ${MIKMOD_CFLAGS}
-core_ldflags := ${MIKMOD_LDFLAGS} ${core_ldflags}
+core_ldflags += ${MIKMOD_LDFLAGS}
 core_cobjs += ${audio_obj}/audio_mikmod.o
 endif
 
 ifeq (${BUILD_XMP},1)
 core_cflags += ${XMP_CFLAGS}
-core_ldflags := ${XMP_LDFLAGS} ${core_ldflags}
+core_ldflags += ${XMP_LDFLAGS}
 core_cobjs += ${audio_obj}/audio_xmp.o
 core_flags += ${libxmp_include}
 core_cobjs += ${libxmp_objs}
@@ -296,7 +298,7 @@ endif
 
 ifeq (${BUILD_OPENMPT},1)
 core_flags += ${OPENMPT_CFLAGS}
-core_ldflags := ${OPENMPT_LDFLAGS} ${core_ldflags}
+core_ldflags += ${OPENMPT_LDFLAGS}
 core_cobjs += ${audio_obj}/audio_openmpt.o
 endif
 
@@ -306,7 +308,7 @@ endif
 
 ifeq (${LIBPNG},1)
 core_flags += $(LIBPNG_CFLAGS) -DNEED_PNG_WRITE_SCREEN
-core_ldflags := $(LIBPNG_LDFLAGS) ${core_ldflags}
+core_ldflags += $(LIBPNG_LDFLAGS)
 core_cobjs += ${core_obj}/pngops.o
 endif
 
@@ -323,18 +325,21 @@ audio_cobjs := \
  ${audio_obj}/audio_pcs.o      \
  ${audio_obj}/audio_wav.o      \
  ${audio_obj}/ext.o            \
- ${audio_obj}/sampled_stream.o \
  ${audio_obj}/sfx.o
 
+audio_cxxobjs := \
+ ${audio_obj}/sampled_stream.o
+
 ifneq (${VORBIS},)
+core_flags += ${VORBIS_CFLAGS}
+core_ldflags += ${VORBIS_LDFLAGS}
 audio_cobjs += \
  ${audio_obj}/audio_vorbis.o
 endif
-
-core_flags += ${VORBIS_CFLAGS}
-core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
 endif
+
 core_cobjs += ${audio_cobjs}
+core_cxxobjs += ${audio_cxxobjs}
 else
 # The editor needs this for sfx_strs...
 ifeq (${BUILD_EDITOR},1)
@@ -361,7 +366,7 @@ endif
 
 else
 
-ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_3DS}),)
+ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_3DS},${BUILD_DJGPP},${BUILD_DREAMCAST}),)
 
 core_cobjs += ${core_obj}/platform_dummy.o
 
@@ -371,15 +376,21 @@ core_cobjs += ${core_obj}/platform_dummy.o
 # we must link pthread ourselves.
 #
 ifeq (${PTHREAD},1)
-core_ldflags := ${PTHREAD_LDFLAGS} ${core_ldflags}
+core_ldflags += ${PTHREAD_LDFLAGS}
 endif
 
 endif
 
 endif
 
-core_cflags := ${ZLIB_CFLAGS} ${core_cflags}
-core_ldflags := ${ZLIB_LDFLAGS} ${core_ldflags}
+# X11 (headers included by SDL_syswm.h).
+# Libraries are only required for EGL, pre-SDL2 clipboard (see editor).
+ifneq (${X11DIR},)
+core_flags += ${X11_CFLAGS}
+ifeq (${BUILD_EGL},1)
+core_ldflags += ${X11_LDFLAGS}
+endif
+endif
 
 ifeq (${BUILD_NETWORK},1)
 core_cobjs += ${network_obj}/sha256.o
@@ -396,10 +407,16 @@ mzx_objs += ${core_obj}/updater.o
 endif
 
 ifeq (${PLATFORM},amiga)
-core_ldflags := ${core_ldflags} -lnet
+core_ldflags += -lnet
 endif
 
 endif
+
+#
+# Append mandatory libraries last.
+#
+core_cflags := ${core_cflags} ${ZLIB_CFLAGS}
+core_ldflags := ${core_ldflags} ${ZLIB_LDFLAGS} -lm
 
 ifeq (${BUILD_DEBYTECODE},1)
 core_cobjs += ${core_obj}/rasm.o
@@ -411,6 +428,10 @@ endif
 # external libraries for MinGW and (particularly) Android builds.
 #
 ifneq (${core_cxxobjs},)
+# Exception: force C++ linking when building against sanitizers.
+ifneq (${SANITIZER},)
+LINK_CC := ${CXX}
+endif
 ifneq (${LINK_CC},${CXX})
 core_cxxobjs := ${core_obj}/nostdc++.o ${core_cxxobjs}
 endif
@@ -432,7 +453,7 @@ core_target := ${DSOPRE}core${DSOPOST}
 ${core_target}: ${core_objs}
 	$(if ${V},,@echo "  LINK    " $@)
 	${LINK_CC} ${DSOLDFLAGS} -o $@ ${core_objs} ${LDFLAGS} \
-	  ${DSOSONAME}$@ ${core_ldflags}
+	  ${DSOSONAME}$@ ${core_ldflags} ${ARCH_LIBS}
 
 core_target_clean:
 	$(if ${V},,@echo "  RM      " ${core_target} ${core_target}.debug)
@@ -465,13 +486,13 @@ endif
 ${mzx}: ${core_target} ${editor_target} ${mzx_objs}
 	$(if ${V},,@echo "  LINK    " ${mzx})
 ifeq (${BUILD_MODULAR},1)
-	${CC} ${mzx_objs} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
+	${LINK_CC} ${mzx_objs} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
 	  ${DSORPATH} -L. -lcore -leditor \
-	  ${mzx_ldflags}
+	  ${mzx_ldflags} ${ARCH_LIBS}
 else
 	${LINK_CC} ${mzx_objs} ${core_target} ${editor_target} \
 	  -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
-	  ${core_ldflags} ${editor_ldflags}
+	  ${core_ldflags} ${editor_ldflags} ${ARCH_LIBS}
 endif
 
 mzx_clean: editor_clean
@@ -501,11 +522,11 @@ endif
 ${mzxrun}: ${core_target} ${mzxrun_objs}
 	$(if ${V},,@echo "  LINK    " ${mzxrun})
 ifeq (${BUILD_MODULAR},1)
-	${CC} ${mzxrun_objs} -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
-	  ${DSORPATH} -L. -lcore ${mzxrun_ldflags}
+	${LINK_CC} ${mzxrun_objs} -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
+	  ${DSORPATH} -L. -lcore ${mzxrun_ldflags} ${ARCH_LIBS}
 else
 	${LINK_CC} ${mzxrun_objs} ${core_target} \
-	  -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${core_ldflags}
+	  -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${core_ldflags} ${ARCH_LIBS}
 endif
 
 else

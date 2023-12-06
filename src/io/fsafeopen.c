@@ -25,16 +25,29 @@
 #include <sys/stat.h>
 
 #include "fsafeopen.h"
-#include "dir.h"
 #include "path.h"
+#include "vio.h"
 
 #include "../util.h"
 
-#ifndef __WIN32__
+#if defined(CONFIG_3DS)
+// Enable hacks to reduce the number of filesystem operations on platforms
+// with extremely slow filesystem access.
+#define SLOW_FILESYSTEM_HACKS
+#endif
+
+#ifndef _WIN32
 #define ENABLE_DOS_COMPAT_TRANSLATIONS
 #endif
 
 #ifdef ENABLE_DOS_COMPAT_TRANSLATIONS
+#if defined(SLOW_FILESYSTEM_HACKS) || defined(_WIN32) || defined(CONFIG_DJGPP)
+// Skip the extra all caps/lower case checks, either because the current
+// platform will always be case-insensitive, or because they are slower than
+// just scanning the directory.
+#define NO_EXTRA_CASE_CHECKS
+#endif
+
 enum sfn_type
 {
   NOT_AN_SFN,
@@ -289,41 +302,49 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
 {
   int ret = -FSAFE_BRUTE_FORCE_FAILED;
   int dirlen = string - path;
-  struct mzx_dir wd;
+  vdir *wd;
   char *newpath;
 
-  newpath = cmalloc(PATH_BUF_LEN);
+  newpath = cmalloc(MAX_PATH);
 
   // prepend the working directory
-  snprintf(newpath, PATH_BUF_LEN, "./");
+  snprintf(newpath, MAX_PATH, "./");
 
   // copy everything sans last token
   if(dirlen > 0)
   {
-    if(dirlen + 2 >= PATH_BUF_LEN)
-      dirlen = PATH_BUF_LEN - 2;
+    if(dirlen + 2 >= MAX_PATH)
+      dirlen = MAX_PATH - 2;
     memcpy(newpath + 2, path, dirlen - 1);
     newpath[dirlen + 2 - 1] = 0;
   }
 
-  if(dir_open(&wd, newpath))
+  wd = vdir_open_ext(newpath, VDIR_FAST);
+  if(wd)
   {
     const char *string_cmp = string;
     char string_sfn[SFN_BUFFER_LEN];
     char newpath_sfn[SFN_BUFFER_LEN];
-    boolean string_is_wildcard_sfn = false;
     boolean has_sfn_match = false;
+    enum sfn_type type;
 
     // If the input path is a truncated SFN, it may need to be aggressively
     // checked against generated SFNs from files in the directory.
-    if(check_sfn && is_sfn(string, strlen(string)) == SFN_TRUNCATED)
+    type = is_sfn(string, strlen(string));
+    if(check_sfn && type == SFN_TRUNCATED)
     {
       memcpy(string_sfn, string, strlen(string) + 1);
-      string_is_wildcard_sfn = true;
       string_cmp = string_sfn;
     }
 
-    while(dir_get_next_entry(&wd, newpath, NULL))
+#ifdef CONFIG_DJGPP
+    if(type == NOT_AN_SFN)
+    {
+      get_sfn(string_sfn, SFN_BUFFER_LEN, string);
+    }
+#endif
+
+    while(vdir_read(wd, newpath, MAX_PATH, NULL))
     {
       // okay, we got something, but does it match?
       if(strcasecmp(string_cmp, newpath) == 0)
@@ -334,7 +355,23 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
       }
       else
 
-      if(string_is_wildcard_sfn)
+#ifdef CONFIG_DJGPP
+      // Is there a file matching the generated SFN for the requested LFN?
+      if(type == NOT_AN_SFN)
+      {
+        if(!strcasecmp(string_sfn, newpath))
+        {
+          trace("%s:%d: truncated LFN '%s' to '%s'\n",
+           __FILE__, __LINE__, string, newpath);
+          memcpy(string, newpath, strlen(newpath) + 1);
+          ret = FSAFE_SUCCESS;
+          break;
+        }
+      }
+      else
+#endif
+
+      if(type == SFN_TRUNCATED)
       {
         const char *newpath_cmp = get_sfn(newpath_sfn, SFN_BUFFER_LEN, newpath);
         if(!strcasecmp(string_cmp, newpath_cmp))
@@ -375,7 +412,7 @@ static int case5(char *path, size_t buffer_len, char *string, boolean check_sfn)
       }
     }
 
-    dir_close(&wd);
+    vdir_close(wd);
   }
 
   free(newpath);
@@ -410,8 +447,13 @@ static int match(char *path, size_t buffer_len)
         for(i = 0; i < 5; i++)
         {
           // check file
-          if(stat(path, &inode) == 0)
+          if(vstat(path, &inode) == 0)
             break;
+
+#ifdef NO_EXTRA_CASE_CHECKS
+          // Skip the "normal" cases.
+          i = 4;
+#endif
 
           // try normal cases, then try brute force
           switch(i)
@@ -448,8 +490,13 @@ static int match(char *path, size_t buffer_len)
       for(i = 0; i < 3; i++)
       {
         // check directory
-        if(stat(path, &inode) == 0)
+        if(vstat(path, &inode) == 0)
           break;
+
+#ifdef NO_EXTRA_CASE_CHECKS
+        // Skip the "normal" cases.
+        i = 2;
+#endif
 
         // try normal cases, then try brute force
         switch(i)
@@ -560,7 +607,7 @@ int fsafetranslate(const char *path, char *newpath, size_t buffer_len)
   if(ret == FSAFE_SUCCESS)
   {
     // see if file is already there
-    if(stat(newpath, &file_info) != 0)
+    if(vstat(newpath, &file_info) != 0)
     {
 #ifdef ENABLE_DOS_COMPAT_TRANSLATIONS
       // it isn't, so try harder..
@@ -568,7 +615,7 @@ int fsafetranslate(const char *path, char *newpath, size_t buffer_len)
       if(ret == FSAFE_SUCCESS)
       {
         // ..and update the stat information for the new path
-        if(stat(newpath, &file_info) != 0)
+        if(vstat(newpath, &file_info) != 0)
           ret = -FSAFE_MATCH_FAILED;
       }
       else
@@ -606,11 +653,11 @@ int fsafetranslate(const char *path, char *newpath, size_t buffer_len)
   return ret;
 }
 
-FILE *fsafeopen(const char *path, const char *mode)
+vfile *fsafeopen(const char *path, const char *mode)
 {
   char *newpath;
   int i, ret;
-  FILE *f;
+  vfile *f;
 
   newpath = cmalloc(MAX_PATH);
 
@@ -630,7 +677,9 @@ FILE *fsafeopen(const char *path, const char *mode)
       }
     }
   }
-  else if(ret < 0)
+  else
+
+  if(ret < 0)
   {
     // bad name, or security checks failed
     free(newpath);
@@ -638,7 +687,7 @@ FILE *fsafeopen(const char *path, const char *mode)
   }
 
   // _TRY_ opening the file
-  f = fopen_unsafe(newpath, mode);
+  f = vfopen_unsafe(newpath, mode);
   free(newpath);
   return f;
 }
@@ -652,6 +701,7 @@ FILE *fsafeopen(const char *path, const char *mode)
  * endings from the buffer, and should work at least until somebody invents
  * a new three byte string terminator ;-(
  */
+/*
 char *fsafegets(char *s, int size, FILE *stream)
 {
   char *ret = fgets(s, size, stream);
@@ -671,4 +721,4 @@ char *fsafegets(char *s, int size, FILE *stream)
 
   return ret;
 }
-
+*/

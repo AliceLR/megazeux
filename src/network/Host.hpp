@@ -23,12 +23,11 @@
 
 #include "../compat.h"
 #include "../configure.h"
-#include "../platform.h"
 
 #include "Socket.hpp"
 
+#include <stdint.h>
 #include <stdio.h> // for FILE
-#include <string>
 
 enum host_type
 {
@@ -87,7 +86,7 @@ private:
   int af;
   int sockfd;
   int proto;
-  Uint32 timeout_ms;
+  uint32_t timeout_ms;
 
 protected:
   // TODO send_callback
@@ -215,7 +214,7 @@ public:
    *
    * @param timeout_ms  Timeout (in ms).
    */
-  void set_timeout_ms(Uint32 timeout_ms);
+  void set_timeout_ms(uint32_t timeout_ms);
 
   /**
    * Set send/recv callbacks which will be called (potentially many times) as
@@ -298,7 +297,7 @@ public:
    * @return <0 if there was a failure, 0 if there was no activity,
    *         or a >0 bitmask of event flags indicating the type(s) of activity.
    */
-  int poll(int flags, Uint32 timeout_ms);
+  int poll(int flags, uint32_t timeout_ms);
 
   /**
    * Check if a poll() result is an error.

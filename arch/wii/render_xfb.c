@@ -19,7 +19,6 @@
  */
 
 #include "../../src/graphics.h"
-#include "../../src/platform.h"
 #include "../../src/render.h"
 #include "../../src/render_layer.h"
 #include "../../src/renderers.h"
@@ -81,6 +80,7 @@ static boolean xfb_init_video(struct graphics_data *graphics,
   render_data = cmalloc(sizeof(struct xfb_render_data));
   graphics->render_data = render_data;
   graphics->ratio = conf->video_ratio;
+  graphics->bits_per_pixel = 16;
 
   VIDEO_Init();
 
@@ -127,12 +127,6 @@ static void xfb_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static boolean xfb_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
-{
-  return true;
-}
-
 static boolean xfb_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
@@ -140,9 +134,9 @@ static boolean xfb_set_video_mode(struct graphics_data *graphics,
 }
 
 static void xfb_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
-  Uint32 i;
+  unsigned int i;
 
   for(i = 0; i < count; i++)
   {
@@ -155,9 +149,9 @@ static void xfb_render_graph(struct graphics_data *graphics)
 {
   struct xfb_render_data *render_data = graphics->render_data;
   int mode = graphics->screen_mode;
-  Uint32 pitch = render_data->pitch;
-  Uint32 skip = render_data->skip;
-  Uint32 *pixels;
+  unsigned int pitch = render_data->pitch;
+  unsigned int skip = render_data->skip;
+  uint32_t *pixels;
 
   if(render_data->require_240p_mode)
   {
@@ -169,22 +163,22 @@ static void xfb_render_graph(struct graphics_data *graphics)
   {
     render_data->intermediate_active = false;
     pixels = render_data->xfb[render_data->current_xfb];
-    pixels += skip / sizeof(Uint32);
+    pixels += skip / sizeof(uint32_t);
   }
 
   if(!mode)
-    render_graph16((Uint16 *)pixels, pitch, graphics,
+    render_graph16((uint16_t *)pixels, pitch, graphics,
      yuy2_subsample_set_colors_mzx);
   else
-    render_graph16((Uint16 *)pixels, pitch, graphics, set_colors32[mode]);
+    render_graph16((uint16_t *)pixels, pitch, graphics, set_colors32[mode]);
 }
 
 static void xfb_render_layer(struct graphics_data *graphics,
  struct video_layer *layer)
 {
   struct xfb_render_data *render_data = graphics->render_data;
-  Uint32 pitch = render_data->pitch * 2;
-  Uint32 *pixels;
+  unsigned int pitch = render_data->pitch * 2;
+  uint32_t *pixels;
 
   render_data->intermediate_active = true;
   render_data->intermediate_bpp = 32;
@@ -193,16 +187,16 @@ static void xfb_render_layer(struct graphics_data *graphics,
   render_layer(pixels, 32, pitch, graphics, layer);
 }
 
-static void xfb_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void xfb_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   struct xfb_render_data *render_data = graphics->render_data;
-  Uint32 pitch = render_data->pitch;
-  Uint32 skip = render_data->skip;
-  Uint8 bpp = 16;
+  unsigned int pitch = render_data->pitch;
+  unsigned int skip = render_data->skip;
+  unsigned int bpp = 16;
 
-  Uint32 flatcolor = graphics->flat_intensity_palette[color];
-  Uint32 *pixels;
+  uint32_t flatcolor = graphics->flat_intensity_palette[color];
+  uint32_t *pixels;
 
   if(render_data->intermediate_active)
   {
@@ -217,23 +211,23 @@ static void xfb_render_cursor(struct graphics_data *graphics,
   else
   {
     pixels = render_data->xfb[render_data->current_xfb];
-    pixels += skip / sizeof(Uint32);
+    pixels += skip / sizeof(uint32_t);
   }
 
   render_cursor(pixels, pitch, bpp, x, y, flatcolor, lines, offset);
 }
 
 static void xfb_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   struct xfb_render_data *render_data = graphics->render_data;
-  Uint32 pitch = render_data->pitch;
-  Uint32 skip = render_data->skip;
-  Uint8 bpp = 16;
-  Uint32 *pixels;
+  unsigned int pitch = render_data->pitch;
+  unsigned int skip = render_data->skip;
+  unsigned int bpp = 16;
+  uint32_t *pixels;
 
-  Uint32 mask = 0xFFFFFFFF;
-  Uint32 alpha_mask = 0x0;
+  uint32_t mask = 0xFFFFFFFF;
+  uint32_t alpha_mask = 0x0;
 
   if(render_data->intermediate_active)
   {
@@ -248,7 +242,7 @@ static void xfb_render_mouse(struct graphics_data *graphics,
   else
   {
     pixels = render_data->xfb[render_data->current_xfb];
-    pixels += skip / sizeof(Uint32);
+    pixels += skip / sizeof(uint32_t);
   }
 
   render_mouse(pixels, pitch, bpp, x, y, mask, alpha_mask, w, h);
@@ -258,21 +252,21 @@ static void xfb_render_mouse(struct graphics_data *graphics,
 #define Y2_MASK YUY2_Y2_MASK
 #define UV_MASK YUY2_UV_MASK
 
-static inline Uint32 yuy_mix_x(Uint32 a, Uint32 b)
+static inline uint32_t yuy_mix_x(uint32_t a, uint32_t b)
 {
   // Mixing two pixels horizontally. Keep Y values but average the UV values.
-  Uint32 y1 = (a & Y1_MASK);
-  Uint32 y2 = (b & Y2_MASK);
-  Uint32 uv = (((a & UV_MASK) / 2) + ((b & UV_MASK) / 2)) & UV_MASK;
+  uint32_t y1 = (a & Y1_MASK);
+  uint32_t y2 = (b & Y2_MASK);
+  uint32_t uv = (((a & UV_MASK) / 2) + ((b & UV_MASK) / 2)) & UV_MASK;
   return y1 | y2 | uv;
 }
 
-static inline Uint32 yuy_mix_y(Uint32 a, Uint32 b)
+static inline uint32_t yuy_mix_y(uint32_t a, uint32_t b)
 {
   // Mixing two pixels vertically. Average all components.
-  Uint32 y1 = (((a & Y1_MASK) / 2) + ((b & Y1_MASK) / 2)) & Y1_MASK;
-  Uint32 y2 = (((a & Y2_MASK) / 2) + ((b & Y2_MASK) / 2)) & Y2_MASK;
-  Uint32 uv = (((a & UV_MASK) / 2) + ((b & UV_MASK) / 2)) & UV_MASK;
+  uint32_t y1 = (((a & Y1_MASK) / 2) + ((b & Y1_MASK) / 2)) & Y1_MASK;
+  uint32_t y2 = (((a & Y2_MASK) / 2) + ((b & Y2_MASK) / 2)) & Y2_MASK;
+  uint32_t uv = (((a & UV_MASK) / 2) + ((b & UV_MASK) / 2)) & UV_MASK;
   return y1 | y2 | uv;
 }
 
@@ -370,7 +364,6 @@ void render_xfb_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = xfb_init_video;
   renderer->free_video = xfb_free_video;
-  renderer->check_video_mode = xfb_check_video_mode;
   renderer->set_video_mode = xfb_set_video_mode;
   renderer->update_colors = xfb_update_colors;
   renderer->resize_screen = resize_screen_standard;

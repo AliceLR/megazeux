@@ -45,7 +45,7 @@ struct ctr_shader_data
 
 struct ctr_layer
 {
-  Uint32 w, h, mode;
+  unsigned int w, h, mode;
   float z;
   int draw_order;
   boolean has_background_texture;
@@ -376,6 +376,7 @@ static boolean ctr_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   static struct ctr_render_data render_data;
+  unsigned int bits_per_pixel = 16;
 
 #ifdef RDR_DEBUG
   consoleInit(GFX_TOP, NULL);
@@ -391,8 +392,11 @@ static boolean ctr_init_video(struct graphics_data *graphics,
   render_data.rendering_frame = false;
   render_data.checked_frame = false;
 
+  if(conf->force_bpp == 32)
+    bits_per_pixel = conf->force_bpp;
+
   // 1024x512 is the smallest power of two texture which can fit a 640x350 playfield
-  if (conf->force_bpp == 32)
+  if(bits_per_pixel == 32)
     C3D_TexInitVRAM(&render_data.playfield_tex, 1024, 512, GPU_RGBA8);
   else
     C3D_TexInitVRAM(&render_data.playfield_tex, 1024, 512, GPU_RGB565);
@@ -484,7 +488,7 @@ static boolean ctr_init_video(struct graphics_data *graphics,
   C3D_DepthTest(false, GPU_GEQUAL, GPU_WRITE_ALL);
 
   graphics->allow_resize = 0;
-  graphics->bits_per_pixel = 32;
+  graphics->bits_per_pixel = bits_per_pixel;
 
   graphics->resolution_width = 640;
   graphics->resolution_height = 350;
@@ -516,12 +520,6 @@ static void ctr_free_video(struct graphics_data *graphics)
   C3D_Fini();
 }
 
-static boolean ctr_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
-{
-  return true;
-}
-
 static boolean ctr_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize)
 {
@@ -529,9 +527,9 @@ static boolean ctr_set_video_mode(struct graphics_data *graphics, int width,
 }
 
 static void ctr_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
-  Uint32 i;
+  unsigned int i;
 
   for(i = 0; i < count; i++)
   {
@@ -596,8 +594,8 @@ static inline void ctr_char_line_to_texture(
   p3[2] = bitmask_smzx[3][ch_low];
 }
 
-static void ctr_remap_char_range(struct graphics_data *graphics, Uint16 first,
- Uint16 count)
+static void ctr_remap_char_range(struct graphics_data *graphics, uint16_t first,
+ uint16_t count)
 {
   struct ctr_render_data *render_data = (struct ctr_render_data *) graphics->render_data;
   u16 end = first + count;
@@ -624,7 +622,7 @@ static void ctr_remap_char_range(struct graphics_data *graphics, Uint16 first,
   render_data->charset_dirty_set = 1;
 }
 
-static void ctr_remap_char(struct graphics_data *graphics, Uint16 chr)
+static void ctr_remap_char(struct graphics_data *graphics, uint16_t chr)
 {
   struct ctr_render_data *render_data = (struct ctr_render_data *) graphics->render_data;
   u16 tex_row = ctr_get_char_texture_row(chr);
@@ -641,8 +639,8 @@ static void ctr_remap_char(struct graphics_data *graphics, Uint16 chr)
   render_data->charset_dirty_set = 1;
 }
 
-static void ctr_remap_charbyte(struct graphics_data *graphics, Uint16 chr,
- Uint8 byte)
+static void ctr_remap_charbyte(struct graphics_data *graphics, uint16_t chr,
+ uint8_t byte)
 {
   struct ctr_render_data *render_data = (struct ctr_render_data *) graphics->render_data;
   u16 tex_row = ctr_get_char_texture_row(chr);
@@ -1036,11 +1034,11 @@ static void ctr_render_layer(struct graphics_data *graphics,
   render_data->layer_num++;
 }
 
-static void ctr_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void ctr_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   struct ctr_render_data *render_data = (struct ctr_render_data *) graphics->render_data;
-  Uint32 flatcolor = graphics->flat_intensity_palette[color];
+  uint32_t flatcolor = graphics->flat_intensity_palette[color];
 
   if(ctr_should_render(render_data))
   {
@@ -1050,10 +1048,10 @@ static void ctr_render_cursor(struct graphics_data *graphics,
 }
 
 static void ctr_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   struct ctr_render_data *render_data = (struct ctr_render_data *) graphics->render_data;
-  Uint32 col = 0xFFFFFFFF;
+  uint32_t col = 0xFFFFFFFF;
 
   if(ctr_should_render(render_data))
   {
@@ -1172,7 +1170,8 @@ static void ctr_sync_screen(struct graphics_data *graphics)
   render_data->checked_frame = false;
 }
 
-static void ctr_focus_pixel(struct graphics_data *graphics, Uint32 x, Uint32 y)
+static void ctr_focus_pixel(struct graphics_data *graphics,
+ unsigned int x, unsigned int y)
 {
   struct ctr_render_data *render_data = (struct ctr_render_data *) graphics->render_data;
 
@@ -1181,7 +1180,7 @@ static void ctr_focus_pixel(struct graphics_data *graphics, Uint32 x, Uint32 y)
     case FOCUS_FORBID:
       return;
     case FOCUS_ALLOW:
-      if (render_data->last_focus_x != x || render_data->last_focus_y != y)
+      if(render_data->last_focus_x != x || render_data->last_focus_y != y)
       {
         render_data->last_focus_x = x;
         render_data->last_focus_y = y;
@@ -1201,7 +1200,6 @@ void render_ctr_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = ctr_init_video;
   renderer->free_video = ctr_free_video;
-  renderer->check_video_mode = ctr_check_video_mode;
   renderer->set_video_mode = ctr_set_video_mode;
   renderer->update_colors = ctr_update_colors;
   renderer->resize_screen = resize_screen_standard;

@@ -36,7 +36,7 @@
 
 
 static int save_board_info(struct board *cur_board, struct zip_archive *zp,
- int savegame, int file_version, const char *name)
+ int savegame, int file_version, int world_version, const char *name)
 {
   const char *tmp;
   char *buffer;
@@ -44,16 +44,15 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
   int result;
 
   size_t size = BOARD_PROPS_SIZE;
-  int length;
 
   if(savegame)
     size += BOARD_SAVE_PROPS_SIZE;
 
   buffer = cmalloc(size);
 
-  mfopen(buffer, size, &mf);
+  mfopen_wr(buffer, size, &mf);
 
-  save_prop_s(BPROP_BOARD_NAME, cur_board->board_name, BOARD_NAME_SIZE, 1, &mf);
+  save_prop_s_293(BPROP_BOARD_NAME, cur_board->board_name, BOARD_NAME_SIZE, &mf);
   save_prop_w(BPROP_BOARD_WIDTH, cur_board->board_width, &mf);
   save_prop_w(BPROP_BOARD_HEIGHT, cur_board->board_height, &mf);
   save_prop_c(BPROP_OVERLAY_MODE, cur_board->overlay_mode, &mf);
@@ -62,8 +61,7 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
   save_prop_c(BPROP_NUM_SENSORS, cur_board->num_sensors, &mf);
   save_prop_w(BPROP_FILE_VERSION, file_version, &mf);
 
-  length = strlen(cur_board->mod_playing);
-  save_prop_s(BPROP_MOD_PLAYING, cur_board->mod_playing, length, 1, &mf);
+  save_prop_s(BPROP_MOD_PLAYING, cur_board->mod_playing, &mf);
   save_prop_c(BPROP_VIEWPORT_X, cur_board->viewport_x, &mf);
   save_prop_c(BPROP_VIEWPORT_Y, cur_board->viewport_y, &mf);
   save_prop_c(BPROP_VIEWPORT_WIDTH, cur_board->viewport_width, &mf);
@@ -91,12 +89,10 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
   save_prop_c(BPROP_RESET_ON_ENTRY, cur_board->reset_on_entry, &mf);
 
   tmp = cur_board->charset_path ? cur_board->charset_path : "";
-  length = strlen(tmp);
-  save_prop_s(BPROP_CHARSET_PATH, tmp, length, 1, &mf);
+  save_prop_s(BPROP_CHARSET_PATH, tmp, &mf);
 
   tmp = cur_board->palette_path ? cur_board->palette_path : "";
-  length = strlen(tmp);
-  save_prop_s(BPROP_PALETTE_PATH, tmp, length, 1, &mf);
+  save_prop_s(BPROP_PALETTE_PATH, tmp, &mf);
 
   if(savegame)
   {
@@ -111,17 +107,25 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
     save_prop_d(BPROP_INPUT_SIZE, cur_board->input_size, &mf);
 
     tmp = cur_board->input_string ? cur_board->input_string : "";
-    length = strlen(tmp);
-    save_prop_s(BPROP_INPUT_STRING, tmp, length, 1, &mf);
+    save_prop_s(BPROP_INPUT_STRING, tmp, &mf);
 
-    length = strlen(cur_board->bottom_mesg);
-    save_prop_s(BRPOP_BOTTOM_MESG, cur_board->bottom_mesg, length, 1, &mf);
+    save_prop_s(BRPOP_BOTTOM_MESG, cur_board->bottom_mesg, &mf);
     save_prop_c(BPROP_BOTTOM_MESG_TIMER, cur_board->b_mesg_timer, &mf);
     save_prop_c(BPROP_BOTTOM_MESG_ROW, cur_board->b_mesg_row, &mf);
     save_prop_c(BPROP_BOTTOM_MESG_COL, cur_board->b_mesg_col, &mf);
     save_prop_c(BPROP_VOLUME, cur_board->volume, &mf);
     save_prop_c(BPROP_VOLUME_INC, cur_board->volume_inc, &mf);
     save_prop_c(BPROP_VOLUME_TARGET, cur_board->volume_target, &mf);
+
+    // Don't bother saving these compatibility fields unless they're needed.
+    if(file_version >= V293 && world_version < V200)
+    {
+      save_prop_c(BPROP_BLIND_DUR, cur_board->blind_dur_v1, &mf);
+      save_prop_c(BPROP_FIREWALKER_DUR, cur_board->firewalker_dur_v1, &mf);
+      save_prop_c(BPROP_FREEZE_TIME_DUR, cur_board->freeze_time_dur_v1, &mf);
+      save_prop_c(BPROP_SLOW_TIME_DUR, cur_board->slow_time_dur_v1, &mf);
+      save_prop_c(BPROP_WIND_DUR, cur_board->wind_dur_v1, &mf);
+    }
   }
 
   save_prop_eof(&mf);
@@ -144,7 +148,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
 
   sprintf(name, "b%2.2X", (unsigned char)board_id);
 
-  if(save_board_info(cur_board, zp, savegame, file_version, name))
+  if(save_board_info(cur_board, zp, savegame, file_version, mzx_world->version, name))
     goto err;
 
   sprintf(name+3, "bid");
@@ -219,7 +223,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
       if(cur_scroll)
       {
         sprintf(name+5, "%2.2X", (unsigned char) i);
-        save_scroll(cur_scroll, zp, name);
+        save_scroll(cur_scroll, zp, file_version, name);
       }
     }
   }
@@ -236,7 +240,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
       if(cur_sensor)
       {
         sprintf(name+5, "%2.2X", (unsigned char) i);
-        save_sensor(cur_sensor, zp, name);
+        save_sensor(cur_sensor, zp, file_version, name);
       }
     }
   }
@@ -301,8 +305,13 @@ static void default_board(struct board *cur_board)
   cur_board->b_mesg_timer = 0;
   cur_board->b_mesg_row = 24;
   cur_board->b_mesg_col = -1;
+  cur_board->blind_dur_v1 = 0;
+  cur_board->firewalker_dur_v1 = 0;
+  cur_board->freeze_time_dur_v1 = 0;
+  cur_board->slow_time_dur_v1 = 0;
+  cur_board->wind_dur_v1 = 0;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(CONFIG_EXTRAM)
   cur_board->is_extram = false;
 #endif
 }
@@ -408,12 +417,14 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
   size_t actual_size;
   struct memfile mf;
   struct memfile prop;
+  int info_file_version;
   int last_ident = -1;
   int ident;
   int size;
   int v;
 
-  zip_get_next_uncompressed_size(zp, &actual_size);
+  if(zip_get_next_uncompressed_size(zp, &actual_size) != ZIP_SUCCESS)
+    return -1;
 
   buffer = cmalloc(actual_size);
 
@@ -431,55 +442,62 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
       // Essential
       case BPROP_BOARD_NAME:
-        size = MIN(size, BOARD_NAME_SIZE);
+        size = MIN(size, BOARD_NAME_SIZE - 1);
         mfread(cur_board->board_name, size, 1, &prop);
-        cur_board->board_name[BOARD_NAME_SIZE - 1] = 0;
+        cur_board->board_name[size] = 0;
         break;
 
       case BPROP_BOARD_WIDTH:
         err_if_missing(BPROP_BOARD_NAME);
-        cur_board->board_width = load_prop_int(size, &prop);
-        if(cur_board->board_width < 1)
+        cur_board->board_width = load_prop_int(&prop);
+        if(cur_board->board_width < 1 || cur_board->board_width > 32767)
           goto err_free;
         break;
 
       case BPROP_BOARD_HEIGHT:
         err_if_missing(BPROP_BOARD_WIDTH);
-        cur_board->board_height = load_prop_int(size, &prop);
-        if(cur_board->board_height < 1)
+        cur_board->board_height = load_prop_int(&prop);
+        if(cur_board->board_height < 1 || cur_board->board_height > 32767)
           goto err_free;
         break;
 
       case BPROP_OVERLAY_MODE:
         err_if_missing(BPROP_BOARD_HEIGHT);
-        v = load_prop_int(size, &prop);
-        cur_board->overlay_mode = CLAMP(v, 0, 3);
+        cur_board->overlay_mode =
+         load_prop_int_u(&prop, OVERLAY_OFF, OVERLAY_TRANSPARENT);
         break;
 
       case BPROP_NUM_ROBOTS:
         err_if_missing(BPROP_OVERLAY_MODE);
-        v = load_prop_int(size, &prop) & 0xFF;
+        v = load_prop_int_u(&prop, 0, 255);
         cur_board->num_robots = v;
         cur_board->num_robots_allocated = v;
         break;
 
       case BPROP_NUM_SCROLLS:
         err_if_missing(BPROP_NUM_ROBOTS);
-        v = load_prop_int(size, &prop) & 0xFF;
+        v = load_prop_int_u(&prop, 0, 255);
         cur_board->num_scrolls = v;
         cur_board->num_scrolls_allocated = v;
         break;
 
       case BPROP_NUM_SENSORS:
         err_if_missing(BPROP_NUM_SCROLLS);
-        v = load_prop_int(size, &prop) & 0xFF;
+        v = load_prop_int_u(&prop, 0, 255);
         cur_board->num_sensors = v;
         cur_board->num_sensors_allocated = v;
         break;
 
       case BPROP_FILE_VERSION:
         err_if_missing(BPROP_NUM_SENSORS);
-        *file_version = load_prop_int(size, &prop);
+        info_file_version = load_prop_int(&prop);
+        // Rearchived worlds may contain boards from older verisons, so just
+        // let version mismatches pass through. This will override the file
+        // version for this board and its components only.
+        if(info_file_version < V290 || info_file_version > MZX_VERSION)
+          goto err_free;
+
+        *file_version = info_file_version;
         break;
 
 
@@ -491,111 +509,107 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
         break;
 
       case BPROP_VIEWPORT_X:
-        v = load_prop_int(size, &prop);
-        cur_board->viewport_x = CLAMP(v, 0, 79);
+        cur_board->viewport_x = load_prop_int_u(&prop, 0, 79);
         break;
 
       case BPROP_VIEWPORT_Y:
-        v = load_prop_int(size, &prop);
-        cur_board->viewport_y = CLAMP(v, 0, 24);
+        cur_board->viewport_y = load_prop_int_u(&prop, 0, 24);
         break;
 
       case BPROP_VIEWPORT_WIDTH:
-        v = load_prop_int(size, &prop);
-        v = CLAMP(v, 1, 80 - cur_board->viewport_x);
-        v = CLAMP(v, 1, cur_board->board_width);
-        cur_board->viewport_width = v;
+        cur_board->viewport_width = load_prop_int_u(&prop, 1, 80);
         break;
 
       case BPROP_VIEWPORT_HEIGHT:
-        v = load_prop_int(size, &prop);
-        v = CLAMP(v, 1, 25 - cur_board->viewport_y);
-        v = CLAMP(v, 1, cur_board->board_height);
-        cur_board->viewport_height = v;
+        cur_board->viewport_height = load_prop_int_u(&prop, 1, 25);
         break;
 
       case BPROP_CAN_SHOOT:
-        cur_board->can_shoot = load_prop_int(size, &prop);
+        cur_board->can_shoot = load_prop_boolean(&prop);
         break;
 
       case BPROP_CAN_BOMB:
-        cur_board->can_bomb = load_prop_int(size, &prop);
+        cur_board->can_bomb = load_prop_boolean(&prop);
         break;
 
       case BPROP_FIRE_BURN_BROWN:
-        cur_board->fire_burn_brown = load_prop_int(size, &prop);
+        cur_board->fire_burn_brown = load_prop_boolean(&prop);
         break;
 
       case BPROP_FIRE_BURN_SPACE:
-        cur_board->fire_burn_space = load_prop_int(size, &prop);
+        cur_board->fire_burn_space = load_prop_boolean(&prop);
         break;
 
       case BPROP_FIRE_BURN_FAKES:
-        cur_board->fire_burn_fakes = load_prop_int(size, &prop);
+        cur_board->fire_burn_fakes = load_prop_boolean(&prop);
         break;
 
       case BPROP_FIRE_BURN_TREES:
-        cur_board->fire_burn_trees = load_prop_int(size, &prop);
+        cur_board->fire_burn_trees = load_prop_boolean(&prop);
         break;
 
       case BPROP_EXPLOSIONS_LEAVE:
-        cur_board->explosions_leave = load_prop_int(size, &prop);
+        cur_board->explosions_leave =
+         load_prop_int_u(&prop, EXPL_LEAVE_SPACE, EXPL_LEAVE_FIRE);
         break;
 
       case BPROP_SAVE_MODE:
-        cur_board->save_mode = load_prop_int(size, &prop);
+        cur_board->save_mode =
+         load_prop_int_u(&prop, CAN_SAVE, CAN_SAVE_ON_SENSOR);
         break;
 
       case BPROP_FOREST_BECOMES:
-        cur_board->forest_becomes = load_prop_int(size, &prop);
+        cur_board->forest_becomes =
+         load_prop_int_u(&prop, FOREST_TO_EMPTY, FOREST_TO_FLOOR);
         break;
 
       case BPROP_COLLECT_BOMBS:
-        cur_board->collect_bombs = load_prop_int(size, &prop);
+        cur_board->collect_bombs = load_prop_boolean(&prop);
         break;
 
       case BPROP_FIRE_BURNS:
-        cur_board->fire_burns = load_prop_int(size, &prop);
+        cur_board->fire_burns =
+         load_prop_int_u(&prop, FIRE_BURNS_LIMITED, FIRE_BURNS_FOREVER);
         break;
 
       case BPROP_BOARD_N:
-        cur_board->board_dir[0] = load_prop_int(size, &prop);
+        cur_board->board_dir[0] = load_prop_int_u(&prop, 0, NO_BOARD);
         break;
 
       case BPROP_BOARD_S:
-        cur_board->board_dir[1] = load_prop_int(size, &prop);
+        cur_board->board_dir[1] = load_prop_int_u(&prop, 0, NO_BOARD);
         break;
 
       case BPROP_BOARD_E:
-        cur_board->board_dir[2] = load_prop_int(size, &prop);
+        cur_board->board_dir[2] = load_prop_int_u(&prop, 0, NO_BOARD);
         break;
 
       case BPROP_BOARD_W:
-        cur_board->board_dir[3] = load_prop_int(size, &prop);
+        cur_board->board_dir[3] = load_prop_int_u(&prop, 0, NO_BOARD);
         break;
 
       case BPROP_RESTART_IF_ZAPPED:
-        cur_board->restart_if_zapped = load_prop_int(size, &prop);
+        cur_board->restart_if_zapped = load_prop_boolean(&prop);
         break;
 
       case BPROP_TIME_LIMIT:
-        cur_board->time_limit = load_prop_int(size, &prop);
+        cur_board->time_limit = load_prop_int(&prop);
         break;
 
       case BPROP_PLAYER_NS_LOCKED:
-        cur_board->player_ns_locked = load_prop_int(size, &prop);
+        cur_board->player_ns_locked = load_prop_boolean(&prop);
         break;
 
       case BPROP_PLAYER_EW_LOCKED:
-        cur_board->player_ew_locked = load_prop_int(size, &prop);
+        cur_board->player_ew_locked = load_prop_boolean(&prop);
         break;
 
       case BPROP_PLAYER_ATTACK_LOCKED:
-        cur_board->player_attack_locked = load_prop_int(size, &prop);
+        cur_board->player_attack_locked = load_prop_boolean(&prop);
         break;
 
       case BPROP_RESET_ON_ENTRY:
-        cur_board->reset_on_entry = load_prop_int(size, &prop);
+        cur_board->reset_on_entry = load_prop_boolean(&prop);
         break;
 
       case BPROP_CHARSET_PATH:
@@ -611,39 +625,39 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
       // Savegame only
       case BPROP_SCROLL_X:
-        cur_board->scroll_x = (signed short) load_prop_int(size, &prop);
+        cur_board->scroll_x = load_prop_int_s(&prop, -32768, 32767);
         break;
 
       case BPROP_SCROLL_Y:
-        cur_board->scroll_y = (signed short) load_prop_int(size, &prop);
+        cur_board->scroll_y = load_prop_int_s(&prop, -32768, 32767);
         break;
 
       case BPROP_LOCKED_X:
-        cur_board->locked_x = (signed short) load_prop_int(size, &prop);
+        cur_board->locked_x = load_prop_int_s(&prop, -1, 32767);
         break;
 
       case BPROP_LOCKED_Y:
-        cur_board->locked_y = (signed short) load_prop_int(size, &prop);
+        cur_board->locked_y = load_prop_int_s(&prop, -1, 32767);
         break;
 
       case BPROP_PLAYER_LAST_DIR:
-        cur_board->player_last_dir = load_prop_int(size, &prop);
+        cur_board->player_last_dir = load_prop_int_u(&prop, 0, 255);
         break;
 
       case BPROP_LAZWALL_START:
-        cur_board->lazwall_start = load_prop_int(size, &prop);
+        cur_board->lazwall_start = load_prop_int(&prop);
         break;
 
       case BPROP_LAST_KEY:
-        cur_board->last_key = load_prop_int(size, &prop);
+        cur_board->last_key = load_prop_int(&prop);
         break;
 
       case BPROP_NUM_INPUT:
-        cur_board->num_input = load_prop_int(size, &prop);
+        cur_board->num_input = load_prop_int(&prop);
         break;
 
       case BPROP_INPUT_SIZE:
-        cur_board->input_size = load_prop_int(size, &prop);
+        cur_board->input_size = load_prop_int(&prop);
         break;
 
       case BPROP_INPUT_STRING:
@@ -658,27 +672,52 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
         break;
 
       case BPROP_BOTTOM_MESG_TIMER:
-        cur_board->b_mesg_timer = load_prop_int(size, &prop);
+        cur_board->b_mesg_timer = load_prop_int(&prop);
         break;
 
       case BPROP_BOTTOM_MESG_ROW:
-        cur_board->b_mesg_row = load_prop_int(size, &prop);
+        cur_board->b_mesg_row = load_prop_int_u(&prop, 0, 24);
         break;
 
       case BPROP_BOTTOM_MESG_COL:
-        cur_board->b_mesg_col = (signed char) load_prop_int(size, &prop);
+        cur_board->b_mesg_col = load_prop_int_s(&prop, -1, 79);
         break;
 
       case BPROP_VOLUME:
-        cur_board->volume = load_prop_int(size, &prop);
+        cur_board->volume = load_prop_int_u(&prop, 0, 255);
         break;
 
       case BPROP_VOLUME_INC:
-        cur_board->volume_inc = load_prop_int(size, &prop);
+        cur_board->volume_inc = load_prop_int_u(&prop, 0, 255);
         break;
 
       case BPROP_VOLUME_TARGET:
-        cur_board->volume_target = load_prop_int(size, &prop);
+        cur_board->volume_target = load_prop_int_u(&prop, 0, 255);
+        break;
+
+      case BPROP_BLIND_DUR:
+        if(*file_version >= V293)
+          cur_board->blind_dur_v1 = load_prop_int_u(&prop, 0, 255);
+        break;
+
+      case BPROP_FIREWALKER_DUR:
+        if(*file_version >= V293)
+          cur_board->firewalker_dur_v1 = load_prop_int_u(&prop, 0, 255);
+        break;
+
+      case BPROP_FREEZE_TIME_DUR:
+        if(*file_version >= V293)
+          cur_board->freeze_time_dur_v1 = load_prop_int_u(&prop, 0, 255);
+        break;
+
+      case BPROP_SLOW_TIME_DUR:
+        if(*file_version >= V293)
+          cur_board->slow_time_dur_v1 = load_prop_int_u(&prop, 0, 255);
+        break;
+
+      case BPROP_WIND_DUR:
+        if(*file_version >= V293)
+          cur_board->wind_dur_v1 = load_prop_int_u(&prop, 0, 255);
         break;
 
       default:
@@ -693,6 +732,12 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
   if(size <= 0 || size > MAX_BOARD_SIZE)
     goto err_free;
+
+  // Fix viewport width/height (these might have been out-of-order).
+  cur_board->viewport_width  = CLAMP(cur_board->viewport_width, 1, 80 - cur_board->viewport_x);
+  cur_board->viewport_width  = CLAMP(cur_board->viewport_width, 1, cur_board->board_width);
+  cur_board->viewport_height = CLAMP(cur_board->viewport_height, 1, 25 - cur_board->viewport_y);
+  cur_board->viewport_height = CLAMP(cur_board->viewport_height, 1, cur_board->board_height);
 
   free(buffer);
   return 0;
@@ -748,15 +793,14 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
   default_board(cur_board);
 
-  while(ZIP_SUCCESS ==
-   zip_get_next_prop(zp, &file_id, &board_id_read, &robot_id_read))
+  while(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &file_id, &board_id_read, &robot_id_read))
   {
     if(board_id_read != board_id)
       break;
 
     switch(file_id)
     {
-      case FPROP_BOARD_INFO:
+      case FILE_ID_BOARD_INFO:
       {
         if(load_board_info(cur_board, zp, savegame, &file_version))
           goto err_invalid;
@@ -798,7 +842,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_BID:
+      case FILE_ID_BOARD_BID:
       {
         if(!has_base)
           goto err_invalid;
@@ -808,7 +852,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_BPR:
+      case FILE_ID_BOARD_BPR:
       {
         if(!has_base)
           goto err_invalid;
@@ -818,7 +862,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_BCO:
+      case FILE_ID_BOARD_BCO:
       {
         if(!has_base)
           goto err_invalid;
@@ -828,7 +872,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_UID:
+      case FILE_ID_BOARD_UID:
       {
         if(!has_base)
           goto err_invalid;
@@ -838,7 +882,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_UPR:
+      case FILE_ID_BOARD_UPR:
       {
         if(!has_base)
           goto err_invalid;
@@ -848,7 +892,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_UCO:
+      case FILE_ID_BOARD_UCO:
       {
         if(!has_base)
           goto err_invalid;
@@ -858,7 +902,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_OCH:
+      case FILE_ID_BOARD_OCH:
       {
         if(!has_base)
           goto err_invalid;
@@ -876,7 +920,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_BOARD_OCO:
+      case FILE_ID_BOARD_OCO:
       {
         if(!has_base)
           goto err_invalid;
@@ -894,7 +938,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_ROBOT:
+      case FILE_ID_ROBOT:
       {
         if(!has_base)
           goto err_invalid;
@@ -917,7 +961,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_SCROLL:
+      case FILE_ID_SCROLL:
       {
         if(!has_base)
           goto err_invalid;
@@ -933,7 +977,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
       }
 
-      case FPROP_SENSOR:
+      case FILE_ID_SENSOR:
       {
         if(!has_base)
           goto err_invalid;

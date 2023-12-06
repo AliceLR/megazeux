@@ -31,6 +31,7 @@
 #include "util.h"
 #include "window.h"
 #include "world.h"
+#include "io/vio.h"
 
 static char *help;
 
@@ -38,7 +39,7 @@ void help_open(struct world *mzx_world, const char *file_name)
 {
   if(file_name)
   {
-    mzx_world->help_file = fopen_unsafe(file_name, "rb");
+    mzx_world->help_file = vfopen_unsafe(file_name, "rb");
     if(!mzx_world->help_file)
       return;
 
@@ -50,7 +51,7 @@ void help_close(struct world *mzx_world)
 {
   if(mzx_world->help_file)
   {
-    fclose(mzx_world->help_file);
+    vfclose(mzx_world->help_file);
     mzx_world->help_file = NULL;
   }
 
@@ -70,25 +71,25 @@ void help_system(context *ctx, struct world *mzx_world)
 {
   char file[13], file2[13], label[13];
   int where, offs, size, t1, t2;
-  FILE *fp;
+  vfile *vf;
 
-  fp = mzx_world->help_file;
-  if(!fp)
+  vf = mzx_world->help_file;
+  if(!vf)
     return;
 
-  rewind(fp);
-  t1 = fgetw(fp);
-  fseek(fp, t1 * 21 + 4 + get_context(ctx) * 12, SEEK_SET);
+  vrewind(vf);
+  t1 = vfgetw(vf);
+  vfseek(vf, t1 * 21 + 4 + get_context(ctx) * 12, SEEK_SET);
 
   // At proper context info
-  where = fgetd(fp);    // Where file to load is
-  size = fgetd(fp);     // Size of file to load
-  offs = fgetd(fp);     // Offset within file of link
+  where = vfgetd(vf);    // Where file to load is
+  size = vfgetd(vf);     // Size of file to load
+  offs = vfgetd(vf);     // Offset within file of link
 
   // Jump to file
-  fseek(fp, where, SEEK_SET);
+  vfseek(vf, where, SEEK_SET);
   // Read it in
-  size = fread(help, 1, size, fp);
+  size = vfread(help, 1, size, vf);
   // Display it
   cursor_off();
 
@@ -99,23 +100,23 @@ labelled:
   if(file[0])
   {
     // Yep. Search for file.
-    fseek(fp, 2, SEEK_SET);
+    vfseek(vf, 2, SEEK_SET);
     for(t2 = 0; t2 < t1; t2++)
     {
-      if(!fread(file2, 13, 1, fp))
+      if(!vfread(file2, 13, 1, vf))
         return;
       if(!strcmp(file, file2))
         break;
-      fseek(fp, 8, SEEK_CUR);
+      vfseek(vf, 8, SEEK_CUR);
     }
 
     if(t2 < t1)
     {
       // Found file.
-      where = fgetd(fp);
-      size = fgetd(fp);
-      fseek(fp, where, SEEK_SET);
-      size = fread(help, 1, size, fp);
+      where = vfgetd(vf);
+      size = vfgetd(vf);
+      vfseek(vf, where, SEEK_SET);
+      size = vfread(help, 1, size, vf);
 
       // Search for label
       for(t2 = 0; t2 < size; t2++)

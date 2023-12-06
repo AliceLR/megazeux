@@ -27,8 +27,7 @@ ARCH_LDFLAGS += -s ALLOW_MEMORY_GROWTH=1
 ARCH_LDFLAGS += -s MODULARIZE=1 -s 'EXTRA_EXPORTED_RUNTIME_METHODS=["FS"]'
 
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
-	ARCH_CFLAGS += -s FULL_ES2=1
-	ARCH_LDFLAGS += -s FULL_ES2=1
+ARCH_LDFLAGS += -s FULL_ES2=1
 endif
 
 ARCH_LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=1048576
@@ -36,7 +35,6 @@ ARCH_LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=1048576
 ARCH_LDFLAGS += -s ASYNCIFY_WHITELIST=@arch/emscripten/whitelist.json
 ARCH_LDFLAGS += -s 'ASYNCIFY_IMPORTS=["emscripten_sleep"]'
 
-ARCH_CFLAGS += -s ENVIRONMENT=web
 ARCH_LDFLAGS += -s ENVIRONMENT=web
 
 # Fix warnings caused by broken Emscripten macros.
@@ -71,7 +69,7 @@ all: emzip.js
 # NOTE: hack, core_obj and io_obj aren't defined yet...
 emzip_objs := \
   src/.build/util.o \
-  src/io/.build/vfile.o \
+  src/io/.build/vio.o \
   src/io/.build/zip.o \
   src/io/.build/zip_stream.o
 

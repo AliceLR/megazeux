@@ -23,6 +23,7 @@
 #include "../../src/util.h"
 
 #include <3ds.h>
+#include <stdint.h>
 
 #include "event.h"
 #include "keyboard.h"
@@ -52,24 +53,36 @@ boolean __update_event_status(void)
   return retval;
 }
 
+boolean __peek_exit_input(void)
+{
+  /* FIXME stub */
+  return false;
+}
+
 void __wait_event(void)
 {
   while(!__update_event_status())
     gspWaitForVBlank();
 }
 
+void __warp_mouse(int x, int y)
+{
+  // Since the touchscreen stylus can't be warped, focus there instead.
+  focus_pixel(x, y);
+}
+
 // Convert the 3DS axis ranges to the MZX axis ranges. The 3DS uses values in
-// (roughly) the -150 to 150 range, but MZX uses the full range of a Sint16.
+// (roughly) the -150 to 150 range, but MZX uses the full range of a int16_t.
 // The 3DS Y axis is also inverted from the typical axis direction, but that
 // is fixed in check_circle below.
-static inline Sint16 axis_convert(s16 value)
+static inline int16_t axis_convert(s16 value)
 {
   int new_value = ((int)value) * 32768 / 150;
-  return (Sint16)CLAMP(new_value, -32768, 32767);
+  return (int16_t)CLAMP(new_value, -32768, 32767);
 }
 
 static inline boolean check_circle(struct buffered_status *status,
- circlePosition *current, circlePosition *prev, Uint32 axis_x, Uint32 axis_y)
+ circlePosition *current, circlePosition *prev, int axis_x, int axis_y)
 {
   boolean rval = false;
 
@@ -90,7 +103,7 @@ static inline boolean check_circle(struct buffered_status *status,
 }
 
 static inline boolean check_hat(struct buffered_status *status,
- Uint32 down, Uint32 up, Uint32 key, enum joystick_hat dir)
+ uint32_t down, uint32_t up, uint32_t key, enum joystick_hat dir)
 {
   if(down & key)
   {
@@ -109,7 +122,7 @@ static inline boolean check_hat(struct buffered_status *status,
 }
 
 static inline boolean check_joy(struct buffered_status *status,
-  Uint32 down, Uint32 up, Uint32 key, Uint32 button)
+ uint32_t down, uint32_t up, uint32_t key, int button)
 {
   if(down & key)
   {
@@ -172,10 +185,10 @@ static inline boolean ctr_update_touch(struct buffered_status *status,
     if(my >= 350) my = 349;
   }
 
-  if((Uint32) mx != status->real_mouse_x || (Uint32) my != status->real_mouse_y)
+  if(mx != status->mouse_pixel_x || my != status->mouse_pixel_y)
   {
-    status->real_mouse_x = mx;
-    status->real_mouse_y = my;
+    status->mouse_pixel_x = mx;
+    status->mouse_pixel_y = my;
     status->mouse_x = mx / 8;
     status->mouse_y = my / 14;
     status->mouse_moved = true;
@@ -203,18 +216,17 @@ static inline boolean ctr_update_cstick(struct buffered_status *status)
 
   if(dmx != 0 || dmy != 0)
   {
-    nmx = status->real_mouse_x + dmx;
-    nmy = status->real_mouse_y + dmy;
+    nmx = status->mouse_pixel_x + dmx;
+    nmy = status->mouse_pixel_y + dmy;
     if(nmx < 0) nmx = 0;
     if(nmx >= 640) nmx = 639;
     if(nmy < 0) nmy = 0;
     if(nmy >= 350) nmy = 349;
 
-    if((Uint32) nmx != status->real_mouse_x ||
-     (Uint32) nmy != status->real_mouse_y)
+    if(nmx != status->mouse_pixel_x || nmy != status->mouse_pixel_y)
     {
-      status->real_mouse_x = nmx;
-      status->real_mouse_y = nmy;
+      status->mouse_pixel_x = nmx;
+      status->mouse_pixel_y = nmy;
       status->mouse_x = nmx / 8;
       status->mouse_y = nmy / 14;
       status->mouse_moved = true;
@@ -231,7 +243,7 @@ static inline boolean ctr_update_cstick(struct buffered_status *status)
 boolean update_hid(void)
 {
   struct buffered_status *status = store_status();
-  Uint32 down, held, up;
+  uint32_t down, held, up;
   boolean retval = false;
   touchPosition touch;
   circlePosition cpad;

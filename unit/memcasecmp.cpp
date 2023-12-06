@@ -21,7 +21,6 @@
 #include "../src/memcasecmp.h"
 
 #include <string.h>
-#include <tuple>
 
 struct string_pair
 {
@@ -55,9 +54,9 @@ UNITTEST(memtolower)
   for(i = 0; i < 256; i++)
   {
     if(i >= 'A' && i <= 'Z')
-      ASSERTEQ(memtolower(i), (i - 'A' + 'a'));
+      ASSERTEQ(memtolower(i), (i - 'A' + 'a'), "");
     else
-      ASSERTEQ(memtolower(i), i);
+      ASSERTEQ(memtolower(i), i, "");
   }
 }
 
@@ -86,49 +85,48 @@ UNITTEST(Matching)
   };
   const char *a;
   const char *b;
-  int i;
 
   SECTION(memcasecmp)
   {
-    for(i = 0; i < arraysize(pairs); i++)
+    for(const string_pair &p : pairs)
     {
-      a = pairs[i].a;
-      b = pairs[i].b;
-      ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTX(!memcasecmp(a, b, strlen(a)), a);
+      a = p.a;
+      b = p.b;
+      ASSERTEQ(strlen(a), strlen(b), "%s", a);
+      ASSERT(!memcasecmp(a, b, strlen(a)), "%s", a);
     }
 
-    for(i = 0; i < arraysize(pairs64); i++)
+    for(const string_pair_aligned &p : pairs64)
     {
-      a = pairs64[i].a.c_str();
-      b = pairs64[i].b.c_str();
+      a = p.a.c_str();
+      b = p.b.c_str();
 
-      ASSERTEQ((size_t)a & (ALIGN_64_MODULO - 1), 0);
-      ASSERTEQ((size_t)b & (ALIGN_64_MODULO - 1), 0);
-      ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTX(!memcasecmp(a, b, strlen(a)), a);
+      ASSERTEQ((size_t)a & (ALIGN_64_MODULO - 1), 0, "a not aligned");
+      ASSERTEQ((size_t)b & (ALIGN_64_MODULO - 1), 0, "b not aligned");
+      ASSERTEQ(strlen(a), strlen(b), "%s", a);
+      ASSERT(!memcasecmp(a, b, strlen(a)), "%s", a);
     }
   }
 
   SECTION(memcasecmp32)
   {
-    for(i = 0; i < arraysize(pairs); i++)
+    for(const string_pair &p : pairs)
     {
-      a = pairs[i].a;
-      b = pairs[i].b;
-      ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTX(!memcasecmp32(a, b, strlen(a)), a);
+      a = p.a;
+      b = p.b;
+      ASSERTEQ(strlen(a), strlen(b), "%s", a);
+      ASSERT(!memcasecmp32(a, b, strlen(a)), "%s", a);
     }
 
-    for(i = 0; i < arraysize(pairs64); i++)
+    for(const string_pair_aligned &p : pairs64)
     {
-      a = pairs64[i].a.c_str();
-      b = pairs64[i].b.c_str();
+      a = p.a.c_str();
+      b = p.b.c_str();
 
-      ASSERTEQ((size_t)a & (ALIGN_32_MODULO - 1), 0);
-      ASSERTEQ((size_t)b & (ALIGN_32_MODULO - 1), 0);
-      ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTX(!memcasecmp32(a, b, strlen(a)), a);
+      ASSERTEQ((size_t)a & (ALIGN_32_MODULO - 1), 0, "a not aligned");
+      ASSERTEQ((size_t)b & (ALIGN_32_MODULO - 1), 0, "b not aligned");
+      ASSERTEQ(strlen(a), strlen(b), "%s", a);
+      ASSERT(!memcasecmp32(a, b, strlen(a)), "%s", a);
     }
   }
 }
@@ -162,53 +160,52 @@ UNITTEST(NoMatch)
   const char *a;
   const char *b;
   int expected;
-  int i;
 
   SECTION(memcasecmp)
   {
-    for(i = 0; i < arraysize(pairs); i++)
+    for(const bad_string_pair &p : pairs)
     {
-      a = pairs[i].a;
-      b = pairs[i].b;
-      expected = pairs[i].expected;
-      ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTEQX(memcasecmp(a, b, strlen(a)), expected, a);
+      a = p.a;
+      b = p.b;
+      expected = p.expected;
+      ASSERTEQ(strlen(a), strlen(b), "%s", a);
+      ASSERTEQ(memcasecmp(a, b, strlen(a)), expected, "%s", a);
     }
 
-    for(i = 0; i < arraysize(pairs64); i++)
+    for(const bad_string_pair_aligned &p : pairs64)
     {
-      a = pairs64[i].a.c_str();
-      b = pairs64[i].b.c_str();
-      expected = pairs64[i].expected;
+      a = p.a.c_str();
+      b = p.b.c_str();
+      expected = p.expected;
 
-      ASSERTEQ((size_t)a & (ALIGN_64_MODULO - 1), 0);
-      ASSERTEQ((size_t)b & (ALIGN_64_MODULO - 1), 0);
-      ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTEQX(memcasecmp(a, b, strlen(a)), expected, a);
+      ASSERTEQ((size_t)a & (ALIGN_64_MODULO - 1), 0, "a not aligned");
+      ASSERTEQ((size_t)b & (ALIGN_64_MODULO - 1), 0, "b not aligned");
+      ASSERTEQ(strlen(a), strlen(b), "%s", a);
+      ASSERTEQ(memcasecmp(a, b, strlen(a)), expected, "%s", a);
     }
   }
 
   SECTION(memcasecmp32)
   {
-    for(i = 0; i < arraysize(pairs); i++)
+    for(const bad_string_pair &p : pairs)
     {
-      a = pairs[i].a;
-      b = pairs[i].b;
-      expected = pairs[i].expected;
-      ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTEQX(memcasecmp32(a, b, strlen(a)), expected, a);
+      a = p.a;
+      b = p.b;
+      expected = p.expected;
+      ASSERTEQ(strlen(a), strlen(b), "%s", a);
+      ASSERTEQ(memcasecmp32(a, b, strlen(a)), expected, "%s", a);
     }
 
-    for(i = 0; i < arraysize(pairs64); i++)
+    for(const bad_string_pair_aligned &p : pairs64)
     {
-      a = pairs64[i].a.c_str();
-      b = pairs64[i].b.c_str();
-      expected = pairs64[i].expected;
+      a = p.a.c_str();
+      b = p.b.c_str();
+      expected = p.expected;
 
-      ASSERTEQ((size_t)a & (ALIGN_32_MODULO - 1), 0);
-      ASSERTEQ((size_t)b & (ALIGN_32_MODULO - 1), 0);
-      ASSERTEQX(strlen(a), strlen(b), a);
-      ASSERTEQX(memcasecmp32(a, b, strlen(a)), expected, a);
+      ASSERTEQ((size_t)a & (ALIGN_32_MODULO - 1), 0, "a not aligned");
+      ASSERTEQ((size_t)b & (ALIGN_32_MODULO - 1), 0, "b not aligned");
+      ASSERTEQ(strlen(a), strlen(b), "%s", a);
+      ASSERTEQ(memcasecmp32(a, b, strlen(a)), expected, "%s", a);
     }
   }
 }

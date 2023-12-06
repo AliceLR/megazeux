@@ -12,6 +12,8 @@ ifeq ($(strip $(DEVKITPPC)),)
 $(error "DEVKITPPC must be set in your environment.")
 endif
 
+EXTRA_LICENSES += ${LICENSE_MPL2} ${LICENSE_NEWLIB}
+
 #
 # Wii target rules
 #
@@ -36,9 +38,8 @@ SUPPRESS_HOST_TARGETS ?= 1
 SDL_CFLAGS     = -isystem $(DEVKITPRO)/libogc/include/SDL
 SDL_LDFLAGS    = $(SDL_CFLAGS)
 
-#
-# As of devkitPPC r34 $(PORTLIBS) has multiple paths for some reason...
-#
+LIBPNG_PREFIX  := ${PORTLIBS_PATH}/ppc
+
 PORTLIBS_INCLUDES := $(foreach dir, $(PORTLIBS), -isystem $(dir)/include)
 PORTLIBS_LIBS     := $(foreach dir, $(PORTLIBS), -L$(dir)/lib)
 

@@ -30,6 +30,10 @@
 
 __M_BEGIN_DECLS
 
+/* Workaround for linking zip.o */
+FILE *mzxout_h = NULL;
+FILE *mzxerr_h = NULL;
+
 #ifdef CONFIG_CHECK_ALLOC
 
 #include <stdlib.h>

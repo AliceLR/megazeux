@@ -8,6 +8,8 @@ ifeq ($(strip $(DEVKITPRO)),)
 $(error "DEVKITPRO must be set in your environment.")
 endif
 
+EXTRA_LICENSES += ${LICENSE_MPL2} ${LICENSE_NEWLIB}
+
 # NOTE: there is no $DEVKITA64. Don't use it.
 
 #
@@ -57,6 +59,7 @@ MESA_LIBS += -lEGL -lglapi -ldrm_nouveau
 endif
 
 SDL_PREFIX := ${PORTLIBS}
+LIBPNG_PREFIX := ${PORTLIBS}
 
 EXTRA_INCLUDES := -isystem ${LIBNX}/include -isystem ${PORTLIBS}/include
 EXTRA_LIBS := -L${LIBNX}/lib -L${PORTLIBS}/lib -L$(DEVKITPRO)/devkitA64/aarch64-none-elf/lib/pic \

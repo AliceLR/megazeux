@@ -25,21 +25,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <sys/stat.h>
 
-#include "graphics.h"
-#include "world.h"
 #include "configure.h"
+#include "error.h"
 #include "event.h"
+#include "graphics.h"
+#include "platform.h"
 #include "render.h"
 #include "render_layer.h"
 #include "renderers.h"
-#include "platform.h"
-#include "error.h"
+#include "world.h"
+#include "io/vio.h"
 
 #ifdef CONFIG_PNG
 #include "pngops.h"
@@ -59,7 +61,6 @@
 #define CURSOR_BLINK_RATE 115
 
 __editor_maybe_static struct graphics_data graphics;
-static boolean graphics_was_initialized;
 
 static const struct renderer_data renderers[] =
 {
@@ -75,6 +76,7 @@ static const struct renderer_data renderers[] =
 #endif
 #if defined(CONFIG_RENDER_GL_PROGRAM)
   { "glsl", render_glsl_register },
+  { "glslscale", render_glsl_software_register },
   { "auto_glsl", render_auto_glsl_register },
 #endif
 #if defined(CONFIG_RENDER_YUV)
@@ -95,6 +97,16 @@ static const struct renderer_data renderers[] =
   { "gx", render_gx_register },
 #endif
   { "xfb", render_xfb_register },
+#endif
+#if defined(CONFIG_DJGPP)
+  { "ega", render_ega_register },
+#if defined(CONFIG_DOS_SVGA)
+  { "svga", render_svga_register },
+#endif
+#endif
+#if defined(CONFIG_DREAMCAST)
+  { "dreamcast", render_dc_register },
+  { "dreamcast_fb", render_dc_fb_register },
 #endif
   { NULL, NULL }
 };
@@ -144,27 +156,27 @@ static inline boolean extended_charsets_check(boolean s, int p, int c)
 }
 #endif
 
-static void remap_charbyte(struct graphics_data *graphics, Uint16 chr,
- Uint8 byte)
+static void remap_charbyte(struct graphics_data *graphics, uint16_t chr,
+ uint8_t byte)
 {
   if(graphics->renderer.remap_charbyte)
     graphics->renderer.remap_charbyte(graphics, chr, byte);
 }
 
-static void remap_char(struct graphics_data *graphics, Uint16 chr)
+static void remap_char(struct graphics_data *graphics, uint16_t chr)
 {
   if(graphics->renderer.remap_char)
     graphics->renderer.remap_char(graphics, chr);
 }
 
-static void remap_char_range(struct graphics_data *graphics, Uint16 first,
- Uint16 len)
+static void remap_char_range(struct graphics_data *graphics, uint16_t first,
+ uint16_t len)
 {
   if(graphics->renderer.remap_char_range)
     graphics->renderer.remap_char_range(graphics, first, len);
 }
 
-void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value)
+void ec_change_byte(uint16_t chr, uint8_t byte, uint8_t new_value)
 {
   extended_charsets_check(true, chr, 1);
 
@@ -174,7 +186,7 @@ void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value)
   remap_charbyte(&graphics, chr, byte);
 }
 
-void ec_change_char(Uint16 chr, char *matrix)
+void ec_change_char(uint16_t chr, const char matrix[CHAR_SIZE])
 {
   extended_charsets_check(true, chr, 1);
 
@@ -184,7 +196,7 @@ void ec_change_char(Uint16 chr, char *matrix)
   remap_char(&graphics, chr);
 }
 
-Uint8 ec_read_byte(Uint16 chr, Uint8 byte)
+uint8_t ec_read_byte(uint16_t chr, uint8_t byte)
 {
   extended_charsets_check(true, chr, 1);
 
@@ -192,7 +204,7 @@ Uint8 ec_read_byte(Uint16 chr, Uint8 byte)
   return graphics.charset[(chr * CHAR_SIZE) + byte];
 }
 
-void ec_read_char(Uint16 chr, char *matrix)
+void ec_read_char(uint16_t chr, char matrix[CHAR_SIZE])
 {
   extended_charsets_check(true, chr, 1);
 
@@ -206,36 +218,32 @@ void ec_clear_set(void)
   remap_char_range(&graphics, 0, FULL_CHARSET_SIZE);
 }
 
-Sint32 ec_load_set(char *name)
+boolean ec_load_set(const char *filename)
 {
-  FILE *fp = fopen_unsafe(name, "rb");
-  Uint16 count;
-
-  if(fp)
+  vfile *vf = vfopen_unsafe(filename, "rb");
+  if(vf)
   {
-    count = fread(graphics.charset, CHAR_SIZE, PROTECTED_CHARSET_POSITION, fp);
-    fclose(fp);
+    int count = vfread(graphics.charset, CHAR_SIZE, PROTECTED_CHARSET_POSITION, vf);
+    vfclose(vf);
 
     if(count > 0)
     {
       // some renderers may want to map charsets to textures
       remap_char_range(&graphics, 0, count);
-      return 0;
+      return true;
     }
   }
-  return -1;
+  return false;
 }
 
-__editor_maybe_static void ec_load_set_secondary(const char *name,
- Uint8 *dest)
+__editor_maybe_static void ec_load_set_secondary(const char *filename,
+ uint8_t dest[CHAR_SIZE * CHARSET_SIZE])
 {
-  FILE *fp = fopen_unsafe(name, "rb");
-  Uint16 count;
-
-  if(fp)
+  vfile *vf = vfopen_unsafe(filename, "rb");
+  if(vf)
   {
-    count = fread(dest, CHAR_SIZE, CHARSET_SIZE, fp);
-    fclose(fp);
+    int count = vfread(dest, CHAR_SIZE, CHARSET_SIZE, vf);
+    vfclose(vf);
 
     // This might have been somewhere in the charset, so
     // some renderers may want to map charsets to textures
@@ -244,52 +252,54 @@ __editor_maybe_static void ec_load_set_secondary(const char *name,
   }
 }
 
-Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
+int ec_load_set_var(const char *filename, uint16_t first_chr, int version)
 {
-  Uint32 size = CHARSET_SIZE;
-  FILE *fp = fopen_unsafe(name, "rb");
-  Uint32 maxChars = PROTECTED_CHARSET_POSITION;
-  Uint16 count;
-
-  if(fp)
+  vfile *vf = vfopen_unsafe(filename, "rb");
+  if(vf)
   {
-    size = ftell_and_rewind(fp) / CHAR_SIZE;
+    int maxchars = PROTECTED_CHARSET_POSITION;
+    int count;
+
+    int size = vfilelength(vf, false) / CHAR_SIZE;
 
     if(version >= V290)
     {
-      extended_charsets_check(true, pos, size);
+      extended_charsets_check(true, first_chr, size);
     }
     else
-      maxChars = 256;
+      maxchars = 256;
 
-    if(pos > maxChars)
+    if(first_chr > maxchars)
+    {
+      vfclose(vf);
       return -1;
+    }
 
-    if(size + pos > maxChars)
-      size = maxChars - pos;
+    if(size + first_chr > maxchars)
+      size = maxchars - first_chr;
 
-    count = fread(graphics.charset + (pos * CHAR_SIZE), CHAR_SIZE, size, fp);
-    fclose(fp);
+    count = vfread(graphics.charset + (first_chr * CHAR_SIZE), CHAR_SIZE, size, vf);
+    vfclose(vf);
 
     // some renderers may want to map charsets to textures
     if(count > 0)
-      remap_char_range(&graphics, pos, count);
+      remap_char_range(&graphics, first_chr, count);
 
     return count;
   }
   return -1;
 }
 
-void ec_mem_load_set(Uint8 *chars, size_t len)
+void ec_mem_load_set(const void *buffer, size_t len)
 {
   // This is used only for legacy and ZIP world loading and the default charsets
   // Use ec_clear_set() in conjunction with this for world loads.
-  Uint16 count;
+  size_t count;
 
   if(len > CHAR_SIZE * PROTECTED_CHARSET_POSITION)
     len = CHAR_SIZE * PROTECTED_CHARSET_POSITION;
 
-  memcpy(graphics.charset, chars, len);
+  memcpy(graphics.charset, buffer, len);
 
   // some renderers may want to map charsets to textures
   count = len / CHAR_SIZE;
@@ -297,47 +307,43 @@ void ec_mem_load_set(Uint8 *chars, size_t len)
     remap_char_range(&graphics, 0, count);
 }
 
-void ec_mem_save_set(Uint8 *chars)
+void ec_mem_load_set_var(const void *buffer, size_t len, uint16_t first_chr,
+ int version)
 {
-  memcpy(chars, graphics.charset, CHAR_SIZE * CHARSET_SIZE);
-}
-
-void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int version)
-{
-  Uint32 maxChars = PROTECTED_CHARSET_POSITION;
-  Uint32 offset = pos * CHAR_SIZE;
-  Uint16 count = (len + CHAR_SIZE - 1) / CHAR_SIZE;
+  size_t maxchars = PROTECTED_CHARSET_POSITION;
+  size_t offset = first_chr * CHAR_SIZE;
+  size_t count = (len + CHAR_SIZE - 1) / CHAR_SIZE;
 
   if(version >= V290)
   {
-    extended_charsets_check(true, pos, count);
+    extended_charsets_check(true, first_chr, count);
   }
   else
-    maxChars = 256;
+    maxchars = 256;
 
-  if(pos > maxChars)
+  if(first_chr > maxchars)
     return;
 
-  if(count > maxChars - pos)
+  if(count > maxchars - first_chr)
   {
-    count = maxChars - pos;
+    count = maxchars - first_chr;
     len = count * CHAR_SIZE;
   }
 
-  memcpy(graphics.charset + offset, chars, len);
+  memcpy(graphics.charset + offset, buffer, len);
 
   // some renderers may want to map charsets to textures
   if(count > 0)
-    remap_char_range(&graphics, pos, count);
+    remap_char_range(&graphics, first_chr, count);
 }
 
-void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos)
+void ec_mem_save_set_var(void *buffer, size_t len, uint16_t first_chr)
 {
-  Uint32 offset = pos * CHAR_SIZE;
-  Uint32 size = MIN(PROTECTED_CHARSET_POSITION * CHAR_SIZE - offset, len);
+  size_t offset = first_chr * CHAR_SIZE;
+  size_t size = MIN(PROTECTED_CHARSET_POSITION * CHAR_SIZE - offset, len);
 
-  if(pos < PROTECTED_CHARSET_POSITION)
-    memcpy(chars, graphics.charset + offset, size);
+  if(first_chr < PROTECTED_CHARSET_POSITION)
+    memcpy(buffer, graphics.charset + offset, size);
 }
 
 __editor_maybe_static void ec_load_mzx(void)
@@ -345,15 +351,15 @@ __editor_maybe_static void ec_load_mzx(void)
   ec_mem_load_set(graphics.default_charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
-static void update_colors(struct rgb_color *palette, Uint32 count)
+static void update_colors(struct rgb_color *palette, unsigned int count)
 {
   graphics.renderer.update_colors(&graphics, palette, count);
 }
 
-static Uint32 make_palette(struct rgb_color *palette)
+static unsigned int make_palette(struct rgb_color *palette)
 {
-  Uint32 i;
-  Uint32 paletteSize;
+  unsigned int paletteSize;
+  int i;
 
   // Is SMZX mode set?
   if(graphics.screen_mode)
@@ -407,9 +413,29 @@ void update_palette(void)
   update_colors(new_palette, make_palette(new_palette));
 }
 
+void default_palette(void)
+{
+  memcpy(graphics.palette, default_pal,
+   sizeof(struct rgb_color) * PAL_SIZE);
+
+  if(!graphics.fade_status)
+  {
+    memcpy(graphics.intensity_palette, default_pal,
+     sizeof(struct rgb_color) * PAL_SIZE);
+  }
+  graphics.palette_dirty = true;
+}
+
+void default_protected_palette(void)
+{
+  memcpy(graphics.protected_palette, default_pal,
+   sizeof(struct rgb_color) * PAL_SIZE);
+  graphics.palette_dirty = true;
+}
+
 static void init_palette(void)
 {
-  Uint32 i;
+  int i;
 
   memcpy(graphics.palette, default_pal,
    sizeof(struct rgb_color) * PAL_SIZE);
@@ -418,16 +444,16 @@ static void init_palette(void)
   memcpy(graphics.intensity_palette, default_pal,
    sizeof(struct rgb_color) * PAL_SIZE);
   memset(graphics.current_intensity, 0,
-   sizeof(Uint32) * PAL_SIZE);
+   sizeof(uint32_t) * PAL_SIZE);
 
   for(i = 0; i < SMZX_PAL_SIZE; i++)
     graphics.saved_intensity[i] = 100;
 
-  graphics.fade_status = 1;
+  graphics.fade_status = true;
   graphics.palette_dirty = true;
 }
 
-static int intensity(int component, int percent)
+static int intensity(unsigned int component, unsigned int percent)
 {
   component = (component * percent) / 100;
 
@@ -437,7 +463,7 @@ static int intensity(int component, int percent)
   return component;
 }
 
-void set_color_intensity(Uint32 color, Uint32 percent)
+void set_color_intensity(uint8_t color, unsigned int percent)
 {
   if(graphics.fade_status)
   {
@@ -458,9 +484,20 @@ void set_color_intensity(Uint32 color, Uint32 percent)
   }
 }
 
-void set_palette_intensity(Uint32 percent)
+/** Set a color intensity in the MZX palette, even if SMZX is enabled. */
+void set_color_intensity_mzx(uint8_t color, unsigned int percent)
 {
-  Uint32 i, num_colors;
+  if(graphics.screen_mode >= 2)
+  {
+    graphics.backup_intensity[color] = percent;
+  }
+  else
+    set_color_intensity(color, percent);
+}
+
+void set_palette_intensity(unsigned int percent)
+{
+  int i, num_colors;
 
   if(graphics.screen_mode >= 2)
     num_colors = SMZX_PAL_SIZE;
@@ -474,9 +511,9 @@ void set_palette_intensity(Uint32 percent)
   graphics.palette_dirty = true;
 }
 
-void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
+void set_rgb(uint8_t color, unsigned int r, unsigned int g, unsigned int b)
 {
-  int percent = graphics.current_intensity[color];
+  uint32_t percent = graphics.current_intensity[color];
   r = r * 255 / 63;
   g = g * 255 / 63;
   b = b * 255 / 63;
@@ -492,7 +529,24 @@ void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
   graphics.palette_dirty = true;
 }
 
-void set_protected_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
+/** Set a color in the MZX palette, even if SMZX is enabled. */
+void set_rgb_mzx(uint8_t color, unsigned int r, unsigned int g, unsigned int b)
+{
+  if(graphics.screen_mode >= 2)
+  {
+    r = r * 255 / 63;
+    g = g * 255 / 63;
+    b = b * 255 / 63;
+    graphics.backup_palette[color].r = r;
+    graphics.backup_palette[color].g = g;
+    graphics.backup_palette[color].b = b;
+  }
+  else
+    set_rgb(color, r, g, b);
+}
+
+void set_protected_rgb(uint8_t color, unsigned int r, unsigned int g,
+ unsigned int b)
 {
   r = r * 255 / 63;
   g = g * 255 / 63;
@@ -503,9 +557,9 @@ void set_protected_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
   graphics.palette_dirty = true;
 }
 
-void set_red_component(Uint32 color, Uint32 r)
+void set_red_component(uint8_t color, unsigned int r)
 {
-  int percent = graphics.current_intensity[color];
+  uint32_t percent = graphics.current_intensity[color];
   r = r * 255 / 63;
 
   graphics.palette[color].r = r;
@@ -513,9 +567,9 @@ void set_red_component(Uint32 color, Uint32 r)
   graphics.palette_dirty = true;
 }
 
-void set_green_component(Uint32 color, Uint32 g)
+void set_green_component(uint8_t color, unsigned int g)
 {
-  int percent = graphics.current_intensity[color];
+  uint32_t percent = graphics.current_intensity[color];
   g = g * 255 / 63;
 
   graphics.palette[color].g = g;
@@ -523,9 +577,9 @@ void set_green_component(Uint32 color, Uint32 g)
   graphics.palette_dirty = true;
 }
 
-void set_blue_component(Uint32 color, Uint32 b)
+void set_blue_component(uint8_t color, unsigned int b)
 {
-  int percent = graphics.current_intensity[color];
+  uint32_t percent = graphics.current_intensity[color];
   b = b * 255 / 63;
 
   graphics.palette[color].b = b;
@@ -533,88 +587,132 @@ void set_blue_component(Uint32 color, Uint32 b)
   graphics.palette_dirty = true;
 }
 
-static Uint32 get_smzx_index_offset(Uint32 color, Uint32 index)
-{
-  index %= 4;
-
-  if(index == 1)
-    index = 2;
-  else if(index == 2)
-    index = 1;
-
-  return (color % SMZX_PAL_SIZE) * 4 + index;
-}
-
-Uint32 get_smzx_index(Uint32 col, Uint32 offset)
-{
-  offset = get_smzx_index_offset(col, offset);
-
-  return graphics.smzx_indices[offset];
-}
-
-void set_smzx_index(Uint32 col, Uint32 offset, Uint32 value)
-{
-  // Setting the SMZX index is only supported for mode 3
-  if(graphics.screen_mode != 3)
-    return;
-
-  offset = get_smzx_index_offset(col, offset);
-
-  graphics.smzx_indices[offset] = value % SMZX_PAL_SIZE;
-  graphics.palette_dirty = true;
-}
-
-Uint32 get_color_intensity(Uint32 color)
+unsigned int get_color_intensity(uint8_t color)
 {
   if(graphics.fade_status)
     return graphics.saved_intensity[color];
   return graphics.current_intensity[color];
 }
 
-void get_rgb(Uint32 color, Uint8 *r, Uint8 *g, Uint8 *b)
+/** Get a color intensity from the MZX palette, even if SMZX is enabled. */
+unsigned int get_color_intensity_mzx(uint8_t color)
+{
+  if(graphics.screen_mode >= 2)
+  {
+    return graphics.backup_intensity[color];
+  }
+  else
+    return get_color_intensity(color);
+}
+
+void get_rgb(uint8_t color, uint8_t *r, uint8_t *g, uint8_t *b)
 {
   *r = ((graphics.palette[color].r * 126) + 255) / 510;
   *g = ((graphics.palette[color].g * 126) + 255) / 510;
   *b = ((graphics.palette[color].b * 126) + 255) / 510;
 }
 
-Uint32 get_red_component(Uint32 color)
+/** Get a color from the MZX palette, even if SMZX is enabled. */
+void get_rgb_mzx(uint8_t color, uint8_t *r, uint8_t *g, uint8_t *b)
+{
+  if(graphics.screen_mode >= 2)
+  {
+    *r = ((graphics.backup_palette[color].r * 126) + 255) / 510;
+    *g = ((graphics.backup_palette[color].g * 126) + 255) / 510;
+    *b = ((graphics.backup_palette[color].b * 126) + 255) / 510;
+  }
+  else
+    get_rgb(color, r, g, b);
+}
+
+unsigned int get_red_component(uint8_t color)
 {
   return ((graphics.palette[color].r * 126) + 255) / 510;
 }
 
-Uint32 get_green_component(Uint32 color)
+unsigned int get_green_component(uint8_t color)
 {
   return ((graphics.palette[color].g * 126) + 255) / 510;
 }
 
-Uint32 get_blue_component(Uint32 color)
+unsigned int get_blue_component(uint8_t color)
 {
   return ((graphics.palette[color].b * 126) + 255) / 510;
 }
 
-Uint32 get_color_luma(Uint32 color)
+static unsigned int get_smzx_index_offset(uint8_t palette, unsigned int index)
 {
-  int r = graphics.palette[color].r;
-  int g = graphics.palette[color].g;
-  int b = graphics.palette[color].b;
+  index %= 4;
 
-  return (Uint32)((r * .299) + (g * .587) + (b * .114) + .5);
+  if(index == 1)
+    index = 2;
+  else
+
+  if(index == 2)
+    index = 1;
+
+  return (unsigned int)palette * 4 + index;
 }
 
-__editor_maybe_static
-Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_chr)
+uint8_t get_smzx_index(uint8_t palette, unsigned int offset)
 {
-  Uint8 char_buffer[CHAR_W * CHAR_H];
-  Uint8 *mask_values = NULL;
-  boolean use_mask = false;
-  Uint32 count = 0;
-  Uint32 sum = 0;
-  Uint8 mask;
-  Uint32 x;
-  Uint32 y;
+  offset = get_smzx_index_offset(palette, offset);
 
-  dump_char(chr, palette, graphics.screen_mode, char_buffer);
+  return graphics.smzx_indices[offset];
+}
+
+void set_smzx_index(uint8_t palette, unsigned int offset, uint8_t color)
+{
+  // Setting the SMZX index is only supported for mode 3
+  if(graphics.screen_mode != 3)
+    return;
+
+  offset = get_smzx_index_offset(palette, offset);
+
+  graphics.smzx_indices[offset] = color % SMZX_PAL_SIZE;
+  graphics.palette_dirty = true;
+}
+
+/**
+ * Returns the effective luma in the range of [0,255] of a given color in the
+ * game palette (0-255) or protected palette (256-271).
+ */
+__editor_maybe_static
+int get_color_luma(unsigned int color)
+{
+  struct rgb_color rgb;
+  unsigned int sum;
+
+  if(color < 256)
+    rgb = graphics.palette[color];
+  else
+    rgb = graphics.protected_palette[color % 16];
+
+  sum = (unsigned int)rgb.r * 306u + /* 1024 * .299 */
+        (unsigned int)rgb.g * 601u + /* 1024 * .587 */
+        (unsigned int)rgb.b * 117u;  /* 1024 * .114 */
+
+  return (int)((sum + 512u) / 1024u);
+}
+
+/**
+ * Returns the average effective luma in the range of [0,255] of a given char
+ * using a given game palette.
+ */
+__editor_maybe_static
+int get_char_average_luma(uint16_t chr, uint8_t palette, int mode, int mask_chr)
+{
+  const uint8_t *char_data = graphics.charset + chr * CHAR_SIZE;
+  const uint8_t *mask_values = NULL;
+  boolean use_mask = false;
+  uint8_t mask;
+  int count = 0;
+  int sum = 0;
+  int x;
+  int y;
+
+  if(chr >= FULL_CHARSET_SIZE)
+    return 0;
 
   if(mask_chr >= 0 && mask_chr < FULL_CHARSET_SIZE)
   {
@@ -627,22 +725,33 @@ Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_ch
 
   if(mode)
   {
+    int lumas[4];
+
+    if(mode == 1)
+    {
+      // Due to quirks in mode 1, the interpolated colors 1 and 2 are not
+      // actually stored in the palette. Conveniently, the stronger-weighted
+      // user color can be derived from the lower bit (1->3, 2->0).
+      lumas[0] = get_color_luma((palette & 0xF0) >> 4);
+      lumas[3] = get_color_luma(palette & 0xF);
+      lumas[1] = lumas[3];
+      lumas[2] = lumas[0];
+    }
+    else
+    {
+      lumas[0] = get_color_luma(graphics.smzx_indices[palette * 4 + 0]);
+      lumas[1] = get_color_luma(graphics.smzx_indices[palette * 4 + 1]);
+      lumas[2] = get_color_luma(graphics.smzx_indices[palette * 4 + 2]);
+      lumas[3] = get_color_luma(graphics.smzx_indices[palette * 4 + 3]);
+    }
+
     for(y = 0; y < CHAR_H; y++)
     {
       for(x = 0, mask = 0xC0; x < CHAR_W; x += 2, mask >>= 2)
       {
         if(!use_mask || (mask_values[y] & mask))
         {
-          Uint32 col = char_buffer[y * CHAR_W + x];
-
-          // Due to quirks in mode 1 and layer rendering, dump_char and
-          // transparent colors and collision treat mode 1 addressing like
-          // mode 2. Conveniently, though, the stronger-weighted of the two
-          // user colors can be derived by just using the lower nibble.
-          if(mode == 1)
-            col &= 0x0F;
-
-          sum += get_color_luma(col);
+          sum += lumas[(char_data[y] & mask) >> (6 - x)];
           count++;
         }
       }
@@ -650,13 +759,19 @@ Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_ch
   }
   else
   {
+    int lumas[2] =
+    {
+      get_color_luma((palette & 0xF0) >> 4),
+      get_color_luma(palette & 0xF),
+    };
+
     for(y = 0; y < CHAR_H; y++)
     {
       for(x = 0, mask = 0x80; x < CHAR_W; x++, mask >>= 1)
       {
         if(!use_mask || (mask_values[y] & mask))
         {
-          sum += get_color_luma(char_buffer[y * CHAR_W + x]);
+          sum += lumas[(char_data[y] & mask) >> (7 - x)];
           count++;
         }
       }
@@ -665,16 +780,16 @@ Uint32 get_char_average_luma(Uint16 chr, Uint8 palette, int mode, Sint32 mask_ch
   return (sum + count / 2) / count;
 }
 
-void load_palette(const char *fname)
+void load_palette(const char *filename)
 {
   int file_size, i, r, g, b;
-  FILE *pal_file;
+  vfile *pal_file;
 
-  pal_file = fopen_unsafe(fname, "rb");
+  pal_file = vfopen_unsafe(filename, "rb");
   if(!pal_file)
     return;
 
-  file_size = ftell_and_rewind(pal_file);
+  file_size = vfilelength(pal_file, false);
 
   switch(graphics.screen_mode)
   {
@@ -691,17 +806,18 @@ void load_palette(const char *fname)
 
   for(i = 0; i < file_size / 3; i++)
   {
-    r = fgetc(pal_file);
-    g = fgetc(pal_file);
-    b = fgetc(pal_file);
+    r = vfgetc(pal_file);
+    g = vfgetc(pal_file);
+    b = vfgetc(pal_file);
     set_rgb(i, r, g, b);
   }
 
-  fclose(pal_file);
+  vfclose(pal_file);
 }
 
-void load_palette_mem(char *pal, size_t len)
+void load_palette_mem(const void *buffer, size_t len)
 {
+  const uint8_t *pal = buffer;
   int size, r, g, b, i, j;
 
   switch(graphics.screen_mode)
@@ -726,32 +842,32 @@ void load_palette_mem(char *pal, size_t len)
   }
 }
 
-void load_index_file(const char *fname)
+void load_index_file(const char *filename)
 {
-  FILE *idx_file;
+  vfile *idx_file;
   int i;
 
   if(get_screen_mode() != 3)
     return;
 
-  idx_file = fopen_unsafe(fname, "rb");
+  idx_file = vfopen_unsafe(filename, "rb");
   if(idx_file)
   {
     for(i = 0; i < SMZX_PAL_SIZE; i++)
     {
-      set_smzx_index(i, 0, fgetc(idx_file));
-      set_smzx_index(i, 1, fgetc(idx_file));
-      set_smzx_index(i, 2, fgetc(idx_file));
-      set_smzx_index(i, 3, fgetc(idx_file));
+      set_smzx_index(i, 0, vfgetc(idx_file));
+      set_smzx_index(i, 1, vfgetc(idx_file));
+      set_smzx_index(i, 2, vfgetc(idx_file));
+      set_smzx_index(i, 3, vfgetc(idx_file));
     }
 
-    fclose(idx_file);
+    vfclose(idx_file);
   }
 }
 
 void save_indices(void *buffer)
 {
-  Uint8 *copy_buffer = buffer;
+  uint8_t *copy_buffer = buffer;
   int i;
 
   if(get_screen_mode() != 3)
@@ -766,19 +882,19 @@ void save_indices(void *buffer)
   }
 }
 
-void load_indices(void *buffer, size_t size)
+void load_indices(const void *buffer, size_t size)
 {
-  Uint8 *copy_buffer = buffer;
+  const uint8_t *copy_buffer = buffer;
   unsigned int i;
 
   if(get_screen_mode() != 3)
     return;
 
-  if(size > SMZX_PAL_SIZE)
-    size = SMZX_PAL_SIZE;
+  if(size > SMZX_PAL_SIZE * 4)
+    size = SMZX_PAL_SIZE * 4;
 
   // Truncate incomplete colors
-  size -= (size & 3);
+  size /= 4;
 
   for(i = 0; i < size; i++)
   {
@@ -789,15 +905,18 @@ void load_indices(void *buffer, size_t size)
   }
 }
 
-void load_indices_direct(void *buffer, size_t size)
+void load_indices_direct(const void *buffer, size_t size)
 {
+  if(size > SMZX_PAL_SIZE * 4)
+    size = SMZX_PAL_SIZE * 4;
+
   memcpy(graphics.smzx_indices, buffer, size);
   graphics.palette_dirty = true;
 }
 
-void smzx_palette_loaded(int val)
+void smzx_palette_loaded(boolean is_loaded)
 {
-  graphics.default_smzx_loaded = val;
+  graphics.default_smzx_loaded = is_loaded;
 }
 
 static void update_intensity_palette(void)
@@ -812,7 +931,7 @@ static void update_intensity_palette(void)
 static void swap_palettes(void)
 {
   struct rgb_color temp_colors[SMZX_PAL_SIZE];
-  Uint32 temp_intensities[SMZX_PAL_SIZE];
+  uint32_t temp_intensities[SMZX_PAL_SIZE];
   memcpy(temp_colors, graphics.backup_palette,
    sizeof(struct rgb_color) * SMZX_PAL_SIZE);
   memcpy(graphics.backup_palette, graphics.palette,
@@ -820,61 +939,38 @@ static void swap_palettes(void)
   memcpy(graphics.palette, temp_colors,
    sizeof(struct rgb_color) * SMZX_PAL_SIZE);
   memcpy(temp_intensities, graphics.backup_intensity,
-   sizeof(Uint32) * SMZX_PAL_SIZE);
+   sizeof(uint32_t) * SMZX_PAL_SIZE);
   if(graphics.fade_status)
   {
     memcpy(graphics.backup_intensity,
-     graphics.saved_intensity, sizeof(Uint32) * SMZX_PAL_SIZE);
+     graphics.saved_intensity, sizeof(uint32_t) * SMZX_PAL_SIZE);
     memcpy(graphics.saved_intensity, temp_intensities,
-     sizeof(Uint32) * SMZX_PAL_SIZE);
+     sizeof(uint32_t) * SMZX_PAL_SIZE);
   }
   else
   {
     memcpy(graphics.backup_intensity,
-     graphics.current_intensity, sizeof(Uint32) * SMZX_PAL_SIZE);
+     graphics.current_intensity, sizeof(uint32_t) * SMZX_PAL_SIZE);
     memcpy(graphics.current_intensity, temp_intensities,
-     sizeof(Uint32) * SMZX_PAL_SIZE);
+     sizeof(uint32_t) * SMZX_PAL_SIZE);
     update_intensity_palette();
-  }
-}
-
-Uint32 get_fade_status(void)
-{
-  return graphics.fade_status;
-}
-
-void dialog_fadein(void)
-{
-  graphics.dialog_fade_status = get_fade_status();
-  if(graphics.dialog_fade_status)
-  {
-    clear_screen();
-    insta_fadein();
-  }
-}
-
-void dialog_fadeout(void)
-{
-  if(graphics.dialog_fade_status)
-  {
-    insta_fadeout();
   }
 }
 
 static void fix_layer_screen_mode(void)
 {
   // Fix the screen mode for all active layers except the UI_LAYER.
-  Uint32 i;
+  unsigned int i;
   for(i = 0; i < graphics.layer_count; i++)
     graphics.video_layers[i].mode = graphics.screen_mode;
 
   graphics.video_layers[UI_LAYER].mode = 0;
 }
 
-void set_screen_mode(Uint32 mode)
+void set_screen_mode(unsigned int mode)
 {
   int i;
-  Uint8 *pal_idx;
+  uint8_t *pal_idx;
   char bg, fg;
   mode %= 4;
 
@@ -893,7 +989,7 @@ void set_screen_mode(Uint32 mode)
       }
       set_palette_intensity(100);
       load_palette(mzx_res_get_by_id(SMZX_PAL));
-      graphics.default_smzx_loaded = 1;
+      graphics.default_smzx_loaded = true;
     }
   }
   else
@@ -939,9 +1035,10 @@ void set_screen_mode(Uint32 mode)
 
   fix_layer_screen_mode();
   graphics.palette_dirty = true;
+  graphics.smzx_dirty = true;
 }
 
-Uint32 get_screen_mode(void)
+unsigned int get_screen_mode(void)
 {
   return graphics.screen_mode;
 }
@@ -958,14 +1055,14 @@ Uint32 get_screen_mode(void)
  * 2 and 3, so always use protected white or black in these modes.
  */
 
-static Uint16 get_cursor_color(void)
+static unsigned int get_cursor_color(void)
 {
   struct char_element *cursor_element =
    graphics.text_video + graphics.cursor_x + (graphics.cursor_y * SCREEN_W);
-  Uint16 cursor_color;
-  Uint32 cursor_char = cursor_element->char_value;
-  Uint32 fg_color = cursor_element->fg_color;
-  Uint32 bg_color = cursor_element->bg_color;
+  unsigned int cursor_char = cursor_element->char_value;
+  unsigned int fg_color = cursor_element->fg_color;
+  unsigned int bg_color = cursor_element->bg_color;
+  unsigned int cursor_color;
   int i;
 
   if(bg_color >= 0x10)
@@ -982,10 +1079,10 @@ static Uint16 get_cursor_color(void)
   if(graphics.screen_mode <= 1)
   {
     // Modes 0 and 1- use the (modified) classic cursor color logic.
-    // NOTE: there was a trick using Uint32 * here before that caused
+    // NOTE: there was a trick using uint32_t * here before that caused
     // misalignment crashes on some platforms.
-    Uint8 *offset = graphics.charset + cursor_char * CHAR_SIZE;
-    Uint8 cursor_solid = 0xFF;
+    uint8_t *offset = graphics.charset + cursor_char * CHAR_SIZE;
+    int cursor_solid = 0xFF;
 
     // Choose FG by default.
     cursor_color = fg_color;
@@ -1018,18 +1115,21 @@ static Uint16 get_cursor_color(void)
 
     // Offset adjust protected colors if necessary.
     if(cursor_color >= 0x10)
+    {
       cursor_color = graphics.protected_pal_position + (cursor_color & 0x0F);
+    }
+    else
 
     // Offset adjust mode 1 colors if necessary.
-    else if(graphics.screen_mode == 1)
+    if(graphics.screen_mode == 1)
       cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
   }
 
   else
   {
     // Modes 2 and 3- pick protected white or black based on the average luma.
-    Uint32 avg;
-    Uint8 pal;
+    unsigned int pal;
+    int avg;
 
     bg_color &= 0x0F;
     fg_color &= 0x0F;
@@ -1056,15 +1156,22 @@ static int compare_layers(const void *a, const void *b)
 
 void update_screen(void)
 {
-  Uint32 ticks = get_ticks();
-#ifndef CONFIG_NO_LAYER_RENDERING
-  Uint32 layer;
-#endif
+  uint32_t ticks = get_ticks();
 
   if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
   {
     graphics.cursor_flipflop ^= 1;
     graphics.cursor_timestamp = ticks;
+  }
+
+  if(graphics.smzx_dirty)
+  {
+    /* Request an SMZX mode change from the renderer, if applicable (EGA).
+     * Hardware SMZX may reset various text mode settings, so do it first.
+     */
+    graphics.smzx_dirty = false;
+    if(graphics.renderer.set_screen_mode)
+      graphics.renderer.set_screen_mode(&graphics, graphics.screen_mode);
   }
 
   if(graphics.palette_dirty)
@@ -1076,6 +1183,7 @@ void update_screen(void)
 #ifndef CONFIG_NO_LAYER_RENDERING
   if(graphics.requires_extended && graphics.renderer.render_layer)
   {
+    uint32_t layer;
     for(layer = 0; layer < graphics.layer_count; layer++)
     {
       graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];
@@ -1114,10 +1222,10 @@ void update_screen(void)
 
   if(graphics.renderer.render_cursor || graphics.renderer.hardware_cursor)
   {
-    Uint16 cursor_color = get_cursor_color();
+    unsigned int cursor_color = get_cursor_color();
+    unsigned int offset = 0;
+    unsigned int lines = 0;
     boolean enabled = true;
-    Uint32 lines = 0;
-    Uint32 offset = 0;
 
     switch(graphics.cursor_mode)
     {
@@ -1132,6 +1240,7 @@ void update_screen(void)
       case CURSOR_MODE_HINT:
         break;
       case CURSOR_MODE_INVISIBLE:
+      default:
         enabled = false;
         break;
     }
@@ -1156,16 +1265,39 @@ void update_screen(void)
   if(graphics.mouse_status)
   {
     int mouse_x, mouse_y;
-    get_real_mouse_position(&mouse_x, &mouse_y);
+    get_mouse_pixel_position(&mouse_x, &mouse_y);
 
-    mouse_x = (mouse_x / graphics.mouse_width_mul) * graphics.mouse_width_mul;
-    mouse_y = (mouse_y / graphics.mouse_height_mul) * graphics.mouse_height_mul;
+    mouse_x = (mouse_x / graphics.mouse_width) * graphics.mouse_width;
+    mouse_y = (mouse_y / graphics.mouse_height) * graphics.mouse_height;
 
     graphics.renderer.render_mouse(&graphics, mouse_x, mouse_y,
-     graphics.mouse_width_mul, graphics.mouse_height_mul);
+     graphics.mouse_width, graphics.mouse_height);
   }
 
   graphics.renderer.sync_screen(&graphics);
+}
+
+boolean get_fade_status(void)
+{
+  return graphics.fade_status;
+}
+
+void dialog_fadein(void)
+{
+  graphics.dialog_fade_status = get_fade_status();
+  if(graphics.dialog_fade_status)
+  {
+    clear_screen();
+    insta_fadein();
+  }
+}
+
+void dialog_fadeout(void)
+{
+  if(graphics.dialog_fade_status)
+  {
+    insta_fadeout();
+  }
 }
 
 // Very quick fade out. Saves intensity table for fade in. Be sure
@@ -1181,8 +1313,7 @@ void vquick_fadeout(void)
 
   if(!graphics.fade_status)
   {
-    Sint32 i, i2, num_colors;
-    Uint32 ticks;
+    int i, i2, num_colors;
 
     if(graphics.screen_mode >= 2)
       num_colors = SMZX_PAL_SIZE;
@@ -1190,11 +1321,11 @@ void vquick_fadeout(void)
       num_colors = PAL_SIZE;
 
     memcpy(graphics.saved_intensity, graphics.current_intensity,
-     sizeof(Uint32) * num_colors);
+     sizeof(uint32_t) * num_colors);
 
     for(i = 10; i >= 0; i--)
     {
-      ticks = get_ticks();
+      uint32_t ticks = get_ticks();
 
       for(i2 = 0; i2 < num_colors; i2++)
         set_color_intensity(i2, (graphics.saved_intensity[i2] * i / 10));
@@ -1206,7 +1337,7 @@ void vquick_fadeout(void)
       if(ticks <= 16)
         delay(16 - ticks);
     }
-    graphics.fade_status = 1;
+    graphics.fade_status = true;
   }
 }
 
@@ -1223,10 +1354,9 @@ void vquick_fadein(void)
 
   if(graphics.fade_status)
   {
-    Uint32 i, i2, num_colors;
-    Uint32 ticks;
+    unsigned int i, i2, num_colors;
 
-    graphics.fade_status = 0;
+    graphics.fade_status = false;
 
     if(graphics.screen_mode >= 2)
       num_colors = SMZX_PAL_SIZE;
@@ -1235,7 +1365,7 @@ void vquick_fadein(void)
 
     for(i = 0; i <= 10; i++)
     {
-      ticks = get_ticks();
+      uint32_t ticks = get_ticks();
 
       for(i2 = 0; i2 < num_colors; i2++)
         set_color_intensity(i2, (graphics.saved_intensity[i2] * i / 10));
@@ -1253,7 +1383,7 @@ void vquick_fadein(void)
 // Instant fade out
 void insta_fadeout(void)
 {
-  Uint32 i, num_colors;
+  unsigned int i, num_colors;
 
   if(graphics.fade_status)
     return;
@@ -1264,7 +1394,7 @@ void insta_fadeout(void)
     num_colors = PAL_SIZE;
 
   memcpy(graphics.saved_intensity, graphics.current_intensity,
-   sizeof(Uint32) * num_colors);
+   sizeof(uint32_t) * num_colors);
 
   for(i = 0; i < num_colors; i++)
     set_color_intensity(i, 0);
@@ -1278,7 +1408,7 @@ void insta_fadeout(void)
 // Instant fade in
 void insta_fadein(void)
 {
-  Uint32 i, num_colors;
+  unsigned int i, num_colors;
 
   if(!graphics.fade_status)
     return;
@@ -1295,22 +1425,6 @@ void insta_fadein(void)
 
   graphics.palette_dirty = true;
   update_screen(); // NOTE: this was called conditionally in 2.81e
-}
-
-void default_palette(void)
-{
-  memcpy(graphics.palette, default_pal,
-   sizeof(struct rgb_color) * PAL_SIZE);
-  memcpy(graphics.intensity_palette, default_pal,
-   sizeof(struct rgb_color) * PAL_SIZE);
-  graphics.palette_dirty = true;
-}
-
-void default_protected_palette(void)
-{
-  memcpy(graphics.protected_palette, default_pal,
-   sizeof(struct rgb_color) * PAL_SIZE);
-  graphics.palette_dirty = true;
 }
 
 static boolean set_graphics_output(struct config_info *conf)
@@ -1357,6 +1471,7 @@ static boolean set_graphics_output(struct config_info *conf)
 
   renderer->reg(&graphics.renderer);
   graphics.renderer_num = i;
+  graphics.renderer_is_headless = false;
 
   debug("Video: using '%s' renderer.\n", renderer->name);
   return true;
@@ -1467,8 +1582,8 @@ static void set_window_icon(void)
 #endif // CONFIG_SDL && CONFIG_ICON
 }
 
-static void new_empty_layer(struct video_layer *layer, int x, int y, Uint32 w,
- Uint32 h, int draw_order)
+static void new_empty_layer(struct video_layer *layer, int x, int y,
+ unsigned int w, unsigned int h, int draw_order)
 {
   // Layers are persistent and static
   if(!layer->data || layer->w != w || layer->h != h)
@@ -1484,10 +1599,10 @@ static void new_empty_layer(struct video_layer *layer, int x, int y, Uint32 w,
   layer->offset = 0;
 }
 
-Uint32 create_layer(int x, int y, Uint32 w, Uint32 h, int draw_order, int t_col,
- int offset, boolean unbound)
+uint32_t create_layer(int x, int y, unsigned int w, unsigned int h,
+ int draw_order, int t_col, int offset, boolean unbound)
 {
-  Uint32 layer_idx = graphics.layer_count;
+  uint32_t layer_idx = graphics.layer_count;
   struct video_layer *layer = &graphics.video_layers[layer_idx];
 
   new_empty_layer(layer, x, y, w, h, draw_order);
@@ -1497,25 +1612,29 @@ Uint32 create_layer(int x, int y, Uint32 w, Uint32 h, int draw_order, int t_col,
   layer->offset = offset;
   graphics.layer_count++;
 
+  // This shouldn't ever happen, but just in case...
+  if(graphics.current_layer == layer_idx)
+    select_layer(layer_idx);
+
   if(!graphics.requires_extended && unbound)
     graphics.requires_extended = true;
 
   return layer_idx;
 }
 
-void set_layer_offset(Uint32 layer, int offset)
+void set_layer_offset(uint32_t layer, int offset)
 {
   graphics.video_layers[layer].offset = offset;
 }
 
-void set_layer_mode(Uint32 layer, int mode)
+void set_layer_mode(uint32_t layer, int mode)
 {
   // In general, we want the layer to use the screen mode, but some
   // UI elements need to be able to change this.
   graphics.video_layers[layer].mode = mode;
 }
 
-void move_layer(Uint32 layer, int x, int y)
+void move_layer(uint32_t layer, int x, int y)
 {
   graphics.video_layers[layer].x = x;
   graphics.video_layers[layer].y = y;
@@ -1541,10 +1660,12 @@ static void init_layers(void)
   blank_layers();
 }
 
-void select_layer(Uint32 layer)
+void select_layer(uint32_t layer_id)
 {
-  graphics.current_layer = layer;
-  graphics.current_video = graphics.video_layers[layer].data;
+  struct video_layer *layer = &graphics.video_layers[layer_id];
+  graphics.current_layer = layer_id;
+  graphics.current_video = layer->data;
+  graphics.current_video_end = layer->data + (layer->w * layer->h);
 }
 
 void blank_layers(void)
@@ -1572,11 +1693,11 @@ void blank_layers(void)
   fix_layer_screen_mode();
 }
 
-void destruct_extra_layers(Uint32 first)
+void destruct_extra_layers(uint32_t first)
 {
   // Delete layers that have not persisted since the previous frame and
   // make all extra layers available for use.
-  Uint32 i;
+  uint32_t i;
 
   if(first < NUM_DEFAULT_LAYERS)
     first = NUM_DEFAULT_LAYERS;
@@ -1601,7 +1722,7 @@ void destruct_extra_layers(Uint32 first)
 
 void destruct_layers(void)
 {
-  Uint32 i;
+  uint32_t i;
   for(i = 0; i < TEXTVIDEO_LAYERS; i++)
   {
     if(graphics.video_layers[i].data)
@@ -1612,30 +1733,6 @@ void destruct_layers(void)
   }
   graphics.layer_count_prev = 0;
   graphics.layer_count = 0;
-}
-
-static void dirty_ui(void)
-{
-  if(graphics.requires_extended) return;
-  if(graphics.current_layer != UI_LAYER) return;
-  if(graphics.screen_mode == 0) return;
-  graphics.requires_extended = true;
-}
-
-static void dirty_current(void)
-{
-  graphics.video_layers[graphics.current_layer].empty = false;
-}
-
-static int offset_adjust(int offset)
-{
-  // Transform the given offset from screen space to layer space
-  struct video_layer *layer;
-  int x, y;
-  layer = &graphics.video_layers[graphics.current_layer];
-  x = (offset % SCREEN_W) - (layer->x / CHAR_W);
-  y = (offset / SCREEN_W) - (layer->y / CHAR_H);
-  return y * layer->w + x;
 }
 
 boolean init_video(struct config_info *conf, const char *caption)
@@ -1653,6 +1750,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   graphics.cursor_flipflop = 1;
   graphics.system_mouse = conf->system_mouse;
   graphics.grab_mouse = conf->grab_mouse;
+  graphics.disable_screensaver = conf->disable_screensaver;
 
   memset(&(graphics.text_video_layer), 0, sizeof(struct video_layer));
   graphics.text_video_layer.w = SCREEN_W;
@@ -1700,13 +1798,28 @@ boolean init_video(struct config_info *conf, const char *caption)
   if(!graphics.renderer.init_video(&graphics, conf))
   {
     // Try falling back to the first registered renderer
+    debug("Failed to initialize '%s', attempting fallback.\n", conf->video_output);
     strcpy(conf->video_output, "");
     if(!set_graphics_output(conf))
       return false;
 
-    // Fallback failed; bail out
     if(!graphics.renderer.init_video(&graphics, conf))
-      return false;
+    {
+      // One last attempt with the "safest" settings.
+      // NOTE: this was originally done in set_video_mode.
+      debug("Failed to initialize fallback, trying 640x350.\n");
+      graphics.window_width = 640;
+      graphics.window_height = 350;
+      graphics.fullscreen = false;
+      graphics.allow_resize = false;
+      conf->force_bpp = BPP_AUTO;
+
+      if(!graphics.renderer.init_video(&graphics, conf))
+      {
+        warn("Failed to initialize video.\n");
+        return false;
+      }
+    }
   }
 
 #ifdef CONFIG_SDL
@@ -1722,7 +1835,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   ec_clear_set();
   ec_load_mzx();
   init_palette();
-  graphics_was_initialized = true;
+  graphics.is_initialized = true;
   return true;
 }
 
@@ -1742,7 +1855,11 @@ boolean has_video_initialized(void)
   if(sdl_driver && !strcmp(sdl_driver, "dummy")) return false;
 #endif /* CONFIG_SDL */
 
-  return graphics_was_initialized;
+  // Renderers can also report as headless.
+  if(graphics.renderer_is_headless)
+    return false;
+
+  return graphics.is_initialized;
 }
 
 boolean set_video_mode(void)
@@ -1776,22 +1893,6 @@ boolean set_video_mode(void)
     target_height = graphics.window_height;
   }
 
-  // If video mode fails, replace it with 'safe' defaults
-  if(!(graphics.renderer.check_video_mode(&graphics,
-   target_width, target_height, target_depth, fullscreen, resize)))
-  {
-    target_width = 640;
-    target_height = 350;
-    target_depth = 8;
-    fullscreen = false;
-    resize = false;
-
-    graphics.resolution_width = target_width;
-    graphics.resolution_height = target_height;
-    graphics.bits_per_pixel = target_depth;
-    graphics.fullscreen = fullscreen;
-  }
-
   ret = graphics.renderer.set_video_mode(&graphics,
    target_width, target_height, target_depth, fullscreen, resize);
 
@@ -1800,6 +1901,10 @@ boolean set_video_mode(void)
     set_window_caption(graphics.default_caption);
     set_window_grab(graphics.grab_mouse);
     set_window_icon();
+
+    // Make sure a BPP was selected by the renderer (if applicable).
+    if(graphics.bits_per_pixel == BPP_AUTO)
+      warn("renderer.set_video_mode must auto-select BPP! Report this!\n");
   }
 
   return ret;
@@ -1886,7 +1991,7 @@ int get_available_video_output_list(const char **buffer, int buffer_len)
 
 int get_current_video_output(void)
 {
-  return (int)(graphics.renderer_num);
+  return graphics.renderer_num;
 }
 
 boolean is_fullscreen(void)
@@ -1906,7 +2011,7 @@ void toggle_fullscreen(void)
   update_screen();
 }
 
-void resize_screen(Uint32 w, Uint32 h)
+void resize_screen(unsigned int w, unsigned int h)
 {
   if(!graphics.fullscreen && graphics.allow_resize)
   {
@@ -1921,359 +2026,188 @@ void resize_screen(Uint32 w, Uint32 h)
   }
 }
 
-void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
- Uint8 *color, Uint32 offset, Uint32 c_offset, boolean respect_newline)
+static void dirty_ui(void)
 {
-  int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
-  struct char_element *dest_copy = graphics.text_video + scr_off;
-  const char *src = str;
-  Uint8 cur_char = *src;
-  Uint8 next;
-  Uint8 bg_color = (*color >> 4) + c_offset;
-  Uint8 fg_color = (*color & 0x0F) + c_offset;
+  if(graphics.requires_extended) return;
+  if(graphics.current_layer != UI_LAYER) return;
+  if(graphics.screen_mode == 0) return;
+  graphics.requires_extended = true;
+}
 
-  char next_str[2];
-  next_str[1] = 0;
+static void dirty_current(void)
+{
+  graphics.video_layers[graphics.current_layer].empty = false;
+}
 
-  dirty_ui();
-  dirty_current();
+static int offset_adjust(int offset, unsigned int x, unsigned int y)
+{
+  // Transform the given offset from screen space to layer space
+  struct video_layer *layer = &graphics.video_layers[graphics.current_layer];
 
-  while(cur_char)
+  if(layer->w != SCREEN_W || layer->x != 0 || layer->y != 0)
   {
-    switch(cur_char)
-    {
-      // Color character
-      case '@':
-      {
-        str++;
-        next = *str;
+    // NOTE: using the UI drawing functions on non-aligned layers is undefined
+    // behavior. Use draw_char_to_layer instead.
+    assert((int)x >= (layer->x / CHAR_W));
+    assert((int)y >= (layer->y / CHAR_H));
+    assert(x < (layer->x / CHAR_W) + layer->w);
+    assert(y < (layer->y / CHAR_H) + layer->h);
 
-        // If 0, stop right there
-        if(!next)
-          goto exit_out;
-
-        // If the next isn't hex, count as one
-        if(isxdigit(next))
-        {
-          next_str[0] = next;
-          bg_color = (Uint8)(strtol(next_str, NULL, 16) + c_offset);
-        }
-        else
-        {
-          if(next == '@')
-          {
-            dest->char_value = '@' + offset;
-            dest->bg_color = bg_color;
-            dest->fg_color = fg_color;
-            *(dest_copy++) = *dest;
-            dest++;
-          }
-          else
-          {
-            str--;
-          }
-        }
-
-        break;
-      }
-
-      case '~':
-      {
-        str++;
-        next = *str;
-
-        // If 0, stop right there
-        if(!next)
-          goto exit_out;
-
-        // If the next isn't hex, count as one
-        if(isxdigit(next))
-        {
-          next_str[0] = next;
-          fg_color = (Uint8)(strtol(next_str, NULL, 16) + c_offset);
-        }
-        else
-        {
-          if(next == '~')
-          {
-            dest->char_value = '~' + offset;
-            dest->bg_color = bg_color;
-            dest->fg_color = fg_color;
-            *(dest_copy++) = *dest;
-            dest++;
-          }
-          else
-          {
-            str--;
-          }
-        }
-
-        break;
-      }
-
-      // Newline
-      case '\n':
-      {
-        if(respect_newline)
-        {
-          y++;
-          dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
-          dest_copy = graphics.text_video + (y * SCREEN_W) + x;
-          break;
-        }
-      }
-
-      /* fallthrough */
-
-      default:
-      {
-        dest->char_value = cur_char + offset;
-        dest->bg_color = bg_color;
-        dest->fg_color = fg_color;
-        *(dest_copy++) = *dest;
-        dest++;
-      }
-    }
-    if(dest >= graphics.current_video + offset_adjust(SCREEN_W * SCREEN_H))
-      break;
-
-    str++;
-    cur_char = *str;
+    x -= layer->x / CHAR_W;
+    y -= layer->y / CHAR_H;
+    return y * layer->w + x;
   }
-
-exit_out:
-  *color = (((bg_color - c_offset) << 4) & 0xF0) |
-           (((fg_color - c_offset) << 0) & 0x0F);
+  return offset;
 }
 
-void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
- Uint32 offset, Uint32 c_offset, boolean respect_newline)
+static int hexdigit(uint8_t hex)
 {
-  color_string_ext_special(str, x, y, &color, offset,
-   c_offset, respect_newline);
+  if(hex >= '0' && hex <= '9')
+    return hex - '0';
+  if(hex >= 'A' && hex <= 'F')
+    return hex - 'A' + 10;
+  if(hex >= 'a' && hex <= 'f')
+    return hex - 'a' + 10;
+  return -1;
 }
 
-// Write a normal string
-
-void write_string_ext(const char *str, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed, Uint32 offset,
- Uint32 c_offset)
+static int write_string_intl(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, boolean allow_tabs, boolean allow_newline, boolean end_newline,
+ boolean allow_colors, boolean mask_midchars, int chr_offset, int color_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
-  const char *src = str;
-  Uint8 cur_char = *src;
-  Uint8 bg_color = (color >> 4) + c_offset;
-  Uint8 fg_color = (color & 0x0F) + c_offset;
+
+  int bg_color = (color >> 4) + color_offset;
+  int fg_color = (color & 0x0F) + color_offset;
+  int code;
 
   dirty_ui();
   dirty_current();
 
-  while(cur_char && (cur_char != 0))
+  while(*str && dest < graphics.current_video_end)
   {
-    switch(cur_char)
+    int cur_char = *str++;
+
+    if(cur_char == '\n')
     {
-      // Newline
-      case '\n':
+      if(end_newline)
+        break;
+
+      if(allow_newline)
       {
         y++;
-        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x, x, y);
         dest_copy = graphics.text_video + (y * SCREEN_W) + x;
-        break;
-      }
-
-      case '\t':
-      {
-        if(tab_allowed)
-        {
-          dest += 5;
-          dest_copy += 5;
-          break;
-        }
-      }
-
-      /* fallthrough */
-
-      default:
-      {
-        dest->char_value = cur_char + offset;
-        dest->bg_color = bg_color;
-        dest->fg_color = fg_color;
-        *(dest_copy++) = *dest;
-        dest++;
+        continue;
       }
     }
-    if(dest >= graphics.current_video + offset_adjust(SCREEN_W * SCREEN_H))
-      break;
+    else
 
-    str++;
-    cur_char = *str;
-  }
-}
-
-void write_string_mask(const char *str, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed)
-{
-  int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
-  struct char_element *dest_copy = graphics.text_video + scr_off;
-  const char *src = str;
-  Uint8 cur_char = *src;
-  Uint8 bg_color = (color >> 4) + 16;
-  Uint8 fg_color = (color & 0x0F) + 16;
-
-  dirty_ui();
-  dirty_current();
-
-  while(cur_char && (cur_char != 0))
-  {
-    switch(cur_char)
+    if(cur_char == '\t')
     {
-      // Newline
-      case '\n':
+      if(allow_tabs)
       {
-        y++;
-        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
-        dest_copy = graphics.text_video + (y * SCREEN_W) + x;
-        break;
+        // Note: the write_line functions used 10 here, but they were used
+        // only for scrolls, which don't allow control codes. 1.x allowed
+        // char 9 but displayed them as char 9.
+        dest += 5;
+        dest_copy += 5;
+        continue;
       }
+    }
+    else
 
-      case '\t':
+    if(allow_colors)
+    {
+      if(cur_char == '@')
       {
-        if(tab_allowed)
-        {
-          dest += 5;
-          dest_copy += 5;
+        if(!*str)
           break;
+
+        code = hexdigit(*str);
+        if(code >= 0)
+        {
+          bg_color = code + color_offset;
+          str++;
+          continue;
         }
-      }
-
-      /* fallthrough */
-
-      default:
-      {
-        if((cur_char >= 32) && (cur_char <= 126))
-          dest->char_value = cur_char + PRO_CH;
         else
-          dest->char_value = cur_char;
 
-        dest->bg_color = bg_color;
-        dest->fg_color = fg_color;
-        *(dest_copy++) = *dest;
-        dest++;
+        if(*str == '@')
+          str++;
       }
-    }
-    if(dest >= graphics.current_video + offset_adjust(SCREEN_W * SCREEN_H))
-      break;
+      else
 
-    str++;
-    cur_char = *str;
-  }
-}
-
-// Write a normal string, without carriage returns
-
-void write_line_ext(const char *str, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed, Uint32 offset,
- Uint32 c_offset)
-{
-  int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
-  struct char_element *dest_copy = graphics.text_video + scr_off;
-  const char *src = str;
-  Uint8 cur_char = *src;
-  Uint8 bg_color = (color >> 4) + c_offset;
-  Uint8 fg_color = (color & 0x0F) + c_offset;
-
-  dirty_ui();
-  dirty_current();
-
-  while(cur_char && (cur_char != '\n'))
-  {
-    switch(cur_char)
-    {
-      // Color character
-      case '\t':
+      if(cur_char == '~')
       {
-        if(tab_allowed)
-        {
-          dest += 10;
-          dest_copy += 10;
+        if(!*str)
           break;
-        }
-      }
 
-      /* fallthrough */
-
-      default:
-      {
-        dest->char_value = cur_char + offset;
-        dest->bg_color = bg_color;
-        dest->fg_color = fg_color;
-        *(dest_copy++) = *dest;
-        dest++;
-      }
-    }
-    str++;
-    cur_char = *str;
-  }
-}
-
-void write_line_mask(const char *str, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed)
-{
-  int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
-  struct char_element *dest_copy = graphics.text_video + scr_off;
-  const char *src = str;
-  Uint8 cur_char = *src;
-  Uint8 bg_color = (color >> 4) + 16;
-  Uint8 fg_color = (color & 0x0F) + 16;
-
-  dirty_ui();
-  dirty_current();
-
-  while(cur_char && (cur_char != '\n'))
-  {
-    switch(cur_char)
-    {
-      // Color character
-      case '\t':
-      {
-        if(tab_allowed)
+        code = hexdigit(*str);
+        if(code >= 0)
         {
-          dest += 10;
-          dest_copy += 10;
-          break;
+          fg_color = code + color_offset;
+          str++;
+          continue;
         }
-      }
-
-      /* fallthrough */
-
-      default:
-      {
-        if((cur_char >= 32) && (cur_char <= 127))
-          dest->char_value = cur_char + PRO_CH;
         else
-          dest->char_value = cur_char;
 
-        dest->bg_color = bg_color;
-        dest->fg_color = fg_color;
-        *(dest_copy++) = *dest;
-        dest++;
+        if(*str == '~')
+          str++;
       }
     }
-    str++;
-    cur_char = *str;
+
+    if(mask_midchars)
+    {
+      if(cur_char >= 32 && cur_char <= 126)
+        chr_offset = PRO_CH;
+      else
+        chr_offset = 0;
+    }
+
+    /* Draw char */
+    dest->char_value = cur_char + chr_offset;
+    dest->bg_color = bg_color;
+    dest->fg_color = fg_color;
+    *(dest_copy++) = *dest;
+    dest++;
   }
+
+  return ((bg_color & 0xf) << 4) | (fg_color & 0xf);
+}
+
+void write_string_ext(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, int flags, unsigned int chr_offset, unsigned int color_offset)
+{
+  boolean allow_tabs      = (flags & WR_TAB) != 0;
+  boolean allow_newlines  = (flags & WR_NEWLINE) != 0;
+  boolean end_newline     = (flags & WR_LINE) != 0;
+  boolean allow_colors    = (flags & WR_COLOR) != 0;
+  boolean mask_midchars   = (flags & WR_MASK) != 0;
+
+  write_string_intl(str, x, y, color, allow_tabs, allow_newlines,
+   end_newline, allow_colors, mask_midchars, chr_offset, color_offset);
+}
+
+void color_string_ext_special(const char *str, unsigned int x, unsigned int y,
+ uint8_t *color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset)
+{
+  *color = write_string_intl(str, x, y, *color,
+   false, allow_newline, false, true, false, chr_offset, color_offset);
+}
+
+void color_string_ext(const char *str, unsigned int x, unsigned int y,
+ uint8_t color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset)
+{
+  color_string_ext_special(str, x, y, &color, allow_newline, chr_offset, color_offset);
 }
 
 // Set rightalign to print the rightmost char at xy and proceed to the left
 // minlen is the minimum length to print. Pad with 0.
 
-void write_number(int number, char color, int x, int y,
+void write_number(int number, uint8_t color, unsigned int x, unsigned int y,
  int minlen, boolean rightalign, int base)
 {
   char temp[12];
@@ -2288,28 +2222,31 @@ void write_number(int number, char color, int x, int y,
 
   if(rightalign)
   {
-    x -= strlen(temp) - 1;
-    if(x < 0)
+    unsigned int shift = strlen(temp) - 1;
+    if(shift < x)
+      x -= shift;
+    else
       x = 0;
   }
 
-  write_string(temp, x, y, color, false);
+  write_string_intl(temp, x, y, color,
+   false, false, false, false, false, PRO_CH, 16);
 }
 
-static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
- Uint8 color, Uint32 offset, Uint32 c_offset)
+static void color_line_ext(unsigned int length, unsigned int x, unsigned int y,
+ uint8_t color, unsigned int color_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
-  Uint8 bg_color = (color >> 4) + c_offset;
-  Uint8 fg_color = (color & 0x0F) + c_offset;
-  Uint32 i;
+  uint8_t bg_color = (color >> 4) + color_offset;
+  uint8_t fg_color = (color & 0x0F) + color_offset;
+  unsigned int i;
 
   dirty_ui();
   dirty_current();
 
-  for(i = 0; i < length; i++)
+  for(i = 0; i < length && dest < graphics.current_video_end; i++)
   {
     dest->char_value = dest_copy->char_value;
     dest->bg_color = bg_color;
@@ -2319,22 +2256,22 @@ static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
   }
 }
 
-void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
- Uint8 chr, Uint8 color, Uint32 offset, Uint32 c_offset)
+void fill_line_ext(unsigned int length, unsigned int x, unsigned int y,
+ uint8_t chr, uint8_t color, unsigned int chr_offset, unsigned int color_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
-  Uint8 bg_color = (color >> 4) + c_offset;
-  Uint8 fg_color = (color & 0x0F) + c_offset;
-  Uint32 i;
+  uint8_t bg_color = (color >> 4) + color_offset;
+  uint8_t fg_color = (color & 0x0F) + color_offset;
+  unsigned int i;
 
   dirty_ui();
   dirty_current();
 
-  for(i = 0; i < length; i++)
+  for(i = 0; i < length && dest < graphics.current_video_end; i++)
   {
-    dest->char_value = chr + offset;
+    dest->char_value = chr + chr_offset;
     dest->bg_color = bg_color;
     dest->fg_color = fg_color;
     *(dest_copy++) = *dest;
@@ -2342,13 +2279,14 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
   }
 }
 
-void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
- Uint8 fg_color, Uint32 x, Uint32 y, Uint32 offset)
+#ifdef CONFIG_EDITOR
+void draw_char_mixed_pal_ext(uint8_t chr, uint8_t bg_color,
+ uint8_t fg_color, unsigned int x, unsigned int y, unsigned int chr_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
-  dest->char_value = chr + offset;
+  dest->char_value = chr + chr_offset;
 
   dest->bg_color = bg_color & 31;
   dest->fg_color = fg_color & 31;
@@ -2358,107 +2296,119 @@ void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
   dirty_ui();
   dirty_current();
 }
+#endif /* CONFIG_EDITOR */
 
-void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
- Uint32 y, Uint32 offset, Uint32 c_offset)
+void draw_char_ext(uint8_t chr, uint8_t color, unsigned int x, unsigned int y,
+ unsigned int chr_offset, unsigned int color_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
-  dest->char_value = chr + offset;
-  dest->bg_color = (color >> 4) + c_offset;
-  dest->fg_color = (color & 0x0F) + c_offset;
+  dest->char_value = chr + chr_offset;
+  dest->bg_color = (color >> 4) + color_offset;
+  dest->fg_color = (color & 0x0F) + color_offset;
   *(dest_copy++) = *dest;
 
   dirty_ui();
   dirty_current();
 }
 
-void draw_char_linear_ext(Uint8 color, Uint8 chr,
- Uint32 offset, Uint32 offset_b, Uint32 c_offset)
+/**
+ * draw_char_ext, except if the color being drawn has a background color of 0,
+ * the background color from text_video will bleed through to the new character.
+ * This effect is used by legacy sprites to simulate transparency.
+ */
+void draw_char_bleedthru_ext(uint8_t chr, uint8_t color,
+ unsigned int x, unsigned int y, unsigned int chr_offset, unsigned int color_offset)
 {
-  struct char_element *dest = graphics.current_video + offset_adjust(offset);
+  int offset = (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.current_video + offset_adjust(offset, x, y);
   struct char_element *dest_copy = graphics.text_video + offset;
-  dest->char_value = chr + offset_b;
-  dest->bg_color = (color >> 4) + c_offset;
-  dest->fg_color = (color & 0x0F) + c_offset;
+
+  if(!(color & 0xF0))
+  {
+    // Bleed-through background color from text_video.
+    color |= (dest_copy->bg_color & 0x0F) << 4;
+  }
+
+  dest->char_value = chr + chr_offset;
+  dest->bg_color = (color >> 4) + color_offset;
+  dest->fg_color = (color & 0x0F) + color_offset;
   *(dest_copy++) = *dest;
 
   dirty_ui();
   dirty_current();
 }
 
-void draw_char_to_layer(Uint8 color, Uint8 chr,
- Uint32 x, Uint32 y, Uint32 offset_b, Uint32 c_offset)
+void draw_char_to_layer(uint8_t chr, uint8_t color,
+ unsigned int x, unsigned int y, unsigned int chr_offset, unsigned int color_offset)
 {
   int w = graphics.video_layers[graphics.current_layer].w;
   struct char_element *dest = graphics.current_video + (y * w) + x;
-  dest->char_value = chr + offset_b;
-  dest->bg_color = (color >> 4) + c_offset;
-  dest->fg_color = (color & 0x0F) + c_offset;
+
+  assert(dest < graphics.current_video_end);
+
+  dest->char_value = chr + chr_offset;
+  dest->bg_color = (color >> 4) + color_offset;
+  dest->fg_color = (color & 0x0F) + color_offset;
   dirty_current();
 }
 
-void color_string(const char *string, Uint32 x, Uint32 y, Uint8 color)
+void color_string(const char *string, unsigned int x, unsigned int y, uint8_t color)
 {
-  color_string_ext(string, x, y, color, PRO_CH, 16, false);
+  color_string_ext(string, x, y, color, false, PRO_CH, 16);
 }
 
-void write_string(const char *string, Uint32 x, Uint32 y, Uint8 color,
- Uint32 tab_allowed)
+void write_string(const char *string, unsigned int x, unsigned int y,
+ uint8_t color, int flags)
 {
-  write_string_ext(string, x, y, color, tab_allowed, PRO_CH, 16);
+  write_string_ext(string, x, y, color, flags, PRO_CH, 16);
 }
 
-void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color)
+void color_line(unsigned int length, unsigned int x, unsigned int y, uint8_t color)
 {
-  color_line_ext(length, x, y, color, PRO_CH, 16);
+  color_line_ext(length, x, y, color, 16);
 }
 
-void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
- Uint8 color)
+void fill_line(unsigned int length, unsigned int x, unsigned int y,
+ uint8_t chr, uint8_t color)
 {
   fill_line_ext(length, x, y, chr, color, PRO_CH, 16);
 }
 
-void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y)
+void draw_char(uint8_t chr, uint8_t color, unsigned int x, unsigned int y)
 {
   draw_char_ext(chr, color, x, y, PRO_CH, 16);
 }
 
-void erase_char(Uint32 x, Uint32 y)
+void erase_char(unsigned int x, unsigned int y)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_adjust(scr_off, x, y);
   dest->char_value = INVISIBLE_CHAR;
 }
 
-void erase_area(Uint32 x, Uint32 y, Uint32 x2, Uint32 y2)
+void erase_area(unsigned int x, unsigned int y, unsigned int x2, unsigned int y2)
 {
-  Uint32 i, j;
+  unsigned int i, j;
 
   for(i = y; i <= y2; i++)
     for(j = x; j <= x2; j++)
       erase_char(j, i);
 }
 
-Uint8 get_color_linear(Uint32 offset)
-{
-  struct char_element *dest = graphics.text_video + offset;
-  return (dest->bg_color << 4) | (dest->fg_color & 0x0F);
-}
-
 void clear_screen(void)
 {
   // Hide the game screen by drawing blank chars over the UI.
-  Uint32 i;
-  struct char_element *dest = graphics.current_video;
+  struct char_element *dest;
   struct char_element *dest_copy = graphics.text_video;
-  Uint32 current_layer = graphics.current_layer;
+  uint32_t current_layer = graphics.current_layer;
+  int i;
 
   select_layer(UI_LAYER);
   dirty_current();
 
+  dest = graphics.current_video;
   for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
   {
     dest->char_value = 0;
@@ -2504,21 +2454,21 @@ void get_screen(struct char_element *dest)
   memcpy(dest, graphics.text_video, size);
 }
 
-void cursor_underline(Uint32 x, Uint32 y)
+void cursor_underline(unsigned int x, unsigned int y)
 {
   graphics.cursor_mode = CURSOR_MODE_UNDERLINE;
   graphics.cursor_x = x;
   graphics.cursor_y = y;
 }
 
-void cursor_solid(Uint32 x, Uint32 y)
+void cursor_solid(unsigned int x, unsigned int y)
 {
   graphics.cursor_mode = CURSOR_MODE_SOLID;
   graphics.cursor_x = x;
   graphics.cursor_y = y;
 }
 
-void cursor_hint(Uint32 x, Uint32 y)
+void cursor_hint(unsigned int x, unsigned int y)
 {
   graphics.cursor_mode = graphics.cursor_hint_mode;
   graphics.cursor_x = x;
@@ -2542,6 +2492,12 @@ void m_show(void)
     graphics.mouse_status = true;
 }
 
+void mouse_size(unsigned int width, unsigned int height)
+{
+  graphics.mouse_width = width;
+  graphics.mouse_height = height;
+}
+
 #ifdef CONFIG_ENABLE_SCREENSHOTS
 #ifdef CONFIG_PNG
 
@@ -2556,14 +2512,14 @@ void m_show(void)
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  */
 /*
-static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
+static void dump_screen_real(uint8_t *pix, struct rgb_color *pal, int count,
  const char *name)
 {
   png_write_screen(pix, pal, count, name);
 }
 */
 
-static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
+static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
 {
   png_write_screen_32bpp(pix, name);
 }
@@ -2573,84 +2529,84 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
 #define DUMP_FMT_EXT "bmp"
 
 /*
-static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
+static void dump_screen_real(uint8_t *pix, struct rgb_color *pal, int count,
  const char *name)
 {
-  FILE *file;
+  vfile *file;
   int i;
 
-  file = fopen_unsafe(name, "wb");
+  file = vfopen_unsafe(name, "wb");
   if(!file)
     return;
 
   // BMP header
-  fputw(0x4D42, file); // BM
-  fputd(14 + 40 + count * 4 + 640 * 350, file); // BMP + DIB + palette + image
-  fputd(0, file); // Reserved
-  fputd(14, file); // DIB header offset
+  vfputw(0x4D42, file); // BM
+  vfputd(14 + 40 + count * 4 + 640 * 350, file); // BMP + DIB + palette + image
+  vfputd(0, file); // Reserved
+  vfputd(14, file); // DIB header offset
 
   // DIB header
-  fputd(40, file); // DIB header size (Windows 3/BITMAPINFOHEADER)
-  fputd(640, file); // Width in pixels
-  fputd(350, file); // Height in pixels
-  fputw(1, file); // Number of color planes
-  fputw(8, file); // Bits per pixel
-  fputd(0, file); // Compression method (none)
-  fputd(640 * 350, file); // Image data size
-  fputd(3780, file); // Horizontal dots per meter
-  fputd(3780, file); // Vertical dots per meter
-  fputd(count, file); // Number of colors in palette
-  fputd(0, file); // Number of important colors
+  vfputd(40, file); // DIB header size (Windows 3/BITMAPINFOHEADER)
+  vfputd(640, file); // Width in pixels
+  vfputd(350, file); // Height in pixels
+  vfputw(1, file); // Number of color planes
+  vfputw(8, file); // Bits per pixel
+  vfputd(0, file); // Compression method (none)
+  vfputd(640 * 350, file); // Image data size
+  vfputd(3780, file); // Horizontal dots per meter
+  vfputd(3780, file); // Vertical dots per meter
+  vfputd(count, file); // Number of colors in palette
+  vfputd(0, file); // Number of important colors
 
   // Color palette
   for(i = 0; i < count; i++)
   {
-    fputc(pal[i].b, file);
-    fputc(pal[i].g, file);
-    fputc(pal[i].r, file);
-    fputc(0, file);
+    vfputc(pal[i].b, file);
+    vfputc(pal[i].g, file);
+    vfputc(pal[i].r, file);
+    vfputc(0, file);
   }
 
   // Image data
   for(i = 349; i >= 0; i--)
   {
-    fwrite(pix + i * 640, sizeof(Uint8), 640, file);
+    vfwrite(pix + i * 640, sizeof(uint8_t), 640, file);
   }
 
-  fclose(file);
+  vfclose(file);
 }
 */
-static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
+static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
 {
-  FILE *file;
+  vfile *file;
   int i, x;
-  Uint8 rowbuffer[SCREEN_PIX_W * 3]; // 24bpp
-  Uint8 *rowbuffer_ptr;
-  Uint32 *pix_ptr;
+  uint8_t rowbuffer[SCREEN_PIX_W * 3]; // 24bpp
+  uint8_t *rowbuffer_ptr;
+  uint32_t *pix_ptr;
 
-  file = fopen_unsafe(name, "wb");
+  file = vfopen_unsafe(name, "wb");
   if(!file)
     return;
 
   // BMP header
-  fputw(0x4D42, file); // BM
+  vfputw(0x4D42, file); // BM
   // BMP + DIB + image
-  fputd(14 + 40 + SCREEN_PIX_W * SCREEN_PIX_H * 3, file);
-  fputd(0, file); // Reserved
-  fputd(14, file); // DIB header offset
+  vfputd(14 + 40 + SCREEN_PIX_W * SCREEN_PIX_H * 3, file);
+  vfputd(0, file); // Reserved
+  vfputd(14, file); // DIB header offset
 
   // DIB header
-  fputd(40, file); // DIB header size (Windows 3/BITMAPINFOHEADER)
-  fputd(SCREEN_PIX_W, file); // Width in pixels
-  fputd(SCREEN_PIX_H, file); // Height in pixels
-  fputw(1, file); // Number of color planes
-  fputw(24, file); // Bits per pixel
-  fputd(0, file); // Compression method (none)
-  fputd(SCREEN_PIX_W * SCREEN_PIX_H * 3, file); // Image data size
-  fputd(3780, file); // Horizontal dots per meter
-  fputd(3780, file); // Vertical dots per meter
-  fputd(0, file); // Number of colors in palette
-  fputd(0, file); // Number of important colors
+  vfputd(40, file); // DIB header size (Windows 3/BITMAPINFOHEADER)
+  vfputd(SCREEN_PIX_W, file); // Width in pixels
+  vfputd(SCREEN_PIX_H, file); // Height in pixels
+  vfputw(1, file); // Number of color planes
+  vfputw(24, file); // Bits per pixel
+  vfputd(0, file); // Compression method (none)
+  vfputd(SCREEN_PIX_W * SCREEN_PIX_H * 3, file); // Image data size
+  vfputd(3780, file); // Horizontal dots per meter
+  vfputd(3780, file); // Vertical dots per meter
+  vfputd(0, file); // Number of colors in palette
+  vfputd(0, file); // Number of important colors
 
   // Image data
   for(i = SCREEN_PIX_H - 1; i >= 0; i--)
@@ -2665,11 +2621,10 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
       rowbuffer_ptr += 3;
       pix_ptr++;
     }
-    fwrite(rowbuffer, SCREEN_PIX_W * 3, 1, file);
-    //fwrite(pix + i * 640, sizeof(Uint8), 640, file);
+    vfwrite(rowbuffer, SCREEN_PIX_W * 3, 1, file);
   }
 
-  fclose(file);
+  vfclose(file);
 }
 
 #endif // CONFIG_PNG
@@ -2679,24 +2634,24 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
 void dump_screen(void)
 {
   struct rgb_color palette[FULL_PAL_SIZE];
-  Uint32 backup_palette[FULL_PAL_SIZE];
-  size_t palette_size_bytes = sizeof(Uint32) * FULL_PAL_SIZE;
+  uint32_t backup_palette[FULL_PAL_SIZE];
+  size_t palette_size_bytes = sizeof(uint32_t) * FULL_PAL_SIZE;
   int palette_size;
   char name[MAX_NAME_SIZE];
   struct stat file_info;
-  Uint32 *ss;
+  uint32_t *ss;
   int i;
-  Uint32 layer;
+  uint32_t layer;
 
   for(i = 0; i < 99999; i++)
   {
     snprintf(name, MAX_NAME_SIZE - 1, "screen%d.%s", i, DUMP_FMT_EXT);
     name[MAX_NAME_SIZE - 1] = '\0';
-    if(stat(name, &file_info))
+    if(vstat(name, &file_info))
       break;
   }
 
-  ss = cmalloc(sizeof(Uint32) * 640 * 350);
+  ss = cmalloc(sizeof(uint32_t) * 640 * 350);
 
   // Unfortunately, render_layer wants flat_intensity_palette set, so we need
   // to back this up, fill it, render the layer to memory, then copy the old
@@ -2723,7 +2678,7 @@ void dump_screen(void)
 
   for(layer = 0; layer < graphics.layer_count; layer++)
   {
-    render_layer(ss, 32, 640 * sizeof(Uint32), &graphics,
+    render_layer(ss, 32, 640 * sizeof(uint32_t), &graphics,
      graphics.sorted_video_layers[layer]);
   }
 
@@ -2735,48 +2690,85 @@ void dump_screen(void)
 }
 #endif /* CONFIG_ENABLE_SCREENSHOTS */
 
-void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer)
+/**
+ * Generate a bitmask of visible pixels for a character/palette pair using the
+ * current screen mode and a given transparent color index. The provided buffer
+ * must be CHAR_SIZE bytes in length. Returns `false` if there are no visible
+ * pixels, otherwise `true`.
+ */
+boolean get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
+ int transparent_color, uint8_t * RESTRICT buffer)
 {
-  // Dumps the specified char into a buffer. Expects CHAR_W * CHAR_H bytes.
-  int x, y;
-  Uint8 cols[4];
-  char_idx = char_idx % PROTECTED_CHARSET_POSITION;
-  color = color % SMZX_PAL_SIZE;
+  const uint8_t *chrdata = graphics.charset + char_idx * CHAR_SIZE;
+  const uint8_t HI = 0xAA;
+  const uint8_t LO = 0x55;
+  int is_transparent[4];
+  int ret = 0x00;
+  int y;
 
-  if(mode == -1)
-    mode = graphics.screen_mode;
-
-  if(mode == 0)
+  if(graphics.screen_mode == 0)
   {
-    cols[0] = (color & 0xF0) >> 4;
-    cols[1] = color & 0x0F;
+    int bg = (palette & 0xF0) >> 4;
+    int fg = (palette & 0x0F);
+    is_transparent[0] = (bg == transparent_color);
+    is_transparent[1] = (fg == transparent_color);
 
-    for(y = 0; y < CHAR_H; y++)
+    for(y = 0; y < CHAR_SIZE; y++)
     {
-      char row = graphics.charset[char_idx * CHAR_SIZE + y];
-      for(x = 0; x < CHAR_W; x++)
-      {
-        buffer[y * CHAR_W + x] = cols[(row >> (7-x)) & 0x01];
-      }
+      uint8_t base = chrdata[y];
+      uint8_t mask = 0xFF;
+
+      if(is_transparent[0])
+        mask &= base;
+
+      if(is_transparent[1])
+        mask &= ~base;
+
+      buffer[y] = mask;
+      ret |= mask;
     }
   }
   else
   {
-    cols[0] = graphics.smzx_indices[color * 4 + 0];
-    cols[1] = graphics.smzx_indices[color * 4 + 1];
-    cols[2] = graphics.smzx_indices[color * 4 + 2];
-    cols[3] = graphics.smzx_indices[color * 4 + 3];
+    is_transparent[0] = graphics.smzx_indices[palette * 4 + 0] == transparent_color;
+    is_transparent[1] = graphics.smzx_indices[palette * 4 + 1] == transparent_color;
+    is_transparent[2] = graphics.smzx_indices[palette * 4 + 2] == transparent_color;
+    is_transparent[3] = graphics.smzx_indices[palette * 4 + 3] == transparent_color;
 
-    for(y = 0; y < CHAR_H; y++)
+    for(y = 0; y < CHAR_SIZE; y++)
     {
-      char row = graphics.charset[char_idx * CHAR_SIZE + y];
-      for(x = 0; x < CHAR_W; x += 2)
+      uint8_t base = chrdata[y];
+      uint8_t mask = 0xFF;
+
+      if(is_transparent[0])
       {
-        buffer[y * CHAR_W + x] = cols[(row >> (6-x)) & 0x03];
-        buffer[y * CHAR_W + x + 1] = cols[(row >> (6-x)) & 0x03];
+        uint8_t colmask = (~base & HI) & ((~base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
       }
+
+      if(is_transparent[1])
+      {
+        uint8_t colmask = (~base & HI) & ((base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
+      }
+
+      if(is_transparent[2])
+      {
+        uint8_t colmask = (base & HI) & ((~base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
+      }
+
+      if(is_transparent[3])
+      {
+        uint8_t colmask = (base & HI) & ((base & LO) << 1);
+        mask &= ~(colmask | (colmask >> 1));
+      }
+
+      buffer[y] = mask;
+      ret |= mask;
     }
   }
+  return (ret != 0x00);
 }
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
@@ -2789,12 +2781,6 @@ void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y)
 {
   graphics.renderer.set_screen_coords(&graphics, x, y, screen_x, screen_y);
-}
-
-void set_mouse_mul(int width_mul, int height_mul)
-{
-  graphics.mouse_width_mul = width_mul;
-  graphics.mouse_height_mul = height_mul;
 }
 
 void focus_screen(int x, int y)

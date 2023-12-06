@@ -4,7 +4,7 @@
 # Unit tests require C++11.
 #
 
-.PHONY: unittest unit_clean
+.PHONY: unit unittest unit_clean
 
 unit_src        := unit
 unit_obj        := unit/.build
@@ -14,12 +14,17 @@ unit_src_io     := unit/io
 unit_obj_io     := unit/io/.build
 unit_src_network:= unit/network
 unit_obj_network:= unit/network/.build
+unit_src_utils  := unit/utils
+unit_obj_utils  := unit/utils/.build
 
 ifneq (${BINEXT},)
 unit_ext        := ${BINEXT}
 else
 unit_ext        := .test
 endif
+
+unit_common_objs := \
+  ${unit_obj}/Unit.o                   \
 
 unit_objs := \
   ${unit_obj}/align${unit_ext}         \
@@ -28,7 +33,9 @@ unit_objs := \
   ${unit_obj_io}/bitstream${unit_ext}  \
   ${unit_obj_io}/memfile${unit_ext}    \
   ${unit_obj_io}/path${unit_ext}       \
+  ${unit_obj_io}/vfs${unit_ext}        \
   ${unit_obj_io}/vio${unit_ext}        \
+  ${unit_obj_io}/zip${unit_ext}        \
 
 ifneq (${BUILD_EDITOR},)
 
@@ -44,6 +51,18 @@ unit_objs += \
 
 endif
 
+ifneq (${BUILD_UTILS},)
+
+unit_objs += \
+  ${unit_obj_utils}/image_file${unit_ext} \
+
+endif
+
+ifeq (${PLATFORM},mingw)
+unit_objs += \
+  ${unit_obj}/thread_win32${unit_ext}
+endif
+
 #
 # Some unit tests only work with modular builds. The reason is usually
 # that the component(s) being tested are far too dependent on other
@@ -54,7 +73,9 @@ ifneq (${BUILD_MODULAR},)
 unit_objs += \
   ${unit_obj}/configure${unit_ext}     \
   ${unit_obj}/intake${unit_ext}        \
-  ${unit_obj_io}/zip${unit_ext}
+  ${unit_obj}/sfx${unit_ext}           \
+  ${unit_obj}/thread${unit_ext}        \
+  ${unit_obj}/world${unit_ext}         \
 
 unit_ldflags += -L. -lcore
 
@@ -66,6 +87,20 @@ ifneq (${BUILD_NETWORK},)
 unit_objs += \
   ${unit_obj_network}/Manifest${unit_ext}
 endif
+
+else # !BUILD_MODULAR
+
+#
+# Certain tests that don't rely on many core MZX features can be patched in
+# by directly linking their objects.
+#
+unit_common_objs += \
+  ${io_obj}/path.o        \
+  ${io_obj}/vfs.o         \
+  ${io_obj}/vio.o         \
+  ${io_obj}/zip.o         \
+  ${io_obj}/zip_stream.o  \
+
 endif
 
 #
@@ -74,54 +109,78 @@ endif
 DEBUG_CFLAGS ?= -O0
 
 #
+# Use DEBUG_CFLAGS to override any optimization flags in the global flags.
 # Build without -DDEBUG to suppress debug messages,
 # build without -DNDEBUG to allow assert().
+# Turn on exceptions explicitly, since the global CXXFLAGS turn them off.
 #
-unit_cflags ?= ${DEBUG_CFLAGS} -g \
- -Wall -Wextra -pedantic -Wno-unused-parameter -funsigned-char -std=gnu++11
+unit_cflags ?= ${CXXFLAGS} ${DEBUG_CFLAGS} -UDEBUG -UNDEBUG
+unit_cflags += -fexceptions -funsigned-char -std=gnu++11
+unit_ldflags += ${DEBUG_CFLAGS}
 
 unit_cflags += ${SDL_CFLAGS} -Umain
-unit_ldflags +=
+unit_ldflags += ${SDL_LDFLAGS} ${ZLIB_LDFLAGS}
 
-ifeq (${BUILD_F_ANALYZER},1)
-ifeq (${HAS_F_ANALYZER},1)
-unit_cflags += -fanalyzer
+# Required for image_file test.
+ifneq (${LIBPNG},)
+unit_cflags  += ${LIBPNG_CFLAGS}
+unit_ldflags += ${LIBPNG_LDFLAGS}
 endif
+
+# Required for threading test.
+ifeq (${PTHREAD},1)
+unit_cflags  += ${PTHREAD_CFLAGS}
+unit_ldflags += ${PTHREAD_LDFLAGS}
 endif
+
+# System libs need to be last in the search order.
+unit_ldflags += ${ARCH_LIBS}
 
 ifneq (${HAS_CXX_11},1)
 
-unittest:
+unit unittest:
 	$(if ${V},,@echo "Skipping unit tests (requires C++11).")
 
 unit_clean:
 
 else
 
+${unit_objs}: ${unit_common_objs}
+
+${unit_obj}/%.o: ${unit_src}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${unit_cflags} -c $< -o $@
+
 ${unit_obj}/%${unit_ext}: ${unit_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_common_objs} ${unit_ldflags}
 
 ${unit_obj_editor}/%${unit_ext}: ${unit_src_editor}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_common_objs} ${unit_ldflags}
 
 ${unit_obj_io}/%${unit_ext}: ${unit_src_io}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_common_objs} ${unit_ldflags}
 
 ${unit_obj_network}/%${unit_ext}: ${unit_src_network}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_ldflags}
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_common_objs} ${unit_ldflags}
+
+${unit_obj_utils}/%${unit_ext}: ${unit_src_utils}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_common_objs} ${unit_ldflags}
 
 -include ${unit_objs:${unit_ext}=.d}
+-include ${unit_common_objs:.o=.d}
 
-${unit_objs}: | $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
-${unit_objs}: | $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
-${unit_objs}: | $(filter-out $(wildcard ${unit_obj_io}), ${unit_obj_io})
-${unit_objs}: | $(filter-out $(wildcard ${unit_obj_network}), ${unit_obj_network})
+${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
+${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
+${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_io}), ${unit_obj_io})
+${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_network}), ${unit_obj_network})
+${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_utils}), ${unit_obj_utils})
 
-unittest: ${unit_objs}
+unit unittest: ${unit_objs}
 	@failcount=0; \
 	for t in ${unit_objs}; do \
 		LD_LIBRARY_PATH="." ./$$t ; \
@@ -135,7 +194,7 @@ unittest: ${unit_objs}
 	fi;
 
 unit_clean:
-	$(if ${V},,@echo "  RM      " ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network})
-	${RM} -r ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network}
+	$(if ${V},,@echo "  RM      " ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network} ${unit_obj_utils})
+	${RM} -r ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network} ${unit_obj_utils}
 
 endif

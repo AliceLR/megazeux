@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -25,7 +25,6 @@
  * from ftp://ftp.funet.fi/pub/amiga/fish/301-400/ff349
  */
 
-#include <assert.h>
 #include "loader.h"
 
 #define MAGIC_MED3	MAGIC4('M','E','D',3)
@@ -61,7 +60,6 @@ static int med3_test(HIO_HANDLE *f, char *t, const int start)
 #define M0F_LINEMSK10	0x20
 #define M0F_FXMSK00	0x40
 #define M0F_FXMSK10	0x80
-
 
 
 /*
@@ -107,7 +105,7 @@ static int unpack_block(struct module_data *m, uint16 bnum, uint8 *from, uint16 
 	int i, j, trkn = mod->chn;
 
 	/*from += 16;*/
-	patbuf = to = calloc(3, 4 * 64);
+	patbuf = to = (uint8 *) calloc(3, 4 * 64);
 	if (to == NULL) {
 		goto err;
 	}
@@ -331,7 +329,7 @@ static int med3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		if (mask & MASK)
 			hio_read8(f);
 	}
-	
+
 	MODULE_INFO();
 
 	D_(D_INFO "Sliding: %d", sliding);
@@ -351,17 +349,20 @@ static int med3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 	for (i = 0; i < mod->pat; i++) {
 		uint32 *conv;
-		uint8 b, tracks;
+		uint8 b;
+		/*uint8 tracks;*/
 		uint16 convsz;
 
 		if (libxmp_alloc_pattern_tracks(mod, i, 64) < 0)
 			return -1;
 
-		tracks = hio_read8(f);
+		/* TODO: not clear if this should be respected. Later MED
+		 * formats are capable of having different track counts. */
+		/*tracks =*/ hio_read8(f);
 
 		b = hio_read8(f);
 		convsz = hio_read16b(f);
-		conv = calloc(1, convsz + 16);
+		conv = (uint32 *) calloc(1, convsz + 16);
 		if (conv == NULL)
 			return -1;
 

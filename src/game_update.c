@@ -767,10 +767,16 @@ static void draw_message(struct world *mzx_world)
 {
   struct board *cur_board = mzx_world->current_board;
   int mesg_y = cur_board->b_mesg_row;
-  Uint8 tmp_color = scroll_color;
+  unsigned char tmp_color = scroll_color;
   char *lines[25];
   int i = 1;
   int j;
+
+  /* Safety check: bad values can get into these vars from
+   * old worlds/saves and cause out-of-bounds draws. */
+  if(mesg_y < 0 || mesg_y >= SCREEN_H ||
+   cur_board->b_mesg_col < -1 || cur_board->b_mesg_col >= SCREEN_W)
+    return;
 
   /* Always at least one line.. */
   lines[0] = cur_board->bottom_mesg;
@@ -805,8 +811,7 @@ static void draw_message(struct world *mzx_world)
     if(mesg_x == -1)
       mesg_x = 40 - (mesg_length / 2);
 
-    color_string_ext_special(lines[j], mesg_x, mesg_y, &tmp_color,
-      0, 0, false);
+    color_string_ext_special(lines[j], mesg_x, mesg_y, &tmp_color, false, 0, 0);
 
     if((mesg_x > 0) && (mesg_edges))
       draw_char_ext(' ', scroll_color, mesg_x - 1, mesg_y, 0, 0);
@@ -903,7 +908,7 @@ boolean draw_world(context *ctx, boolean is_title)
     write_string(tmp_str, 1, 24, timer_color, 0);
 
     // Border with spaces
-    draw_char(' ', edge_color, (Uint32)strlen(tmp_str) + 1, 24);
+    draw_char(' ', edge_color, (unsigned int)strlen(tmp_str) + 1, 24);
     draw_char(' ', edge_color, 0, 24);
   }
 

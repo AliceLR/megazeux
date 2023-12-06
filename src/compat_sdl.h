@@ -40,7 +40,8 @@ __M_BEGIN_DECLS
 // Data types
 
 typedef SDLKey SDL_Keycode;
-typedef void   SDL_Window;
+// Use a macro because sdl1.2-compat typedefs SDL_Window...
+#define SDL_Window void
 
 // Macros / enumerants
 
@@ -113,7 +114,10 @@ static inline int SDL_JoystickInstanceID(SDL_Joystick *joystick)
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 static inline int SDL_GL_SetSwapInterval(int interval)
 {
+#if SDL_VERSION_ATLEAST(1,2,10)
   return SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, interval);
+#endif
+  return 0;
 }
 #endif
 

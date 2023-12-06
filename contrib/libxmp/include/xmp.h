@@ -1,6 +1,8 @@
 #ifndef XMP_H
 #define XMP_H
 
+/**** Start MZX-specific hacks. *****/
+
 /* Suppress unwanted debug messages */
 #ifdef DEBUG
 #undef DEBUG
@@ -8,8 +10,8 @@
 #endif
 
 /* Force libxmp to build static */
-#ifndef BUILDING_STATIC
-#define BUILDING_STATIC
+#ifndef LIBXMP_STATIC
+#define LIBXMP_STATIC
 #endif
 
 /* Force libxmp to not use versioned symbols on Linux */
@@ -17,39 +19,58 @@
 #undef XMP_SYM_VISIBILITY
 #endif
 
+/***** End MZX-specific hacks. *****/
+
+#if defined(EMSCRIPTEN)
+# include <emscripten.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define XMP_VERSION "4.5.0"
-#define XMP_VERCODE 0x040500
+#define XMP_VERSION "4.6.0"
+#define XMP_VERCODE 0x040600
 #define XMP_VER_MAJOR 4
-#define XMP_VER_MINOR 5
+#define XMP_VER_MINOR 6
 #define XMP_VER_RELEASE 0
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
-# if defined(BUILDING_STATIC)
+# if defined(LIBXMP_STATIC)
 #  define LIBXMP_EXPORT
 # elif defined(BUILDING_DLL)
 #  define LIBXMP_EXPORT __declspec(dllexport)
 # else
 #  define LIBXMP_EXPORT __declspec(dllimport)
 # endif
-#elif defined(__OS2__) && defined(__WATCOMC__) && defined(__SW_BD)
+#elif defined(__OS2__) && defined(__WATCOMC__)
+# if defined(LIBXMP_STATIC)
+#  define LIBXMP_EXPORT
+# elif defined(BUILDING_DLL)
 #  define LIBXMP_EXPORT __declspec(dllexport)
+# else
+#  define LIBXMP_EXPORT
+# endif
 #elif (defined(__GNUC__) || defined(__clang__) || defined(__HP_cc)) && defined(XMP_SYM_VISIBILITY)
-# define LIBXMP_EXPORT __attribute__((visibility ("default")))
+# if defined(LIBXMP_STATIC)
+#  define LIBXMP_EXPORT
+# else
+#  define LIBXMP_EXPORT __attribute__((visibility("default")))
+# endif
 #elif defined(__SUNPRO_C) && defined(XMP_LDSCOPE_GLOBAL)
-# define LIBXMP_EXPORT __global
+# if defined(LIBXMP_STATIC)
+#  define LIBXMP_EXPORT
+# else
+#  define LIBXMP_EXPORT __global
+# endif
 #elif defined(EMSCRIPTEN)
-# include <emscripten.h>
 # define LIBXMP_EXPORT EMSCRIPTEN_KEEPALIVE
 # define LIBXMP_EXPORT_VAR
 #else
 # define LIBXMP_EXPORT
 #endif
 
-#if !defined (LIBXMP_EXPORT_VAR)
+#if !defined(LIBXMP_EXPORT_VAR)
 # define LIBXMP_EXPORT_VAR LIBXMP_EXPORT
 #endif
 
@@ -254,6 +275,7 @@ struct xmp_sample {
 #define XMP_SAMPLE_LOOP_FULL	(1 << 4)  /* Play full sample before looping */
 #define XMP_SAMPLE_SLOOP	(1 << 5)  /* Sample has sustain loop */
 #define XMP_SAMPLE_SLOOP_BIDIR	(1 << 6)  /* Bidirectional sustain loop */
+#define XMP_SAMPLE_STEREO	(1 << 7)  /* Interlaced stereo sample */
 #define XMP_SAMPLE_SYNTH	(1 << 15) /* Data contains synth patch */
 	int flg;			/* Flags */
 	unsigned char *data;		/* Sample data */
@@ -336,18 +358,37 @@ struct xmp_frame_info {			/* Current frame information */
 	struct xmp_channel_info channel_info[XMP_MAX_CHANNELS];		/* Current channel information */
 };
 
+struct xmp_callbacks {
+	unsigned long	(*read_func)(void *dest, unsigned long len,
+				     unsigned long nmemb, void *priv);
+	int		(*seek_func)(void *priv, long offset, int whence);
+	long		(*tell_func)(void *priv);
+	int		(*close_func)(void *priv);
+};
 
 typedef char *xmp_context;
 
 LIBXMP_EXPORT_VAR extern const char *xmp_version;
 LIBXMP_EXPORT_VAR extern const unsigned int xmp_vercode;
 
+LIBXMP_EXPORT int         xmp_syserrno        (void);
+
 LIBXMP_EXPORT xmp_context xmp_create_context  (void);
 LIBXMP_EXPORT void        xmp_free_context    (xmp_context);
-LIBXMP_EXPORT int         xmp_test_module     (const char *, struct xmp_test_info *);
+
 LIBXMP_EXPORT int         xmp_load_module     (xmp_context, const char *);
+LIBXMP_EXPORT int         xmp_load_module_from_memory (xmp_context, const void *, long);
+LIBXMP_EXPORT int         xmp_load_module_from_file (xmp_context, void *, long);
+LIBXMP_EXPORT int         xmp_load_module_from_callbacks (xmp_context, void *, struct xmp_callbacks);
+
+LIBXMP_EXPORT int         xmp_test_module     (const char *, struct xmp_test_info *);
+LIBXMP_EXPORT int         xmp_test_module_from_memory (const void *, long, struct xmp_test_info *);
+LIBXMP_EXPORT int         xmp_test_module_from_file (void *, struct xmp_test_info *);
+LIBXMP_EXPORT int         xmp_test_module_from_callbacks (void *, struct xmp_callbacks, struct xmp_test_info *);
+
 LIBXMP_EXPORT void        xmp_scan_module     (xmp_context);
 LIBXMP_EXPORT void        xmp_release_module  (xmp_context);
+
 LIBXMP_EXPORT int         xmp_start_player    (xmp_context, int, int);
 LIBXMP_EXPORT int         xmp_play_frame      (xmp_context);
 LIBXMP_EXPORT int         xmp_play_buffer     (xmp_context, void *, int, int);
@@ -369,10 +410,6 @@ LIBXMP_EXPORT int         xmp_channel_vol     (xmp_context, int, int);
 LIBXMP_EXPORT int         xmp_set_player      (xmp_context, int, int);
 LIBXMP_EXPORT int         xmp_get_player      (xmp_context, int);
 LIBXMP_EXPORT int         xmp_set_instrument_path (xmp_context, const char *);
-LIBXMP_EXPORT int         xmp_load_module_from_memory (xmp_context, void *, long);
-LIBXMP_EXPORT int         xmp_load_module_from_file (xmp_context, void *, long);
-LIBXMP_EXPORT int         xmp_test_module_from_memory (void *, long, struct xmp_test_info *);
-LIBXMP_EXPORT int         xmp_test_module_from_file (void *, struct xmp_test_info *);
 
 /* External sample mixer API */
 LIBXMP_EXPORT int         xmp_start_smix       (xmp_context, int, int);

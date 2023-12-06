@@ -18,7 +18,8 @@
  */
 
 /**
- * Types for vio.h (so it doesn't have to be included in world_struct.h).
+ * Types for vio.h and memfile.h so they don't have to be included in
+ * world_struct.h and other high-traffic headers.
  */
 
 #ifndef __IO_VFILE_H
@@ -29,7 +30,13 @@
 __M_BEGIN_DECLS
 
 typedef struct vfile vfile;
+typedef struct vdir vdir;
+typedef struct vfilesystem vfilesystem;
+struct memfile;
 struct stat;
+
+/* Dummy device for stat on a virtual file. */
+#define VFS_MZX_DEVICE (('M'<<24u) | ('Z'<<16u) | ('X'<<8u) | ('V'))
 
 __M_END_DECLS
 

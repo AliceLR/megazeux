@@ -88,6 +88,11 @@ struct board
   char *palette_path;
   size_t charset_path_allocated;
   size_t palette_path_allocated;
+  unsigned char blind_dur_v1;
+  unsigned char firewalker_dur_v1;
+  unsigned char freeze_time_dur_v1;
+  unsigned char slow_time_dur_v1;
+  unsigned char wind_dur_v1;
 
   int num_robots;
   int num_robots_active;
@@ -100,7 +105,7 @@ struct board
   int num_sensors;
   int num_sensors_allocated;
   struct sensor **sensor_list;
-#ifdef DEBUG
+#if defined(DEBUG) || defined(CONFIG_EXTRAM)
   boolean is_extram;
 #endif
 };

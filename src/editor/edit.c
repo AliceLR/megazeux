@@ -41,6 +41,7 @@
 #include "../window.h"
 #include "../world.h"
 #include "../io/path.h"
+#include "../io/vio.h"
 
 #include "../audio/audio.h"
 #include "../audio/sfx.h"
@@ -67,6 +68,7 @@
 #include "window.h"
 #include "world.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -83,7 +85,6 @@
 static const char *const world_ext[] = { ".MZX", NULL };
 static const char *const mzb_ext[] = { ".MZB", NULL };
 static const char *const mzm_ext[] = { ".MZM", NULL };
-static const char *const sfx_ext[] = { ".SFX", NULL };
 static const char *const chr_ext[] = { ".CHR", NULL };
 static const char *const ans_ext[] = { ".ANS", ".TXT", NULL };
 static const char *const mod_ext[] =
@@ -185,7 +186,7 @@ struct editor_context
   int flash_timer;
   int flash_timer_swap;
   int flash_timer_max;
-  Uint32 flash_layer;
+  uint32_t flash_layer;
 
   // ANSi settings
   int ansi_line_wrap_column; // = 80
@@ -226,7 +227,7 @@ static boolean editor_reload_world(struct editor_context *editor,
   snprintf(config_file_name, MAX_PATH, "%.*s.editor.cnf", file_name_len, file);
   config_file_name[MAX_PATH - 1] = '\0';
 
-  if(stat(config_file_name, &file_info) >= 0)
+  if(vstat(config_file_name, &file_info) >= 0)
     set_config_from_file(GAME_EDITOR_CNF, config_file_name);
 
   edit_menu_show_board_mod(editor->edit_menu);
@@ -246,7 +247,7 @@ static void get_test_world_filename(struct editor_context *editor)
   strcpy(editor->test_reload_file, TEST_WORLD_FILENAME);
 
   // If the regular file exists, attempt numbered names.
-  for(i = 2; !stat(editor->test_reload_file, &file_info); i++)
+  for(i = 2; !vstat(editor->test_reload_file, &file_info); i++)
     snprintf(editor->test_reload_file, MAX_PATH, TEST_WORLD_PATTERN, i);
 }
 
@@ -883,13 +884,13 @@ static void flash_done(struct editor_context *editor)
  * Determine if a protected palette char flash is required.
  */
 static enum flash_thing_type flash_get_type(struct editor_context *editor,
- struct board *cur_board, Uint8 chr, Uint8 color, Uint8 flash_chr)
+ struct board *cur_board, uint8_t chr, uint8_t color, uint8_t flash_chr)
 {
   int screen_mode = get_screen_mode();
   if(!screen_mode)
   {
-    Uint8 fg = color & 0x0F;
-    Uint8 bg = (color & 0xF0) >> 4;
+    unsigned int fg = color & 0x0F;
+    unsigned int bg = (color & 0xF0) >> 4;
 
     ssize_t diff;
 
@@ -906,7 +907,7 @@ static enum flash_thing_type flash_get_type(struct editor_context *editor,
   // If one of the chars to display is the board char, is it too close to the
   // flash char?
   if(!editor->flash_char_a || !editor->flash_char_b)
-    if(compare_char(chr, (Uint16)flash_chr + PRO_CH) >= (112*3/4))
+    if(compare_char(chr, (uint16_t)flash_chr + PRO_CH) >= (112*3/4))
       return FLASH_THING_CLOSE_CHAR;
 
   // SMZX modes should always display protected...
@@ -928,14 +929,14 @@ static void flash_draw(struct editor_context *editor, struct board *cur_board,
 
   if(id >= editor->flash_start && id < editor->flash_start + editor->flash_len)
   {
-    Uint8 color = get_id_color(cur_board, offset);
-    Uint8 chr = get_id_char(cur_board, offset);
+    uint8_t color = get_id_color(cur_board, offset);
+    uint8_t chr = get_id_char(cur_board, offset);
     enum flash_thing_type type;
 
     type = flash_get_type(editor, cur_board, chr, color, flash_chr);
     if(type != FLASH_THING_NORMAL)
     {
-      Uint32 avg_luma = get_char_average_luma(chr, color, -1, flash_chr + PRO_CH);
+      int avg_luma = get_char_average_luma(chr, color, -1, flash_chr + PRO_CH);
 
       if(!editor->flash_layer)
       {
@@ -1052,11 +1053,13 @@ static void draw_vlayer_window(struct editor_context *editor)
  */
 static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
 {
-  int offset = 0;
-  int start;
-  int skip;
-  int x;
+  int after_x;
+  int after_y;
+  int after_width;
   int y;
+
+  if(in_x < 0 || in_x >= SCREEN_W || in_y < 0 || in_y >= SCREEN_H)
+    return;
 
   if(in_x + in_width > SCREEN_W)
     in_width = SCREEN_W - in_x;
@@ -1064,34 +1067,27 @@ static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
   if(in_y + in_height > SCREEN_H)
     in_height = SCREEN_H - in_y;
 
-  start = in_x + (in_y * in_width);
-  skip = SCREEN_W - in_width;
+  after_x = in_x + in_width;
+  after_y = in_y + in_height;
+  after_width = SCREEN_W - after_x;
 
-  // Clear everything before the in-bounds area
-  while(offset < start)
+  // Clear any lines prior to the first line.
+  for(y = 0; y < in_y; y++)
+    fill_line(SCREEN_W, 0, y, 177, 1);
+
+  // Clear any area before and after the in-bounds area.
+  for(; y < after_y; y++)
   {
-    draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-    offset++;
+    if(in_x > 0)
+      fill_line(in_x, 0, y, 177, 1);
+
+    if(after_width > 0)
+      fill_line(after_width, after_x, y, 177, 1);
   }
 
-  // Clear everything between the in-bounds area
-  for(y = 0; y < in_height; y++)
-  {
-    offset += in_width;
-
-    for(x = 0; x < skip; x++)
-    {
-      draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-      offset++;
-    }
-  }
-
-  // Clear everything after the in-bounds area
-  while(offset < SCREEN_W * SCREEN_H)
-  {
-    draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
-    offset++;
-  }
+  // Clear any lines after the last line.
+  for(; y < SCREEN_H; y++)
+    fill_line(SCREEN_W, 0, y, 177, 1);
 }
 
 /**
@@ -2721,6 +2717,7 @@ static boolean editor_key(context *ctx, int *key)
 
             if(del_board == current_board_id)
             {
+              mzx_world->current_board = NULL;
               editor_set_current_board(editor, 0, true);
             }
             else
@@ -2946,20 +2943,7 @@ static boolean editor_key(context *ctx, int *key)
             case 4:
             {
               // Sound effects
-              if(!choose_file(mzx_world, sfx_ext, import_name,
-               "Choose SFX file to import", ALLOW_ALL_DIRS))
-              {
-                FILE *sfx_file;
-
-                sfx_file = fopen_unsafe(import_name, "rb");
-                if(NUM_SFX !=
-                 fread(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file))
-                  error_message(E_IO_READ, 0, NULL);
-
-                mzx_world->custom_sfx_on = 1;
-                fclose(sfx_file);
-                editor->modified = true;
-              }
+              import_sfx(ctx, &editor->modified);
               break;
             }
 
@@ -3220,8 +3204,8 @@ static boolean editor_key(context *ctx, int *key)
             char current_dir[MAX_PATH];
             char new_mod[MAX_PATH] = { 0 } ;
 
-            getcwd(current_dir, MAX_PATH);
-            chdir(editor->current_listening_dir);
+            vgetcwd(current_dir, MAX_PATH);
+            vchdir(editor->current_listening_dir);
 
             if(!choose_file(mzx_world, mod_ext, new_mod,
              "Choose a module file (listening only)", ALLOW_ALL_DIRS))
@@ -3233,7 +3217,7 @@ static boolean editor_key(context *ctx, int *key)
               editor->listening_mod_active = true;
             }
 
-            chdir(current_dir);
+            vchdir(current_dir);
           }
           else
           {
@@ -3428,7 +3412,7 @@ static boolean editor_key(context *ctx, int *key)
             save_world(mzx_world, world_name, false, MZX_VERSION);
 
             if(path_get_directory(new_path, MAX_PATH, world_name) > 0)
-              chdir(new_path);
+              vchdir(new_path);
 
             editor->modified = false;
           }
@@ -3461,7 +3445,7 @@ static boolean editor_key(context *ctx, int *key)
 
         if(!save_world(mzx_world, editor->test_reload_file, false, MZX_VERSION))
         {
-          getcwd(editor->test_reload_dir, MAX_PATH);
+          vgetcwd(editor->test_reload_dir, MAX_PATH);
           editor->test_reload_version = mzx_world->version;
           editor->test_reload_board = mzx_world->current_board_id;
           editor->reload_after_testing = true;
@@ -3480,7 +3464,7 @@ static boolean editor_key(context *ctx, int *key)
           send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
           send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
-          reset_robot_debugger();
+          debug_robot_reset(mzx_world);
 
           play_game(ctx, NULL);
         }
@@ -3592,23 +3576,7 @@ static boolean editor_key(context *ctx, int *key)
             case 3:
             {
               // Sound effects
-              if(!new_file(mzx_world, sfx_ext, ".sfx", export_name,
-               "Export SFX file", ALLOW_ALL_DIRS))
-              {
-                FILE *sfx_file;
-
-                sfx_file = fopen_unsafe(export_name, "wb");
-
-                if(sfx_file)
-                {
-                  if(mzx_world->custom_sfx_on)
-                    fwrite(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file);
-                  else
-                    fwrite(sfx_strs, SFX_SIZE, NUM_SFX, sfx_file);
-
-                  fclose(sfx_file);
-                }
-              }
+              export_sfx(ctx);
               break;
             }
 
@@ -3780,7 +3748,7 @@ static void editor_resume(context *ctx)
   if(editor->reload_after_testing)
   {
     editor->reload_after_testing = false;
-    chdir(editor->test_reload_dir);
+    vchdir(editor->test_reload_dir);
 
     if(!reload_world(mzx_world, editor->test_reload_file, &ignore))
     {
@@ -3815,7 +3783,7 @@ static void editor_resume(context *ctx)
       fix_mod(editor);
     }
 
-    unlink(editor->test_reload_file);
+    vunlink(editor->test_reload_file);
   }
 
   // These may have changed if a robot was edited.
@@ -3878,7 +3846,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
 
   struct stat stat_res;
 
-  getcwd(editor->current_listening_dir, MAX_PATH);
+  vgetcwd(editor->current_listening_dir, MAX_PATH);
 
   if(editor_conf->board_editor_hide_help)
     editor->screen_height = EDIT_SCREEN_MINIMAL;
@@ -3918,7 +3886,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   editor->edit_menu = create_edit_menu((context *)editor);
 
   // Reload the current world or create a blank world.
-  if(curr_file[0] && stat(curr_file, &stat_res))
+  if(curr_file[0] && vstat(curr_file, &stat_res))
     curr_file[0] = '\0';
 
   if(reload_curr_file && curr_file[0] &&
@@ -3971,6 +3939,7 @@ void editor_init(void)
   debug_robot_break = __debug_robot_break;
   debug_robot_watch = __debug_robot_watch;
   debug_robot_config = __debug_robot_config;
+  debug_robot_reset = __debug_robot_reset;
   load_editor_charsets();
 }
 

@@ -31,6 +31,7 @@
 #include "game_menu.h"
 #include "graphics.h"
 #include "helpsys.h"
+#include "platform.h"
 #include "settings.h"
 #include "util.h"
 #include "world.h"
@@ -262,7 +263,7 @@ static void print_ctx_line(context_data *ctx_data)
   if(ctx_data->functions.click == ctx_data->functions.drag)
     click_drag_same = true;
 
-  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s %3s | %-3s %3s %s\n",
+  fprintf(mzxerr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s %3s | %-3s %3s %s\n",
     16, 16, name,
     ctx_data->functions.resume    ? "Yes" : "",
     ctx_data->functions.draw      ? "Yes" : "",
@@ -293,26 +294,26 @@ static void __print_core_stack(context *_ctx, const char *file, int line)
   int i2;
 
   if(file)
-    fprintf(stderr, "%s line %d:\n", file, line);
+    fprintf(mzxerr, "%s line %d:\n", file, line);
 
   if(!_ctx)
   {
-    fprintf(stderr, "Context is NULL!\n");
-    fflush(stderr);
+    fprintf(mzxerr, "Context is NULL!\n");
+    fflush(mzxerr);
     return;
   }
   else
 
   if(!_ctx->root)
   {
-    fprintf(stderr, "Context root is NULL!\n");
-    fflush(stderr);
+    fprintf(mzxerr, "Context root is NULL!\n");
+    fflush(mzxerr);
     return;
   }
 
   root = _ctx->root;
 
-  fprintf(stderr,
+  fprintf(mzxerr,
    "CONTEXT STACK    | Res Drw Idl Key Joy Clk Drg Dst | Fr. CbQ Pri\n"
    "-----------------|---------------------------------|-------------\n");
 
@@ -328,8 +329,8 @@ static void __print_core_stack(context *_ctx, const char *file, int line)
 
     print_ctx_line(ctx_data);
   }
-  fprintf(stderr, "\n");
-  fflush(stderr);
+  fprintf(mzxerr, "\n");
+  fflush(mzxerr);
 }
 
 /**
@@ -1015,7 +1016,7 @@ void core_run(core_context *root)
   // this doesn't break MZX, this function stops once the number of contexts
   // on the stack has dropped below the initial value.
   int initial_stack_size = root->stack.size;
-  int start_ticks = get_ticks();
+  int start_ticks;
   int delta_ticks;
   int total_ticks;
   boolean need_update_screen = true;
@@ -1048,6 +1049,14 @@ void core_run(core_context *root)
       core_resume(root);
       continue;
     }
+
+    // Gameplay framerate timing starts immediately before the board update,
+    // which must be done in the draw function!
+    start_ticks = get_ticks();
+
+#ifdef CONFIG_FPS
+    update_fps(start_ticks);
+#endif
 
     need_update_screen = core_draw(root);
 
@@ -1131,12 +1140,6 @@ void core_run(core_context *root)
     joystick_set_legacy_loop_hacks(true);
     enable_f12_hack = conf->allow_screenshots;
     // FIXME end legacy loop hacks
-
-    start_ticks = get_ticks();
-
-#ifdef CONFIG_FPS
-    update_fps(start_ticks);
-#endif
 
     core_update(root);
   }
@@ -1263,6 +1266,7 @@ int (*debug_robot_break)(context *ctx, struct robot *cur_robot,
 int (*debug_robot_watch)(context *ctx, struct robot *cur_robot,
  int id, int lines_run);
 void (*debug_robot_config)(struct world *mzx_world);
+void (*debug_robot_reset)(struct world *mzx_world);
 
 // Network external function pointers (NULL by default).
 

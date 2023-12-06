@@ -22,7 +22,7 @@
 
 #include "../compat.h"
 
-#include "pngops.h"
+#include "image_file.h"
 #include "smzxconv.h"
 #include "utils_alloc.h"
 
@@ -34,33 +34,6 @@
 #ifndef MAX_PATH
 #define MAX_PATH 512
 #endif
-
-// FIXME: Fix this better
-int error(const char *string, unsigned int type, unsigned int options,
- unsigned int code)
-{
-  return 0;
-}
-
-static boolean dummy_constraint(png_uint_32 w, png_uint_32 h)\
-{
-  return true;
-}
-
-static void *dummy_allocator(png_uint_32 w, png_uint_32 h,
- png_uint_32 *stride, void **pixels)
-{
-  void *p = malloc(w * h * 4);
-  *stride = w * 4;
-  *pixels = p;
-  return p;
-}
-
-static rgba_color *read_png(const char *file, png_uint_32 *w, png_uint_32 *h)
-{
-  return (rgba_color *)png_read_file(file, w, h, dummy_constraint,
-   dummy_allocator);
-}
 
 int main(int argc, char **argv)
 {
@@ -82,26 +55,36 @@ int main(int argc, char **argv)
 
         int skip_char = -1;
 
-  png_uint_32 w, h, i, t;
-  rgba_color *img;
+  struct image_file img;
+  uint32_t i, t;
   mzx_tile *tile;
   mzx_glyph chr[256];
   mzx_color pal[256];
   smzx_converter *c;
 
-  if(argc < 2 || argv[1][0] == '-')
+  if(argc < 2 || (argv[1][0] == '-' && argv[1][1] != '\0'))
   {
     fprintf(stderr,
-      "png2smzx Image Conversion Utility\n\n"
+"png2smzx Image Conversion Utility\n\n"
 
-      "Usage: %s <in.png> [<out> | <out.mzm> "
-      "[<out.chr] [<out.pal>]] [options]\n\n"
+"Usage: %s <in.png|-> [<out> | <out.mzm> "
+"[<out.chr] [<out.pal>]] [options]\n\n"
 
-      "Options:\n"
+"  If the input file is '-', it will be read from stdin.\n\n"
 
-      "--skip-char=[value 0-255]	Skip this "
-      "char in the conversion process.\n"
-      "\n",
+"  Supported file formats are:\n\n"
+
+"  * PNG\n"
+"  * GIF (multi-image GIFs will be flattened into a single image;\n"
+"         non-square pixel aspect ratios are supported via upscaling)\n"
+"  * BMP (1bpp, 2bpp, 4bpp, 8bpp, 16bpp, 24bpp, 32bpp, RLE8, RLE4)\n"
+"  * Netpbm/PNM (.pbm, .pgm, .ppm, .pnm, .pam)\n"
+"  * farbfeld (.ff)\n"
+"\n"
+"Options:\n\n"
+
+"  --skip-char=[value 0-255]	Skip this char in the conversion process.\n"
+"\n",
 
       argv[0]
     );
@@ -112,7 +95,7 @@ int main(int argc, char **argv)
   input_file_name[MAX_PATH - 1] = '\0';
 
   // Read the input files
-  for(i = 2; i < (unsigned int) argc; i++)
+  for(i = 2; i < (unsigned int)argc; i++)
   {
     if(strlen(argv[i]) >= 4)
     {
@@ -148,6 +131,8 @@ int main(int argc, char **argv)
   else
   {
     const char *src = input_file_name;
+    if(!strcmp(input_file_name, "-"))
+      src = "out";
 
     if(argc >= 3 && argv[2] && argv[2][0] != '-')
       src = argv[2];
@@ -189,50 +174,49 @@ int main(int argc, char **argv)
 #endif
 
   // Do stuff
-  img = (rgba_color *)read_png(input_file_name, &w, &h);
-  if(!img)
+  if(!load_image_from_file(input_file_name, &img, NULL))
   {
     fprintf(stderr, "Error reading image.\n");
     return 1;
   }
 
-  if((w % 8) || (h % 14))
+  if((img.width % 8) || (img.height % 14))
   {
     fprintf(stderr, "Image not divisible by 8x14; cropping...\n");
-    if(w % 8)
+    if(img.width % 8)
     {
-      t = w / 8 * 8;
-      for(i = 1; i < h; i++)
-        memmove(img + i * t, img + i * w, sizeof(rgba_color) * t);
+      t = img.width / 8 * 8;
+      for(i = 1; i < img.height; i++)
+        memmove(img.data + i * t, img.data + i * img.width, sizeof(struct rgba_color) * t);
     }
   }
-  w /= 8;
-  h /= 14;
+  img.width /= 8;
+  img.height /= 14;
 
-  c = smzx_convert_init(w, h, 0, skip_char, 256, 0, 16);
+  c = smzx_convert_init(img.width, img.height, 0, skip_char, 256, 0, 16);
   if(!c)
   {
     fprintf(stderr, "Error initializing converter.\n");
-    free(img);
+    image_free(&img);
     return 1;
   }
 
-  tile = malloc(sizeof(mzx_tile) * w * h);
+  tile = malloc(sizeof(mzx_tile) * img.width * img.height);
   if(!tile)
   {
     fprintf(stderr, "Error allocating tile buffer.\n");
     smzx_convert_free(c);
-    free(img);
+    image_free(&img);
     return 1;
   }
 
-  smzx_convert(c, img, tile, chr, pal);
+  smzx_convert(c, img.data, tile, chr, pal);
   smzx_convert_free(c);
-  free(img);
-  mzmhead[4] = w & 0xFF;
-  mzmhead[5] = w >> 8;
-  mzmhead[6] = h & 0xFF;
-  mzmhead[7] = h >> 8;
+  image_free(&img);
+  mzmhead[4] = img.width & 0xFF;
+  mzmhead[5] = img.width >> 8;
+  mzmhead[6] = img.height & 0xFF;
+  mzmhead[7] = img.height >> 8;
 
   fp = fopen_unsafe(output_mzm_name, "wb");
   if(!fp)
@@ -250,7 +234,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  if(fwrite(tile, sizeof(mzx_tile) * w * h, 1, fp) != 1)
+  if(fwrite(tile, sizeof(mzx_tile) * img.width * img.height, 1, fp) != 1)
   {
     fprintf(stderr, "Error writing MZM data.\n");
     fclose(fp);

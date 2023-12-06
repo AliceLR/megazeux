@@ -30,8 +30,6 @@ __M_BEGIN_DECLS
 
 boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, boolean fullscreen, boolean resize, struct gl_version req_ver);
-boolean gl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize);
 void gl_set_attributes(struct graphics_data *graphics);
 boolean gl_swap_buffers(struct graphics_data *graphics);
 void gl_cleanup(struct graphics_data *graphics);
@@ -40,9 +38,15 @@ boolean GL_LoadLibrary(enum gl_lib_type type);
 
 #ifndef ANDROID
 
-static inline fn_ptr GL_GetProcAddress(const char *proc)
+static inline dso_fn *GL_GetProcAddress(const char *proc)
 {
-  return eglGetProcAddress(proc);
+  union suppress_warning
+  {
+    void (*in)(void);
+    dso_fn *out;
+  } t;
+  t.in = eglGetProcAddress(proc);
+  return t.out;
 }
 
 #else /* ANDROID */
@@ -50,7 +54,7 @@ static inline fn_ptr GL_GetProcAddress(const char *proc)
 /* Android's eglGetProcAddress is currently broken, so we
  * have to roll our own..
  */
-fn_ptr GL_GetProcAddress(const char *proc);
+dso_fn *GL_GetProcAddress(const char *proc);
 
 #endif /* !ANDROID */
 

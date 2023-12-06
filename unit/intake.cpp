@@ -38,6 +38,7 @@ struct event_input_data
 {
   const char *base;
   int start_pos;
+  int new_pos;
   const char *input;
   const char *expected;
 };
@@ -46,6 +47,7 @@ struct event_repeat_data
 {
   const char *base;
   int start_pos;
+  int new_pos;
   int repeat_times;
   const char *expected;
 };
@@ -155,7 +157,6 @@ UNITTEST(PosLength)
 {
   struct intake_subcontext intk{};
   char dest[256];
-  char buf[80];
   int ext = 0;
 
   intk.current_length = 100;
@@ -168,9 +169,8 @@ UNITTEST(PosLength)
   {
     for(const int_pair &d : pos_data)
     {
-      snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_pos(&intk, d.input);
-      ASSERTEQX(intk.pos, d.expected, buf);
+      ASSERTEQ(intk.pos, d.expected, "%d -> %d", d.input, d.expected);
     }
   }
 
@@ -180,10 +180,9 @@ UNITTEST(PosLength)
 
     for(const int_pair &d : pos_data)
     {
-      snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_pos(&intk, d.input);
-      ASSERTEQX(intk.pos, d.expected, buf);
-      ASSERTEQX(ext, d.expected, buf);
+      ASSERTEQ(intk.pos, d.expected, "%d -> %d", d.input, d.expected);
+      ASSERTEQ(ext, d.expected, "%d -> %d", d.input, d.expected);
     }
   }
 
@@ -191,9 +190,8 @@ UNITTEST(PosLength)
   {
     for(const int_pair &d : length_data)
     {
-      snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_length(&intk, d.input);
-      ASSERTEQX(intk.current_length, d.expected, buf);
+      ASSERTEQ(intk.current_length, d.expected, "%d -> %d", d.input, d.expected);
     }
   }
 
@@ -203,10 +201,9 @@ UNITTEST(PosLength)
 
     for(const int_pair &d : length_data)
     {
-      snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_length(&intk, d.input);
-      ASSERTEQX(intk.current_length, d.expected, buf);
-      ASSERTEQX(ext, d.expected, buf);
+      ASSERTEQ(intk.current_length, d.expected, "%d -> %d", d.input, d.expected);
+      ASSERTEQ(ext, d.expected, "%d -> %d", d.input, d.expected);
     }
   }
 
@@ -224,18 +221,16 @@ UNITTEST(PosLength)
   {
     for(const int_pair &d : pos_data)
     {
-      snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_pos(&intk, d.input);
       intake_sync((subcontext *)&intk);
-      ASSERTEQX(intk.pos, d.expected, buf);
+      ASSERTEQ(intk.pos, d.expected, "%d -> %d", d.input, d.expected);
     }
 
     for(const int_pair &d : length_data)
     {
-      snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intake_set_length(&intk, d.input);
       intake_sync((subcontext *)&intk);
-      ASSERTEQX(intk.current_length, d.expected, buf);
+      ASSERTEQ(intk.current_length, d.expected, "%d -> %d", d.input, d.expected);
     }
   }
 
@@ -250,11 +245,10 @@ UNITTEST(PosLength)
 
     for(const int_pair &d : pos_data)
     {
-      snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       ext = d.input;
       intake_sync((subcontext *)&intk);
-      ASSERTEQX(intk.pos, d.expected, buf);
-      ASSERTEQX(ext, d.expected, buf);
+      ASSERTEQ(intk.pos, d.expected, "%d -> %d", d.input, d.expected);
+      ASSERTEQ(ext, d.expected, "%d -> %d", d.input, d.expected);
     }
   }
 
@@ -271,12 +265,11 @@ UNITTEST(PosLength)
 
     for(const int_pair &d : length_data)
     {
-      dest_len = std::max(0, std::min(dest_len, d.input));
-      snprintf(buf, arraysize(buf), "%d -> %d", d.input, dest_len);
+      dest_len = Unit::clamp(dest_len, 0, d.input);
       intake_set_length(&intk, d.input);
       intake_sync((subcontext *)&intk);
-      ASSERTEQX(intk.current_length, dest_len, buf);
-      ASSERTEQX(intk.pos, 97, buf);
+      ASSERTEQ(intk.current_length, dest_len, "%d -> %d", d.input, dest_len);
+      ASSERTEQ(intk.pos, 97, "%d -> %d", d.input, dest_len);
     }
   }
 
@@ -291,11 +284,10 @@ UNITTEST(PosLength)
 
     for(const int_pair &d : length_data)
     {
-      snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       ext = d.input;
       intake_sync((subcontext *)&intk);
-      ASSERTEQX(intk.current_length, d.expected, buf);
-      ASSERTEQX(ext, d.expected, buf);
+      ASSERTEQ(intk.current_length, d.expected, "%d -> %d", d.input, d.expected);
+      ASSERTEQ(ext, d.expected, "%d -> %d", d.input, d.expected);
     }
   }
 
@@ -311,11 +303,10 @@ UNITTEST(PosLength)
 
     for(const int_pair &d : length_data)
     {
-      snprintf(buf, arraysize(buf), "%d -> %d", d.input, dest_len);
       ext = d.input;
       intake_sync((subcontext *)&intk);
-      ASSERTEQX(intk.current_length, dest_len, buf);
-      ASSERTEQX(ext, dest_len, buf);
+      ASSERTEQ(intk.current_length, dest_len, "%d -> %d", d.input, dest_len);
+      ASSERTEQ(ext, dest_len, "%d -> %d", d.input, dest_len);
     }
   }
 }
@@ -327,29 +318,28 @@ UNITTEST(EventFixed)
 {
   static const event_input_data insert_data[] =
   {
-    { "test string :)", 0,  "Inserted ",                "Inserted test string :)" },
-    { "abcdevwxyz",     5,  " put this in the middle ", "abcde put this in the middle vwxyz" },
-    { "test string :)", 15, " append this.",            "test string :) append this." },
-    { "",               0,  "blank string",             "blank string" },
-    { "whatever",       0,  "",                         "whatever" },
-    { "whatever",       4,  "",                         "whatever" },
-    { "whatever",       8,  "",                         "whatever" },
+    { "test string :)", 0,  9,  "Inserted ",                "Inserted test string :)" },
+    { "abcdevwxyz",     5,  29, " put this in the middle ", "abcde put this in the middle vwxyz" },
+    { "test string :)", 15, 27, " append this.",            "test string :) append this." },
+    { "",               0,  12, "blank string",             "blank string" },
+    { "whatever",       0,  0,  "",                         "whatever" },
+    { "whatever",       4,  4,  "",                         "whatever" },
+    { "whatever",       8,  8,  "",                         "whatever" },
   };
   static const event_input_data overwrite_data[] =
   {
-    { "test string :)", 0,  "overwritten",              "overwritten :)" },
-    { "abcdevwxyz",     5,  " put this at the end",     "abcde put this at the end" },
-    { "test string :)", 15, " append this.",            "test string :) append this." },
-    { "",               0,  "blank string",             "blank string" },
-    { "whatever",       0,  "",                         "whatever" },
-    { "whatever",       4,  "",                         "whatever" },
-    { "whatever",       8,  "",                         "whatever" },
+    { "test string :)", 0,  11, "overwritten",              "overwritten :)" },
+    { "abcdevwxyz",     5,  26, " put this at the end",     "abcde put this at the end" },
+    { "test string :)", 15, 28, " append this.",            "test string :) append this." },
+    { "",               0,  12, "blank string",             "blank string" },
+    { "whatever",       0,  0,  "",                         "whatever" },
+    { "whatever",       4,  0,  "",                         "whatever" },
+    { "whatever",       8,  0,  "",                         "whatever" },
   };
 
   struct intake_subcontext intk{};
   subcontext *sub = reinterpret_cast<subcontext *>(&intk);
   char dest[256];
-  char buf[80];
   boolean result;
 
   intk.dest = dest;
@@ -368,9 +358,8 @@ UNITTEST(EventFixed)
 
     for(int i : skip_backward_positions)
     {
-      snprintf(buf, arraysize(buf), "%d", i);
-      ASSERTEQX(intk.pos, i, buf);
-      ASSERTEQX(ext, i, buf);
+      ASSERTEQ(intk.pos, i, "%d", i);
+      ASSERTEQ(ext, i, "%d", i);
       intake_skip_back(&intk);
     }
   }
@@ -382,9 +371,8 @@ UNITTEST(EventFixed)
 
     for(int i : skip_forward_positions)
     {
-      snprintf(buf, arraysize(buf), "%d", i);
-      ASSERTEQX(intk.pos, i, buf);
-      ASSERTEQX(ext, i, buf);
+      ASSERTEQ(intk.pos, i, "%d", i);
+      ASSERTEQ(ext, i, "%d", i);
       intake_skip_forward(&intk);
     }
   }
@@ -393,12 +381,12 @@ UNITTEST(EventFixed)
   {
     // Should not crash with a null intake.
     result = intake_apply_event_fixed(nullptr, INTK_MOVE, 0, 0, nullptr);
-    ASSERTEQ(result, false);
+    ASSERTEQ(result, false, "");
 
     // Should not crash with a null dest.
     intk.dest = nullptr;
     result = intake_apply_event_fixed(sub, INTK_MOVE, 0, 0, nullptr);
-    ASSERTEQ(result, false);
+    ASSERTEQ(result, false, "");
     intk.dest = dest;
 
     // Should not crash if intk->pos is somehow invalid.
@@ -407,7 +395,7 @@ UNITTEST(EventFixed)
     {
       intk.pos = i;
       result = intake_apply_event_fixed(sub, INTK_MOVE, 0, 0, nullptr);
-      ASSERTEQ(result, false);
+      ASSERTEQ(result, false, "");
     }
   }
 
@@ -415,7 +403,7 @@ UNITTEST(EventFixed)
   {
     // Nothing should ever actually send this event (if it does, it's a bug).
     result = intake_apply_event_fixed(sub, INTK_NO_EVENT, 0, 0, nullptr);
-    ASSERTEQ(result, false);
+    ASSERTEQ(result, false, "");
   }
 
   SECTION(INTK_MOVE)
@@ -423,11 +411,10 @@ UNITTEST(EventFixed)
     // Applying this moves the cursor, that's it.
     for(const int_pair &d : pos_data)
     {
-      snprintf(buf, arraysize(buf), "%d -> %d", d.input, d.expected);
       intk.pos = 25;
       result = intake_apply_event_fixed(sub, INTK_MOVE, d.input, 0, nullptr);
-      ASSERTEQX(result, true, buf);
-      ASSERTEQX(intk.pos, d.expected, buf);
+      ASSERTEQ(result, true, "%d -> %d", d.input, d.expected);
+      ASSERTEQ(intk.pos, d.expected, "%d -> %d", d.input, d.expected);
     }
   }
 
@@ -439,22 +426,20 @@ UNITTEST(EventFixed)
 
     for(int i : skip_forward_positions)
     {
-      snprintf(buf, arraysize(buf), "%d (forward)", i);
-      ASSERTEQX(intk.pos, i, buf);
-      ASSERTEQX(ext, i, buf);
+      ASSERTEQ(intk.pos, i, "%d (forward)", i);
+      ASSERTEQ(ext, i, "%d (forward)", i);
       result = intake_apply_event_fixed(sub, INTK_MOVE_WORDS, intk.pos, 1, nullptr);
-      ASSERTEQX(result, true, buf);
+      ASSERTEQ(result, true, "%d (forward)", i);
     }
 
     ext = 100;
     intk.pos = 100;
     for(int i : skip_backward_positions)
     {
-      snprintf(buf, arraysize(buf), "%d (backward)", i);
-      ASSERTEQX(intk.pos, i, buf);
-      ASSERTEQX(ext, i, buf);
+      ASSERTEQ(intk.pos, i, "%d (backward)", i);
+      ASSERTEQ(ext, i, "%d (backward)", i);
       result = intake_apply_event_fixed(sub, INTK_MOVE_WORDS, intk.pos, -1, nullptr);
-      ASSERTEQX(result, true, buf);
+      ASSERTEQ(result, true, "%d (backward)", i);
     }
   }
 
@@ -471,10 +456,11 @@ UNITTEST(EventFixed)
       for(size_t i = 0, len = strlen(d.input); i < len; i++)
       {
         result = intake_apply_event_fixed(sub, INTK_INSERT, intk.pos + 1, d.input[i], nullptr);
-        ASSERTEQX(result, true, d.expected);
+        ASSERTEQ(result, true, "%s", d.expected);
       }
-      ASSERTCMP(dest, d.expected);
-      ASSERTEQ(intk.current_length, expected_len);
+      ASSERTCMP(dest, d.expected, "");
+      ASSERTEQ(intk.current_length, expected_len, "%s", d.expected);
+      ASSERTEQ(intk.pos, d.new_pos, "%s", d.expected);
     }
 
     // Special: prevent inserting beyond the maximum length.
@@ -484,14 +470,14 @@ UNITTEST(EventFixed)
 
     intk.pos = 7;
     result = intake_apply_event_fixed(sub, INTK_INSERT, intk.pos + 1, 'h', nullptr);
-    ASSERTEQ(result, true);
+    ASSERTEQ(result, true, "");
     result = intake_apply_event_fixed(sub, INTK_INSERT, intk.pos + 1, 'i', nullptr);
-    ASSERTEQ(result, false);
-    ASSERTEQ(intk.pos, 8);
+    ASSERTEQ(result, false, "");
+    ASSERTEQ(intk.pos, 8, "");
     intk.pos = 0;
     result = intake_apply_event_fixed(sub, INTK_INSERT, intk.pos + 1, 'i', nullptr);
-    ASSERTEQ(result, false);
-    ASSERTEQ(intk.pos, 0);
+    ASSERTEQ(result, false, "");
+    ASSERTEQ(intk.pos, 0, "");
   }
 
   SECTION(INTK_OVERWRITE)
@@ -507,10 +493,10 @@ UNITTEST(EventFixed)
       for(size_t i = 0, len = strlen(d.input); i < len; i++)
       {
         result = intake_apply_event_fixed(sub, INTK_OVERWRITE, intk.pos + 1, d.input[i], nullptr);
-        ASSERTEQX(result, true, d.expected);
+        ASSERTEQ(result, true, "%s", d.expected);
       }
-      ASSERTCMP(dest, d.expected);
-      ASSERTEQ(intk.current_length, expected_len);
+      ASSERTCMP(dest, d.expected, "");
+      ASSERTEQ(intk.current_length, expected_len, "");
     }
 
     // Special: prevent inserting beyond the maximum length.
@@ -520,15 +506,15 @@ UNITTEST(EventFixed)
 
     intk.pos = 7;
     result = intake_apply_event_fixed(sub, INTK_OVERWRITE, intk.pos + 1, 'h', nullptr);
-    ASSERTEQ(result, true);
+    ASSERTEQ(result, true, "");
     result = intake_apply_event_fixed(sub, INTK_OVERWRITE, intk.pos + 1, 'i', nullptr);
-    ASSERTEQ(result, false);
-    ASSERTEQ(intk.pos, 8);
+    ASSERTEQ(result, false, "");
+    ASSERTEQ(intk.pos, 8, "");
     // This should work, though.
     intk.pos = 0;
     result = intake_apply_event_fixed(sub, INTK_OVERWRITE, intk.pos + 1, 'i', nullptr);
-    ASSERTEQ(result, true);
-    ASSERTCMP(dest, "ibcdefgh");
+    ASSERTEQ(result, true, "");
+    ASSERTCMP(dest, "ibcdefgh", "");
   }
 
   SECTION(INTK_DELETE)
@@ -536,11 +522,11 @@ UNITTEST(EventFixed)
     // Delete the char at the cursor.
     static const event_repeat_data data[] =
     {
-      { "testing string :)", 8, 7, "testing :)" },
-      { "abcdef", 0, 6, "" },
-      { "abcdef", 1, 4, "af" },
-      { "", 0, 10, "" },
-      { "some stuff", 10, 10, "some stuff" },
+      { "testing string :)",  8,  8,  7,  "testing :)" },
+      { "abcdef",             0,  0,  6,  "" },
+      { "abcdef",             1,  1,  4,  "af" },
+      { "",                   0,  0,  10, "" },
+      { "some stuff",         10, 10, 10, "some stuff" },
     };
 
     for(const event_repeat_data &d : data)
@@ -553,10 +539,10 @@ UNITTEST(EventFixed)
       for(int i = 0; i < d.repeat_times; i++)
       {
         result = intake_apply_event_fixed(sub, INTK_DELETE, intk.pos, 0, nullptr);
-        ASSERTEQX(result, true, d.expected);
+        ASSERTEQ(result, true, "%s", d.expected);
       }
-      ASSERTCMP(dest, d.expected);
-      ASSERTEQ(intk.current_length, expected_len);
+      ASSERTCMP(dest, d.expected, "");
+      ASSERTEQ(intk.current_length, expected_len, "");
     }
   }
 
@@ -565,11 +551,11 @@ UNITTEST(EventFixed)
     // Delete the char before the cursor.
     static const event_repeat_data data[] =
     {
-      { "testing string :)", 14, 7, "testing :)" },
-      { "abcdef", 6, 6, "" },
-      { "abcdef", 5, 4, "af" },
-      { "", 0, 10, "" },
-      { "some stuff", 0, 10, "some stuff" },
+      { "testing string :)",  14, 7, 7,  "testing :)" },
+      { "abcdef",             6,  0, 6,  "" },
+      { "abcdef",             5,  1, 4,  "af" },
+      { "",                   0,  0, 10, "" },
+      { "some stuff",         0,  0, 10, "some stuff" },
     };
 
     for(const event_repeat_data &d : data)
@@ -582,10 +568,11 @@ UNITTEST(EventFixed)
       for(int i = 0; i < d.repeat_times; i++)
       {
         result = intake_apply_event_fixed(sub, INTK_BACKSPACE, intk.pos - 1, 0, nullptr);
-        ASSERTEQX(result, true, d.expected);
+        ASSERTEQ(result, true, "%s", d.expected);
       }
-      ASSERTCMP(dest, d.expected);
-      ASSERTEQ(intk.current_length, expected_len);
+      ASSERTCMP(dest, d.expected, "");
+      ASSERTEQ(intk.current_length, expected_len, "%s", d.expected);
+      ASSERTEQ(intk.pos, d.new_pos, "%s", d.expected);
     }
   }
 
@@ -596,17 +583,17 @@ UNITTEST(EventFixed)
     // word, which seems like a bug and has not been replicated here.
     static const event_repeat_data data[] =
     {
-      { "testing string :)", 17, 1, "testing " },
-      { "testing string :)", 17, 2, "" },
-      { "testing string :)", 15, 2, ":)" },
-      { "testing{string}", 14, 1, "testing{}" },
-      { "abc def ghi", 9, 2, "abc hi" },
-      { "abcdef", 6, 1, "" },
-      { "abcdef", 3, 1, "def" },
-      { "", 0, 2, "" },
-      { "some stuff", 0, 2, "some stuff" },
-      { "whatever", 8, 0, "whatever" },
-      { "whatever", 4, -1, "whatever" },
+      { "testing string :)",  17, 8, 1,  "testing " },
+      { "testing string :)",  17, 0, 2,  "" },
+      { "testing string :)",  15, 0, 2,  ":)" },
+      { "testing{string}",    14, 8, 1,  "testing{}" },
+      { "abc def ghi",        9,  4, 2,  "abc hi" },
+      { "abcdef",             6,  0, 1,  "" },
+      { "abcdef",             3,  0, 1,  "def" },
+      { "",                   0,  0, 2,  "" },
+      { "some stuff",         0,  0, 2,  "some stuff" },
+      { "whatever",           8,  8, 0,  "whatever" },
+      { "whatever",           4,  4, -1, "whatever" },
     };
 
     for(const event_repeat_data &d : data)
@@ -617,9 +604,10 @@ UNITTEST(EventFixed)
       intake_set_pos(&intk, d.start_pos);
 
       result = intake_apply_event_fixed(sub, INTK_BACKSPACE_WORDS, intk.pos, d.repeat_times, nullptr);
-      ASSERTEQX(result, true, d.expected);
-      ASSERTCMP(dest, d.expected);
-      ASSERTEQ(intk.current_length, expected_len);
+      ASSERTEQ(result, true, "%s", d.expected);
+      ASSERTCMP(dest, d.expected, "");
+      ASSERTEQ(intk.current_length, expected_len, "%s", d.expected);
+      ASSERTEQ(intk.pos, d.new_pos, "%s", d.expected);
     }
   }
 
@@ -627,26 +615,26 @@ UNITTEST(EventFixed)
   {
     static const event_repeat_data data[] =
     {
-      { "testing string :)", 17, 1, nullptr },
-      { "testing string :)", 10, 1, nullptr },
-      { "testing string :)", 0, 1, nullptr },
-      { "abc def ghi", 9, 1, nullptr },
-      { "abcdef", 6, 1, nullptr },
-      { "abcdef", 3, 1, nullptr },
-      { "", 0, 1, nullptr },
+      { "testing string :)",  17, 0, 1, nullptr },
+      { "testing string :)",  10, 0, 1, nullptr },
+      { "testing string :)",  0,  0, 1, nullptr },
+      { "abc def ghi",        9,  0, 1, nullptr },
+      { "abcdef",             6,  0, 1, nullptr },
+      { "abcdef",             3,  0, 1, nullptr },
+      { "",                   0,  0, 1, nullptr },
     };
 
     for(const event_repeat_data &d : data)
     {
-      snprintf(buf, arraysize(buf), "%s @ %d", d.base, d.start_pos);
       strcpy(dest, d.base);
       intake_set_length(&intk, strlen(dest));
       intake_set_pos(&intk, d.start_pos);
 
       result = intake_apply_event_fixed(sub, INTK_CLEAR, 0, 0, nullptr);
-      ASSERTEQX(result, true, buf);
-      ASSERTXCMP(dest, "", buf);
-      ASSERTEQX(intk.current_length, 0, buf);
+      ASSERTEQ(result, true, "%s @ %d", d.base, d.start_pos);
+      ASSERTCMP(dest, "", "%s @ %d", d.base, d.start_pos);
+      ASSERTEQ(intk.current_length, 0, "%s @ %d", d.base, d.start_pos);
+      ASSERTEQ(intk.pos, d.new_pos, "%s @ %d", d.base, d.start_pos);
     }
   }
 
@@ -660,12 +648,12 @@ UNITTEST(EventFixed)
 
       int len = strlen(d.input);
       result = intake_apply_event_fixed(sub, INTK_INSERT_BLOCK, intk.pos + len, len, d.input);
-      ASSERTEQX(result, true, d.expected);
-      ASSERTCMP(dest, d.expected);
+      ASSERTEQ(result, true, "%s", d.expected);
+      ASSERTCMP(dest, d.expected, "");
     }
     // Reject null data...
     result = intake_apply_event_fixed(sub, INTK_INSERT_BLOCK, intk.pos, 0, nullptr);
-    ASSERTEQ(result, false);
+    ASSERTEQ(result, false, "");
   }
 
   SECTION(INTK_OVERWRITE_BLOCK)
@@ -678,12 +666,12 @@ UNITTEST(EventFixed)
 
       int len = strlen(d.input);
       result = intake_apply_event_fixed(sub, INTK_OVERWRITE_BLOCK, intk.pos + len, len, d.input);
-      ASSERTEQX(result, true, d.expected);
-      ASSERTCMP(dest, d.expected);
+      ASSERTEQ(result, true, "%s", d.expected);
+      ASSERTCMP(dest, d.expected, "");
     }
     // Reject null data...
     result = intake_apply_event_fixed(sub, INTK_OVERWRITE_BLOCK, intk.pos, 0, nullptr);
-    ASSERTEQ(result, false);
+    ASSERTEQ(result, false, "");
   }
 
   SECTION(intake_input_string)
@@ -702,13 +690,13 @@ UNITTEST(EventFixed)
       const char *ret = intake_input_string(sub, d.input, d.linebreak_char);
       if(d.retval >= 0)
       {
-        ASSERTX(ret != nullptr, d.expected);
-        ASSERTEQX((ssize_t)(ret - d.input), d.retval, d.expected);
+        ASSERT(ret != nullptr, "%s", d.expected);
+        ASSERTEQ((ssize_t)(ret - d.input), d.retval, "%s", d.expected);
       }
       else
-        ASSERTEQX(ret, nullptr, d.expected);
+        ASSERTEQ(ret, nullptr, "%s", d.expected);
 
-      ASSERTCMP(dest, d.expected);
+      ASSERTCMP(dest, d.expected, "");
     }
   }
 }
@@ -716,18 +704,22 @@ UNITTEST(EventFixed)
 struct event_cb_data
 {
   const char *expected;
+  int *pos_external;
   int call_count;
 };
 
-boolean event_callback(void *priv, subcontext *sub, enum intake_event_type type,
+static boolean event_callback(void *priv, subcontext *sub, enum intake_event_type type,
  int old_pos, int new_pos, int value, const char *data)
 {
   struct intake_subcontext *intk = reinterpret_cast<struct intake_subcontext *>(sub);
   event_cb_data *d = reinterpret_cast<event_cb_data *>(priv);
 
-  ASSERTEQX(old_pos, intk->pos, d->expected);
+  ASSERTEQ(old_pos, intk->pos, "%s", d->expected);
   if(intk->dest)
-    ASSERTCMP(intk->dest, d->expected);
+    ASSERTCMP(intk->dest, d->expected, "");
+
+  if(d->pos_external)
+    *(d->pos_external) = new_pos;
 
   d->call_count++;
   return true;
@@ -763,12 +755,13 @@ UNITTEST(EventCallback)
   struct intake_subcontext intk{};
   subcontext *sub = reinterpret_cast<subcontext *>(&intk);
   char dest[256];
-  //char buf[80];
+  int pos_external;
 
   intk.dest = dest;
   intk.max_length = 240;
   intk.current_length = 100;
   intk.event_cb = event_callback;
+  intk.pos_external = &pos_external;
 
   SECTION(intake_event_ext_no_dest)
   {
@@ -781,12 +774,12 @@ UNITTEST(EventCallback)
 
     for(const event_partial_data &d : data)
     {
-      event_cb_data priv = { d.base, 0 };
+      event_cb_data priv = { d.base, &pos_external, 0 };
       intk.event_priv = &priv;
       intk.pos = d.old_pos;
       intake_event_ext(&intk, d.type, d.old_pos, d.new_pos, d.value, dummy_data);
-      ASSERTEQX(priv.call_count, 1, d.base);
-      ASSERTEQX(intk.pos, d.new_pos, d.base);
+      ASSERTEQ(priv.call_count, 1, "%s", d.base);
+      ASSERTEQ(intk.pos, d.new_pos, "%s", d.base);
     }
   }
 
@@ -801,13 +794,13 @@ UNITTEST(EventCallback)
      */
     for(const event_partial_data &d : data)
     {
-      event_cb_data priv = { d.base, 0 };
+      event_cb_data priv = { d.base, &pos_external, 0 };
       intk.event_priv = &priv;
       intk.pos = d.old_pos;
       strcpy(dest, d.base);
       intake_event_ext(&intk, d.type, d.old_pos, d.new_pos, d.value, dummy_data);
-      ASSERTEQX(priv.call_count, 1, d.base);
-      ASSERTEQX(intk.pos, d.new_pos, d.base);
+      ASSERTEQ(priv.call_count, 1, "%s", d.base);
+      ASSERTEQ(intk.pos, d.new_pos, "%s", d.base);
     }
   }
 
@@ -820,7 +813,7 @@ UNITTEST(EventCallback)
 
     for(const input_string_data &d : input_data)
     {
-      event_cb_data priv = { d.expected, 0 };
+      event_cb_data priv = { d.expected, &pos_external, 0 };
       intk.event_priv = &priv;
 
       intake_set_length(&intk, strlen(d.base));
@@ -829,15 +822,15 @@ UNITTEST(EventCallback)
 
       const char *ret = intake_input_string(sub, d.input, d.linebreak_char);
       if(strlen(d.input))
-        ASSERTEQX(priv.call_count, 1, d.base);
+        ASSERTEQ(priv.call_count, 1, "%s", d.base);
 
       if(d.retval >= 0)
       {
-        ASSERTX(ret != nullptr, d.expected);
-        ASSERTEQX((ssize_t)(ret - d.input), d.retval, d.expected);
+        ASSERT(ret != nullptr, "%s", d.expected);
+        ASSERTEQ((ssize_t)(ret - d.input), d.retval, "%s", d.expected);
       }
       else
-        ASSERTEQX(ret, nullptr, d.expected);
+        ASSERTEQ(ret, nullptr, "%s", d.expected);
     }
   }
 }

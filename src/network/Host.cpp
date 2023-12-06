@@ -370,7 +370,7 @@ const char *Host::get_host_name()
   return this->name;
 }
 
-void Host::set_timeout_ms(Uint32 timeout_ms)
+void Host::set_timeout_ms(uint32_t timeout_ms)
 {
   this->timeout_ms = timeout_ms;
 }
@@ -378,7 +378,7 @@ void Host::set_timeout_ms(Uint32 timeout_ms)
 boolean Host::send(const void *buffer, size_t len)
 {
   const char *buf = (const char *)buffer;
-  Uint32 start, now;
+  uint32_t start, now;
   ssize_t count;
   size_t pos;
 
@@ -417,9 +417,9 @@ boolean Host::send(const void *buffer, size_t len)
     {
       trace("--HOST-- Host::send    ");
       for(size_t i = pos; i < pos + count; i++)
-        fprintf(stderr, "%02x ", buf[i]);
-      fprintf(stderr, "\n");
-      fflush(stderr);
+        fprintf(mzxerr, "%02x ", buf[i]);
+      fprintf(mzxerr, "\n");
+      fflush(mzxerr);
     }
 #endif
   }
@@ -429,7 +429,7 @@ boolean Host::send(const void *buffer, size_t len)
 boolean Host::receive(void *buffer, size_t len)
 {
   char *buf = (char *)buffer;
-  Uint32 start, now;
+  uint32_t start, now;
   ssize_t count;
   size_t pos;
 
@@ -468,9 +468,9 @@ boolean Host::receive(void *buffer, size_t len)
     {
       trace("--HOST-- Host::receive ");
       for(size_t i = pos; i < pos + count; i++)
-        fprintf(stderr, "%02x ", buf[i]);
-      fprintf(stderr, "\n");
-      fflush(stderr);
+        fprintf(mzxerr, "%02x ", buf[i]);
+      fprintf(mzxerr, "\n");
+      fflush(mzxerr);
     }
 #endif
   }
@@ -822,8 +822,8 @@ enum proxy_status Host::connect_socks5(struct addrinfo *ai_data)
       if(username_len > 255 || password_len > 255)
         return PROXY_INVALID_CONFIG;
 
-      Uint8 username_len_b = static_cast<Uint8>(username_len);
-      Uint8 password_len_b = static_cast<Uint8>(password_len);
+      uint8_t username_len_b = static_cast<uint8_t>(username_len);
+      uint8_t password_len_b = static_cast<uint8_t>(password_len);
 
       if(!this->send("\1", 1))
         return PROXY_SEND_ERROR;
@@ -1292,7 +1292,7 @@ boolean Host::send_to(const char *buffer, size_t len,
 
 #endif // NETWORK_DEADCODE
 
-int Host::poll(int flags, Uint32 timeout_ms)
+int Host::poll(int flags, uint32_t timeout_ms)
 {
   struct pollfd p;
   p.fd = this->sockfd;
@@ -1305,8 +1305,8 @@ int Host::poll(int flags, Uint32 timeout_ms)
    * immediately, others may block for the entire timeout. Splitting up the
    * timeout over multiple calls to avoid this shouldn't hurt anything.
    */
-  Uint32 now = get_ticks();
-  Uint32 end = now + timeout_ms;
+  uint32_t now = get_ticks();
+  uint32_t end = now + timeout_ms;
   while(now < end)
   {
     int dur = MIN(end - now, 100);

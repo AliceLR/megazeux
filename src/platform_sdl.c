@@ -40,20 +40,24 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
   emscripten_sleep(ms);
 }
 #else
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
   SDL_Delay(ms);
 }
 #endif
 
-Uint32 get_ticks(void)
+uint64_t get_ticks(void)
 {
+#if SDL_VERSION_ATLEAST(2,0,18)
+  return SDL_GetTicks64();
+#else
   return SDL_GetTicks();
+#endif
 }
 
 #ifdef __WIN32__
@@ -73,7 +77,9 @@ static void set_dpi_aware(void)
   handle = SDL_LoadObject("User32.dll");
   if(handle)
   {
-    void **dest = (void **)&_SetProcessDPIAware;
+    union dso_fn_ptr_ptr sym_ptr = { &_SetProcessDPIAware };
+    dso_fn **dest = sym_ptr.value;
+
     *dest = SDL_LoadFunction(handle, "SetProcessDPIAware");
 
     if(_SetProcessDPIAware && !_SetProcessDPIAware())

@@ -31,8 +31,8 @@
 struct gp2x_render_data
 {
   struct sdl_render_data sdl;
-  Uint32 halfmask;
-  Uint16 buffer[320*350];
+  uint32_t halfmask;
+  uint16_t buffer[320*350];
 };
 
 static SDL_Surface *
@@ -43,10 +43,10 @@ gp2x_get_screen_surface(struct gp2x_render_data *render_data)
 }
 
 static void gp2x_set_colors_mzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  Uint32 cb_bg, cb_fg, cb_mx;
+  uint32_t cb_bg, cb_fg, cb_mx;
 
   cb_bg = graphics->flat_intensity_palette[bg];
   cb_fg = graphics->flat_intensity_palette[fg];
@@ -94,17 +94,18 @@ static void gp2x_set_colors_mzx(const struct graphics_data *graphics,
 }
 
 static void gp2x_set_colors_smzx(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
+ uint32_t * RESTRICT char_colors, uint8_t bg, uint8_t fg)
 {
-  Uint32 bb, bf, fb, ff;
-
+  const uint8_t *indices = graphics->smzx_indices;
+  uint32_t bb, bf, fb, ff;
   bg &= 0x0F;
   fg &= 0x0F;
+  indices += ((bg << 4) | fg) << 2;
 
-  bb = graphics->flat_intensity_palette[(bg << 4) | bg];
-  bf = graphics->flat_intensity_palette[(bg << 4) | fg];
-  fb = graphics->flat_intensity_palette[(fg << 4) | bg];
-  ff = graphics->flat_intensity_palette[(fg << 4) | fg];
+  bb = graphics->flat_intensity_palette[indices[0]];
+  bf = graphics->flat_intensity_palette[indices[1]];
+  fb = graphics->flat_intensity_palette[indices[2]];
+  ff = graphics->flat_intensity_palette[indices[3]];
 
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
   char_colors[0] = (bb << 16) | bb;
@@ -143,63 +144,12 @@ static void gp2x_set_colors_smzx(const struct graphics_data *graphics,
 #endif
 }
 
-static void gp2x_set_colors_smzx3(const struct graphics_data *graphics,
- Uint32 * RESTRICT char_colors, Uint8 bg, Uint8 fg)
-{
-  Uint8 base;
-  Uint32 c0, c1, c2, c3;
-
-  base = (bg << 4) | (fg & 0x0F);
-
-  c0 = graphics->flat_intensity_palette[base];
-  c1 = graphics->flat_intensity_palette[(base + 1) & 0xFF];
-  c2 = graphics->flat_intensity_palette[(base + 2) & 0xFF];
-  c3 = graphics->flat_intensity_palette[(base + 3) & 0xFF];
-
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-  char_colors[0] = (c0 << 16) | c0;
-  char_colors[1] = (c0 << 16) | c2;
-  char_colors[2] = (c0 << 16) | c1;
-  char_colors[3] = (c0 << 16) | c3;
-  char_colors[4] = (c2 << 16) | c0;
-  char_colors[5] = (c2 << 16) | c2;
-  char_colors[6] = (c2 << 16) | c1;
-  char_colors[7] = (c2 << 16) | c3;
-  char_colors[8] = (c1 << 16) | c0;
-  char_colors[9] = (c1 << 16) | c2;
-  char_colors[10] = (c1 << 16) | c1;
-  char_colors[11] = (c1 << 16) | c3;
-  char_colors[12] = (c3 << 16) | c0;
-  char_colors[13] = (c3 << 16) | c2;
-  char_colors[14] = (c3 << 16) | c1;
-  char_colors[15] = (c3 << 16) | c3;
-#else
-  char_colors[0] = (c0 << 16) | c0;
-  char_colors[1] = (c2 << 16) | c0;
-  char_colors[2] = (c1 << 16) | c0;
-  char_colors[3] = (c3 << 16) | c0;
-  char_colors[4] = (c0 << 16) | c2;
-  char_colors[5] = (c2 << 16) | c2;
-  char_colors[6] = (c1 << 16) | c2;
-  char_colors[7] = (c3 << 16) | c2;
-  char_colors[8] = (c0 << 16) | c1;
-  char_colors[9] = (c2 << 16) | c1;
-  char_colors[10] = (c1 << 16) | c1;
-  char_colors[11] = (c3 << 16) | c1;
-  char_colors[12] = (c0 << 16) | c3;
-  char_colors[13] = (c2 << 16) | c3;
-  char_colors[14] = (c1 << 16) | c3;
-  char_colors[15] = (c3 << 16) | c3;
-#endif
-}
-
-static void (*gp2x_set_colors[4])
- (const struct graphics_data *, Uint32 * RESTRICT, Uint8, Uint8) =
+static const set_colors_function gp2x_set_colors[4] =
 {
   gp2x_set_colors_mzx,
   gp2x_set_colors_smzx,
   gp2x_set_colors_smzx,
-  gp2x_set_colors_smzx3
+  gp2x_set_colors_smzx
 };
 
 static boolean gp2x_init_video(struct graphics_data *graphics,
@@ -239,7 +189,7 @@ static boolean gp2x_set_video_mode(struct graphics_data *graphics,
 {
   struct gp2x_render_data *render_data = graphics->render_data;
   SDL_PixelFormat *format;
-  Uint32 halfmask;
+  uint32_t halfmask;
 
   if(!sdl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
@@ -254,11 +204,11 @@ static boolean gp2x_set_video_mode(struct graphics_data *graphics,
 }
 
 static void gp2x_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, Uint32 count)
+ struct rgb_color *palette, unsigned int count)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
   SDL_Surface *screen = gp2x_get_screen_surface(render_data);
-  Uint32 i;
+  unsigned int i;
 
   for(i = 0; i < count; i++)
   {
@@ -290,25 +240,25 @@ static void gp2x_set_screen_coords(struct graphics_data *graphics,
 static void gp2x_render_graph(struct graphics_data *graphics)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  render_graph8((Uint8 *)render_data->buffer, 640, graphics,
+  render_graph8((uint8_t *)render_data->buffer, 640, graphics,
    gp2x_set_colors[graphics->screen_mode]);
 }
 
-static void gp2x_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+static void gp2x_render_cursor(struct graphics_data *graphics, unsigned int x,
+ unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  Uint32 flatcolor = graphics->flat_intensity_palette[color];
+  uint32_t flatcolor = graphics->flat_intensity_palette[color];
   flatcolor |= flatcolor << 16;
-  render_cursor((Uint32 *)render_data->buffer, 640, 8, x, y, flatcolor, lines,
+  render_cursor((uint32_t *)render_data->buffer, 640, 8, x, y, flatcolor, lines,
    offset);
 }
 
 static void gp2x_render_mouse(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+ unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  render_mouse((Uint32 *)render_data->buffer, 640, 8, x, y, 0xFFFFFFFF,
+  render_mouse((uint32_t *)render_data->buffer, 640, 8, x, y, 0xFFFFFFFF,
    0x0, w, h);
 }
 
@@ -317,17 +267,17 @@ static void gp2x_sync_screen(struct graphics_data *graphics)
   struct gp2x_render_data *render_data = graphics->render_data;
   SDL_Surface *screen = gp2x_get_screen_surface(render_data);
 
-  Uint32 line_advance = screen->pitch / 2;
-  Uint16 *dest = (Uint16*)screen->pixels;
-  Uint16 *src = render_data->buffer;
-  Uint32 i, j, skip = 0;
+  unsigned int line_advance = screen->pitch / 2;
+  uint16_t *dest = (uint16_t *)screen->pixels;
+  uint16_t *src = render_data->buffer;
+  unsigned int i, j, skip = 0;
 
   SDL_LockSurface(screen);
   for(i = 0; i < 240; i++)
   {
     skip += 35 - 24;
     if(skip < 24)
-      memcpy(dest, src, sizeof(Uint16) * 320);
+      memcpy(dest, src, sizeof(uint16_t) * 320);
     else
     {
       for(j = 0; j < 320; j++)
@@ -366,7 +316,6 @@ void render_gp2x_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gp2x_init_video;
   renderer->free_video = gp2x_free_video;
-  renderer->check_video_mode = sdl_check_video_mode;
   renderer->set_video_mode = gp2x_set_video_mode;
   renderer->update_colors = gp2x_update_colors;
   renderer->resize_screen = resize_screen_standard;

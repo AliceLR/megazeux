@@ -1,0 +1,325 @@
+name: Regression tests
+
+env:
+  MZXDEPS_DEBIAN_SDL2:  "zlib1g-dev libpng-dev libogg-dev libvorbis-dev libsdl2-dev"
+  MZXDEPS_DEBIAN_MISC:  "libsdl1.2-dev libegl1-mesa-dev libmikmod-dev libopenmpt-dev"
+  MZXDEPS_DEBIAN_CROSS: "p7zip-full"
+  MZX_MAKE:             "make -j4"
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  #
+  # Platform variants and distribution packages.
+  #
+  unix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
+      - uses: actions/checkout@v3
+      - name: Configure
+        run: ./config.sh --platform unix --enable-release
+      - name: Build
+        run: $MZX_MAKE
+      - name: Run tests
+        run: $MZX_MAKE test
+      - name: Install
+        run: sudo $MZX_MAKE install V=1
+      - name: Check install
+        run: command -v megazeux && [ -f "/usr/share/doc/megazeux/LICENSE" ] && [ -f "/etc/megazeux-config" ]
+      - name: Uninstall
+        run: sudo $MZX_MAKE uninstall V=1
+      - name: Check uninstall
+        run: true && [ ! -f "/usr/bin/megazeux" ] && [ ! -f "/usr/share/doc/megazeux/LICENSE" ] && [ ! -f "/etc/megazeux-config" ]
+      - name: Package source .tar.xz
+        run: make source
+
+  unix-portable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
+      - uses: actions/checkout@v3
+      - name: Configure
+        run: ./config.sh --platform unix-devel --enable-release
+      - name: Build
+        run: $MZX_MAKE
+      - name: Run tests
+        run: $MZX_MAKE test
+      - name: Package linux-amd64 .zip
+        run: make archive
+
+  unix-misc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2 $MZXDEPS_DEBIAN_MISC
+      - uses: actions/checkout@v3
+      - name: Configure (SDL 1.2)
+        run: ./config.sh --platform unix-devel --enable-release --disable-libsdl2
+      - name: Build (SDL 1.2)
+        run: $MZX_MAKE
+      - name: Run tests (SDL 1.2)
+        run: $MZX_MAKE test
+      - name: Distclean (SDL 1.2)
+        run: $MZX_MAKE distclean
+      - name: Configure (EGL/X11)
+        run: ./config.sh --platform unix-devel --enable-release --disable-sdl --enable-egl
+      - name: Build (EGL/X11)
+        run: $MZX_MAKE
+      - name: Run tests (EGL/X11)
+        run: $MZX_MAKE test
+      - name: Distclean (EGL/X11)
+        run: $MZX_MAKE distclean
+      - name: Configure (ModPlug)
+        run: ./config.sh --platform unix-devel --enable-release --enable-modplug
+      - name: Build (Modplug)
+        run: $MZX_MAKE
+      - name: Run tests (Modplug)
+        run: $MZX_MAKE test
+      - name: Distclean (Modplug)
+        run: $MZX_MAKE distclean
+      - name: Configure (MikMod)
+        run: ./config.sh --platform unix-devel --enable-release --enable-mikmod
+      - name: Build (MikMod)
+        run: $MZX_MAKE
+      - name: Run tests (MikMod)
+        run: $MZX_MAKE test
+      - name: Distclean (MikMod)
+        run: $MZX_MAKE distclean
+      - name: Configure (OpenMPT)
+        run: ./config.sh --platform unix-devel --enable-release --enable-openmpt
+      - name: Build (OpenMPT)
+        run: $MZX_MAKE
+      - name: Run tests (OpenMPT)
+        run: $MZX_MAKE test
+      - name: Distclean (OpenMPT)
+        run: $MZX_MAKE distclean
+
+  # Ubuntu static SDL2 expects other junk, so build a -static SDL. Either way, it crashes on startup.
+  # Ubuntu's libvorbis.a relies on libm functions that no longer exist. Just build everything manually...
+  unix-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: 🙄
+        run: sudo sed -i '/deb-src/s/^# //' /etc/apt/sources.list
+#      - name: Install dependencies
+#        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
+      - name: Fetch dependency sources
+#        run: mkdir DEPS && sudo apt update && apt source libsdl2
+        run: mkdir DEPS && sudo apt update && apt source zlib libpng1.6 libogg libvorbis libsdl2
+      - name: Build zlib
+        run: (cd zlib-*/; ./configure --prefix "$(pwd)/../DEPS" --static && $MZX_MAKE && make install)
+      - name: Build libpng
+        run: (cd libpng1.6-*/; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
+      - name: Build libogg
+        run: (cd libogg-*/; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
+      - name: Build libvorbis
+        run: (cd libvorbis-*/; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
+      - name: Build SDL2
+        run: (cd libsdl2-*/; ./configure --prefix="$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
+      - name: Configure
+        run: ./config.sh --platform unix-devel --prefix DEPS --enable-release --disable-modular
+      - name: Build
+        run: LDFLAGS="-static" $MZX_MAKE
+        # TODO: tests
+
+  MSYS2-MINGW64:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Setup msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            base-devel git p7zip
+            mingw-w64-x86_64-gcc    mingw-w64-x86_64-zlib      mingw-w64-x86_64-libpng
+            mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-SDL2
+      - uses: actions/checkout@v3
+      - name: Configure x64
+        run: ./config.sh --platform win64 --enable-release
+      - name: Build x64
+        run: $MZX_MAKE
+      - name: Test x64
+        run: $MZX_MAKE test
+      - name: Package x64 .zip
+        run: make archive
+
+  MSYS2-MINGW32:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Setup msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW32
+          update: true
+          install: >-
+            base-devel git p7zip
+            mingw-w64-i686-gcc      mingw-w64-i686-zlib        mingw-w64-i686-libpng
+            mingw-w64-i686-libogg   mingw-w64-i686-libvorbis   mingw-w64-i686-SDL2
+      - uses: actions/checkout@v3
+      - name: Configure x86
+        run: ./config.sh --platform win32 --enable-release
+      - name: Build x86
+        run: $MZX_MAKE
+      - name: Test x86
+        run: $MZX_MAKE test
+      - name: Package x86 .zip
+        run: make archive
+
+  AArch64-Switch:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
+      - run: echo "PATH=$DEVKITPRO/devkitA64/bin:$PATH" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
+      - name: Configure Switch
+        run: arch/switch/CONFIG.SWITCH
+      - name: Build Switch
+        run: $MZX_MAKE
+      - name: Package Switch .zip
+        run: make archive
+
+  ARM-3DS:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
+      - run: echo "PATH=$DEVKITPRO/devkitARM/bin:$PATH" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
+      - name: Configure 3DS
+        run: arch/3ds/CONFIG.3DS
+      - name: Build 3DS
+        run: $MZX_MAKE
+      - name: Package 3DS .zip
+        run: make archive
+
+  ARM-NDS:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
+      - run: echo "PATH=$DEVKITPRO/devkitARM/bin:$PATH" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
+      - name: Configure NDS
+        run: arch/nds/CONFIG.NDS
+      - name: Build NDS
+        run: $MZX_MAKE
+      - name: Package NDS .zip
+        run: make archive
+
+  PowerPC-Wii:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitppc
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
+      - run: echo "PATH=$DEVKITPRO/devkitPPC/bin:$PATH" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
+      - name: Configure Wii
+        run: arch/wii/CONFIG.WII
+      - name: Build Wii
+        run: $MZX_MAKE
+      - name: Package Wii .zip
+        run: make archive
+
+  PowerPC-WiiU:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitppc
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
+      - run: echo "PATH=$DEVKITPRO/devkitPPC/bin:$PATH" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
+      - name: Configure Wii U
+        run: arch/wiiu/CONFIG.WIIU
+      - name: Build Wii U
+        run: $MZX_MAKE
+      - name: Package Wii U .zip
+        run: make archive
+
+  #
+  # Sanitizers.
+  #
+  AddressSanitizer:
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
+      - uses: actions/checkout@v3
+      - name: Configure
+        run: ./config.sh --platform unix-devel --enable-asan
+      - name: Build
+        run: $MZX_MAKE
+      - name: Run tests
+        run: $MZX_MAKE test
+
+  # Note: requires all non-system/libc calls to be from instrumented libraries.
+  # For the regression tests, MZX can get away with just zlib.
+  #
+  # - actions/checkout will delete the work directory(!?), do it first.
+  # - The MSan zlib needs to be built static to prevent linking the system zlib.
+  # - ZLIB_LDFLAGS needs to be overridden to prevent linking the system zlib.
+  MemorySanitizer:
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+      ZLIB_LDFLAGS: DEPS/lib/libz.a
+    steps:
+      - uses: actions/checkout@v3
+      - name: 🙄
+        run: sudo sed -i '/deb-src/s/^# //' /etc/apt/sources.list
+      - name: Fetch dependency sources
+        run: mkdir DEPS && sudo apt update && apt source zlib
+      - name: Build zlib
+        run: |
+          (cd zlib-*;
+          CC=clang CXX=clang++ CFLAGS="-O3 -fsanitize=memory -g -fPIC -Wno-pointer-sign" LDFLAGS="-fsanitize=memory" \
+            ./configure --prefix "$(pwd)/../DEPS" --static;
+          $MZX_MAKE && make install)
+      - name: Configure
+        run: ./config.sh --platform unix-devel --prefix DEPS --enable-msan --disable-sdl --disable-libpng --disable-vorbis --disable-x11
+      - name: Build
+        run: $MZX_MAKE V=1
+      - name: Run tests
+        run: $MZX_MAKE V=1 test
+
+  UndefinedBehaviorSanitizer:
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+      UBSAN_OPTIONS: print_stacktrace=1
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
+      - uses: actions/checkout@v3
+      - name: Configure
+        run: ./config.sh --platform unix-devel --enable-ubsan
+      - name: Build
+        run: $MZX_MAKE
+      - name: Run tests
+        run: $MZX_MAKE test

@@ -21,6 +21,7 @@
 #include "../../src/platform.h"
 #include "../../src/graphics.h"
 #include "../../src/audio/audio.h"
+#include "../../src/audio/audio_struct.h"
 
 #include <3ds.h>
 #include <string.h>
@@ -54,7 +55,7 @@ void init_audio_platform(struct config_info *conf)
   if(!audio.buffer_samples)
     audio.buffer_samples = 2048;
 
-  buffer_size = sizeof(Sint16) * 2 * audio.buffer_samples;
+  buffer_size = sizeof(int16_t) * 2 * audio.buffer_samples;
   audio.mix_buffer = cmalloc(buffer_size * 2);
 
   ndspInit();

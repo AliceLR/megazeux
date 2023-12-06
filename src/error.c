@@ -81,6 +81,7 @@ int error(const char *string, enum error_type type, unsigned int options,
     int scode = code ? (int)code : -1;
 
     fprintf(stderr, "%s%s\n", type_name, string);
+    fflush(stderr);
 
     // Attempt to automatically handle this error if possible.
     if(options & ERROR_OPT_EXIT) exit(scode);
@@ -104,7 +105,7 @@ int error(const char *string, enum error_type type, unsigned int options,
   x = 40 - (int)strlen(type_name)/2;
   write_string(type_name, x, 10, 78, 0);
 
-  write_string(string, 40 - ((Uint32)strlen(string) / 2), 11, 79, 0);
+  write_string(string, 40 - ((unsigned int)strlen(string) / 2), 11, 79, 0);
 
   // Add options
   write_string("Press", 4, 13, 78, 0);
@@ -227,6 +228,9 @@ int error(const char *string, enum error_type type, unsigned int options,
   m_show();
   if(ret == ERROR_OPT_EXIT) // Exit the program
   {
+#ifdef CONFIG_STDIO_REDIRECT
+    redirect_stdio_exit();
+#endif
     platform_quit();
     exit(-1);
   }
@@ -305,7 +309,7 @@ int error_message(enum error_code id, int parameter, const char *string)
 
     case E_WORLD_FILE_VERSION_OLD:
       sprintf(error_mesg,
-       "World is from old version (%s); use converter",
+       "Invalid world version (%s)",
        version_string);
       code = 0x0D02;
       break;
@@ -499,6 +503,16 @@ int error_message(enum error_code id, int parameter, const char *string)
     case E_TEXT_EXPORT:
       sprintf(error_mesg, "Error exporting text");
       code = 0x1401;
+      break;
+
+    case E_SFX_IMPORT:
+      sprintf(error_mesg, "File is invalid or is not an SFX file");
+      code = 0;
+      break;
+
+    case E_SFX_EXPORT:
+      sprintf(error_mesg, "Error exporting SFX file");
+      code = 0;
       break;
 #endif
 

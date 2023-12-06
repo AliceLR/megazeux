@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2018 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -26,7 +26,7 @@
  */
 
 #include "loader.h"
-#include "period.h"
+#include "../period.h"
 
 #define MAGIC_GDM	MAGIC4('G','D','M',0xfe)
 #define MAGIC_GMFS	MAGIC4('G','M','F','S')
@@ -80,8 +80,7 @@ void fix_effect(uint8 *fxt, uint8 *fxp)
 	case 0x0a:
 	case 0x0b:
 	case 0x0c:
-	case 0x0d:
-	case 0x0f:			/* same as protracker */
+	case 0x0d:			/* same as protracker */
 		break;
 	case 0x0e:
 		/* Convert some extended effects to their S3M equivalents. This is
@@ -124,6 +123,9 @@ void fix_effect(uint8 *fxt, uint8 *fxp)
 				break;
 		}
 		break;
+	case 0x0f:			/* set speed */
+		*fxt = FX_S3M_SPEED;
+		break;
 	case 0x10:			/* arpeggio */
 		*fxt = FX_S3M_ARPEGGIO;
 		break;
@@ -141,6 +143,17 @@ void fix_effect(uint8 *fxt, uint8 *fxp)
 		break;
 	case 0x1e:			/* special misc */
 		switch (MSN(*fxp)) {
+		case 0x0:		/* sample control */
+			if (LSN(*fxp) == 1) { /* enable surround */
+				/* This is the only sample control effect
+				 * that 2GDM emits. BWSB ignores it,
+				 * but supporting it is harmless. */
+				*fxt = FX_SURROUND;
+				*fxp = 1;
+			} else {
+				*fxt = *fxp = 0;
+			}
+			break;
 		case 0x8:		/* set pan position */
 			*fxt = FX_EXTENDED;
 			break;
@@ -189,7 +202,10 @@ static int gdm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 					vermaj, vermin, tvmaj, tvmin);
 	}
 
-	hio_read(panmap, 32, 1, f);
+	if (hio_read(panmap, 32, 1, f) == 0) {
+		D_(D_CRIT "error reading header");
+		return -1;
+	}
 	for (i = 0; i < 32; i++) {
 		if (panmap[i] == 255) {
 			panmap[i] = 8;
@@ -212,7 +228,11 @@ static int gdm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	ins_ofs = hio_read32l(f);
 	smp_ofs = hio_read32l(f);
 	mod->ins = mod->smp = hio_read8(f) + 1;
-	
+
+	/* Sanity check */
+	if (mod->ins > MAX_INSTRUMENTS)
+		return -1;
+
 	m->c4rate = C4_NTSC_RATE;
 
 	MODULE_INFO();
@@ -248,7 +268,7 @@ static int gdm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 		c4spd = hio_read16l(f);
 		vol = hio_read8(f);
 		pan = hio_read8(f);
-		
+
 		mod->xxi[i].sub[0].vol = vol > 0x40 ? 0x40 : vol;
 		mod->xxi[i].sub[0].pan = pan > 15 ? 0x80 : 0x80 + (pan - 8) * 16;
 		libxmp_c2spd_to_note(c4spd, &mod->xxi[i].sub[0].xpo, &mod->xxi[i].sub[0].fin);
@@ -298,6 +318,8 @@ static int gdm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 		for (r = 0; len > 0; ) {
 			c = hio_read8(f);
+			if (hio_error(f))
+				return -1;
 			len--;
 
 			if (c == 0) {
@@ -315,7 +337,7 @@ static int gdm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 				continue;
 			}
 
-			if (mod->chn <= (c & 0x1f)) 
+			if (mod->chn <= (c & 0x1f))
 				mod->chn = (c & 0x1f) + 1;
 
 			if (c & 0x20) {		/* note and sample follows */
@@ -327,6 +349,8 @@ static int gdm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 			if (c & 0x40) {		/* effect(s) follow */
 				do {
 					k = hio_read8(f);
+					if (hio_error(f))
+						return -1;
 					len--;
 					if ((k & 0xc0) != 0xc0) {
 						hio_read8(f);
@@ -336,7 +360,7 @@ static int gdm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 			}
 		}
 	}
- 
+
 	mod->trk = mod->pat * mod->chn;
 
 	if (libxmp_init_pattern(mod) < 0)
@@ -356,6 +380,8 @@ static int gdm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 
 		for (r = 0; len > 0; ) {
 			c = hio_read8(f);
+			if (hio_error(f))
+				return -1;
 			len--;
 
 			if (c == 0) {
@@ -381,6 +407,8 @@ static int gdm_load(struct module_data *m, HIO_HANDLE *f, const int start)
 			if (c & 0x40) {		/* effect(s) follow */
 				do {
 					k = hio_read8(f);
+					if (hio_error(f))
+						return -1;
 					len--;
 					switch ((k & 0xc0) >> 6) {
 					case 0:

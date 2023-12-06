@@ -20,7 +20,7 @@
  * to make the tool easy to use for newbies (simply drag and drop).
  *
  * Copyright (C) 2008-2009 Alistair John Strachan <alistair@devzero.co.uk>
- * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017-2022 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -54,6 +54,7 @@
 #endif
 
 #include "../const.h"
+#include "../graphics.h"
 #include "../util.h"
 #include "../world.h"
 #include "../world_format.h"
@@ -61,8 +62,8 @@
 #include "../io/vio.h"
 #include "../io/zip.h"
 
-#define DOWNVER_VERSION "2.92"
-#define DOWNVER_EXT ".291"
+#define DOWNVER_VERSION "2.93"
+#define DOWNVER_EXT ".292"
 
 #define MZX_VERSION_HI ((MZX_VERSION >> 8) & 0xff)
 #define MZX_VERSION_LO (MZX_VERSION & 0xff)
@@ -85,14 +86,36 @@ enum status
     fflush(stderr); \
   }
 
+struct downver_state
+{
+  struct zip_archive *out;
+  struct zip_archive *in;
+
+  /* 2.93 conversion vars */
+  int screen_mode;
+};
+
 static inline void save_prop_p(int ident, struct memfile *prop,
  struct memfile *mf)
 {
-  save_prop_s(ident, prop->start, (prop->end - prop->start), 1, mf);
+  save_prop_a(ident, prop->start, (prop->end - prop->start), 1, mf);
 }
 
-static enum zip_error zip_duplicate_file(struct zip_archive *dest,
- struct zip_archive *src, void (*handler)(struct memfile *, struct memfile *))
+/* <2.92d did not properly terminate this field on loading it, convert it back
+ * to an ASCIIZ string. */
+static inline void save_prop_s_to_asciiz(int ident, size_t len,
+ struct memfile *prop, struct memfile *mf)
+{
+  char buf[BOARD_NAME_SIZE];
+  len = MIN(len, BOARD_NAME_SIZE - 1);
+
+  len = mfread(buf, 1, len, prop);
+  buf[len] = '\0';
+  save_prop_a(ident, buf, len + 1, 1, mf);
+}
+
+static enum zip_error zip_duplicate_file(struct downver_state *dv,
+ void (*handler)(struct downver_state *, struct memfile *, struct memfile *))
 {
   enum zip_error result;
   unsigned int method;
@@ -100,21 +123,23 @@ static enum zip_error zip_duplicate_file(struct zip_archive *dest,
   void *buffer;
   size_t actual_size;
 
-  result = zip_get_next_name(src, name, 9);
+  result = zip_get_next_name(dv->in, name, 9);
   if(result)
     return result;
 
-  result = zip_get_next_method(src, &method);
+  result = zip_get_next_method(dv->in, &method);
   if(result)
     return result;
 
-  result = zip_get_next_uncompressed_size(src, &actual_size);
+  result = zip_get_next_uncompressed_size(dv->in, &actual_size);
   if(result)
     return result;
 
   buffer = malloc(actual_size);
+  if(!buffer)
+    return ZIP_ALLOC_ERROR;
 
-  result = zip_read_file(src, buffer, actual_size, &actual_size);
+  result = zip_read_file(dv->in, buffer, actual_size, &actual_size);
   if(result)
     goto err_free;
 
@@ -122,27 +147,64 @@ static enum zip_error zip_duplicate_file(struct zip_archive *dest,
   {
     struct memfile mf_in;
     struct memfile mf_out;
-    void *buffer2 = malloc(actual_size);
 
-    mfopen(buffer, actual_size, &mf_in);
-    mfopen(buffer2, actual_size, &mf_out);
+    void *buffer2 = malloc(actual_size * 2);
+    if(buffer2)
+    {
+      mfopen(buffer, actual_size, &mf_in);
+      mfopen_wr(buffer2, actual_size * 2, &mf_out);
 
-    handler(&mf_out, &mf_in);
+      handler(dv, &mf_out, &mf_in);
 
-    // Free the old buffer, then replace it with the new buffer.
-    free(buffer);
-    mfsync(&buffer, &actual_size, &mf_out);
+      // Free the old buffer, then replace it with the new buffer.
+      free(buffer);
+      mfsync(&buffer, &actual_size, &mf_out);
+    }
   }
 
-  result = zip_write_file(dest, name, buffer, actual_size, (int)method);
+  result = zip_write_file(dv->out, name, buffer, actual_size, (int)method);
 
 err_free:
   free(buffer);
   return result;
 }
 
-static void convert_292_to_291_world_info(struct memfile *dest,
- struct memfile *src)
+static void convert_293_to_292_status_counters(struct downver_state *dv,
+ struct memfile *dest, struct memfile *src)
+{
+  char counters[NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE];
+  struct memfile prop;
+  int ident;
+  int len;
+  int num = 0;
+
+  memset(counters, 0, sizeof(counters));
+
+  while(next_prop(&prop, &ident, &len, src))
+  {
+    switch(ident)
+    {
+      case STATCTRPROP_SET_ID:
+        num = load_prop_int(&prop);
+        break;
+
+      case STATCTRPROP_NAME:
+        if(num < NUM_STATUS_COUNTERS)
+        {
+          char *pos = counters + num * COUNTER_NAME_SIZE;
+          len = MIN(len, COUNTER_NAME_SIZE - 1);
+          len = mfread(pos, 1, len, &prop);
+          pos[len] = '\0';
+        }
+        break;
+    }
+  }
+  save_prop_a(WPROP_STATUS_COUNTERS, counters,
+   COUNTER_NAME_SIZE, NUM_STATUS_COUNTERS, dest);
+}
+
+static void convert_293_to_292_world_info(struct downver_state *dv,
+ struct memfile *dest, struct memfile *src)
 {
   struct memfile prop;
   int ident;
@@ -158,6 +220,25 @@ static void convert_292_to_291_world_info(struct memfile *dest,
         save_prop_w(ident, MZX_VERSION_PREV, dest);
         break;
 
+      case WPROP_WORLD_NAME:
+        /* NO loading termination pre-2.92d */
+        save_prop_s_to_asciiz(ident, BOARD_NAME_SIZE, &prop, dest);
+        break;
+
+      case WPROP_STATUS_COUNTERS:
+        convert_293_to_292_status_counters(dv, dest, &prop);
+        break;
+
+      case WPROP_SMZX_MODE:
+        /* Load for palette conversion. */
+        dv->screen_mode = load_prop_int(&prop);
+        save_prop_c(ident, dv->screen_mode, dest);
+        break;
+
+      case WPROP_OUTPUT_MODE:
+        /* Added in 2.93 */
+        break;
+
       default:
         save_prop_p(ident, &prop, dest);
         break;
@@ -168,8 +249,8 @@ static void convert_292_to_291_world_info(struct memfile *dest,
   mfresize(mftell(dest), dest);
 }
 
-static void convert_292_to_291_board_info(struct memfile *dest,
- struct memfile *src)
+static void convert_293_to_292_board_info(struct downver_state *dv,
+ struct memfile *dest, struct memfile *src)
 {
   struct memfile prop;
   int ident;
@@ -184,6 +265,19 @@ static void convert_292_to_291_board_info(struct memfile *dest,
         save_prop_w(ident, MZX_VERSION_PREV, dest);
         break;
 
+      case BPROP_BOARD_NAME:
+        /* loading termination expects BOARD_NAME_SIZE input pre-2.93 */
+        save_prop_s_to_asciiz(ident, BOARD_NAME_SIZE, &prop, dest);
+        break;
+
+      case BPROP_BLIND_DUR:
+      case BPROP_FIREWALKER_DUR:
+      case BPROP_FREEZE_TIME_DUR:
+      case BPROP_SLOW_TIME_DUR:
+      case BPROP_WIND_DUR:
+        /* Added in 2.93 */
+        break;
+
       default:
         save_prop_p(ident, &prop, dest);
         break;
@@ -194,65 +288,288 @@ static void convert_292_to_291_board_info(struct memfile *dest,
   mfresize(mftell(dest), dest);
 }
 
-static enum status convert_292_to_291(vfile *out, vfile *in)
+static void convert_293_to_292_robot_info(struct downver_state *dv,
+ struct memfile *dest, struct memfile *src)
 {
-  struct zip_archive *inZ = zip_open_vf_read(in);
-  struct zip_archive *outZ = zip_open_vf_write(out);
+  struct memfile prop;
+  int ident;
+  int len;
+
+  while(next_prop(&prop, &ident, &len, src))
+  {
+    switch(ident)
+    {
+      case RPROP_ROBOT_NAME:
+        /* NO loading termination pre-2.92d */
+        save_prop_s_to_asciiz(ident, ROBOT_NAME_SIZE, &prop, dest);
+        break;
+
+      default:
+        save_prop_p(ident, &prop, dest);
+        break;
+    }
+  }
+
+  save_prop_eof(dest);
+  mfresize(mftell(dest), dest);
+}
+
+static void convert_293_to_292_sensor_info(struct downver_state *dv,
+ struct memfile *dest, struct memfile *src)
+{
+  struct memfile prop;
+  int ident;
+  int len;
+
+  while(next_prop(&prop, &ident, &len, src))
+  {
+    switch(ident)
+    {
+      case SENPROP_SENSOR_NAME:
+      case SENPROP_ROBOT_TO_MESG:
+        /* NO loading termination pre-2.92d */
+        save_prop_s_to_asciiz(ident, ROBOT_NAME_SIZE, &prop, dest);
+        break;
+
+      default:
+        save_prop_p(ident, &prop, dest);
+        break;
+    }
+  }
+
+  save_prop_eof(dest);
+  mfresize(mftell(dest), dest);
+}
+
+static void convert_293_to_292_sfx(struct downver_state *dv,
+ struct memfile *dest, struct memfile *src)
+{
+  struct memfile prop;
+  int ident;
+  int len;
+  int num = 0;
+  char buf[8];
+
+  mfresize(NUM_BUILTIN_SFX * LEGACY_SFX_SIZE, dest);
+  memset(dest->start, 0, NUM_BUILTIN_SFX * LEGACY_SFX_SIZE);
+
+  if(mfread(buf, 8, 1, src) && !memcmp(buf, "MZFX\x1a", 6))
+  {
+    while(next_prop(&prop, &ident, &len, src))
+    {
+      switch(ident)
+      {
+        case SFXPROP_SET_ID:
+          num = load_prop_int(&prop);
+          break;
+
+        case SFXPROP_STRING:
+          if(num >= 0 && num < NUM_BUILTIN_SFX)
+          {
+            len = MIN(len, LEGACY_SFX_SIZE - 1);
+            mfseek(dest, num * LEGACY_SFX_SIZE, SEEK_SET);
+            mfread(dest->current, len, 1, &prop);
+          }
+          break;
+      }
+    }
+  }
+  else
+  {
+    mfseek(src, 0, SEEK_SET);
+    mfread(dest->start, LEGACY_SFX_SIZE, NUM_BUILTIN_SFX, src);
+    dest->end[-1] = '\0';
+  }
+}
+
+static enum status convert_293_to_292(struct downver_state *dv)
+{
   enum zip_error err = ZIP_SUCCESS;
   unsigned int file_id;
   unsigned int board_id;
   unsigned int robot_id;
 
-  if(!inZ || !outZ)
+  if(!dv->in || !dv->out)
   {
-    zip_close(inZ, NULL);
-    zip_close(outZ, NULL);
+    zip_close(dv->in, NULL);
+    zip_close(dv->out, NULL);
     return ARCHIVE_ERROR;
   }
 
-  assign_fprops(inZ, 0);
+  world_assign_file_ids(dv->in, true);
 
-  while(ZIP_SUCCESS == zip_get_next_prop(inZ, &file_id, &board_id, &robot_id))
+  while(ZIP_SUCCESS == zip_get_next_mzx_file_id(dv->in, &file_id, &board_id, &robot_id))
   {
     switch(file_id)
     {
-      case FPROP_WORLD_INFO:
-        err = zip_duplicate_file(outZ, inZ, convert_292_to_291_world_info);
+      case FILE_ID_WORLD_INFO:
+        err = zip_duplicate_file(dv, convert_293_to_292_world_info);
         break;
 
-      case FPROP_BOARD_INFO:
-        err = zip_duplicate_file(outZ, inZ, convert_292_to_291_board_info);
+      case FILE_ID_BOARD_INFO:
+        err = zip_duplicate_file(dv, convert_293_to_292_board_info);
+        break;
+
+      case FILE_ID_WORLD_GLOBAL_ROBOT:
+      case FILE_ID_ROBOT:
+        err = zip_duplicate_file(dv, convert_293_to_292_robot_info);
+        break;
+
+      case FILE_ID_SENSOR:
+        err = zip_duplicate_file(dv, convert_293_to_292_sensor_info);
+        break;
+
+      case FILE_ID_WORLD_SFX:
+        err = zip_duplicate_file(dv, convert_293_to_292_sfx);
+        break;
+
+      case FILE_ID_WORLD_PAL:
+        if(!dv->screen_mode)
+          err = zip_duplicate_file(dv, NULL);
+        else
+          zip_skip_file(dv->in);
+        break;
+
+      case FILE_ID_WORLD_PAL_SMZX:
+        if(dv->screen_mode)
+        {
+          char buf[SMZX_PAL_SIZE * 3];
+          memset(buf, 0, sizeof(buf));
+          err = zip_read_file(dv->in, buf, SMZX_PAL_SIZE * 3, NULL);
+          err = zip_write_file(dv->out, "pal", buf, SMZX_PAL_SIZE * 3, ZIP_M_DEFLATE);
+        }
+        else
+          zip_skip_file(dv->in);
+        break;
+
+      case FILE_ID_WORLD_PAL_INTENSITY:
+        if(!dv->screen_mode)
+        {
+          char buf[PAL_SIZE * 4];
+          int i;
+
+          memset(buf, 0, sizeof(buf));
+          err = zip_read_file(dv->in, buf, PAL_SIZE * 4, NULL);
+          if(err == ZIP_SUCCESS)
+          {
+            // Convert to the old format.
+            for(i = 0; i < PAL_SIZE; i++)
+              buf[i] = buf[i * 4];
+
+            zip_write_file(dv->out, "palint", buf, PAL_SIZE, ZIP_M_NONE);
+          }
+        }
+        else
+          zip_skip_file(dv->in);
+        break;
+
+      case FILE_ID_WORLD_PAL_INTENSITY_SMZX:
+        if(dv->screen_mode)
+        {
+          char buf[SMZX_PAL_SIZE * 4];
+          int i;
+
+          memset(buf, 0, sizeof(buf));
+          err = zip_read_file(dv->in, buf, SMZX_PAL_SIZE * 4, NULL);
+          if(err == ZIP_SUCCESS)
+          {
+            // Convert to the old format.
+            for(i = 0; i < SMZX_PAL_SIZE; i++)
+              buf[i] = buf[i * 4];
+
+            zip_write_file(dv->out, "palint", buf, SMZX_PAL_SIZE, ZIP_M_NONE);
+          }
+        }
+        else
+          zip_skip_file(dv->in);
         break;
 
       default:
-        err = zip_duplicate_file(outZ, inZ, NULL);
+        err = zip_duplicate_file(dv, NULL);
         break;
     }
 
     if(err != ZIP_SUCCESS)
     {
       // Skip files that don't work
-      zip_skip_file(inZ);
+      zip_skip_file(dv->in);
       err = ZIP_SUCCESS;
     }
   }
 
-  zip_close(inZ, NULL);
-  zip_close(outZ, NULL);
+  zip_close(dv->in, NULL);
+  zip_close(dv->out, NULL);
   return SUCCESS;
+}
+
+/* Validate the magic string. */
+static boolean check_magic(const char *magic, boolean save)
+{
+  if(save)
+  {
+    if(magic[0] != 'M' || magic[1] != 'Z' || magic[2] != 'S')
+    {
+      error("Save file is corrupt or unsupported.\n");
+      return false;
+    }
+    magic += 3;
+  }
+  else
+  {
+    if(magic[0] != 'M')
+    {
+      error("World or board file is corrupt or unsupported.\n");
+      return false;
+    }
+    magic++;
+  }
+
+  if(magic[0] != MZX_VERSION_HI || magic[1] != MZX_VERSION_LO)
+  {
+    error("This tool only supports worlds, saves, or boards from %d.%d.\n",
+     MZX_VERSION_HI, MZX_VERSION_LO);
+    return false;
+  }
+  return true;
+}
+
+/* Replace the new magic string with the old magic string. */
+static void fix_magic(char *magic, boolean save)
+{
+  if(save)
+  {
+    magic[3] = MZX_VERSION_PREV_HI;
+    magic[4] = MZX_VERSION_PREV_LO;
+
+    /* Also lower the original world version value (little endian). */
+    if(magic[6] > MZX_VERSION_HI ||
+     (magic[6] == MZX_VERSION_HI && magic[5] > MZX_VERSION_LO))
+    {
+      magic[5] = MZX_VERSION_PREV_LO;
+      magic[6] = MZX_VERSION_PREV_HI;
+    }
+  }
+  else
+  {
+    magic[1] = MZX_VERSION_PREV_HI;
+    magic[2] = MZX_VERSION_PREV_LO;
+  }
 }
 
 int main(int argc, char *argv[])
 {
   char fname[MAX_PATH + 4];
+  char magic[8];
+  struct downver_state dv;
   enum status ret;
   long ext_pos;
-  int world;
   int byte;
+  boolean world = false;
+  boolean save = false;
   vfile *in;
   vfile *out;
 
-  if(strcmp(VERSION, DOWNVER_VERSION) < 0)
+  if(strcmp(VERSION, DOWNVER_VERSION) < 0 && 0)
   {
     error("[ERROR] Update downver for " VERSION "!\n");
     return 1;
@@ -276,14 +593,24 @@ int main(int argc, char *argv[])
     snprintf(fname, sizeof(fname), "%.*s" DOWNVER_EXT ".mzb",
      (int)ext_pos, argv[1]);
     fname[sizeof(fname) - 1] = '\0';
-    world = false;
   }
-  else if(!strcasecmp(argv[1] + ext_pos, ".mzx"))
+  else
+
+  if(!strcasecmp(argv[1] + ext_pos, ".mzx"))
   {
     snprintf(fname, sizeof(fname), "%.*s" DOWNVER_EXT ".mzx",
      (int)ext_pos, argv[1]);
     fname[sizeof(fname) - 1] = '\0';
     world = true;
+  }
+  else
+
+  if(!strcasecmp(argv[1] + ext_pos, ".sav"))
+  {
+    snprintf(fname, sizeof(fname), "%.*s" DOWNVER_EXT ".sav",
+     (int)ext_pos, argv[1]);
+    fname[sizeof(fname) - 1] = '\0';
+    save = true;
   }
   else
   {
@@ -349,12 +676,35 @@ int main(int argc, char *argv[])
       goto err_read;
     }
     else
+
     if(byte != 0)
     {
       error("Protected worlds are not supported.\n");
       goto exit_close;
     }
     vfputc(0, out);
+
+    if(vfread(magic, 1, 3, in) < 3)
+      goto err_read;
+
+    if(!check_magic(magic, false))
+      goto exit_close;
+
+    fix_magic(magic, false);
+    vfwrite(magic, 1, 3, out);
+  }
+  else
+
+  if(save)
+  {
+    if(vfread(magic, 1, 8, in) < 8)
+      goto err_read;
+
+    if(!check_magic(magic, true))
+      goto exit_close;
+
+    fix_magic(magic, true);
+    vfwrite(magic, 1, 8, out);
   }
   else
   {
@@ -364,70 +714,36 @@ int main(int argc, char *argv[])
       goto err_read;
     }
     else
+
     if(byte != 0xFF)
     {
       error("Board file is corrupt or unsupported.\n");
       goto exit_close;
     }
     vfputc(0xFF, out);
+
+    if(vfread(magic, 1, 3, in) < 3)
+      goto exit_close;
+
+    if(!check_magic(magic, false))
+      goto exit_close;
+
+    fix_magic(magic, false);
+    vfwrite(magic, 1, 3, out);
   }
 
-  // Validate version is current
-
-  byte = vfgetc(in);
-  if(byte < 0)
-  {
-    goto err_read;
-  }
-  else
-  if(byte != 'M')
-  {
-    error("World file is corrupt or unsupported.\n");
-    goto exit_close;
-  }
-
-  byte = vfgetc(in);
-  if(byte < 0)
-  {
-    goto err_read;
-  }
-  else
-  if(byte != MZX_VERSION_HI)
-  {
-    error("This tool only supports worlds or boards from %d.%d.\n",
-     MZX_VERSION_HI, MZX_VERSION_LO);
-    goto exit_close;
-  }
-
-  byte = vfgetc(in);
-  if(byte < 0)
-  {
-    goto err_read;
-  }
-  else
-  if(byte != MZX_VERSION_LO)
-  {
-    error("This tool only supports worlds or boards from %d.%d.\n",
-     MZX_VERSION_HI, MZX_VERSION_LO);
-    goto exit_close;
-  }
-
-  // Write previous version's magic
-
-  vfputc('M', out);
-
-  byte = vfputc(MZX_VERSION_PREV_HI, out);
-  if(byte == EOF)
-    goto err_write;
-
-  byte = vfputc(MZX_VERSION_PREV_LO, out);
-  if(byte == EOF)
-    goto err_write;
-
-  // Worlds and boards are the same from here out.
+  // Worlds, saves, and boards are the same from here out.
   // Conversion closes the file pointers, so NULL them.
 
-  ret = convert_292_to_291(out, in);
+  memset(&dv, 0, sizeof(dv));
+  dv.in  = zip_open_vf_read(in);
+  dv.out = zip_open_vf_write(out);
+
+  // Zip64 support was added in 2.93.
+  if(MZX_VERSION_PREV < V293)
+    zip_set_zip64_enabled(dv.out, false);
+
+  ret = convert_293_to_292(&dv);
   out = NULL;
   in = NULL;
 

@@ -1,14 +1,5 @@
 PREPARATION
 
-You need to extract the following additional libraries here:
-
-  - ndsScreens (source packaged with MZX)
-
-If you can't find the require versions online, or can't build them, you
-can use the prebuilts available from:
-
-scripts/deps/nds.zip
-
 You need to build or install the devkitARM toolchain.
 
 CONFIGURING
@@ -22,11 +13,9 @@ For the moment, you need to build with:
 
 make package
 
-This will emit a "mzxgit.nds" which you should know how to launch.
+This will emit a "mzxrun.nds" which you should know how to launch.
 
 PACKAGING THE BUILD
 
 You can then use the usual "make archive" to build a
-build/dist/nds/mzxgit-nds.zip file for distribution.
-
---ajs
+suitable .ZIP file for distribution.

@@ -27,7 +27,9 @@
 #include "../board.h"
 #include "../core.h"
 #include "../event.h"
+#include "../extmem.h"
 #include "../graphics.h"
+#include "../platform.h"
 #include "../intake.h"
 #include "../window.h"
 
@@ -92,7 +94,7 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
     // Add title
     write_string(title, xpos + 3, ypos + 2, DI_TITLE, 0);
     draw_char(' ', DI_TITLE, xpos + 2, ypos + 2);
-    draw_char(' ', DI_TITLE, xpos + 3 + (Uint32)strlen(title), ypos + 2);
+    draw_char(' ', DI_TITLE, xpos + 3 + (unsigned int)strlen(title), ypos + 2);
   }
 
   // Add pointer
@@ -1200,6 +1202,11 @@ int choose_board(struct world *mzx_world, int current, const char *title,
    ((current >= 0) && (mzx_world->board_list[current] == NULL)))
   {
     current = add_board(mzx_world, current);
+    if(current >= 0)
+    {
+      // This board is expected to reside in extra memory (if applicable).
+      store_board_to_extram(mzx_world->board_list[current]);
+    }
   }
 
   for(i = 0; i < num_boards + 1; i++)

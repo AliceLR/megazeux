@@ -20,6 +20,7 @@
 // New counter.cpp. Sorted lists make for faster searching.
 // Builtins are also cleaned up by being put on a seperate list.
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -27,13 +28,6 @@
 #include <ctype.h>
 #include <limits.h>
 #include <time.h>
-#include <sys/stat.h>
-
-#ifdef _MSC_VER
-#include "win32time.h"
-#else
-#include <sys/time.h>
-#endif /* _MSC_VER */
 
 #include "board.h"
 #include "configure.h"
@@ -41,10 +35,13 @@
 #include "data.h"
 #include "error.h"
 #include "event.h"
+#include "expr.h"
 #include "game_ops.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
+#include "memcasecmp.h"
+#include "platform.h"
 #include "rasm.h"
 #include "robot.h"
 #include "sprite.h"
@@ -52,8 +49,8 @@
 #include "util.h"
 #include "world.h"
 #include "world_struct.h"
-#include "io/dir.h"
 #include "io/fsafeopen.h"
+#include "io/vio.h"
 
 #include "audio/audio.h"
 
@@ -1226,7 +1223,7 @@ static int joyn_read(struct world *mzx_world,
   char *dot_ptr;
   int joystick = strtol(name + 3, &dot_ptr, 10) - 1;
   boolean is_active;
-  Sint16 value;
+  int16_t value;
 
   if(*dot_ptr == '.')
   {
@@ -1291,66 +1288,68 @@ static void timereset_write(struct world *mzx_world,
   mzx_world->current_board->time_limit = CLAMP(value, 0, 32767);
 }
 
-static struct tm *system_time(void)
+static void refresh_time(struct world *mzx_world)
 {
-  static struct tm err;
-  struct timeval tv;
-  time_t e_time;
-  struct tm *t;
+  if(!(mzx_world->command_cache & COMMAND_CACHE_CURRENT_TIME))
+  {
+    mzx_world->command_cache |= COMMAND_CACHE_CURRENT_TIME;
 
-  if(!gettimeofday(&tv, NULL))
-    e_time = tv.tv_sec;
-  else
-    e_time = time(NULL);
+    memset(&(mzx_world->current_time), 0, sizeof(mzx_world->current_time));
+    mzx_world->current_time_epoch = 0;
+    mzx_world->current_time_nano = 0;
 
-  // If localtime returns NULL, return a tm with all zeros instead of crashing.
-  t = localtime(&e_time);
-  return t ? t : &err;
+    platform_system_time(&(mzx_world->current_time),
+     &(mzx_world->current_time_epoch), &(mzx_world->current_time_nano));
+  }
 }
 
 static int date_day_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_mday;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_mday;
 }
 
 static int date_year_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_year + 1900;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_year + 1900;
 }
 
 static int date_month_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_mon + 1;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_mon + 1;
 }
 
 static int time_hours_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_hour;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_hour;
 }
 
 static int time_minutes_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_min;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_min;
 }
 
 static int time_seconds_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return system_time()->tm_sec;
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_sec;
 }
 
 static int time_millis_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  struct timeval tv;
-  if(!gettimeofday(&tv, NULL))
-    return (tv.tv_usec / 1000) % 1000;
-  return 0;
+  refresh_time(mzx_world);
+  return mzx_world->current_time_nano / 1000000;
 }
 
 static int random_seed_read(struct world *mzx_world,
@@ -1688,8 +1687,8 @@ static void upr_write(struct world *mzx_world,
 static int char_byte_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  Uint16 char_num = get_counter(mzx_world, "CHAR", id);
-  Uint8 byte_num = get_counter(mzx_world, "BYTE", id);
+  uint16_t char_num = get_counter(mzx_world, "CHAR", id);
+  uint8_t byte_num = get_counter(mzx_world, "BYTE", id);
 
   // Prior to 2.90 char params are clipped.
   if(mzx_world->version < V290)
@@ -1710,8 +1709,8 @@ static int char_byte_read(struct world *mzx_world,
 static void char_byte_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  Uint16 char_num = get_counter(mzx_world, "CHAR", id);
-  Uint8 byte_num = get_counter(mzx_world, "BYTE", id);
+  uint16_t char_num = get_counter(mzx_world, "CHAR", id);
+  uint8_t byte_num = get_counter(mzx_world, "BYTE", id);
 
   // Prior to 2.90 char params are clipped.
   if(mzx_world->version < V290)
@@ -1987,7 +1986,7 @@ static int fread_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   if(!mzx_world->input_is_dir && mzx_world->input_file)
-    return fgetc(mzx_world->input_file);
+    return vfgetc(mzx_world->input_file);
   return -1;
 }
 
@@ -1997,9 +1996,9 @@ static int fread_counter_read(struct world *mzx_world,
   if(!mzx_world->input_is_dir && mzx_world->input_file)
   {
     if(mzx_world->version < V282)
-      return fgetw(mzx_world->input_file);
+      return vfgetw(mzx_world->input_file);
     else
-      return fgetd(mzx_world->input_file);
+      return vfgetd(mzx_world->input_file);
   }
   return -1;
 }
@@ -2008,9 +2007,16 @@ static int fread_pos_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   if(!mzx_world->input_is_dir && mzx_world->input_file)
-    return ftell(mzx_world->input_file);
-  else if(mzx_world->input_is_dir)
-    return dir_tell(&mzx_world->input_directory);
+  {
+    int64_t pos = vftell(mzx_world->input_file);
+    return CLAMP(pos, -1, INT_MAX);
+  }
+  else
+
+  if(mzx_world->input_is_dir)
+  {
+    return vdir_tell(mzx_world->input_directory);
+  }
   else
     return -1;
 }
@@ -2021,14 +2027,14 @@ static void fread_pos_write(struct world *mzx_world,
   if(!mzx_world->input_is_dir && mzx_world->input_file)
   {
     if(value == -1)
-      fseek(mzx_world->input_file, 0, SEEK_END);
+      vfseek(mzx_world->input_file, 0, SEEK_END);
     else
-      fseek(mzx_world->input_file, value, SEEK_SET);
+      vfseek(mzx_world->input_file, value, SEEK_SET);
   }
   else if(mzx_world->input_is_dir)
   {
     if(value >= 0)
-      dir_seek(&mzx_world->input_directory, value);
+      vdir_seek(mzx_world->input_directory, value);
   }
 }
 
@@ -2036,25 +2042,14 @@ static int fread_length_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->input_is_dir)
-    return mzx_world->input_directory.entries;
+    return vdir_length(mzx_world->input_directory);
 
   if(mzx_world->input_file)
   {
-    struct stat stat_info;
-    long current_pos;
-    long length;
-
-    // Since this is read-only, this info is likely accurate and faster to get.
-    if(!fstat(fileno(mzx_world->input_file), &stat_info))
-      return stat_info.st_size;
-
-    // Fall back to SEEK_END/ftell
-    current_pos = ftell(mzx_world->input_file);
-    fseek(mzx_world->input_file, 0, SEEK_END);
-    length = ftell(mzx_world->input_file);
-    fseek(mzx_world->input_file, current_pos, SEEK_SET);
-    return length;
+    int64_t len = vfilelength(mzx_world->input_file, false);
+    return CLAMP(len, -1, INT_MAX);
   }
+
   return -1;
 }
 
@@ -2074,7 +2069,10 @@ static int fwrite_pos_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->output_file)
-    return ftell(mzx_world->output_file);
+  {
+    int64_t pos = vftell(mzx_world->output_file);
+    return CLAMP(pos, -1, INT_MAX);
+  }
   else
     return -1;
 }
@@ -2085,9 +2083,9 @@ static void fwrite_pos_write(struct world *mzx_world,
   if(mzx_world->output_file)
   {
     if(value == -1)
-      fseek(mzx_world->output_file, 0, SEEK_END);
+      vfseek(mzx_world->output_file, 0, SEEK_END);
     else
-      fseek(mzx_world->output_file, value, SEEK_SET);
+      vfseek(mzx_world->output_file, value, SEEK_SET);
   }
 }
 
@@ -2095,7 +2093,7 @@ static void fwrite_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   if(mzx_world->output_file)
-    fputc(value, mzx_world->output_file);
+    vfputc(value, mzx_world->output_file);
 }
 
 static void fwrite_counter_write(struct world *mzx_world,
@@ -2104,9 +2102,9 @@ static void fwrite_counter_write(struct world *mzx_world,
   if(mzx_world->output_file)
   {
     if(mzx_world->version < V282)
-      fputw(value, mzx_world->output_file);
+      vfputw(value, mzx_world->output_file);
     else
-      fputd(value, mzx_world->output_file);
+      vfputd(value, mzx_world->output_file);
   }
 }
 
@@ -2115,15 +2113,8 @@ static int fwrite_length_read(struct world *mzx_world,
 {
   if(mzx_world->output_file)
   {
-    // Since this can change without updating the file on disk, the easiest
-    // way to get this value is SEEK_END/ftell.
-    long current_pos = ftell(mzx_world->output_file);
-    long length;
-
-    fseek(mzx_world->output_file, 0, SEEK_END);
-    length = ftell(mzx_world->output_file);
-    fseek(mzx_world->output_file, current_pos, SEEK_SET);
-    return length;
+    int64_t len = vfilelength(mzx_world->output_file, false);
+    return CLAMP(len, -1, INT_MAX);
   }
   return -1;
 }
@@ -2421,13 +2412,13 @@ static void mousey_write(struct world *mzx_world,
 static int mousepx_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return get_real_mouse_x();
+  return get_mouse_pixel_x();
 }
 
 static int mousepy_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return get_real_mouse_y();
+  return get_mouse_pixel_y();
 }
 
 static void mousepx_write(struct world *mzx_world,
@@ -2439,7 +2430,7 @@ static void mousepx_write(struct world *mzx_world,
   if(value < 0)
     value = 0;
 
-  warp_real_mouse_x(value);
+  warp_mouse_pixel_x(value);
 }
 
 static void mousepy_write(struct world *mzx_world,
@@ -2451,7 +2442,7 @@ static void mousepy_write(struct world *mzx_world,
   if(value < 0)
     value = 0;
 
-  warp_real_mouse_y(value);
+  warp_mouse_pixel_y(value);
 }
 
 static int mboardx_read(struct world *mzx_world,
@@ -2888,7 +2879,7 @@ int match_function_counter(const char *dest, const char *src)
 static const struct function_counter *find_function_counter(const char *name)
 {
   const struct function_counter *base = builtin_counters;
-  int first_letter = tolower((int)name[0]) * 2;
+  int first_letter = memtolower((unsigned char)name[0]) * 2;
   int bottom, top, middle;
   int cmpval;
 
@@ -2924,6 +2915,30 @@ static struct robot *get_robot_by_id(struct world *mzx_world, int id)
     return NULL;
 }
 
+static void fread_close(struct world *mzx_world)
+{
+  if(!mzx_world->input_is_dir && mzx_world->input_file)
+    vfclose(mzx_world->input_file);
+
+  if(mzx_world->input_is_dir && mzx_world->input_directory)
+    vdir_close(mzx_world->input_directory);
+
+  mzx_world->input_file_name[0] = '\0';
+  mzx_world->input_file = NULL;
+  mzx_world->input_directory = NULL;
+  mzx_world->input_is_dir = false;
+}
+
+static void fwrite_close(struct world *mzx_world)
+{
+  if(mzx_world->output_file)
+    vfclose(mzx_world->output_file);
+
+  mzx_world->output_file_name[0] = '\0';
+  mzx_world->output_file = NULL;
+  mzx_world->output_mode = FWRITE_MODE_UNKNOWN;
+}
+
 int set_counter_special(struct world *mzx_world, char *char_value,
  int value, int id)
 {
@@ -2936,130 +2951,82 @@ int set_counter_special(struct world *mzx_world, char *char_value,
   {
     case FOPEN_FREAD:
     {
-      mzx_world->input_file_name[0] = 0;
+      fread_close(mzx_world);
 
       if(char_value[0])
       {
-        char *translated_path = cmalloc(MAX_PATH);
+        char *translated_path = (char *)cmalloc(MAX_PATH);
         int err;
 
-        if(!mzx_world->input_is_dir && mzx_world->input_file)
-        {
-          fclose(mzx_world->input_file);
-          mzx_world->input_file = NULL;
-        }
-
-        if(mzx_world->input_is_dir)
-        {
-          dir_close(&mzx_world->input_directory);
-          mzx_world->input_is_dir = false;
-        }
+        if(!translated_path)
+          return 0;
 
         err = fsafetranslate(char_value, translated_path, MAX_PATH);
 
         if(err == -FSAFE_MATCHED_DIRECTORY)
         {
-          if(dir_open(&mzx_world->input_directory, translated_path))
+          mzx_world->input_directory = vdir_open(translated_path);
+          if(mzx_world->input_directory)
             mzx_world->input_is_dir = true;
         }
-        else if(err == -FSAFE_SUCCESS)
-          mzx_world->input_file = fopen_unsafe(translated_path, "rb");
+        else
+
+        if(err == -FSAFE_SUCCESS)
+          mzx_world->input_file = vfopen_unsafe(translated_path, "rb");
 
         if(mzx_world->input_file || mzx_world->input_is_dir)
           strcpy(mzx_world->input_file_name, translated_path);
 
         free(translated_path);
       }
-      else
-      {
-        if(!mzx_world->input_is_dir && mzx_world->input_file)
-        {
-          fclose(mzx_world->input_file);
-          mzx_world->input_file = NULL;
-        }
-
-        if(mzx_world->input_is_dir)
-        {
-          dir_close(&mzx_world->input_directory);
-          mzx_world->input_is_dir = false;
-        }
-      }
-
       break;
     }
 
     case FOPEN_FWRITE:
     {
-      mzx_world->output_file_name[0] = 0;
+      fwrite_close(mzx_world);
 
       if(char_value[0])
       {
-        if(mzx_world->output_file)
-          fclose(mzx_world->output_file);
-
         mzx_world->output_file = fsafeopen(char_value, "wb");
         if(mzx_world->output_file)
-          strcpy(mzx_world->output_file_name, char_value);
-      }
-      else
-      {
-        if(mzx_world->output_file)
         {
-          fclose(mzx_world->output_file);
-          mzx_world->output_file = NULL;
+          strcpy(mzx_world->output_file_name, char_value);
+          mzx_world->output_mode = FWRITE_MODE_TRUNCATE;
         }
       }
-
       break;
     }
 
     case FOPEN_FAPPEND:
     {
-      mzx_world->output_file_name[0] = 0;
+      fwrite_close(mzx_world);
 
       if(char_value[0])
       {
-        if(mzx_world->output_file)
-          fclose(mzx_world->output_file);
-
         mzx_world->output_file = fsafeopen(char_value, "ab");
         if(mzx_world->output_file)
-          strcpy(mzx_world->output_file_name, char_value);
-      }
-      else
-      {
-        if(mzx_world->output_file)
         {
-          fclose(mzx_world->output_file);
-          mzx_world->output_file = NULL;
+          strcpy(mzx_world->output_file_name, char_value);
+          mzx_world->output_mode = FWRITE_MODE_APPEND;
         }
       }
-
       break;
     }
 
     case FOPEN_FMODIFY:
     {
-      mzx_world->output_file_name[0] = 0;
+      fwrite_close(mzx_world);
 
       if(char_value[0])
       {
-        if(mzx_world->output_file)
-          fclose(mzx_world->output_file);
-
         mzx_world->output_file = fsafeopen(char_value, "r+b");
         if(mzx_world->output_file)
-          strcpy(mzx_world->output_file_name, char_value);
-      }
-      else
-      {
-        if(mzx_world->output_file)
         {
-          fclose(mzx_world->output_file);
-          mzx_world->output_file = NULL;
+          strcpy(mzx_world->output_file_name, char_value);
+          mzx_world->output_mode = FWRITE_MODE_MODIFY;
         }
       }
-
       break;
     }
 
@@ -3193,19 +3160,31 @@ int set_counter_special(struct world *mzx_world, char *char_value,
         // translated into actual commands eventually.
         if(mzx_world->version >= VERSION_SOURCE)
         {
-          FILE *fp = fsafeopen(char_value, "rb");
-          if(fp)
+          vfile *vf = fsafeopen(char_value, "rb");
+          if(vf)
           {
-            new_length = ftell_and_rewind(fp);
+            int64_t vf_len = vfilelength(vf, true);
+            if(vf_len < 0 || vf_len > INT_MAX)
+            {
+              vfclose(vf);
+              break;
+            }
+
+            new_length = (int)vf_len;
             new_source = cmalloc(new_length + 1);
+            if(!new_source)
+            {
+              vfclose(vf);
+              break;
+            }
             new_source[new_length] = 0;
 
-            if(!fread(new_source, new_length, 1, fp))
+            if(vfread(new_source, 1, new_length, vf) != (size_t)new_length)
             {
               free(new_source);
               new_source = NULL;
             }
-            fclose(fp);
+            vfclose(vf);
           }
         }
         else
@@ -3249,7 +3228,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       // It's basically like LOAD_ROBOT except that it first has to disassmble
       // the bytecode.
 
-      FILE *bc_file = fsafeopen(char_value, "rb");
+      vfile *bc_file = fsafeopen(char_value, "rb");
 
       if(bc_file)
       {
@@ -3258,14 +3237,27 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         if(cur_robot)
         {
-          int program_bytecode_length = ftell_and_rewind(bc_file);
-          char *program_legacy_bytecode = malloc(program_bytecode_length + 1);
+          int64_t bc_len = vfilelength(bc_file, true);
+          char *program_legacy_bytecode;
+          int program_bytecode_length;
 
-          fread(program_legacy_bytecode, program_bytecode_length, 1,
-           bc_file);
+          if(bc_len < 0 || bc_len > MAX_OBJ_SIZE)
+            break;
+
+          program_bytecode_length = (int)bc_len;
+          program_legacy_bytecode = cmalloc(program_bytecode_length + 1);
+          if(!program_legacy_bytecode)
+            break;
+
+          if(vfread(program_legacy_bytecode, 1, program_bytecode_length,
+           bc_file) != (size_t)program_bytecode_length)
+          {
+            free(program_legacy_bytecode);
+            break;
+          }
 
           if(!validate_legacy_bytecode(&program_legacy_bytecode,
-           &program_bytecode_length))
+           &program_bytecode_length, NULL))
           {
             error_message(E_LOAD_BC_CORRUPT, 0, char_value);
             free(program_legacy_bytecode);
@@ -3293,12 +3285,12 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           // OR LOAD_BCn was used where n is &robot_id&.
           if(value == -1 || value == id)
           {
-            fclose(bc_file);
+            vfclose(bc_file);
             return 1;
           }
         }
 
-        fclose(bc_file);
+        vfclose(bc_file);
       }
       break;
     }
@@ -3315,14 +3307,14 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
       if(cur_robot && cur_robot->program_source)
       {
-        FILE *fp = fsafeopen(char_value, "wb");
+        vfile *vf = fsafeopen(char_value, "wb");
         size_t len = cur_robot->program_source_length;
 
-        if(fp)
+        if(vf)
         {
           // TODO: this doesn't apply zaps...
-          fwrite(cur_robot->program_source, len, 1, fp);
-          fclose(fp);
+          vfwrite(cur_robot->program_source, len, 1, vf);
+          vfclose(vf);
         }
       }
       break;
@@ -3388,7 +3380,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
     case FOPEN_LOAD_BC:
     {
-      FILE *bc_file = fsafeopen(char_value, "rb");
+      vfile *bc_file = fsafeopen(char_value, "rb");
 
       if(bc_file)
       {
@@ -3397,16 +3389,25 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         if(cur_robot)
         {
-          int new_size = ftell_and_rewind(bc_file);
-          char *program_bytecode = malloc(new_size + 1);
+          int64_t bc_len = vfilelength(bc_file, true);
+          char *program_bytecode;
+          int new_size;
 
-          if(!fread(program_bytecode, new_size, 1, bc_file))
+          if(bc_len < 0 || bc_len > MAX_OBJ_SIZE)
+            break;
+
+          new_size = (int)bc_len;
+          program_bytecode = cmalloc(new_size + 1);
+          if(!program_bytecode)
+            break;
+
+          if(vfread(program_bytecode, 1, new_size, bc_file) != (size_t)new_size)
           {
             free(program_bytecode);
             break;
           }
 
-          if(!validate_legacy_bytecode(&program_bytecode, &new_size))
+          if(!validate_legacy_bytecode(&program_bytecode, &new_size, NULL))
           {
             error_message(E_LOAD_BC_CORRUPT, 0, char_value);
             free(program_bytecode);
@@ -3435,12 +3436,12 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           // OR LOAD_BCn was used where n is &robot_id&.
           if(value == -1 || value == id)
           {
-            fclose(bc_file);
+            vfclose(bc_file);
             return 1;
           }
         }
 
-        fclose(bc_file);
+        vfclose(bc_file);
       }
       break;
     }
@@ -3461,7 +3462,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
     case FOPEN_SAVE_BC:
     {
-      FILE *bc_file = fsafeopen(char_value, "wb");
+      vfile *bc_file = fsafeopen(char_value, "wb");
 
       if(bc_file)
       {
@@ -3470,11 +3471,11 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         if(cur_robot)
         {
-          fwrite(cur_robot->program_bytecode,
+          vfwrite(cur_robot->program_bytecode,
            cur_robot->program_bytecode_length, 1, bc_file);
         }
 
-        fclose(bc_file);
+        vfclose(bc_file);
       }
       break;
     }
@@ -3712,10 +3713,12 @@ static size_t get_counter_alloc_size(int name_length)
    offsetof(struct counter, name) + name_length + 1);
 }
 
-static struct counter *allocate_new_counter(const char *name, int name_length,
+static struct counter *allocate_new_counter(const char *name, size_t name_length,
  int value)
 {
-  struct counter *dest = cmalloc(get_counter_alloc_size(name_length));
+  struct counter *dest = (struct counter *)cmalloc(get_counter_alloc_size(name_length));
+  if(!dest)
+    return NULL;
 
   memcpy(dest->name, name, name_length);
   dest->name[name_length] = 0;
@@ -3749,7 +3752,10 @@ static void add_counter(struct counter_list *counter_list, const char *name,
     else
       allocated = MIN_COUNTER_ALLOCATE;
 
-    base = crealloc(base, sizeof(struct counter *) * allocated);
+    base = (struct counter **)crealloc(base, sizeof(struct counter *) * allocated);
+    if(!base)
+      return;
+
     counter_list->counters = base;
     counter_list->num_counters_allocated = allocated;
   }
@@ -3764,6 +3770,8 @@ static void add_counter(struct counter_list *counter_list, const char *name,
   }
 
   dest = allocate_new_counter(name, name_length, value);
+  if(!dest)
+    return;
 
   counter_list->counters[position] = dest;
   counter_list->num_counters = count + 1;
@@ -3868,6 +3876,26 @@ int get_counter(struct world *mzx_world, const char *name, int id)
     return cdest->value;
 
   return 0;
+}
+
+/**
+ * Get a counter by name and return a pointer to it. This function does not
+ * work with function counters or other special counters; use get_string or
+ * get_string_safe (editor) instead. The pointer this function returns is
+ * guaranteed to be stable for the duration of the gameplay session.
+ *
+ * @param mzx_world   World data.
+ * @param name        Name of counter to look up.
+ * @param id          Current robot ID or 0 for global.
+ * @return            counter pointer if found, otherwise NULL.
+ */
+const struct counter *get_counter_pointer(struct world *mzx_world,
+ const char *name, int id)
+{
+  struct counter_list *counter_list = &(mzx_world->counter_list);
+  int next;
+
+  return find_counter(counter_list, name, &next);
 }
 
 void inc_counter(struct world *mzx_world, const char *name, int value, int id)
@@ -4007,7 +4035,7 @@ void div_counter(struct world *mzx_world, const char *name, int value, int id)
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);
     fdest->function_write(mzx_world, fdest, name,
-     current_value / value, id);
+     safe_divide_32(current_value, value), id);
   }
   else
   {
@@ -4015,7 +4043,7 @@ void div_counter(struct world *mzx_world, const char *name, int value, int id)
 
     if(cdest)
     {
-      value = cdest->value / value;
+      value = safe_divide_32(cdest->value, value);
 
       if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
@@ -4048,14 +4076,14 @@ void mod_counter(struct world *mzx_world, const char *name, int value, int id)
      fdest->function_read(mzx_world, fdest, name, id);
 
     fdest->function_write(mzx_world, fdest, name,
-     current_value % value, id);
+     safe_modulo_32(current_value, value), id);
   }
   else
   {
     cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
-      cdest->value %= value;
+      cdest->value = safe_modulo_32(cdest->value, value);
   }
 }
 

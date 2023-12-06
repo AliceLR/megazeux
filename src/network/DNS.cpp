@@ -26,6 +26,7 @@
 #include "DNS.hpp"
 #include "Socket.hpp"
 
+#include "../configure.h"
 #include "../platform.h"
 #include "../util.h"
 
@@ -159,7 +160,7 @@ static void create_dns_thread(struct dns_data *data)
 
   LOCK(data);
 
-  if(platform_thread_create(&(data->thread),
+  if(!platform_thread_create(&(data->thread),
    (platform_thread_fn)run_dns_thread, (void *)data))
   {
     UNLOCK(data);
@@ -188,7 +189,7 @@ static void destroy_dns_thread(struct dns_data *data)
 }
 
 int DNS::lookup(const char *node, const char *service,
- const struct addrinfo *hints, struct addrinfo **res, Uint32 timeout)
+ const struct addrinfo *hints, struct addrinfo **res, uint32_t timeout)
 {
   int ret;
   int i;

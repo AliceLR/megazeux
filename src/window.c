@@ -56,11 +56,15 @@
 #include "window.h"
 #include "world.h"
 #include "util.h"
-#include "io/dir.h"
 #include "io/path.h"
 #include "io/vio.h"
 
 #include "audio/sfx.h"
+
+#ifdef CONFIG_DJGPP
+// Required for getdisk()/setdisk()
+#include <dir.h>
+#endif
 
 #ifdef CONFIG_WII
 #include <sys/iosupport.h>
@@ -343,8 +347,8 @@ __editor_maybe_static int char_select_next_tile(int current_char,
 __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
  int *width_ptr, int *height_ptr, int *select_charset, int selection_pal)
 {
-  Uint32 pal_layer = OVERLAY_LAYER;
-  Uint32 chars_layer = UI_LAYER;
+  uint32_t pal_layer = OVERLAY_LAYER;
+  uint32_t chars_layer = UI_LAYER;
   int allow_multichar = 0;
   int current_charset = 0;
   int screen_mode = 0;
@@ -1023,7 +1027,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
   write_string(di->title, title_x_offset, y, DI_TITLE, 0);
   draw_char(' ', DI_TITLE, title_x_offset - 1, y);
-  draw_char(' ', DI_TITLE, title_x_offset + (Uint32)strlen(di->title), y);
+  draw_char(' ', DI_TITLE, title_x_offset + (unsigned int)strlen(di->title), y);
 
   memset(vid_usage, -1, 2000);
 
@@ -1315,7 +1319,7 @@ static void draw_label(struct world *mzx_world, struct dialog *di,
   int y = di->y + e->y;
 
   if(src->respect_colors)
-    color_string_ext(src->text, x, y, DI_TEXT, PRO_CH, 16, true);
+    color_string_ext(src->text, x, y, DI_TEXT, true, PRO_CH, 16);
   else
     write_string_ext(src->text, x, y, DI_TEXT, true, PRO_CH, 16);
 }
@@ -1382,7 +1386,7 @@ static void draw_button(struct world *mzx_world, struct dialog *di,
 
   write_string(src->label, x + 1, y, color, 0);
   draw_char(' ', color, x, y);
-  draw_char(' ', color, x + (Uint32)strlen(src->label) + 1, y);
+  draw_char(' ', color, x + (unsigned int)strlen(src->label) + 1, y);
 
   if(active)
     cursor_hint(x + 1, y);
@@ -1445,7 +1449,7 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
     else
       sprintf(num_buffer, " ");
     fill_line(7, x, y, 32, DI_NUMERIC);
-    write_string(num_buffer, x + 6 - (Uint32)strlen(num_buffer), y,
+    write_string(num_buffer, x + 6 - (unsigned int)strlen(num_buffer), y,
      DI_NUMERIC, 0);
     // Buttons
     write_string(num_buttons, x + 7, y, DI_ARROWBUTTON, 0);
@@ -1798,7 +1802,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
 
     case IKEY_BACKSPACE:
     {
-      Sint32 result = current_value / 10;
+      int result = current_value / 10;
       if(result == 0 || result < src->lower_limit)
       {
         result = src->lower_limit;
@@ -3050,7 +3054,8 @@ struct file_list_entry
  */
 static void file_list_get_mzx_world_name(struct file_list_entry *entry)
 {
-  vfile *mzx_file = vfopen_unsafe(entry->filename, "rb");
+  // Don't add this file to the cache as there may be a LOT of these.
+  vfile *mzx_file = vfopen_unsafe_ext(entry->filename, "rb", V_DONT_CACHE);
   char *world_name = entry->display + MAX_FILE_LIST_DISPLAY_MZX;
 
   if(!vfread(world_name, 24, 1, mzx_file))
@@ -3249,24 +3254,25 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
 
 static boolean remove_files(char *directory_name, boolean remove_recursively)
 {
-  struct mzx_dir current_dir;
+  vdir *current_dir;
   char *current_dir_name;
   struct stat file_info;
   char *file_name;
   boolean success = true;
 
-  if(!dir_open(&current_dir, directory_name))
+  current_dir = vdir_open(directory_name);
+  if(!current_dir)
     return false;
 
   current_dir_name = cmalloc(MAX_PATH);
-  file_name = cmalloc(PATH_BUF_LEN);
+  file_name = cmalloc(MAX_PATH);
 
   vgetcwd(current_dir_name, MAX_PATH);
   vchdir(directory_name);
 
   while(1)
   {
-    if(!dir_get_next_entry(&current_dir, file_name, NULL))
+    if(!vdir_read(current_dir, file_name, MAX_PATH, NULL))
       break;
 
     if(vstat(file_name, &file_info) < 0)
@@ -3293,9 +3299,19 @@ static boolean remove_files(char *directory_name, boolean remove_recursively)
   free(file_name);
   free(current_dir_name);
 
-  dir_close(&current_dir);
+  vdir_close(current_dir);
   return success;
 }
+
+#ifdef CONFIG_PSVITA
+static const char *psvita_drives[] = {
+  "app0:",
+  "imc0:",
+  "uma0:",
+  "ux0:"
+};
+#define PSVITA_DRIVES_COUNT 4
+#endif
 
 __editor_maybe_static int file_manager(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
@@ -3303,7 +3319,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
  struct element **dialog_ext, int num_ext, int ext_height)
 {
   // FIXME no buffer size parameter for ret. this function assumes MAX_PATH.
-  struct mzx_dir current_dir;
+  vdir *current_dir;
   char *file_name;
   struct stat file_info;
   char *current_dir_name;
@@ -3343,7 +3359,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
   // These are stack heavy so put them on the heap
   // This function is not performance sensitive anyway.
-  file_name = cmalloc(PATH_BUF_LEN);
+  file_name = cmalloc(MAX_PATH);
 
   // The current directory the file manager is in.
   current_dir_name = cmalloc(MAX_PATH);
@@ -3394,7 +3410,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
      */
     vchdir(current_dir_name);
 
-    if(!dir_open(&current_dir, current_dir_name))
+    current_dir = vdir_open(current_dir_name);
+    if(!current_dir)
       goto skip_dir;
 
     // Hide .. if changing directories isn't allowed or if the selected file
@@ -3409,7 +3426,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     else
       show_parent_dir = true;
 
-#if defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
+#if defined(CONFIG_3DS) || defined(CONFIG_SWITCH) || defined(CONFIG_WIIU) || \
+ defined(CONFIG_PSVITA) || defined(CONFIG_DREAMCAST)
     if(show_parent_dir)
     {
       dir_list[num_dirs] = cmalloc(3);
@@ -3422,8 +3440,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
     while(1)
     {
-      int dir_type;
-      if(!dir_get_next_entry(&current_dir, file_name, &dir_type))
+      enum vdir_type dir_type;
+      if(!vdir_read(current_dir, file_name, MAX_PATH, &dir_type))
         break;
 
       file_name_length = strlen(file_name);
@@ -3497,7 +3515,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       }
     }
 
-    dir_close(&current_dir);
+    vdir_close(current_dir);
 skip_dir:
 
     vchdir(return_dir_name);
@@ -3532,6 +3550,34 @@ skip_dir:
     }
 #endif
 
+#ifdef CONFIG_DJGPP
+    if(allow_dirs == ALLOW_ALL_DIRS)
+    {
+      int current_disk = getdisk();
+      int max_disk = setdisk(current_disk);
+      for(i = 0; i < max_disk; i++)
+      {
+        setdisk(i);
+        if(getdisk() != i)
+          continue;
+
+        dir_list[num_dirs] = cmalloc(3);
+        sprintf(dir_list[num_dirs], "%c:", 'A' + i);
+        num_dirs++;
+
+        if(num_dirs == total_dirnames_allocated)
+        {
+          dir_list = crealloc(dir_list, sizeof(char *) *
+           total_dirnames_allocated * 2);
+          memset(dir_list + total_dirnames_allocated, 0,
+           sizeof(char *) * total_dirnames_allocated);
+          total_dirnames_allocated *= 2;
+        }
+      }
+      setdisk(current_disk);
+    }
+#endif
+
 #ifdef CONFIG_WII
     if(allow_dirs == ALLOW_ALL_DIRS)
     {
@@ -3539,8 +3585,33 @@ skip_dir:
       {
         if(devoptab_list[i] && devoptab_list[i]->chdir_r)
         {
-          dir_list[num_dirs] = cmalloc(strlen(devoptab_list[i]->name + 3));
+          dir_list[num_dirs] = cmalloc(strlen(devoptab_list[i]->name) + 3);
           sprintf(dir_list[num_dirs], "%s:/", devoptab_list[i]->name);
+
+          num_dirs++;
+
+          if(num_dirs == total_dirnames_allocated)
+          {
+            dir_list = crealloc(dir_list, sizeof(char *) *
+             total_dirnames_allocated * 2);
+            memset(dir_list + total_dirnames_allocated, 0,
+             sizeof(char *) * total_dirnames_allocated);
+            total_dirnames_allocated *= 2;
+          }
+        }
+      }
+    }
+#endif
+
+#ifdef CONFIG_PSVITA
+    if(allow_dirs == ALLOW_ALL_DIRS)
+    {
+      for(i = 0; i < PSVITA_DRIVES_COUNT; i++)
+      {
+        if(vstat(psvita_drives[i], &file_info) >= 0)
+        {
+          dir_list[num_dirs] = cmalloc(strlen(psvita_drives[i]) + 2);
+          sprintf(dir_list[num_dirs], "%s/", psvita_drives[i]);
 
           num_dirs++;
 
@@ -3983,7 +4054,7 @@ void meter(const char *title, unsigned int progress, unsigned int out_of)
   // Add title
   write_string(title, titlex, 10, DI_TITLE, 0);
   draw_char(' ', DI_TITLE, titlex - 1, 10);
-  draw_char(' ', DI_TITLE, titlex + (int)strlen(title), 10);
+  draw_char(' ', DI_TITLE, titlex + (unsigned int)strlen(title), 10);
   meter_interior(progress, out_of);
 }
 

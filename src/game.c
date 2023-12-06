@@ -32,7 +32,6 @@
 #include "configure.h"
 #include "const.h"
 #include "core.h"
-#include "counter.h"
 #include "data.h"
 #include "error.h"
 #include "event.h"
@@ -41,9 +40,7 @@
 #include "game_player.h"
 #include "game_update.h"
 #include "graphics.h"
-#include "platform.h"
 #include "robot.h"
-#include "util.h"
 #include "window.h"
 #include "world.h"
 #include "world_struct.h"
@@ -242,9 +239,9 @@ static boolean load_world_gameplay_ext(struct game_context *game, char *name,
       start_board = mzx_world->first_board;
     }
 
-    if(mzx_world->current_board_id != start_board)
-      change_board(mzx_world, start_board);
-
+    // Do this even if it's the current board--this is necessary to set up
+    // the temporary board if the title has Reset Board on Entry set.
+    change_board(mzx_world, start_board);
     cur_board = mzx_world->current_board;
 
     // Send both JUSTENTERED and JUSTLOADED; the JUSTLOADED label will
@@ -305,6 +302,9 @@ static boolean load_world_title(struct game_context *game, char *name)
     // Only send JUSTLOADED on the title screen.
     send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
+    // Do this even though it should be the initial board--this is necessary to
+    // set up the temporary board if the title has Reset Board on Entry set.
+    change_board(mzx_world, 0);
     change_board_set_values(mzx_world);
     change_board_load_assets(mzx_world);
 
@@ -1255,6 +1255,14 @@ void title_screen(context *parent)
     title->load_dialog_on_failed_load = false;
     edit_world((context *)title, true);
   }
+
+#ifdef VERSION_PRERELEASE
+  if(has_video_initialized())
+  {
+    error("Pre-release: created saves/worlds may be incompatible with future versions.",
+     ERROR_T_WARNING, ERROR_OPT_OK, 0);
+  }
+#endif
 
   clear_screen();
 }

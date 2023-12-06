@@ -14,14 +14,20 @@ utils_obj = src/utils/.build
 
 # Some core objects are required for file format purposes.
 # Define UTILS_LIBSPEC so these properly link.
-utils_cflags := ${LIBPNG_CFLAGS} -DUTILS_LIBSPEC=
+utils_cflags := ${LIBPNG_CFLAGS} ${PTHREAD_CFLAGS} -DUTILS_LIBSPEC=
 
-zip_objs  := ${io_obj}/vio.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
+zip_objs  := ${io_obj}/path.o ${io_obj}/vio_no_vfs.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
+img_objs  := ${utils_obj}/image_file.o ${utils_obj}/image_gif.o
+img_flags :=
+
+ifneq (${LIBPNG},)
+img_flags += ${LIBPNG_LDFLAGS} ${ZLIB_LDFLAGS} -lm
+endif
 
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o \
-                 ${io_obj}/dir.o ${io_obj}/fsafeopen.o \
-                 ${io_obj}/path.o ${zip_objs}
+                 ${io_obj}/fsafeopen.o \
+                 ${zip_objs}
 checkres_ldflags := ${ZLIB_LDFLAGS}
 
 downver := ${utils_src}/downver${BINEXT}
@@ -39,12 +45,20 @@ txt2hlp_objs := ${utils_obj}/txt2hlp.o
 
 png2smzx := ${utils_src}/png2smzx${BINEXT}
 png2smzx_objs := ${utils_obj}/png2smzx.o ${utils_obj}/smzxconv.o
-png2smzx_objs += ${core_obj}/pngops.o
-png2smzx_objs += ${io_obj}/path.o ${io_obj}/vio.o
-png2smzx_ldflags := ${LIBPNG_LDFLAGS} ${ZLIB_LDFLAGS}
+png2smzx_objs += ${img_objs}
+png2smzx_ldflags := ${img_flags}
+
+y4m2smzx := ${utils_src}/y4m2smzx${BINEXT}
+y4m2smzx_objs := ${utils_obj}/y4m2smzx.o ${utils_obj}/smzxconv.o ${utils_obj}/y4m.o
+y4m2smzx_ldflags :=
+ifeq (${PTHREAD},1)
+y4m2smzx_ldflags += ${PTHREAD_LDFLAGS}
+endif
 
 ccv := ${utils_src}/ccv${BINEXT}
 ccv_objs := ${utils_obj}/ccv.o
+ccv_objs += ${img_objs}
+ccv_ldflags := ${img_flags}
 
 ${utils_obj}/%.o: ${utils_src}/%.c src/config.h
 	$(if ${V},,@echo "  CC      " $<)
@@ -57,53 +71,57 @@ ${utils_obj}/%.o: ${utils_src}/%.c src/config.h
 -include $(hlp2txt_objs:.o=.d)
 -include $(txt2hlp_objs:.o=.d)
 -include $(png2smzx_objs:.o=.d)
+-include $(y4m2smzx_objs:.o=.d)
+-include $(ccv_objs:.o=.d)
 
 ${checkres}: ${checkres_objs}
 	$(if ${V},,@echo "  LINK    " ${checkres})
 	${CC} ${checkres_objs} -o ${checkres} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${checkres_ldflags}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${checkres_ldflags} ${ARCH_LIBS}
 
 ${downver}: ${downver_objs}
 	$(if ${V},,@echo "  LINK    " ${downver})
 	${CC} ${downver_objs} -o ${downver} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${downver_ldflags}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${downver_ldflags} ${ARCH_LIBS}
 
 ${hlp2html}: ${hlp2html_objs}
 	$(if ${V},,@echo "  LINK    " ${hlp2html})
 	${CC} ${hlp2html_objs} -o ${hlp2html} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${ARCH_LIBS}
 
 ${hlp2txt}: ${hlp2txt_objs}
 	$(if ${V},,@echo "  LINK    " ${hlp2txt})
 	${CC} ${hlp2txt_objs} -o ${hlp2txt} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${ARCH_LIBS}
 
 ${txt2hlp}: ${txt2hlp_objs}
 	$(if ${V},,@echo "  LINK    " ${txt2hlp})
 	${CC} ${txt2hlp_objs} -o ${txt2hlp} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${ARCH_LIBS}
 
 ${png2smzx}: ${png2smzx_objs}
 	$(if ${V},,@echo "  LINK    " ${png2smzx})
 	${CC} ${png2smzx_objs} -o ${png2smzx} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${png2smzx_ldflags}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${png2smzx_ldflags} ${ARCH_LIBS}
+
+${y4m2smzx}: ${y4m2smzx_objs}
+	$(if ${V},,@echo "  LINK    " ${y4m2smzx})
+	${CC} ${y4m2smzx_objs} -o ${y4m2smzx} \
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${y4m2smzx_ldflags} ${ARCH_LIBS}
 
 ${ccv}: ${ccv_objs}
 	$(if ${V},,@echo "  LINK    " ${ccv})
 	${CC} ${ccv_objs} -o ${ccv} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${ccv_ldflags} ${ARCH_LIBS}
 
 utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
 
-utils: ${checkres} ${downver} ${hlp2html} ${hlp2txt} ${txt2hlp} ${ccv}
-
-ifeq (${LIBPNG},1)
-utils: ${png2smzx}
-utils.debug: ${png2smzx}.debug
-endif
+utils: ${checkres} ${downver} ${hlp2html} ${hlp2txt} ${txt2hlp}
+utils: ${ccv} ${png2smzx} ${y4m2smzx}
 
 utils.debug: ${checkres}.debug ${downver}.debug ${ccv}.debug
 utils.debug: ${hlp2html}.debug ${hlp2txt}.debug ${txt2hlp}.debug
+utils.debug: ${png2smzx}.debug ${y4m2smzx}.debug
 
 utils_clean:
 	$(if ${V},,@echo "  RM      " ${utils_obj})
@@ -120,5 +138,7 @@ utils_clean:
 	${RM} ${txt2hlp} ${txt2hlp}.debug
 	$(if ${V},,@echo "  RM      " ${png2smzx} ${png2smzx}.debug)
 	${RM} ${png2smzx} ${png2smzx}.debug
+	$(if ${V},,@echo "  RM      " ${y4m2smzx} ${y4m2smzx}.debug)
+	${RM} ${y4m2smzx} ${y4m2smzx}.debug
 	$(if ${V},,@echo "  RM      " ${ccv} ${ccv}.debug)
 	${RM} ${ccv} ${ccv}.debug

@@ -30,6 +30,7 @@
 #include "../core.h"
 #include "../counter.h"
 #include "../event.h"
+#include "../extmem.h"
 #include "../graphics.h"
 #include "../intake.h"
 #include "../memcasecmp.h"
@@ -39,6 +40,7 @@
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+#include "../io/vio.h"
 
 #include "../audio/audio.h"
 
@@ -255,6 +257,7 @@ enum virtual_var
   VIR_RAM_STRING_LIST,
   VIR_RAM_STRING_TABLE,
   VIR_RAM_STRINGS,
+  VIR_RAM_SFX,
   VIR_RAM_SPRITES,
   VIR_RAM_VLAYER,
   VIR_RAM_BOARD_INFO,
@@ -269,6 +272,9 @@ enum virtual_var
   VIR_RAM_VIDEO_LAYERS,
   VIR_RAM_DEBUGGER_ROBOTS,
   VIR_RAM_DEBUGGER_VARIABLES,
+  VIR_RAM_EXTRAM_DELTA,
+  VIR_RAM_VIRTUAL_FILESYSTEM,
+  VIR_RAM_VIRTUAL_FILESYSTEM_CACHED_ONLY,
 };
 
 static const char * const virtual_var_names[] =
@@ -279,6 +285,7 @@ static const char * const virtual_var_names[] =
   "String list*",
   "String table*",
   "Strings*",
+  "Custom SFX*",
   "Sprites*",
   "Vlayer*",
   "Board info*",
@@ -293,6 +300,9 @@ static const char * const virtual_var_names[] =
   "Video layers*",
   "Debug (robots)*",
   "Debug (variables)*",
+  "ExtRAM compression delta*",
+  "Virtual filesystem (total)*",
+  "Virtual filesystem (cached only)*",
 };
 
 // We'll read off of these when we construct the tree
@@ -345,6 +355,7 @@ static const enum virtual_var world_ram_var_list[] =
   VIR_RAM_STRING_LIST,
   VIR_RAM_STRING_TABLE,
   VIR_RAM_STRINGS,
+  VIR_RAM_SFX,
   VIR_RAM_SPRITES,
   VIR_RAM_VLAYER,
   VIR_RAM_BOARD_INFO,
@@ -361,6 +372,11 @@ static const enum virtual_var world_ram_var_list[] =
   VIR_RAM_VIDEO_LAYERS,
   VIR_RAM_DEBUGGER_ROBOTS,
   VIR_RAM_DEBUGGER_VARIABLES,
+#ifdef CONFIG_EXTRAM
+  VIR_RAM_EXTRAM_DELTA,
+#endif
+  VIR_RAM_VIRTUAL_FILESYSTEM,
+  VIR_RAM_VIRTUAL_FILESYSTEM_CACHED_ONLY,
 };
 
 static const char *board_var_list[] =
@@ -495,6 +511,7 @@ struct debug_ram_data
   size_t string_list_size;
   size_t string_table_size;
   size_t string_struct_size;
+  size_t sfx_size;
   size_t sprites_size;
   size_t vlayer_size;
   size_t board_list_and_struct_size;
@@ -509,6 +526,10 @@ struct debug_ram_data
   size_t video_layer_size;
   size_t debug_robot_total_size;
   size_t debug_variables_total_size;
+  size_t extram_uncompressed_size;
+  size_t extram_compressed_size;
+  size_t virtual_filesystem_size;
+  size_t virtual_filesystem_cached_size;
 };
 
 static struct debug_ram_data ram_data;
@@ -556,6 +577,8 @@ static void update_ram_usage_data(struct world *mzx_world,
 
   string_list_size(&mzx_world->string_list, &ram_data.string_list_size,
    &ram_data.string_table_size, &ram_data.string_struct_size);
+
+  ram_data.sfx_size = sfx_ram_usage(&mzx_world->custom_sfx);
 
   ram_data.sprites_size =
    mzx_world->num_sprites_allocated * sizeof(struct sprite *) +
@@ -607,6 +630,18 @@ static void update_ram_usage_data(struct world *mzx_world,
     for(j = 1; j <= b->num_sensors; j++)
       if(b->sensor_list[j])
         ram_data.scroll_sensor_total_size += sizeof(struct sensor);
+
+#ifdef CONFIG_EXTRAM
+    {
+      size_t c;
+      size_t u;
+      if(board_extram_usage(b, &c, &u))
+      {
+        ram_data.extram_compressed_size += c;
+        ram_data.extram_uncompressed_size += u;
+      }
+    }
+#endif
   }
 
   for(u = 0; u < graphics.layer_count; u++)
@@ -618,6 +653,9 @@ static void update_ram_usage_data(struct world *mzx_world,
   }
 
   ram_data.debug_variables_total_size = var_debug_usage;
+
+  ram_data.virtual_filesystem_size = vio_filesystem_total_memory_usage();
+  ram_data.virtual_filesystem_cached_size = vio_filesystem_total_cached_usage();
 }
 
 #define match_counter(_name) (strlen(_name) == len && !strcasecmp(name, _name))
@@ -858,7 +896,7 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
     case V_VIRTUAL_VAR:
     {
       enum virtual_var vvar = v->data.virtual_var;
-      size_t value = 0;
+      int64_t value = 0;
 
       switch(vvar)
       {
@@ -882,6 +920,9 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
           break;
         case VIR_RAM_VLAYER:
           value = ram_data.vlayer_size;
+          break;
+        case VIR_RAM_SFX:
+          value = ram_data.sfx_size;
           break;
         case VIR_RAM_SPRITES:
           value = ram_data.sprites_size;
@@ -921,6 +962,16 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
           break;
         case VIR_RAM_DEBUGGER_VARIABLES:
           value = ram_data.debug_variables_total_size;
+          break;
+        case VIR_RAM_EXTRAM_DELTA:
+          value = (int64_t)ram_data.extram_compressed_size -
+           (int64_t)ram_data.extram_uncompressed_size;
+          break;
+        case VIR_RAM_VIRTUAL_FILESYSTEM:
+          value = ram_data.virtual_filesystem_size;
+          break;
+        case VIR_RAM_VIRTUAL_FILESYSTEM_CACHED_ONLY:
+          value = ram_data.virtual_filesystem_cached_size;
           break;
       }
       *long_value = value;
@@ -1062,22 +1113,14 @@ static void write_var(struct world *mzx_world, struct debug_var *v, int int_val,
     {
       //set string -- int_val is the length here
       char buffer[ROBOT_MAX_TR];
-      int list_index;
-
       struct string temp;
+
       memset(&temp, '\0', sizeof(struct string));
       temp.length = int_val;
       temp.value = char_val;
 
-      // This may reallocate the string, so we want to save the list index.
-      // We also want to back up the name so its pointer doesn't get changed
-      // in the middle of setting the string.
       memcpy(buffer, v->data.string->name, v->data.string->name_length + 1);
-      list_index = v->data.string->list_ind;
-
       set_string(mzx_world, buffer, &temp, 0);
-
-      v->data.string = mzx_world->string_list.strings[list_index];
       break;
     }
 
@@ -2322,6 +2365,15 @@ enum board_node_ids
   NUM_BOARD_NODES
 };
 
+/**
+ * Some variable values may be cached, such as the clock time.
+ * This resets those values so they will update when the var list refreshes.
+ */
+static void clear_cached_data(struct world *mzx_world)
+{
+  mzx_world->command_cache = 0;
+}
+
 // Create new counter lists.
 // (Re)make the child nodes
 static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
@@ -2332,6 +2384,8 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 
   // Clear the debug tree recursively (but preserve the base structure).
   clear_debug_tree(root, false);
+
+  clear_cached_data(mzx_world);
 
   // Initialize the tree.
   init_counters_node(mzx_world,   &(root->nodes[NODE_COUNTERS]));
@@ -3216,29 +3270,26 @@ void __debug_counters(context *ctx)
         {
           struct counter_list *counter_list = &(mzx_world->counter_list);
           struct string_list *string_list = &(mzx_world->string_list);
-          FILE *fp;
+          vfile *vf;
           size_t i;
 
-          fp = fopen_unsafe(export_name, "wb");
+          vf = vfopen_unsafe(export_name, "wb");
 
           for(i = 0; i < counter_list->num_counters; i++)
           {
-            fprintf(fp, "set \"%s\" to %"PRId32"\n",
-             counter_list->counters[i]->name, counter_list->counters[i]->value);
+            struct counter *ctr = counter_list->counters[i];
+            vf_printf(vf, "set \"%s\" to %" PRId32 "\n", ctr->name, ctr->value);
           }
 
           for(i = 0; i < string_list->num_strings; i++)
           {
-            fprintf(fp, "set \"%s\" to \"",
-             string_list->strings[i]->name);
-
-            fwrite(string_list->strings[i]->value,
-             string_list->strings[i]->length, 1, fp);
-
-            fprintf(fp, "\"\n");
+            struct string *str = string_list->strings[i];
+            vf_printf(vf, "set \"%s\" to \"", str->name);
+            vfwrite(str->value, str->length, 1, vf);
+            vfputs("\"\n", vf);
           }
 
-          fclose(fp);
+          vfclose(vf);
         }
 
         window_focus = 5;
@@ -3246,8 +3297,11 @@ void __debug_counters(context *ctx)
       }
     }
     if(focus->refresh_on_focus)
+    {
+      clear_cached_data(mzx_world);
       for(i = 0; i < focus->num_vars; i++)
         read_var(mzx_world, &(focus->vars[i]));
+    }
 
     // If the current position in the tree was changed by a search, bring it
     // to focus in the tree list. This should only be used after a search.
@@ -3355,11 +3409,11 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
     "X/Y:        /     \n"
     "Board:            \n"
     "Robot mem:      kb\n",
-    x + 1, y + 1, DI_DEBUG_LABEL, 0
+    x + 1, y + 1, DI_DEBUG_LABEL, WR_NEWLINE
   );
 
   version_string_len = get_version_string(version_string, mzx_world->version);
-  write_string(version_string, x + 19 - version_string_len, y, DI_DEBUG_BOX, 0);
+  write_string(version_string, x + 19 - version_string_len, y, DI_DEBUG_BOX, WR_NONE);
 
   if(show_keys)
   {
@@ -3369,7 +3423,7 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
     {
       sprintf(key_string, "%d", key);
       write_string(key_string, x + 15 - strlen(key_string), y + 5,
-       DI_DEBUG_BOX_DARK + 0x0A, 0);
+       DI_DEBUG_BOX_DARK + 0x0A, WR_NONE);
     }
 
     // key_pressed
@@ -3386,7 +3440,7 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
     {
       sprintf(key_string, "%d", key);
       write_string(key_string, x + 19 - strlen(key_string), y + 5,
-       DI_DEBUG_BOX_DARK + 0x0D, 0);
+       DI_DEBUG_BOX_DARK + 0x0D, WR_NONE);
     }
   }
 
@@ -3415,17 +3469,17 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
       char tempc = src_board->mod_playing[18];
       src_board->mod_playing[18] = 0;
       write_string(src_board->mod_playing, x + 1, y + 4,
-       DI_DEBUG_NUMBER, 0);
+       DI_DEBUG_NUMBER, WR_NONE);
       src_board->mod_playing[18] = tempc;
     }
     else
     {
       write_string(src_board->mod_playing, x + 1, y + 4,
-       DI_DEBUG_NUMBER, 0);
+       DI_DEBUG_NUMBER, WR_NONE);
     }
   }
   else
   {
-    write_string("(no module)", x + 2, y + 4, DI_DEBUG_NUMBER, 0);
+    write_string("(no module)", x + 2, y + 4, DI_DEBUG_NUMBER, WR_NONE);
   }
 }

@@ -2,7 +2,7 @@
 <!--
   MegaZeux File Format Reference
 
-  Copyright (C) 2020 Lachesis - https://github.com/AliceLR/megazeux/
+  Copyright (C) 2020-2023 Lachesis - https://github.com/AliceLR/megazeux/
 
   Permission to use, copy, modify, and distribute this document for any
   purpose with or without fee is hereby granted, provided that the above
@@ -20,6 +20,11 @@
 <head>
 <meta charset="UTF-8">
 <title>MegaZeux File Formats</title>
+<meta name="title" content="MegaZeux File Format Reference">
+<meta name="description" content="Information about various file formats defined by MegaZeux.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MegaZeux File Format Reference">
+<meta name="twitter:description" content="Information about various file formats defined by MegaZeux.">
 <style>
   #container
   {
@@ -96,7 +101,7 @@
 
   td
   {
-    padding: 1px 8px;
+    padding: 1px 6px;
     border: 4px solid transparent;
   }
 
@@ -311,9 +316,19 @@
         <li><a href="#worldheader">World Format Header and Magic</a></li>
         <li><a href="#saveheader">Save Format Header and Magic</a></li>
       </ol>
+      <li><a href="#world100">World and Save Format (1.00)</a></li>
+      <ol type="i">
+        <li><a href="#global100">Global Data</a></li>
+        <li><a href="#boardlist100">Board Names, Sizes, and Offsets</a></li>
+        <li><a href="#board100">Boards and Board RLE Planes</a></li>
+        <li><a href="#boardparams100">Board Parameters</a></li>
+        <li><a href="#boardobjs100">Board Objects</a></li>
+        <li><a href="#robot100">Robots</a></li>
+        <li><a href="#scroll100">Scrolls</a></li>
+        <li><a href="#sensor100">Sensors</a></li>
+      </ol>
       <li><a href="#world200">World and Save Format (2.00 through 2.84X)</a></li>
       <ol type="i">
-        <li><a href="#encryption200">Encryption</a></li>
         <li><a href="#global200">Global Data</a></li>
         <ol type="a">
           <li><a href="#global200world1">World Block 1</a></li>
@@ -344,9 +359,15 @@
         <li><a href="#files290">Files List</a></li>
         <li><a href="#properties">Properties Format</a></li>
         <li><a href="#worldprop290">World Properties</a></li>
+        <ol type="a">
+          <li><a href="#statctrprop290">Status Counter Properties</a></li>
+        </ol>
         <li><a href="#sfx290">Custom SFX Table</a></li>
         <li><a href="#chars290">Character Sets</a></li>
-        <li><a href="#pal290">Palette, Palette Indices, and Palette Intensities</a></li>
+        <li><a href="#pal290">Palettes, Palette Indices, and Palette Intensities</a></li>
+        <ol type="a">
+          <li><a href="#pal290old">Prior to 2.93</a></li>
+        </ol>
         <li><a href="#vlayer290">Vlayer Planes</a></li>
         <li><a href="#sprites290">Sprite Properties (.SAV only)</a></li>
         <li><a href="#counters290">Counter and String Lists (.SAV only)</a></li>
@@ -364,6 +385,7 @@
         <li><a href="#mzmx">MZMX</a></li>
       </ol>
       <li><a href="#counters">Counters File</a></li>
+      <li><a href="#sfx">Custom SFX Table File (.SFX)</a></li>
       <li><a href="#bytecode">Robotic Bytecode (.BC)</a></li>
       <li><a href="#license">License</a></li>
     </ol>
@@ -552,8 +574,9 @@
       <h3>World Format Header and Magic</h3>
       <p>
         Most world files begin with a 29-byte header. The only exceptions are
-        encrypted worlds from MegaZeux versions prior to 2.6 (see <a href="#encryption200">Encryption</a>)
-        and rearchived MegaZeux 2.90 worlds (see <a href="#world290">the 2.90+ world format</a>).
+        locked worlds from MegaZeux 1.xx, encrypted worlds from MegaZeux 2.00
+        through 2.6, and rearchived MegaZeux 2.90 worlds
+        (see <a href="#world290">the 2.90+ world format</a>).
       </p>
 
       <div class="markdown">
@@ -562,6 +585,27 @@
 | 0    | s25  | World title <a href="#worldheadernote1">(1)</a> <a href="#worldheadernote2">(2)</a>
 | 25   | b    | Protection method (always zero)
 | 26   | s3   | Magic
+      </div>
+
+      <h4>MegaZeux 1.xx locked world header:</h4>
+      <div class="markdown">
+        | Pos. | Size | Description |
+        |------|------|-------------|
+        | 0    | s25  | World title
+        | 25   | b    | Protection method (always between 1 and 3)
+        | 26   | b    | Length of password (0 to 15)
+        | 27   | s15  | Password (encrypted) <a href="#worldheadernote4">(4)</a>
+        | 42   | s3   | Magic (not encrypted)
+      </div>
+
+      <h4>MegaZeux 2.00 through 2.6 encrypted world header:</h4>
+      <div class="markdown">
+        | Pos. | Size | Description |
+        |------|------|-------------|
+        | 0    | s25  | World title
+        | 25   | b    | Protection method (always between 1 and 3)
+        | 26   | s15  | Password (encrypted) <a href="#worldheadernote4">(4)</a>
+        | 41   | s3   | Magic (not encrypted)
       </div>
 
       <p>
@@ -575,7 +619,7 @@
 | `MZ2`       | 2.00 through 2.51
 | `MZA`       | 2.51s1
 | `M\x02\x09` | 2.51s2 through 2.61 (including MZXAk, SMZX 1.00a)
-| `M\x02\x11` | Used for decrypted worlds by newer MZX versions.<br>Likely derived from misreading 2.51s2 magic <code>M\002\011</code> (octal) as hex.
+| `M\x02\x11` | Used for decrypted worlds by some port MZX versions.<br>Likely derived from misreading 2.51s2 magic <code>M\002\011</code> (octal) as hex.
 | `M\x02\x32` | 2.62 and 2.62b (from octal <code>M\002\062</code>)
 | `M\x02\x41` | 2.65 (from decimal <code>65</code>)
 | `M\x02\x44` | 2.68 (from decimal <code>68</code>) <a href="#worldheadernote3">(3)</a>
@@ -591,6 +635,7 @@
 | `M\x02\x5A` | 2.90X
 | `M\x02\x5B` | 2.91X
 | `M\x02\x5C` | 2.92X
+| `M\x02\x5D` | 2.93X
       </div>
 
       <p>
@@ -598,6 +643,32 @@
         treating the last two bytes as a big-endian word if the magic is from
         2.51s2 or later or 2) using <code>0x0100</code>, <code>0x0205</code>,
         and <code>0x0208</code> for 1.00, 2.00, and 2.51s1 worlds (respectively).
+      </p>
+
+      <p>
+        In all world files with a password, the password can be decrypted with
+        the following algorithm:
+      </p>
+
+      <code class="example">
+/**
+ * This code is copied from the MZX source code, which is GPL 2+ licensed.
+ */
+char magic_code[16] = "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
+
+for(i = 0; i &lt; 15; i++)
+{
+  password[i] ^= magic_code[i];
+  password[i] -= 0x12 - protection_method;
+  password[i] ^= 0x8D;
+}
+      </code>
+
+      <p>
+        In MegaZeux 2.00 through 2.6 encrypted worlds,
+        the rest of the MZX file is XORed with a byte calculated from the
+        password. The bundled MegaZeux utility "checkres" can output the
+        unencrypted password and XOR value when given the -v option, if needed.
       </p>
 
       <h4>Notes:</h4>
@@ -614,6 +685,12 @@
           (as they are versioned for MZX 2.65). Resaving these worlds in a
           newer version (such as MZX 2.69) usually fixes this issue.
         </li>
+        <li id="worldheadernote4">
+          The password field is null terminated if it is 14 or fewer characters
+          long. If the password is 15 characters long, it is NOT null terminated,
+          and the null terminator must be added by the decryption algorithm.
+        </li>
+      </ol>
       </ol>
     </section>
 
@@ -632,9 +709,18 @@
 | 7    | b    | Current board number
       </div>
 
+      <h4>Format prior to MegaZeux 2.82</h4>
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s5   | Magic
+| 5    | b    | Current board number
+      </div>
+
       <div class="markdown">
 | Magic         | File Format Version |
 |---------------|---------------------|
+| `MZSAV`       | 1.00
 | `MZSV2`       | 2.00 through 2.51
 | `MZXSA`       | 2.51s1
 | `MZS\x02\x09` | 2.51s2 through 2.61 (including MZXAk, SMZX 1.00a)
@@ -653,6 +739,7 @@
 | `MZS\x02\x5A` | 2.90X
 | `MZS\x02\x5B` | 2.91X
 | `MZS\x02\x5C` | 2.92X
+| `MZS\x02\x5D` | 2.93X
       </div>
 
       <p>
@@ -665,8 +752,425 @@
         the world version derived from the world magic when the world was
         initially loaded. Notably, this value is saved as a <i>little endian</i>
         word (whereas it is represented as a <i>big endian</i> word in the world
-        magic string).
+        magic string). In versions where this field is not present, the world
+        version should be treated as the same as the file format version.
       </p>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="world100" class="main">
+    <h2>World and Save Format (1.00)</h2>
+    <p>
+      MegaZeux 1.00 world (.MZX) and save (.SAV) files share very similar formats,
+      so they are documented together here. This format is sufficiently different
+      enough from the 2.00 format that it has been given its own section.
+    </p>
+
+    <section id="global100" class="inner">
+      <h3>Global Data</h3>
+      <p>
+        World data immediately follows the header.
+      </p>
+
+      <h4 id="global100world1">World Block 1</h4>
+      <p>
+        Total block length is 3890 bytes.
+      </p>
+      <div class="markdown">
+| Pos.  | Size     | Description |
+|-------|----------|-------------|
+| 0     | b * 3584 | Character set (see <a href="#chr">Character Sets</a>)
+| 3584  | b * 128  | ID Chars block 1 (thing chars) <a href="#global100note1">(1)</a>
+| 3712  | b * 178  | ID Chars block 2 (animations and colors) <a href="#global100note2">(2)</a>
+      </div>
+      <h5>Notes</h5>
+      <ol>
+        <li id="global100note1">
+          Worlds in this format do not contain ID chars block 3 (damages),
+          so the 1.x default damages should be substituted for these instead.
+          Likewise, goop (ID 34) didn't exist in 1.x, so char 176 should should
+          be patched in for its character.
+        </li>
+        <li id="global100note2">
+          This is the first 178 bytes of the 2.00 ID chars block 2. The missing
+          values are bullet chars (306-317), player chars (318-321), player
+          color (322), missile color (323), and bullet colors (324-326).
+          Equivalents to these values are stored separately later in the file.
+        </li>
+      </ol>
+
+      <h4 id="global100save1">Save Block 1 (.SAV only)</h4>
+      <p>
+        This block is present in save files only. Total block length is 16.
+      </p>
+      <div class="markdown">
+| Pos.  | Size  | Description |
+|-------|-------|-------------|
+| 0     | b * 16| Keys
+      </div>
+
+      <h4 id="global100world2">World Block 2</h4>
+      <p>
+        Total block length is 72.
+      </p>
+      <div class="markdown">
+| Pos.  | Size     | Description |
+|-------|----------|-------------|
+| 0     | s15 * 4  | Status counter names (null terminated)
+| 60    | b * 4    | Bullet chars
+| 64    | b        | Player char
+| 65    | b        | Saved player X position
+| 66    | b        | Saved player Y position
+| 67    | b        | Saved player board number
+| 68    | b        | Viewport edge color
+| 69    | b        | Player color
+| 70    | b        | Bullet color
+| 71    | b        | Missile color
+      </div>
+
+      <h4 id="global100save2">Save Block 2 (.SAV only)</h4>
+      <p>
+        This block is present in save files only. Total block length is 9.
+      </p>
+      <div class="markdown">
+| Pos.  | Size  | Description |
+|-------|-------|-------------|
+| 0     | b     | Scroll base color
+| 1     | b     | Scroll corner color
+| 2     | b     | Scroll pointer color
+| 3     | b     | Scroll title color
+| 4     | b     | Scroll arrow color
+| 5     | d     | Score
+      </div>
+
+      <h4 id="global100world3">World Block 3</h4>
+      <p>
+        Total block length is 18.
+      </p>
+      <div class="markdown">
+| Pos.  | Size     | Description |
+|-------|----------|-------------|
+| 0     | b        | First board number
+| 1     | b        | Endgame board number (>=128: no endgame board)
+| 2     | b        | Death board number (>=129: same position, 128: restart board)
+| 3     | b        | Endgame board teleport X
+| 4     | b        | Endgame board teleport Y
+| 5     | b        | Death board teleport X
+| 6     | b        | Death board teleport Y
+| 7     | ws       | Starting lives
+| 9     | ws       | Lives limit
+| 11    | ws       | Starting health
+| 13    | ws       | Health limit
+| 15    | b        | Enemies' bullets hurt other enemies
+| 16    | b        | Game over SFX enabled (1) or disabled (0)
+| 17    | b        | Unused
+      </div>
+
+      <h4 id="global100counters">Counters List (.SAV only)</h4>
+      <p>
+        This block is only present in save files and has an variable length.
+        The counters list begins with the number of counters.
+      </p>
+      <div class="markdown">
+| Pos. | Size    | Description |
+|------|---------|-------------|
+| 0    | b       | Number of counters = N
+      </div>
+      <p>
+        A list of <code>N</code> counters follows, each in the following format:
+      </p>
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s15  | Counter name (null terminated)
+| 15   | w    | Counter value (unsigned)
+      </div>
+    </section>
+
+    <section id="boardlist100" class="inner">
+      <h3>Board Names, Sizes, and Offsets</h3>
+
+      <p>
+        Following the board count byte is the board names list and the board sizes and
+        offsets table.
+      </p>
+
+      <p>
+        For each board:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s25  | Board names (null terminated)
+      </div>
+
+      <p>
+        For each board:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | d    | Size of board data within the file
+| 4    | d    | Offset of board data within the file
+      </div>
+
+      <p>
+        Typically, board data immediately follows these tables.
+      </p>
+    </section>
+
+    <section id="board100" class="inner">
+      <h3>Boards and Board RLE Planes</h3>
+      <p>
+        MegaZeux 1.xx does not support overlays or board modes; these should be
+        treated as disabled and 100x100, respectively. Boards begin immediately
+        with the board RLE plane data. Board contents are compressed with run
+        length encoding, which is different from its MegaZeux 2.xx counterpart.
+        Each board always has exactly 6 planes in the following order:
+      </p>
+
+      <div class="markdown">
+| name              | description |
+|-------------------|-------------|
+| level_id          | Board thing IDs
+| level_color       | Board thing colors
+| level_param       | Board thing parameters
+| level_under_id    | Board thing IDs for floors beneath non-floor things
+| level_under_color | Board thing colors for floors beneath non-floor things
+| level_under_param | Board thing parameters for floors beneath non-floor things
+      </div>
+
+      <p>
+        Each compressed plane starts with the following fields:
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | b    | Width <a href="#board100note1">(1)</a>
+| 1    | b    | Height
+      </div>
+
+      <p>
+        The RLE data follows after, and consists entirely of pairs of run
+        lengths and byte values. The RLE plane can be decompressed with the
+        following algorithm:
+      </p>
+
+      <code class="example">
+/**
+ * This code fragment is a simplified version of the RLE unpacking code from
+ * MegaZeux's source code, and is therefore GPL 2+ licensed.
+ */
+
+int size = width * height;
+int i = 0;
+while(i &lt; size)
+{
+  runsize = *(stream++);
+  current_char = *(stream++);
+
+  if(runsize &gt; size - i)
+    runsize = size - i; // MegaZeux emits an error if this occurs.
+
+  for(int j = 0; j &lt; runsize; j++)
+    plane[i++] = current_char;
+}
+      </code>
+
+      <p>
+        The RLE stream ends when <code>(board width * board height)</code>
+        bytes have been expanded from the stream, and the next compressed plane
+        or the board parameters block immediately follows.
+      </p>
+
+      <h5>Notes</h5>
+      <ol>
+        <li id="board100note1">
+          There MAY be an extra run of length 0 padding between any two planes;
+          if the width byte read is 0, skip the following byte and read the
+          width and height from the next two bytes. (It's not clear why old
+          versions of MegaZeux emit these runs, but this is exactly how VER1TO2
+          handles these. I have never seen this in practice. -Lachesis)
+        </li>
+      </ol>
+    </section>
+
+    <section id="boardparams100" class="inner">
+      <h3>Board Parameters</h3>
+      <p>
+        The board parameters block follows the board RLE planes.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s13  | Mod playing (null terminated)
+| 13   | b    | Viewport X
+| 14   | b    | Viewport Y
+| 15   | b    | Viewport width
+| 16   | b    | Viewport height
+| 17   | b    | Can shoot?
+| 18   | b    | Can bomb?
+| 19   | b    | Fire burns brown?
+| 20   | b    | Fire burns space?
+| 21   | b    | Fire burns fakes?
+| 22   | b    | Fire burns trees?
+| 23   | b    | Explosions leave (0: space, 1: ash, 2: fire)
+| 24   | b    | Save mode (0: enabled, 1: disabled, 2: sensor only)
+| 25   | b    | Forest to floor?
+| 26   | b    | Collect bombs?
+| 27   | b    | Fire burns forever?
+| 28   | b    | Board # to north
+| 29   | b    | Board # to south
+| 30   | b    | Board # to east
+| 31   | b    | Board # to west
+| 32   | b    | Restart if zapped?
+| 33   | w    | Time limit
+| 35   | b    | Last key pressed
+| 36   | ws   | Input (numeric value)
+| 38   | b    | Inputsize
+| 39   | b    | Volume
+| 40   | b    | Player locked NS?
+| 41   | b    | Player locked EW?
+| 42   | b    | Player attack locked?
+| 43   | s81  | Input (string value) (null terminated)
+| 124  | b    | Blind duration <a href="#boardparams100note1">(1)</a>
+| 125  | b    | Firewalker duration
+| 126  | b    | Unused
+| 127  | b    | Freeze time duration
+| 128  | b    | Slow time duration
+| 129  | b    | Unused
+| 130  | b    | Unused
+| 131  | b    | Unused
+| 132  | b    | Wind duration
+| 133  | b    | Last player direction
+| 134  | s81  | Bottom message (null terminated)
+| 215  | b    | Bottom message timer
+| 216  | b    | Lazerwall timer
+| 217  | b    | Bottom message row
+| 218  | b    | Bottom message column (-1: center) <a href="#boardparams100note2">(2)</a>
+| 219  | bs   | Scroll relative X offset
+| 220  | bs   | Scroll relative Y offset
+      </div>
+
+      <h5>Notes</h5>
+      <ol>
+        <li id="boardparams100note1">
+          All 5 status durations are board variables in MegaZeux 1.x. This
+          can be observed most easily in the "Flame Cavern" board of Caverns.
+        </li>
+        <li id="boardparams100note2">
+          The default behavior is centered, but 1.x world files contain 0 here by
+          default. A value of 0 needs to be corrected to -1 when loading worlds.
+        </li>
+      </ol>
+    </section>
+
+    <section id="boardobjs100" class="inner">
+      <h3>Board Objects</h3>
+      <p>
+        Following the board parameters are the robot, scroll, and sensor lists.
+        Each list is stored as a single byte <code>N</code> indicating the
+        number of robots, scrolls, or sensors on the board (0 to 255), followed
+        by <code>N</code> stored objects of that type. Each object in its
+        respective list immediately follows the prior, and the next list starts
+        immediately following the last object in the previous list. The board
+        data ends after all three lists and their objects have been read.
+      </p>
+      <p>
+        The board robots/scrolls/sensors in the list count from ID 1 upward, as
+        ID 0 is the global robot and is invalid for scrolls and sensors. Since
+        objects in the file are sequential, robot/scroll/sensor IDs may have to
+        be reassigned when saving worlds or saves in these versions to optimize
+        out gaps in the list.
+      </p>
+    </section>
+
+    <section id="robot100" class="inner">
+      <h3>Robots</h3>
+      <p>
+        Each robot is 37 bytes plus the length of the robot program long.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Default | Description |
+|------|------|---------|-------------|
+| 0    | d    |         | Program length in bytes. FILEFORM.TXT claims signed...
+| 4    | d    |         | unused <a href="#robot100note1">(1)</a>
+| 8    | s15  |         | Robot name (null-terminated)
+| 23   | b    | 2       | Robot char
+| 24   | d    | 1       | Current position in program
+| 28   | b    | 0       | Position within current line (for <code>WAIT</code>/<code>GO</code>/etc)
+| 29   | b    | 1       | Robot cycle
+| 30   | b    | 0       | Cycle counter
+| 31   | b    | 1       | Bullet type (0: player, 1: neutral, 2: enemy)
+| 32   | b    | 0       | Locked status (0: unlocked, 1: locked)
+| 33   | b    | 0       | Can lavawalk (0: no, 1: yes)
+| 34   | b    | 0       | Walk direction (0: idle)
+| 35   | b    | 0       | Last touch direction
+| 36   | b    | 0       | Last shot direction
+| 37   | s... |         | Robot program
+      </div>
+
+      <h4>Notes</h4>
+      <ol>
+        <li id="robot100note1">
+          DOS MZX versions wrote robot, scroll, and sensor structs directly to
+          world or save files. The unused 4-byte field at offset 4 probably
+          corresponds to the program memory pointer in these versions, if
+          MegaZeux 2.x is any indication. Scrolls likewise have an unused 4
+          byte field.
+        </li>
+      </ol>
+    </section>
+
+    <section id="scroll100" class="inner">
+      <h3>Scrolls</h3>
+      <p>
+        Each scroll block is 10 bytes plus the length of the scroll text long.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | w    | Number of lines
+| 2    | d    | unused
+| 6    | d    | Scroll text length in bytes
+| 10   | s... | Scroll text <a href="#scroll100note1">(1)</a>
+      </div>
+
+      <h4>Notes</h4>
+      <ol>
+        <li id="scroll100note1">
+          Scrolls in MegaZeux 1.x have a unique form of color coding that is
+          not available in versions after. If the first character of a line is
+          '!', the byte immediately following it will be used to apply the
+          palette corresponding to that byte to the entire line. For example,
+          if a line begins with <code>33 8e</code> hex, the line will use
+          color 8 as the background color and color 14 as the foreground color.
+          Unlike 2.x scrolls, the scroll text does not begin with <code>01</code>.
+        </li>
+      </ol>
+    </section>
+
+    <section id="sensor100" class="inner">
+      <h3>Sensors</h3>
+      <p>
+        Each sensor block is 31 bytes long.
+      </p>
+
+      <div class="markdown">
+| Pos. | Size | Description |
+|------|------|-------------|
+| 0    | s15  | Sensor name (null-terminated)
+| 15   | b    | Sensor char
+| 16   | s15  | Robot to message (null-terminated)
+      </div>
     </section>
   </section>
 
@@ -681,59 +1185,6 @@
       versions are somewhat of a mess, so please report any inaccuracies in this
       document.
     </p>
-
-    <section id="encryption200" class="inner">
-      <h3>Encryption</h3>
-      <p>
-        Encrypted worlds (from versions that supported them) begin with a
-        44-byte header similar to the regular header:
-      </p>
-
-      <div class="markdown">
-| Pos. | Size | Description |
-|------|------|-------------|
-| 0    | s25  | World title
-| 25   | b    | Protection method (always non-zero)
-| 26   | s15  | Password (encrypted) <a href="#encryption200note1">(1)</a>
-| 41   | s3   | Magic (not encrypted)
-      </div>
-
-      <p>
-        The password can be decrypted with the following algorithm:
-      </p>
-
-      <code class="example">
-/**
- * This code is copied from the MZX source code, which is GPL 2+ licensed.
- */
-char magic_code[16] = "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
-
-for(i = 0; i < 15; i++)
-{
-  password[i] ^= magic_code[i];
-  password[i] -= 0x12 - protection_method;
-  password[i] ^= 0x8D;
-}
-      </code>
-
-      <p>
-        The rest of the MZX file follows XORed with a byte calculated from the
-        password. In practice, this byte can be determined by using the character
-        set starting at the 44th byte of the encrypted world, the ID chars space
-        damage value at the 3955th byte of the encrypted world (which is almost
-        always 0 unencrypted) or by using recognizable colors in the palette
-        (offsets 4197 through 4244).
-      </p>
-
-      <h4>Notes</h4>
-      <ol>
-        <li id="encryption200note1">
-          The password field is null terminated if it is 14 or fewer characters
-          long. If the password is 15 characters long, it is NOT null terminated,
-          and the null terminator must be added by the decryption algorithm.
-        </li>
-      </ol>
-    </section>
 
     <section id="global200" class="inner">
       <h3>Global Data</h3>
@@ -753,8 +1204,8 @@ for(i = 0; i < 15; i++)
 | 0     | b * 3584 | Character set (see <a href="#chr">Character Sets</a>)
 | 3584  | b * 128  | ID Chars block 1 (thing chars)
 | 3712  | b * 195  | ID Chars block 2 (animations and colors)
-| 3907  | b        | ID Chars missile color
-| 3908  | b * 3    | ID Chars bullet colors
+| 3907  | b        | ID Chars missile color (block 2 no. 323)
+| 3908  | b * 3    | ID Chars bullet colors (block 2 no. 324 through 326)
 | 3911  | b * 128  | ID Chars block 3 (damage)
 | 4039  | s15 * 6  | Status counter names (null terminated)
       </div>
@@ -768,14 +1219,14 @@ for(i = 0; i < 15; i++)
 | Pos.  | Size  | Description |
 |-------|-------|-------------|
 | 0     | b * 16| Keys
-| 16    | b     | Blind timer
-| 17    | b     | Firewalker timer
-| 18    | b     | Freeze time timer
-| 19    | b     | Slow time timer
-| 20    | b     | Wind timer
+| 16    | b     | Blind duration
+| 17    | b     | Firewalker duration
+| 18    | b     | Freeze time duration
+| 19    | b     | Slow time duration
+| 20    | b     | Wind duration
 | 21    | w * 8 | Saved player X positions
 | 37    | w * 8 | Saved player Y positions
-| 53    | b * 8 | Saved player board numbers
+| 53    | b * 8 | Saved player board numbers <a href="#global200save1note3">(3)</a>
 | 61    | b     | Player color
 | 62    | b * 3 | Under player ID/color/param <a href="#global200save1note1">(1)</a>
 | 65    | b     | Message edges enabled (1) or disabled (0)
@@ -805,6 +1256,11 @@ for(i = 0; i < 15; i++)
           Prior to MZX 2.51s2, the current playing mod was not saved at all
           (as it was always the same as the current board mod) (total block
           length 71 bytes).
+        </li>
+        <li id="global200save1note3">
+          Due to a bug, MegaZeux 2.80 through 2.84c instead save the board
+          numbers of the first two saved positions as endian-dependent dwords
+          (4 bytes) and ignore the last six.
         </li>
       </ol>
 
@@ -1392,8 +1848,9 @@ for(i = 0; i < 15; i++)
  * MegaZeux's source code, and is therefore GPL 2+ licensed.
  */
 
+int size = width * height;
 int i = 0;
-while(i < width * height)
+while(i &lt; size)
 {
   current_char = *(stream++);
   if(!(current_char & 0x80))
@@ -1405,7 +1862,10 @@ while(i < width * height)
     int runsize = current_char & 0x7F;
     current_char = *(stream++);
 
-    for(int j = 0; j < runsize; j++)
+    if(runsize &gt; size - i)
+      runsize = size - i; // MegaZeux emits an error if this occurs.
+
+    for(int j = 0; j &lt; runsize; j++)
       plane[i++] = current_char;
   }
 }
@@ -1460,11 +1920,11 @@ while(i < width * height)
 | 202  | b    | Bottom message timer
 | 203  | b    | Lazerwall timer
 | 204  | b    | Bottom message row
-| 205  | b    | Bottom message column
-| 206  | w    | Scroll X
-| 208  | w    | Scroll Y
-| 210  | w    | Scroll locked X
-| 212  | w    | Scroll locked Y
+| 205  | bs   | Bottom message column (-1: center)
+| 206  | ws   | Scroll relative X offset
+| 208  | ws   | Scroll relative Y offset
+| 210  | ws   | Scroll locked X (-1: no lock)
+| 212  | ws   | Scroll locked Y (-1: no lock)
 | 214  | b    | Player locked NS?
 | 215  | b    | Player locked EW?
 | 216  | b    | Player attack locked?
@@ -1536,11 +1996,11 @@ while(i < width * height)
 | 10+x+y  | b    | Bottom message timer
 | 11+x+y  | b    | Lazerwall timer
 | 12+x+y  | b    | Bottom message row
-| 13+x+y  | b    | Bottom message column
-| 14+x+y  | w    | Scroll X
-| 16+x+y  | w    | Scroll Y
-| 18+x+y  | w    | Scroll locked X
-| 20+x+y  | w    | Scroll locked Y
+| 13+x+y  | bs   | Bottom message column (-1: center)
+| 14+x+y  | ws   | Scroll relative X offset
+| 16+x+y  | ws   | Scroll relative Y offset
+| 18+x+y  | ws   | Scroll locked X (-1: no lock)
+| 20+x+y  | ws   | Scroll locked Y (-1: no lock)
       </div>
 
       <p>
@@ -1859,13 +2319,15 @@ while(i < width * height)
 | `sfx`     | <a href="#sfx290"        >Custom SFX Table</a>              | Only if custom SFX enabled  | As of 2.91c
 | `chars`   | <a href="#chars290"      >Character Sets</a>                |                             | Always
 | `pal`     | <a href="#pal290"        >Palette</a>                       |
+| `palsmzx` | <a href="#pal290"        >Palette (SMZX)</a>                | SMZX 2 and 3 only
 | `palidx`  | <a href="#pal290"        >Palette Indices</a>               | Save-only before 2.91, SMZX 3 only
 | `vco`     | <a href="#vlayer290"     >Vlayer Colors Plane</a>           | Save-only before 2.91       | Always
 | `vch`     | <a href="#vlayer290"     >Vlayer Chars Plane</a>            | Save-only before 2.91       | Always
 | `palint`  | <a href="#pal290"        >Palette Intensities</a>           | Save-only
+| `palints` | <a href="#pal290"        >Palette Intensities (SMZX)</a>    | Save-only, SMZX 2 and 3 only
 | `spr`     | <a href="#spriteprop290" >Sprite Properties</a>             | Save-only                   | Always
-| `counter` | <a href="#counters290"   >Counters List</a>                 | Save-only
-| `string`  | <a href="#counters290"   >Strings List</a>                  | Save-only
+| `counter` | <a href="#counters290"   >Counters List</a>                 | Save-only                   | As of 2.93
+| `string`  | <a href="#counters290"   >Strings List</a>                  | Save-only                   | As of 2.93
 | `b##`     | <a href="#boardprop290"  >Board Properties</a>              | See below.
 | `b##bid`  | <a href="#boardplanes290">Board level_id Plane</a>          |                             | Always
 | `b##bpr`  | <a href="#boardplanes290">Board level_param Plane</a>       |                             | Always
@@ -1888,7 +2350,7 @@ while(i < width * height)
         board, <code>b0A</code> for board 10, <code>bF9</code> for
         board 249 (the highest possible regular board number), and
         <code>bFF</code> for the special temporary board that may sometimes
-        exist in save files.
+        exist in save files. This number must be exactly two hex digits long.
       </p>
       <p>
         Extra storage data for robots, scrolls, and sensors is stored in separate
@@ -1897,6 +2359,11 @@ while(i < width * height)
         from <code>01</code> (for robot 1) to <code>FF</code> (for robot 255) are
         valid. The same applies for scrolls and sensors. The robot/scroll/sensor
         must exist on the board for its corresponding properties file to be valid.
+        These numbers must be exactly two hex digits long.
+      </p>
+      <p>
+        Filenames are case-insensitive. Prior to 2.93, they were case-sensitive
+        and had to be all lowercase (aside from board/object numbers).
       </p>
     </section>
 
@@ -1935,7 +2402,8 @@ while(i < width * height)
         The file ends immediately when a property ID of <code>0x0000</code> is
         encountered indicating the end of the file. This value is the same for
         all different properties files. Unrecognized properties IDs are usually
-        skipped unless noted otherwise.
+        skipped unless noted otherwise. The EOF ID should always be present at
+        the end of the file and there should be no data after the EOF ID.
       </p>
       <p>
         It is possible to nest properties files to create a file with a more
@@ -1969,7 +2437,7 @@ while(i < width * height)
       <div class="markdown">
 | ID       | Property                             | Data Type               | Notes |
 |----------|--------------------------------------|-------------------------|-------|
-| `0x0001` | World name                           | string(25) (with \0)    |
+| `0x0001` | World name                           | string                  | <a href="#world290note1">(1)</a>
 | `0x0002` | World version                        | int(w)                  |
 | `0x0003` | File version                         | int(w)                  |
 | `0x0004` | Save start board #                   | int(b)                  | 255: temporary board
@@ -1981,7 +2449,7 @@ while(i < width * height)
 | `0x0012` | ID Chars bullet colors               | array(b * 3)            |
 | `0x0013` | ID Chars block 3 (damage)            | array(b * 128)          |
 
-| `0x0018` | Status counters                      | array(s15 with \0 * 6)  |
+| `0x0018` | Status counters                      | Properties (2.93+)<br>array(s15 with \0 * 6) |
 
 | `0x0020` | Edge color                           | int(b)
 | `0x0021` | First board #                        | int(b)
@@ -2016,11 +2484,11 @@ while(i < width * height)
 | `0x804B` | Player restart Y                     | int(w)                  | Save-only
 | `0x804C` | Player color                         | int(b)                  | Save-only
 | `0x804D` | Keys                                 | array(b * 16)           | Save-only
-| `0x8050` | Blind timer                          | int(b)                  | Save-only
-| `0x8051` | Firewalker timer                     | int(b)                  | Save-only
-| `0x8052` | Freeze time timer                    | int(b)                  | Save-only
-| `0x8053` | Slow time timer                      | int(b)                  | Save-only
-| `0x8054` | Wind timer                           | int(b)                  | Save-only
+| `0x8050` | Blind duration                       | int(d)                  | Save-only
+| `0x8051` | Firewalker duration                  | int(d)                  | Save-only
+| `0x8052` | Freeze time duration                 | int(d)                  | Save-only
+| `0x8053` | Slow time duration                   | int(d)                  | Save-only
+| `0x8054` | Wind duration                        | int(d)                  | Save-only
 | `0x8058` | Scroll base color                    | int(b)                  | Save-only
 | `0x8059` | Scroll corner color                  | int(b)                  | Save-only
 | `0x805A` | Scroll pointer color                 | int(b)                  | Save-only
@@ -2036,6 +2504,7 @@ while(i < width * height)
 | `0x8078` | Output filename                      | string                  | Save-only
 | `0x807C` | Output file position                 | int(d)                  | Save-only
 | `0x807D` | Output file delimiter                | int(ds)                 | Save-only
+| `0x807E` | Output file mode                     | int(b)                  | Save-only, 2.93+ <a href="#world290note1">(2)</a>
 | `0x8080` | Multiplier                           | int(ds)                 | Save-only
 | `0x8081` | Divider                              | int(ds)                 | Save-only
 | `0x8082` | Circle divisions                     | int(ds)                 | Save-only
@@ -2043,23 +2512,80 @@ while(i < width * height)
 | `0x8091` | SMZX message enabled in SMZX mode?   | int(b)                  | Save-only, 2.91+
 | `0x8092` | Joystick presses simulate keypresses?| int(b)                  | Save-only, 2.92+
       </div>
+      <ol>
+        <li id="world290note1">
+          World name maximum length is currently 24 characters; extra data
+          will be ignored. Versions prior to 2.92d expect this field to be null
+          terminated, and may leave parts of previous world names in the loaded
+          name if it is not.
+        </li>
+        <li id="world290note2">
+          This field may be omitted. Valid output file mode values:
+<div class="markdown">
+| Value | Mode         |
+|-------|--------------|
+| 0     | none/unknown
+| 1     | `w+b`
+| 2     | `r+b`
+| 3     | `a+b`
+</div>
+          Files opened in mode <code>w+b</code> should be reopened in mode
+          <code>r+b</code>. The output file is currently write-only, so
+          <code>wb</code> and <code>ab</code> are used in Robotic instead
+          of <code>w+b</code> and <code>a+b</code> for now.
+        </li>
+      </ol>
+      <h4 id="statctrprop290">Status Counter Properties</h4>
+      As of 2.93, the status counters are a nested properties file. Status
+      counters not present in the properties file are unused/blank.
+      <div class="markdown">
+| ID       | Property                             | Data Type               | Notes |
+|----------|--------------------------------------|-------------------------|-------|
+| `0x0001` | Set current status counter ID        | int(b)                  | Counters >=6 are ignored
+| `0x0002` | Status counter name                  | string                  | Max. length 14
+      </div>
+      Prior to 2.93, the status counters were a fixed size array of 6 15-byte
+      ASCIIZ strings (total size 90 bytes). In 2.93+ worlds, if the status
+      counters are 90 bytes long <i>and</i> are not a valid properties file,
+      they will be loaded as the old format.
     </section>
 
     <section id="sfx290" class="inner">
       <h3>Custom SFX Table</h3>
       <p>
-        The custom SFX table is saved as a raw data file of
-        <code>(NUM_SFX * LEGACY_SFX_SIZE</code> bytes, where
-        <code>NUM_SFX = 50</code> and <code>LEGACY_SFX_SIZE = 69</code> (for a
-        total of <code>3450</code> bytes prior to compression). If this file
-        is present, custom SFX will be enabled for the world. If this file is
-        absent, custom SFX will be disabled.
+        If this file is present, custom SFX will be enabled for the world. If
+        this file is absent, custom SFX will be disabled.
       </p>
       <p>
-        This data block is loaded directly over the custom SFX string data and
-        each SFX string is expected to be null terminated within the block.
-        This was a bad idea and will likely be replaced with a properties file
-        in the near future.
+        In versions 2.93 and up, the sound effects are stored as a properties file
+        with a 8-byte header:
+        <div class="markdown">
+| Pos. | Size  | Description |
+|------|-------|-------------|
+| 0    | s6    | `MZFX\x1a\0`
+| 6    | w(BE) | MegaZeux version in big endian, same as last two bytes of <a href="#worldheader">world magic</a>.
+        </div>
+        Versions less than 2.93 (<code>025Dh</code>) are invalid. The properties
+        follow immediately:
+        <div class="markdown">
+| ID       | Property                             | Data Type               | Notes |
+|----------|--------------------------------------|-------------------------|-------|
+| `0x0001` | Set current sound effect ID          | int(b)                  | SFX >= 50 are ignored
+| `0x0002` | Sound effect string                  | string                  | Max. length 68
+        </div>
+        Prior to 2.93, the custom SFX table is saved as a raw array of
+        <code>(NUM_BUILTIN_SFX * LEGACY_SFX_SIZE</code> bytes, where
+        <code>NUM_BUILTIN_SFX = 50</code> and <code>LEGACY_SFX_SIZE = 69</code>
+        (for a total of <code>3450</code> bytes prior to compression). Each
+        individual sound effect must be null terminated. This format is still
+        allowed in 2.93+ version world files. If loaded into a 2.93+ world, all
+        custom sound effects past 50 will be cleared.
+      </p>
+      <p>
+        This file is identical in format to the
+        <a href="#sfx">exported custom SFX file format</a>, and files in 2.90+
+        world and save files can be used interchangeably with files created by
+        SFX export.
       </p>
     </section>
 
@@ -2075,19 +2601,42 @@ while(i < width * height)
     </section>
 
     <section id="pal290" class="inner">
-      <h3>Palette, Palette Indices, and Palette Intensities</h3>
+      <h3>Palettes, Palette Indices, and Palette Intensities</h3>
       <p>
-        The world palette is saved as a raw <a href="#pal">palette file</a>
-        containing 256 colors (regardless of the current SMZX mode). If SMZX
-        mode 3 is enabled, the palette indices will also be saved as a raw
-        <a href="#palidx">palette indices file</a> in 2.90+ save files and
-        2.91+ world files.
+        The world palettes are saved as raw <a href="#pal">palette files</a>.
+        In 2.93 and up, the file <code>pal</code> always contains the 16
+        color palette corresponding to MZX mode and SMZX mode 1. If SMZX
+        modes 2 or 3 are active, an additional 256 color palette will be saved
+        to <code>palsmzx</code>. If SMZX mode 3 is enabled, the palette indices
+        will also be saved as a raw <a href="#palidx">palette indices file</a>
+        in 2.90+ save files and 2.91+ world files.
       </p>
       <p>
-        In save files, the palette intensities are saved as a third file. All
-        256 palette intensities are saved regardless of the current SMZX mode
-        in an array of 256 bytes (note: this will truncate extreme intensity
-        values and was probably a bad idea).
+        In save files, the palette intensities are also saved. The file
+        <code>palint</code> contains a raw array of 16 unsigned little endian
+        dwords representing the MZX and SMZX mode 1 palette intensities. If
+        SMZX modes 2 or 3 are active, an additional file <code>palints</code>
+        containing the SMZX modes 2 and 3 will be saved. This file contains 256
+        unsigned little endian dwords.
+      </p>
+      <h4 id="pal290old">Prior to 2.93</h4>
+      <p>
+        Only one <code>pal</code> and <code>palint</code> file were saved.
+        These files always contained 256 entries, and always represented the
+        current active screen mode. The palette intensities were stored as
+        <i>bytes</i>, which corrupted larger intensity values.
+      </p>
+      <p>
+        In SMZX modes 2 and 3, the MZX palette and palette intensities were NOT
+        saved. For worlds/saves from these versions with SMZX modes 2 or 3 active,
+        the MZX palette should be derived from the first 16 entries of the SMZX
+        palette (same as 2.84X and prior) and the MZX intensities should default
+        to 100.
+      </p>
+      <p>
+        In 2.90X save files, the palette intensities file was stored using the
+        internal indices order, and was incompatible with palette indices
+        files. For each color, the two middle indices are in reverse order.
       </p>
     </section>
 
@@ -2220,14 +2769,14 @@ while(i < width * height)
       <div class="markdown">
 | ID       | Property               | Data Type             | Notes |
 |----------|------------------------|-----------------------|-------|
-| `0x0001` | Board name             | string(25) (with \0)  | Strict<a href="#board290note1">(1)</a>
+| `0x0001` | Board name             | string                | Strict<a href="#board290note1">(1)</a><a href="#board290note2">(2)</a>
 | `0x0002` | Board width            | int(w)                | Strict
 | `0x0003` | Board height           | int(w)                | Strict
 | `0x0004` | Overlay mode           | int(b)                | Strict
 | `0x0005` | Robot count            | int(b)                | Strict
 | `0x0006` | Scroll count           | int(b)                | Strict
 | `0x0007` | Sensor count           | int(b)                | Strict
-| `0x0008` | File version           | int(w)                | Strict<a href="#board290note2">(2)</a>
+| `0x0008` | File version           | int(w)                | Strict<a href="#board290note3">(3)</a>
 | `0x0010` | Mod playing            | string
 | `0x0011` | Viewport X             | int(b)
 | `0x0012` | Viewport Y             | int(b)
@@ -2256,10 +2805,10 @@ while(i < width * height)
 | `0x0029` | Reset board on entry?  | int(b)
 | `0x002A` | Board charset path     | string
 | `0x002B` | Board palette path     | string
-| `0x0100` | Scroll X               | int(w)  | Save-only
-| `0x0101` | Scroll Y               | int(w)  | Save-only
-| `0x0102` | Scroll locked X        | int(w)  | Save-only
-| `0x0103` | Scroll locked Y        | int(w)  | Save-only
+| `0x0100` | Scroll relative X offset | int(ws) | Save-only
+| `0x0101` | Scroll relative Y offset | int(ws) | Save-only
+| `0x0102` | Scroll locked X        | int(ws) | Save-only (-1: no lock)
+| `0x0103` | Scroll locked Y        | int(ws) | Save-only (-1: no lock)
 | `0x0104` | Last player direction  | int(b)  | Save-only
 | `0x010A` | Lazerwall timer        | int(b)  | Save-only
 | `0x010B` | Last key pressed       | int(b)  | Save-only
@@ -2269,19 +2818,31 @@ while(i < width * height)
 | `0x0110` | Bottom message         | string  | Save-only
 | `0x0111` | Bottom message timer   | int(b)  | Save-only
 | `0x0112` | Bottom message row     | int(b)  | Save-only
-| `0x0113` | Bottom message column  | int(b)  | Save-only
+| `0x0113` | Bottom message column  | int(bs) | Save-only (-1: center)
 | `0x0114` | Volume                 | int(b)  | Save-only
 | `0x0115` | Volume increment       | int(b)  | Save-only
 | `0x0116` | Volume target          | int(b)  | Save-only
+| `0x0117` | Blind duration         | int(b)  | Save-only, 1.x only
+| `0x0118` | Firewalker duration    | int(b)  | Save-only, 1.x only
+| `0x0119` | Freeze time duration   | int(b)  | Save-only, 1.x only
+| `0x011a` | Slow time duration     | int(b)  | Save-only, 1.x only
+| `0x011b` | Wind duration          | int(b)  | Save-only, 1.x only
       </div>
       <ol>
         <li id="board290note1">
           Properties marked "strict" must be present and in the order specified
           in the table for the board data to be considered valid. If the board
           properties file is invalid, the entire board contents will be dummied
-          out.
+          out. Properties marked "save-only" are saved to save files only, but will
+          be respected if loaded from a world file. Properties marked "1.x only"
+          are saved/loaded only if the world compatibility version is 1.x.
         </li>
         <li id="board290note2">
+          Board name maximum length is currently 24 characters; extra data
+          will be ignored. Versions prior to 2.93 expect this field to be null
+          terminated and may append garbage to the name if it is not.
+        </li>
+        <li id="board290note3">
           This field exists mainly to provide redundancy for the
           <a href="#mzb">.MZB</a> file header. In world and save files, this
           field should be redundant with the file version field derived from
@@ -2308,7 +2869,7 @@ while(i < width * height)
       <div class="markdown">
 | ID       | Property                     | Data Type             | Notes |
 |----------|------------------------------|-----------------------|-------|
-| `0x0001` | Robot name                   | string(15) (with \0)  | Strict<a href="#robot290note1">(1)</a>
+| `0x0001` | Robot name                   | string                | Strict<a href="#robot290note1">(1)</a><a href="#robot290note1">(2)</a>
 | `0x0002` | Robot char                   | int(b)                | Strict
 | `0x0003` | X position                   | int(ws)               | Strict
 | `0x0004` | Y position                   | int(ws)               | Strict
@@ -2333,7 +2894,15 @@ while(i < width * height)
       <ol>
         <li id="robot290note1">
           Properties marked "strict" must be present and in the order specified
-          in the table for the robot data to be considered valid.
+          in the table for the robot data to be considered valid. Properties
+          marked "save-only" are saved to save files only, but will be respected
+          if loaded from a world file.
+        </li>
+        <li id="robot290note2">
+          Robot name maximum length is currently 14 characters; extra data
+          will be ignored. Versions prior to 2.92d expect this field to be
+          exactly 15 bytes long and to contain a null terminator, and may behave
+          unexpectedly if it does not.
         </li>
       </ol>
     </section>
@@ -2357,12 +2926,20 @@ while(i < width * height)
         Sensor data is stored in a properties file with the following properties:
       </p>
       <div class="markdown">
-| ID       | Property         | Data Type |
-|----------|------------------|-----------|
-| `0x0001` | Sensor name      | string(15) (with \0)
+| ID       | Property         | Data Type | Notes |
+|----------|------------------|-----------|-------|
+| `0x0001` | Sensor name      | string    | <a href="#sensor290note1">(1)</a>
 | `0x0002` | Sensor char      | int(b)
-| `0x0003` | Robot to message | string(15) (with \0)
+| `0x0003` | Robot to message | string    | <a href="#sensor290note1">(1)</a>
       </div>
+      <ol>
+        <li id="sensor290note1">
+          Robot/sensor name maximum length is currently 14 characters; extra data
+          will be ignored. Versions prior to 2.92d expect these fields to be
+          exactly 15 bytes long and to contain a null terminator, and may behave
+          unexpectedly if they do not.
+        </li>
+      </ol>
     </section>
   </section>
 
@@ -2381,13 +2958,26 @@ while(i < width * height)
 | 1    | s3   | Magic (<code>MB2</code> for 2.00 through 2.51s1, same as <a href="#worldheader">world magic</a> after)
     </div>
 
+    <section id="mzb100" class="inner">
+      <h3>Board Files for MegaZeux 1.x</h3>
+      <p>
+        A MegaZeux 1.x board file contains the raw data for a single board in
+        the world format (including robots, scrolls, and sensors as-needed).
+        These board files actually do NOT contain the above header; they begin
+        exactly at the first RLE plane. See the <a href="#board100">world format
+        documentation for boards</a> for more info. A 25-byte null terminated
+        board name follows the board data.
+      </p>
+    </section>
+
     <section id="mzb200" class="inner">
       <h3>Board Files for 2.00 through 2.84X</h3>
       <p>
         The header is immediately followed by the raw data for a single board
         in the world format (including robots, scrolls, and sensors as-needed).
         See the <a href="#board200">world format documentation for boards</a>
-        for more info.
+        for more info. A 25-byte null terminated board name follows the board
+        data.
       </p>
     </section>
 
@@ -2613,6 +3203,19 @@ while(i < width * height)
 
   <hr>
 
+  <section id="sfx" class="main">
+    <h2>Custom SFX Table File (.SFX)</h2>
+    <p>
+      The custom SFX table file format is exactly the same as the
+      <a href="#sfx290">custom SFX table described in the 2.90+ world format</a>.
+      MegaZeux 2.93 and up can save sound effects in either the new format or in
+      the old raw array format. All prior versions of MegaZeux that support sound
+      effects export (2.00 through 2.92f) use the raw array format.
+    </p>
+  </section>
+
+  <hr>
+
   <section id="bytecode" class="main">
     <h2>Robotic Bytecode (.BC)</h2>
     <p>
@@ -2661,7 +3264,7 @@ while(i < width * height)
     <h2>License</h2>
     <section class="inner">
       <p>
-        Copyright &copy; 2020 Lachesis &mdash;
+        Copyright &copy; 2020-2023 Lachesis &mdash;
         <a href="https://github.com/AliceLR/megazeux/">
           https://github.com/AliceLR/megazeux/
         </a>

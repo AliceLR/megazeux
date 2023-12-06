@@ -632,6 +632,11 @@ static void write_html(const char *output)
   append_html(&root, "<html>" EOL "<head>" EOL);
   append_html(&root, "<title>" TITLE "</title>" EOL);
 
+  append_html(&root, "<meta charset=\"UTF-8\">" EOL);
+  append_html(&root, "<meta name=\"title\" content=\"" TITLE "\">" EOL);
+  append_html(&root, "<meta name=\"twitter:card\" content=\"summary\">" EOL);
+  append_html(&root, "<meta name=\"twitter:title\" content=\"" TITLE "\">" EOL);
+
   append_html(&root, "<style>" EOL);
   append_file(&root, font_file);
   append_html(&root, "</style>" EOL);

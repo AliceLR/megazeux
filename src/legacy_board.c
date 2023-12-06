@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,39 +52,94 @@ static int cmp_robots(const void *dest, const void *src)
   return strcasecmp(rdest->robot_name, rsrc->robot_name);
 }
 
-static int load_RLE2_plane(char *plane, vfile *vf, int size)
+/* Due to some 1.x RLE jank the dimensions need special handling. */
+static int load_RLE_dimensions(vfile *vf, int *w, int *h)
+{
+  /* Some streams may have a run of 0 appended, but not all of them?
+   * No known 1.xx worlds actually contain these; this comes from VER1TO2. */
+  int tmp = vfgetc(vf);
+  if(!tmp)
+  {
+    debug("Board plane ending in run of length 0 @ %" PRId64 "\n", vftell(vf) - 1);
+    vfgetc(vf);
+    *w = vfgetc(vf);
+  }
+  else
+    *w = tmp;
+
+  *h = vfgetc(vf);
+  return (*h < 0) ? -1 : 0;
+}
+
+/* Stream position should be after the dimensions. */
+static int load_RLE_plane(struct board *cur_board, char *plane, vfile *vf,
+ int size, boolean check_size)
+{
+  int i, runsize, byte;
+
+  if(check_size)
+  {
+    int w, h;
+    if(load_RLE_dimensions(vf, &w, &h))
+      return -1;
+    if(w != cur_board->board_width || h != cur_board->board_height)
+      return -1;
+  }
+
+  for(i = 0; i < size;)
+  {
+    runsize = vfgetc(vf);
+    byte = vfgetc(vf);
+    if(byte < 0)
+      return -1;
+
+    if(i + runsize > size)
+      return -2;
+
+    memset(plane + i, byte, runsize);
+    i += runsize;
+  }
+  return 0;
+}
+
+static int load_RLE2_plane(struct board *cur_board, char *plane, vfile *vf,
+ int size, boolean check_size)
 {
   int i, runsize;
   int current_char;
 
-  if(size < 0)
-    return -3;
+  if(check_size)
+  {
+    int w = vfgetw(vf);
+    int h = vfgetw(vf);
+    if(h < 0 || w != cur_board->board_width || h != cur_board->board_height)
+      return -1;
+  }
 
-  for(i = 0; i < size; i++)
+  for(i = 0; i < size;)
   {
     current_char = vfgetc(vf);
-    if(current_char == EOF)
-    {
+    if(current_char < 0)
       return -1;
-    }
-    else if(!(current_char & 0x80))
+
+    if(~current_char & 0x80)
     {
       // Regular character
-      plane[i] = current_char;
+      plane[i++] = current_char;
     }
     else
     {
       // A run
       runsize = current_char & 0x7F;
-      if((i + runsize) > size)
+      if(i + runsize > size)
         return -2;
 
       current_char = vfgetc(vf);
-      if(current_char == EOF)
+      if(current_char < 0)
         return -1;
 
       memset(plane + i, current_char, runsize);
-      i += (runsize - 1);
+      i += runsize;
     }
   }
 
@@ -97,6 +153,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, size, board_width, board_height, i;
   int viewport_x, viewport_y, viewport_width, viewport_height;
+  int overlay_width;
+  int overlay_height;
   boolean truncated = false;
 
   struct robot *cur_robot;
@@ -143,93 +201,139 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->palette_path = NULL;
   cur_board->charset_path_allocated = 0;
   cur_board->palette_path_allocated = 0;
+  cur_board->blind_dur_v1 = 0;
+  cur_board->firewalker_dur_v1 = 0;
+  cur_board->freeze_time_dur_v1 = 0;
+  cur_board->slow_time_dur_v1 = 0;
+  cur_board->wind_dur_v1 = 0;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(CONFIG_EXTRAM)
   cur_board->is_extram = false;
 #endif
 
-  // board_mode, unused
-  if(vfgetc(vf) == EOF)
+  if(file_version >= V200)
   {
-    error_message(E_WORLD_BOARD_MISSING, board_location, NULL);
-    return VAL_MISSING;
-  }
-
-  overlay_mode = vfgetc(vf);
-
-  if(!overlay_mode)
-  {
-    int overlay_width;
-    int overlay_height;
+    // board_mode, unused
+    if(vfgetc(vf) < 0)
+    {
+      error_message(E_WORLD_BOARD_MISSING, board_location, NULL);
+      return VAL_MISSING;
+    }
 
     overlay_mode = vfgetc(vf);
-    overlay_width = vfgetw(vf);
-    overlay_height = vfgetw(vf);
 
-    size = overlay_width * overlay_height;
+    if(!overlay_mode)
+    {
+      overlay_mode = vfgetc(vf);
+      overlay_width = vfgetw(vf);
+      overlay_height = vfgetw(vf);
+      cur_board->board_width = overlay_width;
+      cur_board->board_height = overlay_height;
 
-    if((size < 1) || (size > MAX_BOARD_SIZE))
-      goto err_invalid;
+      size = overlay_width * overlay_height;
 
-    cur_board->overlay = cmalloc(size);
-    cur_board->overlay_color = cmalloc(size);
+      if(size < 1 || size > MAX_BOARD_SIZE)
+        goto err_invalid;
 
-    if(load_RLE2_plane(cur_board->overlay, vf, size))
+      cur_board->overlay = (char *)cmalloc(size);
+      cur_board->overlay_color = (char *)cmalloc(size);
+
+      if(!cur_board->overlay || !cur_board->overlay_color)
+        goto err_freeoverlay;
+
+      if(load_RLE2_plane(cur_board, cur_board->overlay, vf, size, false))
+        goto err_freeoverlay;
+      if(load_RLE2_plane(cur_board, cur_board->overlay_color, vf, size, true))
+        goto err_freeoverlay;
+    }
+    else
+    {
+      overlay_mode = 0;
+      // Undo that last get
+      vfseek(vf, -1, SEEK_CUR);
+    }
+
+    cur_board->overlay_mode = overlay_mode;
+
+    board_width = vfgetw(vf);
+    board_height = vfgetw(vf);
+    cur_board->board_width = board_width;
+    cur_board->board_height = board_height;
+
+    size = board_width * board_height;
+
+    if(size < 1 || size > MAX_BOARD_SIZE)
+      goto err_freeoverlay;
+    if(overlay_mode && (board_width != overlay_width || board_height != overlay_height))
       goto err_freeoverlay;
 
-    // Skip sizes
-    if(vfgetd(vf) == EOF ||
-     load_RLE2_plane(cur_board->overlay_color, vf, size))
-      goto err_freeoverlay;
+    cur_board->level_id = (char *)cmalloc(size);
+    cur_board->level_color = (char *)cmalloc(size);
+    cur_board->level_param = (char *)cmalloc(size);
+    cur_board->level_under_id = (char *)cmalloc(size);
+    cur_board->level_under_color = (char *)cmalloc(size);
+    cur_board->level_under_param = (char *)cmalloc(size);
+
+    if(!cur_board->level_id || !cur_board->level_color ||
+     !cur_board->level_param || !cur_board->level_under_id ||
+     !cur_board->level_under_color || !cur_board->level_under_param)
+      goto err_freeboard;
+
+    if(load_RLE2_plane(cur_board, cur_board->level_id, vf, size, false))
+      goto err_freeboard;
+    if(load_RLE2_plane(cur_board, cur_board->level_color, vf, size, true))
+      goto err_freeboard;
+    if(load_RLE2_plane(cur_board, cur_board->level_param, vf, size, true))
+      goto err_freeboard;
+    if(load_RLE2_plane(cur_board, cur_board->level_under_id, vf, size, true))
+      goto err_freeboard;
+    if(load_RLE2_plane(cur_board, cur_board->level_under_color, vf, size, true))
+      goto err_freeboard;
+    if(load_RLE2_plane(cur_board, cur_board->level_under_param, vf, size, true))
+      goto err_freeboard;
   }
   else
   {
+    /* 1.x has no overlay and a different packing format. */
     overlay_mode = 0;
-    // Undo that last get
-    vfseek(vf, -1, SEEK_CUR);
+    cur_board->overlay_mode = overlay_mode;
+
+    if(load_RLE_dimensions(vf, &board_width, &board_height))
+      goto err_invalid;
+
+    cur_board->board_width = board_width;
+    cur_board->board_height = board_height;
+
+    size = board_width * board_height;
+
+    if(size < 1 || size > MAX_BOARD_SIZE)
+      goto err_invalid;
+
+    cur_board->level_id = (char *)cmalloc(size);
+    cur_board->level_color = (char *)cmalloc(size);
+    cur_board->level_param = (char *)cmalloc(size);
+    cur_board->level_under_id = (char *)cmalloc(size);
+    cur_board->level_under_color = (char *)cmalloc(size);
+    cur_board->level_under_param = (char *)cmalloc(size);
+
+    if(!cur_board->level_id || !cur_board->level_color ||
+     !cur_board->level_param || !cur_board->level_under_id ||
+     !cur_board->level_under_color || !cur_board->level_under_param)
+      goto err_freeboard;
+
+    if(load_RLE_plane(cur_board, cur_board->level_id, vf, size, false))
+      goto err_freeboard;
+    if(load_RLE_plane(cur_board, cur_board->level_color, vf, size, true))
+      goto err_freeboard;
+    if(load_RLE_plane(cur_board, cur_board->level_param, vf, size, true))
+      goto err_freeboard;
+    if(load_RLE_plane(cur_board, cur_board->level_under_id, vf, size, true))
+      goto err_freeboard;
+    if(load_RLE_plane(cur_board, cur_board->level_under_color, vf, size, true))
+      goto err_freeboard;
+    if(load_RLE_plane(cur_board, cur_board->level_under_param, vf, size, true))
+      goto err_freeboard;
   }
-
-  cur_board->overlay_mode = overlay_mode;
-
-  board_width = vfgetw(vf);
-  board_height = vfgetw(vf);
-  cur_board->board_width = board_width;
-  cur_board->board_height = board_height;
-
-  size = board_width * board_height;
-
-  if((size < 1) || (size > MAX_BOARD_SIZE))
-    goto err_freeoverlay;
-
-  cur_board->level_id = cmalloc(size);
-  cur_board->level_color = cmalloc(size);
-  cur_board->level_param = cmalloc(size);
-  cur_board->level_under_id = cmalloc(size);
-  cur_board->level_under_color = cmalloc(size);
-  cur_board->level_under_param = cmalloc(size);
-
-  if(load_RLE2_plane(cur_board->level_id, vf, size))
-    goto err_freeboard;
-
-  if(vfgetd(vf) == EOF ||
-   load_RLE2_plane(cur_board->level_color, vf, size))
-    goto err_freeboard;
-
-  if(vfgetd(vf) == EOF ||
-   load_RLE2_plane(cur_board->level_param, vf, size))
-    goto err_freeboard;
-
-  if(vfgetd(vf) == EOF ||
-   load_RLE2_plane(cur_board->level_under_id, vf, size))
-    goto err_freeboard;
-
-  if(vfgetd(vf) == EOF ||
-   load_RLE2_plane(cur_board->level_under_color, vf, size))
-    goto err_freeboard;
-
-  if(vfgetd(vf) == EOF ||
-   load_RLE2_plane(cur_board->level_under_param, vf, size))
-    goto err_freeboard;
 
   // Load board parameters
 
@@ -281,9 +385,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->fire_burns = vfgetc(vf);
 
   for(i = 0; i < 4; i++)
-  {
     cur_board->board_dir[i] = vfgetc(vf);
-  }
 
   cur_board->restart_if_zapped = vfgetc(vf);
   cur_board->time_limit = vfgetw(vf);
@@ -294,10 +396,32 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     cur_board->num_input = vfgetw(vf);
     cur_board->input_size = vfgetc(vf);
 
+    if(file_version < V200)
+    {
+      cur_board->volume = vfgetc(vf);
+      cur_board->player_ns_locked = vfgetc(vf);
+      cur_board->player_ew_locked = vfgetc(vf);
+      cur_board->player_attack_locked = vfgetc(vf);
+    }
+
     if(!vfread(input_string, LEGACY_INPUT_STRING_MAX + 1, 1, vf))
       input_string[0] = 0;
     input_string[LEGACY_INPUT_STRING_MAX] = 0;
     board_set_input_string(cur_board, input_string, LEGACY_INPUT_STRING_MAX);
+
+    if(file_version < V200)
+    {
+      // Effects and unused junk in 1.x :(
+      unsigned char tmp[9];
+      memset(tmp, 0, sizeof(tmp));
+      vfread(tmp, 1, 9, vf);
+
+      cur_board->blind_dur_v1 = tmp[0];
+      cur_board->firewalker_dur_v1 = tmp[1];
+      cur_board->freeze_time_dur_v1 = tmp[3];
+      cur_board->slow_time_dur_v1 = tmp[4];
+      cur_board->wind_dur_v1 = tmp[8];
+    }
 
     cur_board->player_last_dir = vfgetc(vf);
 
@@ -309,10 +433,26 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     cur_board->lazwall_start = vfgetc(vf);
     cur_board->b_mesg_row = vfgetc(vf);
     cur_board->b_mesg_col = (signed char)vfgetc(vf);
-    cur_board->scroll_x = (signed short)vfgetw(vf);
-    cur_board->scroll_y = (signed short)vfgetw(vf);
-    cur_board->locked_x = (signed short)vfgetw(vf);
-    cur_board->locked_y = (signed short)vfgetw(vf);
+
+    if(file_version >= V200)
+    {
+      cur_board->scroll_x = (signed short)vfgetw(vf);
+      cur_board->scroll_y = (signed short)vfgetw(vf);
+      cur_board->locked_x = (signed short)vfgetw(vf);
+      cur_board->locked_y = (signed short)vfgetw(vf);
+    }
+    else
+    {
+      cur_board->scroll_x = (signed char)vfgetc(vf);
+      cur_board->scroll_y = (signed char)vfgetc(vf);
+
+      // World files have different values to indicate centered messages,
+      // typically -128. VER1TO2 fixes values <=0 and >=80. However, in save
+      // files 0 corresponds to column 0 (as with later versions).
+      if(cur_board->b_mesg_col < 0 || cur_board->b_mesg_col >= 80 ||
+       (!savegame && cur_board->b_mesg_col == 0))
+        cur_board->b_mesg_col = -1;
+    }
   }
   else
 
@@ -353,15 +493,18 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     cur_board->locked_y = (signed short)vfgetw(vf);
   }
 
-  cur_board->player_ns_locked = vfgetc(vf);
-  cur_board->player_ew_locked = vfgetc(vf);
-  cur_board->player_attack_locked = vfgetc(vf);
-
-  if(file_version < V283 || savegame)
+  if(file_version >= V200)
   {
-    cur_board->volume = vfgetc(vf);
-    cur_board->volume_inc = vfgetc(vf);
-    cur_board->volume_target = vfgetc(vf);
+    cur_board->player_ns_locked = vfgetc(vf);
+    cur_board->player_ew_locked = vfgetc(vf);
+    cur_board->player_attack_locked = vfgetc(vf);
+
+    if(file_version < V283 || savegame)
+    {
+      cur_board->volume = vfgetc(vf);
+      cur_board->volume_inc = vfgetc(vf);
+      cur_board->volume_target = vfgetc(vf);
+    }
   }
 
 
@@ -405,7 +548,6 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
       }
       else
       {
-        // We don't need no null robot
         clear_robot(cur_robot);
         cur_board->robot_list[i] = NULL;
       }
@@ -451,7 +593,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   {
     for(i = 1; i <= num_scrolls; i++)
     {
-      cur_scroll = legacy_load_scroll_allocate(vf);
+      cur_scroll = legacy_load_scroll_allocate(vf, file_version);
       if(cur_scroll->used)
         cur_board->scroll_list[i] = cur_scroll;
       else
@@ -481,7 +623,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   {
     for(i = 1; i <= num_sensors; i++)
     {
-      cur_sensor = legacy_load_sensor_allocate(vf);
+      cur_sensor = legacy_load_sensor_allocate(vf, file_version);
       if(cur_sensor->used)
         cur_board->sensor_list[i] = cur_sensor;
       else

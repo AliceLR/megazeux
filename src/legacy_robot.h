@@ -27,7 +27,6 @@ __M_BEGIN_DECLS
 
 #include "const.h"
 #include "world_struct.h"
-#include "io/memfile.h"
 #include "io/vfile.h"
 
 struct robot *legacy_load_robot_allocate(struct world *mzx_world, vfile *vf,
@@ -45,9 +44,9 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
 boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
  vfile *vf, int savegame, int version);
 
-struct scroll *legacy_load_scroll_allocate(vfile *vf);
+struct scroll *legacy_load_scroll_allocate(vfile *vf, int file_version);
 
-struct sensor *legacy_load_sensor_allocate(vfile *vf);
+struct sensor *legacy_load_sensor_allocate(vfile *vf, int file_version);
 
 __M_END_DECLS
 

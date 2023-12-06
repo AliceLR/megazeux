@@ -312,6 +312,35 @@ names (and only class names) may use `CamelCase` instead of C naming.
 
 ## Types
 
+### Integers
+
+The following ways of expressing integer types are generally OK.
+Other variants/orderings of specifiers may be redundant or undesirable,
+but not necessarily bad. Don't mix cv specifiers between type words.
+
+| Typical | OK variants |
+|---------|-------------|
+| `char`                    | `unsigned char` (MZX uses -funsigned-char)
+| `signed char`             |
+| `short`                   |
+| `unsigned short`          |
+| `int`                     |
+| `unsigned int`            | `unsigned`
+| `long`                    | `long int`
+| `unsigned long`           | `unsigned long int`
+| `ssize_t` and `ptrdiff_t` |
+| `size_t`                  |
+
+C99 stdint.h fixed-width integer types should be used in cases where the
+width of a particular field needs to be guaranteed and/or emphasized. `int64_t`
+and `uint64_t` should be preferred over `long long` and `unsigned long long`.
+The types `size_t`, `ssize_t`, and `ptrdiff_t` should not be assumed to be
+64-bits wide.
+
+Don't use SDL's fixed-width integer typedefs outside of SDL-specific code.
+Previously these were used in quite a few places, and it caused `platform.h`
+includes to creep into most files.
+
 ### Pointers
 
 Pointers are written in this style:
@@ -437,7 +466,8 @@ compatibility. The following GNU extensions are allowed:
 * Attributes (such as unused or format(printf) or format(gnu_printf)) to avoid
   spurious warnings. Generally these should be wrapped in `#ifdef __GNUC__`.
 * Attributes to specify deprecated functions (wrapped in `#ifdef __GNUC__`).
-* `long long` (should usually use inttypes.h and/or `size_t`/`ssize_t` instead).
+* `long long` (should usually use stdint.h instead).
+* Pre-C++11 code that relies on stdint.h.
 * Pragmas to locally disable warnings are acceptable in rare cases.
 * `__PRETTY_FUNCTION__` (C++ only; an MSVC compatibility define is included).
 * The `__restrict` keyword provided for C and C++ by GCC, Clang, ICC, and MSVC

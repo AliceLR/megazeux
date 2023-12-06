@@ -27,10 +27,6 @@ ifeq (${NDK_PATH},)
 $(error "Must define $$NDK_PATH!")
 endif
 
-${JNI_LIB_DIR}/%:
-	$(if ${V},,@echo "  MKDIR   " $@)
-	@${MKDIR} -p "$@"
-
 #
 # Determine ${TOOLCHAIN} (the common NDK toolchain path) if not provided.
 # Requires determining ${HOST} since currently the NDK toolchain path relies on it.
@@ -149,6 +145,10 @@ LIBPNG_LDFLAGS := -L${JNI_LIBS} -lpng16
 VORBIS_CFLAGS  := -I${JNI_INCLUDES}
 VORBIS_LDFLAGS := -L${JNI_LIBS} -logg -lvorbis -lvorbisfile
 
+${JNI_LIB_DIR}/${ABI}:
+	$(if ${V},,@echo "  MKDIR   " $@)
+	${MKDIR} -p "$@"
+
 package: all | ${JNI_LIB_DIR}/${ABI}
 ifneq (${BUILD_EDITOR},)
 	$(if ${V},,@echo "  MV      " ${mzx} "${JNI_LIB_DIR}/${ABI}/${JNI_LIB_SO}")
@@ -196,7 +196,7 @@ ${ASSETS_DIR}:
 
 ${ASSETS_DIR}/assets.zip: | ${ASSETS_DIR}
 	@${MAKE} ANDROID_TARGET=arm    build/android/assets
-	@(cd build/android/ && zip -9 -r assets.zip LICENSE config.txt assets/ && mv assets.zip ../../$@)
+	@(cd build/android/ && zip -9 -r assets.zip LICENSE LICENSE.3rd config.txt assets/ && mv assets.zip ../../$@)
 
 dist: | ${ASSETS_DIR}/assets.zip
 	@${MAKE} ANDROID_TARGET=arm    clean

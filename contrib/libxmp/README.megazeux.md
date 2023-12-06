@@ -3,8 +3,8 @@
 This is a fork of libxmp generated specifically for MegaZeux
 from this branch using the file `mzx-gen.sh`: https://github.com/AliceLR/libxmp/tree/mzx-gen-libxmp
 
-The script that generated this forked libxmp from commit
-[ab70ec9f](https://github.com/libxmp/libxmp/commit/ab70ec9f3a5c9052e022a66338343f8ea87a4220)
+The script that generated this forked
+[libxmp 4.5.0](https://github.com/libxmp/libxmp/releases/tag/libxmp-4.5.0)
 and applied the following branches as patches:
 
 * [mzx-integration-hacks](https://github.com/AliceLR/libxmp/tree/mzx-integration-hacks):

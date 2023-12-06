@@ -56,6 +56,58 @@ static int board_magic(const char magic_string[4])
   return 0;
 }
 
+static boolean legacy_check_v1_rle(vfile *vf, int board_width, int board_height)
+{
+  int size = board_width * board_height;
+  int w;
+  int h;
+  int i;
+
+  w = vfgetc(vf);
+  h = vfgetc(vf);
+  if(w == 0) // VER1TO2 hack
+  {
+    w = vfgetc(vf);
+    h = vfgetc(vf);
+  }
+  if(w != board_width || h != board_height)
+    return false;
+
+  for(i = 0; i < size;)
+  {
+    int runsize = vfgetc(vf);
+    int current_char = vfgetc(vf);
+    if(current_char < 0 || runsize > size - i)
+      return false;
+
+    i += runsize;
+  }
+  return true;
+}
+
+static boolean legacy_check_v1_board(vfile *vf)
+{
+  int w;
+  int h;
+  int i;
+
+  vrewind(vf);
+
+  w = vfgetc(vf);
+  h = vfgetc(vf);
+  if(w < 1 || w > 100 || h < 1 || h > 100)
+    return false;
+
+  vrewind(vf);
+  for(i = 0; i < 6; i++)
+    if(!legacy_check_v1_rle(vf, w, h))
+      return false;
+
+  // There is at least usable plane data in this file, so allow it to load.
+  vrewind(vf);
+  return true;
+}
+
 void save_board_file(struct world *mzx_world, struct board *cur_board,
  const char *name)
 {
@@ -109,14 +161,14 @@ static int find_first_board(struct zip_archive *zp)
 {
   unsigned int file_id;
 
-  assign_fprops(zp, 1);
+  world_assign_file_ids(zp, false);
 
   // The first file after sorting should be the board info for ID 0.
   // If it isn't, this isn't a board file.
 
-  if(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, NULL, NULL))
+  if(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &file_id, NULL, NULL))
   {
-    if(file_id == FPROP_BOARD_INFO)
+    if(file_id == FILE_ID_BOARD_INFO)
     {
       // Loading board ID 0:
       return 0;
@@ -148,6 +200,10 @@ void replace_current_board(struct world *mzx_world, const char *name)
     }
 
     file_version = board_magic(version_string);
+
+    // 1.x doesn't have a magic string and needs a custom check.
+    if(file_version == 0 && legacy_check_v1_board(vf))
+      file_version = V100;
 
     if(file_version > 0 && file_version <= MZX_LEGACY_FORMAT_VERSION)
     {
@@ -208,6 +264,7 @@ void replace_current_board(struct world *mzx_world, const char *name)
 
       set_update_done_current(mzx_world);
 
+      mzx_world->current_board = NULL;
       set_current_board(mzx_world, src_board);
       mzx_world->board_list[current_board_id] = src_board;
     }

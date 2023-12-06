@@ -19,6 +19,13 @@ This is a modified version of the RAD 2.x player for MegaZeux. Included:
   will ignore processing an entire note when it encounters a line that would
   play a MIDI instrument, causing it to ignore effects and riffs.
 * Some -pedantic warning fixes.
+* Opal bugfixes from OpenMPT/libADLMIDI by JP Cimalando have been ported over:
+  * Fixed wrong KSL (key scale shift) values.
+  * Cases where attack/decay/release are not applied should not prevent envelope
+    state changes.
+  * Registers Ax/Bx should affect both channels in 4op mode. This issue does not
+    affect RAD since RAD implements its 4op algorithms that support detune in
+    2op mode.
 
 As the RAD player code is public domain, so are these modifications. If you find this
 useful, go ahead and use it.

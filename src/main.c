@@ -55,7 +55,7 @@
 #include "network/network.h"
 
 #ifdef CONFIG_SDL
-#include <SDL.h>
+#include <SDL.h> /* SDL_main */
 #endif
 
 #ifndef VERSION
@@ -179,9 +179,9 @@ __libspec int main(int argc, char *argv[])
 #ifdef CONFIG_STDIO_REDIRECT
   // Do this after platform_init() since, even though platform_init() might
   // log stuff, it actually initializes the filesystem on some platforms.
-  if(!redirect_stdio(startup_dir, true))
-    if(!redirect_stdio(SHAREDIR, false))
-      redirect_stdio(getenv("HOME"), false);
+  if(!redirect_stdio_init(startup_dir, true))
+    if(!redirect_stdio_init(SHAREDIR, false))
+      redirect_stdio_init(getenv("HOME"), false);
 #endif
 
 #ifdef __APPLE__
@@ -200,13 +200,17 @@ __libspec int main(int argc, char *argv[])
     argv++;
     argc--;
   }
+#endif
 
-  // Always try to start in /storage/emulated/0 to save some headaches.
-  path_navigate(current_dir, MAX_PATH, "/storage/emulated/0");
+#ifdef STARTUPDIR
+  // Some ports (Android and Vita) require a custom startup directory.
+  path_navigate(current_dir, MAX_PATH, STARTUPDIR);
 #endif
 
   // argc may be 0 on e.g. some Wii homebrew loaders.
+#if !defined(CONFIG_WIIU) && !defined(CONFIG_PSVITA)
   if(argc == 0)
+#endif
   {
     argv = _backup_argv;
     argc = 1;
@@ -244,7 +248,7 @@ __libspec int main(int argc, char *argv[])
   // of the form var=value removed, leaving only unparsed
   // parameters. Interpret the first unparsed parameter
   // as a file to load (overriding startup_file etc.)
-  if(argc > 1)
+  if(argc > 1 && argv != _backup_argv)
   {
     path_get_directory_and_filename(
       conf->startup_path, sizeof(conf->startup_path),
@@ -261,11 +265,19 @@ __libspec int main(int argc, char *argv[])
 
   vchdir(current_dir);
 
+  // Initialize the VFS in the final startup directory.
+  if(conf->vfs_enable)
+  {
+    if(!vio_filesystem_init(conf->vfs_max_cache_size,
+     conf->vfs_max_cache_file_size, conf->vfs_enable_auto_cache))
+      warn("failed to initialize virtual filesystem!\n");
+  }
+
   counter_fsg();
 
   rng_seed_init();
 
-  set_mouse_mul(8, 14);
+  mouse_size(8, 14);
 
   init_event(conf);
 
@@ -287,7 +299,7 @@ __libspec int main(int argc, char *argv[])
       if(updater_init())
       {
         // No auto update checks on repo builds.
-        if(!strcmp(VERSION, "GIT") &&
+        if((strstr(VERSION, "GIT") || strstr(VERSION, "PRE")) &&
          !strcmp(conf->update_branch_pin, "Stable"))
           conf->update_auto_check = UPDATE_AUTO_CHECK_OFF;
 
@@ -367,11 +379,18 @@ err_free_config:
   // FIXME maybe shouldn't be here...?
   if(mzx_world.update_done)
     free(mzx_world.update_done);
+  vio_filesystem_exit();
   free_config();
   free_editor_config();
 err_free_res:
+#ifdef CONFIG_STDIO_REDIRECT
+  redirect_stdio_exit();
+#endif
   mzx_res_free();
   platform_quit();
 err_out:
+#ifdef CONFIG_DJGPP
+  chdir(startup_dir);
+#endif
   return err;
 }

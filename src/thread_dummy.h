@@ -30,6 +30,8 @@
 
 __M_BEGIN_DECLS
 
+#define PLATFORM_NO_THREADING
+
 #define THREAD_ERROR_MSG "Provide a valid thread.h implementation for this platform!"
 
 #if defined(__clang__) && defined(__has_extension) && !defined(THREAD_ERROR)
@@ -52,6 +54,7 @@ __M_BEGIN_DECLS
 
 typedef int platform_cond;
 typedef int platform_mutex;
+typedef int platform_sem;
 typedef int platform_thread;
 typedef int platform_thread_id;
 typedef THREAD_RES (*platform_thread_fn)(void *);
@@ -63,14 +66,16 @@ typedef THREAD_RES (*platform_thread_fn)(void *);
  * without a proper threading/synchronization implementation.
  */
 #ifdef THREAD_DUMMY_ALLOW_MUTEX
-static inline void platform_mutex_init(platform_mutex *mutex)
+static inline boolean platform_mutex_init(platform_mutex *mutex)
 {
   *mutex = 1;
+  return true;
 }
 
-static inline void platform_mutex_destroy(platform_mutex *mutex)
+static inline boolean platform_mutex_destroy(platform_mutex *mutex)
 {
   *mutex = 0;
+  return true;
 }
 
 static inline boolean platform_mutex_lock(platform_mutex *mutex)
@@ -84,10 +89,10 @@ static inline boolean platform_mutex_unlock(platform_mutex *mutex)
 }
 #else
 THREAD_ERROR
-void platform_mutex_init(platform_mutex *mutex);
+boolean platform_mutex_init(platform_mutex *mutex);
 
 THREAD_ERROR
-void platform_mutex_destroy(platform_mutex *mutex);
+boolean platform_mutex_destroy(platform_mutex *mutex);
 
 THREAD_ERROR
 boolean platform_mutex_lock(platform_mutex *mutex);
@@ -97,10 +102,10 @@ boolean platform_mutex_unlock(platform_mutex *mutex);
 #endif
 
 THREAD_ERROR
-void platform_cond_init(platform_cond *cond);
+boolean platform_cond_init(platform_cond *cond);
 
 THREAD_ERROR
-void platform_cond_destroy(platform_cond *cond);
+boolean platform_cond_destroy(platform_cond *cond);
 
 THREAD_ERROR
 boolean platform_cond_wait(platform_cond *cond, platform_mutex *mutex);
@@ -116,11 +121,23 @@ THREAD_ERROR
 boolean platform_cond_broadcast(platform_cond *cond);
 
 THREAD_ERROR
-int platform_thread_create(platform_thread *thread,
+boolean platform_sem_init(platform_sem *sem, unsigned init_value);
+
+THREAD_ERROR
+boolean platform_sem_destroy(platform_sem *sem);
+
+THREAD_ERROR
+boolean platform_sem_wait(platform_sem *sem);
+
+THREAD_ERROR
+boolean platform_sem_post(platform_sem *sem);
+
+THREAD_ERROR
+boolean platform_thread_create(platform_thread *thread,
  platform_thread_fn start_function, void *data);
 
 THREAD_ERROR
-void platform_thread_join(platform_thread *thread);
+boolean platform_thread_join(platform_thread *thread);
 
 /**
  * Safe to use with no thread implementation (required by util.c).
@@ -138,9 +155,6 @@ static inline boolean platform_is_same_thread(platform_thread_id a,
 {
   return true;
 }
-
-THREAD_ERROR
-void platform_yield(void);
 
 __M_END_DECLS
 

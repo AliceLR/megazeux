@@ -27,6 +27,9 @@
 #include "../compat.h"
 #include "../util.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #ifdef IS_CXX_11
 #include <type_traits>
 #endif
@@ -178,7 +181,25 @@ public:
     }
   }
 
+#if IS_CXX_11
+  ScopedPtr &operator=(T *&&p)
+  {
+    reset(p);
+    return *this;
+  }
+#endif
+
   operator T *() const
+  {
+    return ptr;
+  }
+
+  T *operator->() const
+  {
+    return ptr;
+  }
+
+  T *get() const
   {
     return ptr;
   }
@@ -221,7 +242,25 @@ public:
     }
   }
 
+#if IS_CXX_11
+  ScopedPtr &operator=(T *&&p)
+  {
+    reset(p);
+    return *this;
+  }
+#endif
+
   operator T *() const
+  {
+    return ptr;
+  }
+
+  T *operator->() const
+  {
+    return ptr;
+  }
+
+  T *get() const
   {
     return ptr;
   }

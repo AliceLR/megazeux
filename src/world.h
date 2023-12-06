@@ -33,7 +33,8 @@ __M_BEGIN_DECLS
  * MINOR version number.
  */
 
-/* READ THIS -- MAGIC INFO
+/**
+ * READ THIS -- MAGIC INFO
  *
  * World files:
  *
@@ -57,6 +58,7 @@ __M_BEGIN_DECLS
  *  M\x02\x5A - MZX 2.90
  *  M\x02\x5B - MZX 2.91
  *  M\x02\x5C - MZX 2.92
+ *  M\x02\x5D - MZX 2.93
  *
  * Save files:
  *
@@ -78,13 +80,14 @@ __M_BEGIN_DECLS
  *  MZS\x02\x5A - MZX 2.90
  *  MZS\x02\x5B - MZX 2.91
  *  MZS\x02\x5C - MZX 2.92
+ *  MZS\x02\x5D - MZX 2.93
  *
  * Board files follow a similar pattern to world files. Versions prior to
  * 2.51S1 are "MB2". For versions greater than 2.51S1, they match the
  * world file magic. For all boards, the first byte is always 0xFF.
  *
  * As of 2.80+, all letters after the name denote bug fixes/minor additions
- * and may have different save formats. If a save format change is
+ * and may NOT have different save formats. If a save format change is
  * necessitated, a numerical change must be enacted.
  */
 
@@ -115,8 +118,10 @@ enum mzx_version
   V290            = 0x025A,
   V291            = 0x025B,
   V292            = 0x025C,
+  V293            = 0x025D,
 #ifdef CONFIG_DEBYTECODE
   VERSION_SOURCE  = 0x0300, // For checks dependent on Robotic source changes
+  V300            = 0x0300,
 #endif
 };
 
@@ -125,7 +130,7 @@ enum mzx_version
  * such as altering semantics or actually changing the binary format, this
  * value MUST be bumped.
  */
-#define MZX_VERSION      (V292)
+#define MZX_VERSION      (V293)
 
 /* The world version that worlds will be saved as when Export Downver. World
  * is used from the editor. This function is also fulfilled by the downver util.
@@ -134,7 +139,7 @@ enum mzx_version
  * previous value; this way, users can always downgrade their work to an
  * older version (if it at all makes sense to do so).
  */
-#define MZX_VERSION_PREV (V291)
+#define MZX_VERSION_PREV (V292)
 
 // This is the last version of MegaZeux to use the legacy world format.
 #define MZX_LEGACY_FORMAT_VERSION (V284)
@@ -142,7 +147,7 @@ enum mzx_version
 // FIXME: hack
 #ifdef CONFIG_DEBYTECODE
 #undef  MZX_VERSION_PREV
-#define MZX_VERSION_PREV (V292)
+#define MZX_VERSION_PREV (V293)
 #undef  MZX_VERSION
 #define MZX_VERSION      (VERSION_SOURCE)
 #endif
@@ -207,6 +212,7 @@ CORE_LIBSPEC void refactor_board_list(struct world *mzx_world,
  struct board **new_board_list, int new_list_size,
  int *board_id_translation_list);
 CORE_LIBSPEC void optimize_null_boards(struct world *mzx_world);
+
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

@@ -25,14 +25,18 @@
 __M_BEGIN_DECLS
 
 #include <stdio.h>
+#include <stdint.h>
+#include <time.h>
 
 #include "board_struct.h"
 #include "robot_struct.h"
 #include "counter_struct.h"
 #include "sprite_struct.h"
 
-#include "io/dir.h"
+#include "io/vfile.h"
 #include "audio/sfx.h"
+
+#define COMMAND_CACHE_CURRENT_TIME (1 << 0)
 
 enum change_game_state_value
 {
@@ -42,6 +46,15 @@ enum change_game_state_value
   CHANGE_STATE_EXIT_GAME_ROBOTIC,
   CHANGE_STATE_PLAY_GAME_ROBOTIC,
   CHANGE_STATE_REQUEST_EXIT
+};
+
+enum fwrite_mode
+{
+  FWRITE_MODE_UNKNOWN,
+  FWRITE_MODE_TRUNCATE,
+  FWRITE_MODE_MODIFY,
+  FWRITE_MODE_APPEND,
+  FWRITE_MODE_MAX
 };
 
 struct world
@@ -120,11 +133,12 @@ struct world
   int bi_shoot_status;
   int bi_mesg_status;
   char output_file_name[MAX_PATH];
-  FILE *output_file;
   char input_file_name[MAX_PATH];
-  FILE *input_file;
+  vfile *output_file;
+  vfile *input_file;
+  vdir *input_directory;
   boolean input_is_dir;
-  struct mzx_dir input_directory;
+  enum fwrite_mode output_mode;
   int temp_input_pos;
   int temp_output_pos;
   int commands;
@@ -144,8 +158,7 @@ struct world
 
   struct robot global_robot;
 
-  int custom_sfx_on;
-  char custom_sfx[NUM_SFX * SFX_SIZE];
+  struct sfx_list custom_sfx;
 
   // Not part of world/save files, but runtime globals
   int player_x;
@@ -196,6 +209,8 @@ struct world
   int mid_prefix;
   // 1-3 normal 5-7 is 1-3 but from a REL LAST cmd
   int last_prefix;
+  // Flags for data that persists during a command (keep in the prefix cache line).
+  int command_cache;
 
   // Lets the get counter routines indiciate to the caller
   // that the result is not a typical counter but something
@@ -228,11 +243,16 @@ struct world
   int raw_world_info_size;
 
   // Keep this open, just once
-  FILE *help_file;
+  vfile *help_file;
 
   // An array for game2.cpp
   char *update_done;
   int update_done_size;
+
+  // Cached time for the current robot command.
+  struct tm current_time;
+  int64_t current_time_epoch;
+  int32_t current_time_nano;
 };
 
 __M_END_DECLS

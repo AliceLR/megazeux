@@ -18,51 +18,157 @@
  */
 
 #include "../Unit.hpp"
-#include "../../src/io/path.c"
+#include "../../src/io/path.h"
+#include "../../src/io/vio.h"
 
 #include <errno.h>
+#include <sys/stat.h>
 
-/**
- * Allow tests to specify when stat should succeed or fail...
- */
-static enum
-{
-  STAT_FAIL,
-  STAT_REG,
-  STAT_DIR
-} stat_result_type = STAT_FAIL;
-int stat_result_errno = 0;
-int mkdir_result = 0;
+#define PATH_FILE_EXISTS        "path_file_exists"
+#define PATH_DIR_EXISTS         "path_dir_exists"
+#define PATH_DIR_EXISTS_2       PATH_DIR_EXISTS DIR_SEPARATOR "path_dir_exists"
+#define PATH_DIR_NOT_EXISTS     "path_dir_kgdfsdlf"
+#define PATH_DIR_RECURSIVE      "path_dir_recursive"
+#define PATH_DIR_RECURSIVE_2    "path_dir_recursive" DIR_SEPARATOR PATH_DIR_RECURSIVE
+#define PATH_DIR_RECURSIVE_3    "path_dir_recursive" DIR_SEPARATOR PATH_DIR_RECURSIVE_2
+#define PATH_FILE_RECURSIVE     PATH_DIR_RECURSIVE DIR_SEPARATOR PATH_FILE_EXISTS
 
-// Custom vstat so this builds without vfile.c and can control the output.
-int vstat(const char *path, struct stat *buf)
+UNITTEST(Init)
 {
-  memset(buf, 0, sizeof(struct stat));
-  switch(stat_result_type)
+  vfile *vf;
+  vrmdir(PATH_DIR_RECURSIVE_3);
+  vrmdir(PATH_DIR_RECURSIVE_2);
+  vmkdir(PATH_DIR_EXISTS, 0755);
+  vmkdir(PATH_DIR_EXISTS_2, 0755);
+  vmkdir(PATH_DIR_RECURSIVE, 0755);
+  vf = vfopen_unsafe(PATH_FILE_EXISTS, "wb");
+  vfclose(vf);
+  vf = vfopen_unsafe(PATH_FILE_RECURSIVE, "wb");
+  vfclose(vf);
+}
+
+struct path_tokenize_result
+{
+  const char *input;
+  const char *expected[8];
+};
+
+UNITTEST(path_tokenize)
+{
+  static const path_tokenize_result data[] =
   {
-    default:
-    case STAT_FAIL:
-      errno = stat_result_errno;
-      return -1;
+    { nullptr,        { nullptr }},
+    { "",             { "", nullptr }},
+    { "shdfkjshdf",   { "shdfkjshdf", nullptr }},
+    { "/",            { "", "", nullptr }},
+    { "C:\\a",        { "C:", "a", nullptr }},
+    { "sdcard:/bees", { "sdcard:", "bees", nullptr }},
+    { "a\\lomg/path", { "a", "lomg", "path", nullptr }},
+    { "test///path",  { "test", "", "", "path", nullptr }},
+    { "trailing/",    { "trailing", "", nullptr }},
+    {
+      u8"/home/\u00C8śŚ/megazeux/DE/saved.sav",
+      { "", "home", u8"\u00C8śŚ", "megazeux", "DE", "saved.sav", nullptr }
+    },
+  };
 
-    case STAT_REG:
-      buf->st_mode = S_IFREG;
-      return 0;
+  for(const path_tokenize_result &d : data)
+  {
+    char buffer[256];
+    char *cursor;
+    char *current;
+    int pos = 0;
 
-    case STAT_DIR:
-      buf->st_mode = S_IFDIR;
-      return 0;
+    if(d.input)
+    {
+      snprintf(buffer, sizeof(buffer), "%s", d.input);
+      cursor = buffer;
+    }
+    else
+      cursor = nullptr;
+
+    while((current = path_tokenize(&cursor)))
+    {
+      ASSERTCMP(current, d.expected[pos], "%s : %d", d.input, pos);
+      pos++;
+    }
+    ASSERTEQ(current, d.expected[pos], "%s : %d", d.input, pos);
   }
 }
 
-int vmkdir(const char *path, int mode)
+UNITTEST(path_reverse_tokenize)
 {
-  return mkdir_result;
-}
+  static constexpr path_tokenize_result data[] =
+  {
+    { nullptr,          { nullptr }},
+    { "",               { "" }},
+    { "abcde",          { "abcde" }},
+    { "path1/path2",    { "path2", "path1" }},
+    { "p1\\p2\\p3",     { "p3", "p2", "p1" }},
+    { "m1/m2\\m3/m4",   { "m4", "m3", "m2", "m1" }},
+    { "clean///first",  { "first", "", "", "clean" }},
+    { "../duhh/./",     { "", ".", "duhh", ".." }},
+    { "/",              { "", "" }},
+    { "/dir",           { "dir", "" }},
+    { "/dir1/dir2",     { "dir2", "dir1", "" }},
+    { "C:\\",           { "", "C:" }},
+    { "C:\\WINDOWS",    { "WINDOWS", "C:" }},
+    { "C:\\a\\b",       { "b", "a", "C:" }},
+    { "sdcard:/butt",   { "butt", "sdcard:" }},
+    {
+      u8"/home/\u00C8śŚ/megazeux/DE/saved.sav",
+      { "saved.sav", "DE", "megazeux", u8"\u00C8śŚ", "home", "" }
+    },
+  };
 
-int vaccess(const char *path, int mode)
-{
-  return 0;
+  size_t base_length;
+  char *base;
+  char *token;
+
+  token = path_reverse_tokenize(nullptr, nullptr);
+  ASSERTEQ(token, nullptr, "");
+  token = path_reverse_tokenize(nullptr, &base_length);
+  ASSERTEQ(token, nullptr, "");
+
+  for(auto &d : data)
+  {
+    char buffer[256];
+    int pos = 0;
+
+    const auto &init = [&]()
+    {
+      if(d.input)
+      {
+        base_length = snprintf(buffer, sizeof(buffer), "%s", d.input);
+        base = buffer;
+        ASSERT(base_length < sizeof(buffer), "");
+      }
+      else
+      {
+        base_length = 0xbaad; // Some junk, should be ignored.
+        base = nullptr;
+      }
+      pos = 0;
+    };
+
+    init();
+    while((token = path_reverse_tokenize(&base, &base_length)))
+    {
+      ASSERTCMP(token, d.expected[pos], "%s : %d", d.input, pos);
+      pos++;
+    }
+    ASSERTEQ(token, d.expected[pos], "%s : %d", d.input, pos);
+
+    // Should work identically without base_length, it's just slower.
+    init();
+    while((token = path_reverse_tokenize(&base, nullptr)))
+    {
+      ASSERT(d.expected[pos], "%s : %d", d.input, pos);
+      ASSERTCMP(token, d.expected[pos], "%s : %d", d.input, pos);
+      pos++;
+    }
+    ASSERTEQ(token, d.expected[pos], "%s : %d", d.input, pos);
+  }
 }
 
 struct path_ext_result
@@ -139,29 +245,28 @@ UNITTEST(path_force_ext)
   };
   char buffer[MAX_PATH];
   boolean result;
-  int i;
 
   SECTION(NormalCases)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_ext_result &d : data)
     {
-      snprintf(buffer, MAX_PATH, "%s", data[i].path);
-      result = path_force_ext(buffer, MAX_PATH, data[i].ext);
+      snprintf(buffer, MAX_PATH, "%s", d.path);
+      result = path_force_ext(buffer, MAX_PATH, d.ext);
 
-      ASSERTX(result, data[i].path);
-      ASSERTCMP(buffer, data[i].result);
+      ASSERT(result, "%s", d.path);
+      ASSERTCMP(buffer, d.result, "%s", d.path);
     }
   }
 
   SECTION(FailureCases)
   {
-    for(i = 0; i < arraysize(bad_data); i++)
+    for(const path_ext_result &d : bad_data)
     {
-      snprintf(buffer, MAX_PATH, "%s", bad_data[i].path);
-      result = path_force_ext(buffer, 32, bad_data[i].ext);
+      snprintf(buffer, MAX_PATH, "%s", d.path);
+      result = path_force_ext(buffer, 32, d.ext);
 
-      ASSERTX(!result, bad_data[i].path);
-      ASSERTCMP(buffer, bad_data[i].result);
+      ASSERT(!result, "%s", d.path);
+      ASSERTCMP(buffer, d.result, "%s", d.path);
     }
   }
 }
@@ -236,19 +341,19 @@ UNITTEST(path_is_absolute)
 
   SECTION(path_is_absolute)
   {
-    for(int i = 0; i < arraysize(data); i++)
+    for(const path_is_abs_result &d : data)
     {
-      ssize_t len = path_is_absolute(data[i].path);
-      ASSERTEQX(len, data[i].root_len, data[i].path);
+      ssize_t len = path_is_absolute(d.path);
+      ASSERTEQ(len, d.root_len, "%s", d.path);
     }
   }
 
   SECTION(path_is_root)
   {
-    for(int i = 0; i < arraysize(data); i++)
+    for(const path_is_abs_result &d : data)
     {
-      boolean is_root = path_is_root(data[i].path);
-      ASSERTEQX(is_root, data[i].is_root, data[i].path);
+      boolean is_root = path_is_root(d.path);
+      ASSERTEQ(is_root, d.is_root, "%s", d.path);
     }
   }
 }
@@ -341,14 +446,13 @@ UNITTEST(path_get_ext_offset)
     },
   };
   ssize_t result;
-  int i;
 
-  for(i = 0; i < arraysize(data); i++)
+  for(const path_output_pair &d : data)
   {
-    result = path_get_ext_offset(data[i].path);
-    ASSERTEQX(result, data[i].return_value, data[i].path);
-    if(result >= 0 && data[i].expected)
-      ASSERTCMP(data[i].path + result, data[i].expected);
+    result = path_get_ext_offset(d.path);
+    ASSERTEQ(result, d.return_value, "%s", d.path);
+    if(result >= 0 && d.expected)
+      ASSERTCMP(d.path + result, d.expected, "%s", d.path);
   }
 }
 
@@ -442,38 +546,36 @@ UNITTEST(path_clean_slashes)
   };
 
   char buffer[MAX_PATH];
-  size_t result;
-  int i;
 
   SECTION(path_clean_slashes)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_clean_output &d : data)
     {
-      snprintf(buffer, MAX_PATH, "%s", data[i].path);
+      snprintf(buffer, MAX_PATH, "%s", d.path);
       buffer[MAX_PATH - 1] = '\0';
 
       path_clean_slashes(buffer, MAX_PATH);
-      ASSERTCMP(buffer, data[i].PATH_CLEAN_RESULT);
+      ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
     }
   }
 
   SECTION(path_clean_slashes_copy)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_clean_output &d : data)
     {
-      result = path_clean_slashes_copy(buffer, MAX_PATH, data[i].path);
-      ASSERTEQ(result, strlen(data[i].PATH_CLEAN_RESULT));
-      ASSERTCMP(buffer, data[i].PATH_CLEAN_RESULT);
+      size_t result = path_clean_slashes_copy(buffer, MAX_PATH, d.path);
+      ASSERTEQ(result, strlen(d.PATH_CLEAN_RESULT), "%s", d.path);
+      ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
     }
   }
 
   SECTION(path_clean_slashes_copy_truncation)
   {
-    for(i = 0; i < arraysize(truncate_data); i++)
+    for(const path_clean_output &d : truncate_data)
     {
-      result = path_clean_slashes_copy(buffer, 32, truncate_data[i].path);
-      ASSERTEQ(result, strlen(truncate_data[i].PATH_CLEAN_RESULT));
-      ASSERTCMP(buffer, truncate_data[i].PATH_CLEAN_RESULT);
+      size_t result = path_clean_slashes_copy(buffer, 32, d.path);
+      ASSERTEQ(result, strlen(d.PATH_CLEAN_RESULT), "%s", d.path);
+      ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
     }
   }
 }
@@ -590,36 +692,60 @@ UNITTEST(path_split_functions)
       16,
       true
     },
-  };
-  // Internally all of these functions may stat the provided directory to
-  // determine how much of it is/isn't a path. These paths all assume that
-  // a directory stat succeeds for the input path.
-  static const path_split_data data_stat[] =
-  {
     {
-      "actually_a_path",
-      "actually_a_path",
-      "actually_a_path",
+      "/",
+      "/",
+      "\\",
+      "",
+      1,
+      0,
+      true
+    },
+    {
+      "C:\\",
+      "C:/",
+      "C:\\",
+      "",
+      3,
+      0,
+      true
+    },
+    {
+      "/sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
+      "/",
+      "\\",
+      "sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
+      1,
+      42,
+      true
+    },
+    {
+      "C:\\sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
+      "C:/",
+      "C:\\",
+      "sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
+      3,
+      42,
+      true
+    },
+    // Internally all of these functions may stat the provided directory to
+    // determine how much of it is/isn't a path. These paths all assume that
+    // a directory stat succeeds for the input path.
+    {
+      PATH_DIR_EXISTS,
+      PATH_DIR_EXISTS,
+      PATH_DIR_EXISTS,
       "",
       15,
       0,
       true
     },
     {
-      "directory/with/no/trailing/slash",
-      "directory/with/no/trailing/slash",
-      "directory\\with\\no\\trailing\\slash",
+      PATH_DIR_EXISTS_2,
+      PATH_DIR_EXISTS_2,
+      PATH_DIR_EXISTS_2,
       "",
-      32,
-      0,
-      true
-    },
-    {
-      "C:\\dos\\style\\directory",
-      "C:/dos/style/directory",
-      "C:\\dos\\style\\directory",
-      "",
-      22,
+      31,
       0,
       true
     },
@@ -627,120 +753,63 @@ UNITTEST(path_split_functions)
   char dir_buffer[MAX_PATH];
   char file_buffer[MAX_PATH];
   ssize_t result;
-  int i;
-
-  stat_result_type = STAT_FAIL;
 
   SECTION(path_has_directory)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_split_data &d : data)
     {
-      boolean result = path_has_directory(data[i].path);
-      ASSERTEQX(result, data[i].dir_return_value > 0, data[i].path);
-    }
-
-    stat_result_type = STAT_DIR;
-
-    for(i = 0; i < arraysize(data_stat); i++)
-    {
-      boolean result = path_has_directory(data_stat[i].path);
-      ASSERTEQX(result, data_stat[i].dir_return_value > 0, data_stat[i].path);
+      boolean result = path_has_directory(d.path);
+      ASSERTEQ(result, d.dir_return_value > 0, "%s", d.path);
     }
   }
 
   SECTION(path_to_directory)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_split_data &d : data)
     {
-      snprintf(dir_buffer, MAX_PATH, "%s", data[i].path);
+      snprintf(dir_buffer, MAX_PATH, "%s", d.path);
       dir_buffer[MAX_PATH - 1] = '\0';
 
       result = path_to_directory(dir_buffer, MAX_PATH);
-      ASSERTEQX(result, data[i].dir_return_value, data[i].path);
-      if(result >= 0 && data[i].SPLIT_DIRECTORY)
-        ASSERTCMP(dir_buffer, data[i].SPLIT_DIRECTORY);
-    }
-
-    stat_result_type = STAT_DIR;
-
-    for(i = 0; i < arraysize(data_stat); i++)
-    {
-      snprintf(dir_buffer, MAX_PATH, "%s", data_stat[i].path);
-      dir_buffer[MAX_PATH - 1] = '\0';
-
-      result = path_to_directory(dir_buffer, MAX_PATH);
-      ASSERTEQX(result, data_stat[i].dir_return_value, data_stat[i].path);
-      if(result >= 0 && data_stat[i].SPLIT_DIRECTORY)
-        ASSERTCMP(dir_buffer, data_stat[i].SPLIT_DIRECTORY);
+      ASSERTEQ(result, d.dir_return_value, "%s", d.path);
+      if(result >= 0 && d.SPLIT_DIRECTORY)
+        ASSERTCMP(dir_buffer, d.SPLIT_DIRECTORY, "%s", d.path);
     }
   }
 
   SECTION(path_get_directory)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_split_data &d : data)
     {
-      result = path_get_directory(dir_buffer, MAX_PATH, data[i].path);
-      ASSERTEQX(result, data[i].dir_return_value, data[i].path);
-      if(result >= 0 && data[i].SPLIT_DIRECTORY)
-        ASSERTCMP(dir_buffer, data[i].SPLIT_DIRECTORY);
-    }
-
-    stat_result_type = STAT_DIR;
-
-    for(i = 0; i < arraysize(data_stat); i++)
-    {
-      result = path_get_directory(dir_buffer, MAX_PATH, data_stat[i].path);
-      ASSERTEQX(result, data_stat[i].dir_return_value, data_stat[i].path);
-      if(result >= 0 && data_stat[i].SPLIT_DIRECTORY)
-        ASSERTCMP(dir_buffer, data_stat[i].SPLIT_DIRECTORY);
+      result = path_get_directory(dir_buffer, MAX_PATH, d.path);
+      ASSERTEQ(result, d.dir_return_value, "%s", d.path);
+      if(result >= 0 && d.SPLIT_DIRECTORY)
+        ASSERTCMP(dir_buffer, d.SPLIT_DIRECTORY, "%s", d.path);
     }
   }
 
   SECTION(path_to_filename)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_split_data &d : data)
     {
-      snprintf(file_buffer, MAX_PATH, "%s", data[i].path);
+      snprintf(file_buffer, MAX_PATH, "%s", d.path);
       file_buffer[MAX_PATH - 1] = '\0';
 
       result = path_to_filename(file_buffer, MAX_PATH);
-      ASSERTEQX(result, data[i].file_return_value, data[i].path);
-      if(result >= 0 && data[i].filename)
-        ASSERTCMP(file_buffer, data[i].filename);
-    }
-
-    stat_result_type = STAT_DIR;
-
-    for(i = 0; i < arraysize(data_stat); i++)
-    {
-      snprintf(file_buffer, MAX_PATH, "%s", data_stat[i].path);
-      file_buffer[MAX_PATH - 1] = '\0';
-
-      result = path_to_filename(file_buffer, MAX_PATH);
-      ASSERTEQX(result, data_stat[i].file_return_value, data_stat[i].path);
-      if(result >= 0 && data_stat[i].filename)
-        ASSERTCMP(file_buffer, data_stat[i].filename);
+      ASSERTEQ(result, d.file_return_value, "%s", d.path);
+      if(result >= 0 && d.filename)
+        ASSERTCMP(file_buffer, d.filename, "%s", d.path);
     }
   }
 
   SECTION(path_get_filename)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_split_data &d : data)
     {
-      result = path_get_filename(file_buffer, MAX_PATH, data[i].path);
-      ASSERTEQX(result, data[i].file_return_value, data[i].path);
-      if(result >= 0 && data[i].filename)
-        ASSERTCMP(file_buffer, data[i].filename);
-    }
-
-    stat_result_type = STAT_DIR;
-
-    for(i = 0; i < arraysize(data_stat); i++)
-    {
-      result = path_get_filename(file_buffer, MAX_PATH, data_stat[i].path);
-      ASSERTEQX(result, data_stat[i].file_return_value, data_stat[i].path);
-      if(result >= 0 && data_stat[i].filename)
-        ASSERTCMP(file_buffer, data_stat[i].filename);
+      result = path_get_filename(file_buffer, MAX_PATH, d.path);
+      ASSERTEQ(result, d.file_return_value, "%s", d.path);
+      if(result >= 0 && d.filename)
+        ASSERTCMP(file_buffer, d.filename, "%s", d.path);
     }
   }
 
@@ -748,36 +817,46 @@ UNITTEST(path_split_functions)
   {
     boolean result;
 
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_split_data &d : data)
     {
       result = path_get_directory_and_filename(
-        dir_buffer, MAX_PATH, file_buffer, MAX_PATH, data[i].path);
-      ASSERTEQX(result, data[i].dir_and_file_return_value, data[i].path);
+       dir_buffer, MAX_PATH, file_buffer, MAX_PATH, d.path);
+      ASSERTEQ(result, d.dir_and_file_return_value, "%s", d.path);
       if(result)
       {
-        if(data[i].SPLIT_DIRECTORY)
-          ASSERTCMP(dir_buffer, data[i].SPLIT_DIRECTORY);
+        if(d.SPLIT_DIRECTORY)
+          ASSERTCMP(dir_buffer, d.SPLIT_DIRECTORY, "%s", d.path);
 
-        if(data[i].filename)
-          ASSERTCMP(file_buffer, data[i].filename);
+        if(d.filename)
+          ASSERTCMP(file_buffer, d.filename, "%s", d.path);
       }
     }
+  }
 
-    stat_result_type = STAT_DIR;
-
-    for(i = 0; i < arraysize(data_stat); i++)
+  SECTION(path_get_parent)
+  {
+    for(auto &d : data)
     {
-      result = path_get_directory_and_filename(
-        dir_buffer, MAX_PATH, file_buffer, MAX_PATH, data_stat[i].path);
-      ASSERTEQX(result, data_stat[i].dir_and_file_return_value, data_stat[i].path);
-      if(result)
+      // Special: the tests that expect stat() are different.
+      if(!strcmp(d.path, PATH_DIR_EXISTS))
       {
-        if(data_stat[i].SPLIT_DIRECTORY)
-          ASSERTCMP(dir_buffer, data_stat[i].SPLIT_DIRECTORY);
-
-        if(data_stat[i].filename)
-          ASSERTCMP(file_buffer, data_stat[i].filename);
+        result = path_get_parent(dir_buffer, MAX_PATH, PATH_DIR_EXISTS);
+        ASSERTEQ(result, 0, "%s", PATH_DIR_EXISTS);
+        continue;
       }
+      if(!strcmp(d.path, PATH_DIR_EXISTS_2))
+      {
+        result = path_get_parent(dir_buffer, MAX_PATH, PATH_DIR_EXISTS_2);
+        ASSERTEQ(result, strlen(PATH_DIR_EXISTS), "%s", PATH_DIR_EXISTS_2);
+        ASSERTCMP(dir_buffer, PATH_DIR_EXISTS, "%s", PATH_DIR_EXISTS_2);
+        continue;
+      }
+
+      // The rest behave exactly like path_get_directory.
+      result = path_get_parent(dir_buffer, MAX_PATH, d.path);
+      ASSERTEQ(result, d.dir_return_value, "%s", d.path);
+      if(result >= 0 && d.SPLIT_DIRECTORY)
+        ASSERTCMP(dir_buffer, d.SPLIT_DIRECTORY, "%s", d.path);
     }
   }
 }
@@ -887,66 +966,65 @@ UNITTEST(path_append_and_path_join)
 
   char buffer[MAX_PATH];
   ssize_t result;
-  int i;
 
   SECTION(path_append_NormalCases)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_target_output &d : data)
     {
-      snprintf(buffer, MAX_PATH, "%s", data[i].path);
+      snprintf(buffer, MAX_PATH, "%s", d.path);
       buffer[MAX_PATH - 1] = '\0';
 
-      result = path_append(buffer, MAX_PATH, data[i].target);
-      ASSERTEQX(result, data[i].return_value, data[i].path);
-      if(result && data[i].PATH_CLEAN_RESULT)
-        ASSERTCMP(buffer, data[i].PATH_CLEAN_RESULT);
+      result = path_append(buffer, MAX_PATH, d.target);
+      ASSERTEQ(result, d.return_value, "%s", d.path);
+      if(result && d.PATH_CLEAN_RESULT)
+        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
     }
   }
 
   SECTION(path_append_SmallBufferCases)
   {
-    for(i = 0; i < arraysize(small_data); i++)
+    for(const path_target_output &d : small_data)
     {
-      snprintf(buffer, MAX_PATH, "%s", small_data[i].path);
+      snprintf(buffer, MAX_PATH, "%s", d.path);
       buffer[MAX_PATH - 1] = '\0';
 
-      result = path_append(buffer, 32, small_data[i].target);
-      ASSERTEQX(result, small_data[i].return_value, small_data[i].path);
-      if(result && small_data[i].PATH_CLEAN_RESULT)
+      result = path_append(buffer, 32, d.target);
+      ASSERTEQ(result, d.return_value, "%s", d.path);
+      if(result && d.PATH_CLEAN_RESULT)
       {
-        ASSERTCMP(buffer, small_data[i].PATH_CLEAN_RESULT);
+        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
       }
       else
-        ASSERTCMP(buffer, small_data[i].path);
+        ASSERTCMP(buffer, d.path, "");
     }
   }
 
   SECTION(path_join_NormalCases)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_target_output &d : data)
     {
-      result = path_join(buffer, MAX_PATH, data[i].path, data[i].target);
-      ASSERTEQX(result, data[i].return_value, data[i].path);
-      if(result && data[i].PATH_CLEAN_RESULT)
-        ASSERTCMP(buffer, data[i].PATH_CLEAN_RESULT);
+      result = path_join(buffer, MAX_PATH, d.path, d.target);
+      ASSERTEQ(result, d.return_value, "%s", d.path);
+      if(result && d.PATH_CLEAN_RESULT)
+        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
     }
   }
 
   SECTION(path_join_SmallBufferCases)
   {
-    for(i = 0; i < arraysize(small_data); i++)
+    for(const path_target_output &d : small_data)
     {
       static const char *def = "DO NOT MODIFY";
       snprintf(buffer, MAX_PATH, "%s", def);
 
-      result = path_join(buffer, 32, small_data[i].path, small_data[i].target);
-      ASSERTEQX(result, small_data[i].return_value, small_data[i].path);
-      if(result && small_data[i].PATH_CLEAN_RESULT)
+      result = path_join(buffer, 32, d.path, d.target);
+      ASSERTEQ(result, d.return_value, "%s", d.path);
+      if(result && d.PATH_CLEAN_RESULT)
       {
-        ASSERTCMP(buffer, small_data[i].PATH_CLEAN_RESULT);
+        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
       }
       else
-        ASSERTCMP(buffer, def);
+        ASSERTCMP(buffer, def, "%s", d.path);
     }
   }
 }
@@ -1049,45 +1127,44 @@ UNITTEST(path_remove_prefix)
   };
   char buffer[MAX_PATH];
   ssize_t result;
-  int i;
 
   SECTION(NoPrefixLength)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_target_output &d : data)
     {
-      snprintf(buffer, MAX_PATH, "%s", data[i].path);
+      snprintf(buffer, MAX_PATH, "%s", d.path);
       buffer[MAX_PATH - 1] = '\0';
 
-      result = path_remove_prefix(buffer, MAX_PATH, data[i].target, 0);
-      ASSERTEQX(result, data[i].return_value, data[i].path);
+      result = path_remove_prefix(buffer, MAX_PATH, d.target, 0);
+      ASSERTEQ(result, d.return_value, "%s", d.path);
       if(result >= 0)
-        ASSERTCMP(buffer, data[i].PATH_CLEAN_RESULT);
+        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
       else
-        ASSERTCMP(buffer, data[i].path);
+        ASSERTCMP(buffer, d.path, "");
     }
   }
 
   SECTION(PrefixLength)
   {
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_target_output &d : data)
     {
-      snprintf(buffer, MAX_PATH, "%s", data[i].path);
+      snprintf(buffer, MAX_PATH, "%s", d.path);
       buffer[MAX_PATH - 1] = '\0';
 
-      result = path_remove_prefix(buffer, MAX_PATH, data[i].target,
-       strlen(data[i].target));
-      ASSERTEQX(result, data[i].return_value, data[i].path);
+      result = path_remove_prefix(buffer, MAX_PATH, d.target,
+       strlen(d.target));
+      ASSERTEQ(result, d.return_value, "%s", d.path);
       if(result >= 0)
-        ASSERTCMP(buffer, data[i].PATH_CLEAN_RESULT);
+        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
       else
-        ASSERTCMP(buffer, data[i].path);
+        ASSERTCMP(buffer, d.path, "");
     }
   }
 }
 
 UNITTEST(path_navigate)
 {
-  static const path_target_output data[] =
+  static const path_target_output no_check[] =
   {
     {
       "",
@@ -1201,39 +1278,80 @@ UNITTEST(path_navigate)
       "\\skdlfjlskdjfklsd\\i\\am\\someone\\on\\this",
       38
     },
+    {
+      "/.yeah/.actually/.dotfiles/.should/.work",
+      "../../.work",
+      "/.yeah/.actually/.dotfiles/.work",
+      "\\.yeah\\.actually\\.dotfiles\\.work",
+      32
+    },
+    {
+      "look/more/nonsense",
+      ".../lol",
+      "look/more/nonsense/.../lol",
+      "look\\more\\nonsense\\...\\lol",
+      26
+    },
+  };
+  static const path_target_output with_check[] =
+  {
+    {
+      "",
+      "",
+      nullptr,
+      nullptr,
+      -1
+    },
+    {
+      ".",
+      PATH_DIR_NOT_EXISTS,
+      nullptr,
+      nullptr,
+      -1
+    },
+    {
+      ".",
+      PATH_DIR_EXISTS,
+      "./" PATH_DIR_EXISTS,
+      ".\\" PATH_DIR_EXISTS,
+      17
+    },
+    {
+      PATH_FILE_RECURSIVE,
+      "..",
+      PATH_DIR_RECURSIVE,
+      PATH_DIR_RECURSIVE,
+      18
+    },
   };
   char buffer[MAX_PATH];
   ssize_t result;
-  int i;
 
-  SECTION(Success)
+  SECTION(path_navigate_no_check)
   {
-    stat_result_type = STAT_DIR;
-
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_target_output &d : no_check)
     {
-      snprintf(buffer, MAX_PATH, "%s", data[i].path);
+      snprintf(buffer, MAX_PATH, "%s", d.path);
       buffer[MAX_PATH - 1] = '\0';
 
-      result = path_navigate(buffer, MAX_PATH, data[i].target);
-      ASSERTEQX(result, data[i].return_value, data[i].path);
-      if(result && data[i].PATH_CLEAN_RESULT)
-        ASSERTCMP(buffer, data[i].PATH_CLEAN_RESULT);
+      result = path_navigate_no_check(buffer, MAX_PATH, d.target);
+      ASSERTEQ(result, d.return_value, "%s", d.path);
+      if(result && d.PATH_CLEAN_RESULT)
+        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
     }
   }
 
-  SECTION(Fail)
+  SECTION(path_navigate)
   {
-    stat_result_type = STAT_FAIL;
-
-    for(i = 0; i < arraysize(data); i++)
+    for(const path_target_output &d : with_check)
     {
-      snprintf(buffer, MAX_PATH, "%s", data[i].path);
+      snprintf(buffer, MAX_PATH, "%s", d.path);
       buffer[MAX_PATH - 1] = '\0';
 
-      result = path_navigate(buffer, MAX_PATH, data[i].target);
-      ASSERTEQX(result, -1, data[i].path);
-      ASSERTCMP(buffer, data[i].path);
+      result = path_navigate(buffer, MAX_PATH, d.target);
+      ASSERTEQ(result, d.return_value, "%s", d.path);
+      if(result && d.PATH_CLEAN_RESULT)
+        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
     }
   }
 }
@@ -1241,74 +1359,32 @@ UNITTEST(path_navigate)
 struct path_mkdir_data
 {
   const char *path;
+  enum path_create_error expected;
 };
-
-template<size_t N>
-static void test_mkdir(const path_mkdir_data (&data)[N],
- enum path_create_error expected)
-{
-  for(size_t i = 0; i < N; i++)
-  {
-    const path_mkdir_data &cur = data[i];
-    enum path_create_error ret = path_create_parent_recursively(cur.path);
-    ASSERTEQX(ret, expected, cur.path);
-  }
-}
 
 UNITTEST(path_create_parent_recursively)
 {
-  static const path_mkdir_data has_parent[] =
+  static const path_mkdir_data data[] =
   {
-    { "path/with/parent.txt" },
-    { "not\\really\\a\\lot\\to\\test\\here\\right\\now" },
-    { "check/out\\my/cool\\slashes" },
+    // Parent does not exist, call succeeds.
+    { PATH_DIR_RECURSIVE_3 DIR_SEPARATOR PATH_FILE_EXISTS,
+      PATH_CREATE_SUCCESS },
+    // No parent in the input path, call succeeds.
+    { "config.txt", PATH_CREATE_SUCCESS },
+    { "lol.cnf", PATH_CREATE_SUCCESS },
+    { "megazeux.exe", PATH_CREATE_SUCCESS },
+    // Parent exists, call succeeds.
+    { PATH_FILE_RECURSIVE, PATH_CREATE_SUCCESS },
+    // mkdir fails due to existing file.
+    { PATH_FILE_RECURSIVE DIR_SEPARATOR PATH_DIR_RECURSIVE,
+      PATH_CREATE_ERR_FILE_EXISTS },
+    // TODO: PATH_CREATE_ERR_MKDIR_FAILED is returned when mkdir fails.
+    // TODO: PATH_CREATE_ERR_STAT_ERROR is returned when stat fails.
   };
 
-  static const path_mkdir_data no_parent[] =
+  for(const path_mkdir_data &cur : data)
   {
-    { "config.txt" },
-    { "lol.cnf" },
-    { "megazeux.exe" },
-  };
-
-  mkdir_result = 0;
-  stat_result_type = STAT_FAIL;
-  stat_result_errno = ENOENT;
-
-  SECTION(Success)
-  {
-    test_mkdir(has_parent, PATH_CREATE_SUCCESS);
-  }
-
-  SECTION(NoParent)
-  {
-    test_mkdir(no_parent, PATH_CREATE_SUCCESS);
-  }
-
-  SECTION(ParentExists)
-  {
-    stat_result_type = STAT_DIR;
-    test_mkdir(has_parent, PATH_CREATE_SUCCESS);
-  }
-
-  SECTION(FileExists)
-  {
-    stat_result_type = STAT_REG;
-    test_mkdir(no_parent, PATH_CREATE_SUCCESS);
-    test_mkdir(has_parent, PATH_CREATE_ERR_FILE_EXISTS);
-  }
-
-  SECTION(mkdirFail)
-  {
-    mkdir_result = -1;
-    test_mkdir(no_parent, PATH_CREATE_SUCCESS);
-    test_mkdir(has_parent, PATH_CREATE_ERR_MKDIR_FAILED);
-  }
-
-  SECTION(StatError)
-  {
-    stat_result_errno = EACCES;
-    test_mkdir(no_parent, PATH_CREATE_SUCCESS);
-    test_mkdir(has_parent, PATH_CREATE_ERR_STAT_ERROR);
+    enum path_create_error ret = path_create_parent_recursively(cur.path);
+    ASSERTEQ(ret, cur.expected, "%s", cur.path);
   }
 }

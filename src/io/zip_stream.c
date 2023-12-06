@@ -36,6 +36,11 @@
 #endif
 
 #ifdef ZIP_EXTRA_DECOMPRESSORS
+static void zip_stream_destroy(struct zip_stream_data *zs)
+{
+  free(zs);
+}
+
 static void zip_stream_close(struct zip_stream_data *zs,
  size_t *final_input_length, size_t *final_output_length)
 {
@@ -68,6 +73,8 @@ static boolean zip_stream_output(struct zip_stream_data *zs, void *dest,
 
 static struct zip_method_handler shrink_spec =
 {
+  unshrink_create,
+  zip_stream_destroy,
   unshrink_open,
   NULL,
   unshrink_close,
@@ -75,11 +82,14 @@ static struct zip_method_handler shrink_spec =
   zip_stream_output,
   unshrink_file,
   NULL,
+  NULL,
   NULL
 };
 
 static struct zip_method_handler reduce_spec =
 {
+  reduce_ex_create,
+  zip_stream_destroy,
   reduce_ex_open,
   NULL,
   zip_stream_close,
@@ -87,11 +97,14 @@ static struct zip_method_handler reduce_spec =
   zip_stream_output,
   reduce_ex_file,
   NULL,
+  NULL,
   NULL
 };
 
 static struct zip_method_handler implode_spec =
 {
+  expl_create,
+  zip_stream_destroy,
   expl_open,
   NULL,
   expl_close,
@@ -99,11 +112,14 @@ static struct zip_method_handler implode_spec =
   zip_stream_output,
   expl_file,
   NULL,
+  NULL,
   NULL
 };
 
 static struct zip_method_handler deflate64_spec =
 {
+  inflate64_create,
+  zip_stream_destroy,
   inflate64_open,
   NULL,
   inflate64_close,
@@ -111,12 +127,15 @@ static struct zip_method_handler deflate64_spec =
   zip_stream_output,
   inflate64_file,
   NULL,
+  NULL,
   NULL
 };
 #endif
 
 static struct zip_method_handler deflate_spec =
 {
+  deflate_create,
+  deflate_destroy,
   inflate_open,
   deflate_open,
   deflate_close,
@@ -124,7 +143,8 @@ static struct zip_method_handler deflate_spec =
   deflate_output,
   NULL,
   inflate_block,
-  deflate_block
+  deflate_block,
+  deflate_bound
 };
 
 struct zip_method_handler *zip_method_handlers[] =

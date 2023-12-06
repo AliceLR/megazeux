@@ -70,7 +70,6 @@ void translate_robot_bytecode_offsets(struct world *mzx_world,
 #else /* !CONFIG_DEBYTECODE */
 
 CORE_LIBSPEC void reallocate_robot(struct robot *robot, int size);
-CORE_LIBSPEC void clear_label_cache(struct robot *cur_robot);
 
 void change_robot_name(struct board *src_board, struct robot *cur_robot,
  char *new_name);
@@ -78,9 +77,12 @@ void add_robot_name_entry(struct board *src_board, struct robot *cur_robot,
  char *name);
 int find_free_robot(struct board *src_board);
 
+void fix_robot_stack_offsets(struct robot *cur_robot);
+
 #endif /* !CONFIG_DEBYTECODE */
 
 CORE_LIBSPEC void cache_robot_labels(struct robot *robot);
+CORE_LIBSPEC void clear_label_cache(struct robot *cur_robot);
 
 CORE_LIBSPEC void clear_robot_contents(struct robot *cur_robot);
 CORE_LIBSPEC void clear_robot_id(struct board *src_board, int id);
@@ -124,9 +126,9 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
  struct zip_archive *zp, int savegame, int file_version, const char *name);
 
 void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
- const char *name);
+ int file_version, const char *name);
 void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
- const char *name);
+ int file_version, const char *name);
 
 void create_blank_robot(struct robot *cur_robot);
 void create_blank_robot_program(struct robot *cur_robot);
@@ -153,6 +155,8 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
  int *lx, int *ly, int robotx, int roboty);
 void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int y);
 void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y);
+void prefix_mid_xy_ext(struct world *mzx_world, struct board *dest_board,
+ int *mx, int *my, int x, int y);
 void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
  int robotx, int roboty, int width, int height);
 void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,

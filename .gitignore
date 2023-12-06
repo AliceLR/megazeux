@@ -22,9 +22,14 @@ arch/android/project/app/*.iml
 arch/android/project/build
 arch/android/project/keystore.properties
 arch/android/project/local.properties
+arch/djgpp/*.d
+arch/djgpp/*.o
+arch/dreamcast/*.d
+arch/dreamcast/*.o
 arch/emscripten/web/mzxrun_web.js
 arch/emscripten/web/node_modules
 arch/emscripten/web/package-lock.json
+arch/mingw/pefix
 arch/mingw/pefix.d
 arch/mingw/pefix.exe
 arch/mingw/pefix.o
@@ -43,6 +48,8 @@ arch/nds/*.d
 arch/nds/*.o
 arch/psp/*.d
 arch/psp/*.o
+arch/psvita/*.d
+arch/psvita/*.o
 arch/wii/*.d
 arch/wii/*.o
 arch/xcode/version.h
@@ -54,6 +61,7 @@ contrib/libxmp/src/.build/
 contrib/libxmp/src/win32/.build/
 contrib/libxmp/src/loaders/.build/
 contrib/unzip/src/.build/
+1ST_READ.BIN
 boot.dol
 Core.exp
 Core.ilk
@@ -65,6 +73,7 @@ core.dll
 libcore.so
 libcore.dylib
 EBOOT.PBP
+eboot.bin
 Editor.exp
 Editor.ilk
 Editor.iobj
@@ -78,6 +87,7 @@ libeditor.so
 libeditor.dylib
 megazeux-cia.*
 megazeux.3dsx
+megazeux.bin
 megazeux.dol
 megazeux.elf
 megazeux.exe
@@ -90,9 +100,13 @@ megazeux.nacp
 megazeux.nro
 megazeux.nso
 MegaZeux.pdb
+megazeux.rpx
 megazeux.smdh
+megazeux.velf
+megazeux.vpk
 /megazeux
 mzxrun.3dsx
+mzxrun.bin
 mzxrun.cia
 mzxrun.dol
 mzxrun.elf
@@ -110,11 +124,15 @@ mzxrun.nds
 mzxrun.nro
 mzxrun.nso
 mzxrun.pdb
+mzxrun.rpx
 mzxrun.smdh
+mzxrun.velf
+mzxrun.vpk
 mzxrun.wasm
 mzxrun.wasm.map
 /mzxrun
 PARAM.SFO
+param.sfo
 platform.inc
 SDL.dll
 SDL2.dll
@@ -139,6 +157,8 @@ src/utils/txt2hlp.exe
 src/utils/txt2hlp
 src/utils/png2smzx.exe
 src/utils/png2smzx
+src/utils/y4m2smzx.exe
+src/utils/y4m2smzx
 src/utils/*.debug
 stdout.txt
 stderr.txt
@@ -147,6 +167,7 @@ unit/.build/
 unit/editor/.build/
 unit/io/.build/
 unit/network/.build/
+unit/utils/.build/
 /*.js
 /*.js.mem
 /*.js.orig.js

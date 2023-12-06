@@ -34,6 +34,7 @@
 #include "util.h"
 #include "world.h"
 #include "world_struct.h"
+#include "io/vio.h"
 
 /**
  * TODO: String lookups are currently case-insensitive, which is somewhat of
@@ -84,10 +85,7 @@ static struct string *find_string(struct string_list *string_list,
 #if defined(CONFIG_COUNTER_HASH_TABLES)
   size_t name_length = strlen(name);
   HASH_FIND(STRING, string_list->hash_table, name, name_length, current);
-
-  // When reallocing we need to replace the old pointer at
-  // its original list index.
-  *next = current ? current->list_ind : string_list->num_strings;
+  *next = string_list->num_strings;
   return current;
 
 #else
@@ -127,12 +125,11 @@ static struct string *find_string(struct string_list *string_list,
 #endif
 }
 
-static size_t get_string_alloc_size(unsigned int name_alloc_length,
- unsigned int value_length)
+static size_t get_string_alloc_size(size_t name_length)
 {
   // Attempt to reclaim any padding bytes at the end of the struct...
   return MAX(sizeof(struct string),
-   offsetof(struct string, name) + name_alloc_length + value_length);
+   offsetof(struct string, name) + name_length + 1);
 }
 
 /**
@@ -140,16 +137,17 @@ static size_t get_string_alloc_size(unsigned int name_alloc_length,
  * This function does not add the new string to the string list or initialize
  * its value.
  */
-static struct string *allocate_new_string(const char *name, int name_length,
+static struct string *allocate_new_string(const char *name, size_t name_length,
  size_t length)
 {
-  // Allocate the name with space for a null terminator and pad the end so the
-  // value will also be 4-aligned.
-  int name_alloc = (name_length + 1) & 3 ? (name_length & ~3) + 4 : name_length + 1;
-
-  // Allocate a string with room for the name and initial value.
-  // Does not initialize the value or the list index.
-  struct string *dest = cmalloc(get_string_alloc_size(name_alloc, length));
+  struct string *dest = (struct string *)cmalloc(get_string_alloc_size(name_length));
+  char *value = (char *)cmalloc(MAX(length, 1));
+  if(!dest || !value)
+  {
+    free(dest);
+    free(value);
+    return NULL;
+  }
 
   memcpy(dest->name, name, name_length);
   dest->name[name_length] = 0;
@@ -157,7 +155,7 @@ static struct string *allocate_new_string(const char *name, int name_length,
   dest->name_length = name_length;
   dest->allocated_length = length;
   dest->length = length;
-  dest->value = dest->name + name_alloc;
+  dest->value = value;
   return dest;
 }
 
@@ -188,7 +186,10 @@ static struct string *add_string_preallocate(struct string_list *string_list,
     else
       allocated = MIN_STRING_ALLOCATE;
 
-    base = crealloc(base, sizeof(struct string *) * allocated);
+    base = (struct string **)crealloc(base, sizeof(struct string *) * allocated);
+    if(!base)
+      return NULL;
+
     string_list->strings = base;
     string_list->num_strings_allocated = allocated;
   }
@@ -203,12 +204,13 @@ static struct string *add_string_preallocate(struct string_list *string_list,
   }
 
   dest = allocate_new_string(name, name_length, length);
+  if(!dest)
+    return NULL;
 
   // Initialize the value to zero.
   if(length > 0)
     memset(dest->value, ' ', length);
 
-  dest->list_ind = position;
   string_list->strings[position] = dest;
   string_list->num_strings = count + 1;
 
@@ -225,16 +227,11 @@ static struct string *add_string_preallocate(struct string_list *string_list,
 static struct string *reallocate_string(struct string_list *string_list,
  struct string *src, int pos, size_t length)
 {
-  // Find the base length (take out the current length)
-  int base_length = (int)(src->value - (char *)src);
+  char *value = (char *)crealloc(src->value, MAX(length, 1));
+  if(!value)
+    return NULL;
 
-#ifdef CONFIG_COUNTER_HASH_TABLES
-  // Delete the string with the same name as src if it exists in the table.
-  HASH_DELETE(STRING, string_list->hash_table, src);
-#endif
-
-  src = crealloc(src, MAX(sizeof(struct string), base_length + length));
-  src->value = (char *)src + base_length;
+  src->value = value;
 
   // any new bits of the string should be space filled
   // versions up to and including 2.81h used to fill this with garbage
@@ -245,13 +242,6 @@ static struct string *reallocate_string(struct string_list *string_list,
   }
 
   src->allocated_length = length;
-
-  string_list->strings[pos] = src;
-
-#ifdef CONFIG_COUNTER_HASH_TABLES
-  HASH_ADD(STRING, string_list->hash_table, src);
-#endif
-
   return src;
 }
 
@@ -275,7 +265,11 @@ static boolean force_string_length(struct string_list *string_list,
   else
 
   if(*length > (*str)->allocated_length)
+  {
     *str = reallocate_string(string_list, *str, next, *length);
+    if(!*str)
+      return false;
+  }
 
   /* Wipe string if the length has increased but not the allocated memory */
   if(*length > (*str)->length)
@@ -304,7 +298,9 @@ static boolean force_string_splice(struct string_list *string_list,
     if(offset + *size > (*str)->length)
     {
       size_t length = offset + *size;
-      force_string_length(string_list, name, next, str, &length);
+      if(!force_string_length(string_list, name, next, str, &length))
+        return false;
+
       (*str)->length = length;
     }
     else
@@ -886,7 +882,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
   if(special_name_partial("fread") &&
    !mzx_world->input_is_dir && mzx_world->input_file)
   {
-    FILE *input_file = mzx_world->input_file;
+    vfile *input_file = mzx_world->input_file;
 
     if(src_length > 5)
     {
@@ -897,14 +893,8 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
       // You know what would be great, is not trying to allocate 4GB of memory
       read_count = MIN(read_count, MAX_STRING_LEN);
 
-      /* This is hacky, but we don't want to prematurely allocate more space
-       * to the string than can possibly be read from the file. So we save the
-       * old file pointer, figure out the length of the current input file,
-       * and put it back where we found it.
-       */
-      current_pos = ftell(input_file);
-      file_size = ftell_and_rewind(input_file);
-      fseek(input_file, current_pos, SEEK_SET);
+      file_size = vfilelength(input_file, false);
+      current_pos = vftell(input_file);
 
       /* We then truncate the user read to the maximum difference between the
        * current position and the file end; this won't affect normal reads,
@@ -917,7 +907,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
        read_count, offset, offset_specified, &size, size_specified))
         return 0;
 
-      actual_read = fread(dest->value + offset, 1, read_count, input_file);
+      actual_read = vfread(dest->value + offset, 1, read_count, input_file);
       if(offset == 0 && !offset_specified)
         dest->length = actual_read;
     }
@@ -942,7 +932,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
         for(read_allocate = 0; read_allocate < new_allocated;
          read_allocate++, read_pos++)
         {
-          current_char = fgetc(input_file);
+          current_char = vfgetc(input_file);
 
           if((current_char == terminate_char) || (current_char == EOF) ||
            (read_pos + offset == MAX_STRING_LEN))
@@ -969,13 +959,16 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
 
   if(special_name_partial("fread") && mzx_world->input_is_dir)
   {
-    char entry[PATH_BUF_LEN];
+    char entry[MAX_PATH];
 
     while(1)
     {
       // Read entries until there are none left
-      if(!dir_get_next_entry(&mzx_world->input_directory, entry, NULL))
+      if(!vdir_read(mzx_world->input_directory, entry, MAX_PATH, NULL))
+      {
+        entry[0] = '\0';
         break;
+      }
 
       // Ignore . and ..
       if(!strcmp(entry, ".") || !strcmp(entry, ".."))
@@ -1072,7 +1065,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
      */
     if(dest != NULL && dest->length > 0)
     {
-      FILE *output_file = mzx_world->output_file;
+      vfile *output_file = mzx_world->output_file;
       char *dest_value = dest->value;
       size_t dest_length = dest->length;
 
@@ -1088,7 +1081,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
       if(offset + size > dest_length)
         size = dest_length - offset;
 
-      fwrite(dest_value + offset, size, 1, output_file);
+      vfwrite(dest_value + offset, size, 1, output_file);
     }
     else
     {
@@ -1102,7 +1095,7 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
     }
 
     if(write_delimiter)
-      fputc(mzx_world->fwrite_delimiter, mzx_world->output_file);
+      vfputc(mzx_world->fwrite_delimiter, mzx_world->output_file);
   }
   else
 
@@ -1371,13 +1364,31 @@ int get_string(struct world *mzx_world, char *name_buffer, struct string *dest,
     if(offset + size > src->length)
       size = src->length - offset;
 
-    dest->list_ind = src->list_ind;
     dest->value = src->value + offset;
     dest->length = size;
     return 1;
   }
 
   return 0;
+}
+
+/**
+ * Get a string by name and return a pointer to it. This function does not work
+ * with string splices; use get_string instead. The pointer this function
+ * returns is guaranteed to be stable for the duration of the gameplay session.
+ *
+ * @param  mzx_world    World data.
+ * @param  name         Name of string to look up.
+ * @param  id           Current robot ID or 0 for global.
+ * @return              string pointer if found, otherwise NULL.
+ */
+const struct string *get_string_pointer(struct world *mzx_world,
+ const char *name, int id)
+{
+  struct string_list *string_list = &(mzx_world->string_list);
+  int next;
+
+  return find_string(string_list, name, &next);
 }
 
 // You can't increment spliced strings (it's not really useful and
@@ -1467,30 +1478,6 @@ void dec_string_int(struct world *mzx_world, const char *name, int value,
   }
 }
 
-boolean is_string(char *buffer)
-{
-  size_t namelen, i;
-
-  // String doesn't start with $, that's an immediate reject
-  if(buffer[0] != '$')
-    return false;
-
-  // We need to stub out any part of the buffer that describes a
-  // string offset or size constraint. This is because after the
-  // offset or size characters, there may be an expression which
-  // may use the .length operator on the same (or different)
-  // string. We must not consider such composites to be invalid.
-  namelen = strcspn(buffer, "#+");
-
-  // For something to be a string it must not have a . in its name
-  for(i = 0; i < namelen; i++)
-    if(buffer[i] == '.')
-      return false;
-
-  // Valid string
-  return true;
-}
-
 static boolean wildcard_char_is_escapable(unsigned char c)
 {
   return (c == '%') || (c == '?') || (c == '\\');
@@ -1499,8 +1486,8 @@ static boolean wildcard_char_is_escapable(unsigned char c)
 #if 0
 #define WILDCARD_PRINT() do { \
     for(size_t k = 0; k <= str_len; k++) \
-      fprintf(stderr, "%c ", (k+1 < left ? ' ' : str_matched[k] ? 'Y' : 'n')); \
-    fprintf(stderr, "\n"); \
+      fprintf(mzxerr, "%c ", (k+1 < left ? ' ' : str_matched[k] ? 'Y' : 'n')); \
+    fprintf(mzxerr, "\n"); \
 } while(0)
 #endif
 
@@ -1886,7 +1873,6 @@ struct string *load_new_string(struct string_list *string_list, int index,
 {
   struct string *dest = allocate_new_string(name, name_length, str_length);
 
-  dest->list_ind = index;
   string_list->strings[index] = dest;
 
 #ifdef CONFIG_COUNTER_HASH_TABLES
@@ -1905,15 +1891,8 @@ static int string_sort_fcn(const void *a, const void *b)
 
 void sort_string_list(struct string_list *string_list)
 {
-  unsigned int i;
-
   qsort(string_list->strings, (size_t)string_list->num_strings,
    sizeof(struct string *), string_sort_fcn);
-
-  // IMPORTANT: Make sure we reset each string's list_ind since we just
-  // sorted them, it's only polite (and also will make MZX not crash)
-  for(i = 0; i < string_list->num_strings; i++)
-    string_list->strings[i]->list_ind = i;
 }
 
 void clear_string_list(struct string_list *string_list)
@@ -1926,7 +1905,10 @@ void clear_string_list(struct string_list *string_list)
 #endif
 
   for(i = 0; i < string_list->num_strings; i++)
+  {
+    free(string_list->strings[i]->value);
     free(string_list->strings[i]);
+  }
 
   free(string_list->strings);
 
@@ -1962,7 +1944,10 @@ void string_list_size(struct string_list *string_list,
       {
         struct string *s = string_list->strings[i];
         if(s)
-          total += get_string_alloc_size(s->name_length, s->allocated_length);
+        {
+          total += get_string_alloc_size(s->name_length);
+          total += s->allocated_length;
+        }
       }
     }
     *strings_size = total;

@@ -219,7 +219,7 @@ void legacy_save_robot(struct world *mzx_world, struct robot *cur_robot,
   void *buffer = cmalloc(robot_size);
   struct memfile mf;
 
-  mfopen(buffer, robot_size, &mf);
+  mfopen_wr(buffer, robot_size, &mf);
   legacy_save_robot_to_memory(cur_robot, &mf, savegame, version);
 
   fwrite(buffer, robot_size, 1, fp);
@@ -527,7 +527,7 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
 
   // Save charset
   charset_mem = cmalloc(3584);
-  ec_mem_save_set(charset_mem);
+  ec_mem_save_set_var(charset_mem, 3584, 0);
   fwrite(charset_mem, 3584, 1, fp);
   free(charset_mem);
 

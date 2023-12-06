@@ -1,5 +1,5 @@
 /* zutil.h -- internal interface and configuration of the compression library
- * Copyright (C) 1995-2016 Jean-loup Gailly, Mark Adler
+ * Copyright (C) 1995-2022 Jean-loup Gailly, Mark Adler
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
@@ -7,6 +7,16 @@
 
 #ifndef ZUTIL_H
 #define ZUTIL_H
+
+#include <zlib.h>
+
+#if defined(STDC) && !defined(Z_SOLO)
+#  if !(defined(_WIN32_WCE) && defined(_MSC_VER))
+#    include <stddef.h>
+#  endif
+#  include <string.h>
+#  include <stdlib.h>
+#endif
 
 #ifndef z_const
 #define z_const

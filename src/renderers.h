@@ -44,6 +44,7 @@ void render_gl2_register(struct renderer *renderer);
 #endif
 #if defined(CONFIG_RENDER_GL_PROGRAM)
 void render_glsl_register(struct renderer *renderer);
+void render_glsl_software_register(struct renderer *renderer);
 void render_auto_glsl_register(struct renderer *renderer);
 #endif
 #if defined(CONFIG_RENDER_YUV)
@@ -64,6 +65,14 @@ void render_ctr_register(struct renderer *renderer);
 void render_gx_register(struct renderer *renderer);
 #endif
 void render_xfb_register(struct renderer *renderer);
+#endif
+#if defined(CONFIG_DJGPP)
+void render_ega_register(struct renderer *renderer);
+void render_svga_register(struct renderer *renderer);
+#endif
+#if defined(CONFIG_DREAMCAST)
+void render_dc_register(struct renderer *renderer);
+void render_dc_fb_register(struct renderer *renderer);
 #endif
 
 __M_END_DECLS

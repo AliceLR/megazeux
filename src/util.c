@@ -125,9 +125,29 @@ static void out_of_memory_check(void *p, const char *file, int line)
   }
 }
 
+// Attempt to free buffered memory from the virtual filesystem for reuse.
+static boolean check_free_buffered(size_t amount, boolean *retry)
+{
+  if(!*retry || !amount)
+    return false;
+
+  if(!vio_invalidate_at_least(&amount))
+  {
+    vio_invalidate_all();
+    *retry = false;
+  }
+  return true;
+}
+
 void *check_calloc(size_t nmemb, size_t size, const char *file, int line)
 {
   void *result = calloc(nmemb, size);
+  if(!result && nmemb * size >= size)
+  {
+    boolean retry = true;
+    while(!result && check_free_buffered(nmemb * size, &retry))
+      result = calloc(nmemb, size);
+  }
   out_of_memory_check(result, file, line);
   return result;
 }
@@ -135,6 +155,12 @@ void *check_calloc(size_t nmemb, size_t size, const char *file, int line)
 void *check_malloc(size_t size, const char *file, int line)
 {
   void *result = malloc(size);
+  if(!result)
+  {
+    boolean retry = true;
+    while(!result && check_free_buffered(size, &retry))
+      result = malloc(size);
+  }
   out_of_memory_check(result, file, line);
   return result;
 }
@@ -142,6 +168,12 @@ void *check_malloc(size_t size, const char *file, int line)
 void *check_realloc(void *ptr, size_t size, const char *file, int line)
 {
   void *result = realloc(ptr, size);
+  if(!result)
+  {
+    boolean retry = true;
+    while(!result && check_free_buffered(size, &retry))
+      result = realloc(ptr, size);
+  }
   out_of_memory_check(result, file, line);
   return result;
 }
@@ -339,7 +371,11 @@ const char *mzx_res_get_by_id(enum resource_id id)
 
     // Special handling for CONFIG_TXT to allow for user
     // configuration files
+#ifdef CONFIG_PSVITA
+    snprintf(userconfpath, MAX_PATH, "%s", USERCONFFILE);
+#else
     snprintf(userconfpath, MAX_PATH, "%s/%s", getenv("HOME"), USERCONFFILE);
+#endif
 
     // Check if the file can be opened for reading
     vf = vfopen_unsafe(userconfpath, "rb");
@@ -378,12 +414,21 @@ const char *mzx_res_get_by_id(enum resource_id id)
   return mzx_res[id].path;
 }
 
+#ifdef CONFIG_STDIO_REDIRECT
+
+FILE *mzxout_h = NULL;
+FILE *mzxerr_h = NULL;
+
 /**
  * Some platforms may not be able to display console output without extra work.
- * On these platforms redirect STDIO to files so the console output is easier
- * to read. NOTE: this needs to use stdio, don't use vfile here.
+ * On these platforms, open stdout/stderr replacement files instead. The log
+ * macros and any other references to `mzxout` and `mzxerr` will use these
+ * files instead of stdio.
+ *
+ * Previously, this was implemented using `freopen` on stdout/stderr, but
+ * doing this in some console SDKs does not work correctly (NDS, PS Vita).
  */
-boolean redirect_stdio(const char *base_path, boolean require_conf)
+boolean redirect_stdio_init(const char *base_path, boolean require_conf)
 {
   char dest_path[MAX_PATH];
   size_t dest_len;
@@ -401,94 +446,69 @@ boolean redirect_stdio(const char *base_path, boolean require_conf)
     struct stat stat_info;
 
     path_append(dest_path, MAX_PATH, "config.txt");
-    if(stat(dest_path, &stat_info))
+    if(vstat(dest_path, &stat_info))
       return false;
     dest_path[dest_len] = '\0';
   }
 
+  // Clean up existing handles from a previous attempt.
+  redirect_stdio_exit();
+
   // Test directory for write access.
   path_append(dest_path, MAX_PATH, "stdout.txt");
   fp_wr = fopen_unsafe(dest_path, "w");
-  if(fp_wr)
+  if(!fp_wr)
   {
-    t = (uint64_t)time(NULL);
-
-    // Redirect stdout to stdout.txt.
-    fclose(fp_wr);
-    fprintf(stdout, "Redirecting logs to '%s'...\n", dest_path);
-    if(freopen(dest_path, "w", stdout))
-      fprintf(stdout, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
-    else
-      fprintf(stdout, "Failed to redirect stdout\n");
+    fprintf(stdout, "Failed to redirect stdout\n");
     fflush(stdout);
-
-    // Redirect stderr to stderr.txt.
-    dest_path[dest_len] = '\0';
-    path_append(dest_path, MAX_PATH, "stderr.txt");
-    fprintf(stderr, "Redirecting logs to '%s'...\n", dest_path);
-    if(freopen(dest_path, "w", stderr))
-      fprintf(stderr, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
-    else
-      fprintf(stderr, "Failed to redirect stderr\n");
-    fflush(stderr);
-
-    return true;
+    return false;
   }
-  return false;
+
+  t = (uint64_t)time(NULL);
+
+  // Redirect mzxout to stdout.txt.
+  fprintf(stdout, "Redirecting logs to '%s'...\n", dest_path);
+  fflush(stdout);
+  mzxout_h = fp_wr;
+  fprintf(mzxout, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+  fflush(mzxout);
+
+  // Redirect mzxerr to stderr.txt.
+  dest_path[dest_len] = '\0';
+  path_append(dest_path, MAX_PATH, "stderr.txt");
+  fp_wr = fopen_unsafe(dest_path, "w");
+  if(!fp_wr)
+  {
+    fprintf(stderr, "Failed to redirect stderr\n");
+    fflush(stderr);
+    return false;
+  }
+
+  fprintf(stderr, "Redirecting logs to '%s'...\n", dest_path);
+  fflush(stderr);
+  mzxerr_h = fp_wr;
+  fprintf(mzxerr, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+  fflush(mzxerr);
+
+  return true;
 }
 
-// Get 2 bytes, little endian
-
-int fgetw(FILE *fp)
+void redirect_stdio_exit(void)
 {
-  int a = fgetc(fp), b = fgetc(fp);
-  if((a == EOF) || (b == EOF))
-    return EOF;
+  if(mzxout_h)
+  {
+    fclose(mzxout_h);
+    mzxout_h = NULL;
+  }
 
-  return (b << 8) | a;
+  if(mzxerr_h)
+  {
+    fclose(mzxerr_h);
+    mzxerr_h = NULL;
+  }
 }
 
-// Get 4 bytes, little endian
-
-int fgetd(FILE *fp)
-{
-  int a = fgetc(fp), b = fgetc(fp), c = fgetc(fp), d = fgetc(fp);
-  if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF))
-    return EOF;
-
-  return ((unsigned int)d << 24) | (c << 16) | (b << 8) | a;
-}
-
-// Put 2 bytes, little endian
-
-void fputw(int src, FILE *fp)
-{
-  fputc(src & 0xFF, fp);
-  fputc(src >> 8, fp);
-}
-
-// Put 4 bytes, little endian
-
-void fputd(int src, FILE *fp)
-{
-  fputc(src & 0xFF, fp);
-  fputc((src >> 8) & 0xFF, fp);
-  fputc((src >> 16) & 0xFF, fp);
-  fputc((src >> 24) & 0xFF, fp);
-}
-
-// Determine file size of an open FILE and rewind it
-
-long ftell_and_rewind(FILE *f)
-{
-  long size;
-
-  fseek(f, 0, SEEK_END);
-  size = ftell(f);
-  rewind(f);
-
-  return size;
-}
+#endif /* CONFIG_STDIO_REDIRECT */
 
 // Random function, returns an integer [0-range)
 
@@ -521,7 +541,7 @@ unsigned int Random(uint64_t range)
   x ^= x << 25; // b
   x ^= x >> 27; // c
   rng_state = x;
-  return ((x * 0x2545F4914F6CDD1D) >> 32) * range / 0xFFFFFFFF;
+  return (((x * 0x2545F4914F6CDD1D) >> 32) * range) >> 32;
 }
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)

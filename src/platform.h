@@ -26,29 +26,14 @@ __M_BEGIN_DECLS
 
 #include "platform_endian.h"
 
-#ifdef CONFIG_SDL
+#ifndef CONFIG_SDL
 
-#include <SDL_stdinc.h>
-
-#else // !CONFIG_SDL
-
-#include <inttypes.h>
-
-typedef uint8_t Uint8;
-typedef int8_t Sint8;
-typedef uint16_t Uint16;
-typedef int16_t Sint16;
-typedef uint32_t Uint32;
-typedef int32_t Sint32;
-typedef uint64_t Uint64;
-typedef int64_t Sint64;
-
-#if defined(CONFIG_WII) || defined(CONFIG_NDS) || defined(CONFIG_3DS)
+#if defined(CONFIG_WII) || defined(CONFIG_NDS) || defined(CONFIG_3DS) || defined(CONFIG_DREAMCAST)
 int real_main(int argc, char *argv[]);
 #define main real_main
 #endif // CONFIG_WII || CONFIG_NDS || CONFIG_3DS
 
-#endif // CONFIG_SDL
+#endif // !CONFIG_SDL
 
 /**
  * Audio, networking, and other misc. optional features require threading
@@ -64,8 +49,14 @@ int real_main(int argc, char *argv[]);
 #include "../arch/wii/thread.h"
 #elif defined(CONFIG_3DS)
 #include "../arch/3ds/thread.h"
-#elif defined(CONFIG_SDL)
+#elif defined(CONFIG_DJGPP)
+#include "../arch/djgpp/thread.h"
+#elif defined(CONFIG_DREAMCAST)
+#include "../arch/dreamcast/thread.h"
+#elif defined(CONFIG_SDL) && !defined(SKIP_SDL)
 #include "thread_sdl.h"
+#elif defined(_WIN32) /* Fallback, prefer SDL when possible. */
+#include "thread_win32.h"
 #else
 #if defined(CONFIG_NDS)
 #define THREAD_DUMMY_ALLOW_MUTEX
@@ -73,10 +64,15 @@ int real_main(int argc, char *argv[]);
 #include "thread_dummy.h"
 #endif
 
-CORE_LIBSPEC void delay(Uint32 ms);
-CORE_LIBSPEC Uint32 get_ticks(void);
+#include <stdint.h>
+#include <time.h>
+
+CORE_LIBSPEC void delay(uint32_t ms);
+CORE_LIBSPEC uint64_t get_ticks(void);
 CORE_LIBSPEC boolean platform_init(void);
 CORE_LIBSPEC void platform_quit(void);
+CORE_LIBSPEC boolean platform_system_time(struct tm *tm,
+ int64_t *epoch, int32_t *nano);
 
 __M_END_DECLS
 

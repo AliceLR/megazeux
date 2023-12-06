@@ -35,6 +35,8 @@ __M_BEGIN_DECLS
 CORE_LIBSPEC void counter_fsg(void);
 CORE_LIBSPEC int match_function_counter(const char *dest, const char *src);
 CORE_LIBSPEC int get_counter(struct world *mzx_world, const char *name, int id);
+CORE_LIBSPEC const struct counter *get_counter_pointer(struct world *mzx_world,
+ const char *name, int id);
 CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,
  int value, int id);
 CORE_LIBSPEC void new_counter(struct world *mzx_world, const char *name,

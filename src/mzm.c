@@ -195,7 +195,7 @@ static size_t save_mzm_common(struct world *mzx_world,
       if(num_robots)
       {
         struct robot **robot_list = src_board->robot_list;
-        size_t total_size;
+        uint64_t total_size;
         char name[4];
 
         // Now we're at the position we want to start writing robots.
@@ -316,7 +316,7 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
      height, mode, savegame, &storage_mode);
 
     buffer = cmalloc(mzm_size);
-    mfopen(buffer, mzm_size, &mf);
+    mfopen_wr(buffer, mzm_size, &mf);
 
     mzm_size = save_mzm_common(mzx_world, start_x, start_y, width, height, mode,
      savegame, storage_mode, &mf);
@@ -341,7 +341,7 @@ void save_mzm_string(struct world *mzx_world, const char *name, int start_x,
   str = new_string(mzx_world, name, mzm_size, id);
   if(str)
   {
-    mfopen(str->value, mzm_size, &mf);
+    mfopen_wr(str->value, mzm_size, &mf);
 
     mzm_size = save_mzm_common(mzx_world, start_x, start_y, width, height, mode,
      savegame, storage_mode, &mf);
@@ -627,7 +627,7 @@ static int load_mzm_common(struct world *mzx_world, struct memfile *mf,
             else
             {
               zp = zip_open_mem_read(mf->start, file_length);
-              assign_fprops(zp, 1);
+              world_assign_file_ids(zp, false);
             }
 
             // If we're loading a "runtime MZM" then it means that we're loading
@@ -693,7 +693,7 @@ static int load_mzm_common(struct world *mzx_world, struct memfile *mf,
               // Search the zip until a robot is found.
               else do
               {
-                result = zip_get_next_prop(zp, &file_id, NULL, &robot_id);
+                result = zip_get_next_mzx_file_id(zp, &file_id, NULL, &robot_id);
 
                 if(result != ZIP_SUCCESS)
                 {
@@ -705,7 +705,7 @@ static int load_mzm_common(struct world *mzx_world, struct memfile *mf,
                 }
                 else
 
-                if(file_id != FPROP_ROBOT || (int)robot_id < i)
+                if(file_id != FILE_ID_ROBOT || (int)robot_id < i)
                 {
                   // Not a robot or is a skipped robot
                   zip_skip_file(zp);

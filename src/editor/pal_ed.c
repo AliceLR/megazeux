@@ -20,6 +20,7 @@
 
 /* Palette editor */
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -31,6 +32,7 @@
 #include "../intake_num.h"
 #include "../util.h"
 #include "../window.h"
+#include "../io/vio.h"
 
 #include "configure.h"
 #include "graphics.h"
@@ -174,8 +176,8 @@ struct pal_ed_context
     GAME_PALETTE,
     TEMP_PALETTE,
   } current;
-  //Uint32 cursor_fg_layer[5];
-  //Uint32 cursor_bg_layer[5];
+  //uint32_t cursor_fg_layer[5];
+  //uint32_t cursor_bg_layer[5];
   int editing_component;
 };
 
@@ -669,7 +671,7 @@ static void draw_color_components(struct pal_ed_subcontext *current)
      current->x + 3,
      current->y + 1 + i,
      DI_GREY_NUMBER,
-     0
+     WR_NONE
     );
 
     write_string(
@@ -677,7 +679,7 @@ static void draw_color_components(struct pal_ed_subcontext *current)
      current->x,
      current->y + 1 + i,
      DI_GREY_TEXT,
-     0
+     WR_NONE
     );
 
     if(c->min_val == 0 && c->max_val == 359)
@@ -718,7 +720,7 @@ static boolean color_editor_draw(subcontext *ctx)
    current->x,
    current->y,
    DI_GREY_TEXT,
-   0
+   WR_NONE
   );
 
   write_number(current_id, DI_GREY_TEXT,
@@ -734,7 +736,7 @@ static boolean color_editor_draw(subcontext *ctx)
      current->x + mode_list[i].draw_x,
      current->y,
      color,
-     0
+     WR_NONE
     );
   }
 
@@ -961,7 +963,7 @@ static boolean color_editor_drag(subcontext *ctx, int *key, int button,
     // extra char on each side of the bar past the actual bounds to
     // make setting to the minimum and maximum values easier.
 
-    get_real_mouse_position(&mouse_px, &mouse_py);
+    get_mouse_pixel_position(&mouse_px, &mouse_py);
 
     if(MOUSE_IN(current->x + 7, current->y + 1, 34, 3))
     {
@@ -978,7 +980,7 @@ static boolean color_editor_drag(subcontext *ctx, int *key, int button,
       current_mode->set_function(current_color, component, (int)value);
 
       // Snap the mouse to the center of the bar.
-      warp_real_mouse_y(mouse_y * 14 + 7);
+      warp_mouse_pixel_y(mouse_y * 14 + 7);
       return -1;
     }
   }
@@ -1030,13 +1032,13 @@ static void menu_buffer_draw(int x, int y, boolean show_indices)
     DI_GREY, DI_GREY_DARK, DI_GREY_CORNER, false, false
   );
 
-  write_string("Buffer", x + 2, y + 1, DI_GREY_TEXT, false);
-  write_string("     \n     \n     ", x + 9, y + 1, 0x55, false);
+  write_string("Buffer", x + 2, y + 1, DI_GREY_TEXT, WR_NONE);
+  write_string("     \n     \n     ", x + 9, y + 1, 0x55, WR_NEWLINE);
 
   if(mode >= 2 && saved_subpalette_display)
   {
-    Uint8 which = ((timer++) / 60) % 4;
-    Uint8 fg_color;
+    unsigned int which = ((timer++) / 60) % 4;
+    uint8_t fg_color;
     struct color_status *col = &saved_subpal[which];
 
     set_protected_rgb(5, col->r, col->g, col->b);
@@ -1057,7 +1059,7 @@ static void menu_buffer_draw(int x, int y, boolean show_indices)
     int x2;
     int y2;
 
-    write_string("1    3\n2    4", x + 2, y + 2, DI_GREY_CORNER, false);
+    write_string("1    3\n2    4", x + 2, y + 2, DI_GREY_CORNER, WR_NEWLINE);
     for(i = 0; i < 4; i++)
     {
       x2 = x + 3 + (i/2*2);
@@ -1114,11 +1116,11 @@ static boolean menu_16_draw(subcontext *ctx)
     menu->x,
     menu->y,
     DI_GREY_TEXT,
-    false
+    WR_NEWLINE
   );
 
   write_string(palette_labels[!pal_ed->current], menu->x + 49, menu->y + 6,
-   DI_GREY_TEXT, false);
+   DI_GREY_TEXT, WR_NONE);
 
   // Component instructions
   y = menu->y + 1;
@@ -1127,16 +1129,16 @@ static boolean menu_16_draw(subcontext *ctx)
     c = &(current_mode->components[i]);
     x = menu->x;
 
-    write_string(c->name_key, x, y, DI_GREY_TEXT, false);
+    write_string(c->name_key, x, y, DI_GREY_TEXT, WR_NONE);
     x += 12;
 
-    write_string(c->name_long, x, y, DI_GREY_TEXT, false);
+    write_string(c->name_long, x, y, DI_GREY_TEXT, WR_NONE);
     x += 11;
 
-    write_string(c->name_key, x, y, DI_GREY_TEXT, false);
+    write_string(c->name_key, x, y, DI_GREY_TEXT, WR_NONE);
     x += 12;
 
-    write_string(c->name_long, x, y, DI_GREY_TEXT, false);
+    write_string(c->name_long, x, y, DI_GREY_TEXT, WR_NONE);
   }
 
   // All
@@ -1147,7 +1149,7 @@ static boolean menu_16_draw(subcontext *ctx)
      menu->x,
      menu->y + 4,
      DI_GREY_TEXT,
-     false
+     WR_NEWLINE
     );
   }
 
@@ -1211,7 +1213,7 @@ static boolean palette_16_draw(subcontext *ctx)
   if(pal_ed->current != GAME_PALETTE)
   {
     write_string("TEMPORARY -- WILL NOT BE SAVED", pal->border_x + 3,
-     pal->border_y, 0x8E, false);
+     pal->border_y, 0x8E, WR_NONE);
   }
 
   // Draw palette bars
@@ -1257,7 +1259,7 @@ static boolean palette_16_draw(subcontext *ctx)
     {
       // Draw '^^'
       write_string("\x1e\x1e",
-       x, y + 4, DI_GREY_TEXT, false);
+       x, y + 4, DI_GREY_TEXT, WR_NONE);
     }
   }
   return true;
@@ -1434,14 +1436,14 @@ static boolean menu_256_draw(subcontext *ctx)
     menu->x,
     menu->y,
     DI_GREY_TEXT,
-    1
+    WR_NEWLINE
   );
 
   write_string(palette_labels[!pal_ed->current], menu->x + 5, menu->y + 10,
-   DI_GREY_TEXT, false);
+   DI_GREY_TEXT, WR_NONE);
 
   if(subpalette_cursors)
-    write_string("(on) ", menu->x + 13, menu->y + 8, DI_GREY_TEXT, false);
+    write_string("(on) ", menu->x + 13, menu->y + 8, DI_GREY_TEXT, WR_NONE);
 
   if(smzx_mode == 2)
   {
@@ -1457,7 +1459,7 @@ static boolean menu_256_draw(subcontext *ctx)
       menu->x + 19,
       menu->y + 5,
       DI_GREY_TEXT,
-      false
+      WR_NEWLINE
     );
   }
   else
@@ -1474,14 +1476,14 @@ static boolean menu_256_draw(subcontext *ctx)
       menu->x + 19,
       menu->y + 5,
       DI_GREY_TEXT,
-      false
+      WR_NEWLINE
     );
     write_string(
       "Middle/wheel- subpalette\n",
       menu->x,
       menu->y + 15,
       DI_GREY_TEXT,
-      false
+      WR_NEWLINE
     );
   }
 
@@ -1492,16 +1494,16 @@ static boolean menu_256_draw(subcontext *ctx)
     c = &(current_mode->components[i]);
     x = menu->x;
 
-    write_string(c->name_key, x, y, DI_GREY_TEXT, false);
+    write_string(c->name_key, x, y, DI_GREY_TEXT, WR_NONE);
     x += 12;
 
-    write_string(c->name_long, x, y, DI_GREY_TEXT, false);
+    write_string(c->name_long, x, y, DI_GREY_TEXT, WR_NONE);
     x += 11;
 
-    write_string(c->name_key, x, y, DI_GREY_TEXT, false);
+    write_string(c->name_key, x, y, DI_GREY_TEXT, WR_NONE);
     x += 12;
 
-    write_string(c->name_long, x, y, DI_GREY_TEXT, false);
+    write_string(c->name_long, x, y, DI_GREY_TEXT, WR_NONE);
   }
 
   // All
@@ -1512,7 +1514,7 @@ static boolean menu_256_draw(subcontext *ctx)
       menu->x,
       menu->y + 4,
       DI_GREY_TEXT,
-      1
+      WR_NEWLINE
     );
   }
 
@@ -1550,23 +1552,23 @@ static subcontext *create_menu_256(struct pal_ed_context *pal_ed)
 // -----------------------------------------------------------------------------
 
 
-static void draw_unbound_cursor_chars(Uint32 layer, int color)
+static void draw_unbound_cursor_chars(uint32_t layer, int color)
 {
   select_layer(layer);
   set_layer_mode(layer, 0);
   // Note: mode 0, so offset by 16 (PAL_SIZE) for the protected palette.
-  draw_char_to_layer(color, CHAR_CORNER_TL, 0, 0, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_TR, 2, 0, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_BL, 0, 1, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_BR, 2, 1, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 0, PRO_CH, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 1, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_TL,  color, 0, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_TR,  color, 2, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_BL,  color, 0, 1, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_CORNER_BR,  color, 2, 1, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_LINE_HORIZ, color, 1, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(CHAR_LINE_HORIZ, color, 1, 1, PRO_CH, PAL_SIZE);
 }
 
 static void draw_unbound_cursor(int x, int y, int fg, int bg, int offset)
 {
   // Cursor for mode 2/3 palette selector
-  Uint32 layer;
+  uint32_t layer;
   int order;
 
   x = x * CHAR_W - 3;
@@ -1622,7 +1624,7 @@ static boolean palette_256_draw(subcontext *ctx)
   if(pal_ed->current != GAME_PALETTE)
   {
     write_string("TEMPORARY -- WILL NOT BE SAVED", pal->border_x + 3,
-     pal->border_y, 0x8E, false);
+     pal->border_y, 0x8E, WR_NONE);
   }
 
   // Erase the spot where the palette will go.
@@ -1830,7 +1832,6 @@ static boolean subpalette_256_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *spal = (struct pal_ed_subcontext *)ctx;
   struct pal_ed_context *pal_ed = spal->pal_ed;
-  char buffer[5];
   int subpalette_num;
   int c0 = 0;
   int c1 = 0;
@@ -1855,7 +1856,7 @@ static boolean subpalette_256_draw(subcontext *ctx)
    spal->x,
    spal->y,
    DI_GREY_TEXT,
-   0
+   WR_NEWLINE
   );
 
   write_string(
@@ -1863,7 +1864,7 @@ static boolean subpalette_256_draw(subcontext *ctx)
    spal->x + 9,
    spal->y,
    DI_GREY_CORNER,
-   0
+   WR_NONE
   );
 
   // Erase spots where palette colors will go
@@ -1922,20 +1923,14 @@ static boolean subpalette_256_draw(subcontext *ctx)
   select_layer(UI_LAYER);
 
   // Current subpalette number
-  sprintf(buffer, "%03d", subpalette_num);
-  write_string(buffer, spal->x + 3, spal->y + 1, DI_GREY_TEXT, false);
-  sprintf(buffer, "%02X", subpalette_num);
-  write_string(buffer, spal->x + 5, spal->y + 3, DI_GREY_TEXT, false);
+  write_number(subpalette_num, DI_GREY_TEXT, spal->x + 3, spal->y + 1, 3, false, 10);
+  write_number(subpalette_num, DI_GREY_TEXT, spal->x + 5, spal->y + 3, 2, false, 16);
 
   // Subpalette indices
-  sprintf(buffer, "%03d", c0);
-  write_string(buffer, spal->x + 11, spal->y, DI_GREY_TEXT, false);
-  sprintf(buffer, "%03d", c1);
-  write_string(buffer, spal->x + 17, spal->y, DI_GREY_TEXT, false);
-  sprintf(buffer, "%03d", c2);
-  write_string(buffer, spal->x + 23, spal->y, DI_GREY_TEXT, false);
-  sprintf(buffer, "%03d", c3);
-  write_string(buffer, spal->x + 29, spal->y, DI_GREY_TEXT, false);
+  write_number(c0, DI_GREY_TEXT, spal->x + 11, spal->y, 3, false, 10);
+  write_number(c1, DI_GREY_TEXT, spal->x + 17, spal->y, 3, false, 10);
+  write_number(c2, DI_GREY_TEXT, spal->x + 23, spal->y, 3, false, 10);
+  write_number(c3, DI_GREY_TEXT, spal->x + 29, spal->y, 3, false, 10);
   return true;
 }
 
@@ -2296,13 +2291,13 @@ static void init_pal_ed_palettes(struct pal_ed_context *pal_ed)
     else
     {
       // Load the external SMZX palette.
-      FILE *fp = fopen_unsafe(mzx_res_get_by_id(SMZX_PAL), "rb");
-      if(fp)
+      vfile *vf = vfopen_unsafe(mzx_res_get_by_id(SMZX_PAL), "rb");
+      if(vf)
       {
-        if(!fread(temp_palette, sizeof(temp_palette), 1, fp))
+        if(!vfread(temp_palette, sizeof(temp_palette), 1, vf))
           memset(temp_palette, 0, sizeof(temp_palette));
 
-        fclose(fp);
+        vfclose(vf);
       }
     }
 

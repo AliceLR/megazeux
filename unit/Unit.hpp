@@ -42,18 +42,19 @@
  * The file can contain multiple UNITTEST() {...}. Each must have a unique name.
  * The following macros can be used in tests:
  *
- * ASSERT(t)          t must be non-zero.
- * ASSERTX(t,m)       t must be non-zero. (m = message to display on failure)
- * ASSERTEQ(a,b)      a must equal b.
- * ASSERTEQX(a,b,m)   a must equal b. (m = message to display on failure)
- * ASSERTCMP(a,b)     a and b must be null-terminated C strings and must be
- *                    exactly equal.
- * ASSERTXCMP(a,b,m)  a and b must be null-terminated C strings and must be
- *                    exactly equal. (m = message to display on failure)
- * ASSERTMEM(a,b,l)   the memory pointed to by a and b must be identical for l
- *                    bytes (memcmp).
- * ASSERTXMEM(a,b,l,m) the memory pointed to by a and b must be identical for l
- *                    bytes (memcmp). (m = message to display on failure)
+ * [mfmt,...] = optional message to display on failure, passed to vsnprintf.
+ *              mfmt must be a string literal.
+ *
+ * ASSERT(t[,mfmt,...])         t must be non-zero.
+ * ASSERTEQ(a,b[,mfmt,...])     a must equal b.
+ * ASSERTCMP(a,b[,mfmt,...])    a and b must be null-terminated C strings and must
+ *                              be exactly equal (strcmp).
+ * ASSERTNCMP(a,b,n[,mfmt,...]) a and b must be null-terminated C strings and must
+ *                              be exactly equal for the first n chars (strncmp).
+ * ASSERTMEM(a,b,l,[mfmt,...])  the memory pointed to by a and b must be identical
+ *                              for l bytes (memcmp).
+ * FAIL([mfmt,...])             unconditionally fail the test.
+ * SKIP()                       unconditionally skip the test.
  *
  * Additionally, failed assert() assertions will be detected and print error
  * messages (generally, these should only be used in the code being tested).
@@ -74,40 +75,11 @@
 #define EDITOR_LIBSPEC
 #define SKIP_SDL
 #include "../src/compat.h"
-#include "../src/platform_endian.h"
+#include "../src/platform_attribute.h"
 
-#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-
-#include <csignal>
-#include <iostream>
-#include <sstream>
-#include <type_traits>
-#include <vector>
-
-void *check_calloc(size_t nmemb, size_t size, const char *file,
- int line)
-{
-  void *p = calloc(nmemb, size);
-  assert(p);
-  return p;
-}
-
-void *check_malloc(size_t size, const char *file,
- int line)
-{
-  void *p = malloc(size);
-  assert(p);
-  return p;
-}
-
-void *check_realloc(void *ptr, size_t size, const char *file,
- int line)
-{
-  ptr = realloc(ptr, size);
-  assert(ptr);
-  return ptr;
-}
 
 /**
  * Utility templates.
@@ -142,7 +114,7 @@ static inline const char *coalesce(const char *var)
   return (var ? var : "NULL");
 }
 
-static inline constexpr const char *coalesce(std::nullptr_t ignore)
+static inline constexpr const char *coalesce(decltype(nullptr) ignore)
 {
   return "NULL";
 }
@@ -162,14 +134,15 @@ public:
   alignstr(const char (&str)[B])
   {
     static_assert(A >= B, "alignstr buffer is too small!");
-    std::copy(str, str + B - 1, u.arr);
+    memcpy(u.arr, str, B);
   }
 
   alignstr(const char * const str)
   {
     size_t slen = strlen(str);
-    assert(slen + 1 <= A);
-    std::copy(str, str + slen, u.arr);
+    if(slen + 1 > A)
+      abort();
+    memcpy(u.arr, str, slen);
   }
 
   constexpr const char *c_str() const
@@ -188,91 +161,59 @@ public:
     throw Unit::exception(__LINE__, "Test is not yet implemented"); \
   } while(0)
 
-#define ASSERT(test) \
+#define ASSERT(test, ...) \
   do\
   {\
     if(!(test)) \
     { \
-      throw Unit::exception(__LINE__, #test); \
+      throw Unit::exception(__LINE__, #test, "~" __VA_ARGS__); \
     } \
   } while(0)
 
-#define ASSERTX(test, reason) \
-  do\
-  {\
-    if(!(test)) \
-    {\
-      throw Unit::exception(__LINE__, #test, reason); \
-    }\
-  } while(0)
-
-#define ASSERTEQ(a, b) \
+#define ASSERTEQ(a, b, ...) \
   do\
   {\
     if(!((a) == (b)))\
     { \
-      throw Unit::exception(__LINE__, #a " == " #b, (a), (b), nullptr); \
+      throw Unit::exception(__LINE__, #a " == " #b, \
+       Unit::arg(a), Unit::arg(b), "~" __VA_ARGS__); \
     } \
   } while(0)
 
-#define ASSERTEQX(a, b, reason) \
-  do\
-  {\
-    if(!((a) == (b)))\
-    {\
-      throw Unit::exception(__LINE__, #a " == " #b, (a), (b), reason); \
-    }\
-  } while(0)
-
-#define ASSERTCMP(a, b) \
+#define ASSERTCMP(a, b, ...) \
   do\
   {\
     if(strcmp(a,b)) \
     {\
-      throw Unit::exception(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), nullptr); \
+      throw Unit::exception(__LINE__, "strcmp(" #a ", " #b ")", \
+       Unit::arg(a), Unit::arg(b), "~" __VA_ARGS__); \
     }\
   } while(0)
 
-
-#define ASSERTXCMP(a, b, reason) \
-  do\
-  {\
-    if(strcmp(a,b)) \
-    {\
-      throw Unit::exception(__LINE__, "strcmp(" #a ", " #b ")", (a), (b), reason); \
-    }\
-  } while(0)
-
-#define ASSERTXNCMP(a, b, n, reason) \
+#define ASSERTNCMP(a, b, n, ...) \
   do\
   {\
     if(strncmp(a,b,n)) \
     {\
-      throw Unit::exception(__LINE__, "strncmp(" #a ", " #b ", " #n ")", (a), (b), reason); \
+      throw Unit::exception(__LINE__, "strncmp(" #a ", " #b ", " #n ")", \
+       Unit::arg(a), Unit::arg(b), "~" __VA_ARGS__); \
     }\
   } while(0)
 
-#define ASSERTMEM(a, b, l) \
+#define ASSERTMEM(a, b, l, ...) \
   do\
   {\
     if(memcmp(a,b,l)) \
     {\
-      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", (a), (b), (l), nullptr); \
-    }\
-  } while(0)
-#define ASSERTXMEM(a, b, l, reason) \
-  do\
-  {\
-    if(memcmp(a,b,l)) \
-    {\
-      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", (a), (b), (l), reason); \
+      throw Unit::exception(__LINE__, "memcmp(" #a ", " #b ", " #l ")", \
+       Unit::arg(a, l), Unit::arg(b, l), "~" __VA_ARGS__); \
     }\
   } while(0)
 
-#define FAIL(reason) \
+#define FAIL(...) \
   do\
   {\
-    throw Unit::exception(__LINE__, nullptr, reason); \
+    throw Unit::exception(__LINE__, nullptr, "" __VA_ARGS__); \
   } while(0)
 
 #define SKIP() \
@@ -296,96 +237,116 @@ static testname ## _unittest_inst;\
 \
 inline void testname ## _unittest_impl::run_impl(void)
 
+#define Uerr(...) do{ fprintf(stderr, "" __VA_ARGS__); }while(0)
+#define UerrFlush() do{ fflush(stderr); }while(0)
+
 namespace Unit
 {
   class unittest;
 
-  class skip final: std::exception {};
-
-  class exception final: std::exception
+  template<class T>
+  constexpr const T &min(const T &a, const T &b)
   {
+    return (a < b) ? a : b;
+  }
+
+  template<class T>
+  constexpr const T &max(const T &a, const T &b)
+  {
+    return (a > b) ? a : b;
+  }
+
+  template<class T>
+  constexpr const T &clamp(const T &a, const T &_min, const T &_max)
+  {
+    return Unit::max(_min, Unit::min(_max, a));
+  }
+
+  /**
+   * Input value to a failed assertion. These are generated for Unit::exception
+   * instances thrown from assertions with multiple operands. This provides a
+   * printable text representation of the operand (i.e. std::string but worse)
+   * and also disambiguates the correct Unit::exception constructor to use.
+   */
+  class arg final
+  {
+    static constexpr int BUF_SIZE = 23;
+    char *allocbuf = nullptr;
+    char tmpbuf[BUF_SIZE] = { '\0' };
+
   public:
-    int line;
-    std::string test;
-    std::string reason;
-    bool has_reason;
-    std::string left;
-    std::string right;
-    bool has_values;
+    boolean has_value = false;
+    const char *op = nullptr;
 
-    exception(int _line, const char *_test):
-     line(_line), test(coalesce(_test)), reason(""), has_reason(false),
-     left(coalesce(nullptr)), right(coalesce(nullptr)), has_values(false) {}
+    arg();
+    arg(arg &&a);
+    arg(const arg &a);
+    ~arg();
 
-    exception(int _line, const char *_test, const char *_reason):
-     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason),
-     left(coalesce(nullptr)), right(coalesce(nullptr)), has_values(false) {}
+    explicit arg(decltype(nullptr) _op);
+    explicit arg(const char *_op);
+    explicit arg(const void *_op);
+    explicit arg(unsigned char _op);
+    explicit arg(unsigned short _op);
+    explicit arg(unsigned int _op);
+    explicit arg(unsigned long _op);
+    explicit arg(unsigned long long _op);
+    explicit arg(signed char _op);
+    explicit arg(short _op);
+    explicit arg(int _op);
+    explicit arg(long _op);
+    explicit arg(long long _op);
 
-    template<class T, class S>
-    exception(int _line, const char *_test, T _left, S _right, const char *_reason):
-     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason)
-    {
-      std::stringstream l;
-      std::stringstream r;
-      l << coalesce(_left);
-      r << coalesce(_right);
-      left = l.str();
-      right = r.str();
+    explicit arg(const void *_ptr, size_t length_bytes);
+    explicit arg(const unsigned short *_ptr, size_t length_bytes);
+    explicit arg(const unsigned int *_ptr, size_t length_bytes);
 
-      if(!std::is_same<T, std::nullptr_t>::value ||
-       !std::is_same<S, std::nullptr_t>::value)
-      {
-        has_values = true;
-      }
-      else
-        has_values = false;
-    }
-
-    template<class T, class E = std::enable_if<std::is_integral<T>::value>>
-    exception(int _line, const char *_test, const T *_left, const T *_right,
-     size_t length, const char *_reason):
-     line(_line), test(coalesce(_test)), reason(coalesce(_reason)), has_reason(!!_reason)
-    {
-      std::stringstream l;
-      std::stringstream r;
-
-      has_values = (_left || _right);
-      length /= sizeof(T);
-
-      if(_left)
-      {
-        l << std::hex;
-        for(size_t i = 0; i < length; i++)
-          l << static_cast<uint64_t>(_left[i]) << ' ';
-      }
-      else
-        l << coalesce(_left);
-
-      if(_right)
-      {
-        r << std::hex;
-        for(size_t i = 0; i < length; i++)
-          r << static_cast<uint64_t>(_right[i]) << ' ';
-      }
-      else
-        r << coalesce(_right);
-
-      left = l.str();
-      right = r.str();
-    }
-
-    // Print non-integral memcmp types bytewise.
-    exception(int _line, const char *_test, const void *_left, const void *_right,
-     size_t length, const char *_reason):
-     exception(_line, _test, (const uint8_t *)_left, (const uint8_t *)_right,
-      length, _reason) {}
+  private:
+    const char *fix_op(const arg &src);
   };
 
-  class unittestrunner_cls final
+  /**
+   * Thrown to signal the current test (or test section) has been skipped.
+   */
+  class skip final {};
+
+  /**
+   * Thrown on test failure (see ASSERT macros above).
+   */
+  class exception final
+  {
+  private:
+    char reasonbuf[1024];
+    Unit::arg leftarg;
+    Unit::arg rightarg;
+
+  public:
+    int line;
+    const char *test      = coalesce(nullptr);
+    const char *reason    = coalesce(nullptr);
+    bool has_reason       = false;
+    const char *left      = coalesce(nullptr);
+    const char *right     = coalesce(nullptr);
+    bool has_values       = false;
+
+    /* A copy constructor is required to be throwable. */
+    exception(const exception &e);
+
+    exception(int _line, const char *_test);
+    ATTRIBUTE_PRINTF(4, 5)
+    exception(int _line, const char *_test, const char *_reason_fmt, ...);
+    ATTRIBUTE_PRINTF(6, 7)
+    exception(int _line, const char *_test, Unit::arg &&_left, Unit::arg &&_right,
+     const char *_reason_fmt, ...);
+  };
+
+  /**
+   * Class for running all unit tests in the current set of unit tests.
+   */
+  class unittestrunner final
   {
   private:
 
-    std::vector<unittest *> tests;
     unittest *current_test;
     unsigned int count;
     unsigned int passed;
@@ -393,44 +354,19 @@ namespace Unit
     unsigned int skipped;
     unsigned int total;
 
-    void print_status()
-    {
-      if(!total)
-      {
-        std::cerr << "ERROR: no tests defined!\n\n";
-        return;
-      }
-
-      if(total == count && total == passed && !failed && !skipped)
-      {
-        // Print a shorter summary for the general case...
-        std::cerr << "Passed " << total << " "
-         << (total > 1 ? "tests" : "test") << ".\n";
-        std::cerr << std::endl;
-        return;
-      }
-
-      std::cerr << "\n"
-        "Summary:\n"
-        "  Tests total: " << total << "\n";
-
-      if(passed)  std::cerr << "  Tests passed: " << passed << "\n";
-      if(failed)  std::cerr << "  Tests failed: " << failed << "\n";
-      if(skipped) std::cerr << "  Tests skipped: " << skipped << "\n";
-      std::cerr << std::endl;
-    }
+    void print_status();
 
   public:
-    bool run(void);
+    static unittestrunner &get();
+    bool run();
     void signal_fail();
+    void addtest(unittest *t);
+  };
 
-    void addtest(unittest *t)
-    {
-      tests.push_back(t);
-    }
-  }
-  static unittestrunner;
-
+  /**
+   * Class for an individual unit test. Don't use directly; create individual
+   * test subclasses using the UNITTEST() macro.
+   */
   class unittest
   {
     bool has_run = false;
@@ -454,276 +390,27 @@ namespace Unit
 
     bool entire_test_skipped;
 
-    unittest(const char *_file, const char *_test_name):
-     file_name(_file), test_name(_test_name)
-    {
-      unittestrunner.addtest(this);
-    };
+    unittest(const char *_file, const char *_test_name);
 
-    ~unittest() {};
+    bool run();
+    void signal_fail();
 
-    inline void run_section(void)
-    {
-      try
-      {
-        run_impl();
-      }
-      catch(const Unit::skip &e)
-      {
-        this->skip();
-      }
-      catch(const Unit::exception &e)
-      {
-        this->print_exception(e);
-      }
-    }
+  private:
+    void run_section(void);
+    int passed_sections();
+    void print_test_success(void);
+    void print_test_failed(void);
+    void print_test_skipped(void);
+    void print_exception(const Unit::exception &e);
+    void skip();
 
-    inline bool run(void)
-    {
-      assert(!has_run);
-      has_run = true;
-
-      // NOTE-- first time doesn't run any section if sections are present.
-      this->failed_sections = 0;
-      this->count_sections = 0;
-      this->expected_section = 0;
-      this->skipped_sections = 0;
-      this->entire_test_skipped = false;
-      run_section();
-
-      if(has_failed_main)
-        return false;
-
-      if(this->entire_test_skipped)
-      {
-        print_test_skipped();
-        return true;
-      }
-
-      this->num_sections = this->count_sections;
-
-      while(this->expected_section < this->num_sections)
-      {
-        this->count_sections = 0;
-        this->expected_section++;
-        run_section();
-      }
-
-      if(this->entire_test_skipped ||
-       (this->num_sections && this->skipped_sections == this->num_sections))
-      {
-        print_test_skipped();
-        this->entire_test_skipped = true;
-        return true;
-      }
-
-      if(this->last_failed_section)
-      {
-        unsigned int passed = this->passed_sections();
-        std::cerr << "  Failed " << this->failed_sections << " section(s)";
-
-        if(this->skipped_sections)
-        {
-          std::cerr << " (passed " << passed << ", skipped " <<
-           this->skipped_sections << ").\n";
-        }
-        else
-          std::cerr << " (passed " << passed << ").\n";
-        return false;
-      }
-
-      print_test_success();
-      return true;
-    }
-
-    inline int passed_sections(void)
-    {
-      return this->count_sections - this->failed_sections - this->skipped_sections;
-    }
-
-    inline void print_test_success(void)
-    {
-      const char *_test_name = coalesce(test_name);
-      unsigned int passed = this->passed_sections();
-
-      std::cerr << "Passed test '" << file_name << "::" << _test_name << "'";
-
-      if(num_sections > 0)
-      {
-        std::cerr << " (" << passed << (passed > 1 ? " sections" : " section");
-
-        if(this->skipped_sections)
-          std::cerr << ", " << this->skipped_sections << " skipped)\n";
-        else
-          std::cerr << ")\n";
-      }
-      else
-        std::cerr << "\n";
-    }
-
-    inline void print_test_failed(void)
-    {
-      if(!printed_failed)
-      {
-        const char *_test_name = coalesce(test_name);
-
-        std::cerr << "Failed test '" << file_name << "::" << _test_name << "'\n";
-        printed_failed = true;
-      }
-    }
-
-    inline void print_test_skipped(void)
-    {
-      const char *_test_name = coalesce(test_name);
-      std::cerr << "Skipping test '" << file_name << "::" << _test_name << "'";
-
-      if(this->skipped_sections)
-      {
-        std::cerr << " (" << this->skipped_sections <<
-         (this->skipped_sections > 0 ? " section)\n" : " sections)\n");
-      }
-      else
-        std::cerr << "\n";
-    }
-
-    inline void signal_fail()
-    {
-      const char *_test_name = coalesce(this->test_name);
-      const char *_section_name = coalesce(this->section_name);
-
-      if(this->expected_section)
-      {
-        std::cerr << "Test '" << file_name << "::"
-          << _test_name << "' aborted in section '"
-          << _section_name <<  "' (#" << this->expected_section
-          << " out of " << this->num_sections << ")\n";
-      }
-      else
-        std::cerr << "Test '" << file_name << "::" << _test_name << "' aborted\n";
-    }
-
-    inline void print_exception(const Unit::exception &e)
-    {
-      const char *_section_name = coalesce(this->section_name);
-
-      print_test_failed();
-
-      if(this->expected_section)
-      {
-        if(this->last_failed_section < this->expected_section)
-        {
-          this->failed_sections++;
-          std::cerr << "  In section '" << _section_name << "': \n";
-          this->last_failed_section = this->expected_section;
-        }
-        std::cerr <<
-         "    Assert failed at line " << e.line << ": " << e.test;
-      }
-      else
-      {
-        std::cerr << "  Assert failed at line " << e.line << ": " << e.test;
-        this->has_failed_main = true;
-      }
-
-      if(e.has_reason)
-        std::cerr << " (" << e.reason << ")\n";
-      else
-        std::cerr << "\n";
-
-      if(e.has_values)
-      {
-        std::cerr
-          << "    Left:  " << e.left << "\n"
-          << "    Right: " << e.right << "\n";
-      }
-    }
-
-    void skip()
-    {
-      if(!this->expected_section)
-      {
-        this->entire_test_skipped = true;
-      }
-      else
-        this->skipped_sections++;
-    }
-
-    virtual void run_impl(void) {};
+    virtual void run_impl(void) = 0;
   };
 
-  bool unittestrunner_cls::run(void)
-  {
-    count = 0;
-    passed = 0;
-    failed = 0;
-    skipped = 0;
-    total = tests.size();
-
-    for(unittest *t : tests)
-    {
-      count++;
-      current_test = t;
-      bool result = t->run();
-
-      if(result)
-      {
-        if(!t->entire_test_skipped)
-          passed++;
-        else
-          skipped++;
-      }
-      else
-        failed++;
-    }
-
-    print_status();
-    return !failed;
-  }
-
-  void unittestrunner_cls::signal_fail()
-  {
-    if(current_test)
-      current_test->signal_fail();
-    else
-      std::cerr << "ERROR: NULL test!\n";
-
-    failed++;
-    skipped += total - count;
-    print_status();
-  }
-}
-
-void sigabrt_handler(int signal)
-{
-  if(signal == SIGABRT)
-  {
-    std::cerr << "Received SIGABRT: ";
-  }
-  else
-    std::cerr << "Unexpected signal " << signal << " received: ";
-
-  Unit::unittestrunner.signal_fail();
-}
-
-int main(int argc, char *argv[])
-{
-  if(argc && argv && argv[0])
-  {
-    char *fpos = strrchr(argv[0], '/');
-    char *bpos = strrchr(argv[0], '\\');
-    char tmp;
-
-    if(fpos || bpos)
-    {
-      fpos = (fpos > bpos) ? fpos : bpos;
-      tmp = *fpos;
-      *fpos = '\0';
-      chdir(argv[0]);
-      *fpos = tmp;
-    }
-  }
-  std::signal(SIGABRT, sigabrt_handler);
-  return !(Unit::unittestrunner.run());
+  /**
+   * Check the unit test system before running any tests.
+   */
+  bool self_check();
 }
 
 #endif /* UNIT_HPP */

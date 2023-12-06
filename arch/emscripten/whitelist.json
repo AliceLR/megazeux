@@ -31,6 +31,12 @@
 			"main_menu_callback",
 				"title_key",
 
+	"menu_key",
+	"menu_click",
+		"menu_activate",
+			"main_menu_activate",
+				"about_megazeux",
+
 	"load_world_title_selection",
 		"load_world_title",
 			"reload_world",

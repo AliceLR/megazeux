@@ -50,7 +50,7 @@ int pclose(FILE *stream)
   return 0;
 }
 
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
   if(ms > 0)
   {
@@ -68,9 +68,9 @@ boolean ctr_supports_wide(void)
   return consoleModelId != 3 /* O2DS */;
 }
 
-Uint32 get_ticks(void)
+uint64_t get_ticks(void)
 {
-  return (Uint32)osGetTime();
+  return osGetTime();
 }
 
 boolean platform_init(void)
@@ -94,12 +94,6 @@ void platform_quit(void)
 
   romfsExit();
   cfguExit();
-}
-
-void real_warp_mouse(int x, int y)
-{
-  // Since we can't warp a touchscreen stylus, focus there instead.
-  focus_pixel(x, y);
 }
 
 #ifdef CONFIG_CHECK_ALLOC

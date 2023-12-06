@@ -18,6 +18,7 @@
  */
 
 #include "../../src/audio/audio.h"
+#include "../../src/audio/audio_struct.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +37,7 @@
 static lwpq_t audio_queue;
 static lwp_t audio_thread;
 static u8 audio_stack[STACKSIZE];
-static Sint16 *audio_buffer[3];
+static int16_t *audio_buffer[3];
 static volatile int current = 0;
 static volatile int audio_stop = 0;
 static int buffer_size;
@@ -69,7 +70,7 @@ void init_audio_platform(struct config_info *conf)
   if(!audio.buffer_samples)
     audio.buffer_samples = 2048;
 
-  buffer_size = sizeof(Sint16) * 2 * audio.buffer_samples;
+  buffer_size = sizeof(int16_t) * 2 * audio.buffer_samples;
   audio.mix_buffer = malloc(buffer_size * 2);
 
   for(i = 0; i < 3; i++)

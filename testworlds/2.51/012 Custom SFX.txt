@@ -1,0 +1,3 @@
+Title: Custom SFX Test
+Author: Alice Rowan
+Desc: Make sure custom SFX can be loaded from old worlds correctly. This can't do much to verify a successful load except play a sound and WAIT PLAY.

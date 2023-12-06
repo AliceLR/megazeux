@@ -1,0 +1,289 @@
+. "MZV player copyright (C) 2023 Lachesis. This program is licensed"
+. "under the Creative Commons Attribution 4.0 (CC BY 4.0) license, and is"
+. "provided with NO WARRANTY. The original version of this program is"
+. "available in the source code distriution of MegaZeux 2.93. This notice"
+. "must remain in all derivatives of this program, and any changes to this"
+. "program must be documented following this notice."
+
+set "$mzv_file" to "out.mzv"
+mod "out.ogg"
+
+set "mzx_speed" to 2
+set "commands" to 10000
+playercolor is c00
+color c00
+. "This audio synchronization wait is configuration and video dependent :("
+. "wait for 4"
+set "&$mzv_file&" to "fread_open"
+goto "#play"
+set "" to "fread_open"
+end mod
+end
+
+. "Player will track up to time_m units of missed frames."
+: "#time"
+set "mzv_time_n" to "('time_seconds'*1000+'time_millis')"
+set "mzv_time_d" to 1000
+set "mzv_time_m" to "(60000)"
+if "('mzv_time_leap' ? 'mzv_time_n'<'mzv_time_m' : 0)" = 1 then "leap"
+if "mzv_time_n" < "mzv_time_m" then "#return"
+set "mzv_time_leap" to 1
+goto "#return"
+: "leap"
+dec "mzv_time_prev" by "mzv_time_d"
+set "mzv_time_leap" to 0
+goto "#return"
+
+: "#vlayer"
+set "vlayer_size" to "('mzv_vw'*'mzv_vh')"
+set "vlayer_width" to "mzv_vw"
+. "Sprite reference offsets."
+set "mzv_vx" to 0
+set "mzv_vy" to 0
+set "mzv_vo" to 256
+. "Current sprite index."
+set "mzv_idx" to 0
+goto "#return"
+
+: "#sprite"
+set "spr&mzv_idx&_overlaid" to 1
+goto "#return"
+
+
+. "----------------------------------------------------------------------"
+
+
+: "#play"
+set "$mzv_tmp" to "fread4"
+if "$mzv_tmp" === "MZXV" then "play"
+: "err"
+goto "#top"
+: "play"
+set "local" to "fread_counter"
+set "mzv_time_n" to 0
+set "mzv_time_d" to 1000
+goto "#time"
+set "mzv_time_prev" to "mzv_time_n"
+set "mzv_w" to 0
+set "mzv_h" to 0
+set "mzv_vw" to 0
+set "mzv_vh" to 0
+set "mzv_sp_x" to 0
+set "mzv_sp_y" to 0
+set "mzv_sp_w" to 1
+set "mzv_sp_h" to 1
+set "mzv_sp_u" to 0
+set "mzv_sp_o" to 0
+set "mzv_sp_t" to 0
+set "mzv_mode" to 0
+set "mzv_fr_n" to 125
+set "mzv_fr_d" to 6
+set "mzv_fr_adv" to 0
+set "$mzv_chr" to ""
+set "$mzv_pal" to ""
+set "$mzv_idx" to ""
+set "$mzv_mzm" to "MZM2"
+set "$mzv_mzm.8#4" to 0
+set "$mzv_mzm.12#4" to 0
+set "$mzv_mzm.13" to 1
+: "headers"
+goto "#chunk"
+goto "head:&$mzv_tmp&"
+if "mzv_w" = 0 then "err"
+if "mzv_h" = 0 then "err"
+set "mzv_vw" to "('mzv_vw' ? 'mzv_vw' : 'mzv_w')"
+set "mzv_vh" to "('mzv_vh' ? 'mzv_vh' : 'mzv_h')"
+goto "#vlayer"
+set "$mzv_mzm.4#2" to "mzv_w"
+set "$mzv_mzm.6#2" to "mzv_h"
+set "local" to "('mzv_sp_w'*'mzv_sp_h'-1)"
+set "local4" to "('mzv_sp_u'o'mzv_vo'o'mzv_sp_o' ? 1 : 0)"
+set "local2" to "(('local4' ? -'mzv_w'*8+640/2 : 80-'mzv_w'/2) + 'mzv_sp_x')"
+set "local3" to "(('local4' ? -'mzv_h'*14+350/2 : 25-'mzv_h'/2) + 'mzv_sp_y')"
+loop start
+set "spr&mzv_idx&_width" to "mzv_w"
+set "spr&mzv_idx&_height" to "mzv_h"
+set "spr&mzv_idx&_refx" to "('loopcount'%'mzv_sp_w'*'mzv_w'+'mzv_vx')"
+set "spr&mzv_idx&_refy" to "('loopcount'/'mzv_sp_w'*'mzv_h'+'mzv_vy')"
+set "spr&mzv_idx&_vlayer" to 1
+set "spr&mzv_idx&_unbound" to "local4"
+set "spr&mzv_idx&_offset" to "('loopcount'*'mzv_sp_o'+'mzv_vo')"
+set "spr&mzv_idx&_tcol" to "('loopcount' ? 'mzv_sp_t' : -1)"
+put c?? Sprite "mzv_idx" at "('loopcount'%'mzv_sp_w'+'local2')" "('loopcount'/'mzv_sp_w'+'local3')"
+goto "#sprite"
+inc "mzv_idx" by 1
+loop for "local"
+dec "fread_pos" by 8
+: "frames"
+goto "#chunk"
+goto "frame:&$mzv_tmp&"
+. "fallthrough"
+: "frame_wait"
+dec "mzv_fr_adv" by 1
+if "mzv_fr_adv" > 0 then "frames"
+: "w"
+wait for 1
+goto "#frameadv"
+if "mzv_fr_adv" > 0 then "frames"
+goto "w"
+
+: "#frameadv"
+set "mzv_fr_adv" to 0
+goto "#time"
+set "local" to "('mzv_time_n'-'mzv_time_prev')"
+inc "local" by "('local'<0 ? 'mzv_time_m' : 0)"
+set "local2" to "('local'/'mzv_time_d')"
+set "local3" to "('local'%'mzv_time_d')"
+set "local4" to "('local3'*'mzv_fr_n'/'mzv_time_d')"
+inc "local4" by "('local2'*'mzv_fr_n')"
+set "mzv_fr_adv" to "('local4'/'mzv_fr_d')"
+if "mzv_fr_adv" <= 0 then "#return"
+. "Only consume the time it takes to play exactly mzv_fr_adv frames."
+set "local6" to "('mzv_fr_adv'*'mzv_time_d'*'mzv_fr_d'/'mzv_fr_n'-'local')"
+set "mzv_time_prev" to "('mzv_time_n'+'local6')"
+goto "#return"
+
+: "#chunk"
+set "$mzv_tmp" to "fread4"
+set "mzv_sz" to "fread_counter"
+if "mzv_sz" < 0 then "err"
+goto "#return"
+
+: "head:fwid"
+if "mzv_sz" < 4 then "err"
+set "mzv_w" to "fread_counter"
+if "mzv_w" < 0 then "err"
+if "mzv_w" > 32767 then "err"
+inc "fread_pos" by "('mzv_sz'-4)"
+goto "headers"
+
+: "head:fhei"
+if "mzv_sz" < 4 then "err"
+set "mzv_h" to "fread_counter"
+if "mzv_h" < 0 then "err"
+if "mzv_h" > 32767 then "err"
+inc "fread_pos" by "('mzv_sz'-4)"
+goto "headers"
+
+: "head:bwid"
+if "mzv_sz" < 4 then "err"
+set "mzv_vw" to "fread_counter"
+if "mzv_vw" < 0 then "err"
+if "mzv_vw" > 32767 then "err"
+inc "fread_pos" by "('mzv_sz'-4)"
+goto "headers"
+
+: "head:bhei"
+if "mzv_sz" < 4 then "err"
+set "mzv_vh" to "fread_counter"
+if "mzv_vh" < 0 then "err"
+if "mzv_vh" > 32767 then "err"
+inc "fread_pos" by "('mzv_sz'-4)"
+goto "headers"
+
+: "head:sprx"
+if "mzv_sz" < 4 then "err"
+set "mzv_sp_x" to "fread_counter"
+inc "fread_pos" by "('mzv_sz'-4)"
+goto "headers"
+
+: "head:spry"
+if "mzv_sz" < 4 then "err"
+set "mzv_sp_y" to "fread_counter"
+inc "fread_pos" by "('mzv_sz'-4)"
+goto "headers"
+
+: "head:sprw"
+if "mzv_sz" < 4 then "err"
+set "mzv_sp_w" to "fread_counter"
+if "mzv_sp_w" < 0 then "err"
+inc "fread_pos" by "('mzv_sz'-4)"
+goto "headers"
+
+: "head:sprh"
+if "mzv_sz" < 4 then "err"
+set "mzv_sp_h" to "fread_counter"
+if "mzv_sp_h" < 0 then "err"
+inc "fread_pos" by "('mzv_sz'-4)"
+goto "headers"
+
+: "head:spru"
+if "mzv_sz" < 4 then "err"
+set "mzv_sp_u" to "fread_counter"
+if "mzv_sp_u" < 0 then "err"
+if "mzv_sp_u" > 1 then "err"
+inc "fread_pos" by "('mzv_sz'-4)"
+goto "headers"
+
+: "head:spro"
+if "mzv_sz" < 4 then "err"
+set "mzv_sp_o" to "fread_counter"
+inc "fread_pos" by "('mzv_sz'-4)"
+goto "headers"
+
+: "head:sprt"
+if "mzv_sz" < 4 then "err"
+set "mzv_sp_t" to "fread_counter"
+if "mzv_sp_t" < -1 then "err"
+if "mzv_sp_t" >= 256 then "err"
+inc "fread_pos" by "('mzv_sz'-4)"
+goto "headers"
+
+: "frame:smzx"
+if "mzv_sz" < 4 then "err"
+set "mzv_mode" to "fread_counter"
+if "mzv_mode" < 0 then "err"
+if "mzv_mode" > 3 then "err"
+inc "fread_pos" by "('mzv_sz'-4)"
+set "smzx_mode" to "mzv_mode"
+load palette "$mzv_pal"
+if "mzv_mode" != 3 then "frames"
+set "$mzv_idx" to "smzx_indices"
+goto "frames"
+
+: "frame:rate"
+if "mzv_sz" < 8 then "err"
+set "mzv_fr_n" to "fread_counter"
+set "mzv_fr_d" to "fread_counter"
+if "mzv_fr_n" < 0 then "err"
+if "mzv_fr_d" <= 0 then "err"
+inc "fread_pos" by "('mzv_sz'-8)"
+goto "frames"
+
+: "frame:fchr"
+set "$mzv_chr" to "fread&mzv_sz&"
+load char set "@&mzv_vo&$mzv_chr"
+goto "frames"
+
+: "frame:fpal"
+set "$mzv_pal" to "fread&mzv_sz&"
+load palette "$mzv_pal"
+goto "frames"
+
+: "frame:fidx"
+set "$mzv_idx" to "fread&mzv_sz&"
+set "$mzv_idx" to "smzx_indices"
+goto "frames"
+
+: "frame:f1ch"
+set "$mzv_tmp" to "fread&mzv_sz&"
+set "local" to "('mzv_w'*'mzv_h'-1)"
+loop start
+set "$mzv_mzm.('loopcount'<<1+16)" to "$mzv_tmp.&loopcount&"
+loop for "local"
+goto "mzm"
+
+: "frame:f1co"
+set "$mzv_tmp" to "fread&mzv_sz&"
+set "local" to "('mzv_w'*'mzv_h'-1)"
+loop start
+set "$mzv_mzm.('loopcount'<<1+17)" to "$mzv_tmp.&loopcount&"
+loop for "local"
+goto "mzm"
+
+: "frame:f2in"
+set "$mzv_mzm+16" to "fread&mzv_sz&"
+: "mzm"
+set "$mzv_mzm.length" to "('mzv_w'*'mzv_h'*2+16)"
+put "@$mzv_mzm" Image_file p02 at "mzv_vx" "mzv_vy"
+goto "frame_wait"

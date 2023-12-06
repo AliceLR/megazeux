@@ -37,13 +37,34 @@ __M_BEGIN_DECLS
 // Strings cannot be longer than 4M (orig 1M)
 #define MAX_STRING_LEN (1 << 22)
 
+static inline boolean is_string(const char *buffer)
+{
+  size_t namelen;
+
+  // String identifiers always begin with '$'.
+  if(buffer[0] != '$')
+    return false;
+
+  /* String identifiers can contain three different delimiters:
+   * '+' indicates a string offset, which has a string value.
+   * '#' indicates a string length limit, which has a string value.
+   * '.' indicates a string subscript or length, which has a numeric value.
+   *     A subscript may be followed by a '#' to indicate integer width.
+   *
+   * If a '.' is the first delimiter found, the identifier is not a string.
+   */
+  namelen = strcspn(buffer, "#+.");
+  return buffer[namelen] != '.';
+}
+
 CORE_LIBSPEC int get_string(struct world *mzx_world, char *name_buffer,
  struct string *dest, int id);
+CORE_LIBSPEC const struct string *get_string_pointer(struct world *mzx_world,
+ const char *name, int id);
 CORE_LIBSPEC int set_string(struct world *mzx_world, char *name_buffer,
  struct string *src, int id);
 CORE_LIBSPEC struct string *new_string(struct world *mzx_world,
  const char *name, size_t length, int id);
-CORE_LIBSPEC boolean is_string(char *buffer);
 CORE_LIBSPEC void sort_string_list(struct string_list *string_list);
 CORE_LIBSPEC void string_list_size(struct string_list *string_list,
  size_t *list_size, size_t *table_size, size_t *strings_size);

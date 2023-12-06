@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -51,7 +52,7 @@ void intake_set_insert(boolean new_insert_state)
 }
 
 static inline void intake_old_place_char(char *string, int *currx,
- int *curr_len, Uint32 chr)
+ int *curr_len, uint32_t chr)
 {
   // Overwrite or insert?
   if(insert_on || (*currx == *curr_len))
@@ -109,10 +110,8 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
   do
   {
-    if(use_mask)
-      write_string_mask(string, x, y, color, 0);
-    else
-      write_string_ext(string, x, y, color, 0, 0, 16);
+    int flags = use_mask ? WR_MASK : 0;
+    write_string_ext(string, x, y, color, flags, 0, 16);
 
     fill_line(max_len + 1 - curr_len, x + curr_len, y, 32, color);
 
@@ -450,7 +449,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
     if(place)
     {
-      Uint32 num_placed = 0;
+      int num_placed = 0;
 
       if((cur_char != 0) && (cur_char < 32) && (exit_type == INTK_EXIT_ANY))
       {
@@ -461,7 +460,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
       while((curr_len < max_len) && (!done) && num_placed < KEY_UNICODE_MAX)
       {
-        Uint32 cur_char = get_key(keycode_text_ascii);
+        uint32_t cur_char = get_key(keycode_text_ascii);
         if(cur_char)
         {
           intake_old_place_char(string, &currx, &curr_len, cur_char);
@@ -722,6 +721,7 @@ boolean intake_apply_event_fixed(subcontext *sub, enum intake_event_type type,
           intake_skip_back(intk);
           value--;
         }
+        new_pos = intk->pos;
         if(intk->pos < old_pos)
         {
           memmove(intk->dest + intk->pos, intk->dest + old_pos,
@@ -796,7 +796,7 @@ static void intake_event_ext(struct intake_subcontext *intk,
     if(intk->event_cb(intk->event_priv, (subcontext *)intk, type, old_pos,
      new_pos, value, data))
     {
-      intake_set_pos(intk, new_pos);
+      intake_sync((subcontext *)intk);
     }
   }
   else
@@ -871,7 +871,7 @@ static boolean intake_key(subcontext *sub, int *key)
   boolean shift_status = get_shift_status(keycode_internal);
   boolean any_mod = (alt_status || ctrl_status || shift_status);
   boolean place = false;
-  Uint32 num_placed = 0;
+  int num_placed = 0;
 
   // Exit-- let the parent context handle.
   if(get_exit_status())
@@ -1125,6 +1125,8 @@ const char *intake_input_string(subcontext *sub, const char *src,
 /**
  * Set the intake event callback function. This feature is used to report
  * individual intake events immediately to the parent context as they occur.
+ * The callback return value should indicate success (`true`) or failure
+ * (`false`). If the callback returns `true`, `intake_sync` will be called.
  */
 void intake_event_callback(subcontext *sub, void *priv,
  boolean (*event_cb)(void *priv, subcontext *sub, enum intake_event_type type,

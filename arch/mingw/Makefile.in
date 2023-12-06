@@ -33,6 +33,10 @@ ARCH_LDFLAGS += -static-libstdc++ -static-libgcc
 LINK_STATIC_IF_MIXED  ?= -Wl,-Bstatic
 LINK_DYNAMIC_IF_MIXED ?= -Wl,-Bdynamic
 
+# In Fedora, libmingwex dirent is compiled with stack protector now, so
+# libssp must manually be linked (and therefore libmingwex too).
+ARCH_LIBS += ${LINK_STATIC_IF_MIXED} -lmingwex -lssp
+
 # OpenGL must be linked to MZX
 core_ldflags += -lopengl32
 

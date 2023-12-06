@@ -34,12 +34,12 @@
 #include <stdio.h>
 #include <time.h>
 
-void delay(Uint32 ms)
+void delay(uint32_t ms)
 {
   usleep(1000 * ms);
 }
 
-Uint32 get_ticks(void)
+uint64_t get_ticks(void)
 {
   struct timeval tv;
 
@@ -49,7 +49,7 @@ Uint32 get_ticks(void)
     return 0;
   }
 
-  return (Uint32)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+  return (uint64_t)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
 
 boolean platform_init(void)
@@ -71,15 +71,21 @@ void initialize_joysticks(void)
 boolean __update_event_status(void)
 {
   // stub
-  return 0;
+  return false;
 }
 
-void real_warp_mouse(int x, int y)
+boolean __peek_exit_input(void)
+{
+  // stub
+  return false;
+}
+
+void __wait_event(void)
 {
   // stub
 }
 
-void __wait_event(void)
+void __warp_mouse(int x, int y)
 {
   // stub
 }

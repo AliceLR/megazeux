@@ -5,14 +5,19 @@
 usage() {
 	echo "usage: ./config.sh --platform [platform] <--prefix [dir]> <--sysconfdir [dir]>"
 	echo "                                         <--gamesdir [dir]> <--bindir [dir]>"
-	echo "                                         <--sharedir [dir]> <options..>"
+	echo "                                         <--sharedir [dir]> <--licensedir [dir]>"
+	echo "                                         <options..>"
 	echo
-	echo "  --prefix       Where dependencies should be found."
-	echo "  --sysconfdir   Where the config should be read from."
-	echo "  --gamesdir     Where binaries should be installed."
-	echo "  --libdir       Where libraries should be installed."
-	echo "  --bindir       Where utilities should be installed."
-	echo "  --sharedir     Where resources should be installed."
+	echo "  --prefix       Install prefix and where dependencies should be found. (/usr)"
+	echo "  --sysconfdir   Where the config should be read from. (/etc)"
+	echo "  --gamesdir     Where binaries should be installed. (/usr/games)"
+	echo "  --libdir       Where libraries should be installed. (/usr/lib)"
+	echo "  --bindir       Where utilities should be installed. (/usr/bin)"
+	echo "  --sharedir     Where resources should be installed. (/usr/share)"
+	echo "  --licensedir   Where licenses should be installed. (/usr/share/doc)"
+	echo
+	echo "  Install directories can be disregarded for builds for platforms"
+	echo "  with a monolithic directory structure e.g. Windows."
 	echo
 	echo "Supported [platform] values:"
 	echo
@@ -31,10 +36,14 @@ usage() {
 	echo "  3ds            Experimental 3DS port"
 	echo "  switch         Experimental Switch port"
 	echo "  wii            Experimental Wii port"
+	echo "  wiiu           Experimental Wii U port"
+	echo "  psvita         Experimental PS Vita port"
+	echo "  dreamcast      Experimental Dreamcast port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
 	echo "  emscripten     Experimental HTML5 (Emscripten) port"
+	echo "  djgpp          Experimental DOS port"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -70,6 +79,8 @@ usage() {
 	echo "  --disable-utils           Disable compilation of utils."
 	echo "  --disable-check-alloc     Disables memory allocator error handling."
 	echo "  --disable-counter-hash    Disables hash tables for counter/string lookups."
+	echo "  --disable-vfs             Disables MZX's built-in virtual filesystem."
+	echo "  --enable-extram           Enable board memory compression and storage hacks."
 	echo "  --enable-meter            Enable load/save meter display."
 	echo "  --enable-debytecode       Enable experimental 'debytecode' transform."
 	echo
@@ -82,6 +93,7 @@ usage() {
 	echo "  --disable-gl-prog         Disable GL renderers for programmable h/w."
 	echo "  --disable-overlay         Disable SDL 1.2 overlay renderers."
 	echo "  --enable-gp2x             Enables half-res software renderer."
+	echo "  --disable-dos-svga        On the DOS platform, disable SVGA software renderer."
 	echo "  --disable-libpng          Disable PNG screendump support."
 	echo "  --disable-screenshots     Disable the screenshot hotkey."
 	echo "  --enable-fps              Enable frames-per-second counter."
@@ -132,6 +144,10 @@ BINDIR="${PREFIX}${BINDIR_IN_PREFIX}"
 SHAREDIR_IS_SET="false"
 SHAREDIR_IN_PREFIX="/share"
 SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
+LICENSEDIR_IS_SET="false"
+LICENSEDIR_IN_PREFIX="/share/doc"
+LICENSEDIR="${PREFIX}${LICENSEDIR_IN_PREFIX}"
+USERCONFFILE=""
 DATE_STAMP="true"
 AS_NEEDED="false"
 RELEASE="false"
@@ -170,6 +186,7 @@ GETADDRINFO="true"
 POLL="true"
 IPV6="true"
 VERBOSE="false"
+EXTRAM="false"
 METER="false"
 SDL="true"
 EGL="false"
@@ -183,6 +200,8 @@ STDIO_REDIRECT="false"
 GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
 LAYER_RENDERING="true"
+DOS_SVGA="true"
+VFS="true"
 
 #
 # User may override above settings
@@ -214,6 +233,10 @@ while [ "$1" != "" ]; do
 
 		if [ "$SHAREDIR_IS_SET" = "false" ]; then
 			SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
+		fi
+
+		if [ "$LICENSEDIR_IS_SET" = "false" ]; then
+			LICENSEDIR="${PREFIX}${LICENSEDIR_IN_PREFIX}"
 		fi
 	fi
 
@@ -250,6 +273,13 @@ while [ "$1" != "" ]; do
 		shift
 		SHAREDIR="$1"
 		SHAREDIR_IS_SET="true"
+	fi
+
+	# e.g. --licensedir /usr/share/license
+	if [ "$1" = "--licensedir" ]; then
+		shift
+		LICENSEDIR="$1"
+		LICENSEDIR_IS_SET="true"
 	fi
 
 	[ "$1" = "--as-needed-hack" ] && AS_NEEDED="true"
@@ -380,6 +410,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-verbose" ] && VERBOSE="false"
 	[ "$1" = "--enable-verbose" ]  && VERBOSE="true"
 
+	[ "$1" = "--enable-extram" ]  && EXTRAM="true"
+	[ "$1" = "--disable-extram" ] && EXTRAM="false"
+
 	[ "$1" = "--enable-meter" ]  && METER="true"
 	[ "$1" = "--disable-meter" ] && METER="false"
 
@@ -398,6 +431,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--enable-counter-hash" ]  && COUNTER_HASH="true"
 	[ "$1" = "--disable-counter-hash" ] && COUNTER_HASH="false"
 
+	[ "$1" = "--enable-vfs" ]  && VFS="true"
+	[ "$1" = "--disable-vfs" ] && VFS="false"
+
 	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
 	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
 
@@ -412,6 +448,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-fps" ]  && FPSCOUNTER="true"
 	[ "$1" = "--disable-fps" ] && FPSCOUNTER="false"
+
+	[ "$1" = "--enable-dos-svga" ]  && DOS_SVGA="true"
+	[ "$1" = "--disable-dos-svga" ] && DOS_SVGA="false"
 
 	if [ "$1" = "--help" ]; then
 		usage
@@ -433,21 +472,36 @@ fi
 
 rm -f platform.inc
 
-if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
-  -o "$PLATFORM" = "mingw32" -o "$PLATFORM" = "mingw64" ]; then
+if [ "$PLATFORM" = "win32"   ] || [ "$PLATFORM" = "win64" ] ||
+   [ "$PLATFORM" = "mingw32" ] || [ "$PLATFORM" = "mingw64" ]; then
 	# Auto-prefix for the MSYS2 MINGW32/MINGW64 environments if a prefix wasn't
 	# provided. This helps avoid errors that occur when gcc or libs exist in
 	# /usr, which is used by MSYS2 for the MSYS environment.
-	if [ "$PREFIX_IS_SET" = "false" -a -n "$MSYSTEM" \
-	 -a "$(uname -o)" == "Msys" ]; then
-		if [ "$MSYSTEM" = "MINGW32" -o "$MSYSTEM" = "MINGW64" ]; then
+	if [ "$PREFIX_IS_SET" = "false" ] && [ -n "$MSYSTEM" ] &&
+	   [ "$(uname -o)" = "Msys" ] && [ "$MSYSTEM" != "MSYS" ]; then
+		case "$MSYSTEM" in
+		  "MINGW32"|"MINGW64")
 			[ "$PLATFORM" = "win32" ] && PREFIX="/mingw32"
 			[ "$PLATFORM" = "win64" ] && PREFIX="/mingw64"
-		fi
+			;;
+		  "CLANG32"|"CLANG64")
+			[ "$PLATFORM" = "win32" ] && PREFIX="/clang32"
+			[ "$PLATFORM" = "win64" ] && PREFIX="/clang64"
+			;;
+		  "CLANGARM64")
+			[ "$PLATFORM" = "win64" ] && PREFIX="/clangarm64"
+			;;
+		  "UCRT64")
+			[ "$PLATFORM" = "win64" ] && PREFIX="/ucrt64"
+			;;
+		  *)
+			echo "WARNING: Unknown MSYSTEM '$MSYSTEM'!"
+			;;
+		esac
 	fi
 
-	[ "$PLATFORM" = "win32" -o "$PLATFORM" = "mingw32" ] && ARCHNAME=x86
-	[ "$PLATFORM" = "win64" -o "$PLATFORM" = "mingw64" ] && ARCHNAME=x64
+	[ "$PLATFORM" = "win32" ] || [ "$PLATFORM" = "mingw32" ] && ARCHNAME=x86
+	[ "$PLATFORM" = "win64" ] || [ "$PLATFORM" = "mingw64" ] && ARCHNAME=x64
 	[ "$PLATFORM" = "mingw32" ] && MINGWBASE=i686-w64-mingw32-
 	[ "$PLATFORM" = "mingw64" ] && MINGWBASE=x86_64-w64-mingw32-
 	PLATFORM="mingw"
@@ -455,9 +509,9 @@ if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
 	echo "SUBPLATFORM=windows-$ARCHNAME"         >> platform.inc
 	echo "PLATFORM=$PLATFORM"                    >> platform.inc
 	echo "MINGWBASE=$MINGWBASE"                  >> platform.inc
-elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
-	OS="`uname -s`"
-	MACH="`uname -m`"
+elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
+	OS="$(uname -s)"
+	MACH="$(uname -m)"
 
 	case "$OS" in
 		"Linux")
@@ -478,26 +532,36 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 			;;
 	esac
 
-	if [ "$MACH" = "x86_64" -o "$MACH" = "amd64" ]; then
+	if [ "$MACH" = "x86_64" ] || [ "$MACH" = "amd64" ]; then
 		ARCHNAME=amd64
 		#RAWLIBDIR=lib64
 		# FreeBSD amd64 hack
 		#[ "$UNIX" = "freebsd" ] && RAWLIBDIR=lib
-	elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
+	elif [ "$(echo "$MACH" | sed 's,i.86,x86,')" = "x86" ]; then
 		ARCHNAME=x86
 		#RAWLIBDIR=lib
-	elif [ "`echo $MACH | sed 's,^arm.*,arm,'`" = "arm" ]; then
+	elif [ "$MACH" = "aarch64" ] || [ "$MACH" = "arm64" ]; then
+		ARCHNAME=aarch64
+	elif [ "$(echo "$MACH" | sed 's,^arm.*,arm,')" = "arm" ]; then
 		ARCHNAME=arm
 		#RAWLIBDIR=lib
 	elif [ "$MACH" = "ppc" ]; then
 		ARCHNAME=ppc
 		#RAWLIBDIR=lib
+	elif [ "$MACH" = "ppc64" ]; then
+		ARCHNAME=ppc64
+	elif [ "$MACH" = "mips" ]; then
+		ARCHNAME=mips
+	elif [ "$MACH" = "mips64" ]; then
+		ARCHNAME=mips64
 	elif [ "$MACH" = "m68k" ]; then
 		ARCHNAME=m68k
 	elif [ "$MACH" = "alpha" ]; then
 		ARCHNAME=alpha
-	elif [ "$MACH" = "hppa" ]; then
+	elif [ "$MACH" = "hppa" ] || [ "$MACH" = "parisc" ]; then
 		ARCHNAME=hppa
+	elif [ "$MACH" = "sh4" ]; then
+		ARCHNAME=sh4
 	elif [ "$MACH" = "sparc" ]; then
 		ARCHNAME=sparc
 	elif [ "$MACH" = "sparc64" ]; then
@@ -513,8 +577,8 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	echo "#define PLATFORM \"$UNIX-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=$UNIX-$ARCHNAME"         >> platform.inc
 	echo "PLATFORM=unix"                       >> platform.inc
-elif [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-devel" \
- -o "$PLATFORM" = "darwin-dist" ]; then
+elif [ "$PLATFORM" = "darwin" ] || [ "$PLATFORM" = "darwin-devel" ] ||
+     [ "$PLATFORM" = "darwin-dist" ]; then
 
 	echo "#define PLATFORM \"darwin\""    > src/config.h
 	echo "SUBPLATFORM=$PLATFORM"         >> platform.inc
@@ -532,7 +596,7 @@ fi
 
 echo "PREFIX:=$PREFIX" >> platform.inc
 
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"
 elif [ "$PLATFORM" = "emscripten" ]; then
 	LIBDIR="/data"
@@ -542,7 +606,7 @@ fi
 
 ### SYSTEM CONFIG DIRECTORY ###################################################
 
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	: # Use default or user-defined SYSCONFDIR
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SYSCONFDIR="../Resources"
@@ -571,64 +635,77 @@ echo "#define VERSION \"$VERSION\"" >> src/config.h
 
 if [ "$DATE_STAMP" = "true" ]; then
 	echo "Stamping version with today's date."
-	echo "#define VERSION_DATE \" (`date -u +%Y%m%d`)\"" >> src/config.h
+	echo "#define VERSION_DATE \" ($(date -u +%Y%m%d))\"" >> src/config.h
 else
 	echo "Not stamping version with today's date."
+fi
+
+if command -v git && git rev-parse --short HEAD 2>/dev/null; then
+	echo "#define VERSION_HEAD \"$(git rev-parse --short HEAD)\"" >> src/config.h
+fi
+
+if [ "$PRERELEASE" = "1" ]; then
+	echo "#define VERSION_PRERELEASE" >> src/config.h
 fi
 
 echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 
 #
-# Some platforms may have filesystem hierarchies they need to fit into
-# FIXME: SHAREDIR should be hardcoded in fewer cases
+# Some platforms (currently "unix", "darwin") are system installations.
+# Their assets and licenses are located in subdirectories of their
+# respective filesystem hierarchies. For other platforms, these files are
+# located in the base directory of the archive (the executable location).
+# This location needs to be hardcoded for various console platforms.
 #
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
-	echo "#define CONFFILE \"megazeux-config\""      >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""  >> src/config.h
-	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
+if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
+	USERCONFFILE=".megazeux-config"
 elif [ "$PLATFORM" = "nds" ]; then
 	SHAREDIR=/games/megazeux
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "3ds" ]; then
 	SHAREDIR=/3ds/megazeux
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "dreamcast" ]; then
+	SHAREDIR=/cd
 elif [ "$PLATFORM" = "wii" ]; then
 	SHAREDIR=/apps/megazeux
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "wiiu" ]; then
+	SHAREDIR=fs:/vol/external01/wiiu/apps/megazeux
 elif [ "$PLATFORM" = "switch" ]; then
 	SHAREDIR=/switch/megazeux
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "psvita" ]; then
+	SHAREDIR="app0:/"
+	STARTUPDIR="ux0:/data/megazeux"
+	USERCONFFILE="ux0:/data/megazeux/config.txt"
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SHAREDIR=../Resources
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\""           >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""            >> src/config.h
-	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
+	USERCONFFILE=".megazeux-config"
 elif [ "$PLATFORM" = "emscripten" ]; then
 	SHAREDIR=/data
-	GAMESDIR=/data/game
-	BINDIR=/data
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "android" ]; then
+	SHAREDIR=.
+	STARTUPDIR="/storage/emulated/0"
 else
 	SHAREDIR=.
-	GAMESDIR=.
-	BINDIR=.
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+fi
+
+if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
+	echo "#define CONFFILE \"megazeux-config\""		>> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""		>> src/config.h
+	echo "#define LICENSEDIR \"$LICENSEDIR/megazeux/\""	>> src/config.h
+else
+	LICENSEDIR="."
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
+	echo "#define CONFFILE \"config.txt\""			>> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""			>> src/config.h
+	echo "#define LICENSEDIR \"$LICENSEDIR\""		>> src/config.h
+fi
+
+if [ -n "$USERCONFFILE" ]; then
+	echo "#define USERCONFFILE \"$USERCONFFILE\""		>> src/config.h
+fi
+
+if [ -n "$STARTUPDIR" ]; then
+	echo "#define STARTUPDIR \"$STARTUPDIR\""		>> src/config.h
 fi
 
 #
@@ -640,27 +717,24 @@ echo "GAMESDIR=$GAMESDIR"     >> platform.inc
 echo "LIBDIR=$LIBDIR"         >> platform.inc
 echo "BINDIR=$BINDIR"         >> platform.inc
 echo "SHAREDIR=$SHAREDIR"     >> platform.inc
+echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
 
 #
 # Platform-specific libraries, or SDL?
 #
-if [ "$PLATFORM" = "wii" ]; then
-	echo "#define CONFIG_WII" >> src/config.h
-	echo "BUILD_WII=1" >> platform.inc
-	LIBSDL2="false"
-
-	echo "Force-disabling stack protector on Wii."
-	STACK_PROTECTOR="false"
-fi
-
-if [ "$PLATFORM" = "3ds" -o "$PLATFORM" = "nds" ]; then
+if [ "$PLATFORM" = "3ds" ] ||
+   [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
+   [ "$PLATFORM" = "dreamcast" ] ||
+   [ "$PLATFORM" = "egl" ]; then
 	echo "Disabling SDL ($PLATFORM)."
 	SDL="false"
-fi
 
-if [ "$PLATFORM" = "pandora" ]; then
-	echo "#define CONFIG_PANDORA" >> src/config.h
-	echo "BUILD_PANDORA=1" >> platform.inc
+	# The SDL software renderer works as a dummy renderer without
+	# SDL, which is not desired for these platforms. Wii also
+	# needs to do this conditionally if SDL is disabled.
+	echo "Force-disabling software renderer (SDL or dummy only)."
+	SOFTWARE="false"
 fi
 
 #
@@ -668,15 +742,13 @@ fi
 #
 if [ "$SDL" = "false" ]; then
 	echo "Force-disabling SDL dependent components:"
-	echo " -> SOFTWARE, SOFTSCALE, OVERLAY"
-	SOFTWARE="false"
+	echo " -> SOFTSCALE, OVERLAY"
 	SOFTSCALE="false"
 	OVERLAY="false"
 	LIBSDL2="false"
 else
 	echo "#define CONFIG_SDL" >> src/config.h
 	echo "BUILD_SDL=1" >> platform.inc
-	EGL="false"
 fi
 
 #
@@ -703,19 +775,9 @@ fi
 #
 # We need either SDL or EGL for OpenGL
 #
-if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
+if [ "$SDL" = "false" ] && [ "$EGL" = "false" ]; then
 	echo "Force-disabling OpenGL (no SDL or EGL backend)."
 	GL="false"
-fi
-
-#
-# The stack protector may cause issues with various C++ features (platform
-# matrix claims it breaks exceptions) in some versions of MinGW. This hasn't
-# been verified (and MZX doesn't use exceptions), but for now just disable it.
-#
-if [ "$PLATFORM" = "mingw" ]; then
-	echo "Force-disabling stack protector on Windows."
-	STACK_PROTECTOR="false"
 fi
 
 #
@@ -727,6 +789,9 @@ if [ "$PLATFORM" = "emscripten" ]; then
 
 	echo "Force-disabling stack protector (Emscripten)."
 	STACK_PROTECTOR="false"
+
+	echo "Force-disabling virtual filesystem (Emscripten)."
+	VFS="false"
 
 	EDITOR="false"
 	SCREENSHOTS="false"
@@ -749,15 +814,16 @@ if [ "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling stack protector on NDS."
 	STACK_PROTECTOR="false"
 
-	echo "Force-disabling software renderer on NDS."
 	echo "Building custom NDS renderer."
-	SOFTWARE="false"
 
 	echo "Force-disabling hash tables on NDS."
 	COUNTER_HASH="false"
 
 	echo "Force-disabling layer rendering on NDS."
 	LAYER_RENDERING="false"
+
+	echo "Force-disabling virtual filesystem on NDS."
+	VFS="false"
 
 	echo "Force-disabling existing music playback libraries on NDS."
 	MODPLUG="false"
@@ -780,15 +846,54 @@ if [ "$PLATFORM" = "3ds" ]; then
 	echo "Force-disabling stack protector on 3DS."
 	STACK_PROTECTOR="false"
 
-	echo "Force-disabling software renderer on 3DS."
 	echo "Building custom 3DS renderer."
-	SOFTWARE="false"
 
-	echo "Disabling utils on 3DS (silly)."
+	echo "Disabling utils on 3DS."
 	UTILS="false"
 
 	echo "Force-disabling IPv6 on 3DS (not implemented)."
 	IPV6="false"
+fi
+
+#
+# If the Wii arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "wii" ]; then
+	echo "Enabling Wii-specific hacks."
+	echo "#define CONFIG_WII" >> src/config.h
+	echo "BUILD_WII=1" >> platform.inc
+
+	if [ "$SDL" = "false" ]; then
+		echo "Force-disabling software renderer on Wii."
+		echo "Building custom Wii renderers."
+		SOFTWARE="false"
+	fi
+
+	# No SDL 2 support currently.
+	LIBSDL2="false"
+
+	echo "Force-disabling utils on Wii."
+	UTILS="false"
+
+	echo "Force-disabling stack protector on Wii."
+	STACK_PROTECTOR="false"
+fi
+
+#
+# If the Wii U arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "wiiu" ]; then
+	echo "Enabling Wii U-specific hacks."
+	echo "#define CONFIG_WIIU" >> src/config.h
+	echo "BUILD_WIIU=1" >> platform.inc
+
+	echo "Disabling utils on Wii U."
+	UTILS="false"
+
+	# Doesn't seem to be fully populated on the Wii U.
+	GAMECONTROLLERDB="false"
 fi
 
 #
@@ -800,7 +905,7 @@ if [ "$PLATFORM" = "switch" ]; then
 	echo "#define CONFIG_SWITCH" >> src/config.h
 	echo "BUILD_SWITCH=1" >> platform.inc
 
-	echo "Disabling utils on Switch (silly)."
+	echo "Disabling utils on Switch."
 	UTILS="false"
 
 	echo "Force-enabling OpenGL ES support (Switch)."
@@ -824,6 +929,52 @@ if [ "$PLATFORM" = "psp" ]; then
 
 	echo "Force-disabling stack protector on PSP."
 	STACK_PROTECTOR="false"
+fi
+
+#
+# If the PS Vita arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "psvita" ]; then
+	echo "Enabling PS Vita-specific hacks."
+	echo "#define CONFIG_PSVITA" >> src/config.h
+	echo "BUILD_PSVITA=1" >> platform.inc
+
+	echo "Force-disabling utils on PS Vita."
+	UTILS="false"
+
+	echo "Force-disabling stack protector on PS Vita."
+	STACK_PROTECTOR="false"
+fi
+
+#
+# If the DJGPP arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "djgpp" ]; then
+	echo "#define CONFIG_DJGPP" >> src/config.h
+	echo "BUILD_DJGPP=1" >> platform.inc
+
+	echo "Force-disabling stack protector (DOS)."
+	STACK_PROTECTOR="false"
+
+	if [ "$DOS_SVGA" = "true" ]; then
+		echo "#define CONFIG_DOS_SVGA" >> src/config.h
+		echo "BUILD_DOS_SVGA=1" >> platform.inc
+		echo "SVGA software renderer enabled."
+	else
+		echo "SVGA software renderer disabled."
+	fi
+fi
+
+#
+# If the Dreamcast arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "dreamcast" ]; then
+	echo "Enabling Dreamcast-specific hacks."
+	echo "#define CONFIG_DREAMCAST" >> src/config.h
+	echo "BUILD_DREAMCAST=1" >> platform.inc
 fi
 
 #
@@ -852,11 +1003,25 @@ if [ "$PLATFORM" = "gp2x" ]; then
 fi
 
 #
+# If the Pandora arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "pandora" ]; then
+	echo "#define CONFIG_PANDORA" >> src/config.h
+	echo "BUILD_PANDORA=1" >> platform.inc
+fi
+
+#
 # Force-disable OpenGL and overlay renderers on PSP, GP2X, 3DS, NDS and Wii
 #
-if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "3ds" \
-  -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
+if [ "$PLATFORM" = "psp" ] ||
+   [ "$PLATFORM" = "gp2x" ] ||
+   [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "3ds" ] ||
+   [ "$PLATFORM" = "wii" ] ||
+   [ "$PLATFORM" = "wiiu" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
+   [ "$PLATFORM" = "dreamcast" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
 	OVERLAY="false"
@@ -865,7 +1030,7 @@ fi
 #
 # Force-disable the softscale renderer for SDL 1.2 (requires SDL_Renderer).
 #
-if [ "$SDL" = "true" -a "$LIBSDL2" = "false" -a "$SOFTSCALE" = "true" ]; then
+if [ "$SDL" = "true" ] && [ "$LIBSDL2" = "false" ] && [ "$SOFTSCALE" = "true" ]; then
 	echo "Force-disabling softscale renderer (requires SDL 2)."
 	SOFTSCALE="false"
 fi
@@ -874,7 +1039,7 @@ fi
 # Force-disable overlay renderers for SDL 2. The SDL 2 answer to SDL_Overlay
 # involves planar YUV modes which don't mesh well with MZX's internal rendering.
 #
-if [ "$SDL" = "true" -a "$LIBSDL2" = "true" -a "$OVERLAY" = "true" ]; then
+if [ "$SDL" = "true" ] && [ "$LIBSDL2" = "true" ] && [ "$OVERLAY" = "true" ]; then
 	echo "Force-disabling overlay renderers (requires SDL 1.2)."
 	OVERLAY="false"
 fi
@@ -882,7 +1047,7 @@ fi
 #
 # Must have at least one OpenGL renderer enabled
 #
-[ "$GL_FIXED" = "false" -a "$GL_PROGRAM" = "false" ] && GL="false"
+[ "$GL_FIXED" = "false" ] && [ "$GL_PROGRAM" = "false" ] && GL="false"
 
 #
 # If OpenGL is globally disabled, disable all renderers
@@ -898,8 +1063,10 @@ fi
 # Force-disable PNG support on platforms without screenshots or utils enabled.
 # The 3DS port requires PNG for other purposes.
 #
-if [ "$SCREENSHOTS" = "false" -a "$UTILS" = "false" \
-  -a "$LIBPNG" = "true" -a "$PLATFORM" != "3ds" ]; then
+if [ "$SCREENSHOTS" = "false" ] &&
+   [ "$UTILS" = "false" ] &&
+   [ "$LIBPNG" = "true" ] &&
+   [ "$PLATFORM" != "3ds" ]; then
 	echo "Force-disabling PNG support (screenshots and utils disabled)"
 	LIBPNG="false"
 fi
@@ -926,8 +1093,10 @@ fi
 #
 # Force-disable pthread on non-POSIX platforms
 #
-if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
-  -a "$PLATFORM" != "gp2x" -a "$PLATFORM" != "android" ]; then
+if [ "$PLATFORM" != "unix" ] &&
+   [ "$PLATFORM" != "unix-devel" ] &&
+   [ "$PLATFORM" != "gp2x" ] &&
+   [ "$PLATFORM" != "android" ]; then
 	echo "Force-disabling pthread on non-POSIX platforms."
 	PTHREAD="false"
 fi
@@ -935,10 +1104,18 @@ fi
 #
 # Force disable modular DSOs.
 #
-if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
-  -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
-  -o "$PLATFORM" = "android" -o "$PLATFORM" = "emscripten" \
-  -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
+if [ "$PLATFORM" = "gp2x" ] ||
+   [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "3ds" ] ||
+   [ "$PLATFORM" = "wii" ] ||
+   [ "$PLATFORM" = "wiiu" ] ||
+   [ "$PLATFORM" = "switch" ] ||
+   [ "$PLATFORM" = "android" ] ||
+   [ "$PLATFORM" = "emscripten" ] ||
+   [ "$PLATFORM" = "psp" ] ||
+   [ "$PLATFORM" = "psvita" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
+   [ "$PLATFORM" = "dreamcast" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
 fi
@@ -946,7 +1123,9 @@ fi
 #
 # Force disable networking (unsupported platform or no editor build)
 #
-if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" ]; then
+if [ "$EDITOR" = "false" ] ||
+   [ "$PLATFORM" = "djgpp" ] ||
+   [ "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
 fi
@@ -970,32 +1149,37 @@ fi
 #
 # Force disable networking (no applications enabled)
 #
-if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
+if [ "$NETWORK" = "true" ] && [ "$UPDATER" = "false" ]; then
 	echo "Force-disabling networking (no network-dependent features enabled)."
 	NETWORK="false"
 fi
 
-#
-# Force disable getaddrinfo and IPv6 (unsupported platform)
-#
-if [ "$NETWORK" = "true" ] && \
- [ "$PLATFORM" = "amiga" -o "$PLATFORM" = "wii" -o "$PLATFORM" = "psp" ]; then
-	echo "Force-disabling getaddrinfo name resolution and IPv6 support (unsupported platform)."
-	GETADDRINFO="false"
-	IPV6="false"
-fi
+if [ "$NETWORK" = "true" ]; then
+	#
+	# Force disable getaddrinfo and IPv6 (unsupported platform)
+	#
+	if [ "$PLATFORM" = "amiga" ] ||
+	   [ "$PLATFORM" = "wii" ] ||
+	   [ "$PLATFORM" = "psp" ]; then
+		echo "Force-disabling getaddrinfo name resolution and IPv6 support (unsupported platform)."
+		GETADDRINFO="false"
+		IPV6="false"
+	fi
 
-#
-# Force disable poll (unsupported platform)
-# PSPSDK doesn't have this function and old versions of Mac OS X have a bugged
-# implementation. Amiga hasn't been verified, but considering the other things
-# missing, it's probably a safe inclusion.
-#
-if [ "$NETWORK" = "true" ] && \
- [ "$PLATFORM" = "amiga" -o "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-dist" \
-  -o "$PLATFORM" = "darwin-devel" -o "$PLATFORM" = "psp" ]; then
-	echo "Force-disabling poll (unsupported platform)."
-	POLL="false"
+	#
+	# Force disable poll (unsupported platform)
+	# PSPSDK doesn't have this function and old versions of Mac OS X have a bugged
+	# implementation. Amiga hasn't been verified, but considering the other things
+	# missing, it's probably a safe inclusion.
+	#
+	if [ "$PLATFORM" = "amiga" ] ||
+	   [ "$PLATFORM" = "darwin" ] ||
+	   [ "$PLATFORM" = "darwin-dist" ] ||
+	   [ "$PLATFORM" = "darwin-devel" ] ||
+	   [ "$PLATFORM" = "psp" ]; then
+		echo "Force-disabling poll (unsupported platform)."
+		POLL="false"
+	fi
 fi
 
 #
@@ -1141,27 +1325,49 @@ fi
 #
 # X11 support (linked against and needs headers installed)
 #
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" \
-  -o "$PLATFORM" = "pandora" ]; then
+if [ "$PLATFORM" = "unix" ] ||
+   [ "$PLATFORM" = "unix-devel" ] ||
+   [ "$PLATFORM" = "pandora" ]; then
 	#
 	# Confirm the user's selection of X11, if they enabled it
 	#
 	if [ "$X11" = "true" ]; then
+		#
+		# Locate X11 binary path.
+		#
+		X11="false"
 		for XBIN in X Xorg; do
 			# check if X exists
-			command -v $XBIN >/dev/null 2>&1
-
-			# X/Xorg queried successfully
-			[ "$?" = "0" ] && break
+			X11PATH=$(command -v "$XBIN" 2>/dev/null)
+			if [ -n "$X11PATH" ]; then
+				X11="true"
+				break
+			fi
 		done
 
-		if [ "$?" != "0" ]; then
+		#
+		# Locate X11 lib dir. "*/lib" should be the last element in the
+		# list so it will be used as the default in case of failure.
+		#
+		if [ "$X11" = "true" ]; then
+			X11DIR=$(dirname "$(dirname "$X11PATH")")
+
+			for X11LIBDIR in "$X11DIR/lib64" "$X11DIR/lib"; do
+				for EXT in "so" "dylib"; do
+					if [ -f "$X11LIBDIR/libX11.$EXT" ] || \
+					   [ -L "$X11LIBDIR/libX11.$EXT" ]; then
+						break 2
+					fi
+				done
+			done
+		fi
+
+		if [ "$X11" = "false" ]; then
 			echo "Force-disabling X11 (could not be queried)."
-			X11="false"
 		fi
 	fi
 
-	if [ "$ICON" = "true" -a "$X11" = "false" ]; then
+	if [ "$ICON" = "true" ] && [ "$X11" = "false" ]; then
 		echo "Force-disabling icon branding (X11 disabled)."
 		ICON="false"
 	fi
@@ -1172,26 +1378,24 @@ fi
 
 if [ "$X11" = "true" ]; then
 	echo "X11 support enabled."
-
-	# enable the C++ bits
 	echo "#define CONFIG_X11" >> src/config.h
-
-	# figure out where X11 is prefixed
-	X11PATH=`which $XBIN`
-	X11DIR=`dirname $X11PATH`
-
-	# pass this along to the build system
 	echo "X11DIR=${X11DIR}" >> platform.inc
+	echo "X11LIBDIR=${X11LIBDIR}" >> platform.inc
 fi
 
 #
 # Force disable icon branding.
 #
 if [ "$ICON" = "true" ]; then
-	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-devel" \
-	  -o "$PLATFORM" = "darwin-dist" -o "$PLATFORM" = "gp2x" \
-	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" \
-	  -o "$PLATFORM" = "wii" ]; then
+	if [ "$PLATFORM" = "darwin" ] ||
+	   [ "$PLATFORM" = "darwin-devel" ] ||
+	   [ "$PLATFORM" = "darwin-dist" ] ||
+	   [ "$PLATFORM" = "gp2x" ] ||
+	   [ "$PLATFORM" = "psp" ] ||
+	   [ "$PLATFORM" = "nds" ] ||
+	   [ "$PLATFORM" = "wii" ] ||
+	   [ "$PLATFORM" = "djgpp" ] ||
+	   [ "$PLATFORM" = "dreamcast" ]; then
 		echo "Force-disabling icon branding (redundant)."
 		ICON="false"
 	fi
@@ -1265,7 +1469,7 @@ fi
 #
 # GX renderer (Wii and GameCube)
 #
-if [ "$PLATFORM" = "wii" -a "$SDL" = "false" ]; then
+if [ "$PLATFORM" = "wii" ] && [ "$SDL" = "false" ]; then
 	echo "Building custom GX renderer."
 	echo "#define CONFIG_RENDER_GX" >> src/config.h
 	echo "BUILD_RENDER_GX=1" >> platform.inc
@@ -1429,7 +1633,7 @@ if [ "$ICON" = "true" ]; then
 		if [ "$SHAREDIR" = "." ]; then
 			ICONFILE="contrib/icons/quantump.png"
 		else
-			ICONFILE="$SHAREDIR/icons/megazeux.png"
+			ICONFILE="$SHAREDIR/icons/hicolor/128x128/apps/megazeux.png"
 		fi
 		echo "#define ICONFILE \"$ICONFILE\"" >> src/config.h
 	fi
@@ -1504,6 +1708,17 @@ if [ "$VERBOSE" = "true" ]; then
 fi
 
 #
+# Enable extra memory hacks and memory compression, if enabled.
+#
+if [ "$EXTRAM" = "true" ]; then
+	echo "Board memory compression and extra memory hacks enabled."
+	echo "#define CONFIG_EXTRAM" >> src/config.h
+	echo "BUILD_EXTRAM=1" >> platform.inc
+else
+	echo "Board memory compression and extra memory hacks disabled."
+fi
+
+#
 # Users may enable the load/save meter display.
 #
 if [ "$METER" = "true" ]; then
@@ -1535,6 +1750,16 @@ else
 fi
 
 #
+# Virtual filesystem, if enabled
+#
+if [ "$VFS" = "true" ]; then
+	echo "Virtual filesystem enabled."
+	echo "#define CONFIG_VFS" >> src/config.h
+else
+	echo "Virtual filesystem disabled."
+fi
+
+#
 # Experimental 'debytecode' transformation, if enabled
 #
 if [ "$DEBYTECODE" = "true" ]; then
@@ -1558,7 +1783,7 @@ fi
 #
 # stdio redirect, if enabled
 #
-if [ "$SDL" = "true" -a "$LIBSDL2" = "false" ]; then
+if [ "$SDL" = "true" ] && [ "$LIBSDL2" = "false" ]; then
 	echo "Using SDL 1.x default stdio redirect behavior."
 elif [ "$STDIO_REDIRECT" = "true" ]; then
 	echo "Redirecting stdio to stdout.txt and stderr.txt."
@@ -1570,7 +1795,7 @@ fi
 #
 # SDL_GameControllerDB, if enabled. This depends on SDL 2.
 #
-if [ "$LIBSDL2" = "true" -a "$GAMECONTROLLERDB" = "true" ]; then
+if [ "$LIBSDL2" = "true" ] && [ "$GAMECONTROLLERDB" = "true" ]; then
 	echo "SDL_GameControllerDB enabled."
 	echo "#define CONFIG_GAMECONTROLLERDB" >> src/config.h
 	echo "BUILD_GAMECONTROLLERDB=1" >> platform.inc
