@@ -20,6 +20,7 @@
 <head>
   <meta charset="UTF-8">
   <title>MegaZeux Joystick Support</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="title" content="MegaZeux Joystick Support Guide">
   <meta name="description" content="Guide for configuring gamepad support for games and standard console gamepad layouts.">
   <meta name="twitter:card" content="summary">
@@ -29,33 +30,33 @@
   <style>
     #container
     {
-      width: 800px;
+      max-width: 780px;
       margin: auto;
-      padding: 0px 24px;
+      padding: 0px;
     }
 
     header, section
     {
-      margin: 8px;
+      margin: 4px;
       margin-bottom: 16px;
     }
 
     header, section.contents
     {
-      padding: 16px;
+      padding: 8px 4px;
     }
 
     section.main
     {
-      padding: 16px;
-      padding-bottom: 96px;
+      padding: 8px 4px;
+      padding-bottom: 72px;
     }
 
     section.inner
     {
       background-color: #F4F4F4;
       border-radius: 5px;
-      padding: 4px 24px 16px;
+      padding: 2px 16px 8px;
     }
 
     code
@@ -72,26 +73,34 @@
       background-color: #555;
       font-size: .95em;
       color: #fff;
-      margin: 24px;
-      padding: 0px 32px 16px;
+      margin: 20px 8px;
+      padding: 0px 20px 16px;
+      overflow: auto;
       white-space: pre-line;
     }
 
     div.image-wrapper
     {
-      margin: 16px;
+      max-width: 640px;
+      margin: 0 auto;
+      overflow: auto;
+    }
+
+    div.scroll-wrapper
+    {
+      overflow: auto;
     }
 
     table
     {
-      width: 100%;
+      width: 99%;
       margin: 24px 2px 40px;
       border: 1px solid #aaa;
     }
 
     td
     {
-      padding: 1px 10px;
+      padding: 1px 6px;
       border: 4px solid transparent;
     }
 
@@ -178,7 +187,8 @@
       </p>
 
       <div class="image-wrapper">
-      <svg width="640" height="400">
+      <svg width="640" height="400" role="img">
+        <title>Diagram of a typical XInput-like controller with buttons and axes labeled.</title>
         <style>
           .label { font: bold 16px monospace; }
         </style>
@@ -286,6 +296,7 @@
         The available joystick actions, their UI behavior, and their default
         gameplay keybindings are:
       </p>
+      <div class="scroll-wrapper">
       <table>
         <thead>
           <td>Name</td>
@@ -297,28 +308,28 @@
         <tr>
           <td><code>up</code></td>
           <td></td>
-          <td>Element/cursor up</td>
+          <td>Element/&#x200b;cursor up</td>
           <td><code>key_up</code> (movement)</td>
         </tr>
 
         <tr>
           <td><code>down</code></td>
           <td></td>
-          <td>Element/cursor down</td>
+          <td>Element/&#x200b;cursor down</td>
           <td><code>key_down</code> (movement)</td>
         </tr>
 
         <tr>
           <td><code>left</code></td>
           <td></td>
-          <td>Element/cursor left</td>
+          <td>Element/&#x200b;cursor left</td>
           <td><code>key_left</code> (movement)</td>
         </tr>
 
         <tr>
           <td><code>right</code></td>
           <td></td>
-          <td>Element/cursor right</td>
+          <td>Element/&#x200b;cursor right</td>
           <td><code>key_right</code> (movement)</td>
         </tr>
 
@@ -406,6 +417,7 @@
           <td></td>
         </tr>
       </table>
+      </div>
 
       <p>
         The following actions are available only through Robotic or are mostly
@@ -414,7 +426,7 @@
 
       <table>
         <thead>
-          <td style="min-width:256px">Name</td>
+          <td style="min-width:40%">Name</td>
           <td>Description</td>
         </thead>
 
@@ -922,7 +934,8 @@
       </p>
 
       <div class="image-wrapper">
-      <svg width="640" height="560">
+      <svg width="640" height="560" role="img">
+        <title>Diagram resembling an NDS or 3DS, with buttons and axes labeled.</title>
         <svg x="5%" y="1%" width="90%" height="98%">
           <style>
             .label { font: bold 16px monospace; }
@@ -1027,7 +1040,8 @@
       </p>
 
       <div class="image-wrapper">
-      <svg width="640" height="280">
+      <svg width="640" height="280" role="img">
+        <title>Diagram resembling a PSP, with buttons and axes labeled.</title>
         <style>
           .label { font: bold 16px monospace; }
         </style>
@@ -1142,7 +1156,8 @@
       </p>
 
       <div class="image-wrapper">
-      <svg width="640" height="320">
+      <svg width="640" height="320" role="img">
+        <title>Diagram resembling a Switch with buttons and axes labeled.</title>
         <style>
           .label { font: bold 16px monospace; }
         </style>
@@ -1290,7 +1305,8 @@
         </p>
 
         <div class="image-wrapper">
-        <svg width="640" height="200">
+        <svg width="640" height="200" role="img">
+          <title>Diagram resembling a Wii Remote with buttons labeled.</title>
           <style>
             .label { font: bold 16px monospace; }
           </style>
@@ -1367,7 +1383,8 @@
         </p>
 
         <div class="image-wrapper">
-        <svg width="640" height="500">
+        <svg width="640" height="500" role="img">
+          <title>Diagram resembling a Wii Remote and nunchuck, with buttons and axes labeled.</title>
           <style>
             .label { font: bold 16px monospace; }
           </style>
@@ -1473,7 +1490,8 @@
         </p>
 
         <div class="image-wrapper">
-        <svg width="640" height="320">
+        <svg width="640" height="320" role="img">
+          <title>Diagram resembling a Wii Classic Controller with buttons and axes labeled.</title>
           <style>
             .label { font: bold 16px monospace; }
           </style>
@@ -1598,7 +1616,8 @@
       </p>
 
       <div class="image-wrapper">
-      <svg width="640" height="360">
+      <svg width="640" height="360" role="img">
+        <title>Diagram resembling a GP2X with buttons and axes labeled.</title>
         <style>
           .label { font: bold 16px monospace; }
         </style>
@@ -1696,7 +1715,7 @@
     <h2>License</h2>
     <section class="inner">
       <p>
-        Copyright &copy; 2019, 2020 Lachesis &mdash;
+        Copyright &copy; 2019-2023 Lachesis &mdash;
         <a href="https://github.com/AliceLR/megazeux/">
           https://github.com/AliceLR/megazeux/
         </a>
