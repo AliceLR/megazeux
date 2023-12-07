@@ -33,6 +33,7 @@ usage() {
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
+	echo "  nds-blocksds   Experimental NDS (BlocksDS) port"
 	echo "  3ds            Experimental 3DS port"
 	echo "  switch         Experimental Switch port"
 	echo "  wii            Experimental Wii port"
@@ -659,7 +660,7 @@ echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 #
 if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	USERCONFFILE=".megazeux-config"
-elif [ "$PLATFORM" = "nds" ]; then
+elif [ "$PLATFORM" = "nds" ] || [ "$PLATFORM" = "nds-blocksds" ]; then
 	SHAREDIR=/games/megazeux
 elif [ "$PLATFORM" = "3ds" ]; then
 	SHAREDIR=/3ds/megazeux
@@ -724,6 +725,7 @@ echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
 #
 if [ "$PLATFORM" = "3ds" ] ||
    [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "nds-blocksds" ] ||
    [ "$PLATFORM" = "djgpp" ] ||
    [ "$PLATFORM" = "dreamcast" ] ||
    [ "$PLATFORM" = "egl" ]; then
@@ -806,7 +808,7 @@ fi
 # If the NDS arch is enabled, some code has to be compile time
 # enabled too.
 #
-if [ "$PLATFORM" = "nds" ]; then
+if [ "$PLATFORM" = "nds" ] || [ "$PLATFORM" = "nds-blocksds" ]; then
 	echo "Enabling NDS-specific hacks."
 	echo "#define CONFIG_NDS" >> src/config.h
 	echo "BUILD_NDS=1" >> platform.inc
@@ -832,6 +834,12 @@ if [ "$PLATFORM" = "nds" ]; then
 	OPENMPT="false"
 	REALITY="false"
 	VORBIS="false"
+fi
+
+if [ "$PLATFORM" = "nds-blocksds" ]; then
+	echo "Enabling BlocksDS-specific hacks."
+	echo "#define CONFIG_NDS_BLOCKSDS" >> src/config.h
+	echo "BUILD_NDS_BLOCKSDS=1" >> platform.inc
 fi
 
 #
@@ -1017,6 +1025,7 @@ fi
 if [ "$PLATFORM" = "psp" ] ||
    [ "$PLATFORM" = "gp2x" ] ||
    [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "nds-blocksds" ] ||
    [ "$PLATFORM" = "3ds" ] ||
    [ "$PLATFORM" = "wii" ] ||
    [ "$PLATFORM" = "wiiu" ] ||
@@ -1106,6 +1115,7 @@ fi
 #
 if [ "$PLATFORM" = "gp2x" ] ||
    [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "nds-blocksds" ] ||
    [ "$PLATFORM" = "3ds" ] ||
    [ "$PLATFORM" = "wii" ] ||
    [ "$PLATFORM" = "wiiu" ] ||
@@ -1125,7 +1135,8 @@ fi
 #
 if [ "$EDITOR" = "false" ] ||
    [ "$PLATFORM" = "djgpp" ] ||
-   [ "$PLATFORM" = "nds" ]; then
+   [ "$PLATFORM" = "nds" ] ||
+   [ "$PLATFORM" = "nds-blocksds" ]; then
 	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
 fi
@@ -1393,6 +1404,7 @@ if [ "$ICON" = "true" ]; then
 	   [ "$PLATFORM" = "gp2x" ] ||
 	   [ "$PLATFORM" = "psp" ] ||
 	   [ "$PLATFORM" = "nds" ] ||
+	   [ "$PLATFORM" = "nds-blocksds" ] ||
 	   [ "$PLATFORM" = "wii" ] ||
 	   [ "$PLATFORM" = "djgpp" ] ||
 	   [ "$PLATFORM" = "dreamcast" ]; then

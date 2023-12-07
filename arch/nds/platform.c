@@ -102,7 +102,7 @@ void profile_end(void)
   if(--profile_pos < PROFILE_QUEUE_DEPTH)
   {
     ctime = timers2ticks(TIMER0_DATA, TIMER1_DATA);
-    iprintf("%s: %lld cycles\n", profile_names[profile_pos], (u64) (ctime - profile_times[profile_pos]) << 8);
+    printf("%s: %lld cycles\n", profile_names[profile_pos], (u64) (ctime - profile_times[profile_pos]) << 8);
   }
 }
 
@@ -146,14 +146,14 @@ boolean platform_init(void)
 
   if(!fatInitDefault())
   {
-    iprintf("Unable to initialize FAT.\n"
+    printf("Unable to initialize FAT.\n"
             "Check your DLDI driver.\n");
     return false;
   }
 
 #ifdef CONFIG_EXTRAM
   if(!isDSiMode())
-    nds_ram_init(DETECT_RAM);
+    nds_ram_init();
 #endif
   timer_init();
 
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 
   if(argc < 1 || argv == NULL || argv[0] == NULL)
   {
-    iprintf("argv[0]: not found.\n"
+    printf("argv[0]: not found.\n"
             "using '%s'\n"
             "WARNING: Use of a loader that supports argv[0] is recommended.\n",
             _argv0);
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
   }
   else
   {
-    iprintf("argv[0]: '%s'\n", argv[0]);
+    printf("argv[0]: '%s'\n", argv[0]);
     real_main(argc, argv);
   }
 

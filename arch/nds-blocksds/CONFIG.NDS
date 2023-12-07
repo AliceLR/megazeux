@@ -1,0 +1,6 @@
+#!/bin/sh
+
+./config.sh --platform nds-blocksds --prefix $BLOCKSDS --optimize-size \
+            --disable-editor --disable-helpsys --disable-utils \
+            --disable-libpng --enable-release --enable-meter \
+            --enable-extram --disable-screenshots --enable-stdio-redirect "$@"

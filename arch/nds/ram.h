@@ -1,3 +1,4 @@
+#ifndef CONFIG_NDS_BLOCKSDS
 /**********************************
   Copyright (C) Rick Wong (Lick)
 
@@ -43,5 +44,6 @@ void  ram_turbo (bool enable);
 
 #ifdef __cplusplus
 }
+#endif
 #endif
 #endif
