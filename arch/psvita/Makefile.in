@@ -4,7 +4,7 @@ CC      = arm-vita-eabi-gcc
 CXX     = arm-vita-eabi-g++
 AR      = arm-vita-eabi-ar
 OBJCOPY = arm-vita-eabi-objcopy
-STRIP   = arm-vita-eabi-strip
+STRIP   = arm-vita-eabi-strip --strip-unneeded
 
 VITA_TITLEID = VMZX00001
 VITA_TITLE = MegaZeux
@@ -39,7 +39,6 @@ SCE_SYS = "arch/psvita/sce_sys"
 package: mzx
 ifneq ($(BUILD_EDITOR),)
 	${CP} ${mzx} ${mzx}.elf
-	${STRIP} -g ${mzx}.elf
 	vita-elf-create ${mzx}.elf ${mzx}.velf
 	vita-make-fself -s -c ${mzx}.velf eboot.bin
 	vita-mksfoex ${VITA_MKSFOEX_FLAGS} -s TITLE_ID="${VITA_TITLEID}" \
@@ -53,7 +52,6 @@ ifneq ($(BUILD_EDITOR),)
 endif
 
 	${CP} ${mzxrun} ${mzxrun}.elf
-	${STRIP} -g ${mzxrun}.elf
 	vita-elf-create ${mzxrun}.elf ${mzxrun}.velf
 	vita-make-fself -s -c ${mzxrun}.velf eboot.bin
 	vita-mksfoex ${VITA_MKSFOEX_FLAGS} -s TITLE_ID="${VITA_TITLEID}" \
