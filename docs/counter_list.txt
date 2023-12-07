@@ -36,6 +36,7 @@ name                      r/w      g/n/f/b    i
 "C_DIVISIONS"             r w         b       *
 "DATE_DAY"                r           f       *
 "DATE_MONTH"              r           f       *
+"DATE_WEEKDAY"            r           f       *
 "DATE_YEAR"               r           f       *
 "DIVIDER"                 r w         b       *
 "ENTER_MENU"              r w         n       *
@@ -159,6 +160,7 @@ name                      r/w      g/n/f/b    i
 "TIME"                    r w         n       *
 "TIMERESET"               r w         b       *
 "TIME_HOURS"              r           f       *
+"TIME_MILLIS"             r           f       *
 "TIME_MINUTES"            r           f       *
 "TIME_SECONDS"            r           f       *
 "UCHn,n"                  r           b       *

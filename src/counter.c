@@ -1331,6 +1331,13 @@ static int date_month_read(struct world *mzx_world,
   return mzx_world->current_time.tm_mon + 1;
 }
 
+static int date_weekday_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  refresh_time(mzx_world);
+  return mzx_world->current_time.tm_wday;
+}
+
 static int time_hours_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2631,6 +2638,7 @@ static const struct function_counter builtin_counters[] =
   { "c_divisions",      V268,   c_divisions_read,     c_divisions_write },
   { "date_day",         V260,   date_day_read,        NULL },
   { "date_month",       V260,   date_month_read,      NULL },
+  { "date_weekday",     V293,   date_weekday_read,    NULL },
   { "date_year",        V260,   date_year_read,       NULL },
   { "divider",          V268,   divider_read,         divider_write },
   { "exit_game",        V290,   NULL,                 exit_game_write },
