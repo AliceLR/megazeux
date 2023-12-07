@@ -7,6 +7,10 @@ USERS
 + Added an experimental Dreamcast port (asie, Lachesis).
 + Added an experimental MS-DOS 32-bit port based on DJGPP
   (Mr_Alert, asie, Lachesis).
++ Added the new counter KEY_PRESSEDn to read internal keycode
+  statuses. This is like KEYn, but KEY_PRESSEDn accepts internal
+  keycodes instead of PC XT keycodes. KEY_PRESSEDn will return
+  1 if the key is currently pressed, or 0 if it is not pressed.
 + Added the new counter DATE_WEEKDAY containing the number of
   the current day of the week, where 0=Sunday, 1=Monday,
   2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday.
