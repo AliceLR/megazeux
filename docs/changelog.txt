@@ -7,6 +7,9 @@ USERS
 + Added an experimental Dreamcast port (asie, Lachesis).
 + Added an experimental MS-DOS 32-bit port based on DJGPP
   (Mr_Alert, asie, Lachesis).
++ Added the new counter DATE_WEEKDAY containing the number of
+  the current day of the week, where 0=Sunday, 1=Monday,
+  2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday.
 + Added new counters VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH,
   and VIEWPORT_HEIGHT to read the current board's viewport
   settings. (Sparkette)

@@ -313,6 +313,7 @@ static const char *universal_var_list[] =
   "date_year*",
   "date_month*",
   "date_day*",
+  "date_weekday*",
   "time_hours*",
   "time_minutes*",
   "time_seconds*",
