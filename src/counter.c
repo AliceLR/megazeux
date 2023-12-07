@@ -1217,6 +1217,13 @@ static int key_release_read(struct world *mzx_world,
   return get_last_key_released(keycode_pc_xt);
 }
 
+static int key_pressedn_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int key_num = strtol(name + 11, NULL, 10);
+  return get_key_status(keycode_internal, key_num) > 0;
+}
+
 static int joyn_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2654,6 +2661,7 @@ static const struct function_counter builtin_counters[] =
   { "key!",             V269,   keyn_read,            NULL },
   { "key_code",         V269,   key_code_read,        NULL },
   { "key_pressed",      V260,   key_pressed_read,     NULL },
+  { "key_pressed!",     V293,   key_pressedn_read,    NULL },
   { "key_release",      V269,   key_release_read,     NULL },
   { "lava_walk",        V260,   lava_walk_read,       lava_walk_write },
   { "load_bc?",         V270,   load_bc_read,         NULL },

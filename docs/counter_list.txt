@@ -68,6 +68,7 @@ name                      r/w      g/n/f/b    i
 "KEY"                     r           b       *
 "KEY_CODE"                r           b       *
 "KEY_PRESSED"             r           b       *
+"KEY_PRESSEDn"            r           b       *
 "KEY_RELEASE"             r           b       *
 "KEYn"                    r           b       *
 "LASTXPOS"                r w         n       *
