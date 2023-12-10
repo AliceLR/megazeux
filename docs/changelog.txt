@@ -3,10 +3,11 @@ GIT
 USERS
 
 + Added an experimental PlayStation Vita port. (Spectere)
-+ Added an experimental Wii U port (asie).
-+ Added an experimental Dreamcast port (asie, Lachesis).
-+ Added an experimental MS-DOS 32-bit port based on DJGPP
-  (Mr_Alert, asie, Lachesis).
++ Added an experimental Wii U port. (asie)
++ Added an experimental Dreamcast port. (asie, Lachesis)
++ Added an experimental MS-DOS 32-bit port based on DJGPP.
+  (Mr_Alert, asie, Lachesis)
++ Added support for BlocksDS to the NDS port. (asie)
 + Added the new counter KEY_PRESSEDn to read internal keycode
   statuses. This is like KEYn, but KEY_PRESSEDn accepts internal
   keycodes instead of PC XT keycodes. KEY_PRESSEDn will return
