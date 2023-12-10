@@ -3343,7 +3343,6 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   int list_length = 17 - ext_height;
   int last_element = FILESEL_FILE_LIST;
   boolean return_dir_is_base_dir = true;
-  boolean show_parent_dir;
   int i;
 
 #ifdef __WIN32__
@@ -3417,18 +3416,9 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     // Hide .. if changing directories isn't allowed or if the selected file
     // should be in the current directory or a subdirectory of it. Also hide it
     // if this is a root directory.
-    if(allow_dirs == NO_DIRS ||
-     (allow_dirs == ALLOW_SUBDIRS && !strcmp(current_dir_name, base_dir_name)) ||
-     path_is_root(current_dir_name))
-    {
-      show_parent_dir = false;
-    }
-    else
-      show_parent_dir = true;
-
-#if defined(CONFIG_3DS) || defined(CONFIG_SWITCH) || defined(CONFIG_WIIU) || \
- defined(CONFIG_PSVITA) || defined(CONFIG_DREAMCAST) || defined(CONFIG_NDS_BLOCKSDS)
-    if(show_parent_dir)
+    if(!(allow_dirs == NO_DIRS) &&
+     !(allow_dirs == ALLOW_SUBDIRS && !strcmp(current_dir_name, base_dir_name)) &&
+     !path_is_root(current_dir_name))
     {
       dir_list[num_dirs] = cmalloc(3);
       dir_list[num_dirs][0] = '.';
@@ -3436,7 +3426,6 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       dir_list[num_dirs][2] = '\0';
       num_dirs++;
     }
-#endif
 
     while(1)
     {
@@ -3446,8 +3435,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
       file_name_length = strlen(file_name);
 
-      // Exclude . and hidden files
-      if(file_name[0] == '.' && file_name[1] != '.')
+      // Exclude ./.. and hidden files
+      if(file_name[0] == '.')
         continue;
 
       // The file type value from dirent isn't particularly reliable; might
@@ -3467,9 +3456,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
       if(dir_type == DIR_TYPE_DIR)
       {
-        // Exclude .. from base dir in subdirsonly mode
-        if(allow_dirs != NO_DIRS &&
-         !(!show_parent_dir && !strcmp(file_name, "..")))
+        if(allow_dirs != NO_DIRS)
         {
           dir_list[num_dirs] = cmalloc(file_name_length + 1);
           memcpy(dir_list[num_dirs], file_name, file_name_length + 1);
