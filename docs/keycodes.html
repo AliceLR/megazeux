@@ -20,6 +20,7 @@
  <head>
   <title>MegaZeux Keycodes Guide</title>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="title" content="MegaZeux Keycodes Guide">
   <meta name="description" content="Diagram of MegaZeux keycodes for the US keyboard layout.">
   <meta name="twitter:card" content="summary">
@@ -28,9 +29,8 @@
   <style>
    body
    {
-    /* The keyboard starts to visually break apart around ~824px. */
-    min-width: 832px;
     max-width: 1260px;
+    font-family: Arial, sans;
    }
 
    /* Browsers that don't support flexboxes should ignore these settings and
@@ -39,6 +39,10 @@
    {
     display: flex;
     flex-flow: row-reverse;
+    /* The keyboard starts to visually break apart around ~824px. */
+    /* It breaks closer to 860px in Firefox/Linux. */
+    min-width: 860px;
+    overflow: auto;
    }
 
    #keyboardmaincontainer
@@ -48,6 +52,13 @@
     /* This div is also a separate flexbox */
     display: flex;
     flex-flow: column;
+   }
+
+   #keyboardkey
+   {
+    /* See keyboardcontainer */
+    min-width: 860px;
+    overflow: auto;
    }
 
    table, tbody, tr, td, div, p, b
@@ -207,6 +218,11 @@
     z-index: 1;
    }
 
+   table.keyboard.key td div
+   {
+    height: 80px;
+   }
+
    div:before, b:before, p:before
    {
     font-size: 60%;
@@ -237,7 +253,7 @@
    }
    table.bypass th
    {
-    border: 1px solid #000;
+    border: 1px solid #555;
     font-weight: bold;
     text-align: left;
     padding-right: 16px;
@@ -246,7 +262,9 @@
    }
    table.bypass td
    {
-    padding-left: 10px;
+    border-top: 1px solid #aaa;
+    border-bottom: 1px solid #aaa;
+    padding: 5px 0px 5px 10px;
     font-weight: normal;
    }
    var
@@ -379,7 +397,7 @@
 
     <td>
      <div class="warn">
-      7<sup> Home</sup>
+      7<sup>&nbsp;Home</sup>
       <b>71</b>
       <p>263</p>
       <span class="keyname">key_kp7</span>
@@ -388,7 +406,7 @@
 
     <td>
      <div class="warn">
-       8<sup> &#x25b2;</sup>
+       8<sup>&nbsp;&#x25b2;</sup>
       <b>72</b>
       <p>264</p>
       <span class="keyname">key_kp8</span>
@@ -397,7 +415,7 @@
 
     <td>
      <div class="warn">
-      9<sup> PgUp</sup>
+      9<sup>&nbsp;PgUp</sup>
       <b>73</b>
       <p>265</p>
       <span class="keyname">key_kp9</span>
@@ -418,7 +436,7 @@
 
     <td>
      <div class="warn">
-       4<sup> &#x25c0;</sup>
+       4<sup>&nbsp;&#x25c0;</sup>
       <b>75</b>
       <p>260</p>
       <span class="keyname">key_kp4</span>
@@ -436,7 +454,7 @@
 
     <td>
      <div class="warn">
-       6<sup> &#x25b6;</sup>
+       6<sup>&nbsp;&#x25b6;</sup>
       <b>77</b>
       <p>262</p>
       <span class="keyname">key_kp6</span>
@@ -448,7 +466,7 @@
 
     <td>
      <div class="warn">
-      1<sup> End</sup>
+      1<sup>&nbsp;End</sup>
       <b>79</b>
       <p>257</p>
       <span class="keyname">key_kp1</span>
@@ -457,7 +475,7 @@
 
     <td>
      <div class="warn">
-       2<sup> &#x25bc;</sup>
+       2<sup>&nbsp;&#x25bc;</sup>
       <b>80</b>
       <p>258</p>
       <span class="keyname">key_kp2</span>
@@ -466,7 +484,7 @@
 
     <td>
      <div class="warn">
-      3<sup> PgDn</sup>
+      3<sup>&nbsp;PgDn</sup>
       <b>81</b>
       <p>259</p>
       <span class="keyname">key_kp3</span>
@@ -487,7 +505,7 @@
 
     <td colspan="2">
      <div class="warn">
-      0<sup> Insert</sup>
+      0<sup>&nbsp;Insert</sup>
       <b>82</b>
       <p>256</p>
       <span class="keyname">key_kp0</span>
@@ -1418,7 +1436,7 @@
 
   </div> <!-- #keyboardcontainer -->
 
-  <table class="keyboard key">
+  <table id="keyboardkey" class="keyboard key">
    <tr>
     <td class="spacebar">
      <div class="none">
@@ -1443,7 +1461,7 @@
     </td>
     <td class="double">
      <div class="game">
-      Game key&mdash;can be disabled via Robotic or other means.
+      Game key&mdash;can disable via Robotic or other means.
      </div>
     </td>
     <td class="space">
@@ -1629,7 +1647,7 @@
 
   <h3>License</h3>
   <p>
-    Copyright &copy; 2010-2020 Lachesis &mdash;
+    Copyright &copy; 2010-2023 Lachesis &mdash;
     <a href="https://github.com/AliceLR/megazeux/">
       https://github.com/AliceLR/megazeux/
     </a>

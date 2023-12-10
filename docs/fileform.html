@@ -20,6 +20,7 @@
 <head>
 <meta charset="UTF-8">
 <title>MegaZeux File Formats</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="title" content="MegaZeux File Format Reference">
 <meta name="description" content="Information about various file formats defined by MegaZeux.">
 <meta name="twitter:card" content="summary">
@@ -28,33 +29,33 @@
 <style>
   #container
   {
-    width: 800px;
+    max-width: 780px;
     margin: auto;
-    padding: 0px 24px;
+    padding: 0px;
   }
 
   header, section
   {
-    margin: 8px;
+    margin: 4px;
     margin-bottom: 16px;
   }
 
   header, section.contents
   {
-    padding: 16px;
+    padding: 8px 4px;
   }
 
   section.main
   {
-    padding: 16px;
-    padding-bottom: 96px;
+    padding: 8px 4px;
+    padding-bottom: 72px;
   }
 
   section.inner
   {
     background-color: #F4F4F4;
     border-radius: 5px;
-    padding: 4px 24px 16px;
+    padding: 2px 16px 8px;
   }
 
   code
@@ -76,19 +77,27 @@
     background-color: #555;
     font-size: .95em;
     color: #fff;
-    margin: 24px;
-    padding: 0px 32px 16px;
+    margin: 20px 8px;
+    padding: 0px 20px 16px;
+    overflow: auto;
     white-space: pre;
   }
 
   div.image-wrapper
   {
-    margin: 16px;
+    max-width: 640px;
+    margin: 0 auto;
+    overflow: auto;
+  }
+
+  div.scroll-wrapper
+  {
+    overflow: auto;
   }
 
   table
   {
-    width: 100%;
+    width: 99%;
     margin: 24px 2px 40px;
     border: 1px solid #aaa;
     font-size: small;
@@ -129,6 +138,7 @@
   {
     font-family: monospace;
     white-space: pre;
+    overflow: auto;
   }
 
   li
@@ -296,6 +306,8 @@
     <h3>MegaZeux 2.92f &mdash; November 22nd, 2020</h3>
     <p>
       This guide contains specifications for most MegaZeux file formats.
+      This is a table-dense document and should be displayed in a window/viewport
+      at least 640px wide to reduce table overflow.
     </p>
   </header>
 
@@ -461,7 +473,7 @@
 |---------|-----|
 | Binary  | `00101010`
 | Hex     | `2A`
-| Decimal | <code class="block">(128 * 0) + (64 * 0) + (32 * 1) + (16 * 0) +<br>(8 * 1) + (4 * 0) + (2 * 1) + (1 * 0) = 42.</code>
+| Decimal | <code class="block">  (128 * 0) <br> + (64 * 0) <br> + (32 * 1) <br> + (16 * 0) <br> +  (8 * 1) <br> +  (4 * 0) <br> +  (2 * 1) <br> +  (1 * 0) = 42 </code>
       </div>
     </section>
 
@@ -500,7 +512,7 @@
 | Quaternary | `1130`
 | Binary     | `01011100`
 | Hex        | `5C`
-| Decimal    | <code class="block">(64 * 1) + (16 * 1) + (4 * 3) + (1 * 0) = 92</code>
+| Decimal    | <code class="block">   (64 * 1) <br> + (16 * 1) <br> +  (4 * 3) <br> +  (1 * 0) = 92 </code>
       </div>
     </section>
   </section>
@@ -529,8 +541,8 @@
 
       <h4>Examples</h4>
       <div class="markdown">
-| Color         | R   | G   | B   | Hex representation in-file: |
-|---------------|-----|-----|-----|-----------------------------|
+| Color         | R   | G   | B   | Hex in-file: |
+|---------------|-----|-----|-----|--------------|
 | Black         | 0   | 0   | 0   | `00 00 00`
 | Dark Blue     | 0   | 0   | 42  | `00 00 2A`
 | Dark Green    | 0   | 42  | 0   | `00 2A 00`
@@ -1773,13 +1785,13 @@ while(i &lt; size)
           MegaZeux 2.80+ ignores this field and uses the plane dimensions to
           to determine the board size.
           <div class="markdown">
-| Board Mode | Max. Width | Max. Height |
-|------------|------------|-------------|
-| `0`        | 60         | 166         |
-| `1`        | 80         | 125         |
-| `2`        | 100        | 100         |
-| `3`        | 200        | 50          |
-| `4`        | 400        | 25          |
+| Board Mode | Width | Height |
+|------------|-------|--------|
+| `0`        | 60    | 166    |
+| `1`        | 80    | 125    |
+| `2`        | 100   | 100    |
+| `3`        | 200   | 50     |
+| `4`        | 400   | 25     |
           </div>
         </li>
         <li id="board200note2">
@@ -2449,7 +2461,7 @@ while(i &lt; size)
 | `0x0012` | ID Chars bullet colors               | array(b * 3)            |
 | `0x0013` | ID Chars block 3 (damage)            | array(b * 128)          |
 
-| `0x0018` | Status counters                      | Properties (2.93+)<br>array(s15 with \0 * 6) |
+| `0x0018` | Status counters                      | Properties (2.93+)<br>array(s15&nbsp;with&nbsp;\0&nbsp;*&nbsp;6) |
 
 | `0x0020` | Edge color                           | int(b)
 | `0x0021` | First board #                        | int(b)
@@ -2466,7 +2478,7 @@ while(i &lt; size)
 | `0x002C` | Health limit                         | int(w)
 | `0x002D` | Enemies' bullets hurt other enemies  | int(b)
 | `0x002E` | Clear messages/projectiles on exit   | int(b)
-| `0x002F` | Can only play world from a <code>SWAP WORLD</code>| int(b)
+| `0x002F` | Can only play world from <code>SWAP WORLD</code>| int(b)
 
 | `0x8030` | SMZX mode (0: disabled)              | int(b)                  | Save-only before 2.91
 | `0x8031` | Vlayer width                         | int(w)                  | Save-only before 2.91
@@ -2478,7 +2490,7 @@ while(i &lt; size)
 | `0x8042` | MZX speed is locked?                 | int(b)                  | Save-only
 | `0x8043` | Commands per cycle                   | int(ds)                 | Save-only
 | `0x8044` | Commands per cycle breakpoint limit  | int(ds)                 | Save-only
-| `0x8048` | Saved positions                      | array((w + w + b) * 8)  | Save-only
+| `0x8048` | Saved positions                      | array((w&nbsp;+&nbsp;w&nbsp;+&nbsp;b)&nbsp;*&nbsp8)  | Save-only
 | `0x8049` | Under player ID/param/color          | array(b * 3)            | Save-only
 | `0x804A` | Player restart X                     | int(w)                  | Save-only
 | `0x804B` | Player restart Y                     | int(w)                  | Save-only

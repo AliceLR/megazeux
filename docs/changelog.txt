@@ -312,6 +312,8 @@ DEVELOPERS
 + Updated Android SDL to 2.28.2. (asie)
 + Updated Android NDK to r23c. (asie)
 + Fixed Android build system handling of missing libraries.
++ Improved fileform.html, joystick.html, keycodes.html, and
+  platform_matrix.html readability on small/mobile displays.
 - String values are now allocated separately from the string
   struct and name. This may make strings very slightly slower,
   but means string pointers are now stable through an entire
