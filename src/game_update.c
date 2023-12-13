@@ -637,6 +637,9 @@ static void end_life(struct world *mzx_world)
   sfx_clear_queue();
   play_sfx(mzx_world, SFX_DEATH);
 
+  if(mzx_world->version >= V293)
+    send_robot_def(mzx_world, 0, LABEL_PLAYERDIED);
+
   // Go somewhere else?
   if(death_board != DEATH_SAME_POS)
   {

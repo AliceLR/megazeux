@@ -8,6 +8,11 @@ USERS
 + Added an experimental MS-DOS 32-bit port based on DJGPP.
   (Mr_Alert, asie, Lachesis)
 + Added support for BlocksDS to the NDS port. (asie)
++ Added a new built-in label PLAYERDIED (and the subroutine
+  equivalent #PLAYERDIED). When the built-in player dies, this
+  label is sent on the board the player died on. Because player
+  death occurs at the end of the cycle, this is received during
+  the following cycle.
 + Added the new counter KEY_PRESSEDn to read internal keycode
   statuses. This is like KEYn, but KEY_PRESSEDn accepts internal
   keycodes instead of PC XT keycodes. KEY_PRESSEDn will return
