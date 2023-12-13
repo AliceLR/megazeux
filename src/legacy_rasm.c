@@ -2451,11 +2451,18 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
           case THING:
           {
             int thing = *(input_position + 1);
+            input_position += 3;
 
             if(arg_types)
               arg_types[words] = S_THING;
 
-            input_position += 3;
+            if(thing >= (int)ARRAY_SIZE(thing_names))
+            {
+              strcpy(output_position, "??");
+              output_position += 2;
+              break;
+            }
+
             strcpy(output_position, thing_names[thing]);
             output_position += strlen(thing_names[thing]);
             break;
@@ -2538,11 +2545,18 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
           {
             int condition = *(input_position + 1);
             int direction = *(input_position + 2);
+            input_position += 3;
 
             if(arg_types)
               arg_types[words] = S_CONDITION;
 
-            input_position += 3;
+            if(condition >= (int)ARRAY_SIZE(condition_types))
+            {
+              strcpy(output_position, "??");
+              output_position += 2;
+              break;
+            }
+
             strcpy(output_position, condition_types[condition]);
             output_position += strlen(condition_types[condition]);
 
@@ -2563,11 +2577,18 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
           case ITEM:
           {
             int item = *(input_position + 1);
+            input_position += 3;
 
             if(arg_types)
               arg_types[words] = S_ITEM;
 
-            input_position += 3;
+            if(item >= (int)ARRAY_SIZE(item_types))
+            {
+              strcpy(output_position, "??");
+              output_position += 2;
+              break;
+            }
+
             strcpy(output_position, item_types[item]);
             output_position += strlen(item_types[item]);
             break;
@@ -3442,6 +3463,17 @@ static enum bytecode_fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
   return BC_COULDNT_FIX;
 }
 
+static inline int check_numeric_param(const char *bc, int min, int max)
+{
+  if(bc[0] == 0)
+  {
+    int val = bc[1] | ((signed char)bc[2] << 8);
+    if(val >= min && val <= max)
+      return val;
+  }
+  return INT_MIN;
+}
+
 boolean validate_legacy_bytecode(char **_bc, int *_program_length,
  int *_cur_prog_line)
 {
@@ -3506,18 +3538,27 @@ boolean validate_legacy_bytecode(char **_bc, int *_program_length,
         cur_param_length = 2;
 
       // THINGs must be length 0 and smaller than 127
-      if(
-       (param_type & THING) &&
-       ((bc[i] != 0) ||
-       ((bc[i+1] | (bc[i+2] << 8)) > 127)))
+      if((param_type & THING) && check_numeric_param(bc + i, 0, 127) < 0)
       {
         i = cur_command_start - 1;
         status = validate_legacy_bytecode_attempt_fix(&bc, &program_length, i);
-        continue;
+        break;
+      }
+
+      // ITEMs must be length 0 and smaller than the number of ITEM types.
+      if((param_type & ITEM) && check_numeric_param(bc + i, 0, 8) < 0)
+      {
+        i = cur_command_start - 1;
+        status = validate_legacy_bytecode_attempt_fix(&bc, &program_length, i);
+        break;
       }
 
       i += cur_param_length + 1;
     }
+
+    // Retry patched command...
+    if(i < cur_command_start)
+      continue;
 
     if((i > cur_command_start + cur_command_length + 1) || (i > program_length))
     {
