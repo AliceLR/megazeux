@@ -254,6 +254,10 @@ USERS
   board IDs (both), start/death/game over board IDs (zip), board
   exit board IDs (zip), robot program positions (both), robot
   stack pointers (both), or robot stack sizes (legacy).
++ Fixed crashes when executing the GIVE, TAKE, TAKE ELSE, and
+  TRADE commands with an invalid item type.
++ Fixed crashes when disassembling a Robotic command with an
+  invalid condition.
 + Improved the performance of Robotic debugger watchpoints,
   especially for non-built-in counters and non-spliced strings.
 + Robotic debugger watchpoints can now watch for particular
