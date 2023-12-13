@@ -27,6 +27,14 @@
 <meta name="twitter:title" content="MegaZeux File Format Reference">
 <meta name="twitter:description" content="Information about various file formats defined by MegaZeux.">
 <style>
+  body
+  {
+    /* Explicitly define colors for ELinks */
+    background-color: #fff;
+    color: #000;
+    margin: 6px;
+  }
+
   #container
   {
     max-width: 780px;
@@ -98,7 +106,7 @@
   table
   {
     width: 99%;
-    margin: 24px 2px 40px;
+    margin: 8px 2px 24px;
     border: 1px solid #aaa;
     font-size: small;
   }
@@ -2490,7 +2498,7 @@ while(i &lt; size)
 | `0x8042` | MZX speed is locked?                 | int(b)                  | Save-only
 | `0x8043` | Commands per cycle                   | int(ds)                 | Save-only
 | `0x8044` | Commands per cycle breakpoint limit  | int(ds)                 | Save-only
-| `0x8048` | Saved positions                      | array((w&nbsp;+&nbsp;w&nbsp;+&nbsp;b)&nbsp;*&nbsp8)  | Save-only
+| `0x8048` | Saved positions                      | array((w&nbsp;+&nbsp;w&nbsp;+&nbsp;b)&nbsp;*&nbsp;8)  | Save-only
 | `0x8049` | Under player ID/param/color          | array(b * 3)            | Save-only
 | `0x804A` | Player restart X                     | int(w)                  | Save-only
 | `0x804B` | Player restart Y                     | int(w)                  | Save-only
@@ -2582,8 +2590,9 @@ while(i &lt; size)
         <div class="markdown">
 | ID       | Property                             | Data Type               | Notes |
 |----------|--------------------------------------|-------------------------|-------|
-| `0x0001` | Set current sound effect ID          | int(b)                  | SFX >= 50 are ignored
-| `0x0002` | Sound effect string                  | string                  | Max. length 68
+| `0x0001` | Set current sound effect ID          | int(b)                  | SFX >= 256 are ignored
+| `0x0002` | Sound effect string                  | string                  | Max. length 255
+| `0x0003` | Sound effect name                    | string                  | Max. length 9
         </div>
         Prior to 2.93, the custom SFX table is saved as a raw array of
         <code>(NUM_BUILTIN_SFX * LEGACY_SFX_SIZE</code> bytes, where
@@ -2591,8 +2600,7 @@ while(i &lt; size)
         (for a total of <code>3450</code> bytes prior to compression). Each
         individual sound effect must be null terminated. This format is still
         allowed in 2.93+ version world files. If loaded into a 2.93+ world, all
-        custom sound effects past 50 will be cleared.
-      </p>
+        custom sound effects after the first 50 and all names will be cleared.
       <p>
         This file is identical in format to the
         <a href="#sfx">exported custom SFX file format</a>, and files in 2.90+
