@@ -1392,7 +1392,8 @@ void send_robot_all_def(struct world *mzx_world, const char *mesg)
   }
 }
 
-void send_robot_def(struct world *mzx_world, int robot_id, int mesg_id)
+void send_robot_def(struct world *mzx_world, int robot_id,
+ enum builtin_label mesg_id)
 {
   switch(mesg_id)
   {
@@ -1459,6 +1460,10 @@ void send_robot_def(struct world *mzx_world, int robot_id, int mesg_id)
 
     case LABEL_PLAYERHURT:
       send_robot_all_def(mzx_world, "PLAYERHURT");
+      break;
+
+    case LABEL_PLAYERDIED:
+      send_robot_all_def(mzx_world, "PLAYERDIED");
       break;
   }
 }

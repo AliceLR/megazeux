@@ -36,24 +36,29 @@ struct zip_archive;
 #define ROBOT_START_STACK 8
 #define ROBOT_MAX_STACK   65536
 
-#define LABEL_TOUCH 0
-#define LABEL_BOMBED 1
-#define LABEL_INVINCO 2
-#define LABEL_PUSHED 3
-#define LABEL_PLAYERSHOT 4
-#define LABEL_NEUTRALSHOT 5
-#define LABEL_ENEMYSHOT 6
-#define LABEL_PLAYERHIT 7
-#define LABEL_LAZER 8
-#define LABEL_SPITFIRE 9
-#define LABEL_JUSTLOADED 10
-#define LABEL_JUSTENTERED 11
-#define LABEL_GOOPTOUCHED 12
-#define LABEL_PLAYERHURT 13
-
 #define DEBUG_EXIT 1
 #define DEBUG_GOTO 2
 #define DEBUG_HALT 3
+
+/* Internal use only */
+enum builtin_label
+{
+  LABEL_TOUCH,
+  LABEL_BOMBED,
+  LABEL_INVINCO,
+  LABEL_PUSHED,
+  LABEL_PLAYERSHOT,
+  LABEL_NEUTRALSHOT,
+  LABEL_ENEMYSHOT,
+  LABEL_PLAYERHIT,
+  LABEL_LAZER,
+  LABEL_SPITFIRE,
+  LABEL_JUSTLOADED,
+  LABEL_JUSTENTERED,
+  LABEL_GOOPTOUCHED,
+  LABEL_PLAYERHURT,
+  LABEL_PLAYERDIED
+};
 
 #ifdef CONFIG_DEBYTECODE
 
@@ -101,7 +106,7 @@ CORE_LIBSPEC int send_robot_id_def(struct world *mzx_world, int robot_id,
  const char *mesg, int ignore_lock);
 CORE_LIBSPEC void send_robot_all_def(struct world *mzx_world, const char *mesg);
 CORE_LIBSPEC void send_robot_def(struct world *mzx_world, int robot_id,
- int mesg_id);
+ enum builtin_label mesg_id);
 CORE_LIBSPEC void optimize_null_objects(struct board *src_board);
 
 CORE_LIBSPEC int place_at_xy(struct world *mzx_world, enum thing id,
