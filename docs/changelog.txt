@@ -309,6 +309,10 @@ DEVELOPERS
 + Fixed the DSO -Wstrict-aliasing warnings in Socket.cpp and the
   OpenGL renderers for GCC versions using -Wstrict-aliasing=2.
 + Updated libxmp to 4.6.0+ceb2d025.
++ Added --host config.sh option to manually specify a cross
+  compiler prefix. This is ignored or overriden by most ports
+  and is mainly just for Linux.
++ HOST_CC is now LOCAL_CC to avoid confusion with --host.
 + Relicensed ccv from GPL 3 to GPL 2+ to match the rest of MZX.
   (Lancer-X)
 + If available, GetSystemTimePreciseAsFileTime and clock_gettime

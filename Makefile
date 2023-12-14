@@ -49,17 +49,31 @@ CC      ?= gcc
 CXX     ?= g++
 AR      ?= ar
 AS      ?= as
-STRIP   ?= strip --strip-unneeded
+STRIP   ?= strip
 OBJCOPY ?= objcopy
+WINDRES ?= windres
 PEFIX   ?= true
 
 CHMOD   ?= chmod
 CP      ?= cp
-HOST_CC ?= gcc
+LOCAL_CC?= gcc
 LN      ?= ln
 MKDIR   ?= mkdir
 MV      ?= mv
 RM      ?= rm
+
+ifneq (${CROSS_COMPILE},)
+ifeq (${CC},cc)
+CC      = gcc
+endif
+CC      := ${CROSS_COMPILE}${CC}
+CXX     := ${CROSS_COMPILE}${CXX}
+AR      := ${CROSS_COMPILE}${AR}
+AS      := ${CROSS_COMPILE}${AS}
+STRIP   := ${CROSS_COMPILE}${STRIP}
+OBJCOPY := ${CROSS_COMPILE}${OBJCOPY}
+WINDRES := ${CROSS_COMPILE}${WINDRES}
+endif
 
 include arch/compat.inc
 
@@ -422,11 +436,12 @@ AR      := @${AR}
 AS      := @${AS}
 STRIP   := @${STRIP}
 OBJCOPY := @${OBJCOPY}
+WINDRES := @${WINDRES}
 PEFIX   := @${PEFIX}
 
 CHMOD   := @${CHMOD}
 CP      := @${CP}
-HOST_CC := @${HOST_CC}
+LOCAL_CC:= @${LOCAL_CC}
 LN      := @${LN}
 MKDIR   := @${MKDIR}
 MV      := @${MV}
@@ -463,7 +478,7 @@ build/${TARGET}src:
 #
 # * SUPPRESS_CC_TARGETS prevents "mzx", etc from being added to "all".
 # * SUPPRESS_BUILD_TARGETS suppresses "build".
-# * SUPPRESS_HOST_TARGETS suppresses "assets/help.fil", "test", etc.
+# * SUPPRESS_LOCAL_TARGETS suppresses "assets/help.fil", "test", etc.
 #
 ifneq (${SUPPRESS_ALL_TARGETS},1)
 
@@ -486,8 +501,10 @@ endif
 	${OBJCOPY} --only-keep-debug $< $@
 	${PEFIX} $@
 	${CHMOD} a-x $@
-	$(if ${V},,@echo "  STRIP   " $<)
-	${STRIP} $<
+ifneq (${NO_STRIP_IN_DEBUGLINK},1)
+	$(if ${V},,@echo "  STRIP   " --strip-unneeded $<)
+	${STRIP} --strip-unneeded $<
+endif
 	$(if ${V},,@echo "  OBJCOPY " --add-gnu-debuglink $@ $<)
 	${OBJCOPY} --add-gnu-debuglink=$@ $<
 	${PEFIX} $<
@@ -604,7 +621,7 @@ distclean: clean
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
 
-ifneq (${SUPPRESS_HOST_TARGETS},1)
+ifneq (${SUPPRESS_LOCAL_TARGETS},1)
 
 assets/help.fil: ${txt2hlp} docs/WIPHelp.txt
 	$(if ${V},,@echo "  txt2hlp " $@)
@@ -631,7 +648,7 @@ else
 	@${SHELL} testworlds/run.sh ${PLATFORM}
 endif
 
-endif # !SUPPRESS_HOST_TARGETS
+endif # !SUPPRESS_LOCAL_TARGETS
 
 test_clean:
 	@rm -rf testworlds/log

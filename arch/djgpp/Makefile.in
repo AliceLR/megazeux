@@ -2,14 +2,7 @@
 # DJGPP Makefile
 #
 
-DJGPPBASE ?= i586-pc-msdosdjgpp
-CC = ${DJGPPBASE}-gcc
-CXX = ${DJGPPBASE}-g++
-AS = ${DJGPPBASE}-as
-AR = ${DJGPPBASE}-ar
-OBJCOPY = ${DJGPPBASE}-objcopy
-STRIP = ${DJGPPBASE}-strip
-
+CROSS_COMPILE ?= i586-pc-msdosdjgpp
 BINEXT = .exe
 
 EXTRA_LICENSES += ${LICENSE_DJGPP} ${LICENSE_LGPL2}

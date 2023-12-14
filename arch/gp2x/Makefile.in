@@ -2,15 +2,12 @@
 # gp2x makefile generics
 #
 
-CC      = arm-open2x-linux-gcc
-CXX     = arm-open2x-linux-g++
-STRIP   = arm-open2x-linux-strip --strip-unneeded
-OBJCOPY = arm-open2x-linux-objcopy
+CROSS_COMPILE ?= arm-open2x-linux-
 
 BINEXT = .gpe
 
 # Disable rules that require target code to run natively.
-SUPPRESS_HOST_TARGETS ?= 1
+SUPPRESS_LOCAL_TARGETS ?= 1
 
 #
 # GP2X binaries must be statically linked.

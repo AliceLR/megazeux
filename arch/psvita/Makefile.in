@@ -1,10 +1,6 @@
 .PHONY: clean package build
 
-CC      = arm-vita-eabi-gcc
-CXX     = arm-vita-eabi-g++
-AR      = arm-vita-eabi-ar
-OBJCOPY = arm-vita-eabi-objcopy
-STRIP   = arm-vita-eabi-strip --strip-unneeded
+CROSS_COMPILE = arm-vita-eabi-
 
 VITA_TITLEID = VMZX00001
 VITA_TITLE = MegaZeux
