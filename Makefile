@@ -56,7 +56,7 @@ PEFIX   ?= true
 
 CHMOD   ?= chmod
 CP      ?= cp
-LOCAL_CC?= gcc
+HOST_CC ?= gcc
 LN      ?= ln
 MKDIR   ?= mkdir
 MV      ?= mv
@@ -441,7 +441,7 @@ PEFIX   := @${PEFIX}
 
 CHMOD   := @${CHMOD}
 CP      := @${CP}
-LOCAL_CC:= @${LOCAL_CC}
+HOST_CC := @${HOST_CC}
 LN      := @${LN}
 MKDIR   := @${MKDIR}
 MV      := @${MV}
@@ -478,7 +478,7 @@ build/${TARGET}src:
 #
 # * SUPPRESS_CC_TARGETS prevents "mzx", etc from being added to "all".
 # * SUPPRESS_BUILD_TARGETS suppresses "build".
-# * SUPPRESS_LOCAL_TARGETS suppresses "assets/help.fil", "test", etc.
+# * SUPPRESS_HOST_TARGETS suppresses "assets/help.fil", "test", etc.
 #
 ifneq (${SUPPRESS_ALL_TARGETS},1)
 
@@ -621,7 +621,7 @@ distclean: clean
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
 
-ifneq (${SUPPRESS_LOCAL_TARGETS},1)
+ifneq (${SUPPRESS_HOST_TARGETS},1)
 
 assets/help.fil: ${txt2hlp} docs/WIPHelp.txt
 	$(if ${V},,@echo "  txt2hlp " $@)
@@ -648,7 +648,7 @@ else
 	@${SHELL} testworlds/run.sh ${PLATFORM}
 endif
 
-endif # !SUPPRESS_LOCAL_TARGETS
+endif # !SUPPRESS_HOST_TARGETS
 
 test_clean:
 	@rm -rf testworlds/log

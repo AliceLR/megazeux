@@ -55,12 +55,12 @@ pefix := arch/mingw/pefix
 -include arch/mingw/pefix.d
 
 arch/mingw/pefix.o: arch/mingw/pefix.c
-	$(if ${V},,@echo "  LOC.CC  " $<)
-	${LOCAL_CC} -MD ${CFLAGS} -c $< -o $@
+	$(if ${V},,@echo "  HOSTCC  " $<)
+	${HOST_CC} -MD ${CFLAGS} -c $< -o $@
 
 ${pefix}: arch/mingw/pefix.o
-	$(if ${V},,@echo "  LOC.LINK" ${pefix})
-	${LOCAL_CC} arch/mingw/pefix.o -o ${pefix}
+	$(if ${V},,@echo "  HOSTLINK" ${pefix})
+	${HOST_CC} arch/mingw/pefix.o -o ${pefix}
 
 all: ${pefix}
 

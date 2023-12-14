@@ -7,7 +7,7 @@ STRIP   = /bin/true
 # Block --host, which will break things.
 CROSS_COMPILE =
 # Disable rules that require target code to run natively.
-SUPPRESS_LOCAL_TARGETS ?= 1
+SUPPRESS_HOST_TARGETS ?= 1
 
 SDL_CFLAGS = -s USE_SDL=2
 SDL_LDFLAGS = -s USE_SDL=2

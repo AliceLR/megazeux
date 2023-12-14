@@ -21,7 +21,7 @@ EXTRA_LICENSES += ${LICENSE_NEWLIB}
 CROSS_COMPILE = kos-
 
 # Disable rules that require target code to run natively.
-SUPPRESS_LOCAL_TARGETS ?= 1
+SUPPRESS_HOST_TARGETS ?= 1
 
 #
 # Override library paths

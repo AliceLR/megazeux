@@ -15,7 +15,7 @@ usage() {
 	echo "  --bindir       Where utilities should be installed. (/usr/bin)"
 	echo "  --sharedir     Where resources should be installed. (/usr/share)"
 	echo "  --licensedir   Where licenses should be installed. (/usr/share/doc)"
-	echo "  --host         Specify cross toolchain prefix for Unix et al. (none)"
+	echo "  --host         Specify cross toolchain prefix for Linux et al. (none)"
 	echo
 	echo "  Install directories can be disregarded for builds for platforms"
 	echo "  with a monolithic directory structure e.g. Windows."

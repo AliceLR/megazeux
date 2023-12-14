@@ -2,6 +2,9 @@
 
 CROSS_COMPILE = arm-vita-eabi-
 
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 VITA_TITLEID = VMZX00001
 VITA_TITLE = MegaZeux
 

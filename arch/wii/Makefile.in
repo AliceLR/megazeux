@@ -27,7 +27,7 @@ CROSS_COMPILE =
 # Don't strip when generating debug symbols.
 NO_STRIP_IN_DEBUGLINK ?= 1
 # Disable rules that require target code to run natively.
-SUPPRESS_LOCAL_TARGETS ?= 1
+SUPPRESS_HOST_TARGETS ?= 1
 
 #
 # Override library paths
