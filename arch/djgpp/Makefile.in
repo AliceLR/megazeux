@@ -2,7 +2,7 @@
 # DJGPP Makefile
 #
 
-CROSS_COMPILE ?= i586-pc-msdosdjgpp
+CROSS_COMPILE ?= i586-pc-msdosdjgpp-
 BINEXT = .exe
 
 EXTRA_LICENSES += ${LICENSE_DJGPP} ${LICENSE_LGPL2}

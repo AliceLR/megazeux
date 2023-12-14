@@ -3,7 +3,6 @@
 #
 
 CROSS_COMPILE ?= arm-open2x-linux-
-
 BINEXT = .gpe
 
 # Disable rules that require target code to run natively.
