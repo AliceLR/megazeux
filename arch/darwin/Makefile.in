@@ -8,8 +8,6 @@ DSOPOST    = .dylib
 DSORPATH   =
 DSOSONAME  = -install_name ${LIBDIR}/
 
-STRIP   ?= strip
-
 #
 # darwin specific recipes.
 # Enable 'make install' and 'make uninstall' for darwin builds.
