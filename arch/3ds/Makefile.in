@@ -90,6 +90,8 @@ arch/3ds/%.shbin: arch/3ds/%.v.pica arch/3ds/%.g.pica
 arch/3ds/%.shbin.o: arch/3ds/%.shbin arch/3ds/%_shbin.h
 	$(if ${V},,@echo "  AS      " $<)
 	@bin2s $< > $<.S
+	@# Shut up the assembler since bin2s doesn't emit a trailing newline:
+	@echo '' >> $<.S
 	$(AS) $<.S -o $@
 
 arch/3ds/%_shbin.h: arch/3ds/%.shbin

@@ -62,6 +62,8 @@ arch/nds/render.o: arch/nds/protected_palette.bin.o
 arch/nds/%.bin.o arch/nds/%_bin.h : arch/nds/%.bin
 	$(if ${V},,@echo "  AS      " $<)
 	@bin2s -a 32 -H arch/nds/`(echo $(<F) | tr . _)`.h $< > $<.S
+	@# Shut up the assembler since bin2s doesn't emit a trailing newline:
+	@echo '' >> $<.S
 	$(AS) $<.S -o arch/nds/$(<F).o
 	@# Remove dkP's badly constructed macro (-Wundef):
 	@sed -i 's/^#if __cplusplus >= 201103L$$/#if 0/g' arch/nds/*_bin.h

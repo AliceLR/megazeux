@@ -70,7 +70,7 @@ enum vdirflags
   VDIR_NO_SCAN          = (1<<0), // Don't scan the directory to get its length.
                                   // This will break seek, tell, and length.
   VDIR_FAST             = VDIR_NO_SCAN, // Enable all speed hacks.
-  VDIR_PUBLIC_MASK      = VDIR_NO_SCAN,
+  VDIR_PUBLIC_MASK      = VDIR_NO_SCAN
 };
 
 UTILS_LIBSPEC boolean vio_filesystem_init(size_t max_size, size_t max_file_size,
