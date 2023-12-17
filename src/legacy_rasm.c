@@ -2968,10 +2968,10 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
     if(!dest)
       return false;
 
+    dest[0] = 0xff;
+    dest[1] = 0;
     *_dest = dest;
     *_dest_len = 2;
-    *_dest[0] = 0xff;
-    *_dest[1] = 0;
     *_cur_prog_line = 0;
     return true;
   }

@@ -1,0 +1,3 @@
+Title: Slime Spread Speed Test
+Author: Alice Rowan
+Desc: Test MegaZeux 2.x slime spread speeds 1-4 and '5-8', including bugs. This test does NOT work prior to 2.07, as older versions use 1.x slime speeds.
