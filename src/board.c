@@ -251,7 +251,7 @@ err:
   return -1;
 }
 
-static void default_board(struct board *cur_board)
+void default_board_settings(struct world *mzx_world, struct board *cur_board)
 {
   cur_board->mod_playing[0] = 0;
   cur_board->viewport_x = 0;
@@ -269,12 +269,15 @@ static void default_board(struct board *cur_board)
   cur_board->forest_becomes = 0;
   cur_board->collect_bombs = 0;
   cur_board->fire_burns = 0;
-  cur_board->board_dir[0] = 0;
-  cur_board->board_dir[1] = 0;
-  cur_board->board_dir[2] = 0;
-  cur_board->board_dir[3] = 0;
+  cur_board->dragons_can_randomly_move =
+   (mzx_world->version < VERSION_PORT || mzx_world->version >= V293) ? true : false;
+  cur_board->board_dir[0] = NO_BOARD;
+  cur_board->board_dir[1] = NO_BOARD;
+  cur_board->board_dir[2] = NO_BOARD;
+  cur_board->board_dir[3] = NO_BOARD;
   cur_board->restart_if_zapped = 0;
   cur_board->reset_on_entry = 0;
+  cur_board->reset_on_entry_same_board = (mzx_world->version >= V293);
   cur_board->time_limit = 0;
   cur_board->charset_path = NULL;
   cur_board->palette_path = NULL;
@@ -316,7 +319,7 @@ static void default_board(struct board *cur_board)
 #endif
 }
 
-void dummy_board(struct board *cur_board)
+void dummy_board(struct world *mzx_world, struct board *cur_board)
 {
   // Allocate placeholder data for broken boards so they will run
   int size = 2000;
@@ -324,7 +327,7 @@ void dummy_board(struct board *cur_board)
   cur_board->board_width = 80;
   cur_board->board_height = 25;
 
-  default_board(cur_board);
+  default_board_settings(mzx_world, cur_board);
 
   cur_board->level_id = ccalloc(1, size);
   cur_board->level_color = ccalloc(1, size);
@@ -410,8 +413,8 @@ __editor_maybe_static void board_set_palette_path(struct board *cur_board,
 
 #define err_if_missing(expected) if(last_ident < expected) { goto err_free; }
 
-static int load_board_info(struct board *cur_board, struct zip_archive *zp,
- int savegame, int *file_version)
+static int load_board_info(struct world *mzx_world, struct board *cur_board,
+ struct zip_archive *zp, int savegame, int *file_version)
 {
   char *buffer;
   size_t actual_size;
@@ -622,6 +625,16 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
         board_set_palette_path(cur_board, (const char *)prop.start, size);
         break;
 
+      case BPROP_RESET_ON_ENTRY_SAME_BOARD:
+        if(*file_version >= V293 && mzx_world->version >= V293)
+          cur_board->reset_on_entry_same_board = load_prop_boolean(&prop);
+        break;
+
+      case BPROP_DRAGONS_CAN_RANDOMLY_MOVE:
+        if(*file_version >= V293 && mzx_world->version >= V293)
+          cur_board->dragons_can_randomly_move = load_prop_boolean(&prop);
+        break;
+
 
       // Savegame only
       case BPROP_SCROLL_X:
@@ -791,7 +804,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
   int has_och = 0;
   int has_oco = 0;
 
-  default_board(cur_board);
+  default_board_settings(mzx_world, cur_board);
 
   while(ZIP_SUCCESS == zip_get_next_mzx_file_id(zp, &file_id, &board_id_read, &robot_id_read))
   {
@@ -802,7 +815,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
     {
       case FILE_ID_BOARD_INFO:
       {
-        if(load_board_info(cur_board, zp, savegame, &file_version))
+        if(load_board_info(mzx_world, cur_board, zp, savegame, &file_version))
           goto err_invalid;
 
         has_base = 1;
@@ -1217,7 +1230,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
 err_invalid:
   error_message(E_ZIP_BOARD_CORRUPT, (int)board_id, NULL);
-  dummy_board(cur_board);
+  dummy_board(mzx_world, cur_board);
 
   return VAL_INVALID;
 }

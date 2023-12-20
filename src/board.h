@@ -41,7 +41,8 @@ CORE_LIBSPEC void clear_board(struct board *cur_board);
 struct board *duplicate_board(struct world *mzx_world,
  struct board *src_board);
 
-void dummy_board(struct board *cur_board);
+void default_board_settings(struct world *mzx_world, struct board *cur_board);
+void dummy_board(struct world *mzx_world, struct board *cur_board);
 
 int find_board(struct world *mzx_world, char *name);
 

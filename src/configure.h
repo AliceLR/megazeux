@@ -26,8 +26,6 @@ __M_BEGIN_DECLS
 
 #include <stdint.h>
 
-#define OPTION_NAME_LEN 33
-
 enum config_type
 {
   SYSTEM_CNF,

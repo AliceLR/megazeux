@@ -89,8 +89,10 @@ struct editor_config_info
   boolean fire_burns_forever;
   boolean forest_to_floor;
   boolean collect_bombs;
+  boolean dragons_can_randomly_move;
   boolean restart_if_hurt;
   boolean reset_on_entry;
+  boolean reset_on_entry_same_board;
   boolean player_locked_ns;
   boolean player_locked_ew;
   boolean player_locked_att;

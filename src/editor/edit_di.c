@@ -857,7 +857,8 @@ int size_pos_vlayer(struct world *mzx_world)
 //  [ ] Fire burns brown        ( ) Can't save
 //  [ ] Forest to floor         ( ) Can save on sensors
 //  [ ] Collect bombs
-//  [ ] Fire burns forever      ( ) No overlay
+//  [ ] Fire burns forever
+//  [ ] Dragons randomly move   ( ) No overlay
 //  [ ] Restart if hurt         ( ) Normal overlay
 //  [ ] Reset board on entry    ( ) Static overlay
 //  [ ] Player locked N/S       ( ) Transparent overlay
@@ -866,6 +867,7 @@ int size_pos_vlayer(struct world *mzx_world)
 //
 //  Charset to load-            Palette to load-
 //  _______________________[v]  _______________________[v]  //
+//     [ ] Reset/load when entering from the same board
 //
 //            _OK_  _Cancel_  _Set as defaults_             //
 //
@@ -876,25 +878,36 @@ void board_info(struct world *mzx_world)
 {
   struct board *src_board = mzx_world->current_board;
   int dialog_result;
-  struct element *elements[11];
+  struct element *elements[12];
   struct dialog di;
-  int check_box_results[14] =
+  int check_box_results[15] =
   {
     src_board->can_shoot, src_board->can_bomb,
     src_board->fire_burn_space, src_board->fire_burn_fakes,
     src_board->fire_burn_trees, src_board->fire_burn_brown,
     src_board->forest_becomes, src_board->collect_bombs,
-    src_board->fire_burns, src_board->restart_if_zapped,
+    src_board->fire_burns,
+    src_board->dragons_can_randomly_move,
+    src_board->restart_if_zapped,
     src_board->reset_on_entry, src_board->player_ns_locked,
     src_board->player_ew_locked, src_board->player_attack_locked
+  };
+  int check_box_results_2[] =
+  {
+    src_board->reset_on_entry_same_board,
   };
   const char *check_box_strings[] =
   {
     "Can shoot", "Can bomb", "Fire burns space",
     "Fire burns fakes", "Fire burns trees", "Fire burns brown",
     "Forest to floor", "Collect bombs", "Fire burns forever",
+    "Dragons move randomly",
     "Restart if hurt", "Reset board on entry", "Player locked N/S",
     "Player locked E/W", "Player attack locked"
+  };
+  const char *check_box_strings_2[] =
+  {
+    "Reset/load when entering from the same board"
   };
   const char *radio_strings_1[] =
   {
@@ -950,15 +963,15 @@ void board_info(struct world *mzx_world)
 
   do
   {
-    elements[0] = construct_button(13, 21, "OK", 0);
-    elements[1] = construct_button(19, 21, "Cancel", -1);
-    elements[2] = construct_button(29, 21, "Set as defaults", 1);
+    elements[0] = construct_button(13, 22, "OK", 0);
+    elements[1] = construct_button(19, 22, "Cancel", -1);
+    elements[2] = construct_button(29, 22, "Set as defaults", 1);
 
     elements[3] = construct_input_box(7, 1, "Board name- ",
      BOARD_NAME_SIZE - 1, title_string);
 
-    elements[4] = construct_check_box(3, 3, check_box_strings,
-     14, 20, check_box_results);
+    elements[4] = construct_check_box(3, 2, check_box_strings,
+     15, 21, check_box_results);
 
     elements[5] = construct_radio_button(31, 3, radio_strings_1,
      3, 19, &radio_result_1);
@@ -978,8 +991,11 @@ void board_info(struct world *mzx_world)
      "Select a palette...", palette_exts, "(none)", 23, 1, "",
      palette_string, 2);
 
+    elements[11] = construct_check_box(6, 20, check_box_strings_2,
+     1, 46, check_box_results_2);
+
     construct_dialog(&di, "Board Settings", 10, 0, 60, 24,
-     elements, 11, pos);
+     elements, ARRAY_SIZE(elements), pos);
 
     dialog_result = run_dialog(mzx_world, &di);
     pos = di.current_element;
@@ -1001,11 +1017,13 @@ void board_info(struct world *mzx_world)
       conf->forest_to_floor = check_box_results[6];
       conf->collect_bombs = check_box_results[7];
       conf->fire_burns_forever = check_box_results[8];
-      conf->restart_if_hurt = check_box_results[9];
-      conf->reset_on_entry = check_box_results[10];
-      conf->player_locked_ns = check_box_results[11];
-      conf->player_locked_ew = check_box_results[12];
-      conf->player_locked_att = check_box_results[13];
+      conf->dragons_can_randomly_move = check_box_results[9];
+      conf->restart_if_hurt = check_box_results[10];
+      conf->reset_on_entry = check_box_results[11];
+      conf->player_locked_ns = check_box_results[12];
+      conf->player_locked_ew = check_box_results[13];
+      conf->player_locked_att = check_box_results[14];
+      conf->reset_on_entry_same_board = check_box_results_2[0];
       conf->explosions_leave = radio_result_1;
       conf->saving_enabled = radio_result_2;
       conf->overlay_enabled = radio_result_3;
@@ -1030,11 +1048,13 @@ void board_info(struct world *mzx_world)
     src_board->forest_becomes = check_box_results[6];
     src_board->collect_bombs = check_box_results[7];
     src_board->fire_burns = check_box_results[8];
-    src_board->restart_if_zapped = check_box_results[9];
-    src_board->reset_on_entry = check_box_results[10];
-    src_board->player_ns_locked = check_box_results[11];
-    src_board->player_ew_locked = check_box_results[12];
-    src_board->player_attack_locked = check_box_results[13];
+    src_board->dragons_can_randomly_move = check_box_results[9];
+    src_board->restart_if_zapped = check_box_results[10];
+    src_board->reset_on_entry = check_box_results[11];
+    src_board->player_ns_locked = check_box_results[12];
+    src_board->player_ew_locked = check_box_results[13];
+    src_board->player_attack_locked = check_box_results[14];
+    src_board->reset_on_entry_same_board = check_box_results_2[0];
     src_board->explosions_leave = radio_result_1;
     src_board->save_mode = radio_result_2;
 

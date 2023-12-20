@@ -274,8 +274,8 @@ enum sprite_prop
 };
 
 
-#define COUNT_BOARD_PROPS (              1 +  7 +          3 + 25)
-#define BOUND_BOARD_PROPS (BOARD_NAME_SIZE + 10 + 3*MAX_PATH + 26)
+#define COUNT_BOARD_PROPS (              1 +  7 +          3 + 27)
+#define BOUND_BOARD_PROPS (BOARD_NAME_SIZE + 10 + 3*MAX_PATH + 28)
 
 #define COUNT_BOARD_SAVE_PROPS (             2 + 20)
 #define BOUND_BOARD_SAVE_PROPS (2*ROBOT_MAX_TR + 30)
@@ -310,7 +310,7 @@ enum board_prop
   BPROP_NUM_SENSORS               = 0x0007, // 1
   BPROP_FILE_VERSION              = 0x0008, // 2
 
-  // Non-essential                      25     26 + 3 MAX_PATH
+  // Non-essential                      27     28 + 3 MAX_PATH
   BPROP_MOD_PLAYING               = 0x0010, // MAX_PATH
   BPROP_VIEWPORT_X                = 0x0011, // 1
   BPROP_VIEWPORT_Y                = 0x0012, // 1
@@ -339,6 +339,8 @@ enum board_prop
   BPROP_RESET_ON_ENTRY            = 0x0029, // 1
   BPROP_CHARSET_PATH              = 0x002A, // MAX_PATH
   BPROP_PALETTE_PATH              = 0x002B, // MAX_PATH
+  BPROP_RESET_ON_ENTRY_SAME_BOARD = 0x002C, // 1
+  BPROP_DRAGONS_CAN_RANDOMLY_MOVE = 0x002D, // 1
 
   // Save                               17     25 + 2 ROBOT_MAX_TR
   BPROP_SCROLL_X                  = 0x0100, // 2

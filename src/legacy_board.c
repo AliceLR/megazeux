@@ -175,41 +175,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->sensor_list = NULL;
   cur_board->scroll_list = NULL;
 
-  // Initialize some fields that may no longer be loaded
-  // from the board file itself..
-
-  cur_board->last_key = '?';
-  cur_board->num_input = 0;
-  cur_board->input_size = 0;
-  cur_board->input_allocated = 0;
-  cur_board->input_string = NULL;
-  cur_board->player_last_dir = 0x10;
-  cur_board->bottom_mesg[0] = 0;
-  cur_board->b_mesg_timer = 0;
-  cur_board->lazwall_start = 7;
-  cur_board->b_mesg_row = 24;
-  cur_board->b_mesg_col = -1;
-  cur_board->scroll_x = 0;
-  cur_board->scroll_y = 0;
-  cur_board->locked_x = -1;
-  cur_board->locked_y = -1;
-  cur_board->volume = 255;
-  cur_board->volume_inc = 0;
-  cur_board->volume_target = 255;
-  cur_board->reset_on_entry = 0;
-  cur_board->charset_path = NULL;
-  cur_board->palette_path = NULL;
-  cur_board->charset_path_allocated = 0;
-  cur_board->palette_path_allocated = 0;
-  cur_board->blind_dur_v1 = 0;
-  cur_board->firewalker_dur_v1 = 0;
-  cur_board->freeze_time_dur_v1 = 0;
-  cur_board->slow_time_dur_v1 = 0;
-  cur_board->wind_dur_v1 = 0;
-
-#if defined(DEBUG) || defined(CONFIG_EXTRAM)
-  cur_board->is_extram = false;
-#endif
+  default_board_settings(mzx_world, cur_board);
 
   if(file_version >= V200)
   {
@@ -818,7 +784,7 @@ struct board *legacy_load_board_allocate(struct world *mzx_world, vfile *vf,
    savegame, file_version);
 
   if(result != VAL_SUCCESS)
-    dummy_board(cur_board);
+    dummy_board(mzx_world, cur_board);
 
   return cur_board;
 }

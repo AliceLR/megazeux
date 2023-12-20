@@ -956,8 +956,7 @@ void update_board(context *ctx)
               level_param[level_offset] = current_param & 0xE7;
 
               // One out of 8 moves is random
-              // This was broken in the port for a long time.
-              if(mzx_world->version < VERSION_PORT || mzx_world->version >= V293)
+              if(src_board->dragons_can_randomly_move)
                 rval = Random(8);
 
               if(!(rval & 0x07))
