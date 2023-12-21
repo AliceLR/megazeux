@@ -957,6 +957,7 @@ boolean update_resolve_target(struct world *mzx_world,
   {
     int saved_player_last_dir = src_board->player_last_dir;
     int target_board = mzx_world->target_board;
+    boolean is_different_board = false;
     boolean load_assets = false;
 
     // TELEPORT or ENTRANCE.
@@ -983,6 +984,9 @@ boolean update_resolve_target(struct world *mzx_world,
     mzx_world->current_cycle_odd = false;
 
     if(mzx_world->current_board_id != target_board)
+      is_different_board = true;
+
+    if(is_different_board || src_board->reset_on_entry_same_board)
     {
       change_board(mzx_world, target_board);
       load_assets = true;
@@ -1162,12 +1166,19 @@ boolean update_resolve_target(struct world *mzx_world,
       vquick_fadeout();
     }
 
-    // Load the new board's charset and palette, if necessary
+    // Load the new board's charset and palette, if necessary.
+    // If reset/load on same board is set, this should always be done.
     if(load_assets)
-    {
-      // Load board's mod unless it's the same mod playing.
-      load_game_module(mzx_world, src_board->mod_playing, true);
       change_board_load_assets(mzx_world);
+
+    if(is_different_board)
+    {
+      /* Load board's mod unless it's the same mod playing.
+       * Note: this was performed at the start of the NEXT cycle prior to 2.91g.
+       * Note: prior to 2.91g this wasn't conditional on is_different_board,
+       * but the difference should be irrelevant.
+       */
+      load_game_module(mzx_world, src_board->mod_playing, true);
 
 #ifdef CONFIG_EDITOR
       // Also, update the caption to indicate the current board.

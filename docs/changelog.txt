@@ -164,6 +164,9 @@ USERS
   now invokes the macro instead of just inserting a line.
 + Fixed a bug where stdio redirect could generate corrupted log
   files on the Nintendo DS due to poor freopen support.
++ Reset Board on Entry and load charset/palette on entry now
+  optionally will be performed even if re-entering a board from
+  itself (enabled by default).
 + Fixed a Reset Board on Entry bug where a temporary board would
   not be generated when loading the title screen or if the
   starting board is the title board.
