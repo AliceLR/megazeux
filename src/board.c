@@ -94,6 +94,14 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
   tmp = cur_board->palette_path ? cur_board->palette_path : "";
   save_prop_s(BPROP_PALETTE_PATH, tmp, &mf);
 
+  if(world_version >= V293)
+  {
+    save_prop_c(BPROP_RESET_ON_ENTRY_SAME_BOARD,
+     cur_board->reset_on_entry_same_board, &mf);
+    save_prop_c(BPROP_DRAGONS_CAN_RANDOMLY_MOVE,
+     cur_board->dragons_can_randomly_move, &mf);
+  }
+
   if(savegame)
   {
     save_prop_w(BPROP_SCROLL_X, cur_board->scroll_x, &mf);

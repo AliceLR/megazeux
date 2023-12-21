@@ -270,6 +270,8 @@ static void convert_293_to_292_board_info(struct downver_state *dv,
         save_prop_s_to_asciiz(ident, BOARD_NAME_SIZE, &prop, dest);
         break;
 
+      case BPROP_RESET_ON_ENTRY_SAME_BOARD:
+      case BPROP_DRAGONS_CAN_RANDOMLY_MOVE:
       case BPROP_BLIND_DUR:
       case BPROP_FIREWALKER_DUR:
       case BPROP_FREEZE_TIME_DUR:
