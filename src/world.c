@@ -2487,7 +2487,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
   if(!mzx_world->board_list[0])
   {
     struct board *dummy = cmalloc(sizeof(struct board));
-    dummy_board(dummy);
+    dummy_board(mzx_world, dummy);
 
     dummy->board_name[0] = 0;
     dummy->robot_list[0] = &mzx_world->global_robot;

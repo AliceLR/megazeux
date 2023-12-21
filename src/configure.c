@@ -337,7 +337,7 @@ typedef void (*config_function)(struct config_info *conf, char *name,
 
 struct config_entry
 {
-  char option_name[OPTION_NAME_LEN];
+  const char *option_name;
   config_function change_option;
   boolean allow_in_game_config;
 };

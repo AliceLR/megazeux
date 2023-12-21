@@ -164,6 +164,9 @@ USERS
   now invokes the macro instead of just inserting a line.
 + Fixed a bug where stdio redirect could generate corrupted log
   files on the Nintendo DS due to poor freopen support.
++ Reset Board on Entry and load charset/palette on entry now
+  optionally will be performed even if re-entering a board from
+  itself (enabled by default).
 + Fixed a Reset Board on Entry bug where a temporary board would
   not be generated when loading the title screen or if the
   starting board is the title board.
@@ -275,6 +278,10 @@ USERS
   FWRITE_APPEND) is now stored in save files. This fixes a bug
   where the output file would be reopened in the wrong mode (ab)
   when reloading a saved game.
++ Fixed dragon 1/8th chance of random movement, which has been
+  broken since 2.80. The original DOS behavior (random movement)
+  or the 2.80 behavior (no random movement) can be selected via
+  the new board setting "Dragons randomly move".
 + save_slots is now enabled by default for consoles. (Spectere)
 + editor_show_thing_toggles is now enabled by default.
 - board_editor_hide_help and robot_editor_hide_help are no
