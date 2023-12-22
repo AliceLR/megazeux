@@ -88,14 +88,13 @@ static boolean vorbis_mix_data(struct audio_stream *a_src,
 #else
     read_len =
      ov_read(&(v_stream->vorbis_file_handle), read_buffer,
-     read_wanted, ENDIAN_PACKING, 2, 1, &current_section);
+     read_wanted, ENDIAN_PACKING, sizeof(int16_t), 1, &current_section);
 #endif
 
     if(a_src->repeat && (pos < v_stream->loop_end) &&
-     (pos + read_len / v_stream->s.channels / 2 >= v_stream->loop_end) &&
-     (v_stream->loop_start < v_stream->loop_end))
+     (pos + read_len / v_stream->s.channels / sizeof(int16_t) >= v_stream->loop_end))
     {
-      read_len = (v_stream->loop_end - pos) * v_stream->s.channels * 2;
+      read_len = (v_stream->loop_end - pos) * v_stream->s.channels * sizeof(int16_t);
       ov_pcm_seek(&(v_stream->vorbis_file_handle), v_stream->loop_start);
     }
 
@@ -116,7 +115,7 @@ static boolean vorbis_mix_data(struct audio_stream *a_src,
 #else
           read_len =
            ov_read(&(v_stream->vorbis_file_handle), read_buffer,
-           read_wanted, ENDIAN_PACKING, 2, 1, &current_section);
+           read_wanted, ENDIAN_PACKING, sizeof(int16_t), 1, &current_section);
 #endif
         }
       }

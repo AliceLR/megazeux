@@ -74,6 +74,8 @@ USERS
   and are only useful when editing.
 + Fixed crash bugs caused by using CHANGE SFX # to "" with an
   invalid sound effect number.
++ Fixed loop detection for Ogg Vorbis files when MOD_LOOPSTART
+  is set to a value greater than MOD_LOOPEND.
 + Added support for 800x240 mode to the 3DS port. This mode can
   be toggled with the 3DS keyboard. (asie)
 + Added support for using 352kB of previously unused NDS VRAM
