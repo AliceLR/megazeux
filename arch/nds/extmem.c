@@ -63,14 +63,15 @@ static void nds_ext_print_info(void)
     info("Using extra VRAM for board storage.\n");
 #endif
 
+#ifdef CONFIG_NDS_BLOCKSDS
+#define SLOT2_NAME() peripheralSlot2GetName()
+#else
+#define SLOT2_NAME() ram_type_string()
+#endif
+
   if(nds_mspace_def[MSPACE_SLOT_2].start != 0)
     info("Using '%s' RAM expansion with capacity of %d (base %p).\n",
-#ifdef CONFIG_NDS_BLOCKSDS
-     peripheralSlot2GetName(),
-#else
-     ram_type_string(),
-#endif
-     slot2_capacity, (void *)slot2_base);
+     SLOT2_NAME(), slot2_capacity, (void *)slot2_base);
   else
     info("No RAM expansion detected.\n");
 }

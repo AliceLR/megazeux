@@ -4,7 +4,7 @@
 
 CC      = ppc-amigaos-gcc -mcrt=clib2 -I${PREFIX}/clib2/include
 CXX     = ppc-amigaos-g++ -mcrt=clib2 -I${PREFIX}/clib2/include
-STRIP   = ppc-amigaos-strip --strip-unneeded
+STRIP   = ppc-amigaos-strip
 OBJCOPY = true
 CHMOD   = true
 
@@ -15,6 +15,9 @@ DSOPRE     = lib
 DSOPOST    = .so
 DSORPATH   = -Wl,-rpath,${LIBDIR}
 DSOSONAME  = -Wl,-soname,
+
+# Block --host, which will break things.
+CROSS_COMPILE =
 
 ifeq (${BUILD_MODULAR},1)
 ARCH_CFLAGS   += -fPIC

@@ -2,14 +2,7 @@
 # mingw makefile generics
 #
 
-CC      = ${MINGWBASE}gcc
-CXX     = ${MINGWBASE}g++
-AR      = ${MINGWBASE}ar
-OBJCOPY = ${MINGWBASE}objcopy
-STRIP   = ${MINGWBASE}strip --strip-unneeded
-WINDRES = ${MINGWBASE}windres
 PEFIX   = ${pefix}
-
 BINEXT  = .exe
 
 DSOLDFLAGS = -shared

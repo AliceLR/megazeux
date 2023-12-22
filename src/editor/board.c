@@ -308,6 +308,7 @@ struct board *create_blank_board(struct editor_config_info *conf)
   cur_board->forest_becomes =    conf->forest_to_floor;
   cur_board->collect_bombs =     conf->collect_bombs;
   cur_board->fire_burns =        conf->fire_burns_forever;
+  cur_board->dragons_can_randomly_move  = conf->dragons_can_randomly_move;
 
   for(i = 0; i < 4; i++)
   {
@@ -315,6 +316,7 @@ struct board *create_blank_board(struct editor_config_info *conf)
   }
 
   cur_board->reset_on_entry =    conf->reset_on_entry;
+  cur_board->reset_on_entry_same_board  = conf->reset_on_entry_same_board;
   cur_board->restart_if_zapped = conf->restart_if_hurt;
   cur_board->time_limit =        conf->time_limit;
   cur_board->last_key = '?';

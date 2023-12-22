@@ -13,10 +13,6 @@ icons = ${icons_obj}/icons.o
 
 icons_objs = ${icons_obj}/quantump.o
 
-ifneq (${V},1)
-WINDRES := @${WINDRES}
-endif
-
 ${icons_obj}/%.o: ${icons_src}/%.rc
 	$(if ${V},,@echo "  WINDRES " $<)
 	${WINDRES} -i $< -o $@

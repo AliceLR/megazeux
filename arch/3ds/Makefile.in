@@ -30,8 +30,11 @@ EXTRA_LICENSES += ${LICENSE_MPL2} ${LICENSE_NEWLIB}
 #
 # 3DS target rules
 #
-STRIP  = /bin/true
 
+# Block --host, which will break things.
+CROSS_COMPILE =
+# Don't strip when generating debug symbols.
+NO_STRIP_IN_DEBUGLINK ?= 1
 # Disable rules that require target code to run natively.
 SUPPRESS_HOST_TARGETS ?= 1
 
@@ -87,6 +90,8 @@ arch/3ds/%.shbin: arch/3ds/%.v.pica arch/3ds/%.g.pica
 arch/3ds/%.shbin.o: arch/3ds/%.shbin arch/3ds/%_shbin.h
 	$(if ${V},,@echo "  AS      " $<)
 	@bin2s $< > $<.S
+	@# Shut up the assembler since bin2s doesn't emit a trailing newline:
+	@echo '' >> $<.S
 	$(AS) $<.S -o $@
 
 arch/3ds/%_shbin.h: arch/3ds/%.shbin

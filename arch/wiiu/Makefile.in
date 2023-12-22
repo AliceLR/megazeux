@@ -24,6 +24,11 @@ BINEXT     := .elf
 # overridden by base_tools include
 PREFIX     := $(DEVKITPPC)
 
+# Block --host, which will break things.
+CROSS_COMPILE =
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 #
 # Override library paths.
 #

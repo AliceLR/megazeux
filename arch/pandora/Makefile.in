@@ -3,12 +3,6 @@ CROSS_COMPILE   ?= $(TOOLCHAIN)/bin/arm-none-linux-gnueabi-
 PANDORA_LIBPATH ?= $(PREFIX)/lib
 PANDORA_INCPATH ?= $(PREFIX)/include
 
-CC              = $(CROSS_COMPILE)gcc
-CXX             = $(CROSS_COMPILE)g++
-AR              = $(CROSS_COMPILE)ar
-OBJCOPY         = $(CROSS_COMPILE)objcopy
-STRIP           = $(CROSS_COMPILE)strip --strip-unneeded
-
 ARCH_CFLAGS     = -march=armv7-a -mtune=cortex-a8 -fPIC -I$(PANDORA_INCPATH)
 ARCH_CXXFLAGS   = $(ARCH_CFLAGS)
 

@@ -62,8 +62,10 @@ static const struct editor_config_info editor_conf_default =
   0,                            // fire_burns_forever
   1,                            // forest_to_floor
   1,                            // collect_bombs
+  true,                         // dragons_can_randomly_move
   0,                            // restart_if_hurt
   0,                            // reset_on_entry
+  true,                         // reset_on_entry_same_board
   0,                            // player_locked_ns
   0,                            // player_locked_ew
   0,                            // player_locked_att
@@ -109,7 +111,7 @@ typedef void (* editor_config_function)(struct editor_config_info *conf,
 
 struct editor_config_entry
 {
-  char option_name[OPTION_NAME_LEN];
+  const char *option_name;
   editor_config_function change_option;
 };
 
@@ -623,6 +625,12 @@ static void config_board_collect_bombs(struct editor_config_info *conf,
   config_boolean(&conf->collect_bombs, value);
 }
 
+static void config_board_dragons_random_move(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  config_boolean(&conf->dragons_can_randomly_move, value);
+}
+
 static void config_board_restart(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
@@ -633,6 +641,12 @@ static void config_board_reset_on_entry(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
   config_boolean(&conf->reset_on_entry, value);
+}
+
+static void config_board_reset_on_entry_same(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  config_boolean(&conf->reset_on_entry_same_board, value);
 }
 
 static void config_board_locked_ns(struct editor_config_info *conf,
@@ -714,6 +728,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "board_default_can_shoot", config_board_can_shoot },
   { "board_default_charset_path", config_board_charset },
   { "board_default_collect_bombs", config_board_collect_bombs },
+  { "board_default_dragons_can_randomly_move", config_board_dragons_random_move },
   { "board_default_explosions_leave", config_board_explosions },
   { "board_default_fire_burns_brown", config_board_fire_brown },
   { "board_default_fire_burns_fakes", config_board_fire_fakes },
@@ -728,6 +743,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "board_default_player_locked_ew", config_board_locked_ew },
   { "board_default_player_locked_ns", config_board_locked_ns },
   { "board_default_reset_on_entry", config_board_reset_on_entry },
+  { "board_default_reset_on_entry_same_board", config_board_reset_on_entry_same },
   { "board_default_restart_if_hurt", config_board_restart },
   { "board_default_saving", config_board_saving },
   { "board_default_time_limit", config_board_time_limit },
@@ -965,8 +981,12 @@ void save_local_editor_config(struct editor_config_info *conf,
   vf_printf(vf, "board_default_fire_burns_forever = %d\n", conf->fire_burns_forever);
   vf_printf(vf, "board_default_forest_to_floor = %d\n", conf->forest_to_floor);
   vf_printf(vf, "board_default_collect_bombs = %d\n", conf->collect_bombs);
+  vf_printf(vf, "board_default_dragons_can_randomly_move = %d\n",
+   conf->dragons_can_randomly_move);
   vf_printf(vf, "board_default_restart_if_hurt = %d\n", conf->restart_if_hurt);
   vf_printf(vf, "board_default_reset_on_entry = %d\n", conf->reset_on_entry);
+  vf_printf(vf, "board_default_reset_on_entry_same_board = %d\n",
+   conf->reset_on_entry_same_board);
   vf_printf(vf, "board_default_player_locked_ns = %d\n", conf->player_locked_ns);
   vf_printf(vf, "board_default_player_locked_ew = %d\n", conf->player_locked_ew);
   vf_printf(vf, "board_default_player_locked_att = %d\n", conf->player_locked_att);

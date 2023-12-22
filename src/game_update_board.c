@@ -31,6 +31,7 @@
 #include "idarray.h"
 #include "idput.h"
 #include "robot.h"
+#include "world.h"
 #include "util.h"
 
 #include "audio/sfx.h"
@@ -468,7 +469,6 @@ void update_board(context *ctx)
           }
           break;
         }
-        // Cw/Ccw
 
         case CW_ROTATE:
         case CCW_ROTATE:
@@ -787,21 +787,25 @@ void update_board(context *ctx)
         {
           if(!slow_down)
           {
-            // This is pretty weird, but I have to go by the ASM for now
             int spread_speed = current_param & 0x03;
-            int current_cycle = (current_param &  0x3C) >> 2;
+            int current_cycle = (current_param & 0x3C) >> 2;
 
-            spread_speed |= spread_speed << 1;
+            // This was changed from speed*5 some time between 2.04 and 2.07.
+            // Despite MegaZeux 2.x having changed the speed setting range
+            // from 1-4 to 1-8, this setting has always been two bits.
+            // BUG: The newer behavior seems to be a broken attempt at speed*3.
+            if(mzx_world->version >= V251)
+              spread_speed |= spread_speed << 1;
+            else
+              spread_speed |= spread_speed << 2;
 
             if(spread_speed == current_cycle)
             {
               int new_x, new_y;
               current_color = level_color[level_offset];
               // Clear cycle
-              // BUG: This leaves the lowest cycle count bit set, which can't
-              // be fixed right now (compatibility). Seems like Alexis planned
-              // to extend the speed range in 2.00 but didn't fully implement
-              // it; the param dialog has the "wrong" bound too...
+              // BUG: This leaves the lowest cycle count bit set.
+              // This bug exists even in MegaZeux 1.x.
               current_param &= 0xC7;
 
               // Put slimes all around
@@ -838,6 +842,7 @@ void update_board(context *ctx)
             else
             {
               // Increase cycle
+              // BUG: corrupting overflow.
               level_param[level_offset] = current_param + 4;
             }
           }
@@ -951,6 +956,8 @@ void update_board(context *ctx)
               level_param[level_offset] = current_param & 0xE7;
 
               // One out of 8 moves is random
+              if(src_board->dragons_can_randomly_move)
+                rval = Random(8);
 
               if(!(rval & 0x07))
               {
@@ -1496,7 +1503,7 @@ void update_board(context *ctx)
                 level_param[level_offset] = 0x20;
               }
 
-              level_id[level_offset] = 38;
+              level_id[level_offset] = (char)EXPLOSION;
               play_sfx(mzx_world, SFX_EXPLOSION);
             }
             else

@@ -6,7 +6,7 @@ usage() {
 	echo "usage: ./config.sh --platform [platform] <--prefix [dir]> <--sysconfdir [dir]>"
 	echo "                                         <--gamesdir [dir]> <--bindir [dir]>"
 	echo "                                         <--sharedir [dir]> <--licensedir [dir]>"
-	echo "                                         <options..>"
+	echo "                                         <--host [name]> <options..>"
 	echo
 	echo "  --prefix       Install prefix and where dependencies should be found. (/usr)"
 	echo "  --sysconfdir   Where the config should be read from. (/etc)"
@@ -15,6 +15,7 @@ usage() {
 	echo "  --bindir       Where utilities should be installed. (/usr/bin)"
 	echo "  --sharedir     Where resources should be installed. (/usr/share)"
 	echo "  --licensedir   Where licenses should be installed. (/usr/share/doc)"
+	echo "  --host         Specify cross toolchain prefix for Linux et al. (none)"
 	echo
 	echo "  Install directories can be disregarded for builds for platforms"
 	echo "  with a monolithic directory structure e.g. Windows."
@@ -129,6 +130,7 @@ usage() {
 # Default settings for flags (used if unspecified)
 #
 PLATFORM=""
+TOOL_PREFIX=""
 PREFIX="/usr"
 PREFIX_IS_SET="false"
 SYSCONFDIR="/etc"
@@ -281,6 +283,12 @@ while [ "$1" != "" ]; do
 		shift
 		LICENSEDIR="$1"
 		LICENSEDIR_IS_SET="true"
+	fi
+
+	# e.g. --host arm-none-eabi
+	if [ "$1" = "--host" ]; then
+		shift
+		TOOL_PREFIX="$1"
 	fi
 
 	[ "$1" = "--as-needed-hack" ] && AS_NEEDED="true"
@@ -503,13 +511,12 @@ if [ "$PLATFORM" = "win32"   ] || [ "$PLATFORM" = "win64" ] ||
 
 	[ "$PLATFORM" = "win32" ] || [ "$PLATFORM" = "mingw32" ] && ARCHNAME=x86
 	[ "$PLATFORM" = "win64" ] || [ "$PLATFORM" = "mingw64" ] && ARCHNAME=x64
-	[ "$PLATFORM" = "mingw32" ] && MINGWBASE=i686-w64-mingw32-
-	[ "$PLATFORM" = "mingw64" ] && MINGWBASE=x86_64-w64-mingw32-
+	[ "$PLATFORM" = "mingw32" ] && [ "$TOOL_PREFIX" = "" ] && TOOL_PREFIX=i686-w64-mingw32
+	[ "$PLATFORM" = "mingw64" ] && [ "$TOOL_PREFIX" = "" ] && TOOL_PREFIX=x86_64-w64-mingw32
 	PLATFORM="mingw"
 	echo "#define PLATFORM \"windows-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=windows-$ARCHNAME"         >> platform.inc
 	echo "PLATFORM=$PLATFORM"                    >> platform.inc
-	echo "MINGWBASE=$MINGWBASE"                  >> platform.inc
 elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
 	OS="$(uname -s)"
 	MACH="$(uname -m)"
@@ -605,6 +612,10 @@ else
 	LIBDIR="."
 fi
 
+if [ "$TOOL_PREFIX" != "" ]; then
+	echo "CROSS_COMPILE?=$TOOL_PREFIX-" >> platform.inc
+fi
+
 ### SYSTEM CONFIG DIRECTORY ###################################################
 
 if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
@@ -622,6 +633,9 @@ fi
 echo "Building for platform:   $PLATFORM"
 echo "Using prefix:            $PREFIX"
 echo "Using sysconfdir:        $SYSCONFDIR"
+if [ "$TOOL_PREFIX" != "" ]; then
+echo "Using host:              $TOOL_PREFIX"
+fi
 echo
 
 ### GENERATE CONFIG.H HEADER ##################################################

@@ -27,6 +27,11 @@ ifeq (${NDK_PATH},)
 $(error "Must define $$NDK_PATH!")
 endif
 
+# Block --host, which will break things.
+CROSS_COMPILE =
+# Disable rules that require target code to run natively.
+SUPPRESS_HOST_TARGETS ?= 1
+
 #
 # Determine ${TOOLCHAIN} (the common NDK toolchain path) if not provided.
 # Requires determining ${HOST} since currently the NDK toolchain path relies on it.
@@ -171,7 +176,6 @@ else
 #
 SUPPRESS_CC_TARGETS ?= 1
 SUPPRESS_BUILD_TARGETS ?= 1
-SUPPRESS_HOST_TARGETS ?= 1
 all: dist
 archive build: apk
 

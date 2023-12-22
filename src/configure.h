@@ -24,7 +24,7 @@
 
 __M_BEGIN_DECLS
 
-#define OPTION_NAME_LEN 33
+#include <stdint.h>
 
 enum config_type
 {
@@ -148,8 +148,8 @@ struct config_info
   // Virtual filesystem options
   boolean vfs_enable;
   boolean vfs_enable_auto_cache;
-  long long vfs_max_cache_size;
-  long long vfs_max_cache_file_size;
+  int64_t vfs_max_cache_size;
+  int64_t vfs_max_cache_file_size;
 
   // Game options
   char startup_path[256];

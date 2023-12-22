@@ -9,12 +9,10 @@ EXTRA_LICENSES += ${LICENSE_NEWLIB}
 #
 # PSP toolchain overrides
 #
-CC      = psp-gcc
-CXX     = psp-g++
-AR      = psp-ar
-OBJCOPY = psp-objcopy
-STRIP   = /bin/true
+CROSS_COMPILE = psp-
 
+# Don't strip when generating debug symbols.
+NO_STRIP_IN_DEBUGLINK ?= 1
 # Disable rules that require target code to run natively.
 SUPPRESS_HOST_TARGETS ?= 1
 
@@ -44,7 +42,7 @@ LIBPNG_LDFLAGS = -lpng
 package: mzx
 	psp-fixup-imports ${mzxrun}
 	mksfo 'MegaZeux ${VERSION}' PARAM.SFO
-	psp-strip ${mzxrun} -o ${mzxrun}.strip
+	${STRIP} ${mzxrun} -o ${mzxrun}.strip
 	convert -scale 80x80 -border 32x0 -bordercolor transparent \
 	        contrib/icons/quantump.png ICON0.PNG
 	pack-pbp EBOOT.PBP PARAM.SFO ICON0.PNG NULL \

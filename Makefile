@@ -49,8 +49,9 @@ CC      ?= gcc
 CXX     ?= g++
 AR      ?= ar
 AS      ?= as
-STRIP   ?= strip --strip-unneeded
+STRIP   ?= strip
 OBJCOPY ?= objcopy
+WINDRES ?= windres
 PEFIX   ?= true
 
 CHMOD   ?= chmod
@@ -60,6 +61,19 @@ LN      ?= ln
 MKDIR   ?= mkdir
 MV      ?= mv
 RM      ?= rm
+
+ifneq (${CROSS_COMPILE},)
+ifeq (${CC},cc)
+CC      = gcc
+endif
+CC      := ${CROSS_COMPILE}${CC}
+CXX     := ${CROSS_COMPILE}${CXX}
+AR      := ${CROSS_COMPILE}${AR}
+AS      := ${CROSS_COMPILE}${AS}
+STRIP   := ${CROSS_COMPILE}${STRIP}
+OBJCOPY := ${CROSS_COMPILE}${OBJCOPY}
+WINDRES := ${CROSS_COMPILE}${WINDRES}
+endif
 
 include arch/compat.inc
 
@@ -422,6 +436,7 @@ AR      := @${AR}
 AS      := @${AS}
 STRIP   := @${STRIP}
 OBJCOPY := @${OBJCOPY}
+WINDRES := @${WINDRES}
 PEFIX   := @${PEFIX}
 
 CHMOD   := @${CHMOD}
@@ -486,8 +501,10 @@ endif
 	${OBJCOPY} --only-keep-debug $< $@
 	${PEFIX} $@
 	${CHMOD} a-x $@
-	$(if ${V},,@echo "  STRIP   " $<)
-	${STRIP} $<
+ifneq (${NO_STRIP_IN_DEBUGLINK},1)
+	$(if ${V},,@echo "  STRIP   " --strip-unneeded $<)
+	${STRIP} --strip-unneeded $<
+endif
 	$(if ${V},,@echo "  OBJCOPY " --add-gnu-debuglink $@ $<)
 	${OBJCOPY} --add-gnu-debuglink=$@ $<
 	${PEFIX} $<

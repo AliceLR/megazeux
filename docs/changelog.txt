@@ -8,6 +8,11 @@ USERS
 + Added an experimental MS-DOS 32-bit port based on DJGPP.
   (Mr_Alert, asie, Lachesis)
 + Added support for BlocksDS to the NDS port. (asie)
++ Added a new built-in label PLAYERDIED (and the subroutine
+  equivalent #PLAYERDIED). When the built-in player dies, this
+  label is sent on the board the player died on. Because player
+  death occurs at the end of the cycle, this is received during
+  the following cycle.
 + Added the new counter KEY_PRESSEDn to read internal keycode
   statuses. This is like KEYn, but KEY_PRESSEDn accepts internal
   keycodes instead of PC XT keycodes. KEY_PRESSEDn will return
@@ -161,6 +166,9 @@ USERS
   now invokes the macro instead of just inserting a line.
 + Fixed a bug where stdio redirect could generate corrupted log
   files on the Nintendo DS due to poor freopen support.
++ Reset Board on Entry and load charset/palette on entry now
+  optionally will be performed even if re-entering a board from
+  itself (enabled by default).
 + Fixed a Reset Board on Entry bug where a temporary board would
   not be generated when loading the title screen or if the
   starting board is the title board.
@@ -256,6 +264,10 @@ USERS
   board IDs (both), start/death/game over board IDs (zip), board
   exit board IDs (zip), robot program positions (both), robot
   stack pointers (both), or robot stack sizes (legacy).
++ Fixed crashes when executing the GIVE, TAKE, TAKE ELSE, and
+  TRADE commands with an invalid item type.
++ Fixed crashes when disassembling a Robotic command with an
+  invalid condition.
 + Improved the performance of Robotic debugger watchpoints,
   especially for non-built-in counters and non-spliced strings.
 + Robotic debugger watchpoints can now watch for particular
@@ -268,6 +280,10 @@ USERS
   FWRITE_APPEND) is now stored in save files. This fixes a bug
   where the output file would be reopened in the wrong mode (ab)
   when reloading a saved game.
++ Fixed dragon 1/8th chance of random movement, which has been
+  broken since 2.80. The original DOS behavior (random movement)
+  or the 2.80 behavior (no random movement) can be selected via
+  the new board setting "Dragons randomly move".
 + save_slots is now enabled by default for consoles. (Spectere)
 + editor_show_thing_toggles is now enabled by default.
 - board_editor_hide_help and robot_editor_hide_help are no
@@ -302,6 +318,9 @@ DEVELOPERS
 + Fixed the DSO -Wstrict-aliasing warnings in Socket.cpp and the
   OpenGL renderers for GCC versions using -Wstrict-aliasing=2.
 + Updated libxmp to 4.6.0+ceb2d025.
++ Added --host config.sh option to manually specify a cross
+  compiler prefix. This is ignored or overriden by most ports
+  and is mainly just for Linux.
 + Relicensed ccv from GPL 3 to GPL 2+ to match the rest of MZX.
   (Lancer-X)
 + If available, GetSystemTimePreciseAsFileTime and clock_gettime

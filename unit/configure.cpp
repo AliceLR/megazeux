@@ -1052,6 +1052,12 @@ UNITTEST(Settings)
     TEST_ENUM("board_default_collect_bombs", econf->collect_bombs, boolean_data);
   }
 
+  SECTION(dragons_can_randomly_move)
+  {
+    TEST_ENUM("board_default_dragons_can_randomly_move",
+     econf->dragons_can_randomly_move, boolean_data);
+  }
+
   SECTION(restart_if_hurt)
   {
     TEST_ENUM("board_default_restart_if_hurt", econf->restart_if_hurt, boolean_data);
@@ -1060,6 +1066,12 @@ UNITTEST(Settings)
   SECTION(reset_on_entry)
   {
     TEST_ENUM("board_default_reset_on_entry", econf->reset_on_entry, boolean_data);
+  }
+
+  SECTION(reset_on_entry_same_board)
+  {
+    TEST_ENUM("board_default_reset_on_entry_same_board",
+     econf->reset_on_entry_same_board, boolean_data);
   }
 
   SECTION(player_locked_ns)

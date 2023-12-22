@@ -9,11 +9,16 @@
 #
 COMPILER := ${shell \
  compiler="gcc"; \
+ command -v ${CC} >/dev/null || compiler="error"; \
  tmp=`${CC} --version`; \
  echo $$tmp | grep -qi "clang version" && compiler="clang"; \
  echo $$tmp | grep -qi "LLVM version" && compiler="clang"; \
  echo $$tmp | grep -qi "emcc" && compiler="clang"; \
  echo $$compiler; }
+
+ifeq (${COMPILER},error)
+$(error CC not found: ${CC})
+endif
 
 #
 # Get compiler version (GCC).

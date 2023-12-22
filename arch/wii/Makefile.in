@@ -21,8 +21,11 @@ EXTRA_LICENSES += ${LICENSE_MPL2} ${LICENSE_NEWLIB}
 include $(DEVKITPPC)/wii_rules
 
 ELF2DOL := elf2dol
-STRIP   := /bin/true
 
+# Block --host, which will break things.
+CROSS_COMPILE =
+# Don't strip when generating debug symbols.
+NO_STRIP_IN_DEBUGLINK ?= 1
 # Disable rules that require target code to run natively.
 SUPPRESS_HOST_TARGETS ?= 1
 
