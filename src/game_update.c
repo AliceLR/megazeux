@@ -952,6 +952,7 @@ boolean update_resolve_target(struct world *mzx_world,
   char *level_id = src_board->level_id;
   char *level_color = src_board->level_color;
   char *level_under_id = src_board->level_under_id;
+  int i;
 
   if(mzx_world->target_where != TARGET_NONE)
   {
@@ -961,8 +962,8 @@ boolean update_resolve_target(struct world *mzx_world,
     boolean load_assets = false;
 
     // TELEPORT or ENTRANCE.
-    // Destroy message, bullets, spitfire?
 
+    // Destroy message, bullets, spitfire?
     if(mzx_world->clear_on_exit)
     {
       int offset;
@@ -974,6 +975,18 @@ boolean update_resolve_target(struct world *mzx_world,
         d_id = (enum thing)level_id[offset];
         if((d_id == SHOOTING_FIRE) || (d_id == BULLET))
           offs_remove_id(mzx_world, offset);
+      }
+    }
+
+    // Sprites can also optionally be disabled on exit.
+    for(i = 0; i < MAX_SPRITES; i++)
+    {
+      struct sprite *spr = mzx_world->sprite_list[i];
+
+      if((spr->flags & SPRITE_INITIALIZED) && (spr->flags & SPRITE_OFF_ON_EXIT))
+      {
+        spr->flags &= ~SPRITE_INITIALIZED;
+        mzx_world->active_sprites--;
       }
     }
 
@@ -1003,7 +1016,6 @@ boolean update_resolve_target(struct world *mzx_world,
     // Find target x/y
     if(mzx_world->target_where == TARGET_ENTRANCE)
     {
-      int i;
       int tmp_x[5];
       int tmp_y[5];
       int x, y, offset;

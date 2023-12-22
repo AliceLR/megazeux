@@ -2687,7 +2687,7 @@ while(i &lt; size)
 | `0x0004` | Sprite reference X         | int(ds)       | Each sprite
 | `0x0005` | Sprite reference Y         | int(ds)       | Each sprite
 | `0x0006` | Sprite color               | int(b)        | Each sprite
-| `0x0007` | Sprite flags               | int(b)        | Each sprite<a href="#sprites290note2">(2)</a>
+| `0x0007` | Sprite flags               | int(d)        | Each sprite<a href="#sprites290note2">(2)</a>
 | `0x0008` | Sprite width               | int(d)        | Each sprite
 | `0x0009` | Sprite height              | int(d)        | Each sprite
 | `0x000A` | Sprite collision X         | int(ds)       | Each sprite
@@ -2724,6 +2724,7 @@ while(i &lt; size)
 | `0x20` | Sprite ccheck 2 is enabled
 | `0x40` | Sprite references the vlayer
 | `0x80` | Sprite is unbound
+| `0x100`| Sprite off-on-exit is enabled
           </div>
           For unbound sprites, if both the ccheck 1 and ccheck 2 flags are set,
           sprite ccheck 3 is enabled instead.

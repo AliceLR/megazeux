@@ -132,7 +132,6 @@ name                      r/w      g/n/f/b    i
 "SPR_COLLISIONS"          r           b       *
 "SPR_NUM"                 r w         b       *
 "SPR_YORDER"                w         f       *
-"SPRn_AUTOOFF"              w         f       *
 "SPRn_CCHECK"               w         f       *
 "SPRn_CHEIGHT"            r w         b       *
 "SPRn_CLIST"                w         f       *
@@ -140,7 +139,9 @@ name                      r/w      g/n/f/b    i
 "SPRn_CX"                 r w         b       *
 "SPRn_CY"                 r w         b       *
 "SPRn_HEIGHT"             r w         b       *
-"SPRn_OFF"                  w         f       *
+"SPRn_OFF"                r w         f       *
+"SPRn_OFFONEXIT"          r w         f       *
+"SPRn_OFFSET"             r w         b       *
 "SPRn_OVERLAID"             w         f       *
 "SPRn_OVERLAY"              w         f       *
 "SPRn_REFX"               r w         b       *
@@ -148,10 +149,13 @@ name                      r/w      g/n/f/b    i
 "SPRn_SETVIEW"              w         f       *
 "SPRn_STATIC"               w         b       *
 "SPRn_SWAP"                 w         f       *
+"SPRn_TCOL"               r w         b       *
+"SPRn_UNBOUND"            r w         f       *
 "SPRn_VLAYER"               w         f       *
 "SPRn_WIDTH"              r w         b       *
 "SPRn_X"                  r w         b       *
 "SPRn_Y"                  r w         b       *
+"SPRn_Z"                  r w         b       *
 "SQRTn"                   r           f       *
 "TAN"                     r           f       *
 "THISX"                   r           b       *

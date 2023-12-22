@@ -23,6 +23,10 @@ USERS
 + Added new counters VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH,
   and VIEWPORT_HEIGHT to read the current board's viewport
   settings. (Sparkette)
++ Added a new counter SPRn_OFFONEXIT. When enabled for a sprite,
+  that sprite will be automatically turned off when exiting the
+  board (same as setting SPRn_OFF). This occurs even if the new
+  board and the previous board are the same. (Sparkette)
 + Added an "About MegaZeux" dialog, accessible from the main
   menu. This menu contains extended version information, and
   displays license information for MegaZeux and the 3rd party
