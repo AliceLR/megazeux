@@ -33,7 +33,7 @@ struct sprite
   int ref_x;
   int ref_y;
   char color;
-  char flags;
+  unsigned int flags;
   unsigned int width;
   unsigned int height;
   signed int col_x;

@@ -828,6 +828,16 @@ static int spr_off_read(struct world *mzx_world,
   return 0;
 }
 
+static int spr_offonexit_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  if((mzx_world->sprite_list[spr_num])->flags & SPRITE_OFF_ON_EXIT)
+    return 1;
+
+  return 0;
+}
+
 static int spr_cwidth_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -1062,6 +1072,16 @@ static void spr_off_write(struct world *mzx_world,
       mzx_world->active_sprites--;
     }
   }
+}
+
+static void spr_offonexit_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  if(value)
+    (mzx_world->sprite_list[spr_num])->flags |= SPRITE_OFF_ON_EXIT;
+  else
+    (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_OFF_ON_EXIT;
 }
 
 static void spr_swap_write(struct world *mzx_world,
@@ -2738,6 +2758,7 @@ static const struct function_counter builtin_counters[] =
   { "spr!_cy",          V265,   spr_cy_read,          spr_cy_write },
   { "spr!_height",      V265,   spr_height_read,      spr_height_write },
   { "spr!_off",         V265,   spr_off_read,         spr_off_write },
+  { "spr!_offonexit",   V293,   spr_offonexit_read,   spr_offonexit_write },
   { "spr!_offset",      V290,   spr_offset_read,      spr_offset_write },
   { "spr!_overlaid",    V265,   NULL,                 spr_overlaid_write },
   { "spr!_overlay",     V269c,  NULL,                 spr_overlaid_write },

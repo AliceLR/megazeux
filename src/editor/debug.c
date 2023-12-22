@@ -446,6 +446,7 @@ static const char *sprite_var_list[] =
   "cheight",
   "ccheck", // no read
   "off",
+  "offonexit",
   "offset",
   "overlay", // no read
   "static", // no read
