@@ -8,25 +8,25 @@ USERS
 + Added an experimental MS-DOS 32-bit port based on DJGPP.
   (Mr_Alert, asie, Lachesis)
 + Added support for BlocksDS to the NDS port. (asie)
-+ Added a new built-in label PLAYERDIED (and the subroutine
-  equivalent #PLAYERDIED). When the built-in player dies, this
-  label is sent on the board the player died on. Because player
-  death occurs at the end of the cycle, this is received during
-  the following cycle.
-+ Added the new counter KEY_PRESSEDn to read internal keycode
-  statuses. This is like KEYn, but KEY_PRESSEDn accepts internal
-  keycodes instead of PC XT keycodes. KEY_PRESSEDn will return
-  1 if the key is currently pressed, or 0 if it is not pressed.
-+ Added the new counter DATE_WEEKDAY containing the number of
-  the current day of the week, where 0=Sunday, 1=Monday,
++ New built-in label: PLAYERDIED (and the subroutine equivalent
+  #PLAYERDIED). When the built-in player dies, this label is
+  sent on the board the player died on. Because player death
+  occurs at the end of the cycle, this is received during the
+  following cycle.
++ New counter: KEY_PRESSEDn, to read internal keycode statuses.
+  This is like KEYn, but KEY_PRESSEDn accepts internal keycodes
+  instead of PC XT keycodes. KEY_PRESSEDn will return 1 if the
+  key is currently pressed, or 0 if it is not pressed.
++ New counter: DATE_WEEKDAY, which returns the number of the
+  current day of the week. Values are 0=Sunday, 1=Monday,
   2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday.
-+ Added new counters VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH,
-  and VIEWPORT_HEIGHT to read the current board's viewport
-  settings. (Sparkette)
-+ Added a new counter SPRn_OFFONEXIT. When enabled for a sprite,
-  that sprite will be automatically turned off when exiting the
-  board (same as setting SPRn_OFF). This occurs even if the new
-  board and the previous board are the same. (Sparkette)
++ New counters: VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH, and
+  VIEWPORT_HEIGHT to read the current board's viewport settings.
+  (Sparkette)
++ New counter: SPRn_OFFONEXIT. When enabled for a sprite, that
+  sprite will be automatically turned off when exiting the board
+  (same as setting SPRn_OFF). This occurs even if the new board
+  and the previous board are the same. (Sparkette)
 + Added an "About MegaZeux" dialog, accessible from the main
   menu. This menu contains extended version information, and
   displays license information for MegaZeux and the 3rd party
