@@ -1,4 +1,32 @@
-GIT
+December FIXME, 2023 - MZX 2.93
+
+This is the first MegaZeux release in about 3 years, so there
+are a lot of changes, including a large number of crash fixes.
+Brief summaries of each section:
+
+General: worlds are decrypted in memory now, MegaZeux 1.x worlds
+are now supported, you can have more custom sound effects, and
+the 1/8th random movement chance of dragons has been readded.
+
+Robotic: new label PLAYERDIED, new counter KEY_PRESSEDn, new
+counter DATE_WEEKDAY, new counter SPRn_OFFONEXIT, new viewport
+counters, and setting MOD_LOOPSTART after MOD_LOOPEND now works.
+
+Editor: the robot editor now has undo/redo, layer MZM block type
+can now be selected, reimplemented ANSi/TXT import/export,
+watchpoint improvements, a new variable debugger RAM menu, and
+vlayer saved positions.
+
+Video/audio: most GLSL performance and graphical issues have
+been addressed and libxmp has received a massive bugfix update.
+
+Portability: new PS Vita, DOS, Wii U, and Dreamcast ports.
+Numerous NDS and 3DS improvements. The extra memory system from
+the NDS port has been generalized to several ports and now
+supports memory compression. Virtual filesystem support.
+
+Utilities: vastly expanded image file support for ccv/png2smzx
+and a new video conversion utility called y4m2smzx.
 
 GENERAL
 
