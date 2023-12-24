@@ -1,69 +1,45 @@
-GIT
+December FIXME, 2023 - MZX 2.93
 
-USERS
+This is the first MegaZeux release in about 3 years, so there
+are a lot of changes, including a large number of crash fixes.
+Brief summaries of each section:
 
-+ Added an experimental PlayStation Vita port. (Spectere)
-+ Added an experimental Wii U port. (asie)
-+ Added an experimental Dreamcast port. (asie, Lachesis)
-+ Added an experimental MS-DOS 32-bit port based on DJGPP.
-  (Mr_Alert, asie, Lachesis)
-+ Added support for BlocksDS to the NDS port. (asie)
-+ Added a new built-in label PLAYERDIED (and the subroutine
-  equivalent #PLAYERDIED). When the built-in player dies, this
-  label is sent on the board the player died on. Because player
-  death occurs at the end of the cycle, this is received during
-  the following cycle.
-+ Added the new counter KEY_PRESSEDn to read internal keycode
-  statuses. This is like KEYn, but KEY_PRESSEDn accepts internal
-  keycodes instead of PC XT keycodes. KEY_PRESSEDn will return
-  1 if the key is currently pressed, or 0 if it is not pressed.
-+ Added the new counter DATE_WEEKDAY containing the number of
-  the current day of the week, where 0=Sunday, 1=Monday,
-  2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday.
-+ Added new counters VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH,
-  and VIEWPORT_HEIGHT to read the current board's viewport
-  settings. (Sparkette)
-+ Added a new counter SPRn_OFFONEXIT. When enabled for a sprite,
-  that sprite will be automatically turned off when exiting the
-  board (same as setting SPRn_OFF). This occurs even if the new
-  board and the previous board are the same. (Sparkette)
+General: worlds are decrypted in memory now, MegaZeux 1.x worlds
+are now supported, you can have more custom sound effects, and
+the 1/8th random movement chance of dragons has been readded.
+
+Robotic: new label PLAYERDIED, new counter KEY_PRESSEDn, new
+counter DATE_WEEKDAY, new counter SPRn_OFFONEXIT, new viewport
+counters, and setting MOD_LOOPSTART after MOD_LOOPEND now works.
+
+Editor: the robot editor now has undo/redo, layer MZM block type
+can now be selected, reimplemented ANSi/TXT import/export,
+watchpoint improvements, a new variable debugger RAM menu, and
+vlayer saved positions.
+
+Video/audio: most GLSL performance and graphical issues have
+been addressed and libxmp has received a massive bugfix update.
+
+Portability: new PS Vita, DOS, Wii U, and Dreamcast ports.
+Numerous NDS and 3DS improvements. The extra memory system from
+the NDS port has been generalized to several ports and now
+supports memory compression. Virtual filesystem support.
+
+Utilities: vastly expanded image file support for ccv/png2smzx
+and a new video conversion utility called y4m2smzx.
+
+GENERAL
+
 + Added an "About MegaZeux" dialog, accessible from the main
   menu. This menu contains extended version information, and
   displays license information for MegaZeux and the 3rd party
   software it uses.
-+ Added the "glslscale" renderer. This is the same as the GLSL
-  renderer, but uses software rendering with scaling shaders
-  instead of hardware rendering. This is faster on low end PCs
-  and embedded devices and is the new default renderer selected
-  by auto_glsl. (Hardware rendered GLSL is still available for
-  users with graphics cards by selecting the "glsl" renderer.)
-+ Added an "auto" mode for the force_bpp config option. Modern
-  SDL automatically selects a native window pixel format and a
-  fixed value can make the software renderer slower. Detecting
-  the BPP from the created window is more in line with reality.
-+ Added robot editor undo (Ctrl+Z) and redo (Ctrl+Y). Like with
-  board/vlayer/charset editing, the size of the undo stack is
-  defined by the config setting "undo_history_size". Note that
-  extended macro expansion can sometimes clobber undo or redo
-  frames (this is not easily fixable, and prevents worse bugs).
 + Protected worlds are now decrypted to RAM or a temporary file
   when 'auto_decrypt_worlds' is enabled and the original file is
   left unmodified. This setting is now enabled by default.
 + Added experimental support for loading MZX 1.x worlds. Support
   is not fully implemented yet, but all currently known 1.x
   worlds are playable.
-+ When loading a layer MZM to the board in the editor, instead
-  of always loading the MZM as CustomBlocks the conversion type
-  can now be selected from CustomBlock, CustomFloor, and Text.
-  Canceling the object type dialog no longer cancels the current
-  block or MZM placement.
-+ Reimplemented ANSi import/export support for the editor. ANSi
-  and TXT files can be imported in the editor with Alt+I and can
-  be exported by selecting a block (Alt+B).
-+ The software fallback renderer functions now support SMZX mode
-  3 indices, fixing graphical bugs in situations where the
-  fallback would be used and display the wrong colors in games
-  using custom indices.
 + Up to 256 custom sound effects are now supported instead of
   50, and custom sound effects can be up to 255 chars in length.
   Currently, the sound effects editor is restricted to 100 SFX
@@ -72,40 +48,89 @@ USERS
 + Custom sound effects can now be given custom names in the
   sound effects editor. Currently names are limited to 9 chars
   and are only useful when editing.
++ Fixed dragon 1/8th chance of random movement, which has been
+  broken since 2.80. The original DOS behavior (random movement)
+  or the 2.80 behavior (no random movement) can be selected via
+  the new board setting "Dragons randomly move".
++ Reset Board on Entry and load charset/palette on entry now
+  optionally will be performed even if re-entering a board from
+  itself (enabled by default).
++ Fixed a Reset Board on Entry bug where a temporary board would
+  not be generated when loading the title screen or if the
+  starting board is the title board.
++ Fixed bug where the second cycle of a board when entering from
+  a board edge or entrance would be shortened due to incorrect
+  gameplay framerate timing introduced in 2.91g.
++ Fixed a bug where, if a world's title screen music is set but
+  fails to load when the world is loaded, the music from another
+  world could continue to play.
++ Fixed a bug where boards wouldn't be pulled from extra memory
+  before saving, potentially causing save corruption on the NDS.
++ Fixed a standalone mode crash on exit that occurred when using
+  Alt+F4 or the window close button.
++ Fixed a crash that could occur when loading a save file with
+  the temporary board flag set but no temporary board data.
++ Fixed a bug in the random number generation function that
+  could cause it to rarely return a number outside of the
+  expected range. This unfortunately breaks compatibility for
+  the RANDOM_SEED# counter.
++ Optimized ccheck 3 sprite collision performance by generating
+  visibility masks for characters directly instead of using an
+  intermediate render and skipping pixel checks for blank chars.
++ Fixed a bug where worlds with SMZX mode selected would display
+  the previous world's palette after switching back to MZX mode.
++ World and save files now save the MZX mode palette when in
+  SMZX modes 2 or 3. Save files now save the MZX mode palette
+  intensities when in SMZX modes 2 or 3. The palette and palette
+  intensities for SMZX modes 2 and 3 are now saved as "palsmzx"
+  and "palints" when one of these modes is active.
++ Save files now save palette intensities for all modes as a raw
+  array of little endian DWORDs instead of bytes. The 2.92 and
+  2.93 intensities file formats are mutually incompatible.
++ Scrolls can now display standard message ~@ color codes.
++ Fixed warning messages caused by SDL controller CRCs.
++ Fixed hangs that could be caused by malformed counters files.
++ Fixed world/save/counters file corruption in rare edge cases
+  where the aforementioned files could break the zip format's
+  internal field bounds.
++ Fixed loading of world/save/counters files over 4 GB.
++ Fixed crashes when loading world or save files that contain
+  invalid current board IDs (both loaders), saved position
+  board IDs (both), start/death/game over board IDs (zip), board
+  exit board IDs (zip), robot program positions (both), robot
+  stack pointers (both), or robot stack sizes (legacy).
++ The output file mode (FWRITE_OPEN, FWRITE_MODIFY, or
+  FWRITE_APPEND) is now stored in save files. This fixes a bug
+  where the output file would be reopened in the wrong mode (ab)
+  when reloading a saved game.
+
+ROBOTIC
+
++ New built-in label: PLAYERDIED (and the subroutine equivalent
+  #PLAYERDIED). When the built-in player dies, this label is
+  sent on the board the player died on. Because player death
+  occurs at the end of the cycle, this is received during the
+  following cycle.
++ New counter: KEY_PRESSEDn, to read internal keycode statuses.
+  This is like KEYn, but KEY_PRESSEDn accepts internal keycodes
+  instead of PC XT keycodes. KEY_PRESSEDn will return 1 if the
+  key is currently pressed, or 0 if it is not pressed.
++ New counter: DATE_WEEKDAY, which returns the number of the
+  current day of the week. Values are 0=Sunday, 1=Monday,
+  2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday.
++ New counters: VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH, and
+  VIEWPORT_HEIGHT to read the current board's viewport settings.
+  (Sparkette)
++ New counter: SPRn_OFFONEXIT. When enabled for a sprite, that
+  sprite will be automatically turned off when exiting the board
+  (same as setting SPRn_OFF). This occurs even if the new board
+  and the previous board are the same. (Sparkette)
 + Fixed crash bugs caused by using CHANGE SFX # to "" with an
   invalid sound effect number.
 + Fixed loop detection for Ogg Vorbis files when MOD_LOOPSTART
   is set to a value greater than MOD_LOOPEND.
-+ Added support for 800x240 mode to the 3DS port. This mode can
-  be toggled with the 3DS keyboard. (asie)
-+ Added support for using 352kB of previously unused NDS VRAM
-  as board storage. This area can be used for board storage even
-  when a slot 2 expansion cartridge is not present. (asie)
-+ Reduced RAM usage by 50k by removing variants of *printf and
-  *scanf with floating point support on the NDS. (asie)
-+ The MOD_ORDER counter is now readable on the NDS. (asie)
-+ Inactive boards and some robots are now compressed on the NDS,
-  which (combined with asie's VRAM patch) should vastly increase
-  the number of games that can be played on the original DS and
-  DS Lite without a slot 2 expansion cartridge.
-+ Added a list of variables related to RAM usage to the counter
-  debug window. This list can be found in the "World" list.
-+ Added an "sdl_render_driver" config setting. This setting can
-  be used to specify the underlying SDL renderer driver used by
-  the softscale renderer. This setting does not affect any other
-  renderers.
-+ Added vlayer saved positions to the editor. Like regular saved
-  positions, these can be configured with the config file option
-  "vlayer_position#", and they work identically to board saved
-  positions.
-+ Fixed bug where the second cycle of a board when entering from
-  a board edge or entrance would be shortened due to incorrect
-  gameplay framerate timing introduced in 2.91g.
 + Fixed a crash bug when attempting to save MZMs over 4MB to an
   existing string.
-+ Fixed a bug where, if a world's title screen music is set but
-  fails to load when the world is loaded, the music from another
-  world could continue to play.
 + Fixed a buffer overflow crash that could occur when using LOAD
   CHAR SET with both a large input file and a large offset.
 + Reading from and writing to extended character sets should no
@@ -113,45 +138,76 @@ USERS
   when a renderer without layer rendering support is active.
   This will, however, display a (new) error message specific to
   the Nintendo DS port.
-+ Fixed crashes in the RAD player that could be caused by
-  references to uninitialized instruments.
-+ Fixed a bug where the 3DS and Switch ports would display .. in
-  the file manager when selecting a board module, board charset,
-  or board palette.
-+ Fixed a bug where, when a faulty dirent implementation returns
-  .. when listing the contents of a root directory, .. would be
-  displayed despite being meaningless.
-+ Fixed a bug where some checks in the file manager could fail
-  when getcwd returns different slashes than expected.
 + Fixed CLIP INPUT and IF FIRST STRING "" "" bug where INPUTSIZE
   would be used as the bound on the input string without also
   checking for null chars, potentially allowing heap corruption.
-+ Fixed a bug where boards wouldn't be pulled from extra memory
-  before saving, potentially causing save corruption on the NDS.
 + Fixed a hack where the TELEPORT command would temporarily
   store the current board to extra memory, causing the game
   update loop to potentially cause memory corruption with stale
   board pointers on the NDS.
-+ Fixed editor extra memory crashes when importing and deleting
-  boards.
-+ Fixed a bug where checkres would not check the current dir
-  for files when provided with a MZX filename with no path
-  component.
-+ checkres now attempts to scan every board in <=2.84 worlds
-  where a corrupt board/robot is found. Due to old world format
-  limitations, robots after a corrupt robot can not be scanned.
-+ checkres now supports scanning protected worlds.
-+ Added experimental checkres support for MZX 1.x worlds.
-+ Fixed a standalone mode crash on exit that occurred when using
-  Alt+F4 or the window close button.
++ Fixed string wildcard matching bug that could cause patterns
+  ending with ? to sometimes fail.
++ Dividing the value -2147483648 by -1, either by the commands
+  DIVIDE and MODULO or through expression operators / and %, no
+  longer crashes MegaZeux.
++ When the right operand to a bitshift operator in an expression
+  is less than 0 or greater than 31, << and >> will return 0,
+  and >>> will return 0 if the left operand is positive or -1 if
+  the left operand is negative. The old behavior of the bitshift
+  operators for these shift values was architecture dependent.
++ The date and time for the Robotic date and time counters is
+  now sampled once per command maximum. When multiple date/time
+  counters are read in the same command, they are guaranteed to
+  represent the same time.
++ The Robotic message box commands now properly display char 10.
++ The Robotic command ? now correctly accounts for color codes
+  in its length bounding.
++ Fixed crashes in the & Robotic command caused by bad color
+  string length calculations.
++ Fixed PrintScreen/SysRq and Menu/"Right Click" keycodes.
++ Unsupported keys no longer return a KEY_PRESSED value of 1
+  for SDL 2 builds.
++ Fixed crashes when executing the GIVE, TAKE, TAKE ELSE, and
+  TRADE commands with an invalid item type.
++ Fixed crashes when disassembling a Robotic command with an
+  invalid condition.
+
+EDITOR
+
++ Added robot editor undo (Ctrl+Z) and redo (Ctrl+Y). Like with
+  board/vlayer/charset editing, the size of the undo stack is
+  defined by the config setting "undo_history_size". Note that
+  extended macro expansion can sometimes clobber undo or redo
+  frames (this is not easily fixable, and prevents worse bugs).
++ When loading a layer MZM to the board in the editor, instead
+  of always loading the MZM as CustomBlocks the conversion type
+  can now be selected from CustomBlock, CustomFloor, and Text.
+  Canceling the object type dialog no longer cancels the current
+  block or MZM placement.
++ Reimplemented ANSi import/export support for the editor. ANSi
+  and TXT files can be imported in the editor with Alt+I and can
+  be exported by selecting a block (Alt+B).
++ Creating a new world using N from the title screen or Alt+R
+  in the editor now clears the extended character sets.
++ Improved the performance of Robotic debugger watchpoints,
+  especially for non-built-in counters and non-spliced strings.
++ Robotic debugger watchpoints can now watch for particular
+  counter or string values. Leaving the value field blank will
+  still check for any value.
++ Added a list of variables related to RAM usage to the counter
+  debug window. This list can be found in the "World" list.
++ Added vlayer saved positions to the editor. Like regular saved
+  positions, these can be configured with the config file option
+  "vlayer_position#", and they work identically to board saved
+  positions.
++ Fixed bugs caused by missing validation in the Import SFX
+  feature in the editor.
++ Fixed a bug where multichar char tile movement could still
+  sometimes jump to the -/+/= chars in the main charset.
 + Fixed another bug that would cause string searching in the
   robot editor to sometimes skip matches.
 + Replace all (Ctrl+H) in the robot editor should no longer skip
   adjacent instances of the search string.
-+ Fixed string wildcard matching bug that could cause patterns
-  ending with ? to sometimes fail.
-+ Fixed a bug where multichar char tile movement could still
-  sometimes jump to the -/+/= chars in the main charset.
 + Opening the block action menu in the robot editor (either with
   Alt+B or Alt+Enter) now updates the current line, fixing bugs
   where it could copy old line contents to the buffer.
@@ -168,20 +224,28 @@ USERS
   an extra blank line.
 + Pressing enter at the start of a line with an extended macro
   now invokes the macro instead of just inserting a line.
-+ Fixed a bug where stdio redirect could generate corrupted log
-  files on the Nintendo DS due to poor freopen support.
-+ Reset Board on Entry and load charset/palette on entry now
-  optionally will be performed even if re-entering a board from
-  itself (enabled by default).
-+ Fixed a Reset Board on Entry bug where a temporary board would
-  not be generated when loading the title screen or if the
-  starting board is the title board.
-+ Fixed a crash that could occur when loading a save file with
-  the temporary board flag set but no temporary board data.
-+ Fixed a bug in the random number generation function that
-  could cause it to rarely return a number outside of the
-  expected range. This unfortunately breaks compatibility for
-  the RANDOM_SEED# counter.
++ Fixed editor extra memory crashes when importing and deleting
+  boards.
++ editor_show_thing_toggles is now enabled by default.
+- board_editor_hide_help and robot_editor_hide_help are no
+  longer enabled by default for accessibility.
+
+VIDEO/AUDIO
+
++ Added the "glslscale" renderer. This is the same as the GLSL
+  renderer, but uses software rendering with scaling shaders
+  instead of hardware rendering. This is faster on low end PCs
+  and embedded devices and is the new default renderer selected
+  by auto_glsl. (Hardware rendered GLSL is still available for
+  users with graphics cards by selecting the "glsl" renderer.)
++ The software fallback renderer functions now support SMZX mode
+  3 indices, fixing graphical bugs in situations where the
+  fallback would be used and display the wrong colors in games
+  using custom indices.
++ Added an "auto" mode for the force_bpp config option. Modern
+  SDL automatically selects a native window pixel format and a
+  fixed value can make the software renderer slower. Detecting
+  the BPP from the created window is more in line with reality.
 + Fixed color inaccuracies in the softscale renderer on Mac OS
   caused by using full-swing YUV values instead of the expected
   studio-swing values for GL_YCBCR_422_APPLE textures.
@@ -190,38 +254,71 @@ USERS
 + The GLSL tilemap fragment shaders will now use highp floats if
   provided by the OpenGL ES driver. If highp is unavailable and
   mediump has inadequate precision, MZX will print a warning.
-+ Enabled the GLSL renderer for the Android port. The Android
-  port now uses the GLSL scaled software renderer by default.
 + Fixed software renderer display issues caused by relying on
   SDL_PixelFormat::BitsPerPixel instead of BytesPerPixel on
   platforms with native 15 BPP display modes.
-+ Optimized ccheck 3 sprite collision performance by generating
-  visibility masks for characters directly instead of using an
-  intermediate render and skipping pixel checks for blank chars.
-+ Dividing the value -2147483648 by -1, either by the commands
-  DIVIDE and MODULO or through expression operators / and %, no
-  longer crashes MegaZeux.
-+ When the right operand to a bitshift operator in an expression
-  is less than 0 or greater than 31, << and >> will return 0,
-  and >>> will return 0 if the left operand is positive or -1 if
-  the left operand is negative. The old behavior of the bitshift
-  operators for these shift values was architecture dependent.
-+ The date and time for the Robotic date and time counters is
-  now sampled once per command maximum. When multiple date/time
-  counters are read in the same command, they are guaranteed to
-  represent the same time.
-+ Fixed a bug where worlds with SMZX mode selected would display
-  the previous world's palette after switching back to MZX mode.
-+ World and save files now save the MZX mode palette when in
-  SMZX modes 2 or 3. Save files now save the MZX mode palette
-  intensities when in SMZX modes 2 or 3. The palette and palette
-  intensities for SMZX modes 2 and 3 are now saved as "palsmzx"
-  and "palints" when one of these modes is active.
-+ Save files now save palette intensities for all modes as a raw
-  array of little endian DWORDs instead of bytes. The 2.92 and
-  2.93 intensities file formats are mutually incompatible.
++ Added disable_screensaver configuration option. MegaZeux now
+  leaves the screensaver enabled by default (fixes regression
+  caused by SDL 2.0.2+).
++ Added an "sdl_render_driver" config setting. This setting can
+  be used to specify the underlying SDL renderer driver used by
+  the softscale renderer. This setting does not affect any other
+  renderers.
 + libxmp playback improvements for GDM, AMF, and OctaMED modules
   as well as general stability improvements.
++ Updated libxmp to 4.6.0+ceb2d025.
++ Fixed crashes in the RAD player that could be caused by
+  references to uninitialized instruments.
++ Applied various Opal fixes from OpenMPT.
+- Removed GL4ES from the GLSL blacklist.
+
+PORTABILITY
+
++ Added an experimental PlayStation Vita port. (Spectere)
++ Added an experimental Wii U port. (asie)
++ Added an experimental Dreamcast port. (asie, Lachesis)
++ Added an experimental MS-DOS 32-bit port based on DJGPP.
+  (Mr_Alert, asie, Lachesis)
++ Added support for BlocksDS to the NDS port. (asie)
++ Added support for 800x240 mode to the 3DS port. This mode can
+  be toggled with the 3DS keyboard. (asie)
++ Added support for using 352kB of previously unused NDS VRAM
+  as board storage. This area can be used for board storage even
+  when a slot 2 expansion cartridge is not present. (asie)
++ Reduced RAM usage by 50k by removing variants of *printf and
+  *scanf with floating point support on the NDS. (asie)
++ The MOD_ORDER counter is now readable on the NDS. (asie)
++ save_slots is now enabled by default for consoles. (Spectere)
++ Inactive boards and some robots are now compressed on the NDS,
+  which (combined with asie's VRAM patch) should vastly increase
+  the number of games that can be played on the original DS and
+  DS Lite without a slot 2 expansion cartridge. This is also
+  enabled for the PSP and DOS ports.
++ The NDS, PSP, and DOS ports now write zip archives with the
+  fastest zlib compression level. This makes saved files that
+  use compression (worlds, saves, etc.) slightly larger.
++ Added virtual filesystem support to MegaZeux. Currently, this
+  is only used for caching files, and is only enabled by default
+  on platforms with slow or buggy file IO (3DS, Vita). This
+  feature may be optionally configured with the config options
+  vfs_enable, vfs_enable_auto_cache, vfs_max_cache_size, and
+  vfs_max_cache_file_size.
++ Fixed a bug where the 3DS and Switch ports would display .. in
+  the file manager when selecting a board module, board charset,
+  or board palette.
++ Fixed a bug where, when a faulty dirent implementation returns
+  .. when listing the contents of a root directory, .. would be
+  displayed despite being meaningless.
++ Fixed a bug where some checks in the file manager could fail
+  when getcwd returns different slashes than expected.
++ Fixed a bug where stdio redirect could generate corrupted log
+  files on the Nintendo DS due to poor freopen support.
++ Enabled the GLSL renderer for the Android port. The Android
+  port now uses the GLSL scaled software renderer by default.
+- Removed 3DS CIA support. (asie)
+
+UTILITIES
+
 + ccv and png2smzx now both support the following image formats:
   PNG (libpng builds only), GIF, BMP (uncompressed, RLE8, RLE4),
   NetPBM (PBM, PGM, PPM, PNM, PAM), farbfeld. png2smzx will now
@@ -235,73 +332,22 @@ USERS
   rather than MJPEG Tools for now, so it may be buggy. Usage:
   ffmpeg -i input -f yuv4mpegpipe pipe:1 | y4m2smzx - out.mzv
 + The downver utility now supports save files.
-+ Fixed bugs caused by missing validation in the Import SFX
-  feature in the editor.
-+ The Robotic message box commands now properly display char 10.
-+ The Robotic command ? now correctly accounts for color codes
-  in its length bounding.
-+ Fixed crashes in the & Robotic command caused by bad color
-  string length calculations.
-+ Scrolls can now display standard message ~@ color codes.
-+ Creating a new world using N from the title screen or Alt+R
-  in the editor now clears the extended character sets.
-+ Fixed PrintScreen/SysRq and Menu/"Right Click" keycodes.
-+ Unsupported keys no longer return a KEY_PRESSED value of 1
-  for SDL 2 builds.
-+ Fixed warning messages caused by SDL controller CRCs.
-+ Fixed hangs that could be caused by malformed counters files.
-+ Fixed world/save/counters file corruption in rare edge cases
-  where the aforementioned files could break the zip format's
-  internal field bounds.
-+ Fixed loading of world/save/counters files over 4 GB.
-+ Added disable_screensaver configuration option. MegaZeux now
-  leaves the screensaver enabled by default (fixes regression
-  caused by SDL 2.0.2+).
-+ Added virtual filesystem support to MegaZeux. Currently, this
-  is only used for caching files, and is only enabled by default
-  on platforms with slow or buggy file IO (3DS, Vita). This
-  feature may be optionally configured with the config options
-  vfs_enable, vfs_enable_auto_cache, vfs_max_cache_size, and
-  vfs_max_cache_file_size.
-+ Fixed crashes when loading world or save files that contain
-  invalid current board IDs (both loaders), saved position
-  board IDs (both), start/death/game over board IDs (zip), board
-  exit board IDs (zip), robot program positions (both), robot
-  stack pointers (both), or robot stack sizes (legacy).
-+ Fixed crashes when executing the GIVE, TAKE, TAKE ELSE, and
-  TRADE commands with an invalid item type.
-+ Fixed crashes when disassembling a Robotic command with an
-  invalid condition.
-+ Improved the performance of Robotic debugger watchpoints,
-  especially for non-built-in counters and non-spliced strings.
-+ Robotic debugger watchpoints can now watch for particular
-  counter or string values. Leaving the value field blank will
-  still check for any value.
-+ The NDS, PSP, and DOS ports now write zip archives with the
-  fastest zlib compression level. This makes saved files that
-  use compression (worlds, saves, etc.) slightly larger.
-+ The output file mode (FWRITE_OPEN, FWRITE_MODIFY, or
-  FWRITE_APPEND) is now stored in save files. This fixes a bug
-  where the output file would be reopened in the wrong mode (ab)
-  when reloading a saved game.
-+ Fixed dragon 1/8th chance of random movement, which has been
-  broken since 2.80. The original DOS behavior (random movement)
-  or the 2.80 behavior (no random movement) can be selected via
-  the new board setting "Dragons randomly move".
-+ save_slots is now enabled by default for consoles. (Spectere)
-+ editor_show_thing_toggles is now enabled by default.
-- board_editor_hide_help and robot_editor_hide_help are no
-  longer enabled by default for accessibility.
-- Removed GL4ES from the GLSL blacklist.
-- Removed 3DS CIA support. (asie)
++ Fixed a bug where checkres would not check the current dir
+  for files when provided with a MZX filename with no path
+  component.
++ checkres now attempts to scan every board in <=2.84 worlds
+  where a corrupt board/robot is found. Due to old world format
+  limitations, robots after a corrupt robot can not be scanned.
++ checkres now supports scanning protected worlds.
++ Added experimental checkres support for MZX 1.x worlds.
 
 DEVELOPERS
 
 + Added --enable-extram config.sh flag to enable extra memory
   hacks on arbitrary platforms. This is enabled by default in
-  CONFIG.NDS and CONFIG.PSP. When enabled, non-active boards are
-  compressed in RAM. Certain platforms can use platform-specific
-  storage, like the NDS.
+  CONFIG.NDS, CONFIG.PSP, and CONFIG.DJGPP. When enabled, non-
+  active boards are compressed in RAM. Certain platforms can use
+  platform-specific storage, like the NDS.
 + Board input strings, charset paths, and palette paths are now
   heap allocated on-demand to save RAM for low-memory systems.
 + Status counters are now saved as a nested properties file.
@@ -321,7 +367,6 @@ DEVELOPERS
   maintainable template-based mixers.
 + Fixed the DSO -Wstrict-aliasing warnings in Socket.cpp and the
   OpenGL renderers for GCC versions using -Wstrict-aliasing=2.
-+ Updated libxmp to 4.6.0+ceb2d025.
 + Added --host config.sh option to manually specify a cross
   compiler prefix. This is ignored or overriden by most ports
   and is mainly just for Linux.
@@ -334,7 +379,6 @@ DEVELOPERS
   find_function_counter.
 + _FILE_OFFSET_BITS=64 is now used for 64-bit fseeko, ftello,
   readdir, and stat/fstat support for 32-bit Linux builds.
-+ Applied various Opal fixes from OpenMPT.
 + Updated Android SDL to 2.28.2. (asie)
 + Updated Android NDK to r23c. (asie)
 + Fixed Android build system handling of missing libraries.
