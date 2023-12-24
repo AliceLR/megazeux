@@ -1,0 +1,7 @@
+#!/bin/sh
+
+[[ -z $PS2DEV ]] && { echo "\$PS2DEV is unset. Aborting"; exit 1; }
+
+./config.sh --platform ps2 --prefix $PS2DEV/ps2sdk/ee --optimize-size \
+            --disable-editor --disable-utils --enable-debug \
+            --enable-meter --enable-extram #--enable-stdio-redirect "$@"
