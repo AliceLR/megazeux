@@ -737,8 +737,7 @@ echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
 #
 # Platform-specific libraries, or SDL?
 #
-if [ "$PLATFORM" = "3ds" ] ||
-   [ "$PLATFORM" = "nds" ] ||
+if [ "$PLATFORM" = "nds" ] ||
    [ "$PLATFORM" = "nds-blocksds" ] ||
    [ "$PLATFORM" = "djgpp" ] ||
    [ "$PLATFORM" = "dreamcast" ] ||
@@ -875,6 +874,18 @@ if [ "$PLATFORM" = "3ds" ]; then
 
 	echo "Force-disabling IPv6 on 3DS (not implemented)."
 	IPV6="false"
+fi
+
+#
+# If the 3DS arch is enabled and SDL 1.2 is used, softscale is not
+# available. On SDL 2.0, due to the rendering pipeline not supporting
+# hardware acceleration as of writing, it is available, but with
+# unsatisfactory performance. As a workaround, use the GP2X
+# 320x240 renderer.
+#
+if [ "$PLATFORM" = "3ds" ] && [ "$SDL" = "true" ]; then
+	echo "Force-enabling GP2X 320x240 renderer (SDL on 3DS)."
+	GP2X="true"
 fi
 
 #
@@ -1499,6 +1510,15 @@ if [ "$PLATFORM" = "wii" ] && [ "$SDL" = "false" ]; then
 	echo "Building custom GX renderer."
 	echo "#define CONFIG_RENDER_GX" >> src/config.h
 	echo "BUILD_RENDER_GX=1" >> platform.inc
+fi
+
+#
+# CTR renderer (3DS)
+#
+if [ "$PLATFORM" = "3ds" ] && [ "$SDL" = "false" ]; then
+	echo "Building custom CTR renderer."
+	echo "#define CONFIG_RENDER_CTR" >> src/config.h
+	echo "BUILD_RENDER_CTR=1" >> platform.inc
 fi
 
 #

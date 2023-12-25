@@ -154,10 +154,13 @@ endif
 endif
 
 ifeq (${BUILD_3DS},1)
+# SDL and platform_sdl.c takes care of all of this when enabled.
+ifeq (${BUILD_SDL},)
 core_cobjs += arch/3ds/shader_2d.shbin.o arch/3ds/shader_playfield.shbin.o
 core_cobjs += arch/3ds/platform.o arch/3ds/render.o
 core_cobjs += arch/3ds/event.o arch/3ds/audio.o
 core_cobjs += arch/3ds/keyboard.o
+endif
 endif
 
 ifeq (${BUILD_WII},1)
