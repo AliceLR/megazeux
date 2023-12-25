@@ -53,7 +53,7 @@ var no_mingw_stack_protector = subopt("NO", 4);
 var no_low_memory = subopt("NO", 5);
 var no_updater = subopt("NO", 6);
 var no_updater_unix = subopt("NO", 7);
-var no_sdl_3ds = std("NO", 8);
+var optional_sdl_3ds = std("NO / SDL 1.2 / SDL 2", 8);
 var optional_sdl_wii = std("NO / SDL 1.2", 9);
 var yes_but_8bpp = subopt("YES (8bpp)", 10);
 var no_gl_switch = subopt("NO", 11);
@@ -168,7 +168,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor,
     optimization:     speed,
-    sdl:              no_sdl_3ds,
+    sdl:              optional_sdl_3ds,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
