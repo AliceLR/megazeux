@@ -2516,13 +2516,13 @@ static void v1_store_globals_to_board(struct world *mzx_world);
 static void v1_load_globals_from_board(struct world *mzx_world);
 
 int save_world(struct world *mzx_world, const char *file, boolean savegame,
- int world_version)
+ int file_version)
 {
 #ifdef CONFIG_DEBYTECODE
   // TODO we'll cross this bridge when we need to. That shouldn't be
   // until debytecode gets an actual release, though.
 
-  if(world_version == MZX_VERSION_PREV)
+  if(file_version < VERSION_SOURCE)
   {
     error("Downver. not currently supported by debytecode.",
      ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
@@ -2584,33 +2584,30 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
   // Synchronize global variables in the current board.
   v1_store_globals_to_board(mzx_world);
 
-#ifdef CONFIG_EDITOR
-  if(world_version == MZX_VERSION_PREV)
+  // Supported file format versions are the current version (typical world or
+  // save files) and the previous version (downver export from the editor).
+  if(file_version == MZX_VERSION || file_version == MZX_VERSION_PREV)
   {
-    // Temporarily replace the world version with the previous version
-    int actual_world_version = mzx_world->version;
+    int world_version = mzx_world->version;
     int ret_val;
-    mzx_world->version = MZX_VERSION_PREV;
 
-    ret_val = save_world_zip(mzx_world, file, savegame, MZX_VERSION_PREV);
+    if(!savegame)
+    {
+      // Temporarily update the world version to the file version. For world
+      // files, these versions are the same, but permanently changing the world
+      // version needs to happen during specific actions in the editor only.
+      mzx_world->version = file_version;
+    }
 
-    mzx_world->version = actual_world_version;
+    ret_val = save_world_zip(mzx_world, file, savegame, file_version);
+
+    mzx_world->version = world_version;
     return ret_val;
   }
   else
-#endif
-
-  if(world_version == MZX_VERSION)
   {
-    return save_world_zip(mzx_world, file, savegame, MZX_VERSION);
-  }
-
-  else
-  {
-    fprintf(mzxerr,
-     "ERROR: Attempted to save incompatible world version %d.%d! Aborting!\n",
-     (world_version >> 8) & 0xFF, world_version & 0xFF);
-    fflush(mzxerr);
+    warn("Attempted to save incompatible world file version %d.%d! Aborting!\n",
+     (file_version >> 8) & 0xFF, file_version & 0xFF);
 
     return -1;
   }

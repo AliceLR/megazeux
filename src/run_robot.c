@@ -2313,7 +2313,8 @@ void run_robot(context *ctx, int id, int x, int y)
 
             for(i = check_color; i < MAX_SPRITES; i++)
             {
-              if(sprite_at_xy(mzx_world->sprite_list[i], check_x, check_y))
+              if(sprite_at_xy(mzx_world, mzx_world->sprite_list[i],
+               check_x, check_y))
                 break;
             }
             if(i == MAX_SPRITES)
@@ -2331,7 +2332,7 @@ void run_robot(context *ctx, int id, int x, int y)
           {
             if((unsigned int)check_param < 256)
             {
-              ret = sprite_at_xy(mzx_world->sprite_list[check_param],
+              ret = sprite_at_xy(mzx_world, mzx_world->sprite_list[check_param],
                check_x, check_y);
             }
           }

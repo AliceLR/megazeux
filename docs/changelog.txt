@@ -5,8 +5,9 @@ are a lot of changes, including a large number of crash fixes.
 Brief summaries of each section:
 
 General: worlds are decrypted in memory now, MegaZeux 1.x worlds
-are now supported, you can have more custom sound effects, and
-the 1/8th random movement chance of dragons has been readded.
+are now supported, you can have more custom sound effects, the
+1/8th random movement chance of dragons has been readded, and
+static sprites now collide at their apparent position.
 
 Robotic: new label PLAYERDIED, new counter KEY_PRESSEDn, new
 counter DATE_WEEKDAY, new counter SPRn_OFFONEXIT, new viewport
@@ -74,6 +75,10 @@ GENERAL
   could cause it to rarely return a number outside of the
   expected range. This unfortunately breaks compatibility for
   the RANDOM_SEED# counter.
++ Static sprites now collide as if they are at the position on
+  the board where they are currently being drawn i.e. relative
+  to the viewport instead of at their actual X/Y position. This
+  behavior has also been added to the IF SPRITE AT # # command.
 + Optimized ccheck 3 sprite collision performance by generating
   visibility masks for characters directly instead of using an
   intermediate render and skipping pixel checks for blank chars.

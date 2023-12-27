@@ -872,7 +872,7 @@ static inline struct rect board_rectangle(struct rect r)
   );
 }
 
-boolean sprite_at_xy(struct sprite *spr, int x, int y)
+boolean sprite_at_xy(struct world *mzx_world, struct sprite *spr, int x, int y)
 {
   struct rect sprite_rect;
   struct rect pos_rect;
@@ -883,6 +883,15 @@ boolean sprite_at_xy(struct sprite *spr, int x, int y)
 
   sprite_rect = sprite_rectangle(spr);
   pos_rect = rectangle(x * CHAR_W, y * CHAR_H, CHAR_W, CHAR_H);
+
+  // Static sprite collision occurs at its apparent position from 2.93 onward.
+  if((spr->flags & SPRITE_STATIC) && mzx_world->version >= V293)
+  {
+    int screen_x, screen_y;
+    calculate_xytop(mzx_world, &screen_x, &screen_y);
+    sprite_rect.x += screen_x * CHAR_W;
+    sprite_rect.y += screen_y * CHAR_H;
+  }
 
   if(rectangle_overlap(sprite_rect, pos_rect))
     return true;
@@ -1126,6 +1135,8 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
   struct board *cur_board = mzx_world->current_board;
   char *level_id = cur_board->level_id;
   int board_width = cur_board->board_width;
+  int screen_x = 0;
+  int screen_y = 0;
   int bx, by;
   int sprite_idx;
   int cx, cy;
@@ -1138,6 +1149,14 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
 
   if(mzx_world->version < V290)
     return sprite_colliding_xy_old(mzx_world, spr, x, y);
+
+  // Adjust static sprites to match their apparent positions onscreen.
+  if(mzx_world->version >= V293)
+  {
+    calculate_xytop(mzx_world, &screen_x, &screen_y);
+    screen_x *= CHAR_W;
+    screen_y *= CHAR_H;
+  }
 
   board_rect = rectangle(
     0,
@@ -1168,6 +1187,11 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
 
   sprite_rect = sprite_rectangle(&collision_sprite);
   col_rect = collision_rectangle(&collision_sprite);
+  if(spr->flags & SPRITE_STATIC)
+  {
+    sprite_rect.x += screen_x;
+    sprite_rect.y += screen_y;
+  }
   col_rect.x += sprite_rect.x;
   col_rect.y += sprite_rect.y;
 
@@ -1231,6 +1255,11 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
 
     target_spr_rect = sprite_rectangle(target_spr);
     target_col_rect = collision_rectangle(target_spr);
+    if(target_spr->flags & SPRITE_STATIC)
+    {
+      target_spr_rect.x += screen_x;
+      target_spr_rect.y += screen_y;
+    }
     //debug("sprite #%d a: %d %d %d %d\n",
     // target_rect.x, target_rect.y, target_rect.w, target_rect.h);
     target_col_rect.x += target_spr_rect.x;
