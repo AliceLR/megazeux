@@ -168,7 +168,7 @@ CORE_LIBSPEC int save_magic(const char magic_string[5]);
 CORE_LIBSPEC int get_version_string(char buffer[16], enum mzx_version version);
 
 CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
- boolean savegame, int world_version);
+ boolean savegame, int file_version);
 CORE_LIBSPEC boolean reload_world(struct world *mzx_world, const char *file,
  boolean *faded);
 CORE_LIBSPEC void clear_world(struct world *mzx_world);
