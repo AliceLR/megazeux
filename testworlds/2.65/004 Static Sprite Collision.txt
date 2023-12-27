@@ -1,0 +1,3 @@
+Title: Static Sprite Collision (2.65)
+Author: Alice Rowan
+Desc: Pre-2.90 static sprites display relative to the screen but do not collide relative to the screen. This world tests the original collision function from before unbound sprites.
