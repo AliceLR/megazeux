@@ -108,6 +108,11 @@ GENERAL
   FWRITE_APPEND) is now stored in save files. This fixes a bug
   where the output file would be reopened in the wrong mode (ab)
   when reloading a saved game.
++ Added a second Robotic command listing to the help file that
+  lists commands categorized by command type. (Terryn)
++ Links in the help file table of contents and Robotic Reference
+  Manual are now grouped into categories. (Terryn)
++ Other misc. help file corrections and maintenance. (Terryn)
 
 ROBOTIC
 
