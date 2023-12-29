@@ -5495,6 +5495,7 @@ arrangement.
 >_p0:PLAYER CHAR [char]
 >_p9:PLAYER CHAR [dir] [char]
 >_pA:PLAYERCOLOR [color]
+>#COMMAND2.HLP:_c3:CHANGE CHAR ID # [char]
 >#COMMAND2.HLP:_b9:BULLETCOLOR [color]
 >#COMMAND2.HLP:_b0:BULLETE [char]
 >#COMMAND2.HLP:_bA:BULLETN [char]
@@ -5516,7 +5517,6 @@ arrangement.
 >#COMMAND2.HLP:_eC:ENEMY BULLETS [char]
 >#COMMAND2.HLP:_eD:ENEMY BULLETW [char]
 >#COMMAND2.HLP:_m2:MISSILECOLOR [color]
->#COMMAND2.HLP:_c3:CHANGE CHAR ID # [char]
 >#COMMAND2.HLP:_c7:CHANGE THICK ARROW CHAR [dir] [char]
 >#COMMAND2.HLP:_c8:CHANGE THIN ARROW CHAR [dir] [char]
 
@@ -7351,6 +7351,9 @@ any part of the sprite is at the given coordinates. Use p?? to
 check for any sprite. If p?? is used, SPR_NUM is also set to
 the lowest sprite number at that location (if any).
 
+For static sprites, this check is valid against the coordinates
+where they visually appear, not their actual locations.
+
 :_cF:~ACOLOR INTENSITY # PERCENT
 :_cG:~ACOLOR INTENSITY # # PERCENT
 
@@ -8352,7 +8355,7 @@ sample in OGGs.
 
 ~BMOD_LENGTH (read-only, board)
 
-Displays the length of the currently playing mod. This counter's
+Contains the length of the currently playing mod. This counter's
 value shows number of rows for module files and number of
 samples for OGG files.
 
@@ -8657,6 +8660,14 @@ screen for (e.g.) a sprite-based player object.
 If set to 1, makes sprite n act static (like a static overlay, a
 static sprite always stays in a given position on the screen);
 if this is 0, the sprite scrolls with the board.
+
+Of note: any collision with a static sprite happens based on its
+visually-apparent location, not its actual location. This means
+that when the board scrolls, the valid coordinates for absolute
+collision checks against a static sprite change even when the
+static sprite itself is not visually moved, and that relative
+collision checks like SPRn_CLIST against a static sprite work
+based on the static sprite's screen position.
 
 ~BSPRn_SWAP (write-only)
 
