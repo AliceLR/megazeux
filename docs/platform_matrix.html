@@ -20,8 +20,9 @@ function defunct(_v) {
   return _v + note_link(1);
 }
 
-function _yes(_v="YES") {
+function _yes(_v="YES", note=0) {
   // Ideal
+  if(note) _v += note_link(note);
   return {c: "yes", v: _v};
 }
 
@@ -49,7 +50,7 @@ function _FAULTY(_v="NO", note=0)
 var yes = _yes();
 var no = std("NO");
 
-var no_mingw_stack_protector = subopt("NO", 4);
+var stack_protector_strong = _yes("YES", 4);
 var no_low_memory = subopt("NO", 5);
 var no_updater = subopt("NO", 6);
 var no_updater_unix = subopt("NO", 7);
@@ -160,7 +161,7 @@ var archs =
     description:      "Nintendo 3DS",
     architecture:     "ARM11 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 12.1.0 <br> binutils 2.38 <br> (dk r58)",
+    toolchain:        "gcc 13.2.0 <br> binutils 2.41 <br> (dk r62)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -189,7 +190,7 @@ var archs =
     toolchain:        "clang 12.0.9 <br> llvm 12.0.9 <br> (ndk r23)",
     packaged:         APK,
     visibility:       yes,
-    stack_protector:  yes,
+    stack_protector:  stack_protector_strong,
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
@@ -219,7 +220,7 @@ var archs =
     toolchain:        "Various",
     packaged:         DMG,
     visibility:       yes,
-    stack_protector:  yes,
+    stack_protector:  stack_protector_strong,
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
@@ -247,7 +248,7 @@ var archs =
     description:      "MS-DOS (32-bit)",
     architecture:     "i586",
     endian:           "Little",
-    toolchain:        "gcc 12.1.0 <br /> binutils 2.30",
+    toolchain:        "gcc 12.2.0 <br /> binutils 2.30",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -327,10 +328,10 @@ var archs =
     description:      "Windows <br> (GNU toolchain)",
     architecture:     "x64 (PE+ COFF) <br> x86 (PE COFF)",
     endian:           "Little",
-    toolchain:        "gcc 12.1.0 <br> binutils 2.38",
+    toolchain:        "gcc 13.2.0 <br> binutils 2.41",
     packaged:         ZIP,
     visibility:       yes,
-    stack_protector:  no_mingw_stack_protector,
+    stack_protector:  stack_protector_strong,
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
@@ -389,7 +390,7 @@ var archs =
     description:      "Nintendo DS",
     architecture:     "ARM9 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 12.1.0 <br> binutils 2.38 <br> (dk r58)",
+    toolchain:        "gcc 13.2.0 <br> binutils 2.41 <br> (dk r62)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
@@ -439,9 +440,9 @@ var archs =
     description:      "PlayStation Vita",
     architecture:     "ARMv7 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 10.3.0 <br> binutils 2.34",
+    toolchain:        "gcc 10.3.0 <br> binutils 2.34 <br> (sdk v2.510)",
     packaged:         ZIP,
-    stack_protector:  yes,
+    stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
@@ -466,9 +467,9 @@ var archs =
     description:      "Nintendo Switch",
     architecture:     "ARMv8/AArch64 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 12.1.0 <br> binutils 2.32 <br> (dk r19)",
+    toolchain:        "gcc 13.2.0 <br> binutils 2.41 <br> (dk r24)",
     packaged:         ZIP,
-    stack_protector:  yes,
+    stack_protector:  stack_protector_strong,
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
@@ -498,7 +499,7 @@ var archs =
     toolchain:        "Various",
     packaged:         _yes("Various"),
     visibility:       yes,
-    stack_protector:  yes,
+    stack_protector:  stack_protector_strong,
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
@@ -527,7 +528,7 @@ var archs =
     description:      "Nintendo Wii",
     architecture:     "PPC (ELF)",
     endian:           "Big",
-    toolchain:        "gcc 12.1.0 <br> binutils 2.37 <br> (dk r41)",
+    toolchain:        "gcc 13.2.0 <br> binutils 2.41 <br> (dk r44.2)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -553,7 +554,7 @@ var archs =
     description:      "Nintendo Wii U",
     architecture:     "PPC (ELF)",
     endian:           "Big",
-    toolchain:        "gcc 12.1.0 <br> binutils 2.37 <br> (dk r41)",
+    toolchain:        "gcc 13.2.0 <br> binutils 2.41 <br> (dk r44.2)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -615,7 +616,7 @@ var archs =
     toolchain:        "gcc 4.2.2 <br> binutils 2.14 <br> clib2",
     packaged:         LHA,
     visibility:       yes,
-    stack_protector:  yes,
+    stack_protector:  stack_protector_strong,
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
@@ -670,7 +671,7 @@ var archs =
     toolchain:        "gcc 4.4.1 <br> binutils 2.19.51 <br> (CS 2009q3)",
     packaged:         subopt("ZIP (PND?)"),
     visibility:       yes,
-    stack_protector:  yes,
+    stack_protector:  stack_protector_strong,
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
@@ -923,8 +924,11 @@ and loads faster.<br>
 Required on Win32. Only applicable with CONFIG_MODULAR=y builds.
 </li>
 
-<li id="note4">Disabled due to miscompilation of stack protector in
-conjunction with C++ exceptions with some MinGW compilers.
+<li id="note4">The GCC option `-fstack-protector-strong` is preferred when
+available; otherwise, `-fstack-protector-all` will be selected. The config.sh
+option `--disable-stack-protector` should be used for old MinGW compilers (due
+to miscompilation in conjunction with C++ exceptions) and for platforms where
+GCC does not support the stack protector at all (e.g. DEC Alpha).
 </li>
 
 <li id="note5">The editor and help system features are disabled
