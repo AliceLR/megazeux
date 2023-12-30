@@ -3,7 +3,7 @@
 #
 # Git branches for each update pin.
 #
-export STABLE="v2.92f"
+export STABLE="v2.93"
 export UNSTABLE="master"
 export DEBYTECODE="master"
 
@@ -14,6 +14,6 @@ export DEBYTECODE="master"
 # stay the same. In the case of MZX releases, this string must correspond
 # exactly to the MZX version in version.inc.
 #
-export STABLE_UPDATES="2.92f"
+export STABLE_UPDATES="2.93"
 export UNSTABLE_UPDATES="master"
 export DEBYTECODE_UPDATES="debytecode"
