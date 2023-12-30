@@ -1,5 +1,5 @@
-# Configuration file for MegaZeux 2.92f
-# November 22nd, 2020
+# Configuration file for MegaZeux 2.93
+# December 31st, 2023
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
