@@ -1,5 +1,5 @@
 Name:		megazeux
-Version:	2.92f
+Version:	2.93
 Release:	1%{?dist}
 
 Summary:	A simple game creation system (GCS)
@@ -7,7 +7,7 @@ Summary:	A simple game creation system (GCS)
 Group:		Amusements/Games
 License:	GPLv2+
 URL:		https://www.digitalmzx.com/
-Source:		megazeux-2.92f.tar.xz
+Source:		megazeux-2.93.tar.xz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires:	SDL2-devel
@@ -30,7 +30,7 @@ regardless of genre.
 See https://www.digitalmzx.com/ for more information.
 
 %prep
-%setup -q -n mzx292f
+%setup -q -n mzx293
 
 %build
 ./config.sh --platform unix --enable-release --as-needed-hack \
@@ -63,10 +63,13 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_datadir}/applications/mzxrun.desktop
 %{_datadir}/doc/megazeux
 %{_datadir}/license/megazeux
-%{_datadir}/icons/megazeux.png
+%{_datadir}/icons/hicolor/128x128/apps/megazeux.png
 %{_sysconfdir}/megazeux-config
 
 %changelog
+* Sun Dec 31 2023 Alice Rowan <petrifiedrowan@gmail.com> 2.93-1
+- new upstream version, fix icon path
+
 * Sun Nov 22 2020 Alice Rowan <petrifiedrowan@gmail.com> 2.92f-1
 - new upstream version
 
