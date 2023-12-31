@@ -189,15 +189,18 @@ static char **about_text(int *num_lines)
 /**
  * Get the license directory.
  */
-static const char *get_license_dir(void)
+static const char *get_license_dir(char *license_dir, size_t len)
 {
-  if(!strcmp(LICENSEDIR, "."))
+  if(!path_is_absolute(LICENSEDIR))
   {
     const char *exec_dir = mzx_res_get_by_id(MZX_EXECUTABLE_DIR);
     if(!exec_dir)
       return "";
 
-    return exec_dir;
+    if(path_join(license_dir, len, exec_dir, LICENSEDIR) < 0)
+      return "";
+
+    return license_dir;
   }
   else
     return LICENSEDIR;
@@ -392,6 +395,7 @@ void about_megazeux(context *parent)
   char *names[MAX_FILES];
   char *files[MAX_FILES];
   const char *license_dir;
+  char tmp[MAX_PATH];
   char path[MAX_PATH];
   int current_lines = 0;
   int num_elements;
@@ -403,7 +407,7 @@ void about_megazeux(context *parent)
   int y = 1;
   int i;
 
-  license_dir = get_license_dir();
+  license_dir = get_license_dir(tmp, sizeof(tmp));
 
   memset(names, 0, sizeof(names));
   memset(files, 0, sizeof(files));
