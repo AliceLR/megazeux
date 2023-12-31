@@ -498,6 +498,7 @@ static boolean game_idle(context *ctx)
       // The SWAP WORLD command was used by a robot.
       // TODO: the game has already been loaded at this point, but maybe
       // should be loaded here instead of in run_robot.c?
+      caption_set_world(mzx_world);
 
       // Load the new board's mod
       load_board_module(mzx_world);

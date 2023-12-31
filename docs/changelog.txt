@@ -1,4 +1,4 @@
-December FIXME, 2023 - MZX 2.93
+December 31st, 2023 - MZX 2.93
 
 This is the first MegaZeux release in about 3 years, so there
 are a lot of changes, including a large number of crash fixes.

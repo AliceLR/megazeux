@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>MegaZeux 2.92f (20201120) - Help File</title>
+<title>MegaZeux 2.93 (20231230) - Help File</title>
+<meta charset="UTF-8">
+<meta name="title" content="MegaZeux 2.93 (20231230) - Help File">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MegaZeux 2.93 (20231230) - Help File">
 <style>
 /* MegaZeux
  *
@@ -390,7 +394,7 @@ body
 
 <body>
 <div id="helpnav">
-<h1>MegaZeux 2.92f (20201120) - Help File</h1>
+<h1>MegaZeux 2.93 (20231230) - Help File</h1>
 <div class="helpnavcentered"><ul>
 <li><a href="#MAIN.HLP__072">Contents</a></li><li><a href="#EDITINGK.HLP__080">Editor Keys</a></li><li><a href="#ROBOTICR.HLP__087">Robotic Manual</a></li><li><a href="#COMMANDR.HLP__1st">Commands</a></li><li><a href="#COUNTERS.HLP__1st">Counters</a></li><li><a href="#NEWINVER.HLP__1st">Changelog</a></li></ul></div>
 </div>
@@ -403,16 +407,18 @@ body
 
 <a class="hA" name="MAIN.HLP__072">                     <span class="f9">Table of Contents</span></a>
 
+                   <span class="fC">1) Basics and Gameplay</span>
 <a class="hL" href="#FAQ.HLP__1st">FREQUENTLY ASKED QUESTIONS.</a>
-<a class="hL" href="#CONFGINI.HLP__1st">The Config File</a>
-<a class="hL" href="#HELPONHE.HLP__000">Help on Help (Press F1 Within Help to Read This)</a>
-<a class="hL" href="#MOUSESUP.HLP__1st">Mouse Support in MegaZeux</a>
 <a class="hL" href="#1ST_TIME.HLP__071">Overview of MegaZeux - First Time Users Read This!</a>
-<a class="hL" href="#ZZT.HLP__zzt">A ZZTer's Guide to MegaZeux</a>
+<a class="hL" href="#HELPONHE.HLP__000">Help on Help (Press F1 Within Help to Read This)</a>
+<a class="hL" href="#CONFGINI.HLP__1st">The Config File</a>
+<a class="hL" href="#MOUSESUP.HLP__1st">Mouse Support in MegaZeux</a>
 <a class="hL" href="#DIABOX.HLP__098">Dialog Boxes</a>
 <a class="hL" href="#CONTROLS.HLP__ctr">Controls</a>
 <a class="hL" href="#NONDESCR.HLP__091">Nondescript Play Tips</a>
 <a class="hL" href="#BUILTINS.HLP__1st">The Mirth of Built-ins</a>
+
+                       <span class="fC">2) The Editor</span>
 <a class="hL" href="#THEWORLD.HLP__1st">The World Editor</a>
 <a class="hL" href="#GENERALE.HLP__1st">General Editing Tips</a>
 <a class="hL" href="#EDITINGK.HLP__080">Editing Keys and Options Reference</a>
@@ -424,12 +430,17 @@ body
 <a class="hL" href="#SOUNDEFX.HLP__1st">MegaZeux's Sound System</a>
 <a class="hL" href="#TOVERLAY.HLP__081">Editing and Using the Overlay</a>
 <a class="hL" href="#SCROLLSS.HLP__1st">Signs and Scrolls in the Editor</a>
-<a class="hL" href="#SENSORSW.HLP__094">Sensors - What They Are and How to Use Them</a>
+
+                   <span class="fC">3) Coding With Robotic</span>
 <a class="hL" href="#ROBOTSWH.HLP__1st">Robots - What They Are and How to Use Them</a>
 <a class="hL" href="#ROBOTICT.HLP__1st">Robotic Tutorial</a>
 <a class="hL" href="#ROBOTICR.HLP__087">Robotic Reference Manual</a>
-<a class="hL" href="#UPDATER.HLP__099">The MegaZeux Updater</a>
 <a class="hL" href="#DBGMODE.HLP__dbg">Debug Modes</a>
+<a class="hL" href="#SENSORSW.HLP__094">Sensors - What They Are and How to Use Them</a>
+<a class="hL" href="#ZZT.HLP__zzt">A ZZTer's Guide to MegaZeux</a>
+
+                      <span class="fC">4) Miscellaneous</span>
+<a class="hL" href="#UPDATER.HLP__099">The MegaZeux Updater</a>
 <a class="hL" href="#ERRORMES.HLP__1st">Error Messages</a>
 <a class="hL" href="#MEGAZEUX.HLP__1st">MegaZeux Limitations</a>
 <a class="hL" href="#IFYOUFIN.HLP__1st">If You Find a Bug...</a>
@@ -438,7 +449,7 @@ body
 <p class="hC">** Credits and Acknowledgments **</p>
 <p class="hC">Programming and Overall Design by Gilead Kutnick (Exophase),</p><p class="hC">Alistair Strachan (ajs), Alice Rowan (Lachesis) and Lancer-X</p><p class="hC">Based off of original program and source code by Alexis Janson</p><p class="hC">Help file by Terryn</p><p class="hC">Default SMZX palette by Joel Lamontagne (LogiCow)</p><p class="hC">ccv utility by Lancer-X</p><p class="hC">png2smzx utility by Alan Williams (Mr_Alert)</p><p class="hC">checkres utility by Josh Matthews (Revvy), ajs and Lachesis</p><p class="hC">Port contributors: Adrian Siekierka (asiekierka) [3DS],</p><p class="hC">Mr_Alert [Wii], Kevin Vance [NDS], Simon Parzer [GP2X]</p><p class="hC">Renderer code contributors: LogiCow, Mr_Alert</p><p class="hC">Shader code contributors: David Cravens (astral), GreaseMonkey</p><p class="hC">Icon by Quantum P.; Extra icons by LogiCow</p><p class="hC">GDM conversion by ajs and MadBrain</p><p class="hC">Other past contributors: Spider124, Koji, JZig, Akwende,</p><p class="hC">MenTaLguY.</p>
 <p class="hC">** Special Thanks **</p>
-<p class="hC">Insidious (.deb Builds)</p><p class="hC">mzxgiant (MSVC Testing, Bug Fixes)</p><p class="hC">mzxrules (Testing)</p><p class="hC">Quantum P. (OS X Testing / Builds)</p><p class="hC">Spectere (OS X Builds)</p><p class="hC">Terryn (Testing)</p><p class="hC">Wervyn (Testing)</p>
+<p class="hC">Dizzy (.deb Builds)</p><p class="hC">mzxgiant (MSVC Testing, Bug Fixes)</p><p class="hC">mzxrules (Testing)</p><p class="hC">Quantum P. (OS X Testing / Builds)</p><p class="hC">Spectere (OS X Builds)</p><p class="hC">Terryn (Testing)</p><p class="hC">Wervyn (Testing)</p>
 <p class="hC">MegaZeux 2.80 Thanks &amp; Beta Testers:</p><p class="hC">Exophase</p><p class="hC">ZoMbIeGuY</p><p class="hC">Wervyn</p><p class="hC">Quasar84</p><p class="hC">Lancer-X</p><p class="hC">KenOhki2112</p><p class="hC">Terryn</p><p class="hC">Inuchance (Macintosh testing)</p><p class="hC">Everyone who submitted a bug report</p>
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
 
@@ -528,7 +539,8 @@ from making ZZT games to making basic MegaZeux games with
 (mostly) minimal effort. This section is to help seasoned
 ZZTers adjust to MegaZeux.
 
-Firstly, some mechanistic differences exist.
+Firstly, some mechanistic differences exist. Here are some of
+the more prominent examples.
 
 -MegaZeux uses counters instead of flags; however, counters
 can easily be used as flags if set only to 1 and 0.
@@ -542,8 +554,8 @@ shots that can be on a given board, outside of preventing the
 player from shooting altogether.
 -Cloning the player has no use in MZX; uses of player clones
 need simulated in Robotic.
--The Shift-? hotkey (often used for inventory engines) does not
-exist in MegaZeux but can be emulated with Robotic.
+-Unlike ZZT Objects, MZX Robots can detect being shot when the
+player shoots them point-blank.
 -ZZT prevents moving between boards if the other board has an
 object where the player would end up, but MZX simply overwrites
 the object on the other board with the player.
@@ -569,10 +581,12 @@ gems is the Magic Gem.
 some ZZT laser configurations a lot less deadly.
 -Scrolls with only one line launch a message box (instead of
 using the message line for the line).
+-The Shift-? hotkey (often used for inventory engines) does not
+exist in MegaZeux but can be emulated with Robotic.
 -ZZT has one less bullet type than MZX; shift MZX types one
 tier of "friendliness" for each typical shooter to get
 ZZT-equivalent bullets.
--Putting in fake commands for comedic effect (e.g. putting in 
+-Putting in fake commands for comedic effect (e.g. putting in
 <span class="fA">#GOSUCKANEGG</span><span class="fF"> to make ZZT beep and go "ERR: Bad command</span>
 GOSUCKANEGG") does not work in MegaZeux and has to be emulated.
 -Special exploits (e.g. black holes, monitors, speed-up
@@ -622,7 +636,7 @@ for this in MZX.
 
 <span class="fA">#BECOME thing = BECOME color thing param</span>
 
-<span class="fA">#BIND object_name = COPYROBOT "Robot" [+]</span>
+<span class="fA">#BIND object_name = COPYROBOT "Robot" </span><span class="fF">[+]</span>
 
 <span class="fA">#CHANGE thing newthing = CHANGE color thing param newcolor</span>
 <span class="fA">newthing newparam</span>
@@ -639,7 +653,8 @@ for this in MZX.
 
 <span class="fA">#ENDGAME = ENDGAME</span>
 
-<span class="fA">#GIVE item # = GIVE # item</span>
+<span class="fA">#GIVE item # failure_label = GIVE # item </span><span class="fF">(MZX version has no</span>
+optional failure label)
 
 <span class="fA">#GO direction = GO direction #</span>
 
@@ -647,17 +662,14 @@ for this in MZX.
 
 <span class="fA">#IF flag label;text = ? "counter" "label" "text"</span>
 
-<span class="fA">#IF flag THEN command = IF "counter" = 1 THEN "label" </span>
-<span class="fF">[*]</span>
+<span class="fA">#IF flag THEN command = IF "counter" = 1 THEN "label" </span><span class="fF">[*]</span>
 
 <span class="fA">#IF ANY object THEN command = IF ANY color thing param "label"</span>
 <span class="fF">[*]</span>
 
-<span class="fA">#IF NOT flag THEN command = IF "counter" = 0 THEN "label" </span>
-<span class="fF">[*]</span>
+<span class="fA">#IF NOT flag THEN command = IF "counter" = 0 THEN "label" </span><span class="fF">[*]</span>
 
-<span class="fA">#IF condition THEN command = IF condition THEN "label" </span>
-<span class="fF">[*]</span>
+<span class="fA">#IF condition THEN command = IF condition THEN "label" </span><span class="fF">[*]</span>
 
 <span class="fA">#IF NOT condition THEN command = IF NOT condition THEN "label"</span>
 <span class="fF">[*]</span>
@@ -668,8 +680,7 @@ for this in MZX.
 
 <span class="fA">#PUT direction thing = PUT color thing param direction</span>
 
-<span class="fA">#RESTART </span>
-<span class="fF">[#]</span>
+<span class="fA">#RESTART </span><span class="fF">[#]</span>
 
 <span class="fA">#RESTORE label = RESTORE "label" #</span>
 
@@ -677,8 +688,7 @@ for this in MZX.
 
 <span class="fA">#SEND Objectname:"label" = SEND "Robotname" "label"</span>
 
-<span class="fA">#SEND ALL:command = SEND "All" "label" </span>
-<span class="fF">[*]</span>
+<span class="fA">#SEND ALL:command = SEND "All" "label" </span><span class="fF">[*]</span>
 
 <span class="fA">#SET flag = SET "counter" 1</span>
 
@@ -896,8 +906,9 @@ all other settings are global.
 
 Note that some games may block access to the F2 menu entirely.
 Ctrl+F2 or Alt+F2 will ignore this setting and allow access to
-the menu even if it is prohibited otherwise, as will clicking
-on the "F2 - Settings" text in the Enter menu.
+the menu even if it is prohibited otherwise, as will clicking on
+the "F2 - Settings" text in the Enter menu. Ctrl+F2/Alt+F2 will
+not override any F2 block while MZX is in standalone mode.
 
 F3 - Save Game
 This will prompt you for a filename, allowing the saving of the
@@ -916,9 +927,16 @@ load any save made in a version older than 2.84 or newer than
 the current version number. (For instance, 2.92 can load saves
 made in 2.92c and 2.90b, but not saves made in 2.93 or 2.83.)
 
+MegaZeux has the ability to save and load games in save slots
+instead of choosing a file. Save slots are tied to the current
+MZX world, and each MZX world gets 10 save slots. This can be
+enabled in the config file.
+
 NOTE: A few games may save or load automatically, and
 high-caliber games may have completely different methods of
 saving and loading games.
+
+<a class="hL" href="#CONFGINI.HLP__1st">The Config File</a>
 
 F5 or Ins - Toggle Bomb Type
 This will switch your current bomb type between High Strength
@@ -1005,15 +1023,17 @@ The arrow keys will move the player and allow it to interact
 with most objects in most games.
 
 Space - Shoot
-By default, one uses this key in conjunction with an arrow
-key to fire a weapon in the selected direction. The player
-will not move with the arrow keys while trying to fire. Weapons
-and spacebar uses vary from world to world.
+If Space is held, pressing an arrow key fires a bullet from the
+player in the selected direction, with each shot taking one
+ammo. The player will not move with the arrow keys while trying
+to fire a bullet, even if the player can't shoot or is out of
+ammo. Some games may have Space shoot different shots or even
+give Space different uses.
 
 Del - Bomb
 By default, this will drop a bomb of the current type BENEATH
 the player. Move off of it to activate it, then run before it
-explodes! Uses of the del key vary from game to game.
+explodes! Uses of the del key may vary from game to game.
 
 Tab / Left Arrow / Right Arrow - Select Option
 In yes/no dialog boxes, these keys toggle between yes and no.
@@ -1077,6 +1097,11 @@ the World Editor, view the appropriate help sections.
 
 F10 - Quickload (see above)
 
+-= About MegaZeux =-
+Clicking this will display various information about the
+currently-running MegaZeux build, such as version, architecture,
+and library build versions.
+
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
 
 <hr></div>
@@ -1112,7 +1137,7 @@ With that out of the way, some basic play tips:
  game you saved. Remember to save often and keep multiple saves-
  If something ends your game, you'll want to lose as little
  progress as possible.
- 
+
 <span class="fA">*</span><span class="fF"> Touch everything! Even things of seemingly little value</span>
  may prove worthy of your attention. If it kills you, then...
  well... hope you saved (see above).
@@ -1140,7 +1165,7 @@ With that out of the way, some basic play tips:
 <span class="fA">*</span><span class="fF"> If doing the same thing over and over keeps failing, try</span>
  something else. It helps to look at new methods and to put
  distance between yourself and the problem.
- 
+
 <span class="fA">*</span><span class="fF"> Bullets can stop spitting fire, but only sometimes. If trying</span>
  to gun down an enemy that spits fire, stagger your shots
  somewhat; holding down the spacebar often results in ALL of
@@ -1236,12 +1261,13 @@ Then it becomes a normal wall, blocking your path.
 <span class="fB">Gem            &#xE004;</span>
 <span class="fB">Magic Gem      &#xE004;</span>
 
-Your total number of gems is shown on the status screen, and
-each gem gives you one point. Many older games also use them as
-a type of currency, where you can trade gems for stuff like
-food, ammo, weapons, or hints. Magic Gems also give you one
-health point apiece when taken, but are otherwise treated the
-same as standard Gems.
+Gems are a collectible. Your total number of gems is shown on
+the status screen, and each gem gives you one point. Many older
+games also use them as a type of currency, where you can trade
+gems for stuff like food, ammo, weapons, or hints. Gems are
+fragile, and will be destroyed when shot or bombed.
+Magic Gems count as Gems and act like Gems, but they also
+increase health by one point apiece when taken.
 
 <span class="fB">Health         </span><span class="fC">&#xE003;</span>
 
@@ -1264,14 +1290,16 @@ period to 113 cycles.
 <span class="fB">Ammo           </span><span class="f3">&#xE0A3; &#xE0A4;</span>
 
 When you grab ammunition, it will add a certain amount of
-ammo to your supplies. The amount may be different for
-different piles.
+ammo to your supplies. The small piles hold 0-9 shots, and the
+large piles 10-255. The amount may be different for each pile.
 
 <span class="fB">Bomb           </span><span class="f0">&#xE00B;</span>
 
 Each bomb you grab adds another to your supply. The sound made
 when you grab the bomb will be high-pitched for a high strength
-bomb and low-pitched for the rare low strength bomb.
+bomb and low-pitched for the rare low strength bomb. Hibombs
+will explode for five tiles in all directions, while lobombs
+explode for only three tiles in all directions.
 
 Some boards may not allow the player to collect bombs, and
 instead will have bombs ignite on touch.
@@ -1295,9 +1323,10 @@ color to unlock it. The key can only be used once and will
 disappear along with the lock.
 
 <span class="fB">Coin           </span><span class="fE">&#xE007;</span>
-Collecting coins is a good idea- they not only increase your
-score, but can usually be used to purchase valuable items or
-services from vendors.
+Collecting coins is a good idea. Coins not only increase your
+score by one, but can often be used to purchase valuable items
+or services from vendors. Unlike Gems, Coins can withstand being
+shot or bombed.
 
 <span class="fB">Life           </span><span class="fB">&#xE09B;</span>
 
@@ -1309,14 +1338,16 @@ amount of lives, running into a life orb will still collect it.
 
 A pouch is usually filled with coins, gems, or even both. The
 amount varies, but often you will find yourself pleasantly
-rich....
+rich...as long as you can get to it before a Bomb can destroy
+it.
 
 <span class="fB">Chest          </span><span class="f6">&#xE0A0;</span>
 
 A chest can contain numerous things. The contents will be one
 of the following: Empty, a Key, Coins, Lives, Ammo, Health,
 a Potion or Ring, Bombs, or Gems. Once you grab the contents,
-the chest itself will remain, but be empty.
+the chest itself will remain, but be empty. Chests will not
+survive being bombed, empty or not.
 
 <span class="fB">Ring           </span><span class="fE">o</span>
 <span class="fB">Potion         &#xE096;</span>
@@ -1778,7 +1809,7 @@ the # sign from any option you want set!
 
 Editing the options can result in better sound, better / more
 customizable graphics, more fitting defaults, a more
-personalized Robotic editor, joystick support, extended macros, 
+personalized Robotic editor, joystick support, extended macros,
 automated backup and much more.
 
 New versions - even minor version changes - can add new options
@@ -1794,7 +1825,7 @@ this file current.
 <p class="hC"><span class="f9">If You Find a Bug...</span></p>
 ..we want to know! We're very interested in any problems or
 bugs you find in MegaZeux. We also welcome any comments,
-criticism, or suggestions. We especially appreciate QUALITY
+criticism, or suggestions. We especially appreciate older
 MegaZeux worlds. Here's the contact information as of this
 writing:
 
@@ -1819,10 +1850,14 @@ To make things sane for all parties, do this before submitting:
      Pinpointing which version introduced the bug is very
      helpful, if possible.
   6) If it is a crash, try to run a debug build through GDB and
-     post a backtrace of the crash.
+     post a backtrace of the crash. Instructions for running a
+&#xE009; debug build through GDB are on the MZXWiki at DigitalMZX,
+&#xE009; in the New MegaZeux Release FAQ.
   7) If you're unsure if the bug's been addressed, try to build
      a version from GitHub's GIT repository and see if the bug
-     is still present in the test build.
+     is still present in the test build. The MZXWiki has
+&#xE009; instructions for doing so in the article Compiling
+&#xE009; MegaZeux.
   8) Optimally, if the problem is a regression caused by the
      port, upload a world made in 2.70 that works in 2.70 but
      does not in the current version to best isolate the
@@ -1841,35 +1876,45 @@ illuminate the problem.
 The following is a list of questions that have been received
 about MegaZeux innumerable times in some form or another.
 
+Q: I read that newer versions of MegaZeux break old games. Which
+  version should I get to play games?
+
+A: The most recent version. MegaZeux development places enormous
+  importance on backwards compatibility, and contrary to what
+  some others have stated, there are very few cases where an
+  older version is needed to play a specific game.
+
 Q: I hate that MegaZeux is always windowed! Could you change
   this?
 
 A: There's already a way to switch between fullscreen and
   windowed modes - press Ctrl+Alt+ENTER. Also, the config file
-  has an option that starts MZX in fullscreen mode at launch.
+  has options that start MZX in fullscreen mode (either true
+  fullscreen or as a borderless window at desktop resolution) at
+  launch.
 
 Q: How can I get option (foobar) in the config file to work?
 
 A: Make sure the pound / hash sign in front of the command is
   deleted. Otherwise, the option is treated as a comment and
   ignored.
-  
+
 Q: Are there any MZX-specific tools that can make developing an
   MZX game easier?
 
-A: Yes, plenty! MegaZeux comes with two helpful tools: 
+A: Yes, plenty! MegaZeux comes with two helpful tools:
   "Checkres" will detect what files are referenced by an MZX
   world and which are present, and "ccv" can take an image file
   and output a conversion of it in .chr/.mzm form for MZX use.
   There are also several graphical conversion programs such as
   CharCon. MZX has natural time-savers, of course. Automated
   backups, macros, Robotic code import/export, expressions,
-  repeated block copying and other features can help speed up
-  development time.
-  
+  repeated block copying, sprites and other features can help
+  speed up development time.
+
 Q: This MZX game has some neat things in it! Can I use some of
   these things in my own game?
-  
+
 A: It's usually okay to do this, as long as you give definite
   credit to the original creator(s). Unless it was made
   specifically for the game, music and sound from other MZX
@@ -1894,24 +1939,24 @@ A: Of course you can distribute your worlds! That is what
   evaluating the game for bugs, play balance, and
   text/plot/grammatical errors (when relevant). Get creative and
   make your game worth playing!
-  
+
   Please include any WAV, module, OGG, CHR, MZM, PAL and all
   other files with the games, as well as a cohesive and helpful
   description file or manual. (Using checkres to guarantee that
   every relevant file is included can be helpful.)
-  
+
   While you can simply distribute your game with a copy of
   MegaZeux included, or even just post the game's files in an
   archive by itself, consider releasing your game as both a
   standalone archive and as pure game files in separate
   downloads.
-  
+
   Typically, MegaZeux worlds are freeware, but if you've made an
   assuredly epic and ground-breaking game, then you can attempt
   to ask for registration money in a shareware demo version.
   Just don't get your hopes up. Alternatively, consider
   uploading your game to a platform that allows optional
-  donations.
+  donations, such as itch.io.
 
 Q: I WANT FUNCTION (FOOBAR) ADDED OR I LEAVE THE COMMUNITY
   FOREVER :&lt;
@@ -1939,7 +1984,7 @@ A: Before you go bugging the maintainer(s) of MegaZeux to add
      there will be no new commands. Features that are most
      cleanly implemented through a new command may possibly be
      implemented in other ways, however.
-     
+
 Q: Is adding network capabilities to MegaZeux planned?
 
 A: Short answer: Possibly. This has been discussed at-length;
@@ -1957,21 +2002,17 @@ A: Short answer: Possibly. This has been discussed at-length;
 Q: Will MegaZeux games ever be playable without MegaZeux
   itself?
 
-A: In a sense, they can be now. It was a long-held consensus
-  among most of MegaZeux's developers that the possible hassle
-  saved for newbies and for those who would instantly refuse to
-  play a game because it can't be launched directly was not
-  worth implementing this feature. However, this has changed.
-  MZXRun, the editor-less version of MegaZeux, can now be
-  set to run in "standalone mode", a configuration designed for
-  only playing a specific world. This mode changes several MZX
-  mannerisms to better accommodate a standalone version of a
-  game. The title screen can also be completely skipped.
-  Additions to Robotic (such as exiting the game through code or
-  blocking the default escape menu) have also facilitated
-  standalone releases. Read the comments for standalone_mode in
-  config.txt for more information, if interested.
-  
+A: In a sense, they can be now. MZXRun, the editor-less version
+  of MegaZeux, can now be set to run in "standalone mode", a
+  configuration designed for only playing a specific world. This
+  mode changes several MZX mannerisms to better accommodate a
+  standalone version of a game. The title screen can also be
+  completely skipped. Additions to Robotic (such as exiting the
+  game through code or blocking the default escape menu) have
+  also facilitated standalone releases. Read the comments for
+  standalone_mode in config.txt for more information, if
+  interested.
+
   MegaZeux has also been ported to Emscripten, which means that
   MZX games can now be embedded into web pages, allowing play
   without any extra program download or web plugin necessary.
@@ -1990,11 +2031,12 @@ A: Then you'll need to carefully utilize the Robot command
   characters you actually will use. (Alphanumeric characters,
   for instance, may see limited use in certain games, or are
   used heavily in some sections and sparsely in others.)
-  
-  Alternatively, make use of unbound sprites. Unbound sprites
-  (and ONLY unbound sprites) can access 15 full character sets
-  instead of just one, on top of their other benefits.
-  
+
+  Alternatively, make use of unbound sprites. Using unbound
+  sprites (and ONLY unbound sprites) allows display of 15 full
+  character sets at once instead of just one, on top of their
+  other benefits.
+
 <a class="hL" href="#PARTIAL.HLP__par">Partial Character Sets</a>
 <a class="hL" href="#SPRITES.HLP__ubs">Unbound Sprites</a>
 
@@ -2004,7 +2046,7 @@ A: Unfortunately, MegaZeux currently has no way of doing this
   via Robotic. The best you can do for now is load versions of
   your sound that are louder/quieter. Volume settings for music,
   on the other hand, can be manipulated freely.
-  
+
 Q: Why is my MegaZeux world starting on the title screen?
 
 A: The first board has to be set. Press 'G' in the editor, then
@@ -2012,7 +2054,7 @@ A: The first board has to be set. Press 'G' in the editor, then
   As of version 2.91, MZX will default to creating and naming a
   starting board when making a new world, greatly lowering the
   chance of mistakenly starting on the title.
-  
+
 Q: Whenever I place a string on the overlay, the spaces aren't
   acting like overlay at all! Is this a bug?
 
@@ -2022,7 +2064,7 @@ A: No, it's not. Char 32 (the natural space) is never part of
   to useable replacements during run-time.
   If this issue is arising from using the overlay to display
   messages, consider using multi-line * messages instead.
-  
+
 <a class="hL" href="#COMMANDR.HLP____3">* "string"</a>
 
 Q: How can I input a number over 32767 or under -32768 in
@@ -2031,7 +2073,7 @@ Q: How can I input a number over 32767 or under -32768 in
 A: You must use an expression. Encase the number in
   parentheses, as shown here:
   <span class="fE">set "largesse" to "(2000000000)"</span>
-  
+
 Q: My Robot can't change its/the player's characters! I
   use CHAR "A" but it turns invisible! What am I doing wrong?
 
@@ -2054,13 +2096,13 @@ Q: Where can I get module files?
 
 A: If you can't make them, search webpages for good ones.
   http://www.modarchive.com has a very large tracked music
-  library, as do many old CD-ROM shareware collections. Another
-  popular option is to convince a friend to do it for you. If
-  your game shows exceptional promise, then an established
-  musician in the community might make music for you. You will
-  probably have to show real evidence that your game is as good
-  as its hype in most cases, however. In any case, remember to
-  give credit where it is due (yes, even to yourself).
+  library, as do many old CD-ROM shareware collections. (It is
+  best practice to stick to modules that openly permit free
+  usage.) Another popular option is to convince a friend to do
+  it for you. If your game shows exceptional promise, then an
+  established musician in the community might make music for
+  you. In any case, remember to give credit where it is due
+  (yes, even to yourself).
   Be careful when inserting OGG files into your game. OGG files
   often present considerable bloat to a game if used as music.
   Also, not only may you be chided for putting in a popular song
@@ -2081,7 +2123,7 @@ A: It's a matter of personal preference. Many people prefer
   If you don't mind pumping up your game's filesize, you could
   use any typical composition software (like FL Studio) and
   convert your wave to ogg format.
-  
+
   A third alternative would be Reality Tracker. This tracker
   creates music based on the once-common OPL3 chip found in
   typical shareware-era DOS sound cards. MegaZeux now directly
@@ -2115,9 +2157,9 @@ A: You're likely using an idle loop without a CYCLE 1 or WAIT 1
   exceed 2000000 commands in a cycle (but only in test
   sessions). For further information, look up the Cycles and
   Board Scans section.
-  
+
 <a class="hL" href="#PROCESS.HLP__prc">Cycles and Board Scans - How MZX Processes Robots</a>
-  
+
 Q: I don't like that anyone can open up my game and see how it
   works, or that anyone can use the editor functions to cheat
   at my game. Is there an easy way to prevent people from
@@ -2131,11 +2173,11 @@ A: Nope. MegaZeux used to be able to protect worlds from being
   fully look through a standalone game, people who have no
   knowledge of MegaZeux beforehand will lack the immediate means
   to heavily manipulate or look through your game.
-  
-Q: The help file mentions "certain renderers" being unable to
-  display unbound sprites. What are renderers, what does this
-  mean, and what should I be worried about?
-  
+
+Q: I've seen that "certain renderers" are unable to display
+  unbound sprites. What are renderers, what does this mean, and
+  what should I be worried about?
+
 A: MegaZeux has several different video settings to accommodate
   a wide range of hardware. The engines used to provide video
   are called renderers, and can be set in the config file or
@@ -2143,18 +2185,18 @@ A: MegaZeux has several different video settings to accommodate
   from basic support (software, does not utilize video hardware
   functions) to features-oriented (glsl, featuring customizable
   filters).
-  
+
   Certain platforms and renderers cannot show extended graphics
   (in other words, unbound sprites and SMZX mode 3 custom
   indices). Right now, this is only a concern for very weak
   platforms that cannot handle much to begin with, such as the
   DS. Pretty much anyone running MegaZeux on an even remotely
   modern computer should be able to view extended graphics.
-  
+
   (Besides the Nintendo DS, the other platforms and renderers
   currently unable are the GP2X and any use of the weak and
   obseleted "overlay2" renderer.)
-  
+
 Q: I heard only certain graphics cards can properly show Super
   MZX mode games. Is this true?
 
@@ -2171,7 +2213,7 @@ Q: What's with these "~roboclp.tmp" files packed with so many
 
 A: Those held clipboard information in DOS versions of MegaZeux.
   They are useless and can be freely deleted.
-  
+
 Q: Why doesn't [ work for taking screenshots?
 
 A: It has been changed to F12 and now works in any area in MZX,
@@ -2204,7 +2246,7 @@ Boards              250 per world
 Local Counters      32 per Robot plus specialized local counters
                     (e.g. loopcount, lava_walk, bullettype)
 
-<p class="hC">Length Limitations</p>                
+<p class="hC">Length Limitations</p>
 Robot Name Length   14 characters
 Board Name Length   24 characters
 String Length       4,194,304 characters (4 megabytes)
@@ -2221,14 +2263,14 @@ Board size maximum is roughly 16.7 million characters
 Vlayer size maximum is roughly 16.7 million characters
 ((2^24) - 1).
 Board width or height maximum is 32767.
-The maximum number of counters and strings depends on
-the platform (e.g. between 32 or 64-bit) but is sufficiently
-large. You should be fine utilizing hundreds of thousands, or
-even millions.
+The maximum number of counters and strings depends on the
+platform (e.g. between 32 or 64-bit) but is sufficiently large.
+You should be fine utilizing hundreds of thousands, or even
+millions.
 
 These limitations are mostly theoretical because of the utter
 improbability of meeting these limits and the amount of RAM (up
-to (hundreds of) gigabytes if fully utilized) they consume.
+to hundreds of gigabytes if fully utilized) they consume.
 
 <p class="hC">Other Limitations</p>
 Numbers less than -32768 or more than 32767 cannot be directly
@@ -2329,9 +2371,9 @@ General Editing Tips for more advanced editing info.
 
 New in the 2.8+ line of MegaZeux is the protection of colors
 and characters the editor uses. The editor uses sets outside of
-the currently used sets. The character set for the editor is
-mzx_edit.chr; only edit if you want to change the editor's
-appearance.
+the currently used sets to keep the editor GUI consistent. The
+character set for the editor is mzx_edit.chr; only edit if you
+want to change the editor's appearance.
 
 <a class="hL" href="#GENERALE.HLP__1st">General Editing Tips</a>
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
@@ -2351,10 +2393,21 @@ five ways to move between boards.
 
 A simple method of connecting boards is with the Board Exits
 dialog, accessed by pressing X. Here, you can select boards that
-you will reach if you walk off of the screen in a given
+you will reach if the player moves off of the screen in a given
 direction. The destination board shouldn't have anything in the
 way, and will not automatically lead back - you must set the
-exit on that board too.
+exit on that board too. This menu will not allow linking boards
+to the title screen.
+The player will appear on the other board at the appropriate
+edge at the same position (if board sizes allow). For example,
+if the player triggers the north exit of a board while at its
+upper-left corner, it will appear in the lower-left corner of
+the destination board.
+
+If the player triggers a board exit and anything on the
+destination board is in the way of the player moving to the next
+board, the player replaces it upon entering the board
+(effectively destroying it).
 
 Another way is to use a Robot to teleport a player with the
 <span class="fA">teleport player "boardname" X Y</span><span class="fF"> command. This assumes that you</span>
@@ -2412,10 +2465,12 @@ for the current board, or turn the music off if it is already
 selected. Use Alt+Z to clear the current board entirely (you
 will be asked for confirmation). You can edit important Board
 Options with I, and important Global (world) Options with G.
+This is only a small selection of key shortcuts in the editor;
+the full reference is linked at the end of this article.
 
-<p class="hC">The Mouse in the Editor</p>The left mouse button acts like space; it places a copy of the
+<p class="hC">The Mouse in the Editor</p>The left mouse button acts like space: it places a copy of the
 current item over the mouse cursor. The right mouse button acts
-like insert; it grabs the current thing over the mouse cursor.
+like insert: it grabs the current thing over the mouse cursor.
 
 <a class="hL" href="#EDITINGK.HLP__080">Editing Keys and Options Reference</a>
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
@@ -2558,7 +2613,8 @@ Copy to overlay will copy the block to the given spot of the
 overlay.
 Copy to vlayer will copy the block to the given spot of the
 vlayer.
-Save as MZM will save the block as a layer-type MZM file.
+Save as ANSI will save the block as an ANSI file.
+Save as MZM will save the block as a board-type MZM file.
 
 Destinations for Move and Copy can overlap the original block
 safely.
@@ -2634,12 +2690,21 @@ affects all triggered sounds resulting from built-in actions,
 such as getting hit and shooting. First you must decide whether
 to use the default set of sound effects, or whether to edit
 your own. You can't edit the default set. If you edit your own,
-you will be in a series of three editing screens. Use the Next
-and Previous buttons to move between screens. Sound effects,
-and the format used to represent them, are described in detail
-in another section. The format is the same as used for the
-Robotic command PLAY. (Like with PLAY, digitized sounds are
-allowed here.)
+you will be in a series of editing screens. Use the Next and
+Previous buttons to move between screens. Sound effects, and the
+format used to represent them, are described in detail in
+another section. The format is the same as used for the Robotic
+command PLAY. (Like with PLAY, digitized sounds are allowed
+here.)
+
+Press F3 in the sound effects editor to rename the current sound
+slot. Slot names are limited to 9 characters in length.
+
+NOTE: Although this editor currently allows editing only the
+first 100 sound effects, a world can have as many as 256. Worlds
+can also have effects up to 255 characters long. Use the CHANGE
+SFX # "string" command to edit higher-numbered/longer custom
+sound effects.
 
 <a class="hL" href="#SOUNDEFX.HLP__1st">MegaZeux's Sound System</a>
 
@@ -2688,7 +2753,8 @@ world will be ignored. (Unlike old versions of MegaZeux, all
 exits in an imported world will work.) You can import a palette
 (.PAL) file (including a palette indices (.PALIDX) file in SMZX
 mode 3) or a sound effects (.SFX) file, all unique to MegaZeux.
-Finally, you can import an MZM file at a given position.
+Finally, you can import an MZM or ANSI file and place it at a
+given position.
 
 Importing boards or worlds will clear the board and overlay undo
 histories.
@@ -2862,11 +2928,11 @@ settings, with 100 as default.
 <a class="hA" name="EDITINGK.HLP__CtrNu"><span class="fE">Ctrl+Number - Save Editor Position</span></a>
 <a class="hA" name="EDITINGK.HLP__AltNu"><span class="fE">Alt+Number  - Load Editor Position</span></a>
 
-These save and load up to 10 cursor positions in the editor
-(0 through 9). These positions save both current board
-coordinates and active board, so one can save position on one
-board and load position from another board. These positions are
-saved for that world in its .editor.cnf file.
+These save and load up to 10 cursor positions in the editor (0
+through 9). These positions save both current board coordinates
+and active board, so one can save position on one board and load
+position from another board. These positions are saved for that
+world in its .editor.cnf file.
 
 <a class="hA" name="EDITINGK.HLP__Sft8"><span class="fE">Shift+8 OR Numpad * - Mod Wildcard</span></a>
 
@@ -2961,15 +3027,17 @@ go to its relevant section.
 
 <a class="hL" href="#DBGMODE.HLP__101">Debug Modes - The Robotic Debugger</a>
 
-<a class="hA" name="EDITINGK.HLP__ShF1"><span class="fE">Sh+F1 - Show InvisWalls</span></a>
-<a class="hA" name="EDITINGK.HLP__ShF2"><span class="fE">Sh+F2 - Show Robots</span></a>
-<a class="hA" name="EDITINGK.HLP__ShF3"><span class="fE">Sh+F3 - Show Fakes</span></a>
-<a class="hA" name="EDITINGK.HLP__ShF4"><span class="fE">Sh+F4 - Show Spaces</span></a>
+<a class="hA" name="EDITINGK.HLP__ShF1"><span class="fE">Shift+F1 - Show InvisWalls</span></a>
+<a class="hA" name="EDITINGK.HLP__ShF2"><span class="fE">Shift+F2 - Show Robots</span></a>
+<a class="hA" name="EDITINGK.HLP__ShF3"><span class="fE">Shift+F3 - Show Fakes</span></a>
+<a class="hA" name="EDITINGK.HLP__ShF4"><span class="fE">Shift+F4 - Show Spaces</span></a>
 
-These four keys will cause the given things onscreen to flash
-(as the exclamation point character, char #33). They are good
-for locating "hidden" or camouflaged Robots, passages, and the
-like.
+These four keys will cause the given things onscreen to flash.
+Robots flash as the exclamation point character, char #33; fakes
+as the pound character; spaces flash between the O and *
+characters; inviswalls between the carpet/floor characters. They
+are good for locating "hidden" or camouflaged Robots, passages,
+and the like.
 
 <a class="hA" name="EDITINGK.HLP__Ar"><span class="fE">Arrow - Move</span></a>
 
@@ -3130,8 +3198,8 @@ Alt+F will flood fill any highlighted area.
 Tab will toggle mode (set) on and off. (set) mode will turn all
 pixels crossed to ON.
 
-Shift+Tab will turn toggle (clear) mode. (clear) mode will turn
-all pixels crossed OFF.
+Shift+Tab will toggle (clear) mode. (clear) mode will turn all
+pixels crossed OFF.
 
 F4 will revert the current character to its EGA ASCII (code page
 437) appearance; F5 will revert the current character to its
@@ -3251,7 +3319,7 @@ HSL creates colors by setting hue (base color), saturation
 (color strength) and lightness (brightness relative to white).
 Hue can take values of 0-360; saturation and lightness take
 values of 0-100. The keyboard shortcuts in this mode are C, S
-and V for increasing Hue, Saturation, and Luminance, 
+and V for increasing Hue, Saturation, and Luminance,
 respectively, while alt key combinations of these keys reduce
 these values.
 
@@ -3403,6 +3471,9 @@ This button leads to another screen of settings.
 <p class="hC">Edit Chars</p>
 <a class="hA" name="GLOBALIN.HLP__089">This button leads to a series of dialogs where you can edit the</a>
 characters and colors used to represent various internal things.
+When editing chars, selecting char 255 for an object will make
+that object type act like a Custom object, which means the char
+displayed is based on the object's current parameter.
 
 <p class="hC">Edit Dmg</p>
 <a class="hA" name="GLOBALIN.HLP__090">This button leads to a dialog where you can edit the amount of</a>
@@ -3530,12 +3601,17 @@ turn into ash, which is actually a dark gray (c08) Floor. Of
 course, if fire is set to burn fakes, the ash will probably
 re-light immediately.
 
+<p class="hC">Dragons Move Randomly</p>
+If on, dragons that move have a 1/8 chance of moving randomly
+each time they move instead of always seeking the player.
+
 <p class="hC">Restart if Hurt</p>
 When on, the player will be teleported to the place on the
 current board that it originally entered every time health is
 lost.
 
-<p class="hC">Reset Board on Entry</p>When on, every time the board is entered, the board will reset,
+<p class="hC">Reset Board on Entry</p>
+When on, every time the board is entered, the board will reset,
 acting as if the player is entering the board for the first
 time.
 
@@ -3594,10 +3670,12 @@ another section.
 
 <a class="hL" href="#TOVERLAY.HLP__081">Editing and Using the Overlay</a>
 
-<p class="hC">Load Charset on Entry</p>This can be set to load a specific charset every time the board
+<p class="hC">Load Charset on Entry</p>
+This can be set to load a specific charset every time the board
 is entered, or set to do nothing.
 
-<p class="hC">Load Palette on Entry</p>This can be set to load a specific palette every time the board
+<p class="hC">Load Palette on Entry</p>
+This can be set to load a specific palette every time the board
 is entered, or set to do nothing.
 
 One can set the current board's settings as the default
@@ -3606,6 +3684,12 @@ the "Set as defaults" button at the bottom and click or press
 Space/Enter. This will save a .cnf file for the current world.
 There will be no confirmation. Since the .cnf is named after the
 current world, the current world must have been saved first.
+
+<p class="hC">Reset/Load When Entering from the Same Board</p>
+If this option is set, all transitions from this board to itself
+will trigger charset/palette reloads. If "Reset board on entry"
+is concurrently set, all transitions from this board to itself
+will also reset the board.
 
 <a class="hL" href="#EDITINGK.HLP__080">Editing Keys and Options Reference</a>
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
@@ -3717,7 +3801,7 @@ sound and music.
 <a class="hL" href="#COMMANDR.HLP___p3"><span class="fA">PLAY SFX "string"</span></a>
 <a class="hL" href="#COMMANDR.HLP___s1"><span class="fA">SAM # "file"</span></a>
 <a class="hL" href="#COMMANDR.HLP___sO"><span class="fA">SFX #</span></a>
-<a class="hL" href="#COMMAND2.HLP___v3"><span class="fA">VOLUME #</span></a>
+<a class="hL" href="#COMMANDR.HLP___v3"><span class="fA">VOLUME #</span></a>
 <a class="hL" href="#COMMAND2.HLP___w2"><span class="fA">WAIT MOD FADE</span></a>
 <a class="hL" href="#COMMAND2.HLP___w3"><span class="fA">WAIT PLAY</span></a>
 <a class="hL" href="#COMMANDR.HLP___w4"><span class="fA">WAIT PLAY "string"</span></a>
@@ -3972,7 +4056,8 @@ Off - No overlay is saved, none is shown.
 Normal - The overlay is shown normally, scrolling along with
   the rest of the board. Default for boards.
 Static - The overlay is shown, but it does not scroll with the
-  board. It always shows the top left position.
+  board. It always shows the top left position. Very useful for
+  creating HUDs and status displays.
 Transparent - The overlay is saved and can hold info, but is
   currently not shown.
 
@@ -4003,6 +4088,7 @@ board. You can choose to place it as either Custom Block, Custom
 Floor, or Text.
 Copy to vlayer will copy the block to the given spot of the
 vlayer.
+Save as ANSI will save the block as an ANSI file.
 Save as MZM will save the block as a layer-type MZM file.
 
 Destinations for Move and Copy can overlap the original block
@@ -4178,8 +4264,12 @@ the different lines and characters. Type to insert text
 anywhere. Press Ins to toggle between insert mode (default)
 and overwrite mode, where typed characters will overwrite any
 characters already there. Backspace and delete work as normal,
-as do PageDown, PageUp, End, and Home. Finally, use Enter to
-start or insert new lines.
+as do PageDown, PageUp, End, and Home. Use Alt+C to insert a
+selected character from the current character set into the text.
+Finally, use Enter to start or insert new lines.
+
+Signs and scrolls allow the standard color codes (described in
+the Strings section of the help).
 
 Press ESC when you are done editing your sign or scroll. It will
 be placed at the current cursor position and will become the
@@ -4187,6 +4277,7 @@ current object in the buffer. Note that although you can now
 copy the scroll freely, there is a limit of 255 scrolls and
 signs per board, but this limit shouldn't ever be a problem.
 
+<a class="hL" href="#STRINGS.HLP__1st">Strings, Special Formatting, and Their Place in Robotic</a>
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
 
 <hr></div>
@@ -4257,6 +4348,8 @@ entry.
 session of MegaZeux, as well as their values.
 
 <span class="fA">World</span><span class="fF">: Lists built-in world counters/strings and their values.</span>
+Also displays the amount of RAM used by each component of the
+currently-running world under the "RAM" sub-list.
 
 <span class="fA">Board</span><span class="fF">: Lists the current board's built-in board counters/strings</span>
 and their values. Also can expand to show lists of scrolls/signs
@@ -4379,11 +4472,17 @@ Similar to breakpoints are watchpoints. Watchpoints activate
 stepping as well, but are based off of the values of counters
 and strings, and only activate stepping after a relevant value
 is changed, not right when one is seen. Unlike with breakpoints,
-the watchpoint string has to exactly match (although case
-insensitive). Local counters can be watched as well as global
-counters; to watch local counters, check for rN.&lt;counter&gt;, where
-N is the robot_id, and &lt;counter&gt; is the relevant local counter
-name (without the angle brackets).
+the watchpoint Variable string has to exactly match the counter
+name to trigger (although this check is case insensitive). Local
+counters can be watched as well as global counters; to watch
+local counters, check for rN.&lt;counter&gt;, where N is the robot_id,
+and &lt;counter&gt; is the relevant local counter name (without the
+angle brackets).
+
+When the Value field of a watchpoint is left blank, the
+watchpoint triggers every time the relevant counter is changed.
+Putting a number in the Value field has the watchpoint trigger
+only when the relevant counter changes to that specific value.
 
 Editing breakpoints/watchpoints is done by pressing Space.
 Deleting breakpoints/watchpoints is done by pressing Alt+D.
@@ -4420,14 +4519,14 @@ Send All option will act as a normal label send to all Robots.
 Select the "Send/send all ignores locked status?" option to have
 these ignore locked states as well.
 
-The strings given here do not have to be constants; expression
-outputs and interpolated strings will evaluate correctly for
-these values.
+The strings given here do not have to be constants: expression
+outputs and interpolated strings will also evaluate correctly
+for these values.
 
 <span class="fA">Halt</span><span class="fF">: Makes the Robot running the current line immediately</span>
 stop processing commands. Note that this does not permanently
 stop the Robot from processing commands in the future (e.g. due
-to being sent to a label); it merely prevents it from running
+to being sent to a label), but merely prevents it from running
 its currently planned commands. (H)
 
 <span class="fA">Halt All</span><span class="fF">: Immediately makes ALL Robots stop processing</span>
@@ -4458,14 +4557,19 @@ MegaZeux General Errors:
 <a class="hL" href="#ERRORMES.HLP__erc">Current renderer lacks advanced graphical features; features</a>
   <span class="fF">disabled</span>
 <a class="hL" href="#ERRORMES.HLP__erd">Directory rename failed.</a>
-<a class="hL" href="#ERRORMES.HLP__ere">Error saving; file/directory may be write protected</a>
-<a class="hL" href="#ERRORMES.HLP__erf">Error swapping to next world</a>
-<a class="hL" href="#ERRORMES.HLP__erg">(Filename) already exists.</a>
-<a class="hL" href="#ERRORMES.HLP__erh">File rename failed.</a>
-<a class="hL" href="#ERRORMES.HLP__eri">Overlay mode is not on (see Board Info)</a>
-<a class="hL" href="#ERRORMES.HLP__erj">Save would overwrite older world. Aborted.</a>
-<a class="hL" href="#ERRORMES.HLP__erk">Windowing code bug</a>
-<a class="hL" href="#ERRORMES.HLP__erl">You can only play this game via a swap from another game</a>
+<a class="hL" href="#ERRORMES.HLP__ere">Error exporting ANSi</a>
+<a class="hL" href="#ERRORMES.HLP__erf">Error exporting SFX file</a>
+<a class="hL" href="#ERRORMES.HLP__erg">Error exporting text</a>
+<a class="hL" href="#ERRORMES.HLP__erh">Error saving; file/directory may be write protected</a>
+<a class="hL" href="#ERRORMES.HLP__eri">Error swapping to next world</a>
+<a class="hL" href="#ERRORMES.HLP__erj">(Filename) already exists.</a>
+<a class="hL" href="#ERRORMES.HLP__erk">File rename failed.</a>
+<a class="hL" href="#ERRORMES.HLP__erl">Limited/missing extended charset support; some features may not</a>
+  <span class="fF">work</span>
+<a class="hL" href="#ERRORMES.HLP__erm">Overlay mode is not on (see Board Info)</a>
+<a class="hL" href="#ERRORMES.HLP__ern">Save would overwrite older world. Aborted.</a>
+<a class="hL" href="#ERRORMES.HLP__ero">Windowing code bug</a>
+<a class="hL" href="#ERRORMES.HLP__erp">You can only play this game via a swap from another game</a>
 
 MegaZeux Validation Errors:
 
@@ -4480,29 +4584,30 @@ MegaZeux Validation Errors:
 <a class="hL" href="#ERRORMES.HLP__evh">Board file is from a future version (version)</a>
 <a class="hL" href="#ERRORMES.HLP__evi">Bytecode file (filename) failed validation check</a>
 <a class="hL" href="#ERRORMES.HLP__evj">Cannot load password protected world</a>
-<a class="hL" href="#ERRORMES.HLP__evk">File doesn't exist</a>
-<a class="hL" href="#ERRORMES.HLP__evl">File is not a board file or is corrupt</a>
-<a class="hL" href="#ERRORMES.HLP__evm">File is not an MZM or is corrupt</a>
-<a class="hL" href="#ERRORMES.HLP__evn">File is not a valid .SAV file or is corrupt</a>
-<a class="hL" href="#ERRORMES.HLP__evo">File is not a valid world file or is corrupt</a>
-<a class="hL" href="#ERRORMES.HLP__evp">MZM contains runtime robots; dummying out</a>
-<a class="hL" href="#ERRORMES.HLP__evq">MZM doesn't exist</a>
-<a class="hL" href="#ERRORMES.HLP__evr">MZM from more recent version (version); dummying out robots</a>
-<a class="hL" href="#ERRORMES.HLP__evs">MZM is missing robots or contains corrupt robot</a>
-<a class="hL" href="#ERRORMES.HLP__evt">Post validation IO error occurred</a>
-<a class="hL" href="#ERRORMES.HLP__evu">Robot @ (hex location) could not be found</a>
-<a class="hL" href="#ERRORMES.HLP__evv">Robot @ (hex location) is truncated or corrupt</a>
-<a class="hL" href="#ERRORMES.HLP__evw">.SAV files from newer versions of MZX (version) are not</a>
+<a class="hL" href="#ERRORMES.HLP__evk">Error importing ANSi</a>
+<a class="hL" href="#ERRORMES.HLP__evl">File doesn't exist</a>
+<a class="hL" href="#ERRORMES.HLP__evm">File is invalid or is not an SFX file</a>
+<a class="hL" href="#ERRORMES.HLP__evn">File is not a board file or is corrupt</a>
+<a class="hL" href="#ERRORMES.HLP__evo">File is not an MZM or is corrupt</a>
+<a class="hL" href="#ERRORMES.HLP__evp">File is not a valid .SAV file or is corrupt</a>
+<a class="hL" href="#ERRORMES.HLP__evq">File is not a valid world file or is corrupt</a>
+<a class="hL" href="#ERRORMES.HLP__evr">MZM contains runtime robots; dummying out</a>
+<a class="hL" href="#ERRORMES.HLP__evs">MZM doesn't exist</a>
+<a class="hL" href="#ERRORMES.HLP__evt">MZM from newer version (version); dummying out robots</a>
+<a class="hL" href="#ERRORMES.HLP__evu">MZM is missing robots or contains corrupt robot</a>
+<a class="hL" href="#ERRORMES.HLP__evv">Post validation IO error occurred</a>
+<a class="hL" href="#ERRORMES.HLP__evw">Robot @ (hex location) could not be found</a>
+<a class="hL" href="#ERRORMES.HLP__evx">Robot @ (hex location) is truncated or corrupt</a>
+<a class="hL" href="#ERRORMES.HLP__evy">.SAV files from newer versions of MZX (version) are not</a>
   <span class="fF">supported</span>
-<a class="hL" href="#ERRORMES.HLP__evx">.SAV files from older versions of MZX (version) are not</a>
+<a class="hL" href="#ERRORMES.HLP__evz">.SAV files from older versions of MZX (version) are not</a>
   <span class="fF">supported</span>
-<a class="hL" href="#ERRORMES.HLP__evy">Scroll @ (hex location) is truncated or corrupt</a>
-<a class="hL" href="#ERRORMES.HLP__evz">Sensor @ (hex location) is truncated or corrupt</a>
-<a class="hL" href="#ERRORMES.HLP__ev1">This world may be password protected. Decrypt it?</a>
-<a class="hL" href="#ERRORMES.HLP__ev2">Unknown error reading from file</a>
-<a class="hL" href="#ERRORMES.HLP__ev3">Unknown error writing to file</a>
-<a class="hL" href="#ERRORMES.HLP__ev4">World is from a more recent version (version)</a>
-<a class="hL" href="#ERRORMES.HLP__ev5">World is from old version (version); use converter</a>
+<a class="hL" href="#ERRORMES.HLP__ev1">Scroll @ (hex location) is truncated or corrupt</a>
+<a class="hL" href="#ERRORMES.HLP__ev2">Sensor @ (hex location) is truncated or corrupt</a>
+<a class="hL" href="#ERRORMES.HLP__ev3">This world may be password protected. Decrypt it?</a>
+<a class="hL" href="#ERRORMES.HLP__ev4">Unknown error reading from file</a>
+<a class="hL" href="#ERRORMES.HLP__ev5">Unknown error writing to file</a>
+<a class="hL" href="#ERRORMES.HLP__ev6">World is from a more recent version (version)</a>
 
 MegaZeux Validation Errors (ZIP World Format):
 
@@ -4550,60 +4655,79 @@ else is desired at that location.
 <a class="hA" name="ERRORMES.HLP__erc"><span class="fA">Current renderer lacks advanced graphical features; features</span></a>
 <span class="fA">disabled</span>
 
-Certain graphics renderers (at present, the overlay2 renderer)
-are unable to utilize some newer features. Try running MegaZeux
-under a different renderer.
+Certain graphics renderers (overlay2,gp2x) and platforms (NDS)
+are unable to utilize some newer graphical features (i.e. layer
+rendering). If this error message is displayed, these features
+will not work.
 
 <a class="hA" name="ERRORMES.HLP__erd"><span class="fA">Directory rename failed.</span></a>
-<a class="hA" name="ERRORMES.HLP__erh"><span class="fA">File rename failed.</span></a>
+<a class="hA" name="ERRORMES.HLP__erk"><span class="fA">File rename failed.</span></a>
 
 The user attempted to rename a directory or file, respectively,
 but failed. This could be due to trying to change a read-only
 file, trying to change a locked file, or due to some other
 error.
 
-<a class="hA" name="ERRORMES.HLP__ere"><span class="fA">Error saving; file/directory may be write protected</span></a>
+<a class="hA" name="ERRORMES.HLP__ere"><span class="fA">Error exporting ANSi</span></a>
+<a class="hA" name="ERRORMES.HLP__erf"><span class="fA">Error exporting SFX file</span></a>
+<a class="hA" name="ERRORMES.HLP__erg"><span class="fA">Error exporting text</span></a>
+
+The user attempted to export a file in the relevant format, but
+no file was created. This can be caused by file errors or a hard
+disk space shortage. It can also result from an attempt to
+overwrite a read-only file or write to a directory without write
+permissions.
+
+<a class="hA" name="ERRORMES.HLP__erh"><span class="fA">Error saving; file/directory may be write protected</span></a>
 
 This can be caused by file errors or a hard disk space
 shortage. It can also result from an attempt to overwrite a
 read-only file or write to a directory without write
 permissions.
 
-<a class="hA" name="ERRORMES.HLP__erf"><span class="fA">Error swapping to next world</span></a>
+<a class="hA" name="ERRORMES.HLP__eri"><span class="fA">Error swapping to next world</span></a>
 
 A Robotic command, SWAP to WORLD, was issued, but the stated
 world could not be found or otherwise could not be swapped to,
 due to version conflicts, file errors, etc.
 
-<a class="hA" name="ERRORMES.HLP__erg"><span class="fA">(Filename) already exists.</span></a>
+<a class="hA" name="ERRORMES.HLP__erj"><span class="fA">(Filename) already exists.</span></a>
 
 The user attempted to create a new file, but a file with that
 name already exists.
 
-<a class="hA" name="ERRORMES.HLP__eri"><span class="fA">Overlay mode is not on (see Board Info)</span></a>
+<a class="hA" name="ERRORMES.HLP__erl"><span class="fA">Limited/missing extended charset support; some features may not</span></a>
+<span class="fA">work</span>
+
+When this error message is displayed, the currently-running
+instance of MegaZeux cannot fully support extended character
+sets. Worlds that rely on this feature will still run in this
+case, but without this feature.
+
+<a class="hA" name="ERRORMES.HLP__erm"><span class="fA">Overlay mode is not on (see Board Info)</span></a>
 
 You cannot edit or copy to the Overlay if it is Off; go to
 Board Info and turn it to Normal, Static, or Transparent.
 
-<a class="hA" name="ERRORMES.HLP__erj"><span class="fA">Save would overwrite older world. Aborted.</span></a>
+<a class="hA" name="ERRORMES.HLP__ern"><span class="fA">Save would overwrite older world. Aborted.</span></a>
 
 A save was attempted in the debytecode version of MegaZeux that
 would overwrite a non-debytecode world file. Due to the present
 instability of debytecode, this is forcibly prevented.
 
-<a class="hA" name="ERRORMES.HLP__erk"><span class="fA">Windowing code bug</span></a>
+<a class="hA" name="ERRORMES.HLP__ero"><span class="fA">Windowing code bug</span></a>
 
-This is an internal error. Try to isolate the reason for the
-problem and notify the maintainer(s), as this error signifies a
-severe bug in MegaZeux.
+This is a critical internal error. Try to isolate the reason for
+the problem and notify the maintainer(s), as this error
+signifies a severe bug in MegaZeux.
 
-<a class="hA" name="ERRORMES.HLP__erl"><span class="fA">You can only play this game via a swap from another game</span></a>
+<a class="hA" name="ERRORMES.HLP__erp"><span class="fA">You can only play this game via a swap from another game</span></a>
 
 This error occurs when the user tries to play a game that has
 the option set to disallow normal gameplay. The world can only
-be played as a swap from another game. For example, this may be
-the second half of another game, or a separate world for
-showing the introduction.
+be played as a swap from another game or in the editor. For
+example, this may be the second half of another game, or a
+separate world for showing the introduction.
 
 <span class="f9">MZX Validation Errors</span>
 
@@ -4650,108 +4774,108 @@ Since MegaZeux 2.80, worlds that are password protected have to
 be stripped of the password to run. This error is seen when the
 user refuses to decrypt the password-protected file.
 
-<a class="hA" name="ERRORMES.HLP__evk"><span class="fA">File doesn't exist</span></a>
+<a class="hA" name="ERRORMES.HLP__evl"><span class="fA">File doesn't exist</span></a>
 
 An import of a file was attempted, but the file does not exist.
 
-<a class="hA" name="ERRORMES.HLP__evl"><span class="fA">File is not a board file or is corrupt</span></a>
-<a class="hA" name="ERRORMES.HLP__evm"><span class="fA">File is not an MZM or is corrupt</span></a>
-<a class="hA" name="ERRORMES.HLP__evn"><span class="fA">File is not a valid .SAV file or is corrupt</span></a>
-<a class="hA" name="ERRORMES.HLP__evo"><span class="fA">File is not a valid world file or is corrupt</span></a>
+<a class="hA" name="ERRORMES.HLP__evk"><span class="fA">Error importing ANSi</span></a>
+<a class="hA" name="ERRORMES.HLP__evm"><span class="fA">File is invalid or is not an SFX file</span></a>
+<a class="hA" name="ERRORMES.HLP__evn"><span class="fA">File is not a board file or is corrupt</span></a>
+<a class="hA" name="ERRORMES.HLP__evo"><span class="fA">File is not an MZM or is corrupt</span></a>
+<a class="hA" name="ERRORMES.HLP__evp"><span class="fA">File is not a valid .SAV file or is corrupt</span></a>
+<a class="hA" name="ERRORMES.HLP__evq"><span class="fA">File is not a valid world file or is corrupt</span></a>
 
 An import of the given type was halted due to being unrecognized
 as a valid file, or due to corruption.
 
-<a class="hA" name="ERRORMES.HLP__evp"><span class="fA">MZM contains runtime robots; dummying out</span></a>
+<a class="hA" name="ERRORMES.HLP__evr"><span class="fA">MZM contains runtime robots; dummying out</span></a>
 
 Load of an MZM containing Robots and saved during a running
-game was attempted. The Robots will be replaced with
-CustomBlock facsimiles, as if the file were loaded as a
+game was attempted in the editor. The Robots will be replaced
+with CustomBlock facsimiles, as if the file were loaded as a
 layer-type MZM.
 
-<a class="hA" name="ERRORMES.HLP__evq"><span class="fA">MZM doesn't exist</span></a>
+<a class="hA" name="ERRORMES.HLP__evs"><span class="fA">MZM doesn't exist</span></a>
 
 Loading an MZM file was attempted, but the given file does not
 exist.
 
-<a class="hA" name="ERRORMES.HLP__evr"><span class="fA">MZM from more recent version (version); dummying out robots</span></a>
+<a class="hA" name="ERRORMES.HLP__evt"><span class="fA">MZM from more recent version (version); dummying out robots</span></a>
 
 Load of an MZM file with Robots from a more recent version of
 MZX was attempted. The Robots will be replaced with CustomBlock
 facsimiles, as if the file were loaded as a layer-type MZM.
 
-<a class="hA" name="ERRORMES.HLP__evs"><span class="fA">MZM is missing robots or contains corrupt robot</span></a>
+<a class="hA" name="ERRORMES.HLP__evu"><span class="fA">MZM is missing robots or contains corrupt robot</span></a>
 
 The loaded MZM file indicates that a Robot should be at a
 certain location of the MZM, but found either no code or
 corrupt code.
 
-<a class="hA" name="ERRORMES.HLP__evt"><span class="fA">Post validation IO error occurred</span></a>
+<a class="hA" name="ERRORMES.HLP__evv"><span class="fA">Post validation IO error occurred</span></a>
 
 The given file passed validation, but some other problem is
 preventing it from loading.
 
-<a class="hA" name="ERRORMES.HLP__evu"><span class="fA">Robot @ (hex location) could not be found</span></a>
+<a class="hA" name="ERRORMES.HLP__evw"><span class="fA">Robot @ (hex location) could not be found</span></a>
 
 The board file indicates a Robot should be present at the given
 location, but no Robot exists there.
 
-<a class="hA" name="ERRORMES.HLP__evv"><span class="fA">Robot @ (hex location) is truncated or corrupt</span></a>
+<a class="hA" name="ERRORMES.HLP__evx"><span class="fA">Robot @ (hex location) is truncated or corrupt</span></a>
 
 The Robot at the given location is unrecoverable, and will be
 replaced with an empty Robot at that location.
 
-<a class="hA" name="ERRORMES.HLP__evw"><span class="fA">.SAV files from newer versions of MZX (version) are not</span></a>
+<a class="hA" name="ERRORMES.HLP__evy"><span class="fA">.SAV files from newer versions of MZX (version) are not</span></a>
 <span class="fA">supported</span>
-<a class="hA" name="ERRORMES.HLP__evx"><span class="fA">.SAV files from older versions of MZX (version) are not</span></a>
+<a class="hA" name="ERRORMES.HLP__evz"><span class="fA">.SAV files from older versions of MZX (version) are not</span></a>
 <span class="fA">supported</span>
 
 The .SAV file the user attempted to load is a different format
-than the current version's .SAV and cannot be loaded.
+than a supported .SAV version and cannot be loaded. This
+consists of all newer .SAV versions and all .SAV versions
+predating version 2.84.
 
-<a class="hA" name="ERRORMES.HLP__evy"><span class="fA">Scroll @ (hex location) is truncated or corrupt</span></a>
+<a class="hA" name="ERRORMES.HLP__ev1"><span class="fA">Scroll @ (hex location) is truncated or corrupt</span></a>
 
 The Scroll at the given location is unrecoverable, and will be
 replaced with an empty Scroll at that location.
 
-<a class="hA" name="ERRORMES.HLP__evz"><span class="fA">Sensor @ (hex location) is truncated or corrupt</span></a>
+<a class="hA" name="ERRORMES.HLP__ev2"><span class="fA">Sensor @ (hex location) is truncated or corrupt</span></a>
 
 The Sensor at the given location is unrecoverable, and will be
 replaced with a Sensor with default attributes at that location.
 
-<a class="hA" name="ERRORMES.HLP__ev1"><span class="fA">This world may be password protected. Decrypt it?</span></a>
+<a class="hA" name="ERRORMES.HLP__ev3"><span class="fA">This world may be password protected. Decrypt it?</span></a>
 
 Worlds saved with password protection (some worlds made before
 MZX2.51s3.2) cannot natively run in MegaZeux. This prompt asks
 the user if they want to convert the world to a readable format.
-If Yes is chosen, the world is permanently decrypted and
-converted to a world file (with a world version unique to
-decrypted worlds). If No is chosen, the world is left alone and
-MZX keeps any currently-running world as its active world.
+If Yes is chosen, by default MegaZeux will create and run a
+decrypted copy of the world in memory or as a temp file. The
+original MZX file will remain unchanged. If No is chosen, the
+world is left alone and MZX keeps any currently-running world as
+its active world. The decryption method can be changed via the
+config file.
 
-<a class="hA" name="ERRORMES.HLP__ev2"><span class="fA">Unknown error reading from file</span></a>
+<a class="hL" href="#CONFGINI.HLP__1st">The Config File</a>
+
+<a class="hA" name="ERRORMES.HLP__ev4"><span class="fA">Unknown error reading from file</span></a>
 
 A file read was attempted, but MZX failed for some undetermined
 reason.
 
-<a class="hA" name="ERRORMES.HLP__ev3"><span class="fA">Unknown error writing to file</span></a>
+<a class="hA" name="ERRORMES.HLP__ev5"><span class="fA">Unknown error writing to file</span></a>
 
 MZX attempted to write to a file, but failed for some
 undertermined reason.
 
-<a class="hA" name="ERRORMES.HLP__ev4"><span class="fA">World is from a more recent version (version)</span></a>
+<a class="hA" name="ERRORMES.HLP__ev6"><span class="fA">World is from a more recent version (version)</span></a>
 
 The .MZX file you tried to load or import is from a more
 current version of MegaZeux. You must upgrade MegaZeux to the
 given version or higher to play this worldfile.
-
-<a class="hA" name="ERRORMES.HLP__ev5"><span class="fA">World is from old version (version); use converter</span></a>
-
-The user tried to load a .MZX file from version 1.00g, 1.01,
-1.02, or 1.03 of MegaZeux. In order to use these worlds, they
-must first be converted to 2.51 format using the included
-VER1TO2 program. Run VER1TO2 without any command line arguments
-for further instructions.
 
 <span class="f9">MegaZeux Validation Errors (ZIP World Format):</span>
 
@@ -4883,7 +5007,7 @@ can SEND a message to a sensor, but the sensor will only SEND
 messages to the Robot stated in its settings. If you entered a
 Robot of ALL, then it will SEND messages to all Robots. Unlike
 Robots, sensors cannot send to a dynamic name; for instance, it
-cannot be set to send to "&amp;fest&amp;ive" (whereas a Robot would 
+cannot be set to send to "&amp;fest&amp;ive" (whereas a Robot would
 properly send to "1ive" when "fest" is 1 and to "5ive" when
 "fest" is 5).
 
@@ -4956,35 +5080,42 @@ sensor.
 <p class="hC"><span class="f9">Robotic Reference Manual</span></p>
 Use the following help links to see your desired topic(s).
 
-<a class="hL" href="#COMMANDS.HLP__1st">Command Syntax</a>
+                       <span class="fC">1) The Basics</span>
+<a class="hL" href="#ROBOTSWH.HLP__1st">Robots - What They Are and How to Use Them</a>
+<a class="hL" href="#ROBOTICT.HLP__1st">Robotic Tutorial</a>
+
+          <span class="fC">2) Command List and Core Concepts</span>
 <a class="hL" href="#COMMANDR.HLP__1st">Command Reference</a>
+<a class="hL" href="#COMMANDS.HLP__1st">Command Syntax</a>
 <a class="hL" href="#USINGTHE.HLP__1st">Using the Editor</a>
 <a class="hL" href="#THEGLOBL.HLP__gbl">The Global</a>
-<a class="hL" href="#SENSORSW.HLP__094">Sensors</a>
 <a class="hL" href="#COMMANDS.HLP__dir">Directions</a>
 <a class="hL" href="#COMMANDS.HLP__col">Colors</a>
 <a class="hL" href="#BUILTINL.HLP__1st">Built-in Labels</a>
 <a class="hL" href="#COUNTERS.HLP__1st">Counters, Built-in Counters and Local Counters</a>
-<a class="hL" href="#COMMAND2.HLP__pre">Prefixes</a>
 <a class="hL" href="#STRINGS.HLP__1st">Strings, Special Formatting, and Their Place in Robotic</a>
 <a class="hL" href="#COMMANDS.HLP__con">Conditions</a>
 <a class="hL" href="#SOUNDEFX.HLP__1st">Sound and Music</a>
-<a class="hL" href="#SMZXMODE.HLP__095">Super MZX Modes</a>
-<a class="hL" href="#SUBROUTE.HLP__sub">Subroutines</a>
-<a class="hL" href="#EXPRESS.HLP__exp">Expressions</a>
-<a class="hL" href="#FILEACSS.HLP__fil">File Access</a>
+<a class="hL" href="#BULLETTY.HLP__1st">Bullet Types</a>
+<a class="hL" href="#BADPRACT.HLP__bad">Robotic Usages That Should be Avoided</a>
+
+                     <span class="fC">3) Extended Concepts</span>
+<a class="hL" href="#PROCESS.HLP__prc">Cycles and Board Scans - How MZX Processes Robots</a>
 <a class="hL" href="#SPRITES.HLP__spr">Sprites</a>
+<a class="hL" href="#EXPRESS.HLP__exp">Expressions</a>
+<a class="hL" href="#SUBROUTE.HLP__sub">Subroutines</a>
 <a class="hL" href="#VLAYER.HLP__vla">The Vlayer</a>
+<a class="hL" href="#SMZXMODE.HLP__095">Super MZX Modes</a>
+<a class="hL" href="#FILEACSS.HLP__fil">File Access</a>
 <a class="hL" href="#MZM.HLP__mzm">Using MZMs</a>
 <a class="hL" href="#TRIG.HLP__tri">Trigonometric Functions</a>
-<a class="hL" href="#PROCESS.HLP__prc">Cycles and Board Scans - How MZX Processes Robots</a>
 <a class="hL" href="#PARTIAL.HLP__par">Partial Character Sets</a>
-<a class="hL" href="#BULLETTY.HLP__1st">Bullet Types</a>
 <a class="hL" href="#CHANGECH.HLP__1st">CHANGE CHAR ID - The CHAR ID Table</a>
 
-<a class="hL" href="#ROBOTSWH.HLP__1st">Robots - What They Are and How to Use Them</a>
-<a class="hL" href="#ROBOTICT.HLP__1st">Robotic Tutorial</a>
-<a class="hL" href="#BADPRACT.HLP__bad">Robotic Usages That Should be Avoided</a>
+                    <span class="fC">4) Legacy Coding Tools</span>
+<a class="hL" href="#COMMAND2.HLP__pre">Prefixes</a>
+<a class="hL" href="#SENSORSW.HLP__094">Sensors</a>
+
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
 
 <hr></div>
@@ -5016,8 +5147,8 @@ if the string is not the same as any word found in any command
 or parameter, i.e. is a word that the editor could not mistake
 for a part of a command. MegaZeux will add the quotes for you if
 the string meets these criteria. For example, "fifty" and "HONK"
-will be auto-completed by MZX, but "Ammo", "N", "Goto", and "You
-died" have to have the quotes typed in manually.
+will be auto-completed by MZX, but "Ammo", "N", "Goto", and most
+notably "loop" have to have the quotes typed in manually.
 
 <span class="fE">#</span>
 
@@ -5027,6 +5158,10 @@ representing the name of a counter at any time. Examples of
 legal numbers: 3200, "Stuffs", -19043, "Ammo". They can also be
 represented in hexadecimal, using $xxxx format. In this case,
 xxxx can be any number from 0 to FFFF.
+
+Any arithmatic that causes a number to go out of its range will
+not cap the result at the limit, but will instead cause a number
+wraparound.
 
 Numbers can not directly be allowed to go past the 16-bit
 limits (-32768 to 32767) in Robotic commands, but this can be
@@ -5082,11 +5217,11 @@ values:
 
 A color of c?? will be inserted into commands when you do not
 put down anything for the color. Examples of legal colors: cF9,
-c02, c?5, c??, "Color".
+c02, c?5, c??, "color_counter".
 
 While detecting colors of ?? is generally an accepted practice,
 it's extremely discouraged to put colors of ?? or change to
-them, with the exception of Sprites.
+them, with the notable exception of placing Sprites.
 
 <a class="hL" href="#BADPRACT.HLP__bad">Robotic Usages That Should be Avoided</a>
 
@@ -5096,8 +5231,8 @@ Characters ("chars" for short) are single characters surrounded
 by apostrophes, e.g. 'X'. X can be any character in the main
 character set. A character can be selected from a menu in the
 Robot editor using F3. Numbers and counters can be used to
-represent characters as well, with values from 0 to 255 (other
-values will wrap around to be 0-255). Examples of legal
+represent characters as well. Number values range from 0 to 255
+(other values will wrap around to be 0-255). Examples of legal
 characters - 'a', '&#xE0B1;', 20, "Count". Characters can also
 represent numbers, so typing in commands like INC "health" '5'
 will most likely yield _much_ different results than what was
@@ -5114,9 +5249,11 @@ problems with Robotic:
   \r for carriage return (character 13)
   \" for quotation mark
   \\ for slash
-  
+
 MZX handles these conversions for you when using F3 to select
 a character from the current character set.
+
+To access characters in extended character sets, use counters.
 
 <a class="hA" name="COMMANDS.HLP__dir"><span class="fE">[dir]</span></a>
 
@@ -5147,19 +5284,19 @@ Below are descriptions of the other directions.
 
 No direction, as in the absence of any direction. Used with:
 
-<a class="hA" name="COMMANDS.HLP___w5"><span class="fA">WALK [dir]</span></a>
-
-<a class="hL" href="#COMMANDS.HLP__con">Conditions</a>
+<a class="hL" href="#COMMANDR.HLP___w5">WALK [dir]</a>
 
 <span class="fB">NODIR</span>
 
-No directions satisfy the condition. Used with:
+For condition checks only. If no direction matches the
+condition, the condition is met.
 
 <a class="hL" href="#COMMANDS.HLP__con">Conditions</a>
 
 <span class="fB">ANYDIR</span>
 
-Any direction satisfies the condition. Used with:
+For condition checks only. If any direction matches the
+condition, the condition is met.
 
 <a class="hL" href="#COMMANDS.HLP__con">Conditions</a>
 
@@ -5204,10 +5341,8 @@ Randomly one of NORTH, SOUTH, EAST, or WEST.
 The direction signifying whatever is BENEATH something, such
 as floors. Often used with:
 
-<a class="hA" name="COMMANDS.HLP___l1"><span class="fA">LAYBOMB [dir]</span></a>
-<a class="hA" name="COMMANDS.HLP___l2"><span class="fA">LAYBOMB HIGH [dir]</span></a>
-
-<a class="hL" href="#COMMANDS.HLP__con">Conditions</a>
+<a class="hL" href="#COMMAND2.HLP___l1">LAYBOMB [dir]</a>
+<a class="hL" href="#COMMAND2.HLP___l2">LAYBOMB HIGH [dir]</a>
 
 Most directions can be used with the following modifying
 prefixes:
@@ -5325,11 +5460,14 @@ at once.
 Tests whether the last direction the Robot was shot in was
 the given direction. For example, if the Robot had just been
 shot on the north side, then LASTSHOT NORTH would be true.
+All bullet types are valid for this condition. NODIR/ANYDIR
+are not valid for this condition.
 
 <span class="fB">LASTTOUCH [dir]</span>
 
 Similar to the above; tests whether the last direction the
 Robot was touched by the player is the given direction.
+NODIR/ANYDIR are not valid for this condition.
 
 <span class="fB">RIGHTPRESSED</span>
 <span class="fB">LEFTPRESSED</span>
@@ -5410,7 +5548,6 @@ followed by one of these characters:
     5 Purple (color 5)       D Lt. Purple (color 13)
     6 Brown (color 6)        E Yellow (color 14)
     7 Lt. Gray (color 7)     F White (color 15)
-    
 
 To show a ~, use ~~. To show a @, use @@.
 
@@ -5444,17 +5581,16 @@ problems with Robotic:
 <p class="hC">Robotic Usage - Setting Strings</p>
 <span class="fB">SET "$string" to "text"</span>
 
-Sets the given string to the given line of text.
+Sets the contents of the given string to the given line of text.
 
 <span class="fB">SET "$string" to "$string2"</span>
 
-Sets the given string to the contents of another string.
+Sets the contents of the given string to the contents of another
+string.
 
 <span class="fB">SET "$string" to #</span>
 
-Sets the string to an integer value. Notice that DEC commands
-and other similar commands will not work arithmetically with
-strings but instead clip and append to the string.
+Sets the contents of the given string to an integer value.
 
 <p class="hC">Robotic Usage - Outputting Strings</p>
 Anywhere you can output a counter, you can output a string.
@@ -5540,7 +5676,7 @@ Will cause $str to have the value "Long steps."
 (starting from 0). When used for output, it will give the
 character value of the given character in a string. Any invalid
 numbers (past the terminator) are given a value of 0. This
-command works well with char immediates: 
+command works well with char immediates:
 E.G. SET "$string.0" 'S' . When setting the character in a
 string it will make the string length one larger than X, so be
 careful when using very large values.
@@ -5616,15 +5752,328 @@ String splicing is valid for string file operations.
 <div class="hF" id="COMMANDR.HLP">
 <a class="hA" name="COMMANDR.HLP__1st"> </a>
 <p class="hC"><span class="f9">Command Reference</span></p>
-The following table is a list of all Robotic commands in
-MegaZeux. They are listed as help links, in alphabetical order.
-After the table are the actual command descriptions, in order
-of importance/difficulty. Note that because of its size, the
-command reference is split into two parts.
+The following tables are lists of all Robotic commands in
+MegaZeux. The commands are listed as help links and will jump
+to that specific command. After the tables are the actual
+command descriptions. Note that because of its size, the command
+reference is split into two parts.
 
 Any command that (typically) ends a cycle will be marked by a
 [<span class="fD">!</span><span class="fF">] symbol. For more precise information, view</span>
 cycles_and_commands.txt in the documentation.
+
+The command listing is arranged by alphabetical order and by
+command type. Click the respective links to jump to that
+arrangement.
+
+<a class="hL" href="#COMMANDR.HLP__tcl">Type-Based Command Listing</a>
+<a class="hL" href="#COMMANDR.HLP__acl">Alphabetical Command Listing</a>
+
+<a class="hA" name="COMMANDR.HLP__tcl">                    <span class="f9">Type-Based Command Listing</span></a>
+
+                    <span class="fC">Flow and Branching Commands</span>
+
+<a class="hL" href="#COMMANDR.HLP____6">: "label"</a>
+<a class="hL" href="#COMMANDR.HLP___w1">WAIT # [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___e1">END [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___g5">GOTO "label"</a>
+<a class="hL" href="#COMMANDR.HLP___g6">GOTO "#return"</a>
+<a class="hL" href="#COMMANDR.HLP___g7">GOTO "#top"</a>
+<a class="hL" href="#COMMANDR.HLP___sB">SEND # # "label"</a>
+<a class="hL" href="#COMMANDR.HLP___sC">SEND "Robot" "label"</a>
+<a class="hL" href="#COMMANDR.HLP___sD">SEND [dir] "label"</a>
+<a class="hL" href="#COMMANDR.HLP___sE">SEND [dir] PLAYER "label"</a>
+<a class="hL" href="#COMMANDR.HLP___i1">IF "counter" !&lt;&gt;= # "label"</a>
+<a class="hL" href="#COMMAND2.HLP___i2">IF [condition] "label"</a>
+<a class="hL" href="#COMMAND2.HLP___i3">IF # # "label"</a>
+<a class="hL" href="#COMMAND2.HLP___i4">IF [dir] PLAYER [color] [thing] [param] "label"</a>
+<a class="hL" href="#COMMAND2.HLP___i5">IF [color] [thing] [param] # # "label"</a>
+<a class="hL" href="#COMMAND2.HLP___i6">IF [color] [thing] [param] [dir] "label"</a>
+<a class="hL" href="#COMMAND2.HLP___i7">IF ALIGNEDROBOT "Robot" "label"</a>
+<a class="hL" href="#COMMAND2.HLP___i8">IF ANY [color] [thing] [param] "label"</a>
+<a class="hL" href="#COMMAND2.HLP___i9">IF FIRST STRING "string" "label"</a>
+<a class="hL" href="#COMMAND2.HLP___i0">IF NO [color] [thing] [param] "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iA">IF NOT [color] [thing] [param] [dir] "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iB">IF NOT [condition] "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iC">IF PLAYER # # "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iD">IF STRING "string" "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iE">IF STRING MATCHES "string" "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iF">IF STRING NOT "string" "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iO">IF "$string" (equality) # "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iK">IF "$string" (equality) "text" "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iL">IF "$string" (equality) "$string2" "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iG">IF c?? Sprite_Colliding pNN # # "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iH">IF c?? Sprite pNN # # "label"</a>
+<a class="hL" href="#COMMANDR.HLP___lA">LOCKSELF</a>
+<a class="hL" href="#COMMANDR.HLP___u3">UNLOCKSELF</a>
+<a class="hL" href="#COMMAND2.HLP___z1">ZAP "label" #</a>
+<a class="hL" href="#COMMAND2.HLP___rA">RESTORE "label" #</a>
+<a class="hL" href="#COMMAND2.HLP____0">| "label"</a>
+<a class="hL" href="#COMMANDR.HLP___lB">LOOP #</a>
+<a class="hL" href="#COMMANDR.HLP___lC">LOOP START</a>
+<a class="hL" href="#COMMANDR.HLP___a1">ABORT LOOP</a>
+<a class="hL" href="#COMMAND2.HLP___a2">ASK "string"</a>
+<a class="hL" href="#COMMANDR.HLP___cP">CYCLE # [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMAND2.HLP___w2">WAIT MOD FADE [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMAND2.HLP___w3">WAIT PLAY [<span class="fD">!</span><span class="fF">]</span></a>
+
+               <span class="fC">General Color and Character Commands</span>
+
+<a class="hL" href="#COMMAND2.HLP___l5">LOAD PALETTE "file"</a>
+<a class="hL" href="#COMMAND2.HLP___l4">LOAD CHAR SET "file"</a>
+<a class="hL" href="#COMMAND2.HLP___sK">SET COLOR # # # #</a>
+<a class="hL" href="#COMMAND2.HLP___c0">CHAR EDIT [char] # # # # # # # # # # # # # #</a>
+<a class="hL" href="#COMMAND2.HLP___cK">COPY CHAR [char] [char]</a>
+<a class="hL" href="#COMMAND2.HLP___s4">SCROLL CHAR [char] [dir]</a>
+<a class="hL" href="#COMMAND2.HLP___f3">FLIP CHAR [char] [dir]</a>
+<a class="hL" href="#COMMAND2.HLP___cF">COLOR INTENSITY # PERCENT</a>
+<a class="hL" href="#COMMAND2.HLP___cG">COLOR INTENSITY # # PERCENT</a>
+<a class="hL" href="#COMMANDR.HLP___cD">COLOR FADE OUT</a>
+<a class="hL" href="#COMMANDR.HLP___cE">COLOR FADE IN</a>
+
+                 <span class="fC">Item Color and Character Commands</span>
+
+<a class="hL" href="#COMMANDR.HLP___p0">PLAYER CHAR [char]</a>
+<a class="hL" href="#COMMANDR.HLP___p9">PLAYER CHAR [dir] [char]</a>
+<a class="hL" href="#COMMANDR.HLP___pA">PLAYERCOLOR [color]</a>
+<a class="hL" href="#COMMAND2.HLP___c3">CHANGE CHAR ID # [char]</a>
+<a class="hL" href="#COMMAND2.HLP___b9">BULLETCOLOR [color]</a>
+<a class="hL" href="#COMMAND2.HLP___b0">BULLETE [char]</a>
+<a class="hL" href="#COMMAND2.HLP___bA">BULLETN [char]</a>
+<a class="hL" href="#COMMAND2.HLP___bB">BULLETS [char]</a>
+<a class="hL" href="#COMMAND2.HLP___bC">BULLETW [char]</a>
+<a class="hL" href="#COMMAND2.HLP___p4">PLAYER BULLETCOLOR [color]</a>
+<a class="hL" href="#COMMAND2.HLP___p5">PLAYER BULLETE [char]</a>
+<a class="hL" href="#COMMAND2.HLP___p6">PLAYER BULLETN [char]</a>
+<a class="hL" href="#COMMAND2.HLP___p7">PLAYER BULLETS [char]</a>
+<a class="hL" href="#COMMAND2.HLP___p8">PLAYER BULLETW [char]</a>
+<a class="hL" href="#COMMAND2.HLP___n1">NEUTRAL BULLETCOLOR [color]</a>
+<a class="hL" href="#COMMAND2.HLP___n2">NEUTRAL BULLETE [char]</a>
+<a class="hL" href="#COMMAND2.HLP___n3">NEUTRAL BULLETN [char]</a>
+<a class="hL" href="#COMMAND2.HLP___n4">NEUTRAL BULLETS [char]</a>
+<a class="hL" href="#COMMAND2.HLP___n5">NEUTRAL BULLETW [char]</a>
+<a class="hL" href="#COMMAND2.HLP___e0">ENEMY BULLETCOLOR [color]</a>
+<a class="hL" href="#COMMAND2.HLP___eA">ENEMY BULLETE [char]</a>
+<a class="hL" href="#COMMAND2.HLP___eB">ENEMY BULLETN [char]</a>
+<a class="hL" href="#COMMAND2.HLP___eC">ENEMY BULLETS [char]</a>
+<a class="hL" href="#COMMAND2.HLP___eD">ENEMY BULLETW [char]</a>
+<a class="hL" href="#COMMAND2.HLP___m2">MISSILECOLOR [color]</a>
+<a class="hL" href="#COMMAND2.HLP___c7">CHANGE THICK ARROW CHAR [dir] [char]</a>
+<a class="hL" href="#COMMAND2.HLP___c8">CHANGE THIN ARROW CHAR [dir] [char]</a>
+
+             <span class="fC">Counter and String Manipulation Commands</span>
+
+<a class="hL" href="#COMMANDR.HLP___sF">SET "counter" #</a>
+<a class="hL" href="#COMMANDR.HLP___sG">SET "counter" RANDOM # #</a>
+<a class="hL" href="#COMMANDR.HLP___iI">INC "counter" #</a>
+<a class="hL" href="#COMMANDR.HLP___iJ">INC "counter" RANDOM # #</a>
+<a class="hL" href="#COMMANDR.HLP___d1">DEC "counter" #</a>
+<a class="hL" href="#COMMANDR.HLP___d2">DEC "counter" RANDOM # #</a>
+<a class="hL" href="#COMMANDR.HLP___mC">MULTIPLY "counter" #</a>
+<a class="hL" href="#COMMANDR.HLP___d7">DIVIDE "counter" #</a>
+<a class="hL" href="#COMMANDR.HLP___m9">MODULO "counter" #</a>
+<a class="hL" href="#COMMANDR.HLP___d8">DOUBLE "counter"</a>
+<a class="hL" href="#COMMANDR.HLP___h1">HALF "counter"</a>
+<a class="hL" href="#COMMANDR.HLP___sH">SET "$string" "text"</a>
+<a class="hL" href="#COMMANDR.HLP___sI">SET "$string1" "$string2"</a>
+<a class="hL" href="#COMMANDR.HLP___sJ">SET "$string" #</a>
+<a class="hL" href="#COMMAND2.HLP___iM">INC "$string" "text"</a>
+<a class="hL" href="#COMMAND2.HLP___iN">INC "$string" "$string2"</a>
+<a class="hL" href="#COMMAND2.HLP___dA">DEC "$string" #</a>
+
+                     <span class="fC">Music and Sound Commands</span>
+
+<a class="hL" href="#COMMANDR.HLP___m3">MOD "file"</a>
+<a class="hL" href="#COMMANDR.HLP___m8">MOD "*"</a>
+<a class="hL" href="#COMMANDR.HLP___v3">VOLUME #</a>
+<a class="hL" href="#COMMAND2.HLP___m4">MOD FADE # #</a>
+<a class="hL" href="#COMMAND2.HLP___m5">MOD FADE IN "file"</a>
+<a class="hL" href="#COMMAND2.HLP___m6">MOD FADE OUT</a>
+<a class="hL" href="#COMMAND2.HLP___j1">JUMP MOD ORDER #</a>
+<a class="hL" href="#COMMANDR.HLP___s1">SAM # "file"</a>
+<a class="hL" href="#COMMANDR.HLP___p2">PLAY "string"</a>
+<a class="hL" href="#COMMANDR.HLP___p3">PLAY SFX "string"</a>
+<a class="hL" href="#COMMANDR.HLP___w4">WAIT PLAY "string" [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___sO">SFX #</a>
+<a class="hL" href="#COMMAND2.HLP___c6">CHANGE SFX # "string"</a>
+<a class="hL" href="#COMMANDR.HLP___e2">END MOD</a>
+<a class="hL" href="#COMMANDR.HLP___e3">END PLAY</a>
+<a class="hL" href="#COMMANDR.HLP___e4">END SAM</a>
+<a class="hL" href="#COMMAND2.HLP___m7">MOD SAM # #</a>
+
+                 <span class="fC">Textbox and Message Row Commands</span>
+
+<a class="hL" href="#COMMANDR.HLP____9">[ "string"</a>
+<a class="hL" href="#COMMANDR.HLP____1">% "string"</a>
+<a class="hL" href="#COMMANDR.HLP____2">&amp; "string"</a>
+<a class="hL" href="#COMMANDR.HLP____8">? "label" "string"</a>
+<a class="hL" href="#COMMANDR.HLP____7">? "counter" "label" "string"</a>
+<a class="hL" href="#COMMANDR.HLP____3">* "string"</a>
+<a class="hL" href="#COMMAND2.HLP___m1">MESSAGE ROW #</a>
+<a class="hL" href="#COMMAND2.HLP___sN">SET MESG COLUMN #</a>
+<a class="hL" href="#COMMAND2.HLP___c1">CENTER MESG</a>
+<a class="hL" href="#COMMAND2.HLP___cA">CLEAR MESG</a>
+<a class="hL" href="#COMMAND2.HLP___e7">ENABLE MESG EDGE</a>
+<a class="hL" href="#COMMAND2.HLP___d5">DISABLE MESG EDGE</a>
+<a class="hL" href="#COMMAND2.HLP___s5">SCROLLARROW COLOR [color]</a>
+<a class="hL" href="#COMMAND2.HLP___s6">SCROLLBASE COLOR [color]</a>
+<a class="hL" href="#COMMAND2.HLP___s7">SCROLLCORNER COLOR [color]</a>
+<a class="hL" href="#COMMAND2.HLP___s8">SCROLLPOINTER COLOR [color]</a>
+<a class="hL" href="#COMMAND2.HLP___s9">SCROLLTITLE COLOR [color]</a>
+<a class="hL" href="#COMMAND2.HLP___a2">ASK "string"</a>
+<a class="hL" href="#COMMAND2.HLP___iP">INPUT STRING "string"</a>
+<a class="hL" href="#COMMAND2.HLP___cB">CLIP INPUT</a>
+
+                 <span class="fC">Board Placement and Copy Commands</span>
+
+<a class="hL" href="#COMMANDR.HLP___pC">PUT [color] [thing] [param] # #</a>
+<a class="hL" href="#COMMANDR.HLP___pD">PUT [color] [thing] [param] [dir]</a>
+<a class="hL" href="#COMMANDR.HLP___pF">PUT [color] [thing] [param] [dir] PLAYER</a>
+<a class="hL" href="#COMMANDR.HLP___pI">PUT "@FILENAME.XXX" Image_File [param] # #</a>
+<a class="hL" href="#COMMANDR.HLP___pJ">PUT [color] Sprite [param] # #</a>
+<a class="hL" href="#COMMAND2.HLP___cH">COPY # # # #</a>
+<a class="hL" href="#COMMAND2.HLP___cI">COPY [dir] [dir]</a>
+<a class="hL" href="#COMMAND2.HLP___cJ">COPY BLOCK # # # # # #</a>
+<a class="hL" href="#COMMAND2.HLP___cQ">COPY BLOCK # # # # "@filename" #</a>
+<a class="hL" href="#COMMAND2.HLP___cS">COPY (OVERLAY) BLOCK "#x" "#y" # # "@filename" #</a>
+<a class="hL" href="#COMMAND2.HLP___cT">COPY BLOCK # # # # "$string" #</a>
+<a class="hL" href="#COMMAND2.HLP___cV">COPY (OVERLAY) BLOCK "#x" "#y" # # "$string" #</a>
+<a class="hL" href="#COMMAND2.HLP___cW">COPY BLOCK # # # # "#x" "#y"</a>
+<a class="hL" href="#COMMAND2.HLP___cY">COPY BLOCK "#x" "#y" # # # #</a>
+<a class="hL" href="#COMMAND2.HLP___cAA">COPY (OVERLAY) BLOCK "#x1" "#y1" # # "#x2" "#y2"</a>
+
+                         <span class="fC">Overlay Commands</span>
+
+<a class="hL" href="#COMMAND2.HLP___pE">PUT [color] [char] OVERLAY # #</a>
+<a class="hL" href="#COMMAND2.HLP___w7">WRITE OVERLAY [color] "string" # #</a>
+<a class="hL" href="#COMMAND2.HLP___cL">COPY OVERLAY BLOCK # # # # # #</a>
+<a class="hL" href="#COMMAND2.HLP___cR">COPY OVERLAY BLOCK # # # # "@filename" #</a>
+<a class="hL" href="#COMMAND2.HLP___cU">COPY OVERLAY BLOCK # # # # "$string" #</a>
+<a class="hL" href="#COMMAND2.HLP___cX">COPY OVERLAY BLOCK # # # # "#x" "#y"</a>
+<a class="hL" href="#COMMAND2.HLP___cZ">COPY OVERLAY BLOCK "#x" "#y" # # # #</a>
+<a class="hL" href="#COMMAND2.HLP___c5">CHANGE OVERLAY [color] [color]</a>
+<a class="hL" href="#COMMAND2.HLP___c4">CHANGE OVERLAY [color] [char] [color] [char]</a>
+<a class="hL" href="#COMMAND2.HLP___o2">OVERLAY ON</a>
+<a class="hL" href="#COMMAND2.HLP___o3">OVERLAY STATIC</a>
+<a class="hL" href="#COMMAND2.HLP___o4">OVERLAY TRANSPARENT</a>
+
+                           <span class="fC">View Commands</span>
+
+<a class="hL" href="#COMMAND2.HLP___v1">VIEWPORT # #</a>
+<a class="hL" href="#COMMAND2.HLP___v2">VIEWPORT SIZE # #</a>
+<a class="hL" href="#COMMAND2.HLP___s0">SCROLLVIEW [dir] #</a>
+<a class="hL" href="#COMMAND2.HLP___sA">SCROLLVIEW POSITION # #</a>
+<a class="hL" href="#COMMAND2.HLP___r0">RESETVIEW</a>
+<a class="hL" href="#COMMAND2.HLP___l0">LOCKSCROLL</a>
+<a class="hL" href="#COMMAND2.HLP___u2">UNLOCKSCROLL</a>
+<a class="hL" href="#COMMAND2.HLP___sL">SET EDGE COLOR [color]</a>
+
+                       <span class="fC">Other Board Commands</span>
+
+<a class="hL" href="#COMMANDR.HLP___c2">CHANGE [color] [thing] [param] [color] [thing] [param]</a>
+<a class="hL" href="#COMMAND2.HLP___m0">MOVE ALL [color] [thing] [param] [dir] [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMAND2.HLP___b7">BOARD [dir] "string"</a>
+<a class="hL" href="#COMMAND2.HLP___b8">BOARD [dir] NONE</a>
+<a class="hL" href="#COMMAND2.HLP___a3">AVALANCHE</a>
+<a class="hL" href="#COMMAND2.HLP___d6">DISABLE SAVING</a>
+<a class="hL" href="#COMMAND2.HLP___e8">ENABLE SAVING</a>
+<a class="hL" href="#COMMAND2.HLP___e9">ENABLE SENSORONLY SAVING</a>
+
+                 <span class="fC">Player Control and Item Commands</span>
+
+<a class="hL" href="#COMMAND2.HLP___g1">GIVE # [item]</a>
+<a class="hL" href="#COMMAND2.HLP___t1">TAKE # [item]</a>
+<a class="hL" href="#COMMAND2.HLP___t2">TAKE # [item] "label"</a>
+<a class="hL" href="#COMMAND2.HLP___g2">GIVEKEY [color]</a>
+<a class="hL" href="#COMMAND2.HLP___g3">GIVEKEY [color] "label"</a>
+<a class="hL" href="#COMMAND2.HLP___t3">TAKEKEY [color]</a>
+<a class="hL" href="#COMMAND2.HLP___t4">TAKEKEY [color] "label"</a>
+<a class="hL" href="#COMMAND2.HLP___t6">TRADE # [item] # [item] "label"</a>
+<a class="hL" href="#COMMAND2.HLP___l6">LOCKPLAYER</a>
+<a class="hL" href="#COMMAND2.HLP___l7">LOCKPLAYER ATTACK</a>
+<a class="hL" href="#COMMAND2.HLP___l8">LOCKPLAYER EW</a>
+<a class="hL" href="#COMMAND2.HLP___l9">LOCKPLAYER NS</a>
+<a class="hL" href="#COMMAND2.HLP___u1">UNLOCKPLAYER</a>
+<a class="hL" href="#COMMAND2.HLP___t5">TELEPORT PLAYER "string" # # [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___mA">MOVE PLAYER [dir] [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___mB">MOVE PLAYER [dir] "label" [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___pG">PUT PLAYER # # [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___pH">PUT PLAYER [dir] [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___e6">ENDLIFE</a>
+<a class="hL" href="#COMMANDR.HLP___e5">ENDGAME</a>
+<a class="hL" href="#COMMAND2.HLP___f2">FILLHEALTH</a>
+<a class="hL" href="#COMMAND2.HLP___sM">SET MAXHEALTH #</a>
+<a class="hL" href="#COMMAND2.HLP___s2">SAVE PLAYER POSITION</a>
+<a class="hL" href="#COMMAND2.HLP___s3">SAVE PLAYER POSITION #</a>
+<a class="hL" href="#COMMAND2.HLP___rB">RESTORE PLAYER POSITION [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMAND2.HLP___rC">RESTORE PLAYER POSITION # [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMAND2.HLP___rD">RESTORE PLAYER POSITION # DUPLICATE SELF [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMAND2.HLP___eE">EXCHANGE PLAYER POSITION [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMAND2.HLP___eF">EXCHANGE PLAYER POSITION # [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMAND2.HLP___eG">EXCHANGE PLAYER POSITION # DUPLICATE SELF [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMAND2.HLP___b6">BLIND #</a>
+<a class="hL" href="#COMMAND2.HLP___f1">FIREWALKER #</a>
+<a class="hL" href="#COMMAND2.HLP___w6">WIND #</a>
+
+                 <span class="fC">Self Movement and Attack Commands</span>
+
+<a class="hL" href="#COMMANDR.HLP____5">/ "string" [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___w5">WALK [dir]</a>
+<a class="hL" href="#COMMANDR.HLP___g4">GO [dir] # [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___g8">GOTOXY # # [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___p1">PERSISTENT GO "string" [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___t7">TRY [dir] "label" [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___sP">SHOOT [dir]</a>
+<a class="hL" href="#COMMANDR.HLP___sT">SPITFIRE [dir]</a>
+<a class="hL" href="#COMMANDR.HLP___sQ">SHOOTMISSILE [dir]</a>
+<a class="hL" href="#COMMANDR.HLP___sR">SHOOTSEEKER [dir]</a>
+<a class="hL" href="#COMMAND2.HLP___l1">LAYBOMB [dir]</a>
+<a class="hL" href="#COMMAND2.HLP___l2">LAYBOMB HIGH [dir]</a>
+<a class="hL" href="#COMMAND2.HLP___l3">LAZERWALL [dir] #</a>
+
+                   <span class="fC">Other Self-Oriented Commands</span>
+
+<a class="hL" href="#COMMANDR.HLP___c9">CHAR [char]</a>
+<a class="hL" href="#COMMANDR.HLP___cC">COLOR [color]</a>
+<a class="hL" href="#COMMANDR.HLP___d3">DIE</a>
+<a class="hL" href="#COMMANDR.HLP___d4">DIE ITEM</a>
+<a class="hL" href="#COMMANDR.HLP___eH">EXPLODE #</a>
+<a class="hL" href="#COMMANDR.HLP___d9">DUPLICATE SELF # #</a>
+<a class="hL" href="#COMMANDR.HLP___d0">DUPLICATE SELF [dir]</a>
+<a class="hL" href="#COMMANDR.HLP___cM">COPYROBOT "Robot" [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___cN">COPYROBOT # # [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___cO">COPYROBOT [dir] [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMANDR.HLP___4b">. "@string"</a>
+<a class="hL" href="#COMMAND2.HLP___pB">PUSH [dir]</a>
+<a class="hL" href="#COMMAND2.HLP___rE">ROTATECW</a>
+<a class="hL" href="#COMMAND2.HLP___rF">ROTATECCW</a>
+<a class="hL" href="#COMMAND2.HLP___sW">SWITCH [dir] [dir]</a>
+<a class="hL" href="#COMMAND2.HLP___o1">OPEN [dir]</a>
+<a class="hL" href="#COMMAND2.HLP___b2">BECOME NONLAVAWALKER</a>
+<a class="hL" href="#COMMAND2.HLP___b3">BECOME NONPUSHABLE</a>
+<a class="hL" href="#COMMAND2.HLP___b4">BECOME LAVAWALKER</a>
+<a class="hL" href="#COMMAND2.HLP___b5">BECOME PUSHABLE</a>
+<a class="hL" href="#COMMANDR.HLP___b1">BECOME [color] [thing] [param]</a>
+
+                      <span class="fC">Miscellaneous Commands</span>
+
+<a class="hL" href="#COMMANDR.HLP____4">. "string"</a>
+<a class="hL" href="#COMMAND2.HLP___sV">SWAP WORLD "file"</a>
+<a class="hL" href="#COMMAND2.HLP___c3">CHANGE CHAR ID # [char]</a>
+<a class="hL" href="#COMMAND2.HLP___sU">STATUS COUNTER # "counter"</a>
+<a class="hL" href="#COMMAND2.HLP___f4">FREEZETIME #</a>
+<a class="hL" href="#COMMAND2.HLP___sS">SLOWTIME #</a>
+<a class="hL" href="#COMMAND2.HLP__pre">REL COUNTERS</a>
+<a class="hL" href="#COMMAND2.HLP___r2">REL PLAYER</a>
+<a class="hL" href="#COMMAND2.HLP___r3">REL SELF</a>
+<a class="hL" href="#COMMAND2.HLP___r4">REL COUNTERS FIRST</a>
+<a class="hL" href="#COMMAND2.HLP___r5">REL PLAYER FIRST</a>
+<a class="hL" href="#COMMAND2.HLP___r6">REL SELF FIRST</a>
+<a class="hL" href="#COMMAND2.HLP___r7">REL COUNTERS LAST</a>
+<a class="hL" href="#COMMAND2.HLP___r8">REL PLAYER LAST</a>
+<a class="hL" href="#COMMAND2.HLP___r9">REL SELF LAST</a>
+
+<a class="hA" name="COMMANDR.HLP__acl">                <span class="f9">Alphabetical Command Listing</span></a>
 
 <a class="hL" href="#COMMANDR.HLP____1">% "string"</a>
 <a class="hL" href="#COMMANDR.HLP____2">&amp; "string"</a>
@@ -5877,8 +6326,8 @@ cycles_and_commands.txt in the documentation.
 <a class="hL" href="#COMMAND2.HLP___v2">VIEWPORT SIZE # #</a>
 <a class="hL" href="#COMMANDR.HLP___v3">VOLUME #</a>
 <a class="hL" href="#COMMANDR.HLP___w1">WAIT # [<span class="fD">!</span><span class="fF">]</span></a>
-<a class="hL" href="#COMMAND2.HLP___w2">WAIT MOD FADE</a>
-<a class="hL" href="#COMMAND2.HLP___w3">WAIT PLAY</a>
+<a class="hL" href="#COMMAND2.HLP___w2">WAIT MOD FADE [<span class="fD">!</span><span class="fF">]</span></a>
+<a class="hL" href="#COMMAND2.HLP___w3">WAIT PLAY [<span class="fD">!</span><span class="fF">]</span></a>
 <a class="hL" href="#COMMANDR.HLP___w4">WAIT PLAY "string" [<span class="fD">!</span><span class="fF">]</span></a>
 <a class="hL" href="#COMMANDR.HLP___w5">WALK [dir]</a>
 <a class="hL" href="#COMMAND2.HLP___w6">WIND #</a>
@@ -5890,10 +6339,17 @@ cycles_and_commands.txt in the documentation.
 
 This command displays the given string as a message on the
 message line, which by default is at the bottom of the screen
-and centered. Using the newline char (\n) in this string will
-cause the message line to span another line underneath, allowing
+and centered. This command will cycle the message in different
+colors by default, but will also accept ~ and @ color codes.
+Using the newline char (\n) in this string will cause the
+message line to span another line underneath, allowing
 multi-line messages.
 
+A * message will stay on screen on that board for either 160
+cycles, or until replaced by another * message, or until a CLEAR
+MESG command is ran, whichever comes first.
+
+<a class="hL" href="#COMMAND2.HLP___cA">CLEAR MESG</a>
 <a class="hL" href="#STRINGS.HLP__1st">Strings, Special Formatting, and Their Place in Robotic</a>
 
 <a class="hA" name="COMMANDR.HLP____5"><span class="fA">/ "string" </span><span class="fF">[</span><span class="fD">!</span><span class="fF">]</span></a>
@@ -5912,7 +6368,7 @@ will wait until it can before moving on to the next symbol.
 Use GO to move in a single direction for a given number of
 spaces (limited to 255; higher numbers and negatives wrap).
 
-These commands can be used concurrently with <span class="fA">WALK [dir]</span><span class="fF">, </span>
+These commands can be used concurrently with <span class="fA">WALK [dir]</span><span class="fF">,</span>
 allowing Robots to move in double-speed steps. However, this
 can only happen when the commands are in the same cycle and if
 the given string/number for the moving command is small.
@@ -5995,15 +6451,13 @@ as follows:
   &amp; will display the given message, centered within the box.
   % will display the given message, but will parse color codes.
   ? will display an option that will send the current Robot to
-   the given label when selected. If a counter is included, the
-   option will only be shown if the counter is NOT zero.
+   the given label when selected. The counter is optional. If a
+   counter is included, the option will only be shown if the
+   counter is NOT zero.
 
 All box-message commands can use ~ and @ color codes, EXCEPT
-for [. The advantage of [ is that it will be clipped to 64
-characters if it is too long, thereby preventing the display
-from being screwed up. The other commands are not clipped and,
-if too long, can mess up the current display. (No permanent
-damage is done, it just looks bad.)
+for [. The message box can show up to 64 characters per line;
+any characters past that will not be shown.
 
 NOTE: Take care when using any of these commands in a loop (and
 be especially vigilant of possible unintended loops). Looping
@@ -6104,7 +6558,7 @@ This command tests to see if a given counter is equal to, less
 than, etc. another counter or value. If the conditional is met,
 the current Robot is sent to the given label. The following
 conditionals are allowed: = Equal, &lt; Less than, &gt; Greater than,
-&lt;= Less than/equal, &gt;= Greater than/equal, &lt;&gt; (also !=) Not
+&lt;= Less than/equal, &gt;= Greater than/equal, != (also &lt;&gt;) Not
 equal.
 
 <a class="hL" href="#COUNTERS.HLP__1st">Counters, Built-in Counters and Local Counters</a>
@@ -6379,10 +6833,10 @@ See the MZM section for further details.
 
 Puts a sprite on the board. The param number is the number of
 the sprite in hex (auto-converted from decimal). If the color
-is c?? then the sprite is drawn with its normal colors as seen
-on the board; otherwise, it's painted with the given colors.
-# # marks the x,y coordinates of the sprite's upper-left
-corner. See the Spites section for further details.
+is c?? then the sprite is drawn with its reference's colors;
+otherwise, it's painted with the given colors. # # marks the x,y
+coordinates of the sprite's upper-left corner. See the Spites
+section for further details.
 
 <a class="hL" href="#SPRITES.HLP__spr">Sprites</a>
 
@@ -6411,7 +6865,9 @@ command, or was at the end of its program, the destination
 Robot will be in an ended state as well. The Robot to copy can
 be stated in one of three ways:
 
-1. State the target Robot's name.
+1. State the target Robot's name. If multiple Robots on the same
+   board share the same name, the Robot chosen may vary, so
+   using this command in that situation is not advised.
 2. State the x,y coordinates of target Robot.
 3. State the direction of target Robot.
 
@@ -6426,7 +6882,7 @@ even the Robot name is copied.
 <a class="hA" name="COMMANDR.HLP___d9"><span class="fA">DUPLICATE SELF # #</span></a>
 <a class="hA" name="COMMANDR.HLP___d0"><span class="fA">DUPLICATE SELF [dir]</span></a>
 
-The current Robot creates an exact duplicate of itself 
+The current Robot creates an exact duplicate of itself
 (including local counter values!) and places it at the noted
 x,y coordinates or relative direction. That Robot then begins
 its program at the first command.
@@ -6524,7 +6980,7 @@ direction relative to the player.
 
 Jumps to a label if a given thing is at the given x,y
 coordinates or to the immediate given direction of the current
-Robot. The third form jumps if the thing is NOT in the 
+Robot. The third form jumps if the thing is NOT in the
 immediate given direction.
 
 <a class="hL" href="#COMMANDS.HLP__col">Colors</a>
@@ -6615,7 +7071,9 @@ will still act the same.
 <a class="hA" name="COMMAND2.HLP___b8"><span class="fA">BOARD [dir] NONE</span></a>
 
 Changes the board exit in the given direction to lead to the
-given board or to nowhere.
+given board or to nowhere. Unlike with the Board Exits menu,
+linking exits to the title screen with this command is
+allowed.
 
 <a class="hL" href="#COMMANDS.HLP__dir">Directions</a>
 <a class="hL" href="#STRINGS.HLP__1st">Strings, Special Formatting, and Their Place in Robotic</a>
@@ -6647,6 +7105,10 @@ and inactive.
 <a class="hA" name="COMMAND2.HLP___r2"><span class="fA">REL PLAYER</span></a>
 <a class="hA" name="COMMAND2.HLP___r3"><span class="fA">REL SELF</span></a>
 
+PLEASE NOTE: Judicious use of expressions and certain counters
+(THISX/THISY/PLAYERX/PLAYERY) is a less cumbersome alternative
+to using the REL set of commands, and is generally preferred.
+
 These are special types of commands, called PREFIXES. Prefixes
 don't do a thing by themselves, but when placed before another
 command that uses x,y coordinates, they change the origin of the
@@ -6658,7 +7120,7 @@ current Robot.
 
 The movement of the origin changes the (0,0) coordinates from
 the upper left of the board to somewhere else, effectively
-adding that x,y position to any coordinates entered. For 
+adding that x,y position to any coordinates entered. For
 example, if the Robot is at the (5,5) position and uses REL
 SELF on the coordinates (2,2), it will effectively act on
 coordinates (7,7). If the player is at the (7,2) position and a
@@ -6696,11 +7158,11 @@ user before using this command.
 Prefixes only have an effect on the very next command. This
 includes comments.
 
-Prefixes also affect two other things. The built in counters
-THISX and THISY will be offset by a prefix, and the command
-IF [dir] BLOCKED will check next to the player or next to the
-position noted by the counters, if a prefix is present. See
-these for details.
+Prefixes also affect two (and only two) other things. The built
+in counters THISX and THISY will be offset by a prefix, and the
+command IF [dir] (NOT) BLOCKED will check next to the player or
+next to the position noted by the counters if a prefix is
+present. See their relevant sections for details.
 
 <a class="hA" name="COMMAND2.HLP___r4"><span class="fA">REL COUNTERS FIRST</span></a>
 <a class="hA" name="COMMAND2.HLP___r5"><span class="fA">REL PLAYER FIRST</span></a>
@@ -6797,8 +7259,8 @@ COPY OVERLAY BLOCK # # # # "+#" "+#"
 
 <a class="hL" href="#TOVERLAY.HLP__081">Editing and Using the Overlay</a>
 
-<a class="hA" name="COMMAND2.HLP___cW">COPY BLOCK # # # # "#x" "#y"</a>
-<a class="hA" name="COMMAND2.HLP___cX">COPY OVERLAY BLOCK # # # # "#x" "#y"</a>
+<a class="hA" name="COMMAND2.HLP___cW"><span class="fA">COPY BLOCK # # # # "#x" "#y"</span></a>
+<a class="hA" name="COMMAND2.HLP___cX"><span class="fA">COPY OVERLAY BLOCK # # # # "#x" "#y"</span></a>
 
 These commands copy from the board or overlay (respectively) to
 the vlayer. The first two numbers are the x,y coordinates of the
@@ -6808,8 +7270,8 @@ numbers are the respective width and height of the block; the
 upper-left corner. The pound sign in "#x" and "#y" MUST be
 included.
 
-<a class="hA" name="COMMAND2.HLP___cY">COPY BLOCK "#x" "#y" # # # #</a>
-<a class="hA" name="COMMAND2.HLP___cZ">COPY OVERLAY BLOCK "#x" "#y" # # # #</a>
+<a class="hA" name="COMMAND2.HLP___cY"><span class="fA">COPY BLOCK "#x" "#y" # # # #</span></a>
+<a class="hA" name="COMMAND2.HLP___cZ"><span class="fA">COPY OVERLAY BLOCK "#x" "#y" # # # #</span></a>
 
 These commands similarly copy from the vlayer to the board or
 overlay (respectively).
@@ -6817,7 +7279,7 @@ overlay (respectively).
 <a class="hL" href="#TOVERLAY.HLP__081">Editing and Using the Overlay</a>
 <a class="hL" href="#VLAYER.HLP__vla">The Vlayer and Its Uses</a>
 
-<a class="hA" name="COMMAND2.HLP___cAA">COPY (OVERLAY) BLOCK "#x1" "#y1" # # "#x2" "#y2"</a>
+<a class="hA" name="COMMAND2.HLP___cAA"><span class="fA">COPY (OVERLAY) BLOCK "#x1" "#y1" # # "#x2" "#y2"</span></a>
 
 This command copies a block from the vlayer and copies it onto
 a different spot on the vlayer. "#x1" and "#y1" are the x,y
@@ -6954,7 +7416,9 @@ hard-coded filenames.
 
 Teleports the player to the given board at the stated x,y
 coordinates. This happens instantaneously, even if this causes a
-move between boards.
+move between boards. Same-board TELEPORT PLAYER will trigger any
+"justloaded" labels and reset board time limits and entry
+positions, but will not otherwise act as a new board entry.
 
 <a class="hL" href="#STRINGS.HLP__1st">Strings, Special Formatting, and Their Place in Robotic</a>
 
@@ -7067,19 +7531,20 @@ Changes the color of the edging shown around the viewport.
 
 Changes the player's health limit, or maximum health rating.
 
-<a class="hA" name="COMMAND2.HLP___w2"><span class="fA">WAIT MOD FADE</span></a>
+<a class="hA" name="COMMAND2.HLP___w2"><span class="fA">WAIT MOD FADE </span><span class="fF">[</span><span class="fD">!</span><span class="fF">]</span></a>
 
-Waits for the module/OGG music to finish its fading. (see MOD
-FADE IN, MOD FADE OUT, and MOD FADE)
+Waits for the module/OGG music to finish its fading. Does
+nothing if music is not fading. (see MOD FADE IN, MOD FADE OUT,
+and MOD FADE)
 
 <a class="hL" href="#SOUNDEFX.HLP__1st">Sound and Music</a>
-<a class="hL" href="#COMMAND2.HLP___m5"><span class="fA">MOD FADE IN "file"</span></a>
-<a class="hL" href="#COMMAND2.HLP___m6"><span class="fA">MOD FADE OUT</span></a>
-<a class="hL" href="#COMMAND2.HLP___m4"><span class="fA">MOD FADE # #</span></a>
+<a class="hL" href="#COMMAND2.HLP___m5">MOD FADE IN "file"</a>
+<a class="hL" href="#COMMAND2.HLP___m6">MOD FADE OUT</a>
+<a class="hL" href="#COMMAND2.HLP___m4">MOD FADE # #</a>
 
-<a class="hA" name="COMMAND2.HLP___w3"><span class="fA">WAIT PLAY</span></a>
+<a class="hA" name="COMMAND2.HLP___w3"><span class="fA">WAIT PLAY </span><span class="fF">[</span><span class="fD">!</span><span class="fF">]</span></a>
 
-Waits for all queued sound effects to finish playing.
+Waits for all queued sound effects, if any, to finish playing.
 
 <a class="hL" href="#SOUNDEFX.HLP__1st">Sound and Music</a>
 
@@ -7094,7 +7559,7 @@ ESC, the NO label is used.
 
 <a class="hA" name="COMMAND2.HLP___a3"><span class="fA">AVALANCHE</span></a>
 
-Enacts the potion/ring effect, Avalanche, placing boulders
+Enacts the Avalanche potion/ring effect, placing boulders
 randomly about the board. Often precedes the CHANGE c?? Boulder
 p?? to c?? Explosion p?? command.
 
@@ -7114,8 +7579,8 @@ Robots can always move over fire.
 
 The stated potion/ring effect activates for the given number of
 cycles. Potion/ring effects are global; that is, they affect the
-entire world. The only exception is the global Robot; FREEZETIME
-and SLOWTIME commands do not affect it.
+entire world. The only exception is with the global Robot, as
+FREEZETIME and SLOWTIME commands do not affect it.
 
 <a class="hL" href="#THEGLOBL.HLP__gbl">The Global</a>
 <a class="hL" href="#BUILTINS.HLP__prx">Potion and Ring Effects</a>
@@ -7210,18 +7675,26 @@ another string respectively.
 
 <a class="hA" name="COMMAND2.HLP___iG"><span class="fA">IF c?? Sprite_Colliding pNN x y "label"</span></a>
 
-This command determines whether the sprite numbered NN is
-colliding at the location (x,y); if it is, the program goes to
-the given label.
+This command determines whether the sprite numbered NN would
+collide if the sprite is moved by x horizontally and y
+vertically. If it would, the program goes to the given label and
+spr_clistN counters are set to the detected collisions. c values
+other than c?? check if the sprite would collide with anything
+currently at absolute x,y coordinates instead. If the sprite
+numbered NN is unbound, movement amounts and absolute
+coordinates will be in pixels.
 
 <a class="hA" name="COMMAND2.HLP___iH"><span class="fA">IF c?? Sprite pNN x y "label"</span></a>
 
 This command checks if the sprite numbered NN is currently at
-the location (x,y); if it is, the program goes to the given
+the location x,y; if it is, the program goes to the given
 label. For multi-character sprites, the label is jumped to if
 any part of the sprite is at the given coordinates. Use p?? to
 check for any sprite. If p?? is used, SPR_NUM is also set to
 the lowest sprite number at that location (if any).
+
+For static sprites, this check is valid against the coordinates
+where they visually appear, not their actual locations.
 
 <a class="hA" name="COMMAND2.HLP___cF"><span class="fA">COLOR INTENSITY # PERCENT</span></a>
 <a class="hA" name="COMMAND2.HLP___cG"><span class="fA">COLOR INTENSITY # # PERCENT</span></a>
@@ -7233,7 +7706,8 @@ second command only changes one color, stated by number.
 <a class="hA" name="COMMAND2.HLP___cK"><span class="fA">COPY CHAR [char] [char]</span></a>
 
 The character picture of the first character is copied to the
-second character.
+second character. This command can access extended character
+sets; use expressions or counters to access them.
 
 <a class="hA" name="COMMAND2.HLP___d5"><span class="fA">DISABLE MESG EDGE</span></a>
 <a class="hA" name="COMMAND2.HLP___e7"><span class="fA">ENABLE MESG EDGE</span></a>
@@ -7378,7 +7852,7 @@ Enemy, and Neutral. The player shoots Player bullets, enemies
 shoot Enemy bullets, and ricocheted bullets become Neutral
 bullets. A Robot can shoot any type of bullet, according to its
 BULLETTYPE counter, but it defaults to Neutral bullets.
- 
+
 All fired Enemy bullets, even those shot from Robots, become
 Neutral bullets when the option "Enemies' bullets can hurt
 enemies" is set. Only pre-placed Enemy bullets will remain Enemy
@@ -7690,7 +8164,7 @@ with the subroutine version being triggered first, and the
 normal version triggered as the subroutine is left.
 
 Special care is required when dealing with built-in subroutine
-labels; to prevent abuse of the stack, using LOCKPLAYER and/or
+labels. To prevent abuse of the stack, using LOCKPLAYER and/or
 ZAP to keep subroutine calls to an absolute minimum is highly
 advised. Subroutines themselves are explained in another
 section.
@@ -7744,8 +8218,9 @@ Special-case characters that can work with KEY? are character 8
 label just for this mentioned in the very next entry).
 
 There is another way to scan for key presses: using counters.
-They are called KEY_PRESSED, KEY, and KEY_CODE, and are detailed
-in the Miscellaneous Counters section of the help file.
+Key-scanning counters such as KEY_PRESSED, KEY, and KEY_CODE
+are detailed in the Miscellaneous Counters section of the help
+file.
 
 <a class="hL" href="#COUNTERS.HLP__msc">Miscellaneous Counters</a>
 
@@ -7759,8 +8234,9 @@ This is sent when the player grabs an energizer.
 
 <span class="fE">PUSHED [#]</span>
 
-This is sent when a pushable Robot is pushed by something other
-than the player.
+This is sent when a pushable Robot is pushed by something. If
+something tries to push the Robot and can't, this label is not
+sent.
 
 <span class="fE">ENEMYSHOT [#]</span>
 <span class="fE">PLAYERSHOT [#]</span>
@@ -7785,6 +8261,15 @@ found, the Robot is sent to PLAYERHURT instead.
 This is sent when the player is hurt by anything other than a
 bullet. Bullets send the Robot to PLAYERHIT, and only send it
 to PLAYERHURT if PLAYERHIT cannot be found.
+
+<span class="fE">PLAYERDIED [#]</span>
+
+This is sent when the player dies, whether through health being
+lowered to/below 0 or through the ENDLIFE command. This will not
+trigger when the LIVES counter is decremented.
+
+NOTE: Unlike other built-in labels, this label is jumped to on
+the cycle after it is sent, not the same cycle.
 
 <span class="fE">SPITFIRE [#]</span>
 
@@ -7880,6 +8365,11 @@ leading zero (e.g. the number '8' will become '08').
 Also, characters can be used as counters in commands. For
 example: SET "boom" to '0' would come out as SET "boom" to 48.
 It's quite a difference!
+
+Commands that check or modify counters will accept numbers
+ranging from -32768 to 32767. To use numbers outside of this
+range with these commands, one must put the number in
+parentheses. For example: SET "bonus" to "(1000000)".
 
 The following is a list of built-in counters, which all have
 special meanings. There are four types of built-in counters:
@@ -8000,9 +8490,9 @@ The internal ID of the Robot.
 
 Both of these give the robot_id number of the given named
 Robot. In the case of multiple robots with the same name, the
-ID number corresponds to only one of them (the one with the
-largest robot_id). If no robots have the name, or if the name
-in question only belongs to the global Robot, -1 is given.
+ID number corresponds to only one of them. If no robots have the
+name, or if the name in question only belongs to the global
+Robot, -1 is given.
 
 BEWARE: The existence of this counter makes it impossible to
 use words which start with "rid" as counters. The port will NOT
@@ -8057,14 +8547,20 @@ counter has an effective range of 0 to 255.
 <span class="fB">BOARD_ID</span>
 
 Reads or alters the CHAR ID value of the object located at
-"board_x" "board_y".
+"board_x" "board_y". If board_x or board_y is an invalid
+coordinate, BOARD_ID accesses the closest valid coordinate.
+For example, if board_x is 60 and the board is 50 characters
+wide, board_x is treated as if it were 49.
 
 <a class="hL" href="#CHANGECH.HLP__1st">CHANGE CHAR ID - The CHAR ID Table</a>
 
 <span class="fB">BOARD_PARAM</span>
 
-Reads or alters the parameter of the object located at
-"board_x" "board_y".
+Reads or alters the parameter of the object located at "board_x"
+"board_y". If board_x or board_y is an invalid coordinate,
+BOARD_PARAM accesses the closest valid coordinate. For example,
+if board_y is a negative number, board_y is treated as if it
+were 0.
 
 <span class="fB">BOARD_W (read-only, board)</span>
 <span class="fB">BOARD_H (read-only, board)</span>
@@ -8099,6 +8595,7 @@ respectively.
 Set BOARD_X and BOARD_Y to the x,y coordinates of a cell on the
 current board, and BOARD_COLOR and BOARD_CHAR will automatically
 hold the color and character values for that cell, respectively.
+BOARD_CHAR and BOARD_COLOR return -1 for invalid coordinates.
 
 One thing to note is that BOARD_COLOR will not take background
 color 0's transparency into account. For example, assuming
@@ -8110,23 +8607,27 @@ white-on-black instead of the displayed colors.
 <span class="fB">BCHx,y (read-only, board)</span>
 
 Allows the reading of single characters to the board with
-regards to coordinates x,y; the comma must be included.
+regards to coordinates x,y; the comma must be included. Returns
+-1 for invalid coordinates.
 
 <span class="fB">BCOx,y (read-only, board)</span>
 
 Allows the reading of single colors to the board with regards
-to coordinates x,y; the comma must be included. Much like
-BOARD_COLOR, BCOx,y will not take transparency into account.
+to coordinates x,y; the comma must be included.  Returns -1 for
+invalid coordinates. Much like BOARD_COLOR, BCOx,y will not take
+transparency into account.
 
 <span class="fB">BIDx,y (board)</span>
 
 Allows reading and writing of the CHAR ID of an object on the
 board at the coordinates x,y; the comma must be included.
+Returns -1 for invalid coordinates.
 
 <span class="fB">BPRx,y (board)</span>
 
 Allows reading and writing parameter values of an object on the
 board at the coordinates x,y; the comma must be included.
+Returns -1 for invalid coordinates.
 
 <span class="fB">UCHx,y (read-only, board)</span>
 
@@ -8148,9 +8649,11 @@ under layer at the coordinates x,y; the comma must be included.
 Allows reading and writing parameter values of an object on the
 under layer at the coordinates x,y; the comma must be included.
 
-All of the above four under layer counters will fail if any
-floor-type object (fake, floor, carpet, ice, lava, etc) is
-currently occupying the board layer at the given coordinates.
+All of the above four under layer counters will return -1 if
+nothing is on the under layer at that location, as well as for
+invalid coordinates. Floor-type objects by themselves (such as
+fake, floor, carpet, ice, lava, etc) count as being on the board
+layer if nothing is on them.
 
 <span class="fB">OVERLAY_X (board)</span>
 <span class="fB">OVERLAY_Y (board)</span>
@@ -8158,17 +8661,21 @@ currently occupying the board layer at the given coordinates.
 <span class="fB">OVERLAY_COLOR (read-only, board)</span>
 
 These work in the same way as the BOARD_xxx counters above, but
-deal with the overlay instead.
+deal with the overlay instead. OVERLAY_CHAR and OVERLAY_COLOR
+return -1 if the overlay is off or if the coordinates are
+invalid.
 
 <span class="fB">OCHx,y (read-only, board)</span>
 
 Allows the reading of single characters on the overlay at the
-coordinates x,y; the comma must be included.
+coordinates x,y; the comma must be included. Returns -1 if the
+overlay is off or if the coordinates are invalid. 
 
 <span class="fB">OCOx,y (read-only, board)</span>
 
 Allows the reading of single colors on the overlay at the
-coordinates x,y; the comma must be included.
+coordinates x,y; the comma must be included. Returns -1 if the
+overlay is off or if the coordinates are invalid.
 
 <span class="fB">OVERLAY_MODE (read-only, board)</span>
 
@@ -8178,8 +8685,9 @@ static and 3 is transparent.
 <span class="fB">MOD_FREQUENCY (board)</span>
 
 Controls the frequency (in Hz) of the currently playing module/
-OGG music. Note that this value is NOT saved by save files, so
-if necessary, it needs set again after a save gets loaded.
+OGG music. Note that this value is NOT saved by save or counter
+files, so if necessary, it needs set again after a save gets
+loaded.
 
 <a class="hL" href="#SOUNDEFX.HLP__frq">SAM, OGG, MOD and WAV Frequencies</a>
 
@@ -8194,7 +8702,7 @@ sample in OGGs.
 
 <span class="fB">MOD_LENGTH (read-only, board)</span>
 
-Displays the length of the currently playing mod. This counter's
+Contains the length of the currently playing mod. This counter's
 value shows number of rows for module files and number of
 samples for OGG files.
 
@@ -8208,8 +8716,20 @@ the default module engine for MegaZeux.
 These counters control looping in the currently-playing music.
 MOD_LOOPSTART marks the beginning position of a loop;
 MOD_LOOPEND marks the end. If MOD_LOOPEND is 0, no looping will
-occur. Despite the counter names, they do not work on tracked 
+occur. Despite the counter names, they do not work on tracked
 modules, only OGG files.
+
+<span class="fB">VIEWPORT_X (read-only, board)</span>
+<span class="fB">VIEWPORT_Y (read-only, board)</span>
+
+Contains the x,y coordinates of the upper-left corner of the
+current board's viewport.
+
+<span class="fB">VIEWPORT_WIDTH (read-only, board)</span>
+<span class="fB">VIEWPORT_HEIGHT (read-only, board)</span>
+
+Contains the respective width and height of the current board's
+viewport.
 
 <p class="hC">Mathematical Counters</p><a class="hA" name="COUNTERS.HLP__mth"> </a>
 
@@ -8441,7 +8961,15 @@ These have default values of 0.
 
 <span class="fB">SPRn_OFF</span>
 
-If set to any value, turns sprite n off if it is on.
+Shows whether sprite n is inactive: a value of 1 means yes
+(the sprite is off), 0 means no (the sprite is on). Also, if set
+to any value, turns sprite n off if it is on.
+
+<span class="fB">SPRn_OFFONEXIT</span>
+
+If set to any non-zero value, turns the sprite off upon leaving
+the current board. The sprite will be turned off even if the
+destination board is also the current board.
 
 <span class="fB">SPRn_OVERLAID (write-only)</span>
 <span class="fB">SPRn_OVERLAY (write-only)</span>
@@ -8476,6 +9004,14 @@ screen for (e.g.) a sprite-based player object.
 If set to 1, makes sprite n act static (like a static overlay, a
 static sprite always stays in a given position on the screen);
 if this is 0, the sprite scrolls with the board.
+
+Of note: any collision with a static sprite happens based on its
+visually-apparent location, not its actual location. This means
+that when the board scrolls, the valid coordinates for absolute
+collision checks against a static sprite change even when the
+static sprite itself is not visually moved, and that relative
+collision checks like SPRn_CLIST against a static sprite work
+based on the static sprite's screen position.
 
 <span class="fB">SPRn_SWAP (write-only)</span>
 
@@ -8528,9 +9064,10 @@ Setting to -1 disables transparency for that sprite. Defaults to
 <span class="fB">SPRn_OFFSET</span>
 
 Internally alters any number that refers to a character for
-sprite n. In the case of unbound sprites, this number will often
-be a multiple of 256 in order to access an extra charset, but
-offset values within char sets may also be used.
+sprite n by the counter's value. This only applies to unbound
+sprites. This number will often be a multiple of 256 in order to
+access an extra charset, but offset values within char sets may
+also be used.
 
 <a class="hL" href="#SPRITES.HLP__spr">Sprites</a>
 
@@ -8852,19 +9389,21 @@ then width.
 <span class="fB">VCHx,y</span>
 
 Allows reading and writing of single characters to the vlayer
-at the coordinates x,y; the comma must be included.
+at the coordinates x,y; the comma must be included. Returns -1
+for invalid coordinates.
 
 <span class="fB">VCOx,y</span>
 
 Allows reading and writing of single colors to the vlayer with
-at the coordinates x,y; the comma must be included.
+at the coordinates x,y; the comma must be included. Returns -1
+for invalid coordinates.
 
 <a class="hL" href="#VLAYER.HLP__vla">The Vlayer and Its Uses</a>
 
 <p class="hC">Miscellaneous Counters</p><a class="hA" name="COUNTERS.HLP__msc"> </a>
 <span class="fB">MZX_SPEED</span>
 
-The current game speed (1-16) of MegaZeux. MZX_SPEED 1 is 
+The current game speed (1-16) of MegaZeux. MZX_SPEED 1 is
 processor-bound and executes as many cycles per second as
 possible. Other speeds execute cycles according to this
 formula:
@@ -8944,6 +9483,11 @@ the system clock.
 Contain the current hour, minute, second and millisecond
 respectively, based on the system clock, in 24-hour format.
 
+<span class="fB">DATE_WEEKDAY (read-only, universal)</span>
+
+Contains the current day of the week as a number 0 through 6,
+starting with Sunday (0) and ending with Saturday (6).
+
 <span class="fB">INT</span>
 <span class="fB">BIT_PLACE</span>
 <span class="fB">INT2BIN</span>
@@ -8974,28 +9518,37 @@ instead of the current 32). Follow the link below to read more.
 KEY_PRESSED lists whether any key (each referenced by a number)
 is currently being held down; for example, on a typical
 keyboard, if the spacebar is being pressed the value of
-key_pressed will be 32. This set of keycodes is the same as the
-ones required for joystick support. Results are unsigned, so
-checking for negative numbers will not work. "Autorepeat stall"
-affects KEY_PRESSED, so if you hold down a key you will get the
-value, then get zeros for a period, then get the values again.
-This is useful for many applications.
+key_pressed will be 32. If no key is currently held, its value
+is 0. Results are unsigned, so checking for negative numbers
+will not work. "Autorepeat stall" affects KEY_PRESSED, so if you
+hold down a key you will get the value, then get zeros for a
+period, then get the values again. This is useful for many
+applications.
 KEY acts like KEY_PRESSED, but lacks autorepeat stall, returns
 uppercase letter values, and retains its value until another key
 is pressed.
-KEY_CODE acts similar to KEY_PRESSED but has different keycodes.
-Its keycode set is more limited, making KEY_PRESSED generally
+KEY_CODE acts similar to KEY_PRESSED (has an autorepeat stall,
+is 0 when nothing is held) but uses different keycodes. Its
+keycode set is more limited, making KEY_PRESSED generally
 preferable.
+In the case of multiple keys being held down at once, these
+counters only report the value of the most recently-pressed key.
 
 <span class="fB">KEYn (read-only)</span>
 <span class="fB">KEY_RELEASE (read-only)</span>
+<span class="fB">KEY_PRESSEDn (read-only)</span>
 
-KEYn checks whether the key with the keycode n is pressed; 1
-means yes, 0 means no. KEY_RELEASE contains the keycode of the
-last key released, or is 0 if a key is currently being held.
-These display/use the same keycodes as KEY_CODE, but do not
-cause an autorepeat stall. Results are unsigned, so checking for
-negative numbers will not work.
+KEYn counters check whether the key with the keycode n is
+pressed; a counter value of 1 means yes, 0 means no. KEY_RELEASE
+contains the keycode of the last key released, or is 0 if a key
+is currently being held. These display/use the same keycodes as
+KEY_CODE, but do not cause an autorepeat stall. Results are
+unsigned, so checking for negative numbers will not work.
+KEY_PRESSEDn counters function like KEYn, but use KEY_PRESSED's
+keycodes.
+As multiple KEYn and KEY_PRESSEDn values can be 1 at the same
+time, these counters can be very useful for detecting key
+combinations.
 
 <span class="fB">RANDOM_SEED0 (universal)</span>
 <span class="fB">RANDOM_SEED1 (universal)</span>
@@ -9102,13 +9655,15 @@ The following keys are active within the Robotic editor:
 <a class="hL" href="#USINGTHE.HLP___ur">Ctrl+H - Replace</a>
 <a class="hL" href="#USINGTHE.HLP___vr">Ctrl+R - Repeat Search/Replace</a>
 <a class="hL" href="#USINGTHE.HLP___wr">Ctrl+G - Goto Position</a>
-<a class="hL" href="#USINGTHE.HLP___xr">Ctrl+I/D/C - Mark Line</a>
-<a class="hL" href="#USINGTHE.HLP___yr">Ctrl+BackSpace - Delete Previous Word</a>
-<a class="hL" href="#USINGTHE.HLP___zr">Ctrl+LeftArrow - Jump to Previous Word</a>
-<a class="hL" href="#USINGTHE.HLP___1r">Ctrl+RightArrow - Jump to Next Word</a>
-<a class="hL" href="#USINGTHE.HLP___2r">Ctrl+Home - Jump to Program Start</a>
-<a class="hL" href="#USINGTHE.HLP___3r">Ctrl+End - Jump to Program End</a>
-<a class="hL" href="#USINGTHE.HLP___4r">Esc - Exit Robotic Editor</a>
+<a class="hL" href="#USINGTHE.HLP___xr">Ctrl+Y - Redo</a>
+<a class="hL" href="#USINGTHE.HLP___yr">Ctrl+Z - Undo</a>
+<a class="hL" href="#USINGTHE.HLP___zr">Ctrl+I/D/C - Mark Line</a>
+<a class="hL" href="#USINGTHE.HLP___1r">Ctrl+BackSpace - Delete Previous Word</a>
+<a class="hL" href="#USINGTHE.HLP___2r">Ctrl+LeftArrow - Jump to Previous Word</a>
+<a class="hL" href="#USINGTHE.HLP___3r">Ctrl+RightArrow - Jump to Next Word</a>
+<a class="hL" href="#USINGTHE.HLP___4r">Ctrl+Home - Jump to Program Start</a>
+<a class="hL" href="#USINGTHE.HLP___5r">Ctrl+End - Jump to Program End</a>
+<a class="hL" href="#USINGTHE.HLP___6r">Esc - Exit Robotic Editor</a>
 
 On Mac platforms, any command that uses the Alt key can take &#xE0BD;&#xE0BE;
 (the command key) instead.
@@ -9133,8 +9688,12 @@ added.
 <a class="hA" name="USINGTHE.HLP___dr"><span class="fE">F4 - Parameter</span></a>
 
 If you have just typed in the name of a thing, such as Ammo,
-F4 will allow you to select settings for it in order to insert
-a pXX parameter code.
+F4 will allow you to select settings for it, placing a pXX
+parameter code for the chosen settings. This includes things
+that are turned into Custom things by setting their CHAR ID
+values to 255. If the thing is a valid MZX thing without
+meaningful parameter values, pressing F4 automatically outputs
+" p00".
 
 <a class="hA" name="USINGTHE.HLP___er"><span class="fE">F5 - Char Edit</span></a>
 
@@ -9268,7 +9827,13 @@ Use Ctrl+G to jump to the given Robotic line/column (if too
 high of a number is given, the editor will jump to the last
 possible line/column).
 
-<a class="hA" name="USINGTHE.HLP___xr"><span class="fE">Ctrl+I/D/C - Mark Line</span></a>
+<a class="hA" name="USINGTHE.HLP___yr"><span class="fE">Ctrl+Z - Undo</span></a>
+<a class="hA" name="USINGTHE.HLP___xr"><span class="fE">Ctrl+Y - Redo</span></a>
+
+Use Ctrl+Z to undo the most recent editor action(s). Ctrl+Y
+reverts an undo.
+
+<a class="hA" name="USINGTHE.HLP___zr"><span class="fE">Ctrl+I/D/C - Mark Line</span></a>
 
 These commands mark the current invalid line as to be ignored,
 deleted, or commented out upon editor exit, respectively. If
@@ -9277,30 +9842,30 @@ the line is valid Ctrl + C will turn it into a comment
 line exceed 241 characters). Note that comment-marking a
 comment will immediately strip the line.
 
-<a class="hA" name="USINGTHE.HLP___yr"><span class="fE">Ctrl+BackSpace - Delete Previous Word</span></a>
+<a class="hA" name="USINGTHE.HLP___1r"><span class="fE">Ctrl+BackSpace - Delete Previous Word</span></a>
 
 Use Ctrl+BackSpace to delete the word to the left of the cursor.
 
-<a class="hA" name="USINGTHE.HLP___zr"><span class="fE">Ctrl+LeftArrow - Jump to Previous Word</span></a>
+<a class="hA" name="USINGTHE.HLP___2r"><span class="fE">Ctrl+LeftArrow - Jump to Previous Word</span></a>
 
 Use Ctrl+LeftArrow to jump to the beginning of the previous
 word in the current line.
 
-<a class="hA" name="USINGTHE.HLP___1r"><span class="fE">Ctrl+RightArrow - Jump to Next Word</span></a>
+<a class="hA" name="USINGTHE.HLP___3r"><span class="fE">Ctrl+RightArrow - Jump to Next Word</span></a>
 
 Use Ctrl+RightArrow to jump to the beginning of the next word
 in the current line. If on the last word of the line, this
 command jumps to the end of the line.
 
-<a class="hA" name="USINGTHE.HLP___2r"><span class="fE">Ctrl+Home - Jump to Program Start</span></a>
+<a class="hA" name="USINGTHE.HLP___4r"><span class="fE">Ctrl+Home - Jump to Program Start</span></a>
 
 Use Ctrl+Home to jump to the first line of the current program.
 
-<a class="hA" name="USINGTHE.HLP___3r"><span class="fE">Ctrl+End - Jump to Program End</span></a>
+<a class="hA" name="USINGTHE.HLP___5r"><span class="fE">Ctrl+End - Jump to Program End</span></a>
 
 Use Ctrl+End to jump to the last line of the current program.
 
-<a class="hA" name="USINGTHE.HLP___4r"><span class="fE">Esc - Exit Robotic Editor</span></a>
+<a class="hA" name="USINGTHE.HLP___6r"><span class="fE">Esc - Exit Robotic Editor</span></a>
 
 This key will exit the Robotic Editor, unless any lines are
 marked as invalid.
@@ -9701,8 +10266,8 @@ WAIT causes the Robot to stop and sit for an amount of time.
 The time is in number of cycles (in this case, 10 cycles). A
 cycle is the amount of time it takes to update the board once,
 moving all the enemies and bullets, etc. Robots can run at
-different speeds; the default is cycle 1 (fastest, runs every
-real cycle) unless a cycle command is placed inside the Robot.
+different speeds; the default is cycle 1 (fastest, acts every
+cycle) unless a cycle command is placed inside the Robot.
 
 <span class="fE">SHOOT SEEK</span>
 
@@ -9831,7 +10396,7 @@ are several practices to avoid, as well as proper replacements.
   You should add a CYCLE 1 or WAIT 1 for any loop that
   constantly checks for events (such as keypresses or board
   status).
-  
+
 <span class="fC">BAD: Setting the COMMANDS value to maximum.</span>
   It's generally unneeded, and a loop without a cycle-ending
   command coupled with this change is a guaranteed way to cause
@@ -9904,8 +10469,8 @@ slightly different. Because the robot is pre-empted
 (interrupted) it will return to the same command it was at
 before going to the subroutine, not the instruction after.
 
-When using subroutines, especially with easily triggerable
-conditions, it is important to try to make sure that every
+When using subroutines - especially with easily triggerable
+conditions - it is important to try to make sure that every
 subroutine send ends in a #return, or that every set of
 subroutine sends ends in a #top. The built-in labels can be
 especially problematic, as some can trigger rapidly in a short
@@ -10180,7 +10745,7 @@ same time.
 -Writing and reading operations change the current fwrite and
 fread positions.
 -The writing and reading position is set to 0 (the beginning
-position of a file) when a file is loaded, unless the 
+position of a file) when a file is loaded, unless the
 FWRITE_APPEND command is chosen.
 -There is a special character called the terminator (char #42,
 '*', by default) placed at the end of a write when a string is
@@ -10191,7 +10756,7 @@ place a terminator, and FREADn will ignore any terminator
 characters encountered.
 -To find the length of a file, use the FREAD_LENGTH and
 FWRITE_LENGTH counters. They will report the length of the file
-currently open in the respective mode in characters. If a
+(in characters) currently open in the respective mode. If a
 directory is open for reading, the counter will be the number of
 files and subdirectories in that directory. If there is no file
 or directory open, these counters will return -1.
@@ -10209,7 +10774,7 @@ This command loads a file for reading.
 
 <span class="fA">SET "file.xxx" to "FWRITE_OPEN"</span>
 
-This command creates a new file for writing; if a file by this
+This command creates a new file for writing. If a file by this
 name already exists, it is overwritten.
 
 <span class="fA">SET "file.xxx" to "FWRITE_MODIFY"</span>
@@ -10242,8 +10807,9 @@ This command opens subdirectories for reading (by using the name
 of the subdirectory by itself, e.g. <span class="fA">SET "directory" to</span>
 <span class="fA">"FREAD_OPEN"</span><span class="fF">). FREAD will then list the names of files in the</span>
 directory, with each read position being a different filename.
-Note that the files are not guaranteed to be read in any
-specific order.
+To read the directory the current world is in,
+<span class="fA">SET "." to "FREAD_OPEN"</span><span class="fF">. Note that the files are not guaranteed</span>
+to be read in any specific order.
 
 <span class="fA">SET "FREAD_DELIMITER" to #</span>
 <span class="fA">SET "FWRITE_DELIMITER" to #</span>
@@ -10252,18 +10818,6 @@ These commands change the character considered the terminator.
 The FREAD command changes which character is detected as the
 terminator, and the FWRITE command changes which character is
 written as the terminator.
-
-<span class="fA">SET "counter" to "FREAD_COUNTER"</span>
-
-Reads from the open file to a counter. This will grab four
-bytes instead of the normal one (treated as signed; the
-resulting range is from -2147483648 to 2147483647).
-
-<span class="fA">SET "FWRITE_COUNTER" to "counter"</span>
-
-Writes from a counter to the open file. This will write the
-full counter instead of simply the first byte (treated as
-signed; the resulting range is from -2147483648 to 2147483647).
 
 <span class="fA">SET "FWRITE" to "counter"</span>
 <span class="fA">SET "$string" to "FWRITE"</span>
@@ -10285,6 +10839,18 @@ string will be at least N characters long when written.
 FWRITE and FREAD, when used with counters, can be substituted
 by FWRITE_COUNTER and FREAD_COUNTER to read in longer values
 at a time (four bytes as opposed to one).
+
+<span class="fA">SET "counter" to "FREAD_COUNTER"</span>
+
+Reads from the open file to a counter. This will grab four
+bytes instead of one (treated as signed, so the range is from
+-2147483648 to 2147483647).
+
+<span class="fA">SET "FWRITE_COUNTER" to "counter"</span>
+
+Writes from a counter to the open file. This will write all four
+bytes of the counter instead of just the first byte (treated as
+signed, so the range is -2147483648 to 2147483647).
 
 Here's a quick example of file access.
 
@@ -10428,8 +10994,8 @@ the reader.
 <p class="hC"><span class="f9">Sprites</span></p>
 Sprites allow the designer to have interactive entities on the
 board composed of several characters. A sprite is a block of
-characters drawn on the board or the vlayer that is then
-displayed on the board, either beneath or above the overlay.
+characters displayed on the board, either beneath or above the
+overlay.
 The biggest benefit of sprites is that they are cohesive:
 unlike use of several Robots, there is absolutely no chance of
 the sprite falling apart.
@@ -10445,16 +11011,24 @@ There are up to 256 available sprites (globally, not per board),
 and sprites are controlled in the following ways:
 
 -Through sprite-specific counters named SPRn_value ("n" being
- the sprite number, e.g. SPR10_value modifies sprite number 10)
--Through control counters for all of the sprites
--Through commands for placing sprites and testing for collision
+ the sprite number, e.g. SPR10_value modifies sprite number 10);
+-Through control counters for all of the sprites;
+-Through commands for placing sprites and testing for collision.
+
+A sprite's appearance is determined by a set of reference
+characters. These are characters on the board or the vlayer that
+make up what the sprite will look like. By default, sprites look
+for these characters on the board.
+As with the overlay, any instance of char 32 in the sprite will
+not be shown, instead displaying the next underlying layer.
+Also, if the reference characters change, the sprite's
+characters will change to match, as will colors of a c?? sprite.
 
 To set up a sprite you must set its SPRn_REFX / REFY / WIDTH /
-HEIGHT counters to define where the sprite's characters are and
-the sprite's size. (SPRn_REFX and SPRn_REFY are the x,y
-coordinates for the upper-left corner of the reference
-characters, which are the characters a sprite uses for its
-appearance.) Then you use:
+HEIGHT counters to define where the sprite's reference
+characters are and the sprite's size. (SPRn_REFX and SPRn_REFY
+are the x,y coordinates for the upper-left corner of the
+reference characters.) Then you use:
 
 <span class="fA">PUT cXX sprite pNN x y</span>
 
@@ -10484,11 +11058,6 @@ spr15_y. For example, using:
 
 will move the sprite to the northeast by 1.
 
-As with the overlay, any instance of char 32 in the sprite will
-not be shown, instead displaying the next underlying layer.
-Also, if the reference characters change, the sprite's
-characters will change to match, as will colors of a c?? sprite.
-
 Outside of simple sprite motion such as this, you can do
 collision tests. These check if moving sprites will cause
 collision (i.e. overlapping) with either the foreground (i.e.
@@ -10510,10 +11079,11 @@ be triggered. This is done by using the following command:
 
 This will go to the label "collision" if moving sprite NN x by
 y from its current position would cause it to collide with
-something. If anything besides c?? is used then (x, y) are
-absolute board coordinates instead.
+something. If anything besides c?? is used then it tests whether
+it would collide with whatever is at absolute board coordinates
+x,y instead.
 
-If colliding happens, then the spr_clistN counters will be
+If collisions are detected, then the spr_clistN counters will be
 set to what sprite numbers it collided with - one counter set
 for each other sprite in the collision, starting with spr_clist0
 - and spr_collisions will be set to the number of things that
@@ -10554,8 +11124,9 @@ A sprite can be set as unbound by setting the SPRn_UNBOUND
 counter to 1 for a given sprite number n. Once this is done, the
 sprite becomes "unbound" from the tile grid and immediately
 starts using pixels as reference for the collision box (SPRn_CX,
-SPRn_CY, SPRn_CWIDTH, SPRn_CHEIGHT) and sprite location (SPRn_X,
-SPRn_Y). Other attributes, such as reference location and sprite
+SPRn_CY, SPRn_CWIDTH, SPRn_CHEIGHT), for sprite location
+(SPRn_X, SPRn_Y), and for values in Sprite_Colliding checks.
+Other attributes, such as reference location and sprite
 dimensions, are left in terms of tiles. Essentially, this means
 that sprite control and collision checks can now be easily
 pixel-based.
@@ -10615,12 +11186,6 @@ Finally, SMZX modes do not affect unbound sprite movement and
 manipulation. This fact can be exploited to overlap SMZX sprites
 and potentially raise detail to normal MZX mode levels while
 retaining much of SMZX's palette benefits.
-
-Unfortunately, unbound sprites cannot be used with all MZX
-renderers. At present, the overlay2 renderer (which is a 
-low-overhead renderer intended for platforms with weak video
-hardware that cannot support SDL2) is incompatible with
-unbound sprites.
 
 See the Sprite Counters and Robotic sections for other features
 of sprites not noted here.
@@ -10683,12 +11248,13 @@ I's number is the base, II's is base+1, III's is base+2, and
 IV's is base+3. The numbers wrap around (so if your base is, for
 example, FF, color II would be 00).
 
-However, one can also directly change each value, disregarding
-these rules. This essentially allows 256 user-defined
-subpalettes of four colors each. These overrides, called SMZX
-indices, are loaded and saved out separately from the normal
-palette. These changes can only apply for renderers that can
-show unbound sprites (which is the vast majority of renderers).
+However, one can also directly change each value in this mode,
+disregarding these limitations. This essentially allows 256
+user-defined subpalettes of four colors each. These overrides,
+called SMZX indices, are loaded and saved out separately from
+the normal palette. These changes can only apply for renderers
+that can show unbound sprites (which is the vast majority of
+renderers).
 
 Character editing in Super MZX modes is noticeably different.
 While the character set can be edited in MegaZeux's internal
@@ -10737,7 +11303,7 @@ but it is no longer necessary.
 <div class="hF" id="VLAYER.HLP">
 <a class="hA" name="VLAYER.HLP__vla"> </a>
 <p class="hC"><span class="f9">The Vlayer and Its Uses</span></p>
-The vlayer is an extra, global graphical layer, but it is never
+The vlayer is an extra global graphical layer, but it is never
 directly seen in a game. It can only hold character and color
 info. The vlayer acts like a workspace allowing copying from/to
 overlay, copying from/to MZMs, copying between places in the
@@ -10747,10 +11313,11 @@ vlayer, and reading strings from the vlayer.
 Another important aspect of the vlayer is the ability to
 reference a sprite to the vlayer. This allows indirect display
 of the vlayer through display of sprites. This can be
-exploited to create the semblance of an extra overlay layer.
+exploited to create the semblance of extra overlay layers.
 
 The vlayer defaults to 32768 characters large (256x128); its
 size can be as large as roughly 16.7 million characters (2^24).
+It cannot be removed altogether.
 
 While in the editor, press Alt+V to enter the Vlayer Editor. The
 vlayer editor accepts the following commands:
@@ -10777,6 +11344,7 @@ board. You can choose to place it as either Custom Block, Custom
 Floor, or Text.
 Copy to overlay will copy the block to the given spot of the
 overlay.
+Save as ANSI will save the block as an ANSI file.
 Save as MZM will save the block as a layer-type MZM file.
 
 Destinations for Move and Copy can overlap the original block
@@ -10917,6 +11485,14 @@ Ctrl+Z will undo an action; Ctrl+Y will redo any previously
 undone action. Action depth is determined by config file
 settings, with 100 as default.
 
+<span class="fE">Ctrl+Number - Save Editor Position</span>
+<span class="fE">Alt+Number  - Load Editor Position</span>
+
+These save and load up to 10 cursor positions in the vlayer (0
+through 9). These positions save the current coordinates in
+the vlayer. These positions are saved for that world in its
+.editor.cnf file.
+
 ---
 
 On top of being modifiable in the editor, the vlayer can be
@@ -11020,14 +11596,19 @@ MZMs come in two modes: "board" and "layer".
 Any information not saveable will be replaced by a customblock
 facsimile.
 
+While in the editor, MZMs can be placed by using the import
+function (Alt+I) and choosing MZM. Layer MZMs can be placed on
+the board layer as CustomBlock, CustomFloor, or Text.
+
 When loading a board MZM file to the overlay or vlayer, the
 character used is the parameter stored. Outside of customblocks
 and related, different characters could appear due to different
 param settings (especially built-ins and Robots).
 
-One can save MZMs in the editor; use the block action function.
-MZMs saved in the editor from the board are saved as board;
-from the overlay and vlayer, MZMs are always saved as layer.
+One can save MZMs in the editor; use the block action function
+(Alt+B). MZMs saved in the editor from the board are saved as
+board; from the overlay and vlayer, MZMs are always saved as
+layer.
 
 Robotic methods of saving MZMs are:
 
@@ -11257,8 +11838,9 @@ replace in the target character set.
 Modern MegaZeux versions on supported platforms, such as
 Windows, have the ability to update MegaZeux from MegaZeux
 itself. The updater can be set to run by pressing either F7 or U
-on any title screen, and can also be configured to check for
-updates every launch in config.txt settings.
+on any title screen. It can also be configured to check for
+updates every launch in config.txt settings, or disabled
+altogether.
 
 MegaZeux checks the sites listed under the config.txt settings,
 in order. By default, the updater checks the Stable branch of
@@ -11277,7 +11859,7 @@ user these choices:
  using the "Update Old" button.
 -Cancelling out of the update process with the "Cancel" button.
  No changes are made.
- 
+
 Once the option is chosen, MegaZeux lists what files will be
 added, changed, or deleted by the pending update. At this point,
 the user can still cancel out of updating with the Escape key.
@@ -11298,6 +11880,425 @@ updated.
 <div class="hF" id="NEWINVER.HLP">
 <a class="hA" name="NEWINVER.HLP__1st"> </a>
 <p class="hC"><span class="f9">NEW in MegaZeux!</span></p>
+December 31st, 2023 - MZX 2.93
+
+This is the first MegaZeux release in about 3 years, so there
+are a lot of changes, including a large number of crash fixes.
+Brief summaries of each section:
+
+General: worlds are decrypted in memory now, MegaZeux 1.x worlds
+are now supported, you can have more custom sound effects, the
+1/8th random movement chance of dragons has been readded, and
+static sprites now collide at their apparent position.
+
+Robotic: new label PLAYERDIED, new counter KEY_PRESSEDn, new
+counter DATE_WEEKDAY, new counter SPRn_OFFONEXIT, new viewport
+counters, and setting MOD_LOOPSTART after MOD_LOOPEND now works.
+
+Editor: the robot editor now has undo/redo, layer MZM block type
+can now be selected, reimplemented ANSi/TXT import/export,
+watchpoint improvements, a new variable debugger RAM menu, and
+vlayer saved positions.
+
+Video/audio: most GLSL performance and graphical issues have
+been addressed and libxmp has received a massive bugfix update.
+
+Portability: new PS Vita, DOS, Wii U, and Dreamcast ports.
+Numerous NDS and 3DS improvements. The extra memory system from
+the NDS port has been generalized to several ports and now
+supports memory compression. Virtual filesystem support.
+
+Utilities: vastly expanded image file support for ccv/png2smzx
+and a new video conversion utility called y4m2smzx.
+
+GENERAL
+
++ Added an "About MegaZeux" dialog, accessible from the main
+  menu. This menu contains extended version information, and
+  displays license information for MegaZeux and the 3rd party
+  software it uses.
++ Protected worlds are now decrypted to RAM or a temporary file
+  when 'auto_decrypt_worlds' is enabled and the original file is
+  left unmodified. This setting is now enabled by default.
++ Added experimental support for loading MZX 1.x worlds. Support
+  is not fully implemented yet, but all currently known 1.x
+  worlds are playable.
++ Up to 256 custom sound effects are now supported instead of
+  50, and custom sound effects can be up to 255 chars in length.
+  Currently, the sound effects editor is restricted to 100 SFX
+  of length 68; the CHANGE SFX # to "" command may be used as a
+  temporary workaround.
++ Custom sound effects can now be given custom names in the
+  sound effects editor. Currently names are limited to 9 chars
+  and are only useful when editing.
++ Fixed dragon 1/8th chance of random movement, which has been
+  broken since 2.80. The original DOS behavior (random movement)
+  or the 2.80 behavior (no random movement) can be selected via
+  the new board setting "Dragons randomly move".
++ Reset Board on Entry and load charset/palette on entry now
+  optionally will be performed even if re-entering a board from
+  itself (enabled by default).
++ Fixed a Reset Board on Entry bug where a temporary board would
+  not be generated when loading the title screen or if the
+  starting board is the title board.
++ Fixed bug where the second cycle of a board when entering from
+  a board edge or entrance would be shortened due to incorrect
+  gameplay framerate timing introduced in 2.91g.
++ Fixed a bug where, if a world's title screen music is set but
+  fails to load when the world is loaded, the music from another
+  world could continue to play.
++ Fixed a bug where boards wouldn't be pulled from extra memory
+  before saving, potentially causing save corruption on the NDS.
++ Fixed a standalone mode crash on exit that occurred when using
+  Alt+F4 or the window close button.
++ Fixed a crash that could occur when loading a save file with
+  the temporary board flag set but no temporary board data.
++ Fixed a bug in the random number generation function that
+  could cause it to rarely return a number outside of the
+  expected range. This unfortunately breaks compatibility for
+  the RANDOM_SEED# counter.
++ Static sprites now collide as if they are at the position on
+  the board where they are currently being drawn i.e. relative
+  to the viewport instead of at their actual X/Y position. This
+  behavior has also been added to the IF SPRITE AT # # command.
++ Optimized ccheck 3 sprite collision performance by generating
+  visibility masks for characters directly instead of using an
+  intermediate render and skipping pixel checks for blank chars.
++ Fixed a bug where worlds with SMZX mode selected would display
+  the previous world's palette after switching back to MZX mode.
++ World and save files now save the MZX mode palette when in
+  SMZX modes 2 or 3. Save files now save the MZX mode palette
+  intensities when in SMZX modes 2 or 3. The palette and palette
+  intensities for SMZX modes 2 and 3 are now saved as "palsmzx"
+  and "palints" when one of these modes is active.
++ Save files now save palette intensities for all modes as a raw
+  array of little endian DWORDs instead of bytes. The 2.92 and
+  2.93 intensities file formats are mutually incompatible.
++ Scrolls can now display standard message  color codes.
++ Fixed warning messages caused by SDL controller CRCs.
++ Fixed hangs that could be caused by malformed counters files.
++ Fixed world/save/counters file corruption in rare edge cases
+  where the aforementioned files could break the zip format's
+  internal field bounds.
++ Fixed loading of world/save/counters files over 4 GB.
++ Fixed crashes when loading world or save files that contain
+  invalid current board IDs (both loaders), saved position
+  board IDs (both), start/death/game over board IDs (zip), board
+  exit board IDs (zip), robot program positions (both), robot
+  stack pointers (both), or robot stack sizes (legacy).
++ The output file mode (FWRITE_OPEN, FWRITE_MODIFY, or
+  FWRITE_APPEND) is now stored in save files. This fixes a bug
+  where the output file would be reopened in the wrong mode (ab)
+  when reloading a saved game.
++ Added a second Robotic command listing to the help file that
+  lists commands categorized by command type. (Terryn)
++ Links in the help file table of contents and Robotic Reference
+  Manual are now grouped into categories. (Terryn)
++ Other misc. help file corrections and maintenance. (Terryn)
+
+ROBOTIC
+
++ New built-in label: PLAYERDIED (and the subroutine equivalent
+  #PLAYERDIED). When the built-in player dies, this label is
+  sent on the board the player died on. Because player death
+  occurs at the end of the cycle, this is received during the
+  following cycle.
++ New counter: KEY_PRESSEDn, to read internal keycode statuses.
+  This is like KEYn, but KEY_PRESSEDn accepts internal keycodes
+  instead of PC XT keycodes. KEY_PRESSEDn will return 1 if the
+  key is currently pressed, or 0 if it is not pressed.
++ New counter: DATE_WEEKDAY, which returns the number of the
+  current day of the week. Values are 0=Sunday, 1=Monday,
+  2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday.
++ New counters: VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH, and
+  VIEWPORT_HEIGHT to read the current board's viewport settings.
+  (Sparkette)
++ New counter: SPRn_OFFONEXIT. When enabled for a sprite, that
+  sprite will be automatically turned off when exiting the board
+  (same as setting SPRn_OFF). This occurs even if the new board
+  and the previous board are the same. (Sparkette)
++ Fixed crash bugs caused by using CHANGE SFX # to "" with an
+  invalid sound effect number.
++ Fixed loop detection for Ogg Vorbis files when MOD_LOOPSTART
+  is set to a value greater than MOD_LOOPEND.
++ Fixed a crash bug when attempting to save MZMs over 4MB to an
+  existing string.
++ Fixed a buffer overflow crash that could occur when using LOAD
+  CHAR SET with both a large input file and a large offset.
++ Reading from and writing to extended character sets should no
+  longer display an "advanced graphical features" error message
+  when a renderer without layer rendering support is active.
+  This will, however, display a (new) error message specific to
+  the Nintendo DS port.
++ Fixed CLIP INPUT and IF FIRST STRING "" "" bug where INPUTSIZE
+  would be used as the bound on the input string without also
+  checking for null chars, potentially allowing heap corruption.
++ Fixed a hack where the TELEPORT command would temporarily
+  store the current board to extra memory, causing the game
+  update loop to potentially cause memory corruption with stale
+  board pointers on the NDS.
++ Fixed string wildcard matching bug that could cause patterns
+  ending with ? to sometimes fail.
++ Dividing the value -2147483648 by -1, either by the commands
+  DIVIDE and MODULO or through expression operators / and %, no
+  longer crashes MegaZeux.
++ When the right operand to a bitshift operator in an expression
+  is less than 0 or greater than 31, &lt;&lt; and &gt;&gt; will return 0,
+  and &gt;&gt;&gt; will return 0 if the left operand is positive or -1 if
+  the left operand is negative. The old behavior of the bitshift
+  operators for these shift values was architecture dependent.
++ The date and time for the Robotic date and time counters is
+  now sampled once per command maximum. When multiple date/time
+  counters are read in the same command, they are guaranteed to
+  represent the same time.
++ The Robotic message box commands now properly display char 10.
++ The Robotic command ? now correctly accounts for color codes
+  in its length bounding.
++ Fixed crashes in the &amp; Robotic command caused by bad color
+  string length calculations.
++ Fixed PrintScreen/SysRq and Menu/"Right Click" keycodes.
++ Unsupported keys no longer return a KEY_PRESSED value of 1
+  for SDL 2 builds.
++ Fixed crashes when executing the GIVE, TAKE, TAKE ELSE, and
+  TRADE commands with an invalid item type.
++ Fixed crashes when disassembling a Robotic command with an
+  invalid condition.
+
+EDITOR
+
++ Added robot editor undo (Ctrl+Z) and redo (Ctrl+Y). Like with
+  board/vlayer/charset editing, the size of the undo stack is
+  defined by the config setting "undo_history_size". Note that
+  extended macro expansion can sometimes clobber undo or redo
+  frames (this is not easily fixable, and prevents worse bugs).
++ When loading a layer MZM to the board in the editor, instead
+  of always loading the MZM as CustomBlocks the conversion type
+  can now be selected from CustomBlock, CustomFloor, and Text.
+  Canceling the object type dialog no longer cancels the current
+  block or MZM placement.
++ Reimplemented ANSi import/export support for the editor. ANSi
+  and TXT files can be imported in the editor with Alt+I and can
+  be exported by selecting a block (Alt+B).
++ Creating a new world using N from the title screen or Alt+R
+  in the editor now clears the extended character sets.
++ Improved the performance of Robotic debugger watchpoints,
+  especially for non-built-in counters and non-spliced strings.
++ Robotic debugger watchpoints can now watch for particular
+  counter or string values. Leaving the value field blank will
+  still check for any value.
++ Added a list of variables related to RAM usage to the counter
+  debug window. This list can be found in the "World" list.
++ Added vlayer saved positions to the editor. Like regular saved
+  positions, these can be configured with the config file option
+  "vlayer_position#", and they work identically to board saved
+  positions.
++ Fixed bugs caused by missing validation in the Import SFX
+  feature in the editor.
++ Fixed a bug where multichar char tile movement could still
+  sometimes jump to the -/+/= chars in the main charset.
++ Fixed another bug that would cause string searching in the
+  robot editor to sometimes skip matches.
++ Replace all (Ctrl+H) in the robot editor should no longer skip
+  adjacent instances of the search string.
++ Opening the block action menu in the robot editor (either with
+  Alt+B or Alt+Enter) now updates the current line, fixing bugs
+  where it could copy old line contents to the buffer.
++ Fixed a robot editor crash that could occur when combining two
+  lines with backspace or delete if one of the lines contained
+  the start or end block mark.
++ Fixed a bug in the robot editor where Ctrl+Home and Ctrl+End
+  would only set the current line (and not the current column).
++ Fixed a robot editor extended macro crash that would occur:
+    when pasting a line containing a macro from the clipboard;
+    when importing a Robotic source file that invokes macros;
+    when invoking nested extended macros.
++ Invoking an extended macro with enter/return no longer inserts
+  an extra blank line.
++ Pressing enter at the start of a line with an extended macro
+  now invokes the macro instead of just inserting a line.
++ Fixed editor extra memory crashes when importing and deleting
+  boards.
++ editor_show_thing_toggles is now enabled by default.
+- board_editor_hide_help and robot_editor_hide_help are no
+  longer enabled by default for accessibility.
+
+VIDEO/AUDIO
+
++ Added the "glslscale" renderer. This is the same as the GLSL
+  renderer, but uses software rendering with scaling shaders
+  instead of hardware rendering. This is faster on low end PCs
+  and embedded devices and is the new default renderer selected
+  by auto_glsl. (Hardware rendered GLSL is still available for
+  users with graphics cards by selecting the "glsl" renderer.)
++ The software fallback renderer functions now support SMZX mode
+  3 indices, fixing graphical bugs in situations where the
+  fallback would be used and display the wrong colors in games
+  using custom indices.
++ Added an "auto" mode for the force_bpp config option. Modern
+  SDL automatically selects a native window pixel format and a
+  fixed value can make the software renderer slower. Detecting
+  the BPP from the created window is more in line with reality.
++ Fixed color inaccuracies in the softscale renderer on Mac OS
+  caused by using full-swing YUV values instead of the expected
+  studio-swing values for GL_YCBCR_422_APPLE textures.
++ Simplified GLSL renderer texture data packing to improve
+  support for OpenGL ES and older OpenGL implementations.
++ The GLSL tilemap fragment shaders will now use highp floats if
+  provided by the OpenGL ES driver. If highp is unavailable and
+  mediump has inadequate precision, MZX will print a warning.
++ Fixed software renderer display issues caused by relying on
+  SDL_PixelFormat::BitsPerPixel instead of BytesPerPixel on
+  platforms with native 15 BPP display modes.
++ Added disable_screensaver configuration option. MegaZeux now
+  leaves the screensaver enabled by default (fixes regression
+  caused by SDL 2.0.2+).
++ Added an "sdl_render_driver" config setting. This setting can
+  be used to specify the underlying SDL renderer driver used by
+  the softscale renderer. This setting does not affect any other
+  renderers.
++ libxmp playback improvements for GDM, AMF, and OctaMED modules
+  as well as general stability improvements.
++ Updated libxmp to 4.6.0+ceb2d025.
++ Fixed crashes in the RAD player that could be caused by
+  references to uninitialized instruments.
++ Applied various Opal fixes from OpenMPT.
+- Removed GL4ES from the GLSL blacklist.
+
+PORTABILITY
+
++ Added an experimental PlayStation Vita port. (Spectere)
++ Added an experimental Wii U port. (asie)
++ Added an experimental Dreamcast port. (asie, Lachesis)
++ Added an experimental MS-DOS 32-bit port based on DJGPP.
+  (Mr_Alert, asie, Lachesis)
++ Added support for BlocksDS to the NDS port. (asie)
++ Added support for 800x240 mode to the 3DS port. This mode can
+  be toggled with the 3DS keyboard. (asie)
++ Added support for using 352kB of previously unused NDS VRAM
+  as board storage. This area can be used for board storage even
+  when a slot 2 expansion cartridge is not present. (asie)
++ Reduced RAM usage by 50k by removing variants of *printf and
+  *scanf with floating point support on the NDS. (asie)
++ The MOD_ORDER counter is now readable on the NDS. (asie)
++ save_slots is now enabled by default for consoles. (Spectere)
++ Inactive boards and some robots are now compressed on the NDS,
+  which (combined with asie's VRAM patch) should vastly increase
+  the number of games that can be played on the original DS and
+  DS Lite without a slot 2 expansion cartridge. This is also
+  enabled for the PSP and DOS ports.
++ The NDS, PSP, and DOS ports now write zip archives with the
+  fastest zlib compression level. This makes saved files that
+  use compression (worlds, saves, etc.) slightly larger.
++ Added virtual filesystem support to MegaZeux. Currently, this
+  is only used for caching files, and is only enabled by default
+  on platforms with slow or buggy file IO (3DS, Vita). This
+  feature may be optionally configured with the config options
+  vfs_enable, vfs_enable_auto_cache, vfs_max_cache_size, and
+  vfs_max_cache_file_size.
++ Fixed a bug where the 3DS and Switch ports would display .. in
+  the file manager when selecting a board module, board charset,
+  or board palette.
++ Fixed a bug where, when a faulty dirent implementation returns
+  .. when listing the contents of a root directory, .. would be
+  displayed despite being meaningless.
++ Fixed a bug where some checks in the file manager could fail
+  when getcwd returns different slashes than expected.
++ Fixed a bug where stdio redirect could generate corrupted log
+  files on the Nintendo DS due to poor freopen support.
++ Enabled the GLSL renderer for the Android port. The Android
+  port now uses the GLSL scaled software renderer by default.
+- Removed 3DS CIA support. (asie)
+
+UTILITIES
+
++ ccv and png2smzx now both support the following image formats:
+  PNG (libpng builds only), GIF, BMP (uncompressed, RLE8, RLE4),
+  NetPBM (PBM, PGM, PPM, PNM, PAM), farbfeld. png2smzx will now
+  build when libpng support is disabled, though it won't support
+  loading PNGs with this configuration.
++ ccv and png2smzx now both support streaming image data from
+  stdin using the input filename "-".
++ Added y4m2smzx, a video converter frontend for the same image
+  converter that png2smzx uses. This is a rewrite of Mr_Alert's
+  original frontend from 2010. This uses a custom y4m loader
+  rather than MJPEG Tools for now, so it may be buggy. Usage:
+  ffmpeg -i input -f yuv4mpegpipe pipe:1 | y4m2smzx - out.mzv
++ The downver utility now supports save files.
++ Fixed a bug where checkres would not check the current dir
+  for files when provided with a MZX filename with no path
+  component.
++ checkres now attempts to scan every board in &lt;=2.84 worlds
+  where a corrupt board/robot is found. Due to old world format
+  limitations, robots after a corrupt robot can not be scanned.
++ checkres now supports scanning protected worlds.
++ Added experimental checkres support for MZX 1.x worlds.
+
+DEVELOPERS
+
++ Added --enable-extram config.sh flag to enable extra memory
+  hacks on arbitrary platforms. This is enabled by default in
+  CONFIG.NDS, CONFIG.PSP, and CONFIG.DJGPP. When enabled, non-
+  active boards are compressed in RAM. Certain platforms can use
+  platform-specific storage, like the NDS.
++ Board input strings, charset paths, and palette paths are now
+  heap allocated on-demand to save RAM for low-memory systems.
++ Status counters are now saved as a nested properties file.
++ Refactored the 3DS renderer to use templates. (asie)
++ intake2() now supports custom handling of intake events, i.e.
+  it can now be used without providing a fixed size buffer.
++ The draw and click handlers have been removed from intake2().
+  This should provide more flexibility to the parent context for
+  displaying the string that is being edited.
++ Added "mzxout" and "mzxerr" streams for printing console
+  messages. In most places these should be used instead of
+  "stdout" and "stderr" to allow debug and warning messages
+  print to the correct log files when stdio redirect is enabled.
++ Fixed broken MIPS big endian detection inherited from SDL 1.2.
++ Added architecture width detection for RISC-V RV32 and MIPS64.
++ Replaced the macro-based mixers in sampled_stream.c with more
+  maintainable template-based mixers.
++ Fixed the DSO -Wstrict-aliasing warnings in Socket.cpp and the
+  OpenGL renderers for GCC versions using -Wstrict-aliasing=2.
++ Added --host config.sh option to manually specify a cross
+  compiler prefix. This is ignored or overriden by most ports
+  and is mainly just for Linux.
++ Relicensed ccv from GPL 3 to GPL 2+ to match the rest of MZX.
+  (Lancer-X)
++ If available, GetSystemTimePreciseAsFileTime and clock_gettime
+  are now used to calculate the system clock time.
++ If available, SDL_GetTicks64 is now used by get_ticks().
++ Minor performance improvements for run_robot, is_string, and
+  find_function_counter.
++ _FILE_OFFSET_BITS=64 is now used for 64-bit fseeko, ftello,
+  readdir, and stat/fstat support for 32-bit Linux builds.
++ Updated Android SDL to 2.28.2. (asie)
++ Updated Android NDK to r23c. (asie)
++ Fixed Android build system handling of missing libraries.
++ Improved fileform.html, joystick.html, keycodes.html, and
+  platform_matrix.html readability on small/mobile displays.
+- String values are now allocated separately from the string
+  struct and name. This may make strings very slightly slower,
+  but means string pointers are now stable through an entire
+  gameplay session.
+
+<a class="hL" href="#292CLOG.HLP__292">New in Versions 2.92 to 2.92f</a>
+<a class="hL" href="#2901CLOG.HLP__291">New in Versions 2.90 to 2.91j</a>
+<a class="hL" href="#284CLOG.HLP__284">New in Versions 2.84 to 2.84c</a>
+<a class="hL" href="#2823CLOG.HLP__283">New in Versions 2.82 to 2.83</a>
+<a class="hL" href="#281CLOG.HLP__281">New in Versions 2.81 to 2.81h</a>
+<a class="hL" href="#280CLOG.HLP__280">New in Versions 2.80 to 2.80h</a>
+<a class="hL" href="#OLDERVER.HLP__260">New in Versions 2.60 to 2.70</a>
+<a class="hL" href="#OLDESVER.HLP__201">New in Versions 2.01 to 2.60</a>
+<a class="hL" href="#NEWIN200.HLP__1st">New in Version 2.00</a>
+<a class="hL" href="#ANCENVER.HLP__1xx">New in Versions Through 1.03</a>
+<a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
+
+<hr></div>
+
+<div class="hF" id="292CLOG.HLP">
+<a class="hA" name="292CLOG.HLP__292"> </a>
+New in Versions 2.92 to 2.92f
+
 November 22nd, 2020 - MZX 2.92f
 
 Here's another bugfix release. Highlights of this release are
@@ -12213,6 +13214,7 @@ DEVELOPERS
   changed 'key?' to 'key!' to prevent potential false matches.
 - Removed uthash as a build option.
 
+<a class="hL" href="#NEWINVER.HLP__1st">NEW in MegaZeux!</a>
 <a class="hL" href="#2901CLOG.HLP__291">New in Versions 2.90 to 2.91j</a>
 <a class="hL" href="#284CLOG.HLP__284">New in Versions 2.84 to 2.84c</a>
 <a class="hL" href="#2823CLOG.HLP__283">New in Versions 2.82 to 2.83</a>
@@ -12223,7 +13225,6 @@ DEVELOPERS
 <a class="hL" href="#NEWIN200.HLP__1st">New in Version 2.00</a>
 <a class="hL" href="#ANCENVER.HLP__1xx">New in Versions Through 1.03</a>
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
-
 
 <hr></div>
 
@@ -13580,6 +14581,7 @@ DEVELOPERS
   by passing --disable-libsdl2 to config.sh. (Lancer-X)
 
 <a class="hL" href="#NEWINVER.HLP__1st">NEW in MegaZeux!</a>
+<a class="hL" href="#292CLOG.HLP__292">New in Versions 2.92 to 2.92f</a>
 <a class="hL" href="#284CLOG.HLP__284">New in Versions 2.84 to 2.84c</a>
 <a class="hL" href="#2823CLOG.HLP__283">New in Versions 2.82 to 2.83</a>
 <a class="hL" href="#281CLOG.HLP__281">New in Versions 2.81 to 2.81h</a>
@@ -13589,7 +14591,6 @@ DEVELOPERS
 <a class="hL" href="#NEWIN200.HLP__1st">New in Version 2.00</a>
 <a class="hL" href="#ANCENVER.HLP__1xx">New in Versions Through 1.03</a>
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
-
 
 <hr></div>
 
@@ -14097,6 +15098,7 @@ DEVELOPERS
   layer. (MZXGiant)
 
 <a class="hL" href="#NEWINVER.HLP__1st">NEW in MegaZeux!</a>
+<a class="hL" href="#292CLOG.HLP__292">New in Versions 2.92 to 2.92f</a>
 <a class="hL" href="#2901CLOG.HLP__291">New in Versions 2.90 to 2.91j</a>
 <a class="hL" href="#2823CLOG.HLP__283">New in Versions 2.82 to 2.83</a>
 <a class="hL" href="#281CLOG.HLP__281">New in Versions 2.81 to 2.81h</a>
@@ -14737,6 +15739,7 @@ DEVELOPERS
   feature right away (see config.sh). (Mr_Alert)
 
 <a class="hL" href="#NEWINVER.HLP__1st">NEW in MegaZeux!</a>
+<a class="hL" href="#292CLOG.HLP__292">New in Versions 2.92 to 2.92f</a>
 <a class="hL" href="#2901CLOG.HLP__291">New in Versions 2.90 to 2.91j</a>
 <a class="hL" href="#284CLOG.HLP__284">New in Versions 2.84 to 2.84c</a>
 <a class="hL" href="#281CLOG.HLP__281">New in Versions 2.81 to 2.81h</a>
@@ -15501,6 +16504,7 @@ November 20, 2005 - MZX 2.81
   changes in the save format.
 
 <a class="hL" href="#NEWINVER.HLP__1st">NEW in MegaZeux!</a>
+<a class="hL" href="#292CLOG.HLP__292">New in Versions 2.92 to 2.92f</a>
 <a class="hL" href="#2901CLOG.HLP__291">New in Versions 2.90 to 2.91j</a>
 <a class="hL" href="#284CLOG.HLP__284">New in Versions 2.84 to 2.84c</a>
 <a class="hL" href="#2823CLOG.HLP__283">New in Versions 2.82 to 2.83</a>
@@ -16204,6 +17208,7 @@ August 9, 2004 - First release, MZX 2.80 BETA
   before new values were set. They will not work here.
 
 <a class="hL" href="#NEWINVER.HLP__1st">NEW in MegaZeux!</a>
+<a class="hL" href="#292CLOG.HLP__292">New in Versions 2.92 to 2.92f</a>
 <a class="hL" href="#2901CLOG.HLP__291">New in Versions 2.90 to 2.91j</a>
 <a class="hL" href="#284CLOG.HLP__284">New in Versions 2.84 to 2.84c</a>
 <a class="hL" href="#2823CLOG.HLP__283">New in Versions 2.82 to 2.83</a>
@@ -16361,6 +17366,7 @@ August 9, 2004 - First release, MZX 2.80 BETA
 
 <p class="hC">***</p>
 <a class="hL" href="#NEWINVER.HLP__1st">NEW in MegaZeux!</a>
+<a class="hL" href="#292CLOG.HLP__292">New in Versions 2.92 to 2.92f</a>
 <a class="hL" href="#2901CLOG.HLP__291">New in Versions 2.90 to 2.91j</a>
 <a class="hL" href="#284CLOG.HLP__284">New in Versions 2.84 to 2.84c</a>
 <a class="hL" href="#2823CLOG.HLP__283">New in Versions 2.82 to 2.83</a>
@@ -16822,6 +17828,7 @@ before, you probably won't understand much of this list.
  * Fill in editor now works with board sizes over 127x127
 
 <a class="hL" href="#NEWINVER.HLP__1st">NEW in MegaZeux!</a>
+<a class="hL" href="#292CLOG.HLP__292">New in Versions 2.92 to 2.92f</a>
 <a class="hL" href="#2901CLOG.HLP__291">New in Versions 2.90 to 2.91j</a>
 <a class="hL" href="#284CLOG.HLP__284">New in Versions 2.84 to 2.84c</a>
 <a class="hL" href="#2823CLOG.HLP__283">New in Versions 2.82 to 2.83</a>
@@ -17064,6 +18071,7 @@ before, you probably won't understand much of this list.
  * Different player pics per direction.
 
 <a class="hL" href="#NEWINVER.HLP__1st">NEW in MegaZeux!</a>
+<a class="hL" href="#292CLOG.HLP__292">New in Versions 2.92 to 2.92f</a>
 <a class="hL" href="#2901CLOG.HLP__291">New in Versions 2.90 to 2.91j</a>
 <a class="hL" href="#284CLOG.HLP__284">New in Versions 2.84 to 2.84c</a>
 <a class="hL" href="#2823CLOG.HLP__283">New in Versions 2.82 to 2.83</a>
@@ -17370,6 +18378,7 @@ before, you probably won't understand much of this list.
  * Optimized code
 
 <a class="hL" href="#NEWINVER.HLP__1st">NEW in MegaZeux!</a>
+<a class="hL" href="#292CLOG.HLP__292">New in Versions 2.92 to 2.92f</a>
 <a class="hL" href="#2901CLOG.HLP__291">New in Versions 2.90 to 2.91j</a>
 <a class="hL" href="#284CLOG.HLP__284">New in Versions 2.84 to 2.84c</a>
 <a class="hL" href="#2823CLOG.HLP__283">New in Versions 2.82 to 2.83</a>
