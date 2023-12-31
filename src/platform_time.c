@@ -27,6 +27,12 @@
 #include <sys/time.h> /* gettimeofday */
 #endif
 
+#if defined(CONFIG_DREAMCAST) && defined(_POSIX_TIMERS)
+// KallistiOS may incorrectly define this to nothing when
+// it should leave it undefined.
+#undef _POSIX_TIMERS
+#endif
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>

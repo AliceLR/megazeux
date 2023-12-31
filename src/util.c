@@ -224,7 +224,8 @@ static ssize_t find_executable_dir(char *dest, size_t dest_len, const char *argv
         return strlen(dest);
     }
 
-    warn("--RES-- Failed to get executable path from argv[0]: %s\n", argv0);
+    // Might be on PATH, don't print a warning.
+    debug("--RES-- Failed to get executable path from argv[0]: %s\n", argv0);
   }
   else
     warn("--RES-- Failed to get executable path from argv[0]: (null)\n");
@@ -329,6 +330,10 @@ int mzx_res_init(const char *argv0, boolean editor)
 
     if(!mzx_res[i].path)
     {
+      // Finding this fails from installed builds in Linux, just ignore.
+      if(i == MZX_EXECUTABLE_DIR)
+        continue;
+
       if(mzx_res[i].optional)
       {
         warn("Failed to locate non-critical resource '%s'\n",
