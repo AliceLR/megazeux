@@ -31,6 +31,7 @@ usage() {
 	echo "  darwin         Mac OS X Unix-like install"
 	echo "  darwin-devel   Mac OS X running from current dir"
 	echo "  darwin-dist    Mac OS X (PPC .app builds -- use Xcode for Intel)"
+	echo "  ps2            Experimental PS2 port"
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
@@ -941,6 +942,19 @@ if [ "$PLATFORM" = "switch" ]; then
 fi
 
 #
+# If the PS2 arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "ps2" ]; then
+	echo "Enabling PS2-specific hacks."
+	echo "#define CONFIG_PS2" >> src/config.h
+	echo "BUILD_PS2=1" >> platform.inc
+
+	echo "Force-disabling stack protector on PS2."
+	STACK_PROTECTOR="false"
+fi
+
+#
 # If the PSP arch is enabled, some code has to be compile time
 # enabled too.
 #
@@ -1034,9 +1048,10 @@ if [ "$PLATFORM" = "pandora" ]; then
 fi
 
 #
-# Force-disable OpenGL and overlay renderers on PSP, GP2X, 3DS, NDS and Wii
+# Force-disable OpenGL and overlay renderers on PS2, PSP, GP2X, 3DS, NDS and Wii
 #
-if [ "$PLATFORM" = "psp" ] ||
+if [ "$PLATFORM" = "ps2" ] ||
+   [ "$PLATFORM" = "psp" ] ||
    [ "$PLATFORM" = "gp2x" ] ||
    [ "$PLATFORM" = "nds" ] ||
    [ "$PLATFORM" = "nds-blocksds" ] ||
@@ -1136,6 +1151,7 @@ if [ "$PLATFORM" = "gp2x" ] ||
    [ "$PLATFORM" = "switch" ] ||
    [ "$PLATFORM" = "android" ] ||
    [ "$PLATFORM" = "emscripten" ] ||
+   [ "$PLATFORM" = "ps2" ] ||
    [ "$PLATFORM" = "psp" ] ||
    [ "$PLATFORM" = "psvita" ] ||
    [ "$PLATFORM" = "djgpp" ] ||
@@ -1416,6 +1432,7 @@ if [ "$ICON" = "true" ]; then
 	   [ "$PLATFORM" = "darwin-devel" ] ||
 	   [ "$PLATFORM" = "darwin-dist" ] ||
 	   [ "$PLATFORM" = "gp2x" ] ||
+	   [ "$PLATFORM" = "ps2" ] ||
 	   [ "$PLATFORM" = "psp" ] ||
 	   [ "$PLATFORM" = "nds" ] ||
 	   [ "$PLATFORM" = "nds-blocksds" ] ||
