@@ -21,8 +21,8 @@
 #define __ENDIAN_H
 
 /* If SDL is available, include the header and use SDL's configured
- * endianness. If it's not available, use a list of architectures (actually
- * borrowed from SDL 1.2.13) to figure out our likely endianness.
+ * endianness. If it's not available, use GCC/clang or a list of architectures
+ * (both checks borrowed from SDL) to determine the endianness.
  */
 
 #define PLATFORM_LIL_ENDIAN 0x1234
@@ -44,10 +44,20 @@
 #define PLATFORM_BYTE_ORDER PLATFORM_BIG_ENDIAN
 #elif defined(__LITTLE_ENDIAN__)
 #define PLATFORM_BYTE_ORDER PLATFORM_LIL_ENDIAN
+/* predefs from newer gcc and clang versions: */
+#elif defined(__ORDER_LITTLE_ENDIAN__) && defined(__ORDER_BIG_ENDIAN__) && defined(__BYTE_ORDER__)
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define PLATFORM_BYTE_ORDER PLATFORM_LIL_ENDIAN
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define PLATFORM_BYTE_ORDER PLATFORM_BIG_ENDIAN
+#else
+#error Unsupported endianness
+#endif /**/
 #elif defined(__hppa__) || \
     defined(__m68k__) || defined(mc68000) || defined(_M_M68K) || \
     ((defined(__mips__) || defined(__mips) || defined(__MIPS__)) && defined(__MIPSEB__)) || \
     defined(__ppc__) || defined(__POWERPC__) || defined(_M_PPC) || \
+    defined(__s390__) || defined(__s390x__) || defined(__zarch__) || defined(__SYSC_ZARCH__) || \
     defined(__sparc__)
 #define PLATFORM_BYTE_ORDER PLATFORM_BIG_ENDIAN
 #else
@@ -74,7 +84,8 @@
     defined(_MIPS_SIM) && defined(_ABI64) && _MIPS_SIM == _ABI64) || \
   (defined(__GNUC__) && \
     (defined(__x86_64__) || defined(__powerpc64__) || defined(__PPC64__) || \
-     defined(__aarch64__) || defined(__alpha__)))
+     defined(__aarch64__) || defined(__alpha__) || \
+     defined(__s390x__) || defined(__zarch__)))
 #define ARCHITECTURE_BITS 64
 #else
 #define ARCHITECTURE_BITS 32

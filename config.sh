@@ -576,6 +576,10 @@ elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
 		ARCHNAME=sparc64
 	elif [ "$MACH" = "riscv64" ]; then
 		ARCHNAME=riscv64
+	elif [ "$MACH" = "s390" ]; then
+		ARCHNAME=s390
+	elif [ "$MACH" = "s390x" ]; then
+		ARCHNAME=s390x
 	else
 		ARCHNAME=$MACH
 		#RAWLIBDIR=lib
