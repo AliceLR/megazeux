@@ -90,7 +90,8 @@ export SDL_AUDIODRIVER=dummy
 # might have issues detecting libraries and running from this folder, so run from
 # the base folder.
 [ "$quiet" = "yes" ] || printf "Running test worlds"
-(
+
+dir="$(pwd)"
 cd ..
 
 LD_PRELOAD="$preload" \
@@ -101,19 +102,23 @@ LD_PRELOAD="$preload" \
   standalone_mode=1 \
   no_titlescreen=1 \
   &
-)
+
+cd "$dir"
 
 # Attempt to detect a hang (e.g. an error occurred).
-
+# Note: running mzxrun in a subshell breaks this.
 mzxrun_pid=$!
-
+psopt=""
 i="0"
+
+# BusyBox ps may not support -e; mzxrun might not appear WITHOUT -e in a chroot.
+if ps -e 1>/dev/null 2>/dev/null; then psopt='-e'; fi
 
 # In some versions of MSYS2, mzxrun doesn't always appear in ps right away. :(
 sleep 1
 [ "$quiet" = "yes" ] || printf "."
 
-while ps | grep -q "$mzxrun_pid .*[m]zxrun"
+while ps "$psopt" | grep -q "$mzxrun_pid .*[m]zxrun"
 do
 	sleep 1
 	i=$((i+1))

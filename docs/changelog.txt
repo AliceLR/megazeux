@@ -1,5 +1,6 @@
 GIT
 
++ Fixed testworlds process running check edge cases.
 + Fixed config.sh and platform_endian.h detection for IBM Z and
   System/390 architecture.
 
