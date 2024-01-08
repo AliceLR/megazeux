@@ -1,3 +1,9 @@
+GIT
+
++ Fixed config.sh and platform_endian.h detection for IBM Z and
+  System/390 architecture.
+
+
 December 31st, 2023 - MZX 2.93
 
 This is the first MegaZeux release in about 3 years, so there
