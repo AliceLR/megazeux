@@ -1,5 +1,15 @@
 GIT
 
+USERS
+
++ Licenses are now properly loaded in the About MegaZeux dialog
+  for Darwin builds.
+
+DEVELOPERS
+
++ Simplified the configuration of system directories for ports
+  in config.sh, which now prints more information about them.
++ Fixed config.sh output of "/usr/bin/git" and the Git HEAD.
 + Fixed testworlds process running check edge cases.
 + Fixed config.sh and platform_endian.h detection for IBM Z and
   System/390 architecture.
