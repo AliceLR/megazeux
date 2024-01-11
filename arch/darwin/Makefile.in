@@ -8,6 +8,8 @@ DSOPOST    = .dylib
 DSORPATH   =
 DSOSONAME  = -install_name ${LIBDIR}/
 
+LIPO       ?= @arch/darwin/lipo.sh
+
 #
 # darwin specific recipes.
 # Enable 'make install' and 'make uninstall' for darwin builds.
@@ -41,78 +43,93 @@ DSOSONAME  = -install_name @executable_path/
 # Override these to determine which builds are included in the .app.
 PREFIX_I686   ?=
 PREFIX_AMD64  ?=
+PREFIX_AMD64H ?=
 PREFIX_PPC    ?=
 PREFIX_PPC64  ?=
+PREFIX_ARM64  ?=
+PREFIX_ARM64E ?=
 
 HAS_PREFIX=1
 ifeq (${PREFIX_I686},)
 ifeq (${PREFIX_AMD64},)
+ifeq (${PREFIX_AMD64H},)
 ifeq (${PREFIX_PPC},)
 ifeq (${PREFIX_PPC64},)
+ifeq (${PREFIX_ARM64},)
+ifeq (${PREFIX_ARM64E},)
 HAS_PREFIX=0
 endif
 endif
 endif
 endif
-
-# Override these to match the compiler(s) being used.
-CROSS_COMPILE_X86_CC  ?= i686-apple-darwin10-gcc-4.2.1
-CROSS_COMPILE_X86_CXX ?= i686-apple-darwin10-g++-4.2.1
-CROSS_COMPILE_PPC_CC  ?= powerpc-apple-darwin10-gcc-4.2.1
-CROSS_COMPILE_PPC_CXX ?= powerpc-apple-darwin10-g++-4.2.1
+endif
+endif
+endif
 
 ifeq (${ARCH},)
-ARCH := i686
 DARWIN_META_TARGETS := 1
-endif
-
-ifeq (${ARCH},i686)
-CC        := ${CROSS_COMPILE_X86_CC}  -mmacosx-version-min=10.6
-CXX       := ${CROSS_COMPILE_X86_CXX} -mmacosx-version-min=10.6
-REAL_ARCH := i686
 else
+# Configure CC et al. for the selected architecture ARCH, if any.
+include arch/darwin/Makefile.arch
 
-ifeq (${ARCH},amd64)
-CC        := ${CROSS_COMPILE_X86_CC}  -m64 -mmacosx-version-min=10.6
-CXX       := ${CROSS_COMPILE_X86_CXX} -m64 -mmacosx-version-min=10.6
-REAL_ARCH := amd64
-else
+REAL_ARCH = ${ARCH}
+endif
 
-ifeq (${ARCH},ppc)
-CC        := ${CROSS_COMPILE_PPC_CC}  -mmacosx-version-min=10.4
-CXX       := ${CROSS_COMPILE_PPC_CXX} -mmacosx-version-min=10.4
-REAL_ARCH := ppc
-else
-
-ifeq (${ARCH},ppc64)
-CC        := ${CROSS_COMPILE_PPC_CC}  -m64 -mmacosx-version-min=10.4
-CXX       := ${CROSS_COMPILE_PPC_CXX} -m64 -mmacosx-version-min=10.4
-REAL_ARCH := ppc64
-else
-
-REAL_ARCH := $(error Invalid architecture selection)
+#
+# MegaZeux doesn't use a C++ standard library by default, but modern compilers
+# refuse to build without -stdlib. libstdc++ is required to target Snow Leopard,
+# and Apple libstdc++ never got C++11, so forcibly disable that too if needed.
+#
+ifneq (${STDLIB},)
+ARCH_CXXFLAGS ?= -stdlib=${STDLIB}
+ifeq (${STDLIB},libstdc++)
+HAS_CXX_11 := 0
 endif
 endif
-endif
-endif
+
+ifneq (${DARWIN_META_TARGETS},1)
+
+#
+# Per-arch targets.
+#
 
 package: all
+ifeq (${BUILD_EDITOR},1)
 	${MV} ${mzx} ${mzx}.${REAL_ARCH}
-ifneq (${BUILD_MZXRUN},)
+endif
+ifeq (${BUILD_MZXRUN},1)
 	${MV} ${mzxrun} ${mzxrun}.${REAL_ARCH}
 endif
-ifneq (${BUILD_MODULAR},)
+ifeq (${BUILD_MODULAR},1)
 	${MV} ${core_target} ${core_target}.${REAL_ARCH}
+ifeq (${BUILD_EDITOR},1)
 	${MV} ${editor_target} ${editor_target}.${REAL_ARCH}
 endif
+endif
+ifeq (${BUILD_UTILS},1)
+	${MV} ${checkres} ${checkres}.${REAL_ARCH}
+	${MV} ${downver} ${downver}.${REAL_ARCH}
+	${MV} ${hlp2txt} ${hlp2txt}.${REAL_ARCH}
+	${MV} ${txt2hlp} ${txt2hlp}.${REAL_ARCH}
+	${MV} ${png2smzx} ${png2smzx}.${REAL_ARCH}
+	${MV} ${y4m2smzx} ${y4m2smzx}.${REAL_ARCH}
+	${MV} ${ccv} ${ccv}.${REAL_ARCH}
+endif
 
-package_clean: clean
+package_clean:
 	${RM} -f ${mzx}.${REAL_ARCH}
 	${RM} -f ${mzxrun}.${REAL_ARCH}
 	${RM} -f ${core_target}.${REAL_ARCH}
 	${RM} -f ${editor_target}.${REAL_ARCH}
+	${RM} -f ${checkres}.${REAL_ARCH}
+	${RM} -f ${downver}.${REAL_ARCH}
+	${RM} -f ${hlp2txt}.${REAL_ARCH}
+	${RM} -f ${txt2hlp}.${REAL_ARCH}
+	${RM} -f ${png2smzx}.${REAL_ARCH}
+	${RM} -f ${y4m2smzx}.${REAL_ARCH}
+	${RM} -f ${ccv}.${REAL_ARCH}
 
-ifeq (${DARWIN_META_TARGETS},1)
+else # DARWIN_META_TARGETS=1
 
 #
 # Define meta targets.
@@ -126,13 +143,29 @@ SUPPRESS_CC_TARGETS ?= 1
 all: dist
 
 lipo:
-	@arch/darwin/lipo.sh
+ifeq (${BUILD_MZXRUN},1)
+	${LIPO} ${mzxrun}
+endif
+ifeq (${BUILD_EDITOR},1)
+	${LIPO} ${mzx}
+endif
+ifeq (${BUILD_MODULAR},1)
+	${LIPO} ${core_target}
+ifeq (${BUILD_EDITOR},1)
+	${LIPO} ${editor_target}
+endif
+endif
+ifeq (${BUILD_UTILS},1)
+	${LIPO} ${checkres} ${downver} ${hlp2txt} ${txt2hlp} ${png2smzx} ${y4m2smzx} ${ccv}
+endif
 
 dist:
 ifeq (${HAS_PREFIX},0)
 	$(error No target prefix defined!\
 	 Select build targets by defining one or more of PREFIX_I686,\
-	 PREFIX_AMD64, PREFIX_PPC, or PREFIX_PPC64, then build with "make dist")
+	 PREFIX_AMD64, PREFIX_AMD64H, PREFIX_PPC, PREFIX_PPC64,\
+	 PREFIX_ARM64, or PREFIX_ARM64E,\
+	 then build with "make dist")
 endif
 	@${MAKE} ARCH=i686 clean
 ifneq (${PREFIX_I686},)
@@ -141,9 +174,14 @@ ifneq (${PREFIX_I686},)
 	@${MAKE} PREFIX=${PREFIX_I686} ARCH=i686 clean
 endif
 ifneq (${PREFIX_AMD64},)
-	@echo "Building 'amd64' with PREFIX='${PREFIX_AMD64}'"
-	@${MAKE} PREFIX=${PREFIX_AMD64} ARCH=amd64 package
-	@${MAKE} PREFIX=${PREFIX_AMD64} ARCH=amd64 clean
+	@echo "Building 'x86_64' with PREFIX='${PREFIX_AMD64}'"
+	@${MAKE} PREFIX=${PREFIX_AMD64} ARCH=x86_64 package
+	@${MAKE} PREFIX=${PREFIX_AMD64} ARCH=x86_64 clean
+endif
+ifneq (${PREFIX_AMD64H},)
+	@echo "Building 'x86_64h' with PREFIX='${PREFIX_AMD64H}'"
+	@${MAKE} PREFIX=${PREFIX_AMD64H} ARCH=x86_64h package
+	@${MAKE} PREFIX=${PREFIX_AMD64H} ARCH=x86_64h clean
 endif
 ifneq (${PREFIX_PPC},)
 	@echo "Building 'ppc' with PREFIX='${PREFIX_PPC}'"
@@ -155,7 +193,26 @@ ifneq (${PREFIX_PPC64},)
 	@${MAKE} PREFIX=${PREFIX_PPC64} ARCH=ppc64 package
 	@${MAKE} PREFIX=${PREFIX_PPC64} ARCH=ppc64 clean
 endif
+ifneq (${PREFIX_ARM64},)
+	@echo "Building 'arm64' with PREFIX='${PREFIX_ARM64}'"
+	@${MAKE} PREFIX=${PREFIX_ARM64} ARCH=arm64 package
+	@${MAKE} PREFIX=${PREFIX_ARM64} ARCH=arm64 clean
+endif
+ifneq (${PREFIX_ARM64E},)
+	@echo "Building 'arm64e' with PREFIX='${PREFIX_ARM64E}'"
+	@${MAKE} PREFIX=${PREFIX_ARM64E} ARCH=arm64e package
+	@${MAKE} PREFIX=${PREFIX_ARM64E} ARCH=arm64e clean
+endif
 	@${MAKE} lipo
+
+#package_clean:
+#	@${MAKE} ARCH=i686 package_clean
+#	@${MAKE} ARCH=x86_64 package_clean
+#	@${MAKE} ARCH=x86_64h package_clean
+#	@${MAKE} ARCH=ppc package_clean
+#	@${MAKE} ARCH=ppc64 package_clean
+#	@${MAKE} ARCH=arm64 package_clean
+#	@${MAKE} ARCH=arm64e package_clean
 
 mzx_app := ${build_root}/MegaZeux.app/
 mzxrun_app := ${build_root}/MZXRun.app/
@@ -163,10 +220,11 @@ mzxrun_app := ${build_root}/MZXRun.app/
 build := ${mzx_app}/Contents/Resources
 build:
 	${RM} ${build}/*.debug ${build}/utils/*.debug
+	ln -s /Applications               ${mzx_app}/../Applications
 	${MKDIR}                          ${mzx_app}/Contents/MacOS
 	${CP} contrib/icons/quantump.icns ${mzx_app}/Contents/Resources/MegaZeux.icns
 	${CP} ${build}/LICENSE            ${build}/docs/
-	${MV} ${build}/docs               ${mzx_app}/../
+	${MV} ${build}/docs               ${mzx_app}/../Documentation
 	${MV} ${build}/${mzx}             ${mzx_app}/Contents/MacOS/MegaZeux
 ifneq (${BUILD_MZXRUN},)
 	${MV} ${build}/${mzxrun}          ${mzx_app}/Contents/MacOS/MZXRun
@@ -188,6 +246,8 @@ endif
 
 archive: build
 	@arch/darwin/dmg.sh ${TARGET}
+
+#clean: package_clean
 
 endif # DARWIN_META_TARGETS=1
 endif # darwin-dist
