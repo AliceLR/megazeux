@@ -165,7 +165,7 @@ build:
 	${RM} ${build}/*.debug ${build}/utils/*.debug
 	${MKDIR}                          ${mzx_app}/Contents/MacOS
 	${CP} contrib/icons/quantump.icns ${mzx_app}/Contents/Resources/MegaZeux.icns
-	${MV} ${build}/LICENSE            ${build}/docs/
+	${CP} ${build}/LICENSE            ${build}/docs/
 	${MV} ${build}/docs               ${mzx_app}/../
 	${MV} ${build}/${mzx}             ${mzx_app}/Contents/MacOS/MegaZeux
 ifneq (${BUILD_MZXRUN},)

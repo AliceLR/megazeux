@@ -608,35 +608,99 @@ fi
 
 echo "PREFIX:=$PREFIX" >> platform.inc
 
-if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
-	LIBDIR="${LIBDIR}/megazeux"
-elif [ "$PLATFORM" = "emscripten" ]; then
-	LIBDIR="/data"
-else
-	LIBDIR="."
-fi
-
 if [ "$TOOL_PREFIX" != "" ]; then
 	echo "CROSS_COMPILE?=$TOOL_PREFIX-" >> platform.inc
 fi
 
-### SYSTEM CONFIG DIRECTORY ###################################################
+### SYSTEM DIRECTORIES ########################################################
 
-if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
-	: # Use default or user-defined SYSCONFDIR
-elif [ "$PLATFORM" = "darwin-dist" ]; then
-	SYSCONFDIR="../Resources"
-elif [ "$PLATFORM" = "emscripten" ]; then
-	SYSCONFDIR="/data/etc"
-elif [ "$SYSCONFDIR_IS_SET" != "true" ]; then
-	SYSCONFDIR="."
-fi
+#
+# Some platforms (currently "unix", "darwin") are system installations.
+# Their assets and licenses are located in subdirectories of their
+# respective filesystem hierarchies. For other platforms, these files are
+# located in the base directory of the archive (the executable location).
+# These locations need to be hardcoded for various console platforms.
+#
+case "$PLATFORM" in
+	# Set default directories for non-install platforms.
+	# Most directories are irrelevant outside of install platforms.
+	# Most of the time, only SHAREDIR needs to be overriden.
+	"unix" | "darwin")
+		;;
+	*)
+		GAMESDIR="."
+		BINDIR="."
+		LIBDIR="."
+		SHAREDIR="."
+		LICENSEDIR="."
+		if [ "$SYSCONFDIR_IS_SET" != "true" ]; then
+			SYSCONFDIR="."
+		fi
+		;;
+esac
+case "$PLATFORM" in
+	# Set custom per-platform paths.
+	"unix" | "darwin")
+		LIBDIR="${LIBDIR}/megazeux"
+		USERCONFFILE=".megazeux-config"
+		;;
+	"nds" | "nds-blocksds")
+		SHAREDIR=/games/megazeux
+		;;
+	"3ds")
+		SHAREDIR=/3ds/megazeux
+		;;
+	"dreamcast")
+		SHAREDIR=/cd
+		;;
+	"wii")
+		SHAREDIR=/apps/megazeux
+		;;
+	"wiiu")
+		SHAREDIR=fs:/vol/external01/wiiu/apps/megazeux
+		;;
+	"switch")
+		SHAREDIR=/switch/megazeux
+		;;
+	"psvita")
+		SHAREDIR="app0:/"
+		STARTUPDIR="ux0:/data/megazeux"
+		USERCONFFILE="ux0:/data/megazeux/config.txt"
+		;;
+	"darwin-dist")
+		SHAREDIR="../Resources"
+		LICENSEDIR="../Resources"
+		SYSCONFDIR="../Resources"
+		USERCONFFILE=".megazeux-config"
+		;;
+	"emscripten")
+		SHAREDIR="/data"
+		SYSCONFDIR="/data/etc"
+		;;
+	"android")
+		STARTUPDIR="/storage/emulated/0"
+		;;
+esac
 
 ### SUMMARY OF OPTIONS ########################################################
 
 echo "Building for platform:   $PLATFORM"
 echo "Using prefix:            $PREFIX"
-echo "Using sysconfdir:        $SYSCONFDIR"
+echo "      sharedir:          $SHAREDIR"
+echo "      licensedir:        $LICENSEDIR"
+echo "      sysconfdir:        $SYSCONFDIR"
+if [ "$GAMESDIR" != "." ]; then
+echo "      gamesdir (mzx):    $GAMESDIR"
+fi
+if [ "$BINDIR" != "." ]; then
+echo "      bindir (utils):    $BINDIR"
+fi
+if [ "$LIBDIR" != "." ]; then
+echo "      libdir:            $LIBDIR"
+fi
+if [ -n "$STARTUPDIR" ]; then
+echo "      startupdir:        $STARTUPDIR"
+fi
 if [ "$TOOL_PREFIX" != "" ]; then
 echo "Using host:              $TOOL_PREFIX"
 fi
@@ -659,7 +723,7 @@ else
 	echo "Not stamping version with today's date."
 fi
 
-if command -v git && git rev-parse --short HEAD 2>/dev/null; then
+if command -v git >/dev/null 2>&1 && git rev-parse --short HEAD >/dev/null 2>&1; then
 	echo "#define VERSION_HEAD \"$(git rev-parse --short HEAD)\"" >> src/config.h
 fi
 
@@ -669,51 +733,11 @@ fi
 
 echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 
-#
-# Some platforms (currently "unix", "darwin") are system installations.
-# Their assets and licenses are located in subdirectories of their
-# respective filesystem hierarchies. For other platforms, these files are
-# located in the base directory of the archive (the executable location).
-# This location needs to be hardcoded for various console platforms.
-#
-if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
-	USERCONFFILE=".megazeux-config"
-elif [ "$PLATFORM" = "nds" ] || [ "$PLATFORM" = "nds-blocksds" ]; then
-	SHAREDIR=/games/megazeux
-elif [ "$PLATFORM" = "3ds" ]; then
-	SHAREDIR=/3ds/megazeux
-elif [ "$PLATFORM" = "dreamcast" ]; then
-	SHAREDIR=/cd
-elif [ "$PLATFORM" = "wii" ]; then
-	SHAREDIR=/apps/megazeux
-elif [ "$PLATFORM" = "wiiu" ]; then
-	SHAREDIR=fs:/vol/external01/wiiu/apps/megazeux
-elif [ "$PLATFORM" = "switch" ]; then
-	SHAREDIR=/switch/megazeux
-elif [ "$PLATFORM" = "psvita" ]; then
-	SHAREDIR="app0:/"
-	STARTUPDIR="ux0:/data/megazeux"
-	USERCONFFILE="ux0:/data/megazeux/config.txt"
-elif [ "$PLATFORM" = "darwin-dist" ]; then
-	SHAREDIR=../Resources
-	USERCONFFILE=".megazeux-config"
-elif [ "$PLATFORM" = "emscripten" ]; then
-	SHAREDIR=/data
-elif [ "$PLATFORM" = "android" ]; then
-	SHAREDIR=.
-	STARTUPDIR="/storage/emulated/0"
-else
-	SHAREDIR=.
-fi
-
 if [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "darwin" ]; then
 	echo "#define CONFFILE \"megazeux-config\""		>> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""		>> src/config.h
 	echo "#define LICENSEDIR \"$LICENSEDIR/megazeux/\""	>> src/config.h
 else
-	LICENSEDIR="."
-	GAMESDIR=$SHAREDIR
-	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\""			>> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""			>> src/config.h
 	echo "#define LICENSEDIR \"$LICENSEDIR\""		>> src/config.h
