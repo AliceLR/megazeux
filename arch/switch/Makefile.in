@@ -38,12 +38,12 @@ SUPPRESS_HOST_TARGETS ?= 1
 MACHDEP    := -D__SWITCH__ -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 
 ifeq (${DEBUG},1)
-  #DRM_NOUVEAU := drm_nouveaud
-  NX := nxd
+#DRM_NOUVEAU := drm_nouveaud
+NX := nxd
 else
-  OPTIMIZE_CFLAGS := -O3 -ffunction-sections
-  #DRM_NOUVEAU := drm_nouveau
-  NX := nx
+OPTIMIZE_FLAGS += -ffunction-sections
+#DRM_NOUVEAU := drm_nouveau
+NX := nx
 endif
 
 MESA_LIBS :=

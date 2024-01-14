@@ -225,48 +225,55 @@ PTHREAD_LDFLAGS ?= -lpthread
 #
 # Set up general CFLAGS/LDFLAGS
 #
-OPTIMIZE_CFLAGS ?= -O3
-DEBUG_CFLAGS    ?= -O0
 
-ifeq (${DEBUG},1)
 #
 # Usually, just disable the optimizer for "true" debug builds and
 # define "DEBUG" to enable optional code at compile time.
+# Optimized builds have assert() compiled out.
 #
-# Sanitizer builds turn on some optimizations for the sake of being usable.
+ifneq (${DEBUG},1)
+OPTIMIZE_FLAGS := -O3 ${OPTIMIZE_CFLAGS} ${OPTIMIZE_FLAGS}
+OPTIMIZE_DEF   ?= -DNDEBUG
+else
+OPTIMIZE_FLAGS := -Og ${DEBUG_CFLAGS} ${OPTIMIZE_FLAGS}
+OPTIMIZE_DEF   ?= -DDEBUG
+endif
+
+#
+# Enable a sanitizer and its corresponding extra options, if selected.
 #
 ifeq (${SANITIZER},address)
-DEBUG_CFLAGS := -fsanitize=address -O1 -fno-omit-frame-pointer
+OPTIMIZE_FLAGS += -fsanitize=address -fno-omit-frame-pointer
 endif
 ifeq (${SANITIZER},undefined)
 # Signed integer overflows (shift-base, signed-integer-overflow)
 # are pretty much inevitable in Robotic, so ignore them.
-DEBUG_CFLAGS := -fsanitize=undefined -O0 -fno-omit-frame-pointer \
+OPTIMIZE_FLAGS += -fsanitize=undefined -fno-omit-frame-pointer \
  -fno-sanitize-recover=all -fno-sanitize=shift-base,signed-integer-overflow
 endif
 ifeq (${SANITIZER},thread)
-DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE
+OPTIMIZE_FLAGS += -fsanitize=thread -fno-omit-frame-pointer -fPIE
 ARCH_EXE_LDFLAGS += -pie
 endif
 ifeq (${SANITIZER},memory)
 # Note: to be useful, this requires a fairly special build with most
 # external libraries turned off or re-built with instrumentation.
 # This sanitizer is only implemented by clang.
-DEBUG_CFLAGS := -fsanitize=memory -O1 -fno-omit-frame-pointer -fPIC \
+OPTIMIZE_FLAGS += -fsanitize=memory -fno-omit-frame-pointer -fPIC \
  -fsanitize-recover=memory -fsanitize-memory-track-origins=2
 ARCH_EXE_LDFLAGS += -pie
 endif
 
-CFLAGS   = ${DEBUG_CFLAGS} -DDEBUG
-CXXFLAGS = ${DEBUG_CFLAGS} -DDEBUG
-LDFLAGS += ${DEBUG_CFLAGS}
-else
 #
-# Optimized builds have assert() compiled out
+# Enable link-time optimization.
 #
-CFLAGS   += ${OPTIMIZE_CFLAGS} -DNDEBUG
-CXXFLAGS += ${OPTIMIZE_CFLAGS} -DNDEBUG
+ifeq (${LTO},1)
+OPTIMIZE_FLAGS += -flto
 endif
+
+CFLAGS   += ${OPTIMIZE_FLAGS} ${OPTIMIZE_DEF}
+CXXFLAGS += ${OPTIMIZE_FLAGS} ${OPTIMIZE_DEF}
+LDFLAGS  += ${OPTIMIZE_FLAGS}
 
 #
 # Enable C++11 for compilers that support it.

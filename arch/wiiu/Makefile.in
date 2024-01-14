@@ -36,10 +36,10 @@ SUPPRESS_HOST_TARGETS ?= 1
 MACHDEP    := -DESPRESSO -mcpu=750 -meabi -mhard-float
 
 ifeq (${DEBUG},1)
-  WUT := wutd
+WUT := wutd
 else
-  OPTIMIZE_CFLAGS := -O3 -ffunction-sections
-  WUT := wut
+OPTIMIZE_FLAGS += -ffunction-sections
+WUT := wut
 endif
 
 SDL_PREFIX := ${PORTLIBS_PATH}/wiiu

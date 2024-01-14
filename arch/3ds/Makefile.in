@@ -51,12 +51,10 @@ PORTLIBS_LIBS     := $(foreach dir, $(PORTLIBS), -L$(dir)/lib)
 EXTRA_INCLUDES := -isystem $(CTRULIB)/include ${PORTLIBS_INCLUDES}
 EXTRA_LIBS := -L$(CTRULIB)/lib ${PORTLIBS_LIBS}
 ifeq (${DEBUG},1)
-  ARCH_CFLAGS += -Og
-  EXTRA_LIBS += -lcitro3dd -lctrud -lpng16 -lz
+EXTRA_LIBS += -lcitro3dd -lctrud -lpng16 -lz
 else
-  OPTIMIZE_CFLAGS = -O3 -fomit-frame-pointer -ffunction-sections
-# OPTIMIZE_CFLAGS += -flto
-  EXTRA_LIBS += -lcitro3d -lctru -lpng16 -lz
+OPTIMIZE_FLAGS += -fomit-frame-pointer -ffunction-sections
+EXTRA_LIBS += -lcitro3d -lctru -lpng16 -lz
 endif
 
 MACHDEP = -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -mword-relocations
