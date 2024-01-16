@@ -2,6 +2,8 @@ GIT
 
 USERS
 
++ The About MegaZeux dialog now shows both the compiled and
+  linked versions of libpng if they are different.
 + Licenses are now properly loaded in the About MegaZeux dialog
   for Darwin builds.
 

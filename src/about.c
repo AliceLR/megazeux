@@ -56,6 +56,16 @@
 #define MAX_VERSIONS  32
 #define MAX_LICENSE   (1 << 18) /* 256k should be enough for a license... */
 
+#ifdef CONFIG_PNG
+static char *png_version_string(char version_str[16], png_uint_32 version)
+{
+  snprintf(version_str, 16, "%d.%d.%d",
+   version / 10000, (version / 100) % 100, version % 100);
+
+  return version_str;
+}
+#endif
+
 ATTRIBUTE_PRINTF(1, 2)
 static char *about_line(const char *fmt, ...)
 {
@@ -165,7 +175,20 @@ static char **about_text(int *num_lines)
     lines[i++] = about_line("zlib: " ZLIB_VERSION);
 
 #ifdef CONFIG_PNG
-  lines[i++] = about_line("libpng: " PNG_LIBPNG_VER_STRING);
+  {
+    png_uint_32 version_link = png_access_version_number();
+    png_uint_32 version_comp = PNG_LIBPNG_VER;
+    char version_a[16];
+    char version_b[16];
+
+    png_version_string(version_a, version_link);
+    png_version_string(version_b, version_comp);
+
+    if(version_link != version_comp)
+      lines[i++] = about_line("libpng: %s (compiled: %s)", version_a, version_b);
+    else
+      lines[i++] = about_line("libpng: %s", version_a);
+  }
 #endif
 
 #ifdef CONFIG_VORBIS
