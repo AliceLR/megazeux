@@ -49,13 +49,10 @@ ARCH_LDFLAGS += -g4 --source-map-base ${SOURCE_MAP_BASE}
 endif
 
 ifeq (${DEBUG},1)
-	ARCH_CFLAGS += -s ASSERTIONS=1 --profiling-funcs
-	ARCH_LDFLAGS += -s ASSERTIONS=1 --profiling-funcs
-	EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build
+ARCH_LDFLAGS += -s ASSERTIONS=1 --profiling-funcs
+EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build
 else
-	ARCH_LDFLAGS += -O3
-	OPTIMIZE_CFLAGS = -O3
-	EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build-release
+EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build-release
 endif
 
 clean:

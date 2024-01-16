@@ -104,19 +104,20 @@ unit_common_objs += \
 endif
 
 #
-# This may already be set with sanitizer flags.
+# Build unit tests with debug optimizations and without link-time optimzations.
+# (Overrides these optimization flags from the global flags.)
 #
-DEBUG_CFLAGS ?= -O0
+UNIT_OPTIMIZE_FLAGS := -Og -fno-lto ${UNIT_OPTIMIZE_FLAGS}
 
 #
-# Use DEBUG_CFLAGS to override any optimization flags in the global flags.
 # Build without -DDEBUG to suppress debug messages,
 # build without -DNDEBUG to allow assert().
 # Turn on exceptions explicitly, since the global CXXFLAGS turn them off.
 #
-unit_cflags ?= ${CXXFLAGS} ${DEBUG_CFLAGS} -UDEBUG -UNDEBUG
+unit_cflags ?= ${CXXFLAGS}
+unit_cflags += ${UNIT_OPTIMIZE_FLAGS} -UDEBUG -UNDEBUG
 unit_cflags += -fexceptions -funsigned-char -std=gnu++11
-unit_ldflags += ${DEBUG_CFLAGS}
+unit_ldflags += ${UNIT_OPTIMIZE_FLAGS}
 
 unit_cflags += ${SDL_CFLAGS} -Umain
 unit_ldflags += ${SDL_LDFLAGS} ${ZLIB_LDFLAGS}

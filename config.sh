@@ -53,7 +53,9 @@ usage() {
 	echo "  --as-needed-hack          Pass --as-needed through to GNU ld."
 	echo "  --enable-release          Optimize and remove debugging code."
 	echo "  --enable-verbose          Build system is always verbose (V=1)."
+	echo "  --optimize-speed          Perform speed optimizations (-O3, default)."
 	echo "  --optimize-size           Perform size optimizations (-Os)."
+	echo "  --enable-lto              Perform link-time optimizations (-flto)."
 	echo "  --enable-asan             Enable AddressSanitizer for debug builds."
 	echo "  --enable-msan             Enable MemorySanitizer for debug builds."
 	echo "  --enable-tsan             Enable ThreadSanitizer for debug builds."
@@ -155,6 +157,7 @@ DATE_STAMP="true"
 AS_NEEDED="false"
 RELEASE="false"
 OPT_SIZE="false"
+LTO="false"
 SANITIZER="false"
 ANALYZER="false"
 STACK_PROTECTOR="true"
@@ -298,6 +301,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--optimize-size" ]  && OPT_SIZE="true"
 	[ "$1" = "--optimize-speed" ] && OPT_SIZE="false"
+
+	[ "$1" = "--enable-lto" ]  && LTO="true"
+	[ "$1" = "--disable-lto" ] && LTO="false"
 
 	[ "$1" = "--enable-asan" ]  && SANITIZER="address"
 	[ "$1" = "--disable-asan" ] && SANITIZER="false"
@@ -1300,19 +1306,22 @@ if [ "$RELEASE" = "true" ]; then
 	#
 	if [ "$OPT_SIZE" = "true" ]; then
 		echo "Optimizing for size."
-		echo "OPTIMIZE_CFLAGS=-Os" >> platform.inc
+		echo "OPTIMIZE_FLAGS=-Os" >> platform.inc
 	else
 		echo "Optimizing for speed."
+	fi
+	#
+	# Enable link-time optimizations.
+	#
+	if [ "$LTO" = "true" ]; then
+		echo "Link-time optimizations enabled."
+		echo "LTO=1" >> platform.inc
+	else
+		echo "Link-time optimizations disabled."
 	fi
 else
 	echo "Disabling optimization, debug enabled."
 	echo "DEBUG=1" >> platform.inc
-
-	if [ "$SANITIZER" != "false" ]; then
-		echo "Enabling $SANITIZER sanitizer (may enable some optimizations)."
-		echo "SANITIZER=$SANITIZER" >> platform.inc
-	fi
-
 	#
 	# Trace logging for debug builds, if enabled.
 	#
@@ -1320,6 +1329,14 @@ else
 		echo "Enabling trace logging."
 		echo "#define DEBUG_TRACE" >> src/config.h
 	fi
+fi
+
+#
+# Enable sanitizers.
+#
+if [ "$SANITIZER" != "false" ]; then
+	echo "Enabling $SANITIZER sanitizer (may enable some optimizations)."
+	echo "SANITIZER=$SANITIZER" >> platform.inc
 fi
 
 #

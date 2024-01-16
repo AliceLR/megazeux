@@ -7,6 +7,10 @@ USERS
 
 DEVELOPERS
 
++ -Og is now the default debug optimization level (was -O0).
++ Added --enable-lto to enable link-time optimizations.
++ The sanitizer config.sh options can now be used with release
+  builds e.g. --enable-release --enable-asan.
 + Simplified the configuration of system directories for ports
   in config.sh, which now prints more information about them.
 + Fixed config.sh output of "/usr/bin/git" and the Git HEAD.
