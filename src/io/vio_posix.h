@@ -189,6 +189,18 @@ static inline int64_t platform_ftell(FILE *fp)
 #endif
 }
 
+#if defined(__EMSCRIPTEN__)
+
+/**
+ * For unknown reasons, Emscripten fstat is much slower than the fallback.
+ */
+static inline int64_t platform_filelength(FILE *fp)
+{
+  return -1;
+}
+
+#else /* fstat */
+
 static inline int64_t platform_filelength(FILE *fp)
 {
   // Note: off_t, ino_t may cause issues unless _FILE_OFFSET_BITS=64 is defined.
@@ -206,6 +218,8 @@ static inline int64_t platform_filelength(FILE *fp)
 
   return st.st_size;
 }
+
+#endif /* fstat */
 
 __M_END_DECLS
 

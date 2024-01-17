@@ -5,6 +5,8 @@ FREAD/FREADn bugfixes, as the old behavior was unusably buggy.
 
 USERS
 
++ HTML5: fixed the poor performance of FREADn and other features
+  that rely on calculating the length of an open file.
 + Setting a string offset, limit, or splice to FREADn now
   respects the provided limit. If n is larger than the limit,
   n total bytes will still be read (up to the maximum string
