@@ -888,9 +888,8 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
     {
       unsigned int read_count = strtoul(src_value + 5, NULL, 10);
       long current_pos, file_size;
-      size_t actual_read;
+      size_t actual_read = 0;
 
-      // You know what would be great, is not trying to allocate 4GB of memory
       read_count = MIN(read_count, MAX_STRING_LEN);
 
       file_size = vfilelength(input_file, false);
@@ -907,7 +906,13 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
        read_count, offset, offset_specified, &size, size_specified))
         return 0;
 
-      actual_read = vfread(dest->value + offset, 1, read_count, input_file);
+      // MZX currently ignores all spliced writes that would extend past the
+      // string size limit (rather than truncating). See force_string_copy.
+      if(offset <= dest->length - size)
+        actual_read = vfread(dest->value + offset, 1, size, input_file);
+      if(actual_read < read_count)
+        vfseek(input_file, read_count - actual_read, SEEK_CUR);
+
       if(offset == 0 && !offset_specified)
         dest->length = actual_read;
     }
@@ -917,42 +922,91 @@ int set_string(struct world *mzx_world, char *name, struct string *src,
       char *dest_value;
       int current_char = 0;
       unsigned int read_pos = 0;
-      unsigned int read_allocate;
       unsigned int allocated = 32;
-      unsigned int new_allocated = allocated;
 
-      if(!force_string_splice(string_list, name, next, &dest,
-       allocated, offset, offset_specified, &size, size_specified))
-        return 0;
-
-      dest_value = dest->value;
-
-      while(1)
+      if(offset_specified || size_specified)
       {
-        for(read_allocate = 0; read_allocate < new_allocated;
-         read_allocate++, read_pos++)
+        /* The string splice rules require that the source string's length is
+         * known ahead of time. The least bad way to handle this is an
+         * intermediate buffer.
+         */
+        size_t max_read = MAX_STRING_LEN;
+        char *new_value;
+        char *tmp;
+
+        // Preemtively constrain the read to the string maximum limits.
+        if(offset_specified)
+          max_read = MIN(max_read, MAX_STRING_LEN - MIN(offset, MAX_STRING_LEN));
+        if(size_specified)
+          max_read = MIN(max_read, size);
+
+        if(offset_specified && offset >= MAX_STRING_LEN)
+          return 0;
+
+        new_value = (char *)cmalloc(allocated);
+        if(!new_value)
+          return 0;
+
+        while(read_pos < max_read)
         {
+          if(read_pos >= allocated)
+          {
+            if((allocated *= 2) > MAX_STRING_LEN)
+              allocated = MAX_STRING_LEN;
+
+            tmp = (char *)crealloc(new_value, allocated);
+            if(!tmp)
+              break;
+            new_value = tmp;
+          }
           current_char = vfgetc(input_file);
 
-          if((current_char == terminate_char) || (current_char == EOF) ||
-           (read_pos + offset == MAX_STRING_LEN))
-          {
-            if(offset == 0 && !offset_specified)
-              dest->length = read_pos;
-            return 0;
-          }
+          if(current_char == terminate_char || current_char == EOF)
+            break;
 
-          dest_value[read_pos + offset] = current_char;
+          new_value[read_pos++] = current_char;
         }
 
-        new_allocated = allocated;
-
-        if((allocated *= 2) > MAX_STRING_LEN)
-          allocated = MAX_STRING_LEN;
-
-        dest = reallocate_string(string_list, dest, next, allocated);
-        dest_value = dest->value;
+        force_string_copy(string_list, name, next, &dest, read_pos,
+         offset, offset_specified, &size, size_specified, new_value);
+        free(new_value);
       }
+      else
+      {
+        /* Since there's no splice, chars can be directly read to the string. */
+        if(!force_string_splice(string_list, name, next, &dest,
+         allocated, offset, offset_specified, &size, size_specified))
+          return 0;
+
+        dest_value = dest->value;
+        allocated = dest->allocated_length;
+
+        while(read_pos < MAX_STRING_LEN)
+        {
+          if(read_pos >= allocated)
+          {
+            if((allocated *= 2) > MAX_STRING_LEN)
+              allocated = MAX_STRING_LEN;
+
+            if(!reallocate_string(string_list, dest, next, allocated))
+              break;
+            dest_value = dest->value;
+          }
+          current_char = vfgetc(input_file);
+
+          if(current_char == terminate_char || current_char == EOF)
+            break;
+
+          dest_value[read_pos++] = current_char;
+        }
+        // Should always be true.
+        if(offset == 0 && !offset_specified)
+          dest->length = read_pos;
+      }
+
+      // Find the terminator if it wasn't already found.
+      while(current_char != terminate_char && current_char != EOF)
+        current_char = vfgetc(input_file);
     }
   }
   else

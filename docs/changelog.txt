@@ -1,7 +1,24 @@
 GIT
 
+No compatibility checks have been added for the string splice
+FREAD/FREADn bugfixes, as the old behavior was unusably buggy.
+
 USERS
 
++ Setting a string offset, limit, or splice to FREADn now
+  respects the provided limit. If n is larger than the limit,
+  n total bytes will still be read (up to the maximum string
+  size); any bytes read past the limit are discarded.
++ Setting a string offset, limit, or splice to FREAD now
+  respects the provided limit and no longer pads the string with
+  spaces in some cases. Setting any string to FREAD now reads
+  the file until a terminator or the end of the file is found
+  instead of stopping when the maximum string size is reached;
+  any bytes read past the limit or maximum size are discarded.
++ Setting a string splice to FREAD or FREADn with invalid offset
+  or size values no longer causes a crash.
++ Setting a string splice to FREAD with a valid offset that
+  would write past the current length no longer causes a crash.
 + The About MegaZeux dialog now shows both the compiled and
   linked versions of libpng if they are different.
 + Licenses are now properly loaded in the About MegaZeux dialog
