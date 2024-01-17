@@ -1,0 +1,34 @@
+# Axis 1/2: Circle pad x/y
+# Button1: A
+# Button2: B
+# Button3: Select
+# Button4: Start
+# Button5: Right
+# Button6: Left
+# Button7: Up
+# Button8: Down
+# Button9: Right shoulder
+# Button10: Left shoulder
+# Button11: X
+# Button12: Y
+# Button15: ZL (NOTE: New 3DS only)
+# Button16: ZR (NOTE: New 3DS only)
+
+joy1axis1 = act_l_left, act_l_right
+joy1axis2 = act_l_up, act_l_down
+joy1button1 = act_a
+joy1button2 = act_b
+joy1button3 = act_select
+joy1button4 = act_start
+joy1button5 = act_right
+joy1button6 = act_left
+joy1button7 = act_up
+joy1button8 = act_down
+joy1button9 = act_rshoulder
+joy1button10 = act_lshoulder
+joy1button11 = act_x
+joy1button12 = act_y
+joy1button15 = act_ltrigger
+joy1button16 = act_rtrigger
+joy1.axis_lx = 1
+joy1.axis_ly = 2

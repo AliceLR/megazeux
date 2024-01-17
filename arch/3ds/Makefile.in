@@ -59,6 +59,12 @@ endif
 
 MACHDEP = -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -mword-relocations
 
+ifneq (${BUILD_SDL},)
+# devkitPro's SDL 1.2 port accidentally defines key_press and key_release as
+# global symbols.
+ARCH_CFLAGS   += -Dkey_press=mzx_key_press -Dkey_release=mzx_key_release
+endif
+
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP} -DARM11 -D__3DS__ -Iarch/3ds
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
 ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP} -specs=3dsx.specs
@@ -118,7 +124,15 @@ clean:
 
 build := ${build_root}/3ds/megazeux
 build: package ${build}
+ifeq ($(BUILD_SDL),)
 	${CP} arch/3ds/pad.config ${build}
+else
+ifeq ($(BUILD_LIBSDL2),)
+	${CP} arch/3ds/pad.config.sdl12 ${build}/pad.config
+else
+	${CP} arch/3ds/pad.config.sdl2 ${build}/pad.config
+endif
+endif
 	${CP} ${mzxrun}.3dsx ${build}
 ifneq (${BUILD_EDITOR},)
 	${CP} ${mzx}.3dsx ${build}
