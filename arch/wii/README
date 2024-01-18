@@ -14,7 +14,7 @@ arch/wii/CONFIG.WII
 
 SDLWii builds can be enabled by providing the following flag to this script:
 
-  --enable-sdl
+  --enable-sdl1
 
 Then build with the command:
 

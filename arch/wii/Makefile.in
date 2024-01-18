@@ -33,14 +33,7 @@ SUPPRESS_HOST_TARGETS ?= 1
 # Override library paths
 #
 
-#
-# If building with SDLWii, these need to be set manually--no sdl-config.
-# libSDL has to be linked at a very specific place in the library list,
-# but SDL_LDFLAGS gets appended to the end, so set it to something useless.
-#
-SDL_CFLAGS     = -isystem $(DEVKITPRO)/libogc/include/SDL
-SDL_LDFLAGS    = $(SDL_CFLAGS)
-
+SDL_PREFIX     = ${DEVKITPRO}/portlibs/wii
 LIBPNG_PREFIX  := ${PORTLIBS_PATH}/ppc
 
 PORTLIBS_INCLUDES := $(foreach dir, $(PORTLIBS), -isystem $(dir)/include)
@@ -48,7 +41,6 @@ PORTLIBS_LIBS     := $(foreach dir, $(PORTLIBS), -L$(dir)/lib)
 
 EXTRA_INCLUDES := -isystem $(LIBOGC_INC) ${PORTLIBS_INCLUDES}
 EXTRA_LIBS     := -L$(LIBOGC_LIB) ${PORTLIBS_LIBS} \
-                 $(if $(BUILD_SDL), -lSDL,) \
                  -lfat -lasnd -lwiikeyboard -lwiiuse -lbte -logc -lstdc++ -lm
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} $(MACHDEP)

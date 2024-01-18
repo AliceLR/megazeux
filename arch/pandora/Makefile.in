@@ -11,10 +11,11 @@ ARCH_LDFLAGS    = -L$(PANDORA_LIBPATH)
 LIBPNG_CFLAGS   = -I$(PANDORA_INCPATH)/libpng12
 LIBPNG_LDFLAGS  = -lpng12 -lz
 
-ifeq (${BUILD_LIBSDL2},)
+ifeq (${BUILD_SDL},1)
 SDL_CFLAGS      = $(shell $(TOOLCHAIN)/usr/bin/sdl-config --cflags)
 SDL_LDFLAGS     = $(shell $(TOOLCHAIN)/usr/bin/sdl-config --libs)
-else
+endif
+ifeq (${BUILD_SDL},2)
 SDL_CFLAGS      = $(shell $(TOOLCHAIN)/usr/bin/sdl2-config --cflags)
 SDL_LDFLAGS     = $(shell $(TOOLCHAIN)/usr/bin/sdl2-config --libs)
 endif

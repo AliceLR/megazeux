@@ -63,11 +63,13 @@ ${editor_obj}/%.o: ${editor_src}/%.m
 	${CC} -MD ${core_cflags} ${editor_flags} ${editor_spec} -c $< -o $@
 endif
 
-# Use the SDL2 clipboard handler
-ifeq (${BUILD_LIBSDL2},1)
+# Use the SDL2+ clipboard handler
+ifneq (${BUILD_SDL},)
+ifneq (${BUILD_SDL},1)
 clipboard_objs    ?= ${editor_obj}/clipboard_sdl2.o
 clipboard_cflags  ?=
 clipboard_ldflags ?= ${SDL_LDFLAGS}
+endif
 endif
 
 # X11 clipboard handler (requires SDL 1.2)

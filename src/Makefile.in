@@ -350,7 +350,7 @@ core_cobjs += ${audio_obj}/sfx.o
 endif
 endif
 
-ifeq (${BUILD_SDL},1)
+ifneq (${BUILD_SDL},)
 
 core_cobjs += ${core_obj}/event_sdl.o ${core_obj}/platform_sdl.o
 core_cobjs += ${core_obj}/render_sdl.o

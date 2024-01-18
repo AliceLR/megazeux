@@ -81,14 +81,12 @@ include arch/compat.inc
 # Set up CFLAGS/LDFLAGS for all MegaZeux external dependencies.
 #
 
-ifeq (${BUILD_SDL},1)
+ifneq (${BUILD_SDL},)
 
 #
 # SDL 2
 #
-
-ifneq (${BUILD_LIBSDL2},)
-
+ifeq (${BUILD_SDL},2)
 # Check PREFIX for sdl2-config.
 ifneq ($(and ${SDL_PREFIX},$(wildcard ${SDL_PREFIX}/bin/sdl2-config)),)
 SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl2-config
@@ -103,14 +101,12 @@ endif
 SDL_PREFIX  ?= $(shell ${SDL_CONFIG} --prefix)
 SDL_CFLAGS  ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --cflags | sed 's,-I,-isystem ,g')
 SDL_LDFLAGS ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --libs)
-endif
+endif # SDL2
 
 #
 # SDL 1.2
 #
-
-ifeq (${BUILD_LIBSDL2},)
-
+ifeq (${BUILD_SDL},1)
 EXTRA_LICENSES += ${LICENSE_LGPL2}
 
 # Check PREFIX for sdl-config.
@@ -127,14 +123,14 @@ endif
 SDL_PREFIX  ?= $(shell ${SDL_CONFIG} --prefix)
 SDL_CFLAGS  ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --cflags)
 SDL_LDFLAGS ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --libs)
-endif
+endif # SDL1
 
 # Make these immediate so the scripts run only once.
 SDL_PREFIX  := $(SDL_PREFIX)
 SDL_CFLAGS  := $(SDL_CFLAGS)
 SDL_LDFLAGS := $(LINK_DYNAMIC_IF_MIXED) $(SDL_LDFLAGS)
 
-endif
+endif # SDL
 
 #
 # libvorbis/tremor
