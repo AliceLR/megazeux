@@ -4,5 +4,5 @@
 
 ./config.sh --platform psp --prefix $PSPDEV/psp --optimize-size \
             --disable-editor --disable-helpsys --disable-utils \
-            --disable-libsdl2 --enable-release --enable-meter \
+            --enable-sdl1 --enable-release --enable-meter \
             --enable-extram --enable-tremor-lowmem --enable-stdio-redirect "$@"

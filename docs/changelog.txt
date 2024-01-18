@@ -28,6 +28,13 @@ USERS
 
 DEVELOPERS
 
++ The version of SDL to build with is now determined by the
+  config.sh options:
+    --enable-sdl (enables the default SDL version, usually 2);
+    --enable-sdl2 (enables SDL 2.x);
+    --enable-sdl1 (enables SDL 1.2.x);
+    --disable-sdl (disables SDL).
+  For compatibility, "--disable-libsdl2" is still recognized.
 + -Og is now the default debug optimization level (was -O0).
 + Added --enable-lto to enable link-time optimizations.
 + The sanitizer config.sh options can now be used with release

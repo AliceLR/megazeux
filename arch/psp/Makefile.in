@@ -21,10 +21,11 @@ ARCH_CFLAGS   += -G0 -isystem ${PREFIX}/sdk/include -DPATH_MAX=4096
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
 ARCH_LDFLAGS  += -L${PREFIX}/sdk/lib
 
-ifneq (${BUILD_LIBSDL2},)
+ifeq (${BUILD_SDL},2)
 SDL_CFLAGS = -I${PREFIX}/include/SDL2
 SDL_LDFLAGS = -lSDL2 -lpspvram
-else
+endif
+ifeq (${BUILD_SDL},1)
 SDL_CFLAGS = -I${PREFIX}/include/SDL
 SDL_LDFLAGS = -lSDL
 endif

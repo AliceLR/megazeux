@@ -66,13 +66,15 @@ usage() {
 	echo "  --disable-stack-protector Disable stack protector safety checks."
 	echo
 	echo "Platform-dependent options:"
+	echo "  --enable-sdl              Enable SDL backend, typically SDL2 (default)."
+	echo "  --enable-sdl2             Enable SDL2 backend (any version)."
+	echo "  --enable-sdl1             Enable SDL1 backend (1.2.x)."
+	echo "  --disable-sdl             Disable SDL dependencies and features."
+	echo "  --enable-egl              Enable EGL backend (disables SDL)."
 	echo "  --disable-x11             Disable X11, removing binary dependency."
 	echo "  --disable-pthread         Use SDL's threads/locking instead of pthread."
 	echo "  --disable-icon            Do not try to brand executable."
 	echo "  --disable-modular         Disable dynamically shared objects."
-	echo "  --disable-libsdl2         Disable SDL 2.0 support (falls back on 1.2)."
-	echo "  --disable-sdl             Disables SDL dependencies and features."
-	echo "  --enable-egl              Enables EGL backend (if SDL disabled)."
 	echo "  --enable-pledge           Enable experimental OpenBSD pledge(2) support"
 	echo
 	echo "General options:"
@@ -200,7 +202,6 @@ GLES="false"
 CHECK_ALLOC="true"
 COUNTER_HASH="true"
 DEBYTECODE="false"
-LIBSDL2="true"
 TRACE_LOGGING="false"
 STDIO_REDIRECT="false"
 GAMECONTROLLERDB="true"
@@ -433,6 +434,8 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-sdl" ] && SDL="false"
 	[ "$1" = "--enable-sdl" ]  && SDL="true"
+	[ "$1" = "--enable-sdl1" ] && SDL="1"
+	[ "$1" = "--enable-sdl2" ] && SDL="2"
 
 	[ "$1" = "--enable-egl" ]  && EGL="true"
 	[ "$1" = "--disable-egl" ] && EGL="false"
@@ -452,8 +455,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
 	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
 
-	[ "$1" = "--enable-libsdl2" ]  && LIBSDL2="true"
-	[ "$1" = "--disable-libsdl2" ] && LIBSDL2="false"
+	# TODO: compatibility options, eventually remove.
+	[ "$1" = "--enable-libsdl2" ]  && SDL="2"
+	[ "$1" = "--disable-libsdl2" ] && SDL="1"
 
 	[ "$1" = "--enable-trace" ]  && TRACE_LOGGING="true"
 	[ "$1" = "--disable-trace" ] && TRACE_LOGGING="false"
@@ -602,7 +606,7 @@ elif [ "$PLATFORM" = "darwin" ] || [ "$PLATFORM" = "darwin-devel" ] ||
 	echo "SUBPLATFORM=$PLATFORM"         >> platform.inc
 	echo "PLATFORM=darwin"               >> platform.inc
 else
-	if [ ! -d arch/$PLATFORM ]; then
+	if [ ! -d "arch/$PLATFORM" ]; then
 		echo "Invalid platform selection (see arch/)."
 		exit 1
 	fi
@@ -775,7 +779,7 @@ if [ "$PLATFORM" = "nds" ] ||
    [ "$PLATFORM" = "nds-blocksds" ] ||
    [ "$PLATFORM" = "djgpp" ] ||
    [ "$PLATFORM" = "dreamcast" ] ||
-   [ "$PLATFORM" = "egl" ]; then
+   [ "$EGL" = "true" ]; then
 	echo "Disabling SDL ($PLATFORM)."
 	SDL="false"
 
@@ -794,10 +798,16 @@ if [ "$SDL" = "false" ]; then
 	echo " -> SOFTSCALE, OVERLAY"
 	SOFTSCALE="false"
 	OVERLAY="false"
-	LIBSDL2="false"
 else
+	#
+	# If no specific version of SDL is selected, select SDL2.
+	#
+	if [ "$SDL" != "1" ] && [ "$SDL" != "2" ]; then
+		SDL="2"
+	fi
+	echo "Enabling SDL $SDL.x."
 	echo "#define CONFIG_SDL" >> src/config.h
-	echo "BUILD_SDL=1" >> platform.inc
+	echo "BUILD_SDL=$SDL" >> platform.inc
 fi
 
 #
@@ -898,6 +908,18 @@ if [ "$PLATFORM" = "3ds" ]; then
 	echo "#define CONFIG_3DS" >> src/config.h
 	echo "BUILD_3DS=1" >> platform.inc
 
+	#
+	# If the 3DS arch is enabled and SDL 1.2 is used, softscale is not
+	# available. On SDL 2.0, due to the rendering pipeline not supporting
+	# hardware acceleration as of writing, it is available, but with
+	# unsatisfactory performance. As a workaround, use the GP2X
+	# 320x240 renderer.
+	#
+	if [ "$SDL" != "false" ]; then
+		echo "Force-enabling GP2X 320x240 renderer (SDL on 3DS)."
+		GP2X="true"
+	fi
+
 	echo "Force-disabling stack protector on 3DS."
 	STACK_PROTECTOR="false"
 
@@ -908,18 +930,6 @@ if [ "$PLATFORM" = "3ds" ]; then
 
 	echo "Force-disabling IPv6 on 3DS (not implemented)."
 	IPV6="false"
-fi
-
-#
-# If the 3DS arch is enabled and SDL 1.2 is used, softscale is not
-# available. On SDL 2.0, due to the rendering pipeline not supporting
-# hardware acceleration as of writing, it is available, but with
-# unsatisfactory performance. As a workaround, use the GP2X
-# 320x240 renderer.
-#
-if [ "$PLATFORM" = "3ds" ] && [ "$SDL" = "true" ]; then
-	echo "Force-enabling GP2X 320x240 renderer (SDL on 3DS)."
-	GP2X="true"
 fi
 
 #
@@ -936,9 +946,6 @@ if [ "$PLATFORM" = "wii" ]; then
 		echo "Building custom Wii renderers."
 		SOFTWARE="false"
 	fi
-
-	# No SDL 2 support currently.
-	LIBSDL2="false"
 
 	echo "Force-disabling utils on Wii."
 	UTILS="false"
@@ -1098,7 +1105,7 @@ fi
 #
 # Force-disable the softscale renderer for SDL 1.2 (requires SDL_Renderer).
 #
-if [ "$SDL" = "true" ] && [ "$LIBSDL2" = "false" ] && [ "$SOFTSCALE" = "true" ]; then
+if [ "$SDL" = "1" ] && [ "$SOFTSCALE" = "true" ]; then
 	echo "Force-disabling softscale renderer (requires SDL 2)."
 	SOFTSCALE="false"
 fi
@@ -1107,7 +1114,7 @@ fi
 # Force-disable overlay renderers for SDL 2. The SDL 2 answer to SDL_Overlay
 # involves planar YUV modes which don't mesh well with MZX's internal rendering.
 #
-if [ "$SDL" = "true" ] && [ "$LIBSDL2" = "true" ] && [ "$OVERLAY" = "true" ]; then
+if [ "$SDL" != "false" ] && [ "$SDL" -ge "2" ] && [ "$OVERLAY" = "true" ]; then
 	echo "Force-disabling overlay renderers (requires SDL 1.2)."
 	OVERLAY="false"
 fi
@@ -1862,19 +1869,9 @@ else
 fi
 
 #
-# SDL 2.0 support, if enabled
-#
-if [ "$LIBSDL2" = "true" ]; then
-	echo "SDL 2.0 support enabled."
-	echo "BUILD_LIBSDL2=1" >> platform.inc
-else
-	echo "SDL 2.0 support disabled."
-fi
-
-#
 # stdio redirect, if enabled
 #
-if [ "$SDL" = "true" ] && [ "$LIBSDL2" = "false" ]; then
+if [ "$SDL" = "1" ]; then
 	echo "Using SDL 1.x default stdio redirect behavior."
 elif [ "$STDIO_REDIRECT" = "true" ]; then
 	echo "Redirecting stdio to stdout.txt and stderr.txt."
@@ -1886,7 +1883,8 @@ fi
 #
 # SDL_GameControllerDB, if enabled. This depends on SDL 2.
 #
-if [ "$LIBSDL2" = "true" ] && [ "$GAMECONTROLLERDB" = "true" ]; then
+if [ "$SDL" != "false" ] && [ "$SDL" -ge "2" ] && \
+   [ "$GAMECONTROLLERDB" = "true" ]; then
 	echo "SDL_GameControllerDB enabled."
 	echo "#define CONFIG_GAMECONTROLLERDB" >> src/config.h
 	echo "BUILD_GAMECONTROLLERDB=1" >> platform.inc

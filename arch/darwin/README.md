@@ -80,7 +80,6 @@ can be readily built, they currently are not included:
 ```
 ./config.sh \
   --platform darwin-dist \
-  --disable-libsdl2 \
   --disable-utils \
   --enable-release
 ```

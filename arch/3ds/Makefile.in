@@ -127,7 +127,7 @@ build: package ${build}
 ifeq ($(BUILD_SDL),)
 	${CP} arch/3ds/pad.config ${build}
 else
-ifeq ($(BUILD_LIBSDL2),)
+ifeq ($(BUILD_SDL),1)
 	${CP} arch/3ds/pad.config.sdl12 ${build}/pad.config
 else
 	${CP} arch/3ds/pad.config.sdl2 ${build}/pad.config

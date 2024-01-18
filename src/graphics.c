@@ -98,7 +98,9 @@ static const struct renderer_data renderers[] =
 #if defined(CONFIG_RENDER_GX)
   { "gx", render_gx_register },
 #endif
+#if !defined(CONFIG_SDL)
   { "xfb", render_xfb_register },
+#endif
 #endif
 #if defined(CONFIG_DJGPP)
   { "ega", render_ega_register },

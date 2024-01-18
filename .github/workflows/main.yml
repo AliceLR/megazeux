@@ -63,7 +63,7 @@ jobs:
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2 $MZXDEPS_DEBIAN_MISC
       - uses: actions/checkout@v3
       - name: Configure (SDL 1.2)
-        run: ./config.sh --platform unix-devel --enable-release --disable-libsdl2
+        run: ./config.sh --platform unix-devel --enable-release --enable-sdl1
       - name: Build (SDL 1.2)
         run: $MZX_MAKE
       - name: Run tests (SDL 1.2)
@@ -74,8 +74,9 @@ jobs:
         run: ./config.sh --platform unix-devel --enable-release --disable-sdl --enable-egl
       - name: Build (EGL/X11)
         run: $MZX_MAKE
+      # Note: EGL mzxrun builds can't run headless, unit tests only.
       - name: Run tests (EGL/X11)
-        run: $MZX_MAKE test
+        run: $MZX_MAKE unit
       - name: Distclean (EGL/X11)
         run: $MZX_MAKE distclean
       - name: Configure (ModPlug)
