@@ -272,7 +272,7 @@ int Socket::poll(struct pollfd *fds, unsigned int nfds, int timeout_ms)
  */
 
 // For LoadObject/LoadFunction
-#include <SDL.h>
+#include "../SDLmzx.h"
 
 static struct
 {

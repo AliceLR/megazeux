@@ -806,7 +806,7 @@ else
 		SDL="2"
 	fi
 	echo "Enabling SDL $SDL.x."
-	echo "#define CONFIG_SDL" >> src/config.h
+	echo "#define CONFIG_SDL $SDL" >> src/config.h
 	echo "BUILD_SDL=$SDL" >> platform.inc
 fi
 

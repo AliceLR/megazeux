@@ -86,7 +86,6 @@
 #endif
 
 // Defines so checkres builds when MZX headers are included.
-#define SKIP_SDL
 #define CORE_LIBSPEC
 
 // From MZX itself:

@@ -27,8 +27,7 @@
 // a significant FPS drop at speed 2. On top of that even just drawing chars to
 // a screen is much slower than MZX's software-based renderers right now.
 
-#include <SDL.h>
-
+#include "SDLmzx.h"
 #include "graphics.h"
 #include "platform.h"
 #include "render.h"

@@ -23,7 +23,6 @@
 #include <string.h>
 
 // Defines so hlp2html builds when this is included.
-#define SKIP_SDL
 #define CORE_LIBSPEC
 #include "../compat.h"
 #include "../hashtable.h"

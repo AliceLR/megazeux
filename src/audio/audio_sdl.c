@@ -20,9 +20,9 @@
 #include "audio.h"
 #include "audio_struct.h"
 
+#include "../SDLmzx.h"
 #include "../util.h"
 
-#include <SDL.h>
 #include <stdlib.h>
 
 #ifdef __EMSCRIPTEN__

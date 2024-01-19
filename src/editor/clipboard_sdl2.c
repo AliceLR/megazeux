@@ -22,9 +22,8 @@
 
 #include "clipboard.h"
 
+#include "../SDLmzx.h"
 #include "../util.h"
-
-#include <SDL.h>
 
 void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 {

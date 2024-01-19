@@ -18,13 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "compat_sdl.h"
+#include "SDLmzx.h"
 #include "render_sdl.h"
 #include "util.h"
 
 #include <limits.h>
-
-#include <SDL.h>
 
 CORE_LIBSPEC Uint32 sdl_window_id;
 

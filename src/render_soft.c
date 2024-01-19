@@ -28,7 +28,7 @@
 #include "util.h"
 
 #ifdef CONFIG_SDL
-#include <SDL.h>
+#include "SDLmzx.h"
 #include "render_sdl.h"
 #endif
 

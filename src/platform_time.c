@@ -34,9 +34,11 @@
 #endif
 
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
-#include <SDL.h>
+#include "SDLmzx.h"
 
 #define WINDOWS_TO_UNIX_SECONDS 11644473600LL
 #define WINDOWS_TO_UNIX_100NS   10000000LL
