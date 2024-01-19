@@ -5,7 +5,7 @@
 #define USERCONFFILE ".megazeux-config"
 #define SHAREDIR "../Resources"
 #define LICENSEDIR "../Resources"
-#define CONFIG_SDL
+#define CONFIG_SDL 2
 #define CONFIG_EDITOR
 #define CONFIG_HELPSYS
 #define CONFIG_RENDER_SOFT

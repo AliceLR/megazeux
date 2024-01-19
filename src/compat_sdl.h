@@ -121,35 +121,27 @@ static inline int SDL_GL_SetSwapInterval(int interval)
 }
 #endif
 
-#ifdef CONFIG_X11
-static inline XEvent *SDL_SysWMmsg_GetXEvent(SDL_SysWMmsg *msg)
+#ifdef _WIN32
+static inline HWND SDL_GetWindowProperty_HWND(SDL_Window *window)
 {
-  return &msg->event.xevent;
+  SDL_SysWMinfo info;
+  SDL_VERSION(&info.version);
+  SDL_GetWindowWMInfo(window, &info);
+  return info.window;
 }
-#endif /* CONFIG_X11 */
-
-#if defined(CONFIG_ICON) && defined(__WIN32__)
-static inline HWND SDL_SysWMinfo_GetWND(SDL_SysWMinfo *info)
-{
-  return info->window;
-}
-#endif /* CONFIG_ICON && __WIN32__ */
+#endif /* _WIN32 */
 
 #else /* SDL_VERSION_ATLEAST(2,0,0) */
 
-#ifdef CONFIG_X11
-static inline XEvent *SDL_SysWMmsg_GetXEvent(SDL_SysWMmsg *msg)
+#ifdef _WIN32
+static inline HWND SDL_GetWindowProperty_HWND(SDL_Window *window)
 {
-  return &msg->msg.x11.event;
+  SDL_SysWMinfo info;
+  SDL_VERSION(&info.version);
+  SDL_GetWindowWMInfo(window, &info);
+  return info.info.win.window;
 }
-#endif /* CONFIG_X11 */
-
-#if defined(CONFIG_ICON) && defined(__WIN32__)
-static inline HWND SDL_SysWMinfo_GetWND(SDL_SysWMinfo *info)
-{
-  return info->info.win.window;
-}
-#endif /* CONFIG_ICON && __WIN32__ */
+#endif /* _WIN32 */
 
 #endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
