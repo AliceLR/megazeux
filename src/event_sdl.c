@@ -19,14 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "SDLmzx.h"
 #include "configure.h"
 #include "event.h"
 #include "graphics.h"
-#include "compat_sdl.h"
 #include "render_sdl.h"
 #include "util.h"
 
-#include <SDL.h>
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>

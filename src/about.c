@@ -28,7 +28,7 @@
 #include <zlib.h>
 
 #ifdef CONFIG_SDL
-#include <SDL.h>
+#include "SDLmzx.h"
 #endif
 #ifdef CONFIG_XMP
 #include <xmp.h>

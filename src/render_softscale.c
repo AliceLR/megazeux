@@ -33,9 +33,9 @@
  * nearest or linear scaling based on the scaling ratio and window size.
  */
 
-#include <SDL.h>
 #include <stdlib.h>
 
+#include "SDLmzx.h"
 #include "graphics.h"
 #include "render.h"
 #include "render_layer.h"

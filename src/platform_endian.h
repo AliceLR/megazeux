@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk
+ * Copyright (C) 2020, 2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -20,25 +21,12 @@
 #ifndef __ENDIAN_H
 #define __ENDIAN_H
 
-/* If SDL is available, include the header and use SDL's configured
- * endianness. If it's not available, use GCC/clang or a list of architectures
- * (both checks borrowed from SDL) to determine the endianness.
+/* Use GCC/clang or a list of architectures (both checks borrowed from SDL) to
+ * determine the endianness. If SDL is enabled, platform_sdl.c will check this.
  */
 
 #define PLATFORM_LIL_ENDIAN 0x1234
 #define PLATFORM_BIG_ENDIAN 0x4321
-
-#if defined(CONFIG_SDL) && !defined(SKIP_SDL)
-
-#include <SDL_endian.h>
-
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-#define PLATFORM_BYTE_ORDER PLATFORM_BIG_ENDIAN
-#else
-#define PLATFORM_BYTE_ORDER PLATFORM_LIL_ENDIAN
-#endif
-
-#else // !CONFIG_SDL
 
 #if defined(__BIG_ENDIAN__)
 #define PLATFORM_BYTE_ORDER PLATFORM_BIG_ENDIAN
@@ -63,8 +51,6 @@
 #else
 #define PLATFORM_BYTE_ORDER PLATFORM_LIL_ENDIAN
 #endif
-
-#endif // CONFIG_SDL
 
 /* ModPlug and XMP both use this name to find out about endianness. It's not
  * too bad to pollute our namespace with it, so just do so here.

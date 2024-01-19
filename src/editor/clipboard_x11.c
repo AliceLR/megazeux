@@ -25,7 +25,7 @@
 #include "clipboard.h"
 
 #if defined(CONFIG_SDL)
-#include "../compat_sdl.h"
+#include "../SDLmzx.h"
 #include "../render_sdl.h"
 #endif
 
@@ -34,7 +34,7 @@ static int copy_buffer_lines;
 static int copy_buffer_total_length;
 
 /* Forward declaration so the SDL parts can stay separate. */
-static int copy_buffer_to_X11_selection(Display *display, Window xwindow, Xevent *xevent);
+static int copy_buffer_to_X11_selection(Display *display, XEvent *xevent);
 
 #ifdef CONFIG_SDL
 #if SDL_VERSION_ATLEAST(1,2,0)
@@ -69,7 +69,7 @@ static inline int event_callback(const SDL_Event *event)
   SDL_Window *window = NULL;
 #endif
   Display *display;
-  Xevent *xevent;
+  XEvent *xevent;
   if(event->type != SDL_SYSWMEVENT)
     return 0;
 
@@ -79,13 +79,13 @@ static inline int event_callback(const SDL_Event *event)
 #if SDL_VERSION_ATLEAST(2,0,0)
   xevent = &(event->syswm.msg->msg.x11.event);
 #else
-  xevent = &(event->syswm.msg.event.xevent);
+  xevent = &(event->syswm.msg->event.xevent);
 #endif
 
   return copy_buffer_to_X11_selection(display, xevent);
 }
 
-static inline void set_X11_event_callback()
+static inline void set_X11_event_callback(void)
 {
   SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
   SDL_SetEventFilter(event_callback, SDL_GetWindowFromID(sdl_window_id));
@@ -95,7 +95,7 @@ static inline void set_X11_event_callback()
 #endif /* CONFIG_SDL */
 
 
-static int copy_buffer_to_X11_selection(Display *display, Xevent *xevent)
+static int copy_buffer_to_X11_selection(Display *display, XEvent *xevent)
 {
   XSelectionRequestEvent *request;
   char *dest_data, *dest_ptr;

@@ -30,7 +30,9 @@ __M_BEGIN_DECLS
 #if defined(CONFIG_SDL)
 
 #include <SDL.h>
+#if defined(_WIN32) || defined(CONFIG_X11)
 #include <SDL_syswm.h>
+#endif
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
 
@@ -40,6 +42,8 @@ __M_BEGIN_DECLS
 // Data types
 
 typedef SDLKey SDL_Keycode;
+typedef int (*SDL_ThreadFunction)(void *);
+typedef Uint32 SDL_threadID;
 // Use a macro because sdl1.2-compat typedefs SDL_Window...
 #define SDL_Window void
 
@@ -67,11 +71,13 @@ typedef SDLKey SDL_Keycode;
 
 #define SDL_SetEventFilter(filter, userdata) SDL_SetEventFilter(filter)
 
+#ifdef CONFIG_X11
 static inline SDL_bool SDL_GetWindowWMInfo(SDL_Window *window,
                                            SDL_SysWMinfo *info)
 {
   return SDL_GetWMInfo(info) == 1 ? SDL_TRUE : SDL_FALSE;
 }
+#endif
 
 static inline SDL_Window *SDL_GetWindowFromID(Uint32 id)
 {

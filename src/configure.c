@@ -38,7 +38,7 @@
 #include "io/vio.h"
 
 #ifdef CONFIG_SDL
-#include <SDL_version.h>
+#include "SDLmzx.h"
 #endif
 
 #define MAX_INCLUDE_DEPTH 16

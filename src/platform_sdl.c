@@ -19,11 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "compat.h"
+#include "SDLmzx.h"
 #include "platform.h"
 #include "util.h"
-
-#include <SDL.h>
 
 #ifdef CONFIG_PSP
 #include <psppower.h>
@@ -36,6 +34,14 @@
 #ifdef CONFIG_WII
 #include <sys/iosupport.h>
 #include <fat.h>
+#endif
+
+/* Verify that SDL's endianness matches what platform_endian.h claims... */
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN && PLATFORM_BYTE_ORDER != PLATFORM_BIG_ENDIAN
+#error Endian mismatch: SDL detected big, but MZX detected little. Report this!
+#endif
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN && PLATFORM_BYTE_ORDER != PLATFORM_LIL_ENDIAN
+#error Endian mismatch: SDL detected little, but MZX detected big. Report this!
 #endif
 
 #ifdef __EMSCRIPTEN__
@@ -61,7 +67,9 @@ uint64_t get_ticks(void)
 }
 
 #ifdef __WIN32__
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 
 /**

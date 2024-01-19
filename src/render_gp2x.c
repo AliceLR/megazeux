@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "SDLmzx.h"
 #include "platform.h"
 #include "graphics.h"
 #include "render.h"
@@ -25,8 +26,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-
-#include <SDL.h>
 
 struct gp2x_render_data
 {

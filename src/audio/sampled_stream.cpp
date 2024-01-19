@@ -67,7 +67,7 @@ enum mixer_channels
 
 enum mixer_volume
 {
-  FIXED       = 0,
+  FULL        = 0,
   DYNAMIC     = 1
 };
 
@@ -223,8 +223,8 @@ static void mixer_function(struct sampled_stream *s_src,
 {
   switch(volume_mode)
   {
-    case FIXED:
-      mixer_function<CHANNELS, FIXED>(s_src, dest, write_len, src, volume, resample_mode);
+    case FULL:
+      mixer_function<CHANNELS, FULL>(s_src, dest, write_len, src, volume, resample_mode);
       break;
 
     case DYNAMIC:
@@ -323,7 +323,7 @@ void sampled_mix_data(struct sampled_stream *s_src,
     resample_mode = FLAT;
 
   if(!s_src->use_volume || volume == 256)
-    use_volume = FIXED;
+    use_volume = FULL;
 
   if(s_src->channels < 2)
     use_channels = MONO;

@@ -24,14 +24,7 @@
 
 __M_BEGIN_DECLS
 
-#include <SDL_stdinc.h>
-#include <SDL_thread.h>
-#include <SDL_version.h>
-
-#if !SDL_VERSION_ATLEAST(2,0,0)
-typedef int (*SDL_ThreadFunction)(void *);
-typedef Uint32 SDL_threadID;
-#endif
+#include "SDLmzx.h"
 
 #define THREAD_RES int
 #define THREAD_RETURN do { return 0; } while(0)

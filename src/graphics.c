@@ -48,7 +48,7 @@
 #endif
 
 #ifdef CONFIG_SDL
-#include "compat_sdl.h"
+#include "SDLmzx.h"
 #include "render_sdl.h"
 #endif // CONFIG_SDL
 
