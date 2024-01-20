@@ -650,17 +650,21 @@ static void parse_gamepad_map(int joystick_index, char *map)
   }
 }
 
-static void init_gamepad(int sdl_index, int joystick_index)
+/**
+ * `sdl_joystick_id` is a device ID for SDL1/SDL2, but an instance ID for SDL3.
+ */
+static void init_gamepad(SDL_Joystick *joystick, int sdl_joystick_id,
+ int joystick_index)
 {
-  SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(sdl_index);
+  SDL_JoystickGUID guid = SDL_JoystickGetGUID(joystick);
   char guid_string[33];
 
   SDL_JoystickGetGUIDString(guid, guid_string, 33);
   gamepads[joystick_index] = NULL;
 
-  if(SDL_IsGameController(sdl_index))
+  if(SDL_IsGameController(sdl_joystick_id))
   {
-    SDL_GameController *gamepad = SDL_GameControllerOpen(sdl_index);
+    SDL_GameController *gamepad = SDL_GameControllerOpen(sdl_joystick_id);
 
     if(gamepad)
     {
@@ -672,7 +676,7 @@ static void init_gamepad(int sdl_index, int joystick_index)
       // NOTE: the other functions for this will not return the default mapping
       // string; this is the only one that can return everything. Right now,
       // this only matters for the Emscripten port.
-      mapping = (char *)SDL_GameControllerMappingForDeviceIndex(sdl_index);
+      mapping = (char *)SDL_GameControllerMappingForDeviceIndex(sdl_joystick_id);
 #else
       mapping = (char *)SDL_GameControllerMapping(gamepad);
 #endif
@@ -831,13 +835,11 @@ void gamepad_add_mapping(const char *mapping)
 #endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
 /**
- * SDL 2 uses joystick instance IDs instead of the joystick index for all
- * purposes aside from SDL_JoystickOpen(). We prefer the joystick index (which
- * SDL 1.2 used exclusively) as the instance IDs increment every time
- * SDL_JoystickOpen() is used, so keep a map between the two. Additionally,
- * store the joystick pointer to make things easier when closing joysticks.
+ * SDL 2+ uses joystick instance IDs instead of the device ID (index) for all
+ * purposes (except for initialization in SDL 2, but not SDL 3). These instance
+ * IDs need to be mapped to MegaZeux joystick indices. For SDL 1.2, the SDL
+ * device ID is used as a substitute for the instance ID.
  */
-
 static int get_joystick_index(int sdl_instance_id)
 {
   int i;
@@ -858,15 +860,17 @@ static int get_next_unused_joystick_index(void)
   return -1;
 }
 
-static void init_joystick(int sdl_index)
+/**
+ * `sdl_joystick_id` is a device ID for SDL1/SDL2, but an instance ID for SDL3.
+ */
+static void init_joystick(int sdl_joystick_id)
 {
   struct buffered_status *status = store_status();
   int joystick_index = get_next_unused_joystick_index();
 
   if(joystick_index >= 0)
   {
-    SDL_Joystick *joystick = SDL_JoystickOpen(sdl_index);
-
+    SDL_Joystick *joystick = SDL_JoystickOpen(sdl_joystick_id);
     if(joystick)
     {
       joystick_instance_ids[joystick_index] = SDL_JoystickInstanceID(joystick);
@@ -877,7 +881,7 @@ static void init_joystick(int sdl_index)
        joystick_index + 1, joystick_instance_ids[joystick_index]);
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-      init_gamepad(sdl_index, joystick_index);
+      init_gamepad(joystick, sdl_joystick_id, joystick_index);
 #endif
     }
   }
