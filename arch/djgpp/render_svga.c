@@ -47,29 +47,23 @@ struct svga_render_data
   int update_colors;
 };
 
-static void ega_vsync(void)
-{
-  while(!(inportb(0x03DA) & 0x08))
-    ;
-}
-
 static boolean svga_try_mode(struct graphics_data *graphics, uint16_t mode,
  uint16_t width, uint16_t height, uint16_t bpp)
 {
   struct svga_render_data *render_data = graphics->render_data;
   __dpmi_regs reg;
 
-  reg.x.ax = 0x4F02;
-  reg.x.bx = mode | 0x4000 /* LFB */;
+  reg.x.ax = 0x4F02; // set video mode
+  reg.x.bx = mode;
   __dpmi_int(0x10, &reg);
 
-  if(reg.h.ah != 0x00)
+  if(reg.x.ax != 0x004F)
     return false;
 
   graphics->resolution_width = graphics->window_width = width;
   graphics->resolution_height = graphics->window_height = height;
   graphics->bits_per_pixel = bpp;
-  render_data->mode = mode | 0x4000;
+  render_data->mode = mode;
 
   return true;
 }
@@ -78,15 +72,18 @@ static boolean svga_try_modes(struct graphics_data *graphics)
 {
   if(graphics->bits_per_pixel >= 16)
   {
-    if(svga_try_mode(graphics, 0x111, 640, 480, 16))
+    // 640x480x16 with LFB
+    if(svga_try_mode(graphics, 0x4111, 640, 480, 16))
       return true;
   }
 
   if(graphics->bits_per_pixel >= 8)
   {
-    if(svga_try_mode(graphics, 0x100, 640, 400, 8))
+    // 640x400x8 with LFB
+    if(svga_try_mode(graphics, 0x4100, 640, 400, 8))
       return true;
-    if(svga_try_mode(graphics, 0x101, 640, 480, 8))
+    // 640x480x8 with LFB
+    if(svga_try_mode(graphics, 0x4101, 640, 480, 8))
       return true;
   }
   return false;
@@ -124,26 +121,26 @@ static boolean svga_init_video(struct graphics_data *graphics,
     return false;
   }
 
-  reg.x.ax = 0x4F01;
+  reg.x.ax = 0x4F01; // get video mode information
   reg.x.cx = render_data.mode;
-  reg.x.di = __tb & 0xF;
+  reg.x.di = __tb & 0xF; // transfer block
   reg.x.es = (__tb >> 4);
   __dpmi_int(0x10, &reg);
 
   if(reg.x.ax != 0x004F)
   {
-    warn("Could not initialize VESA graphics mode!\n");
+    warn("Could not query VESA graphics mode!\n");
     return false;
   }
 
   dosmemget(__tb, sizeof(struct vbe_mode_info), &vbe);
   render_data.mapping.address = vbe.linear_ptr;
-  render_data.mapping.size = (graphics->resolution_height * vbe.pitch) +
-   (graphics->resolution_width * (graphics->bits_per_pixel >> 3));
-  /* * 2 / 1024 = / 512 = >> 9 */
-  render_data.page_flip_ok = true; //>= (render_data.mapping.size >> 9);
+  render_data.mapping.size = (graphics->resolution_height * vbe.pitch);
+  // TODO: detect if we have enough memory
+  render_data.page_flip_ok = true;
   if(render_data.page_flip_ok)
     render_data.mapping.size <<= 1;
+  // round up to 4KB
   render_data.mapping.size = (render_data.mapping.size + 4095) & (~4095);
   if(__dpmi_physical_address_mapping(&render_data.mapping) != 0)
   {
@@ -170,7 +167,7 @@ static boolean svga_init_video(struct graphics_data *graphics,
   }
 
   memset((uint8_t *)(render_data.mapping.address + __djgpp_conventional_base), 0,
-   vbe.pitch * vbe.height);
+   vbe.pitch * vbe.height * (render_data.page_flip_ok ? 2 : 1));
 
   return set_video_mode();
 }
@@ -196,12 +193,12 @@ static void svga_upload_colors(uint32_t *palette, uint32_t count)
     count = 256;
   dosmemput(palette, count << 2, __tb);
 
-  reg.x.ax = 0x4F08;
-  reg.x.bx = 0x0600; // command 00, palette width 6
+  reg.x.ax = 0x4F08; // DAC palette width
+  reg.x.bx = 0x0600; // ... set 6 bits per color
   __dpmi_int(0x10, &reg);
 
-  reg.x.ax = 0x4F09;
-  reg.h.bl = 0x80;
+  reg.x.ax = 0x4F09; // DAC palette entries
+  reg.x.bx = 0x0080; // ... set on next retrace
   reg.x.cx = count;
   reg.x.dx = 0;
   reg.x.di = __tb & 0xF;
@@ -309,9 +306,6 @@ static void svga_sync_screen(struct graphics_data *graphics)
   uint8_t *ptr;
   uint16_t line;
 
-  if(render_data->update_colors > 0 || render_data->page_flip_ok)
-    ega_vsync();
-
   if(render_data->update_colors > 0)
   {
     svga_upload_colors(graphics->flat_intensity_palette, render_data->update_colors);
@@ -320,16 +314,14 @@ static void svga_sync_screen(struct graphics_data *graphics)
 
   if(render_data->page_flip_ok)
   {
-    // VBE 2.0 method of flipping
-    reg.x.ax = 0x4F07;
-    reg.x.bx = 0x0000;
+    reg.x.ax = 0x4F07; // set display start
+    reg.x.bx = 0x0080; // ...during vertical retrace
     reg.x.cx = 0;
     reg.x.dx = render_data->line;
 
     __dpmi_int(0x10, &reg);
-    if(reg.h.al != 0x4F)
+    if(reg.x.ax != 0x004F)
     {
-      // we were wrong
       render_data->page_flip_ok = false;
       return;
     }
