@@ -962,8 +962,17 @@ err_invalid:
 static boolean process_event(SDL_Event *event)
 {
   struct buffered_status *status = store_status();
-  static boolean unicode_fallback = true;
   enum keycode ckey;
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+  /* Enable converting keycodes to fake unicode presses when text input isn't
+   * active. Enabling text input also enables an onscreen keyboard in some
+   * ports, so it isn't always desired. */
+  boolean unicode_fallback = !SDL_IsTextInputActive();
+#else
+  /* SDL 1.2 might also need this (Pandora? doesn't generate unicode presses). */
+  static boolean unicode_fallback = true;
+#endif
 
   /* SDL's numlock keyboard modifier handling seems to be broken on X11,
    * and it will only get numlock's status right on application init. We
