@@ -290,7 +290,7 @@ static const struct config_info user_conf_default =
   true,                         // pc_speaker_on
 
   // Event options
-  true,                         // allow_gamecontroller
+  true,                         // allow_gamepad
   false,                        // pause_on_unfocus
   1,                            // num_buffered_events
 
@@ -957,16 +957,23 @@ static void config_set_joy_axis_threshold(struct config_info *conf, char *name,
 
 #ifdef CONFIG_SDL
 #if SDL_VERSION_ATLEAST(2,0,0)
-#define GC_ENUM "%15[-+0-9A-Za-z_]"
+#define GAMEPAD_ENUM "%15[-+0-9A-Za-z_]"
 
-static void config_sdl_gc_set(struct config_info *conf, char *name,
+static void config_gamepad_set(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  char gc_sym[16];
+  char gamepad_sym[16];
   char key[16];
   int read = 0;
 
-  if(sscanf(name, "gamecontroller." GC_ENUM "%n", gc_sym, &read) != 1
+  // Option may be either "gamepad.[enum]" or "gamecontroller.[enum]".
+  if(!strncmp(name, "gamepad.", 7))
+    name += 7;
+  else
+  if(!strncmp(name, "gamecontroller", 14))
+    name += 14;
+
+  if(sscanf(name, "." GAMEPAD_ENUM "%n", gamepad_sym, &read) != 1
    || (name[read] != 0))
     return;
 
@@ -974,19 +981,19 @@ static void config_sdl_gc_set(struct config_info *conf, char *name,
   if(sscanf(value, JOY_ENUM "%n", key, &read) != 1 || (value[read] != 0))
     return;
 
-  gamecontroller_map_sym(gc_sym, key);
+  gamepad_map_sym(gamepad_sym, key);
 }
 
-static void config_sdl_gc_add(struct config_info *conf, char *name,
+static void config_gamepad_add(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  gamecontroller_add_mapping(value);
+  gamepad_add_mapping(value);
 }
 
-static void config_sdl_gc_enable(struct config_info *conf, char *name,
+static void config_gamepad_enable(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  config_boolean(&conf->allow_gamecontroller, value);
+  config_boolean(&conf->allow_gamepad, value);
 }
 
 #endif // SDL_VERSION_ATLEAST(2,0,0)
@@ -1231,9 +1238,12 @@ static const struct config_entry config_options[] =
   { "fullscreen_windowed", config_set_fullscreen_windowed, false },
 #ifdef CONFIG_SDL
 #if SDL_VERSION_ATLEAST(2,0,0)
-  { "gamecontroller.*", config_sdl_gc_set, false },
-  { "gamecontroller_add", config_sdl_gc_add, false },
-  { "gamecontroller_enable", config_sdl_gc_enable, false },
+  { "gamecontroller.*", config_gamepad_set, false },
+  { "gamecontroller_add", config_gamepad_add, false },
+  { "gamecontroller_enable", config_gamepad_enable, false },
+  { "gamepad.*", config_gamepad_set, false },
+  { "gamepad_add", config_gamepad_add, false },
+  { "gamepad_enable", config_gamepad_enable, false },
 #endif
 #endif
   { "gl_filter_method", config_set_gl_filter_method, false },

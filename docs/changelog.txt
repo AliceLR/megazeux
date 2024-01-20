@@ -5,6 +5,8 @@ FREAD/FREADn bugfixes, as the old behavior was unusably buggy.
 
 USERS
 
++ All "gamecontroller[...]" config.txt options have been renamed
+  to "gamepad[...]". The old names are still supported.
 + HTML5: fixed the poor performance of FREADn and other features
   that rely on calculating the length of an open file.
 + Setting a string offset, limit, or splice to FREADn now

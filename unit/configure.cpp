@@ -624,9 +624,14 @@ UNITTEST(Settings)
 
 #ifdef CONFIG_SDL
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SECTION(allow_gamecontroller)
+  SECTION(gamecontroller_enable)
   {
-    TEST_ENUM("gamecontroller_enable", conf->allow_gamecontroller, boolean_data);
+    TEST_ENUM("gamecontroller_enable", conf->allow_gamepad, boolean_data);
+  }
+
+  SECTION(gamepad_enable)
+  {
+    TEST_ENUM("gamepad_enable", conf->allow_gamepad, boolean_data);
   }
 #endif
 #endif

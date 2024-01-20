@@ -207,8 +207,8 @@ void __wait_event(void);
 void __warp_mouse(int x, int y);
 
 // "Driver" functions currently only supported by SDL.
-void gamecontroller_map_sym(const char *sym, const char *value);
-void gamecontroller_add_mapping(const char *mapping);
+void gamepad_map_sym(const char *sym, const char *value);
+void gamepad_add_mapping(const char *mapping);
 
 #ifdef CONFIG_NDS
 const struct buffered_status *load_status(void);

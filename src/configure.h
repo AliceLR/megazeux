@@ -141,7 +141,7 @@ struct config_info
   boolean pc_speaker_on;
 
   // Event options
-  boolean allow_gamecontroller;
+  boolean allow_gamepad;
   boolean pause_on_unfocus;
   int num_buffered_events;
 
