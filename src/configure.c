@@ -967,7 +967,7 @@ static void config_gamepad_set(struct config_info *conf, char *name,
   int read = 0;
 
   // Option may be either "gamepad.[enum]" or "gamecontroller.[enum]".
-  if(!strncmp(name, "gamepad.", 7))
+  if(!strncmp(name, "gamepad", 7))
     name += 7;
   else
   if(!strncmp(name, "gamecontroller", 14))
