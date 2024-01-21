@@ -650,47 +650,47 @@
 # joystick number 'X' can be substituted with a range '[Z,W]', which will
 # assign the control for all joysticks numbered Z through W (inclusive).
 
-# Automatic mapping for actions is handled using SDL 2's game controller API.
-# Supported controllers should generally "just work" when they're plugged in.
+# Automatic mapping for actions is handled using SDL's gamepad API.
+# Supported gamepads should generally "just work" when they're plugged in.
 # This setting can be used to globally disable the automatic mapping feature
 # entirely. If 1, it will be enabled (default). If 0, it will be disabled.
 
-# gamecontroller_enable = 1
+# gamepad_enable = 1
 
-# Controllers that aren't supported can be fixed by adding SDL mapping strings.
+# Gamepads that aren't supported can be fixed by adding SDL mapping strings.
 # This config option adds a new mapping string and can be used multiple times;
 # each line adds a new mapping. See docs/joystick.html for more information.
 
-# gamecontroller_add =
+# gamepad_add =
 
 # The following settings can be used to globally customize the automated
 # joystick mappings generated from SDL mapping strings.
 # See docs/joystick.html for more information.
 
-# gamecontroller.a = act_a
-# gamecontroller.b = act_b
-# gamecontroller.x = act_x
-# gamecontroller.y = act_y
-# gamecontroller.back = act_select
-# gamecontroller.start = act_start
-# gamecontroller.leftstick = act_lstick
-# gamecontroller.rightstick = act_rstick
-# gamecontroller.leftshoulder = act_lshoulder
-# gamecontroller.rightshoulder = act_rshoulder
-# gamecontroller.dpup = act_up
-# gamecontroller.dpdown = act_down
-# gamecontroller.dpleft = act_left
-# gamecontroller.dpright = act_right
-# gamecontroller.-leftx = act_l_left
-# gamecontroller.+leftx = act_l_right
-# gamecontroller.-lefty = act_l_up
-# gamecontroller.+lefty = act_l_down
-# gamecontroller.-rightx = act_r_left
-# gamecontroller.+rightx = act_r_right
-# gamecontroller.-righty = act_r_up
-# gamecontroller.+righty = act_r_down
-# gamecontroller.lefttrigger = act_ltrigger
-# gamecontroller.righttrigger = act_rtrigger
+# gamepad.a = act_a
+# gamepad.b = act_b
+# gamepad.x = act_x
+# gamepad.y = act_y
+# gamepad.back = act_select
+# gamepad.start = act_start
+# gamepad.leftstick = act_lstick
+# gamepad.rightstick = act_rstick
+# gamepad.leftshoulder = act_lshoulder
+# gamepad.rightshoulder = act_rshoulder
+# gamepad.dpup = act_up
+# gamepad.dpdown = act_down
+# gamepad.dpleft = act_left
+# gamepad.dpright = act_right
+# gamepad.-leftx = act_l_left
+# gamepad.+leftx = act_l_right
+# gamepad.-lefty = act_l_up
+# gamepad.+lefty = act_l_down
+# gamepad.-rightx = act_r_left
+# gamepad.+rightx = act_r_right
+# gamepad.-righty = act_r_up
+# gamepad.+righty = act_r_down
+# gamepad.lefttrigger = act_ltrigger
+# gamepad.righttrigger = act_rtrigger
 
 
 # Misc Options

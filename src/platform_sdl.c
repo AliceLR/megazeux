@@ -153,15 +153,20 @@ boolean platform_init(void)
   }
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-/**
- * TODO: Don't enable SDL_TEXTINPUT events on Android for now. They seem to
- * cause more issues than they solve. Enabling these on Android also seems
- * to assume that the onscreen keyboard should be opened, which usually
- * covers whatever part of the MZX screen is being typed into.
- */
-#if !defined(ANDROID)
-  SDL_StartTextInput();
-#endif
+  /* Most platforms want text input events always on so they can generate
+   * convenient unicode text values, but in Android this causes some problems:
+   *
+   * - On older versions the navigation bar will ALWAYS display, regardless
+   *   of whether or not there's an attached keyboard.
+   * - Holding the space key no longer works, breaking built-in shooting (as
+   *   recent as Android 10).
+   * - The onscreen keyboard Android pops up can be moved but not collapsed.
+   *
+   * TODO: Instead, enable text input on demand at text prompts.
+   * TODO: this probably redundant with behavior already in SDL.
+   */
+  if(!SDL_HasScreenKeyboardSupport())
+    SDL_StartTextInput();
 #else
   SDL_EnableUNICODE(1);
 #endif
