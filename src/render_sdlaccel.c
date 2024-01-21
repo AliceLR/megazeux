@@ -302,7 +302,7 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
 
   // This requires that the underlying driver supports framebuffer objects.
   if(!sdlrender_set_video_mode(graphics, width, height,
-   depth, fullscreen, resize, SDL_RENDERER_TARGETTEXTURE))
+   depth, fullscreen, resize, true))
     return false;
 
   texture[TEX_SCREEN] =
@@ -551,8 +551,13 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
   SDL_Texture *chars_tex = render_data->sdl.texture[TEX_CHARS];
   SDL_Texture *bg_tex = render_data->sdl.texture[TEX_BACKGROUND];
 
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_FRect dest_bg = { offx, offy, w * CHAR_W, h * CHAR_H };
+  SDL_FRect src_bg = { 0, 0, w, h };
+#else
   SDL_Rect dest_bg = { offx, offy, w * CHAR_W, h * CHAR_H };
   SDL_Rect src_bg = { 0, 0, w, h };
+#endif
   void *_bg;
   int bg_pitch;
   uint32_t *bg;
@@ -637,7 +642,7 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
       }
     }
     SDL_UnlockTexture(bg_tex);
-    SDL_RenderCopy(renderer, bg_tex, &src_bg, &dest_bg);
+    SDL_RenderTexture(renderer, bg_tex, &src_bg, &dest_bg);
 
 #ifdef RENDER_GEOMETRY
 
@@ -646,8 +651,13 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
 #else /* !RENDER_GEOMETRY */
     /* Render foreground and partially transparent chars. */
     {
+#if SDL_VERSION_ATLEAST(3,0,0)
+    SDL_FRect dest_rect = { 0, 0, CHAR_W, CHAR_H };
+    SDL_FRect src_rect = { 0, 0, CHAR_W, CHAR_H };
+#else
     SDL_Rect dest_rect = { 0, 0, CHAR_W, CHAR_H };
     SDL_Rect src_rect = { 0, 0, CHAR_W, CHAR_H };
+#endif
     next = layer->data;
     for(y = 0; y < h; y++)
     {
@@ -676,7 +686,7 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
         else
           continue;
 
-        SDL_RenderCopy(renderer, chars_tex, &src_rect, &dest_rect);
+        SDL_RenderTexture(renderer, chars_tex, &src_rect, &dest_rect);
       }
     }
     }
@@ -695,7 +705,11 @@ static void sdlaccel_render_cursor(struct graphics_data *graphics, unsigned x,
   uint8_t *palette = render_data->palette;
 
   // Input coordinates are on the character grid.
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_FRect dest = { x * CHAR_W, y * CHAR_H + offset, CHAR_W, lines };
+#else
   SDL_Rect dest = { x * CHAR_W, y * CHAR_H + offset, CHAR_W, lines };
+#endif
 
   SDL_SetRenderDrawBlendMode(render_data->sdl.renderer, SDL_BLENDMODE_NONE);
   SDL_SetRenderDrawColor(render_data->sdl.renderer,
@@ -711,7 +725,11 @@ static void sdlaccel_render_mouse(struct graphics_data *graphics, unsigned x,
   struct sdlaccel_render_data *render_data = graphics->render_data;
 
   // Input coordinates are pixel values.
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_FRect dest = { x, y, w, h };
+#else
   SDL_Rect dest = { x, y, w, h };
+#endif
 
   /* There is no preset inversion blend mode, so make a custom blend mode.
    * Lower SDL versions should simply fall back to drawing a white rectangle.
@@ -738,8 +756,13 @@ static void sdlaccel_sync_screen(struct graphics_data *graphics)
   struct sdlaccel_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *screen_tex = render_data->sdl.texture[TEX_SCREEN];
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_FRect src;
+  SDL_FRect dest;
+#else
   SDL_Rect src;
   SDL_Rect dest;
+#endif
   int width = render_data->w;
   int height = render_data->h;
   int v_width, v_height;
@@ -756,7 +779,7 @@ static void sdlaccel_sync_screen(struct graphics_data *graphics)
   dest.h = v_height;
 
   SDL_SetRenderTarget(renderer, NULL);
-  SDL_RenderCopy(renderer, screen_tex, &src, &dest);
+  SDL_RenderTexture(renderer, screen_tex, &src, &dest);
 
   SDL_RenderPresent(renderer);
 

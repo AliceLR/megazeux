@@ -265,14 +265,24 @@ static void softscale_sync_screen(struct graphics_data *graphics)
   struct softscale_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *texture = render_data->sdl.texture[0];
-  SDL_Rect *src_rect = &(render_data->texture_rect);
+  SDL_Rect *texture_rect = &(render_data->texture_rect);
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_FRect src_rect;
+  SDL_FRect dest_rect;
+#else
+  SDL_Rect src_rect;
   SDL_Rect dest_rect;
+#endif
   int width = render_data->w;
   int height = render_data->h;
   int v_width, v_height;
 
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
+  src_rect.x = texture_rect->x;
+  src_rect.y = texture_rect->y;
+  src_rect.w = texture_rect->w;
+  src_rect.x = texture_rect->h;
 
+  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
   dest_rect.x = (width - v_width) / 2;
   dest_rect.y = (height - v_height) / 2;
   dest_rect.w = v_width;
@@ -283,7 +293,7 @@ static void softscale_sync_screen(struct graphics_data *graphics)
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
   SDL_RenderClear(renderer);
 
-  SDL_RenderCopy(renderer, texture, src_rect, &dest_rect);
+  SDL_RenderTexture(renderer, texture, &src_rect, &dest_rect);
   SDL_RenderPresent(renderer);
 }
 

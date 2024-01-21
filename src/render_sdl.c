@@ -70,58 +70,145 @@ int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
   return flags;
 }
 
+// Get the current desktop resolution, if possible.
+static boolean sdl_get_desktop_display_mode(SDL_DisplayMode *display_mode)
+{
+#if SDL_VERSION_ATLEAST(3,0,0)
+
+  const SDL_DisplayMode **list;
+  const SDL_DisplayMode *mode;
+  int count;
+
+  mode = SDL_GetDesktopDisplayMode(0);
+  if(mode)
+  {
+    *display_mode = *mode;
+    return true;
+  }
+
+  warn("Failed to query desktop display mode: %s\n", SDL_GetError());
+  list = SDL_GetFullscreenDisplayModes(0, &count);
+  if(list)
+  {
+    if(count)
+      mode = list[0];
+
+    SDL_free(list);
+    if(mode)
+    {
+      *display_mode = *mode;
+      return true;
+    }
+  }
+
+#elif SDL_VERSION_ATLEAST(2,0,0)
+
+  if(SDL_GetDesktopDisplayMode(0, display_mode) == 0)
+    return true;
+
+  warn("Failed to query desktop display mode: %s\n", SDL_GetError());
+
+  if(SDL_GetNumDisplayModes(0))
+    if(SDL_GetDisplayMode(0, 0, display_mode) == 0)
+      return true;
+
+#endif
+
+  return false;
+}
+
+// Get the smallest possible resolution bigger than 640x350.
+// Smaller means the software renderer will occupy more screen space.
+static boolean sdl_get_smallest_usable_display_mode(SDL_DisplayMode *display_mode)
+{
+#if SDL_VERSION_ATLEAST(3,0,0)
+
+  int min_size = INT_MAX;
+  int count;
+  int i;
+
+  const SDL_DisplayMode **list = SDL_GetFullscreenDisplayModes(0, &count);
+  if(!list)
+    return false;
+
+  debug("Display modes:\n");
+
+  for(i = 0; i < count; i++)
+  {
+    if(!list[i])
+      continue;
+
+    debug("%d: %d x %d, %.2fHz, %s\n", i, list[i]->w, list[i]->h,
+     list[i]->refresh_rate, SDL_GetPixelFormatName(list[i]->format));
+
+    if((list[i]->w * list[i]->h < min_size) &&
+     (list[i]->w >= SCREEN_PIX_W) && (list[i]->h >= SCREEN_PIX_H))
+    {
+      min_size = list[i]->w * list[i]->h;
+      *display_mode = *list[i];
+    }
+  }
+  SDL_free(list);
+
+  if(min_size < INT_MAX)
+    return true;
+
+#elif SDL_VERSION_ATLEAST(2,0,0)
+
+  SDL_DisplayMode mode;
+  int min_size = INT_MAX;
+  int count;
+  int i;
+
+  count = SDL_GetNumDisplayModes(0);
+
+  debug("Display modes:\n");
+
+  for(i = 0; i < count; i++)
+  {
+    if(SDL_GetDisplayMode(0, i, &mode) != 0)
+      continue;
+
+    debug("%d: %d x %d, %dHz, %s\n", i, mode.w, mode.h, mode.refresh_rate, \
+     SDL_GetPixelFormatName(mode.format));
+
+    if((mode.w * mode.h < min_size) &&
+     (mode.w >= SCREEN_PIX_W) && (mode.h >= SCREEN_PIX_H))
+    {
+      min_size = mode.w * mode.h;
+      *display_mode = mode;
+    }
+  }
+  if(min_size < INT_MAX)
+    return true;
+
+#endif
+
+  return false;
+}
+
 boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
+
   SDL_DisplayMode display_mode;
   boolean have_mode = false;
-  int count;
-  int ret;
 
   if(scaling)
   {
     // Use the current desktop resolution.
-    ret = SDL_GetDesktopDisplayMode(0, &display_mode);
-
-    if(ret)
-    {
-      count = SDL_GetNumDisplayModes(0);
-      if(count)
-        ret = SDL_GetDisplayMode(0, 0, &display_mode);
-    }
-    if(!ret)
-      have_mode = true;
+    have_mode = sdl_get_desktop_display_mode(&display_mode);
   }
   else
   {
-    // Get the smallest possible resolution bigger than 640x350.
-    // Smaller means the software renderer will occupy more screen space.
-    SDL_DisplayMode mode;
-    int min_size = INT_MAX;
-    int i;
-
-    count = SDL_GetNumDisplayModes(0);
-
-    debug("Display modes:\n");
-
-    for(i = 0; i < count; i++)
-    {
-      ret = SDL_GetDisplayMode(0, i, &mode);
-      debug("%d: %d x %d, %dHz, %s\n", i, mode.w, mode.h, mode.refresh_rate,
-       SDL_GetPixelFormatName(mode.format));
-
-      if(!ret && (mode.w * mode.h < min_size) &&
-       (mode.w >= SCREEN_PIX_W) && (mode.h >= SCREEN_PIX_H))
-      {
-        min_size = mode.w * mode.h;
-        display_mode = mode;
-        have_mode = true;
-      }
-    }
+    have_mode = sdl_get_smallest_usable_display_mode(&display_mode);
   }
 
   if(have_mode)
   {
+    debug("\n");
+    debug("selected: %d x %d, %.02fHz, %s\n", display_mode.w, display_mode.h,
+     (float)display_mode.refresh_rate, SDL_GetPixelFormatName(display_mode.format));
     *width = display_mode.w;
     *height = display_mode.h;
     return true;
@@ -194,8 +281,8 @@ static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
       break;
     }
 
-    case SDL_PIXELFORMAT_RGB888:
-    case SDL_PIXELFORMAT_BGR888:
+    case SDL_PIXELFORMAT_XRGB8888:
+    case SDL_PIXELFORMAT_XBGR8888:
     case SDL_PIXELFORMAT_RGBX8888:
     case SDL_PIXELFORMAT_BGRX8888:
     case SDL_PIXELFORMAT_ARGB8888:
@@ -203,6 +290,11 @@ static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
     case SDL_PIXELFORMAT_ABGR8888:
     case SDL_PIXELFORMAT_BGRA8888:
     case SDL_PIXELFORMAT_ARGB2101010:
+#if SDL_VERSION_ATLEAST(3,0,0)
+    case SDL_PIXELFORMAT_XRGB2101010:
+    case SDL_PIXELFORMAT_XBGR2101010:
+    case SDL_PIXELFORMAT_ABGR2101010:
+#endif
     {
       // Any 32-bit RGB format is okay.
       if(bits_per_pixel == BPP_AUTO || bits_per_pixel == 32)
@@ -302,21 +394,21 @@ void sdl_destruct_window(struct graphics_data *graphics)
   // match the pixel format MZX wants.
   if(render_data->shadow)
   {
-    SDL_FreeSurface(render_data->shadow);
+    SDL_DestroySurface(render_data->shadow);
     render_data->shadow = NULL;
   }
 
   // Used for 8bpp support for the software renderer.
   if(render_data->palette)
   {
-    SDL_FreePalette(render_data->palette);
+    SDL_DestroyPalette(render_data->palette);
     render_data->palette = NULL;
   }
 
   // Used for generating mapped colors for the SDL_Renderer renderers.
   if(render_data->pixel_format)
   {
-    SDL_FreeFormat(render_data->pixel_format);
+    SDL_DestroyPixelFormat(render_data->pixel_format);
     render_data->pixel_format = NULL;
   }
 
@@ -395,8 +487,11 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 #endif
 
   render_data->window = SDL_CreateWindow("MegaZeux",
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-   sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
+  // FIXME:
+#if !SDL_VERSION_ATLEAST(3,0,0)
+   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+#endif
+   width, height, sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
 
   if(!render_data->window)
   {
@@ -447,14 +542,7 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 
   if(!matched)
   {
-    Uint32 Rmask, Gmask, Bmask, Amask;
-    int bpp;
-
-    SDL_PixelFormatEnumToMasks(fmt, &bpp, &Rmask, &Gmask, &Bmask, &Amask);
-
-    render_data->shadow = SDL_CreateRGBSurface(0, width, height, bpp,
-     Rmask, Gmask, Bmask, Amask);
-
+    render_data->shadow = SDL_CreateSurface(width, height, fmt);
     debug("Blitting enabled. Rendering performance will be reduced.\n");
   }
   else
@@ -468,7 +556,7 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
       render_data->shadow ? render_data->shadow->format :
                             render_data->screen->format;
 
-    render_data->palette = SDL_AllocPalette(SMZX_PAL_SIZE);
+    render_data->palette = SDL_CreatePalette(SMZX_PAL_SIZE);
     if(!render_data->palette)
     {
       warn("Failed to allocate palette: %s\n", SDL_GetError());
@@ -521,7 +609,11 @@ err_free:
 
 #if defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_SDLACCEL)
 
+#if SDL_VERSION_ATLEAST(3,0,0)
+#define BEST_RENDERER NULL
+#else
 #define BEST_RENDERER -1
+#endif
 
 static boolean is_integer_scale(struct graphics_data *graphics, int width,
  int height)
@@ -541,12 +633,12 @@ static uint32_t get_format_amask(uint32_t format)
   Uint32 rmask, gmask, bmask, amask;
   int bpp;
 
-  SDL_PixelFormatEnumToMasks(format, &bpp, &rmask, &gmask, &bmask, &amask);
+  SDL_GetMasksForPixelFormatEnum(format, &bpp, &rmask, &gmask, &bmask, &amask);
   return amask;
 }
 
 static void find_texture_format(struct graphics_data *graphics,
- uint32_t sdl_rendererflags)
+ boolean requires_blend_ops)
 {
   struct sdl_render_data *render_data = (struct sdl_render_data *)graphics->render_data;
   uint32_t texture_format = SDL_PIXELFORMAT_UNKNOWN;
@@ -572,8 +664,7 @@ static void find_texture_format(struct graphics_data *graphics,
 #endif
 
     // Anything using hardware blending must support alpha.
-    // Blending doesn't require targeting a texture, but this works for now.
-    if(sdl_rendererflags & SDL_RENDERER_TARGETTEXTURE)
+    if(requires_blend_ops)
       need_alpha = true;
 
     // Try to use a native texture format to improve performance.
@@ -677,10 +768,11 @@ static void find_texture_format(struct graphics_data *graphics,
  */
 boolean sdlrender_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize,
- uint32_t sdl_rendererflags)
+ boolean requires_blend_ops)
 {
   struct sdl_render_data *render_data = graphics->render_data;
   boolean fullscreen_windowed = graphics->fullscreen_windowed;
+  uint32_t sdl_rendererflags = 0;
 
   sdl_destruct_window(graphics);
 
@@ -696,6 +788,13 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
   SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY, "0");
 #endif
 
+#if !SDL_VERSION_ATLEAST(3,0,0)
+  // Flag removed in SDL3; all drivers support it and its presence needs to be
+  // tested by trying to create a target texture instead.
+  if(requires_blend_ops)
+    sdl_renderer_flags |= SDL_RENDERER_TARGETTEXTURE;
+#endif
+
   if(graphics->sdl_render_driver[0])
   {
     info("Requesting SDL render driver: '%s'\n", graphics->sdl_render_driver);
@@ -703,7 +802,11 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
   }
 
   render_data->window = SDL_CreateWindow("MegaZeux",
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
+// FIXME:
+#if !SDL_VERSION_ATLEAST(3,0,0)
+   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+#endif
+   width, height,
    sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
 
   if(!render_data->window)
@@ -736,7 +839,7 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
   if(!render_data->rgb_to_yuv)
   {
     // This is required for SDL_MapRGBA to work, but YUV formats can ignore it.
-    render_data->pixel_format = SDL_AllocFormat(render_data->texture_format);
+    render_data->pixel_format = SDL_CreatePixelFormat(render_data->texture_format);
     if(!render_data->pixel_format)
     {
       warn("Failed to allocate pixel format: %s\n", SDL_GetError());
@@ -833,7 +936,11 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 #endif
 
   render_data->window = SDL_CreateWindow("MegaZeux",
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
+  // FIXME:
+#if !SDL_VERSION_ATLEAST(3,0,0)
+   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+#endif
+   width, height,
    GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, fullscreen_windowed, resize)));
 
   if(!render_data->window)
@@ -907,4 +1014,3 @@ boolean gl_swap_buffers(struct graphics_data *graphics)
 }
 
 #endif // CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM
-

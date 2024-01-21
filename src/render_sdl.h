@@ -77,7 +77,7 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
 #if SDL_VERSION_ATLEAST(2,0,0)
 boolean sdlrender_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize,
- uint32_t sdl_rendererflags);
+ boolean requires_blend_ops);
 
 void sdlrender_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, unsigned int count);
@@ -89,8 +89,7 @@ void sdlrender_update_colors(struct graphics_data *graphics,
 
 #if SDL_VERSION_ATLEAST(2,0,0)
 #define GL_ALLOW_FLAGS \
- (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP | \
-  SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE)
+ (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE)
 #else
 #define GL_ALLOW_FLAGS (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE)
 #endif

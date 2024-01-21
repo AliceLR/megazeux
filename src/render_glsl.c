@@ -40,7 +40,11 @@
 #ifdef CONFIG_SDL
 #include "render_sdl.h"
 #ifdef ENABLE_GL_DEBUG_OUTPUT
+#if SDL_VERSION_ATLEAST(3,0,0)
+#include <SDL3/SDL_opengl_glext.h>
+#else
 #include <SDL_opengl_glext.h>
+#endif
 #endif
 #endif
 

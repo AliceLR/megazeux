@@ -1560,7 +1560,7 @@ static void set_window_icon(void)
     if(icon)
     {
       SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
-      SendMessage(SDL_GetWindowProperty_HWND(window),
+      SendMessage((HWND)SDL_GetWindowProperty_HWND(window),
        WM_SETICON, ICON_BIG, (LPARAM)icon);
     }
   }
@@ -1821,8 +1821,15 @@ boolean init_video(struct config_info *conf, const char *caption)
   }
 
 #ifdef CONFIG_SDL
+  // TODO: platform function?
   if(!graphics.system_mouse)
+  {
+#if SDL_VERSION_ATLEAST(3,0,0)
+    SDL_HideCursor();
+#else
     SDL_ShowCursor(SDL_DISABLE);
+#endif
+  }
 #endif
 
   ec_load_set_secondary(mzx_res_get_by_id(MZX_DEFAULT_CHR),

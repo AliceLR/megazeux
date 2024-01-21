@@ -27,6 +27,7 @@
 #include "util.h"
 
 #include <ctype.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -252,45 +253,45 @@ static int get_pandora_joystick_button(SDL_Keycode key)
  * No equivalent of this API exists for SDL 1.x.
  */
 
-static SDL_GameController *gamepads[MAX_JOYSTICKS];
+static SDL_Gamepad *gamepads[MAX_JOYSTICKS];
 
-static enum joystick_special_axis sdl_axis_map[SDL_CONTROLLER_AXIS_MAX] =
+static enum joystick_special_axis sdl_axis_map[SDL_GAMEPAD_AXIS_MAX] =
 {
-  [SDL_CONTROLLER_AXIS_LEFTX]         = JOY_AXIS_LEFT_X,
-  [SDL_CONTROLLER_AXIS_LEFTY]         = JOY_AXIS_LEFT_Y,
-  [SDL_CONTROLLER_AXIS_RIGHTX]        = JOY_AXIS_RIGHT_X,
-  [SDL_CONTROLLER_AXIS_RIGHTY]        = JOY_AXIS_RIGHT_Y,
-  [SDL_CONTROLLER_AXIS_TRIGGERLEFT]   = JOY_AXIS_LEFT_TRIGGER,
-  [SDL_CONTROLLER_AXIS_TRIGGERRIGHT]  = JOY_AXIS_RIGHT_TRIGGER
+  [SDL_GAMEPAD_AXIS_LEFTX]         = JOY_AXIS_LEFT_X,
+  [SDL_GAMEPAD_AXIS_LEFTY]         = JOY_AXIS_LEFT_Y,
+  [SDL_GAMEPAD_AXIS_RIGHTX]        = JOY_AXIS_RIGHT_X,
+  [SDL_GAMEPAD_AXIS_RIGHTY]        = JOY_AXIS_RIGHT_Y,
+  [SDL_GAMEPAD_AXIS_LEFT_TRIGGER]  = JOY_AXIS_LEFT_TRIGGER,
+  [SDL_GAMEPAD_AXIS_RIGHT_TRIGGER] = JOY_AXIS_RIGHT_TRIGGER
 };
 
-static int16_t sdl_axis_action_map[SDL_CONTROLLER_AXIS_MAX][2] =
+static int16_t sdl_axis_action_map[SDL_GAMEPAD_AXIS_MAX][2] =
 {
-  [SDL_CONTROLLER_AXIS_LEFTX]         = { -JOY_L_LEFT,  -JOY_L_RIGHT },
-  [SDL_CONTROLLER_AXIS_LEFTY]         = { -JOY_L_UP,    -JOY_L_DOWN },
-  [SDL_CONTROLLER_AXIS_RIGHTX]        = { -JOY_R_LEFT,  -JOY_R_RIGHT },
-  [SDL_CONTROLLER_AXIS_RIGHTY]        = { -JOY_R_UP,    -JOY_R_DOWN },
-  [SDL_CONTROLLER_AXIS_TRIGGERLEFT]   = { 0,            -JOY_LTRIGGER },
-  [SDL_CONTROLLER_AXIS_TRIGGERRIGHT]  = { 0,            -JOY_RTRIGGER },
+  [SDL_GAMEPAD_AXIS_LEFTX]         = { -JOY_L_LEFT,  -JOY_L_RIGHT },
+  [SDL_GAMEPAD_AXIS_LEFTY]         = { -JOY_L_UP,    -JOY_L_DOWN },
+  [SDL_GAMEPAD_AXIS_RIGHTX]        = { -JOY_R_LEFT,  -JOY_R_RIGHT },
+  [SDL_GAMEPAD_AXIS_RIGHTY]        = { -JOY_R_UP,    -JOY_R_DOWN },
+  [SDL_GAMEPAD_AXIS_LEFT_TRIGGER]  = { 0,            -JOY_LTRIGGER },
+  [SDL_GAMEPAD_AXIS_RIGHT_TRIGGER] = { 0,            -JOY_RTRIGGER },
 };
 
-static int16_t sdl_action_map[SDL_CONTROLLER_BUTTON_MAX] =
+static int16_t sdl_action_map[SDL_GAMEPAD_BUTTON_MAX] =
 {
-  [SDL_CONTROLLER_BUTTON_A]             = -JOY_A,
-  [SDL_CONTROLLER_BUTTON_B]             = -JOY_B,
-  [SDL_CONTROLLER_BUTTON_X]             = -JOY_X,
-  [SDL_CONTROLLER_BUTTON_Y]             = -JOY_Y,
-  [SDL_CONTROLLER_BUTTON_BACK]          = -JOY_SELECT,
-//[SDL_CONTROLLER_BUTTON_GUIDE]         = -JOY_GUIDE,
-  [SDL_CONTROLLER_BUTTON_START]         = -JOY_START,
-  [SDL_CONTROLLER_BUTTON_LEFTSTICK]     = -JOY_LSTICK,
-  [SDL_CONTROLLER_BUTTON_RIGHTSTICK]    = -JOY_RSTICK,
-  [SDL_CONTROLLER_BUTTON_LEFTSHOULDER]  = -JOY_LSHOULDER,
-  [SDL_CONTROLLER_BUTTON_RIGHTSHOULDER] = -JOY_RSHOULDER,
-  [SDL_CONTROLLER_BUTTON_DPAD_UP]       = -JOY_UP,
-  [SDL_CONTROLLER_BUTTON_DPAD_DOWN]     = -JOY_DOWN,
-  [SDL_CONTROLLER_BUTTON_DPAD_LEFT]     = -JOY_LEFT,
-  [SDL_CONTROLLER_BUTTON_DPAD_RIGHT]    = -JOY_RIGHT
+  [SDL_GAMEPAD_BUTTON_SOUTH]          = -JOY_A,
+  [SDL_GAMEPAD_BUTTON_EAST]           = -JOY_B,
+  [SDL_GAMEPAD_BUTTON_WEST]           = -JOY_X,
+  [SDL_GAMEPAD_BUTTON_NORTH]          = -JOY_Y,
+  [SDL_GAMEPAD_BUTTON_BACK]           = -JOY_SELECT,
+//[SDL_GAMEPAD_BUTTON_GUIDE]          = -JOY_GUIDE,
+  [SDL_GAMEPAD_BUTTON_START]          = -JOY_START,
+  [SDL_GAMEPAD_BUTTON_LEFT_STICK]     = -JOY_LSTICK,
+  [SDL_GAMEPAD_BUTTON_RIGHT_STICK]    = -JOY_RSTICK,
+  [SDL_GAMEPAD_BUTTON_LEFT_SHOULDER]  = -JOY_LSHOULDER,
+  [SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER] = -JOY_RSHOULDER,
+  [SDL_GAMEPAD_BUTTON_DPAD_UP]        = -JOY_UP,
+  [SDL_GAMEPAD_BUTTON_DPAD_DOWN]      = -JOY_DOWN,
+  [SDL_GAMEPAD_BUTTON_DPAD_LEFT]      = -JOY_LEFT,
+  [SDL_GAMEPAD_BUTTON_DPAD_RIGHT]     = -JOY_RIGHT
 };
 
 enum
@@ -467,8 +468,8 @@ static void parse_gamepad_read_value(char *key, char *value,
 static void parse_gamepad_read_entry(char *key, char *value,
  struct gamepad_axis_map *axes, struct gamepad_map *buttons)
 {
-  SDL_GameControllerAxis a;
-  SDL_GameControllerButton b;
+  SDL_GamepadAxis a;
+  SDL_GamepadButton b;
   struct gamepad_map *single = NULL;
   struct gamepad_map *neg = NULL;
   struct gamepad_map *pos = NULL;
@@ -478,9 +479,9 @@ static void parse_gamepad_read_entry(char *key, char *value,
   if(*key == '+' || *key == '-')
     half_axis = *(key++);
 
-  a = SDL_GameControllerGetAxisFromString(key);
-  b = SDL_GameControllerGetButtonFromString(key);
-  if(a != SDL_CONTROLLER_AXIS_INVALID)
+  a = SDL_GetGamepadAxisFromString(key);
+  b = SDL_GetGamepadButtonFromString(key);
+  if(a != SDL_GAMEPAD_AXIS_INVALID)
   {
     if(half_axis == '+')
       single = &(axes[a].pos);
@@ -496,10 +497,10 @@ static void parse_gamepad_read_entry(char *key, char *value,
   }
   else
 
-  if(b != SDL_CONTROLLER_BUTTON_INVALID)
+  if(b != SDL_GAMEPAD_BUTTON_INVALID)
   {
     // This button isn't really useful to MZX.
-    if(b == SDL_CONTROLLER_BUTTON_GUIDE)
+    if(b == SDL_GAMEPAD_BUTTON_GUIDE)
       return;
 
     single = &(buttons[b]);
@@ -610,8 +611,8 @@ static void parse_gamepad_apply(int joy, int16_t mapping,
 
 static void parse_gamepad_map(int joystick_index, char *map)
 {
-  struct gamepad_axis_map axes[SDL_CONTROLLER_AXIS_MAX];
-  struct gamepad_map buttons[SDL_CONTROLLER_BUTTON_MAX];
+  struct gamepad_axis_map axes[SDL_GAMEPAD_AXIS_MAX];
+  struct gamepad_map buttons[SDL_GAMEPAD_BUTTON_MAX];
   boolean select_mapped = false;
   boolean select_used = false;
   size_t i;
@@ -622,7 +623,7 @@ static void parse_gamepad_map(int joystick_index, char *map)
   parse_gamepad_read_string(map, axes, buttons);
 
   // Apply axes.
-  for(i = 0; i < SDL_CONTROLLER_AXIS_MAX; i++)
+  for(i = 0; i < SDL_GAMEPAD_AXIS_MAX; i++)
   {
     parse_gamepad_apply(joystick_index,
      sdl_axis_action_map[i][0], &(axes[i].neg), &select_mapped, &select_used);
@@ -632,7 +633,7 @@ static void parse_gamepad_map(int joystick_index, char *map)
   }
 
   // Apply buttons.
-  for(i = 0; i < SDL_CONTROLLER_BUTTON_MAX; i++)
+  for(i = 0; i < SDL_GAMEPAD_BUTTON_MAX; i++)
   {
     parse_gamepad_apply(joystick_index,
      sdl_action_map[i], &(buttons[i]), &select_mapped, &select_used);
@@ -656,15 +657,15 @@ static void parse_gamepad_map(int joystick_index, char *map)
 static void init_gamepad(SDL_Joystick *joystick, int sdl_joystick_id,
  int joystick_index)
 {
-  SDL_JoystickGUID guid = SDL_JoystickGetGUID(joystick);
+  SDL_JoystickGUID guid = SDL_GetJoystickGUID(joystick);
   char guid_string[33];
 
-  SDL_JoystickGetGUIDString(guid, guid_string, 33);
+  SDL_GetJoystickGUIDString(guid, guid_string, 33);
   gamepads[joystick_index] = NULL;
 
-  if(SDL_IsGameController(sdl_joystick_id))
+  if(SDL_IsGamepad(sdl_joystick_id))
   {
-    SDL_GameController *gamepad = SDL_GameControllerOpen(sdl_joystick_id);
+    SDL_Gamepad *gamepad = SDL_OpenGamepad(sdl_joystick_id);
 
     if(gamepad)
     {
@@ -672,7 +673,11 @@ static void init_gamepad(SDL_Joystick *joystick, int sdl_joystick_id,
       char *mapping = NULL;
       gamepads[joystick_index] = gamepad;
 
-#if SDL_VERSION_ATLEAST(2,0,9)
+#if SDL_VERSION_ATLEAST(3,0,0)
+      // This is the equivalent to [...]ForDeviceIndex() and is also currently
+      // the only way to get the default generated mapping.
+      mapping = (char *)SDL_GetGamepadInstanceMapping(sdl_joystick_id);
+#elif SDL_VERSION_ATLEAST(2,0,9)
       // NOTE: the other functions for this will not return the default mapping
       // string; this is the only one that can return everything. Right now,
       // this only matters for the Emscripten port.
@@ -778,7 +783,7 @@ static void load_gamecontrollerdb(void)
 
     if(path)
     {
-      int result = SDL_GameControllerAddMappingsFromFile(path);
+      int result = SDL_AddGamepadMappingsFromFile(path);
       if(result >= 0)
         debug("--JOYSTICK-- Added %d mappings from '%s'.\n", result, path);
     }
@@ -793,8 +798,8 @@ static void load_gamecontrollerdb(void)
  */
 void gamepad_map_sym(const char *sym, const char *value)
 {
-  SDL_GameControllerAxis a;
-  SDL_GameControllerButton b;
+  SDL_GamepadAxis a;
+  SDL_GamepadButton b;
   int16_t binding = 0;
 
   if(joystick_parse_map_value(value, &binding))
@@ -804,16 +809,16 @@ void gamepad_map_sym(const char *sym, const char *value)
       dir = *(sym++);
 
     // Digital axis (default to + if no dir specified).
-    a = SDL_GameControllerGetAxisFromString(sym);
-    if(a != SDL_CONTROLLER_AXIS_INVALID)
+    a = SDL_GetGamepadAxisFromString(sym);
+    if(a != SDL_GAMEPAD_AXIS_INVALID)
     {
       int pos = (dir != '-') ? 1 : 0;
       sdl_axis_action_map[a][pos] = binding;
     }
 
     // Button
-    b = SDL_GameControllerGetButtonFromString(sym);
-    if(b != SDL_CONTROLLER_BUTTON_INVALID)
+    b = SDL_GetGamepadButtonFromString(sym);
+    if(b != SDL_GAMEPAD_BUTTON_INVALID)
       sdl_action_map[b] = binding;
   }
 
@@ -828,7 +833,7 @@ void gamepad_add_mapping(const char *mapping)
   // Make sure this is loaded first so it doesn't override the user mapping.
   load_gamecontrollerdb();
 
-  if(SDL_GameControllerAddMapping(mapping) < 0)
+  if(SDL_AddGamepadMapping(mapping) < 0)
     warn("Failed to add gamepad mapping: %s\n", SDL_GetError());
 }
 
@@ -870,10 +875,10 @@ static void init_joystick(int sdl_joystick_id)
 
   if(joystick_index >= 0)
   {
-    SDL_Joystick *joystick = SDL_JoystickOpen(sdl_joystick_id);
+    SDL_Joystick *joystick = SDL_OpenJoystick(sdl_joystick_id);
     if(joystick)
     {
-      joystick_instance_ids[joystick_index] = SDL_JoystickInstanceID(joystick);
+      joystick_instance_ids[joystick_index] = SDL_GetJoystickInstanceID(joystick);
       joysticks[joystick_index] = joystick;
       joystick_set_active(status, joystick_index, true);
 
@@ -899,12 +904,12 @@ static void close_joystick(int joystick_index)
     // SDL_GameControllerClose also closes the joystick.
     if(gamepads[joystick_index])
     {
-      SDL_GameControllerClose(gamepads[joystick_index]);
+      SDL_CloseGamepad(gamepads[joystick_index]);
       gamepad_clean_map(joystick_index);
       gamepads[joystick_index] = NULL;
     }
     else
-      SDL_JoystickClose(joysticks[joystick_index]);
+      SDL_CloseJoystick(joysticks[joystick_index]);
 
     joystick_instance_ids[joystick_index] = -1;
     joysticks[joystick_index] = NULL;
@@ -972,7 +977,7 @@ static boolean process_event(SDL_Event *event)
   /* Enable converting keycodes to fake unicode presses when text input isn't
    * active. Enabling text input also enables an onscreen keyboard in some
    * ports, so it isn't always desired. */
-  boolean unicode_fallback = !SDL_IsTextInputActive();
+  boolean unicode_fallback = !SDL_TextInputActive();
 #else
   /* SDL 1.2 might also need this (Pandora? doesn't generate unicode presses). */
   static boolean unicode_fallback = true;
@@ -991,21 +996,46 @@ static boolean process_event(SDL_Event *event)
    */
   if(!numlock_status_initialized)
   {
-    status->numlock_status = !!(SDL_GetModState() & KMOD_NUM);
+    status->numlock_status = !!(SDL_GetModState() & SDL_KMOD_NUM);
     numlock_status_initialized = true;
   }
 
   switch(event->type)
   {
-    case SDL_QUIT:
+    case SDL_EVENT_QUIT:
     {
-      trace("--EVENT_SDL-- SDL_QUIT\n");
+      trace("--EVENT_SDL-- SDL_EVENT_QUIT\n");
       // Set the exit status
       status->exit_status = true;
       break;
     }
 
-#if SDL_VERSION_ATLEAST(2,0,0)
+#if SDL_VERSION_ATLEAST(3,0,0)
+    case SDL_EVENT_WINDOW_RESIZED:
+    {
+      trace("--EVENT_SDL-- SDL_EVENT_WINDOW_RESIZED: (%u,%u)\n");
+      // FIXME: doing this might send this event now!
+      //resize_screen(event->window.data1, event->window.data2);
+      break;
+    }
+
+    case SDL_EVENT_WINDOW_FOCUS_LOST:
+    {
+      trace("--EVENT_SDL-- SDL_EVENT_WINDOW_FOCUS_LOST\n");
+      // Pause while minimized
+      if(input.unfocus_pause)
+      {
+        while(1)
+        {
+          SDL_WaitEvent(event);
+          if(event->type == SDL_EVENT_WINDOW_FOCUS_GAINED)
+            break;
+        }
+        trace("--EVENT_SDL-- SDL_WINDOWEVENT_FOCUS_GAINED\n");
+      }
+      break;
+    }
+#elif SDL_VERSION_ATLEAST(2,0,0)
     case SDL_WINDOWEVENT:
     {
       switch(event->window.event)
@@ -1034,8 +1064,8 @@ static boolean process_event(SDL_Event *event)
                  event->window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
                 break;
             }
+            trace("--EVENT_SDL-- SDL_WINDOWEVENT_FOCUS_GAINED\n");
           }
-          trace("--EVENT_SDL-- SDL_WINDOWEVENT_FOCUS_GAINED\n");
           break;
         }
       }
@@ -1073,7 +1103,7 @@ static boolean process_event(SDL_Event *event)
     }
 #endif // !SDL_VERSION_ATLEAST(2,0,0)
 
-    case SDL_MOUSEMOTION:
+    case SDL_EVENT_MOUSE_MOTION:
     {
       SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
       int mx_real = event->motion.x;
@@ -1107,7 +1137,7 @@ static boolean process_event(SDL_Event *event)
       }
 
       trace(
-        "--EVENT_SDL-- SDL_MOUSEMOTION: (%d,%d) -> (%d,%d)\n",
+        "--EVENT_SDL-- SDL_EVENT_MOUSE_MOTION: (%d,%d) -> (%d,%d)\n",
         mx_real, my_real, mx, my
       );
       status->mouse_pixel_x = mx;
@@ -1118,23 +1148,23 @@ static boolean process_event(SDL_Event *event)
       break;
     }
 
-    case SDL_MOUSEBUTTONDOWN:
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
     {
       enum mouse_button button = convert_SDL_mouse_internal(event->button.button);
-      trace("--EVENT_SDL-- SDL_MOUSEBUTTONDOWN: %u\n", event->button.button);
+      trace("--EVENT_SDL-- SDL_EVENT_MOUSE_BUTTON_DOWN: %u\n", event->button.button);
       status->mouse_button = button;
       status->mouse_repeat = button;
       status->mouse_button_state |= MOUSE_BUTTON(button);
       status->mouse_repeat_state = 1;
       status->mouse_drag_state = -1;
-      status->mouse_time = SDL_GetTicks();
+      status->mouse_time = get_ticks();
       break;
     }
 
-    case SDL_MOUSEBUTTONUP:
+    case SDL_EVENT_MOUSE_BUTTON_UP:
     {
       enum mouse_button button = convert_SDL_mouse_internal(event->button.button);
-      trace("--EVENT_SDL-- SDL_MOUSEBUTTONUP: %u\n", event->button.button);
+      trace("--EVENT_SDL-- SDL_EVENT_MOUSE_BUTTON_UP: %u\n", event->button.button);
       status->mouse_button_state &= ~MOUSE_BUTTON(button);
       status->mouse_repeat = MOUSE_NO_BUTTON;
       status->mouse_drag_state = 0;
@@ -1144,24 +1174,28 @@ static boolean process_event(SDL_Event *event)
 
 #if SDL_VERSION_ATLEAST(2,0,0)
     // emulate the X11-style "wheel is a button" that SDL 1.2 used
-    case SDL_MOUSEWHEEL:
+    case SDL_EVENT_MOUSE_WHEEL:
     {
       uint32_t button;
+      // floats due to SDL3...
+      float wheel_x = event->wheel.x;
+      float wheel_y = event->wheel.y;
+
       trace(
-        "--EVENT_SDL-- SDL_MOUSEWHEEL: x=%d y=%d\n",
-        event->wheel.x, event->wheel.y
+        "--EVENT_SDL-- SDL_EVENT_MOUSE_WHEEL: x=%.2f y=%.2f\n",
+        wheel_x, wheel_y
       );
 
-      if(abs(event->wheel.x) > abs(event->wheel.y))
+      if(fabsf(wheel_x) > fabsf(wheel_y))
       {
-        if(event->wheel.x < 0)
+        if(wheel_x < 0)
           button = MOUSE_BUTTON_WHEELLEFT;
         else
           button = MOUSE_BUTTON_WHEELRIGHT;
       }
       else
       {
-        if(event->wheel.y < 0)
+        if(wheel_y < 0)
           button = MOUSE_BUTTON_WHEELDOWN;
         else
           button = MOUSE_BUTTON_WHEELUP;
@@ -1173,12 +1207,12 @@ static boolean process_event(SDL_Event *event)
       status->mouse_repeat = MOUSE_NO_BUTTON;
       status->mouse_repeat_state = 0;
       status->mouse_drag_state = 0;
-      status->mouse_time = SDL_GetTicks();
+      status->mouse_time = get_ticks();
       break;
     }
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 
-    case SDL_KEYDOWN:
+    case SDL_EVENT_KEY_DOWN:
     {
       uint32_t unicode = 0;
 
@@ -1208,7 +1242,7 @@ static boolean process_event(SDL_Event *event)
 
       ckey = convert_SDL_internal(event->key.keysym.sym);
       trace(
-        "--EVENT_SDL-- SDL_KEYDOWN: scancode:%d sym:%d -> %d\n",
+        "--EVENT_SDL-- SDL_EVENT_KEY_DOWN: scancode:%d sym:%d -> %d\n",
         event->key.keysym.scancode,
         event->key.keysym.sym,
         ckey
@@ -1237,7 +1271,7 @@ static boolean process_event(SDL_Event *event)
       // using the internal keycode.
       if(unicode_fallback && KEYCODE_IS_ASCII(ckey))
       {
-        boolean caps_lock = !!(SDL_GetModState() & KMOD_CAPS);
+        boolean caps_lock = !!(SDL_GetModState() & SDL_KMOD_CAPS);
         unicode = convert_internal_unicode(ckey, caps_lock);
       }
 
@@ -1302,7 +1336,7 @@ static boolean process_event(SDL_Event *event)
       break;
     }
 
-    case SDL_KEYUP:
+    case SDL_EVENT_KEY_UP:
     {
 #ifdef CONFIG_PANDORA
       {
@@ -1318,7 +1352,7 @@ static boolean process_event(SDL_Event *event)
 
       ckey = convert_SDL_internal(event->key.keysym.sym);
       trace(
-        "--EVENT_SDL-- SDL_KEYUP: scancode:%d sym:%d -> %d\n",
+        "--EVENT_SDL-- SDL_EVENT_KEY_UP: scancode:%d sym:%d -> %d\n",
         event->key.keysym.scancode,
         event->key.keysym.sym,
         ckey
@@ -1356,11 +1390,11 @@ static boolean process_event(SDL_Event *event)
      * can't be distinguished from regular key presses, so key_press_unicode
      * needs to be called without repeating enabled.
      */
-    case SDL_TEXTINPUT:
+    case SDL_EVENT_TEXT_INPUT:
     {
       uint8_t *text = (uint8_t *)event->text.text;
 
-      trace("--EVENT_SDL-- SDL_TEXTINPUT: %s\n", text);
+      trace("--EVENT_SDL-- SDL_EVENT_TEXT_INPUT: %s\n", text);
 
       if(unicode_fallback)
       {
@@ -1381,28 +1415,28 @@ static boolean process_event(SDL_Event *event)
       break;
     }
 
-    case SDL_JOYDEVICEADDED:
+    case SDL_EVENT_JOYSTICK_ADDED:
     {
       // Add a new joystick.
       // "which" for this event (but not for any other joystick event) is not
       // a joystick instance ID, but instead an index for SDL_JoystickOpen().
 
       trace(
-        "--EVENT_SDL-- SDL_JOYDEVICEADDED\n"
+        "--EVENT_SDL-- SDL_EVENT_JOYSTICK_ADDED\n"
       );
 
       init_joystick(event->jdevice.which);
       break;
     }
 
-    case SDL_JOYDEVICEREMOVED:
+    case SDL_EVENT_JOYSTICK_REMOVED:
     {
       // Close a disconnected joystick.
       int which = event->jdevice.which;
       int joystick_index = get_joystick_index(which);
 
       trace(
-        "--EVENT_SDL-- SDL_JOYDEVICEREMOVED: j%d\n",
+        "--EVENT_SDL-- SDL_EVENT_JOYSTICK_REMOVED: j%d\n",
         joystick_index
       );
 
@@ -1415,14 +1449,20 @@ static boolean process_event(SDL_Event *event)
       break;
     }
 
-    case SDL_CONTROLLERAXISMOTION:
+    case SDL_EVENT_GAMEPAD_AXIS_MOTION:
     {
       // Since gamepad axis mappings can be complicated, use
       // the gamepad events to update the named axis values.
       struct config_info *conf = get_config();
+#if SDL_VERSION_ATLEAST(3,0,0)
+      int value = event->gaxis.value;
+      int which = event->gaxis.which;
+      int axis = event->gaxis.axis;
+#else
       int value = event->caxis.value;
       int which = event->caxis.which;
       int axis = event->caxis.axis;
+#endif
       enum joystick_special_axis special_axis = sdl_axis_map[axis];
 
       int joystick_index = get_joystick_index(which);
@@ -1430,7 +1470,7 @@ static boolean process_event(SDL_Event *event)
         break;
 
       trace(
-        "--EVENT_SDL-- SDL_CONTROLLERAXISMOTION: j%d sa%d = %d\n",
+        "--EVENT_SDL-- SDL_EVENT_GAMEPAD_AXIS_MOTION: j%d sa%d = %d\n",
         joystick_index, special_axis, value
       );
 
@@ -1439,7 +1479,7 @@ static boolean process_event(SDL_Event *event)
     }
 #endif
 
-    case SDL_JOYAXISMOTION:
+    case SDL_EVENT_JOYSTICK_AXIS_MOTION:
     {
       int axis_value = event->jaxis.value;
       int which = event->jaxis.which;
@@ -1451,7 +1491,7 @@ static boolean process_event(SDL_Event *event)
         break;
 
       trace(
-        "--EVENT_SDL-- SDL_JOYAXISMOTION: j%d a%d = %d\n",
+        "--EVENT_SDL-- SDL_EVENT_JOYSTICK_AXIS_MOTION: j%d a%d = %d\n",
         joystick_index, axis, axis_value
       );
 
@@ -1459,7 +1499,7 @@ static boolean process_event(SDL_Event *event)
       break;
     }
 
-    case SDL_JOYBUTTONDOWN:
+    case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
@@ -1470,7 +1510,7 @@ static boolean process_event(SDL_Event *event)
         break;
 
       trace(
-        "--EVENT_SDL-- SDL_JOYBUTTONDOWN: j%d b%d\n",
+        "--EVENT_SDL-- SDL_EVENT_JOYSTICK_BUTTON_DOWN: j%d b%d\n",
         joystick_index, button
       );
 
@@ -1484,7 +1524,7 @@ static boolean process_event(SDL_Event *event)
       break;
     }
 
-    case SDL_JOYBUTTONUP:
+    case SDL_EVENT_JOYSTICK_BUTTON_UP:
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
@@ -1501,7 +1541,7 @@ static boolean process_event(SDL_Event *event)
 #endif
 
       trace(
-        "--EVENT_SDL-- SDL_JOYBUTTONUP: j%d b%d\n",
+        "--EVENT_SDL-- SDL_EVENT_JOYSTICK_BUTTON_UP: j%d b%d\n",
         joystick_index, button
       );
 
@@ -1509,7 +1549,7 @@ static boolean process_event(SDL_Event *event)
       break;
     }
 
-    case SDL_JOYHATMOTION:
+    case SDL_EVENT_JOYSTICK_HAT_MOTION:
     {
       int which = event->jhat.which;
       int dir = event->jhat.value;
@@ -1524,7 +1564,8 @@ static boolean process_event(SDL_Event *event)
         break;
 
       trace(
-        "--EVENT_SDL-- SDL_JOYHATMOTION: j%d up:%u down:%u left:%u right:%u\n",
+        "--EVENT_SDL-- SDL_EVENT_JOYSTICK_HAT_MOTION: "
+        "j%d up:%u down:%u left:%u right:%u\n",
         joystick_index, hat_u, hat_d, hat_l, hat_r
       );
 
@@ -1592,27 +1633,27 @@ boolean __peek_exit_input(void)
 
 #if SDL_VERSION_ATLEAST(2,0,0)
   num_events =
-   SDL_PeepEvents(events, 256, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+   SDL_PeepEvents(events, 256, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST);
 #else /* !SDL_VERSION_ATLEAST(2,0,0) */
   num_events = SDL_PeepEvents(events, 256, SDL_PEEKEVENT, SDL_ALLEVENTS);
 #endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
   for(i = 0; i < num_events; i++)
   {
-    if(events[i].type == SDL_QUIT)
+    if(events[i].type == SDL_EVENT_QUIT)
       return true;
 
-    if(events[i].type == SDL_KEYDOWN)
+    if(events[i].type == SDL_EVENT_KEY_DOWN)
     {
       SDL_KeyboardEvent *ev = &(events[i].key);
 
       if(ev->keysym.sym == SDLK_ESCAPE)
         return true;
 
-      if(ev->keysym.sym == SDLK_c && (ev->keysym.mod & KMOD_CTRL))
+      if(ev->keysym.sym == SDLK_c && (ev->keysym.mod & SDL_KMOD_CTRL))
         return true;
 
-      if(ev->keysym.sym == SDLK_F4 && (ev->keysym.mod & KMOD_ALT))
+      if(ev->keysym.sym == SDLK_F4 && (ev->keysym.mod & SDL_KMOD_ALT))
         return true;
     }
   }
@@ -1647,7 +1688,11 @@ void __warp_mouse(int x, int y)
 
   if((x < 0) || (y < 0))
   {
+#if SDL_VERSION_ATLEAST(3,0,0)
+    float current_x, current_y;
+#else
     int current_x, current_y;
+#endif
     SDL_GetMouseState(&current_x, &current_y);
 
     if(x < 0)
@@ -1669,6 +1714,19 @@ void initialize_joysticks(void)
   // and 3DS appear to have the same issue.
   int i, count;
 
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_JoystickID *instance_ids = SDL_GetJoysticks(&count);
+  if(instance_ids)
+  {
+    if(count > MAX_JOYSTICKS)
+      count = MAX_JOYSTICKS;
+
+    for(i = 0; i < count; i++)
+      init_joystick(instance_ids[i]);
+
+    SDL_free(instance_ids);
+  }
+#else
   count = SDL_NumJoysticks();
 
   if(count > MAX_JOYSTICKS)
@@ -1677,11 +1735,12 @@ void initialize_joysticks(void)
   for(i = 0; i < count; i++)
     init_joystick(i);
 #endif
+#endif
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_GameControllerEventState(SDL_ENABLE);
+  SDL_SetGamepadEventsEnabled(SDL_TRUE);
   load_gamecontrollerdb();
 #endif
 
-  SDL_JoystickEventState(SDL_ENABLE);
+  SDL_SetJoystickEventsEnabled(SDL_TRUE);
 }

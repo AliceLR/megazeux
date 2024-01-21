@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,11 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-// Split from compat.h because it's only needed in one place and it was making
-// the build process much slower.
-
-#ifndef __COMPAT_SDL_H
-#define __COMPAT_SDL_H
+#ifndef __SDLMZX_H
+#define __SDLMZX_H
 
 #include "compat.h"
 
@@ -29,10 +27,19 @@ __M_BEGIN_DECLS
 
 #if defined(CONFIG_SDL)
 
+/* TODO: SDL3 hack so the dso code doesn't need to be overhauled (again). */
+#define SDL_FUNCTION_POINTER_IS_VOID_POINTER
+
+#if CONFIG_SDL == 3
+#include <SDL3/SDL.h>
+#else
 #include <SDL.h>
 #if defined(_WIN32) || defined(CONFIG_X11)
 #include <SDL_syswm.h>
 #endif
+#endif
+
+/* SDL1 backwards compatibility for SDL2 ************************************/
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
 
@@ -40,6 +47,14 @@ __M_BEGIN_DECLS
 // counterpart. More complex changes are handled with #ifdefs "in situ".
 
 // Data types
+
+struct SDL_DisplayMode
+{
+  Uint32 format;
+  int w;
+  int h;
+  int refresh_rate;
+};
 
 typedef SDLKey SDL_Keycode;
 typedef int (*SDL_ThreadFunction)(void *);
@@ -137,7 +152,7 @@ static inline HWND SDL_GetWindowProperty_HWND(SDL_Window *window)
 }
 #endif /* _WIN32 */
 
-#else /* SDL_VERSION_ATLEAST(2,0,0) */
+#elif !SDL_VERSION_ATLEAST(3,0,0)
 
 #ifdef _WIN32
 static inline HWND SDL_GetWindowProperty_HWND(SDL_Window *window)
@@ -149,10 +164,203 @@ static inline HWND SDL_GetWindowProperty_HWND(SDL_Window *window)
 }
 #endif /* _WIN32 */
 
-#endif /* SDL_VERSION_ATLEAST(2,0,0) */
+#else /* SDL_VERSION_ATLEAST(3,0,0) */
+
+#ifdef _WIN32
+static inline void *SDL_GetWindowProperty_HWND(SDL_Window *window)
+{
+  return SDL_GetProperty(SDL_GetWindowProperties(window),
+   SDL_PROPERTY_WINDOW_WIN32_HWND_POINTER, NULL);
+}
+#endif /* _WIN32 */
+
+#endif /* SDL_VERSION_ATLEAST(3,0,0) */
+
+
+/* SDL 1/2 backwards compatibility for SDL3 *********************************/
+
+/**
+ * SDL_audio.h
+ */
+#if !SDL_VERSION_ATLEAST(3,0,0)
+#define SDL_AUDIO_U8    AUDIO_U8
+#define SDL_AUDIO_S8    AUDIO_S8
+#define SDL_AUDIO_S16   AUDIO_S16SYS
+#define SDL_AUDIO_S16LE AUDIO_S16LSB
+#define SDL_AUDIO_S16BE AUDIO_S16MSB
+#else
+/* SDL3 defines SDL_FreeWAV to an error type, but MZX needs to keep it to
+ * transparently support older versions. */
+#undef SDL_FreeWAV
+#define SDL_FreeWAV(w)  SDL_free(w)
+#endif
+
+/**
+ * SDL_event.h
+ */
+#if !SDL_VERSION_ATLEAST(3,0,0)
+#define SDL_EVENT_GAMEPAD_AXIS_MOTION   SDL_CONTROLLERAXISMOTION
+#define SDL_EVENT_JOYSTICK_ADDED        SDL_JOYDEVICEADDED
+#define SDL_EVENT_JOYSTICK_REMOVED      SDL_JOYDEVICEREMOVED
+#define SDL_EVENT_JOYSTICK_AXIS_MOTION  SDL_JOYAXISMOTION
+#define SDL_EVENT_JOYSTICK_BUTTON_DOWN  SDL_JOYBUTTONDOWN
+#define SDL_EVENT_JOYSTICK_BUTTON_UP    SDL_JOYBUTTONUP
+#define SDL_EVENT_JOYSTICK_HAT_MOTION   SDL_JOYHATMOTION
+#define SDL_EVENT_KEY_DOWN              SDL_KEYDOWN
+#define SDL_EVENT_KEY_UP                SDL_KEYUP
+#define SDL_EVENT_MOUSE_BUTTON_DOWN     SDL_MOUSEBUTTONDOWN
+#define SDL_EVENT_MOUSE_BUTTON_UP       SDL_MOUSEBUTTONUP
+#define SDL_EVENT_MOUSE_MOTION          SDL_MOUSEMOTION
+#define SDL_EVENT_MOUSE_WHEEL           SDL_MOUSEWHEEL
+#define SDL_EVENT_TEXT_INPUT            SDL_TEXTINPUT
+#define SDL_EVENT_QUIT                  SDL_QUIT
+#define SDL_EVENT_FIRST                 SDL_FIRSTEVENT
+#define SDL_EVENT_LAST                  SDL_LASTEVENT
+#endif
+
+/**
+ * SDL_gamepad.h (formerly SDL_gamecontroller.h)
+ */
+#if !SDL_VERSION_ATLEAST(3,0,0) && SDL_VERSION_ATLEAST(2,0,0)
+typedef SDL_GameController        SDL_Gamepad;
+typedef SDL_GameControllerAxis    SDL_GamepadAxis;
+typedef SDL_GameControllerButton  SDL_GamepadButton;
+#define SDL_INIT_GAMEPAD                  SDL_INIT_GAMECONTROLLER
+#define SDL_GAMEPAD_AXIS_INVALID          SDL_CONTROLLER_AXIS_INVALID
+#define SDL_GAMEPAD_AXIS_LEFTX            SDL_CONTROLLER_AXIS_LEFTX
+#define SDL_GAMEPAD_AXIS_LEFTY            SDL_CONTROLLER_AXIS_LEFTY
+#define SDL_GAMEPAD_AXIS_RIGHTX           SDL_CONTROLLER_AXIS_RIGHTX
+#define SDL_GAMEPAD_AXIS_RIGHTY           SDL_CONTROLLER_AXIS_RIGHTY
+#define SDL_GAMEPAD_AXIS_LEFT_TRIGGER     SDL_CONTROLLER_AXIS_TRIGGERLEFT
+#define SDL_GAMEPAD_AXIS_RIGHT_TRIGGER    SDL_CONTROLLER_AXIS_TRIGGERRIGHT
+#define SDL_GAMEPAD_AXIS_MAX              SDL_CONTROLLER_AXIS_MAX
+#define SDL_GAMEPAD_BUTTON_INVALID        SDL_CONTROLLER_BUTTON_INVALID
+#define SDL_GAMEPAD_BUTTON_SOUTH          SDL_CONTROLLER_BUTTON_A
+#define SDL_GAMEPAD_BUTTON_EAST           SDL_CONTROLLER_BUTTON_B
+#define SDL_GAMEPAD_BUTTON_WEST           SDL_CONTROLLER_BUTTON_X
+#define SDL_GAMEPAD_BUTTON_NORTH          SDL_CONTROLLER_BUTTON_Y
+#define SDL_GAMEPAD_BUTTON_BACK           SDL_CONTROLLER_BUTTON_BACK
+#define SDL_GAMEPAD_BUTTON_GUIDE          SDL_CONTROLLER_BUTTON_GUIDE
+#define SDL_GAMEPAD_BUTTON_START          SDL_CONTROLLER_BUTTON_START
+#define SDL_GAMEPAD_BUTTON_LEFT_STICK     SDL_CONTROLLER_BUTTON_LEFT_STICK
+#define SDL_GAMEPAD_BUTTON_RIGHT_STICK    SDL_CONTROLLER_BUTTON_RIGHT_STICK
+#define SDL_GAMEPAD_BUTTON_LEFT_SHOULDER  SDL_CONTROLLER_BUTTON_LEFTSHOULDER
+#define SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER SDL_CONTROLLER_BUTTON_RIGHTSHOULDER
+#define SDL_GAMEPAD_BUTTON_DPAD_UP        SDL_CONTROLLER_BUTTON_DPAD_UP
+#define SDL_GAMEPAD_BUTTON_DPAD_DOWN      SDL_CONTROLLER_BUTTON_DPAD_DOWN
+#define SDL_GAMEPAD_BUTTON_DPAD_LEFT      SDL_CONTROLLER_BUTTON_DPAD_LEFT
+#define SDL_GAMEPAD_BUTTON_DPAD_RIGHT     SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+#define SDL_GAMEPAD_BUTTON_MISC1          SDL_CONTROLLER_BUTTON_MISC1
+#define SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1  SDL_CONTROLLER_BUTTON_PADDLE1
+#define SDL_GAMEPAD_BUTTON_LEFT_PADDLE1   SDL_CONTROLLER_BUTTON_PADDLE2
+#define SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2  SDL_CONTROLLER_BUTTON_PADDLE3
+#define SDL_GAMEPAD_BUTTON_LEFT_PADDLE2   SDL_CONTROLLER_BUTTON_PADDLE4
+#define SDL_GAMEPAD_BUTTON_TOUCHPAD       SDL_CONTROLLER_BUTTON_TOUCHPAD
+#define SDL_GAMEPAD_BUTTON_MAX            SDL_CONTROLLER_BUTTON_MAX
+#define SDL_IsGamepad(device_id)          SDL_IsGameController(device_id)
+#define SDL_OpenGamepad(device_id)        SDL_GameControllerOpen(device_id)
+#define SDL_CloseGamepad(g)               SDL_GameControllerClose(g)
+#define SDL_GetGamepadAxisFromString(s)   SDL_GameControllerGetAxisFromString(s)
+#define SDL_GetGamepadButtonFromString(s) SDL_GameControllerGetButtonFromString(s)
+#define SDL_AddGamepadMapping(m)          SDL_GameControllerAddMapping(m)
+#define SDL_AddGamepadMappingsFromFile(f) SDL_GameControllerAddMappingsFromFile(f)
+
+static inline void SDL_SetGamepadEventsEnabled(SDL_bool enabled)
+{
+  SDL_GameControllerEventState(enabled ? SDL_ENABLE : SDL_DISABLE);
+}
+#endif
+
+/**
+ * SDL_joystick.h
+ */
+#if !SDL_VERSION_ATLEAST(3,0,0)
+#define SDL_OpenJoystick(device_id)       SDL_JoystickOpen(device_id)
+#define SDL_CloseJoystick(j)              SDL_JoystickClose(j)
+#define SDL_GetJoystickGUID(j)            SDL_JoystickGetGUID(j)
+#define SDL_GetJoystickGUIDString(g,b,l)  SDL_JoystickGetGUIDString(g,b,l)
+#define SDL_GetJoystickInstanceID(j)      SDL_JoystickInstanceID(j)
+
+static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
+{
+  SDL_JoystickEventState(enabled ? SDL_ENABLE : SDL_DISABLE);
+}
+#endif
+
+/**
+ * SDL_keyboard.h and SDL_keycode.h
+ */
+#if !SDL_VERSION_ATLEAST(3,0,0)
+#define SDL_KMOD_CTRL         KMOD_CTRL
+#define SDL_KMOD_ALT          KMOD_ALT
+#define SDL_KMOD_NUM          KMOD_NUM
+#define SDL_KMOD_CAPS         KMOD_CAPS
+#define SDL_TextInputActive() SDL_IsTextInputActive()
+#endif
+
+/**
+ *  SDL_pixels.h
+ */
+#if !SDL_VERSION_ATLEAST(3,0,0)
+#define SDL_PIXELFORMAT_XRGB8888                    SDL_PIXELFORMAT_RGB888
+#define SDL_PIXELFORMAT_XBGR8888                    SDL_PIXELFORMAT_BGR888
+#define SDL_CreatePalette(s)                        SDL_AllocPalette(s)
+#define SDL_DestroyPalette(p)                       SDL_FreePalette(p)
+#define SDL_CreatePixelFormat(f)                    SDL_AllocFormat(f)
+#define SDL_DestroyPixelFormat(pf)                  SDL_FreeFormat(pf)
+#define SDL_GetMasksForPixelFormatEnum(f,b,r,g,b,a) SDL_PixelFormatEnumToMasks(f,b,r,g,b,a)
+#endif
+
+/* SDL_render.h */
+#if !SDL_VERSION_ATLEAST(3,0,0) && SDL_VERSION_ATLEAST(2,0,0)
+typedef int SDL_RendererLogicalPresentation;
+#define SDL_LOGICAL_PRESENTATION_DISABLED 0
+#define SDL_SCALEMODE_BEST SDL_ScaleModeBest
+#define SDL_SCALEMODE_LINEAR SDL_ScaleModeLinear
+#define SDL_SCALEMODE_NEAREST SDL_ScaleModeNearest
+#define SDL_SetRenderClipRect(r, rect)  SDL_RenderSetClipRect(r, rect)
+
+static inline int SDL_SetRenderLogicalPresentation(SDL_Renderer *render,
+ int w, int h, SDL_RendererLogicalPresentiation p, SDL_ScaleMode s)
+{
+  return SDL_SetRenderLogicalSize(render, w, h);
+}
+#endif
+
+/* SDL_surface.h */
+#if !SDL_VERSION_ATLEAST(3,0,0) && SDL_VERSION_ATLEAST(2,0,0)
+#define SDL_DestroySurface(s) SDL_FreeSurface(s)
+
+static inline SDL_Surface *SDL_CreateSurface(int width, int height, Uint32 format)
+{
+  Uint32 rmask, gmask, bmask, amask;
+  int bpp;
+
+  SDL_PixelFormatEnumToMasks(format, &bpp, &rmask, &gmask, &bmask, &amask);
+  return SDL_CreateRGBSurface(0, width, height, bpp, rmask, gmask, bmask, amask);
+}
+#endif
+
+/**
+ * SDL_thread.h symbols were mostly the same for SDL 1 and SDL 2.
+ */
+#if !SDL_VERSION_ATLEAST(3,0,0)
+typedef SDL_cond  SDL_Condition;
+typedef SDL_mutex SDL_Mutex;
+typedef SDL_sem   SDL_Semaphore;
+#define SDL_CreateCondition()           SDL_CreateCond()
+#define SDL_DestroyCondition(c)         SDL_DestroyCond(c)
+#define SDL_WaitCondition(c,m)          SDL_CondWait(c,m)
+#define SDL_WaitConditionTimeout(c,m,t) SDL_CondWaitTimeout(c,m,t)
+#define SDL_SignalCondition(c)          SDL_CondSignal(c)
+#define SDL_BroadcastCondition(c)       SDL_CondBroadcast(c)
+#define SDL_WaitSemaphore(s)            SDL_SemWait(s)
+#define SDL_PostSemaphore(s)            SDL_SemPost(s)
+#define SDL_GetCurrentThreadID()        SDL_ThreadID()
+#endif
 
 #endif /* CONFIG_SDL */
 
 __M_END_DECLS
 
-#endif /* __COMPAT_SDL_H */
+#endif /* __SDLMZX_H */
