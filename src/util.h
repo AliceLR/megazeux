@@ -112,6 +112,17 @@ uint64_t rng_get_seed(void);
 void rng_set_seed(uint64_t seed);
 unsigned int Random(uint64_t range);
 
+static inline size_t round_to_power_of_two(size_t v)
+{
+  v -= (v > 0);
+  v |= v >> 1;
+  v |= v >> 2;
+  v |= v >> 4;
+  v |= v >> 8;
+  v |= v >> 16;
+  return v + 1;
+}
+
 /* Use as (dso_fn **) to store a loaded (void *) to a function pointer. */
 typedef void dso_fn;
 

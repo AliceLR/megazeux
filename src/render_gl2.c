@@ -56,8 +56,13 @@ static const struct gl_version gl_required_version = { 1, 1 };
 // The char texture in this renderer will be 1024x1024
 #define CHARSET_COLS 64
 #define CHARSET_ROWS (FULL_CHARSET_SIZE / CHARSET_COLS)
+#define TEX_CHARSET_WIDTH 1024.0f
+#define TEX_CHARSET_HEIGHT 1024.0f
 #define TEX_BG_WIDTH 128
 #define TEX_BG_HEIGHT 32
+
+#define TEX_CHAR_W (((float)CHAR_W) / TEX_CHARSET_WIDTH)
+#define TEX_CHAR_H (((float)CHAR_H) / TEX_CHARSET_HEIGHT)
 
 enum
 {
@@ -66,17 +71,6 @@ enum
   TEX_BG_ID,
   NUM_TEXTURES
 };
-
-static inline int next_power_of_two(int v)
-{
-  int i;
-  for(i = 1; i <= 65536; i *= 2)
-    if(i >= v)
-      return i;
-
-  debug("Couldn't find power of two for %d\n", v);
-  return v;
-}
 
 static struct
 {
@@ -162,8 +156,6 @@ struct gl2_render_data
   GLubyte color_array[TEX_BG_WIDTH * TEX_BG_HEIGHT * 4 * 4];
   float tex_coord_array[TEX_BG_WIDTH * TEX_BG_HEIGHT * 8];
   float vertex_array[TEX_BG_WIDTH * TEX_BG_HEIGHT * 8];
-  float charset_texture_width;
-  float charset_texture_height;
   boolean viewport_shrunk;
 };
 
@@ -324,10 +316,15 @@ static void gl2_resize_screen(struct graphics_data *graphics,
   gl_check_error();
 
   gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl2.glTexParameterf);
-  charset_width = next_power_of_two(CHARSET_COLS * CHAR_2W);
-  charset_height = next_power_of_two((CHARSET_ROWS + 1) * CHAR_H);
-  render_data->charset_texture_width = charset_width;
-  render_data->charset_texture_height = charset_height;
+  charset_width = round_to_power_of_two(CHARSET_COLS * CHAR_2W);
+  charset_height = round_to_power_of_two((CHARSET_ROWS + 1) * CHAR_H);
+
+#ifdef DEBUG
+  if(charset_width != (int)TEX_CHARSET_WIDTH ||
+   charset_height != (int)TEX_CHARSET_HEIGHT)
+    warn("texture size mismatch: %d %d\n", charset_width, charset_height);
+#endif
+
   gl2.glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, charset_width, charset_height,
    0, GL_ALPHA, GL_UNSIGNED_BYTE, NULL);
   gl_check_error();
@@ -580,8 +577,6 @@ static void gl2_render_layer(struct graphics_data *graphics,
     float *tex_coord_array = render_data->tex_coord_array;
     float *vertex_array    = render_data->vertex_array;
     GLubyte *color_array   = render_data->color_array;
-    int charset_tex_w      = render_data->charset_texture_width;
-    int charset_tex_h      = render_data->charset_texture_height;
     int charset_x;
     int charset_y;
     float x1 = layer->x;
@@ -682,17 +677,17 @@ static void gl2_render_layer(struct graphics_data *graphics,
         charset_x = char_value % CHARSET_COLS * 2;
         charset_y = char_value / CHARSET_COLS;
 
-        tex_coord_array[0] = (charset_x + 0.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[1] = (charset_y + 1.0f) * CHAR_H / charset_tex_h;
+        tex_coord_array[0] = (charset_x + 0.0f) * TEX_CHAR_W;
+        tex_coord_array[1] = (charset_y + 1.0f) * TEX_CHAR_H;
 
-        tex_coord_array[2] = (charset_x + 0.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[3] = (charset_y + 0.0f) * CHAR_H / charset_tex_h;
+        tex_coord_array[2] = (charset_x + 0.0f) * TEX_CHAR_W;
+        tex_coord_array[3] = (charset_y + 0.0f) * TEX_CHAR_H;
 
-        tex_coord_array[4] = (charset_x + 1.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[5] = (charset_y + 1.0f) * CHAR_H / charset_tex_h;
+        tex_coord_array[4] = (charset_x + 1.0f) * TEX_CHAR_W;
+        tex_coord_array[5] = (charset_y + 1.0f) * TEX_CHAR_H;
 
-        tex_coord_array[6] = (charset_x + 1.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[7] = (charset_y + 0.0f) * CHAR_H / charset_tex_h;
+        tex_coord_array[6] = (charset_x + 1.0f) * TEX_CHAR_W;
+        tex_coord_array[7] = (charset_y + 0.0f) * TEX_CHAR_H;
 
         x1 = (i2 + 0.0f) * CHAR_W + layer->x;
         x2 = (i2 + 1.0f) * CHAR_W + layer->x;
@@ -722,10 +717,10 @@ static void gl2_render_layer(struct graphics_data *graphics,
           pal_base = &render_data->palette[bg_color * 3];
 
           // Offset to the inverted copy of the current char
-          tex_coord_array[0] += (CHAR_W * 1.0f) / charset_tex_w;
-          tex_coord_array[2] += (CHAR_W * 1.0f) / charset_tex_w;
-          tex_coord_array[4] += (CHAR_W * 1.0f) / charset_tex_w;
-          tex_coord_array[6] += (CHAR_W * 1.0f) / charset_tex_w;
+          tex_coord_array[0] += TEX_CHAR_W;
+          tex_coord_array[2] += TEX_CHAR_W;
+          tex_coord_array[4] += TEX_CHAR_W;
+          tex_coord_array[6] += TEX_CHAR_W;
         }
         else
         {
@@ -772,17 +767,17 @@ static void gl2_render_layer(struct graphics_data *graphics,
         charset_x = char_value % CHARSET_COLS * 2;
         charset_y = char_value / CHARSET_COLS;
 
-        tex_coord_array[0] = (charset_x + 1.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[1] = (charset_y + 1.0f) * CHAR_H / charset_tex_h;
+        tex_coord_array[0] = (charset_x + 1.0f) * TEX_CHAR_W;
+        tex_coord_array[1] = (charset_y + 1.0f) * TEX_CHAR_H;
 
-        tex_coord_array[2] = (charset_x + 1.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[3] = (charset_y + 0.0f) * CHAR_H / charset_tex_h;
+        tex_coord_array[2] = (charset_x + 1.0f) * TEX_CHAR_W;
+        tex_coord_array[3] = (charset_y + 0.0f) * TEX_CHAR_H;
 
-        tex_coord_array[4] = (charset_x + 0.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[5] = (charset_y + 1.0f) * CHAR_H / charset_tex_h;
+        tex_coord_array[4] = (charset_x + 0.0f) * TEX_CHAR_W;
+        tex_coord_array[5] = (charset_y + 1.0f) * TEX_CHAR_H;
 
-        tex_coord_array[6] = (charset_x + 0.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[7] = (charset_y + 0.0f) * CHAR_H / charset_tex_h;
+        tex_coord_array[6] = (charset_x + 0.0f) * TEX_CHAR_W;
+        tex_coord_array[7] = (charset_y + 0.0f) * TEX_CHAR_H;
 
         x1 = (i2 + 0.0f) * CHAR_W + layer->x;
         x2 = (i2 + 1.0f) * CHAR_W + layer->x;
@@ -812,10 +807,10 @@ static void gl2_render_layer(struct graphics_data *graphics,
           pal_base = &render_data->palette[bg_color * 3];
 
           // Offset to the inverted copy of the current char
-          tex_coord_array[0] += (CHAR_W * 1.0f) / charset_tex_w;
-          tex_coord_array[2] += (CHAR_W * 1.0f) / charset_tex_w;
-          tex_coord_array[4] += (CHAR_W * 1.0f) / charset_tex_w;
-          tex_coord_array[6] += (CHAR_W * 1.0f) / charset_tex_w;
+          tex_coord_array[0] += TEX_CHAR_W;
+          tex_coord_array[2] += TEX_CHAR_W;
+          tex_coord_array[4] += TEX_CHAR_W;
+          tex_coord_array[6] += TEX_CHAR_W;
         }
         else
         {
