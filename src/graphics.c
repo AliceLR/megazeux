@@ -66,6 +66,9 @@ static const struct renderer_data renderers[] =
 #if defined(CONFIG_RENDER_SOFTSCALE)
   { "softscale", render_softscale_register },
 #endif
+#if defined(CONFIG_RENDER_SDLACCEL)
+  { "sdlaccel", render_sdlaccel_register },
+#endif
 #if defined(CONFIG_RENDER_GL_FIXED)
   { "opengl1", render_gl1_register },
   { "opengl2", render_gl2_register },

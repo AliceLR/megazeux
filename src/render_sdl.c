@@ -310,11 +310,25 @@ void sdl_destruct_window(struct graphics_data *graphics)
     render_data->palette = NULL;
   }
 
+  // Used for generating mapped colors for the SDL_Renderer renderers.
+  if(render_data->pixel_format)
+  {
+    SDL_FreeFormat(render_data->pixel_format);
+    render_data->pixel_format = NULL;
+  }
+
   // Used by the softscale renderer for HW acceleration.
   if(render_data->texture)
   {
     SDL_DestroyTexture(render_data->texture);
     render_data->texture = NULL;
+  }
+
+  // Used by the SDL hardware accelerated renderer in mode 0.
+  if(render_data->texture2)
+  {
+    SDL_DestroyTexture(render_data->texture2);
+    render_data->texture2 = NULL;
   }
 
   // Used by the softscale renderer for HW acceleration. Don't use for software.

@@ -49,7 +49,6 @@ struct softscale_render_data
   struct sdl_render_data sdl;
   uint32_t (*rgb_to_yuv)(uint8_t r, uint8_t g, uint8_t b);
   set_colors_function subsample_set_colors;
-  SDL_PixelFormat *sdl_format;
   SDL_Rect texture_rect;
   uint32_t *texture_pixels;
   uint32_t texture_format;
@@ -69,12 +68,6 @@ static void softscale_free_video(struct graphics_data *graphics)
 
   if(render_data)
   {
-    if(render_data->sdl_format)
-    {
-      SDL_FreeFormat(render_data->sdl_format);
-      render_data->sdl_format = NULL;
-    }
-
     sdl_destruct_window(graphics);
 
     graphics->render_data = NULL;
@@ -314,8 +307,8 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
   if(!render_data->rgb_to_yuv)
   {
     // This is required for SDL_MapRGBA to work, but YUV formats can ignore it.
-    render_data->sdl_format = SDL_AllocFormat(render_data->texture_format);
-    if(!render_data->sdl_format)
+    render_data->sdl.pixel_format = SDL_AllocFormat(render_data->texture_format);
+    if(!render_data->sdl.pixel_format)
     {
       warn("Failed to allocate pixel format: %s\n", SDL_GetError());
       goto err_free;
@@ -345,8 +338,9 @@ static void softscale_update_colors(struct graphics_data *graphics,
   {
     for(i = 0; i < count; i++)
     {
-      graphics->flat_intensity_palette[i] = SDL_MapRGBA(render_data->sdl_format,
-       palette[i].r, palette[i].g, palette[i].b, SDL_ALPHA_OPAQUE);
+      graphics->flat_intensity_palette[i] =
+       SDL_MapRGBA(render_data->sdl.pixel_format,
+        palette[i].r, palette[i].g, palette[i].b, SDL_ALPHA_OPAQUE);
     }
   }
   else

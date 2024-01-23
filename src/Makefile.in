@@ -225,10 +225,15 @@ core_cobjs += ${core_obj}/render_soft.o
 render_layer_software = 1
 endif
 
-# Accelerated SDL2 software renderer
+# Accelerated SDL software renderer
 ifeq (${BUILD_RENDER_SOFTSCALE},1)
 core_cobjs += ${core_obj}/render_softscale.o
 render_layer_software = 1
+endif
+
+# Accelerated SDL fixed function hardware renderer
+ifeq (${BUILD_RENDER_SDLACCEL},1)
+core_cobjs += ${core_obj}/render_sdlaccel.o
 endif
 
 # GL shared

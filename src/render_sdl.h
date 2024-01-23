@@ -32,9 +32,11 @@ struct sdl_render_data
 #if SDL_VERSION_ATLEAST(2,0,0)
   SDL_Renderer *renderer;
   SDL_Texture *texture;
+  SDL_Texture *texture2;
   SDL_Palette *palette;
   SDL_Window *window;
   SDL_GLContext context;
+  SDL_PixelFormat *pixel_format;
 #else
   SDL_Overlay *overlay;
 #endif
