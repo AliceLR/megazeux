@@ -24,8 +24,9 @@
 #include "smzxconv.h"
 #include "y4m.h"
 
-#ifdef _WIN32
 #define SKIP_SDL
+#ifdef SKIP_SDL
+// Shut Up GCC
 #endif
 #include "../graphics.h"
 #include "../platform.h"
