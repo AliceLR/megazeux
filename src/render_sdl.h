@@ -32,8 +32,7 @@ struct sdl_render_data
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
   SDL_Renderer *renderer;
-  SDL_Texture *texture;
-  SDL_Texture *texture2;
+  SDL_Texture *texture[3];
   SDL_Palette *palette;
   SDL_Window *window;
   SDL_GLContext context;
@@ -77,7 +76,8 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
 
 #if SDL_VERSION_ATLEAST(2,0,0)
 boolean sdlrender_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize);
+ int width, int height, int depth, boolean fullscreen, boolean resize,
+ uint32_t sdl_rendererflags);
 
 void sdlrender_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, unsigned int count);

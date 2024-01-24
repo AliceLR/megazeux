@@ -94,7 +94,8 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
   struct softscale_render_data *render_data =
    (struct softscale_render_data *)graphics->render_data;
 
-  if(!sdlrender_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+  if(!sdlrender_set_video_mode(graphics, width, height,
+   depth, fullscreen, resize, 0))
     return false;
 
   // YUV texture modes are effectively 16-bit to SDL, but MegaZeux treats them
@@ -107,11 +108,11 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
   render_data->texture_pixels = NULL;
 
   // Initialize the screen texture.
-  render_data->sdl.texture =
+  render_data->sdl.texture[0] =
    SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
     SDL_TEXTUREACCESS_STREAMING, render_data->texture_width, SCREEN_PIX_H);
 
-  if(!render_data->sdl.texture)
+  if(!render_data->sdl.texture[0])
   {
     warn("Failed to create texture: %s\n", SDL_GetError());
     goto err_free;
@@ -155,7 +156,7 @@ static void softscale_lock_texture(struct softscale_render_data *render_data,
     else
       render_data->enable_subsampling = false;
 
-    SDL_LockTexture(render_data->sdl.texture, texture_rect, &pixels, &pitch);
+    SDL_LockTexture(render_data->sdl.texture[0], texture_rect, &pixels, &pitch);
     render_data->texture_pixels = pixels;
     render_data->texture_pitch = pitch;
   }
@@ -173,7 +174,7 @@ static void softscale_unlock_texture(struct softscale_render_data *render_data)
 {
   if(render_data->texture_pixels)
   {
-    SDL_UnlockTexture(render_data->sdl.texture);
+    SDL_UnlockTexture(render_data->sdl.texture[0]);
     render_data->texture_pixels = NULL;
   }
 }
@@ -263,7 +264,7 @@ static void softscale_sync_screen(struct graphics_data *graphics)
 {
   struct softscale_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
-  SDL_Texture *texture = render_data->sdl.texture;
+  SDL_Texture *texture = render_data->sdl.texture[0];
   SDL_Rect *src_rect = &(render_data->texture_rect);
   SDL_Rect dest_rect;
   int width = render_data->w;

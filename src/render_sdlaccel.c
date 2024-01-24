@@ -22,9 +22,7 @@
  * be useful to keep around for reference. SMZX is not implemented yet.
  *
  * The old SDL_RenderTexture implementation (<2.0.18) is just plain slow.
- * SDL_RenderGeometry seems support depth buffering, but large foreground
- * layers stop working in busy scenes for some reason. Even this is about
- * half to one third the speed of the opengl2 renderer.
+ * SDL_RenderGeometry is better, but not enough to justify using it currently.
  *
  * The other main performance problem here is writes to the chars texture.
  * There's no compelling way to make it faster, and even a few rows updated can
@@ -47,6 +45,10 @@
 #define RENDER_GEOMETRY
 #endif
 
+#define TEX_SCREEN      0
+#define TEX_CHARS       1
+#define TEX_BACKGROUND  2
+
 // 32 * 6 * 8 = 1536 px
 // 128 * 1 * 14 = 1792 px
 #define CHARS_ROW_SIZE 32
@@ -66,6 +68,9 @@
 #define TEX_CHARS_PIX_H (CHAR_H * CHARS_NUM_ROWS)
 #define TEX_CHAR_W ((float)CHAR_W / 2048.0)
 #define TEX_CHAR_H ((float)CHAR_H / 2048.0)
+
+#define TEX_SCREEN_W 1024
+#define TEX_SCREEN_H 512
 
 #define TEX_BG_W 128
 #define TEX_BG_H 32
@@ -101,6 +106,8 @@ struct sdlaccel_render_data
   boolean chars_needed_row[CHARS_NUM_ROWS];
   boolean join;
 #endif
+  int w;
+  int h;
 };
 
 static void write_char_byte_mzx(uint32_t **_char_data, uint8_t byte)
@@ -259,6 +266,8 @@ static boolean sdlaccel_init_video(struct graphics_data *graphics,
   memset(render_data->chars_dirty_row, true, CHARS_NUM_ROWS);
   render_data->chars_dirty = true;
   graphics->render_data = render_data;
+  graphics->allow_resize = conf->allow_resize;
+  graphics->ratio = conf->video_ratio;
   graphics->bits_per_pixel = 32;
 
   if(!set_video_mode())
@@ -287,18 +296,27 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
   struct sdlaccel_render_data *render_data =
    (struct sdlaccel_render_data *)graphics->render_data;
 
-  SDL_Rect screen = { 0, 0, SCREEN_PIX_W, SCREEN_PIX_H };
+  SDL_Texture **texture = render_data->sdl.texture;
   int tex_chars_w;
   int tex_chars_h;
 
-  if(!sdlrender_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+  // This requires that the underlying driver supports framebuffer objects.
+  if(!sdlrender_set_video_mode(graphics, width, height,
+   depth, fullscreen, resize, SDL_RENDERER_TARGETTEXTURE))
     return false;
 
-  if(SDL_RenderSetLogicalSize(render_data->sdl.renderer, screen.w, screen.h))
-    warn("Failed to set renderer locical size!\n");
+  texture[TEX_SCREEN] =
+   SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
+    SDL_TEXTUREACCESS_TARGET, TEX_SCREEN_W, TEX_SCREEN_H);
 
-  if(SDL_RenderSetClipRect(render_data->sdl.renderer, &screen))
-    warn("Failed to set clip rectangle!\n");
+  if(!texture[TEX_SCREEN])
+  {
+    warn("Failed to create screen texture: %s\n", SDL_GetError());
+    goto err_free;
+  }
+
+  // Always use nearest neighbor for the charset and background textures.
+  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
   tex_chars_w = round_to_power_of_two(TEX_CHARS_PIX_W);
   tex_chars_h = round_to_power_of_two(TEX_CHARS_PIX_H);
@@ -310,32 +328,35 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
   // requires locking the whole thing, after which the whole thing will be
   // uploaded (SLOW). It's better for the typical use case to write to a
   // smaller local version and only upload recently updated parts.
-  render_data->sdl.texture =
+  texture[TEX_CHARS] =
    SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
     SDL_TEXTUREACCESS_STREAMING, tex_chars_w, tex_chars_h);
 
-  if(!render_data->sdl.texture)
+  if(!texture[TEX_CHARS])
   {
     warn("Failed to create texture: %s\n", SDL_GetError());
     goto err_free;
   }
 
   // Initialize the background texture.
-  render_data->sdl.texture2 =
+  texture[TEX_BACKGROUND] =
    SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
     SDL_TEXTUREACCESS_STREAMING, TEX_BG_W, TEX_BG_H);
 
-  if(!render_data->sdl.texture2)
+  if(!texture[TEX_BACKGROUND])
   {
     warn("Failed to create texture2: %s\n", SDL_GetError());
     goto err_free;
   }
 
-  if(SDL_SetTextureBlendMode(render_data->sdl.texture, SDL_BLENDMODE_BLEND))
-    warn("Failed to set texture blend mode: %s\n", SDL_GetError());
-  if(SDL_SetTextureBlendMode(render_data->sdl.texture2, SDL_BLENDMODE_BLEND))
-    warn("Failed to set texture2 blend mode: %s\n", SDL_GetError());
+  if(SDL_SetTextureBlendMode(texture[TEX_CHARS], SDL_BLENDMODE_BLEND))
+    warn("Failed to set char texture blend mode: %s\n", SDL_GetError());
+  if(SDL_SetTextureBlendMode(texture[TEX_BACKGROUND], SDL_BLENDMODE_BLEND))
+    warn("Failed to set bg texture blend mode: %s\n", SDL_GetError());
 
+  SDL_SetRenderTarget(render_data->sdl.renderer, texture[TEX_SCREEN]);
+  render_data->w = width;
+  render_data->h = height;
   return true;
 
 err_free:
@@ -419,11 +440,11 @@ static void sdlaccel_do_remap_chars(struct graphics_data *graphics,
     if(render_data->chars_dirty_row[i])
     {
       rect.y = i * CHAR_H;
-      SDL_LockTexture(render_data->sdl.texture, &rect, &pixels, &pitch);
+      SDL_LockTexture(render_data->sdl.texture[TEX_CHARS], &rect, &pixels, &pitch);
 
       sdlaccel_do_remap_row(graphics, render_data, pixels, pitch, i);
 
-      SDL_UnlockTexture(render_data->sdl.texture);
+      SDL_UnlockTexture(render_data->sdl.texture[TEX_CHARS]);
       render_data->chars_dirty_row[i] = false;
     }
   }
@@ -459,7 +480,7 @@ static void sdlaccel_do_remap_chars(struct graphics_data *graphics,
 
       rect.y = start * CHAR_H;
       rect.h = (i - start) * CHARS_RAW_ROW_H;
-      SDL_UpdateTexture(render_data->sdl.texture, &rect, pixels, pitch);
+      SDL_UpdateTexture(render_data->sdl.texture[TEX_CHARS], &rect, pixels, pitch);
     }
   }
 
@@ -506,7 +527,7 @@ static void sdlaccel_set_color(struct graphics_data *graphics, int color, int mo
   if(!mode && color >= 16)
     color = graphics->protected_pal_position + (color % 16);
 
-  SDL_SetTextureColorMod(render_data->sdl.texture,
+  SDL_SetTextureColorMod(render_data->sdl.texture[TEX_CHARS],
    palette[color * 3], palette[color * 3 + 1], palette[color * 3 + 2]);
 }
 
@@ -527,8 +548,8 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
   unsigned chr;
 
   SDL_Renderer *renderer = render_data->sdl.renderer;
-  SDL_Texture *chars_tex = render_data->sdl.texture;
-  SDL_Texture *bg_tex = render_data->sdl.texture2;
+  SDL_Texture *chars_tex = render_data->sdl.texture[TEX_CHARS];
+  SDL_Texture *bg_tex = render_data->sdl.texture[TEX_BACKGROUND];
 
   SDL_Rect dest_bg = { offx, offy, w * CHAR_W, h * CHAR_H };
   SDL_Rect src_bg = { 0, 0, w, h };
@@ -593,7 +614,7 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
         if(next->bg_color != transparent_color)
         {
           color = next->bg_color;
-          tex_x += CHAR_W;
+          tex_x += TEX_CHAR_W;
         }
         else
           continue;
@@ -715,11 +736,34 @@ static void sdlaccel_render_mouse(struct graphics_data *graphics, unsigned x,
 static void sdlaccel_sync_screen(struct graphics_data *graphics)
 {
   struct sdlaccel_render_data *render_data = graphics->render_data;
+  SDL_Renderer *renderer = render_data->sdl.renderer;
+  SDL_Texture *screen_tex = render_data->sdl.texture[TEX_SCREEN];
+  SDL_Rect src;
+  SDL_Rect dest;
+  int width = render_data->w;
+  int height = render_data->h;
+  int v_width, v_height;
 
-  SDL_RenderPresent(render_data->sdl.renderer);
+  src.x = 0;
+  src.y = 0;
+  src.w = SCREEN_PIX_W;
+  src.h = SCREEN_PIX_H;
 
-  SDL_SetRenderDrawColor(render_data->sdl.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-  SDL_RenderClear(render_data->sdl.renderer);
+  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
+  dest.x = (width - v_width) / 2;
+  dest.y = (height - v_height) / 2;
+  dest.w = v_width;
+  dest.h = v_height;
+
+  SDL_SetRenderTarget(renderer, NULL);
+  SDL_RenderCopy(renderer, screen_tex, &src, &dest);
+
+  SDL_RenderPresent(renderer);
+
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+  SDL_RenderClear(renderer);
+
+  SDL_SetRenderTarget(renderer, screen_tex);
 }
 
 void render_sdlaccel_register(struct renderer *renderer)

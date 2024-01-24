@@ -296,6 +296,7 @@ void sdl_destruct_window(struct graphics_data *graphics)
   struct sdl_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
+  size_t i;
 
   // Used by the software renderer as a fallback if the window surface doesn't
   // match the pixel format MZX wants.
@@ -319,18 +320,14 @@ void sdl_destruct_window(struct graphics_data *graphics)
     render_data->pixel_format = NULL;
   }
 
-  // Used by the softscale renderer for HW acceleration.
-  if(render_data->texture)
+  // Used by the SDL renderer-based renderers for HW acceleration.
+  for(i = 0; i < ARRAY_SIZE(render_data->texture); i++)
   {
-    SDL_DestroyTexture(render_data->texture);
-    render_data->texture = NULL;
-  }
-
-  // Used by the SDL hardware accelerated renderer in mode 0.
-  if(render_data->texture2)
-  {
-    SDL_DestroyTexture(render_data->texture2);
-    render_data->texture2 = NULL;
+    if(render_data->texture[i])
+    {
+      SDL_DestroyTexture(render_data->texture[i]);
+      render_data->texture[i] = NULL;
+    }
   }
 
   // Used by the softscale renderer for HW acceleration. Don't use for software.
@@ -670,7 +667,8 @@ static void find_texture_format(struct graphics_data *graphics)
  * on the scaling ratio and window size.
  */
 boolean sdlrender_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+ int width, int height, int depth, boolean fullscreen, boolean resize,
+ uint32_t sdl_rendererflags)
 {
   struct sdl_render_data *render_data = graphics->render_data;
   boolean fullscreen_windowed = graphics->fullscreen_windowed;
@@ -706,12 +704,14 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
   }
 
   render_data->renderer =
-   SDL_CreateRenderer(render_data->window, BEST_RENDERER, SDL_RENDERER_ACCELERATED);
+   SDL_CreateRenderer(render_data->window, BEST_RENDERER,
+    SDL_RENDERER_ACCELERATED | sdl_rendererflags);
 
   if(!render_data->renderer)
   {
     render_data->renderer =
-     SDL_CreateRenderer(render_data->window, BEST_RENDERER, SDL_RENDERER_SOFTWARE);
+     SDL_CreateRenderer(render_data->window, BEST_RENDERER,
+      SDL_RENDERER_SOFTWARE | sdl_rendererflags);
 
     if(!render_data->renderer)
     {
