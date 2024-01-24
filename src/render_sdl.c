@@ -545,13 +545,15 @@ static uint32_t get_format_amask(uint32_t format)
   return amask;
 }
 
-static void find_texture_format(struct graphics_data *graphics)
+static void find_texture_format(struct graphics_data *graphics,
+ uint32_t sdl_rendererflags)
 {
   struct sdl_render_data *render_data = (struct sdl_render_data *)graphics->render_data;
   uint32_t texture_format = SDL_PIXELFORMAT_UNKNOWN;
   unsigned int texture_bpp = 0;
   uint32_t texture_amask = 0;
   boolean allow_subsampling = false;
+  boolean need_alpha = false;
   uint32_t yuv_priority = YUV_PRIORITY;
   uint32_t priority = 0;
   SDL_RendererInfo rinfo;
@@ -569,6 +571,11 @@ static void find_texture_format(struct graphics_data *graphics)
       yuv_priority = YUV_PRIORITY_APPLE;
 #endif
 
+    // Anything using hardware blending must support alpha.
+    // Blending doesn't require targeting a texture, but this works for now.
+    if(sdl_rendererflags & SDL_RENDERER_TARGETTEXTURE)
+      need_alpha = true;
+
     // Try to use a native texture format to improve performance.
     for(i = 0; i < rinfo.num_texture_formats; i++)
     {
@@ -577,10 +584,12 @@ static void find_texture_format(struct graphics_data *graphics)
 
       debug("%d: %s\n", i, SDL_GetPixelFormatName(format));
 
-      if(SDL_ISPIXELFORMAT_INDEXED(texture_format))
+      if(SDL_ISPIXELFORMAT_INDEXED(format))
+        continue;
+      if(need_alpha && !SDL_ISPIXELFORMAT_ALPHA(format))
         continue;
 
-      format_priority = sdl_pixel_format_priority(format, depth, false);
+      format_priority = sdl_pixel_format_priority(format, depth, yuv_priority);
       if(format_priority > priority)
       {
         texture_format = format;
@@ -722,7 +731,7 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
     warn("Accelerated renderer not available. Rendering will be SLOW!\n");
   }
 
-  find_texture_format(graphics);
+  find_texture_format(graphics, sdl_rendererflags);
 
   if(!render_data->rgb_to_yuv)
   {
@@ -739,6 +748,7 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
   SDL_RenderClear(render_data->renderer);
 
   sdl_window_id = SDL_GetWindowID(render_data->window);
+  sdl_set_screensaver_enabled(graphics->disable_screensaver == SCREENSAVER_ENABLE);
   return true;
 
 err_free:
