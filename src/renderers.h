@@ -38,6 +38,9 @@ void render_soft_register(struct renderer *renderer);
 #if defined(CONFIG_RENDER_SOFTSCALE)
 void render_softscale_register(struct renderer *renderer);
 #endif
+#if defined(CONFIG_RENDER_SDLACCEL)
+void render_sdlaccel_register(struct renderer *renderer);
+#endif
 #if defined(CONFIG_RENDER_GL_FIXED)
 void render_gl1_register(struct renderer *renderer);
 void render_gl2_register(struct renderer *renderer);

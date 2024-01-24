@@ -25,7 +25,7 @@ jobs:
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
       - uses: actions/checkout@v3
       - name: Configure
-        run: ./config.sh --platform unix --enable-release
+        run: ./config.sh --platform unix --enable-release --enable-sdlaccel
       - name: Build
         run: $MZX_MAKE
       - name: Run tests
@@ -48,7 +48,7 @@ jobs:
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
       - uses: actions/checkout@v3
       - name: Configure
-        run: ./config.sh --platform unix-devel --enable-release
+        run: ./config.sh --platform unix-devel --enable-release --enable-sdlaccel
       - name: Build
         run: $MZX_MAKE
       - name: Run tests

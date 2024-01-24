@@ -41,6 +41,14 @@ DEVELOPERS
     --disable-sdl (disables SDL).
   For compatibility, "--disable-libsdl2" is still recognized.
 + Added SDL 2 and SDL 1.2 support to the 3DS port. (asie)
++ Updated the "sdlaccel" renderer, which can now be enabled with
+  --enable-sdlaccel in config.sh. This renderer uses the SDL
+  renderer API for hardware rendering and has an experimental
+  threaded charset texture update routine. SMZX isn't currently
+  implemented and it's slow, so it's disabled by default.
++ Moved SDL renderer window creation to render_sdl.c so both of
+  the SDL renderer-based renderers can benefit from it.
++ Removed floating point division usage in render_gl2.c.
 + -Og is now the default debug optimization level (was -O0).
 + Added --enable-lto to enable link-time optimizations.
 + The sanitizer config.sh options can now be used with release

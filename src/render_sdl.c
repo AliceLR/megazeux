@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2007-2008 Alistair John Strachan <alistair@devzero.co.uk>
- * Copyright (C) 2021 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2019-2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,8 +19,10 @@
  */
 
 #include "SDLmzx.h"
+#include "render.h"
 #include "render_sdl.h"
 #include "util.h"
+#include "yuv.h"
 
 #include <limits.h>
 
@@ -140,8 +142,8 @@ boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
  * A bits_per_pixel value can be provided to filter out pixel formats that do
  * not correspond to the desired BPP value.
  */
-Uint32 sdl_pixel_format_priority(Uint32 pixel_format, Uint32 bits_per_pixel,
- boolean force_rgb)
+static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
+ uint32_t bits_per_pixel, uint32_t yuv_priority)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
   switch(pixel_format)
@@ -213,13 +215,13 @@ Uint32 sdl_pixel_format_priority(Uint32 pixel_format, Uint32 bits_per_pixel,
     case SDL_PIXELFORMAT_UYVY:
     case SDL_PIXELFORMAT_YVYU:
     {
-      if(force_rgb)
+      if(!yuv_priority)
         break;
 
       // These can work as either 32-bpp (full encode) or partial 16-bpp
       // (chroma subsampling for render_graph, full encode for layers).
       if(bits_per_pixel == BPP_AUTO || bits_per_pixel == 16 || bits_per_pixel == 32)
-        return YUV_PRIORITY;
+        return yuv_priority;
 
       break;
     }
@@ -294,6 +296,7 @@ void sdl_destruct_window(struct graphics_data *graphics)
   struct sdl_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
+  size_t i;
 
   // Used by the software renderer as a fallback if the window surface doesn't
   // match the pixel format MZX wants.
@@ -310,11 +313,21 @@ void sdl_destruct_window(struct graphics_data *graphics)
     render_data->palette = NULL;
   }
 
-  // Used by the softscale renderer for HW acceleration.
-  if(render_data->texture)
+  // Used for generating mapped colors for the SDL_Renderer renderers.
+  if(render_data->pixel_format)
   {
-    SDL_DestroyTexture(render_data->texture);
-    render_data->texture = NULL;
+    SDL_FreeFormat(render_data->pixel_format);
+    render_data->pixel_format = NULL;
+  }
+
+  // Used by the SDL renderer-based renderers for HW acceleration.
+  for(i = 0; i < ARRAY_SIZE(render_data->texture); i++)
+  {
+    if(render_data->texture[i])
+    {
+      SDL_DestroyTexture(render_data->texture[i]);
+      render_data->texture[i] = NULL;
+    }
   }
 
   // Used by the softscale renderer for HW acceleration. Don't use for software.
@@ -358,6 +371,11 @@ void sdl_destruct_window(struct graphics_data *graphics)
 
 #endif
 }
+
+
+/* SDL software renderer functions for: *************************************/
+// software
+// gp2x
 
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize)
@@ -403,7 +421,7 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   fmt = SDL_GetWindowPixelFormat(render_data->window);
   debug("Window pixel format: %s\n", SDL_GetPixelFormatName(fmt));
 
-  if(!sdl_pixel_format_priority(fmt, depth, true))
+  if(!sdl_pixel_format_priority(fmt, depth, YUV_DISABLE))
   {
     switch(depth)
     {
@@ -495,6 +513,271 @@ err_free:
   return false;
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 }
+
+
+/* SDL hardware renderer API functions for: *********************************/
+// softscale
+// sdlaccel
+
+#if defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_SDLACCEL)
+
+#define BEST_RENDERER -1
+
+static boolean is_integer_scale(struct graphics_data *graphics, int width,
+ int height)
+{
+  int v_width, v_height;
+  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
+
+  if((v_width / SCREEN_PIX_W * SCREEN_PIX_W == v_width) &&
+   (v_height / SCREEN_PIX_H * SCREEN_PIX_H == v_height))
+    return true;
+
+  return false;
+}
+
+static uint32_t get_format_amask(uint32_t format)
+{
+  Uint32 rmask, gmask, bmask, amask;
+  int bpp;
+
+  SDL_PixelFormatEnumToMasks(format, &bpp, &rmask, &gmask, &bmask, &amask);
+  return amask;
+}
+
+static void find_texture_format(struct graphics_data *graphics)
+{
+  struct sdl_render_data *render_data = (struct sdl_render_data *)graphics->render_data;
+  uint32_t texture_format = SDL_PIXELFORMAT_UNKNOWN;
+  unsigned int texture_bpp = 0;
+  uint32_t texture_amask = 0;
+  boolean allow_subsampling = false;
+  uint32_t yuv_priority = YUV_PRIORITY;
+  uint32_t priority = 0;
+  SDL_RendererInfo rinfo;
+
+  if(!SDL_GetRendererInfo(render_data->renderer, &rinfo))
+  {
+    unsigned int depth = graphics->bits_per_pixel;
+    unsigned int i;
+
+    info("SDL render driver: '%s'\n", rinfo.name);
+
+#ifdef __MACOSX__
+    // Not clear if Metal supports the custom Apple YUV texture format.
+    if(!strcasecmp(rinfo.name, "opengl"))
+      yuv_priority = YUV_PRIORITY_APPLE;
+#endif
+
+    // Try to use a native texture format to improve performance.
+    for(i = 0; i < rinfo.num_texture_formats; i++)
+    {
+      uint32_t format = rinfo.texture_formats[i];
+      unsigned int format_priority;
+
+      debug("%d: %s\n", i, SDL_GetPixelFormatName(format));
+
+      if(SDL_ISPIXELFORMAT_INDEXED(texture_format))
+        continue;
+
+      format_priority = sdl_pixel_format_priority(format, depth, false);
+      if(format_priority > priority)
+      {
+        texture_format = format;
+        priority = format_priority;
+      }
+    }
+  }
+  else
+    warn("Failed to get renderer info!\n");
+
+  if(texture_format == SDL_PIXELFORMAT_UNKNOWN)
+  {
+    // 16bpp RGB seems moderately faster than YUV with chroma subsampling
+    // when neither are natively supported.
+    if(graphics->bits_per_pixel == 16)
+      texture_format = SDL_PIXELFORMAT_RGB565;
+    else
+      texture_format = SDL_PIXELFORMAT_ARGB8888;
+
+    debug("No matching pixel format. Using %s. Rendering may be slower.\n",
+     SDL_GetPixelFormatName(texture_format));
+  }
+  else
+    debug("Using pixel format %s.\n", SDL_GetPixelFormatName(texture_format));
+
+  if(priority == yuv_priority)
+  {
+    texture_bpp = 32;
+
+    if(texture_format == SDL_PIXELFORMAT_YUY2)
+    {
+      render_data->subsample_set_colors = yuy2_subsample_set_colors_mzx;
+      render_data->rgb_to_yuv = rgb_to_yuy2;
+    }
+
+    if(texture_format == SDL_PIXELFORMAT_UYVY)
+    {
+      render_data->subsample_set_colors = uyvy_subsample_set_colors_mzx;
+#ifdef __MACOSX__
+      render_data->rgb_to_yuv = rgb_to_apple_ycbcr_422;
+#else
+      render_data->rgb_to_yuv = rgb_to_uyvy;
+#endif
+    }
+
+    if(texture_format == SDL_PIXELFORMAT_YVYU)
+    {
+      render_data->subsample_set_colors = yvyu_subsample_set_colors_mzx;
+      render_data->rgb_to_yuv = rgb_to_yvyu;
+    }
+
+    // If this renderer was activated with force_bpp=16, enable subsampling
+    // support for render_graph.
+    if(graphics->bits_per_pixel == 16)
+    {
+      debug("Allowing YUV subsampling for render_graph.\n");
+      allow_subsampling = true;
+    }
+  }
+  else
+  {
+    texture_bpp = SDL_BYTESPERPIXEL(texture_format) * 8;
+    texture_amask = get_format_amask(texture_format);
+  }
+
+  if(graphics->bits_per_pixel == BPP_AUTO)
+    graphics->bits_per_pixel = texture_bpp;
+
+  // Initialize the texture format data.
+  render_data->texture_format = texture_format;
+  render_data->texture_amask = texture_amask;
+  render_data->texture_bpp = texture_bpp;
+  render_data->allow_subsampling = allow_subsampling;
+}
+
+/**
+ * Initialize a window for SDL Renderer-based renderers. This function will
+ * automatically select a native texture format for the renderer (if applicable)
+ * for better performance. This texture format is stored to `sdl_render_data`.
+ * In some cases (but usually not), this may include YUV texture formats. The
+ * corresponding `sdlrender_update_colors` should be used with these renderers.
+ *
+ * This function will also pick nearest or linear scaling automatically based
+ * on the scaling ratio and window size.
+ */
+boolean sdlrender_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize,
+ uint32_t sdl_rendererflags)
+{
+  struct sdl_render_data *render_data = graphics->render_data;
+  boolean fullscreen_windowed = graphics->fullscreen_windowed;
+
+  sdl_destruct_window(graphics);
+
+  // Use linear filtering unless the display is being integer scaled.
+  if(is_integer_scale(graphics, width, height))
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+  else
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+
+#if defined(__EMSCRIPTEN__) && SDL_VERSION_ATLEAST(2,0,10)
+  // Not clear if this hint is required to make this renderer not crash, but
+  // considering both software and GLSL need it...
+  SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY, "0");
+#endif
+
+  if(graphics->sdl_render_driver[0])
+  {
+    info("Requesting SDL render driver: '%s'\n", graphics->sdl_render_driver);
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, graphics->sdl_render_driver);
+  }
+
+  render_data->window = SDL_CreateWindow("MegaZeux",
+   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
+   sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
+
+  if(!render_data->window)
+  {
+    warn("Failed to create window: %s\n", SDL_GetError());
+    goto err_free;
+  }
+
+  render_data->renderer =
+   SDL_CreateRenderer(render_data->window, BEST_RENDERER,
+    SDL_RENDERER_ACCELERATED | sdl_rendererflags);
+
+  if(!render_data->renderer)
+  {
+    render_data->renderer =
+     SDL_CreateRenderer(render_data->window, BEST_RENDERER,
+      SDL_RENDERER_SOFTWARE | sdl_rendererflags);
+
+    if(!render_data->renderer)
+    {
+      warn("Failed to create renderer: %s\n", SDL_GetError());
+      goto err_free;
+    }
+
+    warn("Accelerated renderer not available. Rendering will be SLOW!\n");
+  }
+
+  find_texture_format(graphics);
+
+  if(!render_data->rgb_to_yuv)
+  {
+    // This is required for SDL_MapRGBA to work, but YUV formats can ignore it.
+    render_data->pixel_format = SDL_AllocFormat(render_data->texture_format);
+    if(!render_data->pixel_format)
+    {
+      warn("Failed to allocate pixel format: %s\n", SDL_GetError());
+      goto err_free;
+    }
+  }
+
+  SDL_SetRenderDrawColor(render_data->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+  SDL_RenderClear(render_data->renderer);
+
+  sdl_window_id = SDL_GetWindowID(render_data->window);
+  return true;
+
+err_free:
+  sdl_destruct_window(graphics);
+  return false;
+}
+
+void sdlrender_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, unsigned int count)
+{
+  struct sdl_render_data *render_data = (struct sdl_render_data *)graphics->render_data;
+  unsigned int i;
+
+  if(!render_data->rgb_to_yuv)
+  {
+    for(i = 0; i < count; i++)
+    {
+      graphics->flat_intensity_palette[i] =
+       SDL_MapRGBA(render_data->pixel_format,
+        palette[i].r, palette[i].g, palette[i].b, SDL_ALPHA_OPAQUE);
+    }
+  }
+  else
+  {
+    for(i = 0; i < count; i++)
+    {
+      graphics->flat_intensity_palette[i] =
+       render_data->rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b);
+    }
+  }
+}
+
+#endif /* CONFIG_RENDER_SOFTSCALE || CONFIG_RENDER_SDLACCEL */
+
+
+/* SDL direct OpenGL functions for: *****************************************/
+// opengl1
+// opengl2
+// glsl / glslscale
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 

@@ -93,7 +93,8 @@ usage() {
 	echo "Graphics options:"
 	echo "  --enable-gles             Enable hacks for OpenGL ES platforms."
 	echo "  --disable-software        Disable software renderer."
-	echo "  --disable-softscale       Disable SDL 2 accelerated software renderer."
+	echo "  --disable-softscale       Disable SDL accelerated software renderer."
+	echo "  --enable-sdlaccel         Enable SDL accelerated hardware renderer."
 	echo "  --disable-gl              Disable all GL renderers."
 	echo "  --disable-gl-fixed        Disable GL renderers for fixed-function h/w."
 	echo "  --disable-gl-prog         Disable GL renderers for programmable h/w."
@@ -172,6 +173,7 @@ UTILS="true"
 X11="true"
 SOFTWARE="true"
 SOFTSCALE="true"
+SDLACCEL="false"
 GL_FIXED="true"
 GL_PROGRAM="true"
 OVERLAY="true"
@@ -350,6 +352,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-softscale" ] && SOFTSCALE="false"
 	[ "$1" = "--enable-softscale" ]  && SOFTSCALE="true"
+
+	[ "$1" = "--disable-sdlaccel" ] && SDLACCEL="false"
+	[ "$1" = "--enable-sdlaccel" ]  && SDLACCEL="true"
 
 	[ "$1" = "--disable-gl" ] && GL="false"
 	[ "$1" = "--enable-gl" ]  && GL="true"
@@ -797,6 +802,7 @@ if [ "$SDL" = "false" ]; then
 	echo "Force-disabling SDL dependent components:"
 	echo " -> SOFTSCALE, OVERLAY"
 	SOFTSCALE="false"
+	SDLACCEL="false"
 	OVERLAY="false"
 else
 	#
@@ -1108,6 +1114,7 @@ fi
 if [ "$SDL" = "1" ] && [ "$SOFTSCALE" = "true" ]; then
 	echo "Force-disabling softscale renderer (requires SDL 2)."
 	SOFTSCALE="false"
+	SDLACCEL="false"
 fi
 
 #
@@ -1520,6 +1527,17 @@ if [ "$SOFTSCALE" = "true" ]; then
 	echo "BUILD_RENDER_SOFTSCALE=1" >> platform.inc
 else
 	echo "Softscale renderer disabled."
+fi
+
+#
+# SDL accelerated hardware renderer (SDL 2+)
+#
+if [ "$SDLACCEL" = "true" ]; then
+	echo "SDL accelerated hardware renderer enabled."
+	echo "#define CONFIG_RENDER_SDLACCEL" >> src/config.h
+	echo "BUILD_RENDER_SDLACCEL=1" >> platform.inc
+else
+	echo "SDL accelerated hardware renderer disabled."
 fi
 
 #

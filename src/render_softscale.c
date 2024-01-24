@@ -18,19 +18,9 @@
  */
 
 /**
- * Software renderer with SDL2 hardware accelerated scaling. An improvement on
- * the former SDL2 implementation of the overlay renderers.
- *
- * The overlay renderers use a method to get cheap hardware scaling that isn't
- * applicable to SDL2. The original approach to adapting them to SDL2 was to
- * use YUV textures with an accelerated SDL_Renderer, but as these packed YUV
- * textures tend to be non-native this incurs significant performance penalties
- * converting the pixels to the native format in software.
- *
- * By using a native texture format, this can be bypassed, making scaling much
- * faster. Additionally, rendering can be streamed directly to a texture pixel
- * buffer, saving more time. Finally, this renderer can automatically pick
- * nearest or linear scaling based on the scaling ratio and window size.
+ * Software renderer with SDL hardware accelerated scaling. This renderer takes
+ * advantage of texture streaming, as well as texture format optimization that
+ * is now performed by `sdlrender_set_video_mode`.
  */
 
 #include <stdlib.h>
@@ -47,17 +37,10 @@
 struct softscale_render_data
 {
   struct sdl_render_data sdl;
-  uint32_t (*rgb_to_yuv)(uint8_t r, uint8_t g, uint8_t b);
-  set_colors_function subsample_set_colors;
-  SDL_PixelFormat *sdl_format;
   SDL_Rect texture_rect;
   uint32_t *texture_pixels;
-  uint32_t texture_format;
-  uint32_t texture_amask;
   unsigned int texture_pitch;
-  unsigned int texture_bpp;
   unsigned int texture_width;
-  boolean allow_subsampling;
   boolean enable_subsampling;
   int w;
   int h;
@@ -69,12 +52,6 @@ static void softscale_free_video(struct graphics_data *graphics)
 
   if(render_data)
   {
-    if(render_data->sdl_format)
-    {
-      SDL_FreeFormat(render_data->sdl_format);
-      render_data->sdl_format = NULL;
-    }
-
     sdl_destruct_window(graphics);
 
     graphics->render_data = NULL;
@@ -111,221 +88,36 @@ static boolean softscale_init_video(struct graphics_data *graphics,
   return true;
 }
 
-static boolean is_integer_scale(struct graphics_data *graphics, int width,
- int height)
-{
-  int v_width, v_height;
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-
-  if((v_width / SCREEN_PIX_W * SCREEN_PIX_W == v_width) &&
-   (v_height / SCREEN_PIX_H * SCREEN_PIX_H == v_height))
-    return true;
-
-  return false;
-}
-
-static uint32_t get_format_amask(uint32_t format)
-{
-  Uint32 rmask, gmask, bmask, amask;
-  int bpp;
-
-  SDL_PixelFormatEnumToMasks(format, &bpp, &rmask, &gmask, &bmask, &amask);
-  return amask;
-}
-
-static void find_texture_format(struct graphics_data *graphics)
-{
-  struct softscale_render_data *render_data = graphics->render_data;
-  uint32_t texture_format = SDL_PIXELFORMAT_UNKNOWN;
-  unsigned int texture_width = SCREEN_PIX_W;
-  unsigned int texture_bpp = 0;
-  uint32_t texture_amask = 0;
-  boolean allow_subsampling = false;
-  boolean is_yuv = false;
-  SDL_RendererInfo rinfo;
-
-  if(!SDL_GetRendererInfo(render_data->sdl.renderer, &rinfo))
-  {
-    unsigned int depth = graphics->bits_per_pixel;
-    unsigned int priority = 0;
-    unsigned int i;
-
-    info("SDL render driver: '%s'\n", rinfo.name);
-
-    // Try to use a native texture format to improve performance.
-    for(i = 0; i < rinfo.num_texture_formats; i++)
-    {
-      uint32_t format = rinfo.texture_formats[i];
-      unsigned int format_priority;
-
-      debug("%d: %s\n", i, SDL_GetPixelFormatName(format));
-
-      if(SDL_ISPIXELFORMAT_INDEXED(texture_format))
-        continue;
-
-      format_priority = sdl_pixel_format_priority(format, depth, false);
-      if(format_priority > priority)
-      {
-        texture_format = format;
-        priority = format_priority;
-      }
-    }
-
-    if(priority == YUV_PRIORITY)
-      is_yuv = true;
-  }
-  else
-    warn("Failed to get renderer info!\n");
-
-  if(texture_format == SDL_PIXELFORMAT_UNKNOWN)
-  {
-    // 16bpp RGB seems moderately faster than YUV with chroma subsampling
-    // when neither are natively supported.
-    if(graphics->bits_per_pixel == 16)
-      texture_format = SDL_PIXELFORMAT_RGB565;
-    else
-      texture_format = SDL_PIXELFORMAT_ARGB8888;
-
-    debug("No matching pixel format. Using %s. Rendering may be slower.\n",
-     SDL_GetPixelFormatName(texture_format));
-  }
-  else
-    debug("Using pixel format %s.\n", SDL_GetPixelFormatName(texture_format));
-
-  if(is_yuv)
-  {
-    // These modes treat the texture as 16bpp so double the width.
-    texture_width = SCREEN_PIX_W * 2;
-    texture_bpp = 32;
-
-    if(texture_format == SDL_PIXELFORMAT_YUY2)
-    {
-      render_data->subsample_set_colors = yuy2_subsample_set_colors_mzx;
-      render_data->rgb_to_yuv = rgb_to_yuy2;
-    }
-
-    if(texture_format == SDL_PIXELFORMAT_UYVY)
-    {
-      render_data->subsample_set_colors = uyvy_subsample_set_colors_mzx;
-#ifdef __MACOSX__
-      render_data->rgb_to_yuv = rgb_to_apple_ycbcr_422;
-#else
-      render_data->rgb_to_yuv = rgb_to_uyvy;
-#endif
-    }
-
-    if(texture_format == SDL_PIXELFORMAT_YVYU)
-    {
-      render_data->subsample_set_colors = yvyu_subsample_set_colors_mzx;
-      render_data->rgb_to_yuv = rgb_to_yvyu;
-    }
-
-    // If this renderer was activated with force_bpp=16, enable subsampling
-    // support for render_graph.
-    if(graphics->bits_per_pixel == 16)
-    {
-      debug("Allowing YUV subsampling for render_graph.\n");
-      allow_subsampling = true;
-    }
-  }
-  else
-  {
-    texture_bpp = SDL_BYTESPERPIXEL(texture_format) * 8;
-    texture_amask = get_format_amask(texture_format);
-  }
-
-  if(graphics->bits_per_pixel == BPP_AUTO)
-    graphics->bits_per_pixel = texture_bpp;
-
-  // Initialize the texture data.
-  render_data->texture_pixels = NULL;
-  render_data->texture_format = texture_format;
-  render_data->texture_amask = texture_amask;
-  render_data->texture_bpp = texture_bpp;
-  render_data->texture_width = texture_width;
-  render_data->allow_subsampling = allow_subsampling;
-}
-
 static boolean softscale_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
-  struct softscale_render_data *render_data = graphics->render_data;
-  boolean fullscreen_windowed = graphics->fullscreen_windowed;
+  struct softscale_render_data *render_data =
+   (struct softscale_render_data *)graphics->render_data;
 
-  sdl_destruct_window(graphics);
+  if(!sdlrender_set_video_mode(graphics, width, height,
+   depth, fullscreen, resize, 0))
+    return false;
 
-  // Use linear filtering unless the display is being integer scaled.
-  if(is_integer_scale(graphics, width, height))
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
-  else
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+  // YUV texture modes are effectively 16-bit to SDL, but MegaZeux treats them
+  // like 32-bit most of the time. This means each MZX pixel needs two YUV
+  // pixels when subsampling is off.
+  render_data->texture_width = SCREEN_PIX_W;
+  if(render_data->sdl.rgb_to_yuv)
+    render_data->texture_width <<= 1;
 
-#if defined(__EMSCRIPTEN__) && SDL_VERSION_ATLEAST(2,0,10)
-  // Not clear if this hint is required to make this renderer not crash, but
-  // considering both software and GLSL need it...
-  SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY, "0");
-#endif
+  render_data->texture_pixels = NULL;
 
-  if(graphics->sdl_render_driver[0])
-  {
-    info("Requesting SDL render driver: '%s'\n", graphics->sdl_render_driver);
-    SDL_SetHint(SDL_HINT_RENDER_DRIVER, graphics->sdl_render_driver);
-  }
-
-  render_data->sdl.window = SDL_CreateWindow("MegaZeux",
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-   sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
-
-  if(!render_data->sdl.window)
-  {
-    warn("Failed to create window: %s\n", SDL_GetError());
-    goto err_free;
-  }
-
-  render_data->sdl.renderer =
-   SDL_CreateRenderer(render_data->sdl.window, -1, SDL_RENDERER_ACCELERATED);
-
-  if(!render_data->sdl.renderer)
-  {
-    render_data->sdl.renderer =
-     SDL_CreateRenderer(render_data->sdl.window, -1, SDL_RENDERER_SOFTWARE);
-
-    if(!render_data->sdl.renderer)
-    {
-      warn("Failed to create renderer: %s\n", SDL_GetError());
-      goto err_free;
-    }
-
-    warn("Accelerated renderer not available. Softscale will be SLOW!\n");
-  }
-
-  find_texture_format(graphics);
-
-  render_data->sdl.texture =
-   SDL_CreateTexture(render_data->sdl.renderer, render_data->texture_format,
+  // Initialize the screen texture.
+  render_data->sdl.texture[0] =
+   SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
     SDL_TEXTUREACCESS_STREAMING, render_data->texture_width, SCREEN_PIX_H);
 
-  if(!render_data->sdl.texture)
+  if(!render_data->sdl.texture[0])
   {
     warn("Failed to create texture: %s\n", SDL_GetError());
     goto err_free;
   }
 
-  if(!render_data->rgb_to_yuv)
-  {
-    // This is required for SDL_MapRGBA to work, but YUV formats can ignore it.
-    render_data->sdl_format = SDL_AllocFormat(render_data->texture_format);
-    if(!render_data->sdl_format)
-    {
-      warn("Failed to allocate pixel format: %s\n", SDL_GetError());
-      goto err_free;
-    }
-  }
-
-  SDL_SetRenderDrawColor(render_data->sdl.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-  SDL_RenderClear(render_data->sdl.renderer);
-
-  sdl_window_id = SDL_GetWindowID(render_data->sdl.window);
   render_data->w = width;
   render_data->h = height;
   return true;
@@ -333,30 +125,6 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
 err_free:
   sdl_destruct_window(graphics);
   return false;
-}
-
-static void softscale_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, unsigned int count)
-{
-  struct softscale_render_data *render_data = graphics->render_data;
-  unsigned int i;
-
-  if(!render_data->rgb_to_yuv)
-  {
-    for(i = 0; i < count; i++)
-    {
-      graphics->flat_intensity_palette[i] = SDL_MapRGBA(render_data->sdl_format,
-       palette[i].r, palette[i].g, palette[i].b, SDL_ALPHA_OPAQUE);
-    }
-  }
-  else
-  {
-    for(i = 0; i < count; i++)
-    {
-      graphics->flat_intensity_palette[i] =
-       render_data->rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b);
-    }
-  }
 }
 
 /**
@@ -378,7 +146,7 @@ static void softscale_lock_texture(struct softscale_render_data *render_data,
     texture_rect->w = render_data->texture_width;
     texture_rect->h = SCREEN_PIX_H;
 
-    if(is_render_graph && render_data->allow_subsampling)
+    if(is_render_graph && render_data->sdl.allow_subsampling)
     {
       // Chroma subsampling can be used to draw half as much at the cost of
       // color accuracy. This trick only works with render_graph.
@@ -388,14 +156,14 @@ static void softscale_lock_texture(struct softscale_render_data *render_data,
     else
       render_data->enable_subsampling = false;
 
-    SDL_LockTexture(render_data->sdl.texture, texture_rect, &pixels, &pitch);
+    SDL_LockTexture(render_data->sdl.texture[0], texture_rect, &pixels, &pitch);
     render_data->texture_pixels = pixels;
     render_data->texture_pitch = pitch;
   }
 
   *pixels = render_data->texture_pixels;
   *pitch = render_data->texture_pitch;
-  *bpp = render_data->enable_subsampling ? 16 : render_data->texture_bpp;
+  *bpp = render_data->enable_subsampling ? 16 : render_data->sdl.texture_bpp;
 }
 
 /**
@@ -406,7 +174,7 @@ static void softscale_unlock_texture(struct softscale_render_data *render_data)
 {
   if(render_data->texture_pixels)
   {
-    SDL_UnlockTexture(render_data->sdl.texture);
+    SDL_UnlockTexture(render_data->sdl.texture[0]);
     render_data->texture_pixels = NULL;
   }
 }
@@ -425,7 +193,7 @@ static void softscale_render_graph(struct graphics_data *graphics)
   {
     if(!mode)
       render_graph16((uint16_t *)pixels, pitch, graphics,
-       render_data->subsample_set_colors);
+       render_data->sdl.subsample_set_colors);
     else
       render_graph16((uint16_t *)pixels, pitch, graphics, set_colors32[mode]);
   }
@@ -479,7 +247,7 @@ static void softscale_render_mouse(struct graphics_data *graphics,
  unsigned int x, unsigned int y, unsigned int w, unsigned int h)
 {
   struct softscale_render_data *render_data = graphics->render_data;
-  uint32_t amask = render_data->texture_amask;
+  uint32_t amask = render_data->sdl.texture_amask;
   uint32_t *pixels;
   unsigned int pitch;
   unsigned int bpp;
@@ -496,7 +264,7 @@ static void softscale_sync_screen(struct graphics_data *graphics)
 {
   struct softscale_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
-  SDL_Texture *texture = render_data->sdl.texture;
+  SDL_Texture *texture = render_data->sdl.texture[0];
   SDL_Rect *src_rect = &(render_data->texture_rect);
   SDL_Rect dest_rect;
   int width = render_data->w;
@@ -525,7 +293,7 @@ void render_softscale_register(struct renderer *renderer)
   renderer->init_video = softscale_init_video;
   renderer->free_video = softscale_free_video;
   renderer->set_video_mode = softscale_set_video_mode;
-  renderer->update_colors = softscale_update_colors;
+  renderer->update_colors = sdlrender_update_colors;
   renderer->resize_screen = resize_screen_standard;
   renderer->get_screen_coords = get_screen_coords_scaled;
   renderer->set_screen_coords = set_screen_coords_scaled;
