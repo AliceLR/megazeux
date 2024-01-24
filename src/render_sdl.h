@@ -26,6 +26,7 @@ __M_BEGIN_DECLS
 
 #include "SDLmzx.h"
 #include "graphics.h"
+#include "render.h"
 
 struct sdl_render_data
 {
@@ -42,23 +43,27 @@ struct sdl_render_data
 #endif
   SDL_Surface *screen;
   SDL_Surface *shadow;
+
+  // SDL Renderer and overlay renderer texture format configuration.
+  uint32_t (*rgb_to_yuv)(uint8_t r, uint8_t g, uint8_t b);
+  set_colors_function subsample_set_colors;
+  uint32_t texture_format;
+  uint32_t texture_amask;
+  uint32_t texture_bpp;
+  boolean allow_subsampling;
 };
 
-#ifdef __MACOSX__
 // Mac OS X has a special OpenGL YCbCr native texture mode which is
 // faster than RGB for older machines.
-#define YUV_PRIORITY 1000000
-#else
+#define YUV_PRIORITY_APPLE 1000000
 #define YUV_PRIORITY 422
-#endif
+#define YUV_DISABLE 0
 
 extern CORE_LIBSPEC Uint32 sdl_window_id;
 
 int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
  boolean resize);
 boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling);
-Uint32 sdl_pixel_format_priority(Uint32 pixel_format,  Uint32 bits_per_pixel,
- boolean force_rgb);
 void sdl_destruct_window(struct graphics_data *graphics);
 
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
@@ -68,6 +73,14 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 // Used internally only.
 boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
  int height, int *depth, int flags);
+#endif
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+boolean sdlrender_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize);
+
+void sdlrender_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, unsigned int count);
 #endif
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)

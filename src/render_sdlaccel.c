@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* SDL2 hardware accelerated renderer using the SDL_Renderer API.
+/* SDL hardware accelerated renderer using the SDL_Renderer API.
  * This thing is too slow to have much use in practice right now, but it might
  * be useful to keep around for reference. SMZX is not implemented yet.
  *
@@ -281,80 +281,24 @@ static boolean sdlaccel_init_video(struct graphics_data *graphics,
   return true;
 }
 
-static boolean sdlaccel_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
+static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
-  struct sdlaccel_render_data *render_data = graphics->render_data;
-  boolean fullscreen_windowed = graphics->fullscreen_windowed;
+  struct sdlaccel_render_data *render_data =
+   (struct sdlaccel_render_data *)graphics->render_data;
+
   SDL_Rect screen = { 0, 0, SCREEN_PIX_W, SCREEN_PIX_H };
-  SDL_RendererInfo info;
-  uint32_t format = SDL_PIXELFORMAT_RGBA8888;
   int tex_chars_w;
   int tex_chars_h;
 
-  sdl_destruct_window(graphics);
-
-  render_data->sdl.window = SDL_CreateWindow("MegaZeux",
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-   sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
-
-  if(!render_data->sdl.window)
-  {
-    warn("Failed to create window: %s\n", SDL_GetError());
-    goto err_free;
-  }
-
-  SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
-
-  render_data->sdl.renderer =
-   SDL_CreateRenderer(render_data->sdl.window, -1, SDL_RENDERER_ACCELERATED);
-
-  if(!render_data->sdl.renderer)
-  {
-    render_data->sdl.renderer =
-     SDL_CreateRenderer(render_data->sdl.window, -1, SDL_RENDERER_SOFTWARE);
-
-    if(!render_data->sdl.renderer)
-    {
-      warn("Failed to create renderer: %s\n", SDL_GetError());
-      goto err_free;
-    }
-
-    warn("Accelerated renderer not available. sdlaccel will be SLOW!\n");
-  }
+  if(!sdlrender_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+    return false;
 
   if(SDL_RenderSetLogicalSize(render_data->sdl.renderer, screen.w, screen.h))
     warn("Failed to set renderer locical size!\n");
 
   if(SDL_RenderSetClipRect(render_data->sdl.renderer, &screen))
     warn("Failed to set clip rectangle!\n");
-
-  if(!SDL_GetRendererInfo(render_data->sdl.renderer, &info))
-  {
-    uint32_t i;
-    debug("Using SDL renderer '%s'\n", info.name);
-
-    // Try to use a native texture format to improve performance.
-    for(i = 0; i < info.num_texture_formats; i++)
-    {
-      debug("%d: %s\n", i, SDL_GetPixelFormatName(info.texture_formats[i]));
-      switch(info.texture_formats[i])
-      {
-        case SDL_PIXELFORMAT_ARGB8888:
-        case SDL_PIXELFORMAT_RGBA8888:
-        case SDL_PIXELFORMAT_ABGR8888:
-        case SDL_PIXELFORMAT_BGRA8888:
-        case SDL_PIXELFORMAT_ARGB2101010:
-        {
-          // Any supported 32-bit alpha format is okay.
-          format = info.texture_formats[i];
-          break;
-        }
-      }
-    }
-  }
-  else
-    warn("Failed to get renderer info! Using RGBA8888\n");
 
   tex_chars_w = round_to_power_of_two(TEX_CHARS_PIX_W);
   tex_chars_h = round_to_power_of_two(TEX_CHARS_PIX_H);
@@ -367,7 +311,7 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics, int width
   // uploaded (SLOW). It's better for the typical use case to write to a
   // smaller local version and only upload recently updated parts.
   render_data->sdl.texture =
-   SDL_CreateTexture(render_data->sdl.renderer, format,
+   SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
     SDL_TEXTUREACCESS_STREAMING, tex_chars_w, tex_chars_h);
 
   if(!render_data->sdl.texture)
@@ -376,8 +320,9 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics, int width
     goto err_free;
   }
 
+  // Initialize the background texture.
   render_data->sdl.texture2 =
-   SDL_CreateTexture(render_data->sdl.renderer, format,
+   SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
     SDL_TEXTUREACCESS_STREAMING, TEX_BG_W, TEX_BG_H);
 
   if(!render_data->sdl.texture2)
@@ -391,14 +336,6 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics, int width
   if(SDL_SetTextureBlendMode(render_data->sdl.texture2, SDL_BLENDMODE_BLEND))
     warn("Failed to set texture2 blend mode: %s\n", SDL_GetError());
 
-  render_data->sdl.pixel_format = SDL_AllocFormat(format);
-  if(!render_data->sdl.pixel_format)
-  {
-    warn("Failed to allocate pixel format: %s\n", SDL_GetError());
-    goto err_free;
-  }
-
-  sdl_window_id = SDL_GetWindowID(render_data->sdl.window);
   return true;
 
 err_free:
@@ -412,16 +349,14 @@ static void sdlaccel_update_colors(struct graphics_data *graphics,
   struct sdlaccel_render_data *render_data = graphics->render_data;
   uint32_t i;
 
+  sdlrender_update_colors(graphics, palette, count);
+
   for(i = 0; i < count; i++)
   {
-    graphics->flat_intensity_palette[i] =
-     SDL_MapRGBA(render_data->sdl.pixel_format,
-      palette[i].r, palette[i].g, palette[i].b, SDL_ALPHA_OPAQUE);
-
     render_data->palette[i*3  ] = palette[i].r;
     render_data->palette[i*3+1] = palette[i].g;
     render_data->palette[i*3+2] = palette[i].b;
-}
+  }
 }
 
 static void sdlaccel_remap_char_range(struct graphics_data *graphics,

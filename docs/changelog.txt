@@ -47,6 +47,8 @@ DEVELOPERS
   threaded charset texture update routine. It is still buggy,
   SMZX isn't implemented yet, and it's too slow to be useful for
   users, so it's disabled by default.
++ Moved SDL renderer window creation to render_sdl.c so both of
+  the SDL renderer-based renderers can benefit from it.
 + Removed floating point division usage in render_gl2.c.
 + -Og is now the default debug optimization level (was -O0).
 + Added --enable-lto to enable link-time optimizations.

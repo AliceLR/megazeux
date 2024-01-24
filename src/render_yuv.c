@@ -40,8 +40,6 @@
 struct yuv_render_data
 {
   struct sdl_render_data sdl;
-  set_colors_function set_colors_mzx;
-  Uint32 (*rgb_to_yuv)(Uint8 r, Uint8 g, Uint8 b);
   Uint32 bpp;
   Uint32 w;
   Uint32 h;
@@ -65,16 +63,16 @@ static boolean yuv_set_video_mode_size(struct graphics_data *graphics,
     goto err_free;
 
   // try with a YUY2 pixel format first
-  render_data->rgb_to_yuv = rgb_to_yuy2;
-  render_data->set_colors_mzx = yuy2_subsample_set_colors_mzx;
+  render_data->sdl.rgb_to_yuv = rgb_to_yuy2;
+  render_data->sdl.subsample_set_colors = yuy2_subsample_set_colors_mzx;
   render_data->sdl.overlay = SDL_CreateYUVOverlay(yuv_width, yuv_height,
    SDL_YUY2_OVERLAY, render_data->sdl.screen);
 
   // didn't work, try with a UYVY pixel format next
   if(!render_data->sdl.overlay)
   {
-    render_data->rgb_to_yuv = rgb_to_uyvy;
-    render_data->set_colors_mzx = uyvy_subsample_set_colors_mzx;
+    render_data->sdl.rgb_to_yuv = rgb_to_uyvy;
+    render_data->sdl.subsample_set_colors = uyvy_subsample_set_colors_mzx;
     render_data->sdl.overlay = SDL_CreateYUVOverlay(yuv_width, yuv_height,
      SDL_UYVY_OVERLAY, render_data->sdl.screen);
   }
@@ -82,8 +80,8 @@ static boolean yuv_set_video_mode_size(struct graphics_data *graphics,
   // Since we support this format now too, might as well try.
   if(!render_data->sdl.overlay)
   {
-    render_data->rgb_to_yuv = rgb_to_yvyu;
-    render_data->set_colors_mzx = yvyu_subsample_set_colors_mzx;
+    render_data->sdl.rgb_to_yuv = rgb_to_yvyu;
+    render_data->sdl.subsample_set_colors = yvyu_subsample_set_colors_mzx;
     render_data->sdl.overlay = SDL_CreateYUVOverlay(yuv_width, yuv_height,
      SDL_YVYU_OVERLAY, render_data->sdl.screen);
   }
@@ -162,7 +160,7 @@ static void yuv_update_colors(struct graphics_data *graphics,
   for(i = 0; i < count; i++)
   {
     graphics->flat_intensity_palette[i] =
-     render_data->rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b);
+     render_data->sdl.rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b);
   }
 }
 
@@ -195,7 +193,7 @@ static void yuv_render_graph(struct graphics_data *graphics)
     // Subsampled mode
     if(!mode)
       render_graph16((Uint16 *)pixels, pitch, graphics,
-       render_data->set_colors_mzx);
+       render_data->sdl.subsample_set_colors);
     else
       render_graph16((Uint16 *)pixels, pitch, graphics, set_colors32[mode]);
   }
