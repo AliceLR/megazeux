@@ -4,6 +4,7 @@ env:
   MZXDEPS_DEBIAN_SDL2:  "zlib1g-dev libpng-dev libogg-dev libvorbis-dev libsdl2-dev"
   MZXDEPS_DEBIAN_MISC:  "libsdl1.2-dev libegl1-mesa-dev libmikmod-dev libopenmpt-dev"
   MZXDEPS_DEBIAN_CROSS: "p7zip-full"
+  MZXDEPS_MACOS:        "libpng libogg libvorbis sdl2"
   MZX_MAKE:             "make -j4"
 
 on:
@@ -132,6 +133,19 @@ jobs:
       - name: Build
         run: LDFLAGS="-static" $MZX_MAKE
         # TODO: tests
+
+  darwin-devel:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: brew install $MZXDEPS_MACOS
+      - name: Configure
+        run: ./config.sh --platform darwin-devel --prefix /usr/local --enable-release --enable-sdlaccel
+      - name: Build
+        run: $MZX_MAKE
+      - name: Run tests
+        run: $MZX_MAKE test
 
   MSYS2-MINGW64:
     runs-on: windows-latest
