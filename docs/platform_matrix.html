@@ -55,7 +55,7 @@ var no_low_memory = subopt("NO", 5);
 var no_updater = subopt("NO", 6);
 var no_updater_unix = subopt("NO", 7);
 var optional_sdl_3ds = std("NO / SDL 1.2 / SDL 2", 8);
-var optional_sdl_wii = std("NO / SDL 1.2", 9);
+var optional_sdl_wii = std("NO / SDL 1.2 / SDL 2", 9);
 var yes_but_8bpp = subopt("YES (8bpp)", 10);
 var no_gl_switch = subopt("NO", 11);
 var no_gl_fixed_android = subopt("NO", 12);
@@ -956,9 +956,11 @@ and doesn't allow for special features such as screen dragging. Furthermore,
 SDL significantly increases the size of the MZX executable.
 </li>
 
-<li id="note9">Building MZX with SDL Wii is viable, but produces larger
-binaries than desired, relies on the software renderer, and SDL Wii is
-considered unstable.
+<li id="note9">Building MZX with SDL Wii (1.2) or SDL2 is viable, but
+produces larger binaries than desired and relies on the software renderer.
+SDL Wii (1.2) is also considered unstable. Also, the SDL controller mappings
+are far less flexible than MZX's built-in support and may omit features (like
+the classic controller's analog triggers).
 </li>
 
 <li id="note10">Layer rendering is supported on this platform by as it

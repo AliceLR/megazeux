@@ -1,0 +1,59 @@
+# Wii Remote (+ nunchuck or classic)
+#
+# Axis1:   -left +right (left stick, nunchuck stick)
+# Axis2:   -up   +down
+# Axis3:   -left +right (right stick)
+# Axis4:   -up   +down
+#
+# As of 2024-01-31, no axes are assigned to the triggers for some reason.
+#
+# Button1: A
+# Button2: B
+# Button3: 1
+# Button4: 2
+# Button5: -
+# Button6: +
+# Button7: Home
+# Button8: Z (nunchuck)
+# Button9: C (nunchuck)
+# Button10: X
+# Button11: Y
+# Button12: L
+# Button13: R
+# Button14: ZL
+# Button15: ZR
+# Hat1: dpad
+
+# Gamecube controller
+#
+# Axis1:   -left +right (left stick, nunchuck stick)
+# Axis2:   -up   +down
+# Axis3:   -left +right (right stick)
+# Axis4:   -up   +down
+# Axis5:   +L
+# Axis6:   +R
+#
+# Button1: A
+# Button2: B
+# Button3: X
+# Button4: Y
+# Button5: L
+# Button6: R
+# Button7: Z
+# Button8: Start
+# Hat1: dpad
+
+# You might need to take the mappings printed in stdout.txt and modify them
+# to suit you:
+
+#gamepad_add = 050000007e0500000305000001000000,Wiimote 0 + Classic,a:b1,b:b0,x:b10,y:b9,back:b4,guide:b6,start:b5,leftshoulder:b13,rightshoulder:b14,dpup:h0.1,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,leftx:a0,lefty:a1,rightx:a2,righty:a3,lefttrigger:b11,righttrigger:b12,
+
+# Because this build uses SDL, MZX can generate mappings automatically with
+# the SDL gamepad API. However, this API is based on XInput and has
+# the face buttons inverted from where they'd be expected on a Nintendo system.
+# Uncommenting this "fixes" the classic controller but breaks gamecube controllers.
+
+#gamepad.a = act_b
+#gamepad.b = act_a
+#gamepad.x = act_y
+#gamepad.y = act_x

@@ -78,7 +78,11 @@ build: package ${build}
 ifeq ($(BUILD_SDL),)
 	${CP} arch/wii/pad.config ${build}
 else
+ifeq (${BUILD_SDL},1)
 	${CP} arch/wii/pad.config.sdl ${build}/pad.config
+else
+	${CP} arch/wii/pad.config.sdl2 ${build}/pad.config
+endif
 endif
 	${CP} arch/wii/icon.png ${build}
 	${CP} boot.dol ${build}
