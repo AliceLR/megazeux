@@ -8,7 +8,8 @@ DSOPOST    = .dylib
 DSORPATH   =
 DSOSONAME  = -install_name ${LIBDIR}/
 
-LIPO       ?= @arch/darwin/lipo.sh
+DYLIBBUNDLER ?= @arch/darwin/bundle.sh
+LIPO         ?= @arch/darwin/lipo.sh
 
 #
 # darwin specific recipes.
@@ -93,16 +94,23 @@ ifneq (${DARWIN_META_TARGETS},1)
 # Per-arch targets.
 #
 
+UTILS_ZLIB_LDFLAGS ?= ${PREFIX}/lib/libz.a
+UTILS_LIBPNG_LDFLAGS ?= ${PREFIX}/lib/libpng.a
+
 package: all
 ifeq (${BUILD_EDITOR},1)
+	${DYLIBBUNDLER} ${REAL_ARCH} ${mzx}
 	${MV} ${mzx} ${mzx}.${REAL_ARCH}
 endif
 ifeq (${BUILD_MZXRUN},1)
+	${DYLIBBUNDLER} ${REAL_ARCH} ${mzxrun}
 	${MV} ${mzxrun} ${mzxrun}.${REAL_ARCH}
 endif
 ifeq (${BUILD_MODULAR},1)
+	${DYLIBBUNDLER} ${REAL_ARCH} ${core_target}
 	${MV} ${core_target} ${core_target}.${REAL_ARCH}
 ifeq (${BUILD_EDITOR},1)
+	${DYLIBBUNDLER} ${REAL_ARCH} ${editor_target}
 	${MV} ${editor_target} ${editor_target}.${REAL_ARCH}
 endif
 endif
@@ -205,15 +213,6 @@ ifneq (${PREFIX_ARM64E},)
 endif
 	@${MAKE} lipo
 
-#package_clean:
-#	@${MAKE} ARCH=i686 package_clean
-#	@${MAKE} ARCH=x86_64 package_clean
-#	@${MAKE} ARCH=x86_64h package_clean
-#	@${MAKE} ARCH=ppc package_clean
-#	@${MAKE} ARCH=ppc64 package_clean
-#	@${MAKE} ARCH=arm64 package_clean
-#	@${MAKE} ARCH=arm64e package_clean
-
 mzx_app := ${build_root}/MegaZeux.app/
 mzxrun_app := ${build_root}/MZXRun.app/
 
@@ -225,6 +224,9 @@ build:
 	${CP} contrib/icons/quantump.icns ${mzx_app}/Contents/Resources/MegaZeux.icns
 	${CP} ${build}/LICENSE            ${build}/docs/
 	${MV} ${build}/docs               ${mzx_app}/../Documentation
+ifeq (${BUILD_UTILS},1)
+	${MV} ${build}/utils/             ${mzx_app}/../Utilities
+endif
 	${MV} ${build}/${mzx}             ${mzx_app}/Contents/MacOS/MegaZeux
 ifneq (${BUILD_MZXRUN},)
 	${MV} ${build}/${mzxrun}          ${mzx_app}/Contents/MacOS/MZXRun
@@ -233,6 +235,7 @@ ifneq (${BUILD_MODULAR},)
 	${MV} ${build}/${core_target}     ${mzx_app}/Contents/MacOS/
 	${MV} ${build}/${editor_target}   ${mzx_app}/Contents/MacOS/
 endif
+	${CP} -r ./bundles/libs-*         ${mzx_app}/Contents/
 ifneq (${BUILD_MZXRUN},)
 	${CP} -r ${mzx_app} ${mzxrun_app}
 	${RM} ${mzx_app}/Contents/MacOS/MZXRun

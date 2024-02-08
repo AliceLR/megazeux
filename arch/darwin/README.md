@@ -25,6 +25,11 @@ Untested and unsupported features:
 - arm64 and arm64e builds haven't been tested.
 - Notarization isn't supported yet.
 
+Other required software:
+
+- [dylibbundler](https://github.com/auriamg/macdylibbundler/), which can be
+  installed via MacPorts: `sudo port install dylibbundler`.
+
 ## PREREQUISITES (Xcode 3.2.6)
 
 Note: this section was written against Xcode 3.2.6. The process of building
