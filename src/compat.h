@@ -136,9 +136,12 @@ typedef unsigned char boolean;
 
 #ifdef __APPLE__
 // Patch in some potentially missing defines for older platforms that
-// may be required by headers from our dependencies.
+// may be required. Fixes older versions of SDL2 headers on Snow Leopard.
 #include <TargetConditionals.h>
+#include <AvailabilityMacros.h>
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1050
 #include <Availability.h>
+#endif
 
 #ifndef TARGET_OS_TV
 #define TARGET_OS_TV 0
