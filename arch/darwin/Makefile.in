@@ -94,10 +94,13 @@ ifneq (${DARWIN_META_TARGETS},1)
 # Per-arch targets.
 #
 
+CFLAGS   += -DSUBPLATFORM='"${REAL_ARCH}"'
+CXXFLAGS += -DSUBPLATFORM='"${REAL_ARCH}"'
 UTILS_ZLIB_LDFLAGS ?= ${PREFIX}/lib/libz.a
 UTILS_LIBPNG_LDFLAGS ?= ${PREFIX}/lib/libpng.a
 
 package: all
+	if [ -d "bundles/libs-${REAL_ARCH}" ]; then rm -rf "bundles/libs-${REAL_ARCH}"; fi
 ifeq (${BUILD_EDITOR},1)
 	${DYLIBBUNDLER} ${REAL_ARCH} ${mzx}
 	${MV} ${mzx} ${mzx}.${REAL_ARCH}
