@@ -7,6 +7,9 @@ USERS
 
 + All "gamecontroller[...]" config.txt options have been renamed
   to "gamepad[...]". The old names are still supported.
++ Fixed blank screen bugs that occur with the glslscale renderer
+  in conjunction with Intel HD Graphics 2500 graphics drivers
+  and possibly some other old drivers.
 + The softscale renderer now respects disable_screensaver.
 + HTML5: fixed the poor performance of FREADn and other features
   that rely on calculating the length of an open file.

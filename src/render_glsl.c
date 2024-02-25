@@ -1491,30 +1491,29 @@ static void glsl_sync_screen(struct graphics_data *graphics)
     gl_check_error();
   }
 
-  if(glsl.has_fbo)
-  {
-    glsl.glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbos[FBO_SCREEN_TEX]);
-    gl_check_error();
-
-    // Clear the framebuffer so elements of this frame don't bleed through.
-    glsl.glClear(GL_COLOR_BUFFER_BIT);
-    gl_check_error();
-  }
-
   gl_swap_buffers(graphics);
   render_data->dirty_palette = true;
   render_data->dirty_indices = true;
 
-  /**
-   * When FBOs are not available, the next window frame needs to be cleared
-   * since the screen will be temporarily drawn there before scaling. This call
-   * was previously disabled for Emscripten (which should always have FBOs).
-   */
-  if(!glsl.has_fbo)
+  if(glsl.has_fbo)
   {
-    glsl.glClear(GL_COLOR_BUFFER_BIT);
+    /* Switch back to the texture framebuffer. This needs to be done after
+     * gl_swap_buffers or the screen won't draw properly for some drivers.
+     * The SDL documentation cites macOS, but MegaZeux bugs were encountered
+     * using the Intel HD Graphics 2500 driver in Windows too.
+     */
+    glsl.glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbos[FBO_SCREEN_TEX]);
     gl_check_error();
   }
+
+  /**
+   * Clear the framebuffer so elements of this frame don't bleed through.
+   * When FBOs are not available, the next window frame needs to be cleared
+   * since the screen will be temporarily drawn there before scaling. This call
+   * was previously disabled for Emscripten.
+   */
+  glsl.glClear(GL_COLOR_BUFFER_BIT);
+  gl_check_error();
 }
 
 static boolean glsl_switch_shader(struct graphics_data *graphics,
