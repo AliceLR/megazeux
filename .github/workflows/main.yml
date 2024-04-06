@@ -258,6 +258,24 @@ jobs:
       - name: Package Wii U .zip
         run: make archive
 
+  Emscripten-HTML5:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.56
+          actions-cache-folder: 'emsdk-cache'
+      - uses: actions/checkout@v3
+      - name: Configure HTML5
+        run: arch/emscripten/CONFIG.HTML5
+      - name: Build HTML5
+        run: $MZX_MAKE && make build
+      - name: Package HTML5 .zip
+        run: make archive
+
   #
   # Sanitizers.
   #
