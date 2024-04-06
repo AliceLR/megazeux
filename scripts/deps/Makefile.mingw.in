@@ -1,0 +1,59 @@
+#
+# MinGW dependency builder support.
+#
+# CMake doesn't really work properly for libogg and libvorbis,
+# and MinGW has proper triples anyway, so probably avoid it for
+# this platform.
+#
+
+ALL_ARCH = x86 x64
+
+ifeq (${ARCH},x86)
+HOST	 = i686-w64-mingw32
+CC	 = ${HOST}-gcc
+CXX	 = ${HOST}-g++
+CFLAGS	 = -O3 -g -march=i686
+CXXFLAGS = ${CFLAGS}
+ARCH_CONFIGURE_SDL2_ARGS = --disable-sse --disable-3dnow
+ifneq (${MSYSTEM},)
+CMAKE	 = /mingw32/bin/cmake
+endif
+endif
+
+ifeq (${ARCH},x64)
+HOST	 = x86_64-w64-mingw32
+CC	 = ${HOST}-gcc
+CXX	 = ${HOST}-g++
+CFLAGS	 = -O3 -g -march=x86-64
+CXXFLAGS = ${CFLAGS}
+ARCH_CONFIGURE_SDL2_ARGS = --disable-sse3 --disable-3dnow
+ifneq (${MSYSTEM},)
+CMAKE	 = /mingw64/bin/cmake
+endif
+endif
+
+ifneq (${ARCH},)
+ifeq (${HOST},)
+$(error valid ARCH values: ${ALL_ARCH})
+endif
+
+ARCH_INIT = \
+	export CC='${CC}'; \
+	export CXX='${CXX}'; \
+	export CFLAGS='${CFLAGS}'; \
+	export CXXFLAGS='${CXXFLAGS}'; \
+	export LDSHAREDLIBC=''; \
+	true
+
+ARCH_CONFIGURE_ARGS	=
+ARCH_CMAKE_ARGS		= -D CMAKE_SYSTEM_NAME=Windows-GNU
+
+all: ${ZLIB_TARGET} ${PNG_TARGET} ${OGG_TARGET} ${VORBIS_TARGET} \
+	${SDL12_TARGET} ${SDL2_TARGET}
+
+package: ${TARGET}/${BIN}/SDL.dll ${TARGET}/${BIN}/SDL.dll.debug ${TARGET}/${LIB}/libSDL.dll.a
+package: ${TARGET}/${BIN}/SDL2.dll ${TARGET}/${BIN}/SDL2.dll.debug ${TARGET}/${LIB}/libSDL2.dll.a
+
+package: zlib_package png_package vorbis_package SDL12_package SDL2_package
+
+endif
