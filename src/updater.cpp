@@ -43,6 +43,7 @@
 #include <sys/stat.h>
 
 #include <assert.h>
+#include <ctype.h>
 #include <string.h>
 #include <errno.h>
 

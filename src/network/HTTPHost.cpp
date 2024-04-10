@@ -763,8 +763,8 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, vfile *file)
         if(ret != Z_OK && ret != Z_STREAM_END)
           return HOST_ZLIB_INFLATE_FAILED;
 
-        // Push the block to disk
-        if(vfwrite(outbuf, BLOCK_SIZE - stream.avail_out, 1, file) != 1)
+        size_t amount = BLOCK_SIZE - stream.avail_out;
+        if(amount && vfwrite(outbuf, 1, amount, file) != amount)
           return HOST_FWRITE_FAILED;
 
         // If the stream has terminated, flag it and break out
@@ -790,7 +790,7 @@ HTTPHostStatus HTTPHost::get(HTTPRequestInfo &request, vfile *file)
       /* If the transfer is not deflated, we can simply write out
        * block_size bytes to the file now.
        */
-      if(vfwrite(block, block_size, 1, file) != 1)
+      if(vfwrite(block, 1, block_size, file) != block_size)
         return HOST_FWRITE_FAILED;
     }
 
