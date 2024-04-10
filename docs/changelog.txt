@@ -13,6 +13,7 @@ USERS
 + The softscale renderer now respects disable_screensaver.
 + HTML5: fixed the poor performance of FREADn and other features
   that rely on calculating the length of an open file.
++ Clear world (Alt+R) now resets the world version.
 + Setting a string offset, limit, or splice to FREADn now
   respects the provided limit. If n is larger than the limit,
   n total bytes will still be read (up to the maximum string
