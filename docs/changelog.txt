@@ -29,6 +29,8 @@ USERS
   would write past the current length no longer causes a crash.
 + The About MegaZeux dialog now shows both the compiled and
   linked versions of libpng if they are different.
++ Fixed flash thing layer draw order bug that would cause it to
+  display over editor elements using the game UI layer.
 + Licenses are now properly loaded in the About MegaZeux dialog
   for Darwin builds.
 
