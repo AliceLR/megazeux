@@ -267,6 +267,9 @@ static inline size_t mfread(void *dest, size_t len, size_t count,
 
   if(!mfhasspace(total, mf))
   {
+    if(mf->current >= mf->end)
+      return 0;
+
     count = (mf->end - mf->current) / len;
     total = len * count;
   }
@@ -287,6 +290,9 @@ static inline size_t mfwrite(const void *src, size_t len, size_t count,
 
   if(!mfhasspace(total, mf))
   {
+    if(mf->current >= mf->end)
+      return 0;
+
     count = (mf->end - mf->current) / len;
     total = len * count;
   }

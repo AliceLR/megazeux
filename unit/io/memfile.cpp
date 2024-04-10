@@ -497,6 +497,11 @@ UNITTEST(read_write)
     res = mfread(dest, 1, 1, &mf);
     ASSERTEQ(res, 0, "read 1, past end");
 
+    // This shouldn't happen, but the end bounding should catch it anyway.
+    mf.current = mf.end + 1;
+    res = mfread(dest, 1, 1, &mf);
+    ASSERTEQ(res, 0, "read 1, current past end");
+
     uint8_t noread = 0xef;
     mf.current = mf.start;
     res = mfread(&noread, 0, 1, &mf);
@@ -643,6 +648,11 @@ UNITTEST(read_write)
 
     res = mfwrite(data8, 1, 1, &mf);
     ASSERTEQ(res, 0, "write 1, past end");
+
+    // This shouldn't happen, but the end bounding should catch it anyway.
+    mf.current = mf.end + 1;
+    res = mfwrite(dest, 1, 1, &mf);
+    ASSERTEQ(res, 0, "write 1, current past end");
 
     uint8_t nowrite = 0xef;
     mf.current = mf.start;
