@@ -28,6 +28,8 @@ USERS
   or size values no longer causes a crash.
 + Setting a string splice to FREAD with a valid offset that
   would write past the current length no longer causes a crash.
++ Fixed a rare networking bug where fetching a compressed file
+  over HTTP could fail for particular compressed file sizes.
 + The About MegaZeux dialog now shows both the compiled and
   linked versions of libpng if they are different.
 + Fixed flash thing layer draw order bug that would cause it to
