@@ -941,7 +941,7 @@ static void flash_draw(struct editor_context *editor, struct board *cur_board,
       if(!editor->flash_layer)
       {
         editor->flash_layer = create_layer(0, 0, 80, editor->screen_height,
-         LAYER_DRAWORDER_UI - 500, graphics.protected_pal_position + 5,
+         LAYER_DRAWORDER_GAME_UI - 10, graphics.protected_pal_position + 5,
          PRO_CH, true);
         set_layer_mode(editor->flash_layer, 0);
       }
