@@ -458,6 +458,8 @@ void create_blank_world(struct world *mzx_world)
   // Make a blank board
   int i;
 
+  mzx_world->version = MZX_VERSION;
+
   mzx_world->num_boards = 1;
   mzx_world->num_boards_allocated = 1;
   mzx_world->board_list = cmalloc(sizeof(struct board *));
