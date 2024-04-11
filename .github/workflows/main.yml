@@ -242,6 +242,23 @@ jobs:
       - name: Package NDS .zip
         run: make archive
 
+  ARM-NDS-BlocksDS:
+    runs-on: ubuntu-latest
+    container: skylyrac/blocksds:slim-latest
+    steps:
+      - name: Install dependencies
+        run: apt update && apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
+      - name: Install target dependencies
+        run: wf-pacman -Syu --noconfirm && wf-pacman -S --noconfirm toolchain-gcc-arm-none-eabi-zlib
+      - run: echo "BLOCKSDS=/opt/blocksds/core" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
+      - name: Configure NDS/BlocksDS
+        run: arch/nds-blocksds/CONFIG.NDS
+      - name: Build NDS/BlocksDS
+        run: $MZX_MAKE
+      - name: Package NDS/BlocksDS .zip
+        run: make archive
+
   PowerPC-Wii:
     runs-on: ubuntu-latest
     container: devkitpro/devkitppc
