@@ -1113,6 +1113,7 @@ static enum zip_error zread_stream(uint8_t *destBuf, size_t readLen,
 
       in = zp->stream_buffer;
       in_size = ZIP_STREAM_BUFFER_SIZE;
+      out_size = 0;
 
       if(!direct_write)
       {

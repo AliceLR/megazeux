@@ -31,6 +31,10 @@ USERS
   linked versions of libpng if they are different.
 + Licenses are now properly loaded in the About MegaZeux dialog
   for Darwin builds.
++ Fixed potential heap overflows in mfread and mfwrite when the
+  current position is past the end. This should never actually
+  happen, but it's safer and shuts up _FORTIFY_SOURCE and ASan
+  compilation warnings.
 
 DEVELOPERS
 
