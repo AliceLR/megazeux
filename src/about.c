@@ -112,15 +112,15 @@ static char **about_text(int *num_lines)
 
 #ifdef CONFIG_SDL
   {
-    SDL_version compiled;
-    SDL_version ver;
+    SDL_Version compiled;
+    SDL_Version ver;
     SDL_VERSION(&compiled);
 #if SDL_VERSION_ATLEAST(2,0,0)
     SDL_GetVersion(&ver);
 #else
     ver = *SDL_Linked_Version();
 #endif
-    if(memcmp(&compiled, &ver, sizeof(SDL_version)))
+    if(memcmp(&compiled, &ver, sizeof(SDL_Version)))
     {
       lines[i++] = about_line("SDL: %u.%u.%u (compiled: %u.%u.%u)",
        ver.major, ver.minor, ver.patch, compiled.major, compiled.minor, compiled.patch);

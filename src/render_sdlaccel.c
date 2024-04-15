@@ -35,6 +35,8 @@
 #include "renderers.h"
 #include "render_sdl.h"
 
+#include <stdlib.h>
+
 // 6 versions of each char, 16*256 chars -> 24576 total "chars"
 // -> 49152 8x8s -> sqrt ~= 221 > 32 * 6
 
@@ -314,8 +316,10 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
     goto err_free;
   }
 
+#if !SDL_VERSION_ATLEAST(2,0,12)
   // Always use nearest neighbor for the charset and background textures.
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+#endif
 
   tex_chars_w = round_to_power_of_two(TEX_CHARS_PIX_W);
   tex_chars_h = round_to_power_of_two(TEX_CHARS_PIX_H);
@@ -352,6 +356,15 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
     warn("Failed to set char texture blend mode: %s\n", SDL_GetError());
   if(SDL_SetTextureBlendMode(texture[TEX_BACKGROUND], SDL_BLENDMODE_BLEND))
     warn("Failed to set bg texture blend mode: %s\n", SDL_GetError());
+
+#if SDL_VERSION_ATLEAST(2,0,12)
+  if(SDL_SetTextureScaleMode(texture[TEX_SCREEN], render_data->sdl.screen_scale_mode))
+    warn("Failed to set screen texture scale mode: %s\n", SDL_GetError());
+  if(SDL_SetTextureScaleMode(texture[TEX_CHARS], SDL_SCALEMODE_NEAREST))
+    warn("Failed to set char texture scale mode: %s\n", SDL_GetError());
+  if(SDL_SetTextureScaleMode(texture[TEX_BACKGROUND], SDL_SCALEMODE_NEAREST))
+    warn("Failed to set bg texture scale mode: %s\n", SDL_GetError());
+#endif
 
   SDL_SetRenderTarget(render_data->sdl.renderer, texture[TEX_SCREEN]);
   render_data->w = width;
@@ -489,8 +502,19 @@ static void sdlaccel_do_remap_chars(struct graphics_data *graphics,
 #ifdef RENDER_GEOMETRY
 
 static void vertex_char(struct SDL_Vertex *vertex, float topleft_x,
- float topleft_y, float tex_x, float tex_y, SDL_Color sdl_color)
+ float topleft_y, float tex_x, float tex_y, SDL_Color _sdl_color)
 {
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_FColor sdl_color =
+  {
+    _sdl_color.r / 255.0,
+    _sdl_color.g / 255.0,
+    _sdl_color.b / 255.0,
+    _sdl_color.a / 255.0,
+  };
+#else
+  SDL_Color sdl_color = _sdl_color;
+#endif
   vertex[0].position.x = topleft_x;
   vertex[0].position.y = topleft_y;
   vertex[0].tex_coord.x = tex_x;
@@ -550,9 +574,9 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
   SDL_Texture *chars_tex = render_data->sdl.texture[TEX_CHARS];
   SDL_Texture *bg_tex = render_data->sdl.texture[TEX_BACKGROUND];
 
-  SDL_RenderRect dest_bg =
+  SDL_Rect_mzx dest_bg =
    sdl_render_rect(offx, offy, w * CHAR_W, h * CHAR_H, TEX_SCREEN_W, TEX_SCREEN_H);
-  SDL_RenderRect src_bg = sdl_render_rect(0, 0, w, h, TEX_BG_W, TEX_BG_H);
+  SDL_Rect_mzx src_bg = sdl_render_rect(0, 0, w, h, TEX_BG_W, TEX_BG_H);
 
   void *_bg;
   int bg_pitch;
@@ -747,8 +771,8 @@ static void sdlaccel_sync_screen(struct graphics_data *graphics)
   struct sdlaccel_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *screen_tex = render_data->sdl.texture[TEX_SCREEN];
-  SDL_RenderRect src;
-  SDL_RenderRect dest;
+  SDL_Rect_mzx src;
+  SDL_Rect_mzx dest;
   int width = render_data->w;
   int height = render_data->h;
   int v_width, v_height;

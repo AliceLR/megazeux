@@ -92,9 +92,10 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
 {
   struct softscale_render_data *render_data =
    (struct softscale_render_data *)graphics->render_data;
+  SDL_Texture *tex;
 
   if(!sdlrender_set_video_mode(graphics, width, height,
-   depth, fullscreen, resize, 0))
+   depth, fullscreen, resize, false))
     return false;
 
   // YUV texture modes are effectively 16-bit to SDL, but MegaZeux treats them
@@ -107,16 +108,20 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
   render_data->texture_pixels = NULL;
 
   // Initialize the screen texture.
-  render_data->sdl.texture[0] =
-   SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
-    SDL_TEXTUREACCESS_STREAMING, render_data->texture_width, SCREEN_PIX_H);
-
-  if(!render_data->sdl.texture[0])
+  tex = SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
+   SDL_TEXTUREACCESS_STREAMING, render_data->texture_width, SCREEN_PIX_H);
+  if(!tex)
   {
     warn("Failed to create texture: %s\n", SDL_GetError());
     goto err_free;
   }
 
+#if SDL_VERSION_ATLEAST(2,0,12)
+  if(SDL_SetTextureScaleMode(tex, render_data->sdl.screen_scale_mode))
+    warn("Failed to set screen texture scale mode: %s\n", SDL_GetError());
+#endif
+
+  render_data->sdl.texture[0] = tex;
   render_data->w = width;
   render_data->h = height;
   return true;
@@ -265,8 +270,8 @@ static void softscale_sync_screen(struct graphics_data *graphics)
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *texture = render_data->sdl.texture[0];
   SDL_Rect *texture_rect = &(render_data->texture_rect);
-  SDL_RenderRect src_rect;
-  SDL_RenderRect dest_rect;
+  SDL_Rect_mzx src_rect;
+  SDL_Rect_mzx dest_rect;
   int width = render_data->w;
   int height = render_data->h;
   int v_width, v_height;

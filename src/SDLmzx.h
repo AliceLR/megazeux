@@ -302,6 +302,14 @@ static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
 #define SDL_CreatePixelFormat(f)                    SDL_AllocFormat(f)
 #define SDL_DestroyPixelFormat(pf)                  SDL_FreeFormat(pf)
 #define SDL_GetMasksForPixelFormatEnum(f,b,R,G,B,A) SDL_PixelFormatEnumToMasks(f,b,R,G,B,A)
+
+#if !SDL_VERSION_ATLEAST(2,0,5)
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#define SDL_PIXELFORMAT_RGBA32                      SDL_PIXELFORMAT_RGBA8888
+#else
+#define SDL_PIXELFORMAT_RGBA32                      SDL_PIXELFORMAT_ABGR8888
+#endif
+#endif
 #endif
 
 /**
@@ -312,8 +320,8 @@ typedef struct { float x; float y; float w; float h; } SDL_FRect;
 #endif
 
 #if SDL_VERSION_ATLEAST(3,0,0)
-typedef SDL_FRect SDL_RenderRect;
-static inline SDL_RenderRect sdl_render_rect(int x, int y,
+typedef SDL_FRect SDL_Rect_mzx;
+static inline SDL_Rect_mzx sdl_render_rect(int x, int y,
  int w, int h, int full_w, int full_h)
 {
   SDL_FRect tmp =
@@ -326,8 +334,8 @@ static inline SDL_RenderRect sdl_render_rect(int x, int y,
   return tmp;
 }
 #elif SDL_VERSION_ATLEAST(2,0,0)
-typedef SDL_Rect SDL_RenderRect;
-static inline SDL_RenderRect sdl_render_rect(int x, int y,
+typedef SDL_Rect SDL_Rect_mzx;
+static inline SDL_Rect_mzx sdl_render_rect(int x, int y,
  int w, int h, int full_w, int full_h)
 {
   SDL_Rect tmp = { x, y, w, h };
@@ -347,6 +355,10 @@ typedef int SDL_RendererLogicalPresentation;
 #define SDL_SetRenderClipRect(r, rect)    SDL_RenderSetClipRect(r, rect)
 #define SDL_SetRenderLogicalSize(r, w, h) SDL_RenderSetLogicalSize(r, w, h)
 
+#if !SDL_VERSION_ATLEAST(2,0,12)
+typedef int SDL_ScaleMode;
+#endif
+
 static inline int SDL_SetRenderLogicalPresentation(SDL_Renderer *render,
  int w, int h, SDL_RendererLogicalPresentation p, SDL_ScaleMode s)
 {
@@ -356,7 +368,7 @@ static inline int SDL_SetRenderLogicalPresentation(SDL_Renderer *render,
 
 #if SDL_VERSION_ATLEAST(2,0,0)
 static inline int SDL_RenderTexture_mzx(SDL_Renderer *renderer, SDL_Texture *texture,
- const SDL_RenderRect *src_rect, const SDL_RenderRect *dest_rect)
+ const SDL_Rect_mzx *src_rect, const SDL_Rect_mzx *dest_rect)
 {
 #if SDL_VERSION_ATLEAST(3,0,0)
   return SDL_RenderTexture(renderer, texture, src_rect, dest_rect);
@@ -369,9 +381,10 @@ static inline int SDL_RenderTexture_mzx(SDL_Renderer *renderer, SDL_Texture *tex
 /**
  * SDL_surface.h
  */
-#if !SDL_VERSION_ATLEAST(3,0,0) && SDL_VERSION_ATLEAST(2,0,0)
+#if !SDL_VERSION_ATLEAST(3,0,0)
 #define SDL_DestroySurface(s) SDL_FreeSurface(s)
 
+#if SDL_VERSION_ATLEAST(2,0,0)
 static inline SDL_Surface *SDL_CreateSurface(int width, int height, Uint32 format)
 {
   Uint32 rmask, gmask, bmask, amask;
@@ -380,6 +393,7 @@ static inline SDL_Surface *SDL_CreateSurface(int width, int height, Uint32 forma
   SDL_PixelFormatEnumToMasks(format, &bpp, &rmask, &gmask, &bmask, &amask);
   return SDL_CreateRGBSurface(0, width, height, bpp, rmask, gmask, bmask, amask);
 }
+#endif
 #endif
 
 /**
@@ -398,6 +412,20 @@ typedef SDL_sem   SDL_Semaphore;
 #define SDL_WaitSemaphore(s)            SDL_SemWait(s)
 #define SDL_PostSemaphore(s)            SDL_SemPost(s)
 #define SDL_GetCurrentThreadID()        SDL_ThreadID()
+#endif
+
+/**
+ * SDL_version.h
+ */
+#if !SDL_VERSION_ATLEAST(3,0,0)
+typedef SDL_version SDL_Version;
+#endif
+
+/**
+ * SDL_video.h
+ */
+#if !SDL_VERSION_ATLEAST(2,0,16)
+#define SDL_SetWindowMouseGrab(w,b) SDL_SetWindowGrab(w,b)
 #endif
 
 #endif /* CONFIG_SDL */

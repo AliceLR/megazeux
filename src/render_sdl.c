@@ -654,9 +654,18 @@ static void find_texture_format(struct graphics_data *graphics,
   if(!SDL_GetRendererInfo(render_data->renderer, &rinfo))
   {
     unsigned int depth = graphics->bits_per_pixel;
-    unsigned int i;
+    int i;
 
     info("SDL render driver: '%s'\n", rinfo.name);
+
+#if SDL_VERSION_ATLEAST(3,0,0)
+    if(!strcmp(rinfo.name, SDL_SOFTWARE_RENDERER))
+#else
+    if(rinfo.flags & SDL_RENDERER_SOFTWARE)
+#endif
+    {
+      warn("Accelerated renderer not available. Rendering will be SLOW!\n");
+    }
 
 #ifdef __MACOSX__
     // Not clear if Metal supports the custom Apple YUV texture format.
@@ -669,7 +678,7 @@ static void find_texture_format(struct graphics_data *graphics,
       need_alpha = true;
 
     // Try to use a native texture format to improve performance.
-    for(i = 0; i < rinfo.num_texture_formats; i++)
+    for(i = 0; i < (int)rinfo.num_texture_formats; i++)
     {
       uint32_t format = rinfo.texture_formats[i];
       unsigned int format_priority;
@@ -778,10 +787,17 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
   sdl_destruct_window(graphics);
 
   // Use linear filtering unless the display is being integer scaled.
+#if SDL_VERSION_ATLEAST(2,0,12)
+  if(is_integer_scale(graphics, width, height))
+    render_data->screen_scale_mode = SDL_SCALEMODE_NEAREST;
+  else
+    render_data->screen_scale_mode = SDL_SCALEMODE_LINEAR;
+#else
   if(is_integer_scale(graphics, width, height))
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
   else
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+#endif
 
 #if defined(__EMSCRIPTEN__) && SDL_VERSION_ATLEAST(2,0,10)
   // Not clear if this hint is required to make this renderer not crash, but
@@ -816,23 +832,14 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
     goto err_free;
   }
 
+  // Note: previously attempted SDL_RENDERER_ACCELERATED first, then
+  // SDL_RENDERER_SOFTWARE, but these flags were removed in SDL3.
   render_data->renderer =
-   SDL_CreateRenderer(render_data->window, BEST_RENDERER,
-    SDL_RENDERER_ACCELERATED | sdl_rendererflags);
-
+   SDL_CreateRenderer(render_data->window, BEST_RENDERER, sdl_rendererflags);
   if(!render_data->renderer)
   {
-    render_data->renderer =
-     SDL_CreateRenderer(render_data->window, BEST_RENDERER,
-      SDL_RENDERER_SOFTWARE | sdl_rendererflags);
-
-    if(!render_data->renderer)
-    {
-      warn("Failed to create renderer: %s\n", SDL_GetError());
-      goto err_free;
-    }
-
-    warn("Accelerated renderer not available. Rendering will be SLOW!\n");
+    warn("Failed to create renderer: %s\n", SDL_GetError());
+    goto err_free;
   }
 
   find_texture_format(graphics, sdl_rendererflags);
