@@ -792,7 +792,7 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
   // Flag removed in SDL3; all drivers support it and its presence needs to be
   // tested by trying to create a target texture instead.
   if(requires_blend_ops)
-    sdl_renderer_flags |= SDL_RENDERER_TARGETTEXTURE;
+    sdl_rendererflags |= SDL_RENDERER_TARGETTEXTURE;
 #endif
 
   if(graphics->sdl_render_driver[0])

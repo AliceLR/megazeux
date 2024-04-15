@@ -39,6 +39,8 @@ __M_BEGIN_DECLS
 #endif
 #endif
 
+#include <limits.h>
+
 /* SDL1 backwards compatibility for SDL2 ************************************/
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
@@ -242,8 +244,8 @@ typedef SDL_GameControllerButton  SDL_GamepadButton;
 #define SDL_GAMEPAD_BUTTON_BACK           SDL_CONTROLLER_BUTTON_BACK
 #define SDL_GAMEPAD_BUTTON_GUIDE          SDL_CONTROLLER_BUTTON_GUIDE
 #define SDL_GAMEPAD_BUTTON_START          SDL_CONTROLLER_BUTTON_START
-#define SDL_GAMEPAD_BUTTON_LEFT_STICK     SDL_CONTROLLER_BUTTON_LEFT_STICK
-#define SDL_GAMEPAD_BUTTON_RIGHT_STICK    SDL_CONTROLLER_BUTTON_RIGHT_STICK
+#define SDL_GAMEPAD_BUTTON_LEFT_STICK     SDL_CONTROLLER_BUTTON_LEFTSTICK
+#define SDL_GAMEPAD_BUTTON_RIGHT_STICK    SDL_CONTROLLER_BUTTON_RIGHTSTICK
 #define SDL_GAMEPAD_BUTTON_LEFT_SHOULDER  SDL_CONTROLLER_BUTTON_LEFTSHOULDER
 #define SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER SDL_CONTROLLER_BUTTON_RIGHTSHOULDER
 #define SDL_GAMEPAD_BUTTON_DPAD_UP        SDL_CONTROLLER_BUTTON_DPAD_UP
@@ -308,24 +310,68 @@ static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
 #define SDL_DestroyPalette(p)                       SDL_FreePalette(p)
 #define SDL_CreatePixelFormat(f)                    SDL_AllocFormat(f)
 #define SDL_DestroyPixelFormat(pf)                  SDL_FreeFormat(pf)
-#define SDL_GetMasksForPixelFormatEnum(f,b,r,g,b,a) SDL_PixelFormatEnumToMasks(f,b,r,g,b,a)
+#define SDL_GetMasksForPixelFormatEnum(f,b,R,G,B,A) SDL_PixelFormatEnumToMasks(f,b,R,G,B,A)
 #endif
 
-/* SDL_render.h */
+/**
+ * SDL_rect.h
+ */
+#if !SDL_VERSION_ATLEAST(2,0,10)
+typedef struct { float x; float y; float w; float h; } SDL_FRect;
+#endif
+
+#if SDL_VERSION_ATLEAST(3,0,0)
+typedef SDL_FRect SDL_RenderRect;
+static inline SDL_RenderRect sdl_render_rect(int x, int y,
+ int w, int h, int full_w, int full_h)
+{
+  SDL_FRect tmp =
+  {
+    (float)x / full_w,
+    (float)y / full_h,
+    (float)w / full_w,
+    (float)h / full_h
+  };
+  return tmp;
+}
+#else
+typedef SDL_Rect SDL_RenderRect;
+static inline SDL_RenderRect sdl_render_rect(int x, int y,
+ int w, int h, int full_w, int full_h)
+{
+  SDL_Rect tmp = { x, y, w, h };
+  return tmp;
+}
+#endif
+
+/**
+ * SDL_render.h
+ */
 #if !SDL_VERSION_ATLEAST(3,0,0) && SDL_VERSION_ATLEAST(2,0,0)
 typedef int SDL_RendererLogicalPresentation;
 #define SDL_LOGICAL_PRESENTATION_DISABLED 0
-#define SDL_SCALEMODE_BEST SDL_ScaleModeBest
-#define SDL_SCALEMODE_LINEAR SDL_ScaleModeLinear
-#define SDL_SCALEMODE_NEAREST SDL_ScaleModeNearest
-#define SDL_SetRenderClipRect(r, rect)  SDL_RenderSetClipRect(r, rect)
+#define SDL_SCALEMODE_BEST                SDL_ScaleModeBest
+#define SDL_SCALEMODE_LINEAR              SDL_ScaleModeLinear
+#define SDL_SCALEMODE_NEAREST             SDL_ScaleModeNearest
+#define SDL_SetRenderClipRect(r, rect)    SDL_RenderSetClipRect(r, rect)
+#define SDL_SetRenderLogicalSize(r, w, h) SDL_RenderSetLogicalSize(r, w, h)
 
 static inline int SDL_SetRenderLogicalPresentation(SDL_Renderer *render,
- int w, int h, SDL_RendererLogicalPresentiation p, SDL_ScaleMode s)
+ int w, int h, SDL_RendererLogicalPresentation p, SDL_ScaleMode s)
 {
   return SDL_SetRenderLogicalSize(render, w, h);
 }
 #endif
+
+static inline int SDL_RenderTexture_mzx(SDL_Renderer *renderer, SDL_Texture *texture,
+ const SDL_RenderRect *src_rect, const SDL_RenderRect *dest_rect)
+{
+#if SDL_VERSION_ATLEAST(3,0,0)
+  return SDL_RenderTexture(renderer, texture, src_rect, dest_rect);
+#else
+  return SDL_RenderCopy(renderer, texture, src_rect, dest_rect);
+#endif
+}
 
 /* SDL_surface.h */
 #if !SDL_VERSION_ATLEAST(3,0,0) && SDL_VERSION_ATLEAST(2,0,0)

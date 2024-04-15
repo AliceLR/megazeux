@@ -32,7 +32,6 @@
 #include "render_sdl.h"
 #include "renderers.h"
 #include "util.h"
-#include "yuv.h"
 
 struct softscale_render_data
 {
@@ -266,34 +265,31 @@ static void softscale_sync_screen(struct graphics_data *graphics)
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *texture = render_data->sdl.texture[0];
   SDL_Rect *texture_rect = &(render_data->texture_rect);
-#if SDL_VERSION_ATLEAST(3,0,0)
-  SDL_FRect src_rect;
-  SDL_FRect dest_rect;
-#else
-  SDL_Rect src_rect;
-  SDL_Rect dest_rect;
-#endif
+  SDL_RenderRect src_rect;
+  SDL_RenderRect dest_rect;
   int width = render_data->w;
   int height = render_data->h;
   int v_width, v_height;
 
-  src_rect.x = texture_rect->x;
-  src_rect.y = texture_rect->y;
-  src_rect.w = texture_rect->w;
-  src_rect.x = texture_rect->h;
+  src_rect = sdl_render_rect(texture_rect->x, texture_rect->y,
+   texture_rect->w, texture_rect->h, render_data->texture_width, SCREEN_PIX_H);
 
   fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-  dest_rect.x = (width - v_width) / 2;
-  dest_rect.y = (height - v_height) / 2;
-  dest_rect.w = v_width;
-  dest_rect.h = v_height;
+  dest_rect = sdl_render_rect(
+    (width - v_width) / 2,
+    (height - v_height) / 2,
+    v_width,
+    v_height,
+    width,
+    height
+  );
 
   softscale_unlock_texture(render_data);
 
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
   SDL_RenderClear(renderer);
 
-  SDL_RenderTexture(renderer, texture, &src_rect, &dest_rect);
+  SDL_RenderTexture_mzx(renderer, texture, &src_rect, &dest_rect);
   SDL_RenderPresent(renderer);
 }
 

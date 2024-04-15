@@ -31,7 +31,6 @@
 
 #include "SDLmzx.h"
 #include "graphics.h"
-#include "platform.h"
 #include "render.h"
 #include "renderers.h"
 #include "render_sdl.h"
@@ -551,13 +550,10 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
   SDL_Texture *chars_tex = render_data->sdl.texture[TEX_CHARS];
   SDL_Texture *bg_tex = render_data->sdl.texture[TEX_BACKGROUND];
 
-#if SDL_VERSION_ATLEAST(3,0,0)
-  SDL_FRect dest_bg = { offx, offy, w * CHAR_W, h * CHAR_H };
-  SDL_FRect src_bg = { 0, 0, w, h };
-#else
-  SDL_Rect dest_bg = { offx, offy, w * CHAR_W, h * CHAR_H };
-  SDL_Rect src_bg = { 0, 0, w, h };
-#endif
+  SDL_RenderRect dest_bg =
+   sdl_render_rect(offx, offy, w * CHAR_W, h * CHAR_H, TEX_SCREEN_W, TEX_SCREEN_H);
+  SDL_RenderRect src_bg = sdl_render_rect(0, 0, w, h, TEX_BG_W, TEX_BG_H);
+
   void *_bg;
   int bg_pitch;
   uint32_t *bg;
@@ -642,7 +638,7 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
       }
     }
     SDL_UnlockTexture(bg_tex);
-    SDL_RenderTexture(renderer, bg_tex, &src_bg, &dest_bg);
+    SDL_RenderTexture_mzx(renderer, bg_tex, &src_bg, &dest_bg);
 
 #ifdef RENDER_GEOMETRY
 
@@ -651,13 +647,8 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
 #else /* !RENDER_GEOMETRY */
     /* Render foreground and partially transparent chars. */
     {
-#if SDL_VERSION_ATLEAST(3,0,0)
-    SDL_FRect dest_rect = { 0, 0, CHAR_W, CHAR_H };
-    SDL_FRect src_rect = { 0, 0, CHAR_W, CHAR_H };
-#else
     SDL_Rect dest_rect = { 0, 0, CHAR_W, CHAR_H };
     SDL_Rect src_rect = { 0, 0, CHAR_W, CHAR_H };
-#endif
     next = layer->data;
     for(y = 0; y < h; y++)
     {
@@ -686,7 +677,7 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
         else
           continue;
 
-        SDL_RenderTexture(renderer, chars_tex, &src_rect, &dest_rect);
+        SDL_RenderCopy(renderer, chars_tex, &src_rect, &dest_rect);
       }
     }
     }
@@ -756,30 +747,27 @@ static void sdlaccel_sync_screen(struct graphics_data *graphics)
   struct sdlaccel_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *screen_tex = render_data->sdl.texture[TEX_SCREEN];
-#if SDL_VERSION_ATLEAST(3,0,0)
-  SDL_FRect src;
-  SDL_FRect dest;
-#else
-  SDL_Rect src;
-  SDL_Rect dest;
-#endif
+  SDL_RenderRect src;
+  SDL_RenderRect dest;
   int width = render_data->w;
   int height = render_data->h;
   int v_width, v_height;
 
-  src.x = 0;
-  src.y = 0;
-  src.w = SCREEN_PIX_W;
-  src.h = SCREEN_PIX_H;
+  src = sdl_render_rect(0, 0, SCREEN_PIX_W, SCREEN_PIX_H,
+   TEX_SCREEN_W, TEX_SCREEN_H);
 
   fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-  dest.x = (width - v_width) / 2;
-  dest.y = (height - v_height) / 2;
-  dest.w = v_width;
-  dest.h = v_height;
+  dest = sdl_render_rect(
+    (width - v_width) / 2,
+    (height - v_height) / 2,
+    v_width,
+    v_height,
+    width,
+    height
+  );
 
   SDL_SetRenderTarget(renderer, NULL);
-  SDL_RenderTexture(renderer, screen_tex, &src, &dest);
+  SDL_RenderTexture_mzx(renderer, screen_tex, &src, &dest);
 
   SDL_RenderPresent(renderer);
 
