@@ -49,15 +49,6 @@ __M_BEGIN_DECLS
 // counterpart. More complex changes are handled with #ifdefs "in situ".
 
 // Data types
-
-struct SDL_DisplayMode
-{
-  Uint32 format;
-  int w;
-  int h;
-  int refresh_rate;
-};
-
 typedef SDLKey SDL_Keycode;
 typedef int (*SDL_ThreadFunction)(void *);
 typedef Uint32 SDL_threadID;
@@ -334,7 +325,7 @@ static inline SDL_RenderRect sdl_render_rect(int x, int y,
   };
   return tmp;
 }
-#else
+#elif SDL_VERSION_ATLEAST(2,0,0)
 typedef SDL_Rect SDL_RenderRect;
 static inline SDL_RenderRect sdl_render_rect(int x, int y,
  int w, int h, int full_w, int full_h)
@@ -363,6 +354,7 @@ static inline int SDL_SetRenderLogicalPresentation(SDL_Renderer *render,
 }
 #endif
 
+#if SDL_VERSION_ATLEAST(2,0,0)
 static inline int SDL_RenderTexture_mzx(SDL_Renderer *renderer, SDL_Texture *texture,
  const SDL_RenderRect *src_rect, const SDL_RenderRect *dest_rect)
 {
@@ -372,8 +364,11 @@ static inline int SDL_RenderTexture_mzx(SDL_Renderer *renderer, SDL_Texture *tex
   return SDL_RenderCopy(renderer, texture, src_rect, dest_rect);
 #endif
 }
+#endif
 
-/* SDL_surface.h */
+/**
+ * SDL_surface.h
+ */
 #if !SDL_VERSION_ATLEAST(3,0,0) && SDL_VERSION_ATLEAST(2,0,0)
 #define SDL_DestroySurface(s) SDL_FreeSurface(s)
 

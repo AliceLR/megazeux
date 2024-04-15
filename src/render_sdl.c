@@ -70,6 +70,7 @@ int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
   return flags;
 }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
 // Get the current desktop resolution, if possible.
 static boolean sdl_get_desktop_display_mode(SDL_DisplayMode *display_mode)
 {
@@ -101,7 +102,7 @@ static boolean sdl_get_desktop_display_mode(SDL_DisplayMode *display_mode)
     }
   }
 
-#elif SDL_VERSION_ATLEAST(2,0,0)
+#else
 
   if(SDL_GetDesktopDisplayMode(0, display_mode) == 0)
     return true;
@@ -153,7 +154,7 @@ static boolean sdl_get_smallest_usable_display_mode(SDL_DisplayMode *display_mod
   if(min_size < INT_MAX)
     return true;
 
-#elif SDL_VERSION_ATLEAST(2,0,0)
+#else
 
   SDL_DisplayMode mode;
   int min_size = INT_MAX;
@@ -186,6 +187,7 @@ static boolean sdl_get_smallest_usable_display_mode(SDL_DisplayMode *display_mod
 
   return false;
 }
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
 boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
 {
@@ -220,6 +222,7 @@ boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
   return false;
 }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
 /**
  * Determine if MZX supports a particular SDL pixel format. Returns a priority
  * value if the format is supported or 0 if the format is not supported. Values
@@ -232,7 +235,6 @@ boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
 static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
  uint32_t bits_per_pixel, uint32_t yuv_priority)
 {
-#if SDL_VERSION_ATLEAST(2,0,0)
   switch(pixel_format)
   {
     case SDL_PIXELFORMAT_INDEX8:
@@ -318,10 +320,9 @@ static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
       break;
     }
   }
-#endif /* SDL_VERSION_ATLEAST(2,0,0) */
-
   return 0;
 }
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
 /**
