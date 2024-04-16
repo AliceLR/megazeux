@@ -55,7 +55,11 @@
 #include "network/network.h"
 
 #ifdef CONFIG_SDL
+#if CONFIG_SDL == 3
+#include <SDL3/SDL_main.h>
+#else
 #include <SDL.h> /* SDL_main */
+#endif
 #endif
 
 #ifndef VERSION
