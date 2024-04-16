@@ -31,17 +31,18 @@
 
 static u8 *audio_buffer;
 static ndspWaveBuf ndsp_buffer[2];
-static int buffer_size;
+static unsigned buffer_frames;
+static unsigned buffer_size;
 static bool soundFillBlock = false;
 
 static void ndsp_callback(void *dud)
 {
   if(ndsp_buffer[soundFillBlock].status == NDSP_WBUF_DONE)
   {
-    audio_callback(ndsp_buffer[soundFillBlock].data_pcm16, buffer_size);
+    audio_mixer_render_frames(ndsp_buffer[soundFillBlock].data_pcm16,
+     buffer_frames, 2, SAMPLE_S16);
 
-    DSP_FlushDataCache(ndsp_buffer[soundFillBlock].data_pcm8,
-     audio.buffer_samples * 4);
+    DSP_FlushDataCache(ndsp_buffer[soundFillBlock].data_pcm8, buffer_size);
     ndspChnWaveBufAdd(0, &ndsp_buffer[soundFillBlock]);
     soundFillBlock = !soundFillBlock;
   }
@@ -49,16 +50,19 @@ static void ndsp_callback(void *dud)
 
 void init_audio_platform(struct config_info *conf)
 {
+  // buffer size must be multiple of 32 bytes(?), so samples must be multiple of 8
+  unsigned frames = (conf->audio_buffer_samples + 7) & ~7;
   float mix[12];
 
-  audio.buffer_samples = conf->audio_buffer_samples & ~7;
-  if(!audio.buffer_samples)
-    audio.buffer_samples = 2048;
+  audio_buffer = NULL;
+  if(!audio_mixer_init(conf->audio_sample_rate, frames, 2))
+    return;
 
-  buffer_size = sizeof(int16_t) * 2 * audio.buffer_samples;
-  audio.mix_buffer = cmalloc(buffer_size * 2);
+  buffer_frames = audio.buffer_frames;
+  buffer_size = buffer_frames * sizeof(int16_t) * 2 /* stereo */;
 
-  ndspInit();
+  if(ndspInit() != 0)
+    return;
 
   memset(mix, 0, sizeof(mix));
   mix[0] = mix[1] = 1.0f;
@@ -79,9 +83,9 @@ void init_audio_platform(struct config_info *conf)
   ndspChnSetMix(0, mix);
 
   ndsp_buffer[0].data_vaddr = &audio_buffer[0];
-  ndsp_buffer[0].nsamples = audio.buffer_samples;
+  ndsp_buffer[0].nsamples = buffer_frames;
   ndsp_buffer[1].data_vaddr = &audio_buffer[buffer_size];
-  ndsp_buffer[1].nsamples = audio.buffer_samples;
+  ndsp_buffer[1].nsamples = buffer_frames;
 
   ndspChnWaveBufAdd(0, &ndsp_buffer[0]);
   ndspChnWaveBufAdd(0, &ndsp_buffer[1]);
@@ -89,9 +93,13 @@ void init_audio_platform(struct config_info *conf)
 
 void quit_audio_platform(void)
 {
-  // stub
-  linearFree(audio_buffer);
-  ndspExit();
+  if(audio_buffer)
+  {
+    linearFree(audio_buffer);
+    audio_buffer = NULL;
+
+    ndspExit();
+  }
 }
 
 #endif // CONFIG_AUDIO

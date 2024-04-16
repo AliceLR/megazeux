@@ -77,6 +77,8 @@ USERS
   the player is pushed onto them.
 + The DJGPP port now locks all of its memory. This prevents
   paging crashes related to audio, but increases memory usage.
++ The SDL audio driver will now initialize the software mixer
+  frequency with the value returned by SDL_OpenAudioDevice.
 
 DEVELOPERS
 
@@ -109,6 +111,15 @@ DEVELOPERS
 + Fixed testworlds process running check edge cases.
 + Fixed config.sh and platform_endian.h detection for IBM Z and
   System/390 architecture.
++ Software mixer configuration (rate, buffer, channels) is now
+  done using the function audio_mixer_init instead of each
+  driver handling it manually.
++ The software mixer render function now takes the number of
+  frames and channels to render and the output format instead
+  of the number of bytes. Supported output formats are 16-bit
+  signed, 8-bit signed, and 8-bit unsigned.
++ Audio streams with a null mix_data function are now supported.
+  These streams will be ignored by the software mixer.
 
 
 December 31st, 2023 - MZX 2.93

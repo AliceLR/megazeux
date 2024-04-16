@@ -545,7 +545,7 @@ UNITTEST(Settings)
 
   SECTION(audio_sample_rate)
   {
-    TEST_INT("audio_sample_rate", conf->output_frequency, 1, INT_MAX);
+    TEST_INT("audio_sample_rate", conf->audio_sample_rate, 1, INT_MAX);
   }
 
   SECTION(audio_buffer_samples)

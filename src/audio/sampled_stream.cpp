@@ -281,7 +281,7 @@ void sampled_set_buffer(struct sampled_stream *s_src)
   s_src->negative_comp = 0;
 
   data_window_length =
-   (size_t)(ceil((double)audio.buffer_samples *
+   (size_t)(ceil((double)audio.buffer_frames *
    frequency / audio.output_frequency) * bytes_per_sample);
 
   prologue_length += frequency_delta * bytes_per_sample;

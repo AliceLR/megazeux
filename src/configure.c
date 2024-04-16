@@ -57,6 +57,8 @@
 
 #ifdef CONFIG_DREAMCAST
 #define VIDEO_OUTPUT_DEFAULT "dreamcast"
+#define AUDIO_BUFFER_SAMPLES 2048 // the value KOS seems to like best
+#define AUDIO_SAMPLE_RATE 44100
 #define SAVE_SLOTS_DEFAULT true
 #endif
 
@@ -277,7 +279,7 @@ static const struct config_info user_conf_default =
   true,                         // allow screenshots
 
   // Audio options
-  AUDIO_SAMPLE_RATE,            // output_frequency
+  AUDIO_SAMPLE_RATE,            // audio_sample_rate
   AUDIO_BUFFER_SAMPLES,         // audio_buffer_samples
   0,                            // oversampling_on
   RESAMPLE_MODE_DEFAULT,        // resample_mode
@@ -1047,7 +1049,7 @@ static void config_set_audio_freq(struct config_info *conf, char *name,
 {
   int result;
   if(config_int(&result, value, 1, INT_MAX))
-    conf->output_frequency = result;
+    conf->audio_sample_rate = result;
 }
 
 static void config_force_bpp(struct config_info *conf, char *name,

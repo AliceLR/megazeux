@@ -31,9 +31,9 @@ __M_BEGIN_DECLS
 #include "../platform.h"
 
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-#define SAMPLE_S16SYS SAMPLE_S16MSB
+#define SAMPLE_S16 SAMPLE_S16MSB
 #else
-#define SAMPLE_S16SYS SAMPLE_S16LSB
+#define SAMPLE_S16 SAMPLE_S16LSB
 #endif
 
 enum wav_format
@@ -105,7 +105,9 @@ struct audio_stream_spec
 struct audio
 {
   int32_t *mix_buffer;
-  size_t buffer_samples;
+  size_t buffer_bytes;
+  unsigned buffer_frames;
+  unsigned buffer_channels;
 
   size_t output_frequency;
   unsigned int global_resample_mode;
