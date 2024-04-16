@@ -163,7 +163,7 @@ static inline HWND SDL_GetWindowProperty_HWND(SDL_Window *window)
 static inline void *SDL_GetWindowProperty_HWND(SDL_Window *window)
 {
   return SDL_GetProperty(SDL_GetWindowProperties(window),
-   SDL_PROPERTY_WINDOW_WIN32_HWND_POINTER, NULL);
+   SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
 }
 #endif /* _WIN32 */
 
