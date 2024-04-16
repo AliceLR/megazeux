@@ -87,18 +87,22 @@ ifneq (${BUILD_SDL},)
 # SDL 3
 #
 ifeq (${BUILD_SDL},3)
-# Check SDL_PREFIX and PREFIX for lib/pkgconfig/sdl3.pc.
-ifneq ($(and ${SDL_PREFIX},$(wildcard ${SDL_PREFIX}/lib/pkgconfig/sdl3.pc)),)
-SDL_PKGCONFIG ?= --with-path=${SDL_PREFIX}/lib/pkgconfig
+# Check SDL_PKG_CONFIG_PATH and LIBDIR for pkgconfig/sdl3.pc.
+# Note --with-path is a pkgconf extension.
+ifneq ($(and ${SDL_PKG_CONFIG_PATH},$(wildcard ${SDL_PKG_CONFIG_PATH}/sdl3.pc)),)
+# nop
 else
-ifneq ($(wildcard ${PREFIX}/lib/pkgconfig/sdl3.pc),)
-SDL_PKGCONFIG ?= --with-path=${PREFIX}/lib/pkgconfig
+ifneq ($(wildcard ${LIBDIR}/pkgconfig/sdl3.pc),)
+SDL_PKG_CONFIG_PATH ?= ${LIBDIR}/pkgconfig
 endif
+endif
+ifneq (${SDL_PKG_CONFIG_DIR},)
+SDL_PKG_CONFIG_FLAGS = --with-path=${SDL_PKG_CONFIG_PATH}
 endif
 
-SDL_PREFIX  := $(shell pkg-config ${SDL_PKGCONFIG} sdl3 --variable=prefix)
-SDL_CFLAGS  ?= $(shell pkg-config ${SDL_PKGCONFIG} sdl3 --cflags)
-SDL_LDFLAGS ?= $(shell pkg-config ${SDL_PKGCONFIG} sdl3 --libs)
+SDL_PREFIX  := $(shell ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --variable=prefix)
+SDL_CFLAGS  ?= $(shell ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --cflags)
+SDL_LDFLAGS ?= $(shell ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --libs)
 endif # SDL3
 
 #
