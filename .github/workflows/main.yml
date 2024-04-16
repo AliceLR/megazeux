@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure
         run: ./config.sh --platform unix --enable-release --enable-sdlaccel
       - name: Build
@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure
         run: ./config.sh --platform unix-devel --enable-release --enable-sdlaccel
       - name: Build
@@ -62,7 +62,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2 $MZXDEPS_DEBIAN_MISC
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure (SDL 1.2)
         run: ./config.sh --platform unix-devel --enable-release --enable-sdl1
       - name: Build (SDL 1.2)
@@ -110,7 +110,7 @@ jobs:
   unix-static:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: 🙄
         run: sudo sed -i '/deb-src/s/^# //' /etc/apt/sources.list
 #      - name: Install dependencies
@@ -137,7 +137,7 @@ jobs:
   darwin-devel:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install dependencies
         run: brew install $MZXDEPS_MACOS
       - name: Configure
@@ -162,7 +162,7 @@ jobs:
             base-devel git p7zip
             mingw-w64-x86_64-gcc    mingw-w64-x86_64-zlib      mingw-w64-x86_64-libpng
             mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-SDL2
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure x64
         run: ./config.sh --platform win64 --enable-release
       - name: Build x64
@@ -187,7 +187,7 @@ jobs:
             base-devel git p7zip
             mingw-w64-i686-gcc      mingw-w64-i686-zlib        mingw-w64-i686-libpng
             mingw-w64-i686-libogg   mingw-w64-i686-libvorbis   mingw-w64-i686-SDL2
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure x86
         run: ./config.sh --platform win32 --enable-release
       - name: Build x86
@@ -204,7 +204,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
       - run: echo "PATH=$DEVKITPRO/devkitA64/bin:$PATH" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure Switch
         run: arch/switch/CONFIG.SWITCH
       - name: Build Switch
@@ -219,7 +219,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
       - run: echo "PATH=$DEVKITPRO/devkitARM/bin:$PATH" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure 3DS
         run: arch/3ds/CONFIG.3DS
       - name: Build 3DS
@@ -234,7 +234,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
       - run: echo "PATH=$DEVKITPRO/devkitARM/bin:$PATH" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure NDS
         run: arch/nds/CONFIG.NDS
       - name: Build NDS
@@ -251,7 +251,7 @@ jobs:
       - name: Install target dependencies
         run: wf-pacman -Syu --noconfirm && wf-pacman -S --noconfirm toolchain-gcc-arm-none-eabi-zlib
       - run: echo "BLOCKSDS=/opt/blocksds/core" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure NDS/BlocksDS
         run: arch/nds-blocksds/CONFIG.NDS
       - name: Build NDS/BlocksDS
@@ -266,7 +266,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
       - run: echo "PATH=$DEVKITPRO/devkitPPC/bin:$PATH" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure Wii
         run: arch/wii/CONFIG.WII
       - name: Build Wii
@@ -281,7 +281,7 @@ jobs:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
       - run: echo "PATH=$DEVKITPRO/devkitPPC/bin:$PATH" >> $GITHUB_ENV
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure Wii U
         run: arch/wiiu/CONFIG.WIIU
       - name: Build Wii U
@@ -297,9 +297,9 @@ jobs:
       - name: Install Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
-          version: 3.1.56
+          version: 3.1.57
           actions-cache-folder: 'emsdk-cache'
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure HTML5
         run: arch/emscripten/CONFIG.HTML5
       - name: Build HTML5
@@ -318,7 +318,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure
         run: ./config.sh --platform unix-devel --enable-asan
       - name: Build
@@ -339,7 +339,7 @@ jobs:
       CXX: clang++
       ZLIB_LDFLAGS: DEPS/lib/libz.a
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: 🙄
         run: sudo sed -i '/deb-src/s/^# //' /etc/apt/sources.list
       - name: Fetch dependency sources
@@ -366,7 +366,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure
         run: ./config.sh --platform unix-devel --enable-ubsan
       - name: Build
