@@ -264,7 +264,11 @@ endif
 # Enable link-time optimization.
 #
 ifeq (${LTO},1)
+ifeq (${HAS_F_LTO},1)
 OPTIMIZE_FLAGS += -flto
+else
+$(warning link-time optimization not supported, ignoring.)
+endif
 endif
 
 CFLAGS   += ${OPTIMIZE_FLAGS} ${OPTIMIZE_DEF}

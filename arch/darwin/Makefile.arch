@@ -82,8 +82,8 @@ endif
 ifeq (${ARCH},ppc64)
 CC      := $(or ${PPC64_CC},${CC}) ${PPC64_CFLAGS}
 CXX     := $(or ${PPC64_CXX},${CXX}) ${PPC64_CFLAGS}
-SYSROOT ?= /Developer/SDKs/MacOSX10.4u.sdk
-MINVER  ?= 10.4
+SYSROOT ?= /Developer/SDKs/MacOSX10.5.sdk
+MINVER  ?= 10.5
 endif
 
 ifneq (${ARCH},)
