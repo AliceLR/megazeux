@@ -134,17 +134,30 @@ jobs:
         run: LDFLAGS="-static" $MZX_MAKE
         # TODO: tests
 
-  darwin-devel:
+  darwin-arm64:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: brew install $MZXDEPS_MACOS
-      - name: Configure
-        run: ./config.sh --platform darwin-devel --prefix /usr/local --enable-release --enable-sdlaccel
-      - name: Build
+      - name: Configure (darwin-devel)
+        run: ./config.sh --platform darwin-devel --prefix /opt/homebrew --enable-release --enable-sdlaccel
+      - name: Build (darwin-devel)
         run: $MZX_MAKE
-      - name: Run tests
+      - name: Run tests (darwin-devel)
+        run: $MZX_MAKE test
+
+  darwin-x86_64:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: brew install $MZXDEPS_MACOS
+      - name: Configure (darwin-devel)
+        run: ./config.sh --platform darwin-devel --prefix /usr/local --enable-release --enable-sdlaccel
+      - name: Build (darwin-devel)
+        run: $MZX_MAKE
+      - name: Run tests (darwin-devel)
         run: $MZX_MAKE test
 
   MSYS2-MINGW64:

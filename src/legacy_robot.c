@@ -37,6 +37,10 @@
 #include "io/memfile.h"
 #include "io/vio.h"
 
+/* This is the largest allowed stack size in MZX 2.84X, in case the maximum
+ * stack size ever gets increased for some reason. */
+#define LEGACY_ROBOT_MAX_STACK 65536
+
 static boolean legacy_load_robot_v1(struct world *mzx_world, struct robot *cur_robot,
  vfile *vf, int savegame, int file_version)
 {
@@ -241,10 +245,10 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     cur_robot->stack_pointer = mfgetd(mf) * 2;
 
     // Don't allow the stack size to be loaded over the maximum.
-    if(stack_size > ROBOT_MAX_STACK)
+    if(stack_size > LEGACY_ROBOT_MAX_STACK)
     {
-      stack_skip = ROBOT_MAX_STACK - stack_size;
-      stack_size = ROBOT_MAX_STACK;
+      stack_skip = LEGACY_ROBOT_MAX_STACK - stack_size;
+      stack_size = LEGACY_ROBOT_MAX_STACK;
     }
     else
 
@@ -409,6 +413,18 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
   {
     mfseek(&mf, robot_size - 8, SEEK_SET);
     stack_size = mfgetd(&mf);
+
+    // Don't allow the stack size to be loaded over the maximum.
+    // Nothing valid should ever be higher than this and since the full robot
+    // is being allocated based on this, invalid robots need to be truncated.
+    if(stack_size > LEGACY_ROBOT_MAX_STACK)
+    {
+      return robot_size;
+    }
+    else
+
+    if(stack_size < 0)
+      stack_size = 0;
 
     robot_size += stack_size * 4;
   }

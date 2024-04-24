@@ -40,6 +40,8 @@ USERS
   current position is past the end. This should never actually
   happen, but it's safer and shuts up _FORTIFY_SOURCE and ASan
   compilation warnings.
++ Fixed platform-dependent out-of-memory errors when loading
+  robots from <=2.84 save files with corrupt stack sizes.
 
 DEVELOPERS
 
