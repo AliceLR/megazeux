@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2017 GreaseMonkey
+ * Copyright (C) 2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -23,16 +24,31 @@ uniform sampler2D baseMap;
 
 varying vec2 vTexcoord;
 
-#define XS 1024.0
-#define YS 512.0
-#define AX 0.5/XS
-#define AY 0.5/YS
+/* Larger values result in cleaner edges but will cause stretching
+ * artifacts to become more apparent. */
+#define SHARPNESS         3.0
+
+#define TEX_SCREEN_WIDTH  1024.0
+#define TEX_SCREEN_HEIGHT 512.0
+#define HALF_PIXEL_X      0.5 / TEX_SCREEN_WIDTH
+#define HALF_PIXEL_Y      0.5 / TEX_SCREEN_HEIGHT
 
 void main(void)
 {
-  vec2 tcbase = (floor(vTexcoord*vec2(XS, YS) + 0.5) + 0.5)/vec2(XS, YS);
-  vec2 tcdiff = vTexcoord-tcbase;
-  vec2 sdiff = sign(tcdiff);
-  vec2 adiff = pow(abs(tcdiff)*vec2(XS, YS), vec2(3.0));
-  gl_FragColor = texture2D(baseMap, tcbase + sdiff*adiff/vec2(XS, YS));
+  const vec2 resolution = vec2(TEX_SCREEN_WIDTH, TEX_SCREEN_HEIGHT);
+
+  /* Select a source texture pixel to shift the current fragment towards.
+   *
+   * This is NOT the nearest pixel: to get consistent results, every
+   * fragment needs to be smoothed in the same direction, so the right and
+   * bottom quadrants of a source pixel mix toward the next pixel in their
+   * respective directions. Unfortunately, this means parts of the top row
+   * and left column of source pixels get clipped.
+   */
+  vec2 pos = vTexcoord * resolution;
+  vec2 mix_point = floor(pos + 0.5) + 0.5;
+  vec2 distance = pos - mix_point;
+
+  distance = sign(distance) * pow(abs(distance), vec2(SHARPNESS));
+  gl_FragColor = texture2D(baseMap, (mix_point + distance) / resolution);
 }
