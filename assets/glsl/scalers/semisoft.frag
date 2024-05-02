@@ -47,8 +47,8 @@ void main(void)
    */
   vec2 pos = vTexcoord * resolution;
   vec2 mix_point = floor(pos + 0.5) + 0.5;
-  vec2 distance = pos - mix_point;
+  vec2 dist = pos - mix_point;
 
-  distance = sign(distance) * pow(abs(distance), vec2(SHARPNESS));
-  gl_FragColor = texture2D(baseMap, (mix_point + distance) / resolution);
+  dist = sign(dist) * pow(abs(dist), vec2(SHARPNESS));
+  gl_FragColor = texture2D(baseMap, (mix_point + dist) / resolution);
 }
