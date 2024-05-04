@@ -2065,6 +2065,8 @@ static void replace_current_line(struct robot_editor_context *rstate,
   rstate->command_buffer_space[COMMAND_BUFFER_LEN - 1] = '\0';
   rstate->command_buffer = rstate->command_buffer_space;
 
+  strcpy(rstate->command_buffer, rstate->current_rline->line_text);
+
   /* undo */
   add_undo_frame_lines(rstate, TX_SAME_LINE, start_line, rstate->current_line);
 }
@@ -2192,6 +2194,7 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
 
     case SEARCH_OPTION_REPLACE_ALL:
     {
+      char old_buffer[COMMAND_BUFFER_LEN];
       int l_pos;
       int l_num;
       int r_len = (int)strlen(replace_string);
@@ -2249,7 +2252,18 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
             undo_started = true;
           }
 
+          if(r_len == 0)
+            memcpy(old_buffer, rstate->command_buffer, COMMAND_BUFFER_LEN);
+
           replace_current_line(rstate, l_pos, search_string, replace_string);
+
+          if(r_len == 0 && !strcmp(old_buffer, rstate->command_buffer))
+          {
+            /* Anti-hang hack: if the line didn't change due to compilation
+             * adding quotes or extras and the replacement length is 0, the
+             * loop will get stuck. "Help" it out of this situation. */
+            l_pos++;
+          }
 
           l_pos += r_len;
           rstate->current_x = l_pos;
