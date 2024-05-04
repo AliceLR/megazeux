@@ -1,0 +1,3 @@
+Title: Scan Test
+Author: Alice Rowan
+Desc: Test that the scan is left-to-right, top-to-bottom, and that reverse send is performed by a second scan from right-to-left, bottom-to-top. In 2.x, a robot executes during the reverse scan only if it was already ended, executed an END or WAIT command, or if it did not execute due to its cycle value.
