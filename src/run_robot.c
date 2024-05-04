@@ -1084,7 +1084,8 @@ static void advance_line(struct robot *cur_robot, char *program)
   cur_robot->pos_within_line = 0;
 }
 
-static void end_cycle(struct robot *cur_robot, int lines_run, int x, int y)
+static void end_cycle(struct world *mzx_world, struct robot *cur_robot,
+ int lines_run, int x, int y)
 {
 #ifdef CONFIG_EDITOR
   cur_robot->commands_total += lines_run;
@@ -1097,6 +1098,11 @@ static void end_cycle(struct robot *cur_robot, int lines_run, int x, int y)
   // that causes a lot of bugs, and sadly this needs to be emulated.
   cur_robot->compat_xpos = x;
   cur_robot->compat_ypos = y;
+
+  // Send commands in 1.x always set the label sent flag, but this
+  // robot already received whatever label it sent itself, so clear it.
+  if(mzx_world->version < V200)
+    cur_robot->status = 0;
 }
 
 static void end_program(struct robot *cur_robot)
@@ -1108,7 +1114,7 @@ static void end_program(struct robot *cur_robot)
 #define ADVANCE_LINE do{ advance_line(cur_robot, program); }while(0);
 
 // NOTE: Should always return after using one of these.
-#define END_CYCLE do{ end_cycle(cur_robot, lines_run, x, y); }while(0);
+#define END_CYCLE do{ end_cycle(mzx_world, cur_robot, lines_run, x, y); }while(0);
 #define END_PROGRAM do{ END_CYCLE; end_program(cur_robot); }while(0);
 
 // Run a single robot through a single cycle.
@@ -1156,8 +1162,7 @@ void run_robot(context *ctx, int id, int x, int y)
     cur_robot->compat_xpos = x;
     cur_robot->compat_ypos = y;
     cur_robot->cycle_count = 0;
-
-    src_board->robot_list[id]->status = 0;
+    cur_robot->status = 0;
   }
   else
   {
@@ -1171,6 +1176,7 @@ void run_robot(context *ctx, int id, int x, int y)
     cur_robot->ypos = y;
     cur_robot->compat_xpos = x;
     cur_robot->compat_ypos = y;
+    cur_robot->status = 0; // Clear this here too for 1.x compat.
 
 #ifdef CONFIG_EDITOR
     cur_robot->commands_cycle = 0;

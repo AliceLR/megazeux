@@ -42,6 +42,8 @@ USERS
   compilation warnings.
 + Fixed platform-dependent out-of-memory errors when loading
   robots from <=2.84 save files with corrupt stack sizes.
++ Added compatibility for MegaZeux 1.x's reverse send behavior
+  which allows robots to execute twice per cycle in some cases.
 
 DEVELOPERS
 

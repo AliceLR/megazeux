@@ -1770,8 +1770,8 @@ static int robot_stack_pop(struct robot *cur_robot, int *position_in_line)
   }
 }
 
-static void set_robot_position(struct robot *cur_robot, int position,
- int position_in_line)
+static void set_robot_position(struct world *mzx_world,
+ struct robot *cur_robot, int position, int position_in_line)
 {
   cur_robot->cur_prog_line = position;
   cur_robot->pos_within_line = position_in_line;
@@ -1786,7 +1786,8 @@ static void set_robot_position(struct robot *cur_robot, int position,
   if(cur_robot->cur_prog_line > cur_robot->program_bytecode_length - 2)
     cur_robot->cur_prog_line = 0;
 
-  if(cur_robot->status == 1)
+  // MegaZeux 1.x always sets its equivalent flag here.
+  if(cur_robot->status == 1 || mzx_world->version < V200)
     cur_robot->status = 2;
 }
 
@@ -1817,7 +1818,7 @@ static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
       {
         int return_pos_in_line;
         int return_pos = robot_stack_pop(cur_robot, &return_pos_in_line);
-        set_robot_position(cur_robot, return_pos, return_pos_in_line);
+        set_robot_position(mzx_world, cur_robot, return_pos, return_pos_in_line);
       }
       else
       {
@@ -1832,7 +1833,7 @@ static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
     {
       if(cur_robot->stack_pointer)
       {
-        set_robot_position(cur_robot, cur_robot->stack[0],
+        set_robot_position(mzx_world, cur_robot, cur_robot->stack[0],
          cur_robot->stack[1]);
 
         cur_robot->stack_pointer = 0;
@@ -1877,7 +1878,7 @@ static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
          return_position_in_line);
 
         // Do the jump
-        set_robot_position(cur_robot, new_position, 0);
+        set_robot_position(mzx_world, cur_robot, new_position, 0);
         return 0;
       }
 
@@ -1890,7 +1891,7 @@ static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
 
     if(new_position != -1)
     {
-      set_robot_position(cur_robot, new_position, 0);
+      set_robot_position(mzx_world, cur_robot, new_position, 0);
       return 0;
     }
 
