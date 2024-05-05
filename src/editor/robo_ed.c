@@ -2037,34 +2037,35 @@ static void goto_position(struct robot_editor_context *rstate)
   force_release_all_keys();
 }
 
+/**
+ * Replace a span of the current Robotic line with a replacement string.
+ * The current Robotic line should be synchronized (e.g. by move_and_update).
+ */
 static void replace_current_line(struct robot_editor_context *rstate,
- int r_pos, char *str, char *replace)
+ int r_pos, const char *str, size_t str_size, const char *replace,
+ size_t replace_size)
 {
   struct robot_line *current_rline = rstate->current_rline;
-  char new_buffer[COMMAND_BUFFER_LEN];
-  size_t replace_size = strlen(replace);
-  size_t str_size = strlen(str);
   int start_line = rstate->current_line;
+  size_t tail_size;
 
   /* undo (NOTE: frame must be set up externally). */
   add_robot_editor_undo_line(rstate->h, TX_OLD_LINE, start_line, r_pos,
    current_rline->line_text, current_rline->line_text_length);
 
-  snprintf(new_buffer, COMMAND_BUFFER_LEN, "%s", current_rline->line_text);
-  new_buffer[COMMAND_BUFFER_LEN - 1] = '\0';
+  if(replace_size > (size_t)(COMMAND_BUFFER_LEN - r_pos - 1))
+    replace_size = (size_t)(COMMAND_BUFFER_LEN - r_pos - 1);
 
-  memmove(new_buffer + r_pos + replace_size,
-   new_buffer + r_pos + str_size, strlen(new_buffer) - r_pos);
-  memcpy(new_buffer + r_pos, replace, replace_size);
-  new_buffer[MAX_COMMAND_LEN] = '\0';
+  tail_size = current_rline->line_text_length - r_pos - str_size;
+  if(tail_size > COMMAND_BUFFER_LEN - r_pos - replace_size - 1)
+    tail_size = COMMAND_BUFFER_LEN - r_pos - replace_size - 1;
 
-  rstate->command_buffer = new_buffer;
+  memcpy(rstate->command_buffer + r_pos, replace, replace_size);
+  memcpy(rstate->command_buffer + r_pos + replace_size,
+   current_rline->line_text + r_pos + str_size, tail_size);
+  rstate->command_buffer[r_pos + replace_size + tail_size] = '\0';
+
   update_current_line(rstate, false);
-
-  memcpy(rstate->command_buffer_space, new_buffer, COMMAND_BUFFER_LEN);
-  rstate->command_buffer_space[COMMAND_BUFFER_LEN - 1] = '\0';
-  rstate->command_buffer = rstate->command_buffer_space;
-
   strcpy(rstate->command_buffer, rstate->current_rline->line_text);
 
   /* undo */
@@ -2184,7 +2185,8 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
         end_intake_undo_frame(rstate);
         add_robot_editor_undo_frame(rstate->h, rstate);
 
-        replace_current_line(rstate, l_pos, search_string, replace_string);
+        replace_current_line(rstate, l_pos, search_string, strlen(search_string),
+         replace_string, strlen(replace_string));
 
         update_undo_frame(rstate->h);
       }
@@ -2255,7 +2257,8 @@ static void robo_ed_search_action(struct robot_editor_context *rstate,
           if(r_len == 0)
             memcpy(old_buffer, rstate->command_buffer, COMMAND_BUFFER_LEN);
 
-          replace_current_line(rstate, l_pos, search_string, replace_string);
+          replace_current_line(rstate, l_pos, search_string, s_len,
+           replace_string, r_len);
 
           if(r_len == 0 && !strcmp(old_buffer, rstate->command_buffer))
           {
