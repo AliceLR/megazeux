@@ -42,6 +42,8 @@ USERS
   compilation warnings.
 + Fixed platform-dependent out-of-memory errors when loading
   robots from <=2.84 save files with corrupt stack sizes.
++ Fixed hangs in the robot editor caused by trying to use
+  Replace All to replace quotes or extra words with nothing.
 + Added compatibility for MegaZeux 1.x's reverse send behavior
   which allows robots to execute twice per cycle in some cases.
 
