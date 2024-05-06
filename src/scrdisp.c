@@ -182,17 +182,17 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
 
 void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
 {
-  char *where; // Position of the start of the current line in the scroll.
-  char line_buffer[256];
-  size_t line_src_len;
+  char *where; // Scroll message pointer.
+  char line_buffer[SCROLL_MAX_LINE_LEN];
+  size_t line_src_len = 0;
   size_t edit_len;
   size_t tail_len;
-  size_t i;
+  size_t sz;
+  int page_lines;
 
   unsigned int pos = 1, old_pos; // Where IN scroll?
   int currx = 0; // X position in line
   int key; // Key returned by intake()
-  int t1, t2 = -1, t3;
   int scroll_base_color = mzx_world->scroll_base_color;
   boolean editing = (type == 2);
   // If the user wants to mask chars and we're in the editor..
@@ -219,12 +219,12 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
     if(editing)
     {
       // Get the length of the current editing line.
-      for(i = pos; i < scroll->mesg_size; i++)
+      for(sz = pos; sz < scroll->mesg_size; sz++)
       {
-        if(where[i] == '\n')
+        if(where[sz] == '\n')
           break;
       }
-      line_src_len = i - pos;
+      line_src_len = sz - pos;
 
       edit_len = line_src_len;
       if(edit_len >= sizeof(line_buffer))
@@ -289,10 +289,10 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
       if((mouse_y >= 6) && (mouse_y <= 18) && (mouse_x >= 8) &&
        (mouse_x <= 71))
       {
-        t1 = mouse_y - 12;
-        if(t1)
+        page_lines = mouse_y - 12;
+        if(page_lines)
         {
-          if(t1 < 0)
+          if(page_lines < 0)
             goto pgup;
           else
             goto pgdn;
@@ -344,12 +344,11 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
         else
         {
           // Add in new line below. Need only add one byte.
-          t3 = scroll->mesg_size;
-          reallocate_scroll(scroll, t3 + 1);
+          reallocate_scroll(scroll, scroll->mesg_size + 1);
           where = scroll->mesg;
           // Move all at pos + currx up a space
           memmove(where + pos + currx + 1, where + pos + currx,
-           t3 - pos - currx);
+           scroll->mesg_size - pos - currx);
           // Insert a \n
           where[pos + currx] = '\n';
           // Change pos and currx
@@ -362,51 +361,45 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
 
       case IKEY_BACKSPACE:
       {
+        size_t line_prev_len;
         if(type < 2)
           break;
 
-        // We are at the start of the current line and we are trying to
-        // append it to the end of the previous line. First, remember
-        // the size of the current line is in t2. Now we go back a line,
-        // if there is one.
+        // Get the length of the previous line, if it exists.
         if(where[pos - 1] == 1)
-          break; // Nope.
+          break;
 
         pos--;
         // Go to start of this line, COUNTING CHARACTERS.
-        t1 = 0;
+        line_prev_len = 0;
         do
         {
           pos--;
-          t1++;
+          line_prev_len++;
         } while((where[pos] != '\n') && (where[pos] != 1));
 
-        // pos is at one before the start of this line. WHO CARES!? :)
-        // Now we have to see if the size, t2, is over 64 characters.
-        // t2 + t1 is currently one too many so check for >65 for error.
-
-        if((t2 + t1) > 65)
+        // If the length of the current line plus the length of the previous
+        // line exceeds the maximum length of text the buffer can hold, these
+        // lines can't be joined. Note line_prev_len includes its terminator.
+        if(line_src_len + line_prev_len > sizeof(line_buffer))
         {
           pos = old_pos;
-          break; // Too long. Reset position.
+          break;
         }
 
         // OKAY! Just copy backwards over the \n in the middle to
         // append...
-        t3 = scroll->mesg_size;
-        memmove(where + (old_pos - 1), where + old_pos, t3 - (old_pos + 1));
+        memmove(where + (old_pos - 1), where + old_pos, scroll->mesg_size - (old_pos + 1));
         // ...and reallocate to one space less!
-        reallocate_scroll(scroll, t3 - 1);
+        reallocate_scroll(scroll, scroll->mesg_size - 1);
         where = scroll->mesg;
+        where[scroll->mesg_size - 1] = '\0';
 
         // pos is one before this start. Fix to the start of this new
         // line. Set currx to the length of the old line this was.
         pos++;
-        currx = (int)t1 - 1;
+        currx = (int)line_prev_len - 1;
         scroll->num_lines--;
-
-        // FIXME - total hack!
-        scroll->mesg[scroll->mesg_size - 1] = 0;
 
         // Done.
         break;
@@ -414,7 +407,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
 
       case IKEY_PAGEDOWN:
       {
-        for(t1 = 6; t1 > 0; t1--)
+        for(page_lines = 6; page_lines > 0; page_lines--)
         {
           pgdn:
           // Go forward a line (if possible)
@@ -435,7 +428,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
 
       case IKEY_PAGEUP:
       {
-        for(t1 = -6; t1 < 0; t1++)
+        for(page_lines = -6; page_lines < 0; page_lines++)
         {
           pgup:
           // Go back a line (if possible)
@@ -455,14 +448,14 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
       case IKEY_HOME:
       {
         // FIXME - This is so dirty. Please replace it.
-        t1 = -30000;
+        page_lines = -30000;
         goto pgup;
       }
 
       case IKEY_END:
       {
         // FIXME - See above.
-        t1 = 30000;
+        page_lines = 30000;
         goto pgdn;
       }
 
