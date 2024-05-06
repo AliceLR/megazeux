@@ -84,11 +84,12 @@ static inline void intake_old_place_char(char *string, int *currx,
 // Returns a backspace if attempted at start of line. (exit_type==INTK_EXIT_ANY)
 // Returns a delete if attempted at end of line. (exit_type==INTK_EXIT_ANY)
 
-int intake(struct world *mzx_world, char *string, int max_len,
+int intake(struct world *mzx_world, char *string, int max_len, int display_len,
  int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos)
 {
   int use_mask = get_config()->mask_midchars;
   int currx, curr_len;
+  int scrolledx, tmpx;
   int done = 0, place = 0;
   char cur_char = 0;
   boolean select_char = false;
@@ -103,17 +104,33 @@ int intake(struct world *mzx_world, char *string, int max_len,
   if((return_x_pos) && (*return_x_pos < currx))
     currx = *return_x_pos;
 
-  if(insert_on)
-    cursor_underline(x + currx, y);
-  else
-    cursor_solid(x + currx, y);
-
   do
   {
     int flags = use_mask ? WR_MASK : 0;
-    write_string_ext(string, x, y, color, flags, 0, 16);
 
-    fill_line(max_len + 1 - curr_len, x + curr_len, y, 32, color);
+    if(max_len > display_len && currx > display_len)
+    {
+      scrolledx = currx - display_len;
+      tmpx = currx;
+    }
+    else
+    {
+      scrolledx = 0;
+      tmpx = display_len;
+    }
+
+    cur_char = string[tmpx];
+    string[tmpx] = '\0';
+    write_string_ext(string + scrolledx, x, y, color, flags, 0, 16);
+    string[tmpx] = cur_char;
+
+    if(curr_len < display_len)
+      fill_line(display_len + 1 - curr_len, x + curr_len, y, 32, color);
+
+    if(insert_on)
+      cursor_underline(x + currx - scrolledx, y);
+    else
+      cursor_solid(x + currx - scrolledx, y);
 
     update_screen();
     update_event_status_delay();
@@ -158,7 +175,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
       if((mouse_y == y) && (mouse_x >= x) &&
-       (mouse_x <= (x + max_len)) && (mouse_press <= MOUSE_BUTTON_RIGHT))
+       (mouse_x <= (x + display_len)) && (mouse_press <= MOUSE_BUTTON_RIGHT))
       {
         // Yep, reposition cursor.
         currx = mouse_x - x;
@@ -470,11 +487,6 @@ int intake(struct world *mzx_world, char *string, int max_len,
           break;
       }
     }
-
-    if(insert_on)
-      cursor_underline(x + currx, y);
-    else
-      cursor_solid(x + currx, y);
 
     // Loop
   } while(!done);
