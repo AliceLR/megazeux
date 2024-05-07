@@ -231,6 +231,8 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         // # of stack values is file size /4.
         // Furthermore, there should be an even number of values, and a count
         // over ROBOT_MAX_STACK is invalid.
+        if(cur_robot->stack)
+          break;
         size = MIN((size / 4) & ~1, ROBOT_MAX_STACK);
         cur_robot->stack_size = size;
         cur_robot->stack = cmalloc(size * sizeof(int));
@@ -500,7 +502,15 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
   int size;
 
   zip_get_next_uncompressed_size(zp, &actual_size);
+  if(actual_size > SCROLL_PROPS_SIZE + MAX_OBJ_SIZE)
+    actual_size = SCROLL_PROPS_SIZE + MAX_OBJ_SIZE;
+
   buffer = cmalloc(actual_size);
+  if(!buffer)
+  {
+    zip_skip_file(zp);
+    goto err;
+  }
 
   // We aren't saving or loading null scrolls.
   cur_scroll->used = 1;
@@ -522,8 +532,15 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
         break;
 
       case SCRPROP_MESG:
+        if(cur_scroll->mesg)
+          break;
+        if(size < 3)
+          goto err;
+
+        // TODO: return value (scroll display doesn't support NULL here)
+        size = MIN(size, MAX_OBJ_SIZE);
         cur_scroll->mesg_size = size;
-        cur_scroll->mesg = cmalloc(size);
+        cur_scroll->mesg = (char *)cmalloc(size);
         mfread(cur_scroll->mesg, size, 1, &prop);
         if(size > 0)
           cur_scroll->mesg[size - 1] = '\0';
@@ -536,12 +553,14 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
 
   if(cur_scroll->mesg_size < 3)
   {
+err:
     // We have an incomplete scroll, so slip in an empty scroll.
     cur_scroll->num_lines = 1;
     cur_scroll->mesg_size = 3;
 
+    // TODO: return value (scroll display doesn't support NULL here)
     free(cur_scroll->mesg);
-    cur_scroll->mesg = cmalloc(3);
+    cur_scroll->mesg = (char *)cmalloc(3);
     strcpy(cur_scroll->mesg, "\x01\x0A");
   }
 
@@ -561,7 +580,15 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
   int size;
 
   zip_get_next_uncompressed_size(zp, &actual_size);
+  if(actual_size > MAX_OBJ_SIZE) // SENSOR_PROPS_SIZE, but just in case...
+    actual_size = MAX_OBJ_SIZE;
+
   buffer = cmalloc(actual_size);
+  if(!buffer)
+  {
+    zip_skip_file(zp);
+    return cur_sensor;
+  }
 
   // We aren't saving or loading null sensors.
   cur_sensor->used = 1;
@@ -2526,31 +2553,9 @@ static int robot_box_up(char *program, int pos, int count)
 
 static void clip_color_string(char *buf, size_t len, size_t pos)
 {
-  size_t idx = 0;
-
-  while(idx < len)
-  {
-    char current_char = buf[idx];
-    if(current_char == '\0')
-      break;
-
-    if((current_char == '~') || (current_char == '@'))
-    {
-      if(idx + 1 < len && isxdigit((uint8_t)buf[idx + 1]))
-      {
-        idx += 2;
-        continue;
-      }
-    }
-
-    if(pos == 0) // Clip here
-    {
-      buf[idx] = '\0';
-      return;
-    }
-    pos--;
-    idx++;
-  }
+  size_t idx = color_string_index_of(buf, len, pos, '\0');
+  buf[idx] = '\0';
+  return;
 }
 
 static void display_robot_line(struct world *mzx_world, char *program,
@@ -2620,7 +2625,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       int length, x_position;
       tr_msg(mzx_world, program + 3, id, ibuff);
       clip_color_string(ibuff, ROBOT_MAX_TR, 64); // Clip
-      length = strlencolor(ibuff);
+      length = color_string_length(ibuff, ROBOT_MAX_TR);
       x_position = 40 - (length / 2);
       assert(x_position >= 0);
       color_string_ext(ibuff, x_position, y, scroll_base_color, false, 0, 0);

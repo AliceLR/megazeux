@@ -326,6 +326,10 @@ void color_string_ext_special(const char *string, unsigned int x, unsigned int y
 void fill_line_ext(unsigned int length, unsigned int x, unsigned int y,
  uint8_t chr, uint8_t color, unsigned int chr_offset, unsigned int color_offset);
 
+size_t color_string_length(char *string, size_t max_size);
+size_t color_string_index_of(char *string, size_t max_size, size_t offset,
+ int terminator);
+
 boolean change_video_output(struct config_info *conf, const char *output);
 int get_available_video_output_list(const char **buffer, int buffer_len);
 int get_current_video_output(void);

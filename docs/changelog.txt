@@ -46,6 +46,15 @@ USERS
   Replace All to replace quotes or extra words with nothing.
 + Added compatibility for MegaZeux 1.x's reverse send behavior
   which allows robots to execute twice per cycle in some cases.
++ Fixed the handling of lines over 64 characters long during
+  scroll editing. Scroll editing now previews colors and allows
+  lines up to 255 bytes in length. Like robot message boxes, any
+  characters past the first 64 will clip.
++ Clicking a line in the scroll display and editor now jumps to
+  that line (same as the help file).
++ Fixed possible robot stack and scroll message memory leaks.
++ Fixed a 2.93 regression where color strings with escapes like
+ "~x", where x is not a hex digit, would also print the ~ or @.
 
 DEVELOPERS
 

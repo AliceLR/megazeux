@@ -2069,6 +2069,84 @@ static int hexdigit(uint8_t hex)
   return -1;
 }
 
+/**
+ * Helper function for handling `color_string` strings.
+ * Return the total display length of the nul terminated color string `string`.
+ * Will stop after `max_size` bytes are read from `string`, if applicable.
+ */
+size_t color_string_length(char *string, size_t max_size)
+{
+  size_t pos = 0;
+  size_t i;
+  for(i = 0; i < max_size; )
+  {
+    if(!string[i])
+      break;
+
+    if(string[i] == '~' || string[i] == '@')
+    {
+      if((i + 1 < max_size) && isxdigit((uint8_t)string[i + 1]))
+      {
+        // Color code--no display chars.
+        i += 2;
+        continue;
+      }
+      else
+      {
+        // Escape--only display the next character, regardless of whether
+        // or not it is a matching ~/@.
+        i++;
+      }
+    }
+    // Display character.
+    pos++;
+    i++;
+  }
+  return pos;
+}
+
+/**
+ * Helper function for handling `color_string` strings.
+ * Find the byte index of the character at display position `offset` in a color
+ * string. If the string displays as fewer than `offset` characters, returns
+ * the offset of the terminator or nul instead (whichever is found first).
+ * Will stop after `max_size` bytes are read from `string`, if applicable.
+ * This is useful for clipping a color string for display.
+ */
+size_t color_string_index_of(char *string, size_t max_size, size_t offset,
+ int terminator)
+{
+  size_t pos = 0;
+  size_t i;
+  for(i = 0; i < max_size && pos < offset; )
+  {
+    if(!string[i] || string[i] == terminator)
+      break;
+
+    if(string[i] == '~' || string[i] == '@')
+    {
+      if((i + 1 < max_size) && isxdigit((uint8_t)string[i + 1]))
+      {
+        // Color code--no display chars.
+        i += 2;
+        continue;
+      }
+      else
+      {
+        // Escape--only display the next character, regardless of whether
+        // or not it is a matching ~/@.
+        i++;
+      }
+    }
+    // Display character.
+    pos++;
+    i++;
+  }
+  return i;
+}
+
+// Note: 2.93 erroneously had sane color escaping behavior here.
+// ~ and @ should always escape the next char regardless of whether it's ~/@.
 static int write_string_intl(const char *str, unsigned int x, unsigned int y,
  uint8_t color, boolean allow_tabs, boolean allow_newline, boolean end_newline,
  boolean allow_colors, boolean mask_midchars, int chr_offset, int color_offset)
@@ -2132,9 +2210,7 @@ static int write_string_intl(const char *str, unsigned int x, unsigned int y,
           continue;
         }
         else
-
-        if(*str == '@')
-          str++;
+          cur_char = *str++;
       }
       else
 
@@ -2151,9 +2227,7 @@ static int write_string_intl(const char *str, unsigned int x, unsigned int y,
           continue;
         }
         else
-
-        if(*str == '~')
-          str++;
+          cur_char = *str++;
       }
     }
 

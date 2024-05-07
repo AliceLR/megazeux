@@ -31,7 +31,6 @@
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
-#include "scrdisp.h" // strlencolor
 #include "sprite.h"
 #include "robot.h"
 #include "util.h"
@@ -799,7 +798,7 @@ static void draw_message(struct world *mzx_world)
 
   for(j = 0; j < i; j++)
   {
-    int mesg_length = strlencolor(lines[j]);
+    int mesg_length = color_string_length(lines[j], ROBOT_MAX_TR);
     int mesg_edges = mzx_world->mesg_edges;
     int mesg_x = cur_board->b_mesg_col;
     char backup = 0;
