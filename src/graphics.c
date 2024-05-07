@@ -2074,33 +2074,30 @@ static int hexdigit(uint8_t hex)
  * Return the total display length of the nul terminated color string `string`.
  * Will stop after `max_size` bytes are read from `string`, if applicable.
  */
-size_t color_string_length(char *string, size_t max_size)
+size_t color_string_length(const char *string, size_t max_size)
 {
   size_t pos = 0;
   size_t i;
-  for(i = 0; i < max_size; )
+  for(i = 0; i < max_size; i++)
   {
     if(!string[i])
       break;
 
     if(string[i] == '~' || string[i] == '@')
     {
-      if((i + 1 < max_size) && isxdigit((uint8_t)string[i + 1]))
+      // All ~/@ values either escape the next char or display a color code.
+      i++;
+      if(i >= max_size && !string[i])
+        break;
+
+      if(isxdigit((uint8_t)string[i]))
       {
         // Color code--no display chars.
-        i += 2;
         continue;
-      }
-      else
-      {
-        // Escape--only display the next character, regardless of whether
-        // or not it is a matching ~/@.
-        i++;
       }
     }
     // Display character.
     pos++;
-    i++;
   }
   return pos;
 }
@@ -2113,36 +2110,73 @@ size_t color_string_length(char *string, size_t max_size)
  * Will stop after `max_size` bytes are read from `string`, if applicable.
  * This is useful for clipping a color string for display.
  */
-size_t color_string_index_of(char *string, size_t max_size, size_t offset,
+size_t color_string_index_of(const char *string, size_t max_size, size_t offset,
  int terminator)
 {
   size_t pos = 0;
   size_t i;
-  for(i = 0; i < max_size && pos < offset; )
+  for(i = 0; i < max_size && pos < offset; i++)
   {
     if(!string[i] || string[i] == terminator)
       break;
 
     if(string[i] == '~' || string[i] == '@')
     {
-      if((i + 1 < max_size) && isxdigit((uint8_t)string[i + 1]))
+      // All ~/@ values either escape the next char or display a color code.
+      i++;
+      if(i >= max_size && (!string[i] || string[i] == terminator))
+        break;
+
+      if(isxdigit((uint8_t)string[i]))
       {
         // Color code--no display chars.
-        i += 2;
         continue;
-      }
-      else
-      {
-        // Escape--only display the next character, regardless of whether
-        // or not it is a matching ~/@.
-        i++;
       }
     }
     // Display character.
     pos++;
-    i++;
   }
   return i;
+}
+
+/**
+ * Helper function for handling `color_string` strings.
+ * Returns the final color code of a color string, same as the return value
+ * of `color_string_ext_special`, without actually displaying the string.
+ */
+uint8_t color_string_get_final_color(const char *string, size_t max_size,
+ uint8_t initial_color)
+{
+  int fg_color = initial_color & 0x0f;
+  int bg_color = initial_color >> 4;
+  size_t i;
+  for(i = 0; i < max_size; i++)
+  {
+    if(!string[i])
+      break;
+
+    if(string[i] == '~' || string[i] == '@')
+    {
+      // All ~/@ values either escape the next char or display a color code.
+      i++;
+      if(i >= max_size && !string[i])
+        break;
+
+      if(isxdigit((uint8_t)string[i]))
+      {
+        // Color code--no display chars.
+        int num = hexdigit(string[i]);
+        if(string[i - 1] == '~')
+          fg_color = num;
+        else
+          bg_color = num;
+
+        continue;
+      }
+    }
+    // Display character.
+  }
+  return (bg_color << 4) | fg_color;
 }
 
 // Note: 2.93 erroneously had sane color escaping behavior here.

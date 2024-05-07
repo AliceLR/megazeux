@@ -54,7 +54,13 @@ USERS
   that line (same as the help file).
 + Fixed possible robot stack and scroll message memory leaks.
 + Fixed a 2.93 regression where color strings with escapes like
- "~x", where x is not a hex digit, would also print the ~ or @.
+  "~x", where x is not a hex digit, would also print the ~ or @.
++ Fixed clipping of the board message when it contains color
+  codes and when the message column is set to something besides
+  centered or 0. The next row will also use the correct color
+  code from the previous row (as if there had been no clipping)
+  instead of whatever the last color code displayed was. The old
+  behavior is version locked to <2.93.
 
 DEVELOPERS
 
