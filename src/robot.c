@@ -2553,31 +2553,9 @@ static int robot_box_up(char *program, int pos, int count)
 
 static void clip_color_string(char *buf, size_t len, size_t pos)
 {
-  size_t idx = 0;
-
-  while(idx < len)
-  {
-    char current_char = buf[idx];
-    if(current_char == '\0')
-      break;
-
-    if((current_char == '~') || (current_char == '@'))
-    {
-      if(idx + 1 < len && isxdigit((uint8_t)buf[idx + 1]))
-      {
-        idx += 2;
-        continue;
-      }
-    }
-
-    if(pos == 0) // Clip here
-    {
-      buf[idx] = '\0';
-      return;
-    }
-    pos--;
-    idx++;
-  }
+  size_t idx = color_string_index_of(buf, len, pos, '\0');
+  buf[idx] = '\0';
+  return;
 }
 
 static void display_robot_line(struct world *mzx_world, char *program,
@@ -2647,7 +2625,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       int length, x_position;
       tr_msg(mzx_world, program + 3, id, ibuff);
       clip_color_string(ibuff, ROBOT_MAX_TR, 64); // Clip
-      length = strlencolor(ibuff);
+      length = color_string_length(ibuff, ROBOT_MAX_TR);
       x_position = 40 - (length / 2);
       assert(x_position >= 0);
       color_string_ext(ibuff, x_position, y, scroll_base_color, false, 0, 0);

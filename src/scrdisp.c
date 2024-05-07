@@ -38,41 +38,12 @@
 static const char scr_nm_strs[5][12] =
  { "  Scroll   ", "   Sign    ", "Edit Scroll", "   Help    ", "" };
 
-/**
- * Find the offset of the character at display position `offset` in a color
- * string. If the string displays as fewer than `offset` characters, returns
- * the offset of the terminator or nul instead (whichever is found first).
- * See also: clip_color_string in robot.c, which should probably use this.
- */
-static int color_string_offset(char *string, int offset, int terminator)
-{
-  int j = 0;
-  int i;
-  for(i = 0; i < offset; i++)
-  {
-    while(true)
-    {
-      if(!string[j] || string[j] == terminator)
-        return j;
-
-      if((string[j] == '~' || string[j] == '@') && isxdigit((int)string[j + 1]))
-      {
-        j += 2;
-        continue;
-      }
-      break;
-    }
-    // Display character.
-    j++;
-  }
-  return j;
-}
-
 static int scroll_clip_position(char *string, int pos, int offset, int draw_flags)
 {
   if(draw_flags & WR_COLOR)
   {
-    return pos + color_string_offset(string + pos, offset, '\n');
+    return pos + color_string_index_of(string + pos,
+     SCROLL_MAX_LINE_LEN - pos, offset, '\n');
   }
   else
   {
@@ -623,7 +594,7 @@ static void help_frame(struct world *mzx_world, char *help, int pos)
         case '$':
           // Centered. :)
           pos++;
-          t2 = strlencolor(help + pos);
+          t2 = color_string_length(help + pos, next_pos - pos);
           color_string(help + pos, 40 - (t2 >> 1), t1, scroll_base_color);
           break;
         case '>':
@@ -897,44 +868,3 @@ ex:
 }
 
 #endif // CONFIG_HELPSYS
-
-int strlencolor(char *str)
-{
-  int len = 0;
-  char cur_char = *str;
-
-  while(cur_char != 0)
-  {
-    switch(cur_char)
-    {
-      // Color character
-      case '@':
-      case '~':
-      {
-        str++;
-        cur_char = *str;
-
-        // If 0, stop right there
-        if(!cur_char)
-          return len;
-
-        // If the next isn't hex, count as one
-        if(!isxdigit((uint8_t)cur_char))
-        {
-          len++;
-        }
-        break;
-      }
-
-      default:
-      {
-        len++;
-      }
-    }
-
-    str++;
-    cur_char = *str;
-  }
-
-  return len;
-}

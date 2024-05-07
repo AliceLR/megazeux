@@ -52,7 +52,9 @@ USERS
   characters past the first 64 will clip.
 + Clicking a line in the scroll display and editor now jumps to
   that line (same as the help file).
-+ Fix possible robot stack and scroll message memory leaks.
++ Fixed possible robot stack and scroll message memory leaks.
++ Fixed a 2.93 regression where color strings with escapes like
+ "~x", where x is not a hex digit, would also print the ~ or @.
 
 DEVELOPERS
 

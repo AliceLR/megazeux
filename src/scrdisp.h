@@ -37,8 +37,6 @@ CORE_LIBSPEC void scroll_edit(struct world *mzx_world, struct scroll *scroll,
 void scroll_edging_ext(struct world *mzx_world, int type, boolean mask);
 void help_display(struct world *mzx_world, char *help, int offs,
  char *file, char *label);
-char print(char *str);
-int strlencolor(char *str);
 
 __M_END_DECLS
 
