@@ -52,6 +52,7 @@ USERS
   characters past the first 64 will clip.
 + Clicking a line in the scroll display and editor now jumps to
   that line (same as the help file).
++ Fix possible robot stack and scroll message memory leaks.
 
 DEVELOPERS
 
