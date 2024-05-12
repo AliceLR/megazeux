@@ -1,0 +1,3 @@
+Title: Entrance Text (1.x)
+Author: Alice Rowan
+Desc: A (hopefully) comprehensive test for entrances. Tests: 1) 'voluntary' entrances and MOVE PLAYER trigger on same cycle; 2) pushed onto entrance from non-entrance does NOT trigger; 3) pushed onto entrance from entrance does not trigger; 4) zap onto entrance does not trigger; 5) entrance color rules: (a) full color match; (b) thing match; that the last matching entrance of each category is used; 6) that entrances can exit to other entrances on the same board.

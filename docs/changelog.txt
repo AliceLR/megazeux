@@ -62,6 +62,14 @@ USERS
   instead of whatever the last color code displayed was. The old
   behavior is version locked to <2.93.
 + Fixed COPY when used with REL COUNTERS for 1.x worlds.
++ Added support for MegaZeux 1.x entrance precedence (color
+  match, then thing match only). This fixes an entrance bug in
+  MegaZeux Tutorial.
++ Added support for MegaZeux 1.x entrances linking to other
+  entrances on the same board. This fixes the whirlpools in the
+  Aqua Cavern board in Caverns of Zeux.
++ Added support for MegaZeux 1.x entrances not triggering when
+  the player is pushed onto them.
 
 DEVELOPERS
 
