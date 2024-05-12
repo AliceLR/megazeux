@@ -2007,16 +2007,16 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
 
   switch(mzx_world->first_prefix)
   {
-    case 1:
-    case 5:
+    case REL_TO_SELF:
+    case REL_TO_SELF_FIRST_OR_LAST:
     {
       tfx += robotx;
       tfy += roboty;
       break;
     }
 
-    case 2:
-    case 6:
+    case REL_TO_PLAYER:
+    case REL_TO_PLAYER_FIRST_OR_LAST:
     {
       find_player(mzx_world);
       tfx += mzx_world->player_x;
@@ -2024,14 +2024,14 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS_FIRST_OR_LAST:
     {
       tfx += get_counter(mzx_world, "FIRSTXPOS", 0);
       tfy += get_counter(mzx_world, "FIRSTYPOS", 0);
       break;
     }
 
-    case 7:
+    case REL_TO_XPOS_YPOS:
     {
       tfx += get_counter(mzx_world, "XPOS", 0);
       tfy += get_counter(mzx_world, "YPOS", 0);
@@ -2041,16 +2041,16 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
 
   switch(mzx_world->last_prefix)
   {
-    case 1:
-    case 5:
+    case REL_TO_SELF:
+    case REL_TO_SELF_FIRST_OR_LAST:
     {
       tlx += robotx;
       tly += roboty;
       break;
     }
 
-    case 2:
-    case 6:
+    case REL_TO_PLAYER:
+    case REL_TO_PLAYER_FIRST_OR_LAST:
     {
       find_player(mzx_world);
       tlx += mzx_world->player_x;
@@ -2058,14 +2058,14 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS_FIRST_OR_LAST:
     {
       tlx += get_counter(mzx_world, "LASTXPOS", 0);
       tly += get_counter(mzx_world, "LASTYPOS", 0);
       break;
     }
 
-    case 7:
+    case REL_TO_XPOS_YPOS:
     {
       tlx += get_counter(mzx_world, "XPOS", 0);
       tly += get_counter(mzx_world, "YPOS", 0);
@@ -2116,16 +2116,16 @@ void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
 
   switch(mzx_world->first_prefix)
   {
-    case 1:
-    case 5:
+    case REL_TO_SELF:
+    case REL_TO_SELF_FIRST_OR_LAST:
     {
       tfx += robotx;
       tfy += roboty;
       break;
     }
 
-    case 2:
-    case 6:
+    case REL_TO_PLAYER:
+    case REL_TO_PLAYER_FIRST_OR_LAST:
     {
       find_player(mzx_world);
       tfx += mzx_world->player_x;
@@ -2133,14 +2133,14 @@ void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS_FIRST_OR_LAST:
     {
       tfx += get_counter(mzx_world, "FIRSTXPOS", 0);
       tfy += get_counter(mzx_world, "FIRSTYPOS", 0);
       break;
     }
 
-    case 7:
+    case REL_TO_XPOS_YPOS:
     {
       tfx += get_counter(mzx_world, "XPOS", 0);
       tfy += get_counter(mzx_world, "YPOS", 0);
@@ -2172,16 +2172,16 @@ void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
 
   switch(mzx_world->last_prefix)
   {
-    case 1:
-    case 5:
+    case REL_TO_SELF:
+    case REL_TO_SELF_FIRST_OR_LAST:
     {
       tlx += robotx;
       tly += roboty;
       break;
     }
 
-    case 2:
-    case 6:
+    case REL_TO_PLAYER:
+    case REL_TO_PLAYER_FIRST_OR_LAST:
     {
       find_player(mzx_world);
       tlx += mzx_world->player_x;
@@ -2189,14 +2189,14 @@ void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS_FIRST_OR_LAST:
     {
       tlx += get_counter(mzx_world, "LASTXPOS", 0);
       tly += get_counter(mzx_world, "LASTYPOS", 0);
       break;
     }
 
-    case 7:
+    case REL_TO_XPOS_YPOS:
     {
       tlx += get_counter(mzx_world, "XPOS", 0);
       tly += get_counter(mzx_world, "YPOS", 0);
@@ -2226,16 +2226,16 @@ void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
   int tmx = *mx;
   int tmy = *my;
 
-  switch(mzx_world->first_prefix)
+  switch(mzx_world->mid_prefix)
   {
-    case 1:
+    case REL_TO_SELF:
     {
       tmx += robotx;
       tmy += roboty;
       break;
     }
 
-    case 2:
+    case REL_TO_PLAYER:
     {
       find_player(mzx_world);
       tmx += mzx_world->player_x;
@@ -2243,7 +2243,7 @@ void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS:
     {
       tmx += get_counter(mzx_world, "XPOS", 0);
       tmy += get_counter(mzx_world, "YPOS", 0);
@@ -2275,14 +2275,14 @@ void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int
 
   switch(mzx_world->mid_prefix)
   {
-    case 1:
+    case REL_TO_SELF:
     {
       tmx += x;
       tmy += y;
       break;
     }
 
-    case 2:
+    case REL_TO_PLAYER:
     {
       find_player(mzx_world);
       tmx += mzx_world->player_x;
@@ -2290,7 +2290,7 @@ void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS:
     {
       tmx += get_counter(mzx_world, "XPOS", 0);
       tmy += get_counter(mzx_world, "YPOS", 0);

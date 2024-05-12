@@ -304,7 +304,7 @@ static int thisx_read(struct world *mzx_world,
   int thisx, thisy;
   get_robot_position(cur_robot, &thisx, &thisy);
 
-  if(mzx_world->mid_prefix == 2)
+  if(mzx_world->mid_prefix == REL_TO_PLAYER)
     return thisx - mzx_world->player_x;
 
   return thisx;
@@ -317,7 +317,7 @@ static int thisy_read(struct world *mzx_world,
   int thisx, thisy;
   get_robot_position(cur_robot, &thisx, &thisy);
 
-  if(mzx_world->mid_prefix == 2)
+  if(mzx_world->mid_prefix == REL_TO_PLAYER)
     return thisy - mzx_world->player_y;
 
   return thisy;
