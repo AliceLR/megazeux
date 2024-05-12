@@ -60,6 +60,17 @@ enum builtin_label
   LABEL_PLAYERDIED
 };
 
+enum rel_prefix
+{
+  REL_NONE = 0,
+  REL_TO_SELF = 1,
+  REL_TO_PLAYER = 2,
+  REL_TO_XPOS_YPOS = 3,
+  REL_TO_SELF_FIRST_OR_LAST = 5,
+  REL_TO_PLAYER_FIRST_OR_LAST = 6,
+  REL_TO_XPOS_YPOS_FIRST_OR_LAST = 7,
+};
+
 #ifdef CONFIG_DEBYTECODE
 
 CORE_LIBSPEC void change_robot_name(struct board *src_board,

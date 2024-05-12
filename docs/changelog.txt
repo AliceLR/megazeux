@@ -61,6 +61,7 @@ USERS
   code from the previous row (as if there had been no clipping)
   instead of whatever the last color code displayed was. The old
   behavior is version locked to <2.93.
++ Fixed COPY when used with REL COUNTERS for 1.x worlds.
 
 DEVELOPERS
 

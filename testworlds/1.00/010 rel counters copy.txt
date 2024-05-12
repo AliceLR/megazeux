@@ -1,0 +1,3 @@
+Title: REL COUNTERS COPY Test
+Author: Alice Rowan
+Desc: REL COUNTERS on COPY behaves sanely in 1.x: it applies XPOS and YPOS to both sets of coordinates. If only someone had checked what 1.x did when adding the 2.00 behavior!
