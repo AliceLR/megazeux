@@ -43,7 +43,7 @@ static int scroll_clip_position(char *string, int pos, int offset, int draw_flag
   if(draw_flags & WR_COLOR)
   {
     return pos + color_string_index_of(string + pos,
-     SCROLL_MAX_LINE_LEN - pos, offset, '\n');
+     SCROLL_MAX_LINE_LEN, offset, '\n');
   }
   else
   {
