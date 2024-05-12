@@ -725,9 +725,9 @@ void update_world(context *ctx, boolean is_title)
     update_board(ctx);
 
     if(player_on_entrance(mzx_world) && !mzx_world->player_was_on_entrance &&
-     !mzx_world->was_zapped)
+     !mzx_world->was_zapped && mzx_world->version >= V200)
     {
-      // Pushed onto an entrance
+      // Pushed onto an entrance (2.00+)
       // There's often a pushed sound in this case, so clear the current SFX
       sfx_clear_queue();
       entrance(mzx_world, mzx_world->player_x, mzx_world->player_y);
@@ -957,6 +957,17 @@ boolean draw_world(context *ctx, boolean is_title)
   return true;
 }
 
+// In order of precedence, from highest to least. 1.x lacks some match types.
+enum target_match
+{
+  MATCH_COLOR_AND_THING,
+  MATCH_COLOR,
+  MATCH_FG_AND_THING,
+  MATCH_FG,
+  MATCH_THING,
+  NUM_TARGET_MATCHES
+};
+
 /**
  * If an entrance or the TELEPORT command was used, this state
  * needs to be resolved at the start of cycle execution. After a
@@ -1036,8 +1047,8 @@ boolean update_resolve_target(struct world *mzx_world,
     // Find target x/y
     if(mzx_world->target_where == TARGET_ENTRANCE)
     {
-      int tmp_x[5];
-      int tmp_y[5];
+      int tmp_x[NUM_TARGET_MATCHES];
+      int tmp_y[NUM_TARGET_MATCHES];
       int x, y, offset;
       enum thing d_id;
       enum thing target_id = mzx_world->target_id;
@@ -1057,7 +1068,7 @@ boolean update_resolve_target(struct world *mzx_world,
       // 5) Same type
       // Search for first of all 5 at once
 
-      for(i = 0; i < 5; i++)
+      for(i = 0; i < NUM_TARGET_MATCHES; i++)
       {
         // None found
         tmp_x[i] = -1;
@@ -1089,26 +1100,23 @@ boolean update_resolve_target(struct world *mzx_world,
             // Color match?
             if(level_color[offset] == target_color)
             {
-              // Yep
-              tmp_x[0] = x;
-              tmp_y[0] = y;
+              tmp_x[MATCH_COLOR_AND_THING] = x;
+              tmp_y[MATCH_COLOR_AND_THING] = y;
+              // 1.x doesn't support color+thing match, so set this too.
+              tmp_x[MATCH_COLOR] = x;
+              tmp_y[MATCH_COLOR] = y;
             }
             else
 
             // Fg?
-            if((level_color[offset] & 0x0F) ==
-             (target_color & 0x0F))
+            if((level_color[offset] & 0x0F) == (target_color & 0x0F))
             {
-              // Yep
-              tmp_x[2] = x;
-              tmp_y[2] = y;
+              tmp_x[MATCH_FG_AND_THING] = x;
+              tmp_y[MATCH_FG_AND_THING] = y;
             }
-            else
-            {
-              // Just same type
-              tmp_x[4] = x;
-              tmp_y[4] = y;
-            }
+
+            tmp_x[MATCH_THING] = x;
+            tmp_y[MATCH_THING] = y;
           }
           else
 
@@ -1118,32 +1126,48 @@ boolean update_resolve_target(struct world *mzx_world,
             // Color match?
             if(level_color[offset] == target_color)
             {
-              // Yep
-              tmp_x[1] = x;
-              tmp_y[1] = y;
+              tmp_x[MATCH_COLOR] = x;
+              tmp_y[MATCH_COLOR] = y;
             }
-            // Fg?
             else
 
+            // Fg?
             if((level_color[offset] & 0x0F) == (target_color & 0x0F))
             {
-              // Yep
-              tmp_x[3] = x;
-              tmp_y[3] = y;
+              tmp_x[MATCH_FG] = x;
+              tmp_y[MATCH_FG] = y;
             }
           }
-          // Done with this x/y
         }
       }
 
       // We've got it... maybe.
-      for(i = 0; i < 5; i++)
+      if(mzx_world->version >= V200)
       {
-        if(tmp_x[i] >= 0)
-          break;
+        for(i = 0; i < NUM_TARGET_MATCHES; i++)
+        {
+          if(tmp_x[i] >= 0)
+            break;
+        }
+      }
+      else
+      {
+        // MegaZeux 1.x only checks for exact color and exact thing matches.
+        if(tmp_x[MATCH_COLOR] >= 0)
+        {
+          i = MATCH_COLOR;
+        }
+        else
+
+        if(tmp_x[MATCH_THING] >= 0)
+        {
+          i = MATCH_THING;
+        }
+        else
+          i = NUM_TARGET_MATCHES;
       }
 
-      if(i < 5)
+      if(i < NUM_TARGET_MATCHES)
       {
         mzx_world->player_x = tmp_x[i];
         mzx_world->player_y = tmp_y[i];
