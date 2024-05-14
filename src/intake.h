@@ -53,7 +53,8 @@ CORE_LIBSPEC boolean intake_get_insert(void);
 CORE_LIBSPEC void intake_set_insert(boolean new_insert_state);
 
 CORE_LIBSPEC int intake(struct world *mzx_world, char *string, int max_len, int display_len,
- int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos);
+ int x, int y, char color, enum intake_exit_type exit_type, boolean mask_colors,
+ int *return_x_pos);
 
 CORE_LIBSPEC subcontext *intake2(context *parent, char *dest, int max_length,
  int *pos_external, int *length_external);

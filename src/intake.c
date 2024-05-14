@@ -85,9 +85,11 @@ static inline void intake_old_place_char(char *string, int *currx,
 // Returns a delete if attempted at end of line. (exit_type==INTK_EXIT_ANY)
 
 int intake(struct world *mzx_world, char *string, int max_len, int display_len,
- int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos)
+ int x, int y, char color, enum intake_exit_type exit_type, boolean mask_colors,
+ int *return_x_pos)
 {
-  int use_mask = get_config()->mask_midchars;
+  int use_mask = get_config()->mask_midchars && mask_colors;
+  int c_offset = mask_colors ? 16 : 0;
   int currx, curr_len;
   int scrolledx, tmpx;
   int done = 0, place = 0;
@@ -121,11 +123,11 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
 
     cur_char = string[tmpx];
     string[tmpx] = '\0';
-    write_string_ext(string + scrolledx, x, y, color, flags, 0, 16);
+    write_string_ext(string + scrolledx, x, y, color, flags, 0, c_offset);
     string[tmpx] = cur_char;
 
     if(curr_len < display_len)
-      fill_line(display_len + 1 - curr_len, x + curr_len, y, 32, color);
+      fill_line_ext(display_len + 1 - curr_len, x + curr_len, y, 32, color, 0, c_offset);
 
     if(insert_on)
       cursor_underline(x + currx - scrolledx, y);
@@ -432,6 +434,20 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
       case IKEY_t:
       {
         // Hack for SFX editor dialog
+        if(get_alt_status(keycode_internal))
+        {
+          done = 1;
+        }
+        else
+        {
+          place = 1;
+        }
+        break;
+      }
+
+      case IKEY_v:
+      {
+        // Hack for scroll editor
         if(get_alt_status(keycode_internal))
         {
           done = 1;
