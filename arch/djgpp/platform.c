@@ -34,6 +34,12 @@
 #include "../../src/platform.h"
 #include "platform_djgpp.h"
 
+/* TODO: Most of the audio callback code can't currently be locked or moved
+ * outside of the callback, which causes CWSDMPI to crash during paging.
+ * Disable paging altogether for now.
+ */
+int _crt0_startup_flags = _CRT0_FLAG_LOCK_MEMORY;
+
 static int djgpp_nearptr_cnt = 0;
 
 boolean djgpp_push_enable_nearptr(void)
