@@ -86,11 +86,14 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
 
   select_layer(UI_LAYER);
 
-  // Clear the UI over the frame area in case the frame is masked (editor)
-  // but the contents aren't.
-  erase_area(8, 6, 71, 18);
-  select_layer(GAME_UI_LAYER);
-  c_offset = 0;
+  if(!mask_colors)
+  {
+    // Clear the UI over the frame area in case the frame is masked (editor)
+    // but the contents aren't.
+    erase_area(8, 6, 71, 18);
+    select_layer(GAME_UI_LAYER);
+    c_offset = 0;
+  }
 
   // Display center line
   tmp_pos = scroll_clip_position(where, pos, 64, flags);
@@ -168,22 +171,36 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
   boolean editing = (type == 2);
   // If the user wants to mask chars and we're in the editor..
   boolean mask_chars = get_config()->mask_midchars && editing;
+  boolean mask_colors = editing;
+  boolean update_border = true;
 
   m_show();
   save_screen();
   dialog_fadein();
 
-  // Mask edging chars/colors in the scroll editor, but display natural
-  // chars/colors during gameplay.
-  scroll_edging_ext(mzx_world, type, editing);
-
   where = scroll->mesg;
+
+  if(!editing && mzx_world->version >= VERSION_PORT && mzx_world->version < V291)
+  {
+    // MegaZeux 2.80h through 2.91f expect the protected palette to be used
+    // for scrolls. Furthermore, 2.90 through 2.91f had broken scroll borders
+    // that mixed colors. The versions picked for this behavior are a little
+    // arbitrary because there are no good version cutoffs for supporting this.
+    mask_colors = true;
+  }
 
   do
   {
+    if(update_border)
+    {
+      // Mask edging chars/colors in the scroll editor, but display natural
+      // chars/colors during gameplay.
+      scroll_edging_ext(mzx_world, type, mask_colors);
+      update_border = false;
+    }
     // Display scroll. If editing, the colors of the frame need to be masked.
     // Otherwise, they should display using game colors.
-    scroll_frame(mzx_world, scroll, pos, mask_chars, editing);
+    scroll_frame(mzx_world, scroll, pos, mask_chars, mask_colors);
     cursor_hint(8, 12);
     update_screen();
 
@@ -206,7 +223,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
 
       // Edit line
       key = intake(mzx_world, line_buffer, sizeof(line_buffer), 64, 8, 12,
-       scroll_base_color, INTK_EXIT_ANY, &currx);
+       scroll_base_color, INTK_EXIT_ANY, mask_colors, &currx);
 
       // Modify scroll to hold new line (give errors here)
       edit_len = strlen(line_buffer);
@@ -430,6 +447,18 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
         goto pgdn;
       }
 
+      case IKEY_v:
+      {
+        if(editing && get_alt_status(keycode_internal))
+        {
+          // Game/edit view (toggle masking).
+          mask_colors = !mask_colors;
+          mask_chars = !mask_chars && get_config()->mask_midchars;
+          update_border = true;
+        }
+        break;
+      }
+
       default:
       case IKEY_ESCAPE:
       case 0:
@@ -511,8 +540,11 @@ void scroll_edging_ext(struct world *mzx_world, int type, boolean mask)
   if(type == 2)
   {
     write_string_ext("\x12\x1d: Move cursor   Alt+C: Character "
-     "  Esc: Done editing", 13, 20, scroll_corner_color, WR_NONE,
+     "  Alt+V:XXXX view   Esc: Exit", 8, 20, scroll_corner_color, WR_NONE,
      offset, c_offset);
+
+    write_string_ext(mask ? "Game" : "Edit", 51, 20, scroll_corner_color,
+     WR_NONE, offset, c_offset);
   }
   else
 

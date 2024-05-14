@@ -238,6 +238,8 @@ CORE_LIBSPEC void color_line(unsigned int length, unsigned int x,
  unsigned int y, uint8_t color);
 CORE_LIBSPEC void fill_line(unsigned int length, unsigned int x, unsigned int y,
  uint8_t chr, uint8_t color);
+CORE_LIBSPEC void fill_line_ext(unsigned int length, unsigned int x, unsigned int y,
+ uint8_t chr, uint8_t color, unsigned int chr_offset, unsigned int color_offset);
 CORE_LIBSPEC void draw_char(uint8_t chr, uint8_t color, unsigned int x, unsigned int y);
 CORE_LIBSPEC void erase_char(unsigned int x, unsigned int y);
 CORE_LIBSPEC void erase_area(unsigned int x, unsigned int y,
@@ -323,8 +325,6 @@ void color_string_ext(const char *string, unsigned int x, unsigned int y,
  uint8_t color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset);
 void color_string_ext_special(const char *string, unsigned int x, unsigned int y,
  uint8_t *color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset);
-void fill_line_ext(unsigned int length, unsigned int x, unsigned int y,
- uint8_t chr, uint8_t color, unsigned int chr_offset, unsigned int color_offset);
 
 size_t color_string_length(const char *string, size_t max_size);
 size_t color_string_index_of(const char *string, size_t max_size, size_t offset,
