@@ -75,6 +75,8 @@ USERS
   Aqua Cavern board in Caverns of Zeux.
 + Added support for MegaZeux 1.x entrances not triggering when
   the player is pushed onto them.
++ The DJGPP port now locks all of its memory. This prevents
+  paging crashes related to audio, but increases memory usage.
 
 DEVELOPERS
 
