@@ -36,6 +36,14 @@
 
 #define BUFFER_BLOCKS 2
 
+#define SB_PORT_DMA8_ACK          0xe
+#define SB_PORT_DMA16_ACK         0xf
+
+#define SB16_DSP_AUTOINIT_16_BIT  0xB6
+#define SB16_DSP_AUTOINIT_8_BIT   0xC6
+#define SB16_FORMAT_SIGNED        0x10
+#define SB16_FORMAT_STEREO        0x20
+
 struct sb_config
 {
   // from environment variable, config, ...
@@ -51,6 +59,8 @@ struct sb_config
   unsigned buffer_format;
   unsigned buffer_frames;
   unsigned buffer_size;
+  unsigned active_dma;
+  unsigned active_dma_ack;
   // driver-specific:
   // - to restore on deinit
   uint8_t old_21h;
@@ -61,6 +71,18 @@ struct sb_config
 };
 
 static struct sb_config sb_cfg;
+
+static void audio_sb_clear_buffer(void)
+{
+  int zero = (sb_cfg.buffer_format == SAMPLE_U8) ? 0x80 : 0;
+  memset(sb_cfg.buffer, zero, sb_cfg.buffer_size * BUFFER_BLOCKS);
+
+  if(!sb_cfg.nearptr_buffer_enabled)
+  {
+    dosmemput(sb_cfg.buffer, sb_cfg.buffer_size * BUFFER_BLOCKS,
+     sb_cfg.buffer_segment << 4);
+  }
+}
 
 static void audio_sb_fill_block(void)
 {
@@ -85,7 +107,7 @@ static void audio_sb_next_block(void)
 static void audio_sb_interrupt(void)
 {
   audio_sb_next_block();
-  inportb(sb_cfg.port + 0xF); // ack (sb)
+  inportb(sb_cfg.port + sb_cfg.active_dma_ack); // ack (sb)
   outportb(0x20, 0x20); // ack (pic)
 }
 
@@ -180,18 +202,26 @@ void init_audio_platform(struct config_info *conf)
   {
     unsigned frames = conf->audio_buffer_samples;
     unsigned rate = conf->audio_sample_rate;
-    if(frames > 4096) // TODO: seems arbitrary, the maximum should be 8192?
+    unsigned sb16_format = 0;
+    boolean is_16_bit = false;
+
+    if(frames > 4096) // TODO: seems arbitrary
       frames = 4096;
 
     rate = CLAMP(rate, 5000, 44100);
 
     if(sb_cfg.version_major >= 4) // SB16
     {
-      audio_sb_dsp_write(0x41); // set sampling rate
-      audio_sb_dsp_write(rate >> 8);
-      audio_sb_dsp_write(rate & 0xFF);
+      // TODO: configurable
       sb_cfg.buffer_format = SAMPLE_S16;
       sb_cfg.buffer_channels = 2;
+
+      if(sb_cfg.buffer_format == SAMPLE_S16)
+        is_16_bit = true;
+      if(sb_cfg.buffer_format != SAMPLE_U8)
+        sb16_format |= SB16_FORMAT_SIGNED;
+      if(sb_cfg.buffer_channels == 2)
+        sb16_format |= SB16_FORMAT_STEREO;
     }
     else // pre-SB16
     {
@@ -214,7 +244,8 @@ void init_audio_platform(struct config_info *conf)
       return;
     }
     sb_cfg.buffer_frames = audio.buffer_frames;
-    sb_cfg.buffer_size = sb_cfg.buffer_frames * sizeof(int16_t) * sb_cfg.buffer_channels;
+    sb_cfg.buffer_size = sb_cfg.buffer_frames * sb_cfg.buffer_channels *
+     (is_16_bit ? sizeof(int16_t) : sizeof(uint8_t));
 
     // allocate memory, without crossing 64K boundary, and clean it
     sb_cfg.buffer_segment = djgpp_malloc_boundary(sb_cfg.buffer_size * BUFFER_BLOCKS,
@@ -230,18 +261,22 @@ void init_audio_platform(struct config_info *conf)
       }
       else
       {
-        sb_cfg.buffer = (uint8_t *)(sb_cfg.nearptr_buffer_mapping.address + __djgpp_conventional_base);
-        memset(sb_cfg.buffer, 0, sb_cfg.buffer_size * BUFFER_BLOCKS);
+        sb_cfg.buffer = (uint8_t *)(sb_cfg.nearptr_buffer_mapping.address +
+         __djgpp_conventional_base);
       }
     }
 
     if(!sb_cfg.nearptr_buffer_enabled)
     {
-      sb_cfg.buffer = malloc(sb_cfg.buffer_size * BUFFER_BLOCKS);
-      memset(sb_cfg.buffer, 0, sb_cfg.buffer_size * BUFFER_BLOCKS);
-      dosmemput(sb_cfg.buffer, sb_cfg.buffer_size * BUFFER_BLOCKS,
-       sb_cfg.buffer_segment << 4);
+      sb_cfg.buffer = (uint8_t *)cmalloc(sb_cfg.buffer_size * BUFFER_BLOCKS);
+      if(!sb_cfg.buffer)
+      {
+        sb_cfg.port = 0;
+        return;
+      }
     }
+
+    audio_sb_clear_buffer();
 
     // lock C irq handler
     // (TODO: rewrite handler in ASM?)
@@ -258,16 +293,33 @@ void init_audio_platform(struct config_info *conf)
     sb_cfg.old_21h = inportb(0x21);
     outportb(0x21, sb_cfg.old_21h & (~(1 << sb_cfg.irq)));
 
-    djgpp_enable_dma(sb_cfg.dma16, 0x58, sb_cfg.buffer_segment << 4,
-     sb_cfg.buffer_size * BUFFER_BLOCKS);
+    // configure dma
+    if(is_16_bit)
+    {
+      sb_cfg.active_dma = sb_cfg.dma16;
+      sb_cfg.active_dma_ack = SB_PORT_DMA16_ACK;
+    }
+    else
+    {
+      sb_cfg.active_dma = sb_cfg.dma8;
+      sb_cfg.active_dma_ack = SB_PORT_DMA8_ACK;
+    }
+
+    djgpp_enable_dma(sb_cfg.active_dma, DMA_WRITE | DMA_AUTOINIT,
+     sb_cfg.buffer_segment << 4, sb_cfg.buffer_size * BUFFER_BLOCKS);
 
     // configure dsp
     if(sb_cfg.version_major >= 4)
     {
       audio_sb_dsp_write(0xD1); // turn on speaker
 
-      audio_sb_dsp_write(0xB6); // configure transfer (16-bit, auto-init)
-      audio_sb_dsp_write(0x30); // stereo, signed
+      audio_sb_dsp_write(0x41); // set sampling rate
+      audio_sb_dsp_write(rate >> 8);
+      audio_sb_dsp_write(rate & 0xFF);
+
+      // configure transfer
+      audio_sb_dsp_write(is_16_bit ? SB16_DSP_AUTOINIT_16_BIT : SB16_DSP_AUTOINIT_8_BIT);
+      audio_sb_dsp_write(sb16_format); // mono/stereo, signed/unsigned
       audio_sb_dsp_write(((sb_cfg.buffer_frames << 1) - 1) & 0xFF);
       audio_sb_dsp_write(((sb_cfg.buffer_frames << 1) - 1) >> 8);
     }
@@ -287,7 +339,7 @@ void quit_audio_platform(void)
     // undo vector change
     _go32_dpmi_set_protected_mode_interrupt_vector(8 + sb_cfg.irq, &sb_cfg.old_irq_handler);
 
-    djgpp_disable_dma(sb_cfg.dma16);
+    djgpp_disable_dma(sb_cfg.active_dma);
 
     if(sb_cfg.nearptr_buffer_enabled)
     {

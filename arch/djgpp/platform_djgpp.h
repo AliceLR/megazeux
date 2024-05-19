@@ -21,6 +21,14 @@
 #ifndef __PLATFORM_DJGPP_H
 #define __PLATFORM_DJGPP_H
 
+#include "../../src/compat.h"
+
+__M_BEGIN_DECLS
+
+#define DMA_AUTOINIT  0x10
+#define DMA_READ      0x44
+#define DMA_WRITE     0x48
+
 enum
 {
   DISPLAY_ADAPTER_UNSUPPORTED,
@@ -87,5 +95,7 @@ boolean djgpp_push_enable_nearptr(void);
 boolean djgpp_pop_enable_nearptr(void);
 void djgpp_enable_dma(uint8_t port, uint8_t mode, int offset, int bytes);
 void djgpp_disable_dma(uint8_t port);
+
+__M_END_DECLS
 
 #endif // __PLATFORM_DJGPP_H
