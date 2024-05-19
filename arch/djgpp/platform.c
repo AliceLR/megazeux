@@ -21,6 +21,7 @@
 
 #define delay delay_dos
 #include <errno.h>
+#include <stdlib.h>
 #include <pc.h>
 #include <dos.h>
 #include <dpmi.h>
@@ -256,6 +257,14 @@ static void set_timer(uint32_t count)
   outportb(0x40, count >> 8);
 }
 
+static void fix_timezone(void)
+{
+  // DJGPP, unlike normal SDKs, will return -1 for time functions
+  // unless TZ is initialized. Use UTC as a default.
+  if(!getenv("TZ"))
+    setenv("TZ", "UTC", 1);
+}
+
 boolean platform_init(void)
 {
   __dpmi_meminfo region;
@@ -305,6 +314,7 @@ boolean platform_init(void)
   enable();
 
   __dpmi_get_protected_mode_interrupt_vector(0x09, &kbd_old_handler);
+  fix_timezone();
   return true;
 }
 
