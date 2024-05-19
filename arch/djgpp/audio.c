@@ -34,6 +34,8 @@
 
 #ifdef CONFIG_AUDIO
 
+#define BUFFER_BLOCKS 2
+
 struct sb_config
 {
   // from environment variable, config, ...
@@ -44,7 +46,11 @@ struct sb_config
   // from allocation
   int buffer_selector, buffer_segment;
   uint8_t *buffer;
-  uint8_t buffer_block;
+  unsigned buffer_block;
+  unsigned buffer_channels;
+  unsigned buffer_format;
+  unsigned buffer_frames;
+  unsigned buffer_size;
   // driver-specific:
   // - to restore on deinit
   uint8_t old_21h;
@@ -58,18 +64,22 @@ static struct sb_config sb_cfg;
 
 static void audio_sb_fill_block(void)
 {
-  int block_size_bytes = audio.buffer_samples << 2;
-  int offset = (sb_cfg.buffer_block != 0) ? block_size_bytes : 0;
+  size_t offset = sb_cfg.buffer_block * sb_cfg.buffer_size;
 
-  audio_callback((int16_t *)(sb_cfg.buffer + offset), block_size_bytes);
+  audio_mixer_render_frames(sb_cfg.buffer + offset,
+   sb_cfg.buffer_frames, sb_cfg.buffer_channels, sb_cfg.buffer_format);
+
   if(!sb_cfg.nearptr_buffer_enabled)
-    dosmemput(sb_cfg.buffer + offset, block_size_bytes, (sb_cfg.buffer_segment << 4) + offset);
+  {
+    dosmemput(sb_cfg.buffer + offset, sb_cfg.buffer_size,
+     (sb_cfg.buffer_segment << 4) + offset);
+  }
 }
 
 static void audio_sb_next_block(void)
 {
   audio_sb_fill_block();
-  sb_cfg.buffer_block ^= 1;
+  sb_cfg.buffer_block = (sb_cfg.buffer_block + 1) % BUFFER_BLOCKS;
 }
 
 static void audio_sb_interrupt(void)
@@ -140,7 +150,7 @@ static boolean audio_sb_dsp_detect(void)
 void init_audio_platform(struct config_info *conf)
 {
   _go32_dpmi_seginfo new_irq_handler;
-  int buffer_size_bytes;
+
   // Try to find a Sound Blaster
   char *sb_env = getenv("BLASTER");
   if(sb_env != NULL)
@@ -168,43 +178,51 @@ void init_audio_platform(struct config_info *conf)
 
   if(sb_cfg.port != 0)
   {
-    // configure sample rate
-    audio.output_frequency = CLAMP(audio.output_frequency, 5000, 44100);
+    unsigned frames = conf->audio_buffer_samples;
+    unsigned rate = conf->audio_sample_rate;
+    if(frames > 4096) // TODO: seems arbitrary, the maximum should be 8192?
+      frames = 4096;
+
+    rate = CLAMP(rate, 5000, 44100);
 
     if(sb_cfg.version_major >= 4) // SB16
     {
       audio_sb_dsp_write(0x41); // set sampling rate
-      audio_sb_dsp_write(audio.output_frequency >> 8);
-      audio_sb_dsp_write(audio.output_frequency & 0xFF);
+      audio_sb_dsp_write(rate >> 8);
+      audio_sb_dsp_write(rate & 0xFF);
+      sb_cfg.buffer_format = SAMPLE_S16;
+      sb_cfg.buffer_channels = 2;
     }
-    /* else // pre-SB16
+    else // pre-SB16
     {
-      uint8_t time_constant = 256 - (500000 / audio.output_frequency);
-      audio.output_frequency = 500000 / (256 - time_constant);
+      uint8_t time_constant = 256 - (500000 / rate);
+      rate = 500000 / (256 - time_constant);
       audio_sb_dsp_write(0x40); // set time constant
       audio_sb_dsp_write(time_constant);
-    } */
+      sb_cfg.buffer_format = SAMPLE_U8;
+      sb_cfg.buffer_channels = 1;
+      // Sound Blaster Pro and up support stereo.
+      if(sb_cfg.version_major >= 3)
+        sb_cfg.buffer_channels = 2;
+    }
 
-    // buffer_samples * 2 (stereo) * 2 (16-bit) * 2 (doubled)
-    // each sample is 4 bytes
-    if(audio.buffer_samples > 4096)
-      audio.buffer_samples = 4096;
-    else
-
-    if(audio.buffer_samples <= 0)
-      audio.buffer_samples = 2048;
-
-    buffer_size_bytes = audio.buffer_samples << 3;
     sb_cfg.nearptr_buffer_enabled = djgpp_push_enable_nearptr();
 
-    audio.mix_buffer = malloc(audio.buffer_samples << 3);
+    if(!audio_mixer_init(rate, frames, sb_cfg.buffer_channels))
+    {
+      sb_cfg.port = 0;
+      return;
+    }
+    sb_cfg.buffer_frames = audio.buffer_frames;
+    sb_cfg.buffer_size = sb_cfg.buffer_frames * sizeof(int16_t) * sb_cfg.buffer_channels;
 
     // allocate memory, without crossing 64K boundary, and clean it
-    sb_cfg.buffer_segment = djgpp_malloc_boundary(buffer_size_bytes, 65536, &sb_cfg.buffer_selector);
+    sb_cfg.buffer_segment = djgpp_malloc_boundary(sb_cfg.buffer_size * BUFFER_BLOCKS,
+     65536, &sb_cfg.buffer_selector);
     if(sb_cfg.nearptr_buffer_enabled)
     {
       sb_cfg.nearptr_buffer_mapping.address = sb_cfg.buffer_segment << 4;
-      sb_cfg.nearptr_buffer_mapping.size = buffer_size_bytes;
+      sb_cfg.nearptr_buffer_mapping.size = sb_cfg.buffer_size;
       if(__dpmi_physical_address_mapping(&sb_cfg.nearptr_buffer_mapping) != 0)
       {
         sb_cfg.nearptr_buffer_enabled = false;
@@ -213,15 +231,16 @@ void init_audio_platform(struct config_info *conf)
       else
       {
         sb_cfg.buffer = (uint8_t *)(sb_cfg.nearptr_buffer_mapping.address + __djgpp_conventional_base);
-        memset(sb_cfg.buffer, 0, buffer_size_bytes);
+        memset(sb_cfg.buffer, 0, sb_cfg.buffer_size * BUFFER_BLOCKS);
       }
     }
 
     if(!sb_cfg.nearptr_buffer_enabled)
     {
-      sb_cfg.buffer = malloc(buffer_size_bytes);
-      memset(sb_cfg.buffer, 0, buffer_size_bytes);
-      dosmemput(sb_cfg.buffer, buffer_size_bytes, sb_cfg.buffer_segment << 4);
+      sb_cfg.buffer = malloc(sb_cfg.buffer_size * BUFFER_BLOCKS);
+      memset(sb_cfg.buffer, 0, sb_cfg.buffer_size * BUFFER_BLOCKS);
+      dosmemput(sb_cfg.buffer, sb_cfg.buffer_size * BUFFER_BLOCKS,
+       sb_cfg.buffer_segment << 4);
     }
 
     // lock C irq handler
@@ -239,7 +258,8 @@ void init_audio_platform(struct config_info *conf)
     sb_cfg.old_21h = inportb(0x21);
     outportb(0x21, sb_cfg.old_21h & (~(1 << sb_cfg.irq)));
 
-    djgpp_enable_dma(sb_cfg.dma16, 0x58, sb_cfg.buffer_segment << 4, buffer_size_bytes);
+    djgpp_enable_dma(sb_cfg.dma16, 0x58, sb_cfg.buffer_segment << 4,
+     sb_cfg.buffer_size * BUFFER_BLOCKS);
 
     // configure dsp
     if(sb_cfg.version_major >= 4)
@@ -248,8 +268,8 @@ void init_audio_platform(struct config_info *conf)
 
       audio_sb_dsp_write(0xB6); // configure transfer (16-bit, auto-init)
       audio_sb_dsp_write(0x30); // stereo, signed
-      audio_sb_dsp_write(((audio.buffer_samples << 1) - 1) & 0xFF);
-      audio_sb_dsp_write(((audio.buffer_samples << 1) - 1) >> 8);
+      audio_sb_dsp_write(((sb_cfg.buffer_frames << 1) - 1) & 0xFF);
+      audio_sb_dsp_write(((sb_cfg.buffer_frames << 1) - 1) >> 8);
     }
   }
 }

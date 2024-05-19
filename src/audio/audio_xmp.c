@@ -221,7 +221,7 @@ static boolean audio_xmp_get_sample(struct audio_stream *a_src, unsigned int whi
       // MZX supports all of these, so just copy the sample directly.
       if(sam->flg & XMP_SAMPLE_16BIT)
       {
-        dest->format = SAMPLE_S16SYS;
+        dest->format = SAMPLE_S16;
         dest->data_length *= 2;
       }
       else

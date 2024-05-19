@@ -129,7 +129,7 @@ static uint32_t wav_read_data(struct wav_stream *w_stream,
         new_offset = w_stream->loop_start;
       }
 
-      if(w_stream->format != SAMPLE_S16SYS)
+      if(w_stream->format != SAMPLE_S16)
       {
         // Swap bytes to match the current platform endianness...
         for(i = 0; i < read_len; i += 2)
