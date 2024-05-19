@@ -77,6 +77,8 @@ USERS
   the player is pushed onto them.
 + The DJGPP port now locks all of its memory. This prevents
   paging crashes related to audio, but increases memory usage.
++ Fixed the TIME and DATE counters in the DOS port when the
+  environment variable TZ is not set.
 + The SDL audio driver will now initialize the software mixer
   frequency with the value returned by SDL_OpenAudioDevice.
 
