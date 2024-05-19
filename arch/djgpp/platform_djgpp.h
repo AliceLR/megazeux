@@ -88,6 +88,12 @@ struct vbe_mode_info
   uint16_t offscreen_size;
 } __attribute__((packed));
 
+struct irq_state
+{
+  int port_21h;
+  int port_A1h;
+};
+
 int djgpp_display_adapter_detect(void);
 const char *djgpp_display_adapter_name(int adapter);
 int djgpp_malloc_boundary(int len_bytes, int boundary_bytes, int *selector);
@@ -95,6 +101,11 @@ boolean djgpp_push_enable_nearptr(void);
 boolean djgpp_pop_enable_nearptr(void);
 void djgpp_enable_dma(uint8_t port, uint8_t mode, int offset, int bytes);
 void djgpp_disable_dma(uint8_t port);
+
+void djgpp_irq_enable(int irq, struct irq_state *old_state);
+void djgpp_irq_restore(struct irq_state *old_state);
+void djgpp_irq_ack(int irq);
+int djgpp_irq_vector(int irq);
 
 __M_END_DECLS
 

@@ -5,6 +5,11 @@ FREAD/FREADn bugfixes, as the old behavior was unusably buggy.
 
 USERS
 
++ The DOS port now supports Sound Blaster Pro in stereo mode.
+  The driver should also support all other Sound Blasters with
+  DSP >=2.00 and the mono/8-bit modes of the Sound Blaster 16,
+  but these are disabled for now (no software mixer support for
+  mono output). IRQs higher than 7 are also supported now.
 + All "gamecontroller[...]" config.txt options have been renamed
   to "gamepad[...]". The old names are still supported.
 + Fixed blank screen bugs that occur with the glslscale renderer
