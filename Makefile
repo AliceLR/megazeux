@@ -96,7 +96,7 @@ ifneq ($(wildcard ${LIBDIR}/pkgconfig/sdl3.pc),)
 SDL_PKG_CONFIG_PATH ?= ${LIBDIR}/pkgconfig
 endif
 endif
-ifneq (${SDL_PKG_CONFIG_DIR},)
+ifneq (${SDL_PKG_CONFIG_PATH},)
 SDL_PKG_CONFIG_FLAGS = --with-path=${SDL_PKG_CONFIG_PATH}
 endif
 
