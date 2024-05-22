@@ -834,8 +834,12 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
 
   // Note: previously attempted SDL_RENDERER_ACCELERATED first, then
   // SDL_RENDERER_SOFTWARE, but these flags were removed in SDL3.
+#if SDL_VERSION_ATLEAST(3,0,0)
+  render_data->renderer = SDL_CreateRenderer(render_data->window, BEST_RENDERER);
+#else
   render_data->renderer =
    SDL_CreateRenderer(render_data->window, BEST_RENDERER, sdl_rendererflags);
+#endif
   if(!render_data->renderer)
   {
     warn("Failed to create renderer: %s\n", SDL_GetError());

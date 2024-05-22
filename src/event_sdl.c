@@ -50,7 +50,7 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_RETURN: return IKEY_RETURN;
     case SDLK_ESCAPE: return IKEY_ESCAPE;
     case SDLK_SPACE: return IKEY_SPACE;
-    case SDLK_QUOTE: return IKEY_QUOTE;
+    case SDLK_APOSTROPHE: return IKEY_QUOTE;
     case SDLK_PLUS: return IKEY_EQUALS;
     case SDLK_COMMA: return IKEY_COMMA;
     case SDLK_MINUS: return IKEY_MINUS;
@@ -71,7 +71,7 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_LEFTBRACKET: return IKEY_LEFTBRACKET;
     case SDLK_BACKSLASH: return IKEY_BACKSLASH;
     case SDLK_RIGHTBRACKET: return IKEY_RIGHTBRACKET;
-    case SDLK_BACKQUOTE: return IKEY_BACKQUOTE;
+    case SDLK_GRAVE: return IKEY_BACKQUOTE;
     case SDLK_a: return IKEY_a;
     case SDLK_b: return IKEY_b;
     case SDLK_c: return IKEY_c;

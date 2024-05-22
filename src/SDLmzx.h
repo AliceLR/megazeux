@@ -32,6 +32,7 @@ __M_BEGIN_DECLS
 
 #if CONFIG_SDL == 3
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_version.h>
 #else
 #include <SDL.h>
 #if defined(_WIN32) || defined(CONFIG_X11)
@@ -284,6 +285,8 @@ static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
  * SDL_keyboard.h and SDL_keycode.h
  */
 #if !SDL_VERSION_ATLEAST(3,0,0)
+#define SDLK_APOSTROPHE       SDLK_QUOTE
+#define SDLK_GRAVE            SDLK_BACKQUOTE
 #define SDL_KMOD_CTRL         KMOD_CTRL
 #define SDL_KMOD_ALT          KMOD_ALT
 #define SDL_KMOD_NUM          KMOD_NUM
@@ -418,7 +421,28 @@ typedef SDL_sem   SDL_Semaphore;
  * SDL_version.h
  */
 #if !SDL_VERSION_ATLEAST(3,0,0)
-typedef SDL_version SDL_Version;
+#define SDL_MICRO_VERSION SDL_PATCHLEVEL
+
+#undef SDL_VERSIONNUM
+#define SDL_VERSIONNUM(x,y,z) ((x) * 1000000 + (y) * 1000 + (z))
+#define SDL_VERSIONNUM_MAJOR(v) ((v) / 1000000)
+#define SDL_VERSIONNUM_MINOR(v) (((v) / 1000) % 1000)
+#define SDL_VERSIONNUM_MICRO(v) ((v) % 1000)
+
+#undef SDL_VERSION
+#define SDL_VERSION SDL_VERSIONNUM(SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL)
+
+static inline int replace_SDL_GetVersion(void)
+{
+  SDL_version ver;
+#if SDL_VERSION_ATLEAST(2,0,0)
+  SDL_GetVersion(&ver);
+#else
+  ver = *SDL_Linked_Version();
+#endif
+  return SDL_VERSIONNUM(ver.major, ver.minor, ver.patch);
+}
+#define SDL_GetVersion replace_SDL_GetVersion
 #endif
 
 /**
