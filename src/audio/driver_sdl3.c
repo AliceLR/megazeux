@@ -51,16 +51,19 @@ static void sdl_audio_callback(void *userdata, SDL_AudioStream *stream,
 void init_audio_platform(struct config_info *conf)
 {
   SDL_AudioDeviceID audio_device = SDL_AUDIO_DEVICE_DEFAULT_OUTPUT;
+  int frames = 0;
+  char hint[16];
   void *tmp;
   // TODO: configurable audio channels, format
 
   audio_format = SAMPLE_S16;
 
   memset(&audio_settings, 0, sizeof(audio_settings));
-  if(SDL_GetAudioDeviceFormat(audio_device, &audio_settings, NULL) < 0)
+  if(SDL_GetAudioDeviceFormat(audio_device, &audio_settings, &frames) < 0)
   {
     // Can't query, try to continue anyway...
     audio_settings.freq = 48000;
+    frames = 1024;
   }
   audio_settings.format = SDL_AUDIO_S16;
   audio_settings.channels = 2;
@@ -71,8 +74,10 @@ void init_audio_platform(struct config_info *conf)
     audio_settings.freq = MAX(conf->audio_sample_rate, 2048);
   }
 
-  if(!audio_mixer_init(audio_settings.freq, conf->audio_buffer_samples,
-   audio_settings.channels))
+  if(conf->audio_buffer_samples != 0)
+    frames = conf->audio_buffer_samples;
+
+  if(!audio_mixer_init(audio_settings.freq, frames, audio_settings.channels))
     return;
 
   audio_settings.freq = audio.output_frequency;
@@ -81,6 +86,12 @@ void init_audio_platform(struct config_info *conf)
    audio.buffer_frames * audio.buffer_channels * sizeof(int16_t));
   if(!tmp)
     return;
+
+  // The buffer frames need to be configured with this hack.
+  // This value may be ignored or modified by some platforms.
+  // FIXME: SDL drivers for ALSA, Pulseaudio, PipeWire, and JACK all ignore this...
+  snprintf(hint, sizeof(hint), "%u", audio.buffer_frames);
+  SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, hint);
 
   audio_buffer = tmp;
   audio_stream = SDL_OpenAudioDeviceStream(audio_device, &audio_settings,
