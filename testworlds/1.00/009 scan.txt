@@ -1,0 +1,3 @@
+Title: Scan Test
+Author: Alice Rowan
+Desc: Test that the scan is left-to-right, top-to-bottom, and that reverse send is performed by a second scan from right-to-left, bottom-to-top. In 1.x, any robot that receives a label before it is reached by the reverse scan will execute, even if it already ran normally.

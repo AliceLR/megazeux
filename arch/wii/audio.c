@@ -40,14 +40,16 @@ static u8 audio_stack[STACKSIZE];
 static int16_t *audio_buffer[3];
 static volatile int current = 0;
 static volatile int audio_stop = 0;
-static int buffer_size;
+static unsigned buffer_frames;
+static unsigned buffer_size;
+static boolean active = false;
 
 static void *wii_audio_thread(void *dud)
 {
   while(!audio_stop)
   {
     LWP_ThreadSleep(audio_queue);
-    audio_callback(audio_buffer[current], buffer_size);
+    audio_mixer_render_frames(audio_buffer[current], buffer_frames, 2, SAMPLE_S16);
     DCFlushRange(audio_buffer[current], buffer_size);
     current = (current + 1) % 3;
   }
@@ -63,15 +65,15 @@ static void voice_callback(s32 voice)
 
 void init_audio_platform(struct config_info *conf)
 {
+  // buffer size must be multiple of 32 bytes, so samples must be multiple of 8
+  unsigned frames = (conf->audio_buffer_samples + 7) & ~7;
   int i;
 
-  // buffer size must be multiple of 32 bytes, so samples must be multiple of 8
-  audio.buffer_samples = conf->audio_buffer_samples & ~7;
-  if(!audio.buffer_samples)
-    audio.buffer_samples = 2048;
+  if(!audio_mixer_init(conf->audio_sample_rate, frames, 2))
+    return;
 
-  buffer_size = sizeof(int16_t) * 2 * audio.buffer_samples;
-  audio.mix_buffer = malloc(buffer_size * 2);
+  buffer_frames = audio.buffer_frames;
+  buffer_size = buffer_frames * sizeof(int16_t) * 2 /* stereo */;
 
   for(i = 0; i < 3; i++)
   {
@@ -88,6 +90,7 @@ void init_audio_platform(struct config_info *conf)
     ASND_SetVoice(0, VOICE_STEREO_16BIT, audio.output_frequency, 0,
      audio_buffer[0], buffer_size, 255, 255, voice_callback);
     ASND_Pause(0);
+    active = true;
   }
 }
 
@@ -95,14 +98,14 @@ void quit_audio_platform(void)
 {
   void *dud;
 
-  if(!audio.mix_buffer)
+  if(!active)
     return;
 
+  active = false;
   audio_stop = 1;
   LWP_JoinThread(audio_thread, &dud);
   ASND_Pause(1);
   ASND_End();
-  free(audio.mix_buffer);
   LWP_CloseQueue(audio_queue);
   // Don't free hardware audio buffers
   // Memory allocated with memalign() can't neccessarily be free()'d

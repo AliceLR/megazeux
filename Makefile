@@ -278,7 +278,7 @@ ifeq (${SANITIZER},memory)
 # external libraries turned off or re-built with instrumentation.
 # This sanitizer is only implemented by clang.
 OPTIMIZE_FLAGS += -fsanitize=memory -fno-omit-frame-pointer -fPIC \
- -fsanitize-recover=memory -fsanitize-memory-track-origins=2
+ -fsanitize-memory-track-origins=2
 ARCH_EXE_LDFLAGS += -pie
 endif
 

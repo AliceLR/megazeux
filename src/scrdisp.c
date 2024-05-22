@@ -38,6 +38,20 @@
 static const char scr_nm_strs[5][12] =
  { "  Scroll   ", "   Sign    ", "Edit Scroll", "   Help    ", "" };
 
+static int scroll_clip_position(char *string, int pos, int offset, int draw_flags)
+{
+  if(draw_flags & WR_COLOR)
+  {
+    return pos + color_string_index_of(string + pos,
+     SCROLL_MAX_LINE_LEN, offset, '\n');
+  }
+  else
+  {
+    int tmp = strcspn(string + pos, "\n");
+    return pos + (tmp < offset ? tmp : offset);
+  }
+}
+
 static int scroll_draw_flags(struct world *mzx_world, boolean mask_chars,
  boolean mask_colors)
 {
@@ -64,7 +78,9 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
   char *where;
   int scroll_base_color = mzx_world->scroll_base_color;
   int c_offset = 16;
-  int flags = scroll_draw_flags(mzx_world, mask_chars, mask_colors);
+  int flags = scroll_draw_flags(mzx_world, mask_chars, false);
+  int tmp_pos;
+  char tmp;
 
   where = scroll->mesg;
 
@@ -80,8 +96,12 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
   }
 
   // Display center line
+  tmp_pos = scroll_clip_position(where, pos, 64, flags);
+  tmp = where[tmp_pos];
+  where[tmp_pos] = '\0';
   fill_line_ext(64, 8, 12, 32, scroll_base_color, 0, c_offset);
   write_string_ext(where + pos, 8, 12, scroll_base_color, flags, 0, c_offset);
+  where[tmp_pos] = tmp;
 
   // Display lines above center line
   for(t1 = 11; t1 >= 6; t1--)
@@ -99,7 +119,11 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
         } while((where[pos] != '\n') && (where[pos] != 1));
         // At start of prev. line -1. Display.
         pos++;
+        tmp_pos = scroll_clip_position(where, pos, 64, flags);
+        tmp = where[tmp_pos];
+        where[tmp_pos] = '\0';
         write_string_ext(where + pos, 8, t1, scroll_base_color, flags, 0, c_offset);
+        where[tmp_pos] = tmp;
       }
     }
   }
@@ -115,7 +139,13 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
     // At end of current. If next is a 0, it's the end of the scroll.
     pos++;
     if(where[pos])
+    {
+      tmp_pos = scroll_clip_position(where, pos, 64, flags);
+      tmp = where[tmp_pos];
+      where[tmp_pos] = '\0';
       write_string_ext(where + pos, 8, t1, scroll_base_color, flags, 0, c_offset);
+      where[tmp_pos] = tmp;
+    }
   }
 
   select_layer(UI_LAYER);
@@ -126,75 +156,100 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
 
 void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
 {
-  // Important status vars (insert kept in intake.cpp)
+  char *where; // Scroll message pointer.
+  char line_buffer[SCROLL_MAX_LINE_LEN];
+  size_t line_src_len = 0;
+  size_t edit_len;
+  size_t tail_len;
+  size_t sz;
+  int page_lines;
+
   unsigned int pos = 1, old_pos; // Where IN scroll?
   int currx = 0; // X position in line
   int key; // Key returned by intake()
-  int t1, t2 = -1, t3;
-  char *where; // Where scroll is
-  char line[80]; // For editing
   int scroll_base_color = mzx_world->scroll_base_color;
   boolean editing = (type == 2);
   // If the user wants to mask chars and we're in the editor..
   boolean mask_chars = get_config()->mask_midchars && editing;
+  boolean mask_colors = editing;
+  boolean update_border = true;
 
   m_show();
   save_screen();
   dialog_fadein();
 
-  // Mask edging chars/colors in the scroll editor, but display natural
-  // chars/colors during gameplay.
-  scroll_edging_ext(mzx_world, type, editing);
-
-  // Loop
   where = scroll->mesg;
+
+  if(!editing && mzx_world->version >= VERSION_PORT && mzx_world->version < V291)
+  {
+    // MegaZeux 2.80h through 2.91f expect the protected palette to be used
+    // for scrolls. Furthermore, 2.90 through 2.91f had broken scroll borders
+    // that mixed colors. The versions picked for this behavior are a little
+    // arbitrary because there are no good version cutoffs for supporting this.
+    mask_colors = true;
+  }
 
   do
   {
+    if(update_border)
+    {
+      // Mask edging chars/colors in the scroll editor, but display natural
+      // chars/colors during gameplay.
+      scroll_edging_ext(mzx_world, type, mask_colors);
+      update_border = false;
+    }
     // Display scroll. If editing, the colors of the frame need to be masked.
     // Otherwise, they should display using game colors.
-    scroll_frame(mzx_world, scroll, pos, mask_chars, editing);
+    scroll_frame(mzx_world, scroll, pos, mask_chars, mask_colors);
     cursor_hint(8, 12);
     update_screen();
 
     if(editing)
     {
-      // Figure length
-      for(t1 = 0; t1 < 80; t1++)
+      // Get the length of the current editing line.
+      for(sz = pos; sz < scroll->mesg_size; sz++)
       {
-        if(where[pos + t1] == '\n')
+        if(where[sz] == '\n')
           break;
       }
-      // t1 == length
-      // Edit line
-      where[pos + t1] = 0;
-      strcpy(line, where + pos);
-      where[pos + t1] = '\n';
-      key = intake(mzx_world, line, 64, 8, 12, scroll_base_color,
-       INTK_EXIT_ANY, &currx);
-      // Modify scroll to hold new line (give errors here)
-      t2 = (int)strlen(line); // Get length of NEW line
-      // Resize and move
-      t3 = scroll->mesg_size;
+      line_src_len = sz - pos;
 
-      if(t2 - t1 > 0)
+      edit_len = line_src_len;
+      if(edit_len >= sizeof(line_buffer))
+        edit_len = sizeof(line_buffer) - 1;
+
+      memcpy(line_buffer, where + pos, edit_len);
+      line_buffer[edit_len] = '\0';
+
+      // Edit line
+      key = intake(mzx_world, line_buffer, sizeof(line_buffer), 64, 8, 12,
+       scroll_base_color, INTK_EXIT_ANY, mask_colors, &currx);
+
+      // Modify scroll to hold new line (give errors here)
+      edit_len = strlen(line_buffer);
+      tail_len = scroll->mesg_size - pos - line_src_len;
+
+      // Resize and move
+      if(edit_len > line_src_len)
       {
-        reallocate_scroll(scroll, t3 + t2 - t1);
+        reallocate_scroll(scroll, scroll->mesg_size + edit_len - line_src_len);
         where = scroll->mesg;
 
-        memmove(where + pos + t2, where + pos + t1, t3 - pos - t1);
+        memmove(where + pos + edit_len, where + pos + line_src_len, tail_len);
       }
-      else if(t2 - t1 < 0)
-      {
-        memmove(where + pos + t2, where + pos + t1, t3 - pos - t1);
+      else
 
-        reallocate_scroll(scroll, t3 + t2 - t1);
+      if(edit_len < line_src_len)
+      {
+        memmove(where + pos + edit_len, where + pos + line_src_len, tail_len);
+
+        reallocate_scroll(scroll, scroll->mesg_size + edit_len - line_src_len);
         where = scroll->mesg;
       }
 
       // Copy in new line
-      strcpy(where + pos, line);
-      where[pos + t2] = '\n';
+      memcpy(where + pos, line_buffer, edit_len);
+      where[pos + edit_len] = '\n';
     }
     else
     {
@@ -222,13 +277,13 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
       if((mouse_y >= 6) && (mouse_y <= 18) && (mouse_x >= 8) &&
        (mouse_x <= 71))
       {
-        t1 = mouse_y - 12;
-        if(t1)
+        page_lines = mouse_y - 12;
+        if(page_lines)
         {
-          if(t1 < 0)
-            goto pgdn;
-          else
+          if(page_lines < 0)
             goto pgup;
+          else
+            goto pgdn;
         }
       }
       key = IKEY_ESCAPE;
@@ -277,12 +332,11 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
         else
         {
           // Add in new line below. Need only add one byte.
-          t3 = scroll->mesg_size;
-          reallocate_scroll(scroll, t3 + 1);
+          reallocate_scroll(scroll, scroll->mesg_size + 1);
           where = scroll->mesg;
           // Move all at pos + currx up a space
           memmove(where + pos + currx + 1, where + pos + currx,
-           t3 - pos - currx);
+           scroll->mesg_size - pos - currx);
           // Insert a \n
           where[pos + currx] = '\n';
           // Change pos and currx
@@ -295,51 +349,45 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
 
       case IKEY_BACKSPACE:
       {
+        size_t line_prev_len;
         if(type < 2)
           break;
 
-        // We are at the start of the current line and we are trying to
-        // append it to the end of the previous line. First, remember
-        // the size of the current line is in t2. Now we go back a line,
-        // if there is one.
+        // Get the length of the previous line, if it exists.
         if(where[pos - 1] == 1)
-          break; // Nope.
+          break;
 
         pos--;
         // Go to start of this line, COUNTING CHARACTERS.
-        t1 = 0;
+        line_prev_len = 0;
         do
         {
           pos--;
-          t1++;
+          line_prev_len++;
         } while((where[pos] != '\n') && (where[pos] != 1));
 
-        // pos is at one before the start of this line. WHO CARES!? :)
-        // Now we have to see if the size, t2, is over 64 characters.
-        // t2 + t1 is currently one too many so check for >65 for error.
-
-        if((t2 + t1) > 65)
+        // If the length of the current line plus the length of the previous
+        // line exceeds the maximum length of text the buffer can hold, these
+        // lines can't be joined. Note line_prev_len includes its terminator.
+        if(line_src_len + line_prev_len > sizeof(line_buffer))
         {
           pos = old_pos;
-          break; // Too long. Reset position.
+          break;
         }
 
         // OKAY! Just copy backwards over the \n in the middle to
         // append...
-        t3 = scroll->mesg_size;
-        memmove(where + (old_pos - 1), where + old_pos, t3 - (old_pos + 1));
+        memmove(where + (old_pos - 1), where + old_pos, scroll->mesg_size - (old_pos + 1));
         // ...and reallocate to one space less!
-        reallocate_scroll(scroll, t3 - 1);
+        reallocate_scroll(scroll, scroll->mesg_size - 1);
         where = scroll->mesg;
+        where[scroll->mesg_size - 1] = '\0';
 
         // pos is one before this start. Fix to the start of this new
         // line. Set currx to the length of the old line this was.
         pos++;
-        currx = (int)t1 - 1;
+        currx = (int)line_prev_len - 1;
         scroll->num_lines--;
-
-        // FIXME - total hack!
-        scroll->mesg[scroll->mesg_size - 1] = 0;
 
         // Done.
         break;
@@ -347,7 +395,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
 
       case IKEY_PAGEDOWN:
       {
-        for(t1 = 6; t1 > 0; t1--)
+        for(page_lines = 6; page_lines > 0; page_lines--)
         {
           pgdn:
           // Go forward a line (if possible)
@@ -368,7 +416,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
 
       case IKEY_PAGEUP:
       {
-        for(t1 = -6; t1 < 0; t1++)
+        for(page_lines = -6; page_lines < 0; page_lines++)
         {
           pgup:
           // Go back a line (if possible)
@@ -388,15 +436,27 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
       case IKEY_HOME:
       {
         // FIXME - This is so dirty. Please replace it.
-        t1 = -30000;
+        page_lines = -30000;
         goto pgup;
       }
 
       case IKEY_END:
       {
         // FIXME - See above.
-        t1 = 30000;
+        page_lines = 30000;
         goto pgdn;
+      }
+
+      case IKEY_v:
+      {
+        if(editing && get_alt_status(keycode_internal))
+        {
+          // Game/edit view (toggle masking).
+          mask_colors = !mask_colors;
+          mask_chars = !mask_chars && get_config()->mask_midchars;
+          update_border = true;
+        }
+        break;
       }
 
       default:
@@ -480,8 +540,11 @@ void scroll_edging_ext(struct world *mzx_world, int type, boolean mask)
   if(type == 2)
   {
     write_string_ext("\x12\x1d: Move cursor   Alt+C: Character "
-     "  Esc: Done editing", 13, 20, scroll_corner_color, WR_NONE,
+     "  Alt+V:XXXX view   Esc: Exit", 8, 20, scroll_corner_color, WR_NONE,
      offset, c_offset);
+
+    write_string_ext(mask ? "Game" : "Edit", 51, 20, scroll_corner_color,
+     WR_NONE, offset, c_offset);
   }
   else
 
@@ -563,7 +626,7 @@ static void help_frame(struct world *mzx_world, char *help, int pos)
         case '$':
           // Centered. :)
           pos++;
-          t2 = strlencolor(help + pos);
+          t2 = color_string_length(help + pos, next_pos - pos);
           color_string(help + pos, 40 - (t2 >> 1), t1, scroll_base_color);
           break;
         case '>':
@@ -837,44 +900,3 @@ ex:
 }
 
 #endif // CONFIG_HELPSYS
-
-int strlencolor(char *str)
-{
-  int len = 0;
-  char cur_char = *str;
-
-  while(cur_char != 0)
-  {
-    switch(cur_char)
-    {
-      // Color character
-      case '@':
-      case '~':
-      {
-        str++;
-        cur_char = *str;
-
-        // If 0, stop right there
-        if(!cur_char)
-          return len;
-
-        // If the next isn't hex, count as one
-        if(!isxdigit((uint8_t)cur_char))
-        {
-          len++;
-        }
-        break;
-      }
-
-      default:
-      {
-        len++;
-      }
-    }
-
-    str++;
-    cur_char = *str;
-  }
-
-  return len;
-}

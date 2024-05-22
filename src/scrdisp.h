@@ -26,6 +26,9 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
+// Maximum line length of scrolls, including the newline or terminator.
+#define SCROLL_MAX_LINE_LEN 256
+
 // Type 0/1 to DISPLAY a scroll/sign
 CORE_LIBSPEC void scroll_edit(struct world *mzx_world, struct scroll *scroll,
  int type);
@@ -34,8 +37,6 @@ CORE_LIBSPEC void scroll_edit(struct world *mzx_world, struct scroll *scroll,
 void scroll_edging_ext(struct world *mzx_world, int type, boolean mask);
 void help_display(struct world *mzx_world, char *help, int offs,
  char *file, char *label);
-char print(char *str);
-int strlencolor(char *str);
 
 __M_END_DECLS
 

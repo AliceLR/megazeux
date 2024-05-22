@@ -1084,7 +1084,8 @@ static void advance_line(struct robot *cur_robot, char *program)
   cur_robot->pos_within_line = 0;
 }
 
-static void end_cycle(struct robot *cur_robot, int lines_run, int x, int y)
+static void end_cycle(struct world *mzx_world, struct robot *cur_robot,
+ int lines_run, int x, int y)
 {
 #ifdef CONFIG_EDITOR
   cur_robot->commands_total += lines_run;
@@ -1097,6 +1098,11 @@ static void end_cycle(struct robot *cur_robot, int lines_run, int x, int y)
   // that causes a lot of bugs, and sadly this needs to be emulated.
   cur_robot->compat_xpos = x;
   cur_robot->compat_ypos = y;
+
+  // Send commands in 1.x always set the label sent flag, but this
+  // robot already received whatever label it sent itself, so clear it.
+  if(mzx_world->version < V200)
+    cur_robot->status = 0;
 }
 
 static void end_program(struct robot *cur_robot)
@@ -1108,7 +1114,7 @@ static void end_program(struct robot *cur_robot)
 #define ADVANCE_LINE do{ advance_line(cur_robot, program); }while(0);
 
 // NOTE: Should always return after using one of these.
-#define END_CYCLE do{ end_cycle(cur_robot, lines_run, x, y); }while(0);
+#define END_CYCLE do{ end_cycle(mzx_world, cur_robot, lines_run, x, y); }while(0);
 #define END_PROGRAM do{ END_CYCLE; end_program(cur_robot); }while(0);
 
 // Run a single robot through a single cycle.
@@ -1156,8 +1162,7 @@ void run_robot(context *ctx, int id, int x, int y)
     cur_robot->compat_xpos = x;
     cur_robot->compat_ypos = y;
     cur_robot->cycle_count = 0;
-
-    src_board->robot_list[id]->status = 0;
+    cur_robot->status = 0;
   }
   else
   {
@@ -1171,6 +1176,7 @@ void run_robot(context *ctx, int id, int x, int y)
     cur_robot->ypos = y;
     cur_robot->compat_xpos = x;
     cur_robot->compat_ypos = y;
+    cur_robot->status = 0; // Clear this here too for 1.x compat.
 
 #ifdef CONFIG_EDITOR
     cur_robot->commands_cycle = 0;
@@ -1993,7 +1999,7 @@ void run_robot(context *ctx, int id, int x, int y)
             // If REL PLAYER or REL COUNTERS, use special code
             switch(mzx_world->mid_prefix)
             {
-              case 2:
+              case REL_TO_PLAYER:
               {
                 // Give an ID of -1 to throw it off from not
                 // allowing global robot.
@@ -2003,7 +2009,7 @@ void run_robot(context *ctx, int id, int x, int y)
                 break;
               }
 
-              case 3:
+              case REL_TO_XPOS_YPOS:
               {
                 // Give an ID of -1 to throw it off from not
                 // allowing global robot.
@@ -3205,6 +3211,8 @@ void run_robot(context *ctx, int id, int x, int y)
             dest_height = src_board->board_height;
           }
 
+          // Note: due to a bug between 2.80 and 2.93, using a REL FIRST
+          // command after a REL command prevented this from working.
           prefix_mid_xy_var(mzx_world, &put_x, &put_y, x, y,
            dest_width, dest_height);
 
@@ -4499,9 +4507,9 @@ void run_robot(context *ctx, int id, int x, int y)
       {
         if(id)
         {
-          mzx_world->first_prefix = 1;
-          mzx_world->mid_prefix = 1;
-          mzx_world->last_prefix = 1;
+          mzx_world->first_prefix = REL_TO_SELF;
+          mzx_world->mid_prefix = REL_TO_SELF;
+          mzx_world->last_prefix = REL_TO_SELF;
           lines_run--;
           goto next_cmd_prefix;
         }
@@ -4510,18 +4518,28 @@ void run_robot(context *ctx, int id, int x, int y)
 
       case ROBOTIC_CMD_REL_PLAYER: // rel player
       {
-        mzx_world->first_prefix = 2;
-        mzx_world->mid_prefix = 2;
-        mzx_world->last_prefix = 2;
+        mzx_world->first_prefix = REL_TO_PLAYER;
+        mzx_world->mid_prefix = REL_TO_PLAYER;
+        mzx_world->last_prefix = REL_TO_PLAYER;
         lines_run--;
         goto next_cmd_prefix;
       }
 
       case ROBOTIC_CMD_REL_COUNTERS: // rel counters
       {
-        mzx_world->first_prefix = 3;
-        mzx_world->mid_prefix = 3;
-        mzx_world->last_prefix = 3;
+        mzx_world->first_prefix = REL_TO_XPOS_YPOS;
+        mzx_world->mid_prefix = REL_TO_XPOS_YPOS;
+        mzx_world->last_prefix = REL_TO_XPOS_YPOS;
+
+        // The REL COUNTERS commands are broken in 2.00+ - the usage of
+        // XPOS/YPOS and FIRSTXPOS/FIRSTYPOS/LASTXPOS/LASTYPOS are reversed.
+        // This seems to be intentional but is completely backwards from what
+        // the 2.00 help file claimed (and what would be sensible).
+        if(mzx_world->version >= V200)
+        {
+          mzx_world->first_prefix = REL_TO_XPOS_YPOS_FIRST_OR_LAST;
+          mzx_world->last_prefix = REL_TO_XPOS_YPOS_FIRST_OR_LAST;
+        }
         lines_run--;
         goto next_cmd_prefix;
       }
@@ -4946,7 +4964,7 @@ void run_robot(context *ctx, int id, int x, int y)
       {
         if(id)
         {
-          mzx_world->first_prefix = 5;
+          mzx_world->first_prefix = REL_TO_SELF_FIRST_OR_LAST;
           lines_run--;
           goto next_cmd_prefix;
         }
@@ -4957,7 +4975,7 @@ void run_robot(context *ctx, int id, int x, int y)
       {
         if(id)
         {
-          mzx_world->last_prefix = 5;
+          mzx_world->last_prefix = REL_TO_SELF_FIRST_OR_LAST;
           lines_run--;
           goto next_cmd_prefix;
         }
@@ -4966,28 +4984,30 @@ void run_robot(context *ctx, int id, int x, int y)
 
       case ROBOTIC_CMD_REL_PLAYER_FIRST: // Rel player first
       {
-        mzx_world->first_prefix = 6;
+        mzx_world->first_prefix = REL_TO_PLAYER_FIRST_OR_LAST;
         lines_run--;
         goto next_cmd_prefix;
       }
 
       case ROBOTIC_CMD_REL_PLAYER_LAST: // Rel player last
       {
-        mzx_world->last_prefix = 6;
+        mzx_world->last_prefix = REL_TO_PLAYER_FIRST_OR_LAST;
         lines_run--;
         goto next_cmd_prefix;
       }
 
       case ROBOTIC_CMD_REL_COUNTERS_FIRST: // Rel counters first
       {
-        mzx_world->first_prefix = 7;
+        // BUG: should be REL_TO_XPOS_YPOS_FIRST_OR_LAST (see REL COUNTERS).
+        mzx_world->first_prefix = REL_TO_XPOS_YPOS;
         lines_run--;
         goto next_cmd_prefix;
       }
 
       case ROBOTIC_CMD_REL_COUNTERS_LAST: // Rel counters last
       {
-        mzx_world->last_prefix = 7;
+        // BUG: should be REL_TO_XPOS_YPOS_FIRST_OR_LAST (see REL COUNTERS).
+        mzx_world->last_prefix = REL_TO_XPOS_YPOS;
         lines_run--;
         goto next_cmd_prefix;
       }

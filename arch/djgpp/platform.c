@@ -21,6 +21,7 @@
 
 #define delay delay_dos
 #include <errno.h>
+#include <stdlib.h>
 #include <pc.h>
 #include <dos.h>
 #include <dpmi.h>
@@ -33,6 +34,12 @@
 #include "../../src/util.h"
 #include "../../src/platform.h"
 #include "platform_djgpp.h"
+
+/* TODO: Most of the audio callback code can't currently be locked or moved
+ * outside of the callback, which causes CWSDMPI to crash during paging.
+ * Disable paging altogether for now.
+ */
+int _crt0_startup_flags = _CRT0_FLAG_LOCK_MEMORY;
 
 static int djgpp_nearptr_cnt = 0;
 
@@ -250,6 +257,14 @@ static void set_timer(uint32_t count)
   outportb(0x40, count >> 8);
 }
 
+static void fix_timezone(void)
+{
+  // DJGPP, unlike normal SDKs, will return -1 for time functions
+  // unless TZ is initialized. Use UTC as a default.
+  if(!getenv("TZ"))
+    setenv("TZ", "UTC", 1);
+}
+
 boolean platform_init(void)
 {
   __dpmi_meminfo region;
@@ -299,6 +314,7 @@ boolean platform_init(void)
   enable();
 
   __dpmi_get_protected_mode_interrupt_vector(0x09, &kbd_old_handler);
+  fix_timezone();
   return true;
 }
 
