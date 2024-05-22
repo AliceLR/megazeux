@@ -27,7 +27,6 @@
 #include "audio_struct.h"
 
 static SDL_AudioSpec audio_settings;
-static SDL_AudioDeviceID audio_device;
 static SDL_AudioStream *audio_stream;
 static void *audio_buffer;
 static unsigned audio_format;
@@ -37,12 +36,13 @@ static void sdl_audio_callback(void *userdata, SDL_AudioStream *stream,
 {
   size_t framesize = SDL_AUDIO_FRAMESIZE(audio_settings);
   size_t frames = MAX(0, required_bytes) / framesize;
+
   while(frames > 0)
   {
     size_t out = audio_mixer_render_frames(userdata, frames,
      audio_settings.channels, audio_format);
 
-    assert(out < frames);
+    assert(out <= frames);
     SDL_PutAudioStreamData(audio_stream, userdata, out * framesize);
     frames -= out;
   }
@@ -50,10 +50,10 @@ static void sdl_audio_callback(void *userdata, SDL_AudioStream *stream,
 
 void init_audio_platform(struct config_info *conf)
 {
+  SDL_AudioDeviceID audio_device = SDL_AUDIO_DEVICE_DEFAULT_OUTPUT;
   void *tmp;
   // TODO: configurable audio channels, format
 
-  audio_device = SDL_AUDIO_DEVICE_DEFAULT_OUTPUT;
   audio_format = SAMPLE_S16;
 
   memset(&audio_settings, 0, sizeof(audio_settings));
@@ -88,7 +88,7 @@ void init_audio_platform(struct config_info *conf)
   if(!audio_stream)
     goto err;
 
-  SDL_ResumeAudioDevice(audio_device);
+  SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(audio_stream));
   return;
 
 err:
