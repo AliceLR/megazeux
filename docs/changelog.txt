@@ -81,6 +81,7 @@ USERS
   environment variable TZ is not set.
 + The SDL audio driver will now initialize the software mixer
   frequency with the value returned by SDL_OpenAudioDevice.
++ Fixed audible pops when setting MOD_FREQUENCY.
 
 DEVELOPERS
 
@@ -122,6 +123,8 @@ DEVELOPERS
   signed, 8-bit signed, and 8-bit unsigned.
 + Audio streams with a null mix_data function are now supported.
   These streams will be ignored by the software mixer.
++ sampled_mix_data now properly handles output requests smaller
+  than the size of the audio buffer.
 
 
 December 31st, 2023 - MZX 2.93
