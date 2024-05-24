@@ -89,16 +89,15 @@ static void init_modplug_settings(void)
 static boolean mp_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer,
  size_t frames, unsigned int channels)
 {
-  size_t read_len;
   struct modplug_stream *mp_stream = (struct modplug_stream *)a_src;
-  size_t read_wanted = mp_stream->s.allocated_data_length -
-   mp_stream->s.stream_offset;
-  uint8_t *read_buffer = (uint8_t *)mp_stream->s.output_data +
-   mp_stream->s.stream_offset;
+  void *read_buffer;
+  size_t read_wanted;
+  size_t read_len;
   boolean r_val = false;
 
-  read_len =
-   ModPlug_Read(mp_stream->module_data, read_buffer, read_wanted);
+  read_buffer = sampled_get_buffer(&mp_stream->s, &read_wanted);
+
+  read_len = ModPlug_Read(mp_stream->module_data, read_buffer, read_wanted);
 
   if(!a_src->volume)
   {
@@ -123,7 +122,7 @@ static boolean mp_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer
     else
     {
       // FIXME: I think this memset should always be done?
-      memset(read_buffer + read_len, 0, read_wanted - read_len);
+      memset((uint8_t *)read_buffer + read_len, 0, read_wanted - read_len);
       r_val = true;
     }
 
