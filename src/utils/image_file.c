@@ -54,6 +54,8 @@ typedef image_bool boolean;
 #define MAXIMUM_HEIGHT (32767u * 14u)
 #define MAXIMUM_PIXELS ((16u << 20u) * 8u * 14u)
 
+#define ROUND_32 (1u << 31u)
+
 #define IMAGE_EOF -1
 
 typedef struct imageinfo
@@ -104,9 +106,11 @@ const char *image_error_string(enum image_error err)
     case IMAGE_ERROR_BMP_UNSUPPORTED_BPP:
       return "unsupported BMP bits per pixel";
     case IMAGE_ERROR_BMP_UNSUPPORTED_BPP_RLE8:
-      return "unsupported BMP bits per pixel (must be 8 for RLE8)";
+      return "unsupported BMP bits per pixel (must be 8 for BI_RLE8)";
     case IMAGE_ERROR_BMP_UNSUPPORTED_BPP_RLE4:
-      return "unsupported BMP bits per pixel (must be 4 for RLE4)";
+      return "unsupported BMP bits per pixel (must be 4 for BI_RLE4)";
+    case IMAGE_ERROR_BMP_UNSUPPORTED_BPP_BITFIELDS:
+      return "unsupported BMP bits per pixel (must be 16 or 32 for BI_BITFIELDS)";
     case IMAGE_ERROR_BMP_BAD_1BPP:
       return "error unpacking 1BPP BMP";
     case IMAGE_ERROR_BMP_BAD_2BPP:
@@ -127,6 +131,14 @@ const char *image_error_string(enum image_error err)
       return "invalid BMP image size";
     case IMAGE_ERROR_BMP_BAD_COLOR_TABLE:
       return "invalid BMP color table";
+    case IMAGE_ERROR_BMP_BAD_BITFIELDS_DIB:
+      return "invalid BMP DIB version for BI_BITFIELDS";
+    case IMAGE_ERROR_BMP_BAD_BITFIELDS_MASK_CONTINUITY:
+      return "invalid non-continuous BMP BI_BITFIELDS mask";
+    case IMAGE_ERROR_BMP_BAD_BITFIELDS_MASK_OVERLAP:
+      return "invalid overlapping BMP BI_BITFIELDS mask";
+    case IMAGE_ERROR_BMP_BAD_BITFIELDS_MASK_RANGE:
+      return "invalid out-of-range BMP BI_BITFIELDS mask for 16bpp";
 
     case IMAGE_ERROR_PBM_BAD_HEADER:
       return "failed to read PBM header";
@@ -399,17 +411,26 @@ enum dib_type
 
 enum dib_compression
 {
-  BI_RGB,             // None
-  BI_RLE8,            // 8bpp RLE
-  BI_RLE4,            // 4bpp RLE
-  BI_BITFIELDS,       // RGB or RGBA bitfield masks, huffman
-  BI_JPEG,            // JPEG
-  BI_PNG,             // PNG
-  BI_ALPHABITFIELDS,  // RGBA bitfield masks
-  BI_CMYK     = 11,
-  BI_BMYKRLE8 = 12,
-  BI_CMYKRLE4 = 13,
+  BI_RGB            = 0,  // None
+  BI_RLE8           = 1,  // 8bpp RLE
+  BI_RLE4           = 2,  // 4bpp RLE
+  BI_BITFIELDS      = 3,  // RGB (v2) or RGBA (v3+) bitfield masks
+  BI_OS2_HUFFMAN    = 3,  // OS22XBITMAPHEADER has this, not BI_BITFIELDS.
+  BI_JPEG           = 4,  // JPEG
+  BI_OS2_RLE24      = 4,  // OS22XBITMAPHEADER has this, not BI_JPEG.
+  BI_PNG            = 5,  // PNG
+  BI_ALPHABITFIELDS = 6,  // RGBA bitfield masks (Windows CE 5.0)
+  BI_CMYK           = 11,
+  BI_BMYKRLE8       = 12,
+  BI_CMYKRLE4       = 13,
   BI_MAX
+};
+
+struct bmp_bitfield_mask
+{
+  uint32_t mask;
+  unsigned shift;
+  uint64_t maxscale;
 };
 
 // NOTE: not packed, don't fread directly into this.
@@ -440,6 +461,12 @@ struct bmp_header
   uint32_t vert_res;
   uint32_t palette_size;
   uint32_t important;
+
+  // BITMAPV2INFOHEADER and BITMAPV3INFOHEADER fields.
+  struct bmp_bitfield_mask r_mask;
+  struct bmp_bitfield_mask g_mask;
+  struct bmp_bitfield_mask b_mask;
+  struct bmp_bitfield_mask a_mask;
 };
 
 static enum dib_type bmp_get_dib_type(uint32_t length)
@@ -456,6 +483,104 @@ static enum dib_type bmp_get_dib_type(uint32_t length)
     case 124: return BITMAPV5HEADER;
     default:  return DIB_UNKNOWN;
   }
+}
+
+static enum image_error bmp_init_bitfields_mask(const struct bmp_header *bmp,
+ struct bmp_bitfield_mask *m, const char *name)
+{
+  unsigned shift = 0;
+  unsigned maxval;
+
+  if(m->mask != 0)
+  {
+    uint32_t mask = m->mask;
+
+    // Skip leading bits and count the shift.
+    while(~mask & 1)
+    {
+      mask >>= 1;
+      shift++;
+    }
+    // Mask should be continuous.
+    while(mask & 1)
+      mask >>= 1;
+
+    if(mask != 0)
+    {
+      debug("non-continuous bitfield.%s: %08x\n", name, (unsigned)m->mask);
+      return IMAGE_ERROR_BMP_BAD_BITFIELDS_MASK_CONTINUITY;
+    }
+  }
+
+  if(bmp->bpp == 16 && m->mask & 0xffff0000u)
+  {
+    debug("nonsense bitfield.%s for 16bpp: %08x\n", name, (unsigned)m->mask);
+    return IMAGE_ERROR_BMP_BAD_BITFIELDS_MASK_RANGE;
+  }
+
+  maxval = m->mask >> shift;
+
+  m->shift = shift;
+  m->maxscale = maxval ? ((uint64_t)255 << 32u) / maxval : 0;
+
+  debug("bitfield.%s: (%08xh >> %2u) *%3x.%08xh\n", name,
+   (unsigned)m->mask, m->shift, (unsigned)(m->maxscale >> 32), (unsigned)m->maxscale);
+
+  return IMAGE_OK;
+}
+
+static enum image_error bmp_init_bitfields(struct bmp_header *bmp)
+{
+  enum image_error ret;
+
+  ret = bmp_init_bitfields_mask(bmp, &(bmp->r_mask), "r");
+  if(ret)
+    return ret;
+
+  ret = bmp_init_bitfields_mask(bmp, &(bmp->g_mask), "g");
+  if(ret)
+    return ret;
+
+  ret = bmp_init_bitfields_mask(bmp, &(bmp->b_mask), "b");
+  if(ret)
+    return ret;
+
+  ret = bmp_init_bitfields_mask(bmp, &(bmp->a_mask), "a");
+  if(ret)
+    return ret;
+
+  if((bmp->r_mask.mask & bmp->g_mask.mask) ||
+     (bmp->r_mask.mask & bmp->b_mask.mask) ||
+     (bmp->r_mask.mask & bmp->a_mask.mask) ||
+     (bmp->g_mask.mask & bmp->b_mask.mask) ||
+     (bmp->g_mask.mask & bmp->a_mask.mask) ||
+     (bmp->b_mask.mask & bmp->a_mask.mask))
+  {
+    debug("overlapping bitfield masks: %08x %08x %08x %08x\n",
+     (unsigned)bmp->r_mask.mask, (unsigned)bmp->g_mask.mask,
+     (unsigned)bmp->b_mask.mask, (unsigned)bmp->a_mask.mask);
+    return IMAGE_ERROR_BMP_BAD_BITFIELDS_MASK_OVERLAP;
+  }
+  return IMAGE_OK;
+}
+
+static inline uint32_t bmp_decode_bitfields_component(
+ const struct bmp_bitfield_mask *m, uint32_t value)
+{
+  return (((value & m->mask) >> m->shift) * m->maxscale + ROUND_32) >> 32u;
+}
+
+static inline void bmp_decode_bitfields(const struct bmp_header *bmp,
+ struct rgba_color *out, uint32_t value, image_bool alpha)
+{
+  out->r = bmp_decode_bitfields_component(&(bmp->r_mask), value);
+  out->g = bmp_decode_bitfields_component(&(bmp->g_mask), value);
+  out->b = bmp_decode_bitfields_component(&(bmp->b_mask), value);
+
+  if(alpha)
+    out->a = bmp_decode_bitfields_component(&(bmp->a_mask), value);
+  else
+    out->a = 255;
 }
 
 static struct rgba_color *bmp_read_color_table(struct bmp_header *bmp, imageinfo *s)
@@ -636,9 +761,10 @@ static enum image_error bmp_pixarray_u8(const struct bmp_header *bmp,
 }
 
 static enum image_error bmp_pixarray_u16(const struct bmp_header *bmp,
- imageinfo * RESTRICT s)
+ imageinfo * RESTRICT s, const image_bool bitfields)
 {
   struct image_file *dest = s->out;
+  const image_bool alpha = !!bmp->a_mask.mask;
   uint8_t d[4];
   ssize_t y;
   ssize_t x;
@@ -654,6 +780,12 @@ static enum image_error bmp_pixarray_u16(const struct bmp_header *bmp,
         return IMAGE_ERROR_BMP_BAD_16BPP;
 
       value = read16le(d);
+
+      if(bitfields)
+      {
+        bmp_decode_bitfields(bmp, pos++, value, alpha);
+        continue;
+      }
 
       pos->r = (((value >> 10) & 0x1f) * 255u + 16) / 31u;
       pos->g = (((value >>  5) & 0x1f) * 255u + 16) / 31u;
@@ -699,9 +831,10 @@ static enum image_error bmp_pixarray_u24(const struct bmp_header *bmp,
 }
 
 static enum image_error bmp_pixarray_u32(const struct bmp_header *bmp,
- imageinfo * RESTRICT s)
+ imageinfo * RESTRICT s, const image_bool bitfields)
 {
   struct image_file *dest = s->out;
+  const image_bool alpha = !!bmp->a_mask.mask;
   uint8_t d[4];
   ssize_t y;
   ssize_t x;
@@ -714,6 +847,12 @@ static enum image_error bmp_pixarray_u32(const struct bmp_header *bmp,
     {
       if(s->readfn(d, 4, s->in) < 4)
         return IMAGE_ERROR_BMP_BAD_32BPP;
+
+      if(bitfields)
+      {
+        bmp_decode_bitfields(bmp, pos++, read32le(d), alpha);
+        continue;
+      }
 
       pos->r = d[2];
       pos->g = d[1];
@@ -735,9 +874,20 @@ static enum image_error bmp_read_pixarray_uncompressed(const struct bmp_header *
     case 2:   return bmp_pixarray_u2(bmp, s);
     case 4:   return bmp_pixarray_u4(bmp, s);
     case 8:   return bmp_pixarray_u8(bmp, s);
-    case 16:  return bmp_pixarray_u16(bmp, s);
+    case 16:  return bmp_pixarray_u16(bmp, s, IMAGE_FALSE);
     case 24:  return bmp_pixarray_u24(bmp, s);
-    case 32:  return bmp_pixarray_u32(bmp, s);
+    case 32:  return bmp_pixarray_u32(bmp, s, IMAGE_FALSE);
+  }
+  return IMAGE_ERROR_BMP_UNSUPPORTED_BPP;
+}
+
+static enum image_error bmp_read_pixarray_bitfields(const struct bmp_header *bmp,
+ imageinfo * RESTRICT s)
+{
+  switch(bmp->bpp)
+  {
+    case 16: return bmp_pixarray_u16(bmp, s, IMAGE_TRUE);
+    case 32: return bmp_pixarray_u32(bmp, s, IMAGE_TRUE);
   }
   return IMAGE_ERROR_BMP_UNSUPPORTED_BPP;
 }
@@ -944,7 +1094,7 @@ static enum image_error load_bmp(imageinfo *s)
   }
   else
   {
-    debug("BITMAPINFOHEADER or compatible\n");
+    debug("BITMAPINFOHEADER or compatible (size %u)\n", (unsigned)bmp.dibsize);
     bmp.width           = (int32_t)read32le(buf + 4);
     bmp.height          = (int32_t)read32le(buf + 8);
     bmp.planes          = read16le(buf + 12);
@@ -958,6 +1108,18 @@ static enum image_error load_bmp(imageinfo *s)
       bmp.vert_res      = read32le(buf + 28);
       bmp.palette_size  = read32le(buf + 32);
       bmp.important     = read32le(buf + 36);
+    }
+
+    if(bmp.dibsize >= 52 && bmp.type >= BITMAPV2INFOHEADER)
+    {
+      bmp.r_mask.mask   = read32le(buf + 40);
+      bmp.g_mask.mask   = read32le(buf + 44);
+      bmp.b_mask.mask   = read32le(buf + 48);
+    }
+
+    if(bmp.dibsize >= 56 && bmp.type >= BITMAPV3INFOHEADER)
+    {
+      bmp.a_mask.mask   = read32le(buf + 52);
     }
   }
   bmp.streamidx += bmp.dibsize;
@@ -974,8 +1136,16 @@ static enum image_error load_bmp(imageinfo *s)
     return IMAGE_ERROR_BMP_UNSUPPORTED_PLANES;
   }
 
+  /* This compression method is ambiguous with the supported BI_BITFIELDS. */
+  if(bmp.type == OS22XBITMAPHEADER && bmp.compr_method == BI_OS2_HUFFMAN)
+  {
+    debug("unsupported BMP compression type OS/2 Huffman 1D\n");
+    return IMAGE_ERROR_BMP_UNSUPPORTED_COMPRESSION;
+  }
+
   if(bmp.compr_method != BI_RGB &&
-   bmp.compr_method != BI_RLE8 && bmp.compr_method != BI_RLE4)
+   bmp.compr_method != BI_RLE8 && bmp.compr_method != BI_RLE4 &&
+   bmp.compr_method != BI_BITFIELDS && bmp.compr_method != BI_ALPHABITFIELDS)
   {
     debug("unsupported BMP compression type %zu\n", (size_t)bmp.compr_method);
     return IMAGE_ERROR_BMP_UNSUPPORTED_COMPRESSION;
@@ -992,14 +1162,41 @@ static enum image_error load_bmp(imageinfo *s)
 
   if(bmp.compr_method == BI_RLE8 && bmp.bpp != 8)
   {
-    debug("unsupported BPP %u for RLE8\n", bmp.bpp);
+    debug("unsupported BPP %u for BI_RLE8\n", bmp.bpp);
     return IMAGE_ERROR_BMP_UNSUPPORTED_BPP_RLE8;
   }
 
   if(bmp.compr_method == BI_RLE4 && bmp.bpp != 4)
   {
-    debug("unsupported BPP %u for RLE4\n", bmp.bpp);
+    debug("unsupported BPP %u for BI_RLE4\n", bmp.bpp);
     return IMAGE_ERROR_BMP_UNSUPPORTED_BPP_RLE4;
+  }
+
+  /* Init BI_BITFIELDS data if applicable. The relevant DIB fields must have
+   * been loaded and the BPP must be 16 or 32.
+   */
+  if(bmp.compr_method == BI_BITFIELDS || bmp.compr_method == BI_ALPHABITFIELDS)
+  {
+    if(bmp.type < BITMAPV2INFOHEADER ||
+     (bmp.type < BITMAPV3INFOHEADER && bmp.compr_method == BI_ALPHABITFIELDS))
+    {
+      debug("unsupported DIB size %d for BI_BITFIELDS %u", bmp.type,
+       (unsigned)bmp.compr_method);
+      return IMAGE_ERROR_BMP_BAD_BITFIELDS_DIB;
+    }
+
+    if(bmp.bpp != 16 && bmp.bpp != 32)
+    {
+      debug("unsupported BPP %u for BI_BITFIELDS\n", bmp.bpp);
+      return IMAGE_ERROR_BMP_UNSUPPORTED_BPP_BITFIELDS;
+    }
+
+    ret = bmp_init_bitfields(&bmp);
+    if(ret)
+    {
+      debug("failed to init BMP bitfields masks\n");
+      return ret;
+    }
   }
 
   if(bmp.bpp <= 8)
@@ -1051,8 +1248,6 @@ static enum image_error load_bmp(imageinfo *s)
   {
     case BI_RGB:
       ret = bmp_read_pixarray_uncompressed(&bmp, s);
-      if(ret)
-        goto err_free_image;
       break;
 
     // ImageMagick tends to automatically emit this for 8bpp BMPs.
@@ -1060,13 +1255,21 @@ static enum image_error load_bmp(imageinfo *s)
     case BI_RLE8:
     case BI_RLE4:
       ret = bmp_read_pixarray_rle(&bmp, s);
-      if(ret)
-        goto err_free_image;
+      break;
+
+    case BI_BITFIELDS:
+    case BI_ALPHABITFIELDS:
+      ret = bmp_read_pixarray_bitfields(&bmp, s);
       break;
 
     default:
-      goto err_free_image; // Shouldn't happen--method is filtered above!
+      // Shouldn't happen--method is filtered above!
+      ret = IMAGE_ERROR_UNKNOWN;
+      break;
   }
+
+  if(ret)
+    goto err_free_image;
 
   free(bmp.color_table);
   return IMAGE_OK;
@@ -1083,8 +1286,6 @@ err_free:
 /**
  * NetPBM loaders.
  */
-
-#define ROUND_32 (1u << 31u)
 
 static int next_byte(imageinfo *s)
 {

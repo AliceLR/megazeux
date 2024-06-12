@@ -127,15 +127,28 @@ static const struct image_file_const base_scaling_img_interlaced
   4, 8, raw_rgba_2x
 };
 
+/* Allow error in 16-bpp conversions since they can't accurately reproduce
+ * the source data. +-3 seems good enough for the current inputs.
+ */
+template<unsigned ERROR>
+static boolean compare_16bpp(int a, int b)
+{
+  a -= b;
+  return a >= -(int)ERROR && a <= (int)ERROR;
+}
 
+template<int ERROR>
 static boolean compare_rgb16(const rgba_color &base, const rgba_color &in)
 {
-  // Allow error in 16-bpp conversions...
-  static const int T = 3;
-  int r = (int)base.r - (int)in.r;
-  int g = (int)base.g - (int)in.g;
-  int b = (int)base.b - (int)in.b;
-  return (r >= -T && r <= T) && (g >= -T && g <= T) && (b >= -T && b <= T) && (in.a == 255);
+  return  compare_16bpp<ERROR>(base.r, in.r) && compare_16bpp<ERROR>(base.g, in.g) &&
+          compare_16bpp<ERROR>(base.b, in.b) && in.a == 255;
+}
+
+template<int ERROR>
+static boolean compare_rgba16(const rgba_color &base, const rgba_color &in)
+{
+  return  compare_16bpp<ERROR>(base.r, in.r) && compare_16bpp<ERROR>(base.g, in.g) &&
+          compare_16bpp<ERROR>(base.b, in.b) && compare_16bpp<ERROR>(base.a, in.a);
 }
 
 static boolean compare_rgb(const rgba_color &base, const rgba_color &in)
@@ -351,6 +364,37 @@ UNITTEST(BMP)
     "true_32bpp.bmp",
   };
 
+  /* These bitfields BMPs are 100% valid by the specification, but they
+   * confuse software aside from some web browsers:
+   *
+   * - Vivaldi (and possibly other Chromium browsers) displays all of them.
+   * - ImageMagick seems to be completely unaware of BITMAPV2INFOHEADER and
+   *   BITMAPV3INFOHEADER despite having output the original BITMAPV5HEADER
+   *   BMPs that these are based on.
+   * - Firefox can't display any of them either.
+   * - GIMP and misc. Windows applications can read the RGBA8888 and RGBA4444,
+   *   but not the RGB565 or RGB101010.
+   */
+  static const char *rgb_bitfields16_inputs[] =
+  {
+    "bitfields565_16bpp.bmp"
+  };
+
+  static const char *rgba_bitfields16_inputs[] =
+  {
+    "bitfields4444_16bpp.bmp"
+  };
+
+  static const char *rgb_bitfields32_inputs[] =
+  {
+    "bitfields101010_32bpp.bmp"
+  };
+
+  static const char *rgba_bitfields32_inputs[] =
+  {
+    "bitfields8888_32bpp.bmp"
+  };
+
   SECTION(TrueColor)
   {
     for(const char *filename : rgb_truecolor_inputs)
@@ -358,7 +402,7 @@ UNITTEST(BMP)
 
     // 16bpp is lossy, needs a special compare...
     for(const char *filename : rgb_truecolor16_inputs)
-      load_and_compare_image<compare_rgb16>(base_rgba_img, filename);
+      load_and_compare_image<compare_rgb16<3>>(base_rgba_img, filename);
   }
 
   SECTION(Indexed)
@@ -377,6 +421,20 @@ UNITTEST(BMP)
   {
     for(const char *filename : rgb_rle_inputs)
       load_and_compare_image<compare_rgb>(base_rgba_img, filename);
+  }
+
+  SECTION(Bitfields)
+  {
+    for(const char *filename : rgb_bitfields32_inputs)
+      load_and_compare_image<compare_rgb>(base_rgba_img, filename);
+    for(const char *filename : rgba_bitfields32_inputs)
+      load_and_compare_image<compare_rgba>(base_rgba_img, filename);
+
+    // 16bpp is lossy, needs a special compare...
+    for(const char *filename : rgb_bitfields16_inputs)
+      load_and_compare_image<compare_rgb16<3>>(base_rgba_img, filename);
+    for(const char *filename : rgba_bitfields16_inputs)
+      load_and_compare_image<compare_rgba16<3>>(base_rgba_img, filename);
   }
 }
 
