@@ -89,6 +89,8 @@ USERS
 + Fixed audible pops when setting MOD_FREQUENCY.
 + ccv and png2smzx now return slightly more useful error
   messages when an image fails to load.
++ ccv and png2smzx now support BMPs that use BI_BITFIELDS and
+  BI_ALPHABITFIELDS.
 
 DEVELOPERS
 
