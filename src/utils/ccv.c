@@ -504,6 +504,7 @@ static void LoadImage(struct image_file *dest, Config *cfg, const char *path)
 {
   struct image_raw_format format;
   struct image_raw_format *use_format = NULL;
+  enum image_error ret;
 
   if((cfg->w > 0) && (cfg->h > 0))
   {
@@ -513,8 +514,9 @@ static void LoadImage(struct image_file *dest, Config *cfg, const char *path)
     use_format = &format;
   }
 
-  if(!load_image_from_file(path, dest, use_format))
-    Error("Failed to load file '%s'", path);
+  ret = load_image_from_file(path, dest, use_format);
+  if(ret)
+    Error("Failed to load file '%s': %s", path, image_error_string(ret));
 }
 
 static void FreeImage(Image *img)

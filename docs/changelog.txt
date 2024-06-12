@@ -87,6 +87,8 @@ USERS
 + The SDL audio driver will now initialize the software mixer
   frequency with the value returned by SDL_OpenAudioDevice.
 + Fixed audible pops when setting MOD_FREQUENCY.
++ ccv and png2smzx now return slightly more useful error
+  messages when an image fails to load.
 
 DEVELOPERS
 

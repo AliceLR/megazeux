@@ -175,8 +175,8 @@ static void load_and_compare_image(const struct image_file_const &base,
 
   snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
-  boolean ret = load_image_from_file(path, &img, NULL);
-  ASSERT(ret, "%s: load failed", filename);
+  enum image_error ret = load_image_from_file(path, &img, NULL);
+  ASSERT(ret == IMAGE_OK, "%s: load failed: %s", filename, image_error_string(ret));
   compare_image<COMPARE_FN>(base, img, filename);
   image_free(&img);
 }
@@ -300,14 +300,14 @@ UNITTEST(GIF)
   {
     struct image_file img{};
     char path[512];
-    boolean ret;
+    enum image_error ret;
 
     for(const auto &in : complex_inputs)
     {
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", in.filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", in.filename);
+      ASSERT(ret == IMAGE_OK, "%s: load failed: %s", in.filename, image_error_string(ret));
       uint32_t chk = crc32(0ul, reinterpret_cast<uint8_t *>(img.data), img.width * img.height * 4);
       ASSERTEQ(chk, in.crc, "crc32 mismatch");
       image_free(&img);
@@ -474,7 +474,7 @@ UNITTEST(farbfeld)
 UNITTEST(raw)
 {
   struct image_file img{};
-  boolean ret;
+  enum image_error ret;
 
   static const struct image_raw_format gs_format = { base_gs_img.width, base_gs_img.height, 1 };
   static const struct image_raw_format gsa_format = { base_gs_img.width, base_gs_img.height, 2 };
@@ -484,7 +484,7 @@ UNITTEST(raw)
   SECTION(Greyscale)
   {
     ret = load_image_from_file(DATA_BASEDIR "raw_gs.raw", &img, &gs_format);
-    ASSERT(ret, "raw_gs.raw: load failed");
+    ASSERT(ret == IMAGE_OK, "raw_gs.raw: load failed: %s", image_error_string(ret));
     compare_image<compare_rgb>(base_gs_img, img, "raw_gs.raw");
     image_free(&img);
   }
@@ -492,7 +492,7 @@ UNITTEST(raw)
   SECTION(GreyscaleAlpha)
   {
     ret = load_image_from_file(DATA_BASEDIR "raw_gsa.raw", &img, &gsa_format);
-    ASSERT(ret, "raw_gsa.raw: load failed");
+    ASSERT(ret == IMAGE_OK, "raw_gsa.raw: load failed: %s", image_error_string(ret));
     compare_image<compare_rgba>(base_gs_img, img, "raw_gsa.raw");
     image_free(&img);
   }
@@ -500,7 +500,7 @@ UNITTEST(raw)
   SECTION(RGB)
   {
     ret = load_image_from_file(DATA_BASEDIR "raw_rgb.raw", &img, &rgb_format);
-    ASSERT(ret, "raw_rgb.raw: load failed");
+    ASSERT(ret == IMAGE_OK, "raw_rgb.raw: load failed: %s", image_error_string(ret));
     compare_image<compare_rgb>(base_rgba_img, img, "raw_rgb.raw");
     image_free(&img);
   }
@@ -508,7 +508,7 @@ UNITTEST(raw)
   SECTION(RGBA)
   {
     ret = load_image_from_file(DATA_BASEDIR "raw_rgba.raw", &img, &rgba_format);
-    ASSERT(ret, "raw_rgba.raw: load failed");
+    ASSERT(ret == IMAGE_OK, "raw_rgba.raw: load failed: %s", image_error_string(ret));
     compare_image<compare_rgba>(base_rgba_img, img, "raw_rgba.raw");
     image_free(&img);
   }

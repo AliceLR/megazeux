@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2021 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2021-2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -65,6 +65,91 @@ typedef struct imageinfo
 }
 imageinfo;
 
+const char *image_error_string(enum image_error err)
+{
+  switch(err)
+  {
+    case IMAGE_OK:
+      return "success";
+    case IMAGE_ERROR_UNKNOWN:
+      return "unknown error";
+    case IMAGE_ERROR_IO:
+      return "read error";
+    case IMAGE_ERROR_MEM:
+      return "out of memory";
+    case IMAGE_ERROR_SIGNATURE:
+      return "unrecognized image type";
+    case IMAGE_ERROR_CONSTRAINT:
+      return "image size exceeds maximum";
+
+    case IMAGE_ERROR_RAW_UNSUPPORTED_BPP:
+      return "unsupported RAW bits per pixel";
+
+    case IMAGE_ERROR_PNG_INIT:
+      return "failed to init PNG decoder";
+    case IMAGE_ERROR_PNG_FAILED:
+      return "unknown PNG decoder error";
+
+    case IMAGE_ERROR_GIF_INVALID:
+      return "invalid GIF data";
+    case IMAGE_ERROR_GIF_SIGNATURE:
+      return "unsupported GIF type";
+
+    case IMAGE_ERROR_BMP_UNSUPPORTED_DIB:
+      return "unsupported BMP DIB header size";
+    case IMAGE_ERROR_BMP_UNSUPPORTED_PLANES:
+      return "unsupported BMP plane count";
+    case IMAGE_ERROR_BMP_UNSUPPORTED_COMPRESSION:
+      return "unsupported BMP compression method";
+    case IMAGE_ERROR_BMP_UNSUPPORTED_BPP:
+      return "unsupported BMP bits per pixel";
+    case IMAGE_ERROR_BMP_UNSUPPORTED_BPP_RLE8:
+      return "unsupported BMP bits per pixel (must be 8 for RLE8)";
+    case IMAGE_ERROR_BMP_UNSUPPORTED_BPP_RLE4:
+      return "unsupported BMP bits per pixel (must be 4 for RLE4)";
+    case IMAGE_ERROR_BMP_BAD_1BPP:
+      return "error unpacking 1BPP BMP";
+    case IMAGE_ERROR_BMP_BAD_2BPP:
+      return "error unpacking 2BPP BMP";
+    case IMAGE_ERROR_BMP_BAD_4BPP:
+      return "error unpacking 4BPP BMP";
+    case IMAGE_ERROR_BMP_BAD_8BPP:
+      return "error loading 8BPP BMP";
+    case IMAGE_ERROR_BMP_BAD_16BPP:
+      return "error loading 16BPP BMP";
+    case IMAGE_ERROR_BMP_BAD_24BPP:
+      return "error loading 24BPP BMP";
+    case IMAGE_ERROR_BMP_BAD_32BPP:
+      return "error loading 32BPP BMP";
+    case IMAGE_ERROR_BMP_BAD_RLE:
+      return "error decoding RLE BMP";
+    case IMAGE_ERROR_BMP_BAD_SIZE:
+      return "invalid BMP image size";
+    case IMAGE_ERROR_BMP_BAD_COLOR_TABLE:
+      return "invalid BMP color table";
+
+    case IMAGE_ERROR_PBM_BAD_HEADER:
+      return "failed to read PBM header";
+    case IMAGE_ERROR_PBM_BAD_MAXVAL:
+      return "bad PBM header maxval";
+    case IMAGE_ERROR_PAM_BAD_WIDTH:
+      return "bad PAM width";
+    case IMAGE_ERROR_PAM_BAD_HEIGHT:
+      return "bad PAM height";
+    case IMAGE_ERROR_PAM_BAD_DEPTH:
+      return "bad PAM depth";
+    case IMAGE_ERROR_PAM_BAD_MAXVAL:
+      return "bad PAM maxval";
+    case IMAGE_ERROR_PAM_BAD_TUPLTYPE:
+      return "bad PAM tupltype";
+    case IMAGE_ERROR_PAM_MISSING_ENDHDR:
+      return "missing PAM endhdr";
+    case IMAGE_ERROR_PAM_DEPTH_TUPLTYPE_MISMATCH:
+      return "PAM tupltype does not support image depth";
+  }
+  return "unknown error";
+}
+
 static uint16_t read16be(const uint8_t in[2])
 {
   return (in[0] << 8u) | in[1];
@@ -101,21 +186,22 @@ static boolean image_constraint(uint32_t width, uint32_t height)
 /**
  * Initialize an image file's pixel array and other values.
  */
-static boolean image_init(uint32_t width, uint32_t height, struct image_file *dest)
+static enum image_error image_init(uint32_t width, uint32_t height,
+ struct image_file *dest)
 {
   struct rgba_color *data;
 
   if(!image_constraint(width, height))
-    return false;
+    return IMAGE_ERROR_CONSTRAINT;
 
   data = (struct rgba_color *)calloc(width * height, sizeof(struct rgba_color));
   if(!data)
-    return false;
+    return IMAGE_ERROR_MEM;
 
   dest->width = width;
   dest->height = height;
   dest->data = data;
-  return true;
+  return IMAGE_OK;
 }
 
 /**
@@ -148,7 +234,7 @@ static void png_read_fn(png_struct *png, png_byte *dest, size_t count)
     png_error(png, "eof");
 }
 
-static boolean load_png(imageinfo *s)
+static enum image_error load_png(imageinfo *s)
 {
   struct image_file *dest = s->out;
   png_struct *png = NULL;
@@ -160,19 +246,26 @@ static boolean load_png(imageinfo *s)
   png_uint_32 j;
   int bit_depth;
   int color_type;
+  enum image_error ret;
 
   debug("Image type: PNG\n");
   dest->data = NULL;
 
   png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if(!png)
-    return false;
+    return IMAGE_ERROR_PNG_INIT;
   info = png_create_info_struct(png);
   if(!info)
+  {
+    ret = IMAGE_ERROR_PNG_INIT;
     goto error;
+  }
 
   if(setjmp(png_jmpbuf(png)))
+  {
+    ret = IMAGE_ERROR_PNG_FAILED;
     goto error;
+  }
 
   png_set_read_fn(png, s, png_read_fn);
   png_set_sig_bytes(png, 8);
@@ -180,12 +273,16 @@ static boolean load_png(imageinfo *s)
   png_read_info(png, info);
   png_get_IHDR(png, info, &w, &h, &bit_depth, &color_type, NULL, NULL, NULL);
 
-  if(!image_init(w, h, dest))
+  ret = image_init(w, h, dest);
+  if(ret)
     goto error;
 
   row_ptrs = (png_byte **)malloc(sizeof(png_byte *) * h);
   if(!row_ptrs)
+  {
+    ret = IMAGE_ERROR_MEM;
     goto error;
+  }
 
   for(i = 0, j = 0; i < h; i++, j += w)
     row_ptrs[i] = (png_byte *)(dest->data + j);
@@ -210,14 +307,14 @@ static boolean load_png(imageinfo *s)
   free(row_ptrs);
   dest->width = w;
   dest->height = h;
-  return true;
+  return IMAGE_OK;
 
 error:
   png_destroy_read_struct(&png, info ? &info : NULL, NULL);
 
   free(dest->data);
   free(row_ptrs);
-  return false;
+  return ret;
 }
 
 #endif /* CONFIG_PNG */
@@ -227,7 +324,20 @@ error:
  * GIF loader.
  */
 
-static boolean load_gif(imageinfo *s)
+static enum image_error convert_gif_error(enum gif_error err)
+{
+  switch(err)
+  {
+    case GIF_OK:        return IMAGE_OK;
+    case GIF_IO:        return IMAGE_ERROR_IO;
+    case GIF_MEM:       return IMAGE_ERROR_MEM;
+    case GIF_INVALID:   return IMAGE_ERROR_GIF_INVALID;
+    case GIF_SIGNATURE: return IMAGE_ERROR_GIF_SIGNATURE;
+  }
+  return IMAGE_ERROR_UNKNOWN;
+}
+
+static enum image_error load_gif(imageinfo *s)
 {
   struct image_file *dest = s->out;
   struct gif_info gif;
@@ -242,7 +352,7 @@ static boolean load_gif(imageinfo *s)
   if(ret != GIF_OK)
   {
     debug("read failed: %s\n", gif_error_string(ret));
-    return false;
+    return convert_gif_error(ret);
   }
 
   gif_composite_size(&width, &height, &gif);
@@ -250,7 +360,7 @@ static boolean load_gif(imageinfo *s)
   if(!image_constraint(width, height))
   {
     gif_close(&gif);
-    return false;
+    return IMAGE_ERROR_CONSTRAINT;
   }
 
   ret = gif_composite(&pixels, &gif, malloc);
@@ -264,7 +374,7 @@ static boolean load_gif(imageinfo *s)
     debug("composite failed: %s\n", gif_error_string(ret));
 
   gif_close(&gif);
-  return (ret == GIF_OK);
+  return convert_gif_error(ret);
 }
 
 
@@ -396,7 +506,8 @@ static struct rgba_color *bmp_read_color_table(struct bmp_header *bmp, imageinfo
   return color_table;
 }
 
-static boolean bmp_pixarray_u1(const struct bmp_header *bmp, imageinfo * RESTRICT s)
+static enum image_error bmp_pixarray_u1(const struct bmp_header *bmp,
+ imageinfo * RESTRICT s)
 {
   const struct rgba_color *color_table = bmp->color_table;
   struct image_file *dest = s->out;
@@ -414,7 +525,7 @@ static boolean bmp_pixarray_u1(const struct bmp_header *bmp, imageinfo * RESTRIC
       char v;
       int value;
       if(s->readfn(&v, 1, s->in) < 1)
-        return false;
+        return IMAGE_ERROR_BMP_BAD_1BPP;
 
       for(value = v, i = 7; i >= 0 && x < bmp->width; i--, x++)
       {
@@ -424,12 +535,13 @@ static boolean bmp_pixarray_u1(const struct bmp_header *bmp, imageinfo * RESTRIC
     }
 
     if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
-      return false;
+      return IMAGE_ERROR_BMP_BAD_1BPP;
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean bmp_pixarray_u2(const struct bmp_header *bmp, imageinfo * RESTRICT s)
+static enum image_error bmp_pixarray_u2(const struct bmp_header *bmp,
+ imageinfo * RESTRICT s)
 {
   const struct rgba_color *color_table = bmp->color_table;
   struct image_file *dest = s->out;
@@ -447,7 +559,7 @@ static boolean bmp_pixarray_u2(const struct bmp_header *bmp, imageinfo * RESTRIC
       char v;
       int value;
       if(s->readfn(&v, 1, s->in) < 1)
-        return false;
+        return IMAGE_ERROR_BMP_BAD_2BPP;
 
       for(value = v, i = 6; i >= 0 && x < bmp->width; i -= 2, x++)
       {
@@ -457,12 +569,13 @@ static boolean bmp_pixarray_u2(const struct bmp_header *bmp, imageinfo * RESTRIC
     }
 
     if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
-      return false;
+      return IMAGE_ERROR_BMP_BAD_2BPP;
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean bmp_pixarray_u4(const struct bmp_header *bmp, imageinfo * RESTRICT s)
+static enum image_error bmp_pixarray_u4(const struct bmp_header *bmp,
+ imageinfo * RESTRICT s)
 {
   const struct rgba_color *color_table = bmp->color_table;
   struct image_file *dest = s->out;
@@ -478,7 +591,7 @@ static boolean bmp_pixarray_u4(const struct bmp_header *bmp, imageinfo * RESTRIC
     {
       char value;
       if(s->readfn(&value, 1, s->in) < 1)
-        return false;
+        return IMAGE_ERROR_BMP_BAD_4BPP;
 
       d[0] = (value >> 0) & 0x0f;
       d[1] = (value >> 4) & 0x0f;
@@ -489,12 +602,13 @@ static boolean bmp_pixarray_u4(const struct bmp_header *bmp, imageinfo * RESTRIC
     }
 
     if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
-      return false;
+      return IMAGE_ERROR_BMP_BAD_4BPP;
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean bmp_pixarray_u8(const struct bmp_header *bmp, imageinfo * RESTRICT s)
+static enum image_error bmp_pixarray_u8(const struct bmp_header *bmp,
+ imageinfo * RESTRICT s)
 {
   const struct rgba_color *color_table = bmp->color_table;
   struct image_file *dest = s->out;
@@ -510,18 +624,18 @@ static boolean bmp_pixarray_u8(const struct bmp_header *bmp, imageinfo * RESTRIC
     {
       uint8_t value;
       if(s->readfn(&value, 1, s->in) < 1)
-        return false;
+        return IMAGE_ERROR_BMP_BAD_8BPP;
 
       *(pos++) = color_table[value];
     }
 
     if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
-      return false;
+      return IMAGE_ERROR_BMP_BAD_8BPP;
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean bmp_pixarray_u16(const struct bmp_header *bmp,
+static enum image_error bmp_pixarray_u16(const struct bmp_header *bmp,
  imageinfo * RESTRICT s)
 {
   struct image_file *dest = s->out;
@@ -537,7 +651,7 @@ static boolean bmp_pixarray_u16(const struct bmp_header *bmp,
     {
       uint16_t value;
       if(s->readfn(d, 2, s->in) < 2)
-        return false;
+        return IMAGE_ERROR_BMP_BAD_16BPP;
 
       value = read16le(d);
 
@@ -549,12 +663,13 @@ static boolean bmp_pixarray_u16(const struct bmp_header *bmp,
     }
 
     if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
-      return false;
+      return IMAGE_ERROR_BMP_BAD_16BPP;
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean bmp_pixarray_u24(const struct bmp_header *bmp, imageinfo * RESTRICT s)
+static enum image_error bmp_pixarray_u24(const struct bmp_header *bmp,
+ imageinfo * RESTRICT s)
 {
   struct image_file *dest = s->out;
   uint8_t d[4];
@@ -568,7 +683,7 @@ static boolean bmp_pixarray_u24(const struct bmp_header *bmp, imageinfo * RESTRI
     for(x = 0; x < bmp->width; x++)
     {
       if(s->readfn(d, 3, s->in) < 3)
-        return false;
+        return IMAGE_ERROR_BMP_BAD_24BPP;
 
       pos->r = d[2];
       pos->g = d[1];
@@ -578,12 +693,13 @@ static boolean bmp_pixarray_u24(const struct bmp_header *bmp, imageinfo * RESTRI
     }
 
     if(bmp->rowpadding && s->readfn(d, bmp->rowpadding, s->in) < bmp->rowpadding)
-      return false;
+      return IMAGE_ERROR_BMP_BAD_24BPP;
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean bmp_pixarray_u32(const struct bmp_header *bmp, imageinfo * RESTRICT s)
+static enum image_error bmp_pixarray_u32(const struct bmp_header *bmp,
+ imageinfo * RESTRICT s)
 {
   struct image_file *dest = s->out;
   uint8_t d[4];
@@ -597,7 +713,7 @@ static boolean bmp_pixarray_u32(const struct bmp_header *bmp, imageinfo * RESTRI
     for(x = 0; x < bmp->width; x++)
     {
       if(s->readfn(d, 4, s->in) < 4)
-        return false;
+        return IMAGE_ERROR_BMP_BAD_32BPP;
 
       pos->r = d[2];
       pos->g = d[1];
@@ -607,10 +723,10 @@ static boolean bmp_pixarray_u32(const struct bmp_header *bmp, imageinfo * RESTRI
     }
     // 32bpp is always aligned, no padding required.
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean bmp_read_pixarray_uncompressed(const struct bmp_header *bmp,
+static enum image_error bmp_read_pixarray_uncompressed(const struct bmp_header *bmp,
  imageinfo * RESTRICT s)
 {
   switch(bmp->bpp)
@@ -623,13 +739,13 @@ static boolean bmp_read_pixarray_uncompressed(const struct bmp_header *bmp,
     case 24:  return bmp_pixarray_u24(bmp, s);
     case 32:  return bmp_pixarray_u32(bmp, s);
   }
-  return false;
+  return IMAGE_ERROR_BMP_UNSUPPORTED_BPP;
 }
 
 /**
  * Microsoft RLE8 and RLE4 compression.
  */
-static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
+static enum image_error bmp_read_pixarray_rle(const struct bmp_header *bmp,
  imageinfo * RESTRICT s)
 {
   const struct rgba_color *color_table = bmp->color_table;
@@ -640,7 +756,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
   uint8_t d[2];
 
   if(bmp->bpp != 4 && bmp->bpp != 8) // Should never happen...
-    return false;
+    return IMAGE_ERROR_UNKNOWN;
 
   while(x < bmp->width && y >= 0)
   {
@@ -650,7 +766,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
     while(true)
     {
       if(s->readfn(d, 2, s->in) < 2)
-        return false;
+        return IMAGE_ERROR_BMP_BAD_RLE;
 
       if(!d[0])
       {
@@ -668,7 +784,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
         {
           // End of file.
           //debug("RLE%u EOF  : %3u %3u\n", bmp->bpp, d[0], d[1]);
-          return true;
+          return IMAGE_OK;
         }
         else
 
@@ -678,7 +794,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
           // Documentation refers to unsigned y moving the current position
           // "down", but since this is still OS/2 line order, it means "up".
           if(s->readfn(d, 2, s->in) < 2)
-            return false;
+            return IMAGE_ERROR_BMP_BAD_RLE;
 
           //debug("RLE%u delta: %3u %3u\n", bmp->bpp, d[0], d[1]);
           x += d[0];
@@ -695,7 +811,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
             for(i = 0; i < d[1] && x < bmp->width; i++, x++)
             {
               if(s->readfn(&idx, 1, s->in) < 1)
-                return false;
+                return IMAGE_ERROR_BMP_BAD_RLE;
 
               *(pos++) = color_table[idx];
             }
@@ -708,7 +824,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
             for(i = 0; i < d[1] && x < bmp->width;)
             {
               if(s->readfn(&idx, 1, s->in) < 1)
-                return false;
+                return IMAGE_ERROR_BMP_BAD_RLE;
 
               *(pos++) = color_table[(idx >> 4) & 0x0f];
               i++, x++;
@@ -728,7 +844,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
           {
             debug("RLE%u reached x=bmp->width during absolute run (should this be valid)?\n",
              bmp->bpp);
-            return false;
+            return IMAGE_ERROR_BMP_BAD_RLE;
           }
         }
       }
@@ -762,7 +878,7 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
         {
           debug("RLE%u reached x=bmp->width during encoded run (should this be valid)?\n",
            bmp->bpp);
-          return false;
+          return IMAGE_ERROR_BMP_BAD_RLE;
         }
       }
     }
@@ -774,24 +890,25 @@ static boolean bmp_read_pixarray_rle(const struct bmp_header *bmp,
     if(s->readfn(d, 2, s->in) < 2 || d[0] != 0 || d[1] != 1)
       debug("RLE%u missing EOF!\n", bmp->bpp);
 
-    return true;
+    return IMAGE_OK;
   }
 
   debug("RLE%u out of bounds\n", bmp->bpp);
-  return false;
+  return IMAGE_ERROR_BMP_BAD_RLE;
 }
 
-static boolean load_bmp(imageinfo *s)
+static enum image_error load_bmp(imageinfo *s)
 {
   struct image_file *dest = s->out;
   uint8_t buf[BMP_DIB_MAX_LEN] = { 'B', 'M' };
   struct bmp_header bmp;
+  enum image_error ret;
 
   debug("Image type: BMP\n");
 
   // Note: already read magic bytes.
   if(s->readfn(buf + 2, BMP_HEADER_LEN - 2, s->in) < BMP_HEADER_LEN - 2)
-    return false;
+    return IMAGE_ERROR_IO;
 
   memset(&bmp, 0, sizeof(bmp));
 
@@ -803,7 +920,7 @@ static boolean load_bmp(imageinfo *s)
 
   // DIB header size.
   if(s->readfn(buf, 4, s->in) < 4)
-    return false;
+    return IMAGE_ERROR_IO;
 
   bmp.dibsize = read32le(buf + 0);
   bmp.type = bmp_get_dib_type(bmp.dibsize);
@@ -811,11 +928,11 @@ static boolean load_bmp(imageinfo *s)
   if(bmp.type == DIB_UNKNOWN)
   {
     debug("Unknown BMP DIB header size %zu!\n", (size_t)bmp.dibsize);
-    return false;
+    return IMAGE_ERROR_BMP_UNSUPPORTED_DIB;
   }
 
   if(s->readfn(buf + 4, bmp.dibsize - 4, s->in) < bmp.dibsize - 4)
-    return false;
+    return IMAGE_ERROR_IO;
 
   if(bmp.type == BITMAPCOREHEADER)
   {
@@ -848,20 +965,20 @@ static boolean load_bmp(imageinfo *s)
   if(bmp.width < 0 || bmp.height < 0)
   {
     debug("invalid BMP dimensions %zd x %zd", (ssize_t)bmp.width, (ssize_t)bmp.height);
-    return false;
+    return IMAGE_ERROR_BMP_BAD_SIZE;
   }
 
   if(bmp.planes != 1)
   {
     debug("invalid BMP planes %u\n", bmp.planes);
-    return false;
+    return IMAGE_ERROR_BMP_UNSUPPORTED_PLANES;
   }
 
   if(bmp.compr_method != BI_RGB &&
    bmp.compr_method != BI_RLE8 && bmp.compr_method != BI_RLE4)
   {
     debug("unsupported BMP compression type %zu\n", (size_t)bmp.compr_method);
-    return false;
+    return IMAGE_ERROR_BMP_UNSUPPORTED_COMPRESSION;
   }
   debug("Compression: %zu\n", (size_t)bmp.compr_method);
 
@@ -869,20 +986,20 @@ static boolean load_bmp(imageinfo *s)
    bmp.bpp != 16 && bmp.bpp != 24 && bmp.bpp != 32)
   {
     debug("unsupported BMP BPP %u\n", bmp.bpp);
-    return false;
+    return IMAGE_ERROR_BMP_UNSUPPORTED_BPP;
   }
   debug("BPP: %u\n", bmp.bpp);
 
   if(bmp.compr_method == BI_RLE8 && bmp.bpp != 8)
   {
     debug("unsupported BPP %u for RLE8\n", bmp.bpp);
-    return false;
+    return IMAGE_ERROR_BMP_UNSUPPORTED_BPP_RLE8;
   }
 
   if(bmp.compr_method == BI_RLE4 && bmp.bpp != 4)
   {
     debug("unsupported BPP %u for RLE4\n", bmp.bpp);
-    return false;
+    return IMAGE_ERROR_BMP_UNSUPPORTED_BPP_RLE4;
   }
 
   if(bmp.bpp <= 8)
@@ -901,7 +1018,7 @@ static boolean load_bmp(imageinfo *s)
     if(!bmp.color_table)
     {
       debug("failed to read BMP color table\n");
-      return false;
+      return IMAGE_ERROR_BMP_BAD_COLOR_TABLE;
     }
   }
 
@@ -920,16 +1037,21 @@ static boolean load_bmp(imageinfo *s)
     bmp.streamidx += r;
 
     if(s->readfn(buf, 1, s->in) < 1)
+    {
+      ret = IMAGE_ERROR_IO;
       goto err_free;
+    }
   }
 
-  if(!image_init(bmp.width, bmp.height, dest))
+  ret = image_init(bmp.width, bmp.height, dest);
+  if(ret)
     goto err_free;
 
   switch(bmp.compr_method)
   {
     case BI_RGB:
-      if(!bmp_read_pixarray_uncompressed(&bmp, s))
+      ret = bmp_read_pixarray_uncompressed(&bmp, s);
+      if(ret)
         goto err_free_image;
       break;
 
@@ -937,7 +1059,8 @@ static boolean load_bmp(imageinfo *s)
     // GIMP can emit both types of RLE, though this is turned off by default.
     case BI_RLE8:
     case BI_RLE4:
-      if(!bmp_read_pixarray_rle(&bmp, s))
+      ret = bmp_read_pixarray_rle(&bmp, s);
+      if(ret)
         goto err_free_image;
       break;
 
@@ -946,14 +1069,14 @@ static boolean load_bmp(imageinfo *s)
   }
 
   free(bmp.color_table);
-  return true;
+  return IMAGE_OK;
 
 err_free_image:
   debug("error reading pixarray\n");
   image_free(dest);
 err_free:
   free(bmp.color_table);
-  return false;
+  return ret;
 }
 
 
@@ -1097,7 +1220,7 @@ static char *next_line(char *dest, int dest_len, imageinfo *s)
   return dest;
 }
 
-static boolean pbm_header(uint32_t *width, uint32_t *height, imageinfo *s)
+static enum image_error pbm_header(uint32_t *width, uint32_t *height, imageinfo *s)
 {
   // NOTE: already read magic.
   uint32_t w = 0;
@@ -1105,18 +1228,18 @@ static boolean pbm_header(uint32_t *width, uint32_t *height, imageinfo *s)
 
   if(next_number(&w, s) < 0 ||
    next_number(&h, s) < 0)
-    return false;
+    return IMAGE_ERROR_PBM_BAD_HEADER;
 
   // Skip exactly one whitespace (for binary files).
   skip_whitespace(s);
 
   *width = w;
   *height = h;
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean ppm_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
- imageinfo *s)
+static enum image_error ppm_header(uint32_t *width, uint32_t *height,
+ uint32_t *maxval, imageinfo *s)
 {
   // NOTE: already read magic. PGM and PPM use the same header format.
   uint32_t w = 0;
@@ -1126,24 +1249,25 @@ static boolean ppm_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
   if(next_number(&w, s) < 0 ||
    next_number(&h, s) < 0 ||
    next_number(&m, s) < 0)
-    return false;
+    return IMAGE_ERROR_PBM_BAD_HEADER;
 
   // Skip exactly one whitespace (for binary files).
   skip_whitespace(s);
 
   if(!m || m > 65535)
-    return false;
+    return IMAGE_ERROR_PBM_BAD_MAXVAL;
 
   *width = w;
   *height = h;
   *maxval = m;
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean load_portable_bitmap_plain(imageinfo *s)
+static enum image_error load_portable_bitmap_plain(imageinfo *s)
 {
   struct image_file *dest = s->out;
   struct rgba_color *pos;
+  enum image_error ret;
   uint32_t width;
   uint32_t height;
   uint32_t size;
@@ -1151,11 +1275,13 @@ static boolean load_portable_bitmap_plain(imageinfo *s)
 
   debug("Image type: PBM (P1)\n");
 
-  if(!pbm_header(&width, &height, s))
-    return false;
+  ret = pbm_header(&width, &height, s);
+  if(ret)
+    return ret;
 
-  if(!image_init(width, height, dest))
-    return false;
+  ret = image_init(width, height, dest);
+  if(ret)
+    return ret;
 
   pos = dest->data;
   size = dest->width * dest->height;
@@ -1164,7 +1290,10 @@ static boolean load_portable_bitmap_plain(imageinfo *s)
   {
     int val = next_bit_value(s);
     if(val < 0)
+    {
+      debug("short read in PBM P1 (read %zu of %zu)\n", (size_t)i, (size_t)size);
       break;
+    }
 
     val = val ? 0 : 255;
     pos->r = val;
@@ -1173,13 +1302,14 @@ static boolean load_portable_bitmap_plain(imageinfo *s)
     pos->a = 255;
     pos++;
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean load_portable_bitmap_binary(imageinfo *s)
+static enum image_error load_portable_bitmap_binary(imageinfo *s)
 {
   struct image_file *dest = s->out;
   struct rgba_color *pos;
+  enum image_error ret;
   uint32_t width;
   uint32_t height;
   uint32_t x;
@@ -1187,11 +1317,13 @@ static boolean load_portable_bitmap_binary(imageinfo *s)
 
   debug("Image type: PBM (P4)\n");
 
-  if(!pbm_header(&width, &height, s))
-    return false;
+  ret = pbm_header(&width, &height, s);
+  if(ret)
+    return ret;
 
-  if(!image_init(width, height, dest))
-    return false;
+  ret = image_init(width, height, dest);
+  if(ret)
+    return ret;
 
   pos = dest->data;
 
@@ -1203,7 +1335,10 @@ static boolean load_portable_bitmap_binary(imageinfo *s)
       int val = next_byte(s);
       int mask;
       if(val < 0)
-        break;
+      {
+        debug("short read in PBM P4\n");
+        return IMAGE_OK;
+      }
 
       for(mask = 0x80; mask && x < width; mask >>= 1, x++)
       {
@@ -1216,13 +1351,14 @@ static boolean load_portable_bitmap_binary(imageinfo *s)
       }
     }
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean load_portable_greymap_plain(imageinfo *s)
+static enum image_error load_portable_greymap_plain(imageinfo *s)
 {
   struct image_file *dest = s->out;
   struct rgba_color *pos;
+  enum image_error ret;
   uint32_t width;
   uint32_t height;
   uint32_t maxval;
@@ -1232,11 +1368,13 @@ static boolean load_portable_greymap_plain(imageinfo *s)
 
   debug("Image type: PGM (P2)\n");
 
-  if(!ppm_header(&width, &height, &maxval, s))
-    return false;
+  ret = ppm_header(&width, &height, &maxval, s);
+  if(ret)
+    return ret;
 
-  if(!image_init(width, height, dest))
-    return false;
+  ret = image_init(width, height, dest);
+  if(ret)
+    return ret;
 
   pos = dest->data;
   size = dest->width * dest->height;
@@ -1246,7 +1384,10 @@ static boolean load_portable_greymap_plain(imageinfo *s)
   {
     int val = next_value(maxval, s);
     if(val < 0)
+    {
+      debug("short read in PGM P2 (read %zu of %zu)\n", (size_t)i, (size_t)size);
       break;
+    }
 
     val = (val * maxscale + ROUND_32) >> 32u;
     pos->r = val;
@@ -1255,13 +1396,14 @@ static boolean load_portable_greymap_plain(imageinfo *s)
     pos->a = 255;
     pos++;
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean load_portable_greymap_binary(imageinfo *s)
+static enum image_error load_portable_greymap_binary(imageinfo *s)
 {
   struct image_file *dest = s->out;
   struct rgba_color *pos;
+  enum image_error ret;
   uint32_t width;
   uint32_t height;
   uint32_t maxval;
@@ -1271,11 +1413,13 @@ static boolean load_portable_greymap_binary(imageinfo *s)
 
   debug("Image type: PGM (P5)\n");
 
-  if(!ppm_header(&width, &height, &maxval, s))
-    return false;
+  ret = ppm_header(&width, &height, &maxval, s);
+  if(ret)
+    return ret;
 
-  if(!image_init(width, height, dest))
-    return false;
+  ret = image_init(width, height, dest);
+  if(ret)
+    return ret;
 
   pos = dest->data;
   size = dest->width * dest->height;
@@ -1285,7 +1429,10 @@ static boolean load_portable_greymap_binary(imageinfo *s)
   {
     int val = next_binary(maxval, s);
     if(val < 0)
+    {
+      debug("short read in PGM P5 (read %zu of %zu)\n", (size_t)i, (size_t)size);
       break;
+    }
 
     val = (val * maxscale + ROUND_32) >> 32u;
     pos->r = val;
@@ -1294,13 +1441,14 @@ static boolean load_portable_greymap_binary(imageinfo *s)
     pos->a = 255;
     pos++;
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean load_portable_pixmap_plain(imageinfo *s)
+static enum image_error load_portable_pixmap_plain(imageinfo *s)
 {
   struct image_file *dest = s->out;
   struct rgba_color *pos;
+  enum image_error ret;
   uint32_t width;
   uint32_t height;
   uint32_t maxval;
@@ -1310,11 +1458,13 @@ static boolean load_portable_pixmap_plain(imageinfo *s)
 
   debug("Image type: PPM (P3)\n");
 
-  if(!ppm_header(&width, &height, &maxval, s))
-    return false;
+  ret = ppm_header(&width, &height, &maxval, s);
+  if(ret)
+    return ret;
 
-  if(!image_init(width, height, dest))
-    return false;
+  ret = image_init(width, height, dest);
+  if(ret)
+    return ret;
 
   pos = dest->data;
   size = dest->width * dest->height;
@@ -1326,7 +1476,10 @@ static boolean load_portable_pixmap_plain(imageinfo *s)
     int g = next_value(maxval, s);
     int b = next_value(maxval, s);
     if(r < 0 || g < 0 || b < 0)
+    {
+      debug("short read in PPM P3 (read %zu of %zu)\n", (size_t)i, (size_t)size);
       break;
+    }
 
     pos->r = (r * maxscale + ROUND_32) >> 32u;
     pos->g = (g * maxscale + ROUND_32) >> 32u;
@@ -1334,13 +1487,14 @@ static boolean load_portable_pixmap_plain(imageinfo *s)
     pos->a = 255;
     pos++;
   }
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean load_portable_pixmap_binary(imageinfo *s)
+static enum image_error load_portable_pixmap_binary(imageinfo *s)
 {
   struct image_file *dest = s->out;
   struct rgba_color *pos;
+  enum image_error ret;
   uint32_t width;
   uint32_t height;
   uint32_t maxval;
@@ -1350,11 +1504,13 @@ static boolean load_portable_pixmap_binary(imageinfo *s)
 
   debug("Image type: PPM (P6)\n");
 
-  if(!ppm_header(&width, &height, &maxval, s))
-    return false;
+  ret = ppm_header(&width, &height, &maxval, s);
+  if(ret)
+    return ret;
 
-  if(!image_init(width, height, dest))
-    return false;
+  ret = image_init(width, height, dest);
+  if(ret)
+    return ret;
 
   pos = dest->data;
   size = dest->width * dest->height;
@@ -1366,7 +1522,10 @@ static boolean load_portable_pixmap_binary(imageinfo *s)
     int g = next_binary(maxval, s);
     int b = next_binary(maxval, s);
     if(r < 0 || g < 0 || b < 0)
+    {
+      debug("short read in PPM P6 (read %zu of %zu)\n", (size_t)i, (size_t)size);
       break;
+    }
 
     pos->r = (r * maxscale + ROUND_32) >> 32u;
     pos->g = (g * maxscale + ROUND_32) >> 32u;
@@ -1374,7 +1533,7 @@ static boolean load_portable_pixmap_binary(imageinfo *s)
     pos->a = 255;
     pos++;
   }
-  return true;
+  return IMAGE_OK;
 }
 
 struct pam_tupl
@@ -1387,7 +1546,7 @@ struct pam_tupl
   int8_t alpha_pos;
 };
 
-static boolean pam_set_tupltype(struct pam_tupl *dest, const char *tuplstr)
+static enum image_error pam_set_tupltype(struct pam_tupl *dest, const char *tuplstr)
 {
   static const struct pam_tupl tupltypes[] =
   {
@@ -1405,15 +1564,15 @@ static boolean pam_set_tupltype(struct pam_tupl *dest, const char *tuplstr)
     if(!strcasecmp(tupltypes[i].name, tuplstr))
     {
       *dest = tupltypes[i];
-      return true;
+      return IMAGE_OK;
     }
   }
   debug("unsupported TUPLTYPE '%s'!\n", tuplstr);
-  return false;
+  return IMAGE_ERROR_PAM_BAD_TUPLTYPE;
 }
 
-static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
- uint32_t *depth, struct pam_tupl *tupltype, imageinfo *s)
+static enum image_error pam_header(uint32_t *width, uint32_t *height,
+ uint32_t *maxval, uint32_t *depth, struct pam_tupl *tupltype, imageinfo *s)
 {
   char linebuf[256];
   char tuplstr[256];
@@ -1425,6 +1584,7 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
   boolean has_d = false;
   boolean has_e = false;
   boolean has_tu = false;
+  enum image_error ret;
 
   while(next_line(linebuf, 256, s))
   {
@@ -1452,7 +1612,7 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
     if(!strcasecmp(key, "WIDTH"))
     {
       if(!*value || has_w)
-        return false;
+        return IMAGE_ERROR_PAM_BAD_WIDTH;
 
       *width = strtoul(value, NULL, 10);
       has_w = true;
@@ -1462,7 +1622,7 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
     if(!strcasecmp(key, "HEIGHT"))
     {
       if(!*value || has_h)
-        return false;
+        return IMAGE_ERROR_PAM_BAD_HEIGHT;
 
       *height = strtoul(value, NULL, 10);
       has_h = true;
@@ -1472,7 +1632,7 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
     if(!strcasecmp(key, "DEPTH"))
     {
       if(!*value || has_d)
-        return false;
+        return IMAGE_ERROR_PAM_BAD_DEPTH;
 
       *depth = strtoul(value, NULL, 10);
       has_d = true;
@@ -1482,7 +1642,7 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
     if(!strcasecmp(key, "MAXVAL"))
     {
       if(!*value || has_m)
-        return false;
+        return IMAGE_ERROR_PAM_BAD_MAXVAL;
 
       *maxval = strtoul(value, NULL, 10);
       has_m = true;
@@ -1493,7 +1653,7 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
     {
       // NOTE: the spec supports combining multiple of these, but doesn't use it.
       if(!*value || has_tu)
-        return false;
+        return IMAGE_ERROR_PAM_BAD_TUPLTYPE;
 
       // NOTE: tuplstr size MUST be >= linebuf size.
       strcpy(tuplstr, value);
@@ -1501,19 +1661,27 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
     }
   }
 
-  if(!has_w || !has_h || !has_d || !has_m || !has_e)
-    return false;
+  if(!has_w)
+    return IMAGE_ERROR_PAM_BAD_WIDTH;
+  if(!has_h)
+    return IMAGE_ERROR_PAM_BAD_HEIGHT;
+  if(!has_d)
+    return IMAGE_ERROR_PAM_BAD_DEPTH;
+  if(!has_m)
+    return IMAGE_ERROR_PAM_BAD_MAXVAL;
+  if(!has_e)
+    return IMAGE_ERROR_PAM_MISSING_ENDHDR;
 
   if(*depth < 1 || *depth > 4)
   {
     debug("invalid depth '%u'!\n", (unsigned int)*depth);
-    return false;
+    return IMAGE_ERROR_PAM_BAD_DEPTH;
   }
 
   if(*maxval < 1 || *maxval > 65535)
   {
     debug("invalid maxval '%u'!\n", (unsigned int)*maxval);
-    return false;
+    return IMAGE_ERROR_PAM_BAD_MAXVAL;
   }
 
   if(has_tu)
@@ -1530,17 +1698,18 @@ static boolean pam_header(uint32_t *width, uint32_t *height, uint32_t *maxval,
       case 3: guess = "RGB"; break;
       case 4: guess = "RGB_ALPHA"; break;
     }
-    if(!pam_set_tupltype(tupltype, guess))
-      return false;
+    ret = pam_set_tupltype(tupltype, guess);
+    if(ret)
+      return ret;
   }
 
   if(tupltype->mindepth > *depth)
-    return false;
+    return IMAGE_ERROR_PAM_DEPTH_TUPLTYPE_MISMATCH;
 
-  return true;
+  return IMAGE_OK;
 }
 
-static boolean load_portable_arbitrary_map(imageinfo *s)
+static enum image_error load_portable_arbitrary_map(imageinfo *s)
 {
   struct image_file *dest = s->out;
   struct rgba_color *pos;
@@ -1552,15 +1721,18 @@ static boolean load_portable_arbitrary_map(imageinfo *s)
   uint64_t maxscale;
   uint32_t size;
   uint32_t i;
+  enum image_error ret;
   int v[4] = { 0 };
 
   debug("Image type: PAM (P7)\n");
 
-  if(!pam_header(&width, &height, &maxval, &depth, &tupltype, s))
-    return false;
+  ret = pam_header(&width, &height, &maxval, &depth, &tupltype, s);
+  if(ret)
+    return ret;
 
-  if(!image_init(width, height, dest))
-    return false;
+  ret = image_init(width, height, dest);
+  if(ret)
+    return ret;
 
   pos = dest->data;
   size = dest->width * dest->height;
@@ -1574,7 +1746,10 @@ static boolean load_portable_arbitrary_map(imageinfo *s)
     {
       v[j] = next_binary(maxval, s);
       if(v[j] < 0)
-        return true;
+      {
+        debug("short read in PAM P7 (read %zu of %zu)\n", (size_t)i, (size_t)size);
+        return IMAGE_OK;
+      }
 
       v[j] = (v[j] * maxscale + ROUND_32) >> 32u;
     }
@@ -1585,7 +1760,7 @@ static boolean load_portable_arbitrary_map(imageinfo *s)
     pos->a = tupltype.alpha_pos >= 0 ? v[tupltype.alpha_pos] : 255;
     pos++;
   }
-  return true;
+  return IMAGE_OK;
 }
 
 
@@ -1598,7 +1773,7 @@ static uint8_t convert_16b_to_8b(uint16_t component)
   return (uint32_t)(component * 255u + 32768u) / 65535u;
 }
 
-static boolean load_farbfeld(imageinfo *s)
+static enum image_error load_farbfeld(imageinfo *s)
 {
   struct image_file *dest = s->out;
   struct rgba_color *pos;
@@ -1607,16 +1782,18 @@ static boolean load_farbfeld(imageinfo *s)
   uint32_t height;
   uint32_t size;
   uint32_t i;
+  enum image_error ret;
 
   debug("Image type: farbfeld\n");
 
   if(s->readfn(buf, 8, s->in) < 8)
-    return false;
+    return IMAGE_ERROR_IO;
 
   width  = read32be(buf + 0);
   height = read32be(buf + 4);
-  if(!image_init(width, height, dest))
-    return false;
+  ret = image_init(width, height, dest);
+  if(ret)
+    return ret;
 
   pos = dest->data;
   size = width * height;
@@ -1624,7 +1801,10 @@ static boolean load_farbfeld(imageinfo *s)
   for(i = 0; i < size; i++)
   {
     if(s->readfn(buf, 8, s->in) < 8)
+    {
+      debug("short read in ff (read %zu of %zu)\n", (size_t)i, (size_t)size);
       break;
+    }
 
     pos->r = convert_16b_to_8b(read16be(buf + 0));
     pos->g = convert_16b_to_8b(read16be(buf + 2));
@@ -1632,7 +1812,7 @@ static boolean load_farbfeld(imageinfo *s)
     pos->a = convert_16b_to_8b(read16be(buf + 6));
     pos++;
   }
-  return true;
+  return IMAGE_OK;
 }
 
 
@@ -1641,7 +1821,7 @@ static boolean load_farbfeld(imageinfo *s)
  * `not_magic` is the first few bytes of the file read for the purposes of
  * identifying a file format. For raw files, this is actually pixel data.
  */
-static boolean load_raw(imageinfo *s,
+static enum image_error load_raw(imageinfo *s,
  const struct image_raw_format *format, const uint8_t not_magic[8])
 {
   struct image_file *dest = s->out;
@@ -1651,12 +1831,13 @@ static boolean load_raw(imageinfo *s,
   uint64_t size = (uint64_t)format->width * format->height;
   uint64_t raw_size = size * format->bytes_per_pixel;
   uint64_t i;
+  enum image_error ret = IMAGE_OK;
   char tmp;
 
   if(format->bytes_per_pixel < 1 || format->bytes_per_pixel > 4)
   {
     debug("unsupported raw bytes per pixel %zu\n", (size_t)format->bytes_per_pixel);
-    return false;
+    return IMAGE_ERROR_RAW_UNSUPPORTED_BPP;
   }
 
   debug("checking if this is a raw file with properties: %zu %zu %zu\n",
@@ -1666,13 +1847,14 @@ static boolean load_raw(imageinfo *s,
   if(!data)
   {
     debug("can't allocate memory for raw image with given size\n");
-    return false;
+    return IMAGE_ERROR_MEM;
   }
 
   memcpy(data, not_magic, 8);
   if(s->readfn(data + 8, raw_size - 8, s->in) < raw_size - 8)
   {
     debug("failed to read required data for raw image\n");
+    ret = IMAGE_ERROR_IO;
     goto err_free;
   }
 
@@ -1681,7 +1863,8 @@ static boolean load_raw(imageinfo *s,
   if(s->readfn(&tmp, 1, s->in) != 0)
     debug("data exists after expected EOF in raw file\n");
 
-  if(!image_init(format->width, format->height, dest))
+  ret = image_init(format->width, format->height, dest);
+  if(ret)
     goto err_free;
 
   dest_pos = dest->data;
@@ -1712,12 +1895,9 @@ static boolean load_raw(imageinfo *s,
     src_pos += format->bytes_per_pixel;
   }
 
-  free(data);
-  return true;
-
 err_free:
   free(data);
-  return false;
+  return ret;
 }
 
 
@@ -1731,7 +1911,7 @@ err_free:
  * Load an image from a stream.
  * Assume this stream can NOT be seeked.
  */
-boolean load_image_from_stream(void *fp, image_read_function readfn,
+enum image_error load_image_from_stream(void *fp, image_read_function readfn,
  struct image_file *dest, const struct image_raw_format *raw_format)
 {
   imageinfo s = { dest, fp, readfn, -1 };
@@ -1740,7 +1920,7 @@ boolean load_image_from_stream(void *fp, image_read_function readfn,
   memset(dest, 0, sizeof(struct image_file));
 
   if(readfn(magic, 2, fp) < 2)
-    return false;
+    return IMAGE_ERROR_SIGNATURE;
 
   switch(MAGIC(magic[0], magic[1]))
   {
@@ -1758,14 +1938,14 @@ boolean load_image_from_stream(void *fp, image_read_function readfn,
   }
 
   if(readfn(magic + 2, 1, fp) < 1)
-    return false;
+    return IMAGE_ERROR_SIGNATURE;
 
   /* GIF */
   if(!memcmp(magic, "GIF", 3))
     return load_gif(&s);
 
   if(readfn(magic + 3, 5, fp) < 5)
-    return false;
+    return IMAGE_ERROR_SIGNATURE;
 
   /* farbfeld */
   if(!memcmp(magic, "farbfeld", 8))
@@ -1786,13 +1966,13 @@ boolean load_image_from_stream(void *fp, image_read_function readfn,
 
   if(raw_format)
   {
-    boolean res = load_raw(&s, raw_format, magic);
-    if(res)
-      return true;
+    enum image_error res = load_raw(&s, raw_format, magic);
+    if(res != IMAGE_ERROR_IO && res != IMAGE_ERROR_MEM)
+      return res;
   }
 
   debug("unknown format\n");
-  return false;
+  return IMAGE_ERROR_SIGNATURE;
 }
 
 static size_t stdio_read_fn(void *dest, size_t num, void *handle)
@@ -1803,11 +1983,11 @@ static size_t stdio_read_fn(void *dest, size_t num, void *handle)
 /**
  * Load an image from a file.
  */
-boolean load_image_from_file(const char *filename, struct image_file *dest,
- const struct image_raw_format *raw_format)
+enum image_error load_image_from_file(const char *filename,
+ struct image_file *dest, const struct image_raw_format *raw_format)
 {
   FILE *fp;
-  boolean ret;
+  enum image_error ret;
 
   if(!strcmp(filename, "-"))
   {
@@ -1820,7 +2000,7 @@ boolean load_image_from_file(const char *filename, struct image_file *dest,
 
   fp = fopen(filename, "rb");
   if(!fp)
-    return false;
+    return IMAGE_ERROR_IO;
 
   setvbuf(fp, NULL, _IOFBF, 32768);
 
