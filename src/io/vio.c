@@ -1137,7 +1137,7 @@ static inline boolean virt_writeback(vfile *vf)
  */
 static inline boolean virt_read(vfile *vf)
 {
-  const unsigned char *tmp;
+  const unsigned char *tmp = NULL;
   size_t len = 0;
   int ret = -1;
   if(!vf->inode)

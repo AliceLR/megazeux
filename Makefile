@@ -231,7 +231,7 @@ ifneq (${DEBUG},1)
 OPTIMIZE_FLAGS := -O3 ${OPTIMIZE_CFLAGS} ${OPTIMIZE_FLAGS}
 OPTIMIZE_DEF   ?= -DNDEBUG
 else
-OPTIMIZE_FLAGS := -Og ${DEBUG_CFLAGS} ${OPTIMIZE_FLAGS}
+OPTIMIZE_FLAGS := -O0 ${DEBUG_CFLAGS} ${OPTIMIZE_FLAGS}
 OPTIMIZE_DEF   ?= -DDEBUG
 endif
 
@@ -264,7 +264,11 @@ endif
 # Enable link-time optimization.
 #
 ifeq (${LTO},1)
+ifeq (${HAS_F_LTO},1)
 OPTIMIZE_FLAGS += -flto
+else
+$(warning link-time optimization not supported, ignoring.)
+endif
 endif
 
 CFLAGS   += ${OPTIMIZE_FLAGS} ${OPTIMIZE_DEF}

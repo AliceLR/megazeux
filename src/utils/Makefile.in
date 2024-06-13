@@ -16,23 +16,27 @@ utils_obj = src/utils/.build
 # Define UTILS_LIBSPEC so these properly link.
 utils_cflags := ${LIBPNG_CFLAGS} ${PTHREAD_CFLAGS} -DUTILS_LIBSPEC=
 
+# Hack for static linking the utilities on macOS.
+UTILS_ZLIB_LDFLAGS ?= ${ZLIB_LDFLAGS}
+UTILS_LIBPNG_LDFLAGS ?= ${LIBPNG_LDFLAGS}
+
 zip_objs  := ${io_obj}/path.o ${io_obj}/vio_no_vfs.o ${io_obj}/zip.o ${io_obj}/zip_stream.o
 img_objs  := ${utils_obj}/image_file.o ${utils_obj}/image_gif.o
 img_flags :=
 
 ifneq (${LIBPNG},)
-img_flags += ${LIBPNG_LDFLAGS} ${ZLIB_LDFLAGS} -lm
+img_flags += ${UTILS_LIBPNG_LDFLAGS} ${UTILS_ZLIB_LDFLAGS} -lm
 endif
 
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o \
                  ${io_obj}/fsafeopen.o \
                  ${zip_objs}
-checkres_ldflags := ${ZLIB_LDFLAGS}
+checkres_ldflags := ${UTILS_ZLIB_LDFLAGS}
 
 downver := ${utils_src}/downver${BINEXT}
 downver_objs := ${utils_obj}/downver.o ${zip_objs}
-downver_ldflags := ${ZLIB_LDFLAGS}
+downver_ldflags := ${UTILS_ZLIB_LDFLAGS}
 
 hlp2html := ${utils_src}/hlp2html${BINEXT}
 hlp2html_objs := ${utils_obj}/hlp2html.o
