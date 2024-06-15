@@ -332,11 +332,12 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
         else
         {
           // Add in new line below. Need only add one byte.
+          sz = scroll->mesg_size;
           reallocate_scroll(scroll, scroll->mesg_size + 1);
           where = scroll->mesg;
           // Move all at pos + currx up a space
           memmove(where + pos + currx + 1, where + pos + currx,
-           scroll->mesg_size - pos - currx);
+           sz - pos - currx);
           // Insert a \n
           where[pos + currx] = '\n';
           // Change pos and currx
