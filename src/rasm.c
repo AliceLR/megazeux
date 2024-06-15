@@ -22,10 +22,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "data.h"
-#include "rasm.h"
-#include "util.h"
 #include "counter.h"
+#include "data.h"
+#include "memcasecmp.h"
+#include "rasm.h"
+#include "str.h"
+#include "util.h"
 #include "io/fsafeopen.h"
 #include "io/memfile.h"
 #include "io/vio.h"
@@ -2747,6 +2749,23 @@ static boolean is_basic_param(char *value)
   }
 }
 
+static boolean is_string_valued_ident(char *value, size_t len, boolean is_interpolation)
+{
+  boolean ret;
+  char tmp;
+
+  // TODO: make this $INPUT?
+  if(is_interpolation && len == 5 && !memcasecmp(value, "INPUT", len))
+    return true;
+
+  // TODO: this may need to account for interpolation too...
+  tmp = value[len];
+  value[len] = '\0';
+  ret = is_string(value);
+  value[len] = tmp;
+  return ret;
+}
+
 static int get_param(char *cmd_line)
 {
   if((cmd_line[1] == '?') && (cmd_line[2] == '?'))
@@ -2812,7 +2831,7 @@ static int escape_chars(char *dest, char *src, int escape_char,
 
   if(src[0] == '\\')
   {
-    if(escape_interpolation && ((src[1] == '(') || (src[1] == '<')))
+    if(escape_interpolation && ((src[1] == '(') || (src[1] == '<') || src[1] == '>'))
     {
       *dest = src[1];
       return 2;
@@ -2852,9 +2871,9 @@ static int escape_chars(char *dest, char *src, int escape_char,
   return 1;
 }
 
-static char *get_character_string_expressions(char *src, char terminator,
+static char *get_character_interpolated(char *src, char terminator,
  int *contains_expressions);
-static char *get_expression(char *src);
+static char *get_expression(char *src, const char terminator1, const char terminator2);
 
 enum is_op_type
 {
@@ -2982,7 +3001,7 @@ static char *get_expr_value_token(char *src)
 
     case '(':
       // Start of an expression, verify that it is one.
-      next = get_expression(next + 1);
+      next = get_expression(next + 1, ')', ')');
       if(*next != ')')
         return src;
 
@@ -2993,8 +3012,7 @@ static char *get_expr_value_token(char *src)
     {
       // This is exactly like a name in normal contexts.
       int contains_expressions;
-      next =
-       get_character_string_expressions(next + 1, '`', &contains_expressions);
+      next = get_character_interpolated(next + 1, '`', &contains_expressions);
 
       if(*next != '`')
         return src;
@@ -3021,7 +3039,7 @@ static char *get_expr_value_token(char *src)
   return next;
 }
 
-static char *get_expression(char *src)
+static char *get_expression(char *src, const char terminator1, const char terminator2)
 {
   char *next, *next_next;
   int ternary_level = 0;
@@ -3038,14 +3056,13 @@ static char *get_expression(char *src)
 
   // Now keep going until we hit the end - for every
   // time we don't we need an operator then a value.
-  while(*next != ')')
+  while(true)
   {
-    if(*next == 0)
-      return src;
-
     next = skip_whitespace(next);
-    if(*next == ')')
+    if(*next == terminator1 || *next == terminator2)
       break;
+    if(*next == '\0')
+      return src;
 
     next = get_expr_binary_operator_token(next, &is_operator);
     if(!is_operator)
@@ -3075,53 +3092,113 @@ static char *get_expression(char *src)
   return next;
 }
 
-static char *get_string_expression(char *src)
+static char *get_interpolation_expression(char *src)
 {
   char *next = src;
+  char *next_next;
   int contains_expressions;
+  boolean numeric_only;
 
   // Now keep going until we hit the end.
   while(*next != '>')
   {
     next = skip_whitespace(next);
 
+    // TODO: replace this with proper format syntax.
+    numeric_only = false;
+    if(*next == '#' || *next == '+')
+    {
+      numeric_only = true;
+      next = skip_whitespace(next + 1);
+    }
+
     switch(*next)
     {
       case 0:
         return src;
 
-      case '"':
-      case '`':
-      {
-        char delimitter = *next;
-        // String or name literal.
-        next = get_character_string_expressions(next + 1, delimitter,
-         &contains_expressions);
-
-        if(*next != delimitter)
+      case '(':
+        /* Numeric expression. */
+        next = get_expression(next + 1, ')', ')');
+        if(*next != ')')
           return src;
 
         next++;
         break;
-      }
 
-      default:
-      {
-        // Simple string name
-        char *next_next = find_non_identifier_char(next);
-        if(next_next == next)
+      case '"':
+        // String literal.
+        next = get_character_interpolated(next + 1, '"',
+         &contains_expressions);
+        if(*next != '"')
           return src;
+        if(numeric_only)
+          return src;
+
+        next++;
+        break;
+
+      case '`':
+        // String identifier?
+        next_next = get_character_interpolated(next + 1, '`',
+         &contains_expressions);
+        if(next_next <= next + 1 || *next_next != '`')
+          return src;
+
+        // Note: this can't reliably detect all strings due to nested string
+        // interpolation. This shouldn't hurt anything (currently).
+        if(!is_string_valued_ident(next + 1, next_next - next - 1, false))
+        {
+          // Numeric expression without parentheses?
+          next_next = get_expression(next, ',', '>');
+          if(next_next <= next)
+            return src;
+        }
+        else
+        {
+          if(numeric_only)
+            return src;
+
+          next_next++;
+        }
 
         next = next_next;
         break;
-      }
+
+      default:
+        // String identifier?
+        next_next = find_non_identifier_char(next);
+
+        if(next_next <= next ||
+         !is_string_valued_ident(next, next_next - next, true))
+        {
+          // Numeric expression without parentheses?
+          next_next = get_expression(next, ',', '>');
+          if(next_next <= next)
+            return src;
+        }
+        else
+        {
+          if(numeric_only)
+            return src;
+        }
+
+        next = next_next;
+        break;
     }
+
+    // Find comma or terminating >.
+    next = skip_whitespace(next);
+    if(*next != ',' && *next != '>')
+      return src;
+    if(*next == ',')
+      next++;
   }
 
   return next;
 }
 
-static char *get_character_string_expressions(char *src, char terminator,
+static char *get_character_interpolated(char *src, char terminator,
  int *contains_expressions)
 {
   int num_expressions = 0;
@@ -3133,9 +3210,9 @@ static char *get_character_string_expressions(char *src, char terminator,
     if(current_char == '(')
     {
       if((next[1] == '#') || (next[1] == '+'))
-        next = get_expression(next + 2);
+        next = get_expression(next + 2, ')', ')');
       else
-        next = get_expression(next + 1);
+        next = get_expression(next + 1, ')', ')');
 
       num_expressions++;
       if(*next != ')')
@@ -3146,9 +3223,16 @@ static char *get_character_string_expressions(char *src, char terminator,
     }
     else
 
+    if(current_char == '>')
+    {
+      // Unescaped > is a compile error.
+      return src;
+    }
+    else
+
     if(current_char == '<')
     {
-      next = get_string_expression(next + 1);
+      next = get_interpolation_expression(next + 1);
       num_expressions++;
       if(*next != '>')
       {
@@ -3184,8 +3268,7 @@ static char *get_token(char *src, struct token *token)
   {
     case '"':
       // String literal.
-      next =
-       get_character_string_expressions(src + 1, '"', &contains_expression);
+      next = get_character_interpolated(src + 1, '"', &contains_expression);
 
       token_type = TOKEN_TYPE_STRING_LITERAL;
 
@@ -3198,8 +3281,7 @@ static char *get_token(char *src, struct token *token)
 
     case '`':
       // Name.
-      next =
-       get_character_string_expressions(src + 1, '`', &contains_expression);
+      next = get_character_interpolated(src + 1, '`', &contains_expression);
 
       token_type = TOKEN_TYPE_NAME;
 
@@ -3234,7 +3316,8 @@ static char *get_token(char *src, struct token *token)
         token_type = TOKEN_TYPE_NUMERIC_LITERAL_BASE10;
       }
 
-      if (token->arg_value.numeric_literal < -32768 ||
+      // TODO: remove when new bytecode
+      if(token->arg_value.numeric_literal < -32768 ||
        token->arg_value.numeric_literal > 32767)
         token_type |= TOKEN_TYPE_INVALID;
 
@@ -3260,7 +3343,7 @@ static char *get_token(char *src, struct token *token)
 
     case '(':
       // Expression.
-      next = get_expression(src + 1);
+      next = get_expression(src + 1, ')', ')');
 
       token_type = TOKEN_TYPE_EXPRESSION;
 
@@ -5226,47 +5309,6 @@ static char *legacy_disassemble_print_expression(char *src, char **_output,
   return next;
 }
 
-// Similar to counter.c's is_string() but keeps track of the expr stack.
-// is_string() is designed for post-tr_msg strings and will not work
-// with disassembled code.  It also expects there to be a terminator,
-// which our disassembled code won't have.
-static boolean legacy_disassembled_field_is_string(char *src, char *end)
-{
-  int level = 0;
-
-  if(*src != '$')
-    return false;
-
-  while(src < end)
-  {
-    switch(*src)
-    {
-      case '\\':
-      {
-        src++;
-        break;
-      }
-      case '(':
-      {
-        level++;
-        break;
-      }
-      case ')':
-      {
-        level--;
-        break;
-      }
-      case '.':
-      {
-        if(level <= 0)
-          return false;
-      }
-    }
-    src++;
-  }
-  return true;
-}
-
 // If you don't want an early terminator then give this -1.
 static char *legacy_disassemble_print_string_expressions(char *src,
  char **_output, int *_string_length, int early_terminator,
@@ -5305,7 +5347,7 @@ static char *legacy_disassemble_print_string_expressions(char *src,
 
     if(current_char == '&')
     {
-      // Print an old style interpolation as an expression.
+      // Convert old interpolation to new interpolation.
       if((string_length > 1) && (src[1] == '&'))
       {
         // Or just print an &.. no more of this && stuff.
@@ -5320,7 +5362,6 @@ static char *legacy_disassemble_print_string_expressions(char *src,
         char *next;
         char *base_output;
         char *name_offset;
-        boolean is_real_string;
 
         src++;
 
@@ -5355,8 +5396,6 @@ static char *legacy_disassemble_print_string_expressions(char *src,
           next++;
         }
 
-        is_real_string = legacy_disassembled_field_is_string(name_offset, output);
-
         if(!is_simple_identifier_name(name_offset, name_length, true))
         {
           memmove(name_offset + 1, name_offset, name_length);
@@ -5365,24 +5404,16 @@ static char *legacy_disassemble_print_string_expressions(char *src,
           output += 2;
         }
 
-        if(is_real_string)
-        {
-          *base_output = '<';
-          *output = '>';
-        }
-        else
-        {
-          *base_output = '(';
-          *output = ')';
-        }
-
+        *base_output = '<';
+        *output = '>';
         output++;
         src = next;
       }
     }
     else
     {
-      if((current_char == '<') || (current_char == escape_char))
+      if((current_char == '<') || (current_char == '>') ||
+       (current_char == escape_char))
       {
         output[0] = '\\';
         output[1] = current_char;

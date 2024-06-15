@@ -3599,6 +3599,17 @@ static boolean robot_editor_draw(context *ctx)
   int cursor_x;
   int i;
 
+#ifdef CONFIG_DEBYTECODE
+  // Update program status if it has been modified.
+  // This needs to be done after all input and prior to drawing lines.
+  if(rstate->program_modified)
+  {
+    update_program_status(rstate, rstate->base.next, NULL);
+    rstate->program_modified = false;
+    rstate->confirm_changes = true;
+  }
+#endif
+
   fill_line(80, 0, 0, top_char, top_color);
 
   if(rstate->scr_hide_mode)
@@ -3832,16 +3843,6 @@ static boolean robot_editor_idle(context *ctx)
     if(!rstate->idle_timer)
       end_intake_undo_frame(rstate);
   }
-
-#ifdef CONFIG_DEBYTECODE
-  // Update program status if it has been modified.
-  if(rstate->program_modified)
-  {
-    update_program_status(rstate, rstate->base.next, NULL);
-    rstate->program_modified = false;
-    rstate->confirm_changes = true;
-  }
-#endif
 
   // Disable the cursor so it doesn't display over other interfaces.
   // The draw function will enable it again if needed.
