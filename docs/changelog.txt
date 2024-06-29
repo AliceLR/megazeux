@@ -91,6 +91,7 @@ USERS
   messages when an image fails to load.
 + ccv and png2smzx now support BMPs that use BI_BITFIELDS and
   BI_ALPHABITFIELDS.
++ ccv and png2smzx now support Truevision TGA images.
 
 DEVELOPERS
 

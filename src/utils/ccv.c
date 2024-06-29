@@ -62,7 +62,8 @@ static const char USAGE_DESC[] =
 "  * PNG\n"
 "  * GIF (multi-image GIFs will be flattened into a single image;\n"
 "         non-square pixel aspect ratios are supported via upscaling)\n"
-"  * BMP (1bpp, 2bpp, 4bpp, 8bpp, 16bpp, 24bpp, 32bpp, RLE8, RLE4)\n"
+"  * BMP (1bpp, 2bpp, 4bpp, 8bpp, 16bpp, 24bpp, 32bpp, RLE8, RLE4, bitfields)\n"
+"  * TGA (all)\n"
 "  * Netpbm/PNM (.pbm, .pgm, .ppm, .pnm, .pam)\n"
 "  * farbfeld (.ff)\n"
 "  * raw (see raw format)\n"
@@ -511,6 +512,7 @@ static void LoadImage(struct image_file *dest, Config *cfg, const char *path)
     format.width = cfg->w;
     format.height = cfg->h;
     format.bytes_per_pixel = 1; // TODO
+    format.force_raw = true;
     use_format = &format;
   }
 
