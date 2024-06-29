@@ -439,6 +439,88 @@ UNITTEST(BMP)
 }
 
 
+UNITTEST(TGA)
+{
+  static const char *bpp16_inputs[] =
+  {
+    "tga_15bpp.tga",
+    "tga_16bpp.tga",
+    "tga_16bpp_rle.tga",
+    "tga_16bpp_ttb.tga",
+    "tga_16bpp_ttb_rle.tga",
+    "tga_idx8_15bpp.tga",
+    "tga_idx8_16bpp.tga",
+    "tga_idx8_16bpp_rle.tga",
+    "tga_idx8_16bpp_ttb.tga",
+    "tga_idx8_16bpp_ttb_rle.tga",
+  };
+
+  static const char *bpp24_inputs[] =
+  {
+    "tga_24bpp.tga",
+    "tga_24bpp_rle.tga",
+    "tga_24bpp_ttb.tga",
+    "tga_24bpp_ttb_rle.tga",
+    "tga_idx8_24bpp.tga",
+    "tga_idx8_24bpp_rle.tga",
+    "tga_idx8_24bpp_ttb.tga",
+    "tga_idx8_24bpp_ttb_rle.tga",
+  };
+
+  static const char *bpp32_inputs[] =
+  {
+    "tga_32bpp.tga",
+    "tga_32bpp_rle.tga",
+    "tga_32bpp_ttb.tga",
+    "tga_32bpp_ttb_rle.tga",
+    "tga_32bpp_rtl.tga",      // Unlikely that anyone uses right-to-left TGAs,
+    "tga_32bpp_rtl_ttb.tga",  // but support them anyway...
+    "tga_idx8_32bpp.tga",
+    "tga_idx8_32bpp_rle.tga",
+    "tga_idx8_32bpp_ttb.tga",
+    "tga_idx8_32bpp_ttb_rle.tga",
+    // These are hexedited and follow the spec but nothing supports them :(
+    "tga_idx16_32bpp.tga",
+    "tga_idx16_32bpp_rle.tga",
+    "tga_idx16_32bpp_ttb.tga",
+    "tga_idx16_32bpp_ttb_rle.tga",
+  };
+
+  static const char *greyscale_inputs[] =
+  {
+    "tga_g.tga",
+    "tga_g_rle.tga",
+    "tga_g_ttb.tga",
+    "tga_g_ttb_rle.tga",
+  };
+
+  SECTION(16bpp)
+  {
+    // 16bpp is lossy, needs a special compare...
+    for(const char *filename : bpp16_inputs)
+      load_and_compare_image<compare_rgb16<3>>(base_rgba_img, filename);
+  }
+
+  SECTION(24bpp)
+  {
+    for(const char *filename : bpp24_inputs)
+      load_and_compare_image<compare_rgb>(base_rgba_img, filename);
+  }
+
+  SECTION(32bpp)
+  {
+    for(const char *filename : bpp32_inputs)
+      load_and_compare_image<compare_rgba>(base_rgba_img, filename);
+  }
+
+  SECTION(Greyscale)
+  {
+    for(const char *filename : greyscale_inputs)
+      load_and_compare_image<compare_rgb>(base_gs_img, filename);
+  }
+}
+
+
 UNITTEST(Netpbm)
 {
   static const char *bw_inputs[] =
@@ -534,10 +616,10 @@ UNITTEST(raw)
   struct image_file img{};
   enum image_error ret;
 
-  static const struct image_raw_format gs_format = { base_gs_img.width, base_gs_img.height, 1 };
-  static const struct image_raw_format gsa_format = { base_gs_img.width, base_gs_img.height, 2 };
-  static const struct image_raw_format rgb_format = { base_rgba_img.width, base_rgba_img.height, 3 };
-  static const struct image_raw_format rgba_format = { base_rgba_img.width, base_rgba_img.height, 4 };
+  static const struct image_raw_format gs_format = { base_gs_img.width, base_gs_img.height, 1, true};
+  static const struct image_raw_format gsa_format = { base_gs_img.width, base_gs_img.height, 2, true };
+  static const struct image_raw_format rgb_format = { base_rgba_img.width, base_rgba_img.height, 3, true };
+  static const struct image_raw_format rgba_format = { base_rgba_img.width, base_rgba_img.height, 4, true };
 
   SECTION(Greyscale)
   {
