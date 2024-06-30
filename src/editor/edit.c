@@ -1116,26 +1116,20 @@ static boolean editor_draw(context *ctx)
   // Draw the board/vlayer
   if(editor->mode == EDIT_BOARD)
   {
-    cur_board->overlay_mode = 0;
+    cur_board->overlay_mode |= OVERLAY_FLAG_HIDE_OVERLAY;
     draw_edit_window(editor);
   }
   else
 
   if(editor->mode == EDIT_OVERLAY)
   {
-    cur_board->overlay_mode = 1;
-    if(!editor->show_board_under_overlay)
-    {
-      cur_board->overlay_mode |= 0x40;
-      draw_edit_window(editor);
-      cur_board->overlay_mode ^= 0x40;
-    }
-    else
-    {
-      draw_edit_window(editor);
-    }
-  }
+    cur_board->overlay_mode = OVERLAY_ON;
 
+    if(!editor->show_board_under_overlay)
+      cur_board->overlay_mode |= OVERLAY_FLAG_HIDE_BOARD;
+
+    draw_edit_window(editor);
+  }
   else // EDIT_VLAYER
   {
     draw_vlayer_window(editor);
