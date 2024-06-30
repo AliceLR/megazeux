@@ -331,7 +331,7 @@ void dummy_board(struct world *mzx_world, struct board *cur_board)
 {
   // Allocate placeholder data for broken boards so they will run
   int size = 2000;
-  cur_board->overlay_mode = 0;
+  cur_board->overlay_mode = OVERLAY_OFF;
   cur_board->board_width = 80;
   cur_board->board_height = 25;
 

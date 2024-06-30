@@ -464,10 +464,13 @@ void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,
 
   array_offset = (array_y * board_width) + array_x;
 
-  if(!(overlay_mode & 128) && (overlay_mode & 3) &&
-   ((overlay_mode & 3) != 3))
+  // Note: old worlds unfortunately can contain the hide overlay and hide board
+  // flags, so their checks have been kept functionally intact unless noted.
+  if(!(overlay_mode & OVERLAY_FLAG_HIDE_OVERLAY) &&
+   (overlay_mode & OVERLAY_MODE_MASK) != OVERLAY_OFF &&
+   (overlay_mode & OVERLAY_MODE_MASK) != OVERLAY_TRANSPARENT)
   {
-    if(overlay_mode & 2)
+    if((overlay_mode & OVERLAY_MODE_MASK) == OVERLAY_STATIC)
     {
       overlay_offset = (ovr_y * board_width) + ovr_x;
     }
@@ -475,16 +478,13 @@ void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,
     {
       overlay_offset = array_offset;
     }
+
     select_layer(OVERLAY_LAYER);
     c = src_board->overlay[overlay_offset];
     color = src_board->overlay_color[overlay_offset];
-    if(overlay_mode & 64)
-    {
-      draw_char_ext(c, color, x_pos, y_pos, 0, 0);
-      return;
-    }
 
-    if(overlay_mode == 4)
+    // NOTE: <2.51s3.1 won't display 32 even with OVERLAY_FLAG_HIDE_BOARD set.
+    if(!(overlay_mode & OVERLAY_FLAG_HIDE_BOARD))
     {
       if(c == 32)
       {
@@ -493,35 +493,23 @@ void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,
         color = get_id_color(src_board, array_offset);
       }
       else
+
+      if(!(color & 0xF0))
       {
-        if(!(color & 0xF0) && !(overlay_mode & 64))
+        /*
+        // Undocumented and inaccessible MZXak overlay mode 4.
+        if(overlay_mode == 4)
         {
           select_layer(BOARD_LAYER);
           c = get_id_char(src_board, array_offset);
-          color = (color & 0x0F) |
-           (get_id_color(src_board, array_offset) & 0xF0);
         }
-      }
-    }
-    else
-    {
-      if(c == 32)
-      {
-        select_layer(BOARD_LAYER);
-        c = get_id_char(src_board, array_offset);
-        color = get_id_color(src_board, array_offset);
-      }
-      else
-      {
-        if(!(color & 0xF0) && !(overlay_mode & 64))
-        {
-          color = (color & 0x0F) |
-           (get_id_color(src_board, array_offset) & 0xF0);
-        }
+        */
+        color = (color & 0x0F) | (get_id_color(src_board, array_offset) & 0xF0);
       }
     }
   }
   else
+  // NOTE: <2.51s3 checked (overlay_mode & OVERLAY_FLAG_HIDE_BOARD) here.
   {
     select_layer(BOARD_LAYER);
     c = get_id_char(src_board, array_offset);
