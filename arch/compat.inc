@@ -150,3 +150,12 @@ ifeq (${CLANG_VER_GE_3_3},0)
 HAS_F_STACK_PROTECTOR_STRONG ?= 1
 endif
 endif # clang
+
+#
+# Get pkgconf or pkg-config (prefer pkgconf).
+#
+PKGCONF ?= ${shell \
+ result=false; \
+ command -v pkg-config >/dev/null && result=pkg-config; \
+ command -v pkgconf >/dev/null && result=pkgconf; \
+ echo $$result; }

@@ -55,7 +55,15 @@
 #include "network/network.h"
 
 #ifdef CONFIG_SDL
+#if CONFIG_SDL == 3
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+#include <SDL3/SDL_main.h>
+#else
 #include <SDL.h> /* SDL_main */
+#endif
 #endif
 
 #ifndef VERSION
