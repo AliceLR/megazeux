@@ -682,6 +682,7 @@ static inline void render_layer_func(void * RESTRICT pixels, size_t pitch,
           // can try to do a similar trick, but it won't work if the char has
           // multiple indices set to the transparent color.
           if(TR && has_tcol && current_char_byte == byte_tcol)
+          //if(TR && /*has_tcol &&*/ current_char_byte == byte_tcol)
             continue;
 
           if(!CLIP || (pixel_y + row >= 0 && pixel_y + row < SCREEN_PIX_H))
@@ -726,6 +727,7 @@ static inline void render_layer_func(void * RESTRICT pixels, size_t pitch,
                   if(PPW == 1)
                   {
                     pcol = (current_char_byte & (0xC0 >> write_pos)) << write_pos >> 6;
+                    //pcol = (current_char_byte >> (6 - write_pos)) & 0x03;
 
                     pix = char_colors[pcol];
                     if(!CLIP || (pixel_x + write_pos * PPW >= 0))
@@ -754,6 +756,7 @@ static inline void render_layer_func(void * RESTRICT pixels, size_t pitch,
                       {
                         ALIGNTYPE shift = write_pos * PPW + (PPW - 2 - i);
                         pcol = (current_char_byte & (0xC0 >> shift)) << shift >> 6;
+                        //pcol = (current_char_byte >> (6 - shift)) & 0x03;
 
                         if(char_idx[pcol] == tcol)
                         {
@@ -771,6 +774,7 @@ static inline void render_layer_func(void * RESTRICT pixels, size_t pitch,
                       {
                         ALIGNTYPE shift = write_pos * PPW + (PPW - 2 - i);
                         pcol = (current_char_byte & (0xC0 >> shift)) << shift >> 6;
+                        //pcol = (current_char_byte >> (6 - shift)) & 0x03;
                         pix |= char_colors[pcol] << PIXEL_POS_PAIR(i);
                       }
                     }

@@ -38,17 +38,25 @@ static void png_write_vfile(png_struct *png_ptr, png_byte *data, png_size_t leng
 
 static void png_flush_vfile(png_struct *png_ptr) {}
 
+/* Trivial PNG dumper; this routine is a modification (simplification) of
+ * code pinched from http://www2.autistici.org/encelo/prog_sdldemos.php.
+ *
+ * Palette support was added, the original support was broken.
+ *
+ * Copyright (C) 2006 Angelo "Encelo" Theodorou
+ * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ */
 /*
-int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
- const char *name)
+int png_write_image_8bpp(const char *name, size_t w, size_t h,
+ const struct rgb_color *pal, unsigned count, void *priv,
+ const uint8_t *(*row_pixels_callback)(size_t num_pixels, void *priv))
 {
   png_structp png_ptr = NULL;
   png_infop info_ptr = NULL;
-  png_bytep * volatile row_ptrs = NULL;
   png_colorp volatile pal_ptr = NULL;
   int volatile ret = false;
   int type;
-  int i;
+  size_t i;
   vfile *vf;
 
   vf = vfopen_unsafe(name, "wb");
@@ -71,7 +79,7 @@ int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
 
   // we know we have an 8-bit surface; save a palettized PNG
   type = PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE;
-  png_set_IHDR(png_ptr, info_ptr, 640, 350, 8, type,
+  png_set_IHDR(png_ptr, info_ptr, w, h, 8, type,
    PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
    PNG_FILTER_TYPE_DEFAULT);
 
@@ -91,14 +99,15 @@ int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
   png_write_info(png_ptr, info_ptr);
   png_set_packing(png_ptr);
 
-  row_ptrs = (png_bytep *)cmalloc(sizeof(png_bytep) * 350);
-  if(!row_ptrs)
-    goto exit_free_close;
-
   // and then the surface
-  for(i = 0; i < 350; i++)
-    row_ptrs[i] = (png_bytep)(pixels + i * 640);
-  png_write_image(png_ptr, row_ptrs);
+  for(i = 0; i < h; i++)
+  {
+    const uint8_t *row = row_pixels_callback(w, priv);
+    if(!row)
+      goto exit_free_close;
+
+    png_write_row(png_ptr, (png_const_bytep)row);
+  }
   png_write_end(png_ptr, info_ptr);
 
   // all done
@@ -107,7 +116,6 @@ int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
 exit_free_close:
   png_destroy_write_struct(&png_ptr, &info_ptr);
   free(pal_ptr);
-  free(row_ptrs);
 exit_close:
   vfclose(vf);
 exit_out:
@@ -115,14 +123,14 @@ exit_out:
 }
 */
 
-int png_write_screen_32bpp(uint32_t *pixels, const char *name)
+int png_write_image_32bpp(const char *name, size_t w, size_t h, void *priv,
+ const uint32_t *(*row_pixels_callback)(size_t num_pixels, void *priv))
 {
   png_structp png_ptr = NULL;
   png_infop info_ptr = NULL;
-  png_bytep * volatile row_ptrs = NULL;
   int volatile ret = false;
   int type;
-  int i;
+  size_t i;
   vfile *vf;
 
   vf = vfopen_unsafe(name, "wb");
@@ -145,7 +153,7 @@ int png_write_screen_32bpp(uint32_t *pixels, const char *name)
 
   // 24-bit png
   type = PNG_COLOR_TYPE_RGB;
-  png_set_IHDR(png_ptr, info_ptr, 640, 350, 8, type,
+  png_set_IHDR(png_ptr, info_ptr, w, h, 8, type,
    PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
    PNG_FILTER_TYPE_DEFAULT);
 
@@ -153,18 +161,19 @@ int png_write_screen_32bpp(uint32_t *pixels, const char *name)
   png_write_info(png_ptr, info_ptr);
   png_set_packing(png_ptr);
 
-  row_ptrs = (png_bytep *)cmalloc(sizeof(png_bytep) * 350);
-  if(!row_ptrs)
-    goto exit_free_close;
-
   // our surface is 32bpp ABGR, so set up filler and order
   png_set_filler(png_ptr, 0, PNG_FILLER_AFTER);
   png_set_bgr(png_ptr);
 
   // and then the surface
-  for(i = 0; i < 350; i++)
-    row_ptrs[i] = (png_bytep)(pixels + i * 640);
-  png_write_image(png_ptr, row_ptrs);
+  for(i = 0; i < h; i++)
+  {
+    const uint32_t *row = row_pixels_callback(w, priv);
+    if(!row)
+      goto exit_free_close;
+
+    png_write_row(png_ptr, (png_const_bytep)row);
+  }
   png_write_end(png_ptr, info_ptr);
 
   // all done
@@ -172,7 +181,6 @@ int png_write_screen_32bpp(uint32_t *pixels, const char *name)
 
 exit_free_close:
   png_destroy_write_struct(&png_ptr, &info_ptr);
-  free(row_ptrs);
 exit_close:
   vfclose(vf);
 exit_out:
