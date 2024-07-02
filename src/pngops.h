@@ -38,10 +38,12 @@ __M_BEGIN_DECLS
 struct rgb_color;
 
 /*
-int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
- const char *name);
+int png_write_image_8bpp(const char *name, size_t w, size_t h,
+ const struct rgb_color *pal, unsigned count, void *priv,
+ const uint8_t *(*row_pixels_callback)(size_t num_pixels, void *priv));
 */
-int png_write_screen_32bpp(uint32_t *pixels, const char *name);
+int png_write_image_32bpp(const char *name, size_t w, size_t h, void *priv,
+ const uint32_t *(*row_pixels_callback)(size_t num_pixels, void *priv));
 
 #endif // NEED_PNG_WRITE_SCREEN
 

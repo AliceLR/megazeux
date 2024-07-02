@@ -99,6 +99,18 @@ static const char *const sam_ext[] =
   NULL
 };
 
+#ifdef CONFIG_ENABLE_SCREENSHOTS
+static const char *const image_ext[] =
+{
+#ifdef CONFIG_PNG
+  ".PNG",
+#else
+  ".BMP",
+#endif
+  NULL
+};
+#endif
+
 struct editor_context
 {
   context ctx;
@@ -3587,7 +3599,27 @@ static boolean editor_key(context *ctx, int *key)
               {
                 save_world(mzx_world, export_name, false, MZX_VERSION_PREV);
               }
+              break;
             }
+
+#ifdef CONFIG_ENABLE_SCREENSHOTS
+            case 5:
+            {
+              // Board/vlayer image
+              const char *title = (editor->mode == EDIT_VLAYER) ?
+               "Export vlayer image" : "Export board image";
+
+              if(!new_file(mzx_world, image_ext, image_ext[0], export_name,
+               title, ALLOW_ALL_DIRS))
+              {
+                if(editor->mode == EDIT_VLAYER)
+                  export_vlayer_image(mzx_world, export_name);
+                else
+                  export_board_image(mzx_world, cur_board, export_name);
+              }
+              break;
+            }
+#endif
           }
         }
       }

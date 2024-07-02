@@ -151,15 +151,21 @@ int export_type(struct world *mzx_world)
     "Palette (PAL)",
     "Sound effects (SFX)",
     "Downver. world (MZX)",
+    "Board/vlayer image",
   };
+  int num_choices = 5;
+
+#if defined(CONFIG_ENABLE_SCREENSHOTS) && defined(CONFIG_PNG)
+  num_choices++;
+#endif
 
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
   set_context(CTX_IMPORTEXPORT_TYPE);
 
-  elements[0] = construct_radio_button(2, 3, radio_strings,
-   5, 20, &export_choice);
+  elements[0] = construct_radio_button(2, 8 - num_choices, radio_strings,
+   num_choices, 20, &export_choice);
   elements[1] = construct_button(5, 9, "OK", 0);
   elements[2] = construct_button(15, 9, "Cancel", -1);
 

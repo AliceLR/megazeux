@@ -34,6 +34,10 @@ void move_current_board(struct world *mzx_world, int new_position);
 
 char get_default_id_char(int id);
 
+void export_board_image(struct world *mzx_world, struct board *src_board,
+ const char *file);
+void export_vlayer_image(struct world *mzx_world, const char *file);
+
 __M_END_DECLS
 
 #endif // __EDITOR_WORLD_H
