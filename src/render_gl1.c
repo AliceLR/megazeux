@@ -298,7 +298,8 @@ static void gl1_render_layer(struct graphics_data *graphics,
 {
   struct gl1_render_data *render_data = graphics->render_data;
 
-  render_layer(render_data->pixels, 32, render_data->w * 4, graphics, layer);
+  render_layer(render_data->pixels, render_data->w, render_data->h,
+   render_data->w * 4, 32, graphics, layer);
 }
 
 static void gl1_render_cursor(struct graphics_data *graphics, unsigned int x,

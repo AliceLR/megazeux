@@ -2784,7 +2784,8 @@ void dump_screen(void)
 
   for(layer = 0; layer < graphics.layer_count; layer++)
   {
-    render_layer(ss, 32, 640 * sizeof(uint32_t), &graphics,
+    render_layer(ss, SCREEN_PIX_W, SCREEN_PIX_H,
+     SCREEN_PIX_W * sizeof(uint32_t), 32, &graphics,
      graphics.sorted_video_layers[layer]);
   }
 

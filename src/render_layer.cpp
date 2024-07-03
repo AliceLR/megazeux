@@ -52,7 +52,8 @@
 // The renderers in render_layer_code.hpp should generally be used instead.
 // It might be useful to build for tests or benchmarking, though.
 
-static inline void reference_renderer(uint32_t * RESTRICT pixels, size_t pitch,
+static inline void reference_renderer(uint32_t * RESTRICT pixels,
+ int width_px, int height_px, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer)
 {
   unsigned int mode = layer->mode;
@@ -134,7 +135,7 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels, size_t pitch,
               y = layer->y + ch_y * 14 + row;
               x = layer->x + ch_x * 8 + col;
 
-              if(x >= 0 && x < SCREEN_PIX_W && y >= 0 && y < SCREEN_PIX_H)
+              if(x >= 0 && x < width_px && y >= 0 && y < height_px)
               {
                 drawPtr = pixels + (pitch / sizeof(uint32_t)) * y + x;
 
@@ -152,7 +153,7 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels, size_t pitch,
               y = layer->y + ch_y * 14 + row;
               x = layer->x + ch_x * 8 + col;
 
-              if(x >= 0 && x < SCREEN_PIX_W && y >= 0 && y < SCREEN_PIX_H)
+              if(x >= 0 && x < width_px && y >= 0 && y < height_px)
               {
                 drawPtr = pixels + (pitch / sizeof(uint32_t)) * y + x;
 
@@ -162,7 +163,7 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels, size_t pitch,
                 {
                   pix = char_colors[pix_pos];
                   *drawPtr = pix;
-                  if(x < SCREEN_PIX_W - 1)
+                  if(x < height_px - 1)
                     *(++drawPtr) = pix;
                 }
               }
@@ -177,11 +178,13 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels, size_t pitch,
 }
 #endif
 
-void render_layer(void * RESTRICT pixels, int force_bpp, size_t pitch,
+void render_layer(void * RESTRICT pixels,
+ size_t width_px, size_t height_px, size_t pitch, int bpp,
  const struct graphics_data *graphics, const struct video_layer *layer)
 {
 #ifdef BUILD_REFERENCE_RENDERER
-  reference_renderer((uint32_t * RESTRICT)pixels, pitch, graphics, layer);
+  reference_renderer((uint32_t * RESTRICT)pixels,
+   width_px, height_px, pitch, graphics, layer);
   return;
 #endif
 
@@ -192,15 +195,15 @@ void render_layer(void * RESTRICT pixels, int force_bpp, size_t pitch,
   int clip = 0;
 
   if(layer->x < 0 || layer->y < 0 ||
-   (layer->x + layer->w * CHAR_W) > SCREEN_PIX_W ||
-   (layer->y + layer->h * CHAR_H) > SCREEN_PIX_H)
+   (layer->x + layer->w * CHAR_W) > width_px ||
+   (layer->y + layer->h * CHAR_H) > height_px)
     clip = 1;
 
-  if(force_bpp == -1)
-    force_bpp = graphics->bits_per_pixel;
+  if(bpp == -1)
+    bpp = graphics->bits_per_pixel;
 
   drawStart =
-   (size_t)((char *)pixels + layer->y * pitch + (layer->x * force_bpp / 8));
+   (size_t)((char *)pixels + layer->y * pitch + (layer->x * bpp / 8));
 
   /**
    * Select the highest pixel align the current platform is capable of.
@@ -227,6 +230,6 @@ void render_layer(void * RESTRICT pixels, int force_bpp, size_t pitch,
     align = 16;
   }
 
-  render_layer_func(pixels, pitch, graphics, layer,
-   force_bpp, align, smzx, trans, clip);
+  render_layer_func(pixels, width_px, height_px, pitch, graphics, layer,
+   bpp, align, smzx, trans, clip);
 }

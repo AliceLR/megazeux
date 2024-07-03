@@ -259,10 +259,11 @@ static void svga_render_graph(struct graphics_data *graphics)
 }
 
 static void svga_render_layer(struct graphics_data *graphics,
- struct video_layer *vlayer)
+ struct video_layer *layer)
 {
   struct svga_render_data *render_data = graphics->render_data;
-  render_layer(render_data->ptr, graphics->bits_per_pixel, render_data->pitch, graphics, vlayer);
+  render_layer(render_data->ptr, SCREEN_PIX_W, SCREEN_PIX_H,
+   render_data->pitch, graphics->bits_per_pixel, graphics, layer);
 }
 
 static void svga_render_cursor(struct graphics_data *graphics, unsigned int x,
