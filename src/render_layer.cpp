@@ -190,7 +190,6 @@ void render_layer(void * RESTRICT pixels, int force_bpp, size_t pitch,
   size_t drawStart;
   int align = 8;
   int clip = 0;
-  int ppal = graphics->protected_pal_position;
 
   if(layer->x < 0 || layer->y < 0 ||
    (layer->x + layer->w * CHAR_W) > SCREEN_PIX_W ||
@@ -229,5 +228,5 @@ void render_layer(void * RESTRICT pixels, int force_bpp, size_t pitch,
   }
 
   render_layer_func(pixels, pitch, graphics, layer,
-   force_bpp, align, smzx, ppal, trans, clip);
+   force_bpp, align, smzx, trans, clip);
 }
