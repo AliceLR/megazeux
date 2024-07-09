@@ -756,6 +756,10 @@ static inline void render_layer_func(
                   }
                 }
               }
+              else
+
+              if(SMZX && PPW == 1) // Skip two pixels instead of 1.
+                write_pos++;
             }
           }
         }

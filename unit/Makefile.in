@@ -25,10 +25,12 @@ endif
 
 unit_common_objs := \
   ${unit_obj}/Unit.o                   \
+  ${unit_obj}/UnitIO.o                 \
 
 unit_objs := \
   ${unit_obj}/align${unit_ext}         \
   ${unit_obj}/expr${unit_ext}          \
+  ${unit_obj}/render${unit_ext}        \
   ${unit_obj}/memcasecmp${unit_ext}    \
   ${unit_obj_io}/bitstream${unit_ext}  \
   ${unit_obj_io}/memfile${unit_ext}    \

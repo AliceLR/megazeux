@@ -178,6 +178,30 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels,
 }
 #endif
 
+static size_t get_align_for_offset(size_t value)
+{
+#ifndef SKIP_64_ALIGN
+  if(value % sizeof(uint64_t) == 0)
+  {
+    return 64;
+  }
+  else
+#endif
+
+  if(value % sizeof(uint32_t) == 0)
+  {
+    return 32;
+  }
+  else
+
+  if(value % sizeof(uint16_t) == 0)
+  {
+    return 16;
+  }
+  else
+    return 8;
+}
+
 void render_layer(void * RESTRICT pixels,
  size_t width_px, size_t height_px, size_t pitch, int bpp,
  const struct graphics_data *graphics, const struct video_layer *layer)
@@ -191,7 +215,7 @@ void render_layer(void * RESTRICT pixels,
   int smzx = layer->mode;
   int trans = layer->transparent_col != -1;
   size_t drawStart;
-  int align = 8;
+  int align;
   int clip = 0;
 
   if(layer->x < 0 || layer->y < 0 ||
@@ -203,32 +227,22 @@ void render_layer(void * RESTRICT pixels,
     bpp = graphics->bits_per_pixel;
 
   drawStart =
-   (size_t)((char *)pixels + layer->y * pitch + (layer->x * bpp / 8));
+   (size_t)((char *)pixels + layer->y * (ptrdiff_t)pitch + (layer->x * bpp / 8));
 
   /**
    * Select the highest pixel align the current platform is capable of.
    * Additionally, to simplify the renderer code, the align must also be
    * capable of addressing the first pixel of the draw (e.g. a 64-bit platform
    * will use a 32-bit align if the layer is on an odd horizontal pixel).
+   * This must be true for the first pixel of every character row drawn, so
+   * the pitch must be in alignment too.
+   *
+   * In other words, the alignment is the minimum of:
+   *   the number of bits of size_t (rough approximation of arch width),
+   *   the number of bits of the first pixel's alignment in memory,
+   *   the number of bits of the pitch's alignment (for rows after the first).
    */
-#ifndef SKIP_64_ALIGN
-  if((sizeof(size_t) >= sizeof(uint64_t)) && ((drawStart % sizeof(uint64_t)) == 0))
-  {
-    align = 64;
-  }
-  else
-#endif
-
-  if((sizeof(size_t) >= sizeof(uint32_t)) && ((drawStart % sizeof(uint32_t)) == 0))
-  {
-    align = 32;
-  }
-  else
-
-  if((sizeof(size_t) >= sizeof(uint16_t)) && ((drawStart % sizeof(uint16_t)) == 0))
-  {
-    align = 16;
-  }
+  align = get_align_for_offset(sizeof(size_t) | drawStart | pitch);
 
   render_layer_func(pixels, width_px, height_px, pitch, graphics, layer,
    bpp, align, smzx, trans, clip);
