@@ -859,7 +859,8 @@ static void gl2_render_layer(struct graphics_data *graphics,
       640.0f / 1024.0f, 350.0f / 512.0f,
     };
 
-    render_layer(render_data->pixels, 32, 640 * 4, graphics, layer);
+    render_layer(render_data->pixels, SCREEN_PIX_W, SCREEN_PIX_H,
+     SCREEN_PIX_W * 4, 32, graphics, layer);
 
     gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
     gl_check_error();

@@ -184,7 +184,7 @@ static void xfb_render_layer(struct graphics_data *graphics,
   render_data->intermediate_bpp = 32;
   pixels = render_data->intermediate_fb;
 
-  render_layer(pixels, 32, pitch, graphics, layer);
+  render_layer(pixels, SCREEN_PIX_W, SCREEN_PIX_H, pitch, 32, graphics, layer);
 }
 
 static void xfb_render_cursor(struct graphics_data *graphics, unsigned int x,

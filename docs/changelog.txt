@@ -19,6 +19,12 @@ USERS
 + HTML5: fixed the poor performance of FREADn and other features
   that rely on calculating the length of an open file.
 + Clear world (Alt+R) now resets the world version.
++ Fixed a software layer renderer bug where a buffer with a
+  pixel alignment that varies between lines would cause the
+  frame to render incorrectly.
++ Fixed a software layer renderer bug in 32-bit builds where
+  SMZX sprites would sometimes render incorrectly when clipping
+  off the left side of the screen.
 + Setting a string offset, limit, or splice to FREADn now
   respects the provided limit. If n is larger than the limit,
   n total bytes will still be read (up to the maximum string
@@ -135,6 +141,7 @@ DEVELOPERS
   These streams will be ignored by the software mixer.
 + sampled_mix_data now properly handles output requests smaller
   than the size of the audio buffer.
++ Added software renderer regression tests.
 
 
 December 31st, 2023 - MZX 2.93

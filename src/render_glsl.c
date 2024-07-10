@@ -1127,7 +1127,8 @@ static void glsl_render_layer(struct graphics_data *graphics,
 
   if(render_data->use_software_renderer)
   {
-    render_layer(render_data->pixels, 32, SCREEN_PIX_W * 4, graphics, layer);
+    render_layer(render_data->pixels, SCREEN_PIX_W, SCREEN_PIX_H,
+     SCREEN_PIX_W * 4, 32, graphics, layer);
     return;
   }
 
