@@ -19,6 +19,8 @@ USERS
 + HTML5: fixed the poor performance of FREADn and other features
   that rely on calculating the length of an open file.
 + Clear world (Alt+R) now resets the world version.
++ Software layer rendering performance for transparent sprites
+  has been improved, significantly in some cases.
 + Fixed a software layer renderer bug where a buffer with a
   pixel alignment that varies between lines would cause the
   frame to render incorrectly.
