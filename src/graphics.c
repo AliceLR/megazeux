@@ -2878,7 +2878,6 @@ static const uint32_t *dump_layer_callback(size_t num_pixels, void *priv)
 }
 
 /* Render an arbitrary layer to an image.
- * FIXME: need to duplicate graphics_data since this can be run async.
  * TODO: The caller is responsible for constructing the layer char_element
  * array since the graphics API functions are very much intended for operating
  * on real graphical layers rather than arbitrary layers. */

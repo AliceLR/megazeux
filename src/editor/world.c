@@ -24,12 +24,15 @@
 
 #include "../board.h"
 #include "../const.h"
+#include "../error.h"
 #include "../extmem.h"
 #include "../graphics.h"
 #include "../robot.h"
+#include "../window.h"
 #include "../world.h"
 #include "../legacy_board.h"
 #include "../idput.h"
+#include "../util.h"
 #include "../io/memfile.h"
 #include "../io/vio.h"
 #include "../io/zip.h"
@@ -38,7 +41,6 @@
 
 #include "board.h"
 #include "configure.h"
-#include "edit.h"
 #include "robot.h"
 
 #include <string.h>
