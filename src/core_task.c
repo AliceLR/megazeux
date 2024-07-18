@@ -54,6 +54,24 @@ struct task_context
   void *task_priv;
 };
 
+static boolean task_lock(struct task_context *task)
+{
+#ifdef TASK_THREADED
+  if(task->async)
+    return platform_mutex_lock(&task->lock);
+#endif
+  return true;
+}
+
+static boolean task_unlock(struct task_context *task)
+{
+#ifdef TASK_THREADED
+  if(task->async)
+    return platform_mutex_unlock(&task->lock);
+#endif
+  return true;
+}
+
 static boolean task_draw(context *ctx)
 {
   struct task_context *task = (struct task_context *)ctx;
@@ -64,11 +82,7 @@ static boolean task_draw(context *ctx)
   boolean no_draw;
   boolean redraw;
 
-#ifdef TASK_THREADED
-  if(task->async)
-    platform_mutex_lock(&task->lock);
-#endif
-
+  task_lock(task);
   done = task->done;
   no_draw = task->first_draw || task->cancel;
   redraw = task->redraw;
@@ -86,11 +100,7 @@ static boolean task_draw(context *ctx)
     memcpy(title, task->title, sizeof(title));
     task->redraw = false;
   }
-
-#ifdef TASK_THREADED
-  if(task->async)
-    platform_mutex_unlock(&task->lock);
-#endif
+  task_unlock(task);
 
   if(done)
   {
@@ -117,17 +127,9 @@ static boolean task_key(context *ctx, int *key)
   // Request cancelation--the task may or may not check this.
   if(get_exit_status() || *key == IKEY_ESCAPE)
   {
-#ifdef TASK_THREADED
-    if(task->async)
-      platform_mutex_lock(&task->lock);
-#endif
-
+    task_lock(task);
     task->cancel = true;
-
-#ifdef TASK_THREADED
-    if(task->async)
-      platform_mutex_unlock(&task->lock);
-#endif
+    task_unlock(task);
   }
 
   // capture all other inputs, including help file, settings
@@ -143,9 +145,9 @@ static void task_destroy(context *ctx)
 #ifdef TASK_THREADED
   if(task->async)
   {
-    platform_mutex_lock(&task->lock);
+    task_lock(task);
     task->cancel = true;
-    platform_mutex_unlock(&task->lock);
+    task_unlock(task);
     platform_thread_join(&task->thd);
     platform_mutex_destroy(&task->lock);
   }
@@ -155,19 +157,24 @@ static void task_destroy(context *ctx)
 
 /**
  * Call during a task to update the meter. Called from task thread if threaded.
- * @returns  `true` if the task should continue, otherwise `false`.
+ * If the task is running synchronously, either because the task initialization
+ * failed to create a thread or because the platform does not support
+ * threading, this function may update the screen and poll events. Because of
+ * this, tasks should call this function regularly.
+ *
+ * @param ctx           the task context provided to the task callback.
+ * @param progress      the current progress of the task.
+ * @param progress_max  expected final value of the progress of the task.
+ * @param status        new title for the progress bar (`NULL` for no change).
+ * @returns             `true` if the task should continue, otherwise `false`.
  */
 boolean core_task_tick(context *ctx,
  int progress, int progress_max, const char *status)
 {
   struct task_context *task = (struct task_context *)ctx;
-#ifdef TASK_THREADED
-  if(task->async && !platform_mutex_lock(&task->lock))
+
+  if(!task_lock(task))
     return false;
-#else
-  uint64_t ticks;
-  int ignore = 0;
-#endif
 
   task->progress = MIN(progress, progress_max);
   task->progress_max = progress_max;
@@ -176,19 +183,24 @@ boolean core_task_tick(context *ctx,
     snprintf(task->title, sizeof(task->title), "%s", status);
     task->redraw = true;
   }
+  task_unlock(task);
 
 #ifdef TASK_THREADED
-  if(task->async)
-    platform_mutex_unlock(&task->lock);
-#else
-  ticks = get_ticks();
-  if(ticks - task->ticks >= UPDATE_DELAY)
-  {
-    task->ticks = ticks;
-    task_draw(ctx);
-    task_key(ctx, &ignore);
-  }
+  if(!task->async)
 #endif
+  {
+    uint64_t ticks = get_ticks();
+    if(ticks - task->ticks >= UPDATE_DELAY)
+    {
+      int key;
+      task->ticks = ticks;
+      task_draw(ctx);
+      update_screen();
+      update_event_status();
+      key = get_key(keycode_internal_wrt_numlock);
+      task_key(ctx, &key);
+    }
+  }
   return (task->cancel == false);
 }
 
@@ -197,21 +209,31 @@ static THREAD_RES task_execute(void *priv)
   struct task_context *task = (struct task_context *)priv;
   boolean status = task->task_callback((context *)task, task->task_priv);
 
-#ifdef TASK_THREADED
-  if(task->async)
-    platform_mutex_lock(&task->lock);
-#endif
-
+  task_lock(task);
   task->return_status = status;
   task->done = true;
+  task_unlock(task);
 
-#ifdef TASK_THREADED
-  if(task->async)
-    platform_mutex_unlock(&task->lock);
-#endif
   THREAD_RETURN;
 }
 
+/**
+ * Create a context which blocks and executes a task. This context displays a
+ * simple progress meter and allows the task to be canceled. The task itself
+ * will be executed asynchronous from the main loop, if possible. Because of
+ * this, the caller should ensure the task owns ALL data it will use during
+ * execution. The task should regularly call `core_task_tick` to provide
+ * progress information to the user and to update the screen (if synchronous).
+ *
+ * @param parent          parent context for the new task.
+ * @param title           initial title of the progress bar.
+ * @param task_callback   called to start execution of the task. Caller
+ *                        should assume this will be called in a new thread.
+ * @param task_complete   called after the execution of the task by the
+ *                        main thread. Caller should should assume the task
+ *                        context has been destroyed.
+ * @param priv            private data for the task callbacks.
+ */
 void core_task_context(context *parent, const char *title,
  boolean (*task_callback)(context *ctx, void *priv),
  void (*task_complete)(void *priv, boolean ret), void *priv)
@@ -224,6 +246,7 @@ void core_task_context(context *parent, const char *title,
 
   task->redraw = true;
   task->first_draw = true;
+  task->ticks = get_ticks();
   task->task_callback = task_callback;
   task->task_complete = task_complete;
   task->task_priv = priv;
@@ -231,8 +254,6 @@ void core_task_context(context *parent, const char *title,
 #ifdef TASK_THREADED
   if(platform_mutex_init(&task->lock))
     task->async = true;
-#else
-  task->ticks = get_ticks();
 #endif
 
   memset(&spec, 0, sizeof(spec));
@@ -244,11 +265,19 @@ void core_task_context(context *parent, const char *title,
   core_task_tick((context *)task, 0, 1, title);
 
 #ifdef TASK_THREADED
-  if(platform_thread_create(&task->thd, task_execute, task))
-    return;
+  if(task->async)
+  {
+   if(platform_thread_create(&task->thd, task_execute, task))
+      return;
 
-  platform_mutex_destroy(&task->lock);
-  task->async = false;
+    platform_mutex_destroy(&task->lock);
+    task->async = false;
+  }
+  warn("falling back to synchronous task execution--report this!\n");
 #endif
+  /* Do not allow synchronous tasks in HTML5 */
+#ifndef __EMSCRIPTEN__
   task_execute(task);
+#endif
+  destroy_context((context *)task);
 }

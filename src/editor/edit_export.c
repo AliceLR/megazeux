@@ -46,21 +46,19 @@ struct export_image_task_data
 static boolean export_image_task_run(context *ctx, void *priv)
 {
   struct export_image_task_data *data = (struct export_image_task_data *)priv;
-  boolean ret = true;
 
-  if(!dump_layer_to_image(data->filename,
+  return dump_layer_to_image(data->filename,
    data->width_ch, data->height_ch, data->layer,
-   export_image_status_callback, ctx))
-    ret = false;
-
-  free(data->filename);
-  free(data->layer);
-  free(data);
-  return ret;
+   export_image_status_callback, ctx);
 }
 
 static void export_image_task_complete(void *priv, boolean ret)
 {
+  struct export_image_task_data *data = (struct export_image_task_data *)priv;
+  free(data->filename);
+  free(data->layer);
+  free(data);
+
   if(!ret)
   {
     error("Image export failed or was canceled.",
@@ -82,7 +80,13 @@ static void export_image_task(context *parent, const char *filename,
   d->layer = layer;
 
   memcpy(d->filename, filename, len + 1);
-  snprintf(title, sizeof(title), "Exporting '%.50s'...", filename);
+  if(len > 50)
+  {
+    filename += len - 47;
+    snprintf(title, sizeof(title), "Saving '...%.47s'...", filename);
+  }
+  else
+    snprintf(title, sizeof(title), "Saving '%.50s'...", filename);
 
   core_task_context(parent, title, export_image_task_run,
    export_image_task_complete, d);

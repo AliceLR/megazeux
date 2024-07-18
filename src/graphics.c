@@ -2755,23 +2755,26 @@ static void dump_screen_real_32bpp(const uint32_t *pix, const char *name)
 
 #define MAX_NAME_SIZE 20
 
-static void screenshot_init_palette(struct rgb_color palette[FULL_PAL_SIZE],
- uint32_t backup_palette[FULL_PAL_SIZE])
+static void screenshot_init_palette(struct graphics_data *graphics,
+ struct rgb_color palette[FULL_PAL_SIZE], uint32_t backup_palette[FULL_PAL_SIZE])
 {
   int palette_size;
   int i;
 
-  memcpy(backup_palette, graphics.flat_intensity_palette,
-   FULL_PAL_SIZE * sizeof(uint32_t));
+  if(backup_palette)
+  {
+    memcpy(backup_palette, graphics->flat_intensity_palette,
+     FULL_PAL_SIZE * sizeof(uint32_t));
+  }
 
   palette_size = make_palette(palette);
   for(i = 0; i < palette_size; i++)
   {
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-    graphics.flat_intensity_palette[i] =
+    graphics->flat_intensity_palette[i] =
      (palette[i].r << 8) | (palette[i].g << 16) | (palette[i].b << 24);
 #else
-    graphics.flat_intensity_palette[i] =
+    graphics->flat_intensity_palette[i] =
      (palette[i].r << 16) | (palette[i].g << 8) | (palette[i].b << 0);
 #endif /* PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN */
   }
@@ -2805,7 +2808,7 @@ void dump_screen(void)
   if(!ss)
     return;
 
-  screenshot_init_palette(palette, backup_palette);
+  screenshot_init_palette(&graphics, palette, backup_palette);
 
   for(layer = 0; layer < graphics.layer_count; layer++)
     graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];
@@ -2832,6 +2835,7 @@ struct dump_layer_priv
 {
   boolean (*status_callback)(void *, size_t, size_t);
   void *status_priv;
+  struct graphics_data *graphics_copy;
   uint32_t *flat_array;
   size_t pitch;
   size_t width_px;
@@ -2862,7 +2866,7 @@ static const uint32_t *dump_layer_callback(size_t num_pixels, void *priv)
       return NULL;
 
     render_layer(data->flat_array, data->width_px, data->height_px,
-     data->pitch, 32, &graphics, &data->layer);
+     data->pitch, 32, data->graphics_copy, &data->layer);
     data->layer.data += data->width_ch;
     data->pos_in_layer++;
     data->pos_in_array = 0;
@@ -2882,8 +2886,8 @@ boolean dump_layer_to_image(const char *filename,
  size_t width_ch, size_t height_ch, const struct char_element *layer,
  boolean (*status_callback)(void *priv, size_t p, size_t m), void *priv)
 {
+  struct graphics_data *graphics_copy;
   struct rgb_color palette[FULL_PAL_SIZE];
-  uint32_t backup_palette[FULL_PAL_SIZE];
   struct dump_layer_priv data;
   uint32_t *flat_array;
   boolean ret;
@@ -2891,13 +2895,24 @@ boolean dump_layer_to_image(const char *filename,
   if(width_ch >= 32768 || height_ch >= 32768)
     return false;
 
-  flat_array = (uint32_t *)cmalloc(width_ch * CHAR_W * CHAR_H * sizeof(uint32_t));
-  if(!flat_array)
+  /* This may be run as an async task, which results in palette conflicts.
+   * The easiest thing to do is duplicate graphics entirely. */
+  graphics_copy = (struct graphics_data *)cmalloc(sizeof(struct graphics_data));
+  if(!graphics_copy)
     return false;
 
+  flat_array = (uint32_t *)cmalloc(width_ch * CHAR_W * CHAR_H * sizeof(uint32_t));
+  if(!flat_array)
+  {
+    free(graphics_copy);
+    return false;
+  }
+
+  memcpy(graphics_copy, &graphics, sizeof(struct graphics_data));
   memset(&data, 0, sizeof(data));
   data.status_callback = status_callback;
   data.status_priv = priv;
+  data.graphics_copy = graphics_copy;
   data.flat_array = flat_array;
   data.pitch = width_ch * CHAR_W * sizeof(uint32_t);
   data.width_px = width_ch * CHAR_W;
@@ -2917,14 +2932,13 @@ boolean dump_layer_to_image(const char *filename,
   data.layer.mode = get_screen_mode();
   data.layer.empty = false;
 
-  screenshot_init_palette(palette, backup_palette);
+  screenshot_init_palette(graphics_copy, palette, NULL);
 
   ret = png_write_image_32bpp(filename,
    width_ch * CHAR_W, height_ch * CHAR_H, &data, dump_layer_callback);
 
+  free(graphics_copy);
   free(flat_array);
-
-  screenshot_cleanup_palette(backup_palette);
   return ret;
 }
 #else
