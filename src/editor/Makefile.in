@@ -29,6 +29,7 @@ editor_objs := \
   ${editor_obj}/debug.o         \
   ${editor_obj}/edit.o          \
   ${editor_obj}/edit_di.o       \
+  ${editor_obj}/edit_export.o   \
   ${editor_obj}/edit_menu.o     \
   ${editor_obj}/fill.o          \
   ${editor_obj}/graphics.o      \

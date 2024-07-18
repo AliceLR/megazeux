@@ -2830,6 +2830,8 @@ void dump_screen(void)
 #if defined(CONFIG_EDITOR) && defined(CONFIG_PNG)
 struct dump_layer_priv
 {
+  boolean (*status_callback)(void *, size_t, size_t);
+  void *status_priv;
   uint32_t *flat_array;
   size_t pitch;
   size_t width_px;
@@ -2849,6 +2851,13 @@ static const uint32_t *dump_layer_callback(size_t num_pixels, void *priv)
 
   if(data->pos_in_array >= CHAR_H)
   {
+    if(data->status_callback)
+    {
+      if(!data->status_callback(data->status_priv,
+       data->pos_in_layer, data->height_ch))
+        return NULL; // cancel requested
+    }
+
     if(data->pos_in_layer >= data->height_ch)
       return NULL;
 
@@ -2865,11 +2874,13 @@ static const uint32_t *dump_layer_callback(size_t num_pixels, void *priv)
 }
 
 /* Render an arbitrary layer to an image.
+ * FIXME: need to duplicate graphics_data since this can be run async.
  * TODO: The caller is responsible for constructing the layer char_element
  * array since the graphics API functions are very much intended for operating
  * on real graphical layers rather than arbitrary layers. */
 boolean dump_layer_to_image(const char *filename,
- size_t width_ch, size_t height_ch, const struct char_element *layer)
+ size_t width_ch, size_t height_ch, const struct char_element *layer,
+ boolean (*status_callback)(void *priv, size_t p, size_t m), void *priv)
 {
   struct rgb_color palette[FULL_PAL_SIZE];
   uint32_t backup_palette[FULL_PAL_SIZE];
@@ -2885,6 +2896,8 @@ boolean dump_layer_to_image(const char *filename,
     return false;
 
   memset(&data, 0, sizeof(data));
+  data.status_callback = status_callback;
+  data.status_priv = priv;
   data.flat_array = flat_array;
   data.pitch = width_ch * CHAR_W * sizeof(uint32_t);
   data.width_px = width_ch * CHAR_W;

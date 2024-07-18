@@ -389,7 +389,8 @@ CORE_LIBSPEC void draw_char_mixed_pal_ext(uint8_t chr, uint8_t bg_color,
 #ifdef CONFIG_ENABLE_SCREENSHOTS
 void dump_screen(void);
 CORE_LIBSPEC boolean dump_layer_to_image(const char *filename,
- size_t width_ch, size_t height_ch, const struct char_element *layer);
+ size_t width_ch, size_t height_ch, const struct char_element *layer,
+ boolean (*status_callback)(void *priv, size_t p, size_t m), void *priv);
 #endif
 
 __M_END_DECLS

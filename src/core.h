@@ -46,6 +46,7 @@ enum context_type
   CTX_MAIN_MENU             = -3,
   CTX_GAME_MENU             = -4,
   CTX_INTAKE_NUM            = -6,
+  CTX_TASK                  = -7,
 
   // Network contexts.
   CTX_UPDATER               = 99,

@@ -55,6 +55,7 @@
 #include "debug.h"
 #include "edit.h"
 #include "edit_di.h"
+#include "edit_export.h"
 #include "edit_menu.h"
 #include "fill.h"
 #include "graphics.h"
@@ -3613,9 +3614,9 @@ static boolean editor_key(context *ctx, int *key)
                title, ALLOW_ALL_DIRS))
               {
                 if(editor->mode == EDIT_VLAYER)
-                  export_vlayer_image(mzx_world, export_name);
+                  export_vlayer_image(ctx, mzx_world, export_name);
                 else
-                  export_board_image(mzx_world, cur_board, export_name);
+                  export_board_image(ctx, cur_board, export_name);
               }
               break;
             }

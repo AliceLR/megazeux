@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,23 +17,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __EDITOR_WORLD_H
-#define __EDITOR_WORLD_H
+#ifndef __EDITOR_EDIT_EXPORT_H
+#define __EDITOR_EDIT_EXPORT_H
 
 #include "../compat.h"
 
 __M_BEGIN_DECLS
 
-#include "../world_struct.h"
+#include "../core.h"
 
-boolean append_world(struct world *mzx_world, const char *file);
-void create_blank_world(struct world *mzx_world);
-void set_update_done_current(struct world *mzx_world);
-
-void move_current_board(struct world *mzx_world, int new_position);
-
-char get_default_id_char(int id);
+void export_board_image(context *parent, struct board *src_board,
+ const char *file);
+void export_vlayer_image(context *parent, struct world *mzx_world,
+ const char *file);
 
 __M_END_DECLS
 
-#endif // __EDITOR_WORLD_H
+#endif /* __EDITOR_EDIT_EXPORT_H */

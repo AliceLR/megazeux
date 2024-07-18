@@ -24,15 +24,12 @@
 
 #include "../board.h"
 #include "../const.h"
-#include "../error.h"
 #include "../extmem.h"
 #include "../graphics.h"
 #include "../robot.h"
-#include "../window.h"
 #include "../world.h"
 #include "../legacy_board.h"
 #include "../idput.h"
-#include "../util.h"
 #include "../io/memfile.h"
 #include "../io/vio.h"
 #include "../io/zip.h"
@@ -598,100 +595,3 @@ char get_default_id_char(int id)
 {
   return def_id_chars[id];
 }
-
-#ifdef CONFIG_ENABLE_SCREENSHOTS
-/**
- * Export a board to an image file.
- */
-void export_board_image(struct world *mzx_world, struct board *src_board,
- const char *file)
-{
-  struct char_element *image;
-  int board_width = src_board->board_width;
-  int board_height = src_board->board_height;
-  int overlay_mode = src_board->overlay_mode & OVERLAY_MODE_MASK;
-  size_t offset;
-  size_t sz;
-  int ch, co;
-  int x, y;
-
-  sz = (size_t)board_width * board_height;
-  image = (struct char_element *)cmalloc(sz * sizeof(struct char_element));
-  if(!image)
-    return;
-
-  offset = 0;
-  for(y = 0; y < board_height; y++)
-  {
-    for(x = 0; x < board_width; x++, offset++)
-    {
-      /* simplified version of id_put */
-      if(overlay_mode == OVERLAY_ON || overlay_mode == OVERLAY_STATIC)
-      {
-        ch = src_board->overlay[offset];
-        co = src_board->overlay_color[offset];
-        if(ch != 32)
-        {
-          image[offset].char_value = ch;
-          image[offset].fg_color = co & 0xf;
-
-          if(co & 0xf0)
-            image[offset].bg_color = co >> 4;
-          else
-            image[offset].bg_color = get_id_color(src_board, offset) >> 4;
-
-          continue;
-        }
-      }
-
-      ch = get_id_char(src_board, offset);
-      co = get_id_color(src_board, offset);
-      image[offset].char_value = ch;
-      image[offset].fg_color = co & 0xf;
-      image[offset].bg_color = co >> 4;
-    }
-  }
-
-  // FIXME:
-  if(!dump_layer_to_image(file, board_width, board_height, image))
-    error("dafuck??", ERROR_T_WARNING, ERROR_OPT_OK, 0);
-
-  free(image);
-}
-
-/**
- * Export the vlayer to an image file.
- */
-void export_vlayer_image(struct world *mzx_world, const char *file)
-{
-  struct char_element *image;
-  int board_width = mzx_world->vlayer_width;
-  int board_height = mzx_world->vlayer_height;
-  size_t offset;
-  size_t sz;
-  int x, y;
-
-  sz = (size_t)board_width * board_height;
-  image = (struct char_element *)cmalloc(sz * sizeof(struct char_element));
-  if(!image)
-    return;
-
-  offset = 0;
-  for(y = 0; y < board_height; y++)
-  {
-    for(x = 0; x < board_width; x++, offset++)
-    {
-      int color = mzx_world->vlayer_colors[offset];
-      image[offset].char_value = mzx_world->vlayer_chars[offset];
-      image[offset].fg_color = color & 0x0f;
-      image[offset].bg_color = color >> 4;
-    }
-  }
-
-  // FIXME:
-  if(!dump_layer_to_image(file, board_width, board_height, image))
-    error("dafuck??", ERROR_T_WARNING, ERROR_OPT_OK, 0);
-
-  free(image);
-}
-#endif /* CONFIG_ENABLE_SCREENSHOTS */
