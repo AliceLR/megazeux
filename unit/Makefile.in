@@ -117,7 +117,7 @@ UNIT_OPTIMIZE_FLAGS := -Og -fno-lto ${UNIT_OPTIMIZE_FLAGS}
 # Turn on exceptions explicitly, since the global CXXFLAGS turn them off.
 #
 unit_cflags ?= ${CXXFLAGS}
-unit_cflags += ${UNIT_OPTIMIZE_FLAGS} -UDEBUG -UNDEBUG
+unit_cflags += ${UNIT_OPTIMIZE_FLAGS} -UDEBUG -UNDEBUG -DMZX_UNIT_TESTS
 unit_cflags += -fexceptions -funsigned-char -std=gnu++11
 unit_ldflags += ${UNIT_OPTIMIZE_FLAGS}
 
