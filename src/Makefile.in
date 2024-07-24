@@ -290,7 +290,12 @@ endif
 # This one tends to take forever for many builds. Prefix it to
 # the list so hopefully it starts sooner during parallel builds.
 ifeq (${render_layer_software},1)
-core_cobjs := ${core_obj}/render_layer.o ${core_cobjs}
+core_cobjs := \
+  ${core_obj}/render_layer.o \
+  ${core_obj}/render_layer_avx.o \
+  ${core_obj}/render_layer_neon.o \
+  ${core_obj}/render_layer_sse2.o \
+  ${core_cobjs}
 endif
 
 ifeq (${BUILD_MODPLUG},1)

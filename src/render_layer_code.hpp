@@ -28,6 +28,7 @@
 
 #include "graphics.h"
 #include "platform_endian.h"
+#include "render_layer_common.hpp"
 #include "util.h"
 
 #include <stdlib.h>
@@ -316,21 +317,6 @@ static inline void render_layer_func(
       exit(1);
       break;
   }
-}
-
-/**
- * Mode 0 and UI layer color selection function.
- * This needs to be done for both colors.
- */
-static inline int select_color_16(uint8_t color, int ppal)
-{
-  // Palette values >= 16, prior to offsetting, are from the protected palette.
-  if(color >= 16)
-  {
-    return (color - 16) % 16 + ppal;
-  }
-  else
-    return color;
 }
 
 // Macros to perform these shifts while ignoring spurious compiler warnings
