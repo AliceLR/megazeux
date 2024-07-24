@@ -738,7 +738,7 @@ static constexpr int SM_H = 20;
 static constexpr int XL_W = 132;
 static constexpr int XL_H = 43;
 
-template<typename T, smzx_type MODE, flat_bpp FLAT, int ALLOW_GENERATE = 0,
+template<typename T, smzx_type MODE, flat_bpp FLAT, int ALLOW_GENERATE = 1,
  render_layer_fp my_render_layer = render_layer>
 class render_layer_tester
 {
@@ -830,17 +830,51 @@ static void layer_common(unsigned screen_w, unsigned screen_h,
     my_render_layer(pixels, width_px, height_px,
      pitch, bpp, &graphics, &d.layer_small);
 
-    d.layer_ui.x = x3;
-    d.layer_ui.y = y3;
-    d.layer_ui.transparent_col = TR ? graphics.protected_pal_position + 2 : -1;
-    my_render_layer(pixels, width_px, height_px,
-     pitch, bpp, &graphics, &d.layer_ui);
+    if(!CLIP)
+    {
+      // Test UI rendering.
+      d.layer_ui.x = x3;
+      d.layer_ui.y = y3;
+      d.layer_ui.transparent_col = TR ? graphics.protected_pal_position + 2 : -1;
+      my_render_layer(pixels, width_px, height_px,
+       pitch, bpp, &graphics, &d.layer_ui);
 
-    d.layer_ui.x = x4;
-    d.layer_ui.y = y4;
-    d.layer_ui.transparent_col = TR ? graphics.protected_pal_position + 15 : -1;
-    my_render_layer(pixels, width_px, height_px,
-     pitch, bpp, &graphics, &d.layer_ui);
+      d.layer_ui.x = x4;
+      d.layer_ui.y = y4;
+      d.layer_ui.transparent_col = TR ? graphics.protected_pal_position + 15 : -1;
+      my_render_layer(pixels, width_px, height_px,
+       pitch, bpp, &graphics, &d.layer_ui);
+    }
+    else
+    {
+      // Test normal clipping at bottom and right edges.
+      d.layer_small.x = x3;
+      d.layer_small.y = y3;
+      d.layer_small.transparent_col = TR ? (MODE ? 0x11 : 1) : -1;
+      my_render_layer(pixels, width_px, height_px,
+       pitch, bpp, &graphics, &d.layer_small);
+
+      d.layer_small.x = x4;
+      d.layer_small.y = y4;
+      d.layer_small.transparent_col = TR ? (MODE ? 0xff : 15) : -1;
+      my_render_layer(pixels, width_px, height_px,
+       pitch, bpp, &graphics, &d.layer_small);
+    }
+  }
+
+  if(CLIP)
+  {
+    // Corner clipping test.
+    d.layer_small.transparent_col = TR ? (MODE ? 0x11 : 1) : -1;
+    for(i = 0; i < 4; i++)
+    {
+      constexpr int show_x = CHAR_W * 2 - 1;
+      constexpr int show_y = CHAR_H * 1 - 7;
+      d.layer_small.x = (i & 1) ? width_px - show_x : show_x - CHAR_W * 3;
+      d.layer_small.y = (i & 2) ? height_px - show_y : show_y - CHAR_H * 2;
+      my_render_layer(pixels, width_px, height_px,
+       pitch, bpp, &graphics, &d.layer_small);
+    }
   }
 
   frame.check(graphics, path);
