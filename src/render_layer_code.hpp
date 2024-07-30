@@ -584,8 +584,7 @@ static inline void render_layer_func(
 
   ALIGNTYPE set_colors[16];
   ALIGNTYPE set_opaque[16];
-  uint16_t last_fg = 0xFFFF;
-  uint16_t last_bg = 0xFFFF;
+  unsigned prev = 0x10000;
   boolean has_tcol = false;
   boolean all_tcol = true;
   unsigned int byte_tcol = 0xFFFF;
@@ -624,8 +623,9 @@ static inline void render_layer_func(
           c %= PROTECTED_CHARSET_POSITION;
         }
 
-        if(src->bg_color != last_bg || src->fg_color != last_fg)
+        if(prev != both_colors(src))
         {
+          //prev = both_colors(src); // TODO
           if(SMZX)
           {
             unsigned int pal = ((src->bg_color & 0xF) << 4) | (src->fg_color & 0xF);

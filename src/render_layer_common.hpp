@@ -100,6 +100,18 @@ static inline boolean precompute_clip(int &start_x, int &start_y,
   return ret;
 }
 
+/**
+ * Get the combined colors value from a char_element.
+ */
+static inline unsigned both_colors(const char_element *src)
+{
+#ifdef IS_CXX_11
+  static_assert(offsetof(char_element, bg_color) == 2, "");
+  static_assert(offsetof(char_element, fg_color) == 3, "");
+#endif
+  return reinterpret_cast<const uint16_t *>(src)[1];
+}
+
 #ifndef CONFIG_NO_VECTOR_RENDERING
 
 /**
