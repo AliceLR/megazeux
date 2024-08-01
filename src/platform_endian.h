@@ -102,4 +102,21 @@
 #define ALIGN_64_MODULO ALIGN_32_MODULO
 #endif
 
+/**
+ * Functions for extended processor feature detection.
+ */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+int platform_has_sse2(void);
+int platform_has_avx(void);
+int platform_has_avx2(void);
+int platform_has_neon(void);
+int platform_has_sve(void);
+int platform_has_rvv(void);
+#ifdef __cplusplus
+}
+#endif
+
 #endif // __ENDIAN_H
