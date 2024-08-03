@@ -67,6 +67,7 @@ usage() {
 	echo
 	echo "Platform-dependent options:"
 	echo "  --enable-sdl              Enable SDL backend, typically SDL2 (default)."
+	echo "  --enable-sdl3             Enable SDL3 backend (any version)."
 	echo "  --enable-sdl2             Enable SDL2 backend (any version)."
 	echo "  --enable-sdl1             Enable SDL1 backend (1.2.x)."
 	echo "  --disable-sdl             Disable SDL dependencies and features."
@@ -441,6 +442,7 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--enable-sdl" ]  && SDL="true"
 	[ "$1" = "--enable-sdl1" ] && SDL="1"
 	[ "$1" = "--enable-sdl2" ] && SDL="2"
+	[ "$1" = "--enable-sdl3" ] && SDL="3"
 
 	[ "$1" = "--enable-egl" ]  && EGL="true"
 	[ "$1" = "--disable-egl" ] && EGL="false"
@@ -808,7 +810,7 @@ else
 	#
 	# If no specific version of SDL is selected, select SDL2.
 	#
-	if [ "$SDL" != "1" ] && [ "$SDL" != "2" ]; then
+	if [ "$SDL" != "1" ] && [ "$SDL" != "2" ] && [ "$SDL" != "3" ]; then
 		SDL="2"
 	fi
 	echo "Enabling SDL $SDL.x."
@@ -1112,7 +1114,7 @@ fi
 # Force-disable the softscale renderer for SDL 1.2 (requires SDL_Renderer).
 #
 if [ "$SDL" = "1" ] && [ "$SOFTSCALE" = "true" ]; then
-	echo "Force-disabling softscale renderer (requires SDL 2)."
+	echo "Force-disabling softscale renderer (requires SDL 2+)."
 	SOFTSCALE="false"
 	SDLACCEL="false"
 fi
@@ -1519,7 +1521,7 @@ else
 fi
 
 #
-# Softscale renderer (SDL 2)
+# Softscale renderer (SDL 2+)
 #
 if [ "$SOFTSCALE" = "true" ]; then
 	echo "Softscale renderer enabled."
@@ -1899,7 +1901,7 @@ else
 fi
 
 #
-# SDL_GameControllerDB, if enabled. This depends on SDL 2.
+# SDL_GameControllerDB, if enabled. This depends on SDL 2+.
 #
 if [ "$SDL" != "false" ] && [ "$SDL" -ge "2" ] && \
    [ "$GAMECONTROLLERDB" = "true" ]; then

@@ -59,7 +59,11 @@ static void soft_lock_buffer(struct soft_render_data *render_data,
 
   *pixels = (uint32_t *)screen->pixels;
   *pitch = screen->pitch;
+#if SDL_VERSION_ATLEAST(3,0,0)
+  *bpp = screen->format->bytes_per_pixel * 8;
+#else
   *bpp = screen->format->BytesPerPixel * 8;
+#endif
 
   *pixels += *pitch * ((screen->h - 350) / 8);
   *pixels += (screen->w - 640) * *bpp / 64;

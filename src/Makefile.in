@@ -361,7 +361,11 @@ core_cobjs += ${core_obj}/event_sdl.o ${core_obj}/platform_sdl.o
 core_cobjs += ${core_obj}/render_sdl.o
 
 ifeq (${BUILD_AUDIO},1)
+ifeq (${BUILD_SDL},3)
+core_cobjs += ${audio_obj}/driver_sdl3.o
+else
 core_cobjs += ${audio_obj}/audio_sdl.o
+endif
 endif
 
 core_flags   += $(SDL_CFLAGS)

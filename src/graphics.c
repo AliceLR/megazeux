@@ -1489,6 +1489,19 @@ static boolean icon_w_h_constraint(png_uint_32 w, png_uint_32 h)
   return (w == h) && ((w % 16) == 0) && ((h % 16) == 0);
 }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
+static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
+ png_uint_32 *stride, void **pixels)
+{
+  SDL_Surface *s = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_RGBA32);
+  if(!s)
+    return NULL;
+
+  *stride = s->pitch;
+  *pixels = s->pixels;
+  return s;
+}
+#else
 static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
  png_uint_32 *stride, void **pixels)
 {
@@ -1515,6 +1528,7 @@ static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
   *pixels = s->pixels;
   return s;
 }
+#endif
 
 static SDL_Surface *png_read_icon(const char *name)
 {
@@ -1528,7 +1542,7 @@ static void set_window_grab(boolean grabbed)
 {
 #ifdef CONFIG_SDL
   SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
-  SDL_SetWindowGrab(window, grabbed ? SDL_TRUE : SDL_FALSE);
+  SDL_SetWindowMouseGrab(window, grabbed ? SDL_TRUE : SDL_FALSE);
 #endif
 }
 
@@ -1560,7 +1574,7 @@ static void set_window_icon(void)
     if(icon)
     {
       SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
-      SendMessage(SDL_GetWindowProperty_HWND(window),
+      SendMessage((HWND)SDL_GetWindowProperty_HWND(window),
        WM_SETICON, ICON_BIG, (LPARAM)icon);
     }
   }
@@ -1572,7 +1586,7 @@ static void set_window_icon(void)
     {
       SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
       SDL_SetWindowIcon(window, icon);
-      SDL_FreeSurface(icon);
+      SDL_DestroySurface(icon);
     }
   }
 #endif // CONFIG_PNG
@@ -1821,8 +1835,15 @@ boolean init_video(struct config_info *conf, const char *caption)
   }
 
 #ifdef CONFIG_SDL
+  // TODO: platform function?
   if(!graphics.system_mouse)
+  {
+#if SDL_VERSION_ATLEAST(3,0,0)
+    SDL_HideCursor();
+#else
     SDL_ShowCursor(SDL_DISABLE);
+#endif
+  }
 #endif
 
   ec_load_set_secondary(mzx_res_get_by_id(MZX_DEFAULT_CHR),
