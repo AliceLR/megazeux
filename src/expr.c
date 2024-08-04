@@ -1646,8 +1646,8 @@ static int evaluate_operation(int operand_a, enum op c_operator, int operand_b)
   }
 }
 
-int parse_expression(struct world *mzx_world, char **_expression, int *error,
- int id)
+static int _parse_expression(struct world *mzx_world, char **_expression,
+ int *error, int id, const char *operand_a, const char terminator1, const char terminator2)
 {
   char *expression = *_expression;
   int operand_val;
@@ -1657,9 +1657,18 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 
   *error = 0;
 
-  // Skip initial whitespace..
-  expression = expr_skip_whitespace(expression);
-  value = parse_argument(mzx_world, &expression, &current_arg, 0, id);
+  if(!operand_a)
+  {
+    // Skip initial whitespace..
+    expression = expr_skip_whitespace(expression);
+    value = parse_argument(mzx_world, &expression, &current_arg, 0, id);
+  }
+  else
+  {
+    // Use a pre-evaluated counter name as the initial operand.
+    value = get_counter(mzx_world, operand_a, id);
+    current_arg = 0;
+  }
 
 #ifndef CONFIG_DEBYTECODE
   if((current_arg != 0) && (current_arg != 2))
@@ -1675,11 +1684,8 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 
   while(1)
   {
-    if(*expression == ')')
-    {
-      expression++;
+    if(*expression == terminator1 || *expression == terminator2)
       break;
-    }
 
     c_operator = parse_argument(mzx_world, &expression, &current_arg, value, id);
     // Next arg must be an operator, unless it's a negative number,
@@ -1726,55 +1732,111 @@ err_out:
   return value;
 }
 
+int parse_expression(struct world *mzx_world, char **_expression, int *error,
+ int id)
+{
+  int ret = _parse_expression(mzx_world, _expression, error, id, NULL, ')', ')');
+  // Skip trailing ).
+  (*_expression)++;
+  return ret;
+}
+
 #ifdef CONFIG_DEBYTECODE
+
+static void output_string(char * RESTRICT * RESTRICT dest, size_t *remaining,
+ const char *src, size_t src_length)
+{
+  if(src_length > *remaining)
+    src_length = *remaining;
+
+  memcpy(*dest, src, src_length);
+  *dest += src_length;
+  *remaining -= src_length;
+}
+
+static void output_input_string(struct world *mzx_world,
+ char * RESTRICT * RESTRICT dest, size_t *remaining)
+{
+  const char *str = mzx_world->current_board->input_string;
+  if(!str)
+    str = "";
+
+  output_string(dest, remaining, str, strlen(str));
+}
+
+static void output_number(char * RESTRICT *dest, size_t *remaining,
+ int32_t value, boolean hex_byte, boolean hex_short)
+{
+  char number_buffer[16];
+  size_t len;
+
+  if(hex_byte)
+  {
+    snprintf(number_buffer, sizeof(number_buffer), "%02" PRIx32, value);
+    output_string(dest, remaining, number_buffer, 2);
+  }
+  else
+
+  if(hex_short)
+  {
+    char *src = tr_int_to_hex_string(number_buffer, value, &len);
+    output_string(dest, remaining, src, len);
+  }
+  else
+  {
+    len = snprintf(number_buffer, sizeof(number_buffer), "%" PRId32, value);
+    output_string(dest, remaining, number_buffer, len);
+  }
+}
 
 int parse_string_expression(struct world *mzx_world, char **_expression,
  int id, char *output, size_t output_left)
 {
+  char name_translated[ROBOT_MAX_TR];
   char *expression = *_expression;
   size_t expression_length = output_left;
-  size_t copy_length;
+  int error;
+  int32_t value;
+  // TODO: real formatting syntax
+  boolean hex_byte = false;
+  boolean hex_short = false;
 
   while(1)
   {
     expression = expr_skip_whitespace(expression);
 
+    hex_byte = hex_short = false;
+    if(*expression == '#')
+    {
+      hex_byte = true;
+      expression = expr_skip_whitespace(expression + 1);
+    }
+    else
+
+    if(*expression == '+')
+    {
+      hex_short = true;
+      expression = expr_skip_whitespace(expression + 1);
+    }
+
     switch(*expression)
     {
-      case '`':
+      case '(':
       {
-        struct string string;
-        char name_translated[ROBOT_MAX_TR];
+        // Numeric expression.
         expression++;
-
-        expression =
-         tr_msg_ext(mzx_world, expression, id, name_translated, '`');
-
-        get_string(mzx_world, name_translated, &string, id);
-        copy_length = string.length;
-
-        if(copy_length > output_left)
-          copy_length = output_left;
-
-        memcpy(output, string.value, copy_length);
-        output += copy_length;
-
-        output_left -= copy_length;
+        value = parse_expression(mzx_world, &expression, &error, id);
+        output_number(&output, &output_left, value, hex_byte, hex_short);
         break;
       }
 
       case '"':
       {
+        // String literal.
         expression++;
 
-        expression = tr_msg_ext(mzx_world, expression, id, output, '"');
-        copy_length = strlen(output);
-
-        if(copy_length > output_left)
-          copy_length = output_left;
-
-        output += copy_length;
-        output_left -= copy_length;
+        expression = tr_msg_ext(mzx_world, expression, id, name_translated, '"');
+        output_string(&output, &output_left, name_translated, strlen(name_translated));
         break;
       }
 
@@ -1784,33 +1846,69 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
         expression_length -= output_left;
         return expression_length;
 
+      case '`':
+      {
+        // String identifier (complex) or no-parentheses expression.
+        struct string string;
+        expression++;
+
+        expression =
+         tr_msg_ext(mzx_world, expression, id, name_translated, '`');
+
+        if(is_string(name_translated))
+        {
+          get_string(mzx_world, name_translated, &string, id);
+          output_string(&output, &output_left, string.value, string.length);
+        }
+        else
+        {
+          // Pass the pre-evaluated counter name through...
+          value = _parse_expression(mzx_world, &expression, &error, id,
+           name_translated, ',', '>');
+          output_number(&output, &output_left, value, hex_byte, hex_short);
+        }
+        break;
+      }
+
       default:
       {
+        // String identifier (simple) or no-parentheses expression.
         char *next;
         struct string string;
-        char name_buffer[ROBOT_MAX_TR];
         size_t len;
 
         next = find_non_identifier_char(expression);
         len = MIN(ROBOT_MAX_TR - 1, next - expression);
 
-        memcpy(name_buffer, expression, len);
-        name_buffer[len] = '\0';
+        memcpy(name_translated, expression, len);
+        name_translated[len] = '\0';
 
-        get_string(mzx_world, name_buffer, &string, id);
-        expression = next;
+        if(!strcasecmp(name_translated, "INPUT"))
+        {
+          output_input_string(mzx_world, &output, &output_left);
+          expression = next;
+        }
+        else
 
-        copy_length = string.length;
-
-        if(copy_length > output_left)
-          copy_length = output_left;
-
-        memcpy(output, string.value, copy_length);
-        output += copy_length;
-        output_left -= copy_length;
+        if(is_string(name_translated))
+        {
+          get_string(mzx_world, name_translated, &string, id);
+          output_string(&output, &output_left, string.value, string.length);
+          expression = next;
+        }
+        else
+        {
+          value = _parse_expression(mzx_world, &expression, &error, id,
+           0, ',', '>');
+          output_number(&output, &output_left, value, hex_byte, hex_short);
+        }
         break;
       }
     }
+    // Skip comma, if present
+    expression = expr_skip_whitespace(expression);
+    if(*expression == ',')
+      expression++;
   }
 }
 
