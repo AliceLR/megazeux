@@ -99,6 +99,12 @@ ${core_obj}/render_layer_neon.o: ${core_src}/render_layer_neon.cpp
 	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} ${MNEON} -c $< -o $@
 endif
 
+ifneq (${MRVV},)
+${core_obj}/render_layer_rvv.o: ${core_src}/render_layer_rvv.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} ${MRVV} -c $< -o $@
+endif
+
 #
 # Lists mandatory C language sources (mangled to object names) required
 # to build the main binary. Please keep this sorted alphabetically.
@@ -313,6 +319,7 @@ core_cobjs := \
   ${core_obj}/render_layer.o \
   ${core_obj}/render_layer_avx.o \
   ${core_obj}/render_layer_neon.o \
+  ${core_obj}/render_layer_rvv.o \
   ${core_obj}/render_layer_sse2.o \
   ${core_cobjs}
 endif

@@ -168,7 +168,7 @@ ${unit_obj}/%${unit_ext}: ${unit_src}/%.cpp
 
 ${unit_obj}/render${unit_ext}: ${unit_src}/render.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${unit_cflags} ${MSSE2} ${MAVX} ${MNEON} $< -o $@ ${unit_common_objs} ${unit_ldflags}
+	${CXX} -MD ${unit_cflags} ${MSSE2} ${MAVX} ${MNEON} ${MRVV} $< -o $@ ${unit_common_objs} ${unit_ldflags}
 
 ${unit_obj_audio}/%${unit_ext}: ${unit_src_audio}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
