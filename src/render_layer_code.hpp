@@ -598,7 +598,7 @@ static inline void render_layer_func(
   {
     for(ch_x = 0; ch_x < layer->w; ch_x++, src++, outPtr += advance_char)
     {
-      c = src->char_value;
+      c = select_char(src, layer);
 
       if(CLIP)
       {
@@ -612,17 +612,6 @@ static inline void render_layer_func(
 
       if(c != INVISIBLE_CHAR)
       {
-        // Char values of 256+, prior to offsetting, are from the protected set
-        if(c > 0xFF)
-        {
-          c = (c & 0xFF) + PROTECTED_CHARSET_POSITION;
-        }
-        else
-        {
-          c += layer->offset;
-          c %= PROTECTED_CHARSET_POSITION;
-        }
-
         if(prev != both_colors(src))
         {
           //prev = both_colors(src); // TODO

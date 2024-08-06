@@ -24,6 +24,26 @@
 #include "platform_endian.h"
 
 /**
+ * Select the real display character for a char element.
+ * TODO: this should be done at draw time.
+ */
+static inline int select_char(const struct char_element *src,
+ const struct video_layer *layer)
+{
+  int ch = src->char_value;
+  if(ch >= INVISIBLE_CHAR)
+    return INVISIBLE_CHAR;
+
+  // Char values >= 256, prior to offsetting, are from the protected charset.
+  if(ch > 0xff)
+  {
+    return (ch & 0xff) + PROTECTED_CHARSET_POSITION;
+  }
+  else
+    return ((ch & 0xff) + layer->offset) % PROTECTED_CHARSET_POSITION;
+}
+
+/**
  * Mode 0 and UI layer color selection function.
  * This needs to be done for both colors.
  */
@@ -224,6 +244,35 @@ static inline boolean render_layer32x4(
    smzx, trans, clip);
 }
 #endif /* NEON */
+
+/**
+ * render_layer32x8_rvv
+ */
+boolean render_layer32x8_rvv(
+ void * RESTRICT pixels, int width_px, int height_px, size_t pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
+ int smzx, int tr, int clip);
+
+#if defined(__riscv) || defined(__riscv__)
+#define HAS_RENDER_LAYER32X8
+#define HAS_RENDER_LAYER32X8_RVV
+
+#include <riscv_vector.h>
+
+static inline boolean render_layer32x8(
+ void * RESTRICT pixels, int width_px, int height_px, size_t pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
+ int smzx, int trans, int clip)
+{
+  if(!platform_has_rvv())
+    return false;
+
+  return render_layer32x8_rvv(
+   pixels, width_px, height_px, pitch, graphics, layer,
+   smzx, trans, clip);
+}
+
+#endif
 
 #endif /* CONFIG_NO_VECTOR_RENDERING */
 
