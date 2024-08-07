@@ -19,6 +19,7 @@
 
 #include "about.h"
 #include "platform_attribute.h" /* ATTRIBUTE_PRINTF */
+#include "platform_endian.h"
 #include "util.h"
 #include "window.h"
 #include "io/path.h"
@@ -207,6 +208,31 @@ static char **about_text(int *num_lines)
   lines[i++] = about_line("CONFFILE: " CONFFILE);
   lines[i++] = about_line("SHAREDIR: " SHAREDIR);
   lines[i++] = about_line("LICENSEDIR: " LICENSEDIR);
+
+  // Report available SIMD/vector software renderers.
+  {
+    boolean has_sse2 = platform_has_sse2();
+    boolean has_avx = platform_has_avx();
+    boolean has_neon = platform_has_neon();
+    boolean has_sve = platform_has_sve();
+    boolean has_rvv = platform_has_rvv();
+
+    if(has_sse2 || has_avx || has_neon || has_sve || has_rvv)
+    {
+      lines[i++] = about_line(" ");
+      lines[i++] = about_line("Extra software renderers: %s%s%s%s%s",
+        has_sse2 ? "SSE2(32x4) " : "",
+        has_avx ? "AVX(32x8) " : "",
+#ifdef __aarch64__
+        has_neon ? "Neon(A64 32x4) " : "",
+#else
+        has_neon ? "Neon(32x4) " : "",
+#endif
+        has_sve ? "SVE(32x8) " : "",
+        has_rvv ? "RVV(32x8) " : ""
+      );
+    }
+  }
 
   *num_lines = i;
   return lines;
