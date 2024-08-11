@@ -105,6 +105,12 @@ ${core_obj}/render_layer_rvv.o: ${core_src}/render_layer_rvv.cpp
 	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} ${MRVV} -c $< -o $@
 endif
 
+ifneq (${MALTIVEC},)
+${core_obj}/render_layer_altivec.o: ${core_src}/render_layer_altivec.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} ${MALTIVEC} -c $< -o $@
+endif
+
 #
 # Lists mandatory C language sources (mangled to object names) required
 # to build the main binary. Please keep this sorted alphabetically.
@@ -317,6 +323,7 @@ endif
 ifeq (${render_layer_software},1)
 core_cobjs := \
   ${core_obj}/render_layer.o \
+  ${core_obj}/render_layer_altivec.o \
   ${core_obj}/render_layer_avx.o \
   ${core_obj}/render_layer_neon.o \
   ${core_obj}/render_layer_rvv.o \
