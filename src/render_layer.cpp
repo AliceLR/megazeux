@@ -153,7 +153,7 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels,
               y = layer->y + ch_y * 14 + row;
               x = layer->x + ch_x * 8 + col;
 
-              if(x >= 0 && x < width_px && y >= 0 && y < height_px)
+              if(x >= -1 && x < width_px && y >= 0 && y < height_px)
               {
                 drawPtr = pixels + (pitch / sizeof(uint32_t)) * y + x;
 
@@ -162,8 +162,9 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels,
                 if(char_idx[pix_pos] != tcol)
                 {
                   pix = char_colors[pix_pos];
-                  *drawPtr = pix;
-                  if(x < height_px - 1)
+                  if(x >= 0)
+                    *drawPtr = pix;
+                  if(x < width_px - 1)
                     *(++drawPtr) = pix;
                 }
               }
@@ -206,7 +207,7 @@ void render_layer(void * RESTRICT pixels,
  size_t width_px, size_t height_px, size_t pitch, int bpp,
  const struct graphics_data *graphics, const struct video_layer *layer)
 {
-#ifdef BUILD_REFERENCE_RENDERER
+#if defined(BUILD_REFERENCE_RENDERER) && !defined(MZX_UNIT_TESTS)
   reference_renderer((uint32_t * RESTRICT)pixels,
    width_px, height_px, pitch, graphics, layer);
   return;

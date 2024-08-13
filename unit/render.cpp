@@ -25,7 +25,13 @@
 extern "C" {
 #include "../src/render.c"
 }
+
+#define BUILD_REFERENCE_RENDERER
 #include "../src/render_layer.cpp"
+
+typedef void (*render_layer_fp)(void * RESTRICT pixels,
+ size_t width_px, size_t height_px, size_t pitch, int bpp,
+ const struct graphics_data *graphics, const struct video_layer *layer);
 
 //#define GENERATE_FILES
 
@@ -732,10 +738,14 @@ static constexpr int SM_H = 20;
 static constexpr int XL_W = 132;
 static constexpr int XL_H = 43;
 
+template<typename T, smzx_type MODE, flat_bpp FLAT, int ALLOW_GENERATE = 1,
+ render_layer_fp my_render_layer = render_layer>
+class render_layer_tester
+{
+public:
 /* Test rendering text_video data.
  * Output should be indistinguishable from render_graph with the same input. */
-template<typename T, smzx_type MODE, flat_bpp FLAT>
-static void render_layer_graphic(const char *path)
+static void graphic(const char *path)
 {
   struct graphics_data graphics{};
   render_frame<T, 0, 0> frame(SCREEN_PIX_W, SCREEN_PIX_H);
@@ -747,7 +757,7 @@ static void render_layer_graphic(const char *path)
   render_layer_init<MODE, FLAT> d(graphics);
   init_layer_data(d.big_data, SCREEN_W, SCREEN_H, 0, 0, 0x1f);
 
-  render_layer(pixels, SCREEN_PIX_W, SCREEN_PIX_H,
+  my_render_layer(pixels, SCREEN_PIX_W, SCREEN_PIX_H,
    pitch, bpp, &graphics, &d.layer_screen);
 
   frame.check(graphics, path);
@@ -755,17 +765,18 @@ static void render_layer_graphic(const char *path)
 
 /* Test rendering layers at various alignments with or without clipping.
  * If TR=1, the layers will use transparent colors. */
-template<typename T, smzx_type MODE, flat_bpp FLAT,
- int TR = 0, int CLIP = 0, int MISALIGN = 0>
-static void render_layer_common(unsigned screen_w, unsigned screen_h,
+template<int TR, int CLIP, int MISALIGN>
+static void layer_common(unsigned screen_w, unsigned screen_h,
  unsigned fill_color, const char *path)
 {
+  constexpr int GENERATE = !MISALIGN && ALLOW_GENERATE;
+
   struct graphics_data graphics{};
   size_t i;
   int width_px = screen_w * CHAR_W;
   int height_px = screen_h * CHAR_H;
 
-  render_frame<T, MISALIGN, !MISALIGN> frame(width_px, height_px);
+  render_frame<T, MISALIGN, GENERATE> frame(width_px, height_px);
 
   T *pixels = frame.pixels();
   size_t pitch = frame.pitch();
@@ -777,7 +788,7 @@ static void render_layer_common(unsigned screen_w, unsigned screen_h,
   d.layer_screen.w = screen_w;
   d.layer_screen.h = screen_h;
   init_layer_data(d.big_data, screen_w, screen_h, 0, 0, fill_color);
-  render_layer(pixels, width_px, height_px,
+  my_render_layer(pixels, width_px, height_px,
    pitch, bpp, &graphics, &d.layer_screen);
 
   for(i = 0; i < 8; i++)
@@ -810,26 +821,60 @@ static void render_layer_common(unsigned screen_w, unsigned screen_h,
     d.layer_small.x = x1;
     d.layer_small.y = y1;
     d.layer_small.transparent_col = TR ? (MODE ? 0x11 : 1) : -1;
-    render_layer(pixels, width_px, height_px,
+    my_render_layer(pixels, width_px, height_px,
      pitch, bpp, &graphics, &d.layer_small);
 
     d.layer_small.x = x2;
     d.layer_small.y = y2;
     d.layer_small.transparent_col = TR ? (MODE ? 0xff : 15) : -1;
-    render_layer(pixels, width_px, height_px,
+    my_render_layer(pixels, width_px, height_px,
      pitch, bpp, &graphics, &d.layer_small);
 
-    d.layer_ui.x = x3;
-    d.layer_ui.y = y3;
-    d.layer_ui.transparent_col = TR ? graphics.protected_pal_position + 2 : -1;
-    render_layer(pixels, width_px, height_px,
-     pitch, bpp, &graphics, &d.layer_ui);
+    if(!CLIP)
+    {
+      // Test UI rendering.
+      d.layer_ui.x = x3;
+      d.layer_ui.y = y3;
+      d.layer_ui.transparent_col = TR ? graphics.protected_pal_position + 2 : -1;
+      my_render_layer(pixels, width_px, height_px,
+       pitch, bpp, &graphics, &d.layer_ui);
 
-    d.layer_ui.x = x4;
-    d.layer_ui.y = y4;
-    d.layer_ui.transparent_col = TR ? graphics.protected_pal_position + 15 : -1;
-    render_layer(pixels, width_px, height_px,
-     pitch, bpp, &graphics, &d.layer_ui);
+      d.layer_ui.x = x4;
+      d.layer_ui.y = y4;
+      d.layer_ui.transparent_col = TR ? graphics.protected_pal_position + 15 : -1;
+      my_render_layer(pixels, width_px, height_px,
+       pitch, bpp, &graphics, &d.layer_ui);
+    }
+    else
+    {
+      // Test normal clipping at bottom and right edges.
+      d.layer_small.x = x3;
+      d.layer_small.y = y3;
+      d.layer_small.transparent_col = TR ? (MODE ? 0x11 : 1) : -1;
+      my_render_layer(pixels, width_px, height_px,
+       pitch, bpp, &graphics, &d.layer_small);
+
+      d.layer_small.x = x4;
+      d.layer_small.y = y4;
+      d.layer_small.transparent_col = TR ? (MODE ? 0xff : 15) : -1;
+      my_render_layer(pixels, width_px, height_px,
+       pitch, bpp, &graphics, &d.layer_small);
+    }
+  }
+
+  if(CLIP)
+  {
+    // Corner clipping test.
+    d.layer_small.transparent_col = TR ? (MODE ? 0x11 : 1) : -1;
+    for(i = 0; i < 4; i++)
+    {
+      constexpr int show_x = CHAR_W * 2 - 1;
+      constexpr int show_y = CHAR_H * 1 - 7;
+      d.layer_small.x = (i & 1) ? width_px - show_x : show_x - CHAR_W * 3;
+      d.layer_small.y = (i & 2) ? height_px - show_y : show_y - CHAR_H * 2;
+      my_render_layer(pixels, width_px, height_px,
+       pitch, bpp, &graphics, &d.layer_small);
+    }
   }
 
   frame.check(graphics, path);
@@ -837,55 +882,70 @@ static void render_layer_common(unsigned screen_w, unsigned screen_h,
 
 /* Test rendering layers at various alignments without clipping.
  * If TR=1, the layers will use transparent colors. */
-template<typename T, smzx_type MODE, flat_bpp FLAT, int TR = 0>
-static void render_layer_align(const char *path)
+static void align(const char *path)
 {
-  render_layer_common<T, MODE, FLAT, TR, 0>(SM_W, SM_H, 0, path);
+  layer_common<0, 0, 0>(SM_W, SM_H, 0, path);
+}
+static void align_tr(const char *path)
+{
+  layer_common<1, 0, 0>(SM_W, SM_H, 0, path);
 }
 /* Same, but with clipping. */
-template<typename T, smzx_type MODE, flat_bpp FLAT, int TR = 0>
-static void render_layer_clip(const char *path)
+static void clip(const char *path)
 {
-  render_layer_common<T, MODE, FLAT, TR, 1>(SM_W, SM_H, 0, path);
+  layer_common<0, 1, 0>(SM_W, SM_H, 0, path);
+}
+static void clip_tr(const char *path)
+{
+  layer_common<1, 1, 0>(SM_W, SM_H, 0, path);
 }
 
 /* Test rendering layers at various alignments without clipping.
  * The buffer will be misaligned by one pixel to test that
  * the layer renderer selects an appropriately misaligned (1PPW) renderer.
  * If TR=1, the layers will use transparent colors. */
-template<typename T, smzx_type MODE, flat_bpp FLAT, int TR = 0>
-static void render_layer_misalign(const char *path)
+static void misalign(const char *path)
 {
-  render_layer_common<T, MODE, FLAT, TR, 0, 1>(SM_W, SM_H, 0, path);
+  layer_common<0, 0, 1>(SM_W, SM_H, 0, path);
+}
+static void misalign_tr(const char *path)
+{
+  layer_common<1, 0, 1>(SM_W, SM_H, 0, path);
 }
 /* Same, but with clipping. */
-template<typename T, smzx_type MODE, flat_bpp FLAT, int TR = 0>
-static void render_layer_misclip(const char *path)
+static void misclip(const char *path)
 {
-  render_layer_common<T, MODE, FLAT, TR, 1, 1>(SM_W, SM_H, 0, path);
+  layer_common<0, 1, 1>(SM_W, SM_H, 0, path);
+}
+static void misclip_tr(const char *path)
+{
+  layer_common<1, 1, 1>(SM_W, SM_H, 0, path);
 }
 
 /* Test rendering layers to a large destination at various alignments
  * with clipping. If TR=1, the layers will use transparent colors. */
-template<typename T, smzx_type MODE, flat_bpp FLAT, int TR = 0>
-static void render_layer_large(const char *path)
+static void large(const char *path)
 {
-  render_layer_common<T, MODE, FLAT, TR, 1>(XL_W, XL_H, 0x5f, path);
+  layer_common<0, 1, 0>(XL_W, XL_H, 0x5f, path);
 }
+};
 
 UNITTEST(render_layer_mzx8)
 {
 #ifdef SKIP_8BPP
   SKIP();
 #else
-  SECTION(graphic)  render_layer_graphic<uint8_t, MZX, FLAT32>(DIR "8.tga.gz");
-  SECTION(align)    render_layer_align<uint8_t, MZX, FLAT32>(DIR "8a.tga.gz");
-  SECTION(align_tr) render_layer_align<uint8_t, MZX, FLAT32, 1>(DIR "8ta.tga.gz");
-  SECTION(clip)     render_layer_clip<uint8_t, MZX, FLAT32>(DIR "8c.tga.gz");
-  SECTION(clip_tr)  render_layer_clip<uint8_t, MZX, FLAT32, 1>(DIR "8tc.tga.gz");
-  SECTION(misalign) render_layer_misalign<uint8_t, MZX, FLAT32>(DIR "8a.tga.gz");
-  SECTION(misclip)  render_layer_misclip<uint8_t, MZX, FLAT32>(DIR "8c.tga.gz");
-  SECTION(large)    render_layer_large<uint8_t, MZX, FLAT32>(DIR "8xl.tga.gz");
+  using test = render_layer_tester<uint8_t, MZX, FLAT32>;
+  SECTION(graphic)      test::graphic(DIR "8.tga.gz");
+  SECTION(align)        test::align(DIR "8a.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "8ta.tga.gz");
+  SECTION(clip)         test::clip(DIR "8c.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "8tc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "8a.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "8ta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "8c.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "8tc.tga.gz");
+  SECTION(large)        test::large(DIR "8xl.tga.gz");
 #endif
 }
 
@@ -894,14 +954,17 @@ UNITTEST(render_layer_smzx8)
 #ifdef SKIP_8BPP
   SKIP();
 #else
-  SECTION(graphic)  render_layer_graphic<uint8_t, SMZX, FLAT32>(DIR "8s.tga.gz");
-  SECTION(align)    render_layer_align<uint8_t, SMZX, FLAT32>(DIR "8sa.tga.gz");
-  SECTION(align_tr) render_layer_align<uint8_t, SMZX, FLAT32, 1>(DIR "8sta.tga.gz");
-  SECTION(clip)     render_layer_clip<uint8_t, SMZX, FLAT32>(DIR "8sc.tga.gz");
-  SECTION(clip_tr)  render_layer_clip<uint8_t, SMZX, FLAT32, 1>(DIR "8stc.tga.gz");
-  SECTION(misalign) render_layer_misalign<uint8_t, SMZX, FLAT32>(DIR "8sa.tga.gz");
-  SECTION(misclip)  render_layer_misclip<uint8_t, SMZX, FLAT32>(DIR "8sc.tga.gz");
-  SECTION(large)    render_layer_large<uint8_t, SMZX, FLAT32>(DIR "8sxl.tga.gz");
+  using test = render_layer_tester<uint8_t, SMZX, FLAT32>;
+  SECTION(graphic)      test::graphic(DIR "8s.tga.gz");
+  SECTION(align)        test::align(DIR "8sa.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "8sta.tga.gz");
+  SECTION(clip)         test::clip(DIR "8sc.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "8stc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "8sa.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "8sta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "8sc.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "8stc.tga.gz");
+  SECTION(large)        test::large(DIR "8sxl.tga.gz");
 #endif
 }
 
@@ -910,14 +973,17 @@ UNITTEST(render_layer_mzx16)
 #ifdef SKIP_16BPP
   SKIP();
 #else
-  SECTION(graphic)  render_layer_graphic<uint16_t, MZX, FLAT16>(DIR "16.tga.gz");
-  SECTION(align)    render_layer_align<uint16_t, MZX, FLAT16>(DIR "16a.tga.gz");
-  SECTION(align_tr) render_layer_align<uint16_t, MZX, FLAT16, 1>(DIR "16ta.tga.gz");
-  SECTION(clip)     render_layer_clip<uint16_t, MZX, FLAT16>(DIR "16c.tga.gz");
-  SECTION(clip_tr)  render_layer_clip<uint16_t, MZX, FLAT16, 1>(DIR "16tc.tga.gz");
-  SECTION(misalign) render_layer_misalign<uint16_t, MZX, FLAT16>(DIR "16a.tga.gz");
-  SECTION(misclip)  render_layer_misclip<uint16_t, MZX, FLAT16>(DIR "16c.tga.gz");
-  SECTION(large)    render_layer_large<uint16_t, MZX, FLAT16>(DIR "16xl.tga.gz");
+  using test = render_layer_tester<uint16_t, MZX, FLAT16>;
+  SECTION(graphic)      test::graphic(DIR "16.tga.gz");
+  SECTION(align)        test::align(DIR "16a.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "16ta.tga.gz");
+  SECTION(clip)         test::clip(DIR "16c.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "16tc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "16a.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "16ta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "16c.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "16tc.tga.gz");
+  SECTION(large)        test::large(DIR "16xl.tga.gz");
 #endif
 }
 
@@ -926,37 +992,85 @@ UNITTEST(render_layer_smzx16)
 #ifdef SKIP_16BPP
   SKIP();
 #else
-  SECTION(graphic)  render_layer_graphic<uint16_t, SMZX, FLAT16>(DIR "16s.tga.gz");
-  SECTION(align)    render_layer_align<uint16_t, SMZX, FLAT16>(DIR "16sa.tga.gz");
-  SECTION(align_tr) render_layer_align<uint16_t, SMZX, FLAT16, 1>(DIR "16sta.tga.gz");
-  SECTION(clip)     render_layer_clip<uint16_t, SMZX, FLAT16>(DIR "16sc.tga.gz");
-  SECTION(clip_tr)  render_layer_clip<uint16_t, SMZX, FLAT16, 1>(DIR "16stc.tga.gz");
-  SECTION(misalign) render_layer_misalign<uint16_t, SMZX, FLAT16>(DIR "16sa.tga.gz");
-  SECTION(misclip)  render_layer_misclip<uint16_t, SMZX, FLAT16>(DIR "16sc.tga.gz");
-  SECTION(large)    render_layer_large<uint16_t, SMZX, FLAT16>(DIR "16sxl.tga.gz");
+  using test = render_layer_tester<uint16_t, SMZX, FLAT16>;
+  SECTION(graphic)      test::graphic(DIR "16s.tga.gz");
+  SECTION(align)        test::align(DIR "16sa.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "16sta.tga.gz");
+  SECTION(clip)         test::clip(DIR "16sc.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "16stc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "16sa.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "16sta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "16sc.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "16stc.tga.gz");
+  SECTION(large)        test::large(DIR "16sxl.tga.gz");
 #endif
 }
 
 UNITTEST(render_layer_mzx32)
 {
-  SECTION(graphic)  render_layer_graphic<uint32_t, MZX, FLAT32>(DIR "32.tga.gz");
-  SECTION(align)    render_layer_align<uint32_t, MZX, FLAT32>(DIR "32a.tga.gz");
-  SECTION(align_tr) render_layer_align<uint32_t, MZX, FLAT32, 1>(DIR "32ta.tga.gz");
-  SECTION(clip)     render_layer_clip<uint32_t, MZX, FLAT32>(DIR "32c.tga.gz");
-  SECTION(clip_tr)  render_layer_clip<uint32_t, MZX, FLAT32, 1>(DIR "32tc.tga.gz");
-  SECTION(misalign) render_layer_misalign<uint32_t, MZX, FLAT32>(DIR "32a.tga.gz");
-  SECTION(misclip)  render_layer_misclip<uint32_t, MZX, FLAT32>(DIR "32c.tga.gz");
-  SECTION(large)    render_layer_large<uint32_t, MZX, FLAT32>(DIR "32xl.tga.gz");
+  using test = render_layer_tester<uint32_t, MZX, FLAT32>;
+  SECTION(graphic)      test::graphic(DIR "32.tga.gz");
+  SECTION(align)        test::align(DIR "32a.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "32ta.tga.gz");
+  SECTION(clip)         test::clip(DIR "32c.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "32tc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "32a.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "32ta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "32c.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "32tc.tga.gz");
+  SECTION(large)        test::large(DIR "32xl.tga.gz");
 }
 
 UNITTEST(render_layer_smzx32)
 {
-  SECTION(graphic)  render_layer_graphic<uint32_t, SMZX, FLAT32>(DIR "32s.tga.gz");
-  SECTION(align)    render_layer_align<uint32_t, SMZX, FLAT32>(DIR "32sa.tga.gz");
-  SECTION(align_tr) render_layer_align<uint32_t, SMZX, FLAT32, 1>(DIR "32sta.tga.gz");
-  SECTION(clip)     render_layer_clip<uint32_t, SMZX, FLAT32>(DIR "32sc.tga.gz");
-  SECTION(clip_tr)  render_layer_clip<uint32_t, SMZX, FLAT32, 1>(DIR "32stc.tga.gz");
-  SECTION(misalign) render_layer_misalign<uint32_t, SMZX, FLAT32>(DIR "32sa.tga.gz");
-  SECTION(misclip)  render_layer_misclip<uint32_t, SMZX, FLAT32>(DIR "32sc.tga.gz");
-  SECTION(large)    render_layer_large<uint32_t, SMZX, FLAT32>(DIR "32sxl.tga.gz");
+  using test = render_layer_tester<uint32_t, SMZX, FLAT32>;
+  SECTION(graphic)      test::graphic(DIR "32s.tga.gz");
+  SECTION(align)        test::align(DIR "32sa.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "32sta.tga.gz");
+  SECTION(clip)         test::clip(DIR "32sc.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "32stc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "32sa.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "32sta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "32sc.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "32stc.tga.gz");
+  SECTION(large)        test::large(DIR "32sxl.tga.gz");
+}
+
+static void reference_renderer_wrap(void * RESTRICT pixels,
+ size_t width_px, size_t height_px, size_t pitch, int bpp,
+ const struct graphics_data *graphics, const struct video_layer *layer)
+{
+  ASSERTEQ(bpp, 32, "reference renderer is 32-bit only");
+  reference_renderer(reinterpret_cast<uint32_t * RESTRICT>(pixels),
+   width_px, height_px, pitch, graphics, layer);
+}
+
+UNITTEST(reference_renderer_mzx32)
+{
+  using test = render_layer_tester<uint32_t, MZX, FLAT32, 0, reference_renderer_wrap>;
+  SECTION(graphic)      test::graphic(DIR "32.tga.gz");
+  SECTION(align)        test::align(DIR "32a.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "32ta.tga.gz");
+  SECTION(clip)         test::clip(DIR "32c.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "32tc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "32a.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "32ta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "32c.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "32tc.tga.gz");
+  SECTION(large)        test::large(DIR "32xl.tga.gz");
+}
+
+UNITTEST(reference_renderer_smzx32)
+{
+  using test = render_layer_tester<uint32_t, SMZX, FLAT32, 0, reference_renderer_wrap>;
+  SECTION(graphic)      test::graphic(DIR "32s.tga.gz");
+  SECTION(align)        test::align(DIR "32sa.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "32sta.tga.gz");
+  SECTION(clip)         test::clip(DIR "32sc.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "32stc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "32sa.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "32sta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "32sc.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "32stc.tga.gz");
+  SECTION(large)        test::large(DIR "32sxl.tga.gz");
 }

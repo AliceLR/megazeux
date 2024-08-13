@@ -23,6 +23,9 @@ USERS
 + HTML5: fixed the poor performance of FREADn and other features
   that rely on calculating the length of an open file.
 + Clear world (Alt+R) now resets the world version.
++ Fixed a crash bug and a false positive match bug in the
+  command IF ALIGNEDROBOT. The false positive bug has been
+  version locked to 2.80 through 2.92X (just in case).
 + Software layer rendering performance for transparent sprites
   has been improved, significantly in some cases.
 + Fixed a software layer renderer bug where a buffer with a
