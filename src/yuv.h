@@ -29,6 +29,7 @@
 __M_BEGIN_DECLS
 
 #include "platform_endian.h"
+#include <stdint.h>
 
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
 
@@ -105,28 +106,47 @@ static inline uint32_t yvyu_pack(uint8_t y1, uint8_t u, uint8_t y2, uint8_t v)
    (y2 << YVYU_Y2_SHIFT) | (v << YVYU_V_SHIFT);
 }
 
-static inline uint32_t yuv_subsample(uint32_t a, uint32_t b,
+// First byte is u or v -> LE must add first, BE must shift first
+static inline uint32_t yuv_subsample_uv0(uint32_t a, uint32_t b,
  uint32_t y1_mask, uint32_t y2_mask, uint32_t uv_mask)
 {
   uint32_t y1 = a & y1_mask;
   uint32_t y2 = b & y2_mask;
-  uint32_t uv = ((a & uv_mask) / 2 + (b & uv_mask) / 2) & uv_mask;
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+  uint32_t uv = (((a & uv_mask) >> 1) + ((b & uv_mask) >> 1)) & uv_mask;
+#else
+  uint32_t uv = (((a & uv_mask) + (b & uv_mask)) >> 1) & uv_mask;
+#endif
+  return y1 | y2 | uv;
+}
+
+// First byte is y1 or y2 -> LE must shift first, BE must add first
+static inline uint32_t yuv_subsample_y0(uint32_t a, uint32_t b,
+ uint32_t y1_mask, uint32_t y2_mask, uint32_t uv_mask)
+{
+  uint32_t y1 = a & y1_mask;
+  uint32_t y2 = b & y2_mask;
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+  uint32_t uv = (((a & uv_mask) + (b & uv_mask)) >> 1) & uv_mask;
+#else
+  uint32_t uv = (((a & uv_mask) >> 1) + ((b & uv_mask) >> 1)) & uv_mask;
+#endif
   return y1 | y2 | uv;
 }
 
 static inline uint32_t yuy2_subsample(uint32_t a, uint32_t b)
 {
-  return yuv_subsample(a, b, YUY2_Y1_MASK, YUY2_Y2_MASK, YUY2_UV_MASK);
+  return yuv_subsample_y0(a, b, YUY2_Y1_MASK, YUY2_Y2_MASK, YUY2_UV_MASK);
 }
 
 static inline uint32_t uyvy_subsample(uint32_t a, uint32_t b)
 {
-  return yuv_subsample(a, b, UYVY_Y1_MASK, UYVY_Y2_MASK, UYVY_UV_MASK);
+  return yuv_subsample_uv0(a, b, UYVY_Y1_MASK, UYVY_Y2_MASK, UYVY_UV_MASK);
 }
 
 static inline uint32_t yvyu_subsample(uint32_t a, uint32_t b)
 {
-  return yuv_subsample(a, b, YVYU_Y1_MASK, YVYU_Y2_MASK, YVYU_UV_MASK);
+  return yuv_subsample_y0(a, b, YVYU_Y1_MASK, YVYU_Y2_MASK, YVYU_UV_MASK);
 }
 
 // Full-swing RGB to YUV conversion.
