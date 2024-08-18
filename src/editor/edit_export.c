@@ -60,33 +60,40 @@ static void export_image_task_complete(void *priv, boolean ret)
   free(data);
 
   if(!ret)
-  {
-    error("Image export failed or was canceled.",
-     ERROR_T_WARNING, ERROR_OPT_OK, 0);
-  }
+    error_message(E_IMAGE_EXPORT_CANCELED, 0, NULL);
 }
 
 static void export_image_task(context *parent, const char *filename,
  unsigned width_ch, unsigned height_ch, struct char_element *layer)
 {
-  struct export_image_task_data *d =
-   (struct export_image_task_data *)malloc(sizeof(struct export_image_task_data));
+  struct export_image_task_data *d;
+  char *name;
   size_t len = strlen(filename);
   char title[80];
 
-  d->filename = (char *)malloc(len + 1);
+  d = (struct export_image_task_data *)cmalloc(sizeof(struct export_image_task_data));
+  name = (char *)cmalloc(len + 1);
+  if(!d || !name)
+  {
+    free(d);
+    free(name);
+    error_message(E_IMAGE_EXPORT, 0, NULL);
+    return;
+  }
+
+  d->filename = name;
   d->width_ch = width_ch;
   d->height_ch = height_ch;
   d->layer = layer;
 
   memcpy(d->filename, filename, len + 1);
-  if(len > 50)
+  if(len > 55)
   {
-    filename += len - 47;
-    snprintf(title, sizeof(title), "Saving '...%.47s'...", filename);
+    filename += len - 52;
+    snprintf(title, sizeof(title), "Saving ...%.52s", filename);
   }
   else
-    snprintf(title, sizeof(title), "Saving '%.50s'...", filename);
+    snprintf(title, sizeof(title), "Saving %.55s", filename);
 
   core_task_context(parent, title, export_image_task_run,
    export_image_task_complete, d);
