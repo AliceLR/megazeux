@@ -154,6 +154,6 @@ namespace unit
   template<> std::vector<uint8_t> io::load_tga<uint8_t>(const char *);
   template<> std::vector<uint16_t> io::load_tga<uint16_t>(const char *);
   template<> std::vector<uint32_t> io::load_tga<uint32_t>(const char *);
-};
+}
 
 #endif /* UNIT_IO_HPP */
