@@ -2945,7 +2945,8 @@ boolean dump_layer_to_image(const char *filename,
  * The files this can output can be nearly 2 billion pixels in size; if an
  * adequate truecolor fallback format exists this can be revisited. */
 boolean dump_layer_to_image(const char *filename,
- size_t width_ch, size_t height_ch, const struct char_element *layer)
+ size_t width_ch, size_t height_ch, const struct char_element *layer,
+ boolean (*status_callback)(void *priv, size_t p, size_t m), void *priv)
 {
   return false;
 }
