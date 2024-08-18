@@ -107,6 +107,8 @@ USERS
 + ccv and png2smzx now support BMPs that use BI_BITFIELDS and
   BI_ALPHABITFIELDS.
 + ccv and png2smzx now support Truevision TGA images.
++ Fixed YUV subsample averaging for UYVY (little endian) and
+  YUY2/YVYU (big endian).
 
 DEVELOPERS
 

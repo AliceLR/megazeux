@@ -802,7 +802,7 @@ static void draw_message(struct world *mzx_world)
     int mesg_edges = mzx_world->mesg_edges;
     int mesg_x = cur_board->b_mesg_col;
     int clip_x = (mesg_x >= 0) ? mesg_x : 0;
-    int clip_pos;
+    int clip_pos = 80;
     char backup = 0;
 
     if(mzx_world->version >= V293 && mesg_length > (80 - clip_x))
