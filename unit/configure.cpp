@@ -209,9 +209,9 @@ void TEST_INT(const char *setting_name, T &setting, ssize_t min, ssize_t max)
   {
     ssize_t tmp;
     if(max >= SSIZE_MAX / 16)
-      tmp = (max - min) / 16 * i + min;
+      tmp = ((int64_t)max - min) / 16 * i + min;
     else
-      tmp = (max - min) * i / 16 + min;
+      tmp = ((int64_t)max - min) * i / 16 + min;
 
     ssize_t expected = (tmp >= min && tmp <= max) ? tmp : static_cast<ssize_t>(default_value);
 

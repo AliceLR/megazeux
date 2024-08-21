@@ -18,6 +18,7 @@
  */
 
 #include "../Unit.hpp"
+#include "../UnitIO.hpp"
 
 #include "../../src/util.h"
 #include "../../src/io/memfile.h"
@@ -50,10 +51,11 @@ struct zip_stream_test_data
   pair reduce4;
   pair implode;
   boolean inputs_are_paths;
-  boolean need_free;
   boolean expected_is_base64;
   boolean compressed_is_base64;
 };
+
+static std::vector<std::vector<uint8_t>> managed_buffers;
 
 static zip_stream_test_data data[] =
 {
@@ -71,7 +73,6 @@ static zip_stream_test_data data[] =
     { "DwASAyQVNic4OWp7TJ1uHwkGARM05faW93/+CAZgAw==", 31, 0 },
     false,
     false,
-    false,
     true
   },
   // FRED_01.PAL from Fred the Freak Gaiden was originally shrunk.
@@ -86,7 +87,6 @@ static zip_stream_test_data data[] =
     {},
     {},
     {},
-    false,
     false,
     true,
     true
@@ -103,7 +103,6 @@ static zip_stream_test_data data[] =
     {},
     {},
     {},
-    false,
     false,
     true,
     true
@@ -122,7 +121,6 @@ static zip_stream_test_data data[] =
     { "CN_S.CHR.implode",   1793, 0x0000 },
     true,
     false,
-    false,
     false
   },
   // FREAKSOF.MZX from Freaks Collection was originally imploded.
@@ -139,7 +137,6 @@ static zip_stream_test_data data[] =
     { "freaksof.implode",   6586, 0x0000 },
     true,
     false,
-    false,
     false
   },
   {
@@ -155,7 +152,6 @@ static zip_stream_test_data data[] =
     { "dch1.implode",       3666, 0x0006 },
     true,
     false,
-    false,
     false
   },
   {
@@ -170,7 +166,6 @@ static zip_stream_test_data data[] =
     { "ct_level.reduce4",   65837, 0 },
     { "ct_level.implode",   66879, 0x0000 },
     true,
-    false,
     false,
     false
   },
@@ -207,66 +202,40 @@ static void debase64(char *dest, size_t dest_len, const char *_src, size_t src_l
   }
 }
 
-static char *load_file(const char *path)
+static const char *load_file(const char *path)
 {
   char buffer[MAX_PATH];
   if(path_join(buffer, sizeof(buffer), DATA_DIR, path) < 1)
     return nullptr;
 
-  FILE *fp = fopen_unsafe(buffer, "rb");
-  if(!fp)
-    return nullptr;
-
-  fseek(fp, 0, SEEK_END);
-  size_t len = ftell(fp);
-  rewind(fp);
-
-  char *data = (char *)cmalloc(len + 1);
-  assert(fread(data, len, 1, fp));
-  fclose(fp);
-
-  data[len] = '\0';
-  return data;
+  managed_buffers.push_back(unit::io::load(buffer));
+  return reinterpret_cast<const char *>(managed_buffers.back().data());
 }
 
-static char *load_file(const char *path, char *buffer, size_t *buffer_len)
+static const char *load_file(char *buffer, size_t *buffer_len, const char *path)
 {
   char path_buffer[MAX_PATH];
   if(path_join(path_buffer, sizeof(path_buffer), DATA_DIR, path) < 1)
     return nullptr;
 
-  FILE *fp = fopen_unsafe(path_buffer, "rb");
-  if(!fp)
-    return nullptr;
-
-  fseek(fp, 0, SEEK_END);
-  size_t file_len = ftell(fp);
-  rewind(fp);
-
-  assert(file_len <= *buffer_len);
-  *buffer_len = file_len;
-  int fread_ret = fread(buffer, file_len, 1, fp);
-  assert(fread_ret);
-  fclose(fp);
-  return buffer;
+  return unit::io::load_buffer(buffer, buffer_len, path_buffer);
 }
 
 static void check_data(zip_stream_test_data &data)
 {
   if(data.inputs_are_paths)
   {
-    data.expected.data = (const char *)load_file(data.expected.data);
-    data.deflate.data = (const char *)load_file(data.deflate.data);
-    data.deflate64.data = (const char *)load_file(data.deflate64.data);
-    data.shrink.data = (const char *)load_file(data.shrink.data);
-    data.reduce1.data = (const char *)load_file(data.reduce1.data);
-    data.reduce2.data = (const char *)load_file(data.reduce2.data);
-    data.reduce3.data = (const char *)load_file(data.reduce3.data);
-    data.reduce4.data = (const char *)load_file(data.reduce4.data);
-    data.implode.data = (const char *)load_file(data.implode.data);
+    data.expected.data = load_file(data.expected.data);
+    data.deflate.data = load_file(data.deflate.data);
+    data.deflate64.data = load_file(data.deflate64.data);
+    data.shrink.data = load_file(data.shrink.data);
+    data.reduce1.data = load_file(data.reduce1.data);
+    data.reduce2.data = load_file(data.reduce2.data);
+    data.reduce3.data = load_file(data.reduce3.data);
+    data.reduce4.data = load_file(data.reduce4.data);
+    data.implode.data = load_file(data.implode.data);
     data.expected_is_base64 = false;
     data.compressed_is_base64 = false;
-    data.need_free = true;
   }
 }
 
@@ -760,7 +729,7 @@ static zip_archive *zip_test_open(const zip_test_data &d, char *buffer, size_t l
 {
   if(!d.data_length)
   {
-    if(!load_file(d.data, buffer, &len))
+    if(!load_file(buffer, &len, d.data))
       return nullptr;
 
     return zip_open_mem_read(buffer, len);
@@ -786,7 +755,7 @@ static const char *zip_get_contents(const zip_test_file_data &df, char *buf,
 
       case CONTENTS_FILE:
         assert(df.uncompressed_size <= buf_size);
-        if(load_file(df.contents, buf, &buf_size))
+        if(load_file(buf, &buf_size, df.contents))
         {
           assert(df.uncompressed_size == buf_size);
           return buf;

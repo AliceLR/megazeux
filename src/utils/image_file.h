@@ -86,6 +86,9 @@ enum image_error
   IMAGE_ERROR_PAM_BAD_TUPLTYPE,
   IMAGE_ERROR_PAM_MISSING_ENDHDR,
   IMAGE_ERROR_PAM_DEPTH_TUPLTYPE_MISMATCH,
+  /* TGA errors. */
+  IMAGE_ERROR_TGA_NOT_A_TGA,
+  IMAGE_ERROR_TGA_BAD_RLE,
 };
 
 struct rgba_color
@@ -112,6 +115,7 @@ struct image_raw_format
   uint32_t width;
   uint32_t height;
   uint32_t bytes_per_pixel;
+  image_bool force_raw;
 };
 
 enum image_error load_image_from_file(const char *filename,

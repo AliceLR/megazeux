@@ -214,7 +214,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     }
     else
     {
-      overlay_mode = 0;
+      overlay_mode = OVERLAY_OFF;
       // Undo that last get
       vfseek(vf, -1, SEEK_CUR);
     }
@@ -261,7 +261,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   else
   {
     /* 1.x has no overlay and a different packing format. */
-    overlay_mode = 0;
+    overlay_mode = OVERLAY_OFF;
     cur_board->overlay_mode = overlay_mode;
 
     if(load_RLE_dimensions(vf, &board_width, &board_height))

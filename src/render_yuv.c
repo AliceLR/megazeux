@@ -218,7 +218,7 @@ static void yuv1_render_layer(struct graphics_data *graphics,
 
   yuv_lock_overlay(render_data, &pixels, &pitch);
 
-  render_layer(pixels, bpp, pitch, graphics, layer);
+  render_layer(pixels, SCREEN_PIX_W, SCREEN_PIX_H, pitch, bpp, graphics, layer);
 
   yuv_unlock_overlay(render_data);
 }

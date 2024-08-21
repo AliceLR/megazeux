@@ -2788,66 +2788,68 @@ while(i &lt; size)
         Board data is stored in a properties file with the following properties:
       </p>
       <div class="markdown">
-| ID       | Property               | Data Type             | Notes |
-|----------|------------------------|-----------------------|-------|
-| `0x0001` | Board name             | string                | Strict<a href="#board290note1">(1)</a><a href="#board290note2">(2)</a>
-| `0x0002` | Board width            | int(w)                | Strict
-| `0x0003` | Board height           | int(w)                | Strict
-| `0x0004` | Overlay mode           | int(b)                | Strict
-| `0x0005` | Robot count            | int(b)                | Strict
-| `0x0006` | Scroll count           | int(b)                | Strict
-| `0x0007` | Sensor count           | int(b)                | Strict
-| `0x0008` | File version           | int(w)                | Strict<a href="#board290note3">(3)</a>
-| `0x0010` | Mod playing            | string
-| `0x0011` | Viewport X             | int(b)
-| `0x0012` | Viewport Y             | int(b)
-| `0x0013` | Viewport width         | int(b)
-| `0x0014` | Viewport height        | int(b)
-| `0x0015` | Can shoot?             | int(b)
-| `0x0016` | Can bomb?              | int(b)
-| `0x0017` | Fire burns brown?      | int(b)
-| `0x0018` | Fire burns space?      | int(b)
-| `0x0019` | Fire burns fakes?      | int(b)
-| `0x001A` | Fire burns trees?      | int(b)
-| `0x001B` | Explosions leave       | int(b)
-| `0x001C` | Save mode              | int(b)
-| `0x001D` | Forest to floor?       | int(b)
-| `0x001E` | Collect bombs?         | int(b)
-| `0x001F` | Fire burns forever?    | int(b)
-| `0x0020` | Board # to north       | int(b)
-| `0x0021` | Board # to south       | int(b)
-| `0x0022` | Board # to east        | int(b)
-| `0x0023` | Board # to west        | int(b)
-| `0x0024` | Restart if zapped?     | int(b)
-| `0x0025` | Time limit             | int(w)
-| `0x0026` | Player locked NS?      | int(b)
-| `0x0027` | Player locked EW?      | int(b)
-| `0x0028` | Player attack locked?  | int(b)
-| `0x0029` | Reset board on entry?  | int(b)
-| `0x002A` | Board charset path     | string
-| `0x002B` | Board palette path     | string
-| `0x0100` | Scroll relative X offset | int(ws) | Save-only
-| `0x0101` | Scroll relative Y offset | int(ws) | Save-only
-| `0x0102` | Scroll locked X        | int(ws) | Save-only (-1: no lock)
-| `0x0103` | Scroll locked Y        | int(ws) | Save-only (-1: no lock)
-| `0x0104` | Last player direction  | int(b)  | Save-only
-| `0x010A` | Lazerwall timer        | int(b)  | Save-only
-| `0x010B` | Last key pressed       | int(b)  | Save-only
-| `0x010C` | Input (numeric value)  | int(ds) | Save-only
-| `0x010D` | Inputsize              | int(ds) | Save-only
-| `0x010E` | Input (string value)   | string  | Save-only
-| `0x0110` | Bottom message         | string  | Save-only
-| `0x0111` | Bottom message timer   | int(b)  | Save-only
-| `0x0112` | Bottom message row     | int(b)  | Save-only
-| `0x0113` | Bottom message column  | int(bs) | Save-only (-1: center)
-| `0x0114` | Volume                 | int(b)  | Save-only
-| `0x0115` | Volume increment       | int(b)  | Save-only
-| `0x0116` | Volume target          | int(b)  | Save-only
-| `0x0117` | Blind duration         | int(b)  | Save-only, 1.x only
-| `0x0118` | Firewalker duration    | int(b)  | Save-only, 1.x only
-| `0x0119` | Freeze time duration   | int(b)  | Save-only, 1.x only
-| `0x011a` | Slow time duration     | int(b)  | Save-only, 1.x only
-| `0x011b` | Wind duration          | int(b)  | Save-only, 1.x only
+| ID       | Property                           | Data Type | Notes |
+|----------|------------------------------------|-----------|-------|
+| `0x0001` | Board name                         | string    | Strict<a href="#board290note1">(1)</a><a href="#board290note2">(2)</a>
+| `0x0002` | Board width                        | int(w)    | Strict
+| `0x0003` | Board height                       | int(w)    | Strict
+| `0x0004` | Overlay mode                       | int(b)    | Strict
+| `0x0005` | Robot count                        | int(b)    | Strict
+| `0x0006` | Scroll count                       | int(b)    | Strict
+| `0x0007` | Sensor count                       | int(b)    | Strict
+| `0x0008` | File version                       | int(w)    | Strict<a href="#board290note3">(3)</a>
+| `0x0010` | Mod playing                        | string
+| `0x0011` | Viewport X                         | int(b)
+| `0x0012` | Viewport Y                         | int(b)
+| `0x0013` | Viewport width                     | int(b)
+| `0x0014` | Viewport height                    | int(b)
+| `0x0015` | Can shoot?                         | int(b)
+| `0x0016` | Can bomb?                          | int(b)
+| `0x0017` | Fire burns brown?                  | int(b)
+| `0x0018` | Fire burns space?                  | int(b)
+| `0x0019` | Fire burns fakes?                  | int(b)
+| `0x001A` | Fire burns trees?                  | int(b)
+| `0x001B` | Explosions leave                   | int(b)
+| `0x001C` | Save mode                          | int(b)
+| `0x001D` | Forest to floor?                   | int(b)
+| `0x001E` | Collect bombs?                     | int(b)
+| `0x001F` | Fire burns forever?                | int(b)
+| `0x0020` | Board # to north                   | int(b)
+| `0x0021` | Board # to south                   | int(b)
+| `0x0022` | Board # to east                    | int(b)
+| `0x0023` | Board # to west                    | int(b)
+| `0x0024` | Restart if zapped?                 | int(b)
+| `0x0025` | Time limit                         | int(w)
+| `0x0026` | Player locked NS?                  | int(b)
+| `0x0027` | Player locked EW?                  | int(b)
+| `0x0028` | Player attack locked?              | int(b)
+| `0x0029` | Reset board on entry?              | int(b)
+| `0x002A` | Board charset path                 | string
+| `0x002B` | Board palette path                 | string
+| `0x002C` | Reset/load on entry if same board? | int(b)    | Since 2.93
+| `0x002D` | Dragons move randomly              | int(b)    | Since 2.93
+| `0x0100` | Scroll relative X offset           | int(ws)   | Save-only
+| `0x0101` | Scroll relative Y offset           | int(ws)   | Save-only
+| `0x0102` | Scroll locked X                    | int(ws)   | Save-only (-1: no lock)
+| `0x0103` | Scroll locked Y                    | int(ws)   | Save-only (-1: no lock)
+| `0x0104` | Last player direction              | int(b)    | Save-only
+| `0x010A` | Lazerwall timer                    | int(b)    | Save-only
+| `0x010B` | Last key pressed                   | int(b)    | Save-only
+| `0x010C` | Input (numeric value)              | int(ds)   | Save-only
+| `0x010D` | Inputsize                          | int(ds)   | Save-only
+| `0x010E` | Input (string value)               | string    | Save-only
+| `0x0110` | Bottom message                     | string    | Save-only
+| `0x0111` | Bottom message timer               | int(b)    | Save-only
+| `0x0112` | Bottom message row                 | int(b)    | Save-only
+| `0x0113` | Bottom message column              | int(bs)   | Save-only (-1: center)
+| `0x0114` | Volume                             | int(b)    | Save-only
+| `0x0115` | Volume increment                   | int(b)    | Save-only
+| `0x0116` | Volume target                      | int(b)    | Save-only
+| `0x0117` | Blind duration                     | int(b)    | Save-only, 1.x only
+| `0x0118` | Firewalker duration                | int(b)    | Save-only, 1.x only
+| `0x0119` | Freeze time duration               | int(b)    | Save-only, 1.x only
+| `0x011a` | Slow time duration                 | int(b)    | Save-only, 1.x only
+| `0x011b` | Wind duration                      | int(b)    | Save-only, 1.x only
       </div>
       <ol>
         <li id="board290note1">

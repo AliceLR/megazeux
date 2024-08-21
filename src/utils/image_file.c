@@ -54,6 +54,10 @@ typedef image_bool boolean;
 #define MAXIMUM_HEIGHT (32767u * 14u)
 #define MAXIMUM_PIXELS ((16u << 20u) * 8u * 14u)
 
+// Maximum number of magic bytes.
+// BMP, NetPBM: 2; GIF: 3; PNG: 8; TGA: none, but 18 header bytes.
+#define CHECK_LENGTH 18
+
 #define ROUND_32 (1u << 31u)
 
 #define IMAGE_EOF -1
@@ -158,6 +162,11 @@ const char *image_error_string(enum image_error err)
       return "missing PAM endhdr";
     case IMAGE_ERROR_PAM_DEPTH_TUPLTYPE_MISMATCH:
       return "PAM tupltype does not support image depth";
+
+    case IMAGE_ERROR_TGA_NOT_A_TGA:
+      return "not a TGA";
+    case IMAGE_ERROR_TGA_BAD_RLE:
+      return "bad TGA RLE stream";
   }
   return "unknown error";
 }
@@ -1284,6 +1293,541 @@ err_free:
 
 
 /**
+ * Truevision TGA (Targa) loader.
+ */
+
+enum tga_colormap_type
+{
+  TGA_NO_COLORMAP,
+  TGA_HAS_COLORMAP,
+  TGA_MAX_COLORMAP_TYPE
+};
+
+enum tga_image_type
+{
+  TGA_TYPE_NO_IMAGE       = 0,
+  TGA_TYPE_INDEXED        = 1,
+  TGA_TYPE_TRUECOLOR      = 2,
+  TGA_TYPE_GREYSCALE      = 3,
+  TGA_TYPE_INDEXED_RLE    = 9,
+  TGA_TYPE_TRUECOLOR_RLE  = 10,
+  TGA_TYPE_GREYSCALE_RLE  = 11,
+  TGA_MAX_IMAGE_TYPE
+};
+
+struct tga_header
+{
+  uint8_t   image_id_length;
+  uint8_t   map_type;
+  uint8_t   image_type;
+  uint16_t  map_first_index;
+  uint16_t  map_length;
+  uint8_t   map_depth;
+  uint16_t  x_origin;
+  uint16_t  y_origin;
+  uint16_t  width;
+  uint16_t  height;
+  uint8_t   depth;
+  uint8_t   descriptor;
+  // Derived
+  uint8_t   alpha_depth;
+  uint8_t   interleaving;
+  boolean   left_to_right;
+  boolean   top_to_bottom;
+  boolean   alpha;
+  unsigned  bytes_per_pixel;
+  unsigned  bytes_per_color;
+  int       offset_in_image;
+  int       offset_in_row;
+  int       row_inc;
+  int       pix_inc;
+
+  struct rgba_color *map;
+};
+
+struct tga_cursor
+{
+  struct rgba_color *pixel_row;
+  struct rgba_color *pixel;
+  struct rgba_color *pixel_stop;
+};
+
+static void tga_cursor_init(struct tga_cursor *out, const struct tga_header *tga,
+ struct rgba_color *dest)
+{
+  out->pixel_row = dest + tga->offset_in_image;
+  out->pixel = out->pixel_row + tga->offset_in_row;
+  out->pixel_stop = out->pixel + (tga->pix_inc * tga->width);
+}
+
+static void tga_cursor_inc(struct tga_cursor *out, const struct tga_header *tga)
+{
+  out->pixel += tga->pix_inc;
+  if(out->pixel == out->pixel_stop)
+  {
+    out->pixel_row += tga->row_inc;
+    out->pixel_stop += tga->row_inc;
+    out->pixel = out->pixel_row + tga->offset_in_row;
+  }
+}
+
+static void tga_cursor_rle(struct tga_cursor *out, const struct tga_header *tga,
+ struct rgba_color color, size_t num)
+{
+  for(; num > 0; num--)
+  {
+    *(out->pixel) = color;
+    tga_cursor_inc(out, tga);
+  }
+}
+
+static int tga_bytes_per_pixel(uint8_t depth, uint8_t alpha_depth)
+{
+  if(depth == 15 && alpha_depth == 0)
+    return 2;
+
+  if(depth == 16 && (alpha_depth == 0 || alpha_depth == 1))
+    return 2;
+
+  if(depth == 24 && alpha_depth == 0)
+    return 3;
+
+  if(depth == 32 && (alpha_depth == 0 || alpha_depth == 8))
+    return 4;
+
+  return 0;
+}
+
+typedef struct rgba_color (*tga_decode_fn)(uint8_t *buf,
+ const struct tga_header *tga);
+
+static struct rgba_color tga_decode_index8(uint8_t *buf,
+ const struct tga_header *tga)
+{
+  struct rgba_color dummy = { 0, 0, 0, 255 };
+  if(*buf < tga->map_length)
+    return tga->map[*buf];
+
+  return dummy;
+}
+
+static struct rgba_color tga_decode_index16(uint8_t *buf,
+ const struct tga_header *tga)
+{
+  struct rgba_color dummy = { 0, 0, 0, 255 };
+  uint16_t index = read16le(buf);
+  if(index < tga->map_length)
+    return tga->map[index];
+
+  return dummy;
+}
+
+static struct rgba_color tga_decode_greyscale(uint8_t *buf,
+ const struct tga_header *tga)
+{
+  struct rgba_color ret = { *buf, *buf, *buf, 255 };
+  return ret;
+}
+
+static struct rgba_color tga_decode_color16(uint8_t *buf,
+ const struct tga_header *tga)
+{
+  struct rgba_color ret;
+  uint16_t value = read16le(buf);
+  ret.r = (((value >> 10) & 0x1f) * 255u + 16) / 31u;
+  ret.g = (((value >>  5) & 0x1f) * 255u + 16) / 31u;
+  ret.b = (((value >>  0) & 0x1f) * 255u + 16) / 31u;
+  ret.a = !tga->alpha || (value >> 15) ? 255 : 0;
+  return ret;
+}
+
+static struct rgba_color tga_decode_color24(uint8_t *buf,
+ const struct tga_header *tga)
+{
+  struct rgba_color ret = { buf[2], buf[1], buf[0], 255 };
+  return ret;
+}
+
+static struct rgba_color tga_decode_color32(uint8_t *buf,
+ const struct tga_header *tga)
+{
+  struct rgba_color ret = { buf[2], buf[1], buf[0], buf[3] };
+  return ret;
+}
+
+static enum image_error tga_load_colormap(struct tga_header *tga, imageinfo *s)
+{
+  const int depth = tga->map_depth;
+  uint8_t buf[4];
+  size_t i;
+
+  tga->map = (struct rgba_color *)calloc(tga->map_length, sizeof(struct rgba_color));
+  if(!tga->map)
+    return IMAGE_ERROR_MEM;
+
+  for(i = 0; i < tga->map_length; i++)
+  {
+    if(s->readfn(buf, tga->bytes_per_color, s->in) < tga->bytes_per_color)
+      return IMAGE_ERROR_IO;
+
+    switch(depth)
+    {
+      case 15:
+      case 16:
+        tga->map[i] = tga_decode_color16(buf, tga);
+        break;
+      case 24:
+        tga->map[i] = tga_decode_color24(buf, tga);
+        break;
+      case 32:
+        tga->map[i] = tga_decode_color32(buf, tga);
+        break;
+    }
+  }
+  return IMAGE_OK;
+}
+
+static inline enum image_error tga_load_inner(const tga_decode_fn decode,
+ struct tga_cursor *out, size_t num,
+ const struct tga_header *tga, uint8_t * RESTRICT rowbuf, imageinfo *s)
+{
+  const size_t bytes_per_pixel = tga->bytes_per_pixel;
+  uint8_t *pos;
+
+  while(num > 0)
+  {
+    size_t sz = IMAGE_MIN(num, tga->width);
+    num -= sz;
+    if(s->readfn(rowbuf, sz * bytes_per_pixel, s->in) < sz * bytes_per_pixel)
+      return IMAGE_ERROR_IO;
+
+    pos = rowbuf;
+    while(sz > 0)
+    {
+      *(out->pixel) = decode(pos, tga);
+      tga_cursor_inc(out, tga);
+      pos += bytes_per_pixel;
+      sz--;
+    }
+  }
+  return IMAGE_OK;
+}
+
+static inline enum image_error tga_load_image(const tga_decode_fn decode,
+ const struct tga_header *tga, uint8_t * RESTRICT rowbuf, imageinfo *s)
+{
+  struct tga_cursor out;
+  tga_cursor_init(&out, tga, s->out->data);
+  return tga_load_inner(decode, &out, tga->width * tga->height, tga, rowbuf, s);
+}
+
+static inline enum image_error tga_load_image_rle(const tga_decode_fn decode,
+ const struct tga_header *tga, uint8_t * RESTRICT rowbuf, imageinfo *s)
+{
+  struct tga_cursor out;
+  struct rgba_color color;
+  const size_t bytes_per_pixel = tga->bytes_per_pixel;
+  enum image_error ret;
+  size_t num, total;
+
+  tga_cursor_init(&out, tga, s->out->data);
+  for(total = tga->width * tga->height; total > 0;)
+  {
+    if(s->readfn(rowbuf, bytes_per_pixel + 1, s->in) < bytes_per_pixel + 1)
+      return IMAGE_ERROR_IO;
+
+    num = (rowbuf[0] & 0x7f) + 1;
+    if(num > total)
+      return IMAGE_ERROR_TGA_BAD_RLE;
+    total -= num;
+
+    color = decode(rowbuf + 1, tga);
+    if(rowbuf[0] & 0x80)
+    {
+      tga_cursor_rle(&out, tga, color, num);
+    }
+    else
+    {
+      *(out.pixel) = color;
+      tga_cursor_inc(&out, tga);
+
+      if(num > 1)
+      {
+        ret = tga_load_inner(decode, &out, num - 1, tga, rowbuf, s);
+        if(ret)
+          return ret;
+      }
+    }
+  }
+  return IMAGE_OK;
+}
+
+static enum image_error load_tga(imageinfo *s, const uint8_t *header,
+ size_t header_sz)
+{
+  struct tga_header tga;
+  struct image_file *dest = s->out;
+  uint8_t *rowbuf;
+  uint8_t buf[256];
+  size_t total_pixels;
+  enum image_error ret;
+
+  if(header_sz < 18)
+    return IMAGE_ERROR_TGA_NOT_A_TGA;
+
+  memset(&tga, 0, sizeof(tga));
+
+  tga.image_id_length = header[0];
+  tga.map_type        = header[1];
+  tga.image_type      = header[2];
+  //tga.map_first_index = read16le(header + 3);
+  tga.map_length      = read16le(header + 5);
+  tga.map_depth       = header[7];
+  //tga.x_origin        = read16le(header + 8);
+  //tga.y_origin        = read16le(header + 10);
+  tga.width           = read16le(header + 12);
+  tga.height          = read16le(header + 14);
+  tga.depth           = header[16];
+  tga.descriptor      = header[17];
+
+  //tga.map_last_index = tga.map_first_index + tga.map_length;
+  tga.alpha_depth = tga.descriptor & 0x0f;
+  tga.interleaving = tga.descriptor >> 6;
+  tga.left_to_right = (tga.descriptor & 0x10) == 0;
+  tga.top_to_bottom = (tga.descriptor & 0x20) != 0;
+
+  switch(tga.image_type)
+  {
+    case TGA_TYPE_INDEXED:
+    case TGA_TYPE_INDEXED_RLE:
+    {
+      if(tga.map_type != TGA_HAS_COLORMAP)
+        goto not_a_tga;
+      if(tga.depth != 8 && tga.depth != 15 && tga.depth != 16)
+        goto not_a_tga;
+      if(!tga.map_length)
+        goto not_a_tga;
+      if(tga.depth == 8 && tga.map_length > 256)
+        goto not_a_tga;
+      tga.bytes_per_color = tga_bytes_per_pixel(tga.map_depth, tga.alpha_depth);
+      if(!tga.bytes_per_color)
+        goto not_a_tga;
+
+      tga.bytes_per_pixel = (tga.depth > 8) ? 2 : 1;
+      tga.alpha = tga.map_depth == 16 || tga.map_depth == 32;
+      break;
+    }
+
+    case TGA_TYPE_TRUECOLOR:
+    case TGA_TYPE_TRUECOLOR_RLE:
+    {
+      if(tga.map_type != TGA_NO_COLORMAP)
+        goto not_a_tga;
+      tga.bytes_per_pixel = tga_bytes_per_pixel(tga.depth, tga.alpha_depth);
+      if(!tga.bytes_per_pixel)
+        goto not_a_tga;
+      tga.alpha = tga.depth == 16 || tga.depth == 32;
+      break;
+    }
+
+    case TGA_TYPE_GREYSCALE:
+    case TGA_TYPE_GREYSCALE_RLE:
+    {
+      if(tga.map_type != TGA_NO_COLORMAP)
+        goto not_a_tga;
+      if(tga.depth != 8)
+        goto not_a_tga;
+      if(tga.alpha_depth != 0)
+        goto not_a_tga;
+
+      tga.bytes_per_pixel = 1;
+      break;
+    }
+
+    case TGA_TYPE_NO_IMAGE:
+    default:
+      goto not_a_tga;
+  }
+
+  if(tga.width == 0 || tga.height == 0 || tga.interleaving != 0)
+    goto not_a_tga;
+
+  debug("Image type: Truevision TGA\n");
+  debug("  type: %u\n", tga.image_type);
+  debug("  v. order: %s\n", tga.top_to_bottom ? "top-to-bottom" : "bottom-to-top");
+  debug("  h. order: %s\n", tga.left_to_right ? "left-to-right" : "right-to-left");
+  debug("  indexed: %s\n", tga.map_type ? "yes" : "no");
+  debug("  pixel depth: %u\n", tga.depth);
+  if(tga.map_type)
+  {
+    debug("  palette start: %u\n", tga.map_first_index);
+    debug("  stored colors: %u\n", tga.map_length);
+    debug("  palette depth: %u\n", tga.map_depth);
+  }
+
+  /* Skip image identification field. */
+  if(s->readfn(buf, tga.image_id_length, s->in) < tga.image_id_length)
+    return IMAGE_ERROR_IO;
+
+  /* Load color map. */
+  if(tga.map_type == TGA_HAS_COLORMAP)
+  {
+    if(tga.image_type == TGA_TYPE_INDEXED ||
+     tga.image_type == TGA_TYPE_INDEXED_RLE)
+    {
+      ret = tga_load_colormap(&tga, s);
+      if(ret)
+      {
+        debug("error loading colormap\n");
+        return ret;
+      }
+    }
+    else
+    {
+      /* Skip map if present (shouldn't happen). */
+      size_t map_len = (size_t)tga.bytes_per_pixel * tga.map_length;
+      while(map_len)
+      {
+        size_t sz = IMAGE_MIN(map_len, sizeof(buf));
+        if(s->readfn(buf, sz, s->in) < sz)
+        {
+          debug("short read skipping colormap\n");
+          return IMAGE_ERROR_MEM;
+        }
+        map_len -= sz;
+      }
+    }
+  }
+
+  /* Image data */
+  rowbuf = (uint8_t *)malloc(tga.width * tga.bytes_per_pixel);
+  if(!rowbuf)
+  {
+    debug("failed to allocate row buffer\n");
+    ret = IMAGE_ERROR_MEM;
+    goto err_free;
+  }
+
+  ret = image_init(tga.width, tga.height, dest);
+  if(ret)
+  {
+    free(rowbuf);
+    return ret;
+  }
+
+  total_pixels = (size_t)tga.width * tga.height;
+  tga.offset_in_image = 0;
+  tga.offset_in_row = 0;
+  tga.row_inc = tga.width;
+  tga.pix_inc = 1;
+
+  if(!tga.top_to_bottom)
+  {
+    tga.offset_in_image = total_pixels - tga.width;
+    tga.row_inc = -tga.width;
+  }
+  if(!tga.left_to_right)
+  {
+    tga.offset_in_row = tga.width - 1;
+    tga.pix_inc = -1;
+  }
+
+  ret = IMAGE_ERROR_UNKNOWN;
+  switch(tga.image_type)
+  {
+    case TGA_TYPE_INDEXED:
+    {
+      switch(tga.depth)
+      {
+        case 8:
+          ret = tga_load_image(tga_decode_index8, &tga, rowbuf, s);
+          break;
+
+        case 15:
+        case 16:
+          ret = tga_load_image(tga_decode_index16, &tga, rowbuf, s);
+          break;
+      }
+      break;
+    }
+
+    case TGA_TYPE_INDEXED_RLE:
+    {
+      switch(tga.depth)
+      {
+        case 8:
+          ret = tga_load_image_rle(tga_decode_index8, &tga, rowbuf, s);
+          break;
+
+        case 15:
+        case 16:
+          ret = tga_load_image_rle(tga_decode_index16, &tga, rowbuf, s);
+          break;
+      }
+      break;
+    }
+
+    case TGA_TYPE_TRUECOLOR:
+    {
+      switch(tga.depth)
+      {
+        case 15:
+        case 16:
+          ret = tga_load_image(tga_decode_color16, &tga, rowbuf, s);
+          break;
+        case 24:
+          ret = tga_load_image(tga_decode_color24, &tga, rowbuf, s);
+          break;
+        case 32:
+          ret = tga_load_image(tga_decode_color32, &tga, rowbuf, s);
+          break;
+      }
+      break;
+    }
+
+    case TGA_TYPE_TRUECOLOR_RLE:
+    {
+      switch(tga.depth)
+      {
+        case 15:
+        case 16:
+          ret = tga_load_image_rle(tga_decode_color16, &tga, rowbuf, s);
+          break;
+        case 24:
+          ret = tga_load_image_rle(tga_decode_color24, &tga, rowbuf, s);
+          break;
+        case 32:
+          ret = tga_load_image_rle(tga_decode_color32, &tga, rowbuf, s);
+          break;
+      }
+      break;
+    }
+
+    case TGA_TYPE_GREYSCALE:
+      ret = tga_load_image(tga_decode_greyscale, &tga, rowbuf, s);
+      break;
+
+    case TGA_TYPE_GREYSCALE_RLE:
+      ret = tga_load_image_rle(tga_decode_greyscale, &tga, rowbuf, s);
+      break;
+  }
+  if(ret)
+  {
+    debug("error reading image data\n");
+    image_free(dest);
+  }
+
+err_free:
+  free(rowbuf);
+  free(tga.map);
+  return ret;
+
+not_a_tga:
+  return IMAGE_ERROR_TGA_NOT_A_TGA;
+}
+
+
+/**
  * NetPBM loaders.
  */
 
@@ -1915,17 +2459,20 @@ static enum image_error load_portable_arbitrary_map(imageinfo *s)
   struct image_file *dest = s->out;
   struct rgba_color *pos;
   struct pam_tupl tupltype;
-  uint32_t width;
-  uint32_t height;
-  uint32_t depth;
-  uint32_t maxval;
-  uint64_t maxscale;
+  uint32_t width = 0;
+  uint32_t height = 0;
+  uint32_t depth = 0;
+  uint32_t maxval = 0;
+  uint64_t maxscale = 0;
   uint32_t size;
   uint32_t i;
   enum image_error ret;
   int v[4] = { 0 };
 
   debug("Image type: PAM (P7)\n");
+
+  // Shut up GCC 14 false positive
+  memset(&tupltype, 0, sizeof(tupltype));
 
   ret = pam_header(&width, &height, &maxval, &depth, &tupltype, s);
   if(ret)
@@ -2023,7 +2570,8 @@ static enum image_error load_farbfeld(imageinfo *s)
  * identifying a file format. For raw files, this is actually pixel data.
  */
 static enum image_error load_raw(imageinfo *s,
- const struct image_raw_format *format, const uint8_t not_magic[8])
+ const struct image_raw_format *format, const uint8_t *not_magic,
+ size_t not_magic_length)
 {
   struct image_file *dest = s->out;
   struct rgba_color *dest_pos;
@@ -2051,12 +2599,18 @@ static enum image_error load_raw(imageinfo *s,
     return IMAGE_ERROR_MEM;
   }
 
-  memcpy(data, not_magic, 8);
-  if(s->readfn(data + 8, raw_size - 8, s->in) < raw_size - 8)
+  if(not_magic_length)
+    memcpy(data, not_magic, IMAGE_MIN(raw_size, not_magic_length));
+
+  if(raw_size > not_magic_length)
   {
-    debug("failed to read required data for raw image\n");
-    ret = IMAGE_ERROR_IO;
-    goto err_free;
+    raw_size -= not_magic_length;
+    if(s->readfn(data + not_magic_length, raw_size, s->in) < raw_size)
+    {
+      debug("failed to read required data for raw image\n");
+      ret = IMAGE_ERROR_IO;
+      goto err_free;
+    }
   }
 
   debug("Image type: raw\n");
@@ -2116,9 +2670,15 @@ enum image_error load_image_from_stream(void *fp, image_read_function readfn,
  struct image_file *dest, const struct image_raw_format *raw_format)
 {
   imageinfo s = { dest, fp, readfn, -1 };
-  uint8_t magic[8];
+  uint8_t magic[CHECK_LENGTH];
+  size_t sz = 0;
+  enum image_error ret;
 
   memset(dest, 0, sizeof(struct image_file));
+  memset(magic, 0, sizeof(magic));
+
+  if(raw_format && raw_format->force_raw)
+    goto force_raw;
 
   if(readfn(magic, 2, fp) < 2)
     return IMAGE_ERROR_SIGNATURE;
@@ -2165,9 +2725,19 @@ enum image_error load_image_from_stream(void *fp, image_read_function readfn,
 
 #endif
 
+  sz = 8 + readfn(magic + 8, 10, fp);
+  if(sz == 18)
+  {
+    /* TGA has no signature. If the header looks wrong no bytes will be read. */
+    ret = load_tga(&s, magic, 18);
+    if(ret != IMAGE_ERROR_TGA_NOT_A_TGA)
+      return ret;
+  }
+
+force_raw:
   if(raw_format)
   {
-    enum image_error res = load_raw(&s, raw_format, magic);
+    enum image_error res = load_raw(&s, raw_format, magic, sz);
     if(res != IMAGE_ERROR_IO && res != IMAGE_ERROR_MEM)
       return res;
   }

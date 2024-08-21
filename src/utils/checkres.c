@@ -1345,7 +1345,7 @@ static void process_requirements(struct base_path **path_list,
 {
 #define FOUND_WILDCARD 2
   struct stat stat_info;
-  struct base_path *current_path;
+  struct base_path *current_path = NULL;
   struct base_path_file *bpf;
   struct resource *req;
   struct resource *res;
