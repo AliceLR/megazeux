@@ -115,6 +115,7 @@ usage() {
 	echo "  --disable-vorbis          Disable ogg/vorbis support."
 	echo "  --enable-tremor           Use libvorbisidec instead of libvorbis."
 	echo "  --enable-tremor-lowmem    Use libvorbisidec (lowmem) instead of libvorbis."
+	echo "  --enable-stb-vorbis       Use stb_vorbis instead of libvorbis."
 	echo
 	echo "Network options:"
 	echo "  --disable-network         Disable networking abilities."
@@ -403,6 +404,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-tremor-lowmem" ] && VORBIS="true"
 	[ "$1" = "--enable-tremor-lowmem" ]  && VORBIS="tremor-lowmem"
+
+	[ "$1" = "--disable-stb-vorbis" ] && VORBIS="true"
+	[ "$1" = "--enable-stb-vorbis" ]  && VORBIS="stb_vorbis"
 
 	[ "$1" = "--disable-pthread" ] && PTHREAD="false"
 	[ "$1" = "--enable-pthread" ]  && PTHREAD="true"
@@ -1037,6 +1041,11 @@ if [ "$PLATFORM" = "djgpp" ]; then
 
 	echo "Force-disabling stack protector (DOS)."
 	STACK_PROTECTOR="false"
+
+	if [ "$VORBIS" != "false" ] && [ "$VORBIS" != "stb_vorbis" ]; then
+		echo "Force-switching ogg/vorbis to stb_vorbis."
+		VORBIS="stb_vorbis"
+	fi
 
 	if [ "$DOS_SVGA" = "true" ]; then
 		echo "#define CONFIG_DOS_SVGA" >> src/config.h
@@ -1715,6 +1724,12 @@ elif [ "$VORBIS" = "tremor-lowmem" ]; then
 	echo "#define CONFIG_VORBIS" >> src/config.h
 	echo "#define CONFIG_TREMOR" >> src/config.h
 	echo "VORBIS=tremor-lowmem" >> platform.inc
+
+elif [ "$VORBIS" = "stb_vorbis" ]; then
+	echo "Using stb_vorbis in place of ogg/vorbis."
+	echo "#define CONFIG_VORBIS" >> src/config.h
+	echo "#define CONFIG_STB_VORBIS" >> src/config.h
+	echo "VORBIS=stb_vorbis" >> platform.inc
 else
 	echo "Ogg/vorbis disabled."
 fi

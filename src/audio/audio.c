@@ -3,6 +3,7 @@
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2004 madbrain
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2017-2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -118,7 +119,24 @@ static unsigned int volume_function(int input, int volume_setting)
 // hardware mixing is utilized.
 #ifndef CONFIG_NDS
 
-void destruct_audio_stream(struct audio_stream *a_src)
+static void audio_stream_insert_list(struct audio_stream **base,
+ struct audio_stream **end, struct audio_stream *a_src)
+{
+  if(*base == NULL)
+  {
+    *base = a_src;
+  }
+  else
+  {
+    (*end)->next = a_src;
+  }
+
+  a_src->next = NULL;
+  a_src->previous = *end;
+  *end = a_src;
+}
+
+static void audio_stream_remove_from_lists(struct audio_stream *a_src)
 {
   if(a_src == audio.primary_stream)
     audio.primary_stream = NULL;
@@ -129,12 +147,53 @@ void destruct_audio_stream(struct audio_stream *a_src)
   if(a_src == audio.stream_list_end)
     audio.stream_list_end = a_src->previous;
 
+#ifdef CONFIG_DJGPP
+  if(a_src == audio.garbage_list_base)
+    audio.garbage_list_base = a_src->next;
+
+  if(a_src == audio.garbage_list_end)
+    audio.garbage_list_end = a_src->previous;
+#endif
+
   if(a_src->next)
     a_src->next->previous = a_src->previous;
 
   if(a_src->previous)
     a_src->previous->next = a_src->next;
+}
 
+static void audio_garbage_collect(void)
+{
+#ifdef CONFIG_DJGPP
+  struct audio_stream *a_src;
+  struct audio_stream *next;
+
+  for(a_src = audio.garbage_list_base; a_src; a_src = next)
+  {
+    next = a_src->next;
+    a_src->destruct(a_src);
+  }
+  audio.garbage_list_base = audio.garbage_list_end = NULL;
+#endif
+}
+
+// DOS audio is handled during an interrupt and can never be allowed to
+// manage memory. This means audio stream cleanup needs to be delayed until
+// the main thread creates a new stream or explicitly destroys other streams.
+static void audio_garbage_queue(struct audio_stream *a_src)
+{
+#ifdef CONFIG_DJGPP
+  audio_stream_remove_from_lists(a_src);
+  audio_stream_insert_list(&audio.garbage_list_base,
+   &audio.garbage_list_end, a_src);
+#else
+  a_src->destruct(a_src);
+#endif
+}
+
+void destruct_audio_stream(struct audio_stream *a_src)
+{
+  audio_stream_remove_from_lists(a_src);
   free(a_src);
 }
 
@@ -168,17 +227,9 @@ void initialize_audio_stream(struct audio_stream *a_src,
 
   LOCK();
 
-  if(audio.stream_list_base == NULL)
-  {
-    audio.stream_list_base = a_src;
-  }
-  else
-  {
-    audio.stream_list_end->next = a_src;
-  }
-
-  a_src->previous = audio.stream_list_end;
-  audio.stream_list_end = a_src;
+  audio_garbage_collect();
+  audio_stream_insert_list(&audio.stream_list_base,
+   &audio.stream_list_end, a_src);
 
   UNLOCK();
 }
@@ -287,7 +338,7 @@ size_t audio_mixer_render_frames(void *stream, unsigned frames,
          audio.mix_buffer, frames, channels);
 
         if(destroy_flag)
-          current_astream->destruct(current_astream);
+          audio_garbage_queue(current_astream);
       }
 
       current_astream = next_astream;
@@ -459,6 +510,7 @@ void quit_audio(void)
 
   LOCK();
 
+  audio_garbage_collect();
   audio_mixer_free();
   audio_ext_free_registry();
   free(audio.pcs_stream);
@@ -539,6 +591,7 @@ void audio_end_module(void)
 
       current_astream = next_astream;
     }
+    audio_garbage_collect();
 
     UNLOCK();
   }
@@ -710,6 +763,7 @@ void audio_end_sample(void)
 
     current_astream = next_astream;
   }
+  audio_garbage_collect();
 
   UNLOCK();
 }

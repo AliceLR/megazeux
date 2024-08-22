@@ -10,6 +10,9 @@ USERS
   DSP >=2.00 and the mono/8-bit modes of the Sound Blaster 16,
   but these are disabled for now (no software mixer support for
   mono output). IRQs higher than 7 are also supported now.
++ The DOS port now uses stb_vorbis for Ogg Vorbis playback,
+  which should fix most audio-related crash bugs. Related crash
+  bugs caused by stream management have also been fixed.
 + All "gamecontroller[...]" config.txt options have been renamed
   to "gamepad[...]". The old names are still supported.
 + Fixed blank screen bugs that occur with the glslscale renderer

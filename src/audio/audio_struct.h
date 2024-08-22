@@ -118,6 +118,10 @@ struct audio
   struct audio_stream *pcs_stream;
   struct audio_stream *stream_list_base;
   struct audio_stream *stream_list_end;
+#ifdef CONFIG_DJGPP
+  struct audio_stream *garbage_list_base;
+  struct audio_stream *garbage_list_end;
+#endif
 
   platform_mutex audio_mutex;
   platform_mutex audio_sfx_mutex;
