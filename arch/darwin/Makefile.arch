@@ -1,0 +1,101 @@
+#
+# MegaZeux Darwin multi-arch configuration.
+#
+
+ALL_ARCH        = arm64 arm64e i686 x86_64 x86_64h ppc ppc64
+
+# Override these to match the compiler(s) being used.
+# For x86 and ARM, assume clang is being used by default.
+ifeq (${XCODE_3},1)
+ARM64_CC        ?= unsupported-architecture
+ARM64E_CC       ?= unsupported-architecture
+X86_64H_CC      ?= unsupported-architecture
+X86_CC          ?= i686-apple-darwin10-gcc-4.2.1
+X86_CXX         ?= i686-apple-darwin10-g++-4.2.1
+X86_64_CC       ?= ${X86_CC} -m64
+X86_64_CXX      ?= ${X86_CXX} -m64
+STDLIB          ?=
+else
+ARM64_CFLAGS    ?= -arch arm64
+ARM64E_CFLAGS   ?= -arch arm64e
+X86_CFLAGS      ?= -arch i686
+X86_64_CFLAGS   ?= -arch x86_64
+X86_64H_CFLAGS  ?= -arch x86_64h
+endif
+
+# For PowerPC, assume the Xcode 3 compilers are being used by default.
+XCODE_3_PPC     ?= 1
+ifeq (${XCODE_3_PPC},1)
+PPC_CC          ?= powerpc-apple-darwin10-gcc-4.0.1
+PPC_CXX         ?= powerpc-apple-darwin10-g++-4.0.1
+PPC64_CC        ?= powerpc-apple-darwin10-gcc-4.2.1 -m64
+PPC64_CXX       ?= powerpc-apple-darwin10-g++-4.2.1 -m64
+else
+PPC_CC          ?= powerpc-apple-darwin10-gcc
+PPC_CXX         ?= powerpc-apple-darwin10-g++
+PPC64_CC        ?= powerpc64-apple-darwin10-gcc
+PPC64_CXX       ?= powerpc64-apple-darwin10-g++
+endif
+
+ifeq (${ARCH},arm64)
+CC      := $(or ${ARM64_CC},${CC}) ${ARM64_CFLAGS}
+CXX     := $(or ${ARM64_CXX},${CXX}) ${ARM64_CFLAGS}
+STDLIB  ?= libc++
+MINVER  ?= 11.0
+endif
+
+ifeq (${ARCH},arm64e)
+CC      := $(or ${ARM64E_CC},${CC}) ${ARM64E_CFLAGS}
+CXX     := $(or ${ARM64E_CXX},${CXX}) ${ARM64E_CFLAGS}
+STDLIB  ?= libc++
+MINVER  ?= 11.0
+endif
+
+ifeq (${ARCH},i686)
+CC      := $(or ${X86_CC},${CC}) ${X86_CFLAGS}
+CXX     := $(or ${X86_CXX},${CXX}) ${X86_CFLAGS}
+STDLIB  ?= libstdc++
+MINVER  ?= 10.6
+endif
+
+ifeq (${ARCH},x86_64)
+CC      := $(or ${X86_64_CC},${CC}) ${X86_64_CFLAGS}
+CXX     := $(or ${X86_64_CXX},${CXX}) ${X86_64_CFLAGS}
+STDLIB  ?= libstdc++
+MINVER  ?= 10.6
+endif
+
+ifeq (${ARCH},x86_64h)
+CC      := $(or ${X86_64H_CC},${CC}) ${X86_64H_CFLAGS}
+CXX     := $(or ${X86_64H_CXX},${CXX}) ${X86_64H_CFLAGS}
+STDLIB  ?= libc++
+MINVER  ?= 10.9
+endif
+
+ifeq (${ARCH},ppc)
+CC      := $(or ${PPC_CC},${CC}) ${PPC_CFLAGS}
+CXX     := $(or ${PPC_CXX},${CXX}) ${PPC_CFLAGS}
+SYSROOT ?= /Developer/SDKs/MacOSX10.4u.sdk
+MINVER  ?= 10.4
+endif
+
+ifeq (${ARCH},ppc64)
+CC      := $(or ${PPC64_CC},${CC}) ${PPC64_CFLAGS}
+CXX     := $(or ${PPC64_CXX},${CXX}) ${PPC64_CFLAGS}
+SYSROOT ?= /Developer/SDKs/MacOSX10.5.sdk
+MINVER  ?= 10.5
+endif
+
+ifneq (${ARCH},)
+ifeq (${MINVER},)
+$(error invalid architecture ${ARCH})
+endif
+endif
+
+CC      += -mmacosx-version-min=${MINVER}
+CXX     += -mmacosx-version-min=${MINVER}
+
+ifneq (${SYSROOT},)
+CC      += -isysroot "${SYSROOT}"
+CXX     += -isysroot "${SYSROOT}"
+endif

@@ -30,7 +30,7 @@ usage() {
 	echo "  unix-devel     As above, but for running from current dir"
 	echo "  darwin         Mac OS X Unix-like install"
 	echo "  darwin-devel   Mac OS X running from current dir"
-	echo "  darwin-dist    Mac OS X (PPC .app builds -- use Xcode for Intel)"
+	echo "  darwin-dist    Mac OS X multiarchitecture .app (see arch/darwin/README.md)"
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
@@ -532,9 +532,11 @@ if [ "$PLATFORM" = "win32"   ] || [ "$PLATFORM" = "win64" ] ||
 	echo "#define PLATFORM \"windows-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=windows-$ARCHNAME"         >> platform.inc
 	echo "PLATFORM=$PLATFORM"                    >> platform.inc
-elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
+elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ] ||
+     [ "$PLATFORM" = "darwin" ] || [ "$PLATFORM" = "darwin-devel" ]; then
 	OS="$(uname -s)"
 	MACH="$(uname -m)"
+	DIRNAME=unix
 
 	case "$OS" in
 		"Linux")
@@ -548,6 +550,10 @@ elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
 			;;
 		"NetBSD")
 			UNIX="netbsd"
+			;;
+		"Darwin")
+			UNIX="darwin"
+			DIRNAME="darwin"
 			;;
 		*)
 			echo "WARNING: Should define proper UNIX name here!"
@@ -603,13 +609,13 @@ elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
 
 	echo "#define PLATFORM \"$UNIX-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=$UNIX-$ARCHNAME"         >> platform.inc
-	echo "PLATFORM=unix"                       >> platform.inc
-elif [ "$PLATFORM" = "darwin" ] || [ "$PLATFORM" = "darwin-devel" ] ||
-     [ "$PLATFORM" = "darwin-dist" ]; then
+	echo "PLATFORM=$DIRNAME"                   >> platform.inc
+elif [ "$PLATFORM" = "darwin-dist" ]; then
+	# Multiarchitecture build--let the Makefile patch in a subplatform.
 
-	echo "#define PLATFORM \"darwin\""    > src/config.h
-	echo "SUBPLATFORM=$PLATFORM"         >> platform.inc
-	echo "PLATFORM=darwin"               >> platform.inc
+	echo "#define PLATFORM \"darwin-\" SUBPLATFORM"  > src/config.h
+	echo "SUBPLATFORM=$PLATFORM"                    >> platform.inc
+	echo "PLATFORM=darwin"                          >> platform.inc
 else
 	if [ ! -d "arch/$PLATFORM" ]; then
 		echo "Invalid platform selection (see arch/)."

@@ -92,6 +92,11 @@ endif
 #
 ifeq (${COMPILER},gcc)
 
+GCC_VER_GE_4_5   := ${shell test ${GCC_VER} -ge 40500; echo $$?}
+ifeq ($(GCC_VER_GE_4_5),0)
+HAS_F_LTO ?= 1
+endif
+
 GCC_VER_GE_4_6   := ${shell test ${GCC_VER} -ge 40600; echo $$?}
 ifeq ($(GCC_VER_GE_4_6),0)
 HAS_W_NO_UNUSED_BUT_SET_VARIABLE ?= 1
@@ -140,6 +145,9 @@ endif # GCC
 # C++11 support (clang).
 #
 ifeq (${COMPILER},clang)
+# Not clear when this was added but it's old.
+HAS_F_LTO ?= 1
+
 CLANG_VER_GE_3_3 := ${shell test "${CLANG_VER}" -ge 30300; echo $$?}
 ifeq (${CLANG_VER_GE_3_3},0)
 HAS_CXX_11 ?= 1
