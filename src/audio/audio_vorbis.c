@@ -67,12 +67,12 @@ static boolean vorbis_mix_data(struct audio_stream *a_src,
 {
   uint32_t read_len = 0;
   struct vorbis_stream *v_stream = (struct vorbis_stream *)a_src;
-  uint32_t read_wanted = v_stream->s.allocated_data_length -
-   v_stream->s.stream_offset;
+  char *read_buffer;
+  size_t read_wanted;
   uint32_t pos = 0;
-  char *read_buffer = (char *)v_stream->s.output_data +
-   v_stream->s.stream_offset;
   int current_section;
+
+  read_buffer = (char *)sampled_get_buffer(&v_stream->s, &read_wanted);
 
   do
   {

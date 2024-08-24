@@ -70,9 +70,9 @@ static const struct editor_config_info editor_conf_default =
   0,                            // player_locked_ew
   0,                            // player_locked_att
   0,                            // time_limit
-  1,                            // explosions_leave (default = ash)
-  0,                            // saving_enabled (default = enabled)
-  1,                            // overlay_enabled (default = enabled)
+  EXPL_LEAVE_ASH,               // explosions_leave (default = ash)
+  CAN_SAVE,                     // saving_enabled (default = enabled)
+  OVERLAY_ON,                   // overlay_enabled (default = enabled)
   "",                           // charset_path
   "",                           // palette_path
 

@@ -368,7 +368,7 @@ void draw_sprites(struct world *mzx_world)
 
     // Offset and skip value for overlay (as it may cover part of a sprite)
     overlay_skip = board_width - draw_width;
-    if(overlay_mode == 2)
+    if(overlay_mode == OVERLAY_STATIC)
     {
       // Static overlay
       overlay_offset = ((start_y - viewport_y) * board_width) +
@@ -400,7 +400,8 @@ void draw_sprites(struct world *mzx_world)
           color = cur_sprite->color;
 
         if(unbound || (cur_sprite->flags & SPRITE_OVER_OVERLAY) ||
-         !(overlay_mode && overlay_mode != 3 && overlay[overlay_offset] != 32))
+         !(overlay_mode && overlay_mode != OVERLAY_TRANSPARENT &&
+           overlay[overlay_offset] != 32))
         {
           if(unbound || ch != 32)
           {

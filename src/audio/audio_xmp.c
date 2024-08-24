@@ -70,13 +70,14 @@ static boolean audio_xmp_mix_data(struct audio_stream *a_src,
  int32_t * RESTRICT buffer, size_t frames, unsigned int channels)
 {
   struct xmp_stream *stream = (struct xmp_stream *)a_src;
-  size_t read_wanted = stream->s.allocated_data_length -
-   stream->s.stream_offset;
-  uint8_t *read_buffer = (uint8_t *)stream->s.output_data +
-   stream->s.stream_offset;
+  void *read_buffer;
+  size_t read_wanted;
   boolean r_val = false;
+  int xmp_r_val;
 
-  int xmp_r_val =
+  read_buffer = sampled_get_buffer(&stream->s, &read_wanted);
+
+  xmp_r_val =
    xmp_play_buffer(stream->ctx, read_buffer, read_wanted, a_src->repeat ? 0 : 1);
 
   if(xmp_r_val == -XMP_END && !a_src->repeat)
@@ -221,7 +222,7 @@ static boolean audio_xmp_get_sample(struct audio_stream *a_src, unsigned int whi
       // MZX supports all of these, so just copy the sample directly.
       if(sam->flg & XMP_SAMPLE_16BIT)
       {
-        dest->format = SAMPLE_S16SYS;
+        dest->format = SAMPLE_S16;
         dest->data_length *= 2;
       }
       else

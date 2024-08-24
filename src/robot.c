@@ -231,6 +231,8 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         // # of stack values is file size /4.
         // Furthermore, there should be an even number of values, and a count
         // over ROBOT_MAX_STACK is invalid.
+        if(cur_robot->stack)
+          break;
         size = MIN((size / 4) & ~1, ROBOT_MAX_STACK);
         cur_robot->stack_size = size;
         cur_robot->stack = cmalloc(size * sizeof(int));
@@ -500,7 +502,15 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
   int size;
 
   zip_get_next_uncompressed_size(zp, &actual_size);
+  if(actual_size > SCROLL_PROPS_SIZE + MAX_OBJ_SIZE)
+    actual_size = SCROLL_PROPS_SIZE + MAX_OBJ_SIZE;
+
   buffer = cmalloc(actual_size);
+  if(!buffer)
+  {
+    zip_skip_file(zp);
+    goto err;
+  }
 
   // We aren't saving or loading null scrolls.
   cur_scroll->used = 1;
@@ -522,8 +532,15 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
         break;
 
       case SCRPROP_MESG:
+        if(cur_scroll->mesg)
+          break;
+        if(size < 3)
+          goto err;
+
+        // TODO: return value (scroll display doesn't support NULL here)
+        size = MIN(size, MAX_OBJ_SIZE);
         cur_scroll->mesg_size = size;
-        cur_scroll->mesg = cmalloc(size);
+        cur_scroll->mesg = (char *)cmalloc(size);
         mfread(cur_scroll->mesg, size, 1, &prop);
         if(size > 0)
           cur_scroll->mesg[size - 1] = '\0';
@@ -536,12 +553,14 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
 
   if(cur_scroll->mesg_size < 3)
   {
+err:
     // We have an incomplete scroll, so slip in an empty scroll.
     cur_scroll->num_lines = 1;
     cur_scroll->mesg_size = 3;
 
+    // TODO: return value (scroll display doesn't support NULL here)
     free(cur_scroll->mesg);
-    cur_scroll->mesg = cmalloc(3);
+    cur_scroll->mesg = (char *)cmalloc(3);
     strcpy(cur_scroll->mesg, "\x01\x0A");
   }
 
@@ -561,7 +580,15 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
   int size;
 
   zip_get_next_uncompressed_size(zp, &actual_size);
+  if(actual_size > MAX_OBJ_SIZE) // SENSOR_PROPS_SIZE, but just in case...
+    actual_size = MAX_OBJ_SIZE;
+
   buffer = cmalloc(actual_size);
+  if(!buffer)
+  {
+    zip_skip_file(zp);
+    return cur_sensor;
+  }
 
   // We aren't saving or loading null sensors.
   cur_sensor->used = 1;
@@ -1770,8 +1797,8 @@ static int robot_stack_pop(struct robot *cur_robot, int *position_in_line)
   }
 }
 
-static void set_robot_position(struct robot *cur_robot, int position,
- int position_in_line)
+static void set_robot_position(struct world *mzx_world,
+ struct robot *cur_robot, int position, int position_in_line)
 {
   cur_robot->cur_prog_line = position;
   cur_robot->pos_within_line = position_in_line;
@@ -1786,7 +1813,8 @@ static void set_robot_position(struct robot *cur_robot, int position,
   if(cur_robot->cur_prog_line > cur_robot->program_bytecode_length - 2)
     cur_robot->cur_prog_line = 0;
 
-  if(cur_robot->status == 1)
+  // MegaZeux 1.x always sets its equivalent flag here.
+  if(cur_robot->status == 1 || mzx_world->version < V200)
     cur_robot->status = 2;
 }
 
@@ -1817,7 +1845,7 @@ static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
       {
         int return_pos_in_line;
         int return_pos = robot_stack_pop(cur_robot, &return_pos_in_line);
-        set_robot_position(cur_robot, return_pos, return_pos_in_line);
+        set_robot_position(mzx_world, cur_robot, return_pos, return_pos_in_line);
       }
       else
       {
@@ -1832,7 +1860,7 @@ static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
     {
       if(cur_robot->stack_pointer)
       {
-        set_robot_position(cur_robot, cur_robot->stack[0],
+        set_robot_position(mzx_world, cur_robot, cur_robot->stack[0],
          cur_robot->stack[1]);
 
         cur_robot->stack_pointer = 0;
@@ -1877,7 +1905,7 @@ static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
          return_position_in_line);
 
         // Do the jump
-        set_robot_position(cur_robot, new_position, 0);
+        set_robot_position(mzx_world, cur_robot, new_position, 0);
         return 0;
       }
 
@@ -1890,7 +1918,7 @@ static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
 
     if(new_position != -1)
     {
-      set_robot_position(cur_robot, new_position, 0);
+      set_robot_position(mzx_world, cur_robot, new_position, 0);
       return 0;
     }
 
@@ -1979,16 +2007,16 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
 
   switch(mzx_world->first_prefix)
   {
-    case 1:
-    case 5:
+    case REL_TO_SELF:
+    case REL_TO_SELF_FIRST_OR_LAST:
     {
       tfx += robotx;
       tfy += roboty;
       break;
     }
 
-    case 2:
-    case 6:
+    case REL_TO_PLAYER:
+    case REL_TO_PLAYER_FIRST_OR_LAST:
     {
       find_player(mzx_world);
       tfx += mzx_world->player_x;
@@ -1996,14 +2024,14 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS_FIRST_OR_LAST:
     {
       tfx += get_counter(mzx_world, "FIRSTXPOS", 0);
       tfy += get_counter(mzx_world, "FIRSTYPOS", 0);
       break;
     }
 
-    case 7:
+    case REL_TO_XPOS_YPOS:
     {
       tfx += get_counter(mzx_world, "XPOS", 0);
       tfy += get_counter(mzx_world, "YPOS", 0);
@@ -2013,16 +2041,16 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
 
   switch(mzx_world->last_prefix)
   {
-    case 1:
-    case 5:
+    case REL_TO_SELF:
+    case REL_TO_SELF_FIRST_OR_LAST:
     {
       tlx += robotx;
       tly += roboty;
       break;
     }
 
-    case 2:
-    case 6:
+    case REL_TO_PLAYER:
+    case REL_TO_PLAYER_FIRST_OR_LAST:
     {
       find_player(mzx_world);
       tlx += mzx_world->player_x;
@@ -2030,14 +2058,14 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS_FIRST_OR_LAST:
     {
       tlx += get_counter(mzx_world, "LASTXPOS", 0);
       tly += get_counter(mzx_world, "LASTYPOS", 0);
       break;
     }
 
-    case 7:
+    case REL_TO_XPOS_YPOS:
     {
       tlx += get_counter(mzx_world, "XPOS", 0);
       tly += get_counter(mzx_world, "YPOS", 0);
@@ -2088,16 +2116,16 @@ void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
 
   switch(mzx_world->first_prefix)
   {
-    case 1:
-    case 5:
+    case REL_TO_SELF:
+    case REL_TO_SELF_FIRST_OR_LAST:
     {
       tfx += robotx;
       tfy += roboty;
       break;
     }
 
-    case 2:
-    case 6:
+    case REL_TO_PLAYER:
+    case REL_TO_PLAYER_FIRST_OR_LAST:
     {
       find_player(mzx_world);
       tfx += mzx_world->player_x;
@@ -2105,14 +2133,14 @@ void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS_FIRST_OR_LAST:
     {
       tfx += get_counter(mzx_world, "FIRSTXPOS", 0);
       tfy += get_counter(mzx_world, "FIRSTYPOS", 0);
       break;
     }
 
-    case 7:
+    case REL_TO_XPOS_YPOS:
     {
       tfx += get_counter(mzx_world, "XPOS", 0);
       tfy += get_counter(mzx_world, "YPOS", 0);
@@ -2144,16 +2172,16 @@ void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
 
   switch(mzx_world->last_prefix)
   {
-    case 1:
-    case 5:
+    case REL_TO_SELF:
+    case REL_TO_SELF_FIRST_OR_LAST:
     {
       tlx += robotx;
       tly += roboty;
       break;
     }
 
-    case 2:
-    case 6:
+    case REL_TO_PLAYER:
+    case REL_TO_PLAYER_FIRST_OR_LAST:
     {
       find_player(mzx_world);
       tlx += mzx_world->player_x;
@@ -2161,14 +2189,14 @@ void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS_FIRST_OR_LAST:
     {
       tlx += get_counter(mzx_world, "LASTXPOS", 0);
       tly += get_counter(mzx_world, "LASTYPOS", 0);
       break;
     }
 
-    case 7:
+    case REL_TO_XPOS_YPOS:
     {
       tlx += get_counter(mzx_world, "XPOS", 0);
       tly += get_counter(mzx_world, "YPOS", 0);
@@ -2198,16 +2226,16 @@ void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
   int tmx = *mx;
   int tmy = *my;
 
-  switch(mzx_world->first_prefix)
+  switch(mzx_world->mid_prefix)
   {
-    case 1:
+    case REL_TO_SELF:
     {
       tmx += robotx;
       tmy += roboty;
       break;
     }
 
-    case 2:
+    case REL_TO_PLAYER:
     {
       find_player(mzx_world);
       tmx += mzx_world->player_x;
@@ -2215,7 +2243,7 @@ void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS:
     {
       tmx += get_counter(mzx_world, "XPOS", 0);
       tmy += get_counter(mzx_world, "YPOS", 0);
@@ -2247,14 +2275,14 @@ void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int
 
   switch(mzx_world->mid_prefix)
   {
-    case 1:
+    case REL_TO_SELF:
     {
       tmx += x;
       tmy += y;
       break;
     }
 
-    case 2:
+    case REL_TO_PLAYER:
     {
       find_player(mzx_world);
       tmx += mzx_world->player_x;
@@ -2262,7 +2290,7 @@ void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int
       break;
     }
 
-    case 3:
+    case REL_TO_XPOS_YPOS:
     {
       tmx += get_counter(mzx_world, "XPOS", 0);
       tmy += get_counter(mzx_world, "YPOS", 0);
@@ -2525,31 +2553,9 @@ static int robot_box_up(char *program, int pos, int count)
 
 static void clip_color_string(char *buf, size_t len, size_t pos)
 {
-  size_t idx = 0;
-
-  while(idx < len)
-  {
-    char current_char = buf[idx];
-    if(current_char == '\0')
-      break;
-
-    if((current_char == '~') || (current_char == '@'))
-    {
-      if(idx + 1 < len && isxdigit((uint8_t)buf[idx + 1]))
-      {
-        idx += 2;
-        continue;
-      }
-    }
-
-    if(pos == 0) // Clip here
-    {
-      buf[idx] = '\0';
-      return;
-    }
-    pos--;
-    idx++;
-  }
+  size_t idx = color_string_index_of(buf, len, pos, '\0');
+  buf[idx] = '\0';
+  return;
 }
 
 static void display_robot_line(struct world *mzx_world, char *program,
@@ -2619,7 +2625,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       int length, x_position;
       tr_msg(mzx_world, program + 3, id, ibuff);
       clip_color_string(ibuff, ROBOT_MAX_TR, 64); // Clip
-      length = strlencolor(ibuff);
+      length = color_string_length(ibuff, ROBOT_MAX_TR);
       x_position = 40 - (length / 2);
       assert(x_position >= 0);
       color_string_ext(ibuff, x_position, y, scroll_base_color, false, 0, 0);

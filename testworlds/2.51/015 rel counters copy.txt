@@ -1,0 +1,3 @@
+Title: REL COUNTERS COPY Test
+Author: Alice Rowan
+Desc: REL COUNTERS and REL COUNTERS FIRST/LAST on COPY and COPY BLOCK have been broken since 2.00 in a possibly intentional and very pointless way: REL COUNTERS, despite it being claimed to apply XPOS and YPOS to both coordinate sets, instead applies FIRSTXPOS, FIRSTYPOS, LASTXPOS, and LASTYPOS. REL COUNTERS FIRST/LAST, despite them being claimed to apply the latter to either the first or last set of coordinates, applies XPOS and YPOS to their respective set of coordinates instead.

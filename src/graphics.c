@@ -2069,6 +2069,118 @@ static int hexdigit(uint8_t hex)
   return -1;
 }
 
+/**
+ * Helper function for handling `color_string` strings.
+ * Return the total display length of the nul terminated color string `string`.
+ * Will stop after `max_size` bytes are read from `string`, if applicable.
+ */
+size_t color_string_length(const char *string, size_t max_size)
+{
+  size_t pos = 0;
+  size_t i;
+  for(i = 0; i < max_size; i++)
+  {
+    if(!string[i])
+      break;
+
+    if(string[i] == '~' || string[i] == '@')
+    {
+      // All ~/@ values either escape the next char or display a color code.
+      i++;
+      if(i >= max_size && !string[i])
+        break;
+
+      if(isxdigit((uint8_t)string[i]))
+      {
+        // Color code--no display chars.
+        continue;
+      }
+    }
+    // Display character.
+    pos++;
+  }
+  return pos;
+}
+
+/**
+ * Helper function for handling `color_string` strings.
+ * Find the byte index of the character at display position `offset` in a color
+ * string. If the string displays as fewer than `offset` characters, returns
+ * the offset of the terminator or nul instead (whichever is found first).
+ * Will stop after `max_size` bytes are read from `string`, if applicable.
+ * This is useful for clipping a color string for display.
+ */
+size_t color_string_index_of(const char *string, size_t max_size, size_t offset,
+ int terminator)
+{
+  size_t pos = 0;
+  size_t i;
+  for(i = 0; i < max_size && pos < offset; i++)
+  {
+    if(!string[i] || string[i] == terminator)
+      break;
+
+    if(string[i] == '~' || string[i] == '@')
+    {
+      // All ~/@ values either escape the next char or display a color code.
+      i++;
+      if(i >= max_size && (!string[i] || string[i] == terminator))
+        break;
+
+      if(isxdigit((uint8_t)string[i]))
+      {
+        // Color code--no display chars.
+        continue;
+      }
+    }
+    // Display character.
+    pos++;
+  }
+  return i;
+}
+
+/**
+ * Helper function for handling `color_string` strings.
+ * Returns the final color code of a color string, same as the return value
+ * of `color_string_ext_special`, without actually displaying the string.
+ */
+uint8_t color_string_get_final_color(const char *string, size_t max_size,
+ uint8_t initial_color)
+{
+  int fg_color = initial_color & 0x0f;
+  int bg_color = initial_color >> 4;
+  size_t i;
+  for(i = 0; i < max_size; i++)
+  {
+    if(!string[i])
+      break;
+
+    if(string[i] == '~' || string[i] == '@')
+    {
+      // All ~/@ values either escape the next char or display a color code.
+      i++;
+      if(i >= max_size && !string[i])
+        break;
+
+      if(isxdigit((uint8_t)string[i]))
+      {
+        // Color code--no display chars.
+        int num = hexdigit(string[i]);
+        if(string[i - 1] == '~')
+          fg_color = num;
+        else
+          bg_color = num;
+
+        continue;
+      }
+    }
+    // Display character.
+  }
+  return (bg_color << 4) | fg_color;
+}
+
+// Note: 2.93 erroneously had sane color escaping behavior here.
+// ~ and @ should always escape the next char regardless of whether it's ~/@.
 static int write_string_intl(const char *str, unsigned int x, unsigned int y,
  uint8_t color, boolean allow_tabs, boolean allow_newline, boolean end_newline,
  boolean allow_colors, boolean mask_midchars, int chr_offset, int color_offset)
@@ -2132,9 +2244,7 @@ static int write_string_intl(const char *str, unsigned int x, unsigned int y,
           continue;
         }
         else
-
-        if(*str == '@')
-          str++;
+          cur_char = *str++;
       }
       else
 
@@ -2151,9 +2261,7 @@ static int write_string_intl(const char *str, unsigned int x, unsigned int y,
           continue;
         }
         else
-
-        if(*str == '~')
-          str++;
+          cur_char = *str++;
       }
     }
 
@@ -2676,7 +2784,8 @@ void dump_screen(void)
 
   for(layer = 0; layer < graphics.layer_count; layer++)
   {
-    render_layer(ss, 32, 640 * sizeof(uint32_t), &graphics,
+    render_layer(ss, SCREEN_PIX_W, SCREEN_PIX_H,
+     SCREEN_PIX_W * sizeof(uint32_t), 32, &graphics,
      graphics.sorted_video_layers[layer]);
   }
 

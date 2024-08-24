@@ -5,6 +5,11 @@ FREAD/FREADn bugfixes, as the old behavior was unusably buggy.
 
 USERS
 
++ The DOS port now supports Sound Blaster Pro in stereo mode.
+  The driver should also support all other Sound Blasters with
+  DSP >=2.00 and the mono/8-bit modes of the Sound Blaster 16,
+  but these are disabled for now (no software mixer support for
+  mono output). IRQs higher than 7 are also supported now.
 + All "gamecontroller[...]" config.txt options have been renamed
   to "gamepad[...]". The old names are still supported.
 + Fixed blank screen bugs that occur with the glslscale renderer
@@ -14,6 +19,17 @@ USERS
 + HTML5: fixed the poor performance of FREADn and other features
   that rely on calculating the length of an open file.
 + Clear world (Alt+R) now resets the world version.
++ Fixed a crash bug and a false positive match bug in the
+  command IF ALIGNEDROBOT. The false positive bug has been
+  version locked to 2.80 through 2.92X (just in case).
++ Software layer rendering performance for transparent sprites
+  has been improved, significantly in some cases.
++ Fixed a software layer renderer bug where a buffer with a
+  pixel alignment that varies between lines would cause the
+  frame to render incorrectly.
++ Fixed a software layer renderer bug in 32-bit builds where
+  SMZX sprites would sometimes render incorrectly when clipping
+  off the left side of the screen.
 + Setting a string offset, limit, or splice to FREADn now
   respects the provided limit. If n is larger than the limit,
   n total bytes will still be read (up to the maximum string
@@ -40,6 +56,55 @@ USERS
   current position is past the end. This should never actually
   happen, but it's safer and shuts up _FORTIFY_SOURCE and ASan
   compilation warnings.
++ Fixed platform-dependent out-of-memory errors when loading
+  robots from <=2.84 save files with corrupt stack sizes.
++ Fixed hangs in the robot editor caused by trying to use
+  Replace All to replace quotes or extra words with nothing.
++ Added compatibility for MegaZeux 1.x's reverse send behavior
+  which allows robots to execute twice per cycle in some cases.
++ Fixed the handling of lines over 64 characters long during
+  scroll editing. Scroll editing now previews colors and allows
+  lines up to 255 bytes in length. Like robot message boxes, any
+  characters past the first 64 will clip.
++ Clicking a line in the scroll display and editor now jumps to
+  that line (same as the help file).
++ You can now toggle between editing scrolls with the protected
+  palette/charset and the game palette/charset with Alt+V.
++ Games for versions 2.80X through 2.90X now display scrolls
+  using the protected palette instead of the game palette (fixes
+  a scroll in Welkin).
++ Fixed possible robot stack and scroll message memory leaks.
++ Fixed a 2.93 regression where color strings with escapes like
+  "~x", where x is not a hex digit, would also print the ~ or @.
++ Fixed clipping of the board message when it contains color
+  codes and when the message column is set to something besides
+  centered or 0. The next row will also use the correct color
+  code from the previous row (as if there had been no clipping)
+  instead of whatever the last color code displayed was. The old
+  behavior is version locked to <2.93.
++ Fixed COPY when used with REL COUNTERS for 1.x worlds.
++ Added support for MegaZeux 1.x entrance precedence (color
+  match, then thing match only). This fixes an entrance bug in
+  MegaZeux Tutorial.
++ Added support for MegaZeux 1.x entrances linking to other
+  entrances on the same board. This fixes the whirlpools in the
+  Aqua Cavern board in Caverns of Zeux.
++ Added support for MegaZeux 1.x entrances not triggering when
+  the player is pushed onto them.
++ The DJGPP port now locks all of its memory. This prevents
+  paging crashes related to audio, but increases memory usage.
++ Fixed the TIME and DATE counters in the DOS port when the
+  environment variable TZ is not set.
++ The SDL audio driver will now initialize the software mixer
+  frequency with the value returned by SDL_OpenAudioDevice.
++ Fixed audible pops when setting MOD_FREQUENCY.
++ ccv and png2smzx now return slightly more useful error
+  messages when an image fails to load.
++ ccv and png2smzx now support BMPs that use BI_BITFIELDS and
+  BI_ALPHABITFIELDS.
++ ccv and png2smzx now support Truevision TGA images.
++ Fixed YUV subsample averaging for UYVY (little endian) and
+  YUY2/YVYU (big endian).
 
 DEVELOPERS
 
@@ -71,6 +136,18 @@ DEVELOPERS
 + Fixed testworlds process running check edge cases.
 + Fixed config.sh and platform_endian.h detection for IBM Z and
   System/390 architecture.
++ Software mixer configuration (rate, buffer, channels) is now
+  done using the function audio_mixer_init instead of each
+  driver handling it manually.
++ The software mixer render function now takes the number of
+  frames and channels to render and the output format instead
+  of the number of bytes. Supported output formats are 16-bit
+  signed, 8-bit signed, and 8-bit unsigned.
++ Audio streams with a null mix_data function are now supported.
+  These streams will be ignored by the software mixer.
++ sampled_mix_data now properly handles output requests smaller
+  than the size of the audio buffer.
++ Added software renderer regression tests.
 
 
 December 31st, 2023 - MZX 2.93

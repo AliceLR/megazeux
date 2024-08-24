@@ -53,9 +53,10 @@ int main(int argc, char **argv)
   char output_base_name[MAX_PATH] = { '\0' };
   const char *ext;
 
-        int skip_char = -1;
+  int skip_char = -1;
 
   struct image_file img;
+  enum image_error ret;
   uint32_t i, t;
   mzx_tile *tile;
   mzx_glyph chr[256];
@@ -77,7 +78,8 @@ int main(int argc, char **argv)
 "  * PNG\n"
 "  * GIF (multi-image GIFs will be flattened into a single image;\n"
 "         non-square pixel aspect ratios are supported via upscaling)\n"
-"  * BMP (1bpp, 2bpp, 4bpp, 8bpp, 16bpp, 24bpp, 32bpp, RLE8, RLE4)\n"
+"  * BMP (1bpp, 2bpp, 4bpp, 8bpp, 16bpp, 24bpp, 32bpp, RLE8, RLE4, bitfields)\n"
+"  * TGA (all)\n"
 "  * Netpbm/PNM (.pbm, .pgm, .ppm, .pnm, .pam)\n"
 "  * farbfeld (.ff)\n"
 "\n"
@@ -174,9 +176,10 @@ int main(int argc, char **argv)
 #endif
 
   // Do stuff
-  if(!load_image_from_file(input_file_name, &img, NULL))
+  ret = load_image_from_file(input_file_name, &img, NULL);
+  if(ret)
   {
-    fprintf(stderr, "Error reading image.\n");
+    fprintf(stderr, "Error reading image: %s\n", image_error_string(ret));
     return 1;
   }
 

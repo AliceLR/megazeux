@@ -38,6 +38,59 @@ enum image_bool_values
   IMAGE_TRUE
 };
 
+enum image_error
+{
+  IMAGE_OK = 0,
+  IMAGE_ERROR_UNKNOWN,
+  IMAGE_ERROR_IO,
+  IMAGE_ERROR_MEM,
+  IMAGE_ERROR_SIGNATURE,
+  IMAGE_ERROR_CONSTRAINT,
+  /* RAW errors. */
+  IMAGE_ERROR_RAW_UNSUPPORTED_BPP,
+  /* PNG errors. */
+  IMAGE_ERROR_PNG_INIT,
+  IMAGE_ERROR_PNG_FAILED,
+  /* GIF errors. */
+  IMAGE_ERROR_GIF_INVALID,
+  IMAGE_ERROR_GIF_SIGNATURE,
+  /* BMP errors. */
+  IMAGE_ERROR_BMP_UNSUPPORTED_DIB,
+  IMAGE_ERROR_BMP_UNSUPPORTED_PLANES,
+  IMAGE_ERROR_BMP_UNSUPPORTED_COMPRESSION,
+  IMAGE_ERROR_BMP_UNSUPPORTED_BPP,
+  IMAGE_ERROR_BMP_UNSUPPORTED_BPP_RLE8,
+  IMAGE_ERROR_BMP_UNSUPPORTED_BPP_RLE4,
+  IMAGE_ERROR_BMP_UNSUPPORTED_BPP_BITFIELDS,
+  IMAGE_ERROR_BMP_BAD_1BPP,
+  IMAGE_ERROR_BMP_BAD_2BPP,
+  IMAGE_ERROR_BMP_BAD_4BPP,
+  IMAGE_ERROR_BMP_BAD_8BPP,
+  IMAGE_ERROR_BMP_BAD_16BPP,
+  IMAGE_ERROR_BMP_BAD_24BPP,
+  IMAGE_ERROR_BMP_BAD_32BPP,
+  IMAGE_ERROR_BMP_BAD_RLE,
+  IMAGE_ERROR_BMP_BAD_SIZE,
+  IMAGE_ERROR_BMP_BAD_COLOR_TABLE,
+  IMAGE_ERROR_BMP_BAD_BITFIELDS_DIB,
+  IMAGE_ERROR_BMP_BAD_BITFIELDS_MASK_CONTINUITY,
+  IMAGE_ERROR_BMP_BAD_BITFIELDS_MASK_OVERLAP,
+  IMAGE_ERROR_BMP_BAD_BITFIELDS_MASK_RANGE,
+  /* NetPBM errors. */
+  IMAGE_ERROR_PBM_BAD_HEADER,
+  IMAGE_ERROR_PBM_BAD_MAXVAL,
+  IMAGE_ERROR_PAM_BAD_WIDTH,
+  IMAGE_ERROR_PAM_BAD_HEIGHT,
+  IMAGE_ERROR_PAM_BAD_DEPTH,
+  IMAGE_ERROR_PAM_BAD_MAXVAL,
+  IMAGE_ERROR_PAM_BAD_TUPLTYPE,
+  IMAGE_ERROR_PAM_MISSING_ENDHDR,
+  IMAGE_ERROR_PAM_DEPTH_TUPLTYPE_MISMATCH,
+  /* TGA errors. */
+  IMAGE_ERROR_TGA_NOT_A_TGA,
+  IMAGE_ERROR_TGA_BAD_RLE,
+};
+
 struct rgba_color
 {
   uint8_t r;
@@ -62,13 +115,22 @@ struct image_raw_format
   uint32_t width;
   uint32_t height;
   uint32_t bytes_per_pixel;
+  image_bool force_raw;
 };
 
-image_bool load_image_from_file(const char *filename, struct image_file *dest,
- const struct image_raw_format *raw_format);
-image_bool load_image_from_stream(void *handle, image_read_function readfn,
+enum image_error load_image_from_file(const char *filename,
+ struct image_file *dest, const struct image_raw_format *raw_format);
+enum image_error load_image_from_stream(void *handle, image_read_function readfn,
  struct image_file *dest, const struct image_raw_format *raw_format);
 void image_free(struct image_file *dest);
+
+/**
+ * Get the error string for a given error.
+ *
+ * @param   err   a `image_error` value.
+ * @returns       a statically allocated string corresponding to the error.
+ */
+const char *image_error_string(enum image_error err);
 
 #ifdef __cplusplus
 }

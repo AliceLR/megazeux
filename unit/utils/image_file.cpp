@@ -127,15 +127,28 @@ static const struct image_file_const base_scaling_img_interlaced
   4, 8, raw_rgba_2x
 };
 
+/* Allow error in 16-bpp conversions since they can't accurately reproduce
+ * the source data. +-3 seems good enough for the current inputs.
+ */
+template<unsigned ERROR>
+static boolean compare_16bpp(int a, int b)
+{
+  a -= b;
+  return a >= -(int)ERROR && a <= (int)ERROR;
+}
 
+template<int ERROR>
 static boolean compare_rgb16(const rgba_color &base, const rgba_color &in)
 {
-  // Allow error in 16-bpp conversions...
-  static const int T = 3;
-  int r = (int)base.r - (int)in.r;
-  int g = (int)base.g - (int)in.g;
-  int b = (int)base.b - (int)in.b;
-  return (r >= -T && r <= T) && (g >= -T && g <= T) && (b >= -T && b <= T) && (in.a == 255);
+  return  compare_16bpp<ERROR>(base.r, in.r) && compare_16bpp<ERROR>(base.g, in.g) &&
+          compare_16bpp<ERROR>(base.b, in.b) && in.a == 255;
+}
+
+template<int ERROR>
+static boolean compare_rgba16(const rgba_color &base, const rgba_color &in)
+{
+  return  compare_16bpp<ERROR>(base.r, in.r) && compare_16bpp<ERROR>(base.g, in.g) &&
+          compare_16bpp<ERROR>(base.b, in.b) && compare_16bpp<ERROR>(base.a, in.a);
 }
 
 static boolean compare_rgb(const rgba_color &base, const rgba_color &in)
@@ -175,8 +188,8 @@ static void load_and_compare_image(const struct image_file_const &base,
 
   snprintf(path, sizeof(path), DATA_BASEDIR "%s", filename);
 
-  boolean ret = load_image_from_file(path, &img, NULL);
-  ASSERT(ret, "%s: load failed", filename);
+  enum image_error ret = load_image_from_file(path, &img, NULL);
+  ASSERT(ret == IMAGE_OK, "%s: load failed: %s", filename, image_error_string(ret));
   compare_image<COMPARE_FN>(base, img, filename);
   image_free(&img);
 }
@@ -300,14 +313,14 @@ UNITTEST(GIF)
   {
     struct image_file img{};
     char path[512];
-    boolean ret;
+    enum image_error ret;
 
     for(const auto &in : complex_inputs)
     {
       snprintf(path, sizeof(path), DATA_BASEDIR "%s", in.filename);
 
       ret = load_image_from_file(path, &img, NULL);
-      ASSERT(ret, "%s: load failed", in.filename);
+      ASSERT(ret == IMAGE_OK, "%s: load failed: %s", in.filename, image_error_string(ret));
       uint32_t chk = crc32(0ul, reinterpret_cast<uint8_t *>(img.data), img.width * img.height * 4);
       ASSERTEQ(chk, in.crc, "crc32 mismatch");
       image_free(&img);
@@ -351,6 +364,37 @@ UNITTEST(BMP)
     "true_32bpp.bmp",
   };
 
+  /* These bitfields BMPs are 100% valid by the specification, but they
+   * confuse software aside from some web browsers:
+   *
+   * - Vivaldi (and possibly other Chromium browsers) displays all of them.
+   * - ImageMagick seems to be completely unaware of BITMAPV2INFOHEADER and
+   *   BITMAPV3INFOHEADER despite having output the original BITMAPV5HEADER
+   *   BMPs that these are based on.
+   * - Firefox can't display any of them either.
+   * - GIMP and misc. Windows applications can read the RGBA8888 and RGBA4444,
+   *   but not the RGB565 or RGB101010.
+   */
+  static const char *rgb_bitfields16_inputs[] =
+  {
+    "bitfields565_16bpp.bmp"
+  };
+
+  static const char *rgba_bitfields16_inputs[] =
+  {
+    "bitfields4444_16bpp.bmp"
+  };
+
+  static const char *rgb_bitfields32_inputs[] =
+  {
+    "bitfields101010_32bpp.bmp"
+  };
+
+  static const char *rgba_bitfields32_inputs[] =
+  {
+    "bitfields8888_32bpp.bmp"
+  };
+
   SECTION(TrueColor)
   {
     for(const char *filename : rgb_truecolor_inputs)
@@ -358,7 +402,7 @@ UNITTEST(BMP)
 
     // 16bpp is lossy, needs a special compare...
     for(const char *filename : rgb_truecolor16_inputs)
-      load_and_compare_image<compare_rgb16>(base_rgba_img, filename);
+      load_and_compare_image<compare_rgb16<3>>(base_rgba_img, filename);
   }
 
   SECTION(Indexed)
@@ -377,6 +421,102 @@ UNITTEST(BMP)
   {
     for(const char *filename : rgb_rle_inputs)
       load_and_compare_image<compare_rgb>(base_rgba_img, filename);
+  }
+
+  SECTION(Bitfields)
+  {
+    for(const char *filename : rgb_bitfields32_inputs)
+      load_and_compare_image<compare_rgb>(base_rgba_img, filename);
+    for(const char *filename : rgba_bitfields32_inputs)
+      load_and_compare_image<compare_rgba>(base_rgba_img, filename);
+
+    // 16bpp is lossy, needs a special compare...
+    for(const char *filename : rgb_bitfields16_inputs)
+      load_and_compare_image<compare_rgb16<3>>(base_rgba_img, filename);
+    for(const char *filename : rgba_bitfields16_inputs)
+      load_and_compare_image<compare_rgba16<3>>(base_rgba_img, filename);
+  }
+}
+
+
+UNITTEST(TGA)
+{
+  static const char *bpp16_inputs[] =
+  {
+    "tga_15bpp.tga",
+    "tga_16bpp.tga",
+    "tga_16bpp_rle.tga",
+    "tga_16bpp_ttb.tga",
+    "tga_16bpp_ttb_rle.tga",
+    "tga_idx8_15bpp.tga",
+    "tga_idx8_16bpp.tga",
+    "tga_idx8_16bpp_rle.tga",
+    "tga_idx8_16bpp_ttb.tga",
+    "tga_idx8_16bpp_ttb_rle.tga",
+  };
+
+  static const char *bpp24_inputs[] =
+  {
+    "tga_24bpp.tga",
+    "tga_24bpp_rle.tga",
+    "tga_24bpp_ttb.tga",
+    "tga_24bpp_ttb_rle.tga",
+    "tga_idx8_24bpp.tga",
+    "tga_idx8_24bpp_rle.tga",
+    "tga_idx8_24bpp_ttb.tga",
+    "tga_idx8_24bpp_ttb_rle.tga",
+  };
+
+  static const char *bpp32_inputs[] =
+  {
+    "tga_32bpp.tga",
+    "tga_32bpp_rle.tga",
+    "tga_32bpp_ttb.tga",
+    "tga_32bpp_ttb_rle.tga",
+    "tga_32bpp_rtl.tga",      // Unlikely that anyone uses right-to-left TGAs,
+    "tga_32bpp_rtl_ttb.tga",  // but support them anyway...
+    "tga_idx8_32bpp.tga",
+    "tga_idx8_32bpp_rle.tga",
+    "tga_idx8_32bpp_ttb.tga",
+    "tga_idx8_32bpp_ttb_rle.tga",
+    // These are hexedited and follow the spec but nothing supports them :(
+    "tga_idx16_32bpp.tga",
+    "tga_idx16_32bpp_rle.tga",
+    "tga_idx16_32bpp_ttb.tga",
+    "tga_idx16_32bpp_ttb_rle.tga",
+  };
+
+  static const char *greyscale_inputs[] =
+  {
+    "tga_g.tga",
+    "tga_g_rle.tga",
+    "tga_g_ttb.tga",
+    "tga_g_ttb_rle.tga",
+  };
+
+  SECTION(16bpp)
+  {
+    // 16bpp is lossy, needs a special compare...
+    for(const char *filename : bpp16_inputs)
+      load_and_compare_image<compare_rgb16<3>>(base_rgba_img, filename);
+  }
+
+  SECTION(24bpp)
+  {
+    for(const char *filename : bpp24_inputs)
+      load_and_compare_image<compare_rgb>(base_rgba_img, filename);
+  }
+
+  SECTION(32bpp)
+  {
+    for(const char *filename : bpp32_inputs)
+      load_and_compare_image<compare_rgba>(base_rgba_img, filename);
+  }
+
+  SECTION(Greyscale)
+  {
+    for(const char *filename : greyscale_inputs)
+      load_and_compare_image<compare_rgb>(base_gs_img, filename);
   }
 }
 
@@ -474,17 +614,17 @@ UNITTEST(farbfeld)
 UNITTEST(raw)
 {
   struct image_file img{};
-  boolean ret;
+  enum image_error ret;
 
-  static const struct image_raw_format gs_format = { base_gs_img.width, base_gs_img.height, 1 };
-  static const struct image_raw_format gsa_format = { base_gs_img.width, base_gs_img.height, 2 };
-  static const struct image_raw_format rgb_format = { base_rgba_img.width, base_rgba_img.height, 3 };
-  static const struct image_raw_format rgba_format = { base_rgba_img.width, base_rgba_img.height, 4 };
+  static const struct image_raw_format gs_format = { base_gs_img.width, base_gs_img.height, 1, true};
+  static const struct image_raw_format gsa_format = { base_gs_img.width, base_gs_img.height, 2, true };
+  static const struct image_raw_format rgb_format = { base_rgba_img.width, base_rgba_img.height, 3, true };
+  static const struct image_raw_format rgba_format = { base_rgba_img.width, base_rgba_img.height, 4, true };
 
   SECTION(Greyscale)
   {
     ret = load_image_from_file(DATA_BASEDIR "raw_gs.raw", &img, &gs_format);
-    ASSERT(ret, "raw_gs.raw: load failed");
+    ASSERT(ret == IMAGE_OK, "raw_gs.raw: load failed: %s", image_error_string(ret));
     compare_image<compare_rgb>(base_gs_img, img, "raw_gs.raw");
     image_free(&img);
   }
@@ -492,7 +632,7 @@ UNITTEST(raw)
   SECTION(GreyscaleAlpha)
   {
     ret = load_image_from_file(DATA_BASEDIR "raw_gsa.raw", &img, &gsa_format);
-    ASSERT(ret, "raw_gsa.raw: load failed");
+    ASSERT(ret == IMAGE_OK, "raw_gsa.raw: load failed: %s", image_error_string(ret));
     compare_image<compare_rgba>(base_gs_img, img, "raw_gsa.raw");
     image_free(&img);
   }
@@ -500,7 +640,7 @@ UNITTEST(raw)
   SECTION(RGB)
   {
     ret = load_image_from_file(DATA_BASEDIR "raw_rgb.raw", &img, &rgb_format);
-    ASSERT(ret, "raw_rgb.raw: load failed");
+    ASSERT(ret == IMAGE_OK, "raw_rgb.raw: load failed: %s", image_error_string(ret));
     compare_image<compare_rgb>(base_rgba_img, img, "raw_rgb.raw");
     image_free(&img);
   }
@@ -508,7 +648,7 @@ UNITTEST(raw)
   SECTION(RGBA)
   {
     ret = load_image_from_file(DATA_BASEDIR "raw_rgba.raw", &img, &rgba_format);
-    ASSERT(ret, "raw_rgba.raw: load failed");
+    ASSERT(ret == IMAGE_OK, "raw_rgba.raw: load failed: %s", image_error_string(ret));
     compare_image<compare_rgba>(base_rgba_img, img, "raw_rgba.raw");
     image_free(&img);
   }

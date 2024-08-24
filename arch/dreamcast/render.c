@@ -112,10 +112,11 @@ static void dc_render_graph(struct graphics_data *graphics)
 }
 
 static void dc_render_layer(struct graphics_data *graphics,
- struct video_layer *vlayer)
+ struct video_layer *layer)
 {
   struct dc_render_data *render_data = graphics->render_data;
-  render_layer(render_data->texture, 16, 1024 * 2, graphics, vlayer);
+  render_layer(render_data->texture, SCREEN_PIX_W, SCREEN_PIX_H,
+   1024 * 2, 16, graphics, layer);
 }
 
 static void dc_render_cursor(struct graphics_data *graphics,

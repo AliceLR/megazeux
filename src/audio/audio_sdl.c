@@ -36,14 +36,16 @@ static SDL_AudioDeviceID audio_device;
 
 static void sdl_audio_callback(void *userdata, Uint8 *stream, int len)
 {
-  audio_callback((int16_t *)stream, len);
+  // TODO: non-stereo and 8-bit?
+  size_t frames = len / (2 * sizeof(int16_t));
+  audio_mixer_render_frames(stream, frames, 2, SAMPLE_S16);
 }
 
 void init_audio_platform(struct config_info *conf)
 {
   SDL_AudioSpec desired_spec =
   {
-    0,
+    conf->audio_sample_rate,
     AUDIO_S16SYS,
     2,
     0,
@@ -54,16 +56,27 @@ void init_audio_platform(struct config_info *conf)
     NULL
   };
 
-  desired_spec.freq = audio.output_frequency;
+  // Reject very low sample rates to avoid PulseAudio hangs.
+  if(conf->audio_sample_rate > 0 && conf->audio_sample_rate < 2048)
+    desired_spec.freq = 2048;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
   audio_device = SDL_OpenAudioDevice(NULL, 0, &desired_spec, &audio_settings, 0);
+  if(!audio_device)
+  {
+    warn("failed to init SDL audio device: %s\n", SDL_GetError());
+    return;
+  }
 #else
   SDL_OpenAudio(&desired_spec, &audio_settings);
 #endif
 
-  audio.mix_buffer = cmalloc(audio_settings.size * 2);
-  audio.buffer_samples = audio_settings.samples;
+  if(!audio_mixer_init(audio_settings.freq, audio_settings.samples,
+   audio_settings.channels))
+    return;
+  // If the mixer doesn't like SDL's selected frequency, exit to avoid bugs...
+  if(audio.output_frequency != (size_t)audio_settings.freq)
+    return;
 
   // now set the audio going
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -87,9 +100,13 @@ void init_audio_platform(struct config_info *conf)
 void quit_audio_platform(void)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_PauseAudioDevice(audio_device, 1);
+  if(audio_device)
+  {
+    SDL_PauseAudioDevice(audio_device, 1);
+    SDL_CloseAudioDevice(audio_device);
+    audio_device = 0;
+  }
 #else
   SDL_PauseAudio(1);
 #endif
-  free(audio.mix_buffer);
 }

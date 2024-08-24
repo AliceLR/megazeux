@@ -32,6 +32,7 @@
 #include "scrdisp.h"
 #include "util.h"
 #include "window.h"
+#include "world.h"
 #include "world_struct.h"
 
 #include "audio/sfx.h"
@@ -1236,7 +1237,9 @@ void entrance(struct world *mzx_world, int x, int y)
 
   play_sfx(mzx_world, SFX_ENTRANCE);
 
-  if((board != mzx_world->current_board_id) &&
+  // MegaZeux 1.x allows entrances on a board to link to other entrances
+  // on the same board. This was removed in MegaZeux 2.00.
+  if((board != mzx_world->current_board_id || mzx_world->version < V200) &&
    (board < mzx_world->num_boards) && mzx_world->board_list[board])
   {
     mzx_world->target_board = board;

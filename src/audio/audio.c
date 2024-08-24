@@ -120,6 +120,9 @@ static unsigned int volume_function(int input, int volume_setting)
 
 void destruct_audio_stream(struct audio_stream *a_src)
 {
+  if(a_src == audio.primary_stream)
+    audio.primary_stream = NULL;
+
   if(a_src == audio.stream_list_base)
     audio.stream_list_base = a_src->next;
 
@@ -180,12 +183,48 @@ void initialize_audio_stream(struct audio_stream *a_src,
   UNLOCK();
 }
 
-static void clip_buffer(int16_t *dest, int32_t *src, size_t len)
+static void clip_buffer_u8(uint8_t *dest, int32_t *src, size_t samples)
 {
   int32_t cur_sample;
   size_t i;
 
-  for(i = 0; i < len; i++)
+  for(i = 0; i < samples; i++)
+  {
+    cur_sample = src[i];
+    if(cur_sample > 32767)
+      cur_sample = 32767;
+
+    if(cur_sample < -32768)
+      cur_sample = -32768;
+
+    dest[i] = (uint8_t)(cur_sample >> 8) + 128;
+  }
+}
+
+static void clip_buffer_s8(int8_t *dest, int32_t *src, size_t samples)
+{
+  int32_t cur_sample;
+  size_t i;
+
+  for(i = 0; i < samples; i++)
+  {
+    cur_sample = src[i];
+    if(cur_sample > 32767)
+      cur_sample = 32767;
+
+    if(cur_sample < -32768)
+      cur_sample = -32768;
+
+    dest[i] = cur_sample >> 8;
+  }
+}
+
+static void clip_buffer_s16(int16_t *dest, int32_t *src, size_t samples)
+{
+  int32_t cur_sample;
+  size_t i;
+
+  for(i = 0; i < samples; i++)
   {
     cur_sample = src[i];
     if(cur_sample > 32767)
@@ -199,48 +238,164 @@ static void clip_buffer(int16_t *dest, int32_t *src, size_t len)
 }
 
 /**
- * Audio callback for threaded software mixing. The output buffer must be
- * 16-bit stereo and the length value must be the size of the buffer in bytes
- * (i.e. the frame count times 4).
+ * Render `frames` number of audio frames with the software mixer. The
+ * output buffer must be able to hold a number of bytes equal to the
+ * requested frames times the requested channels times the size in bytes
+ * of the requested sample type. Destroys any audio streams that end
+ * while rendering the output.
+ * TODO: the mixer requires exactly 2 output channels currently.
+ *
+ * Returns the number of frames successfully renderered.
  */
-void audio_callback(int16_t *stream, size_t len)
+size_t audio_mixer_render_frames(void *stream, unsigned frames,
+ unsigned channels, unsigned format)
 {
-  boolean destroy_flag;
   struct audio_stream *current_astream;
+  size_t frames_chn;
+  boolean destroy_flag;
 
   LOCK();
 
   current_astream = audio.stream_list_base;
 
-  if(current_astream)
+  if(current_astream && audio.mix_buffer && frames && channels)
   {
-    size_t frames = len / (2 * sizeof(int16_t));
-    memset(audio.mix_buffer, 0, frames * 2 * sizeof(int32_t));
+    // Due to how resampling is implemented, the requested frames
+    // should never exceed the buffer's number of frames. If it does,
+    // this call can't complete the entire request.
+    if(frames > audio.buffer_frames)
+      frames = audio.buffer_frames;
+
+    // Additionally, if the output channels exceed the configured
+    // number of channels, the frames may need to be limited further.
+    frames_chn = frames * channels;
+    if(frames_chn * sizeof(int32_t) > audio.buffer_bytes)
+    {
+      frames = audio.buffer_bytes / (channels * sizeof(int32_t));
+      frames_chn = frames * channels;
+    }
+
+    memset(audio.mix_buffer, 0, frames_chn * sizeof(int32_t));
 
     while(current_astream != NULL)
     {
       struct audio_stream *next_astream = current_astream->next;
 
-      destroy_flag = current_astream->mix_data(current_astream,
-       audio.mix_buffer, frames, 2);
-
-      if(destroy_flag)
+      if(current_astream->mix_data)
       {
-        current_astream->destruct(current_astream);
+        destroy_flag = current_astream->mix_data(current_astream,
+         audio.mix_buffer, frames, channels);
 
-        // if the destroyed stream was our music, we shouldn't
-        // let end_mod try to destroy it again.
-        if(current_astream == audio.primary_stream)
-          audio.primary_stream = NULL;
+        if(destroy_flag)
+          current_astream->destruct(current_astream);
       }
 
       current_astream = next_astream;
     }
 
-    clip_buffer(stream, audio.mix_buffer, frames * 2);
+    switch(format)
+    {
+      case SAMPLE_U8:
+        clip_buffer_u8((uint8_t *)stream, audio.mix_buffer, frames_chn);
+        break;
+
+      case SAMPLE_S8:
+        clip_buffer_s8((int8_t *)stream, audio.mix_buffer, frames_chn);
+        break;
+
+      case SAMPLE_S16:
+        clip_buffer_s16((int16_t *)stream, audio.mix_buffer, frames_chn);
+        break;
+
+      default:
+        warn("clip_buffer unimplemented for sample format %d!\n", format);
+    }
   }
 
   UNLOCK();
+
+  return frames;
+}
+
+/**
+ * This function initializes audio.output_frequency, audio.mix_buffer,
+ * and audio.buffer_frames for software mixing. This function may reconfigure
+ * the provided values of any of these fields.
+ *
+ * This should be called when initializing a sound driver but before unpausing
+ * audio, and any time the sample rate, number of buffer frames, or the number
+ * of output channels changes (also while audio is paused). Sample format
+ * changes are handled in the audio callback directly.
+ */
+boolean audio_mixer_init(unsigned rate, unsigned frames, unsigned channels)
+{
+  boolean ret = false;
+  size_t sz;
+
+  debug("--MIXER-- attempting init with rate=%u, frames=%u, channels=%u\n",
+   rate, frames, channels);
+
+  if(rate == 0)
+    rate = 44100;
+  if(rate < 256 || rate > 384000)
+    goto err;
+
+  if(frames == 0)
+    frames = 1024;
+  frames = CLAMP(frames, 8, 65536);
+  frames = round_to_power_of_two(frames);
+
+  if(channels == 0)
+    channels = 2;
+  if(channels > 2)
+    goto err;
+
+  sz = sizeof(int32_t) * frames * channels;
+
+  LOCK();
+
+  if(!audio.mix_buffer || audio.buffer_bytes != sz)
+  {
+    int32_t *buffer = (int32_t *)crealloc(audio.mix_buffer, sz);
+    if(!buffer)
+    {
+      debug("--MIXER-- failed buffer alloc of size %zu\n", sz);
+      goto err_unlock;
+    }
+
+    audio.mix_buffer = buffer;
+    audio.buffer_bytes = sz;
+  }
+
+  audio.output_frequency = rate;
+  audio.buffer_frames = frames;
+  audio.buffer_channels = channels;
+  ret = true;
+
+  // TODO: if there are any open audio streams, they should sampled_set_buffer
+  // since they rely on output_frequency and buffer_frames.
+
+err_unlock:
+  UNLOCK();
+
+err:
+  debug("--MIXER-- init %s with rate=%u, frames=%u, channels=%u\n",
+   ret ? "OK" : "FAILURE", rate, frames, channels);
+  return ret;
+}
+
+/**
+ * Free the software mixer buffer. This does not need to be called
+ * in driver exit functions; quit_audio will call it for them.
+ */
+void audio_mixer_free(void)
+{
+  free(audio.mix_buffer);
+  audio.mix_buffer = NULL;
+  audio.buffer_bytes = 0;
+  audio.buffer_frames = 0;
+  audio.buffer_channels = 0;
+  audio.output_frequency = 44100;
 }
 
 void init_audio(struct config_info *conf)
@@ -251,7 +406,7 @@ void init_audio(struct config_info *conf)
   platform_mutex_init(&audio.audio_debug_mutex);
 #endif
 
-  audio.output_frequency = conf->output_frequency;
+  audio.output_frequency = 44100; // Dummy value.
   audio.global_resample_mode = conf->resample_mode;
 
   audio.max_simultaneous_samples = -1;
@@ -304,8 +459,10 @@ void quit_audio(void)
 
   LOCK();
 
+  audio_mixer_free();
   audio_ext_free_registry();
   free(audio.pcs_stream);
+  audio.pcs_stream = NULL;
 
   UNLOCK();
 

@@ -1,0 +1,3 @@
+Title: IF ALIGNEDROBOT Test
+Author: Alice Rowan
+Desc: Test basic functionality of IF ALIGNEDROBOT.

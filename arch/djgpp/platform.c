@@ -21,6 +21,7 @@
 
 #define delay delay_dos
 #include <errno.h>
+#include <stdlib.h>
 #include <pc.h>
 #include <dos.h>
 #include <dpmi.h>
@@ -33,6 +34,12 @@
 #include "../../src/util.h"
 #include "../../src/platform.h"
 #include "platform_djgpp.h"
+
+/* TODO: Most of the audio callback code can't currently be locked or moved
+ * outside of the callback, which causes CWSDMPI to crash during paging.
+ * Disable paging altogether for now.
+ */
+int _crt0_startup_flags = _CRT0_FLAG_LOCK_MEMORY;
 
 static int djgpp_nearptr_cnt = 0;
 
@@ -207,6 +214,42 @@ void djgpp_disable_dma(uint8_t port)
     outportb(0x0A, 0x04 | (port & 3));
 }
 
+void djgpp_irq_enable(int irq, struct irq_state *old_state)
+{
+  old_state->port_21h = inportb(0x21);
+  old_state->port_A1h = -1;
+  if(irq >= 8)
+  {
+    old_state->port_A1h = inportb(0xA1);
+    outportb(0x21, old_state->port_21h & (~(1 << 2)));
+    outportb(0xA1, old_state->port_A1h & (~(1 << (irq & 7))));
+  }
+  else
+    outportb(0x21, old_state->port_21h & (~(1 << irq)));
+}
+
+void djgpp_irq_restore(struct irq_state *old_state)
+{
+  outportb(0x21, old_state->port_21h);
+  if(old_state->port_A1h >= 0)
+    outportb(0xA1, old_state->port_A1h);
+}
+
+void djgpp_irq_ack(int irq)
+{
+  if(irq >= 8)
+    outportb(0xA0, 0x20);
+  outportb(0x20, 0x20);
+}
+
+int djgpp_irq_vector(int irq)
+{
+  if(irq >= 8)
+    return 0x70 + (irq - 8);
+  else
+    return 0x08 + irq;
+}
+
 #define TIMER_CLOCK  3579545
 #define TIMER_LENGTH 8
 #define TIMER_COUNT  (TIMER_LENGTH * TIMER_CLOCK / 3000)
@@ -248,6 +291,14 @@ static void set_timer(uint32_t count)
   outportb(0x43, 0x34);
   outportb(0x40, count & 0xFF);
   outportb(0x40, count >> 8);
+}
+
+static void fix_timezone(void)
+{
+  // DJGPP, unlike normal SDKs, will return -1 for time functions
+  // unless TZ is initialized. Use UTC as a default.
+  if(!getenv("TZ"))
+    setenv("TZ", "UTC", 1);
 }
 
 boolean platform_init(void)
@@ -299,6 +350,7 @@ boolean platform_init(void)
   enable();
 
   __dpmi_get_protected_mode_interrupt_vector(0x09, &kbd_old_handler);
+  fix_timezone();
   return true;
 }
 

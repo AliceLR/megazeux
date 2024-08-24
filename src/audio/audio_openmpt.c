@@ -72,13 +72,15 @@ static boolean omp_mix_data(struct audio_stream *a_src, int32_t *buffer,
   struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
   struct sampled_stream *s = (struct sampled_stream *)a_src;
 
-  uint32_t read_wanted = s->allocated_data_length - s->stream_offset;
-  uint8_t *read_buffer = (uint8_t *)s->output_data + s->stream_offset;
+  int16_t *read_buffer;
+  size_t read_wanted;
   boolean r_val = false;
   uint32_t read_len;
 
+  read_buffer = (int16_t *)sampled_get_buffer(&omp_stream->s, &read_wanted);
+
   read_len = openmpt_module_read_interleaved_stereo(omp_stream->module_data,
-   s->frequency, read_wanted / 4, (int16_t *)read_buffer) * 4;
+   s->frequency, read_wanted / 4, read_buffer) * 4;
 
   if(read_len < read_wanted && !a_src->repeat)
   {
