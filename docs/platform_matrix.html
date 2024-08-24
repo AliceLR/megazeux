@@ -75,6 +75,7 @@ var rad = std("RAD");
 var libvorbis = std("libvorbis");
 var tremor = std("tremor");
 var tremor_lowmem = std("tremor<br>(lowmem)");
+var stb_vorbis = std("stb_vorbis");
 
 var render_ctr = std("render_ctr");
 var render_nds = std("render_nds");
@@ -254,7 +255,7 @@ var archs =
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
-    ogg_vorbis:       tremor_lowmem,
+    ogg_vorbis:       stb_vorbis,
     optimization:     speed,
     sdl:              no,
     editor:           yes,
