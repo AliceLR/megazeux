@@ -48,12 +48,12 @@ ARCH_INIT = \
 ARCH_CONFIGURE_ARGS	=
 ARCH_CMAKE_ARGS		= -D CMAKE_SYSTEM_NAME=Windows-GNU
 
-all: ${ZLIB_TARGET} ${PNG_TARGET} ${OGG_TARGET} ${VORBIS_TARGET} \
+all: ${ZLIB_TARGET} ${PNG_TARGET} ${OGG_TARGET} ${VORBIS_TARGET} ${STB_TARGET} \
 	${SDL12_TARGET} ${SDL2_TARGET}
 
 package: ${TARGET}/${BIN}/SDL.dll ${TARGET}/${BIN}/SDL.dll.debug ${TARGET}/${LIB}/libSDL.dll.a
 package: ${TARGET}/${BIN}/SDL2.dll ${TARGET}/${BIN}/SDL2.dll.debug ${TARGET}/${LIB}/libSDL2.dll.a
 
-package: zlib_package png_package vorbis_package SDL12_package SDL2_package
+package: zlib_package png_package vorbis_package SDL12_package SDL2_package stb_package
 
 endif

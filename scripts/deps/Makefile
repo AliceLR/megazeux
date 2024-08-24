@@ -307,7 +307,10 @@ SDL2: ${SDL2_TARGET}
 # MinGW requires some involved special handling...
 ${ZLIB_TARGET}: | build/${ZLIB} zlib_clean
 ifeq (${PLATFORM},mingw)
+	# Not clear why this stopped working, but whatever.
+	sed -i 's/^.c.o:$$/%.o: %.c/" build/${ZLIB}/win32/Makefile.gcc
 	cd build/${ZLIB}; \
+	set -e; \
 	${ARCH_INIT}; \
 	export DESTDIR='${PREFIX}/'; \
 	export INCLUDE_PATH=include; \
@@ -317,6 +320,7 @@ ifeq (${PLATFORM},mingw)
 	${MAKE} -fwin32/Makefile.gcc PREFIX='${HOST}-' prefix='${PREFIX}' install SHARED_MODE=1;
 else
 	cd build/${ZLIB}; \
+	set -e; \
 	${ARCH_INIT}; \
 	${ZLIB_CONFIGURE} ./configure --prefix='${PREFIX}'; \
 	${MAKE}; \

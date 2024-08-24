@@ -25,7 +25,8 @@ ARCH_INIT = \
 ARCH_CONFIGURE_ARGS	= --disable-shared --enable-static
 TREMOR_LOWMEM		= 1
 
-all: ${ZLIB_TARGET} ${PNG_TARGET} ${OGG_TARGET} ${VORBIS_TARGET} ${TREMOR_TARGET}
+all: ${ZLIB_TARGET} ${PNG_TARGET}
+all: ${OGG_TARGET} ${VORBIS_TARGET} ${TREMOR_TARGET} ${STB_TARGET}
 
-package: zlib_package png_package vorbis_package tremor_package
+package: zlib_package png_package vorbis_package tremor_package stb_package
 endif
