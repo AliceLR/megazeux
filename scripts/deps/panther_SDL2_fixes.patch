@@ -1,0 +1,225 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 75a8937..d88c3aa 100755
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -572,18 +572,18 @@ foreach(_SUB ${SDL_SUBSYSTEMS})
+     set(SDL_${_OPT}_DISABLED 1)
+   endif()
+ endforeach()
+-if(SDL_JOYSTICK)
++#if(SDL_JOYSTICK)
+   file(GLOB JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/*.c)
+   set(SOURCE_FILES ${SOURCE_FILES} ${JOYSTICK_SOURCES})
+-endif()
+-if(SDL_HAPTIC)
+-  if(NOT SDL_JOYSTICK)
++#endif()
++#if(SDL_HAPTIC)
++#  if(NOT SDL_JOYSTICK)
+     # Haptic requires some private functions from the joystick subsystem.
+-    message_error("SDL_HAPTIC requires SDL_JOYSTICK, which is not enabled")
+-  endif()
++#    message_error("SDL_HAPTIC requires SDL_JOYSTICK, which is not enabled")
++#  endif()
+   file(GLOB HAPTIC_SOURCES ${SDL2_SOURCE_DIR}/src/haptic/*.c)
+   set(SOURCE_FILES ${SOURCE_FILES} ${HAPTIC_SOURCES})
+-endif()
++#endif()
+ if(SDL_POWER)
+   file(GLOB POWER_SOURCES ${SDL2_SOURCE_DIR}/src/power/*.c)
+   set(SOURCE_FILES ${SOURCE_FILES} ${POWER_SOURCES})
+@@ -1085,11 +1085,11 @@ endif()
+ # src/X/*.c does not get included.
+ if(NOT HAVE_SDL_JOYSTICK)
+   set(SDL_JOYSTICK_DISABLED 1)
+-  if(SDL_JOYSTICK AND NOT APPLE) # results in unresolved symbols on OSX
++  #if(SDL_JOYSTICK AND NOT APPLE) # results in unresolved symbols on OSX
+ 
+     file(GLOB JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/dummy/*.c)
+     set(SOURCE_FILES ${SOURCE_FILES} ${JOYSTICK_SOURCES})
+-  endif()
++  #endif()
+ endif()
+ if(NOT HAVE_SDL_HAPTIC)
+   set(SDL_HAPTIC_DISABLED 1)
+@@ -1290,8 +1290,8 @@ if(NOT WINDOWS OR CYGWIN)
+   if(SDL_SHARED)
+     install(CODE "
+       execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+-      \"libSDL2-2.0.so\" \"libSDL2.so\")")
+-    install(FILES ${SDL2_BINARY_DIR}/libSDL2.so DESTINATION "lib${LIB_SUFFIX}")
++      \"libSDL2-2.0.dylib\" \"libSDL2.dylib\")")
++    install(FILES ${SDL2_BINARY_DIR}/libSDL2.dylib DESTINATION "lib${LIB_SUFFIX}")
+   endif()
+   if(FREEBSD)
+     # FreeBSD uses ${PREFIX}/libdata/pkgconfig
+diff --git a/include/SDL_syswm.h b/include/SDL_syswm.h
+index d20aa6f..d7a2347 100755
+--- a/include/SDL_syswm.h
++++ b/include/SDL_syswm.h
+@@ -83,7 +83,7 @@ struct SDL_SysWMinfo;
+ 
+ #if defined(SDL_VIDEO_DRIVER_COCOA)
+ #ifdef __OBJC__
+-#if defined(__ALTIVEC__) && !defined(MAC_OS_X_VERSION_10_5)
++#if defined(__ALTIVEC__) && MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+ /* to cricumvent a bug in Mac OS X 10.4 SDK */
+ #define vector __vector
+ #include <CoreServices/CoreServices.h>
+diff --git a/src/audio/coreaudio/SDL_coreaudio.h b/src/audio/coreaudio/SDL_coreaudio.h
+index 52c49f0..4064f9f 100755
+--- a/src/audio/coreaudio/SDL_coreaudio.h
++++ b/src/audio/coreaudio/SDL_coreaudio.h
+@@ -34,7 +34,7 @@
+ 
+ #if defined(MACOSX_COREAUDIO) || defined(MACOSX_PANTHER_COREAUDIO)
+ #include <CoreAudio/CoreAudio.h>
+-#if defined(__ALTIVEC__) && !defined(MAC_OS_X_VERSION_10_5)
++#if defined(__ALTIVEC__) && MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+ /* to cricumvent a bug in Mac OS X 10.4 SDK */
+ #define vector __vector
+ #include <CoreServices/CoreServices.h>
+diff --git a/src/file/cocoa/SDL_rwopsbundlesupport.m b/src/file/cocoa/SDL_rwopsbundlesupport.m
+index 8830367..3b215ad 100755
+--- a/src/file/cocoa/SDL_rwopsbundlesupport.m
++++ b/src/file/cocoa/SDL_rwopsbundlesupport.m
+@@ -21,7 +21,7 @@
+ #include "../../SDL_internal.h"
+ 
+ #ifdef __APPLE__
+-#if defined(__ALTIVEC__) && !defined(MAC_OS_X_VERSION_10_5)
++#if defined(__ALTIVEC__) && MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+ /* to cricumvent a bug in Mac OS X 10.4 SDK */
+ #define vector __vector
+ #include <CoreServices/CoreServices.h>
+diff --git a/src/filesystem/cocoa/SDL_sysfilesystem.m b/src/filesystem/cocoa/SDL_sysfilesystem.m
+index 8b87e37..971e6ec 100755
+--- a/src/filesystem/cocoa/SDL_sysfilesystem.m
++++ b/src/filesystem/cocoa/SDL_sysfilesystem.m
+@@ -25,7 +25,7 @@
+ /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+ /* System dependent filesystem routines                                */
+ 
+-#if defined(__ALTIVEC__) && !defined(MAC_OS_X_VERSION_10_5)
++#if defined(__ALTIVEC__) && MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+ /* to cricumvent a bug in Mac OS X 10.4 SDK */
+ #define vector __vector
+ #include <CoreServices/CoreServices.h>
+diff --git a/src/power/macosx/SDL_syspower.c b/src/power/macosx/SDL_syspower.c
+index 944e452..026ea71 100755
+--- a/src/power/macosx/SDL_syspower.c
++++ b/src/power/macosx/SDL_syspower.c
+@@ -23,7 +23,7 @@
+ #ifndef SDL_POWER_DISABLED
+ #if SDL_POWER_MACOSX
+ 
+-#if defined(__ALTIVEC__) && !defined(MAC_OS_X_VERSION_10_5)
++#if defined(__ALTIVEC__) && MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+ /* to cricumvent a bug in Mac OS X 10.4 SDK */
+ #define vector __vector
+ #include <CoreServices/CoreServices.h>
+diff --git a/src/video/cocoa/SDL_cocoakeyboard.m b/src/video/cocoa/SDL_cocoakeyboard.m
+index e973ef4..39e75f5 100755
+--- a/src/video/cocoa/SDL_cocoakeyboard.m
++++ b/src/video/cocoa/SDL_cocoakeyboard.m
+@@ -426,7 +426,7 @@ HandleModifiers(_THIS, unsigned short scancode, unsigned int modifierFlags)
+ static void
+ UpdateKeymap(SDL_VideoData *data)
+ {
+-#if defined(MAC_OS_X_VERSION_10_5)
++#if MAC_OS_X_VERSION_REQUIRED >= 1050
+     TISInputSourceRef key_layout;
+     const void *chr_data;
+     int i;
+diff --git a/src/video/cocoa/SDL_cocoamessagebox.m b/src/video/cocoa/SDL_cocoamessagebox.m
+index 730d952..e528e9c 100755
+--- a/src/video/cocoa/SDL_cocoamessagebox.m
++++ b/src/video/cocoa/SDL_cocoamessagebox.m
+@@ -22,7 +22,7 @@
+ 
+ #if SDL_VIDEO_DRIVER_COCOA
+ 
+-#if defined(__APPLE__) && defined(__POWERPC__) && !defined(__APPLE_ALTIVEC__)
++#if defined(__APPLE__) && defined(__POWERPC__) && defined(__ALTIVEC__)
+ #include <altivec.h>
+ #undef bool
+ #undef vector
+diff --git a/src/video/cocoa/SDL_cocoamouse.h b/src/video/cocoa/SDL_cocoamouse.h
+index 03f1d50..2f5e87b 100755
+--- a/src/video/cocoa/SDL_cocoamouse.h
++++ b/src/video/cocoa/SDL_cocoamouse.h
+@@ -25,7 +25,7 @@
+ 
+ #include "SDL_cocoavideo.h"
+ 
+-#if !defined(MAC_OS_X_VERSION_10_5)
++#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050 && !defined(CGFLOAT_DEFINED)
+ typedef float CGFloat;
+ #endif
+ 
+diff --git a/src/video/cocoa/SDL_cocoavideo.h b/src/video/cocoa/SDL_cocoavideo.h
+index 757d8e5..6e27bac 100755
+--- a/src/video/cocoa/SDL_cocoavideo.h
++++ b/src/video/cocoa/SDL_cocoavideo.h
+@@ -25,7 +25,7 @@
+ 
+ #include "SDL_opengl.h"
+ 
+-#if defined(__ALTIVEC__) && !defined(MAC_OS_X_VERSION_10_5)
++#if defined(__ALTIVEC__) && MAC_OS_X_VERSION_MIN_REQUIRED < 1050
+ /* to cricumvent a bug in Mac OS X 10.4 SDK */
+ #define vector __vector
+ #include <CoreServices/CoreServices.h>
+@@ -45,7 +45,7 @@
+ #include "SDL_cocoaopengl.h"
+ #include "SDL_cocoawindow.h"
+ 
+-#if !defined(MAC_OS_X_VERSION_10_5)
++#if MAC_OS_X_VERSION_MIN_REQUIRED < 1050 && !defined(NSINTEGER_DEFINED)
+ typedef long int NSInteger;
+ typedef unsigned int NSUInteger;
+ #endif
+diff --git a/src/video/cocoa/SDL_cocoavideo.m b/src/video/cocoa/SDL_cocoavideo.m
+index 6766b71..1380192 100755
+--- a/src/video/cocoa/SDL_cocoavideo.m
++++ b/src/video/cocoa/SDL_cocoavideo.m
+@@ -22,7 +22,7 @@
+ 
+ #if SDL_VIDEO_DRIVER_COCOA
+ 
+-#if defined(__APPLE__) && defined(__POWERPC__) && !defined(__APPLE_ALTIVEC__)
++#if defined(__APPLE__) && defined(__POWERPC__) && defined(__ALTIVEC__)
+ #include <altivec.h>
+ #undef bool
+ #undef vector
+diff --git a/src/video/cocoa/SDL_cocoawindow.m b/src/video/cocoa/SDL_cocoawindow.m
+index ae125b4..3e9ea77 100755
+--- a/src/video/cocoa/SDL_cocoawindow.m
++++ b/src/video/cocoa/SDL_cocoawindow.m
+@@ -102,7 +102,7 @@ ScheduleContextUpdates(SDL_WindowData *data)
+     NSOpenGLContext *currentContext = [NSOpenGLContext currentContext];
+     NSMutableArray *contexts = data->nscontexts;
+     @synchronized (contexts) {
+-#if defined(MAC_OS_X_VERSION_10_5)
++#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1050
+         for (SDLOpenGLContext *context in contexts) {
+ #else
+         /* old way to iterate */
+@@ -363,7 +363,7 @@ SetWindowStyle(SDL_Window * window, unsigned int style)
+        !!! FIXME:   http://bugzilla.libsdl.org/show_bug.cgi?id=1825
+     */
+     windows = [NSApp orderedWindows];
+-#if defined(MAC_OS_X_VERSION_10_5)
++#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1050
+     for (NSWindow *win in windows) {
+ #else
+     /* old way to iterate */
+@@ -1521,7 +1521,7 @@ Cocoa_DestroyWindow(_THIS, SDL_Window * window)
+         }
+ 
+         NSArray *contexts = [[data->nscontexts copy] autorelease];
+-#if defined(MAC_OS_X_VERSION_10_5)
++#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1050
+         for (SDLOpenGLContext *context in contexts) {
+ #else
+         /* old way to iterate */
