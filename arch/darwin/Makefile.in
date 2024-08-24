@@ -67,12 +67,12 @@ endif
 endif
 endif
 
-ifeq (${ARCH},)
-DARWIN_META_TARGETS := 1
-else
 # Configure CC et al. for the selected architecture ARCH, if any.
 include arch/darwin/Makefile.arch
 
+ifeq (${ARCH},)
+DARWIN_META_TARGETS := 1
+else
 REAL_ARCH = ${ARCH}
 endif
 
@@ -126,19 +126,6 @@ ifeq (${BUILD_UTILS},1)
 	${MV} ${y4m2smzx} ${y4m2smzx}.${REAL_ARCH}
 	${MV} ${ccv} ${ccv}.${REAL_ARCH}
 endif
-
-package_clean:
-	${RM} -f ${mzx}.${REAL_ARCH}
-	${RM} -f ${mzxrun}.${REAL_ARCH}
-	${RM} -f ${core_target}.${REAL_ARCH}
-	${RM} -f ${editor_target}.${REAL_ARCH}
-	${RM} -f ${checkres}.${REAL_ARCH}
-	${RM} -f ${downver}.${REAL_ARCH}
-	${RM} -f ${hlp2txt}.${REAL_ARCH}
-	${RM} -f ${txt2hlp}.${REAL_ARCH}
-	${RM} -f ${png2smzx}.${REAL_ARCH}
-	${RM} -f ${y4m2smzx}.${REAL_ARCH}
-	${RM} -f ${ccv}.${REAL_ARCH}
 
 else # DARWIN_META_TARGETS=1
 
@@ -253,7 +240,22 @@ endif
 archive: build
 	@arch/darwin/dmg.sh ${TARGET}
 
-#clean: package_clean
+clean: package_clean
+
+package_clean:
+	for arch in ${ALL_ARCH}; do \
+		rm -f ${mzx}.$$arch; \
+		rm -f ${mzxrun}.$$arch; \
+		rm -f ${core_target}.$$arch; \
+		rm -f ${editor_target}.$$arch; \
+		rm -f ${checkres}.$$arch; \
+		rm -f ${downver}.$$arch; \
+		rm -f ${hlp2txt}.$$arch; \
+		rm -f ${txt2hlp}.$$arch; \
+		rm -f ${png2smzx}.$$arch; \
+		rm -f ${y4m2smzx}.$$arch; \
+		rm -f ${ccv}.$$arch; \
+	done
 
 endif # DARWIN_META_TARGETS=1
 endif # darwin-dist
