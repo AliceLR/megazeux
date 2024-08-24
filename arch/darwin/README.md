@@ -8,22 +8,23 @@ please use the Xcode project for that.
 
 Tested versions of Xcode:
 
-- Xcode 3.2.6 was used from MegaZeux 2.90 through 2.93 to produce the PowerPC
-  compatibility DMG. To get the correct compiler names from Makefile.arch,
-  define XCODE_3=1. This is the **LAST** version of Xcode that targets PowerPC.
+- Xcode 3.2.6 has been used from MegaZeux 2.90 onward to produce PowerPC
+  binaries. To get the correct compiler names from Makefile.arch, define
+  XCODE_3=1. This is the **LAST** version of Xcode that targets PowerPC.
+  The 10.4 SDK should be used for PPC and the 10.5 SDK should be used for PPC64.
+  The current setup installs these SDKs alongside Xcode 9.4.1 via XcodeLegacy.
 - Xcode 4.1 has been tested in the past and should work.
 - Xcode 9.4.1 can target i686, x86_64, and x86_64h. It is the **LAST** version
-  of Xcode that targets i686. This is used to produce the compatibility DMG
-  from 2.93b onward (with gcc 10 PowerPC compilers built off of the Tiger SDK
-  to provide PowerPC support).
-- osxcross should work, but you'll need to override the compilers defined in
-  Makefile.arch.
+  of Xcode that targets i686. This is used to produce the Intel binaries from
+  from 2.93b onward.
 
 Untested and unsupported features:
 
 - Other versions of Xcode might require changing some variables (Makefile.arch).
 - arm64 and arm64e builds haven't been tested.
 - Notarization isn't supported yet.
+- osxcross should work, but you'll need to override the compilers defined in
+  Makefile.arch. Only the official SDKs have been tested so far.
 
 Other required software:
 
