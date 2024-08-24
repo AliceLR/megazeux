@@ -8,11 +8,12 @@ BINEXT = .exe
 EXTRA_LICENSES += ${LICENSE_DJGPP} ${LICENSE_LGPL2}
 
 # 387 emulation for FPU not have
-EXTRA_LIBS = -lemu
+#EXTRA_LIBS = -lemu
 
 # pc.h and sys/farptr.h have functions declared extern __inline__
 # Use -fgnu89-inline to avoid multiple-definition errors
 #-fgnu89-inline
+ARCH_CFLAGS   += -mfpmath=387
 ARCH_LDFLAGS  += ${EXTRA_LIBS}
 
 clean:

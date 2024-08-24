@@ -30,6 +30,10 @@ __M_BEGIN_DECLS
 #include "../configure.h"
 #include "../platform.h"
 
+#ifdef CONFIG_DJGPP
+#define AUDIO_GARBAGE_COLLECTOR
+#endif
+
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
 #define SAMPLE_S16 SAMPLE_S16MSB
 #else
@@ -118,7 +122,7 @@ struct audio
   struct audio_stream *pcs_stream;
   struct audio_stream *stream_list_base;
   struct audio_stream *stream_list_end;
-#ifdef CONFIG_DJGPP
+#ifdef AUDIO_GARBAGE_COLLECTOR
   struct audio_stream *garbage_list_base;
   struct audio_stream *garbage_list_end;
 #endif

@@ -147,7 +147,7 @@ static void audio_stream_remove_from_lists(struct audio_stream *a_src)
   if(a_src == audio.stream_list_end)
     audio.stream_list_end = a_src->previous;
 
-#ifdef CONFIG_DJGPP
+#ifdef AUDIO_GARBAGE_COLLECTOR
   if(a_src == audio.garbage_list_base)
     audio.garbage_list_base = a_src->next;
 
@@ -164,7 +164,7 @@ static void audio_stream_remove_from_lists(struct audio_stream *a_src)
 
 static void audio_garbage_collect(void)
 {
-#ifdef CONFIG_DJGPP
+#ifdef AUDIO_GARBAGE_COLLECTOR
   struct audio_stream *a_src;
   struct audio_stream *next;
 
@@ -182,7 +182,7 @@ static void audio_garbage_collect(void)
 // the main thread creates a new stream or explicitly destroys other streams.
 static void audio_garbage_queue(struct audio_stream *a_src)
 {
-#ifdef CONFIG_DJGPP
+#ifdef AUDIO_GARBAGE_COLLECTOR
   audio_stream_remove_from_lists(a_src);
   audio_stream_insert_list(&audio.garbage_list_base,
    &audio.garbage_list_end, a_src);
