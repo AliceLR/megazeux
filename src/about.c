@@ -43,7 +43,7 @@
 #include <png.h>
 #endif
 #ifdef CONFIG_VORBIS
-#ifndef CONFIG_TREMOR
+#if !defined(CONFIG_TREMOR) && !defined(CONFIG_STB_VORBIS)
 #include <vorbis/codec.h>
 #endif
 #endif
@@ -192,10 +192,12 @@ static char **about_text(int *num_lines)
 #endif
 
 #ifdef CONFIG_VORBIS
-#ifndef CONFIG_TREMOR
-  lines[i++] = about_line("libvorbis: %s", vorbis_version_string());
-#else
+#if defined(CONFIG_STB_VORBIS)
+  lines[i++] = about_line("stb_vorbis");
+#elif defined(CONFIG_TREMOR)
   lines[i++] = about_line("libtremor");
+#else
+  lines[i++] = about_line("libvorbis: %s", vorbis_version_string());
 #endif
 #endif
 

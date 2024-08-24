@@ -133,7 +133,7 @@ SDL_LDFLAGS := $(LINK_DYNAMIC_IF_MIXED) $(SDL_LDFLAGS)
 endif # SDL
 
 #
-# libvorbis/tremor
+# libvorbis/tremor/stb_vorbis
 #
 
 VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
@@ -145,6 +145,9 @@ VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisidec -logg
 endif
 ifeq (${VORBIS},tremor-lowmem)
 VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisidec
+endif
+ifeq (${VORBIS},stb_vorbis)
+VORBIS_LDFLAGS ?= -L${PREFIX}/lib
 endif
 
 #
