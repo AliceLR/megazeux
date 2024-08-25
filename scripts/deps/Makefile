@@ -49,7 +49,6 @@ STB_GIT		= https://github.com/sezero/stb
 #SDL2_TIGER_GIT	= https://github.com/panther_SDL2/panther_SDL2
 SDL2_TIGER_GIT	= https://github.com/AliceLR/panther_SDL2
 
-PREFIX		:= $(shell pwd)/${PLATFORM}/${ARCH}
 LIB		= ${PLATFORM}/${ARCH}/lib
 BIN		= ${PLATFORM}/${ARCH}/bin
 INCLUDE		= ${PLATFORM}/${ARCH}/include
@@ -102,16 +101,14 @@ SDL3_PACKAGE	= ${TARGET}/${LIB}/libSDL3.a \
 		  ${TARGET}/${INCLUDE}/SDL3
 
 .PHONY: all
-.PHONY: package package_dir package_clean zlib_package png_package vorbis_package tremor_package
+.PHONY: package package_dir package_clean zlib_package png_package
+.PHONY: vorbis_package tremor_package stb_package
 .PHONY: SDL12_package SDL2_package SDL3_package
 .PHONY: clean zlib_clean png_clean ogg_clean vorbis_clean tremor_clean
 .PHONY: SDL12_clean SDL2_tiger_clean SDL2_22_clean SDL2_clean SDL3_clean
 
 .NOTPARALLEL:
 .SUFFIXES:
-
-MAKEFLAGS += --no-builtin-rules
-MAKEFLAGS += --no-builtin-variables
 
 #
 # Initial setup rules.
@@ -274,6 +271,7 @@ else
 # when autodetecting cross compilation. This doesn't work with SDL.
 #
 
+PREFIX		:= $(shell pwd)/${PLATFORM}/${ARCH}
 CONFIGURE_ARGS	= --prefix='${PREFIX}'
 ifneq (${HOST},)
 ZLIB_CONFIGURE	= CHOST='${HOST}'
@@ -307,8 +305,6 @@ SDL2: ${SDL2_TARGET}
 # MinGW requires some involved special handling...
 ${ZLIB_TARGET}: | build/${ZLIB} zlib_clean
 ifeq (${PLATFORM},mingw)
-	# Not clear why this stopped working, but whatever.
-	sed -i 's/^.c.o:$$/%.o: %.c/" build/${ZLIB}/win32/Makefile.gcc
 	cd build/${ZLIB}; \
 	set -e; \
 	${ARCH_INIT}; \
@@ -502,6 +498,7 @@ zlib_package: ${ZLIB_PACKAGE}
 png_package: ${PNG_PACKAGE}
 vorbis_package: ${VORBIS_PACKAGE}
 tremor_package: ${TREMOR_PACKAGE}
+stb_package: ${STB_PACKAGE}
 SDL12_package: ${SDL12_PACKAGE}
 SDL2_package: ${SDL2_PACKAGE}
 SDL3_package: ${SDL3_PACKAGE}
