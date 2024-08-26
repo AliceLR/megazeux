@@ -101,9 +101,14 @@ static void audio_sb_next_block(void)
 
 static void audio_sb_interrupt(void)
 {
+  uint8_t fpustate[108];
+  djgpp_save_x87(fpustate);
+
   audio_sb_next_block();
   inportb(sb_cfg.port + sb_cfg.active_dma_ack); // ack (sb)
   djgpp_irq_ack(sb_cfg.irq); // ack (pic)
+
+  djgpp_restore_x87(fpustate);
 }
 
 static void audio_sb_parse_env(struct sb_config *conf, char *env)
