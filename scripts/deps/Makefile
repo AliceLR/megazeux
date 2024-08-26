@@ -179,11 +179,16 @@ build/${SDL12}: build/${SDL12}.tar.gz | build
 
 build/${SDL2_TIGER}: | build
 	cd build && \
-	git clone "${SDL2_TIGER_GIT}"
+	git clone "${SDL2_TIGER_GIT}" && \
+	cd "${SDL2_TIGER_GIT}" && \
+	git apply ../../panther_SDL2_fixes.patch
 
 build/${SDL2_22}: build/${SDL2_22}.tar.gz | build
 	cd build && \
 	tar -xzf '${SDL2_22}.tar.gz'
+	# SDL 2.0.22 doesn't actually need -fobjc-weak but CMakeLists.txt
+	# tries to force it. This doesn't affect autotools.
+	sed -i '' 's/^.*fobjc-weak.*$$//g' build/${SDL2_22}/CMakeLists.txt
 
 build/${SDL2_LATEST}: build/${SDL2_LATEST}.tar.gz | build
 	cd build && \
@@ -420,6 +425,7 @@ endif
 # stb_vorbis is just a .c source file include.
 ${STB_TARGET}: | build/${STB}
 	mkdir -p "${PREFIX}/include/stb"
+	cd build/${STB} && git checkout stb_vorbis-sezero
 	cp build/${STB}/stb_vorbis.c "${PREFIX}/include/stb"
 
 # SDL1.2 only supports Autotools.
