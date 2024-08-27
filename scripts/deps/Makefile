@@ -180,7 +180,7 @@ build/${SDL12}: build/${SDL12}.tar.gz | build
 build/${SDL2_TIGER}: | build
 	cd build && \
 	git clone "${SDL2_TIGER_GIT}" && \
-	cd "${SDL2_TIGER_GIT}" && \
+	cd "${SDL2_TIGER}" && \
 	git apply ../../panther_SDL2_fixes.patch
 
 build/${SDL2_22}: build/${SDL2_22}.tar.gz | build
