@@ -3,22 +3,26 @@
 #
 # Lipo all the binaries together, if not already done
 #
-for FILE in megazeux mzxrun libcore.dylib \
-            libeditor.dylib; do
-	[ -f ${FILE} ] && continue
+for FILE in "$@"; do
+	[ -f ${FILE} ] && rm ${FILE}
 
-	if [ ! -f ${FILE}.i686 -a ! -f ${FILE}.ppc ]; then
-		echo "Neither ${FILE}.i686 nor ${FILE}.ppc are present!"
+	list=
+	for ARCH in arm64 arm64e i686 x86_64 x86_64h ppc ppc64; do
+		if [ -f "${FILE}.${ARCH}" ]; then
+			list="$list ${FILE}.${ARCH}"
+		fi
+	done
+
+	if [ -z "$list" ]; then
+		echo "No target binaries are present!"
 		breakout 4
 	fi
 
-	if [ -f ${FILE}.i686 -a ! -f ${FILE}.ppc ]; then
-		mv ${FILE}.i686 ${FILE}
-	elif [ -f ${FILE}.ppc -a ! -f ${FILE}.i686 ]; then
-		mv ${FILE}.ppc ${FILE}
+	echo "lipo -create $list -output ${FILE}"
+	if [ -f "$list" ]; then
+		cp "$list" "${FILE}"
 	else
-		lipo -create ${FILE}.i686 ${FILE}.ppc -output ${FILE}
-		rm -f ${FILE}.i686 ${FILE}.ppc
+		lipo -create $list -output ${FILE}
 	fi
 
 	if [ ! -f ${FILE} ]; then

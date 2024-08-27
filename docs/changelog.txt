@@ -14,6 +14,9 @@ USERS
   DSP >=2.00 and the mono/8-bit modes of the Sound Blaster 16,
   but these are disabled for now (no software mixer support for
   mono output). IRQs higher than 7 are also supported now.
++ The DOS port now uses stb_vorbis for Ogg Vorbis playback,
+  which should fix most audio-related crash bugs. Related crash
+  bugs caused by stream management have also been fixed.
 + All "gamecontroller[...]" config.txt options have been renamed
   to "gamepad[...]". The old names are still supported.
 + Fixed blank screen bugs that occur with the glslscale renderer
@@ -131,7 +134,6 @@ DEVELOPERS
 + Moved SDL renderer window creation to render_sdl.c so both of
   the SDL renderer-based renderers can benefit from it.
 + Removed floating point division usage in render_gl2.c.
-+ -Og is now the default debug optimization level (was -O0).
 + Added --enable-lto to enable link-time optimizations.
 + The sanitizer config.sh options can now be used with release
   builds e.g. --enable-release --enable-asan.

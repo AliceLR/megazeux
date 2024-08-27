@@ -107,6 +107,25 @@ void djgpp_irq_restore(struct irq_state *old_state);
 void djgpp_irq_ack(int irq);
 int djgpp_irq_vector(int irq);
 
+/* Because multiple sound engines rely on floating point, the x87 FPU
+ * state needs to be saved at the beginning of and reloaded at the end
+ * of every audio driver callback. Otherwise, these engines will clobber
+ * floating point values from normal execution (especially noticeable
+ * in stb_vorbis streams corrupted during their loading process).
+ *
+ * Affected engines: libxmp, libmodplug, libopenmpt, stb_vorbis.
+ * Also affected: libvorbis, which is unusable for other reasons.
+ */
+static inline void djgpp_save_x87(uint8_t fpustate[108])
+{
+  __asm__("fsave %0" : "=m"(fpustate));
+}
+static inline void djgpp_restore_x87(const uint8_t fpustate[108])
+{
+  __asm__("fwait\n\t"
+          "frstor %0" : : "m"(fpustate));
+}
+
 __M_END_DECLS
 
 #endif // __PLATFORM_DJGPP_H

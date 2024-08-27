@@ -30,7 +30,7 @@ usage() {
 	echo "  unix-devel     As above, but for running from current dir"
 	echo "  darwin         Mac OS X Unix-like install"
 	echo "  darwin-devel   Mac OS X running from current dir"
-	echo "  darwin-dist    Mac OS X (PPC .app builds -- use Xcode for Intel)"
+	echo "  darwin-dist    Mac OS X multiarchitecture .app (see arch/darwin/README.md)"
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
@@ -115,6 +115,7 @@ usage() {
 	echo "  --disable-vorbis          Disable ogg/vorbis support."
 	echo "  --enable-tremor           Use libvorbisidec instead of libvorbis."
 	echo "  --enable-tremor-lowmem    Use libvorbisidec (lowmem) instead of libvorbis."
+	echo "  --enable-stb-vorbis       Use stb_vorbis instead of libvorbis."
 	echo
 	echo "Network options:"
 	echo "  --disable-network         Disable networking abilities."
@@ -404,6 +405,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-tremor-lowmem" ] && VORBIS="true"
 	[ "$1" = "--enable-tremor-lowmem" ]  && VORBIS="tremor-lowmem"
 
+	[ "$1" = "--disable-stb-vorbis" ] && VORBIS="true"
+	[ "$1" = "--enable-stb-vorbis" ]  && VORBIS="stb_vorbis"
+
 	[ "$1" = "--disable-pthread" ] && PTHREAD="false"
 	[ "$1" = "--enable-pthread" ]  && PTHREAD="true"
 
@@ -532,9 +536,11 @@ if [ "$PLATFORM" = "win32"   ] || [ "$PLATFORM" = "win64" ] ||
 	echo "#define PLATFORM \"windows-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=windows-$ARCHNAME"         >> platform.inc
 	echo "PLATFORM=$PLATFORM"                    >> platform.inc
-elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
+elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ] ||
+     [ "$PLATFORM" = "darwin" ] || [ "$PLATFORM" = "darwin-devel" ]; then
 	OS="$(uname -s)"
 	MACH="$(uname -m)"
+	DIRNAME=unix
 
 	case "$OS" in
 		"Linux")
@@ -548,6 +554,10 @@ elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
 			;;
 		"NetBSD")
 			UNIX="netbsd"
+			;;
+		"Darwin")
+			UNIX="darwin"
+			DIRNAME="darwin"
 			;;
 		*)
 			echo "WARNING: Should define proper UNIX name here!"
@@ -603,13 +613,13 @@ elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
 
 	echo "#define PLATFORM \"$UNIX-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=$UNIX-$ARCHNAME"         >> platform.inc
-	echo "PLATFORM=unix"                       >> platform.inc
-elif [ "$PLATFORM" = "darwin" ] || [ "$PLATFORM" = "darwin-devel" ] ||
-     [ "$PLATFORM" = "darwin-dist" ]; then
+	echo "PLATFORM=$DIRNAME"                   >> platform.inc
+elif [ "$PLATFORM" = "darwin-dist" ]; then
+	# Multiarchitecture build--let the Makefile patch in a subplatform.
 
-	echo "#define PLATFORM \"darwin\""    > src/config.h
-	echo "SUBPLATFORM=$PLATFORM"         >> platform.inc
-	echo "PLATFORM=darwin"               >> platform.inc
+	echo "#define PLATFORM \"darwin-\" SUBPLATFORM"  > src/config.h
+	echo "SUBPLATFORM=$PLATFORM"                    >> platform.inc
+	echo "PLATFORM=darwin"                          >> platform.inc
 else
 	if [ ! -d "arch/$PLATFORM" ]; then
 		echo "Invalid platform selection (see arch/)."
@@ -1037,6 +1047,11 @@ if [ "$PLATFORM" = "djgpp" ]; then
 
 	echo "Force-disabling stack protector (DOS)."
 	STACK_PROTECTOR="false"
+
+	if [ "$VORBIS" != "false" ] && [ "$VORBIS" != "stb_vorbis" ]; then
+		echo "Force-switching ogg/vorbis to stb_vorbis."
+		VORBIS="stb_vorbis"
+	fi
 
 	if [ "$DOS_SVGA" = "true" ]; then
 		echo "#define CONFIG_DOS_SVGA" >> src/config.h
@@ -1715,6 +1730,12 @@ elif [ "$VORBIS" = "tremor-lowmem" ]; then
 	echo "#define CONFIG_VORBIS" >> src/config.h
 	echo "#define CONFIG_TREMOR" >> src/config.h
 	echo "VORBIS=tremor-lowmem" >> platform.inc
+
+elif [ "$VORBIS" = "stb_vorbis" ]; then
+	echo "Using stb_vorbis in place of ogg/vorbis."
+	echo "#define CONFIG_VORBIS" >> src/config.h
+	echo "#define CONFIG_STB_VORBIS" >> src/config.h
+	echo "VORBIS=stb_vorbis" >> platform.inc
 else
 	echo "Ogg/vorbis disabled."
 fi

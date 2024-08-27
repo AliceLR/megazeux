@@ -33,6 +33,11 @@
 #include <cstdlib>
 #include <new>
 
+#ifdef __APPLE__
+// Mac OS X 10.5 SDK somehow defines this to unsigned int __vector__...
+#undef bool
+#endif
+
 // Yes, this is how the Reality player is intended to be included.
 #define RAD_DETECT_REPEATS 1
 #include "../../contrib/rad/opal.cpp"
