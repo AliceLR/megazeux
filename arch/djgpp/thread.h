@@ -31,6 +31,8 @@
 __M_BEGIN_DECLS
 
 #define PLATFORM_NO_THREADING
+#define THREAD_RES void *
+#define THREAD_RETURN do { return NULL; } while(0)
 
 typedef int platform_mutex;
 typedef int platform_thread_id;
