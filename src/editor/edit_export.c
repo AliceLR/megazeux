@@ -27,8 +27,6 @@
 #include "../idput.h"
 #include "../util.h"
 
-#if defined(CONFIG_ENABLE_SCREENSHOTS) && defined(CONFIG_PNG)
-
 static boolean export_image_status_callback(void *priv, size_t progress,
  size_t progress_max)
 {
@@ -186,25 +184,3 @@ void export_vlayer_image(context *parent, struct world *mzx_world,
 
   export_image_task(parent, file, board_width, board_height, image);
 }
-
-#else /* !CONFIG_ENABLE_SCREENSHOTS */
-
-static void export_image_error()
-{
-  error("Screenshots or PNG export not enabled for this build!",
-   ERROR_T_WARNING, ERROR_OPT_OK, 0);
-}
-
-void export_board_image(context *parent, struct board *src_board,
- const char *file)
-{
-  export_image_error();
-}
-
-void export_vlayer_image(context *parent, struct world *mzx_world,
- const char *file)
-{
-  export_image_error();
-}
-
-#endif /* !CONFIG_ENABLE_SCREENSHOTS */

@@ -38,15 +38,12 @@
 #include "event.h"
 #include "graphics.h"
 #include "platform.h"
+#include "pngops.h"
 #include "render.h"
 #include "render_layer.h"
 #include "renderers.h"
 #include "world.h"
 #include "io/vio.h"
-
-#ifdef CONFIG_PNG
-#include "pngops.h"
-#endif
 
 #ifdef CONFIG_SDL
 #include "SDLmzx.h"
@@ -2605,8 +2602,38 @@ void mouse_size(unsigned int width, unsigned int height)
   graphics.mouse_height = height;
 }
 
+#if defined(CONFIG_ENABLE_SCREENSHOTS) || defined(CONFIG_EDITOR)
+
+static void screenshot_init_palette(struct graphics_data *graphics,
+ struct rgb_color palette[FULL_PAL_SIZE], uint32_t backup_palette[FULL_PAL_SIZE])
+{
+  int palette_size;
+  int i;
+
+  if(backup_palette)
+  {
+    memcpy(backup_palette, graphics->flat_intensity_palette,
+     FULL_PAL_SIZE * sizeof(uint32_t));
+  }
+
+  palette_size = make_palette(palette);
+  for(i = 0; i < palette_size; i++)
+  {
+    // PNG byte order: R, G, B, A
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+    graphics->flat_intensity_palette[i] = 0xff |
+     (palette[i].b << 8) | (palette[i].g << 16) | (palette[i].r << 24);
+#else
+    graphics->flat_intensity_palette[i] = 0xff000000u |
+     (palette[i].b << 16) | (palette[i].g << 8) | (palette[i].r << 0);
+#endif /* PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN */
+  }
+}
+
+#endif /* CONFIG_ENABLE_SCREENSHOTS || CONFIG_EDITOR */
+
 #ifdef CONFIG_ENABLE_SCREENSHOTS
-#ifdef CONFIG_PNG
+#if 1 // CONFIG_PNG
 
 #define DUMP_FMT_EXT "png"
 
@@ -2739,9 +2766,9 @@ static void dump_screen_real_32bpp(const uint32_t *pix, const char *name)
     rowbuffer_ptr = rowbuffer;
     for(x = 0; x < SCREEN_PIX_W; x++)
     {
-      rowbuffer_ptr[0] = pix_ptr[0];
+      rowbuffer_ptr[0] = pix_ptr[2];
       rowbuffer_ptr[1] = pix_ptr[1];
-      rowbuffer_ptr[2] = pix_ptr[2];
+      rowbuffer_ptr[2] = pix_ptr[0];
       rowbuffer_ptr += 3;
       pix_ptr += 4;
     }
@@ -2754,31 +2781,6 @@ static void dump_screen_real_32bpp(const uint32_t *pix, const char *name)
 #endif // CONFIG_PNG
 
 #define MAX_NAME_SIZE 20
-
-static void screenshot_init_palette(struct graphics_data *graphics,
- struct rgb_color palette[FULL_PAL_SIZE], uint32_t backup_palette[FULL_PAL_SIZE])
-{
-  int palette_size;
-  int i;
-
-  if(backup_palette)
-  {
-    memcpy(backup_palette, graphics->flat_intensity_palette,
-     FULL_PAL_SIZE * sizeof(uint32_t));
-  }
-
-  palette_size = make_palette(palette);
-  for(i = 0; i < palette_size; i++)
-  {
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-    graphics->flat_intensity_palette[i] =
-     (palette[i].r << 8) | (palette[i].g << 16) | (palette[i].b << 24);
-#else
-    graphics->flat_intensity_palette[i] =
-     (palette[i].r << 16) | (palette[i].g << 8) | (palette[i].b << 0);
-#endif /* PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN */
-  }
-}
 
 static void screenshot_cleanup_palette(const uint32_t backup_palette[FULL_PAL_SIZE])
 {
@@ -2829,8 +2831,9 @@ void dump_screen(void)
   dump_screen_real_32bpp(ss, name);
   free(ss);
 }
+#endif /* CONFIG_ENABLE_SCREENSHOTS */
 
-#if defined(CONFIG_EDITOR) && defined(CONFIG_PNG)
+#ifdef CONFIG_EDITOR
 struct dump_layer_priv
 {
   boolean (*status_callback)(void *, size_t, size_t);
@@ -2940,18 +2943,7 @@ boolean dump_layer_to_image(const char *filename,
   free(flat_array);
   return ret;
 }
-#else
-/* Disabled unless the editor and PNG are both enabled.
- * The files this can output can be nearly 2 billion pixels in size; if an
- * adequate truecolor fallback format exists this can be revisited. */
-boolean dump_layer_to_image(const char *filename,
- size_t width_ch, size_t height_ch, const struct char_element *layer,
- boolean (*status_callback)(void *priv, size_t p, size_t m), void *priv)
-{
-  return false;
-}
-#endif /* CONFIG_EDITOR && CONFIG_PNG */
-#endif /* CONFIG_ENABLE_SCREENSHOTS */
+#endif /* CONFIG_EDITOR */
 
 /**
  * Generate a bitmask of visible pixels for a character/palette pair using the

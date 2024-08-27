@@ -153,11 +153,7 @@ int export_type(struct world *mzx_world)
     "Downver. world (MZX)",
     "Board/vlayer image",
   };
-  int num_choices = 5;
-
-#if defined(CONFIG_ENABLE_SCREENSHOTS) && defined(CONFIG_PNG)
-  num_choices++;
-#endif
+  int num_choices = 6;
 
   // Prevent previous keys from carrying through.
   force_release_all_keys();

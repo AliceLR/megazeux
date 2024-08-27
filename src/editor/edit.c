@@ -100,17 +100,11 @@ static const char *const sam_ext[] =
   NULL
 };
 
-#ifdef CONFIG_ENABLE_SCREENSHOTS
 static const char *const image_ext[] =
 {
-#ifdef CONFIG_PNG
   ".PNG",
-#else
-  ".BMP",
-#endif
   NULL
 };
-#endif
 
 struct editor_context
 {
@@ -3603,7 +3597,6 @@ static boolean editor_key(context *ctx, int *key)
               break;
             }
 
-#ifdef CONFIG_ENABLE_SCREENSHOTS
             case 5:
             {
               // Board/vlayer image
@@ -3620,7 +3613,6 @@ static boolean editor_key(context *ctx, int *key)
               }
               break;
             }
-#endif
           }
         }
       }
