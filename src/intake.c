@@ -89,6 +89,7 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
  int *return_x_pos)
 {
   int use_mask = get_config()->mask_midchars && mask_colors;
+  int offset = mask_colors ? PRO_CH : 0;
   int c_offset = mask_colors ? 16 : 0;
   int currx, curr_len;
   int scrolledx, tmpx;
@@ -127,7 +128,10 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
     string[tmpx] = cur_char;
 
     if(curr_len < display_len)
-      fill_line_ext(display_len + 1 - curr_len, x + curr_len, y, 32, color, 0, c_offset);
+    {
+      fill_line_ext(display_len + 1 - curr_len, x + curr_len, y, 32, color,
+       offset, c_offset);
+    }
 
     if(insert_on)
       cursor_underline(x + currx - scrolledx, y);

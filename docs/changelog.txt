@@ -5,6 +5,12 @@ FREAD/FREADn bugfixes, as the old behavior was unusably buggy.
 
 USERS
 
++ Added board and vlayer image export to the editor (Alt+X).
+  This feature will render the entire board (with overlay, if
+  applicable) or vlayer as it appears in the editor. This may
+  take a long time with large boards/vlayers.
++ Builds without libpng (Android, DOS) now use a simple fallback
+  PNG exporter for screenshots instead of falling back to BMP.
 + The DOS port now supports Sound Blaster Pro in stereo mode.
   The driver should also support all other Sound Blasters with
   DSP >=2.00 and the mono/8-bit modes of the Sound Blaster 16,

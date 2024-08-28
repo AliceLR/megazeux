@@ -2,6 +2,9 @@
  *
  * Copyright (C) 2008 Alistair Strachan <alistair@devzero.co.uk>
  *
+ * Fallback PNG writer:
+ * Copyright (C) 2024 Alice Rowan <petrifiedrowan@gmail.com>
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 2 of
@@ -22,12 +25,15 @@
 #include "util.h"
 #include "io/vio.h"
 
-#include <png.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #ifdef NEED_PNG_WRITE_SCREEN
+
+#ifdef CONFIG_PNG
+
+#include <png.h>
 
 static void png_write_vfile(png_struct *png_ptr, png_byte *data, png_size_t length)
 {
@@ -38,17 +44,25 @@ static void png_write_vfile(png_struct *png_ptr, png_byte *data, png_size_t leng
 
 static void png_flush_vfile(png_struct *png_ptr) {}
 
+/* Trivial PNG dumper; this routine is a modification (simplification) of
+ * code pinched from http://www2.autistici.org/encelo/prog_sdldemos.php.
+ *
+ * Palette support was added, the original support was broken.
+ *
+ * Copyright (C) 2006 Angelo "Encelo" Theodorou
+ * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ */
 /*
-int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
- const char *name)
+int png_write_image_8bpp(const char *name, size_t w, size_t h,
+ const struct rgb_color *pal, unsigned count, void *priv,
+ const uint8_t *(*row_pixels_callback)(size_t num_pixels, void *priv))
 {
   png_structp png_ptr = NULL;
   png_infop info_ptr = NULL;
-  png_bytep * volatile row_ptrs = NULL;
   png_colorp volatile pal_ptr = NULL;
   int volatile ret = false;
   int type;
-  int i;
+  size_t i;
   vfile *vf;
 
   vf = vfopen_unsafe(name, "wb");
@@ -71,7 +85,7 @@ int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
 
   // we know we have an 8-bit surface; save a palettized PNG
   type = PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE;
-  png_set_IHDR(png_ptr, info_ptr, 640, 350, 8, type,
+  png_set_IHDR(png_ptr, info_ptr, w, h, 8, type,
    PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
    PNG_FILTER_TYPE_DEFAULT);
 
@@ -91,14 +105,15 @@ int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
   png_write_info(png_ptr, info_ptr);
   png_set_packing(png_ptr);
 
-  row_ptrs = (png_bytep *)cmalloc(sizeof(png_bytep) * 350);
-  if(!row_ptrs)
-    goto exit_free_close;
-
   // and then the surface
-  for(i = 0; i < 350; i++)
-    row_ptrs[i] = (png_bytep)(pixels + i * 640);
-  png_write_image(png_ptr, row_ptrs);
+  for(i = 0; i < h; i++)
+  {
+    const uint8_t *row = row_pixels_callback(w, priv);
+    if(!row)
+      goto exit_free_close;
+
+    png_write_row(png_ptr, (png_const_bytep)row);
+  }
   png_write_end(png_ptr, info_ptr);
 
   // all done
@@ -107,7 +122,6 @@ int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
 exit_free_close:
   png_destroy_write_struct(&png_ptr, &info_ptr);
   free(pal_ptr);
-  free(row_ptrs);
 exit_close:
   vfclose(vf);
 exit_out:
@@ -115,14 +129,14 @@ exit_out:
 }
 */
 
-int png_write_screen_32bpp(uint32_t *pixels, const char *name)
+int png_write_image_32bpp(const char *name, size_t w, size_t h, void *priv,
+ const uint32_t *(*row_pixels_callback)(size_t num_pixels, void *priv))
 {
   png_structp png_ptr = NULL;
   png_infop info_ptr = NULL;
-  png_bytep * volatile row_ptrs = NULL;
   int volatile ret = false;
   int type;
-  int i;
+  size_t i;
   vfile *vf;
 
   vf = vfopen_unsafe(name, "wb");
@@ -145,7 +159,7 @@ int png_write_screen_32bpp(uint32_t *pixels, const char *name)
 
   // 24-bit png
   type = PNG_COLOR_TYPE_RGB;
-  png_set_IHDR(png_ptr, info_ptr, 640, 350, 8, type,
+  png_set_IHDR(png_ptr, info_ptr, w, h, 8, type,
    PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
    PNG_FILTER_TYPE_DEFAULT);
 
@@ -153,18 +167,19 @@ int png_write_screen_32bpp(uint32_t *pixels, const char *name)
   png_write_info(png_ptr, info_ptr);
   png_set_packing(png_ptr);
 
-  row_ptrs = (png_bytep *)cmalloc(sizeof(png_bytep) * 350);
-  if(!row_ptrs)
-    goto exit_free_close;
-
   // our surface is 32bpp ABGR, so set up filler and order
   png_set_filler(png_ptr, 0, PNG_FILLER_AFTER);
-  png_set_bgr(png_ptr);
+  //png_set_bgr(png_ptr);
 
   // and then the surface
-  for(i = 0; i < 350; i++)
-    row_ptrs[i] = (png_bytep)(pixels + i * 640);
-  png_write_image(png_ptr, row_ptrs);
+  for(i = 0; i < h; i++)
+  {
+    const uint32_t *row = row_pixels_callback(w, priv);
+    if(!row)
+      goto exit_free_close;
+
+    png_write_row(png_ptr, (png_const_bytep)row);
+  }
   png_write_end(png_ptr, info_ptr);
 
   // all done
@@ -172,16 +187,154 @@ int png_write_screen_32bpp(uint32_t *pixels, const char *name)
 
 exit_free_close:
   png_destroy_write_struct(&png_ptr, &info_ptr);
-  free(row_ptrs);
 exit_close:
   vfclose(vf);
 exit_out:
   return ret;
 }
 
+#else /* !CONFIG_PNG */
+
+/* Much more limited fallback PNG writer for builds without libpng.
+ * This has fewer features than libpng but, since MegaZeux already relies
+ * on zlib, it doesn't increase binary size by much more than a BMP writer.
+ * Unlike a BMP writer, it allows large board/vlayer images to be compressed.
+ */
+#include <zlib.h>
+
+#define MAGIC_BE(buf, str) do { \
+  (buf)[0] = (str)[0]; \
+  (buf)[1] = (str)[1]; \
+  (buf)[2] = (str)[2]; \
+  (buf)[3] = (str)[3]; \
+} while(0)
+
+#define PUT32_BE(buf, val) do { \
+  (buf)[0] = (val) >> 24; \
+  (buf)[1] = (val) >> 16; \
+  (buf)[2] = (val) >> 8; \
+  (buf)[3] = (val); \
+} while(0)
+
+#define DEFLATE_OUT(p) do { \
+  z.next_out = tmp2; \
+  z.avail_out = sizeof(tmp2); \
+  ret = deflate(&z, p); \
+  if(ret < 0) \
+    goto err2; \
+  sz = sizeof(tmp2) - z.avail_out; \
+  len += sz; \
+  crc = crc32(crc, tmp2, sz); \
+  if(vfwrite(tmp2, 1, sz, vf) < sz) \
+    goto err2; \
+} while(0)
+
+int png_write_image_32bpp(const char *name, size_t w, size_t h, void *priv,
+ const uint32_t *(*row_pixels_callback)(size_t num_pixels, void *priv))
+{
+  uint8_t tmp[1029];
+  uint8_t tmp2[1024];
+  uint32_t crc;
+  uint32_t len = 0;
+  size_t x, y, i, sz;
+  int ret;
+  z_stream z;
+
+  vfile *vf = vfopen_unsafe(name, "w+b");
+  if(!vf)
+    return false;
+
+  memset(&z, 0, sizeof(z));
+  if(deflateInit2(&z, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15, 8, Z_FILTERED) != Z_OK)
+    if(deflateInit2(&z, Z_BEST_SPEED, Z_DEFLATED, 9, 1, Z_RLE) != Z_OK)
+      goto err;
+
+  vfputs("\x89PNG\r\n\x1a\n", vf);
+  PUT32_BE(tmp, 13);
+  MAGIC_BE(tmp + 4, "IHDR");
+  PUT32_BE(tmp + 8, w);
+  PUT32_BE(tmp + 12, h);
+  tmp[16] = 8; // 8 bits per component
+  tmp[17] = 6; // RGB
+  tmp[18] = 0; // deflate
+  tmp[19] = 0; // filter 0
+  tmp[20] = 0; // no interlace
+  crc = crc32(0, tmp + 4, 17);
+  PUT32_BE(tmp + 21, crc);
+  vfwrite(tmp, 25, 1, vf);
+
+  vfputd(0, vf);
+  MAGIC_BE(tmp, "IDAT");
+  crc = crc32(0, tmp, 4);
+  vfwrite(tmp, 4, 1, vf);
+  for(y = 0; y < h; y++)
+  {
+    const uint8_t *row = (const uint8_t *)row_pixels_callback(w, priv);
+    uint8_t *pos = tmp + 5;
+    if(!row)
+      goto err2;
+
+    tmp[0] = 1; // left filter
+    for(i = 0; i < 4; i++)
+      tmp[i + 1] = row[i];
+
+    for(x = 1; x < w;)
+    {
+      size_t num = MIN(w - x, 256);
+      x += num;
+      // Prefilter: since it's always left filter RGBA, delta with the
+      // same component of the previous pixel (the value 4 bytes ago).
+      while(num)
+      {
+        for(i = 0; i < 4; i++)
+          pos[i] = row[i + 4] - row[i];
+        pos += 4;
+        row += 4;
+        num--;
+      }
+
+      z.next_in = tmp;
+      z.avail_in = pos - tmp;
+      do
+      {
+        DEFLATE_OUT(Z_NO_FLUSH);
+      } while(z.avail_out == 0);
+      pos = tmp;
+    }
+  }
+  do
+  {
+    DEFLATE_OUT(Z_FINISH);
+  } while(ret != Z_STREAM_END);
+  deflateEnd(&z);
+
+  PUT32_BE(tmp, crc);
+  vfwrite(tmp, 4, 1, vf);
+
+  vfputd(0, vf);
+  MAGIC_BE(tmp, "IEND");
+  crc = crc32(0, tmp, 4);
+  PUT32_BE(tmp + 4, crc);
+  vfwrite(tmp, 8, 1, vf);
+
+  vfseek(vf, 33, SEEK_SET);
+  PUT32_BE(tmp, len);
+  vfwrite(tmp, 4, 1, vf);
+  vfclose(vf);
+  return true;
+
+err2:
+  deflateEnd(&z);
+err:
+  vfclose(vf);
+  return false;
+}
+#endif /* !CONFIG_PNG */
+
 #endif /* NEED_PNG_WRITE_SCREEN */
 
 #ifdef NEED_PNG_READ_FILE
+#include <png.h>
 
 /* TODO can vio-ize these, but it involves updating image_file.c. */
 

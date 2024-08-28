@@ -24,11 +24,15 @@
 
 __M_BEGIN_DECLS
 
-#include <png.h>
+#if defined(CONFIG_EDITOR) || defined(CONFIG_ENABLE_SCREENSHOTS)
+#define NEED_PNG_WRITE_SCREEN
+#endif
 
+#ifdef CONFIG_PNG
 #if (defined(CONFIG_SDL) && defined(CONFIG_ICON) && !defined(__WIN32__)) || \
     defined(CONFIG_UTILS) || defined(CONFIG_3DS)
 #define NEED_PNG_READ_FILE
+#endif
 #endif
 
 #ifdef NEED_PNG_WRITE_SCREEN
@@ -38,15 +42,18 @@ __M_BEGIN_DECLS
 struct rgb_color;
 
 /*
-int png_write_screen(uint8_t *pixels, struct rgb_color *pal, int count,
- const char *name);
+int png_write_image_8bpp(const char *name, size_t w, size_t h,
+ const struct rgb_color *pal, unsigned count, void *priv,
+ const uint8_t *(*row_pixels_callback)(size_t num_pixels, void *priv));
 */
-int png_write_screen_32bpp(uint32_t *pixels, const char *name);
+int png_write_image_32bpp(const char *name, size_t w, size_t h, void *priv,
+ const uint32_t *(*row_pixels_callback)(size_t num_pixels, void *priv));
 
 #endif // NEED_PNG_WRITE_SCREEN
 
 #ifdef NEED_PNG_READ_FILE
 
+#include <png.h>
 #include <stdio.h>
 
 typedef boolean (*check_w_h_constraint_t)(png_uint_32 w, png_uint_32 h);
