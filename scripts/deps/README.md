@@ -5,7 +5,8 @@ some platforms supported by MegaZeux which don't provide these dependencies
 through other means (e.g. built-in package manager). These Makefiles are
 not guaranteed to work with every setup; rather, they're whatever Makefiles
 worked the last time I had to rebuild dependencies for MegaZeux. Note that
-the Android port uses its own integrated dependency builder.
+the Android port uses its own integrated dependency builder and the Xcode
+and MSVC ports still require manual generation of dependencies.
 
 Official builds can be found here: https://github.com/AliceLR/megazeux-dependencies
 
@@ -14,8 +15,14 @@ Official builds can be found here: https://github.com/AliceLR/megazeux-dependenc
 * MinGW: extract to some directory `DIR`. Set the environment variables `MINGW32_PREFIX`
   and `MINGW64_PREFIX` to `DIR/x86` and `DIR/x64`, respectively, and configure with
   `arch/mingw/CONFIG.MINGW32` or `arch/mingw/CONFIG.MINGW64`.
+* macOS: extract to some directory `DIR`. Configure with
+  `./config.sh --platform darwin-dist`, then provide `PREFIX_[target]=DIR/[target_dir]`
+  to Make for each platform to build.
 * DJGPP: extract to some directory `DIR`. Set the environment variable `DJGPP`
   to `DIR/i386` and configure with `arch/djgpp/CONFIG.DJGPP`.
+* linux (MSan): extract to some directory `DIR`. Configure with
+  `./config.sh --platform unix-devel --prefix DIR --disable-sdl --enable-msan` and make.
+  You may have to build your own depending on the available glibc version.
 
 ## Building
 
@@ -35,9 +42,6 @@ the x64 binaries *should* target Windows XP on `-march=x86-64`.
 make PLATFORM=mingw
 make PLATFORM=mingw package
 ```
-
-### macOS (Xcode)
-FIXME!!!
 
 ### macOS (darwin-dist)
 Install any of the following standalone SDKs with XcodeLegacy:

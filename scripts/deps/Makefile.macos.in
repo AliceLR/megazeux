@@ -1,6 +1,6 @@
 #
 # macOS combined dependency builder support.
-# Supports darwin, should eventually support xcode as well.
+# Supports darwin, may eventually support xcode as well.
 #
 
 ALL_ARCH = ppc ppc64 i686 x86_64 x86_64h arm64 arm64e
