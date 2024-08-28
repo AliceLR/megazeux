@@ -2868,7 +2868,7 @@ static const uint32_t *dump_layer_callback(size_t num_pixels, void *priv)
     if(data->pos_in_layer >= data->height_ch)
       return NULL;
 
-    render_layer(data->flat_array, data->width_px, data->height_px,
+    render_layer(data->flat_array, data->width_px, CHAR_H,
      data->pitch, 32, data->graphics_copy, &data->layer);
     data->layer.data += data->width_ch;
     data->pos_in_layer++;
