@@ -261,7 +261,9 @@ package:
 	done
 	A=''; \
 	for ARCH in ${ALL_ARCH}; do \
-		A="$$A ${PLATFORM}/$$ARCH"; \
+		if [ -d "${PLATFORM}/$$ARCH" ]; then \
+			A="$$A ${PLATFORM}/$$ARCH"; \
+		fi; \
 	done; \
 	cd ${TARGET}; \
 	XZ_OPT="-T0 -9" tar -cJf '../${DIST}-${PLATFORM}.tar.xz' ${TAR_FLAGS} $$A
