@@ -157,6 +157,9 @@ DEVELOPERS
 + sampled_mix_data now properly handles output requests smaller
   than the size of the audio buffer.
 + Added software renderer regression tests.
++ Added dependency builder makefile system in scripts/deps to
+  help with regenerating MinGW, DJGPP, darwin-dist, and Linux w/
+  MemorySanitizer dependencies.
 
 
 December 31st, 2023 - MZX 2.93
