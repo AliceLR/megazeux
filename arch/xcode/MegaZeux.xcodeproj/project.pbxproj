@@ -28,6 +28,10 @@
 		48E8C3652B411D7F006177C3 /* LICENSE.3rd in Resources */ = {isa = PBXBuildFile; fileRef = 48E8C3632B411D75006177C3 /* LICENSE.3rd */; };
 		48E8C3662B411D98006177C3 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 48E8C3622B411D68006177C3 /* LICENSE */; };
 		48E8C3672B411D98006177C3 /* LICENSE.3rd in Resources */ = {isa = PBXBuildFile; fileRef = 48E8C3632B411D75006177C3 /* LICENSE.3rd */; };
+		48F5B9962C7EFBB200137776 /* core_task.c in Sources */ = {isa = PBXBuildFile; fileRef = 48F5B9942C7EFBB000137776 /* core_task.c */; };
+		48F5B9972C7EFBB200137776 /* core_task.h in Headers */ = {isa = PBXBuildFile; fileRef = 48F5B9952C7EFBB100137776 /* core_task.h */; };
+		48F5B99E2C7EFC0A00137776 /* edit_export.c in Sources */ = {isa = PBXBuildFile; fileRef = 48F5B99C2C7EFC0900137776 /* edit_export.c */; };
+		48F5B99F2C7EFC0A00137776 /* edit_export.h in Headers */ = {isa = PBXBuildFile; fileRef = 48F5B99D2C7EFC0900137776 /* edit_export.h */; };
 		BF10127F1FCCA7C2008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */; };
 		BF1012A61FCCA993008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF1012A51FCCA993008EEDB6 /* Assets.xcassets */; };
 		BF1012BA1FCCABB5008EEDB6 /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; };
@@ -406,6 +410,10 @@
 		48E8C3602B411680006177C3 /* sampled_stream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = sampled_stream.cpp; path = ../../src/audio/sampled_stream.cpp; sourceTree = "<group>"; };
 		48E8C3622B411D68006177C3 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; name = LICENSE; path = ../../LICENSE; sourceTree = "<group>"; };
 		48E8C3632B411D75006177C3 /* LICENSE.3rd */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = LICENSE.3rd; path = ../LICENSE.3rd; sourceTree = "<group>"; };
+		48F5B9942C7EFBB000137776 /* core_task.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = core_task.c; path = ../../src/core_task.c; sourceTree = "<group>"; };
+		48F5B9952C7EFBB100137776 /* core_task.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core_task.h; path = ../../src/core_task.h; sourceTree = "<group>"; };
+		48F5B99C2C7EFC0900137776 /* edit_export.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = edit_export.c; path = ../../src/editor/edit_export.c; sourceTree = "<group>"; };
+		48F5B99D2C7EFC0900137776 /* edit_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = edit_export.h; path = ../../src/editor/edit_export.h; sourceTree = "<group>"; };
 		BF1012781FCCA7C2008EEDB6 /* MegaZeux.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MegaZeux.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BF1012831FCCA7C2008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -891,6 +899,8 @@
 				BF6058D7216B3724001B738C /* const.h */,
 				BF6058B9216B371F001B738C /* core.c */,
 				BF6058C9216B3722001B738C /* core.h */,
+				48F5B9942C7EFBB000137776 /* core_task.c */,
+				48F5B9952C7EFBB100137776 /* core_task.h */,
 				BFFF16731FCDC64D00BDEC58 /* counter.c */,
 				BFFF166C1FCDC64D00BDEC58 /* counter.h */,
 				BF6058BF216B3720001B738C /* counter_struct.h */,
@@ -1108,6 +1118,8 @@
 				BFFF18331FCDCF6500BDEC58 /* edit_di.h */,
 				BFFF18301FCDCF6400BDEC58 /* edit.c */,
 				BFFF182F1FCDCF6400BDEC58 /* edit.h */,
+				48F5B99C2C7EFC0900137776 /* edit_export.c */,
+				48F5B99D2C7EFC0900137776 /* edit_export.h */,
 				BF6058AC216B3682001B738C /* edit_menu.c */,
 				BF6058AE216B3682001B738C /* edit_menu.h */,
 				BFFF18251FCDCF6300BDEC58 /* fill.c */,
@@ -1208,6 +1220,7 @@
 				BFFF180D1FCDCD1200BDEC58 /* loader.h in Headers */,
 				BFFF16E51FCDC76900BDEC58 /* mzm.h in Headers */,
 				BFFF16F11FCDC76900BDEC58 /* render_sdl.h in Headers */,
+				48F5B9972C7EFBB200137776 /* core_task.h in Headers */,
 				BFD67B3D2410ABE200AF114E /* render_layer_code.hpp in Headers */,
 				BFFF16EA1FCDC76900BDEC58 /* render_gl.h in Headers */,
 				48E8C3532B411561006177C3 /* tempfile.h in Headers */,
@@ -1268,6 +1281,7 @@
 				BF6058B6216B3683001B738C /* buffer_struct.h in Headers */,
 				BFFF18711FCDCF7C00BDEC58 /* macro.h in Headers */,
 				BFD5B05B2465B0C400BC91E9 /* stringsearch.h in Headers */,
+				48F5B99F2C7EFC0A00137776 /* edit_export.h in Headers */,
 				BFFF187B1FCDCF7C00BDEC58 /* robot.h in Headers */,
 				BFFF18671FCDCF7C00BDEC58 /* debug.h in Headers */,
 				4836B2E1261860FE00F802DD /* ansi.h in Headers */,
@@ -1533,6 +1547,7 @@
 				BFFF17B21FCDCCF300BDEC58 /* hio.c in Sources */,
 				BFFF17BA1FCDCCF300BDEC58 /* mix_all.c in Sources */,
 				BFFF17F91FCDCD1200BDEC58 /* it_load.c in Sources */,
+				48F5B9962C7EFBB200137776 /* core_task.c in Sources */,
 				BFFF17F11FCDCD1200BDEC58 /* 669_load.c in Sources */,
 				BFFF17C11FCDCCF300BDEC58 /* scan.c in Sources */,
 				BF6058E1216B3725001B738C /* game_menu.c in Sources */,
@@ -1626,6 +1641,7 @@
 				BFD5B05C2465B0C400BC91E9 /* stringsearch.c in Sources */,
 				BFFF18761FCDCF7C00BDEC58 /* robo_debug.c in Sources */,
 				BFFF18821FCDCF7C00BDEC58 /* window.c in Sources */,
+				48F5B99E2C7EFC0A00137776 /* edit_export.c in Sources */,
 				BFFF18781FCDCF7C00BDEC58 /* robo_ed.c in Sources */,
 				BF6058B2216B3683001B738C /* edit_menu.c in Sources */,
 				BFFF187C1FCDCF7C00BDEC58 /* select.c in Sources */,
@@ -1835,7 +1851,6 @@
 					"$(PROJECT_DIR)",
 				);
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					NEED_PNG_WRITE_SCREEN,
 					"DEBUG=1",
 					LIBXMP_NO_DEPACKERS,
 					LIBXMP_NO_PROWIZARD,
@@ -1868,7 +1883,6 @@
 					"$(PROJECT_DIR)",
 				);
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					NEED_PNG_WRITE_SCREEN,
 					LIBXMP_NO_DEPACKERS,
 					LIBXMP_NO_PROWIZARD,
 				);
