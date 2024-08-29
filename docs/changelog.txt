@@ -114,6 +114,8 @@ USERS
 + ccv and png2smzx now support Truevision TGA images.
 + Fixed YUV subsample averaging for UYVY (little endian) and
   YUY2/YVYU (big endian).
++ The SVGA renderer now uses vsync palette/display page flips,
+  which improves performance and fixes display bugs. (asie)
 
 DEVELOPERS
 
@@ -127,6 +129,7 @@ DEVELOPERS
     --enable-sdl1 (enables SDL 1.2.x);
     --disable-sdl (disables SDL).
   For compatibility, "--disable-libsdl2" is still recognized.
++ Added SDL 2 support to the Wii port.
 + Added SDL 2 and SDL 1.2 support to the 3DS port. (asie)
 + Updated the "sdlaccel" renderer, which can now be enabled with
   --enable-sdlaccel in config.sh. This renderer uses the SDL
@@ -157,6 +160,8 @@ DEVELOPERS
 + sampled_mix_data now properly handles output requests smaller
   than the size of the audio buffer.
 + Added software renderer regression tests.
++ Removed PPAL compile time render_layer variants. These did not
+  help performance and increased the render_layer size by 50%.
 + Added dependency builder makefile system in scripts/deps to
   help with regenerating MinGW, DJGPP, darwin-dist, and Linux w/
   MemorySanitizer dependencies.
