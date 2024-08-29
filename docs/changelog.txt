@@ -114,6 +114,9 @@ USERS
 + ccv and png2smzx now support Truevision TGA images.
 + Fixed YUV subsample averaging for UYVY (little endian) and
   YUY2/YVYU (big endian).
++ ANSi file import/export options are now identified as both
+  ANSi and TXT, and the extension of the selected format is now
+  forced during export.
 + The SVGA renderer now uses vsync palette/display page flips,
   which improves performance and fixes display bugs. (asie)
 

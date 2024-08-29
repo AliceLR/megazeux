@@ -769,7 +769,7 @@ boolean select_block_command(struct world *mzx_world, struct block_info *block,
     "Paint block",
     NULL,
     NULL,
-    "Save as ANSi",
+    "Save as ANSi/TXT",
     "Save as MZM"
   };
 
