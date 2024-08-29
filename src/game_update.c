@@ -807,7 +807,7 @@ static void draw_message(struct world *mzx_world)
     int clip_pos = 80;
     char backup = 0;
 
-    if(mzx_world->version >= V293 && mesg_length > (80 - clip_x))
+    if(mzx_world->version >= V294 && mesg_length > (80 - clip_x))
     {
       clip_pos = color_string_index_of(lines[j], ROBOT_MAX_TR, 80 - clip_x, '\0');
       backup = lines[j][clip_pos];
@@ -816,7 +816,7 @@ static void draw_message(struct world *mzx_world)
     }
     else
 
-    if(mzx_world->version < V293 && mesg_length > 80)
+    if(mzx_world->version < V294 && mesg_length > 80)
     {
       // Compat for 2.83 through 2.93's buggy clipping behavior...
       backup = lines[j][80];
@@ -840,8 +840,8 @@ static void draw_message(struct world *mzx_world)
     {
       lines[j][clip_pos] = backup;
 
-      // Versions prior to 2.93b didn't parse color codes after the clip.
-      if(mzx_world->version >= V293)
+      // Versions until 2.94 didn't parse color codes after the clip.
+      if(mzx_world->version >= V294)
       {
         tmp_color = color_string_get_final_color(lines[j] + clip_pos,
          ROBOT_MAX_TR, tmp_color);

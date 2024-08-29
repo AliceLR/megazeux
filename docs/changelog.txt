@@ -1,4 +1,11 @@
-GIT
+GIT - MZX 2.94
+
+FIXES
+
++ TODO: 2.94 enables board message clipping bugfixes from 2.93b.
+
+
+GIT - MZX 2.93b
 
 No compatibility checks have been added for the string splice
 FREAD/FREADn bugfixes, as the old behavior was unusably buggy.
@@ -90,7 +97,8 @@ USERS
   centered or 0. The next row will also use the correct color
   code from the previous row (as if there had been no clipping)
   instead of whatever the last color code displayed was. The old
-  behavior is version locked to <2.93.
+  behavior is version locked to <=2.93, so this fix won't take
+  effect until 2.94.
 + Fixed COPY when used with REL COUNTERS for 1.x worlds.
 + Added support for MegaZeux 1.x entrance precedence (color
   match, then thing match only). This fixes an entrance bug in
