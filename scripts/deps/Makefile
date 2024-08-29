@@ -259,6 +259,7 @@ package:
 		${MAKE} PLATFORM='${PLATFORM}' ARCH="$$ARCH" package_clean; \
 		${MAKE} PLATFORM='${PLATFORM}' ARCH="$$ARCH" package; \
 	done
+	cp ../../arch/LICENSE.3rd ${TARGET}/${PLATFORM}/
 	A=''; \
 	for ARCH in ${ALL_ARCH}; do \
 		if [ -d "${PLATFORM}/$$ARCH" ]; then \
@@ -266,7 +267,7 @@ package:
 		fi; \
 	done; \
 	cd ${TARGET}; \
-	XZ_OPT="-T0 -9" tar -cJf '../${DIST}-${PLATFORM}.tar.xz' ${TAR_FLAGS} $$A
+	XZ_OPT="-T0 -9" tar -cJf '../${DIST}-${PLATFORM}.tar.xz' ${TAR_FLAGS} $$A ${PLATFORM}/LICENSE.3rd
 
 else
 
