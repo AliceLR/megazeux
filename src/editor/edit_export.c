@@ -27,6 +27,8 @@
 #include "../idput.h"
 #include "../util.h"
 
+#include <string.h>
+
 static boolean export_image_status_callback(void *priv, size_t progress,
  size_t progress_max)
 {

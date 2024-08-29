@@ -470,8 +470,7 @@ enum sensor_prop
  * and (hopefully) they won't ever need to. This seems to be a bit faster than
  * strcmp et al. optimizations even for 32-bit.
  */
-#define FILE_ID_VALUE(...) FILE_ID_8(__VA_ARGS__,'\0','\0','\0','\0','\0','\0','\0','\0')
-#define FILE_ID_8(a,b,c,d,e,f,g,h,...) \
+#define FILE_ID_8(a,b,c,d,e,f,g,h) \
  (((uint64_t)a <<  0) | \
   ((uint64_t)b <<  8) | \
   ((uint64_t)c << 16) | \
@@ -481,25 +480,32 @@ enum sensor_prop
   ((uint64_t)g << 48) | \
   ((uint64_t)h << 56))
 
+#define FILE_ID_7(a,b,c,d,e,f,g) FILE_ID_8(a,b,c,d,e,f,g,'\0')
+#define FILE_ID_6(a,b,c,d,e,f) FILE_ID_7(a,b,c,d,e,f,'\0')
+#define FILE_ID_5(a,b,c,d,e) FILE_ID_6(a,b,c,d,e,'\0')
+#define FILE_ID_4(a,b,c,d) FILE_ID_5(a,b,c,d,'\0')
+#define FILE_ID_3(a,b,c) FILE_ID_4(a,b,c,'\0')
+#define FILE_ID_2(a,b) FILE_ID_3(a,b,'\0')
+#define FILE_ID_1(a) FILE_ID_2(a,'\0')
+
 /**
  * Since only ASCII values are ever valid IDs, double bit 6 to bit 5 as a
  * cheap and tacky tolower replacement.
  */
-#define FILE_ID_VALUE_TOLOWER(...) (FILE_ID_VALUE(__VA_ARGS__) | \
- ((FILE_ID_VALUE(__VA_ARGS__) & (uint64_t)0x4040404040404040) >> 1))
+#define FILE_ID_TOLOWER(id) ((id) | (((id) & (uint64_t)0x4040404040404040) >> 1))
 
 static inline uint64_t world_file_id_value(const char *filename, size_t len)
 {
   const char *f = filename;
   switch(len)
   {
-    case 1: return FILE_ID_VALUE_TOLOWER(f[0]);
-    case 2: return FILE_ID_VALUE_TOLOWER(f[0],f[1]);
-    case 3: return FILE_ID_VALUE_TOLOWER(f[0],f[1],f[2]);
-    case 4: return FILE_ID_VALUE_TOLOWER(f[0],f[1],f[2],f[3]);
-    case 5: return FILE_ID_VALUE_TOLOWER(f[0],f[1],f[2],f[3],f[4]);
-    case 6: return FILE_ID_VALUE_TOLOWER(f[0],f[1],f[2],f[3],f[4],f[5]);
-    case 7: return FILE_ID_VALUE_TOLOWER(f[0],f[1],f[2],f[3],f[4],f[5],f[6]);
+    case 1: return FILE_ID_TOLOWER(FILE_ID_1(f[0]));
+    case 2: return FILE_ID_TOLOWER(FILE_ID_2(f[0],f[1]));
+    case 3: return FILE_ID_TOLOWER(FILE_ID_3(f[0],f[1],f[2]));
+    case 4: return FILE_ID_TOLOWER(FILE_ID_4(f[0],f[1],f[2],f[3]));
+    case 5: return FILE_ID_TOLOWER(FILE_ID_5(f[0],f[1],f[2],f[3],f[4]));
+    case 6: return FILE_ID_TOLOWER(FILE_ID_6(f[0],f[1],f[2],f[3],f[4],f[5]));
+    case 7: return FILE_ID_TOLOWER(FILE_ID_7(f[0],f[1],f[2],f[3],f[4],f[5],f[6]));
     // Currently no valid world format filenames with >=8 chars.
   }
   return 0;
@@ -589,28 +595,28 @@ static inline void world_assign_file_ids_parse_board(const char *next, size_t le
 
     switch(world_file_id_value(next, len))
     {
-      case FILE_ID_VALUE('b','i','d'):
+      case FILE_ID_3('b','i','d'):
         *_file_id = FILE_ID_BOARD_BID;
         break;
-      case FILE_ID_VALUE('b','p','r'):
+      case FILE_ID_3('b','p','r'):
         *_file_id = FILE_ID_BOARD_BPR;
         break;
-      case FILE_ID_VALUE('b','c','o'):
+      case FILE_ID_3('b','c','o'):
         *_file_id = FILE_ID_BOARD_BCO;
         break;
-      case FILE_ID_VALUE('u','i','d'):
+      case FILE_ID_3('u','i','d'):
         *_file_id = FILE_ID_BOARD_UID;
         break;
-      case FILE_ID_VALUE('u','p','r'):
+      case FILE_ID_3('u','p','r'):
         *_file_id = FILE_ID_BOARD_UPR;
         break;
-      case FILE_ID_VALUE('u','c','o'):
+      case FILE_ID_3('u','c','o'):
         *_file_id = FILE_ID_BOARD_UCO;
         break;
-      case FILE_ID_VALUE('o','c','h'):
+      case FILE_ID_3('o','c','h'):
         *_file_id = FILE_ID_BOARD_OCH;
         break;
-      case FILE_ID_VALUE('o','c','o'):
+      case FILE_ID_3('o','c','o'):
         *_file_id = FILE_ID_BOARD_OCO;
         break;
     }
@@ -722,46 +728,46 @@ static inline void world_assign_file_ids(struct zip_archive *zp, boolean is_a_wo
 
       switch(world_file_id_value(next, len))
       {
-        case FILE_ID_VALUE('w','o','r','l','d'):
+        case FILE_ID_5('w','o','r','l','d'):
           file_id = FILE_ID_WORLD_INFO;
           break;
-        case FILE_ID_VALUE('g','r'):
+        case FILE_ID_2('g','r'):
           file_id = FILE_ID_WORLD_GLOBAL_ROBOT;
           break;
-        case FILE_ID_VALUE('s','f','x'):
+        case FILE_ID_3('s','f','x'):
           file_id = FILE_ID_WORLD_SFX;
           break;
-        case FILE_ID_VALUE('c','h','a','r','s'):
+        case FILE_ID_5('c','h','a','r','s'):
           file_id = FILE_ID_WORLD_CHARS;
           break;
-        case FILE_ID_VALUE('p','a','l'):
+        case FILE_ID_3('p','a','l'):
           file_id = FILE_ID_WORLD_PAL;
           break;
-        case FILE_ID_VALUE('p','a','l','s','m','z','x'):
+        case FILE_ID_7('p','a','l','s','m','z','x'):
           file_id = FILE_ID_WORLD_PAL_SMZX;
           break;
-        case FILE_ID_VALUE('p','a','l','i','d','x'):
+        case FILE_ID_6('p','a','l','i','d','x'):
           file_id = FILE_ID_WORLD_PAL_INDEX;
           break;
-        case FILE_ID_VALUE('p','a','l','i','n','t'):
+        case FILE_ID_6('p','a','l','i','n','t'):
           file_id = FILE_ID_WORLD_PAL_INTENSITY;
           break;
-        case FILE_ID_VALUE('p','a','l','i','n','t','s'):
+        case FILE_ID_7('p','a','l','i','n','t','s'):
           file_id = FILE_ID_WORLD_PAL_INTENSITY_SMZX;
           break;
-        case FILE_ID_VALUE('v','c','o'):
+        case FILE_ID_3('v','c','o'):
           file_id = FILE_ID_WORLD_VCO;
           break;
-        case FILE_ID_VALUE('v','c','h'):
+        case FILE_ID_3('v','c','h'):
           file_id = FILE_ID_WORLD_VCH;
           break;
-        case FILE_ID_VALUE('s','p','r'):
+        case FILE_ID_3('s','p','r'):
           file_id = FILE_ID_WORLD_SPRITES;
           break;
-        case FILE_ID_VALUE('c','o','u','n','t','e','r'):
+        case FILE_ID_7('c','o','u','n','t','e','r'):
           file_id = FILE_ID_WORLD_COUNTERS;
           break;
-        case FILE_ID_VALUE('s','t','r','i','n','g'):
+        case FILE_ID_6('s','t','r','i','n','g'):
           file_id = FILE_ID_WORLD_STRINGS;
           break;
       }

@@ -3,6 +3,7 @@
 #define PLATFORM "msvc"
 #define CONFDIR "./"
 #define CONFFILE "config.txt"
+#define LICENSEDIR "./"
 #define SHAREDIR "./"
 #define CONFIG_SDL 2
 #define CONFIG_EDITOR

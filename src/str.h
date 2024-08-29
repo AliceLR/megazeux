@@ -27,6 +27,7 @@
 __M_BEGIN_DECLS
 
 #include <stdio.h>
+#include <string.h>
 
 #include "world_struct.h"
 #include "counter_struct.h"

@@ -35,6 +35,8 @@
 #include "world.h"
 #include "world_struct.h"
 
+#include <string.h>
+
 #define MENU_COL            0x19
 #define MENU_COL_DARK       0x10
 #define MENU_COL_CORNER     0x18
