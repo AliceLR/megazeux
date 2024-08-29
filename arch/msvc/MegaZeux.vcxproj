@@ -177,6 +177,7 @@
     <ClCompile Include="..\..\src\main.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\SDLmzx.h" />
     <ClInclude Include="config.h" />
   </ItemGroup>
   <ItemGroup>

@@ -40,6 +40,8 @@
 #include "audio/audio.h"
 #include "audio/sfx.h"
 
+#include <string.h>
+
 // Number of cycles to make player idle before repeating a
 // directional move
 #define REPEAT_WAIT 2

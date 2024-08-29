@@ -171,6 +171,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\run_stubs.h" />
+    <ClInclude Include="..\..\src\SDLmzx.h" />
     <ClInclude Include="config.h" />
   </ItemGroup>
   <ItemGroup>
