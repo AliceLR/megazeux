@@ -179,7 +179,7 @@ jobs:
       - name: Configure x64
         run: ./config.sh --platform win64 --enable-release
       - name: Build x64
-        run: $MZX_MAKE
+        run: $MZX_MAKE V=1
       - name: Test x64
         run: $MZX_MAKE test
       - name: Package x64 .zip
@@ -204,7 +204,7 @@ jobs:
       - name: Configure x86
         run: ./config.sh --platform win32 --enable-release
       - name: Build x86
-        run: $MZX_MAKE
+        run: $MZX_MAKE V=1
       - name: Test x86
         run: $MZX_MAKE test
       - name: Package x86 .zip
