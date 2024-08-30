@@ -36,7 +36,6 @@ struct soft_render_data
 {
 #ifdef CONFIG_SDL
   struct sdl_render_data sdl;
-  SDL_Color sdlpal[SMZX_PAL_SIZE];
 #else
   unsigned pitch;
   unsigned bpp;
@@ -160,38 +159,7 @@ static void soft_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, unsigned int count)
 {
 #ifdef CONFIG_SDL
-  struct soft_render_data *render_data = graphics->render_data;
-  SDL_Surface *screen = soft_get_screen_surface(render_data);
-
-  unsigned int i;
-
-  if(graphics->bits_per_pixel != 8)
-  {
-    for(i = 0; i < count; i++)
-    {
-      graphics->flat_intensity_palette[i] =
-       SDL_MapRGBA(screen->format, palette[i].r, palette[i].g, palette[i].b,
-       255);
-    }
-  }
-  else
-  {
-    if(count > 256)
-      count = 256;
-
-    for(i = 0; i < count; i++)
-    {
-      render_data->sdlpal[i].r = palette[i].r;
-      render_data->sdlpal[i].g = palette[i].g;
-      render_data->sdlpal[i].b = palette[i].b;
-    }
-
-#if SDL_VERSION_ATLEAST(2,0,0)
-    SDL_SetPaletteColors(render_data->sdl.palette, render_data->sdlpal, 0, count);
-#else
-    SDL_SetColors(render_data->sdl.screen, render_data->sdlpal, 0, count);
-#endif
-  }
+  sdl_update_colors(graphics, palette, count);
 #endif /* CONFIG_SDL */
 }
 
@@ -311,9 +279,10 @@ static void soft_sync_screen(struct graphics_data *graphics)
 
   if(render_data->shadow)
   {
-    SDL_BlitSurface(render_data->shadow,
-     &render_data->shadow->clip_rect, render_data->screen,
-     &render_data->screen->clip_rect);
+    SDL_Rect src_rect = render_data->shadow->clip_rect;
+    SDL_Rect dest_rect = render_data->screen->clip_rect;
+    SDL_BlitSurface(render_data->shadow, &src_rect,
+     render_data->screen, &dest_rect);
   }
 
 #if SDL_VERSION_ATLEAST(2,0,0)

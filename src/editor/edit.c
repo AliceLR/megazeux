@@ -2503,6 +2503,8 @@ static boolean editor_key(context *ctx, int *key)
             if(!file_manager(mzx_world, ans_ext, NULL, export_name,
              "Export ANSi or TXT", 1, 1, elements, ARRAY_SIZE(elements), 3))
             {
+              path_force_ext(export_name, sizeof(export_name),
+               text_only ? ".txt" : ".ans");
               memcpy(editor->mzm_name_buffer, export_name, MAX_PATH);
               memcpy(editor->ansi_save_title, title, ARRAY_SIZE(title));
               memcpy(editor->ansi_save_author, author, ARRAY_SIZE(author));
@@ -2962,7 +2964,8 @@ static boolean editor_key(context *ctx, int *key)
 
               strcpy(import_name, editor->mzm_name_buffer);
               if(!file_manager(mzx_world, ans_ext, NULL, import_name,
-               "Choose ANSi file to import", 1, 0, elements, ARRAY_SIZE(elements), 2))
+               "Choose ANSi or TXT file to import", 1, 0,
+               elements, ARRAY_SIZE(elements), 2))
               {
                 int width = -1;
                 int height = -1;
