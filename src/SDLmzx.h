@@ -319,7 +319,7 @@ static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
 #define SDL_KMOD_ALT          KMOD_ALT
 #define SDL_KMOD_NUM          KMOD_NUM
 #define SDL_KMOD_CAPS         KMOD_CAPS
-#define SDL_TextInputActive() SDL_IsTextInputActive()
+#define SDL_TextInputActive(w) SDL_IsTextInputActive()
 #endif
 
 /**
@@ -335,8 +335,6 @@ static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
 #define SDL_PixelFormatDetails                      SDL_PixelFormat
 #define SDL_CreatePalette(s)                        SDL_AllocPalette(s)
 #define SDL_DestroyPalette(p)                       SDL_FreePalette(p)
-#define SDL_GetPixelFormatDetails(f)                SDL_AllocFormat(f)
-#define SDL_DestroyPixelFormat(pf)                  SDL_FreeFormat(pf)
 #define SDL_GetMasksForPixelFormat(f,b,R,G,B,A)     SDL_PixelFormatEnumToMasks(f,b,R,G,B,A)
 
 #if !SDL_VERSION_ATLEAST(2,0,5)
@@ -468,6 +466,11 @@ typedef SDL_sem   SDL_Semaphore;
 #define SDL_VERSIONNUM_MINOR(v) (((v) / 1000) % 1000)
 #define SDL_VERSIONNUM_MICRO(v) ((v) % 1000)
 
+static inline void SDL_VERSION_ORIG(SDL_version *v)
+{
+  SDL_VERSION(v);
+}
+
 #undef SDL_VERSION
 #define SDL_VERSION SDL_VERSIONNUM(SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL)
 
@@ -488,8 +491,10 @@ static inline int replace_SDL_GetVersion(void)
  * SDL_video.h
  */
 #if !SDL_VERSION_ATLEAST(2,0,16)
-#define SDL_GL_DestroyContext(gl)   SDL_GL_DeleteContext(gl)
 #define SDL_SetWindowMouseGrab(w,b) SDL_SetWindowGrab(w,b)
+#endif
+#if !SDL_VERSION_ATLEAST(3,0,0)
+#define SDL_GL_DestroyContext(gl)   SDL_GL_DeleteContext(gl)
 #endif
 
 #endif /* CONFIG_SDL */

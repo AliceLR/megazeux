@@ -44,7 +44,7 @@ struct sdl_render_data
   SDL_Surface *screen;
   SDL_Surface *shadow;
   SDL_Color *palette_colors;
-  const SDL_PixelFormat *flat_format; // format used by sdl_update_colors.
+  const SDL_PixelFormatDetails *flat_format; // format used by sdl_update_colors.
 
   // SDL Renderer and overlay renderer texture format configuration.
   uint32_t (*rgb_to_yuv)(uint8_t r, uint8_t g, uint8_t b);

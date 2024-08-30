@@ -406,14 +406,14 @@ void sdl_destruct_window(struct graphics_data *graphics)
     render_data->palette = NULL;
   }
 
+#if !SDL_VERSION_ATLEAST(3,0,0)
   // Used for generating mapped colors for the SDL_Renderer renderers.
   if(render_data->pixel_format)
   {
-#if !SDL_VERSION_ATLEAST(3,0,0)
     SDL_FreeFormat(render_data->pixel_format);
-#endif
     render_data->pixel_format = NULL;
   }
+#endif
 
   // Used by the SDL renderer-based renderers for HW acceleration.
   for(i = 0; i < ARRAY_SIZE(render_data->texture); i++)
@@ -711,7 +711,7 @@ static uint32_t get_format_amask(uint32_t format)
   Uint32 rmask, gmask, bmask, amask;
   int bpp;
 
-  SDL_GetMasksForPixelFormatEnum(format, &bpp, &rmask, &gmask, &bmask, &amask);
+  SDL_GetMasksForPixelFormat(format, &bpp, &rmask, &gmask, &bmask, &amask);
   return amask;
 }
 
@@ -927,14 +927,18 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
 
   if(!render_data->rgb_to_yuv)
   {
+#if SDL_VERSION_ATLEAST(3,0,0)
+#error wtf
+#else
     // This is required for SDL_MapRGBA to work, but YUV formats can ignore it.
-    render_data->pixel_format = SDL_CreatePixelFormat(render_data->texture_format);
+    render_data->pixel_format = SDL_AllocFormat(render_data->texture_format);
     if(!render_data->pixel_format)
     {
       warn("Failed to allocate pixel format: %s\n", SDL_GetError());
       goto err_free;
     }
     render_data->flat_format = render_data->pixel_format;
+#endif
   }
 
   SDL_SetRenderDrawColor(render_data->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);

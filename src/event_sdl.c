@@ -1215,10 +1215,14 @@ static boolean process_event(SDL_Event *event)
 // TODO: this is kind of tacky
 #if SDL_VERSION_ATLEAST(3,0,0)
 #define FIELD_KEY       key
+#ifdef DEBUG_TRACE
 #define FIELD_SCANCODE  scancode
+#endif
 #else
 #define FIELD_KEY       keysym.sym
+#ifdef DEBUG_TRACE
 #define FIELD_SCANCODE  keysym.scancode
+#endif
 #endif
 
     case SDL_EVENT_KEY_DOWN:
