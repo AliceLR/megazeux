@@ -72,32 +72,32 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_BACKSLASH: return IKEY_BACKSLASH;
     case SDLK_RIGHTBRACKET: return IKEY_RIGHTBRACKET;
     case SDLK_GRAVE: return IKEY_BACKQUOTE;
-    case SDLK_a: return IKEY_a;
-    case SDLK_b: return IKEY_b;
-    case SDLK_c: return IKEY_c;
-    case SDLK_d: return IKEY_d;
-    case SDLK_e: return IKEY_e;
-    case SDLK_f: return IKEY_f;
-    case SDLK_g: return IKEY_g;
-    case SDLK_h: return IKEY_h;
-    case SDLK_i: return IKEY_i;
-    case SDLK_j: return IKEY_j;
-    case SDLK_k: return IKEY_k;
-    case SDLK_l: return IKEY_l;
-    case SDLK_m: return IKEY_m;
-    case SDLK_n: return IKEY_n;
-    case SDLK_o: return IKEY_o;
-    case SDLK_p: return IKEY_p;
-    case SDLK_q: return IKEY_q;
-    case SDLK_r: return IKEY_r;
-    case SDLK_s: return IKEY_s;
-    case SDLK_t: return IKEY_t;
-    case SDLK_u: return IKEY_u;
-    case SDLK_v: return IKEY_v;
-    case SDLK_w: return IKEY_w;
-    case SDLK_x: return IKEY_x;
-    case SDLK_y: return IKEY_y;
-    case SDLK_z: return IKEY_z;
+    case SDLK_A: return IKEY_a;
+    case SDLK_B: return IKEY_b;
+    case SDLK_C: return IKEY_c;
+    case SDLK_D: return IKEY_d;
+    case SDLK_E: return IKEY_e;
+    case SDLK_F: return IKEY_f;
+    case SDLK_G: return IKEY_g;
+    case SDLK_H: return IKEY_h;
+    case SDLK_I: return IKEY_i;
+    case SDLK_J: return IKEY_j;
+    case SDLK_K: return IKEY_k;
+    case SDLK_L: return IKEY_l;
+    case SDLK_M: return IKEY_m;
+    case SDLK_N: return IKEY_n;
+    case SDLK_O: return IKEY_o;
+    case SDLK_P: return IKEY_p;
+    case SDLK_Q: return IKEY_q;
+    case SDLK_R: return IKEY_r;
+    case SDLK_S: return IKEY_s;
+    case SDLK_T: return IKEY_t;
+    case SDLK_U: return IKEY_u;
+    case SDLK_V: return IKEY_v;
+    case SDLK_W: return IKEY_w;
+    case SDLK_X: return IKEY_x;
+    case SDLK_Y: return IKEY_y;
+    case SDLK_Z: return IKEY_z;
     case SDLK_DELETE: return IKEY_DELETE;
     case SDLK_KP_0: return IKEY_KP0;
     case SDLK_KP_1: return IKEY_KP1;
@@ -657,10 +657,10 @@ static void parse_gamepad_map(int joystick_index, char *map)
 static void init_gamepad(SDL_Joystick *joystick, int sdl_joystick_id,
  int joystick_index)
 {
-  SDL_JoystickGUID guid = SDL_GetJoystickGUID(joystick);
+  SDL_GUID guid = SDL_GetJoystickGUID(joystick);
   char guid_string[33];
 
-  SDL_GetJoystickGUIDString(guid, guid_string, 33);
+  SDL_GUIDToString(guid, guid_string, 33);
   gamepads[joystick_index] = NULL;
 
   if(SDL_IsGamepad(sdl_joystick_id))
@@ -676,7 +676,7 @@ static void init_gamepad(SDL_Joystick *joystick, int sdl_joystick_id,
 #if SDL_VERSION_ATLEAST(3,0,0)
       // This is the equivalent to [...]ForDeviceIndex() and is also currently
       // the only way to get the default generated mapping.
-      mapping = (char *)SDL_GetGamepadInstanceMapping(sdl_joystick_id);
+      mapping = (char *)SDL_GetGamepadMappingForID(sdl_joystick_id);
 #elif SDL_VERSION_ATLEAST(2,0,9)
       // NOTE: the other functions for this will not return the default mapping
       // string; this is the only one that can return everything. Right now,
@@ -878,7 +878,7 @@ static void init_joystick(int sdl_joystick_id)
     SDL_Joystick *joystick = SDL_OpenJoystick(sdl_joystick_id);
     if(joystick)
     {
-      joystick_instance_ids[joystick_index] = SDL_GetJoystickInstanceID(joystick);
+      joystick_instance_ids[joystick_index] = SDL_GetJoystickID(joystick);
       joysticks[joystick_index] = joystick;
       joystick_set_active(status, joystick_index, true);
 
@@ -977,7 +977,7 @@ static boolean process_event(SDL_Event *event)
   /* Enable converting keycodes to fake unicode presses when text input isn't
    * active. Enabling text input also enables an onscreen keyboard in some
    * ports, so it isn't always desired. */
-  boolean unicode_fallback = !SDL_TextInputActive();
+  boolean unicode_fallback = !SDL_TextInputActive(NULL); // FIXME
 #else
   /* SDL 1.2 might also need this (Pandora? doesn't generate unicode presses). */
   static boolean unicode_fallback = true;
@@ -1212,6 +1212,15 @@ static boolean process_event(SDL_Event *event)
     }
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 
+// TODO: this is kind of tacky
+#if SDL_VERSION_ATLEAST(3,0,0)
+#define FIELD_KEY       key
+#define FIELD_SCANCODE  scancode
+#else
+#define FIELD_KEY       keysym.sym
+#define FIELD_SCANCODE  keysym.scancode
+#endif
+
     case SDL_EVENT_KEY_DOWN:
     {
       uint32_t unicode = 0;
@@ -1231,7 +1240,7 @@ static boolean process_event(SDL_Event *event)
 #ifdef CONFIG_PANDORA
       {
         // Pandora hack. Certain keys are actually joystick buttons.
-        int button = get_pandora_joystick_button(event->key.keysym.sym);
+        int button = get_pandora_joystick_button(event->key.FIELD_KEY);
         if(button >= 0)
         {
           joystick_button_press(status, 0, button);
@@ -1240,11 +1249,11 @@ static boolean process_event(SDL_Event *event)
       }
 #endif
 
-      ckey = convert_SDL_internal(event->key.keysym.sym);
+      ckey = convert_SDL_internal(event->key.FIELD_KEY);
       trace(
         "--EVENT_SDL-- SDL_EVENT_KEY_DOWN: scancode:%d sym:%d -> %d\n",
-        event->key.keysym.scancode,
-        event->key.keysym.sym,
+        event->key.FIELD_SCANCODE,
+        event->key.FIELD_KEY,
         ckey
       );
       if(!ckey)
@@ -1350,11 +1359,11 @@ static boolean process_event(SDL_Event *event)
       }
 #endif
 
-      ckey = convert_SDL_internal(event->key.keysym.sym);
+      ckey = convert_SDL_internal(event->key.FIELD_KEY);
       trace(
         "--EVENT_SDL-- SDL_EVENT_KEY_UP: scancode:%d sym:%d -> %d\n",
-        event->key.keysym.scancode,
-        event->key.keysym.sym,
+        event->key.FIELD_SCANCODE,
+        event->key.FIELD_KEY,
         ckey
       );
       if(!ckey)

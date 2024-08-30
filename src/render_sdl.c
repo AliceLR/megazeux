@@ -246,9 +246,9 @@ static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
     }
 
 #if SDL_VERSION_ATLEAST(2,0,12)
-    case SDL_PIXELFORMAT_BGR444:
+    case SDL_PIXELFORMAT_XBGR4444:
 #endif
-    case SDL_PIXELFORMAT_RGB444:
+    case SDL_PIXELFORMAT_XRGB4444:
     case SDL_PIXELFORMAT_ARGB4444:
     case SDL_PIXELFORMAT_RGBA4444:
     case SDL_PIXELFORMAT_ABGR4444:
@@ -261,8 +261,8 @@ static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
       break;
     }
 
-    case SDL_PIXELFORMAT_RGB555:
-    case SDL_PIXELFORMAT_BGR555:
+    case SDL_PIXELFORMAT_XRGB1555:
+    case SDL_PIXELFORMAT_XBGR1555:
     case SDL_PIXELFORMAT_ARGB1555:
     case SDL_PIXELFORMAT_RGBA5551:
     case SDL_PIXELFORMAT_ABGR1555:
@@ -409,7 +409,9 @@ void sdl_destruct_window(struct graphics_data *graphics)
   // Used for generating mapped colors for the SDL_Renderer renderers.
   if(render_data->pixel_format)
   {
-    SDL_DestroyPixelFormat(render_data->pixel_format);
+#if !SDL_VERSION_ATLEAST(3,0,0)
+    SDL_FreeFormat(render_data->pixel_format);
+#endif
     render_data->pixel_format = NULL;
   }
 
@@ -434,7 +436,7 @@ void sdl_destruct_window(struct graphics_data *graphics)
   // Used by the OpenGL renderers.
   if(render_data->context)
   {
-    SDL_GL_DeleteContext(render_data->context);
+    SDL_GL_DestroyContext(render_data->context);
     render_data->context = NULL;
   }
 

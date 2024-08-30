@@ -183,7 +183,7 @@ static inline void *SDL_GetWindowProperty_HWND(SDL_Window *window)
 #define SDL_AUDIO_S16LE AUDIO_S16LSB
 #define SDL_AUDIO_S16BE AUDIO_S16MSB
 #else
-/* SDL3 defines SDL_FreeWAV to an error type, but MZX needs to keep it to
+/* SDL3 defines SDL_FreeWAV to an old name type, but MZX needs to keep it to
  * transparently support older versions. */
 #undef SDL_FreeWAV
 #define SDL_FreeWAV(w)  SDL_free(w)
@@ -269,11 +269,13 @@ static inline void SDL_SetGamepadEventsEnabled(SDL_bool enabled)
  * SDL_joystick.h
  */
 #if !SDL_VERSION_ATLEAST(3,0,0)
+#define SDL_GUID                          SDL_JoystickGUID
+#define SDL_GUIDToString                  SDL_GetJoystickGUIDString
 #define SDL_OpenJoystick(device_id)       SDL_JoystickOpen(device_id)
 #define SDL_CloseJoystick(j)              SDL_JoystickClose(j)
 #define SDL_GetJoystickGUID(j)            SDL_JoystickGetGUID(j)
 #define SDL_GetJoystickGUIDString(g,b,l)  SDL_JoystickGetGUIDString(g,b,l)
-#define SDL_GetJoystickInstanceID(j)      SDL_JoystickInstanceID(j)
+#define SDL_GetJoystickID(j)              SDL_JoystickInstanceID(j)
 
 static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
 {
@@ -285,6 +287,32 @@ static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
  * SDL_keyboard.h and SDL_keycode.h
  */
 #if !SDL_VERSION_ATLEAST(3,0,0)
+#define SDLK_A                SDLK_a
+#define SDLK_B                SDLK_b
+#define SDLK_C                SDLK_c
+#define SDLK_D                SDLK_d
+#define SDLK_E                SDLK_e
+#define SDLK_F                SDLK_f
+#define SDLK_G                SDLK_g
+#define SDLK_H                SDLK_h
+#define SDLK_I                SDLK_i
+#define SDLK_J                SDLK_j
+#define SDLK_K                SDLK_k
+#define SDLK_L                SDLK_l
+#define SDLK_M                SDLK_m
+#define SDLK_N                SDLK_n
+#define SDLK_O                SDLK_o
+#define SDLK_P                SDLK_p
+#define SDLK_Q                SDLK_q
+#define SDLK_R                SDLK_r
+#define SDLK_S                SDLK_s
+#define SDLK_T                SDLK_t
+#define SDLK_U                SDLK_u
+#define SDLK_V                SDLK_v
+#define SDLK_W                SDLK_w
+#define SDLK_X                SDLK_x
+#define SDLK_Y                SDLK_y
+#define SDLK_Z                SDLK_z
 #define SDLK_APOSTROPHE       SDLK_QUOTE
 #define SDLK_GRAVE            SDLK_BACKQUOTE
 #define SDL_KMOD_CTRL         KMOD_CTRL
@@ -298,13 +326,18 @@ static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
  *  SDL_pixels.h
  */
 #if !SDL_VERSION_ATLEAST(3,0,0)
+#define SDL_PIXELFORMAT_XRGB4444                    SDL_PIXELFORMAT_RGB444
+#define SDL_PIXELFORMAT_XBGR4444                    SDL_PIXELFORMAT_BGR444
+#define SDL_PIXELFORMAT_XRGB1555                    SDL_PIXELFORMAT_RGB555
+#define SDL_PIXELFORMAT_XBGR1555                    SDL_PIXELFORMAT_BGR555
 #define SDL_PIXELFORMAT_XRGB8888                    SDL_PIXELFORMAT_RGB888
 #define SDL_PIXELFORMAT_XBGR8888                    SDL_PIXELFORMAT_BGR888
+#define SDL_PixelFormatDetails                      SDL_PixelFormat
 #define SDL_CreatePalette(s)                        SDL_AllocPalette(s)
 #define SDL_DestroyPalette(p)                       SDL_FreePalette(p)
-#define SDL_CreatePixelFormat(f)                    SDL_AllocFormat(f)
+#define SDL_GetPixelFormatDetails(f)                SDL_AllocFormat(f)
 #define SDL_DestroyPixelFormat(pf)                  SDL_FreeFormat(pf)
-#define SDL_GetMasksForPixelFormatEnum(f,b,R,G,B,A) SDL_PixelFormatEnumToMasks(f,b,R,G,B,A)
+#define SDL_GetMasksForPixelFormat(f,b,R,G,B,A)     SDL_PixelFormatEnumToMasks(f,b,R,G,B,A)
 
 #if !SDL_VERSION_ATLEAST(2,0,5)
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
@@ -313,6 +346,12 @@ static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
 #define SDL_PIXELFORMAT_RGBA32                      SDL_PIXELFORMAT_ABGR8888
 #endif
 #endif
+
+static inline Uint32 SDL_MapSurfaceRGBA(SDL_Surface *surface,
+ Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+{
+  return SDL_MapRGBA(surface->format, r, g, b, a);
+}
 #endif
 
 /**
@@ -449,6 +488,7 @@ static inline int replace_SDL_GetVersion(void)
  * SDL_video.h
  */
 #if !SDL_VERSION_ATLEAST(2,0,16)
+#define SDL_GL_DestroyContext(gl)   SDL_GL_DeleteContext(gl)
 #define SDL_SetWindowMouseGrab(w,b) SDL_SetWindowGrab(w,b)
 #endif
 
