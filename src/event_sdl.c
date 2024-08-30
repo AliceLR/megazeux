@@ -23,6 +23,7 @@
 #include "configure.h"
 #include "event.h"
 #include "graphics.h"
+#include "platform.h"
 #include "render_sdl.h"
 #include "util.h"
 
