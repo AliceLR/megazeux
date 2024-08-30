@@ -65,8 +65,20 @@ ${pefix}: arch/mingw/pefix.o
 
 all: ${pefix}
 
-clean:
-	${RM} -f ${pefix} arch/mingw/pefix.o arch/mingw/pefix.d
+clean: msvc_clean pefix_clean
+.PHONY: msvc_clean pefix_clean
+
+pefix_clean:
+	$(if ${V},,@echo "  RM      " ${pefix} arch/mingw/pefix.o arch/mingw/pefix.d)
+	${RM} ${pefix} arch/mingw/pefix.o arch/mingw/pefix.d
+
+# Clean up MSVC files just in case; they break linking MinGW.
+msvc_clean:
+	$(if ${V},,@echo "  RM      " *.exp *.ilk *.lib *.pdb)
+	${RM} Core.{exp,ilk,lib,pdb}
+	${RM} Editor.{exp,ilk,lib,pdb}
+	${RM} MZXRun.{exp,ilk,lib,pdb}
+	${RM} MegaZeux.{exp,ilk,lib,pdb}
 
 #
 # Windows builds must copy $SDL_DLL
