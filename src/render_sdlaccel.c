@@ -370,7 +370,7 @@ static void sdlaccel_update_colors(struct graphics_data *graphics,
   struct sdlaccel_render_data *render_data = graphics->render_data;
   uint32_t i;
 
-  sdlrender_update_colors(graphics, palette, count);
+  sdl_update_colors(graphics, palette, count);
 
   for(i = 0; i < count; i++)
   {

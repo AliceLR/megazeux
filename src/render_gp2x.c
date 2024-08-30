@@ -187,34 +187,19 @@ static boolean gp2x_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  SDL_PixelFormat *format;
+  const SDL_PixelFormat *format;
   uint32_t halfmask;
 
   if(!sdl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
 
-  format = gp2x_get_screen_surface(render_data)->format;
+  format = render_data->sdl.flat_format;
   halfmask = (format->Rmask >> 1) & format->Rmask;
   halfmask |= (format->Gmask >> 1) & format->Gmask;
   halfmask |= (format->Bmask >> 1) & format->Bmask;
   render_data->halfmask = halfmask;
 
   return true;
-}
-
-static void gp2x_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, unsigned int count)
-{
-  struct gp2x_render_data *render_data = graphics->render_data;
-  SDL_Surface *screen = gp2x_get_screen_surface(render_data);
-  unsigned int i;
-
-  for(i = 0; i < count; i++)
-  {
-    graphics->flat_intensity_palette[i] =
-     SDL_MapRGBA(screen->format, palette[i].r, palette[i].g,
-      palette[i].b, 255);
-  }
 }
 
 static void gp2x_get_screen_coords(struct graphics_data *graphics,
@@ -298,9 +283,10 @@ static void gp2x_sync_screen(struct graphics_data *graphics)
 
   if(render_data->sdl.shadow)
   {
-    SDL_BlitSurface(render_data->sdl.shadow,
-     &render_data->sdl.shadow->clip_rect, render_data->sdl.screen,
-     &render_data->sdl.screen->clip_rect);
+    SDL_Rect src_rect = render_data->sdl.shadow->clip_rect;
+    SDL_Rect dest_rect = render_data->sdl.screen->clip_rect;
+    SDL_BlitSurface(render_data->sdl.shadow, &src_rect,
+     render_data->sdl.screen, &dest_rect);
   }
 
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -316,7 +302,7 @@ void render_gp2x_register(struct renderer *renderer)
   renderer->init_video = gp2x_init_video;
   renderer->free_video = gp2x_free_video;
   renderer->set_video_mode = gp2x_set_video_mode;
-  renderer->update_colors = gp2x_update_colors;
+  renderer->update_colors = sdl_update_colors;
   renderer->resize_screen = resize_screen_standard;
   renderer->get_screen_coords = gp2x_get_screen_coords;
   renderer->set_screen_coords = gp2x_set_screen_coords;

@@ -370,6 +370,64 @@ void sdl_destruct_window(struct graphics_data *graphics)
   render_data->shadow = NULL;
 
 #endif
+
+  // Used to send the palette to SDL in indexed mode.
+  if(render_data->palette_colors)
+  {
+    free(render_data->palette_colors);
+    render_data->palette_colors = NULL;
+  }
+  render_data->flat_format = NULL;
+}
+
+void sdl_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, unsigned int count)
+{
+  struct sdl_render_data *render_data = (struct sdl_render_data *)graphics->render_data;
+  unsigned int i;
+
+  if(graphics->bits_per_pixel == 8)
+  {
+    if(!render_data->palette_colors)
+      return;
+    if(count > 256)
+      count = 256;
+
+    for(i = 0; i < count; i++)
+    {
+      render_data->palette_colors[i].r = palette[i].r;
+      render_data->palette_colors[i].g = palette[i].g;
+      render_data->palette_colors[i].b = palette[i].b;
+    }
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+    SDL_SetPaletteColors(render_data->palette,
+     render_data->palette_colors, 0, count);
+#else
+    SDL_SetColors(render_data->screen, render_data->palette_colors, 0, count);
+#endif
+  }
+  else
+
+  if(!render_data->rgb_to_yuv)
+  {
+    if(!render_data->flat_format)
+      return;
+    for(i = 0; i < count; i++)
+    {
+      graphics->flat_intensity_palette[i] =
+       SDL_MapRGBA(render_data->flat_format,
+        palette[i].r, palette[i].g, palette[i].b, SDL_ALPHA_OPAQUE);
+    }
+  }
+  else
+  {
+    for(i = 0; i < count; i++)
+    {
+      graphics->flat_intensity_palette[i] =
+       render_data->rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b);
+    }
+  }
 }
 
 
@@ -383,6 +441,7 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   struct sdl_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
+  SDL_PixelFormat *format;
   boolean fullscreen_windowed = graphics->fullscreen_windowed;
   boolean matched = false;
   Uint32 fmt;
@@ -462,16 +521,23 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
     render_data->shadow = NULL;
   }
 
+  format = render_data->shadow ? render_data->shadow->format :
+                                 render_data->screen->format;
+  render_data->flat_format = format;
+
   if(fmt == SDL_PIXELFORMAT_INDEX8)
   {
-    SDL_PixelFormat *format =
-      render_data->shadow ? render_data->shadow->format :
-                            render_data->screen->format;
-
     render_data->palette = SDL_AllocPalette(SMZX_PAL_SIZE);
     if(!render_data->palette)
     {
       warn("Failed to allocate palette: %s\n", SDL_GetError());
+      goto err_free;
+    }
+    render_data->palette_colors =
+     (SDL_Color *)ccalloc(SMZX_PAL_SIZE, sizeof(SDL_Color));
+    if(!render_data->palette_colors)
+    {
+      warn("Failed to allocate palette colors\n");
       goto err_free;
     }
 
@@ -502,6 +568,15 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
     return false;
 
   render_data->shadow = NULL;
+  render_data->flat_format = render_data->screen->format;
+
+  if(depth == 8)
+  {
+    render_data->palette_colors =
+     (SDL_Color *)ccalloc(SMZX_PAL_SIZE, sizeof(SDL_Color));
+    if(!render_data->palette_colors)
+      return false;
+  }
 
 #endif // !SDL_VERSION_ATLEAST(2,0,0)
 
@@ -742,6 +817,7 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
       warn("Failed to allocate pixel format: %s\n", SDL_GetError());
       goto err_free;
     }
+    render_data->flat_format = render_data->pixel_format;
   }
 
   SDL_SetRenderDrawColor(render_data->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
@@ -754,31 +830,6 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
 err_free:
   sdl_destruct_window(graphics);
   return false;
-}
-
-void sdlrender_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, unsigned int count)
-{
-  struct sdl_render_data *render_data = (struct sdl_render_data *)graphics->render_data;
-  unsigned int i;
-
-  if(!render_data->rgb_to_yuv)
-  {
-    for(i = 0; i < count; i++)
-    {
-      graphics->flat_intensity_palette[i] =
-       SDL_MapRGBA(render_data->pixel_format,
-        palette[i].r, palette[i].g, palette[i].b, SDL_ALPHA_OPAQUE);
-    }
-  }
-  else
-  {
-    for(i = 0; i < count; i++)
-    {
-      graphics->flat_intensity_palette[i] =
-       render_data->rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b);
-    }
-  }
 }
 
 #endif /* CONFIG_RENDER_SOFTSCALE || CONFIG_RENDER_SDLACCEL */
