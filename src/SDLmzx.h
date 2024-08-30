@@ -424,6 +424,12 @@ static inline int SDL_RenderTexture_mzx(SDL_Renderer *renderer, SDL_Texture *tex
 #if !SDL_VERSION_ATLEAST(3,0,0)
 #define SDL_DestroySurface(s) SDL_FreeSurface(s)
 
+static inline SDL_bool SDL_GetSurfaceClipRect(SDL_Surface *surface, SDL_Rect *rect)
+{
+  *rect = surface->clip_rect;
+  return SDL_TRUE;
+}
+
 #if SDL_VERSION_ATLEAST(2,0,0)
 static inline SDL_Surface *SDL_CreateSurface(int width, int height, Uint32 format)
 {

@@ -108,6 +108,15 @@ static void set_dpi_aware(void)
 }
 #endif
 
+static inline boolean sdl_init(Uint32 flags)
+{
+#if SDL_VERSION_ATLEAST(3,0,0)
+  return SDL_Init(flags);
+#else
+  return SDL_Init(flags) >= 0;
+#endif
+}
+
 boolean platform_init(void)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
@@ -138,7 +147,7 @@ boolean platform_init(void)
   set_dpi_aware();
 #endif
 
-  if(SDL_Init(flags) < 0)
+  if(!sdl_init(flags))
   {
     debug("Failed to initialize SDL; attempting with joystick support disabled: %s\n", SDL_GetError());
 
@@ -148,7 +157,7 @@ boolean platform_init(void)
     flags &= ~SDL_INIT_GAMEPAD;
 #endif
 
-    if(SDL_Init(flags) < 0)
+    if(!sdl_init(flags))
     {
       warn("Failed to initialize SDL: %s\n", SDL_GetError());
       return false;
@@ -169,7 +178,7 @@ boolean platform_init(void)
    * TODO: this probably redundant with behavior already in SDL.
    */
   if(!SDL_HasScreenKeyboardSupport())
-    SDL_StartTextInput();
+    SDL_StartTextInput(NULL); // FIXME
 #else
   SDL_EnableUNICODE(1);
 #endif

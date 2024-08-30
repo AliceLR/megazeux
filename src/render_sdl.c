@@ -25,6 +25,7 @@
 #include "yuv.h"
 
 #include <limits.h>
+#include <stdlib.h>
 
 CORE_LIBSPEC Uint32 sdl_window_id;
 
@@ -88,7 +89,7 @@ static boolean sdl_get_desktop_display_mode(SDL_DisplayMode *display_mode)
   }
 
   warn("Failed to query desktop display mode: %s\n", SDL_GetError());
-  list = SDL_GetFullscreenDisplayModes(0, &count);
+  list = (const SDL_DisplayMode **)SDL_GetFullscreenDisplayModes(0, &count);
   if(list)
   {
     if(count)
@@ -128,7 +129,8 @@ static boolean sdl_get_smallest_usable_display_mode(SDL_DisplayMode *display_mod
   int count;
   int i;
 
-  const SDL_DisplayMode **list = SDL_GetFullscreenDisplayModes(0, &count);
+  const SDL_DisplayMode **list =
+   (const SDL_DisplayMode **)SDL_GetFullscreenDisplayModes(0, &count);
   if(!list)
     return false;
 
@@ -510,9 +512,15 @@ void sdl_update_colors(struct graphics_data *graphics,
       return;
     for(i = 0; i < count; i++)
     {
+#if SDL_VERSION_ATLEAST(3,0,0)
+      graphics->flat_intensity_palette[i] =
+       SDL_MapRGBA(render_data->flat_format, NULL,
+        palette[i].r, palette[i].g, palette[i].b, SDL_ALPHA_OPAQUE);
+#else
       graphics->flat_intensity_palette[i] =
        SDL_MapRGBA(render_data->flat_format,
         palette[i].r, palette[i].g, palette[i].b, SDL_ALPHA_OPAQUE);
+#endif
     }
   }
   else
@@ -536,7 +544,7 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   struct sdl_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_PixelFormat *format;
+  SDL_PixelFormatDetails *format;
   boolean fullscreen_windowed = graphics->fullscreen_windowed;
   boolean matched = false;
   Uint32 fmt;
@@ -726,27 +734,57 @@ static void find_texture_format(struct graphics_data *graphics,
   boolean need_alpha = false;
   uint32_t yuv_priority = YUV_PRIORITY;
   uint32_t priority = 0;
+  boolean is_software_renderer = false;
+  const char *renderer_name;
+  const uint32_t *formats = NULL;
+  int num_formats;
+
+#if SDL_VERSION_ATLEAST(3,0,0)
+
+  SDL_PropertiesID props = SDL_GetRendererProperties(render_data->renderer);
+  const uint32_t *pos;
+
+  renderer_name = SDL_GetRendererName(render_data->renderer);
+  if(!strcmp(renderer_name, SDL_SOFTWARE_RENDERER))
+    is_software_renderer = true;
+
+  // thanks for the michael mouse API
+  formats = (const uint32_t *)SDL_GetPointerProperty(props,
+   SDL_PROP_RENDERER_TEXTURE_FORMATS_POINTER, NULL);
+  num_formats = 0;
+  for(pos = formats; pos && *pos != SDL_PIXELFORMAT_UNKNOWN; pos++)
+    num_formats++;
+
+#else
+
   SDL_RendererInfo rinfo;
 
   if(!SDL_GetRendererInfo(render_data->renderer, &rinfo))
   {
+    renderer_name = rinfo.name;
+    num_formats = rinfo.num_texture_formats;
+    formats = rinfo.texture_formats;
+
+    if(rinfo.flags & SDL_RENDERER_SOFTWARE)
+      is_software_renderer = true;
+  }
+  else
+    warn("Failed to get renderer info!\n");
+
+#endif /* !SDL_VERSION_ATLEAST(3,0,0) */
+
+  if(formats)
+  {
     unsigned int depth = graphics->bits_per_pixel;
     int i;
 
-    info("SDL render driver: '%s'\n", rinfo.name);
-
-#if SDL_VERSION_ATLEAST(3,0,0)
-    if(!strcmp(rinfo.name, SDL_SOFTWARE_RENDERER))
-#else
-    if(rinfo.flags & SDL_RENDERER_SOFTWARE)
-#endif
-    {
+    info("SDL render driver: '%s'\n", renderer_name);
+    if(is_software_renderer)
       warn("Accelerated renderer not available. Rendering will be SLOW!\n");
-    }
 
 #ifdef __MACOSX__
     // Not clear if Metal supports the custom Apple YUV texture format.
-    if(!strcasecmp(rinfo.name, "opengl"))
+    if(!strcasecmp(renderer_name, "opengl"))
       yuv_priority = YUV_PRIORITY_APPLE;
 #endif
 
@@ -755,9 +793,9 @@ static void find_texture_format(struct graphics_data *graphics,
       need_alpha = true;
 
     // Try to use a native texture format to improve performance.
-    for(i = 0; i < (int)rinfo.num_texture_formats; i++)
+    for(i = 0; i < num_formats; i++)
     {
-      uint32_t format = rinfo.texture_formats[i];
+      uint32_t format = formats[i];
       unsigned int format_priority;
 
       debug("%d: %s\n", i, SDL_GetPixelFormatName(format));
@@ -775,8 +813,6 @@ static void find_texture_format(struct graphics_data *graphics,
       }
     }
   }
-  else
-    warn("Failed to get renderer info!\n");
 
   if(texture_format == SDL_PIXELFORMAT_UNKNOWN)
   {

@@ -1216,11 +1216,13 @@ static boolean process_event(SDL_Event *event)
 // TODO: this is kind of tacky
 #if SDL_VERSION_ATLEAST(3,0,0)
 #define FIELD_KEY       key
+#define FIELD_MOD       mod
 #ifdef DEBUG_TRACE
 #define FIELD_SCANCODE  scancode
 #endif
 #else
 #define FIELD_KEY       keysym.sym
+#define FIELD_MOD       keysym.mod
 #ifdef DEBUG_TRACE
 #define FIELD_SCANCODE  keysym.scancode
 #endif
@@ -1355,7 +1357,7 @@ static boolean process_event(SDL_Event *event)
 #ifdef CONFIG_PANDORA
       {
         // Pandora hack. Certain keys are actually joystick buttons.
-        int button = get_pandora_joystick_button(event->key.keysym.sym);
+        int button = get_pandora_joystick_button(event->key.FIELD_KEY);
         if(button >= 0)
         {
           joystick_button_release(status, 0, button);
@@ -1661,13 +1663,13 @@ boolean __peek_exit_input(void)
     {
       SDL_KeyboardEvent *ev = &(events[i].key);
 
-      if(ev->keysym.sym == SDLK_ESCAPE)
+      if(ev->FIELD_KEY == SDLK_ESCAPE)
         return true;
 
-      if(ev->keysym.sym == SDLK_c && (ev->keysym.mod & SDL_KMOD_CTRL))
+      if(ev->FIELD_KEY == SDLK_C && (ev->FIELD_MOD & SDL_KMOD_CTRL))
         return true;
 
-      if(ev->keysym.sym == SDLK_F4 && (ev->keysym.mod & SDL_KMOD_ALT))
+      if(ev->FIELD_KEY == SDLK_F4 && (ev->FIELD_MOD & SDL_KMOD_ALT))
         return true;
     }
   }

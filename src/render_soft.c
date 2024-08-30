@@ -54,21 +54,22 @@ static SDL_Surface *soft_get_screen_surface(struct soft_render_data *_render_dat
 static void soft_lock_buffer(struct soft_render_data *render_data,
  uint32_t **pixels, unsigned *pitch, unsigned *bpp, uint32_t *amask)
 {
+  const SDL_PixelFormatDetails *format = render_data->sdl.flat_format;
   SDL_Surface *screen = soft_get_screen_surface(render_data);
 
   *pixels = (uint32_t *)screen->pixels;
   *pitch = screen->pitch;
 #if SDL_VERSION_ATLEAST(3,0,0)
-  *bpp = screen->format->bytes_per_pixel * 8;
+  *bpp = format->bytes_per_pixel * 8;
 #else
-  *bpp = screen->format->BytesPerPixel * 8;
+  *bpp = format->BytesPerPixel * 8;
 #endif
 
   *pixels += *pitch * ((screen->h - 350) / 8);
   *pixels += (screen->w - 640) * *bpp / 64;
 
   if(amask)
-    *amask = screen->format->Amask;
+    *amask = format->Amask;
 
   SDL_LockSurface(screen);
 }
@@ -279,8 +280,10 @@ static void soft_sync_screen(struct graphics_data *graphics)
 
   if(render_data->shadow)
   {
-    SDL_Rect src_rect = render_data->shadow->clip_rect;
-    SDL_Rect dest_rect = render_data->screen->clip_rect;
+    SDL_Rect src_rect;
+    SDL_Rect dest_rect;
+    SDL_GetSurfaceClipRect(render_data->shadow, &src_rect);
+    SDL_GetSurfaceClipRect(render_data->screen, &dest_rect);
     SDL_BlitSurface(render_data->shadow, &src_rect,
      render_data->screen, &dest_rect);
   }
