@@ -81,7 +81,11 @@ static boolean sdl_get_desktop_display_mode(SDL_DisplayMode *display_mode)
   const SDL_DisplayMode *mode;
   int count;
 
-  mode = SDL_GetDesktopDisplayMode(0);
+  SDL_DisplayID id = SDL_GetPrimaryDisplay();
+  if(id == 0)
+    return false;
+
+  mode = SDL_GetDesktopDisplayMode(id);
   if(mode)
   {
     *display_mode = *mode;
@@ -129,8 +133,12 @@ static boolean sdl_get_smallest_usable_display_mode(SDL_DisplayMode *display_mod
   int count;
   int i;
 
-  const SDL_DisplayMode **list =
-   (const SDL_DisplayMode **)SDL_GetFullscreenDisplayModes(0, &count);
+  const SDL_DisplayMode **list;
+  SDL_DisplayID id = SDL_GetPrimaryDisplay();
+  if(id == 0)
+    return false;
+
+  list = (const SDL_DisplayMode **)SDL_GetFullscreenDisplayModes(id, &count);
   if(!list)
     return false;
 
@@ -402,9 +410,12 @@ void sdl_destruct_window(struct graphics_data *graphics)
   }
 
   // Used for 8bpp support for the software renderer.
+  // This is attached to the surface in SDL3 and should not be destroyed.
   if(render_data->palette)
   {
+#if !SDL_VERSION_ATLEAST(3,0,0)
     SDL_DestroyPalette(render_data->palette);
+#endif
     render_data->palette = NULL;
   }
 
@@ -544,7 +555,7 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   struct sdl_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_PixelFormatDetails *format;
+  SDL_Surface *target;
   boolean fullscreen_windowed = graphics->fullscreen_windowed;
   boolean matched = false;
   Uint32 fmt;
@@ -620,18 +631,37 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
     render_data->shadow = NULL;
   }
 
-  format = render_data->shadow ? render_data->shadow->format :
-                                 render_data->screen->format;
-  render_data->flat_format = format;
+  target = render_data->shadow ? render_data->shadow : render_data->screen;
+#if SDL_VERSION_ATLEAST(3,0,0)
+  render_data->flat_format = SDL_GetPixelFormatDetails(target->format);
+#else
+  render_data->flat_format = target->format;
+#endif
 
   if(fmt == SDL_PIXELFORMAT_INDEX8)
   {
+#if SDL_VERSION_ATLEAST(3,0,0)
+    render_data->palette = SDL_CreateSurfacePalette(target);
+    if(!render_data->palette)
+    {
+      warn("Failed to allocate palette: %s\n", SDL_GetError());
+      goto err_free;
+    }
+#else
     render_data->palette = SDL_CreatePalette(SMZX_PAL_SIZE);
     if(!render_data->palette)
     {
       warn("Failed to allocate palette: %s\n", SDL_GetError());
       goto err_free;
     }
+
+    if(SDL_SetPixelFormatPalette(target->format, render_data->palette))
+    {
+      warn("Failed to set pixel format palette: %s\n", SDL_GetError());
+      goto err_free;
+    }
+#endif
+
     render_data->palette_colors =
      (SDL_Color *)ccalloc(SMZX_PAL_SIZE, sizeof(SDL_Color));
     if(!render_data->palette_colors)
@@ -639,16 +669,11 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
       warn("Failed to allocate palette colors\n");
       goto err_free;
     }
-
-    if(SDL_SetPixelFormatPalette(format, render_data->palette))
-    {
-      warn("Failed to set pixel format palette: %s\n", SDL_GetError());
-      goto err_free;
-    }
   }
   else
   {
     render_data->palette = NULL;
+    render_data->palette_colors = NULL;
   }
 
   sdl_window_id = SDL_GetWindowID(render_data->window);
@@ -964,7 +989,8 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
   if(!render_data->rgb_to_yuv)
   {
 #if SDL_VERSION_ATLEAST(3,0,0)
-#error wtf
+    render_data->flat_format =
+     SDL_GetPixelFormatDetails(render_data->texture_format);
 #else
     // This is required for SDL_MapRGBA to work, but YUV formats can ignore it.
     render_data->pixel_format = SDL_AllocFormat(render_data->texture_format);

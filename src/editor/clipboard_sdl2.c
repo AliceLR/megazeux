@@ -44,7 +44,11 @@ void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
   }
 
   dest_ptr[-1] = 0;
+#if SDL_VERSION_ATLEAST(3,0,0)
+  if(!SDL_SetClipboardText(dest_data))
+#else
   if(SDL_SetClipboardText(dest_data) < 0)
+#endif
     warn("SDL_SetClipboardText failed: %s\n", SDL_GetError());
 
   free(dest_data);

@@ -50,7 +50,7 @@ static void sdl_audio_callback(void *userdata, SDL_AudioStream *stream,
 
 void init_audio_platform(struct config_info *conf)
 {
-  SDL_AudioDeviceID audio_device = SDL_AUDIO_DEVICE_DEFAULT_OUTPUT;
+  SDL_AudioDeviceID audio_device = SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
   int frames = 0;
   char hint[16];
   void *tmp;
@@ -59,7 +59,7 @@ void init_audio_platform(struct config_info *conf)
   audio_format = SAMPLE_S16;
 
   memset(&audio_settings, 0, sizeof(audio_settings));
-  if(SDL_GetAudioDeviceFormat(audio_device, &audio_settings, &frames) < 0)
+  if(!SDL_GetAudioDeviceFormat(audio_device, &audio_settings, &frames))
   {
     // Can't query, try to continue anyway...
     audio_settings.freq = 48000;

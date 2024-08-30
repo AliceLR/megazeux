@@ -164,7 +164,9 @@ boolean platform_init(void)
     }
   }
 
-#if SDL_VERSION_ATLEAST(2,0,0)
+#if SDL_VERSION_ATLEAST(3,0,0)
+  // FIXME: Can't do this here, because it is per-window.
+#elif SDL_VERSION_ATLEAST(2,0,0)
   /* Most platforms want text input events always on so they can generate
    * convenient unicode text values, but in Android this causes some problems:
    *
@@ -178,7 +180,7 @@ boolean platform_init(void)
    * TODO: this probably redundant with behavior already in SDL.
    */
   if(!SDL_HasScreenKeyboardSupport())
-    SDL_StartTextInput(NULL); // FIXME
+    SDL_StartTextInput();
 #else
   SDL_EnableUNICODE(1);
 #endif
