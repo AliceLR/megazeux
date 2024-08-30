@@ -52,7 +52,8 @@
 // The renderers in render_layer_code.hpp should generally be used instead.
 // It might be useful to build for tests or benchmarking, though.
 
-static inline void reference_renderer(uint32_t * RESTRICT pixels, size_t pitch,
+static inline void reference_renderer(uint32_t * RESTRICT pixels,
+ int width_px, int height_px, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer)
 {
   unsigned int mode = layer->mode;
@@ -134,7 +135,7 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels, size_t pitch,
               y = layer->y + ch_y * 14 + row;
               x = layer->x + ch_x * 8 + col;
 
-              if(x >= 0 && x < SCREEN_PIX_W && y >= 0 && y < SCREEN_PIX_H)
+              if(x >= 0 && x < width_px && y >= 0 && y < height_px)
               {
                 drawPtr = pixels + (pitch / sizeof(uint32_t)) * y + x;
 
@@ -152,7 +153,7 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels, size_t pitch,
               y = layer->y + ch_y * 14 + row;
               x = layer->x + ch_x * 8 + col;
 
-              if(x >= 0 && x < SCREEN_PIX_W && y >= 0 && y < SCREEN_PIX_H)
+              if(x >= -1 && x < width_px && y >= 0 && y < height_px)
               {
                 drawPtr = pixels + (pitch / sizeof(uint32_t)) * y + x;
 
@@ -161,8 +162,9 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels, size_t pitch,
                 if(char_idx[pix_pos] != tcol)
                 {
                   pix = char_colors[pix_pos];
-                  *drawPtr = pix;
-                  if(x < SCREEN_PIX_W - 1)
+                  if(x >= 0)
+                    *drawPtr = pix;
+                  if(x < width_px - 1)
                     *(++drawPtr) = pix;
                 }
               }
@@ -177,57 +179,72 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels, size_t pitch,
 }
 #endif
 
-void render_layer(void * RESTRICT pixels, int force_bpp, size_t pitch,
+static size_t get_align_for_offset(size_t value)
+{
+#ifndef SKIP_64_ALIGN
+  if(value % sizeof(uint64_t) == 0)
+  {
+    return 64;
+  }
+  else
+#endif
+
+  if(value % sizeof(uint32_t) == 0)
+  {
+    return 32;
+  }
+  else
+
+  if(value % sizeof(uint16_t) == 0)
+  {
+    return 16;
+  }
+  else
+    return 8;
+}
+
+void render_layer(void * RESTRICT pixels,
+ size_t width_px, size_t height_px, size_t pitch, int bpp,
  const struct graphics_data *graphics, const struct video_layer *layer)
 {
-#ifdef BUILD_REFERENCE_RENDERER
-  reference_renderer((uint32_t * RESTRICT)pixels, pitch, graphics, layer);
+#if defined(BUILD_REFERENCE_RENDERER) && !defined(MZX_UNIT_TESTS)
+  reference_renderer((uint32_t * RESTRICT)pixels,
+   width_px, height_px, pitch, graphics, layer);
   return;
 #endif
 
   int smzx = layer->mode;
   int trans = layer->transparent_col != -1;
   size_t drawStart;
-  int align = 8;
+  int align;
   int clip = 0;
-  int ppal = graphics->protected_pal_position;
 
   if(layer->x < 0 || layer->y < 0 ||
-   (layer->x + layer->w * CHAR_W) > SCREEN_PIX_W ||
-   (layer->y + layer->h * CHAR_H) > SCREEN_PIX_H)
+   (layer->x + layer->w * CHAR_W) > width_px ||
+   (layer->y + layer->h * CHAR_H) > height_px)
     clip = 1;
 
-  if(force_bpp == -1)
-    force_bpp = graphics->bits_per_pixel;
+  if(bpp == -1)
+    bpp = graphics->bits_per_pixel;
 
   drawStart =
-   (size_t)((char *)pixels + layer->y * pitch + (layer->x * force_bpp / 8));
+   (size_t)((char *)pixels + layer->y * (ptrdiff_t)pitch + (layer->x * bpp / 8));
 
   /**
    * Select the highest pixel align the current platform is capable of.
    * Additionally, to simplify the renderer code, the align must also be
    * capable of addressing the first pixel of the draw (e.g. a 64-bit platform
    * will use a 32-bit align if the layer is on an odd horizontal pixel).
+   * This must be true for the first pixel of every character row drawn, so
+   * the pitch must be in alignment too.
+   *
+   * In other words, the alignment is the minimum of:
+   *   the number of bits of size_t (rough approximation of arch width),
+   *   the number of bits of the first pixel's alignment in memory,
+   *   the number of bits of the pitch's alignment (for rows after the first).
    */
-#ifndef SKIP_64_ALIGN
-  if((sizeof(size_t) >= sizeof(uint64_t)) && ((drawStart % sizeof(uint64_t)) == 0))
-  {
-    align = 64;
-  }
-  else
-#endif
+  align = get_align_for_offset(sizeof(size_t) | drawStart | pitch);
 
-  if((sizeof(size_t) >= sizeof(uint32_t)) && ((drawStart % sizeof(uint32_t)) == 0))
-  {
-    align = 32;
-  }
-  else
-
-  if((sizeof(size_t) >= sizeof(uint16_t)) && ((drawStart % sizeof(uint16_t)) == 0))
-  {
-    align = 16;
-  }
-
-  render_layer_func(pixels, pitch, graphics, layer,
-   force_bpp, align, smzx, ppal, trans, clip);
+  render_layer_func(pixels, width_px, height_px, pitch, graphics, layer,
+   bpp, align, smzx, trans, clip);
 }

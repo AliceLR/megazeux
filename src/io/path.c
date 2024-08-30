@@ -20,6 +20,7 @@
  */
 
 #include <errno.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #ifndef _MSC_VER

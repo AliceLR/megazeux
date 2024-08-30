@@ -277,11 +277,9 @@ CORE_LIBSPEC int new_file(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
  const char *title, enum allow_dirs allow_dirs);
 
-#if defined(CONFIG_UPDATER) || defined(CONFIG_LOADSAVE_METER)
 CORE_LIBSPEC void meter(const char *title, unsigned int progress,
  unsigned int out_of);
 CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
-#endif // CONFIG_UPDATER || CONFIG_LOADSAVE_METER
 
 // Dialog box color #define's-
 #define DI_MAIN             31

@@ -21,6 +21,14 @@
 #ifndef __PLATFORM_DJGPP_H
 #define __PLATFORM_DJGPP_H
 
+#include "../../src/compat.h"
+
+__M_BEGIN_DECLS
+
+#define DMA_AUTOINIT  0x10
+#define DMA_READ      0x44
+#define DMA_WRITE     0x48
+
 enum
 {
   DISPLAY_ADAPTER_UNSUPPORTED,
@@ -80,6 +88,12 @@ struct vbe_mode_info
   uint16_t offscreen_size;
 } __attribute__((packed));
 
+struct irq_state
+{
+  int port_21h;
+  int port_A1h;
+};
+
 int djgpp_display_adapter_detect(void);
 const char *djgpp_display_adapter_name(int adapter);
 int djgpp_malloc_boundary(int len_bytes, int boundary_bytes, int *selector);
@@ -87,5 +101,31 @@ boolean djgpp_push_enable_nearptr(void);
 boolean djgpp_pop_enable_nearptr(void);
 void djgpp_enable_dma(uint8_t port, uint8_t mode, int offset, int bytes);
 void djgpp_disable_dma(uint8_t port);
+
+void djgpp_irq_enable(int irq, struct irq_state *old_state);
+void djgpp_irq_restore(struct irq_state *old_state);
+void djgpp_irq_ack(int irq);
+int djgpp_irq_vector(int irq);
+
+/* Because multiple sound engines rely on floating point, the x87 FPU
+ * state needs to be saved at the beginning of and reloaded at the end
+ * of every audio driver callback. Otherwise, these engines will clobber
+ * floating point values from normal execution (especially noticeable
+ * in stb_vorbis streams corrupted during their loading process).
+ *
+ * Affected engines: libxmp, libmodplug, libopenmpt, stb_vorbis.
+ * Also affected: libvorbis, which is unusable for other reasons.
+ */
+static inline void djgpp_save_x87(uint8_t fpustate[108])
+{
+  __asm__("fsave %0" : "=m"(fpustate));
+}
+static inline void djgpp_restore_x87(const uint8_t fpustate[108])
+{
+  __asm__("fwait\n\t"
+          "frstor %0" : : "m"(fpustate));
+}
+
+__M_END_DECLS
 
 #endif // __PLATFORM_DJGPP_H

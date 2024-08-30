@@ -117,6 +117,7 @@
       <AdditionalOptions>/J /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <SDLCheck>false</SDLCheck>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <DisableSpecificWarnings>4244;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalDependencies>zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -153,6 +154,7 @@
       <AdditionalOptions>/J /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <SDLCheck>false</SDLCheck>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <DisableSpecificWarnings>4244;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -162,6 +164,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\editor\ansi.c" />
     <ClCompile Include="..\..\src\editor\block.c" />
     <ClCompile Include="..\..\src\editor\board.c" />
     <ClCompile Include="..\..\src\editor\buffer.c" />
@@ -171,6 +174,7 @@
     <ClCompile Include="..\..\src\editor\debug.c" />
     <ClCompile Include="..\..\src\editor\edit.c" />
     <ClCompile Include="..\..\src\editor\edit_di.c" />
+    <ClCompile Include="..\..\src\editor\edit_export.c" />
     <ClCompile Include="..\..\src\editor\edit_menu.c" />
     <ClCompile Include="..\..\src\editor\fill.c" />
     <ClCompile Include="..\..\src\editor\graphics.c" />
@@ -192,8 +196,10 @@
     <ClInclude Include="..\..\src\audio\sfx.h" />
     <ClInclude Include="..\..\src\block.h" />
     <ClInclude Include="..\..\src\const.h" />
+    <ClInclude Include="..\..\src\core_task.h" />
     <ClInclude Include="..\..\src\counter.h" />
     <ClInclude Include="..\..\src\data.h" />
+    <ClInclude Include="..\..\src\editor\ansi.h" />
     <ClInclude Include="..\..\src\editor\block.h" />
     <ClInclude Include="..\..\src\editor\board.h" />
     <ClInclude Include="..\..\src\editor\buffer.h" />
@@ -203,6 +209,7 @@
     <ClInclude Include="..\..\src\editor\debug.h" />
     <ClInclude Include="..\..\src\editor\edit.h" />
     <ClInclude Include="..\..\src\editor\edit_di.h" />
+    <ClInclude Include="..\..\src\editor\edit_export.h" />
     <ClInclude Include="..\..\src\editor\edit_menu.h" />
     <ClInclude Include="..\..\src\editor\fill.h" />
     <ClInclude Include="..\..\src\editor\graphics.h" />
@@ -229,6 +236,7 @@
     <ClInclude Include="..\..\src\mzm.h" />
     <ClInclude Include="..\..\src\platform.h" />
     <ClInclude Include="..\..\src\scrdisp.h" />
+    <ClInclude Include="..\..\src\SDLmzx.h" />
     <ClInclude Include="..\..\src\util.h" />
     <ClInclude Include="..\..\src\window.h" />
     <ClInclude Include="..\..\src\world.h" />

@@ -26,5 +26,8 @@
     <ClInclude Include="config.h">
       <Filter>Header Files\MSVC</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\SDLmzx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

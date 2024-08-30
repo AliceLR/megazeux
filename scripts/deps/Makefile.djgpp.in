@@ -1,0 +1,32 @@
+#
+# DJGPP dependency builder support.
+#
+# Some byte order macros need to be predefined for tremor.
+#
+
+ALL_ARCH = i386
+
+HOST	 = i586-pc-msdosdjgpp
+CFLAGS	 = -O3 -g -DBYTE_ORDER=1 -DLITTLE_ENDIAN=1 -DBIG_ENDIAN=0
+CXXFLAGS = ${CFLAGS}
+
+ifneq (${USE_CMAKE},)
+$(error use Autotools for this arch.)
+endif
+
+ifneq (${ARCH},)
+ARCH = ${ALL_ARCH}
+ARCH_INIT = \
+	export CFLAGS='${CFLAGS}'; \
+	export CXXFLAGS='${CXXFLAGS}'; \
+	export PKG_CONFIG_PATH='${PREFIX}/lib/pkgconfig'; \
+	true
+
+ARCH_CONFIGURE_ARGS	= --disable-shared --enable-static
+TREMOR_LOWMEM		= 1
+
+all: ${ZLIB_TARGET} ${PNG_TARGET}
+all: ${OGG_TARGET} ${VORBIS_TARGET} ${TREMOR_TARGET} ${STB_TARGET}
+
+package: zlib_package png_package vorbis_package tremor_package stb_package
+endif

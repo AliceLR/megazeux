@@ -33,8 +33,12 @@
 #define W_OK   2
 #define R_OK   4
 
+#ifndef S_ISREG
 #define S_ISREG(mode) (mode & _S_IFREG)
+#endif
+#ifndef S_ISDIR
 #define S_ISDIR(mode) (mode & _S_IFDIR)
+#endif
 
 #define access      _access
 #define chdir       _chdir

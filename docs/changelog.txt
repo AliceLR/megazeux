@@ -5,6 +5,20 @@ FREAD/FREADn bugfixes, as the old behavior was unusably buggy.
 
 USERS
 
++ Added board and vlayer image export to the editor (Alt+X).
+  This feature will render the entire board (with overlay, if
+  applicable) or vlayer as it appears in the editor. This may
+  take a long time with large boards/vlayers.
++ Builds without libpng (Android, DOS) now use a simple fallback
+  PNG exporter for screenshots instead of falling back to BMP.
++ The DOS port now supports Sound Blaster Pro in stereo mode.
+  The driver should also support all other Sound Blasters with
+  DSP >=2.00 and the mono/8-bit modes of the Sound Blaster 16,
+  but these are disabled for now (no software mixer support for
+  mono output). IRQs higher than 7 are also supported now.
++ The DOS port now uses stb_vorbis for Ogg Vorbis playback,
+  which should fix most audio-related crash bugs. Related crash
+  bugs caused by stream management have also been fixed.
 + All "gamecontroller[...]" config.txt options have been renamed
   to "gamepad[...]". The old names are still supported.
 + Fixed blank screen bugs that occur with the glslscale renderer
@@ -14,6 +28,17 @@ USERS
 + HTML5: fixed the poor performance of FREADn and other features
   that rely on calculating the length of an open file.
 + Clear world (Alt+R) now resets the world version.
++ Fixed a crash bug and a false positive match bug in the
+  command IF ALIGNEDROBOT. The false positive bug has been
+  version locked to 2.80 through 2.92X (just in case).
++ Software layer rendering performance for transparent sprites
+  has been improved, significantly in some cases.
++ Fixed a software layer renderer bug where a buffer with a
+  pixel alignment that varies between lines would cause the
+  frame to render incorrectly.
++ Fixed a software layer renderer bug in 32-bit builds where
+  SMZX sprites would sometimes render incorrectly when clipping
+  off the left side of the screen.
 + Setting a string offset, limit, or splice to FREADn now
   respects the provided limit. If n is larger than the limit,
   n total bytes will still be read (up to the maximum string
@@ -82,6 +107,13 @@ USERS
 + The SDL audio driver will now initialize the software mixer
   frequency with the value returned by SDL_OpenAudioDevice.
 + Fixed audible pops when setting MOD_FREQUENCY.
++ ccv and png2smzx now return slightly more useful error
+  messages when an image fails to load.
++ ccv and png2smzx now support BMPs that use BI_BITFIELDS and
+  BI_ALPHABITFIELDS.
++ ccv and png2smzx now support Truevision TGA images.
++ Fixed YUV subsample averaging for UYVY (little endian) and
+  YUY2/YVYU (big endian).
 
 DEVELOPERS
 
@@ -104,7 +136,6 @@ DEVELOPERS
 + Moved SDL renderer window creation to render_sdl.c so both of
   the SDL renderer-based renderers can benefit from it.
 + Removed floating point division usage in render_gl2.c.
-+ -Og is now the default debug optimization level (was -O0).
 + Added --enable-lto to enable link-time optimizations.
 + The sanitizer config.sh options can now be used with release
   builds e.g. --enable-release --enable-asan.
@@ -125,6 +156,10 @@ DEVELOPERS
   These streams will be ignored by the software mixer.
 + sampled_mix_data now properly handles output requests smaller
   than the size of the audio buffer.
++ Added software renderer regression tests.
++ Added dependency builder makefile system in scripts/deps to
+  help with regenerating MinGW, DJGPP, darwin-dist, and Linux w/
+  MemorySanitizer dependencies.
 
 
 December 31st, 2023 - MZX 2.93

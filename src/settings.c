@@ -33,6 +33,8 @@
 
 #include "audio/audio.h"
 
+#include <string.h>
+
 // Settings dialog-
 
 //----------------------------

@@ -92,6 +92,7 @@ core_cobjs := \
   ${core_obj}/caption.o           \
   ${core_obj}/configure.o         \
   ${core_obj}/core.o              \
+  ${core_obj}/core_task.o         \
   ${core_obj}/counter.o           \
   ${core_obj}/data.o              \
   ${core_obj}/error.o             \
@@ -114,6 +115,7 @@ core_cobjs := \
   ${core_obj}/legacy_world.o      \
   ${core_obj}/mzm.o               \
   ${core_obj}/platform_time.o     \
+  ${core_obj}/pngops.o            \
   ${core_obj}/render.o            \
   ${core_obj}/robot.o             \
   ${core_obj}/run_robot.o         \
@@ -315,9 +317,8 @@ core_cxxobjs += ${audio_obj}/audio_reality.o
 endif
 
 ifeq (${LIBPNG},1)
-core_flags += $(LIBPNG_CFLAGS) -DNEED_PNG_WRITE_SCREEN
+core_flags += $(LIBPNG_CFLAGS)
 core_ldflags += $(LIBPNG_LDFLAGS)
-core_cobjs += ${core_obj}/pngops.o
 endif
 
 ifeq (${BUILD_AUDIO},1)

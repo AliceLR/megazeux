@@ -225,7 +225,7 @@ static void softscale_render_layer(struct graphics_data *graphics,
   unsigned int bpp;
 
   softscale_lock_texture(render_data, false, &pixels, &pitch, &bpp);
-  render_layer(pixels, bpp, pitch, graphics, layer);
+  render_layer(pixels, SCREEN_PIX_W, SCREEN_PIX_H, pitch, bpp, graphics, layer);
 }
 
 static void softscale_render_cursor(struct graphics_data *graphics, unsigned int x,

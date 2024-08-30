@@ -75,6 +75,7 @@ var rad = std("RAD");
 var libvorbis = std("libvorbis");
 var tremor = std("tremor");
 var tremor_lowmem = std("tremor<br>(lowmem)");
+var stb_vorbis = std("stb_vorbis");
 
 var render_ctr = std("render_ctr");
 var render_nds = std("render_nds");
@@ -254,7 +255,7 @@ var archs =
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
-    ogg_vorbis:       tremor_lowmem,
+    ogg_vorbis:       stb_vorbis,
     optimization:     speed,
     sdl:              no,
     editor:           yes,
@@ -1002,6 +1003,7 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
   <li><b>i386</b> / <b>i686</b> / etc.</li>
   <li><b>ARMhf</b></li>
   <li><b>AArch64</b></li>
+  <li><b>RISC-V RV64GC</b></li>
 </ul>
 <p>
   More niche architectures are only tested via non-Linux ports or are
@@ -1016,10 +1018,10 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
   <li><b>PA-RISC</b> (qemu-system-hppa)</li>
   <li><b>PowerPC</b> (qemu-system-ppc, Nintendo Wii, Nintendo Wii U, Mac OS X)</li>
   <li><b>PowerPC 64</b> (qemu-system-ppc64, Mac OS X)</li>
-  <li><b>RISC-V RV64GC</b> (qemu-system-riscv64)</li>
   <li><b>SPARC</b> (qemu-system-sparc)</li>
   <li><b>SPARC64</b> (qemu-system-sparc64)</li>
   <li><b>SuperH SH-4</b> (qemu-sh4-static, Sega Dreamcast)</li>
+  <li><b>IBM Z</b> (qemu-s390x-static)</li>
 </ul>
 
 <hr>

@@ -384,6 +384,9 @@ CORE_LIBSPEC void ec_load_set_secondary(const char *filename,
  uint8_t dest[CHAR_SIZE * CHARSET_SIZE]);
 CORE_LIBSPEC void draw_char_mixed_pal_ext(uint8_t chr, uint8_t bg_color,
  uint8_t fg_color, unsigned int x, unsigned int y, unsigned int chr_offset);
+CORE_LIBSPEC boolean dump_layer_to_image(const char *filename,
+ size_t width_ch, size_t height_ch, const struct char_element *layer,
+ boolean (*status_callback)(void *priv, size_t p, size_t m), void *priv);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_ENABLE_SCREENSHOTS

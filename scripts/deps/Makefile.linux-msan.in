@@ -1,0 +1,37 @@
+#
+# linux MemorySanitizer dependency builder support.
+#
+# Every dependency of MegaZeux needs to be instrumented with
+# MemorySanitizer for MemorySanitizer builds to work.
+# Because SDL uses so many external libraries, this means
+# that MSan builds don't support SDL.
+#
+
+THIS_ARCH = $(shell uname -m)
+ALL_ARCH = ${THIS_ARCH}
+
+CC	 = clang
+CXX	 = clang++
+CFLAGS	 = -O3 -fsanitize=memory -fno-omit-frame-pointer -fPIC \
+	  -fsanitize-memory-track-origins=2 -g
+CXXFLAGS = ${CFLAGS}
+
+ifneq (${ARCH},)
+ifneq (${ARCH},$(shell uname -m))
+HOST     = ${ARCH}-linux-gnu
+CC       = ${HOST}-${CC}
+CXX      = ${HOST}-${CXX}
+endif
+
+ARCH_INIT = \
+	export CC='${CC}'; \
+	export CXX='${CXX}'; \
+	export CFLAGS='${CFLAGS}'; \
+	export CXXFLAGS='${CXXFLAGS}'; \
+	true
+
+USE_CMAKE := 0
+
+all: ${ZLIB_TARGET} ${PNG_TARGET} ${OGG_TARGET} ${VORBIS_TARGET} ${STB_TARGET}
+package: zlib_package png_package vorbis_package stb_package
+endif

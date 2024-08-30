@@ -185,7 +185,7 @@ static inline int platform_unlink(const char *path)
   if(utf8_to_utf16(path, wpath, MAX_PATH))
     return _wunlink(wpath);
 #endif
-  return unlink(path);
+  return _unlink(path);
 }
 
 static inline int platform_rmdir(const char *path)
@@ -299,7 +299,7 @@ static inline boolean platform_readdir(struct dir_handle dh, char *buffer,
 
 #ifdef DT_UNKNOWN
     if(d_type)
-      d_type = wd->d_type;
+      *d_type = wd->d_type;
 #endif
 
     return true;
@@ -344,7 +344,7 @@ static inline int platform_fseek(FILE *fp, int64_t offset, int whence)
   return _fseeki64(fp, offset, whence);
 #else
   fpos_t pos;
-  int fd = fileno(fp);
+  int fd = _fileno(fp);
   if(fd < 0)
     return -1;
 
@@ -378,7 +378,7 @@ static inline int64_t platform_ftell(FILE *fp)
 
 static inline int64_t platform_filelength(FILE *fp)
 {
-  int fd = fileno(fp);
+  int fd = _fileno(fp);
   return fd >= 0 ? _filelengthi64(fd) : -1;
 }
 
