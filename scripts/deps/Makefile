@@ -189,6 +189,10 @@ build/${SDL2_22}: build/${SDL2_22}.tar.gz | build
 	# SDL 2.0.22 doesn't actually need -fobjc-weak but CMakeLists.txt
 	# tries to force it. This doesn't affect autotools.
 	sed -i '' 's/^.*fobjc-weak.*$$//g' build/${SDL2_22}/CMakeLists.txt
+	# SDL 2.0.22 doesn't need AVFoundation.framework either, but
+	# the CMakeLists.txt links it anyway just to break Snow Leopard.
+	# This also does not affect autotools.
+	sed -i '' 's/set(SDL_FRAMEWORK_AVFOUNDATION 1)//g' build/${SDL2_22}/CMakeLists.txt
 
 build/${SDL2_LATEST}: build/${SDL2_LATEST}.tar.gz | build
 	cd build && \

@@ -55,6 +55,13 @@ Install any of the following standalone SDKs with XcodeLegacy:
 | `ppc`     | 3.2.6	| 10.4u		| 10.4		| 2.0.3		| Last SDK to target PPC
 | `ppc64`   | 3.2.6	| 10.5		| 10.5		| 2.0.3		| Last SDK to target PPC
 
+NOTE: XcodeLegacy will replace the current Xcode ld with a wrapper that reroutes all
+PowerPC and <=10.6 usage to the Xcode 3.2.6 ld. This script will be located at
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld
+and the check that redirects <=10.6 needs to be changed to <=10.5 instead. Otherwise,
+linking i686 and x86_64 binaries will fail because ld doesn't understand the .tbd files
+in newer SDKs.
+
 Builds the following libraries: zlib, libpng, libogg, libvorbis, libSDL, libSDL2.
 
 ```sh
