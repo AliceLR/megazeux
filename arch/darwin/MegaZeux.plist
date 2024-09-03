@@ -7,7 +7,7 @@
 	<key>CFBundleIconFile</key>
 	<string>MegaZeux</string>
 	<key>CFBundleIdentifier</key>
-	<string>MegaZeux</string>
+	<string>com.digitalmzx.MegaZeux</string>
 	<key>CFBundleName</key>
 	<string>MegaZeux</string>
 </dict>
