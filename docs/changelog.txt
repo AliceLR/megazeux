@@ -176,6 +176,11 @@ DEVELOPERS
 + Added dependency builder makefile system in scripts/deps to
   help with regenerating MinGW, DJGPP, darwin-dist, and Linux w/
   MemorySanitizer dependencies.
++ Overhauled the darwin-dist build system to allow for more
+  modern XcodeLegacy-based compilation, including code signing
+  and shared library support (via dylibbundler). The following
+  architectures are now supported: i386, x86_64, x86_64h, ppc,
+  ppc64, and arm64/arm64e (untested).
 
 
 December 31st, 2023 - MZX 2.93
