@@ -28,6 +28,9 @@ USERS
   bugs caused by stream management have also been fixed.
 + All "gamecontroller[...]" config.txt options have been renamed
   to "gamepad[...]". The old names are still supported.
++ Windows UNC paths are now supported in the file manager.
++ Paths with colons (:) are now explicitly supported in Linux
+  and macOS and always rejected in path strings used by worlds.
 + Fixed blank screen bugs that occur with the glslscale renderer
   in conjunction with Intel HD Graphics 2500 graphics drivers
   and possibly some other old drivers.

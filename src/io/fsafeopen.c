@@ -572,12 +572,16 @@ static int fsafetest(const char *path, char *newpath, size_t buffer_len)
     return FSAFE_SUCCESS;
 
   // windows drive letters
+  if(strchr(newpath, ':') != NULL)
+    return -FSAFE_WINDOWS_DRIVE_LETTER_ERROR;
+  /*
   if(((newpath[0] >= 'A') && (newpath[0] <= 'Z')) ||
      ((newpath[0] >= 'a') && (newpath[0] <= 'z')))
   {
     if(newpath[1] == ':')
       return -FSAFE_WINDOWS_DRIVE_LETTER_ERROR;
   }
+  */
 
   // reject any pathname including /../
   for(i = 0; i < pathlen; i++)

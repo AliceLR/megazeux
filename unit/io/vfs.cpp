@@ -165,7 +165,7 @@ static void do_op_and_stat(vfilesystem *vfs, const vfs_op_result &d,
     case DO_MAKE_ROOT:
       ret = vfs_make_root(vfs, d.path);
       ASSERTEQ(ret, d.expected_ret, "make_root: %s", d.path);
-      snprintf(buffer, MAX_PATH, "%s:/", d.path);
+      snprintf(buffer, MAX_PATH, "%s://", d.path);
       st_path = buffer;
       break;
   }
@@ -209,8 +209,10 @@ UNITTEST(vfs_stat)
     { "", -ENOENT },
     { "jsdjfk", -ENOENT },
     { "sdcard:/", -ENOENT },
+    { "sdcard://", -ENOENT },
     { "verylongrootnamewhywouldyouevennamearootthis:/", -ENOENT },
     { "D:\\", -ENOENT },
+    { "D:\\\\", -ENOENT },
   };
 
   ScopedVFS vfs = vfs_init();
@@ -259,7 +261,10 @@ UNITTEST(vfs_make_root)
     { "",       -EINVAL },
     { "wowe!",  -EINVAL },
     { "fat:/",  -EINVAL },
+    { "fat://", -EINVAL },
     { "D:",     -EINVAL },
+    { "\\\\.\\", -EINVAL },
+    { "\\\\.\\u", -EINVAL },
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
     { "C",      -EEXIST },
 #endif
@@ -283,7 +288,7 @@ UNITTEST(vfs_make_root)
     {
       struct stat st;
       char buffer[MAX_PATH];
-      snprintf(buffer, MAX_PATH, "%s:/", d.path);
+      snprintf(buffer, MAX_PATH, "%s://", d.path);
       ret = vfs_stat(vfs, buffer, &st);
       ASSERTEQ(ret, 0, "stat %s", buffer);
       ASSERTEQ(S_ISDIR(st.st_mode), 1, "stat s_isdir %s", buffer);
@@ -317,9 +322,13 @@ UNITTEST(vfs_create_file_at_path)
     { "reallylongfilename.reallylongext", 0,    { 5, S_IFREG, 0 }},
     { "../initrd.img", 0,                       { 6, S_IFREG, 0 }},
     { "é", 0,                                   { 7, S_IFREG, 0 }},
-    { "fat:/testfile", 0,                       { 8, S_IFREG, 0 }},
+    { "fat://testfile", 0,                      { 8, S_IFREG, 0 }},
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
     { "C:/dkdfjklsjdf", 0,                      { 9, S_IFREG, 0 }},
+#endif
+#ifdef PATH_UNC_ROOTS
+    { "\\\\.\\c:\\uncfile.txt", 0,              { 10, S_IFREG, 0 }},
+    { "\\\\?\\c:\\uncfile2.txt", 0,             { 11, S_IFREG, 0 }},
 #endif
   };
 
@@ -334,10 +343,19 @@ UNITTEST(vfs_create_file_at_path)
     { "./",                 -EISDIR },
     { "",                   -ENOENT },
     { "abchnkdf/file.txt",  -ENOENT },
-    { "fat:\\",             -EISDIR },
-    { "sdcard:/testfile",   -ENOENT },
+    { "fat:\\\\",           -EISDIR },
+    { "sdcard://testfile",  -ENOENT },
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
     { "c:\\",               -EISDIR },
+#endif
+#ifdef PATH_UNC_ROOTS
+    { "\\\\.\\",            -EISDIR }, // resolves to /
+    { "\\\\.\\c",           -ENOENT },
+    { "\\\\.\\c:",          -ENOENT },
+    { "\\\\.\\c:\\",        -EISDIR },
+    { "\\\\?\\c:\\",        -EISDIR },
+    { "\\\\.\\c:\\file.txt", -EEXIST },
+    { "\\\\?\\c:\\file.txt", -EEXIST },
 #endif
   };
 
@@ -391,9 +409,13 @@ UNITTEST(vfs_mkdir)
     { "0", 0,                           { 8, S_IFDIR, 0 }}, // Test inserting before existing.
     { "1", 0,                           { 9, S_IFDIR, 0 }},
     { "á", 0,                           { 10, S_IFDIR, 0 }},
-    { "fat:\\somedir", 0,               { 11, S_IFDIR, 0 }},
+    { "fat:\\\\somedir", 0,             { 11, S_IFDIR, 0 }},
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
     { "c:/fff/", 0,                     { 12, S_IFDIR, 0 }},
+#endif
+#ifdef PATH_UNC_ROOTS
+    { "\\\\.\\c:\\uncdir", 0,           { 13, S_IFDIR, 0 }},
+    { "\\\\?\\c:\\uncdir2", 0,          { 14, S_IFDIR, 0 }},
 #endif
   };
 
@@ -407,13 +429,22 @@ UNITTEST(vfs_mkdir)
     { ".",              -EEXIST },
     { "..",             -EEXIST },
     { "./",             -EEXIST },
-    { "D:\\",           -ENOENT },
-    { "sdcardsfdfds:/", -ENOENT },
+    { "D:\\\\",         -ENOENT },
+    { "sdcardsfdfd://", -ENOENT },
     { "file.txt/abc",   -ENOTDIR },
-    { "fat:/",          -EEXIST },
-    { "sdcard:\\a",     -ENOENT },
+    { "fat://",         -EEXIST },
+    { "sdcard:\\\\a",   -ENOENT },
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
     { "C:\\",           -EEXIST },
+#endif
+#ifdef PATH_UNC_ROOTS
+    { "\\\\.\\",        -EEXIST }, // resolves to /
+    { "\\\\.\\c",       -ENOENT },
+    { "\\\\.\\c:",      -ENOENT },
+    { "\\\\.\\c:\\",    -EEXIST },
+    { "\\\\?\\c:\\",    -EEXIST },
+    { "\\\\.\\c:\\aaa", -EEXIST },
+    { "\\\\?\\c:\\aaa", -EEXIST },
 #endif
   };
 
@@ -465,6 +496,13 @@ UNITTEST(vfs_chdir_getcwd)
 #else
 #define BASE "/"
 #endif
+
+#ifdef PATH_DOS_STYLE_ROOTS
+#define DIR_SEPARATOR2 DIR_SEPARATOR
+#else
+#define DIR_SEPARATOR2 DIR_SEPARATOR DIR_SEPARATOR
+#endif
+
 #define NAME32 "0123456789.0123456789.0123456789"
 #define NAME128 NAME32 "." NAME32 "." NAME32 "." NAME32
 #define NAME512 NAME128 "." NAME128 "." NAME128 "." NAME128
@@ -490,15 +528,22 @@ UNITTEST(vfs_chdir_getcwd)
     { "/", "", DO_CHDIR, 0,               0,        { 1, S_IFDIR, 0 }},
     { BASE, "", DO_GETCWD, 0,             0,        { 1, S_IFDIR, 0 }},
     { "fat", "", DO_MAKE_ROOT, 0,         0,        { 6, S_IFDIR, 0 }},
-    { "fat:/", "", DO_CHDIR, 0,           0,        { 6, S_IFDIR, 0 }},
-    { "fat:" DIR_SEPARATOR, "", DO_GETCWD, 0, 0,    { 6, S_IFDIR, 0 }},
+    { "fat://", "", DO_CHDIR, 0,          0,        { 6, S_IFDIR, 0 }},
+    { "fat:" DIR_SEPARATOR2, "", DO_GETCWD, 0, 0,   { 6, S_IFDIR, 0 }},
     { "dir", "", DO_MKDIR, 0,             0,        { 7, S_IFDIR, 0 }},
     { "dir", "", DO_CHDIR, 0,             0,        { 7, S_IFDIR, 0 }},
-    { "fat:" DIR_SEPARATOR "dir", "", DO_GETCWD, 0, 0, { 7, S_IFDIR, 0 }},
+    { "fat:" DIR_SEPARATOR2 "dir", "", DO_GETCWD, 0, 0, { 7, S_IFDIR, 0 }},
 #ifdef VIRTUAL_FILESYSTEM_DOS_DRIVE
     // "/" is the root of the current drive in these OSes.
     { "/",  "", DO_CHDIR, 0,              0,        { 6, S_IFDIR, 0 }},
-    { "fat:" DIR_SEPARATOR, "", DO_GETCWD, 0, 0,    { 6, S_IFDIR, 0 }},
+    { "fat:" DIR_SEPARATOR2, "", DO_GETCWD, 0, 0,   { 6, S_IFDIR, 0 }},
+#endif
+#ifdef PATH_UNC_ROOTS
+    // VFS functions currently delete the UNC prefix.
+    { "\\\\.\\fat:\\", "", DO_CHDIR, 0,   0,        { 6, S_IFDIR, 0 }},
+    { "fat:" DIR_SEPARATOR2, "", DO_GETCWD, 0, 0,   { 6, S_IFDIR, 0 }},
+    { "\\\\?\\fat:\\", "", DO_CHDIR, 0,   0,        { 6, S_IFDIR, 0 }},
+    { "fat:" DIR_SEPARATOR2, "", DO_GETCWD, 0, 0,   { 6, S_IFDIR, 0 }},
 #endif
   };
 
@@ -1107,7 +1152,11 @@ UNITTEST(vfs_cache_directory)
     { "/dir3",          0, 3 },
     { "dir3/../dir4",   0, 4 },
     { "vdir/dir5",      0, 5 },
-    { "fat:/dir6",      0, 6 },
+    { "fat://dir6",     0, 6 },
+#ifdef PATH_UNC_ROOTS
+    { "\\\\.\\fat:\\dir7", 0, 7 },
+    { "\\\\?\\fat:\\dir8", 0, 8 },
+#endif
   };
 
   static const vfs_cache_result invalid_data[] =
@@ -1125,10 +1174,19 @@ UNITTEST(vfs_cache_directory)
     { "vdir",       -EEXIST,  0 },
     { "vfile",      -EEXIST,  0 },
     { "vfile/dirE", -ENOTDIR, 0 },
-    { "fat:/",      -EEXIST,  0 },
-    { "fat:/dirF",  0,        56789 },
-    { "fat:/dirG/dirH", -ENOENT, 0 },
-    { "sdcard:/dirI",   -ENOENT, 0 },
+    { "fat://",     -EEXIST,  0 },
+    { "fat://dirF", 0,        56789 },
+    { "fat://dirG/dirH", -ENOENT, 0 },
+    { "sdcard://dirI",  -ENOENT, 0 },
+#ifdef PATH_UNC_ROOTS
+    { "\\\\.\\fat:\\", -EEXIST, 0 },
+    { "\\\\?\\fat:\\", -EEXIST, 0 },
+    { "\\\\.\\fat:\\dirF", -EEXIST, 0 },
+    { "\\\\?\\fat:\\dirF", -EEXIST, 0 },
+    { "\\\\.\\fat:\\dirJ", 0, 66666 },
+    { "\\\\?\\fat:\\dirJ", -EEXIST, 0 },
+    { "fat:\\dirJ", -EEXIST, 0 },
+#endif
   };
 
   const auto &do_test = [&vfs](const struct vfs_cache_result &d)
@@ -1278,7 +1336,11 @@ UNITTEST(vfs_cache_file)
     { "/file4",         0, 0, "" },
     { "file5",          0, 0, nullptr },
     { "vdir/file6",     0, 0, "jffjddf" },
-    { "fat:/file7",     0, 0, "toptwtpo"},
+    { "fat://file7",    0, 0, "toptwtpo"},
+#ifdef PATH_UNC_ROOTS
+    { "\\\\.\\fat:\\file8", 0, 0, "hewwo" },
+    { "\\\\?\\fat:\\file9", 0, 0, "tyis one too" },
+#endif
   };
 
   static const vfs_cache_content invalid_data[] =
@@ -1296,8 +1358,21 @@ UNITTEST(vfs_cache_file)
     { "vfile",          -EEXIST,  0,  "iriqrg" },
     { "vdir",           -EISDIR,  0,  "oregfg" },
     { "vfile/fileC",    -ENOTDIR, 0,  "vnccnm" },
-    { "fat:/dir/fileD", -ENOENT,  0,  "eijety" },
-    { "sdcard:/fileE",  -ENOENT,  0,  "hhhhh" },
+    { "fat://dir/fileD", -ENOENT,  0,  "eijety" },
+    { "sdcard://fileE", -ENOENT,  0,  "hhhhh" },
+#ifdef PATH_UNC_ROOTS
+    { "fat://fileF",    0,        0,  "yolo" },
+    { "\\\\.\\fat:\\fileF", -EEXIST, 0, nullptr },
+    { "\\\\?\\fat:\\fileF", -EEXIST, 0, nullptr },
+    { "\\\\.\\fat:\\fileG", 0,    0,  "yah boie" },
+    { "\\\\.\\fat:\\fileG", -EEXIST, 0, nullptr },
+    { "\\\\?\\fat:\\fileG", -EEXIST, 0, nullptr },
+    { "fat://fileG",    -EEXIST,  0,   nullptr },
+    { "\\\\?\\fat:\\fileH", 0,    0,  "this 2" },
+    { "\\\\?\\fat:\\fileH", -EEXIST, 0, nullptr },
+    { "\\\\.\\fat:\\fileH", -EEXIST, 0, nullptr },
+    { "fat://fileH",    -EEXIST,  0,  nullptr },
+#endif
   };
 
   const auto &check_test = [&vfs](const struct vfs_cache_content &d)
@@ -1461,7 +1536,7 @@ static size_t setup_cache_testing_vfs(ScopedVFS &vfs)
     "dirA",
     "dirA/dirB",
     "dirA/dirC",
-    "fat:/dirX",
+    "fat://dirX",
   };
 
   static const struct
@@ -1477,8 +1552,8 @@ static size_t setup_cache_testing_vfs(ScopedVFS &vfs)
     { "dirA/dirB/file4", 256 },
     { "dirA/dirC/file5", 224 },
     { "dirA/dirC/file6", 72 },
-    { "fat:/fileX", 192 },
-    { "fat:/dirX/fileY", 96 },
+    { "fat://fileX", 192 },
+    { "fat://dirX/fileY", 96 },
   };
 
   static const char file_buf[256]{};
@@ -1705,7 +1780,7 @@ UNITTEST(vfs_invalidate_at_path)
   } data[] =
   {
     { "noexist",      -ENOENT,  0 },
-    { "sdcard:/",     -ENOENT,  0 },
+    { "sdcard://",    -ENOENT,  0 },
     { "dirA/fjsdf",   -ENOENT,  0 },
     { "file1",        0,        -256 },
     { "file1",        -ENOENT,  0 },
@@ -1716,8 +1791,8 @@ UNITTEST(vfs_invalidate_at_path)
     { ".",            0,        0 },
     { "..",           0,        0 },
     { "/",            0,        0 },
-    { "fat:/",        0,        -288 },
-    { "fat:/",        0,        0 },
+    { "fat://",       0,        -288 },
+    { "fat://",       0,        0 },
   };
 
   ScopedVFS vfs = vfs_init();
@@ -1779,13 +1854,13 @@ UNITTEST(vfs_invalidate_at_least)
       { "dirA/dirB/file3", -VFS_ERR_IS_CACHED },
       { "dirA/dirB/file4", -ENOENT },
       { "dirA/dirC/file5", -ENOENT },
-      { "fat:/fileX", -ENOENT }}},
+      { "fat://fileX", -ENOENT }}},
     { 0, 1000, 640, fileopen_len,
      {
       { "dirA/file2", -ENOENT },
       { "dirA/dirB/file3", -ENOENT },
       { "dirA/dirB/file6", -ENOENT },
-      { "fat:/dirX/fileY", -ENOENT }}},
+      { "fat://dirX/fileY", -ENOENT }}},
     { 0, 256, 256, fileopen_len, {}},
   };
 

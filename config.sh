@@ -211,6 +211,7 @@ GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
 LAYER_RENDERING="true"
 DOS_SVGA="true"
+DOS_ROOTS="false"
 VFS="true"
 
 #
@@ -885,6 +886,7 @@ if [ "$PLATFORM" = "nds" ] || [ "$PLATFORM" = "nds-blocksds" ]; then
 	echo "Enabling NDS-specific hacks."
 	echo "#define CONFIG_NDS" >> src/config.h
 	echo "BUILD_NDS=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	echo "Force-disabling stack protector on NDS."
 	STACK_PROTECTOR="false"
@@ -923,6 +925,7 @@ if [ "$PLATFORM" = "3ds" ]; then
 	echo "Enabling 3DS-specific hacks."
 	echo "#define CONFIG_3DS" >> src/config.h
 	echo "BUILD_3DS=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	#
 	# If the 3DS arch is enabled and SDL 1.2 is used, softscale is not
@@ -956,6 +959,7 @@ if [ "$PLATFORM" = "wii" ]; then
 	echo "Enabling Wii-specific hacks."
 	echo "#define CONFIG_WII" >> src/config.h
 	echo "BUILD_WII=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	if [ "$SDL" = "false" ]; then
 		echo "Force-disabling software renderer on Wii."
@@ -978,6 +982,7 @@ if [ "$PLATFORM" = "wiiu" ]; then
 	echo "Enabling Wii U-specific hacks."
 	echo "#define CONFIG_WIIU" >> src/config.h
 	echo "BUILD_WIIU=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	echo "Disabling utils on Wii U."
 	UTILS="false"
@@ -994,6 +999,7 @@ if [ "$PLATFORM" = "switch" ]; then
 	echo "Enabling Switch-specific hacks."
 	echo "#define CONFIG_SWITCH" >> src/config.h
 	echo "BUILD_SWITCH=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	echo "Disabling utils on Switch."
 	UTILS="false"
@@ -1016,6 +1022,7 @@ if [ "$PLATFORM" = "psp" ]; then
 	echo "Enabling PSP-specific hacks."
 	echo "#define CONFIG_PSP" >> src/config.h
 	echo "BUILD_PSP=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	echo "Force-disabling stack protector on PSP."
 	STACK_PROTECTOR="false"
@@ -1029,6 +1036,7 @@ if [ "$PLATFORM" = "psvita" ]; then
 	echo "Enabling PS Vita-specific hacks."
 	echo "#define CONFIG_PSVITA" >> src/config.h
 	echo "BUILD_PSVITA=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	echo "Force-disabling utils on PS Vita."
 	UTILS="false"
@@ -1884,6 +1892,14 @@ if [ "$COUNTER_HASH" = "true" ]; then
 	echo "BUILD_COUNTER_HASH_TABLES=1" >> platform.inc
 else
 	echo "Hash table counter/string lookups disabled (using binary search)."
+fi
+
+#
+# DOS-style roots in POSIX-like environments, if enabled
+#
+if [ "$DOS_ROOTS" = "true" ]; then
+	echo "Enabling DOS-style roots."
+	echo "#define CONFIG_DOS_STYLE_ROOTS" >> src/config.h
 fi
 
 #
