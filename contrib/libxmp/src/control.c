@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2022 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -23,7 +23,9 @@
 #include "format.h"
 #include "virtual.h"
 #include "mixer.h"
+#include "rng.h"
 
+/* TODO: Change this to const char *const in a future ABI change */
 const char *xmp_version LIBXMP_EXPORT_VAR = XMP_VERSION;
 const unsigned int xmp_vercode LIBXMP_EXPORT_VAR = XMP_VERCODE;
 
@@ -39,6 +41,7 @@ xmp_context xmp_create_context(void)
 	ctx->state = XMP_STATE_UNLOADED;
 	ctx->m.defpan = 100;
 	ctx->s.numvoc = SMIX_NUMVOC;
+	libxmp_init_random(&ctx->rng);
 
 	return (xmp_context)ctx;
 }
@@ -575,13 +578,24 @@ int xmp_set_tempo_factor(xmp_context opaque, double val)
 	struct mixer_data *s = &ctx->s;
 	int ticksize;
 
-	if (val <= 0.0) {
+	/* This function relies on values initialized by xmp_start_player
+	 * and will behave in an undefined manner if called prior. */
+	if (ctx->state < XMP_STATE_PLAYING) {
+		return -XMP_ERROR_STATE;
+	}
+
+	if (val <= 0.0 || val != val /* NaN */) {
 		return -1;
 	}
 
 	val *= 10;
-	ticksize = s->freq * val * m->rrate / p->bpm / 1000 * sizeof(int);
-	if (ticksize > XMP_MAX_FRAMESIZE) {
+
+	/* s->freq can change between xmp_start_player calls and p->bpm can
+	 * change during playback, so repeat these checks in the mixer. */
+	ticksize = libxmp_mixer_get_ticksize(s->freq, val, m->rrate, p->bpm);
+
+	/* ticksize is in frames, s->total_size is in frames * 2. */
+	if (ticksize < 0 || ticksize > (s->total_size / 2)) {
 		return -1;
 	}
 	m->time_factor = val;

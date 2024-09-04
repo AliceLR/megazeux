@@ -32,6 +32,8 @@
 		48F5B9972C7EFBB200137776 /* core_task.h in Headers */ = {isa = PBXBuildFile; fileRef = 48F5B9952C7EFBB100137776 /* core_task.h */; };
 		48F5B99E2C7EFC0A00137776 /* edit_export.c in Sources */ = {isa = PBXBuildFile; fileRef = 48F5B99C2C7EFC0900137776 /* edit_export.c */; };
 		48F5B99F2C7EFC0A00137776 /* edit_export.h in Headers */ = {isa = PBXBuildFile; fileRef = 48F5B99D2C7EFC0900137776 /* edit_export.h */; };
+		731E16482C8AE37600E3D730 /* rng.c in Sources */ = {isa = PBXBuildFile; fileRef = 731E16462C8AE37500E3D730 /* rng.c */; };
+		731E16492C8AE37600E3D730 /* rng.h in Headers */ = {isa = PBXBuildFile; fileRef = 731E16472C8AE37500E3D730 /* rng.h */; };
 		BF10127F1FCCA7C2008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */; };
 		BF1012A61FCCA993008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF1012A51FCCA993008EEDB6 /* Assets.xcassets */; };
 		BF1012BA1FCCABB5008EEDB6 /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; };
@@ -414,6 +416,8 @@
 		48F5B9952C7EFBB100137776 /* core_task.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core_task.h; path = ../../src/core_task.h; sourceTree = "<group>"; };
 		48F5B99C2C7EFC0900137776 /* edit_export.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = edit_export.c; path = ../../src/editor/edit_export.c; sourceTree = "<group>"; };
 		48F5B99D2C7EFC0900137776 /* edit_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = edit_export.h; path = ../../src/editor/edit_export.h; sourceTree = "<group>"; };
+		731E16462C8AE37500E3D730 /* rng.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rng.c; path = ../../contrib/libxmp/src/rng.c; sourceTree = "<group>"; };
+		731E16472C8AE37500E3D730 /* rng.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rng.h; path = ../../contrib/libxmp/src/rng.h; sourceTree = "<group>"; };
 		BF1012781FCCA7C2008EEDB6 /* MegaZeux.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MegaZeux.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BF1012831FCCA7C2008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -1043,6 +1047,8 @@
 				BFFF172F1FCDCBDF00BDEC58 /* player.h */,
 				BFFF17371FCDCBE200BDEC58 /* precomp_lut.h */,
 				BFFF17241FCDCBDB00BDEC58 /* read_event.c */,
+				731E16462C8AE37500E3D730 /* rng.c */,
+				731E16472C8AE37500E3D730 /* rng.h */,
 				BFFF17251FCDCBDB00BDEC58 /* scan.c */,
 				BFFF17341FCDCBE200BDEC58 /* smix.c */,
 				48E8C34E2B411560006177C3 /* tempfile.h */,
@@ -1191,6 +1197,7 @@
 				BFFF180B1FCDCD1200BDEC58 /* iff.h in Headers */,
 				BFFF17D11FCDCCF300BDEC58 /* mixer.h in Headers */,
 				BF6058E0216B3725001B738C /* compat.h in Headers */,
+				731E16492C8AE37600E3D730 /* rng.h in Headers */,
 				BFFF180E1FCDCD1200BDEC58 /* med.h in Headers */,
 				BFFF17C41FCDCCF300BDEC58 /* common.h in Headers */,
 				BFD5B04E2465AFAE00BC91E9 /* fsafeopen.h in Headers */,
@@ -1519,6 +1526,7 @@
 				BFFF18071FCDCD1200BDEC58 /* ult_load.c in Sources */,
 				BFFF18061FCDCD1200BDEC58 /* stm_load.c in Sources */,
 				BFFF16E01FCDC76900BDEC58 /* legacy_robot.c in Sources */,
+				731E16482C8AE37600E3D730 /* rng.c in Sources */,
 				BFFF17AC1FCDCCF300BDEC58 /* dataio.c in Sources */,
 				BFFF17AF1FCDCCF300BDEC58 /* filter.c in Sources */,
 				BFFF18001FCDCD1200BDEC58 /* mmd3_load.c in Sources */,

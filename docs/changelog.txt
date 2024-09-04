@@ -127,6 +127,8 @@ USERS
   forced during export.
 + The SVGA renderer now uses vsync palette/display page flips,
   which improves performance and fixes display bugs. (asie)
++ Fixed libxmp stereo samples not playing correctly.
++ Fixed libxmp music not playing at high audio sample rates.
 
 DEVELOPERS
 
@@ -181,6 +183,7 @@ DEVELOPERS
   and shared library support (via dylibbundler). The following
   architectures are now supported: i386, x86_64, x86_64h, ppc,
   ppc64, and arm64/arm64e (untested).
++ Updated libxmp to 4.6.0+6cb48a4a+sample rate patch.
 
 
 December 31st, 2023 - MZX 2.93

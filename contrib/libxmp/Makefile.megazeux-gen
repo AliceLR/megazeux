@@ -24,6 +24,7 @@ dest_loaders	:= ${dest_base}/${loaders}
 patches := \
 	mzx-integration-hacks \
 	mzx-remove-extra-formats \
+	real-max-srate \
 
 #
 # Files to install from the generated libxmp branch to the
@@ -78,6 +79,8 @@ install := \
 	${dest_src}/player.h \
 	${dest_src}/precomp_lut.h \
 	${dest_src}/read_event.c \
+	${dest_src}/rng.c \
+	${dest_src}/rng.h \
 	${dest_src}/scan.c \
 	${dest_src}/smix.c \
 	${dest_src}/tempfile.h \
