@@ -19,7 +19,7 @@ STB		= stb
 SDL12		= SDL-1.2.15
 SDL2_TIGER	= panther_sdl2
 SDL2_22		= SDL2-2.0.22
-SDL2_LATEST	= SDL2-2.30.6
+SDL2_LATEST	= SDL2-2.30.7
 #SDL3		= SDL3-3.2.0
 
 # Mac OS X/macOS compatibility builds rely on different versions of SDL2
