@@ -444,7 +444,7 @@ ${SDL12_TARGET}: | build/${SDL12} SDL12_clean
 	${ARCH_INIT}; \
 	./autogen.sh; \
 	ln -sf build-scripts/config.guess config.guess; \
-	${CONFIGURE}; \
+	${CONFIGURE} ${ARCH_CONFIGURE_SDL12_ARGS}; \
 	${MAKE}; \
 	${MAKE} install;
 

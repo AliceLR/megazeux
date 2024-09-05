@@ -13,6 +13,11 @@ package: package_lazy
 
 all: ${SDL2_TARGET}
 
+ifneq ($(filter ppc ppc64,${ARCH}),)
+all: ${SDL12_TARGET}
+HOST=powerpc-apple-darwin10
+endif
+
 CFLAGS = -O3
 CXXFLAGS = ${CFLAGS}
 USE_CMAKE := 1
@@ -30,6 +35,7 @@ ARCH_INIT = \
 	true
 
 ARCH_CONFIGURE_ARGS	=
+ARCH_CONFIGURE_SDL12_ARGS = --disable-video-x11
 ARCH_CONFIGURE_SDL2_ARGS = --without-x
 
 ARCH_CMAKE_ARGS = \
