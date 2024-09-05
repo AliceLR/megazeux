@@ -9,14 +9,9 @@ include ../../arch/darwin/Makefile.arch
 
 ifneq (${ARCH},)
 all: ${ZLIB_TARGET} ${PNG_TARGET} ${OGG_TARGET} ${VORBIS_TARGET} ${STB_TARGET}
-package: zlib_package png_package vorbis_package stb_package
-package: ${TARGET}/${LIB}/libz.dylib ${TARGET}/${LIB}/libpng16.dylib
-package: ${TARGET}/${LIB}/libogg.dylib ${TARGET}/${LIB}/libvorbis.dylib
-package: ${TARGET}/${LIB}/libvorbisfile.dylib
+package: package_lazy
 
 all: ${SDL2_TARGET}
-package: SDL2_package
-package: ${TARGET}/${LIB}/libSDL2.dylib
 
 CFLAGS = -O3
 CXXFLAGS = ${CFLAGS}

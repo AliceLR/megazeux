@@ -101,7 +101,8 @@ SDL3_PACKAGE	= ${TARGET}/${LIB}/libSDL3.a \
 		  ${TARGET}/${INCLUDE}/SDL3
 
 .PHONY: all
-.PHONY: package package_dir package_clean zlib_package png_package
+.PHONY: package package_dir package_clean package_lazy
+.PHONY: zlib_package png_package
 .PHONY: vorbis_package tremor_package stb_package
 .PHONY: SDL12_package SDL2_package SDL3_package
 .PHONY: clean zlib_clean png_clean ogg_clean vorbis_clean tremor_clean
@@ -489,9 +490,22 @@ package_clean:
 	rm -rf ${TARGET}/${BIN}
 
 package_dir:
-	mkdir -p ${TARGET}/${LIB}
-	mkdir -p ${TARGET}/${INCLUDE}
-	mkdir -p ${TARGET}/${BIN}
+	if [ -d "${PLATFORM}/${ARCH}" ]; then \
+		mkdir -p ${TARGET}/${LIB}; \
+		mkdir -p ${TARGET}/${INCLUDE}; \
+		mkdir -p ${TARGET}/${BIN}; \
+	fi
+
+# macOS dylibbundler requires libraries with intact full names,
+# which the normal package targets can't handle. This copies the
+# entirety of bin, lib, and include instead, and then strips
+# out known bloat.
+package_lazy: | package_dir
+	cp -RP "${LIB}" "${TARGET}/${LIB}/../"
+	cp -RP "${INCLUDE}" "${TARGET}/${INCLUDE}/../"
+	cp -RP "${BIN}" "${TARGET}/${BIN}/../"
+	rm -rf "${TARGET}/${LIB}/png.framework"
+	rm -f "${TARGET}/${BIN}/png"*
 
 %.debug: % | package_dir
 	${HOST}-objcopy --only-keep-debug $< $@
