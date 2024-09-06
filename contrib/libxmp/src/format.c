@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2023 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -48,7 +48,7 @@ const struct format_loader *const format_loaders[NUM_FORMATS + 2] = {
 	&libxmp_loader_far,
 	&libxmp_loader_hmn,
 	&libxmp_loader_669,
-	NULL /* list teminator */
+	NULL /* list terminator */
 };
 
 static const char *_farray[NUM_FORMATS + NUM_PW_FORMATS + 1] = { NULL };

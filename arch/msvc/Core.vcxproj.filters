@@ -408,6 +408,9 @@
     <ClCompile Include="..\..\src\core_task.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\rng.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\block.h">
@@ -739,6 +742,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\core_task.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\contrib\libxmp\src\rng.h">
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
