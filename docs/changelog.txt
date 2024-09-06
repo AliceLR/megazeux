@@ -187,6 +187,7 @@ DEVELOPERS
   architectures are now supported: i386, x86_64, x86_64h, ppc,
   ppc64, and arm64/arm64e (untested).
 + Updated libxmp to 4.6.0+6cb48a4a+sample rate patch.
++ Added more PowerPC64 GCC defines to platform_endian.h.
 
 
 December 31st, 2023 - MZX 2.93
