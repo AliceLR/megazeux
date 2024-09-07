@@ -13,6 +13,7 @@ LIPO         ?= @arch/darwin/lipo.sh
 
 CODESIGN_ID  ?= -
 CODESIGN     ?= codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign ${CODESIGN_ID}
+CODESIGN_CHK ?= codesign --verify --deep --strict -vvvv
 
 #
 # darwin specific recipes.
@@ -247,13 +248,16 @@ ifneq (${BUILD_MODULAR},)
 endif
 	${CP} arch/darwin/MZXRun.plist    ${mzxrun_app}/Contents/Info.plist
 	${CODESIGN}                       ${mzxrun_app}/Contents/MacOS/MZXRun
+	${CODESIGN_CHK}                   ${mzxrun_app}
 endif
 	${CP} arch/darwin/MegaZeux.plist  ${mzx_app}/Contents/Info.plist
 	${CODESIGN}                       ${mzx_app}/Contents/MacOS/MegaZeux
+	${CODESIGN_CHK}                   ${mzx_app}
 
 archive: build
 	@arch/darwin/dmg.sh ${TARGET}
 	${CODESIGN} build/dist/darwin/${TARGET}.dmg
+	${CODESIGN_CHK} build/dist/darwin/${TARGET}.dmg
 
 clean: package_clean
 

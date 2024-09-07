@@ -9,14 +9,14 @@ include ../../arch/darwin/Makefile.arch
 
 ifneq (${ARCH},)
 all: ${ZLIB_TARGET} ${PNG_TARGET} ${OGG_TARGET} ${VORBIS_TARGET} ${STB_TARGET}
-package: zlib_package png_package vorbis_package stb_package
-package: ${TARGET}/${LIB}/libz.dylib ${TARGET}/${LIB}/libpng16.dylib
-package: ${TARGET}/${LIB}/libogg.dylib ${TARGET}/${LIB}/libvorbis.dylib
-package: ${TARGET}/${LIB}/libvorbisfile.dylib
+package: package_lazy
 
 all: ${SDL2_TARGET}
-package: SDL2_package
-package: ${TARGET}/${LIB}/libSDL2.dylib
+
+ifneq ($(filter ppc ppc64,${ARCH}),)
+all: ${SDL12_TARGET}
+HOST=powerpc-apple-darwin10
+endif
 
 CFLAGS = -O3
 CXXFLAGS = ${CFLAGS}
@@ -35,6 +35,7 @@ ARCH_INIT = \
 	true
 
 ARCH_CONFIGURE_ARGS	=
+ARCH_CONFIGURE_SDL12_ARGS = --disable-video-x11
 ARCH_CONFIGURE_SDL2_ARGS = --without-x
 
 ARCH_CMAKE_ARGS = \
