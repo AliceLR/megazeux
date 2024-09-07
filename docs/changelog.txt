@@ -128,6 +128,7 @@ USERS
 + ANSi file import/export options are now identified as both
   ANSi and TXT, and the extension of the selected format is now
   forced during export.
++ Fixed taking screenshots when in the board editor text mode.
 + The SVGA renderer now uses vsync palette/display page flips,
   which improves performance and fixes display bugs. (asie)
 + Fixed libxmp stereo samples not playing correctly.

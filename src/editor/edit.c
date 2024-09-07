@@ -2298,6 +2298,12 @@ static boolean editor_key(context *ctx, int *key)
       return true;
     }
 
+    case IKEY_F12:
+    {
+      // don't block in text mode :(
+      break;
+    }
+
     case IKEY_8:
     case IKEY_KP_MULTIPLY:
     {
