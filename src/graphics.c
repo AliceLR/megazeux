@@ -3,6 +3,7 @@
  * Copyright (C) 2004-2006 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  * Copyright (C) 2017 Dr Lancer-X <drlancer@megazeux.org>
+ * Copyright (C) 2017-2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * YUV Renderers:
  *   Copyright (C) 2007 Alan Williams <mralert@gmail.com>
@@ -37,15 +38,12 @@
 #include "event.h"
 #include "graphics.h"
 #include "platform.h"
+#include "pngops.h"
 #include "render.h"
 #include "render_layer.h"
 #include "renderers.h"
 #include "world.h"
 #include "io/vio.h"
-
-#ifdef CONFIG_PNG
-#include "pngops.h"
-#endif
 
 #ifdef CONFIG_SDL
 #include "SDLmzx.h"
@@ -2604,30 +2602,76 @@ void mouse_size(unsigned int width, unsigned int height)
   graphics.mouse_height = height;
 }
 
+#if defined(CONFIG_ENABLE_SCREENSHOTS) || defined(CONFIG_EDITOR)
+
+static void screenshot_init_palette(struct graphics_data *graphics,
+ struct rgb_color palette[FULL_PAL_SIZE], uint32_t backup_palette[FULL_PAL_SIZE])
+{
+  int palette_size;
+  int i;
+
+  if(backup_palette)
+  {
+    memcpy(backup_palette, graphics->flat_intensity_palette,
+     FULL_PAL_SIZE * sizeof(uint32_t));
+  }
+
+  palette_size = make_palette(palette);
+  for(i = 0; i < palette_size; i++)
+  {
+    // PNG byte order: R, G, B, A
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+    graphics->flat_intensity_palette[i] = 0xff |
+     (palette[i].b << 8) | (palette[i].g << 16) | (palette[i].r << 24);
+#else
+    graphics->flat_intensity_palette[i] = 0xff000000u |
+     (palette[i].b << 16) | (palette[i].g << 8) | (palette[i].r << 0);
+#endif /* PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN */
+  }
+}
+
+#endif /* CONFIG_ENABLE_SCREENSHOTS || CONFIG_EDITOR */
+
 #ifdef CONFIG_ENABLE_SCREENSHOTS
-#ifdef CONFIG_PNG
+#if 1 // CONFIG_PNG
 
 #define DUMP_FMT_EXT "png"
 
-/* Trivial PNG dumper; this routine is a modification (simplification) of
- * code pinched from http://www2.autistici.org/encelo/prog_sdldemos.php.
- *
- * Palette support was added, the original support was broken.
- *
- * Copyright (C) 2006 Angelo "Encelo" Theodorou
- * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
- */
-/*
-static void dump_screen_real(uint8_t *pix, struct rgb_color *pal, int count,
- const char *name)
+struct dump_screen_priv
 {
-  png_write_screen(pix, pal, count, name);
+  const uint8_t *pix8;
+  const uint32_t *pix32;
+};
+
+/*
+static const uint8_t *dump_screen_callback(size_t num_pixels, void *priv)
+{
+  struct dump_screen_priv *data = (struct dump_screen_priv *)priv;
+  const uint8_t *ret = data->pix8;
+  data->pix8 += num_pixels;
+  return ret;
+}
+
+static void dump_screen_real(const uint8_t *pix,
+ const struct rgb_color *pal, int count, const char *name)
+{
+  struct dump_screen_priv priv = { pix, NULL };
+  png_write_image_8bpp(name, 640, 350, pal, count, &priv, dump_screen_callback);
 }
 */
 
-static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
+static const uint32_t *dump_screen_callback_32bpp(size_t num_pixels, void *priv)
 {
-  png_write_screen_32bpp(pix, name);
+  struct dump_screen_priv *data = (struct dump_screen_priv *)priv;
+  const uint32_t *ret = data->pix32;
+  data->pix32 += num_pixels;
+  return ret;
+}
+
+static void dump_screen_real_32bpp(const uint32_t *pix, const char *name)
+{
+  struct dump_screen_priv priv = { NULL, pix };
+  png_write_image_32bpp(name, 640, 350, &priv, dump_screen_callback_32bpp);
 }
 
 #else
@@ -2635,8 +2679,8 @@ static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
 #define DUMP_FMT_EXT "bmp"
 
 /*
-static void dump_screen_real(uint8_t *pix, struct rgb_color *pal, int count,
- const char *name)
+static void dump_screen_real(const uint8_t *pix, const struct rgb_color *pal,
+ int count, const char *name)
 {
   vfile *file;
   int i;
@@ -2682,13 +2726,14 @@ static void dump_screen_real(uint8_t *pix, struct rgb_color *pal, int count,
   vfclose(file);
 }
 */
-static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
+
+static void dump_screen_real_32bpp(const uint32_t *pix, const char *name)
 {
   vfile *file;
   int i, x;
   uint8_t rowbuffer[SCREEN_PIX_W * 3]; // 24bpp
   uint8_t *rowbuffer_ptr;
-  uint32_t *pix_ptr;
+  const uint8_t *pix_ptr;
 
   file = vfopen_unsafe(name, "wb");
   if(!file)
@@ -2717,15 +2762,15 @@ static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
   // Image data
   for(i = SCREEN_PIX_H - 1; i >= 0; i--)
   {
-    pix_ptr = pix + i * SCREEN_PIX_W;
+    pix_ptr = (const uint8_t *)(pix + i * SCREEN_PIX_W);
     rowbuffer_ptr = rowbuffer;
     for(x = 0; x < SCREEN_PIX_W; x++)
     {
-      rowbuffer_ptr[0] = (*pix_ptr & 0x000000FF) >> 0;
-      rowbuffer_ptr[1] = (*pix_ptr & 0x0000FF00) >> 8;
-      rowbuffer_ptr[2] = (*pix_ptr & 0x00FF0000) >> 16;
+      rowbuffer_ptr[0] = pix_ptr[2];
+      rowbuffer_ptr[1] = pix_ptr[1];
+      rowbuffer_ptr[2] = pix_ptr[0];
       rowbuffer_ptr += 3;
-      pix_ptr++;
+      pix_ptr += 4;
     }
     vfwrite(rowbuffer, SCREEN_PIX_W * 3, 1, file);
   }
@@ -2737,12 +2782,16 @@ static void dump_screen_real_32bpp(uint32_t *pix, const char *name)
 
 #define MAX_NAME_SIZE 20
 
+static void screenshot_cleanup_palette(const uint32_t backup_palette[FULL_PAL_SIZE])
+{
+  memcpy(graphics.flat_intensity_palette, backup_palette,
+   FULL_PAL_SIZE * sizeof(uint32_t));
+}
+
 void dump_screen(void)
 {
   struct rgb_color palette[FULL_PAL_SIZE];
   uint32_t backup_palette[FULL_PAL_SIZE];
-  size_t palette_size_bytes = sizeof(uint32_t) * FULL_PAL_SIZE;
-  int palette_size;
   char name[MAX_NAME_SIZE];
   struct stat file_info;
   uint32_t *ss;
@@ -2757,24 +2806,11 @@ void dump_screen(void)
       break;
   }
 
-  ss = cmalloc(sizeof(uint32_t) * 640 * 350);
+  ss = (uint32_t *)cmalloc(sizeof(uint32_t) * 640 * 350);
+  if(!ss)
+    return;
 
-  // Unfortunately, render_layer wants flat_intensity_palette set, so we need
-  // to back this up, fill it, render the layer to memory, then copy the old
-  // palette back.
-  memcpy(backup_palette, graphics.flat_intensity_palette, palette_size_bytes);
-
-  palette_size = make_palette(palette);
-  for(i = 0; i < palette_size; i++)
-  {
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-    graphics.flat_intensity_palette[i] =
-     (palette[i].r << 8) | (palette[i].g << 16) | (palette[i].b << 24);
-#else
-    graphics.flat_intensity_palette[i] =
-     (palette[i].r << 16) | (palette[i].g << 8) | (palette[i].b << 0);
-#endif /* PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN */
-  }
+  screenshot_init_palette(&graphics, palette, backup_palette);
 
   for(layer = 0; layer < graphics.layer_count; layer++)
     graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];
@@ -2784,17 +2820,130 @@ void dump_screen(void)
 
   for(layer = 0; layer < graphics.layer_count; layer++)
   {
-    render_layer(ss, 32, 640 * sizeof(uint32_t), &graphics,
+    render_layer(ss, SCREEN_PIX_W, SCREEN_PIX_H,
+     SCREEN_PIX_W * sizeof(uint32_t), 32, &graphics,
      graphics.sorted_video_layers[layer]);
   }
 
-  memcpy(graphics.flat_intensity_palette, backup_palette, palette_size_bytes);
+  screenshot_cleanup_palette(backup_palette);
 
   //dump_screen_real(ss, palette, make_palette(palette), name);
   dump_screen_real_32bpp(ss, name);
   free(ss);
 }
 #endif /* CONFIG_ENABLE_SCREENSHOTS */
+
+#ifdef CONFIG_EDITOR
+struct dump_layer_priv
+{
+  boolean (*status_callback)(void *, size_t, size_t);
+  void *status_priv;
+  struct graphics_data *graphics_copy;
+  uint32_t *flat_array;
+  size_t pitch;
+  size_t width_px;
+  size_t height_px;
+  size_t width_ch;
+  size_t height_ch;
+  size_t pos_in_layer;
+  size_t pos_in_array;
+  struct video_layer layer;
+};
+
+/* Render the layer one row at a time as it may be LARGE. */
+static const uint32_t *dump_layer_callback(size_t num_pixels, void *priv)
+{
+  struct dump_layer_priv *data = (struct dump_layer_priv *)priv;
+  uint32_t *pos;
+
+  if(data->pos_in_array >= CHAR_H)
+  {
+    if(data->status_callback)
+    {
+      if(!data->status_callback(data->status_priv,
+       data->pos_in_layer, data->height_ch))
+        return NULL; // cancel requested
+    }
+
+    if(data->pos_in_layer >= data->height_ch)
+      return NULL;
+
+    render_layer(data->flat_array, data->width_px, CHAR_H,
+     data->pitch, 32, data->graphics_copy, &data->layer);
+    data->layer.data += data->width_ch;
+    data->pos_in_layer++;
+    data->pos_in_array = 0;
+  }
+
+  pos = data->flat_array + (data->pitch >> 2) * data->pos_in_array;
+  data->pos_in_array++;
+  return pos;
+}
+
+/* Render an arbitrary layer to an image.
+ * TODO: The caller is responsible for constructing the layer char_element
+ * array since the graphics API functions are very much intended for operating
+ * on real graphical layers rather than arbitrary layers. */
+boolean dump_layer_to_image(const char *filename,
+ size_t width_ch, size_t height_ch, const struct char_element *layer,
+ boolean (*status_callback)(void *priv, size_t p, size_t m), void *priv)
+{
+  struct graphics_data *graphics_copy;
+  struct rgb_color palette[FULL_PAL_SIZE];
+  struct dump_layer_priv data;
+  uint32_t *flat_array;
+  boolean ret;
+
+  if(width_ch >= 32768 || height_ch >= 32768)
+    return false;
+
+  /* This may be run as an async task, which results in palette conflicts.
+   * The easiest thing to do is duplicate graphics entirely. */
+  graphics_copy = (struct graphics_data *)cmalloc(sizeof(struct graphics_data));
+  if(!graphics_copy)
+    return false;
+
+  flat_array = (uint32_t *)cmalloc(width_ch * CHAR_W * CHAR_H * sizeof(uint32_t));
+  if(!flat_array)
+  {
+    free(graphics_copy);
+    return false;
+  }
+
+  memcpy(graphics_copy, &graphics, sizeof(struct graphics_data));
+  memset(&data, 0, sizeof(data));
+  data.status_callback = status_callback;
+  data.status_priv = priv;
+  data.graphics_copy = graphics_copy;
+  data.flat_array = flat_array;
+  data.pitch = width_ch * CHAR_W * sizeof(uint32_t);
+  data.width_px = width_ch * CHAR_W;
+  data.height_px = height_ch * CHAR_H;
+  data.width_ch = width_ch;
+  data.height_ch = height_ch;
+  data.pos_in_array = CHAR_H; // redraw
+  data.pos_in_layer = 0;
+
+  data.layer.data = (struct char_element *)layer;
+  data.layer.x = 0;
+  data.layer.y = 0;
+  data.layer.w = width_ch;
+  data.layer.h = 1;
+  data.layer.transparent_col = -1;
+  data.layer.offset = 0;
+  data.layer.mode = get_screen_mode();
+  data.layer.empty = false;
+
+  screenshot_init_palette(graphics_copy, palette, NULL);
+
+  ret = png_write_image_32bpp(filename,
+   width_ch * CHAR_W, height_ch * CHAR_H, &data, dump_layer_callback);
+
+  free(graphics_copy);
+  free(flat_array);
+  return ret;
+}
+#endif /* CONFIG_EDITOR */
 
 /**
  * Generate a bitmask of visible pixels for a character/palette pair using the

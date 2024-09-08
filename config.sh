@@ -30,7 +30,7 @@ usage() {
 	echo "  unix-devel     As above, but for running from current dir"
 	echo "  darwin         Mac OS X Unix-like install"
 	echo "  darwin-devel   Mac OS X running from current dir"
-	echo "  darwin-dist    Mac OS X (PPC .app builds -- use Xcode for Intel)"
+	echo "  darwin-dist    Mac OS X multiarchitecture .app (see arch/darwin/README.md)"
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
@@ -115,6 +115,7 @@ usage() {
 	echo "  --disable-vorbis          Disable ogg/vorbis support."
 	echo "  --enable-tremor           Use libvorbisidec instead of libvorbis."
 	echo "  --enable-tremor-lowmem    Use libvorbisidec (lowmem) instead of libvorbis."
+	echo "  --enable-stb-vorbis       Use stb_vorbis instead of libvorbis."
 	echo
 	echo "Network options:"
 	echo "  --disable-network         Disable networking abilities."
@@ -210,6 +211,7 @@ GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
 LAYER_RENDERING="true"
 DOS_SVGA="true"
+DOS_ROOTS="false"
 VFS="true"
 
 #
@@ -404,6 +406,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-tremor-lowmem" ] && VORBIS="true"
 	[ "$1" = "--enable-tremor-lowmem" ]  && VORBIS="tremor-lowmem"
 
+	[ "$1" = "--disable-stb-vorbis" ] && VORBIS="true"
+	[ "$1" = "--enable-stb-vorbis" ]  && VORBIS="stb_vorbis"
+
 	[ "$1" = "--disable-pthread" ] && PTHREAD="false"
 	[ "$1" = "--enable-pthread" ]  && PTHREAD="true"
 
@@ -532,9 +537,11 @@ if [ "$PLATFORM" = "win32"   ] || [ "$PLATFORM" = "win64" ] ||
 	echo "#define PLATFORM \"windows-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=windows-$ARCHNAME"         >> platform.inc
 	echo "PLATFORM=$PLATFORM"                    >> platform.inc
-elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
+elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ] ||
+     [ "$PLATFORM" = "darwin" ] || [ "$PLATFORM" = "darwin-devel" ]; then
 	OS="$(uname -s)"
 	MACH="$(uname -m)"
+	DIRNAME=unix
 
 	case "$OS" in
 		"Linux")
@@ -548,6 +555,10 @@ elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
 			;;
 		"NetBSD")
 			UNIX="netbsd"
+			;;
+		"Darwin")
+			UNIX="darwin"
+			DIRNAME="darwin"
 			;;
 		*)
 			echo "WARNING: Should define proper UNIX name here!"
@@ -603,13 +614,13 @@ elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ]; then
 
 	echo "#define PLATFORM \"$UNIX-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=$UNIX-$ARCHNAME"         >> platform.inc
-	echo "PLATFORM=unix"                       >> platform.inc
-elif [ "$PLATFORM" = "darwin" ] || [ "$PLATFORM" = "darwin-devel" ] ||
-     [ "$PLATFORM" = "darwin-dist" ]; then
+	echo "PLATFORM=$DIRNAME"                   >> platform.inc
+elif [ "$PLATFORM" = "darwin-dist" ]; then
+	# Multiarchitecture build--let the Makefile patch in a subplatform.
 
-	echo "#define PLATFORM \"darwin\""    > src/config.h
-	echo "SUBPLATFORM=$PLATFORM"         >> platform.inc
-	echo "PLATFORM=darwin"               >> platform.inc
+	echo "#define PLATFORM \"darwin-\" SUBPLATFORM"  > src/config.h
+	echo "SUBPLATFORM=$PLATFORM"                    >> platform.inc
+	echo "PLATFORM=darwin"                          >> platform.inc
 else
 	if [ ! -d "arch/$PLATFORM" ]; then
 		echo "Invalid platform selection (see arch/)."
@@ -875,6 +886,7 @@ if [ "$PLATFORM" = "nds" ] || [ "$PLATFORM" = "nds-blocksds" ]; then
 	echo "Enabling NDS-specific hacks."
 	echo "#define CONFIG_NDS" >> src/config.h
 	echo "BUILD_NDS=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	echo "Force-disabling stack protector on NDS."
 	STACK_PROTECTOR="false"
@@ -913,6 +925,7 @@ if [ "$PLATFORM" = "3ds" ]; then
 	echo "Enabling 3DS-specific hacks."
 	echo "#define CONFIG_3DS" >> src/config.h
 	echo "BUILD_3DS=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	#
 	# If the 3DS arch is enabled and SDL 1.2 is used, softscale is not
@@ -946,6 +959,7 @@ if [ "$PLATFORM" = "wii" ]; then
 	echo "Enabling Wii-specific hacks."
 	echo "#define CONFIG_WII" >> src/config.h
 	echo "BUILD_WII=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	if [ "$SDL" = "false" ]; then
 		echo "Force-disabling software renderer on Wii."
@@ -968,6 +982,7 @@ if [ "$PLATFORM" = "wiiu" ]; then
 	echo "Enabling Wii U-specific hacks."
 	echo "#define CONFIG_WIIU" >> src/config.h
 	echo "BUILD_WIIU=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	echo "Disabling utils on Wii U."
 	UTILS="false"
@@ -984,6 +999,7 @@ if [ "$PLATFORM" = "switch" ]; then
 	echo "Enabling Switch-specific hacks."
 	echo "#define CONFIG_SWITCH" >> src/config.h
 	echo "BUILD_SWITCH=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	echo "Disabling utils on Switch."
 	UTILS="false"
@@ -1006,6 +1022,7 @@ if [ "$PLATFORM" = "psp" ]; then
 	echo "Enabling PSP-specific hacks."
 	echo "#define CONFIG_PSP" >> src/config.h
 	echo "BUILD_PSP=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	echo "Force-disabling stack protector on PSP."
 	STACK_PROTECTOR="false"
@@ -1019,6 +1036,7 @@ if [ "$PLATFORM" = "psvita" ]; then
 	echo "Enabling PS Vita-specific hacks."
 	echo "#define CONFIG_PSVITA" >> src/config.h
 	echo "BUILD_PSVITA=1" >> platform.inc
+	DOS_ROOTS="true"
 
 	echo "Force-disabling utils on PS Vita."
 	UTILS="false"
@@ -1037,6 +1055,11 @@ if [ "$PLATFORM" = "djgpp" ]; then
 
 	echo "Force-disabling stack protector (DOS)."
 	STACK_PROTECTOR="false"
+
+	if [ "$VORBIS" != "false" ] && [ "$VORBIS" != "stb_vorbis" ]; then
+		echo "Force-switching ogg/vorbis to stb_vorbis."
+		VORBIS="stb_vorbis"
+	fi
 
 	if [ "$DOS_SVGA" = "true" ]; then
 		echo "#define CONFIG_DOS_SVGA" >> src/config.h
@@ -1715,6 +1738,12 @@ elif [ "$VORBIS" = "tremor-lowmem" ]; then
 	echo "#define CONFIG_VORBIS" >> src/config.h
 	echo "#define CONFIG_TREMOR" >> src/config.h
 	echo "VORBIS=tremor-lowmem" >> platform.inc
+
+elif [ "$VORBIS" = "stb_vorbis" ]; then
+	echo "Using stb_vorbis in place of ogg/vorbis."
+	echo "#define CONFIG_VORBIS" >> src/config.h
+	echo "#define CONFIG_STB_VORBIS" >> src/config.h
+	echo "VORBIS=stb_vorbis" >> platform.inc
 else
 	echo "Ogg/vorbis disabled."
 fi
@@ -1863,6 +1892,14 @@ if [ "$COUNTER_HASH" = "true" ]; then
 	echo "BUILD_COUNTER_HASH_TABLES=1" >> platform.inc
 else
 	echo "Hash table counter/string lookups disabled (using binary search)."
+fi
+
+#
+# DOS-style roots in POSIX-like environments, if enabled
+#
+if [ "$DOS_ROOTS" = "true" ]; then
+	echo "Enabling DOS-style roots."
+	echo "#define CONFIG_DOS_STYLE_ROOTS" >> src/config.h
 fi
 
 #

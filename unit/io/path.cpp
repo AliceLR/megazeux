@@ -61,6 +61,8 @@ UNITTEST(path_tokenize)
     { "",             { "", nullptr }},
     { "shdfkjshdf",   { "shdfkjshdf", nullptr }},
     { "/",            { "", "", nullptr }},
+    { "\\\\unc\\p",   { "", "", "unc", "p", nullptr }},
+    { "\\\\.\\C:",    { "", "", ".", "C:" }},
     { "C:\\a",        { "C:", "a", nullptr }},
     { "sdcard:/bees", { "sdcard:", "bees", nullptr }},
     { "a\\lomg/path", { "a", "lomg", "path", nullptr }},
@@ -115,6 +117,8 @@ UNITTEST(path_reverse_tokenize)
     { "C:\\WINDOWS",    { "WINDOWS", "C:" }},
     { "C:\\a\\b",       { "b", "a", "C:" }},
     { "sdcard:/butt",   { "butt", "sdcard:" }},
+    { "\\\\unc\\path",  { "path", "unc", "", "" }},
+    { "\\\\.\\C:",      { "C:", ".", "", "" }},
     {
       u8"/home/\u00C8śŚ/megazeux/DE/saved.sav",
       { "saved.sav", "DE", "megazeux", u8"\u00C8śŚ", "home", "" }
@@ -314,18 +318,33 @@ UNITTEST(path_is_absolute)
     },
     {
       "A:",
+#ifdef PATH_DOS_STYLE_ROOTS
       2,
       true
+#else
+      0,
+      false
+#endif
     },
     {
       "C:\\",
+#ifdef PATH_DOS_STYLE_ROOTS
       3,
       true
+#else
+      0,
+      false
+#endif
     },
     {
       "sdcard:/",
+#ifdef PATH_DOS_STYLE_ROOTS
       8,
       true
+#else
+      0,
+      false
+#endif
     },
     {
       "/absolute/but/not/root",
@@ -334,7 +353,93 @@ UNITTEST(path_is_absolute)
     },
     {
       "C:\\absolute/not\\root",
+#ifdef PATH_DOS_STYLE_ROOTS
       3,
+      false
+#else
+      0,
+      false
+#endif
+    },
+    // Modified DOS-style paths (all platforms).
+    {
+      "C://",
+      4,
+      true
+    },
+    { "sdcard://",
+      9,
+      true
+    },
+    {
+      "fat://absolute/but/not/root",
+      6,
+      false
+    },
+    // Windows UNC paths
+    {
+      "\\\\.\\C:",
+#ifdef PATH_UNC_ROOTS
+      6,
+      true
+#else
+      1,
+      false
+#endif
+    },
+    {
+      "\\\\?\\Z:",
+#ifdef PATH_UNC_ROOTS
+      6,
+      true
+#else
+      1,
+      false
+#endif
+    },
+    {
+      "\\\\unc\\root\\",
+#ifdef PATH_UNC_ROOTS
+      11,
+      true
+#else
+      1,
+      false
+#endif
+    },
+    {
+      "\\\\.\\unc\\localhost\\c$",
+#ifdef PATH_UNC_ROOTS
+      20,
+      true
+#else
+      1,
+      false
+#endif
+    },
+    {
+      "//?/unc/thisworks/too",
+#ifdef PATH_UNC_ROOTS
+      21,
+      true
+#else
+      1,
+      false
+#endif
+    },
+    {
+      "\\\\.\\unc\\localhost\\c$\\somefile",
+#ifdef PATH_UNC_ROOTS
+      21,
+      false
+#else
+      1,
+      false
+#endif
+    },
+    {
+      "\\\\bad_unc",
+      1,
       false
     },
   };
@@ -505,18 +610,49 @@ UNITTEST(path_clean_slashes)
     },
     {
       "C:\\\\\\remove\\\\\\duplicate\\\\slashes\\\\here\\\\too\\",
+#ifdef PATH_DOS_STYLE_ROOTS
+      // Platforms that natively have DOS-style paths only
+      // preserve one slash at the start.
       "C:/remove/duplicate/slashes/here/too",
       "C:\\remove\\duplicate\\slashes\\here\\too",
+#else
+      // Modified DOS-style paths (all platforms).
+      // path_clean_slashes will preserve two root slashes here.
+      "C://remove/duplicate/slashes/here/too",
+      "C:\\\\remove\\duplicate\\slashes\\here\\too",
+#endif
     },
     {
       "C:\\",
+#ifdef PATH_DOS_STYLE_ROOTS
       "C:/",
       "C:\\"
+#else
+      "C:",
+      "C:"
+#endif
     },
     {
       "C:/",
+#ifdef PATH_DOS_STYLE_ROOTS
       "C:/",
       "C:\\"
+#else
+      "C:",
+      "C:"
+#endif
+    },
+    {
+      "C:\\\\/",
+#ifdef PATH_DOS_STYLE_ROOTS
+      // Native DOS-style paths.
+      "C:/",
+      "C:\\",
+#else
+      // Modified DOS-style paths (all platforms).
+      "C://",
+      "C:\\\\",
+#endif
     },
     {
       "/",
@@ -527,7 +663,30 @@ UNITTEST(path_clean_slashes)
       "\\",
       "/",
       "\\"
-    }
+    },
+#ifdef PATH_UNC_ROOTS
+    // Windows UNC paths: do not remove duplicate slashes from the prefix.
+    {
+      "\\\\.\\C:\\",
+      "//./C:/",
+      "\\\\.\\C:\\"
+    },
+    {
+      "\\\\?\\C:\\",
+      "//?/C:/",
+      "\\\\?\\C:\\"
+    },
+    {
+      "\\\\.\\unc\\\\localhost\\\\\\duhhr",
+      "//./unc/localhost/duhhr",
+      "\\\\.\\unc\\localhost\\duhhr"
+    },
+    {
+      "\\\\?\\unc\\\\localhost\\\\\\duhhr",
+      "//?/unc/localhost/duhhr",
+      "\\\\?\\unc\\localhost\\duhhr"
+    },
+#endif
   };
   // Data for testing truncation (assume buffer size == 32). This only matters
   // for path_clean_slashes_copy, which should return false in this case.
@@ -703,10 +862,17 @@ UNITTEST(path_split_functions)
     },
     {
       "C:\\",
+#ifdef PATH_DOS_STYLE_ROOTS
       "C:/",
       "C:\\",
       "",
       3,
+#else
+      "C:",
+      "C:",
+      "",
+      2,
+#endif
       0,
       true
     },
@@ -721,11 +887,34 @@ UNITTEST(path_split_functions)
     },
     {
       "C:\\sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
+#ifdef PATH_DOS_STYLE_ROOTS
       "C:/",
       "C:\\",
       "sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
       3,
+#else
+      "C:",
+      "C:",
+      "sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
+      2,
+#endif
       42,
+      true
+    },
+    {
+      "C://sdfjklf",
+#ifdef PATH_DOS_STYLE_ROOTS
+      "C:/",
+      "C:\\",
+      "sdfjklf",
+      3,
+#else
+      "C://",
+      "C:\\\\",
+      "sdfjklf",
+      4,
+#endif
+      7,
       true
     },
     // Internally all of these functions may stat the provided directory to
@@ -1190,9 +1379,15 @@ UNITTEST(path_navigate)
     {
       "/abc",
       "malformed/root:/path/",
+#ifdef PATH_DOS_STYLE_ROOTS
       nullptr,
       nullptr,
       -1
+#else
+      "/abc/malformed/root:/path",
+      "\\abc\\malformed\\root:\\path",
+      25
+#endif
     },
     {
       "/start/path",
@@ -1253,16 +1448,67 @@ UNITTEST(path_navigate)
     {
       "C:\\start\\path",
       "D:\\folder",
+#ifdef PATH_DOS_STYLE_ROOTS
       "D:/folder",
       "D:\\folder",
       9
+#else
+      "C:/start/path/D:/folder",
+      "C:\\start\\path\\D:\\folder",
+      23
+#endif
     },
     {
       "/some/directory",
       "C:",
+#ifdef PATH_DOS_STYLE_ROOTS
       "C:/",
       "C:\\",
       3
+#else
+      "/some/directory/C:",
+      "\\some\\directory\\C:",
+      18
+#endif
+    },
+    {
+      "C:\\\\start\\path",
+      "D:\\\\folder",
+#ifdef PATH_DOS_STYLE_ROOTS
+      "D:/folder",
+      "D:\\folder",
+      9
+#else
+      "D://folder",
+      "D:\\\\folder",
+      10
+#endif
+    },
+    {
+      "/some/directory2",
+      "C://",
+#ifdef PATH_DOS_STYLE_ROOTS
+      "C:/",
+      "C:\\",
+      3
+#else
+      "C://",
+      "C:\\\\",
+      4
+#endif
+    },
+    {
+      "ahhkillme://",
+      "..",
+#ifdef PATH_DOS_STYLE_ROOTS
+      "ahhkillme:/",
+      "ahhkillme:\\",
+      11
+#else
+      "ahhkillme://",
+      "ahhkillme:\\\\",
+      12
+#endif
     },
     {
       "/cwd",
@@ -1292,6 +1538,44 @@ UNITTEST(path_navigate)
       "look\\more\\nonsense\\...\\lol",
       26
     },
+#ifdef PATH_UNC_ROOTS
+    // Windows UNC paths
+    {
+      "\\\\.\\C:",
+      "Program Files",
+      "//./C:/Program Files",
+      "\\\\.\\C:\\Program Files",
+      20
+    },
+    {
+      "\\\\localhost\\share\\folder",
+      "..",
+      "//localhost/share/",
+      "\\\\localhost\\share\\",
+      18
+    },
+    {
+      "\\\\?\\unc\\localhost\\c$\\",
+      "whymustyoudothis/..",
+      "//?/unc/localhost/c$/",
+      "\\\\?\\unc\\localhost\\c$\\",
+      21
+    },
+    {
+      "\\\\.\\C:\\nope\\",
+      "..\\..",
+      "//./C:/",
+      "\\\\.\\C:\\",
+      7
+    },
+    {
+      "\\\\127.0.0.1\\why",
+      "..",
+      "//127.0.0.1/why/",
+      "\\\\127.0.0.1\\why\\",
+      16
+    }
+#endif
   };
   static const path_target_output with_check[] =
   {

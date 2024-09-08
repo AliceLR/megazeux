@@ -99,6 +99,12 @@
     <ClCompile Include="..\..\src\editor\stringsearch.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\editor\ansi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\edit_export.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\editor\block.h">
@@ -241,6 +247,18 @@
     </ClInclude>
     <ClInclude Include="..\..\src\audio\sfx.h">
       <Filter>Header Files\Core\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\SDLmzx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\ansi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\edit_export.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\core_task.h">
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

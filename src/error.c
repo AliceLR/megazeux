@@ -514,6 +514,16 @@ int error_message(enum error_code id, int parameter, const char *string)
       sprintf(error_mesg, "Error exporting SFX file");
       code = 0;
       break;
+
+    case E_IMAGE_EXPORT:
+      sprintf(error_mesg, "Error exporting image");
+      code = 0;
+      break;
+
+    case E_IMAGE_EXPORT_CANCELED:
+      sprintf(error_mesg, "Error exporting image or export was canceled");
+      code = 0;
+      break;
 #endif
 
 #ifdef CONFIG_UPDATER

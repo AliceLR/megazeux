@@ -192,6 +192,7 @@ static const char *get_ctx_name(enum context_type id)
     case CTX_MAIN_MENU:         return "Main menu";
     case CTX_GAME_MENU:         return "Game menu";
     case CTX_INTAKE_NUM:        return "(intake number)";
+    case CTX_TASK:              return "(running task)";
 
     // Network contexts.
     case CTX_UPDATER:           return "Updater";

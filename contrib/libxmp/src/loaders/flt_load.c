@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -23,6 +23,7 @@
 #include "loader.h"
 #include "mod.h"
 #include "../period.h"
+#include "../rng.h"
 
 static int flt_test(HIO_HANDLE *, char *, const int);
 static int flt_load(struct module_data *, HIO_HANDLE *, const int);
@@ -118,7 +119,8 @@ static int read_am_instrument(struct module_data *m, HIO_HANDLE *nt, int i)
 	struct xmp_envelope *vol_env = &xxi->aei;
 	struct xmp_envelope *freq_env = &xxi->fei;
 	struct am_instrument am;
-	char *wave;
+	struct rng_state rng;
+	const int8 *wave;
 	int a, b;
 	int8 am_noise[1024];
 
@@ -154,7 +156,7 @@ static int read_am_instrument(struct module_data *m, HIO_HANDLE *nt, int i)
 		xxs->len = 32;
 		xxs->lps = 0;
 		xxs->lpe = 32;
-		wave = (char *)&am_waveform[am.wf][0];
+		wave = &am_waveform[am.wf][0];
 	} else {
 		int j;
 
@@ -162,10 +164,11 @@ static int read_am_instrument(struct module_data *m, HIO_HANDLE *nt, int i)
 		xxs->lps = 0;
 		xxs->lpe = 1024;
 
+		libxmp_init_random(&rng);
 		for (j = 0; j < 1024; j++)
-			am_noise[j] = rand() % 256;
+			am_noise[j] = libxmp_get_random(&rng, 256);
 
-		wave = (char *)&am_noise[0];
+		wave = &am_noise[0];
 	}
 
 	xxs->flg = XMP_SAMPLE_LOOP;

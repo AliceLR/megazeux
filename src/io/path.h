@@ -28,6 +28,17 @@ __M_BEGIN_DECLS
 
 #include <stddef.h>
 
+#if defined(_WIN32) || defined(CONFIG_DJGPP) || defined(__amigaos__) || \
+ defined(CONFIG_DOS_STYLE_ROOTS)
+// DOS-style roots with one slash (all platforms allow two).
+#define PATH_DOS_STYLE_ROOTS
+#endif
+
+#if defined(_WIN32)
+// Windows-style UNC roots.
+#define PATH_UNC_ROOTS
+#endif
+
 #ifndef DIR_SEPARATOR
 #if defined(__WIN32__) || defined(CONFIG_DJGPP)
 #define DIR_SEPARATOR "\\"

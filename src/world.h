@@ -119,6 +119,7 @@ enum mzx_version
   V291            = 0x025B,
   V292            = 0x025C,
   V293            = 0x025D,
+  V294            = 0x025E,
 #ifdef CONFIG_DEBYTECODE
   VERSION_SOURCE  = 0x0300, // For checks dependent on Robotic source changes
   V300            = 0x0300,

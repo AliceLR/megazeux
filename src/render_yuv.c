@@ -151,19 +151,6 @@ static void yuv_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static void yuv_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, unsigned int count)
-{
-  struct yuv_render_data *render_data = graphics->render_data;
-  unsigned int i;
-
-  for(i = 0; i < count; i++)
-  {
-    graphics->flat_intensity_palette[i] =
-     render_data->sdl.rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b);
-  }
-}
-
 static void yuv_lock_overlay(struct yuv_render_data *render_data,
  Uint32 **pixels, Uint32 *pitch)
 {
@@ -218,7 +205,7 @@ static void yuv1_render_layer(struct graphics_data *graphics,
 
   yuv_lock_overlay(render_data, &pixels, &pitch);
 
-  render_layer(pixels, bpp, pitch, graphics, layer);
+  render_layer(pixels, SCREEN_PIX_W, SCREEN_PIX_H, pitch, bpp, graphics, layer);
 
   yuv_unlock_overlay(render_data);
 }
@@ -278,7 +265,7 @@ void render_yuv1_register(struct renderer *renderer)
   renderer->init_video = yuv_init_video;
   renderer->free_video = yuv_free_video;
   renderer->set_video_mode = yuv1_set_video_mode;
-  renderer->update_colors = yuv_update_colors;
+  renderer->update_colors = sdl_update_colors;
   renderer->resize_screen = resize_screen_standard;
   renderer->get_screen_coords = get_screen_coords_scaled;
   renderer->set_screen_coords = set_screen_coords_scaled;

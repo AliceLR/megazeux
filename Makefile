@@ -133,7 +133,7 @@ SDL_LDFLAGS := $(LINK_DYNAMIC_IF_MIXED) $(SDL_LDFLAGS)
 endif # SDL
 
 #
-# libvorbis/tremor
+# libvorbis/tremor/stb_vorbis
 #
 
 VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
@@ -145,6 +145,9 @@ VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisidec -logg
 endif
 ifeq (${VORBIS},tremor-lowmem)
 VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisidec
+endif
+ifeq (${VORBIS},stb_vorbis)
+VORBIS_LDFLAGS ?= -L${PREFIX}/lib
 endif
 
 #
@@ -231,7 +234,7 @@ ifneq (${DEBUG},1)
 OPTIMIZE_FLAGS := -O3 ${OPTIMIZE_CFLAGS} ${OPTIMIZE_FLAGS}
 OPTIMIZE_DEF   ?= -DNDEBUG
 else
-OPTIMIZE_FLAGS := -Og ${DEBUG_CFLAGS} ${OPTIMIZE_FLAGS}
+OPTIMIZE_FLAGS := -O0 ${DEBUG_CFLAGS} ${OPTIMIZE_FLAGS}
 OPTIMIZE_DEF   ?= -DDEBUG
 endif
 
@@ -256,7 +259,7 @@ ifeq (${SANITIZER},memory)
 # external libraries turned off or re-built with instrumentation.
 # This sanitizer is only implemented by clang.
 OPTIMIZE_FLAGS += -fsanitize=memory -fno-omit-frame-pointer -fPIC \
- -fsanitize-recover=memory -fsanitize-memory-track-origins=2
+ -fsanitize-memory-track-origins=2
 ARCH_EXE_LDFLAGS += -pie
 endif
 
@@ -264,7 +267,11 @@ endif
 # Enable link-time optimization.
 #
 ifeq (${LTO},1)
+ifeq (${HAS_F_LTO},1)
 OPTIMIZE_FLAGS += -flto
+else
+$(warning link-time optimization not supported, ignoring.)
+endif
 endif
 
 CFLAGS   += ${OPTIMIZE_FLAGS} ${OPTIMIZE_DEF}

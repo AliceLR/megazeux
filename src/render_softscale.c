@@ -221,7 +221,7 @@ static void softscale_render_layer(struct graphics_data *graphics,
   unsigned int bpp;
 
   softscale_lock_texture(render_data, false, &pixels, &pitch, &bpp);
-  render_layer(pixels, bpp, pitch, graphics, layer);
+  render_layer(pixels, SCREEN_PIX_W, SCREEN_PIX_H, pitch, bpp, graphics, layer);
 }
 
 static void softscale_render_cursor(struct graphics_data *graphics, unsigned int x,
@@ -293,7 +293,7 @@ void render_softscale_register(struct renderer *renderer)
   renderer->init_video = softscale_init_video;
   renderer->free_video = softscale_free_video;
   renderer->set_video_mode = softscale_set_video_mode;
-  renderer->update_colors = sdlrender_update_colors;
+  renderer->update_colors = sdl_update_colors;
   renderer->resize_screen = resize_screen_standard;
   renderer->get_screen_coords = get_screen_coords_scaled;
   renderer->set_screen_coords = set_screen_coords_scaled;

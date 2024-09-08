@@ -172,10 +172,10 @@ static boolean mm_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer
  size_t frames, unsigned int channels)
 {
   struct mikmod_stream *mm_stream = (struct mikmod_stream *)a_src;
-  uint32_t read_wanted = mm_stream->s.allocated_data_length -
-   mm_stream->s.stream_offset;
-  uint8_t *read_buffer = (uint8_t *)mm_stream->s.output_data +
-   mm_stream->s.stream_offset;
+  void *read_buffer;
+  size_t read_wanted;
+
+  read_buffer = sampled_get_buffer(&mm_stream->s, &read_wanted);
 
   VC_WriteBytes((SBYTE *)read_buffer, read_wanted);
   sampled_mix_data((struct sampled_stream *)mm_stream, buffer, frames, channels);

@@ -36,9 +36,13 @@
 #define SLOW_FILESYSTEM_HACKS
 #endif
 
-#ifndef _WIN32
+/* As of Windows 7, short filenames can be disabled per-volume.
+ * In Windows 8+ they are disabled by default except on the boot volume.
+ * Github CI Windows runners now disable them too, so case5 must be enabled.
+ */
+//#ifndef _WIN32
 #define ENABLE_DOS_COMPAT_TRANSLATIONS
-#endif
+//#endif
 
 #ifdef ENABLE_DOS_COMPAT_TRANSLATIONS
 #if defined(SLOW_FILESYSTEM_HACKS) || defined(_WIN32) || defined(CONFIG_DJGPP)
@@ -439,7 +443,7 @@ static int match(char *path, size_t buffer_len)
   while(1)
   {
     {
-      token = strsep(&nexttoken, "/\\");
+      token = path_tokenize(&nexttoken);
 
       // this token is the file
       if(nexttoken == NULL)
@@ -521,7 +525,7 @@ static int match(char *path, size_t buffer_len)
       }
 
       /* this "hack" overwrites the token's \0 to re-formulate
-       * the string versus strsep(); it has the nice side-effect of
+       * the string versus path_tokenize(); it has the nice side-effect of
        * also converting windows style path to UNIX ones, so they'll
        * work on everything.
        */
@@ -568,12 +572,16 @@ static int fsafetest(const char *path, char *newpath, size_t buffer_len)
     return FSAFE_SUCCESS;
 
   // windows drive letters
+  if(strchr(newpath, ':') != NULL)
+    return -FSAFE_WINDOWS_DRIVE_LETTER_ERROR;
+  /*
   if(((newpath[0] >= 'A') && (newpath[0] <= 'Z')) ||
      ((newpath[0] >= 'a') && (newpath[0] <= 'z')))
   {
     if(newpath[1] == ':')
       return -FSAFE_WINDOWS_DRIVE_LETTER_ERROR;
   }
+  */
 
   // reject any pathname including /../
   for(i = 0; i < pathlen; i++)

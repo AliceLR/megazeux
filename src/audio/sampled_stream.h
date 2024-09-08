@@ -35,11 +35,9 @@ struct sampled_stream
   int16_t *output_data;
   size_t data_window_length;
   size_t allocated_data_length;
-  size_t prologue_length;
-  size_t epilogue_length;
   size_t stream_offset;
-  size_t negative_comp;
   size_t channels;
+  unsigned bytes_per_frame;
   boolean use_volume;
   int64_t frequency_delta;
   int64_t sample_index;
@@ -53,6 +51,7 @@ struct sampled_stream_spec
   uint32_t  (* get_frequency)(struct sampled_stream *s_src);
 };
 
+void *sampled_get_buffer(struct sampled_stream *s_src, size_t *needed);
 void sampled_set_buffer(struct sampled_stream *s_src);
 void sampled_mix_data(struct sampled_stream *s_src,
  int32_t * RESTRICT dest_buffer, size_t dest_frames, unsigned int dest_channels);

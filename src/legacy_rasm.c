@@ -3007,7 +3007,11 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
       break;
     }
 
-    // Note: invalid commands default to 0 and translate to ROBOTIC_CMD_END.
+    // All Robo-P commands past MESSAGE ROW "str" (167) should be treated as
+    // NOPs, unless some special forward compatibilty is needed (SWAP WORLD).
+    if(cmd > ROBOTIC_CMD_UNUSED_167 && cmd != ROBOTIC_CMD_SWAP_WORLD)
+      cmd = ROBOTIC_CMD_BLANK_LINE;
+
     buf[len++] = v1_command_translation[cmd][0];
 
     for(j = 1; v1_command_translation[cmd][j]; j++)

@@ -33,6 +33,7 @@
 #include "window.h"
 
 #include <stdint.h>
+#include <string.h>
 
 #define NUM_MENUS 6
 

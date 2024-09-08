@@ -75,6 +75,7 @@ var rad = std("RAD");
 var libvorbis = std("libvorbis");
 var tremor = std("tremor");
 var tremor_lowmem = std("tremor<br>(lowmem)");
+var stb_vorbis = std("stb_vorbis");
 
 var render_ctr = std("render_ctr");
 var render_nds = std("render_nds");
@@ -111,7 +112,7 @@ var fields =
   network:          "NETWORK" + note_link(13),
   updater:          "UPDATER",
   modular:          "MODULAR",
-  png:              "PNG",
+  png:              "LIBPNG",
   x11:              "X11",
   hashtables:       "HASH TABLES",
   loadsave_meter:   "LOADSAVE_METER",
@@ -161,7 +162,7 @@ var archs =
     description:      "Nintendo 3DS",
     architecture:     "ARM11 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 13.2.0 <br> binutils 2.41 <br> (dk r62)",
+    toolchain:        "gcc 14.1.0 <br> binutils 2.42 <br> (dk r64)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -206,7 +207,7 @@ var archs =
     glsl:             yes,
     network:          yes,
     updater:          no_updater,
-    png:              yes,
+    png:              no,
     hashtables:       yes,
     loadsave_meter:   no,
   },
@@ -254,7 +255,7 @@ var archs =
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
-    ogg_vorbis:       tremor_lowmem,
+    ogg_vorbis:       stb_vorbis,
     optimization:     speed,
     sdl:              no,
     editor:           yes,
@@ -328,7 +329,7 @@ var archs =
     description:      "Windows <br> (GNU toolchain)",
     architecture:     "x64 (PE+ COFF) <br> x86 (PE COFF)",
     endian:           "Little",
-    toolchain:        "gcc 13.2.0 <br> binutils 2.41",
+    toolchain:        "gcc 14.1.1 <br> binutils 2.41",
     packaged:         ZIP,
     visibility:       yes,
     stack_protector:  stack_protector_strong,
@@ -390,7 +391,7 @@ var archs =
     description:      "Nintendo DS",
     architecture:     "ARM9 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 13.2.0 <br> binutils 2.41 <br> (dk r62)",
+    toolchain:        "gcc 14.1.0 <br> binutils 2.42 <br> (dk r64)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
@@ -467,7 +468,7 @@ var archs =
     description:      "Nintendo Switch",
     architecture:     "ARMv8/AArch64 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 13.2.0 <br> binutils 2.41 <br> (dk r24)",
+    toolchain:        "gcc 14.1.0 <br> binutils 2.42 <br> (dk r26.1)",
     packaged:         ZIP,
     stack_protector:  stack_protector_strong,
     layer_rendering:  yes,
@@ -528,7 +529,7 @@ var archs =
     description:      "Nintendo Wii",
     architecture:     "PPC (ELF)",
     endian:           "Big",
-    toolchain:        "gcc 13.2.0 <br> binutils 2.41 <br> (dk r44.2)",
+    toolchain:        "gcc 13.1.0 <br> binutils 2.42 <br> (dk r45.2)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -554,7 +555,7 @@ var archs =
     description:      "Nintendo Wii U",
     architecture:     "PPC (ELF)",
     endian:           "Big",
-    toolchain:        "gcc 13.2.0 <br> binutils 2.41 <br> (dk r44.2)",
+    toolchain:        "gcc 13.1.0 <br> binutils 2.42 <br> (dk r45.2)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -1002,6 +1003,7 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
   <li><b>i386</b> / <b>i686</b> / etc.</li>
   <li><b>ARMhf</b></li>
   <li><b>AArch64</b></li>
+  <li><b>RISC-V RV64GC</b></li>
 </ul>
 <p>
   More niche architectures are only tested via non-Linux ports or are
@@ -1016,10 +1018,10 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
   <li><b>PA-RISC</b> (qemu-system-hppa)</li>
   <li><b>PowerPC</b> (qemu-system-ppc, Nintendo Wii, Nintendo Wii U, Mac OS X)</li>
   <li><b>PowerPC 64</b> (qemu-system-ppc64, Mac OS X)</li>
-  <li><b>RISC-V RV64GC</b> (qemu-system-riscv64)</li>
   <li><b>SPARC</b> (qemu-system-sparc)</li>
   <li><b>SPARC64</b> (qemu-system-sparc64)</li>
   <li><b>SuperH SH-4</b> (qemu-sh4-static, Sega Dreamcast)</li>
+  <li><b>IBM Z</b> (qemu-s390x-static)</li>
 </ul>
 
 <hr>

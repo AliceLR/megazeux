@@ -19,9 +19,6 @@
     <Filter Include="Source Files\contrib">
       <UniqueIdentifier>{8a9e0782-2347-4780-bc6c-0c3235801faa}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\contrib\gdm2s3m">
-      <UniqueIdentifier>{cfd89b63-1e51-451d-b0a2-94ac57152826}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\contrib\libxmp">
       <UniqueIdentifier>{107eb3a2-bd41-481c-a305-4f34cfaca719}</UniqueIdentifier>
     </Filter>
@@ -30,9 +27,6 @@
     </Filter>
     <Filter Include="Header Files\contrib">
       <UniqueIdentifier>{c590945c-346c-429f-8553-b432ae68e7b7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\contrib\gdm2s3m">
-      <UniqueIdentifier>{6f918c8b-e2c0-4be0-8b34-53d061c7d5df}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\contrib\libxmp">
       <UniqueIdentifier>{38d84df2-712f-43ad-bc11-fa34314f80d3}</UniqueIdentifier>
@@ -276,21 +270,6 @@
     <ClCompile Include="..\..\contrib\libxmp\src\virtual.c">
       <Filter>Source Files\contrib\libxmp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\gdm2s3m\src\error.c">
-      <Filter>Source Files\contrib\gdm2s3m</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\contrib\gdm2s3m\src\gdm.c">
-      <Filter>Source Files\contrib\gdm2s3m</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\contrib\gdm2s3m\src\gdm2s3m.c">
-      <Filter>Source Files\contrib\gdm2s3m</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\contrib\gdm2s3m\src\s3m.c">
-      <Filter>Source Files\contrib\gdm2s3m</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\contrib\gdm2s3m\src\utility.c">
-      <Filter>Source Files\contrib\gdm2s3m</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\platform_sdl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -331,9 +310,6 @@
       <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\audio\ext.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\audio\sampled_stream.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\audio\sfx.c">
@@ -396,9 +372,6 @@
     <ClCompile Include="..\..\src\audio\audio_xmp.c">
       <Filter>Source Files\audio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\io\dir.c">
-      <Filter>Source Files\io</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\io\fsafeopen.c">
       <Filter>Source Files\io</Filter>
     </ClCompile>
@@ -417,7 +390,25 @@
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\ice_load.c">
       <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\xfnmatch.c">
+    <ClCompile Include="..\..\src\audio\sampled_stream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\far_extras.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\platform_time.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\about.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\filetype.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\core_task.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\rng.c">
       <Filter>Source Files\contrib\libxmp</Filter>
     </ClCompile>
   </ItemGroup>
@@ -502,9 +493,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\world.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="config.h">
-      <Filter>Header Files\MSVC</Filter>
     </ClInclude>
     <ClInclude Include="dirent.h">
       <Filter>Header Files\MSVC</Filter>
@@ -592,24 +580,6 @@
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\win32\unistd.h">
       <Filter>Header Files\contrib\libxmp\win32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\contrib\gdm2s3m\src\error.h">
-      <Filter>Header Files\contrib\gdm2s3m</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\contrib\gdm2s3m\src\gdm.h">
-      <Filter>Header Files\contrib\gdm2s3m</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\contrib\gdm2s3m\src\gdm2s3m.h">
-      <Filter>Header Files\contrib\gdm2s3m</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\contrib\gdm2s3m\src\s3m.h">
-      <Filter>Header Files\contrib\gdm2s3m</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\contrib\gdm2s3m\src\types.h">
-      <Filter>Header Files\contrib\gdm2s3m</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\contrib\gdm2s3m\src\utility.h">
-      <Filter>Header Files\contrib\gdm2s3m</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\render_sdl.h">
       <Filter>Header Files</Filter>
@@ -710,9 +680,6 @@
     <ClInclude Include="..\..\src\io\bitstream.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\io\dir.h">
-      <Filter>Header Files\io</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\io\fsafeopen.h">
       <Filter>Header Files\io</Filter>
     </ClInclude>
@@ -758,7 +725,25 @@
     <ClInclude Include="..\..\src\hashtable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\contrib\libxmp\src\xfnmatch.h">
+    <ClInclude Include="..\..\src\SDLmzx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Header Files\MSVC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\world_format.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\contrib\libxmp\src\far_extras.h">
+      <Filter>Header Files\contrib\libxmp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\about.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\core_task.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\contrib\libxmp\src\rng.h">
       <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
   </ItemGroup>

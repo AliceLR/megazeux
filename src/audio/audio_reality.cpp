@@ -33,6 +33,11 @@
 #include <cstdlib>
 #include <new>
 
+#ifdef __APPLE__
+// Mac OS X 10.5 SDK somehow defines this to unsigned int __vector__...
+#undef bool
+#endif
+
 // Yes, this is how the Reality player is intended to be included.
 #define RAD_DETECT_REPEATS 1
 #include "../../contrib/rad/opal.cpp"
@@ -83,12 +88,12 @@ static boolean rad_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
  size_t frames, unsigned int channels)
 {
   struct rad_stream *rad_stream = (struct rad_stream *)a_src;
-  uint32_t read_wanted = rad_stream->s.allocated_data_length -
-   rad_stream->s.stream_offset;
-  int16_t *read_buffer = rad_stream->s.output_data +
-   (rad_stream->s.stream_offset / 2);
+  int16_t *read_buffer;
+  size_t read_wanted;
   boolean rval = false;
   uint32_t i;
+
+  read_buffer = (int16_t *)sampled_get_buffer(&rad_stream->s, &read_wanted);
 
   for(i = 0; i < read_wanted; i += 4)
   {

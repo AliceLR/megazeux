@@ -55,6 +55,7 @@
 #include "debug.h"
 #include "edit.h"
 #include "edit_di.h"
+#include "edit_export.h"
 #include "edit_menu.h"
 #include "fill.h"
 #include "graphics.h"
@@ -96,6 +97,12 @@ static const char *const mod_ext[] =
 };
 static const char *const sam_ext[] =
 { ".WAV", ".SAM", ".OGG",
+  NULL
+};
+
+static const char *const image_ext[] =
+{
+  ".PNG",
   NULL
 };
 
@@ -1116,26 +1123,20 @@ static boolean editor_draw(context *ctx)
   // Draw the board/vlayer
   if(editor->mode == EDIT_BOARD)
   {
-    cur_board->overlay_mode = 0;
+    cur_board->overlay_mode |= OVERLAY_FLAG_HIDE_OVERLAY;
     draw_edit_window(editor);
   }
   else
 
   if(editor->mode == EDIT_OVERLAY)
   {
-    cur_board->overlay_mode = 1;
-    if(!editor->show_board_under_overlay)
-    {
-      cur_board->overlay_mode |= 0x40;
-      draw_edit_window(editor);
-      cur_board->overlay_mode ^= 0x40;
-    }
-    else
-    {
-      draw_edit_window(editor);
-    }
-  }
+    cur_board->overlay_mode = OVERLAY_ON;
 
+    if(!editor->show_board_under_overlay)
+      cur_board->overlay_mode |= OVERLAY_FLAG_HIDE_BOARD;
+
+    draw_edit_window(editor);
+  }
   else // EDIT_VLAYER
   {
     draw_vlayer_window(editor);
@@ -2297,6 +2298,12 @@ static boolean editor_key(context *ctx, int *key)
       return true;
     }
 
+    case IKEY_F12:
+    {
+      // don't block in text mode :(
+      break;
+    }
+
     case IKEY_8:
     case IKEY_KP_MULTIPLY:
     {
@@ -2502,6 +2509,8 @@ static boolean editor_key(context *ctx, int *key)
             if(!file_manager(mzx_world, ans_ext, NULL, export_name,
              "Export ANSi or TXT", 1, 1, elements, ARRAY_SIZE(elements), 3))
             {
+              path_force_ext(export_name, sizeof(export_name),
+               text_only ? ".txt" : ".ans");
               memcpy(editor->mzm_name_buffer, export_name, MAX_PATH);
               memcpy(editor->ansi_save_title, title, ARRAY_SIZE(title));
               memcpy(editor->ansi_save_author, author, ARRAY_SIZE(author));
@@ -2961,7 +2970,8 @@ static boolean editor_key(context *ctx, int *key)
 
               strcpy(import_name, editor->mzm_name_buffer);
               if(!file_manager(mzx_world, ans_ext, NULL, import_name,
-               "Choose ANSi file to import", 1, 0, elements, ARRAY_SIZE(elements), 2))
+               "Choose ANSi or TXT file to import", 1, 0,
+               elements, ARRAY_SIZE(elements), 2))
               {
                 int width = -1;
                 int height = -1;
@@ -3593,6 +3603,24 @@ static boolean editor_key(context *ctx, int *key)
               {
                 save_world(mzx_world, export_name, false, MZX_VERSION_PREV);
               }
+              break;
+            }
+
+            case 5:
+            {
+              // Board/vlayer image
+              const char *title = (editor->mode == EDIT_VLAYER) ?
+               "Export vlayer image" : "Export board image";
+
+              if(!new_file(mzx_world, image_ext, image_ext[0], export_name,
+               title, ALLOW_ALL_DIRS))
+              {
+                if(editor->mode == EDIT_VLAYER)
+                  export_vlayer_image(ctx, mzx_world, export_name);
+                else
+                  export_board_image(ctx, cur_board, export_name);
+              }
+              break;
             }
           }
         }

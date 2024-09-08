@@ -42,6 +42,8 @@ struct sdl_render_data
 #endif
   SDL_Surface *screen;
   SDL_Surface *shadow;
+  SDL_Color *palette_colors;
+  const SDL_PixelFormat *flat_format; // format used by sdl_update_colors.
 
   // SDL Renderer and overlay renderer texture format configuration.
   uint32_t (*rgb_to_yuv)(uint8_t r, uint8_t g, uint8_t b);
@@ -64,6 +66,8 @@ int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
  boolean resize);
 boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling);
 void sdl_destruct_window(struct graphics_data *graphics);
+void sdl_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, unsigned int count);
 
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize);
@@ -78,9 +82,6 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
 boolean sdlrender_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize,
  uint32_t sdl_rendererflags);
-
-void sdlrender_update_colors(struct graphics_data *graphics,
- struct rgb_color *palette, unsigned int count);
 #endif
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)

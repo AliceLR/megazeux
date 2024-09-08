@@ -118,22 +118,45 @@ static boolean vio_cache_directory_recursively(vfilesystem *vfs, const char *pat
   path_clean_slashes_copy(tmp, MAX_PATH, path);
   next = tmp;
   len = path_is_absolute(tmp);
-  if(tmp[0] != '/' && len)
+  if(len > 1)
   {
+#ifdef PATH_DOS_STYLE_ROOTS
+    int skip = 0;
     // Last character of the root should be /, next to last :.
     if(len < 3 || tmp[len - 2] != ':')
       return false;
 
+#ifdef PATH_UNC_ROOTS
+    // Reject UNC host/share paths as network files should be assumed volatile.
+    // Allow local file UNC prefixes.
+    if(isslash(tmp[0]))
+    {
+      if(len > 4 && (!memcmp(tmp, "\\\\.\\", 4) || !memcmp(tmp, "\\\\?\\", 4)) &&
+       strncasecmp(tmp + 4, "unc\\", 4))
+      {
+        next += 4;
+        skip = 4;
+      }
+      else
+        return false;
+    }
+#endif
+
     path_tokenize(&next);
     tmp[len - 2] = '\0';
 
-    ret = vfs_make_root(vfs, tmp);
+    ret = vfs_make_root(vfs, tmp + skip);
     if(ret != 0 && ret != -EEXIST)
       return false;
 
     // Repair current fragment.
     tmp[len - 2] = ':';
     tmp[len - 1] = DIR_SEPARATOR_CHAR;
+#else
+    // DOS-style roots are only supported as VFS roots and should never
+    // make it here!
+    return false;
+#endif
   }
   else
 
@@ -1137,7 +1160,7 @@ static inline boolean virt_writeback(vfile *vf)
  */
 static inline boolean virt_read(vfile *vf)
 {
-  const unsigned char *tmp;
+  const unsigned char *tmp = NULL;
   size_t len = 0;
   int ret = -1;
   if(!vf->inode)

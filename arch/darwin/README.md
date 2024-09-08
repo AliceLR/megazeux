@@ -1,15 +1,40 @@
 # BUILDING MEGAZEUX VIA THIS MAKEFILE
 
-If you are building on the Darwin 10 platform (OS 10.6 or higher) you can build
-MegaZeux without using Xcode by following the instructions in this file. This
-process has been superceded by the Xcode project folder (arch/xcode) for all
-Intel Mac builds, but is still required to create PowerPC builds.
+This Makefile can be used to build a DMG targeting Mac OS X 10.4 (ppc, ppc64),
+Mac OS X 10.6 (i686 and x86_64), Mac OS X 10.9 (x86_64h), and macOS 11 (arm64).
+The process here is slightly involved and in most cases will require *multiple*
+versions of Xcode to target everything. Notarization is NOT currently supported;
+please use the Xcode project for that.
 
-Xcode 3.2.6 is assumed to be installed, but older versions may work. Xcode 4.x
-and later remove the PowerPC compilers, however, so they are not suited to
-creating PowerPC builds.
+Tested versions of Xcode:
 
-## PREREQUISITES
+- Xcode 3.2.6 has been used from MegaZeux 2.90 onward to produce PowerPC
+  binaries. To get the correct compiler names from Makefile.arch, define
+  XCODE_3=1. This is the **LAST** version of Xcode that targets PowerPC.
+  The 10.4 SDK should be used for PPC and the 10.5 SDK should be used for PPC64.
+  The current setup installs these SDKs alongside Xcode 9.4.1 via XcodeLegacy.
+- Xcode 4.1 has been tested in the past and should work.
+- Xcode 9.4.1 can target i686, x86_64, and x86_64h. It is the **LAST** version
+  of Xcode that targets i686. This is used to produce the Intel binaries from
+  from 2.93b onward.
+
+Untested and unsupported features:
+
+- Other versions of Xcode might require changing some variables (Makefile.arch).
+- arm64 and arm64e builds haven't been tested.
+- Notarization isn't supported yet.
+- osxcross should work, but you'll need to override the compilers defined in
+  Makefile.arch. Only the official SDKs have been tested so far.
+
+Other required software:
+
+- [dylibbundler](https://github.com/auriamg/macdylibbundler/), which can be
+  installed via MacPorts: `sudo port install dylibbundler`.
+
+## PREREQUISITES (Xcode 3.2.6)
+
+Note: this section was written against Xcode 3.2.6. The process of building
+dependencies is different for later versions.
 
 Make sure `i686-apple-darwin10-gcc` and/or `powerpc-apple-darwin10-gcc` exist
 in your `/usr/bin` folder or create them with the following commands:
@@ -84,56 +109,49 @@ can be readily built, they currently are not included:
   --enable-release
 ```
 
-## BUILDING INDIVIDUALLY (optional)
+## BUILDING
 
 You need Xcode's development tools package to have been installed. This does
 NOT mean you need all of the Xcode IDE, but you do need the DMG file it is
 installed from. This is normally included on your OS X install DVD #1. It is
 enough to install the UNIX tools.
 
-**NOTE**: Read this section and then _the following section_ before building.
+Run make with variables defining the dependencies folders of each architecture
+to be targeted (and optionally -j#, etc). Each architecture provided will be
+compiled:
 
-A build for a single arch can be produced using one of the following sequences
-of commands:
 ```
-make package ARCH=i686 PREFIX_I686=[YOUR PREFIX HERE]/i686
-make distclean
-```
-```
-make package ARCH=ppc PREFIX_PPC=[YOUR PREFIX HERE]/ppc
-make distclean
-```
-
-These will build the i686/ppc binary and put it in the root as "mzxrun.i686" or
-"megazeux.ppc" or etc. It will also clean the source tree, which is **VERY IMPORTANT**.
-
-The instructions above can also be repeated with `ARCH=amd64` and `ARCH=ppc64` for
-64-bit binaries (this may improve performance, but it is not necessary).
-
-The individual builds can then be merged using the following comand:
-```
-make lipo
-```
-
-## BUILDING SEVERAL ARCHITECTURES AT ONCE
-
-All of the instructions from the previous section can be performed with a single
-command:
-```
-make dist \
+make \
   PREFIX_I686=[YOUR PREFIX HERE]/i686 \
   PREFIX_PPC=[YOUR PREFIX HERE]/ppc
 ```
 
-The prefixes you supply (`PREFIX_I686`, `PREFIX_AMD64`, `PREFIX_PPC`, and/or
-`PREFIX_PPC64`) will determine which binaries are built. After all desired
-platforms are built, `make lipo` will be run automatically to merge them.
+The prefixes you supply will determine which binaries are built. Supported
+prefixes:
 
+| Arch    | Prefix          |
+|---------|-----------------|
+| arm64   | `PREFIX_ARM64`  |
+| arm64e  | `PREFIX_ARM64E` |
+| i686    | `PREFIX_I686`   |
+| x86_64  | `PREFIX_AMD64`  |
+| x86_64h | `PREFIX_AMD64H` |
+| ppc     | `PREFIX_PPC`    |
+| ppc64   | `PREFIX_PPC64`  |
+
+Each architecture's binaries will be output as "mzxrun.${ARCH}" et al.
+After all desired platforms are built, `make lipo` will be run automatically
+to merge them. Any pre-existing binaries from other architectures will also
+be combined into the fat binary. This can be used to e.g. import PowerPC
+builds made with Xcode 3.2.6 into a binary otherwise built by Xcode 9.4.1.
 
 ## PACKAGING
 
-After `make dist` (or `make lipo` if using the first method), simply do the
-following:
+**FIRST**: Make sure there is no currently mounted volume named "MegaZeux",
+and that /Volumes contains no folder named "MegaZeux". This will break the
+DMG creation step. You may have to manually clean up from prior failed builds.
+
+After `make` or `make lipo`, simply do the following:
 ```
 make archive
 ```
@@ -141,4 +159,3 @@ make archive
 This will output a file to the `build/dist/darwin` directory at the top level.
 One of these is a redistributable DMG that contains both MegaZeux and MZXRun
 applications supporting the architectures you built.
-

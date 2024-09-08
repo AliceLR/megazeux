@@ -5642,7 +5642,22 @@ void run_robot(context *ctx, int id, int x, int y)
           char robot_name_buffer[ROBOT_MAX_TR];
           tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
 
-          find_robot(src_board, robot_name_buffer, &first, &last);
+          if(!find_robot(src_board, robot_name_buffer, &first, &last))
+          {
+            /* Versions 2.80 through 2.93 didn't bother checking the return
+             * value of find_robot. When find_robot returns 0, no robot with
+             * that name exists and the values of both first and last contain
+             * the index where a robot with that name should be inserted into
+             * the name sorted list. In other words, this command checked the
+             * robot alphabetically following the searched name or the stale
+             * pointer at the end of the list (resulting in a crash).
+             * It's doubtful anything relies on this, but allow just in case.
+             */
+            if(mzx_world->version < VERSION_PORT || mzx_world->version >= V293 ||
+             last >= src_board->num_robots_active)
+              break;
+          }
+
           while(first <= last)
           {
             dest_robot = src_board->robot_list_name_sorted[first];
@@ -5652,6 +5667,9 @@ void run_robot(context *ctx, int id, int x, int y)
             {
               char *p2 = next_param_pos(cmd_ptr + 1);
               gotoed = send_self_label_tr(mzx_world, p2 + 1, id);
+              // DOS versions only send once here.
+              if(mzx_world->version < VERSION_PORT)
+                break;
             }
             first++;
           }

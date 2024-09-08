@@ -334,7 +334,7 @@ static GLint glsl_verify_compile(struct glsl_render_data *render_data,
 {
   GLint compile_status;
   char buffer[INFO_MAX];
-  int len = 0;
+  GLsizei len = 0;
 
   glsl.glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status);
   glsl.glGetShaderInfoLog(shader, INFO_MAX - 1, &len, buffer);
@@ -353,7 +353,7 @@ static void glsl_verify_link(struct glsl_render_data *render_data,
  GLenum program)
 {
   char buffer[INFO_MAX];
-  int len = 0;
+  GLsizei len = 0;
 
   glsl.glGetProgramInfoLog(program, INFO_MAX - 1, &len, buffer);
   buffer[len] = 0;
@@ -1127,7 +1127,8 @@ static void glsl_render_layer(struct graphics_data *graphics,
 
   if(render_data->use_software_renderer)
   {
-    render_layer(render_data->pixels, 32, SCREEN_PIX_W * 4, graphics, layer);
+    render_layer(render_data->pixels, SCREEN_PIX_W, SCREEN_PIX_H,
+     SCREEN_PIX_W * 4, 32, graphics, layer);
     return;
   }
 

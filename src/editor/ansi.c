@@ -31,6 +31,7 @@
 #include "../io/vio.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 enum sauce_flags

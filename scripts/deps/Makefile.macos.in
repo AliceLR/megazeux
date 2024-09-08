@@ -1,0 +1,120 @@
+#
+# macOS combined dependency builder support.
+# Supports darwin, may eventually support xcode as well.
+#
+
+ALL_ARCH = ppc ppc64 i686 x86_64 x86_64h arm64 arm64e
+
+include ../../arch/darwin/Makefile.arch
+
+ifneq (${ARCH},)
+all: ${ZLIB_TARGET} ${PNG_TARGET} ${OGG_TARGET} ${VORBIS_TARGET} ${STB_TARGET}
+package: package_lazy
+
+all: ${SDL2_TARGET}
+
+ifneq ($(filter ppc ppc64,${ARCH}),)
+all: ${SDL12_TARGET}
+HOST=powerpc-apple-darwin10
+endif
+
+CFLAGS = -O3
+CXXFLAGS = ${CFLAGS}
+USE_CMAKE := 1
+
+# Note: OBJC and OBJCXX are CMake-specific.
+ARCH_INIT = \
+	export CC="${CC}"; \
+	export CXX="${CXX}"; \
+	export CFLAGS="${CFLAGS}"; \
+	export CXXFLAGS="${CXXFLAGS}"; \
+	export OBJC="${CC}"; \
+	export OBJCXX="${CXX}"; \
+	export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"; \
+	export CMAKE_LIBRARY_PATH="${PREFIX}"; \
+	true
+
+ARCH_CONFIGURE_ARGS	=
+ARCH_CONFIGURE_SDL12_ARGS = --disable-video-x11
+ARCH_CONFIGURE_SDL2_ARGS = --without-x
+
+ARCH_CMAKE_ARGS = \
+	-D SDL_X11=OFF \
+	-D CMAKE_INSTALL_NAME_DIR="${PREFIX}/lib" \
+	-D CMAKE_BUILD_WITH_INSTALL_NAME_DIR=TRUE \
+	-D CMAKE_MACOSX_RPATH=FALSE
+
+ifneq (${SYSROOT},)
+ARCH_CMAKE_ARGS += -D CMAKE_OSX_SYSROOT="${SYSROOT}"
+endif
+
+ifeq (${ARCH},arm64)
+endif
+
+ifeq (${ARCH},arm64e)
+endif
+
+ifeq (${ARCH},i686)
+SDL2 := ${SDL2_22}
+endif
+
+ifeq (${ARCH},x86_64)
+SDL2 := ${SDL2_22}
+endif
+
+ifeq (${ARCH},x86_64h)
+FIX_SDL_CMAKE += -D SDL_VULKAN=FALSE
+endif
+
+ifeq (${ARCH},ppc)
+SDL2 := ${SDL2_TIGER}
+ARCH_INIT += ; export MACOSX_DEPLOYMENT_TARGET=10.4; true
+ARCH_CMAKE_ARGS += -D SDL_JOYSTICK=FALSE -D SDL_HAPTIC=FALSE -D SSEMATH=FALSE -D ALTIVEC=FALSE
+endif
+
+ifeq (${ARCH},ppc64)
+SDL2 := ${SDL2_TIGER}
+ARCH_INIT += ; export MACOSX_DEPLOYMENT_TARGET=10.5; true
+ARCH_CMAKE_ARGS += -D SDL_JOYSTICK=FALSE -D SDL_HAPTIC=FALSE -D SSEMATH=FALSE -D CMAKE_OSX_DEPLOYMENT_TARGET=${MINVER}
+endif
+endif # ARCH != ''
+
+# TODO: these framework forgeries aren't good enough, look into this more.
+# This may need to be its own subplatform in the dependency system.
+
+frameworks: ${PREFIX}/zlib.framework ${PREFIX}/libpng.framework
+frameworks: ${PREFIX}/libogg.framework ${PREFIX}/libvorbis.framework
+frameworks: ${PREFIX}/libSDL2.framework
+.PHONY: frameworks
+
+${PREFIX}/zlib.framework:
+	rm -rf "$@" && mkdir -p "$@/Headers"
+	cp "$</zconf.h" "$</zlib.h" "$@/Headers"
+	lipo -create ${PREFIX}/*/lib/libz.dylib -output "$@/zlib"
+	install_name_util -id "@rpath/zlib.framework/zlib" "$@/zlib"
+
+${PREFIX}/libpng.framework:
+	rm -rf "$@" && mkdir -p "$@/Headers"
+	cp "$</png.h" "$</pngconf.h" "$</pnglibconf.h" "$@/Headers"
+	lipo -create */lib/libpng.dylib -output "$@/libpng"
+	install_name_util -id "@rpath/libpng.framework/libpng" "$@/libpng"
+	install_name_util -change "@loader_path/libz.dylib" "@rpath/zlib.framework/zlib" "$@/libpng"
+
+${PREFIX}/libogg.framework:
+	rm -rf "$@" && mkdir -p "$@/Headers"
+	cp "$</include/ogg/"*.h "$@/Headers"
+	lipo -create ${PREFIX}/*/lib/libogg.dylib -output "$@/libogg"
+	install_name_util -id "@rpath/libogg.framework/libogg" "$@/libogg"
+
+${PREFIX}/libvorbis.framework:
+	rm -rf "$@" && mkdir -p "$@/Headers"
+	cp "$</include/vorbis/"*.h "$@/Headers"
+	lipo -create ${PREFIX}/*/lib/libvorbis.dylib -output "$@/libvorbis"
+	install_name_util -id "@rpath/libvorbis.framework/libvorbis" "$@/libvorbis"
+	install_name_util -change "@loader_path/libogg.dylib" "@rpath/libogg.framework/libogg" "$@/libvorbis"
+
+${PREFIX}/libSDL2.framework:
+	rm -rf "$@" && mkdir -p "$@/Headers"
+	cp "$</include/"*.h "$@/Headers"
+	lipo -create ${PREFIX}/*/lib/libSDL2.dylib -output "$@/libSDL2"
+	install_name_util -id "@rpath/libSDL2.framework/libSDL2" "$@/libSDL2"

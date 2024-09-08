@@ -128,7 +128,7 @@ struct config_info
   boolean allow_screenshots;
 
   // Audio options
-  int output_frequency;
+  int audio_sample_rate;
   int audio_buffer_samples;
   boolean oversampling_on;
   enum resample_mode resample_mode;

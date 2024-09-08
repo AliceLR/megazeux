@@ -20,6 +20,7 @@
  */
 
 #include <errno.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #ifndef _MSC_VER
@@ -200,12 +201,47 @@ ssize_t path_is_absolute(const char *path)
   size_t len;
   size_t i;
 
+#ifdef PATH_UNC_ROOTS
+  // Windows unified DOS and UNC roots.
+  len = strlen(path);
+  if(len > 2 && isslash(path[0]) && isslash(path[1]) && !isslash(path[2]))
+  {
+    i = 3;
+    // UNC roots may be prefixed with \\.\UNC\, try to catch that.
+    if((path[2] == '.'|| path[2] == '?') && isslash(path[3])
+     && !strncasecmp(path + 4, "unc", 3) && isslash(path[7]))
+    {
+      i = 8;
+    }
+
+    // Host name or . or ?
+    for(; i < len; i++)
+      if(isslash(path[i]))
+        break;
+
+    if(i + 1 < len && !isslash(path[i + 1]))
+    {
+      // Share or root name.
+      for(i += 1; i < len; i++)
+        if(isslash(path[i]))
+          break;
+
+      if(isslash(path[i]))
+        return i + 1;
+
+      return i;
+    }
+  }
+#endif /* UNC roots */
+
   // Unix-style root.
   if(isslash(path[0]))
     return 1;
 
   // DOS-style root.
+#ifndef PATH_UNC_ROOTS
   len = strlen(path);
+#endif
   for(i = 0; i < len; i++)
   {
     if(isslash(path[i]))
@@ -217,13 +253,20 @@ ssize_t path_is_absolute(const char *path)
         break;
 
       i++;
+#ifdef PATH_DOS_STYLE_ROOTS
+      // True DOS-style roots do not require a trailing slash.
       if(!path[i])
         return i;
+#endif
 
       if(isslash(path[i]))
       {
         while(isslash(path[i]))
           i++;
+#ifndef PATH_DOS_STYLE_ROOTS
+        // Allow DOS-style roots in Linux only with >=2 slashes.
+        if(i >= 2 && isslash(path[i - 2]))
+#endif
         return i;
       }
       break;
@@ -484,8 +527,29 @@ ssize_t path_get_parent(char *dest, size_t dest_len, const char *path)
 size_t path_clean_slashes(char *path, size_t path_len)
 {
   boolean need_copy = false;
+  size_t root_len;
   size_t i = 0;
   size_t j = 0;
+
+  root_len = path_is_absolute(path);
+#ifdef PATH_UNC_ROOTS
+  // UNC roots should retain two slashes at the start.
+  if(root_len >= 2 && isslash(path[0]) && isslash(path[1]))
+  {
+    path[0] = path[1] = DIR_SEPARATOR_CHAR;
+    i = j = 1; // Merge >2 slashes into the second one.
+  }
+#endif
+#ifndef PATH_DOS_STYLE_ROOTS
+  // Non-native DOS-style double slash roots should retain two slashes.
+  if(root_len >= 4 && !isslash(path[0]))
+  {
+    while(root_len >= 3 && path[root_len - 3] != ':')
+      root_len--;
+    path[root_len - 2] = path[root_len - 1] = DIR_SEPARATOR_CHAR;
+    i = j = root_len - 1; // Merge >2 slashes into the second slash.
+  }
+#endif
 
   while((i < path_len) && path[i])
   {
@@ -510,7 +574,8 @@ size_t path_clean_slashes(char *path, size_t path_len)
   }
   path[j] = '\0';
 
-  if((j >= 2) && (path[j - 1] == DIR_SEPARATOR_CHAR) && (path[j - 2] != ':'))
+  // Trim trailing slashes unless they are a component of the root.
+  if(j >= 2 && j > root_len && path[j - 1] == DIR_SEPARATOR_CHAR)
     path[--j] = '\0';
 
   return j;
@@ -529,8 +594,34 @@ size_t path_clean_slashes(char *path, size_t path_len)
 size_t path_clean_slashes_copy(char *dest, size_t dest_len, const char *path)
 {
   size_t path_len = strlen(path);
+  size_t root_len;
   size_t i = 0;
   size_t j = 0;
+
+  root_len = path_is_absolute(path);
+#ifdef PATH_UNC_ROOTS
+  // UNC roots should retain two slashes at the start.
+  if(root_len >= 2 && isslash(path[0]) && isslash(path[1]))
+  {
+    if(dest_len >= 2)
+      dest[j++] = DIR_SEPARATOR_CHAR;
+    i = 1; // Merge >2 slashes into the second one.
+  }
+#endif
+#ifndef PATH_DOS_STYLE_ROOTS
+  // Non-native DOS-style double slash roots should retain two slashes.
+  if(root_len >= 4 && !isslash(path[0]))
+  {
+    while(j < dest_len - 1 && i < root_len && !isslash(path[i]))
+      dest[j++] = path[i++];
+
+    i++;
+    if(j < dest_len - 1)
+      dest[j++] = DIR_SEPARATOR_CHAR;
+    // Merge >2 slashes into the second slash.
+    root_len = j + 1;
+  }
+#endif
 
   while((i < path_len) && (j < dest_len - 1))
   {
@@ -546,7 +637,8 @@ size_t path_clean_slashes_copy(char *dest, size_t dest_len, const char *path)
   }
   dest[j] = '\0';
 
-  if((j >= 2) && (dest[j - 1] == DIR_SEPARATOR_CHAR) && (dest[j - 2] != ':'))
+  // Trim trailing slashes unless they are a component of the root.
+  if(j >= 2 && j > root_len && dest[j - 1] == DIR_SEPARATOR_CHAR)
     dest[--j] = '\0';
 
   return j;
@@ -693,6 +785,7 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
   const char *next;
   const char *end;
   char current_char;
+  size_t root_len;
   size_t len;
 
   if(!path || !target || !target[0])
@@ -701,43 +794,35 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
   current = target;
   end = target + strlen(target);
 
-  next = strchr(target, ':');
-  if(next)
+  len = path_is_absolute(target);
+  if(len)
   {
     /**
-     * Destination starts with a Windows-style root directory.
+     * Destination starts with any type of root, including:
+     *
+     * 1) a Unix-style root directory e.g. / or \.
+     * Aside from Unix-likes, these are also supported by console platforms.
+     * Even Windows (back through XP at least) doesn't seem to mind them.
+     *
+     * 2) a DOS-style root directory e.g. C: or sdcard:/.
      * Aside from Windows, these are often used by console SDKs (albeit with /
      * instead of \) to distinguish SD cards and the like.
+     * Linux and macOS also allow them for VFS roots (with double slashes).
+     *
+     * 3) a Windows-style UNC root (Windows only) e.g. \\localhost\share\
+     * These are used for network folders and long paths.
      */
-    // Make sure this is actually a well-formed absolute path.
-    if(!path_is_absolute(target))
-      return -1;
-
-    snprintf(buffer, MAX_PATH, "%.*s" DIR_SEPARATOR, (int)(next - target + 1),
-     target);
-    buffer[MAX_PATH - 1] = '\0';
+    next = target + len;
+    snprintf(buffer, MAX_PATH, "%.*s" DIR_SEPARATOR, (int)len, target);
+    path_clean_slashes(buffer, MAX_PATH);
 
     if(allow_checks && vstat(buffer, &stat_info) < 0)
       return -1;
 
-    current = next + 1;
-    if(isslash(current[0]))
+    current = next;
+    while(isslash(current[0]))
       current++;
   }
-  else
-
-  if(isslash(target[0]))
-  {
-    /**
-     * Destination starts with a Unix-style root directory.
-     * Aside from Unix-likes, these are also supported by console platforms.
-     * Even Windows (back through XP at least) doesn't seem to mind them.
-     */
-    snprintf(buffer, MAX_PATH, DIR_SEPARATOR);
-    buffer[MAX_PATH - 1] = '\0';
-    current = target + 1;
-  }
-
   else
   {
     /**
@@ -755,8 +840,15 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
     }
   }
 
+#ifdef PATH_DOS_STYLE_ROOTS
+  // Any attempted DOS-style root after the start is a broken path.
+  if(strchr(current, ':'))
+    return -1;
+#endif
+
   current_char = current[0];
   len = strlen(buffer);
+  root_len = path_is_absolute(buffer);
 
   // Apply directory fragments to the path.
   while(current_char != '\0')
@@ -778,17 +870,21 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
     {
       // Skip the rightmost separator (current level) and look for the
       // previous separator. If found, truncate the path to it.
-      char *pos = buffer + len - 1;
-      do
+      // Do not attempt to consume portions of the root.
+      if(len > root_len)
       {
-        pos--;
-      }
-      while(pos >= buffer && !isslash(*pos));
+        char *pos = buffer + len - 1;
+        do
+        {
+          pos--;
+        }
+        while(pos >= buffer && !isslash(*pos));
 
-      if(pos >= buffer)
-      {
-        pos[1] = '\0';
-        len = strlen(buffer);
+        if(pos >= buffer)
+        {
+          pos[1] = '\0';
+          len = strlen(buffer);
+        }
       }
     }
     else

@@ -31,17 +31,20 @@
 
 static int16_t *sound_buffer;
 static snd_stream_hnd_t stream;
-static int buffer_size;
+static unsigned buffer_frames;
+static unsigned buffer_size;
 static boolean running;
 static kthread_t *sound_thread;
 
+// `smp_req` and `smp_recv` are actually BYTES, not samples.
 static void *dc_audio_callback(snd_stream_hnd_t hnd, int smp_req, int *smp_recv)
 {
-  int actual = smp_req;
-  if(actual > buffer_size)
-    actual = buffer_size;
-  audio_callback(sound_buffer, actual);
-  *smp_recv = actual;
+  size_t frames = MAX(0, smp_req) / (sizeof(int16_t) * 2);
+  if(frames > buffer_frames)
+    frames = buffer_frames;
+
+  frames = audio_mixer_render_frames(sound_buffer, frames, 2, SAMPLE_S16);
+  *smp_recv = frames * sizeof(int16_t) * 2;
   return sound_buffer;
 }
 
@@ -49,7 +52,6 @@ static void *dc_audio_thread(void *dud)
 {
   snd_stream_init();
 
-  audio.mix_buffer = cmalloc(buffer_size * 2);
   sound_buffer = cmalloc(buffer_size);
 
   stream = snd_stream_alloc(dc_audio_callback, buffer_size);
@@ -66,25 +68,30 @@ static void *dc_audio_thread(void *dud)
   snd_stream_shutdown();
 
   free(sound_buffer);
-  free(audio.mix_buffer);
 
   return NULL;
 }
 
 void init_audio_platform(struct config_info *conf)
 {
-  audio.buffer_samples = 2048; // the value KOS seems to like best
-  audio.output_frequency = 44100;
-  buffer_size = 4 * audio.buffer_samples;
+  if(!audio_mixer_init(conf->audio_sample_rate, conf->audio_buffer_samples, 2))
+    return;
 
-  running = true;
+  buffer_frames = audio.buffer_frames;
+  buffer_size = buffer_frames * sizeof(int16_t) * 2 /* stereo */;
+
   sound_thread = thd_create(0, dc_audio_thread, NULL);
+  if(sound_thread)
+    running = true;
 }
 
 void quit_audio_platform(void)
 {
-  running = false;
-  thd_join(sound_thread, NULL);
+  if(running)
+  {
+    running = false;
+    thd_join(sound_thread, NULL);
+  }
 }
 
 #endif // CONFIG_AUDIO

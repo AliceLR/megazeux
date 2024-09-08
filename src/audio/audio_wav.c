@@ -129,7 +129,7 @@ static uint32_t wav_read_data(struct wav_stream *w_stream,
         new_offset = w_stream->loop_start;
       }
 
-      if(w_stream->format != SAMPLE_S16SYS)
+      if(w_stream->format != SAMPLE_S16)
       {
         // Swap bytes to match the current platform endianness...
         for(i = 0; i < read_len; i += 2)
@@ -156,10 +156,10 @@ static boolean wav_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
 {
   uint32_t read_len = 0;
   struct wav_stream *w_stream = (struct wav_stream *)a_src;
-  uint32_t read_wanted = w_stream->s.allocated_data_length -
-   w_stream->s.stream_offset;
-  uint8_t *read_buffer = (uint8_t *)w_stream->s.output_data +
-   w_stream->s.stream_offset;
+  uint8_t *read_buffer;
+  size_t read_wanted;
+
+  read_buffer = (uint8_t *)sampled_get_buffer(&w_stream->s, &read_wanted);
 
   read_len = wav_read_data(w_stream, read_buffer, read_wanted, a_src->repeat);
 

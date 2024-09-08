@@ -52,6 +52,7 @@ SRC_OBJS = \
   period.o        \
   player.o        \
   read_event.o    \
+  rng.o           \
   scan.o          \
   smix.o          \
   virtual.o       \

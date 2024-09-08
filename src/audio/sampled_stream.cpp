@@ -71,11 +71,9 @@ enum mixer_volume
   DYNAMIC     = 1
 };
 
-static void update_sample_index(struct sampled_stream *s_src, int64_t index)
-{
-  s_src->sample_index = index -
-   ((s_src->data_window_length / (s_src->channels * 2)) << FP_SHIFT);
-}
+/* Cubic resampling needs one prologue sample and three epilogue samples. */
+#define PROLOGUE_LENGTH (1 * STEREO * sizeof(int16_t))
+#define EPILOGUE_LENGTH (3 * STEREO * sizeof(int16_t))
 
 template<mixer_volume VOLUME>
 static int32_t volume_function(int32_t sample, int volume)
@@ -109,7 +107,7 @@ static void flat_mix_loop(struct sampled_stream *s_src,
       *(dest++) += smpl;
     }
   }
-  s_src->sample_index = 0;
+  s_src->sample_index = (write_len >> 1) << FP_SHIFT;
 }
 
 /**
@@ -185,7 +183,7 @@ static void resample_mix_loop(struct sampled_stream *s_src,
       *(dest++) += smpl;
     }
   }
-  update_sample_index(s_src, sample_index);
+  s_src->sample_index = sample_index;
 }
 
 template<mixer_channels CHANNELS, mixer_volume VOLUME>
@@ -249,24 +247,15 @@ static void mixer_function(struct sampled_stream *s_src,
   }
 }
 
-static void sampled_negative_threshold(struct sampled_stream *s_src)
+void *sampled_get_buffer(struct sampled_stream *s_src, size_t *needed)
 {
-  int32_t negative_threshold = ((s_src->frequency_delta + FP_AND) & ~FP_AND);
-
-  if(s_src->sample_index < -negative_threshold)
-  {
-    s_src->sample_index += negative_threshold;
-    s_src->negative_comp =
-     (size_t)(negative_threshold >> FP_SHIFT) * s_src->channels * 2;
-    s_src->stream_offset += s_src->negative_comp;
-  }
+  size_t total = s_src->data_window_length + PROLOGUE_LENGTH + EPILOGUE_LENGTH;
+  *needed = (total > s_src->stream_offset) ? total - s_src->stream_offset : 0;
+  return ((uint8_t *)s_src->output_data) + s_src->stream_offset;
 }
 
 void sampled_set_buffer(struct sampled_stream *s_src)
 {
-  size_t prologue_length = 4;
-  size_t epilogue_length = 12;
-  size_t bytes_per_sample = 2 * s_src->channels;
   size_t frequency = s_src->frequency;
   size_t data_window_length;
   size_t allocated_data_length;
@@ -277,44 +266,41 @@ void sampled_set_buffer(struct sampled_stream *s_src)
 
   frequency_delta = ((int64_t)frequency << FP_SHIFT) / audio.output_frequency;
 
-  s_src->frequency_delta = frequency_delta;
-  s_src->negative_comp = 0;
-
   data_window_length =
-   (size_t)(ceil((double)audio.buffer_samples *
-   frequency / audio.output_frequency) * bytes_per_sample);
+   (size_t)(ceil((double)audio.buffer_frames *
+   frequency / audio.output_frequency) * s_src->bytes_per_frame);
 
-  prologue_length += frequency_delta * bytes_per_sample;
-  //(size_t)ceil((double)frequency_delta) * bytes_per_sample;
+  allocated_data_length = data_window_length + PROLOGUE_LENGTH + EPILOGUE_LENGTH;
 
-  allocated_data_length = data_window_length + prologue_length +
-   epilogue_length;
+  if(allocated_data_length < s_src->bytes_per_frame)
+    allocated_data_length = s_src->bytes_per_frame;
 
-  if(allocated_data_length < bytes_per_sample)
-    allocated_data_length = bytes_per_sample;
+  /* If the buffer still contains data past the desired allocation, leave it.
+   * Otherwise, the audio will audibly skip. */
+  if(s_src->stream_offset > allocated_data_length)
+    allocated_data_length = s_src->stream_offset;
 
+  s_src->frequency_delta = frequency_delta;
   s_src->data_window_length = data_window_length;
   s_src->allocated_data_length = allocated_data_length;
-  s_src->prologue_length = prologue_length;
-  s_src->epilogue_length = epilogue_length;
-  s_src->stream_offset = prologue_length;
 
   s_src->output_data =
    (int16_t *)crealloc(s_src->output_data, allocated_data_length);
-
-  sampled_negative_threshold(s_src);
 }
 
 void sampled_mix_data(struct sampled_stream *s_src,
  int32_t * RESTRICT dest_buffer, size_t dest_frames, unsigned int dest_channels)
 {
   uint8_t *output_data = (uint8_t *)s_src->output_data;
-  int16_t *src_buffer = (int16_t *)(output_data + s_src->prologue_length);
+  int16_t *src_buffer = (int16_t *)(output_data + PROLOGUE_LENGTH);
   size_t write_len = dest_frames * dest_channels;
   int volume = ((struct audio_stream *)s_src)->volume;
   int resample_mode = audio.global_resample_mode + 1;
   enum mixer_volume   use_volume   = DYNAMIC;
   enum mixer_channels use_channels = STEREO;
+  size_t new_index;
+  size_t new_index_bytes;
+  size_t leftover_bytes = 0;
 
   // MZX currently only supports stereo output.
   assert(dest_channels == 2);
@@ -331,20 +317,23 @@ void sampled_mix_data(struct sampled_stream *s_src,
   mixer_function(s_src, dest_buffer, write_len, src_buffer, volume,
    resample_mode, use_channels, use_volume);
 
-  if(s_src->stream_offset == s_src->prologue_length)
-    s_src->stream_offset += s_src->epilogue_length;
+  /* Relocate the leftovers--plus the extra prologue and epilogue samples for
+   * the resamplers--back to the start of the buffer. */
+  new_index = s_src->sample_index >> FP_SHIFT;
+  new_index_bytes = new_index * s_src->bytes_per_frame;
+  if(new_index_bytes > s_src->data_window_length)
+    new_index_bytes = s_src->data_window_length;
 
-  if(s_src->negative_comp)
-  {
-    s_src->stream_offset -= s_src->negative_comp;
-    s_src->negative_comp = 0;
-  }
+  leftover_bytes = s_src->data_window_length - new_index_bytes;
 
-  sampled_negative_threshold(s_src);
+  /* Note new_index_bytes doesn't count the prologue, so both the source and
+   * the dest include it implicitly. */
+  memmove(output_data,
+   output_data + new_index_bytes,
+   leftover_bytes + PROLOGUE_LENGTH + EPILOGUE_LENGTH);
 
-  memmove(output_data, output_data +
-   s_src->allocated_data_length - s_src->stream_offset,
-   s_src->stream_offset);
+  s_src->stream_offset = leftover_bytes + PROLOGUE_LENGTH + EPILOGUE_LENGTH;
+  s_src->sample_index &= FP_AND;
 }
 
 void sampled_destruct(struct audio_stream *a_src)
@@ -363,9 +352,11 @@ void initialize_sampled_stream(struct sampled_stream *s_src,
   s_src->channels = channels;
   s_src->output_data = NULL;
   s_src->use_volume = use_volume;
+  s_src->bytes_per_frame = channels * sizeof(int16_t);
+  s_src->stream_offset = PROLOGUE_LENGTH;
   s_src->sample_index = 0;
 
   s_src->set_frequency(s_src, frequency);
 
-  memset(s_src->output_data, 0, s_src->prologue_length);
+  memset(s_src->output_data, 0, PROLOGUE_LENGTH);
 }

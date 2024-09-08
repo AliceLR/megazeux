@@ -51,6 +51,7 @@ static boolean legacy_load_robot_v1(struct world *mzx_world, struct robot *cur_r
   int program_v2_length;
 
   create_blank_robot(cur_robot);
+  cur_robot->world_version = mzx_world->version;
 
   program_v1_length = vfgetw(vf);
   vfgetw(vf); // Unused high bytes
@@ -113,7 +114,7 @@ static boolean legacy_load_robot_v1(struct world *mzx_world, struct robot *cur_r
    legacy_disassemble_program(program_v2, program_v2_length,
    &(cur_robot->program_source_length), true, 10);
 
-  if(savegame)
+  if(cur_robot->cur_prog_line)
   {
     // Translate the legacy current bytecode offset and stack bytecode offsets
     // into usable new bytecode offsets. This may compile the robot program.

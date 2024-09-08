@@ -30,10 +30,14 @@ __M_BEGIN_DECLS
 #include "../configure.h"
 #include "../platform.h"
 
+#ifdef CONFIG_DJGPP
+#define AUDIO_GARBAGE_COLLECTOR
+#endif
+
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-#define SAMPLE_S16SYS SAMPLE_S16MSB
+#define SAMPLE_S16 SAMPLE_S16MSB
 #else
-#define SAMPLE_S16SYS SAMPLE_S16LSB
+#define SAMPLE_S16 SAMPLE_S16LSB
 #endif
 
 enum wav_format
@@ -105,7 +109,9 @@ struct audio_stream_spec
 struct audio
 {
   int32_t *mix_buffer;
-  size_t buffer_samples;
+  size_t buffer_bytes;
+  unsigned buffer_frames;
+  unsigned buffer_channels;
 
   size_t output_frequency;
   unsigned int global_resample_mode;
@@ -116,6 +122,10 @@ struct audio
   struct audio_stream *pcs_stream;
   struct audio_stream *stream_list_base;
   struct audio_stream *stream_list_end;
+#ifdef AUDIO_GARBAGE_COLLECTOR
+  struct audio_stream *garbage_list_base;
+  struct audio_stream *garbage_list_end;
+#endif
 
   platform_mutex audio_mutex;
   platform_mutex audio_sfx_mutex;

@@ -2,13 +2,16 @@
 
 ## Instructions
 
-The process of building MegaZeux using Xcode should be fairly straightforward and mostly painless. All required third-party frameworks are prebuilt and provided in the distribution for ease of use.
+The process of building MegaZeux using Xcode should be fairly straightforward and mostly painless. All required third-party frameworks are prebuilt and provided in the releases of this Github repository:
+
+https://github.com/AliceLR/megazeux-dependencies
 
 The following steps should produce a usable binary:
 
-1. After cloning the repository, open the Xcode project contained in arch/xcode/.
-2. Make sure that the desired build target (probably MegaZeux or MZXRun) is selected in the bar on the top of the screen.
-3. Press Cmd+B to build the project or Cmd+R to build and run the project.
+1. Fetch the latest frameworks tarball and extract it into arch/xcode/.
+2. After cloning the repository, open the Xcode project contained in arch/xcode/.
+3. Make sure that the desired build target (probably MegaZeux or MZXRun) is selected in the bar on the top of the screen.
+4. Press Cmd+B to build the project or Cmd+R to build and run the project.
 
 That will generate a debug build. To generate a release build, either build an archive (Product > Archive) and export the app bundle (recommended) or edit the Run scheme (Cmd+Shift+, or Product > Scheme > Edit Scheme...) and change the build configuration in the Info tab.
 

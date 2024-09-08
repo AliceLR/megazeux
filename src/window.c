@@ -4028,8 +4028,6 @@ int new_file(struct world *mzx_world, const char *const *wildcards,
    ALLOW_NEW_FILES, NULL, 0, 0);
 }
 
-#if defined(CONFIG_UPDATER) || defined(CONFIG_LOADSAVE_METER)
-
 // Calculates the percent from progress and out_of as in (progress/out_of).
 void meter(const char *title, unsigned int progress, unsigned int out_of)
 {
@@ -4074,5 +4072,3 @@ void meter_interior(unsigned int progress, unsigned int out_of)
 
   // Done! :)
 }
-
-#endif // CONFIG_UPDATER || CONFIG_LOADSAVE_METER
