@@ -2934,6 +2934,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
   char current_char = *src_ptr;
 
   int dest_pos = 0;
+  int expr_length;
   int val, error;
 
   while((current_char != terminating_char) && (dest_pos < ROBOT_MAX_TR-1))
@@ -2941,7 +2942,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
     switch(current_char)
     {
       case '\\':
-        if((src_ptr[1] == '(') || (src_ptr[1] == '<') ||
+        if((src_ptr[1] == '(') || (src_ptr[1] == '<') || (src_ptr[1] == '>') ||
          (src_ptr[1] == '\\') || (src_ptr[1] == terminating_char))
         {
           buffer[dest_pos] = src_ptr[1];
@@ -2956,39 +2957,22 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         break;
 
       case '(':
+      {
+        char number_buffer[16];
         src_ptr++;
-        if(*src_ptr == '#')
-        {
-          src_ptr++;
-          val = parse_expression(mzx_world, &src_ptr, &error, id);
-          dest_pos += sprintf(buffer + dest_pos, "%02x", val);
-        }
-        else
+        val = parse_expression(mzx_world, &src_ptr, &error, id);
 
-        if(*src_ptr == '+')
-        {
-          src_ptr++;
-          val = parse_expression(mzx_world, &src_ptr, &error, id);
-          dest_pos += sprintf(buffer + dest_pos, "%x", val);
-        }
-        else
+        expr_length = sprintf(number_buffer, "%d", val);
+        if(expr_length >= ROBOT_MAX_TR - dest_pos)
+          expr_length = ROBOT_MAX_TR - dest_pos - 1;
 
-        if(!strncasecmp(src_ptr, "input)", 6))
-        {
-          dest_pos += sprintf(buffer + dest_pos, "%s",
-           src_board->input_string ? src_board->input_string : "");
-          src_ptr += 6;
-        }
-        else
-        {
-          val = parse_expression(mzx_world, &src_ptr, &error, id);
-          dest_pos += sprintf(buffer + dest_pos, "%d", val);
-        }
+        memcpy(buffer + dest_pos, number_buffer, expr_length);
+        dest_pos += expr_length;
         break;
+      }
 
       case '<':
       {
-        int expr_length;
         src_ptr++;
         expr_length = parse_string_expression(mzx_world, &src_ptr, id,
          buffer + dest_pos, ROBOT_MAX_TR - dest_pos - 1);
