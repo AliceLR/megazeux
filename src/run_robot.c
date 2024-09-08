@@ -99,6 +99,24 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
   }
 }
 
+/**
+ * MegaZeux 1.x performed the board changes for TELEPORT, RESTORE PLAYER
+ * POSITION, and EXCHANGE PLAYER POSITION immediately. To prevent executing
+ * part of the new board, TELEPORT would clear the label received flags
+ * instruct the board scan to abort. Unfortunately, this needs to be supported.
+ * The RESTORE/EXCHANGE commands do not do this and can only be supported in
+ * a partial manner by canceling the cycle if the boards are different.
+ */
+static void immediate_board_change_compat_v1(struct world *mzx_world,
+ boolean is_teleport)
+{
+  if(mzx_world->version < V200 &&
+   (is_teleport || mzx_world->current_board_id != mzx_world->target_board))
+  {
+    mzx_world->change_game_state = CHANGE_STATE_INTERRUPT_CYCLE;
+  }
+}
+
 static void save_player_position(struct world *mzx_world, int pos)
 {
   mzx_world->pl_saved_x[pos] = mzx_world->player_x;
@@ -112,6 +130,7 @@ static void restore_player_position(struct world *mzx_world, int pos)
   mzx_world->target_y = mzx_world->pl_saved_y[pos];
   mzx_world->target_board = mzx_world->pl_saved_board[pos];
   mzx_world->target_where = TARGET_POSITION;
+  immediate_board_change_compat_v1(mzx_world, false);
 }
 
 static void calculate_blocked(struct world *mzx_world, int x, int y, int id,
@@ -3855,6 +3874,9 @@ void run_robot(context *ctx, int id, int x, int y)
           mzx_world->target_y = teleport_y;
           mzx_world->target_where = TARGET_TELEPORT;
           done = 1;
+
+          // MegaZeux 1.x performs the board change IMMEDIATELY.
+          immediate_board_change_compat_v1(mzx_world, true);
         }
 
         break;

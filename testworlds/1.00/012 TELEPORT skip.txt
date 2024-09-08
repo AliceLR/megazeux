@@ -1,0 +1,3 @@
+Title: 1.x TELEPORT skips the rest of the cycle test.
+Author: Alice Rowan
+Desc: make sure 1.x TELEPORT cancels the cycle early.
