@@ -1,5 +1,5 @@
 #!/bin/sh
 
-./config.sh --platform wii --prefix $DEVKITPPC --disable-sdl --enable-release \
-            --disable-utils --enable-tremor --enable-meter \
+./config.sh --platform wii --prefix $DEVKITPPC --enable-release --enable-lto \
+            --disable-sdl --disable-utils --enable-tremor --enable-meter \
             --enable-stdio-redirect "$@"
