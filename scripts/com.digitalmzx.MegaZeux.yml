@@ -1,0 +1,40 @@
+app-id: com.digitalmzx.MegaZeux
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: /app/bin/megazeux
+rename-desktop-file: megazeux.desktop
+rename-icon: megazeux
+modules:
+  - name: MegaZeux
+    buildsystem: simple
+    build-commands:
+      - ./config.sh --platform unix
+          --sysconfdir /app/etc
+          --gamesdir /app/bin
+          --bindir /app/bin
+          --libdir /app/lib
+          --sharedir /app/share
+          --licensedir /app/share/doc
+          --enable-release
+          --enable-lto
+          --disable-utils
+      - make -j${FLATPAK_BUILDER_N_JOBS}
+      - make install
+    sources:
+      - type: git
+        url: https://github.com/AliceLR/megazeux.git
+        branch: v2.93b
+#      - type: archive
+#        url: https://github.com/AliceLR/megazeux/releases/releases/download/v2.93b/mzx293bsrc.tar.xz
+#        sha256:
+
+finish-args:
+  - --device=all
+  - --device=dri
+  - --share=ipc
+  - --share=network
+  - --socket=x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --filesystem=home
