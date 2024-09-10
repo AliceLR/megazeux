@@ -1,6 +1,6 @@
 #!/bin/sh
 
-./config.sh --platform 3ds --enable-release --enable-meter --disable-utils \
-            --disable-sdl --enable-tremor --disable-screenshots \
+./config.sh --platform 3ds --enable-release --enable-lto --enable-meter \
+            --disable-sdl --enable-tremor --disable-screenshots --disable-utils \
             --enable-stdio-redirect "$@"
 

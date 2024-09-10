@@ -54,7 +54,7 @@ platform_config_debug()
 
 platform_config_release()
 {
-	./config.sh --platform $MINGW64_PLATFORM $MINGW64_CONFIG --enable-release "$@"
+	./config.sh --platform $MINGW64_PLATFORM $MINGW64_CONFIG --enable-release --enable-lto "$@"
 }
 
 platform_check_build()
