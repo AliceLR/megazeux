@@ -29,6 +29,15 @@ static constexpr char TEST_READ_FILENAME[]  = "VFILE_TEST_DATA";
 static constexpr char TEST_WRITE_FILENAME[] = "VFILE_TEST_WRITE";
 static constexpr char TEST_DIR[]            = "VFILE_TEST_DIR";
 
+// NOTE: using the combining encodings of öè here to appease Mac OS X,
+// which converts some single codepoint encodings to combining encodings.
+// Some macOS SDKs (but not MacPorts clang) also have trouble with emoji.
+#define UTF8_DIR_STRING u8"\u00e6Ro\u0308e\u0300mMJ\u00b7\u2021\u00b2\u2019\u02c6\u00de\u2018$";
+static constexpr char UTF8_DIR[] = UTF8_DIR_STRING;
+//static constexpr char UTF8_FILE[] = u8"\u00A5\u2014\U0001F970";
+static constexpr char UTF8_FILE[] = u8"f\u0302(\u03be)=\u222b(-\u221e,\u221e)f(x)e^(-i2\u03c0\u03bex)dx";
+static constexpr char UTF8_FILE2[] = u8"\u222b(-\u221e,\u221e)f(x)e^(-i2\u03c0\u03bex)dx=f\u0302(\u03be)";
+
 // Randomly generated binary data. Note: this is null terminated for vfputs.
 // The first byte is also \n to help test vungetc/vfsafegets behavior.
 static const uint8_t test_data[] =
@@ -1104,11 +1113,6 @@ UNITTEST(Filesystem)
 
   SECTION(UTF8)
   {
-    // NOTE: using the combining encodings of öè here to appease Mac OS X,
-    // which converts some single codepoint encodings to combining encodings.
-    static constexpr char UTF8_DIR[] = u8"\u00e6Ro\u0308e\u0300mMJ\u00b7\u2021\u00b2\u2019\u02c6\u00de\u2018$";
-    static constexpr char UTF8_FILE[] = u8"\u00A5\u2014\U0001F970";
-    static constexpr char UTF8_FILE2[] = u8"\U0001F970\u2014\u00A5";
     static constexpr int utf8_dir_len = sizeof(UTF8_DIR) - 1;
 
     ret = vstat(UTF8_DIR, &stat_info);
@@ -1269,15 +1273,15 @@ skip_scan_checks:
 UNITTEST(dirent)
 {
   static const char TEST_DIRENT_DIR[]     = "VFILE_TEST_DIRENT";
-  static const char TEST_DIRENT_DIR_UTF[] = u8"VFILE_TEST_DIRENT_\u00e6Ro\u0308e\u0300mMJ\u00b7\u2021\u00b2\u2019\u02c6\u00de\u2018$";
+  static const char TEST_DIRENT_DIR_UTF[] = u8"VFILE_TEST_DIRENT_" UTF8_DIR_STRING;
 
   static const char *TEST_DIRENT_EMPTY[] = { nullptr };
   static const char *TEST_DIRENT_NONEMPTY[] =
   {
     "file1",
     "file2",
-    u8"\u00A5\u2014\U0001F970",
-    u8"\U0001F970\u2014\u00A5",
+    UTF8_FILE,
+    UTF8_FILE2,
   };
 
   // Cleanup from prior tests.
