@@ -9,7 +9,7 @@
 # NOTE: TARGET must NOT be kept in quotes, and spaces CANNOT be used.
 #
 
-VERSION="2.93b-GIT"
-TARGET=mzxgit
+VERSION="2.93b"
+TARGET=mzx293b
 
 PRERELEASE=0
