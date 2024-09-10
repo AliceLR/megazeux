@@ -216,7 +216,7 @@ var archs =
   {
     platform:         "darwin",
     description:      "MacOS 10.x",
-    architecture:     "x86_64 (Mach-O) <br> i686 (Mach-O) <br> PPC (Mach-O)",
+    architecture:     "Various (Mach-O) <br>" + note_link("macOS"),
     endian:           "Varies",
     toolchain:        "Various",
     packaged:         DMG,
@@ -579,7 +579,7 @@ var archs =
   {
     platform:         "xcode",
     description:      ">= MacOS 10.6",
-    architecture:     "x86_64 (Mach-O) <br> i686 (Mach-O)",
+    architecture:     "x86_64 (Mach-O) <br> i686 (Mach-O) <br>" + note_link("macOS"),
     endian:           "Little",
     toolchain:        "clang 902.0.39.2 <br> LLVM 9.1.0",
     packaged:         DMG,
@@ -807,9 +807,12 @@ table {
 	border-collapse : collapse;
 	border : 2px solid black;
 	border-spacing : 0;
+	font-size : 9pt;
+}
+
+table#matrix {
 	min-width : 1880px;
 	width : 98%;
-	font-size : 9pt;
 }
 
 td, th {
@@ -1023,6 +1026,68 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
   <li><b>SuperH SH-4</b> (qemu-sh4-static, Sega Dreamcast)</li>
   <li><b>IBM Z</b> (qemu-s390x-static)</li>
 </ul>
+
+<hr>
+
+<h2 id="notemacOS">Darwin/Xcode Architectures</h2>
+<p>
+  The following architectures and SDL versions are currently supported by the macOS builds:
+</p>
+<table style="min-width:800">
+  <tr>
+    <th rowspan="2"></th>
+    <th></th>
+    <th colspan="2">Xcode</th>
+    <th colspan="2">darwin-dist</th>
+  </tr>
+  <tr>
+    <th>Toolchain/SDK</th>
+    <th>Minimum OS</th>
+    <th>SDL</th>
+    <th>Minimum OS</th>
+    <th>SDL</th>
+  </tr>
+  <tr>
+    <th>ppc</th>
+    <td>Xcode 3.2.6<br>10.4u SDK</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>10.4</td>
+    <td>SDL 1.2.5<br>SDL 2.0.3</td>
+  </tr>
+  <tr>
+    <th>ppc64</th>
+    <td>Xcode 3.2.6<br>10.5 SDK</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>10.5</td>
+    <td>SDL 1.2.5<br>SDL 2.0.3</td>
+  </tr>
+  <tr>
+    <th>i386</th>
+    <td>Xcode 9.4.1<br>10.13 SDK</td>
+    <td>10.6</td>
+    <td>SDL 2.0.7</td>
+    <td>10.6</td>
+    <td>SDL 2.0.22</td>
+  </tr>
+  <tr>
+    <th>x86_64</th>
+    <td>Xcode 9.4.1<br>10.13 SDK</td>
+    <td>10.6</td>
+    <td>SDL 2.0.7</td>
+    <td>10.6</td>
+    <td>SDL 2.0.22</td>
+  </tr>
+  <tr>
+    <th>x86_64h</th>
+    <td>Xcode 9.4.1<br>10.13 SDK</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>10.9</td>
+    <td>SDL2 (latest)</td>
+  </tr>
+</table>
 
 <hr>
 

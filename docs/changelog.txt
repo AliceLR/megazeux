@@ -5,8 +5,26 @@ FIXES
 + TODO: 2.94 enables board message clipping bugfixes from 2.93b.
 
 
-GIT - MZX 2.93b
+September 10th, 2024 - MZX 2.93b
 
+This is mostly a big bugfix release, but there are a few new
+features of note. First and probably of most interest, there is
+a new feature to export a full screenshot of an entire board or
+the entire vlayer from the editor. Renderers based on the
+software layer renderer should see some performance improvement.
+The Darwin multiarchitecture .app port has also been massively
+overhauled, and now targets up to 5 architectures (ARM still
+pending). libxmp now plays stereo samples correctly.
+
+DOS port users should be happy to hear that Sound Blaster Pro
+support has been restored, and support for even more sound cards
+is coming. Additionally, some Ogg Vorbis-related crashes have
+been fixed, and the SVGA renderer should work better than prior.
+Screenshots have been enabled for this port, and the TIME/DATE
+counters should now work properly.
+
+Finally, as usual, there are a large number of bugfixes, which
+includes several crash fixes, scroll fixes, and FREAD fixes.
 No compatibility checks have been added for the string splice
 FREAD/FREADn bugfixes, as the old behavior was unusably buggy.
 
@@ -79,8 +97,6 @@ USERS
   robots from <=2.84 save files with corrupt stack sizes.
 + Fixed hangs in the robot editor caused by trying to use
   Replace All to replace quotes or extra words with nothing.
-+ Added compatibility for MegaZeux 1.x's reverse send behavior
-  which allows robots to execute twice per cycle in some cases.
 + Fixed the handling of lines over 64 characters long during
   scroll editing. Scroll editing now previews colors and allows
   lines up to 255 bytes in length. Like robot message boxes, any
@@ -102,6 +118,8 @@ USERS
   instead of whatever the last color code displayed was. The old
   behavior is version locked to <=2.93, so this fix won't take
   effect until 2.94.
++ Added compatibility for MegaZeux 1.x's reverse send behavior
+  which allows robots to execute twice per cycle in some cases.
 + Fixed COPY when used with REL COUNTERS for 1.x worlds.
 + Added support for MegaZeux 1.x entrance precedence (color
   match, then thing match only). This fixes an entrance bug in
@@ -111,6 +129,9 @@ USERS
   Aqua Cavern board in Caverns of Zeux.
 + Added support for MegaZeux 1.x entrances not triggering when
   the player is pushed onto them.
++ Added support for MegaZeux 1.x TELEPORT interrupting the
+  current board scan and partial support for the same behavior
+  in RESTORE PLAYER POSITION/EXCHANGE PLAYER POSITION.
 + The DJGPP port now locks all of its memory. This prevents
   paging crashes related to audio, but increases memory usage.
 + Fixed the TIME and DATE counters in the DOS port when the

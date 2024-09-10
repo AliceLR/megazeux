@@ -94,7 +94,7 @@ static void dc_fb_render_layer(struct graphics_data *graphics,
  struct video_layer *vlayer)
 {
 //  struct dc_fb_render_data *render_data = graphics->render_data;
-  render_layer(dc_fb_vram_ptr(), 16, 640 * 2, graphics, vlayer);
+  render_layer(dc_fb_vram_ptr(), 640, 350, 640 * 2, 16, graphics, vlayer);
 }
 
 static void dc_fb_render_cursor(struct graphics_data *graphics,
