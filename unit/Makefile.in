@@ -109,7 +109,12 @@ endif
 # Build unit tests with debug optimizations and without link-time optimzations.
 # (Overrides these optimization flags from the global flags.)
 #
-UNIT_OPTIMIZE_FLAGS := -Og -fno-lto ${UNIT_OPTIMIZE_FLAGS}
+UNIT_OPTIMIZE_FLAGS := -O0 ${UNIT_OPTIMIZE_FLAGS}
+ifeq (${LTO},1)
+ifeq (${HAS_F_LTO},1)
+UNIT_OPTIMIZE_FLAGS := -fno-lto ${UNIT_OPTIMIZE_FLAGS}
+endif
+endif
 
 #
 # Build without -DDEBUG to suppress debug messages,

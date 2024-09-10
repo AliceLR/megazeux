@@ -112,7 +112,9 @@ psopt=""
 i="0"
 
 # BusyBox ps may not support -e; mzxrun might not appear WITHOUT -e in a chroot.
-if ps -e 1>/dev/null 2>/dev/null; then psopt='-e'; fi
+# -A is equivalent to -e in POSIX, but NetBSD uses -e for something else.
+# MSYS2 only supports -e (not -A) but it doesn't need it either.
+if ps -A 1>/dev/null 2>/dev/null; then psopt='-A'; fi
 
 # In some versions of MSYS2, mzxrun doesn't always appear in ps right away. :(
 sleep 1
