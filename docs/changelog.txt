@@ -1,10 +1,3 @@
-GIT - MZX 2.94
-
-FIXES
-
-+ TODO: 2.94 enables board message clipping bugfixes from 2.93b.
-
-
 September 10th, 2024 - MZX 2.93b
 
 This is mostly a big bugfix release, but there are a few new
