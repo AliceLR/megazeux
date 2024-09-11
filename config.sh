@@ -937,12 +937,14 @@ if [ "$PLATFORM" = "3ds" ]; then
 	if [ "$SDL" != "false" ]; then
 		echo "Force-enabling GP2X 320x240 renderer (SDL on 3DS)."
 		GP2X="true"
+	else
+		echo "Force-disabling software renderer on 3DS."
+		echo "Building custom 3DS renderer."
+		SOFTWARE="false"
 	fi
 
 	echo "Force-disabling stack protector on 3DS."
 	STACK_PROTECTOR="false"
-
-	echo "Building custom 3DS renderer."
 
 	echo "Disabling utils on 3DS."
 	UTILS="false"
