@@ -30,6 +30,13 @@
 #define SKIP_16BPP
 #endif
 
+#if defined(CONFIG_3DS)
+#define SKIP_8BPP
+#if !defined(CONFIG_SDL)
+#define SKIP_16BPP
+#endif
+#endif
+
 #if defined(CONFIG_DJGPP) && !defined(CONFIG_DOS_SVGA)
 #define SKIP_8BPP
 #define SKIP_16BPP
