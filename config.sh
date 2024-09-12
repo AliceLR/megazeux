@@ -606,6 +606,8 @@ elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ] ||
 		ARCHNAME=s390
 	elif [ "$MACH" = "s390x" ]; then
 		ARCHNAME=s390x
+	elif [ "$MACH" = "loong64" ] || [ "$MACH" = "loongarch64" ]; then
+		ARCHNAME=loong64
 	else
 		ARCHNAME=$MACH
 		#RAWLIBDIR=lib

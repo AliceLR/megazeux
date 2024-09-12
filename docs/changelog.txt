@@ -13,6 +13,10 @@ USERS
 
 DEVELOPERS
 
++ Added detection for LoongArch64. 64-bit architectures that
+  platform_endian.h fails to identify as such should no longer
+  abort in the software layer renderer.
+
 
 September 10th, 2024 - MZX 2.93b
 
