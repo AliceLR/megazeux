@@ -27,7 +27,6 @@
 
 #include "../configure.h"
 
-#include <assert.h>
 #include <string.h>
 
 struct pc_speaker_stream
@@ -48,7 +47,7 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
  size_t dest_frames, unsigned int dest_channels)
 {
   struct pc_speaker_stream *pcs_stream = (struct pc_speaker_stream *)a_src;
-  uint32_t offset = 0, i;
+  uint32_t offset = 0, i, j;
   uint32_t sample_duration = pcs_stream->last_duration;
   uint32_t end_duration;
   uint32_t increment_value, increment_buffer;
@@ -56,9 +55,6 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
   uint32_t sfx_scale_half = sfx_scale / 2;
   int32_t *mix_dest_ptr = buffer;
   int16_t cur_sample;
-
-  // MZX currently only supports stereo output.
-  assert(dest_channels == 2);
 
   /**
    * Cancel the current playing note if PC speaker effects were turned off or
@@ -90,16 +86,15 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
     {
       cur_sample = (uint32_t)((increment_buffer & 0x80000000) >> 31) *
        sfx_scale - sfx_scale_half;
-      mix_dest_ptr[0] += cur_sample;
-      mix_dest_ptr[1] += cur_sample;
-      mix_dest_ptr += 2;
+      for(j = 0; j < dest_channels; j++)
+        *(mix_dest_ptr++) += cur_sample;
       increment_buffer += increment_value;
     }
     pcs_stream->last_increment_buffer = increment_buffer;
   }
   else
   {
-    mix_dest_ptr += (sample_duration * 2);
+    mix_dest_ptr += (sample_duration * dest_channels);
   }
 
   offset += sample_duration;
@@ -145,16 +140,15 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
       {
         cur_sample = (uint32_t)((increment_buffer & 0x80000000) >> 31) *
          sfx_scale - sfx_scale_half;
-        mix_dest_ptr[0] += cur_sample;
-        mix_dest_ptr[1] += cur_sample;
-        mix_dest_ptr += 2;
+        for(j = 0; j < dest_channels; j++)
+          *(mix_dest_ptr++) += cur_sample;
         increment_buffer += increment_value;
       }
       pcs_stream->last_increment_buffer = increment_buffer;
     }
     else
     {
-      mix_dest_ptr += (sample_duration * 2);
+      mix_dest_ptr += (sample_duration * dest_channels);
     }
   }
 

@@ -9,6 +9,11 @@ GIT - MZX 2.93c
 
 USERS
 
++ The DOS Sound Blaster driver now supports Sound Blaster with
+  DSP 2.0, Sound Blaster 2, and Sound Blaster Pro/16 mono mode.
+  Original Sound Blaster with the old DSP is still unsupported.
++ The DOS port and SDL ports now support mono audio. Mono can be
+  selected with the new config option "audio_output_channels".
 + Fixed the board editor show thing hotkeys (broken by 2.93b).
 
 DEVELOPERS

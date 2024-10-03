@@ -221,14 +221,21 @@
 
 # audio_sample_rate = 44100
 
-# Audio buffer size in samples. Setting this to lower can improve
+# Audio buffer size in sample frames. Setting this to lower can improve
 # latency, so audio will be heard sooner after it is set to be
 # changed. It is also possible to change PC speaker effects more
 # rapidly with lower values. Lower buffer sizes need more CPU power
-# to process. 2048 is adequete for PC speaker playback every
+# to process. 2048 is adequate for PC speaker playback every
 # command at speed 4.
 
 # audio_buffer_samples = 1024
+
+# Number of audio channels. The normal value here is 2 for stereo, but
+# in rare cases, 1 (mono) may be preferable. This setting is ignored
+# by most ports and for some DOS sound devices. MegaZeux currently
+# does not support any type of surround sound.
+
+# audio_output_channels = 2
 
 # Allow music to be sampled at higher precision. Increases CPU
 # usage but increases audio quality as well. (Modplug only.)

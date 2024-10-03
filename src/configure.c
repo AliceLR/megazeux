@@ -175,6 +175,10 @@
 #define AUDIO_SAMPLE_RATE 44100
 #endif
 
+#ifndef AUDIO_OUTPUT_CHANNELS
+#define AUDIO_OUTPUT_CHANNELS 2
+#endif
+
 #ifndef RESAMPLE_MODE_DEFAULT
 #define RESAMPLE_MODE_DEFAULT RESAMPLE_MODE_LINEAR
 #endif
@@ -283,6 +287,7 @@ static const struct config_info user_conf_default =
   // Audio options
   AUDIO_SAMPLE_RATE,            // audio_sample_rate
   AUDIO_BUFFER_SAMPLES,         // audio_buffer_samples
+  AUDIO_OUTPUT_CHANNELS,        // audio_output_channels
   0,                            // oversampling_on
   RESAMPLE_MODE_DEFAULT,        // resample_mode
   MOD_RESAMPLE_MODE_DEFAULT,    // module_resample_mode
@@ -650,6 +655,14 @@ static void config_set_audio_buffer(struct config_info *conf, char *name,
   int result;
   if(config_int(&result, value, 1, INT_MAX))
     conf->audio_buffer_samples = result;
+}
+
+static void config_set_audio_channels(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  int result;
+  if(config_int(&result, value, 1, 2))
+    conf->audio_output_channels = result;
 }
 
 static void config_set_resolution(struct config_info *conf, char *name,
@@ -1230,6 +1243,7 @@ static const struct config_entry config_options[] =
   { "allow_screenshots", config_set_allow_screenshots, false },
   { "audio_buffer", config_set_audio_buffer, false },
   { "audio_buffer_samples", config_set_audio_buffer, false },
+  { "audio_output_channels", config_set_audio_channels, false },
   { "audio_sample_rate", config_set_audio_freq, false },
   { "auto_decrypt_worlds", config_set_auto_decrypt_worlds, false },
   { "dialog_cursor_hints", config_set_dialog_cursor_hints, false },

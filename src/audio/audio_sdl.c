@@ -36,9 +36,23 @@ static SDL_AudioDeviceID audio_device;
 
 static void sdl_audio_callback(void *userdata, Uint8 *stream, int len)
 {
-  // TODO: non-stereo and 8-bit?
-  size_t frames = len / (2 * sizeof(int16_t));
-  audio_mixer_render_frames(stream, frames, 2, SAMPLE_S16);
+  // TODO: 8-bit?
+  unsigned channels = audio_settings.channels;
+  size_t frames;
+  switch(channels)
+  {
+    case 0:
+    case 1:
+      frames = len / sizeof(int16_t);
+      break;
+    case 2:
+      frames = len / (2u * sizeof(int16_t));
+      break;
+    default:
+      frames = len / (channels * sizeof(int16_t));
+      break;
+  }
+  audio_mixer_render_frames(stream, frames, audio_settings.channels, SAMPLE_S16);
 }
 
 void init_audio_platform(struct config_info *conf)
@@ -47,7 +61,7 @@ void init_audio_platform(struct config_info *conf)
   {
     conf->audio_sample_rate,
     AUDIO_S16SYS,
-    2,
+    conf->audio_output_channels ? conf->audio_output_channels : 2,
     0,
     conf->audio_buffer_samples,
     0,
@@ -74,8 +88,9 @@ void init_audio_platform(struct config_info *conf)
   if(!audio_mixer_init(audio_settings.freq, audio_settings.samples,
    audio_settings.channels))
     return;
-  // If the mixer doesn't like SDL's selected frequency, exit to avoid bugs...
-  if(audio.output_frequency != (size_t)audio_settings.freq)
+  // If the mixer doesn't like SDL's selected config, exit to avoid bugs...
+  if(audio.output_frequency != (size_t)audio_settings.freq ||
+   audio.buffer_channels != audio_settings.channels)
     return;
 
   // now set the audio going

@@ -240,9 +240,8 @@ void init_audio_platform(struct config_info *conf)
 
     if(SB_VERSION_ATLEAST(sb_cfg, SB_VERSION_SB16))
     {
-      // TODO: configurable
       sb_cfg.buffer_format = SAMPLE_S16;
-      sb_cfg.buffer_channels = 2;
+      sb_cfg.buffer_channels = CLAMP(conf->audio_output_channels, 1, 2);
 
       if(sb_cfg.buffer_format == SAMPLE_S16)
         is_16_bit = true;
@@ -256,9 +255,8 @@ void init_audio_platform(struct config_info *conf)
       sb_cfg.buffer_format = SAMPLE_U8;
       sb_cfg.buffer_channels = 1;
       // Sound Blaster Pro and up support stereo.
-      // TODO: configurable
       if(SB_VERSION_ATLEAST(sb_cfg, SB_VERSION_SBPRO1))
-        sb_cfg.buffer_channels = 2;
+        sb_cfg.buffer_channels = CLAMP(conf->audio_output_channels, 1, 2);
 
       // Sound Blaster Pro stereo and all DSPs prior to 2.01 have a
       // maximum rate of around 22050.
