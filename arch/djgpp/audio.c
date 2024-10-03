@@ -330,7 +330,7 @@ void init_audio_platform(struct config_info *conf)
       sb_cfg.active_dma = sb_cfg.dma8;
       sb_cfg.active_dma_ack = SB_PORT_DMA8_ACK;
     }
-    sb_cfg.active_dma_size = (sb_cfg.buffer_frames << 1) - 1;
+    sb_cfg.active_dma_size = (sb_cfg.buffer_frames * sb_cfg.buffer_channels) - 1;
 
     djgpp_enable_dma(sb_cfg.active_dma, DMA_WRITE | DMA_AUTOINIT,
      sb_cfg.buffer_segment << 4, sb_cfg.buffer_size * BUFFER_BLOCKS);
