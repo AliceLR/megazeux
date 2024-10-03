@@ -1036,8 +1036,14 @@ void RADPlayer::TickRiff(int channum, CChannel::CRiff &riff, bool chan_riff) {
             // Channel riff: play current note
             UnpackNote(trk, riff.LastInstrument);
             Transpose(riff.TransposeNote, riff.TransposeOctave);
+            // If the effect is also a riff, it will either replace this riff
+            // or stop the current playing riff (unless the recursion limit is hit).
+            // Either way, this riff needs to exit early to prevent playback bugs.
+            bool replaced = (EffectNum == cmRiff || EffectNum == cmTranspose) && Entrances < 8;
             PlayNote(channum, NoteNum, OctaveNum, InstNum, EffectNum, Param, SRiff);
 
+            if (replaced)
+                return;
         } else {
 
             // Instrument riff: here each track channel is an extra effect that can run, but is not

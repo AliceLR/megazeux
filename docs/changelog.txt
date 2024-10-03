@@ -10,6 +10,9 @@ GIT - MZX 2.93c
 USERS
 
 + Fixed the board editor show thing hotkeys (broken by 2.93b).
++ Fixed nested riff behavior in the RAD replayer. The replayer
+  would fail to replace the outer riff with the inner riff in
+  some cases.
 
 DEVELOPERS
 
