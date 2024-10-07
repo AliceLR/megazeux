@@ -164,6 +164,7 @@ stdout.txt
 stderr.txt
 Thumbs.db
 unit/.build/
+unit/audio/.build/
 unit/editor/.build/
 unit/io/.build/
 unit/network/.build/

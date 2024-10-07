@@ -26,7 +26,7 @@
 
 __M_BEGIN_DECLS
 
-#include "audio.h"
+#include "audio_struct.h"
 
 struct sampled_stream
 {
@@ -37,6 +37,7 @@ struct sampled_stream
   size_t allocated_data_length;
   size_t stream_offset;
   size_t channels;
+  size_t dest_channels;
   unsigned bytes_per_frame;
   boolean use_volume;
   int64_t frequency_delta;

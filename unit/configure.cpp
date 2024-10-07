@@ -553,6 +553,11 @@ UNITTEST(Settings)
     TEST_INT("audio_buffer_samples", conf->audio_buffer_samples, 1, INT_MAX);
   }
 
+  SECTION(audio_output_channels)
+  {
+    TEST_INT("audio_output_channels", conf->audio_output_channels, 1, 2);
+  }
+
   SECTION(enable_oversampling)
   {
     TEST_ENUM("enable_oversampling", conf->oversampling_on, boolean_data);

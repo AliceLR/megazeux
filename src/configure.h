@@ -130,6 +130,7 @@ struct config_info
   // Audio options
   int audio_sample_rate;
   int audio_buffer_samples;
+  int audio_output_channels;
   boolean oversampling_on;
   enum resample_mode resample_mode;
   enum resample_mode module_resample_mode;
