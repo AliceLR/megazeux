@@ -142,7 +142,7 @@ int32_t nearest_mix(const int16_t *src_offset, ssize_t frac_index)
 template<mixer_channels SRC_CHANNELS>
 int32_t linear_mix(const int16_t *src_offset, ssize_t frac_index)
 {
-  size_t chn = (size_t)SRC_CHANNELS;
+  int chn = static_cast<int>(SRC_CHANNELS);
   int32_t left = src_offset[0];
   int32_t right = src_offset[chn];
   return left + ((right - left) * frac_index >> FP_SHIFT);

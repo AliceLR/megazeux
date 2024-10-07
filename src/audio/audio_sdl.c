@@ -37,19 +37,18 @@ static SDL_AudioDeviceID audio_device;
 static void sdl_audio_callback(void *userdata, Uint8 *stream, int len)
 {
   // TODO: 8-bit?
-  unsigned channels = audio_settings.channels;
   size_t frames;
-  switch(channels)
+  switch(audio_settings.channels)
   {
     case 0:
     case 1:
-      frames = len / sizeof(int16_t);
+      frames = (unsigned)len / sizeof(int16_t);
       break;
     case 2:
-      frames = len / (2u * sizeof(int16_t));
+      frames = (unsigned)len / (2u * sizeof(int16_t));
       break;
     default:
-      frames = len / (channels * sizeof(int16_t));
+      frames = (unsigned)len / (audio_settings.channels * sizeof(int16_t));
       break;
   }
   audio_mixer_render_frames(stream, frames, audio_settings.channels, SAMPLE_S16);

@@ -92,6 +92,7 @@ public:
 
   const int16_t *start() const
   {
+    ASSERT(did_init, "run init() before calling start()");
     return input.data() + PROLOGUE_LENGTH;
   }
 
