@@ -151,7 +151,7 @@ int32_t linear_mix(const int16_t *src_offset, ssize_t frac_index)
 template<mixer_channels SRC_CHANNELS>
 int32_t cubic_mix(const int16_t *src_offset, ssize_t frac_index)
 {
-  size_t chn = (size_t)SRC_CHANNELS;
+  int chn = static_cast<int>(SRC_CHANNELS);
   /**
    * NOTE: copied mostly verbatim from the old mixer code, with cleanup.
    * This uses ssize_t instead of int32_t since it seems to be faster for
