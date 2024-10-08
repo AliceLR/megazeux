@@ -399,12 +399,15 @@ struct render_layer_init : public render_graph_init<MODE, FLAT>
   struct video_layer layer_screen{};
   struct video_layer layer_small{};
   struct video_layer layer_ui{};
-  struct char_element big_data[132 * 43]{};
-  struct char_element small_data[w * h]{};
-  struct char_element ui_data[w * h]{};
+  // NOTE: GCC 4.8.5 will ICE attempting to value-initialize these
+  // arrays. Do not move the constructor value-initializers here.
+  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58704
+  struct char_element big_data[132 * 43];
+  struct char_element small_data[w * h];
+  struct char_element ui_data[w * h];
 
   render_layer_init(struct graphics_data &graphics):
-   render_graph_init<MODE, FLAT>(graphics)
+   render_graph_init<MODE, FLAT>(graphics), big_data{}, small_data{}, ui_data{}
   {
     init_layer(layer_screen, SCREEN_W, SCREEN_H,
      graphics.screen_mode, big_data);
