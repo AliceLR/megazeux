@@ -15,6 +15,9 @@ USERS
 + The DOS port and SDL ports now support mono audio. Mono can be
   selected with the new config option "audio_output_channels".
 + Fixed the board editor show thing hotkeys (broken by 2.93b).
++ Fixed nested riff behavior in the RAD replayer. The replayer
+  would fail to replace the outer riff with the inner riff in
+  some cases.
 
 DEVELOPERS
 

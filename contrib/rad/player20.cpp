@@ -117,6 +117,7 @@ class RADPlayer {
             int8_t          TransposeOctave;
             int8_t          TransposeNote;
             uint8_t         LastInstrument;
+            bool            Updated;
         } Riff, IRiff;
     };
 
@@ -1010,6 +1011,8 @@ void RADPlayer::ResetFX(CEffects *fx) {
 void RADPlayer::TickRiff(int channum, CChannel::CRiff &riff, bool chan_riff) {
     uint8_t lineid;
 
+    riff.Updated = true;
+
     if (riff.SpeedCnt == 0) {
         ResetFX(&riff.FX);
         return;
@@ -1031,6 +1034,11 @@ void RADPlayer::TickRiff(int channum, CChannel::CRiff &riff, bool chan_riff) {
     if (trk && (*trk & 0x7F) == line) {
         lineid = *trk++;
 
+        // The current riff may be clobbered by recursive riffs.
+        // If this happens, this riff should exit early and not update the
+        // current playing riff pointer (or attempt a line jump).
+        riff.Updated = false;
+
         if (chan_riff) {
 
             // Channel riff: play current note
@@ -1051,6 +1059,11 @@ void RADPlayer::TickRiff(int channum, CChannel::CRiff &riff, bool chan_riff) {
                 PlayNote(channum, NoteNum, OctaveNum, InstNum, EffectNum, Param, SIRiff, col > 0 ? (col - 1) & 3 : 0);
             } while (!last);
         }
+
+        // Exit if another riff replaced or stopped this riff in the recursive call.
+        if (riff.Updated)
+            return;
+        riff.Updated = true;
 
         // Last line?
         if (lineid & 0x80)
