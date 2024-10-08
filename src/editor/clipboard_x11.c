@@ -43,7 +43,7 @@ static inline boolean get_X11_display_and_window(SDL_Window *window,
  Display **display, Window *xwindow)
 {
   SDL_SysWMinfo info;
-  SDL_VERSION(&info.version);
+  SDL_VERSION_ORIG(&info.version);
 
   if(!window)
     window = SDL_GetWindowFromID(sdl_window_id);
