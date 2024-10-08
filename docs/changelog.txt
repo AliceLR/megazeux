@@ -9,12 +9,21 @@ GIT - MZX 2.93c
 
 USERS
 
++ The DOS Sound Blaster driver now supports Sound Blaster with
+  DSP 2.0, Sound Blaster 2, and Sound Blaster Pro/16 mono mode.
+  Original Sound Blaster with the old DSP is still unsupported.
++ The DOS port and SDL ports now support mono audio. Mono can be
+  selected with the new config option "audio_output_channels".
 + Fixed the board editor show thing hotkeys (broken by 2.93b).
 + Fixed nested riff behavior in the RAD replayer. The replayer
   would fail to replace the outer riff with the inner riff in
   some cases.
 
 DEVELOPERS
+
++ Added detection for LoongArch64. 64-bit architectures that
+  platform_endian.h fails to identify as such should no longer
+  abort in the software layer renderer.
 
 
 September 10th, 2024 - MZX 2.93b
