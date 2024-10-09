@@ -678,9 +678,8 @@ static void glsl_load_shaders(struct graphics_data *graphics)
 static boolean glsl_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
-  struct glsl_render_data *render_data;
-
-  render_data = cmalloc(sizeof(struct glsl_render_data));
+  struct glsl_render_data *render_data =
+   (struct glsl_render_data *)cmalloc(sizeof(struct glsl_render_data));
   if(!render_data)
     return false;
 
@@ -703,19 +702,14 @@ static boolean glsl_init_video(struct graphics_data *graphics,
     graphics->bits_per_pixel = conf->force_bpp;
 
   // Buffer for screen texture
-  render_data->pixels = cmalloc(sizeof(uint32_t) * GL_POWER_2_WIDTH *
-   GL_POWER_2_HEIGHT);
+  render_data->pixels = (uint32_t *)cmalloc(sizeof(uint32_t) *
+   GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
   render_data->conf = conf;
   if(!render_data->pixels)
     goto err_free;
 
-  if(!set_video_mode())
-    goto err_free_pixels;
-
   return true;
 
-err_free_pixels:
-  free(render_data->pixels);
 err_free:
   free(render_data);
   graphics->render_data = NULL;
@@ -774,10 +768,12 @@ static void glsl_remap_char_range(struct graphics_data *graphics, uint16_t first
     render_data->remap_texture = true;
 }
 
-static void glsl_resize_screen(struct graphics_data *graphics,
- int width, int height)
+static boolean glsl_resize_callback(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct glsl_render_data *render_data = graphics->render_data;
+  int width = window->width_px;
+  int height = window->height_px;
 
   glsl.glViewport(0, 0, width, height);
   gl_check_error();
@@ -838,6 +834,7 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   }
 
   glsl_load_shaders(graphics);
+  return true;
 }
 
 #ifdef ENABLE_GL_DEBUG_OUTPUT
@@ -851,8 +848,8 @@ static void glsl_debug_callback(GLenum source, GLenum type, GLuint id,
 }
 #endif
 
-static boolean glsl_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean glsl_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
 #ifdef CONFIG_GLES
   struct glsl_render_data *render_data = graphics->render_data;
@@ -861,8 +858,7 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
 
   gl_set_attributes(graphics);
 
-  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize,
-   gl_required_version))
+  if(!gl_create_window(graphics, window, gl_required_version))
     return false;
 
   gl_set_attributes(graphics);
@@ -946,26 +942,25 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
   glsl.glDebugMessageCallback(glsl_debug_callback, NULL);
 #endif
 
-  glsl_resize_screen(graphics, width, height);
-  return true;
+  return glsl_resize_callback(graphics, window);
 }
 
-static boolean glsl_software_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean glsl_software_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   render_data->use_software_renderer = true;
-  return glsl_set_video_mode(graphics, width, height, depth, fullscreen, resize);
+  return glsl_create_window(graphics, window);
 }
 
-static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean glsl_auto_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   const char *renderer;
   int i;
 
-  if(glsl_software_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+  if(glsl_software_create_window(graphics, window))
   {
     // Driver blacklist. If the renderer is on the blacklist, fall back
     // on software as these renderers have disastrous GLSL performance.
@@ -994,7 +989,7 @@ static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
     }
 
     // Switch from auto_glsl to glslscale now that it is known to work.
-    graphics->renderer.set_video_mode = glsl_software_set_video_mode;
+    graphics->renderer.create_window = glsl_software_create_window;
     strcpy(render_data->conf->video_output, "glslscale");
 
     return true;
@@ -1559,9 +1554,10 @@ void render_glsl_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = glsl_init_video;
   renderer->free_video = glsl_free_video;
-  renderer->set_video_mode = glsl_set_video_mode;
+  renderer->create_window = glsl_create_window;
+  renderer->resize_window = gl_resize_window;
+  renderer->resize_callback = glsl_resize_callback;
   renderer->update_colors = glsl_update_colors;
-  renderer->resize_screen = resize_screen_standard;
   renderer->remap_char_range = glsl_remap_char_range;
   renderer->remap_char = glsl_remap_char;
   renderer->remap_charbyte = glsl_remap_charbyte;
@@ -1577,11 +1573,11 @@ void render_glsl_register(struct renderer *renderer)
 void render_glsl_software_register(struct renderer *renderer)
 {
   render_glsl_register(renderer);
-  renderer->set_video_mode = glsl_software_set_video_mode;
+  renderer->create_window = glsl_software_create_window;
 }
 
 void render_auto_glsl_register(struct renderer *renderer)
 {
   render_glsl_register(renderer);
-  renderer->set_video_mode = glsl_auto_set_video_mode;
+  renderer->create_window = glsl_auto_create_window;
 }

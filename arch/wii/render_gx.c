@@ -368,8 +368,7 @@ static boolean gx_init_video(struct graphics_data *graphics,
 
   guOrtho(projmtx, -1, sh - 1, 0, sw, -1.0, 1.0);
   GX_LoadProjectionMtx(projmtx, GX_ORTHOGRAPHIC);
-
-  return set_video_mode();
+  return true;
 }
 
 static void gx_free_video(struct graphics_data *graphics)
@@ -378,14 +377,14 @@ static void gx_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static boolean gx_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean gx_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct gx_render_data *render_data = graphics->render_data;
   float x, y, w, h, scale, xscale, yscale;
   int fh, fs, sw, sh, dw, dh;
 
-  if(fullscreen)
+  if(window->is_fullscreen)
     scale = 8.0 / 9.0;
   else
     scale = 8.0 / 10.0;
@@ -958,9 +957,9 @@ void render_gx_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gx_init_video;
   renderer->free_video = gx_free_video;
-  renderer->set_video_mode = gx_set_video_mode;
+  renderer->create_window = gx_create_window;
+  renderer->resize_window = gx_create_window;
   renderer->update_colors = gx_update_colors;
-  renderer->resize_screen = resize_screen_standard;
   renderer->remap_char_range = gx_remap_char_range;
   renderer->remap_char = gx_remap_char;
   renderer->remap_charbyte = gx_remap_charbyte;

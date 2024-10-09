@@ -124,12 +124,12 @@ static const EGLint gles_v2_attribs[] =
   EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE
 };
 
-boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, boolean fullscreen, boolean resize, struct gl_version req_ver)
+boolean gl_create_window(struct graphics_data *graphics,
+ struct video_window *window, struct gl_version req_ver)
 {
   struct egl_render_data *egl_render_data = graphics->render_data;
   const EGLint *attribs = gles_v1_attribs;
-  EGLNativeWindowType window = 0;
+  EGLNativeWindowType egl_window = 0;
   EGLint num_configs;
   EGLint w, h;
 
@@ -143,12 +143,12 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
     return false;
   }
 
-  window = XCreateSimpleWindow(egl_render_data->native_display,
+  egl_window = XCreateSimpleWindow(egl_render_data->native_display,
                                RootWindow(egl_render_data->native_display, 0),
                                0, 0, 640, 350, 0,
                                BlackPixel(egl_render_data->native_display, 0),
                                BlackPixel(egl_render_data->native_display, 0));
-  XMapWindow(egl_render_data->native_display, window);
+  XMapWindow(egl_render_data->native_display, egl_window);
   XFlush(egl_render_data->native_display);
 #endif
 
@@ -166,7 +166,7 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   }
 
   if(!eglChooseConfig(egl_render_data->display,
-                      get_current_config(depth),
+                      get_current_config(window->bits_per_pixel),
                       &egl_render_data->config, 1, &num_configs))
   {
     warn("eglChooseConfig failed\n");
@@ -175,7 +175,7 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 
   egl_render_data->surface = eglCreateWindowSurface(egl_render_data->display,
                                                     egl_render_data->config,
-                                                    window, NULL);
+                                                    egl_window, NULL);
   if(egl_render_data->surface == EGL_NO_SURFACE)
   {
     warn("eglCreateWindowSurface failed\n");
@@ -213,17 +213,8 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
     warn("eglQuerySurface (height) failed\n");
     goto err_cleanup;
   }
-
-  if(fullscreen)
-  {
-    graphics->resolution_width = w;
-    graphics->resolution_height = h;
-  }
-  else
-  {
-    graphics->window_width = w;
-    graphics->window_height = h;
-  }
+  window->width_px = w;
+  window->height_px = h;
 
   if(!eglMakeCurrent(egl_render_data->display, egl_render_data->surface,
                      egl_render_data->surface, egl_render_data->context))
@@ -238,6 +229,14 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 err_cleanup:
   gl_cleanup(graphics);
   return false;
+}
+
+boolean gl_resize_window(struct graphics_data *graphics,
+ struct video_window *window)
+{
+  struct gl_version dummy = {}; // TODO: fix this
+  gl_cleanup(graphics);
+  return gl_create_window(graphics, window, dummy);
 }
 
 void gl_set_attributes(struct graphics_data *graphics)

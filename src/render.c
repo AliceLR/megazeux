@@ -650,9 +650,3 @@ void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
 
 #endif /* CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM ||
  CONFIG_RENDER_YUV || CONFIG_RENDER_GX */
-
-void resize_screen_standard(struct graphics_data *graphics, int w, int h)
-{
-  graphics->palette_dirty = true;
-  update_screen();
-}

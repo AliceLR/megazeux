@@ -496,8 +496,7 @@ static boolean ctr_init_video(struct graphics_data *graphics,
   graphics->window_height = 350;
 
   ctr_keyboard_init(&render_data);
-
-  return set_video_mode();
+  return true;
 }
 
 static void ctr_free_video(struct graphics_data *graphics)
@@ -520,8 +519,8 @@ static void ctr_free_video(struct graphics_data *graphics)
   C3D_Fini();
 }
 
-static boolean ctr_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
+static boolean ctr_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   return true;
 }
@@ -1200,9 +1199,8 @@ void render_ctr_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = ctr_init_video;
   renderer->free_video = ctr_free_video;
-  renderer->set_video_mode = ctr_set_video_mode;
+  renderer->create_window = ctr_create_window;
   renderer->update_colors = ctr_update_colors;
-  renderer->resize_screen = resize_screen_standard;
   renderer->remap_char_range = ctr_remap_char_range;
   renderer->remap_char = ctr_remap_char;
   renderer->remap_charbyte = ctr_remap_charbyte;
