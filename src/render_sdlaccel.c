@@ -35,6 +35,7 @@
 #include "render.h"
 #include "renderers.h"
 #include "render_sdl.h"
+#include "util.h"
 
 // 6 versions of each char, 16*256 chars -> 24576 total "chars"
 // -> 49152 8x8s -> sqrt ~= 221 > 32 * 6
@@ -106,8 +107,6 @@ struct sdlaccel_render_data
   boolean chars_needed_row[CHARS_NUM_ROWS];
   boolean join;
 #endif
-  int w;
-  int h;
 };
 
 static void write_char_byte_mzx(uint32_t **_char_data, uint8_t byte)
@@ -270,12 +269,6 @@ static boolean sdlaccel_init_video(struct graphics_data *graphics,
   graphics->ratio = conf->video_ratio;
   graphics->bits_per_pixel = 32;
 
-  if(!set_video_mode())
-  {
-    sdlaccel_free_video(graphics);
-    return false;
-  }
-
 #ifdef THREADED_CHARSETS
   memset(render_data->chars_needed_row, true, CHARS_NUM_ROWS);
 
@@ -290,8 +283,8 @@ static boolean sdlaccel_init_video(struct graphics_data *graphics,
   return true;
 }
 
-static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean sdlaccel_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct sdlaccel_render_data *render_data =
    (struct sdlaccel_render_data *)graphics->render_data;
@@ -301,8 +294,7 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
   int tex_chars_h;
 
   // This requires that the underlying driver supports framebuffer objects.
-  if(!sdlrender_set_video_mode(graphics, width, height,
-   depth, fullscreen, resize, SDL_RENDERER_TARGETTEXTURE))
+  if(!sdl_create_window_renderer(graphics, window, SDL_RENDERER_TARGETTEXTURE))
     return false;
 
   texture[TEX_SCREEN] =
@@ -315,8 +307,10 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
     goto err_free;
   }
 
+#if !SDL_VERSION_ATLEAST(2,0,12)
   // Always use nearest neighbor for the charset and background textures.
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+#endif
 
   tex_chars_w = round_to_power_of_two(TEX_CHARS_PIX_W);
   tex_chars_h = round_to_power_of_two(TEX_CHARS_PIX_H);
@@ -354,14 +348,25 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
   if(SDL_SetTextureBlendMode(texture[TEX_BACKGROUND], SDL_BLENDMODE_BLEND))
     warn("Failed to set bg texture blend mode: %s\n", SDL_GetError());
 
+  sdl_set_texture_scale_mode(graphics, window, TEX_SCREEN, true);
+  sdl_set_texture_scale_mode(graphics, window, TEX_CHARS, false);
+  sdl_set_texture_scale_mode(graphics, window, TEX_BACKGROUND, false);
+
   SDL_SetRenderTarget(render_data->sdl.renderer, texture[TEX_SCREEN]);
-  render_data->w = width;
-  render_data->h = height;
   return true;
 
 err_free:
   sdl_destruct_window(graphics);
   return false;
+}
+
+static boolean sdlaccel_resize_callback(struct graphics_data *graphics,
+ struct video_window *window)
+{
+  sdl_set_texture_scale_mode(graphics, window, TEX_SCREEN, true);
+  sdl_set_texture_scale_mode(graphics, window, TEX_CHARS, false);
+  sdl_set_texture_scale_mode(graphics, window, TEX_BACKGROUND, false);
+  return true;
 }
 
 static void sdlaccel_update_colors(struct graphics_data *graphics,
@@ -740,8 +745,8 @@ static void sdlaccel_sync_screen(struct graphics_data *graphics)
   SDL_Texture *screen_tex = render_data->sdl.texture[TEX_SCREEN];
   SDL_Rect src;
   SDL_Rect dest;
-  int width = render_data->w;
-  int height = render_data->h;
+  int width = graphics->window.width_px;
+  int height = graphics->window.height_px;
   int v_width, v_height;
 
   src.x = 0;
@@ -771,9 +776,10 @@ void render_sdlaccel_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = sdlaccel_init_video;
   renderer->free_video = sdlaccel_free_video;
-  renderer->set_video_mode = sdlaccel_set_video_mode;
+  renderer->create_window = sdlaccel_create_window;
+  renderer->resize_window = sdl_resize_window;
+  renderer->resize_callback = sdlaccel_resize_callback;
   renderer->update_colors = sdlaccel_update_colors;
-  renderer->resize_screen = resize_screen_standard;
   renderer->remap_char_range = sdlaccel_remap_char_range;
   renderer->remap_char = sdlaccel_remap_char;
   renderer->remap_charbyte = sdlaccel_remap_charbyte;

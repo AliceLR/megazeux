@@ -927,7 +927,7 @@ static boolean process_event(union event *ev)
        get_alt_status(keycode_internal) &&
        get_ctrl_status(keycode_internal))
       {
-        toggle_fullscreen();
+        video_toggle_fullscreen();
         return true;
       }
 

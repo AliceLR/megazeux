@@ -26,7 +26,7 @@
 
 #if defined(CONFIG_SDL)
 #include "../SDLmzx.h"
-#include "../render_sdl.h"
+#include "../graphics.h"
 #endif
 
 static char **copy_buffer;
@@ -46,7 +46,10 @@ static inline boolean get_X11_display_and_window(SDL_Window *window,
   SDL_VERSION(&info.version);
 
   if(!window)
-    window = SDL_GetWindowFromID(sdl_window_id);
+  {
+    const struct video_window *_window = video_get_window(1);
+    window = SDL_GetWindowFromID(_window->platform_id);
+  }
   if(!window || !SDL_GetWindowWMInfo(window, &info) || info.subsystem != SDL_SYSWM_X11)
     return false;
 
@@ -87,8 +90,9 @@ static inline int event_callback(const SDL_Event *event)
 
 static inline void set_X11_event_callback(void)
 {
+  const struct video_window *_window = video_get_window(1);
   SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-  SDL_SetEventFilter(event_callback, SDL_GetWindowFromID(sdl_window_id));
+  SDL_SetEventFilter(event_callback, SDL_GetWindowFromID(_window->platform_id));
 }
 
 #endif /* SDL_VERSION_ATLEAST(1,2,0) */
