@@ -7,6 +7,17 @@ FIXES
 
 GIT - MZX 2.93c
 
+TODO:
+- Xcode frameworks.
+- actually test Xcode.
+
+FIXMES:
+- Xcode project deployment targets - earliest macOS with a fixed linker
+- arch/darwin/README.md - earliest macOS with a fixed linker
+- arch/darwin/README.md - remove the “arm64e hasn’t been tested” once it has been.
+- docs/changelog.txt - earliest macOS with a fixed linker
+- docs/changelog.txt - maximum of (a) 8.x and (b) earliest Xcode version supported by earliest macOS with a fixed linker 
+
 USERS
 
 + The DOS Sound Blaster driver now supports Sound Blaster with
@@ -21,6 +32,14 @@ DEVELOPERS
 + Added detection for LoongArch64. 64-bit architectures that
   platform_endian.h fails to identify as such should no longer
   abort in the software layer renderer.
++ Updated the Xcode project. Supported architectures are now
+  x86_64, x86_64h, and arm64e. Both x86_64 architectures require
+  FIXME!!!! and arm64e requires Big Sur.
+  The Xcode project format is still 8.x but it now requires at
+  least FIXME!!!! to compile debug builds and at least Xcode
+  12.2 to compile release builds.
++ Tweaked the Darwin .app buildsystem to properly support arm64
+  and arm64e.
 
 
 September 10th, 2024 - MZX 2.93b

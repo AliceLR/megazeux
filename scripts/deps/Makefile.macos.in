@@ -32,16 +32,19 @@ ARCH_INIT = \
 	export OBJCXX="${CXX}"; \
 	export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"; \
 	export CMAKE_LIBRARY_PATH="${PREFIX}"; \
+	export MACOSX_DEPLOYMENT_TARGET="${MINVER}"; \
 	true
 
 ARCH_CONFIGURE_ARGS	=
 ARCH_CONFIGURE_SDL12_ARGS = --disable-video-x11
 ARCH_CONFIGURE_SDL2_ARGS = --without-x
 
+# CMAKE_OSX_ARCHITECTURES is required to make libpng successfully link ARM.
 ARCH_CMAKE_ARGS = \
 	-D SDL_X11=OFF \
 	-D CMAKE_INSTALL_NAME_DIR="${PREFIX}/lib" \
 	-D CMAKE_BUILD_WITH_INSTALL_NAME_DIR=TRUE \
+	-D CMAKE_OSX_ARCHITECTURES="${ARCH}" \
 	-D CMAKE_MACOSX_RPATH=FALSE
 
 ifneq (${SYSROOT},)

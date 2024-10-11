@@ -6,6 +6,11 @@ The process here is slightly involved and in most cases will require *multiple*
 versions of Xcode to target everything. Notarization is NOT currently supported;
 please use the Xcode project for that.
 
+The current "official" build environment for this port is a dual-booted Mac Mini
+with macOS 10.13 High Sierra (Xcode 9.4.1 with 3.2.6 compilers and SDKs via
+XcodeLegacy) and macOS 12 Monterey (Xcode 14.2). However, this buildsystem should
+technically work in some capacity with most Xcode versions.
+
 Tested versions of Xcode:
 
 - Xcode 3.2.6 has been used from MegaZeux 2.90 onward to produce PowerPC
@@ -16,13 +21,18 @@ Tested versions of Xcode:
 - Xcode 4.1 has been tested in the past and should work.
 - Xcode 9.4.1 can target i686, x86_64, and x86_64h. It is the **LAST** version
   of Xcode that targets i686. This is used to produce the Intel binaries from
-  from 2.93b onward.
+  from 2.93b onward. It is also capable of hosting the Xcode 3.2.6 SDKs and
+  compilers.
+- Xcode 14.2 is used to provide arm64/arm64e binaries from 2.93c onward. It
+  can also provide x86_64 and x86_64h with a minimum OS version of 10.9.
+  Versions as low as Xcode 12.2 should work for this, but are untested.
 
 Untested and unsupported features:
 
 - Other versions of Xcode might require changing some variables (Makefile.arch).
 - arm64 and arm64e builds haven't been tested.
-- Notarization isn't supported yet.
+- Notarization will probably never be supported due to the nature of how
+  this platform builds application bundles. Use the Xcode port for this instead.
 - osxcross should work, but you'll need to override the compilers defined in
   Makefile.arch. Only the official SDKs have been tested so far.
 
@@ -31,100 +41,54 @@ Other required software:
 - [dylibbundler](https://github.com/auriamg/macdylibbundler/), which can be
   installed via MacPorts: `sudo port install dylibbundler`.
 
-## PREREQUISITES (Xcode 3.2.6)
+## PREREQUISITES
 
-Note: this section was written against Xcode 3.2.6. The process of building
-dependencies is different for later versions.
-
-Make sure `i686-apple-darwin10-gcc` and/or `powerpc-apple-darwin10-gcc` exist
-in your `/usr/bin` folder or create them with the following commands:
-
-```
-cd /usr/bin
-sudo ln -s i686-apple-darwin10-gcc-4.2.1 i686-apple-darwin10-gcc
-sudo ln -s powerpc-apple-darwin10-gcc-4.2.1 powerpc-apple-darwin10-gcc
-```
-
-You must build static library versions of zlib, libpng, libogg, libvorbis,
-and SDL 1.2 (SDL 2 is not supported for these platforms). These libraries
-must be installed to a common prefix. The following commands to `configure'
-are recommended:
-
-### zlib
-
-#### i686
-```
-CHOST="i686-apple-darwin10" \
-CFLAGS="-O2 -mmacosx-version-min=10.6" \
-./configure \
-  --prefix=[YOUR PREFIX HERE]/i686 \
-  -static
-```
-
-#### powerpc
-```
-CHOST="powerpc-apple-darwin10" \
-CFLAGS="-O2 -mmacosx-version-min=10.4" \
-./configure \
-  --prefix=[YOUR PREFIX HERE]/ppc \
-  -static
-```
-
-### libpng, libogg, libvorbis, and SDL
-
-#### i686
-```
-CFLAGS="-O2 -mmacosx-version-min=10.6" \
-./configure \
-  --prefix=[YOUR PREFIX HERE]/i686 \
-  --disable-shared \
-  --enable-static \
-  --build=i686-apple-darwin10 \
-  --host=i686-apple-darwin10
-```
-
-#### powerpc
-```
-CFLAGS="-O2 -mmacosx-version-min=10.4" \
-./configure \
-  --prefix=[YOUR PREFIX HERE]/ppc \
-  --disable-shared \
-  --enable-static \
-  --build=powerpc-apple-darwin10 \
-  --host=powerpc-apple-darwin10
-```
-
-Similarly, AMD64 and PPC64 sets of dependencies can be produced, but are
-probably not necessary.
+1) Install the base version of Xcode that will be used (e.g. 9.4.1).
+   Most of these are available from the Apple Developers site or from the
+   OS install media (for older OS versions).
+2) Add extra compilers/SDKs as necessary via XcodeLegacy.
+3) Install dylibbundler via MacPorts or otherwise.
+4) Grab a prebuilt MegaZeux dependencies bundle from
+   [here](https://github.com/AliceLR/megazeux-dependencies) and extract the
+   tarball into scripts/deps/. Alternatively (if you are feeling brave), you
+   can use the Makefiles in scripts/deps/ to build these yourself. Manually
+   building the dependencies currently requires wget.
 
 ## CONFIGURATION
 
-Use the following config.sh setup to prepare `darwin-dist`. While the utils
-can be readily built, they currently are not included:
+Use the following config.sh setup to prepare `darwin-dist`.
+```
+./config.sh --platform darwin-dist --enable-release --enable-lto
+```
 
+For i686 builds and x86_64 builds targeting versions prior to 10.9, SDL2
+should be explicitly supplied to future-proof configuring for them:
 ```
-./config.sh \
-  --platform darwin-dist \
-  --disable-utils \
-  --enable-release
+./config.sh --platform darwin-dist --enable-release --enable-lto --enable-sdl2
 ```
+
+For the PowerPC and PowerPC64 builds, using SDL 1.2 is recommended:
+```
+./config.sh --platform darwin-dist --enable-release --enable-sdl1
+```
+
+Note that you can reconfigure between individual architecture builds,
+but invoking `make clean` manually at any point will clean up the temporary
+pre-lipo binaries from previous builds.
 
 ## BUILDING
 
-You need Xcode's development tools package to have been installed. This does
-NOT mean you need all of the Xcode IDE, but you do need the DMG file it is
-installed from. This is normally included on your OS X install DVD #1. It is
-enough to install the UNIX tools.
-
 Run make with variables defining the dependencies folders of each architecture
 to be targeted (and optionally -j#, etc). Each architecture provided will be
-compiled:
+compiled, e.g.
 
 ```
 make \
-  PREFIX_I686=[YOUR PREFIX HERE]/i686 \
-  PREFIX_PPC=[YOUR PREFIX HERE]/ppc
+  PREFIX_I686=scripts/deps/macos/i686 \
+  PREFIX_PPC=scripts/deps/macos/ppc
 ```
+
+will compile the x86 and PowerPC 32-bit builds.
 
 The prefixes you supply will determine which binaries are built. Supported
 prefixes:
@@ -144,6 +108,12 @@ After all desired platforms are built, `make lipo` will be run automatically
 to merge them. Any pre-existing binaries from other architectures will also
 be combined into the fat binary. This can be used to e.g. import PowerPC
 builds made with Xcode 3.2.6 into a binary otherwise built by Xcode 9.4.1.
+The lipo and archive steps should work on any macOS version regardless of
+which macOS/Xcode produced the component builds.
+
+NOTE: OS X Mavericks (and presumably older versions) have linker issues when
+a binary links against both x86_64 and x86_64h dylibs. This was fixed in FIXME!!!
+and any binary containing both should target this OS version minimum *for both*.
 
 ## PACKAGING
 
