@@ -1,0 +1,92 @@
+#
+# macOS Xcode port dependency builder support.
+#
+
+ALL_ARCH :=
+
+all: libpng.framework Ogg.framework Vorbis.framework SDL2.framework
+.PHONY: libpng.framework Ogg.framework Vorbis.framework SDL2.framework frameworks
+
+ZLIB_DIR := $(shell xcrun --show-sdk-path)/usr
+
+FRAMEWORK_PREFIX := $(shell pwd)/${PLATFORM}
+FRAMEWORK_FLAGS_X86_64 := -O3 -flto -arch x86_64
+FRAMEWORK_FLAGS_ARM := -O3 -flto -arch arm64
+FRAMEWORK_CMAKE_FLAGS := \
+	-D CMAKE_FRAMEWORK_PATH='${PREFIX}' \
+
+FRAMEWORK_CMAKE_LIBPNG_FLAGS := \
+	-D PNG_SHARED=OFF -D PNG_STATIC=OFF -D PNG_TESTS=OFF -D PNG_TOOLS=OFF \
+	-D ZLIB_ROOT='${ZLIB_DIR}' \
+
+CMAKE_X86_64 := \
+	make clean; \
+	rm -rf CMakeCache.txt; \
+	export MACOSX_DEPLOYMENT_TARGET='10.11'; \
+	CFLAGS='${FRAMEWORK_FLAGS_X86_64}' \
+	CXXFLAGS='${FRAMEWORK_FLAGS_X86_64}' \
+	LDFLAGS='${FRAMEWORK_FLAGS_X86_64}' \
+	cmake ${FRAMEWORK_CMAKE_FLAGS} \
+		-D CMAKE_INSTALL_PREFIX='${FRAMEWORK_PREFIX}' \
+		-D CMAKE_OSX_ARCHITECTURES='x86_64'
+
+CMAKE_ARM := \
+	make clean; \
+	rm -rf CMakeCache.txt; \
+	export MACOSX_DEPLOYMENT_TARGET='11.0'; \
+	CFLAGS='${FRAMEWORK_FLAGS_ARM}' \
+	CXXFLAGS='${FRAMEWORK_FLAGS_ARM}' \
+	LDFLAGS='${FRAMEWORK_FLAGS_ARM}' \
+	cmake ${FRAMEWORK_CMAKE_FLAGS} \
+		-D CMAKE_INSTALL_PREFIX='${FRAMEWORK_PREFIX}/arm' \
+		-D CMAKE_OSX_ARCHITECTURES='arm64'
+
+# No Xcode project
+libpng.framework: build/${PNG}
+	mkdir -p build/cmake/${PNG}
+	cd build/cmake/${PNG}; \
+	${CMAKE_X86_64} -B . -S ../../${PNG} ${FRAMEWORK_CMAKE_LIBPNG_FLAGS} && ${MAKE} && ${MAKE} install
+	cd build/cmake/${PNG}; \
+	${CMAKE_ARM} -B . -S ../../${PNG} ${FRAMEWORK_CMAKE_LIBPNG_FLAGS} && ${MAKE} && ${MAKE} install
+	cd ${FRAMEWORK_PREFIX}; \
+		lipo -create lib/png.framework/png arm/lib/png.framework/png -output _png && \
+		mv _png lib/png.framework/Versions/Current/png
+	mv '${FRAMEWORK_PREFIX}'/lib/png.framework '${FRAMEWORK_PREFIX}'/libpng.framework
+
+# Previously had an Xcode project, but deleted it because "you can just use CMake"
+Ogg.framework: build/${OGG}
+	mkdir -p build/cmake/${OGG}
+	cd build/cmake/${OGG}; \
+	${CMAKE_X86_64} -B . -S ../../${OGG} -D BUILD_FRAMEWORK=1 && ${MAKE} && ${MAKE} install
+	cd build/cmake/${OGG}; \
+	${CMAKE_ARM} -B . -S ../../${OGG} -D BUILD_FRAMEWORK=1 && ${MAKE} && ${MAKE} install
+	cd ${FRAMEWORK_PREFIX}; \
+		lipo -create Ogg.framework/Ogg arm/Ogg.framework/Ogg -output _Ogg && \
+		mv _Ogg Ogg.framework/Versions/Current/Ogg
+
+# Has an Xcode project, but see above
+Vorbis.framework: Ogg.framework
+	mkdir -p build/cmake/${VORBIS}
+	cd build/cmake/${VORBIS}; \
+	cp -r ../../${VORBIS}/include .; \
+	${CMAKE_X86_64} -B . -S ../../${VORBIS} -D BUILD_FRAMEWORK=1 && ${MAKE} && ${MAKE} install
+	cd build/cmake/${VORBIS}; \
+	export SRCDIR='../../${VORBIS}'; \
+	${CMAKE_ARM} -B . -S ../../${VORBIS} -D BUILD_FRAMEWORK=1 && ${MAKE} && ${MAKE} install
+	cd ${FRAMEWORK_PREFIX}; \
+		lipo -create Vorbis.framework/Vorbis arm/Vorbis.framework/Vorbis -output _Vorbis && \
+		mv _Vorbis Vorbis.framework/Versions/Current/Vorbis
+
+# The only one that doesn't make this hard for some reason
+SDL2.framework: build/${SDL2_LATEST}
+	cd build/${SDL2_LATEST}/Xcode/SDL && \
+	xcodebuild -scheme Framework -configuration Release install DSTROOT='${FRAMEWORK_PREFIX}'
+	mv '${FRAMEWORK_PREFIX}'/Library/Frameworks/SDL2.framework '${FRAMEWORK_PREFIX}'
+
+frameworks:
+	rm -rf ${TARGET}/${PLATFORM}
+	mkdir -p ${TARGET}/${PLATFORM}
+	cp -r ${PLATFORM}/*.framework ${TARGET}/${PLATFORM}
+	cp ../../arch/LICENSE.3rd ${TARGET}/${PLATFORM}/
+	cd ${TARGET}/${PLATFORM}; \
+	XZ_OPT="-T0 -9" tar -cJf '../${DIST}-${PLATFORM}.tar.xz' ${TAR_FLAGS} *.framework LICENSE.3rd

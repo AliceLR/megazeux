@@ -5,8 +5,8 @@ some platforms supported by MegaZeux which don't provide these dependencies
 through other means (e.g. built-in package manager). These Makefiles are
 not guaranteed to work with every setup; rather, they're whatever Makefiles
 worked the last time I had to rebuild dependencies for MegaZeux. Note that
-the Android port uses its own integrated dependency builder and the Xcode
-and MSVC ports still require manual generation of dependencies.
+the Android port uses its own integrated dependency builder and the
+MSVC port still requires manual generation of dependencies.
 
 Official builds can be found here: https://github.com/AliceLR/megazeux-dependencies
 
@@ -44,11 +44,14 @@ make PLATFORM=mingw package
 ```
 
 ### macOS (darwin-dist)
-Install any of the following standalone SDKs with XcodeLegacy:
+Install any of the following Xcode versions/SDKs.
+Recommended setup: High Sierra running 9.4.1 with the 3.2.6 SDKs installed via XcodeLegacy,
+plus any macOS version capable of running Xcode 12.2 or higher for ARM support.
 
 | Target    | Xcode	| SDK		| macOS Target	| Supported SDL	| Notes |
 |-----------|-----------|---------------|---------------|---------------|-------|
-| `arm64e`  | 12.4?	| 11.0?		| 11.0		| Latest	|
+| `arm64`   | 12.2+	| 11.0+		| 11.0		| Latest	|
+| `arm64e`  | 12.2+	| 11.0+		| 11.0		| Latest	|
 | `i686`    | 9.4.1	| 10.13.4	| 10.6		| 2.0.22	| Last SDK to target 10.6, x86
 | `x86_64`  | 9.4.1	| 10.13.4	| 10.6		| 2.0.22	| Last SDK to target 10.6
 | `x86_64h` | 9.4.1?	| 10.13.4	| 10.9		| Latest	|
@@ -71,6 +74,22 @@ make PLATFORM=macos ARCH=x86_64
 make PLATFORM=macos ARCH=ppc
 make PLATFORM=macos ARCH=ppc64
 make PLATFORM=macos package
+```
+
+### Xcode
+Install Xcode 12.2+ on any macOS version capable of running it. The dependency
+builder targets x86_64 and arm64 only, but it should be possible to link x86_64h and arm64e
+against these binaries.
+
+Unlike the other platforms here, the tarball produced for this platform is designed
+to be extracted directly into arch/xcode/, where the Xcode project expects the frameworks to be.
+
+Builds the following libraries: libpng, libogg, libvorbis, libSDL2.
+```sh
+# Compile all frameworks.
+make PLATFORM=xcode
+# Package the frameworks. Do not use the 'package' target for this platform.
+make PLATFORM=xcode frameworks
 ```
 
 ### DJGPP

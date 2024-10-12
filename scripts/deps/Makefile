@@ -6,7 +6,7 @@ ifeq (${PLATFORM},)
 $(error usage: make PLATFORM=<platform> [ARCH=<arch>] [all|<arch>|package|clean])
 endif
 
-VERSION		= 2.93b-r0
+VERSION		= 2.93c-r0
 DIST		= megazeux-dependencies-${VERSION}
 TARGET		= TARGET
 
@@ -165,6 +165,9 @@ build/${OGG}: build/${OGG}.tar.gz | build
 build/${VORBIS}: build/${VORBIS}.tar.gz | build
 	cd build && \
 	tar -xzf '${VORBIS}.tar.gz'
+ifeq (${VORBIS},libvorbis-1.3.7)
+	patch build/${VORBIS}/lib/CMakeLists.txt fix-vorbis-1.3.7-build-framework.patch
+endif
 
 build/${TREMOR}: | build
 	cd build && \
