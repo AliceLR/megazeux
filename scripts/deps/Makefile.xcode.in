@@ -4,8 +4,8 @@
 
 ALL_ARCH :=
 
-all: libpng.framework Ogg.framework Vorbis.framework SDL2.framework
-.PHONY: libpng.framework Ogg.framework Vorbis.framework SDL2.framework frameworks
+all: png.framework Ogg.framework Vorbis.framework SDL2.framework
+.PHONY: png.framework Ogg.framework Vorbis.framework SDL2.framework frameworks
 
 ZLIB_DIR := $(shell xcrun --show-sdk-path)/usr
 
@@ -14,6 +14,7 @@ FRAMEWORK_FLAGS_X86_64 := -O3 -flto -arch x86_64
 FRAMEWORK_FLAGS_ARM := -O3 -flto -arch arm64
 FRAMEWORK_CMAKE_FLAGS := \
 	-D CMAKE_FRAMEWORK_PATH='${PREFIX}' \
+	-D CMAKE_MACOSX_RPATH=TRUE \
 
 FRAMEWORK_CMAKE_LIBPNG_FLAGS := \
 	-D PNG_SHARED=OFF -D PNG_STATIC=OFF -D PNG_TESTS=OFF -D PNG_TOOLS=OFF \
@@ -42,7 +43,7 @@ CMAKE_ARM := \
 		-D CMAKE_OSX_ARCHITECTURES='arm64'
 
 # No Xcode project
-libpng.framework: build/${PNG}
+png.framework: build/${PNG}
 	mkdir -p build/cmake/${PNG}
 	cd build/cmake/${PNG}; \
 	${CMAKE_X86_64} -B . -S ../../${PNG} ${FRAMEWORK_CMAKE_LIBPNG_FLAGS} && ${MAKE} && ${MAKE} install
@@ -51,7 +52,7 @@ libpng.framework: build/${PNG}
 	cd ${FRAMEWORK_PREFIX}; \
 		lipo -create lib/png.framework/png arm/lib/png.framework/png -output _png && \
 		mv _png lib/png.framework/Versions/Current/png
-	mv '${FRAMEWORK_PREFIX}'/lib/png.framework '${FRAMEWORK_PREFIX}'/libpng.framework
+	mv '${FRAMEWORK_PREFIX}'/lib/png.framework '${FRAMEWORK_PREFIX}'
 
 # Previously had an Xcode project, but deleted it because "you can just use CMake"
 Ogg.framework: build/${OGG}
@@ -83,10 +84,8 @@ SDL2.framework: build/${SDL2_LATEST}
 	xcodebuild -scheme Framework -configuration Release install DSTROOT='${FRAMEWORK_PREFIX}'
 	mv '${FRAMEWORK_PREFIX}'/Library/Frameworks/SDL2.framework '${FRAMEWORK_PREFIX}'
 
+# Use the platform directory directly to avoid issues caused by copying symlinks.
 frameworks:
-	rm -rf ${TARGET}/${PLATFORM}
-	mkdir -p ${TARGET}/${PLATFORM}
-	cp -r ${PLATFORM}/*.framework ${TARGET}/${PLATFORM}
-	cp ../../arch/LICENSE.3rd ${TARGET}/${PLATFORM}/
-	cd ${TARGET}/${PLATFORM}; \
+	cp ../../arch/LICENSE.3rd ${PLATFORM}/
+	cd ${PLATFORM}; \
 	XZ_OPT="-T0 -9" tar -cJf '../${DIST}-${PLATFORM}.tar.xz' ${TAR_FLAGS} *.framework LICENSE.3rd
