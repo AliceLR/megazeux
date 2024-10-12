@@ -1896,6 +1896,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				USER_HEADER_SEARCH_PATHS = "../../contrib/libxmp/src ../../contrib/libxmp/src/loaders";
 			};
 			name = Debug;
@@ -1929,6 +1930,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				USER_HEADER_SEARCH_PATHS = "../../contrib/libxmp/src ../../contrib/libxmp/src/loaders";
 			};
 			name = Release;
@@ -1952,6 +1954,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				USER_HEADER_SEARCH_PATHS = .;
 				USE_HEADERMAP = NO;
 			};
@@ -1976,6 +1979,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				USER_HEADER_SEARCH_PATHS = .;
 				USE_HEADERMAP = NO;
 			};
