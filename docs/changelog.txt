@@ -7,20 +7,12 @@ FIXES
 
 GIT - MZX 2.93c
 
-TODO:
-- Xcode release builds.
-
-FIXMES:
-- Xcode project deployment targets - earliest macOS with a fixed linker (or 10.11)
-- arch/darwin/README.md - earliest macOS with a fixed linker (or 10.11)
-- arch/darwin/README.md - remove the “arm64e hasn’t been tested” once it has been.
-- arch/darwin/README.md - note that arm64e seems to just not work?
-- docs/changelog.txt - earliest macOS with a fixed linker (or 10.11)
-
 The Xcode port has been updated to build with the latest version
 of SDL and other dependencies, and now requires OS X El Capitan
 (x86_64) or macOS Big Sur (arm64) to run. This port no longer
-supports x86 (32-bit).
+supports x86 (32-bit). The Darwin multiarchitecture port has
+also been updated to fix arm64 and arm64e support (only arm64 is
+included in builds).
 
 USERS
 
@@ -37,16 +29,18 @@ DEVELOPERS
   platform_endian.h fails to identify as such should no longer
   abort in the software layer renderer.
 + Updated the Xcode project. Supported architectures are now
-  x86_64, x86_64h, and arm64. Both x86_64 architectures require
-  OS X El Capitan (minimum version supported by SDL) and arm64
-  requires macOS Big Sur. The Xcode project format is still 8.x,
-  but Xcode 12.2 or newer is required to compile release builds.
+  x86_64 and arm64. The x86_64 architecture requires OS X El
+  Capitan (minimum version supported by SDL) and arm64 requires
+  macOS Big Sur. The Xcode project format is still 8.x, but
+  Xcode 12.2 or newer is required to compile release builds.
 + Tweaked the Darwin .app buildsystem to properly support arm64
-  and arm64e.
+  and arm64e. The documentation has also been updated to note
+  linker issues in versions prior to 10.10 when combining
+  x86_64 and x86_64h into the same binary, and issues involving
+  arm64e builds being terminated by the kernel.
 + The dependency builder scripts now support building Xcode
-  Frameworks. Updated SDL to 2.30.8, libpng to 1.6.44, libogg
-  to 1.3.5, and libvorbis to 1.3.7. The dependencies are built
-  for x86_64 and arm64.
+  frameworks for both x86_64 and arm64. Updated SDL to 2.30.8,
+  libpng to 1.6.44, libogg to 1.3.5, and libvorbis to 1.3.7.
 
 
 September 10th, 2024 - MZX 2.93b

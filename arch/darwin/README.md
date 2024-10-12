@@ -30,7 +30,6 @@ Tested versions of Xcode:
 Untested and unsupported features:
 
 - Other versions of Xcode might require changing some variables (Makefile.arch).
-- arm64 and arm64e builds haven't been tested.
 - Notarization will probably never be supported due to the nature of how
   this platform builds application bundles. Use the Xcode port for this instead.
 - osxcross should work, but you'll need to override the compilers defined in
@@ -112,8 +111,13 @@ The lipo and archive steps should work on any macOS version regardless of
 which macOS/Xcode produced the component builds.
 
 NOTE: OS X Mavericks (and presumably older versions) have linker issues when
-a binary links against both x86_64 and x86_64h dylibs. This was fixed in FIXME!!!
-and any binary containing both should target this OS version minimum *for both*.
+a binary links against both x86_64 and x86_64h dylibs. This was found in
+OS X Mavericks 10.9.5 and is fixed in OS X Yosemite 10.10.5. Any binary
+containing both x86_64 and x86_64h should target 10.10 minimum *for both*.
+
+NOTE: arm64e builds are reportedly terminated by the kernel immediately in
+macOS Monterey even with correct signage. The reason for this is unknown
+but it is strongly recommended to use arm64 *only* for now.
 
 ## PACKAGING
 

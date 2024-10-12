@@ -51,10 +51,10 @@ plus any macOS version capable of running Xcode 12.2 or higher for ARM support.
 | Target    | Xcode	| SDK		| macOS Target	| Supported SDL	| Notes |
 |-----------|-----------|---------------|---------------|---------------|-------|
 | `arm64`   | 12.2+	| 11.0+		| 11.0		| Latest	|
-| `arm64e`  | 12.2+	| 11.0+		| 11.0		| Latest	|
+| `arm64e`  | 12.2+	| 11.0+		| 11.0		| Latest	| See below.
 | `i686`    | 9.4.1	| 10.13.4	| 10.6		| 2.0.22	| Last SDK to target 10.6, x86
 | `x86_64`  | 9.4.1	| 10.13.4	| 10.6		| 2.0.22	| Last SDK to target 10.6
-| `x86_64h` | 9.4.1?	| 10.13.4	| 10.9		| Latest	|
+| `x86_64h` | 9.4.1?	| 10.13.4	| 10.9		| Latest	| See below.
 | `ppc`     | 3.2.6	| 10.4u		| 10.4		| 2.0.3		| Last SDK to target PPC
 | `ppc64`   | 3.2.6	| 10.5		| 10.5		| 2.0.3		| Last SDK to target PPC
 
@@ -64,6 +64,15 @@ PowerPC and <=10.6 usage to the Xcode 3.2.6 ld. This script will be located at
 and the check that redirects <=10.6 needs to be changed to <=10.5 instead. Otherwise,
 linking i686 and x86_64 binaries will fail because ld doesn't understand the .tbd files
 in newer SDKs.
+
+NOTE: Versions earlier than OS X Yosemite may have runtime linker issues
+distinguishing x86_64 and x86_64h binaries. Manually change the minimum OS
+version to 10.10 for BOTH when combining them in the same build. This bug
+was found in OS X Mavericks 10.9.5 and is not present in OS X Yosemite 10.10.5.
+
+NOTE: It has been reported that macOS Monterey (and probably other versions)
+will immediately terminate arm64e binaries. Building for this architecture
+is not recommended until we have more information about this.
 
 Builds the following libraries: zlib, libpng, libogg, libvorbis, libSDL, libSDL2.
 
