@@ -42,8 +42,19 @@ CMAKE_ARM := \
 		-D CMAKE_INSTALL_PREFIX='${FRAMEWORK_PREFIX}/arm' \
 		-D CMAKE_OSX_ARCHITECTURES='arm64'
 
+# Fix CMake's poor comprehension of the Versions folder.
+# This has to be patched out PRIOR to build in the CMakeLists.txt,
+# otherwise it's more annoying to fix afterward.
+#
+# CMake will also leave trash in the wrong Versions subfolder anyway
+# that needs to be cleaned up after the fact.
+CMAKE_VERSION_A_BUGFIX := \
+	sed -i '' 's/FRAMEWORK_VERSION .*/FRAMEWORK_VERSION "A"/g' CMakeLists.txt
+
 # No Xcode project
 png.framework: build/${PNG}
+	rm -rf '${FRAMEWORK_PREFIX}/$@'
+	cd build/${PNG} && ${CMAKE_VERSION_A_BUGFIX}
 	mkdir -p build/cmake/${PNG}
 	cd build/cmake/${PNG}; \
 	${CMAKE_X86_64} -B . -S ../../${PNG} ${FRAMEWORK_CMAKE_LIBPNG_FLAGS} && ${MAKE} && ${MAKE} install
@@ -56,6 +67,8 @@ png.framework: build/${PNG}
 
 # Previously had an Xcode project, but deleted it because "you can just use CMake"
 Ogg.framework: build/${OGG}
+	rm -rf '${FRAMEWORK_PREFIX}/$@'
+	cd build/${OGG} && ${CMAKE_VERSION_A_BUGFIX}
 	mkdir -p build/cmake/${OGG}
 	cd build/cmake/${OGG}; \
 	${CMAKE_X86_64} -B . -S ../../${OGG} -D BUILD_FRAMEWORK=1 && ${MAKE} && ${MAKE} install
@@ -67,6 +80,8 @@ Ogg.framework: build/${OGG}
 
 # Has an Xcode project, but see above
 Vorbis.framework: Ogg.framework
+	rm -rf '${FRAMEWORK_PREFIX}/$@'
+	cd build/${VORBIS}/lib && ${CMAKE_VERSION_A_BUGFIX}
 	mkdir -p build/cmake/${VORBIS}
 	cd build/cmake/${VORBIS}; \
 	cp -r ../../${VORBIS}/include .; \
@@ -80,12 +95,14 @@ Vorbis.framework: Ogg.framework
 
 # The only one that doesn't make this hard for some reason
 SDL2.framework: build/${SDL2_LATEST}
+	rm -rf '${FRAMEWORK_PREFIX}/$@'
 	cd build/${SDL2_LATEST}/Xcode/SDL && \
 	xcodebuild -scheme Framework -configuration Release install DSTROOT='${FRAMEWORK_PREFIX}'
 	mv '${FRAMEWORK_PREFIX}'/Library/Frameworks/SDL2.framework '${FRAMEWORK_PREFIX}'
 
 # Use the platform directory directly to avoid issues caused by copying symlinks.
 frameworks:
+	rm -rf ${PLATFORM}/*.framework/Versions/1.*
 	cp ../../arch/LICENSE.3rd ${PLATFORM}/
 	cd ${PLATFORM}; \
 	XZ_OPT="-T0 -9" tar -cJf '../${DIST}-${PLATFORM}.tar.xz' ${TAR_FLAGS} *.framework LICENSE.3rd
