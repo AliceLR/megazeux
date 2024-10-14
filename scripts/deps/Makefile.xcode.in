@@ -106,3 +106,12 @@ frameworks:
 	cp ../../arch/LICENSE.3rd ${PLATFORM}/
 	cd ${PLATFORM}; \
 	XZ_OPT="-T0 -9" tar -cJf '../${DIST}-${PLATFORM}.tar.xz' ${TAR_FLAGS} *.framework LICENSE.3rd
+	rm -rf ${PLATFORM}/x86_64; \
+	mkdir -p ${PLATFORM}/x86_64; \
+	cd ${PLATFORM}/x86_64; \
+	tar -xJf '../../${DIST}-${PLATFORM}.tar.xz' && \
+	(cd png.framework/Versions/Current && lipo -remove arm64 png -o png) && \
+	(cd Ogg.framework/Versions/Current && lipo -remove arm64 Ogg -o Ogg) && \
+	(cd Vorbis.framework/Versions/Current && lipo -remove arm64 Vorbis -o Vorbis) && \
+	(cd SDL2.framework/Versions/Current && lipo -remove arm64 SDL2 -o SDL2) && \
+	XZ_OPT="-T0 -9" tar -cJf '../../${DIST}-${PLATFORM}-el-capitan.tar.xz' ${TAR_FLAGS} *.framework LICENSE.3rd
