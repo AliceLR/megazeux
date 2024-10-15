@@ -994,7 +994,8 @@ void sdl_set_texture_scale_mode(struct graphics_data *graphics,
   if(render_data->texture[texture_id])
   {
     SDL_ScaleMode mode;
-    if(is_integer_scale(graphics, window->width_px, window->height_px))
+    if(!allow_non_integer ||
+     is_integer_scale(graphics, window->width_px, window->height_px))
       mode = SDL_ScaleModeNearest;
     else
       mode = SDL_ScaleModeLinear;
