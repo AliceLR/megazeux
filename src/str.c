@@ -1393,6 +1393,7 @@ int get_string(struct world *mzx_world, char *name_buffer, struct string *dest,
   struct string *src;
   int next;
 
+  dest->value = NULL;
   dest->length = 0;
 
   if(get_string_size_offset(name_buffer, &size, &size_specified,
