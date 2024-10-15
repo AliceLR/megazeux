@@ -648,6 +648,9 @@ boolean sdl_create_window_soft(struct graphics_data *graphics,
 
 #endif // !SDL_VERSION_ATLEAST(2,0,0)
 
+  // Wipe the letterbox area, if any.
+  SDL_FillRect(render_data->screen, NULL, 0);
+
   SDL_SetWindowGrab(render_data->window, window->grab_mouse);
   sdl_set_system_cursor(graphics);
   return true;
