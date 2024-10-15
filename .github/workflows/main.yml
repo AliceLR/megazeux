@@ -312,29 +312,15 @@ jobs:
 
   # Note: requires all non-system/libc calls to be from instrumented libraries.
   # For the regression tests, MZX can get away with just zlib.
-  #
-  # - actions/checkout will delete the work directory(!?), do it first.
-  # - The MSan zlib needs to be built static to prevent linking the system zlib.
-  # - ZLIB_LDFLAGS needs to be overridden to prevent linking the system zlib.
+  # SDL calls into uninstrumented functions and is not built at all.
+  # libpng is temporarily disabled. libogg/libvorbis work with no issue.
   MemorySanitizer:
     runs-on: ubuntu-latest
     env:
       CC: clang
       CXX: clang++
-#      ZLIB_LDFLAGS: DEPS/lib/libz.a
     steps:
       - uses: actions/checkout@v4
-#      - name: 🙄
-#        run: |
-#          sudo sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/ubuntu.sources
-#      - name: Fetch dependency sources
-#        run: mkdir DEPS && sudo apt update && apt source zlib
-#      - name: Build zlib
-#        run: |
-#          (cd zlib-*;
-#          CC=clang CXX=clang++ CFLAGS="-O3 -fsanitize=memory -g -fPIC -Wno-pointer-sign" LDFLAGS="-fsanitize=memory" \
-#            ./configure --prefix "$(pwd)/../DEPS" --static;
-#          $MZX_MAKE && make install)
       - name: Fetch dependencies
         run: |
           (cd scripts/deps;
