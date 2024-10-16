@@ -39,6 +39,20 @@ static void sdl_set_system_cursor(struct graphics_data *graphics)
 #endif
 }
 
+static void sdl_set_window_grab(struct sdl_render_data *render_data,
+ boolean enable)
+{
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_SetWindowMouseGrab(render_data->window, enable);
+#elif SDL_VERSION_ATLEAST(2,0,0)
+  SDL_SetWindowGrab(render_data->window, enable);
+#else
+  // Not a perfect equivalent; the SDL 1.2 version will grab even if unfocused
+  SDL_GrabMode mode = enable ? SDL_GRAB_ON : SDL_GRAB_OFF;
+  SDL_WM_GrabInput(mode);
+#endif
+}
+
 #if SDL_VERSION_ATLEAST(2,0,0)
 static void sdl_set_screensaver_enabled(boolean enable)
 {
@@ -194,6 +208,7 @@ static void auto_fullscreen_size(struct graphics_data *graphics,
   }
 }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
 /**
  * Determine if MZX supports a particular SDL pixel format. Returns a priority
  * value if the format is supported or 0 if the format is not supported. Values
@@ -206,7 +221,6 @@ static void auto_fullscreen_size(struct graphics_data *graphics,
 static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
  uint32_t bits_per_pixel, uint32_t yuv_priority)
 {
-#if SDL_VERSION_ATLEAST(2,0,0)
   switch(pixel_format)
   {
     case SDL_PIXELFORMAT_INDEX8:
@@ -287,10 +301,10 @@ static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
       break;
     }
   }
-#endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
   return 0;
 }
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
 /**
@@ -309,7 +323,7 @@ boolean sdl_check_video_mode(struct graphics_data *graphics,
   int in_depth = window->bits_per_pixel;
   int out_depth;
 
-  auto_fullscreen_size(window, renderer_supports_scaling);
+  auto_fullscreen_size(graphics, window, renderer_supports_scaling);
   width = window->width_px;
   height = window->height_px;
 
@@ -638,7 +652,7 @@ boolean sdl_create_window_soft(struct graphics_data *graphics,
   render_data->shadow = NULL;
   render_data->flat_format = render_data->screen->format;
 
-  if(depth == 8)
+  if(window->bits_per_pixel == 8)
   {
     render_data->palette_colors =
      (SDL_Color *)ccalloc(SMZX_PAL_SIZE, sizeof(SDL_Color));
@@ -651,8 +665,8 @@ boolean sdl_create_window_soft(struct graphics_data *graphics,
   // Wipe the letterbox area, if any.
   SDL_FillRect(render_data->screen, NULL, 0);
 
-  SDL_SetWindowGrab(render_data->window, window->grab_mouse);
   sdl_set_system_cursor(graphics);
+  sdl_set_window_grab(render_data, window->grab_mouse);
   return true;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -725,8 +739,8 @@ boolean sdl_resize_window(struct graphics_data *graphics,
      SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   }
 
-  SDL_SetWindowGrab(render_data->window, window->grab_mouse);
   sdl_set_system_cursor(graphics);
+  sdl_set_window_grab(render_data, window->grab_mouse);
   return true;
 
 #else
@@ -974,8 +988,8 @@ boolean sdl_create_window_renderer(struct graphics_data *graphics,
 
   window->platform_id = SDL_GetWindowID(render_data->window);
   sdl_set_screensaver_enabled(graphics->disable_screensaver == SCREENSAVER_ENABLE);
-  SDL_SetWindowGrab(render_data->window, window->grab_mouse);
   sdl_set_system_cursor(graphics);
+  sdl_set_window_grab(render_data, window->grab_mouse);
   return true;
 
 err_free:
@@ -1103,8 +1117,8 @@ boolean gl_create_window(struct graphics_data *graphics,
   render_data->screen = NULL;
   render_data->shadow = NULL;
 
-  SDL_SetWindowGrab(render_data->window, window->grab_mouse);
   sdl_set_system_cursor(graphics);
+  sdl_set_window_grab(render_data, window->grab_mouse);
   return true;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -1121,7 +1135,7 @@ boolean gl_resize_window(struct graphics_data *graphics,
   return sdl_resize_window(graphics, window);
 #else
   // SDL_SetVideoMode
-  struct gl_version dummy = {};
+  struct gl_version dummy = { 0, 0 };
   return gl_create_window(graphics, window, dummy);
 #endif
 }

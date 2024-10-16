@@ -234,7 +234,7 @@ err_cleanup:
 boolean gl_resize_window(struct graphics_data *graphics,
  struct video_window *window)
 {
-  struct gl_version dummy = {}; // TODO: fix this
+  struct gl_version dummy = { 0, 0 }; // TODO: fix this
   gl_cleanup(graphics);
   return gl_create_window(graphics, window, dummy);
 }
