@@ -71,7 +71,7 @@ typedef Uint32 SDL_threadID;
 
 #define SDL_SetEventFilter(filter, userdata) SDL_SetEventFilter(filter)
 
-#ifdef CONFIG_X11
+#if defined(_WIN32) || defined(CONFIG_X11)
 static inline SDL_bool SDL_GetWindowWMInfo(SDL_Window *window,
                                            SDL_SysWMinfo *info)
 {

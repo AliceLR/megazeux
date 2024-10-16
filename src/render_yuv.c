@@ -88,6 +88,10 @@ static boolean yuv_set_video_mode_size(struct graphics_data *graphics,
   if(!render_data->sdl.overlay)
     goto err_free;
 
+  // Wipe the letterbox area, if any.
+  // This must be performed on the window surface, not the overlay.
+  SDL_FillRect(render_data->sdl.screen, NULL, 0);
+  SDL_Flip(render_data->sdl.screen);
   return true;
 
 err_free:

@@ -22,6 +22,8 @@ USERS
 + Fixed window resize bugs in Linux (particularly Wayland)
   caused by MZX recreating the window every time a window resize
   event was received.
++ Fixed junk display in the letterbox area after resizing using
+  the software, gp2x, or SDL 1.2 overlay renderers.
 + Fixed sai.frag not being installed by "make install" or
   distributed with Unix-style packages for Linux/BSD/Darwin.
 + Fixed the board editor show thing hotkeys (broken by 2.93b).
