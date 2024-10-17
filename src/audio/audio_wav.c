@@ -106,8 +106,8 @@ static uint32_t wav_read_data(struct wav_stream *w_stream,
       break;
     }
 
-    case SAMPLE_S16LSB:
-    case SAMPLE_S16MSB:
+    case SAMPLE_S16LE:
+    case SAMPLE_S16BE:
     {
       uint8_t *dest = (uint8_t *)buffer;
 
@@ -454,18 +454,18 @@ static boolean load_wav_file_sdl(const char *filename, struct wav_info *spec)
   spec->freq = sdlspec.freq;
   switch(sdlspec.format)
   {
-    case AUDIO_U8:
+    case SDL_AUDIO_U8:
       spec->format = SAMPLE_U8;
       break;
-    case AUDIO_S8:
+    case SDL_AUDIO_S8:
       spec->format = SAMPLE_S8;
       break;
-    case AUDIO_S16LSB:
-      spec->format = SAMPLE_S16LSB;
+    case SDL_AUDIO_S16LE:
+      spec->format = SAMPLE_S16LE;
       break;
     // May be returned by SDL on big endian machines.
-    case AUDIO_S16MSB:
-      spec->format = SAMPLE_S16MSB;
+    case SDL_AUDIO_S16BE:
+      spec->format = SAMPLE_S16BE;
       break;
     /**
      * TODO: SDL 2.0 can technically return AUDIO_S32LSB or AUDIO_F32LSB.
@@ -591,7 +591,7 @@ static boolean load_wav_file(vfile *vf, const char *filename, struct wav_info *s
   if(sbytes == 1)
     spec->format = SAMPLE_U8;
   else
-    spec->format = SAMPLE_S16LSB;
+    spec->format = SAMPLE_S16LE;
   spec->channels = channels;
 
   // Check for "smpl" chunk for looping info

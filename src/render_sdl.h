@@ -36,14 +36,15 @@ struct sdl_render_data
   SDL_Palette *palette;
   SDL_Window *window;
   SDL_GLContext context;
-  SDL_PixelFormat *pixel_format;
+  SDL_PixelFormatDetails *pixel_format;
+  SDL_ScaleMode screen_scale_mode;
 #else
   SDL_Overlay *overlay;
 #endif
   SDL_Surface *screen;
   SDL_Surface *shadow;
   SDL_Color *palette_colors;
-  const SDL_PixelFormat *flat_format; // format used by sdl_update_colors.
+  const SDL_PixelFormatDetails *flat_format; // format used by sdl_update_colors.
 
   // SDL Renderer and overlay renderer texture format configuration.
   uint32_t (*rgb_to_yuv)(uint8_t r, uint8_t g, uint8_t b);
@@ -81,7 +82,7 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
 #if SDL_VERSION_ATLEAST(2,0,0)
 boolean sdlrender_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize,
- uint32_t sdl_rendererflags);
+ boolean requires_blend_ops);
 #endif
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
@@ -90,8 +91,7 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
 
 #if SDL_VERSION_ATLEAST(2,0,0)
 #define GL_ALLOW_FLAGS \
- (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP | \
-  SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE)
+ (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE)
 #else
 #define GL_ALLOW_FLAGS (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE)
 #endif
