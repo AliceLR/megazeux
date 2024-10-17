@@ -341,7 +341,7 @@ UNITTEST(Settings)
   struct config_info *conf = get_config();
 
   vio_filesystem_init(0, 0, false);
-  const struct vfsclose
+  struct vfsclose
   {
     ~vfsclose() { vio_filesystem_exit(); }
   } a;

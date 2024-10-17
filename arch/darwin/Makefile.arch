@@ -40,20 +40,19 @@ endif
 ifeq (${ARCH},arm64)
 CC      := $(or ${ARM64_CC},${CC}) ${ARM64_CFLAGS}
 CXX     := $(or ${ARM64_CXX},${CXX}) ${ARM64_CFLAGS}
-STDLIB  ?= libc++
 MINVER  ?= 11.0
 endif
 
 ifeq (${ARCH},arm64e)
 CC      := $(or ${ARM64E_CC},${CC}) ${ARM64E_CFLAGS}
 CXX     := $(or ${ARM64E_CXX},${CXX}) ${ARM64E_CFLAGS}
-STDLIB  ?= libc++
 MINVER  ?= 11.0
 endif
 
 ifeq (${ARCH},i686)
 CC      := $(or ${X86_CC},${CC}) ${X86_CFLAGS}
 CXX     := $(or ${X86_CXX},${CXX}) ${X86_CFLAGS}
+SYSROOT ?= /Developer/SDKs/MacOSX10.13.sdk
 STDLIB  ?= libstdc++
 MINVER  ?= 10.6
 endif
@@ -61,6 +60,7 @@ endif
 ifeq (${ARCH},x86_64)
 CC      := $(or ${X86_64_CC},${CC}) ${X86_64_CFLAGS}
 CXX     := $(or ${X86_64_CXX},${CXX}) ${X86_64_CFLAGS}
+SYSROOT ?= /Developer/SDKs/MacOSX10.13.sdk
 STDLIB  ?= libstdc++
 MINVER  ?= 10.6
 endif
@@ -68,7 +68,6 @@ endif
 ifeq (${ARCH},x86_64h)
 CC      := $(or ${X86_64H_CC},${CC}) ${X86_64H_CFLAGS}
 CXX     := $(or ${X86_64H_CXX},${CXX}) ${X86_64H_CFLAGS}
-STDLIB  ?= libc++
 MINVER  ?= 10.9
 endif
 
