@@ -6,12 +6,12 @@ ifeq (${PLATFORM},)
 $(error usage: make PLATFORM=<platform> [ARCH=<arch>] [all|<arch>|package|clean])
 endif
 
-VERSION		= 2.93b-r0
+VERSION		= 2.93c-r0
 DIST		= megazeux-dependencies-${VERSION}
 TARGET		= TARGET
 
 ZLIB		= zlib-1.3.1
-PNG		= libpng-1.6.43
+PNG		= libpng-1.6.44
 OGG		= libogg-1.3.5
 VORBIS		= libvorbis-1.3.7
 TREMOR		= tremor
@@ -19,7 +19,7 @@ STB		= stb
 SDL12		= SDL-1.2.15
 SDL2_TIGER	= panther_sdl2
 SDL2_22		= SDL2-2.0.22
-SDL2_LATEST	= SDL2-2.30.7
+SDL2_LATEST	= SDL2-2.30.8
 #SDL3		= SDL3-3.2.0
 
 # Mac OS X/macOS compatibility builds rely on different versions of SDL2
@@ -165,6 +165,9 @@ build/${OGG}: build/${OGG}.tar.gz | build
 build/${VORBIS}: build/${VORBIS}.tar.gz | build
 	cd build && \
 	tar -xzf '${VORBIS}.tar.gz'
+ifeq (${VORBIS},libvorbis-1.3.7)
+	patch build/${VORBIS}/lib/CMakeLists.txt fix-vorbis-1.3.7-build-framework.patch
+endif
 
 build/${TREMOR}: | build
 	cd build && \

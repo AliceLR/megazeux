@@ -1,6 +1,5 @@
 #
-# macOS combined dependency builder support.
-# Supports darwin, may eventually support xcode as well.
+# macOS Darwin port dependency builder support.
 #
 
 ALL_ARCH = ppc ppc64 i686 x86_64 x86_64h arm64 arm64e
@@ -32,6 +31,7 @@ ARCH_INIT = \
 	export OBJCXX="${CXX}"; \
 	export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"; \
 	export CMAKE_LIBRARY_PATH="${PREFIX}"; \
+	export MACOSX_DEPLOYMENT_TARGET="${MINVER}"; \
 	true
 
 ARCH_CONFIGURE_ARGS	=
@@ -43,6 +43,12 @@ ARCH_CMAKE_ARGS = \
 	-D CMAKE_INSTALL_NAME_DIR="${PREFIX}/lib" \
 	-D CMAKE_BUILD_WITH_INSTALL_NAME_DIR=TRUE \
 	-D CMAKE_MACOSX_RPATH=FALSE
+
+# CMAKE_OSX_ARCHITECTURES is required to make libpng successfully link ARM.
+# However, this breaks PowerPC64.
+ifeq ($(filter ppc ppc64,${ARCH}),)
+ARCH_CMAKE_ARGS += -D CMAKE_OSX_ARCHITECTURES="${ARCH}"
+endif
 
 ifneq (${SYSROOT},)
 ARCH_CMAKE_ARGS += -D CMAKE_OSX_SYSROOT="${SYSROOT}"
@@ -78,43 +84,3 @@ ARCH_INIT += ; export MACOSX_DEPLOYMENT_TARGET=10.5; true
 ARCH_CMAKE_ARGS += -D SDL_JOYSTICK=FALSE -D SDL_HAPTIC=FALSE -D SSEMATH=FALSE -D CMAKE_OSX_DEPLOYMENT_TARGET=${MINVER}
 endif
 endif # ARCH != ''
-
-# TODO: these framework forgeries aren't good enough, look into this more.
-# This may need to be its own subplatform in the dependency system.
-
-frameworks: ${PREFIX}/zlib.framework ${PREFIX}/libpng.framework
-frameworks: ${PREFIX}/libogg.framework ${PREFIX}/libvorbis.framework
-frameworks: ${PREFIX}/libSDL2.framework
-.PHONY: frameworks
-
-${PREFIX}/zlib.framework:
-	rm -rf "$@" && mkdir -p "$@/Headers"
-	cp "$</zconf.h" "$</zlib.h" "$@/Headers"
-	lipo -create ${PREFIX}/*/lib/libz.dylib -output "$@/zlib"
-	install_name_util -id "@rpath/zlib.framework/zlib" "$@/zlib"
-
-${PREFIX}/libpng.framework:
-	rm -rf "$@" && mkdir -p "$@/Headers"
-	cp "$</png.h" "$</pngconf.h" "$</pnglibconf.h" "$@/Headers"
-	lipo -create */lib/libpng.dylib -output "$@/libpng"
-	install_name_util -id "@rpath/libpng.framework/libpng" "$@/libpng"
-	install_name_util -change "@loader_path/libz.dylib" "@rpath/zlib.framework/zlib" "$@/libpng"
-
-${PREFIX}/libogg.framework:
-	rm -rf "$@" && mkdir -p "$@/Headers"
-	cp "$</include/ogg/"*.h "$@/Headers"
-	lipo -create ${PREFIX}/*/lib/libogg.dylib -output "$@/libogg"
-	install_name_util -id "@rpath/libogg.framework/libogg" "$@/libogg"
-
-${PREFIX}/libvorbis.framework:
-	rm -rf "$@" && mkdir -p "$@/Headers"
-	cp "$</include/vorbis/"*.h "$@/Headers"
-	lipo -create ${PREFIX}/*/lib/libvorbis.dylib -output "$@/libvorbis"
-	install_name_util -id "@rpath/libvorbis.framework/libvorbis" "$@/libvorbis"
-	install_name_util -change "@loader_path/libogg.dylib" "@rpath/libogg.framework/libogg" "$@/libvorbis"
-
-${PREFIX}/libSDL2.framework:
-	rm -rf "$@" && mkdir -p "$@/Headers"
-	cp "$</include/"*.h "$@/Headers"
-	lipo -create ${PREFIX}/*/lib/libSDL2.dylib -output "$@/libSDL2"
-	install_name_util -id "@rpath/libSDL2.framework/libSDL2" "$@/libSDL2"
