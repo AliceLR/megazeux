@@ -24,8 +24,9 @@ Tested versions of Xcode:
   from 2.93b onward. It is also capable of hosting the Xcode 3.2.6 SDKs and
   compilers.
 - Xcode 14.2 is used to provide arm64/arm64e binaries from 2.93c onward. It
-  can also provide x86_64 and x86_64h with a minimum OS version of 10.9.
-  Versions as low as Xcode 12.2 should work for this, but are untested.
+  can also provide x86_64 and x86_64h with a minimum OS version of 10.13.
+  Versions as low as Xcode 12.2 should work for this (down to even 10.9),
+  but are untested.
 
 Untested and unsupported features:
 
@@ -51,7 +52,8 @@ Other required software:
    [here](https://github.com/AliceLR/megazeux-dependencies) and extract the
    tarball into scripts/deps/. Alternatively (if you are feeling brave), you
    can use the Makefiles in scripts/deps/ to build these yourself. Manually
-   building the dependencies currently requires wget.
+   building the dependencies currently requires CMake and wget, which can
+   also be installed via MacPorts.
 
 ## CONFIGURATION
 
@@ -107,8 +109,8 @@ After all desired platforms are built, `make lipo` will be run automatically
 to merge them. Any pre-existing binaries from other architectures will also
 be combined into the fat binary. This can be used to e.g. import PowerPC
 builds made with Xcode 3.2.6 into a binary otherwise built by Xcode 9.4.1.
-The lipo and archive steps should work on any macOS version regardless of
-which macOS/Xcode produced the component builds.
+The final lipo and archive steps should be performed on the newer of the
+environments involved to ensure correct codesigning et al.
 
 NOTE: OS X Mavericks (and presumably older versions) have linker issues when
 a binary links against both x86_64 and x86_64h dylibs. This was found in
