@@ -65,7 +65,8 @@
 #define __M_BEGIN_DECLS
 #define __M_END_DECLS
 
-#if !defined(CONFIG_WII) && !defined(CONFIG_NDS) && !defined(CONFIG_3DS)
+#if !defined(CONFIG_WII) && !defined(CONFIG_NDS) && !defined(CONFIG_3DS) && \
+ !defined(CONFIG_DREAMCAST)
 
 #undef false
 #undef true

@@ -171,6 +171,7 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 		assets/glsl/scalers/hqscale.frag \
 		assets/glsl/scalers/hqscale.vert \
 		assets/glsl/scalers/nearest.frag \
+		assets/glsl/scalers/sai.frag \
 		assets/glsl/scalers/semisoft.frag \
 		assets/glsl/scalers/sepia.frag \
 		assets/glsl/scalers/simple.frag \

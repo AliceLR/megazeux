@@ -60,28 +60,33 @@ struct sdl_render_data
 #define YUV_PRIORITY 422
 #define YUV_DISABLE 0
 
-extern CORE_LIBSPEC Uint32 sdl_window_id;
+static inline SDL_Window *sdl_get_current_window(void)
+{
+  const struct video_window *window = video_get_window(1);
+  return SDL_GetWindowFromID(window ? window->platform_id : 0);
+}
 
-int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
- boolean resize);
-boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling);
+int sdl_flags(const struct video_window *window);
 void sdl_destruct_window(struct graphics_data *graphics);
 void sdl_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, unsigned int count);
 
-boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize);
+boolean sdl_create_window_soft(struct graphics_data *graphics,
+ struct video_window *window);
+boolean sdl_resize_window(struct graphics_data *graphics,
+ struct video_window *window);
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
 // Used internally only.
-boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int *depth, int flags);
+boolean sdl_check_video_mode(struct graphics_data *graphics,
+ struct video_window *window, boolean renderer_supports_scaling, int flags);
 #endif
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-boolean sdlrender_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize,
- uint32_t sdl_rendererflags);
+boolean sdl_create_window_renderer(struct graphics_data *graphics,
+ struct video_window *window, uint32_t sdl_rendererflags);
+void sdl_set_texture_scale_mode(struct graphics_data *graphics,
+ struct video_window *window, int texture_id, boolean allow_non_integer);
 #endif
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
@@ -98,8 +103,10 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
 
 #define GL_STRIP_FLAGS(A) ((A & GL_ALLOW_FLAGS) | SDL_WINDOW_OPENGL)
 
-boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, boolean fullscreen, boolean resize, struct gl_version req_ver);
+boolean gl_create_window(struct graphics_data *graphics,
+ struct video_window *window, struct gl_version req_ver);
+boolean gl_resize_window(struct graphics_data *graphics,
+ struct video_window *window);
 void gl_set_attributes(struct graphics_data *graphics);
 boolean gl_swap_buffers(struct graphics_data *graphics);
 

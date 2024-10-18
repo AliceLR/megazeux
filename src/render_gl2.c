@@ -170,10 +170,11 @@ static const GLubyte color_array_white[4 * 4] =
 static boolean gl2_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
-  struct gl2_render_data *render_data = cmalloc(sizeof(struct gl2_render_data));
+  struct gl2_render_data *render_data =
+   (struct gl2_render_data *)cmalloc(sizeof(struct gl2_render_data));
 
   if(!render_data)
-    goto err_out;
+    return false;
 
   if(!GL_LoadLibrary(GL_LIB_FIXED))
     goto err_free_render_data;
@@ -192,37 +193,37 @@ static boolean gl2_init_video(struct graphics_data *graphics,
     graphics->bits_per_pixel = conf->force_bpp;
 
   // We want to deal internally with 32bit surfaces
-  render_data->pixels = cmalloc(sizeof(uint32_t) * GL_POWER_2_WIDTH *
+  render_data->pixels = (uint32_t *)cmalloc(sizeof(uint32_t) * GL_POWER_2_WIDTH *
    GL_POWER_2_HEIGHT);
 
   if(!render_data->pixels)
     goto err_free_render_data;
 
-  if(!set_video_mode())
-    goto err_free_pixels;
-
   return true;
 
-err_free_pixels:
-  free(render_data->pixels);
 err_free_render_data:
   free(render_data);
   graphics->render_data = NULL;
-err_out:
   return false;
 }
 
 static void gl2_free_video(struct graphics_data *graphics)
 {
   struct gl2_render_data *render_data = graphics->render_data;
-  gl2.glDeleteTextures(NUM_TEXTURES, render_data->textures);
-  gl_check_error();
 
-  gl_cleanup(graphics);
+  if(render_data)
+  {
+    if(gl2.glDeleteTextures)
+    {
+      gl2.glDeleteTextures(NUM_TEXTURES, render_data->textures);
+      gl_check_error();
+    }
 
-  free(render_data->pixels);
-  free(render_data);
-  graphics->render_data = NULL;
+    gl_cleanup(graphics);
+    free(render_data->pixels);
+    free(render_data);
+    graphics->render_data = NULL;
+  }
 }
 
 static void gl2_remap_char_range(struct graphics_data *graphics, uint16_t first,
@@ -253,10 +254,12 @@ static void gl2_remap_charbyte(struct graphics_data *graphics,
   gl2_remap_char(graphics, chr);
 }
 
-static void gl2_resize_screen(struct graphics_data *graphics,
- int width, int height)
+static boolean gl2_resize_callback(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct gl2_render_data *render_data = graphics->render_data;
+  int width = window->width_px;
+  int height = window->height_px;
   int v_width, v_height;
   int charset_width, charset_height;
 
@@ -339,15 +342,15 @@ static void gl2_resize_screen(struct graphics_data *graphics,
   gl2.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_BG_WIDTH, TEX_BG_HEIGHT,
    0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   gl_check_error();
+  return true;
 }
 
-static boolean gl2_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean gl2_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   gl_set_attributes(graphics);
 
-  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize,
-   gl_required_version))
+  if(!gl_create_window(graphics, window, gl_required_version))
     return false;
 
   gl_set_attributes(graphics);
@@ -391,8 +394,7 @@ static boolean gl2_set_video_mode(struct graphics_data *graphics,
   }
 #endif
 
-  gl2_resize_screen(graphics, width, height);
-  return true;
+  return gl2_resize_callback(graphics, window);
 }
 
 static void gl2_update_colors(struct graphics_data *graphics,
@@ -1014,9 +1016,10 @@ void render_gl2_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gl2_init_video;
   renderer->free_video = gl2_free_video;
-  renderer->set_video_mode = gl2_set_video_mode;
+  renderer->create_window = gl2_create_window;
+  renderer->resize_window = gl_resize_window;
+  renderer->resize_callback = gl2_resize_callback;
   renderer->update_colors = gl2_update_colors;
-  renderer->resize_screen = resize_screen_standard;
   renderer->remap_char_range = gl2_remap_char_range;
   renderer->remap_char = gl2_remap_char;
   renderer->remap_charbyte = gl2_remap_charbyte;

@@ -336,7 +336,7 @@ static boolean process_keypress(int key)
    get_alt_status(keycode_internal) &&
    get_ctrl_status(keycode_internal))
   {
-    toggle_fullscreen();
+    video_toggle_fullscreen();
     return true;
   }
 

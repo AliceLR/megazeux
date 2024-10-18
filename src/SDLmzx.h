@@ -71,7 +71,7 @@ typedef Uint32 SDL_threadID;
 
 #define SDL_SetEventFilter(filter, userdata) SDL_SetEventFilter(filter)
 
-#ifdef CONFIG_X11
+#if defined(_WIN32) || defined(CONFIG_X11)
 static inline SDL_bool SDL_GetWindowWMInfo(SDL_Window *window,
                                            SDL_SysWMinfo *info)
 {
@@ -97,13 +97,6 @@ static inline void SDL_SetWindowTitle(SDL_Window *window, const char *title)
 static inline void SDL_SetWindowIcon(SDL_Window *window, SDL_Surface *icon)
 {
    SDL_WM_SetIcon(icon, NULL);
-}
-
-static inline void SDL_SetWindowGrab(SDL_Window *window, SDL_bool grabbed)
-{
-  // Not a perfect equivalent; the SDL 1.2 version will grab even if unfocused
-  SDL_GrabMode mode = (grabbed == SDL_TRUE) ? SDL_GRAB_ON : SDL_GRAB_OFF;
-  SDL_WM_GrabInput(mode);
 }
 
 static inline char *SDL_GetCurrentVideoDriver(void)
