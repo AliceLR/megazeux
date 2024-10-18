@@ -210,14 +210,20 @@ err_free_render_data:
 static void gl2_free_video(struct graphics_data *graphics)
 {
   struct gl2_render_data *render_data = graphics->render_data;
-  gl2.glDeleteTextures(NUM_TEXTURES, render_data->textures);
-  gl_check_error();
 
-  gl_cleanup(graphics);
+  if(render_data)
+  {
+    if(gl2.glDeleteTextures)
+    {
+      gl2.glDeleteTextures(NUM_TEXTURES, render_data->textures);
+      gl_check_error();
+    }
 
-  free(render_data->pixels);
-  free(render_data);
-  graphics->render_data = NULL;
+    gl_cleanup(graphics);
+    free(render_data->pixels);
+    free(render_data);
+    graphics->render_data = NULL;
+  }
 }
 
 static void gl2_remap_char_range(struct graphics_data *graphics, uint16_t first,

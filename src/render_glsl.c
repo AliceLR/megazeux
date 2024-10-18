@@ -716,7 +716,6 @@ err_free:
   return false;
 }
 
-// FIXME free more
 static void glsl_free_video(struct graphics_data *graphics)
 {
   struct glsl_render_data *render_data = graphics->render_data;
@@ -739,11 +738,14 @@ static void glsl_free_video(struct graphics_data *graphics)
       gl_check_error();
     }
 
-    glsl.glDeleteTextures(NUM_TEXTURES, render_data->textures);
-    gl_check_error();
+    if(glsl.glDeleteTextures)
+    {
+      glsl.glDeleteTextures(NUM_TEXTURES, render_data->textures);
+      gl_check_error();
 
-    glsl.glUseProgram(0);
-    gl_check_error();
+      glsl.glUseProgram(0);
+      gl_check_error();
+    }
 
     gl_cleanup(graphics);
     free(render_data->pixels);

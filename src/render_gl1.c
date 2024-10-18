@@ -251,8 +251,11 @@ static void gl1_free_video(struct graphics_data *graphics)
 
   if(render_data)
   {
-    gl1.glDeleteTextures(1, &render_data->texture_number);
-    gl_check_error();
+    if(gl1.glDeleteTextures)
+    {
+      gl1.glDeleteTextures(1, &render_data->texture_number);
+      gl_check_error();
+    }
 
     gl_cleanup(graphics);
     free(render_data);
