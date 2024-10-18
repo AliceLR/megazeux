@@ -1079,8 +1079,7 @@ static boolean process_event(SDL_Event *event)
 
     case SDL_MOUSEMOTION:
     {
-      const struct video_window *_window = video_get_window(1);
-      SDL_Window *window = SDL_GetWindowFromID(_window->platform_id);
+      SDL_Window *window = sdl_get_current_window();
       int mx_real = event->motion.x;
       int my_real = event->motion.y;
       int mx, my, min_x, min_y, max_x, max_y;
@@ -1648,8 +1647,7 @@ void __wait_event(void)
 
 void __warp_mouse(int x, int y)
 {
-  const struct video_window *_window = video_get_window(1);
-  SDL_Window *window = SDL_GetWindowFromID(_window->platform_id);
+  SDL_Window *window = sdl_get_current_window();
 
   if((x < 0) || (y < 0))
   {

@@ -46,10 +46,8 @@ static inline boolean get_X11_display_and_window(SDL_Window *window,
   SDL_VERSION(&info.version);
 
   if(!window)
-  {
-    const struct video_window *_window = video_get_window(1);
-    window = SDL_GetWindowFromID(_window->platform_id);
-  }
+    window = sdl_get_current_window();
+
   if(!window || !SDL_GetWindowWMInfo(window, &info) || info.subsystem != SDL_SYSWM_X11)
     return false;
 

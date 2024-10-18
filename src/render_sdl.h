@@ -60,6 +60,12 @@ struct sdl_render_data
 #define YUV_PRIORITY 422
 #define YUV_DISABLE 0
 
+static inline SDL_Window *sdl_get_current_window(void)
+{
+  const struct video_window *window = video_get_window(1);
+  return SDL_GetWindowFromID(window ? window->platform_id : 0);
+}
+
 int sdl_flags(const struct video_window *window);
 void sdl_destruct_window(struct graphics_data *graphics);
 void sdl_update_colors(struct graphics_data *graphics,
