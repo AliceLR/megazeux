@@ -26,7 +26,7 @@
 
 #if defined(CONFIG_SDL)
 #include "../SDLmzx.h"
-#include "../graphics.h"
+#include "../render_sdl.h"
 #endif
 
 static char **copy_buffer;
@@ -88,9 +88,8 @@ static inline int event_callback(const SDL_Event *event)
 
 static inline void set_X11_event_callback(void)
 {
-  const struct video_window *_window = video_get_window(1);
   SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-  SDL_SetEventFilter(event_callback, SDL_GetWindowFromID(_window->platform_id));
+  SDL_SetEventFilter(event_callback, sdl_get_current_window());
 }
 
 #endif /* SDL_VERSION_ATLEAST(1,2,0) */
