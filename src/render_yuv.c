@@ -41,23 +41,21 @@ struct yuv_render_data
 {
   struct sdl_render_data sdl;
   Uint32 bpp;
-  Uint32 w;
-  Uint32 h;
 };
 
 static boolean yuv_set_video_mode_size(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize,
- int yuv_width, int yuv_height)
+ struct video_window *window, int yuv_width, int yuv_height)
 {
   struct yuv_render_data *render_data = graphics->render_data;
 
-  if(!sdl_check_video_mode(graphics, width, height, &depth,
-   sdl_flags(depth, fullscreen, false, resize) | SDL_ANYFORMAT))
+  window->bits_per_pixel = 32;
+  if(!sdl_check_video_mode(graphics, window, true, sdl_flags(window) | SDL_ANYFORMAT))
     return false;
 
   // the YUV renderer _requires_ 32bit colour
-  render_data->sdl.screen = SDL_SetVideoMode(width, height, 32,
-   sdl_flags(depth, fullscreen, false, resize) | SDL_ANYFORMAT);
+  render_data->sdl.screen =
+   SDL_SetVideoMode(window->width_px, window->height_px, 32,
+    sdl_flags(window) | SDL_ANYFORMAT);
 
   if(!render_data->sdl.screen)
     goto err_free;
@@ -90,8 +88,10 @@ static boolean yuv_set_video_mode_size(struct graphics_data *graphics,
   if(!render_data->sdl.overlay)
     goto err_free;
 
-  render_data->w = width;
-  render_data->h = height;
+  // Wipe the letterbox area, if any.
+  // This must be performed on the window surface, not the overlay.
+  SDL_FillRect(render_data->sdl.screen, NULL, 0);
+  SDL_Flip(render_data->sdl.screen);
   return true;
 
 err_free:
@@ -100,29 +100,30 @@ err_free:
 }
 
 static boolean yuv1_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+ struct video_window *window)
 {
   struct yuv_render_data *render_data = graphics->render_data;
   render_data->bpp = 32;
 
-  return yuv_set_video_mode_size(graphics, width, height, depth, fullscreen,
-   resize, YUV1_OVERLAY_WIDTH, YUV1_OVERLAY_HEIGHT);
+  return yuv_set_video_mode_size(graphics, window,
+   YUV1_OVERLAY_WIDTH, YUV1_OVERLAY_HEIGHT);
 }
 
 static boolean yuv2_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+ struct video_window *window)
 {
   struct yuv_render_data *render_data = graphics->render_data;
   render_data->bpp = 16;
 
-  return yuv_set_video_mode_size(graphics, width, height, depth, fullscreen,
-   resize, YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT);
+  return yuv_set_video_mode_size(graphics, window,
+   YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT);
 }
 
 static boolean yuv_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
-  struct yuv_render_data *render_data = cmalloc(sizeof(struct yuv_render_data));
+  struct yuv_render_data *render_data =
+   (struct yuv_render_data *)cmalloc(sizeof(struct yuv_render_data));
   if(!render_data)
     return false;
 
@@ -132,14 +133,6 @@ static boolean yuv_init_video(struct graphics_data *graphics,
   graphics->render_data = render_data;
   graphics->allow_resize = conf->allow_resize;
   graphics->ratio = conf->video_ratio;
-
-  if(!set_video_mode())
-  {
-    free(render_data);
-    graphics->render_data = NULL;
-    return false;
-  }
-
   return true;
 }
 
@@ -244,8 +237,8 @@ static void yuv_render_mouse(struct graphics_data *graphics,
 static void yuv_sync_screen(struct graphics_data *graphics)
 {
   struct yuv_render_data *render_data = graphics->render_data;
-  int width = render_data->w, v_width;
-  int height = render_data->h, v_height;
+  int width = graphics->window.width_px, v_width;
+  int height = graphics->window.height_px, v_height;
   SDL_Rect rect;
 
   // FIXME: Putting this here is suboptimal
@@ -264,9 +257,9 @@ void render_yuv1_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = yuv_init_video;
   renderer->free_video = yuv_free_video;
-  renderer->set_video_mode = yuv1_set_video_mode;
+  renderer->create_window = yuv1_set_video_mode;
+  renderer->resize_window = yuv1_set_video_mode;
   renderer->update_colors = sdl_update_colors;
-  renderer->resize_screen = resize_screen_standard;
   renderer->get_screen_coords = get_screen_coords_scaled;
   renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_graph = yuv_render_graph;
@@ -279,6 +272,7 @@ void render_yuv1_register(struct renderer *renderer)
 void render_yuv2_register(struct renderer *renderer)
 {
   render_yuv1_register(renderer);
-  renderer->set_video_mode = yuv2_set_video_mode;
+  renderer->create_window = yuv2_set_video_mode;
+  renderer->resize_window = yuv2_set_video_mode;
   renderer->render_layer = NULL;
 }

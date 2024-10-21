@@ -46,7 +46,8 @@ static inline boolean get_X11_display_and_window(SDL_Window *window,
   SDL_VERSION(&info.version);
 
   if(!window)
-    window = SDL_GetWindowFromID(sdl_window_id);
+    window = sdl_get_current_window();
+
   if(!window || !SDL_GetWindowWMInfo(window, &info) || info.subsystem != SDL_SYSWM_X11)
     return false;
 
@@ -88,7 +89,7 @@ static inline int event_callback(const SDL_Event *event)
 static inline void set_X11_event_callback(void)
 {
   SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-  SDL_SetEventFilter(event_callback, SDL_GetWindowFromID(sdl_window_id));
+  SDL_SetEventFilter(event_callback, sdl_get_current_window());
 }
 
 #endif /* SDL_VERSION_ATLEAST(1,2,0) */

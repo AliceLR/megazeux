@@ -26,7 +26,32 @@
 
 #include <limits.h>
 
-CORE_LIBSPEC Uint32 sdl_window_id;
+static void sdl_set_system_cursor(struct graphics_data *graphics)
+{
+#if SDL_VERSION_ATLEAST(3,0,0)
+  if(graphics->system_mouse == SYSTEM_MOUSE_OFF)
+    SDL_HideCursor();
+  else
+    SDL_ShowCursor();
+#else
+  int value = (graphics->system_mouse == SYSTEM_MOUSE_OFF) ? SDL_DISABLE : SDL_ENABLE;
+  SDL_ShowCursor(value);
+#endif
+}
+
+static void sdl_set_window_grab(struct sdl_render_data *render_data,
+ boolean enable)
+{
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_SetWindowMouseGrab(render_data->window, enable);
+#elif SDL_VERSION_ATLEAST(2,0,0)
+  SDL_SetWindowGrab(render_data->window, enable);
+#else
+  // Not a perfect equivalent; the SDL 1.2 version will grab even if unfocused
+  SDL_GrabMode mode = enable ? SDL_GRAB_ON : SDL_GRAB_OFF;
+  SDL_WM_GrabInput(mode);
+#endif
+}
 
 #if SDL_VERSION_ATLEAST(2,0,0)
 static void sdl_set_screensaver_enabled(boolean enable)
@@ -39,89 +64,110 @@ static void sdl_set_screensaver_enabled(boolean enable)
 }
 #endif
 
-int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
- boolean resize)
+int sdl_flags(const struct video_window *window)
 {
   int flags = 0;
 
-  if(fullscreen)
+  if(window->is_fullscreen)
   {
 #if SDL_VERSION_ATLEAST(2,0,0)
-    if(fullscreen_windowed)
-    {
-      // FIXME There's no built-in flag to achieve fake fullscreen. Disabling
-      // the border, ignoring the fullscreen flags, and using native resolution
-      // seems to be the best way to approximate it.
-      flags |= SDL_WINDOW_BORDERLESS;
-    }
+    if(window->is_fullscreen_windowed)
+      flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     else
 #endif
       flags |= SDL_WINDOW_FULLSCREEN;
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
-    if(depth == 8)
+    if(window->bits_per_pixel == 8)
       flags |= SDL_HWPALETTE;
 #endif
   }
   else
-    if(resize)
+    if(window->allow_resize)
       flags |= SDL_WINDOW_RESIZABLE;
 
   return flags;
 }
 
-boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
+#if SDL_VERSION_ATLEAST(2,0,0)
+// Get the current desktop resolution, if possible.
+static boolean sdl_get_desktop_display_mode(SDL_DisplayMode *display_mode)
+{
+  if(SDL_GetDesktopDisplayMode(0, display_mode) == 0)
+  {
+    debug("Queried desktop mode: %d x %d, %dHz, %s\n",
+     display_mode->w, display_mode->h, display_mode->refresh_rate,
+     SDL_GetPixelFormatName(display_mode->format));
+    return true;
+  }
+
+  warn("Failed to query desktop display mode: %s\n", SDL_GetError());
+
+  if(SDL_GetNumDisplayModes(0))
+    if(SDL_GetDisplayMode(0, 0, display_mode) == 0)
+      return true;
+
+  return false;
+}
+
+// Get the smallest possible resolution bigger than both 640x350 and requested.
+// Smaller means the software renderer will occupy more screen space.
+static boolean sdl_get_closest_usable_display_mode(SDL_DisplayMode *display_mode,
+ int width, int height)
+{
+  SDL_DisplayMode mode;
+  int min_size = INT_MAX;
+  int count;
+  int i;
+
+  count = SDL_GetNumDisplayModes(0);
+
+  debug("Display modes:\n");
+
+  for(i = 0; i < count; i++)
+  {
+    if(SDL_GetDisplayMode(0, i, &mode) != 0)
+      continue;
+
+    debug("%d: %d x %d, %dHz, %s\n", i, mode.w, mode.h, mode.refresh_rate,
+     SDL_GetPixelFormatName(mode.format));
+
+    if((mode.w * mode.h < min_size) && (mode.w >= width) && (mode.h >= height))
+    {
+      min_size = mode.w * mode.h;
+      *display_mode = mode;
+    }
+  }
+  if(min_size < INT_MAX)
+    return true;
+
+  return false;
+}
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
+
+static boolean sdl_get_fullscreen_resolution(int *width, int *height,
+ boolean renderer_supports_scaling)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
+
   SDL_DisplayMode display_mode;
   boolean have_mode = false;
-  int count;
-  int ret;
 
-  if(scaling)
+  if(renderer_supports_scaling)
   {
     // Use the current desktop resolution.
-    ret = SDL_GetDesktopDisplayMode(0, &display_mode);
-
-    if(ret)
-    {
-      count = SDL_GetNumDisplayModes(0);
-      if(count)
-        ret = SDL_GetDisplayMode(0, 0, &display_mode);
-    }
-    if(!ret)
-      have_mode = true;
+    have_mode = sdl_get_desktop_display_mode(&display_mode);
   }
   else
   {
-    // Get the smallest possible resolution bigger than 640x350.
-    // Smaller means the software renderer will occupy more screen space.
-    SDL_DisplayMode mode;
-    int min_size = INT_MAX;
-    int i;
-
-    count = SDL_GetNumDisplayModes(0);
-
-    debug("Display modes:\n");
-
-    for(i = 0; i < count; i++)
-    {
-      ret = SDL_GetDisplayMode(0, i, &mode);
-      debug("%d: %d x %d, %dHz, %s\n", i, mode.w, mode.h, mode.refresh_rate,
-       SDL_GetPixelFormatName(mode.format));
-
-      if(!ret && (mode.w * mode.h < min_size) &&
-       (mode.w >= SCREEN_PIX_W) && (mode.h >= SCREEN_PIX_H))
-      {
-        min_size = mode.w * mode.h;
-        display_mode = mode;
-        have_mode = true;
-      }
-    }
+    have_mode = sdl_get_closest_usable_display_mode(&display_mode, 320, 240);
   }
 
   if(have_mode)
   {
+    debug("\n");
+    debug("selected: %d x %d, %.02fHz, %s\n", display_mode.w, display_mode.h,
+     (float)display_mode.refresh_rate, SDL_GetPixelFormatName(display_mode.format));
     *width = display_mode.w;
     *height = display_mode.h;
     return true;
@@ -134,6 +180,36 @@ boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
 }
 
 /**
+ * Automatically detect and correct the fullscreen size if required.
+ * This should be done even if the window isn't initially fullscreen.
+ * If the window is fullscreen, the window size will also be updated.
+ */
+static void auto_fullscreen_size(struct graphics_data *graphics,
+ struct video_window *window, boolean renderer_supports_scaling)
+{
+  int width = graphics->resolution_width;
+  int height = graphics->resolution_height;
+
+  if(width < 0 || height < 0)
+  {
+    if(!sdl_get_fullscreen_resolution(&width, &height, renderer_supports_scaling))
+    {
+      width = 640;
+      height = 480;
+    }
+
+    graphics->resolution_width = width;
+    graphics->resolution_height = height;
+    if(window->is_fullscreen)
+    {
+      window->width_px = graphics->resolution_width;
+      window->height_px = graphics->resolution_height;
+    }
+  }
+}
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+/**
  * Determine if MZX supports a particular SDL pixel format. Returns a priority
  * value if the format is supported or 0 if the format is not supported. Values
  * returned for separate formats can be compared; higher values correspond to
@@ -145,7 +221,6 @@ boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
 static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
  uint32_t bits_per_pixel, uint32_t yuv_priority)
 {
-#if SDL_VERSION_ATLEAST(2,0,0)
   switch(pixel_format)
   {
     case SDL_PIXELFORMAT_INDEX8:
@@ -226,10 +301,10 @@ static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
       break;
     }
   }
-#endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
   return 0;
 }
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
 /**
@@ -238,13 +313,19 @@ static uint32_t sdl_pixel_format_priority(uint32_t pixel_format,
  * being picked by SDL (which needs to be checked for MZX support), MZX
  * instead needs to test its preferred pixel format by querying SDL.
  */
-boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int *depth, int flags)
+boolean sdl_check_video_mode(struct graphics_data *graphics,
+ struct video_window *window, boolean renderer_supports_scaling, int flags)
 {
   static int system_bpp = 0;
   static boolean has_system_bpp = false;
-  int in_depth = *depth;
+  int width;
+  int height;
+  int in_depth = window->bits_per_pixel;
   int out_depth;
+
+  auto_fullscreen_size(graphics, window, renderer_supports_scaling);
+  width = window->width_px;
+  height = window->height_px;
 
   if(!has_system_bpp)
   {
@@ -270,13 +351,13 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
     return false;
   }
 
-  if(*depth == BPP_AUTO)
+  if(window->bits_per_pixel == BPP_AUTO)
   {
     if(out_depth == 8 || out_depth == 16 || out_depth == 32)
     {
       debug("SDL_VideoModeOK recommends BPP=%d\n", out_depth);
       graphics->bits_per_pixel = out_depth;
-      *depth = out_depth;
+      window->bits_per_pixel = out_depth;
     }
     else
 
@@ -284,7 +365,7 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
     {
       debug("SDL_VideoModeOK recommends unsupported BPP=%d; using 32bpp\n", out_depth);
       graphics->bits_per_pixel = 32;
-      *depth = 32;
+      window->bits_per_pixel = 32;
     }
   }
   return true;
@@ -435,18 +516,20 @@ void sdl_update_colors(struct graphics_data *graphics,
 // software
 // gp2x
 
-boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
+boolean sdl_create_window_soft(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct sdl_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
   SDL_PixelFormat *format;
-  boolean fullscreen_windowed = graphics->fullscreen_windowed;
+  int depth = window->bits_per_pixel;
   boolean matched = false;
   Uint32 fmt;
 
   sdl_destruct_window(graphics);
+
+  auto_fullscreen_size(graphics, window, false);
 
 #if defined(__EMSCRIPTEN__) && SDL_VERSION_ATLEAST(2,0,10)
   // Also, a hint needs to be set to make SDL_UpdateWindowSurface not crash.
@@ -454,8 +537,8 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 #endif
 
   render_data->window = SDL_CreateWindow("MegaZeux",
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-   sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
+   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+   window->width_px, window->height_px, sdl_flags(window));
 
   if(!render_data->window)
   {
@@ -502,7 +585,7 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   debug("Using pixel format: %s\n", SDL_GetPixelFormatName(fmt));
 
   if(depth == BPP_AUTO)
-    graphics->bits_per_pixel = SDL_BYTESPERPIXEL(fmt) * 8;
+    graphics->bits_per_pixel = window->bits_per_pixel = SDL_BYTESPERPIXEL(fmt) * 8;
 
   if(!matched)
   {
@@ -511,8 +594,8 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 
     SDL_PixelFormatEnumToMasks(fmt, &bpp, &Rmask, &Gmask, &Bmask, &Amask);
 
-    render_data->shadow = SDL_CreateRGBSurface(0, width, height, bpp,
-     Rmask, Gmask, Bmask, Amask);
+    render_data->shadow = SDL_CreateRGBSurface(0,
+     window->width_px, window->height_px, bpp, Rmask, Gmask, Bmask, Amask);
 
     debug("Blitting enabled. Rendering performance will be reduced.\n");
   }
@@ -552,17 +635,16 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
     render_data->palette = NULL;
   }
 
-  sdl_window_id = SDL_GetWindowID(render_data->window);
+  window->platform_id = SDL_GetWindowID(render_data->window);
   sdl_set_screensaver_enabled(graphics->disable_screensaver == SCREENSAVER_ENABLE);
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 
-  if(!sdl_check_video_mode(graphics, width, height, &depth,
-   sdl_flags(depth, fullscreen, false, resize)))
+  if(!sdl_check_video_mode(graphics, window, false, sdl_flags(window)))
     return false;
 
-  render_data->screen = SDL_SetVideoMode(width, height, depth,
-   sdl_flags(depth, fullscreen, false, resize));
+  render_data->screen = SDL_SetVideoMode(window->width_px, window->height_px,
+   window->bits_per_pixel, sdl_flags(window));
 
   if(!render_data->screen)
     return false;
@@ -570,7 +652,7 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   render_data->shadow = NULL;
   render_data->flat_format = render_data->screen->format;
 
-  if(depth == 8)
+  if(window->bits_per_pixel == 8)
   {
     render_data->palette_colors =
      (SDL_Color *)ccalloc(SMZX_PAL_SIZE, sizeof(SDL_Color));
@@ -580,6 +662,11 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 
 #endif // !SDL_VERSION_ATLEAST(2,0,0)
 
+  // Wipe the letterbox area, if any.
+  SDL_FillRect(render_data->screen, NULL, 0);
+
+  sdl_set_system_cursor(graphics);
+  sdl_set_window_grab(render_data, window->grab_mouse);
   return true;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -587,6 +674,79 @@ err_free:
   sdl_destruct_window(graphics);
   return false;
 #endif // SDL_VERSION_ATLEAST(2,0,0)
+}
+
+boolean sdl_resize_window(struct graphics_data *graphics,
+ struct video_window *window)
+{
+#if SDL_VERSION_ATLEAST(2,0,0)
+  struct sdl_render_data *render_data = graphics->render_data;
+
+  if(window->is_fullscreen)
+  {
+    // Unlike window creation, SDL can't be nicely provided with a target
+    // resolution for real fullscreen, so MZX has to manually find one.
+    SDL_DisplayMode mode;
+    boolean real_fullscreen = false;
+
+    if(!window->is_fullscreen_windowed &&
+     sdl_get_closest_usable_display_mode(&mode, window->width_px, window->height_px))
+    {
+      debug("\n");
+      debug("selected: %d x %d, %.02fHz, %s\n", mode.w, mode.h,
+       (float)mode.refresh_rate, SDL_GetPixelFormatName(mode.format));
+
+#if SDL_VERSION_ATLEAST(3,0,0)
+      if(SDL_SetWindowFullscreenMode(render_data->window, &mode) &&
+         SDL_SetWindowFullscreen(render_data->window, true))
+#else
+      if(SDL_SetWindowDisplayMode(render_data->window, &mode) == 0 &&
+         SDL_SetWindowFullscreen(render_data->window, SDL_WINDOW_FULLSCREEN) == 0)
+#endif
+      {
+        graphics->resolution_width = mode.w;
+        graphics->resolution_height = mode.h;
+        window->width_px = mode.w;
+        window->height_px = mode.h;
+        real_fullscreen = true;
+      }
+      else
+      {
+        debug("failed to set selected fullscreen mode: %s\n", SDL_GetError());
+        debug("falling back to fullscreen windowed\n");
+      }
+    }
+
+    if(!real_fullscreen)
+    {
+#if SDL_VERSION_ATLEAST(3,0,0)
+      // Select borderless desktop fullscreen.
+      SDL_SetWindowFullscreenMode(render_data->window, NULL);
+      SDL_SetWindowFullscreen(render_data->window, true);
+#else
+      SDL_SetWindowFullscreen(render_data->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+#endif
+    }
+  }
+  else
+  {
+    SDL_SetWindowFullscreen(render_data->window, 0);
+    SDL_SetWindowBordered(render_data->window, 1);
+    SDL_SetWindowResizable(render_data->window, window->allow_resize);
+    // TODO: doesn't seem to reliably work??
+    SDL_SetWindowSize(render_data->window, window->width_px, window->height_px);
+    SDL_SetWindowPosition(render_data->window,
+     SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+  }
+
+  sdl_set_system_cursor(graphics);
+  sdl_set_window_grab(render_data, window->grab_mouse);
+  return true;
+
+#else
+  // SDL_SetVideoMode
+  return sdl_create_window_soft(graphics, window);
+#endif
 }
 
 
@@ -750,20 +910,22 @@ static void find_texture_format(struct graphics_data *graphics,
  * This function will also pick nearest or linear scaling automatically based
  * on the scaling ratio and window size.
  */
-boolean sdlrender_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize,
- uint32_t sdl_rendererflags)
+boolean sdl_create_window_renderer(struct graphics_data *graphics,
+ struct video_window *window, uint32_t sdl_rendererflags)
 {
   struct sdl_render_data *render_data = graphics->render_data;
-  boolean fullscreen_windowed = graphics->fullscreen_windowed;
 
   sdl_destruct_window(graphics);
 
+  auto_fullscreen_size(graphics, window, true);
+
+#if !SDL_VERSION_ATLEAST(2,0,12)
   // Use linear filtering unless the display is being integer scaled.
   if(is_integer_scale(graphics, width, height))
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
   else
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+#endif
 
 #if defined(__EMSCRIPTEN__) && SDL_VERSION_ATLEAST(2,0,10)
   // Not clear if this hint is required to make this renderer not crash, but
@@ -778,8 +940,8 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
   }
 
   render_data->window = SDL_CreateWindow("MegaZeux",
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-   sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
+   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+   window->width_px, window->height_px, sdl_flags(window));
 
   if(!render_data->window)
   {
@@ -807,6 +969,7 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
   }
 
   find_texture_format(graphics, sdl_rendererflags);
+  window->bits_per_pixel = graphics->bits_per_pixel;
 
   if(!render_data->rgb_to_yuv)
   {
@@ -823,13 +986,43 @@ boolean sdlrender_set_video_mode(struct graphics_data *graphics,
   SDL_SetRenderDrawColor(render_data->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
   SDL_RenderClear(render_data->renderer);
 
-  sdl_window_id = SDL_GetWindowID(render_data->window);
+  window->platform_id = SDL_GetWindowID(render_data->window);
   sdl_set_screensaver_enabled(graphics->disable_screensaver == SCREENSAVER_ENABLE);
+  sdl_set_system_cursor(graphics);
+  sdl_set_window_grab(render_data, window->grab_mouse);
   return true;
 
 err_free:
   sdl_destruct_window(graphics);
   return false;
+}
+
+/* Set the texture scaling mode for a given texture.
+ * If allow_non_integer is true, the best is selected given whether or not
+ * the screen is an integer multiple of 640x350. If false, nearest is used.
+ * This only works for SDL 2.0.12 and up; prior should rely on hints. */
+void sdl_set_texture_scale_mode(struct graphics_data *graphics,
+ struct video_window *window, int texture_id, boolean allow_non_integer)
+{
+#if SDL_VERSION_ATLEAST(2,0,12)
+  struct sdl_render_data *render_data =
+   (struct sdl_render_data *)graphics->render_data;
+
+  if(render_data->texture[texture_id])
+  {
+    SDL_ScaleMode mode;
+    if(!allow_non_integer ||
+     is_integer_scale(graphics, window->width_px, window->height_px))
+      mode = SDL_ScaleModeNearest;
+    else
+      mode = SDL_ScaleModeLinear;
+
+    if(SDL_SetTextureScaleMode(render_data->texture[texture_id], mode))
+      warn("Failed to set texture %d scale mode: %s\n", texture_id, SDL_GetError());
+  }
+  else
+    warn("Texture %d is null!\n", texture_id);
+#endif
 }
 
 #endif /* CONFIG_RENDER_SOFTSCALE || CONFIG_RENDER_SDLACCEL */
@@ -842,15 +1035,15 @@ err_free:
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
-boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, boolean fullscreen, boolean resize, struct gl_version req_ver)
+boolean gl_create_window(struct graphics_data *graphics,
+ struct video_window *window, struct gl_version req_ver)
 {
   struct sdl_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  boolean fullscreen_windowed = graphics->fullscreen_windowed;
-
   sdl_destruct_window(graphics);
+
+  auto_fullscreen_size(graphics, window, true);
 
 #ifdef CONFIG_GLES
   // Hints to make SDL use OpenGL ES drivers (e.g. ANGLE) on Windows/Linux.
@@ -884,8 +1077,8 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 #endif
 
   render_data->window = SDL_CreateWindow("MegaZeux",
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, fullscreen_windowed, resize)));
+   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+   window->width_px, window->height_px, GL_STRIP_FLAGS(sdl_flags(window)));
 
   if(!render_data->window)
   {
@@ -907,17 +1100,16 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
     goto err_free;
   }
 
-  sdl_window_id = SDL_GetWindowID(render_data->window);
+  window->platform_id = SDL_GetWindowID(render_data->window);
   sdl_set_screensaver_enabled(graphics->disable_screensaver == SCREENSAVER_ENABLE);
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 
-  if(!sdl_check_video_mode(graphics, width, height, &depth,
-       GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, false, resize))))
+  if(!sdl_check_video_mode(graphics, window, true, GL_STRIP_FLAGS(sdl_flags(window))))
     return false;
 
-  if(!SDL_SetVideoMode(width, height, depth,
-       GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, false, resize))))
+  if(!SDL_SetVideoMode(window->width_px, window->height_px, window->bits_per_pixel,
+       GL_STRIP_FLAGS(sdl_flags(window))))
     return false;
 
 #endif // !SDL_VERSION_ATLEAST(2,0,0)
@@ -925,6 +1117,8 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   render_data->screen = NULL;
   render_data->shadow = NULL;
 
+  sdl_set_system_cursor(graphics);
+  sdl_set_window_grab(render_data, window->grab_mouse);
   return true;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -934,10 +1128,22 @@ err_free:
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 }
 
+boolean gl_resize_window(struct graphics_data *graphics,
+ struct video_window *window)
+{
+#if SDL_VERSION_ATLEAST(2,0,0)
+  return sdl_resize_window(graphics, window);
+#else
+  // SDL_SetVideoMode
+  struct gl_version dummy = { 0, 0 };
+  return gl_create_window(graphics, window, dummy);
+#endif
+}
+
 void gl_set_attributes(struct graphics_data *graphics)
 {
   // Note that this function is called twice- both before and after
-  // gl_set_video_mode
+  // gl_create_window
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
   if(graphics->gl_vsync == 0)

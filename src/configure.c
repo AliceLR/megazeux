@@ -49,6 +49,13 @@
 #define UPDATE_AUTO_CHECK_DEFAULT UPDATE_AUTO_CHECK_SILENT
 #endif
 
+#ifdef __APPLE__
+// Regular fullscreen behaves badly in conjunction with the maximized
+// fullscreen behavior in Mac OS X Lion and later, and can lock the
+// computer on a black screen in Monterey.
+#define FULLSCREEN_WINDOWED_DEFAULT true
+#endif
+
 #ifdef CONFIG_NDS
 #define VIDEO_OUTPUT_DEFAULT "nds"
 #define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
@@ -199,6 +206,10 @@
 #define FULLSCREEN_DEFAULT 0
 #endif
 
+#ifndef FULLSCREEN_WINDOWED_DEFAULT
+#define FULLSCREEN_WINDOWED_DEFAULT false
+#endif
+
 #ifndef VIDEO_RATIO_DEFAULT
 #define VIDEO_RATIO_DEFAULT RATIO_MODERN_64_35
 #endif
@@ -267,7 +278,7 @@ static const struct config_info user_conf_default =
 {
   // Video options
   FULLSCREEN_DEFAULT,           // fullscreen
-  false,                        // fullscreen_windowed
+  FULLSCREEN_WINDOWED_DEFAULT,  // fullscreen_windowed
   FULLSCREEN_WIDTH_DEFAULT,     // resolution_width
   FULLSCREEN_HEIGHT_DEFAULT,    // resolution_height
   640,                          // window_width
@@ -319,7 +330,7 @@ static const struct config_info user_conf_default =
   false,                        // startup_editor
   false,                        // standalone_mode
   false,                        // no_titlescreen
-  false,                        // system_mouse
+  SYSTEM_MOUSE_OFF,             // system_mouse
   false,                        // grab_mouse
   SAVE_SLOTS_DEFAULT,           // save_slots
   "%w.",                        // save_slots_name
@@ -422,8 +433,11 @@ static const struct config_enum cursor_hint_type_values[] =
 
 static const struct config_enum system_mouse_values[] =
 {
-  { "0", 0 },
-  { "1", 1 }
+  { "0", SYSTEM_MOUSE_OFF },
+  { "1", SYSTEM_MOUSE_ON },
+  { "off", SYSTEM_MOUSE_OFF },
+  { "on", SYSTEM_MOUSE_ON },
+  { "only", SYSTEM_MOUSE_HIDE_SOFTWARE_MOUSE },
 };
 
 static const struct config_enum screensaver_disable_values[] =

@@ -109,15 +109,14 @@ struct gl1_render_data
   struct sdl_render_data sdl;
 #endif
   uint32_t *pixels;
-  unsigned int w;
-  unsigned int h;
   GLuint texture_number;
 };
 
 static boolean gl1_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
-  struct gl1_render_data *render_data = cmalloc(sizeof(struct gl1_render_data));
+  struct gl1_render_data *render_data =
+   (struct gl1_render_data *)cmalloc(sizeof(struct gl1_render_data));
 
   if(!render_data)
     goto err_out;
@@ -139,9 +138,6 @@ static boolean gl1_init_video(struct graphics_data *graphics,
   if(conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
-  if(!set_video_mode())
-    goto err_free_render_data;
-
   return true;
 
 err_free_render_data:
@@ -151,10 +147,12 @@ err_out:
   return false;
 }
 
-static void gl1_resize_screen(struct graphics_data *graphics,
- int width, int height)
+static boolean gl1_resize_callback(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct gl1_render_data *render_data = graphics->render_data;
+  int width = window->width_px;
+  int height = window->height_px;
   int v_width, v_height;
 
   get_context_width_height(graphics, &width, &height);
@@ -183,17 +181,17 @@ static void gl1_resize_screen(struct graphics_data *graphics,
    GL_POWER_2_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
   gl_set_filter_method(graphics->gl_filter_method, gl1.glTexParameterf);
+  return true;
 }
 
-static boolean gl1_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean gl1_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct gl1_render_data *render_data = graphics->render_data;
 
   gl_set_attributes(graphics);
 
-  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize,
-   gl_required_version))
+  if(!gl_create_window(graphics, window, gl_required_version))
     return false;
 
   gl_set_attributes(graphics);
@@ -237,18 +235,14 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
   }
 #endif
 
-  render_data->pixels = cmalloc(sizeof(uint32_t) * SCREEN_PIX_W * SCREEN_PIX_H);
+  render_data->pixels = (uint32_t *)cmalloc(sizeof(uint32_t) * SCREEN_PIX_W * SCREEN_PIX_H);
   if(!render_data->pixels)
   {
     gl_cleanup(graphics);
     return false;
   }
 
-  render_data->w = SCREEN_PIX_W;
-  render_data->h = SCREEN_PIX_H;
-
-  gl1_resize_screen(graphics, width, height);
-  return true;
+  return gl1_resize_callback(graphics, window);
 }
 
 static void gl1_free_video(struct graphics_data *graphics)
@@ -257,8 +251,11 @@ static void gl1_free_video(struct graphics_data *graphics)
 
   if(render_data)
   {
-    gl1.glDeleteTextures(1, &render_data->texture_number);
-    gl_check_error();
+    if(gl1.glDeleteTextures)
+    {
+      gl1.glDeleteTextures(1, &render_data->texture_number);
+      gl_check_error();
+    }
 
     gl_cleanup(graphics);
     free(render_data);
@@ -286,11 +283,12 @@ static void gl1_render_graph(struct graphics_data *graphics)
 {
   struct gl1_render_data *render_data = graphics->render_data;
   unsigned int mode = graphics->screen_mode;
+  unsigned pitch = SCREEN_PIX_W * sizeof(uint32_t);
 
   if(!mode)
-    render_graph32(render_data->pixels, render_data->w * 4, graphics);
+    render_graph32(render_data->pixels, pitch, graphics);
   else
-    render_graph32s(render_data->pixels, render_data->w * 4, graphics);
+    render_graph32s(render_data->pixels, pitch, graphics);
 }
 
 static void gl1_render_layer(struct graphics_data *graphics,
@@ -298,8 +296,8 @@ static void gl1_render_layer(struct graphics_data *graphics,
 {
   struct gl1_render_data *render_data = graphics->render_data;
 
-  render_layer(render_data->pixels, render_data->w, render_data->h,
-   render_data->w * 4, 32, graphics, layer);
+  render_layer(render_data->pixels, SCREEN_PIX_W, SCREEN_PIX_H,
+   SCREEN_PIX_W * sizeof(uint32_t), 32, graphics, layer);
 }
 
 static void gl1_render_cursor(struct graphics_data *graphics, unsigned int x,
@@ -307,7 +305,7 @@ static void gl1_render_cursor(struct graphics_data *graphics, unsigned int x,
 {
   struct gl1_render_data *render_data = graphics->render_data;
 
-  render_cursor(render_data->pixels, render_data->w * 4, 32, x, y,
+  render_cursor(render_data->pixels, SCREEN_PIX_W * sizeof(uint32_t), 32, x, y,
    graphics->flat_intensity_palette[color], lines, offset);
 }
 
@@ -316,7 +314,7 @@ static void gl1_render_mouse(struct graphics_data *graphics,
 {
   struct gl1_render_data *render_data = graphics->render_data;
 
-  render_mouse(render_data->pixels, render_data->w * 4, 32, x, y, 0xFFFFFFFF,
+  render_mouse(render_data->pixels, SCREEN_PIX_W * sizeof(uint32_t), 32, x, y, 0xFFFFFFFF,
    0x0, w, h);
 }
 
@@ -334,7 +332,7 @@ static void gl1_sync_screen(struct graphics_data *graphics)
     texture_width, texture_height
   };
 
-  gl1.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, render_data->w, render_data->h,
+  gl1.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SCREEN_PIX_W, SCREEN_PIX_H,
    GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
   gl_check_error();
 
@@ -358,9 +356,10 @@ void render_gl1_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gl1_init_video;
   renderer->free_video = gl1_free_video;
-  renderer->set_video_mode = gl1_set_video_mode;
+  renderer->create_window = gl1_create_window;
+  renderer->resize_window = gl_resize_window;
+  renderer->resize_callback = gl1_resize_callback;
   renderer->update_colors = gl1_update_colors;
-  renderer->resize_screen = gl1_resize_screen;
   renderer->get_screen_coords = get_screen_coords_scaled;
   renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_graph = gl1_render_graph;

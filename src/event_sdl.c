@@ -1008,21 +1008,24 @@ static boolean process_event(SDL_Event *event)
 #if SDL_VERSION_ATLEAST(2,0,0)
     case SDL_WINDOWEVENT:
     {
+      Uint32 sdl_window_id = event->window.windowID;
       switch(event->window.event)
       {
         case SDL_WINDOWEVENT_RESIZED:
         {
+          unsigned window_id = video_window_by_platform_id(sdl_window_id);
           trace(
-            "--EVENT_SDL-- SDL_WINDOWEVENT_RESIZED: (%u,%u)\n",
-            event->window.data1, event->window.data2
+            "--EVENT_SDL-- SDL_WINDOWEVENT_RESIZED: %u (%u,%u)\n",
+            sdl_window_id, event->window.data1, event->window.data2
           );
-          resize_screen(event->window.data1, event->window.data2);
+          video_sync_window_size(window_id,
+           event->window.data1, event->window.data2);
           break;
         }
 
         case SDL_WINDOWEVENT_FOCUS_LOST:
         {
-          trace("--EVENT_SDL-- SDL_WINDOWEVENT_FOCUS_LOST\n");
+          trace("--EVENT_SDL-- SDL_WINDOWEVENT_FOCUS_LOST: %u\n", sdl_window_id);
           // Pause while minimized
           if(input.unfocus_pause)
           {
@@ -1035,7 +1038,7 @@ static boolean process_event(SDL_Event *event)
                 break;
             }
           }
-          trace("--EVENT_SDL-- SDL_WINDOWEVENT_FOCUS_GAINED\n");
+          trace("--EVENT_SDL-- SDL_WINDOWEVENT_FOCUS_GAINED: %u\n", sdl_window_id);
           break;
         }
       }
@@ -1049,7 +1052,8 @@ static boolean process_event(SDL_Event *event)
         "--EVENT_SDL-- SDL_VIDEORESIZE: (%u,%u)\n",
         event->resize.w, event->resize.h
       );
-      resize_screen(event->resize.w, event->resize.h);
+      if(get_config()->allow_resize)
+        video_resize_window(1, event->resize.w, event->resize.h);
       break;
     }
 
@@ -1075,7 +1079,7 @@ static boolean process_event(SDL_Event *event)
 
     case SDL_MOUSEMOTION:
     {
-      SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
+      SDL_Window *window = sdl_get_current_window();
       int mx_real = event->motion.x;
       int my_real = event->motion.y;
       int mx, my, min_x, min_y, max_x, max_y;
@@ -1245,7 +1249,7 @@ static boolean process_event(SDL_Event *event)
        get_alt_status(keycode_internal) &&
        get_ctrl_status(keycode_internal))
       {
-        toggle_fullscreen();
+        video_toggle_fullscreen();
         break;
       }
 
@@ -1643,7 +1647,7 @@ void __wait_event(void)
 
 void __warp_mouse(int x, int y)
 {
-  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
+  SDL_Window *window = sdl_get_current_window();
 
   if((x < 0) || (y < 0))
   {

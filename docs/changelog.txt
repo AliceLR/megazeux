@@ -21,10 +21,41 @@ USERS
   Original Sound Blaster with the old DSP is still unsupported.
 + The DOS port and SDL ports now support mono audio. Mono can be
   selected with the new config option "audio_output_channels".
++ Setting the config option "system_mouse" to "1" or "on" will
+  no longer disable the software cursor. The old behavior can be
+  restored by setting it to "only". The new behavior of "1" is
+  more useful, especially in Wayland (due to forced mouse grab
+  when the system cursor is hidden).
++ macOS now enables fullscreen_windowed by default to work
+  around macOS bugs involving real fullscreen and maximizing.
++ Fixed window resize bugs in Windows, macOS, Linux/BSD (both
+  X11 and Wayland), and probably other operating systems caused
+  by MZX recreating the window after every window resize event.
++ Fixed junk display in the letterbox area after resizing using
+  the software, gp2x, or SDL 1.2 overlay renderers.
++ Fixed sai.frag not being installed by "make install" or
+  distributed with Unix-style packages for Linux/BSD/Darwin.
 + Fixed the board editor show thing hotkeys (broken by 2.93b).
 
 DEVELOPERS
 
++ Split the renderer function "set_video_mode" into two renderer
+  functions "create_window" and "resize_window" to more closely
+  reflect the reality of SDL2/3. The former is used during
+  renderer init and is mandatory; the latter is used to resize
+  and update other window settings like mouse grab/visibility
+  e.g. when switching to/from fullscreen, and is optional. If
+  it is not provided, switching to/from fullscreen will do
+  nothing. "resize_window" is also invoked in SDL 1.2 when a
+  window resize event is received. Some renderers (software,
+  gp2x) still use the same implementation for both functions.
++ Renamed the renderer function "resize_screen" to
+  "resize_callback" to more accurately reflect its purpose. It
+  is called in response to SDL2/3 window resize events and after
+  "resize_window" (by the video functions that call it, see
+  above). This function is now responsible for post-resize
+  maintenance such as glViewport and selecting the filter mode,
+  and is no longer required to call update_screen.
 + Added detection for LoongArch64. 64-bit architectures that
   platform_endian.h fails to identify as such should no longer
   abort in the software layer renderer.

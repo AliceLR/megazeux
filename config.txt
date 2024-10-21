@@ -153,11 +153,12 @@
 
 # If this setting is enabled, instead of regular fullscreen MZX will create
 # a borderless window with the current desktop resolution when fullscreen
-# is enabled. This overrides fullscreen_resolution. Disabled by default.
+# is enabled. This overrides fullscreen_resolution. Disabled by default
+# except on macOS, where it is enabled by default.
 
 # fullscreen_windowed = 0
 
-# The resolution MZX uses in a window. If you renderer supports
+# The resolution MZX uses in a window. If your renderer supports
 # it, MZX will be scaled to fit this specification. Otherwise
 # the setting is ignored.
 
@@ -715,10 +716,11 @@
 
 # mask_midchars = 1
 
-# Set to 1 if you would rather MZX's mouse pointer used the
-# system mouse cursor.
+# Set to 1/"on" to display the system mouse; set to "only" to display ONLY
+# the system mouse (i.e. hide the software mouse cursor). MegaZeux versions
+# prior to 2.93c treated a setting of 1 like "only".
 
-# system_mouse = 0
+# system_mouse = off
 
 # Set to 1 to let MZX grab the mouse pointer while active.
 

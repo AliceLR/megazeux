@@ -99,8 +99,10 @@ static boolean soft_init_video(struct graphics_data *graphics,
 {
   struct soft_render_data *render_data =
    (struct soft_render_data *)ccalloc(1, sizeof(struct soft_render_data));
-  graphics->render_data = render_data;
+  if(!render_data)
+    return false;
 
+  graphics->render_data = render_data;
   graphics->allow_resize = 0;
   graphics->bits_per_pixel = 32;
 
@@ -119,7 +121,7 @@ static boolean soft_init_video(struct graphics_data *graphics,
    conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
-  return set_video_mode();
+  return true;
 }
 
 static void soft_free_video(struct graphics_data *graphics)
@@ -132,20 +134,21 @@ static void soft_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static boolean soft_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean soft_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
 #ifdef CONFIG_SDL
-  return sdl_set_video_mode(graphics, width, height, depth, fullscreen, resize);
+  return sdl_create_window_soft(graphics, window);
 #else
 
-  struct soft_render_data *render_data = graphics->render_data;
+  struct soft_render_data *render_data =
+   (struct soft_render_data *)graphics->render_data;
 
-  graphics->bits_per_pixel = 8;
-  render_data->pitch = (graphics->bits_per_pixel / 8) * SCREEN_PIX_W;
-  render_data->bpp = graphics->bits_per_pixel;
+  window->bits_per_pixel = 8;
+  render_data->pitch = (window->bits_per_pixel / 8) * SCREEN_PIX_W;
+  render_data->bpp = window->bits_per_pixel;
 
-  graphics->renderer_is_headless = true;
+  window->is_headless = true;
   return true;
 
 #endif /* !CONFIG_SDL */
@@ -294,9 +297,9 @@ void render_soft_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = soft_init_video;
   renderer->free_video = soft_free_video;
-  renderer->set_video_mode = soft_set_video_mode;
+  renderer->create_window = soft_create_window;
+  renderer->resize_window = soft_create_window;
   renderer->update_colors = soft_update_colors;
-  renderer->resize_screen = resize_screen_standard;
   renderer->get_screen_coords = get_screen_coords_centered;
   renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = soft_render_graph;
