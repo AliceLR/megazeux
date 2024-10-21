@@ -279,6 +279,18 @@ static void gl1_update_colors(struct graphics_data *graphics,
   }
 }
 
+static void gl1_render_graph(struct graphics_data *graphics)
+{
+  struct gl1_render_data *render_data = graphics->render_data;
+  unsigned int mode = graphics->screen_mode;
+  unsigned pitch = SCREEN_PIX_W * sizeof(uint32_t);
+
+  if(!mode)
+    render_graph32(render_data->pixels, pitch, graphics);
+  else
+    render_graph32s(render_data->pixels, pitch, graphics);
+}
+
 static void gl1_render_layer(struct graphics_data *graphics,
  struct video_layer *layer)
 {
@@ -350,6 +362,7 @@ void render_gl1_register(struct renderer *renderer)
   renderer->update_colors = gl1_update_colors;
   renderer->get_screen_coords = get_screen_coords_scaled;
   renderer->set_screen_coords = set_screen_coords_scaled;
+  renderer->render_graph = gl1_render_graph;
   renderer->render_layer = gl1_render_layer;
   renderer->render_cursor = gl1_render_cursor;
   renderer->render_mouse = gl1_render_mouse;
