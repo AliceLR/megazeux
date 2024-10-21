@@ -304,7 +304,7 @@ jobs:
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
       - uses: actions/checkout@v4
       - name: Configure
-        run: ./config.sh --platform unix-devel --enable-asan
+        run: ./config.sh --platform unix-devel --enable-asan --enable-extram
       - name: Build
         run: $MZX_MAKE
       - name: Run tests
@@ -327,7 +327,7 @@ jobs:
 #          wget https://github.com/AliceLR/megazeux-dependencies/releases/download/v2.93c/megazeux-dependencies-2.93c-r0-linux-msan.tar.xz;
 #          tar -xJf megazeux-dependencies-*-linux-msan.tar.xz)
 #      - name: Configure
-#        run: ./config.sh --platform unix-devel --prefix scripts/deps/linux-msan/x86_64 --enable-msan --disable-sdl --disable-libpng --disable-x11
+#        run: ./config.sh --platform unix-devel --prefix scripts/deps/linux-msan/x86_64 --enable-msan --disable-sdl --disable-libpng --disable-x11 --enable-extram
 #      - name: Build
 #        run: $MZX_MAKE V=1
 #      - name: Run tests
@@ -344,7 +344,7 @@ jobs:
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
       - uses: actions/checkout@v4
       - name: Configure
-        run: ./config.sh --platform unix-devel --enable-ubsan
+        run: ./config.sh --platform unix-devel --enable-ubsan --enable-extram
       - name: Build
         run: $MZX_MAKE
       - name: Run tests
