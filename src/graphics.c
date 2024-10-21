@@ -1885,13 +1885,6 @@ unsigned video_create_window(void)
     set_window_caption(graphics.default_caption);
     set_window_icon();
 
-    // Store the final fullscreen size--it was likely modified.
-    if(graphics.fullscreen)
-    {
-      graphics.resolution_width = window->width_px;
-      graphics.resolution_height = window->height_px;
-    }
-
     // Make sure a BPP was selected by the renderer (if applicable).
     if(window->bits_per_pixel == BPP_AUTO)
       warn("renderer.create_window must auto-select BPP! Report this!\n");
