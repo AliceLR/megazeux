@@ -1861,13 +1861,17 @@ unsigned video_create_window(void)
     window->width_px = graphics.resolution_width;
     window->height_px = graphics.resolution_height;
 
+#ifdef CONFIG_SDL
     // If fullscreen_windowed is enabled, the driver should automatically pick
     // the size of the window in all situations.
+    // TODO: too many console renderers are forcing resolution in init_video,
+    // so only do this for SDL.
     if(graphics.fullscreen_windowed)
     {
       window->width_px = -1;
       window->height_px = -1;
     }
+#endif
   }
   else
   {
