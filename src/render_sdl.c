@@ -206,6 +206,7 @@ static void auto_fullscreen_size(struct graphics_data *graphics,
       window->height_px = graphics->resolution_height;
     }
   }
+  video_window_update_viewport(window);
 }
 
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -708,6 +709,8 @@ boolean sdl_resize_window(struct graphics_data *graphics,
         graphics->resolution_height = mode.h;
         window->width_px = mode.w;
         window->height_px = mode.h;
+        // graphics.c will do this anyway.
+        //video_window_update_viewport(window);
         real_fullscreen = true;
       }
       else
@@ -757,19 +760,6 @@ boolean sdl_resize_window(struct graphics_data *graphics,
 #if defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_SDLACCEL)
 
 #define BEST_RENDERER -1
-
-static boolean is_integer_scale(struct graphics_data *graphics, int width,
- int height)
-{
-  int v_width, v_height;
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-
-  if((v_width / SCREEN_PIX_W * SCREEN_PIX_W == v_width) &&
-   (v_height / SCREEN_PIX_H * SCREEN_PIX_H == v_height))
-    return true;
-
-  return false;
-}
 
 static uint32_t get_format_amask(uint32_t format)
 {
@@ -921,7 +911,7 @@ boolean sdl_create_window_renderer(struct graphics_data *graphics,
 
 #if !SDL_VERSION_ATLEAST(2,0,12)
   // Use linear filtering unless the display is being integer scaled.
-  if(is_integer_scale(graphics, width, height))
+  if(window->is_integer_scaled)
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
   else
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
@@ -1011,8 +1001,7 @@ void sdl_set_texture_scale_mode(struct graphics_data *graphics,
   if(render_data->texture[texture_id])
   {
     SDL_ScaleMode mode;
-    if(!allow_non_integer ||
-     is_integer_scale(graphics, window->width_px, window->height_px))
+    if(!allow_non_integer || window->is_integer_scaled)
       mode = SDL_ScaleModeNearest;
     else
       mode = SDL_ScaleModeLinear;

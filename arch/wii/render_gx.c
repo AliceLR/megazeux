@@ -910,7 +910,8 @@ static void gx_render_mouse(struct graphics_data *graphics,
   GX_End();
 }
 
-static void gx_sync_screen(struct graphics_data *graphics)
+static void gx_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct gx_render_data *render_data = graphics->render_data;
   static u8 tex_ptn[12][2] = {

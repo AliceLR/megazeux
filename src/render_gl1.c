@@ -151,15 +151,9 @@ static boolean gl1_resize_callback(struct graphics_data *graphics,
  struct video_window *window)
 {
   struct gl1_render_data *render_data = graphics->render_data;
-  int width = window->width_px;
-  int height = window->height_px;
-  int v_width, v_height;
 
-  get_context_width_height(graphics, &width, &height);
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-
-  gl1.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
-   v_width, v_height);
+  gl1.glViewport(window->viewport_x, window->viewport_y,
+   window->viewport_width, window->viewport_height);
   gl_check_error();
 
   gl1.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -318,7 +312,8 @@ static void gl1_render_mouse(struct graphics_data *graphics,
    0x0, w, h);
 }
 
-static void gl1_sync_screen(struct graphics_data *graphics)
+static void gl1_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct gl1_render_data *render_data = graphics->render_data;
 

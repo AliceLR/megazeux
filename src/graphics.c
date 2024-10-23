@@ -1276,7 +1276,7 @@ void update_screen(void)
      graphics.mouse_width, graphics.mouse_height);
   }
 
-  graphics.renderer.sync_screen(&graphics);
+  graphics.renderer.sync_screen(&graphics, &(graphics.window));
 }
 
 boolean get_fade_status(void)
@@ -1855,6 +1855,7 @@ unsigned video_create_window(void)
   window->is_fullscreen_windowed = graphics.fullscreen_windowed;
   window->is_headless = false;
   window->allow_resize = graphics.allow_resize;
+  window->ratio = graphics.ratio;
 
   if(graphics.fullscreen)
   {
@@ -1878,6 +1879,7 @@ unsigned video_create_window(void)
     window->width_px = graphics.window_width;
     window->height_px = graphics.window_height;
   }
+  video_window_update_viewport(window);
 
   if(graphics.renderer.create_window(&graphics, window))
   {
@@ -1915,6 +1917,69 @@ unsigned video_window_by_platform_id(unsigned platform_id)
   return 0;
 }
 
+/**
+ * Update the scaled viewport coordinates within the window according to
+ * the window's scaling ratio, for use in SDL update rectangles or glViewport.
+ * This should be called by the renderer any time create_window forces the
+ * window size (SDL window creation functions already handle this).
+ * This is called automatically between resize_window and resize_callback.
+ *
+ * For best results, call glViewport (or equivalent) in either
+ * resize_callback or sync_screen.
+ */
+void video_window_update_viewport(struct video_window *window)
+{
+  /* TODO: this doesn't reduce size much, consider making it universal.
+   * The software renderers might be able to benefit from centering here. */
+#if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
+ || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV) \
+ || defined(CONFIG_RENDER_GX)
+
+  int width = MAX(window->width_px, 1);
+  int height = MAX(window->height_px, 1);
+  int numerator = 1;
+  int denominator = 1;
+
+  if(window->ratio == RATIO_CLASSIC_4_3)
+  {
+    numerator = 4;
+    denominator = 3;
+  }
+  else
+
+  if(window->ratio == RATIO_MODERN_64_35)
+  {
+    numerator = 64;
+    denominator = 35;
+  }
+
+  if(numerator > 1)
+  {
+    // (width / height) < (numerator / denominator)
+    // Multiply both sides by (height * denominator):
+    if(width * denominator < height * numerator)
+    {
+      height = (width * denominator) / numerator;
+      height = MAX(height, 1);
+    }
+    else
+    {
+      width = (height * numerator) / denominator;
+      width = MAX(width, 1);
+    }
+  }
+
+  window->viewport_x = (window->width_px - width) >> 1;
+  window->viewport_y = (window->height_px - height) >> 1;
+  window->viewport_width = width;
+  window->viewport_height = height;
+  window->is_integer_scaled = false;
+
+  if((width % SCREEN_PIX_W == 0) && (height % SCREEN_PIX_H == 0))
+    window->is_integer_scaled = true;
+#endif
+}
+
 /* Sync the current window size after it has ALREADY been changed by the
  * platform or by a call to a graphics.c window resize function.
  * SDL2/3 reports a window resize event after it is resized;
@@ -1937,8 +2002,7 @@ void video_sync_window_size(unsigned window_id,
       graphics.window_width = new_width_px;
       graphics.window_height = new_height_px;
     }
-    // TODO: call fix_viewport_ratio and update the viewport position here
-    // instead of in 50 million other places.
+    video_window_update_viewport(&(graphics.window));
 
     if(graphics.renderer.resize_callback)
       graphics.renderer.resize_callback(&graphics, &graphics.window);

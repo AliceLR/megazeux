@@ -1130,7 +1130,9 @@ static void glsl_render_layer(struct graphics_data *graphics,
   }
 
   // Clamp draw area to size of screen texture.
-  get_context_width_height(graphics, &width, &height);
+  // TODO: do this elsewhere with proper access to the window struct.
+  width = graphics->window.width_px;
+  height = graphics->window.height_px;
   if(width < SCREEN_PIX_W || height < SCREEN_PIX_H)
   {
     if(width >= GL_POWER_2_WIDTH)
@@ -1381,15 +1383,15 @@ static void glsl_render_mouse(struct graphics_data *graphics,
   glsl.glDisable(GL_BLEND);
 }
 
-static void glsl_sync_screen(struct graphics_data *graphics)
+static void glsl_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  int v_width, v_height, width, height;
+  int width = window->width_px;
+  int height = window->height_px;
 
-  get_context_width_height(graphics, &width, &height);
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-  glsl.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
-   v_width, v_height);
+  glsl.glViewport(window->viewport_x, window->viewport_y,
+   window->viewport_width, window->viewport_height);
 
   // Clamp draw area to size of screen texture.
   if(width < SCREEN_PIX_W || height < SCREEN_PIX_H)

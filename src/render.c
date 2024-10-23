@@ -608,12 +608,12 @@ void set_screen_coords_scaled(struct graphics_data *graphics, int x, int y,
 #endif /* CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM ||
  CONFIG_RENDER_YUV */
 
-// FIXME: Integerize
-
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
  || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV) \
  || defined(CONFIG_RENDER_GX)
 
+// FIXME: finish replacement of this function with the window viewport fields.
+// The GX renderer and scaled screen coords functions still use it.
 void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
  enum ratio_type ratio)
 {
@@ -636,7 +636,8 @@ void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
     denominator = 35;
   }
 
-  if(((float)width / (float)height) < ((float)numerator / (float)denominator))
+  //if(((float)width / (float)height) < ((float)numerator / (float)denominator))
+  if(width * denominator < height * numerator)
   {
     height = (width * denominator) / numerator;
     *v_height = MAX(height, 1);

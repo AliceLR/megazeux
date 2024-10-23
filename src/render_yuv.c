@@ -234,20 +234,18 @@ static void yuv_render_mouse(struct graphics_data *graphics,
   yuv_unlock_overlay(render_data);
 }
 
-static void yuv_sync_screen(struct graphics_data *graphics)
+static void yuv_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct yuv_render_data *render_data = graphics->render_data;
   int width = graphics->window.width_px, v_width;
   int height = graphics->window.height_px, v_height;
   SDL_Rect rect;
 
-  // FIXME: Putting this here is suboptimal
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-
-  rect.x = (width - v_width) >> 1;
-  rect.y = (height - v_height) >> 1;
-  rect.w = v_width;
-  rect.h = v_height;
+  rect.x = window->viewport_x;
+  rect.y = window->viewport_y;
+  rect.w = window->viewport_width;
+  rect.h = window->viewport_height;
 
   SDL_DisplayYUVOverlay(render_data->sdl.overlay, &rect);
 }

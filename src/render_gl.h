@@ -71,8 +71,6 @@ boolean gl_load_syms(const struct dso_syms_map *map);
 void gl_set_filter_method(enum gl_filter_type method,
  void (GL_APIENTRY *glTexParameterf_p)(GLenum target, GLenum pname,
   GLfloat param));
-void get_context_width_height(struct graphics_data *graphics,
- int *width, int *height);
 
 // Used to request an OpenGL API version with gl_set_video_mode.
 // Currently this is only used to configure SDL on platforms that require

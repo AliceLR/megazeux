@@ -738,7 +738,8 @@ static void sdlaccel_render_mouse(struct graphics_data *graphics, unsigned x,
   SDL_RenderFillRect(render_data->sdl.renderer, &dest);
 }
 
-static void sdlaccel_sync_screen(struct graphics_data *graphics)
+static void sdlaccel_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct sdlaccel_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
@@ -754,11 +755,10 @@ static void sdlaccel_sync_screen(struct graphics_data *graphics)
   src.w = SCREEN_PIX_W;
   src.h = SCREEN_PIX_H;
 
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-  dest.x = (width - v_width) / 2;
-  dest.y = (height - v_height) / 2;
-  dest.w = v_width;
-  dest.h = v_height;
+  dest_rect.x = window->viewport_x;
+  dest_rect.y = window->viewport_y;
+  dest_rect.w = window->viewport_width;
+  dest_rect.h = window->viewport_height;
 
   SDL_SetRenderTarget(renderer, NULL);
   SDL_RenderCopy(renderer, screen_tex, &src, &dest);

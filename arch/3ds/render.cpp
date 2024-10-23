@@ -1135,7 +1135,8 @@ static inline void ctr_draw_playfield(struct ctr_render_data *render_data,
   }
 }
 
-static void ctr_sync_screen(struct graphics_data *graphics)
+static void ctr_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct ctr_render_data *render_data = (struct ctr_render_data *) graphics->render_data;
 

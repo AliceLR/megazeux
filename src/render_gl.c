@@ -114,18 +114,3 @@ void gl_set_filter_method(enum gl_filter_type method,
   glTexParameterf_p(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameterf_p(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
-
-void get_context_width_height(struct graphics_data *graphics,
- int *width, int *height)
-{
-  if(!graphics->fullscreen)
-  {
-    *width = graphics->window_width;
-    *height = graphics->window_height;
-  }
-  else
-  {
-    *width = graphics->resolution_width;
-    *height = graphics->resolution_height;
-  }
-}

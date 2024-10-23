@@ -482,7 +482,8 @@ static void ega_render_mouse(struct graphics_data *graphics,
   _farnspokeb(dest, _farnspeekb(dest) ^ 0xFF);
 }
 
-static void ega_sync_screen(struct graphics_data *graphics)
+static void ega_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct ega_render_data *render_data = graphics->render_data;
   uint8_t *src = graphics->charset;

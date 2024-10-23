@@ -271,7 +271,8 @@ static void soft_render_mouse(struct graphics_data *graphics,
   soft_unlock_buffer(render_data);
 }
 
-static void soft_sync_screen(struct graphics_data *graphics)
+static void soft_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
 #ifdef CONFIG_SDL
   struct sdl_render_data *render_data = graphics->render_data;

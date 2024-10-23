@@ -136,7 +136,8 @@ static void dc_render_mouse(struct graphics_data *graphics,
    0xFFFFFFFF, 0, w, h);
 }
 
-static void dc_sync_screen(struct graphics_data *graphics)
+static void dc_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct dc_render_data *render_data = graphics->render_data;
   pvr_vertex_t vtx;

@@ -338,7 +338,8 @@ static void xfb_copy_buffer(struct graphics_data *graphics)
   }
 }
 
-static void xfb_sync_screen(struct graphics_data *graphics)
+static void xfb_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct xfb_render_data *render_data = graphics->render_data;
 

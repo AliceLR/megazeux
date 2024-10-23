@@ -143,7 +143,7 @@ struct renderer
                                 boolean enable);
   void    (*render_mouse)     (struct graphics_data *, unsigned x, unsigned y,
                                 unsigned w, unsigned h);
-  void    (*sync_screen)      (struct graphics_data *);
+  void    (*sync_screen)      (struct graphics_data *, struct video_window *);
   void    (*focus_pixel)      (struct graphics_data *, unsigned x, unsigned y);
 };
 
@@ -168,16 +168,18 @@ struct video_window
   // Real size of the window.
   unsigned width_px;
   unsigned height_px;
-  // Scaled viewport size within the window (fix_viewport_ratio).
-  //unsigned viewport_x;
-  //unsigned viewport_y;
-  //unsigned viewport_width;
-  //unsigned viewport_height;
+  // Scaled viewport size within the window (video_window_update_viewport).
+  // Not all renderers use these fields.
+  unsigned viewport_x;
+  unsigned viewport_y;
+  unsigned viewport_width;
+  unsigned viewport_height;
+  enum ratio_type ratio;
 
   unsigned bits_per_pixel;
   boolean is_init;
   boolean is_headless;
-  // These properties are refreshed by calling resize_window.
+  boolean is_integer_scaled;
   boolean is_fullscreen;
   boolean is_fullscreen_windowed;
   boolean allow_resize;
@@ -362,6 +364,7 @@ int get_current_video_output(void);
 unsigned video_create_window(void);
 CORE_LIBSPEC const struct video_window *video_get_window(unsigned window_id);
 unsigned video_window_by_platform_id(unsigned platform_id);
+void video_window_update_viewport(struct video_window *window);
 void video_sync_window_size(unsigned window_id,
  unsigned new_width_px, unsigned new_height_px);
 void video_resize_window(unsigned window_id,

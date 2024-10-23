@@ -299,7 +299,8 @@ static void svga_render_mouse(struct graphics_data *graphics,
    graphics->bits_per_pixel, x, y, mask, 0, w, h);
 }
 
-static void svga_sync_screen(struct graphics_data *graphics)
+static void svga_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct svga_render_data *render_data = graphics->render_data;
   __dpmi_regs reg;

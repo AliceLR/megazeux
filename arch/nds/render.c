@@ -747,7 +747,8 @@ static void nds_render_mouse(struct graphics_data *graphics,
   // stub
 }
 
-static void nds_sync_screen(struct graphics_data *graphics)
+static void nds_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   // stub
 }
