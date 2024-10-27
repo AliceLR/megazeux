@@ -245,7 +245,8 @@ static void gp2x_render_mouse(struct graphics_data *graphics,
    0x0, w, h);
 }
 
-static void gp2x_sync_screen(struct graphics_data *graphics)
+static void gp2x_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
   SDL_Surface *screen = gp2x_get_screen_surface(render_data);

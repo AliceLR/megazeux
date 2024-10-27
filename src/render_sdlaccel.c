@@ -746,19 +746,16 @@ static void sdlaccel_sync_screen(struct graphics_data *graphics,
   SDL_Texture *screen_tex = render_data->sdl.texture[TEX_SCREEN];
   SDL_Rect src;
   SDL_Rect dest;
-  int width = graphics->window.width_px;
-  int height = graphics->window.height_px;
-  int v_width, v_height;
 
   src.x = 0;
   src.y = 0;
   src.w = SCREEN_PIX_W;
   src.h = SCREEN_PIX_H;
 
-  dest_rect.x = window->viewport_x;
-  dest_rect.y = window->viewport_y;
-  dest_rect.w = window->viewport_width;
-  dest_rect.h = window->viewport_height;
+  dest.x = window->viewport_x;
+  dest.y = window->viewport_y;
+  dest.w = window->viewport_width;
+  dest.h = window->viewport_height;
 
   SDL_SetRenderTarget(renderer, NULL);
   SDL_RenderCopy(renderer, screen_tex, &src, &dest);
