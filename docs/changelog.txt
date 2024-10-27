@@ -38,6 +38,8 @@ USERS
 + Fixed the board editor show thing hotkeys (broken by 2.93b).
 + Fixed a crash that would occur in builds using extra memory
   hacks (DOS) when copying blocks between boards in the editor.
++ Fixed text input bugs caused by a 2.93b change accidentally
+  reenabling old deadcode for exiting intake().
 
 DEVELOPERS
 

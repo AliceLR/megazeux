@@ -241,10 +241,10 @@ void sfx_edit(struct world *mzx_world)
         num_elements = counts[page];
         num_sfx = num_elements;
 
+        memset(buffers, 0, sizeof(buffers));
         for(i = 0, pos = offsets[page]; i < num_sfx; i++, pos++)
         {
           const struct custom_sfx *sfx = sfx_get(custom_sfx, pos);
-          buffers[i][0] = '\0';
 
           update_label(sfx, pos, i);
           if(sfx)
