@@ -94,7 +94,7 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
   int currx, curr_len;
   int scrolledx, tmpx;
   int done = 0, place = 0;
-  char cur_char = 0;
+  char tmp_char;
   boolean select_char = false;
   int mouse_press;
   int action;
@@ -122,10 +122,10 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
       tmpx = display_len;
     }
 
-    cur_char = string[tmpx];
+    tmp_char = string[tmpx];
     string[tmpx] = '\0';
     write_string_ext(string + scrolledx, x, y, color, flags, 0, c_offset);
-    string[tmpx] = cur_char;
+    string[tmpx] = tmp_char;
 
     if(curr_len < display_len)
     {
@@ -487,13 +487,6 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
     if(place)
     {
       int num_placed = 0;
-
-      if((cur_char != 0) && (cur_char < 32) && (exit_type == INTK_EXIT_ANY))
-      {
-        done = 1;
-        key = cur_char;
-      }
-      else
 
       while((curr_len < max_len) && (!done) && num_placed < KEY_UNICODE_MAX)
       {
