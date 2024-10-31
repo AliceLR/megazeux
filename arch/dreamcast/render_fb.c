@@ -127,9 +127,8 @@ void render_dc_fb_register(struct renderer *renderer)
   renderer->init_video = dc_fb_init_video;
   renderer->free_video = dc_fb_free_video;
   renderer->create_window = dc_fb_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->update_colors = dc_fb_update_colors;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = dc_fb_render_graph;
   renderer->render_layer = dc_fb_render_layer;
   renderer->render_cursor = dc_fb_render_cursor;

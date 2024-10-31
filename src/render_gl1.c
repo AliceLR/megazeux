@@ -354,9 +354,8 @@ void render_gl1_register(struct renderer *renderer)
   renderer->create_window = gl1_create_window;
   renderer->resize_window = gl_resize_window;
   renderer->resize_callback = gl1_resize_callback;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = gl1_update_colors;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_graph = gl1_render_graph;
   renderer->render_layer = gl1_render_layer;
   renderer->render_cursor = gl1_render_cursor;

@@ -257,9 +257,8 @@ void render_yuv1_register(struct renderer *renderer)
   renderer->free_video = yuv_free_video;
   renderer->create_window = yuv1_set_video_mode;
   renderer->resize_window = yuv1_set_video_mode;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = sdl_update_colors;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_graph = yuv_render_graph;
   renderer->render_layer = yuv1_render_layer;
   renderer->render_cursor = yuv_render_cursor;

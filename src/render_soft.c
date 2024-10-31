@@ -300,9 +300,8 @@ void render_soft_register(struct renderer *renderer)
   renderer->free_video = soft_free_video;
   renderer->create_window = soft_create_window;
   renderer->resize_window = soft_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->update_colors = soft_update_colors;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = soft_render_graph;
   renderer->render_layer = soft_render_layer;
   renderer->render_cursor = soft_render_cursor;

@@ -44,6 +44,7 @@ enum ratio_type
   RATIO_CLASSIC_4_3,
   RATIO_MODERN_64_35,
   RATIO_STRETCH,
+  RATIO_SQUARE_1_1, // internal use only
   NUM_RATIO_TYPES
 };
 

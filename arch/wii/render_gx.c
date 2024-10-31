@@ -382,7 +382,7 @@ static boolean gx_create_window(struct graphics_data *graphics,
 {
   struct gx_render_data *render_data = graphics->render_data;
   float x, y, w, h, scale, xscale, yscale;
-  int fh, fs, sw, sh, dw, dh;
+  int fh;
 
   if(window->is_fullscreen)
     scale = 8.0 / 9.0;
@@ -393,20 +393,21 @@ static boolean gx_create_window(struct graphics_data *graphics,
     fh = 574;
   else
     fh = 480;
-  fs = fh * 720;
 
   if(CONF_GetAspectRatio() == CONF_ASPECT_16_9)
   {
-    sw = fs * 16;
-    sh = fs * 9;
-  }
-  else
-  {
-    sw = fs * 4;
-    sh = fs * 3;
+    // 4:3 stretched to 16:9; correct ratio for non-square pixels.
+    if(window->ratio == RATIO_CLASSIC_4_3)
+      window->ratio = RATIO_SQUARE_1_1;
+    else
+
+    if(window->ratio == RATIO_MODERN_64_35)
+      window->ratio = RATIO_CLASSIC_4_3;
   }
 
-  fix_viewport_ratio(sw, sh, &dw, &dh, graphics->ratio);
+  window->width_px = 720;
+  window->height_px = fh;
+  video_window_update_viewport(window);
 
   if(render_data->rmode->viWidth > render_data->rmode->fbWidth)
     xscale = (float)render_data->rmode->fbWidth / render_data->rmode->viWidth;
@@ -414,10 +415,10 @@ static boolean gx_create_window(struct graphics_data *graphics,
     xscale = 1.0;
   yscale = (float)render_data->rmode->efbHeight / render_data->rmode->viHeight;
 
-  w = (float)dw * 720 / sw * scale;
-  h = (float)dh * fh / sh * scale;
-  x = (720 - w) / 2 - render_data->rmode->viXOrigin;
-  y = (fh - h) / 2 - render_data->rmode->viYOrigin;
+  w = window->viewport_width * scale;
+  h = window->viewport_height * scale;
+  x = (window->width_px - w) / 2 - render_data->rmode->viXOrigin;
+  y = (window->height_px - h) / 2 - render_data->rmode->viYOrigin;
   w *= xscale; h *= yscale; x *= xscale; y *= yscale;
 
   render_data->sx0 = x;
@@ -960,12 +961,11 @@ void render_gx_register(struct renderer *renderer)
   renderer->free_video = gx_free_video;
   renderer->create_window = gx_create_window;
   renderer->resize_window = gx_create_window;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = gx_update_colors;
   renderer->remap_char_range = gx_remap_char_range;
   renderer->remap_char = gx_remap_char;
   renderer->remap_charbyte = gx_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_layer = gx_render_layer;
   renderer->render_cursor = gx_render_cursor;
   renderer->render_mouse = gx_render_mouse;

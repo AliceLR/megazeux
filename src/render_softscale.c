@@ -290,9 +290,8 @@ void render_softscale_register(struct renderer *renderer)
   renderer->create_window = softscale_create_window;
   renderer->resize_window = sdl_resize_window;
   renderer->resize_callback = softscale_resize_callback;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = sdl_update_colors;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_graph = softscale_render_graph;
   renderer->render_layer = softscale_render_layer;
   renderer->render_cursor = softscale_render_cursor;

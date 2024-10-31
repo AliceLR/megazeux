@@ -343,9 +343,8 @@ void render_svga_register(struct renderer *renderer)
   renderer->init_video = svga_init_video;
   renderer->free_video = svga_free_video;
   renderer->create_window = svga_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->update_colors = svga_update_colors;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = svga_render_graph;
   renderer->render_layer = svga_render_layer;
   renderer->render_cursor = svga_render_cursor;

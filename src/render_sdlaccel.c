@@ -776,12 +776,11 @@ void render_sdlaccel_register(struct renderer *renderer)
   renderer->create_window = sdlaccel_create_window;
   renderer->resize_window = sdl_resize_window;
   renderer->resize_callback = sdlaccel_resize_callback;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = sdlaccel_update_colors;
   renderer->remap_char_range = sdlaccel_remap_char_range;
   renderer->remap_char = sdlaccel_remap_char;
   renderer->remap_charbyte = sdlaccel_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_layer = sdlaccel_render_layer;
   renderer->render_cursor = sdlaccel_render_cursor;
   renderer->render_mouse = sdlaccel_render_mouse;

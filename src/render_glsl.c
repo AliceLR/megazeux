@@ -1561,12 +1561,11 @@ void render_glsl_register(struct renderer *renderer)
   renderer->create_window = glsl_create_window;
   renderer->resize_window = gl_resize_window;
   renderer->resize_callback = glsl_resize_callback;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = glsl_update_colors;
   renderer->remap_char_range = glsl_remap_char_range;
   renderer->remap_char = glsl_remap_char;
   renderer->remap_charbyte = glsl_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_layer = glsl_render_layer;
   renderer->render_cursor = glsl_render_cursor;
   renderer->render_mouse = glsl_render_mouse;

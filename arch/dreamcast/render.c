@@ -188,9 +188,8 @@ void render_dc_register(struct renderer *renderer)
   renderer->init_video = dc_init_video;
   renderer->free_video = dc_free_video;
   renderer->create_window = dc_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->update_colors = dc_update_colors;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = dc_render_graph;
   renderer->render_layer = dc_render_layer;
   renderer->render_cursor = dc_render_cursor;

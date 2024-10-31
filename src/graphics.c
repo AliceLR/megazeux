@@ -1929,55 +1929,18 @@ unsigned video_window_by_platform_id(unsigned platform_id)
  */
 void video_window_update_viewport(struct video_window *window)
 {
-  /* TODO: this doesn't reduce size much, consider making it universal.
-   * The software renderers might be able to benefit from centering here. */
-#if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
- || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV) \
- || defined(CONFIG_RENDER_GX)
-
-  int width = MAX(window->width_px, 1);
-  int height = MAX(window->height_px, 1);
-  int numerator = 1;
-  int denominator = 1;
-
-  if(window->ratio == RATIO_CLASSIC_4_3)
+  if(graphics.renderer.set_viewport)
   {
-    numerator = 4;
-    denominator = 3;
+    graphics.renderer.set_viewport(&graphics, window);
   }
   else
-
-  if(window->ratio == RATIO_MODERN_64_35)
   {
-    numerator = 64;
-    denominator = 35;
+    window->viewport_x = 0;
+    window->viewport_y = 0;
+    window->viewport_width = window->width_px;
+    window->viewport_height = window->height_px;
+    window->is_integer_scaled = false;
   }
-
-  if(numerator > 1)
-  {
-    // (width / height) < (numerator / denominator)
-    // Multiply both sides by (height * denominator):
-    if(width * denominator < height * numerator)
-    {
-      height = (width * denominator) / numerator;
-      height = MAX(height, 1);
-    }
-    else
-    {
-      width = (height * numerator) / denominator;
-      width = MAX(width, 1);
-    }
-  }
-
-  window->viewport_x = (window->width_px - width) >> 1;
-  window->viewport_y = (window->height_px - height) >> 1;
-  window->viewport_width = width;
-  window->viewport_height = height;
-  window->is_integer_scaled = false;
-
-  if((width % SCREEN_PIX_W == 0) && (height % SCREEN_PIX_H == 0))
-    window->is_integer_scaled = true;
-#endif
 }
 
 /* Sync the current window size after it has ALREADY been changed by the
@@ -3174,13 +3137,34 @@ boolean get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y)
 {
-  graphics.renderer.get_screen_coords(&graphics, screen_x, screen_y, x, y,
-   min_x, min_y, max_x, max_y);
+#if 0
+  if(graphics.renderer.get_screen_coords)
+  {
+    graphics.renderer.get_screen_coords(&graphics, &(graphics.window),
+     screen_x, screen_y, x, y, min_x, min_y, max_x, max_y);
+  }
+  else
+#endif
+  {
+    get_screen_coords_viewport(&graphics, &(graphics.window),
+     screen_x, screen_y, x, y, min_x, min_y, max_x, max_y);
+  }
 }
 
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y)
 {
-  graphics.renderer.set_screen_coords(&graphics, x, y, screen_x, screen_y);
+#if 0
+  if(graphics.renderer.set_screen_coords)
+  {
+    graphics.renderer.set_screen_coords(&graphics, &(graphics.window),
+     x, y, screen_x, screen_y);
+  }
+  else
+#endif
+  {
+    set_screen_coords_viewport(&graphics, &(graphics.window),
+     x, y, screen_x, screen_y);
+  }
 }
 
 void focus_screen(int x, int y)

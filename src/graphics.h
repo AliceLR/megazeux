@@ -122,17 +122,20 @@ struct renderer
   boolean (*create_window)    (struct graphics_data *, struct video_window *);
   boolean (*resize_window)    (struct graphics_data *, struct video_window *);
   boolean (*resize_callback)  (struct graphics_data *, struct video_window *);
+  void    (*set_viewport)     (struct graphics_data *, struct video_window *);
+#if 0
+  void    (*get_screen_coords)(struct graphics_data *, struct video_window *,
+                                int screen_x, int screen_y, int *x, int *y,
+                                int *min_x, int *min_y, int *max_x, int *max_y);
+  void    (*set_screen_coords)(struct graphics_data *, struct video_window *,
+                                int x, int y, int *screen_x, int *screen_y);
+#endif
   boolean (*set_screen_mode)  (struct graphics_data *, unsigned mode);
   void    (*update_colors)    (struct graphics_data *, struct rgb_color *palette,
                                 unsigned int count);
   void    (*remap_char_range) (struct graphics_data *, uint16_t first, uint16_t count);
   void    (*remap_char)       (struct graphics_data *, uint16_t chr);
   void    (*remap_charbyte)   (struct graphics_data *, uint16_t chr, uint8_t byte);
-  void    (*get_screen_coords)(struct graphics_data *, int screen_x,
-                                int screen_y, int *x, int *y, int *min_x,
-                                int *min_y, int *max_x, int *max_y);
-  void    (*set_screen_coords)(struct graphics_data *, int x, int y,
-                                int *screen_x, int *screen_y);
   boolean (*switch_shader)    (struct graphics_data *, const char *name);
   void    (*render_graph)     (struct graphics_data *);
   void    (*render_layer)     (struct graphics_data *, struct video_layer *);
@@ -169,7 +172,7 @@ struct video_window
   unsigned width_px;
   unsigned height_px;
   // Scaled viewport size within the window (video_window_update_viewport).
-  // Not all renderers use these fields.
+  // These variables are used to convert from screen space to real window space.
   unsigned viewport_x;
   unsigned viewport_y;
   unsigned viewport_width;
