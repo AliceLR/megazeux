@@ -1920,6 +1920,9 @@ unsigned video_window_by_platform_id(unsigned platform_id)
 /**
  * Update the scaled viewport coordinates within the window according to
  * the window's scaling ratio, for use in SDL update rectangles or glViewport.
+ * The viewport is also used to translate mouse coordinates between screen
+ * and window space.
+ *
  * This should be called by the renderer any time create_window forces the
  * window size (SDL window creation functions already handle this).
  * This is called automatically between resize_window and resize_callback.
@@ -1935,6 +1938,7 @@ void video_window_update_viewport(struct video_window *window)
   }
   else
   {
+    debug("Implement set_viewport!");
     window->viewport_x = 0;
     window->viewport_y = 0;
     window->viewport_width = window->width_px;
