@@ -173,10 +173,10 @@ struct video_window
   unsigned height_px;
   // Scaled viewport size within the window (video_window_update_viewport).
   // These variables are used to convert from screen space to real window space.
-  unsigned viewport_x;
-  unsigned viewport_y;
-  unsigned viewport_width;
-  unsigned viewport_height;
+  int viewport_x;
+  int viewport_y;
+  int viewport_width;
+  int viewport_height;
   enum ratio_type ratio;
 
   unsigned bits_per_pixel;

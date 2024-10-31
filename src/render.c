@@ -534,16 +534,14 @@ void set_screen_coords_viewport(struct graphics_data *graphics,
 void set_window_viewport_centered(struct graphics_data *graphics,
  struct video_window *window)
 {
-  window->viewport_x = (window->width_px - SCREEN_PIX_W) >> 1;
-  window->viewport_y = (window->height_px - SCREEN_PIX_H) >> 1;
+  window->viewport_x = ((int)window->width_px - SCREEN_PIX_W) >> 1;
+  window->viewport_y = ((int)window->height_px - SCREEN_PIX_H) >> 1;
   window->viewport_width = SCREEN_PIX_W;
   window->viewport_height = SCREEN_PIX_H;
   window->is_integer_scaled = true;
 }
 
-#if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
- || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV) \
- || defined(CONFIG_RENDER_GX)
+#ifdef HAVE_SET_WINDOW_VIEWPORT_SCALED
 
 void set_window_viewport_scaled(struct graphics_data *graphics,
  struct video_window *window)
@@ -588,8 +586,8 @@ void set_window_viewport_scaled(struct graphics_data *graphics,
     }
   }
 
-  window->viewport_x = (window->width_px - width) >> 1;
-  window->viewport_y = (window->height_px - height) >> 1;
+  window->viewport_x = ((int)window->width_px - width) >> 1;
+  window->viewport_y = ((int)window->height_px - height) >> 1;
   window->viewport_width = width;
   window->viewport_height = height;
   window->is_integer_scaled = false;
@@ -598,5 +596,4 @@ void set_window_viewport_scaled(struct graphics_data *graphics,
     window->is_integer_scaled = true;
 }
 
-#endif /* CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM ||
- CONFIG_RENDER_YUV || CONFIG_RENDER_GX */
+#endif /* HAVE_SET_WINDOW_VIEWPORT_SCALED */

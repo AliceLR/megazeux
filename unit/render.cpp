@@ -1077,3 +1077,226 @@ UNITTEST(reference_renderer_smzx32)
   SECTION(misclip_tr)   test::misclip_tr(DIR "32stc.tga.gz");
   SECTION(large)        test::large(DIR "32sxl.tga.gz");
 }
+
+struct viewport_test
+{
+  struct
+  {
+    int w;
+    int h;
+    ratio_type ratio;
+  } in;
+
+  struct
+  {
+    int x;
+    int y;
+    int w;
+    int h;
+    boolean is_integer_scaled;
+  } out;
+};
+
+template<void (*set_viewport_fn)(struct graphics_data *graphics,
+ struct video_window *window)>
+static void test_set_window_viewport(struct graphics_data *graphics,
+ struct video_window *window, const viewport_test &test)
+{
+  window->width_px = test.in.w;
+  window->height_px = test.in.h;
+  window->ratio = test.in.ratio;
+
+  set_viewport_fn(graphics, window);
+
+  const char *ratio_str =
+   (test.in.ratio == RATIO_MODERN_64_35) ? "64:35" :
+   (test.in.ratio == RATIO_CLASSIC_4_3) ? "4:3" :
+   (test.in.ratio == RATIO_STRETCH) ? "stretch" :
+   (test.in.ratio == RATIO_SQUARE_1_1) ? "1:1" : "?";
+
+#undef OUT_STR
+#define OUT_STR "%d, %d, %s", test.in.w, test.in.h, ratio_str
+
+  ASSERTEQ(window->viewport_x, test.out.x, OUT_STR);
+  ASSERTEQ(window->viewport_y, test.out.y, OUT_STR);
+  ASSERTEQ(window->viewport_width, test.out.w, OUT_STR);
+  ASSERTEQ(window->viewport_height, test.out.h, OUT_STR);
+  ASSERTEQ(window->is_integer_scaled, test.out.is_integer_scaled, OUT_STR);
+}
+
+/* Screen-sized viewport, centered regardless of window size. */
+UNITTEST(set_window_viewport_centered)
+{
+  static constexpr viewport_test data[] =
+  {
+    { { 640, 350, RATIO_MODERN_64_35 },   { 0, 0, 640, 350, true } },
+    { { 640, 480, RATIO_CLASSIC_4_3 },    { 0, 65, 640, 350, true } },
+    { { 1280, 350, RATIO_MODERN_64_35 },  { 320, 0, 640, 350, true }},
+    { { 1280, 700, RATIO_MODERN_64_35 },  { 320, 175, 640, 350, true } },
+    { { 320, 240, RATIO_MODERN_64_35 },   { -160, -55, 640, 350, true } },
+    { { 0, 0, RATIO_MODERN_64_35 },       { -320, -175, 640, 350, true } },
+  };
+  struct graphics_data graphics{};
+  struct video_window window{};
+
+  for(auto &d : data)
+    test_set_window_viewport<set_window_viewport_centered>(&graphics, &window, d);
+}
+
+/* Viewport scaled to fit the window according to the requested ratio. */
+UNITTEST(set_window_viewport_scaled)
+{
+  static constexpr viewport_test data[] =
+  {
+    { { 640, 350, RATIO_MODERN_64_35 },   { 0, 0, 640, 350, true } },
+    { { 640, 480, RATIO_CLASSIC_4_3 },    { 0, 0, 640, 480, false } },
+    { { 640, 560, RATIO_STRETCH },        { 0, 0, 640, 560, false } },
+    { { 640, 640, RATIO_SQUARE_1_1 },     { 0, 0, 640, 640, false } },
+    { { 1280, 350, RATIO_MODERN_64_35 },  { 320, 0, 640, 350, true } },
+    { { 1280, 350, RATIO_STRETCH },       { 0, 0, 1280, 350, true } },
+    { { 1280, 700, RATIO_MODERN_64_35 },  { 0, 0, 1280, 700, true } },
+    { { 1280, 1024, RATIO_MODERN_64_35 }, { 0, 162, 1280, 700, true } },
+    { { 1366, 768, RATIO_MODERN_64_35 },  { 0, 10, 1366, 747, false } },
+    { { 1366, 768, RATIO_CLASSIC_4_3 },   { 171, 0, 1024, 768, false } },
+    { { 1366, 768, RATIO_STRETCH },       { 0, 0, 1366, 768, false } },
+    { { 1366, 768, RATIO_SQUARE_1_1 },    { 299, 0, 768, 768, false } },
+    { { 320, 240, RATIO_MODERN_64_35 },   { 0, 32, 320, 175, false } },
+    { { 320, 240, RATIO_CLASSIC_4_3 },    { 0, 0, 320, 240, false } },
+    { { 320, 240, RATIO_SQUARE_1_1 },     { 40, 0, 240, 240, false } },
+    { { 1920, 1080, RATIO_MODERN_64_35 }, { 0, 15, 1920, 1050, true } },
+    { { 1920, 1080, RATIO_CLASSIC_4_3 },  { 240, 0, 1440, 1080, false } },
+    { { 1920, 1080, RATIO_STRETCH },      { 0, 0, 1920, 1080, false } },
+    { { 0, 0, RATIO_MODERN_64_35 },       { -1, -1, 1, 1, false } },
+    { { 25600, 16800, RATIO_CLASSIC_4_3 },{ 1600, 0, 22400, 16800, true } },
+  };
+  struct graphics_data graphics{};
+  struct video_window window{};
+
+  for(auto &d : data)
+    test_set_window_viewport<set_window_viewport_scaled>(&graphics, &window, d);
+}
+
+struct viewport_coords_test
+{
+  struct
+  {
+    int x;
+    int y;
+    int w;
+    int h;
+  } viewport;
+
+  struct
+  {
+    int x;
+    int y;
+  } in;
+
+  struct
+  {
+    int x;
+    int y;
+  } out;
+};
+
+/* Window space -> screen space conversion for updating the logical mouse position.
+ * Also returns the minimum and maximum viewport coordinates. */
+UNITTEST(get_screen_coords_viewport)
+{
+  static constexpr viewport_coords_test data[] =
+  {
+    { { 0, 0, 640, 350 }, { 456, 123 }, { 456, 123 } },
+    /* Clamp coordinates within the logical screen. */
+    { { 0, 0, 640, 350 }, { -1, -1 }, { 0, 0 } },
+    { { 0, 0, 640, 350 }, { 1000, 1000 }, { 639, 349 } },
+    /* Downscale coordinates of 2x window */
+    { { 0, 0, 1280, 700 }, { 1234, 456 }, { 617, 228 } },
+    { { 0, 0, 1280, 700 }, { 1279, 699 }, { 639, 349 } },
+    /* Upscale coordinates of GP2X half-size 4:3 window. */
+    { { 0, 0, 320, 240 }, { 160, 120 }, { 320, 175 } },
+    { { 0, 0, 320, 240 }, { 319, 239 }, { 638, 348 } },
+    /* 1920x1080 with 64:35 (15px letterbox top and bottom). */
+    { { 0, 15, 1920, 1050 }, { 0, 0 }, { 0, 0 } },
+    { { 0, 15, 1920, 1050 }, { 1600, 1079 }, { 533, 349 } },
+    { { 0, 15, 1920, 1050 }, { 1919, 17 }, { 639, 0 } },
+    { { 0, 15, 1920, 1050 }, { 1919, 18 }, { 639, 1 } },
+    { { 0, 15, 1920, 1050 }, { 1919, 20 }, { 639, 1 } },
+    { { 0, 15, 1920, 1050 }, { 1919, 21 }, { 639, 2 } },
+  };
+  struct graphics_data graphics{};
+  struct video_window window{};
+
+  for(auto &d : data)
+  {
+    window.viewport_x = d.viewport.x;
+    window.viewport_y = d.viewport.y;
+    window.viewport_width = d.viewport.w;
+    window.viewport_height = d.viewport.h;
+
+#define NO_VALUE -65536
+    int x = NO_VALUE;
+    int y = NO_VALUE;
+    int min_x = NO_VALUE;
+    int min_y = NO_VALUE;
+    int max_x = NO_VALUE;
+    int max_y = NO_VALUE;
+    get_screen_coords_viewport(&graphics, &window, d.in.x, d.in.y,
+     &x, &y, &min_x, &min_y, &max_x, &max_y);
+
+#undef OUT_STR
+#define OUT_STR "%d,%d { %d,%d %dx%d }", d.in.x, d.in.y, \
+ d.viewport.x, d.viewport.y, d.viewport.w, d.viewport.h
+
+    ASSERTEQ(x, d.out.x, OUT_STR);
+    ASSERTEQ(y, d.out.y, OUT_STR);
+    ASSERTEQ(min_x, d.viewport.x, OUT_STR);
+    ASSERTEQ(min_y, d.viewport.y, OUT_STR);
+    ASSERTEQ(max_x, d.viewport.x + d.viewport.w - 1, OUT_STR);
+    ASSERTEQ(max_y, d.viewport.y + d.viewport.h - 1, OUT_STR);
+  }
+}
+
+/* Screen space -> window space conversion for warping the system mouse. */
+UNITTEST(set_screen_coords_viewport)
+{
+  static constexpr viewport_coords_test data[] =
+  {
+    { { 0, 0, 640, 350 }, { 456, 123 }, { 456, 123 } },
+    /* No clamping within the window currently */
+    { { 0, 0, 640, 350 }, { -1, -1 }, { -1, -1 } },
+    { { 0, 0, 640, 350 }, { 1000, 1000 }, { 1000, 1000 } },
+    /* Upscale coordinates of 2x window. */
+    { { 0, 10, 1280, 700 }, { 320, 175 }, { 640, 360 } },
+    { { 0, 100, 1280, 700 }, { 320, 175 }, { 640, 450 } },
+    { { 0, 0, 1280, 700 }, { 639, 349 }, { 1278, 698 } },
+    /* Downscale coordinates of GP2X half-size 4:3 window. */
+    { { 0, 0, 320, 240 }, { 320, 175 }, { 160, 120 } },
+    { { 0, 0, 320, 240 }, { 639, 349 }, { 319, 239 } },
+    { { 160, 120, 320, 240 }, { -2, -2 }, { 159, 119 } },
+    { { 160, 120, 320, 240 }, { -1, -1 }, { 160, 120 } },
+    { { 160, 120, 320, 240 }, { 0, 0 }, { 160, 120 } },
+    { { 160, 120, 320, 240 }, { 1, 1 }, { 160, 120 } },
+    { { 160, 120, 320, 240 }, { 2, 2 }, { 161, 121 } },
+    /* Upscale coordinates of 1920x1080 (3x) window. */
+    { { 0, 15, 1920, 1050 }, { 0, 0 }, { 0, 15 } },
+    { { 0, 15, 1920, 1050 }, { 320, 175 }, { 960, 540 } },
+    { { 0, 15, 1920, 1050 }, { 639, 349 }, { 1917, 1062 } },
+  };
+  struct graphics_data graphics{};
+  struct video_window window{};
+
+  for(auto &d : data)
+  {
+    window.viewport_x = d.viewport.x;
+    window.viewport_y = d.viewport.y;
+    window.viewport_width = d.viewport.w;
+    window.viewport_height = d.viewport.h;
+
+    int x = NO_VALUE;
+    int y = NO_VALUE;
+    set_screen_coords_viewport(&graphics, &window, d.in.x, d.in.y, &x, &y);
+
+    ASSERTEQ(x, d.out.x, OUT_STR);
+    ASSERTEQ(y, d.out.y, OUT_STR);
+  }
+}

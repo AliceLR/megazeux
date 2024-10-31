@@ -64,14 +64,16 @@ void set_window_viewport_centered(struct graphics_data *graphics,
  struct video_window *window);
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
- || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV) \
- || defined(CONFIG_RENDER_GX)
+ || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_SDLACCEL) \
+ || defined(CONFIG_RENDER_YUV) || defined(CONFIG_RENDER_GX) \
+ || defined(MZX_UNIT_TESTS)
+
+#define HAVE_SET_WINDOW_VIEWPORT_SCALED
 
 void set_window_viewport_scaled(struct graphics_data *graphics,
  struct video_window *window);
 
-#endif /* CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM ||
- CONFIG_RENDER_YUV || CONFIG_RENDER_GX */
+#endif /* CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM || ... */
 
 __M_END_DECLS
 
