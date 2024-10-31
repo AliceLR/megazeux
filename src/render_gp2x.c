@@ -211,6 +211,27 @@ static void gp2x_set_window_viewport(struct graphics_data *graphics,
   window->is_integer_scaled = false;
 }
 
+#if 0
+static void gp2x_get_screen_coords(struct graphics_data *graphics,
+ int screen_x, int screen_y, int *x, int *y, int *min_x, int *min_y,
+ int *max_x, int *max_y)
+{
+  *x = screen_x * 2;
+  *y = screen_y * 35 / 24;
+  *min_x = 0;
+  *min_y = 0;
+  *max_x = 319;
+  *max_y = 239;
+}
+
+static void gp2x_set_screen_coords(struct graphics_data *graphics,
+ int x, int y, int *screen_x, int *screen_y)
+{
+  *screen_x = x / 2;
+  *screen_y = y * 24 / 35;
+}
+#endif
+
 static void gp2x_render_graph(struct graphics_data *graphics)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
