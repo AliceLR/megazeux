@@ -546,31 +546,12 @@ void set_window_viewport_centered(struct graphics_data *graphics,
 void set_window_viewport_scaled(struct graphics_data *graphics,
  struct video_window *window)
 {
-  int numerator = 0, denominator = 0;
+  int numerator = window->ratio_numerator;
+  int denominator = window->ratio_denominator;
   int width = MAX(window->width_px, 1);
   int height = MAX(window->height_px, 1);
 
-  if(window->ratio == RATIO_CLASSIC_4_3)
-  {
-    numerator = 4;
-    denominator = 3;
-  }
-  else
-
-  if(window->ratio == RATIO_MODERN_64_35)
-  {
-    numerator = 64;
-    denominator = 35;
-  }
-  else
-
-  if(window->ratio == RATIO_SQUARE_1_1)
-  {
-    numerator = 1;
-    denominator = 1;
-  }
-
-  if(numerator > 0)
+  if(numerator > 0 && denominator > 0)
   {
     // (width / height) < (numerator / denominator)
     // Multiply both sides by (height * denominator):

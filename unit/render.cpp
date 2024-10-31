@@ -1084,7 +1084,14 @@ struct viewport_test
   {
     int w;
     int h;
-    ratio_type ratio;
+#define STRETCH 0, 0
+#define MODERN_64_35 64, 35
+#define CLASSIC_4_3 4, 3
+// GX stretched widescreen ratios (4:3 pixel aspect ratio).
+#define MODERN_64_35_GX (64 * 3), (35 * 4)
+#define CLASSIC_4_3_GX (4 * 3), (3 * 4)
+    int n;
+    int d;
   } in;
 
   struct
@@ -1104,18 +1111,13 @@ static void test_set_window_viewport(struct graphics_data *graphics,
 {
   window->width_px = test.in.w;
   window->height_px = test.in.h;
-  window->ratio = test.in.ratio;
+  window->ratio_numerator = test.in.n;
+  window->ratio_denominator = test.in.d;
 
   set_viewport_fn(graphics, window);
 
-  const char *ratio_str =
-   (test.in.ratio == RATIO_MODERN_64_35) ? "64:35" :
-   (test.in.ratio == RATIO_CLASSIC_4_3) ? "4:3" :
-   (test.in.ratio == RATIO_STRETCH) ? "stretch" :
-   (test.in.ratio == RATIO_SQUARE_1_1) ? "1:1" : "?";
-
 #undef OUT_STR
-#define OUT_STR "%d, %d, %s", test.in.w, test.in.h, ratio_str
+#define OUT_STR "%d, %d (%d:%d)", test.in.w, test.in.h, test.in.n, test.in.d
 
   ASSERTEQ(window->viewport_x, test.out.x, OUT_STR);
   ASSERTEQ(window->viewport_y, test.out.y, OUT_STR);
@@ -1129,12 +1131,19 @@ UNITTEST(set_window_viewport_centered)
 {
   static constexpr viewport_test data[] =
   {
-    { { 640, 350, RATIO_MODERN_64_35 },   { 0, 0, 640, 350, true } },
-    { { 640, 480, RATIO_CLASSIC_4_3 },    { 0, 65, 640, 350, true } },
-    { { 1280, 350, RATIO_MODERN_64_35 },  { 320, 0, 640, 350, true }},
-    { { 1280, 700, RATIO_MODERN_64_35 },  { 320, 175, 640, 350, true } },
-    { { 320, 240, RATIO_MODERN_64_35 },   { -160, -55, 640, 350, true } },
-    { { 0, 0, RATIO_MODERN_64_35 },       { -320, -175, 640, 350, true } },
+    { { 640, 350, MODERN_64_35 },     { 0, 0, 640, 350, true } },
+    { { 640, 480, CLASSIC_4_3 },      { 0, 65, 640, 350, true } },
+    { { 640, 350, CLASSIC_4_3 },      { 0, 0, 640, 350, true } },
+    { { 640, 350, MODERN_64_35_GX },  { 0, 0, 640, 350, true } },
+    { { 640, 350, CLASSIC_4_3_GX },   { 0, 0, 640, 350, true } },
+    { { 640, 350, STRETCH },          { 0, 0, 640, 350, true } },
+    { { 640, 350, 1, 0 },             { 0, 0, 640, 350, true } },
+    { { 640, 350, 0, 1 },             { 0, 0, 640, 350, true } },
+    { { 640, 350, -16, -32 },         { 0, 0, 640, 350, true } },
+    { { 1280, 350, MODERN_64_35 },    { 320, 0, 640, 350, true }},
+    { { 1280, 700, MODERN_64_35 },    { 320, 175, 640, 350, true } },
+    { { 320, 240, MODERN_64_35 },     { -160, -55, 640, 350, true } },
+    { { 0, 0, MODERN_64_35 },         { -320, -175, 640, 350, true } },
   };
   struct graphics_data graphics{};
   struct video_window window{};
@@ -1148,26 +1157,30 @@ UNITTEST(set_window_viewport_scaled)
 {
   static constexpr viewport_test data[] =
   {
-    { { 640, 350, RATIO_MODERN_64_35 },   { 0, 0, 640, 350, true } },
-    { { 640, 480, RATIO_CLASSIC_4_3 },    { 0, 0, 640, 480, false } },
-    { { 640, 560, RATIO_STRETCH },        { 0, 0, 640, 560, false } },
-    { { 640, 640, RATIO_SQUARE_1_1 },     { 0, 0, 640, 640, false } },
-    { { 1280, 350, RATIO_MODERN_64_35 },  { 320, 0, 640, 350, true } },
-    { { 1280, 350, RATIO_STRETCH },       { 0, 0, 1280, 350, true } },
-    { { 1280, 700, RATIO_MODERN_64_35 },  { 0, 0, 1280, 700, true } },
-    { { 1280, 1024, RATIO_MODERN_64_35 }, { 0, 162, 1280, 700, true } },
-    { { 1366, 768, RATIO_MODERN_64_35 },  { 0, 10, 1366, 747, false } },
-    { { 1366, 768, RATIO_CLASSIC_4_3 },   { 171, 0, 1024, 768, false } },
-    { { 1366, 768, RATIO_STRETCH },       { 0, 0, 1366, 768, false } },
-    { { 1366, 768, RATIO_SQUARE_1_1 },    { 299, 0, 768, 768, false } },
-    { { 320, 240, RATIO_MODERN_64_35 },   { 0, 32, 320, 175, false } },
-    { { 320, 240, RATIO_CLASSIC_4_3 },    { 0, 0, 320, 240, false } },
-    { { 320, 240, RATIO_SQUARE_1_1 },     { 40, 0, 240, 240, false } },
-    { { 1920, 1080, RATIO_MODERN_64_35 }, { 0, 15, 1920, 1050, true } },
-    { { 1920, 1080, RATIO_CLASSIC_4_3 },  { 240, 0, 1440, 1080, false } },
-    { { 1920, 1080, RATIO_STRETCH },      { 0, 0, 1920, 1080, false } },
-    { { 0, 0, RATIO_MODERN_64_35 },       { -1, -1, 1, 1, false } },
-    { { 25600, 16800, RATIO_CLASSIC_4_3 },{ 1600, 0, 22400, 16800, true } },
+    { { 640, 350, MODERN_64_35 },     { 0, 0, 640, 350, true } },
+    { { 640, 480, CLASSIC_4_3 },      { 0, 0, 640, 480, false } },
+    { { 640, 560, STRETCH },          { 0, 0, 640, 560, false } },
+    { { 640, 480, MODERN_64_35_GX },  { 0, 7, 640, 466, false } },
+    { { 640, 640, CLASSIC_4_3_GX },   { 0, 0, 640, 640, false } },
+    { { 640, 480, 1, 0 },             { 0, 0, 640, 480, false } },
+    { { 640, 480, 0, 1 },             { 0, 0, 640, 480, false } },
+    { { 640, 480, -20, -10 },         { 0, 0, 640, 480, false } },
+    { { 1280, 350, MODERN_64_35 },    { 320, 0, 640, 350, true } },
+    { { 1280, 350, STRETCH },         { 0, 0, 1280, 350, true } },
+    { { 1280, 700, MODERN_64_35 },    { 0, 0, 1280, 700, true } },
+    { { 1280, 1024, MODERN_64_35 },   { 0, 162, 1280, 700, true } },
+    { { 1366, 768, MODERN_64_35 },    { 0, 10, 1366, 747, false } },
+    { { 1366, 768, CLASSIC_4_3 },     { 171, 0, 1024, 768, false } },
+    { { 1366, 768, STRETCH },         { 0, 0, 1366, 768, false } },
+    { { 1366, 768, CLASSIC_4_3_GX },  { 299, 0, 768, 768, false } },
+    { { 320, 240, MODERN_64_35 },     { 0, 32, 320, 175, false } },
+    { { 320, 240, CLASSIC_4_3 },      { 0, 0, 320, 240, false } },
+    { { 320, 240, CLASSIC_4_3_GX },   { 40, 0, 240, 240, false } },
+    { { 1920, 1080, MODERN_64_35 },   { 0, 15, 1920, 1050, true } },
+    { { 1920, 1080, CLASSIC_4_3 },    { 240, 0, 1440, 1080, false } },
+    { { 1920, 1080, STRETCH },        { 0, 0, 1920, 1080, false } },
+    { { 0, 0, MODERN_64_35 },         { -1, -1, 1, 1, false } },
+    { { 25600, 16800, CLASSIC_4_3 },  { 1600, 0, 22400, 16800, true } },
   };
   struct graphics_data graphics{};
   struct video_window window{};

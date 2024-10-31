@@ -397,13 +397,8 @@ static boolean gx_create_window(struct graphics_data *graphics,
   if(CONF_GetAspectRatio() == CONF_ASPECT_16_9)
   {
     // 4:3 stretched to 16:9; correct ratio for non-square pixels.
-    // TODO: real pixel aspect ratio correction instead of this hack.
-    if(window->ratio == RATIO_CLASSIC_4_3)
-      window->ratio = RATIO_SQUARE_1_1;
-    else
-
-    if(window->ratio == RATIO_MODERN_64_35)
-      window->ratio = RATIO_CLASSIC_4_3;
+    window->ratio_numerator *= 3;
+    window->ratio_denominator *= 4;
   }
 
   window->width_px = 720;

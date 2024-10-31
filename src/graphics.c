@@ -1843,6 +1843,26 @@ boolean has_video_initialized(void)
   return graphics.is_initialized;
 }
 
+static void set_window_ratio(struct video_window *window, enum ratio_type ratio)
+{
+  switch(ratio)
+  {
+    case RATIO_MODERN_64_35:
+      window->ratio_numerator = 64;
+      window->ratio_denominator = 35;
+      break;
+    case RATIO_CLASSIC_4_3:
+      window->ratio_numerator = 4;
+      window->ratio_denominator = 3;
+      break;
+    default:
+    case RATIO_STRETCH:
+      window->ratio_numerator = 0;
+      window->ratio_denominator = 0;
+      break;
+  }
+}
+
 unsigned video_create_window(void)
 {
   struct video_window *window = &(graphics.window);
@@ -1855,7 +1875,7 @@ unsigned video_create_window(void)
   window->is_fullscreen_windowed = graphics.fullscreen_windowed;
   window->is_headless = false;
   window->allow_resize = graphics.allow_resize;
-  window->ratio = graphics.ratio;
+  set_window_ratio(window, graphics.ratio);
 
   if(graphics.fullscreen)
   {
@@ -1995,6 +2015,7 @@ static void resize_window(unsigned window_id, boolean fullscreen)
     }
     graphics.window.is_fullscreen = fullscreen;
     graphics.fullscreen = fullscreen;
+    set_window_ratio(&graphics.window, graphics.ratio);
 
     graphics.renderer.resize_window(&graphics, &graphics.window);
 

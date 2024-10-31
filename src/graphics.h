@@ -177,7 +177,8 @@ struct video_window
   int viewport_y;
   int viewport_width;
   int viewport_height;
-  enum ratio_type ratio;
+  int ratio_numerator;
+  int ratio_denominator;
 
   unsigned bits_per_pixel;
   boolean is_init;
