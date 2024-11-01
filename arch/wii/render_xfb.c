@@ -338,7 +338,8 @@ static void xfb_copy_buffer(struct graphics_data *graphics)
   }
 }
 
-static void xfb_sync_screen(struct graphics_data *graphics)
+static void xfb_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct xfb_render_data *render_data = graphics->render_data;
 
@@ -365,9 +366,8 @@ void render_xfb_register(struct renderer *renderer)
   renderer->init_video = xfb_init_video;
   renderer->free_video = xfb_free_video;
   renderer->create_window = xfb_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->update_colors = xfb_update_colors;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = xfb_render_graph;
   renderer->render_layer = xfb_render_layer;
   renderer->render_cursor = xfb_render_cursor;

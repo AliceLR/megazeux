@@ -54,31 +54,26 @@ void render_cursor(uint32_t *pixels, size_t pitch, uint8_t bpp, unsigned int x,
 void render_mouse(uint32_t *pixels, size_t pitch, uint8_t bpp, unsigned int x,
  unsigned int y, uint32_t mask, uint32_t amask, uint8_t w, uint8_t h);
 
-void get_screen_coords_centered(struct graphics_data *graphics, int screen_x,
- int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
-void set_screen_coords_centered(struct graphics_data *graphics, int x, int y,
+void get_screen_coords_viewport(struct graphics_data *graphics,
+ struct video_window *window, int screen_x, int screen_y,
+ int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
+void set_screen_coords_viewport(struct graphics_data *graphics,
+ struct video_window *window, int x, int y,
  int *screen_x, int *screen_y);
+void set_window_viewport_centered(struct graphics_data *graphics,
+ struct video_window *window);
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
- || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV)
+ || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_SDLACCEL) \
+ || defined(CONFIG_RENDER_YUV) || defined(CONFIG_RENDER_GX) \
+ || defined(MZX_UNIT_TESTS)
 
-void get_screen_coords_scaled(struct graphics_data *graphics, int screen_x,
- int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
-void set_screen_coords_scaled(struct graphics_data *graphics, int x, int y,
- int *screen_x, int *screen_y);
+#define HAVE_SET_WINDOW_VIEWPORT_SCALED
 
-#endif /* CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM ||
- CONFIG_RENDER_YUV */
+void set_window_viewport_scaled(struct graphics_data *graphics,
+ struct video_window *window);
 
-#if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
- || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV) \
- || defined(CONFIG_RENDER_GX)
-
-void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
- enum ratio_type ratio);
-
-#endif /* CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM ||
- CONFIG_RENDER_YUV || CONFIG_RENDER_GX */
+#endif /* CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM || ... */
 
 __M_END_DECLS
 

@@ -234,20 +234,18 @@ static void yuv_render_mouse(struct graphics_data *graphics,
   yuv_unlock_overlay(render_data);
 }
 
-static void yuv_sync_screen(struct graphics_data *graphics)
+static void yuv_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct yuv_render_data *render_data = graphics->render_data;
   int width = graphics->window.width_px, v_width;
   int height = graphics->window.height_px, v_height;
   SDL_Rect rect;
 
-  // FIXME: Putting this here is suboptimal
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-
-  rect.x = (width - v_width) >> 1;
-  rect.y = (height - v_height) >> 1;
-  rect.w = v_width;
-  rect.h = v_height;
+  rect.x = window->viewport_x;
+  rect.y = window->viewport_y;
+  rect.w = window->viewport_width;
+  rect.h = window->viewport_height;
 
   SDL_DisplayYUVOverlay(render_data->sdl.overlay, &rect);
 }
@@ -259,9 +257,8 @@ void render_yuv1_register(struct renderer *renderer)
   renderer->free_video = yuv_free_video;
   renderer->create_window = yuv1_set_video_mode;
   renderer->resize_window = yuv1_set_video_mode;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = sdl_update_colors;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_graph = yuv_render_graph;
   renderer->render_layer = yuv1_render_layer;
   renderer->render_cursor = yuv_render_cursor;

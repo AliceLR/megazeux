@@ -1135,7 +1135,8 @@ static inline void ctr_draw_playfield(struct ctr_render_data *render_data,
   }
 }
 
-static void ctr_sync_screen(struct graphics_data *graphics)
+static void ctr_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct ctr_render_data *render_data = (struct ctr_render_data *) graphics->render_data;
 
@@ -1200,12 +1201,11 @@ void render_ctr_register(struct renderer *renderer)
   renderer->init_video = ctr_init_video;
   renderer->free_video = ctr_free_video;
   renderer->create_window = ctr_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->update_colors = ctr_update_colors;
   renderer->remap_char_range = ctr_remap_char_range;
   renderer->remap_char = ctr_remap_char;
   renderer->remap_charbyte = ctr_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_layer = ctr_render_layer;
   renderer->render_cursor = ctr_render_cursor;
   renderer->render_mouse = ctr_render_mouse;

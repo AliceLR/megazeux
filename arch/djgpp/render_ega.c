@@ -482,7 +482,8 @@ static void ega_render_mouse(struct graphics_data *graphics,
   _farnspokeb(dest, _farnspeekb(dest) ^ 0xFF);
 }
 
-static void ega_sync_screen(struct graphics_data *graphics)
+static void ega_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct ega_render_data *render_data = graphics->render_data;
   uint8_t *src = graphics->charset;
@@ -509,13 +510,12 @@ void render_ega_register(struct renderer *renderer)
   renderer->init_video = ega_init_video;
   renderer->free_video = ega_free_video;
   renderer->create_window = ega_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->set_screen_mode = ega_set_screen_mode;
   renderer->update_colors = ega_update_colors;
   renderer->remap_char_range = ega_remap_char_range;
   renderer->remap_char = ega_remap_char;
   renderer->remap_charbyte = ega_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = ega_render_graph;
   renderer->hardware_cursor = ega_hardware_cursor;
   renderer->render_mouse = ega_render_mouse;

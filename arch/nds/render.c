@@ -747,7 +747,8 @@ static void nds_render_mouse(struct graphics_data *graphics,
   // stub
 }
 
-static void nds_sync_screen(struct graphics_data *graphics)
+static void nds_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   // stub
 }
@@ -849,11 +850,10 @@ void render_nds_register(struct renderer *renderer)
   renderer->init_video = nds_init_video;
   renderer->create_window = nds_create_window;
   renderer->update_colors = nds_update_colors;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->remap_char_range = nds_remap_char_range;
   renderer->remap_char = nds_remap_char;
   renderer->remap_charbyte = nds_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = nds_render_graph;
   renderer->render_cursor = nds_render_cursor;
   renderer->render_mouse = nds_render_mouse;

@@ -738,27 +738,24 @@ static void sdlaccel_render_mouse(struct graphics_data *graphics, unsigned x,
   SDL_RenderFillRect(render_data->sdl.renderer, &dest);
 }
 
-static void sdlaccel_sync_screen(struct graphics_data *graphics)
+static void sdlaccel_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct sdlaccel_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *screen_tex = render_data->sdl.texture[TEX_SCREEN];
   SDL_Rect src;
   SDL_Rect dest;
-  int width = graphics->window.width_px;
-  int height = graphics->window.height_px;
-  int v_width, v_height;
 
   src.x = 0;
   src.y = 0;
   src.w = SCREEN_PIX_W;
   src.h = SCREEN_PIX_H;
 
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-  dest.x = (width - v_width) / 2;
-  dest.y = (height - v_height) / 2;
-  dest.w = v_width;
-  dest.h = v_height;
+  dest.x = window->viewport_x;
+  dest.y = window->viewport_y;
+  dest.w = window->viewport_width;
+  dest.h = window->viewport_height;
 
   SDL_SetRenderTarget(renderer, NULL);
   SDL_RenderCopy(renderer, screen_tex, &src, &dest);
@@ -779,12 +776,11 @@ void render_sdlaccel_register(struct renderer *renderer)
   renderer->create_window = sdlaccel_create_window;
   renderer->resize_window = sdl_resize_window;
   renderer->resize_callback = sdlaccel_resize_callback;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = sdlaccel_update_colors;
   renderer->remap_char_range = sdlaccel_remap_char_range;
   renderer->remap_char = sdlaccel_remap_char;
   renderer->remap_charbyte = sdlaccel_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_layer = sdlaccel_render_layer;
   renderer->render_cursor = sdlaccel_render_cursor;
   renderer->render_mouse = sdlaccel_render_mouse;

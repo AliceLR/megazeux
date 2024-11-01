@@ -1130,7 +1130,9 @@ static void glsl_render_layer(struct graphics_data *graphics,
   }
 
   // Clamp draw area to size of screen texture.
-  get_context_width_height(graphics, &width, &height);
+  // TODO: do this elsewhere with proper access to the window struct.
+  width = graphics->window.width_px;
+  height = graphics->window.height_px;
   if(width < SCREEN_PIX_W || height < SCREEN_PIX_H)
   {
     if(width >= GL_POWER_2_WIDTH)
@@ -1381,15 +1383,15 @@ static void glsl_render_mouse(struct graphics_data *graphics,
   glsl.glDisable(GL_BLEND);
 }
 
-static void glsl_sync_screen(struct graphics_data *graphics)
+static void glsl_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  int v_width, v_height, width, height;
+  int width = window->width_px;
+  int height = window->height_px;
 
-  get_context_width_height(graphics, &width, &height);
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-  glsl.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
-   v_width, v_height);
+  glsl.glViewport(window->viewport_x, window->viewport_y,
+   window->viewport_width, window->viewport_height);
 
   // Clamp draw area to size of screen texture.
   if(width < SCREEN_PIX_W || height < SCREEN_PIX_H)
@@ -1559,12 +1561,11 @@ void render_glsl_register(struct renderer *renderer)
   renderer->create_window = glsl_create_window;
   renderer->resize_window = gl_resize_window;
   renderer->resize_callback = glsl_resize_callback;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = glsl_update_colors;
   renderer->remap_char_range = glsl_remap_char_range;
   renderer->remap_char = glsl_remap_char;
   renderer->remap_charbyte = glsl_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_layer = glsl_render_layer;
   renderer->render_cursor = glsl_render_cursor;
   renderer->render_mouse = glsl_render_mouse;

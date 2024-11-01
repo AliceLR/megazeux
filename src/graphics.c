@@ -1276,7 +1276,7 @@ void update_screen(void)
      graphics.mouse_width, graphics.mouse_height);
   }
 
-  graphics.renderer.sync_screen(&graphics);
+  graphics.renderer.sync_screen(&graphics, &(graphics.window));
 }
 
 boolean get_fade_status(void)
@@ -1843,6 +1843,26 @@ boolean has_video_initialized(void)
   return graphics.is_initialized;
 }
 
+static void set_window_ratio(struct video_window *window, enum ratio_type ratio)
+{
+  switch(ratio)
+  {
+    case RATIO_MODERN_64_35:
+      window->ratio_numerator = 64;
+      window->ratio_denominator = 35;
+      break;
+    case RATIO_CLASSIC_4_3:
+      window->ratio_numerator = 4;
+      window->ratio_denominator = 3;
+      break;
+    default:
+    case RATIO_STRETCH:
+      window->ratio_numerator = 0;
+      window->ratio_denominator = 0;
+      break;
+  }
+}
+
 unsigned video_create_window(void)
 {
   struct video_window *window = &(graphics.window);
@@ -1855,6 +1875,7 @@ unsigned video_create_window(void)
   window->is_fullscreen_windowed = graphics.fullscreen_windowed;
   window->is_headless = false;
   window->allow_resize = graphics.allow_resize;
+  set_window_ratio(window, graphics.ratio);
 
   if(graphics.fullscreen)
   {
@@ -1878,6 +1899,7 @@ unsigned video_create_window(void)
     window->width_px = graphics.window_width;
     window->height_px = graphics.window_height;
   }
+  video_window_update_viewport(window);
 
   if(graphics.renderer.create_window(&graphics, window))
   {
@@ -1915,6 +1937,36 @@ unsigned video_window_by_platform_id(unsigned platform_id)
   return 0;
 }
 
+/**
+ * Update the scaled viewport coordinates within the window according to
+ * the window's scaling ratio, for use in SDL update rectangles or glViewport.
+ * The viewport is also used to translate mouse coordinates between screen
+ * and window space.
+ *
+ * This should be called by the renderer any time create_window forces the
+ * window size (SDL window creation functions already handle this).
+ * This is called automatically between resize_window and resize_callback.
+ *
+ * For best results, call glViewport (or equivalent) in either
+ * resize_callback or sync_screen.
+ */
+void video_window_update_viewport(struct video_window *window)
+{
+  if(graphics.renderer.set_viewport)
+  {
+    graphics.renderer.set_viewport(&graphics, window);
+  }
+  else
+  {
+    debug("Implement set_viewport!");
+    window->viewport_x = 0;
+    window->viewport_y = 0;
+    window->viewport_width = window->width_px;
+    window->viewport_height = window->height_px;
+    window->is_integer_scaled = false;
+  }
+}
+
 /* Sync the current window size after it has ALREADY been changed by the
  * platform or by a call to a graphics.c window resize function.
  * SDL2/3 reports a window resize event after it is resized;
@@ -1937,8 +1989,7 @@ void video_sync_window_size(unsigned window_id,
       graphics.window_width = new_width_px;
       graphics.window_height = new_height_px;
     }
-    // TODO: call fix_viewport_ratio and update the viewport position here
-    // instead of in 50 million other places.
+    video_window_update_viewport(&(graphics.window));
 
     if(graphics.renderer.resize_callback)
       graphics.renderer.resize_callback(&graphics, &graphics.window);
@@ -1964,6 +2015,7 @@ static void resize_window(unsigned window_id, boolean fullscreen)
     }
     graphics.window.is_fullscreen = fullscreen;
     graphics.fullscreen = fullscreen;
+    set_window_ratio(&graphics.window, graphics.ratio);
 
     graphics.renderer.resize_window(&graphics, &graphics.window);
 
@@ -3110,13 +3162,34 @@ boolean get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y)
 {
-  graphics.renderer.get_screen_coords(&graphics, screen_x, screen_y, x, y,
-   min_x, min_y, max_x, max_y);
+#if 0
+  if(graphics.renderer.get_screen_coords)
+  {
+    graphics.renderer.get_screen_coords(&graphics, &(graphics.window),
+     screen_x, screen_y, x, y, min_x, min_y, max_x, max_y);
+  }
+  else
+#endif
+  {
+    get_screen_coords_viewport(&graphics, &(graphics.window),
+     screen_x, screen_y, x, y, min_x, min_y, max_x, max_y);
+  }
 }
 
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y)
 {
-  graphics.renderer.set_screen_coords(&graphics, x, y, screen_x, screen_y);
+#if 0
+  if(graphics.renderer.set_screen_coords)
+  {
+    graphics.renderer.set_screen_coords(&graphics, &(graphics.window),
+     x, y, screen_x, screen_y);
+  }
+  else
+#endif
+  {
+    set_screen_coords_viewport(&graphics, &(graphics.window),
+     x, y, screen_x, screen_y);
+  }
 }
 
 void focus_screen(int x, int y)

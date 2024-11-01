@@ -259,23 +259,19 @@ static void softscale_render_mouse(struct graphics_data *graphics,
   render_mouse(pixels, pitch, bpp, x, y, 0xFFFFFFFF, amask, w, h);
 }
 
-static void softscale_sync_screen(struct graphics_data *graphics)
+static void softscale_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct softscale_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *texture = render_data->sdl.texture[0];
   SDL_Rect *src_rect = &(render_data->texture_rect);
   SDL_Rect dest_rect;
-  int width = graphics->window.width_px;
-  int height = graphics->window.height_px;
-  int v_width, v_height;
 
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-
-  dest_rect.x = (width - v_width) / 2;
-  dest_rect.y = (height - v_height) / 2;
-  dest_rect.w = v_width;
-  dest_rect.h = v_height;
+  dest_rect.x = window->viewport_x;
+  dest_rect.y = window->viewport_y;
+  dest_rect.w = window->viewport_width;
+  dest_rect.h = window->viewport_height;
 
   softscale_unlock_texture(render_data);
 
@@ -294,9 +290,8 @@ void render_softscale_register(struct renderer *renderer)
   renderer->create_window = softscale_create_window;
   renderer->resize_window = sdl_resize_window;
   renderer->resize_callback = softscale_resize_callback;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = sdl_update_colors;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_graph = softscale_render_graph;
   renderer->render_layer = softscale_render_layer;
   renderer->render_cursor = softscale_render_cursor;

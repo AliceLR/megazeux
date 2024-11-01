@@ -271,7 +271,8 @@ static void soft_render_mouse(struct graphics_data *graphics,
   soft_unlock_buffer(render_data);
 }
 
-static void soft_sync_screen(struct graphics_data *graphics)
+static void soft_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
 #ifdef CONFIG_SDL
   struct sdl_render_data *render_data = graphics->render_data;
@@ -299,9 +300,8 @@ void render_soft_register(struct renderer *renderer)
   renderer->free_video = soft_free_video;
   renderer->create_window = soft_create_window;
   renderer->resize_window = soft_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->update_colors = soft_update_colors;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = soft_render_graph;
   renderer->render_layer = soft_render_layer;
   renderer->render_cursor = soft_render_cursor;
