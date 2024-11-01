@@ -26,13 +26,14 @@
 #include "ext.h"
 #include "sampled_stream.h"
 
-#include "../const.h"
 #include "../util.h"
 #include "../io/path.h"
 #include "../io/vio.h"
 
 #include <libopenmpt/libopenmpt.h>
 #include <libopenmpt/libopenmpt_stream_callbacks_file.h>
+#include <limits.h>
+#include <stdlib.h>
 
 struct openmpt_stream
 {
@@ -79,8 +80,16 @@ static boolean omp_mix_data(struct audio_stream *a_src, int32_t *buffer,
 
   read_buffer = (int16_t *)sampled_get_buffer(&omp_stream->s, &read_wanted);
 
-  read_len = openmpt_module_read_interleaved_stereo(omp_stream->module_data,
-   s->frequency, read_wanted / 4, read_buffer) * 4;
+  if(s->channels >= 2)
+  {
+    read_len = openmpt_module_read_interleaved_stereo(omp_stream->module_data,
+     s->frequency, read_wanted / 4, read_buffer) * 4;
+  }
+  else
+  {
+    read_len = openmpt_module_read_mono(omp_stream->module_data,
+     s->frequency, read_wanted / 2, read_buffer) * 2;
+  }
 
   if(read_len < read_wanted && !a_src->repeat)
   {
@@ -243,6 +252,7 @@ static struct audio_stream *construct_openmpt_stream(vfile *vf,
   uint32_t ord;
   uint32_t i;
   int row_tbl_size;
+  int chn = audio.buffer_channels < 2 ? 1 : 2;
 
   openmpt_module *open_file = openmpt_module_create2(omp_callbacks, vf,
    &omp_log, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -297,7 +307,7 @@ static struct audio_stream *construct_openmpt_stream(vfile *vf,
   s_spec.get_frequency = omp_get_frequency;
 
   initialize_sampled_stream((struct sampled_stream *)omp_stream, &s_spec,
-   frequency, 2, false);
+   frequency, chn, false);
 
   initialize_audio_stream((struct audio_stream *)omp_stream, &a_spec,
    volume, repeat);

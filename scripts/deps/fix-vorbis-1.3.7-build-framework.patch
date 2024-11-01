@@ -1,0 +1,19 @@
+161a162,170
+> 
+>     target_include_directories(vorbis
+>         PUBLIC
+>             $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+>             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+>         PRIVATE
+>             ${CMAKE_CURRENT_SOURCE_DIR}
+>     )
+> 
+162a172,179
+> 
+>     install(TARGETS vorbis
+>         EXPORT VorbisTargets
+>         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+>         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+>         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+>         FRAMEWORK DESTINATION ${CMAKE_INSTALL_PREFIX}
+>     )

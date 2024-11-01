@@ -108,6 +108,12 @@ constexpr gl_filter_type INVALID<gl_filter_type>()
 }
 
 template<>
+constexpr system_mouse_type INVALID<system_mouse_type>()
+{
+  return NUM_SYSTEM_MOUSE_TYPES;
+}
+
+template<>
 constexpr cursor_mode_types INVALID<cursor_mode_types>()
 {
   return NUM_CURSOR_MODE_TYPES;
@@ -336,7 +342,7 @@ UNITTEST(Settings)
   struct config_info *conf = get_config();
 
   vio_filesystem_init(0, 0, false);
-  const struct vfsclose
+  struct vfsclose
   {
     ~vfsclose() { vio_filesystem_exit(); }
   } a;
@@ -554,6 +560,11 @@ UNITTEST(Settings)
     TEST_INT("audio_buffer_samples", conf->audio_buffer_samples, 1, INT_MAX);
   }
 
+  SECTION(audio_output_channels)
+  {
+    TEST_INT("audio_output_channels", conf->audio_output_channels, 1, 2);
+  }
+
   SECTION(enable_oversampling)
   {
     TEST_ENUM("enable_oversampling", conf->oversampling_on, boolean_data);
@@ -722,7 +733,20 @@ UNITTEST(Settings)
 
   SECTION(system_mouse)
   {
-    TEST_ENUM("system_mouse", conf->system_mouse, boolean_data);
+    constexpr system_mouse_type DEFAULT = INVALID<system_mouse_type>();
+    static const config_test_single data[] =
+    {
+      { "0", SYSTEM_MOUSE_OFF },
+      { "1", SYSTEM_MOUSE_ON },
+      { "off", SYSTEM_MOUSE_OFF },
+      { "on", SYSTEM_MOUSE_ON },
+      { "only", SYSTEM_MOUSE_HIDE_SOFTWARE_MOUSE },
+      { "mzxrun", DEFAULT },
+      { "ksdjfksdf", DEFAULT },
+      { "2", DEFAULT },
+      { "", DEFAULT },
+    };
+    TEST_ENUM("system_mouse", conf->system_mouse, data);
   }
 
   SECTION(grab_mouse)

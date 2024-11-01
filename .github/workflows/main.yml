@@ -105,35 +105,6 @@ jobs:
       - name: Distclean (OpenMPT)
         run: $MZX_MAKE distclean
 
-  # Ubuntu static SDL2 expects other junk, so build a -static SDL. Either way, it crashes on startup.
-  # Ubuntu's libvorbis.a relies on libm functions that no longer exist. Just build everything manually...
-  unix-static:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: 🙄
-        run: sudo sed -i '/deb-src/s/^# //' /etc/apt/sources.list
-#      - name: Install dependencies
-#        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
-      - name: Fetch dependency sources
-#        run: mkdir DEPS && sudo apt update && apt source libsdl2
-        run: mkdir DEPS && sudo apt update && apt source zlib libpng1.6 libogg libvorbis libsdl2
-      - name: Build zlib
-        run: (cd zlib-*/; ./configure --prefix "$(pwd)/../DEPS" --static && $MZX_MAKE && make install)
-      - name: Build libpng
-        run: (cd libpng1.6-*/; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
-      - name: Build libogg
-        run: (cd libogg-*/; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
-      - name: Build libvorbis
-        run: (cd libvorbis-*/; ./configure --prefix "$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
-      - name: Build SDL2
-        run: (cd libsdl2-*/; ./configure --prefix="$(pwd)/../DEPS" --disable-shared --enable-static && make -j8 && make install)
-      - name: Configure
-        run: ./config.sh --platform unix-devel --prefix DEPS --enable-release --disable-modular
-      - name: Build
-        run: LDFLAGS="-static" $MZX_MAKE
-        # TODO: tests
-
   darwin-arm64:
     runs-on: macos-latest
     steps:
@@ -333,7 +304,7 @@ jobs:
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
       - uses: actions/checkout@v4
       - name: Configure
-        run: ./config.sh --platform unix-devel --enable-asan
+        run: ./config.sh --platform unix-devel --enable-asan --enable-extram
       - name: Build
         run: $MZX_MAKE
       - name: Run tests
@@ -341,34 +312,26 @@ jobs:
 
   # Note: requires all non-system/libc calls to be from instrumented libraries.
   # For the regression tests, MZX can get away with just zlib.
-  #
-  # - actions/checkout will delete the work directory(!?), do it first.
-  # - The MSan zlib needs to be built static to prevent linking the system zlib.
-  # - ZLIB_LDFLAGS needs to be overridden to prevent linking the system zlib.
-  MemorySanitizer:
-    runs-on: ubuntu-latest
-    env:
-      CC: clang
-      CXX: clang++
-      ZLIB_LDFLAGS: DEPS/lib/libz.a
-    steps:
-      - uses: actions/checkout@v4
-      - name: 🙄
-        run: sudo sed -i '/deb-src/s/^# //' /etc/apt/sources.list
-      - name: Fetch dependency sources
-        run: mkdir DEPS && sudo apt update && apt source zlib
-      - name: Build zlib
-        run: |
-          (cd zlib-*;
-          CC=clang CXX=clang++ CFLAGS="-O3 -fsanitize=memory -g -fPIC -Wno-pointer-sign" LDFLAGS="-fsanitize=memory" \
-            ./configure --prefix "$(pwd)/../DEPS" --static;
-          $MZX_MAKE && make install)
-      - name: Configure
-        run: ./config.sh --platform unix-devel --prefix DEPS --enable-msan --disable-sdl --disable-libpng --disable-vorbis --disable-x11
-      - name: Build
-        run: $MZX_MAKE V=1
-      - name: Run tests
-        run: $MZX_MAKE V=1 test
+  # SDL calls into uninstrumented functions and is not built at all.
+  # libpng is temporarily disabled. libogg/libvorbis work with no issue.
+#  MemorySanitizer:
+#    runs-on: ubuntu-latest
+#    env:
+#      CC: clang
+#      CXX: clang++
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Fetch dependencies
+#        run: |
+#          (cd scripts/deps;
+#          wget https://github.com/AliceLR/megazeux-dependencies/releases/download/v2.93c/megazeux-dependencies-2.93c-r0-linux-msan.tar.xz;
+#          tar -xJf megazeux-dependencies-*-linux-msan.tar.xz)
+#      - name: Configure
+#        run: ./config.sh --platform unix-devel --prefix scripts/deps/linux-msan/x86_64 --enable-msan --disable-sdl --disable-libpng --disable-x11 --enable-extram
+#      - name: Build
+#        run: $MZX_MAKE V=1
+#      - name: Run tests
+#        run: $MZX_MAKE V=1 test
 
   UndefinedBehaviorSanitizer:
     runs-on: ubuntu-latest
@@ -381,7 +344,7 @@ jobs:
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
       - uses: actions/checkout@v4
       - name: Configure
-        run: ./config.sh --platform unix-devel --enable-ubsan
+        run: ./config.sh --platform unix-devel --enable-ubsan --enable-extram
       - name: Build
         run: $MZX_MAKE
       - name: Run tests

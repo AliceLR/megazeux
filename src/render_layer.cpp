@@ -30,6 +30,13 @@
 #define SKIP_16BPP
 #endif
 
+#if defined(CONFIG_3DS)
+#define SKIP_8BPP
+#if !defined(CONFIG_SDL)
+#define SKIP_16BPP
+#endif
+#endif
+
 #if defined(CONFIG_DJGPP) && !defined(CONFIG_DOS_SVGA)
 #define SKIP_8BPP
 #define SKIP_16BPP
@@ -184,6 +191,15 @@ static size_t get_align_for_offset(size_t value)
 #ifndef SKIP_64_ALIGN
   if(value % sizeof(uint64_t) == 0)
   {
+#if ARCHITECTURE_BITS < 64
+    static boolean printed = false;
+    if(!printed)
+    {
+      warn("ARCHITECTURE_BITS not configured for this arch -- report this\n");
+      printed = true;
+    }
+    return ARCHITECTURE_BITS;
+#endif
     return 64;
   }
   else

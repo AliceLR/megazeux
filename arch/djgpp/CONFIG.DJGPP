@@ -2,6 +2,6 @@
 
 [ -z "$DJGPP" ] && { echo "DJGPP not defined! Aborting."; exit 1; }
 
-./config.sh --platform djgpp --prefix "$DJGPP" --enable-release \
+./config.sh --platform djgpp --prefix "$DJGPP" --enable-release --enable-lto \
 	--enable-stb-vorbis --disable-libpng \
 	--enable-stdio-redirect --enable-meter --enable-extram "$@"

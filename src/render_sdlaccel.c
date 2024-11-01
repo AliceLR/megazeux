@@ -34,6 +34,7 @@
 #include "render.h"
 #include "renderers.h"
 #include "render_sdl.h"
+#include "util.h"
 
 #include <stdlib.h>
 
@@ -107,8 +108,6 @@ struct sdlaccel_render_data
   boolean chars_needed_row[CHARS_NUM_ROWS];
   boolean join;
 #endif
-  int w;
-  int h;
 };
 
 static void write_char_byte_mzx(uint32_t **_char_data, uint8_t byte)
@@ -271,12 +270,6 @@ static boolean sdlaccel_init_video(struct graphics_data *graphics,
   graphics->ratio = conf->video_ratio;
   graphics->bits_per_pixel = 32;
 
-  if(!set_video_mode())
-  {
-    sdlaccel_free_video(graphics);
-    return false;
-  }
-
 #ifdef THREADED_CHARSETS
   memset(render_data->chars_needed_row, true, CHARS_NUM_ROWS);
 
@@ -291,8 +284,8 @@ static boolean sdlaccel_init_video(struct graphics_data *graphics,
   return true;
 }
 
-static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean sdlaccel_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct sdlaccel_render_data *render_data =
    (struct sdlaccel_render_data *)graphics->render_data;
@@ -302,8 +295,7 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
   int tex_chars_h;
 
   // This requires that the underlying driver supports framebuffer objects.
-  if(!sdlrender_set_video_mode(graphics, width, height,
-   depth, fullscreen, resize, true))
+  if(!sdl_create_window_renderer(graphics, window, true))
     return false;
 
   texture[TEX_SCREEN] =
@@ -357,23 +349,25 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
   if(SDL_SetTextureBlendMode(texture[TEX_BACKGROUND], SDL_BLENDMODE_BLEND))
     warn("Failed to set bg texture blend mode: %s\n", SDL_GetError());
 
-#if SDL_VERSION_ATLEAST(2,0,12)
-  if(SDL_SetTextureScaleMode(texture[TEX_SCREEN], render_data->sdl.screen_scale_mode))
-    warn("Failed to set screen texture scale mode: %s\n", SDL_GetError());
-  if(SDL_SetTextureScaleMode(texture[TEX_CHARS], SDL_SCALEMODE_NEAREST))
-    warn("Failed to set char texture scale mode: %s\n", SDL_GetError());
-  if(SDL_SetTextureScaleMode(texture[TEX_BACKGROUND], SDL_SCALEMODE_NEAREST))
-    warn("Failed to set bg texture scale mode: %s\n", SDL_GetError());
-#endif
+  sdl_set_texture_scale_mode(graphics, window, TEX_SCREEN, true);
+  sdl_set_texture_scale_mode(graphics, window, TEX_CHARS, false);
+  sdl_set_texture_scale_mode(graphics, window, TEX_BACKGROUND, false);
 
   SDL_SetRenderTarget(render_data->sdl.renderer, texture[TEX_SCREEN]);
-  render_data->w = width;
-  render_data->h = height;
   return true;
 
 err_free:
   sdl_destruct_window(graphics);
   return false;
+}
+
+static boolean sdlaccel_resize_callback(struct graphics_data *graphics,
+ struct video_window *window)
+{
+  sdl_set_texture_scale_mode(graphics, window, TEX_SCREEN, true);
+  sdl_set_texture_scale_mode(graphics, window, TEX_CHARS, false);
+  sdl_set_texture_scale_mode(graphics, window, TEX_BACKGROUND, false);
+  return true;
 }
 
 static void sdlaccel_update_colors(struct graphics_data *graphics,
@@ -766,29 +760,22 @@ static void sdlaccel_render_mouse(struct graphics_data *graphics, unsigned x,
   SDL_RenderFillRect(render_data->sdl.renderer, &dest);
 }
 
-static void sdlaccel_sync_screen(struct graphics_data *graphics)
+static void sdlaccel_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct sdlaccel_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *screen_tex = render_data->sdl.texture[TEX_SCREEN];
   SDL_Rect_mzx src;
   SDL_Rect_mzx dest;
-  int width = render_data->w;
-  int height = render_data->h;
-  int v_width, v_height;
 
   src = sdl_render_rect(0, 0, SCREEN_PIX_W, SCREEN_PIX_H,
    TEX_SCREEN_W, TEX_SCREEN_H);
 
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-  dest = sdl_render_rect(
-    (width - v_width) / 2,
-    (height - v_height) / 2,
-    v_width,
-    v_height,
-    width,
-    height
-  );
+  dest.x = window->viewport_x;
+  dest.y = window->viewport_y;
+  dest.w = window->viewport_width;
+  dest.h = window->viewport_height;
 
   SDL_SetRenderTarget(renderer, NULL);
   SDL_RenderTexture_mzx(renderer, screen_tex, &src, &dest);
@@ -806,14 +793,14 @@ void render_sdlaccel_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = sdlaccel_init_video;
   renderer->free_video = sdlaccel_free_video;
-  renderer->set_video_mode = sdlaccel_set_video_mode;
+  renderer->create_window = sdlaccel_create_window;
+  renderer->resize_window = sdl_resize_window;
+  renderer->resize_callback = sdlaccel_resize_callback;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = sdlaccel_update_colors;
-  renderer->resize_screen = resize_screen_standard;
   renderer->remap_char_range = sdlaccel_remap_char_range;
   renderer->remap_char = sdlaccel_remap_char;
   renderer->remap_charbyte = sdlaccel_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_layer = sdlaccel_render_layer;
   renderer->render_cursor = sdlaccel_render_cursor;
   renderer->render_mouse = sdlaccel_render_mouse;

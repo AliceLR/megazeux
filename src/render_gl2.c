@@ -170,10 +170,11 @@ static const GLubyte color_array_white[4 * 4] =
 static boolean gl2_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
-  struct gl2_render_data *render_data = cmalloc(sizeof(struct gl2_render_data));
+  struct gl2_render_data *render_data =
+   (struct gl2_render_data *)cmalloc(sizeof(struct gl2_render_data));
 
   if(!render_data)
-    goto err_out;
+    return false;
 
   if(!GL_LoadLibrary(GL_LIB_FIXED))
     goto err_free_render_data;
@@ -192,37 +193,37 @@ static boolean gl2_init_video(struct graphics_data *graphics,
     graphics->bits_per_pixel = conf->force_bpp;
 
   // We want to deal internally with 32bit surfaces
-  render_data->pixels = cmalloc(sizeof(uint32_t) * GL_POWER_2_WIDTH *
+  render_data->pixels = (uint32_t *)cmalloc(sizeof(uint32_t) * GL_POWER_2_WIDTH *
    GL_POWER_2_HEIGHT);
 
   if(!render_data->pixels)
     goto err_free_render_data;
 
-  if(!set_video_mode())
-    goto err_free_pixels;
-
   return true;
 
-err_free_pixels:
-  free(render_data->pixels);
 err_free_render_data:
   free(render_data);
   graphics->render_data = NULL;
-err_out:
   return false;
 }
 
 static void gl2_free_video(struct graphics_data *graphics)
 {
   struct gl2_render_data *render_data = graphics->render_data;
-  gl2.glDeleteTextures(NUM_TEXTURES, render_data->textures);
-  gl_check_error();
 
-  gl_cleanup(graphics);
+  if(render_data)
+  {
+    if(gl2.glDeleteTextures)
+    {
+      gl2.glDeleteTextures(NUM_TEXTURES, render_data->textures);
+      gl_check_error();
+    }
 
-  free(render_data->pixels);
-  free(render_data);
-  graphics->render_data = NULL;
+    gl_cleanup(graphics);
+    free(render_data->pixels);
+    free(render_data);
+    graphics->render_data = NULL;
+  }
 }
 
 static void gl2_remap_char_range(struct graphics_data *graphics, uint16_t first,
@@ -253,33 +254,42 @@ static void gl2_remap_charbyte(struct graphics_data *graphics,
   gl2_remap_char(graphics, chr);
 }
 
-static void gl2_resize_screen(struct graphics_data *graphics,
- int width, int height)
+static void gl2_set_shrunk_viewport(const struct video_window *window)
+{
+  gl2.glViewport((window->width_px - SCREEN_PIX_W) >> 1,
+   (window->height_px - SCREEN_PIX_H) >> 1, SCREEN_PIX_W, SCREEN_PIX_H);
+  gl_check_error();
+}
+
+static void gl2_set_real_viewport(const struct video_window *window)
+{
+  gl2.glViewport(window->viewport_x, window->viewport_y,
+   window->viewport_width, window->viewport_height);
+  gl_check_error();
+}
+
+static boolean gl2_resize_callback(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct gl2_render_data *render_data = graphics->render_data;
-  int v_width, v_height;
   int charset_width, charset_height;
-
-  // FIXME: Hack, remove
-  get_context_width_height(graphics, &width, &height);
 
   // If the window is exactly 640x350, then any filtering is useless.
   // Turning filtering off here might speed things up.
   //
   // Otherwise, linear filtering breaks if the window is smaller than
   // 640x350, so also turn it off here.
-  if(width == 640 && height == 350)
-    render_data->ignore_linear = true;
-  else if(width < 640 || height < 350)
-    render_data->ignore_linear = true;
+  if(window->width_px < SCREEN_PIX_W || window->height_px < SCREEN_PIX_H ||
+   window->is_integer_scaled || graphics->gl_filter_method != CONFIG_GL_FILTER_LINEAR)
+  {
+    render_data->viewport_shrunk = false;
+  }
   else
-    render_data->ignore_linear = false;
-
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-  gl2.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
-   v_width, v_height);
-  gl_check_error();
-  render_data->viewport_shrunk = false;
+  {
+    render_data->viewport_shrunk = true;
+  }
+  // Use the real viewport at all times that don't involve drawing the frame.
+  gl2_set_real_viewport(window);
 
   // Free any preexisting textures if they exist
   gl2.glDeleteTextures(NUM_TEXTURES, render_data->textures);
@@ -339,15 +349,15 @@ static void gl2_resize_screen(struct graphics_data *graphics,
   gl2.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_BG_WIDTH, TEX_BG_HEIGHT,
    0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   gl_check_error();
+  return true;
 }
 
-static boolean gl2_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean gl2_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   gl_set_attributes(graphics);
 
-  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize,
-   gl_required_version))
+  if(!gl_create_window(graphics, window, gl_required_version))
     return false;
 
   gl_set_attributes(graphics);
@@ -391,8 +401,7 @@ static boolean gl2_set_video_mode(struct graphics_data *graphics,
   }
 #endif
 
-  gl2_resize_screen(graphics, width, height);
-  return true;
+  return gl2_resize_callback(graphics, window);
 }
 
 static void gl2_update_colors(struct graphics_data *graphics,
@@ -519,15 +528,6 @@ static void gl2_check_remap_chars(struct graphics_data *graphics)
   }
 }
 
-static int gl2_linear_filter_method(struct graphics_data *graphics)
-{
-  struct gl2_render_data *render_data = graphics->render_data;
-
-  if(render_data->ignore_linear)
-    return false;
-  return graphics->gl_filter_method == CONFIG_GL_FILTER_LINEAR;
-}
-
 static inline int translate_layer_color(struct graphics_data *graphics,
  uint8_t color)
 {
@@ -558,19 +558,9 @@ static void gl2_render_layer(struct graphics_data *graphics,
   uint16_t char_value;
   int fg_color, bg_color;
 
-  if(gl2_linear_filter_method(graphics))
-  {
-    int width, height;
-
-    /* Put the initial rendering's viewport in the center of the screen
-      * so that when it is linearly stretched in sync_screen() it is
-      * masked by the stretched image.
-      */
-    get_context_width_height(graphics, &width, &height);
-    gl2.glViewport((width - 640) >> 1, (height - 350) >> 1, 640, 350);
-    gl_check_error();
-    render_data->viewport_shrunk = true;
-  }
+  // TODO: do this elsewhere with proper access to the window struct.
+  if(render_data->viewport_shrunk)
+    gl2_set_shrunk_viewport(&(graphics->window));
 
   if(!layer->mode)
   {
@@ -953,15 +943,13 @@ static void gl2_render_mouse(struct graphics_data *graphics,
   gl2.glDisable(GL_BLEND);
 }
 
-static void gl2_sync_screen(struct graphics_data *graphics)
+static void gl2_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct gl2_render_data *render_data = graphics->render_data;
 
   if(render_data->viewport_shrunk)
   {
-    int v_width, v_height;
-    int width, height;
-
     static const float tex_coord_array_single[2 * 4] =
     {
        0.0f,             350.0f / 512.0f,
@@ -973,16 +961,12 @@ static void gl2_sync_screen(struct graphics_data *graphics)
     gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
     gl_check_error();
 
-    get_context_width_height(graphics, &width, &height);
     gl2.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-     (width - 640) >> 1, (height - 350) >> 1, 1024, 512, 0);
+     (window->width_px - SCREEN_PIX_W) >> 1,
+     (window->height_px - SCREEN_PIX_H) >> 1, 1024, 512, 0);
     gl_check_error();
 
-    fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-    gl2.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
-     v_width, v_height);
-    gl_check_error();
-    render_data->viewport_shrunk = false;
+    gl2_set_real_viewport(window);
 
     gl2.glClear(GL_COLOR_BUFFER_BIT);
     gl_check_error();
@@ -1014,14 +998,14 @@ void render_gl2_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gl2_init_video;
   renderer->free_video = gl2_free_video;
-  renderer->set_video_mode = gl2_set_video_mode;
+  renderer->create_window = gl2_create_window;
+  renderer->resize_window = gl_resize_window;
+  renderer->resize_callback = gl2_resize_callback;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = gl2_update_colors;
-  renderer->resize_screen = resize_screen_standard;
   renderer->remap_char_range = gl2_remap_char_range;
   renderer->remap_char = gl2_remap_char;
   renderer->remap_charbyte = gl2_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_layer = gl2_render_layer;
   renderer->render_cursor = gl2_render_cursor;
   renderer->render_mouse = gl2_render_mouse;

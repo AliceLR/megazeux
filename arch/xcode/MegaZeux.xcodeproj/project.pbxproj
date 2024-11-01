@@ -32,6 +32,8 @@
 		48F5B9972C7EFBB200137776 /* core_task.h in Headers */ = {isa = PBXBuildFile; fileRef = 48F5B9952C7EFBB100137776 /* core_task.h */; };
 		48F5B99E2C7EFC0A00137776 /* edit_export.c in Sources */ = {isa = PBXBuildFile; fileRef = 48F5B99C2C7EFC0900137776 /* edit_export.c */; };
 		48F5B99F2C7EFC0A00137776 /* edit_export.h in Headers */ = {isa = PBXBuildFile; fileRef = 48F5B99D2C7EFC0900137776 /* edit_export.h */; };
+		731E16482C8AE37600E3D730 /* rng.c in Sources */ = {isa = PBXBuildFile; fileRef = 731E16462C8AE37500E3D730 /* rng.c */; };
+		731E16492C8AE37600E3D730 /* rng.h in Headers */ = {isa = PBXBuildFile; fileRef = 731E16472C8AE37500E3D730 /* rng.h */; };
 		BF10127F1FCCA7C2008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */; };
 		BF1012A61FCCA993008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF1012A51FCCA993008EEDB6 /* Assets.xcassets */; };
 		BF1012BA1FCCABB5008EEDB6 /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; };
@@ -40,8 +42,8 @@
 		BF1012BF1FCCABB5008EEDB6 /* Ogg.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B91FCCABB5008EEDB6 /* Ogg.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BF1012C11FCCABF0008EEDB6 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; };
 		BF1012C21FCCABF0008EEDB6 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		BF1012C41FCCB02F008EEDB6 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
-		BF1012C51FCCB02F008EEDB6 /* libpng.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		BF1012C41FCCB02F008EEDB6 /* png.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* png.framework */; };
+		BF1012C51FCCB02F008EEDB6 /* png.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* png.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BF3C7A7C22E689020024C630 /* render_softscale.c in Sources */ = {isa = PBXBuildFile; fileRef = BF3C7A7A22E688000024C630 /* render_softscale.c */; };
 		BF6058B2216B3683001B738C /* edit_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058AC216B3682001B738C /* edit_menu.c */; };
 		BF6058B3216B3683001B738C /* buffer.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058AD216B3682001B738C /* buffer.h */; };
@@ -120,8 +122,8 @@
 		BFD5B05C2465B0C400BC91E9 /* stringsearch.c in Sources */ = {isa = PBXBuildFile; fileRef = BFD5B05A2465B0C400BC91E9 /* stringsearch.c */; };
 		BFD67B3D2410ABE200AF114E /* render_layer_code.hpp in Headers */ = {isa = PBXBuildFile; fileRef = BFD67B3B2410ABE200AF114E /* render_layer_code.hpp */; };
 		BFD67B3E2410ABE200AF114E /* render_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BFD67B3C2410ABE200AF114E /* render_layer.cpp */; };
-		BFFF16281FCDC55000BDEC58 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
-		BFFF16291FCDC55000BDEC58 /* libpng.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		BFFF16281FCDC55000BDEC58 /* png.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* png.framework */; };
+		BFFF16291FCDC55000BDEC58 /* png.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* png.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BFFF162A1FCDC55000BDEC58 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; };
 		BFFF162B1FCDC55000BDEC58 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BFFF162C1FCDC55000BDEC58 /* Ogg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B91FCCABB5008EEDB6 /* Ogg.framework */; };
@@ -195,7 +197,7 @@
 		BFFF17071FCDC76900BDEC58 /* window.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF164F1FCDC64800BDEC58 /* window.h */; };
 		BFFF17081FCDC76900BDEC58 /* world.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16591FCDC64A00BDEC58 /* world.c */; };
 		BFFF17091FCDC76900BDEC58 /* world.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF165F1FCDC64B00BDEC58 /* world.h */; };
-		BFFF170C1FCDC7AC00BDEC58 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
+		BFFF170C1FCDC7AC00BDEC58 /* png.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* png.framework */; };
 		BFFF170D1FCDC7AC00BDEC58 /* Ogg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B91FCCABB5008EEDB6 /* Ogg.framework */; };
 		BFFF170E1FCDC7AC00BDEC58 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; };
 		BFFF170F1FCDC7AC00BDEC58 /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; };
@@ -362,7 +364,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				BF1012C51FCCB02F008EEDB6 /* libpng.framework in Embed Frameworks */,
+				BF1012C51FCCB02F008EEDB6 /* png.framework in Embed Frameworks */,
 				BFFF188F1FCDE81D00BDEC58 /* libCore.dylib in Embed Frameworks */,
 				BF1012BF1FCCABB5008EEDB6 /* Ogg.framework in Embed Frameworks */,
 				BFFF18921FCDE82100BDEC58 /* libEditor.dylib in Embed Frameworks */,
@@ -381,7 +383,7 @@
 				BFFF162D1FCDC55000BDEC58 /* Ogg.framework in Embed Frameworks */,
 				BFFF189E1FCDEA5D00BDEC58 /* libCore.dylib in Embed Frameworks */,
 				BFFF162F1FCDC55000BDEC58 /* Vorbis.framework in Embed Frameworks */,
-				BFFF16291FCDC55000BDEC58 /* libpng.framework in Embed Frameworks */,
+				BFFF16291FCDC55000BDEC58 /* png.framework in Embed Frameworks */,
 				BFFF162B1FCDC55000BDEC58 /* SDL2.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -414,6 +416,8 @@
 		48F5B9952C7EFBB100137776 /* core_task.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core_task.h; path = ../../src/core_task.h; sourceTree = "<group>"; };
 		48F5B99C2C7EFC0900137776 /* edit_export.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = edit_export.c; path = ../../src/editor/edit_export.c; sourceTree = "<group>"; };
 		48F5B99D2C7EFC0900137776 /* edit_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = edit_export.h; path = ../../src/editor/edit_export.h; sourceTree = "<group>"; };
+		731E16462C8AE37500E3D730 /* rng.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rng.c; path = ../../contrib/libxmp/src/rng.c; sourceTree = "<group>"; };
+		731E16472C8AE37500E3D730 /* rng.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rng.h; path = ../../contrib/libxmp/src/rng.h; sourceTree = "<group>"; };
 		BF1012781FCCA7C2008EEDB6 /* MegaZeux.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MegaZeux.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BF1012831FCCA7C2008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -425,7 +429,7 @@
 		BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Vorbis.framework; sourceTree = "<group>"; };
 		BF1012B91FCCABB5008EEDB6 /* Ogg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Ogg.framework; sourceTree = "<group>"; };
 		BF1012C01FCCABF0008EEDB6 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL2.framework; sourceTree = "<group>"; };
-		BF1012C31FCCB02F008EEDB6 /* libpng.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = libpng.framework; sourceTree = "<group>"; };
+		BF1012C31FCCB02F008EEDB6 /* png.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = png.framework; sourceTree = "<group>"; };
 		BF1012C61FCCB0F9008EEDB6 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		BF3C7A7A22E688000024C630 /* render_softscale.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_softscale.c; path = ../../src/render_softscale.c; sourceTree = "<group>"; };
 		BF3C7A7D22E6B6A20024C630 /* yuv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = yuv.h; path = ../../src/yuv.h; sourceTree = "<group>"; };
@@ -711,7 +715,7 @@
 			files = (
 				BFFF188E1FCDE81900BDEC58 /* libEditor.dylib in Frameworks */,
 				BFFF188D1FCDE81600BDEC58 /* libCore.dylib in Frameworks */,
-				BF1012C41FCCB02F008EEDB6 /* libpng.framework in Frameworks */,
+				BF1012C41FCCB02F008EEDB6 /* png.framework in Frameworks */,
 				BF1012BE1FCCABB5008EEDB6 /* Ogg.framework in Frameworks */,
 				BF1012BA1FCCABB5008EEDB6 /* Vorbis.framework in Frameworks */,
 				BF1012C11FCCABF0008EEDB6 /* SDL2.framework in Frameworks */,
@@ -722,7 +726,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BFFF170C1FCDC7AC00BDEC58 /* libpng.framework in Frameworks */,
+				BFFF170C1FCDC7AC00BDEC58 /* png.framework in Frameworks */,
 				BFFF170D1FCDC7AC00BDEC58 /* Ogg.framework in Frameworks */,
 				BFFF170E1FCDC7AC00BDEC58 /* SDL2.framework in Frameworks */,
 				BFFF170F1FCDC7AC00BDEC58 /* Vorbis.framework in Frameworks */,
@@ -747,7 +751,7 @@
 				BFFF189C1FCDEA5700BDEC58 /* libCore.dylib in Frameworks */,
 				BFFF162C1FCDC55000BDEC58 /* Ogg.framework in Frameworks */,
 				BFFF162E1FCDC55000BDEC58 /* Vorbis.framework in Frameworks */,
-				BFFF16281FCDC55000BDEC58 /* libpng.framework in Frameworks */,
+				BFFF16281FCDC55000BDEC58 /* png.framework in Frameworks */,
 				BFFF162A1FCDC55000BDEC58 /* SDL2.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -769,7 +773,7 @@
 				BFFF181C1FCDCEE800BDEC58 /* Editor */,
 				BF10127A1FCCA7C2008EEDB6 /* MegaZeux */,
 				BF1012A11FCCA993008EEDB6 /* MZXRun */,
-				BF1012C31FCCB02F008EEDB6 /* libpng.framework */,
+				BF1012C31FCCB02F008EEDB6 /* png.framework */,
 				BF1012C01FCCABF0008EEDB6 /* SDL2.framework */,
 				BF1012B91FCCABB5008EEDB6 /* Ogg.framework */,
 				BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */,
@@ -1043,6 +1047,8 @@
 				BFFF172F1FCDCBDF00BDEC58 /* player.h */,
 				BFFF17371FCDCBE200BDEC58 /* precomp_lut.h */,
 				BFFF17241FCDCBDB00BDEC58 /* read_event.c */,
+				731E16462C8AE37500E3D730 /* rng.c */,
+				731E16472C8AE37500E3D730 /* rng.h */,
 				BFFF17251FCDCBDB00BDEC58 /* scan.c */,
 				BFFF17341FCDCBE200BDEC58 /* smix.c */,
 				48E8C34E2B411560006177C3 /* tempfile.h */,
@@ -1191,6 +1197,7 @@
 				BFFF180B1FCDCD1200BDEC58 /* iff.h in Headers */,
 				BFFF17D11FCDCCF300BDEC58 /* mixer.h in Headers */,
 				BF6058E0216B3725001B738C /* compat.h in Headers */,
+				731E16492C8AE37600E3D730 /* rng.h in Headers */,
 				BFFF180E1FCDCD1200BDEC58 /* med.h in Headers */,
 				BFFF17C41FCDCCF300BDEC58 /* common.h in Headers */,
 				BFD5B04E2465AFAE00BC91E9 /* fsafeopen.h in Headers */,
@@ -1389,7 +1396,7 @@
 		BF1012701FCCA7C1008EEDB6 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0920;
+				LastUpgradeCheck = 1420;
 				ORGANIZATIONNAME = "MegaZeux Dev Team";
 				TargetAttributes = {
 					BF1012771FCCA7C2008EEDB6 = {
@@ -1519,6 +1526,7 @@
 				BFFF18071FCDCD1200BDEC58 /* ult_load.c in Sources */,
 				BFFF18061FCDCD1200BDEC58 /* stm_load.c in Sources */,
 				BFFF16E01FCDC76900BDEC58 /* legacy_robot.c in Sources */,
+				731E16482C8AE37600E3D730 /* rng.c in Sources */,
 				BFFF17AC1FCDCCF300BDEC58 /* dataio.c in Sources */,
 				BFFF17AF1FCDCCF300BDEC58 /* filter.c in Sources */,
 				BFFF18001FCDCD1200BDEC58 /* mmd3_load.c in Sources */,
@@ -1687,15 +1695,16 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++98";
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_ENABLE_MODULES = NO;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = NO;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -1703,6 +1712,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -1713,6 +1723,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1733,7 +1744,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = NO;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -1744,16 +1755,16 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++98";
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_ENABLE_MODULES = NO;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = NO;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -1761,6 +1772,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -1771,6 +1783,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1785,7 +1798,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = NO;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				LLVM_LTO = YES_THIN;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 			};
@@ -1795,8 +1809,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1818,8 +1835,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1840,7 +1860,9 @@
 		BF1012921FCCA957008EEDB6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1857,7 +1879,7 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					SDL2.framework/Headers,
-					libpng.framework/Headers,
+					png.framework/Headers,
 					Ogg.framework/Headers,
 					Vorbis.framework/Headers,
 					../../contrib/libxmp/include,
@@ -1865,6 +1887,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				USER_HEADER_SEARCH_PATHS = "../../contrib/libxmp/src ../../contrib/libxmp/src/loaders";
 			};
 			name = Debug;
@@ -1872,7 +1895,9 @@
 		BF1012931FCCA957008EEDB6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1888,7 +1913,7 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					SDL2.framework/Headers,
-					libpng.framework/Headers,
+					png.framework/Headers,
 					Ogg.framework/Headers,
 					Vorbis.framework/Headers,
 					../../contrib/libxmp/include,
@@ -1896,6 +1921,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				USER_HEADER_SEARCH_PATHS = "../../contrib/libxmp/src ../../contrib/libxmp/src/loaders";
 			};
 			name = Release;
@@ -1903,7 +1929,9 @@
 		BF10129A1FCCA97D008EEDB6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1917,6 +1945,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				USER_HEADER_SEARCH_PATHS = .;
 				USE_HEADERMAP = NO;
 			};
@@ -1925,7 +1954,9 @@
 		BF10129B1FCCA97D008EEDB6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1939,6 +1970,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				USER_HEADER_SEARCH_PATHS = .;
 				USE_HEADERMAP = NO;
 			};
@@ -1948,8 +1980,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1967,8 +2002,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",

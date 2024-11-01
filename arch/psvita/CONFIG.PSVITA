@@ -2,6 +2,6 @@
 
 [[ -z $VITASDK ]] && { echo "\$VITASDK is unset. Aborting"; exit 1; }
 
-./config.sh --platform psvita --prefix $VITASDK \
-            --disable-utils --enable-release --enable-stdio-redirect \
+./config.sh --platform psvita --prefix $VITASDK --enable-release --enable-lto \
+            --disable-utils --enable-stdio-redirect \
             --enable-meter --disable-gl "$@"

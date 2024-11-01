@@ -1,0 +1,138 @@
+diff --git a/docs/libxmp.rst b/docs/libxmp.rst
+index d20f00f3..4ee26341 100644
+--- a/docs/libxmp.rst
++++ b/docs/libxmp.rst
+@@ -115,7 +115,7 @@ error. Error codes are::
+ If a system error occurs, the specific error is set in ``errno``.
+ 
+ Parameters to `xmp_start_player()`_ are the sampling
+-rate (up to 48kHz) and a bitmapped integer holding one or more of the
++rate (up to 384kHz) and a bitmapped integer holding one or more of the
+ following mixer flags::
+ 
+   XMP_MIX_8BIT          /* Mix to 8-bit instead of 16 */
+@@ -599,7 +599,7 @@ int xmp_start_player(xmp_context c, int rate, int format)
+     :c: the player context handle.
+ 
+     :rate: the sampling rate to use, in Hz (typically 44100). Valid values
+-       range from 8kHz to 48kHz.
++       range from 8kHz to 384kHz.
+ 
+     :flags: bitmapped configurable player flags, one or more of the
+       following::
+@@ -709,7 +709,8 @@ void xmp_get_frame_info(xmp_context c, struct xmp_frame_info \*info)
+       This function should be used to retrieve sound buffer data after
+       `xmp_play_frame()`_ is called. Fields ``buffer`` and ``buffer_size``
+       contain the pointer to the sound buffer PCM data and its size. The
+-      buffer size will be no larger than ``XMP_MAX_FRAMESIZE``.
++      buffer size will be no larger than ``XMP_MAX_FRAMESIZE`` if the player
++      is initialized with a rate equal to or less than ``XMP_MAX_SRATE``.
+ 
+ .. _xmp_end_player():
+ 
+diff --git a/src/common.h b/src/common.h
+index 034d3ed8..73915148 100644
+--- a/src/common.h
++++ b/src/common.h
+@@ -125,6 +125,7 @@ typedef int tst_uint64[2 * (8 == sizeof(uint64)) - 1];
+ #endif
+ 
+ /* Constants */
++#define REAL_MAX_SRATE	384000		/* actual maximum sample rate */
+ #define PAL_RATE	250.0		/* 1 / (50Hz * 80us)		  */
+ #define NTSC_RATE	208.0		/* 1 / (60Hz * 80us)		  */
+ #define C4_PAL_RATE	8287		/* 7093789.2 / period (C4) * 2	  */
+@@ -515,6 +516,7 @@ struct mixer_data {
+ 	int dsp;		/* dsp effect flags */
+ 	char *buffer;		/* output buffer */
+ 	int32 *buf32;		/* temporary buffer for 32 bit samples */
++	int total_size;		/* allocated samples (not frames) in buffers */
+ 	int numvoc;		/* default softmixer voices number */
+ 	int ticksize;
+ 	int dtright;		/* anticlick control, right channel */
+diff --git a/src/control.c b/src/control.c
+index c3666e33..7e923c2b 100644
+--- a/src/control.c
++++ b/src/control.c
+@@ -594,8 +594,8 @@ int xmp_set_tempo_factor(xmp_context opaque, double val)
+ 	 * change during playback, so repeat these checks in the mixer. */
+ 	ticksize = libxmp_mixer_get_ticksize(s->freq, val, m->rrate, p->bpm);
+ 
+-	/* ticksize is in frames, XMP_MAX_FRAMESIZE is in frames * 2. */
+-	if (ticksize < 0 || ticksize > (XMP_MAX_FRAMESIZE / 2)) {
++	/* ticksize is in frames, s->total_size is in frames * 2. */
++	if (ticksize < 0 || ticksize > (s->total_size / 2)) {
+ 		return -1;
+ 	}
+ 	m->time_factor = val;
+diff --git a/src/mixer.c b/src/mixer.c
+index 3e6cc58d..27d048d9 100644
+--- a/src/mixer.c
++++ b/src/mixer.c
+@@ -1007,15 +1007,20 @@ int libxmp_mixer_numvoices(struct context_data *ctx, int num)
+ int libxmp_mixer_on(struct context_data *ctx, int rate, int format, int c4rate)
+ {
+ 	struct mixer_data *s = &ctx->s;
++	int total_size = 5 * rate * 2 / XMP_MIN_BPM; /* See xmp.h */
+ 
+-	s->buffer = (char *) calloc(XMP_MAX_FRAMESIZE, sizeof(int16));
++	if(total_size < XMP_MAX_FRAMESIZE)
++		total_size = XMP_MAX_FRAMESIZE;
++
++	s->buffer = (char *) calloc(total_size, sizeof(int16));
+ 	if (s->buffer == NULL)
+ 		goto err;
+ 
+-	s->buf32 = (int32 *) calloc(XMP_MAX_FRAMESIZE, sizeof(int32));
++	s->buf32 = (int32 *) calloc(total_size, sizeof(int32));
+ 	if (s->buf32 == NULL)
+ 		goto err1;
+ 
++	s->total_size = total_size;
+ 	s->freq = rate;
+ 	s->format = format;
+ 	s->amplify = DEFAULT_AMPLIFY;
+diff --git a/src/player.c b/src/player.c
+index e1226d56..dcfadc04 100644
+--- a/src/player.c
++++ b/src/player.c
+@@ -1859,7 +1859,7 @@ int xmp_start_player(xmp_context opaque, int rate, int format)
+ 	int i;
+ 	int ret = 0;
+ 
+-	if (rate < XMP_MIN_SRATE || rate > XMP_MAX_SRATE)
++	if (rate < XMP_MIN_SRATE || rate > REAL_MAX_SRATE)
+ 		return -XMP_ERROR_INVALID;
+ 
+ 	if (ctx->state < XMP_STATE_LOADED)
+@@ -2244,7 +2244,7 @@ void xmp_get_frame_info(xmp_context opaque, struct xmp_frame_info *info)
+ 	info->time = p->current_time;
+ 	info->buffer = s->buffer;
+ 
+-	info->total_size = XMP_MAX_FRAMESIZE;
++	info->total_size = s->total_size;
+ 	info->buffer_size = s->ticksize;
+ 	if (~s->format & XMP_FORMAT_MONO) {
+ 		info->buffer_size *= 2;
+diff --git a/test-dev/test_api_start_player.c b/test-dev/test_api_start_player.c
+index 079b8322..237c5d44 100644
+--- a/test-dev/test_api_start_player.c
++++ b/test-dev/test_api_start_player.c
+@@ -33,7 +33,7 @@ TEST(test_api_start_player)
+ 	state = xmp_get_player(ctx, XMP_PLAYER_STATE);
+ 	fail_unless(state == XMP_STATE_LOADED, "state error");
+ 
+-	ret = xmp_start_player(ctx, XMP_MAX_SRATE, 0);
++	ret = xmp_start_player(ctx, REAL_MAX_SRATE, 0);
+ 	fail_unless(ret == 0, "max sample rate failed");
+ 
+ 	state = xmp_get_player(ctx, XMP_PLAYER_STATE);
+@@ -53,7 +53,7 @@ TEST(test_api_start_player)
+ 
+ 	xmp_end_player(ctx);
+ 
+-	ret = xmp_start_player(ctx, XMP_MAX_SRATE + 1, 0);
++	ret = xmp_start_player(ctx, REAL_MAX_SRATE + 1, 0);
+ 	fail_unless(ret == -XMP_ERROR_INVALID, "max sample rate limit failed");
+ 
+ 	state = xmp_get_player(ctx, XMP_PLAYER_STATE);

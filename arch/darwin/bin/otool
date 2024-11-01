@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Used to replace otool with otool-classic when bundling PowerPC64 binaries.
+xcrun otool-classic "$@"

@@ -8,6 +8,8 @@
 
 unit_src        := unit
 unit_obj        := unit/.build
+unit_src_audio  := unit/audio
+unit_obj_audio  := unit/audio/.build
 unit_src_editor := unit/editor
 unit_obj_editor := unit/editor/.build
 unit_src_io     := unit/io
@@ -32,6 +34,7 @@ unit_objs := \
   ${unit_obj}/expr${unit_ext}          \
   ${unit_obj}/render${unit_ext}        \
   ${unit_obj}/memcasecmp${unit_ext}    \
+  ${unit_obj_audio}/mixer${unit_ext}   \
   ${unit_obj_io}/bitstream${unit_ext}  \
   ${unit_obj_io}/memfile${unit_ext}    \
   ${unit_obj_io}/path${unit_ext}       \
@@ -109,7 +112,12 @@ endif
 # Build unit tests with debug optimizations and without link-time optimzations.
 # (Overrides these optimization flags from the global flags.)
 #
-UNIT_OPTIMIZE_FLAGS := -Og -fno-lto ${UNIT_OPTIMIZE_FLAGS}
+UNIT_OPTIMIZE_FLAGS := -O0 ${UNIT_OPTIMIZE_FLAGS}
+ifeq (${LTO},1)
+ifeq (${HAS_F_LTO},1)
+UNIT_OPTIMIZE_FLAGS := -fno-lto ${UNIT_OPTIMIZE_FLAGS}
+endif
+endif
 
 #
 # Build without -DDEBUG to suppress debug messages,
@@ -158,6 +166,10 @@ ${unit_obj}/%${unit_ext}: ${unit_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
 	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_common_objs} ${unit_ldflags}
 
+${unit_obj_audio}/%${unit_ext}: ${unit_src_audio}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_common_objs} ${unit_ldflags}
+
 ${unit_obj_editor}/%${unit_ext}: ${unit_src_editor}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
 	${CXX} -MD ${unit_cflags} $< -o $@ ${unit_common_objs} ${unit_ldflags}
@@ -178,6 +190,7 @@ ${unit_obj_utils}/%${unit_ext}: ${unit_src_utils}/%.cpp
 -include ${unit_common_objs:.o=.d}
 
 ${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
+${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_audio}), ${unit_obj_audio})
 ${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
 ${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_io}), ${unit_obj_io})
 ${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_network}), ${unit_obj_network})
@@ -197,7 +210,7 @@ unit unittest: ${unit_objs}
 	fi;
 
 unit_clean:
-	$(if ${V},,@echo "  RM      " ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network} ${unit_obj_utils})
-	${RM} -r ${unit_obj} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network} ${unit_obj_utils}
+	$(if ${V},,@echo "  RM      " ${unit_obj} ${unit_obj_audio} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network} ${unit_obj_utils})
+	${RM} -r ${unit_obj} ${unit_obj_audio} ${unit_obj_editor} ${unit_obj_io} ${unit_obj_network} ${unit_obj_utils}
 
 endif

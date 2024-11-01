@@ -502,157 +502,79 @@ void render_mouse(uint32_t *pixels, size_t pitch, uint8_t bpp, unsigned int x,
   }
 }
 
-void get_screen_coords_centered(struct graphics_data *graphics, int screen_x,
- int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y)
+void get_screen_coords_viewport(struct graphics_data *graphics,
+ struct video_window *window, int screen_x, int screen_y,
+ int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y)
 {
-  int w_offset, h_offset;
-  int target_width = graphics->window_width;
-  int target_height = graphics->window_height;
+  int rel_x = screen_x - window->viewport_x;
+  int rel_y = screen_y - window->viewport_y;
 
-  if(graphics->fullscreen)
-  {
-    target_width = graphics->resolution_width;
-    target_height = graphics->resolution_height;
-  }
+  if(window->viewport_width != SCREEN_PIX_W)
+    rel_x = rel_x * SCREEN_PIX_W / window->viewport_width;
 
-  w_offset = (target_width - 640) / 2;
-  h_offset = (target_height - 350) / 2;
+  if(window->viewport_height != SCREEN_PIX_H)
+    rel_y = rel_y * SCREEN_PIX_H / window->viewport_height;
 
-  *x = screen_x - w_offset;
-  *y = screen_y - h_offset;
-
-  *min_x = w_offset;
-  *min_y = h_offset;
-  *max_x = 639 + w_offset;
-  *max_y = 349 + h_offset;
+  *x = CLAMP(rel_x, 0, SCREEN_PIX_W - 1);
+  *y = CLAMP(rel_y, 0, SCREEN_PIX_H - 1);
+  *min_x = window->viewport_x;
+  *min_y = window->viewport_y;
+  *max_x = window->viewport_x + window->viewport_width - 1;
+  *max_y = window->viewport_y + window->viewport_height - 1;
 }
 
-void set_screen_coords_centered(struct graphics_data *graphics, int x, int y,
+void set_screen_coords_viewport(struct graphics_data *graphics,
+ struct video_window *window, int x, int y,
  int *screen_x, int *screen_y)
 {
-  int target_width = graphics->window_width;
-  int target_height = graphics->window_height;
-
-  if(graphics->fullscreen)
-  {
-    target_width = graphics->resolution_width;
-    target_height = graphics->resolution_height;
-  }
-
-  *screen_x = x + (target_width - 640) / 2;
-  *screen_y = y + (target_height - 350) / 2;
+  *screen_x = x * window->viewport_width / SCREEN_PIX_W + window->viewport_x;
+  *screen_y = y * window->viewport_height / SCREEN_PIX_H + window->viewport_y;
 }
 
-#if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
- || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV)
-
-void get_screen_coords_scaled(struct graphics_data *graphics, int screen_x,
- int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y)
+void set_window_viewport_centered(struct graphics_data *graphics,
+ struct video_window *window)
 {
-  int window_width = graphics->window_width;
-  int window_height = graphics->window_height;
-  int target_width;
-  int target_height;
-  int offset_x;
-  int offset_y;
-
-  if(graphics->fullscreen)
-  {
-    window_width = graphics->resolution_width;
-    window_height = graphics->resolution_height;
-  }
-
-  target_width = window_width;
-  target_height = window_height;
-
-  fix_viewport_ratio(window_width, window_height, &target_width, &target_height,
-   graphics->ratio);
-
-  offset_x = (window_width - target_width)/2;
-  offset_y = (window_height - target_height)/2;
-
-  *x = CLAMP( (screen_x - offset_x) * 640 / target_width, 0, 639 );
-  *y = CLAMP( (screen_y - offset_y) * 350 / target_height, 0, 349 );
-  *min_x = 0;
-  *min_y = 0;
-  *max_x = target_width - 1;
-  *max_y = target_height - 1;
+  window->viewport_x = ((int)window->width_px - SCREEN_PIX_W) >> 1;
+  window->viewport_y = ((int)window->height_px - SCREEN_PIX_H) >> 1;
+  window->viewport_width = SCREEN_PIX_W;
+  window->viewport_height = SCREEN_PIX_H;
+  window->is_integer_scaled = true;
 }
 
-void set_screen_coords_scaled(struct graphics_data *graphics, int x, int y,
- int *screen_x, int *screen_y)
+#ifdef HAVE_SET_WINDOW_VIEWPORT_SCALED
+
+void set_window_viewport_scaled(struct graphics_data *graphics,
+ struct video_window *window)
 {
-  int window_width = graphics->window_width;
-  int window_height = graphics->window_height;
-  int target_width;
-  int target_height;
-  int offset_x;
-  int offset_y;
+  int numerator = window->ratio_numerator;
+  int denominator = window->ratio_denominator;
+  int width = MAX(window->width_px, 1);
+  int height = MAX(window->height_px, 1);
 
-  if(graphics->fullscreen)
+  if(numerator > 0 && denominator > 0)
   {
-    window_width = graphics->resolution_width;
-    window_height = graphics->resolution_height;
+    // (width / height) < (numerator / denominator)
+    // Multiply both sides by (height * denominator):
+    if(width * denominator < height * numerator)
+    {
+      height = (width * denominator) / numerator;
+      height = MAX(height, 1);
+    }
+    else
+    {
+      width = (height * numerator) / denominator;
+      width = MAX(width, 1);
+    }
   }
 
-  fix_viewport_ratio(window_width, window_height, &target_width, &target_height,
-   graphics->ratio);
+  window->viewport_x = ((int)window->width_px - width) >> 1;
+  window->viewport_y = ((int)window->height_px - height) >> 1;
+  window->viewport_width = width;
+  window->viewport_height = height;
+  window->is_integer_scaled = false;
 
-  offset_x = (window_width - target_width)/2;
-  offset_y = (window_height - target_height)/2;
-
-  *screen_x = x * target_width / 640 + offset_x;
-  *screen_y = y * target_height / 350 + offset_y;
+  if((width % SCREEN_PIX_W == 0) && (height % SCREEN_PIX_H == 0))
+    window->is_integer_scaled = true;
 }
 
-#endif /* CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM ||
- CONFIG_RENDER_YUV */
-
-// FIXME: Integerize
-
-#if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
- || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV) \
- || defined(CONFIG_RENDER_GX)
-
-void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
- enum ratio_type ratio)
-{
-  int numerator = 0, denominator = 0;
-
-  *v_width = MAX(width, 1);
-  *v_height = MAX(height, 1);
-
-  if(ratio == RATIO_STRETCH)
-    return;
-
-  if(ratio == RATIO_CLASSIC_4_3)
-  {
-    numerator = 4;
-    denominator = 3;
-  }
-  else if(ratio == RATIO_MODERN_64_35)
-  {
-    numerator = 64;
-    denominator = 35;
-  }
-
-  if(((float)width / (float)height) < ((float)numerator / (float)denominator))
-  {
-    height = (width * denominator) / numerator;
-    *v_height = MAX(height, 1);
-  }
-  else
-  {
-    width = (height * numerator) / denominator;
-    *v_width = MAX(width, 1);
-  }
-}
-
-#endif /* CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM ||
- CONFIG_RENDER_YUV || CONFIG_RENDER_GX */
-
-void resize_screen_standard(struct graphics_data *graphics, int w, int h)
-{
-  graphics->palette_dirty = true;
-  update_screen();
-}
+#endif /* HAVE_SET_WINDOW_VIEWPORT_SCALED */

@@ -1,5 +1,5 @@
-# Configuration file for MegaZeux 2.93
-# December 31st, 2023
+# Configuration file for MegaZeux 2.93b
+# September 10th, 2024
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -153,11 +153,12 @@
 
 # If this setting is enabled, instead of regular fullscreen MZX will create
 # a borderless window with the current desktop resolution when fullscreen
-# is enabled. This overrides fullscreen_resolution. Disabled by default.
+# is enabled. This overrides fullscreen_resolution. Disabled by default
+# except on macOS, where it is enabled by default.
 
 # fullscreen_windowed = 0
 
-# The resolution MZX uses in a window. If you renderer supports
+# The resolution MZX uses in a window. If your renderer supports
 # it, MZX will be scaled to fit this specification. Otherwise
 # the setting is ignored.
 
@@ -221,14 +222,21 @@
 
 # audio_sample_rate = 44100
 
-# Audio buffer size in samples. Setting this to lower can improve
+# Audio buffer size in sample frames. Setting this to lower can improve
 # latency, so audio will be heard sooner after it is set to be
 # changed. It is also possible to change PC speaker effects more
 # rapidly with lower values. Lower buffer sizes need more CPU power
-# to process. 2048 is adequete for PC speaker playback every
+# to process. 2048 is adequate for PC speaker playback every
 # command at speed 4.
 
 # audio_buffer_samples = 1024
+
+# Number of audio channels. The normal value here is 2 for stereo, but
+# in rare cases, 1 (mono) may be preferable. This setting is ignored
+# by most ports and for some DOS sound devices. MegaZeux currently
+# does not support any type of surround sound.
+
+# audio_output_channels = 2
 
 # Allow music to be sampled at higher precision. Increases CPU
 # usage but increases audio quality as well. (Modplug only.)
@@ -708,10 +716,11 @@
 
 # mask_midchars = 1
 
-# Set to 1 if you would rather MZX's mouse pointer used the
-# system mouse cursor.
+# Set to 1/"on" to display the system mouse; set to "only" to display ONLY
+# the system mouse (i.e. hide the software mouse cursor). MegaZeux versions
+# prior to 2.93c treated a setting of 1 like "only".
 
-# system_mouse = 0
+# system_mouse = off
 
 # Set to 1 to let MZX grab the mouse pointer while active.
 

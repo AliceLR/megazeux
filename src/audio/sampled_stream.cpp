@@ -3,7 +3,7 @@
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2004 madbrain
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
- * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2018, 2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -49,6 +49,7 @@
  * NOTE: FP_SHIFT values of 16 or 32 theoretically might help performance but
  *       some experimentation suggests it's not enough to be worth the effort.
  * TODO: FIR/Sinc-Lanczos resampler!!!!!111one
+ * TODO: surround (runtime channel mapping only)
  */
 
 enum mixer_resample
@@ -62,7 +63,8 @@ enum mixer_resample
 enum mixer_channels
 {
   MONO        = 1,
-  STEREO      = 2
+  STEREO      = 2,
+  SURROUND    = 3
 };
 
 enum mixer_volume
@@ -89,25 +91,39 @@ static int32_t volume_function(int32_t sample, int volume)
   return sample;
 }
 
-template<mixer_channels CHANNELS, mixer_volume VOLUME>
+template<mixer_channels DEST_CHANNELS, mixer_channels SRC_CHANNELS,
+ mixer_volume VOLUME>
 static void flat_mix_loop(struct sampled_stream *s_src,
- int32_t * RESTRICT dest, size_t write_len, const int16_t *src, int volume)
+ int32_t * RESTRICT dest, size_t dest_frames, const int16_t *src, int volume)
 {
-  for(size_t i = 0; i < write_len; i += 2)
+  //size_t chn = DEST_CHANNELS > STEREO ? s_src->dest_channels : (size_t)DEST_CHANNELS;
+  for(size_t i = 0; i < dest_frames; i++)
   {
-    if(CHANNELS >= STEREO)
+    if(SRC_CHANNELS == DEST_CHANNELS && DEST_CHANNELS <= STEREO)
     {
-      *(dest++) += volume_function<VOLUME>(*(src++), volume);
-      *(dest++) += volume_function<VOLUME>(*(src++), volume);
+      for(size_t j = 0; j < DEST_CHANNELS; j++)
+        *(dest++) += volume_function<VOLUME>(*(src++), volume);
     }
     else
+
+    if(DEST_CHANNELS == STEREO && SRC_CHANNELS == MONO)
     {
       int32_t smpl = volume_function<VOLUME>(*(src++), volume);
       *(dest++) += smpl;
       *(dest++) += smpl;
     }
+    else
+
+    if(DEST_CHANNELS == MONO && SRC_CHANNELS == STEREO)
+    {
+      int32_t mix = 0;
+      mix += volume_function<VOLUME>(*(src++), volume);
+      mix += volume_function<VOLUME>(*(src++), volume);
+      *(dest++) += mix >> 1;
+    }
+    //else TODO: surround not implemented
   }
-  s_src->sample_index = (write_len >> 1) << FP_SHIFT;
+  s_src->sample_index = dest_frames << FP_SHIFT;
 }
 
 /**
@@ -116,23 +132,26 @@ static void flat_mix_loop(struct sampled_stream *s_src,
  */
 typedef int32_t (*mix_function)(const int16_t *src_offset, ssize_t frac_index);
 
-template<mixer_channels CHANNELS>
+template<mixer_channels SRC_CHANNELS>
 int32_t nearest_mix(const int16_t *src_offset, ssize_t frac_index)
 {
   return src_offset[0];
 }
 
-template<mixer_channels CHANNELS>
+// TODO: linear and cubic need external s_chn for surround.
+template<mixer_channels SRC_CHANNELS>
 int32_t linear_mix(const int16_t *src_offset, ssize_t frac_index)
 {
+  int chn = static_cast<int>(SRC_CHANNELS);
   int32_t left = src_offset[0];
-  int32_t right = src_offset[CHANNELS];
+  int32_t right = src_offset[chn];
   return left + ((right - left) * frac_index >> FP_SHIFT);
 }
 
-template<mixer_channels CHANNELS>
+template<mixer_channels SRC_CHANNELS>
 int32_t cubic_mix(const int16_t *src_offset, ssize_t frac_index)
 {
+  int chn = static_cast<int>(SRC_CHANNELS);
   /**
    * NOTE: copied mostly verbatim from the old mixer code, with cleanup.
    * This uses ssize_t instead of int32_t since it seems to be faster for
@@ -141,10 +160,10 @@ int32_t cubic_mix(const int16_t *src_offset, ssize_t frac_index)
    * This uses a Hermite spline. This is somewhat faster to compute and
    * generally considered better quality than a Lagrange cubic.
    */
-  ssize_t s0 = (ssize_t)src_offset[-CHANNELS]    << FP_SHIFT;
-  ssize_t s1 = (ssize_t)src_offset[0]            << FP_SHIFT;
-  ssize_t s2 = (ssize_t)src_offset[CHANNELS]     << FP_SHIFT;
-  ssize_t s3 = (ssize_t)src_offset[CHANNELS * 2] << FP_SHIFT;
+  ssize_t s0 = (ssize_t)src_offset[-chn]    << FP_SHIFT;
+  ssize_t s1 = (ssize_t)src_offset[0]       << FP_SHIFT;
+  ssize_t s2 = (ssize_t)src_offset[chn]     << FP_SHIFT;
+  ssize_t s3 = (ssize_t)src_offset[chn * 2] << FP_SHIFT;
 
   int64_t a = (((3 * (s1 - s2)) - s0 + s3) / 2);
   int64_t b = ((2 * s2) + s0 - (((5 * s1) + s3) / 2));
@@ -156,93 +175,147 @@ int32_t cubic_mix(const int16_t *src_offset, ssize_t frac_index)
   return (a >> FP_SHIFT);
 }
 
-template<mixer_channels CHANNELS, mixer_volume VOLUME, mix_function MIX>
+template<mixer_channels DEST_CHANNELS, mixer_channels SRC_CHANNELS,
+ mixer_volume VOLUME, mix_function MIX>
 static void resample_mix_loop(struct sampled_stream *s_src,
- int32_t * RESTRICT dest, size_t write_len, const int16_t *src, int volume)
+ int32_t * RESTRICT dest, size_t dest_frames, const int16_t *src, int volume)
 {
+  //size_t d_chn = DEST_CHANNELS > STEREO ? s_src->dest_channels : (size_t)DEST_CHANNELS;
+  size_t s_chn = SRC_CHANNELS > STEREO ? s_src->channels : (size_t)SRC_CHANNELS;
   int64_t sample_index = s_src->sample_index;
   int64_t delta = s_src->frequency_delta;
 
-  for(size_t i = 0; i < write_len; i += 2, sample_index += delta)
+  for(size_t i = 0; i < dest_frames; i++, sample_index += delta)
   {
-    ssize_t int_index = (sample_index >> FP_SHIFT) * CHANNELS;
+    ssize_t int_index = (sample_index >> FP_SHIFT) * s_chn;
     ssize_t frac_index = sample_index & FP_AND;
 
-    if(CHANNELS >= STEREO)
+    if(SRC_CHANNELS == DEST_CHANNELS && DEST_CHANNELS <= STEREO)
     {
-      int32_t mix_a = MIX(src + int_index + 0, frac_index);
-      int32_t mix_b = MIX(src + int_index + 1, frac_index);
-      *(dest++) += volume_function<VOLUME>(mix_a, volume);
-      *(dest++) += volume_function<VOLUME>(mix_b, volume);
+      for(size_t j = 0; j < DEST_CHANNELS; j++)
+      {
+        int32_t mix = MIX(src + int_index + j, frac_index);
+        *(dest++) += volume_function<VOLUME>(mix, volume);
+      }
     }
     else
+
+    if(DEST_CHANNELS == STEREO && SRC_CHANNELS == MONO)
     {
       int32_t mix = MIX(src + int_index, frac_index);
       int32_t smpl = volume_function<VOLUME>(mix, volume);
       *(dest++) += smpl;
       *(dest++) += smpl;
     }
+    else
+
+    if(DEST_CHANNELS == MONO && SRC_CHANNELS == STEREO)
+    {
+      int32_t mix = 0;
+      for(size_t chn = 0; chn < SRC_CHANNELS; chn++)
+      {
+        int32_t smpl = MIX(src + int_index + chn, frac_index);
+        mix += volume_function<VOLUME>(smpl, volume);
+      }
+      *(dest++) += mix >> 1;
+    }
+    //else TODO: surround not implemented
   }
   s_src->sample_index = sample_index;
 }
 
-template<mixer_channels CHANNELS, mixer_volume VOLUME>
+template<mixer_channels DEST_CHANNELS, mixer_channels SRC_CHANNELS, mixer_volume VOLUME>
 static void mixer_function(struct sampled_stream *s_src,
- int32_t * RESTRICT dest, size_t write_len, const int16_t *src, int volume,
+ int32_t * RESTRICT dest, size_t dest_frames, const int16_t *src, int volume,
  int resample_mode)
 {
   switch((mixer_resample)resample_mode)
   {
     case FLAT:
-      flat_mix_loop<CHANNELS, VOLUME>(s_src, dest, write_len, src, volume);
+      flat_mix_loop<DEST_CHANNELS, SRC_CHANNELS, VOLUME>(
+       s_src, dest, dest_frames, src, volume);
       break;
 
     case NEAREST:
-      resample_mix_loop<CHANNELS, VOLUME, nearest_mix<CHANNELS> >(s_src,
-       dest, write_len, src, volume);
+      resample_mix_loop<DEST_CHANNELS, SRC_CHANNELS, VOLUME, nearest_mix<SRC_CHANNELS> >(
+       s_src, dest, dest_frames, src, volume);
       break;
 
     case LINEAR:
-      resample_mix_loop<CHANNELS, VOLUME, linear_mix<CHANNELS> >(s_src,
-       dest, write_len, src, volume);
+      resample_mix_loop<DEST_CHANNELS, SRC_CHANNELS, VOLUME, linear_mix<SRC_CHANNELS> >(
+       s_src, dest, dest_frames, src, volume);
       break;
 
     case CUBIC:
-      resample_mix_loop<CHANNELS, VOLUME, cubic_mix<CHANNELS> >(s_src,
-       dest, write_len, src, volume);
+      resample_mix_loop<DEST_CHANNELS, SRC_CHANNELS, VOLUME, cubic_mix<SRC_CHANNELS> >(
+       s_src, dest, dest_frames, src, volume);
       break;
   }
 }
 
-template<mixer_channels CHANNELS>
+template<mixer_channels DEST_CHANNELS, mixer_channels SRC_CHANNELS>
 static void mixer_function(struct sampled_stream *s_src,
- int32_t * RESTRICT dest, size_t write_len, const int16_t *src, int volume,
+ int32_t * RESTRICT dest, size_t dest_frames, const int16_t *src, int volume,
  int resample_mode, mixer_volume volume_mode)
 {
   switch(volume_mode)
   {
     case FULL:
-      mixer_function<CHANNELS, FULL>(s_src, dest, write_len, src, volume, resample_mode);
+      mixer_function<DEST_CHANNELS, SRC_CHANNELS, FULL>(
+       s_src, dest, dest_frames, src, volume, resample_mode);
       break;
 
     case DYNAMIC:
-      mixer_function<CHANNELS, DYNAMIC>(s_src, dest, write_len, src, volume, resample_mode);
+      mixer_function<DEST_CHANNELS, SRC_CHANNELS, DYNAMIC>(
+       s_src, dest, dest_frames, src, volume, resample_mode);
+      break;
+  }
+}
+
+template<mixer_channels DEST_CHANNELS>
+static void mixer_function(struct sampled_stream *s_src,
+ int32_t * RESTRICT dest, size_t dest_frames, const int16_t *src, int volume,
+ int resample_mode, mixer_channels src_channels, mixer_volume volume_mode)
+{
+  switch(src_channels)
+  {
+    case MONO:
+      mixer_function<DEST_CHANNELS, MONO>(
+       s_src, dest, dest_frames, src, volume, resample_mode, volume_mode);
+      break;
+
+    case STEREO:
+      mixer_function<DEST_CHANNELS, STEREO>(
+       s_src, dest, dest_frames, src, volume, resample_mode, volume_mode);
+      break;
+
+    case SURROUND:
+      mixer_function<DEST_CHANNELS, SURROUND>(
+       s_src, dest, dest_frames, src, volume, resample_mode, volume_mode);
       break;
   }
 }
 
 static void mixer_function(struct sampled_stream *s_src,
- int32_t * RESTRICT dest, size_t write_len, const int16_t *src, int volume,
- int resample_mode, mixer_channels channel_mode, mixer_volume volume_mode)
+ int32_t * RESTRICT dest, size_t dest_frames, const int16_t *src, int volume,
+ int resample_mode, mixer_channels dest_channels, mixer_channels src_channels,
+ mixer_volume volume_mode)
 {
-  switch(channel_mode)
+  switch(dest_channels)
   {
     case MONO:
-      mixer_function<MONO>(s_src, dest, write_len, src, volume, resample_mode, volume_mode);
+      mixer_function<MONO>(
+       s_src, dest, dest_frames, src, volume, resample_mode, src_channels, volume_mode);
       break;
 
     case STEREO:
-      mixer_function<STEREO>(s_src, dest, write_len, src, volume, resample_mode, volume_mode);
+      mixer_function<STEREO>(
+       s_src, dest, dest_frames, src, volume, resample_mode, src_channels, volume_mode);
+      break;
+
+    case SURROUND:
+      mixer_function<SURROUND>(
+       s_src, dest, dest_frames, src, volume, resample_mode, src_channels, volume_mode);
       break;
   }
 }
@@ -293,29 +366,32 @@ void sampled_mix_data(struct sampled_stream *s_src,
 {
   uint8_t *output_data = (uint8_t *)s_src->output_data;
   int16_t *src_buffer = (int16_t *)(output_data + PROLOGUE_LENGTH);
-  size_t write_len = dest_frames * dest_channels;
   int volume = ((struct audio_stream *)s_src)->volume;
   int resample_mode = audio.global_resample_mode + 1;
-  enum mixer_volume   use_volume   = DYNAMIC;
-  enum mixer_channels use_channels = STEREO;
+  enum mixer_volume   volume_mode  = DYNAMIC;
+  enum mixer_channels src_channels = STEREO;
+  enum mixer_channels out_channels = STEREO;
   size_t new_index;
   size_t new_index_bytes;
   size_t leftover_bytes = 0;
 
-  // MZX currently only supports stereo output.
-  assert(dest_channels == 2);
+  // MZX currently only supports mono and stereo output.
+  assert(dest_channels == 1 || dest_channels == 2);
 
   if(s_src->frequency == audio.output_frequency)
     resample_mode = FLAT;
 
   if(!s_src->use_volume || volume == 256)
-    use_volume = FULL;
+    volume_mode = FULL;
 
   if(s_src->channels < 2)
-    use_channels = MONO;
+    src_channels = MONO;
+  if(dest_channels < 2)
+    out_channels = MONO;
 
-  mixer_function(s_src, dest_buffer, write_len, src_buffer, volume,
-   resample_mode, use_channels, use_volume);
+  s_src->dest_channels = dest_channels;
+  mixer_function(s_src, dest_buffer, dest_frames, src_buffer, volume,
+   resample_mode, out_channels, src_channels, volume_mode);
 
   /* Relocate the leftovers--plus the extra prologue and epilogue samples for
    * the resamplers--back to the start of the buffer. */

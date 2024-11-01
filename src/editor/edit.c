@@ -1003,8 +1003,8 @@ static void draw_edit_window(struct editor_context *editor)
     {
       id_put(cur_board, x, y, a_x, a_y, a_x, a_y);
 
-      // Don't display flashing when the overlay is enabled.
-      if(flash_char && !cur_board->overlay_mode)
+      // Don't display flashing unless in board edit mode.
+      if(flash_char && editor->mode == EDIT_BOARD)
         flash_draw(editor, cur_board, x, y, a_x, a_y, flash_char);
     }
   }
@@ -2296,6 +2296,12 @@ static boolean editor_key(context *ctx, int *key)
         }
       }
       return true;
+    }
+
+    case IKEY_F12:
+    {
+      // don't block in text mode :(
+      break;
     }
 
     case IKEY_8:

@@ -783,6 +783,15 @@ static uint32_t vfs_get_path_base_inode(vfilesystem *vfs, const char **path)
   if(len > 0)
   {
     struct vfs_inode *roots = vfs_get_inode_ptr(vfs, 0);
+#ifdef PATH_UNC_ROOTS
+    // These can be passed from pretty much anywhere and need to be
+    // stripped out here.
+    if(len >= 4 && (!memcmp(*path, "\\\\.\\", 4) || !memcmp(*path, "\\\\?\\", 4)))
+    {
+      *path += 4;
+      len -= 4;
+    }
+#endif
     memcpy(buffer, *path, len);
     buffer[len] = '\0';
     *path += len;
@@ -1336,7 +1345,11 @@ int vfs_make_root(vfilesystem *vfs, const char *name)
     if(!isalnum((unsigned char)name[i]))
       return -EINVAL;
 
+#ifdef PATH_DOS_STYLE_ROOTS
   snprintf(buffer, MAX_PATH, "%s:" DIR_SEPARATOR, name);
+#else
+  snprintf(buffer, MAX_PATH, "%s:" DIR_SEPARATOR DIR_SEPARATOR, name);
+#endif
 
   if(!vfs_write_lock(vfs))
     return -vfs_geterror(vfs);

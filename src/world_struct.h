@@ -41,6 +41,7 @@ __M_BEGIN_DECLS
 enum change_game_state_value
 {
   CHANGE_STATE_NONE,
+  CHANGE_STATE_INTERRUPT_CYCLE, // Cycle interrupted without state change.
   CHANGE_STATE_SWAP_WORLD,
   CHANGE_STATE_LOAD_GAME_ROBOTIC,
   CHANGE_STATE_EXIT_GAME_ROBOTIC,

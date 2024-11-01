@@ -242,6 +242,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\contrib\libxmp\src\period.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\player.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\read_event.c" />
+    <ClCompile Include="..\..\contrib\libxmp\src\rng.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\scan.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\smix.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\virtual.c" />
@@ -338,6 +339,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\contrib\libxmp\src\period.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\player.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\precomp_lut.h" />
+    <ClInclude Include="..\..\contrib\libxmp\src\rng.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\virtual.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\win32\osdcomm.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\win32\ptpopen.h" />

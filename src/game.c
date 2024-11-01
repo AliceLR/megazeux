@@ -491,6 +491,7 @@ static boolean game_idle(context *ctx)
   switch(mzx_world->change_game_state)
   {
     case CHANGE_STATE_NONE:
+    case CHANGE_STATE_INTERRUPT_CYCLE:
       break;
 
     case CHANGE_STATE_SWAP_WORLD:

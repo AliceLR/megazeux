@@ -1,10 +1,10 @@
-                    @1                   
-                    @1  ~fM ~bE G ~3A Z ~bE U ~fX  
-                    @1                   
+$@1                   
+$@1  ~fM ~bE G ~3A Z ~bE U ~fX  
+$@1                   
+:072:
+$~9Table of Contents
 
-:072:                     ~9Table of Contents
-
-                   ~C1) Basics and Gameplay
+$~C1) Basics and Gameplay
 >#FAQ.HLP:1st:FREQUENTLY ASKED QUESTIONS.
 >#1ST_TIME.HLP:071:Overview of MegaZeux - First Time Users Read This!
 >#HELPONHE.HLP:000:Help on Help (Press F1 Within Help to Read This)
@@ -15,7 +15,7 @@
 >#NONDESCR.HLP:091:Nondescript Play Tips
 >#BUILTINS.HLP:1st:The Mirth of Built-ins
 
-                       ~C2) The Editor
+$~C2) The Editor
 >#THEWORLD.HLP:1st:The World Editor
 >#GENERALE.HLP:1st:General Editing Tips
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
@@ -28,7 +28,7 @@
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
 >#SCROLLSS.HLP:1st:Signs and Scrolls in the Editor
 
-                   ~C3) Coding With Robotic
+$~C3) Coding With Robotic
 >#ROBOTSWH.HLP:1st:Robots - What They Are and How to Use Them
 >#ROBOTICT.HLP:1st:Robotic Tutorial
 >#ROBOTICR.HLP:087:Robotic Reference Manual
@@ -36,7 +36,7 @@
 >#SENSORSW.HLP:094:Sensors - What They Are and How to Use Them
 >#ZZT.HLP:zzt:A ZZTer's Guide to MegaZeux
 
-                      ~C4) Miscellaneous
+$~C4) Miscellaneous
 >#UPDATER.HLP:099:The MegaZeux Updater
 >#ERRORMES.HLP:1st:Error Messages
 >#MEGAZEUX.HLP:1st:MegaZeux Limitations
@@ -249,8 +249,8 @@ for this in MZX.
 
 ~A@@object_name = . "@@Robot_name"
 
-~A/direction/direction = PERSISTENT GO (works only for cardinal
-~Adirections and idle: n s e w i)
+~A/direction/direction = PERSISTENT GO ~F(works only for cardinal
+directions and idle: n s e w i)
 
 ~A?direction = / "directions"
 
@@ -262,7 +262,7 @@ for this in MZX.
 
 ~A!label;text = ? "label" "text"
 
-~A$ text = % "~~ftext" (by default palette)
+~A$ text = % "~~ftext" ~F(by default palette)
 
 ~A#BECOME thing = BECOME color thing param
 
@@ -325,7 +325,7 @@ optional failure label)
 ~A#SHOOT direction = SHOOT direction
 
 ~A#TAKE item # failure_label = TAKE # item "failure_label"
-~A(failure label optional)
+(failure label optional)
 
 ~A#THROWSTAR direction = SHOOTSEEKER direction
 
@@ -360,16 +360,13 @@ help for details.
 :098:
 $~9Dialog Boxes
 
-Much of MegaZeux's interface is made of dialog boxes. They
-are simple and intuitive to use, but instructions for the
-uninformed are included here.
-
-A dialog box is a form of inputting various information. An
-example of a dialog box is the Save Game box or the Settings
-box, both in-game. To use a box is simple - Use TAB and
-SHIFT+TAB to highlight an element, and type or use the cursor
-keys to change the value. Press ENTER on a button (Rectangle
-with a label) to exit the dialog or produce an effect.
+Much of MegaZeux's interface is made of dialog boxes. A dialog
+box is a form of inputting various information. An example of a
+dialog box is the Save Game box or the Settings box, both
+in-game. To use a box is simple - Use TAB and SHIFT+TAB to
+highlight an element, and type or use the cursor keys to change
+the value. Press ENTER on a button (Rectangle with a label) to
+exit the dialog or produce an effect.
 
 MZX also utilizes mouse control. You can click on a dialog box
 element to select it, or click on a selected element to change
@@ -537,11 +534,12 @@ the "F2 - Settings" text in the Enter menu. Ctrl+F2/Alt+F2 will
 not override any F2 block while MZX is in standalone mode.
 
 F3 - Save Game
-This will prompt you for a filename, allowing the saving of the
-exact state of the current game. Some games may not allow
-saving on some (or any) of its screens, or will only allow
-saving in certain spots of a board. Saving lets you quit your
-game in the middle or take precautions against unknown dangers.
+This will load a prompt for a filename, allowing the saving of
+the exact state of the current game. Some games may not allow
+manual saving on some (or any) of its screens, or will only
+allow manual saving in certain spots of a board. Saving lets you
+quit your game in the middle or take precautions against unknown
+dangers.
 
 F4 - Restore Game
 This will let you select a saved game from a list of filenames.
@@ -694,11 +692,11 @@ F5 or P - Play Game
 This will stop the title screen and actually begin game play.
 
 F7 or U - Updater
-This will load the updater. The updater will connect to an
-online repository and check if a new MegaZeux version is
-available. If so, the user gets the option to update MegaZeux.
-MZX will then list the files added/changed/deleted in the
-update, and if the user decides to update, MZX will restart
+This will load the updater, if it is enabled. The updater will
+connect to an online repository and check if a new MegaZeux
+version is available. If so, the user gets the option to update
+MegaZeux. MZX will then list the files added/changed/deleted in
+the update, and if the user decides to update, MZX will restart
 when the update is finished.
 WARNING: This will most likely replace your config.txt file, so
 if you want to keep your settings, make a backup first so you
@@ -724,7 +722,7 @@ the World Editor, view the appropriate help sections.
 F10 - Quickload (see above)
 
 -= About MegaZeux =-
-Clicking this will display various information about the
+Selecting this will display various information about the
 currently-running MegaZeux build, such as version, architecture,
 and library build versions.
 
@@ -811,7 +809,7 @@ Use of the mouse is very simple. Move the mouse to move the
 mouse cursor. Press the Left mouse button to select something,
 activate something, etc. Press the Right mouse button to grab
 whatever's under the cursor in the World Editor. Certain games
-may make use of the mouse during gameplay; the scroll wheel will
+may make use of the mouse during gameplay. The scroll wheel will
 always emulate up/down presses in dialog boxes and the list menu
 on top of whatever functions it may have in the current game.
 
@@ -976,7 +974,8 @@ survive being bombed, empty or not.
 
 These mystical items will bestow a magical effect on you when
 you wear or drink them. The effect, however, is unknown to
-you until you try it... and some effects aren't so nice.
+you until you try it... and some effects aren't so nice. All
+rings and potions increase score by 5 when collected.
 :prx:
 $@0~8± ~FPotion and Ring Effects~8 ±@8
 
@@ -1070,9 +1069,10 @@ $@0~8± ~FCreatures~8 ±@8
 A snake moves in a straight line until it hits an obstruction,
 then aims itself in another direction and continues. Hitting a
 snake (like all enemies hereafter unless noted) will cause you
-to lose health, then kill the snake. Runners act like snakes and
-will take up to four hits, but will only go the opposite
-direction when obstructed.
+to lose health, then kill the snake, while hitting the snake
+with a player bullet will kill the snake and increase score by
+3. Runners act like snakes and will take up to four hits, but
+will only go the opposite direction when obstructed.
 
 ~BEye            ~Fì
 
@@ -1088,7 +1088,8 @@ A ghost is the simplest enemy, simply chasing you. While some
 of them are invincible, most can be killed. Thieves chase but
 don't do damage. They steal your gems on touch instead, and can
 do so multiple times until killed. Ghosts can traverse lava and
-goop; thieves cannot.
+goop; thieves cannot. Ghosts give no score when killed by a
+player bullet.
 
                 ~A*
 ~BSlime Blob     ~A*±*
@@ -1099,15 +1100,17 @@ become incredibly annoying because of its habit of dividing
 into more slime blobs, then hardening into "solid slime"
 (i.e. breakables), quickly filling rooms.... You can often
 kill slime by touching or shooting it, but some slimes can be
-invincible, and others can be harmful to touch.
+invincible, and others can be harmful to touch. Slime blobs give
+no score when shot by a player bullet.
 
 ~BDragon         ~4 ~C ~E*~C
 
 Some dragons move around slowly, but their main advantage is
 their offense - they can shoot barrages of scorching flame.
 Dragons also have a strong defense, taking up to eight hits to
-kill. Touching them will take away health, but will NOT hurt the
-dragon. Dragons can traverse lava but not goop.
+kill, and take only one hit of damage from explosions. Touching
+them will take away health, but will NOT hurt the dragon.
+Dragons can traverse lava but not goop.
 
 ~BFish           ~Eà
 ~BShark          ~7
@@ -1209,6 +1212,19 @@ When you enter any one of these, you are transported to another
 location within the current world. These are not always
 two-way connections.
 
+The specific destination is determined as follows, from highest
+priority to lowest, scanning right-to-left from the lower-right
+corner to the upper-left:
+ ~E*~F Same passage type, same exact color
+ ~E*~F Same exact color
+ ~E*~F Same passage type, same foreground color
+ ~E*~F Same foreground color
+ ~E*~F Same passage type
+ ~E*~F Default player position on destination board
+
+If the current board and destination board are the same, no
+teleport will happen.
+
 ~BCW             ~A/
 ~BCCW            ~A\
 
@@ -1288,10 +1304,10 @@ blow up when touched, shot, or hit with an explosion.
                  ~F@E±
 
 An explosion starts at a certain point, quickly spreading
-outward, wreaking havoc in its wake. Some explosions are
-smaller than others. Explosions will also cause explosives
-such as bombs to explode, leading to some very cool chain
-reactions.
+outward, wreaking havoc in its wake and destroying most
+creatures. Some explosions are smaller than others. Explosions
+will also cause explosives such as bombs to explode, leading to
+some very cool chain reactions.
 
 ~BGoop           ~8@1°°°
 
@@ -1455,7 +1471,7 @@ MegaZeux worlds. Here's the contact information as of this
 writing:
 
 Check the reports on DigitalMZX's Bug Tracker
-(http://www.digitalmzx.com/forums/index.php?app=tracker) to see
+(https://www.digitalmzx.com/forums/index.php?app=tracker) to see
 if your problem has already been addressed. Active problems and
 bugs that are only fixed in a development version of MegaZeux
 are listed, as of this writing, in the "MegaZeux" category,
@@ -1476,13 +1492,13 @@ To make things sane for all parties, do this before submitting:
      helpful, if possible.
   6) If it is a crash, try to run a debug build through GDB and
      post a backtrace of the crash. Instructions for running a
-	 debug build through GDB are on the MZXWiki at DigitalMZX,
-	 in the New MegaZeux Release FAQ.
+     debug build through GDB are on the MZXWiki at DigitalMZX,
+     in the New MegaZeux Release FAQ.
   7) If you're unsure if the bug's been addressed, try to build
      a version from GitHub's GIT repository and see if the bug
      is still present in the test build. The MZXWiki has
-	 instructions for doing so in the article Compiling
-	 MegaZeux.
+     instructions for doing so in the article Compiling
+     MegaZeux.
   8) Optimally, if the problem is a regression caused by the
      port, upload a world made in 2.70 that works in 2.70 but
      does not in the current version to best isolate the
@@ -1572,7 +1588,8 @@ A: Of course you can distribute your worlds! That is what
   MegaZeux included, or even just post the game's files in an
   archive by itself, consider releasing your game as both a
   standalone archive and as pure game files in separate
-  downloads.
+  downloads. MegaZeux games can also be embedded in a webpage
+  for accessibility and player ease.
 
   Typically, MegaZeux worlds are freeware, but if you've made an
   assuredly epic and ground-breaking game, then you can attempt
@@ -1670,7 +1687,7 @@ A: Unfortunately, MegaZeux currently has no way of doing this
   your sound that are louder/quieter. Volume settings for music,
   on the other hand, can be manipulated freely.
 
-Q: Why is my MegaZeux world starting on the title screen?
+Q: Why is my MegaZeux world starting on the title board?
 
 A: The first board has to be set. Press 'G' in the editor, then
   set the board using the "First board" field at the top left.
@@ -1718,7 +1735,7 @@ A: It'd be preferred if you did not use Caverns music in any
 Q: Where can I get module files?
 
 A: If you can't make them, search webpages for good ones.
-  http://www.modarchive.com has a very large tracked music
+  https://www.modarchive.com has a very large tracked music
   library, as do many old CD-ROM shareware collections. (It is
   best practice to stick to modules that openly permit free
   usage.) Another popular option is to convince a friend to do
@@ -1849,7 +1866,7 @@ A: It has been changed to F12 and now works in any area in MZX,
 :1st:
 $~9MegaZeux Limitations
 
-MegaZeux has to impose a number of limitations to insure
+MegaZeux has to impose a number of limitations to ensure
 worldfile compatibility with MZX 2.x worldfiles.
 
 $Memory Limitations
@@ -1938,14 +1955,14 @@ it).
 listing, and ½¾+R would restart the world.)
 
 For your first world, you should start simple. The very first
-board in the board listings is the title screen, so name that
+board in the board listings is the title board, so name that
 board after your game. (If you opted to create a starting board,
 you have to switch to the first board with the B key.) Press I
 for board info. This screen will display a bunch of options;
 there are loads of important options, but the most relevant
 option for now is the "Board name" option. Type in the name of
 your game and then click on "OK" or press Tab until OK is
-highlighted and press Enter. Now that the title screen is
+highlighted and press Enter. Now that the title board is
 named, its design begins... or is put aside for later (or even
 the end).
 
@@ -1982,7 +1999,7 @@ When you are done, press G to go to the Global Info screen.
 TAB to the Next button and press Enter. You will now be
 highlighting the option "First Board". Press Enter, and select
 the starting board (this is where gameplay starts... NOT the
-title screen in the vast majority of cases) from the list and
+title board in the vast majority of cases) from the list and
 press Enter. Then TAB to OK and press Enter.
 
 You could now press Alt+N to select a module (music) file for
@@ -2020,7 +2037,7 @@ you will reach if the player moves off of the screen in a given
 direction. The destination board shouldn't have anything in the
 way, and will not automatically lead back - you must set the
 exit on that board too. This menu will not allow linking boards
-to the title screen.
+to the title board.
 The player will appear on the other board at the appropriate
 edge at the same position (if board sizes allow). For example,
 if the player triggers the north exit of a board while at its
@@ -2035,10 +2052,10 @@ board, the player replaces it upon entering the board
 Another way is to use a Robot to teleport a player with the
 ~Ateleport player "boardname" X Y~F command. This assumes that you
 are familiar with using Robots, but is the only way to go to
-another board without having the player walk off-screen, moving
-the player into a teleport, requiring the player to have been on
-the destination board earlier, or reloading the current world.
-Robots can also dynamically set board exits using the
+another board without having the player moved past a board edge,
+moving the player into a teleport, requiring the player to have
+been on the destination board earlier, or reloading the current
+world. Robots can also dynamically set board exits using the
 ~ABOARD [dir] "boardname"~F command, including disabling exits
 by inputting NONE instead of the board name.
 
@@ -2237,7 +2254,7 @@ Copy to overlay will copy the block to the given spot of the
 overlay.
 Copy to vlayer will copy the block to the given spot of the
 vlayer.
-Save as ANSI will save the block as an ANSI file.
+Save as ANSi/TXT will save the block as an ANSi or TXT file.
 Save as MZM will save the block as a board-type MZM file.
 
 Destinations for Move and Copy can overlap the original block
@@ -2273,7 +2290,7 @@ another section.
 :_D:~ED - Delete (board)
 
 Press D to select a board from a list to be deleted. You cannot
-delete the first board (the title screen). A deleted board will
+delete the first board (the title board). A deleted board will
 be pruned out, with the next actual board taking its place. A
 deleted board cannot be recovered or undone, so make sure this
 is the desired action.
@@ -2377,8 +2394,8 @@ world will be ignored. (Unlike old versions of MegaZeux, all
 exits in an imported world will work.) You can import a palette
 (.PAL) file (including a palette indices (.PALIDX) file in SMZX
 mode 3) or a sound effects (.SFX) file, all unique to MegaZeux.
-Finally, you can import an MZM or ANSI file and place it at a
-given position.
+Finally, you can import an MZM or ANSI/TXT file and place it at
+a given position.
 
 Importing boards or worlds will clear the board and overlay undo
 histories.
@@ -2398,8 +2415,8 @@ frequency. This has no effect on the actual board or world.
 :_M:~EM - Move Board
 
 M moves the current board to the desired place on the board
-list. The title screen cannot be moved, and other boards cannot
-be moved to the title screen position.
+list. The title board cannot be moved, and other boards cannot
+be moved to the title board position.
 
 :AltM:~EAlt+M - Modify
 
@@ -2515,9 +2532,13 @@ character set (CHR) for later game use or to edit in Fontutil or
 another external app, or export a partial portion of the current
 set instead. You can export palettes (PAL) [regular mode or
 SMZX] and sound effect settings (SFX) for transportation. Both
-are file formats unique to MegaZeux. Finally, you can export the
-current world, but using the last version's world format, with
-the "Downver. world (MZX)" option.
+are file formats unique to MegaZeux. You can export the current
+world, but using the last version's world format, with the
+"Downver. world (MZX)" option. Finally, you can export a
+PNG-format image of the current board/overlay (when in
+board/overlay edit modes) or the vlayer (when in vlayer edit
+mode); this option will launch a progress bar, and can be
+aborted by pressing the Escape key while exporting.
 
 Files like MZMs and SAVs can be exported in-game by Robotic
 code. See their respective areas for details. Other file types
@@ -2753,7 +2774,7 @@ These keys also jump numbers by 100 in dialog boxes.
 $~9The Character Editor
 
 The character editor is an important part of MegaZeux. With
-it, you can change the appearance of the character set. For
+it, you can change the appearance of character sets. For
 example, one can make bricks, rockets, stones, and demons;
 using multiple characters, one can make much grander things.
 The default pixel resolution is fair - 8x14 per character for a
@@ -2844,17 +2865,19 @@ switch character sets, either on the main character edit screen
 or on the character selection menu.
 
 Alt+I will import character sets while in the character editor;
-Alt+X will export. This can be done with one full set or series
-of partials. For a full set, simply select the desired set and
-click OK. For saving a series of partials, insert a hash sign
-in the set name then choose the Offset (starting character).
-Then choose the First number of the series (e.g. char#.chr with
-a First value of 5 would start from char5.chr). Then choose the
-Count value to indicate how many sets will be saved. Loading is
-simpler; simply choose the starting character set, the Offset
-value and the Count value. If multiple characters are being
-worked on at once, importing and exporting partials can be set
-to tile (which will base export and import positions on the
+Alt+X will export. This can be done with one full set, multiple
+sets, or groups of partials. For a full set, simply select the
+desired set and click OK. For saving multiple sets or a series
+of partials, first insert a hash sign in the set name then
+choose the Offset (starting character). Next, choose the First
+number of the series (e.g. char#.chr with a First value of 5
+would start from char5.chr). Then, put the Size of each set (up
+to 256 chars, or a full set). Finally, choose the Count value to
+indicate how many sets will be saved.
+Loading is simpler: simply choose the starting character set,
+the Offset value and the Count value. If multiple characters are
+being worked on at once, importing and exporting partials can be
+set to tile (which will base export and import positions on the
 current character grouping) or linear (which will be based on
 sequential places in the char set).
 
@@ -3057,7 +3080,7 @@ $First Board
 
 Here is where you select which board will be the starting board
 for the game. The player will start on this board. This
-defaults to the second board in the list, or to the title screen
+defaults to the second board in the list, or to the title board
 if a second board was not made when creating a new world.
 
 $Edging Color
@@ -3182,7 +3205,7 @@ The damage editing dialog allows you to change the amount of
 damage dealt by various things within the game. Select one and
 use the usual dialog keys to change the values, which can range
 from 0 to 255. 0 will leave the player invincible versus that
-thing.
+thing, but pain sounds and messages will still be triggered.
 
 Editing the global Robot is covered in the Robot tutorials, as
 it is (mostly) the same as editing any other Robot. The actual
@@ -3331,19 +3354,19 @@ $Load Palette on Entry
 This can be set to load a specific palette every time the board
 is entered, or set to do nothing.
 
-One can set the current board's settings as the default
-settings for all new boards made for this world file. Select
-the "Set as defaults" button at the bottom and click or press
-Space/Enter. This will save a .cnf file for the current world.
-There will be no confirmation. Since the .cnf is named after the
-current world, the current world must have been saved first.
-
 $Reset/Load When Entering from the Same Board
 
 If this option is set, all transitions from this board to itself
 will trigger charset/palette reloads. If "Reset board on entry"
 is concurrently set, all transitions from this board to itself
 will also reset the board.
+
+One can set the current board's settings as the default
+settings for all new boards made for this world file. Select
+the "Set as defaults" button at the bottom and click or press
+Space/Enter. This will save a .cnf file for the current world.
+There will be no confirmation. Since the .cnf is named after the
+current world, the current world must have been saved first.
 
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
@@ -3463,14 +3486,14 @@ sound and music.
 >#COMMAND2.HLP:_w3:~AWAIT PLAY
 >#COMMANDR.HLP:_w4:~AWAIT PLAY "string"
 
-$SAM Files in the Port
+$SAM File Support
 
 SAM files, formerly the only format for playing sounds in MZX,
 are directly supported. However, using OGGs or WAVs as the
 original source, if possible, is preferred as SAMs are low
 quality (~~8KHz mono) compared to typical WAV and OGG quality
 settings. SAM support is mostly kept in for supporting older
-games, not for usage in designing games.
+games, not for current usage in designing games.
 
 $Format for Sound Effects
 
@@ -3613,7 +3636,7 @@ effects are listed below.
 $SAM, OGG, MOD and WAV Frequencies
 
 Sounds played using the SAM command in Robotic play at its
-"natural" frequency at value 0; if one wants to play the sound
+"natural" frequency at value 0. If one wants to play the sound
 at a different pitch, a frequency value is needed. Frequencies
 corresponding to MOD file notes follow:
 
@@ -3706,8 +3729,8 @@ a score and lives display that is overlaid over the view at all
 times (by using Robotic). However, character 32 (empty space
 99.99% of the time) is never part of the overlay. To emulate a
 space, use the wall character or make your own space character.
-This is very important to remember when putting text onto the
-overlay.
+This is very important to remember when using the overlay to
+display text.
 
 The overlay is set on "Normal Overlay" mode by default. The
 editor will prevent you from editing the overlay if it is Off,
@@ -3750,7 +3773,7 @@ board. You can choose to place it as either Custom Block, Custom
 Floor, or Text.
 Copy to vlayer will copy the block to the given spot of the
 vlayer.
-Save as ANSI will save the block as an ANSI file.
+Save as ANSi/TXT will save the block as an ANSi or TXT file.
 Save as MZM will save the block as a layer-type MZM file.
 
 Destinations for Move and Copy can overlap the original block
@@ -3770,6 +3793,10 @@ under the cursor is not affected. One can jump to a color by
 typing its hex code in the color menu; for example, typing "0D"
 would jump to color 013 (background color 0, foreground color
 D).
+
+A quirk to keep in mind: any overlay tile with a background
+color of 0 will display the background color of anything beneath
+it.
 
 :_F:~EF - Fill
 
@@ -3791,9 +3818,10 @@ board.
 
 Alt+S will toggle whether the level beneath the overlay is
 shown (defaults to yes). Without the level, only the overlay is
-shown, and no board bits are seen through any holes in the
-overlay. However, it can be a good idea to show the level to see
-how it looks beneath the overlay.
+shown, and no board bits or underlying colors are seen through
+any holes or c0x characters in the overlay. However, it can be a
+good idea to show the level to see how it looks beneath the
+overlay.
 
 :F1:~EF1 - Help
 
@@ -3926,10 +3954,14 @@ and overwrite mode, where typed characters will overwrite any
 characters already there. Backspace and delete work as normal,
 as do PageDown, PageUp, End, and Home. Use Alt+C to insert a
 selected character from the current character set into the text.
+Press Alt+V to toggle between viewing the scroll elements with
+the current game charset/palette and the editor charset/palette.
 Finally, use Enter to start or insert new lines.
 
-Signs and scrolls allow the standard color codes (described in
-the Strings section of the help).
+Signs and scrolls allow the standard color codes in messages
+(described in the Strings section of the help). Default color
+coding for messages in scrolls is background color 8 and
+foreground color F.
 
 Press ESC when you are done editing your sign or scroll. It will
 be placed at the current cursor position and will become the
@@ -4133,16 +4165,23 @@ stepping as well, but are based off of the values of counters
 and strings, and only activate stepping after a relevant value
 is changed, not right when one is seen. Unlike with breakpoints,
 the watchpoint Variable string has to exactly match the counter
-name to trigger (although this check is case insensitive). Local
-counters can be watched as well as global counters; to watch
-local counters, check for rN.<counter>, where N is the robot_id,
-and <counter> is the relevant local counter name (without the
-angle brackets).
+or string name to trigger (although this check is case
+insensitive). Local counters can be watched as well as global
+counters; to watch local counters, check for rN.<counter>, where
+N is the robot_id, and <counter> is the relevant local counter
+name (without the angle brackets). For watching the global
+Robot's local counters, just check for the relevant local
+counter name.
 
 When the Value field of a watchpoint is left blank, the
-watchpoint triggers every time the relevant counter is changed.
-Putting a number in the Value field has the watchpoint trigger
-only when the relevant counter changes to that specific value.
+watchpoint triggers every time the relevant counter or string is
+changed. Putting a value in the Value field has the watchpoint
+trigger only when the relevant counter or string changes to that
+specific value.
+
+When a counter watchpoint is triggered, the debugger will show
+the original value and the changed value. String watchpoints
+will only show that the watched string value has changed.
 
 Editing breakpoints/watchpoints is done by pressing Space.
 Deleting breakpoints/watchpoints is done by pressing Alt+D.
@@ -4737,11 +4776,11 @@ $~9Robotic Reference Manual
 
 Use the following help links to see your desired topic(s).
 
-                       ~C1) The Basics
+$~C1) The Basics
 >#ROBOTSWH.HLP:1st:Robots - What They Are and How to Use Them
 >#ROBOTICT.HLP:1st:Robotic Tutorial
 
-          ~C2) Command List and Core Concepts
+$~C2) Command List and Core Concepts
 >#COMMANDR.HLP:1st:Command Reference
 >#COMMANDS.HLP:1st:Command Syntax
 >#USINGTHE.HLP:1st:Using the Editor
@@ -4756,7 +4795,7 @@ Use the following help links to see your desired topic(s).
 >#BULLETTY.HLP:1st:Bullet Types
 >#BADPRACT.HLP:bad:Robotic Usages That Should be Avoided
 
-                     ~C3) Extended Concepts
+$~C3) Extended Concepts
 >#PROCESS.HLP:prc:Cycles and Board Scans - How MZX Processes Robots
 >#SPRITES.HLP:spr:Sprites
 >#EXPRESS.HLP:exp:Expressions
@@ -4769,7 +4808,7 @@ Use the following help links to see your desired topic(s).
 >#PARTIAL.HLP:par:Partial Character Sets
 >#CHANGECH.HLP:1st:CHANGE CHAR ID - The CHAR ID Table
 
-                    ~C4) Legacy Coding Tools
+$~C4) Legacy Coding Tools
 >#COMMAND2.HLP:pre:Prefixes
 >#SENSORSW.HLP:094:Sensors
 
@@ -4903,7 +4942,7 @@ problems with Robotic:
   \n for newline (character 10)
   \r for carriage return (character 13)
   \" for quotation mark
-  \\ for slash
+  \\ for backslash
 
 MZX handles these conversions for you when using F3 to select
 a character from the current character set.
@@ -5024,10 +5063,18 @@ Randomly any direction OTHER than the given direction.
 
 The name of any object from the editor, other than the player.
 Use the name from the object list, minus any punctuation or
-spaces. In addition to the things on the lists, you can use
-Lazer for any lazer walls shot by lazer guns or Robots, and
-OpenGate for a gate that has been opened. Examples of legal
-things: Gem, CustomFloor, LitBomb, Robot.
+spaces. Examples of legal things: Gem, CustomFloor, LitBomb,
+Robot.
+
+There are some special cases:
+ * OpenGate will place an already-open gate. The parameter field
+  determines how long it remains open (ranging from p00 for 1
+  cycle, up to pff for 256 cycles).
+ * Lazer will place a single piece of lazer wall. The parameter
+  field determines both initial lazer character and duration.
+ * Sprite and Sprite_Colliding relate to sprites, while
+  Image_File relates to MZMs. These are covered in their own
+  sections.
 
 ~E[param]
 
@@ -5232,7 +5279,7 @@ problems with Robotic:
   \n for newline (character 10)
   \r for carriage return (character 13)
   \" for quotation mark
-  \\ for slash
+  \\ for backslash
 
 $Robotic Usage - Setting Strings
 
@@ -5327,8 +5374,8 @@ string limit works; any length cap will limit how much of the
 spliced-in material is inserted instead of limiting the string
 length in total. For instance:
 
-~B set "$str" "Baby steps."
-~B set "$str+0#4" "Long journey."
+~Bset "$str" "Baby steps."
+~Bset "$str+0#4" "Long journey."
 
 Will cause $str to have the value "Long steps."
 
@@ -5427,10 +5474,25 @@ arrangement.
 
 >tcl:Type-Based Command Listing
 >acl:Alphabetical Command Listing
+:tcl:
+$~9Type-Based Command Listing
 
-:tcl:                    ~9Type-Based Command Listing
-
-                    ~CFlow and Branching Commands
+>tc0:Flow and Branching Commands
+>tc1:General Color and Character Commands
+>tc2:Item Color and Character Commands
+>tc3:Counter and String Manipulation Commands
+>tc4:Music and Sound Commands
+>tc5:Textbox and Message Row Commands
+>tc6:Board Placement and Copy Commands
+>tc7:Overlay Commands
+>tc8:View Commands
+>tc9:Other Board Commands
+>tca:Player Control and Item Commands
+>tcb:Self Movement and Attack Commands
+>tcc:Other Self-Oriented Commands
+>tcd:Miscellaneous Commands
+:tc0:
+$~CFlow and Branching Commands
 
 >__6:: "label"
 >_w1:WAIT # [~D!~F]
@@ -5444,25 +5506,25 @@ arrangement.
 >_sE:SEND [dir] PLAYER "label"
 >_i1:IF "counter" !<>= # "label"
 >#COMMAND2.HLP:_i2:IF [condition] "label"
+>#COMMAND2.HLP:_iB:IF NOT [condition] "label"
 >#COMMAND2.HLP:_i3:IF # # "label"
->#COMMAND2.HLP:_i4:IF [dir] PLAYER [color] [thing] [param] "label"
+>#COMMAND2.HLP:_iC:IF PLAYER # # "label"
+>#COMMAND2.HLP:_i7:IF ALIGNEDROBOT "Robot" "label"
 >#COMMAND2.HLP:_i5:IF [color] [thing] [param] # # "label"
 >#COMMAND2.HLP:_i6:IF [color] [thing] [param] [dir] "label"
->#COMMAND2.HLP:_i7:IF ALIGNEDROBOT "Robot" "label"
->#COMMAND2.HLP:_i8:IF ANY [color] [thing] [param] "label"
->#COMMAND2.HLP:_i9:IF FIRST STRING "string" "label"
->#COMMAND2.HLP:_i0:IF NO [color] [thing] [param] "label"
+>#COMMAND2.HLP:_i4:IF [dir] PLAYER [color] [thing] [param] "label"
 >#COMMAND2.HLP:_iA:IF NOT [color] [thing] [param] [dir] "label"
->#COMMAND2.HLP:_iB:IF NOT [condition] "label"
->#COMMAND2.HLP:_iC:IF PLAYER # # "label"
->#COMMAND2.HLP:_iD:IF STRING "string" "label"
->#COMMAND2.HLP:_iE:IF STRING MATCHES "string" "label"
->#COMMAND2.HLP:_iF:IF STRING NOT "string" "label"
+>#COMMAND2.HLP:_i8:IF ANY [color] [thing] [param] "label"
+>#COMMAND2.HLP:_i0:IF NO [color] [thing] [param] "label"
 >#COMMAND2.HLP:_iO:IF "$string" (equality) # "label"
 >#COMMAND2.HLP:_iK:IF "$string" (equality) "text" "label"
 >#COMMAND2.HLP:_iL:IF "$string" (equality) "$string2" "label"
 >#COMMAND2.HLP:_iG:IF c?? Sprite_Colliding pNN # # "label"
 >#COMMAND2.HLP:_iH:IF c?? Sprite pNN # # "label"
+>#COMMAND2.HLP:_iD:IF STRING "string" "label"
+>#COMMAND2.HLP:_iE:IF STRING MATCHES "string" "label"
+>#COMMAND2.HLP:_iF:IF STRING NOT "string" "label"
+>#COMMAND2.HLP:_i9:IF FIRST STRING "string" "label"
 >_lA:LOCKSELF
 >_u3:UNLOCKSELF
 >#COMMAND2.HLP:_z1:ZAP "label" #
@@ -5475,8 +5537,8 @@ arrangement.
 >_cP:CYCLE # [~D!~F]
 >#COMMAND2.HLP:_w2:WAIT MOD FADE [~D!~F]
 >#COMMAND2.HLP:_w3:WAIT PLAY [~D!~F]
-
-               ~CGeneral Color and Character Commands
+:tc1:
+$~CGeneral Color and Character Commands
 
 >#COMMAND2.HLP:_l5:LOAD PALETTE "file"
 >#COMMAND2.HLP:_l4:LOAD CHAR SET "file"
@@ -5489,8 +5551,8 @@ arrangement.
 >#COMMAND2.HLP:_cG:COLOR INTENSITY # # PERCENT
 >_cD:COLOR FADE OUT
 >_cE:COLOR FADE IN
-
-                 ~CItem Color and Character Commands
+:tc2:
+$~CItem Color and Character Commands
 
 >_p0:PLAYER CHAR [char]
 >_p9:PLAYER CHAR [dir] [char]
@@ -5519,8 +5581,8 @@ arrangement.
 >#COMMAND2.HLP:_m2:MISSILECOLOR [color]
 >#COMMAND2.HLP:_c7:CHANGE THICK ARROW CHAR [dir] [char]
 >#COMMAND2.HLP:_c8:CHANGE THIN ARROW CHAR [dir] [char]
-
-             ~CCounter and String Manipulation Commands
+:tc3:
+$~CCounter and String Manipulation Commands
 
 >_sF:SET "counter" #
 >_sG:SET "counter" RANDOM # #
@@ -5539,8 +5601,10 @@ arrangement.
 >#COMMAND2.HLP:_iM:INC "$string" "text"
 >#COMMAND2.HLP:_iN:INC "$string" "$string2"
 >#COMMAND2.HLP:_dA:DEC "$string" #
-
-                     ~CMusic and Sound Commands
+>#COMMAND2.HLP:_iP:INPUT STRING "string"
+>#COMMAND2.HLP:_cB:CLIP INPUT
+:tc4:
+$~CMusic and Sound Commands
 
 >_m3:MOD "file"
 >_m8:MOD "*"
@@ -5559,8 +5623,8 @@ arrangement.
 >_e3:END PLAY
 >_e4:END SAM
 >#COMMAND2.HLP:_m7:MOD SAM # #
-
-                 ~CTextbox and Message Row Commands
+:tc5:
+$~CTextbox and Message Row Commands
 
 >__9:[ "string"
 >__1:% "string"
@@ -5581,9 +5645,8 @@ arrangement.
 >#COMMAND2.HLP:_s9:SCROLLTITLE COLOR [color]
 >#COMMAND2.HLP:_a2:ASK "string"
 >#COMMAND2.HLP:_iP:INPUT STRING "string"
->#COMMAND2.HLP:_cB:CLIP INPUT
-
-                 ~CBoard Placement and Copy Commands
+:tc6:
+$~CBoard Placement and Copy Commands
 
 >_pC:PUT [color] [thing] [param] # #
 >_pD:PUT [color] [thing] [param] [dir]
@@ -5600,8 +5663,8 @@ arrangement.
 >#COMMAND2.HLP:_cW:COPY BLOCK # # # # "#x" "#y"
 >#COMMAND2.HLP:_cY:COPY BLOCK "#x" "#y" # # # #
 >#COMMAND2.HLP:_cAA:COPY (OVERLAY) BLOCK "#x1" "#y1" # # "#x2" "#y2"
-
-                         ~COverlay Commands
+:tc7:
+$~COverlay Commands
 
 >#COMMAND2.HLP:_pE:PUT [color] [char] OVERLAY # #
 >#COMMAND2.HLP:_w7:WRITE OVERLAY [color] "string" # #
@@ -5615,8 +5678,8 @@ arrangement.
 >#COMMAND2.HLP:_o2:OVERLAY ON
 >#COMMAND2.HLP:_o3:OVERLAY STATIC
 >#COMMAND2.HLP:_o4:OVERLAY TRANSPARENT
-
-                           ~CView Commands
+:tc8:
+$~CView Commands
 
 >#COMMAND2.HLP:_v1:VIEWPORT # #
 >#COMMAND2.HLP:_v2:VIEWPORT SIZE # #
@@ -5626,8 +5689,8 @@ arrangement.
 >#COMMAND2.HLP:_l0:LOCKSCROLL
 >#COMMAND2.HLP:_u2:UNLOCKSCROLL
 >#COMMAND2.HLP:_sL:SET EDGE COLOR [color]
-
-                       ~COther Board Commands
+:tc9:
+$~COther Board Commands
 
 >_c2:CHANGE [color] [thing] [param] [color] [thing] [param]
 >#COMMAND2.HLP:_m0:MOVE ALL [color] [thing] [param] [dir] [~D!~F]
@@ -5637,8 +5700,8 @@ arrangement.
 >#COMMAND2.HLP:_d6:DISABLE SAVING
 >#COMMAND2.HLP:_e8:ENABLE SAVING
 >#COMMAND2.HLP:_e9:ENABLE SENSORONLY SAVING
-
-                 ~CPlayer Control and Item Commands
+:tca:
+$~CPlayer Control and Item Commands
 
 >#COMMAND2.HLP:_g1:GIVE # [item]
 >#COMMAND2.HLP:_t1:TAKE # [item]
@@ -5673,8 +5736,8 @@ arrangement.
 >#COMMAND2.HLP:_b6:BLIND #
 >#COMMAND2.HLP:_f1:FIREWALKER #
 >#COMMAND2.HLP:_w6:WIND #
-
-                 ~CSelf Movement and Attack Commands
+:tcb:
+$~CSelf Movement and Attack Commands
 
 >__5:/ "string" [~D!~F]
 >_w5:WALK [dir]
@@ -5689,8 +5752,8 @@ arrangement.
 >#COMMAND2.HLP:_l1:LAYBOMB [dir]
 >#COMMAND2.HLP:_l2:LAYBOMB HIGH [dir]
 >#COMMAND2.HLP:_l3:LAZERWALL [dir] #
-
-                   ~COther Self-Oriented Commands
+:tcc:
+$~COther Self-Oriented Commands
 
 >_c9:CHAR [char]
 >_cC:COLOR [color]
@@ -5713,8 +5776,8 @@ arrangement.
 >#COMMAND2.HLP:_b4:BECOME LAVAWALKER
 >#COMMAND2.HLP:_b5:BECOME PUSHABLE
 >_b1:BECOME [color] [thing] [param]
-
-                      ~CMiscellaneous Commands
+:tcd:
+$~CMiscellaneous Commands
 
 >__4:. "string"
 >#COMMAND2.HLP:_sV:SWAP WORLD "file"
@@ -5731,8 +5794,8 @@ arrangement.
 >#COMMAND2.HLP:_r7:REL COUNTERS LAST
 >#COMMAND2.HLP:_r8:REL PLAYER LAST
 >#COMMAND2.HLP:_r9:REL SELF LAST
-
-:acl:                ~9Alphabetical Command Listing
+:acl:
+$~9Alphabetical Command Listing
 
 >__1:% "string"
 >__2:& "string"
@@ -6045,9 +6108,9 @@ a label of its own, or otherwise receives an external message.
 Label names can be any length and consist of any characters.
 They are not case-sensitive, and they can not take interpreted
 counters (e.g. : "&label&").
-A Robot can have multiple labels with the same name. In these
-cases, the topmost of these labels in the Robot's code is the
-one that is triggered.
+A Robot can have multiple active labels with the same name. In
+these cases, the topmost of these labels in the Robot's code is
+the one that is triggered.
 There are several label names that are automatically jumped to
 under certain conditions. These are detailed in the Built-in
 Labels section.
@@ -6063,6 +6126,8 @@ See the Subroutine section for more information.
 This will attempt to send the current Robot to the label
 given; if the label does not exist, this command does nothing.
 If the label begins with a # it will go to it as a subroutine.
+Several (but not all!) built-in labels also have subroutine
+versions.
 
 :_g6:~AGOTO "#return"
 :_g7:~AGOTO "#top"
@@ -6087,7 +6152,8 @@ as listed above respectively:
 Robot name to message all Robots (including the Robot doing the
 send). Set ~ALOCKSELF~F beforehand to prevent sending to yourself
 when sending to "ALL".
-2. State the direction of the target Robot.
+2. State the direction of the target Robot, relative to the
+source Robot.
 3. State the direction of the target Robot, relative to the
 player.
 4. State the x,y coordinates of the target Robot.
@@ -6296,11 +6362,12 @@ objects of the second given type.
 :_pD:~APUT [color] [thing] [param] [dir]
 :_pF:~APUT [color] [thing] [param] [dir] PLAYER
 
-This will put a given object somewhere onscreen. If anything
-else is in that spot and layer, it will be replaced with this
-object. (The exception is if the player is in the target
-location. In this case, nothing happens.) The target location
-can be given in one of three ways:
+This will put a given object somewhere on the board. If anything
+else is in that spot and layer, it will be placed under the new
+object, if possible; otherwise, it will be replaced by this
+object. (The exception is if the object were to replace the
+player; in this case, nothing happens.) The target location can
+be given in one of three ways:
 
 1. State the target x,y coordinates.
 2. State the direction, relative to the Robot.
@@ -6317,7 +6384,7 @@ use ~ADUPLICATE SELF # #~F or ~ADUPLICATE SELF [dir]~F.
 
 This command loads the given module/OGG/SAM file as background
 music. These files also can be loaded from a subdirectory with
-the syntax of ""dir"\"file"" or ""dir"/"file"" (without the
+the syntax of ""dir"\\"file"" or ""dir"/"file"" (without the
 inner quotes). MOD, unlike SAM, will loop audio, and is affected
 by related commands like VOLUME and MOD ORDER.
 NOTE: placing * at the end of the filename will set the current
@@ -6341,7 +6408,7 @@ there, 2.mod will continue playing, and 1.mod will not start.
 
 Plays the given SAM/WAV/OGG/module file at a given frequency.
 These files also can be loaded from a subdirectory with the
-syntax of ""dir"\"file"" or ""dir"/"file"" (without the inner
+syntax of ""dir"\\"file"" or ""dir"/"file"" (without the inner
 quotes). 0 plays the file at natural frequency. Music loaded
 with the SAM command will not loop.
 
@@ -6472,15 +6539,18 @@ Changes the color of the player.
 :_pH:~APUT PLAYER [dir] ~F[~D!~F]
 
 The player will go to the given x,y coordinates or in the given
-direction immediately relative to the Robot. If this is
-impossible, the command is ignored.
+direction immediately relative to the Robot, destroying anything
+there that cannot go on the under layer. If the x,y coordinates
+of the put command are out of bounds, the player is moved to the
+closest-matching coordinates, and if a directional put is out of
+bounds it is ignored.
 
 >#COMMANDS.HLP:dir:Directions
 
 :_pI:~APUT "@@FILENAME.XXX" Image_File [param] # #
 
 Places an MZM of the given filename. These files also can be
-loaded from a subdirectory with the syntax of ""@@dir"\"file""
+loaded from a subdirectory with the syntax of ""@@dir"\\"file""
 or ""@@dir"/"file"" (without the inner quotes). The @@ is
 REQUIRED. The numbers mark the destination x,y coordinates of
 the MZM's upper-left corner; the parameter determines the
@@ -6529,13 +6599,14 @@ be stated in one of three ways:
    board share the same name, the Robot chosen may vary, so
    using this command in that situation is not advised.
 2. State the x,y coordinates of target Robot.
-3. State the direction of target Robot.
+3. State the direction of target Robot relative to the source
+   Robot.
 
-NOTE: Exact means just that, EXACT, down to the values of
-local counters. The only thing that will differ will be the
-robot_id. If one requires a group of objects differing only in
-name, COPYROBOT is generally unsuitable for this purpose because
-even the Robot name is copied.
+NOTE: Exact means just that, EXACT, down to its states and the
+values of local counters. The only thing that will differ will
+be the robot_id. If one requires a group of objects differing
+only in name, COPYROBOT is generally unsuitable for this purpose
+because even the Robot name is copied.
 
 >#COMMANDS.HLP:dir:Directions
 
@@ -6720,7 +6791,7 @@ actions from showing (such as bomb switch messages or a "Can't
 
 Also, locking the player will not cause the relevant input to
 be ignored completely. MegaZeux will still detect that you are
-pressing keys, even if the Player is forbidden from responding
+pressing keys, even if the player is forbidden from responding
 to them, and will act accordingly. In short, even if a player
 is locked, Robots that take directional and space/delete inputs
 will still act the same.
@@ -6730,7 +6801,7 @@ will still act the same.
 
 Changes the board exit in the given direction to lead to the
 given board or to nowhere. Unlike with the Board Exits menu,
-linking exits to the title screen with this command is
+linking exits to the title board with this command is
 allowed.
 
 >#COMMANDS.HLP:dir:Directions
@@ -6915,6 +6986,9 @@ numbers must be prefixed by plus signs, like so:
 COPY BLOCK # # # # "+#" "+#"
 COPY OVERLAY BLOCK # # # # "+#" "+#"
 
+Valid Robotic block copies from the overlay to the board are
+always CustomBlocks.
+
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
 
 :_cW:~ACOPY BLOCK # # # # "#x" "#y"
@@ -7051,7 +7125,7 @@ Loads in the specified character set or palette, exported using
 Alt+X from the world editor. The new character set or palette
 is permanent and affects the entire world until a new one is
 loaded. These files also can be loaded from a subdirectory with
-the syntax of ""dir"\"file"" or ""dir"/"file"" (without the
+the syntax of ""dir"\\"file"" or ""dir"/"file"" (without the
 inner quotes).
 
 Character sets can be loaded to the middle of the current
@@ -7093,7 +7167,9 @@ care about the character, only the color.
 :_m0:~AMOVE ALL [color] [thing] [param] [dir] ~F[~D!~F]
 
 All instances of the stated thing with the color and parameter
-given are moved in the given direction.
+given are moved in the given direction. This can force objects
+onto lava that normally don't go onto lava, but cannot force any
+objects onto goop.
 
 >#COMMANDS.HLP:col:Colors
 >#COMMANDS.HLP:dir:Directions
@@ -7142,7 +7218,7 @@ Robot editor, select the desired character, and press ESC.
 
 Fades in the stated module/OGG music file, from 0 volume to 255
 volume. These files also can be loaded from a subdirectory with
-the syntax of ""dir"\"file"" or ""dir"/"file"" (without the
+the syntax of ""dir"\\"file"" or ""dir"/"file"" (without the
 inner quotes).
 
 >#SOUNDEFX.HLP:1st:Sound and Music
@@ -7173,9 +7249,9 @@ Changes the color of all missiles fired from that point on.
 
 :_pB:~APUSH [dir]
 
-Pushes anything in the given direction one space forward, if
-the object in that direction is pushable. The Robot itself does
-not move.
+Pushes anything next to the Robot in the given direction one
+space forward, if the object in that direction is pushable. The
+Robot itself does not move.
 
 >#COMMANDS.HLP:dir:Directions
 
@@ -7359,7 +7435,8 @@ where they visually appear, not their actual locations.
 
 The first command changes the intensity of the entire palette
 from 0 to 255 percent (100 percent is a palette's default). The
-second command only changes one color, stated by number.
+second command only changes one color, with the first number
+being the chosen color and the second number the intensity.
 
 :_cK:~ACOPY CHAR [char] [char]
 
@@ -7458,7 +7535,7 @@ editor.
 The status screen counter with the stated position # is changed
 to the given counter. Valid positions for status counters range
 from 1 (top slot) to 6 (bottom slot).
-Status counters have a name limit of 14 characters; if the given
+Status counters have a name limit of 14 characters. If the given
 counter has a name over 14 characters long, this command will be
 ignored.
 
@@ -7466,12 +7543,13 @@ ignored.
 
 :_sV:~ASWAP WORLD "file"
 
-Transfers play to the starting board of the stated world file.
-All counters, items, keys, strings, etc. are retained from the
-current world, and the target world starts fresh. The target
-file can be the same world that is currently running; this is a
-simple way to "reset" the world while keeping progress in the
-form of items and counters.
+Transfers play to the starting board of the stated world file,
+with the target world starting as freshly loaded. In contrast to
+a launch from the title screen, a SWAP WORLD will retain all
+counters, items, keys, strings, etc. from the current world.
+The target file can be the same world that is currently running;
+this is a simple way to "reset" the world while keeping progress
+in the form of items and counters.
 
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 
@@ -8037,6 +8115,7 @@ divided into distinct sections.
 >#COUNTERS.HLP:ply:Player Counters
 >#COUNTERS.HLP:rob:Robot Counters
 >#COUNTERS.HLP:brd:Board Counters
+>#COUNTERS.HLP:auc:Audio Counters
 >#COUNTERS.HLP:mth:Mathematical Counters
 >#COUNTERS.HLP:fac:File Access Counters
 >#COUNTERS.HLP:spc:Sprite Counters
@@ -8135,14 +8214,17 @@ LOOP #, and ABORT LOOP.
 
 ~BROBOT_ID (read-only, local)
 
-The internal ID of the Robot.
+The internal ID of the Robot. These numbers match the parameters
+of Robots on the board, but are in decimal. So, for example, if
+a Robot on the board has a parameter of p0a, its ROBOT_ID would
+be 10.
 
 ~BRID<Robot name> (read-only)
 ~BROBOT_ID_<Robot name> (read-only)
 
 Both of these give the robot_id number of the given named
-Robot. In the case of multiple robots with the same name, the
-ID number corresponds to only one of them. If no robots have the
+Robot. In the case of multiple Robots with the same name, the
+ID number corresponds to only one of them. If no Robots have the
 name, or if the name in question only belongs to the global
 Robot, -1 is given.
 
@@ -8197,6 +8279,31 @@ counter has an effective range of 0 to 255.
 $Board Counters
 :brd:
 
+~BBOARD_X
+~BBOARD_Y
+
+BOARD_X and BOARD_Y represent the x,y coordinates of a target
+location on the current board. Several other counters use the
+values of these counters to read or alter parts of the board.
+These counters default to 0.
+
+~BBOARD_COLOR (read-only, board)
+~BBOARD_CHAR (read-only, board)
+
+Reads the color and character, respectively, of the object
+located at "board_x" "board_y". If board_x or board_y is an
+invalid coordinate, BOARD_COLOR and BOARD_CHAR access the
+closest valid coordinate. For example, if board_y is 60 and the
+board is 50 characters tall, board_y is treated as if it were
+49.
+
+One thing to note is that BOARD_COLOR will not take background
+color 0's transparency into account. For example, assuming
+default colors, if a white-on-black Robot walks onto a
+yellow-on-blue floor tile, the Robot appears as white-on-blue on
+the screen, but this counter will still report it as
+white-on-black instead of the displayed colors.
+
 ~BBOARD_ID
 
 Reads or alters the CHAR ID value of the object located at
@@ -8240,67 +8347,50 @@ counter in current versions.
 The top-left corner of the screen's x or y coordinates,
 respectively.
 
-~BBOARD_X (board)
-~BBOARD_Y (board)
-~BBOARD_COLOR (read-only, board)
-~BBOARD_CHAR (read-only, board)
-
-Set BOARD_X and BOARD_Y to the x,y coordinates of a cell on the
-current board, and BOARD_COLOR and BOARD_CHAR will automatically
-hold the color and character values for that cell, respectively.
-BOARD_CHAR and BOARD_COLOR return -1 for invalid coordinates.
-
-One thing to note is that BOARD_COLOR will not take background
-color 0's transparency into account. For example, assuming
-default colors, if a white-on-black Robot walks onto a
-yellow-on-blue floor tile, the Robot appears as white-on-blue on
-the screen, but this counter will still report it as
-white-on-black instead of the displayed colors.
-
 ~BBCHx,y (read-only, board)
 
 Allows the reading of single characters to the board with
-regards to coordinates x,y; the comma must be included. Returns
+regards to coordinates x,y. The comma must be included. Returns
 -1 for invalid coordinates.
 
 ~BBCOx,y (read-only, board)
 
 Allows the reading of single colors to the board with regards
-to coordinates x,y; the comma must be included.  Returns -1 for
+to coordinates x,y. The comma must be included.  Returns -1 for
 invalid coordinates. Much like BOARD_COLOR, BCOx,y will not take
 transparency into account.
 
 ~BBIDx,y (board)
 
 Allows reading and writing of the CHAR ID of an object on the
-board at the coordinates x,y; the comma must be included.
+board at the coordinates x,y. The comma must be included.
 Returns -1 for invalid coordinates.
 
 ~BBPRx,y (board)
 
 Allows reading and writing parameter values of an object on the
-board at the coordinates x,y; the comma must be included.
+board at the coordinates x,y. The comma must be included.
 Returns -1 for invalid coordinates.
 
 ~BUCHx,y (read-only, board)
 
 Allows the reading of single characters on the under layer at
-the coordinates x,y; the comma must be included.
+the coordinates x,y. The comma must be included.
 
 ~BUCOx,y (read-only, board)
 
 Allows the reading of single colors on the under layer at the
-coordinates x,y; the comma must be included.
+coordinates x,y. The comma must be included.
 
 ~BUIDx,y (board)
 
 Allows reading and writing of the CHAR ID of an object on the
-under layer at the coordinates x,y; the comma must be included.
+under layer at the coordinates x,y. The comma must be included.
 
 ~BUPRx,y (board)
 
 Allows reading and writing parameter values of an object on the
-under layer at the coordinates x,y; the comma must be included.
+under layer at the coordinates x,y. The comma must be included.
 
 All of the above four under layer counters will return -1 if
 nothing is on the under layer at that location, as well as for
@@ -8321,19 +8411,34 @@ invalid.
 ~BOCHx,y (read-only, board)
 
 Allows the reading of single characters on the overlay at the
-coordinates x,y; the comma must be included. Returns -1 if the
+coordinates x,y. The comma must be included. Returns -1 if the
 overlay is off or if the coordinates are invalid. 
 
 ~BOCOx,y (read-only, board)
 
 Allows the reading of single colors on the overlay at the
-coordinates x,y; the comma must be included. Returns -1 if the
+coordinates x,y. The comma must be included. Returns -1 if the
 overlay is off or if the coordinates are invalid.
 
 ~BOVERLAY_MODE (read-only, board)
 
 Shows the state of the overlay. 0 is off, 1 is normal, 2 is
 static and 3 is transparent.
+
+~BVIEWPORT_X (read-only, board)
+~BVIEWPORT_Y (read-only, board)
+
+Contains the x,y coordinates of the upper-left corner of the
+current board's viewport.
+
+~BVIEWPORT_WIDTH (read-only, board)
+~BVIEWPORT_HEIGHT (read-only, board)
+
+Contains the respective width and height of the current board's
+viewport.
+
+$Audio Counters
+:auc:
 
 ~BMOD_FREQUENCY (board)
 
@@ -8371,18 +8476,6 @@ MOD_LOOPSTART marks the beginning position of a loop;
 MOD_LOOPEND marks the end. If MOD_LOOPEND is 0, no looping will
 occur. Despite the counter names, they do not work on tracked
 modules, only OGG files.
-
-~BVIEWPORT_X (read-only, board)
-~BVIEWPORT_Y (read-only, board)
-
-Contains the x,y coordinates of the upper-left corner of the
-current board's viewport.
-
-~BVIEWPORT_WIDTH (read-only, board)
-~BVIEWPORT_HEIGHT (read-only, board)
-
-Contains the respective width and height of the current board's
-viewport.
 
 $Mathematical Counters
 :mth:
@@ -8444,11 +8537,11 @@ $File Access Counters
 Opens a file for reading from or writing to, respectively. The
 syntax is as such:
 
-set "file.ext" to "FREAD_OPEN"
+~Eset "file.ext" to "FREAD_OPEN"
 
 FREAD_OPEN will also read subdirectories with the given syntax:
 
-set "dir" to "FREAD_OPEN"
+~Eset "dir" to "FREAD_OPEN"
 
 ~BFWRITE_MODIFY (function)
 
@@ -8558,44 +8651,26 @@ Saves or loads MZX counter files, respectively.
 $Sprite Counters
 :spc:
 
-~BSPR_CLISTn (read-only)
+~BSPRn_WIDTH
+~BSPRn_HEIGHT
 
-A list of flagged collisions after a collision test was
-performed. Values of n from 0 to (SPR_COLLISIONS - 1) are
-valid. If the foreground collided, SPR_CLIST0 is always set to
--1 to indicate this.
+The dimensions of sprite n. (x and y dimensions, respectively.)
 
-~BSPR_COLLISIONS (read-only)
+~BSPRn_X
+~BSPRn_Y
 
-The number of sprite/foreground collisions reported by
-SPR_CLISTn counters.
+The current position of sprite n. These can be used to set the
+sprite outside the edges of the board, whereas PUT c?? Sprite
+p?? X Y disallows this.
 
-~BSPR_NUM
+~BSPRn_REFX
+~BSPRn_REFY
 
-When using p?? for placing a sprite, this counter's value
-becomes the sprite's parameter. When IF c?? Sprite p?? X Y is
-used, SPR_NUM will be set to the number of the first sprite that
-makes the IF statement true (if there are any). The sprites are
-checked by sprite number in ascending order.
-
-~BSPR_YORDER (write-only)
-
-If set to 1, the sprites are drawn in order of lowest sum of
-SPRn_Y and SPRn_CY values to highest instead of in order of
-their sprite numbers. Any incidence of matching sums will have
-draw order determined by sprite number. If any SPRn_Z values are
-set, those take precedence.
-
-~BSPRn_CCHECK (write-only)
-
-If set to 1 for sprite n, overlapping char 32s will not cause a
-collision between that sprite and other sprites or the
-foreground. If set to 2, char 32s and blank chars will also not
-collide, and blank characters will not be drawn. If set to 3,
-the given unbound sprite will undergo pixel-precise collision
-checks, and transparent colors will not cause a collision.
-Setting to 0 will cancel any previously set ccheck modes for
-that given sprite.
+Where sprite n's appearance is stored - either on the board or
+the vlayer (see SPRn_VLAYER). REFX is the x-coordinate, REFY is
+the y-coordinate. Whatever this looks like at this position is
+what the sprite will look like when drawn, including the colors
+if c?? is used when placing the sprite.
 
 ~BSPRn_CWIDTH
 ~BSPRn_CHEIGHT
@@ -8603,17 +8678,47 @@ that given sprite.
 The dimensions of the collision box around sprite n. (X and Y
 dimensions, respectively)
 
-~BSPRn_CLIST (write-only)
-
-Setting this counter to any value will perform a collision test
-on sprite n against its current location.
-
 ~BSPRn_CX
 ~BSPRn_CY
 
 The location, relative to sprite n's upper left corner, of the
 sprite's collision box (X and Y coordinates, respectively).
 These have default values of 0.
+
+~BSPR_CLISTn (read-only)
+
+A list of flagged collisions after a collision test was
+performed. Values of n from 0 to (SPR_COLLISIONS - 1) are
+valid. Each valid SPR_CLISTn value lists the number of a sprite
+involved in a collision with the checked sprite, arranged in
+ascending sprite order. If the foreground collided, SPR_CLIST0
+is always set to -1 to indicate this.
+
+~BSPR_COLLISIONS (read-only)
+
+The number of sprite/foreground collisions reported by
+SPR_CLISTn counters.
+
+~BSPRn_CCHECK (write-only)
+
+If set to 1 for sprite n, overlapping char 32s will not cause a
+collision between that sprite and other sprites or the
+foreground. If set to 2, both char 32s and blank chars will not
+collide, and blank characters will not be drawn. If set to 3,
+the given unbound sprite will undergo pixel-precise collision
+checks, and transparent colors will not cause a collision.
+Setting to 0 will cancel any previously set ccheck modes for
+that given sprite.
+
+~BSPRn_CLIST (write-only)
+
+Setting this counter to any value will perform a collision test
+on sprite n against its current location.
+
+~BSPRn_VLAYER (write-only)
+
+If set to 1, sprite n is referenced from the vlayer instead of
+the board.
 
 ~BSPRn_OFF
 
@@ -8639,15 +8744,6 @@ If unbound sprites are not in use, overlaid sprites will be
 drawn above the overlay, but will otherwise respect the standard
 sprite draw order.
 
-~BSPRn_REFX
-~BSPRn_REFY
-
-Where sprite n's appearance is stored - either on the board or
-the vlayer (see SPRn_VLAYER). REFX is the x-coordinate, REFY is
-the y-coordinate. Whatever this looks like at this position is
-what the sprite will look like when drawn, including the colors
-if c?? is used when placing the sprite.
-
 ~BSPRn_SETVIEW (write-only)
 
 Setting this to 1 will cause the viewport to be centered around
@@ -8669,28 +8765,6 @@ static sprite itself is not visually moved, and that relative
 collision checks like SPRn_CLIST against a static sprite work
 based on the static sprite's screen position.
 
-~BSPRn_SWAP (write-only)
-
-Swaps sprite n with the sprite number to which this function is
-set.
-
-~BSPRn_VLAYER (write-only)
-
-If set to 1, sprite n is referenced from the vlayer instead of
-the board.
-
-~BSPRn_WIDTH
-~BSPRn_HEIGHT
-
-The dimensions of sprite n. (x and y dimensions, respectively.)
-
-~BSPRn_X
-~BSPRn_Y
-
-The current position of sprite n. These can be used to set the
-sprite outside the edges of the board, whereas PUT c?? Sprite
-p?? X Y disallows this.
-
 ~BSPRn_Z
 
 These counters allow a user-defined sprite draw order. This
@@ -8699,6 +8773,27 @@ SPR_YORDER and sprite number. Higher SPRn_Z values are higher
 priority and will be drawn over sprites with lower SPRn_Z
 numbers. Matching SPRn_Z values will fall back to SPR_YORDER
 precedence if active, and sprite number precedence otherwise.
+
+~BSPR_NUM
+
+When using p?? for placing a sprite, this counter's value
+becomes the sprite's parameter. When IF c?? Sprite p?? X Y is
+used, SPR_NUM will be set to the number of the first sprite that
+makes the IF statement true (if there are any). The sprites are
+checked by sprite number in ascending order.
+
+~BSPR_YORDER (write-only)
+
+If set to 1, the sprites are drawn in order of lowest sum of
+SPRn_Y and SPRn_CY values to highest instead of in order of
+their sprite numbers. Any incidence of matching sums will have
+draw order determined by sprite number. If any SPRn_Z values are
+set, those take precedence.
+
+~BSPRn_SWAP (write-only)
+
+Swaps sprite n with the sprite number to which this function is
+set.
 
 ~BSPRn_UNBOUND
 
@@ -8730,32 +8825,30 @@ also be used.
 $String Counters
 :stc:
 
-~BSET "$string" to "BOARD_NAME"
-
-Sets the given string to the name of the current board.
-
-~BSET "$string" to "BOARD_SCAN"
-
-Sets the given string to a line of characters read directly
-from the board starting at "board_x" "board_y" and terminating
-at an asterisk (char 42), any instance of char 0, or after 63
-characters (whichever comes first). This command is
-deprecated; please use copy block to strings instead.
-
 ~BSET "$string" to "INPUT"
 
 Sets the given string to any input placed for the "input
 string" command.
 
+~BSET "$string" to "BOARD_NAME"
+
+Sets the given string to the name of the current board, or to a
+blank string when the board has no name.
+
 ~BSET "$string" to "MOD_NAME"
 
 Sets the given string to the filename of the currently playing
-module.
+module, or to a blank string when no music is playing. If the
+current board mod is mod *, this will contain the actual
+filename of the currently-playing mod, not "*".
 
 ~BSET "$string" to "ROBOT_NAME"
 
 Sets the given string to the name of the Robot this command
-is in.
+is in, or to a blank string when the Robot has no name.
+
+Note: BOARD_NAME, MOD_NAME and ROBOT_NAME cannot be directly
+displayed, unlike &INPUT&.
 
 ~BSET "$string" to "FREAD"
 ~BSET "$string" to "FREADn"
@@ -8776,6 +8869,14 @@ terminator character (*, or char 42, by default), while FWRITEn
 only places the first n characters. If n goes over the string's
 length, the entire string (and nothing else like whitespace or
 garbage characters) will be placed.
+
+~BSET "$string" to "BOARD_SCAN"
+
+Sets the given string to a line of characters read directly
+from the board starting at "board_x" "board_y" and terminating
+at an asterisk (char 42), any instance of char 0, or after 63
+characters (whichever comes first). This command is
+deprecated; please use copy block to strings instead.
 
 $Super MZX Counters
 :szc:
@@ -9051,13 +9152,13 @@ then width.
 ~BVCHx,y
 
 Allows reading and writing of single characters to the vlayer
-at the coordinates x,y; the comma must be included. Returns -1
+at the coordinates x,y. The comma must be included. Returns -1
 for invalid coordinates.
 
 ~BVCOx,y
 
 Allows reading and writing of single colors to the vlayer with
-at the coordinates x,y; the comma must be included. Returns -1
+at the coordinates x,y. The comma must be included. Returns -1
 for invalid coordinates.
 
 >#VLAYER.HLP:vla:The Vlayer and Its Uses
@@ -9093,10 +9194,11 @@ of 2000000.
 ~BEXIT_GAME
 
 If this counter is set to a non-zero value, the current
-MegaZeux world will exit to the title screen. This counter does
-nothing on the title screen unless in standalone mode, and if
-standalone mode is ran without a title screen, this counter will
-cause MegaZeux to exit entirely.
+MegaZeux world will exit to the title screen, or back to the
+editor if playing from the editor. This counter does nothing on
+the title screen unless in standalone mode, and if standalone
+mode is ran without a title screen, this counter will cause
+MegaZeux to exit entirely.
 
 ~BPLAY_GAME
 
@@ -9120,7 +9222,10 @@ green and blue values of that color.
 ~BINPUT (board)
 
 The numerical value of the last string inputted in an INPUT
-STRING box.
+STRING box. Strings that are solely numbers and strings leading
+with numbers (e.g. "86ed") set this counter to the relevant
+number. This counter returns 0 if the last string inputted did
+not lead with a number.
 
 >#COMMAND2.HLP:_iP:INPUT STRING "string"
 
@@ -9207,8 +9312,8 @@ contains the keycode of the last key released, or is 0 if a key
 is currently being held. These display/use the same keycodes as
 KEY_CODE, but do not cause an autorepeat stall. Results are
 unsigned, so checking for negative numbers will not work.
-KEY_PRESSEDn counters function like KEYn, but use KEY_PRESSED's
-keycodes.
+KEY_PRESSEDn counters function like KEYn counters, but use
+KEY_PRESSED's keycodes.
 As multiple KEYn and KEY_PRESSEDn values can be 1 at the same
 time, these counters can be very useful for detecting key
 combinations.
@@ -9429,7 +9534,7 @@ The current block is unmarked.
 :_pr:~EAlt+V - Verify
 
 Use Alt+V to determine if there are any invalid lines in the
-robot, and if there are what their errors are. Each invalid line
+Robot, and if there are what their errors are. Each invalid line
 can be set to I (ignore), D (delete) or C (comment), which will
 be applied if the user selects OK. Only the first 256 errors
 will be listed.
@@ -9651,7 +9756,7 @@ be inputted in specific ways to avoid problems with Robotic:
   \n for newline (character 10)
   \r for carriage return (character 13)
   \" for quotation mark
-  \\ for slash
+  \\ for backslash
 
 $Colors
 
@@ -9691,8 +9796,8 @@ Here's what each line does.
 
 ~E* "HELLO WORLD!"
 
-The * command puts whatever text is in the parentheses on the
-bottom of the screen. (Actually, it's placed on the given
+The * command puts whatever text is in the quotation marks on
+the bottom of the screen. (Actually, it's placed on the given
 message line row, which is the bottom by default.) All Robotic
 code starts immediately, so this particular statement happens
 right as the board with this Robot is loaded.
@@ -9759,7 +9864,8 @@ Try the following Robot program:
 
 Testing will show you that this Robot runs around in a small
 square. Now try touching it. If you can catch it, the Robot
-will change to an X and greet you! Let's look at this program.
+will stop moving, change to an X and greet you! Let's look at
+this program.
 
 ~E: "loop"
 
@@ -9784,8 +9890,10 @@ will never do anything else.
 
 Another label, but this one is special. When the player touches
 a Robot, by standing next to it and pressing against it, the
-Robot is sent the message "touch". The following commands will
-be run when the player touches the Robot.
+Robot is sent to the label "touch". MegaZeux has several labels
+like this, called "built-in labels", that are triggered in
+specific ways. The following commands will be run when the
+player touches the Robot.
 
 ~ECHAR 'X'
 
@@ -9879,7 +9987,7 @@ This gives the player 5 high-strength bombs.
 
 ~E: "shot"
 
-When the Robot is shot by a bullet, it is sent this message.
+When the Robot is shot by a bullet, it jumps to this label.
 
 ~ECOLOR c2C
 
@@ -9943,7 +10051,7 @@ cycle) unless a cycle command is placed inside the Robot.
 ~ESHOOT SEEK
 
 The Robot will shoot a bullet in the indicated direction (in
-this case, the direction the player is in).
+this case, the nearest direction the player is in).
 
 $Conclusion
 
@@ -9969,7 +10077,7 @@ tutorials. Especially of interest will be advanced topics like
 :gbl:
 $~9The Global
 
-The global Robot is a special-case Robot; it is always present
+The global Robot is a special-case Robot that is always present
 on every board of the game. It is immobile (technically off the
 board, but listed as at (-1,-1)), has a ROBOT_ID of 0, and
 cannot be destroyed or changed into another object, even
@@ -10033,7 +10141,7 @@ are several practices to avoid, as well as proper replacements.
   There are several counters that are Robot-specific and don't
   eat up global counter space. local through local32 per Robot
   should be enough for almost everyone, and the local counters
-  can be written to and read by other robots as well (using the
+  can be written to and read by other Robots as well (using the
   rN.local# counter form). If global temp counters are used in
   a Robot with several copies on the board, you will most likely
   run into problems. Unfortunately, using local counters can
@@ -10130,8 +10238,8 @@ A quick example of subroutines:
 ~Eif not spacepressed "notspaceloop"
 ~Egoto "#return"
 
-When sending other robots to subroutines the behavior is
-slightly different. Because the robot is pre-empted
+When sending other Robots to subroutines the behavior is
+slightly different. Because the Robot is pre-empted
 (interrupted) it will return to the same command it was at
 before going to the subroutine, not the instruction after.
 
@@ -10163,12 +10271,16 @@ parentheses. For example, an expression adding 5 and 3 would
 be done in MegaZeux by inputting "(5 + 3)".
 
 Counters can be used inside expressions using single quotes or
-ampersands like so: "(&five& + 'three')".
+ampersands like so: "('five' + &three&)". Using single quotes is
+preferred to prevent confusion with the normal usage of
+ampersands to interpolate counters.
 
 Unlike in many other programming languages, MegaZeux does not
 follow a strict order of operations. Items in parentheses take
-precedence, with other operator precedence solely determined by
-their position (from left to right).
+precedence, then unary ops; ternary is evaluated last, with all
+other operator precedence solely determined by their positions.
+Unary ops are handled right-to-left; everything else is handled
+left-to-right.
 
 For example, "(5 - 4 * 20 / (21 - 16))" would evaulate to 4.
 5 - 4 evaluates to 1; 1 * 20 evaluates to 20; 20 / (21 - 16)
@@ -10300,10 +10412,10 @@ Unary operators (operator followed by value):
 ~E- Unary Negation~F: returns the negative value of the operand
 (two's complement); i.e. reverses the sign of a number. (-10)
 would return -10.
-~E~~ Bitwise Negation~F: returns the bitwise NOT value of the
-operand (one's complement); i.e. changes each bit in a number.
-Using an 8-bit counter for clarity's sake, (~~10) [00001010]
-would return -11. [11110101]
+~E~~ Bitwise Negation~F: returns the bitwise NOT value of the operand
+(one's complement); i.e. changes each bit in a number. Using an
+8-bit counter for clarity's sake, (~~10) [00001010] would return
+-11. [11110101]
 
 Ternary operators (value - operator token - value - operator
 token - value):
@@ -10720,10 +10832,10 @@ will move the sprite to the northeast by 1.
 
 Outside of simple sprite motion such as this, you can do
 collision tests. These check if moving sprites will cause
-collision (i.e. overlapping) with either the foreground (i.e.
-customblocks) or with other sprites. This way, you can do things
-such as prevent sprites from moving on top of walls or on top of
-other characters, or allow a sprite to damage another one when
+collision (i.e. overlapping) with either the foreground
+(customblocks) or with other sprites. This way, you can do
+things such as prevent sprites from moving into walls or other
+characters, or allow a sprite to damage another one when
 striking.
 
 For these, sprite collision boxes must be set, as sprites will
@@ -10770,9 +10882,11 @@ prevent blank characters in a sprite from being shown, much like
 char 32.
 
 Since sprites are global, they will persist upon changing
-boards. Since the vlayer is global as well, using the vlayer to
-reference characters (by setting the SPRn_VLAYER counter to 1)
-will keep sprite characters consistent between boards.
+boards. (They can, however, be turned off on leaving a board by
+setting the SPRn_OFFONEXIT counter to 1). Since the vlayer is
+global as well, using the vlayer to reference characters (by
+setting the SPRn_VLAYER counter to 1) will keep sprite
+characters consistent between boards.
 
 $~9Unbound Sprites
 :ubs:
@@ -11001,7 +11115,7 @@ board. You can choose to place it as either Custom Block, Custom
 Floor, or Text.
 Copy to overlay will copy the block to the given spot of the
 overlay.
-Save as ANSI will save the block as an ANSI file.
+Save as ANSi/TXT will save the block as an ANSi or TXT file.
 Save as MZM will save the block as a layer-type MZM file.
 
 Destinations for Move and Copy can overlap the original block
@@ -11167,6 +11281,9 @@ Overlay to vlayer: ~ACOPY OVERLAY BLOCK x1 y1 w h "#x2" "#y2"
 Vlayer to board: ~ACOPY BLOCK "#x1" "#y1" w h x2 y2
 Vlayer to overlay: ~ACOPY OVERLAY BLOCK "#x1" "#y1" w h x2 y2
 
+Valid Robotic copies from vlayer to board are always
+CustomBlocks.
+
 In the commands below, ~eCOPY BLOCK~f and ~eCOPY OVERLAY BLOCK~f
 are interchangeable.
 
@@ -11244,7 +11361,7 @@ MZMs come in two modes: "board" and "layer".
   * Board mode saves color, param, ID, and under information.
     However, it cannot save the player, scrolls or sensors.
     Board mode can save most built-ins. As for Robots, MZMs
-    saved in the editor will save fresh robots, while MZMs saved
+    saved in the editor will save fresh Robots, while MZMs saved
     in-game keep the Robots' current states.
   * Layer mode saves only color and char information.
 
@@ -11444,6 +11561,13 @@ Commands that can prompt this behavior are:
 >#COMMANDR.HLP:_t7:TRY [dir] "label"
 >#COMMANDR.HLP:_w1:WAIT #
 
+Anything besides solely one of these commands ran in the target
+Robot's cycle (even blank lines!) will prevent the target Robot
+from executing in the same cycle.
+There is an exception for Robots using CYCLE # values over 1:
+being in such a Robot's idle cycles will trigger a same-cycle
+execution.
+
 For more detailed information about what commands end cycles and
 when, read cycles_and_commands.txt in the additional
 documentation.
@@ -11524,6 +11648,214 @@ updated.
 #NEWINVER.HLP
 :1st:
 $~9NEW in MegaZeux!
+
+September 10th, 2024 - MZX 2.93b
+
+This is mostly a big bugfix release, but there are a few new
+features of note. First and probably of most interest, there is
+a new feature to export a full screenshot of an entire board or
+the entire vlayer from the editor. Renderers based on the
+software layer renderer should see some performance improvement.
+The Darwin multiarchitecture .app port has also been massively
+overhauled, and now targets up to 5 architectures (ARM still
+pending). libxmp now plays stereo samples correctly.
+
+DOS port users should be happy to hear that Sound Blaster Pro
+support has been restored, and support for even more sound cards
+is coming. Additionally, some Ogg Vorbis-related crashes have
+been fixed, and the SVGA renderer should work better than prior.
+Screenshots have been enabled for this port, and the TIME/DATE
+counters should now work properly.
+
+Finally, as usual, there are a large number of bugfixes, which
+includes several crash fixes, scroll fixes, and FREAD fixes.
+No compatibility checks have been added for the string splice
+FREAD/FREADn bugfixes, as the old behavior was unusably buggy.
+
+USERS
+
++ Added board and vlayer image export to the editor (Alt+X).
+  This feature will render the entire board (with overlay, if
+  applicable) or vlayer as it appears in the editor. This may
+  take a long time with large boards/vlayers.
++ Builds without libpng (Android, DOS) now use a simple fallback
+  PNG exporter for screenshots instead of falling back to BMP.
++ The DOS port now supports Sound Blaster Pro in stereo mode.
+  The driver should also support all other Sound Blasters with
+  DSP >=2.00 and the mono/8-bit modes of the Sound Blaster 16,
+  but these are disabled for now (no software mixer support for
+  mono output). IRQs higher than 7 are also supported now.
++ The DOS port now uses stb_vorbis for Ogg Vorbis playback,
+  which should fix most audio-related crash bugs. Related crash
+  bugs caused by stream management have also been fixed.
++ All "gamecontroller[...]" config.txt options have been renamed
+  to "gamepad[...]". The old names are still supported.
++ Windows UNC paths are now supported in the file manager.
++ Paths with colons (:) are now explicitly supported in Linux
+  and macOS and always rejected in path strings used by worlds.
++ Fixed blank screen bugs that occur with the glslscale renderer
+  in conjunction with Intel HD Graphics 2500 graphics drivers
+  and possibly some other old drivers.
++ The softscale renderer now respects disable_screensaver.
++ HTML5: fixed the poor performance of FREADn and other features
+  that rely on calculating the length of an open file.
++ Clear world (Alt+R) now resets the world version.
++ Fixed a crash bug and a false positive match bug in the
+  command IF ALIGNEDROBOT. The false positive bug has been
+  version locked to 2.80 through 2.92X (just in case).
++ Software layer rendering performance for transparent sprites
+  has been improved, significantly in some cases.
++ Fixed a software layer renderer bug where a buffer with a
+  pixel alignment that varies between lines would cause the
+  frame to render incorrectly.
++ Fixed a software layer renderer bug in 32-bit builds where
+  SMZX sprites would sometimes render incorrectly when clipping
+  off the left side of the screen.
++ Setting a string offset, limit, or splice to FREADn now
+  respects the provided limit. If n is larger than the limit,
+  n total bytes will still be read (up to the maximum string
+  size); any bytes read past the limit are discarded.
++ Setting a string offset, limit, or splice to FREAD now
+  respects the provided limit and no longer pads the string with
+  spaces in some cases. Setting any string to FREAD now reads
+  the file until a terminator or the end of the file is found
+  instead of stopping when the maximum string size is reached;
+  any bytes read past the limit or maximum size are discarded.
++ Setting a string splice to FREAD or FREADn with invalid offset
+  or size values no longer causes a crash.
++ Setting a string splice to FREAD with a valid offset that
+  would write past the current length no longer causes a crash.
++ Fixed a rare networking bug where fetching a compressed file
+  over HTTP could fail for particular compressed file sizes.
++ The About MegaZeux dialog now shows both the compiled and
+  linked versions of libpng if they are different.
++ Fixed flash thing layer draw order bug that would cause it to
+  display over editor elements using the game UI layer.
++ Licenses are now properly loaded in the About MegaZeux dialog
+  for Darwin builds.
++ Fixed potential heap overflows in mfread and mfwrite when the
+  current position is past the end. This should never actually
+  happen, but it's safer and shuts up _FORTIFY_SOURCE and ASan
+  compilation warnings.
++ Fixed platform-dependent out-of-memory errors when loading
+  robots from <=2.84 save files with corrupt stack sizes.
++ Fixed hangs in the robot editor caused by trying to use
+  Replace All to replace quotes or extra words with nothing.
++ Fixed the handling of lines over 64 characters long during
+  scroll editing. Scroll editing now previews colors and allows
+  lines up to 255 bytes in length. Like robot message boxes, any
+  characters past the first 64 will clip.
++ Clicking a line in the scroll display and editor now jumps to
+  that line (same as the help file).
++ You can now toggle between editing scrolls with the protected
+  palette/charset and the game palette/charset with Alt+V.
++ Games for versions 2.80X through 2.90X now display scrolls
+  using the protected palette instead of the game palette (fixes
+  a scroll in Welkin).
++ Fixed possible robot stack and scroll message memory leaks.
++ Fixed a 2.93 regression where color strings with escapes like
+  "~~x", where x is not a hex digit, would also print the ~~ or @@.
++ Fixed clipping of the board message when it contains color
+  codes and when the message column is set to something besides
+  centered or 0. The next row will also use the correct color
+  code from the previous row (as if there had been no clipping)
+  instead of whatever the last color code displayed was. The old
+  behavior is version locked to <=2.93, so this fix won't take
+  effect until 2.94.
++ Added compatibility for MegaZeux 1.x's reverse send behavior
+  which allows robots to execute twice per cycle in some cases.
++ Fixed COPY when used with REL COUNTERS for 1.x worlds.
++ Added support for MegaZeux 1.x entrance precedence (color
+  match, then thing match only). This fixes an entrance bug in
+  MegaZeux Tutorial.
++ Added support for MegaZeux 1.x entrances linking to other
+  entrances on the same board. This fixes the whirlpools in the
+  Aqua Cavern board in Caverns of Zeux.
++ Added support for MegaZeux 1.x entrances not triggering when
+  the player is pushed onto them.
++ Added support for MegaZeux 1.x TELEPORT interrupting the
+  current board scan and partial support for the same behavior
+  in RESTORE PLAYER POSITION/EXCHANGE PLAYER POSITION.
++ The DJGPP port now locks all of its memory. This prevents
+  paging crashes related to audio, but increases memory usage.
++ Fixed the TIME and DATE counters in the DOS port when the
+  environment variable TZ is not set.
++ The SDL audio driver will now initialize the software mixer
+  frequency with the value returned by SDL_OpenAudioDevice.
++ Fixed audible pops when setting MOD_FREQUENCY.
++ ccv and png2smzx now return slightly more useful error
+  messages when an image fails to load.
++ ccv and png2smzx now support BMPs that use BI_BITFIELDS and
+  BI_ALPHABITFIELDS.
++ ccv and png2smzx now support Truevision TGA images.
++ Fixed YUV subsample averaging for UYVY (little endian) and
+  YUY2/YVYU (big endian).
++ ANSi file import/export options are now identified as both
+  ANSi and TXT, and the extension of the selected format is now
+  forced during export.
++ Fixed taking screenshots when in the board editor text mode.
++ The SVGA renderer now uses vsync palette/display page flips,
+  which improves performance and fixes display bugs. (asie)
++ Fixed libxmp stereo samples not playing correctly.
++ Fixed libxmp music not playing at high audio sample rates.
+
+DEVELOPERS
+
++ Renamed "compat_sdl.h" to "SDLmzx.h". This header is now used
+  to abstract ALL trivial includes of SDL headers. This makes
+  supporting the future release of SDL 3 cleaner.
++ The version of SDL to build with is now determined by the
+  config.sh options:
+    --enable-sdl (enables the default SDL version, usually 2);
+    --enable-sdl2 (enables SDL 2.x);
+    --enable-sdl1 (enables SDL 1.2.x);
+    --disable-sdl (disables SDL).
+  For compatibility, "--disable-libsdl2" is still recognized.
++ Added SDL 2 support to the Wii port.
++ Added SDL 2 and SDL 1.2 support to the 3DS port. (asie)
++ Updated the "sdlaccel" renderer, which can now be enabled with
+  --enable-sdlaccel in config.sh. This renderer uses the SDL
+  renderer API for hardware rendering and has an experimental
+  threaded charset texture update routine. SMZX isn't currently
+  implemented and it's slow, so it's disabled by default.
++ Moved SDL renderer window creation to render_sdl.c so both of
+  the SDL renderer-based renderers can benefit from it.
++ Removed floating point division usage in render_gl2.c.
++ Added --enable-lto to enable link-time optimizations.
++ The sanitizer config.sh options can now be used with release
+  builds e.g. --enable-release --enable-asan.
++ Simplified the configuration of system directories for ports
+  in config.sh, which now prints more information about them.
++ Fixed config.sh output of "/usr/bin/git" and the Git HEAD.
++ Fixed testworlds process running check edge cases.
++ Fixed config.sh and platform_endian.h detection for IBM Z and
+  System/390 architecture.
++ Software mixer configuration (rate, buffer, channels) is now
+  done using the function audio_mixer_init instead of each
+  driver handling it manually.
++ The software mixer render function now takes the number of
+  frames and channels to render and the output format instead
+  of the number of bytes. Supported output formats are 16-bit
+  signed, 8-bit signed, and 8-bit unsigned.
++ Audio streams with a null mix_data function are now supported.
+  These streams will be ignored by the software mixer.
++ sampled_mix_data now properly handles output requests smaller
+  than the size of the audio buffer.
++ Added software renderer regression tests.
++ Removed PPAL compile time render_layer variants. These did not
+  help performance and increased the render_layer size by 50%.
++ Added dependency builder makefile system in scripts/deps to
+  help with regenerating MinGW, DJGPP, darwin-dist, and Linux w/
+  MemorySanitizer dependencies.
++ Overhauled the darwin-dist build system to allow for more
+  modern XcodeLegacy-based compilation, including code signing
+  and shared library support (via dylibbundler). The following
+  architectures are now supported: i386, x86_64, x86_64h, ppc,
+  ppc64, and arm64/arm64e (untested).
++ Updated libxmp to 4.6.0+6cb48a4a+sample rate patch.
++ Added more PowerPC64 GCC defines to platform_endian.h.
+
+>#MAIN.HLP:072:Table of Contents
 
 December 31st, 2023 - MZX 2.93
 
@@ -11619,7 +11951,7 @@ GENERAL
 + Save files now save palette intensities for all modes as a raw
   array of little endian DWORDs instead of bytes. The 2.92 and
   2.93 intensities file formats are mutually incompatible.
-+ Scrolls can now display standard message ~@ color codes.
++ Scrolls can now display standard message ~~@@ color codes.
 + Fixed warning messages caused by SDL controller CRCs.
 + Fixed hangs that could be caused by malformed counters files.
 + Fixed world/save/counters file corruption in rare edge cases
@@ -13956,7 +14288,7 @@ FEATURES
 + Strings can now be used for the special counter LOAD_ROBOT in
   place of a file name, i.e. set "$str" "LOAD_ROBOT".
 + Strings can now be used for saving and loading MZMs in place
-  of a file name, i.e. put "@$str" image_file... (Lancer-X)
+  of a file name, i.e. put "@@$str" image_file... (Lancer-X)
 + Added ESCAPE_MENU counter. When set to 0, this counter will
   prevent pressing escape from opening the exit gameplay menu.
   This will not affect any other escape menus in MZX, and the
@@ -14016,7 +14348,7 @@ FEATURES
   (e.g. set "spr0_offset" 256)
   Offset values can also be set to locations within a char set.
   (Lancer-X)
-+ To allow you to access the extended charsets, the @ option to
++ To allow you to access the extended charsets, the @@ option to
   load char set now takes up to 4 digits, rather than merely 3.
   The + option still only allows 2 hex digits. (Lancer-X)
 + The colors used by tiles of a given color # in SMZX mode 3
@@ -14315,7 +14647,7 @@ BUGFIXES
   freezing both normally AND after loading a save. Robots will
   not be incorrectly versioned with the save format magic now.
 + Fixed bug where ALT+M wouldn't always edit non-stored types.
-+ Fixed bug where ! could not be used as a substitute for ~.
++ Fixed bug where ! could not be used as a substitute for ~~.
 + Fixed a bug where tab-draw and block actions would carry
   between board and overlay editing. ALT+O now sets the drawing
   mode back to normal on a switch.
@@ -14353,7 +14685,7 @@ BUGFIXES
 DEVELOPERS
 
 + Overhauled txt2hlp. Error messages now differentiate between
-  hyperlinks and labels and will take the display chars ~ and &
+  hyperlinks and labels and will take the display chars ~~ and &
   into account. Eventually, the goal should be to get rid of
   txt2hlp altogether and have MZX load straight from the .txt
   file.

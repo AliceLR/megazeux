@@ -3,7 +3,7 @@
 
 MegaZeux is a game creation system (GCS) created by game developer Alexis Janson in 1994.
 Originally a DOS program, in 2005 a multi-platform port was released by Exophase. The most
-recent version of MegaZeux is 2.93, which was released on December 31st, 2023.
+recent version of MegaZeux is 2.93b, which was released on September 10th, 2024.
 
 MegaZeux is officially supported on Windows, Linux/BSD, MacOS, as well as the NDS, 3DS, Wii,
 and PSP consoles. Historical support has also existed for GP2X, Pandora, and AmigaOS 4.
@@ -17,6 +17,7 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 [megazeux-w64]: https://www.digitalmzx.com/download.php?latest=windows64
 [megazeux-w32]: https://www.digitalmzx.com/download.php?latest=windows32
 [megazeux-dos]: https://www.digitalmzx.com/download.php?latest=dos
+[megazeux-dos32]: https://www.digitalmzx.com/download.php?latest=dosdjgpp
 [megazeux-osx]: https://www.digitalmzx.com/download.php?latest=osx
 [megazeux-ppc]: https://www.digitalmzx.com/download.php?latest=osxppc
 [megazeux-u64]: https://www.digitalmzx.com/download.php?latest=ubuntu64
@@ -25,37 +26,47 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 [megazeux-d32]: https://www.digitalmzx.com/download.php?latest=debian32
 [megazeux-f64]: https://www.digitalmzx.com/download.php?latest=fedora64
 [megazeux-rpi]: https://www.digitalmzx.com/download.php?latest=raspbian
+[megazeux-flat]: https://www.digitalmzx.com/download.php?latest=flatpak
 [megazeux-and]: https://www.digitalmzx.com/download.php?latest=android
 [megazeux-html]: https://www.digitalmzx.com/download.php?latest=html5
 [megazeux-nds]: https://www.digitalmzx.com/download.php?latest=nds
 [megazeux-3ds]: https://www.digitalmzx.com/download.php?latest=3ds
 [megazeux-wii]: https://www.digitalmzx.com/download.php?latest=wii
+[megazeux-wiiu]: https://www.digitalmzx.com/download.php?latest=wiiu
 [megazeux-swi]: https://www.digitalmzx.com/download.php?latest=switch
 [megazeux-psp]: https://www.digitalmzx.com/download.php?latest=psp
+[megazeux-vita]: https://www.digitalmzx.com/download.php?latest=psvita
+[megazeux-dc]: https://www.digitalmzx.com/download.php?latest=dreamcast
 [megazeux-src]: https://www.digitalmzx.com/download.php?latest=src
 
 <!-- Images for download links. -->
 [arch-w64]: contrib/archicons/windows64.png "Windows x64"
 [arch-w32]: contrib/archicons/windows32.png "Windows x86"
 [arch-dos]: contrib/archicons/dos.png       "MS DOS (MZX 2.70)"
-[arch-osx]: contrib/archicons/osx.png       "MacOS"
-[arch-ppc]: contrib/archicons/osxppc.png    "Mac OS X (PowerPC)"
+[arch-dos32]:contrib/archicons/dosdjgpp.png "MS DOS (32-bit)"
+[arch-osx]: contrib/archicons/osx.png       "macOS"
+[arch-ppc]: contrib/archicons/maccompat.png "macOS (Compatible)"
 [arch-u64]: contrib/archicons/ubuntu64.png  "Ubuntu AMD64"
 [arch-u32]: contrib/archicons/ubuntu32.png  "Ubuntu i386"
 [arch-d64]: contrib/archicons/debian64.png  "Debian AMD64"
 [arch-d32]: contrib/archicons/debian32.png  "Debian i386"
 [arch-f64]: contrib/archicons/fedora64.png  "Fedora x86_64"
 [arch-rpi]: contrib/archicons/raspbian.png  "Raspbian"
+[arch-flat]:contrib/archicons/flatpak.png   "Flatpak"
 [arch-and]: contrib/archicons/android.png   "Android"
 [arch-html]:contrib/archicons/html5.png     "HTML5 (Emscripten)"
 [arch-aur]: contrib/archicons/archlinux.png "Arch Linux (via AUR)"
 [arch-void]:contrib/archicons/voidlinux.png "Void Linux"
 [arch-gen]: contrib/archicons/gentoo.png    "Gentoo"
+[arch-alp]: contrib/archicons/alpine.png    "Alpine Linux"
 [arch-nds]: contrib/archicons/nds.png       "Nintendo DS"
 [arch-3ds]: contrib/archicons/3ds.png       "Nintendo 3DS"
 [arch-wii]: contrib/archicons/wii.png       "Nintendo Wii"
+[arch-wiiu]:contrib/archicons/wiiu.png      "Nintendo Wii U"
 [arch-swi]: contrib/archicons/switch.png    "Nintendo Switch"
 [arch-psp]: contrib/archicons/psp.png       "PlayStation Portable"
+[arch-vita]:contrib/archicons/psvita.png    "PlayStation Vita"
+[arch-dc]:  contrib/archicons/dreamcast.png "Sega Dreamcast"
 [arch-ami]: contrib/archicons/amiga.png     "Amiga OS 4"
 [arch-gp2x]:contrib/archicons/gp2x.png      "GP2X"
 [arch-pand]:contrib/archicons/pandora.png   "Pandora"
@@ -65,20 +76,25 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 &nbsp; [![Windows x64         ][arch-w64]][megazeux-w64]
 &nbsp; [![Windows x86         ][arch-w32]][megazeux-w32]
 &nbsp; [![Mac OS X            ][arch-osx]][megazeux-osx]
-&nbsp; [![Mac OS X (PowerPC)  ][arch-ppc]][megazeux-ppc]
+&nbsp; [![macOS (Compatible)) ][arch-ppc]][megazeux-ppc]
 &nbsp; [![Ubuntu AMD64        ][arch-u64]][megazeux-u64]
 &nbsp; [![Ubuntu i386         ][arch-u32]][megazeux-u32]
 &nbsp; [![Debian AMD64        ][arch-d64]][megazeux-d64]
 &nbsp; [![Debian i386         ][arch-d32]][megazeux-d32]
 &nbsp; [![Fedora x86_64       ][arch-f64]][megazeux-f64]
 &nbsp; [![Raspbian            ][arch-rpi]][megazeux-rpi]
+&nbsp; [![Flatpak             ][arch-flat]][megazeux-flat]
 &nbsp; [![Android             ][arch-and]][megazeux-and]
 &nbsp; [![HTML5 (Emscripten)  ][arch-html]][megazeux-html]
 &nbsp; [![Nintendo DS         ][arch-nds]][megazeux-nds]
 &nbsp; [![Nintendo 3DS        ][arch-3ds]][megazeux-3ds]
 &nbsp; [![Nintendo Wii        ][arch-wii]][megazeux-wii]
+&nbsp; [![Nintendo Wii U      ][arch-wiiu]][megazeux-wiiu]
 &nbsp; [![Nintendo Switch     ][arch-swi]][megazeux-swi]
 &nbsp; [![PlayStation Portable][arch-psp]][megazeux-psp]
+&nbsp; [![PlayStation Vita    ][arch-vita]][megazeux-vita]
+&nbsp; [![Sega Dreamcast      ][arch-dc]][megazeux-dc]
+&nbsp; [![DOS (32-bit)        ][arch-dos32]][megazeux-dos32]
 &nbsp; [![Source code         ][arch-src]][megazeux-src]
 
 The following platforms have MegaZeux releases available via repository:
@@ -86,6 +102,7 @@ The following platforms have MegaZeux releases available via repository:
 &nbsp; [![Arch Linux (via AUR)][arch-aur]](https://aur.archlinux.org/packages/megazeux/)
 &nbsp; [![Void Linux][arch-void]](https://github.com/void-linux/void-packages/tree/master/srcpkgs/megazeux)
 &nbsp; [![Gentoo][arch-gen]](https://github.com/Spectere/megazeux-overlay)
+&nbsp; [![Alpine Linux][arch-alp]](https://pkgs.alpinelinux.org/packages?name=megazeux)
 &nbsp; [![Amiga OS 4 (outdated)][arch-ami]](http://aminet.net/package/game/misc/pfp-mgzx)
 &nbsp; [![GP2X (outdated)][arch-gp2x]](https://dl.openhandhelds.org/cgi-bin/gp2x.cgi?0,0,0,0,26,2920)
 &nbsp; [![Pandora (outdated)][arch-pand]](https://repo.openpandora.org/?page=detail&app=megazeux_ptitseb)

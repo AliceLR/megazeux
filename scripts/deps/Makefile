@@ -6,12 +6,12 @@ ifeq (${PLATFORM},)
 $(error usage: make PLATFORM=<platform> [ARCH=<arch>] [all|<arch>|package|clean])
 endif
 
-VERSION		= 2.93b-r0
+VERSION		= 2.93c-r0
 DIST		= megazeux-dependencies-${VERSION}
 TARGET		= TARGET
 
 ZLIB		= zlib-1.3.1
-PNG		= libpng-1.6.43
+PNG		= libpng-1.6.44
 OGG		= libogg-1.3.5
 VORBIS		= libvorbis-1.3.7
 TREMOR		= tremor
@@ -19,7 +19,7 @@ STB		= stb
 SDL12		= SDL-1.2.15
 SDL2_TIGER	= panther_sdl2
 SDL2_22		= SDL2-2.0.22
-SDL2_LATEST	= SDL2-2.30.5
+SDL2_LATEST	= SDL2-2.30.8
 #SDL3		= SDL3-3.2.0
 
 # Mac OS X/macOS compatibility builds rely on different versions of SDL2
@@ -101,7 +101,8 @@ SDL3_PACKAGE	= ${TARGET}/${LIB}/libSDL3.a \
 		  ${TARGET}/${INCLUDE}/SDL3
 
 .PHONY: all
-.PHONY: package package_dir package_clean zlib_package png_package
+.PHONY: package package_dir package_clean package_lazy
+.PHONY: zlib_package png_package
 .PHONY: vorbis_package tremor_package stb_package
 .PHONY: SDL12_package SDL2_package SDL3_package
 .PHONY: clean zlib_clean png_clean ogg_clean vorbis_clean tremor_clean
@@ -164,6 +165,9 @@ build/${OGG}: build/${OGG}.tar.gz | build
 build/${VORBIS}: build/${VORBIS}.tar.gz | build
 	cd build && \
 	tar -xzf '${VORBIS}.tar.gz'
+ifeq (${VORBIS},libvorbis-1.3.7)
+	patch build/${VORBIS}/lib/CMakeLists.txt fix-vorbis-1.3.7-build-framework.patch
+endif
 
 build/${TREMOR}: | build
 	cd build && \
@@ -189,6 +193,10 @@ build/${SDL2_22}: build/${SDL2_22}.tar.gz | build
 	# SDL 2.0.22 doesn't actually need -fobjc-weak but CMakeLists.txt
 	# tries to force it. This doesn't affect autotools.
 	sed -i '' 's/^.*fobjc-weak.*$$//g' build/${SDL2_22}/CMakeLists.txt
+	# SDL 2.0.22 doesn't need AVFoundation.framework either, but
+	# the CMakeLists.txt links it anyway just to break Snow Leopard.
+	# This also does not affect autotools.
+	sed -i '' 's/set(SDL_FRAMEWORK_AVFOUNDATION 1)//g' build/${SDL2_22}/CMakeLists.txt
 
 build/${SDL2_LATEST}: build/${SDL2_LATEST}.tar.gz | build
 	cd build && \
@@ -439,7 +447,7 @@ ${SDL12_TARGET}: | build/${SDL12} SDL12_clean
 	${ARCH_INIT}; \
 	./autogen.sh; \
 	ln -sf build-scripts/config.guess config.guess; \
-	${CONFIGURE}; \
+	${CONFIGURE} ${ARCH_CONFIGURE_SDL12_ARGS}; \
 	${MAKE}; \
 	${MAKE} install;
 
@@ -485,9 +493,22 @@ package_clean:
 	rm -rf ${TARGET}/${BIN}
 
 package_dir:
-	mkdir -p ${TARGET}/${LIB}
-	mkdir -p ${TARGET}/${INCLUDE}
-	mkdir -p ${TARGET}/${BIN}
+	if [ -d "${PLATFORM}/${ARCH}" ]; then \
+		mkdir -p ${TARGET}/${LIB}; \
+		mkdir -p ${TARGET}/${INCLUDE}; \
+		mkdir -p ${TARGET}/${BIN}; \
+	fi
+
+# macOS dylibbundler requires libraries with intact full names,
+# which the normal package targets can't handle. This copies the
+# entirety of bin, lib, and include instead, and then strips
+# out known bloat.
+package_lazy: | package_dir
+	cp -RP "${LIB}" "${TARGET}/${LIB}/../"
+	cp -RP "${INCLUDE}" "${TARGET}/${INCLUDE}/../"
+	cp -RP "${BIN}" "${TARGET}/${BIN}/../"
+	rm -rf "${TARGET}/${LIB}/png.framework"
+	rm -f "${TARGET}/${BIN}/png"*
 
 %.debug: % | package_dir
 	${HOST}-objcopy --only-keep-debug $< $@

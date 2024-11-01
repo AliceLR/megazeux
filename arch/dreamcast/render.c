@@ -74,8 +74,7 @@ static boolean dc_init_video(struct graphics_data *graphics,
   graphics->resolution_height = 350;
   graphics->window_width = 640;
   graphics->window_height = 350;
-
-  return set_video_mode();
+  return true;
 }
 
 static void dc_free_video(struct graphics_data *graphics)
@@ -84,8 +83,8 @@ static void dc_free_video(struct graphics_data *graphics)
   pvr_mem_free(render_data->texture);
 }
 
-static boolean dc_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
+static boolean dc_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   return true;
 }
@@ -137,7 +136,8 @@ static void dc_render_mouse(struct graphics_data *graphics,
    0xFFFFFFFF, 0, w, h);
 }
 
-static void dc_sync_screen(struct graphics_data *graphics)
+static void dc_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct dc_render_data *render_data = graphics->render_data;
   pvr_vertex_t vtx;
@@ -187,11 +187,9 @@ void render_dc_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = dc_init_video;
   renderer->free_video = dc_free_video;
-  renderer->set_video_mode = dc_set_video_mode;
+  renderer->create_window = dc_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->update_colors = dc_update_colors;
-  renderer->resize_screen = resize_screen_standard;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = dc_render_graph;
   renderer->render_layer = dc_render_layer;
   renderer->render_cursor = dc_render_cursor;

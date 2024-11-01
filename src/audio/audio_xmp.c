@@ -282,6 +282,8 @@ static struct audio_stream *construct_xmp_stream(vfile *vf,
   size_t row_pos;
   int num_orders;
   int i;
+  int chn = audio.buffer_channels < 2 ? 1 : 2;
+  int flags = chn == 1 ? XMP_FORMAT_MONO : 0;
 
   ctx = xmp_create_context();
   if(!ctx)
@@ -304,7 +306,7 @@ static struct audio_stream *construct_xmp_stream(vfile *vf,
   }
 
   xmp_stream->ctx = ctx;
-  xmp_start_player(ctx, audio.output_frequency, 0);
+  xmp_start_player(ctx, audio.output_frequency, flags);
   xmp_set_player(ctx, XMP_PLAYER_INTERP, get_xmp_resample_mode());
 
   xmp_get_module_info(ctx, &info);
@@ -344,7 +346,7 @@ static struct audio_stream *construct_xmp_stream(vfile *vf,
   s_spec.get_frequency = audio_xmp_get_frequency;
 
   initialize_sampled_stream((struct sampled_stream *)xmp_stream, &s_spec,
-   frequency, 2, false);
+   frequency, chn, false);
 
   initialize_audio_stream((struct audio_stream *)xmp_stream, &a_spec,
    volume, repeat);

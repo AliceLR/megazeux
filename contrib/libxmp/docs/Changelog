@@ -1,6 +1,40 @@
 Stable versions
 ---------------
 
+4.6.1 (?):
+	Changes by Claudio Matsuoka:
+	- The full library is now under MIT license
+	Changes by Alice Rowan:
+	- Fix XM envelope sustain points that exist on a zero-length loop.
+	- Fix loading edge case STMs with an EOF byte of 2.
+	- Fix loading Imago Orpheus modules with null instrument magic
+	  strings, bidirectional samples, and disabled default panning.
+	- Faster IT loading by buffering pattern, sample, and comment reads.
+	- Fix loop detection edge cases broken by S3M/IT marker scan bugs.
+	- Fix out-of-bounds reads in His Master's Noise Mupp instruments.
+	- Fix slow ProWizard testing.
+	- Replace rand() with a built-in reentrant alternative.
+	- xmp_set_tempo_factor now returns -XMP_ERROR_STATE when called prior
+	  to xmp_start_player (instead of causing crashes).
+	- Fix mixer crashes caused by previously valid tempo factors after
+	  sample rate or BPM changes.
+	Changes by Thomas Neumann:
+	- Fix XM envelope handling
+	- Bug fixes to DSMI loader
+	- Fix 16-bit sample check in MultiTracker loader
+	- Fix finetune in MultiTracker loader
+	Changes by Saga Musix:
+	- S3M: Detect PlayerPRO, Velvet Studio and old MPT versions
+	Changes by ds-sloth:
+	- Optimize scan code for common case of no effects
+	Changes by Misty De Méo:
+	- Filter off html files when reading archives.
+	Changes by Ozkan Sezer:
+	- Change lha depacker to use a stripped down version of lhasa.
+	- Merge several CVE fixes to depackers stb_vorbis backend.
+	- Make the lite version buildable from git or full distribution.
+	- Build system fixes and clean-ups. Misc code clean-ups.
+
 4.6.0 (20230615):
 	Changes by Alice Rowan:
 	- Add Astroidea XMF format loader.
@@ -251,7 +285,7 @@ Stable versions
 	- add frequency-based "period" mode
 	- add support to IT sample sustain loop
 	- limit Oktalyzer modules to MOD note range
-	- remove broken synth chip and Adlib emulation suport
+	- remove broken synth chip and Adlib emulation support
 	- code refactoring and cleanup
 
 4.3.13 (20160417):
@@ -878,7 +912,7 @@ Stable versions
 	- fix AMF volume slide effect
 	- fix AMF track allocation
 	- fix OpenBSD driver configuration
-	- fix patern delay + pattern break command (reported by The Welder)
+	- fix pattern delay + pattern break command (reported by The Welder)
 	- fix memory leaks found by cppcheck (reported by Paul Wise)
 	- fix XM note cut on invalid instrument (reported by Benjamin Shadwick)
 	- fix invalid memory access in case of mismatched track/pattern lengths
@@ -952,7 +986,7 @@ Stable versions
 	- code cleanup and optimizations
 	- Android port using NDK
 	- fix time echoback event for MED
-	- fix module time count not reseting at new module
+	- fix module time count not resetting at new module
 	- make zipfile detection stricter (by Solomon Peachy)
 	- fix DSMI loader volume event (by Solomon Peachy)
 	- initialize formats only once
@@ -981,7 +1015,7 @@ Stable versions
 	- better handling of corrupted modules
 	- load Real Tracker RTMM 1.12 modules (tested with odyssey.rtm)
 	- fix tuning of Real Tracker modules
-	- fix Real Tracker patern decoding
+	- fix Real Tracker pattern decoding
 	- fix segfault in modules with 0 orders or 0 channels
 	- fix loading of MED4 module patterns with less than 32 lines
 	- fix memory leak when loading corrupt MED4 files
@@ -1658,7 +1692,7 @@ Stable versions
 	- Channel 1 to 10 mute/unmute keys changed
 	- cfg.mode -1 bias removed
 	- --ignoreff option removed
-	- Reserved & unsed fields removed from structures
+	- Reserved & unused fields removed from structures
 	- S3M tremor effect implemented
 	- XM keyoff effect implemented
 	- Experimental (untested) SGI driver
@@ -1735,7 +1769,7 @@ Stable versions
 	- Support for Oktalyzer 7 bit samples
 	- Support for IFF modules and variations
 	- S3M arpeggio kludge removed
-	- S3M module length adjusted discarding 0xff paterns
+	- S3M module length adjusted discarding 0xff patterns
 	- S3M set tempo/BPM effect adjusted
 	- XM envelope loop bug fixed ("Shooting Star" plays correctly)
 	- XM 16 bit sample conversion bug fixed ("Hyperdrive" plays correctly)

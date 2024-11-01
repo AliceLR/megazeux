@@ -68,8 +68,12 @@
   ((defined(__riscv) || defined(__riscv__)) && __riscv_xlen >= 64) || \
   ((defined(__mips__) || defined(__mips) || defined(__MIPS__)) && \
     defined(_MIPS_SIM) && defined(_ABI64) && _MIPS_SIM == _ABI64) || \
+  (defined(__loongarch__) && defined(__loongarch_grlen) && \
+    __loongarch_grlen == 64) || \
   (defined(__GNUC__) && \
-    (defined(__x86_64__) || defined(__powerpc64__) || defined(__PPC64__) || \
+    (defined(__x86_64__) || \
+     defined(__powerpc64__) || defined(__PPC64__) || \
+     defined(__ppc64__) || defined(_ARCH_PPC64) || \
      defined(__aarch64__) || defined(__alpha__) || \
      defined(__s390x__) || defined(__zarch__)))
 #define ARCHITECTURE_BITS 64

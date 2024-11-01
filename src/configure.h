@@ -63,6 +63,14 @@ enum gl_filter_type
   NUM_GL_FILTER_TYPES
 };
 
+enum system_mouse_type
+{
+  SYSTEM_MOUSE_OFF,
+  SYSTEM_MOUSE_ON,
+  SYSTEM_MOUSE_HIDE_SOFTWARE_MOUSE,
+  NUM_SYSTEM_MOUSE_TYPES
+};
+
 enum cursor_mode_types
 {
   CURSOR_MODE_UNDERLINE,  // Underline for text entry (insert).
@@ -130,6 +138,7 @@ struct config_info
   // Audio options
   int audio_sample_rate;
   int audio_buffer_samples;
+  int audio_output_channels;
   boolean oversampling_on;
   enum resample_mode resample_mode;
   enum resample_mode module_resample_mode;
@@ -161,7 +170,7 @@ struct config_info
   boolean startup_editor;
   boolean standalone_mode;
   boolean no_titlescreen;
-  boolean system_mouse;
+  enum system_mouse_type system_mouse;
   boolean grab_mouse;
   boolean save_slots;
   char save_slots_name[256];

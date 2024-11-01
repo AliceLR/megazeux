@@ -121,6 +121,7 @@ typedef int tst_uint64[2 * (8 == sizeof(uint64)) - 1];
 #endif
 
 /* Constants */
+#define REAL_MAX_SRATE	384000		/* actual maximum sample rate */
 #define PAL_RATE	250.0		/* 1 / (50Hz * 80us)		  */
 #define NTSC_RATE	208.0		/* 1 / (60Hz * 80us)		  */
 #define C4_PAL_RATE	8287		/* 7093789.2 / period (C4) * 2	  */
@@ -155,6 +156,7 @@ typedef int tst_uint64[2 * (8 == sizeof(uint64)) - 1];
 #define EVENT(a,c,r)	m->mod.xxt[TRACK_NUM((a),(c))]->event[r]
 
 #ifdef _MSC_VER
+
 #define D_CRIT "  Error: "
 #define D_WARN "Warning: "
 #define D_INFO "   Info: "
@@ -208,16 +210,6 @@ static void __inline D_(const char *text, ...) {
 
 #endif	/* !_MSC_VER */
 
-#ifdef _MSC_VER
-#define dup _dup
-#define fileno _fileno
-#define strnicmp _strnicmp
-#define fdopen _fdopen
-#define open _open
-#define close _close
-#define unlink _unlink
-#define S_ISDIR(x) (((x)&_S_IFDIR) != 0)
-#endif
 #if defined(_WIN32) || defined(__WATCOMC__) /* in win32.c */
 #define USE_LIBXMP_SNPRINTF
 /* MSVC 2015+ has C99 compliant snprintf and vsnprintf implementations.
@@ -226,6 +218,9 @@ static void __inline D_(const char *text, ...) {
  * functions. Additionally, GCC may optimize some calls to those functions. */
 #if defined(_MSC_VER) && _MSC_VER >= 1900
 #undef USE_LIBXMP_SNPRINTF
+#endif
+#if defined(__MINGW32__) && !defined(__MINGW_FEATURES__)
+#define __MINGW_FEATURES__ 0 /* to avoid -Wundef from old mingw.org headers */
 #endif
 #if defined(__MINGW32__) && defined(__USE_MINGW_ANSI_STDIO) && (__USE_MINGW_ANSI_STDIO != 0)
 #undef USE_LIBXMP_SNPRINTF
@@ -290,6 +285,7 @@ int libxmp_snprintf (char *, size_t, const char *, ...) LIBXMP_ATTRIB_PRINTF(3,4
 #define QUIRK_NOBPM	(1 << 28)	/* Adjust speed only, no BPM */
 #define QUIRK_ARPMEM	(1 << 29)	/* Arpeggio has memory (S3M_ARPEGGIO) */
 #define QUIRK_RSTCHN	(1 << 30)	/* Reset channel on sample end */
+#define QUIRK_FT2ENV	(1 << 31)	/* Use FT2-style envelope handling */
 
 #define HAS_QUIRK(x)	(m->quirk & (x))
 
@@ -516,6 +512,7 @@ struct mixer_data {
 	int dsp;		/* dsp effect flags */
 	char *buffer;		/* output buffer */
 	int32 *buf32;		/* temporary buffer for 32 bit samples */
+	int total_size;		/* allocated samples (not frames) in buffers */
 	int numvoc;		/* default softmixer voices number */
 	int ticksize;
 	int dtright;		/* anticlick control, right channel */
@@ -524,11 +521,16 @@ struct mixer_data {
 	double pbase;		/* period base */
 };
 
+struct rng_state {
+	unsigned state;
+};
+
 struct context_data {
 	struct player_data p;
 	struct mixer_data s;
 	struct module_data m;
 	struct smix_data smix;
+	struct rng_state rng;
 	int state;
 };
 

@@ -4,4 +4,5 @@
 # with software + canvas scaling. These should probably have their performace
 # compared at some point though.
 
-./config.sh --platform emscripten --enable-release --disable-softscale "$@"
+./config.sh --platform emscripten --enable-release --enable-lto \
+            --disable-softscale "$@"

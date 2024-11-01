@@ -58,7 +58,7 @@ static void init_modplug_settings(void)
     mod_settings.mFlags = MODPLUG_ENABLE_OVERSAMPLING;
 
   mod_settings.mFrequency = audio.output_frequency;
-  mod_settings.mChannels = 2;
+  mod_settings.mChannels = audio.buffer_channels < 2 ? 1 : 2;
   mod_settings.mBits = 16;
 
   switch(conf->module_resample_mode)

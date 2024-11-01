@@ -11,6 +11,10 @@ DSOSONAME  = -install_name ${LIBDIR}/
 DYLIBBUNDLER ?= @arch/darwin/bundle.sh
 LIPO         ?= @arch/darwin/lipo.sh
 
+CODESIGN_ID  ?= -
+CODESIGN     ?= codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign ${CODESIGN_ID}
+CODESIGN_CHK ?= codesign --verify --deep --strict -vvvv
+
 #
 # darwin specific recipes.
 # Enable 'make install' and 'make uninstall' for darwin builds.
@@ -98,6 +102,7 @@ CFLAGS   += -DSUBPLATFORM='"${REAL_ARCH}"'
 CXXFLAGS += -DSUBPLATFORM='"${REAL_ARCH}"'
 UTILS_ZLIB_LDFLAGS ?= ${PREFIX}/lib/libz.a
 UTILS_LIBPNG_LDFLAGS ?= ${PREFIX}/lib/libpng.a
+SDL_PREFIX := ${PREFIX}
 
 package: all
 	if [ -d "bundles/libs-${REAL_ARCH}" ]; then rm -rf "bundles/libs-${REAL_ARCH}"; fi
@@ -216,6 +221,13 @@ build:
 	${MV} ${build}/docs               ${mzx_app}/../Documentation
 ifeq (${BUILD_UTILS},1)
 	${MV} ${build}/utils/             ${mzx_app}/../Utilities
+	${CODESIGN}                       ${mzx_app}/../Utilities/ccv
+	${CODESIGN}                       ${mzx_app}/../Utilities/checkres
+	${CODESIGN}                       ${mzx_app}/../Utilities/downver
+	${CODESIGN}                       ${mzx_app}/../Utilities/png2smzx
+	${CODESIGN}                       ${mzx_app}/../Utilities/y4m2smzx
+	${CODESIGN}                       ${mzx_app}/../Utilities/hlp2txt
+	${CODESIGN}                       ${mzx_app}/../Utilities/txt2hlp
 endif
 	${MV} ${build}/${mzx}             ${mzx_app}/Contents/MacOS/MegaZeux
 ifneq (${BUILD_MZXRUN},)
@@ -225,7 +237,8 @@ ifneq (${BUILD_MODULAR},)
 	${MV} ${build}/${core_target}     ${mzx_app}/Contents/MacOS/
 	${MV} ${build}/${editor_target}   ${mzx_app}/Contents/MacOS/
 endif
-	${CP} -r ./bundles/libs-*         ${mzx_app}/Contents/
+	${MKDIR}                          ${mzx_app}/Contents/Frameworks
+	${CP} -r ./bundles/libs-*         ${mzx_app}/Contents/Frameworks
 ifneq (${BUILD_MZXRUN},)
 	${CP} -r ${mzx_app} ${mzxrun_app}
 	${RM} ${mzx_app}/Contents/MacOS/MZXRun
@@ -234,11 +247,17 @@ ifneq (${BUILD_MODULAR},)
 	${RM} ${mzxrun_app}/Contents/MacOS/${editor_target}
 endif
 	${CP} arch/darwin/MZXRun.plist    ${mzxrun_app}/Contents/Info.plist
+	${CODESIGN}                       ${mzxrun_app}/Contents/MacOS/MZXRun
+	${CODESIGN_CHK}                   ${mzxrun_app}
 endif
 	${CP} arch/darwin/MegaZeux.plist  ${mzx_app}/Contents/Info.plist
+	${CODESIGN}                       ${mzx_app}/Contents/MacOS/MegaZeux
+	${CODESIGN_CHK}                   ${mzx_app}
 
 archive: build
 	@arch/darwin/dmg.sh ${TARGET}
+	${CODESIGN} build/dist/darwin/${TARGET}.dmg
+	${CODESIGN_CHK} build/dist/darwin/${TARGET}.dmg
 
 clean: package_clean
 

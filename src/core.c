@@ -741,7 +741,7 @@ static boolean core_draw(core_context *root)
   }
 
 #ifdef CONFIG_FPS
-  if(is_fullscreen() && ctx_data->context_type != CTX_EDITOR)
+  if(video_is_fullscreen() && ctx_data->context_type != CTX_EDITOR)
   {
     // If we're in fullscreen mode, draw an onscreen FPS display.
     char fpsbuf[32];

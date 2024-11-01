@@ -280,6 +280,12 @@ ifeq (${BUILD_ENABLE_SCREENSHOTS},1)
 render_layer_software = 1
 endif
 
+# The editor requires the software layer renderer
+# (board screenshot export).
+ifeq (${BUILD_EDITOR},1)
+render_layer_software = 1
+endif
+
 # Software layer renderer
 # This one tends to take forever for many builds. Prefix it to
 # the list so hopefully it starts sooner during parallel builds.

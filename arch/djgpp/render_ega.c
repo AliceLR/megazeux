@@ -237,7 +237,8 @@ static boolean ega_is_ati_card(void)
 static boolean ega_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
-  struct ega_render_data *render_data = cmalloc(sizeof(struct ega_render_data));
+  struct ega_render_data *render_data =
+   (struct ega_render_data *)cmalloc(sizeof(struct ega_render_data));
   int display, sel;
 
   if(!render_data)
@@ -276,7 +277,7 @@ static boolean ega_init_video(struct graphics_data *graphics,
   render_data->smzx_swap_nibbles = render_data->is_ati_card;
 
   graphics->render_data = render_data;
-  return set_video_mode();
+  return true;
 }
 
 static void ega_free_video(struct graphics_data *graphics)
@@ -333,8 +334,8 @@ static boolean ega_set_screen_mode(struct graphics_data *graphics, unsigned mode
   return true;
 }
 
-static boolean ega_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean ega_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   ega_set_screen_mode(graphics, graphics->screen_mode);
   return true;
@@ -481,7 +482,8 @@ static void ega_render_mouse(struct graphics_data *graphics,
   _farnspokeb(dest, _farnspeekb(dest) ^ 0xFF);
 }
 
-static void ega_sync_screen(struct graphics_data *graphics)
+static void ega_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct ega_render_data *render_data = graphics->render_data;
   uint8_t *src = graphics->charset;
@@ -507,15 +509,13 @@ void render_ega_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = ega_init_video;
   renderer->free_video = ega_free_video;
-  renderer->set_video_mode = ega_set_video_mode;
+  renderer->create_window = ega_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->set_screen_mode = ega_set_screen_mode;
   renderer->update_colors = ega_update_colors;
-  renderer->resize_screen = resize_screen_standard;
   renderer->remap_char_range = ega_remap_char_range;
   renderer->remap_char = ega_remap_char;
   renderer->remap_charbyte = ega_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = ega_render_graph;
   renderer->hardware_cursor = ega_hardware_cursor;
   renderer->render_mouse = ega_render_mouse;
