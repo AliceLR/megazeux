@@ -7,6 +7,12 @@ FIXES
 
 GIT - MZX 2.93c
 
+As part of the preparation for SDL3, this release includes many
+long-belated changes to the way MegaZeux resizes windows and
+calculates the scaled display area within the window (including
+mouse coordinate conversion). This overhaul has fixed several
+bugs, but please be on the lookout for regressions.
+
 The Xcode port has been updated to build with the latest version
 of SDL and other dependencies, and now requires OS X El Capitan
 (x86_64) or macOS Big Sur (arm64) to run. This port no longer
@@ -60,6 +66,12 @@ DEVELOPERS
   above). This function is now responsible for post-resize
   maintenance such as glViewport and selecting the filter mode,
   and is no longer required to call update_screen.
++ Replaced renderer functions "get_screen_coords" and
+  "set_screen_coords" with a single function "set_viewport" to
+  calculate the current window's display area. This area is used
+  in places where "fix_viewport_ratio" previously was and also
+  to convert mouse coordinates. Most renderers should use one of
+  the two prefab implementations of this function.
 + Added detection for LoongArch64. 64-bit architectures that
   platform_endian.h fails to identify as such should no longer
   abort in the software layer renderer.
