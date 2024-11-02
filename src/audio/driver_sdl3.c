@@ -54,7 +54,7 @@ void init_audio_platform(struct config_info *conf)
   int frames = 0;
   char hint[16];
   void *tmp;
-  // TODO: configurable audio channels, format
+  // TODO: 8-bit?
 
   audio_format = SAMPLE_S16;
 
@@ -76,6 +76,9 @@ void init_audio_platform(struct config_info *conf)
 
   if(conf->audio_buffer_samples != 0)
     frames = conf->audio_buffer_samples;
+
+  if(conf->audio_output_channels != 0)
+    audio_settings.channels = MIN(conf->audio_output_channels, 2);
 
   if(!audio_mixer_init(audio_settings.freq, frames, audio_settings.channels))
     return;
