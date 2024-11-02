@@ -1768,8 +1768,8 @@ boolean init_video(struct config_info *conf, const char *caption)
   {
     // The driver should attempt to pick the best resolution automatically.
     // Not all create_window implementations support this.
-    graphics.resolution_width = -1;
-    graphics.resolution_height = -1;
+    graphics.resolution_width = 0;
+    graphics.resolution_height = 0;
   }
 
   if(conf->window_width <= 0 || conf->window_height <= 0)
