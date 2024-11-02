@@ -256,7 +256,7 @@ static int get_pandora_joystick_button(SDL_Keycode key)
 
 static SDL_Gamepad *gamepads[MAX_JOYSTICKS];
 
-static enum joystick_special_axis sdl_axis_map[SDL_GAMEPAD_AXIS_MAX] =
+static enum joystick_special_axis sdl_axis_map[SDL_GAMEPAD_AXIS_COUNT] =
 {
   [SDL_GAMEPAD_AXIS_LEFTX]         = JOY_AXIS_LEFT_X,
   [SDL_GAMEPAD_AXIS_LEFTY]         = JOY_AXIS_LEFT_Y,
@@ -266,7 +266,7 @@ static enum joystick_special_axis sdl_axis_map[SDL_GAMEPAD_AXIS_MAX] =
   [SDL_GAMEPAD_AXIS_RIGHT_TRIGGER] = JOY_AXIS_RIGHT_TRIGGER
 };
 
-static int16_t sdl_axis_action_map[SDL_GAMEPAD_AXIS_MAX][2] =
+static int16_t sdl_axis_action_map[SDL_GAMEPAD_AXIS_COUNT][2] =
 {
   [SDL_GAMEPAD_AXIS_LEFTX]         = { -JOY_L_LEFT,  -JOY_L_RIGHT },
   [SDL_GAMEPAD_AXIS_LEFTY]         = { -JOY_L_UP,    -JOY_L_DOWN },
@@ -276,7 +276,7 @@ static int16_t sdl_axis_action_map[SDL_GAMEPAD_AXIS_MAX][2] =
   [SDL_GAMEPAD_AXIS_RIGHT_TRIGGER] = { 0,            -JOY_RTRIGGER },
 };
 
-static int16_t sdl_action_map[SDL_GAMEPAD_BUTTON_MAX] =
+static int16_t sdl_action_map[SDL_GAMEPAD_BUTTON_COUNT] =
 {
   [SDL_GAMEPAD_BUTTON_SOUTH]          = -JOY_A,
   [SDL_GAMEPAD_BUTTON_EAST]           = -JOY_B,
@@ -612,8 +612,8 @@ static void parse_gamepad_apply(int joy, int16_t mapping,
 
 static void parse_gamepad_map(int joystick_index, char *map)
 {
-  struct gamepad_axis_map axes[SDL_GAMEPAD_AXIS_MAX];
-  struct gamepad_map buttons[SDL_GAMEPAD_BUTTON_MAX];
+  struct gamepad_axis_map axes[SDL_GAMEPAD_AXIS_COUNT];
+  struct gamepad_map buttons[SDL_GAMEPAD_BUTTON_COUNT];
   boolean select_mapped = false;
   boolean select_used = false;
   size_t i;
@@ -624,7 +624,7 @@ static void parse_gamepad_map(int joystick_index, char *map)
   parse_gamepad_read_string(map, axes, buttons);
 
   // Apply axes.
-  for(i = 0; i < SDL_GAMEPAD_AXIS_MAX; i++)
+  for(i = 0; i < SDL_GAMEPAD_AXIS_COUNT; i++)
   {
     parse_gamepad_apply(joystick_index,
      sdl_axis_action_map[i][0], &(axes[i].neg), &select_mapped, &select_used);
@@ -634,7 +634,7 @@ static void parse_gamepad_map(int joystick_index, char *map)
   }
 
   // Apply buttons.
-  for(i = 0; i < SDL_GAMEPAD_BUTTON_MAX; i++)
+  for(i = 0; i < SDL_GAMEPAD_BUTTON_COUNT; i++)
   {
     parse_gamepad_apply(joystick_index,
      sdl_action_map[i], &(buttons[i]), &select_mapped, &select_used);
@@ -1016,8 +1016,11 @@ static boolean process_event(SDL_Event *event)
 #if SDL_VERSION_ATLEAST(3,0,0)
     case SDL_EVENT_WINDOW_RESIZED:
     {
-      trace("--EVENT_SDL-- SDL_EVENT_WINDOW_RESIZED: (%u,%u)\n");
-      video_sync_window_size(event->window.windowID,
+      unsigned window_id = video_window_by_platform_id(event->window.windowID);
+
+      trace("--EVENT_SDL-- SDL_EVENT_WINDOW_RESIZED: %u (%d,%d)\n",
+       event->window.windowID, event->window.data1, event->window.data2);
+      video_sync_window_size(window_id,
        event->window.data1, event->window.data2);
       break;
     }
@@ -1759,9 +1762,9 @@ void initialize_joysticks(void)
 #endif
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_SetGamepadEventsEnabled(SDL_TRUE);
+  SDL_SetGamepadEventsEnabled(true);
   load_gamecontrollerdb();
 #endif
 
-  SDL_SetJoystickEventsEnabled(SDL_TRUE);
+  SDL_SetJoystickEventsEnabled(true);
 }

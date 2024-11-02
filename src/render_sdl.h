@@ -117,7 +117,13 @@ static inline void gl_cleanup(struct graphics_data *graphics)
 
 static inline boolean GL_LoadLibrary(enum gl_lib_type type)
 {
-  if(!SDL_GL_LoadLibrary(NULL)) return true;
+#if SDL_VERSION_ATLEAST(3,0,0)
+  if(SDL_GL_LoadLibrary(NULL))
+#else
+  if(SDL_GL_LoadLibrary(NULL) == 0)
+#endif
+    return true;
+
 #if !SDL_VERSION_ATLEAST(2,0,0)
   // If the context already exists, don't reload the library
   // This is for SDL 1.2 which doesn't let us unload OpenGL

@@ -71,7 +71,8 @@ int sdl_flags(const struct video_window *window)
 
   if(window->is_fullscreen)
   {
-#if SDL_VERSION_ATLEAST(2,0,0)
+#if SDL_VERSION_ATLEAST(2,0,0) && !SDL_VERSION_ATLEAST(3,0,0)
+    /* SDL3 removed the ability to specify this at window creation time. */
     if(window->is_fullscreen_windowed)
       flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     else
@@ -768,7 +769,7 @@ boolean sdl_create_window_soft(struct graphics_data *graphics,
 #endif // !SDL_VERSION_ATLEAST(2,0,0)
 
   // Wipe the letterbox area, if any.
-  SDL_FillRect(render_data->screen, NULL, 0);
+  SDL_FillSurfaceRect(render_data->screen, NULL, 0);
 
   sdl_set_system_cursor(graphics);
   sdl_set_window_grab(render_data, window->grab_mouse);
@@ -1157,11 +1158,15 @@ void sdl_set_texture_scale_mode(struct graphics_data *graphics,
   {
     SDL_ScaleMode mode;
     if(!allow_non_integer || window->is_integer_scaled)
-      mode = SDL_ScaleModeNearest;
+      mode = SDL_SCALEMODE_NEAREST;
     else
-      mode = SDL_ScaleModeLinear;
+      mode = SDL_SCALEMODE_LINEAR;
 
-    if(SDL_SetTextureScaleMode(render_data->texture[texture_id], mode))
+#if SDL_VERSION_ATLEAST(3,0,0)
+    if(!SDL_SetTextureScaleMode(render_data->texture[texture_id], mode))
+#else
+    if(SDL_SetTextureScaleMode(render_data->texture[texture_id], mode) < 0)
+#endif
       warn("Failed to set texture %d scale mode: %s\n", texture_id, SDL_GetError());
   }
   else
@@ -1241,7 +1246,11 @@ boolean gl_create_window(struct graphics_data *graphics,
     goto err_free;
   }
 
-  if(SDL_GL_MakeCurrent(render_data->window, render_data->context))
+#if SDL_VERSION_ATLEAST(3,0,0)
+  if(!SDL_GL_MakeCurrent(render_data->window, render_data->context))
+#else
+  if(SDL_GL_MakeCurrent(render_data->window, render_data->context) != 0)
+#endif
   {
     warn("Failed to make context current: %s\n", SDL_GetError());
     goto err_free;

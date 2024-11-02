@@ -220,7 +220,7 @@ typedef SDL_GameControllerButton  SDL_GamepadButton;
 #define SDL_GAMEPAD_AXIS_RIGHTY           SDL_CONTROLLER_AXIS_RIGHTY
 #define SDL_GAMEPAD_AXIS_LEFT_TRIGGER     SDL_CONTROLLER_AXIS_TRIGGERLEFT
 #define SDL_GAMEPAD_AXIS_RIGHT_TRIGGER    SDL_CONTROLLER_AXIS_TRIGGERRIGHT
-#define SDL_GAMEPAD_AXIS_MAX              SDL_CONTROLLER_AXIS_MAX
+#define SDL_GAMEPAD_AXIS_COUNT            SDL_CONTROLLER_AXIS_MAX
 #define SDL_GAMEPAD_BUTTON_INVALID        SDL_CONTROLLER_BUTTON_INVALID
 #define SDL_GAMEPAD_BUTTON_SOUTH          SDL_CONTROLLER_BUTTON_A
 #define SDL_GAMEPAD_BUTTON_EAST           SDL_CONTROLLER_BUTTON_B
@@ -243,7 +243,7 @@ typedef SDL_GameControllerButton  SDL_GamepadButton;
 #define SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2  SDL_CONTROLLER_BUTTON_PADDLE3
 #define SDL_GAMEPAD_BUTTON_LEFT_PADDLE2   SDL_CONTROLLER_BUTTON_PADDLE4
 #define SDL_GAMEPAD_BUTTON_TOUCHPAD       SDL_CONTROLLER_BUTTON_TOUCHPAD
-#define SDL_GAMEPAD_BUTTON_MAX            SDL_CONTROLLER_BUTTON_MAX
+#define SDL_GAMEPAD_BUTTON_COUNT          SDL_CONTROLLER_BUTTON_MAX
 #define SDL_IsGamepad(device_id)          SDL_IsGameController(device_id)
 #define SDL_OpenGamepad(device_id)        SDL_GameControllerOpen(device_id)
 #define SDL_CloseGamepad(g)               SDL_GameControllerClose(g)
@@ -356,13 +356,7 @@ typedef SDL_FRect SDL_Rect_mzx;
 static inline SDL_Rect_mzx sdl_render_rect(int x, int y,
  int w, int h, int full_w, int full_h)
 {
-  SDL_FRect tmp =
-  {
-    (float)x / full_w,
-    (float)y / full_h,
-    (float)w / full_w,
-    (float)h / full_h
-  };
+  SDL_FRect tmp = { (float)x, (float)y, (float)w, (float)h };
   return tmp;
 }
 #elif SDL_VERSION_ATLEAST(2,0,0)
@@ -414,7 +408,10 @@ static inline int SDL_RenderTexture_mzx(SDL_Renderer *renderer, SDL_Texture *tex
  * SDL_surface.h
  */
 #if !SDL_VERSION_ATLEAST(3,0,0)
-#define SDL_DestroySurface(s) SDL_FreeSurface(s)
+#define SDL_SCALEMODE_NEAREST       SDL_ScaleModeNearest
+#define SDL_SCALEMODE_LINEAR        SDL_ScaleModeLinear
+#define SDL_DestroySurface(s)       SDL_FreeSurface(s)
+#define SDL_FillSurfaceRect(s,r,c)  SDL_FillRect(s,r,c)
 
 static inline SDL_bool SDL_GetSurfaceClipRect(SDL_Surface *surface, SDL_Rect *rect)
 {
