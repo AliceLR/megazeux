@@ -39,6 +39,8 @@ USERS
   by MZX recreating the window after every window resize event.
 + Fixed junk display in the letterbox area after resizing using
   the software, gp2x, or SDL 1.2 overlay renderers.
++ The software and gp2x renderers now enable blitting when the
+  created window is smaller than expected instead of crashing.
 + Fixed sai.frag not being installed by "make install" or
   distributed with Unix-style packages for Linux/BSD/Darwin.
 + Fixed the board editor show thing hotkeys (broken by 2.93b).

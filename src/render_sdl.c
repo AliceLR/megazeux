@@ -588,6 +588,15 @@ boolean sdl_create_window_soft(struct graphics_data *graphics,
   if(depth == BPP_AUTO)
     graphics->bits_per_pixel = window->bits_per_pixel = SDL_BYTESPERPIXEL(fmt) * 8;
 
+  if((unsigned)render_data->screen->w < window->width_px ||
+   (unsigned)render_data->screen->h < window->height_px)
+  {
+    matched = false;
+    warn("Window surface (%dx%d) is smaller than expected (%ux%u).\n",
+     render_data->screen->w, render_data->screen->h,
+     window->width_px, window->height_px);
+  }
+
   if(!matched)
   {
     Uint32 Rmask, Gmask, Bmask, Amask;
