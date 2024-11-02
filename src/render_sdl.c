@@ -146,21 +146,21 @@ static boolean sdl_get_closest_usable_display_mode(SDL_DisplayMode *display_mode
 #endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
 static boolean sdl_get_fullscreen_resolution(int *width, int *height,
- boolean renderer_supports_scaling)
+ boolean match_current_desktop)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
 
   SDL_DisplayMode display_mode;
   boolean have_mode = false;
 
-  if(renderer_supports_scaling)
+  if(match_current_desktop)
   {
     // Use the current desktop resolution.
     have_mode = sdl_get_desktop_display_mode(&display_mode);
   }
   else
   {
-    have_mode = sdl_get_closest_usable_display_mode(&display_mode, 320, 240);
+    have_mode = sdl_get_closest_usable_display_mode(&display_mode, 640, 350);
   }
 
   if(have_mode)
@@ -190,9 +190,11 @@ static void auto_fullscreen_size(struct graphics_data *graphics,
   int width = graphics->resolution_width;
   int height = graphics->resolution_height;
 
-  if(width < 0 || height < 0)
+  // Fullscreen windowed should always autodetect the size regardless of config.
+  if(width <= 0 || height <= 0 || window->is_fullscreen_windowed)
   {
-    if(!sdl_get_fullscreen_resolution(&width, &height, renderer_supports_scaling))
+    if(!sdl_get_fullscreen_resolution(&width, &height,
+     renderer_supports_scaling || window->is_fullscreen_windowed))
     {
       width = 640;
       height = 480;
