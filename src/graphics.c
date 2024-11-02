@@ -1768,8 +1768,8 @@ boolean init_video(struct config_info *conf, const char *caption)
   {
     // The driver should attempt to pick the best resolution automatically.
     // Not all create_window implementations support this.
-    graphics.resolution_width = -1;
-    graphics.resolution_height = -1;
+    graphics.resolution_width = 0;
+    graphics.resolution_height = 0;
   }
 
   if(conf->window_width <= 0 || conf->window_height <= 0)
@@ -1881,18 +1881,6 @@ unsigned video_create_window(void)
   {
     window->width_px = graphics.resolution_width;
     window->height_px = graphics.resolution_height;
-
-#ifdef CONFIG_SDL
-    // If fullscreen_windowed is enabled, the driver should automatically pick
-    // the size of the window in all situations.
-    // TODO: too many console renderers are forcing resolution in init_video,
-    // so only do this for SDL.
-    if(graphics.fullscreen_windowed)
-    {
-      window->width_px = -1;
-      window->height_px = -1;
-    }
-#endif
   }
   else
   {
