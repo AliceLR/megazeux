@@ -156,7 +156,7 @@ static inline HWND SDL_GetWindowProperty_HWND(SDL_Window *window)
 #ifdef _WIN32
 static inline void *SDL_GetWindowProperty_HWND(SDL_Window *window)
 {
-  return SDL_GetProperty(SDL_GetWindowProperties(window),
+  return SDL_GetPointerProperty(SDL_GetWindowProperties(window),
    SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
 }
 #endif /* _WIN32 */
@@ -445,7 +445,7 @@ typedef SDL_sem   SDL_Semaphore;
 #define SDL_SignalCondition(c)          SDL_CondSignal(c)
 #define SDL_BroadcastCondition(c)       SDL_CondBroadcast(c)
 #define SDL_WaitSemaphore(s)            SDL_SemWait(s)
-#define SDL_PostSemaphore(s)            SDL_SemPost(s)
+#define SDL_SignalSemaphore(s)          SDL_SemPost(s)
 #define SDL_GetCurrentThreadID()        SDL_ThreadID()
 #endif
 

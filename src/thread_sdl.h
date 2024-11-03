@@ -61,13 +61,15 @@ static inline boolean platform_mutex_destroy(platform_mutex *mutex)
 
 static inline boolean platform_mutex_lock(platform_mutex *mutex)
 {
-  SDL_LockMutex(*mutex); // Returns void as of SDL 3.
+  // Returns void as of SDL 3.
+  SDL_LockMutex(*mutex);
   return true;
 }
 
 static inline boolean platform_mutex_unlock(platform_mutex *mutex)
 {
-  SDL_UnlockMutex(*mutex); // Returns void as of SDL 3.
+  // Returns void as of SDL 3.
+  SDL_UnlockMutex(*mutex);
   return true;
 }
 
@@ -91,30 +93,30 @@ static inline boolean platform_cond_destroy(platform_cond *cond)
 static inline boolean platform_cond_wait(platform_cond *cond,
  platform_mutex *mutex)
 {
-  if(SDL_WaitCondition(*cond, *mutex))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_WaitCondition(*cond, *mutex);
   return true;
 }
 
 static inline boolean platform_cond_timedwait(platform_cond *cond,
  platform_mutex *mutex, unsigned int timeout_ms)
 {
-  if(SDL_WaitConditionTimeout(*cond, *mutex, (Uint32)timeout_ms))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_WaitConditionTimeout(*cond, *mutex, (Uint32)timeout_ms);
   return true;
 }
 
 static inline boolean platform_cond_signal(platform_cond *cond)
 {
-  if(SDL_SignalCondition(*cond))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_SignalCondition(*cond);
   return true;
 }
 
 static inline boolean platform_cond_broadcast(platform_cond *cond)
 {
-  if(SDL_BroadcastCondition(*cond))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_BroadcastCondition(*cond);
   return true;
 }
 
@@ -137,15 +139,15 @@ static inline boolean platform_sem_destroy(platform_sem *sem)
 
 static inline boolean platform_sem_wait(platform_sem *sem)
 {
-  if(SDL_WaitSemaphore(*sem))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_WaitSemaphore(*sem);
   return true;
 }
 
 static inline boolean platform_sem_post(platform_sem *sem)
 {
-  if(SDL_PostSemaphore(*sem))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_SignalSemaphore(*sem);
   return true;
 }
 
