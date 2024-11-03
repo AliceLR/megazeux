@@ -126,9 +126,16 @@ static inline boolean GL_LoadLibrary(enum gl_lib_type type)
   return false;
 }
 
-static inline void *GL_GetProcAddress(const char *proc)
+static inline dso_fn_ptr GL_GetProcAddress(const char *proc)
 {
+#if SDL_VERSION_ATLEAST(3,0,0)
   return SDL_GL_GetProcAddress(proc);
+#else
+  /* SDL1/2 returns void * instead of a function pointer. */
+  union dso_suppress_warning value;
+  value.in = SDL_GL_GetProcAddress(proc);
+  return value.out;
+#endif
 }
 
 #endif // CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM

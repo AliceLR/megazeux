@@ -40,15 +40,9 @@ boolean GL_LoadLibrary(enum gl_lib_type type);
 
 #ifndef ANDROID
 
-static inline dso_fn *GL_GetProcAddress(const char *proc)
+static inline dso_fn_ptr GL_GetProcAddress(const char *proc)
 {
-  union suppress_warning
-  {
-    void (*in)(void);
-    dso_fn *out;
-  } t;
-  t.in = eglGetProcAddress(proc);
-  return t.out;
+  return eglGetProcAddress(proc);
 }
 
 #else /* ANDROID */
@@ -56,7 +50,7 @@ static inline dso_fn *GL_GetProcAddress(const char *proc)
 /* Android's eglGetProcAddress is currently broken, so we
  * have to roll our own..
  */
-dso_fn *GL_GetProcAddress(const char *proc);
+dso_fn_ptr GL_GetProcAddress(const char *proc);
 
 #endif /* !ANDROID */
 
