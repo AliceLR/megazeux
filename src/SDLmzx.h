@@ -26,10 +26,6 @@
 __M_BEGIN_DECLS
 
 #if defined(CONFIG_SDL)
-
-/* TODO: SDL3 hack so the dso code doesn't need to be overhauled (again). */
-#define SDL_FUNCTION_POINTER_IS_VOID_POINTER
-
 #if CONFIG_SDL == 3
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_version.h>
