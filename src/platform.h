@@ -78,6 +78,13 @@ union dso_fn_ptr_ptr
   dso_fn_ptr *value;
 };
 
+/* SDL1/2, dlopen return void * instead of a function pointer. */
+union dso_suppress_warning
+{
+  void *in;
+  dso_fn_ptr out;
+};
+
 struct dso_syms_map
 {
   const char *name;
