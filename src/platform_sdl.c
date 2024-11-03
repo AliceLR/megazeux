@@ -66,6 +66,50 @@ uint64_t get_ticks(void)
 #endif
 }
 
+#if SDL_VERSION_ATLEAST(3,0,0)
+typedef SDL_SharedObject *dso_library_ptr;
+#else
+typedef void *dso_library_ptr;
+#endif
+
+/* Note: for OpenGL, use (SDL_)GL_LoadLibrary instead. */
+struct dso_library *platform_load_library(const char *name)
+{
+  dso_library_ptr handle = SDL_LoadObject(name);
+  if(handle)
+    return (struct dso_library *)handle;
+  return NULL;
+}
+
+void platform_unload_library(struct dso_library *library)
+{
+  dso_library_ptr handle = (dso_library_ptr)library;
+  SDL_UnloadObject(handle);
+}
+
+/* Note: for OpenGL, use (SDL_)GL_GetProcAddress (via gl_load_syms) instead. */
+boolean platform_load_function(struct dso_library *library,
+ const struct dso_syms_map *syms_map)
+{
+  dso_library_ptr handle = (dso_library_ptr)library;
+
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_FunctionPointer *dest = (SDL_FunctionPointer *)syms_map->sym_ptr.value;
+#else
+  void **dest = (void **)syms_map->sym_ptr.in;
+#endif
+  if(!syms_map->name || !dest)
+    return false;
+
+  *dest = SDL_LoadFunction(handle, syms_map->name);
+  if(!*dest)
+  {
+    debug("--DSO--- failed to load: %s\n", syms_map->name);
+    return false;
+  }
+  return true;
+}
+
 #ifdef __WIN32__
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -80,17 +124,13 @@ uint64_t get_ticks(void)
 static void set_dpi_aware(void)
 {
   BOOL (*_SetProcessDPIAware)(void) = NULL;
-  void *handle;
 
-  handle = SDL_LoadObject("User32.dll");
+  struct dso_library *handle = platform_load_library("User32.dll");
   if(handle)
   {
-    union dso_fn_ptr_ptr sym_ptr = { &_SetProcessDPIAware };
-    dso_fn **dest = sym_ptr.value;
+    struct dso_syms_map sym = { "SetProcessDPIAware", { &_SetProcessDPIAware } };
 
-    *dest = SDL_LoadFunction(handle, "SetProcessDPIAware");
-
-    if(_SetProcessDPIAware && !_SetProcessDPIAware())
+    if(platform_load_function(handle, &sym) && !_SetProcessDPIAware())
     {
       warn("failed to SetProcessDPIAware!\n");
     }
@@ -99,7 +139,7 @@ static void set_dpi_aware(void)
     if(!_SetProcessDPIAware)
       debug("couldn't load SetProcessDPIAware.\n");
 
-    SDL_UnloadObject(handle);
+    platform_unload_library(handle);
   }
   else
     debug("couldn't load User32.dll: %s\n", SDL_GetError());

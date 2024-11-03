@@ -123,24 +123,6 @@ static inline size_t round_to_power_of_two(size_t v)
   return v + 1;
 }
 
-/* Use as (dso_fn **) to store a loaded (void *) to a function pointer. */
-typedef void dso_fn;
-
-/* Initialize a (dso_fn **) via (void *) to avoid strict aliasing warnings. */
-union dso_fn_ptr_ptr
-{
-  void *in;
-  dso_fn **value;
-};
-
-struct dso_syms_map
-{
-  const char *name;
-  union dso_fn_ptr_ptr sym_ptr;
-};
-
-#define DSO_MAP_END { NULL, { NULL }}
-
 #include <sys/types.h>
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)

@@ -271,9 +271,6 @@ int Socket::poll(struct pollfd *fds, unsigned int nfds, int timeout_ms)
  * but 95 was also supported with an additional download.
  */
 
-// For LoadObject/LoadFunction
-#include "../SDLmzx.h"
-
 static struct
 {
   /* These are Winsock 2.0 functions that should be present all the
@@ -314,7 +311,7 @@ static struct
   // These functions were only implemented as of Windows Vista.
   int (WSAAPI *WSAPoll)(struct pollfd *fds, unsigned long nfds, int timeout);
 
-  void *handle;
+  struct dso_library *handle;
 }
 socksyms;
 
@@ -358,7 +355,7 @@ static void socket_free_syms(void)
 {
   if(socksyms.handle)
   {
-    SDL_UnloadObject(socksyms.handle);
+    platform_unload_library(socksyms.handle);
     socksyms.handle = NULL;
   }
 }
@@ -367,11 +364,11 @@ static boolean socket_load_syms(void)
 {
   int i;
 
-  socksyms.handle = SDL_LoadObject(WINSOCK2);
+  socksyms.handle = platform_load_library(WINSOCK2);
   if(!socksyms.handle)
   {
     warn("Failed to load Winsock 2.0, falling back to Winsock\n");
-    socksyms.handle = SDL_LoadObject(WINSOCK);
+    socksyms.handle = platform_load_library(WINSOCK);
     if(!socksyms.handle)
     {
       warn("Failed to load Winsock fallback\n");
@@ -381,10 +378,7 @@ static boolean socket_load_syms(void)
 
   for(i = 0; socksyms_map[i].name; i++)
   {
-    dso_fn **sym_ptr = socksyms_map[i].sym_ptr.value;
-    *sym_ptr = SDL_LoadFunction(socksyms.handle, socksyms_map[i].name);
-
-    if(!*sym_ptr)
+    if(!platform_load_function(socksyms.handle, &(socksyms_map[i])))
     {
       // Skip these NT 5.1 WS2 extensions; we can fall back
       if((strcmp(socksyms_map[i].name, "freeaddrinfo") == 0) ||

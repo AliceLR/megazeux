@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "platform.h"
 #include "render.h"
 #include "util.h"
 
@@ -82,13 +83,23 @@ void gl_error(const char *file, int line,
 
 #endif // DEBUG
 
+#ifdef CONFIG_SDL
+#if SDL_VERSION_ATLEAST(3,0,0)
+#define HAVE_SDL_FUNCTIONPOINTER
+#endif
+#endif
+
 boolean gl_load_syms(const struct dso_syms_map *map)
 {
   int i = 0;
 
   for(i = 0; map[i].name != NULL; i++)
   {
-    dso_fn **sym_ptr = map[i].sym_ptr.value;
+#ifdef HAVE_SDL_FUNCTIONPOINTER
+    SDL_FunctionPointer *sym_ptr = (SDL_FunctionPointer *)map[i].sym_ptr.value;
+#else
+    void **sym_ptr = (void **)map[i].sym_ptr.in;
+#endif
     *sym_ptr = GL_GetProcAddress(map[i].name);
     if(!*sym_ptr)
     {
