@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "platform.h"
 #include "render.h"
 #include "util.h"
 
@@ -88,7 +89,8 @@ boolean gl_load_syms(const struct dso_syms_map *map)
 
   for(i = 0; map[i].name != NULL; i++)
   {
-    dso_fn **sym_ptr = map[i].sym_ptr.value;
+    dso_fn_ptr *sym_ptr = map[i].sym_ptr.value;
+
     *sym_ptr = GL_GetProcAddress(map[i].name);
     if(!*sym_ptr)
     {

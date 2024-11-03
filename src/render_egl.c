@@ -34,9 +34,11 @@ static enum gl_lib_type gl_type;
 
 #ifdef ANDROID
 
-dso_fn *GL_GetProcAddress(const char *proc)
+dso_fn_ptr GL_GetProcAddress(const char *proc)
 {
-  return (dso_fn *)dlsym(glso, proc);
+  union dso_suppress_warning value;
+  value.in = dlsym(glso, proc);
+  return value.out;
 }
 
 #endif /* ANDROID */

@@ -67,12 +67,43 @@ int real_main(int argc, char *argv[]);
 #include <stdint.h>
 #include <time.h>
 
+/* Use as (dso_fn_ptr *) to store a loaded void(*)(void) to a function pointer. */
+typedef void (*dso_fn_ptr)(void);
+struct dso_library;
+
+/* Initialize a (dso_fn_ptr *) via (void *) to avoid strict aliasing warnings. */
+union dso_fn_ptr_ptr
+{
+  void *in;
+  dso_fn_ptr *value;
+};
+
+/* SDL1/2, dlopen return void * instead of a function pointer. */
+union dso_suppress_warning
+{
+  void *in;
+  dso_fn_ptr out;
+};
+
+struct dso_syms_map
+{
+  const char *name;
+  union dso_fn_ptr_ptr sym_ptr;
+};
+
+#define DSO_MAP_END { NULL, { NULL }}
+
 CORE_LIBSPEC void delay(uint32_t ms);
 CORE_LIBSPEC uint64_t get_ticks(void);
 CORE_LIBSPEC boolean platform_init(void);
 CORE_LIBSPEC void platform_quit(void);
 CORE_LIBSPEC boolean platform_system_time(struct tm *tm,
  int64_t *epoch, int32_t *nano);
+
+CORE_LIBSPEC struct dso_library *platform_load_library(const char *name);
+CORE_LIBSPEC void platform_unload_library(struct dso_library *library);
+CORE_LIBSPEC boolean platform_load_function(struct dso_library *library,
+ const struct dso_syms_map *syms_map);
 
 __M_END_DECLS
 
