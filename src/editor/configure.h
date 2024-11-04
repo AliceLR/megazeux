@@ -139,6 +139,8 @@ EDITOR_LIBSPEC void free_editor_config(void);
 EDITOR_LIBSPEC struct editor_config_info *get_editor_config(void);
 void load_editor_config_backup(void);
 
+size_t get_local_editor_config_name(char *dest, size_t dest_len,
+ const char *mzx_file_path);
 void save_local_editor_config(struct editor_config_info *conf,
  const char *mzx_file_path);
 
