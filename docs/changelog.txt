@@ -48,6 +48,11 @@ USERS
   hacks (DOS) when copying blocks between boards in the editor.
 + Fixed text input bugs caused by a 2.93b change accidentally
   reenabling old deadcode for exiting intake().
++ Fixed crash when saving editor config files/"Set as Default"
+  after the file fails to open for write. If the ".editor.cnf"
+  file fails to save or load, MZX will attempt to save or load a
+  ".cne" file instead. This allows this feature to work in DOS
+  builds when there is no long filename (LFN) support.
 
 DEVELOPERS
 

@@ -882,28 +882,77 @@ void free_editor_config(void)
   __free_editor_config(&editor_conf_backup);
 }
 
+static size_t editor_config_full_name(char *dest, size_t dest_len,
+ const char *path, size_t path_len)
+{
+  size_t ret = snprintf(dest, dest_len, "%.*s.editor.cnf",
+   (int)path_len - 4, path);
+  dest[dest_len - 1] = '\0';
+  return ret;
+}
+
+static size_t editor_config_dos_name(char *dest, size_t dest_len,
+ const char *path, size_t path_len)
+{
+  size_t ret = snprintf(dest, dest_len, "%.*s.cne",
+   (int)path_len - 4, path);
+  dest[dest_len - 1] = '\0';
+  return ret;
+}
+
+/* Get the existing world file editor config name, if present. It may have
+ * the extension .editor.cnf (usual) or the extension .cne (DOS). */
+size_t get_local_editor_config_name(char *dest, size_t dest_len,
+ const char *mzx_file_path)
+{
+  struct stat file_info;
+  size_t path_len = strlen(mzx_file_path);
+  size_t ret;
+
+  if(path_len < 4)
+    return 0;
+
+  ret = editor_config_full_name(dest, dest_len, mzx_file_path, path_len);
+  if(ret < dest_len &&
+   vstat(dest, &file_info) >= 0 && S_ISREG(file_info.st_mode))
+  {
+    debug("found editor config: %s\n", dest);
+    return ret;
+  }
+
+  ret = editor_config_dos_name(dest, dest_len, mzx_file_path, path_len);
+  if(ret < dest_len &&
+   vstat(dest, &file_info) >= 0 && S_ISREG(file_info.st_mode))
+  {
+    debug("found editor config: %s\n", dest);
+    return ret;
+  }
+
+  return 0;
+}
+
+// TODO: update this function once there's a good config rewriting routine.
 void save_local_editor_config(struct editor_config_info *conf,
  const char *mzx_file_path)
 {
-  int mzx_file_len = strlen(mzx_file_path) - 4;
+  size_t mzx_file_len = strlen(mzx_file_path);
   char config_file_name[MAX_PATH];
 
   const char comment[]   = "\n############################################################";
   const char comment_a[] = "\n#####  Editor generated configuration - do not modify  #####";
   const char comment_b[] = "\n#####        End editor generated configuration        #####";
   const char *value;
-  vfile *vf;
+  vfile *vf = NULL;
+  boolean exists = false;
   int i;
 
-  if(mzx_file_len <= 0)
+  if(mzx_file_len < 4)
     return;
 
-  // Get our filename
-  snprintf(config_file_name, MAX_PATH, "%.*s.editor.cnf",
-   mzx_file_len, mzx_file_path);
-
   // Does it exist?
-  vf = vfopen_unsafe(config_file_name, "rb");
+  if(get_local_editor_config_name(config_file_name, MAX_PATH, mzx_file_path) > 0)
+    vf = vfopen_unsafe(config_file_name, "rb");
+
   if(vf)
   {
     char *a, *b;
@@ -911,6 +960,8 @@ void save_local_editor_config(struct editor_config_info *conf,
     char *config_file_b = NULL;
     int config_file_size = 0;
     int config_file_size_b = 0;
+
+    exists = true;
 
     config_file_size = vfilelength(vf, true);
     config_file = cmalloc(config_file_size + 1);
@@ -952,6 +1003,11 @@ void save_local_editor_config(struct editor_config_info *conf,
     }
 
     vf = vfopen_unsafe(config_file_name, "wb");
+    if(!vf)
+    {
+      warn("failed to rewrite editor config file\n");
+      return;
+    }
 
     if(config_file_size)
       vfwrite(config_file, 1, config_file_size, vf);
@@ -962,7 +1018,29 @@ void save_local_editor_config(struct editor_config_info *conf,
     free(config_file);
   }
 
+  if(!exists)
+  {
+    // Try creating a file with the normal name first. This may fail in DOS.
+    editor_config_full_name(config_file_name, MAX_PATH,
+     mzx_file_path, mzx_file_len);
+  }
+
   vf = vfopen_unsafe(config_file_name, "a");
+  if(!vf)
+  {
+    if(!exists)
+    {
+      editor_config_dos_name(config_file_name, MAX_PATH,
+       mzx_file_path, mzx_file_len);
+      vf = vfopen_unsafe(config_file_name, "a");
+    }
+    if(!vf)
+    {
+      warn("failed to rewrite editor config file\n");
+      return;
+    }
+  }
+  debug("writing editor config: %s\n", config_file_name);
 
   vf_printf(vf, "%s%s%s\n\n", comment, comment_a, comment);
 

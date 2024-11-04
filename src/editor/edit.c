@@ -218,9 +218,7 @@ static boolean editor_reload_world(struct editor_context *editor,
 {
   struct world *mzx_world = ((context *)editor)->world;
 
-  int file_name_len = strlen(file) - 4;
   char config_file_name[MAX_PATH];
-  struct stat file_info;
   boolean ignore;
 
   if(!reload_world(mzx_world, file, &ignore))
@@ -230,11 +228,7 @@ static boolean editor_reload_world(struct editor_context *editor,
   load_editor_config_backup();
 
   // Part 2: Now load the new world.editor.cnf.
-
-  snprintf(config_file_name, MAX_PATH, "%.*s.editor.cnf", file_name_len, file);
-  config_file_name[MAX_PATH - 1] = '\0';
-
-  if(vstat(config_file_name, &file_info) >= 0)
+  if(get_local_editor_config_name(config_file_name, MAX_PATH, file) > 0)
     set_config_from_file(GAME_EDITOR_CNF, config_file_name);
 
   edit_menu_show_board_mod(editor->edit_menu);
