@@ -1114,7 +1114,7 @@ void __warp_mouse(int x, int y)
   // Mouse warping doesn't work too well with the Wiimote
 }
 
-void initialize_joysticks(void)
+void platform_init_event(void)
 {
   struct buffered_status *status = store_status();
   int i;
