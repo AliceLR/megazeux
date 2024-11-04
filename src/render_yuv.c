@@ -238,8 +238,6 @@ static void yuv_sync_screen(struct graphics_data *graphics,
  struct video_window *window)
 {
   struct yuv_render_data *render_data = graphics->render_data;
-  int width = graphics->window.width_px, v_width;
-  int height = graphics->window.height_px, v_height;
   SDL_Rect rect;
 
   rect.x = window->viewport_x;

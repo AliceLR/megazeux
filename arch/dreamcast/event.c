@@ -26,7 +26,7 @@
 
 extern struct input_status input;
 
-void initialize_joysticks(void)
+void platform_init_event(void)
 {
 }
 

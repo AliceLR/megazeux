@@ -585,7 +585,7 @@ static void init_mouse(void)
   mouse_init = true;
 }
 
-void initialize_joysticks(void)
+void platform_init_event(void)
 {
   init_kbd();
   init_mouse();

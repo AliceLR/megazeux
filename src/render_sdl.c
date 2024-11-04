@@ -19,6 +19,7 @@
  */
 
 #include "SDLmzx.h"
+#include "event.h"
 #include "render.h"
 #include "render_sdl.h"
 #include "util.h"
@@ -784,6 +785,7 @@ boolean sdl_create_window_soft(struct graphics_data *graphics,
 
   sdl_set_system_cursor(graphics);
   sdl_set_window_grab(render_data, window->grab_mouse);
+  sdl_init_window_text_events(window->platform_id);
   return true;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -1147,6 +1149,7 @@ boolean sdl_create_window_renderer(struct graphics_data *graphics,
   sdl_set_screensaver_enabled(graphics->disable_screensaver == SCREENSAVER_ENABLE);
   sdl_set_system_cursor(graphics);
   sdl_set_window_grab(render_data, window->grab_mouse);
+  sdl_init_window_text_events(window->platform_id);
   return true;
 
 err_free:
@@ -1286,6 +1289,7 @@ boolean gl_create_window(struct graphics_data *graphics,
 
   sdl_set_system_cursor(graphics);
   sdl_set_window_grab(render_data, window->grab_mouse);
+  sdl_init_window_text_events(window->platform_id);
   return true;
 
 #if SDL_VERSION_ATLEAST(2,0,0)

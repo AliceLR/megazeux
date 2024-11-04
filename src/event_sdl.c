@@ -38,6 +38,14 @@
 
 extern struct input_status input;
 
+/* Enable converting keycodes to fake unicode presses when text input isn't
+ * active. Enabling text input also enables an onscreen keyboard in some
+ * ports, so it isn't always desired.
+ *
+ * SDL 1.2 builds will disable this automatically if unicode is detected.
+ */
+static boolean unicode_fallback;
+
 static boolean numlock_status_initialized;
 static int joystick_instance_ids[MAX_JOYSTICKS];
 static SDL_Joystick *joysticks[MAX_JOYSTICKS];
@@ -974,18 +982,6 @@ static boolean process_event(SDL_Event *event)
   struct buffered_status *status = store_status();
   enum keycode ckey;
 
-#if SDL_VERSION_ATLEAST(3,0,0)
-  boolean unicode_fallback = false; // FIXME: this is per-window now
-#elif SDL_VERSION_ATLEAST(2,0,0)
-  /* Enable converting keycodes to fake unicode presses when text input isn't
-   * active. Enabling text input also enables an onscreen keyboard in some
-   * ports, so it isn't always desired. */
-  boolean unicode_fallback = !SDL_IsTextInputActive();
-#else
-  /* SDL 1.2 might also need this (Pandora? doesn't generate unicode presses). */
-  static boolean unicode_fallback = true;
-#endif
-
   /* SDL's numlock keyboard modifier handling seems to be broken on X11,
    * and it will only get numlock's status right on application init. We
    * can trust this value once, and then toggle based on user presses of
@@ -1420,13 +1416,9 @@ static boolean process_event(SDL_Event *event)
 
       trace("--EVENT_SDL-- SDL_EVENT_TEXT_INPUT: %s\n", text);
 
+      // This should never happen; ignore.
       if(unicode_fallback)
-      {
-        // Clear any unicode keys on the buffer generated from the fallback...
-        status->unicode_length = 0;
-        status->unicode_repeat = 0;
-        unicode_fallback = false;
-      }
+        break;
 
       // Decode the input UTF-8 string into UTF-32 for the event buffer.
       while(*text)
@@ -1729,7 +1721,43 @@ void __warp_mouse(int x, int y)
   SDL_WarpMouseInWindow(window, x, y);
 }
 
-void initialize_joysticks(void)
+/**
+ * Enable text events for the provided window.
+ * Prior to SDL3, this was global, so the window ID isn't used.
+ */
+void sdl_init_window_text_events(unsigned sdl_window_id)
+{
+#if SDL_VERSION_ATLEAST(2,0,0)
+  /* Most platforms want text input events always on so they can generate
+   * convenient unicode text values, but in Android this causes some problems:
+   *
+   * - On older versions the navigation bar will ALWAYS display, regardless
+   *   of whether or not there's an attached keyboard.
+   * - Holding the space key no longer works, breaking built-in shooting (as
+   *   recent as Android 10).
+   * - The onscreen keyboard Android pops up can be moved but not collapsed.
+   *
+   * TODO: Instead, enable text input on demand at text prompts.
+   */
+  if(!SDL_HasScreenKeyboardSupport())
+  {
+    SDL_StartTextInput();
+    unicode_fallback = false;
+  }
+  else
+  {
+    SDL_StopTextInput();
+    unicode_fallback = true;
+  }
+#else
+  SDL_EnableUNICODE(1);
+  /* SDL 1.2 might also need this (Pandora? doesn't generate unicode presses).
+   * If it isn't required, real unicode events will turn this off. */
+  unicode_fallback = true;
+#endif
+}
+
+void platform_init_event(void)
 {
 #if !SDL_VERSION_ATLEAST(2,0,0) || defined(CONFIG_SWITCH) || defined(CONFIG_PSVITA) \
  || defined(CONFIG_3DS)

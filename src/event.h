@@ -200,13 +200,14 @@ boolean has_unicode_input(void);
 uint32_t convert_internal_unicode(enum keycode key, boolean caps_lock);
 
 // Implemented by "drivers" (SDL, Wii, NDS, 3DS, etc.)
-void initialize_joysticks(void);
+void platform_init_event(void);
 boolean __update_event_status(void);
 boolean __peek_exit_input(void);
 void __wait_event(void);
 void __warp_mouse(int x, int y);
 
 // "Driver" functions currently only supported by SDL.
+void sdl_init_window_text_events(unsigned sdl_window_id);
 void gamepad_map_sym(const char *sym, const char *value);
 void gamepad_add_mapping(const char *mapping);
 

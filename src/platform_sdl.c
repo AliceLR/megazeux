@@ -203,27 +203,6 @@ boolean platform_init(void)
       return false;
     }
   }
-
-#if SDL_VERSION_ATLEAST(3,0,0)
-  // FIXME: Can't do this here, because it is per-window.
-#elif SDL_VERSION_ATLEAST(2,0,0)
-  /* Most platforms want text input events always on so they can generate
-   * convenient unicode text values, but in Android this causes some problems:
-   *
-   * - On older versions the navigation bar will ALWAYS display, regardless
-   *   of whether or not there's an attached keyboard.
-   * - Holding the space key no longer works, breaking built-in shooting (as
-   *   recent as Android 10).
-   * - The onscreen keyboard Android pops up can be moved but not collapsed.
-   *
-   * TODO: Instead, enable text input on demand at text prompts.
-   * TODO: this probably redundant with behavior already in SDL.
-   */
-  if(!SDL_HasScreenKeyboardSupport())
-    SDL_StartTextInput();
-#else
-  SDL_EnableUNICODE(1);
-#endif
   return true;
 }
 
