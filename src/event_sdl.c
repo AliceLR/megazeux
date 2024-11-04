@@ -1727,7 +1727,6 @@ void __warp_mouse(int x, int y)
  */
 void sdl_init_window_text_events(unsigned sdl_window_id)
 {
-#if SDL_VERSION_ATLEAST(2,0,0)
   /* Most platforms want text input events always on so they can generate
    * convenient unicode text values, but in Android this causes some problems:
    *
@@ -1739,6 +1738,17 @@ void sdl_init_window_text_events(unsigned sdl_window_id)
    *
    * TODO: Instead, enable text input on demand at text prompts.
    */
+#if SDL_VERSION_ATLEAST(3,0,0)
+#ifdef ANDROID
+/* This is largely wishful thinking and needs thorough Android testing. */
+#error See above comments.
+#endif
+  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
+  SDL_StopTextInput(window);
+  SDL_SetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD, "0");
+  SDL_StartTextInput(window);
+  unicode_fallback = false;
+#elif SDL_VERSION_ATLEAST(2,0,0)
   if(!SDL_HasScreenKeyboardSupport())
   {
     SDL_StartTextInput();
