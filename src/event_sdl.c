@@ -1664,7 +1664,7 @@ void __warp_mouse(int x, int y)
   SDL_WarpMouseInWindow(window, x, y);
 }
 
-void initialize_joysticks(void)
+void platform_init_event(void)
 {
 #if !SDL_VERSION_ATLEAST(2,0,0) || defined(CONFIG_SWITCH) || defined(CONFIG_PSVITA) \
  || defined(CONFIG_3DS)

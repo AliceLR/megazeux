@@ -161,8 +161,8 @@ void init_event(struct config_info *conf)
   // Write the new global bindings over the game bindings.
   joystick_reset_game_map();
 
-  // Now, initialize the joysticks (platform-dependent function).
-  initialize_joysticks();
+  // Platform-specific events system initialization.
+  platform_init_event();
 }
 
 uint32_t convert_internal_unicode(enum keycode key, boolean caps_lock)
