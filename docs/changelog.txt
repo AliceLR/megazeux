@@ -74,6 +74,8 @@ DEVELOPERS
   in places where "fix_viewport_ratio" previously was and also
   to convert mouse coordinates. Most renderers should use one of
   the two prefab implementations of this function.
++ SDL text event enablement now happens after the window is
+  created. This shouldn't really affect anything.
 + Added detection for LoongArch64. 64-bit architectures that
   platform_endian.h fails to identify as such should no longer
   abort in the software layer renderer.
