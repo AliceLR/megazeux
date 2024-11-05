@@ -32,7 +32,7 @@
 
 #ifdef CONFIG_SDL
 #include "../src/SDLmzx.h"
-#undef IGNORE /* wtf Windows? */
+#undef IGNORE /* Windows defines this for some reason... */
 #endif
 
 #ifdef CONFIG_EDITOR

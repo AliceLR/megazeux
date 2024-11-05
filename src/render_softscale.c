@@ -270,7 +270,7 @@ static void softscale_sync_screen(struct graphics_data *graphics,
   SDL_Rect_mzx dest_rect;
 
   src_rect = sdl_render_rect(texture_rect->x, texture_rect->y,
-   texture_rect->w, texture_rect->h, render_data->texture_width, SCREEN_PIX_H);
+   texture_rect->w, texture_rect->h);
 
   dest_rect.x = window->viewport_x;
   dest_rect.y = window->viewport_y;
@@ -282,7 +282,7 @@ static void softscale_sync_screen(struct graphics_data *graphics,
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
   SDL_RenderClear(renderer);
 
-  SDL_RenderTexture_mzx(renderer, texture, &src_rect, &dest_rect);
+  SDL_RenderTexture(renderer, texture, &src_rect, &dest_rect);
   SDL_RenderPresent(renderer);
 }
 

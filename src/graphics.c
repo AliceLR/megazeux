@@ -1488,22 +1488,12 @@ static boolean icon_w_h_constraint(png_uint_32 w, png_uint_32 h)
   return (w == h) && ((w % 16) == 0) && ((h % 16) == 0);
 }
 
+static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
+ png_uint_32 *stride, void **pixels)
+{
 #if SDL_VERSION_ATLEAST(2,0,0)
-static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
- png_uint_32 *stride, void **pixels)
-{
   SDL_Surface *s = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_RGBA32);
-  if(!s)
-    return NULL;
-
-  *stride = s->pitch;
-  *pixels = s->pixels;
-  return s;
-}
 #else
-static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
- png_uint_32 *stride, void **pixels)
-{
   Uint32 rmask, gmask, bmask, amask;
   SDL_Surface *s;
 
@@ -1520,6 +1510,7 @@ static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
 #endif
 
   s = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, rmask, gmask, bmask, amask);
+#endif
   if(!s)
     return NULL;
 
@@ -1527,7 +1518,6 @@ static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
   *pixels = s->pixels;
   return s;
 }
-#endif
 
 static SDL_Surface *png_read_icon(const char *name)
 {

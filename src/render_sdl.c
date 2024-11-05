@@ -913,7 +913,6 @@ static void find_texture_format(struct graphics_data *graphics,
   if(!strcmp(renderer_name, SDL_SOFTWARE_RENDERER))
     is_software_renderer = true;
 
-  // thanks for the michael mouse API
   formats = (const uint32_t *)SDL_GetPointerProperty(props,
    SDL_PROP_RENDERER_TEXTURE_FORMATS_POINTER, NULL);
   num_formats = 0;
@@ -1168,12 +1167,7 @@ void sdl_set_texture_scale_mode(struct graphics_data *graphics,
     else
       mode = SDL_SCALEMODE_LINEAR;
 
-#if SDL_VERSION_ATLEAST(3,0,0)
-    if(!SDL_SetTextureScaleMode(render_data->texture[texture_id], mode))
-#else
-    if(SDL_SetTextureScaleMode(render_data->texture[texture_id], mode) < 0)
-#endif
-      warn("Failed to set texture %d scale mode: %s\n", texture_id, SDL_GetError());
+    SDL_SetTextureScaleMode(render_data->texture[texture_id], mode);
   }
   else
     warn("Texture %d is null!\n", texture_id);

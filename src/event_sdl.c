@@ -1800,9 +1800,9 @@ void platform_init_event(void)
 #endif
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_SetGamepadEventsEnabled(true);
+  SDL_SetGamepadEventsEnabled(1);
   load_gamecontrollerdb();
 #endif
 
-  SDL_SetJoystickEventsEnabled(true);
+  SDL_SetJoystickEventsEnabled(1);
 }
