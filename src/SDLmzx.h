@@ -486,6 +486,11 @@ static inline int replace_SDL_GetVersion(void)
 #endif
 #if !SDL_VERSION_ATLEAST(3,0,0)
 #define SDL_GL_DestroyContext(gl)   SDL_GL_DeleteContext(gl)
+
+/* SDL3 removed the coordinate arguments to SDL_CreateWindow.
+ * Windows are created centered by default instead. */
+#define SDL_CreateWindow(title, w, h, flags) SDL_CreateWindow((title), \
+ SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (w), (h), (flags))
 #endif
 
 #endif /* CONFIG_SDL */

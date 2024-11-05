@@ -635,10 +635,6 @@ boolean sdl_create_window_soft(struct graphics_data *graphics,
 #endif
 
   render_data->window = SDL_CreateWindow("MegaZeux",
-  // FIXME:
-#if !SDL_VERSION_ATLEAST(3,0,0)
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-#endif
    window->width_px, window->height_px, sdl_flags(window));
 
   if(!render_data->window)
@@ -1096,10 +1092,6 @@ boolean sdl_create_window_renderer(struct graphics_data *graphics,
   }
 
   render_data->window = SDL_CreateWindow("MegaZeux",
-// FIXME:
-#if !SDL_VERSION_ATLEAST(3,0,0)
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-#endif
    window->width_px, window->height_px, sdl_flags(window));
 
   if(!render_data->window)
@@ -1240,10 +1232,6 @@ boolean gl_create_window(struct graphics_data *graphics,
 #endif
 
   render_data->window = SDL_CreateWindow("MegaZeux",
-  // FIXME:
-#if !SDL_VERSION_ATLEAST(3,0,0)
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-#endif
    window->width_px, window->height_px, GL_STRIP_FLAGS(sdl_flags(window)));
 
   if(!render_data->window)
