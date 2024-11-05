@@ -92,7 +92,6 @@ void init_audio_platform(struct config_info *conf)
 
   // The buffer frames need to be configured with this hack.
   // This value may be ignored or modified by some platforms.
-  // FIXME: SDL drivers for ALSA, Pulseaudio, PipeWire, and JACK all ignore this...
   snprintf(hint, sizeof(hint), "%u", audio.buffer_frames);
   SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, hint);
 
