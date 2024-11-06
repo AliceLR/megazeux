@@ -3,6 +3,7 @@
  * Copyright (C) 2004-2006 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2007,2009 Alistair John Strachan <alistair@devzero.co.uk>
  * Copyright (C) 2007 Alan Williams <mralert@gmail.com>
+ * Copyright (C) 2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -32,34 +33,29 @@ __M_BEGIN_DECLS
 #include "util.h"
 
 #ifdef CONFIG_SDL
-#include "SDLmzx.h"
-#ifdef CONFIG_GLES
-
-#ifdef CONFIG_RENDER_GL_FIXED
-#if SDL_VERSION_ATLEAST(3,0,0)
-#include <SDL3/SDL_opengles.h>
-#else
-#include <SDL_opengles.h>
-#endif
-#endif
-
-#ifdef CONFIG_RENDER_GL_PROGRAM
-#if SDL_VERSION_ATLEAST(3,0,0)
-#include <SDL3/SDL_opengles2.h>
-#else
-#include <SDL_opengles2.h>
-#endif
-#endif
-
-#else
-
-#if SDL_VERSION_ATLEAST(3,0,0)
-#include <SDL3/SDL_opengl.h>
-#else
-#include <SDL_opengl.h>
-#endif
-
-#endif
+# include "SDLmzx.h"
+# ifdef CONFIG_GLES
+#   ifdef CONFIG_RENDER_GL_FIXED
+#     if SDL_VERSION_ATLEAST(3,0,0)
+#       include <SDL3/SDL_opengles.h>
+#     else
+#       include <SDL_opengles.h>
+#     endif
+#   endif
+#   ifdef CONFIG_RENDER_GL_PROGRAM
+#     if SDL_VERSION_ATLEAST(3,0,0)
+#       include <SDL3/SDL_opengles2.h>
+#     else
+#       include <SDL_opengles2.h>
+#     endif
+#   endif
+# else
+#   if SDL_VERSION_ATLEAST(3,0,0)
+#     include <SDL3/SDL_opengl.h>
+#   else
+#     include <SDL_opengl.h>
+#   endif
+# endif
 #endif
 
 #ifndef GLAPIENTRY
