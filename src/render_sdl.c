@@ -1057,7 +1057,6 @@ boolean sdl_create_window_renderer(struct graphics_data *graphics,
  struct video_window *window, boolean requires_blend_ops)
 {
   struct sdl_render_data *render_data = graphics->render_data;
-  uint32_t sdl_rendererflags = 0;
 
   sdl_destruct_window(graphics);
 
@@ -1077,13 +1076,6 @@ boolean sdl_create_window_renderer(struct graphics_data *graphics,
   SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY, "0");
 #endif
 
-#if !SDL_VERSION_ATLEAST(3,0,0)
-  // Flag removed in SDL3; all drivers support it and its presence needs to be
-  // tested by trying to create a target texture instead.
-  if(requires_blend_ops)
-    sdl_rendererflags |= SDL_RENDERER_TARGETTEXTURE;
-#endif
-
   if(graphics->sdl_render_driver[0])
   {
     info("Requesting SDL render driver: '%s'\n", graphics->sdl_render_driver);
@@ -1099,13 +1091,11 @@ boolean sdl_create_window_renderer(struct graphics_data *graphics,
     goto err_free;
   }
 
-  // Note: previously attempted SDL_RENDERER_ACCELERATED first, then
-  // SDL_RENDERER_SOFTWARE, but these flags were removed in SDL3.
 #if SDL_VERSION_ATLEAST(3,0,0)
   render_data->renderer = SDL_CreateRenderer(render_data->window, BEST_RENDERER);
 #else
-  render_data->renderer =
-   SDL_CreateRenderer(render_data->window, BEST_RENDERER, sdl_rendererflags);
+  render_data->renderer = SDL_CreateRenderer(render_data->window, BEST_RENDERER,
+   requires_blend_ops ? SDL_RENDERER_TARGETTEXTURE : 0);
 #endif
   if(!render_data->renderer)
   {
@@ -1113,7 +1103,7 @@ boolean sdl_create_window_renderer(struct graphics_data *graphics,
     goto err_free;
   }
 
-  find_texture_format(graphics, sdl_rendererflags);
+  find_texture_format(graphics, requires_blend_ops);
   window->bits_per_pixel = graphics->bits_per_pixel;
 
   if(!render_data->rgb_to_yuv)
@@ -1234,21 +1224,11 @@ boolean gl_create_window(struct graphics_data *graphics,
     goto err_free;
   }
 
+  /* This automatically makes the context current. */
   render_data->context = SDL_GL_CreateContext(render_data->window);
-
   if(!render_data->context)
   {
     warn("Failed to create context: %s\n", SDL_GetError());
-    goto err_free;
-  }
-
-#if SDL_VERSION_ATLEAST(3,0,0)
-  if(!SDL_GL_MakeCurrent(render_data->window, render_data->context))
-#else
-  if(SDL_GL_MakeCurrent(render_data->window, render_data->context) != 0)
-#endif
-  {
-    warn("Failed to make context current: %s\n", SDL_GetError());
     goto err_free;
   }
 

@@ -119,10 +119,9 @@ static inline void gl_cleanup(struct graphics_data *graphics)
 static inline boolean GL_LoadLibrary(enum gl_lib_type type)
 {
 #if SDL_VERSION_ATLEAST(3,0,0)
-  if(SDL_GL_LoadLibrary(NULL))
+  return SDL_GL_LoadLibrary(NULL);
 #else
   if(SDL_GL_LoadLibrary(NULL) == 0)
-#endif
     return true;
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
@@ -131,6 +130,7 @@ static inline boolean GL_LoadLibrary(enum gl_lib_type type)
   if(strcmp(SDL_GetError(), "OpenGL context already created") == 0) return true;
 #endif
   return false;
+#endif
 }
 
 static inline dso_fn_ptr GL_GetProcAddress(const char *proc)

@@ -313,13 +313,16 @@ static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
 /**
  *  SDL_pixels.h
  */
-#if !SDL_VERSION_ATLEAST(3,0,0)
+#if !SDL_VERSION_ATLEAST(2,0,14)
+/* Added in 2.0.14 with the old names remaining; old names removed in SDL3. */
 #define SDL_PIXELFORMAT_XRGB4444                    SDL_PIXELFORMAT_RGB444
 #define SDL_PIXELFORMAT_XBGR4444                    SDL_PIXELFORMAT_BGR444
 #define SDL_PIXELFORMAT_XRGB1555                    SDL_PIXELFORMAT_RGB555
 #define SDL_PIXELFORMAT_XBGR1555                    SDL_PIXELFORMAT_BGR555
 #define SDL_PIXELFORMAT_XRGB8888                    SDL_PIXELFORMAT_RGB888
 #define SDL_PIXELFORMAT_XBGR8888                    SDL_PIXELFORMAT_BGR888
+#endif
+#if !SDL_VERSION_ATLEAST(3,0,0)
 #define SDL_PixelFormatDetails                      SDL_PixelFormat
 #define SDL_CreatePalette(s)                        SDL_AllocPalette(s)
 #define SDL_DestroyPalette(p)                       SDL_FreePalette(p)
