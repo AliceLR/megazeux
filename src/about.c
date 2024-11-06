@@ -112,8 +112,8 @@ static char **about_text(int *num_lines)
 
 #ifdef CONFIG_SDL
   {
-    int ver_compiled = SDL_VERSION;
-    int ver_linked = SDL_GetVersion();
+    int ver_compiled = sdl_compiled_version();
+    int ver_linked = sdl_linked_version();
 
     if(ver_compiled != ver_linked)
     {

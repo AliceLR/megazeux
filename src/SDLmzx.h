@@ -448,33 +448,34 @@ typedef SDL_sem   SDL_Semaphore;
  */
 #if !SDL_VERSION_ATLEAST(3,0,0)
 #define SDL_MICRO_VERSION SDL_PATCHLEVEL
-
-#undef SDL_VERSIONNUM
-#define SDL_VERSIONNUM(x,y,z) ((x) * 1000000 + (y) * 1000 + (z))
+// This macro *should* be identical to SDL3's SDL_VERSIONNUM.
+#define SDL_VERSIONNUM_MZX(x,y,z) ((x) * 1000000 + (y) * 1000 + (z))
 #define SDL_VERSIONNUM_MAJOR(v) ((v) / 1000000)
 #define SDL_VERSIONNUM_MINOR(v) (((v) / 1000) % 1000)
 #define SDL_VERSIONNUM_MICRO(v) ((v) % 1000)
+#else
+#define SDL_VERSIONNUM_MZX(x,y,z) SDL_VERSIONNUM((x),(y),(z))
+#endif
 
-static inline void SDL_VERSION_ORIG(SDL_version *v)
+static inline int sdl_compiled_version(void)
 {
-  SDL_VERSION(v);
+  return SDL_VERSIONNUM_MZX(SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
 }
 
-#undef SDL_VERSION
-#define SDL_VERSION SDL_VERSIONNUM(SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL)
-
-static inline int replace_SDL_GetVersion(void)
+static inline int sdl_linked_version(void)
 {
+#if SDL_VERSION_ATLEAST(3,0,0)
+  return SDL_GetVersion();
+#else
   SDL_version ver;
 #if SDL_VERSION_ATLEAST(2,0,0)
   SDL_GetVersion(&ver);
 #else
   ver = *SDL_Linked_Version();
 #endif
-  return SDL_VERSIONNUM(ver.major, ver.minor, ver.patch);
-}
-#define SDL_GetVersion replace_SDL_GetVersion
+  return SDL_VERSIONNUM_MZX(ver.major, ver.minor, ver.patch);
 #endif
+}
 
 /**
  * SDL_video.h
