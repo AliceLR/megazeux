@@ -380,22 +380,22 @@ typedef int SDL_RendererLogicalPresentation;
 typedef int SDL_ScaleMode;
 #endif
 
-static inline SDL_bool SDL_SetRenderClipRect(SDL_Renderer *render,
+static inline boolean SDL_SetRenderClipRect(SDL_Renderer *render,
  SDL_Rect *rect)
 {
-  return (SDL_bool)(SDL_RenderSetClipRect(render, rect) == 0);
+  return SDL_RenderSetClipRect(render, rect) == 0;
 }
 
-static inline SDL_bool SDL_SetRenderLogicalPresentation(SDL_Renderer *render,
+static inline boolean SDL_SetRenderLogicalPresentation(SDL_Renderer *render,
  int w, int h, SDL_RendererLogicalPresentation p, SDL_ScaleMode s)
 {
-  return (SDL_bool)(SDL_RenderSetLogicalSize(render, w, h) == 0);
+  return SDL_RenderSetLogicalSize(render, w, h) == 0;
 }
 
-static inline SDL_bool SDL_RenderTexture(SDL_Renderer *renderer,
+static inline boolean SDL_RenderTexture(SDL_Renderer *renderer,
  SDL_Texture *texture, const SDL_Rect_mzx *src_rect, const SDL_Rect_mzx *dest_rect)
 {
-  return (SDL_bool)(SDL_RenderCopy(renderer, texture, src_rect, dest_rect) == 0);
+  return SDL_RenderCopy(renderer, texture, src_rect, dest_rect) == 0;
 }
 #endif
 
@@ -407,16 +407,16 @@ static inline SDL_bool SDL_RenderTexture(SDL_Renderer *renderer,
 #define SDL_SCALEMODE_LINEAR        SDL_ScaleModeLinear
 #define SDL_DestroySurface(s)       SDL_FreeSurface(s)
 
-static inline SDL_bool SDL_FillSurfaceRect(SDL_Surface *surface, SDL_Rect *rect,
+static inline boolean SDL_FillSurfaceRect(SDL_Surface *surface, SDL_Rect *rect,
  Uint32 color)
 {
-  return (SDL_bool)(SDL_FillRect(surface, rect, color) == 0);
+  return SDL_FillRect(surface, rect, color) == 0;
 }
 
-static inline SDL_bool SDL_GetSurfaceClipRect(SDL_Surface *surface, SDL_Rect *rect)
+static inline boolean SDL_GetSurfaceClipRect(SDL_Surface *surface, SDL_Rect *rect)
 {
   *rect = surface->clip_rect;
-  return SDL_TRUE;
+  return true;
 }
 
 #if SDL_VERSION_ATLEAST(2,0,0)
