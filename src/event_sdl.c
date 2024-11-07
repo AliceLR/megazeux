@@ -1796,11 +1796,11 @@ void platform_init_event(void)
 #endif
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_SetGamepadEventsEnabled(1);
+  SDL_SetGamepadEventsEnabled(true);
   load_gamecontrollerdb();
 #endif
 
-  SDL_SetJoystickEventsEnabled(1);
+  SDL_SetJoystickEventsEnabled(true);
 
   /* It's not clear which ports do and don't implement SDL text events, so
    * enable the unicode fallback at startup until proven otherwise.

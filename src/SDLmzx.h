@@ -248,7 +248,7 @@ typedef SDL_GameControllerButton  SDL_GamepadButton;
 #define SDL_AddGamepadMapping(m)          SDL_GameControllerAddMapping(m)
 #define SDL_AddGamepadMappingsFromFile(f) SDL_GameControllerAddMappingsFromFile(f)
 
-static inline void SDL_SetGamepadEventsEnabled(SDL_bool enabled)
+static inline void SDL_SetGamepadEventsEnabled(boolean enabled)
 {
   SDL_GameControllerEventState(enabled ? SDL_ENABLE : SDL_DISABLE);
 }
@@ -266,7 +266,7 @@ static inline void SDL_SetGamepadEventsEnabled(SDL_bool enabled)
 #define SDL_GetJoystickGUIDString(g,b,l)  SDL_JoystickGetGUIDString(g,b,l)
 #define SDL_GetJoystickID(j)              SDL_JoystickInstanceID(j)
 
-static inline void SDL_SetJoystickEventsEnabled(SDL_bool enabled)
+static inline void SDL_SetJoystickEventsEnabled(boolean enabled)
 {
   SDL_JoystickEventState(enabled ? SDL_ENABLE : SDL_DISABLE);
 }
