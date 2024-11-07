@@ -717,11 +717,11 @@ boolean sdl_create_window_soft(struct graphics_data *graphics,
     render_data->palette = SDL_CreateSurfacePalette(target);
     if(!render_data->palette)
     {
-      warn("Failed to allocate palette: %s\n", SDL_GetError());
+      warn("Failed to create surface palette: %s\n", SDL_GetError());
       goto err_free;
     }
 #else
-    render_data->palette = SDL_CreatePalette(SMZX_PAL_SIZE);
+    render_data->palette = SDL_AllocPalette(SMZX_PAL_SIZE);
     if(!render_data->palette)
     {
       warn("Failed to allocate palette: %s\n", SDL_GetError());
