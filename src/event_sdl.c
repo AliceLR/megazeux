@@ -2,7 +2,7 @@
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2007 Kevin Vance <kvance@kvance.com>
- * Copyright (C) 2019 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2019, 2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -926,6 +926,20 @@ static void close_joystick(int joystick_index)
 }
 #endif
 
+static inline void read_key_event(int *key, int *mod, int *scancode,
+ const SDL_KeyboardEvent *ev)
+{
+#if SDL_VERSION_ATLEAST(3,0,0)
+  *key = ev->key;
+  *mod = ev->mod;
+  *scancode = ev->scancode;
+#else
+  *key = ev->keysym.sym;
+  *mod = ev->keysym.mod;
+  *scancode = ev->keysym.scancode;
+#endif
+}
+
 static inline uint32_t utf8_next_char(uint8_t **_src)
 {
   uint8_t *src = *_src;
@@ -980,6 +994,7 @@ err_invalid:
 static boolean process_event(SDL_Event *event)
 {
   struct buffered_status *status = store_status();
+  int key, mod, scancode;
   enum keycode ckey;
 
   /* SDL's numlock keyboard modifier handling seems to be broken on X11,
@@ -1179,12 +1194,12 @@ static boolean process_event(SDL_Event *event)
 
 #if SDL_VERSION_ATLEAST(2,0,0)
     // emulate the X11-style "wheel is a button" that SDL 1.2 used
+    // SDL3 uses floats, SDL2 uses ints.
     case SDL_EVENT_MOUSE_WHEEL:
     {
       uint32_t button;
-      // floats due to SDL3...
-      float wheel_x = event->wheel.x;
-      float wheel_y = event->wheel.y;
+      float wheel_x = (float)event->wheel.x;
+      float wheel_y = (float)event->wheel.y;
 
       trace(
         "--EVENT_SDL-- SDL_EVENT_MOUSE_WHEEL: x=%.2f y=%.2f\n",
@@ -1193,14 +1208,14 @@ static boolean process_event(SDL_Event *event)
 
       if(fabsf(wheel_x) > fabsf(wheel_y))
       {
-        if(wheel_x < 0)
+        if(wheel_x < 0.0f)
           button = MOUSE_BUTTON_WHEELLEFT;
         else
           button = MOUSE_BUTTON_WHEELRIGHT;
       }
       else
       {
-        if(wheel_y < 0)
+        if(wheel_y < 0.0f)
           button = MOUSE_BUTTON_WHEELDOWN;
         else
           button = MOUSE_BUTTON_WHEELUP;
@@ -1217,24 +1232,10 @@ static boolean process_event(SDL_Event *event)
     }
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 
-// TODO: this is kind of tacky
-#if SDL_VERSION_ATLEAST(3,0,0)
-#define FIELD_KEY       key
-#define FIELD_MOD       mod
-#ifdef DEBUG_TRACE
-#define FIELD_SCANCODE  scancode
-#endif
-#else
-#define FIELD_KEY       keysym.sym
-#define FIELD_MOD       keysym.mod
-#ifdef DEBUG_TRACE
-#define FIELD_SCANCODE  keysym.scancode
-#endif
-#endif
-
     case SDL_EVENT_KEY_DOWN:
     {
       uint32_t unicode = 0;
+      read_key_event(&key, &mod, &scancode, &event->key);
 
 #if SDL_VERSION_ATLEAST(2,0,0)
       // SDL 2.0 uses proper key repeat, but derives its timing from the OS.
@@ -1251,7 +1252,7 @@ static boolean process_event(SDL_Event *event)
 #ifdef CONFIG_PANDORA
       {
         // Pandora hack. Certain keys are actually joystick buttons.
-        int button = get_pandora_joystick_button(event->key.FIELD_KEY);
+        int button = get_pandora_joystick_button(key);
         if(button >= 0)
         {
           joystick_button_press(status, 0, button);
@@ -1260,13 +1261,9 @@ static boolean process_event(SDL_Event *event)
       }
 #endif
 
-      ckey = convert_SDL_internal(event->key.FIELD_KEY);
-      trace(
-        "--EVENT_SDL-- SDL_EVENT_KEY_DOWN: scancode:%d sym:%d -> %d\n",
-        event->key.FIELD_SCANCODE,
-        event->key.FIELD_KEY,
-        ckey
-      );
+      ckey = convert_SDL_internal(key);
+      trace("--EVENT_SDL-- SDL_EVENT_KEY_DOWN: scancode:%d sym:%d -> %d\n",
+       scancode, key, ckey);
       if(!ckey)
       {
 #if !SDL_VERSION_ATLEAST(2,0,0)
@@ -1294,6 +1291,8 @@ static boolean process_event(SDL_Event *event)
         boolean caps_lock = !!(SDL_GetModState() & SDL_KMOD_CAPS);
         unicode = convert_internal_unicode(ckey, caps_lock);
       }
+      if(unicode)
+        trace("--EVENT_SDL--                     unicode:%d\n", (int)unicode);
 
       if((ckey == IKEY_RETURN) &&
        get_alt_status(keycode_internal) &&
@@ -1358,10 +1357,12 @@ static boolean process_event(SDL_Event *event)
 
     case SDL_EVENT_KEY_UP:
     {
+      read_key_event(&key, &mod, &scancode, &event->key);
+
 #ifdef CONFIG_PANDORA
       {
         // Pandora hack. Certain keys are actually joystick buttons.
-        int button = get_pandora_joystick_button(event->key.FIELD_KEY);
+        int button = get_pandora_joystick_button(key);
         if(button >= 0)
         {
           joystick_button_release(status, 0, button);
@@ -1370,13 +1371,9 @@ static boolean process_event(SDL_Event *event)
       }
 #endif
 
-      ckey = convert_SDL_internal(event->key.FIELD_KEY);
-      trace(
-        "--EVENT_SDL-- SDL_EVENT_KEY_UP: scancode:%d sym:%d -> %d\n",
-        event->key.FIELD_SCANCODE,
-        event->key.FIELD_KEY,
-        ckey
-      );
+      ckey = convert_SDL_internal(key);
+      trace("--EVENT_SDL-- SDL_EVENT_KEY_UP: scancode:%d sym:%d -> %d\n",
+       scancode, key, ckey);
       if(!ckey)
       {
 #if !SDL_VERSION_ATLEAST(2,0,0)
@@ -1416,9 +1413,12 @@ static boolean process_event(SDL_Event *event)
 
       trace("--EVENT_SDL-- SDL_EVENT_TEXT_INPUT: %s\n", text);
 
-      // This should never happen; ignore.
       if(unicode_fallback)
-        break;
+      {
+        // Clear any unicode keys on the buffer generated from the fallback...
+        status->unicode_length = 0;
+        unicode_fallback = false;
+      }
 
       // Decode the input UTF-8 string into UTF-32 for the event buffer.
       while(*text)
@@ -1643,6 +1643,7 @@ boolean __peek_exit_input(void)
 {
   SDL_Event events[256];
   int num_events;
+  int key, mod, scancode;
   int i;
 
   SDL_PumpEvents();
@@ -1661,15 +1662,15 @@ boolean __peek_exit_input(void)
 
     if(events[i].type == SDL_EVENT_KEY_DOWN)
     {
-      SDL_KeyboardEvent *ev = &(events[i].key);
+      read_key_event(&key, &mod, &scancode, &(events[i].key));
 
-      if(ev->FIELD_KEY == SDLK_ESCAPE)
+      if(key == SDLK_ESCAPE)
         return true;
 
-      if(ev->FIELD_KEY == SDLK_C && (ev->FIELD_MOD & SDL_KMOD_CTRL))
+      if(key == SDLK_C && (mod & SDL_KMOD_CTRL))
         return true;
 
-      if(ev->FIELD_KEY == SDLK_F4 && (ev->FIELD_MOD & SDL_KMOD_ALT))
+      if(key == SDLK_F4 && (mod & SDL_KMOD_ALT))
         return true;
     }
   }
@@ -1747,12 +1748,10 @@ void sdl_init_window_text_events(unsigned sdl_window_id)
   SDL_StopTextInput(window);
   SDL_SetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD, "0");
   SDL_StartTextInput(window);
-  unicode_fallback = false;
 #elif SDL_VERSION_ATLEAST(2,0,0)
   if(!SDL_HasScreenKeyboardSupport())
   {
     SDL_StartTextInput();
-    unicode_fallback = false;
   }
   else
   {
@@ -1761,9 +1760,6 @@ void sdl_init_window_text_events(unsigned sdl_window_id)
   }
 #else
   SDL_EnableUNICODE(1);
-  /* SDL 1.2 might also need this (Pandora? doesn't generate unicode presses).
-   * If it isn't required, real unicode events will turn this off. */
-  unicode_fallback = true;
 #endif
 }
 
@@ -1805,4 +1801,10 @@ void platform_init_event(void)
 #endif
 
   SDL_SetJoystickEventsEnabled(1);
+
+  /* It's not clear which ports do and don't implement SDL text events, so
+   * enable the unicode fallback at startup until proven otherwise.
+   * SDL 1.2 might also need this (Pandora? doesn't generate unicode presses).
+   * If it isn't required, real unicode events will turn this off. */
+  unicode_fallback = true;
 }
