@@ -186,7 +186,7 @@ static boolean gp2x_create_window(struct graphics_data *graphics,
  struct video_window *window)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  const SDL_PixelFormat *format;
+  const SDL_PixelFormatDetails *format;
   uint32_t halfmask;
 
   if(!sdl_create_window_soft(graphics, window))
@@ -295,8 +295,10 @@ static void gp2x_sync_screen(struct graphics_data *graphics,
 
   if(render_data->sdl.shadow)
   {
-    SDL_Rect src_rect = render_data->sdl.shadow->clip_rect;
-    SDL_Rect dest_rect = render_data->sdl.screen->clip_rect;
+    SDL_Rect src_rect;
+    SDL_Rect dest_rect;
+    SDL_GetSurfaceClipRect(render_data->sdl.shadow, &src_rect);
+    SDL_GetSurfaceClipRect(render_data->sdl.screen, &dest_rect);
     SDL_BlitSurface(render_data->sdl.shadow, &src_rect,
      render_data->sdl.screen, &dest_rect);
   }

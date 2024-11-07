@@ -37,7 +37,7 @@ static int copy_buffer_total_length;
 static int copy_buffer_to_X11_selection(Display *display, XEvent *xevent);
 
 #ifdef CONFIG_SDL
-#if SDL_VERSION_ATLEAST(1,2,0)
+#if SDL_VERSION_ATLEAST(1,2,0) && !SDL_VERSION_ATLEAST(3,0,0)
 
 static inline boolean get_X11_display_and_window(SDL_Window *window,
  Display **display, Window *xwindow)
@@ -92,7 +92,7 @@ static inline void set_X11_event_callback(void)
   SDL_SetEventFilter(event_callback, sdl_get_current_window());
 }
 
-#endif /* SDL_VERSION_ATLEAST(1,2,0) */
+#endif /* SDL_VERSION_ATLEAST(1,2,0) && !SDL_VERSION_ATLEAST(3,0,0) */
 #endif /* CONFIG_SDL */
 
 
@@ -201,4 +201,9 @@ char *get_clipboard_buffer(void)
 err_unlock:
   XUnlockDisplay(display);
   return dest_data;
+}
+
+void free_clipboard_buffer(char *buffer)
+{
+  free(buffer);
 }

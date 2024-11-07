@@ -31,7 +31,8 @@
 #include "../src/io/vio.h"
 
 #ifdef CONFIG_SDL
-#include <SDL_version.h>
+#include "../src/SDLmzx.h"
+#undef IGNORE /* Windows defines this for some reason... */
 #endif
 
 #ifdef CONFIG_EDITOR

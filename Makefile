@@ -84,6 +84,33 @@ include arch/compat.inc
 ifneq (${BUILD_SDL},)
 
 #
+# SDL 3
+#
+ifeq (${BUILD_SDL},3)
+# Check SDL_PKG_CONFIG_PATH and PREFIX/lib/pkgconfig for sdl3.pc.
+# Note --with-path is a pkgconf extension.
+ifneq ($(and ${SDL_PKG_CONFIG_PATH},$(wildcard ${SDL_PKG_CONFIG_PATH}/sdl3.pc)),)
+# nop
+else
+# Check dependencies prefix instead for LIBDIR=. platforms.
+# This is useless for unix/darwin, which should have sdl3.pc in a
+# place pkgconf can find through normal means.
+ifeq (${LIBDIR},.)
+ifneq ($(wildcard ${PREFIX}/lib/pkgconfig/sdl3.pc),)
+SDL_PKG_CONFIG_PATH ?= ${PREFIX}/lib/pkgconfig
+endif
+endif # LIBDIR=.
+endif
+ifneq (${SDL_PKG_CONFIG_PATH},)
+SDL_PKG_CONFIG_FLAGS = --with-path=${SDL_PKG_CONFIG_PATH}
+endif
+
+SDL_PREFIX  := $(shell ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --variable=prefix)
+SDL_CFLAGS  ?= $(shell ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --cflags)
+SDL_LDFLAGS ?= $(shell ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --libs)
+endif # SDL3
+
+#
 # SDL 2
 #
 ifeq (${BUILD_SDL},2)

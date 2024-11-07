@@ -1491,6 +1491,9 @@ static boolean icon_w_h_constraint(png_uint_32 w, png_uint_32 h)
 static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
  png_uint_32 *stride, void **pixels)
 {
+#if SDL_VERSION_ATLEAST(2,0,0)
+  SDL_Surface *s = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_RGBA32);
+#else
   Uint32 rmask, gmask, bmask, amask;
   SDL_Surface *s;
 
@@ -1507,6 +1510,7 @@ static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
 #endif
 
   s = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, rmask, gmask, bmask, amask);
+#endif
   if(!s)
     return NULL;
 
@@ -1551,7 +1555,7 @@ static void set_window_icon(void)
     if(icon)
     {
       SDL_Window *window = SDL_GetWindowFromID(graphics.window.platform_id);
-      SendMessage(SDL_GetWindowProperty_HWND(window),
+      SendMessage((HWND)SDL_GetWindowProperty_HWND(window),
        WM_SETICON, ICON_BIG, (LPARAM)icon);
     }
   }
@@ -1563,7 +1567,7 @@ static void set_window_icon(void)
     {
       SDL_Window *window = SDL_GetWindowFromID(graphics.window.platform_id);
       SDL_SetWindowIcon(window, icon);
-      SDL_FreeSurface(icon);
+      SDL_DestroySurface(icon);
     }
   }
 #endif // CONFIG_PNG

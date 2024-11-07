@@ -32,7 +32,6 @@
 #include "render_sdl.h"
 #include "renderers.h"
 #include "util.h"
-#include "yuv.h"
 
 struct softscale_render_data
 {
@@ -88,8 +87,9 @@ static boolean softscale_create_window(struct graphics_data *graphics,
 {
   struct softscale_render_data *render_data =
    (struct softscale_render_data *)graphics->render_data;
+  SDL_Texture *tex;
 
-  if(!sdl_create_window_renderer(graphics, window, 0))
+  if(!sdl_create_window_renderer(graphics, window, false))
     return false;
 
   // YUV texture modes are effectively 16-bit to SDL, but MegaZeux treats them
@@ -102,15 +102,15 @@ static boolean softscale_create_window(struct graphics_data *graphics,
   render_data->texture_pixels = NULL;
 
   // Initialize the screen texture.
-  render_data->sdl.texture[0] =
-   SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
-    SDL_TEXTUREACCESS_STREAMING, render_data->texture_width, SCREEN_PIX_H);
-
-  if(!render_data->sdl.texture[0])
+  tex = SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
+   SDL_TEXTUREACCESS_STREAMING, render_data->texture_width, SCREEN_PIX_H);
+  if(!tex)
   {
     warn("Failed to create texture: %s\n", SDL_GetError());
     goto err_free;
   }
+  render_data->sdl.texture[0] = tex;
+
   sdl_set_texture_scale_mode(graphics, window, 0, true);
   return true;
 
@@ -265,8 +265,12 @@ static void softscale_sync_screen(struct graphics_data *graphics,
   struct softscale_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *texture = render_data->sdl.texture[0];
-  SDL_Rect *src_rect = &(render_data->texture_rect);
-  SDL_Rect dest_rect;
+  SDL_Rect *texture_rect = &(render_data->texture_rect);
+  SDL_Rect_mzx src_rect;
+  SDL_Rect_mzx dest_rect;
+
+  src_rect = sdl_render_rect(texture_rect->x, texture_rect->y,
+   texture_rect->w, texture_rect->h);
 
   dest_rect.x = window->viewport_x;
   dest_rect.y = window->viewport_y;
@@ -278,7 +282,7 @@ static void softscale_sync_screen(struct graphics_data *graphics,
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
   SDL_RenderClear(renderer);
 
-  SDL_RenderCopy(renderer, texture, src_rect, &dest_rect);
+  SDL_RenderTexture(renderer, texture, &src_rect, &dest_rect);
   SDL_RenderPresent(renderer);
 }
 

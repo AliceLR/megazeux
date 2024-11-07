@@ -31,11 +31,12 @@
 
 #include "SDLmzx.h"
 #include "graphics.h"
-#include "platform.h"
 #include "render.h"
 #include "renderers.h"
 #include "render_sdl.h"
 #include "util.h"
+
+#include <stdlib.h>
 
 // 6 versions of each char, 16*256 chars -> 24576 total "chars"
 // -> 49152 8x8s -> sqrt ~= 221 > 32 * 6
@@ -294,7 +295,7 @@ static boolean sdlaccel_create_window(struct graphics_data *graphics,
   int tex_chars_h;
 
   // This requires that the underlying driver supports framebuffer objects.
-  if(!sdl_create_window_renderer(graphics, window, SDL_RENDERER_TARGETTEXTURE))
+  if(!sdl_create_window_renderer(graphics, window, true))
     return false;
 
   texture[TEX_SCREEN] =
@@ -343,10 +344,8 @@ static boolean sdlaccel_create_window(struct graphics_data *graphics,
     goto err_free;
   }
 
-  if(SDL_SetTextureBlendMode(texture[TEX_CHARS], SDL_BLENDMODE_BLEND))
-    warn("Failed to set char texture blend mode: %s\n", SDL_GetError());
-  if(SDL_SetTextureBlendMode(texture[TEX_BACKGROUND], SDL_BLENDMODE_BLEND))
-    warn("Failed to set bg texture blend mode: %s\n", SDL_GetError());
+  SDL_SetTextureBlendMode(texture[TEX_CHARS], SDL_BLENDMODE_BLEND);
+  SDL_SetTextureBlendMode(texture[TEX_BACKGROUND], SDL_BLENDMODE_BLEND);
 
   sdl_set_texture_scale_mode(graphics, window, TEX_SCREEN, true);
   sdl_set_texture_scale_mode(graphics, window, TEX_CHARS, false);
@@ -495,8 +494,19 @@ static void sdlaccel_do_remap_chars(struct graphics_data *graphics,
 #ifdef RENDER_GEOMETRY
 
 static void vertex_char(struct SDL_Vertex *vertex, float topleft_x,
- float topleft_y, float tex_x, float tex_y, SDL_Color sdl_color)
+ float topleft_y, float tex_x, float tex_y, SDL_Color _sdl_color)
 {
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_FColor sdl_color =
+  {
+    _sdl_color.r / 255.0,
+    _sdl_color.g / 255.0,
+    _sdl_color.b / 255.0,
+    _sdl_color.a / 255.0,
+  };
+#else
+  SDL_Color sdl_color = _sdl_color;
+#endif
   vertex[0].position.x = topleft_x;
   vertex[0].position.y = topleft_y;
   vertex[0].tex_coord.x = tex_x;
@@ -556,8 +566,9 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
   SDL_Texture *chars_tex = render_data->sdl.texture[TEX_CHARS];
   SDL_Texture *bg_tex = render_data->sdl.texture[TEX_BACKGROUND];
 
-  SDL_Rect dest_bg = { offx, offy, w * CHAR_W, h * CHAR_H };
-  SDL_Rect src_bg = { 0, 0, w, h };
+  SDL_Rect_mzx dest_bg = sdl_render_rect(offx, offy, w * CHAR_W, h * CHAR_H);
+  SDL_Rect_mzx src_bg = sdl_render_rect(0, 0, w, h);
+
   void *_bg;
   int bg_pitch;
   uint32_t *bg;
@@ -642,7 +653,7 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
       }
     }
     SDL_UnlockTexture(bg_tex);
-    SDL_RenderCopy(renderer, bg_tex, &src_bg, &dest_bg);
+    SDL_RenderTexture(renderer, bg_tex, &src_bg, &dest_bg);
 
 #ifdef RENDER_GEOMETRY
 
@@ -700,7 +711,8 @@ static void sdlaccel_render_cursor(struct graphics_data *graphics, unsigned x,
   uint8_t *palette = render_data->palette;
 
   // Input coordinates are on the character grid.
-  SDL_Rect dest = { x * CHAR_W, y * CHAR_H + offset, CHAR_W, lines };
+  SDL_Rect_mzx dest =
+   sdl_render_rect(x * CHAR_W, y * CHAR_H + offset, CHAR_W, lines);
 
   SDL_SetRenderDrawBlendMode(render_data->sdl.renderer, SDL_BLENDMODE_NONE);
   SDL_SetRenderDrawColor(render_data->sdl.renderer,
@@ -716,7 +728,7 @@ static void sdlaccel_render_mouse(struct graphics_data *graphics, unsigned x,
   struct sdlaccel_render_data *render_data = graphics->render_data;
 
   // Input coordinates are pixel values.
-  SDL_Rect dest = { x, y, w, h };
+  SDL_Rect_mzx dest = sdl_render_rect(x, y, w, h);
 
   /* There is no preset inversion blend mode, so make a custom blend mode.
    * Lower SDL versions should simply fall back to drawing a white rectangle.
@@ -744,13 +756,10 @@ static void sdlaccel_sync_screen(struct graphics_data *graphics,
   struct sdlaccel_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *screen_tex = render_data->sdl.texture[TEX_SCREEN];
-  SDL_Rect src;
-  SDL_Rect dest;
+  SDL_Rect_mzx src;
+  SDL_Rect_mzx dest;
 
-  src.x = 0;
-  src.y = 0;
-  src.w = SCREEN_PIX_W;
-  src.h = SCREEN_PIX_H;
+  src = sdl_render_rect(0, 0, SCREEN_PIX_W, SCREEN_PIX_H);
 
   dest.x = window->viewport_x;
   dest.y = window->viewport_y;
@@ -758,7 +767,7 @@ static void sdlaccel_sync_screen(struct graphics_data *graphics,
   dest.h = window->viewport_height;
 
   SDL_SetRenderTarget(renderer, NULL);
-  SDL_RenderCopy(renderer, screen_tex, &src, &dest);
+  SDL_RenderTexture(renderer, screen_tex, &src, &dest);
 
   SDL_RenderPresent(renderer);
 

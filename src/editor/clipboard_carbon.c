@@ -125,7 +125,7 @@ char *get_clipboard_buffer(void)
       src_data = (char *)CFDataGetBytePtr(flavorData);
       length = (size_t)CFDataGetLength(flavorData);
 
-      dest_data = cmalloc(length + 1);
+      dest_data = (char *)cmalloc(length + 1);
       memcpy(dest_data, src_data, length);
       dest_data[length] = 0;
 
@@ -136,4 +136,9 @@ char *get_clipboard_buffer(void)
 err_release:
   CFRelease(clipboard);
   return dest_data;
+}
+
+void free_clipboard_buffer(char *buffer)
+{
+  free(buffer);
 }

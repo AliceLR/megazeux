@@ -59,7 +59,9 @@ void delay(uint32_t ms)
 
 uint64_t get_ticks(void)
 {
-#if SDL_VERSION_ATLEAST(2,0,18)
+  // SDL_GetTicks returns a 64-bit value in SDL3, but
+  // SDL_GetTicks64 had to be used prior to that.
+#if SDL_VERSION_ATLEAST(2,0,18) && !SDL_VERSION_ATLEAST(3,0,0)
   return SDL_GetTicks64();
 #else
   return SDL_GetTicks();
@@ -146,12 +148,21 @@ static void set_dpi_aware(void)
 }
 #endif
 
+static inline boolean sdl_init(Uint32 flags)
+{
+#if SDL_VERSION_ATLEAST(3,0,0)
+  return SDL_Init(flags);
+#else
+  return SDL_Init(flags) >= 0;
+#endif
+}
+
 boolean platform_init(void)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  flags |= SDL_INIT_GAMECONTROLLER;
+  flags |= SDL_INIT_GAMEPAD;
 #endif
 
 #ifdef CONFIG_PSP
@@ -163,7 +174,8 @@ boolean platform_init(void)
     return false;
 #endif
 
-#ifdef DEBUG
+#if defined(DEBUG) && !SDL_VERSION_ATLEAST(3,0,0)
+  // Removed in SDL 3.
   flags |= SDL_INIT_NOPARACHUTE;
 #endif
 
@@ -175,17 +187,17 @@ boolean platform_init(void)
   set_dpi_aware();
 #endif
 
-  if(SDL_Init(flags) < 0)
+  if(!sdl_init(flags))
   {
     debug("Failed to initialize SDL; attempting with joystick support disabled: %s\n", SDL_GetError());
 
     // try again without joystick support
     flags &= ~SDL_INIT_JOYSTICK;
 #if SDL_VERSION_ATLEAST(2,0,0)
-    flags &= ~SDL_INIT_GAMECONTROLLER;
+    flags &= ~SDL_INIT_GAMEPAD;
 #endif
 
-    if(SDL_Init(flags) < 0)
+    if(!sdl_init(flags))
     {
       warn("Failed to initialize SDL: %s\n", SDL_GetError());
       return false;
