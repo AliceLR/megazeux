@@ -1262,8 +1262,10 @@ static boolean process_event(SDL_Event *event)
 #endif
 
       ckey = convert_SDL_internal(key);
-      trace("--EVENT_SDL-- SDL_EVENT_KEY_DOWN: scancode:%d sym:%d -> %d\n",
-       scancode, key, ckey);
+      trace(
+        "--EVENT_SDL-- SDL_EVENT_KEY_DOWN: scancode:%d sym:%d -> %d\n",
+        scancode, key, ckey
+      );
       if(!ckey)
       {
 #if !SDL_VERSION_ATLEAST(2,0,0)
@@ -1372,8 +1374,10 @@ static boolean process_event(SDL_Event *event)
 #endif
 
       ckey = convert_SDL_internal(key);
-      trace("--EVENT_SDL-- SDL_EVENT_KEY_UP: scancode:%d sym:%d -> %d\n",
-       scancode, key, ckey);
+      trace(
+        "--EVENT_SDL-- SDL_EVENT_KEY_UP: scancode:%d sym:%d -> %d\n",
+        scancode, key, ckey
+      );
       if(!ckey)
       {
 #if !SDL_VERSION_ATLEAST(2,0,0)
