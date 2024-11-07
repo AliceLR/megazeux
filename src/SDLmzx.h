@@ -313,6 +313,14 @@ static inline void SDL_SetJoystickEventsEnabled(boolean enabled)
 /**
  *  SDL_pixels.h
  */
+#if !SDL_VERSION_ATLEAST(2,0,5)
+/* Convenience macros added in 2.0.5. */
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#define SDL_PIXELFORMAT_RGBA32                      SDL_PIXELFORMAT_RGBA8888
+#else
+#define SDL_PIXELFORMAT_RGBA32                      SDL_PIXELFORMAT_ABGR8888
+#endif
+#endif
 #if !SDL_VERSION_ATLEAST(2,0,14)
 /* Added in 2.0.14 with the old names remaining; old names removed in SDL3. */
 #define SDL_PIXELFORMAT_XRGB4444                    SDL_PIXELFORMAT_RGB444
@@ -327,14 +335,6 @@ static inline void SDL_SetJoystickEventsEnabled(boolean enabled)
 #define SDL_CreatePalette(s)                        SDL_AllocPalette(s)
 #define SDL_DestroyPalette(p)                       SDL_FreePalette(p)
 #define SDL_GetMasksForPixelFormat(f,b,R,G,B,A)     SDL_PixelFormatEnumToMasks(f,b,R,G,B,A)
-
-#if !SDL_VERSION_ATLEAST(2,0,5)
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-#define SDL_PIXELFORMAT_RGBA32                      SDL_PIXELFORMAT_RGBA8888
-#else
-#define SDL_PIXELFORMAT_RGBA32                      SDL_PIXELFORMAT_ABGR8888
-#endif
-#endif
 
 static inline Uint32 SDL_MapSurfaceRGBA(SDL_Surface *surface,
  Uint8 r, Uint8 g, Uint8 b, Uint8 a)
