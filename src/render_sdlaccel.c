@@ -344,10 +344,8 @@ static boolean sdlaccel_create_window(struct graphics_data *graphics,
     goto err_free;
   }
 
-  if(SDL_SetTextureBlendMode(texture[TEX_CHARS], SDL_BLENDMODE_BLEND))
-    warn("Failed to set char texture blend mode: %s\n", SDL_GetError());
-  if(SDL_SetTextureBlendMode(texture[TEX_BACKGROUND], SDL_BLENDMODE_BLEND))
-    warn("Failed to set bg texture blend mode: %s\n", SDL_GetError());
+  SDL_SetTextureBlendMode(texture[TEX_CHARS], SDL_BLENDMODE_BLEND);
+  SDL_SetTextureBlendMode(texture[TEX_BACKGROUND], SDL_BLENDMODE_BLEND);
 
   sdl_set_texture_scale_mode(graphics, window, TEX_SCREEN, true);
   sdl_set_texture_scale_mode(graphics, window, TEX_CHARS, false);
