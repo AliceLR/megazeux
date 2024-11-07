@@ -58,3 +58,8 @@ char *get_clipboard_buffer(void)
 {
   return SDL_GetClipboardText();
 }
+
+void free_clipboard_buffer(char *buffer)
+{
+  SDL_free(buffer);
+}

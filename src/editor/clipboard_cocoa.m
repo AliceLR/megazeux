@@ -115,7 +115,7 @@ char *get_clipboard_buffer(void)
     goto err;
 
   size_t buf_len = [chrdata length];
-  char *buf = cmalloc(buf_len + 1);
+  char *buf = (char *)cmalloc(buf_len + 1);
 
   [chrdata getBytes:buf length:buf_len];
   buf[buf_len] = '\0';
@@ -125,4 +125,9 @@ char *get_clipboard_buffer(void)
 err:
   [pool release];
   return NULL;
+}
+
+void free_clipboard_buffer(char *buffer)
+{
+  free(buffer);
 }

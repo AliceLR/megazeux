@@ -18,10 +18,16 @@
  */
 
 #include "clipboard.h"
+#include <stdlib.h>
 
 void copy_buffer_to_clipboard(char **buffer, int lines, int total_length) {}
 
 char *get_clipboard_buffer(void)
 {
   return NULL;
+}
+
+void free_clipboard_buffer(char *buffer)
+{
+  free(buffer);
 }

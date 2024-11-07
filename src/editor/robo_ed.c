@@ -1537,7 +1537,8 @@ static void paste_buffer(struct robot_editor_context *rstate)
 #endif
     }
 
-    free(ext_buffer);
+    /* This may need SDL_free if it was allocated by SDL. */
+    free_clipboard_buffer(ext_buffer);
   }
   else
 

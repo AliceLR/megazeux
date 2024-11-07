@@ -202,3 +202,8 @@ err_unlock:
   XUnlockDisplay(display);
   return dest_data;
 }
+
+void free_clipboard_buffer(char *buffer)
+{
+  free(buffer);
+}

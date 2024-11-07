@@ -86,7 +86,7 @@ char *get_clipboard_buffer(void)
     // CF_TEXT is guaranteed to be null-terminated.
     length = strlen(src_data);
 
-    dest_data = cmalloc(length + 1);
+    dest_data = (char *)cmalloc(length + 1);
     strcpy(dest_data, src_data);
 
     GlobalUnlock(global_memory);
@@ -96,4 +96,9 @@ char *get_clipboard_buffer(void)
   }
 
   return NULL;
+}
+
+void free_clipboard_buffer(char *buffer)
+{
+  free(buffer);
 }
