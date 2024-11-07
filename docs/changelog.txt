@@ -7,6 +7,8 @@ FIXES
 
 GIT - MZX 2.93c
 
+Initial support for SDL3 has been added, but as it has not been
+released yet, no MegaZeux release builds use it currently.
 As part of the preparation for SDL3, this release includes many
 long-belated changes to the way MegaZeux resizes windows and
 calculates the scaled display area within the window (including
@@ -56,6 +58,9 @@ USERS
 
 DEVELOPERS
 
++ Added initial support for SDL3. No platforms select SDL3 by
+  default, but it is now possible to build and test MegaZeux for
+  platforms that already support the current prerelease (3.1.6).
 + Split the renderer function "set_video_mode" into two renderer
   functions "create_window" and "resize_window" to more closely
   reflect the reality of SDL2/3. The former is used during
