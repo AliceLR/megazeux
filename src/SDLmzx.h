@@ -375,23 +375,26 @@ typedef int SDL_RendererLogicalPresentation;
 #define SDL_SCALEMODE_BEST                SDL_ScaleModeBest
 #define SDL_SCALEMODE_LINEAR              SDL_ScaleModeLinear
 #define SDL_SCALEMODE_NEAREST             SDL_ScaleModeNearest
-#define SDL_SetRenderClipRect(r, rect)    (SDL_RenderSetClipRect((r), (rect)) == 0)
 
 #if !SDL_VERSION_ATLEAST(2,0,12)
 typedef int SDL_ScaleMode;
 #endif
 
+static inline SDL_bool SDL_SetRenderClipRect(SDL_Renderer *render,
+ SDL_Rect *rect)
+{
+  return (SDL_bool)(SDL_RenderSetClipRect(render, rect) == 0);
+}
+
 static inline SDL_bool SDL_SetRenderLogicalPresentation(SDL_Renderer *render,
  int w, int h, SDL_RendererLogicalPresentation p, SDL_ScaleMode s)
 {
-  // Return value 0/-1 -> true/false
   return (SDL_bool)(SDL_RenderSetLogicalSize(render, w, h) == 0);
 }
 
 static inline SDL_bool SDL_RenderTexture(SDL_Renderer *renderer,
  SDL_Texture *texture, const SDL_Rect_mzx *src_rect, const SDL_Rect_mzx *dest_rect)
 {
-  // Return value 0/-1 -> true/false
   return (SDL_bool)(SDL_RenderCopy(renderer, texture, src_rect, dest_rect) == 0);
 }
 #endif
