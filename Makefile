@@ -92,9 +92,17 @@ ifeq (${BUILD_SDL},3)
 ifneq ($(and ${SDL_PKG_CONFIG_PATH},$(wildcard ${SDL_PKG_CONFIG_PATH}/sdl3.pc)),)
 # nop
 else
+ifneq (${LIBDIR},.)
+# Check LIBDIR for SDL3 first, if it is set.
 ifneq ($(wildcard ${LIBDIR}/pkgconfig/sdl3.pc),)
 SDL_PKG_CONFIG_PATH ?= ${LIBDIR}/pkgconfig
 endif
+else
+# Check dependencies prefix instead for LIBDIR=. platforms.
+ifneq ($(wildcard ${PREFIX}/lib/pkgconfig/sdl3.pc),)
+SDL_PKG_CONFIG_PATH ?= ${PREFIX}/lib/pkgconfig
+endif
+endif # LIBDIR=.
 endif
 ifneq (${SDL_PKG_CONFIG_PATH},)
 SDL_PKG_CONFIG_FLAGS = --with-path=${SDL_PKG_CONFIG_PATH}
