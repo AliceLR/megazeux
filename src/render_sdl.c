@@ -901,19 +901,19 @@ static void find_texture_format(struct graphics_data *graphics,
   uint32_t priority = 0;
   boolean is_software_renderer = false;
   const char *renderer_name;
-  const uint32_t *formats = NULL;
   int num_formats;
 
 #if SDL_VERSION_ATLEAST(3,0,0)
 
   SDL_PropertiesID props = SDL_GetRendererProperties(render_data->renderer);
-  const uint32_t *pos;
+  const SDL_PixelFormat *formats = NULL;
+  const SDL_PixelFormat *pos;
 
   renderer_name = SDL_GetRendererName(render_data->renderer);
   if(!strcmp(renderer_name, SDL_SOFTWARE_RENDERER))
     is_software_renderer = true;
 
-  formats = (const uint32_t *)SDL_GetPointerProperty(props,
+  formats = (const SDL_PixelFormat *)SDL_GetPointerProperty(props,
    SDL_PROP_RENDERER_TEXTURE_FORMATS_POINTER, NULL);
   num_formats = 0;
   for(pos = formats; pos && *pos != SDL_PIXELFORMAT_UNKNOWN; pos++)
@@ -922,6 +922,7 @@ static void find_texture_format(struct graphics_data *graphics,
 #else
 
   SDL_RendererInfo rinfo;
+  const uint32_t *formats = NULL;
 
   if(!SDL_GetRendererInfo(render_data->renderer, &rinfo))
   {
