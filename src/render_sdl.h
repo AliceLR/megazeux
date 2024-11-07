@@ -37,7 +37,6 @@ struct sdl_render_data
   SDL_Window *window;
   SDL_GLContext context;
   SDL_PixelFormatDetails *pixel_format;
-  SDL_ScaleMode screen_scale_mode;
 #else
   SDL_Overlay *overlay;
 #endif
