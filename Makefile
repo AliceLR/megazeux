@@ -87,18 +87,15 @@ ifneq (${BUILD_SDL},)
 # SDL 3
 #
 ifeq (${BUILD_SDL},3)
-# Check SDL_PKG_CONFIG_PATH and LIBDIR for pkgconfig/sdl3.pc.
+# Check SDL_PKG_CONFIG_PATH and PREFIX/lib/pkgconfig for sdl3.pc.
 # Note --with-path is a pkgconf extension.
 ifneq ($(and ${SDL_PKG_CONFIG_PATH},$(wildcard ${SDL_PKG_CONFIG_PATH}/sdl3.pc)),)
 # nop
 else
-ifneq (${LIBDIR},.)
-# Check LIBDIR for SDL3 first, if it is set.
-ifneq ($(wildcard ${LIBDIR}/pkgconfig/sdl3.pc),)
-SDL_PKG_CONFIG_PATH ?= ${LIBDIR}/pkgconfig
-endif
-else
 # Check dependencies prefix instead for LIBDIR=. platforms.
+# This is useless for unix/darwin, which should have sdl3.pc in a
+# place pkgconf can find through normal means.
+ifeq (${LIBDIR},.)
 ifneq ($(wildcard ${PREFIX}/lib/pkgconfig/sdl3.pc),)
 SDL_PKG_CONFIG_PATH ?= ${PREFIX}/lib/pkgconfig
 endif
