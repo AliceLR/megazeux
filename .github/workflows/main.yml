@@ -208,7 +208,7 @@ jobs:
 
   ARM-NDS:
     runs-on: ubuntu-latest
-    container: devkitpro/devkitarm
+    container: devkitpro/devkitarm:20241104
     steps:
       - run: echo "PATH=$DEVKITPRO/devkitARM/bin:$PATH" >> $GITHUB_ENV
       - uses: actions/checkout@v4
