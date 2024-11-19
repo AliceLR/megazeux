@@ -142,7 +142,7 @@ jobs:
           msystem: MINGW64
           update: true
           install: >-
-            base-devel git
+            base-devel git zip
             mingw-w64-x86_64-gcc    mingw-w64-x86_64-zlib      mingw-w64-x86_64-libpng
             mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-SDL2
       - uses: actions/checkout@v4
@@ -167,7 +167,7 @@ jobs:
           msystem: MINGW32
           update: true
           install: >-
-            base-devel git
+            base-devel git zip
             mingw-w64-i686-gcc      mingw-w64-i686-zlib        mingw-w64-i686-libpng
             mingw-w64-i686-libogg   mingw-w64-i686-libvorbis   mingw-w64-i686-SDL2
       - uses: actions/checkout@v4
@@ -223,6 +223,8 @@ jobs:
     runs-on: ubuntu-latest
     container: skylyrac/blocksds:slim-latest
     steps:
+      - name: Install dependencies
+        run: apt update && apt install -y --no-install-recommends zip
       - name: Install target dependencies
         run: wf-pacman -Syu --noconfirm && wf-pacman -S --noconfirm toolchain-gcc-arm-none-eabi-zlib
       - run: echo "BLOCKSDS=/opt/blocksds/core" >> $GITHUB_ENV
