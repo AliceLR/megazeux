@@ -25,15 +25,16 @@ android {
             keyPassword keystoreProperties['keyPassword']
         }
     }
+    namespace "net.digitalmzx.megazeux"
     ndkVersion "23.2.8568313"
-    compileSdkVersion 31
-    buildToolsVersion "30.0.3"
+    compileSdkVersion 34
+    buildToolsVersion "34.0.0"
     defaultConfig {
         if (buildAsApplication) {
             applicationId "net.digitalmzx.megazeux"
         }
         minSdkVersion 16
-        targetSdkVersion 31
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
         externalNativeBuild {
@@ -62,7 +63,7 @@ android {
         }
 
     }
-    lintOptions {
+    lint {
         abortOnError false
     }
 
