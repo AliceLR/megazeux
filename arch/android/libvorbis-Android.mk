@@ -7,6 +7,9 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/include $(LOCAL_PATH)/lib
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
 LOCAL_SHARED_LIBRARIES := libogg
 
+# https://developer.android.com/guide/practices/page-sizes
+LOCAL_LDFLAGS += "-Wl,-z,max-page-size=16384"
+
 LOCAL_SRC_FILES := lib/mdct.c lib/smallft.c lib/block.c lib/envelope.c lib/window.c lib/lsp.c \
 			lib/lpc.c lib/analysis.c lib/synthesis.c lib/psy.c lib/info.c \
 			lib/floor1.c lib/floor0.c \
@@ -20,6 +23,9 @@ LOCAL_MODULE := libvorbisfile
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/include $(LOCAL_PATH)/lib
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include
 LOCAL_SHARED_LIBRARIES := libogg libvorbis
+
+# https://developer.android.com/guide/practices/page-sizes
+LOCAL_LDFLAGS += "-Wl,-z,max-page-size=16384"
 
 LOCAL_SRC_FILES := lib/vorbisfile.c
 

@@ -23,6 +23,7 @@ LIBOGG_VERSION    ?= 1.3.5
 LIBVORBIS_VERSION ?= 1.3.7
 WGET              ?= wget
 TAR               ?= tar
+PATCH             ?= patch
 
 DEPS              := arch/android/deps
 DEPS_BUILD        := arch/android/deps/.build
@@ -52,6 +53,7 @@ ${DEPS}/SDL2-${SDL_VERSION}: | ${DEPS}
 	${RM} -f $@.tar.gz
 	${WGET} https://www.libsdl.org/release/SDL2-${SDL_VERSION}.tar.gz -O$@.tar.gz
 	${TAR} -xzf $@.tar.gz -C ${DEPS}/
+	${PATCH} -i ../../SDL2-page-sizes.patch -p1 -d ${DEPS}/SDL2-${SDL_VERSION}
 
 ${DEPS}/libogg-${LIBOGG_VERSION}: | ${DEPS}
 	$(if ${V},,@echo "  WGET    " $@)
