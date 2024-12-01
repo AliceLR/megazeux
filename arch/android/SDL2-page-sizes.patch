@@ -1,0 +1,23 @@
+diff -Nrup SDL2-2.30.9.orig/Android.mk SDL2-2.30.9/Android.mk
+--- SDL2-2.30.9.orig/Android.mk	2023-06-04 08:55:56.000000000 +0200
++++ SDL2-2.30.9/Android.mk	2024-12-01 10:07:36.795771235 +0100
+@@ -83,6 +83,9 @@ LOCAL_LDLIBS := -ldl -lGLESv1_CM -lGLESv
+ 
+ LOCAL_LDFLAGS := -Wl,--no-undefined
+ 
++# https://developer.android.com/guide/practices/page-sizes
++LOCAL_LDFLAGS += "-Wl,-z,max-page-size=16384"
++
+ ifeq ($(NDK_DEBUG),1)
+     cmd-strip :=
+ endif
+@@ -104,7 +107,8 @@ LOCAL_MODULE_FILENAME := libSDL2
+ 
+ LOCAL_LDLIBS :=
+ 
+-LOCAL_LDFLAGS :=
++# https://developer.android.com/guide/practices/page-sizes
++LOCAL_LDFLAGS := "-Wl,-z,max-page-size=16384"
+ 
+ LOCAL_EXPORT_LDLIBS := -ldl -lGLESv1_CM -lGLESv2 -llog -landroid
+ 
