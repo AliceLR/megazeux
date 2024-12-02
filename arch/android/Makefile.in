@@ -138,7 +138,7 @@ JNI_INCLUDES   := arch/android/include
 JNI_LIBS       := ${JNI_LIB_DIR}/${ABI}
 
 ARCH_CFLAGS    += -DANDROID -fPIE -fPIC
-ARCH_LDFLAGS   += -shared
+ARCH_LDFLAGS   += -shared -llog
 ARCH_CXXFLAGS  := ${ARCH_CFLAGS}
 
 SDL_PREFIX     := ${PREFIX}
