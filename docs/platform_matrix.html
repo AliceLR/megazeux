@@ -162,7 +162,7 @@ var archs =
     description:      "Nintendo 3DS",
     architecture:     "ARM11 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 14.1.0 <br> binutils 2.42 <br> (dk r64)",
+    toolchain:        "gcc 14.2.0 <br> binutils 2.43.1 <br> (dk r65)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -215,7 +215,7 @@ var archs =
   darwin:
   {
     platform:         "darwin",
-    description:      "MacOS 10.x",
+    description:      "Mac OS X/macOS (compatibility)",
     architecture:     "Various (Mach-O) <br>" + note_link("macOS"),
     endian:           "Varies",
     toolchain:        "Various",
@@ -274,7 +274,7 @@ var archs =
     description:      "Sega Dreamcast",
     architecture:     "SH-4 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 9.3.0 <br /> binutils 2.34 <br /> (KallistiOS)",
+    toolchain:        "gcc 13.2.0 <br /> binutils 2.43 <br /> (KallistiOS)",
     packaged:         _FAULTY(),
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -299,7 +299,7 @@ var archs =
     description:      "HTML5 (Emscripten)",
     architecture:     "JavaScript <br> WebAssembly",
     endian:           "Little",
-    toolchain:        "clang 18.0.0 <br> (sdk 3.1.47)",
+    toolchain:        "clang 20.0.0 <br> (sdk 3.1.66)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -329,7 +329,7 @@ var archs =
     description:      "Windows <br> (GNU toolchain)",
     architecture:     "x64 (PE+ COFF) <br> x86 (PE COFF)",
     endian:           "Little",
-    toolchain:        "gcc 14.1.1 <br> binutils 2.41",
+    toolchain:        "gcc 14.2.1 <br> binutils 2.42",
     packaged:         ZIP,
     visibility:       yes,
     stack_protector:  stack_protector_strong,
@@ -391,7 +391,7 @@ var archs =
     description:      "Nintendo DS",
     architecture:     "ARM9 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 14.1.0 <br> binutils 2.42 <br> (dk r64)",
+    toolchain:        "gcc 14.2.0 <br> binutils 2.43.1 <br> (dk r65)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
@@ -468,7 +468,7 @@ var archs =
     description:      "Nintendo Switch",
     architecture:     "ARMv8/AArch64 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 14.1.0 <br> binutils 2.42 <br> (dk r26.1)",
+    toolchain:        "gcc 14.2.0 <br> binutils 2.43.1 <br> (dk r27)",
     packaged:         ZIP,
     stack_protector:  stack_protector_strong,
     layer_rendering:  yes,
@@ -578,10 +578,10 @@ var archs =
   xcode:
   {
     platform:         "xcode",
-    description:      ">= MacOS 10.6",
-    architecture:     "x86_64 (Mach-O) <br> i686 (Mach-O) <br>" + note_link("macOS"),
+    description:      "macOS 10.13+ (Xcode)",
+    architecture:     "x86_64 (Mach-O) <br> AArch64 (Mach-O) <br>" + note_link("macOS"),
     endian:           "Little",
-    toolchain:        "clang 902.0.39.2 <br> LLVM 9.1.0",
+    toolchain:        "clang 1200.0.32.29 <br> LLVM 12.0.0",
     packaged:         DMG,
     visibility:       yes,
     stack_protector:  yes,
@@ -872,7 +872,7 @@ span.yes, span.no, span.no2, span.na, span.std {
   border-top : none;
   border-bottom : none;
   padding-left : 10px;
-  width : 2%;
+  width : 1%;
 }
 
 a {
@@ -1004,7 +1004,7 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
 <ul>
   <li><b>AMD64</b> / <b>x86_64</b></li>
   <li><b>i386</b> / <b>i686</b> / etc.</li>
-  <li><b>ARMhf</b></li>
+  <li><b>ARMv7</b> / <b>ARMhf</b> / etc.</li>
   <li><b>AArch64</b></li>
   <li><b>RISC-V RV64GC</b></li>
 </ul>
@@ -1014,6 +1014,7 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
 </p>
 <ul>
   <li><b>DEC Alpha</b> (qemu-system-alpha)</li>
+  <li><b>LoongArch64</b> (qemu-system-loong64)</li>
   <li><b>MIPSeb</b> (qemu-system-mips)</li>
   <li><b>MIPSel</b> (qemu-system-mipsel, PlayStation Portable)</li>
   <li><b>MIPS64el</b> (qemu-system-mips64)</li>
@@ -1031,61 +1032,83 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
 
 <h2 id="notemacOS">Darwin/Xcode Architectures</h2>
 <p>
-  The following architectures and SDL versions are currently supported by the macOS builds:
+  The following architectures and SDL versions are currently supported by the macOS builds.
+  Listed toolchain/SDK values are the ones used for release builds currently:
 </p>
 <table style="min-width:800">
   <tr>
     <th rowspan="2"></th>
-    <th></th>
-    <th colspan="2">Xcode</th>
-    <th colspan="2">darwin-dist</th>
+    <th colspan="3">Xcode</th>
+    <th colspan="4">darwin-dist</th>
   </tr>
   <tr>
     <th>Toolchain/SDK</th>
     <th>Minimum OS</th>
     <th>SDL</th>
+    <th>Toolchain/SDK</th>
     <th>Minimum OS</th>
     <th>SDL</th>
+    <th>Enabled in<br>release</th>
   </tr>
   <tr>
     <th>ppc</th>
+    <td colspan="3">&mdash;</td>
     <td>Xcode 3.2.6<br>10.4u SDK</td>
-    <td>&mdash;</td>
-    <td>&mdash;</td>
     <td>10.4</td>
-    <td>SDL 1.2.5<br>SDL 2.0.3</td>
+    <td>SDL 1.2.15<br>SDL 2.0.3</td>
+    <td class="std">YES (1.2.15)</td>
   </tr>
   <tr>
     <th>ppc64</th>
+    <td colspan="3">&mdash;</td>
     <td>Xcode 3.2.6<br>10.5 SDK</td>
-    <td>&mdash;</td>
-    <td>&mdash;</td>
     <td>10.5</td>
-    <td>SDL 1.2.5<br>SDL 2.0.3</td>
+    <td>SDL 1.2.15<br>SDL 2.0.3</td>
+    <td class="std">YES (1.2.15)</td>
   </tr>
   <tr>
     <th>i386</th>
+    <td colspan="3">&mdash;</td>
     <td>Xcode 9.4.1<br>10.13 SDK</td>
     <td>10.6</td>
-    <td>SDL 2.0.7</td>
-    <td>10.6</td>
     <td>SDL 2.0.22</td>
+    <td class="std">YES</td>
   </tr>
   <tr>
     <th>x86_64</th>
+    <td>Xcode 14.2<br>13.1 SDK</td>
+    <td>10.13</td>
+    <td>SDL2 (latest)</td>
     <td>Xcode 9.4.1<br>10.13 SDK</td>
     <td>10.6</td>
-    <td>SDL 2.0.7</td>
-    <td>10.6</td>
     <td>SDL 2.0.22</td>
+    <td class="std">YES</td>
   </tr>
   <tr>
     <th>x86_64h</th>
+    <td colspan="3">&mdash;</td>
     <td>Xcode 9.4.1<br>10.13 SDK</td>
-    <td>&mdash;</td>
-    <td>&mdash;</td>
     <td>10.9</td>
     <td>SDL2 (latest)</td>
+    <td class="no2">NO</td>
+  </tr>
+  <tr>
+    <th>arm64</th>
+    <td>Xcode 14.2<br>13.1 SDK</td>
+    <td>11.0</td>
+    <td>SDL2 (latest)</td>
+    <td>Xcode 14.2<br>13.1 SDK</td>
+    <td>11.0</td>
+    <td>SDL2 (latest)</td>
+    <td class="std">YES</td>
+  </tr>
+  <tr>
+    <th>arm64e</th>
+    <td colspan="3">&mdash;</td>
+    <td>Xcode 14.2<br>13.1 SDK</td>
+    <td>11.0</td>
+    <td>SDL2 (latest)</td>
+    <td class="no2">NO</td>
   </tr>
 </table>
 
