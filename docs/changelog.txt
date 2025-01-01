@@ -111,6 +111,7 @@ DEVELOPERS
   libpng to 1.6.44, libogg to 1.3.5, and libvorbis to 1.3.7.
 + Enabled 16k pages on Android to hopefully future-proof
   MegaZeux against Android 15.0. (asie)
++ Updated libxmp to 4.6.1+sample rate patch.
 
 
 September 10th, 2024 - MZX 2.93b

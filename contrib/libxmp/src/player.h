@@ -201,6 +201,7 @@ struct channel_data {
 		int slide;	/* Frequency slide value */
 		double fslide;	/* Fine frequency slide value */
 		int memory;	/* Portamento effect memory */
+		int down_memory;/* Portamento down effect memory (XM) */
 	} freq;
 
 	struct {
@@ -214,6 +215,8 @@ struct channel_data {
 	struct {
 		int up_memory;	/* FT2 has separate memories for these */
 		int down_memory;/* cases (see Porta-LinkMem.xm) */
+		int xf_up_memory;
+		int xf_down_memory;
 	} fine_porta;
 
 	struct {
@@ -276,6 +279,8 @@ struct channel_data {
 
 void	libxmp_process_fx	(struct context_data *, struct channel_data *,
 				 int, struct xmp_event *, int);
+void	libxmp_process_pattern_loop	(struct context_data *,
+					 struct flow_control *f, int, int, int);
 void	libxmp_filter_setup	(int, int, int, int*, int*, int *);
 int	libxmp_read_event	(struct context_data *, struct xmp_event *, int);
 

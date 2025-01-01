@@ -35,6 +35,9 @@
 
 #include "loader.h"
 #include "xm.h"
+#if 0
+#include "vorbis.h"
+#endif
 
 static int xm_test(HIO_HANDLE *, char *, const int);
 static int xm_load(struct module_data *, HIO_HANDLE *, const int);
@@ -997,6 +1000,8 @@ static int xm_load(struct module_data *m, HIO_HANDLE * f, const int start)
 		libxmp_set_type(m, "ModPlug Tracker 1.16 XM %d.%02d",
 				xfh.version >> 8, xfh.version & 0xff);
 
+		m->quirk &= ~QUIRK_FT2BUGS;
+		m->flow_mode = FLOW_MODE_MPT_116;
 		m->mvolbase = 48;
 		m->mvol = 48;
 		libxmp_apply_mpt_preamp(m);
