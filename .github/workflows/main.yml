@@ -221,7 +221,7 @@ jobs:
 
   ARM-NDS-BlocksDS:
     runs-on: ubuntu-latest
-    container: skylyrac/blocksds:slim-latest
+    container: skylyrac/blocksds:slim-v1.6.3
     steps:
       - name: Install dependencies
         run: apt update && apt install -y --no-install-recommends zip
