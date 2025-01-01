@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2021 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -208,14 +208,17 @@ static int unpack_block(struct module_data *m, uint16 bnum, uint8 *from, uint16 
 				} else if (event->fxp == 0xfe) {
 					event->fxp = event->fxt = 0;
 				} else if (event->fxp == 0xf1) {
+					/* Retrigger once on tick 3 */
 					event->fxt = FX_EXTENDED;
 					event->fxp = (EX_RETRIG << 4) | 3;
 				} else if (event->fxp == 0xf2) {
-					event->fxt = FX_EXTENDED;
-					event->fxp = (EX_CUT << 4) | 3;
-				} else if (event->fxp == 0xf3) {
+					/* Delay until tick 3 */
 					event->fxt = FX_EXTENDED;
 					event->fxp = (EX_DELAY << 4) | 3;
+				} else if (event->fxp == 0xf3) {
+					/* Retrigger once on tick 2 */
+					event->fxt = FX_EXTENDED;
+					event->fxp = (EX_RETRIG << 4) | 2;
 				} else if (event->fxp > 10) {
 					event->fxt = FX_S3M_BPM;
 					event->fxp = 125 * event->fxp / 33;
@@ -335,6 +338,7 @@ static int med3_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	D_(D_INFO "Sliding: %d", sliding);
 	D_(D_INFO "Play transpose: %d", transp);
 
+	m->quirk |= QUIRK_RTONCE;
 	if (sliding == 6)
 		m->quirk |= QUIRK_VSALL | QUIRK_PBALL;
 

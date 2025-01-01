@@ -348,6 +348,7 @@ static void identify_tracker(struct module_data *m, struct it_file_header *ifh,
 	char tracker_name[40];
 	int sample_mode = ~ifh->flags & IT_USE_INST;
 
+	m->flow_mode = FLOW_MODE_IT_210;
 	switch (ifh->cwt >> 8) {
 	case 0x00:
 		strcpy(tracker_name, "unmo3");
@@ -366,6 +367,7 @@ static void identify_tracker(struct module_data *m, struct it_file_header *ifh,
 			strcpy(tracker_name, "ModPlug Tracker 1.16");
 			/* ModPlug Tracker files aren't really IMPM 2.00 */
 			ifh->cmwt = sample_mode ? 0x100 : 0x214;
+			m->flow_mode = FLOW_MODE_MPT_116;
 			*is_mpt_116 = 1;
 		} else if (ifh->cmwt == 0x0200 && ifh->cwt == 0x0202 && pat_before_smp) {
 			/* ModPlug Tracker ITs from pre-alpha 4 use tracker
@@ -375,6 +377,9 @@ static void identify_tracker(struct module_data *m, struct it_file_header *ifh,
 			 * samples/instruments. */
 			strcpy(tracker_name, "ModPlug Tracker 1.0 pre-alpha");
 			ifh->cmwt = sample_mode ? 0x100 : 0x200;
+			/* TODO: pre-alpha 4 has its own Pattern Loop behavior;
+			 * the <=1.16 behavior is present in pre-alpha 6. */
+			m->flow_mode = FLOW_MODE_MPT_116;
 			*is_mpt_116 = 1;
 		} else if (ifh->cwt == 0x0216) {
 			strcpy(tracker_name, "Impulse Tracker 2.14v3");
@@ -385,12 +390,22 @@ static void identify_tracker(struct module_data *m, struct it_file_header *ifh,
 		} else {
 			snprintf(tracker_name, 40, "Impulse Tracker %d.%02x",
 				 (ifh->cwt & 0x0f00) >> 8, ifh->cwt & 0xff);
+
+			if (ifh->cwt < 0x104) {
+				m->flow_mode = FLOW_MODE_IT_100;
+			} else if (ifh->cwt < 0x210) {
+				m->flow_mode = FLOW_MODE_IT_104;
+			}
 		}
 		break;
 	case 0x08:
 	case 0x7f:
 		if (ifh->cwt == 0x0888) {
 			strcpy(tracker_name, "OpenMPT 1.17");
+			/* TODO: 1.17.02.49 onward implement IT 2.10+
+			 * Pattern Loop when the IT compatibility flag is set
+			 * (by default, it is not set). */
+			m->flow_mode = FLOW_MODE_MPT_116;
 			*is_mpt_116 = 1;
 		} else if (ifh->cwt == 0x7fff) {
 			strcpy(tracker_name, "munch.py");
@@ -423,6 +438,7 @@ static void identify_tracker(struct module_data *m, struct it_file_header *ifh,
 						ifh->cmwt & 0xff);
 #else
 	libxmp_set_type(m, "Impulse Tracker");
+	m->flow_mode = FLOW_MODE_IT_210;
 #endif
 }
 
@@ -674,7 +690,7 @@ static int load_new_it_instrument(struct xmp_instrument *xxi, HIO_HANDLE *f)
 	}
 
 	xxi->nsm = k;
-	xxi->vol = i2h.gbv >> 1;
+	xxi->vol = MIN(i2h.gbv, 128) >> 1;
 
 	if (k) {
 		xxi->sub = (struct xmp_subinstrument *) calloc(k, sizeof(struct xmp_subinstrument));
@@ -881,7 +897,7 @@ static int load_it_sample(struct module_data *m, int i, int start,
 			struct xmp_subinstrument *sub = &mod->xxi[j].sub[k];
 			if (sub->sid == i) {
 				sub->vol = ish.vol;
-				sub->gvl = ish.gvl;
+				sub->gvl = MIN(ish.gvl, 64);
 				sub->vra = ish.vis;	/* sample to sub-instrument vibrato */
 				sub->vde = ish.vid << 1;
 				sub->vwf = ish.vit;
