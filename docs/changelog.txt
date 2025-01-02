@@ -62,6 +62,18 @@ USERS
 + Fixed filesystem permissions on Android 11.0 and up. (asie)
 + Fixed linkage bug preventing MegaZeux from starting in Android
   Jelly Bean and KitKat due to a missing logging symbol.
++ Added support for pre-2.70 "put thing BENEATH" being ignored.
++ Added support for pre-2.80 "put thing" treating p?? as 0.
++ Robo-P p0 now converts to either p00 or p?? when appropriate.
++ Robo-P PUT commands now ignore the high thing bit instead of
+  combining it into the color.
++ Fixed disassembly of out-of-bounds color and param values to
+  match their most common interpretation during gameplay.
++ Fixed assembly of immediates in second char of CHANGE OVERLAY.
++ Out-of-bounds char values are now disassembled to immediates
+  for CHAR EDIT, COPY CHAR, SCROLL CHAR, and FLIP CHAR. This
+  makes commands such as "CHAR EDIT 256 [...]" more usable since
+  they will persist in the robot editor.
 
 DEVELOPERS
 

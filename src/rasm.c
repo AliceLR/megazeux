@@ -5445,27 +5445,34 @@ static char *legacy_disassemble_print_string_expressions(char *src,
 
 __editor_maybe_static void print_color(int color, char *color_buffer)
 {
-  if(color & 0x100)
+  /* Simulate the 2.x interpreter function fix_color here to guarantee
+   * that invalid values are accurately disassembled as they are interpreted.
+   * Invalid values below 0 (signed 16-bit) are ultimately handled mod 256.
+   * Invalid values above 0x120 are treated identically to c??.
+   *
+   * This interpreter behavior dates back to 2.51 or older, but the DOS
+   * disassembler would treat all invalid values as c??, and port versions
+   * prior to 2.93c would print one of two forms of invalid junk instead.
+   */
+  if((int16_t)color < 0x100)
   {
-    color ^= 0x100;
-    if(color == 32)
-    {
-      sprintf(color_buffer, "c??");
-    }
-    else
+    sprintf(color_buffer, "c%02x", color & 0xff);
+  }
+  else
 
-    if(color < 16)
-    {
-      sprintf(color_buffer, "c?%1x", color);
-    }
-    else
-    {
-      sprintf(color_buffer, "c%1x?", color - 16);
-    }
+  if(color < 0x110)
+  {
+    sprintf(color_buffer, "c?%1x", color & 0x0f);
+  }
+  else
+
+  if(color < 0x120)
+  {
+    sprintf(color_buffer, "c%1x?", color & 0x0f);
   }
   else
   {
-    sprintf(color_buffer, "c%02x", color);
+    sprintf(color_buffer, "c??");
   }
 }
 
@@ -5602,8 +5609,13 @@ static char *legacy_disassemble_arg(enum arg_type arg_type, char *src,
 
     if(arg_type & ARG_TYPE_PARAM)
     {
+      /* Note: disassembling invalid values modulo 256 to match how
+       * they are interpreted. The DOS disassembler would disassemble
+       * all invalid values to p?? and the port disassembler would
+       * produce either p?? or junk prior to 2.93c.
+       */
       output[0] = 'p';
-      if(compiled_arg_value & 0x100)
+      if(compiled_arg_value == 0x100)
       {
         output[1] = '?';
         output[2] = '?';
@@ -5611,7 +5623,7 @@ static char *legacy_disassemble_arg(enum arg_type arg_type, char *src,
       }
       else
       {
-        sprintf(output + 1, "%02x", compiled_arg_value);
+        sprintf(output + 1, "%02x", compiled_arg_value & 0xff);
       }
       *_output = output + 3;
       return src;
@@ -5623,6 +5635,10 @@ static char *legacy_disassemble_arg(enum arg_type arg_type, char *src,
       *_output = output + 3;
       return src;
     }
+
+    /* Character: prefer immediate representation if not a normal char. */
+    if((arg_type & ARG_TYPE_CHARACTER) && (compiled_arg_value & 0xff00))
+      arg_type &= ~ARG_TYPE_CHARACTER;
 
     if(arg_type & ARG_TYPE_CHARACTER)
     {
