@@ -172,77 +172,77 @@ namespace Unit
 
   arg::arg(const void *_op)
   {
-    sprintf(tmpbuf, "0x%08zx", reinterpret_cast<size_t>(_op));
+    snprintf(tmpbuf, sizeof(tmpbuf), "0x%08zx", reinterpret_cast<size_t>(_op));
     op = tmpbuf;
     has_value = true;
   }
 
   arg::arg(unsigned char _op)
   {
-    sprintf(tmpbuf, "%u", _op);
+    snprintf(tmpbuf, sizeof(tmpbuf), "%u", _op);
     op = tmpbuf;
     has_value = true;
   }
 
   arg::arg(unsigned short _op)
   {
-    sprintf(tmpbuf, "%u", _op);
+    snprintf(tmpbuf, sizeof(tmpbuf), "%u", _op);
     op = tmpbuf;
     has_value = true;
   }
 
   arg::arg(unsigned int _op)
   {
-    sprintf(tmpbuf, "%d", _op);
+    snprintf(tmpbuf, sizeof(tmpbuf), "%d", _op);
     op = tmpbuf;
     has_value = true;
   }
 
   arg::arg(unsigned long _op)
   {
-    sprintf(tmpbuf, "%lu", _op);
+    snprintf(tmpbuf, sizeof(tmpbuf), "%lu", _op);
     op = tmpbuf;
     has_value = true;
   }
 
   arg::arg(unsigned long long _op)
   {
-    sprintf(tmpbuf, "%llu", _op);
+    snprintf(tmpbuf, sizeof(tmpbuf), "%llu", _op);
     op = tmpbuf;
     has_value = true;
   }
 
   arg::arg(signed char _op)
   {
-    sprintf(tmpbuf, "%d", _op);
+    snprintf(tmpbuf, sizeof(tmpbuf), "%d", _op);
     op = tmpbuf;
     has_value = true;
   }
 
   arg::arg(short _op)
   {
-    sprintf(tmpbuf, "%d", _op);
+    snprintf(tmpbuf, sizeof(tmpbuf), "%d", _op);
     op = tmpbuf;
     has_value = true;
   }
 
   arg::arg(int _op)
   {
-    sprintf(tmpbuf, "%d", _op);
+    snprintf(tmpbuf, sizeof(tmpbuf), "%d", _op);
     op = tmpbuf;
     has_value = true;
   }
 
   arg::arg(long _op)
   {
-    sprintf(tmpbuf, "%ld", _op);
+    snprintf(tmpbuf, sizeof(tmpbuf), "%ld", _op);
     op = tmpbuf;
     has_value = true;
   }
 
   arg::arg(long long _op)
   {
-    sprintf(tmpbuf, "%lld", _op);
+    snprintf(tmpbuf, sizeof(tmpbuf), "%lld", _op);
     op = tmpbuf;
     has_value = true;
   }
