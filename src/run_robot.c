@@ -186,13 +186,12 @@ int place_at_xy(struct world *mzx_world, enum thing id, int color, int param,
   int offset = x + (y * board_width);
   enum thing old_id = (enum thing)src_board->level_id[offset];
 
-  // Okay, I'm really stabbing at behavior here.
-  // Wildcard param, use source but only if id matches and isn't
-  // greater than or equal to 122..
-  if(param == 256)
+  // 2.80+: wildcard parameter will preserve the parameter of the
+  // destination if both things are currently configured to have an ID char
+  // of 255 (use parameter for char). Otherwise, the wildcard expands to the
+  // default parameter of the replacement thing instead.
+  if(param == 256 && mzx_world->version >= V280)
   {
-    // The param must represent the char for this to happen,
-    // nothing else will give.
     if((id_chars[old_id] != 255) || (id_chars[id] != 255))
     {
       if(def_params[id] > 0)
@@ -205,6 +204,8 @@ int place_at_xy(struct world *mzx_world, enum thing id, int color, int param,
       param = src_board->level_param[offset];
     }
   }
+  // Invalid parameters and p?? (pre-2.80) evaluate modulo 256.
+  param &= 0xff;
 
   if(old_id == SENSOR)
   {
@@ -236,19 +237,14 @@ int place_at_xy(struct world *mzx_world, enum thing id, int color, int param,
     return 0; // Don't allow the player to be overwritten
   }
 
-  if(param == 256)
-  {
-    param = src_board->level_param[offset];
-  }
-
   id_place(mzx_world, x, y, id,
    fix_color(color, src_board->level_color[offset]), param);
 
   return 1;
 }
 
-static int place_under_xy(struct board *src_board, enum thing id, int color,
- int param, int x, int y)
+static int place_under_xy(struct world *mzx_world, struct board *src_board,
+ enum thing id, int color, int param, int x, int y)
 {
   int board_width = src_board->board_width;
   char *level_under_id = src_board->level_under_id;
@@ -256,7 +252,10 @@ static int place_under_xy(struct board *src_board, enum thing id, int color,
   char *level_under_param = src_board->level_under_param;
 
   int offset = x + (y * board_width);
-  if(param == 256)
+  // 2.80+: wildcard parameter will preserve the parameter of whatever is
+  // beneath, regardless of the destination and replacement things' ID chars.
+  // Interesting oversight!
+  if(param == 256 && mzx_world->version >= V280)
     param = level_under_param[offset];
 
   color = fix_color(color, level_under_color[offset]);
@@ -279,7 +278,7 @@ static int place_dir_xy(struct world *mzx_world, enum thing id, int color,
   // Check under
   if(direction == BENEATH)
   {
-    return place_under_xy(src_board, id, color, param, x, y);
+    return place_under_xy(mzx_world, src_board, id, color, param, x, y);
   }
   else
   {
@@ -436,6 +435,95 @@ static void split_colors(int color, int *fg, int *bg)
   }
 }
 
+/**
+ * The change command has the same broken semantics on the replacement
+ * thing as on the match thing prior to 2.80. This nasty hack converts
+ * invalid edge cases to be compatible with fix_colors/param modulo.
+ */
+static void replacement_version_fix(struct world *mzx_world, int *color,
+ int *param, boolean *weird_color)
+{
+  if(mzx_world->version < VERSION_PORT)
+  {
+    if(*color < 0 || *color > 288)
+    {
+      int fg, bg;
+      split_colors(*color, &fg, &bg);
+
+      /* DOS has a very weird edge case with color<0, bit 8 set where it ends
+       * up ORing the source background color with the replacement. */
+      if(fg < 0 && bg == 16)
+      {
+        *color &= 0xff;
+        *weird_color = true;
+      }
+      else
+
+      if(fg >= 16 && bg >= 16)
+        *color = 288;
+      else
+      if(fg >= 16)
+        *color = 272 | (bg & 0x0f);
+      else
+      if(bg >= 16)
+        *color = 256 | (fg & 0x0f);
+      else
+        *color &= 0xff;
+    }
+    if(*param > 256)
+      *param = 256;
+  }
+}
+
+/**
+ * Prior to 2.80, match parameters >256 act identically to p??.
+ * Post-split_colors fg and bg >16 act identically to a ? for that component.
+ */
+static void match_version_fix(struct world *mzx_world, int *fg, int *bg, int *param)
+{
+  if(mzx_world->version < VERSION_PORT)
+  {
+    if(*fg > 16)
+      *fg = 16;
+    if(*bg > 16)
+      *bg = 16;
+    if(param && *param > 256)
+      *param = 256;
+  }
+}
+
+/* Some nuances here that need to be preserved in the off-chance that something
+ * accidentally relied on them:
+ *
+ * - The match param may be <0 or >256, which always fails the match.
+ * - The match colors may be <0 or >16, which always fails the match
+ *   (see split_colors). Pre-2.80, params >256 and components >16 acted like
+ *   wildcards (see match_version_fix).
+ */
+static inline boolean match_thing(enum thing d_id, int dcolor, int dparam,
+ enum thing match_id, int match_fg, int match_bg, int match_param)
+{
+  if((d_id == match_id) &&
+   (((dcolor & 0x0F) == match_fg) || (match_fg == 16)) &&
+   (((dcolor >> 4) == match_bg) || (match_bg == 16)) &&
+   ((dparam == match_param) || (match_param == 256)))
+  {
+    return true;
+  }
+
+  return false;
+}
+
+/* The colors here can also be <0 or >16 (see split_colors). */
+static inline boolean match_overlay_color(int d_color, int fg, int bg)
+{
+  if(((bg == 16) || (bg == (d_color >> 4))) &&
+   ((fg == 16) || (fg == (d_color & 0x0F))))
+    return true;
+
+  return false;
+}
+
 static int check_at_xy(struct board *src_board, enum thing id, int fg, int bg,
  int param, int offset)
 {
@@ -447,14 +535,7 @@ static int check_at_xy(struct board *src_board, enum thing id, int fg, int bg,
   if(is_whirlpool(d_id))
     d_id = WHIRLPOOL_1;
 
-  if((d_id == id) && (((dcolor & 0x0F) == fg) || (fg == 16)) &&
-   (((dcolor >> 4) == bg) || (bg == 16)) &&
-   ((dparam == param) || (param == 256)))
-  {
-    return 1;
-  }
-
-  return 0;
+  return match_thing(d_id, dcolor, dparam, id, fg, bg, param);
 }
 
 static int check_under_xy(struct board *src_board, enum thing id,
@@ -464,12 +545,7 @@ static int check_under_xy(struct board *src_board, enum thing id,
   int dcolor = src_board->level_under_color[offset];
   int dparam = src_board->level_under_param[offset];
 
-  if((did == id) && (((dcolor & 0x0F) == fg) || (fg == 16)) &&
-   (((dcolor >> 4) == bg) || (bg == 16)) &&
-   ((dparam == param) || (param == 256)))
-    return 1;
-
-  return 0;
+  return match_thing(did, dcolor, dparam, id, fg, bg, param);
 }
 
 static int check_dir_xy(struct world *mzx_world, enum thing id, int color,
@@ -482,6 +558,8 @@ static int check_dir_xy(struct world *mzx_world, enum thing id, int color,
   int offset;
 
   split_colors(color, &fg, &bg);
+  match_version_fix(mzx_world, &fg, &bg, &param);
+  // TODO: fix whirlpool id
 
   // Check under
   if(direction == BENEATH)
@@ -2203,6 +2281,8 @@ void run_robot(context *ctx, int id, int x, int y)
         int check_param = parse_param(mzx_world, p3, id);
 
         split_colors(color, &fg, &bg);
+        match_version_fix(mzx_world, &fg, &bg, &check_param);
+        // TODO: fix whirlpool id
 
         for(offset = 0; offset < (board_width * board_height); offset++)
         {
@@ -2233,6 +2313,8 @@ void run_robot(context *ctx, int id, int x, int y)
         int check_param = parse_param(mzx_world, p3, id);
 
         split_colors(color, &fg, &bg);
+        match_version_fix(mzx_world, &fg, &bg, &check_param);
+        // TODO: fix whirlpool id
 
         for(offset = 0; offset < (board_width * board_height); offset++)
         {
@@ -2261,6 +2343,7 @@ void run_robot(context *ctx, int id, int x, int y)
           char *p4 = next_param_pos(p3);
           enum dir direction = parse_param_dir(mzx_world, p4);
 
+          // Note: beneath never goes to label prior to 2.51s2.
           if(check_dir_xy(mzx_world, check_id, check_color,
            check_param, x, y, direction, cur_robot, _bl))
           {
@@ -2283,6 +2366,7 @@ void run_robot(context *ctx, int id, int x, int y)
           char *p4 = next_param_pos(p3);
           enum dir direction = parse_param_dir(mzx_world, p4);
 
+          // Note: beneath always goes to label prior to 2.51s2.
           if(!check_dir_xy(mzx_world, check_id, check_color,
            check_param, x, y, direction, cur_robot, _bl))
           {
@@ -2413,6 +2497,8 @@ void run_robot(context *ctx, int id, int x, int y)
           offset = check_x + (check_y * board_width);
 
           split_colors(check_color, &fg, &bg);
+          match_version_fix(mzx_world, &fg, &bg, (int *)&check_param);
+          // TODO: fix whirlpool id
           if(check_at_xy(src_board, check_id, fg, bg, check_param, offset))
           {
             char *p6 = next_param_pos(p5);
@@ -2531,6 +2617,8 @@ void run_robot(context *ctx, int id, int x, int y)
 
           if(put_id < SENSOR)
           {
+            if(mzx_world->version < V270 && direction == BENEATH)
+              break;
             place_dir_xy(mzx_world, put_id, put_color, put_param, x, y,
              direction, cur_robot, _bl);
           }
@@ -4052,6 +4140,9 @@ void run_robot(context *ctx, int id, int x, int y)
 
         move_dir = parsedir(move_dir, x, y, cur_robot->walk_dir);
         split_colors(move_color, &fg, &bg);
+        match_version_fix(mzx_world, &fg, &bg, &move_param);
+
+        // TODO: fix whirlpool id AND level id(!)
 
         if(is_cardinal_dir(move_dir))
         {
@@ -4064,12 +4155,8 @@ void run_robot(context *ctx, int id, int x, int y)
             {
               for(lx = 0; lx < board_width; lx++, offset++)
               {
-                int dcolor = level_color[offset];
-                if((move_id == level_id[offset]) &&
-                 ((move_param == 256) ||
-                 (level_param[offset] == move_param)) &&
-                 ((fg == 16) || (fg == (dcolor & 0x0F))) &&
-                 ((bg == 16) || (bg == (dcolor >> 4))))
+                if(match_thing(level_id[offset], level_color[offset],
+                 level_param[offset], move_id, fg, bg, move_param))
                 {
                   move(mzx_world, lx, ly, int_dir,
                    CAN_PUSH | CAN_TRANSPORT | CAN_LAVAWALK |
@@ -4085,12 +4172,8 @@ void run_robot(context *ctx, int id, int x, int y)
             {
               for(lx = board_width - 1; lx >= 0; lx--, offset--)
               {
-                int dcolor = level_color[offset];
-                if((move_id == level_id[offset]) &&
-                 ((move_param == 256) ||
-                 (level_param[offset] == move_param)) &&
-                 ((fg == 16) || (fg == (dcolor & 0x0F))) &&
-                 ((bg == 16) || (bg == (dcolor >> 4))))
+                if(match_thing(level_id[offset], level_color[offset],
+                 level_param[offset], move_id, fg, bg, move_param))
                 {
                   move(mzx_world, lx, ly, int_dir,
                    CAN_PUSH | CAN_TRANSPORT | CAN_LAVAWALK |
@@ -4354,12 +4437,14 @@ void run_robot(context *ctx, int id, int x, int y)
         enum thing put_id = parse_param_thing(mzx_world, p5);
         char *p6 = next_param_pos(p5);
         int put_param = parse_param(mzx_world, p6, id);
-        int check_fg, check_bg, put_fg, put_bg;
+        int check_fg, check_bg;
         enum thing d_id;
         int offset, d_param, d_color;
+        boolean weird_color = false;
 
         split_colors(check_color, &check_fg, &check_bg);
-        split_colors(put_color, &put_fg, &put_bg);
+        match_version_fix(mzx_world, &check_fg, &check_bg, &check_param);
+        replacement_version_fix(mzx_world, &put_color, &put_param, &weird_color);
 
         // Make sure the change isn't incompatable
         // Only robots (pushable or otherwise) can be changed to
@@ -4415,14 +4500,16 @@ void run_robot(context *ctx, int id, int x, int y)
             if(is_whirlpool(d_id))
               d_id = WHIRLPOOL_1;
 
-            if((d_id == check_id) && (((d_color & 0x0F) == check_fg) ||
-             (check_fg == 16)) && (((d_color >> 4) == check_bg) ||
-             (check_bg == 16)) && ((d_param == check_param) ||
-             (check_param == 256)))
+            if(match_thing(d_id, d_color, d_param,
+             check_id, check_fg, check_bg, check_param))
             {
               // Change the color and the ID
               level_color[offset] = fix_color(put_color, d_color);
               level_id[offset] = put_id;
+
+              // Regrettably supporting extreme edge case DOS-era nonsense
+              if(weird_color)
+                level_color[offset] = (d_color & 0xf0) | put_color;
 
               if(((d_id == ROBOT_PUSHABLE) || (d_id == ROBOT)) &&
                (put_id != ROBOT) && (put_id != ROBOT_PUSHABLE))
@@ -5849,14 +5936,14 @@ void run_robot(context *ctx, int id, int x, int y)
         overlay_color = src_board->overlay_color;
 
         split_colors(src_color, &src_fg, &src_bg);
+        match_version_fix(mzx_world, &src_fg, &src_bg, NULL);
 
         for(i = 0; i < (board_width * board_height); i++)
         {
           d_color = overlay_color[i];
 
           if((overlay[i] == src_char) &&
-           ((src_bg == 16) || (src_bg == (d_color >> 4))) &&
-           ((src_fg == 16) || (src_fg == (d_color & 0x0F))))
+           match_overlay_color(d_color, src_fg, src_bg))
           {
             overlay[i] = dest_char;
             overlay_color[i] = fix_color(dest_color, d_color);
@@ -5881,13 +5968,12 @@ void run_robot(context *ctx, int id, int x, int y)
         overlay_color = src_board->overlay_color;
 
         split_colors(src_color, &src_fg, &src_bg);
+        match_version_fix(mzx_world, &src_fg, &src_bg, NULL);
 
         for(i = 0; i < (board_width * board_height); i++)
         {
           d_color = overlay_color[i];
-
-          if(((src_bg == 16) || (src_bg == (d_color >> 4))) &&
-           ((src_fg == 16) || (src_fg == (d_color & 0x0F))))
+          if(match_overlay_color(d_color, src_fg, src_bg))
           {
             overlay_color[i] = fix_color(dest_color, d_color);
           }

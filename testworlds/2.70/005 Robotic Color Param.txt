@@ -1,0 +1,3 @@
+Title: Robotic Color/Parameter Test (2.70)
+Author: Alice Rowan
+Desc: Comprehensive test for color and parameter Robotic arguments, including normal, wildcards, invalid, and counters. These programs contain hex edited commands that may not disassemble. This world only tests PUT THING BENEATH, which was added in 2.70. See the 1.00, 2.00, 2.60, and 2.80 worlds for more information.
