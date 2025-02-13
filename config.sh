@@ -693,9 +693,7 @@ case "$PLATFORM" in
 		SHAREDIR=/switch/megazeux
 		;;
 	"psvita")
-		SHAREDIR="app0:/"
-		STARTUPDIR="ux0:/data/megazeux"
-		USERCONFFILE="ux0:/data/megazeux/config.txt"
+		SHAREDIR="ux0:/data/megazeux"
 		;;
 	"darwin-dist")
 		SHAREDIR="../Resources"

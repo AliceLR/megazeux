@@ -74,6 +74,9 @@ USERS
   for CHAR EDIT, COPY CHAR, SCROLL CHAR, and FLIP CHAR. This
   makes commands such as "CHAR EDIT 256 [...]" more usable since
   they will persist in the robot editor.
++ Temporarily revert the broken Vita SHAREDIR/startup dir split.
+  MegaZeux now expects assets to exist in ux0:/data/megazeux
+  like the README claims.
 
 DEVELOPERS
 
