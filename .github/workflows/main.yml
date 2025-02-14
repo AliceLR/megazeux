@@ -277,6 +277,18 @@ jobs:
       - name: Package HTML5 .zip
         run: make archive
 
+  Vita:
+    runs-on: ubuntu-latest
+    container: vitasdk/vitasdk
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Vita
+        run: arch/psvita/CONFIG.PSVITA
+      - name: Build Vita
+        run: $MZX_MAKE
+      - name: Package Vita
+        run: make archive
+
   #
   # Sanitizers.
   #
