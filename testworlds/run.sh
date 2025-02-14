@@ -129,7 +129,7 @@ do
 	sleep 1
 	i=$((i+1))
 	[ "$quiet" = "yes" ] || printf "."
-	if [ $i -ge 60 ];
+	if [ $i -ge 180 ];
 	then
 		kill -9 $mzxrun_pid
 		echo "killing frozen process."
