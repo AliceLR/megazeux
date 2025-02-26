@@ -31,10 +31,12 @@
 
 #include "SDLmzx.h"
 #include "graphics.h"
-#include "platform.h"
 #include "render.h"
 #include "renderers.h"
 #include "render_sdl.h"
+#include "util.h"
+
+#include <stdlib.h>
 
 // 6 versions of each char, 16*256 chars -> 24576 total "chars"
 // -> 49152 8x8s -> sqrt ~= 221 > 32 * 6
@@ -106,8 +108,6 @@ struct sdlaccel_render_data
   boolean chars_needed_row[CHARS_NUM_ROWS];
   boolean join;
 #endif
-  int w;
-  int h;
 };
 
 static void write_char_byte_mzx(uint32_t **_char_data, uint8_t byte)
@@ -270,12 +270,6 @@ static boolean sdlaccel_init_video(struct graphics_data *graphics,
   graphics->ratio = conf->video_ratio;
   graphics->bits_per_pixel = 32;
 
-  if(!set_video_mode())
-  {
-    sdlaccel_free_video(graphics);
-    return false;
-  }
-
 #ifdef THREADED_CHARSETS
   memset(render_data->chars_needed_row, true, CHARS_NUM_ROWS);
 
@@ -290,8 +284,8 @@ static boolean sdlaccel_init_video(struct graphics_data *graphics,
   return true;
 }
 
-static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean sdlaccel_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct sdlaccel_render_data *render_data =
    (struct sdlaccel_render_data *)graphics->render_data;
@@ -301,8 +295,7 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
   int tex_chars_h;
 
   // This requires that the underlying driver supports framebuffer objects.
-  if(!sdlrender_set_video_mode(graphics, width, height,
-   depth, fullscreen, resize, SDL_RENDERER_TARGETTEXTURE))
+  if(!sdl_create_window_renderer(graphics, window, true))
     return false;
 
   texture[TEX_SCREEN] =
@@ -315,8 +308,10 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
     goto err_free;
   }
 
+#if !SDL_VERSION_ATLEAST(2,0,12)
   // Always use nearest neighbor for the charset and background textures.
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+#endif
 
   tex_chars_w = round_to_power_of_two(TEX_CHARS_PIX_W);
   tex_chars_h = round_to_power_of_two(TEX_CHARS_PIX_H);
@@ -349,19 +344,28 @@ static boolean sdlaccel_set_video_mode(struct graphics_data *graphics,
     goto err_free;
   }
 
-  if(SDL_SetTextureBlendMode(texture[TEX_CHARS], SDL_BLENDMODE_BLEND))
-    warn("Failed to set char texture blend mode: %s\n", SDL_GetError());
-  if(SDL_SetTextureBlendMode(texture[TEX_BACKGROUND], SDL_BLENDMODE_BLEND))
-    warn("Failed to set bg texture blend mode: %s\n", SDL_GetError());
+  SDL_SetTextureBlendMode(texture[TEX_CHARS], SDL_BLENDMODE_BLEND);
+  SDL_SetTextureBlendMode(texture[TEX_BACKGROUND], SDL_BLENDMODE_BLEND);
+
+  sdl_set_texture_scale_mode(graphics, window, TEX_SCREEN, true);
+  sdl_set_texture_scale_mode(graphics, window, TEX_CHARS, false);
+  sdl_set_texture_scale_mode(graphics, window, TEX_BACKGROUND, false);
 
   SDL_SetRenderTarget(render_data->sdl.renderer, texture[TEX_SCREEN]);
-  render_data->w = width;
-  render_data->h = height;
   return true;
 
 err_free:
   sdl_destruct_window(graphics);
   return false;
+}
+
+static boolean sdlaccel_resize_callback(struct graphics_data *graphics,
+ struct video_window *window)
+{
+  sdl_set_texture_scale_mode(graphics, window, TEX_SCREEN, true);
+  sdl_set_texture_scale_mode(graphics, window, TEX_CHARS, false);
+  sdl_set_texture_scale_mode(graphics, window, TEX_BACKGROUND, false);
+  return true;
 }
 
 static void sdlaccel_update_colors(struct graphics_data *graphics,
@@ -490,8 +494,19 @@ static void sdlaccel_do_remap_chars(struct graphics_data *graphics,
 #ifdef RENDER_GEOMETRY
 
 static void vertex_char(struct SDL_Vertex *vertex, float topleft_x,
- float topleft_y, float tex_x, float tex_y, SDL_Color sdl_color)
+ float topleft_y, float tex_x, float tex_y, SDL_Color _sdl_color)
 {
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_FColor sdl_color =
+  {
+    _sdl_color.r / 255.0,
+    _sdl_color.g / 255.0,
+    _sdl_color.b / 255.0,
+    _sdl_color.a / 255.0,
+  };
+#else
+  SDL_Color sdl_color = _sdl_color;
+#endif
   vertex[0].position.x = topleft_x;
   vertex[0].position.y = topleft_y;
   vertex[0].tex_coord.x = tex_x;
@@ -551,8 +566,9 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
   SDL_Texture *chars_tex = render_data->sdl.texture[TEX_CHARS];
   SDL_Texture *bg_tex = render_data->sdl.texture[TEX_BACKGROUND];
 
-  SDL_Rect dest_bg = { offx, offy, w * CHAR_W, h * CHAR_H };
-  SDL_Rect src_bg = { 0, 0, w, h };
+  SDL_Rect_mzx dest_bg = sdl_render_rect(offx, offy, w * CHAR_W, h * CHAR_H);
+  SDL_Rect_mzx src_bg = sdl_render_rect(0, 0, w, h);
+
   void *_bg;
   int bg_pitch;
   uint32_t *bg;
@@ -637,7 +653,7 @@ static void sdlaccel_render_layer(struct graphics_data *graphics,
       }
     }
     SDL_UnlockTexture(bg_tex);
-    SDL_RenderCopy(renderer, bg_tex, &src_bg, &dest_bg);
+    SDL_RenderTexture(renderer, bg_tex, &src_bg, &dest_bg);
 
 #ifdef RENDER_GEOMETRY
 
@@ -695,7 +711,8 @@ static void sdlaccel_render_cursor(struct graphics_data *graphics, unsigned x,
   uint8_t *palette = render_data->palette;
 
   // Input coordinates are on the character grid.
-  SDL_Rect dest = { x * CHAR_W, y * CHAR_H + offset, CHAR_W, lines };
+  SDL_Rect_mzx dest =
+   sdl_render_rect(x * CHAR_W, y * CHAR_H + offset, CHAR_W, lines);
 
   SDL_SetRenderDrawBlendMode(render_data->sdl.renderer, SDL_BLENDMODE_NONE);
   SDL_SetRenderDrawColor(render_data->sdl.renderer,
@@ -711,7 +728,7 @@ static void sdlaccel_render_mouse(struct graphics_data *graphics, unsigned x,
   struct sdlaccel_render_data *render_data = graphics->render_data;
 
   // Input coordinates are pixel values.
-  SDL_Rect dest = { x, y, w, h };
+  SDL_Rect_mzx dest = sdl_render_rect(x, y, w, h);
 
   /* There is no preset inversion blend mode, so make a custom blend mode.
    * Lower SDL versions should simply fall back to drawing a white rectangle.
@@ -733,30 +750,24 @@ static void sdlaccel_render_mouse(struct graphics_data *graphics, unsigned x,
   SDL_RenderFillRect(render_data->sdl.renderer, &dest);
 }
 
-static void sdlaccel_sync_screen(struct graphics_data *graphics)
+static void sdlaccel_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct sdlaccel_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *screen_tex = render_data->sdl.texture[TEX_SCREEN];
-  SDL_Rect src;
-  SDL_Rect dest;
-  int width = render_data->w;
-  int height = render_data->h;
-  int v_width, v_height;
+  SDL_Rect_mzx src;
+  SDL_Rect_mzx dest;
 
-  src.x = 0;
-  src.y = 0;
-  src.w = SCREEN_PIX_W;
-  src.h = SCREEN_PIX_H;
+  src = sdl_render_rect(0, 0, SCREEN_PIX_W, SCREEN_PIX_H);
 
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
-  dest.x = (width - v_width) / 2;
-  dest.y = (height - v_height) / 2;
-  dest.w = v_width;
-  dest.h = v_height;
+  dest.x = window->viewport_x;
+  dest.y = window->viewport_y;
+  dest.w = window->viewport_width;
+  dest.h = window->viewport_height;
 
   SDL_SetRenderTarget(renderer, NULL);
-  SDL_RenderCopy(renderer, screen_tex, &src, &dest);
+  SDL_RenderTexture(renderer, screen_tex, &src, &dest);
 
   SDL_RenderPresent(renderer);
 
@@ -771,14 +782,14 @@ void render_sdlaccel_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = sdlaccel_init_video;
   renderer->free_video = sdlaccel_free_video;
-  renderer->set_video_mode = sdlaccel_set_video_mode;
+  renderer->create_window = sdlaccel_create_window;
+  renderer->resize_window = sdl_resize_window;
+  renderer->resize_callback = sdlaccel_resize_callback;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = sdlaccel_update_colors;
-  renderer->resize_screen = resize_screen_standard;
   renderer->remap_char_range = sdlaccel_remap_char_range;
   renderer->remap_char = sdlaccel_remap_char;
   renderer->remap_charbyte = sdlaccel_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_layer = sdlaccel_render_layer;
   renderer->render_cursor = sdlaccel_render_cursor;
   renderer->render_mouse = sdlaccel_render_mouse;

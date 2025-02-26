@@ -57,20 +57,20 @@ static void convert_timestamp(int64_t *epoch, int32_t *nano,
  */
 static boolean system_time_win32(int64_t *epoch, int32_t *nano)
 {
+  static struct dso_library *dll;
   static void (WINAPI *_GetSystemTimePreciseAsFileTime)(LPFILETIME) = NULL;
+  static const struct dso_syms_map sym =
+   { "GetSystemTimePreciseAsFileTime", { &_GetSystemTimePreciseAsFileTime } };
   static boolean init = false;
   FILETIME ft;
 
   if(!init)
   {
-    void *dll = SDL_LoadObject("Kernel32.dll");
+    // Note: can't unload, or the function pointer will no longer be valid.
+    dll = platform_load_library("Kernel32.dll");
     if(dll)
-    {
-      union dso_fn_ptr_ptr tmp;
-      tmp.in = (dso_fn **)&_GetSystemTimePreciseAsFileTime;
-      *(tmp.value) = SDL_LoadFunction(dll, "GetSystemTimePreciseAsFileTime");
-      SDL_UnloadObject(dll);
-    }
+      platform_load_function(dll, &sym);
+
     init = true;
   }
 

@@ -63,7 +63,7 @@ void platform_quit(void)
   // stub
 }
 
-void initialize_joysticks(void)
+void platform_init_event(void)
 {
   // stub
 }

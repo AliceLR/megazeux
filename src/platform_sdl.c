@@ -59,11 +59,57 @@ void delay(uint32_t ms)
 
 uint64_t get_ticks(void)
 {
-#if SDL_VERSION_ATLEAST(2,0,18)
+  // SDL_GetTicks returns a 64-bit value in SDL3, but
+  // SDL_GetTicks64 had to be used prior to that.
+#if SDL_VERSION_ATLEAST(2,0,18) && !SDL_VERSION_ATLEAST(3,0,0)
   return SDL_GetTicks64();
 #else
   return SDL_GetTicks();
 #endif
+}
+
+#if SDL_VERSION_ATLEAST(3,0,0)
+typedef SDL_SharedObject *dso_library_ptr;
+#else
+typedef void *dso_library_ptr;
+#endif
+
+/* Note: for OpenGL, use (SDL_)GL_LoadLibrary instead. */
+struct dso_library *platform_load_library(const char *name)
+{
+  dso_library_ptr handle = SDL_LoadObject(name);
+  if(handle)
+    return (struct dso_library *)handle;
+  return NULL;
+}
+
+void platform_unload_library(struct dso_library *library)
+{
+  dso_library_ptr handle = (dso_library_ptr)library;
+  SDL_UnloadObject(handle);
+}
+
+/* Note: for OpenGL, use (SDL_)GL_GetProcAddress (via gl_load_syms) instead. */
+boolean platform_load_function(struct dso_library *library,
+ const struct dso_syms_map *syms_map)
+{
+  dso_library_ptr handle = (dso_library_ptr)library;
+
+#if SDL_VERSION_ATLEAST(3,0,0)
+  SDL_FunctionPointer *dest = (SDL_FunctionPointer *)syms_map->sym_ptr.value;
+#else
+  void **dest = (void **)syms_map->sym_ptr.in;
+#endif
+  if(!syms_map->name || !dest)
+    return false;
+
+  *dest = SDL_LoadFunction(handle, syms_map->name);
+  if(!*dest)
+  {
+    debug("--DSO--- failed to load: %s\n", syms_map->name);
+    return false;
+  }
+  return true;
 }
 
 #ifdef __WIN32__
@@ -80,17 +126,13 @@ uint64_t get_ticks(void)
 static void set_dpi_aware(void)
 {
   BOOL (*_SetProcessDPIAware)(void) = NULL;
-  void *handle;
 
-  handle = SDL_LoadObject("User32.dll");
+  struct dso_library *handle = platform_load_library("User32.dll");
   if(handle)
   {
-    union dso_fn_ptr_ptr sym_ptr = { &_SetProcessDPIAware };
-    dso_fn **dest = sym_ptr.value;
+    struct dso_syms_map sym = { "SetProcessDPIAware", { &_SetProcessDPIAware } };
 
-    *dest = SDL_LoadFunction(handle, "SetProcessDPIAware");
-
-    if(_SetProcessDPIAware && !_SetProcessDPIAware())
+    if(platform_load_function(handle, &sym) && !_SetProcessDPIAware())
     {
       warn("failed to SetProcessDPIAware!\n");
     }
@@ -99,19 +141,28 @@ static void set_dpi_aware(void)
     if(!_SetProcessDPIAware)
       debug("couldn't load SetProcessDPIAware.\n");
 
-    SDL_UnloadObject(handle);
+    platform_unload_library(handle);
   }
   else
     debug("couldn't load User32.dll: %s\n", SDL_GetError());
 }
 #endif
 
+static inline boolean sdl_init(Uint32 flags)
+{
+#if SDL_VERSION_ATLEAST(3,0,0)
+  return SDL_Init(flags);
+#else
+  return SDL_Init(flags) >= 0;
+#endif
+}
+
 boolean platform_init(void)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  flags |= SDL_INIT_GAMECONTROLLER;
+  flags |= SDL_INIT_GAMEPAD;
 #endif
 
 #ifdef CONFIG_PSP
@@ -123,7 +174,8 @@ boolean platform_init(void)
     return false;
 #endif
 
-#ifdef DEBUG
+#if defined(DEBUG) && !SDL_VERSION_ATLEAST(3,0,0)
+  // Removed in SDL 3.
   flags |= SDL_INIT_NOPARACHUTE;
 #endif
 
@@ -135,41 +187,22 @@ boolean platform_init(void)
   set_dpi_aware();
 #endif
 
-  if(SDL_Init(flags) < 0)
+  if(!sdl_init(flags))
   {
     debug("Failed to initialize SDL; attempting with joystick support disabled: %s\n", SDL_GetError());
 
     // try again without joystick support
     flags &= ~SDL_INIT_JOYSTICK;
 #if SDL_VERSION_ATLEAST(2,0,0)
-    flags &= ~SDL_INIT_GAMECONTROLLER;
+    flags &= ~SDL_INIT_GAMEPAD;
 #endif
 
-    if(SDL_Init(flags) < 0)
+    if(!sdl_init(flags))
     {
       warn("Failed to initialize SDL: %s\n", SDL_GetError());
       return false;
     }
   }
-
-#if SDL_VERSION_ATLEAST(2,0,0)
-  /* Most platforms want text input events always on so they can generate
-   * convenient unicode text values, but in Android this causes some problems:
-   *
-   * - On older versions the navigation bar will ALWAYS display, regardless
-   *   of whether or not there's an attached keyboard.
-   * - Holding the space key no longer works, breaking built-in shooting (as
-   *   recent as Android 10).
-   * - The onscreen keyboard Android pops up can be moved but not collapsed.
-   *
-   * TODO: Instead, enable text input on demand at text prompts.
-   * TODO: this probably redundant with behavior already in SDL.
-   */
-  if(!SDL_HasScreenKeyboardSupport())
-    SDL_StartTextInput();
-#else
-  SDL_EnableUNICODE(1);
-#endif
   return true;
 }
 

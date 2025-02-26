@@ -1,6 +1,6 @@
-import resolve from 'rollup-plugin-node-resolve';
-import babel from 'rollup-plugin-babel';
-import { terser } from 'rollup-plugin-terser';
+import resolve from '@rollup/plugin-node-resolve';
+import babel from '@rollup/plugin-babel';
+import terser from '@rollup/plugin-terser';
 
 let plugins = [
     resolve(),
@@ -19,6 +19,6 @@ export default {
   output: {
     file: 'mzxrun_web.js',
     format: 'iife', // use browser globals
-    sourceMap: true
+    sourcemap: true
   }
 };

@@ -32,7 +32,7 @@ static constexpr char TEST_DIR[]            = "VFILE_TEST_DIR";
 // NOTE: using the combining encodings of öè here to appease Mac OS X,
 // which converts some single codepoint encodings to combining encodings.
 // Some macOS SDKs (but not MacPorts clang) also have trouble with emoji.
-#define UTF8_DIR_STRING u8"\u00e6Ro\u0308e\u0300mMJ\u00b7\u2021\u00b2\u2019\u02c6\u00de\u2018$";
+#define UTF8_DIR_STRING u8"\u00e6Ro\u0308e\u0300mMJ\u00b7\u2021\u00b2\u2019\u02c6\u00de\u2018$"
 static constexpr char UTF8_DIR[] = UTF8_DIR_STRING;
 //static constexpr char UTF8_FILE[] = u8"\u00A5\u2014\U0001F970";
 static constexpr char UTF8_FILE[] = u8"f\u0302(\u03be)=\u222b(-\u221e,\u221e)f(x)e^(-i2\u03c0\u03bex)dx";

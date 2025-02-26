@@ -180,7 +180,7 @@ class mixer_tester
 public:
   mixer_tester(const mixer_input<SRC_CHANNELS> &in): input(in)
   {
-    seed = time(NULL) << 32u;
+    seed = (uint64_t)time(NULL) << 32u;
   }
 
   template<int N>

@@ -82,8 +82,12 @@ fi
 # Coupled with the software renderer, this will disable video in MZX, speeding things up
 # and allowing for automated testing. Disabling the SDL audio driver will prevent annoying
 # noises from occuring during tests, but shouldn't affect audio-related tests.
+# SDL 1.2 and SDL2
 export SDL_VIDEODRIVER=dummy
 export SDL_AUDIODRIVER=dummy
+# SDL3
+export SDL_VIDEO_DRIVER=dummy
+export SDL_AUDIO_DRIVER=dummy
 
 # Standalone mode will allow tests.mzx to terminate MZX and no_titlescreen mode
 # simplifies things. Disable auto update checking to save time. Some platforms
@@ -125,7 +129,7 @@ do
 	sleep 1
 	i=$((i+1))
 	[ "$quiet" = "yes" ] || printf "."
-	if [ $i -ge 60 ];
+	if [ $i -ge 180 ];
 	then
 		kill -9 $mzxrun_pid
 		echo "killing frozen process."

@@ -36,14 +36,14 @@ struct sdl_render_data
   SDL_Palette *palette;
   SDL_Window *window;
   SDL_GLContext context;
-  SDL_PixelFormat *pixel_format;
+  SDL_PixelFormatDetails *pixel_format;
 #else
   SDL_Overlay *overlay;
 #endif
   SDL_Surface *screen;
   SDL_Surface *shadow;
   SDL_Color *palette_colors;
-  const SDL_PixelFormat *flat_format; // format used by sdl_update_colors.
+  const SDL_PixelFormatDetails *flat_format; // format used by sdl_update_colors.
 
   // SDL Renderer and overlay renderer texture format configuration.
   uint32_t (*rgb_to_yuv)(uint8_t r, uint8_t g, uint8_t b);
@@ -60,46 +60,53 @@ struct sdl_render_data
 #define YUV_PRIORITY 422
 #define YUV_DISABLE 0
 
-extern CORE_LIBSPEC Uint32 sdl_window_id;
+static inline SDL_Window *sdl_get_current_window(void)
+{
+  const struct video_window *window = video_get_window(1);
+  return SDL_GetWindowFromID(window ? window->platform_id : 0);
+}
 
-int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
- boolean resize);
-boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling);
+int sdl_flags(const struct video_window *window);
 void sdl_destruct_window(struct graphics_data *graphics);
 void sdl_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, unsigned int count);
 
-boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize);
+boolean sdl_create_window_soft(struct graphics_data *graphics,
+ struct video_window *window);
+boolean sdl_resize_window(struct graphics_data *graphics,
+ struct video_window *window);
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
 // Used internally only.
-boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int *depth, int flags);
+boolean sdl_check_video_mode(struct graphics_data *graphics,
+ struct video_window *window, boolean renderer_supports_scaling, int flags);
 #endif
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-boolean sdlrender_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize,
- uint32_t sdl_rendererflags);
+boolean sdl_create_window_renderer(struct graphics_data *graphics,
+ struct video_window *window, boolean requires_blend_ops);
+void sdl_set_texture_scale_mode(struct graphics_data *graphics,
+ struct video_window *window, int texture_id, boolean allow_non_integer);
 #endif
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
 #include "render_gl.h"
 
-#if SDL_VERSION_ATLEAST(2,0,0)
+#if SDL_VERSION_ATLEAST(2,0,0) && !SDL_VERSION_ATLEAST(3,0,0)
+/* SDL_WINDOW_FULLSCREEN_DESKTOP removed in SDL3. */
 #define GL_ALLOW_FLAGS \
- (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP | \
-  SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE)
+ (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_RESIZABLE)
 #else
 #define GL_ALLOW_FLAGS (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE)
 #endif
 
 #define GL_STRIP_FLAGS(A) ((A & GL_ALLOW_FLAGS) | SDL_WINDOW_OPENGL)
 
-boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, boolean fullscreen, boolean resize, struct gl_version req_ver);
+boolean gl_create_window(struct graphics_data *graphics,
+ struct video_window *window, struct gl_version req_ver);
+boolean gl_resize_window(struct graphics_data *graphics,
+ struct video_window *window);
 void gl_set_attributes(struct graphics_data *graphics);
 boolean gl_swap_buffers(struct graphics_data *graphics);
 
@@ -110,18 +117,31 @@ static inline void gl_cleanup(struct graphics_data *graphics)
 
 static inline boolean GL_LoadLibrary(enum gl_lib_type type)
 {
-  if(!SDL_GL_LoadLibrary(NULL)) return true;
+#if SDL_VERSION_ATLEAST(3,0,0)
+  return SDL_GL_LoadLibrary(NULL);
+#else
+  if(SDL_GL_LoadLibrary(NULL) == 0)
+    return true;
+
 #if !SDL_VERSION_ATLEAST(2,0,0)
   // If the context already exists, don't reload the library
   // This is for SDL 1.2 which doesn't let us unload OpenGL
   if(strcmp(SDL_GetError(), "OpenGL context already created") == 0) return true;
 #endif
   return false;
+#endif
 }
 
-static inline void *GL_GetProcAddress(const char *proc)
+static inline dso_fn_ptr GL_GetProcAddress(const char *proc)
 {
+#if SDL_VERSION_ATLEAST(3,0,0)
   return SDL_GL_GetProcAddress(proc);
+#else
+  /* SDL1/2 returns void * instead of a function pointer. */
+  union dso_suppress_warning value;
+  value.in = SDL_GL_GetProcAddress(proc);
+  return value.out;
+#endif
 }
 
 #endif // CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM

@@ -113,25 +113,29 @@ enum write_string_flags
 
 struct graphics_data;
 struct video_layer;
+struct video_window;
 
 struct renderer
 {
   boolean (*init_video)       (struct graphics_data *, struct config_info *);
   void    (*free_video)       (struct graphics_data *);
-  boolean (*set_video_mode)   (struct graphics_data *, int width, int height,
-                                int depth, boolean fullscreen, boolean resize);
+  boolean (*create_window)    (struct graphics_data *, struct video_window *);
+  boolean (*resize_window)    (struct graphics_data *, struct video_window *);
+  boolean (*resize_callback)  (struct graphics_data *, struct video_window *);
+  void    (*set_viewport)     (struct graphics_data *, struct video_window *);
+#if 0
+  void    (*get_screen_coords)(struct graphics_data *, struct video_window *,
+                                int screen_x, int screen_y, int *x, int *y,
+                                int *min_x, int *min_y, int *max_x, int *max_y);
+  void    (*set_screen_coords)(struct graphics_data *, struct video_window *,
+                                int x, int y, int *screen_x, int *screen_y);
+#endif
   boolean (*set_screen_mode)  (struct graphics_data *, unsigned mode);
   void    (*update_colors)    (struct graphics_data *, struct rgb_color *palette,
                                 unsigned int count);
-  void    (*resize_screen)    (struct graphics_data *, int width, int height);
   void    (*remap_char_range) (struct graphics_data *, uint16_t first, uint16_t count);
   void    (*remap_char)       (struct graphics_data *, uint16_t chr);
   void    (*remap_charbyte)   (struct graphics_data *, uint16_t chr, uint8_t byte);
-  void    (*get_screen_coords)(struct graphics_data *, int screen_x,
-                                int screen_y, int *x, int *y, int *min_x,
-                                int *min_y, int *max_x, int *max_y);
-  void    (*set_screen_coords)(struct graphics_data *, int x, int y,
-                                int *screen_x, int *screen_y);
   boolean (*switch_shader)    (struct graphics_data *, const char *name);
   void    (*render_graph)     (struct graphics_data *);
   void    (*render_layer)     (struct graphics_data *, struct video_layer *);
@@ -142,7 +146,7 @@ struct renderer
                                 boolean enable);
   void    (*render_mouse)     (struct graphics_data *, unsigned x, unsigned y,
                                 unsigned w, unsigned h);
-  void    (*sync_screen)      (struct graphics_data *);
+  void    (*sync_screen)      (struct graphics_data *, struct video_window *);
   void    (*focus_pixel)      (struct graphics_data *, unsigned x, unsigned y);
 };
 
@@ -161,8 +165,34 @@ struct video_layer
   boolean empty;
 };
 
+struct video_window
+{
+  unsigned platform_id;
+  // Real size of the window.
+  unsigned width_px;
+  unsigned height_px;
+  // Scaled viewport size within the window (video_window_update_viewport).
+  // These variables are used to convert from screen space to real window space.
+  int viewport_x;
+  int viewport_y;
+  int viewport_width;
+  int viewport_height;
+  int ratio_numerator;
+  int ratio_denominator;
+
+  unsigned bits_per_pixel;
+  boolean is_init;
+  boolean is_headless;
+  boolean is_integer_scaled;
+  boolean is_fullscreen;
+  boolean is_fullscreen_windowed;
+  boolean allow_resize;
+  boolean grab_mouse;
+};
+
 struct graphics_data
 {
+  struct video_window window;
   unsigned int screen_mode;
   char default_caption[32];
   struct char_element text_video[SCREEN_W * SCREEN_H];
@@ -176,7 +206,6 @@ struct graphics_data
   uint32_t saved_intensity[SMZX_PAL_SIZE];
   uint32_t backup_intensity[SMZX_PAL_SIZE];
   boolean is_initialized;
-  boolean renderer_is_headless;
   boolean default_smzx_loaded;
   boolean palette_dirty;
   boolean smzx_dirty;
@@ -201,8 +230,8 @@ struct graphics_data
   uint32_t cursor_timestamp;
   unsigned int mouse_width;
   unsigned int mouse_height;
+  enum system_mouse_type system_mouse;
   boolean mouse_status;
-  boolean system_mouse;
   boolean grab_mouse;
   boolean fullscreen;
   boolean fullscreen_windowed;
@@ -336,10 +365,20 @@ boolean change_video_output(struct config_info *conf, const char *output);
 int get_available_video_output_list(const char **buffer, int buffer_len);
 int get_current_video_output(void);
 
-boolean set_video_mode(void);
-boolean is_fullscreen(void);
-void toggle_fullscreen(void);
-void resize_screen(unsigned int w, unsigned int h);
+unsigned video_create_window(void);
+CORE_LIBSPEC const struct video_window *video_get_window(unsigned window_id);
+unsigned video_window_by_platform_id(unsigned platform_id);
+void video_window_update_viewport(struct video_window *window);
+void video_sync_window_size(unsigned window_id,
+ unsigned new_width_px, unsigned new_height_px);
+void video_resize_window(unsigned window_id,
+ unsigned new_width_px, unsigned new_height_px);
+void video_resize_fullscreen(unsigned window_id,
+ unsigned new_width_px, unsigned new_height_px);
+void video_toggle_fullscreen(void);
+unsigned video_get_fullscreen_window(void);
+boolean video_is_fullscreen(void);
+
 void set_screen(struct char_element *src);
 void get_screen(struct char_element *dest);
 

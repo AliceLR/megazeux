@@ -32,6 +32,7 @@
 #include "../core.h"
 #include "../data.h"
 #include "../event.h"
+#include "../extmem.h"
 #include "../mzm.h"
 #include "../robot.h"
 #include "../window.h"
@@ -416,6 +417,7 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
   int block_height = block->height;
   int dest_block_width = block_width;
   int dest_block_height = block_height;
+  boolean loaded_src_board = false;
 
   if(block->command == BLOCK_CMD_NONE)
     return;
@@ -425,6 +427,11 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
   {
     case EDIT_BOARD:
       if(block->src_board == NULL) break;
+      if(block->src_board != mzx_world->current_board)
+      {
+        retrieve_board_from_extram(block->src_board);
+        loaded_src_board = true;
+      }
       src_board = block->src_board;
       src_char = NULL;
       src_color = src_board->level_color;
@@ -732,6 +739,10 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
 
     update_undo_frame(dest_history);
   }
+
+  // TODO: it might be better to keep it in regular memory for repeat copies.
+  if(loaded_src_board)
+    store_board_to_extram(src_board);
 }
 
 //--------------------------

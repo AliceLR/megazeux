@@ -927,7 +927,7 @@ static boolean process_event(union event *ev)
        get_alt_status(keycode_internal) &&
        get_ctrl_status(keycode_internal))
       {
-        toggle_fullscreen();
+        video_toggle_fullscreen();
         return true;
       }
 
@@ -1114,7 +1114,7 @@ void __warp_mouse(int x, int y)
   // Mouse warping doesn't work too well with the Wiimote
 }
 
-void initialize_joysticks(void)
+void platform_init_event(void)
 {
   struct buffered_status *status = store_status();
   int i;

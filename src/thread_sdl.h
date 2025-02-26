@@ -29,12 +29,18 @@ __M_BEGIN_DECLS
 #define THREAD_RES int
 #define THREAD_RETURN do { return 0; } while(0)
 
-typedef SDL_cond *platform_cond;
-typedef SDL_mutex *platform_mutex;
-typedef SDL_sem *platform_sem;
+typedef SDL_Condition *platform_cond;
+typedef SDL_Mutex *platform_mutex;
+typedef SDL_Semaphore *platform_sem;
 typedef SDL_Thread *platform_thread;
-typedef SDL_threadID platform_thread_id;
 typedef SDL_ThreadFunction platform_thread_fn;
+
+// Can't fix this with typedefs--SDL_ThreadID meant something else in SDL 2.
+#if SDL_VERSION_ATLEAST(3,0,0)
+typedef SDL_ThreadID platform_thread_id;
+#else
+typedef SDL_threadID platform_thread_id;
+#endif
 
 static inline boolean platform_mutex_init(platform_mutex *mutex)
 {
@@ -55,21 +61,21 @@ static inline boolean platform_mutex_destroy(platform_mutex *mutex)
 
 static inline boolean platform_mutex_lock(platform_mutex *mutex)
 {
-  if(SDL_LockMutex(*mutex))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_LockMutex(*mutex);
   return true;
 }
 
 static inline boolean platform_mutex_unlock(platform_mutex *mutex)
 {
-  if(SDL_UnlockMutex(*mutex))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_UnlockMutex(*mutex);
   return true;
 }
 
 static inline boolean platform_cond_init(platform_cond *cond)
 {
-  platform_cond c = SDL_CreateCond();
+  platform_cond c = SDL_CreateCondition();
   if(c)
   {
     *cond = c;
@@ -80,43 +86,43 @@ static inline boolean platform_cond_init(platform_cond *cond)
 
 static inline boolean platform_cond_destroy(platform_cond *cond)
 {
-  SDL_DestroyCond(*cond);
+  SDL_DestroyCondition(*cond);
   return true;
 }
 
 static inline boolean platform_cond_wait(platform_cond *cond,
  platform_mutex *mutex)
 {
-  if(SDL_CondWait(*cond, *mutex))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_WaitCondition(*cond, *mutex);
   return true;
 }
 
 static inline boolean platform_cond_timedwait(platform_cond *cond,
  platform_mutex *mutex, unsigned int timeout_ms)
 {
-  if(SDL_CondWaitTimeout(*cond, *mutex, (Uint32)timeout_ms))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_WaitConditionTimeout(*cond, *mutex, (Uint32)timeout_ms);
   return true;
 }
 
 static inline boolean platform_cond_signal(platform_cond *cond)
 {
-  if(SDL_CondSignal(*cond))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_SignalCondition(*cond);
   return true;
 }
 
 static inline boolean platform_cond_broadcast(platform_cond *cond)
 {
-  if(SDL_CondBroadcast(*cond))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_BroadcastCondition(*cond);
   return true;
 }
 
 static inline boolean platform_sem_init(platform_sem *sem, unsigned init_value)
 {
-  SDL_sem *ret = SDL_CreateSemaphore(init_value);
+  platform_sem ret = SDL_CreateSemaphore(init_value);
   if(ret)
   {
     *sem = ret;
@@ -133,15 +139,15 @@ static inline boolean platform_sem_destroy(platform_sem *sem)
 
 static inline boolean platform_sem_wait(platform_sem *sem)
 {
-  if(SDL_SemWait(*sem))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_WaitSemaphore(*sem);
   return true;
 }
 
 static inline boolean platform_sem_post(platform_sem *sem)
 {
-  if(SDL_SemPost(*sem))
-    return false;
+  // Returns void as of SDL 3.
+  SDL_SignalSemaphore(*sem);
   return true;
 }
 
@@ -170,7 +176,7 @@ static inline boolean platform_thread_join(platform_thread *thread)
 
 static inline platform_thread_id platform_get_thread_id(void)
 {
-  return SDL_ThreadID();
+  return SDL_GetCurrentThreadID();
 }
 
 static inline boolean platform_is_same_thread(platform_thread_id a,

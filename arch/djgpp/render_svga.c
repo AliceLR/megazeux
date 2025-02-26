@@ -168,8 +168,7 @@ static boolean svga_init_video(struct graphics_data *graphics,
 
   memset((uint8_t *)(render_data.mapping.address + __djgpp_conventional_base), 0,
    vbe.pitch * vbe.height * (render_data.page_flip_ok ? 2 : 1));
-
-  return set_video_mode();
+  return true;
 }
 
 static void svga_free_video(struct graphics_data *graphics)
@@ -179,8 +178,8 @@ static void svga_free_video(struct graphics_data *graphics)
   djgpp_pop_enable_nearptr();
 }
 
-static boolean svga_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize)
+static boolean svga_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   return true;
 }
@@ -300,7 +299,8 @@ static void svga_render_mouse(struct graphics_data *graphics,
    graphics->bits_per_pixel, x, y, mask, 0, w, h);
 }
 
-static void svga_sync_screen(struct graphics_data *graphics)
+static void svga_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct svga_render_data *render_data = graphics->render_data;
   __dpmi_regs reg;
@@ -342,11 +342,9 @@ void render_svga_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = svga_init_video;
   renderer->free_video = svga_free_video;
-  renderer->set_video_mode = svga_set_video_mode;
+  renderer->create_window = svga_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->update_colors = svga_update_colors;
-  renderer->resize_screen = resize_screen_standard;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = svga_render_graph;
   renderer->render_layer = svga_render_layer;
   renderer->render_cursor = svga_render_cursor;

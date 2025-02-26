@@ -258,6 +258,25 @@ original condition in a block comment after `#endif`.
     // more code
 ```
 
+In complex cases where there is no other option, left-hash indentation is OK:
+
+```
+#ifdef CONFIG_GLES
+# ifdef CONFIG_RENDER_GL_FIXED
+#   if SDL_VERSION_ATLEAST(3,0,0)
+#     include <SDL3/SDL_opengles.h>
+#   else
+#     ...
+#   endif
+# endif
+# ifdef CONFIG_RENDER_GL_PROGRAM
+#   ...
+# endif
+#else
+# ...
+#endif
+```
+
 ### Tabulated definitions
 
 In some places where many values or repetitive structs or enums are defined,

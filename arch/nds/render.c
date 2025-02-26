@@ -452,8 +452,8 @@ static boolean nds_init_video(struct graphics_data *graphics,
   return true;
 }
 
-static boolean nds_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean nds_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   return true;	// stub
 }
@@ -735,11 +735,6 @@ static void nds_update_colors(struct graphics_data *graphics,
     nds_update_palette_entry(palette, i);
 }
 
-static void nds_resize_screen(struct graphics_data *graphics, int w, int h)
-{
-  // stub
-}
-
 static void nds_render_cursor(struct graphics_data *graphics, unsigned int x,
  unsigned int y, uint16_t color, unsigned int lines, unsigned int offset)
 {
@@ -752,7 +747,8 @@ static void nds_render_mouse(struct graphics_data *graphics,
   // stub
 }
 
-static void nds_sync_screen(struct graphics_data *graphics)
+static void nds_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   // stub
 }
@@ -852,14 +848,12 @@ void render_nds_register(struct renderer *renderer)
 {
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = nds_init_video;
-  renderer->set_video_mode = nds_set_video_mode;
+  renderer->create_window = nds_create_window;
   renderer->update_colors = nds_update_colors;
-  renderer->resize_screen = nds_resize_screen;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->remap_char_range = nds_remap_char_range;
   renderer->remap_char = nds_remap_char;
   renderer->remap_charbyte = nds_remap_charbyte;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = nds_render_graph;
   renderer->render_cursor = nds_render_cursor;
   renderer->render_mouse = nds_render_mouse;

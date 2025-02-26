@@ -155,7 +155,7 @@ static boolean gp2x_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct gp2x_render_data *render_data =
-   cmalloc(sizeof(struct gp2x_render_data));
+   (struct gp2x_render_data *)cmalloc(sizeof(struct gp2x_render_data));
 
   if(!render_data)
     return false;
@@ -171,8 +171,7 @@ static boolean gp2x_init_video(struct graphics_data *graphics,
   graphics->resolution_height = 240;
   graphics->window_width = 320;
   graphics->window_height = 240;
-
-  return set_video_mode();
+  return true;
 }
 
 static void gp2x_free_video(struct graphics_data *graphics)
@@ -183,14 +182,14 @@ static void gp2x_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static boolean gp2x_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean gp2x_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  const SDL_PixelFormat *format;
+  const SDL_PixelFormatDetails *format;
   uint32_t halfmask;
 
-  if(!sdl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+  if(!sdl_create_window_soft(graphics, window))
     return false;
 
   format = render_data->sdl.flat_format;
@@ -202,6 +201,17 @@ static boolean gp2x_set_video_mode(struct graphics_data *graphics,
   return true;
 }
 
+static void gp2x_set_window_viewport(struct graphics_data *graphics,
+ struct video_window *window)
+{
+  window->viewport_x = 0;
+  window->viewport_y = 0;
+  window->viewport_width = 320;
+  window->viewport_height = 240;
+  window->is_integer_scaled = false;
+}
+
+#if 0
 static void gp2x_get_screen_coords(struct graphics_data *graphics,
  int screen_x, int screen_y, int *x, int *y, int *min_x, int *min_y,
  int *max_x, int *max_y)
@@ -220,6 +230,7 @@ static void gp2x_set_screen_coords(struct graphics_data *graphics,
   *screen_x = x / 2;
   *screen_y = y * 24 / 35;
 }
+#endif
 
 static void gp2x_render_graph(struct graphics_data *graphics)
 {
@@ -246,7 +257,8 @@ static void gp2x_render_mouse(struct graphics_data *graphics,
    0x0, w, h);
 }
 
-static void gp2x_sync_screen(struct graphics_data *graphics)
+static void gp2x_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
   SDL_Surface *screen = gp2x_get_screen_surface(render_data);
@@ -283,8 +295,10 @@ static void gp2x_sync_screen(struct graphics_data *graphics)
 
   if(render_data->sdl.shadow)
   {
-    SDL_Rect src_rect = render_data->sdl.shadow->clip_rect;
-    SDL_Rect dest_rect = render_data->sdl.screen->clip_rect;
+    SDL_Rect src_rect;
+    SDL_Rect dest_rect;
+    SDL_GetSurfaceClipRect(render_data->sdl.shadow, &src_rect);
+    SDL_GetSurfaceClipRect(render_data->sdl.screen, &dest_rect);
     SDL_BlitSurface(render_data->sdl.shadow, &src_rect,
      render_data->sdl.screen, &dest_rect);
   }
@@ -301,11 +315,10 @@ void render_gp2x_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gp2x_init_video;
   renderer->free_video = gp2x_free_video;
-  renderer->set_video_mode = gp2x_set_video_mode;
+  renderer->create_window = gp2x_create_window;
+  renderer->resize_window = gp2x_create_window;
+  renderer->set_viewport = gp2x_set_window_viewport;
   renderer->update_colors = sdl_update_colors;
-  renderer->resize_screen = resize_screen_standard;
-  renderer->get_screen_coords = gp2x_get_screen_coords;
-  renderer->set_screen_coords = gp2x_set_screen_coords;
   renderer->render_graph = gp2x_render_graph;
   renderer->render_cursor = gp2x_render_cursor;
   renderer->render_mouse = gp2x_render_mouse;

@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2025 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -35,6 +35,9 @@
 
 #include "loader.h"
 #include "xm.h"
+#if 0
+#include "vorbis.h"
+#endif
 
 static int xm_test(HIO_HANDLE *, char *, const int);
 static int xm_load(struct module_data *, HIO_HANDLE *, const int);
@@ -414,12 +417,12 @@ static int oggdec(struct module_data *m, HIO_HANDLE *f, struct xmp_sample *xxs, 
 	n = stb_vorbis_decode_memory(data, len, &ch, &rate, &pcm16);
 	free(data);
 
-	if (n <= 0 || ch != 1) {
+	if (n < 0 || ch != 1) {
 		free(pcm16);
 		return -1;
 	}
 
-	if ((xxs->flg & XMP_SAMPLE_16BIT) == 0) {
+	if ((xxs->flg & XMP_SAMPLE_16BIT) == 0 && n > 0) {
 		uint8 *pcm = (uint8 *)pcm16;
 
 		for (i = 0; i < n; i++) {
@@ -997,6 +1000,8 @@ static int xm_load(struct module_data *m, HIO_HANDLE * f, const int start)
 		libxmp_set_type(m, "ModPlug Tracker 1.16 XM %d.%02d",
 				xfh.version >> 8, xfh.version & 0xff);
 
+		m->quirk &= ~QUIRK_FT2BUGS;
+		m->flow_mode = FLOW_MODE_MPT_116;
 		m->mvolbase = 48;
 		m->mvol = 48;
 		libxmp_apply_mpt_preamp(m);

@@ -3,7 +3,6 @@ name: Regression tests
 env:
   MZXDEPS_DEBIAN_SDL2:  "zlib1g-dev libpng-dev libogg-dev libvorbis-dev libsdl2-dev"
   MZXDEPS_DEBIAN_MISC:  "libsdl1.2-dev libegl1-mesa-dev libmikmod-dev libopenmpt-dev"
-  MZXDEPS_DEBIAN_CROSS: "p7zip-full"
   MZXDEPS_MACOS:        "libpng libogg libvorbis sdl2"
   MZX_MAKE:             "make -j4"
 
@@ -143,7 +142,7 @@ jobs:
           msystem: MINGW64
           update: true
           install: >-
-            base-devel git p7zip
+            base-devel git zip
             mingw-w64-x86_64-gcc    mingw-w64-x86_64-zlib      mingw-w64-x86_64-libpng
             mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-SDL2
       - uses: actions/checkout@v4
@@ -168,7 +167,7 @@ jobs:
           msystem: MINGW32
           update: true
           install: >-
-            base-devel git p7zip
+            base-devel git zip
             mingw-w64-i686-gcc      mingw-w64-i686-zlib        mingw-w64-i686-libpng
             mingw-w64-i686-libogg   mingw-w64-i686-libvorbis   mingw-w64-i686-SDL2
       - uses: actions/checkout@v4
@@ -185,8 +184,6 @@ jobs:
     runs-on: ubuntu-latest
     container: devkitpro/devkita64
     steps:
-      - name: Install dependencies
-        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
       - run: echo "PATH=$DEVKITPRO/devkitA64/bin:$PATH" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - name: Configure Switch
@@ -200,8 +197,6 @@ jobs:
     runs-on: ubuntu-latest
     container: devkitpro/devkitarm
     steps:
-      - name: Install dependencies
-        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
       - run: echo "PATH=$DEVKITPRO/devkitARM/bin:$PATH" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - name: Configure 3DS
@@ -213,10 +208,8 @@ jobs:
 
   ARM-NDS:
     runs-on: ubuntu-latest
-    container: devkitpro/devkitarm
+    container: devkitpro/devkitarm:20241104
     steps:
-      - name: Install dependencies
-        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
       - run: echo "PATH=$DEVKITPRO/devkitARM/bin:$PATH" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - name: Configure NDS
@@ -231,10 +224,9 @@ jobs:
     container: skylyrac/blocksds:slim-latest
     steps:
       - name: Install dependencies
-        run: apt update && apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
+        run: apt update && apt install -y --no-install-recommends zip
       - name: Install target dependencies
         run: wf-pacman -Syu --noconfirm && wf-pacman -S --noconfirm toolchain-gcc-arm-none-eabi-zlib
-      - run: echo "BLOCKSDS=/opt/blocksds/core" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - name: Configure NDS/BlocksDS
         run: arch/nds-blocksds/CONFIG.NDS
@@ -247,8 +239,6 @@ jobs:
     runs-on: ubuntu-latest
     container: devkitpro/devkitppc
     steps:
-      - name: Install dependencies
-        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
       - run: echo "PATH=$DEVKITPRO/devkitPPC/bin:$PATH" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - name: Configure Wii
@@ -262,8 +252,6 @@ jobs:
     runs-on: ubuntu-latest
     container: devkitpro/devkitppc
     steps:
-      - name: Install dependencies
-        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
       - run: echo "PATH=$DEVKITPRO/devkitPPC/bin:$PATH" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - name: Configure Wii U
@@ -276,8 +264,6 @@ jobs:
   Emscripten-HTML5:
     runs-on: ubuntu-latest
     steps:
-      - name: Install dependencies
-        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_CROSS
       - name: Install Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
@@ -289,6 +275,20 @@ jobs:
       - name: Build HTML5
         run: $MZX_MAKE && make build
       - name: Package HTML5 .zip
+        run: make archive
+
+  Vita:
+    runs-on: ubuntu-latest
+    container: vitasdk/vitasdk
+    steps:
+      - name: Install dependencies
+        run: apk add --no-cache zip
+      - uses: actions/checkout@v4
+      - name: Configure Vita
+        run: arch/psvita/CONFIG.PSVITA --disable-libpng --disable-lto
+      - name: Build Vita
+        run: $MZX_MAKE
+      - name: Package Vita
         run: make archive
 
   #
@@ -304,7 +304,7 @@ jobs:
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
       - uses: actions/checkout@v4
       - name: Configure
-        run: ./config.sh --platform unix-devel --enable-asan
+        run: ./config.sh --platform unix-devel --enable-asan --enable-extram
       - name: Build
         run: $MZX_MAKE
       - name: Run tests
@@ -324,10 +324,10 @@ jobs:
       - name: Fetch dependencies
         run: |
           (cd scripts/deps;
-          wget https://github.com/AliceLR/megazeux-dependencies/releases/download/v2.93c/megazeux-dependencies-2.93c-r0-linux-msan.tar.xz;
-          tar -xJf megazeux-dependencies-*-linux-msan.tar.xz)
+          wget https://github.com/AliceLR/megazeux-dependencies/releases/download/v2.93c/megazeux-dependencies-2.93c-r0-linux-msan-mint22.tar.xz;
+          tar -xJf megazeux-dependencies-*-linux-msan-mint22.tar.xz)
       - name: Configure
-        run: ./config.sh --platform unix-devel --prefix scripts/deps/linux-msan/x86_64 --enable-msan --disable-sdl --disable-libpng --disable-x11
+        run: ./config.sh --platform unix-devel --prefix scripts/deps/linux-msan/x86_64 --enable-msan --disable-sdl --disable-libpng --disable-x11 --enable-extram
       - name: Build
         run: $MZX_MAKE V=1
       - name: Run tests
@@ -344,7 +344,7 @@ jobs:
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2
       - uses: actions/checkout@v4
       - name: Configure
-        run: ./config.sh --platform unix-devel --enable-ubsan
+        run: ./config.sh --platform unix-devel --enable-ubsan --enable-extram
       - name: Build
         run: $MZX_MAKE
       - name: Run tests

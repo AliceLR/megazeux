@@ -44,6 +44,7 @@
 #define ITEM               (1 << 10)
 #define EXTRA              (1 << 11)
 #define UNDEFINED          (1 << 13)
+#define EXTENDED           (1 << 14) /* Allow disassembly of char -> imm */
 
 #define ERR_BADCHARACTER   2
 #define ERR_INVALID        3
@@ -297,7 +298,7 @@ static const int cm121[] = { IGNORE_TYPE_TO, IGNORE_TYPE_THE, DIRECTION,
  IGNORE_TYPE_IS, STRING };
 static const int cm122[] = { IGNORE_TYPE_TO, IGNORE_TYPE_THE, DIRECTION,
  CMD_NONE };
-static const int cm123[] = { CMD_EDIT, CHARACTER | STRING | IMM_U16,
+static const int cm123[] = { CMD_EDIT, CHARACTER | STRING | IMM_U16 | EXTENDED,
  IGNORE_TYPE_TO,
  IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
  IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
@@ -406,12 +407,12 @@ static const int cm201[] = { CMD_BLOCK, IGNORE_TYPE_AT, IMM_S16 | STRING,
  IMM_U16 | STRING, IGNORE_TYPE_TO, IMM_S16 | STRING, IMM_S16 | STRING };
 static const int cm202[] = { CMD_INPUT };
 static const int cm203[] = { IGNORE_TYPE_TO, DIRECTION };
-static const int cm204[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16,
+static const int cm204[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16 | EXTENDED,
  DIRECTION };
-static const int cm205[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16,
+static const int cm205[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16 | EXTENDED,
  DIRECTION };
-static const int cm206[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16,
- IGNORE_TYPE_TO, CHARACTER | STRING | IMM_U16 };
+static const int cm206[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16 | EXTENDED,
+ IGNORE_TYPE_TO, CHARACTER | STRING | IMM_U16 | EXTENDED };
 static const int cm210[] = { CMD_SFX, IMM_U16 | STRING, IGNORE_TYPE_TO,
  STRING };
 static const int cm211[] = { CMD_INTENSITY, IGNORE_TYPE_IS, IGNORE_TYPE_AT,
@@ -456,7 +457,7 @@ static const int cm243[] = { CMD_OVERLAY, CMD_BLOCK, IGNORE_TYPE_AT,
  IMM_S16 | STRING };
 static const int cm245[] = { CMD_OVERLAY, COLOR | STRING,
  CHARACTER | STRING | IMM_U16, IGNORE_TYPE_TO,
- COLOR | STRING, CHARACTER | STRING };
+ COLOR | STRING, CHARACTER | STRING | IMM_U16 };
 static const int cm246[] = { CMD_OVERLAY, COLOR | STRING, IGNORE_TYPE_TO,
  COLOR | STRING };
 static const int cm247[] = { CMD_OVERLAY, COLOR | STRING, STRING,
@@ -2136,27 +2137,34 @@ char *assemble_program(char *src, int len, int *size)
 
 __editor_maybe_static void print_color(int color, char *color_buffer)
 {
-  if(color & 0x100)
+  /* Simulate the 2.x interpreter function fix_color here to guarantee
+   * that invalid values are accurately disassembled as they are interpreted.
+   * Invalid values below 0 (signed 16-bit) are ultimately handled mod 256.
+   * Invalid values above 0x120 are treated identically to c??.
+   *
+   * This interpreter behavior dates back to 2.51 or older, but the DOS
+   * disassembler would treat all invalid values as c??, and port versions
+   * prior to 2.93c would print one of two forms of invalid junk instead.
+   */
+  if((int16_t)color < 0x100)
   {
-    color ^= 0x100;
-    if(color == 32)
-    {
-      sprintf(color_buffer, "c??");
-    }
-    else
+    sprintf(color_buffer, "c%02x", color & 0xff);
+  }
+  else
 
-    if(color < 16)
-    {
-      sprintf(color_buffer, "c?%1x", color);
-    }
-    else
-    {
-      sprintf(color_buffer, "c%1x?", color - 16);
-    }
+  if(color < 0x110)
+  {
+    sprintf(color_buffer, "c?%1x", color & 0x0f);
+  }
+  else
+
+  if(color < 0x120)
+  {
+    sprintf(color_buffer, "c%1x?", color & 0x0f);
   }
   else
   {
-    sprintf(color_buffer, "c%02x", color);
+    sprintf(color_buffer, "c??");
   }
 }
 
@@ -2309,7 +2317,7 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
 
     current_command = &command_list[command_number];
 
-    if(command_number != 47)
+    if(command_number != ROBOTIC_CMD_BLANK_LINE)
     {
       strcpy(output_position, current_command->name);
       output_position += strlen(current_command->name);
@@ -2377,8 +2385,13 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
         // Give char representation, not immediate
         if(param_type & CHARACTER)
         {
-          param_type &= ~IMM_U16;
+          // ...unless this is an extended char in a command that supports it.
+          if(input_position[2] && (param_type & EXTENDED))
+            param_type = IMM_U16;
+          else
+            param_type &= ~IMM_U16;
         }
+        param_type &= ~EXTENDED;
 
         switch(param_type)
         {
@@ -2476,14 +2489,19 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
             if(arg_types)
               arg_types[words] = S_PARAM;
 
+            /* Note: disassembling invalid values modulo 256 to match how
+             * they are interpreted. The DOS disassembler would disassemble
+             * all invalid values to p?? and the port disassembler would
+             * produce either p?? or junk prior to 2.93c.
+             */
             input_position += 3;
-            if(param & 0x100)
+            if(param == 0x100)
             {
               sprintf(param_buffer, "p??");
             }
             else
             {
-              sprintf(param_buffer, "p%02x", param);
+              sprintf(param_buffer, "p%02x", param & 0xff);
             }
 
             strcpy(output_position, param_buffer);
@@ -2757,14 +2775,15 @@ enum v1_params
   V1_U8,              // unsigned
   V1_STRING,
   V1_CHAR,
-  V1_COLOR,           // bit 8 is stored as bit 7 of the next byte(!).
-  V1_COLOR_UNUSED,    // unused in ver1to2, handled in V1_COLOR here.
+  V1_COLOR_WILDCARD,  // bit 8 is stored as bit 7 of the next byte(!).
+  V1_COLOR,           // unused in ver1to2; colors with no wildcard support.
   V1_DIRECTION,
   V1_ITEM,
   V1_EQUALITY,
   V1_CONDITION,
   V1_THING,
   V1_PARAM,
+  V1_PARAM_WILDCARD,  // p0 -> p??
   V1_ADD_PARAM,       // param was not present in the original command, use 256.
   V1_8,               // signed
 
@@ -2781,7 +2800,7 @@ static const uint8_t v1_command_translation[256][8] =
   { ROBOTIC_CMD_CYCLE,              V1_U8 },
   { ROBOTIC_CMD_GO,                 V1_DIRECTION, V1_U8 },
   { ROBOTIC_CMD_WALK,               V1_DIRECTION },
-  { ROBOTIC_CMD_BECOME,             V1_COLOR, V1_THING, V1_PARAM },
+  { ROBOTIC_CMD_BECOME,             V1_COLOR_WILDCARD, V1_THING, V1_PARAM },
   { ROBOTIC_CMD_CHAR,               V1_CHAR },
   { ROBOTIC_CMD_COLOR,              V1_COLOR },
   { ROBOTIC_CMD_GOTOXY,             V1_8, V1_8 },
@@ -2795,13 +2814,13 @@ static const uint8_t v1_command_translation[256][8] =
   { ROBOTIC_CMD_IF,                 V1_STRING, V1_EQUALITY, V1_STRING, V1_STRING }, // cvt
   { ROBOTIC_CMD_IF_CONDITION,       V1_CONDITION, V1_STRING },
   { ROBOTIC_CMD_IF_NOT_CONDITION,   V1_CONDITION, V1_STRING },
-  { ROBOTIC_CMD_IF_ANY,             V1_COLOR, V1_THING, V1_ADD_PARAM, V1_STRING },
-  { ROBOTIC_CMD_IF_NO,              V1_COLOR, V1_THING, V1_ADD_PARAM, V1_STRING },
-  { ROBOTIC_CMD_IF_THING_DIR,       V1_COLOR, V1_THING, V1_ADD_PARAM, V1_DIRECTION, V1_STRING },
-  { ROBOTIC_CMD_IF_NOT_THING_DIR,   V1_COLOR, V1_THING, V1_ADD_PARAM, V1_DIRECTION, V1_STRING },
-  { ROBOTIC_CMD_IF_THING_XY,        V1_COLOR, V1_THING, V1_ADD_PARAM, V1_8, V1_8, V1_STRING },
+  { ROBOTIC_CMD_IF_ANY,             V1_COLOR_WILDCARD, V1_THING, V1_ADD_PARAM, V1_STRING },
+  { ROBOTIC_CMD_IF_NO,              V1_COLOR_WILDCARD, V1_THING, V1_ADD_PARAM, V1_STRING },
+  { ROBOTIC_CMD_IF_THING_DIR,       V1_COLOR_WILDCARD, V1_THING, V1_ADD_PARAM, V1_DIRECTION, V1_STRING },
+  { ROBOTIC_CMD_IF_NOT_THING_DIR,   V1_COLOR_WILDCARD, V1_THING, V1_ADD_PARAM, V1_DIRECTION, V1_STRING },
+  { ROBOTIC_CMD_IF_THING_XY,        V1_COLOR_WILDCARD, V1_THING, V1_ADD_PARAM, V1_8, V1_8, V1_STRING },
   { ROBOTIC_CMD_IF_AT,              V1_8, V1_8, V1_STRING },
-  { ROBOTIC_CMD_IF_DIR_OF_PLAYER,   V1_DIRECTION, V1_COLOR, V1_THING, V1_ADD_PARAM, V1_STRING },
+  { ROBOTIC_CMD_IF_DIR_OF_PLAYER,   V1_DIRECTION, V1_COLOR_WILDCARD, V1_THING, V1_ADD_PARAM, V1_STRING },
   { ROBOTIC_CMD_DOUBLE,             V1_STRING },
   { ROBOTIC_CMD_HALF,               V1_STRING },
   { ROBOTIC_CMD_GOTO,               V1_STRING },
@@ -2893,7 +2912,7 @@ static const uint8_t v1_command_translation[256][8] =
   { ROBOTIC_CMD_PLAYER_CHAR,        V1_CHAR },
   { ROBOTIC_CMD_MESSAGE_BOX_COLOR_LINE, V1_STRING },
   { ROBOTIC_CMD_MESSAGE_BOX_CENTER_LINE, V1_STRING },
-  { ROBOTIC_CMD_MOVE_ALL,           V1_COLOR, V1_THING, V1_ADD_PARAM, V1_DIRECTION },
+  { ROBOTIC_CMD_MOVE_ALL,           V1_COLOR_WILDCARD, V1_THING, V1_ADD_PARAM, V1_DIRECTION },
   { ROBOTIC_CMD_COPY,               V1_8, V1_8, V1_8, V1_8 },
   { ROBOTIC_CMD_SET_EDGE_COLOR,     V1_COLOR },
   { ROBOTIC_CMD_BOARD,              V1_DIRECTION, V1_STRING },
@@ -2910,8 +2929,8 @@ static const uint8_t v1_command_translation[256][8] =
   { ROBOTIC_CMD_COPY_DIR,           V1_DIRECTION, V1_DIRECTION },
   { ROBOTIC_CMD_BECOME_LAVAWALKER },
   { ROBOTIC_CMD_BECOME_NONLAVAWALKER },
-  { ROBOTIC_CMD_CHANGE,             V1_COLOR, V1_THING, V1_ADD_PARAM,
-                                    V1_COLOR, V1_THING, V1_PARAM },
+  { ROBOTIC_CMD_CHANGE,             V1_COLOR_WILDCARD, V1_THING, V1_ADD_PARAM,
+                                    V1_COLOR_WILDCARD, V1_THING, V1_PARAM_WILDCARD },
   { ROBOTIC_CMD_PLAYERCOLOR,        V1_COLOR },
   { ROBOTIC_CMD_BULLETCOLOR,        V1_COLOR },
   { ROBOTIC_CMD_MISSILECOLOR,       V1_COLOR },
@@ -3016,7 +3035,8 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
 
     for(j = 1; v1_command_translation[cmd][j]; j++)
     {
-      switch(v1_command_translation[cmd][j])
+      enum v1_params type = v1_command_translation[cmd][j];
+      switch(type)
       {
         case V1_16:
         case V1_CONDITION:
@@ -3032,6 +3052,7 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
 
         case V1_U8:
         case V1_CHAR:
+        case V1_COLOR: // no thing for wildcard, or wildcard is ignored
         case V1_DIRECTION:
         case V1_ITEM:
         case V1_EQUALITY:
@@ -3077,7 +3098,7 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
           break;
         }
 
-        case V1_COLOR:
+        case V1_COLOR_WILDCARD:
         {
           if(i >= src_len || len + 3 > 255)
             goto err;
@@ -3085,6 +3106,7 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
           buf[len++] = 0;
           buf[len++] = src[i++];
 
+          // bit 8 is stored as bit 7 of the thing
           if(i + 1 <= src_len && v1_command_translation[cmd][j + 1] == V1_THING)
             buf[len++] = src[i] >> 7;
           else
@@ -3105,15 +3127,22 @@ boolean legacy_convert_v1_program(char **_dest, int *_dest_len,
         }
 
         case V1_PARAM:
+        case V1_PARAM_WILDCARD:
         {
           int param;
           if(i >= src_len || len + 3 > 255)
             goto err;
+          param = src[i++];
 
           // p?? encodes to a value of 0(!), convert to 256.
+          // VER1TO2 did this unconditionally, which only worked because
+          // non-CHANGE replacement commands treated p?? like 0 until 2.80d.
+          if(type == V1_PARAM_WILDCARD && param == 0)
+            param = 256;
+
           buf[len++] = 0;
-          buf[len++] = param = src[i++];
-          buf[len++] = param ? 0 : 1;
+          buf[len++] = param & 0xff;
+          buf[len++] = param >> 8;
           break;
         }
 

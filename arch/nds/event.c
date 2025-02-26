@@ -73,7 +73,7 @@ enum focus_mode get_allow_focus_changes(void)
   return allow_focus_changes;
 }
 
-void initialize_joysticks(void)
+void platform_init_event(void)
 {
   struct buffered_status *status = store_status();
   joystick_set_active(status, 0, true);

@@ -990,7 +990,8 @@ static boolean retrieve_buffer_from_extram(struct extram_data *data,
   ptr = platform_extram_retrieve(block, len);
   if(!ptr)
   {
-    debug("--EXTRAM-- failed to retrieve buffer %p from non-mapped platform RAM.\n", *src);
+    debug("--EXTRAM-- failed to retrieve buffer %p from non-mapped platform RAM.\n",
+     (void *)*src);
     goto err;
   }
   block = ptr;

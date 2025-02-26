@@ -28,8 +28,10 @@ __M_BEGIN_DECLS
 
 #include <EGL/egl.h>
 
-boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, boolean fullscreen, boolean resize, struct gl_version req_ver);
+boolean gl_create_window(struct graphics_data *graphics,
+ struct video_window *window, struct gl_version req_ver);
+boolean gl_resize_window(struct graphics_data *graphics,
+ struct video_window *window);
 void gl_set_attributes(struct graphics_data *graphics);
 boolean gl_swap_buffers(struct graphics_data *graphics);
 void gl_cleanup(struct graphics_data *graphics);
@@ -38,15 +40,9 @@ boolean GL_LoadLibrary(enum gl_lib_type type);
 
 #ifndef ANDROID
 
-static inline dso_fn *GL_GetProcAddress(const char *proc)
+static inline dso_fn_ptr GL_GetProcAddress(const char *proc)
 {
-  union suppress_warning
-  {
-    void (*in)(void);
-    dso_fn *out;
-  } t;
-  t.in = eglGetProcAddress(proc);
-  return t.out;
+  return eglGetProcAddress(proc);
 }
 
 #else /* ANDROID */
@@ -54,7 +50,7 @@ static inline dso_fn *GL_GetProcAddress(const char *proc)
 /* Android's eglGetProcAddress is currently broken, so we
  * have to roll our own..
  */
-dso_fn *GL_GetProcAddress(const char *proc);
+dso_fn_ptr GL_GetProcAddress(const char *proc);
 
 #endif /* !ANDROID */
 

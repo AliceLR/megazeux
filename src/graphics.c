@@ -1263,7 +1263,8 @@ void update_screen(void)
     }
   }
 
-  if(graphics.mouse_status)
+  if(graphics.mouse_status &&
+   graphics.system_mouse != SYSTEM_MOUSE_HIDE_SOFTWARE_MOUSE)
   {
     int mouse_x, mouse_y;
     get_mouse_pixel_position(&mouse_x, &mouse_y);
@@ -1275,7 +1276,7 @@ void update_screen(void)
      graphics.mouse_width, graphics.mouse_height);
   }
 
-  graphics.renderer.sync_screen(&graphics);
+  graphics.renderer.sync_screen(&graphics, &(graphics.window));
 }
 
 boolean get_fade_status(void)
@@ -1472,7 +1473,7 @@ static boolean set_graphics_output(struct config_info *conf)
 
   renderer->reg(&graphics.renderer);
   graphics.renderer_num = i;
-  graphics.renderer_is_headless = false;
+  graphics.window.is_init = false;
 
   debug("Video: using '%s' renderer.\n", renderer->name);
   return true;
@@ -1490,6 +1491,9 @@ static boolean icon_w_h_constraint(png_uint_32 w, png_uint_32 h)
 static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
  png_uint_32 *stride, void **pixels)
 {
+#if SDL_VERSION_ATLEAST(2,0,0)
+  SDL_Surface *s = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_RGBA32);
+#else
   Uint32 rmask, gmask, bmask, amask;
   SDL_Surface *s;
 
@@ -1506,6 +1510,7 @@ static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
 #endif
 
   s = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, rmask, gmask, bmask, amask);
+#endif
   if(!s)
     return NULL;
 
@@ -1522,18 +1527,10 @@ static SDL_Surface *png_read_icon(const char *name)
 
 #endif // CONFIG_PNG && CONFIG_SDL && CONFIG_ICON && !__WIN32__
 
-static void set_window_grab(boolean grabbed)
-{
-#ifdef CONFIG_SDL
-  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
-  SDL_SetWindowGrab(window, grabbed ? SDL_TRUE : SDL_FALSE);
-#endif
-}
-
 void set_window_caption(const char *caption)
 {
 #ifdef CONFIG_SDL
-  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
+  SDL_Window *window = SDL_GetWindowFromID(graphics.window.platform_id);
   SDL_SetWindowTitle(window, caption);
 #endif
 }
@@ -1557,8 +1554,8 @@ static void set_window_icon(void)
     HICON icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(1));
     if(icon)
     {
-      SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
-      SendMessage(SDL_GetWindowProperty_HWND(window),
+      SDL_Window *window = SDL_GetWindowFromID(graphics.window.platform_id);
+      SendMessage((HWND)SDL_GetWindowProperty_HWND(window),
        WM_SETICON, ICON_BIG, (LPARAM)icon);
     }
   }
@@ -1568,9 +1565,9 @@ static void set_window_icon(void)
     SDL_Surface *icon = png_read_icon(ICONFILE);
     if(icon)
     {
-      SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
+      SDL_Window *window = SDL_GetWindowFromID(graphics.window.platform_id);
       SDL_SetWindowIcon(window, icon);
-      SDL_FreeSurface(icon);
+      SDL_DestroySurface(icon);
     }
   }
 #endif // CONFIG_PNG
@@ -1731,6 +1728,19 @@ void destruct_layers(void)
   graphics.layer_count = 0;
 }
 
+static boolean try_init_video(struct config_info *conf)
+{
+  if(graphics.renderer.init_video(&graphics, conf))
+  {
+    if(video_create_window())
+      return true;
+
+    if(graphics.renderer.free_video)
+      graphics.renderer.free_video(&graphics);
+  }
+  return false;
+}
+
 boolean init_video(struct config_info *conf, const char *caption)
 {
   graphics.screen_mode = 0;
@@ -1760,27 +1770,10 @@ boolean init_video(struct config_info *conf, const char *caption)
 
   if(conf->resolution_width <= 0 || conf->resolution_height <= 0)
   {
-#ifdef CONFIG_SDL
-    // TODO maybe be able to communicate with the renderer instead of this hack
-    boolean is_scaling = true;
-    int width;
-    int height;
-
-    if(!strcmp(conf->video_output, "software"))
-      is_scaling = false;
-
-    if(sdl_get_fullscreen_resolution(&width, &height, is_scaling))
-    {
-      graphics.resolution_width = width;
-      graphics.resolution_height = height;
-    }
-    else
-#endif
-    {
-      // "Safe" resolution
-      graphics.resolution_width = 640;
-      graphics.resolution_height = 480;
-    }
+    // The driver should attempt to pick the best resolution automatically.
+    // Not all create_window implementations support this.
+    graphics.resolution_width = 0;
+    graphics.resolution_height = 0;
   }
 
   if(conf->window_width <= 0 || conf->window_height <= 0)
@@ -1791,7 +1784,7 @@ boolean init_video(struct config_info *conf, const char *caption)
 
   snprintf(graphics.default_caption, 32, "%s", caption);
 
-  if(!graphics.renderer.init_video(&graphics, conf))
+  if(!try_init_video(conf))
   {
     // Try falling back to the first registered renderer
     debug("Failed to initialize '%s', attempting fallback.\n", conf->video_output);
@@ -1799,7 +1792,7 @@ boolean init_video(struct config_info *conf, const char *caption)
     if(!set_graphics_output(conf))
       return false;
 
-    if(!graphics.renderer.init_video(&graphics, conf))
+    if(!try_init_video(conf))
     {
       // One last attempt with the "safest" settings.
       // NOTE: this was originally done in set_video_mode.
@@ -1810,18 +1803,13 @@ boolean init_video(struct config_info *conf, const char *caption)
       graphics.allow_resize = false;
       conf->force_bpp = BPP_AUTO;
 
-      if(!graphics.renderer.init_video(&graphics, conf))
+      if(!try_init_video(conf))
       {
         warn("Failed to initialize video.\n");
         return false;
       }
     }
   }
-
-#ifdef CONFIG_SDL
-  if(!graphics.system_mouse)
-    SDL_ShowCursor(SDL_DISABLE);
-#endif
 
   ec_load_set_secondary(mzx_res_get_by_id(MZX_DEFAULT_CHR),
    graphics.default_charset);
@@ -1841,6 +1829,7 @@ void quit_video(void)
     graphics.renderer.free_video(&graphics);
 
   destruct_layers();
+  graphics.window.is_init = false;
 }
 
 boolean has_video_initialized(void)
@@ -1852,58 +1841,228 @@ boolean has_video_initialized(void)
 #endif /* CONFIG_SDL */
 
   // Renderers can also report as headless.
-  if(graphics.renderer_is_headless)
+  if(graphics.window.is_init && graphics.window.is_headless)
     return false;
 
   return graphics.is_initialized;
 }
 
-boolean set_video_mode(void)
+static void set_window_ratio(struct video_window *window, enum ratio_type ratio)
 {
-  int target_width, target_height;
-  int target_depth = graphics.bits_per_pixel;
-  boolean fullscreen = graphics.fullscreen;
-  boolean resize = graphics.allow_resize;
-  boolean ret;
-
-#ifdef CONFIG_SDL
-  if(fullscreen && graphics.fullscreen_windowed)
+  switch(ratio)
   {
-    // TODO maybe be able to communicate with the renderer instead of this hack
-    if(sdl_get_fullscreen_resolution(&target_width, &target_height, true))
-    {
-      graphics.resolution_width = target_width;
-      graphics.resolution_height = target_height;
-    }
+    case RATIO_MODERN_64_35:
+      window->ratio_numerator = 64;
+      window->ratio_denominator = 35;
+      break;
+    case RATIO_CLASSIC_4_3:
+      window->ratio_numerator = 4;
+      window->ratio_denominator = 3;
+      break;
+    default:
+    case RATIO_STRETCH:
+      window->ratio_numerator = 0;
+      window->ratio_denominator = 0;
+      break;
   }
-#endif
+}
 
-  if(fullscreen)
+unsigned video_create_window(void)
+{
+  struct video_window *window = &(graphics.window);
+
+  if(window->is_init)
+    return false;
+
+  window->bits_per_pixel = graphics.bits_per_pixel;
+  window->is_fullscreen = graphics.fullscreen;
+  window->is_fullscreen_windowed = graphics.fullscreen_windowed;
+  window->is_headless = false;
+  window->allow_resize = graphics.allow_resize;
+  set_window_ratio(window, graphics.ratio);
+
+  if(graphics.fullscreen)
   {
-    target_width = graphics.resolution_width;
-    target_height = graphics.resolution_height;
+    window->width_px = graphics.resolution_width;
+    window->height_px = graphics.resolution_height;
   }
   else
   {
-    target_width = graphics.window_width;
-    target_height = graphics.window_height;
+    window->width_px = graphics.window_width;
+    window->height_px = graphics.window_height;
   }
+  video_window_update_viewport(window);
 
-  ret = graphics.renderer.set_video_mode(&graphics,
-   target_width, target_height, target_depth, fullscreen, resize);
-
-  if(ret)
+  if(graphics.renderer.create_window(&graphics, window))
   {
+    window->is_init = true;
     set_window_caption(graphics.default_caption);
-    set_window_grab(graphics.grab_mouse);
     set_window_icon();
 
     // Make sure a BPP was selected by the renderer (if applicable).
-    if(graphics.bits_per_pixel == BPP_AUTO)
-      warn("renderer.set_video_mode must auto-select BPP! Report this!\n");
-  }
+    if(window->bits_per_pixel == BPP_AUTO)
+      warn("renderer.create_window must auto-select BPP! Report this!\n");
 
-  return ret;
+    return 1;
+  }
+  return 0;
+}
+
+static boolean valid_window_id(unsigned window_id)
+{
+  return window_id == 1;
+}
+
+const struct video_window *video_get_window(unsigned window_id)
+{
+  if(valid_window_id(window_id))
+    return &graphics.window;
+
+  return NULL;
+}
+
+unsigned video_window_by_platform_id(unsigned platform_id)
+{
+  if(graphics.window.platform_id == platform_id)
+    return 1;
+
+  return 0;
+}
+
+/**
+ * Update the scaled viewport coordinates within the window according to
+ * the window's scaling ratio, for use in SDL update rectangles or glViewport.
+ * The viewport is also used to translate mouse coordinates between screen
+ * and window space.
+ *
+ * This should be called by the renderer any time create_window forces the
+ * window size (SDL window creation functions already handle this).
+ * This is called automatically between resize_window and resize_callback.
+ *
+ * For best results, call glViewport (or equivalent) in either
+ * resize_callback or sync_screen.
+ */
+void video_window_update_viewport(struct video_window *window)
+{
+  if(graphics.renderer.set_viewport)
+  {
+    graphics.renderer.set_viewport(&graphics, window);
+  }
+  else
+  {
+    debug("Implement set_viewport!");
+    window->viewport_x = 0;
+    window->viewport_y = 0;
+    window->viewport_width = window->width_px;
+    window->viewport_height = window->height_px;
+    window->is_integer_scaled = false;
+  }
+}
+
+/* Sync the current window size after it has ALREADY been changed by the
+ * platform or by a call to a graphics.c window resize function.
+ * SDL2/3 reports a window resize event after it is resized;
+ * this is the only situation in which this should be called anywhere else. */
+void video_sync_window_size(unsigned window_id,
+ unsigned new_width_px, unsigned new_height_px)
+{
+  if(valid_window_id(window_id))
+  {
+    graphics.window.width_px = new_width_px;
+    graphics.window.height_px = new_height_px;
+
+    if(graphics.window.is_fullscreen)
+    {
+      graphics.resolution_width = new_width_px;
+      graphics.resolution_height = new_height_px;
+    }
+    else
+    {
+      graphics.window_width = new_width_px;
+      graphics.window_height = new_height_px;
+    }
+    video_window_update_viewport(&(graphics.window));
+
+    if(graphics.renderer.resize_callback)
+      graphics.renderer.resize_callback(&graphics, &graphics.window);
+
+    graphics.palette_dirty = true;
+    update_screen();
+  }
+}
+
+static void resize_window(unsigned window_id, boolean fullscreen)
+{
+  if(graphics.renderer.resize_window)
+  {
+    if(fullscreen)
+    {
+      graphics.window.width_px = graphics.resolution_width;
+      graphics.window.height_px = graphics.resolution_height;
+    }
+    else
+    {
+      graphics.window.width_px = graphics.window_width;
+      graphics.window.height_px = graphics.window_height;
+    }
+    graphics.window.is_fullscreen = fullscreen;
+    graphics.fullscreen = fullscreen;
+    set_window_ratio(&graphics.window, graphics.ratio);
+
+    graphics.renderer.resize_window(&graphics, &graphics.window);
+
+    // Renderer resize_window may have modified the requested dimensions.
+    video_sync_window_size(window_id,
+     graphics.window.width_px, graphics.window.height_px);
+  }
+}
+
+/* Change the current window size. This should NOT be called in response to
+ * SDL2/3 window resize events, but when something in MegaZeux explicitly
+ * wants the window size to change. If currently in fullscreen, this switches
+ * to windowed mode. */
+void video_resize_window(unsigned window_id,
+ unsigned new_width_px, unsigned new_height_px)
+{
+  if(graphics.renderer.resize_window && valid_window_id(window_id))
+  {
+    graphics.window_width = new_width_px;
+    graphics.window_height = new_height_px;
+    resize_window(window_id, false);
+  }
+}
+
+/* Set the current fullscreen size and switch to fullscreen mode. */
+void video_resize_fullscreen(unsigned window_id,
+ unsigned new_width_px, unsigned new_height_px)
+{
+  if(graphics.renderer.resize_window && valid_window_id(window_id))
+  {
+    graphics.resolution_width = new_width_px;
+    graphics.resolution_height = new_height_px;
+    resize_window(window_id, true);
+  }
+}
+
+void video_toggle_fullscreen(void)
+{
+  unsigned current_fullscreen = video_get_fullscreen_window();
+  if(current_fullscreen)
+    resize_window(current_fullscreen, false);
+  else
+    resize_window(1, true);
+}
+
+unsigned video_get_fullscreen_window(void)
+{
+  if(graphics.window.is_fullscreen)
+    return 1;
+  return 0;
+}
+
+boolean video_is_fullscreen(void)
+{
+  return video_get_fullscreen_window() > 0;
 }
 
 boolean change_video_output(struct config_info *conf, const char *output)
@@ -1924,7 +2083,7 @@ boolean change_video_output(struct config_info *conf, const char *output)
 
   set_graphics_output(conf);
 
-  if(!graphics.renderer.init_video(&graphics, conf))
+  if(!try_init_video(conf))
   {
     retval = false;
 
@@ -1936,7 +2095,7 @@ boolean change_video_output(struct config_info *conf, const char *output)
     }
     else
 
-    if(!graphics.renderer.init_video(&graphics, conf))
+    if(!try_init_video(conf))
     {
       warn("Failed to roll back video mode!\n");
       fallback = true;
@@ -1959,7 +2118,7 @@ boolean change_video_output(struct config_info *conf, const char *output)
       exit(1);
     }
 
-    if(!graphics.renderer.init_video(&graphics, conf))
+    if(!try_init_video(conf))
     {
       warn("Failed to set fallback video mode, aborting!\n");
       exit(1);
@@ -1988,38 +2147,6 @@ int get_available_video_output_list(const char **buffer, int buffer_len)
 int get_current_video_output(void)
 {
   return graphics.renderer_num;
-}
-
-boolean is_fullscreen(void)
-{
-  return graphics.fullscreen;
-}
-
-void toggle_fullscreen(void)
-{
-  graphics.fullscreen = !graphics.fullscreen;
-  graphics.palette_dirty = true;
-  if(!set_video_mode())
-  {
-    warn("Failed to set video mode toggling fullscreen. Aborting\n");
-    exit(1);
-  }
-  update_screen();
-}
-
-void resize_screen(unsigned int w, unsigned int h)
-{
-  if(!graphics.fullscreen && graphics.allow_resize)
-  {
-    graphics.window_width = w;
-    graphics.window_height = h;
-    if(!set_video_mode())
-    {
-      warn("Failed to set video mode resizing window. Aborting\n");
-      exit(1);
-    }
-    graphics.renderer.resize_screen(&graphics, w, h);
-  }
 }
 
 static void dirty_ui(void)
@@ -2586,14 +2713,12 @@ void cursor_off(void)
 
 void m_hide(void)
 {
-  if(!graphics.system_mouse)
-    graphics.mouse_status = false;
+  graphics.mouse_status = false;
 }
 
 void m_show(void)
 {
-  if(!graphics.system_mouse)
-    graphics.mouse_status = true;
+  graphics.mouse_status = true;
 }
 
 void mouse_size(unsigned int width, unsigned int height)
@@ -3029,13 +3154,34 @@ boolean get_char_visible_bitmask(uint16_t char_idx, uint8_t palette,
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y)
 {
-  graphics.renderer.get_screen_coords(&graphics, screen_x, screen_y, x, y,
-   min_x, min_y, max_x, max_y);
+#if 0
+  if(graphics.renderer.get_screen_coords)
+  {
+    graphics.renderer.get_screen_coords(&graphics, &(graphics.window),
+     screen_x, screen_y, x, y, min_x, min_y, max_x, max_y);
+  }
+  else
+#endif
+  {
+    get_screen_coords_viewport(&graphics, &(graphics.window),
+     screen_x, screen_y, x, y, min_x, min_y, max_x, max_y);
+  }
 }
 
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y)
 {
-  graphics.renderer.set_screen_coords(&graphics, x, y, screen_x, screen_y);
+#if 0
+  if(graphics.renderer.set_screen_coords)
+  {
+    graphics.renderer.set_screen_coords(&graphics, &(graphics.window),
+     x, y, screen_x, screen_y);
+  }
+  else
+#endif
+  {
+    set_screen_coords_viewport(&graphics, &(graphics.window),
+     x, y, screen_x, screen_y);
+  }
 }
 
 void focus_screen(int x, int y)

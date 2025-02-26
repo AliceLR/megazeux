@@ -1,5 +1,5 @@
 #include "version.h"
-#define PLATFORM "xcode"
+#define PLATFORM "xcode-" SUBPLATFORM
 #define CONFDIR "../Resources"
 #define CONFFILE "config.txt"
 #define USERCONFFILE ".megazeux-config"
@@ -24,3 +24,18 @@
 #define CONFIG_CHECK_ALLOC
 #define CONFIG_COUNTER_HASH_TABLES
 #define CONFIG_GAMECONTROLLERDB
+
+/* TODO: do this from Xcode? */
+#if defined(__x86_64h__)
+#define SUBPLATFORM "x86_64h"
+#elif defined(__x86_64__)
+#define SUBPLATFORM "x86_64"
+#elif defined(__x86__)
+#define SUBPLATFORM "i386"
+#elif defined(__arm64e__)
+#define SUBPLATFORM "arm64e"
+#elif defined(__arm64__)
+#define SUBPLATFORM "arm64"
+#else
+#define SUBPLATFORM "unknown"
+#endif

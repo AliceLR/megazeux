@@ -32,7 +32,6 @@
 #include "render_sdl.h"
 #include "renderers.h"
 #include "util.h"
-#include "yuv.h"
 
 struct softscale_render_data
 {
@@ -42,8 +41,6 @@ struct softscale_render_data
   unsigned int texture_pitch;
   unsigned int texture_width;
   boolean enable_subsampling;
-  int w;
-  int h;
 };
 
 static void softscale_free_video(struct graphics_data *graphics)
@@ -62,8 +59,10 @@ static void softscale_free_video(struct graphics_data *graphics)
 static boolean softscale_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
-  struct softscale_render_data *render_data =
+  struct softscale_render_data *render_data = (struct softscale_render_data *)
    cmalloc(sizeof(struct softscale_render_data));
+  if(!render_data)
+    return false;
 
   memset(render_data, 0, sizeof(struct softscale_render_data));
   graphics->render_data = render_data;
@@ -80,22 +79,17 @@ static boolean softscale_init_video(struct graphics_data *graphics,
   snprintf(graphics->sdl_render_driver, ARRAY_SIZE(graphics->sdl_render_driver),
    "%s", conf->sdl_render_driver);
 
-  if(!set_video_mode())
-  {
-    softscale_free_video(graphics);
-    return false;
-  }
   return true;
 }
 
-static boolean softscale_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean softscale_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct softscale_render_data *render_data =
    (struct softscale_render_data *)graphics->render_data;
+  SDL_Texture *tex;
 
-  if(!sdlrender_set_video_mode(graphics, width, height,
-   depth, fullscreen, resize, 0))
+  if(!sdl_create_window_renderer(graphics, window, false))
     return false;
 
   // YUV texture modes are effectively 16-bit to SDL, but MegaZeux treats them
@@ -108,23 +102,28 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
   render_data->texture_pixels = NULL;
 
   // Initialize the screen texture.
-  render_data->sdl.texture[0] =
-   SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
-    SDL_TEXTUREACCESS_STREAMING, render_data->texture_width, SCREEN_PIX_H);
-
-  if(!render_data->sdl.texture[0])
+  tex = SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
+   SDL_TEXTUREACCESS_STREAMING, render_data->texture_width, SCREEN_PIX_H);
+  if(!tex)
   {
     warn("Failed to create texture: %s\n", SDL_GetError());
     goto err_free;
   }
+  render_data->sdl.texture[0] = tex;
 
-  render_data->w = width;
-  render_data->h = height;
+  sdl_set_texture_scale_mode(graphics, window, 0, true);
   return true;
 
 err_free:
   sdl_destruct_window(graphics);
   return false;
+}
+
+static boolean softscale_resize_callback(struct graphics_data *graphics,
+ struct video_window *window)
+{
+  sdl_set_texture_scale_mode(graphics, window, 0, true);
+  return true;
 }
 
 /**
@@ -260,30 +259,30 @@ static void softscale_render_mouse(struct graphics_data *graphics,
   render_mouse(pixels, pitch, bpp, x, y, 0xFFFFFFFF, amask, w, h);
 }
 
-static void softscale_sync_screen(struct graphics_data *graphics)
+static void softscale_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
   struct softscale_render_data *render_data = graphics->render_data;
   SDL_Renderer *renderer = render_data->sdl.renderer;
   SDL_Texture *texture = render_data->sdl.texture[0];
-  SDL_Rect *src_rect = &(render_data->texture_rect);
-  SDL_Rect dest_rect;
-  int width = render_data->w;
-  int height = render_data->h;
-  int v_width, v_height;
+  SDL_Rect *texture_rect = &(render_data->texture_rect);
+  SDL_Rect_mzx src_rect;
+  SDL_Rect_mzx dest_rect;
 
-  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
+  src_rect = sdl_render_rect(texture_rect->x, texture_rect->y,
+   texture_rect->w, texture_rect->h);
 
-  dest_rect.x = (width - v_width) / 2;
-  dest_rect.y = (height - v_height) / 2;
-  dest_rect.w = v_width;
-  dest_rect.h = v_height;
+  dest_rect.x = window->viewport_x;
+  dest_rect.y = window->viewport_y;
+  dest_rect.w = window->viewport_width;
+  dest_rect.h = window->viewport_height;
 
   softscale_unlock_texture(render_data);
 
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
   SDL_RenderClear(renderer);
 
-  SDL_RenderCopy(renderer, texture, src_rect, &dest_rect);
+  SDL_RenderTexture(renderer, texture, &src_rect, &dest_rect);
   SDL_RenderPresent(renderer);
 }
 
@@ -292,11 +291,11 @@ void render_softscale_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = softscale_init_video;
   renderer->free_video = softscale_free_video;
-  renderer->set_video_mode = softscale_set_video_mode;
+  renderer->create_window = softscale_create_window;
+  renderer->resize_window = sdl_resize_window;
+  renderer->resize_callback = softscale_resize_callback;
+  renderer->set_viewport = set_window_viewport_scaled;
   renderer->update_colors = sdl_update_colors;
-  renderer->resize_screen = resize_screen_standard;
-  renderer->get_screen_coords = get_screen_coords_scaled;
-  renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_graph = softscale_render_graph;
   renderer->render_layer = softscale_render_layer;
   renderer->render_cursor = softscale_render_cursor;

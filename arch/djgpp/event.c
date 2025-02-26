@@ -336,7 +336,7 @@ static boolean process_keypress(int key)
    get_alt_status(keycode_internal) &&
    get_ctrl_status(keycode_internal))
   {
-    toggle_fullscreen();
+    video_toggle_fullscreen();
     return true;
   }
 
@@ -585,7 +585,7 @@ static void init_mouse(void)
   mouse_init = true;
 }
 
-void initialize_joysticks(void)
+void platform_init_event(void)
 {
   init_kbd();
   init_mouse();

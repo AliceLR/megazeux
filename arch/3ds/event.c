@@ -333,7 +333,7 @@ int ctr_get_subscreen_height(void)
   }
 }
 
-void initialize_joysticks(void)
+void platform_init_event(void)
 {
   struct buffered_status *status = store_status();
   joystick_set_active(status, 0, true);

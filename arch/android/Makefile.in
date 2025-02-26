@@ -94,6 +94,8 @@ CLANG_PRE    := ${ANDROID_LIBS}
 BINUTILS_PRE := ${ANDROID_LIBS}
 ABI          := arm64-v8a
 SDK          := 21
+# https://developer.android.com/guide/practices/page-sizes
+ARCH_LDFLAGS   += -Wl,-z,max-page-size=16384
 else
 
 ifeq (${ANDROID_TARGET},i686)
@@ -110,6 +112,8 @@ CLANG_PRE    := ${ANDROID_LIBS}
 BINUTILS_PRE := ${ANDROID_LIBS}
 ABI          := x86_64
 SDK          := 21
+# https://developer.android.com/guide/practices/page-sizes
+ARCH_LDFLAGS   += -Wl,-z,max-page-size=16384
 else
 
 ANDROID_LIBS := none
@@ -134,7 +138,7 @@ JNI_INCLUDES   := arch/android/include
 JNI_LIBS       := ${JNI_LIB_DIR}/${ABI}
 
 ARCH_CFLAGS    += -DANDROID -fPIE -fPIC
-ARCH_LDFLAGS   += -shared
+ARCH_LDFLAGS   += -shared -llog
 ARCH_CXXFLAGS  := ${ARCH_CFLAGS}
 
 SDL_PREFIX     := ${PREFIX}

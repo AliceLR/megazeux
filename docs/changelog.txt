@@ -7,6 +7,25 @@ FIXES
 
 GIT - MZX 2.93c
 
+Initial support for SDL3 has been added, but as it has not been
+released yet, no MegaZeux release builds use it currently.
+As part of the preparation for SDL3, this release includes many
+long-belated changes to the way MegaZeux resizes windows and
+calculates the scaled display area within the window (including
+mouse coordinate conversion). This overhaul has fixed several
+bugs, but please be on the lookout for regressions.
+
+The Xcode port has been updated to build with the latest version
+of SDL and other dependencies, and now requires OS X El Capitan
+(x86_64) or macOS Big Sur (arm64) to run. This port no longer
+supports x86 (32-bit). The Darwin multiarchitecture port has
+also been updated to fix arm64 and arm64e support (only arm64 is
+included in builds).
+
+Also included are Android fixes for Android 11+ (thanks asie)
+and also a fix for a bug preventing MZX from starting on Jelly
+Bean and KitKat.
+
 USERS
 
 + The DOS Sound Blaster driver now supports Sound Blaster with
@@ -14,16 +33,103 @@ USERS
   Original Sound Blaster with the old DSP is still unsupported.
 + The DOS port and SDL ports now support mono audio. Mono can be
   selected with the new config option "audio_output_channels".
++ Setting the config option "system_mouse" to "1" or "on" will
+  no longer disable the software cursor. The old behavior can be
+  restored by setting it to "only". The new behavior of "1" is
+  more useful, especially in Wayland (due to forced mouse grab
+  when the system cursor is hidden).
++ macOS now enables fullscreen_windowed by default to work
+  around macOS bugs involving real fullscreen and maximizing.
++ Fixed window resize bugs in Windows, macOS, Linux/BSD (both
+  X11 and Wayland), and probably other operating systems caused
+  by MZX recreating the window after every window resize event.
++ Fixed junk display in the letterbox area after resizing using
+  the software, gp2x, or SDL 1.2 overlay renderers.
++ The software and gp2x renderers now enable blitting when the
+  created window is smaller than expected instead of crashing.
++ Fixed sai.frag not being installed by "make install" or
+  distributed with Unix-style packages for Linux/BSD/Darwin.
 + Fixed the board editor show thing hotkeys (broken by 2.93b).
 + Fixed nested riff behavior in the RAD replayer. The replayer
   would fail to replace the outer riff with the inner riff in
   some cases.
++ Fixed a crash that would occur in builds using extra memory
+  hacks (DOS) when copying blocks between boards in the editor.
++ Fixed text input bugs caused by a 2.93b change accidentally
+  reenabling old deadcode for exiting intake().
++ Fixed crash when saving editor config files/"Set as Default"
+  after the file fails to open for write. If the ".editor.cnf"
+  file fails to save or load, MZX will attempt to save or load a
+  ".cne" file instead. This allows this feature to work in DOS
+  builds when there is no long filename (LFN) support.
++ Fixed filesystem permissions on Android 11.0 and up. (asie)
++ Fixed linkage bug preventing MegaZeux from starting in Android
+  Jelly Bean and KitKat due to a missing logging symbol.
++ Added support for pre-2.70 "put thing BENEATH" being ignored.
++ Added support for pre-2.80 "put thing" treating p?? as 0.
++ Robo-P p0 now converts to either p00 or p?? when appropriate.
++ Robo-P PUT commands now ignore the high thing bit instead of
+  combining it into the color.
++ Fixed disassembly of out-of-bounds color and param values to
+  match their most common interpretation during gameplay.
++ Fixed assembly of immediates in second char of CHANGE OVERLAY.
++ Out-of-bounds char values are now disassembled to immediates
+  for CHAR EDIT, COPY CHAR, SCROLL CHAR, and FLIP CHAR. This
+  makes commands such as "CHAR EDIT 256 [...]" more usable since
+  they will persist in the robot editor.
++ Temporarily revert the broken Vita SHAREDIR/startup dir split.
+  MegaZeux now expects assets to exist in ux0:/data/megazeux
+  like the README claims.
 
 DEVELOPERS
 
++ Added initial support for SDL3. No platforms select SDL3 by
+  default, but it is now possible to build and test MegaZeux for
+  platforms that already support the current prerelease (3.1.6).
++ Split the renderer function "set_video_mode" into two renderer
+  functions "create_window" and "resize_window" to more closely
+  reflect the reality of SDL2/3. The former is used during
+  renderer init and is mandatory; the latter is used to resize
+  and update other window settings like mouse grab/visibility
+  e.g. when switching to/from fullscreen, and is optional. If
+  it is not provided, switching to/from fullscreen will do
+  nothing. "resize_window" is also invoked in SDL 1.2 when a
+  window resize event is received. Some renderers (software,
+  gp2x) still use the same implementation for both functions.
++ Renamed the renderer function "resize_screen" to
+  "resize_callback" to more accurately reflect its purpose. It
+  is called in response to SDL2/3 window resize events and after
+  "resize_window" (by the video functions that call it, see
+  above). This function is now responsible for post-resize
+  maintenance such as glViewport and selecting the filter mode,
+  and is no longer required to call update_screen.
++ Replaced renderer functions "get_screen_coords" and
+  "set_screen_coords" with a single function "set_viewport" to
+  calculate the current window's display area. This area is used
+  in places where "fix_viewport_ratio" previously was and also
+  to convert mouse coordinates. Most renderers should use one of
+  the two prefab implementations of this function.
++ SDL text event enablement now happens after the window is
+  created. This shouldn't really affect anything.
 + Added detection for LoongArch64. 64-bit architectures that
   platform_endian.h fails to identify as such should no longer
   abort in the software layer renderer.
++ Updated the Xcode project. Supported architectures are now
+  x86_64 and arm64. The x86_64 architecture requires OS X El
+  Capitan (minimum version supported by SDL) and arm64 requires
+  macOS Big Sur. The Xcode project format is still 8.x, but
+  Xcode 12.2 or newer is required to compile release builds.
++ Tweaked the Darwin .app buildsystem to properly support arm64
+  and arm64e. The documentation has also been updated to note
+  linker issues in versions prior to 10.10 when combining
+  x86_64 and x86_64h into the same binary, and issues involving
+  arm64e builds being terminated by the kernel.
++ The dependency builder scripts now support building Xcode
+  frameworks for both x86_64 and arm64. Updated SDL to 2.30.8,
+  libpng to 1.6.44, libogg to 1.3.5, and libvorbis to 1.3.7.
++ Enabled 16k pages on Android to hopefully future-proof
+  MegaZeux against Android 15.0. (asie)
++ Updated libxmp to 4.6.2+sample rate patch.
 
 
 September 10th, 2024 - MZX 2.93b

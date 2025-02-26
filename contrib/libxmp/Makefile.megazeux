@@ -38,6 +38,7 @@ SRC_OBJS = \
   far_extras.o    \
   filetype.o      \
   filter.o        \
+  flow.o          \
   format.o        \
   hio.o           \
   hmn_extras.o    \

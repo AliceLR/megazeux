@@ -31,7 +31,8 @@
 #include "../src/io/vio.h"
 
 #ifdef CONFIG_SDL
-#include <SDL_version.h>
+#include "../src/SDLmzx.h"
+#undef IGNORE /* Windows defines this for some reason... */
 #endif
 
 #ifdef CONFIG_EDITOR
@@ -104,6 +105,12 @@ template<>
 constexpr gl_filter_type INVALID<gl_filter_type>()
 {
   return NUM_GL_FILTER_TYPES;
+}
+
+template<>
+constexpr system_mouse_type INVALID<system_mouse_type>()
+{
+  return NUM_SYSTEM_MOUSE_TYPES;
 }
 
 template<>
@@ -335,7 +342,7 @@ UNITTEST(Settings)
   struct config_info *conf = get_config();
 
   vio_filesystem_init(0, 0, false);
-  const struct vfsclose
+  struct vfsclose
   {
     ~vfsclose() { vio_filesystem_exit(); }
   } a;
@@ -726,7 +733,20 @@ UNITTEST(Settings)
 
   SECTION(system_mouse)
   {
-    TEST_ENUM("system_mouse", conf->system_mouse, boolean_data);
+    constexpr system_mouse_type DEFAULT = INVALID<system_mouse_type>();
+    static const config_test_single data[] =
+    {
+      { "0", SYSTEM_MOUSE_OFF },
+      { "1", SYSTEM_MOUSE_ON },
+      { "off", SYSTEM_MOUSE_OFF },
+      { "on", SYSTEM_MOUSE_ON },
+      { "only", SYSTEM_MOUSE_HIDE_SOFTWARE_MOUSE },
+      { "mzxrun", DEFAULT },
+      { "ksdjfksdf", DEFAULT },
+      { "2", DEFAULT },
+      { "", DEFAULT },
+    };
+    TEST_ENUM("system_mouse", conf->system_mouse, data);
   }
 
   SECTION(grab_mouse)

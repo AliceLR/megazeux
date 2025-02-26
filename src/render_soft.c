@@ -54,17 +54,22 @@ static SDL_Surface *soft_get_screen_surface(struct soft_render_data *_render_dat
 static void soft_lock_buffer(struct soft_render_data *render_data,
  uint32_t **pixels, unsigned *pitch, unsigned *bpp, uint32_t *amask)
 {
+  const SDL_PixelFormatDetails *format = render_data->sdl.flat_format;
   SDL_Surface *screen = soft_get_screen_surface(render_data);
 
   *pixels = (uint32_t *)screen->pixels;
   *pitch = screen->pitch;
-  *bpp = screen->format->BytesPerPixel * 8;
+#if SDL_VERSION_ATLEAST(3,0,0)
+  *bpp = format->bytes_per_pixel * 8;
+#else
+  *bpp = format->BytesPerPixel * 8;
+#endif
 
   *pixels += *pitch * ((screen->h - 350) / 8);
   *pixels += (screen->w - 640) * *bpp / 64;
 
   if(amask)
-    *amask = screen->format->Amask;
+    *amask = format->Amask;
 
   SDL_LockSurface(screen);
 }
@@ -99,8 +104,10 @@ static boolean soft_init_video(struct graphics_data *graphics,
 {
   struct soft_render_data *render_data =
    (struct soft_render_data *)ccalloc(1, sizeof(struct soft_render_data));
-  graphics->render_data = render_data;
+  if(!render_data)
+    return false;
 
+  graphics->render_data = render_data;
   graphics->allow_resize = 0;
   graphics->bits_per_pixel = 32;
 
@@ -119,7 +126,7 @@ static boolean soft_init_video(struct graphics_data *graphics,
    conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
-  return set_video_mode();
+  return true;
 }
 
 static void soft_free_video(struct graphics_data *graphics)
@@ -132,20 +139,21 @@ static void soft_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static boolean soft_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, boolean fullscreen, boolean resize)
+static boolean soft_create_window(struct graphics_data *graphics,
+ struct video_window *window)
 {
 #ifdef CONFIG_SDL
-  return sdl_set_video_mode(graphics, width, height, depth, fullscreen, resize);
+  return sdl_create_window_soft(graphics, window);
 #else
 
-  struct soft_render_data *render_data = graphics->render_data;
+  struct soft_render_data *render_data =
+   (struct soft_render_data *)graphics->render_data;
 
-  graphics->bits_per_pixel = 8;
-  render_data->pitch = (graphics->bits_per_pixel / 8) * SCREEN_PIX_W;
-  render_data->bpp = graphics->bits_per_pixel;
+  window->bits_per_pixel = 8;
+  render_data->pitch = (window->bits_per_pixel / 8) * SCREEN_PIX_W;
+  render_data->bpp = window->bits_per_pixel;
 
-  graphics->renderer_is_headless = true;
+  window->is_headless = true;
   return true;
 
 #endif /* !CONFIG_SDL */
@@ -268,15 +276,18 @@ static void soft_render_mouse(struct graphics_data *graphics,
   soft_unlock_buffer(render_data);
 }
 
-static void soft_sync_screen(struct graphics_data *graphics)
+static void soft_sync_screen(struct graphics_data *graphics,
+ struct video_window *window)
 {
 #ifdef CONFIG_SDL
   struct sdl_render_data *render_data = graphics->render_data;
 
   if(render_data->shadow)
   {
-    SDL_Rect src_rect = render_data->shadow->clip_rect;
-    SDL_Rect dest_rect = render_data->screen->clip_rect;
+    SDL_Rect src_rect;
+    SDL_Rect dest_rect;
+    SDL_GetSurfaceClipRect(render_data->shadow, &src_rect);
+    SDL_GetSurfaceClipRect(render_data->screen, &dest_rect);
     SDL_BlitSurface(render_data->shadow, &src_rect,
      render_data->screen, &dest_rect);
   }
@@ -294,11 +305,10 @@ void render_soft_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = soft_init_video;
   renderer->free_video = soft_free_video;
-  renderer->set_video_mode = soft_set_video_mode;
+  renderer->create_window = soft_create_window;
+  renderer->resize_window = soft_create_window;
+  renderer->set_viewport = set_window_viewport_centered;
   renderer->update_colors = soft_update_colors;
-  renderer->resize_screen = resize_screen_standard;
-  renderer->get_screen_coords = get_screen_coords_centered;
-  renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = soft_render_graph;
   renderer->render_layer = soft_render_layer;
   renderer->render_cursor = soft_render_cursor;
