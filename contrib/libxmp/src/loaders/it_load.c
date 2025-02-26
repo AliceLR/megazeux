@@ -1,5 +1,5 @@
 /* Extended Module Player
- * Copyright (C) 1996-2024 Claudio Matsuoka and Hipolito Carraro Jr
+ * Copyright (C) 1996-2025 Claudio Matsuoka and Hipolito Carraro Jr
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -1275,13 +1275,14 @@ static int it_load(struct module_data *m, HIO_HANDLE *f, const int start)
 	for (i = 0; i < mod->pat; i++)
 		pp_pat[i] = hio_read32l(f);
 
+	/* Skip edit history if it exists. */
+	if (ifh.special & IT_EDIT_HISTORY) {
+		int skip = hio_read16l(f) * 8;
+		if (hio_error(f) || (skip && hio_seek(f, skip, SEEK_CUR) < 0))
+			goto err4;
+	}
+
 	if ((ifh.flags & IT_MIDI_CONFIG) || (ifh.special & IT_SPEC_MIDICFG)) {
-		/* Skip edit history if it exists. */
-		if (ifh.special & IT_EDIT_HISTORY) {
-			int skip = hio_read16l(f) * 8;
-			if (hio_error(f) || (skip && hio_seek(f, skip, SEEK_CUR) < 0))
-				goto err4;
-		}
 		if (load_it_midi_config(m, f) < 0)
 			goto err4;
 	}
