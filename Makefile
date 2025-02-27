@@ -103,11 +103,14 @@ endif # LIBDIR=.
 endif
 ifneq (${SDL_PKG_CONFIG_PATH},)
 SDL_PKG_CONFIG_FLAGS = --with-path=${SDL_PKG_CONFIG_PATH}
+SDL_PKG_CONFIG_FORCE := PKG_CONFIG_PATH="${SDL_PKG_CONFIG_PATH}"
+else
+SDL_PKG_CONFIG_FORCE :=
 endif
 
-SDL_PREFIX  := $(shell ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --variable=prefix)
-SDL_CFLAGS  ?= $(shell ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --cflags)
-SDL_LDFLAGS ?= $(shell ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --libs)
+SDL_PREFIX  := $(shell ${SDL_PKG_CONFIG_FORCE} ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --variable=prefix)
+SDL_CFLAGS  ?= $(shell ${SDL_PKG_CONFIG_FORCE} ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --cflags)
+SDL_LDFLAGS ?= $(shell ${SDL_PKG_CONFIG_FORCE} ${PKGCONF} ${SDL_PKG_CONFIG_FLAGS} sdl3 --libs)
 endif # SDL3
 
 #

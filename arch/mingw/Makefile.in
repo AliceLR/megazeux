@@ -42,6 +42,9 @@ endif
 ifeq (${BUILD_SDL},2)
 SDL_DLL := SDL2.dll
 endif
+ifeq (${BUILD_SDL},3)
+SDL_DLL := SDL3.dll
+endif
 
 ifdef DEBUG
 ARCH_LDFLAGS += -mconsole
