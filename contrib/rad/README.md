@@ -20,6 +20,7 @@ This is a modified version of the RAD 2.x player for MegaZeux. Included:
   play a MIDI instrument, causing it to ignore effects and riffs.
 * A bugfix for nested riff references. Nested riffs in RAD will immediately
   replace the parent riff, but the replayer would fail to do this in some cases.
+  See `test_nested_riffs.rad` and `test_nested_riffs_transpose.rad`.
 * Some -pedantic warning fixes.
 * Opal bugfixes from OpenMPT/libADLMIDI by JP Cimalando have been ported over:
   * Fixed wrong KSL (key scale shift) values.
