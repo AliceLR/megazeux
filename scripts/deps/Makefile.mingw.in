@@ -15,6 +15,7 @@ CXX	 = ${HOST}-g++
 CFLAGS	 = -O3 -g -march=i686
 CXXFLAGS = ${CFLAGS}
 ARCH_CONFIGURE_SDL2_ARGS = --disable-sse --disable-3dnow
+ARCH_CMAKE_SDL3_ARGS = -DCMAKE_TOOLCHAIN_FILE=build-scripts/cmake-toolchain-mingw64-i686.cmake
 ifneq (${MSYSTEM},)
 CMAKE	 = /mingw32/bin/cmake
 endif
@@ -27,6 +28,7 @@ CXX	 = ${HOST}-g++
 CFLAGS	 = -O3 -g -march=x86-64
 CXXFLAGS = ${CFLAGS}
 ARCH_CONFIGURE_SDL2_ARGS = --disable-sse3 --disable-3dnow
+ARCH_CMAKE_SDL3_ARGS = -DCMAKE_TOOLCHAIN_FILE=build-scripts/cmake-toolchain-mingw64-x86_64.cmake
 ifneq (${MSYSTEM},)
 CMAKE	 = /mingw64/bin/cmake
 endif

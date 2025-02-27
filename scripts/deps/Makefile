@@ -6,12 +6,12 @@ ifeq (${PLATFORM},)
 $(error usage: make PLATFORM=<platform> [ARCH=<arch>] [all|<arch>|package|clean])
 endif
 
-VERSION		= 2.93c-r0
+VERSION		= 2.93c-r1
 DIST		= megazeux-dependencies-${VERSION}
 TARGET		= TARGET
 
 ZLIB		= zlib-1.3.1
-PNG		= libpng-1.6.44
+PNG		= libpng-1.6.47
 OGG		= libogg-1.3.5
 VORBIS		= libvorbis-1.3.7
 TREMOR		= tremor
@@ -19,8 +19,8 @@ STB		= stb
 SDL12		= SDL-1.2.15
 SDL2_TIGER	= panther_sdl2
 SDL2_22		= SDL2-2.0.22
-SDL2_LATEST	= SDL2-2.30.8
-#SDL3		= SDL3-3.2.0
+SDL2_LATEST	= SDL2-2.32.0
+SDL3		= SDL3-3.2.4
 
 # Mac OS X/macOS compatibility builds rely on different versions of SDL2
 # for each architecture. Override ${SDL2} to select a different version.
@@ -33,7 +33,7 @@ VORBIS_URL	= https://downloads.xiph.org/releases/vorbis/${VORBIS}.tar.gz
 SDL12_URL	= https://www.libsdl.org/release/${SDL12}.tar.gz
 SDL2_22_URL	= https://www.libsdl.org/release/${SDL2_22}.tar.gz
 SDL2_URL	= https://www.libsdl.org/release/${SDL2_LATEST}.tar.gz
-#SDL3_URL	= https://www.libsdl.org/release/${SDL3}.tar.gz
+SDL3_URL	= https://www.libsdl.org/release/${SDL3}.tar.gz
 
 # xiph still hasn't fixed the crash bugs in tremor yet
 #TREMOR_GIT	= https://gitlab.xiph.org/xiph/tremor
@@ -60,7 +60,7 @@ TREMOR_TARGET	= ${LIB}/libvorbisidec.a
 STB_TARGET	= ${INCLUDE}/stb/stb_vorbis.c
 SDL12_TARGET	= ${LIB}/libSDL.a
 SDL2_TARGET	= ${LIB}/libSDL2.a
-#SDL3_TARGET	= ${LIB}/libSDL3.a
+SDL3_TARGET	= ${LIB}/libSDL3.a
 TARGETS		= ${ZLIB_TARGET} \
 		  ${PNG_TARGET} \
 		  ${OGG_TARGET} \
@@ -146,9 +146,9 @@ build/${SDL2_LATEST}.tar.gz: | build
 	cd build && \
 	wget '${SDL2_URL}'
 
-#build/${SDL3}.tar.gz: | build
-#	cd build && \
-#	wget '${SDL3_URL}'
+build/${SDL3}.tar.gz: | build
+	cd build && \
+	wget '${SDL3_URL}'
 
 build/${ZLIB}: build/${ZLIB}.tar.gz
 	cd build && \
@@ -202,9 +202,9 @@ build/${SDL2_LATEST}: build/${SDL2_LATEST}.tar.gz | build
 	cd build && \
 	tar -xzf '${SDL2_LATEST}.tar.gz'
 
-#build/${SDL3}: build/${SDL3}.tar.gz | build
-#	cd build && \
-#	tar -xzf '${SDL3}.tar.gz'
+build/${SDL3}: build/${SDL3}.tar.gz | build
+	cd build && \
+	tar -xzf '${SDL3}.tar.gz'
 
 zlib_clean:
 	cd build/${ZLIB}; make distclean || true; make -fwin32/Makefile.gcc clean || true
@@ -239,8 +239,8 @@ SDL2_clean:
 	rm -rf build/cmake/${SDL2_LATEST}
 	cd build/${SDL2_LATEST}; make distclean || true
 
-#SDL3_clean:
-#	rm -rf build/cmake/${SDL3}
+SDL3_clean:
+	rm -rf build/cmake/${SDL3}
 
 ifeq (${ARCH},)
 #
@@ -253,7 +253,7 @@ ${ALL_ARCH}:
 	${MAKE} ARCH='$@'
 
 clean: zlib_clean png_clean ogg_clean vorbis_clean
-clean: SDL12_clean SDL2_tiger_clean SDL2_22_clean SDL2_clean
+clean: SDL12_clean SDL2_tiger_clean SDL2_22_clean SDL2_clean SDL3_clean
 
 distclean:
 	rm -rf ${TARGET}
@@ -315,7 +315,7 @@ tremor: ${TREMOR_TARGET}
 stb: ${STB_TARGET}
 SDL12: ${SDL12_TARGET}
 SDL2: ${SDL2_TARGET}
-#SDL3: ${SDL3_TARGET}
+SDL3: ${SDL3_TARGET}
 
 # zlib has its own buildsystem.
 # MinGW requires some involved special handling...
@@ -473,15 +473,15 @@ else
 endif
 
 # SDL3 only supports CMake.
-#${SDL3_TARGET}: | build/${SDL3} sdl3_clean
-#	mkdir -p build/cmake/${SDL3}
-#	cd build/cmake/${SDL3}; \
-#	export SRCDIR='../../${SDL3}'; \
-#	set -e; \
-#	${ARCH_INIT}; \
-#	${CMAKE}; \
-#	${MAKE}; \
-#	${MAKE} install;
+${SDL3_TARGET}: | build/${SDL3} SDL3_clean
+	mkdir -p build/cmake/${SDL3}
+	cd build/cmake/${SDL3}; \
+	export SRCDIR='../../${SDL3}'; \
+	set -e; \
+	${ARCH_INIT}; \
+	${CMAKE} ${ARCH_CMAKE_SDL3_ARGS}; \
+	${MAKE}; \
+	${MAKE} install;
 
 #
 # Packaging rules.

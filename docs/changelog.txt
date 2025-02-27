@@ -82,7 +82,7 @@ DEVELOPERS
 
 + Added initial support for SDL3. No platforms select SDL3 by
   default, but it is now possible to build and test MegaZeux for
-  platforms that already support the current prerelease (3.1.6).
+  platforms that already support the current release (3.2.4).
 + Split the renderer function "set_video_mode" into two renderer
   functions "create_window" and "resize_window" to more closely
   reflect the reality of SDL2/3. The former is used during
