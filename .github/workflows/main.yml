@@ -324,7 +324,7 @@ jobs:
       - name: Fetch dependencies
         run: |
           (cd scripts/deps;
-          wget https://github.com/AliceLR/megazeux-dependencies/releases/download/v2.93c/megazeux-dependencies-2.93c-r0-linux-msan-mint22.tar.xz;
+          wget https://github.com/AliceLR/megazeux-dependencies/releases/download/v2.93c-r1/megazeux-dependencies-2.93c-r1-linux-msan-mint22.tar.xz;
           tar -xJf megazeux-dependencies-*-linux-msan-mint22.tar.xz)
       - name: Configure
         run: ./config.sh --platform unix-devel --prefix scripts/deps/linux-msan/x86_64 --enable-msan --disable-sdl --disable-libpng --disable-x11 --enable-extram
