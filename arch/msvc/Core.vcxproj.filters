@@ -411,6 +411,12 @@
     <ClCompile Include="..\..\contrib\libxmp\src\rng.c">
       <Filter>Source Files\contrib\libxmp</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\flow.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\io\vfs.c">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\block.h">
@@ -745,6 +751,9 @@
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\rng.h">
       <Filter>Header Files\contrib\libxmp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\io\vfs.h">
+      <Filter>Header Files\io</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
