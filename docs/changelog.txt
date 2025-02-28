@@ -54,6 +54,9 @@ USERS
 + Fixed sai.frag not being installed by "make install" or
   distributed with Unix-style packages for Linux/BSD/Darwin.
 + Fixed the board editor show thing hotkeys (broken by 2.93b).
++ Fixed nested riff behavior in the RAD replayer. The replayer
+  would fail to replace the outer riff with the inner riff in
+  some cases.
 + Fixed a crash that would occur in builds using extra memory
   hacks (DOS) when copying blocks between boards in the editor.
 + Fixed text input bugs caused by a 2.93b change accidentally
