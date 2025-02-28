@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 
-[[ -z $VITASDK ]] && { echo "\$VITASDK is unset. Aborting"; exit 1; }
+[ -z "$VITASDK" ] && { echo "\$VITASDK is unset. Aborting"; exit 1; }
 
-./config.sh --platform psvita --prefix $VITASDK --enable-release --enable-lto \
+./config.sh --platform psvita --prefix "$VITASDK" --enable-release --enable-lto \
             --disable-utils --enable-stdio-redirect \
             --enable-meter --disable-gl "$@"
