@@ -39,6 +39,42 @@
 #ifndef S_ISDIR
 #define S_ISDIR(mode) (mode & _S_IFDIR)
 #endif
+#ifndef S_IRUSR
+#define S_IRUSR _S_IREAD
+#endif
+#ifndef S_IWUSR
+#define S_IWUSR _S_IWRITE
+#endif
+#ifndef S_IXUSR
+#define S_IXUSR _S_IEXEC
+#endif
+#ifndef S_IRGRP
+#define S_IRGRP (S_IRUSR >> 3)
+#endif
+#ifndef S_IWGRP
+#define S_IWGRP (S_IWUSR >> 3)
+#endif
+#ifndef S_IXGRP
+#define S_IXGRP (S_IXUSR >> 3)
+#endif
+#ifndef S_IROTH
+#define S_IROTH (S_IRGRP >> 3)
+#endif
+#ifndef S_IWOTH
+#define S_IWOTH (S_IWGRP >> 3)
+#endif
+#ifndef S_IXOTH
+#define S_IXOTH (S_IXGRP >> 3)
+#endif
+#ifndef S_IRWXU
+#define S_IRWXU (S_IRUSR | S_IWUSR | S_IXUSR)
+#endif
+#ifndef S_IRWXG
+#define S_IRWXG (S_IRWXU >> 3)
+#endif
+#ifndef S_IRWXO
+#define S_IRWXO (S_IRWXG >> 3)
+#endif
 
 #define access      _access
 #define chdir       _chdir

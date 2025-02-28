@@ -201,6 +201,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\contrib\libxmp\src\far_extras.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\filetype.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\filter.c" />
+    <ClCompile Include="..\..\contrib\libxmp\src\flow.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\format.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\hio.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\hmn_extras.c" />
@@ -283,6 +284,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\intake_num.c" />
     <ClCompile Include="..\..\src\io\fsafeopen.c" />
     <ClCompile Include="..\..\src\io\path.c" />
+    <ClCompile Include="..\..\src\io\vfs.c" />
     <ClCompile Include="..\..\src\io\vio.c" />
     <ClCompile Include="..\..\src\io\zip.c" />
     <ClCompile Include="..\..\src\io\zip_stream.c" />
@@ -384,6 +386,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\io\memfile.h" />
     <ClInclude Include="..\..\src\io\path.h" />
     <ClInclude Include="..\..\src\io\vfile.h" />
+    <ClInclude Include="..\..\src\io\vfs.h" />
     <ClInclude Include="..\..\src\io\vio.h" />
     <ClInclude Include="..\..\src\io\vio_win32.h" />
     <ClInclude Include="..\..\src\io\zip.h" />
