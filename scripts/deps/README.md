@@ -34,7 +34,7 @@ To delete all build directories, use `make distclean`.
 ### MinGW
 The MinGW-w64 toolchains should be on `$PATH`.
 
-Builds the following libraries: zlib, libpng, libogg, libvorbis, libSDL, libSDL2.
+Builds the following libraries: zlib, libpng, libogg, libvorbis, libSDL, libSDL2, libSDL3.
 The x86 binaries *should* target Windows XP on  `-march=i686` and
 the x64 binaries *should* target Windows XP on `-march=x86-64`.
 
@@ -50,13 +50,13 @@ plus any macOS version capable of running Xcode 12.2 or higher for ARM support.
 
 | Target    | Xcode	| SDK		| macOS Target	| Supported SDL	| Notes |
 |-----------|-----------|---------------|---------------|---------------|-------|
-| `arm64`   | 12.2+	| 11.0+		| 11.0		| Latest	|
-| `arm64e`  | 12.2+	| 11.0+		| 11.0		| Latest	| See below.
+| `arm64`   | 12.2+	| 11.0+		| 11.0		| 2.x, 3.x	|
+| `arm64e`  | 12.2+	| 11.0+		| 11.0		| 2.x, 3.x	| See below.
 | `i686`    | 9.4.1	| 10.13.4	| 10.6		| 2.0.22	| Last SDK to target 10.6, x86
 | `x86_64`  | 9.4.1	| 10.13.4	| 10.6		| 2.0.22	| Last SDK to target 10.6
-| `x86_64h` | 9.4.1?	| 10.13.4	| 10.9		| Latest	| See below.
-| `ppc`     | 3.2.6	| 10.4u		| 10.4		| 2.0.3		| Last SDK to target PPC
-| `ppc64`   | 3.2.6	| 10.5		| 10.5		| 2.0.3		| Last SDK to target PPC
+| `x86_64h` | 9.4.1	| 10.13.4	| 10.9		| 2.x, 3.x	| See below.
+| `ppc`     | 3.2.6	| 10.4u		| 10.4		| 1.2.15, 2.0.3	| Last SDK to target PPC
+| `ppc64`   | 3.2.6	| 10.5		| 10.5		| 1.2.15, 2.0.3	| Last SDK to target PPC
 
 NOTE: XcodeLegacy will replace the current Xcode ld with a wrapper that reroutes all
 PowerPC and <=10.6 usage to the Xcode 3.2.6 ld. This script will be located at
@@ -70,11 +70,14 @@ distinguishing x86_64 and x86_64h binaries. Manually change the minimum OS
 version to 10.10 for BOTH when combining them in the same build. This bug
 was found in OS X Mavericks 10.9.5 and is not present in OS X Yosemite 10.10.5.
 
+NOTE: SDL3 for x86_64 or x86_64h should be built with the same Xcode/SDK/target
+as arm64/arm64e. It will not work with Xcode 9.4.1.
+
 NOTE: It has been reported that macOS Monterey (and probably other versions)
 will immediately terminate arm64e binaries. Building for this architecture
 is not recommended until we have more information about this.
 
-Builds the following libraries: zlib, libpng, libogg, libvorbis, libSDL, libSDL2.
+Builds the following libraries: zlib, libpng, libogg, libvorbis, libSDL, libSDL2, libSDL3.
 
 ```sh
 # Select only the required architectures, e.g.
@@ -93,7 +96,7 @@ against these binaries.
 Unlike the other platforms here, the tarball produced for this platform is designed
 to be extracted directly into arch/xcode/, where the Xcode project expects the frameworks to be.
 
-Builds the following libraries: libpng, libogg, libvorbis, libSDL2.
+Builds the following libraries: libpng, libogg, libvorbis, libSDL2, libSDL3.
 ```sh
 # Compile all frameworks.
 make PLATFORM=xcode
