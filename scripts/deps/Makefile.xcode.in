@@ -4,8 +4,8 @@
 
 ALL_ARCH :=
 
-all: png.framework Ogg.framework Vorbis.framework SDL2.framework
-.PHONY: png.framework Ogg.framework Vorbis.framework SDL2.framework frameworks
+all: png.framework Ogg.framework Vorbis.framework SDL2.framework SDL3.framework
+.PHONY: png.framework Ogg.framework Vorbis.framework SDL2.framework SDL3.framework frameworks
 
 ZLIB_DIR := $(shell xcrun --show-sdk-path)/usr
 
@@ -100,6 +100,12 @@ SDL2.framework: build/${SDL2_LATEST}
 	xcodebuild -scheme Framework -configuration Release install DSTROOT='${FRAMEWORK_PREFIX}'
 	mv '${FRAMEWORK_PREFIX}'/Library/Frameworks/SDL2.framework '${FRAMEWORK_PREFIX}'
 
+SDL3.framework: build/${SDL3}
+	rm -rf '${FRAMEWORK_PREFIX}/$@'
+	cd build/${SDL3}/Xcode/SDL && \
+	xcodebuild -scheme SDL3 -configuration Release install DSTROOT='${FRAMEWORK_PREFIX}'
+	mv '${FRAMEWORK_PREFIX}'/Library/Frameworks/SDL3.framework '${FRAMEWORK_PREFIX}'
+
 # Use the platform directory directly to avoid issues caused by copying symlinks.
 frameworks:
 	rm -rf ${PLATFORM}/*.framework/Versions/1.*
@@ -114,4 +120,5 @@ frameworks:
 	(cd Ogg.framework/Versions/Current && lipo -remove arm64 Ogg -o Ogg) && \
 	(cd Vorbis.framework/Versions/Current && lipo -remove arm64 Vorbis -o Vorbis) && \
 	(cd SDL2.framework/Versions/Current && lipo -remove arm64 SDL2 -o SDL2) && \
+	(cd SDL3.framework/Versions/Current && lipo -remove arm64 SDL3 -o SDL3) && \
 	XZ_OPT="-T0 -9" tar -cJf '../../${DIST}-${PLATFORM}-el-capitan.tar.xz' ${TAR_FLAGS} *.framework LICENSE.3rd
