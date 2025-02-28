@@ -18,7 +18,7 @@ HOST=powerpc-apple-darwin10
 endif
 
 ifneq ($(filter arm64 arm64e,${ARCH}),)
-#all: ${SDL3_TARGET}
+all: ${SDL3_TARGET}
 endif
 
 CFLAGS = -O3
