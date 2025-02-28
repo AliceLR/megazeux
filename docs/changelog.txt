@@ -5,7 +5,7 @@ FIXES
 + TODO: 2.94 enables board message clipping bugfixes from 2.93b.
 
 
-GIT - MZX 2.93c
+February 28th, 2025 - MZX 2.93c
 
 Yes, the text input bug and show thing keys are fixed now. :)
 
@@ -87,9 +87,9 @@ USERS
 
 DEVELOPERS
 
-+ Added initial support for SDL3. No platforms select SDL3 by
-  default, but it is now possible to build and test MegaZeux for
-  platforms that already support the current release (3.2.4).
++ Added initial support for SDL3. No architectures select SDL3
+  by default, but it is now possible to build and test MegaZeux
+  for platforms that already support it.
 + Split the renderer function "set_video_mode" into two renderer
   functions "create_window" and "resize_window" to more closely
   reflect the reality of SDL2/3. The former is used during
@@ -129,8 +129,9 @@ DEVELOPERS
   x86_64 and x86_64h into the same binary, and issues involving
   arm64e builds being terminated by the kernel.
 + The dependency builder scripts now support building Xcode
-  frameworks for both x86_64 and arm64. Updated SDL to 2.30.8,
-  libpng to 1.6.44, libogg to 1.3.5, and libvorbis to 1.3.7.
+  frameworks for both x86_64 and arm64. Updated SDL2 to 2.32.0,
+  libpng to 1.6.47, libogg to 1.3.5, and libvorbis to 1.3.7.
+  Added building SDL3 3.2.4 for all relevant platforms.
 + Enabled 16k pages on Android to hopefully future-proof
   MegaZeux against Android 15.0. (asie)
 + Updated libxmp to 4.6.2+sample rate patch.
