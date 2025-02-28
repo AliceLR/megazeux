@@ -17,6 +17,10 @@ all: ${SDL12_TARGET}
 HOST=powerpc-apple-darwin10
 endif
 
+ifneq ($(filter arm64 arm64e,${ARCH}),)
+all: ${SDL3_TARGET}
+endif
+
 CFLAGS = -O3
 CXXFLAGS = ${CFLAGS}
 USE_CMAKE := 1
@@ -37,6 +41,7 @@ ARCH_INIT = \
 ARCH_CONFIGURE_ARGS	=
 ARCH_CONFIGURE_SDL12_ARGS = --disable-video-x11
 ARCH_CONFIGURE_SDL2_ARGS = --without-x
+ARCH_CMAKE_SDL3_ARGS = -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=1 -DSDL_SHARED=1
 
 ARCH_CMAKE_ARGS = \
 	-D SDL_X11=OFF \

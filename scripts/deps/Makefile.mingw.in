@@ -15,6 +15,7 @@ CXX	 = ${HOST}-g++
 CFLAGS	 = -O3 -g -march=i686
 CXXFLAGS = ${CFLAGS}
 ARCH_CONFIGURE_SDL2_ARGS = --disable-sse --disable-3dnow
+ARCH_CMAKE_SDL3_ARGS = -DCMAKE_TOOLCHAIN_FILE=build-scripts/cmake-toolchain-mingw64-i686.cmake
 ifneq (${MSYSTEM},)
 CMAKE	 = /mingw32/bin/cmake
 endif
@@ -27,6 +28,7 @@ CXX	 = ${HOST}-g++
 CFLAGS	 = -O3 -g -march=x86-64
 CXXFLAGS = ${CFLAGS}
 ARCH_CONFIGURE_SDL2_ARGS = --disable-sse3 --disable-3dnow
+ARCH_CMAKE_SDL3_ARGS = -DCMAKE_TOOLCHAIN_FILE=build-scripts/cmake-toolchain-mingw64-x86_64.cmake
 ifneq (${MSYSTEM},)
 CMAKE	 = /mingw64/bin/cmake
 endif
@@ -47,15 +49,18 @@ ARCH_INIT = \
 
 ARCH_CONFIGURE_ARGS	=
 ARCH_CMAKE_ARGS		= -D CMAKE_SYSTEM_NAME=Windows-GNU
+ARCH_CMAKE_SDL3_ARGS	+= -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=1 -DSDL_STATIC=1
 
 all: ${ZLIB_TARGET} ${PNG_TARGET} ${OGG_TARGET} ${VORBIS_TARGET} ${STB_TARGET} \
-	${SDL12_TARGET} ${SDL2_TARGET}
+	${SDL12_TARGET} ${SDL2_TARGET} ${SDL3_TARGET}
 
 package: ${TARGET}/${BIN}/SDL.dll ${TARGET}/${BIN}/SDL.dll.debug ${TARGET}/${LIB}/libSDL.dll.a
 package: ${TARGET}/${LIB}/libSDLmain.a
 package: ${TARGET}/${BIN}/SDL2.dll ${TARGET}/${BIN}/SDL2.dll.debug ${TARGET}/${LIB}/libSDL2.dll.a
 package: ${TARGET}/${LIB}/libSDL2main.a
+package: ${TARGET}/${BIN}/SDL3.dll ${TARGET}/${BIN}/SDL3.dll.debug ${TARGET}/${LIB}/libSDL3.dll.a
 
-package: zlib_package png_package vorbis_package SDL12_package SDL2_package stb_package
+package: zlib_package png_package vorbis_package stb_package
+package: SDL12_package SDL2_package SDL3_package
 
 endif
