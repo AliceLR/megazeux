@@ -21,7 +21,7 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 [megazeux-osx]: https://www.digitalmzx.com/download.php?latest=osx
 [megazeux-ppc]: https://www.digitalmzx.com/download.php?latest=osxppc
 [megazeux-u64]: https://www.digitalmzx.com/download.php?latest=ubuntu64
-[megazeux-u32]: https://www.digitalmzx.com/download.php?latest=ubuntu32
+[megazeux-ults]: https://www.digitalmzx.com/download.php?latest=ubuntu64lts
 [megazeux-d64]: https://www.digitalmzx.com/download.php?latest=debian64
 [megazeux-d32]: https://www.digitalmzx.com/download.php?latest=debian32
 [megazeux-f64]: https://www.digitalmzx.com/download.php?latest=fedora64
@@ -47,7 +47,7 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 [arch-osx]: contrib/archicons/osx.png       "macOS"
 [arch-ppc]: contrib/archicons/maccompat.png "macOS (Compatible)"
 [arch-u64]: contrib/archicons/ubuntu64.png  "Ubuntu AMD64"
-[arch-u32]: contrib/archicons/ubuntu32.png  "Ubuntu i386"
+[arch-ults]: contrib/archicons/ubuntu64lts.png  "Ubuntu AMD64 LTS"
 [arch-d64]: contrib/archicons/debian64.png  "Debian AMD64"
 [arch-d32]: contrib/archicons/debian32.png  "Debian i386"
 [arch-f64]: contrib/archicons/fedora64.png  "Fedora x86_64"
@@ -78,7 +78,7 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 &nbsp; [![Mac OS X            ][arch-osx]][megazeux-osx]
 &nbsp; [![macOS (Compatible)) ][arch-ppc]][megazeux-ppc]
 &nbsp; [![Ubuntu AMD64        ][arch-u64]][megazeux-u64]
-&nbsp; [![Ubuntu i386         ][arch-u32]][megazeux-u32]
+&nbsp; [![Ubuntu AMD64 LTS    ][arch-ults]][megazeux-ults]
 &nbsp; [![Debian AMD64        ][arch-d64]][megazeux-d64]
 &nbsp; [![Debian i386         ][arch-d32]][megazeux-d32]
 &nbsp; [![Fedora x86_64       ][arch-f64]][megazeux-f64]
