@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>MegaZeux 2.93b (20240910) - Help File</title>
+<title>MegaZeux 2.93c (20250228) - Help File</title>
 <meta charset="UTF-8">
-<meta name="title" content="MegaZeux 2.93b (20240910) - Help File">
+<meta name="title" content="MegaZeux 2.93c (20250228) - Help File">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="MegaZeux 2.93b (20240910) - Help File">
+<meta name="twitter:title" content="MegaZeux 2.93c (20250228) - Help File">
 <style>
 /* MegaZeux
  *
@@ -394,7 +394,7 @@ body
 
 <body>
 <div id="helpnav">
-<h1>MegaZeux 2.93b (20240910) - Help File</h1>
+<h1>MegaZeux 2.93c (20250228) - Help File</h1>
 <div class="helpnavcentered"><ul>
 <li><a href="#MAIN.HLP__072">Contents</a></li><li><a href="#EDITINGK.HLP__080">Editor Keys</a></li><li><a href="#ROBOTICR.HLP__087">Robotic Manual</a></li><li><a href="#COMMANDR.HLP__1st">Commands</a></li><li><a href="#COUNTERS.HLP__1st">Counters</a></li><li><a href="#NEWINVER.HLP__1st">Changelog</a></li></ul></div>
 </div>
@@ -851,23 +851,23 @@ Enter - Menu/Status
 Use this to bring up a menu of options and a list of your
 current stats, such as Score, Gems, any custom-defined status
 counters, etc. Some games may have this key do nothing, or even
-something different entirely. Clicking on the key shortcuts
+something different entirely. Selecting the key shortcuts
 (everything but move/shoot/bomb) will perform the given action.
+Either click on actions to select them, or highlight an action
+with the arrow keys and press Enter.
 
 Certain key shortcuts will not be listed if the current MZX
 world prevents their default actions from happening. "Help",
-"Save game", "Restore game", "Quicksave" and "Quickload" can be
-filtered out this way, while "Exit to title" and "Settings" are
-always available and still work when clicked even if otherwise
-locked out.
+"Save", "Load", "Quicksave" and "Quickload" can be filtered out
+this way, while "Exit game" and "Settings" are always available
+and still work when selected even if otherwise locked out.
 
 ESC - Exit to Title
 This will load a prompt to quit the current game and return to
 its title screen. In yes/no dialog boxes, this key triggers the
 "no" option. Some games may disable using ESC to trigger the
-exit prompt, but other methods (such as Alt+F4 or clicking on
-the "ESC - Exit to Title" text in the Enter menu) will always
-work.
+exit prompt, but other methods (such as Alt+F4 or selecting the
+"ESC - Exit to Title" text in the Enter menu) will always work.
 
 F2 or Ctrl+F2 or Alt+F2 - Settings
 <a class="hA" name="CONTROLS.HLP__092">This will bring up a dialog box where you can change the</a>
@@ -895,7 +895,7 @@ all other settings are global.
 
 Note that some games may block access to the F2 menu entirely.
 Ctrl+F2 or Alt+F2 will ignore this setting and allow access to
-the menu even if it is prohibited otherwise, as will clicking on
+the menu even if it is prohibited otherwise, as will selecting
 the "F2 - Settings" text in the Enter menu. Ctrl+F2/Alt+F2 will
 not override any F2 block while MZX is in standalone mode.
 
@@ -1099,6 +1099,9 @@ and library build versions.
 <div class="hF" id="NONDESCR.HLP">
 <a class="hA" name="NONDESCR.HLP__091"> </a>
 <p class="hC"><span class="f9">Nondescript Play Tips</span></p>
+Hi! Welcome to the default help entry for playing a MegaZeux
+game!
+
 First, let me warn you that many worlds you get from archives
 or (especially) from personal webpages may not be of acceptable
 quality. They may be unfair, boring, have numerous bugs, and/or
@@ -1122,7 +1125,7 @@ With that out of the way, some basic play tips:
 
 <span class="fA">*</span><span class="fF"> Save your game! It is rather simple - in most games,</span>
  Press F3 to save your game to disk at the EXACT point you are
- [if allowed]. Press F4 to reload a saved game. You can use F9
+ (if allowed). Press F4 to reload a saved game. You can use F9
  and F10 to quick-save and quick-load, which work on the last
  game you saved. Remember to save often and keep multiple saves-
  If something ends your game, you'll want to lose as little
@@ -1271,8 +1274,9 @@ your maximum health, running into a heart will still collect it.
 After grabbing an energizer, the player will flash colors for a
 limited time (specifically, for 113 cycles). During this period,
 you are invincible against enemies, bullets, fire, lava, poison
-damage, and most other forms of pain. Be careful not to get into
-a dangerous situation as its energy runs out!
+damage, Robots attempting to TAKE HEALTHS, and most other forms
+of pain. Be careful not to get into a dangerous situation as its
+energy runs out!
 
 Any energizer grabbed while already energized resets the timeout
 period to 113 cycles.
@@ -1699,8 +1703,8 @@ can be moved over directly when open.
 
 When a bullet hits a ricochet panel, it is reflected to travel
 in a new direction, depending upon the way the panel is facing.
-When a bullet hits a ricochet, it is reflected back in the
-original direction. Any bullet that hits a ricochet panel or a
+When a bullet hits a ricochet, it is reflected to travel in the
+opposite direction. Any bullet that hits a ricochet panel or a
 ricochet will have its type set to neutral when reflected.
 
 <span class="fB">Spike          </span><span class="f7">&#xE010;</span>
@@ -1720,9 +1724,9 @@ hints or other enlightening messages.
 <span class="fB">Moving Wall E  </span><span class="f7">?</span>
 <span class="fB">Moving Wall W  </span><span class="f7">?</span>
 
-Moving walls are like Runners - they just move back and forth,
+Moving walls act like Runners - they just move back and forth,
 to and fro... They can't hurt you by touch, but can get in the
-way very easily.
+way very easily and can't be destroyed like Runners can.
 
 <p class="hC"><span class="f8 b0">&#xE0B1; </span><span class="fF b0">Objects</span><span class="f8 b0"> &#xE0B1;</span></p>
 <span class="fB">Player         </span><span class="fB b1">&#xE002;</span>
@@ -1764,8 +1768,8 @@ bullets can harm both the player and default enemies.
 A seeker, thrown by a Tiger, Shark, or other enemy, will chase
 the player all over the screen until they collide and do damage.
 Collision with most projectiles will not destroy it, only pause
-it. They have a limited life, however, and will expire after a
-certain amount of time or when caught in an explosion.
+it. They have a limited lifespan, however, and will expire after
+a certain amount of time or when caught in an explosion.
 They are still one of the deadliest weapons you will face;
 more than only a few at once can easily ruin a game, especially
 in cramped spaces.
@@ -1907,8 +1911,8 @@ A: Make sure the pound / hash sign in front of the command is
   deleted. Otherwise, the option is treated as a comment and
   ignored.
 
-Q: Are there any MZX-specific tools that can make developing an
-  MZX game easier?
+Q: Are there any MZX-specific tools that can make developing and
+  packaging an MZX game easier?
 
 A: Yes, plenty! MegaZeux comes with two helpful tools:
   "Checkres" will detect what files are referenced by an MZX
@@ -2210,7 +2214,8 @@ Q: I heard only certain graphics cards can properly show Super
   MZX mode games. Is this true?
 
 A: Not anymore. Any computer that can display normal games in
-  MegaZeux can now display Super MZX mode games.
+  MegaZeux can now display Super MZX mode games. Even the modern
+  DOS version supports them (via an SVGA mode).
 
 Q: How can I get "mod *" as the default board mod?
 
@@ -2245,7 +2250,7 @@ No single Robot can exceed 2 megabytes in size.
 No single sign or Scroll can exceed 64 kilobytes in size.
 
 <p class="hC">Quantity Limitations</p>
-Item:           Largest number allowed:
+Item:               Largest number allowed:
 
 Robots              255 per board plus Global Robot
 Scrolls/Signs       255 per board
@@ -2288,7 +2293,7 @@ circumvented by using a constant expression (parentheses).
 
 No board can have a width of a multiple of 256 chars because
 this corrupts the board if it lacks an overlay. This problem is
-a worldfile issue and widths set to a multiple of 256 will
+a worldfile issue and widths set to a multiple of 256 will be
 increased by one more horizontal character regardless of the
 status of the board's overlay.
 
@@ -2307,7 +2312,7 @@ teach you the basics of creating your own worlds.
 To get into the editor, press N or F8 from the title screen. You
 will be asked to name a starting board: one can type an
 appropriate name and create a second starting board, or press
-Escape to cancel and remain on your new world's title screen.
+Escape to cancel and remain on your new world's title board.
 When this prompt is dealt with, you will be presented with a
 blank board with a small status bar at the bottom. You can use
 Alt+H to pop up a listing of key shortcuts at the bottom. PageUp
@@ -2344,17 +2349,20 @@ starting board. Press G to load the Global Settings screen. Once
 there, select the First Board option and set it to your starting
 board.
 
-Now you are free to doodle around. Use C to change the active
-color. Use F3 through F9 to bring up menus of items, terrains,
-and creatures. Selecting one with the arrows and Enter will
-allow you to place it using arrow keys and space.
+Now you are free to doodle around. Use F3 through F9 to bring up
+menus of items, terrains, and creatures. Selecting one with the
+arrows and Enter will put that thing into the editor buffer,
+making it your current object, and place it on the board. This
+thing and its traits are shown in the upper-right section of the
+editor menu. With the thing in the buffer, you can now place it
+using arrow keys and space. The thing's color in the buffer can
+be changed by pressing C and selecting a color.
 
 For example, press F3 for terrains, and select Line. (This is
 a form of wall.) Now move around, placing walls. To ease
 this, you can press Tab to toggle draw mode. When draw mode is
-active, every move of the cursor will place the current
-item/color. The current item and color is shown on the top
-line of the menu.
+active, every move of the cursor will place a copy of the
+current thing in the buffer onto the board.
 
 Try to create a pleasing-looking screen, regardless of its
 planned function. Some items will require that you set settings
@@ -2435,8 +2443,8 @@ by inputting NONE instead of the board name.
 The third way is to add stairs, caves and whirlpools using the
 Transport (F7) menu. After one is picked, you select a
 destination board. The destination board should contain a
-similar transport leading back. The two entrances will now lead
-to each other.
+transport of the same type and color leading back. The two
+entrances will now lead to each other.
 
 The fourth way is by saving and restoring player positions using
 Robotic. The <span class="fA">save player position #</span><span class="fF"> command will remember the</span>
@@ -2478,8 +2486,11 @@ This is only a small selection of key shortcuts in the editor;
 the full reference is linked at the end of this article.
 
 <p class="hC">The Mouse in the Editor</p>The left mouse button acts like space: it places a copy of the
-current item over the mouse cursor. The right mouse button acts
-like insert: it grabs the current thing over the mouse cursor.
+current item under the mouse cursor. The right mouse button acts
+like insert: it grabs whatever is under the mouse cursor and
+places it into the buffer. Moving the scrollwheel or clicking
+middle mouse changes the editor cursor location to under the
+mouse cursor.
 
 <a class="hL" href="#EDITINGK.HLP__080">Editing Keys and Options Reference</a>
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
@@ -2639,10 +2650,10 @@ using the repeated copy function.
 <a class="hA" name="EDITINGK.HLP___C"><span class="fE">C - Color</span></a>
 
 Press C to select a new current color from a menu. The thing
-under the cursor is not affected. One can jump to a color by
-typing its hex code in the color menu; for example, typing "0D"
-would jump to color 013 (background color 0, foreground color
-D).
+under the cursor is not affected, just the thing in the buffer.
+One can jump to a color by typing its hex code in the color
+menu; for example, typing "0D" would jump to color 013
+(background color 0, foreground color D).
 
 A quirk to keep in mind: any entity with a background color of 0
 will display the background color of anything beneath it.
@@ -2682,8 +2693,8 @@ another section.
 
 <a class="hA" name="EDITINGK.HLP___F"><span class="fE">F - Fill</span></a>
 
-Press F to fill in an enclosed area with the current thing and
-color. The area must be completely surrounded by things other
+Press F to fill in an enclosed area with the thing in the
+buffer. The area must be completely surrounded by things other
 than the thing beneath the cursor. For example, you can fill
 over a solid square of Fakes with something else. The current
 fill command may not work accurately for very large and complex
@@ -2838,8 +2849,8 @@ confirmation. All undo histories will also be cleared.
 <a class="hA" name="EDITINGK.HLP__076"><span class="fE">S - Save</span></a>
 
 S will prompt you for a filename, then save the current world
-as a MZX file. The save option will be highlighted if the
-world has changed since the last save or load.
+as a MZX file. If there are unsaved changes, the title bar will
+begin with an asterisk to show this.
 
 <a class="hA" name="EDITINGK.HLP__082"><span class="fE">Alt+S - Status Info</span></a>
 
@@ -3069,7 +3080,7 @@ also jump numbers by 10 in dialog boxes.
 The Del key will delete everything under the cursor, while
 BackSpace will delete the object on the main layer and move any
 object on the under layer to the main layer. The current thing
-is not affected.
+in the buffer is not affected.
 
 <a class="hA" name="EDITINGK.HLP__End"><span class="fE">End - L/R Corner</span></a>
 
@@ -3079,8 +3090,8 @@ entire board.
 <a class="hA" name="EDITINGK.HLP__En"><span class="fE">Enter - Modify+Grab [Board Mode]</span></a>
 
 Enter will modify the settings of the thing under the cursor,
-if applicable, then select that thing as the current thing. It
-is just like pressing Alt+M and then Ins.
+if applicable, then copy that thing into the buffer. It is just
+like pressing Alt+M and then Ins.
 
 <a class="hA" name="EDITINGK.HLP__Enter2"><span class="fE">Enter - Character [Overlay Mode]</span></a>
 
@@ -3102,13 +3113,13 @@ entire board.
 
 <a class="hA" name="EDITINGK.HLP__Ins"><span class="fE">Ins - Grab</span></a>
 
-Ins will select the thing under the cursor as the current
-thing. The thing under the cursor is not affected.
+Ins will copy the thing under the cursor into the buffer. The
+thing under the cursor is not affected.
 
 <a class="hA" name="EDITINGK.HLP__Sp"><span class="fE">Spacebar - Place</span></a>
 
-Spacebar will copy the current thing to the location under the
-cursor. Trying to place something over a similar thing will
+Spacebar will copy the thing in the buffer to the location under
+the cursor. Trying to place something over a similar thing will
 instead replace the object under the cursor by default. (Robots
 and Pushable Robots are the exception; they will never be
 replaced.) Placing something over a floor type will actually
@@ -3237,7 +3248,7 @@ or on the character selection menu.
 Alt+I will import character sets while in the character editor;
 Alt+X will export. This can be done with one full set, multiple
 sets, or groups of partials. For a full set, simply select the
-desired set and click OK. For saving multiple sets or a series
+desired set and select OK. For saving multiple sets or a series
 of partials, first insert a hash sign in the set name then
 choose the Offset (starting character). Next, choose the First
 number of the series (e.g. char#.chr with a First value of 5
@@ -3465,12 +3476,12 @@ Same as above, but for health points.
 
 <p class="hC">Enemies' Bullets Hurt Other Enemies</p>
 If this is on, then bullets shot by enemies, such as tigers,
-will destroy other enemies that they hit. It basically turns
+will damage other enemies that they hit. It basically turns
 all Enemy bullets fired into Neutral bullets (including ones
 shot by Robots).
 
 <p class="hC">Clear Messages and Projectiles on Exit</p>
-If this is on, the current message and all projectiles (stars,
+If this is on, the current message and all projectiles (seekers,
 bullets, missiles, shooting fire) are cleared whenever the
 player leaves the screen.
 
@@ -3584,7 +3595,7 @@ current board. The options are as follows:
 This is the name of the board. It is mainly for internal
 reference; however, the name of the first board (the title
 screen) is also used to represent the entire world on a file
-listing, and its value can be accessed through the BOARD_NAME
+listing, and board names can be accessed through the BOARD_NAME
 string counter in Robotic. The special color codes ~ and @
 can apply here, allowing colored text in board names.
 
@@ -3608,7 +3619,7 @@ Floor. If off, the forest will simply be replaced by a space.
 
 <p class="hC">Collect Bombs</p>
 If on, the player will collect bombs normally. If off, bombs
-will be instantly lit when touched instead.
+will be instantly lit when touched by the player instead.
 
 <p class="hC">Fire Burns Forever</p>
 If on, fire will never burn out. If off, fire will eventually
@@ -4058,9 +4069,9 @@ you could create archways that the player moves under, or have
 a score and lives display that is overlaid over the view at all
 times (by using Robotic). However, character 32 (empty space
 99.99% of the time) is never part of the overlay. To emulate a
-space, use the wall character or make your own space character.
-This is very important to remember when using the overlay to
-display text.
+space, use character 0 (if still blank) or make your own space
+character. This is very important to remember when using the
+overlay to display text.
 
 The overlay is set on "Normal Overlay" mode by default. The
 editor will prevent you from editing the overlay if it is Off,
@@ -4163,6 +4174,7 @@ almost any time.
 F2 will toggle text mode on and off. When text mode is on, Enter
 will go to the next line, and Backspace will delete going
 backwards. All printable characters will type in as text.
+Pressing Space will place a char 32 on the overlay.
 
 <a class="hA" name="TOVERLAY.HLP__Ar"><span class="fE">Arrow - Move</span></a>
 
@@ -4342,7 +4354,8 @@ shown in the upper-right. Selecting one of these lists will
 display its contents in the left-side box. If a list has a plus
 sign next to it, it is a tree, and clicking on it or pressing
 Space or Enter will expand it to show any of that tree's
-sub-lists (if they exist). Click again to hide the sub-lists.
+sub-lists (if they exist). Repeat this action to hide the
+sub-lists.
 
 The lists are as follows:
 
@@ -4363,8 +4376,9 @@ first 40 characters of a string value will be shown.
 
 <span class="fA">Sprites</span><span class="fF">: Lists the global sprite counters and their values.</span>
 Expanding this list will allow selection of lists sorted by
-relevant sprite - "spr1","spr2", and so on. Each spr# list
-shows all of each sprite's relevant counters. The number of
+relevant sprite - "spr0", "spr1", "spr2", and so on - if any of
+that sprite's counters have been set. Each spr# list shows all
+of each sprite's relevant counters. The number of
 currently-active sprites is given under the "Active sprites"
 entry.
 
@@ -4518,10 +4532,11 @@ will only show that the watched string value has changed.
 Editing breakpoints/watchpoints is done by pressing Space.
 Deleting breakpoints/watchpoints is done by pressing Alt+D.
 
-The Robotic debugger defaults to off. Clicking the Enable
+The Robotic debugger defaults to off. Selecting the Enable
 Robotic Debugger button, or adding a breakpoint or watchpoint,
 activates the debugger from that point on. Once done editing
-breakpoints and watchpoints, click the Done button.
+breakpoints and watchpoints, select the Done button by clicking
+it or by using Tab to highlight it and pressing Enter.
 
 In addition to user-defined breakpoints and watchpoints,
 MegaZeux also activates stepping through the debugger when Robot
@@ -5152,11 +5167,13 @@ Use the following help links to see your desired topic(s).
 <p class="hC"><span class="f9">Command Syntax</span></p>
 Commands in Robotic must conform to a certain syntax:
 
-  COMMAND [param] [param] ...
+  COMMAND [parameter] [parameter] ...
 
 COMMAND is the words or symbol that specifies exactly which
-command you are using. Params are the values used to supplement
-the command's function.
+command you are using. Parameters are the values used to
+supplement the command's function. This help section describes
+and details the various parameters that MegaZeux commands can
+take.
 
 <span class="fE">"string" or "counter" or "label" or "Robot" or "file"</span>
 
@@ -5225,7 +5242,7 @@ following colors, by default:
 15 White      <span class="fF">(color #15)</span>
 ? Any color/No change in color
 
-The UI uses its own set of protected colors, to prevent general
+The UI uses its own set of protected colors to prevent general
 color edits from harming usability.
 
 The use of ? is not always a logical option for some commands.
@@ -5280,7 +5297,11 @@ problems with Robotic:
 MZX handles these conversions for you when using F3 to select
 a character from the current character set.
 
-To access characters in extended character sets, use counters.
+The commands that can manipulate extended char sets (CHAR EDIT,
+COPY CHAR, SCROLL CHAR, FLIP CHAR) will directly accept the full
+16-bit integer range. (Numbers outside of the proper range of
+0-3839 will still display as inputted, but will internally
+wrap around that range.)
 
 <a class="hA" name="COMMANDS.HLP__dir"><span class="fE">[dir]</span></a>
 
@@ -5419,7 +5440,8 @@ editor after you have typed in an object name. p?? will be
 inserted automatically any time you have a thing without a
 parameter. Counters can also be used as parameters, as can
 decimal numbers; to insert decimal numbers, place the number
-in the proper location, but without the "p" before it.
+in the proper location, but without the "p" before it. A value
+of 256 represents p??.
 
 p?? in an IF command will allow that command to accept all
 params.
@@ -5569,11 +5591,11 @@ as: "BUG", "Hi there!", and even "&#xE0C5;&#xE081;EA9 _&#xE00F;&#xE0B1;&#xE0C7;"
 two special aspects or features of strings that may be useful:
 color coding, and counter interpolation.
 
-<p class="hC">Color</p>
-Used in Robotic commands *, %, ?, and &amp;, strings can contain
-color codes. There are two color symbols: ~ for changing
-foreground, and @ for changing background. These should be
-followed by one of these characters:
+<p class="hC">Color Codes</p>
+Used in Robotic commands *, %, ?, and &amp;, color codes are used to
+place colors in strings. There are two color symbols: ~ for
+changing foreground, and @ for changing background. These should
+be followed by one of these characters:
 
     0 Black (color 0)        8 Dk. Gray (color 8)
     1 Blue (color 1)         9 Lt. Blue (color 9)
@@ -5586,14 +5608,14 @@ followed by one of these characters:
 
 To show a ~, use ~~. To show a @, use @@.
 
-<p class="hC">Counters</p>
-Strings can show the values of counters, using the counter name
-surrounded with &amp;s. For example, if the player has 55 gems,
-"You have &amp;GEMS&amp; gems." will become "You have 55 gems." If you
-use &amp;INPUT&amp;, then the last inputted string will be shown. Use &amp;&amp;
-to show a true '&amp;'. The above features are available in nearly
-ALL Robotic commands that use strings, including in the name of
-OTHER counters. (The sole exception is in label names.) This
+<p class="hC">Counter Interpolation</p>
+Strings can show the values of counters by surrounding the
+counter name with &amp;s. This is called counter interpolation. For
+example, if the player has 55 gems, "You have &amp;GEMS&amp; gems." will
+become "You have 55 gems." Use &amp;&amp; to show a &amp;. This feature is
+available in nearly ALL Robotic commands that use strings,
+including in the names of OTHER counters. (The sole exceptions
+are in label names and in strings for the PLAY commands.) This
 can be used to simulate array-like constructs.
 
 <p class="hC">Robotic Usage of Strings</p>
@@ -5645,8 +5667,8 @@ certain functions. These are listed in the Counters section.
 String comparisons are case-insensitive unless stated otherwise.
 Allowed comparisons are to a line of text, to another string and
 to a number. However, the string is required to be the first
-item, and string counters such as "MOD_NAME", "BOARD_SCAN", etc.
-are not valid comparisons.
+item, and string counters such as "MOD_NAME", "INPUT", etc. are
+not valid comparisons.
 
 Strings can be compared through these commands:
 
@@ -5798,7 +5820,7 @@ Any command that (typically) ends a cycle will be marked by a
 cycles_and_commands.txt in the documentation.
 
 The command listing is arranged by alphabetical order and by
-command type. Click the respective links to jump to that
+command type. Select the respective links to jump to that
 arrangement.
 
 <a class="hL" href="#COMMANDR.HLP__tcl">Type-Based Command Listing</a>
@@ -5846,7 +5868,7 @@ arrangement.
 <a class="hL" href="#COMMAND2.HLP___iO">IF "$string" (equality) # "label"</a>
 <a class="hL" href="#COMMAND2.HLP___iK">IF "$string" (equality) "text" "label"</a>
 <a class="hL" href="#COMMAND2.HLP___iL">IF "$string" (equality) "$string2" "label"</a>
-<a class="hL" href="#COMMAND2.HLP___iG">IF c?? Sprite_Colliding pNN # # "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iG">IF cNN Sprite_Colliding pNN # # "label"</a>
 <a class="hL" href="#COMMAND2.HLP___iH">IF c?? Sprite pNN # # "label"</a>
 <a class="hL" href="#COMMAND2.HLP___iD">IF STRING "string" "label"</a>
 <a class="hL" href="#COMMAND2.HLP___iE">IF STRING MATCHES "string" "label"</a>
@@ -6235,7 +6257,7 @@ arrangement.
 <a class="hL" href="#COMMAND2.HLP___iO">IF "$string" (equality) # "label"</a>
 <a class="hL" href="#COMMAND2.HLP___iK">IF "$string" (equality) "text" "label"</a>
 <a class="hL" href="#COMMAND2.HLP___iL">IF "$string" (equality) "$string2" "label"</a>
-<a class="hL" href="#COMMAND2.HLP___iG">IF c?? Sprite_Colliding pNN # # "label"</a>
+<a class="hL" href="#COMMAND2.HLP___iG">IF cNN Sprite_Colliding pNN # # "label"</a>
 <a class="hL" href="#COMMAND2.HLP___iH">IF c?? Sprite pNN # # "label"</a>
 <a class="hL" href="#COMMAND2.HLP___iM">INC "$string" "text"</a>
 <a class="hL" href="#COMMAND2.HLP___iN">INC "$string" "$string2"</a>
@@ -6655,9 +6677,9 @@ given label.
 
 The Robot will end its program permanently, and instead become
 a specified object with a given color and parameter.
-NOTE: Becoming another Robot type will not destroy the program,
-but there are far better commands for doing this: <span class="fA">BECOME</span>
-<span class="fA">PUSHABLE</span><span class="fF"> and </span><span class="fA">BECOME NONPUSHABLE</span><span class="fF">.</span>
+NOTE: Becoming another Robot type will not end or destroy the
+program, but there are far better commands for doing this:
+<span class="fA">BECOME</span><span class="fF"> </span><span class="fA">PUSHABLE</span><span class="fF"> and </span><span class="fA">BECOME NONPUSHABLE</span><span class="fF">.</span>
 
 <a class="hL" href="#COMMANDS.HLP__col">Colors</a>
 <a class="hL" href="#COMMAND2.HLP___b3">BECOME NONPUSHABLE</a>
@@ -7152,7 +7174,7 @@ PLEASE NOTE: Judicious use of expressions and certain counters
 (THISX/THISY/PLAYERX/PLAYERY) is a less cumbersome alternative
 to using the REL set of commands, and is generally preferred.
 
-These are special types of commands, called PREFIXES. Prefixes
+These are a special class of commands, called PREFIXES. Prefixes
 don't do a thing by themselves, but when placed before another
 command that uses x,y coordinates, they change the origin of the
 x,y coordinate system for that ONE following command. REL
@@ -7243,8 +7265,8 @@ With OGG music, this command makes a jump to the stated frame.
 <a class="hA" name="COMMAND2.HLP___l1"><span class="fA">LAYBOMB [dir]</span></a>
 <a class="hA" name="COMMAND2.HLP___l2"><span class="fA">LAYBOMB HIGH [dir]</span></a>
 
-Places a bomb (high strength for the second form) next to the
-Robot in the given direction. Use a direction of UNDER or
+Places a lit bomb (high strength for the second form) next to
+the Robot in the given direction. Use a direction of UNDER or
 BENEATH to place the bomb underneath the Robot.
 
 <a class="hL" href="#COMMANDS.HLP__dir">Directions</a>
@@ -7526,7 +7548,8 @@ the player moves. The screen will not scroll.
 Changes the appearance of the given character, using a 14-number
 code of 8-bit numbers derived from which pixels are set per
 horizontal line. To insert these codes easily, use F5 in the
-Robot editor, select the desired character, and press ESC.
+Robot editor, select the desired character, and press ESC. This
+command can access extended character sets.
 
 <a class="hA" name="COMMAND2.HLP___m5"><span class="fA">MOD FADE IN "file"</span></a>
 
@@ -7676,10 +7699,10 @@ equal to the given string. Case is ignored.
 
 <a class="hA" name="COMMAND2.HLP___iE"><span class="fA">IF STRING MATCHES "string" "label"</span></a>
 
-If the string matches a given pattern, jump to the given label.
-(Case is ignored.) The pattern is a series of characters and
-symbols to match. Characters must match exactly. The following
-symbols apply:
+If the inputted string matches a given pattern, jump to the
+given label. (Case is ignored.) The pattern is a series of
+characters and symbols to match. Characters must match exactly.
+The following symbols apply:
 
 # matches any number from 0-9
 _ matches any letter from A-Z or a-z
@@ -7721,16 +7744,16 @@ as less than are automatically parsed as FALSE). These commands
 compare the given string to a number, a line of text, or
 another string respectively.
 
-<a class="hA" name="COMMAND2.HLP___iG"><span class="fA">IF c?? Sprite_Colliding pNN x y "label"</span></a>
+<a class="hA" name="COMMAND2.HLP___iG"><span class="fA">IF cNN Sprite_Colliding pNN x y "label"</span></a>
 
-This command determines whether the sprite numbered NN would
-collide if the sprite is moved by x horizontally and y
-vertically. If it would, the program goes to the given label and
-spr_clistN counters are set to the detected collisions. c values
-other than c?? check if the sprite would collide with anything
-currently at absolute x,y coordinates instead. If the sprite
-numbered NN is unbound, movement amounts and absolute
-coordinates will be in pixels.
+This command, when the color is c??, determines whether the
+sprite numbered NN would collide if the sprite is moved by x
+horizontally and y vertically. If it would, the program goes to
+the given label and spr_clistN counters are set to the detected
+collisions. c values other than c?? check if the sprite would
+collide with anything currently at absolute x,y coordinates
+instead. If the sprite numbered NN is unbound, movement amounts
+and absolute coordinates will be in pixels.
 
 <a class="hA" name="COMMAND2.HLP___iH"><span class="fA">IF c?? Sprite pNN x y "label"</span></a>
 
@@ -7756,7 +7779,7 @@ being the chosen color and the second number the intensity.
 
 The character picture of the first character is copied to the
 second character. This command can access extended character
-sets; use expressions or counters to access them.
+sets.
 
 <a class="hA" name="COMMAND2.HLP___d5"><span class="fA">DISABLE MESG EDGE</span></a>
 <a class="hA" name="COMMAND2.HLP___e7"><span class="fA">ENABLE MESG EDGE</span></a>
@@ -7778,7 +7801,8 @@ manual saving on sensors only.
 
 The character picture of the stated character is flipped
 vertically if the direction is north/south, or horizontally if
-the direction is east/west.
+the direction is east/west. This command can access extended
+char sets.
 
 <a class="hL" href="#COMMANDS.HLP__dir">Directions</a>
 
@@ -7803,7 +7827,8 @@ these commands rotate objects only one space.
 
 The character picture of the stated character is scrolled one
 pixel in the given direction, with wraparound in effect. This
-command will not work as expected in SMZX modes.
+command can access extended char sets, but it will not work as
+expected in SMZX modes.
 
 <a class="hL" href="#COMMANDS.HLP__dir">Directions</a>
 
@@ -8309,8 +8334,9 @@ found, the Robot is sent to PLAYERHURT instead.
 <span class="fE">PLAYERHURT [#]</span>
 
 This is sent when the player is hurt by anything other than a
-bullet. Bullets send the Robot to PLAYERHIT, and only send it
-to PLAYERHURT if PLAYERHIT cannot be found.
+bullet. (This includes when Robots successfully TAKE HEALTHS.)
+Bullets send the Robot to PLAYERHIT, and only send it to
+PLAYERHURT if PLAYERHIT cannot be found.
 
 <span class="fE">PLAYERDIED [#]</span>
 
@@ -8341,7 +8367,7 @@ JUSTLOADED is triggered instead.
 <span class="fE">SENSORON</span>
 
 This is sent by a Sensor when it is stepped upon by the player,
-or the Sensor moves beneath the player.
+or when a Sensor moves beneath the player.
 
 <a class="hL" href="#SENSORSW.HLP__094">Sensors</a>
 
@@ -9016,14 +9042,22 @@ SPR_CLISTn counters.
 
 <span class="fB">SPRn_CCHECK (write-only)</span>
 
-If set to 1 for sprite n, overlapping char 32s will not cause a
+If set to 1 for sprite n, overlapping char 32s of a sprite,
+regardless of whether char 32 is blank, will not cause a
 collision between that sprite and other sprites or the
-foreground. If set to 2, both char 32s and blank chars will not
-collide, and blank characters will not be drawn. If set to 3,
-the given unbound sprite will undergo pixel-precise collision
-checks, and transparent colors will not cause a collision.
-Setting to 0 will cancel any previously set ccheck modes for
-that given sprite.
+foreground. If set to 2, fully blank chars of a sprite will not
+collide, and blank characters of a sprite will not be drawn. If
+set to 3 - a setting only valid for unbound sprites - the given
+unbound sprite will undergo pixel-precise collision checks, and
+transparent colors will not cause a collision. Setting to 0 will
+cancel any previously set ccheck modes for that given sprite.
+
+Standard sprites will apply only the checked sprite's ccheck
+value to all involved sprites in collision checks, while checks
+against unbound sprites will also apply the values of all
+sprites involved with it. Foreground char 32s and blank chars
+will not be ignored in collision checks, regardless of a
+standard sprite's ccheck value.
 
 <span class="fB">SPRn_CLIST (write-only)</span>
 
@@ -9129,7 +9163,7 @@ Setting to -1 disables transparency for that sprite. Defaults to
 
 <span class="fB">SPRn_OFFSET</span>
 
-Internally alters any number that refers to a character for
+Internally increments any number that refers to a character for
 sprite n by the counter's value. This only applies to unbound
 sprites. This number will often be a multiple of 256 in order to
 access an extra charset, but offset values within char sets may
@@ -9141,8 +9175,8 @@ also be used.
 
 <span class="fB">SET "$string" to "INPUT"</span>
 
-Sets the given string to any input placed for the "input
-string" command.
+Sets the given string to any input placed for the "input string"
+command.
 
 <span class="fB">SET "$string" to "BOARD_NAME"</span>
 
@@ -9492,12 +9526,12 @@ configuration file upon loading a different game.
 
 <span class="fB">COMMANDS_STOP</span>
 
-A special counter active only while playtesting in the editor.
-COMMANDS_STOP will activate stepping in the Robotic debugger,
-even if the debugger was currently disabled, once the number of
-commands any specific Robot executes in a single cycle exceeds
-COMMANDS_STOP's value. By default, COMMANDS_STOP holds a value
-of 2000000.
+This is a special counter active only while playtesting in the
+editor. COMMANDS_STOP will activate stepping in the Robotic
+debugger, even if the debugger was currently disabled, once the
+number of commands any specific Robot executes in a single cycle
+exceeds COMMANDS_STOP's value. By default, COMMANDS_STOP holds a
+value of 2000000.
 
 <span class="fB">EXIT_GAME</span>
 
@@ -9533,7 +9567,12 @@ The numerical value of the last string inputted in an INPUT
 STRING box. Strings that are solely numbers and strings leading
 with numbers (e.g. "86ed") set this counter to the relevant
 number. This counter returns 0 if the last string inputted did
-not lead with a number.
+not lead with a number. This function is separate from its use
+in messages with &amp;INPUT&amp;.
+
+NOTE: When this counter is interpolated, it will instead
+interpolate the counter NAMED after the inputted string, so
+exercise caution.
 
 <a class="hL" href="#COMMAND2.HLP___iP">INPUT STRING "string"</a>
 
@@ -9656,7 +9695,7 @@ command.
 The X or Y-coordinates (respectively) used by the REL COUNTERS
 FIRST command.
 
-<a class="hL" href="#COMMAND2.HLP___r4">REL COUNTERS LAST</a>
+<a class="hL" href="#COMMAND2.HLP___r4">REL COUNTERS FIRST</a>
 
 <span class="fB">LASTXPOS</span>
 <span class="fB">LASTYPOS</span>
@@ -9703,8 +9742,8 @@ double-check your line if MZX reformats it.
 All lines other than the current line will have the various
 elements such as strings and numbers highlighted in different
 colors. cXX-type color codes will be shown as their actual
-color. The current line is shown in a solid color and color
-codes are shown in the usual cXX format.
+color using the current palette. The current line is shown in a
+solid color and color codes are shown in the usual cXX format.
 
 The following keys are active within the Robotic editor:
 
@@ -10388,7 +10427,7 @@ memory, reserved local counters and the ability to be copied,
 apply to the global.
 
 The global is accessed either through pressing G to access the
-Global Settings menu and then clicking Edit Global Robot, or by
+Global Settings menu and then selecting Edit Global Robot, or by
 simply pressing Alt+G on the editor screen.
 
 The global is important because it not only exists on all
@@ -11150,10 +11189,12 @@ characters, or allow a sprite to damage another one when
 striking.
 
 For these, sprite collision boxes must be set, as sprites will
-not have one set by default. Use the SPRn_CX and SPRn_CY
-counters to set the respective x,y coordinates of the upper-left
-corner of the collision box, and use SPRn_CWIDTH and
-SPRn_CHEIGHT to set its respective width and height (in tiles).
+not have one set by default. Use SPRn_CWIDTH and SPRn_CHEIGHT to
+set the respective width and height of the collision box (in
+tiles). By default, sprite collision boxes originate from the
+upper-left corner of the sprite, but the origin point can be
+offset horizonally and vertically by setting the SPRn_CX and
+SPRn_CY counters.
 
 Once collision boxes are established, collision tests have to
 be triggered. This is done by using the following command:
@@ -11186,7 +11227,7 @@ setting that sprite n's "SPRn_CLIST" counter to anything. This
 checks that sprite against its current location and does not
 force a label jump on collision.
 
-Sprites can be set to ignore certain types of blocks in
+Sprites can be set to ignore certain types of sprite chars in
 collision checks by setting the sprN_ccheck value of a given
 sprite N. In addition, setting a sprite's ccheck value to 2 will
 prevent blank characters in a sprite from being shown, much like
@@ -11236,9 +11277,7 @@ begins at position 256, the second at 512, the third at 768, and
 so on. (One could also load a character set file that is much
 larger than normal to fill these positions.) CHAR EDIT can
 manipulate individual characters of an extra charset by being
-given similar numbers, but the command cannot take them
-directly; one must feed it a counter with the desired number
-instead.
+given similar numbers.
 
 Second, the sprite must be set to access these charsets. This is
 done by setting an offset for that sprite using the SPRn_OFFSET
@@ -11262,10 +11301,12 @@ unbound sprite will not display, and instead show the next
 underlying layer.
 
 When assigned a ccheck value with SPRn_CCHECK, an unbound sprite
-will only apply its personal ccheck value in collision tests
-instead of the value of the sprite that initiated the check. In
-addition, unbound sprites can use a special ccheck value (3) to
-ignore transparent colors in collision checks.
+will apply all ccheck values of colliding sprites in collision
+tests instead of applying the value of the sprite that initiated
+the check to all colliding sprites. In addition, unbound sprites
+can use a special ccheck value (3) to make collision checks
+pixel-based. A SPRn_CCHECK value of 3 will also ignore
+transparent colors in collision checks.
 
 Finally, SMZX modes do not affect unbound sprite movement and
 manipulation. This fact can be exploited to overlap SMZX sprites
@@ -11965,7 +12006,7 @@ for the update. The download indicator lists the current file
 being downloaded, its size in bytes, and current file number
 out of total files to be downloaded. If all files are properly
 downloaded, MegaZeux will apply the update and notify the user
-of a restart. Click "OK" and MegaZeux will restart, fully
+of a restart. Select "OK" and MegaZeux will restart, fully
 updated.
 
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
@@ -11975,6 +12016,139 @@ updated.
 <div class="hF" id="NEWINVER.HLP">
 <a class="hA" name="NEWINVER.HLP__1st"> </a>
 <p class="hC"><span class="f9">NEW in MegaZeux!</span></p>
+February 28th, 2025 - MZX 2.93c
+
+Yes, the text input bug and show thing keys are fixed now. :)
+
+Initial support for SDL3 has been added, and will be enabled for
+the Fedora and AUR builds for this release. Other platforms will
+gradually transition to SDL3 over the next few releases.
+
+As part of the preparation for SDL3, this release includes many
+long-belated changes to the way MegaZeux resizes windows and
+calculates the scaled display area within the window (including
+mouse coordinate conversion). This overhaul has fixed several
+bugs, but please be on the lookout for regressions.
+
+The Xcode port has been updated to build with the latest version
+of SDL and other dependencies, and now requires OS X El Capitan
+(x86_64) or macOS Big Sur (arm64) to run. This port no longer
+supports x86 (32-bit). The Darwin multiarchitecture port has
+also been updated to fix arm64 and arm64e support (only arm64 is
+included in builds).
+
+Also included are Android fixes for Android 11+ (thanks asie)
+and also a fix for a bug preventing MZX from starting on Jelly
+Bean and KitKat.
+
+USERS
+
++ The DOS Sound Blaster driver now supports Sound Blaster with
+  DSP 2.0, Sound Blaster 2, and Sound Blaster Pro/16 mono mode.
+  Original Sound Blaster with the old DSP is still unsupported.
++ The DOS port and SDL ports now support mono audio. Mono can be
+  selected with the new config option "audio_output_channels".
++ Setting the config option "system_mouse" to "1" or "on" will
+  no longer disable the software cursor. The old behavior can be
+  restored by setting it to "only". The new behavior of "1" is
+  more useful, especially in Wayland (due to forced mouse grab
+  when the system cursor is hidden).
++ macOS now enables fullscreen_windowed by default to work
+  around macOS bugs involving real fullscreen and maximizing.
++ Fixed window resize bugs in Windows, macOS, Linux/BSD (both
+  X11 and Wayland), and probably other operating systems caused
+  by MZX recreating the window after every window resize event.
++ Fixed junk display in the letterbox area after resizing using
+  the software, gp2x, or SDL 1.2 overlay renderers.
++ The software and gp2x renderers now enable blitting when the
+  created window is smaller than expected instead of crashing.
++ Fixed sai.frag not being installed by "make install" or
+  distributed with Unix-style packages for Linux/BSD/Darwin.
++ Fixed the board editor show thing hotkeys (broken by 2.93b).
++ Fixed nested riff behavior in the RAD replayer. The replayer
+  would fail to replace the outer riff with the inner riff in
+  some cases.
++ Fixed a crash that would occur in builds using extra memory
+  hacks (DOS) when copying blocks between boards in the editor.
++ Fixed text input bugs caused by a 2.93b change accidentally
+  reenabling old deadcode for exiting intake().
++ Fixed crash when saving editor config files/"Set as Default"
+  after the file fails to open for write. If the ".editor.cnf"
+  file fails to save or load, MZX will attempt to save or load a
+  ".cne" file instead. This allows this feature to work in DOS
+  builds when there is no long filename (LFN) support.
++ Fixed filesystem permissions on Android 11.0 and up. (asie)
++ Fixed linkage bug preventing MegaZeux from starting in Android
+  Jelly Bean and KitKat due to a missing logging symbol.
++ Added support for pre-2.70 "put thing BENEATH" being ignored.
++ Added support for pre-2.80 "put thing" treating p?? as 0.
++ Robo-P p0 now converts to either p00 or p?? when appropriate.
++ Robo-P PUT commands now ignore the high thing bit instead of
+  combining it into the color.
++ Fixed disassembly of out-of-bounds color and param values to
+  match their most common interpretation during gameplay.
++ Fixed assembly of immediates in second char of CHANGE OVERLAY.
++ Out-of-bounds char values are now disassembled to immediates
+  for CHAR EDIT, COPY CHAR, SCROLL CHAR, and FLIP CHAR. This
+  makes commands such as "CHAR EDIT 256 [...]" more usable since
+  they will persist in the robot editor.
++ Temporarily revert the broken Vita SHAREDIR/startup dir split.
+  MegaZeux now expects assets to exist in ux0:/data/megazeux
+  like the README claims.
+
+DEVELOPERS
+
++ Added initial support for SDL3. No architectures select SDL3
+  by default, but it is now possible to build and test MegaZeux
+  for platforms that already support it.
++ Split the renderer function "set_video_mode" into two renderer
+  functions "create_window" and "resize_window" to more closely
+  reflect the reality of SDL2/3. The former is used during
+  renderer init and is mandatory; the latter is used to resize
+  and update other window settings like mouse grab/visibility
+  e.g. when switching to/from fullscreen, and is optional. If
+  it is not provided, switching to/from fullscreen will do
+  nothing. "resize_window" is also invoked in SDL 1.2 when a
+  window resize event is received. Some renderers (software,
+  gp2x) still use the same implementation for both functions.
++ Renamed the renderer function "resize_screen" to
+  "resize_callback" to more accurately reflect its purpose. It
+  is called in response to SDL2/3 window resize events and after
+  "resize_window" (by the video functions that call it, see
+  above). This function is now responsible for post-resize
+  maintenance such as glViewport and selecting the filter mode,
+  and is no longer required to call update_screen.
++ Replaced renderer functions "get_screen_coords" and
+  "set_screen_coords" with a single function "set_viewport" to
+  calculate the current window's display area. This area is used
+  in places where "fix_viewport_ratio" previously was and also
+  to convert mouse coordinates. Most renderers should use one of
+  the two prefab implementations of this function.
++ SDL text event enablement now happens after the window is
+  created. This shouldn't really affect anything.
++ Added detection for LoongArch64. 64-bit architectures that
+  platform_endian.h fails to identify as such should no longer
+  abort in the software layer renderer.
++ Updated the Xcode project. Supported architectures are now
+  x86_64 and arm64. The x86_64 architecture requires OS X El
+  Capitan (minimum version supported by SDL) and arm64 requires
+  macOS Big Sur. The Xcode project format is still 8.x, but
+  Xcode 12.2 or newer is required to compile release builds.
++ Tweaked the Darwin .app buildsystem to properly support arm64
+  and arm64e. The documentation has also been updated to note
+  linker issues in versions prior to 10.10 when combining
+  x86_64 and x86_64h into the same binary, and issues involving
+  arm64e builds being terminated by the kernel.
++ The dependency builder scripts now support building Xcode
+  frameworks for both x86_64 and arm64. Updated SDL2 to 2.32.0,
+  libpng to 1.6.47, libogg to 1.3.5, and libvorbis to 1.3.7.
+  Added building SDL3 3.2.4 for all relevant platforms.
++ Enabled 16k pages on Android to hopefully future-proof
+  MegaZeux against Android 15.0. (asie)
++ Updated libxmp to 4.6.2+sample rate patch.
+
+<a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
+
 September 10th, 2024 - MZX 2.93b
 
 This is mostly a big bugfix release, but there are a few new
@@ -18691,7 +18865,6 @@ before, you probably won't understand much of this list.
 <a class="hL" href="#OLDESVER.HLP__201">New in versions 2.01 to 2.60</a>
 <a class="hL" href="#NEWIN200.HLP__1st">New in version 2.00</a>
 <a class="hL" href="#MAIN.HLP__072">Table of Contents</a>
-
 
 <hr></div>
 

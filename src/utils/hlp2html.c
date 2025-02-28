@@ -408,6 +408,9 @@ static struct help_file *parse_line(struct help_file *current, char *line)
   unsigned char cur;
   char buffer[MAX_ANCHOR_NAME];
 
+  if(!current)
+    return NULL;
+
   // Check for commands.
   switch(line[0])
   {
@@ -415,6 +418,12 @@ static struct help_file *parse_line(struct help_file *current, char *line)
     {
       // Start a new help file.
       return new_help_file(line + 1);
+    }
+
+    case '@':
+    {
+      // End of help file.
+      return NULL;
     }
 
     case ':':
@@ -599,7 +608,7 @@ static void parse_file(char *file_buffer, size_t file_length)
 
   mfopen(file_buffer, file_length, &mf);
 
-  while(mfsafegets(line_buffer, MAX_LINE, &mf))
+  while(current && mfsafegets(line_buffer, MAX_LINE, &mf))
     current = parse_line(current, line_buffer);
 
   // Make sure all links connect to a valid anchor.

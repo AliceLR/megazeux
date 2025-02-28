@@ -121,16 +121,16 @@ Source URL:    http://www.delorie.com/pub/djgpp/ (djlsr205.zip)
 
 
 ----------------------------------------------------------------
-  SDL 2
+  SDL
 ----------------------------------------------------------------
 
-SDL 2 is available under the zlib license.
+SDL is available under the zlib license.
 gamecontrollerdb.txt is available under an identical license.
 
 Used by ports: Most.
 Home page:     https://www.libsdl.org/
 
-Copyright (C) 1997-2021 Sam Lantinga <slouken@libsdl.org>
+Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>
   
 This software is provided 'as-is', without any express or implied
 warranty.  In no event will the authors be held liable for any damages

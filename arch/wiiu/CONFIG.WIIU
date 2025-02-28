@@ -1,5 +1,5 @@
-#!/bin/bash
+#!/bin/sh
 
-./config.sh --platform wiiu --prefix $DEVKITPPC --enable-release --enable-lto \
+./config.sh --platform wiiu --prefix "$DEVKITPPC" --enable-release --enable-lto \
             --disable-utils --enable-meter --enable-stdio-redirect \
-            --disable-gl $@
+            --disable-gl "$@"
