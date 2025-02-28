@@ -1,5 +1,5 @@
 Name:		megazeux
-Version:	2.93b
+Version:	2.93c
 Release:	1%{?dist}
 
 Summary:	A simple game creation system (GCS)
@@ -7,10 +7,10 @@ Summary:	A simple game creation system (GCS)
 Group:		Amusements/Games
 License:	GPLv2+
 URL:		https://www.digitalmzx.com/
-Source:		megazeux-2.93b.tar.xz
+Source:		megazeux-2.93c.tar.xz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root
 
-BuildRequires:	SDL2-devel
+BuildRequires:	SDL3-devel
 BuildRequires:	libvorbis-devel
 BuildRequires:	libpng-devel
 BuildRequires:	zlib-devel
@@ -30,10 +30,11 @@ regardless of genre.
 See https://www.digitalmzx.com/ for more information.
 
 %prep
-%setup -q -n mzx293b
+%setup -q -n mzx293c
 
 %build
 ./config.sh --platform unix --enable-release --enable-lto --as-needed-hack \
+            --enable-sdl3 \
             --libdir %{_libdir} \
             --gamesdir %{_bindir} \
             --sharedir %{_datadir} \
@@ -67,6 +68,9 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_sysconfdir}/megazeux-config
 
 %changelog
+* Fri Feb 28 2025 Alice Rowan <petrifiedrowan@gmail.com> 2.93c-1
+- new upstream version, switch to SDL3
+
 * Tue Sep 10 2024 Alice Rowan <petrifiedrowan@gmail.com> 2.93b-1
 - new upstream version, add --enable-lto
 
