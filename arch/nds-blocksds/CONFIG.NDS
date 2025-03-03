@@ -1,6 +1,8 @@
 #!/bin/sh
 
-./config.sh --platform nds-blocksds --prefix $BLOCKSDS --optimize-size --enable-lto \
+[ -z "$BLOCKSDS" ] && { echo "\$BLOCKSDS is unset, aborting"; exit 1; }
+
+./config.sh --platform nds-blocksds --prefix "$BLOCKSDS" --optimize-size --enable-lto \
             --disable-editor --disable-helpsys --disable-utils \
             --disable-libpng --enable-release --enable-meter \
             --enable-extram --disable-screenshots --enable-stdio-redirect "$@"
