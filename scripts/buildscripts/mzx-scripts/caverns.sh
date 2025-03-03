@@ -51,7 +51,7 @@ caverns_init()
 			OLD_DIR="$(pwd)"
 			cd "$CAVERNS_BASE/$CAVERNS_MMUTIL_PATH" || { ERRNO="CV-1"; return; }
 			for f in ./*.MOD; do
-				"$DEVKITPRO/tools/bin/mmutil" -d -m "$f" && rm -f "$f"
+				"$DEVKITPRO/tools/bin/mmutil" -d -m "$f"
 			done
 			cd "$OLD_DIR" || { ERRNO="CV-2"; return; }
 		fi
