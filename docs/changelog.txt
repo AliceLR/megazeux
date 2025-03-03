@@ -5,6 +5,15 @@ FIXES
 + TODO: 2.94 enables board message clipping bugfixes from 2.93b.
 
 
+GIT - MZX 2.93d
+
+USERS
+
++ Fixed date and time counters on NDS (missing IRQ_NETWORK).
+
+DEVELOPERS
+
+
 February 28th, 2025 - MZX 2.93c
 
 Yes, the text input bug and show thing keys are fixed now. :)

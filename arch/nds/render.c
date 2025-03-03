@@ -90,6 +90,9 @@ static struct {
 enum Subscreen_Mode last_subscreen_mode;
 enum Subscreen_Mode subscreen_mode;
 
+// Initialized with a pointer to static libnds memory via keyboardInit.
+static Keyboard *kb;
+
 // Forward declarations
 static void nds_keyboard_scroll_in(void);
 static void nds_keyboard_scroll_out(void);
@@ -181,12 +184,10 @@ static void nds_subscreen_scaled_init(void)
 
 static void nds_subscreen_keyboard_init(void)
 {
-  Keyboard *kb = keyboardGetDefault();
-
   // BG0: Keyboard 256x512 text, map following tiles (45056 bytes total)
   // Clear the keyboard area before drawing it.
   dmaFillWords(0, BG_MAP_RAM(20), 4096);
-  keyboardInit(kb, 0, BgType_Text4bpp, BgSize_T_256x512, 20, 0, true, true);
+  kb = keyboardInit(NULL, 0, BgType_Text4bpp, BgSize_T_256x512, 20, 0, true, true);
   bgSetPriority(0, 1);
   kb->scrollSpeed = 7;
   transition.time = 0;
@@ -312,7 +313,8 @@ void nds_video_do_transition(void)
 
 static void nds_keyboard_scroll_in(void)
 {
-  Keyboard *kb = keyboardGetDefault();
+  if(!kb)
+    return;
   if(transition.time == 0)
   {
     // Show the background.
@@ -341,7 +343,8 @@ static void nds_keyboard_scroll_in(void)
 
 static void nds_keyboard_scroll_out(void)
 {
-  Keyboard *kb = keyboardGetDefault();
+  if(!kb)
+    return;
   if(transition.time == 0)
     kb->visible = 0;
 
