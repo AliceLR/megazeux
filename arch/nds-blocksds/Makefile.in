@@ -8,12 +8,15 @@ ifeq ($(strip $(BLOCKSDS)),)
 $(error "BLOCKSDS must be set in your environment.")
 endif
 
+ifeq ($(strip $(WONDERFUL_TOOLCHAIN)),)
+$(error "WONDERFUL_TOOLCHAIN must be set in your environment.")
+endif
+
 EXTRA_LICENSES += ${LICENSE_CC0} ${LICENSE_MPL2} ${LICENSE_NEWLIB}
 
 #
 # NDS target rules
 #
-WONDERFUL_TOOLCHAIN	?= /opt/wonderful
 ARM_NONE_EABI_PATH	?= $(WONDERFUL_TOOLCHAIN)/toolchain/gcc-arm-none-eabi/bin/
 CROSS_COMPILE := ${ARM_NONE_EABI_PATH}arm-none-eabi-
 

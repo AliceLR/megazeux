@@ -1,6 +1,7 @@
 #!/bin/sh
 
 [ -z "$BLOCKSDS" ] && { echo "\$BLOCKSDS is unset, aborting"; exit 1; }
+[ -z "$WONDERFUL_TOOLCHAIN" ] && { echo "\$WONDERFUL_TOOLCHAIN is unset, aborting"; exit 1; }
 
 ./config.sh --platform nds-blocksds --prefix "$BLOCKSDS" --optimize-size --enable-lto \
             --disable-editor --disable-helpsys --disable-utils \
