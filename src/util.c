@@ -641,15 +641,3 @@ void __stack_chk_fail(void)
 }
 
 #endif // __amigaos__
-
-#if defined(CONFIG_PSP) || defined(CONFIG_NDS)
-FILE *popen(const char *command, const char *type)
-{
-	return NULL;
-}
-
-int pclose(FILE *stream)
-{
-	return 0;
-}
-#endif // CONFIG_PSP || CONFIG_NDS
