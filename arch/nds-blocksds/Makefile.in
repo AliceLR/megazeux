@@ -90,7 +90,7 @@ arch/nds/arm7/source/%.c.o: arch/nds/arm7/source/%.c
 	$(if ${V},,@echo "  CC.7    " $<)
 	${CC} -MD -Os -std=gnu11 -specs=$(BLOCKSDS)/sys/crts/ds_arm7.specs \
 		-Wall -Wno-unused-macros -mcpu=arm7tdmi \
-		-mthumb $(ARM7_INCLUDES) \
+		-mthumb $(ARM7_INCLUDES) -DCONFIG_BLOCKSDS \
 		-ffunction-sections -fdata-sections -fomit-frame-pointer \
 		-c $< -o $@
 #

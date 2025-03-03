@@ -86,7 +86,11 @@ int main() {
 
 	irqInit();
 	// Start the RTC tracking IRQ
+#ifdef CONFIG_BLOCKSDS
+	initClockIRQTimer(3);
+#else
 	initClockIRQ();
+#endif
 	fifoInit();
 	touchInit();
 
@@ -100,7 +104,7 @@ int main() {
 	irqSet(IRQ_VCOUNT, VcountHandler);
 	irqSet(IRQ_VBLANK, VblankHandler);
 
-	irqEnable(IRQ_VBLANK | IRQ_VCOUNT);
+	irqEnable(IRQ_VBLANK | IRQ_VCOUNT | IRQ_NETWORK);
 
 	setPowerButtonCB(powerButtonCB);
 
