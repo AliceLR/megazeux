@@ -548,7 +548,7 @@ static inline void render_layer_func(
   }
 #endif
 
-  unsigned int ch_x, ch_y;
+  int x, y;
   uint16_t c;
 
   const struct char_element *src = layer->data;
@@ -564,13 +564,7 @@ static inline void render_layer_func(
   unsigned int pcol;
   unsigned idx;
 
-  ALIGNTYPE *drawPtr;
   ALIGNTYPE pix;
-
-  ALIGNTYPE *outPtr;
-  size_t align_pitch = pitch / sizeof(ALIGNTYPE);
-  size_t advance_char = CHAR_W * sizeof(PIXTYPE) / sizeof(ALIGNTYPE);
-  size_t advance_char_row = align_pitch * CHAR_H - advance_char * layer->w;
 
   int i;
 
@@ -581,9 +575,6 @@ static inline void render_layer_func(
   int ppal = graphics->protected_pal_position;
   int write_pos;
 
-  int pixel_x;
-  int pixel_y;
-
   ALIGNTYPE set_colors[16];
   ALIGNTYPE set_opaque[16];
   unsigned prev = 0x10000;
@@ -591,27 +582,70 @@ static inline void render_layer_func(
   boolean all_tcol = true;
   unsigned int byte_tcol = 0xFFFF;
 
-  // Position the output ptr at the location of the first char
-  outPtr = (ALIGNTYPE *)pixels;
-  outPtr += layer->y * (int)align_pitch;
-  outPtr += layer->x * (int)sizeof(PIXTYPE) / (int)sizeof(ALIGNTYPE);
+  size_t pix_pitch = pitch / sizeof(PIXTYPE);
+  size_t pix_skip = pix_pitch * CHAR_H;
+  PIXTYPE *dest_ptr = reinterpret_cast<PIXTYPE *>(pixels);
+  PIXTYPE *out_ptr;
+  //PIXTYPE *start_ptr = dest_ptr;
+  PIXTYPE *end_ptr = dest_ptr + (height_px - 1) * pix_pitch + width_px;
 
-  for(ch_y = 0; ch_y < layer->h; ch_y++, outPtr += advance_char_row)
+  // CLIP variables
+  int start_x = 0;
+  int start_y = 0;
+  int end_x = layer->w;
+  int end_y = layer->h;
+  int dest_x = layer->x;
+  int dest_y = layer->y;
+  size_t src_skip = 0;
+  int clip_xl = -1;
+  int clip_xr = -1;
+  int clip_yt = -1;
+  int clip_yb = -1;
+
+  if(CLIP)
   {
-    for(ch_x = 0; ch_x < layer->w; ch_x++, src++, outPtr += advance_char)
+    if(precompute_clip(start_x, start_y, end_x, end_y, dest_x, dest_y,
+     width_px, height_px, layer))
     {
-      if(CLIP)
+      // Precalculate clipping boundaries.
+      // This only needs to be done when the layer isn't char-aligned.
+      int dest_last_x = layer->x + (int)layer->w * CHAR_W;
+      if((layer->x < 0 || dest_last_x > width_px) && (dest_x & 7))
       {
-        pixel_x = layer->x + ch_x * CHAR_W;
-        pixel_y = layer->y + ch_y * CHAR_H;
-
-        if(pixel_x <= -CHAR_W || pixel_y <= -CHAR_H ||
-         pixel_x >= width_px || pixel_y >= height_px)
-          continue;
+        if(layer->x < 0)
+          clip_xl = start_x;
+        if(dest_last_x > width_px)
+          clip_xr = end_x - 1;
       }
 
+      if(layer->y < 0)
+        clip_yt = start_y;
+      if(layer->y + (int)layer->h * CHAR_H > height_px)
+        clip_yb = end_y - 1;
+    }
+    src_skip = layer->w - (end_x - start_x);
+  }
+
+  dest_ptr += dest_y * (ptrdiff_t)pix_pitch;
+  dest_ptr += dest_x;
+  src = layer->data + start_x + (start_y * layer->w);
+
+  pix_skip -= (end_x - start_x) * CHAR_W;
+
+  for(y = start_y; y < end_y; y++, src += src_skip, dest_ptr += pix_skip)
+  {
+    int clip_y = CLIP && (y == clip_yt || y == clip_yb);
+    int pix_y = layer->y + y * CHAR_H;
+
+    for(x = start_x; x < end_x; x++, src++, dest_ptr += CHAR_W)
+    {
+      int clip_x = CLIP && (x == clip_xl || x == clip_xr);
+      int pix_x = layer->x + x * CHAR_W;
+
       c = select_char(src, layer);
-      if(c != INVISIBLE_CHAR)
+      if(c >= INVISIBLE_CHAR)
+        continue;
+
       {
         unsigned both_cols = both_colors(src);
         if(prev != both_cols)
@@ -695,10 +729,10 @@ static inline void render_layer_func(
         if(TR && all_tcol)
           continue;
 
+        out_ptr = dest_ptr;
         char_ptr = graphics->charset + (c * CHAR_H);
-        drawPtr = outPtr;
 
-        for(row = 0; row < CHAR_H; row++, drawPtr += align_pitch)
+        for(row = 0; row < CHAR_H; row++, out_ptr += pix_pitch)
         {
           current_char_byte = char_ptr[row];
 
@@ -708,20 +742,24 @@ static inline void render_layer_func(
           // multiple indices set to the transparent color.
           if(TR && has_tcol && current_char_byte == byte_tcol)
             continue;
+          if(CLIP && clip_y &&
+           (/*out_ptr < start_ptr*/ pix_y + row < 0 || out_ptr >= end_ptr))
+            continue;
 
-          if(!CLIP || (pixel_y + row >= 0 && pixel_y + row < height_px))
+          ALIGNTYPE *write_ptr = reinterpret_cast<ALIGNTYPE *>(out_ptr);
+
           {
             for(write_pos = 0; write_pos < CHAR_W / PPW; write_pos++)
             {
-              if(!CLIP ||
-               ((pixel_x + write_pos * PPW >= PIXEL_X_MINIMUM) &&
-                (pixel_x + write_pos * PPW < width_px)))
+              if(!CLIP || !clip_x ||
+               ((pix_x + write_pos * PPW >= PIXEL_X_MINIMUM) &&
+                (pix_x + write_pos * PPW < width_px)))
               {
                 if(!SMZX && PPW == 1)
                 {
                   pcol = !!(current_char_byte & (0x80 >> write_pos));
                   if(!TR || !has_tcol || tcol != char_idx[pcol])
-                    drawPtr[write_pos] = char_colors[pcol];
+                    write_ptr[write_pos] = char_colors[pcol];
                 }
                 else
 
@@ -735,13 +773,13 @@ static inline void render_layer_func(
                   }
 
                   pix = char_colors[pcol];
-                  if(!CLIP || (pixel_x + write_pos * PPW >= 0))
-                    drawPtr[write_pos] = pix;
+                  if(!CLIP || (pix_x + write_pos * PPW >= 0))
+                    write_ptr[write_pos] = pix;
 
                   write_pos++;
 
-                  if(!CLIP || (pixel_x + write_pos * PPW < width_px))
-                    drawPtr[write_pos] = pix;
+                  if(!CLIP || (pix_x + write_pos * PPW < width_px))
+                    write_ptr[write_pos] = pix;
                 }
                 else
 
@@ -751,7 +789,7 @@ static inline void render_layer_func(
                   pcol = (current_char_byte & (0xC0 >> shift)) << shift >> 6;
 
                   if(!TR || !has_tcol || tcol != char_idx[pcol])
-                    drawPtr[write_pos] = char_colors[pcol];
+                    write_ptr[write_pos] = char_colors[pcol];
                 }
                 else
                 {
@@ -761,9 +799,9 @@ static inline void render_layer_func(
                   if(TR && has_tcol)
                   {
                     ALIGNTYPE opaque = get_colors<PPW>(set_opaque, idx);
-                    pix = (pix & opaque) | (drawPtr[write_pos] & ~opaque);
+                    pix = (pix & opaque) | (write_ptr[write_pos] & ~opaque);
                   }
-                  drawPtr[write_pos] = pix;
+                  write_ptr[write_pos] = pix;
                 }
               }
               else
