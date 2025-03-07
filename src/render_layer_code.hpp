@@ -28,6 +28,7 @@
 
 #include "graphics.h"
 #include "platform_endian.h"
+#include "render_layer_common.hpp"
 #include "util.h"
 
 #include <stdlib.h>
@@ -318,21 +319,6 @@ static inline void render_layer_func(
   }
 }
 
-/**
- * Mode 0 and UI layer color selection function.
- * This needs to be done for both colors.
- */
-static inline int select_color_16(uint8_t color, int ppal)
-{
-  // Palette values >= 16, prior to offsetting, are from the protected palette.
-  if(color >= 16)
-  {
-    return (color - 16) % 16 + ppal;
-  }
-  else
-    return color;
-}
-
 // Macros to perform these shifts while ignoring spurious compiler warnings
 // that can't be turned off for older versions of GCC. Since BPP is constexpr
 // these should all optimize to single shifts.
@@ -491,7 +477,7 @@ static inline ALIGNTYPE get_colors(ALIGNTYPE (&set_colors)[16], unsigned idx)
   {
     // Should be unreachable, but some compilers complain...
     case 1:
-      return 0;
+      break;
 
     case 2:
     case 4:
@@ -508,6 +494,8 @@ static inline ALIGNTYPE get_colors(ALIGNTYPE (&set_colors)[16], unsigned idx)
 #endif
     }
   }
+  // Very old compilers also complain about this unreachable return.
+  return 0;
 }
 
 #if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
@@ -598,8 +586,7 @@ static inline void render_layer_func(
 
   ALIGNTYPE set_colors[16];
   ALIGNTYPE set_opaque[16];
-  uint16_t last_fg = 0xFFFF;
-  uint16_t last_bg = 0xFFFF;
+  unsigned prev = 0x10000;
   boolean has_tcol = false;
   boolean all_tcol = true;
   unsigned int byte_tcol = 0xFFFF;
@@ -613,8 +600,6 @@ static inline void render_layer_func(
   {
     for(ch_x = 0; ch_x < layer->w; ch_x++, src++, outPtr += advance_char)
     {
-      c = src->char_value;
-
       if(CLIP)
       {
         pixel_x = layer->x + ch_x * CHAR_W;
@@ -622,24 +607,16 @@ static inline void render_layer_func(
 
         if(pixel_x <= -CHAR_W || pixel_y <= -CHAR_H ||
          pixel_x >= width_px || pixel_y >= height_px)
-          c = INVISIBLE_CHAR;
+          continue;
       }
 
+      c = select_char(src, layer);
       if(c != INVISIBLE_CHAR)
       {
-        // Char values of 256+, prior to offsetting, are from the protected set
-        if(c > 0xFF)
+        unsigned both_cols = both_colors(src);
+        if(prev != both_cols)
         {
-          c = (c & 0xFF) + PROTECTED_CHARSET_POSITION;
-        }
-        else
-        {
-          c += layer->offset;
-          c %= PROTECTED_CHARSET_POSITION;
-        }
-
-        if(src->bg_color != last_bg || src->fg_color != last_fg)
-        {
+          prev = both_cols;
           if(SMZX)
           {
             unsigned int pal = ((src->bg_color & 0xF) << 4) | (src->fg_color & 0xF);
