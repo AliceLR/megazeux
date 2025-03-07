@@ -547,6 +547,7 @@ static inline void render_layer_func(
     printed = true;
   }
 #endif
+  int unaligned = (size_t)pixels % sizeof(ALIGNTYPE);
 
   int x, y;
   uint16_t c;
@@ -586,7 +587,7 @@ static inline void render_layer_func(
   size_t pix_skip = pix_pitch * CHAR_H;
   PIXTYPE *dest_ptr = reinterpret_cast<PIXTYPE *>(pixels);
   PIXTYPE *out_ptr;
-  //PIXTYPE *start_ptr = dest_ptr;
+  PIXTYPE *start_ptr = dest_ptr;
   PIXTYPE *end_ptr = dest_ptr + (height_px - 1) * pix_pitch + width_px;
 
   // CLIP variables
@@ -742,47 +743,57 @@ static inline void render_layer_func(
           // multiple indices set to the transparent color.
           if(TR && has_tcol && current_char_byte == byte_tcol)
             continue;
-          if(CLIP && clip_y &&
-           (/*out_ptr < start_ptr*/ pix_y + row < 0 || out_ptr >= end_ptr))
-            continue;
 
-          ALIGNTYPE *write_ptr = reinterpret_cast<ALIGNTYPE *>(out_ptr);
-
+          // Force 1 PPW if this renderer is using unaligned writes on an edge.
+          if(PPW == 1 || (CLIP && clip_x && unaligned))
           {
+            if(CLIP && clip_y && (pix_y + row < 0 || out_ptr >= end_ptr))
+              continue;
+
+            for(write_pos = 0; write_pos < CHAR_W; write_pos++)
+            {
+              if(!SMZX)
+              {
+                if(CLIP && clip_x && (pix_x + write_pos < 0 || pix_x + write_pos >= width_px))
+                  continue;
+
+                pcol = !!(current_char_byte & (0x80 >> write_pos));
+                if(!TR || !has_tcol || tcol != char_idx[pcol])
+                  out_ptr[write_pos] = char_colors[pcol];
+              }
+              else
+              {
+                pcol = (current_char_byte & (0xC0 >> write_pos)) << write_pos >> 6;
+                if(TR && has_tcol && tcol == char_idx[pcol])
+                {
+                  write_pos++;
+                  continue;
+                }
+
+                pix = char_colors[pcol];
+                if(!CLIP || !clip_x || (pix_x + write_pos >= 0 && pix_x + write_pos < width_px))
+                  out_ptr[write_pos] = pix;
+
+                write_pos++;
+
+                if(!CLIP || !clip_x || (pix_x + write_pos >= 0 && pix_x + write_pos < width_px))
+                  out_ptr[write_pos] = pix;
+              }
+            }
+          }
+          else
+          {
+            ALIGNTYPE *write_ptr = reinterpret_cast<ALIGNTYPE *>(out_ptr);
+
+            if(CLIP && clip_y && (out_ptr < start_ptr || out_ptr >= end_ptr))
+              continue;
+
             for(write_pos = 0; write_pos < CHAR_W / PPW; write_pos++)
             {
               if(!CLIP || !clip_x ||
                ((pix_x + write_pos * PPW >= PIXEL_X_MINIMUM) &&
                 (pix_x + write_pos * PPW < width_px)))
               {
-                if(!SMZX && PPW == 1)
-                {
-                  pcol = !!(current_char_byte & (0x80 >> write_pos));
-                  if(!TR || !has_tcol || tcol != char_idx[pcol])
-                    write_ptr[write_pos] = char_colors[pcol];
-                }
-                else
-
-                if(SMZX && PPW == 1)
-                {
-                  pcol = (current_char_byte & (0xC0 >> write_pos)) << write_pos >> 6;
-                  if(TR && has_tcol && tcol == char_idx[pcol])
-                  {
-                    write_pos++;
-                    continue;
-                  }
-
-                  pix = char_colors[pcol];
-                  if(!CLIP || (pix_x + write_pos * PPW >= 0))
-                    write_ptr[write_pos] = pix;
-
-                  write_pos++;
-
-                  if(!CLIP || (pix_x + write_pos * PPW < width_px))
-                    write_ptr[write_pos] = pix;
-                }
-                else
-
                 if(SMZX && PPW == 2)
                 {
                   ALIGNTYPE shift = write_pos * PPW;
@@ -804,10 +815,6 @@ static inline void render_layer_func(
                   write_ptr[write_pos] = pix;
                 }
               }
-              else
-
-              if(SMZX && PPW == 1) // Skip two pixels instead of 1.
-                write_pos++;
             }
           }
         }
