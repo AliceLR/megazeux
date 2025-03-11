@@ -581,6 +581,10 @@ static inline void render_layer_func(
   unsigned prev = 0x10000;
   boolean has_tcol = false;
   boolean all_tcol = true;
+  // In mode 0 it's possible to quickly determine if an entire byte is
+  // transparent. If it is, there's no point in drawing it. SMZX modes
+  // can try to do a similar trick, but it won't work if the char has
+  // multiple indices set to the transparent color.
   unsigned int byte_tcol = 0xFFFF;
 
   size_t pix_pitch = pitch / sizeof(PIXTYPE);
@@ -733,20 +737,15 @@ static inline void render_layer_func(
         out_ptr = dest_ptr;
         char_ptr = graphics->charset + (c * CHAR_H);
 
-        for(row = 0; row < CHAR_H; row++, out_ptr += pix_pitch)
+        // Force 1 PPW if this renderer is using unaligned writes on an edge.
+        if(PPW == 1 || (CLIP && clip_x && unaligned))
         {
-          current_char_byte = char_ptr[row];
-
-          // In mode 0 it's possible to quickly determine if an entire byte is
-          // transparent. If it is, there's no point in drawing it. SMZX modes
-          // can try to do a similar trick, but it won't work if the char has
-          // multiple indices set to the transparent color.
-          if(TR && has_tcol && current_char_byte == byte_tcol)
-            continue;
-
-          // Force 1 PPW if this renderer is using unaligned writes on an edge.
-          if(PPW == 1 || (CLIP && clip_x && unaligned))
+          for(row = 0; row < CHAR_H; row++, out_ptr += pix_pitch)
           {
+            current_char_byte = char_ptr[row];
+
+            if(TR && has_tcol && current_char_byte == byte_tcol)
+              continue;
             if(CLIP && clip_y && (pix_y + row < 0 || out_ptr >= end_ptr))
               continue;
 
@@ -781,12 +780,19 @@ static inline void render_layer_func(
               }
             }
           }
-          else
+        }
+        else
+        {
+          for(row = 0; row < CHAR_H; row++, out_ptr += pix_pitch)
           {
-            ALIGNTYPE *write_ptr = reinterpret_cast<ALIGNTYPE *>(out_ptr);
+            current_char_byte = char_ptr[row];
 
+            if(TR && has_tcol && current_char_byte == byte_tcol)
+              continue;
             if(CLIP && clip_y && (out_ptr < start_ptr || out_ptr >= end_ptr))
               continue;
+
+            ALIGNTYPE *write_ptr = reinterpret_cast<ALIGNTYPE *>(out_ptr);
 
             for(write_pos = 0; write_pos < CHAR_W / PPW; write_pos++)
             {
