@@ -21,6 +21,7 @@
 #include <assert.h>
 
 #include "graphics.h"
+#include "platform_endian.h"
 #include "render_layer.h"
 
 // Skip unused variants to reduce compile time on these platforms.
@@ -186,6 +187,10 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels,
 }
 #endif
 
+/* Return the alignment of a particular value (typically pixel array address).
+ * Multiple addresses can be ORed together to get the lowest-common alignment
+ * for multiple inputs. This function should not take architecture unalignment
+ * capabilities or vector rendering into consideration. */
 static size_t get_align_for_offset(size_t value)
 {
 #ifndef SKIP_64_ALIGN

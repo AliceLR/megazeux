@@ -1039,6 +1039,146 @@ UNITTEST(render_layer_smzx32)
   SECTION(large)        test::large(DIR "32sxl.tga.gz");
 }
 
+/* Manual layer renderer dispatch to ensure every valid alignment combination
+ * is instantiated. Calls to render_layer may instead dispatch to unaligned
+ * or vector renderers--making the lower-alignment renderers impossible to
+ * reach--so the regular tests aren't sufficient for coverage.
+ */
+static void render_layer_no_unalign(void * RESTRICT pixels,
+ size_t width_px, size_t height_px, size_t pitch, int bpp,
+ const struct graphics_data *graphics, const struct video_layer *layer)
+{
+  /* Copied from render_layer. */
+  int smzx = layer->mode;
+  int trans = layer->transparent_col != -1;
+  size_t drawStart;
+  int align;
+  int clip = 0;
+
+  if(layer->x < 0 || layer->y < 0 ||
+   (layer->x + layer->w * CHAR_W) > width_px ||
+   (layer->y + layer->h * CHAR_H) > height_px)
+    clip = 1;
+
+  if(bpp == -1)
+    bpp = graphics->bits_per_pixel;
+
+  drawStart =
+   (size_t)((char *)pixels + layer->y * (ptrdiff_t)pitch + (layer->x * bpp / 8));
+
+  /* See render_layer. Do not perform any extra handling for unalignment. */
+  align = get_align_for_offset(sizeof(size_t) | drawStart | pitch);
+
+  render_layer_func(pixels, width_px, height_px, pitch, graphics, layer,
+   bpp, align, smzx, trans, clip);
+}
+
+UNITTEST(render_layer_mzx8_all)
+{
+#ifdef SKIP_8BPP
+  SKIP();
+#else
+  using test = render_layer_tester<uint8_t, MZX, FLAT32, 0, render_layer_no_unalign>;
+  SECTION(graphic)      test::graphic(DIR "8.tga.gz");
+  SECTION(align)        test::align(DIR "8a.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "8ta.tga.gz");
+  SECTION(clip)         test::clip(DIR "8c.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "8tc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "8a.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "8ta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "8c.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "8tc.tga.gz");
+  SECTION(large)        test::large(DIR "8xl.tga.gz");
+#endif
+}
+
+UNITTEST(render_layer_smzx8_all)
+{
+#ifdef SKIP_8BPP
+  SKIP();
+#else
+  using test = render_layer_tester<uint8_t, SMZX, FLAT32, 0, render_layer_no_unalign>;
+  SECTION(graphic)      test::graphic(DIR "8s.tga.gz");
+  SECTION(align)        test::align(DIR "8sa.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "8sta.tga.gz");
+  SECTION(clip)         test::clip(DIR "8sc.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "8stc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "8sa.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "8sta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "8sc.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "8stc.tga.gz");
+  SECTION(large)        test::large(DIR "8sxl.tga.gz");
+#endif
+}
+
+UNITTEST(render_layer_mzx16_all)
+{
+#ifdef SKIP_16BPP
+  SKIP();
+#else
+  using test = render_layer_tester<uint16_t, MZX, FLAT16, 0, render_layer_no_unalign>;
+  SECTION(graphic)      test::graphic(DIR "16.tga.gz");
+  SECTION(align)        test::align(DIR "16a.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "16ta.tga.gz");
+  SECTION(clip)         test::clip(DIR "16c.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "16tc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "16a.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "16ta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "16c.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "16tc.tga.gz");
+  SECTION(large)        test::large(DIR "16xl.tga.gz");
+#endif
+}
+
+UNITTEST(render_layer_smzx16_all)
+{
+#ifdef SKIP_16BPP
+  SKIP();
+#else
+  using test = render_layer_tester<uint16_t, SMZX, FLAT16, 0, render_layer_no_unalign>;
+  SECTION(graphic)      test::graphic(DIR "16s.tga.gz");
+  SECTION(align)        test::align(DIR "16sa.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "16sta.tga.gz");
+  SECTION(clip)         test::clip(DIR "16sc.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "16stc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "16sa.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "16sta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "16sc.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "16stc.tga.gz");
+  SECTION(large)        test::large(DIR "16sxl.tga.gz");
+#endif
+}
+
+UNITTEST(render_layer_mzx32_all)
+{
+  using test = render_layer_tester<uint32_t, MZX, FLAT32, 0, render_layer_no_unalign>;
+  SECTION(graphic)      test::graphic(DIR "32.tga.gz");
+  SECTION(align)        test::align(DIR "32a.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "32ta.tga.gz");
+  SECTION(clip)         test::clip(DIR "32c.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "32tc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "32a.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "32ta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "32c.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "32tc.tga.gz");
+  SECTION(large)        test::large(DIR "32xl.tga.gz");
+}
+
+UNITTEST(render_layer_smzx32_all)
+{
+  using test = render_layer_tester<uint32_t, SMZX, FLAT32, 0, render_layer_no_unalign>;
+  SECTION(graphic)      test::graphic(DIR "32s.tga.gz");
+  SECTION(align)        test::align(DIR "32sa.tga.gz");
+  SECTION(align_tr)     test::align_tr(DIR "32sta.tga.gz");
+  SECTION(clip)         test::clip(DIR "32sc.tga.gz");
+  SECTION(clip_tr)      test::clip_tr(DIR "32stc.tga.gz");
+  SECTION(misalign)     test::misalign(DIR "32sa.tga.gz");
+  SECTION(misalign_tr)  test::misalign_tr(DIR "32sta.tga.gz");
+  SECTION(misclip)      test::misclip(DIR "32sc.tga.gz");
+  SECTION(misclip_tr)   test::misclip_tr(DIR "32stc.tga.gz");
+  SECTION(large)        test::large(DIR "32sxl.tga.gz");
+}
+
 static void reference_renderer_wrap(void * RESTRICT pixels,
  size_t width_px, size_t height_px, size_t pitch, int bpp,
  const struct graphics_data *graphics, const struct video_layer *layer)
