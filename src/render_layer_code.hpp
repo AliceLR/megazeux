@@ -519,13 +519,6 @@ static inline void render_layer_func(
   constexpr int BPP = sizeof(PIXTYPE) * 8;
   constexpr int PPW = sizeof(ALIGNTYPE) / sizeof(PIXTYPE);
 
-  /**
-   * The minimum pixel position allowed to be drawn.
-   * Since the SMZX,PPW=1 renderers have a special behavior that draws two
-   * pixels, it should always use -1 here (as if PPW is 2).
-   */
-  constexpr int PIXEL_X_MINIMUM = (SMZX && PPW == 1) ? -1 : 1 - PPW;
-
   // Make sure some pointless/impossible renderers are never instantiated.
   static_assert((PPW >= 1), "invalid ppw < 1");
   static_assert((PPW <= 8), "invalid ppw > 8");
@@ -535,7 +528,6 @@ static inline void render_layer_func(
 // Use these if for whatever reason C++11 isn't available.
 #define BPP (int)(sizeof(PIXTYPE) * 8)
 #define PPW (int)(sizeof(ALIGNTYPE) / sizeof(PIXTYPE))
-#define PIXEL_X_MINIMUM (int)((SMZX && PPW == 1) ? -1 : 1 - PPW)
 #endif
 
 #ifdef DEBUG
@@ -547,7 +539,6 @@ static inline void render_layer_func(
     printed = true;
   }
 #endif
-  int unaligned = (size_t)pixels % sizeof(ALIGNTYPE);
 
   int x, y;
   uint16_t c;
@@ -636,6 +627,11 @@ static inline void render_layer_func(
   src = layer->data + start_x + (start_y * layer->w);
 
   pix_skip -= (end_x - start_x) * CHAR_W;
+
+  /* Enable 1PPW writes for >1PPW renderers at X clip boundaries if anything
+   * in the render will be off of alignment. */
+  const int unaligned =
+   ((size_t)pixels | (size_t)dest_ptr | pitch) % sizeof(ALIGNTYPE);
 
   for(y = start_y; y < end_y; y++, src += src_skip, dest_ptr += pix_skip)
   {
@@ -797,8 +793,8 @@ static inline void render_layer_func(
             for(write_pos = 0; write_pos < CHAR_W / PPW; write_pos++)
             {
               if(!CLIP || !clip_x ||
-               ((pix_x + write_pos * PPW >= PIXEL_X_MINIMUM) &&
-                (pix_x + write_pos * PPW < width_px)))
+               ((pix_x + write_pos * PPW >= 0) &&
+                (pix_x + write_pos * PPW + PPW - 1 < width_px)))
               {
                 if(SMZX && PPW == 2)
                 {
