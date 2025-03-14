@@ -47,12 +47,6 @@
 #define SKIP_8BPP
 #endif
 
-// Not exactly clear how much Emscripten benefits from these and they're
-// doubling the number of renderers.
-#if defined(__EMSCRIPTEN__)
-#define SKIP_64_ALIGN
-#endif
-
 #include "render_layer_code.hpp"
 
 #ifdef BUILD_REFERENCE_RENDERER
@@ -265,6 +259,15 @@ void render_layer(void * RESTRICT pixels,
    *   the number of bits of the pitch's alignment (for rows after the first).
    */
   align = get_align_for_offset(sizeof(size_t) | drawStart | pitch);
+
+  // Override selected alignment for platforms that support fast unaligned.
+#if defined(PLATFORM_UNALIGN_64)
+  if(align >= PLATFORM_UNALIGN_64 * 8)
+    align = 64;
+#elif defined(PLATFORM_UNALIGN_32)
+  if(align >= PLATFORM_UNALIGN_32 * 8 && align < 32)
+    align = 32;
+#endif
 
   render_layer_func(pixels, width_px, height_px, pitch, graphics, layer,
    bpp, align, smzx, trans, clip);
