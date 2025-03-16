@@ -40,7 +40,9 @@
  defined(__ppc64__) || defined(_ARCH_PPC64)
 #define PLATFORM_IS_PPC64
 #endif
-#if defined(__ppc__) || defined(__POWERPC__) || defined(PLATFORM_IS_PPC64)
+#if defined(__powerpc__) || defined(__PPC__) || \
+ defined(__ppc__) || defined(_ARCH_PPC) || defined(__POWERPC__) || \
+ defined(PLATFORM_IS_PPC64)
 #define PLATFORM_IS_PPC
 #endif
 
