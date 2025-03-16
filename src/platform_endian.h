@@ -146,9 +146,13 @@
 #endif
 #endif
 
-/* PowerPC can access 32-bit ints unaligned, but 64-bit ints must be aligned. */
+/* PowerPC can access 32-bit ints unaligned, but 64-bit ints must be aligned.
+ * POWER8 and up have safe unaligned access for 64-bit ints. */
 #if defined(PLATFORM_IS_PPC)
 #define PLATFORM_UNALIGN_32 0x01
+#if defined(_ARCH_PWR8)
+#define PLATFORM_UNALIGN_64 0x01
+#endif
 #endif
 
 /* Motorola 68000 has limited unaligned safety, see above. */
