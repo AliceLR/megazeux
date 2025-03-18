@@ -781,10 +781,6 @@ static inline void render_layer_func(
         // the case without edge clipping isn't at the mercy of old compilers.
         if(CLIP && clip_x)
         {
-          int write_start = (pix_x < 0) ? (-pix_x / PPW) : 0;
-          int write_end = (pix_x + CHAR_W > width_px) ?
-           (width_px - pix_x) / PPW : CHAR_W / PPW;
-
           for(row = 0; row < CHAR_H; row++, out_ptr += pix_pitch)
           {
             current_char_byte = char_ptr[row];
@@ -796,8 +792,12 @@ static inline void render_layer_func(
 
             ALIGNTYPE *write_ptr = reinterpret_cast<ALIGNTYPE *>(out_ptr);
 
-            for(write_pos = write_start; write_pos < write_end; write_pos++)
+            for(write_pos = 0; write_pos < CHAR_W / PPW; write_pos++)
             {
+              if(pix_x + write_pos * PPW < 0 ||
+               pix_x + write_pos * PPW + PPW - 1 >= width_px)
+                continue;
+
               if(SMZX && PPW == 2)
               {
                 ALIGNTYPE shift = write_pos * PPW;
