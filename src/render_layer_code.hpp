@@ -646,8 +646,11 @@ static inline void render_layer_func(
       c = select_char(src, layer);
       if(c != INVISIBLE_CHAR)
       {
+        /* For 4PPW and 8PPW, only update the color arrays if the palette has
+         * actually changed. This optimization is negligible or worse for lower
+         * write sizes since it blocks other compiler optimizations. */
         unsigned both_cols = both_colors(src);
-        if(prev != both_cols)
+        if(PPW <= 2 || prev != both_cols)
         {
           prev = both_cols;
           if(SMZX)
