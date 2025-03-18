@@ -776,10 +776,6 @@ static inline void render_layer_func(
           }
         }
         else
-
-        // >1PPW with aligned x clipping manually unswitched so unrolling
-        // the case without edge clipping isn't at the mercy of old compilers.
-        if(CLIP && clip_x)
         {
           for(row = 0; row < CHAR_H; row++, out_ptr += pix_pitch)
           {
@@ -794,49 +790,10 @@ static inline void render_layer_func(
 
             for(write_pos = 0; write_pos < CHAR_W / PPW; write_pos++)
             {
-              if(pix_x + write_pos * PPW < 0 ||
-               pix_x + write_pos * PPW + PPW - 1 >= width_px)
-                continue;
-
-              if(SMZX && PPW == 2)
+              if(!CLIP || !clip_x ||
+               ((pix_x + write_pos * PPW >= 0) &&
+                (pix_x + write_pos * PPW + PPW - 1 < width_px)))
               {
-                ALIGNTYPE shift = write_pos * PPW;
-                pcol = (current_char_byte & (0xC0 >> shift)) << shift >> 6;
-
-                if(!TR || !has_tcol || tcol != char_idx[pcol])
-                  write_ptr[write_pos] = char_colors[pcol];
-              }
-              else
-              {
-                idx = get_colors_index<PPW>(current_char_byte, write_pos);
-                pix = get_colors<PPW>(set_colors, idx);
-
-                if(TR && has_tcol)
-                {
-                  ALIGNTYPE opaque = get_colors<PPW>(set_opaque, idx);
-                  pix = (pix & opaque) | (write_ptr[write_pos] & ~opaque);
-                }
-                write_ptr[write_pos] = pix;
-              }
-            }
-          }
-        }
-
-        else
-        {
-          for(row = 0; row < CHAR_H; row++, out_ptr += pix_pitch)
-          {
-            current_char_byte = char_ptr[row];
-
-            if(TR && has_tcol && current_char_byte == byte_tcol)
-              continue;
-            if(CLIP && clip_y && (out_ptr < start_ptr || out_ptr >= end_ptr))
-              continue;
-
-            ALIGNTYPE *write_ptr = reinterpret_cast<ALIGNTYPE *>(out_ptr);
-
-            for(write_pos = 0; write_pos < CHAR_W / PPW; write_pos++)
-            {
                 if(SMZX && PPW == 2)
                 {
                   ALIGNTYPE shift = write_pos * PPW;
@@ -857,6 +814,7 @@ static inline void render_layer_func(
                   }
                   write_ptr[write_pos] = pix;
                 }
+              }
             }
           }
         }
