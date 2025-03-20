@@ -603,19 +603,14 @@ static inline void render_layer_func(
      width_px, height_px, layer))
     {
       // Precalculate clipping boundaries.
-      // This only needs to be done when the layer isn't char-aligned.
-      int dest_last_x = layer->x + (int)layer->w * CHAR_W;
-      if((layer->x < 0 || dest_last_x > width_px) && (dest_x & 7))
-      {
-        if(layer->x < 0)
-          clip_xl = start_x;
-        if(dest_last_x > width_px)
-          clip_xr = end_x - 1;
-      }
+      if(layer->x + start_x * CHAR_W < 0)
+        clip_xl = start_x;
+      if(layer->x + end_x * CHAR_W > width_px)
+        clip_xr = end_x - 1;
 
-      if(layer->y < 0)
+      if(layer->y + start_y * CHAR_H < 0)
         clip_yt = start_y;
-      if(layer->y + (int)layer->h * CHAR_H > height_px)
+      if(layer->y + end_y * CHAR_H > height_px)
         clip_yb = end_y - 1;
     }
     src_skip = layer->w - (end_x - start_x);
