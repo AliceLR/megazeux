@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2017 Dr Lancer-X <drlancer@megazeux.org>
+ * Copyright (C) 2024-2025 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -218,21 +219,18 @@ static size_t get_align_for_offset(size_t value)
     return 8;
 }
 
-void render_layer(void * RESTRICT pixels,
- size_t width_px, size_t height_px, size_t pitch, int bpp,
- const struct graphics_data *graphics, const struct video_layer *layer)
+/* Select the safest renderer given the alignment of the pixel
+ * array, row pitch, and size_t. This function should not take architecture
+ * alignment capabilities or vector rendering into consideration.
+ */
+static inline void select_aligned_renderer(const void *pixels,
+ size_t width_px, size_t height_px, size_t pitch,
+ const struct graphics_data *graphics, const struct video_layer *layer,
+ int &bpp, int &align, int &smzx, int &trans, int &clip)
 {
-#if defined(BUILD_REFERENCE_RENDERER) && !defined(MZX_UNIT_TESTS)
-  reference_renderer((uint32_t * RESTRICT)pixels,
-   width_px, height_px, pitch, graphics, layer);
-  return;
-#endif
-
-  int smzx = layer->mode;
-  int trans = layer->transparent_col != -1;
-  size_t drawStart;
-  int align;
-  int clip = 0;
+  smzx = layer->mode;
+  trans = layer->transparent_col != -1;
+  clip = 0;
 
   if(layer->x < 0 || layer->y < 0 ||
    (layer->x + layer->w * CHAR_W) > width_px ||
@@ -242,7 +240,7 @@ void render_layer(void * RESTRICT pixels,
   if(bpp == -1)
     bpp = graphics->bits_per_pixel;
 
-  drawStart =
+  size_t drawStart =
    (size_t)((char *)pixels + layer->y * (ptrdiff_t)pitch + (layer->x * bpp / 8));
 
   /**
@@ -259,8 +257,12 @@ void render_layer(void * RESTRICT pixels,
    *   the number of bits of the pitch's alignment (for rows after the first).
    */
   align = get_align_for_offset(sizeof(size_t) | drawStart | pitch);
+}
 
-  // Override selected alignment for platforms that support fast unaligned.
+/* Override selected alignment for platforms that support fast unaligned.
+ */
+static inline void select_unaligned_renderer(int &align)
+{
 #if defined(PLATFORM_UNALIGN_64)
   if(align >= PLATFORM_UNALIGN_64 * 8)
     align = 64;
@@ -268,6 +270,26 @@ void render_layer(void * RESTRICT pixels,
   if(align >= PLATFORM_UNALIGN_32 * 8 && align < 32)
     align = 32;
 #endif
+}
+
+void render_layer(void * RESTRICT pixels,
+ size_t width_px, size_t height_px, size_t pitch, int bpp,
+ const struct graphics_data *graphics, const struct video_layer *layer)
+{
+#if defined(BUILD_REFERENCE_RENDERER) && !defined(MZX_UNIT_TESTS)
+  reference_renderer((uint32_t * RESTRICT)pixels,
+   width_px, height_px, pitch, graphics, layer);
+  return;
+#endif
+
+  int smzx = 0;
+  int trans = 0;
+  int align = 0;
+  int clip = 0;
+  select_aligned_renderer(pixels, width_px, height_px, pitch, graphics, layer,
+   bpp, align, smzx, trans, clip);
+
+  select_unaligned_renderer(align);
 
   render_layer_func(pixels, width_px, height_px, pitch, graphics, layer,
    bpp, align, smzx, trans, clip);

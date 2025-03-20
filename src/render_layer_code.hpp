@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2017 Dr Lancer-X <drlancer@megazeux.org>
- * Copyright (C) 2020, 2024 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2020, 2024-2025 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -494,7 +494,6 @@ static inline ALIGNTYPE get_colors(ALIGNTYPE (&set_colors)[16], unsigned idx)
 #endif
     }
   }
-  // Very old compilers also complain about this unreachable return.
   return 0;
 }
 
