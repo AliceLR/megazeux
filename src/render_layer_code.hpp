@@ -27,6 +27,7 @@
 // stream to a file.
 
 #include "graphics.h"
+#include "platform_attribute.h"
 #include "platform_endian.h"
 #include "render_layer_common.hpp"
 #include "util.h"
@@ -68,7 +69,12 @@ static void render_layer_func(
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int TR, int CLIP>
 static void render_layer_func(
  void * RESTRICT pixels, int width_px, int height_px, size_t pitch,
- const struct graphics_data *graphics, const struct video_layer *layer);
+ const struct graphics_data *graphics, const struct video_layer *layer)
+#if defined(PLATFORM_UNALIGN_32) || defined(PLATFORM_UNALIGN_64)
+/* May be using intentional unaligned accesses; tell UBSan to calm down. */
+ATTRIBUTE_NO_SANITIZE("alignment")
+#endif
+;
 
 /**
  * Alignment of pixel buffer (8bpp).

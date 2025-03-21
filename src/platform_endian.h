@@ -148,6 +148,17 @@
 #endif
 #endif
 
+/* ARMv7+ can access 32-bit (AArch64: and 64-bit) integers unaligned if
+ * the system allows this. This is almost always (but not necessarily) enabled
+ * for AArch64, and sometimes for ARMv7 and AArch32. Currently trusting
+ * __ARM_FEATURE_UNALIGNED to be accurate for any relevant environment. */
+#if defined(PLATFORM_IS_ARM) && defined(__ARM_FEATURE_UNALIGNED)
+#define PLATFORM_UNALIGN_32 0x01
+#if ARCHITECTURE_BITS >= 64
+#define PLATFORM_UNALIGN_64 0x01
+#endif
+#endif
+
 /* PowerPC can access 32-bit ints unaligned, but 64-bit ints must be aligned.
  * POWER8 and up have safe unaligned access for 64-bit ints. */
 #if defined(PLATFORM_IS_PPC)
