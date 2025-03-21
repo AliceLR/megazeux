@@ -151,8 +151,10 @@
 /* ARMv7+ can access 32-bit (AArch64: and 64-bit) integers unaligned if
  * the system allows this. This is almost always (but not necessarily) enabled
  * for AArch64, and sometimes for ARMv7 and AArch32. Currently trusting
- * __ARM_FEATURE_UNALIGNED to be accurate for any relevant environment. */
-#if defined(PLATFORM_IS_ARM) && defined(__ARM_FEATURE_UNALIGNED)
+ * __ARM_FEATURE_UNALIGNED to be accurate for any relevant environment.
+ * This is currently disabled for 32-bit ARM because clang 19 -O3 will emit
+ * STM instructions that trap even if __ARM_FEATURE_UNALIGNED is defined. */
+#if defined(PLATFORM_IS_ARM64) && defined(__ARM_FEATURE_UNALIGNED)
 #define PLATFORM_UNALIGN_32 0x01
 #if ARCHITECTURE_BITS >= 64
 #define PLATFORM_UNALIGN_64 0x01
