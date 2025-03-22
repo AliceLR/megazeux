@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2017 Dr Lancer-X <drlancer@megazeux.org>
- * Copyright (C) 2020, 2024 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2020, 2024-2025 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,7 +27,9 @@
 // stream to a file.
 
 #include "graphics.h"
+#include "platform_attribute.h"
 #include "platform_endian.h"
+#include "render_layer_common.hpp"
 #include "util.h"
 
 #include <stdlib.h>
@@ -38,6 +40,13 @@
 
 #ifdef _MSC_VER
 #include <cstdio>
+#endif
+
+#if defined(PLATFORM_UNALIGN_32) || defined(PLATFORM_UNALIGN_64)
+/* May be using intentional unaligned accesses; tell UBSan to calm down. */
+#define RENDER_EXTRA_ATTRIBUTES ATTRIBUTE_NO_SANITIZE("alignment")
+#else
+#define RENDER_EXTRA_ATTRIBUTES
 #endif
 
 template<typename PIXTYPE>
@@ -67,7 +76,8 @@ static void render_layer_func(
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int TR, int CLIP>
 static void render_layer_func(
  void * RESTRICT pixels, int width_px, int height_px, size_t pitch,
- const struct graphics_data *graphics, const struct video_layer *layer);
+ const struct graphics_data *graphics, const struct video_layer *layer)
+ RENDER_EXTRA_ATTRIBUTES;
 
 /**
  * Alignment of pixel buffer (8bpp).
@@ -318,21 +328,6 @@ static inline void render_layer_func(
   }
 }
 
-/**
- * Mode 0 and UI layer color selection function.
- * This needs to be done for both colors.
- */
-static inline int select_color_16(uint8_t color, int ppal)
-{
-  // Palette values >= 16, prior to offsetting, are from the protected palette.
-  if(color >= 16)
-  {
-    return (color - 16) % 16 + ppal;
-  }
-  else
-    return color;
-}
-
 // Macros to perform these shifts while ignoring spurious compiler warnings
 // that can't be turned off for older versions of GCC. Since BPP is constexpr
 // these should all optimize to single shifts.
@@ -491,7 +486,7 @@ static inline ALIGNTYPE get_colors(ALIGNTYPE (&set_colors)[16], unsigned idx)
   {
     // Should be unreachable, but some compilers complain...
     case 1:
-      return 0;
+      break;
 
     case 2:
     case 4:
@@ -508,6 +503,7 @@ static inline ALIGNTYPE get_colors(ALIGNTYPE (&set_colors)[16], unsigned idx)
 #endif
     }
   }
+  return 0;
 }
 
 #if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
@@ -531,13 +527,6 @@ static inline void render_layer_func(
   constexpr int BPP = sizeof(PIXTYPE) * 8;
   constexpr int PPW = sizeof(ALIGNTYPE) / sizeof(PIXTYPE);
 
-  /**
-   * The minimum pixel position allowed to be drawn.
-   * Since the SMZX,PPW=1 renderers have a special behavior that draws two
-   * pixels, it should always use -1 here (as if PPW is 2).
-   */
-  constexpr int PIXEL_X_MINIMUM = (SMZX && PPW == 1) ? -1 : 1 - PPW;
-
   // Make sure some pointless/impossible renderers are never instantiated.
   static_assert((PPW >= 1), "invalid ppw < 1");
   static_assert((PPW <= 8), "invalid ppw > 8");
@@ -547,7 +536,6 @@ static inline void render_layer_func(
 // Use these if for whatever reason C++11 isn't available.
 #define BPP (int)(sizeof(PIXTYPE) * 8)
 #define PPW (int)(sizeof(ALIGNTYPE) / sizeof(PIXTYPE))
-#define PIXEL_X_MINIMUM (int)((SMZX && PPW == 1) ? -1 : 1 - PPW)
 #endif
 
 #ifdef DEBUG
@@ -560,7 +548,7 @@ static inline void render_layer_func(
   }
 #endif
 
-  unsigned int ch_x, ch_y;
+  int x, y;
   uint16_t c;
 
   const struct char_element *src = layer->data;
@@ -576,13 +564,7 @@ static inline void render_layer_func(
   unsigned int pcol;
   unsigned idx;
 
-  ALIGNTYPE *drawPtr;
   ALIGNTYPE pix;
-
-  ALIGNTYPE *outPtr;
-  size_t align_pitch = pitch / sizeof(ALIGNTYPE);
-  size_t advance_char = CHAR_W * sizeof(PIXTYPE) / sizeof(ALIGNTYPE);
-  size_t advance_char_row = align_pitch * CHAR_H - advance_char * layer->w;
 
   int i;
 
@@ -593,53 +575,87 @@ static inline void render_layer_func(
   int ppal = graphics->protected_pal_position;
   int write_pos;
 
-  int pixel_x;
-  int pixel_y;
-
   ALIGNTYPE set_colors[16];
   ALIGNTYPE set_opaque[16];
-  uint16_t last_fg = 0xFFFF;
-  uint16_t last_bg = 0xFFFF;
+  unsigned prev = 0x10000;
   boolean has_tcol = false;
   boolean all_tcol = true;
+  // In mode 0 it's possible to quickly determine if an entire byte is
+  // transparent. If it is, there's no point in drawing it. SMZX modes
+  // can try to do a similar trick, but it won't work if the char has
+  // multiple indices set to the transparent color.
   unsigned int byte_tcol = 0xFFFF;
 
-  // Position the output ptr at the location of the first char
-  outPtr = (ALIGNTYPE *)pixels;
-  outPtr += layer->y * (int)align_pitch;
-  outPtr += layer->x * (int)sizeof(PIXTYPE) / (int)sizeof(ALIGNTYPE);
+  size_t pix_pitch = pitch / sizeof(PIXTYPE);
+  size_t pix_skip = pix_pitch * CHAR_H;
+  PIXTYPE *dest_ptr = reinterpret_cast<PIXTYPE *>(pixels);
+  PIXTYPE *out_ptr;
+  PIXTYPE *start_ptr = dest_ptr;
+  PIXTYPE *end_ptr = dest_ptr + (height_px - 1) * pix_pitch + width_px;
 
-  for(ch_y = 0; ch_y < layer->h; ch_y++, outPtr += advance_char_row)
+  // CLIP variables
+  int start_x = 0;
+  int start_y = 0;
+  int end_x = layer->w;
+  int end_y = layer->h;
+  int dest_x = layer->x;
+  int dest_y = layer->y;
+  size_t src_skip = 0;
+  int clip_xl = -1;
+  int clip_xr = -1;
+  int clip_yt = -1;
+  int clip_yb = -1;
+
+  if(CLIP)
   {
-    for(ch_x = 0; ch_x < layer->w; ch_x++, src++, outPtr += advance_char)
+    if(precompute_clip(start_x, start_y, end_x, end_y, dest_x, dest_y,
+     width_px, height_px, layer))
     {
-      c = src->char_value;
+      // Precalculate clipping boundaries.
+      if(layer->x + start_x * CHAR_W < 0)
+        clip_xl = start_x;
+      if(layer->x + end_x * CHAR_W > width_px)
+        clip_xr = end_x - 1;
 
-      if(CLIP)
-      {
-        pixel_x = layer->x + ch_x * CHAR_W;
-        pixel_y = layer->y + ch_y * CHAR_H;
+      if(layer->y + start_y * CHAR_H < 0)
+        clip_yt = start_y;
+      if(layer->y + end_y * CHAR_H > height_px)
+        clip_yb = end_y - 1;
+    }
+    src_skip = layer->w - (end_x - start_x);
+  }
 
-        if(pixel_x <= -CHAR_W || pixel_y <= -CHAR_H ||
-         pixel_x >= width_px || pixel_y >= height_px)
-          c = INVISIBLE_CHAR;
-      }
+  dest_ptr += dest_y * (ptrdiff_t)pix_pitch;
+  dest_ptr += dest_x;
+  src = layer->data + start_x + (start_y * layer->w);
 
+  pix_skip -= (end_x - start_x) * CHAR_W;
+
+  /* Enable 1PPW writes for >1PPW renderers at X clip boundaries if anything
+   * in the render will be off of alignment. */
+  const int unaligned =
+   ((size_t)pixels | (size_t)dest_ptr | pitch) % sizeof(ALIGNTYPE);
+
+  for(y = start_y; y < end_y; y++, src += src_skip, dest_ptr += pix_skip)
+  {
+    int clip_y = CLIP && (y == clip_yt || y == clip_yb);
+    int pix_y = layer->y + y * CHAR_H;
+
+    for(x = start_x; x < end_x; x++, src++, dest_ptr += CHAR_W)
+    {
+      int clip_x = CLIP && (x == clip_xl || x == clip_xr);
+      int pix_x = layer->x + x * CHAR_W;
+
+      c = select_char(src, layer);
       if(c != INVISIBLE_CHAR)
       {
-        // Char values of 256+, prior to offsetting, are from the protected set
-        if(c > 0xFF)
+        /* For 4PPW and 8PPW, only update the color arrays if the palette has
+         * actually changed. This optimization is negligible or worse for lower
+         * write sizes since it blocks other compiler optimizations. */
+        unsigned both_cols = both_colors(src);
+        if(PPW <= 2 || prev != both_cols)
         {
-          c = (c & 0xFF) + PROTECTED_CHARSET_POSITION;
-        }
-        else
-        {
-          c += layer->offset;
-          c %= PROTECTED_CHARSET_POSITION;
-        }
-
-        if(src->bg_color != last_bg || src->fg_color != last_fg)
-        {
+          prev = both_cols;
           if(SMZX)
           {
             unsigned int pal = ((src->bg_color & 0xF) << 4) | (src->fg_color & 0xF);
@@ -718,63 +734,79 @@ static inline void render_layer_func(
         if(TR && all_tcol)
           continue;
 
+        out_ptr = dest_ptr;
         char_ptr = graphics->charset + (c * CHAR_H);
-        drawPtr = outPtr;
 
-        for(row = 0; row < CHAR_H; row++, drawPtr += align_pitch)
+        // Force 1 PPW if this renderer is using unaligned writes on an edge.
+        if(PPW == 1 || (CLIP && clip_x && unaligned))
         {
-          current_char_byte = char_ptr[row];
-
-          // In mode 0 it's possible to quickly determine if an entire byte is
-          // transparent. If it is, there's no point in drawing it. SMZX modes
-          // can try to do a similar trick, but it won't work if the char has
-          // multiple indices set to the transparent color.
-          if(TR && has_tcol && current_char_byte == byte_tcol)
-            continue;
-
-          if(!CLIP || (pixel_y + row >= 0 && pixel_y + row < height_px))
+          for(row = 0; row < CHAR_H; row++, out_ptr += pix_pitch)
           {
+            current_char_byte = char_ptr[row];
+
+            if(TR && has_tcol && current_char_byte == byte_tcol)
+              continue;
+            if(CLIP && clip_y && (pix_y + row < 0 || out_ptr >= end_ptr))
+              continue;
+
+            for(write_pos = 0; write_pos < CHAR_W; write_pos++)
+            {
+              if(!SMZX)
+              {
+                if(CLIP && clip_x && (pix_x + write_pos < 0 || pix_x + write_pos >= width_px))
+                  continue;
+
+                pcol = !!(current_char_byte & (0x80 >> write_pos));
+                if(!TR || !has_tcol || tcol != char_idx[pcol])
+                  out_ptr[write_pos] = char_colors[pcol];
+              }
+              else
+              {
+                pcol = (current_char_byte & (0xC0 >> write_pos)) << write_pos >> 6;
+                if(TR && has_tcol && tcol == char_idx[pcol])
+                {
+                  write_pos++;
+                  continue;
+                }
+
+                pix = char_colors[pcol];
+                if(!CLIP || !clip_x || (pix_x + write_pos >= 0 && pix_x + write_pos < width_px))
+                  out_ptr[write_pos] = pix;
+
+                write_pos++;
+
+                if(!CLIP || !clip_x || (pix_x + write_pos >= 0 && pix_x + write_pos < width_px))
+                  out_ptr[write_pos] = pix;
+              }
+            }
+          }
+        }
+        else
+        {
+          for(row = 0; row < CHAR_H; row++, out_ptr += pix_pitch)
+          {
+            current_char_byte = char_ptr[row];
+
+            if(TR && has_tcol && current_char_byte == byte_tcol)
+              continue;
+            if(CLIP && clip_y && (out_ptr < start_ptr || out_ptr >= end_ptr))
+              continue;
+
+            ALIGNTYPE *write_ptr = reinterpret_cast<ALIGNTYPE *>(out_ptr);
+
             for(write_pos = 0; write_pos < CHAR_W / PPW; write_pos++)
             {
-              if(!CLIP ||
-               ((pixel_x + write_pos * PPW >= PIXEL_X_MINIMUM) &&
-                (pixel_x + write_pos * PPW < width_px)))
+              if(!CLIP || !clip_x ||
+               ((pix_x + write_pos * PPW >= 0) &&
+                (pix_x + write_pos * PPW + PPW - 1 < width_px)))
               {
-                if(!SMZX && PPW == 1)
-                {
-                  pcol = !!(current_char_byte & (0x80 >> write_pos));
-                  if(!TR || !has_tcol || tcol != char_idx[pcol])
-                    drawPtr[write_pos] = char_colors[pcol];
-                }
-                else
-
-                if(SMZX && PPW == 1)
-                {
-                  pcol = (current_char_byte & (0xC0 >> write_pos)) << write_pos >> 6;
-                  if(TR && has_tcol && tcol == char_idx[pcol])
-                  {
-                    write_pos++;
-                    continue;
-                  }
-
-                  pix = char_colors[pcol];
-                  if(!CLIP || (pixel_x + write_pos * PPW >= 0))
-                    drawPtr[write_pos] = pix;
-
-                  write_pos++;
-
-                  if(!CLIP || (pixel_x + write_pos * PPW < width_px))
-                    drawPtr[write_pos] = pix;
-                }
-                else
-
                 if(SMZX && PPW == 2)
                 {
                   ALIGNTYPE shift = write_pos * PPW;
                   pcol = (current_char_byte & (0xC0 >> shift)) << shift >> 6;
 
                   if(!TR || !has_tcol || tcol != char_idx[pcol])
-                    drawPtr[write_pos] = char_colors[pcol];
+                    write_ptr[write_pos] = char_colors[pcol];
                 }
                 else
                 {
@@ -784,15 +816,11 @@ static inline void render_layer_func(
                   if(TR && has_tcol)
                   {
                     ALIGNTYPE opaque = get_colors<PPW>(set_opaque, idx);
-                    pix = (pix & opaque) | (drawPtr[write_pos] & ~opaque);
+                    pix = (pix & opaque) | (write_ptr[write_pos] & ~opaque);
                   }
-                  drawPtr[write_pos] = pix;
+                  write_ptr[write_pos] = pix;
                 }
               }
-              else
-
-              if(SMZX && PPW == 1) // Skip two pixels instead of 1.
-                write_pos++;
             }
           }
         }

@@ -9,6 +9,17 @@ GIT - MZX 2.93d
 
 USERS
 
++ Software layer renderer performance enhancements for repeat
+  colors, clipping, and unaligned renderering.
++ Unaligned software layer rendering using 64-bit writes is
+  now enabled for x86-64, POWER8, Emscripten, and probably most
+  AArch64 builds. This optimizes out up to 48 renderers for
+  these architectures, and improves 8-bit, 16-bit, and 32-bit
+  rendering performance.
++ Unaligned software layer rendering using 32-bit writes is
+  now enabled for x86, PowerPC, and M68k. This optimizes out up
+  to 24 renderers for these architectures, and improves 8-bit
+  and 16-bit rendering performance.
 + Fixed date and time counters on NDS (missing IRQ_NETWORK).
 
 DEVELOPERS
