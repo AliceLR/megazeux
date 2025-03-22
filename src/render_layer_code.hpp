@@ -42,6 +42,13 @@
 #include <cstdio>
 #endif
 
+#if defined(PLATFORM_UNALIGN_32) || defined(PLATFORM_UNALIGN_64)
+/* May be using intentional unaligned accesses; tell UBSan to calm down. */
+#define RENDER_EXTRA_ATTRIBUTES ATTRIBUTE_NO_SANITIZE("alignment")
+#else
+#define RENDER_EXTRA_ATTRIBUTES
+#endif
+
 template<typename PIXTYPE>
 static void render_layer_func(
  void * RESTRICT pixels, int width_px, int height_px, size_t pitch,
@@ -70,11 +77,7 @@ template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int TR, int CLIP>
 static void render_layer_func(
  void * RESTRICT pixels, int width_px, int height_px, size_t pitch,
  const struct graphics_data *graphics, const struct video_layer *layer)
-#if defined(PLATFORM_UNALIGN_32) || defined(PLATFORM_UNALIGN_64)
-/* May be using intentional unaligned accesses; tell UBSan to calm down. */
-ATTRIBUTE_NO_SANITIZE("alignment")
-#endif
-;
+ RENDER_EXTRA_ATTRIBUTES;
 
 /**
  * Alignment of pixel buffer (8bpp).

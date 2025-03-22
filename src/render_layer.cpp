@@ -185,7 +185,8 @@ static inline void reference_renderer(uint32_t * RESTRICT pixels,
 /* Return the alignment of a particular value (typically pixel array address).
  * Multiple addresses can be ORed together to get the lowest-common alignment
  * for multiple inputs. This function should not take architecture unalignment
- * capabilities or vector rendering into consideration. */
+ * capabilities or vector rendering into consideration.
+ */
 static size_t get_align_for_offset(size_t value)
 {
 #ifndef SKIP_64_ALIGN
@@ -277,7 +278,7 @@ void render_layer(void * RESTRICT pixels,
  const struct graphics_data *graphics, const struct video_layer *layer)
 {
 #if defined(BUILD_REFERENCE_RENDERER) && !defined(MZX_UNIT_TESTS)
-  reference_renderer((uint32_t * RESTRICT)pixels,
+  reference_renderer(reinterpret_cast<uint32_t * RESTRICT>(pixels),
    width_px, height_px, pitch, graphics, layer);
   return;
 #endif
