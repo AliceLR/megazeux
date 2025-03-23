@@ -69,7 +69,7 @@ crlf_convert_repository()
 	#
 	[ -z "$MSYSTEM" ] || { return; }
 
-	FILES=$(find config.txt LICENSE assets docs arch/mingw arch/*/pad.config arch/emscripten/web/res/index.html \
+	FILES=$(find config.txt LICENSE* assets docs arch/mingw arch/*/pad.config arch/emscripten/web/res/index.html \
 		-name "*.txt" -o \
 		-name "*.frag" -o \
 		-name "*.vert" -o \
