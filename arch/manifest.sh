@@ -5,12 +5,15 @@ if [ "$1" = "" ]; then
 	echo "usage: $0 [build dir]"
 	exit 0
 fi
+
 if command -v sha256sum >/dev/null 2>/dev/null; then
-	export sha256cmd="sha256sum"
-elif command -v shasum >/dev/null 2>/dev/null; then
-	export sha256cmd="shasum -a256"
+	export sha256cmd="sha256sum -b"
 elif command -v gsha256sum >/dev/null 2>/dev/null; then
-	export sha256cmd="gsha256sum"
+	export sha256cmd="gsha256sum -b"
+elif command -v shasum >/dev/null 2>/dev/null; then
+	export sha256cmd="shasum -a256 -b"
+elif command -v sha256 >/dev/null 2>/dev/null; then
+	export sha256cmd="sha256 -q"
 else
 	echo "error: install sha256sum (coreutils, BusyBox) or shasum (perl)."
 	exit 1
@@ -32,7 +35,7 @@ find . -mindepth 1 -type f				\
 	-print0						\
 | xargs -0 -n1 -P24 /bin/sh -c				\
 	'size=$(($(wc -c <"$1")));			\
-	 sha=$($sha256cmd -b "$1" | cut -f1 -d" ");	\
+	 sha=$($sha256cmd "$1" | cut -f1 -d" ");	\
 	 name=$(echo "$1" | sed "s,\\.\\/,,");		\
 	 echo "$sha" "$size" "$name"' "$0"		\
 | sort -k3						\
