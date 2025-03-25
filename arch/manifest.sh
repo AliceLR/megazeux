@@ -10,10 +10,10 @@ if command -v sha256sum >/dev/null 2>/dev/null; then
 	export sha256cmd="sha256sum -b"
 elif command -v gsha256sum >/dev/null 2>/dev/null; then
 	export sha256cmd="gsha256sum -b"
-elif command -v shasum >/dev/null 2>/dev/null; then
-	export sha256cmd="shasum -a256 -b"
 elif command -v sha256 >/dev/null 2>/dev/null; then
 	export sha256cmd="sha256 -q"
+elif command -v shasum >/dev/null 2>/dev/null; then
+	export sha256cmd="shasum -a256 -b"
 else
 	echo "error: install sha256sum (coreutils, BusyBox) or shasum (perl)."
 	exit 1
