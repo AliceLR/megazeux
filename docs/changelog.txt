@@ -24,6 +24,10 @@ USERS
 
 DEVELOPERS
 
++ manifest.sh no longer requires bash. All scripts and Makefiles
+  should now be fully compatible with POSIX sh (with only a few
+  GNU extended options remaining where required).
+
 
 February 28th, 2025 - MZX 2.93c
 
