@@ -753,14 +753,15 @@ static char *OutputPath(const char *input, Config *cfg, const char *ext)
   size_t output_len;
   if(cfg->output[0] == '\0')
   {
-    if(strcmp(input, "-"))
-      snprintf(buf, MAX_PATH, "%s", input);
-    else
-      strcpy(buf, "out");
+    if(!strcmp(input, "-"))
+      input = "out";
 
+    snprintf(buf, MAX_PATH, "%s", input);
     buf[MAX_PATH] = '\0';
+
     buf_e = strrchr(buf, '.');
-    if (buf_e) *buf_e = '\0';
+    if(buf_e)
+      *buf_e = '\0';
 
     output_len = strlen(buf) + strlen(ext) + 1;
     output_path = cmalloc(output_len);

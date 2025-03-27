@@ -3249,7 +3249,7 @@ static enum status parse_file(const char *file_name,
   ext = len >= 4 ? (char *)file_name + len - 4 : NULL;
 
   if(!_get_path(file_dir, file_name))
-    strcpy(file_dir, ".");
+    snprintf(file_dir, sizeof(file_dir), ".");
 
   if(vf && ext && !strcasecmp(ext, ".MZX"))
   {

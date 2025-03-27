@@ -2400,8 +2400,7 @@ static enum image_error pam_header(uint32_t *width, uint32_t *height,
       if(!*value || has_tu)
         return IMAGE_ERROR_PAM_BAD_TUPLTYPE;
 
-      // NOTE: tuplstr size MUST be >= linebuf size.
-      strcpy(tuplstr, value);
+      snprintf(tuplstr, sizeof(tuplstr), "%s", value);
       has_tu = true;
     }
   }
