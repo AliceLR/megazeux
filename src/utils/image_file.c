@@ -2334,14 +2334,14 @@ static enum image_error pam_header(uint32_t *width, uint32_t *height,
   while(next_line(linebuf, 256, s))
   {
     value = linebuf;
-    while(isspace(*value))
+    while(isspace((uint8_t )*value))
       value++;
 
     if(!*value || *value == '#')
       continue;
 
     key = value;
-    while(*value && !isspace(*value))
+    while(*value && !isspace((uint8_t)*value))
       value++;
 
     if(*value)
