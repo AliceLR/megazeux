@@ -27,6 +27,10 @@ DEVELOPERS
 + manifest.sh no longer requires bash. All scripts and Makefiles
   should now be fully compatible with POSIX sh (with only a few
   GNU extended options remaining where required).
++ Fix compilation with glibc versions prior to 2.17 caused by
+  clock_gettime (disabling for now until -lrt can be tested).
++ Fix compilation with libpng versions missing png_const_bytep.
++ Remove -Wno-missing-field-initializers to fix GCC 3 support.
 
 
 February 28th, 2025 - MZX 2.93c
