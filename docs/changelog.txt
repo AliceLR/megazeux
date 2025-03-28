@@ -31,6 +31,8 @@ DEVELOPERS
   clock_gettime (disabling for now until -lrt can be tested).
 + Fix compilation with libpng versions missing png_const_bytep.
 + Remove -Wno-missing-field-initializers to fix GCC 3 support.
++ Remove redundant order-only prerequisites in src/Makefile.in
+  to fix building with older versions of GNU Make.
 
 
 February 28th, 2025 - MZX 2.93c

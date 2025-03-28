@@ -460,10 +460,10 @@ core_objs := ${core_cobjs} ${core_cxxobjs}
 
 -include ${core_objs:.o=.d}
 
-${core_objs}: | $(filter-out $(wildcard ${core_obj}), ${core_obj})
-${core_objs}: | $(filter-out $(wildcard ${audio_obj}), ${audio_obj})
-${core_objs}: | $(filter-out $(wildcard ${io_obj}), ${io_obj})
-${core_objs}: | $(filter-out $(wildcard ${network_obj}), ${network_obj})
+${core_objs}: $(filter-out $(wildcard ${core_obj}), ${core_obj})
+${core_objs}: $(filter-out $(wildcard ${audio_obj}), ${audio_obj})
+${core_objs}: $(filter-out $(wildcard ${io_obj}), ${io_obj})
+${core_objs}: $(filter-out $(wildcard ${network_obj}), ${network_obj})
 
 ifeq (${BUILD_MODULAR},1)
 
