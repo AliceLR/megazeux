@@ -431,10 +431,12 @@ void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checke
   {
     png_set_tRNS_to_alpha(png_ptr);
   }
+#if PNG_LIBPNG_VER >= 10207
   else
 
   if(!(type & PNG_COLOR_MASK_ALPHA))
     png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);
+#endif
 
   // FIXME: Are these necessary?
   png_read_update_info(png_ptr, info_ptr);

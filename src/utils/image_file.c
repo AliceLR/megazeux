@@ -316,8 +316,10 @@ static enum image_error load_png(imageinfo *s)
     png_set_palette_to_rgb(png);
   if(!(color_type & PNG_COLOR_MASK_COLOR))
     png_set_gray_to_rgb(png);
+#if PNG_LIBPNG_VER >= 10207
   if(!(color_type & PNG_COLOR_MASK_ALPHA))
     png_set_add_alpha(png, 0xff, PNG_FILLER_AFTER);
+#endif
   if(png_get_valid(png, info, PNG_INFO_tRNS))
     png_set_tRNS_to_alpha(png);
 

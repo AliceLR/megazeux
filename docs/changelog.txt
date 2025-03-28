@@ -29,7 +29,8 @@ DEVELOPERS
   GNU extended options remaining where required).
 + Fix compilation with glibc versions prior to 2.17 caused by
   clock_gettime (disabling for now until -lrt can be tested).
-+ Fix compilation with libpng versions missing png_const_bytep.
++ Fix compilation with libpng versions missing png_const_bytep
+  and png_set_add_alpha.
 + Remove -Wno-missing-field-initializers to fix GCC 3 support.
 + Remove redundant order-only prerequisites in src/Makefile.in
   to fix building with older versions of GNU Make.
