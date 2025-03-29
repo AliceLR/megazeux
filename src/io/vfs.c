@@ -1110,7 +1110,7 @@ static boolean vfs_move_inode(vfilesystem *vfs, uint32_t old_parent,
   struct vfs_inode *new_p;
   struct vfs_inode *n;
   uint32_t old_pos_in_parent;
-  uint32_t new_pos_in_parent;
+  uint32_t new_pos_in_parent = 0;
   uint32_t pos;
 
   if(inode == VFS_NO_INODE)

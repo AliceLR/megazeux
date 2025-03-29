@@ -1352,7 +1352,7 @@ err_out:
 enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
  size_t *u_size)
 {
-  uint64_t tmp;
+  uint64_t tmp = 0;
   enum zip_error result = zip_get_next_uncompressed_size64(zp, &tmp);
   if(result)
     return result;
