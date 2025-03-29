@@ -40,7 +40,8 @@ __M_BEGIN_DECLS
 #endif
 #endif
 
-#if defined(__GNUC__) && !defined(THREAD_ERROR)
+#if defined(__GNUC__) && !defined(THREAD_ERROR) && \
+ (__GNUC__ >= 5 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
 #define THREAD_ERROR __attribute__((error(THREAD_ERROR_MSG)))
 #endif
 
