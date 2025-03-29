@@ -34,9 +34,6 @@ __M_BEGIN_DECLS
 
 #ifdef CONFIG_SDL
 # include "SDLmzx.h"
-# if !SDL_VERSION_ATLEAST(2,0,0) && !defined(_WIN32)
-#   define NO_SDL_GLEXT /* Include glext.h instead of oudated SDL 1.2 defines */
-# endif
 # ifdef CONFIG_GLES
 #   ifdef CONFIG_RENDER_GL_FIXED
 #     if SDL_VERSION_ATLEAST(3,0,0)
