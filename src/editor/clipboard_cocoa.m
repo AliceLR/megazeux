@@ -43,6 +43,8 @@
 void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 {
   NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  NSPasteboard *pasteboard = NULL;
+  NSString *string = NULL;
 
   char *buf = cmalloc(total_length + 1);
   char *pos = buf;
@@ -58,11 +60,11 @@ void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
   /* Convert to NSString. NOTE: this function requires 10.3+, haven't
    * looked for a compelling way to do this for 10.0.
    */
-  NSString *string = [[[NSString alloc] initWithBytes:buf length:total_length
+  string = [[[NSString alloc] initWithBytes:buf length:total_length
    encoding:NSMacOSRomanStringEncoding] autorelease];
   free(buf);
 
-  NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+  pasteboard = [NSPasteboard generalPasteboard];
 
 #if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1060
 
@@ -87,13 +89,17 @@ char *get_clipboard_buffer(void)
 {
   NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+  NSString *string = NULL;
+  NSData *chrdata = NULL;
+  size_t buf_len;
+  char *buf;
 
 #if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1060
 
   NSArray *for_classes = [NSArray arrayWithObject:[NSString class]];
   NSArray *items = [pasteboard readObjectsForClasses:for_classes options:nil];
 
-  NSString *string = items && [items count] ? [items objectAtIndex:0] : nil;
+  string = items && [items count] ? [items objectAtIndex:0] : nil;
   if(!string)
     goto err;
 
@@ -103,19 +109,19 @@ char *get_clipboard_buffer(void)
   if(![pasteboard availableTypeFromArray:types])
     goto err;
 
-  NSString *string = [pasteboard stringForType:NSStringPboardType];
+  string = [pasteboard stringForType:NSStringPboardType];
   if(!string)
     goto err;
 
 #endif /* VERSION_MIN < 1060 */
 
-  NSData *chrdata = [string dataUsingEncoding:NSMacOSRomanStringEncoding
+  chrdata = [string dataUsingEncoding:NSMacOSRomanStringEncoding
    allowLossyConversion:true];
   if(!chrdata)
     goto err;
 
-  size_t buf_len = [chrdata length];
-  char *buf = (char *)cmalloc(buf_len + 1);
+  buf_len = [chrdata length];
+  buf = (char *)cmalloc(buf_len + 1);
 
   [chrdata getBytes:buf length:buf_len];
   buf[buf_len] = '\0';
