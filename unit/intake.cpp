@@ -449,7 +449,7 @@ UNITTEST(EventFixed)
     for(const event_input_data &d : insert_data)
     {
       int expected_len = strlen(d.expected);
-      strcpy(dest, d.base);
+      snprintf(dest, sizeof(dest), "%s", d.base);
       intake_set_length(&intk, strlen(dest));
       intake_set_pos(&intk, d.start_pos);
 
@@ -466,7 +466,7 @@ UNITTEST(EventFixed)
     // Special: prevent inserting beyond the maximum length.
     intk.max_length = 8;
     intk.current_length = 7;
-    strcpy(dest, "abcdefg");
+    snprintf(dest, sizeof(dest), "abcdefg");
 
     intk.pos = 7;
     result = intake_apply_event_fixed(sub, INTK_INSERT, intk.pos + 1, 'h', nullptr);
@@ -486,7 +486,7 @@ UNITTEST(EventFixed)
     for(const event_input_data &d : overwrite_data)
     {
       int expected_len = strlen(d.expected);
-      strcpy(dest, d.base);
+      snprintf(dest, sizeof(dest), "%s", d.base);
       intake_set_length(&intk, strlen(dest));
       intake_set_pos(&intk, d.start_pos);
 
@@ -502,7 +502,7 @@ UNITTEST(EventFixed)
     // Special: prevent inserting beyond the maximum length.
     intk.max_length = 8;
     intk.current_length = 7;
-    strcpy(dest, "abcdefg");
+    snprintf(dest, sizeof(dest), "abcdefg");
 
     intk.pos = 7;
     result = intake_apply_event_fixed(sub, INTK_OVERWRITE, intk.pos + 1, 'h', nullptr);
@@ -532,7 +532,7 @@ UNITTEST(EventFixed)
     for(const event_repeat_data &d : data)
     {
       int expected_len = strlen(d.expected);
-      strcpy(dest, d.base);
+      snprintf(dest, sizeof(dest), "%s", d.base);
       intake_set_length(&intk, strlen(dest));
       intake_set_pos(&intk, d.start_pos);
 
@@ -561,7 +561,7 @@ UNITTEST(EventFixed)
     for(const event_repeat_data &d : data)
     {
       int expected_len = strlen(d.expected);
-      strcpy(dest, d.base);
+      snprintf(dest, sizeof(dest), "%s", d.base);
       intake_set_length(&intk, strlen(dest));
       intake_set_pos(&intk, d.start_pos);
 
@@ -599,7 +599,7 @@ UNITTEST(EventFixed)
     for(const event_repeat_data &d : data)
     {
       int expected_len = strlen(d.expected);
-      strcpy(dest, d.base);
+      snprintf(dest, sizeof(dest), "%s", d.base);
       intake_set_length(&intk, strlen(dest));
       intake_set_pos(&intk, d.start_pos);
 
@@ -626,7 +626,7 @@ UNITTEST(EventFixed)
 
     for(const event_repeat_data &d : data)
     {
-      strcpy(dest, d.base);
+      snprintf(dest, sizeof(dest), "%s", d.base);
       intake_set_length(&intk, strlen(dest));
       intake_set_pos(&intk, d.start_pos);
 
@@ -642,7 +642,7 @@ UNITTEST(EventFixed)
   {
     for(const event_input_data &d : insert_data)
     {
-      strcpy(dest, d.base);
+      snprintf(dest, sizeof(dest), "%s", d.base);
       intake_set_length(&intk, strlen(dest));
       intake_set_pos(&intk, d.start_pos);
 
@@ -660,7 +660,7 @@ UNITTEST(EventFixed)
   {
     for(const event_input_data &d : overwrite_data)
     {
-      strcpy(dest, d.base);
+      snprintf(dest, sizeof(dest), "%s", d.base);
       intake_set_length(&intk, strlen(dest));
       intake_set_pos(&intk, d.start_pos);
 
@@ -682,7 +682,7 @@ UNITTEST(EventFixed)
      */
     for(const input_string_data &d : input_data)
     {
-      strcpy(dest, d.base);
+      snprintf(dest, sizeof(dest), "%s", d.base);
       intake_set_length(&intk, strlen(dest));
       intake_set_pos(&intk, d.start_pos);
       intake_set_insert(d.insert_on);
@@ -797,7 +797,7 @@ UNITTEST(EventCallback)
       event_cb_data priv = { d.base, &pos_external, 0 };
       intk.event_priv = &priv;
       intk.pos = d.old_pos;
-      strcpy(dest, d.base);
+      snprintf(dest, sizeof(dest), "%s", d.base);
       intake_event_ext(&intk, d.type, d.old_pos, d.new_pos, d.value, dummy_data);
       ASSERTEQ(priv.call_count, 1, "%s", d.base);
       ASSERTEQ(intk.pos, d.new_pos, "%s", d.base);

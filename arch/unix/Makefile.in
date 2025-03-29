@@ -12,8 +12,9 @@ DSOSONAME  = -Wl,-soname,
 # This fixes issues with readdir() failing with EOVERFLOW when called from a
 # 32-bit executable running on a large filesystem.
 # This also enables 64-bit file support on 32-bit platforms.
-ARCH_CFLAGS   = -D_FILE_OFFSET_BITS=64
-ARCH_CXXFLAGS = -D_FILE_OFFSET_BITS=64
+# _LARGEFILE_SOURCE enables fseeko/ftello for very old glibc versions.
+ARCH_CFLAGS   = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
+ARCH_CXXFLAGS = -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
 
 # Allow ZIP for portable unix-devel packages.
 include arch/zip.inc

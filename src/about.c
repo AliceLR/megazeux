@@ -59,8 +59,8 @@
 #ifdef CONFIG_PNG
 static char *png_version_string(char version_str[16], png_uint_32 version)
 {
-  snprintf(version_str, 16, "%d.%d.%d",
-   version / 10000, (version / 100) % 100, version % 100);
+  int v = (int)version;
+  snprintf(version_str, 16, "%d.%d.%d", v / 10000, (v / 100) % 100, v % 100);
 
   return version_str;
 }

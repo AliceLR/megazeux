@@ -362,8 +362,10 @@ int main(int argc, char *argv[])
         file_len += (str_len + 1);
 
         //Is this a context-link?
-        if((str_len == 3) && isdigit(tstr[0]) &&
-           isdigit(tstr[1]) && isdigit(tstr[2]))
+        if((str_len == 3) &&
+         isdigit((unsigned char)tstr[0]) &&
+         isdigit((unsigned char)tstr[1]) &&
+         isdigit((unsigned char)tstr[2]))
         {
           //Yep.
           link_numbers[curr_link_ref] = atoi(tstr);

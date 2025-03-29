@@ -305,7 +305,7 @@ static boolean is_simple_path(const char *src, boolean allow_expressions)
     {
       while(*(++tpos))
       {
-        if(isdigit(*tpos)) continue;
+        if(isdigit((unsigned char)*tpos)) continue;
         if(*tpos == '.' || *tpos == '\0')
           return false;
       }
@@ -415,9 +415,9 @@ static boolean get_wildcard_path(char dest[MAX_PATH], const char *src)
     {
       // Truncated DOS filename--replace ~### with wildcard
       size_t backup = i;
-      if(i + 1 < len && isdigit(src[i + 1]))
+      if(i + 1 < len && isdigit((unsigned char)src[i + 1]))
       {
-        while(i + 1 < len && isdigit(src[i + 1])) i++;
+        while(i + 1 < len && isdigit((unsigned char)src[i + 1])) i++;
         if(i + 1 >= len || src[i + 1] == '.')
         {
           dest[j++] = '*';
@@ -534,7 +534,7 @@ static boolean check_wildcard_path(const char *path, const char *wildcard)
         for(i = p; i < MIN(p + 10, path_len); i++)
         {
           if(pos == MAX_STATE - 1) break;
-          if(isdigit(path[i]))
+          if(isdigit((unsigned char)path[i]))
           {
             pos++;
             state[pos].p = i + 1;
@@ -3249,7 +3249,7 @@ static enum status parse_file(const char *file_name,
   ext = len >= 4 ? (char *)file_name + len - 4 : NULL;
 
   if(!_get_path(file_dir, file_name))
-    strcpy(file_dir, ".");
+    snprintf(file_dir, sizeof(file_dir), ".");
 
   if(vf && ext && !strcasecmp(ext, ".MZX"))
   {

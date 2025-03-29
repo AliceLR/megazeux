@@ -2644,6 +2644,9 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
     goto err_out;
   }
 
+  // Fix bogus old GCC warnings
+  memset(&eocd, 0, sizeof(eocd));
+
   result = zip_read_eocd(zp, &eocd);
   if(result != ZIP_SUCCESS)
     goto err_out;

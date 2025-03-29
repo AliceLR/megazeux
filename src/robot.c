@@ -765,6 +765,7 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
   struct memfile mf;
   void *buffer = NULL;
   size_t actual_size = 0;
+  enum zip_error ret = ZIP_SUCCESS;
 
   if(cur_robot->used)
   {
@@ -783,9 +784,9 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
     if(zp->is_memory)
     {
       // The regular way works with memory zips too, but this is faster.
-      zip_write_open_mem_stream(zp, &mf, name, actual_size);
+      ret = zip_write_open_mem_stream(zp, &mf, name, actual_size);
     }
-    else
+    if(!zp->is_memory || ret != ZIP_SUCCESS)
     {
       buffer = cmalloc(actual_size);
 

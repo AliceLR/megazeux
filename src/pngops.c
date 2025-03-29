@@ -35,6 +35,15 @@
 
 #include <png.h>
 
+/* Prior to libpng 1.5.16, png_write_row takes a non-const pointer despite
+ * it never modifying the row data. In some very old libpng versions, the
+ * type png_const_bytep does not even exist (encountered in 1.2.49). */
+#if defined(PNG_LIBPNG_VER) && PNG_LIBPNG_VER >= 10516
+typedef png_const_bytep png_maybeconst_bytep;
+#else
+typedef png_bytep png_maybeconst_bytep;
+#endif
+
 static void png_write_vfile(png_struct *png_ptr, png_byte *data, png_size_t length)
 {
   vfile *vf = (vfile *)png_get_io_ptr(png_ptr);
@@ -112,7 +121,7 @@ int png_write_image_8bpp(const char *name, size_t w, size_t h,
     if(!row)
       goto exit_free_close;
 
-    png_write_row(png_ptr, (png_const_bytep)row);
+    png_write_row(png_ptr, (png_maybeconst_bytep)row);
   }
   png_write_end(png_ptr, info_ptr);
 
@@ -178,7 +187,7 @@ int png_write_image_32bpp(const char *name, size_t w, size_t h, void *priv,
     if(!row)
       goto exit_free_close;
 
-    png_write_row(png_ptr, (png_const_bytep)row);
+    png_write_row(png_ptr, (png_maybeconst_bytep)row);
   }
   png_write_end(png_ptr, info_ptr);
 
@@ -422,10 +431,12 @@ void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checke
   {
     png_set_tRNS_to_alpha(png_ptr);
   }
+#if PNG_LIBPNG_VER >= 10207
   else
 
   if(!(type & PNG_COLOR_MASK_ALPHA))
     png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);
+#endif
 
   // FIXME: Are these necessary?
   png_read_update_info(png_ptr, info_ptr);
