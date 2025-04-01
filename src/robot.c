@@ -765,6 +765,7 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
   struct memfile mf;
   void *buffer = NULL;
   size_t actual_size = 0;
+  boolean is_stream = false;
 
   if(cur_robot->used)
   {
@@ -783,9 +784,11 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
     if(zp->is_memory)
     {
       // The regular way works with memory zips too, but this is faster.
-      zip_write_open_mem_stream(zp, &mf, name, actual_size);
+      if(zip_write_open_mem_stream(zp, &mf, name, actual_size) == ZIP_SUCCESS)
+        is_stream = true;
     }
-    else
+
+    if(!is_stream)
     {
       buffer = cmalloc(actual_size);
 
@@ -794,7 +797,7 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
 
     save_robot_to_memory(cur_robot, &mf, savegame, file_version);
 
-    if(zp->is_memory)
+    if(is_stream)
     {
       zip_write_close_mem_stream(zp, &mf);
     }

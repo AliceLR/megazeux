@@ -153,8 +153,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, size, board_width, board_height, i;
   int viewport_x, viewport_y, viewport_width, viewport_height;
-  int overlay_width;
-  int overlay_height;
+  int overlay_width = 0;
+  int overlay_height = 0;
   boolean truncated = false;
 
   struct robot *cur_robot;

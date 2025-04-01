@@ -93,10 +93,14 @@ static boolean system_time_win32(int64_t *epoch, int32_t *nano)
 /**
  * Get the system timestamp via `clock_gettime(CLOCK_REALTIME)`.
  * Disable for MinGW (implemented by winpthread); not supported by MSVC.
+ * TODO: glibc prior to 2.17 requires manually linking librt, which can't
+ * be linked safely currently (no equivalent to autoconf to check for it).
  */
 static boolean system_time_clock_gettime(int64_t *epoch, int32_t *nano)
 {
-#if !defined(_WIN32) && defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0
+#if !defined(_WIN32) && defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0 && \
+ (!defined(__GLIBC__) || !defined(__GLIBC_MINOR__) || __GLIBC__ >= 3 || \
+  (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 17))
   struct timespec tp;
 
   if(clock_gettime(CLOCK_REALTIME, &tp))

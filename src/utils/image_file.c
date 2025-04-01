@@ -316,8 +316,10 @@ static enum image_error load_png(imageinfo *s)
     png_set_palette_to_rgb(png);
   if(!(color_type & PNG_COLOR_MASK_COLOR))
     png_set_gray_to_rgb(png);
+#if PNG_LIBPNG_VER >= 10207
   if(!(color_type & PNG_COLOR_MASK_ALPHA))
     png_set_add_alpha(png, 0xff, PNG_FILLER_AFTER);
+#endif
   if(png_get_valid(png, info, PNG_INFO_tRNS))
     png_set_tRNS_to_alpha(png);
 
@@ -2334,14 +2336,14 @@ static enum image_error pam_header(uint32_t *width, uint32_t *height,
   while(next_line(linebuf, 256, s))
   {
     value = linebuf;
-    while(isspace(*value))
+    while(isspace((uint8_t )*value))
       value++;
 
     if(!*value || *value == '#')
       continue;
 
     key = value;
-    while(*value && !isspace(*value))
+    while(*value && !isspace((uint8_t)*value))
       value++;
 
     if(*value)
@@ -2400,8 +2402,7 @@ static enum image_error pam_header(uint32_t *width, uint32_t *height,
       if(!*value || has_tu)
         return IMAGE_ERROR_PAM_BAD_TUPLTYPE;
 
-      // NOTE: tuplstr size MUST be >= linebuf size.
-      strcpy(tuplstr, value);
+      snprintf(tuplstr, sizeof(tuplstr), "%s", value);
       has_tu = true;
     }
   }

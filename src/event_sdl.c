@@ -940,6 +940,7 @@ static inline void read_key_event(int *key, int *mod, int *scancode,
 #endif
 }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
 static inline uint32_t utf8_next_char(uint8_t **_src)
 {
   uint8_t *src = *_src;
@@ -990,6 +991,7 @@ err_invalid:
   *_src = src;
   return 0;
 }
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
 static boolean process_event(SDL_Event *event)
 {

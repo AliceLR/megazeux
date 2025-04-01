@@ -192,41 +192,23 @@ static void Error(const char *string, ...)
   exit(1);
 }
 
-/*
-static inline int lc_strcmp(const char *A, const char *B)
-{
-  const char *a = A;
-  const char *b = B;
-
-  if (A == NULL) return -1;
-  if (B == NULL) return 1;
-  for (;;) {
-    if (tolower(*a) < tolower(*b)) return -1;
-    if (tolower(*a) > tolower(*b)) return 1;
-    if (*a == '\0') return 0;
-    a++;
-    b++;
-  }
-}
-*/
-
 static inline int lc_strncmp(const char *A, const char *B, int n)
 {
-  const char *a = A;
-  const char *b = B;
-  int i = 0;
+  const unsigned char *a = (const unsigned char *)A;
+  const unsigned char *b = (const unsigned char *)B;
+  int i;
 
-  if (A == NULL) return -1;
-  if (B == NULL) return 1;
-  for (;;) {
-    if (i >= n) return 0;
-    if (tolower(*a) < tolower(*b)) return -1;
-    if (tolower(*a) > tolower(*b)) return 1;
-    if (*a == '\0') return 0;
+  if(A == NULL) return -1;
+  if(B == NULL) return 1;
+  for(i = 0; i < n; i++)
+  {
+    if(tolower(*a) < tolower(*b)) return -1;
+    if(tolower(*a) > tolower(*b)) return 1;
+    if(*a == '\0') return 0;
     a++;
     b++;
-    i++;
   }
+  return 0;
 }
 
 static inline void file_write32(int val, FILE *fp)
@@ -771,14 +753,15 @@ static char *OutputPath(const char *input, Config *cfg, const char *ext)
   size_t output_len;
   if(cfg->output[0] == '\0')
   {
-    if(strcmp(input, "-"))
-      snprintf(buf, MAX_PATH, "%s", input);
-    else
-      strcpy(buf, "out");
+    if(!strcmp(input, "-"))
+      input = "out";
 
+    snprintf(buf, MAX_PATH, "%s", input);
     buf[MAX_PATH] = '\0';
+
     buf_e = strrchr(buf, '.');
-    if (buf_e) *buf_e = '\0';
+    if(buf_e)
+      *buf_e = '\0';
 
     output_len = strlen(buf) + strlen(ext) + 1;
     output_path = cmalloc(output_len);

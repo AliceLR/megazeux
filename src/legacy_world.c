@@ -1006,7 +1006,7 @@ static void legacy_load_world_v1(struct world *mzx_world, vfile *vf, const char 
   int protection_method;
   int num_boards;
   long offset;
-  int score;
+  int score = 0;
   int i;
   char buf[4];
 

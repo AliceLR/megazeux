@@ -151,7 +151,7 @@ endif
 endif
 
 SDL_PREFIX  ?= $(shell ${SDL_CONFIG} --prefix)
-SDL_CFLAGS  ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --cflags)
+SDL_CFLAGS  ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --cflags | sed 's,-I,-isystem ,g')
 SDL_LDFLAGS ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --libs)
 endif # SDL1
 
