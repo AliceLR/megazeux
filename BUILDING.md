@@ -26,7 +26,7 @@ most recent versions available.
   - **GNU coreutils**: <=4.5.3 or newer (packaging MinGW requires `sha256sum`, 6.0+)
   - **BusyBox**: <=1.22 or newer (packaging MinGW requires `sha256sum`, 1.14.0+)
   - (**BSD** `sha256` or **Perl** `shasum -a256` also works.)
-- POSIX-compatible C and C++ compilers:
+- GNU-compatible C and C++ compilers:
   - **GCC**: 3.4 or newer
   - **clang/LLVM**
 - **GNU Make**: <=3.79 or newer
