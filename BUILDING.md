@@ -2,8 +2,8 @@ Building MegaZeux
 =================
 
 MegaZeux can currently be built for Microsoft Windows, Linux, macOS,
-NetBSD, FreeBSD, OpenBSD, OpenSolaris, HaikuOS, Amiga OS 4, Android, HTML5,
-DJGPP, NDS, 3DS, Wii, Wii U, Switch, PSP, Vita, Dreamcast, GP2X, and Pandora.
+NetBSD, FreeBSD, OpenBSD, Haiku, Amiga OS 4, Android, HTML5, DJGPP,
+NDS, 3DS, Wii, Wii U, Switch, PSP, Vita, Dreamcast, GP2X, and Pandora.
 
 MegaZeux has three buildsystems--the GNU Make buildsystem for building most
 ports, the Xcode project (`arch/xcode/`) for development and release builds
@@ -29,6 +29,7 @@ most recent versions available.
 - GNU-compatible C and C++ compilers:
   - **GCC**: 3.4 or newer
   - **clang/LLVM**
+- **GNU binutils** or equivalent
 - **GNU Make**: <=3.79 or newer
 - **pkgconf** or **pkg-config** (SDL 3 builds only)
 - **zip** or **7za** (packaging only)
@@ -204,6 +205,10 @@ the general requirements section, `darwin-dist` also requires dylibbundler,
 which (along with other tools) is easiest to get via MacPorts.
 
 ### Other notes
+
+Amiga OS 4, GP2X, and Pandora have not been tested recently and may have bitrot.
+OpenSolaris was previously mentioned in the list of working platforms, but
+neither old OpenSolaris nor modern Solaris can be verified currently.
 
 MegaZeux builds in ancient environments with a little manual effort, if
 for some reason you actually need this. The oldest tested is CentOS 3:
