@@ -5,13 +5,15 @@ MegaZeux is a game creation system (GCS) created by game developer Alexis Janson
 Originally a DOS program, in 2005 a multi-platform port was released by Exophase. The most
 recent version of MegaZeux is 2.93c, which was released on February 28th, 2025.
 
-MegaZeux is officially supported on Windows, Linux/BSD, MacOS, as well as the NDS, 3DS, Wii,
-and PSP consoles. Historical support has also existed for GP2X, Pandora, and AmigaOS 4.
+MegaZeux is officially supported on Windows, Linux, macOS, BSD, Haiku, HTML5,
+and MS-DOS, as well as numerous console ports. See platform_matrix.html for a
+full list of ports.
 
 ## Downloads
 
-Windows releases are packaged with a copy of the game Caverns of Zeux.
-Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
+Windows, MS-DOS, and console releases are packaged with a copy of the game
+Caverns of Zeux. Older versions are available at [DigitalMZX](https://www.digitalmzx.com/)
+or [on the Github releases page](https://github.com/AliceLR/megazeux/releases).
 
 <!-- Download URLs. -->
 [megazeux-w64]: https://www.digitalmzx.com/download.php?latest=windows64
@@ -95,6 +97,7 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 &nbsp; [![PlayStation Vita    ][arch-vita]][megazeux-vita]
 &nbsp; [![Sega Dreamcast      ][arch-dc]][megazeux-dc]
 &nbsp; [![DOS (32-bit)        ][arch-dos32]][megazeux-dos32]
+&nbsp; [![MS DOS (MZX 2.70)   ][arch-dos]][megazeux-dos]
 &nbsp; [![Source code         ][arch-src]][megazeux-src]
 
 The following platforms have MegaZeux releases available via repository:
@@ -107,10 +110,9 @@ The following platforms have MegaZeux releases available via repository:
 &nbsp; [![GP2X (outdated)][arch-gp2x]](https://dl.openhandhelds.org/cgi-bin/gp2x.cgi?0,0,0,0,26,2920)
 &nbsp; [![Pandora (outdated)][arch-pand]](https://repo.openpandora.org/?page=detail&app=megazeux_ptitseb)
 
-Downloads are also available for the following platform(s), but these
-platform(s) are not regularly updated:
+## Building MegaZeux
 
-&nbsp; [![MS DOS (MZX 2.70)   ][arch-dos]][megazeux-dos]
+See BUILDING.md for more information about compiling MegaZeux from source.
 
 ## Credits
 
@@ -191,6 +193,5 @@ GitHub, or the DigitalMZX forums.
 ## Resources
 
 [Official MegaZeux game archive](https://www.digitalmzx.com/) <br/>
-[MegaZeux help file](https://www.digitalmzx.com/help.php) <br/>
-[Development roadmap](https://www.digitalmzx.com/forums/index.php?showtopic=15226) <br/>
-[Compiling MegaZeux on the official Wiki](https://www.digitalmzx.com/wiki/index.php?title=Compiling)
+[MegaZeux help file](https://www.digitalmzx.com/mzx_help.html) <br/>
+[Development roadmap](https://www.digitalmzx.com/forums/index.php?showtopic=15226)

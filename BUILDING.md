@@ -29,7 +29,7 @@ most recent versions available.
 - GNU-compatible C and C++ compilers:
   - **GCC**: 3.4 or newer
   - **clang/LLVM**
-- **GNU binutils** or equivalent
+- **GNU binutils** or **LLVM** or equivalent
 - **GNU Make**: <=3.79 or newer
 - **pkgconf** or **pkg-config** (SDL 3 builds only)
 - **zip** or **7za** (packaging only)
@@ -66,7 +66,7 @@ Configure MegaZeux with the script `config.sh` located in the source root:
 # You may need to specify --prefix [dir] or other options.
 # For debug builds, omit --enable-release and --enable-lto.
 
-./config.sh --platform [PLATFORM HERE] --enable-release --enable-lto
+./config.sh --platform [platform] --enable-release --enable-lto
 
 # For a full list of supported options and platforms:
 ./config.sh
