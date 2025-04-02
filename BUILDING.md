@@ -2,7 +2,7 @@ Building MegaZeux
 =================
 
 MegaZeux can currently be built for Microsoft Windows, Linux, macOS,
-NetBSD, FreeBSD, OpenBSD, Haiku, Amiga OS 4, Android, HTML5, DJGPP,
+NetBSD, FreeBSD, OpenBSD, Haiku, Amiga OS 4, Android, HTML5, MS-DOS (DJGPP),
 NDS, 3DS, Wii, Wii U, Switch, PSP, Vita, Dreamcast, GP2X, and Pandora.
 
 MegaZeux has three buildsystems--the GNU Make buildsystem for building most
