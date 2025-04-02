@@ -69,8 +69,12 @@ rm -f log/summary
 rm -f log/failures
 
 # Force mzxrun to use the libraries in its own directory.
+# Linux/BSD
 export LD_LIBRARY_PATH="."
+# macOS
 export DYLD_FALLBACK_LIBRARY_PATH="."
+# Haiku
+export LIBRARY_PATH="$LIBRARY_PATH:."
 
 preload=""
 if [ -n "$2" ];
@@ -119,12 +123,14 @@ i="0"
 # -A is equivalent to -e in POSIX, but NetBSD uses -e for something else.
 # MSYS2 only supports -e (not -A) but it doesn't need it either.
 if ps -A 1>/dev/null 2>/dev/null; then psopt='-A'; fi
+# Haiku has completely different formatting and needs reordered fields:
+if [ "$(uname -s 2>/dev/null)" = "Haiku" ]; then psopt='-o Id Team'; fi
 
 # In some versions of MSYS2, mzxrun doesn't always appear in ps right away. :(
 sleep 1
 [ "$quiet" = "yes" ] || printf "."
 
-while ps "$psopt" | grep -q "$mzxrun_pid .*[m]zxrun"
+while ps $psopt | grep -q "[ \t]*$mzxrun_pid .*[m]zxrun"
 do
 	sleep 1
 	i=$((i+1))

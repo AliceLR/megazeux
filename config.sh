@@ -558,6 +558,9 @@ elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ] ||
 		"NetBSD")
 			UNIX="netbsd"
 			;;
+		"Haiku")
+			UNIX="haiku"
+			;;
 		"Darwin")
 			UNIX="darwin"
 			DIRNAME="darwin"
