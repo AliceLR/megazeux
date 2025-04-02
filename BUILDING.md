@@ -22,7 +22,7 @@ For the GNU Make buildsystem, most versions of these tools from the
 past 20 years work with little issue. You should almost always use the
 most recent versions available.
 
-- POSIX-compatible base system e.g. Linux, macOS, BSD, MSYS2, Msys:
+- POSIX-compatible base system e.g. Linux, macOS, BSD, MSYS2:
   - **GNU coreutils**: <=4.5.3 or newer (packaging MinGW requires `sha256sum`, 6.0+)
   - **BusyBox**: <=1.22 or newer (packaging MinGW requires `sha256sum`, 1.14.0+)
   - (**BSD** `sha256` or **Perl** `shasum -a256` also works.)
@@ -60,8 +60,10 @@ See below or the platform-specific README for more info.
 Configuring and building
 ------------------------
 
-Configure MegaZeux with the script `config.sh` located in the source root:
+All operations must be run within a POSIX-compatible shell environment
+such as Bash, BusyBox, ksh, MSYS2 terminal, or similar.
 
+Configure MegaZeux with the script `config.sh` located in the source root:
 ```sh
 # You may need to specify --prefix [dir] or other options.
 # For debug builds, omit --enable-release and --enable-lto.
