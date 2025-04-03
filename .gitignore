@@ -42,6 +42,7 @@ arch/msvc/MegaZeux.v12.suo
 arch/msvc/obj
 arch/msvc/version.h
 arch/nds/mzxrun.arm7.elf
+arch/nds/protected_palette_bin.c
 arch/nds/protected_palette_bin.h
 arch/nds/*.S
 arch/nds/*.d
