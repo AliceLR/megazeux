@@ -26,7 +26,7 @@ arch/djgpp/*.d
 arch/djgpp/*.o
 arch/dreamcast/*.d
 arch/dreamcast/*.o
-arch/emscripten/web/mzxrun_web.js
+arch/emscripten/web/mzxrun_web.js*
 arch/emscripten/web/node_modules
 arch/emscripten/web/package-lock.json
 arch/mingw/pefix
@@ -180,6 +180,7 @@ unit/utils/.build/
 *.sav
 *.mzm
 *~
+.clangd
 .vscode
 .DS_Store
 xcuserdata/

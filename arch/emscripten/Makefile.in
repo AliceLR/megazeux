@@ -56,12 +56,16 @@ EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build-release
 endif
 
 clean:
-	$(if ${V},,@echo "  RM       mzxrun.js.orig.js")
-	$(if ${V},,@echo "  RM       mzxrun.js.mem")
-	$(if ${V},,@echo "  RM       mzxrun.wasm")
-	$(if ${V},,@echo "  RM       mzxrun.wasm.map")
-	$(if ${V},,@echo "  RM       emzip.js")
-	@rm -rf mzxrun.js.mem mzxrun.js.orig.js mzxrun.wasm mzxrun.wasm.map emzip.js* emzip.wasm
+	$(if ${V},,@echo "  RM      " arch/emscripten/web/mzxrun_web.js"*")
+	$(if ${V},,@echo "  RM      " mzxrun.js.orig.js)
+	$(if ${V},,@echo "  RM      " mzxrun.js.mem)
+	$(if ${V},,@echo "  RM      " mzxrun.wasm)
+	$(if ${V},,@echo "  RM      " mzxrun.wasm.map)
+	$(if ${V},,@echo "  RM      " emzip.js)
+	$(if ${V},,@echo "  RM      " emzip.wasm)
+	${RM} -f arch/emscripten/web/mzxrun_web.js*
+	${RM} -f mzxrun.js.mem mzxrun.js.orig.js mzxrun.wasm mzxrun.wasm.map
+	${RM} -f emzip.js* emzip.wasm
 
 all: emzip.js
 
