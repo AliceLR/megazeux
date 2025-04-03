@@ -119,8 +119,8 @@ ifneq (${BUILD_EDITOR},)
 endif
 
 clean:
-	${RM} ${mzxrun}.{smdh,3dsx} ${mzx}.{smdh,3dsx}
-	${RM} arch/3ds/*.{d,o} arch/3ds/*shbin*
+	${RM} ${mzxrun}.smdh ${mzxrun}.3dsx ${mzx}.smdh ${mzx}.3dsx
+	${RM} arch/3ds/*.d arch/3ds/*.o arch/3ds/*shbin*
 
 build := ${build_root}/3ds/megazeux
 build: package ${build}

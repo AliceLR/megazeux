@@ -37,10 +37,10 @@ endif
 
 # linux os specific install files
 uninstall-arch: install-check
-	@${RM} -f \
+	${RM} -f \
 		${DESTDIR}${SHAREDIR}/icons/hicolor/128x128/apps/megazeux.png \
 		${DESTDIR}${SHAREDIR}/applications/megazeux.desktop
 ifeq (${BUILD_MZXRUN},1)
-	@${RM} -f \
+	${RM} -f \
 		${DESTDIR}${SHAREDIR}/applications/mzxrun.desktop
 endif

@@ -63,8 +63,9 @@ endif
 		mzxrun.vpk
 
 clean:
-	@${RM} -f arch/psvita/*.{o,d} mzxrun mzxrun.elf mzxrun.velf mzxrun.vpk \
-		megazeux megazeux.elf megazeux.velf megazeux.vpk eboot.bin param.sfo
+	${RM} -f arch/psvita/*.o arch/psvita/*.d eboot.bin param.sfo
+	${RM} -f mzxrun mzxrun.elf mzxrun.velf mzxrun.vpk
+	${RM} -f megazeux megazeux.elf megazeux.velf megazeux.vpk
 
 build: package ${build}
 	${CP} ${mzx}.vpk ${build}

@@ -51,7 +51,7 @@ package: mzx
 	rm -f ${mzxrun}.strip
 
 clean:
-	@rm -f EBOOT.PBP PARAM.SFO ICON0.PNG arch/psp/*.{o,d}
+	${RM} -f EBOOT.PBP PARAM.SFO ICON0.PNG arch/psp/*.o arch/psp/*.d
 
 build: package ${build}
 	${CP} arch/psp/pad.config ${build}

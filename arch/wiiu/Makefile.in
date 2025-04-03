@@ -58,7 +58,7 @@ ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP} ${RPXSPECS}
 package: mzx mzxrun.rpx megazeux.rpx
 
 clean:
-	@rm -f mzxrun.{rpx,elf} megazeux.{rpx,elf}
+	${RM} -f mzxrun.rpx mzxrun.elf megazeux.rpx megazeux.elf
 
 build := build/${SUBPLATFORM}/wiiu/apps/megazeux
 build: package ${build}

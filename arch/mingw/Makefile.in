@@ -77,11 +77,13 @@ pefix_clean:
 
 # Clean up MSVC files just in case; they break linking MinGW.
 msvc_clean:
-	$(if ${V},,@echo "  RM      " *.exp *.ilk *.lib *.pdb)
-	${RM} Core.{exp,ilk,lib,pdb}
-	${RM} Editor.{exp,ilk,lib,pdb}
-	${RM} MZXRun.{exp,ilk,lib,pdb}
-	${RM} MegaZeux.{exp,ilk,lib,pdb}
+	$(if ${V},,@echo "  RM      " "*.exp" "*.ilk" "*.lib" "*.pdb")
+	$(if ${V},,@echo "  RM      " arch/msvc/.vs arch/msvc/obj)
+	${RM} -r arch/msvc/.vs arch/msvc/obj
+	${RM} Core.exp Editor.exp MZXRun.exp MegaZeux.exp
+	${RM} Core.ilk Editor.ilk MZXRun.ilk MegaZeux.ilk
+	${RM} Core.lib Editor.lib MZXRun.lib MegaZeux.lib
+	${RM} Core.pdb Editor.pdb MZXRun.pdb MegaZeux.pdb
 
 #
 # Windows builds must copy $SDL_DLL
