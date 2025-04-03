@@ -39,6 +39,9 @@ DEVELOPERS
   predate _FILE_OFFSET_BITS.
 + Numerous warnings fixes/workarounds affecting macOS, NetBSD,
   OpenBSD, 3DS, GCC 4.x, SDL 1.2, and old versions of libpng.
++ Fixed OS detection, unit tests, and testworlds for Haiku.
++ Replaced return values of all VFS functions to fix issues with
+  using errno values here on Haiku.
 
 
 February 28th, 2025 - MZX 2.93c

@@ -189,17 +189,17 @@ ${unit_obj_utils}/%${unit_ext}: ${unit_src_utils}/%.cpp
 -include ${unit_objs:${unit_ext}=.d}
 -include ${unit_common_objs:.o=.d}
 
-${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
-${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_audio}), ${unit_obj_audio})
-${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
-${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_io}), ${unit_obj_io})
-${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_network}), ${unit_obj_network})
-${unit_objs} ${unit_common_objs}: | $(filter-out $(wildcard ${unit_obj_utils}), ${unit_obj_utils})
+${unit_objs} ${unit_common_objs}: $(filter-out $(wildcard ${unit_obj}), ${unit_obj})
+${unit_objs} ${unit_common_objs}: $(filter-out $(wildcard ${unit_obj_audio}), ${unit_obj_audio})
+${unit_objs} ${unit_common_objs}: $(filter-out $(wildcard ${unit_obj_editor}), ${unit_obj_editor})
+${unit_objs} ${unit_common_objs}: $(filter-out $(wildcard ${unit_obj_io}), ${unit_obj_io})
+${unit_objs} ${unit_common_objs}: $(filter-out $(wildcard ${unit_obj_network}), ${unit_obj_network})
+${unit_objs} ${unit_common_objs}: $(filter-out $(wildcard ${unit_obj_utils}), ${unit_obj_utils})
 
 unit unittest: ${unit_objs}
 	@failcount=0; \
 	for t in ${unit_objs}; do \
-		LD_LIBRARY_PATH="." ./$$t ; \
+		LD_LIBRARY_PATH="." LIBRARY_PATH="$$LIBRARY_PATH:." ./$$t ; \
 		if [ "$$?" != "0" ] ; then \
 			failcount=$$(($$failcount + 1)); \
 		fi; \

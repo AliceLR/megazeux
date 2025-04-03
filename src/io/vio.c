@@ -100,11 +100,12 @@ static boolean vio_cache_directory_recursively(vfilesystem *vfs, const char *pat
   char *next;
   struct stat st;
   ssize_t len;
+  enum vfs_error code;
   int ret;
 
   // Does it already exist in the VFS?
-  ret = vfs_stat(vfs, path, &st);
-  if(ret == 0 || ret == -VFS_ERR_IS_CACHED)
+  code = vfs_stat(vfs, path, &st);
+  if(code == 0 || code == VFS_ERR_IS_CACHED)
     return true;
 
 /*
@@ -145,8 +146,8 @@ static boolean vio_cache_directory_recursively(vfilesystem *vfs, const char *pat
     path_tokenize(&next);
     tmp[len - 2] = '\0';
 
-    ret = vfs_make_root(vfs, tmp + skip);
-    if(ret != 0 && ret != -EEXIST)
+    code = vfs_make_root(vfs, tmp + skip);
+    if(code != 0 && code != VFS_EEXIST)
       return false;
 
     // Repair current fragment.
@@ -172,8 +173,8 @@ static boolean vio_cache_directory_recursively(vfilesystem *vfs, const char *pat
     if(ret < 0 || !S_ISDIR(st.st_mode))
       return false;
 
-    ret = vfs_cache_directory(vfs, tmp, &st);
-    if(ret != 0 && ret != -EEXIST)
+    code = vfs_cache_directory(vfs, tmp, &st);
+    if(code != 0 && code != VFS_EEXIST)
       return false;
 
     // Repair current fragment.
@@ -216,7 +217,7 @@ static boolean vio_cache_file_and_parent(vfilesystem *vfs, const char *path,
   struct stat st;
   int64_t len;
   int64_t pos;
-  int ret;
+  enum vfs_error code;
 
   // Already cached...
   if(vfs_stat(vfs, path, &st) == 0 && S_ISREG(st.st_mode))
@@ -249,9 +250,9 @@ static boolean vio_cache_file_and_parent(vfilesystem *vfs, const char *path,
     return false;
 
   pos = platform_ftell(fp);
-  ret = vfs_cache_file_callback(vfs, path, cache_file_read_fn, fp, len);
+  code = vfs_cache_file_callback(vfs, path, cache_file_read_fn, fp, len);
   platform_fseek(fp, pos, SEEK_SET);
-  return ret == 0;
+  return code == 0;
 }
 
 /**
@@ -268,7 +269,7 @@ static boolean vio_cache_file_and_parent(vfilesystem *vfs, const char *path,
 static const char *vio_normalize_virtual_path(vfilesystem *vfs,
  char *buffer, size_t buffer_len, const char *path)
 {
-  // Cached current directory will return -VFS_ERR_IS_CACHED instead.
+  // Cached current directory will return VFS_ERR_IS_CACHED instead.
   if(vfs_getcwd(vfs, buffer, buffer_len) == 0)
   {
     path_navigate_no_check(buffer, buffer_len, path);
@@ -312,7 +313,7 @@ boolean vio_filesystem_init(size_t max_size, size_t max_file_size,
     goto err;
   if(!vio_cache_directory_recursively(vfs_base, tmp))
     goto err;
-  if(vfs_chdir(vfs_base, tmp) != -VFS_ERR_IS_CACHED)
+  if(vfs_chdir(vfs_base, tmp) != VFS_ERR_IS_CACHED)
     goto err;
 
   // Immediately purge the cache if it has been disabled.
@@ -543,15 +544,15 @@ int vfile_get_flags(vfile *vf)
  * Internal function for opening a file from the VFS.
  * filename should already have been normalized by the caller.
  */
-static int vfopen_virtual(vfilesystem *vfs, vfile *vf, const char *filename,
- int flags)
+static enum vfs_error vfopen_virtual(vfilesystem *vfs, vfile *vf,
+ const char *filename, int flags)
 {
   uint32_t inode;
-  int ret;
+  enum vfs_error code;
 
-  ret = vfs_open_if_exists(vfs_base, filename, !!(flags & VF_WRITE), &inode);
-  if(ret != 0 && ret != -VFS_ERR_IS_CACHED)
-    return ret;
+  code = vfs_open_if_exists(vfs_base, filename, !!(flags & VF_WRITE), &inode);
+  if(code != 0 && code != VFS_ERR_IS_CACHED)
+    return code;
 
   if(flags & VF_TRUNCATE)
     vfs_truncate(vfs_base, inode);
@@ -560,7 +561,7 @@ static int vfopen_virtual(vfilesystem *vfs, vfile *vf, const char *filename,
   vf->inode = inode;
   vf->position = (flags & VF_APPEND) ? vfs_filelength(vfs, inode) : 0;
   vf->position_writeback = vf->position;
-  return ret;
+  return code;
 }
 
 /**
@@ -571,7 +572,7 @@ vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
 {
   char buffer[MAX_PATH];
   int flags = vfile_get_mode_flags(mode);
-  int ret;
+  enum vfs_error code;
   vfile *vf;
   FILE *fp;
 
@@ -585,12 +586,12 @@ vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
   if(vfs_base)
   {
     filename = vio_normalize_virtual_path(vfs_base, buffer, MAX_PATH, filename);
-    ret = vfopen_virtual(vfs_base, vf, filename, flags);
+    code = vfopen_virtual(vfs_base, vf, filename, flags);
     // File is 100% virtual? Can exit now.
-    if(ret == 0)
+    if(code == 0)
       return vf;
     // Non-write and cached? Don't need a FILE handle for that either...
-    if(ret == -VFS_ERR_IS_CACHED && (~flags & VF_WRITE))
+    if(code == VFS_ERR_IS_CACHED && (~flags & VF_WRITE))
       return vf;
   }
 
@@ -856,6 +857,7 @@ int vchdir(const char *path)
   if(vfs_base)
   {
     char buffer[MAX_PATH];
+    enum vfs_error code;
     int ret;
 
     path = vio_normalize_virtual_path(vfs_base, buffer, MAX_PATH, path);
@@ -872,9 +874,9 @@ int vchdir(const char *path)
     ret = platform_chdir(path);
     if(ret == 0)
     {
-      ret = vfs_chdir(vfs_base, path);
-      assert(ret == -VFS_ERR_IS_CACHED);
-      ret = 0;
+      code = vfs_chdir(vfs_base, path);
+      assert(code == VFS_ERR_IS_CACHED);
+      (void)code; // silence -Wunused-but-set-variable
     }
 
     return ret;
@@ -891,7 +893,7 @@ char *vgetcwd(char *buf, size_t size)
   if(vfs_base)
   {
     // If cwd is a virtual path, return the VFS cwd.
-    // Cached real cwds will return -VFS_ERR_IS_CACHED.
+    // Cached real cwds will return VFS_ERR_IS_CACHED.
     if(vfs_getcwd(vfs_base, buf, size) == 0)
       return buf;
   }
@@ -906,6 +908,7 @@ int vmkdir(const char *path, int mode)
   if(vfs_base)
   {
     char buffer[MAX_PATH];
+    enum vfs_error code;
     int ret;
 
     path = vio_normalize_virtual_path(vfs_base, buffer, MAX_PATH, path);
@@ -916,10 +919,10 @@ int vmkdir(const char *path, int mode)
     if(ret == 0 || errno != ENOENT)
       return ret;
 
-    ret = vfs_mkdir(vfs_base, path, mode);
-    if(ret < 0)
+    code = vfs_mkdir(vfs_base, path, mode);
+    if(code != 0)
     {
-      errno = -ret;
+      errno = vfs_error_to_errno(code);
       return -1;
     }
     return 0;
@@ -936,6 +939,7 @@ int vrename(const char *oldpath, const char *newpath)
   {
     char buffer1[MAX_PATH];
     char buffer2[MAX_PATH];
+    enum vfs_error code;
     int ret;
 
     oldpath = vio_normalize_virtual_path(vfs_base, buffer1, MAX_PATH, oldpath);
@@ -947,13 +951,14 @@ int vrename(const char *oldpath, const char *newpath)
     // Attempt vfs_rename, which will handle virtual source files
     // moving, replacing cached files, or replacing virtual files.
     // No filesystem operation needs to be done in this case.
-    ret = vfs_rename(vfs_base, oldpath, newpath);
-    if(ret == 0)
+    code = vfs_rename(vfs_base, oldpath, newpath);
+    if(code == 0)
       return 0;
 
-    if(ret == -EBUSY || ret == -ENOTDIR || ret == -EISDIR || ret == -EEXIST)
+    if(code == VFS_EBUSY || code == VFS_ENOTDIR ||
+     code == VFS_EISDIR || code == VFS_EEXIST)
     {
-      errno = -ret;
+      errno = vfs_error_to_errno(code);
       return -1;
     }
 
@@ -979,17 +984,18 @@ int vunlink(const char *path)
   if(vfs_base)
   {
     char buffer[MAX_PATH];
+    enum vfs_error code;
     int ret;
 
     path = vio_normalize_virtual_path(vfs_base, buffer, MAX_PATH, path);
-    ret = vfs_unlink(vfs_base, path);
-    if(ret == 0)
+    code = vfs_unlink(vfs_base, path);
+    if(code == 0)
       return 0;
 
     // VFS inode exists and isn't cached, but there was an error.
-    if(ret == -EBUSY || ret == -EPERM)
+    if(code == VFS_EBUSY || code == VFS_EPERM)
     {
-      errno = -ret;
+      errno = vfs_error_to_errno(code);
       return -1;
     }
 
@@ -1009,17 +1015,18 @@ int vrmdir(const char *path)
   if(vfs_base)
   {
     char buffer[MAX_PATH];
+    enum vfs_error code;
     int ret;
 
     path = vio_normalize_virtual_path(vfs_base, buffer, MAX_PATH, path);
-    ret = vfs_rmdir(vfs_base, path);
-    if(ret == 0)
+    code = vfs_rmdir(vfs_base, path);
+    if(code == 0)
       return 0;
 
     // VFS inode exists and isn't cached, but there was an error.
-    if(ret == -EBUSY || ret == -ENOTDIR || ret == -ENOTEMPTY)
+    if(code == VFS_EBUSY || code == VFS_ENOTDIR || code == VFS_ENOTEMPTY)
     {
-      errno = -ret;
+      errno = vfs_error_to_errno(code);
       return -1;
     }
 
@@ -1044,17 +1051,17 @@ int vaccess(const char *path, int mode)
   if(vfs_base)
   {
     char buffer[MAX_PATH];
-    int ret;
+    enum vfs_error code;
 
     path = vio_normalize_virtual_path(vfs_base, buffer, MAX_PATH, path);
-    ret = vfs_access(vfs_base, path, mode);
-    if(ret == 0)
+    code = vfs_access(vfs_base, path, mode);
+    if(code == 0)
       return 0;
 
     // File exists and is virtual but permission was denied.
-    if(ret == -EACCES)
+    if(code == VFS_EACCES)
     {
-      errno = -ret;
+      errno = vfs_error_to_errno(code);
       return -1;
     }
   }
@@ -1070,12 +1077,12 @@ int vstat(const char *path, struct stat *buf)
   {
     char buffer[MAX_PATH];
     struct stat tmp;
-    int ret;
+    enum vfs_error code;
 
     path = vio_normalize_virtual_path(vfs_base, buffer, MAX_PATH, path);
     // Pass through success only.
-    ret = vfs_stat(vfs_base, path, &tmp);
-    if(ret == 0 || ret == -VFS_ERR_IS_CACHED)
+    code = vfs_stat(vfs_base, path, &tmp);
+    if(code == 0 || code == VFS_ERR_IS_CACHED)
     {
       memcpy(buf, &tmp, sizeof(struct stat));
       return 0;
@@ -1162,14 +1169,14 @@ static inline boolean virt_read(vfile *vf)
 {
   const unsigned char *tmp = NULL;
   size_t len = 0;
-  int ret = -1;
+  enum vfs_error code = VFS_EINVAL;
   if(!vf->inode)
     return false;
 
   assert(vf->flags & VF_MEMORY);
   if(vfs_base)
-    ret = vfs_lock_file_read(vfs_base, vf->inode, &tmp, &len);
-  if(ret != 0)
+    code = vfs_lock_file_read(vfs_base, vf->inode, &tmp, &len);
+  if(code != 0)
   {
     vfile_cleanup_virtual(vf);
     return false;
@@ -1194,18 +1201,18 @@ static inline void virt_read_end(vfile *vf)
 
 static inline boolean virt_write(vfile *vf)
 {
-  int ret = -1;
+  enum vfs_error code = VFS_EINVAL;
   if(!vf->inode)
     return false;
 
   assert(vf->flags & VF_MEMORY);
   if(vfs_base)
   {
-    ret = vfs_lock_file_write(vfs_base, vf->inode,
+    code = vfs_lock_file_write(vfs_base, vf->inode,
      (unsigned char ***)&vf->external_buffer,
      &vf->v_length, &vf->external_buffer_size);
   }
-  if(ret != 0)
+  if(code != 0)
   {
     vfile_cleanup_virtual(vf);
     return false;
