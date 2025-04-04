@@ -97,8 +97,10 @@ arch/nds/arm7/source/%.c.o: arch/nds/arm7/source/%.c
 # Misc. helpers.
 #
 clean:
-	@rm -f ${mzxrun}.nds arch/nds/*.{d,o} ${ARM7_DEPEND_FILES} ${ARM7_OBJECT_FILES} ${ARM7_BINARY}
-	@rm -f arch/nds/protected_palette.bin.S arch/nds/protected_palette_bin.h
+	${RM} -f ${mzxrun}.nds arch/nds/*.d arch/nds/*.o arch/nds/*.elf
+	${RM} -f ${ARM7_DEPEND_FILES} ${ARM7_OBJECT_FILES} ${ARM7_BINARY}
+	${RM} -f arch/nds/protected_palette.bin.S arch/nds/protected_palette_bin.h
+	${RM} -f arch/nds/protected_palette_bin.c
 
 #
 # We're only interested in our packaged binary; remove the ELF intermediaries

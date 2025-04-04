@@ -63,7 +63,7 @@ package: mzx
 	${KOS_BASE}/utils/scramble/scramble ${mzxrun}.bin 1ST_READ.BIN
 
 clean:
-	@rm -f ${mzxrun}.bin 1ST_READ.BIN arch/dreamcast/*.{d,o}
+	${RM} -f ${mzxrun}.bin 1ST_READ.BIN arch/dreamcast/*.d arch/dreamcast/*.o
 
 build: package ${build}
 	${CP} 1ST_READ.BIN ${build}

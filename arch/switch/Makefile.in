@@ -74,7 +74,8 @@ ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP} -specs=$(DEVKITPRO)/libnx/switch.specs
 package: mzx mzxrun.nro megazeux.nro mzxrun.nso megazeux.nso mzxrun.nacp megazeux.nacp
 
 clean:
-	@rm -f mzxrun.{nacp,nro,nso,pfs0,elf} megazeux.{nacp,nro,nso,pfs0,elf}
+	${RM} -f mzxrun.nacp mzxrun.nro mzxrun.nso mzxrun.pfs0 mzxrun.elf
+	${RM} -f megazeux.nacp megazeux.nro megazeux.nso megazeux.pfs0 megazeux.elf
 
 build := ${build_root}/switch/megazeux
 build: package ${build}

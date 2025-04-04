@@ -74,8 +74,9 @@ package: mzx
 
 clean:
 	@${MAKE} -C arch/nds TARGET=${mzxrun} clean
-	@rm -f ${mzxrun}.nds arch/nds/*.{d,o}
-	@rm -f arch/nds/protected_palette.bin.S arch/nds/protected_palette_bin.h
+	${RM} -f ${mzxrun}.nds arch/nds/*.d arch/nds/*.o arch/nds/*.elf
+	${RM} -f arch/nds/protected_palette.bin.S arch/nds/protected_palette_bin.h
+	${RM} -f arch/nds/protected_palette_bin.c
 
 #
 # We're only interested in our packaged binary; remove the ELF intermediaries

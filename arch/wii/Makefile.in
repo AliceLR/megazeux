@@ -57,7 +57,7 @@ else
 endif
 
 clean:
-	@rm -f boot.dol mzxrun.dol arch/wii/*.d arch/wii/*.o
+	${RM} -f boot.dol mzxrun.dol arch/wii/*.d arch/wii/*.o
 
 #
 # Vile hack, remove me ASAP
