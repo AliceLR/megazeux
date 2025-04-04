@@ -216,7 +216,12 @@ static ssize_t find_executable_dir(char *dest, size_t dest_len, const char *argv
 
   if(argv0)
   {
+#ifdef CONFIG_PSP
+    // FIXME: EBOOT.PBP may be treated as a directory, always get the parent.
+    ssize_t len = path_get_parent(dest, dest_len, argv0);
+#else
     ssize_t len = path_get_directory(dest, dest_len, argv0);
+#endif
     if(len > 0)
     {
       // Change to the executable dir and get it as an absolute path.

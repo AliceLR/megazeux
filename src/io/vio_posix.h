@@ -148,6 +148,13 @@ static inline boolean platform_readdir(struct dir_handle dh, char *buffer,
   if(!d)
     return false;
 
+#ifdef CONFIG_PSP
+  // SCE IO does this instead for some reason. This issue is only present in
+  // post-devkitPSP builds for some reason. FIXME: bandaid, upstream fix needed?
+  if(d->d_name[0] == '\0')
+    return false;
+#endif
+
   if(buffer && buffer_len)
     snprintf(buffer, buffer_len, "%s", d->d_name);
 
