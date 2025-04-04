@@ -392,15 +392,15 @@ size_t vio_filesystem_total_memory_usage(void)
  */
 boolean vio_virtual_file(const char *path)
 {
-  int err;
+  enum vfs_error code;
   if(!vfs_base)
     return false;
 
   if(!vio_cache_parent_recursively(vfs_base, path))
     return false;
 
-  err = vfs_create_file_at_path(vfs_base, path);
-  if(err != 0 && err != -EEXIST)
+  code = vfs_create_file_at_path(vfs_base, path);
+  if(code != 0 && code != VFS_EEXIST)
     return false;
 
   return true;
@@ -420,15 +420,15 @@ boolean vio_virtual_file(const char *path)
  */
 boolean vio_virtual_directory(const char *path)
 {
-  int err;
+  enum vfs_error code;
   if(!vfs_base)
     return false;
 
   if(!vio_cache_parent_recursively(vfs_base, path))
     return false;
 
-  err = vfs_mkdir(vfs_base, path, 0755);
-  if(err != 0 && err != -EEXIST)
+  code = vfs_mkdir(vfs_base, path, 0755);
+  if(code != 0 && code != VFS_EEXIST)
     return false;
 
   return true;
@@ -443,12 +443,12 @@ boolean vio_invalidate_at_least(size_t *amount_to_free)
 #ifdef DEBUG
   size_t init = amount_to_free ? *amount_to_free : 0;
 #endif
-  int err;
+  enum vfs_error code;
   if(!vfs_base || !amount_to_free)
     return false;
 
-  err = vfs_invalidate_at_least(vfs_base, amount_to_free);
-  if(err)
+  code = vfs_invalidate_at_least(vfs_base, amount_to_free);
+  if(code != 0)
     return false;
 
   debug("vio_invalidate_at_least freed >= %zu buffered\n", init - *amount_to_free);
@@ -467,7 +467,7 @@ boolean vio_invalidate_all(void)
     return false;
 
   debug("vio_invalidate_all\n");
-  if(vfs_invalidate_all(vfs_base) < 0)
+  if(vfs_invalidate_all(vfs_base) != 0)
     return false;
 
   return true;
