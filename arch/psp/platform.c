@@ -25,6 +25,10 @@
 #include <pspdebug.h>
 #include <pspctrl.h>
 
+#include "../../src/config.h"
+
+#if CONFIG_SDL < 2
 PSP_MODULE_INFO("MegaZeux", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
+#endif
 PSP_MAIN_THREAD_STACK_SIZE_KB(512);
