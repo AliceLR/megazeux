@@ -3931,7 +3931,6 @@ static void __edit_world(context *parent, boolean reload_curr_file)
       clear_world(mzx_world);
       clear_global_data(mzx_world);
     }
-    mzx_world->active = 1;
 
     create_blank_world(mzx_world);
 
