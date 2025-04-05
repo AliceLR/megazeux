@@ -9,6 +9,11 @@ GIT - MZX 2.93d
 
 USERS
 
++ The KEY? label is no longer sent for pre-2.62 worlds when
+  the char pressed is outside of the A-Z 1-9 range, and is no
+  longer sent for 1.x worlds when the char is outside of the A-Z
+  range. (Previously checked version for the KEY counter only.)
++ The KEYENTER label is no longer sent for pre-2.62 worlds.
 + Software layer renderer performance enhancements for repeat
   colors, clipping, and unaligned renderering.
 + Unaligned software layer rendering using 64-bit writes is
