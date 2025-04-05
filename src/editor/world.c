@@ -459,6 +459,7 @@ void create_blank_world(struct world *mzx_world)
   int i;
 
   mzx_world->version = MZX_VERSION;
+  mzx_world->active = 1;
 
   mzx_world->num_boards = 1;
   mzx_world->num_boards_allocated = 1;
