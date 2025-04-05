@@ -646,28 +646,27 @@ static boolean game_key(context *ctx, int *key)
     if(key_unicode > 0 && key_unicode < 256)
       key_char = key_unicode;
 
-    if(key_char)
+    if(key_char > 0 && key_char < 256)
     {
-      if(key_char < 256)
+      // KEY? label and pre-2.80 KEY counter.
+      // Values over 256 have no meaning here.
+      key_char = toupper(key_char);
+
+      // 1.xx only supported A-Z. <2.60 only supported 1-9 and A-Z.
+      // Since 2.60 magic overlaps with a lot of older games, 2.62 came out
+      // a week after it, and this counter frequently broke old games,
+      // apply the new behavior conservatively to >=2.62 instead.
+      if(mzx_world->version >= V262 ||
+       (key_char >= 'A' && key_char <= 'Z') ||
+       (key_char >= '1' && key_char <= '9' && mzx_world->version >= V200))
       {
         // Send the KEY? label.
-        // Values over 256 have no meaning here.
         keylbl[3] = key_char;
         send_robot_all_def(mzx_world, keylbl);
-      }
 
-      // In pre-port MZX versions key was a board counter
-      if(mzx_world->version < VERSION_PORT)
-      {
-        char keych = toupper(key_char);
-        // <2.60 it only supported 1-9 and A-Z
-        // This is difficult to version check, so apply it to <2.62
-        if(mzx_world->version >= V262 ||
-         (keych >= 'A' && keych <= 'Z') ||
-         (keych >= '1' && keych <= '9'))
-        {
-          cur_board->last_key = keych;
-        }
+        // In pre-2.80 MZX versions, KEY was a board counter.
+        if(mzx_world->version < VERSION_PORT)
+          cur_board->last_key = key_char;
       }
     }
 
@@ -798,7 +797,10 @@ static boolean game_key(context *ctx, int *key)
 
       case IKEY_RETURN:
       {
-        send_robot_all_def(mzx_world, "KeyEnter");
+        // KeyEnter label was added in 2.60. See the KEY? comments above for
+        // why this is being applied to >=2.62 instead of 2.60.
+        if(mzx_world->version >= V262)
+          send_robot_all_def(mzx_world, "KeyEnter");
 
         // Ignore if this isn't a fresh press
         if(key_status != 1)
