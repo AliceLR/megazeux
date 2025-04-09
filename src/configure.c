@@ -54,6 +54,8 @@
 // fullscreen behavior in Mac OS X Lion and later, and can lock the
 // computer on a black screen in Monterey.
 #define FULLSCREEN_WINDOWED_DEFAULT true
+// TODO: this should be on by default, as Option is closer to AltGr than Alt.
+//#define ALT_IS_ALTGR_DEFAULT true
 #endif
 
 #ifdef CONFIG_NDS
@@ -214,6 +216,10 @@
 #define VIDEO_RATIO_DEFAULT RATIO_MODERN_64_35
 #endif
 
+#ifndef ALT_IS_ALTGR_DEFAULT
+#define ALT_IS_ALTGR_DEFAULT false
+#endif
+
 #ifndef VFS_ENABLE_DEFAULT
 #define VFS_ENABLE_DEFAULT false
 #endif
@@ -312,6 +318,8 @@ static const struct config_info user_conf_default =
   // Event options
   true,                         // allow_gamepad
   false,                        // pause_on_unfocus
+  ALT_IS_ALTGR_DEFAULT,         // key_left_alt_is_altgr
+  ALT_IS_ALTGR_DEFAULT,         // key_right_alt_is_altgr
   1,                            // num_buffered_events
 
   // Virtual filesystem options
@@ -1036,6 +1044,18 @@ static void pause_on_unfocus(struct config_info *conf, char *name,
   config_boolean(&conf->pause_on_unfocus, value);
 }
 
+static void config_set_left_alt_is_altgr(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  config_boolean(&conf->key_left_alt_is_altgr, value);
+}
+
+static void config_set_right_alt_is_altgr(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  config_boolean(&conf->key_right_alt_is_altgr, value);
+}
+
 static void include_config(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -1292,6 +1312,8 @@ static const struct config_entry config_options[] =
   { "joy[!,!]button!", joy_button_set, true },
   { "joy[!,!]hat", joy_hat_set, true },
   { "joy_axis_threshold", config_set_joy_axis_threshold, false },
+  { "key_left_alt_is_altgr", config_set_left_alt_is_altgr, false },
+  { "key_right_alt_is_altgr", config_set_right_alt_is_altgr, false },
   { "mask_midchars", config_mask_midchars, false },
   { "max_simultaneous_samples", config_max_simultaneous_samples, false },
   { "modplug_resample_mode", config_mod_resample_mode, false },

@@ -308,6 +308,7 @@ static inline void SDL_SetJoystickEventsEnabled(boolean enabled)
 #define SDL_KMOD_ALT          KMOD_ALT
 #define SDL_KMOD_NUM          KMOD_NUM
 #define SDL_KMOD_CAPS         KMOD_CAPS
+#define SDL_KMOD_MODE         KMODE_MODE
 #endif
 
 /**

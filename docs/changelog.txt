@@ -9,6 +9,16 @@ GIT - MZX 2.93d
 
 USERS
 
++ Added config options "key_left_alt_is_altgr" and
+  "key_right_alt_is_altgr". When set to 1, these prevent their
+  respective Alt keys from activating built-in UI and editor
+  keyboard shortcuts e.g. Ctrl+Alt+Enter. They do not alter the
+  keycodes emitted by these keys. This may be useful for Windows
+  international keyboard layouts and for macOS. These options
+  can be disregarded for Wayland/X11 (AltGr has its own keysym)
+  or other ports that don't have AltGr.
++ Wayland/X11 AltGr now correctly emits internal keycode 313 and
+  PC XT keycode 56.
 + The KEY? label is no longer sent for pre-2.62 worlds when
   the char pressed is outside of the A-Z 1-9 range, and is no
   longer sent for 1.x worlds when the char is outside of the A-Z
