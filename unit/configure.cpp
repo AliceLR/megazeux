@@ -653,6 +653,16 @@ UNITTEST(Settings)
     TEST_ENUM("pause_on_unfocus", conf->pause_on_unfocus, boolean_data);
   }
 
+  SECTION(key_left_alt_is_altgr)
+  {
+    TEST_ENUM("key_left_alt_is_altgr", conf->key_left_alt_is_altgr, boolean_data);
+  }
+
+  SECTION(key_right_alt_is_altgr)
+  {
+    TEST_ENUM("key_right_alt_is_altgr", conf->key_right_alt_is_altgr, boolean_data);
+  }
+
   SECTION(num_buffered_events)
   {
     TEST_INT("num_buffered_events", conf->num_buffered_events, 1, 256);

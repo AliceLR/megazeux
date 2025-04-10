@@ -349,6 +349,10 @@ static void new_watchpoint(struct world *mzx_world)
 static int debug_config_idle_function(struct world *mzx_world,
  struct dialog *di, int key)
 {
+  // List element, so filter unhandled modifiers.
+  if(get_ctrl_status(keycode_internal) || get_shift_status(keycode_internal))
+    return key;
+
   switch(key)
   {
     // Add

@@ -154,6 +154,7 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_LCTRL: return IKEY_LCTRL;
     case SDLK_RALT: return IKEY_RALT;
     case SDLK_LALT: return IKEY_LALT;
+    case SDLK_MODE: return IKEY_ALTGR;
 #if !SDL_VERSION_ATLEAST(2,0,0)
     // SDL 1.2 had two different versions of the same pair of keys.
     // Because of this, we can't just #define these to the new values.
@@ -1265,8 +1266,8 @@ static boolean process_event(SDL_Event *event)
 
       ckey = convert_SDL_internal(key);
       trace(
-        "--EVENT_SDL-- SDL_EVENT_KEY_DOWN: scancode:%d sym:%d -> %d\n",
-        scancode, key, ckey
+        "--EVENT_SDL-- SDL_EVENT_KEY_DOWN: scancode:%d sym:%xh mod:%xh -> %d\n",
+        scancode, key, mod, ckey
       );
       if(!ckey)
       {
@@ -1340,6 +1341,7 @@ static boolean process_event(SDL_Event *event)
        (status->key_repeat != IKEY_RSUPER) &&
        (status->key_repeat != IKEY_LALT) &&
        (status->key_repeat != IKEY_RALT) &&
+       (status->key_repeat != IKEY_ALTGR) &&
        (status->key_repeat != IKEY_LCTRL) &&
        (status->key_repeat != IKEY_RCTRL))
       {
@@ -1377,8 +1379,8 @@ static boolean process_event(SDL_Event *event)
 
       ckey = convert_SDL_internal(key);
       trace(
-        "--EVENT_SDL-- SDL_EVENT_KEY_UP: scancode:%d sym:%d -> %d\n",
-        scancode, key, ckey
+        "--EVENT_SDL-- SDL_EVENT_KEY_UP: scancode:%d sym:%xh mod:%xh -> %d\n",
+        scancode, key, mod, ckey
       );
       if(!ckey)
       {

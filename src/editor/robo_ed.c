@@ -4168,7 +4168,8 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_v:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         end_intake_undo_frame(rstate);
         update_current_line(rstate, true);
@@ -4181,7 +4182,8 @@ static boolean robot_editor_key(context *ctx, int *key)
 #ifdef CONFIG_DEBYTECODE
     case IKEY_c:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) &&
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         toggle_current_line_comment(rstate);
         return true;
@@ -4191,7 +4193,8 @@ static boolean robot_editor_key(context *ctx, int *key)
 #else /* !CONFIG_DEBYTECODE */
     case IKEY_c:
     {
-      if(!get_ctrl_status(keycode_internal))
+      if(!get_ctrl_status(keycode_internal) ||
+       get_alt_status(keycode_internal) || get_shift_status(keycode_internal))
         break;
 
       if(rstate->current_rline->validity_status != valid)
@@ -4207,7 +4210,8 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_d:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) &&
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         if(rstate->current_rline->validity_status != valid)
         {
@@ -4232,7 +4236,8 @@ static boolean robot_editor_key(context *ctx, int *key)
     case IKEY_HOME:
     case IKEY_END:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) &&
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         if(*key == IKEY_HOME)
         {
@@ -4251,7 +4256,8 @@ static boolean robot_editor_key(context *ctx, int *key)
       }
       else
 
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         int mark_switch;
 
@@ -4316,7 +4322,8 @@ static boolean robot_editor_key(context *ctx, int *key)
     // Block action menu (also see Alt+Enter).
     case IKEY_b:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         end_intake_undo_frame(rstate);
         update_current_line(rstate, true);
@@ -4328,7 +4335,8 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_g:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) &&
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         goto_position(rstate);
         return true;
@@ -4339,7 +4347,8 @@ static boolean robot_editor_key(context *ctx, int *key)
     case IKEY_p:
     case IKEY_INSERT:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         paste_buffer(rstate);
         return true;
@@ -4350,14 +4359,17 @@ static boolean robot_editor_key(context *ctx, int *key)
     // Import file
     case IKEY_i:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         import_block(rstate);
         return true;
       }
 #ifndef CONFIG_DEBYTECODE
       else
-      if(get_ctrl_status(keycode_internal))
+
+      if(get_ctrl_status(keycode_internal) &
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         if(rstate->current_rline->validity_status != valid)
         {
@@ -4372,7 +4384,8 @@ static boolean robot_editor_key(context *ctx, int *key)
     // Export file
     case IKEY_x:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         if(rstate->mark_mode)
         {
@@ -4390,7 +4403,8 @@ static boolean robot_editor_key(context *ctx, int *key)
     // Single line macros
     case IKEY_o:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         edit_single_line_macros(rstate);
         return true;
@@ -4401,7 +4415,8 @@ static boolean robot_editor_key(context *ctx, int *key)
     // Unmark
     case IKEY_u:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         rstate->mark_mode = 0;
         return true;
@@ -4412,14 +4427,16 @@ static boolean robot_editor_key(context *ctx, int *key)
     // Hide
     case IKEY_h:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) &&
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         robo_ed_replace_dialog(rstate);
         return true;
       }
       else
 
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         rstate->scr_hide_mode = !rstate->scr_hide_mode;
         return true;
@@ -4429,7 +4446,8 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_f:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) &&
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         robo_ed_search_dialog(rstate);
         return true;
@@ -4439,7 +4457,8 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_r:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) &&
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         robo_ed_search_action(rstate, last_search_action);
         return true;
@@ -4449,7 +4468,8 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_m:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         char macro_line[256];
         macro_line[0] = 0;
@@ -4471,7 +4491,8 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_y:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) &&
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         // Update the current line here to avoid repeat macro expansion bugs.
         // Unfortunately, this means macro expansion here will clobber the
@@ -4485,7 +4506,8 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_z:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) &&
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         // See above. If the current frame is a buffer-based modification,
         // it will not trigger macro expansion and should be safe.

@@ -131,6 +131,7 @@ enum keycode
   IKEY_LALT         = 308,
   IKEY_LSUPER       = 311,
   IKEY_RSUPER       = 312,
+  IKEY_ALTGR        = 313,
   IKEY_SYSREQ       = 317,
   IKEY_BREAK        = 318,
   IKEY_MENU         = 319,

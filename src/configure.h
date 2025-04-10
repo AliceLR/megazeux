@@ -152,6 +152,8 @@ struct config_info
   // Event options
   boolean allow_gamepad;
   boolean pause_on_unfocus;
+  boolean key_left_alt_is_altgr;
+  boolean key_right_alt_is_altgr;
   int num_buffered_events;
 
   // Virtual filesystem options

@@ -415,7 +415,8 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
 
       case IKEY_c:
       {
-        if(get_alt_status(keycode_internal) || select_char)
+        if(select_char || (get_alt_status(keycode_internal) &&
+         !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal)))
         {
           // If alt - C is pressed, choose character
           int new_char = char_selection(last_char);
@@ -438,7 +439,8 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
       case IKEY_t:
       {
         // Hack for SFX editor dialog
-        if(get_alt_status(keycode_internal))
+        if(get_alt_status(keycode_internal) &&
+         !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
         {
           done = 1;
         }
@@ -452,7 +454,8 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
       case IKEY_v:
       {
         // Hack for scroll editor
-        if(get_alt_status(keycode_internal))
+        if(get_alt_status(keycode_internal) &&
+         !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
         {
           done = 1;
         }
@@ -1021,13 +1024,8 @@ static boolean intake_key(subcontext *sub, int *key)
 
     case IKEY_c:
     {
-      if(get_ctrl_status(keycode_internal))
-      {
-        break;
-      }
-      else
-
-      if(get_alt_status(keycode_internal) || intk->select_char)
+      if(intk->select_char || (get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal)))
       {
         // If alt - C is pressed, choose character
         int new_char = char_selection(last_char);

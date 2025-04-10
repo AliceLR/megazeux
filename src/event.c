@@ -142,6 +142,8 @@ void init_event(struct config_info *conf)
   // Get defaults from config.
   num_buffered_events = MAX(1, conf->num_buffered_events);
   input.unfocus_pause = conf->pause_on_unfocus;
+  input.left_alt_is_altgr = conf->key_left_alt_is_altgr;
+  input.right_alt_is_altgr = conf->key_right_alt_is_altgr;
 
   input.buffer = ccalloc(num_buffered_events, sizeof(struct buffered_status));
   input.load_offset = num_buffered_events - 1;
@@ -292,6 +294,7 @@ static uint32_t convert_internal_xt(enum keycode key)
     case IKEY_LALT: return 0x38;
     case IKEY_SPACE: return 0x39;
     case IKEY_RALT: return 0x38;
+    case IKEY_ALTGR: return 0x38;
     case IKEY_RSUPER: return 0x5C;
     case IKEY_MENU: return 0x5D;
     case IKEY_RCTRL: return 0x1D;
@@ -331,9 +334,11 @@ static uint32_t convert_internal_xt(enum keycode key)
   }
 }
 
-static enum keycode convert_xt_internal(uint32_t key, enum keycode *second)
+static enum keycode convert_xt_internal(uint32_t key, enum keycode *second,
+ enum keycode *third)
 {
   *second = IKEY_UNKNOWN;
+  *third = IKEY_UNKNOWN;
   switch(key)
   {
     case 0x01: return IKEY_ESCAPE;
@@ -412,6 +417,7 @@ static enum keycode convert_xt_internal(uint32_t key, enum keycode *second)
     case 0x5B: return IKEY_LSUPER;
     case 0x38:
       *second = IKEY_RALT;
+      *third = IKEY_ALTGR;
       return IKEY_LALT;
     case 0x39: return IKEY_SPACE;
     case 0x5C: return IKEY_RSUPER;
@@ -819,9 +825,9 @@ uint32_t get_key_status(enum keycode_type type, uint32_t index)
   {
     case keycode_pc_xt:
     {
-      enum keycode first, second;
-      first = convert_xt_internal(index, &second);
-      return (status->keymap[first] || status->keymap[second]);
+      enum keycode first, second, third;
+      first = convert_xt_internal(index, &second, &third);
+      return status->keymap[first] || status->keymap[second] || status->keymap[third];
     }
 
     case keycode_internal:
@@ -1034,8 +1040,8 @@ void force_last_key(enum keycode_type type, int val)
   {
     case keycode_pc_xt:
     {
-      enum keycode second;
-      status->key_pressed = convert_xt_internal(val, &second);
+      enum keycode second, third;
+      status->key_pressed = convert_xt_internal(val, &second, &third);
       break;
     }
 
@@ -1077,8 +1083,16 @@ boolean get_alt_status(enum keycode_type type)
    get_key_status(type, IKEY_LSUPER) ||
    get_key_status(type, IKEY_RSUPER) ||
 #endif
-   get_key_status(type, IKEY_LALT) ||
-   get_key_status(type, IKEY_RALT);
+   (!input.left_alt_is_altgr && get_key_status(type, IKEY_LALT)) ||
+   (!input.right_alt_is_altgr && get_key_status(type, IKEY_RALT));
+}
+
+boolean get_altgr_status(enum keycode_type type)
+{
+  return
+   (input.left_alt_is_altgr && get_key_status(type, IKEY_LALT)) ||
+   (input.right_alt_is_altgr && get_key_status(type, IKEY_RALT)) ||
+   get_key_status(type, IKEY_ALTGR);
 }
 
 boolean get_shift_status(enum keycode_type type)

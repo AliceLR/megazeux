@@ -242,6 +242,9 @@
    .modifier:before {
     content: "D";
    }
+   .altgr:before {
+    content: "E";
+   }
    .annotation {
     font-size: .95em;
    }
@@ -1386,7 +1389,7 @@
     </td>
 
     <td class="wide">
-     <div class="modifier">
+     <div class="warn modifier altgr">
       R.&nbsp;Alt
       <b>56</b>
       <p>307</p>
@@ -1527,6 +1530,15 @@
      conjunction with other keys. The Windows key (aka "Meta", "Super") is
      equivalent to the Command key on Mac keyboards, however, the positions of
      these keys are swapped with the Alt keys (which may be called "Option").
+    </td>
+   </tr>
+
+   <tr>
+    <td class="altgr">&nbsp;</td>
+    <td class="annotation">
+     In Wayland and X11, when using keyboard layouts with AltGr (e.g.
+     non-English layouts or US International), right alt will instead have the
+     internal keycode 313 and the PC XT keycode 56.
     </td>
    </tr>
 
