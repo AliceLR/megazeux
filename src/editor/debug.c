@@ -2890,13 +2890,16 @@ static int counter_debugger_idle_function(struct world *mzx_world,
     di->return_value = -2;
     di->done = 1;
   }
+  // List element, so filter unhandled modifiers.
+  if(get_shift_status(keycode_internal))
+    return key;
 
   switch(key)
   {
     // Char editor
     case IKEY_c:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) && !get_ctrl_status(keycode_internal))
       {
         char_editor(mzx_world);
         return 0;
@@ -2906,7 +2909,7 @@ static int counter_debugger_idle_function(struct world *mzx_world,
     // Palette editor
     case IKEY_e:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) && !get_ctrl_status(keycode_internal))
       {
         // FIXME hack
         if(ctx_for_pal_char_editors)
@@ -2921,7 +2924,7 @@ static int counter_debugger_idle_function(struct world *mzx_world,
     // Search dialog
     case IKEY_f:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) && !get_alt_status(keycode_internal))
       {
         di->return_value = 2;
         di->done = 1;
@@ -2932,7 +2935,7 @@ static int counter_debugger_idle_function(struct world *mzx_world,
     // Repeat search
     case IKEY_r:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) && !get_alt_status(keycode_internal))
       {
         di->return_value = -3;
         di->done = 1;
@@ -2943,7 +2946,7 @@ static int counter_debugger_idle_function(struct world *mzx_world,
     // Hide empties
     case IKEY_h:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) && !get_ctrl_status(keycode_internal))
       {
         di->return_value = 4;
         di->done = 1;
@@ -2954,7 +2957,7 @@ static int counter_debugger_idle_function(struct world *mzx_world,
     // New counter/string
     case IKEY_n:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) && !get_ctrl_status(keycode_internal))
       {
         di->return_value = 3;
         di->done = 1;

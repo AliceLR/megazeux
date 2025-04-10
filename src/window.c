@@ -3133,7 +3133,8 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
       {
         const char *file_name = src->choices[*(src->result)];
 
-        if(get_alt_status(keycode_internal))
+        if(get_alt_status(keycode_internal) &&
+         !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
         {
           switch(key)
           {
