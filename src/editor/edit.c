@@ -1710,7 +1710,8 @@ static boolean editor_key(context *ctx, int *key)
     else
       s = &(editor_conf->saved_positions[s_num]);
 
-    if(get_ctrl_status(keycode_internal))
+    if(get_ctrl_status(keycode_internal) &&
+     !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
     {
       if(editor->mode == EDIT_VLAYER)
       {
@@ -1738,7 +1739,8 @@ static boolean editor_key(context *ctx, int *key)
     }
     else
 
-    if(get_alt_status(keycode_internal))
+    if(get_alt_status(keycode_internal) &&
+     !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
     {
       int s_board = s->board_id;
 
@@ -2580,7 +2582,8 @@ static boolean editor_key(context *ctx, int *key)
 
     case IKEY_a:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         int charset_load = choose_char_set(mzx_world);
 
@@ -2822,7 +2825,8 @@ static boolean editor_key(context *ctx, int *key)
 
     case IKEY_h:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) & !get_shift_status(keycode_internal))
       {
         if(editor->screen_height == EDIT_SCREEN_NORMAL)
         {
@@ -2846,7 +2850,8 @@ static boolean editor_key(context *ctx, int *key)
 
     case IKEY_i:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         int import_number = import_type(mzx_world);
         if(import_number >= 0)
@@ -3050,7 +3055,8 @@ static boolean editor_key(context *ctx, int *key)
 
     case IKEY_l:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         char test_wav[MAX_PATH] = { 0, };
 
@@ -3344,7 +3350,8 @@ static boolean editor_key(context *ctx, int *key)
 
     case IKEY_r:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         // Clear world
         if(!confirm(mzx_world, "Clear ALL - Are you sure?"))
@@ -3432,7 +3439,8 @@ static boolean editor_key(context *ctx, int *key)
 
     case IKEY_t:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         // Test world
         if(block->selected)
@@ -3521,7 +3529,8 @@ static boolean editor_key(context *ctx, int *key)
 
     case IKEY_x:
     {
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         int export_number = export_type(mzx_world);
         if(export_number >= 0)
@@ -3639,14 +3648,16 @@ static boolean editor_key(context *ctx, int *key)
 
     case IKEY_y:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) &&
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         // Redo
         editor->modified |= apply_redo(editor->cur_history);
       }
       else
 
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         mzx_world->debug_mode = !(mzx_world->debug_mode);
       }
@@ -3662,14 +3673,16 @@ static boolean editor_key(context *ctx, int *key)
 
     case IKEY_z:
     {
-      if(get_ctrl_status(keycode_internal))
+      if(get_ctrl_status(keycode_internal) &&
+       !get_alt_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         // Undo
         editor->modified |= apply_undo(editor->cur_history);
       }
       else
 
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         if(editor->mode == EDIT_VLAYER)
         {

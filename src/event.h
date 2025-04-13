@@ -144,6 +144,8 @@ struct input_status
   uint16_t joystick_axis_threshold;
 
   boolean unfocus_pause;
+  boolean left_alt_is_altgr;
+  boolean right_alt_is_altgr;
 };
 
 // regular keycode_internal treats numpad keys as unique keys
@@ -187,6 +189,7 @@ CORE_LIBSPEC void warp_mouse_pixel_x(int pixel_x);
 CORE_LIBSPEC void warp_mouse_pixel_y(int pixel_y);
 CORE_LIBSPEC boolean get_mouse_drag(void);
 CORE_LIBSPEC boolean get_alt_status(enum keycode_type type);
+CORE_LIBSPEC boolean get_altgr_status(enum keycode_type type);
 CORE_LIBSPEC boolean get_shift_status(enum keycode_type type);
 CORE_LIBSPEC boolean get_ctrl_status(enum keycode_type type);
 CORE_LIBSPEC boolean get_exit_status(void);
