@@ -2,10 +2,10 @@ MEGAZEUX ON UNIX / UNIX CLONES
 
 MegaZeux has been tested as compiling on the following UNIX / UNIX clones:
 
- - Linux (x86 / AMD64 / PPC / PPC64 are tested)
- - BSD (FreeBSD and OpenBSD are tested)
+ - Linux (most architectures tested on hardware or QEMU via Alpine and Debian)
+ - BSD (NetBSD, FreeBSD, and OpenBSD are tested)
+ - Haiku (R1 Beta 5 x86-64 most recently tested; x86 needs the newer compiler)
  - Solaris (OpenSolaris 2008.3 is tested)
- - HaikuOS (based on BeOS 5)
 
 Some of these platforms may have additional dependencies or installation
 instructions, which will be added to this document over time.

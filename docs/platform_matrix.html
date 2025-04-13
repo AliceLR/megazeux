@@ -49,20 +49,20 @@ function _FAULTY(_v="NO", note=0)
 // Some common values
 var yes = _yes();
 var no = std("NO");
+var tba = {c: "tba", v: "TBA"};
 
 var stack_protector_strong = _yes("YES", 4);
 var no_low_memory = subopt("NO", 5);
 var no_updater = subopt("NO", 6);
 var no_updater_unix = subopt("NO", 7);
-var optional_sdl_3ds = std("NO / SDL 1.2 / SDL 2", 8);
-var optional_sdl_wii = std("NO / SDL 1.2 / SDL 2", 9);
+var optional_sdl = std("YES");
+var optional_sdl_3ds = std("YES", 8);
+var optional_sdl_wii = std("YES", 9);
 var yes_but_8bpp = subopt("YES (8bpp)", 10);
 var no_gl_switch = subopt("NO", 11);
 var no_gl_fixed_android = subopt("NO", 12);
-var no_libpng_wiiu = subopt("NO", 14);
-
-var sdl2 = _yes("SDL 2");
-var sdl1_2 = std("SDL 1.2");
+var no_libpng = std("NO", 14);
+var no_libpng_wiiu = std("NO", 15);
 
 var ZIP = _yes("ZIP");
 var DMG = _yes("DMG");
@@ -91,8 +91,10 @@ var fields =
   platform:         "$PLATFORM",
   description:      "Description",
   architecture:     "Architecture(s)<br>(Tested Only)",
+  format:           "Executable Format",
   endian:           "Endian",
   toolchain:        "Toolchain",
+  libc:             "libc",
   packaged:         "Packaged",
   visibility:       "Optimized Visibility" + note_link(3),
   stack_protector:  "Stack Protector",
@@ -101,7 +103,9 @@ var fields =
   adlib_engine:     "Adlib Engine",
   ogg_vorbis:       "Ogg Vorbis",
   optimization:     "Optimization",
-  sdl:              "SDL",
+  sdl3:             "SDL3",
+  sdl2:             "SDL2",
+  sdl:              "SDL 1.2",
   editor:           "EDITOR",
   helpsys:          "HELPSYS",
   audio:            "AUDIO",
@@ -129,8 +133,10 @@ var archs =
     platform:         // config platform name
     description:      // short description
     architecture:     // target processor architecture
+    format:           // executable file format
     endian:           // "Little" or "Big"
     toolchain:        // gcc/clang/binutils/etc versions
+    libc:             // C standard library implementation
     packaged:         // ZIP or other
     visibility:       // Optimized visibility (See note 3)
     stack_protector:  // Is the stack protector enabled? (usually _FAULTY())
@@ -138,7 +144,9 @@ var archs =
     adlib_engine:     // rad
     ogg_vorbis:       // vorbis, tremor, tremor_lowmem or _FAULTY()
     optimization:     // speed or size
-    sdl:              // Does this platform rely on SDL?
+    sdl3:             // Does this platform support SDL3?
+    sdl2:             // Does this platform support SDL2?
+    sdl:              // Does this platform support SDL 1.2?
     editor:           // Does this platform ship with the editor enabled?
     helpsys:          // Does this platform ship with the help file enabled?
     audio:            // Does this platform ship with audio enabled?
@@ -160,9 +168,11 @@ var archs =
   {
     platform:         "3ds",
     description:      "Nintendo 3DS",
-    architecture:     "ARM11 (ELF)",
+    architecture:     "ARM11",
+    format:           "ELF",
     endian:           "Little",
-    toolchain:        "gcc 14.2.0 <br> binutils 2.43.1 <br> (dk r65)",
+    toolchain:        "gcc 14.2.0 <br> binutils&nbsp;2.43.1 <br> (dk r65)",
+    libc:             "Newlib",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -170,6 +180,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor,
     optimization:     speed,
+    sdl2:             optional_sdl_3ds,
     sdl:              optional_sdl_3ds,
     editor:           yes,
     helpsys:          yes,
@@ -186,18 +197,20 @@ var archs =
   {
     platform:         "android",
     description:      "Android",
-    architecture:     "ARMv7-a (ELF) <br> AArch64 (ELF) <br> i686 (ELF) <br> x86_64 (ELF)",
+    architecture:     "ARMv7-a <br> AArch64 <br> i686 <br> x86_64",
+    format:           "ELF",
     endian:           "Little",
-    toolchain:        "clang 12.0.9 <br> llvm 12.0.9 <br> (ndk r23)",
+    toolchain:        "clang&nbsp;12.0.9 <br> llvm 12.0.9 <br> (ndk r23)",
+    libc:             "Bionic",
     packaged:         APK,
-    visibility:       yes,
     stack_protector:  stack_protector_strong,
     layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              sdl2,
+    sdl3:             tba,
+    sdl2:             yes,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -207,7 +220,7 @@ var archs =
     glsl:             yes,
     network:          yes,
     updater:          no_updater,
-    png:              no,
+    png:              no_libpng,
     hashtables:       yes,
     loadsave_meter:   no,
   },
@@ -216,9 +229,11 @@ var archs =
   {
     platform:         "darwin",
     description:      "Mac OS X/macOS (compatibility)",
-    architecture:     "Various (Mach-O) <br>" + note_link("macOS"),
+    architecture:     "Various <br>" + note_link("macOS"),
+    format:           "Mach&#x2011;O",
     endian:           "Varies",
     toolchain:        "Various",
+    libc:             "Apple libc",
     packaged:         DMG,
     visibility:       yes,
     stack_protector:  stack_protector_strong,
@@ -227,7 +242,9 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl3:             tba,
+    sdl2:             yes,
+    sdl:              optional_sdl,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -246,10 +263,12 @@ var archs =
   djgpp:
   {
     platform:         "djgpp",
-    description:      "MS-DOS (32-bit)",
+    description:      "MS-DOS (32&#x2011;bit)",
     architecture:     "i586",
+    format:           "MZ / COFF",
     endian:           "Little",
     toolchain:        "gcc 12.2.0 <br /> binutils 2.30",
+    libc:             "DJGPP libc",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -257,13 +276,11 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       stb_vorbis,
     optimization:     speed,
-    sdl:              no,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
     software:         _yes("render_svga"),
-    updater:          no_updater,
-    png:              subopt(),
+    png:              subopt("NO", 14),
     hashtables:       yes,
     loadsave_meter:   yes,
   },
@@ -272,9 +289,11 @@ var archs =
   {
     platform:         "dreamcast",
     description:      "Sega Dreamcast",
-    architecture:     "SH-4 (ELF)",
+    architecture:     "SH-4",
+    format:           "ELF",
     endian:           "Little",
     toolchain:        "gcc 13.2.0 <br /> binutils 2.43 <br /> (KallistiOS)",
+    libc:             "Newlib",
     packaged:         _FAULTY(),
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -282,13 +301,13 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor,
     optimization:     size,
-    sdl:              no,
     editor:           no_low_memory,
     helpsys:          no_low_memory,
     audio:            yes,
     software:         yes,
+    network:          _FAULTY(),
     updater:          no_updater,
-    png:              subopt(),
+    png:              no_libpng,
     hashtables:       yes,
     loadsave_meter:   yes,
   },
@@ -298,8 +317,10 @@ var archs =
     platform:         "emscripten",
     description:      "HTML5 (Emscripten)",
     architecture:     "JavaScript <br> WebAssembly",
+    format:           "&mdash;",
     endian:           "Little",
     toolchain:        "clang 20.0.0 <br> (sdk 3.1.66)",
+    libc:             "musl",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -307,7 +328,9 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              sdl2,
+    sdl3:             tba,
+    sdl2:             yes,
+    sdl:              tba,
     editor:           _FAULTY(),
     helpsys:          yes,
     audio:            yes,
@@ -318,7 +341,7 @@ var archs =
     network:          no,
     updater:          no,
     modular:          no,
-    png:              no,
+    png:              no_libpng,
     hashtables:       yes,
     loadsave_meter:   no,
   },
@@ -326,10 +349,12 @@ var archs =
   mingw:
   {
     platform:         "mingw",
-    description:      "Windows <br> (GNU toolchain)",
-    architecture:     "x64 (PE+ COFF) <br> x86 (PE COFF)",
+    description:      "Windows <br> (MinGW)",
+    architecture:     "x64 <br> x86",
+    format:           "PE32&nbsp;/&nbsp;PE32+",
     endian:           "Little",
-    toolchain:        "gcc 14.2.1 <br> binutils 2.42",
+    toolchain:        "gcc 14.2.1 <br> binutils&nbsp;2.42",
+    libc:             "MSVCRT",
     packaged:         ZIP,
     visibility:       yes,
     stack_protector:  stack_protector_strong,
@@ -338,7 +363,9 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl3:             _FAULTY(),
+    sdl2:             yes,
+    sdl:              optional_sdl,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -358,9 +385,11 @@ var archs =
   {
     platform:         "msvc",
     description:      "Windows <br> (Visual Studio)",
-    architecture:     "x64 (PE+ COFF) <br> x86 (PE COFF)",
+    architecture:     "x64 <br> x86 ",
+    format:           "PE32&nbsp;/&nbsp;PE32+",
     endian:           "Little",
     toolchain:        "Visual Studio 2017",
+    libc:             "VC 14.0 RT",
     packaged:         subopt("NO", 2),
     visibility:       yes,
     stack_protector:  _FAULTY(),
@@ -369,7 +398,9 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl3:             _FAULTY(),
+    sdl2:             yes,
+    sdl:              no,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -389,9 +420,11 @@ var archs =
   {
     platform:         "nds",
     description:      "Nintendo DS",
-    architecture:     "ARM9 (ELF)",
+    architecture:     "ARM9",
+    format:           "ELF",
     endian:           "Little",
-    toolchain:        "gcc 14.2.0 <br> binutils 2.43.1 <br> (dk r65)",
+    toolchain:        "gcc 14.2.0 <br> binutils&nbsp;2.44 <br> (blocksds&nbsp;1.9.1)",
+    libc:             "Newlib",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
@@ -399,12 +432,13 @@ var archs =
     adlib_engine:     _FAULTY(),
     ogg_vorbis:       _FAULTY(),
     optimization:     size,
-    sdl:              no,
     editor:           no_low_memory,
     helpsys:          no_low_memory,
     audio:            yes,
     software:         render_nds,
-    png:              no_low_memory,
+    network:          _FAULTY(),
+    updater:          no_updater,
+    png:              no_libpng,
     hashtables:       no_low_memory,
     loadsave_meter:   yes,
   },
@@ -413,9 +447,11 @@ var archs =
   {
     platform:         "psp",
     description:      "PlayStation Portable",
-    architecture:     "MIPS (ELF)",
+    architecture:     "MIPS",
+    format:           "ELF",
     endian:           "Little",
-    toolchain:        "gcc 4.6.2 <br> binutils 2.22 <br> (dk r16)",
+    toolchain:        "gcc 4.6.3 <br> binutils 2.22 <br> (dk r17)",
+    libc:             "Newlib",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes_but_8bpp,
@@ -423,7 +459,9 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
-    sdl:              sdl1_2,
+    sdl3:             _FAULTY(),
+    sdl2:             _FAULTY(),
+    sdl:              yes,
     editor:           no_low_memory,
     helpsys:          no_low_memory,
     audio:            yes,
@@ -439,9 +477,11 @@ var archs =
   {
     platform:         "psvita",
     description:      "PlayStation Vita",
-    architecture:     "ARMv7 (ELF)",
+    architecture:     "ARMv7",
+    format:           "ELF",
     endian:           "Little",
     toolchain:        "gcc 10.3.0 <br> binutils 2.34 <br> (sdk v2.510)",
+    libc:             "Newlib",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -449,7 +489,8 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              sdl2,
+    sdl3:             tba,
+    sdl2:             yes,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -466,9 +507,11 @@ var archs =
   {
     platform:         "switch",
     description:      "Nintendo Switch",
-    architecture:     "ARMv8/AArch64 (ELF)",
+    architecture:     "AArch64",
+    format:           "ELF",
     endian:           "Little",
-    toolchain:        "gcc 14.2.0 <br> binutils 2.43.1 <br> (dk r27)",
+    toolchain:        "gcc 14.2.0 <br> binutils&nbsp;2.43.1 <br> (dk r27)",
+    libc:             "Newlib",
     packaged:         ZIP,
     stack_protector:  stack_protector_strong,
     layer_rendering:  yes,
@@ -476,7 +519,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              sdl2,
+    sdl2:             yes,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -494,10 +537,12 @@ var archs =
   unix:
   {
     platform:         "unix",
-    description:      "Linux, BSD, Solaris, HaikuOS, etc.",
-    architecture:     "AMD64 (ELF) <br> i386 (ELF) <br> AArch64 (ELF) <br> " + note_link("Others"),
+    description:      "Linux, BSD, Illumos, Haiku, etc.",
+    architecture:     "AMD64 <br> i386 <br> AArch64 <br> " + note_link("Others"),
+    format:           "ELF",
     endian:           "Varies",
     toolchain:        "Various",
+    libc:             "Various",
     packaged:         _yes("Various"),
     visibility:       yes,
     stack_protector:  stack_protector_strong,
@@ -506,7 +551,9 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl3:             yes,
+    sdl2:             optional_sdl,
+    sdl:              optional_sdl,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -527,9 +574,11 @@ var archs =
   {
     platform:         "wii",
     description:      "Nintendo Wii",
-    architecture:     "PPC (ELF)",
+    architecture:     "PowerPC",
+    format:           "ELF",
     endian:           "Big",
-    toolchain:        "gcc 13.1.0 <br> binutils 2.42 <br> (dk r45.2)",
+    toolchain:        "gcc 13.1.0 <br> binutils&nbsp;2.42 <br> (dk r45.2)",
+    libc:             "Newlib",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -537,6 +586,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor,
     optimization:     speed,
+    sdl2:             optional_sdl_wii,
     sdl:              optional_sdl_wii,
     editor:           yes,
     helpsys:          yes,
@@ -553,9 +603,11 @@ var archs =
   {
     platform:         "wiiu",
     description:      "Nintendo Wii U",
-    architecture:     "PPC (ELF)",
+    architecture:     "PowerPC",
+    format:           "ELF",
     endian:           "Big",
     toolchain:        "gcc 13.1.0 <br> binutils 2.42 <br> (dk r45.2)",
+    libc:             "Newlib",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -563,12 +615,13 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor,
     optimization:     speed,
-    sdl:              sdl2,
+    sdl2:             yes,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
     software:         yes,
     overlay:          yes,
+    network:          _FAULTY(),
     updater:          no_updater,
     png:              no_libpng_wiiu,
     hashtables:       yes,
@@ -579,9 +632,11 @@ var archs =
   {
     platform:         "xcode",
     description:      "macOS 10.11+ (Xcode)",
-    architecture:     "x86_64 (Mach-O) <br> AArch64 (Mach-O) <br>" + note_link("macOS"),
+    architecture:     "x86_64 <br> AArch64 <br>" + note_link("macOS"),
+    format:           "Mach&#x2011;O",
     endian:           "Little",
-    toolchain:        "clang 1200.0.32.29 <br> LLVM 12.0.0",
+    toolchain:        "clang 1400.0.29.202 <br> LLVM 14.0.0",
+    libc:             "Apple libc",
     packaged:         DMG,
     visibility:       yes,
     stack_protector:  yes,
@@ -590,7 +645,9 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              yes,
+    sdl3:             tba,
+    sdl2:             yes,
+    sdl:              no,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -612,9 +669,11 @@ var archs =
   {
     platform:         defunct("amiga"),
     description:      "AmigaOS 4.x",
-    architecture:     "PPC (ELF)",
+    architecture:     "PowerPC",
+    format:           "ELF",
     endian:           "Big",
-    toolchain:        "gcc 4.2.2 <br> binutils 2.14 <br> clib2",
+    toolchain:        "gcc 4.2.2 <br> binutils&nbsp;2.14",
+    libc:             "clib2",
     packaged:         LHA,
     visibility:       yes,
     stack_protector:  stack_protector_strong,
@@ -623,7 +682,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              sdl1_2,
+    sdl:              yes,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -643,9 +702,11 @@ var archs =
   {
     platform:         defunct("gp2x"),
     description:      "GP2x",
-    architecture:     "ARM9 (ELF)",
+    architecture:     "ARM9",
+    format:           "ELF",
     endian:           "Little",
-    toolchain:        "gcc 4.1.1 <br> binutils 2.16.1 <br> glibc2.3.7 <br> (open2x)",
+    toolchain:        "gcc 4.1.1 <br> binutils&nbsp;2.16.1 <br> (open2x)",
+    libc:             "glibc 2.3.7",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
@@ -653,7 +714,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
-    sdl:              sdl1_2,
+    sdl:              yes,
     editor:           no_low_memory,
     helpsys:          no_low_memory,
     audio:            yes,
@@ -667,9 +728,11 @@ var archs =
   {
     platform:         defunct("pandora"),
     description:      "Pandora",
-    architecture:     "ARMv7-a (ELF)",
+    architecture:     "ARMv7-a",
+    format:           "ELF",
     endian:           "Little",
-    toolchain:        "gcc 4.4.1 <br> binutils 2.19.51 <br> (CS 2009q3)",
+    toolchain:        "gcc 4.4.1 <br> binutils&nbsp;2.19.51 <br> (CS 2009q3)",
+    libc:             "glibc",
     packaged:         subopt("ZIP (PND?)"),
     visibility:       yes,
     stack_protector:  stack_protector_strong,
@@ -678,7 +741,7 @@ var archs =
     adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     speed,
-    sdl:              sdl1_2,
+    sdl:              yes,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
@@ -834,11 +897,11 @@ th {
   max-width: 120px;
 }
 
-td.yes, td.no, td.no2, td.na, td.std {
+td.yes, td.no, td.no2, td.na, td.std, td.tba {
 	vertical-align : middle;
 }
 
-span.yes, span.no, span.no2, span.na, span.std {
+span.yes, span.no, span.no2, span.na, span.std, span.tba {
 	border : 1px solid black;
 	padding-right : 1em;
 	padding-left : 1em;
@@ -868,11 +931,15 @@ span.yes, span.no, span.no2, span.na, span.std {
 	background-color : rgb(150,255,150);
 }
 
+.tba {
+	background-color: yellow;
+}
+
 .spacer {
   border-top : none;
   border-bottom : none;
   padding-left : 10px;
-  width : 1%;
+  width : 0.5%;
 }
 
 a {
@@ -897,6 +964,7 @@ li {
 <span class="yes">Ideal</span>
 <span class="std">Normal</span>
 <span class="na">Not applicable</span>
+<span class="tba">Pending triage</span>
 <span class="no2">Suboptimal, Trivially fixable</span>
 <span class="no">Faulty, Not trivially fixable</span>
 </p>
@@ -988,7 +1056,15 @@ requires it is also enabled. The only feature that currently uses networking
 is the updater.
 </li>
 
-<li id="note14">There is currently a toolchain conflict between two versions of
+<li id="note14">libpng is used to save screenshots/editor image exports, to
+load icons for some platforms, to load the onscreen keyboard in the 3DS port,
+and for loading PNGs with the utilities <b>ccv</b> and <b>png2smzx</b>.
+MegaZeux has a fallback PNG exporter, so libpng can be disabled to reduce
+executable size if it isn't really needed and/or if the worse PNG output is
+acceptable. Currently, only DJGPP is truly deficient here (utilities).
+</li>
+
+<li id="note15">There is currently a toolchain conflict between two versions of
 zlib - one (1.2.5) included in the Wii U operating system, one (1.2.11) included
 in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
 </li>
@@ -998,35 +1074,190 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
 
 <h2 id="noteOthers">Other Unix Architectures</h2>
 <p>
-  MegaZeux is regularly tested with Linux/BSD on hardware for the
-  following architectures:
+  MegaZeux is regularly tested with Linux, BSD, and/or Android on hardware
+  (or semi-regularly tested in QEMU) for the following architectures:
 </p>
-<ul>
-  <li><b>AMD64</b> / <b>x86_64</b></li>
-  <li><b>i386</b> / <b>i686</b> / etc.</li>
-  <li><b>ARMv7</b> / <b>ARMhf</b> / etc.</li>
-  <li><b>AArch64</b></li>
-  <li><b>RISC-V RV64GC</b></li>
-</ul>
-<p>
-  More niche architectures are only tested via non-Linux ports or are
-  semi-regularly tested with Linux/BSD via QEMU emulation:
-</p>
-<ul>
-  <li><b>DEC Alpha</b> (qemu-system-alpha)</li>
-  <li><b>LoongArch64</b> (qemu-system-loong64)</li>
-  <li><b>MIPSeb</b> (qemu-system-mips)</li>
-  <li><b>MIPSel</b> (qemu-system-mipsel, PlayStation Portable)</li>
-  <li><b>MIPS64el</b> (qemu-system-mips64)</li>
-  <li><b>Motorola 68000</b> (qemu-system-m68k)</li>
-  <li><b>PA-RISC</b> (qemu-system-hppa)</li>
-  <li><b>PowerPC</b> (qemu-system-ppc, Nintendo Wii, Nintendo Wii U, Mac OS X)</li>
-  <li><b>PowerPC 64</b> (qemu-system-ppc64, Mac OS X)</li>
-  <li><b>SPARC</b> (qemu-system-sparc)</li>
-  <li><b>SPARC64</b> (qemu-system-sparc64)</li>
-  <li><b>SuperH SH-4</b> (qemu-sh4-static, Sega Dreamcast)</li>
-  <li><b>IBM Z</b> (qemu-s390x-static)</li>
-</ul>
+<table style="min-width:800px">
+  <tr>
+    <th></th>
+    <th>Debian GNU/Linux</th>
+    <th>Alpine Linux</th>
+    <th>NetBSD</th>
+    <th>Android</th>
+    <th>Related ports</th>
+  </tr>
+  <tr>
+    <th>AMD64 / x86-64</th>
+    <td class="std">YES</td>
+    <td class="std">YES</td>
+    <td class="std">YES</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <th>i386 / i686 / etc.</th>
+    <td class="std">YES</td>
+    <td class="std">YES</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <th>AArch64</th>
+    <td class="std">Le Potato<br>Raspberry Pi</td>
+    <td class="tba">qemu-system-aarch64</td>
+    <td>&mdash;</td>
+    <td class="std">YES</td>
+    <td>Nintendo Switch</td>
+  </tr>
+  <tr>
+    <th>ARMv7</th>
+    <td class="std">Raspberry Pi</td>
+    <td class="tba">qemu-system-arm</td>
+    <td>&mdash;</td>
+    <td class="std">YES</td>
+    <td>PlayStation Vita<br>Pandora</td>
+  </tr>
+  <tr>
+    <th>ARMv6 / ARMhf</th>
+    <td class="std">Raspberry Pi<br>qemu-system-arm</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>Nintendo 3DS</td>
+  </tr>
+  <tr>
+    <th><=ARMv5</th>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>Nintendo DS<br>GP2X</td>
+  </tr>
+  <tr>
+    <th>RISC-V RV64GC</th>
+    <td class="std">VisionFive 2<br>qemu-system-riscv64</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+
+  <tr><td colspan="6"></td></tr>
+
+  <tr>
+    <th>DEC Alpha</th>
+    <td class="tba">qemu-system-alpha</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <th>LoongArch64</th>
+    <td>&mdash;</td>
+    <td class="tba">qemu-system-loong64</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <th>MIPSeb</th>
+    <td class="tba">qemu-system-mips<br>(Debian 10.13)</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <th>MIPSel</th>
+    <td class="tba">qemu-system-mipsel<br>(Debian 12.x)</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>PlayStation Portable</td>
+  </tr>
+  <tr>
+    <th>MIPS64el</th>
+    <td class="tba">qemu-system-mipsel</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <th>Motorola 68000</th>
+    <td class="tba">qemu-system-m68k</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <th>PA-RISC</th>
+    <td class="tba">qemu-system-hppa</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <th>PowerPC</th>
+    <td class="tba">qemu-system-ppc</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>Mac OS X<br>Nintendo Wii<br>Nintendo Wii U<br>AmigaOS 4</td>
+  </tr>
+  <tr>
+    <th>PowerPC 64</th>
+    <td class="tba">qemu-system-ppc64</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>Mac OS X</td>
+  </tr>
+  <tr>
+    <th>POWER8</th>
+    <td>&mdash;</td>
+    <td class="tba">qemu-system-ppc64</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <th>SPARC</th>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td class="tba">qemu-system-sparc</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <th>SPARC64</th>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td class="tba">qemu-system-sparc64</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+  <tr>
+    <th>SuperH SH-4</th>
+    <td class="tba">qemu-sh4 (binfmt_misc)</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>Sega Dreamcast</td>
+  </tr>
+  <tr>
+    <th>IBM Z</th>
+    <td>&mdash;</td>
+    <td class="tba">qemu-system-s390x</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+  </tr>
+</table>
 
 <hr>
 
@@ -1035,7 +1266,7 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
   The following architectures and SDL versions are currently supported by the macOS builds.
   Listed toolchain/SDK values are the ones used for release builds currently:
 </p>
-<table style="min-width:800">
+<table style="min-width:800px">
   <tr>
     <th rowspan="2"></th>
     <th colspan="3">Xcode</th>
@@ -1077,7 +1308,7 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
   <tr>
     <th>x86_64</th>
     <td>Xcode 14.2<br>13.1 SDK</td>
-    <td>10.11</td>
+    <td>10.11<br>10.14</td>
     <td>SDL2 (latest)<br>SDL3 (latest)</td>
     <td>Xcode 9.4.1<br>10.13 SDK</td>
     <td>10.6</td>
@@ -1095,7 +1326,7 @@ in devkitPro. As such, the devkitPro-provided version of libpng fails to link.
   <tr>
     <th>arm64</th>
     <td>Xcode 14.2<br>13.1 SDK</td>
-    <td>11.0</td>
+    <td>11.0<br>11.0</td>
     <td>SDL2 (latest)<br>SDL3 (latest)</td>
     <td>Xcode 14.2<br>13.1 SDK</td>
     <td>11.0</td>
