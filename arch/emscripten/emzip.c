@@ -24,6 +24,7 @@
  */
 
 #include "../../src/io/zip.h"
+#include "../../src/utils/utils_alloc.h"
 #include <stdlib.h>
 #include <emscripten.h>
 

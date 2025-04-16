@@ -9,8 +9,14 @@ CROSS_COMPILE =
 # Disable rules that require target code to run natively.
 SUPPRESS_HOST_TARGETS ?= 1
 
+ifeq (${BUILD_SDL},3)
+SDL_CFLAGS = -s USE_SDL=3
+SDL_LDFLAGS = -s USE_SDL=3
+endif
+ifeq (${BUILD_SDL},2)
 SDL_CFLAGS = -s USE_SDL=2
 SDL_LDFLAGS = -s USE_SDL=2
+endif
 
 VORBIS_CFLAGS = -s USE_OGG=1 -s USE_VORBIS=1
 VORBIS_LDFLAGS = -s USE_OGG=1 -s USE_VORBIS=1
@@ -26,7 +32,7 @@ BINEXT = .js
 ARCH_LDFLAGS += -s ALLOW_MEMORY_GROWTH=1
 # ARCH_LDFLAGS += -s TOTAL_MEMORY=134217728 -s ALLOW_MEMORY_GROWTH=0
 
-ARCH_LDFLAGS += -s MODULARIZE=1 -s 'EXTRA_EXPORTED_RUNTIME_METHODS=["FS"]'
+ARCH_LDFLAGS += -s MODULARIZE=1 -s 'EXPORTED_RUNTIME_METHODS=["FS"]'
 
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 ARCH_LDFLAGS += -s FULL_ES2=1
@@ -71,8 +77,7 @@ all: emzip.js
 
 # NOTE: hack, core_obj and io_obj aren't defined yet...
 emzip_objs := \
-  src/.build/util.o \
-  src/io/.build/vio.o \
+  src/io/.build/vio_no_vfs.o \
   src/io/.build/zip.o \
   src/io/.build/zip_stream.o
 
