@@ -292,7 +292,7 @@ var archs =
     architecture:     "SH-4",
     format:           "ELF",
     endian:           "Little",
-    toolchain:        "gcc 13.2.0 <br /> binutils 2.43 <br /> (KallistiOS)",
+    toolchain:        "gcc 13.2.0 <br> binutils&nbsp;2.43 <br> (KallistiOS)",
     libc:             "Newlib",
     packaged:         _FAULTY(),
     stack_protector:  _FAULTY(),
@@ -450,7 +450,7 @@ var archs =
     architecture:     "MIPS",
     format:           "ELF",
     endian:           "Little",
-    toolchain:        "gcc 4.6.3 <br> binutils 2.22 <br> (dk r17)",
+    toolchain:        "gcc 4.6.3 <br> binutils&nbsp;2.22 <br> (dk r17)",
     libc:             "Newlib",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
@@ -480,7 +480,7 @@ var archs =
     architecture:     "ARMv7",
     format:           "ELF",
     endian:           "Little",
-    toolchain:        "gcc 10.3.0 <br> binutils 2.34 <br> (sdk v2.510)",
+    toolchain:        "gcc 10.3.0 <br> binutils&nbsp;2.34 <br> (sdk&nbsp;v2.510)",
     libc:             "Newlib",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
@@ -537,7 +537,7 @@ var archs =
   unix:
   {
     platform:         "unix",
-    description:      "Linux, BSD, Illumos, Haiku, etc.",
+    description:      "Linux, BSD, Haiku, etc.",
     architecture:     "AMD64 <br> i386 <br> AArch64 <br> " + note_link("Others"),
     format:           "ELF",
     endian:           "Varies",
@@ -606,7 +606,7 @@ var archs =
     architecture:     "PowerPC",
     format:           "ELF",
     endian:           "Big",
-    toolchain:        "gcc 13.1.0 <br> binutils 2.42 <br> (dk r45.2)",
+    toolchain:        "gcc 13.1.0 <br> binutils&nbsp;2.42 <br> (dk r45.2)",
     libc:             "Newlib",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
@@ -857,8 +857,8 @@ window.onload = build_table;
 <style type="text/css">
 body {
 	font-family : "Verdana", "Bitstream Vera Sans";
-	margin-left : 1em;
-	margin-right : 1em;
+	margin-left : 0.5em;
+	margin-right : 0.5em;
 }
 
 p#legend {
@@ -875,7 +875,7 @@ table {
 
 table#matrix {
 	min-width : 1880px;
-	width : 98%;
+	width : 99%;
 }
 
 td, th {
@@ -883,7 +883,7 @@ td, th {
 	border-width : 1px 1px 1px 1px;
 	border-style : inset inset inset inset;
 	border-color : gray;
-	padding : 5px;
+	padding : 4px;
 	color : black;
   max-width : 100px;
 }
@@ -938,7 +938,7 @@ span.yes, span.no, span.no2, span.na, span.std, span.tba {
 .spacer {
   border-top : none;
   border-bottom : none;
-  padding-left : 10px;
+  padding-left : 4px;
   width : 0.5%;
 }
 
