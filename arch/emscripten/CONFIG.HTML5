@@ -5,4 +5,4 @@
 # compared at some point though.
 
 ./config.sh --platform emscripten --enable-release --enable-lto \
-            --disable-softscale "$@"
+            --enable-sdl3 --disable-softscale "$@"
