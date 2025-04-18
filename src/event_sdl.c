@@ -36,6 +36,24 @@
 #include <whb/proc.h>
 #endif
 
+/* Several ports don't or did not send joystick added events:
+ *
+ * - SDL 1.2 doesn't have joystick added/removed events.
+ * - The 3DS port didn't send them until 3.x
+ * - The PS2 port didn't send them until 3.x
+ * - The PSP port didn't send them until 2.32.0 and 3.x
+ * - The Vita port didn't send them until 2.0.22 and 3.x
+ * - The unofficial Switch port doesn't bother at all.
+ */
+#if !SDL_VERSION_ATLEAST(2,0,0) || \
+ (!SDL_VERSION_ATLEAST(3,0,0) && defined(CONFIG_3DS)) || \
+ (!SDL_VERSION_ATLEAST(3,0,0) && defined(CONFIG_PS2)) || \
+ (!SDL_VERSION_ATLEAST(2,32,0) && defined(CONFIG_PSP)) || \
+ (!SDL_VERSION_ATLEAST(2,0,22) && defined(CONFIG_PSVITA)) || \
+ defined(CONFIG_SWITCH)
+#define NO_JOYSTICK_ADDED_EVENTS
+#endif
+
 extern struct input_status input;
 
 /* Enable converting keycodes to fake unicode presses when text input isn't
@@ -1773,11 +1791,7 @@ void sdl_init_window_text_events(unsigned sdl_window_id)
 
 void platform_init_event(void)
 {
-#if !SDL_VERSION_ATLEAST(2,0,0) || defined(CONFIG_SWITCH) || defined(CONFIG_PSVITA) \
- || defined(CONFIG_3DS)
-  // SDL 1.2 doesn't have joystick added/removed events.
-  // Switch SDL doesn't seem to generate these events at all on startup. The Vita
-  // and 3DS appear to have the same issue.
+#ifdef NO_JOYSTICK_ADDED_EVENTS
   int i, count;
 
 #if SDL_VERSION_ATLEAST(3,0,0)
@@ -1801,7 +1815,7 @@ void platform_init_event(void)
   for(i = 0; i < count; i++)
     init_joystick(i);
 #endif
-#endif
+#endif /* NO_JOYSTICK_ADDED_EVENTS */
 
 #if SDL_VERSION_ATLEAST(2,0,0)
   SDL_SetGamepadEventsEnabled(true);
