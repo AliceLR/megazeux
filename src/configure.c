@@ -45,7 +45,8 @@
 #define MAX_CONFIG_REGISTERED 2
 
 // Arch-specific config.
-#ifdef __WIN32__
+#ifdef _WIN32
+#define DEFAULT_SDL_RENDER_DRIVER "direct3d"
 #define UPDATE_AUTO_CHECK_DEFAULT UPDATE_AUTO_CHECK_SILENT
 #endif
 
@@ -176,6 +177,10 @@
 #endif
 #endif
 
+#ifndef DEFAULT_SDL_RENDER_DRIVER
+#define DEFAULT_SDL_RENDER_DRIVER ""
+#endif
+
 #ifndef AUDIO_BUFFER_SAMPLES
 #define AUDIO_BUFFER_SAMPLES 1024
 #endif
@@ -296,7 +301,7 @@ static const struct config_info user_conf_default =
   CONFIG_GL_FILTER_LINEAR,      // opengl filter method
   GL_VSYNC_DEFAULT,             // opengl vsync mode
   "",                           // opengl default scaling shader
-  "",                           // sdl_render_driver
+  DEFAULT_SDL_RENDER_DRIVER,    // sdl_render_driver
   CURSOR_MODE_HINT,             // cursor_hint_mode
   SCREENSAVER_ENABLE,           // disable_screensaver
   true,                         // allow screenshots

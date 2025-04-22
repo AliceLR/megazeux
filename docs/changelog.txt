@@ -43,6 +43,8 @@ USERS
   now enabled for x86, PowerPC, and M68k. This optimizes out up
   to 24 renderers for these architectures, and improves 8-bit
   and 16-bit rendering performance.
++ Fixed slow softscale rendering for some drivers. Texture
+  streaming is now used for direct3d/consoles/software only.
 + Fixed date and time counters on NDS (missing IRQ_NETWORK).
 
 DEVELOPERS

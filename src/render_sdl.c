@@ -879,6 +879,33 @@ boolean sdl_resize_window(struct graphics_data *graphics,
 #define BEST_RENDERER -1
 #endif
 
+/* The official SDL line on SDL_LockTexture is that the buffer is write-only,
+ * but in practice, this is variable. MegaZeux doesn't care about whether or
+ * not the buffer is initialized, but it needs to be able to read after writing
+ * for transparent layers. The "official" way this should be done is using a
+ * buffer and SDL_UpdateTexture.
+ *
+ * + direct3d, software, PS2, PSP, Vita, Wii U:
+ *   SDL_UpdateTexture calls SDL_LockTexture and SDL_memcpy internally.
+ *   SDL_LockTexture in these instances returns a read+write buffer.
+ *   This is safe for rendering and faster than using SDL_UpdateTexture.
+ * + OpenGL(ES) uses glTexSubImage2D either way, so negligible.
+ * + direct3d11/direct3d12 map texture memory as write-only and incur massive
+ *   performance penalties for ANY read. Always use SDL_UpdateTexture.
+ * + vulkan, gpu may use direct3d11/direct3d12 mapping internally.
+ * + metal is only supported on new enough computers that it doesn't matter.
+ * + ogc (Wii/GC) has a faster SDL_UpdateTexture.
+ */
+#if defined(CONFIG_PS2) || defined(CONFIG_PSP) || \
+    defined(CONFIG_PSVITA) || defined(CONFIG_WIIU)
+#define USE_TEXTURE_STREAMING(driver) (true)
+#elif defined(_WIN32)
+#define USE_TEXTURE_STREAMING(driver) \
+ (is_software_renderer || !strcasecmp((driver), "direct3d"))
+#else
+#define USE_TEXTURE_STREAMING(driver) (is_software_renderer)
+#endif
+
 static uint32_t get_format_amask(uint32_t format)
 {
   Uint32 rmask, gmask, bmask, amask;
@@ -1042,6 +1069,7 @@ static void find_texture_format(struct graphics_data *graphics,
   render_data->texture_amask = texture_amask;
   render_data->texture_bpp = texture_bpp;
   render_data->allow_subsampling = allow_subsampling;
+  render_data->use_texture_streaming = USE_TEXTURE_STREAMING(renderer_name);
 }
 
 /**
