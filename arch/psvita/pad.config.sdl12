@@ -1,0 +1,35 @@
+# Axis 1/2: left stick
+# Axis 3/4: right stick
+# Button1: Triangle
+# Button2: Circle
+# Button3: Cross
+# Button4: Square
+# Button5: L
+# Button6: R
+# Button7: Down
+# Button8: Left
+# Button9: Up
+# Button10: Right
+# Button11: Select
+# Button12: Start
+
+joy1axis1 = act_l_left, act_l_right
+joy1axis2 = act_l_up, act_l_down
+joy1axis3 = act_r_left, act_r_right
+joy1axis4 = acr_r_up, act_r_down
+joy1button1 = act_y
+joy1button2 = act_b
+joy1button3 = act_a
+joy1button4 = act_x
+joy1button5 = act_lshoulder
+joy1button6 = act_rshoulder
+joy1button7 = act_down
+joy1button8 = act_left
+joy1button9 = act_up
+joy1button10 = act_right
+joy1button11 = act_select
+joy1button12 = act_start
+joy1.axis_lx = 1
+joy1.axis_ly = 2
+joy1.axis_rx = 3
+joy1.axis_ry = 4

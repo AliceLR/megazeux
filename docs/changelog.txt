@@ -65,6 +65,8 @@ DEVELOPERS
 + Fixed OS detection, unit tests, and testworlds for Haiku.
 + Replaced return values of all VFS functions to fix issues with
   using errno values here on Haiku.
++ Add Emscripten Makefile support for SDL3.
++ Add PS Vita Makefile support for SDL3 and SDL 1.2.
 
 
 February 28th, 2025 - MZX 2.93c
