@@ -52,6 +52,7 @@ struct sdl_render_data
   uint32_t texture_amask;
   uint32_t texture_bpp;
   boolean allow_subsampling;
+  boolean use_texture_streaming;
 };
 
 // Mac OS X has a special OpenGL YCbCr native texture mode which is

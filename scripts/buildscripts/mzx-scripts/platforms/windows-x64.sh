@@ -27,7 +27,7 @@ if [ -n "$MSYSTEM" ]; then
 	MSYSTEM="MINGW64"
 	. /etc/profile
 
-	export SDL_PREFIX="$MZX_WORKINGDIR/sdl2-mingw/x86_64-w64-mingw32/"
+	export SDL_PREFIX="$MZX_WORKINGDIR/sdl3-mingw/x86_64-w64-mingw32/"
 	[ -d "$SDL_PREFIX" ] || { mzx_warn "Failed to find MinGW SDL dir!" "MINGW64-1"; }
 fi
 
@@ -49,12 +49,12 @@ platform_init()
 
 platform_config_debug()
 {
-	./config.sh --platform $MINGW64_PLATFORM $MINGW64_CONFIG --enable-fps --enable-trace "$@"
+	./config.sh --platform $MINGW64_PLATFORM $MINGW64_CONFIG --enable-sdl3 --enable-fps --enable-trace "$@"
 }
 
 platform_config_release()
 {
-	./config.sh --platform $MINGW64_PLATFORM $MINGW64_CONFIG --enable-release --enable-lto "$@"
+	./config.sh --platform $MINGW64_PLATFORM $MINGW64_CONFIG --enable-sdl3 --enable-release --enable-lto "$@"
 }
 
 platform_check_build()

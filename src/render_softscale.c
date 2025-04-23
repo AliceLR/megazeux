@@ -37,6 +37,8 @@ struct softscale_render_data
 {
   struct sdl_render_data sdl;
   SDL_Rect texture_rect;
+  void *private_pixels;
+  size_t private_pitch;
   uint32_t *texture_pixels;
   unsigned int texture_pitch;
   unsigned int texture_width;
@@ -52,6 +54,7 @@ static void softscale_free_video(struct graphics_data *graphics)
     sdl_destruct_window(graphics);
 
     graphics->render_data = NULL;
+    free(render_data->private_pixels);
     free(render_data);
   }
 }
@@ -88,6 +91,7 @@ static boolean softscale_create_window(struct graphics_data *graphics,
   struct softscale_render_data *render_data =
    (struct softscale_render_data *)graphics->render_data;
   SDL_Texture *tex;
+  void *tmp;
 
   if(!sdl_create_window_renderer(graphics, window, false))
     return false;
@@ -100,6 +104,18 @@ static boolean softscale_create_window(struct graphics_data *graphics,
     render_data->texture_width <<= 1;
 
   render_data->texture_pixels = NULL;
+
+  if(!render_data->sdl.use_texture_streaming)
+  {
+    render_data->private_pitch = render_data->texture_width *
+     SDL_BYTESPERPIXEL(render_data->sdl.texture_format);
+
+    tmp = crealloc(render_data->private_pixels, render_data->private_pitch * SCREEN_PIX_H);
+    if(!tmp)
+      goto err_free;
+
+    render_data->private_pixels = tmp;
+  }
 
   // Initialize the screen texture.
   tex = SDL_CreateTexture(render_data->sdl.renderer, render_data->sdl.texture_format,
@@ -155,9 +171,17 @@ static void softscale_lock_texture(struct softscale_render_data *render_data,
     else
       render_data->enable_subsampling = false;
 
-    SDL_LockTexture(render_data->sdl.texture[0], texture_rect, &pixels, &pitch);
-    render_data->texture_pixels = pixels;
-    render_data->texture_pitch = pitch;
+    if(render_data->sdl.use_texture_streaming)
+    {
+      SDL_LockTexture(render_data->sdl.texture[0], texture_rect, &pixels, &pitch);
+      render_data->texture_pixels = pixels;
+      render_data->texture_pitch = pitch;
+    }
+    else
+    {
+      render_data->texture_pixels = render_data->private_pixels;
+      render_data->texture_pitch = render_data->private_pitch;
+    }
   }
 
   *pixels = render_data->texture_pixels;
@@ -173,7 +197,16 @@ static void softscale_unlock_texture(struct softscale_render_data *render_data)
 {
   if(render_data->texture_pixels)
   {
-    SDL_UnlockTexture(render_data->sdl.texture[0]);
+    if(render_data->sdl.use_texture_streaming)
+    {
+      SDL_UnlockTexture(render_data->sdl.texture[0]);
+    }
+    else
+    {
+      SDL_UpdateTexture(render_data->sdl.texture[0],
+       &render_data->texture_rect, render_data->texture_pixels,
+       render_data->texture_pitch);
+    }
     render_data->texture_pixels = NULL;
   }
 }
