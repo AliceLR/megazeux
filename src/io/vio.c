@@ -298,23 +298,40 @@ boolean vio_filesystem_init(size_t max_size, size_t max_file_size,
  boolean enable_auto_cache)
 {
   char tmp[MAX_PATH];
+  enum vfs_error code;
 
+  trace("--VIO-- vio_filesystem_init\n");
   if(!vfs_base)
   {
 #ifdef VIRTUAL_FILESYSTEM
     vfs_base = vfs_init();
 #endif
     if(!vfs_base)
+    {
+      trace("--VIO-- vio_filesystem_init: failed vfs_init\n");
       return false;
+    }
   }
 
   // Synchronize the current working directory.
   if(!getcwd(tmp, MAX_PATH))
+  {
+    trace("--VIO-- vio_filesystem_init: failed getcwd\n");
     goto err;
+  }
   if(!vio_cache_directory_recursively(vfs_base, tmp))
+  {
+    trace("--VIO-- vio_filesystem_init: "
+     "failed vio_cache_directory_recursively: %s\n", tmp);
     goto err;
-  if(vfs_chdir(vfs_base, tmp) != VFS_ERR_IS_CACHED)
+  }
+  code = vfs_chdir(vfs_base, tmp);
+  if(code != VFS_ERR_IS_CACHED)
+  {
+    trace("--VIO-- vio_filesystem_init: failed vfs_chdir with code %u: %s\n",
+     code, strerror(vfs_error_to_errno(code)));
     goto err;
+  }
 
   // Immediately purge the cache if it has been disabled.
   if(vfs_enable_auto_cache && !enable_auto_cache)
@@ -324,6 +341,7 @@ boolean vio_filesystem_init(size_t max_size, size_t max_file_size,
   vfs_max_auto_cache_file_size = max_file_size ? max_file_size : vfs_max_size;
   vfs_enable_auto_cache = enable_auto_cache;
 
+  trace("--VIO-- vio_filesystem_init: success\n");
   return true;
 
 err:

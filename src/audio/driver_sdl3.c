@@ -37,6 +37,7 @@ static void sdl_audio_callback(void *userdata, SDL_AudioStream *stream,
   size_t framesize = SDL_AUDIO_FRAMESIZE(audio_settings);
   size_t frames = MAX(0, required_bytes) / framesize;
 
+  //fprintf(mzxerr, "  #:%d fr:%zu frsz:%zu\n", required_bytes, frames, framesize);
   while(frames > 0)
   {
     size_t out = audio_mixer_render_frames(userdata, frames,
@@ -56,11 +57,15 @@ void init_audio_platform(struct config_info *conf)
   void *tmp;
   // TODO: 8-bit?
 
+  debug("--AUDIO_DRIVER_SDL3-- init_audio_platform\n");
+
   audio_format = SAMPLE_S16;
 
   memset(&audio_settings, 0, sizeof(audio_settings));
   if(!SDL_GetAudioDeviceFormat(audio_device, &audio_settings, &frames))
   {
+    debug("--AUDIO_DRIVER_SDL3-- failed to query default device format: %s\n",
+     SDL_GetError());
     // Can't query, try to continue anyway...
     audio_settings.freq = 48000;
     frames = 1024;
@@ -88,20 +93,48 @@ void init_audio_platform(struct config_info *conf)
   tmp = crealloc(audio_buffer,
    audio.buffer_frames * audio.buffer_channels * sizeof(int16_t));
   if(!tmp)
+  {
+    warn("--AUDIO_DRIVER_SDL3-- failed to allocate buffer\n");
     return;
+  }
 
   // The buffer frames need to be configured with this hack.
   // This value may be ignored or modified by some platforms.
   snprintf(hint, sizeof(hint), "%u", audio.buffer_frames);
   SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, hint);
 
+  debug("--AUDIO_DRIVER_SDL3-- initializing default audio device %" PRIu32 ": "
+   "S16 %dch %dHz %dfr\n", audio_device, audio_settings.channels,
+   audio_settings.freq, audio.buffer_frames);
+
   audio_buffer = tmp;
   audio_stream = SDL_OpenAudioDeviceStream(audio_device, &audio_settings,
    sdl_audio_callback, tmp);
   if(!audio_stream)
+  {
+    warn("--AUDIO_DRIVER_SDL3-- failed to initialize default audio device: %s\n",
+     SDL_GetError());
     goto err;
+  }
 
-  SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(audio_stream));
+  audio_device = SDL_GetAudioStreamDevice(audio_stream);
+  if(audio_device == 0)
+  {
+    debug("--AUDIO_DRIVER_SDL3-- failed to get device ID to resume: %s\n",
+     SDL_GetError());
+    audio_device = SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
+  }
+
+  if(SDL_ResumeAudioDevice(audio_device))
+  {
+    debug("--AUDIO_DRIVER_SDL3-- audio device %" PRIu32
+     " initialized successfully\n", audio_device);
+  }
+  else
+  {
+    warn("--AUDIO_DRIVER_SDL3-- failed to resume audio device %" PRIu32 ": %s\n",
+     audio_device, SDL_GetError());
+  }
   return;
 
 err:
