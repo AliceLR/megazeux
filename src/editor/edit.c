@@ -2826,7 +2826,7 @@ static boolean editor_key(context *ctx, int *key)
     case IKEY_h:
     {
       if(get_alt_status(keycode_internal) &&
-       !get_ctrl_status(keycode_internal) & !get_shift_status(keycode_internal))
+       !get_ctrl_status(keycode_internal) && !get_shift_status(keycode_internal))
       {
         if(editor->screen_height == EDIT_SCREEN_NORMAL)
         {
