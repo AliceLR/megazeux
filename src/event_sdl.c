@@ -65,6 +65,7 @@ extern struct input_status input;
 static boolean unicode_fallback;
 
 static boolean numlock_status_initialized;
+static unsigned last_text_window_id;
 static int joystick_instance_ids[MAX_JOYSTICKS];
 static SDL_Joystick *joysticks[MAX_JOYSTICKS];
 
@@ -1193,6 +1194,8 @@ static boolean process_event(SDL_Event *event)
     {
       enum mouse_button button = convert_SDL_mouse_internal(event->button.button);
       trace("--EVENT_SDL-- SDL_EVENT_MOUSE_BUTTON_DOWN: %u\n", event->button.button);
+      if(button == MOUSE_NO_BUTTON)
+        break;
       status->mouse_button = button;
       status->mouse_repeat = button;
       status->mouse_button_state |= MOUSE_BUTTON(button);
@@ -1206,6 +1209,8 @@ static boolean process_event(SDL_Event *event)
     {
       enum mouse_button button = convert_SDL_mouse_internal(event->button.button);
       trace("--EVENT_SDL-- SDL_EVENT_MOUSE_BUTTON_UP: %u\n", event->button.button);
+      if(button == MOUSE_NO_BUTTON)
+        break;
       status->mouse_button_state &= ~MOUSE_BUTTON(button);
       status->mouse_repeat = MOUSE_NO_BUTTON;
       status->mouse_drag_state = 0;
@@ -1249,6 +1254,62 @@ static boolean process_event(SDL_Event *event)
       status->mouse_repeat_state = 0;
       status->mouse_drag_state = 0;
       status->mouse_time = get_ticks();
+      break;
+    }
+
+    /* Finger events--mostly just debug for now. */
+    case SDL_EVENT_FINGER_MOTION:
+    {
+      trace(
+        "--EVENT_SDL-- SDL_EVENT_FINGER_MOTION: id:%ld w:%u "
+        "x:%.2f y:%.2f dx:%.2f dy:%.2f p:%.2f\n",
+        (long)TFINGER_TOUCH_ID(event->tfinger), event->tfinger.windowID,
+        event->tfinger.x, event->tfinger.y,
+        event->tfinger.dx, event->tfinger.dy, event->tfinger.pressure
+      );
+      break;
+    }
+
+    case SDL_EVENT_FINGER_DOWN:
+    {
+      trace(
+        "--EVENT_SDL-- SDL_EVENT_FINGER_DOWN: id:%ld w:%u "
+        "x:%.2f y:%.2f dx:%.2f dy:%.2f p:%.2f\n",
+        (long)TFINGER_TOUCH_ID(event->tfinger), event->tfinger.windowID,
+        event->tfinger.x, event->tfinger.y,
+        event->tfinger.dx, event->tfinger.dy, event->tfinger.pressure
+      );
+#ifdef __ANDROID__
+      {
+        /* There may be no physical keyboard or gamepad present. While this
+         * configuration is useless, this screen keyboard toggle gesture at
+         * least allows opening the main menu and exiting from the title. */
+        int count = 0;
+        SDL_TouchID tid = TFINGER_TOUCH_ID(event->tfinger);
+        SDL_Finger **fingers = SDL_GetTouchFingers(tid, &count);
+        if(fingers)
+        {
+          trace("--EVENT_SDL-- queried %d active finger(s)\n", count);
+          if(count == 3)
+            screen_keyboard_toggle_state();
+          SDL_free(fingers);
+        }
+        else
+          debug("--EVENT_SDL-- couldn't query finger(s): %s\n", SDL_GetError());
+      }
+#endif
+      break;
+    }
+
+    case SDL_EVENT_FINGER_UP:
+    {
+      trace(
+        "--EVENT_SDL-- SDL_EVENT_FINGER_UP: id:%ld w:%u "
+        "x:%.2f y:%.2f dx:%.2f dy:%.2f p:%.2f\n",
+        (long)TFINGER_TOUCH_ID(event->tfinger), event->tfinger.windowID,
+        event->tfinger.x, event->tfinger.y,
+        event->tfinger.dx, event->tfinger.dy, event->tfinger.pressure
+      );
       break;
     }
 #endif // SDL_VERSION_ATLEAST(2,0,0)
@@ -1511,10 +1572,13 @@ static boolean process_event(SDL_Event *event)
       if(joystick_index < 0 || !special_axis || !conf->allow_gamepad)
         break;
 
+#if 0
+      /* May be sent almost nonstop, especially for Windows for some reason. */
       trace(
         "--EVENT_SDL-- SDL_EVENT_GAMEPAD_AXIS_MOTION: j%d sa%d = %d\n",
         joystick_index, special_axis, value
       );
+#endif
 
       joystick_special_axis_update(status, joystick_index, special_axis, value);
       break;
@@ -1532,10 +1596,13 @@ static boolean process_event(SDL_Event *event)
       if(joystick_index < 0)
         break;
 
+#if 0
+      /* May be sent almost nonstop, especially for Windows for some reason. */
       trace(
         "--EVENT_SDL-- SDL_EVENT_JOYSTICK_AXIS_MOTION: j%d a%d = %d\n",
         joystick_index, axis, axis_value
       );
+#endif
 
       joystick_axis_update(status, joystick_index, axis, axis_value);
       break;
@@ -1754,27 +1821,22 @@ void __warp_mouse(int x, int y)
  */
 void sdl_init_window_text_events(unsigned sdl_window_id)
 {
-  /* Most platforms want text input events always on so they can generate
-   * convenient unicode text values, but in Android this causes some problems:
-   *
-   * - On older versions the navigation bar will ALWAYS display, regardless
-   *   of whether or not there's an attached keyboard.
-   * - Holding the space key no longer works, breaking built-in shooting (as
-   *   recent as Android 10).
-   * - The onscreen keyboard Android pops up can be moved but not collapsed.
-   *
-   * TODO: Instead, enable text input on demand at text prompts.
-   */
-#if SDL_VERSION_ATLEAST(3,0,0)
-#ifdef ANDROID
-/* This is largely wishful thinking and needs thorough Android testing. */
-#error See above comments.
-#endif
+#if SDL_VERSION_ATLEAST(2,28,0)
+  /* This SDL version supports hiding the screen keyboard, so it's safe to
+   * enable text events and defer to MegaZeux's screen keyboard toggle. */
   SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
+  if(window)
+    last_text_window_id = sdl_window_id;
+
   SDL_StopTextInput(window);
-  SDL_SetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD, "0");
+  SDL_SetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD,
+   input.showing_screen_keyboard ? "1" : "0");
   SDL_StartTextInput(window);
+
 #elif SDL_VERSION_ATLEAST(2,0,0)
+  /* Hack: since this version of SDL doesn't support forcibly hiding the
+   * screen keyboard, if a screen keyboard is supported, do not enable text
+   * events and use the fallback instead. This is required on Android. */
   if(!SDL_HasScreenKeyboardSupport())
   {
     SDL_StartTextInput();
@@ -1787,6 +1849,27 @@ void sdl_init_window_text_events(unsigned sdl_window_id)
 #else
   SDL_EnableUNICODE(1);
 #endif
+}
+
+boolean platform_has_screen_keyboard(void)
+{
+  return SDL_HasScreenKeyboardSupport();
+}
+
+boolean platform_show_screen_keyboard(void)
+{
+  trace("--EVENT_SDL-- requesting screen keyboard\n");
+  input.showing_screen_keyboard = true;
+  sdl_init_window_text_events(last_text_window_id);
+  return true;
+}
+
+boolean platform_hide_screen_keyboard(void)
+{
+  trace("--EVENT_SDL-- hiding screen keyboard\n");
+  input.showing_screen_keyboard = false;
+  sdl_init_window_text_events(last_text_window_id);
+  return true;
 }
 
 void platform_init_event(void)
@@ -1823,6 +1906,12 @@ void platform_init_event(void)
 #endif
 
   SDL_SetJoystickEventsEnabled(true);
+
+#if SDL_VERSION_ATLEAST(3,0,0)
+  /* Disable a couple of events that are unused by MZX. */
+  SDL_SetEventEnabled(SDL_EVENT_JOYSTICK_UPDATE_COMPLETE, false);
+  SDL_SetEventEnabled(SDL_EVENT_GAMEPAD_UPDATE_COMPLETE, false);
+#endif
 
   /* It's not clear which ports do and don't implement SDL text events, so
    * enable the unicode fallback at startup until proven otherwise.

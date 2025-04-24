@@ -864,22 +864,33 @@ void render_nds_register(struct renderer *renderer)
   renderer->focus_pixel = nds_focus_pixel;
 }
 
-void nds_subscreen_switch(void)
+boolean nds_subscreen_preview(void)
 {
   // Don't switch during a transition.
   if(transition.state != TRANSITION_NONE)
-    return;
+    return false;
 
   // Call appropriate exit function.
-  if(subscreen_mode == SUBSCREEN_KEYBOARD)
+  if(subscreen_mode != SUBSCREEN_SCALED)
+  {
+    last_subscreen_mode = subscreen_mode;
+    subscreen_mode = SUBSCREEN_SCALED;
     nds_subscreen_keyboard_exit();
+  }
+  return true;
+}
 
-  // Cycle between modes.
-  last_subscreen_mode = subscreen_mode;
-  if(++subscreen_mode == SUBSCREEN_MODE_COUNT)
-    subscreen_mode = 0;
+boolean nds_subscreen_keyboard(void)
+{
+  // Don't switch during a transition.
+  if(transition.state != TRANSITION_NONE)
+    return false;
 
-  // Call the appropriate init function.
-  if(subscreen_mode == SUBSCREEN_KEYBOARD)
+  if(subscreen_mode != SUBSCREEN_KEYBOARD)
+  {
+    last_subscreen_mode = subscreen_mode;
+    subscreen_mode = SUBSCREEN_KEYBOARD;
     nds_subscreen_keyboard_init();
+  }
+  return true;
 }

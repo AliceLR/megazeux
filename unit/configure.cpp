@@ -1404,6 +1404,11 @@ UNITTEST(Settings)
 #endif /* CONFIG_EDITOR */
 }
 
+#define SP_AXIS     (1 << 13)
+#define SP_KEYBOARD (1 << 14)
+#define AXIS(n)     (SP_AXIS | (n))
+#define AXIS_NONE   (SP_AXIS | 255)
+
 struct config_test_joystick
 {
   const char * const setting;
@@ -1547,6 +1552,46 @@ void TEST_JOY_HAT(const config_test_joystick (&data)[NUM_TESTS])
   }
 }
 
+static void reset_mapping(struct joystick_map *map, int j, int which)
+{
+  if(which & SP_KEYBOARD)
+  {
+    map->show_screen_keyboard_action[j] = INVALID<int16_t>();
+  }
+  else
+
+  if(which & SP_AXIS)
+  {
+    memset(map->special_axis[j], 255, sizeof(map->special_axis[j]));
+  }
+  else
+    map->action[j][which] = INVALID<int16_t>();
+}
+
+static void check_mapping(const struct joystick_map *map, int j, int which,
+ int expected, const char *arg)
+{
+  if(which & SP_KEYBOARD)
+  {
+    ASSERTEQ(map->show_screen_keyboard_action[j], expected, "%s", arg);
+  }
+  else
+
+  if(which & SP_AXIS)
+  {
+    which = (which & ~SP_AXIS) - 1;
+    for(int i = 0; i < arraysize(map->special_axis[j]); i++)
+    {
+      if(i == which && expected != INVALID<int16_t>())
+        ASSERTEQ(map->special_axis[j][i], expected, "%s", arg);
+      else
+        ASSERTEQ(map->special_axis[j][i], 255, "%s", arg);
+    }
+  }
+  else
+    ASSERTEQ(map->action[j][which], expected, "%s", arg);
+}
+
 template<int NUM_TESTS>
 void TEST_JOY_ACTION(const config_test_joystick (&data)[NUM_TESTS])
 {
@@ -1562,7 +1607,7 @@ void TEST_JOY_ACTION(const config_test_joystick (&data)[NUM_TESTS])
     // NOTE: unlike the other tests, don't subtract 1 from t.which here since
     // it's an action number.
     for(int j = 0; j < MAX_JOYSTICKS; j++)
-      joy_global_map->action[j][t.which] = DEFAULT;
+      reset_mapping(joy_global_map, j, t.which);
 
     snprintf(arg, arraysize(arg), "%s=%s", t.setting, t.value);
     load_arg(arg);
@@ -1570,15 +1615,17 @@ void TEST_JOY_ACTION(const config_test_joystick (&data)[NUM_TESTS])
     for(int j = 0; j < MAX_JOYSTICKS; j++)
     {
       if(j >= t.first - 1 && j <= t.last - 1)
-        ASSERTEQ(joy_global_map->action[j][t.which], t.expected[0], "%s", arg);
+        check_mapping(joy_global_map, j, t.which, t.expected[0], arg);
       else
-        ASSERTEQ(joy_global_map->action[j][t.which], DEFAULT, "%s", arg);
+        check_mapping(joy_global_map, j, t.which, DEFAULT, arg);
     }
   }
 }
 
 UNITTEST(Joystick)
 {
+  constexpr int16_t DEFAULT = INVALID<int16_t>();
+
   SECTION(joyN_button)
   {
     static const config_test_joystick data[] =
@@ -1660,12 +1707,35 @@ UNITTEST(Joystick)
       { "joy1.r_left",        "key_space",    1,  1,  JOY_R_LEFT,     { IKEY_SPACE }},
       { "joy1.r_right",       "key_space",    1,  1,  JOY_R_RIGHT,    { IKEY_SPACE }},
 
+      // Reject actions.
+      { "joy1.ltrigger",      "0",            1,  1,  JOY_LTRIGGER,   { DEFAULT }},
+      { "joy1.select",        "act_up",       1,  1,  JOY_SELECT,     { DEFAULT }},
+
       // Ranges.
       // Setting              Value           [#, #]  which           expected
       { "joy[1,16].select",   "key_escape",   1,  16, JOY_SELECT,     { IKEY_ESCAPE }},
       { "joy[7,9].up",        "key_w",        7,  9,  JOY_UP,         { IKEY_w }},
       { "joy[14,15].l_right", "key_7",        14, 15, JOY_L_RIGHT,    { IKEY_7 }},
       { "joy[1,4].y",         "49",           1,  4,  JOY_Y,          { IKEY_1 }},
+
+      // Special axes.
+      { "joy1.axis_lx",       "3",            1,  1,  AXIS(3),        { JOY_AXIS_LEFT_X }},
+      { "joy1.axis_ly",       "1",            1,  1,  AXIS(1),        { JOY_AXIS_LEFT_Y }},
+      { "joy1.axis_rx",       "5",            1,  1,  AXIS(5),        { JOY_AXIS_RIGHT_X }},
+      { "joy1.axis_ry",       "10",           1,  1,  AXIS(10),       { JOY_AXIS_RIGHT_Y }},
+      { "joy1.axis_ltrigger", "16",           1,  1,  AXIS(16),       { JOY_AXIS_LEFT_TRIGGER }},
+      { "joy1.axis_rtrigger", "8",            1,  1,  AXIS(8),        { JOY_AXIS_RIGHT_TRIGGER }},
+      { "joy1.axis_lx",       "0",            1,  1,  AXIS_NONE,      { JOY_AXIS_LEFT_X }},
+      { "joy1.axis_lx",       "-1",           1,  1,  AXIS_NONE,      { JOY_AXIS_LEFT_X }},
+      { "joy1.axis_lx",       "17",           1,  1,  AXIS_NONE,      { JOY_AXIS_LEFT_X }},
+      { "joy1.axis_lx",       "act_x",        1,  1,  AXIS_NONE,      { JOY_AXIS_LEFT_X }},
+      { "joy[4,12].axis_lx",  "7",            4, 12,  AXIS(7),        { JOY_AXIS_LEFT_X }},
+
+      // Special settings.
+      { "joy1.show_screen_keyboard", "act_l_up",   1, 1, SP_KEYBOARD, { JOY_L_UP }},
+      { "joy1.show_screen_keyboard", "0",          1, 1, SP_KEYBOARD, { JOY_NO_ACTION }},
+      { "joy1.show_screen_keyboard", "key_space",  1, 1, SP_KEYBOARD, { DEFAULT }},
+      { "joy[2,9].show_screen_keyboard", "act_x",  2, 9, SP_KEYBOARD, { JOY_X }},
     };
     TEST_JOY_ACTION(data);
   }

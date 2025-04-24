@@ -46,7 +46,8 @@ void nds_video_rasterhack(void);
 void nds_video_do_transition(void);
 
 // Toggle to the next subscreen mode.
-void nds_subscreen_switch(void);
+boolean nds_subscreen_preview(void);
+boolean nds_subscreen_keyboard(void);
 
 __M_END_DECLS
 

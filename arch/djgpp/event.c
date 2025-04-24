@@ -552,6 +552,21 @@ boolean __peek_exit_input(void)
   return false;
 }
 
+boolean platform_has_screen_keyboard(void)
+{
+  return false;
+}
+
+boolean platform_show_screen_keyboard(void)
+{
+  return false;
+}
+
+boolean platform_hide_screen_keyboard(void)
+{
+  return false;
+}
+
 static void init_kbd(void)
 {
   __dpmi_paddr handler;

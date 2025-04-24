@@ -68,6 +68,24 @@ void platform_init_event(void)
   // stub
 }
 
+boolean platform_has_screen_keyboard(void)
+{
+  // stub
+  return false;
+}
+
+boolean platform_show_screen_keyboard(void)
+{
+  // stub
+  return false;
+}
+
+boolean platform_hide_screen_keyboard(void)
+{
+  // stub
+  return false;
+}
+
 boolean __update_event_status(void)
 {
   // stub
