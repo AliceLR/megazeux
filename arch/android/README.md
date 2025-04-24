@@ -50,6 +50,11 @@ The build process for the MegaZeux port is as follows:
 
 ## Environment Setup
 
+The Android build system currently targets Java SE 7 to support
+Android Jelly Bean (4.1). Make sure JDK <=17 is installed and selected by
+setting `JAVA_HOME`. (Fedora users: As of Fedora 42, OpenJDK 17 must be
+installed from a 3rd party repository.)
+
 1. Install the latest version of both the Android SDK and NDK. The easiest way
   to do this is to install these through Android Studio. MegaZeux requires
   a version of the NDK between r19 and r23 (version r24 and above drop support
@@ -115,19 +120,21 @@ Issues **KNOWN** to be caused by MegaZeux bugs:
 * The GLSL renderer relies on precise addressing of a 512x1024 texture in the
   tilemap fragment shaders, which is generally hard or impossible to do unless
   highp floats are available (or alternatively, mediump floats have more than
-  10 bits of precision). This renderer is generally slower than softscale so
-  it is not selected by default.
+  10 bits of precision). This renderer is generally slower than software
+  rendering (`glslscale`, `softscale`) on Android, so it is not selected by default.
 
 Issues **PROBABLY** caused by compatibility issues between Android and SDL:
 
-* When text input is enabled, some keys may spontaneously stop working or stick.
-  Because of this, text input has been disabled for Android, which means certain
-  international keybord layouts probably won't work properly.
-  (Moto G5 Plus, Android 8.1, arm64-v8a)
-* Keys which would usually produce both a scancode and text will generate a key
-  press and release on the same frame for some devices, meaning certain MZX
-  features relying on the held status of a key (including shooting, the KEY#
-  counters) will not work. (Nexus 7 (2013), Android 6.0, armeabi-v7a)
+* Hardware keyboards: space, but no other keys, will emit `SDL_EVENT_KEY_DOWN`,
+  `SDL_EVENT_KEY_UP`, and `SDL_EVENT_TEXT_INPUT` simultaneously. This breaks
+  built-in shooting, `spacepressed`, etc. Only encountered in Android 15 (so far).
+  (Google Pixel 8a, Android 15.0, arm64-v8a)
+* Hardware keyboards: any key which usually produces both a scancode and text
+  will emit `SDL_EVENT_KEY_DOWN`, `SDL_EVENT_KEY_UP`, and `SDL_EVENT_TEXT_INPUT`
+  simultaneously. This breaks built-in shooting, `KEY#`, and anything else that
+  relies on the held status of a key. (Nexus 7 (2013), Android 6.0, armeabi-v7a)
+  Note: at least one earlier version of android (4.3) does not have this issue
+  on the same hardware.
 * The function keys (Fn) may not work as expected. (Xiaomi Mi 8 SE, Android 8.1, arm64-v8a)
 * RGBA components may be reversed to ARBG, causing serious graphical issues.
   This can be worked around by turning on the "Disable HW Overlays" developer

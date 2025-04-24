@@ -265,18 +265,13 @@ boolean update_hid(void)
   retval |= check_joy(status, down, up, KEY_X, 2);
   retval |= check_joy(status, down, up, KEY_Y, 3);
   retval |= check_joy(status, down, up, KEY_L, 4);
+  retval |= check_joy(status, down, up, KEY_R, 5);
   retval |= check_joy(status, down, up, KEY_SELECT, 6);
   retval |= check_joy(status, down, up, KEY_START, 7);
   retval |= check_joy(status, down, up, KEY_ZL, 8);
   retval |= check_joy(status, down, up, KEY_ZR, 9);
 
   last_cpad = cpad;
-
-  if(down & KEY_R)
-  {
-    b_mode = (b_mode + 1) % BOTTOM_SCREEN_MODE_MAX;
-    retval = true;
-  }
 
   if((down | held | up) & KEY_TOUCH)
   {
@@ -333,8 +328,28 @@ int ctr_get_subscreen_height(void)
   }
 }
 
+boolean platform_has_screen_keyboard(void)
+{
+  return true;
+}
+
+boolean platform_show_screen_keyboard(void)
+{
+  input.showing_screen_keyboard = true;
+  b_mode = BOTTOM_SCREEN_MODE_KEYBOARD;
+  return true;
+}
+
+boolean platform_hide_screen_keyboard(void)
+{
+  input.showing_screen_keyboard = false;
+  b_mode = BOTTOM_SCREEN_MODE_PREVIEW;
+  return true;
+}
+
 void platform_init_event(void)
 {
   struct buffered_status *status = store_status();
   joystick_set_active(status, 0, true);
+  joystick_map_fallback_keyboard_button(0, 5);
 }

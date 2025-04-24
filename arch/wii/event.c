@@ -1114,6 +1114,21 @@ void __warp_mouse(int x, int y)
   // Mouse warping doesn't work too well with the Wiimote
 }
 
+boolean platform_has_screen_keyboard(void)
+{
+  return false;
+}
+
+boolean platform_show_screen_keyboard(void)
+{
+  return false;
+}
+
+boolean platform_hide_screen_keyboard(void)
+{
+  return false;
+}
+
 void platform_init_event(void)
 {
   struct buffered_status *status = store_status();

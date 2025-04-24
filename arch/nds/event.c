@@ -73,10 +73,32 @@ enum focus_mode get_allow_focus_changes(void)
   return allow_focus_changes;
 }
 
+boolean platform_has_screen_keyboard(void)
+{
+  return true;
+}
+
+boolean platform_show_screen_keyboard(void)
+{
+  if(nds_subscreen_keyboard())
+    input.showing_screen_keyboard = true;
+  // Always treat as handled, even if the state doesn't change.
+  return true;
+}
+
+boolean platform_hide_screen_keyboard(void)
+{
+  if(nds_subscreen_preview())
+    input.showing_screen_keyboard = false;
+  // Always treat as handled, even if the state doesn't change.
+  return true;
+}
+
 void platform_init_event(void)
 {
   struct buffered_status *status = store_status();
   joystick_set_active(status, 0, true);
+  joystick_map_fallback_keyboard_button(0, 5);
 }
 
 static int nds_map_joystick(int nds_button, boolean *is_hat)
@@ -162,14 +184,6 @@ static boolean process_event(NDSEvent *event)
     {
       boolean is_hat;
       int button;
-
-      // Special case- R is currently hardcoded to the keyboard.
-      if(event->key == KEY_R)
-      {
-        nds_subscreen_switch();
-        retval = false;
-        break;
-      }
 
       button = nds_map_joystick(event->key, &is_hat);
       if(button >= 0)

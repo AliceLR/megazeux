@@ -122,11 +122,13 @@ struct joystick_map
   int16_t hat[MAX_JOYSTICKS][4];
   int16_t action[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
   uint8_t special_axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
+  int16_t show_screen_keyboard_action[MAX_JOYSTICKS];
 
   boolean button_is_conf[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
   boolean axis_is_conf[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
   boolean hat_is_conf[MAX_JOYSTICKS];
   boolean action_is_conf[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
+  boolean show_keyboard_is_conf[MAX_JOYSTICKS];
 };
 
 struct input_status
@@ -146,6 +148,7 @@ struct input_status
   boolean unfocus_pause;
   boolean left_alt_is_altgr;
   boolean right_alt_is_altgr;
+  boolean showing_screen_keyboard;
 };
 
 // regular keycode_internal treats numpad keys as unique keys
@@ -204,6 +207,9 @@ uint32_t convert_internal_unicode(enum keycode key, boolean caps_lock);
 
 // Implemented by "drivers" (SDL, Wii, NDS, 3DS, etc.)
 void platform_init_event(void);
+boolean platform_has_screen_keyboard(void);
+boolean platform_show_screen_keyboard(void);
+boolean platform_hide_screen_keyboard(void);
 boolean __update_event_status(void);
 boolean __peek_exit_input(void);
 void __wait_event(void);
@@ -234,6 +240,8 @@ void key_press(struct buffered_status *status, enum keycode key);
 void key_press_unicode(struct buffered_status *status,
  uint32_t unicode, boolean repeating);
 void key_release(struct buffered_status *status, enum keycode key);
+boolean screen_keyboard_is_active(void);
+boolean screen_keyboard_toggle_state(void);
 
 boolean joystick_parse_map_value(const char *value, int16_t *binding);
 void joystick_map_button(int first, int last, int button, const char *value,
@@ -244,6 +252,7 @@ void joystick_map_hat(int first, int last, const char *up, const char *down,
  const char *left, const char *right, boolean is_global);
 void joystick_map_action(int first, int last, const char *action,
  const char *value, boolean is_global);
+void joystick_map_fallback_keyboard_button(int joystick, int button);
 void joystick_reset_game_map(void);
 void joystick_set_game_mode(boolean enable);
 void joystick_set_game_bindings(boolean enable);
