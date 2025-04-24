@@ -46,6 +46,8 @@ USERS
 + Fixed slow softscale rendering for some drivers. Texture
   streaming is now used for direct3d/consoles/software only.
 + Fixed date and time counters on NDS (missing IRQ_NETWORK).
++ Fixed VFS cache failing to init caused by getcwd returning
+  a root with no trailing slash.
 
 DEVELOPERS
 

@@ -106,7 +106,10 @@ static boolean vio_cache_directory_recursively(vfilesystem *vfs, const char *pat
   // Does it already exist in the VFS?
   code = vfs_stat(vfs, path, &st);
   if(code == 0 || code == VFS_ERR_IS_CACHED)
+  {
+    trace("--VIO-- vio_cache_directory_recursively: '%s' exists\n", path);
     return true;
+  }
 
 /*
   // Is it a real directory?
@@ -123,9 +126,19 @@ static boolean vio_cache_directory_recursively(vfilesystem *vfs, const char *pat
   {
 #ifdef PATH_DOS_STYLE_ROOTS
     int skip = 0;
-    // Last character of the root should be /, next to last :.
-    if(len < 3 || tmp[len - 2] != ':')
+    int colon_pos = -1;
+
+    // Root should end in :/, unless CWD is the root, in which
+    // case it may end with just a :.
+    if(tmp[len - 1] == ':')
+      colon_pos = len - 1;
+    if(tmp[len - 2] == ':')
+      colon_pos = len - 2;
+    if(colon_pos < 0)
+    {
+      trace("--VIO-- vio_cache_directory_recursively: missing colon (%s)\n", path);
       return false;
+    }
 
 #ifdef PATH_UNC_ROOTS
     // Reject UNC host/share paths as network files should be assumed volatile.
@@ -139,23 +152,32 @@ static boolean vio_cache_directory_recursively(vfilesystem *vfs, const char *pat
         skip = 4;
       }
       else
+      {
+        trace("--VIO-- vio_cache_directory_recursively: rejecting UNC (%s)\n", path);
         return false;
+      }
     }
 #endif
 
     path_tokenize(&next);
-    tmp[len - 2] = '\0';
+    tmp[colon_pos] = '\0';
 
     code = vfs_make_root(vfs, tmp + skip);
     if(code != 0 && code != VFS_EEXIST)
+    {
+      trace("--VIO-- vio_cache_directory_recursively: failed vfs_make_root '%s' (%s)\n",
+       tmp + skip, path);
       return false;
+    }
 
     // Repair current fragment.
-    tmp[len - 2] = ':';
-    tmp[len - 1] = DIR_SEPARATOR_CHAR;
+    tmp[colon_pos] = ':';
+    if(colon_pos < len - 1)
+      tmp[len - 1] = DIR_SEPARATOR_CHAR;
 #else
     // DOS-style roots are only supported as VFS roots and should never
     // make it here!
+    trace("--VIO-- vio_cache_directory_recursively: unsupported DOS-style root (%s)\n", path);
     return false;
 #endif
   }
@@ -171,16 +193,25 @@ static boolean vio_cache_directory_recursively(vfilesystem *vfs, const char *pat
 
     ret = platform_stat(tmp, &st);
     if(ret < 0 || !S_ISDIR(st.st_mode))
+    {
+      trace("--VIO-- vio_cache_directory_recursively: stat failed or is not dir '%s' (%s)\n",
+       tmp, path);
       return false;
+    }
 
     code = vfs_cache_directory(vfs, tmp, &st);
     if(code != 0 && code != VFS_EEXIST)
+    {
+      trace("--VIO-- vio_cache_directory_recursively: failed vfs_cache_directory '%s' (%s)\n",
+       tmp, path);
       return false;
+    }
 
     // Repair current fragment.
     if(next)
       next[-1] = DIR_SEPARATOR_CHAR;
   }
+  trace("--VIO-- vio_cache_directory_recursively: '%s' OK\n", path);
   return true;
 }
 
