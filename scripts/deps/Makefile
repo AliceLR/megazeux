@@ -6,7 +6,7 @@ ifeq (${PLATFORM},)
 $(error usage: make PLATFORM=<platform> [ARCH=<arch>] [all|<arch>|package|clean])
 endif
 
-VERSION		= 2.93c-r1
+VERSION		= 2.93d-r0
 DIST		= megazeux-dependencies-${VERSION}
 TARGET		= TARGET
 
@@ -19,8 +19,8 @@ STB		= stb
 SDL12		= SDL-1.2.15
 SDL2_TIGER	= panther_sdl2
 SDL2_22		= SDL2-2.0.22
-SDL2_LATEST	= SDL2-2.32.0
-SDL3		= SDL3-3.2.4
+SDL2_LATEST	= SDL2-2.32.4
+SDL3		= SDL3-3.2.10
 
 # Mac OS X/macOS compatibility builds rely on different versions of SDL2
 # for each architecture. Override ${SDL2} to select a different version.
