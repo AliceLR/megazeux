@@ -628,6 +628,12 @@ elif [ "$PLATFORM" = "darwin-dist" ]; then
 	echo "#define PLATFORM \"darwin-\" SUBPLATFORM"  > src/config.h
 	echo "SUBPLATFORM=$PLATFORM"                    >> platform.inc
 	echo "PLATFORM=darwin"                          >> platform.inc
+elif [ "$PLATFORM" = "android" ]; then
+	# Multiarchitecture build--let the Makefile patch in a subplatform.
+
+	echo "#define PLATFORM \"android-\" SUBPLATFORM" > src/config.h
+	echo "SUBPLATFORM=$PLATFORM"                    >> platform.inc
+	echo "PLATFORM=$PLATFORM"                       >> platform.inc
 else
 	if [ ! -d "arch/$PLATFORM" ]; then
 		echo "Invalid platform selection (see arch/)."

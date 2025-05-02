@@ -137,7 +137,7 @@ PREFIX_LIBS    := ${TOOLCHAIN}/sysroot/usr/lib/${ANDROID_LIBS}/${SDK}
 JNI_INCLUDES   := arch/android/include
 JNI_LIBS       := ${JNI_LIB_DIR}/${ABI}
 
-ARCH_CFLAGS    += -DANDROID -fPIE -fPIC
+ARCH_CFLAGS    += -DANDROID -DSUBPLATFORM='"${ANDROID_TARGET}"' -fPIE -fPIC
 ARCH_LDFLAGS   += -shared -llog
 ARCH_CXXFLAGS  := ${ARCH_CFLAGS}
 
@@ -158,7 +158,7 @@ ${JNI_LIB_DIR}/${ABI}:
 	$(if ${V},,@echo "  MKDIR   " $@)
 	${MKDIR} -p "$@"
 
-package: all | ${JNI_LIB_DIR}/${ABI}
+package: all ${JNI_LIB_DIR}/${ABI}
 ifneq (${BUILD_EDITOR},)
 	$(if ${V},,@echo "  MV      " ${mzx} "${JNI_LIB_DIR}/${ABI}/${JNI_LIB_SO}")
 	${MV} ${mzx} ${JNI_LIB_DIR}/${ABI}/${JNI_LIB_SO}
@@ -200,13 +200,13 @@ deps-uninstall:
 
 ${ASSETS_DIR}:
 	$(if ${V},,@echo "  MKDIR   " $@)
-	@${MKDIR} -p "$@"
+	${MKDIR} -p "$@"
 
-${ASSETS_DIR}/assets.zip: | ${ASSETS_DIR}
+${ASSETS_DIR}/assets.zip: ${ASSETS_DIR}
 	@${MAKE} ANDROID_TARGET=arm    build/android/assets
 	@(cd build/android/ && zip -9 -r assets.zip LICENSE LICENSE.3rd config.txt assets/ && mv assets.zip ../../$@)
 
-dist: | ${ASSETS_DIR}/assets.zip
+dist:
 	@${MAKE} ANDROID_TARGET=arm    clean
 	@echo "Building 'arm'."
 	@${MAKE} ANDROID_TARGET=arm    package
@@ -221,31 +221,29 @@ dist: | ${ASSETS_DIR}/assets.zip
 	@${MAKE} ANDROID_TARGET=x86_64 package
 	@${MAKE} ANDROID_TARGET=x86_64 clean
 
-${RELEASE_APK}: | ${ASSETS_DIR}/assets.zip
-	@cd ${PROJECT_DIR} && ./${GRADLEW} build
-
-apk: ${RELEASE_APK}
-	@${MKDIR} -p ${build}
+apk: ${ASSETS_DIR}/assets.zip
+	@(cd ${PROJECT_DIR} && ./${GRADLEW} build)
+	${MKDIR} -p ${build}
 	$(if ${V},,@echo "  CP      " ${RELEASE_APK} build/dist/${SUBPLATFORM}/)
 	${RM} -r build/dist/${SUBPLATFORM}
 	${MKDIR} -p build/dist/${SUBPLATFORM}
-	@${CP} ${RELEASE_APK} build/dist/${SUBPLATFORM}/${TARGET}-${SUBPLATFORM}.apk
+	${CP} ${RELEASE_APK} build/dist/${SUBPLATFORM}/${TARGET}-${SUBPLATFORM}.apk
 
 clean:
 	$(if ${V},,@echo "  RM      " ${JNI_DIR}/lib/*/libmain.so)
-	@${RM} -r ${JNI_DIR}/lib/*/libmain.so
+	${RM} -r ${JNI_DIR}/lib/*/libmain.so
 	$(if ${V},,@echo "  RM      " ${BUILD_DIR})
-	@${RM} -r ${BUILD_DIR}
+	${RM} -r ${BUILD_DIR}
 	$(if ${V},,@echo "  RM      " ${APP_DIR}/debug)
-	@${RM} -r ${APP_DIR}/debug
+	${RM} -r ${APP_DIR}/debug
 	$(if ${V},,@echo "  RM      " ${APP_DIR}/release)
-	@${RM} -r ${APP_DIR}/release
+	${RM} -r ${APP_DIR}/release
 	$(if ${V},,@echo "  RM      " ${ASSETS_DIR}/assets.zip)
-	@${RM} ${ASSETS_DIR}/assets.zip
+	${RM} ${ASSETS_DIR}/assets.zip
 
 deps-clean:
 	$(if ${V},,@echo "  RM      " arch/android/deps/)
-	@${RM} -r arch/android/deps/
+	${RM} -r arch/android/deps/
 
 endif
 
