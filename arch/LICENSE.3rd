@@ -501,6 +501,148 @@ Home page:     https://maxmod.org
 
 
 ----------------------------------------------------------------
+  libnds and FatFS
+----------------------------------------------------------------
+
+Both variants of the libnds SDK supported by MegaZeux (devkitPro
+libnds 1.x, BlocksDS libnds 1.x-blocks) are available under various
+zlib licenses and a zlib-like license for FatFS.
+
+Used by ports: NDS.
+Home page:     https://github.com/devkitPro/libnds
+Home page:     https://github.com/blocksds/libnds
+
+  Copyright (C) 2005 - 2008
+   Michael Noland (joat)
+   Jason Rogers (dovoto)
+   Dave Murpy (WinterMute)
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any
+  damages arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any
+  purpose, including commercial applications, and to alter it and
+  redistribute it freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you
+     must not claim that you wrote the original software. If you use
+     this software in a product, an acknowledgment in the product
+     documentation would be appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and
+     must not be misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source
+     distribution.
+
+/*----------------------------------------------------------------------------/
+/  FatFs - Generic FAT Filesystem Module  Rx.xx                               /
+/-----------------------------------------------------------------------------/
+/
+/ Copyright (C) 20xx, ChaN, all right reserved.
+/
+/ FatFs module is an open source software. Redistribution and use of FatFs in
+/ source and binary forms, with or without modification, are permitted provided
+/ that the following condition is met:
+/
+/ 1. Redistributions of source code must retain the above copyright notice,
+/    this condition and the following disclaimer.
+/
+/ This software is provided by the copyright holder and contributors "AS IS"
+/ and any warranties related to this software are DISCLAIMED.
+/ The copyright owner or contributors be NOT LIABLE for any damages caused
+/ by use of this software.
+/----------------------------------------------------------------------------*/
+
+
+----------------------------------------------------------------
+  libctru
+----------------------------------------------------------------
+
+The libctru 3DS SDK is available under the zlib license.
+
+Used by ports: 3DS.
+Home page:     https://github.com/devkitPro/libctru
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any
+  damages arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any
+  purpose, including commercial applications, and to alter it and
+  redistribute it freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you
+     must not claim that you wrote the original software. If you use
+     this software in a product, an acknowledgment in the product
+     documentation would be appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and
+     must not be misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source
+     distribution.
+
+
+----------------------------------------------------------------
+  libogc
+----------------------------------------------------------------
+
+libogc consists primarily of code from RTEMS (GPLv2-or-later with
+linking exception plus various permissive licenses, unattributed),
+possibly with a small portion of Linux code (GPLv2-only, unattributed).
+The remainder is available under various zlib licenses.
+
+https://www.rtems.org/news/2025-05-06-rtems-devkit-libogc-response/
+
+Used by ports: Wii.
+Home page:     https://github.com/devkitPro/libogc
+RTEMS license: https://gitlab.rtems.org/rtems/rtos/rtems/-/blob/main/LICENSE.md
+
+  Copyright (C) 2004 - 2009
+    Michael Wiedenbauer (shagkur)
+    Dave Murphy (WinterMute)
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any
+  damages arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any
+  purpose, including commercial applications, and to alter it and
+  redistribute it freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you
+     must not claim that you wrote the original software. If you use
+     this software in a product, an acknowledgment in the product
+     documentation would be appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and
+     must not be misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source
+     distribution.
+
+
+----------------------------------------------------------------
+  libnx
+----------------------------------------------------------------
+
+The libnx Switch SDK is available under the ISC license.
+
+Used by ports: Switch.
+Home page:     https://github.com/switchbrew/libnx
+
+Copyright 2017-2018 libnx Authors
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+----------------------------------------------------------------
   crt0
 ----------------------------------------------------------------
 
