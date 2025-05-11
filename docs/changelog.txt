@@ -71,6 +71,7 @@ DEVELOPERS
   using errno values here on Haiku.
 + Add Emscripten Makefile support for SDL3.
 + Add PS Vita Makefile support for SDL3 and SDL 1.2.
++ Updated libxmp to 4.6.3+sample rate patch.
 
 
 February 28th, 2025 - MZX 2.93c
