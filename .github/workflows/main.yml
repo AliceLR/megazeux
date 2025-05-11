@@ -221,12 +221,12 @@ jobs:
 
   ARM-NDS-BlocksDS:
     runs-on: ubuntu-latest
-    container: skylyrac/blocksds:slim-latest
+    container: skylyrac/blocksds:slim-v1.9.1
     steps:
       - name: Install dependencies
         run: apt update && apt install -y --no-install-recommends zip
       - name: Install target dependencies
-        run: wf-pacman -Syu --noconfirm && wf-pacman -S --noconfirm toolchain-gcc-arm-none-eabi-zlib
+        run: wf-pacman -S --noconfirm toolchain-gcc-arm-none-eabi-zlib
       - uses: actions/checkout@v4
       - name: Configure NDS/BlocksDS
         run: arch/nds-blocksds/CONFIG.NDS
