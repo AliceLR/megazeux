@@ -567,6 +567,11 @@ boolean platform_hide_screen_keyboard(void)
   return false;
 }
 
+boolean platform_is_screen_keyboard_active(void)
+{
+  return false;
+}
+
 static void init_kbd(void)
 {
   __dpmi_paddr handler;

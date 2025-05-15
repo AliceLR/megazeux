@@ -1872,6 +1872,13 @@ boolean platform_hide_screen_keyboard(void)
   return true;
 }
 
+boolean platform_is_screen_keyboard_active(void)
+{
+  SDL_Window *window = SDL_GetWindowFromID(last_text_window_id);
+  (void)window; /* SDL2 */
+  return SDL_ScreenKeyboardShown(window);
+}
+
 void platform_init_event(void)
 {
 #ifdef NO_JOYSTICK_ADDED_EVENTS

@@ -347,6 +347,11 @@ boolean platform_hide_screen_keyboard(void)
   return true;
 }
 
+boolean platform_is_screen_keyboard_active(void)
+{
+  return input.showing_screen_keyboard;
+}
+
 void platform_init_event(void)
 {
   struct buffered_status *status = store_status();
