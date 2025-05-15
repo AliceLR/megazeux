@@ -203,7 +203,9 @@ boolean ctr_keyboard_update(struct buffered_status *status)
     {
       force_zoom_out = !force_zoom_out;
     }
-    else if(ctr_supports_wide() && pos.px >= 284 && pos.py >= 2 &&
+    else
+
+    if(ctr_supports_wide() && pos.px >= 284 && pos.py >= 2 &&
      pos.px < 300 && pos.py < 18)
     {
       ctr_request_set_wide(!gfxIsWide());

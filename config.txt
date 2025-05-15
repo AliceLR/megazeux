@@ -636,7 +636,7 @@
 #  select         Main menu       Cancel          Game menu (2)
 #  start          Play game       Select          Game menu (2)
 #  lshoulder      Settings        Next element    Insert (switch bombs)
-#  rshoulder      Settings        Settings        P (Caverns: altar)
+#  rshoulder(3)   Settings        Settings        P (Caverns: altar)
 #  ltrigger       Load world      Page up         F3 (save game)
 #  rtrigger       Reload save     Page down       F4 (load save)
 #  lstick                         Home
@@ -648,6 +648,11 @@
 #
 # (2) These buttons will always open the game menu directly unless both the
 # enter menu and the escape menu have been disabled through Robotic.
+#
+# (3) By default, this action will be intercepted and used to show/hide the
+# onscreen keyboard for platforms that support it. This is supported on Android,
+# Vita, NDS, 3DS, and Linux machines with no hardware keyboard active (e.g.
+# Steam Deck). This will globally override any press of this action.
 
 # To map a joystick action to a different key for gameplay, use the setting
 
@@ -657,6 +662,11 @@
 # (e.g. "lshoulder"), and A is the number (or name) of the key to assign. The
 # joystick number 'X' can be substituted with a range '[Z,W]', which will
 # assign the control for all joysticks numbered Z through W (inclusive).
+
+# To change the action that shows/hides the onscreen keyboard (0 to disable),
+# use the setting
+
+# joy[1,16].show_screen_keyboard = act_rshoulder
 
 # Automatic mapping for actions is handled using SDL's gamepad API.
 # Supported gamepads should generally "just work" when they're plugged in.

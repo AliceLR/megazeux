@@ -24,6 +24,7 @@
 #include "platform.h"
 #include "util.h"
 
+#include <assert.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -156,6 +157,10 @@ void init_event(struct config_info *conf)
       if(!input.joystick_global_map.action_is_conf[i][i2])
         input.joystick_global_map.action[i][i2] =
          joystick_action_map_default[i2];
+
+  for(i = 0; i < MAX_JOYSTICKS; i++)
+    if(!input.joystick_global_map.show_keyboard_is_conf[i])
+      input.joystick_global_map.show_screen_keyboard_action[i] = JOY_RSHOULDER;
 
   if(!input.joystick_axis_threshold)
     input.joystick_axis_threshold = AXIS_DEFAULT_THRESHOLD;
@@ -1184,6 +1189,43 @@ boolean set_exit_status(boolean value)
   return exit_status;
 }
 
+/**
+ * @return true if the screen keyboard is active, otherwise false.
+ */
+boolean screen_keyboard_is_active(void)
+{
+  return input.showing_screen_keyboard;
+}
+
+/**
+ * Toggle the state of the screen keyboard and report whether or
+ * not the event was handled.
+ *
+ * Note platforms may not actually change the keyboard state
+ * (e.g. during an animation), but will still report the change
+ * as handled. A return value of false should be interpreted as
+ * lack of a functioning screen keyboard.
+ *
+ * @return true if the event is supported and handled, otherwise false.
+ */
+boolean screen_keyboard_toggle_state(void)
+{
+  if(platform_has_screen_keyboard())
+  {
+    if(!input.showing_screen_keyboard)
+    {
+      if(platform_show_screen_keyboard())
+        return true;
+    }
+    else
+    {
+      if(platform_hide_screen_keyboard())
+        return true;
+    }
+  }
+  return false;
+}
+
 struct keycode_name
 {
   const char * const name;
@@ -1342,7 +1384,9 @@ static const struct joystick_action_name joystick_axis_names[] =
   { "ry",       JOY_AXIS_RIGHT_Y },
 };
 
-static enum keycode find_keycode(const char *name)
+/* Get an internal keycode by config name. This does NOT include the key_
+ * prefix used by the config file. */
+static enum keycode keycode_by_name(const char *name)
 {
   int top = ARRAY_SIZE(keycode_names) - 1;
   int bottom = 0;
@@ -1367,12 +1411,16 @@ static enum keycode find_keycode(const char *name)
   return IKEY_UNKNOWN;
 }
 
-static enum joystick_action find_joystick_action(const char *name)
+/* Get a joystick action by name. This does NOT include the joy#. or act_
+ * prefix used by Robotic and the config file, respectively. */
+static enum joystick_action joystick_action_by_name(const char *name)
 {
   int top = ARRAY_SIZE(joystick_action_names) - 1;
   int bottom = 0;
   int middle;
   int cmpval;
+  if(!name)
+    return JOY_NO_ACTION;
 
   while(bottom <= top)
   {
@@ -1392,7 +1440,9 @@ static enum joystick_action find_joystick_action(const char *name)
   return JOY_NO_ACTION;
 }
 
-static enum joystick_special_axis find_joystick_axis(const char *name)
+/* Get a joystick axis by name. This does NOT include the joy#.axis_ or axis_
+ * prefix used by Robotic and the config file, respectively. */
+static enum joystick_special_axis joystick_axis_by_name(const char *name)
 {
   size_t i;
   for(i = 0; i < ARRAY_SIZE(joystick_axis_names); i++)
@@ -1435,7 +1485,7 @@ boolean joystick_parse_map_value(const char *value, int16_t *binding)
 
   if(!strncmp(value, "act_", 4))
   {
-    action_value = find_joystick_action(value + 4);
+    action_value = joystick_action_by_name(value + 4);
     if(action_value)
     {
       *binding = -((int16_t)action_value);
@@ -1446,7 +1496,7 @@ boolean joystick_parse_map_value(const char *value, int16_t *binding)
 
   if(!strncmp(value, "key_", 4))
   {
-    key_value = find_keycode(value + 4);
+    key_value = keycode_by_name(value + 4);
     if(key_value)
     {
       *binding = key_value;
@@ -1572,22 +1622,40 @@ void joystick_map_hat(int first, int last, const char *up, const char *down,
  *
  * Alternatively, the action provided may be an axis, in which case the named
  * axis is being assigned to a real axis number.
+ *
+ * This function also handles the per-joystick setting show_screen_keyboard.
+ * In this case, the value must resolve to an action or to 0.
  */
 void joystick_map_action(int first, int last, const char *action,
  const char *value, boolean is_global)
 {
   if((first <= last) && (first >= 0) && (first < MAX_JOYSTICKS))
   {
-    enum joystick_action action_value = find_joystick_action(action);
+    enum joystick_action action_value;
     int16_t binding;
     int i;
 
-    if(!joystick_parse_map_value(value, &binding) || (binding < 0))
+    if(!joystick_parse_map_value(value, &binding))
       return;
 
     last = MIN(last, MAX_JOYSTICKS - 1);
 
-    if(action_value != JOY_NO_ACTION)
+    if(!strcasecmp(action, "show_screen_keyboard"))
+    {
+      // Must be an action or 0. Valid for the global map only.
+      if(binding > 0 || !is_global)
+        return;
+
+      for(i = first; i <= last; i++)
+      {
+        input.joystick_global_map.show_screen_keyboard_action[i] = -binding;
+        input.joystick_global_map.show_keyboard_is_conf[i] = true;
+      }
+      return;
+    }
+
+    action_value = joystick_action_by_name(action);
+    if(action_value != JOY_NO_ACTION && binding > 0)
     {
       for(i = first; i <= last; i++)
       {
@@ -1605,7 +1673,7 @@ void joystick_map_action(int first, int last, const char *action,
     if(!strncasecmp(action, "axis_", 5) && (binding > 0) &&
      (binding <= MAX_JOYSTICK_AXES))
     {
-      enum joystick_special_axis axis_value = find_joystick_axis(action + 5);
+      enum joystick_special_axis axis_value = joystick_axis_by_name(action + 5);
 
       if(axis_value == JOY_NO_AXIS)
         return;
@@ -1616,6 +1684,24 @@ void joystick_map_action(int first, int last, const char *action,
           input.joystick_global_map.special_axis[i][binding - 1] = axis_value;
       }
     }
+  }
+}
+
+/**
+ * Set a fallback screen keyboard button for a joystick (console ports)
+ * if pad.config failed to load. Call during/after init_event.
+ */
+void joystick_map_fallback_keyboard_button(int joystick, int button)
+{
+  assert(joystick >= 0 && joystick < MAX_JOYSTICKS &&
+   button >= 0 && button < MAX_JOYSTICK_BUTTONS);
+
+  if(!input.joystick_global_map.button_is_conf[joystick][button] &&
+   input.joystick_global_map.button[joystick][button] == 0)
+  {
+    /* Positive show_screen_keyboard action -> negative button */
+    input.joystick_global_map.button[joystick][button] =
+     -input.joystick_global_map.show_screen_keyboard_action[joystick];
   }
 }
 
@@ -1716,6 +1802,13 @@ static void joystick_press(struct buffered_status *status, int joystick,
  enum joy_press_type type, int num, int16_t global_binding, int16_t game_binding)
 {
   int pos = status->joystick_press_count[joystick];
+
+  /* Special: hijack the show screen keyboard button. */
+  int16_t kbd = input.joystick_global_map.show_screen_keyboard_action[joystick];
+  if(global_binding < 0 && -global_binding == kbd)
+    if(screen_keyboard_toggle_state())
+      return;
+
   if(pos < MAX_JOYSTICK_PRESS)
   {
     enum joystick_action press_action = JOY_NO_ACTION;
@@ -2050,7 +2143,7 @@ boolean joystick_get_status(int joystick, char *name, int16_t *value)
   {
     if(!strncasecmp(name, "axis_", 5))
     {
-      enum joystick_special_axis axis = find_joystick_axis(name + 5);
+      enum joystick_special_axis axis = joystick_axis_by_name(name + 5);
 
       if(axis != JOY_NO_AXIS)
       {
@@ -2060,7 +2153,7 @@ boolean joystick_get_status(int joystick, char *name, int16_t *value)
     }
     else
     {
-      enum joystick_action action = find_joystick_action(name);
+      enum joystick_action action = joystick_action_by_name(name);
 
       if(action != JOY_NO_ACTION)
       {

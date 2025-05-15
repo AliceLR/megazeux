@@ -182,6 +182,9 @@ static inline void *SDL_GetWindowProperty_HWND(SDL_Window *window)
  * SDL_event.h
  */
 #if !SDL_VERSION_ATLEAST(3,0,0)
+#define SDL_EVENT_FINGER_DOWN           SDL_FINGERDOWN
+#define SDL_EVENT_FINGER_MOTION         SDL_FINGERMOTION
+#define SDL_EVENT_FINGER_UP             SDL_FINGERUP
 #define SDL_EVENT_GAMEPAD_AXIS_MOTION   SDL_CONTROLLERAXISMOTION
 #define SDL_EVENT_JOYSTICK_ADDED        SDL_JOYDEVICEADDED
 #define SDL_EVENT_JOYSTICK_REMOVED      SDL_JOYDEVICEREMOVED
@@ -199,6 +202,10 @@ static inline void *SDL_GetWindowProperty_HWND(SDL_Window *window)
 #define SDL_EVENT_QUIT                  SDL_QUIT
 #define SDL_EVENT_FIRST                 SDL_FIRSTEVENT
 #define SDL_EVENT_LAST                  SDL_LASTEVENT
+#define TFINGER_TOUCH_ID(tfinger)       ((tfinger).touchId)
+#endif
+#if SDL_VERSION_ATLEAST(3,0,0)
+#define TFINGER_TOUCH_ID(tfinger)       ((tfinger).touchID)
 #endif
 
 /**
@@ -275,6 +282,10 @@ static inline void SDL_SetJoystickEventsEnabled(boolean enabled)
 /**
  * SDL_keyboard.h and SDL_keycode.h
  */
+#if !SDL_VERSION_ATLEAST(2,0,0)
+#define SDL_HasScreenKeyboardSupport()  (0)
+#define SDL_IsScreenKeyboardShown(w)    (0)
+#endif
 #if !SDL_VERSION_ATLEAST(3,0,0)
 #define SDLK_A                SDLK_a
 #define SDLK_B                SDLK_b
@@ -309,6 +320,9 @@ static inline void SDL_SetJoystickEventsEnabled(boolean enabled)
 #define SDL_KMOD_NUM          KMOD_NUM
 #define SDL_KMOD_CAPS         KMOD_CAPS
 #define SDL_KMOD_MODE         KMODE_MODE
+#define SDL_StartTextInput(w) SDL_StartTextInput()
+#define SDL_StopTextInput(w)  SDL_StopTextInput()
+#define SDL_ScreenKeyboardShown(w) SDL_IsScreenKeyboardShown(w)
 #endif
 
 /**
@@ -448,6 +462,28 @@ typedef SDL_sem   SDL_Semaphore;
 #define SDL_WaitSemaphore(s)            SDL_SemWait(s)
 #define SDL_SignalSemaphore(s)          SDL_SemPost(s)
 #define SDL_GetCurrentThreadID()        SDL_ThreadID()
+#endif
+
+/**
+ * SDL_touch.h
+ */
+#if SDL_VERSION_ATLEAST(2,0,0) && !SDL_VERSION_ATLEAST(3,0,0)
+static inline SDL_Finger **SDL_GetTouchFingers(SDL_TouchID touchID, int *count)
+{
+  SDL_Finger **ret;
+  int num = SDL_GetNumTouchFingers(touchID);
+  int i;
+
+  if(num <= 0)
+    return NULL;
+
+  ret = (SDL_Finger **)SDL_calloc(num + 1, sizeof(SDL_Finger *));
+  for(i = 0; i < num; i++)
+    ret[i] = SDL_GetTouchFinger(touchID, i);
+
+  *count = num;
+  return ret;
+}
 #endif
 
 /**
