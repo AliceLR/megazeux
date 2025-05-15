@@ -86,6 +86,12 @@ boolean platform_hide_screen_keyboard(void)
   return false;
 }
 
+boolean platform_is_screen_keyboard_active(void)
+{
+  // stub
+  return false;
+}
+
 boolean __update_event_status(void)
 {
   // stub

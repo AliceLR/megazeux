@@ -148,7 +148,7 @@ struct input_status
   boolean unfocus_pause;
   boolean left_alt_is_altgr;
   boolean right_alt_is_altgr;
-  boolean showing_screen_keyboard;
+  boolean showing_screen_keyboard; /* optional, used by platform drivers */
 };
 
 // regular keycode_internal treats numpad keys as unique keys
@@ -210,6 +210,7 @@ void platform_init_event(void);
 boolean platform_has_screen_keyboard(void);
 boolean platform_show_screen_keyboard(void);
 boolean platform_hide_screen_keyboard(void);
+boolean platform_is_screen_keyboard_active(void);
 boolean __update_event_status(void);
 boolean __peek_exit_input(void);
 void __wait_event(void);

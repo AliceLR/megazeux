@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2019 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2019-2025 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -1194,7 +1194,7 @@ boolean set_exit_status(boolean value)
  */
 boolean screen_keyboard_is_active(void)
 {
-  return input.showing_screen_keyboard;
+  return platform_is_screen_keyboard_active();
 }
 
 /**
@@ -1212,7 +1212,7 @@ boolean screen_keyboard_toggle_state(void)
 {
   if(platform_has_screen_keyboard())
   {
-    if(!input.showing_screen_keyboard)
+    if(!platform_is_screen_keyboard_active())
     {
       if(platform_show_screen_keyboard())
         return true;
