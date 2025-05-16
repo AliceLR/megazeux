@@ -16,7 +16,8 @@ USERS
   or, in Android, by performing a 3-point touch on the screen.
 + Added config option "joy#.show_screen_keyboard" to configure
   which button (if any) is used to open the screen keyboard for
-  platforms that support it (set to act_rshoulder by default).
+  platforms that support it (set to act_rshoulder by default,
+  except for Linux, where it's disabled by default).
 + Added config options "key_left_alt_is_altgr" and
   "key_right_alt_is_altgr". When set to 1, these prevent their
   respective Alt keys from activating built-in UI and editor

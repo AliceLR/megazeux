@@ -40,6 +40,18 @@
 #define JOYSTICK_REPEAT_START KEY_REPEAT_START
 #define JOYSTICK_REPEAT_RATE  KEY_REPEAT_RATE
 
+#if defined(__linux__) && !defined(__ANDROID__)
+/* TODO: Steam Deck hack. SteamOS apparently broke this and the fix has
+ * not been backported to SDL2. Additionally, SteamOS has its own shortcut
+ * to open the screen keyboard, so it's not necessary to sacrifice a button.
+ * Platforms that don't support this don't need to worry about it.
+ * If Linux SDL ever gets another source of screen keyboard this will
+ * need to be revised. */
+#define DEFAULT_SCREEN_KEYBOARD_ACTION JOY_NO_ACTION
+#else
+#define DEFAULT_SCREEN_KEYBOARD_ACTION JOY_RSHOULDER
+#endif
+
 static uint32_t last_update_time;
 
 struct input_status input;
@@ -160,7 +172,8 @@ void init_event(struct config_info *conf)
 
   for(i = 0; i < MAX_JOYSTICKS; i++)
     if(!input.joystick_global_map.show_keyboard_is_conf[i])
-      input.joystick_global_map.show_screen_keyboard_action[i] = JOY_RSHOULDER;
+      input.joystick_global_map.show_screen_keyboard_action[i] =
+       DEFAULT_SCREEN_KEYBOARD_ACTION;
 
   if(!input.joystick_axis_threshold)
     input.joystick_axis_threshold = AXIS_DEFAULT_THRESHOLD;
