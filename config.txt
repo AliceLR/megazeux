@@ -651,8 +651,9 @@
 #
 # (3) By default, this action will be intercepted and used to show/hide the
 # onscreen keyboard for platforms that support it. This is supported on Android,
-# Vita, NDS, 3DS, and Linux machines with no hardware keyboard active (e.g.
-# Steam Deck). This will globally override any press of this action.
+# Vita, NDS, and 3DS, and can also be enabled for Linux machines with no
+# hardware keyboard active (e.g. Steam Deck). This will globally override
+# any press of this action.
 
 # To map a joystick action to a different key for gameplay, use the setting
 
