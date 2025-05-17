@@ -33,11 +33,11 @@ jobs:
       - name: Install
         run: sudo $MZX_MAKE install V=1
       - name: Check install
-        run: command -v megazeux && [ -f "/usr/share/doc/megazeux/LICENSE" ] && [ -f "/etc/megazeux-config" ]
+        run: command -v megazeux && [ -f "/usr/share/licenses/megazeux/LICENSE" ] && [ -f "/etc/megazeux-config" ]
       - name: Uninstall
         run: sudo $MZX_MAKE uninstall V=1
       - name: Check uninstall
-        run: true && [ ! -f "/usr/bin/megazeux" ] && [ ! -f "/usr/share/doc/megazeux/LICENSE" ] && [ ! -f "/etc/megazeux-config" ]
+        run: true && [ ! -f "/usr/bin/megazeux" ] && [ ! -f "/usr/share/licenses/megazeux/LICENSE" ] && [ ! -f "/etc/megazeux-config" ]
       - name: Package source .tar.xz
         run: make source
 
