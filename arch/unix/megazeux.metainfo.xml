@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2025 Lachesis -->
+<component type="desktop-application">
+  <id>megazeux</id>
+  <metadata_license>CC-BY-SA-4.0</metadata_license>
+  <project_license>GPL-2.0+</project_license>
+  <name>MegaZeux</name>
+  <summary>Text-mode game creation system</summary>
+  <developer id="com.digitalmzx">
+    <name>MegaZeux developers</name>
+  </developer>
+  <description>
+    <p>
+      MegaZeux is a game creation system and spiritual successor to ZZT,
+      originally created in 1994 by Alexis Janson. MegaZeux allows playing
+      and creating games based on&#x2104;but no longer limited to&#x2104;DOS
+      80x25 text mode graphics. MegaZeux includes a built-in editor and
+      supports rudimentary scripting with its own scripting language, Robotic.
+    </p>
+    <p>
+      Hundreds of games and other world files have been created for MegaZeux.
+      Many of these available to download, at no charge, from the official
+      MegaZeux games archive at DigitalMZX.
+    </p>
+    <p>
+      Supported platforms include Linux/BSD, MS-DOS, Windows, macOS, Wasm,
+      Android, Haiku, and numerous games consoles and handhelds.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">megazeux.desktop</launchable>
+
+  <!-- FIXME: need to preview this file somehow to verify these colors -->
+  <branding>
+    <color type="primary" scheme_preference="light">#ff88ff</color>
+    <color type="primary" scheme_preference="dark">#aa5555</color>
+  </branding>
+  <content_rating type="oars-1.1" />
+
+  <url type="homepage">https://www.digitalmzx.com</url>
+  <url type="bugtracker">https://github.com/AliceLR/megazeux</url>
+  <url type="help">https://www.digitalmzx.com/mzx_help.html</url>
+
+  <!-- FIXME: screenshot 1 sucks, need a more interesting one -->
+  <screenshots>
+    <screenshot type="default">
+      <caption>
+        Typical gameplay in MegaZeux (Zeux III: Chronos Stasis by Alexis Janson)
+      </caption>
+      <image>https://www.digitalmzx.com/metainfo/gameplay.png</image>
+    </screenshot>
+
+    <screenshot>
+      <caption>
+        Example of a game using extended graphical features (Pandemonium Buster by Lancer-X and Maxim)
+      </caption>
+      <image>https://www.digitalmzx.com/metainfo/gameplay2.png</image>
+    </screenshot>
+
+    <screenshot>
+      <caption>
+        MegaZeux editor with a game open for editing (MegaZeux Tutorial by Alexis Janson)
+      </caption>
+      <image>https://www.digitalmzx.com/metainfo/editor.png</image>
+    </screenshot>
+
+    <screenshot>
+      <caption>
+        MegaZeux graphics are based on editing text mode characters (xxy by Lachesis)
+      </caption>
+      <image>https://www.digitalmzx.com/metainfo/charedit.png</image>
+    </screenshot>
+
+    <screenshot>
+      <caption>
+        Robot editor showing an example Robotic script (Zeux II: Caverns of Zeux by Alexis Janson)
+      </caption>
+      <image>https://www.digitalmzx.com/metainfo/robotic.png</image>
+    </screenshot>
+  </screenshots>
+
+  <provides>
+    <binary>megazeux</binary>
+    <binary>mzxrun</binary>
+  </provides>
+
+  <recommends>
+    <control>keyboard</control>
+  </recommends>
+  <supports>
+    <control>gamepad</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </supports>
+
+  <!-- FIXME: flathub wants descriptions for every single release -->
+  <releases>
+    <release version="2.93c" date="2025-02-28" />
+    <release version="2.93b" date="2024-09-10" />
+    <release version="2.93"  date="2023-12-31" />
+
+    <release version="2.92f" date="2020-10-22" />
+    <release version="2.92e" date="2020-07-20" />
+    <release version="2.92d" date="2020-05-08" />
+    <release version="2.92c" date="2020-03-08" />
+    <release version="2.92b" date="2019-09-23" />
+    <release version="2.92"  date="2019-07-22" />
+
+    <release version="2.91j" date="2019-02-20" />
+    <release version="2.91i" date="2018-12-09" />
+    <release version="2.91h" date="2018-11-14" />
+    <release version="2.91g" date="2018-10-07" />
+    <release version="2.91f" date="2018-09-17" />
+    <release version="2.91e" date="2018-09-03" />
+    <release version="2.91d" date="2018-07-12" />
+    <release version="2.91c" date="2018-03-04" />
+    <release version="2.91b" date="2018-01-06" />
+    <release version="2.91"  date="2017-10-22" />
+
+    <release version="2.90d" date="2017-09-04" />
+    <release version="2.90c" date="2017-07-25" />
+    <release version="2.90b" date="2017-07-16" />
+    <release version="2.90"  date="2017-06-29" />
+
+    <release version="2.84c" date="2012-12-24" />
+    <release version="2.84b" date="2012-06-20" />
+    <release version="2.84"  date="2012-06-01" />
+
+    <release version="2.83"  date="2009-12-29" />
+    <release version="2.82b" date="2008-12-29" />
+    <release version="2.82"  date="2008-06-10" />
+
+    <release version="2.81h" date="2007-12-08" />
+    <release version="2.81g" date="2007-07-04" />
+    <release version="2.81f" date="2007-01-30" />
+    <release version="2.81e" date="2007-01-18" />
+    <release version="2.81d" date="2006-12-10" />
+    <release version="2.81c" date="2005-12-14" />
+    <release version="2.81b" date="2005-11-26" />
+    <release version="2.81"  date="2005-11-20" />
+
+    <release version="2.80h" date="2005-06-06" />
+    <release version="2.80g" date="2005-04-01" />
+    <release version="2.80f" date="2004-12-26" />
+    <release version="2.80e" date="2004-12-19" />
+    <release version="2.80d" date="2004-10-09" />
+    <release version="2.80c" date="2004-08-16" />
+    <release version="2.80b" date="2004-08-11" />
+    <release version="2.80"  date="2004-08-09" />
+
+    <!-- Old DOS release dates not ported into this list. -->
+  </releases>
+</component>
