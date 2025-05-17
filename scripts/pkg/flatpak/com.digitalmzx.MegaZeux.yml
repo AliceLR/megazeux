@@ -1,0 +1,47 @@
+app-id: com.digitalmzx.MegaZeux
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: megazeux
+rename-desktop-file: megazeux.desktop
+rename-appdata-file: megazeux.metainfo.xml
+rename-icon: megazeux
+cleanup:
+  - /share/doc
+
+finish-args:
+  # SDL application that expects OpenGL, Wayland, audio, gamepads to work.
+  # Network support exists but is currently disabled in Linux (not used yet).
+  - --device=dri
+  - --device=all
+  - --share=ipc
+  #- --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  # MegaZeux is both a game engine and development kit and
+  # users may store game folders or create games anywhere.
+  - --filesystem=home
+  - --filesystem=/media
+  - --filesystem=/run/media
+
+modules:
+  - name: MegaZeux
+    buildsystem: simple
+    build-commands:
+      - ./config.sh --platform unix --enable-release --enable-lto
+          --prefix /app
+          --sysconfdir /app/etc
+          --gamesdir /app/bin
+          --bindir /app/bin
+          --libdir /app/lib
+          --sharedir /app/share
+          --licensedir /app/share/licenses
+          --metainfodir /app/share/metainfo
+      - make -j${FLATPAK_BUILDER_N_JOBS}
+      - make -j${FLATPAK_BUILDER_N_JOBS} test
+      - make install
+    sources:
+       - type: git
+         url: https://github.com/AliceLR/megazeux.git
+         tag: v2.93d

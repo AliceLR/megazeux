@@ -58,6 +58,7 @@ USERS
 + Fixed VFS cache failing to init caused by getcwd returning
   a root with no trailing slash.
 + Unsupported mouse button presses are now ignored.
++ Fixed the window icon for Flatpak builds.
 
 DEVELOPERS
 
@@ -84,6 +85,12 @@ DEVELOPERS
   using errno values here on Haiku.
 + Add Emscripten Makefile support for SDL3.
 + Add PS Vita Makefile support for SDL3 and SDL 1.2.
++ make install now installs an AppStream .metainfo.xml file.
++ Added --metainfodir [dir] option to config.sh. This setting
+  defaults to [sharedir]/metainfo for relevant platforms.
++ --licensedir now defaults to [sharedir]/licenses instead of
+  [prefix]/share/doc.
++ Fixed ansi.c compilation failure with --disable-datestamp.
 + Updated libxmp to 4.6.3+sample rate patch.
 
 

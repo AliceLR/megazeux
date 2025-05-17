@@ -8,6 +8,7 @@ See /megazeux.spec and /debian for Fedora and Debian/Ubuntu, respectively.
 |---------------|-----------------------|-----------------------|---------------|
 | alpine	| asie			| orphaned		| https://gitlab.alpinelinux.org/alpine/aports/-/tree/master/testing/megazeux
 | archlinux	| CyberShadow/GetDizzy	| ok			| https://aur.archlinux.org/packages/megazeux/
+| flatpak	| Lachesis		| not submitted		| —
 | macports	| Lachesis		| not submitted		| —
 | nix		| Why-Fi		| not submitted		| —
 | voidlinux	| asie			| orphaned		| https://github.com/void-linux/void-packages/tree/master/srcpkgs/megazeux

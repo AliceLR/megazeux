@@ -48,6 +48,10 @@ endif
 ifeq (${LICENSEDIR},.)
 	$(error ${ERROR_PLATFORM} (LICENSEDIR))
 endif
+	@echo METAINFODIR: ${METAINFODIR}
+ifeq (${METAINFODIR},.)
+	$(error ${ERROR_PLATFORM} (METAINFODIR))
+endif
 ifneq (${BUILD_MODULAR},)
 	@echo LIBDIR: ${LIBDIR}
 ifeq (${LIBDIR},.)
@@ -79,7 +83,8 @@ install: install-check install-arch
 		${DESTDIR}${SHAREDIR}/megazeux \
 		${DESTDIR}${SHAREDIR}/megazeux/assets \
 		${DESTDIR}${LICENSEDIR} \
-		${DESTDIR}${LICENSEDIR}/megazeux
+		${DESTDIR}${LICENSEDIR}/megazeux \
+		${DESTDIR}${METAINFODIR}
 	${install} -m 0644 \
 		assets/default.chr \
 		assets/edit.chr \
@@ -119,6 +124,11 @@ endif
 ifeq (${BUILD_MZXRUN},1)
 	${install} -m 0755 -d ${DESTDIR}${GAMESDIR}
 	${install} -m 0755 ${mzxrun} ${DESTDIR}${GAMESDIR}/
+ifneq (${BUILD_EDITOR},1)
+	${install} -m 0644 -T \
+		arch/unix/megazeux.metainfo.xml \
+		${DESTDIR}${METAINFODIR}/mzxrun.metainfo.xml
+endif
 endif
 ifeq (${BUILD_EDITOR},1)
 	${install} -m 0755 -d ${DESTDIR}${GAMESDIR}
@@ -129,6 +139,9 @@ ifeq (${BUILD_EDITOR},1)
 		assets/smzx.chr \
 		assets/smzx2.chr \
 		${DESTDIR}${SHAREDIR}/megazeux/assets
+	${install} -m 0644 \
+		arch/unix/megazeux.metainfo.xml \
+		${DESTDIR}${METAINFODIR}
 endif
 ifeq (${BUILD_UTILS},1)
 	${install} -m 0755 -d ${DESTDIR}${BINDIR}
@@ -204,10 +217,14 @@ endif
 ifeq (${BUILD_MZXRUN},1)
 	${RM} \
 		${DESTDIR}${GAMESDIR}/${mzxrun}
+ifneq (${BUILD_EDITOR},1)
+	${RM} -f ${DESTDIR}${METAINFODIR}/mzxrun.metainfo.xml
+endif
 endif
 ifeq (${BUILD_EDITOR},1)
 	${RM} \
 		${DESTDIR}${GAMESDIR}/${mzx}
+	${RM} -f ${DESTDIR}${METAINFODIR}/megazeux.metainfo.xml
 endif
 ifeq (${BUILD_UTILS},1)
 	${RM} \

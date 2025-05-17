@@ -10,11 +10,12 @@ usage() {
 	echo
 	echo "  --prefix       Install prefix and where dependencies should be found. (/usr)"
 	echo "  --sysconfdir   Where the config should be read from. (/etc)"
-	echo "  --gamesdir     Where binaries should be installed. (/usr/games)"
-	echo "  --libdir       Where libraries should be installed. (/usr/lib)"
-	echo "  --bindir       Where utilities should be installed. (/usr/bin)"
-	echo "  --sharedir     Where resources should be installed. (/usr/share)"
-	echo "  --licensedir   Where licenses should be installed. (/usr/share/doc)"
+	echo "  --gamesdir     Where binaries should be installed. ([prefix]/games)"
+	echo "  --libdir       Where libraries should be installed. ([prefix]/lib)"
+	echo "  --bindir       Where utilities should be installed. ([prefix]/bin)"
+	echo "  --sharedir     Where resources should be installed. ([prefix]/share)"
+	echo "  --licensedir   Where licenses should be installed. ([sharedir]/licenses)"
+	echo "  --metainfodir  Where metainfo should be installed. ([sharedir]/metainfo)"
 	echo "  --host         Specify cross toolchain prefix for Linux et al. (none)"
 	echo
 	echo "  Install directories can be disregarded for builds for platforms"
@@ -155,8 +156,11 @@ SHAREDIR_IS_SET="false"
 SHAREDIR_IN_PREFIX="/share"
 SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
 LICENSEDIR_IS_SET="false"
-LICENSEDIR_IN_PREFIX="/share/doc"
-LICENSEDIR="${PREFIX}${LICENSEDIR_IN_PREFIX}"
+LICENSEDIR_IN_SHAREDIR="/licenses"
+LICENSEDIR="${SHAREDIR}${LICENSEDIR_IN_SHAREDIR}"
+METAINFODIR_IS_SET="false"
+METAINFODIR_IN_SHAREDIR="/metainfo"
+METAINFODIR="${SHAREDIR}${METAINFODIR_IN_SHAREDIR}"
 USERCONFFILE=""
 DATE_STAMP="true"
 AS_NEEDED="false"
@@ -230,26 +234,6 @@ while [ "$1" != "" ]; do
 		shift
 		PREFIX="$1"
 		PREFIX_IS_SET="true"
-		# Update other install folders to match
-		if [ "$GAMESDIR_IS_SET" = "false" ]; then
-			GAMESDIR="${PREFIX}${GAMESDIR_IN_PREFIX}"
-		fi
-
-		if [ "$LIBDIR_IS_SET" = "false" ]; then
-			LIBDIR="${PREFIX}${LIBDIR_IN_PREFIX}"
-		fi
-
-		if [ "$BINDIR_IS_SET" = "false" ]; then
-			BINDIR="${PREFIX}${BINDIR_IN_PREFIX}"
-		fi
-
-		if [ "$SHAREDIR_IS_SET" = "false" ]; then
-			SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
-		fi
-
-		if [ "$LICENSEDIR_IS_SET" = "false" ]; then
-			LICENSEDIR="${PREFIX}${LICENSEDIR_IN_PREFIX}"
-		fi
 	fi
 
 	# e.g. --sysconfdir /etc
@@ -287,11 +271,18 @@ while [ "$1" != "" ]; do
 		SHAREDIR_IS_SET="true"
 	fi
 
-	# e.g. --licensedir /usr/share/license
+	# e.g. --licensedir /usr/share/licenses
 	if [ "$1" = "--licensedir" ]; then
 		shift
 		LICENSEDIR="$1"
 		LICENSEDIR_IS_SET="true"
+	fi
+
+	# e.g. --metainfodir /usr/share/metainfo
+	if [ "$1" = "--metainfodir" ]; then
+		shift
+		METAINFODIR="$1"
+		METAINFODIR_IS_SET="true"
 	fi
 
 	# e.g. --host arm-none-eabi
@@ -499,6 +490,28 @@ if [ "$PLATFORM" = "" ]; then
 	exit 0
 fi
 
+#
+# Derive unspecified install dirs from specified dirs.
+#
+if [ "$BINDIR_IS_SET" = "false" ]; then
+	BINDIR="${PREFIX}${BINDIR_IN_PREFIX}"
+fi
+if [ "$GAMESDIR_IS_SET" = "false" ]; then
+	GAMESDIR="${PREFIX}${GAMESDIR_IN_PREFIX}"
+fi
+if [ "$LIBDIR_IS_SET" = "false" ]; then
+	LIBDIR="${PREFIX}${LIBDIR_IN_PREFIX}"
+fi
+if [ "$SHAREDIR_IS_SET" = "false" ]; then
+	SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
+fi
+if [ "$LICENSEDIR_IS_SET" = "false" ]; then
+	LICENSEDIR="${SHAREDIR}${LICENSEDIR_IN_SHAREDIR}"
+fi
+if [ "$METAINFODIR_IS_SET" = "false" ]; then
+	METAINFODIR="${SHAREDIR}${METAINFODIR_IN_SHAREDIR}"
+fi
+
 ### PLATFORM DEFINITION #######################################################
 
 rm -f platform.inc
@@ -672,6 +685,7 @@ case "$PLATFORM" in
 		LIBDIR="."
 		SHAREDIR="."
 		LICENSEDIR="."
+		METAINFODIR="."
 		if [ "$SYSCONFDIR_IS_SET" != "true" ]; then
 			SYSCONFDIR="."
 		fi
@@ -725,6 +739,9 @@ echo "Building for platform:   $PLATFORM"
 echo "Using prefix:            $PREFIX"
 echo "      sharedir:          $SHAREDIR"
 echo "      licensedir:        $LICENSEDIR"
+if [ "$METAINFODIR" != "." ]; then
+echo "      metainfodir:       $METAINFODIR"
+fi
 echo "      sysconfdir:        $SYSCONFDIR"
 if [ "$GAMESDIR" != "." ]; then
 echo "      gamesdir (mzx):    $GAMESDIR"
@@ -798,6 +815,7 @@ echo "LIBDIR=$LIBDIR"         >> platform.inc
 echo "BINDIR=$BINDIR"         >> platform.inc
 echo "SHAREDIR=$SHAREDIR"     >> platform.inc
 echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
+echo "METAINFODIR=$METAINFODIR" >> platform.inc
 
 #
 # Platform-specific libraries, or SDL?
@@ -1783,12 +1801,17 @@ if [ "$ICON" = "true" ]; then
 		#
 		# Also get the (probable) icon path...
 		#
+		ICONFILE="megazeux.png"
+		ICONDIR="$SHAREDIR/icons/hicolor/128x128/apps"
+
 		if [ "$SHAREDIR" = "." ]; then
-			ICONFILE="contrib/icons/quantump.png"
-		else
-			ICONFILE="$SHAREDIR/icons/hicolor/128x128/apps/megazeux.png"
+			ICONFILE="quantump.png"
+			ICONDIR="contrib/icons"
+		elif [ "$SHAREDIR" = "/app/share" ]; then
+			# TODO: flatpak hack
+			ICONFILE="com.digitalmzx.MegaZeux.png"
 		fi
-		echo "#define ICONFILE \"$ICONFILE\"" >> src/config.h
+		echo "#define ICONFILE \"$ICONDIR/$ICONFILE\"" >> src/config.h
 	fi
 else
 	echo "Icon branding disabled."
