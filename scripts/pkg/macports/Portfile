@@ -1,0 +1,51 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+
+name                MegaZeux
+version             2.93c
+categories          games
+platforms           darwin
+license             GPL-2+
+maintainers         @AliceLR
+description         Text mode game creation system
+long_description    MegaZeux is a Game Creation System originally written for DOS in 1994.\
+                    Hundreds of MegaZeux games are available for download at https://www.digitalmzx.com/
+homepage            https://www.digitalmzx.com/
+
+master_sites        https://github.com/AliceLR/megazeux/releases/download/v2.93c/
+distfiles           mzx293csrc.tar.xz
+use_xz              yes
+worksrcdir          mzxgit
+checksums           rmd160   4f751319ac1283ac1793472eae247592472d16e3 \
+                    sha256   a878d0937324c6d8ff057348d4efd96effaf070b16b314b57031d7fae3b75974 \
+                    size     4519284
+
+depends_lib         port:zlib \
+                    port:libpng \
+                    port:libogg \
+                    port:libvorbis \
+                    port:libsdl2
+
+configure.cmd       ./config.sh
+configure.args      --platform darwin               \
+                    --prefix ${prefix}              \
+                    --gamesdir ${prefix}/bin        \
+                    --bindir ${prefix}/lib/megazeux \
+                    --sysconfdir ${prefix}/etc      \
+                    --enable-release --enable-lto
+
+use_parallel_build  yes
+
+# TODO: untested
+platform darwin 8 {
+	depends_lib-append port:libsdl
+	configure.args-append --enable-sdl1
+}
+platform darwin 9 {
+	depends_lib-append port:libsdl
+	configure.args-append --enable-sdl1
+}
+platform darwin 10 {
+	depends_lib-append port:libsdl2-snowleopard
+}
