@@ -1,0 +1,38 @@
+# Contributor: Adrian Siekierka <kontakt@asie.pl>
+# Maintainer: Adrian Siekierka <kontakt@asie.pl>
+pkgname=megazeux
+pkgver=2.93b
+pkgrel=0
+pkgdesc="Game creation system"
+url="https://www.digitalmzx.com/"
+# loongarch64: Test failure
+arch="all !loongarch64"
+license="GPL-2.0-or-later"
+makedepends="libpng-dev libvorbis-dev sdl2-dev zlib-dev"
+subpackages="$pkgname-doc"
+_srcprefix=mzx${pkgver/.}
+source="${_srcprefix}src.tar.xz::https://www.digitalmzx.com/download.php?latest=src&ver=$pkgver"
+builddir="$srcdir/$_srcprefix/"
+
+build() {
+	./config.sh \
+		--platform unix \
+		--prefix /usr \
+		--bindir /usr/lib/megazeux \
+		--libdir /usr/lib \
+		--gamesdir /usr/bin
+
+	make
+}
+
+check() {
+	make test
+}
+
+package() {
+	make DESTDIR="$pkgdir/" install
+}
+
+sha512sums="
+23c7888d8e18f8002da0fc737182fdb67ffc6d7325670a86dcd7398a1634b118025154ca84c4013bfabc1ba50aaed863a0bf7f4013961f0e0c85e08328172cd7  mzx293bsrc.tar.xz
+"
