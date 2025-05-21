@@ -2,7 +2,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017-2025 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -1232,7 +1232,10 @@ void run_robot(context *ctx, int id, int x, int y)
   char *program;
   char *cmd_ptr;
   char done = 0;
-  char update_blocked = 0;
+  // Set this to true if ANYTHING in a command changes the board contents.
+  // FIXME: this isn't done for SET/INC/DEC/RANDOM/MULTIPLY/DIVIDE/MODULO/DOUBLE/HALF
+  // except when relying on 2.80 until 2.94 bugs.
+  boolean update_blocked = false;
   char first_cmd = 1;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
@@ -2102,7 +2105,11 @@ void run_robot(context *ctx, int id, int x, int y)
                 // allowing global robot.
                 calculate_blocked(mzx_world, mzx_world->player_x,
                  mzx_world->player_y, -1, new_bl);
-                update_blocked = 1;
+
+                // DOS compatibility: this clobbered the blocked array.
+                // MegaZeux continued to set it unconditionally until 2.93d.
+                if(mzx_world->version < V294)
+                  update_blocked = true;
                 break;
               }
 
@@ -2113,14 +2120,18 @@ void run_robot(context *ctx, int id, int x, int y)
                 calculate_blocked(mzx_world,
                  get_counter(mzx_world, "XPOS", 0),
                  get_counter(mzx_world, "YPOS", 0), -1, new_bl);
-                update_blocked = 1;
+
+                // DOS compatibility: this clobbered the blocked array.
+                // MegaZeux continued to set it unconditionally until 2.93d.
+                if(mzx_world->version < V294)
+                  update_blocked = true;
                 break;
               }
 
               default:
               {
                 // Use the blocked list that's already there
-                memcpy(new_bl, _bl, sizeof(int) * 4);
+                memcpy(new_bl, _bl, sizeof(_bl));
               }
             }
 
@@ -2536,10 +2547,21 @@ void run_robot(context *ctx, int id, int x, int y)
         enum thing check_id = parse_param_thing(mzx_world, p3);
         char *p4 = next_param_pos(p3);
         int check_param = parse_param(mzx_world, p4, id);
+        int player_bl[4];
+
+        // Versions prior to 2.94 use the wrong blocked values when
+        // calculating the direction for this command.
+        if(mzx_world->version >= V294)
+        {
+          calculate_blocked(mzx_world, mzx_world->player_x,
+           mzx_world->player_y, -1, player_bl);
+        }
+        else
+          memcpy(player_bl, _bl, sizeof(_bl));
 
         if(check_dir_xy(mzx_world, check_id, check_color,
          check_param, mzx_world->player_x, mzx_world->player_y,
-         direction, cur_robot, _bl))
+         direction, cur_robot, player_bl))
         {
           char *p5 = next_param_pos(p4);
           gotoed = send_self_label_tr(mzx_world, p5 + 1, id);
@@ -2622,7 +2644,7 @@ void run_robot(context *ctx, int id, int x, int y)
             place_dir_xy(mzx_world, put_id, put_color, put_param, x, y,
              direction, cur_robot, _bl);
           }
-          update_blocked = 1;
+          update_blocked = true;
         }
         break;
       }
@@ -2834,7 +2856,7 @@ void run_robot(context *ctx, int id, int x, int y)
                 }
 
                 level_id[offset] = old_id;
-                update_blocked = 1;
+                update_blocked = true;
               }
             }
           }
@@ -3055,8 +3077,7 @@ void run_robot(context *ctx, int id, int x, int y)
         if(id)
         {
           rotate(mzx_world, x, y, 0);
-          // Figure blocked vars
-          update_blocked = 1;
+          update_blocked = true;
         }
         break;
       }
@@ -3066,9 +3087,7 @@ void run_robot(context *ctx, int id, int x, int y)
         if(id)
         {
           rotate(mzx_world, x, y, 1);
-          // Figure blocked vars
-          update_blocked = 1;
-          break;
+          update_blocked = true;
         }
         break;
       }
@@ -3112,8 +3131,7 @@ void run_robot(context *ctx, int id, int x, int y)
                 level_id[dest_offset] = cp_id;
                 level_param[dest_offset] = cp_param;
                 level_color[dest_offset] = cp_color;
-                // Figure blocked vars
-                update_blocked = 1;
+                update_blocked = true;
 
                 // This might have moved robots. Fix their xpos/ypos values.
                 // Old versions didn't fix these, so don't touch the compat pos.
@@ -3175,7 +3193,7 @@ void run_robot(context *ctx, int id, int x, int y)
           enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           place_dir_xy(mzx_world, LIT_BOMB, 8, 0, x, y, direction,
            cur_robot, _bl);
-          update_blocked = 1;
+          update_blocked = true;
         }
         break;
       }
@@ -3187,7 +3205,7 @@ void run_robot(context *ctx, int id, int x, int y)
           enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           place_dir_xy(mzx_world, LIT_BOMB, 8, 128, x, y, direction,
            cur_robot, _bl);
-          update_blocked = 1;
+          update_blocked = true;
         }
         break;
       }
@@ -3201,7 +3219,14 @@ void run_robot(context *ctx, int id, int x, int y)
           if(is_cardinal_dir(direction))
           {
             shoot_missile(mzx_world, x, y, dir_to_int(direction));
-            calculate_blocked(mzx_world, x, y, id, _bl);
+
+            // From 2.93 until 2.94, this updated the blocked array WITHOUT
+            // setting update_blocked. Since versions 2.80 until 2.94 leak
+            // update_blocked, this needs to be supported too.
+            if(mzx_world->version >= V283 && mzx_world->version < V294)
+              calculate_blocked(mzx_world, x, y, id, _bl);
+            else
+              update_blocked = true;
           }
         }
         // MZX 2.83 erroneously ended the cycle here, some games depend on it...
@@ -3224,7 +3249,14 @@ void run_robot(context *ctx, int id, int x, int y)
           if(is_cardinal_dir(direction))
           {
             shoot_seeker(mzx_world, x, y, dir_to_int(direction));
-            calculate_blocked(mzx_world, x, y, id, _bl);
+
+            // From 2.93 until 2.94, this updated the blocked array WITHOUT
+            // setting update_blocked. Since versions 2.80 until 2.94 leak
+            // update_blocked, this needs to be supported too.
+            if(mzx_world->version >= V283 && mzx_world->version < V294)
+              calculate_blocked(mzx_world, x, y, id, _bl);
+            else
+              update_blocked = true;
           }
         }
         // MZX 2.83 erroneously ended the cycle here, some games depend on it...
@@ -3247,7 +3279,14 @@ void run_robot(context *ctx, int id, int x, int y)
           if(is_cardinal_dir(direction))
           {
             shoot_fire(mzx_world, x, y, dir_to_int(direction));
-            calculate_blocked(mzx_world, x, y, id, _bl);
+
+            // From 2.93 until 2.94, this updated the blocked array WITHOUT
+            // setting update_blocked. Since versions 2.80 until 2.94 leak
+            // update_blocked, this needs to be supported too.
+            if(mzx_world->version >= V283 && mzx_world->version < V294)
+              calculate_blocked(mzx_world, x, y, id, _bl);
+            else
+              update_blocked = true;
           }
         }
         // MZX 2.83 erroneously ended the cycle here, some games depend on it...
@@ -3274,8 +3313,7 @@ void run_robot(context *ctx, int id, int x, int y)
             int duration = parse_param(mzx_world, p2, id);
             shoot_lazer(mzx_world, x, y, dir_to_int(direction),
              duration, level_color[x + (y * board_width)]);
-            // Figure blocked vars
-            update_blocked = 1;
+            update_blocked = true;
           }
         }
         break;
@@ -3359,8 +3397,7 @@ void run_robot(context *ctx, int id, int x, int y)
             // Update position
             program = cur_robot->program_bytecode;
             cmd_ptr = program + cur_robot->cur_prog_line;
-
-            update_blocked = 1;
+            update_blocked = true;
           }
         }
         else
@@ -3399,7 +3436,7 @@ void run_robot(context *ctx, int id, int x, int y)
               return;
             }
 
-            update_blocked = 1;
+            update_blocked = true;
           }
         }
         break;
@@ -3537,8 +3574,14 @@ void run_robot(context *ctx, int id, int x, int y)
                duplicate_x, duplicate_y, 0);
 
               if(dest_id != -1)
+              {
                 place_at_xy(mzx_world, duplicate_id, duplicate_color,
                  dest_id, duplicate_x, duplicate_y);
+
+                // Didn't update the blocked array from 2.80 until 2.94
+                if(mzx_world->version < VERSION_PORT || mzx_world->version >= V294)
+                  update_blocked = 1;
+              }
             }
           }
         }
@@ -3582,6 +3625,10 @@ void run_robot(context *ctx, int id, int x, int y)
           {
             place_at_xy(mzx_world, duplicate_id,
              duplicate_color, dest_id, duplicate_x, duplicate_y);
+
+            // Didn't update the blocked array from 2.80 until 2.94
+            if(mzx_world->version < VERSION_PORT || mzx_world->version >= V294)
+              update_blocked = 1;
           }
         }
         else
@@ -3791,7 +3838,7 @@ void run_robot(context *ctx, int id, int x, int y)
           }
         }
 
-        update_blocked = 1;
+        update_blocked = true;
         break;
       }
 
@@ -4226,7 +4273,7 @@ void run_robot(context *ctx, int id, int x, int y)
           if((d_id != ROBOT && d_id != ROBOT_PUSHABLE) || (d_param != id))
             return;
 
-          update_blocked = 1;
+          update_blocked = true;
         }
         break;
       }
@@ -4399,7 +4446,7 @@ void run_robot(context *ctx, int id, int x, int y)
                 if((d_id != ROBOT && d_id != ROBOT_PUSHABLE) || (d_param != id))
                   return;
               }
-              update_blocked = 1;
+              update_blocked = true;
             }
           }
         }
@@ -4556,7 +4603,7 @@ void run_robot(context *ctx, int id, int x, int y)
             if(!is_robot(d_id))
               return;
 
-            update_blocked = 1;
+            update_blocked = true;
           }
         }
 
@@ -5199,7 +5246,7 @@ void run_robot(context *ctx, int id, int x, int y)
           if(!is_robot(d_id) || (d_param != id))
             return;
 
-          update_blocked = 1;
+          update_blocked = true;
         }
 
         break;
@@ -5256,7 +5303,7 @@ void run_robot(context *ctx, int id, int x, int y)
                (d_id == SENSOR))
               {
                 push(mzx_world, x, y, int_dir, 0);
-                update_blocked = 1;
+                update_blocked = true;
               }
             }
           }
@@ -6172,8 +6219,13 @@ void run_robot(context *ctx, int id, int x, int y)
     if(update_blocked)
     {
       calculate_blocked(mzx_world, x, y, id, _bl);
+      // From 2.80 until 2.93d, this was called unconditionally.
+      find_player(mzx_world);
+
+      // thanks exo
+      if(mzx_world->version < VERSION_PORT || mzx_world->version >= V294)
+        update_blocked = false;
     }
-    find_player(mzx_world);
 
     // Some commands can decrement lines_run, putting it at -1 here,
     // so add 2 to lines_run for the check. Originally this checked every 1 mil
