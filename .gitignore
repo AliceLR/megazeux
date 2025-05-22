@@ -175,6 +175,7 @@ unit/utils/.build/
 /*.js.orig.js
 /*.wasm
 /*.wasm.map
+*.code-workspace
 *.debug
 *.mzx
 *.sav
