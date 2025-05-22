@@ -122,7 +122,7 @@ static void update_caption(void)
   if(caption_world[0])
     caption_append(caption, "%s" CAPTION_SPACER, caption_world);
 
-  caption_append(caption, "%s", get_default_caption());
+  caption_append(caption, "%s", video_get_default_caption());
 
   if(caption_editing)
     caption_append(caption, " (editor)");
@@ -138,7 +138,7 @@ static void update_caption(void)
 #endif /* CONFIG_FPS */
 
   caption[MAX_CAPTION_SIZE - 1] = 0;
-  set_window_caption(caption);
+  video_set_window_caption(NULL, caption);
 }
 
 static void set_caption_world_string(struct world *mzx_world)

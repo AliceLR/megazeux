@@ -34,12 +34,12 @@ struct sdl_render_data
   SDL_Renderer *renderer;
   SDL_Texture *texture[3];
   SDL_Palette *palette;
-  SDL_Window *window;
   SDL_GLContext context;
   SDL_PixelFormatDetails *pixel_format;
 #else
   SDL_Overlay *overlay;
 #endif
+  SDL_Window *window; // always NULL in SDL 1.2
   SDL_Surface *screen;
   SDL_Surface *shadow;
   SDL_Color *palette_colors;
@@ -76,6 +76,10 @@ boolean sdl_create_window_soft(struct graphics_data *graphics,
  struct video_window *window);
 boolean sdl_resize_window(struct graphics_data *graphics,
  struct video_window *window);
+boolean sdl_set_window_caption(struct graphics_data *graphics,
+ struct video_window *window, const char *caption);
+boolean sdl_set_window_icon(struct graphics_data *graphics,
+ struct video_window *window, const char *icon_path);
 
 #if !SDL_VERSION_ATLEAST(2,0,0)
 // Used internally only.
@@ -103,6 +107,9 @@ void sdl_set_texture_scale_mode(struct graphics_data *graphics,
 #endif
 
 #define GL_STRIP_FLAGS(A) ((A & GL_ALLOW_FLAGS) | SDL_WINDOW_OPENGL)
+
+#define gl_set_window_caption sdl_set_window_caption
+#define gl_set_window_icon    sdl_set_window_icon
 
 boolean gl_create_window(struct graphics_data *graphics,
  struct video_window *window, struct gl_version req_ver);

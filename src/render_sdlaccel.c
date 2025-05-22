@@ -786,6 +786,8 @@ void render_sdlaccel_register(struct renderer *renderer)
   renderer->resize_window = sdl_resize_window;
   renderer->resize_callback = sdlaccel_resize_callback;
   renderer->set_viewport = set_window_viewport_scaled;
+  renderer->set_window_caption = sdl_set_window_caption;
+  renderer->set_window_icon = sdl_set_window_icon;
   renderer->update_colors = sdlaccel_update_colors;
   renderer->remap_char_range = sdlaccel_remap_char_range;
   renderer->remap_char = sdlaccel_remap_char;

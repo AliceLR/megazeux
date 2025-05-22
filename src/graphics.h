@@ -130,6 +130,10 @@ struct renderer
   void    (*set_screen_coords)(struct graphics_data *, struct video_window *,
                                 int x, int y, int *screen_x, int *screen_y);
 #endif
+  boolean (*set_window_caption)(struct graphics_data *, struct video_window *,
+                                const char *caption);
+  boolean (*set_window_icon)  (struct graphics_data *, struct video_window *,
+                                const char *icon_path);
   boolean (*set_screen_mode)  (struct graphics_data *, unsigned mode);
   void    (*update_colors)    (struct graphics_data *, struct rgb_color *palette,
                                 unsigned int count);
@@ -348,7 +352,7 @@ CORE_LIBSPEC void m_hide(void);
 CORE_LIBSPEC void m_show(void);
 CORE_LIBSPEC void mouse_size(unsigned int width, unsigned int height);
 
-char *get_default_caption(void);
+const char *video_get_default_caption(void);
 
 void color_string_ext(const char *string, unsigned int x, unsigned int y,
  uint8_t color, boolean allow_newline, unsigned int chr_offset, unsigned int color_offset);
@@ -378,6 +382,8 @@ void video_resize_fullscreen(unsigned window_id,
 void video_toggle_fullscreen(void);
 unsigned video_get_fullscreen_window(void);
 boolean video_is_fullscreen(void);
+boolean video_set_window_caption(struct video_window *window, const char *caption);
+boolean video_set_window_icon(struct video_window *window, const char *icon_file);
 
 void set_screen(struct char_element *src);
 void get_screen(struct char_element *dest);

@@ -61,6 +61,9 @@ USERS
 
 DEVELOPERS
 
++ Added renderer set_window_caption, set_window_icon functions;
+  moved SDL-specific icon functionality out of graphics.c.
++ Failure to query X11 no longer disables the icon in Linux/BSD.
 + manifest.sh no longer requires bash. All scripts and Makefiles
   should now be fully compatible with POSIX sh (with only a few
   GNU extended options remaining where required).

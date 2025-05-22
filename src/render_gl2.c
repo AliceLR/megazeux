@@ -1002,6 +1002,8 @@ void render_gl2_register(struct renderer *renderer)
   renderer->resize_window = gl_resize_window;
   renderer->resize_callback = gl2_resize_callback;
   renderer->set_viewport = set_window_viewport_scaled;
+  renderer->set_window_caption = gl_set_window_caption;
+  renderer->set_window_icon = gl_set_window_icon;
   renderer->update_colors = gl2_update_colors;
   renderer->remap_char_range = gl2_remap_char_range;
   renderer->remap_char = gl2_remap_char;

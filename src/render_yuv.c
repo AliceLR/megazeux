@@ -256,6 +256,8 @@ void render_yuv1_register(struct renderer *renderer)
   renderer->create_window = yuv1_set_video_mode;
   renderer->resize_window = yuv1_set_video_mode;
   renderer->set_viewport = set_window_viewport_scaled;
+  renderer->set_window_caption = sdl_set_window_caption;
+  renderer->set_window_icon = sdl_set_window_icon;
   renderer->update_colors = sdl_update_colors;
   renderer->render_graph = yuv_render_graph;
   renderer->render_layer = yuv1_render_layer;

@@ -318,6 +318,8 @@ void render_gp2x_register(struct renderer *renderer)
   renderer->create_window = gp2x_create_window;
   renderer->resize_window = gp2x_create_window;
   renderer->set_viewport = gp2x_set_window_viewport;
+  renderer->set_window_caption = sdl_set_window_caption;
+  renderer->set_window_icon = sdl_set_window_icon;
   renderer->update_colors = sdl_update_colors;
   renderer->render_graph = gp2x_render_graph;
   renderer->render_cursor = gp2x_render_cursor;

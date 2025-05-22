@@ -308,6 +308,10 @@ void render_soft_register(struct renderer *renderer)
   renderer->create_window = soft_create_window;
   renderer->resize_window = soft_create_window;
   renderer->set_viewport = set_window_viewport_centered;
+#ifdef CONFIG_SDL
+  renderer->set_window_caption = sdl_set_window_caption;
+  renderer->set_window_icon = sdl_set_window_icon;
+#endif
   renderer->update_colors = soft_update_colors;
   renderer->render_graph = soft_render_graph;
   renderer->render_layer = soft_render_layer;

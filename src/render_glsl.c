@@ -1566,6 +1566,8 @@ void render_glsl_register(struct renderer *renderer)
   renderer->resize_window = gl_resize_window;
   renderer->resize_callback = glsl_resize_callback;
   renderer->set_viewport = set_window_viewport_scaled;
+  renderer->set_window_caption = gl_set_window_caption;
+  renderer->set_window_icon = gl_set_window_icon;
   renderer->update_colors = glsl_update_colors;
   renderer->remap_char_range = glsl_remap_char_range;
   renderer->remap_char = glsl_remap_char;

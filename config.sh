@@ -1497,11 +1497,6 @@ if [ "$PLATFORM" = "unix" ] ||
 			echo "Force-disabling X11 (could not be queried)."
 		fi
 	fi
-
-	if [ "$ICON" = "true" ] && [ "$X11" = "false" ]; then
-		echo "Force-disabling icon branding (X11 disabled)."
-		ICON="false"
-	fi
 else
 	echo "Force-disabling X11 (unsupported platform)."
 	X11="false"
