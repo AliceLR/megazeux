@@ -104,6 +104,20 @@ jobs:
       - name: Distclean (OpenMPT)
         run: $MZX_MAKE distclean
 
+  flatpak:
+    runs-on: ubuntu-latest
+    container: freedesktopsdk/flatpak
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and install
+        run: |
+          cd scripts/pkg/flatpak;
+          flatpak-builder --force-clean --sandbox --user --install --install-deps-from=flathub --ccache --mirror-screenshots-url=https://dl.flathub.org/media/ --repo=repo builddir com.digitalmzx.MegaZeux.yml;
+      - name: Export bundle
+        run: |
+          cd scripts/pkg/flatpak;
+          flatpak build-bundle repo mzxgit.flatpak com.digitalmzx.MegaZeux
+
   darwin-arm64:
     runs-on: macos-latest
     steps:
