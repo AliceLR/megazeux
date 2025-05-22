@@ -92,6 +92,8 @@ DEVELOPERS
   [prefix]/share/doc.
 + Fixed ansi.c compilation failure with --disable-datestamp.
 + Updated libxmp to 4.6.3+sample rate patch.
++ Updated dependency builder scripts: SDL3 3.2.14, SDL2 2.32.6,
+  libpng 1.6.48.
 
 
 February 28th, 2025 - MZX 2.93c

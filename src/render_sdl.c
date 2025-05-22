@@ -1046,7 +1046,7 @@ static void find_texture_format(struct graphics_data *graphics,
   uint32_t yuv_priority = YUV_PRIORITY;
   uint32_t priority = 0;
   boolean is_software_renderer = false;
-  const char *renderer_name;
+  const char *renderer_name = NULL;
   int num_formats;
 
 #if SDL_VERSION_ATLEAST(3,0,0)

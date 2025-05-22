@@ -11,7 +11,7 @@ DIST		= megazeux-dependencies-${VERSION}
 TARGET		= TARGET
 
 ZLIB		= zlib-1.3.1
-PNG		= libpng-1.6.47
+PNG		= libpng-1.6.48
 OGG		= libogg-1.3.5
 VORBIS		= libvorbis-1.3.7
 TREMOR		= tremor
@@ -19,8 +19,8 @@ STB		= stb
 SDL12		= SDL-1.2.15
 SDL2_TIGER	= panther_sdl2
 SDL2_22		= SDL2-2.0.22
-SDL2_LATEST	= SDL2-2.32.4
-SDL3		= SDL3-3.2.10
+SDL2_LATEST	= SDL2-2.32.6
+SDL3		= SDL3-3.2.14
 
 # Mac OS X/macOS compatibility builds rely on different versions of SDL2
 # for each architecture. Override ${SDL2} to select a different version.
