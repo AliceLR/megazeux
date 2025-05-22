@@ -32,6 +32,10 @@ boolean gl_create_window(struct graphics_data *graphics,
  struct video_window *window, struct gl_version req_ver);
 boolean gl_resize_window(struct graphics_data *graphics,
  struct video_window *window);
+boolean gl_set_window_caption(struct graphics_data *graphics,
+ struct video_window *window, const char *caption);
+boolean gl_set_window_icon(struct graphics_data *graphics,
+ struct video_window *window, const char *icon_path);
 void gl_set_attributes(struct graphics_data *graphics);
 boolean gl_swap_buffers(struct graphics_data *graphics);
 void gl_cleanup(struct graphics_data *graphics);

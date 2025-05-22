@@ -241,6 +241,20 @@ boolean gl_resize_window(struct graphics_data *graphics,
   return gl_create_window(graphics, window, dummy);
 }
 
+boolean gl_set_window_caption(struct graphics_data *graphics,
+ struct video_window *window, const char *caption)
+{
+  // TODO: implement
+  return false;
+}
+
+boolean gl_set_window_icon(struct graphics_data *graphics,
+ struct video_window *window, const char *icon_path)
+{
+  // TODO: implement
+  return false;
+}
+
 void gl_set_attributes(struct graphics_data *graphics)
 {
   // Note that this function is called twice- both before and after

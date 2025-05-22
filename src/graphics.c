@@ -47,7 +47,6 @@
 
 #ifdef CONFIG_SDL
 #include "SDLmzx.h"
-#include "render_sdl.h"
 #endif // CONFIG_SDL
 
 #include "util.h"
@@ -1479,100 +1478,9 @@ static boolean set_graphics_output(struct config_info *conf)
   return true;
 }
 
-#if defined(CONFIG_PNG) && defined(CONFIG_SDL) && \
-    defined(CONFIG_ICON) && !defined(__WIN32__)
-
-static boolean icon_w_h_constraint(png_uint_32 w, png_uint_32 h)
-{
-  // Icons must be multiples of 16 and square
-  return (w == h) && ((w % 16) == 0) && ((h % 16) == 0);
-}
-
-static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
- png_uint_32 *stride, void **pixels)
-{
-#if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_Surface *s = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_RGBA32);
-#else
-  Uint32 rmask, gmask, bmask, amask;
-  SDL_Surface *s;
-
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-  rmask = 0xff000000;
-  gmask = 0x00ff0000;
-  bmask = 0x0000ff00;
-  amask = 0x000000ff;
-#else
-  rmask = 0x000000ff;
-  gmask = 0x0000ff00;
-  bmask = 0x00ff0000;
-  amask = 0xff000000;
-#endif
-
-  s = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, rmask, gmask, bmask, amask);
-#endif
-  if(!s)
-    return NULL;
-
-  *stride = s->pitch;
-  *pixels = s->pixels;
-  return s;
-}
-
-static SDL_Surface *png_read_icon(const char *name)
-{
-  return png_read_file(name, NULL, NULL, icon_w_h_constraint,
-   sdl_alloc_rgba_surface);
-}
-
-#endif // CONFIG_PNG && CONFIG_SDL && CONFIG_ICON && !__WIN32__
-
-void set_window_caption(const char *caption)
-{
-#ifdef CONFIG_SDL
-  SDL_Window *window = SDL_GetWindowFromID(graphics.window.platform_id);
-  SDL_SetWindowTitle(window, caption);
-#endif
-}
-
-char *get_default_caption(void)
+const char *video_get_default_caption(void)
 {
   return graphics.default_caption;
-}
-
-static void set_window_icon(void)
-{
-#if defined(CONFIG_SDL) && defined(CONFIG_ICON)
-#ifdef __WIN32__
-  {
-    /* Roll our own icon code; the SDL stuff is a mess and for some
-     * reason limits us to 256 colour icons (with keying but no alpha).
-     *
-     * We also pull off some nifty WIN32 hackery to load the executable's
-     * icon resource; saves having an external dependency.
-     */
-    HICON icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(1));
-    if(icon)
-    {
-      SDL_Window *window = SDL_GetWindowFromID(graphics.window.platform_id);
-      SendMessage((HWND)SDL_GetWindowProperty_HWND(window),
-       WM_SETICON, ICON_BIG, (LPARAM)icon);
-    }
-  }
-#else // !__WIN32__
-#if defined(CONFIG_PNG) && defined(ICONFILE)
-  {
-    SDL_Surface *icon = png_read_icon(ICONFILE);
-    if(icon)
-    {
-      SDL_Window *window = SDL_GetWindowFromID(graphics.window.platform_id);
-      SDL_SetWindowIcon(window, icon);
-      SDL_DestroySurface(icon);
-    }
-  }
-#endif // CONFIG_PNG
-#endif // __WIN32__
-#endif // CONFIG_SDL && CONFIG_ICON
 }
 
 static void new_empty_layer(struct video_layer *layer, int x, int y,
@@ -1867,6 +1775,10 @@ static void set_window_ratio(struct video_window *window, enum ratio_type ratio)
   }
 }
 
+#ifndef ICONFILE
+#define ICONFILE NULL
+#endif
+
 unsigned video_create_window(void)
 {
   struct video_window *window = &(graphics.window);
@@ -1896,8 +1808,8 @@ unsigned video_create_window(void)
   if(graphics.renderer.create_window(&graphics, window))
   {
     window->is_init = true;
-    set_window_caption(graphics.default_caption);
-    set_window_icon();
+    video_set_window_caption(window, graphics.default_caption);
+    video_set_window_icon(window, ICONFILE);
 
     // Make sure a BPP was selected by the renderer (if applicable).
     if(window->bits_per_pixel == BPP_AUTO)
@@ -2063,6 +1975,42 @@ unsigned video_get_fullscreen_window(void)
 boolean video_is_fullscreen(void)
 {
   return video_get_fullscreen_window() > 0;
+}
+
+boolean video_set_window_caption(struct video_window *window, const char *caption)
+{
+  if(!window)
+    window = &(graphics.window);
+
+  if(graphics.renderer.set_window_caption)
+  {
+    if(!graphics.renderer.set_window_caption(&graphics, window, caption))
+    {
+      debug("--VIDEO-- video_set_window_caption failed: %s\n",
+       caption ? caption : "NULL");
+      return false;
+    }
+    trace("--VIDEO-- video_set_window_caption: %s\n", caption ? caption : "NULL");
+  }
+  return true;
+}
+
+boolean video_set_window_icon(struct video_window *window, const char *icon_path)
+{
+  if(!window)
+    window = &(graphics.window);
+
+  if(graphics.renderer.set_window_icon)
+  {
+    if(!graphics.renderer.set_window_icon(&graphics, window, icon_path))
+    {
+      debug("--VIDEO-- video_set_window_icon failed: %s\n",
+       icon_path ? icon_path : "NULL");
+      return false;
+    }
+    trace("--VIDEO-- video_set_window_icon: %s\n", icon_path ? icon_path : "NULL");
+  }
+  return true;
 }
 
 boolean change_video_output(struct config_info *conf, const char *output)

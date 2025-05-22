@@ -553,6 +553,125 @@ void sdl_destruct_window(struct graphics_data *graphics)
   render_data->flat_format = NULL;
 }
 
+boolean sdl_set_window_caption(struct graphics_data *graphics,
+ struct video_window *window, const char *caption)
+{
+  struct sdl_render_data *render_data = graphics->render_data;
+
+#if SDL_VERSION_ATLEAST(3,0,0)
+  if(!SDL_SetWindowTitle(render_data->window, caption))
+  {
+    debug("failed SDL_SetWindowTitle: %s\n", SDL_GetError());
+    return false;
+  }
+#else
+  SDL_SetWindowTitle(render_data->window, caption);
+#endif
+  return true;
+}
+
+#if defined(CONFIG_PNG) && defined(CONFIG_ICON) && !defined(_WIN32)
+#include "pngops.h"
+
+static boolean icon_w_h_constraint(png_uint_32 w, png_uint_32 h)
+{
+  // Icons must be multiples of 16 and square
+  return (w == h) && ((w % 16) == 0) && ((h % 16) == 0);
+}
+
+static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
+ png_uint_32 *stride, void **pixels)
+{
+#if SDL_VERSION_ATLEAST(2,0,0)
+  SDL_Surface *s = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_RGBA32);
+#else
+  Uint32 rmask, gmask, bmask, amask;
+  SDL_Surface *s;
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+  rmask = 0xff000000;
+  gmask = 0x00ff0000;
+  bmask = 0x0000ff00;
+  amask = 0x000000ff;
+#else
+  rmask = 0x000000ff;
+  gmask = 0x0000ff00;
+  bmask = 0x00ff0000;
+  amask = 0xff000000;
+#endif
+
+  s = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, rmask, gmask, bmask, amask);
+#endif
+  if(!s)
+    return NULL;
+
+  *stride = s->pitch;
+  *pixels = s->pixels;
+  return s;
+}
+
+static SDL_Surface *png_read_icon(const char *name)
+{
+  return png_read_file(name, NULL, NULL, icon_w_h_constraint,
+   sdl_alloc_rgba_surface);
+}
+#endif // CONFIG_PNG && CONFIG_ICON && !_WIN32
+
+boolean sdl_set_window_icon(struct graphics_data *graphics,
+ struct video_window *window, const char *icon_path)
+{
+#ifdef CONFIG_ICON
+  struct sdl_render_data *render_data = graphics->render_data;
+  /* This function may be a NOP for some configurations. */
+  (void)render_data;
+
+#ifdef _WIN32
+  {
+    /* Load the icon directly from the executable resource. */
+    HICON icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(1));
+    if(icon)
+    {
+      SendMessage((HWND)SDL_GetWindowProperty_HWND(render_data->window),
+       WM_SETICON, ICON_BIG, (LPARAM)icon);
+      return true;
+    }
+    else
+      debug("failed to open embedded icon\n");
+  }
+#else // !_WIN32
+#if defined(CONFIG_PNG) && defined(ICONFILE)
+  {
+    SDL_Surface *icon;
+    if(!icon_path)
+    {
+      warn("NULL icon path, report this!\n");
+      return false;
+    }
+
+    icon = png_read_icon(ICONFILE);
+    if(icon)
+    {
+#if SDL_VERSION_ATLEAST(3,0,0)
+      if(!SDL_SetWindowIcon(render_data->window, icon))
+      {
+        debug("failed SDL_SetWindowIcon: %s\n", SDL_GetError());
+        return false;
+      }
+#else
+      SDL_SetWindowIcon(render_data->window, icon);
+#endif
+      SDL_DestroySurface(icon);
+      return true;
+    }
+    else
+      warn("failed to open icon file '%s'\n", ICONFILE);
+  }
+#endif // CONFIG_PNG
+#endif // !_WIN32
+#endif // CONFIG_ICON
+  return false;
+}
+
 void sdl_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, unsigned int count)
 {
