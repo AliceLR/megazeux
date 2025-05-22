@@ -26,7 +26,7 @@ jobs:
       - name: Build and install
         run: |
           cd scripts/pkg/flatpak;
-          flatpak-builder --force-clean --sandbox --user --install --install-deps-from=flathub --ccache --mirror-screenshots-url=https://dl.flathub.org/media/ --repo=repo builddir com.digitalmzx.MegaZeux.yml;
+          flatpak-builder --force-clean --sandbox --user --install --ccache --mirror-screenshots-url=https://dl.flathub.org/media/ --repo=repo builddir com.digitalmzx.MegaZeux.yml
       - name: Export bundle
         run: |
           cd scripts/pkg/flatpak;
