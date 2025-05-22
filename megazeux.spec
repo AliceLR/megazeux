@@ -14,6 +14,7 @@ BuildRequires:	SDL3-devel
 BuildRequires:	libvorbis-devel
 BuildRequires:	libpng-devel
 BuildRequires:	zlib-devel
+BuildRequires:	libappstream-glib
 
 %description
 
@@ -38,7 +39,8 @@ See https://www.digitalmzx.com/ for more information.
             --libdir %{_libdir} \
             --gamesdir %{_bindir} \
             --sharedir %{_datadir} \
-            --licensedir %{_datadir}/license \
+            --licensedir %{_datadir}/licenses \
+            --metainfodir %{_metainfodir} \
             --bindir %{_datadir}/megazeux/bin \
             --sysconfdir %{_sysconfdir}
 %make_build
@@ -46,6 +48,7 @@ See https://www.digitalmzx.com/ for more information.
 %install
 rm -rf "$RPM_BUILD_ROOT"
 %make_install V=1
+appstream-util validate-relax %{buildroot}%{_metainfodir}/megazeux.metainfo.xml
 
 %check
 %make_build test
@@ -63,11 +66,15 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_datadir}/applications/megazeux.desktop
 %{_datadir}/applications/mzxrun.desktop
 %{_datadir}/doc/megazeux
-%{_datadir}/license/megazeux
+%{_datadir}/licenses/megazeux
 %{_datadir}/icons/hicolor/128x128/apps/megazeux.png
+%{_metainfodir}/megazeux.metainfo.xml
 %{_sysconfdir}/megazeux-config
 
 %changelog
+#* TBA May 00 2025 Alice Rowan <petrifiedrowan@gmail.com> 2.93d-1
+#- new upstream version, add megazeux.metainfo.xml, fix licenses dir.
+
 * Fri Feb 28 2025 Alice Rowan <petrifiedrowan@gmail.com> 2.93c-1
 - new upstream version, switch to SDL3
 

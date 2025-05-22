@@ -319,7 +319,11 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     vfputc(0x1A, vf);
     snprintf(buffer, ARRAY_SIZE(buffer),
       "COMNT%-64.64sSAUCE00%-35.35s%-20.20s%-20.20s%-8.8s",
+#ifdef VERSION_DATE
       "Created with MegaZeux " VERSION VERSION_DATE ".", // Comment line 1.
+#else
+      "Created with MegaZeux " VERSION ".",
+#endif
       title,
       author,
       "",     // Group

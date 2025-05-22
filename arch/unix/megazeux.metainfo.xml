@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2025 Lachesis -->
+<component type="desktop-application">
+  <id>megazeux</id>
+  <metadata_license>CC-BY-SA-4.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+  <name>MegaZeux</name>
+  <summary>Text mode game creation system</summary>
+  <developer id="com.digitalmzx">
+    <name>MegaZeux developers</name>
+  </developer>
+  <description>
+    <p>
+      MegaZeux is a spiritual successor to ZZT originally written for DOS
+      in 1994. MegaZeux allows playing and creating games based
+      on&#x2104;but no longer limited to&#x2104;VGA 80x25 text mode graphics.
+      MegaZeux includes a built-in editor and supports rudimentary scripting.
+    </p>
+    <p>
+      Hundreds of games have been created for MegaZeux,
+      and are available for download at no charge from DigitalMZX.
+    </p>
+    <p>
+      Supported platforms include Linux/BSD, Windows, macOS, MS-DOS, Wasm,
+      Android, Haiku, and numerous games consoles and handhelds.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">megazeux.desktop</launchable>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#99bbbb</color>
+    <color type="primary" scheme_preference="dark">#181830</color>
+  </branding>
+  <content_rating type="oars-1.1" />
+
+  <url type="homepage">https://www.digitalmzx.com</url>
+  <url type="bugtracker">https://github.com/AliceLR/megazeux</url>
+  <url type="help">https://www.digitalmzx.com/mzx_help.html</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>
+        A typical MegaZeux game with text mode graphics (Weirdness, Chapter I by Alexis Janson)
+      </caption>
+      <image>https://www.digitalmzx.com/metainfo/gameplay.png</image>
+    </screenshot>
+
+    <screenshot>
+      <caption>
+        Example of a game using extended graphical features (Pandemonium Buster by Lancer-X and Maxim)
+      </caption>
+      <image>https://www.digitalmzx.com/metainfo/gameplay2.png</image>
+    </screenshot>
+
+    <screenshot>
+      <caption>
+        MegaZeux editor with a game open for editing (MegaZeux Tutorial by Alexis Janson)
+      </caption>
+      <image>https://www.digitalmzx.com/metainfo/editor.png</image>
+    </screenshot>
+
+    <screenshot>
+      <caption>
+        MegaZeux graphics are based on editing text mode characters (xxy by Lachesis)
+      </caption>
+      <image>https://www.digitalmzx.com/metainfo/charedit.png</image>
+    </screenshot>
+
+    <screenshot>
+      <caption>
+        Robot editor showing an example Robotic script (Zeux II: Caverns of Zeux by Alexis Janson)
+      </caption>
+      <image>https://www.digitalmzx.com/metainfo/robotic.png</image>
+    </screenshot>
+  </screenshots>
+
+  <provides>
+    <binary>megazeux</binary>
+    <binary>mzxrun</binary>
+  </provides>
+
+  <recommends>
+    <control>keyboard</control>
+    <control>gamepad</control>
+  </recommends>
+  <supports>
+    <control>pointing</control>
+    <control>touch</control>
+  </supports>
+
+  <releases>
+    <release version="2.93c" date="2025-02-28">
+      <description>
+        <p>
+          A bugfix release focused primarily on portability fixes. Longstanding
+          bugs related to window resizing that affect Linux in particular have
+          been fixed. Regressions involving the editor "show thing" shortcuts
+          and text input have been fixed. New features include SDL3 support and
+          restored support for some older Sound Blaster cards in the DOS port.
+        </p>
+      </description>
+    </release>
+
+    <!-- See the MegaZeux help file or docs/changelog.txt for all releases
+         from Aug. 2004 onward.
+
+         See the MegaZeux help file or release notes bundled with old
+         version archives for releases from Dec. 1994 to July 2004. -->
+  </releases>
+
+  <update_contact>petrifiedrowan_AT_gmail.com</update_contact>
+</component>
