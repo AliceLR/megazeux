@@ -586,7 +586,7 @@ Home page:     https://github.com/devkitPro/libctru
 ----------------------------------------------------------------
 
 libogc consists primarily of code from RTEMS (GPLv2-or-later with
-linking exception plus various permissive licenses, unattributed),
+linking exception plus various permissive licenses, partially attributed),
 possibly with a small portion of Linux code (GPLv2-only, unattributed).
 The remainder is available under various zlib licenses.
 
