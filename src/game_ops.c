@@ -1128,6 +1128,12 @@ enum move_status move(struct world *mzx_world, int x, int y, int dir,
   char *level_param = src_board->level_param;
   char *level_color = src_board->level_color;
 
+  /* Can't move to invalid directions. This was implicit prior to
+   * 2.93d for all things capable of moving in invalid directions
+   * (ShootingFire, Missile, Pusher, and SpittingTiger) */
+  if((unsigned)dir > 3)
+    return HIT;
+
   if(xy_shift_dir(src_board, x, y, &dx, &dy, dir))
   {
     // Hit edge

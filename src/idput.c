@@ -67,6 +67,54 @@ unsigned char id_dmg[ID_DMG_SIZE];
 unsigned char bullet_color[ID_BULLET_COLOR_SIZE] = { 15, 15, 15 };
 unsigned char missile_color = 8;
 
+/* Simulate DOS-era reads of id_chars, which was a single 455 byte array.
+ * This is only accurate for out-of-bounds reads when drawing unusual thing
+ * parameters until 2.51s3.
+ *
+ * 0-127:   ID chars (0-127)
+ * 128-322: ID animations (except bullet colors and missile color)
+ * 323:     missile color (until 2.51s3, unused after)
+ * 324-326: bullet colors (until 2.51s3.1, unused after)
+ * 327-454: ID damages 0-127 (until 2.51s3.1, unused after)
+ *
+ * 455-909: out of bounds default ID chars (until 2.51s3).
+ * 455-:    out of bounds misc pointers and various other things (2.51s3+)
+ */
+static unsigned char get_id_char_by_legacy_index(unsigned index)
+{
+  if(index < ID_CHARS_SIZE)
+    return id_chars[index];
+
+  if(index == ID_MISSILE_COLOR_POS)
+    return missile_color;
+
+  if(index < ID_DMG_POS)
+    return bullet_color[index - ID_BULLET_COLOR_POS];
+
+  if(index < ID_CHARS_TOTAL_SIZE)
+    return id_dmg[index - ID_DMG_POS];
+
+  return 255;
+}
+
+void set_id_char_by_legacy_index(unsigned index, unsigned char value)
+{
+  if(index < ID_CHARS_SIZE)
+    id_chars[index] = value;
+  else
+
+  if(index == ID_MISSILE_COLOR_POS)
+    missile_color = value;
+  else
+
+  if(index < ID_DMG_POS)
+    bullet_color[index - ID_BULLET_COLOR_POS] = value;
+  else
+
+  if(index < ID_CHARS_TOTAL_SIZE)
+    id_dmg[index - ID_DMG_POS] = value;
+}
+
 static unsigned char get_special_id_char(struct board *src_board,
  enum thing cell_id, char param, int offset)
 {
@@ -184,12 +232,14 @@ static unsigned char get_special_id_char(struct board *src_board,
 
     case ICE:
     {
-      return id_chars[ice_anim + param];
+      /* Allowed OOB until 2.93d */
+      return get_id_char_by_legacy_index(ice_anim + param);
     }
 
     case LAVA:
     {
-      return id_chars[lava_anim + param];
+      /* Allowed OOB until 2.93d */
+      return get_id_char_by_legacy_index(lava_anim + param);
     }
 
     case AMMO:
@@ -220,12 +270,14 @@ static unsigned char get_special_id_char(struct board *src_board,
 
     case CW_ROTATE:
     {
-      return id_chars[cw_anim + param];
+      /* Allowed OOB until 2.93d */
+      return get_id_char_by_legacy_index(cw_anim + param);
     }
 
     case CCW_ROTATE:
     {
-      return id_chars[ccw_anim + param];
+      /* Allowed OOB until 2.93d */
+      return get_id_char_by_legacy_index(ccw_anim + param);
     }
 
     case TRANSPORT:
@@ -249,7 +301,8 @@ static unsigned char get_special_id_char(struct board *src_board,
     case MISSILE:
     case SPIKE:
     {
-      return id_chars[thick_arrow + param];
+      /* Allowed OOB until 2.93d */
+      return get_id_char_by_legacy_index(thick_arrow + param);
     }
 
     case LAZER:
@@ -262,22 +315,26 @@ static unsigned char get_special_id_char(struct board *src_board,
 
     case BULLET:
     {
-      return id_chars[bullet_char + param];
+      /* Allowed OOB until 2.93d */
+      return get_id_char_by_legacy_index(bullet_char + param);
     }
 
     case FIRE:
     {
-      return id_chars[fire_anim + param];
+      /* Allowed OOB until 2.93d */
+      return get_id_char_by_legacy_index(fire_anim + param);
     }
 
     case LIFE:
     {
-      return id_chars[life_anim + param];
+      /* Allowed OOB until 2.93d */
+      return get_id_char_by_legacy_index(life_anim + param);
     }
 
     case RICOCHET_PANEL:
     {
-      return id_chars[ricochet_panels + param];
+      /* Allowed OOB until 2.93d */
+      return get_id_char_by_legacy_index(ricochet_panels + param);
     }
 
     case MINE:
@@ -339,7 +396,8 @@ static unsigned char get_special_id_color(struct board *src_board,
   switch(cell_id)
   {
     case ENERGIZER:
-      spec_color = id_chars[energizer_glow + param];
+      /* Allowed OOB until 2.93d */
+      spec_color = get_id_char_by_legacy_index(energizer_glow + param);
       break;
 
     case EXPLOSION:
@@ -347,11 +405,13 @@ static unsigned char get_special_id_color(struct board *src_board,
       break;
 
     case FIRE:
-      spec_color = id_chars[fire_colors + param];
+      /* Allowed OOB until 2.93d */
+      spec_color = get_id_char_by_legacy_index(fire_colors + param);
       break;
 
     case LIFE:
-      spec_color = id_chars[life_colors + param];
+      /* Allowed OOB until 2.93d */
+      spec_color = get_id_char_by_legacy_index(life_colors + param);
       break;
 
     case WHIRLPOOL_1:
@@ -362,7 +422,7 @@ static unsigned char get_special_id_color(struct board *src_board,
       break;
 
     case SHOOTING_FIRE:
-      spec_color = id_chars[shooting_fire_colors + (param&1)];
+      spec_color = id_chars[shooting_fire_colors + (param & 1)];
       break;
 
     case SEEKER:
