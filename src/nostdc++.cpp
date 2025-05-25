@@ -46,7 +46,7 @@ extern "C" CORE_LIBSPEC void __cxa_deleted_virtual()
   exit(1);
 }
 
-CORE_LIBSPEC void *operator new(size_t count) noexcept
+CORE_LIBSPEC void *operator new(size_t count)
 {
   void *ptr = cmalloc(count);
   if(!ptr)
@@ -59,7 +59,7 @@ CORE_LIBSPEC void *operator new(size_t count) noexcept
   return ptr;
 }
 
-CORE_LIBSPEC void *operator new[](size_t count) noexcept
+CORE_LIBSPEC void *operator new[](size_t count)
 {
   void *ptr = cmalloc(count);
   if(!ptr)
