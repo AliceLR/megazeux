@@ -315,15 +315,18 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
 
     total_len = vftell(vf);
 
+// macOS makes snprintf a macro for some reason so define this separately.
+#ifdef VERSION_DATE
+#define COMMENT_LINE "Created with MegaZeux " VERSION VERSION_DATE "."
+#else
+#define COMMENT_LINE "Created with MegaZeux " VERSION "."
+#endif
+
     // SAUCE record.
     vfputc(0x1A, vf);
     snprintf(buffer, ARRAY_SIZE(buffer),
       "COMNT%-64.64sSAUCE00%-35.35s%-20.20s%-20.20s%-8.8s",
-#ifdef VERSION_DATE
-      "Created with MegaZeux " VERSION VERSION_DATE ".", // Comment line 1.
-#else
-      "Created with MegaZeux " VERSION ".",
-#endif
+      COMMENT_LINE, // Comment line 1.
       title,
       author,
       "",     // Group
