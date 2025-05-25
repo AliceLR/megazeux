@@ -96,79 +96,83 @@ struct context_data
 #ifdef CONFIG_FPS
 #define FPS_HISTORY_SIZE 5
 #define FPS_INTERVAL 1000
+#include <math.h>
+
+struct fps_history_entry
+{
+  int frames;
+  int delta;
+  double ratio;
+};
 
 static double average_fps;
 
 /**
  * Track the current speed MegaZeux is running in cycles.
  */
-static void update_fps(int current_ticks)
+static void update_fps(int64_t current_ticks)
 {
-  static int fps_previous_ticks = -1;
-  static int fps_history[FPS_HISTORY_SIZE];
-  static int fps_history_count;
+  static struct fps_history_entry history[FPS_HISTORY_SIZE];
+  static int64_t fps_previous_ticks = -1;
   static int frames_counted;
-  int total_fps;
-  int min_fps;
-  int max_fps;
+  static int pos;
   int i;
 
   int delta_ticks = current_ticks - fps_previous_ticks;
+  frames_counted++;
 
   if(fps_previous_ticks == -1)
   {
     fps_previous_ticks = current_ticks;
-    frames_counted = 0;
-    for(i = 0; i < FPS_HISTORY_SIZE; i++)
-      fps_history[i] = -1;
   }
   else
 
   if(delta_ticks >= FPS_INTERVAL)
   {
-    for(i = FPS_HISTORY_SIZE - 1; i >= 1; i--)
-    {
-      fps_history[i] = fps_history[i - 1];
-    }
+    double min_ratio = INFINITY;
+    double max_ratio = -INFINITY;
+    int min_pos = 0;
+    int max_pos = 0;
+    int total_frames = 0;
+    int total_delta = 0;
+    int count = 0;
 
-    fps_history[0] = frames_counted;
-    min_fps = fps_history[0];
-    max_fps = fps_history[0];
-    total_fps = 0;
-    fps_history_count = 0;
+    history[pos].frames = frames_counted;
+    history[pos].delta = delta_ticks;
+    history[pos].ratio = (double)frames_counted / (double)delta_ticks;
+    if((++pos) >= FPS_HISTORY_SIZE)
+      pos = 0;
 
     for(i = 0; i < FPS_HISTORY_SIZE; i++)
     {
-      if(fps_history[i] > -1)
+      if(history[i].delta <= 0)
+        continue;
+
+      if(history[i].ratio > max_ratio)
       {
-        if(fps_history[i] > max_fps)
-          max_fps = fps_history[i];
-
-        if(fps_history[i] < min_fps)
-          min_fps = fps_history[i];
-
-        total_fps += fps_history[i];
-        fps_history_count++;
+        max_ratio = history[i].ratio;
+        max_pos = i;
       }
+      if(history[i].ratio < min_ratio)
+      {
+        min_ratio = history[i].ratio;
+        min_pos = i;
+      }
+      total_frames += history[i].frames;
+      total_delta += history[i].delta;
+      count++;
     }
-    // Subtract off highest and lowest scores (outliers)
-    total_fps -= max_fps;
-    total_fps -= min_fps;
-    if(fps_history_count > 2)
+    if(count > 2)
     {
-      average_fps =
-        1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
+      // Subtract off highest and lowest scores (outliers)
+      total_frames -= history[min_pos].frames + history[max_pos].frames;
+      total_delta -= history[min_pos].delta + history[max_pos].delta;
+      average_fps = (double)total_frames * 1000.0 / (double)total_delta;
 
       caption_set_fps(average_fps);
     }
-    fps_previous_ticks += FPS_INTERVAL;
-
+    fps_previous_ticks = current_ticks;
     frames_counted = 0;
-  }
-
-  else
-  {
-    frames_counted++;
   }
 }
 #endif
@@ -1017,12 +1021,12 @@ void core_run(core_context *root)
   // this doesn't break MZX, this function stops once the number of contexts
   // on the stack has dropped below the initial value.
   int initial_stack_size = root->stack.size;
-  int start_ticks;
-  int delta_ticks;
-  int total_ticks;
+  int64_t start_ticks;
+  int64_t delta_ticks;
+  int64_t total_ticks;
   boolean need_update_screen = true;
 #ifdef __EMSCRIPTEN__
-  int emscripten_prev_ticks = get_ticks();
+  uint64_t emscripten_prev_ticks = get_ticks();
 #endif
 
   // If there aren't any contexts on the stack, there's no reason to be here.

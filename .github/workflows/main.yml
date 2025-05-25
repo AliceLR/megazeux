@@ -103,6 +103,14 @@ jobs:
         run: $MZX_MAKE test
       - name: Distclean (OpenMPT)
         run: $MZX_MAKE distclean
+      - name: Configure (debug)
+        run: ./config.sh --platform unix-devel --disable-release --enable-trace --enable-fps
+      - name: Build (debug)
+        run: $MZX_MAKE
+      - name: Run tests (debug)
+        run: $MZX_MAKE test
+      - name: Distclean (debug)
+        run: $MZX_MAKE distclean
 
   darwin-arm64:
     runs-on: macos-latest
