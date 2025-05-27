@@ -41,6 +41,15 @@ USERS
 + Fixed bug where, after Alt+R or failure to reload __TEST.MZX,
   the editor would not mark the new blank world as active. This
   would cause the screen to not be drawn during Alt+T testing.
++ SpittingTigers that shoot fire now play the fire sound effect.
++ Fixed out-of-bounds array reads when a Missile with an invalid
+  parameter attempted to turn after colliding with itself (no
+  compatibility checks for old behavior).
++ Fixed out-of-bounds array reads when reading the char of or
+  displaying (no compat checks): Ice, Lava, CWRotate, CCWRotate,
+  Pusher, Missile, Spike, Bullet, Fire, Life, RicochetPanel.
++ Fixed out-of-bounds array reads when reading the color of or
+  displaying (no compat checks): Energizer, Fire, Life.
 + Software layer renderer performance enhancements for repeat
   colors, clipping, and unaligned renderering.
 + Unaligned software layer rendering using 64-bit writes is

@@ -504,13 +504,14 @@ void update_board(context *ctx)
         {
           enum move_status status;
           // Get direction
-          enum dir direction = (enum dir)(current_param >> 1);
+          int m_dir = current_param >> 1;
           // Flip animation and store
           current_param ^= 1;
           level_param[level_offset] = current_param;
           // Try moving
 
-          status = move(mzx_world, x, y, direction,
+          /* Note: directions >3 always result in a self-collision. */
+          status = move(mzx_world, x, y, m_dir,
            CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK |
            REACT_PLAYER | CAN_GOOPWALK | SPITFIRE);
 
@@ -549,21 +550,26 @@ void update_board(context *ctx)
 
         case MISSILE:
         {
+          enum move_status status = HIT_PLAYER;
           int move_params =
            CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK |
            REACT_PLAYER | CAN_GOOPWALK;
 
           // Param is the direction
-          enum move_status status = move(mzx_world, x, y,
-           current_param, move_params);
+          /* Note: directions >3 always result in a self collision.
+           * Rotating an invalid direction is also an invalid direction,
+           * so skip all of the checks and just explode if this happens.
+           * Rotating an invalid direction would read junk prior to 2.93d */
+          if((unsigned)current_param <= 3)
+            status = move(mzx_world, x, y, current_param, move_params);
+
           // Did it hit something that's not the player?
           if((status == HIT) || (status == HIT_EDGE))
           {
             // Otherwise change direction; try cw then ccw
             int new_direction = cwturndir[(int)current_param];
             level_param[level_offset] = new_direction;
-            status = move(mzx_world, x, y, new_direction,
-             move_params);
+            status = move(mzx_world, x, y, new_direction, move_params);
             // Did it hit something that's not the player? Try ccw.
             if((status == HIT) || (status == HIT_EDGE))
             {
@@ -641,6 +647,7 @@ void update_board(context *ctx)
 
         case PUSHER:
         {
+          /* Note: directions >3 always result in a self-collision. */
           if(!slow_down)
             move(mzx_world, x, y, current_param, CAN_PUSH);
 
@@ -1010,12 +1017,10 @@ void update_board(context *ctx)
 
         case FISH:
         {
-          unsigned int m_dir;
-
           // Is the cycle count ready or is fast movement on?
           if((current_param & 0x10) || !(current_param & 0x08))
           {
-            m_dir = level_under_id[level_offset] - 21;
+            unsigned m_dir = (unsigned)(level_under_id[level_offset] - N_WATER);
 
             // Toggle cycle flipflop off
             level_param[level_offset] = current_param & 0xEF;
@@ -1301,6 +1306,7 @@ void update_board(context *ctx)
             if(shoot_type == 16)
             {
               shoot_fire(mzx_world, new_x, new_y, m_dir);
+              play_sfx(mzx_world, SFX_DRAGON_FIRE);
             }
             else
             {
@@ -1580,15 +1586,14 @@ void update_board(context *ctx)
         case W_MOVING_WALL:
         {
           // Get direction
-          current_id = (enum thing)((int)current_id - N_MOVING_WALL);
+          int m_dir = (int)current_id - N_MOVING_WALL;
           // Try the move
-          if(move(mzx_world, x, y, current_id, CAN_PUSH |
+          if(move(mzx_world, x, y, m_dir, CAN_PUSH |
            CAN_TRANSPORT | CAN_LAVAWALK | CAN_FIREWALK |
            CAN_WATERWALK) != NO_HIT)
           {
             // Can't move; try other direction
-            level_id[level_offset] =
-             ((int)flip_dir(current_id) + N_MOVING_WALL);
+            level_id[level_offset] = flip_dir(m_dir) + N_MOVING_WALL;
           }
           break;
         }
