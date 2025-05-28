@@ -3,6 +3,12 @@ GIT - MZX 2.94
 FIXES
 
 + TODO: 2.94 enables board message clipping bugfixes from 2.93b.
++ TODO: 2.94 fixes update_blocked never being cleared.
++ TODO: 2.94 fixes player position being tested every command.
++ TODO: 2.94 fixes IF DIR OF PLAYER using the robot blocked
+  flags instead of blocked flags generated from the player pos.
++ TODO: 2.94 fixes DUPLICATE SELF X Y and DUPLICATE SELF DIR
+  not updating the blocked array.
 
 
 GIT - MZX 2.93d
