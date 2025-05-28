@@ -60,6 +60,7 @@ struct board
   int collect_bombs;
   int fire_burns;
   int dragons_can_randomly_move;
+  int spittingtiger_moves;
   int board_dir[4];
   int restart_if_zapped;
   int reset_on_entry;
