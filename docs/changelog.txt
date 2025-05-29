@@ -3,6 +3,8 @@ GIT - MZX 2.94
 FIXES
 
 + TODO: 2.94 enables board message clipping bugfixes from 2.93b.
++ TODO: 2.94 fixes tiger self destruct behavior by default (2.93d).
++ TODO: 2.94 should allow configuration of tiger behavior per-board.
 
 
 GIT - MZX 2.93d
@@ -41,6 +43,10 @@ USERS
 + Fixed bug where, after Alt+R or failure to reload __TEST.MZX,
   the editor would not mark the new blank world as active. This
   would cause the screen to not be drawn during Alt+T testing.
++ SpittingTigers from pre-2.80 worlds no longer move slower than
+  they're supposed to with low intelligence, and no longer shoot
+  themselves on these buggy idle cycles when "Enemies' bullets
+  hurt other enemies" is enabled.
 + SpittingTigers that shoot fire now play the fire sound effect.
 + Fixed out-of-bounds array reads when a Missile with an invalid
   parameter attempted to turn after colliding with itself (no

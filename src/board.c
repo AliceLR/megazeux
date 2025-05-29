@@ -279,6 +279,10 @@ void default_board_settings(struct world *mzx_world, struct board *cur_board)
   cur_board->fire_burns = 0;
   cur_board->dragons_can_randomly_move =
    (mzx_world->version < VERSION_PORT || mzx_world->version >= V293) ? true : false;
+  cur_board->spittingtiger_moves =
+   (mzx_world->version >= V294)         ? SPITTINGTIGER_MOVES_SLOWLY :
+   (mzx_world->version >= VERSION_PORT) ? SPITTINGTIGER_MOVES_SLOWLY_SELF_DESTRUCTS
+                                        : SPITTINGTIGER_MOVES_NORMALLY;
   cur_board->board_dir[0] = NO_BOARD;
   cur_board->board_dir[1] = NO_BOARD;
   cur_board->board_dir[2] = NO_BOARD;

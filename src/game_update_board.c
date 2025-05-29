@@ -1246,6 +1246,7 @@ void update_board(context *ctx)
           int new_x = 0, new_y = 0;
           int fire_rate;
           int shoot_type;
+          boolean no_shoot = false;
 
           if(slow_down) break;
 
@@ -1258,7 +1259,19 @@ void update_board(context *ctx)
           }
           else
           {
-            m_dir = Random(8);
+            // From 2.80 until 2.94, SpittingTigers used the wrong value here,
+            // resulting in directions 4-7. Invalid dirs result in no movement
+            // and self-destruction with bullets when Enemies Hurt Enemies is on.
+            if(src_board->spittingtiger_moves >= SPITTINGTIGER_MOVES_SLOWLY)
+            {
+              m_dir = Random(8);
+              // 2.94+: allow enabling slow tigers without the self-destruct bug.
+              if(m_dir > 3 && src_board->spittingtiger_moves <
+               SPITTINGTIGER_MOVES_SLOWLY_SELF_DESTRUCTS)
+                no_shoot = true;
+            }
+            else
+              m_dir = Random(4);
           }
 
           // Hit player and die
@@ -1293,7 +1306,7 @@ void update_board(context *ctx)
           rval = Random(32);
 
           // Is the random number <= the rate? Also, does it shoot?
-          if((rval <= fire_rate) && (shoot_type != 24))
+          if((rval <= fire_rate) && (shoot_type != 24) && !no_shoot)
           {
             // Shoot seeker
             if(shoot_type == 8)

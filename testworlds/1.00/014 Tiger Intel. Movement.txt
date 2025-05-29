@@ -1,0 +1,3 @@
+Title: SpittingTiger Intelligence/Movement Test (1.00)
+Author: Alice Rowan
+Desc: There are 20 tigers on the board for each of the 8 possible intelligence levels. Every single one of them should move on the first cycle and none should self-destruct when they shoot. This test requires 'Enemies hurt enemies' enabled.

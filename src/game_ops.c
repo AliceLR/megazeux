@@ -311,7 +311,7 @@ int find_seek(struct world *mzx_world, int x, int y)
 
   if(dir)
   {
-    // Horizontal movement
+    // Dir becomes up or down.
     if(player_y < y)
     {
       return 0;
@@ -323,7 +323,7 @@ int find_seek(struct world *mzx_world, int x, int y)
   }
   else
   {
-    // Vertical movement
+    // Dir becomes left or right.
     if(player_x < x)
     {
       return 3;

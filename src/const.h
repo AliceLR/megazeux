@@ -64,6 +64,13 @@ enum
   OVERLAY_MODE_MASK = 0x03
 };
 
+enum spittingtiger_moves
+{
+  SPITTINGTIGER_MOVES_NORMALLY              = 0,
+  SPITTINGTIGER_MOVES_SLOWLY                = 1,
+  SPITTINGTIGER_MOVES_SLOWLY_SELF_DESTRUCTS = 2
+};
+
 enum
 {
   PLAYER_BULLET,
