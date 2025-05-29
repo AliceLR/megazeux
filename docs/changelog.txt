@@ -74,6 +74,8 @@ USERS
   a root with no trailing slash.
 + Unsupported mouse button presses are now ignored.
 + Fixed the window icon for Flatpak builds.
++ Fixed the directory mentioned in the PS Vita README.md
+  (claimed "ux0:/data/MegaZeux", actually "ux0:/data/megazeux").
 
 DEVELOPERS
 
