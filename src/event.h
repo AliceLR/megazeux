@@ -31,7 +31,7 @@ __M_BEGIN_DECLS
 #define UPDATE_DELAY 16
 
 #define KEY_REPEAT_STACK_SIZE 32
-#define KEY_UNICODE_MAX 16
+#define KEY_UNICODE_MAX 1024
 
 #define STATUS_NUM_KEYCODES 512
 
@@ -66,10 +66,11 @@ struct buffered_status
   enum keycode key;
   enum keycode key_repeat;
   enum keycode key_release;
-  uint32_t unicode[KEY_UNICODE_MAX];
+  uint32_t *unicode;
   uint32_t unicode_repeat;
   int unicode_pos;
   int unicode_length;
+  int unicode_alloc;
   uint32_t keypress_time;
   int mouse_x;
   int mouse_y;

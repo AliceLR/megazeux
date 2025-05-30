@@ -136,6 +136,7 @@ const struct buffered_status *load_status(void)
 static void bump_status(void)
 {
   unsigned int last_store_offset = input.store_offset;
+  uint32_t *unicode;
 
   input.store_offset = (input.store_offset + 1) % num_buffered_events;
   input.load_offset = (input.store_offset + 1) % num_buffered_events;
@@ -143,9 +144,12 @@ static void bump_status(void)
   // No event buffering; nothing to do
   if(input.store_offset == input.load_offset)
     return;
+
   // Some events can "echo" from the previous buffer
+  unicode = store_status()->unicode;
   memcpy(store_status(), &input.buffer[last_store_offset],
          sizeof(struct buffered_status));
+  store_status()->unicode = unicode;
 }
 
 void init_event(struct config_info *conf)
@@ -1159,7 +1163,19 @@ void key_press_unicode(struct buffered_status *status, uint32_t unicode,
   {
     if(status->unicode_length < KEY_UNICODE_MAX)
     {
-      status->unicode[status->unicode_length++] = unicode;
+      if(status->unicode_length >= status->unicode_alloc)
+      {
+        int alloc = MAX(4, status->unicode_alloc << 1);
+        uint32_t *unicode =
+         (uint32_t *)crealloc(status->unicode, alloc * sizeof(uint32_t));
+        if(unicode)
+        {
+          status->unicode = unicode;
+          status->unicode_alloc = alloc;
+        }
+      }
+      if(status->unicode_length < status->unicode_alloc)
+        status->unicode[status->unicode_length++] = unicode;
     }
     else
       status->unicode[KEY_UNICODE_MAX - 1] = unicode;

@@ -1367,6 +1367,13 @@ static boolean process_event(SDL_Event *event)
       }
 #endif
 
+#ifdef CONFIG_PSVITA
+      // Vita SDL keyboard will send an enter press immediately following
+      // text input, which screws up several things. Suppress this:
+      if(ckey == IKEY_RETURN && has_unicode_input())
+        break;
+#endif
+
       // Some platforms don't implement SDL_TEXTINPUT (SDL 2.0) or the unicode
       // field (SDL 1.2); until usage of those is detected, fake the text key
       // using the internal keycode.
