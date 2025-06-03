@@ -800,7 +800,7 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
       case MINE:
       {
         // Turn into explosion
-        level_id[d_offset] = 38;
+        level_id[d_offset] = EXPLOSION;
         // Get rid of count and anim fields in param
         level_param[d_offset] = d_param & 0xF0;
         play_sfx(mzx_world, SFX_EXPLOSION);

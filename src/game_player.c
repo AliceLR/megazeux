@@ -717,7 +717,7 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
       {
         // Light bomb
         play_sfx(mzx_world, SFX_PLACE_LO_BOMB);
-        cur_board->level_id[offset] = 37;
+        cur_board->level_id[offset] = LIT_BOMB;
         cur_board->level_param[offset] = param << 7;
       }
       break;
@@ -783,7 +783,7 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
         set_mesg(mzx_world, "You open the door.");
       }
 
-      cur_board->level_id[offset] = 42;
+      cur_board->level_id[offset] = OPEN_DOOR;
       cur_board->level_param[offset] = (param & 7);
 
       if(move(mzx_world, x, y, door_first_movement[param & 7],
@@ -791,7 +791,7 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
       {
         set_mesg(mzx_world, "The door is blocked from opening!");
         play_sfx(mzx_world, SFX_DOOR_LOCKED);
-        level_id[offset] = 41;
+        level_id[offset] = DOOR;
         level_param[offset] = param & 7;
       }
       else
@@ -1108,11 +1108,7 @@ void move_player(struct world *mzx_world, int dir)
     {
       // Sensor
       // Activate label and then move player
-      int d_param = src_board->level_param[d_offset];
-      send_robot(mzx_world,
-       (src_board->sensor_list[d_param])->robot_to_mesg,
-       "SENSORON", 0);
-
+      step_sensor(mzx_world, src_board->level_param[d_offset]);
       place_player(mzx_world, new_x, new_y, dir);
       return;
     }
