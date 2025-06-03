@@ -50,6 +50,41 @@ enum sauce_flags
 static const char ansi_csi_prefix[3] = "\x1b[";
 
 /**
+ * Convert a reserved character into the closest CP-437 equivalent.
+ *
+ * @param chr     character to convert, 0-255.
+ * @return        `chr`, or the closest equivalent if `chr` is reserved.
+ */
+static int convert_reserved_character(int chr)
+{
+  switch(chr)
+  {
+    case '\0':
+      return ' ';   // blank (nul) -> space
+    case '\a':
+      return 249;   // bullet (bell) -> interpunct
+    case '\b':
+      return 219;   // inverted bullet (backspace) -> block
+    case '\t':
+      return 'o';   // circle (tab) -> lowercase o
+    case '\n':
+      return 219;   // inverted cricle (line feed) -> block
+    /* TODO: MegaZeux wasn't stripping this, should it be?
+    case '\f':
+      return 157;   // female sign (form feed) -> yen
+    */
+    case '\r':
+      return 14;    // single 8th note (carriage return) -> double 8th note
+    /* TODO: need more investigation for this one. */
+    case 26:
+      return '-';   // right thin arrow (EOF for some implementations) -> dash
+    case 27:
+      return '-';   // left thin arrow (escape) -> dash
+  }
+  return chr;
+}
+
+/**
  * Output meta codes to transform the current color into the destination color.
  *
  * @param curr    color to change from.
@@ -156,7 +191,7 @@ static ssize_t issue_color_meta_codes(int curr, int dest, vfile *vf)
  */
 boolean export_ansi(struct world *mzx_world, const char *filename,
  enum editor_mode mode, int start_x, int start_y, int width, int height,
- boolean text_only, const char *title, const char *author)
+ boolean text_only, boolean doorway_mode, const char *title, const char *author)
 {
   struct board *cur_board = mzx_world->current_board;
   vfile *vf;
@@ -164,7 +199,7 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
   int x, y, line_size;
   int terminal_width = -1;
   int curr_color;
-  int col, chr;
+  int col, chr, replace_chr;
   int offset;
   int board_width;
   int line_skip;
@@ -199,12 +234,22 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     vfwrite("2J", 1, 2, vf);
     line_size += 8;
 
+    if(doorway_mode)
+    {
+      /* Enable Doorway mode. */
+      vfwrite(ansi_csi_prefix, 1, 2, vf);
+      vfwrite("=255h", 1, 5, vf);
+      line_size += 7;
+    }
+
     /**
      * TODO: it might be useful to allow a user-specified width here so e.g.
      * line ends are inserted.
      */
     terminal_width = width;
   }
+  else
+    doorway_mode = false;
 
   // Longest meta code issuable is \x1b[0;5;1;30;40m, or 14 characters.
   for(y = 0; y < height; y++)
@@ -242,30 +287,16 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
       curr_color = col;
 
       // Print alternate characters for reserved chars.
-      switch(chr)
+      replace_chr = convert_reserved_character(chr);
+      if(replace_chr != chr && doorway_mode)
       {
-        case '\0':
-          chr = ' ';
-          break;
-        case '\a':
-          chr = 249;
-          break;
-        case '\b':
-          chr = 219;
-          break;
-        case '\t':
-          chr = 'o';
-          break;
-        case '\n':
-          chr = 219;
-          break;
-        case '\r':
-          chr = 14;
-          break;
-        case 27: // ESC
-          chr = '-';
-          break;
+        /* Doorway mode: write nul to escape reserved character. */
+        vfputc(0, vf);
+        line_size++;
       }
+      else
+        chr = replace_chr;
+
       vfputc(chr, vf);
       line_size++;
 
@@ -308,6 +339,13 @@ boolean export_ansi(struct world *mzx_world, const char *filename,
     color_size = issue_color_meta_codes(curr_color, 7, vf);
     if(color_size < 0)
       goto err;
+
+    if(doorway_mode)
+    {
+      /* Disable Doorway mode. */
+      vfwrite(ansi_csi_prefix, 1, 2, vf);
+      vfwrite("=255l", 1, 5, vf);
+    }
 
     t = time(NULL);
     tm = localtime(&t);
@@ -396,6 +434,7 @@ struct ansi_data
   enum ansi_erase erase_display;
   enum ansi_erase erase_line;
   boolean is_scan;
+  boolean doorway_mode;
 };
 
 static const struct ansi_data default_state =
@@ -411,6 +450,7 @@ static const struct ansi_data default_state =
   EOL_UNKNOWN,
   ANSI_NO_ERASE,
   ANSI_NO_ERASE,
+  false,
   false
 };
 
@@ -531,8 +571,23 @@ static int read_ansi(struct ansi_data *ansi, vfile *vf)
   }
   else
 
+  // Nul (escape if Doorway mode is active; otherwise print a space).
+  if(sym == '\0')
+  {
+    if(ansi->doorway_mode)
+    {
+      sym = vfgetc(vf);
+      return sym >= 0 ? sym : ANSI_EOF;
+    }
+  }
+  else
+
+  // TODO: handle bell/backspace/form feed/tab instead of printing them?
+
   if(sym == 0x1A)
   {
+    // TODO: TYPE treats this as an unconditional EOF, PabloDraw refuses to
+    // load it, and other sources claim it's just a display character.
     return ANSI_EOF;
   }
   else
@@ -549,7 +604,18 @@ static int read_ansi(struct ansi_data *ansi, vfile *vf)
     sym = vfgetc(vf);
     if(sym == '[')
     {
-      // CSI sequence.
+      /**
+       * CSI sequence.
+       *
+       * TODO: not following the spec, which is:
+       * Format: any number of characters 0x30 - 0x3f;
+       *         any number of characters 0x20 - 0x2f;
+       *         terminating byte         0x40 - 0x7e;
+       *         any sequence which includes <=>? or ends in p-z{|}~ is
+       *         "private" (the only supported one here is Doorway mode).
+       *         If the parameter doesn't start with <=>?, it should only
+       *         contain 0-9 and ;.
+       */
       int param[32] =
       {
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -561,6 +627,37 @@ static int read_ansi(struct ansi_data *ansi, vfile *vf)
       sym = vfgetc(vf);
       while(1)
       {
+        if(sym == '=')
+        {
+          // The only extension commands supported in this format are
+          // =255h (begin Doorway mode) and =255l (end Doorway mode).
+          if(vfgetc(vf) != '2')
+            return ANSI_ERROR;
+          if(vfgetc(vf) != '5')
+            return ANSI_ERROR;
+          if(vfgetc(vf) != '5')
+            return ANSI_ERROR;
+
+          sym = vfgetc(vf);
+          if(sym == 'h')
+          {
+            trace("--ANSI-- enabled Doorway mode.\n");
+            ansi->doorway_mode = true;
+            return ANSI_ESCAPE;
+          }
+          else
+
+          if(sym == 'l')
+          {
+            trace("--ANSI-- disabled Doorway mode.\n");
+            ansi->doorway_mode = false;
+            return ANSI_ESCAPE;
+          }
+          else
+            return ANSI_ERROR;
+        }
+        else
+
         if(sym == ';')
         {
           // End param.

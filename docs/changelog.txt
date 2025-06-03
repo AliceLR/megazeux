@@ -56,6 +56,12 @@ USERS
   Pusher, Missile, Spike, Bullet, Fire, Life, RicochetPanel.
 + Fixed out-of-bounds array reads when reading the color of or
   displaying (no compat checks): Energizer, Fire, Life.
++ ANSi export now replaces char 26 with a dash to avoid import
+  bugs and conflicts with other software.
++ Added ANSi export support for Doorway mode, a non-standard
+  ANSI extension that allows displaying control characters that
+  would otherwise get stripped out. MegaZeux now supports
+  loading ANSi files that use Doorway mode, as well.
 + Software layer renderer performance enhancements for repeat
   colors, clipping, and unaligned renderering.
 + Unaligned software layer rendering using 64-bit writes is
