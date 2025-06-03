@@ -34,7 +34,7 @@ boolean import_ansi(struct world *mzx_world, const char *filename,
 
 boolean export_ansi(struct world *mzx_world, const char *filename,
  enum editor_mode mode, int start_x, int start_y, int width, int height,
- boolean text_only, const char *title, const char *author);
+ boolean text_only, boolean doorway_mode, const char *title, const char *author);
 
 __M_END_DECLS
 

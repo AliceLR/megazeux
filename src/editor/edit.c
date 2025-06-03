@@ -199,6 +199,7 @@ struct editor_context
   int ansi_line_wrap_column; // = 80
   boolean ansi_line_wrap;
   boolean ansi_save_text_only;
+  boolean ansi_save_doorway_mode;
   char ansi_save_title[36];
   char ansi_save_author[21];
 
@@ -2485,10 +2486,15 @@ static boolean editor_key(context *ctx, int *key)
             char author[ARRAY_SIZE(editor->ansi_save_author)];
             char export_name[MAX_PATH];
             int text_only = editor->ansi_save_text_only;
+            int doorway_mode = editor->ansi_save_doorway_mode;
             static const char *radio_strings[] =
             {
               "Save ANSi",
               "Save TXT"
+            };
+            static const char *checkbox_strings[] =
+            {
+              "Doorway mode"
             };
             struct element *elements[] =
             {
@@ -2496,6 +2502,8 @@ static boolean editor_key(context *ctx, int *key)
                9, &text_only),
               construct_input_box(23, 19, "Title (ANSi):", ARRAY_SIZE(title) - 1, title),
               construct_input_box(22, 20, "Author (ANSi):", ARRAY_SIZE(author) - 1, author),
+              construct_check_box(58, 20, checkbox_strings, ARRAY_SIZE(checkbox_strings),
+               12, &doorway_mode),
             };
 
             memcpy(export_name, editor->mzm_name_buffer, MAX_PATH);
@@ -2511,9 +2519,11 @@ static boolean editor_key(context *ctx, int *key)
               memcpy(editor->ansi_save_title, title, ARRAY_SIZE(title));
               memcpy(editor->ansi_save_author, author, ARRAY_SIZE(author));
               editor->ansi_save_text_only = text_only;
+              editor->ansi_save_doorway_mode = doorway_mode;
 
               export_ansi(mzx_world, export_name, editor->mode, block->src_x,
-               block->src_y, block->width, block->height, text_only, title, author);
+               block->src_y, block->width, block->height, text_only, doorway_mode,
+               title, author);
             }
             block->selected = false;
             editor->cursor_mode = CURSOR_PLACE;
