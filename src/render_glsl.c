@@ -182,6 +182,8 @@ static struct
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
+  void (GL_APIENTRY *glClearColor)(GLclampf red, GLclampf green,
+   GLclampf blue, GLclampf alpha);
   void (GL_APIENTRY *glCompileShader)(GLuint shader);
   void (GL_APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
    GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height,
@@ -250,6 +252,7 @@ static const struct dso_syms_map glsl_syms_map[] =
   { "glBindTexture",              { &glsl.glBindTexture }},
   { "glBlendFunc",                { &glsl.glBlendFunc }},
   { "glClear",                    { &glsl.glClear }},
+  { "glClearColor",               { &glsl.glClearColor }},
   { "glCompileShader",            { &glsl.glCompileShader }},
   { "glCopyTexImage2D",           { &glsl.glCopyTexImage2D }},
   { "glCreateProgram",            { &glsl.glCreateProgram }},
@@ -784,6 +787,13 @@ static boolean glsl_resize_callback(struct graphics_data *graphics,
   glsl.glViewport(0, 0, width, height);
   gl_check_error();
 
+  // Initial clear color <0,0,0,0> may be interpreted as transparent (Wayland).
+  glsl.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  gl_check_error();
+  // Clear entire window to prevent background leak-through.
+  glsl.glClear(GL_COLOR_BUFFER_BIT);
+  gl_check_error();
+
   // Free any preexisting textures if they exist
   glsl.glDeleteTextures(NUM_TEXTURES, render_data->textures);
   gl_check_error();
@@ -799,7 +809,8 @@ static boolean glsl_resize_callback(struct graphics_data *graphics,
 
   glsl.glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
 
-  memset(render_data->pixels, 255,
+  // Fill the entire screen texture transparent to avoid edge leak-through.
+  memset(render_data->pixels, 0,
    sizeof(uint32_t) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
 
   glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GL_POWER_2_WIDTH,
