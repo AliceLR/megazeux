@@ -116,7 +116,7 @@ DEVELOPERS
 + Fixed ansi.c compilation failure with --disable-datestamp.
 + More accurate FPS counter for --enable-fps.
 + Updated libxmp to 4.6.3+sample rate patch.
-+ Updated dependency builder scripts: SDL3 3.2.14, SDL2 2.32.6,
++ Updated dependency builder scripts: SDL3 3.2.16, SDL2 2.32.8,
   libpng 1.6.48.
 
 
