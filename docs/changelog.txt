@@ -11,6 +11,8 @@ GIT - MZX 2.93d
 
 USERS
 
++ MegaZeux on Android no longer overwrites config.txt if it has
+  more recent changes than the copy in assets.zip.
 + Added support for system screen keyboards for SDL. This allows
   opening the system screen keyboards with the Android and Vita
   ports, as well as some Linux configurations e.g. Steam Deck.

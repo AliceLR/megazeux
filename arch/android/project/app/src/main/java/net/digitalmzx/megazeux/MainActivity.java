@@ -120,7 +120,7 @@ public class MainActivity extends Activity
         {
           if(target.exists())
           {
-            if(target.lastModified() == entry.getTime())
+            if(target.lastModified() >= entry.getTime())
               continue;
           }
 
