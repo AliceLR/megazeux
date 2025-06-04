@@ -52,6 +52,8 @@ static struct
 {
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
+  void (GL_APIENTRY *glClearColor)(GLclampf red, GLclampf green,
+   GLclampf blue, GLclampf alpha);
   void (GL_APIENTRY *glDeleteTextures)(GLsizei n, GLuint *textures);
   void (GL_APIENTRY *glDisableClientState)(GLenum cap);
   void (GL_APIENTRY *glDrawArrays)(GLenum mode, GLint first, GLsizei count);
@@ -81,6 +83,7 @@ static const struct dso_syms_map gl1_syms_map[] =
 {
   { "glBindTexture",        { &gl1.glBindTexture }},
   { "glClear",              { &gl1.glClear }},
+  { "glClearColor",         { &gl1.glClearColor }},
   { "glDeleteTextures",     { &gl1.glDeleteTextures }},
   { "glDisableClientState", { &gl1.glDisableClientState }},
   { "glDrawArrays",         { &gl1.glDrawArrays }},
@@ -151,6 +154,15 @@ static boolean gl1_resize_callback(struct graphics_data *graphics,
  struct video_window *window)
 {
   struct gl1_render_data *render_data = graphics->render_data;
+
+  // Initial clear color <0,0,0,0> may be interpreted as transparent (Wayland).
+  gl1.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  gl_check_error();
+  // Clear entire window to prevent background leak-through.
+  gl1.glViewport(0, 0, window->width_px, window->height_px);
+  gl_check_error();
+  gl1.glClear(GL_COLOR_BUFFER_BIT);
+  gl_check_error();
 
   gl1.glViewport(window->viewport_x, window->viewport_y,
    window->viewport_width, window->viewport_height);
@@ -263,13 +275,8 @@ static void gl1_update_colors(struct graphics_data *graphics,
   unsigned int i;
   for(i = 0; i < count; i++)
   {
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-    graphics->flat_intensity_palette[i] = (palette[i].r << 24) |
-     (palette[i].g << 16) | (palette[i].b << 8);
-#else
-    graphics->flat_intensity_palette[i] = (palette[i].b << 16) |
-     (palette[i].g << 8) | palette[i].r;
-#endif
+    graphics->flat_intensity_palette[i] = gl_pack_u32((0xff << 24) |
+     (palette[i].b << 16) | (palette[i].g << 8) | palette[i].r);
   }
 }
 

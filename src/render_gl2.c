@@ -78,6 +78,8 @@ static struct
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
+  void (GL_APIENTRY *glClearColor)(GLclampf red, GLclampf green,
+   GLclampf blue, GLclampf alpha);
   void (GL_APIENTRY *glColorPointer)(GLint size, GLenum type, GLsizei stride,
    const GLvoid *pointer);
   void (GL_APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
@@ -115,6 +117,7 @@ static const struct dso_syms_map gl2_syms_map[] =
   { "glBindTexture",        { &gl2.glBindTexture }},
   { "glBlendFunc",          { &gl2.glBlendFunc }},
   { "glClear",              { &gl2.glClear }},
+  { "glClearColor",         { &gl2.glClearColor }},
   { "glColorPointer",       { &gl2.glColorPointer }},
   { "glCopyTexImage2D",     { &gl2.glCopyTexImage2D }},
   { "glDeleteTextures",     { &gl2.glDeleteTextures }},
@@ -274,6 +277,15 @@ static boolean gl2_resize_callback(struct graphics_data *graphics,
   struct gl2_render_data *render_data = graphics->render_data;
   int charset_width, charset_height;
 
+  // Initial clear color <0,0,0,0> may be interpreted as transparent (Wayland).
+  gl2.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  gl_check_error();
+  // Clear entire window to prevent background leak-through.
+  gl2.glViewport(0, 0, window->width_px, window->height_px);
+  gl_check_error();
+  gl2.glClear(GL_COLOR_BUFFER_BIT);
+  gl_check_error();
+
   // If the window is exactly 640x350, then any filtering is useless.
   // Turning filtering off here might speed things up.
   //
@@ -314,7 +326,8 @@ static boolean gl2_resize_callback(struct graphics_data *graphics,
   gl2.glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
   gl_check_error();
 
-  memset(render_data->pixels, 255,
+  // Fill the entire screen texture transparent to avoid edge leak-through.
+  memset(render_data->pixels, 0,
    sizeof(uint32_t) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
 
   gl2.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GL_POWER_2_WIDTH,
