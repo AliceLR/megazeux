@@ -62,6 +62,7 @@ enum resource_id
 {
   MZX_EXECUTABLE_DIR = 0,
   CONFIG_TXT,
+  MZX_ICON_PNG,
   MZX_DEFAULT_CHR,
   MZX_EDIT_CHR,
   SMZX_PAL,

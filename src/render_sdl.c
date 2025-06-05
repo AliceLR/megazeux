@@ -638,8 +638,7 @@ boolean sdl_set_window_icon(struct graphics_data *graphics,
     else
       debug("failed to open embedded icon\n");
   }
-#else // !_WIN32
-#if defined(CONFIG_PNG) && defined(ICONFILE)
+#elif defined(CONFIG_PNG) // !_WIN32
   {
     SDL_Surface *icon;
     if(!icon_path)
@@ -648,7 +647,7 @@ boolean sdl_set_window_icon(struct graphics_data *graphics,
       return false;
     }
 
-    icon = png_read_icon(ICONFILE);
+    icon = png_read_icon(icon_path);
     if(icon)
     {
 #if SDL_VERSION_ATLEAST(3,0,0)
@@ -664,10 +663,9 @@ boolean sdl_set_window_icon(struct graphics_data *graphics,
       return true;
     }
     else
-      warn("failed to open icon file '%s'\n", ICONFILE);
+      warn("failed to open icon file '%s'\n", icon_path);
   }
-#endif // CONFIG_PNG
-#endif // !_WIN32
+#endif // !_WIN32 && !CONFIG_PNG
 #endif // CONFIG_ICON
   return false;
 }
