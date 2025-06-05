@@ -1775,10 +1775,6 @@ static void set_window_ratio(struct video_window *window, enum ratio_type ratio)
   }
 }
 
-#ifndef ICONFILE
-#define ICONFILE NULL
-#endif
-
 unsigned video_create_window(void)
 {
   struct video_window *window = &(graphics.window);
@@ -1809,7 +1805,7 @@ unsigned video_create_window(void)
   {
     window->is_init = true;
     video_set_window_caption(window, graphics.default_caption);
-    video_set_window_icon(window, ICONFILE);
+    video_set_window_icon(window, mzx_res_get_by_id(MZX_ICON_PNG));
 
     // Make sure a BPP was selected by the renderer (if applicable).
     if(window->bits_per_pixel == BPP_AUTO)

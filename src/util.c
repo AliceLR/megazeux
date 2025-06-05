@@ -50,10 +50,10 @@ struct mzx_resource
   char *path;
 
   /* So mzxrun requires fewer files even in CONFIG_EDITOR=1 build */
-  boolean editor_only;
+  const boolean editor_only;
 
   /* Optional resource--do not abort if not found, but print a warning. */
-  boolean optional;
+  const boolean optional;
 };
 
 /* Using C99 initializers would be nicer here, but MSVC doesn't support
@@ -65,8 +65,12 @@ struct mzx_resource
 static struct mzx_resource mzx_res[] =
 {
 #define ASSETS "assets/"
+#ifndef ICONFILE
+#define ICONFILE NULL
+#endif
   { "(binpath)",                        NULL, false, true },
   { CONFFILE,                           NULL, false, false },
+  { ICONFILE,                           NULL, false, true },
   { ASSETS "default.chr",               NULL, false, false },
   { ASSETS "edit.chr",                  NULL, false, false },
   { ASSETS "smzx.pal",                  NULL, false, false },
@@ -273,7 +277,7 @@ int mzx_res_init(const char *argv0, boolean editor)
    */
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
-    size_t base_name_len = strlen(mzx_res[i].base_name);
+    size_t base_name_len;
     size_t full_path_len;
     size_t p_dir_len;
 
@@ -281,6 +285,31 @@ int mzx_res_init(const char *argv0, boolean editor)
     {
       // Special--this was already determined above if applicable.
       mzx_res[i].path = bin_path;
+      continue;
+    }
+
+    if(!mzx_res[i].base_name)
+      continue;
+
+    base_name_len = strlen(mzx_res[i].base_name);
+
+    // Path may be an absolute path.
+    if(mzx_res[i].base_name[0] == '/')
+    {
+      full_path_len = base_name_len + 1;
+      full_path = cmalloc(full_path_len);
+
+      if(path_clean_slashes_copy(full_path, full_path_len,
+       mzx_res[i].base_name) > 0)
+      {
+        if(!vstat(full_path, &file_info))
+        {
+          mzx_res[i].path = full_path;
+          continue;
+        }
+      }
+      // Do not attempt to load absolute files relatively.
+      free(full_path);
       continue;
     }
 
@@ -341,13 +370,18 @@ int mzx_res_init(const char *argv0, boolean editor)
 
       if(mzx_res[i].optional)
       {
-        warn("Failed to locate non-critical resource '%s'\n",
-         mzx_res[i].base_name);
+        if(!mzx_res[i].base_name)
+        {
+          trace("--RES-- %d -> NULL\n", i);
+          continue;
+        }
+        warn("Failed to locate non-critical resource (%d) '%s'\n",
+         i, mzx_res[i].base_name);
         continue;
       }
 
-      warn("Failed to locate critical resource '%s'.\n",
-       mzx_res[i].base_name);
+      warn("Failed to locate critical resource (%d) '%s'.\n",
+       i, mzx_res[i].base_name);
       ret = 1;
     }
     else
