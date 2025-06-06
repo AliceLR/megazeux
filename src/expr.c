@@ -600,8 +600,11 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         len = buf_alloc - buf_pos;
       }
 
-      memcpy(buf_pos, src, len);
-      buf_pos += len;
+      if(len)
+      {
+        memcpy(buf_pos, src, len);
+        buf_pos += len;
+      }
       continue;
     }
 
@@ -1863,8 +1866,8 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
 
         if(is_string(name_translated))
         {
-          get_string(mzx_world, name_translated, &string, id);
-          output_string(&output, &output_left, string.value, string.length);
+          if(get_string(mzx_world, name_translated, &string, id))
+            output_string(&output, &output_left, string.value, string.length);
         }
         else
         {
@@ -1898,8 +1901,8 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
 
         if(is_string(name_translated))
         {
-          get_string(mzx_world, name_translated, &string, id);
-          output_string(&output, &output_left, string.value, string.length);
+          if(get_string(mzx_world, name_translated, &string, id))
+            output_string(&output, &output_left, string.value, string.length);
           expression = next;
         }
         else
@@ -2091,15 +2094,16 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
           // Write the value of the counter name
           struct string str_src;
 
-          get_string(mzx_world, name_buffer, &str_src, 0);
+          if(get_string(mzx_world, name_buffer, &str_src, 0))
+          {
+            name_length = str_src.length;
 
-          name_length = str_src.length;
+            if(dest_pos + name_length >= ROBOT_MAX_TR)
+              name_length = ROBOT_MAX_TR - dest_pos - 1;
 
-          if(dest_pos + name_length >= ROBOT_MAX_TR)
-            name_length = ROBOT_MAX_TR - dest_pos - 1;
-
-          memcpy(buffer + dest_pos, str_src.value, name_length);
-          dest_pos += name_length;
+            memcpy(buffer + dest_pos, str_src.value, name_length);
+            dest_pos += name_length;
+          }
         }
         else
 
