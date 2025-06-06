@@ -345,18 +345,11 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
           {
             int old_position = currx;
 
-            if(!isalnum((int)string[currx]))
-            {
-              while(currx && !isalnum((int)string[currx]))
-              {
-                currx--;
-              }
-            }
+            while(currx && !isalnum((int)string[currx]))
+              currx--;
 
             while(currx && isalnum((int)string[currx]))
-            {
               currx--;
-            }
 
             curr_len -= old_position - currx;
 
@@ -583,33 +576,24 @@ void intake_sync(subcontext *sub)
  */
 static void intake_skip_back(struct intake_subcontext *intk)
 {
-  char *current_position;
+  char *next_position;
   int pos = intk->pos;
 
   if(pos)
   {
-    current_position = intk->dest + pos;
+    next_position = intk->dest + pos - 1;
 
-    if(pos)
-      current_position--;
-
-    if(!isalnum((int)*current_position))
+    while(pos && !isalnum((int)*next_position))
     {
-      while(pos && !isalnum((int)*current_position))
-      {
-        current_position--;
-        pos--;
-      }
+      next_position--;
+      pos--;
     }
 
-    do
+    while(pos && isalnum((int)*next_position))
     {
-      current_position--;
+      next_position--;
       pos--;
-    } while(pos && isalnum((int)*current_position));
-
-    if(pos < 0)
-      pos = 0;
+    }
 
     intake_set_pos(intk, pos);
   }
