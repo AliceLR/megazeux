@@ -236,28 +236,19 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
           // Find nearest space to the left
           if(currx)
           {
-            char *current_position = string + currx;
+            char *next_position = string + currx - 1;
 
-            if(currx)
-              current_position--;
-
-            if(!isalnum((int)*current_position))
+            while(currx && !isalnum((int)*next_position))
             {
-              while(currx && !isalnum((int)*current_position))
-              {
-                current_position--;
-                currx--;
-              }
+              next_position--;
+              currx--;
             }
 
-            do
+            while(currx && isalnum((int)*next_position))
             {
-              current_position--;
+              next_position--;
               currx--;
-            } while(currx && isalnum((int)*current_position));
-
-            if(currx < 0)
-              currx = 0;
+            }
           }
         }
         else
