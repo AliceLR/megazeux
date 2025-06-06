@@ -39,6 +39,12 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
 CORE_LIBSPEC char *tr_msg_ext(struct world *mzx_world, char *mesg, int id,
  char *buffer, char terminating_char);
 
+static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
+ char *buffer)
+{
+  return tr_msg_ext(mzx_world, mesg, id, buffer, 0);
+}
+
 /* Guard against division by 0 and dividing INT_MIN by -1. */
 static inline int safe_divide_32(int a, int b)
 {
@@ -134,12 +140,6 @@ static inline char *tr_int_to_hex_string(char dest[9], int value, size_t *len)
 
   *len = dest + 8 - pos;
   return pos;
-}
-
-static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
- char *buffer)
-{
-  return tr_msg_ext(mzx_world, mesg, id, buffer, 0);
 }
 
 __M_END_DECLS
