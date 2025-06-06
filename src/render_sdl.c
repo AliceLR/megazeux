@@ -654,6 +654,7 @@ boolean sdl_set_window_icon(struct graphics_data *graphics,
       if(!SDL_SetWindowIcon(render_data->window, icon))
       {
         debug("failed SDL_SetWindowIcon: %s\n", SDL_GetError());
+        SDL_DestroySurface(icon);
         return false;
       }
 #else

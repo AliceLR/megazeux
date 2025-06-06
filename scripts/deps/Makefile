@@ -411,7 +411,7 @@ else
 	cd build/${VORBIS}; \
 	set -e; \
 	${ARCH_INIT}; \
-	${CONFIGURE}; \
+	${CONFIGURE} --disable-oggtest; \
 	${MAKE}; \
 	${MAKE} install;
 endif
