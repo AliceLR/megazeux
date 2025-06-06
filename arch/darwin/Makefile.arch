@@ -18,7 +18,7 @@ STDLIB          ?=
 else
 ARM64_CFLAGS    ?= -arch arm64
 ARM64E_CFLAGS   ?= -arch arm64e
-X86_CFLAGS      ?= -arch i686
+X86_CFLAGS      ?= -arch i386
 X86_64_CFLAGS   ?= -arch x86_64
 X86_64H_CFLAGS  ?= -arch x86_64h
 endif

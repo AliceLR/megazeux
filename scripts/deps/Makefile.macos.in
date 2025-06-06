@@ -51,7 +51,10 @@ ARCH_CMAKE_ARGS = \
 
 # CMAKE_OSX_ARCHITECTURES is required to make libpng successfully link ARM.
 # However, this breaks PowerPC64.
-ifeq ($(filter ppc ppc64,${ARCH}),)
+# CMake 3.31 tries to check -arch arguments and refuses to accept i686 now
+# (doesn't seem to be aware that i686 is an alias for i386), so do not
+# use ${ARCH} in this case either.
+ifeq ($(filter ppc ppc64 i686,${ARCH}),)
 ARCH_CMAKE_ARGS += -D CMAKE_OSX_ARCHITECTURES="${ARCH}"
 endif
 
