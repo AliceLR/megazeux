@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2017-2025 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -2831,7 +2832,7 @@ static int escape_chars(char *dest, char *src, int escape_char,
 
   if(src[0] == '\\')
   {
-    if(escape_interpolation && ((src[1] == '(') || (src[1] == '<') || src[1] == '>'))
+    if(escape_interpolation && (src[1] == '{' || src[1] == '}'))
     {
       *dest = src[1];
       return 2;
@@ -3100,7 +3101,7 @@ static char *get_interpolation_expression(char *src)
   boolean numeric_only;
 
   // Now keep going until we hit the end.
-  while(*next != '>')
+  while(*next != '}')
   {
     next = skip_whitespace(next);
 
@@ -3150,7 +3151,7 @@ static char *get_interpolation_expression(char *src)
         if(!is_string_valued_ident(next + 1, next_next - next - 1, false))
         {
           // Numeric expression without parentheses?
-          next_next = get_expression(next, ',', '>');
+          next_next = get_expression(next, ',', '}');
           if(next_next <= next)
             return src;
         }
@@ -3173,7 +3174,7 @@ static char *get_interpolation_expression(char *src)
          !is_string_valued_ident(next, next_next - next, true))
         {
           // Numeric expression without parentheses?
-          next_next = get_expression(next, ',', '>');
+          next_next = get_expression(next, ',', '}');
           if(next_next <= next)
             return src;
         }
@@ -3189,7 +3190,7 @@ static char *get_interpolation_expression(char *src)
 
     // Find comma or terminating >.
     next = skip_whitespace(next);
-    if(*next != ',' && *next != '>')
+    if(*next != ',' && *next != '}')
       return src;
     if(*next == ',')
       next++;
@@ -3207,34 +3208,18 @@ static char *get_character_interpolated(char *src, char terminator,
 
   while(current_char && (current_char != terminator))
   {
-    if(current_char == '(')
+    if(current_char == '}')
     {
-      if((next[1] == '#') || (next[1] == '+'))
-        next = get_expression(next + 2, ')', ')');
-      else
-        next = get_expression(next + 1, ')', ')');
-
-      num_expressions++;
-      if(*next != ')')
-      {
-        *contains_expressions = -num_expressions;
-        return src;
-      }
-    }
-    else
-
-    if(current_char == '>')
-    {
-      // Unescaped > is a compile error.
+      // Unescaped } is a compile error.
       return src;
     }
     else
 
-    if(current_char == '<')
+    if(current_char == '{')
     {
       next = get_interpolation_expression(next + 1);
       num_expressions++;
-      if(*next != '>')
+      if(*next != '}')
       {
         *contains_expressions = -num_expressions;
         return src;
@@ -5029,7 +5014,7 @@ static char *legacy_disassemble_print_hex(char *src, char **_output,
 }
 
 static char *legacy_disassemble_print_expression(char *src, char **_output,
- int *_string_length);
+ int *_string_length, boolean is_interpolation);
 static char *legacy_disassemble_print_string_expressions(char *src,
  char **_output, int *_string_length, int early_terminator,
  int escape_char, int is_expression_interpolation);
@@ -5130,7 +5115,7 @@ static char *legacy_disassemble_print_binary_operator(char *src,
 
 
 static char *legacy_disassemble_print_expr_value_token(char *src,
- char **_output, int *_string_length)
+ char **_output, int *_string_length, boolean is_first, boolean is_interpolation)
 {
   int string_length = *_string_length;
   char *output = *_output;
@@ -5193,7 +5178,7 @@ static char *legacy_disassemble_print_expr_value_token(char *src,
     case '(':
       // Start of an expression, verify that it is one.
       next_next =
-       legacy_disassemble_print_expression(next, &output, &string_length);
+       legacy_disassemble_print_expression(next, &output, &string_length, false);
 
       if((string_length == 0) || (next_next == next))
         return src;
@@ -5207,6 +5192,8 @@ static char *legacy_disassemble_print_expr_value_token(char *src,
       int name_length;
       char base_char = *next;
       char *base_output = output;
+      boolean wrap_parentheses = false;
+      boolean wrap_backticks = false;
 
       next_next = legacy_disassemble_print_string_expressions(next + 1,
        &output, &string_length, base_char, '`', false);
@@ -5219,12 +5206,39 @@ static char *legacy_disassemble_print_expr_value_token(char *src,
       // Take off the enclosing chars that weren't printed.
       string_length -= 2;
 
+      if(is_first && is_interpolation &&
+       is_string_valued_ident(next + 1, name_length, is_interpolation))
+      {
+        // Hack: wrap in parentheses so this doesn't get mistaken for a
+        // string interpolation. It might be nice to have a more readable
+        // way of supporting this someday e.g. int($string).
+        wrap_parentheses = true;
+      }
+
       if(!is_simple_identifier_name(next + 1, name_length, true))
       {
-        memmove(base_output + 1, base_output, name_length);
-        *base_output = '`';
-        output[1] = '`';
-        output += 2;
+        wrap_backticks = true;
+      }
+
+      if(wrap_parentheses || wrap_backticks)
+      {
+        int num = wrap_parentheses + wrap_backticks;
+        int pos = 0;
+        memmove(base_output + num, base_output, name_length);
+
+        output += num * 2;
+        if(wrap_parentheses)
+        {
+          base_output[pos] = '(';
+          output[-1 - pos] = ')';
+          pos++;
+        }
+        if(wrap_backticks)
+        {
+          base_output[pos] = '`';
+          output[-1 - pos] = '`';
+          pos++;
+        }
       }
 
       next = next_next + 1;
@@ -5242,7 +5256,7 @@ static char *legacy_disassemble_print_expr_value_token(char *src,
 }
 
 static char *legacy_disassemble_print_expression(char *src, char **_output,
- int *_string_length)
+ int *_string_length, boolean is_interpolation)
 {
   char *next, *next_next;
   char *output = *_output;
@@ -5251,8 +5265,9 @@ static char *legacy_disassemble_print_expression(char *src, char **_output,
   // First character must be the opening paren, but if it weren't we
   // wouldn't be here. However, the string_length must be greater than
   // 1.
+  // When interpolating, convert to interpolation brackets instead of ().
 
-  *output = '(';
+  *output = is_interpolation ? '{' : '(';
   output++;
   next = src + 1;
   string_length--;
@@ -5263,7 +5278,7 @@ static char *legacy_disassemble_print_expression(char *src, char **_output,
 
   // Need a value to kick things off.
   next_next = legacy_disassemble_print_expr_value_token(next, &output,
-   &string_length);
+   &string_length, true, is_interpolation);
 
   if((string_length == 0) || (next_next == next))
     return src;
@@ -5291,7 +5306,7 @@ static char *legacy_disassemble_print_expression(char *src, char **_output,
     next = legacy_disassemble_print_spaces(next_next, &output, &string_length);
 
     next_next = legacy_disassemble_print_expr_value_token(next, &output,
-     &string_length);
+     &string_length, false, is_interpolation);
 
     if((string_length == 0) || (next_next == next))
       return src;
@@ -5299,7 +5314,7 @@ static char *legacy_disassemble_print_expression(char *src, char **_output,
     next = legacy_disassemble_print_spaces(next_next, &output, &string_length);
   }
 
-  *output = ')';
+  *output = is_interpolation ? '}' : ')';
   output++;
   next++;
   string_length--;
@@ -5328,13 +5343,12 @@ static char *legacy_disassemble_print_string_expressions(char *src,
     if(current_char == '(')
     {
       char *next = legacy_disassemble_print_expression(src, &output,
-       &string_length);
+       &string_length, true);
 
       if(next == src)
       {
-        output[0] = '\\';
-        output[1] = '(';
-        output += 2;
+        output[0] = '(';
+        output++;
         src++;
         string_length--;
       }
@@ -5404,15 +5418,15 @@ static char *legacy_disassemble_print_string_expressions(char *src,
           output += 2;
         }
 
-        *base_output = '<';
-        *output = '>';
+        *base_output = '{';
+        *output = '}';
         output++;
         src = next;
       }
     }
     else
     {
-      if((current_char == '<') || (current_char == '>') ||
+      if((current_char == '{') || (current_char == '}') ||
        (current_char == escape_char))
       {
         output[0] = '\\';
@@ -5674,7 +5688,7 @@ static char *legacy_disassemble_arg(enum arg_type arg_type, char *src,
       int expression_length = arg_length;
       char *base_output = output;
       char *next =
-       legacy_disassemble_print_expression(src, &output, &expression_length);
+       legacy_disassemble_print_expression(src, &output, &expression_length, false);
 
       // For now, letting this fall through if we get something like:
       // (expr)trailing

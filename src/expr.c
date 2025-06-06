@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017-2025 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -78,7 +78,7 @@ static inline char *skip_string_interpolation(char *expression)
     }
     else
 
-    if(current_char == '>')
+    if(current_char == '}')
     {
       break;
     }
@@ -147,14 +147,14 @@ static inline char *skip_identifier(char *expression, char terminator)
     }
     else
 
+#ifndef CONFIG_DEBYTECODE
     if(current_char == '(')
     {
       expression = skip_expression(expression);
     }
     else
-
-#ifdef CONFIG_DEBYTECODE
-    if(current_char == '<')
+#else
+    if(current_char == '{')
     {
       expression = skip_string_interpolation(expression);
     }
@@ -1091,7 +1091,7 @@ static char *expr_skip_whitespace(char *expression)
 }
 
 static int parse_argument(struct world *mzx_world, char **_argument,
- int *type, int operand_a, int id)
+ int *type, int operand_a, int id, const char terminator1, const char terminator2)
 {
   char *argument = *_argument;
   int first_char = *argument;
@@ -1114,7 +1114,9 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       argument++;
       if(!isspace((int)*argument))
       {
-        int t2, val = parse_argument(mzx_world, &argument, &t2, 0, id);
+        int t2;
+        int val = parse_argument(mzx_world, &argument, &t2, 0, id,
+         terminator1, terminator2);
 #ifndef CONFIG_DEBYTECODE
         if((t2 != 0) && (t2 != 2))
         {
@@ -1285,7 +1287,8 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       int t2, val;
 
       argument++;
-      val = parse_argument(mzx_world, &argument, &t2, 0, id);
+      val = parse_argument(mzx_world, &argument, &t2, 0, id,
+       terminator1, terminator2);
 
 #ifndef CONFIG_DEBYTECODE
       if((t2 != 0) && (t2 != 2))
@@ -1378,7 +1381,7 @@ static int parse_argument(struct world *mzx_world, char **_argument,
         return -1;
       }
 
-      // Seek next ')'
+      // Seek next terminator
       while(1)
       {
         argument++;
@@ -1406,7 +1409,7 @@ static int parse_argument(struct world *mzx_world, char **_argument,
         }
         else
 
-        if(first_char == ')')
+        if(first_char == terminator1 || first_char == terminator2)
         {
           break;
         }
@@ -1661,7 +1664,8 @@ static int _parse_expression(struct world *mzx_world, char **_expression,
   {
     // Skip initial whitespace..
     expression = expr_skip_whitespace(expression);
-    value = parse_argument(mzx_world, &expression, &current_arg, 0, id);
+    value = parse_argument(mzx_world, &expression, &current_arg, 0, id,
+     terminator1, terminator2);
   }
   else
   {
@@ -1687,7 +1691,8 @@ static int _parse_expression(struct world *mzx_world, char **_expression,
     if(*expression == terminator1 || *expression == terminator2)
       break;
 
-    c_operator = parse_argument(mzx_world, &expression, &current_arg, value, id);
+    c_operator = parse_argument(mzx_world, &expression, &current_arg, value, id,
+     terminator1, terminator2);
     // Next arg must be an operator, unless it's a negative number,
     // in which case it's considered + num
     if(current_arg == 2)
@@ -1706,7 +1711,8 @@ static int _parse_expression(struct world *mzx_world, char **_expression,
 #endif
 
       expression = expr_skip_whitespace(expression);
-      operand_val = parse_argument(mzx_world, &expression, &current_arg, value, id);
+      operand_val = parse_argument(mzx_world, &expression, &current_arg, value, id,
+       terminator1, terminator2);
 
 #ifndef CONFIG_DEBYTECODE
       // And now it must be an integer.
@@ -1840,7 +1846,7 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
         break;
       }
 
-      case '>':
+      case '}':
         expression++;
         *_expression = expression;
         expression_length -= output_left;
@@ -1864,7 +1870,7 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
         {
           // Pass the pre-evaluated counter name through...
           value = _parse_expression(mzx_world, &expression, &error, id,
-           name_translated, ',', '>');
+           name_translated, ',', '}');
           output_number(&output, &output_left, value, hex_byte, hex_short);
         }
         break;
@@ -1899,7 +1905,7 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
         else
         {
           value = _parse_expression(mzx_world, &expression, &error, id,
-           0, ',', '>');
+           0, ',', '}');
           output_number(&output, &output_left, value, hex_byte, hex_short);
         }
         break;
@@ -1926,21 +1932,19 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
 char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
  char terminating_char)
 {
-  struct board *src_board = mzx_world->current_board;
   char *src_ptr = mesg;
   char current_char = *src_ptr;
 
   int dest_pos = 0;
   int expr_length;
-  int val, error;
 
-  while((current_char != terminating_char) && (dest_pos < ROBOT_MAX_TR-1))
+  while((current_char != terminating_char) && (dest_pos < ROBOT_MAX_TR - 1))
   {
     switch(current_char)
     {
       case '\\':
-        if((src_ptr[1] == '(') || (src_ptr[1] == '<') || (src_ptr[1] == '>') ||
-         (src_ptr[1] == '\\') || (src_ptr[1] == terminating_char))
+        if(src_ptr[1] == '{' || src_ptr[1] == '}' ||
+         src_ptr[1] == '\\' || src_ptr[1] == terminating_char)
         {
           buffer[dest_pos] = src_ptr[1];
           src_ptr += 2;
@@ -1953,22 +1957,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         dest_pos++;
         break;
 
-      case '(':
-      {
-        char number_buffer[16];
-        src_ptr++;
-        val = parse_expression(mzx_world, &src_ptr, &error, id);
-
-        expr_length = sprintf(number_buffer, "%d", val);
-        if(expr_length >= ROBOT_MAX_TR - dest_pos)
-          expr_length = ROBOT_MAX_TR - dest_pos - 1;
-
-        memcpy(buffer + dest_pos, number_buffer, expr_length);
-        dest_pos += expr_length;
-        break;
-      }
-
-      case '<':
+      case '{':
       {
         src_ptr++;
         expr_length = parse_string_expression(mzx_world, &src_ptr, id,
