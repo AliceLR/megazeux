@@ -158,8 +158,6 @@ CORE_LIBSPEC void send_robot(struct world *mzx_world, char *name,
  const char *mesg, int ignore_lock);
 CORE_LIBSPEC int send_robot_id(struct world *mzx_world, int id,
  const char *mesg, int ignore_lock);
-CORE_LIBSPEC char *tr_msg_ext(struct world *mzx_world, char *mesg, int id,
- char *buffer, char terminating_char);
 
 int find_robot(struct board *src_board, const char *name,
  int *first, int *last);
@@ -198,12 +196,6 @@ int get_robot_id(struct board *src_board, const char *name);
 
 CORE_LIBSPEC void get_robot_position(struct robot *cur_robot, int *xpos,
  int *ypos);
-
-static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
- char *buffer)
-{
-  return tr_msg_ext(mzx_world, mesg, id, buffer, 0);
-}
 
 void run_robot(context *ctx, int id, int x, int y);
 

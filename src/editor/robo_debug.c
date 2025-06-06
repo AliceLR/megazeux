@@ -31,6 +31,7 @@
 #include "../core.h"
 #include "../counter.h"
 #include "../event.h"
+#include "../expr.h"
 #include "../graphics.h"
 #include "../robot.h"
 #include "../str.h"
