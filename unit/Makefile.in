@@ -129,7 +129,7 @@ unit_cflags += ${UNIT_OPTIMIZE_FLAGS} -UDEBUG -UNDEBUG -DMZX_UNIT_TESTS
 unit_cflags += -fexceptions -funsigned-char -std=gnu++11
 unit_ldflags += ${UNIT_OPTIMIZE_FLAGS}
 
-unit_cflags += ${SDL_CFLAGS} -Umain
+unit_cflags += ${SDL_CFLAGS} ${ZLIB_CFLAGS} -Umain
 unit_ldflags += ${SDL_LDFLAGS} ${ZLIB_LDFLAGS}
 
 # Required for image_file test.
