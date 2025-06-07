@@ -90,6 +90,17 @@
   </supports>
 
   <releases>
+    <release version="2.93d" date="2025-06-09">
+      <description>
+        <p>
+          Adds screen keyboard support for Android and Vita, plus software
+          rendering improvements for all platforms and bugfixes for various
+          renderers. KEY? and KEYENTER are now properly version gated,
+          Spitting Tiger logic for &lt;2.80 worlds has been fixed, and
+          general module playback enhancements.
+        </p>
+      </description>
+    </release>
     <release version="2.93c" date="2025-02-28">
       <description>
         <p>

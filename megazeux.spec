@@ -1,5 +1,5 @@
 Name:		megazeux
-Version:	2.93c
+Version:	2.93d
 Release:	1%{?dist}
 
 Summary:	A simple game creation system (GCS)
@@ -7,7 +7,7 @@ Summary:	A simple game creation system (GCS)
 Group:		Amusements/Games
 License:	GPLv2+
 URL:		https://www.digitalmzx.com/
-Source:		megazeux-2.93c.tar.xz
+Source:		megazeux-2.93d.tar.xz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires:	SDL3-devel
@@ -31,7 +31,7 @@ regardless of genre.
 See https://www.digitalmzx.com/ for more information.
 
 %prep
-%setup -q -n mzx293c
+%setup -q -n mzx293d
 
 %build
 ./config.sh --platform unix --enable-release --enable-lto --as-needed-hack \
@@ -41,7 +41,7 @@ See https://www.digitalmzx.com/ for more information.
             --sharedir %{_datadir} \
             --licensedir %{_datadir}/licenses \
             --metainfodir %{_metainfodir} \
-            --bindir %{_datadir}/megazeux/bin \
+            --bindir %{_libdir}/megazeux/bin \
             --sysconfdir %{_sysconfdir}
 %make_build
 
@@ -72,8 +72,10 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_sysconfdir}/megazeux-config
 
 %changelog
-#* TBA May 00 2025 Alice Rowan <petrifiedrowan@gmail.com> 2.93d-1
-#- new upstream version, add megazeux.metainfo.xml, fix licenses dir.
+* Mon Jun 09 2025 Alice Rowan <petrifiedrowan@gmail.com> 2.93d-1
+- new upstream version
+- add megazeux.metainfo.xml
+- fix licenses and utils dirs
 
 * Fri Feb 28 2025 Alice Rowan <petrifiedrowan@gmail.com> 2.93c-1
 - new upstream version, switch to SDL3
