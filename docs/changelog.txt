@@ -18,12 +18,12 @@ no longer overwrites config.txt if it has changed. Other notes:
 better AltGr tolerance, faster software renderer performance,
 rendering fixes for softscale, glsl/glslscale, and opengl1/2.
 
-Compatibility changes include corrected version locking for the
-KEY? and KEYENTER labels and Spitting Tiger logic bugfixes.
+Compatibility changes include Spitting Tiger logic bugfixes and
+corrected version locking for the KEY? and KEYENTER labels.
 Several out-of-bounds accesses in ID char resolution and in the
 Missile logic have been fixed, which may introduce (unfixable)
 differences in behavior for out-of-range parameters. There are
-also the regular module playback improvements (libxmp 4.6.3).
+also various module playback improvements (libxmp 4.6.3).
 
 SDL3 is now selected by default for Windows, Emscripten,
 and Vita (thanks to Aeon17 for Vita testing). SDL3 adoption for
