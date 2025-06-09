@@ -69,14 +69,14 @@ crlf_convert_repository()
 	#
 	[ -z "$MSYSTEM" ] || { return; }
 
-	FILES=$(find config.txt LICENSE* assets docs arch/mingw arch/*/pad.config arch/emscripten/web/res/index.html \
+	FILES=$(find config.txt LICENSE* arch/LICENSE* assets docs arch/mingw arch/*/pad.config* arch/emscripten/web/res/index.html \
 		-name "*.txt" -o \
 		-name "*.frag" -o \
 		-name "*.vert" -o \
 		-name "*.bat" -o \
 		-name "index.html" -o \
 		-name "*LICENSE*" -o \
-		-name "pad.config")
+		-name "pad.config*")
 
 	if command -v unix2dos >/dev/null
 	then
