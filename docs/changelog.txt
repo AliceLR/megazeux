@@ -1,12 +1,3 @@
-GIT - MZX 2.94
-
-FIXES
-
-+ TODO: 2.94 enables board message clipping bugfixes from 2.93b.
-+ TODO: 2.94 fixes tiger self destruct behavior by default (2.93d).
-+ TODO: 2.94 should allow configuration of tiger behavior per-board.
-
-
 June 9th, 2025 - MZX 2.93d
 
 This release includes several features and bugfixes to help with
