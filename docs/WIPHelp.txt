@@ -11690,6 +11690,148 @@ updated.
 :1st:
 $~9NEW in MegaZeux!
 
+June 9th, 2025 - MZX 2.93d
+
+This release includes several features and bugfixes to help with
+portability. Screen keyboard support from the NDS/3DS ports has
+been generalized and enabled for SDL ports; Android and Vita can
+now open their respective screen keyboard interfaces by pressing
+right shoulder on the gamepad (configurable). The Android port
+no longer overwrites config.txt if it has changed. Other notes:
+better AltGr tolerance, faster software renderer performance,
+rendering fixes for softscale, glsl/glslscale, and opengl1/2.
+
+Compatibility changes include Spitting Tiger logic bugfixes and
+corrected version locking for the KEY? and KEYENTER labels.
+Several out-of-bounds accesses in ID char resolution and in the
+Missile logic have been fixed, which may introduce (unfixable)
+differences in behavior for out-of-range parameters. There are
+also various module playback improvements (libxmp 4.6.3).
+
+SDL3 is now selected by default for Windows, Emscripten,
+and Vita (thanks to Aeon17 for Vita testing). SDL3 adoption for
+macOS has been delayed to 2.94 (requires increasing the minimum
+OS version to 10.14).
+
+USERS
+
++ MegaZeux on Android no longer overwrites config.txt if it has
+  more recent changes than the copy in assets.zip.
++ Added support for system screen keyboards for SDL. This allows
+  opening the system screen keyboards with the Android and Vita
+  ports, as well as some Linux configurations e.g. Steam Deck.
+  The screen keyboard can be toggled with rshoulder (see below)
+  or, in Android, by performing a 3-point touch on the screen.
++ Added config option "joy#.show_screen_keyboard" to configure
+  which button (if any) is used to open the screen keyboard for
+  platforms that support it (set to act_rshoulder by default,
+  except for Linux, where it's disabled by default).
++ Added config options "key_left_alt_is_altgr" and
+  "key_right_alt_is_altgr". When set to 1, these prevent their
+  respective Alt keys from activating built-in UI and editor
+  keyboard shortcuts e.g. Ctrl+Alt+Enter. They do not alter the
+  keycodes emitted by these keys. This may be useful for Windows
+  international keyboard layouts and for macOS. These options
+  can be disregarded for Wayland/X11 (AltGr has its own keysym)
+  or other ports that don't have AltGr.
++ More strict modifier checking for keyboard shortcuts that use
+  alphanumeric keys in places with text entry: dialog boxes,
+  editor, scroll editor, Robot editor, Robot debugger config,
+  and variable debugger. This should make it easier to use
+  Windows Ctrl+Alt style AltGr in these interfaces.
++ Wayland/X11 AltGr now correctly emits internal keycode 313 and
+  PC XT keycode 56.
++ The KEY? label is no longer sent for pre-2.62 worlds when
+  the char pressed is outside of the A-Z 1-9 range, and is no
+  longer sent for 1.x worlds when the char is outside of the A-Z
+  range. (Previously checked version for the KEY counter only.)
++ The KEYENTER label is no longer sent for pre-2.62 worlds.
++ Fixed bug where, after Alt+R or failure to reload __TEST.MZX,
+  the editor would not mark the new blank world as active. This
+  would cause the screen to not be drawn during Alt+T testing.
++ Spitting Tigers from pre-2.80 worlds no longer move slower
+  than they're supposed to with low intelligence, and no longer
+  shoot themselves on these buggy idle cycles when "Enemies'
+  bullets hurt other enemies" is enabled.
++ Spitting Tigers that shoot fire now play the fire SFX.
++ Fixed out-of-bounds array reads when a Missile with an invalid
+  parameter attempted to turn after colliding with itself (no
+  compatibility checks for old behavior).
++ Fixed out-of-bounds array reads when reading the char of or
+  displaying (no compat checks): Ice, Lava, CWRotate, CCWRotate,
+  Pusher, Missile, Spike, Bullet, Fire, Life, Ricochet Panel.
++ Fixed out-of-bounds array reads when reading the color of or
+  displaying (no compat checks): Energizer, Fire, Life.
++ ANSi export now replaces char 26 with a dash to avoid import
+  bugs and conflicts with other software.
++ Added ANSi export support for Doorway mode, a non-standard
+  ANSI extension that allows displaying control characters that
+  would otherwise get stripped out. MegaZeux now supports
+  loading ANSi files that use Doorway mode, as well.
++ Software layer renderer performance enhancements for repeat
+  colors, clipping, and unaligned renderering.
++ Unaligned software layer rendering using 64-bit writes is
+  now enabled for x86-64, POWER8, Emscripten, and probably most
+  AArch64 builds. This optimizes out up to 48 renderers for
+  these architectures, and improves 8-bit, 16-bit, and 32-bit
+  rendering performance.
++ Unaligned software layer rendering using 32-bit writes is
+  now enabled for x86, PowerPC, and M68k. This optimizes out up
+  to 24 renderers for these architectures, and improves 8-bit
+  and 16-bit rendering performance.
++ Fixed slow softscale rendering for some drivers. Texture
+  streaming is now used for direct3d/consoles/software only.
++ Fixed OpenGL rendering issues in Wayland caused by OpenGL's
+  transparent default clear color.
++ Fixed opengl1 renderer colors missing alpha component.
++ Fixed glsl, glslscale, opengl2 renderers sometimes showing a
+  thin white line on the edges of the screen.
++ Fixed date and time counters on NDS (missing IRQ_NETWORK).
++ Fixed VFS cache failing to init caused by getcwd returning
+  a root with no trailing slash.
++ Unsupported mouse button presses are now ignored.
++ Fixed the window icon for Flatpak builds.
++ Fixed the directory mentioned in the PS Vita README.md
+  (claimed "ux0:/data/MegaZeux", actually "ux0:/data/megazeux").
+
+DEVELOPERS
+
++ Added renderer set_window_caption, set_window_icon functions;
+  moved SDL-specific icon functionality out of graphics.c.
++ Failure to query X11 no longer disables the icon in Linux/BSD.
++ manifest.sh no longer requires bash. All scripts and Makefiles
+  should now be fully compatible with POSIX sh (with only a few
+  GNU extended options remaining where required).
++ Fix compilation with glibc versions prior to 2.17 caused by
+  clock_gettime (disabling for now until -lrt can be tested).
++ Fix compilation with libpng versions missing png_const_bytep
+  and png_set_add_alpha.
++ Remove -Wno-missing-field-initializers to fix GCC 3.4 support.
++ Remove redundant order-only prerequisites in src/Makefile.in
+  to fix building with older versions of GNU Make.
++ Define _LARGEFILE_SOURCE in addition to _FILE_OFFSET_BITS=64
+  in the unix Makefile to fix builds with old glibcs that
+  predate _FILE_OFFSET_BITS.
++ Numerous warnings fixes/workarounds affecting macOS, NetBSD,
+  OpenBSD, 3DS, GCC 4.x, SDL 1.2, and old versions of libpng.
++ Fixed OS detection, unit tests, and testworlds for Haiku.
++ Replaced return values of all VFS functions to fix issues with
+  using errno values here on Haiku.
++ Add Emscripten Makefile support for SDL3.
++ Add PS Vita Makefile support for SDL3 and SDL 1.2.
++ make install now installs an AppStream .metainfo.xml file.
++ Added --metainfodir [dir] option to config.sh. This setting
+  defaults to [sharedir]/metainfo for relevant platforms.
++ --licensedir now defaults to [sharedir]/licenses instead of
+  [prefix]/share/doc.
++ Fixed ansi.c compilation failure with --disable-datestamp.
++ More accurate FPS counter for --enable-fps.
++ Updated libxmp to 4.6.3+sample rate patch.
++ Updated dependency builder scripts: SDL3 3.2.16, SDL2 2.32.8,
+  libpng 1.6.48.
+
+>#MAIN.HLP:072:Table of Contents
+
 February 28th, 2025 - MZX 2.93c
 
 Yes, the text input bug and show thing keys are fixed now. :)
