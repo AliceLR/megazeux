@@ -134,43 +134,35 @@ static unsigned char get_special_id_char(struct board *src_board,
 
       if(array_y > 0)
       {
-        if(*(ptr - board_width) == 4)
+        if(*(ptr - board_width) == LINE)
           bits = 1;
       }
       else
-      {
         bits = 1;
-      }
 
       if(array_y < (board_height - 1))
       {
-        if(*(ptr + board_width) == 4)
+        if(*(ptr + board_width) == LINE)
           bits |= 2;
       }
       else
-      {
         bits |= 2;
-      }
 
       if(array_x > 0)
       {
-        if(*(ptr - 1) == 4)
+        if(*(ptr - 1) == LINE)
           bits |= 8;
       }
       else
-      {
         bits |= 8;
-      }
 
       if(array_x < (board_width - 1))
       {
-        if(*(ptr + 1) == 4 )
+        if(*(ptr + 1) == LINE)
           bits |= 4;
       }
       else
-      {
         bits |= 4;
-      }
 
       return id_chars[thick_line + bits];
     }
@@ -185,47 +177,39 @@ static unsigned char get_special_id_char(struct board *src_board,
       char *ptr;
       ptr = level_id + offset;
 
-      if(array_y > 0 )
+      if(array_y > 0)
       {
-        if(*(ptr - board_width) != 0)
+        if(*(ptr - board_width) != SPACE)
           bits = 1;
       }
       else
-      {
         bits = 1;
-      }
 
       if(array_y < (board_height - 1))
       {
-        if(*(ptr + board_width) != 0)
+        if(*(ptr + board_width) != SPACE)
           bits |= 2;
       }
       else
-      {
         bits |= 2;
-      }
 
       if(array_x > 0)
       {
-        if(*(ptr - 1) != 0)
+        if(*(ptr - 1) != SPACE)
           bits |= 8;
       }
       else
-      {
         bits |= 8;
-      }
 
       if(array_x < (board_width - 1))
       {
-        if(*(ptr + 1) != 0)
+        if(*(ptr + 1) != SPACE)
           bits |= 4;
       }
       else
-      {
         bits |= 4;
-      }
 
-      if(cell_id == 18)
+      if(cell_id == WEB)
         return id_chars[thin_line + bits];
       return id_chars[thick_line + bits];
     }
@@ -418,7 +402,7 @@ static unsigned char get_special_id_color(struct board *src_board,
     case WHIRLPOOL_2:
     case WHIRLPOOL_3:
     case WHIRLPOOL_4:
-      spec_color = id_chars[whirlpool_glow + (cell_id - 67)];
+      spec_color = id_chars[whirlpool_glow + (int)(cell_id - WHIRLPOOL_1)];
       break;
 
     case SHOOTING_FIRE:
