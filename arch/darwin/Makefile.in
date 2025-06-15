@@ -217,7 +217,7 @@ build:
 	${RM} ${build}/*.debug ${build}/utils/*.debug
 	ln -s /Applications               ${mzx_app}/../Applications
 	${MKDIR}                          ${mzx_app}/Contents/MacOS
-	${CP} contrib/icons/quantump.icns ${mzx_app}/Contents/Resources/MegaZeux.icns
+	${CP} contrib/icons/old/quantump.icns ${mzx_app}/Contents/Resources/MegaZeux.icns
 	${CP} ${build}/LICENSE            ${build}/docs/
 	${MV} ${build}/docs               ${mzx_app}/../Documentation
 ifeq (${BUILD_UTILS},1)

@@ -29,8 +29,8 @@
   <launchable type="desktop-id">megazeux.desktop</launchable>
 
   <branding>
-    <color type="primary" scheme_preference="light">#99bbbb</color>
-    <color type="primary" scheme_preference="dark">#181830</color>
+    <color type="primary" scheme_preference="light">#70d0d0</color>
+    <color type="primary" scheme_preference="dark">#000080</color>
   </branding>
   <content_rating type="oars-1.1" />
 

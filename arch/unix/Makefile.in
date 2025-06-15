@@ -24,10 +24,34 @@ include arch/install.inc
 install-arch: install-check
 	${install} -m 0755 -d \
 		${DESTDIR}${SHAREDIR} \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/16x16/apps \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/22x22/apps \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/24x24/apps \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/32x32/apps \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/48x48/apps \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/64x64/apps \
 		${DESTDIR}${SHAREDIR}/icons/hicolor/128x128/apps \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/256x256/apps \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/scalable/apps \
 		${DESTDIR}${SHAREDIR}/applications
-	${install} -m 0644 contrib/icons/quantump.png \
+	${install} -m 0644 contrib/icons/generated/icon_16.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/16x16/apps/megazeux.png
+	${install} -m 0644 contrib/icons/generated/icon_22.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/22x22/apps/megazeux.png
+	${install} -m 0644 contrib/icons/generated/icon_24.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/24x24/apps/megazeux.png
+	${install} -m 0644 contrib/icons/generated/icon_32.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/32x32/apps/megazeux.png
+	${install} -m 0644 contrib/icons/generated/icon_48.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/48x48/apps/megazeux.png
+	${install} -m 0644 contrib/icons/generated/icon_64.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/64x64/apps/megazeux.png
+	${install} -m 0644 contrib/icons/generated/icon_128.png \
 		${DESTDIR}${SHAREDIR}/icons/hicolor/128x128/apps/megazeux.png
+	${install} -m 0644 contrib/icons/generated/icon_256.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/256x256/apps/megazeux.png
+	${install} -m 0644 contrib/icons/icon.svg \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/scalable/apps/megazeux.svg
 	${install} -m 0644 arch/unix/megazeux.desktop \
 		${DESTDIR}${SHAREDIR}/applications/megazeux.desktop
 ifeq (${BUILD_MZXRUN},1)
@@ -38,7 +62,15 @@ endif
 # linux os specific install files
 uninstall-arch: install-check
 	${RM} -f \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/16x16/apps/megazeux.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/22x22/apps/megazeux.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/24x24/apps/megazeux.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/32x32/apps/megazeux.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/48x48/apps/megazeux.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/64x64/apps/megazeux.png \
 		${DESTDIR}${SHAREDIR}/icons/hicolor/128x128/apps/megazeux.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/256x256/apps/megazeux.png \
+		${DESTDIR}${SHAREDIR}/icons/hicolor/scalable/apps/megazeux.svg \
 		${DESTDIR}${SHAREDIR}/applications/megazeux.desktop
 ifeq (${BUILD_MZXRUN},1)
 	${RM} -f \

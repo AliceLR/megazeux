@@ -67,11 +67,22 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_datadir}/applications/mzxrun.desktop
 %{_datadir}/doc/megazeux
 %{_datadir}/licenses/megazeux
+%{_datadir}/icons/hicolor/16x16/apps/megazeux.png
+%{_datadir}/icons/hicolor/22x22/apps/megazeux.png
+%{_datadir}/icons/hicolor/24x24/apps/megazeux.png
+%{_datadir}/icons/hicolor/32x32/apps/megazeux.png
+%{_datadir}/icons/hicolor/48x48/apps/megazeux.png
+%{_datadir}/icons/hicolor/64x64/apps/megazeux.png
 %{_datadir}/icons/hicolor/128x128/apps/megazeux.png
+%{_datadir}/icons/hicolor/256x256/apps/megazeux.png
+%{_datadir}/icons/hicolor/scalable/apps/megazeux.svg
 %{_metainfodir}/megazeux.metainfo.xml
 %{_sysconfdir}/megazeux-config
 
 %changelog
+# TODO
+# - add 16, 22, 24, 32, 48, 64, 256, SVG icons
+
 * Mon Jun 09 2025 Alice Rowan <petrifiedrowan@gmail.com> 2.93d-1
 - new upstream version
 - add megazeux.metainfo.xml
