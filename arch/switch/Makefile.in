@@ -22,7 +22,7 @@ BINEXT     := .elf
 
 APP_TITLE  := MegaZeux
 APP_AUTHOR := \"MegaZeux Developers\"
-APP_ICON   := arch/switch/icon.jpg
+APP_ICON   := contrib/icons/generated/icon_switch.jpg
 
 # Block --host, which will break things.
 CROSS_COMPILE =

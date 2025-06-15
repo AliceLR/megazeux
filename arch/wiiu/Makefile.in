@@ -64,7 +64,7 @@ build := build/${SUBPLATFORM}/wiiu/apps/megazeux
 build: package ${build}
 	${CP} arch/wiiu/pad.config ${build}
 	${CP} megazeux.rpx ${build}
-	${CP} arch/wiiu/icon.png ${build}
+	${CP} contrib/icons/generated/icon_wiiu.png ${build}/icon.png
 	@sed "s/%VERSION%/${VERSION}/g;s/%DATE%/`date -u +%Y%m%d%H%M`/g" \
 	    arch/wiiu/meta.xml > ${build}/meta.xml
 	${RM} ${build}/${mzxrun} ${build}/${mzx} ${build}/*.debug

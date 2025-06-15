@@ -70,7 +70,7 @@ arch/nds/%.bin.o arch/nds/%_bin.h : arch/nds/%.bin
 
 package: mzx
 	${MAKE} -C arch/nds TARGET=${mzxrun}
-	ndstool -c ${mzxrun}.nds -7 arch/nds/${mzxrun}.arm7.elf -9 ${mzxrun} -b arch/nds/icon.bmp "MegaZeux ${VERSION}"
+	ndstool -c ${mzxrun}.nds -7 arch/nds/${mzxrun}.arm7.elf -9 ${mzxrun} -b contrib/icons/generated/icon_nds.bmp "MegaZeux ${VERSION}"
 
 clean:
 	@${MAKE} -C arch/nds TARGET=${mzxrun} clean

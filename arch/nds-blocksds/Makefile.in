@@ -64,7 +64,7 @@ arch/nds/%.bin.o arch/nds/%_bin.h : arch/nds/%.bin
 	@$(CC) $(CFLAGS) -MMD -MP -c -o arch/nds/$*.bin.o arch/nds/$*_bin.c
 
 package: mzx $(ARM7_BINARY)
-	$(BLOCKSDS)/tools/ndstool/ndstool -c ${mzxrun}.nds -7 $(ARM7_BINARY) -9 ${mzxrun} -b arch/nds-blocksds/icon.png "MegaZeux ${VERSION} (B)"
+	$(BLOCKSDS)/tools/ndstool/ndstool -c ${mzxrun}.nds -7 $(ARM7_BINARY) -9 ${mzxrun} -b contrib/icons/generated/icon_nds.png "MegaZeux ${VERSION} (B)"
 
 #
 # Build the ARM7 binary.

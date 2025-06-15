@@ -48,8 +48,7 @@ package: mzx
 	psp-fixup-imports ${mzxrun}
 	mksfo 'MegaZeux '${VERSION} PARAM.SFO
 	${STRIP} ${mzxrun} -o ${mzxrun}.strip
-	convert -scale 80x80 -border 32x0 -bordercolor transparent \
-	        contrib/icons/quantump.png ICON0.PNG
+	cp contrib/icons/generated/icon_psp.png ICON0.PNG
 	pack-pbp EBOOT.PBP PARAM.SFO ICON0.PNG NULL \
 		 NULL NULL NULL ${mzxrun}.strip NULL
 	rm -f ${mzxrun}.strip

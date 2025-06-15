@@ -1805,8 +1805,8 @@ if [ "$ICON" = "true" ]; then
 		ICONDIR="$SHAREDIR/icons/hicolor/128x128/apps"
 
 		if [ "$SHAREDIR" = "." ]; then
-			ICONFILE="quantump.png"
-			ICONDIR="contrib/icons"
+			ICONFILE="icon_256.png"
+			ICONDIR="contrib/icons/generated"
 		elif [ "$SHAREDIR" = "/app/share" ]; then
 			# TODO: flatpak hack
 			ICONFILE="com.digitalmzx.MegaZeux.png"

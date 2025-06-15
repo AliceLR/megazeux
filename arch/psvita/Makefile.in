@@ -1,5 +1,6 @@
 .PHONY: clean package build
 
+BINEXT = .elf
 CROSS_COMPILE = arm-vita-eabi-
 
 # Disable rules that require target code to run natively.
@@ -55,9 +56,8 @@ SCE_SYS = "arch/psvita/sce_sys"
 
 package: mzx
 ifneq ($(BUILD_EDITOR),)
-	${CP} ${mzx} ${mzx}.elf
-	vita-elf-create ${mzx}.elf ${mzx}.velf
-	vita-make-fself -s -c ${mzx}.velf eboot.bin
+	vita-elf-create ${mzx} megazeux.velf
+	vita-make-fself -s -c megazeux.velf eboot.bin
 	vita-mksfoex ${VITA_MKSFOEX_FLAGS} -s TITLE_ID="${VITA_TITLEID}" \
 		"${VITA_TITLE}" param.sfo
 	vita-pack-vpk -s param.sfo -b eboot.bin \
@@ -67,10 +67,8 @@ ifneq ($(BUILD_EDITOR),)
 		--add ${SCE_SYS}/livearea/contents/template.xml=sce_sys/livearea/contents/template.xml \
 		megazeux.vpk
 endif
-
-	${CP} ${mzxrun} ${mzxrun}.elf
-	vita-elf-create ${mzxrun}.elf ${mzxrun}.velf
-	vita-make-fself -s -c ${mzxrun}.velf eboot.bin
+	vita-elf-create ${mzxrun} mzxrun.velf
+	vita-make-fself -s -c mzxrun.velf eboot.bin
 	vita-mksfoex ${VITA_MKSFOEX_FLAGS} -s TITLE_ID="${VITA_TITLEID}" \
 		"${VITA_TITLE}" param.sfo
 	vita-pack-vpk -s param.sfo -b eboot.bin \
@@ -82,12 +80,12 @@ endif
 
 clean:
 	${RM} -f arch/psvita/*.o arch/psvita/*.d eboot.bin param.sfo
-	${RM} -f mzxrun mzxrun.elf mzxrun.velf mzxrun.vpk
-	${RM} -f megazeux megazeux.elf megazeux.velf megazeux.vpk
+	${RM} -f mzxrun.velf mzxrun.vpk
+	${RM} -f megazeux.velf megazeux.vpk
 
 build: package ${build}
-	${CP} ${mzx}.vpk ${build}
-	${CP} ${mzxrun}.vpk ${build}
+	${CP} megazeux.vpk ${build}
+	${CP} mzxrun.vpk ${build}
 	${CP} arch/psvita/README.md ${build}/VITA-README.txt
 ifeq (${BUILD_SDL},1)
 	${CP} arch/psvita/pad.config.sdl12 ${build}/pad.config

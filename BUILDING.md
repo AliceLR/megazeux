@@ -34,6 +34,9 @@ most recent versions available.
 - **pkgconf** or **pkg-config** (SDL 3 builds only)
 - **zip** or **7za** (packaging only)
 - **tar** and **xz** (packaging source only)
+- **ImageMagick** 7.0 or newer (rebuilding icons only)
+  - Older versions may work if `MAGICK=convert` is provided to Make.
+  - **GraphicsMagick** does not work as a substitute (no parentheses or clone).
 
 Dependencies:
 
