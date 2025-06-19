@@ -2988,6 +2988,7 @@ static enum status parse_sfx_file(struct memfile *mf, struct base_file *file)
   else
   {
     trace("SFX array found\n");
+    mfseek(mf, 0, SEEK_SET);
 
     for(i = 0; i < NUM_BUILTIN_SFX; i++)
     {

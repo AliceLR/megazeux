@@ -7,6 +7,16 @@ FIXES
 + TODO: 2.94 should allow configuration of tiger behavior per-board.
 
 
+GIT - MZX 2.93e
+
+USERS
+
++ Fixed checkres testing of 2.90X through 2.92X worlds with
+  custom sound effects tables.
+
+DEVELOPERS
+
+
 June 9th, 2025 - MZX 2.93d
 
 This release includes several features and bugfixes to help with
