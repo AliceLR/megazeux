@@ -52,7 +52,11 @@ void mzxFifoCommandHandler(u32 command, void *userdata) {
 			}
 		} break;
 		case CMD_MZX_MM_GET_POSITION: {
+#ifdef CONFIG_BLOCKSDS
+			fifoSendValue32(FIFO_MZX, mmGetPosition());
+#else
 			fifoSendValue32(FIFO_MZX, mmLayerMain.position);
+#endif
 		} break;
 	}
 }
