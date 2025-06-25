@@ -43,9 +43,9 @@ EXTRA_INCLUDES := -isystem $(LIBOGC_INC) ${PORTLIBS_INCLUDES}
 EXTRA_LIBS     := -L$(LIBOGC_LIB) ${PORTLIBS_LIBS} \
                  -lfat -lasnd -lwiikeyboard -lwiiuse -lbte -logc -lstdc++ -lm
 
-ARCH_CFLAGS   += ${EXTRA_INCLUDES} $(MACHDEP)
-ARCH_CXXFLAGS += ${ARCH_CFLAGS}
-ARCH_LDFLAGS  += ${EXTRA_LIBS} $(MACHDEP)
+ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP}
+ARCH_CXXFLAGS += ${EXTRA_INCLUDES} ${MACHDEP}
+ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP}
 
 # Boot MegaZeux by default if the editor is enabled; otherwise, boot MZXRun.
 package: mzx

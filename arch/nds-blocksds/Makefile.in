@@ -37,15 +37,18 @@ EXTRA_INCLUDES := $(foreach path,$(EXTRA_LIBS_DIRS),-I$(path)/include)
 EXTRA_LIBS := $(foreach path,$(EXTRA_LIBS_DIRS),-L$(path)/lib) \
               -Wl,--start-group $(EXTRA_LIBS_NAMES) -Wl,--end-group
 
-ARCH_CFLAGS   += -marm -mcpu=arm946e-s+nofp
-ARCH_CFLAGS   += ${EXTRA_INCLUDES} -Iarch/nds -ffunction-sections -fdata-sections
+NDS_CFLAGS    += -marm -mcpu=arm946e-s+nofp
+NDS_CFLAGS    += ${EXTRA_INCLUDES} -Iarch/nds -ffunction-sections -fdata-sections
 
-ARCH_LDFLAGS  += -marm -mcpu=arm946e-s+nofp
-ARCH_LDFLAGS  += ${EXTRA_LIBS}
+NDS_LDFLAGS   += -marm -mcpu=arm946e-s+nofp
+NDS_LDFLAGS   += ${EXTRA_LIBS}
 
-ARCH_CFLAGS   += -DPICOLIBC_LONG_LONG_PRINTF_SCANF -specs=$(BLOCKSDS)/sys/crts/ds_arm9.specs
-ARCH_LDFLAGS  += -DPICOLIBC_LONG_LONG_PRINTF_SCANF -specs=$(BLOCKSDS)/sys/crts/ds_arm9.specs
-ARCH_CXXFLAGS += ${ARCH_CFLAGS}
+NDS_CFLAGS    += -DPICOLIBC_LONG_LONG_PRINTF_SCANF -specs=$(BLOCKSDS)/sys/crts/ds_arm9.specs
+NDS_LDFLAGS   += -DPICOLIBC_LONG_LONG_PRINTF_SCANF -specs=$(BLOCKSDS)/sys/crts/ds_arm9.specs
+
+ARCH_CFLAGS   += ${NDS_CFLAGS}
+ARCH_CXXFLAGS += ${NDS_CFLAGS}
+ARCH_LDFLAGS  += ${NDS_LDFLAGS}
 
 # BlocksDS does not support building with pre-C11 standards for its header files.
 # Use gnu17, as that's the standard currently used by the official template files.

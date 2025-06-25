@@ -75,45 +75,45 @@ endif
 # If none is defined, disable make all and enable the meta targets.
 #
 
-ARCH_CFLAGS  :=
-ARCH_LDFLAGS :=
+ANDROID_CFLAGS  :=
+ANDROID_LDFLAGS :=
 
 ifeq (${ANDROID_TARGET},arm)
-ANDROID_LIBS := arm-linux-androideabi
-CLANG_PRE    := armv7a-linux-androideabi
-BINUTILS_PRE := arm-linux-androideabi
-ABI          := armeabi-v7a
-SDK          := 16
-ARCH_CFLAGS  += -march=armv7-a -mthumb
-ARCH_LDFLAGS += -march=armv7-a -Wl,--fix-cortex-a8
+ANDROID_LIBS    := arm-linux-androideabi
+CLANG_PRE       := armv7a-linux-androideabi
+BINUTILS_PRE    := arm-linux-androideabi
+ABI             := armeabi-v7a
+SDK             := 16
+ANDROID_CFLAGS  += -march=armv7-a -mthumb
+ANDROID_LDFLAGS += -march=armv7-a -Wl,--fix-cortex-a8
 else
 
 ifeq (${ANDROID_TARGET},arm64)
-ANDROID_LIBS := aarch64-linux-android
-CLANG_PRE    := ${ANDROID_LIBS}
-BINUTILS_PRE := ${ANDROID_LIBS}
-ABI          := arm64-v8a
-SDK          := 21
+ANDROID_LIBS    := aarch64-linux-android
+CLANG_PRE       := ${ANDROID_LIBS}
+BINUTILS_PRE    := ${ANDROID_LIBS}
+ABI             := arm64-v8a
+SDK             := 21
 # https://developer.android.com/guide/practices/page-sizes
-ARCH_LDFLAGS   += -Wl,-z,max-page-size=16384
+ANDROID_LDFLAGS += -Wl,-z,max-page-size=16384
 else
 
 ifeq (${ANDROID_TARGET},i686)
-ANDROID_LIBS := i686-linux-android
-CLANG_PRE    := ${ANDROID_LIBS}
-BINUTILS_PRE := ${ANDROID_LIBS}
-ABI          := x86
-SDK          := 16
+ANDROID_LIBS    := i686-linux-android
+CLANG_PRE       := ${ANDROID_LIBS}
+BINUTILS_PRE    := ${ANDROID_LIBS}
+ABI             := x86
+SDK             := 16
 else
 
 ifeq (${ANDROID_TARGET},x86_64)
-ANDROID_LIBS := x86_64-linux-android
-CLANG_PRE    := ${ANDROID_LIBS}
-BINUTILS_PRE := ${ANDROID_LIBS}
-ABI          := x86_64
-SDK          := 21
+ANDROID_LIBS    := x86_64-linux-android
+CLANG_PRE       := ${ANDROID_LIBS}
+BINUTILS_PRE    := ${ANDROID_LIBS}
+ABI             := x86_64
+SDK             := 21
 # https://developer.android.com/guide/practices/page-sizes
-ARCH_LDFLAGS   += -Wl,-z,max-page-size=16384
+ANDROID_LDFLAGS += -Wl,-z,max-page-size=16384
 else
 
 ANDROID_LIBS := none
@@ -137,9 +137,10 @@ PREFIX_LIBS    := ${TOOLCHAIN}/sysroot/usr/lib/${ANDROID_LIBS}/${SDK}
 JNI_INCLUDES   := arch/android/include
 JNI_LIBS       := ${JNI_LIB_DIR}/${ABI}
 
-ARCH_CFLAGS    += -DANDROID -DSUBPLATFORM='"${ANDROID_TARGET}"' -fPIE -fPIC
-ARCH_LDFLAGS   += -shared -llog
-ARCH_CXXFLAGS  := ${ARCH_CFLAGS}
+ANDROID_CFLAGS += -DANDROID -DSUBPLATFORM='"${ANDROID_TARGET}"' -fPIE -fPIC
+ARCH_CFLAGS    += ${ANDROID_CFLAGS}
+ARCH_CXXFLAGS  += ${ANDROID_CFLAGS}
+ARCH_LDFLAGS   += ${ANDROID_LDFLAGS} -shared -llog
 
 SDL_PREFIX     := ${PREFIX}
 SDL_CFLAGS     := -I${JNI_INCLUDES}/SDL2

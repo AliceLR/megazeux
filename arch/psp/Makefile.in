@@ -17,8 +17,10 @@ NO_STRIP_IN_DEBUGLINK ?= 1
 SUPPRESS_HOST_TARGETS ?= 1
 
 # flag PSP build and link in c/psppower
-ARCH_CFLAGS   += -G0 -isystem ${PREFIX}/sdk/include -DPATH_MAX=4096
-ARCH_CXXFLAGS += ${ARCH_CFLAGS}
+PSP_CFLAGS    += -G0 -isystem ${PREFIX}/sdk/include -DPATH_MAX=4096
+
+ARCH_CFLAGS   += ${PSP_CFLAGS}
+ARCH_CXXFLAGS += ${PSP_CFLAGS}
 ARCH_LDFLAGS  += -L${PREFIX}/sdk/lib
 
 ifeq (${BUILD_SDL},3)
