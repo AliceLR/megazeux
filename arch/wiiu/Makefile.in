@@ -52,8 +52,12 @@ EXTRA_INCLUDES := -isystem ${WUT_ROOT}/include ${PORTLIBS_INCLUDES}
 EXTRA_LIBS := -L${WUT_ROOT}/lib ${PORTLIBS_LIBS} -lSDL2 -l${WUT}
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP}
-ARCH_CXXFLAGS += ${ARCH_CFLAGS} -fno-rtti -fno-exceptions
+ARCH_CXXFLAGS += ${EXTRA_INCLUDES} ${MACHDEP}
 ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP} ${RPXSPECS}
+
+# Unknown purpose, copied from dkp templates(?)
+# Only relevant search result: https://devkitpro.org/viewtopic.php?f=42&t=9552
+ARCH_CXXFLAGS += -fno-rtti -fno-exceptions
 
 package: mzx mzxrun.rpx megazeux.rpx
 

@@ -13,6 +13,8 @@ EXTRA_LIBS = -lemu
 # pc.h and sys/farptr.h have functions declared extern __inline__
 # Use -fgnu89-inline to avoid multiple-definition errors
 #-fgnu89-inline
+ARCH_CFLAGS   +=
+ARCH_CXXFLAGS +=
 ARCH_LDFLAGS  += ${EXTRA_LIBS}
 
 clean:

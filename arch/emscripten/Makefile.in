@@ -51,6 +51,7 @@ ARCH_CFLAGS += -Wno-gnu-zero-variadic-macro-arguments
 # Enable source map for debugging if this is supplied by the user.
 ifneq (${SOURCE_MAP_BASE},)
 ARCH_CFLAGS += -g4 --source-map-base ${SOURCE_MAP_BASE}
+ARCH_CXXFLAGS += -g4 --source-map-base ${SOURCE_MAP_BASE}
 ARCH_LDFLAGS += -g4 --source-map-base ${SOURCE_MAP_BASE}
 endif
 

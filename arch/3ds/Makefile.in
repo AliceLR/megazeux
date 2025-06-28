@@ -62,11 +62,13 @@ MACHDEP = -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -mword-relocati
 ifneq (${BUILD_SDL},)
 # devkitPro's SDL 1.2 port accidentally defines key_press and key_release as
 # global symbols.
-ARCH_CFLAGS   += -Dkey_press=mzx_key_press -Dkey_release=mzx_key_release
+3DS_CFLAGS    += -Dkey_press=mzx_key_press -Dkey_release=mzx_key_release
 endif
 
-ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP} -DARM11 -D__3DS__ -Iarch/3ds
-ARCH_CXXFLAGS += ${ARCH_CFLAGS}
+3DS_CFLAGS    += ${EXTRA_INCLUDES} ${MACHDEP} -DARM11 -D__3DS__ -Iarch/3ds
+
+ARCH_CFLAGS   += ${3DS_CFLAGS}
+ARCH_CXXFLAGS += ${3DS_CFLAGS}
 ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP} -specs=3dsx.specs
 
 LIBPNG_CFLAGS =
