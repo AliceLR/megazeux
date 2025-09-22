@@ -5044,8 +5044,7 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_ENEMY_BULLETE: // En bullete
       case ROBOTIC_CMD_ENEMY_BULLETW: // En bulletw
       {
-        // Id' make these all separate, but this is really too convenient
-        id_chars[bullet_char + (cmd - 173)] =
+        id_chars[bullet_char + (cmd - ROBOTIC_CMD_PLAYER_BULLETN)] =
          parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
@@ -5054,7 +5053,8 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_NEUTRAL_BULLET_COLOR: // Nu bcolor
       case ROBOTIC_CMD_ENEMY_BULLET_COLOR: // En bcolor
       {
-        bullet_color[cmd - 185] = parse_param(mzx_world, cmd_ptr + 1, id);
+        bullet_color[cmd - ROBOTIC_CMD_PLAYER_BULLET_COLOR] =
+         parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
