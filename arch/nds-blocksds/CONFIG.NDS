@@ -6,4 +6,5 @@
 ./config.sh --platform nds-blocksds --prefix "$BLOCKSDS" --optimize-size --enable-lto \
             --disable-editor --disable-helpsys --disable-utils \
             --disable-libpng --enable-release --enable-meter \
-            --enable-extram --disable-screenshots --enable-stdio-redirect "$@"
+            --enable-extram --disable-screenshots --enable-stdio-redirect \
+            --disable-stack-protector "$@"

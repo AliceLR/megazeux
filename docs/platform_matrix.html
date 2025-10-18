@@ -422,10 +422,10 @@ var archs =
     architecture:     "ARM9",
     format:           "ELF",
     endian:           "Little",
-    toolchain:        "gcc 15.1.0 <br> binutils&nbsp;2.44 <br> (blocksds&nbsp;1.11.1)",
-    libc:             "Newlib",
+    toolchain:        "gcc 15.2.1 <br> binutils&nbsp;2.45 <br> (blocksds&nbsp;1.15.3)",
+    libc:             "Picolibc",
     packaged:         ZIP,
-    stack_protector:  _FAULTY(),
+    stack_protector:  no_low_memory,
     layer_rendering:  _FAULTY(),
     module_engine:    maxmod,
     adlib_engine:     _FAULTY(),
@@ -1006,8 +1006,8 @@ GCC does not support the stack protector at all (e.g. DEC Alpha).
 <li id="note5">The editor and help system features are disabled
 to conserve cache on embedded platforms. The features build and work
 on these platforms, but they are basically unusable due to the lack of any
-on-screen keyboard. Additionally, hash tables have been disabled on the NDS to
-conserve memory.
+on-screen keyboard. Additionally, hash tables and stack protection have been
+disabled on the NDS to conserve memory.
 </li>
 
 <li id="note6">The updater may or may not work on these platforms, but
