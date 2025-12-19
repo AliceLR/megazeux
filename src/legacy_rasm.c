@@ -1097,7 +1097,7 @@ static const int num_argument_names =
 
 static int escape_chars(char *dest, char *src)
 {
-  if(src[0] == '\\')
+  if(src[0] == '\\' && src[1] != '\0')
   {
     switch(src[1])
     {
