@@ -115,7 +115,7 @@ enum thing
   MINE            = 74,
   SPIKE           = 75,
   CUSTOM_HURT     = 76,
-  __TEXT          = 77,
+  TEXT_ID         = 77,
   SHOOTING_FIRE   = 78,
   SEEKER          = 79,
   SNAKE           = 80,

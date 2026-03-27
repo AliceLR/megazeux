@@ -699,7 +699,7 @@ static void place_text(struct editor_context *editor)
   struct buffer_info temp_buffer;
   int num_placed = 0;
 
-  temp_buffer.id = __TEXT;
+  temp_buffer.id = TEXT_ID;
   temp_buffer.color = editor->buffer.color;
 
   while(num_placed < KEY_UNICODE_MAX)
@@ -1945,7 +1945,7 @@ static boolean editor_key(context *ctx, int *key)
         if(((editor->cursor_x - editor->scroll_x) < 5) && editor->scroll_x)
           editor->scroll_x--;
 
-        temp_buffer.id = __TEXT;
+        temp_buffer.id = TEXT_ID;
         temp_buffer.param = ' ';
         temp_buffer.color = buffer->color;
         place_current_at_xy(mzx_world, &temp_buffer,
@@ -2029,7 +2029,7 @@ static boolean editor_key(context *ctx, int *key)
     {
       if(editor->cursor_mode == CURSOR_TEXT)
       {
-        temp_buffer.id = __TEXT;
+        temp_buffer.id = TEXT_ID;
         temp_buffer.param = ' ';
         temp_buffer.color = buffer->color;
         place_current_at_xy(mzx_world, &temp_buffer,
