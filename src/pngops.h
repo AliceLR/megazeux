@@ -54,13 +54,13 @@ int png_write_image_32bpp(const char *name, size_t w, size_t h, void *priv,
 #ifdef NEED_PNG_READ_FILE
 
 #include <png.h>
-#include <stdio.h>
+#include "io/vfile.h"
 
 typedef boolean (*check_w_h_constraint_t)(png_uint_32 w, png_uint_32 h);
 typedef void *(*rgba_surface_allocator_t)(png_uint_32 w, png_uint_32 h,
                                           png_uint_32 *stride, void **pixels);
 
-void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checked,
+void *png_read_stream(vfile *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checked,
  check_w_h_constraint_t constraint, rgba_surface_allocator_t allocator);
 
 void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
