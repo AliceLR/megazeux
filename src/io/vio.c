@@ -1728,7 +1728,14 @@ size_t vfwrite(const void *src, size_t size, size_t count, vfile *vf)
   }
 
   if(vf->flags & VF_FILE)
+  {
+#ifdef __DragonFly__
+    /* DragonFly BSD ignored the C standard on this: */
+    if(!size)
+      return 0;
+#endif
     return fwrite(src, size, count, vf->fp);
+  }
 
   return 0;
 }

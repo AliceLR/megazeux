@@ -89,7 +89,6 @@ int png_write_image_8bpp(const char *name, size_t w, size_t h,
   if(setjmp(png_jmpbuf(png_ptr)))
     goto exit_free_close;
 
-  //png_init_io(png_ptr, f);
   png_set_write_fn(png_ptr, vf, png_write_vfile, png_flush_vfile);
 
   // we know we have an 8-bit surface; save a palettized PNG
@@ -163,7 +162,6 @@ int png_write_image_32bpp(const char *name, size_t w, size_t h, void *priv,
   if(setjmp(png_jmpbuf(png_ptr)))
     goto exit_free_close;
 
-  //png_init_io(png_ptr, f);
   png_set_write_fn(png_ptr, vf, png_write_vfile, png_flush_vfile);
 
   // 24-bit png
@@ -345,13 +343,11 @@ err:
 #ifdef NEED_PNG_READ_FILE
 #include <png.h>
 
-/* TODO can vio-ize these, but it involves updating image_file.c. */
-
-static boolean png_check_stream(FILE *fp)
+static boolean png_check_stream(vfile *vf)
 {
   png_byte header[8];
 
-  if(fread(header, 1, 8, fp) < 8)
+  if(vfread(header, 1, 8, vf) < 8)
     return false;
 
   if(png_sig_cmp(header, 0, 8))
@@ -360,11 +356,18 @@ static boolean png_check_stream(FILE *fp)
   return true;
 }
 
+static void png_read_vfile(png_structp png_ptr, png_bytep data, size_t length)
+{
+  vfile *vf = (vfile *)png_get_io_ptr(png_ptr);
+  if(vfread(data, 1, length, vf) < length)
+    png_error(png_ptr, "read error");
+}
+
 /**
  * If `checked` is true, the first 8 bytes of the stream have already been
  * read and verified to be the PNG signature.
  */
-void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checked,
+void *png_read_stream(vfile *vf, png_uint_32 *_w, png_uint_32 *_h, boolean checked,
  check_w_h_constraint_t constraint, rgba_surface_allocator_t allocator)
 {
   png_uint_32 i, w, h, stride;
@@ -376,7 +379,7 @@ void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checke
   int type;
   int bpp;
 
-  if(!checked && !png_check_stream(fp))
+  if(!checked && !png_check_stream(vf))
     goto exit_out;
 
   png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
@@ -390,7 +393,7 @@ void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checke
   if(setjmp(png_jmpbuf(png_ptr)))
     goto exit_free_close;
 
-  png_init_io(png_ptr, fp);
+  png_set_read_fn(png_ptr, vf, png_read_vfile);
   png_set_sig_bytes(png_ptr, 8);
   png_read_info(png_ptr, info_ptr);
   png_get_IHDR(png_ptr, info_ptr, &w, &h, &bpp, &type, NULL, NULL, NULL);
@@ -401,31 +404,17 @@ void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checke
     goto exit_free_close;
   }
 
-  if(type == PNG_COLOR_TYPE_PALETTE)
-  {
-    png_set_palette_to_rgb(png_ptr);
-  }
-  else
-
-  if(type == PNG_COLOR_TYPE_GRAY_ALPHA || !(type & PNG_COLOR_MASK_COLOR))
-  {
-    png_set_gray_to_rgb(png_ptr);
-  }
-#if PNG_LIBPNG_VER >= 10209
-  else
-
-  if(!(type & PNG_COLOR_MASK_COLOR) && bpp < 8)
-    png_set_expand_gray_1_2_4_to_8(png_ptr);
+#if PNG_LIBPNG_VER < 10504
+#define png_set_scale_16(p) png_set_strip_16(p)
 #endif
-
+  /* This SHOULD convert everything to RGBA32.
+   * See the far too complicated table in libpng-manual.txt for more info. */
   if(bpp == 16)
-  {
-    png_set_strip_16(png_ptr);
-  }
-  else
-
-  if(bpp < 8)
-    png_set_packing(png_ptr);
+    png_set_scale_16(png_ptr);
+  if(type & PNG_COLOR_MASK_PALETTE)
+    png_set_palette_to_rgb(png_ptr);
+  if(!(type & PNG_COLOR_MASK_COLOR))
+    png_set_gray_to_rgb(png_ptr);
 
   if(png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
   {
@@ -437,10 +426,6 @@ void *png_read_stream(FILE *fp, png_uint_32 *_w, png_uint_32 *_h, boolean checke
   if(!(type & PNG_COLOR_MASK_ALPHA))
     png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);
 #endif
-
-  // FIXME: Are these necessary?
-  png_read_update_info(png_ptr, info_ptr);
-  png_get_IHDR(png_ptr, info_ptr, &w, &h, &bpp, &type, NULL, NULL, NULL);
 
   row_ptrs = (png_bytep *)cmalloc(sizeof(png_bytep) * h);
   if(!row_ptrs)
@@ -472,12 +457,12 @@ void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
 {
   void *s;
 
-  FILE *fp = fopen_unsafe(name, "rb");
-  if(!fp)
+  vfile *vf = vfopen_unsafe(name, "rb");
+  if(!vf)
     return NULL;
 
-  s = png_read_stream(fp, _w, _h, false, constraint, allocator);
-  fclose(fp);
+  s = png_read_stream(vf, _w, _h, false, constraint, allocator);
+  vfclose(vf);
 
   if(!s)
     warn("Failed to load '%s'\n", name);

@@ -980,11 +980,11 @@ UNITTEST(Filesystem)
   {
     char buffer[1024];
     char buffer2[1024];
-    char *t = getcwd(buffer, sizeof(buffer));
+    char *t = vgetcwd(buffer, sizeof(buffer));
     ASSERTEQ(t, buffer, "");
     ret = vchdir("..");
     ASSERTEQ(ret, 0, "");
-    t = getcwd(buffer2, sizeof(buffer2));
+    t = vgetcwd(buffer2, sizeof(buffer2));
     ASSERTEQ(t, buffer2, "");
     size_t len = strlen(buffer2);
     ASSERT(len < sizeof(buffer), "");

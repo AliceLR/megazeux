@@ -571,6 +571,9 @@ elif [ "$PLATFORM" = "unix" ] || [ "$PLATFORM" = "unix-devel" ] ||
 		"NetBSD")
 			UNIX="netbsd"
 			;;
+		"DragonFly")
+			UNIX="dragonflybsd"
+			;;
 		"Haiku")
 			UNIX="haiku"
 			;;
