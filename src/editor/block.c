@@ -950,7 +950,7 @@ enum thing layer_to_board_object_type(struct world *mzx_world)
   {
     case 0: return CUSTOM_BLOCK;
     case 1: return CUSTOM_FLOOR;
-    case 2: return __TEXT;
+    case 2: return TEXT_ID;
   }
 
   return NO_ID;

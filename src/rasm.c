@@ -2539,7 +2539,7 @@ static const struct special_word sorted_special_word_list[] =
   { "string",           ARG_TYPE_FRAGMENT_STRING,        ARG_TYPE_FRAGMENT  },
   { "swater",           S_WATER,                         ARG_TYPE_THING     },
   { "swimming",         SWIMMING,                        ARG_TYPE_CONDITION },
-  { "text",             __TEXT,                          ARG_TYPE_THING     },
+  { "text",             TEXT_ID,                         ARG_TYPE_THING     },
   { "the",              ARG_TYPE_IGNORE_THE,             ARG_TYPE_IGNORE    },
   { "then",             ARG_TYPE_IGNORE_THEN,            ARG_TYPE_IGNORE    },
   { "thick",            ARG_TYPE_FRAGMENT_THICK,         ARG_TYPE_FRAGMENT  },

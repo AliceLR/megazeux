@@ -183,7 +183,7 @@ static struct thing_menu_item thing_menus[NUM_THING_MENUS][MAX_CHOICES] =
     { "Mine            ~C\x8F",   MINE            },
     { "Spike           ~8\x1E",   SPIKE           },
     { "Custom Hurt     ~F?",      CUSTOM_HURT     },
-    { "Text            ~F?",      __TEXT          },
+    { "Text            ~F?",      TEXT_ID         },
     { "N Moving Wall   ~F?",      N_MOVING_WALL   },
     { "S Moving Wall   ~F?",      S_MOVING_WALL   },
     { "E Moving Wall   ~F?",      E_MOVING_WALL   },
