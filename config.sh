@@ -917,9 +917,6 @@ if [ "$PLATFORM" = "nds" ] || [ "$PLATFORM" = "nds-blocksds" ]; then
 	echo "BUILD_NDS=1" >> platform.inc
 	DOS_ROOTS="true"
 
-	echo "Force-disabling stack protector on NDS."
-	STACK_PROTECTOR="false"
-
 	echo "Building custom NDS renderer."
 
 	echo "Force-disabling hash tables on NDS."
@@ -938,6 +935,11 @@ if [ "$PLATFORM" = "nds" ] || [ "$PLATFORM" = "nds-blocksds" ]; then
 	OPENMPT="false"
 	REALITY="false"
 	VORBIS="false"
+fi
+
+if [ "$PLATFORM" = "nds" ]; then
+	echo "Force-disabling stack protector on NDS."
+	STACK_PROTECTOR="false"
 fi
 
 if [ "$PLATFORM" = "nds-blocksds" ]; then
