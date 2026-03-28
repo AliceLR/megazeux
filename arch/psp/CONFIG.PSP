@@ -1,6 +1,6 @@
 #!/bin/sh
 
-[[ -z $PSPDEV ]] && { echo "\$PSPDEV is unset. Aborting"; exit 1; }
+[ -z $PSPDEV ] && { echo "\$PSPDEV is unset. Aborting"; exit 1; }
 
 ./config.sh --platform psp --prefix $PSPDEV/psp --optimize-size \
             --disable-editor --disable-helpsys --disable-utils \
