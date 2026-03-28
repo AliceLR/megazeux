@@ -28,7 +28,8 @@ __M_BEGIN_DECLS
 
 #ifndef CONFIG_SDL
 
-#if defined(CONFIG_WII) || defined(CONFIG_NDS) || defined(CONFIG_3DS) || defined(CONFIG_DREAMCAST)
+#if defined(CONFIG_WII) || defined(CONFIG_NDS) || defined(CONFIG_3DS) || \
+    defined(CONFIG_DREAMCAST) || defined(CONFIG_AMIGA)
 int real_main(int argc, char *argv[]);
 #define main real_main
 #endif // CONFIG_WII || CONFIG_NDS || CONFIG_3DS

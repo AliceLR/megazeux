@@ -669,10 +669,12 @@ char *strsep(char **stringp, const char *delim)
 
 #endif // __WIN32__ || __amigaos__
 
-#if defined(__amigaos__)
+#if defined(CONFIG_AMIGA)
 
+__attribute__((used))
 long __stack_chk_guard[8];
 
+__attribute__((used))
 void __stack_chk_fail(void)
 {
   warn("Stack overflow detected; terminated");
