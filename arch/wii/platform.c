@@ -31,7 +31,6 @@
 #define BOOL _BOOL
 #include <ogc/system.h>
 #include <ogc/lwp.h>
-#include <ogc/lwp_threads.h>
 #include <ogc/lwp_watchdog.h>
 #include <ogc/message.h> // Suppress unused BOOL warning.
 #include <fat.h>
@@ -43,7 +42,7 @@ static lwpq_t reset_queue;
 static lwp_t reset_thread;
 static u8 reset_stack[STACKSIZE];
 
-void c_default_exceptionhandler(frame_context *pCtx);
+//void c_default_exceptionhandler(frame_context *pCtx);
 
 // Emergency exit
 static void *wii_reset_thread(void *dud)
@@ -51,7 +50,7 @@ static void *wii_reset_thread(void *dud)
   LWP_ThreadSleep(reset_queue);
   platform_quit();
   delay(1000);
-  c_default_exceptionhandler(&_thr_main->context);
+  //c_default_exceptionhandler(&_thr_main->context);
   exit(0);
   return 0;
 }
