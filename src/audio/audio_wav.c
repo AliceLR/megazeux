@@ -217,12 +217,9 @@ static void wav_set_loop_end(struct audio_stream *a_src, uint32_t position)
 
 static void wav_set_frequency(struct sampled_stream *s_src, uint32_t frequency)
 {
-  if(frequency == 0)
-    frequency = ((struct wav_stream *)s_src)->natural_frequency;
+  struct wav_stream *w_stream = (struct wav_stream *)s_src;
 
-  s_src->frequency = frequency;
-
-  sampled_set_buffer(s_src);
+  sampled_set_buffer(s_src, frequency, w_stream->natural_frequency);
 }
 
 static uint32_t wav_get_position(struct audio_stream *a_src)
@@ -251,7 +248,7 @@ static uint32_t wav_get_loop_end(struct audio_stream *a_src)
 
 static uint32_t wav_get_frequency(struct sampled_stream *s_src)
 {
-  return s_src->frequency;
+  return s_src->relative_frequency;
 }
 
 static void wav_destruct(struct audio_stream *a_src)
@@ -679,7 +676,7 @@ struct audio_stream *construct_wav_stream_direct(struct wav_info *w_info,
   s_spec.get_frequency = wav_get_frequency;
 
   initialize_sampled_stream((struct sampled_stream *)w_stream, &s_spec,
-   frequency, w_info->channels, true);
+   w_info->freq, frequency, w_info->channels, true);
 
   initialize_audio_stream((struct audio_stream *)w_stream, &a_spec,
    volume, repeat);

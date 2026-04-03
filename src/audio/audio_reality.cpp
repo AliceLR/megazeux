@@ -81,7 +81,6 @@ struct rad_stream
   size_t data_length;
   uint32_t sample_update_timer;
   uint32_t sample_update_max;
-  uint32_t effective_frequency;
 };
 
 static boolean rad_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffer,
@@ -150,21 +149,7 @@ static void rad_set_position(struct audio_stream *a_src, uint32_t position)
 
 static void rad_set_frequency(struct sampled_stream *s_src, uint32_t frequency)
 {
-  struct rad_stream *rad_stream = (struct rad_stream *)s_src;
-
-  if(frequency == 0)
-  {
-    rad_stream->effective_frequency = 44100;
-    frequency = OPL_FREQUENCY;
-  }
-  else
-  {
-    rad_stream->effective_frequency = frequency;
-    frequency = (uint64_t)frequency * OPL_FREQUENCY / 44100;
-  }
-
-  s_src->frequency = frequency;
-  sampled_set_buffer(s_src);
+  sampled_set_buffer(s_src, frequency, 44100);
 }
 
 static uint32_t rad_get_order(struct audio_stream *a_src)
@@ -193,8 +178,7 @@ static uint32_t rad_get_length(struct audio_stream *a_src)
 
 static uint32_t rad_get_frequency(struct sampled_stream *s_src)
 {
-  struct rad_stream *rad_stream = (struct rad_stream *)s_src;
-  return rad_stream->effective_frequency;
+  return s_src->relative_frequency;
 }
 
 static void rad_destruct(struct audio_stream *a_src)
@@ -283,7 +267,7 @@ static struct audio_stream *construct_rad_stream(vfile *vf,
   s_spec.get_frequency = rad_get_frequency;
 
   initialize_sampled_stream((struct sampled_stream *)rad_stream, &s_spec,
-   frequency, 2, true);
+   OPL_FREQUENCY, frequency, 2, true);
 
   initialize_audio_stream((struct audio_stream *)rad_stream, &a_spec,
    volume, repeat);

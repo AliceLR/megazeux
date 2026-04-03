@@ -39,7 +39,6 @@ struct openmpt_stream
 {
   struct sampled_stream s;
   openmpt_module *module_data;
-  uint32_t effective_frequency;
   uint32_t *row_tbl;
   uint32_t row_tbl_size;
   uint32_t total_rows;
@@ -83,12 +82,12 @@ static boolean omp_mix_data(struct audio_stream *a_src, int32_t *buffer,
   if(s->channels >= 2)
   {
     read_len = openmpt_module_read_interleaved_stereo(omp_stream->module_data,
-     s->frequency, read_wanted / 4, read_buffer) * 4;
+     s->input_frequency, read_wanted / 4, read_buffer) * 4;
   }
   else
   {
     read_len = openmpt_module_read_mono(omp_stream->module_data,
-     s->frequency, read_wanted / 2, read_buffer) * 2;
+     s->input_frequency, read_wanted / 2, read_buffer) * 2;
   }
 
   if(read_len < read_wanted && !a_src->repeat)
@@ -155,21 +154,7 @@ static void omp_set_position(struct audio_stream *a_src, uint32_t position)
 
 static void omp_set_frequency(struct sampled_stream *s_src, uint32_t frequency)
 {
-  struct openmpt_stream *omp_stream = (struct openmpt_stream *)s_src;
-
-  if(frequency == 0)
-  {
-    omp_stream->effective_frequency = 44100;
-    frequency = audio.output_frequency;
-  }
-  else
-  {
-    omp_stream->effective_frequency = frequency;
-    frequency = (uint32_t)((float)frequency * audio.output_frequency / 44100);
-  }
-
-  s_src->frequency = frequency;
-  sampled_set_buffer(s_src);
+  sampled_set_buffer(s_src, frequency, 44100);
 }
 
 static uint32_t omp_get_order(struct audio_stream *a_src)
@@ -198,7 +183,7 @@ static uint32_t omp_get_length(struct audio_stream *a_src)
 
 static uint32_t omp_get_frequency(struct sampled_stream *s_src)
 {
-  return ((struct sampled_stream *)s_src)->frequency;
+  return s_src->relative_frequency;
 }
 
 static void omp_destruct(struct audio_stream *a_src)
@@ -307,7 +292,7 @@ static struct audio_stream *construct_openmpt_stream(vfile *vf,
   s_spec.get_frequency = omp_get_frequency;
 
   initialize_sampled_stream((struct sampled_stream *)omp_stream, &s_spec,
-   frequency, chn, false);
+   audio.output_frequency, frequency, chn, false);
 
   initialize_audio_stream((struct audio_stream *)omp_stream, &a_spec,
    volume, repeat);

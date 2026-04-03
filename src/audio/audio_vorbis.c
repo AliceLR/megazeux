@@ -349,12 +349,9 @@ static void vorbis_set_loop_end(struct audio_stream *a_src, uint32_t position)
 
 static void vorbis_set_frequency(struct sampled_stream *s_src, uint32_t frequency)
 {
-  if(frequency == 0)
-    frequency = ((struct vorbis_stream *)s_src)->info.rate;
+  struct vorbis_stream *v_stream = (struct vorbis_stream *)s_src;
 
-  s_src->frequency = frequency;
-
-  sampled_set_buffer(s_src);
+  sampled_set_buffer(s_src, frequency, v_stream->info.rate);
 }
 
 static uint32_t vorbis_get_position(struct audio_stream *a_src)
@@ -380,7 +377,7 @@ static uint32_t vorbis_get_loop_end(struct audio_stream *a_src)
 
 static uint32_t vorbis_get_frequency(struct sampled_stream *s_src)
 {
-  return s_src->frequency;
+  return s_src->relative_frequency;
 }
 
 static void vorbis_destruct(struct audio_stream *a_src)
@@ -483,7 +480,7 @@ static struct audio_stream *construct_vorbis_stream(vfile *vf,
   s_spec.get_frequency = vorbis_get_frequency;
 
   initialize_sampled_stream((struct sampled_stream *)v_stream, &s_spec,
-   frequency, info.channels, true);
+   info.rate, frequency, info.channels, true);
 
   initialize_audio_stream((struct audio_stream *)v_stream, &a_spec,
    volume, repeat);

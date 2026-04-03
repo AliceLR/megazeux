@@ -34,6 +34,7 @@
 
 #define FP_SHIFT      13
 #define FP_AND        ((1 << FP_SHIFT) - 1)
+#define FP_ONE        (1 << FP_SHIFT)
 
 /**
  * This uses C++ templates to generate optimized mixer variants depending on
@@ -327,21 +328,37 @@ void *sampled_get_buffer(struct sampled_stream *s_src, size_t *needed)
   return ((uint8_t *)s_src->output_data) + s_src->stream_offset;
 }
 
-void sampled_set_buffer(struct sampled_stream *s_src)
+void sampled_set_buffer(struct sampled_stream *s_src, uint32_t rel_frequency,
+ uint32_t rel_frequency_base)
 {
-  size_t frequency = s_src->frequency;
   size_t data_window_length;
   size_t allocated_data_length;
+  int64_t frequency;
+  int64_t frequency_base;
   int64_t frequency_delta;
 
-  if(!frequency)
-    frequency = audio.output_frequency;
+  frequency = (int64_t)s_src->input_frequency;
+  frequency_base = (int64_t)audio.output_frequency;
 
-  frequency_delta = ((int64_t)frequency << FP_SHIFT) / audio.output_frequency;
+  /* The relative frequency base is whatever value should be reported for "1:1"
+   * rate to the game engine, usually 44100 for modules and native for PCM.
+   * This value should never be zero, but check it just in case.
+   *
+   * Relative frequency of 0 acts the same as 1:1.
+   */
+  if(rel_frequency != 0 && rel_frequency_base != 0)
+  {
+    frequency *= (int64_t)rel_frequency;
+    frequency_base *= (int64_t)rel_frequency_base;
+  }
+  else
+    rel_frequency = rel_frequency_base;
+
+  frequency_delta = (frequency << FP_SHIFT) / frequency_base;
 
   data_window_length =
    (size_t)(ceil((double)audio.buffer_frames *
-   frequency / audio.output_frequency) * s_src->bytes_per_frame);
+   frequency / frequency_base) * s_src->bytes_per_frame);
 
   allocated_data_length = data_window_length + PROLOGUE_LENGTH + EPILOGUE_LENGTH;
 
@@ -353,6 +370,7 @@ void sampled_set_buffer(struct sampled_stream *s_src)
   if(s_src->stream_offset > allocated_data_length)
     allocated_data_length = s_src->stream_offset;
 
+  s_src->relative_frequency = rel_frequency;
   s_src->frequency_delta = frequency_delta;
   s_src->data_window_length = data_window_length;
   s_src->allocated_data_length = allocated_data_length;
@@ -378,7 +396,7 @@ void sampled_mix_data(struct sampled_stream *s_src,
   // MZX currently only supports mono and stereo output.
   assert(dest_channels == 1 || dest_channels == 2);
 
-  if(s_src->frequency == audio.output_frequency)
+  if(s_src->frequency_delta == FP_ONE)
     resample_mode = FLAT;
 
   if(!s_src->use_volume || volume == 256)
@@ -420,8 +438,8 @@ void sampled_destruct(struct audio_stream *a_src)
 }
 
 void initialize_sampled_stream(struct sampled_stream *s_src,
- struct sampled_stream_spec *s_spec, uint32_t frequency, uint32_t channels,
- boolean use_volume)
+ struct sampled_stream_spec *s_spec, uint32_t input_frequency,
+ uint32_t relative_frequency, uint32_t channels, boolean use_volume)
 {
   s_src->set_frequency = s_spec->set_frequency;
   s_src->get_frequency = s_spec->get_frequency;
@@ -432,7 +450,8 @@ void initialize_sampled_stream(struct sampled_stream *s_src,
   s_src->stream_offset = PROLOGUE_LENGTH;
   s_src->sample_index = 0;
 
-  s_src->set_frequency(s_src, frequency);
+  s_src->input_frequency = input_frequency;
+  s_src->set_frequency(s_src, relative_frequency);
 
   memset(s_src->output_data, 0, PROLOGUE_LENGTH);
 }
