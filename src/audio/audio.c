@@ -108,9 +108,9 @@ static unsigned int volume_function(int input, int volume_setting)
   /* Adjust volume (0-255) exponentially according to a given setting (0-10).
    * 0 is no volume whatsoever and 10 is maximum volume. */
 
-  float setting_f = volume_setting / 10.0f;
-  float setting_exp = (expf(setting_f) - 1) / (M_E - 1);
-  int output = (int)((float)input * setting_exp + 0.5f);
+  double setting_f = (double)volume_setting / 10.0;
+  double setting_exp = (exp(setting_f) - 1.0) / (M_E - 1.0);
+  int output = (int)((double)input * setting_exp + 0.5);
 
   return CLAMP(output, 0, 255);
 }
