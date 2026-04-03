@@ -2410,7 +2410,7 @@ static void execute_macro(struct robot_editor_context *rstate,
   int total_lines_needed;
   int largest;
   int current_len;
-  float optimal_delta, old_optimal_delta = 1000000.0;
+  double optimal_delta, old_optimal_delta = 1000000.0;
   int x, y, dialog_index = 2;
   struct macro_variable *current_variable;
   int draw_on_line;
@@ -2509,7 +2509,7 @@ static void execute_macro(struct robot_editor_context *rstate,
     // two for borders
     nominal_height = total_lines_needed + 5;
 
-    optimal_delta = (float)fabs((80.0 / 25) -
+    optimal_delta = fabs((80.0 / 25) -
      (double)(nominal_width + 3) / nominal_height);
 
     if((old_optimal_delta < optimal_delta) ||
