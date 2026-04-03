@@ -77,7 +77,7 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
   if(pcs_stream->last_playing)
   {
     increment_value =
-     (uint32_t)((float)pcs_stream->last_frequency /
+     (uint32_t)((double)pcs_stream->last_frequency /
      (audio.output_frequency) * 4294967296.0);
 
     increment_buffer = pcs_stream->last_increment_buffer;
@@ -114,7 +114,7 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
     if(pcs_stream->note_duration < 1)
       pcs_stream->note_duration = 1;
 
-    sample_duration = (uint32_t)((float)audio.output_frequency / 500 *
+    sample_duration = (uint32_t)((double)audio.output_frequency / 500.0 *
      pcs_stream->note_duration);
 
     if(offset + sample_duration >= dest_frames)
@@ -132,7 +132,7 @@ static boolean pcs_mix_data(struct audio_stream *a_src, int32_t * RESTRICT buffe
     if(pcs_stream->playing)
     {
       increment_value =
-       (uint32_t)((float)pcs_stream->frequency /
+       (uint32_t)((double)pcs_stream->frequency /
        audio.output_frequency * 4294967296.0);
       increment_buffer = 0;
 
