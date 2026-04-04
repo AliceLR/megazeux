@@ -11,6 +11,8 @@ GIT - MZX 2.93e
 
 USERS
 
++ Fixed out-of-memory error on some platforms when attempting to
+  flood fill the player in the editor.
 + Fixed checkres testing of 2.90X through 2.92X worlds with
   custom sound effects tables.
 
