@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 1996 Alexis Janson
  * Copyright (C) 1999 Charles Goetzman
  * Copyright (C) 2004 Gilead Kutnick
  *

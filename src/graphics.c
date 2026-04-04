@@ -3,7 +3,7 @@
  * Copyright (C) 2004-2006 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  * Copyright (C) 2017 Dr Lancer-X <drlancer@megazeux.org>
- * Copyright (C) 2017-2024 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017-2025 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * YUV Renderers:
  *   Copyright (C) 2007 Alan Williams <mralert@gmail.com>

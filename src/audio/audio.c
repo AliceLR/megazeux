@@ -3,7 +3,7 @@
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2004 madbrain
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
- * Copyright (C) 2017-2024 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

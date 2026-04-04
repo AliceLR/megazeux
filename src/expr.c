@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson (original tr_msg only)
+ * Copyright (C) 1996 Alexis Janson (original tr_msg)
  * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2017-2025 Alice Rowan <petrifiedrowan@gmail.com>
  *

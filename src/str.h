@@ -1,8 +1,8 @@
 /* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 1996 Alexis Janson
  * Copyright (C) 1999 Charles Goetzman
- * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017-2024 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

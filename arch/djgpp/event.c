@@ -1,6 +1,6 @@
 /* MegaZeux
 *
-* Copyright (C) 1996 Greg Janson
+* Copyright (C) 1996 Alexis Janson
 * Copyright (C) 2010 Alan Williams <mralert@gmail.com>
 *
 * This program is free software; you can redistribute it and/or

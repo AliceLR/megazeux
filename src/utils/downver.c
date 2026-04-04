@@ -20,7 +20,7 @@
  * to make the tool easy to use for newbies (simply drag and drop).
  *
  * Copyright (C) 2008-2009 Alistair John Strachan <alistair@devzero.co.uk>
- * Copyright (C) 2017-2022 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017-2023 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

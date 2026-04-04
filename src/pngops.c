@@ -1,9 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2008 Alistair Strachan <alistair@devzero.co.uk>
- *
- * Fallback PNG writer:
- * Copyright (C) 2024 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2024-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

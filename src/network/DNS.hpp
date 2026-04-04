@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2018-2021 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
