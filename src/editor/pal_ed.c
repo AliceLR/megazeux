@@ -214,21 +214,21 @@ static const char *const idx_ext[] = { ".PALIDX", NULL };
 
 static void rgb_to_hsl(struct color_status *current)
 {
-  float r = (float)(current->r) / 63.0;
-  float g = (float)(current->g) / 63.0;
-  float b = (float)(current->b) / 63.0;
+  double r = (double)current->r / 63.0;
+  double g = (double)current->g / 63.0;
+  double b = (double)current->b / 63.0;
 
-  float M = MAX(r, MAX(g, b));
-  float m = MIN(r, MIN(g, b));
-  float c = M - m;
+  double M = MAX(r, MAX(g, b));
+  double m = MIN(r, MIN(g, b));
+  double c = M - m;
 
-  float h =
+  double h =
    (c == 0) ? 0 :
    (M == r) ? fmod((g - b)/c + 6, 6.0)  : // Add 6 to bypass C's shit modulo
    (M == g) ? ((b - r)/c) + 2           :
    (M == b) ? ((r - g)/c) + 4           : 0;
 
-  float l = (M+m)/2.0;
+  double l = (M + m) / 2.0;
 
   current->h = (unsigned int) round( fmod(h * 60, 360.0) );
 
@@ -239,27 +239,27 @@ static void rgb_to_hsl(struct color_status *current)
 
 static void hsl_to_rgb(struct color_status *current)
 {
-  float l = (float)( current->l ) / 100.0;
-  float s = (float)( current->s ) / 100.0;
-  float h = (float)( current->h ) / 60.0;
+  double l = (double)current->l / 100.0;
+  double s = (double)current->s / 100.0;
+  double h = (double)current->h / 60.0;
 
-  float c = (1 - fabs(2*l - 1)) * s;
+  double c = (1 - fabs(2 * l - 1)) * s;
 
-  float m = l - c/2.0;
+  double m = l - c / 2.0;
 
-  float x = c * (1 - fabs( fmod(h, 2.0) - 1 ));
+  double x = c * (1 - fabs(fmod(h, 2.0) - 1));
 
   int fh = floor(h);
 
-  float r =
+  double r =
    (fh == 0) || (fh == 5) ? c+m :
    (fh == 1) || (fh == 4) ? x+m : m;
 
-  float g =
+  double g =
    (fh == 1) || (fh == 2) ? c+m :
    (fh == 0) || (fh == 3) ? x+m : m;
 
-  float b =
+  double b =
    (fh == 3) || (fh == 4) ? c+m :
    (fh == 2) || (fh == 5) ? x+m : m;
 
@@ -970,7 +970,7 @@ static boolean color_editor_drag(subcontext *ctx, int *key, int button,
       const struct color_mode_component *c;
       int component = mouse_y - current->y - 1;
 
-      float value =
+      double value =
        CLAMP((mouse_x - current->x - 8) + ((mouse_px % 8) / 8.0), 0, 32);
 
       c = &(current_mode->components[component]);

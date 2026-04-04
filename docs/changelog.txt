@@ -19,6 +19,8 @@ DEVELOPERS
 + Renamed enum thing __TEXT to TEXT_ID to fix conflicts with
   libnix BSD sockets headers.
 + Fix vfwrite return value for size 0 on DragonFly BSD.
++ Replace various instances of audio and editor single-precision
+  floating point with doubles or 64-bit integers.
 
 
 June 9th, 2025 - MZX 2.93d

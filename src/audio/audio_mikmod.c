@@ -40,7 +40,6 @@ struct mikmod_stream
 {
   struct sampled_stream s;
   MODULE *module_data;
-  uint32_t effective_frequency;
   uint32_t num_orders;
   uint32_t *order_to_pos_table;
 };
@@ -229,21 +228,7 @@ static void mm_set_position(struct audio_stream *a_src, uint32_t position)
 
 static void mm_set_frequency(struct sampled_stream *s_src, uint32_t frequency)
 {
-  if(frequency == 0)
-  {
-    ((struct mikmod_stream *)s_src)->effective_frequency = 44100;
-    frequency = audio.output_frequency;
-  }
-  else
-  {
-    ((struct mikmod_stream *)s_src)->effective_frequency = frequency;
-    frequency = (uint32_t)((float)frequency *
-     audio.output_frequency / 44100);
-  }
-
-  s_src->frequency = frequency;
-
-  sampled_set_buffer(s_src);
+  sampled_set_buffer(s_src, frequency, 44100);
 }
 
 static uint32_t mm_get_order(struct audio_stream *a_src)
@@ -269,7 +254,7 @@ static uint32_t mm_get_length(struct audio_stream *a_src)
 
 static uint32_t mm_get_frequency(struct sampled_stream *s_src)
 {
-  return ((struct mikmod_stream *)s_src)->effective_frequency;
+  return s_src->relative_frequency;
 }
 
 static void mm_destruct(struct audio_stream *a_src)
@@ -333,7 +318,7 @@ static struct audio_stream *construct_mikmod_stream(vfile *vf,
   s_spec.get_frequency = mm_get_frequency;
 
   initialize_sampled_stream((struct sampled_stream *)mm_stream, &s_spec,
-   frequency, 2, false);
+   md_mixfreq, frequency, 2, false);
 
   initialize_audio_stream((struct audio_stream *)mm_stream, &a_spec,
    volume, repeat);

@@ -31,7 +31,8 @@ __M_BEGIN_DECLS
 struct sampled_stream
 {
   struct audio_stream a;
-  size_t frequency;
+  uint32_t relative_frequency;
+  uint32_t input_frequency;
   int16_t *output_data;
   size_t data_window_length;
   size_t allocated_data_length;
@@ -53,14 +54,37 @@ struct sampled_stream_spec
 };
 
 void *sampled_get_buffer(struct sampled_stream *s_src, size_t *needed);
-void sampled_set_buffer(struct sampled_stream *s_src);
+void sampled_set_buffer(struct sampled_stream *s_src, uint32_t rel_frequency,
+ uint32_t rel_frequency_base);
 void sampled_mix_data(struct sampled_stream *s_src,
  int32_t * RESTRICT dest_buffer, size_t dest_frames, unsigned int dest_channels);
 void sampled_destruct(struct audio_stream *a_src);
 
+/**
+ *                      input frequency * relative frequency
+ * frequency ratio = ------------------------------------------
+ *                   output frequency * relative frequency base
+ *
+ * This function will call the provided set_frequency function with the
+ * provided relative frequency to recalculate the frequency ratio and allocate
+ * a mixing buffer.
+ *
+ * @param s_src               audio_stream/sampled_stream struct
+ * @param s_spec              override member function pointers
+ * @param input_frequency     the native rate of the input stream. For module
+ *                            players, this is set to the output frequency
+ *                            (to allow them to use internal resamplers); for
+ *                            RAD, this is 49716; for PCM files, this is the
+ *                            sample rate of the file.
+ * @param relative_frequency  the logical playback rate. For module players,
+ *                            this is relative to 44100; for PCM files, this
+ *                            is relative to the sample rate of the file.
+ * @param channels            channels in stream (1 or 2).
+ * @param use_volume          if true, compute volume, otherwise always max.
+ */
 void initialize_sampled_stream(struct sampled_stream *s_src,
- struct sampled_stream_spec *s_spec, uint32_t frequency, uint32_t channels,
- boolean use_volume);
+ struct sampled_stream_spec *s_spec, uint32_t input_frequency,
+ uint32_t relative_frequency, uint32_t channels, boolean use_volume);
 
 __M_END_DECLS
 

@@ -44,7 +44,6 @@ struct modplug_stream
 {
   struct sampled_stream s;
   ModPlugFile *module_data;
-  size_t effective_frequency;
 };
 
 static void init_modplug_settings(void)
@@ -168,21 +167,7 @@ static void mp_set_position(struct audio_stream *a_src, uint32_t position)
 
 static void mp_set_frequency(struct sampled_stream *s_src, uint32_t frequency)
 {
-  if(frequency == 0)
-  {
-    ((struct modplug_stream *)s_src)->effective_frequency = 44100;
-    frequency = audio.output_frequency;
-  }
-  else
-  {
-    ((struct modplug_stream *)s_src)->effective_frequency = frequency;
-    frequency = (uint32_t)((float)frequency *
-     audio.output_frequency / 44100);
-  }
-
-  s_src->frequency = frequency;
-
-  sampled_set_buffer(s_src);
+  sampled_set_buffer(s_src, frequency, 44100);
 }
 
 static uint32_t mp_get_order(struct audio_stream *a_src)
@@ -205,7 +190,7 @@ static uint32_t mp_get_length(struct audio_stream *a_src)
 
 static uint32_t mp_get_frequency(struct sampled_stream *s_src)
 {
-  return ((struct modplug_stream *)s_src)->effective_frequency;
+  return s_src->relative_frequency;
 }
 
 static void mp_destruct(struct audio_stream *a_src)
@@ -269,7 +254,7 @@ static struct audio_stream *construct_modplug_stream(vfile *vf,
   s_spec.get_frequency = mp_get_frequency;
 
   initialize_sampled_stream((struct sampled_stream *)mp_stream, &s_spec,
-   frequency, 2, false);
+   audio.output_frequency, frequency, 2, false);
 
   initialize_audio_stream((struct audio_stream *)mp_stream, &a_spec,
    volume, repeat);

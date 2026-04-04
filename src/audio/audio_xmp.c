@@ -42,7 +42,6 @@ struct xmp_stream
   struct sampled_stream s;
   xmp_context ctx;
   uint32_t row_tbl[XMP_MAX_MOD_LENGTH];
-  size_t effective_frequency;
   size_t total_rows;
   boolean repeat;
 };
@@ -140,22 +139,7 @@ static void audio_xmp_set_order(struct audio_stream *a_src, uint32_t order)
 static void audio_xmp_set_frequency(struct sampled_stream *s_src,
  uint32_t frequency)
 {
-  struct xmp_stream *stream = (struct xmp_stream *)s_src;
-
-  if(frequency == 0)
-  {
-    stream->effective_frequency = 44100;
-    frequency = audio.output_frequency;
-  }
-  else
-  {
-    stream->effective_frequency = frequency;
-    frequency = (uint32_t)((float)frequency * audio.output_frequency / 44100);
-  }
-
-  s_src->frequency = frequency;
-
-  sampled_set_buffer(s_src);
+  sampled_set_buffer(s_src, frequency, 44100);
 }
 
 static uint32_t audio_xmp_get_order(struct audio_stream *a_src)
@@ -180,7 +164,7 @@ static uint32_t audio_xmp_get_length(struct audio_stream *a_src)
 
 static uint32_t audio_xmp_get_frequency(struct sampled_stream *s_src)
 {
-  return ((struct xmp_stream *)s_src)->effective_frequency;
+  return s_src->relative_frequency;
 }
 
 // Return a duplicate of a sample from the current playing mod.
@@ -346,7 +330,7 @@ static struct audio_stream *construct_xmp_stream(vfile *vf,
   s_spec.get_frequency = audio_xmp_get_frequency;
 
   initialize_sampled_stream((struct sampled_stream *)xmp_stream, &s_spec,
-   frequency, chn, false);
+   audio.output_frequency, frequency, chn, false);
 
   initialize_audio_stream((struct audio_stream *)xmp_stream, &a_spec,
    volume, repeat);

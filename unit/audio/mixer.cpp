@@ -205,7 +205,7 @@ public:
 
         strm.a.volume = s.volume;
         strm.sample_index = 0;
-        strm.frequency = static_cast<size_t>(sample_rate * s.delta);
+        //strm.frequency = static_cast<size_t>(sample_rate * s.delta);
         strm.frequency_delta = static_cast<int64_t>((1 << FP_SHIFT) * s.delta);
 
         dest_frames = static_cast<size_t>(ceil(input.frames() / s.delta));
