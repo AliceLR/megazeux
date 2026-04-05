@@ -367,7 +367,7 @@ Because they won't help anything.
 
 Main author: Exophase (Gilead Kutnick, exophase@adelphia.net)
 
-Original MZX base code: Gregory Janson
+Original MZX base code: Alexis Janson
 
 Additional MZX contributions: Spider124, MenTaLguY, CapnKev, JZig,
   madbrain, Akwende, Koji
