@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2017-2023 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -245,7 +245,7 @@ struct zip_archive
   void **external_buffer;
   size_t *external_buffer_size;
 
-  struct zip_method_handler *stream;
+  const struct zip_method_handler *stream;
   struct zip_stream_data *stream_data;
   struct zip_stream_data *stream_data_ptrs[ZIP_M_MAX_SUPPORTED + 1];
 };

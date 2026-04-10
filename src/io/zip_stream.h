@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2020-2023 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2020-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -79,7 +79,7 @@ struct zip_method_handler
  * ZIP stream function registry for supported (de)compression methods.
  */
 UTILS_LIBSPEC
-extern struct zip_method_handler *zip_method_handlers[ZIP_M_MAX_SUPPORTED + 1];
+extern const struct zip_method_handler * const zip_method_handlers[ZIP_M_MAX_SUPPORTED + 1];
 
 __M_END_DECLS
 
