@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2020-2023 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2020-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -71,7 +71,7 @@ static boolean zip_stream_output(struct zip_stream_data *zs, void *dest,
   return true;
 }
 
-static struct zip_method_handler shrink_spec =
+static const struct zip_method_handler shrink_spec =
 {
   unshrink_create,
   zip_stream_destroy,
@@ -86,7 +86,7 @@ static struct zip_method_handler shrink_spec =
   NULL
 };
 
-static struct zip_method_handler reduce_spec =
+static const struct zip_method_handler reduce_spec =
 {
   reduce_ex_create,
   zip_stream_destroy,
@@ -101,7 +101,7 @@ static struct zip_method_handler reduce_spec =
   NULL
 };
 
-static struct zip_method_handler implode_spec =
+static const struct zip_method_handler implode_spec =
 {
   expl_create,
   zip_stream_destroy,
@@ -116,7 +116,7 @@ static struct zip_method_handler implode_spec =
   NULL
 };
 
-static struct zip_method_handler deflate64_spec =
+static const struct zip_method_handler deflate64_spec =
 {
   inflate64_create,
   zip_stream_destroy,
@@ -132,7 +132,7 @@ static struct zip_method_handler deflate64_spec =
 };
 #endif
 
-static struct zip_method_handler deflate_spec =
+static const struct zip_method_handler deflate_spec =
 {
   deflate_create,
   deflate_destroy,
@@ -147,16 +147,22 @@ static struct zip_method_handler deflate_spec =
   deflate_bound
 };
 
-struct zip_method_handler *zip_method_handlers[] =
-{
 #ifdef ZIP_EXTRA_DECOMPRESSORS
-  [ZIP_M_SHRUNK]    = &shrink_spec,
-  [ZIP_M_REDUCED_1] = &reduce_spec,
-  [ZIP_M_REDUCED_2] = &reduce_spec,
-  [ZIP_M_REDUCED_3] = &reduce_spec,
-  [ZIP_M_REDUCED_4] = &reduce_spec,
-  [ZIP_M_IMPLODED]  = &implode_spec,
-  [ZIP_M_DEFLATE64] = &deflate64_spec,
+#define ZIP_EXTRA(ds) (ds)
+#else
+#define ZIP_EXTRA(ds) NULL
 #endif
-  [ZIP_M_DEFLATE]   = &deflate_spec,
+
+const struct zip_method_handler * const zip_method_handlers[] =
+{
+  NULL,
+  ZIP_EXTRA(&shrink_spec),
+  ZIP_EXTRA(&reduce_spec),
+  ZIP_EXTRA(&reduce_spec),
+  ZIP_EXTRA(&reduce_spec),
+  ZIP_EXTRA(&reduce_spec),
+  ZIP_EXTRA(&implode_spec),
+  NULL,
+  &deflate_spec,
+  ZIP_EXTRA(&deflate64_spec),
 };

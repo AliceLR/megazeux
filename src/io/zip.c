@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2017-2025 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -275,7 +275,7 @@ static enum zip_error zip_get_stream(struct zip_archive *zp, uint8_t method,
 
   if(method <= ZIP_M_MAX_SUPPORTED)
   {
-    struct zip_method_handler *result = zip_method_handlers[method];
+    const struct zip_method_handler *result = zip_method_handlers[method];
 
     switch(new_mode)
     {

@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2020, 2024 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2020-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -105,6 +105,16 @@ namespace unit
         FAIL("failed to read file data: %s", path);
 
       return out;
+    }
+
+    static void load_vector(std::vector<uint8_t> &out, const char *path)
+    {
+      io in(path);
+
+      out.resize(in.file_length);
+
+      if(fread(out.data(), 1, in.file_length, in.file_handle) < in.file_length)
+        FAIL("failed to read file data: %s", path);
     }
 
     template<typename T>
