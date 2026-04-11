@@ -316,6 +316,11 @@ CONFIGURE_ARGS	+= --build=$$(./config.guess) --host='${HOST}'
 endif
 CONFIGURE_ARGS	+= ${ARCH_CONFIGURE_ARGS}
 
+ifneq (${FORCE_STATIC_LIBS},)
+ZLIB_ARGS	+= --static
+CONFIGURE_ARGS	+= --disable-shared --enable-static
+endif
+
 CONFIGURE	?= ./configure
 CMAKE		?= cmake
 
@@ -355,7 +360,7 @@ else
 	cd build/${ZLIB}; \
 	set -e; \
 	${ARCH_INIT}; \
-	${ZLIB_CONFIGURE} ./configure --prefix='${PREFIX}'; \
+	${ZLIB_CONFIGURE} ./configure --prefix='${PREFIX}' ${ZLIB_ARGS}; \
 	${MAKE}; \
 	${MAKE} install;
 endif

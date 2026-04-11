@@ -22,7 +22,7 @@ ARCH_INIT = \
 	export PKG_CONFIG_PATH='${PREFIX}/lib/pkgconfig'; \
 	true
 
-ARCH_CONFIGURE_ARGS	= --disable-shared --enable-static
+FORCE_STATIC_LIBS	= 1
 TREMOR_LOWMEM		= 1
 
 all: ${ZLIB_TARGET} ${PNG_TARGET}

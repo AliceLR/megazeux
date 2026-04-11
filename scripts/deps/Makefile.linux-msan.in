@@ -5,6 +5,8 @@
 # MemorySanitizer for MemorySanitizer builds to work.
 # Because SDL uses so many external libraries, this means
 # that MSan builds don't support SDL.
+# Due to complications when dynamically linking, build
+# static libraries only.
 #
 
 THIS_ARCH = $(shell uname -m)
@@ -30,6 +32,7 @@ ARCH_INIT = \
 	export CXXFLAGS='${CXXFLAGS}'; \
 	true
 
+FORCE_STATIC_LIBS := 1
 USE_CMAKE := 0
 
 all: ${ZLIB_TARGET} ${PNG_TARGET} ${OGG_TARGET} ${VORBIS_TARGET} ${STB_TARGET}
