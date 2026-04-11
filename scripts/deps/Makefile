@@ -3,30 +3,34 @@
 #
 
 ifeq (${PLATFORM},)
-$(error usage: make PLATFORM=<platform> [ARCH=<arch>] [all|<arch>|package|clean])
+all:
+	$(error usage: make PLATFORM=<platform> [ARCH=<arch>] [all|<arch>|fetch|package|clean])
+
 endif
 
-VERSION		= 2.93d-r0
+VERSION		= 2.93e-r0
 DIST		= megazeux-dependencies-${VERSION}
 TARGET		= TARGET
 
+# 1.3.2 is broken on DJGPP (EWOULDBLOCK) and Amiga m68k (-fPIC).
 ZLIB		= zlib-1.3.1
-PNG		= libpng-1.6.48
-OGG		= libogg-1.3.5
+PNG		= libpng-1.6.57
+OGG		= libogg-1.3.6
 VORBIS		= libvorbis-1.3.7
 TREMOR		= tremor
 STB		= stb
 SDL12		= SDL-1.2.15
 SDL2_TIGER	= panther_sdl2
 SDL2_22		= SDL2-2.0.22
-SDL2_LATEST	= SDL2-2.32.8
-SDL3		= SDL3-3.2.16
+SDL2_LATEST	= SDL2-2.32.10
+SDL3		= SDL3-3.4.4
 
 # Mac OS X/macOS compatibility builds rely on different versions of SDL2
 # for each architecture. Override ${SDL2} to select a different version.
 SDL2		:= ${SDL2_LATEST}
 
-ZLIB_URL	= https://www.zlib.net/${ZLIB}.tar.gz
+#ZLIB_URL	= https://www.zlib.net/${ZLIB}.tar.gz
+ZLIB_URL	= https://github.com/madler/zlib/releases/download/v1.3.1/${ZLIB}.tar.gz
 PNG_URL		= http://download.sourceforge.net/libpng/${PNG}.tar.gz
 OGG_URL		= https://downloads.xiph.org/releases/ogg/${OGG}.tar.gz
 VORBIS_URL	= https://downloads.xiph.org/releases/vorbis/${VORBIS}.tar.gz
@@ -107,6 +111,7 @@ SDL3_PACKAGE	= ${TARGET}/${LIB}/libSDL3.a \
 .PHONY: SDL12_package SDL2_package SDL3_package
 .PHONY: clean zlib_clean png_clean ogg_clean vorbis_clean tremor_clean
 .PHONY: SDL12_clean SDL2_tiger_clean SDL2_22_clean SDL2_clean SDL3_clean
+.PHONY: fetch distclean
 
 .NOTPARALLEL:
 .SUFFIXES:
@@ -150,18 +155,22 @@ build/${SDL3}.tar.gz: | build
 	cd build && \
 	wget '${SDL3_URL}'
 
+fetch: build/${ZLIB}
 build/${ZLIB}: build/${ZLIB}.tar.gz
 	cd build && \
 	tar -xzf '${ZLIB}.tar.gz'
 
+fetch: build/${PNG}
 build/${PNG}: build/${PNG}.tar.gz | build
 	cd build && \
 	tar -xzf '${PNG}.tar.gz'
 
+fetch: build/${OGG}
 build/${OGG}: build/${OGG}.tar.gz | build
 	cd build && \
 	tar -xzf '${OGG}.tar.gz'
 
+fetch: build/${VORBIS}
 build/${VORBIS}: build/${VORBIS}.tar.gz | build
 	cd build && \
 	tar -xzf '${VORBIS}.tar.gz'
@@ -169,75 +178,82 @@ ifeq (${VORBIS},libvorbis-1.3.7)
 	patch build/${VORBIS}/lib/CMakeLists.txt fix-vorbis-1.3.7-build-framework.patch
 endif
 
+fetch: build/${TREMOR}
 build/${TREMOR}: | build
 	cd build && \
 	git clone "${TREMOR_GIT}"
 
+fetch: build/${STB}
 build/${STB}: | build
 	cd build && \
 	git clone "${STB_GIT}"
 
+fetch: build/${SDL12}
 build/${SDL12}: build/${SDL12}.tar.gz | build
 	cd build && \
 	tar -xzf '${SDL12}.tar.gz'
 
+# fetch: build/${SDL2_TIGER}
 build/${SDL2_TIGER}: | build
 	cd build && \
 	git clone "${SDL2_TIGER_GIT}" && \
 	cd "${SDL2_TIGER}" && \
 	git apply ../../panther_SDL2_fixes.patch
 
+fetch: build/${SDL2_22}
 build/${SDL2_22}: build/${SDL2_22}.tar.gz | build
 	cd build && \
 	tar -xzf '${SDL2_22}.tar.gz'
 	# SDL 2.0.22 doesn't actually need -fobjc-weak but CMakeLists.txt
 	# tries to force it. This doesn't affect autotools.
-	sed -i '' 's/^.*fobjc-weak.*$$//g' build/${SDL2_22}/CMakeLists.txt
+	sed -ibak 's/^.*fobjc-weak.*$$//g' build/${SDL2_22}/CMakeLists.txt
 	# SDL 2.0.22 doesn't need AVFoundation.framework either, but
 	# the CMakeLists.txt links it anyway just to break Snow Leopard.
 	# This also does not affect autotools.
-	sed -i '' 's/set(SDL_FRAMEWORK_AVFOUNDATION 1)//g' build/${SDL2_22}/CMakeLists.txt
+	sed -ibak 's/set(SDL_FRAMEWORK_AVFOUNDATION 1)//g' build/${SDL2_22}/CMakeLists.txt
 
+fetch: build/${SDL2_LATEST}
 build/${SDL2_LATEST}: build/${SDL2_LATEST}.tar.gz | build
 	cd build && \
 	tar -xzf '${SDL2_LATEST}.tar.gz'
 
+fetch: build/${SDL3}
 build/${SDL3}: build/${SDL3}.tar.gz | build
 	cd build && \
 	tar -xzf '${SDL3}.tar.gz'
 
 zlib_clean:
-	cd build/${ZLIB}; make distclean || true; make -fwin32/Makefile.gcc clean || true
+	cd build/${ZLIB} && make distclean || true; make -fwin32/Makefile.gcc clean || true
 
 png_clean:
 	rm -rf build/cmake/${PNG}
-	cd build/${PNG}; make distclean || true
+	cd build/${PNG} && make distclean || true
 
 ogg_clean:
 	rm -rf build/cmake/${OGG}
-	cd build/${OGG}; make distclean || true
+	cd build/${OGG} && make distclean || true
 
 vorbis_clean:
 	rm -rf build/cmake/${VORBIS}
-	cd build/${VORBIS}; make distclean || true
+	cd build/${VORBIS} && make distclean || true
 
 tremor_clean:
-	cd build/${TREMOR}; make distclean || true
+	cd build/${TREMOR} && make distclean || true
 
 SDL12_clean:
-	cd build/${SDL12}; make distclean || true
+	cd build/${SDL12} && make distclean || true
 
 SDL2_tiger_clean:
 	rm -rf build/cmake/${SDL2_TIGER}
-	cd build/${SDL2_TIGER}; make distclean || true
+	cd build/${SDL2_TIGER} && make distclean || true
 
 SDL2_22_clean:
 	rm -rf build/cmake/${SDL2_22}
-	cd build/${SDL2_22}; make distclean || true
+	cd build/${SDL2_22} && make distclean || true
 
 SDL2_clean:
 	rm -rf build/cmake/${SDL2_LATEST}
-	cd build/${SDL2_LATEST}; make distclean || true
+	cd build/${SDL2_LATEST} && make distclean || true
 
 SDL3_clean:
 	rm -rf build/cmake/${SDL3}
@@ -263,6 +279,9 @@ distclean:
 	rm -rf mingw
 
 package:
+ifeq (${PLATFORM},)
+	$(error define a platform!)
+endif
 	for ARCH in ${ALL_ARCH}; do \
 		${MAKE} PLATFORM='${PLATFORM}' ARCH="$$ARCH" package_clean; \
 		${MAKE} PLATFORM='${PLATFORM}' ARCH="$$ARCH" package; \
@@ -274,8 +293,10 @@ package:
 			A="$$A ${PLATFORM}/$$ARCH"; \
 		fi; \
 	done; \
+	mkdir -p "PACKAGES"; \
 	cd ${TARGET}; \
-	XZ_OPT="-T0 -9" tar -cJf '../${DIST}-${PLATFORM}.tar.xz' ${TAR_FLAGS} $$A ${PLATFORM}/LICENSE.3rd
+	XZ_OPT="-T0 -9" tar -cJf '../PACKAGES/${DIST}-${PLATFORM}.tar.xz' \
+				 ${TAR_FLAGS} $$A ${PLATFORM}/LICENSE.3rd
 
 else
 
