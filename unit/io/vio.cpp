@@ -25,6 +25,10 @@
 
 #include <errno.h>
 
+#ifndef _WIN32
+#include <unistd.h>
+#endif
+
 static constexpr char TEST_READ_FILENAME[]  = "VFILE_TEST_DATA";
 static constexpr char TEST_WRITE_FILENAME[] = "VFILE_TEST_WRITE";
 static constexpr char TEST_DIR[]            = "VFILE_TEST_DIR";

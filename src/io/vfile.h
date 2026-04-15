@@ -36,7 +36,7 @@ struct memfile;
 struct stat;
 
 /* Dummy device for stat on a virtual file. */
-#define VFS_MZX_DEVICE (('M'<<24u) | ('Z'<<16u) | ('X'<<8u) | ('V'))
+#define VFS_MZX_DEVICE (dev_t)(('M'<<24u) | ('Z'<<16u) | ('X'<<8u) | ('V'))
 
 __M_END_DECLS
 

@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2019-2025 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2019-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -32,31 +32,18 @@
 #include <utility>
 #include <vector>
 
+/* Enable exception diagnostics if -fno-exceptions or platform lacks
+ * a stack unwinder. */
+#if defined(__GNUC__) && !defined(__clang__) && \
+    (!defined(__EXCEPTIONS) || __EXCEPTIONS == 0)
+#define PRINT_EXCEPTION_DIAGNOSTICS
+#endif
+#if defined(CONFIG_AMIGA) && defined(__mc68000__)
+#define PRINT_EXCEPTION_DIAGNOSTICS
+#endif
+
 /* Utility functions that inlined MegaZeux source expects to exist. */
-
-void *check_calloc(size_t nmemb, size_t size, const char *file,
- int line)
-{
-  void *p = calloc(nmemb, size);
-  assert(p);
-  return p;
-}
-
-void *check_malloc(size_t size, const char *file,
- int line)
-{
-  void *p = malloc(size);
-  assert(p);
-  return p;
-}
-
-void *check_realloc(void *ptr, size_t size, const char *file,
- int line)
-{
-  ptr = realloc(ptr, size);
-  assert(ptr);
-  return ptr;
-}
+#include "../src/utils/utils_alloc.h"
 
 static const clock_t get_ticks_base = clock();
 uint64_t get_ticks()
@@ -322,6 +309,26 @@ namespace Unit
     e->has_reason = true;
   }
 
+  void exception::diagnostics()
+  {
+#ifdef PRINT_EXCEPTION_DIAGNOSTICS
+    Uerr("  ***** unit::exception *****\n");
+    Uerr("    at line %d: %s", line, test);
+
+    if(has_reason)
+      Uerr(" (%s)\n", reason);
+    else
+      Uerr("\n");
+
+    if(has_values)
+    {
+      Uerr("    Left:  %s\n", left);
+      Uerr("    Right: %s\n", right);
+    }
+    UerrFlush();
+#endif
+  }
+
   exception::exception(const exception &e):
    leftarg(e.leftarg), rightarg(e.rightarg)
   {
@@ -336,7 +343,10 @@ namespace Unit
   }
 
   exception::exception(int _line, const char *_test):
-   line(_line), test(coalesce(_test)), reason("") {}
+   line(_line), test(coalesce(_test)), reason("")
+  {
+    diagnostics();
+  }
 
   exception::exception(int _line, const char *_test, const char *_reason_fmt, ...):
    line(_line), test(coalesce(_test))
@@ -348,6 +358,8 @@ namespace Unit
       set_reason_fmt(this, reasonbuf, _reason_fmt, vl);
       va_end(vl);
     }
+
+    diagnostics();
   }
 
   exception::exception(int _line, const char *_test, Unit::arg &&_left, Unit::arg &&_right,
@@ -365,6 +377,8 @@ namespace Unit
     left = leftarg.op;
     right = rightarg.op;
     has_values = leftarg.has_value || rightarg.has_value;
+
+    diagnostics();
   }
 
 
