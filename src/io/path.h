@@ -2,7 +2,7 @@
  *
  * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2012, 2020-2024 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2012, 2020-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,10 +28,20 @@ __M_BEGIN_DECLS
 
 #include <stddef.h>
 
-#if defined(_WIN32) || defined(CONFIG_DJGPP) || defined(__amigaos__) || \
- defined(CONFIG_DOS_STYLE_ROOTS)
+// Most platforms allow / as a root.
+#define PATH_UNIX_STYLE_ROOTS
+
+#if defined(_WIN32) || defined(CONFIG_DJGPP) || defined(CONFIG_DOS_STYLE_ROOTS)
 // DOS-style roots with one slash (all platforms allow two).
 #define PATH_DOS_STYLE_ROOTS
+#endif
+
+#if defined(CONFIG_AMIGA)
+/* Amiga exists in an alternate universe where roots are delimited only
+ * by the colon, and any 0-length dir component is equivalent to ".."
+ * on everything else. This requires some pretty different handling. */
+#define PATH_AMIGA_STYLE_ROOTS
+#undef PATH_UNIX_STYLE_ROOTS
 #endif
 
 #if defined(_WIN32)
@@ -40,14 +50,26 @@ __M_BEGIN_DECLS
 #endif
 
 #ifndef DIR_SEPARATOR
-#if defined(__WIN32__) || defined(CONFIG_DJGPP)
+#if defined(_WIN32) || defined(CONFIG_DJGPP)
 #define DIR_SEPARATOR "\\"
 #define DIR_SEPARATOR_CHAR '\\'
-#else /* !__WIN32__ && !CONFIG_DJGPP */
+#else /* !_WIN32 && !CONFIG_DJGPP */
 #define DIR_SEPARATOR "/"
 #define DIR_SEPARATOR_CHAR '/'
 #endif
 #endif /* DIR_SEPARATOR */
+
+/* Standalone current/parent directory string for file manager usage.
+ * Amiga has a parent directory token, but not a current directory token. */
+#ifndef PATH_PARENT_DIR
+#if defined(CONFIG_AMIGA)
+#define PATH_CURRENT_DIR ""
+#define PATH_PARENT_DIR "/"
+#else
+#define PATH_CURRENT_DIR "."
+#define PATH_PARENT_DIR ".."
+#endif
+#endif /* PATH_PARENT_DIR */
 
 enum path_create_error
 {
