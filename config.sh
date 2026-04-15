@@ -75,7 +75,7 @@ usage() {
 	echo "  --enable-egl              Enable EGL backend (disables SDL)."
 	echo "  --disable-x11             Disable X11, removing binary dependency."
 	echo "  --disable-pthread         Use SDL's threads/locking instead of pthread."
-	echo "  --disable-icon            Do not try to brand executable."
+	echo "  --disable-icon            Disable runtime window icon loading."
 	echo "  --disable-modular         Disable dynamically shared objects."
 	echo "  --enable-pledge           Enable experimental OpenBSD pledge(2) support"
 	echo
@@ -1533,7 +1533,7 @@ if [ "$X11" = "true" ]; then
 fi
 
 #
-# Force disable icon branding.
+# Force disable runtime icon loading (SDL_SetWindowIcon or LoadIcon).
 #
 if [ "$ICON" = "true" ]; then
 	if [ "$PLATFORM" = "darwin" ] ||
@@ -1546,7 +1546,7 @@ if [ "$ICON" = "true" ]; then
 	   [ "$PLATFORM" = "wii" ] ||
 	   [ "$PLATFORM" = "djgpp" ] ||
 	   [ "$PLATFORM" = "dreamcast" ]; then
-		echo "Force-disabling icon branding (redundant)."
+		echo "Force-disabling runtime window icon loading (redundant)."
 		ICON="false"
 	fi
 fi
@@ -1791,16 +1791,18 @@ else
 fi
 
 #
-# Handle icon branding, if enabled
+# Handle runtime icon loading (SDL_SetWindowIcon or LoadIcon), if enabled
+# For MinGW, this also disables embedding the icon.
 #
 if [ "$ICON" = "true" ]; then
-	echo "Icon branding enabled."
+	echo "Runtime window icon loading enabled."
 	echo "#define CONFIG_ICON" >> src/config.h
 
 	#
 	# On Windows we want the icons to be compiled in
 	#
 	if [ "$PLATFORM" = "mingw" ]; then
+		echo "Embedded application icon enabled."
 		echo "EMBED_ICONS=1" >> platform.inc
 	else
 		#
@@ -1819,7 +1821,8 @@ if [ "$ICON" = "true" ]; then
 		echo "#define ICONFILE \"$ICONDIR/$ICONFILE\"" >> src/config.h
 	fi
 else
-	echo "Icon branding disabled."
+	echo "Runtime window icon loading disabled."
+	[ "$PLATFORM" = "mingw" ] && echo "Embedded application icon disabled."
 fi
 
 #
