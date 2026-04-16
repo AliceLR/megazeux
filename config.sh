@@ -180,6 +180,7 @@ X11="true"
 SOFTWARE="true"
 SOFTSCALE="true"
 SDLACCEL="false"
+GL="true"
 GL_FIXED="true"
 GL_PROGRAM="true"
 OVERLAY="true"
@@ -820,83 +821,48 @@ echo "SHAREDIR=$SHAREDIR"     >> platform.inc
 echo "LICENSEDIR=$LICENSEDIR" >> platform.inc
 echo "METAINFODIR=$METAINFODIR" >> platform.inc
 
-#
-# Platform-specific libraries, or SDL?
-#
-if [ "$PLATFORM" = "nds" ] ||
-   [ "$PLATFORM" = "nds-blocksds" ] ||
-   [ "$PLATFORM" = "djgpp" ] ||
-   [ "$PLATFORM" = "dreamcast" ] ||
-   [ "$EGL" = "true" ]; then
-	echo "Disabling SDL ($PLATFORM)."
-	SDL="false"
 
-	# The SDL software renderer works as a dummy renderer without
-	# SDL, which is not desired for these platforms. Wii also
-	# needs to do this conditionally if SDL is disabled.
-	echo "Force-disabling software renderer (SDL or dummy only)."
-	SOFTWARE="false"
-fi
+### PLATFORM-SPECIFIC FEATURE CONFIG ##########################################
 
-#
-# SDL was disabled above; must also disable SDL-dependent modules
-#
-if [ "$SDL" = "false" ]; then
-	echo "Force-disabling SDL dependent components:"
-	echo " -> SOFTSCALE, OVERLAY"
-	SOFTSCALE="false"
-	SDLACCEL="false"
-	OVERLAY="false"
-else
-	#
-	# If no specific version of SDL is selected, select SDL2.
-	#
-	if [ "$SDL" != "1" ] && [ "$SDL" != "2" ] && [ "$SDL" != "3" ]; then
-		SDL="2"
-	fi
-	echo "Enabling SDL $SDL.x."
-	echo "#define CONFIG_SDL $SDL" >> src/config.h
-	echo "BUILD_SDL=$SDL" >> platform.inc
-fi
+case "$PLATFORM" in
+"darwin"*)
+	echo "Force-disabling runtime icon loading (macOS)."
+	ICON="false"
 
-#
-# Use an EGL backend in place of SDL.
-# For now, also force-enable OpenGL ES hacks, since that's most
-# likely what is being used with EGL.
-#
-if [ "$EGL" = "true" ]; then
-	echo "#define CONFIG_EGL" >> src/config.h
-	echo "BUILD_EGL=1" >> platform.inc
+	echo "Force-disabling poll (macOS)."
+	POLL="false"
+	;;
 
-	echo "Force-enabling OpenGL ES support (EGL)."
-	GLES="true"
-fi
+"amiga")
+	echo "Force-disabling getaddrinfo, poll, and IPv6 (Amiga)."
+	GETADDRINFO="false"
+	POLL="false"
+	IPV6="false"
+	;;
 
-#
-# Use GLES on Android.
-#
-if [ "$PLATFORM" = "android" ]; then
+"android")
+	echo "Force-disabling modular build (Android)."
+	MODULAR="false"
+
 	echo "Force-enabling OpenGL ES support (Android)."
 	GLES="true"
-fi
 
-#
-# We need either SDL or EGL for OpenGL
-#
-if [ "$SDL" = "false" ] && [ "$EGL" = "false" ]; then
-	echo "Force-disabling OpenGL (no SDL or EGL backend)."
-	GL="false"
-fi
+	echo "Force-disabling runtime icon loading (Android)."
+	ICON="false"
+	;;
 
-#
-# Force-disable features unnecessary on Emscripten.
-#
-if [ "$PLATFORM" = "emscripten" ]; then
+"emscripten")
 	echo "Enabling Emscripten-specific hacks."
 	echo "BUILD_EMSCRIPTEN=1" >> platform.inc
 
+	echo "Force-disabling modular build (Emscripten)."
+	MODULAR="false"
+
 	echo "Force-disabling stack protector (Emscripten)."
 	STACK_PROTECTOR="false"
+
+	echo "Force-disabling runtime icon loading (Emscripten)."
+	ICON="false"
 
 	echo "Force-disabling virtual filesystem (Emscripten)."
 	VFS="false"
@@ -908,19 +874,31 @@ if [ "$PLATFORM" = "emscripten" ]; then
 
 	GLES="true"
 	GL_FIXED="false"
-fi
+	;;
 
-#
-# If the NDS arch is enabled, some code has to be compile time
-# enabled too.
-#
-if [ "$PLATFORM" = "nds" ] || [ "$PLATFORM" = "nds-blocksds" ]; then
+"nds"*)
 	echo "Enabling NDS-specific hacks."
 	echo "#define CONFIG_NDS" >> src/config.h
 	echo "BUILD_NDS=1" >> platform.inc
 	DOS_ROOTS="true"
 
+	if [ "$PLATFORM" = "nds-blocksds" ]; then
+		echo "Enabling BlocksDS-specific hacks."
+		echo "#define CONFIG_NDS_BLOCKSDS" >> src/config.h
+		echo "BUILD_NDS_BLOCKSDS=1" >> platform.inc
+	fi
+
+	echo "Force-disabling modular build on NDS."
+	MODULAR="false"
+
 	echo "Building custom NDS renderer."
+
+	echo "Force-disabling SDL on NDS."
+	SDL="false"
+	SOFTWARE="false"
+
+	echo "Force-disabling runtime icon loading on NDS."
+	ICON="false"
 
 	echo "Force-disabling hash tables on NDS."
 	COUNTER_HASH="false"
@@ -938,28 +916,24 @@ if [ "$PLATFORM" = "nds" ] || [ "$PLATFORM" = "nds-blocksds" ]; then
 	OPENMPT="false"
 	REALITY="false"
 	VORBIS="false"
-fi
 
-if [ "$PLATFORM" = "nds" ]; then
-	echo "Force-disabling stack protector on NDS."
-	STACK_PROTECTOR="false"
-fi
+	if [ "$PLATFORM" = "nds" ]; then
+		echo "Force-disabling stack protector on NDS."
+		STACK_PROTECTOR="false"
+	fi
 
-if [ "$PLATFORM" = "nds-blocksds" ]; then
-	echo "Enabling BlocksDS-specific hacks."
-	echo "#define CONFIG_NDS_BLOCKSDS" >> src/config.h
-	echo "BUILD_NDS_BLOCKSDS=1" >> platform.inc
-fi
+	echo "Force-disabling networking on NDS."
+	NETWORK="false"
+	;;
 
-#
-# If the 3DS arch is enabled, some code has to be compile time
-# enabled too.
-#
-if [ "$PLATFORM" = "3ds" ]; then
+"3ds")
 	echo "Enabling 3DS-specific hacks."
 	echo "#define CONFIG_3DS" >> src/config.h
 	echo "BUILD_3DS=1" >> platform.inc
 	DOS_ROOTS="true"
+
+	echo "Force-disabling modular build on 3DS."
+	MODULAR="false"
 
 	#
 	# If the 3DS arch is enabled and SDL 1.2 is used, softscale is not
@@ -969,6 +943,10 @@ if [ "$PLATFORM" = "3ds" ]; then
 	# 320x240 renderer.
 	#
 	if [ "$SDL" != "false" ]; then
+		echo "Force-disabling overlay and OpenGL renderers (3DS)."
+		OVERLAY="false"
+		GL="false"
+
 		echo "Force-enabling GP2X 320x240 renderer (SDL on 3DS)."
 		GP2X="true"
 	else
@@ -980,62 +958,83 @@ if [ "$PLATFORM" = "3ds" ]; then
 	echo "Force-disabling stack protector on 3DS."
 	STACK_PROTECTOR="false"
 
+	echo "Force-disabling runtime icon loading on 3DS."
+	ICON="false"
+
 	echo "Disabling utils on 3DS."
 	UTILS="false"
 
 	echo "Force-disabling IPv6 on 3DS (not implemented)."
 	IPV6="false"
-fi
+	;;
 
-#
-# If the Wii arch is enabled, some code has to be compile time
-# enabled too.
-#
-if [ "$PLATFORM" = "wii" ]; then
+"wii")
 	echo "Enabling Wii-specific hacks."
 	echo "#define CONFIG_WII" >> src/config.h
 	echo "BUILD_WII=1" >> platform.inc
 	DOS_ROOTS="true"
 
+	echo "Force-disabling modular build on Wii."
+	MODULAR="false"
+
 	if [ "$SDL" = "false" ]; then
 		echo "Force-disabling software renderer on Wii."
 		echo "Building custom Wii renderers."
 		SOFTWARE="false"
+	else
+		echo "Force-disabling overlay and OpenGL renderers on Wii."
+		OVERLAY="false"
+		GL="false"
 	fi
+
+	echo "Force-disabling stack protector on Wii."
+	STACK_PROTECTOR="false"
+
+	echo "Force-disabling runtime icon loading on Wii."
+	ICON="false"
 
 	echo "Force-disabling utils on Wii."
 	UTILS="false"
 
-	echo "Force-disabling stack protector on Wii."
-	STACK_PROTECTOR="false"
-fi
+	echo "Force-disabling getaddrinfo and IPv6 on Wii."
+	GETADDRINFO="false"
+	IPV6="false"
+	;;
 
-#
-# If the Wii U arch is enabled, some code has to be compile time
-# enabled too.
-#
-if [ "$PLATFORM" = "wiiu" ]; then
+"wiiu")
 	echo "Enabling Wii U-specific hacks."
 	echo "#define CONFIG_WIIU" >> src/config.h
 	echo "BUILD_WIIU=1" >> platform.inc
 	DOS_ROOTS="true"
+
+	echo "Force-disabling modular build on Wii U."
+	MODULAR="false"
+
+	echo "Force-disabling overlay and OpenGL renderers on Wii U."
+	OVERLAY="false"
+	GL="false"
+
+	echo "Force-disabling runtime icon loading on Wii U."
+	ICON="false"
 
 	echo "Disabling utils on Wii U."
 	UTILS="false"
 
 	# Doesn't seem to be fully populated on the Wii U.
 	GAMECONTROLLERDB="false"
-fi
+	;;
 
-#
-# If the Switch arch is enabled, some code has to be compile time
-# enabled too.
-#
-if [ "$PLATFORM" = "switch" ]; then
+"switch")
 	echo "Enabling Switch-specific hacks."
 	echo "#define CONFIG_SWITCH" >> src/config.h
 	echo "BUILD_SWITCH=1" >> platform.inc
 	DOS_ROOTS="true"
+
+	echo "Force-disabling modular build on Switch."
+	MODULAR="false"
+
+	echo "Force-disabling runtime icon loading on Switch."
+	ICON="false"
 
 	echo "Disabling utils on Switch."
 	UTILS="false"
@@ -1048,49 +1047,69 @@ if [ "$PLATFORM" = "switch" ]; then
 
 	# This may or may not be totally useless for the Switch, disable it for now.
 	GAMECONTROLLERDB="false"
-fi
+	;;
 
-#
-# If the PSP arch is enabled, some code has to be compile time
-# enabled too.
-#
-if [ "$PLATFORM" = "psp" ]; then
+"psp")
 	echo "Enabling PSP-specific hacks."
 	echo "#define CONFIG_PSP" >> src/config.h
 	echo "BUILD_PSP=1" >> platform.inc
 	DOS_ROOTS="true"
 
+	echo "Force-disabling modular build on PSP."
+	MODULAR="false"
+
+	echo "Force-disabling OpenGL and overlay renderers on PSP."
+	GL="false"
+	OVERLAY="false"
+
 	echo "Force-disabling stack protector on PSP."
 	STACK_PROTECTOR="false"
-fi
 
-#
-# If the PS Vita arch is enabled, some code has to be compile time
-# enabled too.
-#
-if [ "$PLATFORM" = "psvita" ]; then
+	echo "Force-disabling runtime icon loading on PSP."
+	ICON="false"
+
+	echo "Force-disabling getaddrinfo, poll, and IPv6 on PSP."
+	GETADDRINFO="false"
+	POLL="false"
+	IPV6="false"
+	;;
+
+"psvita")
 	echo "Enabling PS Vita-specific hacks."
 	echo "#define CONFIG_PSVITA" >> src/config.h
 	echo "BUILD_PSVITA=1" >> platform.inc
 	DOS_ROOTS="true"
+
+	echo "Force-disabling modular build on PS Vita."
+	MODULAR="false"
 
 	echo "Force-disabling utils on PS Vita."
 	UTILS="false"
 
 	echo "Force-disabling stack protector on PS Vita."
 	STACK_PROTECTOR="false"
-fi
 
-#
-# If the DJGPP arch is enabled, some code has to be compile time
-# enabled too.
-#
-if [ "$PLATFORM" = "djgpp" ]; then
+	echo "Force-disabling runtime icon loading on PS Vita."
+	ICON="false"
+	;;
+
+"djgpp")
+	echo "Enabling DOS-specific hacks."
 	echo "#define CONFIG_DJGPP" >> src/config.h
 	echo "BUILD_DJGPP=1" >> platform.inc
 
+	echo "Force-disabling modular build (DOS)."
+	MODULAR="false"
+
+	echo "Force-disabling SDL (DOS)."
+	SDL="false"
+	SOFTWARE="false"
+
 	echo "Force-disabling stack protector (DOS)."
 	STACK_PROTECTOR="false"
+
+	echo "Force-disabling runtime icon loading (DOS)."
+	ICON="false"
 
 	if [ "$VORBIS" != "false" ] && [ "$VORBIS" != "stb_vorbis" ]; then
 		echo "Force-switching ogg/vorbis to stb_vorbis."
@@ -1104,67 +1123,99 @@ if [ "$PLATFORM" = "djgpp" ]; then
 	else
 		echo "SVGA software renderer disabled."
 	fi
-fi
 
-#
-# If the Dreamcast arch is enabled, some code has to be compile time
-# enabled too.
-#
-if [ "$PLATFORM" = "dreamcast" ]; then
+	echo "Force-disabling networking (DOS)."
+	NETWORK="false"
+	;;
+
+"dreamcast")
 	echo "Enabling Dreamcast-specific hacks."
 	echo "#define CONFIG_DREAMCAST" >> src/config.h
 	echo "BUILD_DREAMCAST=1" >> platform.inc
-fi
 
-#
-# If the GP2X arch is enabled, some code has to be compile time
-# enabled too.
-#
-# Additionally, the software renderer is replaced with the gp2x
-# renderer on this platform.
-#
-if [ "$PLATFORM" = "gp2x" ]; then
+	echo "Force-disabling modular build (Dreamcast)."
+	MODULAR="false"
+
+	echo "Force-disabling SDL (Dreamcast)."
+	SDL="false"
+	SOFTWARE="false"
+
+	echo "Force-disabling runtime icon loading (Dreamcast)."
+	ICON="false"
+	;;
+
+"gp2x")
 	echo "Enabling GP2X-specific hacks."
 	echo "#define CONFIG_GP2X" >> src/config.h
 	echo "BUILD_GP2X=1" >> platform.inc
 
+	echo "Force-disabling modular build on GP2X."
+	MODULAR="false"
+
 	echo "Force-disabling stack protector on GP2X."
 	STACK_PROTECTOR="false"
 
-	echo "Force disabling software renderer on GP2X."
+	echo "Force-disabling runtime icon loading on GP2X."
+	ICON="false"
+
+	echo "Force disabling software, overlay, and OpenGL renderers on GP2X."
 	SOFTWARE="false"
+	OVERLAY="false"
+	GL="false"
 
 	echo "Force-enabling GP2X 320x240 renderer."
 	GP2X="true"
 
 	echo "Force-disabling Modplug audio."
 	MODPLUG="false"
-fi
 
-#
-# If the Pandora arch is enabled, some code has to be compile time
-# enabled too.
-#
-if [ "$PLATFORM" = "pandora" ]; then
+	if [ "$VORBIS" != "false" ] && [ "$VORBIS" != "tremor-lowmem" ]; then
+		echo "Force-switching ogg/vorbis to tremor-lowmem."
+		VORBIS="tremor-lowmem"
+	fi
+	;;
+
+"pandora")
+	echo "Enabling Pandora-specific hacks."
 	echo "#define CONFIG_PANDORA" >> src/config.h
 	echo "BUILD_PANDORA=1" >> platform.inc
+	;;
+esac
+
+
+### RESOLVE CONFLICTING OPTIONS ###############################################
+
+#
+# SDL was disabled above; must also disable SDL-dependent modules
+#
+if [ "$SDL" = "false" ]; then
+	echo "Force-disabling SDL dependent components:"
+	echo " -> SOFTSCALE, OVERLAY"
+	SOFTSCALE="false"
+	SDLACCEL="false"
+	OVERLAY="false"
+#
+# If no specific version of SDL is selected, select SDL2.
+#
+elif [ "$SDL" != "1" ] && [ "$SDL" != "2" ] && [ "$SDL" != "3" ]; then
+	SDL="2"
 fi
 
 #
-# Force-disable OpenGL and overlay renderers on PSP, GP2X, 3DS, NDS and Wii
+# For now, force-enable OpenGL ES hacks, since that's most
+# likely what is being used with EGL.
 #
-if [ "$PLATFORM" = "psp" ] ||
-   [ "$PLATFORM" = "gp2x" ] ||
-   [ "$PLATFORM" = "nds" ] ||
-   [ "$PLATFORM" = "nds-blocksds" ] ||
-   [ "$PLATFORM" = "3ds" ] ||
-   [ "$PLATFORM" = "wii" ] ||
-   [ "$PLATFORM" = "wiiu" ] ||
-   [ "$PLATFORM" = "djgpp" ] ||
-   [ "$PLATFORM" = "dreamcast" ]; then
-  	echo "Force-disabling OpenGL and overlay renderers."
+if [ "$EGL" = "true" ]; then
+	echo "Force-enabling OpenGL ES support (EGL)."
+	GLES="true"
+fi
+
+#
+# Force-disable OpenGL renderers for non-SDL, non-EGL.
+#
+if [ "$SDL" = "false" ] && [ "$EGL" = "false" ] && [ "$GL" = "true" ]; then
+	echo "Force-disabling OpenGL (no SDL or EGL backend)."
 	GL="false"
-	OVERLAY="false"
 fi
 
 #
@@ -1188,47 +1239,53 @@ fi
 #
 # Must have at least one OpenGL renderer enabled
 #
-[ "$GL_FIXED" = "false" ] && [ "$GL_PROGRAM" = "false" ] && GL="false"
+if [ "$GL_FIXED" = "false" ] && [ "$GL_PROGRAM" = "false" ] && [ "$GL" = "true" ]; then
+	echo "Force-disabling OpenGL (no OpenGL renderers enabled)"
+	GL="false"
+fi
 
 #
 # If OpenGL is globally disabled, disable all renderers
 #
-if [ "$GL" = "false" ]; then
-	echo "Force-disabling OpenGL."
+if [ "$GL_FIXED" = "true" ] || [ "$GL_PROGRAM" = "true" ] && [ "$GL" = "false" ]; then
+	echo "Force-disabling OpenGL renderers (OpenGL disabled)."
 	GL_FIXED="false"
 	GL_PROGRAM="false"
-	GLES="false"
 fi
 
 #
-# Force-disable PNG support on platforms without screenshots or utils enabled.
+# Runtime icon loading requires MinGW or SDL + libpng.
+#
+if [ "$SDL" = "false" ] || [ "$LIBPNG" = "false" ] &&
+   [ "$PLATFORM" != "mingw" ] && [ "$ICON" = "true" ]; then
+	echo "Force-disabling runtime icon loading (requires MinGW or SDL + libpng)"
+	ICON="false"
+fi
+
+#
+# Force-disable PNG support on platforms without screenshots, utils, icon enabled.
 # The 3DS port requires PNG for other purposes.
 #
 if [ "$SCREENSHOTS" = "false" ] &&
    [ "$UTILS" = "false" ] &&
+   [ "$ICON" = "false" ] &&
    [ "$LIBPNG" = "true" ] &&
    [ "$PLATFORM" != "3ds" ]; then
-	echo "Force-disabling PNG support (screenshots and utils disabled)"
+	echo "Force-disabling PNG support (screenshots, utils, icon disabled)"
 	LIBPNG="false"
 fi
 
 #
-# Force-enable tremor-lowmem on GP2X
-#
-if [ "$PLATFORM" = "gp2x" ]; then
-	echo "Force-switching ogg/vorbis to tremor-lowmem."
-	VORBIS="tremor-lowmem"
-fi
-
-#
-# Force-disable modplug/mikmod/openmpt if audio is disabled
+# Force-disable all music playback libraries if audio is disabled
 #
 if [ "$AUDIO" = "false" ]; then
+	echo "Force-disabling music playback libraries (audio disabled)"
 	MODPLUG="false"
 	MIKMOD="false"
 	XMP="false"
 	OPENMPT="false"
 	REALITY="false"
+	VORBIS="false"
 fi
 
 #
@@ -1243,41 +1300,10 @@ if [ "$PLATFORM" != "unix" ] &&
 fi
 
 #
-# Force disable modular DSOs.
+# Force disable updater (non-MinGW or non-editor)
 #
-if [ "$PLATFORM" = "gp2x" ] ||
-   [ "$PLATFORM" = "nds" ] ||
-   [ "$PLATFORM" = "nds-blocksds" ] ||
-   [ "$PLATFORM" = "3ds" ] ||
-   [ "$PLATFORM" = "wii" ] ||
-   [ "$PLATFORM" = "wiiu" ] ||
-   [ "$PLATFORM" = "switch" ] ||
-   [ "$PLATFORM" = "android" ] ||
-   [ "$PLATFORM" = "emscripten" ] ||
-   [ "$PLATFORM" = "psp" ] ||
-   [ "$PLATFORM" = "psvita" ] ||
-   [ "$PLATFORM" = "djgpp" ] ||
-   [ "$PLATFORM" = "dreamcast" ]; then
-	echo "Force-disabling modular build (nonsensical or unsupported)."
-	MODULAR="false"
-fi
-
-#
-# Force disable networking (unsupported platform or no editor build)
-#
-if [ "$EDITOR" = "false" ] ||
-   [ "$PLATFORM" = "djgpp" ] ||
-   [ "$PLATFORM" = "nds" ] ||
-   [ "$PLATFORM" = "nds-blocksds" ]; then
-	echo "Force-disabling networking (unsupported platform or editor disabled)."
-	NETWORK="false"
-fi
-
-#
-# Force disable updater (unsupported platform)
-#
-if [ "$PLATFORM" != "mingw" ]; then
-	echo "Force-disabling updater (unsupported platform)."
+if [ "$PLATFORM" != "mingw" ] || [ "$EDITOR" = "false" ]; then
+	echo "Force-disabling updater (currently requires MinGW and editor)."
 	UPDATER="false"
 fi
 
@@ -1297,40 +1323,35 @@ if [ "$NETWORK" = "true" ] && [ "$UPDATER" = "false" ]; then
 	NETWORK="false"
 fi
 
-if [ "$NETWORK" = "true" ]; then
-	#
-	# Force disable getaddrinfo and IPv6 (unsupported platform)
-	#
-	if [ "$PLATFORM" = "amiga" ] ||
-	   [ "$PLATFORM" = "wii" ] ||
-	   [ "$PLATFORM" = "psp" ]; then
-		echo "Force-disabling getaddrinfo name resolution and IPv6 support (unsupported platform)."
-		GETADDRINFO="false"
-		IPV6="false"
-	fi
-
-	#
-	# Force disable poll (unsupported platform)
-	# PSPSDK doesn't have this function and old versions of Mac OS X have a bugged
-	# implementation. Amiga hasn't been verified, but considering the other things
-	# missing, it's probably a safe inclusion.
-	#
-	if [ "$PLATFORM" = "amiga" ] ||
-	   [ "$PLATFORM" = "darwin" ] ||
-	   [ "$PLATFORM" = "darwin-dist" ] ||
-	   [ "$PLATFORM" = "darwin-devel" ] ||
-	   [ "$PLATFORM" = "psp" ]; then
-		echo "Force-disabling poll (unsupported platform)."
-		POLL="false"
-	fi
-fi
-
 #
 # Force disable utils.
 #
 if [ "$DEBYTECODE" = "true" ]; then
 	echo "Force-disabling utils (debytecode)."
 	UTILS="false"
+fi
+
+
+### EMIT OPTIONS ##############################################################
+
+#
+# Enable SDL.
+#
+if [ "$SDL" != "false" ]; then
+	echo "SDL $SDL.x enabled."
+	echo "#define CONFIG_SDL $SDL" >> src/config.h
+	echo "BUILD_SDL=$SDL" >> platform.inc
+else
+	echo "SDL disabled."
+fi
+
+#
+# Enable EGL.
+#
+if [ "$EGL" = "true" ]; then
+	echo "EGL enabled."
+	echo "#define CONFIG_EGL" >> src/config.h
+	echo "BUILD_EGL=1" >> platform.inc
 fi
 
 #
@@ -1533,28 +1554,9 @@ if [ "$X11" = "true" ]; then
 fi
 
 #
-# Force disable runtime icon loading (SDL_SetWindowIcon or LoadIcon).
-#
-if [ "$ICON" = "true" ]; then
-	if [ "$PLATFORM" = "darwin" ] ||
-	   [ "$PLATFORM" = "darwin-devel" ] ||
-	   [ "$PLATFORM" = "darwin-dist" ] ||
-	   [ "$PLATFORM" = "gp2x" ] ||
-	   [ "$PLATFORM" = "psp" ] ||
-	   [ "$PLATFORM" = "nds" ] ||
-	   [ "$PLATFORM" = "nds-blocksds" ] ||
-	   [ "$PLATFORM" = "wii" ] ||
-	   [ "$PLATFORM" = "djgpp" ] ||
-	   [ "$PLATFORM" = "dreamcast" ]; then
-		echo "Force-disabling runtime window icon loading (redundant)."
-		ICON="false"
-	fi
-fi
-
-#
 # Enable OpenGL ES hacks if required.
 #
-if [ "$GLES" = "true" ]; then
+if [ "$GL" = "true" ] && [ "$GLES" = "true" ]; then
 	echo "OpenGL ES support enabled."
 	echo "#define CONFIG_GLES" >> src/config.h
 else
