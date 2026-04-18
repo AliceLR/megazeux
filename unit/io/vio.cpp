@@ -1361,6 +1361,42 @@ UNITTEST(dirent)
   }
 }
 
+static constexpr const char *expected_real_roots[] =
+{
+#if defined(_WIN32) || defined(CONFIG_DJGPP)
+  /* The only guaranteed root for these is C: */
+  "C:",
+#elif defined(CONFIG_AMIGA)
+  "sys:",
+#else
+  DIR_SEPARATOR
+#endif
+};
+
+UNITTEST(vvolumelist)
+{
+  boolean found[arraysize(expected_real_roots)]{};
+
+  ScopedFile<vvolumelist, vvolumelist_close> volumes = vvolumelist_open();
+  const char *file;
+
+  ASSERT(volumes, "failed to open volume list");
+
+  while((file = vvolumelist_read(volumes)))
+  {
+    for(int i = 0; i < arraysize(expected_real_roots); i++)
+    {
+      if(!strcasecmp(file, expected_real_roots[i]))
+      {
+        ASSERT(!found[i], "root '%s' duplicated in volume list", expected_real_roots[i]);
+        found[i] = true;
+      }
+    }
+  }
+  for(int i = 0; i < arraysize(found); i++)
+    ASSERT(found[i], "root '%s' missing from volume list", expected_real_roots[i]);
+}
+
 
 /**********************************************************************
  * Virtual filesystem tests.
@@ -1846,6 +1882,14 @@ UNITTEST(VirtualFilesystem)
     ASSERT(dir2, "");
     while(vdir_read(dir2, buf, MAX_PATH, &type)) {}
     ASSERTEQ(vdir_tell(dir2), vdir_length(dir2), "");
+  }
+
+  SECTION(vvolumelist)
+  {
+    // Straightforward--if there are virtual roots, list them after the real
+    // roots. Do not list cached roots twice.
+    // TODO: there is no function to add roots to the vio VFS yet.
+    SKIP();
   }
 
   SECTION(DeleteOpenFile)
