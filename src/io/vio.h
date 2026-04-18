@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2019-2023 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2019-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -137,6 +137,10 @@ UTILS_LIBSPEC boolean vdir_seek(vdir *dir, long position);
 UTILS_LIBSPEC boolean vdir_rewind(vdir *dir);
 UTILS_LIBSPEC long vdir_tell(vdir *dir);
 UTILS_LIBSPEC long vdir_length(vdir *dir);
+
+UTILS_LIBSPEC vvolumelist *vvolumelist_open(void);
+UTILS_LIBSPEC int vvolumelist_close(vvolumelist *volumes);
+UTILS_LIBSPEC const char *vvolumelist_read(vvolumelist *volumes);
 
 __M_END_DECLS
 

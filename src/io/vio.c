@@ -31,7 +31,7 @@
 #include "vfs.h"
 //#include "zip.h"
 
-#ifdef __WIN32__
+#ifdef _WIN32
 #include "vio_win32.h"
 #else
 #include "vio_posix.h"
@@ -2205,7 +2205,7 @@ boolean vdir_read(vdir *dir, char *buffer, size_t len, enum vdir_type *type)
         return false;
     }
     if(type)
-      *type = f->type;
+      *type = (enum vdir_type)f->type;
 
     dir->position++;
     return true;
@@ -2306,4 +2306,128 @@ long vdir_tell(vdir *dir)
 long vdir_length(vdir *dir)
 {
   return dir->num_total;
+}
+
+
+/************************************************************************
+ * Volume listing function wrappers.
+ * For DOS/Amiga-style volumes, this will append ':' (but no slash).
+ */
+
+struct vvolumelist
+{
+  char **names;
+  size_t num_total;
+  size_t num_alloc;
+  size_t pos;
+};
+
+static vvolumelist *vvolumelist_alloc(void)
+{
+  vvolumelist *volumes = (vvolumelist *)malloc(sizeof(vvolumelist));
+  if(!volumes)
+    return NULL;
+
+  volumes->pos = 0;
+  volumes->num_total = 0;
+  volumes->num_alloc = 16;
+  volumes->names = (char **)malloc(volumes->num_alloc * sizeof(char *));
+  if(!volumes->names)
+  {
+    free(volumes);
+    return NULL;
+  }
+  return volumes;
+}
+
+static boolean vvolumelist_append(vvolumelist *volumes,
+ const char *name, size_t name_len)
+{
+  char *n;
+
+  trace("--VIO-- vvolumelist_append: %s\n", name);
+
+  if(volumes->num_total == volumes->num_alloc)
+  {
+    char **tmp;
+    size_t new_num = volumes->num_alloc << 1u;
+
+    if(new_num <= volumes->num_alloc)
+      return false;
+
+    tmp = (char **)realloc(volumes->names, new_num * sizeof(char *));
+    if(!tmp)
+      return false;
+
+    volumes->names = tmp;
+    volumes->num_alloc = new_num;
+  }
+
+  n = (char *)malloc(name_len + 1);
+  if(!n)
+    return false;
+
+  memcpy(n, name, name_len);
+  n[name_len] = '\0';
+  volumes->names[volumes->num_total++] = n;
+  return true;
+}
+
+static void vvolumelist_free(vvolumelist *volumes)
+{
+  size_t i;
+  for(i = 0; i < volumes->num_total; i++)
+    free(volumes->names[i]);
+
+  free(volumes->names);
+  free(volumes);
+}
+
+vvolumelist *vvolumelist_open(void)
+{
+  struct vvolumelist_handle vh;
+  vvolumelist *ret;
+  int sz;
+  char buf[MAX_PATH];
+
+  trace("--VIO-- vvolumelist_open\n");
+
+  if(!platform_vvolumelist_open(&vh))
+  {
+    trace("--VIO-- vvolumelist_open: failed to open platform volume list\n");
+    return NULL;
+  }
+
+  ret = vvolumelist_alloc();
+  if(!ret)
+    goto err;
+
+  while((sz = platform_vvolumelist_read(&vh, buf, sizeof(buf))))
+    if((size_t)sz < sizeof(buf) && !vvolumelist_append(ret, buf, sz))
+      goto err2;
+
+  platform_vvolumelist_close(&vh);
+
+  /* TODO: virtual roots */
+  return ret;
+
+err2:
+  vvolumelist_free(ret);
+err:
+  platform_vvolumelist_close(&vh);
+  return NULL;
+}
+
+int vvolumelist_close(vvolumelist *volumes)
+{
+  vvolumelist_free(volumes);
+  return 0;
+}
+
+const char *vvolumelist_read(vvolumelist *volumes)
+{
+  if(volumes->pos >= volumes->num_total)
+    return NULL;
+
+  return volumes->names[volumes->pos++];
 }

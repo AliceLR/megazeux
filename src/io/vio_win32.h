@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2018-2024 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2018-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -336,6 +336,38 @@ static inline boolean platform_rewinddir(struct dir_handle dh)
 
   rewinddir(dh.dir);
   return true;
+}
+
+struct vvolumelist_handle
+{
+  DWORD drives;
+  DWORD pos;
+};
+
+static inline boolean platform_vvolumelist_open(struct vvolumelist_handle *vh)
+{
+  vh->drives = GetLogicalDrives();
+  vh->pos = 0;
+  return true;
+}
+
+static inline void platform_vvolumelist_close(struct vvolumelist_handle *vh)
+{
+  /* nop */
+  (void)vh;
+}
+
+static inline int platform_vvolumelist_read(struct vvolumelist_handle *vh,
+ char *buf, size_t buf_sz)
+{
+  while(vh->pos < 32)
+  {
+    DWORD num = (vh->pos++);
+
+    if(vh->drives & (1u << num))
+      return snprintf(buf, buf_sz, "%c:", 'A' + (char)num);
+  }
+  return 0;
 }
 
 static inline int platform_fseek(FILE *fp, int64_t offset, int whence)

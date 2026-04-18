@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2020-2025 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2020-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -35,6 +35,8 @@ __M_BEGIN_DECLS
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include "vio_volume.h"
 
 // pspdev/devkitPSP historically does not have a rewinddir implementation.
 // libctru (3DS) and libnx (Switch) have rewinddir but it doesn't work.

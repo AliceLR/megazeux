@@ -2,7 +2,7 @@
  *
  * Copyright (C) 1996 Alexis Janson
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2012-2025 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2012-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -29,16 +29,6 @@
 #include <sys/stat.h>
 #include <assert.h>
 
-#ifndef _MSC_VER
-#include <unistd.h>
-#endif
-
-#ifdef __WIN32__
-// Required for GetLogicalDrives()
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
-
 #include "board.h"
 #include "configure.h" // TODO for help file only
 #include "const.h"
@@ -60,15 +50,6 @@
 #include "io/vio.h"
 
 #include "audio/sfx.h"
-
-#ifdef CONFIG_DJGPP
-// Required for getdisk()/setdisk()
-#include <dir.h>
-#endif
-
-#ifdef CONFIG_WII
-#include <sys/iosupport.h>
-#endif
 
 #ifdef CONFIG_NDS
 // Should be sufficient with a disabled editor.
@@ -3304,16 +3285,6 @@ static boolean remove_files(char *directory_name, boolean remove_recursively)
   return success;
 }
 
-#ifdef CONFIG_PSVITA
-static const char *psvita_drives[] = {
-  "app0:",
-  "imc0:",
-  "uma0:",
-  "ux0:"
-};
-#define PSVITA_DRIVES_COUNT 4
-#endif
-
 __editor_maybe_static int file_manager(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
  const char *title, enum allow_dirs allow_dirs, enum allow_new allow_new,
@@ -3345,10 +3316,6 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   int last_element = FILESEL_FILE_LIST;
   boolean return_dir_is_base_dir = true;
   int i;
-
-#ifdef __WIN32__
-  int drive_letter_bitmap;
-#endif
 
   // Buffers for the return file's path and name.
   char ret_path[MAX_PATH];
@@ -3511,18 +3478,26 @@ skip_dir:
     qsort(file_list, num_files, sizeof(char *), sort_function);
     qsort(dir_list, num_dirs, sizeof(char *), sort_function);
 
-#ifdef __WIN32__
     if(allow_dirs == ALLOW_ALL_DIRS)
     {
-      drive_letter_bitmap = GetLogicalDrives();
-
-      for(i = 0; i < 32; i++)
+      vvolumelist *volumes = vvolumelist_open();
+      if(volumes)
       {
-        if(drive_letter_bitmap & (1 << i))
-        {
-          dir_list[num_dirs] = cmalloc(3);
-          sprintf(dir_list[num_dirs], "%c:", 'A' + i);
+        const char *dir;
 
+        while((dir = vvolumelist_read(volumes)))
+        {
+          size_t sz = strlen(dir) + 1;
+
+          /* Strip out / for now. */
+          if(!strcmp(dir, DIR_SEPARATOR))
+            continue;
+
+          dir_list[num_dirs] = (char *)cmalloc(sz);
+          if(!dir_list[num_dirs])
+            break;
+
+          memcpy(dir_list[num_dirs], dir, sz);
           num_dirs++;
 
           if(num_dirs == total_dirnames_allocated)
@@ -3534,87 +3509,9 @@ skip_dir:
             total_dirnames_allocated *= 2;
           }
         }
+        vvolumelist_close(volumes);
       }
     }
-#endif
-
-#ifdef CONFIG_DJGPP
-    if(allow_dirs == ALLOW_ALL_DIRS)
-    {
-      int current_disk = getdisk();
-      int max_disk = setdisk(current_disk);
-      for(i = 0; i < max_disk; i++)
-      {
-        setdisk(i);
-        if(getdisk() != i)
-          continue;
-
-        dir_list[num_dirs] = cmalloc(3);
-        sprintf(dir_list[num_dirs], "%c:", 'A' + i);
-        num_dirs++;
-
-        if(num_dirs == total_dirnames_allocated)
-        {
-          dir_list = crealloc(dir_list, sizeof(char *) *
-           total_dirnames_allocated * 2);
-          memset(dir_list + total_dirnames_allocated, 0,
-           sizeof(char *) * total_dirnames_allocated);
-          total_dirnames_allocated *= 2;
-        }
-      }
-      setdisk(current_disk);
-    }
-#endif
-
-#ifdef CONFIG_WII
-    if(allow_dirs == ALLOW_ALL_DIRS)
-    {
-      for(i = 0; i < STD_MAX; i++)
-      {
-        if(devoptab_list[i] && devoptab_list[i]->chdir_r)
-        {
-          dir_list[num_dirs] = cmalloc(strlen(devoptab_list[i]->name) + 3);
-          sprintf(dir_list[num_dirs], "%s:/", devoptab_list[i]->name);
-
-          num_dirs++;
-
-          if(num_dirs == total_dirnames_allocated)
-          {
-            dir_list = crealloc(dir_list, sizeof(char *) *
-             total_dirnames_allocated * 2);
-            memset(dir_list + total_dirnames_allocated, 0,
-             sizeof(char *) * total_dirnames_allocated);
-            total_dirnames_allocated *= 2;
-          }
-        }
-      }
-    }
-#endif
-
-#ifdef CONFIG_PSVITA
-    if(allow_dirs == ALLOW_ALL_DIRS)
-    {
-      for(i = 0; i < PSVITA_DRIVES_COUNT; i++)
-      {
-        if(vstat(psvita_drives[i], &file_info) >= 0)
-        {
-          dir_list[num_dirs] = cmalloc(strlen(psvita_drives[i]) + 2);
-          sprintf(dir_list[num_dirs], "%s/", psvita_drives[i]);
-
-          num_dirs++;
-
-          if(num_dirs == total_dirnames_allocated)
-          {
-            dir_list = crealloc(dir_list, sizeof(char *) *
-             total_dirnames_allocated * 2);
-            memset(dir_list + total_dirnames_allocated, 0,
-             sizeof(char *) * total_dirnames_allocated);
-            total_dirnames_allocated *= 2;
-          }
-        }
-      }
-    }
-#endif
 
     current_dir_length = strlen(current_dir_name);
 
