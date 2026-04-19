@@ -110,6 +110,11 @@ static inline int platform_rmdir(const char *path)
 
 static inline int platform_access(const char *path, int mode)
 {
+#if defined(CONFIG_AMIGA)
+  /* X_OK seems to have non-POSIX semantics here, replace with R_OK. */
+  if(mode & X_OK)
+    mode = (mode & ~X_OK) | R_OK;
+#endif
 #if defined(CONFIG_DREAMCAST)
   // KallistiOS doesn't have access() :(
   return 0;

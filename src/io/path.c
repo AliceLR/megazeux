@@ -2,7 +2,7 @@
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
- * Copyright (C) 2012, 2020-2024 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2012, 2020-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,6 +27,7 @@
 #include <unistd.h>
 #endif
 
+#include "../util.h"
 #include "path.h"
 #include "vio.h"
 
@@ -147,9 +148,10 @@ boolean path_force_ext(char *path, size_t buffer_len, const char *ext)
 ssize_t path_get_ext_offset(const char *path)
 {
   ssize_t path_len = strlen(path);
+  ssize_t root_len = path_is_absolute(path);
   ssize_t ext_pos;
 
-  for(ext_pos = path_len - 1; ext_pos >= 0; ext_pos--)
+  for(ext_pos = path_len - 1; ext_pos >= root_len; ext_pos--)
   {
     // Don't let this detect an "extension" of a directory!
     if(isslash(path[ext_pos]))
@@ -169,6 +171,7 @@ ssize_t path_get_ext_offset(const char *path)
 static ssize_t path_get_filename_offset(const char *path)
 {
   struct stat stat_info;
+  ssize_t root_len;
   ssize_t pos;
   if(!path || !path[0])
     return -1;
@@ -180,14 +183,15 @@ static ssize_t path_get_filename_offset(const char *path)
 
   // Otherwise, find the last directory separator (if any).
   pos = (ssize_t)strlen(path) - 1;
-  while(pos >= 0)
+  root_len = path_is_absolute(path);
+  while(pos >= root_len)
   {
     if(isslash(path[pos]))
       return pos + 1;
 
     pos--;
   }
-  return 0;
+  return root_len;
 }
 
 /**
@@ -234,16 +238,20 @@ ssize_t path_is_absolute(const char *path)
   }
 #endif /* UNC roots */
 
+#ifdef PATH_UNIX_STYLE_ROOTS
   // Unix-style root.
   if(isslash(path[0]))
     return 1;
+#endif
 
-  // DOS-style root.
+  // DOS-style or Amiga-style root.
 #ifndef PATH_UNC_ROOTS
   len = strlen(path);
 #endif
   for(i = 0; i < len; i++)
   {
+#ifndef PATH_AMIGA_STYLE_ROOTS
+
     if(isslash(path[i]))
       break;
 
@@ -271,6 +279,25 @@ ssize_t path_is_absolute(const char *path)
       }
       break;
     }
+
+#else /* PATH_AMIGA_STYLE_ROOTS */
+
+    /* Amiga: root ends at the first ':'.
+     * If ':' is the first character, it's an absolute path on the current
+     * disk. The root can include slashes! :(
+     */
+    if(path[i] == ':')
+    {
+      i++;
+
+      /* Include any following slashes (they will get cleaned). */
+      while(isslash(path[i]))
+        i++;
+
+      return i;
+    }
+
+#endif
   }
   return 0;
 }
@@ -492,13 +519,15 @@ boolean path_get_directory_and_filename(char *d_dest, size_t d_len,
 ssize_t path_get_parent(char *dest, size_t dest_len, const char *path)
 {
   ssize_t path_len;
+  ssize_t root_len;
   ssize_t i;
   if(!path || !path[0])
     return -1;
 
   // Find last slash without respect to vstat.
+  root_len = path_is_absolute(path);
   path_len = strlen(path);
-  for(i = path_len - 1; i >= 0; i--)
+  for(i = path_len - 1; i >= root_len; i--)
     if(isslash(path[i]))
       break;
   // Include the separator.
@@ -532,6 +561,7 @@ size_t path_clean_slashes(char *path, size_t path_len)
   size_t j = 0;
 
   root_len = path_is_absolute(path);
+
 #ifdef PATH_UNC_ROOTS
   // UNC roots should retain two slashes at the start.
   if(root_len >= 2 && isslash(path[0]) && isslash(path[1]))
@@ -540,7 +570,18 @@ size_t path_clean_slashes(char *path, size_t path_len)
     i = j = 1; // Merge >2 slashes into the second one.
   }
 #endif
-#ifndef PATH_DOS_STYLE_ROOTS
+
+#ifdef PATH_AMIGA_STYLE_ROOTS
+  /* Strip root trailing slashes, do not normalize internal root slashes. */
+  i = j = root_len;
+  if(root_len && isslash(path[j - 1]))
+  {
+    while(j > 0 && isslash(path[j - 1]))
+      j--;
+
+    need_copy = true;
+  }
+#elif !defined(PATH_DOS_STYLE_ROOTS)
   // Non-native DOS-style double slash roots should retain two slashes.
   if(root_len >= 4 && !isslash(path[0]))
   {
@@ -555,11 +596,16 @@ size_t path_clean_slashes(char *path, size_t path_len)
   {
     if(isslash(path[i]))
     {
+#ifndef PATH_AMIGA_STYLE_ROOTS
       while(isslash(path[i]))
         i++;
 
       if(i > j + 1)
         need_copy = true;
+#else
+      /* Can't merge slashes on Amiga. */
+      i++;
+#endif
 
       path[j++] = DIR_SEPARATOR_CHAR;
     }
@@ -574,8 +620,12 @@ size_t path_clean_slashes(char *path, size_t path_len)
   }
   path[j] = '\0';
 
-  // Trim trailing slashes unless they are a component of the root.
+  /* Trim trailing slashes unless they are a component of the root.
+   * Amiga can only do this if there is exactly one trailing slash. */
   if(j >= 2 && j > root_len && path[j - 1] == DIR_SEPARATOR_CHAR)
+#ifdef PATH_AMIGA_STYLE_ROOTS
+    if(path[j - 2] != DIR_SEPARATOR_CHAR)
+#endif
     path[--j] = '\0';
 
   return j;
@@ -599,6 +649,7 @@ size_t path_clean_slashes_copy(char *dest, size_t dest_len, const char *path)
   size_t j = 0;
 
   root_len = path_is_absolute(path);
+
 #ifdef PATH_UNC_ROOTS
   // UNC roots should retain two slashes at the start.
   if(root_len >= 2 && isslash(path[0]) && isslash(path[1]))
@@ -608,7 +659,20 @@ size_t path_clean_slashes_copy(char *dest, size_t dest_len, const char *path)
     i = 1; // Merge >2 slashes into the second one.
   }
 #endif
-#ifndef PATH_DOS_STYLE_ROOTS
+
+#ifdef PATH_AMIGA_STYLE_ROOTS
+  /* Strip root trailing slashes, do not normalize internal root slashes. */
+  if(root_len)
+  {
+    while(j < dest_len - 1 && i < root_len && path[i] != ':')
+      dest[j++] = path[i++];
+
+    if(j < dest_len - 1)
+      dest[j++] = ':';
+
+    i = root_len;
+  }
+#elif !defined(PATH_DOS_STYLE_ROOTS)
   // Non-native DOS-style double slash roots should retain two slashes.
   if(root_len >= 4 && !isslash(path[0]))
   {
@@ -627,7 +691,10 @@ size_t path_clean_slashes_copy(char *dest, size_t dest_len, const char *path)
   {
     if(isslash(path[i]))
     {
+#ifndef PATH_AMIGA_STYLE_ROOTS
+      /* Can't merge slashes on Amiga. */
       while(isslash(path[i]))
+#endif
         i++;
 
       dest[j++] = DIR_SEPARATOR_CHAR;
@@ -637,8 +704,12 @@ size_t path_clean_slashes_copy(char *dest, size_t dest_len, const char *path)
   }
   dest[j] = '\0';
 
-  // Trim trailing slashes unless they are a component of the root.
+  /* Trim trailing slashes unless they are a component of the root.
+   * Amiga can only do this if there is exactly one trailing slash. */
   if(j >= 2 && j > root_len && dest[j - 1] == DIR_SEPARATOR_CHAR)
+#ifdef PATH_AMIGA_STYLE_ROOTS
+    if(dest[j - 2] != DIR_SEPARATOR_CHAR)
+#endif
     dest[--j] = '\0';
 
   return j;
@@ -647,7 +718,7 @@ size_t path_clean_slashes_copy(char *dest, size_t dest_len, const char *path)
 /**
  * Append a relative directory or filename path to an existing base path.
  * This function does not handle ./, ../, etc; to resolve relative paths
- * containing those, use path_navigate() instead. On succes, the destination
+ * containing those, use path_navigate() instead. On success, the destination
  * is guaranteed to have cleaned slashes (see path_clean_slashes).
  *
  * @param  path         Existing base path.
@@ -664,7 +735,8 @@ ssize_t path_append(char *path, size_t buffer_len, const char *rel)
   if(path_len && rel_len && path_len + rel_len + 2 <= buffer_len)
   {
     path_len = path_clean_slashes(path, buffer_len);
-    path[path_len++] = DIR_SEPARATOR_CHAR;
+    if(path[path_len - 1] != DIR_SEPARATOR_CHAR)
+      path[path_len++] = DIR_SEPARATOR_CHAR;
 
     rel_len = path_clean_slashes_copy(path + path_len, buffer_len - path_len, rel);
     return path_len + rel_len;
@@ -693,7 +765,8 @@ ssize_t path_join(char *dest, size_t dest_len, const char *base, const char *rel
   if(base_len && rel_len && base_len + rel_len + 2 <= dest_len)
   {
     base_len = path_clean_slashes_copy(dest, dest_len, base);
-    dest[base_len++] = DIR_SEPARATOR_CHAR;
+    if(dest[base_len - 1] != DIR_SEPARATOR_CHAR)
+      dest[base_len++] = DIR_SEPARATOR_CHAR;
 
     rel_len = path_clean_slashes_copy(dest + base_len, dest_len - base_len, rel);
     return base_len + rel_len;
@@ -817,7 +890,11 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
     path_clean_slashes(buffer, MAX_PATH);
 
     if(allow_checks && vstat(buffer, &stat_info) < 0)
+    {
+      trace("--PATH-- path_navigate_internal: stat of root '%s' failed (%d)\n",
+       buffer, errno);
       return -1;
+    }
 
     current = next;
     while(isslash(current[0]))
@@ -858,6 +935,7 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
     if(!next) next = end;
     else      next++;
 
+#ifndef PATH_AMIGA_STYLE_ROOTS
     // . does nothing, .. goes back one level
     if(current_char == '.' && (current[1] == '\0' || isslash(current[1])))
     {
@@ -867,6 +945,10 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
 
     if(current_char == '.' && current[1] == '.' &&
      (current[2] == '\0' || isslash(current[2])))
+#else /* PATH_AMIGA_STYLE_ROOTS */
+    /* Zero-length path token -> parent directory (as Unix ".."). */
+    if((next - current) == 1 && isslash(current[0]))
+#endif
     {
       // Skip the rightmost separator (current level) and look for the
       // previous separator. If found, truncate the path to it.
@@ -874,11 +956,12 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
       if(len > root_len)
       {
         char *pos = buffer + len - 1;
+        char *end = buffer + root_len;
         do
         {
           pos--;
         }
-        while(pos >= buffer && !isslash(*pos));
+        while(pos >= end && !isslash(*pos));
 
         if(pos >= buffer)
         {
@@ -903,11 +986,24 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
   len = path_clean_slashes(buffer, MAX_PATH);
   if(len < path_len)
   {
+    trace("--PATH-- path_navigate_internal: '%s'\n", buffer);
     if(allow_checks)
     {
-      if(vstat(buffer, &stat_info) < 0 || !S_ISDIR(stat_info.st_mode) ||
-       vaccess(buffer, R_OK|X_OK) < 0)
+      if(vstat(buffer, &stat_info) < 0)
+      {
+        trace("--PATH-- path_navigate_internal: failed stat (%d)\n", errno);
         return -1;
+      }
+      if(!S_ISDIR(stat_info.st_mode))
+      {
+        trace("--PATH-- path_navigate_internal: not dir (%d)\n", stat_info.st_mode);
+        return -1;
+      }
+      if(vaccess(buffer, R_OK|X_OK) < 0)
+      {
+        trace("--PATH-- path_navigate_internal: failed access (%d)\n", errno);
+        return -1;
+      }
     }
     memcpy(path, buffer, len + 1);
     path[path_len - 1] = '\0';

@@ -15,6 +15,7 @@ USERS
   flood fill the player in the editor.
 + Fixed checkres testing of 2.90X through 2.92X worlds with
   custom sound effects tables.
++ Added file manager support for handling Amiga paths.
 + Added file manager support for listing volumes on Amiga.
 + The file manager now correctly ignores rename/delete when used
   on volumes in the directory list for Wii, PS Vita, and Amiga.

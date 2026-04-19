@@ -525,7 +525,7 @@ static boolean check_prune_basedir(const char *file)
     info("--UPDATER-- Pruned empty directory '%s'\n", path);
 
     // If that worked, also try to remove the parent directory recursively.
-    ssize_t ret = path_navigate(path, MAX_PATH, "..");
+    ssize_t ret = path_navigate(path, MAX_PATH, PATH_PARENT_DIR);
     if(ret < 0 || ret >= len)
       break;
   }

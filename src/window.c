@@ -3268,7 +3268,7 @@ static boolean remove_files(char *directory_name, boolean remove_recursively)
     }
     else
 
-    if(strcmp(file_name, ".") && strcmp(file_name, ".."))
+    if(strcmp(file_name, PATH_CURRENT_DIR) && strcmp(file_name, PATH_PARENT_DIR))
     {
       if(!remove_recursively ||
        !remove_files(file_name, true) || vrmdir(file_name))
@@ -3389,10 +3389,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
      !(allow_dirs == ALLOW_SUBDIRS && !strcmp(current_dir_name, base_dir_name)) &&
      !path_is_root(current_dir_name))
     {
-      dir_list[num_dirs] = cmalloc(3);
-      dir_list[num_dirs][0] = '.';
-      dir_list[num_dirs][1] = '.';
-      dir_list[num_dirs][2] = '\0';
+      dir_list[num_dirs] = (char *)cmalloc(strlen(PATH_PARENT_DIR) + 1);
+      strcpy(dir_list[num_dirs], PATH_PARENT_DIR);
       num_dirs++;
     }
 
@@ -3607,7 +3605,7 @@ skip_dir:
       // Pressed Backspace
       case -2:
       {
-        path_navigate(current_dir_name, MAX_PATH, "..");
+        path_navigate(current_dir_name, MAX_PATH, PATH_PARENT_DIR);
         break;
       }
 
@@ -3728,7 +3726,7 @@ skip_dir:
       case 4:
       {
         if((vstat(ret, &file_info) >= 0) &&
-         strcmp(ret, "..") && strcmp(ret, "."))
+         strcmp(ret, PATH_PARENT_DIR) && strcmp(ret, PATH_CURRENT_DIR))
         {
           char *confirm_string;
 
@@ -3779,9 +3777,9 @@ skip_dir:
       // Delete directory
       case 6:
       {
-        if(strcmp(dir_list[chosen_dir], "..") &&
-         strcmp(dir_list[chosen_dir], ".") &&
-         strcmp(dir_list[chosen_dir], "/") && chosen_dir < volumes_pos)
+        if(strcmp(dir_list[chosen_dir], PATH_PARENT_DIR) &&
+         strcmp(dir_list[chosen_dir], PATH_CURRENT_DIR) &&
+         chosen_dir < volumes_pos)
         {
           char confirm_string[70];
           snprintf(confirm_string, 70, "Delete %s: are you sure?",
@@ -3815,9 +3813,9 @@ skip_dir:
       // Rename directory
       case 7:
       {
-        if(strcmp(dir_list[chosen_dir], "..") &&
-         strcmp(dir_list[chosen_dir], ".") &&
-         strcmp(dir_list[chosen_dir], "/") && chosen_dir < volumes_pos)
+        if(strcmp(dir_list[chosen_dir], PATH_PARENT_DIR) &&
+         strcmp(dir_list[chosen_dir], PATH_CURRENT_DIR) &&
+         chosen_dir < volumes_pos)
         {
           char *old_path = cmalloc(MAX_PATH);
           char *new_path = cmalloc(MAX_PATH);

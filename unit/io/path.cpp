@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2020-2024 Alice Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2020-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -24,6 +24,30 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+/* path_is_absolute, path_clean, path_clean_copy, path_navigate, and
+ * path_navigate_no_check have significantly different behavior between
+ * platforms and require separate implementations. Many of these can be
+ * tested in a cross-platform manner, so store test data for all platforms,
+ * and use this selector to get the "native" data.
+ */
+#if DIR_SEPARATOR_CHAR == '\\'
+#define PATH_SELECTOR_DOS dos
+#else
+#define PATH_SELECTOR_DOS posixdos
+#endif
+
+#ifdef PATH_AMIGA_STYLE_ROOTS
+#undef amiga
+#define PATH_SELECTOR amiga
+#elif defined(PATH_UNC_ROOTS)
+#define PATH_SELECTOR win32
+#elif defined(PATH_DOS_STYLE_ROOTS)
+#define PATH_SELECTOR PATH_SELECTOR_DOS
+#else
+#define PATH_SELECTOR posix
+#endif
+
+
 #define PATH_FILE_EXISTS        "path_file_exists"
 #define PATH_DIR_EXISTS         "path_dir_exists"
 #define PATH_DIR_EXISTS_2       PATH_DIR_EXISTS DIR_SEPARATOR "path_dir_exists"
@@ -32,6 +56,7 @@
 #define PATH_DIR_RECURSIVE_2    "path_dir_recursive" DIR_SEPARATOR PATH_DIR_RECURSIVE
 #define PATH_DIR_RECURSIVE_3    "path_dir_recursive" DIR_SEPARATOR PATH_DIR_RECURSIVE_2
 #define PATH_FILE_RECURSIVE     PATH_DIR_RECURSIVE DIR_SEPARATOR PATH_FILE_EXISTS
+
 
 UNITTEST(Init)
 {
@@ -46,6 +71,7 @@ UNITTEST(Init)
   vf = vfopen_unsafe(PATH_FILE_RECURSIVE, "wb");
   vfclose(vf);
 }
+
 
 struct path_tokenize_result
 {
@@ -97,6 +123,7 @@ UNITTEST(path_tokenize)
     ASSERTEQ(current, d.expected[pos], "%s : %d", d.input, pos);
   }
 }
+
 
 UNITTEST(path_reverse_tokenize)
 {
@@ -174,6 +201,7 @@ UNITTEST(path_reverse_tokenize)
     ASSERTEQ(token, d.expected[pos], "%s : %d", d.input, pos);
   }
 }
+
 
 struct path_ext_result
 {
@@ -275,193 +303,224 @@ UNITTEST(path_force_ext)
   }
 }
 
+
 struct path_is_abs_result
 {
-  const char *path;
   ssize_t root_len;
   boolean is_root;
 };
 
+struct path_is_abs_data
+{
+  const char *path;
+  struct path_is_abs_result posix;    /* POSIX with added root:// roots */
+  struct path_is_abs_result posixdos; /* POSIX with added root:/ roots (console SDKs) */
+  struct path_is_abs_result dos;      /* DOS */
+  struct path_is_abs_result win32;    /* DOS with UNC roots */
+  struct path_is_abs_result amiga;    /* Amiga */
+
+  constexpr static struct path_is_abs_data all(const char *p,
+   struct path_is_abs_result _all)
+  {
+    return path_is_abs_data{ p, _all, _all, _all, _all, _all };
+  }
+
+  constexpr static struct path_is_abs_data posixroot(const char *p,
+   struct path_is_abs_result _posix, struct path_is_abs_result _noposix)
+  {
+    return path_is_abs_data{ p, _posix, _posix, _posix, _posix, _noposix };
+  }
+
+  constexpr static struct path_is_abs_data dosroot(const char *p,
+   struct path_is_abs_result _posix, struct path_is_abs_result _dos)
+  {
+    return path_is_abs_data{ p, _posix, _dos, _dos, _dos, _dos };
+  }
+
+  constexpr static struct path_is_abs_data amigaroot(const char *p,
+   struct path_is_abs_result _noamiga, struct path_is_abs_result _amiga)
+  {
+    return path_is_abs_data{ p, _noamiga, _noamiga, _noamiga, _noamiga, _amiga };
+  }
+
+  constexpr static struct path_is_abs_data uncroot(const char *p,
+   struct path_is_abs_result _posix, struct path_is_abs_result _win32,
+   struct path_is_abs_result _amiga)
+  {
+    return path_is_abs_data{ p, _posix, _posix, _posix, _win32, _amiga };
+  }
+};
+
 UNITTEST(path_is_absolute)
 {
-  static const path_is_abs_result data[]
+  static constexpr const path_is_abs_data data[]
   {
-    {
+    path_is_abs_data::all(
       "",
-      0,
-      false
-    },
-    {
+      { 0, false }
+    ),
+    path_is_abs_data::all(
       "sdhfjkshfjkds",
-      0,
-      false
-    },
-    {
+      { 0, false }
+    ),
+    path_is_abs_data::all(
       "relative/path/here",
-      0,
-      false
-    },
-    {
-      "malformed:dos/path",
-      0,
-      false
-    },
-    {
+      { 0, false }
+    ),
+    path_is_abs_data::amigaroot(
       ":/wtf",
-      0,
-      false
-    },
-    {
+      { 0, false },
+      { 2, false }
+    ),
+    // Unix-style roots (all platforms but Amiga)
+    path_is_abs_data::posixroot(
       "/",
-      1,
-      true
-    },
-    {
-      "A:",
-#ifdef PATH_DOS_STYLE_ROOTS
-      2,
-      true
-#else
-      0,
-      false
-#endif
-    },
-    {
-      "C:\\",
-#ifdef PATH_DOS_STYLE_ROOTS
-      3,
-      true
-#else
-      0,
-      false
-#endif
-    },
-    {
-      "sdcard:/",
-#ifdef PATH_DOS_STYLE_ROOTS
-      8,
-      true
-#else
-      0,
-      false
-#endif
-    },
-    {
+      { 1, true },
+      { 0, false }
+    ),
+    path_is_abs_data::posixroot(
       "/absolute/but/not/root",
-      1,
-      false
-    },
-    {
+      { 1, false },
+      { 0, false }
+    ),
+    // DOS-style paths (Windows, DOS, Amiga, and various consoles).
+    path_is_abs_data::dosroot(
+      "A:",
+      { 0, false },
+      { 2, true }
+    ),
+    path_is_abs_data::dosroot(
+      "C:\\",
+      { 0, false },
+      { 3, true }
+    ),
+    path_is_abs_data::dosroot(
+      "sdcard:/",
+      { 0, false },
+      { 8, true }
+    ),
+    path_is_abs_data::dosroot(
       "C:\\absolute/not\\root",
-#ifdef PATH_DOS_STYLE_ROOTS
-      3,
-      false
-#else
-      0,
-      false
-#endif
-    },
+      { 0, false },
+      { 3, false }
+    ),
+    path_is_abs_data::dosroot(
+      "software:",
+      { 0, false },
+      { 9, true }
+    ),
+    // Amiga-style paths (Amiga-only).
+    path_is_abs_data::amigaroot(
+      "sys:some/path",
+      { 0, false },
+      { 4, false }
+    ),
+    path_is_abs_data::amigaroot(
+      ":",
+      { 0, false },
+      { 1, true }
+    ),
+    path_is_abs_data::amigaroot(
+      ":System/Shell",
+      { 0, false },
+      { 1, false }
+    ),
+    path_is_abs_data::amigaroot(
+      "are/you/serious:",
+      { 0, false },
+      { 16, true }
+    ),
+    path_is_abs_data::amigaroot(
+      "w/t:f",
+      { 0, false },
+      { 4, false }
+    ),
+    path_is_abs_data::amigaroot(
+      "/lol:",
+      { 1, false },
+      { 5, true }
+    ),
+    path_is_abs_data::amigaroot(
+      "/lol:lmao",
+      { 1, false },
+      { 5, false }
+    ),
     // Modified DOS-style paths (all platforms).
-    {
+    path_is_abs_data::all(
       "C://",
-      4,
-      true
-    },
-    { "sdcard://",
-      9,
-      true
-    },
-    {
+      { 4, true }
+    ),
+    path_is_abs_data::all(
+      "sdcard://",
+      { 9, true }
+    ),
+    path_is_abs_data::all(
       "fat://absolute/but/not/root",
-      6,
-      false
-    },
+      { 6, false }
+    ),
     // Windows UNC paths
-    {
+    path_is_abs_data::uncroot(
       "\\\\.\\C:",
-#ifdef PATH_UNC_ROOTS
-      6,
-      true
-#else
-      1,
-      false
-#endif
-    },
-    {
+      { 1, false },
+      { 6, true },
+      { 6, true }
+    ),
+    path_is_abs_data::uncroot(
       "\\\\?\\Z:",
-#ifdef PATH_UNC_ROOTS
-      6,
-      true
-#else
-      1,
-      false
-#endif
-    },
-    {
+      { 1, false },
+      { 6, true },
+      { 6, true }
+    ),
+    path_is_abs_data::uncroot(
       "\\\\unc\\root\\",
-#ifdef PATH_UNC_ROOTS
-      11,
-      true
-#else
-      1,
-      false
-#endif
-    },
-    {
+      { 1, false },
+      { 11, true },
+      { 0, false }
+    ),
+    path_is_abs_data::uncroot(
       "\\\\.\\unc\\localhost\\c$",
-#ifdef PATH_UNC_ROOTS
-      20,
-      true
-#else
-      1,
-      false
-#endif
-    },
-    {
+      { 1, false },
+      { 20, true },
+      { 0, false }
+    ),
+    path_is_abs_data::uncroot(
       "//?/unc/thisworks/too",
-#ifdef PATH_UNC_ROOTS
-      21,
-      true
-#else
-      1,
-      false
-#endif
-    },
-    {
+      { 1, false },
+      { 21, true },
+      { 0, false }
+    ),
+    path_is_abs_data::uncroot(
       "\\\\.\\unc\\localhost\\c$\\somefile",
-#ifdef PATH_UNC_ROOTS
-      21,
-      false
-#else
-      1,
-      false
-#endif
-    },
-    {
+      { 1, false },
+      { 21, false },
+      { 0, false }
+    ),
+    path_is_abs_data::posixroot(
       "\\\\bad_unc",
-      1,
-      false
-    },
+      { 1, false },
+      { 0, false }
+    ),
   };
 
   SECTION(path_is_absolute)
   {
-    for(const path_is_abs_result &d : data)
+    for(const path_is_abs_data &d : data)
     {
       ssize_t len = path_is_absolute(d.path);
-      ASSERTEQ(len, d.root_len, "%s", d.path);
+      ASSERTEQ(len, d.PATH_SELECTOR.root_len, "%s", d.path);
     }
   }
 
   SECTION(path_is_root)
   {
-    for(const path_is_abs_result &d : data)
+    for(const path_is_abs_data &d : data)
     {
       boolean is_root = path_is_root(d.path);
-      ASSERTEQ(is_root, d.is_root, "%s", d.path);
+      ASSERTEQ(is_root, d.PATH_SELECTOR.is_root, "%s", d.path);
     }
   }
 }
+
 
 struct path_output_pair
 {
@@ -549,6 +608,47 @@ UNITTEST(path_get_ext_offset)
       ".mzx",
       24
     },
+    /* More absolute paths... */
+    {
+      "c:/caverns.mzx",
+      ".mzx",
+      10
+    },
+    {
+      "a:\\.mzx",
+      ".mzx",
+      3
+    },
+    {
+      "fat://.awawa",
+      ".awawa",
+      6
+    },
+    {
+      "any.oof://nope",
+      nullptr,
+      -1
+    },
+    {
+      "amiga:filename.ext",
+      ".ext",
+      14
+    },
+    {
+      "amiga:.thistoo",
+      ".thistoo",
+      6,
+    },
+    {
+      "amiga.oof:nope",
+#ifndef PATH_AMIGA_STYLE_ROOTS
+      ".oof:nope",
+      5,
+#else
+      nullptr,
+      -1
+#endif
+    }
   };
   ssize_t result;
 
@@ -561,383 +661,376 @@ UNITTEST(path_get_ext_offset)
   }
 }
 
-struct path_clean_output
+
+struct path_clean_result
 {
-  const char *path;
-  const char *posix_result;
-  const char *win32_result;
+  const char *result;
 };
 
-#if DIR_SEPARATOR_CHAR == '\\'
-#define PATH_CLEAN_RESULT win32_result
-#else
-#define PATH_CLEAN_RESULT posix_result
-#endif
-
-UNITTEST(path_clean_slashes)
+struct path_clean_data
 {
-  static const path_clean_output data[] =
+  const char *path;
+  struct path_clean_result posix;     /* POSIX with added root:// roots */
+  struct path_clean_result posixdos;  /* POSIX with added root:/ roots (console SDKs) */
+  struct path_clean_result dos;       /* DOS */
+  struct path_clean_result win32;     /* DOS with UNC roots */
+  struct path_clean_result amiga;     /* Amiga */
+
+  constexpr static struct path_clean_data all(const char *p,
+   struct path_clean_result _all)
   {
-    {
+    return path_clean_data{ p, _all, _all, _all, _all, _all };
+  }
+
+  constexpr static struct path_clean_data posixroot(const char *p,
+   struct path_clean_result _posix, struct path_clean_result _dos)
+  {
+    return path_clean_data{ p, _posix, _posix, _dos, _dos, _posix };
+  }
+
+  constexpr static struct path_clean_data amigaroot(const char *p,
+   struct path_clean_result _posix, struct path_clean_result _dos,
+   struct path_clean_result _amiga)
+  {
+    return path_clean_data{ p, _posix, _posix, _dos, _dos, _amiga };
+  }
+
+  constexpr static struct path_clean_data extroot(const char *p,
+   struct path_clean_result _posix, struct path_clean_result _posixdos,
+   struct path_clean_result _dos, struct path_clean_result _amiga)
+  {
+    return path_clean_data{ p, _posix, _posixdos, _dos, _dos, _amiga };
+  }
+};
+
+UNITTEST(path_clean)
+{
+  static constexpr const path_clean_data data[] =
+  {
+    path_clean_data::all(
       "",
-      "",
-      ""
-    },
-    {
+      { "" }
+    ),
+    path_clean_data::posixroot(
       "/a/path",
-      "/a/path",
-      "\\a\\path"
-    },
-    {
+      { "/a/path" },
+      { "\\a\\path" }
+    ),
+    path_clean_data::posixroot(
       "/remove/trailing/slash/",
-      "/remove/trailing/slash",
-      "\\remove\\trailing\\slash"
-    },
-    {
+      { "/remove/trailing/slash" },
+      { "\\remove\\trailing\\slash" }
+    ),
+    path_clean_data::posixroot(
       "/normalize\\slashes/that\\are/like\\this",
-      "/normalize/slashes/that/are/like/this",
-      "\\normalize\\slashes\\that\\are\\like\\this",
-    },
-    {
+      { "/normalize/slashes/that/are/like/this" },
+      { "\\normalize\\slashes\\that\\are\\like\\this" }
+    ),
+    path_clean_data::amigaroot(
       "/////remove////duplicate//////slashes/////",
-      "/remove/duplicate/slashes",
-      "\\remove\\duplicate\\slashes",
-    },
-    {
+      { "/remove/duplicate/slashes" },
+      { "\\remove\\duplicate\\slashes" },
+      { "/////remove////duplicate//////slashes/////" }
+    ),
+    path_clean_data::amigaroot(
       "C:\\work\\on\\dos\\style\\paths\\",
-      "C:/work/on/dos/style/paths",
-      "C:\\work\\on\\dos\\style\\paths",
-    },
-    {
+      { "C:/work/on/dos/style/paths" },
+      { "C:\\work\\on\\dos\\style\\paths" },
+      { "C:work/on/dos/style/paths" }
+    ),
+    path_clean_data::extroot(
       "C:\\\\\\remove\\\\\\duplicate\\\\slashes\\\\here\\\\too\\",
-#ifdef PATH_DOS_STYLE_ROOTS
-      // Platforms that natively have DOS-style paths only
-      // preserve one slash at the start.
-      "C:/remove/duplicate/slashes/here/too",
-      "C:\\remove\\duplicate\\slashes\\here\\too",
-#else
-      // Modified DOS-style paths (all platforms).
-      // path_clean_slashes will preserve two root slashes here.
-      "C://remove/duplicate/slashes/here/too",
-      "C:\\\\remove\\duplicate\\slashes\\here\\too",
-#endif
-    },
-    {
+      { "C://remove/duplicate/slashes/here/too" },
+      { "C:/remove/duplicate/slashes/here/too" },
+      { "C:\\remove\\duplicate\\slashes\\here\\too" },
+      { "C:remove///duplicate//slashes//here//too" }
+    ),
+    path_clean_data::extroot(
       "C:\\",
-#ifdef PATH_DOS_STYLE_ROOTS
+      { "C:" },
+      { "C:/" },
+      { "C:\\" },
+      { "C:" }
+    ),
+    path_clean_data::extroot(
       "C:/",
-      "C:\\"
-#else
-      "C:",
-      "C:"
-#endif
-    },
-    {
-      "C:/",
-#ifdef PATH_DOS_STYLE_ROOTS
-      "C:/",
-      "C:\\"
-#else
-      "C:",
-      "C:"
-#endif
-    },
-    {
+      { "C:" },
+      { "C:/" },
+      { "C:\\" },
+      { "C:" }
+    ),
+    path_clean_data::extroot(
       "C:\\\\/",
-#ifdef PATH_DOS_STYLE_ROOTS
-      // Native DOS-style paths.
-      "C:/",
-      "C:\\",
-#else
-      // Modified DOS-style paths (all platforms).
-      "C://",
-      "C:\\\\",
-#endif
-    },
-    {
+      { "C://" },
+      { "C:/" },
+      { "C:\\" },
+      { "C:" }
+    ),
+    path_clean_data::posixroot(
       "/",
-      "/",
-      "\\"
-    },
-    {
+      { "/" },
+      { "\\" }
+    ),
+    path_clean_data::posixroot(
       "\\",
-      "/",
-      "\\"
-    },
-#ifdef PATH_UNC_ROOTS
+      { "/" },
+      { "\\" }
+    ),
     // Windows UNC paths: do not remove duplicate slashes from the prefix.
-    {
+    path_clean_data::amigaroot(
       "\\\\.\\C:\\",
-      "//./C:/",
-      "\\\\.\\C:\\"
-    },
-    {
+      { "/./C:" },
+      { "\\\\.\\C:\\" },
+      { "\\\\.\\C:" }
+    ),
+    path_clean_data::amigaroot(
       "\\\\?\\C:\\",
-      "//?/C:/",
-      "\\\\?\\C:\\"
-    },
-    {
+      { "/?/C:" },
+      { "\\\\?\\C:\\" },
+      { "\\\\?\\C:" }
+    ),
+    path_clean_data::amigaroot(
       "\\\\.\\unc\\\\localhost\\\\\\duhhr",
-      "//./unc/localhost/duhhr",
-      "\\\\.\\unc\\localhost\\duhhr"
-    },
-    {
+      { "/./unc/localhost/duhhr" },
+      { "\\\\.\\unc\\localhost\\duhhr" },
+      { "//./unc//localhost///duhhr" }
+    ),
+    path_clean_data::amigaroot(
       "\\\\?\\unc\\\\localhost\\\\\\duhhr",
-      "//?/unc/localhost/duhhr",
-      "\\\\?\\unc\\localhost\\duhhr"
-    },
-#endif
+      { "/?/unc/localhost/duhhr" },
+      { "\\\\?\\unc\\localhost\\duhhr" },
+      { "//?/unc//localhost///duhhr" }
+    ),
   };
   // Data for testing truncation (assume buffer size == 32). This only matters
   // for path_clean_slashes_copy, which should return false in this case.
-  static const path_clean_output truncate_data[] =
+  static constexpr const path_clean_data truncate_data[] =
   {
-    {
+    path_clean_data::posixroot(
       "/a/rly/long/path/looooooooooooooooooooool/",
-      "/a/rly/long/path/looooooooooooo",
-      "\\a\\rly\\long\\path\\looooooooooooo",
-    },
-    {
+      { "/a/rly/long/path/looooooooooooo" },
+      { "\\a\\rly\\long\\path\\looooooooooooo" }
+    ),
+    path_clean_data::amigaroot(
       "C:\\truncate\\my\\dos\\style\\path\\pls",
-      "C:/truncate/my/dos/style/path/p",
-      "C:\\truncate\\my\\dos\\style\\path\\p",
-    },
+      { "C:/truncate/my/dos/style/path/p" },
+      { "C:\\truncate\\my\\dos\\style\\path\\p" },
+      { "C:truncate/my/dos/style/path/pl" }
+    ),
   };
 
   char buffer[MAX_PATH];
 
-  SECTION(path_clean_slashes)
+  SECTION(path_clean)
   {
-    for(const path_clean_output &d : data)
+    for(const path_clean_data &d : data)
     {
       snprintf(buffer, MAX_PATH, "%s", d.path);
       buffer[MAX_PATH - 1] = '\0';
 
       path_clean_slashes(buffer, MAX_PATH);
-      ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
+      ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
   }
 
-  SECTION(path_clean_slashes_copy)
+  SECTION(path_clean_copy)
   {
-    for(const path_clean_output &d : data)
+    for(const path_clean_data &d : data)
     {
       size_t result = path_clean_slashes_copy(buffer, MAX_PATH, d.path);
-      ASSERTEQ(result, strlen(d.PATH_CLEAN_RESULT), "%s", d.path);
-      ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
+      ASSERTEQ(result, strlen(d.PATH_SELECTOR.result), "%s", d.path);
+      ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
   }
 
-  SECTION(path_clean_slashes_copy_truncation)
+  SECTION(path_clean_copy_truncation)
   {
-    for(const path_clean_output &d : truncate_data)
+    for(const path_clean_data &d : truncate_data)
     {
       size_t result = path_clean_slashes_copy(buffer, 32, d.path);
-      ASSERTEQ(result, strlen(d.PATH_CLEAN_RESULT), "%s", d.path);
-      ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
+      ASSERTEQ(result, strlen(d.PATH_SELECTOR.result), "%s", d.path);
+      ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
   }
 }
 
+
+struct path_return_result
+{
+  ssize_t return_value;
+  const char *result;
+};
+
 struct path_split_data
 {
   const char *path;
-  const char *directory_posix;
-  const char *directory_win32;
-  const char *filename;
-  ssize_t dir_return_value;
-  ssize_t file_return_value;
+  struct path_return_result posix;    /* POSIX with added root:// roots */
+  struct path_return_result posixdos; /* POSIX with added root:/ roots (console SDKs) */
+  struct path_return_result dos;      /* DOS */
+  struct path_return_result win32;    /* DOS with UNC roots */
+  struct path_return_result amiga;    /* Amiga */
+  struct path_return_result filename;
   boolean dir_and_file_return_value;
-};
 
-#if DIR_SEPARATOR_CHAR == '\\'
-#define SPLIT_DIRECTORY directory_win32
-#else
-#define SPLIT_DIRECTORY directory_posix
-#endif
+  static constexpr struct path_split_data all(const char *p,
+   struct path_return_result dir, struct path_return_result file,
+   boolean dir_and_file_ret)
+  {
+    return path_split_data{ p, dir, dir, dir, dir, dir, file, dir_and_file_ret };
+  }
+
+  static constexpr struct path_split_data posixroot(const char *p,
+   struct path_return_result posix_dir, struct path_return_result dos_dir,
+   struct path_return_result file, boolean dir_and_file_ret)
+  {
+    return path_split_data{ p, posix_dir, posix_dir, dos_dir, dos_dir,
+                            posix_dir, file, dir_and_file_ret };
+  }
+
+  static constexpr struct path_split_data posixroot(const char *p,
+   struct path_return_result posix_dir, struct path_return_result dos_dir,
+   struct path_return_result amiga_dir, struct path_return_result file,
+   boolean dir_and_file_ret)
+  {
+    return path_split_data{ p, posix_dir, posix_dir, dos_dir, dos_dir,
+                            amiga_dir, file, dir_and_file_ret };
+  }
+
+  static constexpr struct path_split_data posixdosroot(const char *p,
+   struct path_return_result posix_dir, struct path_return_result posixdos_dir,
+   struct path_return_result dos_dir, struct path_return_result amiga_dir,
+   struct path_return_result file, boolean dir_and_file_ret)
+  {
+    return path_split_data{ p, posix_dir, posixdos_dir, dos_dir, dos_dir,
+                            amiga_dir, file, dir_and_file_ret };
+  }
+};
 
 UNITTEST(path_split_functions)
 {
   // All of these tests assume a directory stat fail on the input path.
-  static const path_split_data data[] =
+  static constexpr const path_split_data data[] =
   {
-    {
+    path_split_data::all(
       "",
-      nullptr,
-      nullptr,
-      nullptr,
-      -1,
-      -1,
+      { -1, nullptr },
+      { -1, nullptr },
       false
-    },
-    {
+    ),
+    path_split_data::all(
       "a",
-      "",
-      "",
-      "a",
-      0,
-      1,
+      { 0, "" },
+      { 1, "a" },
       true
-    },
-    {
+    ),
+    path_split_data::all(
       "filename.ext",
-      "",
-      "",
-      "filename.ext",
-      0,
-      12,
+      { 0, "" },
+      { 12, "filename.ext" },
       true
-    },
-    {
+    ),
+    path_split_data::all(
       "input/filename.ext",
-      "input",
-      "input",
-      "filename.ext",
-      5,
-      12,
+      { 5, "input" },
+      { 12, "filename.ext" },
       true
-    },
-    {
+    ),
+    path_split_data::all(
       "input\\filename.ext",
-      "input",
-      "input",
-      "filename.ext",
-      5,
-      12,
+      { 5, "input" },
+      { 12, "filename.ext" },
       true
-    },
-    {
+    ),
+    path_split_data::all(
       "input/",
-      "input",
-      "input",
-      "",
-      5,
-      0,
+      { 5, "input" },
+      { 0, "" },
       true
-    },
-    {
+    ),
+    path_split_data::all(
       "input\\",
-      "input",
-      "input",
-      "",
-      5,
-      0,
+      { 5, "input" },
+      { 0, "" },
       true
-    },
-    {
+    ),
+    path_split_data::posixroot(
       "C:\\Users\\MegaZeux\\Desktop\\MegaZeux\\Zeux\\Caverns\\CAVERNS.MZX",
-      "C:/Users/MegaZeux/Desktop/MegaZeux/Zeux/Caverns",
-      "C:\\Users\\MegaZeux\\Desktop\\MegaZeux\\Zeux\\Caverns",
-      "CAVERNS.MZX",
-      47,
-      11,
+      { 47, "C:/Users/MegaZeux/Desktop/MegaZeux/Zeux/Caverns" },
+      { 47, "C:\\Users\\MegaZeux\\Desktop\\MegaZeux\\Zeux\\Caverns" },
+      { 46, "C:Users/MegaZeux/Desktop/MegaZeux/Zeux/Caverns" },
+      { 11, "CAVERNS.MZX" },
       true
-    },
-    {
+    ),
+    path_split_data::posixroot(
       u8"/home/\u00C8śŚ/megazeux/DE/DE_START.MZX",
-      u8"/home/\u00C8śŚ/megazeux/DE",
-      u8"\\home\\\u00C8śŚ\\megazeux\\DE",
-      "DE_START.MZX",
-      24,
-      12,
+      { 24, u8"/home/\u00C8śŚ/megazeux/DE" },
+      { 24, u8"\\home\\\u00C8śŚ\\megazeux\\DE" },
+      { 12, "DE_START.MZX" },
       true
-    },
-    {
+    ),
+    path_split_data::posixroot(
       u8"/home/ćçáö/megazeux/DE/saved.\u00C8śŚ.sav",
-      u8"/home/ćçáö/megazeux/DE",
-      u8"\\home\\ćçáö\\megazeux\\DE",
-      u8"saved.\u00C8śŚ.sav",
-      26,
-      16,
+      { 26, u8"/home/ćçáö/megazeux/DE" },
+      { 26, u8"\\home\\ćçáö\\megazeux\\DE" },
+      { 16, u8"saved.\u00C8śŚ.sav" },
       true
-    },
-    {
+    ),
+    path_split_data::posixroot(
       "/",
-      "/",
-      "\\",
-      "",
-      1,
-      0,
+      { 1, "/" },
+      { 1, "\\" },
+      { 0, "" },
       true
-    },
-    {
+    ),
+    path_split_data::posixdosroot(
       "C:\\",
-#ifdef PATH_DOS_STYLE_ROOTS
-      "C:/",
-      "C:\\",
-      "",
-      3,
-#else
-      "C:",
-      "C:",
-      "",
-      2,
-#endif
-      0,
+      { 2, "C:" },
+      { 3, "C:/" },
+      { 3, "C:\\" },
+      { 2, "C:" },
+      { 0, "" },
       true
-    },
-    {
+    ),
+    path_split_data::posixroot(
       "/sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
-      "/",
-      "\\",
-      "sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
-      1,
-      42,
+      { 1, "/" },
+      { 1, "\\" },
+      { 42, "sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg" },
       true
-    },
-    {
+    ),
+    path_split_data::posixdosroot(
       "C:\\sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
-#ifdef PATH_DOS_STYLE_ROOTS
-      "C:/",
-      "C:\\",
-      "sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
-      3,
-#else
-      "C:",
-      "C:",
-      "sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg",
-      2,
-#endif
-      42,
+      { 2, "C:" },
+      { 3, "C:/" },
+      { 3, "C:\\" },
+      { 2, "C:" },
+      { 42, "sdfjklfdjdskfdsfgdfsggdfgdfgfdgsgdfgfdgfgg" },
       true
-    },
-    {
+    ),
+    path_split_data::posixdosroot(
       "C://sdfjklf",
-#ifdef PATH_DOS_STYLE_ROOTS
-      "C:/",
-      "C:\\",
-      "sdfjklf",
-      3,
-#else
-      "C://",
-      "C:\\\\",
-      "sdfjklf",
-      4,
-#endif
-      7,
+      { 4, "C://" },
+      { 3, "C:/" },
+      { 3, "C:\\" },
+      { 2, "C:" },
+      { 7, "sdfjklf" },
       true
-    },
+    ),
     // Internally all of these functions may stat the provided directory to
     // determine how much of it is/isn't a path. These paths all assume that
     // a directory stat succeeds for the input path.
-    {
+    path_split_data::all(
       PATH_DIR_EXISTS,
-      PATH_DIR_EXISTS,
-      PATH_DIR_EXISTS,
-      "",
-      15,
-      0,
+      { 15, PATH_DIR_EXISTS },
+      { 0, "" },
       true
-    },
-    {
+    ),
+    path_split_data::all(
       PATH_DIR_EXISTS_2,
-      PATH_DIR_EXISTS_2,
-      PATH_DIR_EXISTS_2,
-      "",
-      31,
-      0,
+      { 31, PATH_DIR_EXISTS_2 },
+      { 0, "" },
       true
-    },
+    ),
   };
   char dir_buffer[MAX_PATH];
   char file_buffer[MAX_PATH];
@@ -948,7 +1041,7 @@ UNITTEST(path_split_functions)
     for(const path_split_data &d : data)
     {
       boolean result = path_has_directory(d.path);
-      ASSERTEQ(result, d.dir_return_value > 0, "%s", d.path);
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value > 0, "%s", d.path);
     }
   }
 
@@ -960,9 +1053,9 @@ UNITTEST(path_split_functions)
       dir_buffer[MAX_PATH - 1] = '\0';
 
       result = path_to_directory(dir_buffer, MAX_PATH);
-      ASSERTEQ(result, d.dir_return_value, "%s", d.path);
-      if(result >= 0 && d.SPLIT_DIRECTORY)
-        ASSERTCMP(dir_buffer, d.SPLIT_DIRECTORY, "%s", d.path);
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value, "%s", d.path);
+      if(result >= 0 && d.PATH_SELECTOR.result)
+        ASSERTCMP(dir_buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
   }
 
@@ -971,9 +1064,9 @@ UNITTEST(path_split_functions)
     for(const path_split_data &d : data)
     {
       result = path_get_directory(dir_buffer, MAX_PATH, d.path);
-      ASSERTEQ(result, d.dir_return_value, "%s", d.path);
-      if(result >= 0 && d.SPLIT_DIRECTORY)
-        ASSERTCMP(dir_buffer, d.SPLIT_DIRECTORY, "%s", d.path);
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value, "%s", d.path);
+      if(result >= 0 && d.PATH_SELECTOR.result)
+        ASSERTCMP(dir_buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
   }
 
@@ -985,9 +1078,9 @@ UNITTEST(path_split_functions)
       file_buffer[MAX_PATH - 1] = '\0';
 
       result = path_to_filename(file_buffer, MAX_PATH);
-      ASSERTEQ(result, d.file_return_value, "%s", d.path);
-      if(result >= 0 && d.filename)
-        ASSERTCMP(file_buffer, d.filename, "%s", d.path);
+      ASSERTEQ(result, d.filename.return_value, "%s", d.path);
+      if(result >= 0 && d.filename.result)
+        ASSERTCMP(file_buffer, d.filename.result, "%s", d.path);
     }
   }
 
@@ -996,9 +1089,9 @@ UNITTEST(path_split_functions)
     for(const path_split_data &d : data)
     {
       result = path_get_filename(file_buffer, MAX_PATH, d.path);
-      ASSERTEQ(result, d.file_return_value, "%s", d.path);
-      if(result >= 0 && d.filename)
-        ASSERTCMP(file_buffer, d.filename, "%s", d.path);
+      ASSERTEQ(result, d.filename.return_value, "%s", d.path);
+      if(result >= 0 && d.filename.result)
+        ASSERTCMP(file_buffer, d.filename.result, "%s", d.path);
     }
   }
 
@@ -1013,11 +1106,11 @@ UNITTEST(path_split_functions)
       ASSERTEQ(result, d.dir_and_file_return_value, "%s", d.path);
       if(result)
       {
-        if(d.SPLIT_DIRECTORY)
-          ASSERTCMP(dir_buffer, d.SPLIT_DIRECTORY, "%s", d.path);
+        if(d.PATH_SELECTOR.result)
+          ASSERTCMP(dir_buffer, d.PATH_SELECTOR.result, "%s", d.path);
 
-        if(d.filename)
-          ASSERTCMP(file_buffer, d.filename, "%s", d.path);
+        if(d.filename.result)
+          ASSERTCMP(file_buffer, d.filename.result, "%s", d.path);
       }
     }
   }
@@ -1043,114 +1136,150 @@ UNITTEST(path_split_functions)
 
       // The rest behave exactly like path_get_directory.
       result = path_get_parent(dir_buffer, MAX_PATH, d.path);
-      ASSERTEQ(result, d.dir_return_value, "%s", d.path);
-      if(result >= 0 && d.SPLIT_DIRECTORY)
-        ASSERTCMP(dir_buffer, d.SPLIT_DIRECTORY, "%s", d.path);
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value, "%s", d.path);
+      if(result >= 0 && d.PATH_SELECTOR.result)
+        ASSERTCMP(dir_buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
   }
 }
+
 
 struct path_target_output
 {
   const char *path;
   const char *target;
-  const char *posix_result;
-  const char *win32_result;
-  ssize_t return_value;
+  struct path_return_result posix;    /* POSIX with added root:// roots */
+  struct path_return_result posixdos; /* POSIX with added root:/ roots (console SDKs) */
+  struct path_return_result dos;      /* DOS */
+  struct path_return_result win32;    /* DOS with UNC roots */
+  struct path_return_result amiga;    /* Amiga */
+
+  static constexpr struct path_target_output all(const char *path,
+   const char *target, struct path_return_result any)
+  {
+    return path_target_output{ path, target, any, any, any, any, any };
+  }
+
+  static constexpr struct path_target_output posixroot(const char *path,
+   const char *target, struct path_return_result posix,
+   struct path_return_result dos)
+  {
+    return path_target_output{ path, target, posix, posix, dos, dos, posix };
+  }
+
+  static constexpr struct path_target_output posixroot(const char *path,
+   const char *target, struct path_return_result posix,
+   struct path_return_result dos, struct path_return_result amiga)
+  {
+    return path_target_output{ path, target, posix, posix, dos, dos, amiga };
+  }
+
+  static constexpr struct path_target_output posixdosroot(const char *path,
+   const char *target, struct path_return_result posix,
+   struct path_return_result posixdos, struct path_return_result dos,
+   struct path_return_result amiga)
+  {
+    return path_target_output{ path, target, posix, posixdos, dos, dos, amiga };
+  }
+
+  static constexpr struct path_target_output uncroot(const char *path,
+   const char *target, struct path_return_result posix,
+   struct path_return_result dos, struct path_return_result win32,
+   struct path_return_result amiga)
+  {
+    return path_target_output{ path, target, posix, posix, dos, win32, amiga };
+  }
 };
 
 UNITTEST(path_append_and_path_join)
 {
-  static const path_target_output data[] =
+  static constexpr const path_target_output data[] =
   {
-    {
+    path_target_output::all(
       "",
       "",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "/a/base",
       "",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "",
       "a/target",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::posixroot(
+      "/",
+      "awa",
+      { 4, "/awa" },
+      { 4, "\\awa" }
+    ),
+    path_target_output::posixroot(
       "/base/path",
       "a/target.ext",
-      "/base/path/a/target.ext",
-      "\\base\\path\\a\\target.ext",
-      23
-    },
-    {
+      { 23, "/base/path/a/target.ext" },
+      { 23, "\\base\\path\\a\\target.ext" }
+    ),
+    path_target_output::posixroot(
       "/do/not/duplicate/",
       "this/slash",
-      "/do/not/duplicate/this/slash",
-      "\\do\\not\\duplicate\\this\\slash",
-      28
-    },
-    {
+      { 28, "/do/not/duplicate/this/slash" },
+      { 28, "\\do\\not\\duplicate\\this\\slash" }
+    ),
+    path_target_output::posixroot(
       "/loool/",
       "loool/",
-      "/loool/loool",
-      "\\loool\\loool",
-      12
-    },
-    {
+      { 12, "/loool/loool" },
+      { 12, "\\loool\\loool" }
+    ),
+    path_target_output::posixroot(
       "C:\\dos\\path",
       "to\\join",
-      "C:/dos/path/to/join",
-      "C:\\dos\\path\\to\\join",
-      19
-    }
+      { 19, "C:/dos/path/to/join" },
+      { 19, "C:\\dos\\path\\to\\join" },
+      { 18, "C:dos/path/to/join" }
+    ),
+    path_target_output::posixroot(
+      "some:amiga/nonsense///",
+      "augh",
+      { 24, "some:amiga/nonsense/augh" },
+      { 24, "some:amiga\\nonsense\\augh" },
+      { 26, "some:amiga/nonsense///augh" }
+    ),
   };
   // Assume a buffer size of 32 for these.
-  static const path_target_output small_data[] =
+  static constexpr const path_target_output small_data[] =
   {
-    {
+    path_target_output::posixroot(
       "/should/barely/fit",
       "this/string",
-      "/should/barely/fit/this/string",
-      "\\should\\barely\\fit\\this\\string",
-      30
-    },
-    {
+      { 30, "/should/barely/fit/this/string" },
+      { 30, "\\should\\barely\\fit\\this\\string" }
+    ),
+    path_target_output::posixroot(
       "C:/an/exact/fit",
       "and/should/pass",
-      "C:/an/exact/fit/and/should/pass",
-      "C:\\an\\exact\\fit\\and\\should\\pass",
-      31
-    },
-    {
+      { 31, "C:/an/exact/fit/and/should/pass" },
+      { 31, "C:\\an\\exact\\fit\\and\\should\\pass" },
+      { 30, "C:an/exact/fit/and/should/pass" }
+    ),
+    path_target_output::all(
       "/should/not/be/able/to/fit",
       "these/strings",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "C:\\wow\\this\\path\\is\\kinda\\very\\long\\",
       "whatever",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "C:\\",
       "wtf\\is\\wrong\\with\\you\\no\\seriously",
-      nullptr,
-      nullptr,
-      -1
-    }
+      { -1, nullptr }
+    ),
   };
 
   char buffer[MAX_PATH];
@@ -1164,9 +1293,9 @@ UNITTEST(path_append_and_path_join)
       buffer[MAX_PATH - 1] = '\0';
 
       result = path_append(buffer, MAX_PATH, d.target);
-      ASSERTEQ(result, d.return_value, "%s", d.path);
-      if(result && d.PATH_CLEAN_RESULT)
-        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value, "%s", d.path);
+      if(result && d.PATH_SELECTOR.result)
+        ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
   }
 
@@ -1178,10 +1307,10 @@ UNITTEST(path_append_and_path_join)
       buffer[MAX_PATH - 1] = '\0';
 
       result = path_append(buffer, 32, d.target);
-      ASSERTEQ(result, d.return_value, "%s", d.path);
-      if(result && d.PATH_CLEAN_RESULT)
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value, "%s", d.path);
+      if(result && d.PATH_SELECTOR.result)
       {
-        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
+        ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
       }
       else
         ASSERTCMP(buffer, d.path, "");
@@ -1193,9 +1322,9 @@ UNITTEST(path_append_and_path_join)
     for(const path_target_output &d : data)
     {
       result = path_join(buffer, MAX_PATH, d.path, d.target);
-      ASSERTEQ(result, d.return_value, "%s", d.path);
-      if(result && d.PATH_CLEAN_RESULT)
-        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value, "%s", d.path);
+      if(result && d.PATH_SELECTOR.result)
+        ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
   }
 
@@ -1207,10 +1336,10 @@ UNITTEST(path_append_and_path_join)
       snprintf(buffer, MAX_PATH, "%s", def);
 
       result = path_join(buffer, 32, d.path, d.target);
-      ASSERTEQ(result, d.return_value, "%s", d.path);
-      if(result && d.PATH_CLEAN_RESULT)
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value, "%s", d.path);
+      if(result && d.PATH_SELECTOR.result)
       {
-        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
+        ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
       }
       else
         ASSERTCMP(buffer, def, "%s", d.path);
@@ -1218,101 +1347,78 @@ UNITTEST(path_append_and_path_join)
   }
 }
 
+
 UNITTEST(path_remove_prefix)
 {
-  static const path_target_output data[] =
+  static constexpr const path_target_output data[] =
   {
-    {
+    path_target_output::all(
       "",
       "",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "valid path",
       "",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "",
       "valid prefix",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "/some/path/here/with/an/invalid/prefix",
       "/some/p",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "/some/regular/path",
       "/some/regular/path/except/the/prefix/is/really/long",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "C:\\dont\\mix\\root\\styles",
       "\\dont\\mix\\root",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "/some/path/here",
       "/some/path",
-      "here",
-      "here",
-      4
-    },
-    {
+      { 4, "here" }
+    ),
+    path_target_output::posixroot(
       "/some/prefix/some/path/here",
       "/some/prefix/",
-      "some/path/here",
-      "some\\path\\here",
-      14
-    },
-    {
+      { 14, "some/path/here" },
+      { 14, "some\\path\\here" }
+    ),
+    path_target_output::all(
       "C:\\a\\dos\\style\\prefixed\\path",
       "C:\\a\\dos\\style\\prefixed",
-      "path",
-      "path",
-      4
-    },
-    {
+      { 4, "path" }
+    ),
+    path_target_output::posixroot(
       "work\\on\\relative\\paths\\too\\thanks",
       "work\\on\\relative\\",
-      "paths/too/thanks",
-      "paths\\too\\thanks",
-      16
-    },
-    {
+      { 16, "paths/too/thanks" },
+      { 16, "paths\\too\\thanks" }
+    ),
+    path_target_output::all(
       "consume/all/slashes////////////////////////////////////thanks",
       "consume/all/slashes",
-      "thanks",
-      "thanks",
-      6
-    },
-    {
+      { 6, "thanks" }
+    ),
+    path_target_output::all(
       "/allow/mixed/slash/styles",
       "\\allow/mixed\\slash",
-      "styles",
-      "styles",
-      6
-    },
-    {
+      { 6, "styles" }
+    ),
+    path_target_output::all(
       "merge//prefix\\\\slashes//////thanks",
       "merge/\\//\\\\prefix///////////\\slashes",
-      "thanks",
-      "thanks",
-      6
-    },
+      { 6, "thanks" }
+    ),
   };
   char buffer[MAX_PATH];
   ssize_t result;
@@ -1325,9 +1431,9 @@ UNITTEST(path_remove_prefix)
       buffer[MAX_PATH - 1] = '\0';
 
       result = path_remove_prefix(buffer, MAX_PATH, d.target, 0);
-      ASSERTEQ(result, d.return_value, "%s", d.path);
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value, "%s", d.path);
       if(result >= 0)
-        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
+        ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
       else
         ASSERTCMP(buffer, d.path, "");
     }
@@ -1342,271 +1448,283 @@ UNITTEST(path_remove_prefix)
 
       result = path_remove_prefix(buffer, MAX_PATH, d.target,
        strlen(d.target));
-      ASSERTEQ(result, d.return_value, "%s", d.path);
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value, "%s", d.path);
       if(result >= 0)
-        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
+        ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
       else
         ASSERTCMP(buffer, d.path, "");
     }
   }
 }
 
+
 UNITTEST(path_navigate)
 {
-  static const path_target_output no_check[] =
+  static constexpr const path_target_output no_check[] =
   {
-    {
+    path_target_output::all(
       "",
       "",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "lol",
       "",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       "",
       "lol",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::posixdosroot(
       "/abc",
       "malformed/root:/path/",
-#ifdef PATH_DOS_STYLE_ROOTS
-      nullptr,
-      nullptr,
-      -1
-#else
-      "/abc/malformed/root:/path",
-      "\\abc\\malformed\\root:\\path",
-      25
-#endif
-    },
-    {
+      { 25, "/abc/malformed/root:/path" },
+      { -1, nullptr },
+      { -1, nullptr },
+      { 19, "malformed/root:path"}
+    ),
+    path_target_output::posixroot(
       "/start/path",
       "relative/target",
-      "/start/path/relative/target",
-      "\\start\\path\\relative\\target",
-      27
-    },
-    {
+      { 27, "/start/path/relative/target" },
+      { 27, "\\start\\path\\relative\\target" }
+    ),
+    path_target_output::posixroot(
       "/",
       "hello",
-      "/hello",
-      "\\hello",
-      6
-    },
-    {
+      { 6, "/hello" },
+      { 6, "\\hello" }
+    ),
+    path_target_output::posixroot(
       "C:\\",
       "a",
-      "C:/a",
-      "C:\\a",
-      4
-    },
-    {
+      { 4, "C:/a" },
+      { 4, "C:\\a" },
+      { 3, "C:a" }
+    ),
+    path_target_output::posixroot(
       "/some/path",
       "..",
-      "/some",
-      "\\some",
-      5
-    },
-    {
+      { 5, "/some" },
+      { 5, "\\some" },
+      { 13, "/some/path/.." }
+    ),
+    path_target_output::posixroot(
       "/",
       "..",
-      "/",
-      "\\",
-      1
-    },
-    {
+      { 1, "/" },
+      { 1, "\\" },
+      { 3, "/.." }
+    ),
+    path_target_output::posixroot(
       "/another/path",
       "./../path/../../../another/./",
-      "/another",
-      "\\another",
-      8
-    },
-    {
+      { 8, "/another" },
+      { 8, "\\another" },
+      { 42, "/another/path/./../path/../../../another/." }
+    ),
+    path_target_output::posixroot(
       "/start/path",
       "/an/absolute/path",
-      "/an/absolute/path",
-      "\\an\\absolute\\path",
-      17
-    },
-    {
+      { 17, "/an/absolute/path" },
+      { 17, "\\an\\absolute\\path" },
+      { 23, "/start/an/absolute/path" }
+    ),
+    path_target_output::posixroot(
       "jdflkjsdlfjksdklfjsdlksjdfklsd",
       "\\also\\an\\absolute\\path",
-      "/also/an/absolute/path",
-      "\\also\\an\\absolute\\path",
-      22
-    },
-    {
+      { 22, "/also/an/absolute/path" },
+      { 22, "\\also\\an\\absolute\\path" },
+      { 52, "jdflkjsdlfjksdklfjsdlksjdfklsd/also/an/absolute/path" }
+    ),
+    path_target_output::posixdosroot(
       "C:\\start\\path",
       "D:\\folder",
-#ifdef PATH_DOS_STYLE_ROOTS
-      "D:/folder",
-      "D:\\folder",
-      9
-#else
-      "C:/start/path/D:/folder",
-      "C:\\start\\path\\D:\\folder",
-      23
-#endif
-    },
-    {
+      { 23, "C:/start/path/D:/folder" },
+      { 9, "D:/folder" },
+      { 9, "D:\\folder" },
+      { 8, "D:folder" }
+    ),
+    path_target_output::posixdosroot(
       "/some/directory",
       "C:",
-#ifdef PATH_DOS_STYLE_ROOTS
-      "C:/",
-      "C:\\",
-      3
-#else
-      "/some/directory/C:",
-      "\\some\\directory\\C:",
-      18
-#endif
-    },
-    {
+      { 18, "/some/directory/C:" },
+      { 3, "C:/" },
+      { 3, "C:\\" },
+      { 2, "C:" }
+    ),
+    path_target_output::posixdosroot(
       "C:\\\\start\\path",
       "D:\\\\folder",
-#ifdef PATH_DOS_STYLE_ROOTS
-      "D:/folder",
-      "D:\\folder",
-      9
-#else
-      "D://folder",
-      "D:\\\\folder",
-      10
-#endif
-    },
-    {
+      { 10, "D://folder" },
+      { 9, "D:/folder" },
+      { 9, "D:\\folder" },
+      { 8, "D:folder" }
+    ),
+    path_target_output::posixdosroot(
       "/some/directory2",
       "C://",
-#ifdef PATH_DOS_STYLE_ROOTS
-      "C:/",
-      "C:\\",
-      3
-#else
-      "C://",
-      "C:\\\\",
-      4
-#endif
-    },
-    {
+      { 4, "C://" },
+      { 3, "C:/" },
+      { 3, "C:\\" },
+      { 2, "C:" }
+    ),
+    path_target_output::posixdosroot(
       "ahhkillme://",
       "..",
-#ifdef PATH_DOS_STYLE_ROOTS
-      "ahhkillme:/",
-      "ahhkillme:\\",
-      11
-#else
-      "ahhkillme://",
-      "ahhkillme:\\\\",
-      12
-#endif
-    },
-    {
+      { 12, "ahhkillme://" },
+      { 11, "ahhkillme:/" },
+      { 11, "ahhkillme:\\" },
+      { 12, "ahhkillme:.." }
+    ),
+    path_target_output::posixroot(
       "/cwd",
       "mix\\up/some\\of/these\\slashes/lol",
-      "/cwd/mix/up/some/of/these/slashes/lol",
-      "\\cwd\\mix\\up\\some\\of\\these\\slashes\\lol",
-      37
-    },
-    {
+      { 37, "/cwd/mix/up/some/of/these/slashes/lol" },
+      { 37, "\\cwd\\mix\\up\\some\\of\\these\\slashes\\lol" }
+    ),
+    path_target_output::posixroot(
       "/skdlfjlskdjfklsd/",
       "i/am\\sure/..\\someone/relies\\..\\on/this",
-      "/skdlfjlskdjfklsd/i/am/someone/on/this",
-      "\\skdlfjlskdjfklsd\\i\\am\\someone\\on\\this",
-      38
-    },
-    {
+      { 38, "/skdlfjlskdjfklsd/i/am/someone/on/this" },
+      { 38, "\\skdlfjlskdjfklsd\\i\\am\\someone\\on\\this" },
+      { 56, "/skdlfjlskdjfklsd/i/am/sure/../someone/relies/../on/this" }
+    ),
+    path_target_output::posixroot(
       "/.yeah/.actually/.dotfiles/.should/.work",
       "../../.work",
-      "/.yeah/.actually/.dotfiles/.work",
-      "\\.yeah\\.actually\\.dotfiles\\.work",
-      32
-    },
-    {
+      { 32, "/.yeah/.actually/.dotfiles/.work" },
+      { 32, "\\.yeah\\.actually\\.dotfiles\\.work" },
+      { 52, "/.yeah/.actually/.dotfiles/.should/.work/../../.work" }
+    ),
+    path_target_output::posixroot(
       "look/more/nonsense",
       ".../lol",
-      "look/more/nonsense/.../lol",
-      "look\\more\\nonsense\\...\\lol",
-      26
-    },
-#ifdef PATH_UNC_ROOTS
+      { 26, "look/more/nonsense/.../lol" },
+      { 26, "look\\more\\nonsense\\...\\lol"}
+    ),
+    // Amiga-style parent directory navigation
+    path_target_output::posixroot(
+      "sys:software/octamed",
+      "/",
+      { 1, "/" },
+      { 1, "\\" },
+      { 12, "sys:software" }
+    ),
+    path_target_output::posixroot(
+      "a1200:da_megazeux_zone",
+      "/",
+      { 1, "/" },
+      { 1, "\\" },
+      { 6, "a1200:" }
+    ),
+    path_target_output::posixroot(
+      "fd0:this/is/pretty/horrible/tbh",
+      "aaaa//wtf/awful//////working",
+      { 54, "fd0:this/is/pretty/horrible/tbh/aaaa/wtf/awful/working" },
+      { 54, "fd0:this\\is\\pretty\\horrible\\tbh\\aaaa\\wtf\\awful\\working" },
+      { 19, "fd0:this/is/working" }
+    ),
+    path_target_output::posixdosroot(
+      "daharddisk:ok/surely/this/will/be/normal",
+      ":",
+      { 42, "daharddisk:ok/surely/this/will/be/normal/:" },
+      { -1, nullptr },
+      { -1, nullptr },
+      { 1, ":" }
+    ),
+    path_target_output::posixdosroot(
+      "awawa:hello/world",
+      ":Software",
+      { 27, "awawa:hello/world/:Software" },
+      { -1, nullptr },
+      { -1, nullptr },
+      { 9, ":Software" }
+    ),
+    path_target_output::posixroot(
+      "cant:go/past/root",
+      "//////",
+      { 1, "/" },
+      { 1, "\\" },
+      { 5, "cant:" }
+    ),
     // Windows UNC paths
-    {
+    path_target_output::uncroot(
       "\\\\.\\C:",
       "Program Files",
-      "//./C:/Program Files",
-      "\\\\.\\C:\\Program Files",
-      20
-    },
-    {
+      { 19, "/./C:/Program Files" },
+      { -1, nullptr },
+      { 20, "\\\\.\\C:\\Program Files" },
+      { 19, "\\\\.\\C:Program Files" }
+    ),
+    path_target_output::uncroot(
       "\\\\localhost\\share\\folder",
       "..",
-      "//localhost/share/",
-      "\\\\localhost\\share\\",
-      18
-    },
-    {
+      { 16, "/localhost/share" },
+      { 16, "\\localhost\\share" },
+      { 18, "\\\\localhost\\share\\" },
+      { 27, "//localhost/share/folder/.." }
+    ),
+    path_target_output::uncroot(
       "\\\\?\\unc\\localhost\\c$\\",
       "whymustyoudothis/..",
-      "//?/unc/localhost/c$/",
-      "\\\\?\\unc\\localhost\\c$\\",
-      21
-    },
-    {
+      { 19, "/?/unc/localhost/c$" },
+      { 19, "\\?\\unc\\localhost\\c$" },
+      { 21, "\\\\?\\unc\\localhost\\c$\\" },
+      { 40, "//?/unc/localhost/c$/whymustyoudothis/.." }
+    ),
+    path_target_output::uncroot(
       "\\\\.\\C:\\nope\\",
       "..\\..",
-      "//./C:/",
-      "\\\\.\\C:\\",
-      7
-    },
-    {
+      { 2, "/." },
+      { 2, "\\." },
+      { 7, "\\\\.\\C:\\" },
+      { 16, "\\\\.\\C:nope/../.." }
+    ),
+    path_target_output::uncroot(
       "\\\\127.0.0.1\\why",
       "..",
-      "//127.0.0.1/why/",
-      "\\\\127.0.0.1\\why\\",
-      16
-    }
-#endif
+      { 10, "/127.0.0.1" },
+      { 10, "\\127.0.0.1" },
+      { 16, "\\\\127.0.0.1\\why\\" },
+      { 18, "//127.0.0.1/why/.." }
+    ),
   };
   static const path_target_output with_check[] =
   {
-    {
+    path_target_output::all(
       "",
       "",
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::all(
       ".",
       PATH_DIR_NOT_EXISTS,
-      nullptr,
-      nullptr,
-      -1
-    },
-    {
+      { -1, nullptr }
+    ),
+    path_target_output::posixroot(
       ".",
       PATH_DIR_EXISTS,
-      "./" PATH_DIR_EXISTS,
-      ".\\" PATH_DIR_EXISTS,
-      17
-    },
-    {
+      { 17, "./" PATH_DIR_EXISTS },
+      { 17, ".\\" PATH_DIR_EXISTS },
+      { -1, nullptr }
+    ),
+    path_target_output::posixroot(
       PATH_FILE_RECURSIVE,
       "..",
-      PATH_DIR_RECURSIVE,
-      PATH_DIR_RECURSIVE,
-      18
-    },
+      { 18, PATH_DIR_RECURSIVE },
+      { 18, PATH_DIR_RECURSIVE },
+      { -1, nullptr }
+    ),
+    path_target_output::posixroot(
+      PATH_FILE_RECURSIVE,
+      "/",
+      { 1, "/" },
+      { 1, "\\" },
+      { 18, PATH_DIR_RECURSIVE }
+    ),
   };
   char buffer[MAX_PATH];
   ssize_t result;
@@ -1619,9 +1737,9 @@ UNITTEST(path_navigate)
       buffer[MAX_PATH - 1] = '\0';
 
       result = path_navigate_no_check(buffer, MAX_PATH, d.target);
-      ASSERTEQ(result, d.return_value, "%s", d.path);
-      if(result && d.PATH_CLEAN_RESULT)
-        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value, "%s", d.path);
+      if(result && d.PATH_SELECTOR.result)
+        ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
   }
 
@@ -1633,12 +1751,13 @@ UNITTEST(path_navigate)
       buffer[MAX_PATH - 1] = '\0';
 
       result = path_navigate(buffer, MAX_PATH, d.target);
-      ASSERTEQ(result, d.return_value, "%s", d.path);
-      if(result && d.PATH_CLEAN_RESULT)
-        ASSERTCMP(buffer, d.PATH_CLEAN_RESULT, "%s", d.path);
+      ASSERTEQ(result, d.PATH_SELECTOR.return_value, "%s", d.path);
+      if(result && d.PATH_SELECTOR.result)
+        ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
   }
 }
+
 
 struct path_mkdir_data
 {
