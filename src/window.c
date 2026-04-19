@@ -3315,6 +3315,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   int list_length = 17 - ext_height;
   int last_element = FILESEL_FILE_LIST;
   boolean return_dir_is_base_dir = true;
+  int volumes_pos;
   int i;
 
   // Buffers for the return file's path and name.
@@ -3478,6 +3479,7 @@ skip_dir:
     qsort(file_list, num_files, sizeof(char *), sort_function);
     qsort(dir_list, num_dirs, sizeof(char *), sort_function);
 
+    volumes_pos = num_dirs;
     if(allow_dirs == ALLOW_ALL_DIRS)
     {
       vvolumelist *volumes = vvolumelist_open();
@@ -3778,7 +3780,8 @@ skip_dir:
       case 6:
       {
         if(strcmp(dir_list[chosen_dir], "..") &&
-         strcmp(dir_list[chosen_dir], ".") && dir_list[chosen_dir][1] != ':')
+         strcmp(dir_list[chosen_dir], ".") &&
+         strcmp(dir_list[chosen_dir], "/") && chosen_dir < volumes_pos)
         {
           char confirm_string[70];
           snprintf(confirm_string, 70, "Delete %s: are you sure?",
@@ -3813,7 +3816,8 @@ skip_dir:
       case 7:
       {
         if(strcmp(dir_list[chosen_dir], "..") &&
-         strcmp(dir_list[chosen_dir], ".") && dir_list[chosen_dir][1] != ':')
+         strcmp(dir_list[chosen_dir], ".") &&
+         strcmp(dir_list[chosen_dir], "/") && chosen_dir < volumes_pos)
         {
           char *old_path = cmalloc(MAX_PATH);
           char *new_path = cmalloc(MAX_PATH);

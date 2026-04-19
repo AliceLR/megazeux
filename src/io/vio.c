@@ -2383,12 +2383,20 @@ static void vvolumelist_free(vvolumelist *volumes)
   free(volumes);
 }
 
+/**
+ * Open the system volume list for reading. This function will read the volume
+ * list in one go and allocate a copy to memory, as some platforms require
+ * locking the volume list (Amiga) or temporarily changing the disk (DOS).
+ * For most POSIX platforms, this list will consist of "/" and nothing else.
+ *
+ * @return an opaque volume list on success, otherwise NULL.
+ */
 vvolumelist *vvolumelist_open(void)
 {
   struct vvolumelist_handle vh;
   vvolumelist *ret;
   int sz;
-  char buf[MAX_PATH];
+  char buf[256]; /* Amiga BCPL strings max at 255, other platforms are less. */
 
   trace("--VIO-- vvolumelist_open\n");
 
@@ -2418,12 +2426,24 @@ err:
   return NULL;
 }
 
+/**
+ * Release resources associated with an opened system volume list and free it.
+ *
+ * @param volumes   system volume list to destroy.
+ * @return          0 on success.
+ */
 int vvolumelist_close(vvolumelist *volumes)
 {
   vvolumelist_free(volumes);
   return 0;
 }
 
+/**
+ * Get the next volume from an opened system volume list.
+ *
+ * @param volumes   system volume list to read.
+ * @return          the name of the next volume, or NULL (end of list).
+ */
 const char *vvolumelist_read(vvolumelist *volumes)
 {
   if(volumes->pos >= volumes->num_total)

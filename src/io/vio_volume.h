@@ -80,28 +80,42 @@ static inline int platform_vvolumelist_read(struct vvolumelist_handle *vh,
 struct vvolumelist_handle
 {
   struct DosList *dl;
+  size_t pos;
 };
 
 static inline boolean platform_vvolumelist_open(struct vvolumelist_handle *vh)
 {
   vh->dl = LockDosList(LDF_VOLUMES | LDF_READ);
+  vh->pos = 0;
   return true;
 }
 
 static inline void platform_vvolumelist_close(struct vvolumelist_handle *vh)
 {
-  UnlockDosList(LDF_VOLUMES | LDF_READ);
+  UnLockDosList(LDF_VOLUMES | LDF_READ);
 }
 
 static inline int platform_vvolumelist_read(struct vvolumelist_handle *vh,
  char *buf, size_t buf_sz)
 {
+  /* Patch in SYS: after the reported list. */
+  static const char * const extras[] =
+  {
+    "SYS"
+  };
+
   while((vh->dl = NextDosEntry(vh->dl, LDF_VOLUMES)))
   {
     uint8_t *bname = (uint8_t *)BADDR(vh->dl->dol_Name);
     int len = bname[0];
 
     return snprintf(buf, buf_sz, "%*.*s:", len, len, (char *)bname + 1);
+  }
+
+  while(vh->pos < ARRAY_SIZE(extras))
+  {
+    size_t num = (vh->pos++);
+    return snprintf(buf, buf_sz, "%s:", extras[num]);
   }
   return 0;
 }
