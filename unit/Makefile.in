@@ -83,9 +83,11 @@ unit_objs += \
   ${unit_obj}/world${unit_ext}         \
 
 unit_ldflags += -L. -lcore
+${unit_objs}: ${core_target}
 
 ifneq (${BUILD_EDITOR},)
 unit_ldflags += -L. -leditor
+${unit_objs}: ${editor_target}
 endif
 
 ifneq (${BUILD_NETWORK},)
