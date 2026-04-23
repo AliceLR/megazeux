@@ -39,7 +39,7 @@
  * tokenize to "C:" followed by "a". If this behavior isn't desired, use the
  * return value of `path_is_absolute` before tokenizing to skip the root. This
  * function also does not skip duplicate slashes or trailing slashes
- * (see `path_clean_slashes`).
+ * (see `path_clean`).
  *
  * @param next  pointer to the current position in the path string.
  *              The value will be updated to the location of the next token or
@@ -263,7 +263,7 @@ ssize_t path_is_absolute(const char *path)
       i++;
 #ifdef PATH_DOS_STYLE_ROOTS
       // True DOS-style roots do not require a trailing slash.
-      if(!path[i])
+      if(path[i] == '\0')
         return i;
 #endif
 
@@ -298,6 +298,50 @@ ssize_t path_is_absolute(const char *path)
     }
 
 #endif
+  }
+  return 0;
+}
+
+/**
+ * Determine if the given path is an absolute path, using DOS-style roots rules.
+ *
+ * @param  path   Path to test.
+ * @return        length of root token if this is an absolute path, otherwise 0.
+ */
+ssize_t path_is_absolute_dos(const char *path)
+{
+  size_t len;
+  size_t i;
+
+  // Unix-style root.
+  if(isslash(path[0]))
+    return 1;
+
+  // DOS-style root.
+  len = strlen(path);
+  for(i = 0; i < len; i++)
+  {
+    if(isslash(path[i]))
+      break;
+
+    if(path[i] == ':')
+    {
+      if(i == 0)
+        break;
+
+      i++;
+      // True DOS-style roots do not require a trailing slash.
+      if(path[i] == '\0')
+        return i;
+
+      if(isslash(path[i]))
+      {
+        while(isslash(path[i]))
+          i++;
+        return i;
+      }
+      break;
+    }
   }
   return 0;
 }
@@ -360,7 +404,7 @@ ssize_t path_to_directory(char *path, size_t buffer_len)
 
   path[filename_pos] = '\0';
   if(filename_pos > 0)
-    filename_pos = path_clean_slashes(path, buffer_len);
+    filename_pos = path_clean(path, buffer_len);
 
   return filename_pos;
 }
@@ -425,7 +469,7 @@ ssize_t path_get_directory(char *dest, size_t dest_len, const char *path)
   if(filename_pos > 0)
   {
     memcpy(dest, path, filename_pos);
-    filename_pos = path_clean_slashes(dest, dest_len);
+    filename_pos = path_clean(dest, dest_len);
   }
   return filename_pos;
 }
@@ -495,7 +539,7 @@ boolean path_get_directory_and_filename(char *d_dest, size_t d_len,
   if(filename_pos > 0)
   {
     memcpy(d_dest, path, filename_pos);
-    path_clean_slashes(d_dest, d_len);
+    path_clean(d_dest, d_len);
   }
 
   filename_len = path_len - filename_pos;
@@ -540,20 +584,22 @@ ssize_t path_get_parent(char *dest, size_t dest_len, const char *path)
   if(i > 0)
   {
     memcpy(dest, path, i);
-    i = path_clean_slashes(dest, dest_len);
+    i = path_clean(dest, dest_len);
   }
   return i;
 }
 
 /**
- * Clean duplicate directory separators out of a path and normalize them to
- * the correct slash for the current platform.
+ * Clean a path according to the current platform, namely:
+ * - All: normalize slashes to this platform's directory separator.
+ * - POSIX, DOS/Win32: remove extra directory separators and ending separators.
+ * - Amiga: remove end-of-root directory separators, single ending separator.
  *
  * @param  path       Path to clean slashes of.
  * @param  path_len   Size of the path buffer.
  * @return            The length of the destination path.
  */
-size_t path_clean_slashes(char *path, size_t path_len)
+size_t path_clean(char *path, size_t path_len)
 {
   boolean need_copy = false;
   size_t root_len;
@@ -632,16 +678,17 @@ size_t path_clean_slashes(char *path, size_t path_len)
 }
 
 /**
- * Create a duplicate of a path with duplicate directory separators removed
- * and with the directory separators normalized to the correct slash for the
- * current platform.
+ * Create a duplicate of a path according to the current platform, namely:
+ * - All: normalize slashes to this platform's directory separator.
+ * - POSIX, DOS/Win32: remove extra directory separators and ending separators.
+ * - Amiga: remove end-of-root directory separators, single ending separator.
  *
  * @param  dest       Destination buffer for the cleaned path.
  * @param  dest_len   Size of the destination buffer.
  * @param  path       Path to clean slashes of.
  * @return            The length of the destination path.
  */
-size_t path_clean_slashes_copy(char *dest, size_t dest_len, const char *path)
+size_t path_clean_copy(char *dest, size_t dest_len, const char *path)
 {
   size_t path_len = strlen(path);
   size_t root_len;
@@ -716,10 +763,88 @@ size_t path_clean_slashes_copy(char *dest, size_t dest_len, const char *path)
 }
 
 /**
+ * Create a duplicate of a path, cleaning specifically using POSIX with DOS
+ * single slash root rules:
+ * - Normalize all slashes to the POSIX directory separator /.
+ * - Merge duplicate slashes and trim any final trailing slashes.
+ * - Do not preserve double root slashes.
+ *
+ * @param  dest       Destination buffer for the cleaned path.
+ * @param  dest_len   Size of the destination buffer.
+ * @param  path       Path to clean slashes of.
+ * @return            The length of the destination path.
+ */
+size_t path_clean_copy_posixdos(char *dest, size_t dest_len, const char *path)
+{
+  size_t path_len = strlen(path);
+  size_t root_len;
+  size_t i = 0;
+  size_t j = 0;
+
+  root_len = path_is_absolute_dos(path);
+
+  while((i < path_len) && (j < dest_len - 1))
+  {
+    if(isslash(path[i]))
+    {
+      while(isslash(path[i]))
+        i++;
+
+      dest[j++] = '/';
+    }
+    else
+      dest[j++] = path[i++];
+  }
+  dest[j] = '\0';
+
+  /* Trim trailing slashes unless they are a component of the root. */
+  if(j >= 2 && j > root_len && dest[j - 1] == '/')
+    dest[--j] = '\0';
+
+  return j;
+}
+
+/**
+ * Strip redundant POSIX/DOS/Win32 current directory tokens (".") out of
+ * a path. TODO: this function should be merged into the path clean functions
+ * in 2.94, but for now it strictly uses DOS roots rules, because it's needed
+ * by Amiga to fix DOS paths provided by games.
+ */
+ssize_t path_clean_current_tokens(char *path, size_t path_len)
+{
+  size_t i = path_is_absolute(path);
+  size_t j = i;
+
+  while(i < path_len && path[i])
+  {
+    if(path[i] == '.' && /* TODO: i >= root_len && */
+     (j == 0 || isslash(path[j - 1])) &&
+     (path[i + 1] == '\0' || isslash(path[i + 1])))
+    {
+      i++;
+      while(isslash(path[i]))
+        i++;
+      if(j == 0 && path[i] == '\0')
+        path[j++] = '.';
+    }
+    else
+    {
+      if(j < i)
+        path[j] = path[i];
+      j++;
+      i++;
+    }
+  }
+  path[j] = '\0';
+
+  return j;
+}
+
+/**
  * Append a relative directory or filename path to an existing base path.
  * This function does not handle ./, ../, etc; to resolve relative paths
  * containing those, use path_navigate() instead. On success, the destination
- * is guaranteed to have cleaned slashes (see path_clean_slashes).
+ * is guaranteed to have cleaned  by `path_clean`/`path_clean_copy`.
  *
  * @param  path         Existing base path.
  * @param  buffer_len   Size of the base path buffer.
@@ -734,11 +859,11 @@ ssize_t path_append(char *path, size_t buffer_len, const char *rel)
   // Needs to be able to fit the worst case size: path + separator + rel + \0.
   if(path_len && rel_len && path_len + rel_len + 2 <= buffer_len)
   {
-    path_len = path_clean_slashes(path, buffer_len);
+    path_len = path_clean(path, buffer_len);
     if(path[path_len - 1] != DIR_SEPARATOR_CHAR)
       path[path_len++] = DIR_SEPARATOR_CHAR;
 
-    rel_len = path_clean_slashes_copy(path + path_len, buffer_len - path_len, rel);
+    rel_len = path_clean_copy(path + path_len, buffer_len - path_len, rel);
     return path_len + rel_len;
   }
   return -1;
@@ -748,7 +873,7 @@ ssize_t path_append(char *path, size_t buffer_len, const char *rel)
  * Join a base directory path to a relative directory or filename path.
  * This function does not handle ./, ../, etc; to resolve relative paths
  * containing those, use path_navigate() instead. On success, the destination
- * is guaranteed to have cleaned slashes (see path_clean_slashes)
+ * is guaranteed to have cleaned  by `path_clean`/`path_clean_copy`.
  *
  * @param  dest       Destination buffer for the joined path.
  * @param  dest_len   Size of the destination buffer.
@@ -764,11 +889,11 @@ ssize_t path_join(char *dest, size_t dest_len, const char *base, const char *rel
   // Needs to be able to fit the worst case size: base + separator + rel + \0.
   if(base_len && rel_len && base_len + rel_len + 2 <= dest_len)
   {
-    base_len = path_clean_slashes_copy(dest, dest_len, base);
+    base_len = path_clean_copy(dest, dest_len, base);
     if(dest[base_len - 1] != DIR_SEPARATOR_CHAR)
       dest[base_len++] = DIR_SEPARATOR_CHAR;
 
-    rel_len = path_clean_slashes_copy(dest + base_len, dest_len - base_len, rel);
+    rel_len = path_clean_copy(dest + base_len, dest_len - base_len, rel);
     return base_len + rel_len;
   }
   return -1;
@@ -841,9 +966,162 @@ ssize_t path_remove_prefix(char *path, size_t buffer_len,
     if(offset < 0)
       return -1;
 
-    return path_clean_slashes_copy(path, buffer_len, path + offset);
+    return path_clean_copy(path, buffer_len, path + offset);
   }
   return -1;
+}
+
+/* Check a single path token for a reserved DOS device. */
+static boolean path_safety_check_dos_device(const char *token, size_t token_len)
+{
+  /* These names can not exist alone or followed by any extension,
+   * including multiple extensions like ".tar.gz". */
+  static const char * const devices_num[] =
+  {
+    "com",
+    "lpt",
+  };
+  static const char * const devices[] =
+  {
+    "aux",
+    "con",
+    "nul",
+    "prn",
+  };
+  /* Numbered devices are reserved 1-9 and for Latin-1 superscripts 1-3. */
+  static const char reserved_numbers[] = "123456789\xb9\xb2\xb3";
+
+  size_t i;
+
+  /* path_get_ext_offset gets the last extension, this needs to exclude all */
+  for(i = 0; i < token_len; i++)
+    if(token[i] == '.')
+      break;
+
+  token_len = i;
+
+  if(token_len == 3)
+  {
+    for(i = 0; i < ARRAY_SIZE(devices); i++)
+      if(!strncasecmp(token, devices[i], 3))
+        return true;
+  }
+  else
+
+  if(token_len == 4)
+  {
+    for(i = 0; i < ARRAY_SIZE(devices_num); i++)
+    {
+      if(strncasecmp(token, devices_num[i], 3))
+        continue;
+
+      if(strchr(reserved_numbers, token[3]))
+        return true;
+
+      /* Matched one device prefix, won't match another... */
+      break;
+    }
+  }
+  return false;
+}
+
+/**
+ * Perform safety checks on a provided path, optionally including any of the
+ * following checks. Use following a path_clean function for best results.
+ * Many of these checks are deliberately overly aggressive, since the specifics
+ * of what counts as a root may vary between systems.
+ *
+ * PATH_SAFE_UNIX_ROOT:     detect paths beginning with any slash, including
+ *                          Unix and UNC roots.
+ * PATH_SAFE_DOS_ROOT:      detect any path that may be mistaken for containing
+ *                          a DOS or Amiga root (any path containing a colon).
+ * PATH_SAFE_UNIX_PARENT:   detect paths containing Unix parent directory
+ *                          tokens (..), which may break sandboxing.
+ * PATH_SAFE_AMIGA_PARENT:  detect path containing adjacent slashes, which
+ *                          may break sandboxing.
+ * PATH_SAFE_DOS_CHARACTER: detect characters forbidden by NTFS/VFAT/exFAT,
+ *                          including 1-31 and any of these: "*:<>?|. Doesn't
+ *                          exclude \0, /, or \ (meaningful in C-string paths),
+ *                          or several characters only forbidden pre-VFAT
+ *                          (existing Windows-era games rely on these).
+ * PATH_SAFE_DOS_DEVICE:    detect patch containing deserved DOS/Windows
+ *                          device names, which can cause hangs or worse in
+ *                          DOS and Windows.
+ *
+ * @param path        the path to safety check.
+ * @param check_mask  a mask of the above enum values for checks to perform.
+ * @return            the first check in the provided check_mask that fails,
+ *                    otherwise PATH_SAFE_OK.
+ */
+enum path_safe_mask path_safety_check(const char *path, int check_mask)
+{
+  size_t len = strlen(path);
+  const char *pos;
+
+  if((check_mask & PATH_SAFE_UNIX_ROOT) && isslash(path[0]))
+    return PATH_SAFE_UNIX_ROOT;
+
+  if((check_mask & PATH_SAFE_DOS_ROOT) && strchr(path, ':'))
+    return PATH_SAFE_DOS_ROOT;
+
+  if(check_mask & PATH_SAFE_UNIX_PARENT)
+  {
+    pos = path;
+    while((pos = strstr(pos, "..")))
+    {
+      if((pos == path || isslash(pos[-1])) &&
+       (pos[2] == '\0' || isslash(pos[2])))
+        return PATH_SAFE_UNIX_PARENT;
+
+      pos += 2;
+    }
+  }
+
+  if(check_mask & PATH_SAFE_AMIGA_PARENT)
+  {
+    pos = path;
+    while((pos = strpbrk(pos, "/\\")))
+    {
+      if(isslash(pos[1]))
+        return PATH_SAFE_AMIGA_PARENT;
+
+      pos++;
+    }
+  }
+
+  if(check_mask & PATH_SAFE_DOS_CHARACTER)
+  {
+    if(strpbrk(path,
+          "\x01\x02\x03\x04\x05\x06\x07"
+      "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
+      "\x10\x11\x12\x13\x14\x15\x16\x17"
+      "\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
+      "\"*:<>?|"))
+      return PATH_SAFE_DOS_CHARACTER;
+  }
+
+  if(check_mask & PATH_SAFE_DOS_DEVICE)
+  {
+    size_t root_len = path_is_absolute(path);
+    const char *end = path + len;
+
+    /* path tokenize functions are currently destructive, so do this instead. */
+    pos = path + root_len;
+    for(;;)
+    {
+      size_t token_len;
+      const char *next = strpbrk(pos, "/\\");
+      token_len = (next ? next : end) - pos;
+
+      if(path_safety_check_dos_device(pos, token_len))
+        return PATH_SAFE_DOS_DEVICE;
+      if(!next)
+        break;
+
+      pos = next + 1;
+    }
+  }
+  return PATH_SAFE_OK;
 }
 
 /**
@@ -887,7 +1165,7 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
      */
     next = target + len;
     snprintf(buffer, MAX_PATH, "%.*s" DIR_SEPARATOR, (int)len, target);
-    path_clean_slashes(buffer, MAX_PATH);
+    path_clean(buffer, MAX_PATH);
 
     if(allow_checks && vstat(buffer, &stat_info) < 0)
     {
@@ -906,7 +1184,7 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
      * Destination is relative--start from the current path. Make sure there's
      * a trailing separator.
      */
-    len = path_clean_slashes_copy(buffer, MAX_PATH, path);
+    len = path_clean_copy(buffer, MAX_PATH, path);
     if(!len)
       return -1;
 
@@ -983,7 +1261,7 @@ static ssize_t path_navigate_internal(char *path, size_t path_len, const char *t
   }
 
   // This needs to be done before the stat for some platforms (e.g. 3DS)
-  len = path_clean_slashes(buffer, MAX_PATH);
+  len = path_clean(buffer, MAX_PATH);
   if(len < path_len)
   {
     trace("--PATH-- path_navigate_internal: '%s'\n", buffer);

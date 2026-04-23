@@ -796,7 +796,7 @@ static uint32_t vfs_get_path_base_inode(vfilesystem *vfs, const char **path)
     buffer[len] = '\0';
     *path += len;
 
-    path_clean_slashes(buffer, sizeof(buffer));
+    path_clean(buffer, sizeof(buffer));
 
     inode = vfs_get_inode_in_parent_by_name(vfs, roots, buffer, NULL);
     if(inode == VFS_NO_INODE)
@@ -857,7 +857,7 @@ static uint32_t vfs_get_inode_by_path(vfilesystem *vfs, const char *path)
   if(!inode)
     return VFS_NO_INODE;
 
-  path_clean_slashes_copy(buffer, sizeof(buffer), path);
+  path_clean_copy(buffer, sizeof(buffer), path);
 
   return vfs_get_inode_by_relative_path(vfs, inode, buffer);
 }
@@ -880,7 +880,7 @@ static boolean vfs_get_inode_and_parent_by_path(vfilesystem *vfs, const char *pa
   if(!base)
     return false;
 
-  path_clean_slashes_copy(buffer, sizeof(buffer), path);
+  path_clean_copy(buffer, sizeof(buffer), path);
 
   // If the buffer is empty, the entire path is a root.
   // The target inode is the root and its parent is itself in this situation.

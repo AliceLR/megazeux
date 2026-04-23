@@ -3345,7 +3345,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
   // TODO: some platforms don't return this in the format MZX needs it.
   vgetcwd(return_dir_name, MAX_PATH);
-  path_clean_slashes(return_dir_name, MAX_PATH);
+  path_clean(return_dir_name, MAX_PATH);
 
   snprintf(current_dir_name, MAX_PATH, "%s", return_dir_name);
   current_dir_name[MAX_PATH - 1] = '\0';

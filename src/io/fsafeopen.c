@@ -551,7 +551,7 @@ static int fsafetest(const char *path, char *newpath, size_t buffer_len)
   if((path == NULL) || (path[0] == 0))
     return -FSAFE_INVALID_ARGUMENT;
 
-  pathlen = path_clean_slashes_copy(newpath, buffer_len, path);
+  pathlen = path_clean_copy(newpath, buffer_len, path);
 
 #if (DIR_SEPARATOR_CHAR == '\\')
   // The slash cleaning function made these Windows slashes but fsafetranslate

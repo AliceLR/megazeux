@@ -446,7 +446,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
       // Try to load these from config before loading the default.
 
       char *path = cmalloc(MAX_PATH);
-      size_t path_len = path_clean_slashes_copy(path, MAX_PATH,
+      size_t path_len = path_clean_copy(path, MAX_PATH,
        mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
 
       switch(res)

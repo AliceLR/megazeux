@@ -119,7 +119,7 @@ static boolean vio_cache_directory_recursively(vfilesystem *vfs, const char *pat
 */
 
   // Initialize root.
-  path_clean_slashes_copy(tmp, MAX_PATH, path);
+  path_clean_copy(tmp, MAX_PATH, path);
   next = tmp;
   len = path_is_absolute(tmp);
   if(len > 1)

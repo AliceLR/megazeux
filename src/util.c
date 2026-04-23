@@ -299,7 +299,7 @@ int mzx_res_init(const char *argv0, boolean editor)
       full_path_len = base_name_len + 1;
       full_path = cmalloc(full_path_len);
 
-      if(path_clean_slashes_copy(full_path, full_path_len,
+      if(path_clean_copy(full_path, full_path_len,
        mzx_res[i].base_name) > 0)
       {
         if(!vstat(full_path, &file_info))
@@ -482,7 +482,7 @@ boolean redirect_stdio_init(const char *base_path, boolean require_conf)
   if(!base_path)
     return false;
 
-  dest_len = path_clean_slashes_copy(dest_path, MAX_PATH - 10, base_path);
+  dest_len = path_clean_copy(dest_path, MAX_PATH - 10, base_path);
 
   if(require_conf)
   {
