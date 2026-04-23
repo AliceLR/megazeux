@@ -218,7 +218,7 @@ public:
         size_t pos = render.size();
         render.resize(pos + dest.size());
         for(size_t i = 0; i < dest.size(); i++)
-          render[pos + i] = Unit::clamp(dest[i], -32768, 32767);
+          render[pos + i] = Unit::clamp((int)dest[i], -32768, 32767);
       }
     }
 
