@@ -285,6 +285,13 @@ namespace Unit
     has_value = !!allocbuf;
   }
 
+  arg::arg(const unsigned long *_ptr, size_t length_bytes)
+  {
+    allocbuf = _set_operand_integral_ptr(_ptr, length_bytes / sizeof(long));
+    op = allocbuf;
+    has_value = !!allocbuf;
+  }
+
 
   /************************************************************************
    * Unit::exception functions.

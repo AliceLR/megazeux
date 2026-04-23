@@ -173,7 +173,7 @@ static void compare_image(const struct image_file_const &base,
   {
     if(!COMPARE_FN(base.data[i], in.data[i]))
     {
-      FAIL("%s: pixel mismatch @ %zu - %08x %08x", filename, i,
+      FAIL("%s: pixel mismatch @ %zu - %08" PRIx32 " %08" PRIx32, filename, i,
        *(uint32_t *)(base.data + i), *(uint32_t *)(in.data + i));
     }
   }
