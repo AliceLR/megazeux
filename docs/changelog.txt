@@ -11,6 +11,11 @@ GIT - MZX 2.93e
 
 USERS
 
++ fsafetranslate now rejects paths containing invalid characters
+  for NTFS/VFAT/exFAT filenames and paths containing reserved
+  DOS/Windows devices. There is no compatibility check for this,
+  as this has always been very broken in DOS/Windows, and no
+  known games made in Linux/macOS rely on this.
 + Fixed out-of-memory error on some platforms when attempting to
   flood fill the player in the editor.
 + Fixed checkres testing of 2.90X through 2.92X worlds with
