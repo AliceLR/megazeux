@@ -3566,41 +3566,6 @@ skip_dir:
     // Prevent UI keys from carrying through.
     force_release_all_keys();
 
-    // If there's a path on ret, change to it.  Make ret absolute.
-    switch(dialog_result)
-    {
-      case 0:
-      case 1:
-      {
-        size_t ret_len = strlen(ret);
-        boolean ignore_file = false;
-
-        if(ret[0] && (ret[ret_len - 1] == ':') && (ret_len + 1) < MAX_PATH)
-          strcpy(ret + ret_len, DIR_SEPARATOR);
-
-        // TODO: for reliable results this needs to happen from the current dir.
-        vchdir(current_dir_name);
-        path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
-        vchdir(return_dir_name);
-
-        if(ret_path[0])
-        {
-          if(path_navigate(current_dir_name, MAX_PATH, ret_path) < 0)
-          {
-            error("Directory does not exist or permission denied.",
-             ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
-            ignore_file = true;
-            ret[0] = '\0';
-          }
-        }
-
-        if(ret_file[0] && !ignore_file)
-          path_join(ret, MAX_PATH, current_dir_name, ret_file);
-      }
-    }
-
-    ret[MAX_PATH - 1] = 0;
-
     switch(dialog_result)
     {
       // Pressed Backspace
@@ -3623,19 +3588,51 @@ skip_dir:
       {
         int stat_result;
 
-        if(!ret_file[0])
-          break;
-
-        // Unfortunately, ret isn't reliable when the file name is 55+ chars,
-        // so if the focus is directly on the list and they don't match, use
-        // the complete name
         if(di.current_element == FILESEL_FILE_LIST)
         {
+          /* If a file was selected from the file list, ignore the filename
+           * entry box value, which may be wrong--join the full filename to
+           * the (absolute) current directory instead. */
           struct file_list_entry *e =
            (struct file_list_entry *)file_list[chosen_file];
 
-          if(strcmp(ret_file, e->filename))
-            path_join(ret, MAX_PATH, current_dir_name, e->filename);
+          if(path_join(ret, MAX_PATH, current_dir_name, e->filename) < 0)
+          {
+            ret[0] = '\0';
+            break;
+          }
+        }
+        else
+        {
+          /* Entered filenames are more messy--split them into components,
+           * derive a new current directory, and make ret absolute. */
+
+          /* This function will never set ret_file to an existing directory.
+           * TODO: since ret is probably relative, the internal stat() needs
+           * to be performed from the current directory to get reliable results.
+           */
+          vchdir(current_dir_name);
+          path_get_directory_and_filename(ret_path, MAX_PATH, ret_file, MAX_PATH, ret);
+          vchdir(return_dir_name);
+
+          if(ret_path[0] != '\0')
+          {
+            if(path_navigate(current_dir_name, MAX_PATH, ret_path) < 0)
+            {
+              error("Directory does not exist or permission denied.",
+               ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
+              ret[0] = '\0';
+              break;
+            }
+          }
+
+          if(ret_file[0] == '\0' ||
+           path_join(ret, MAX_PATH, current_dir_name, ret_file) < 0)
+          {
+            /* Directory entered, nothing else to do; or path is too long. */
+            ret[0] = '\0';
+            break;
+          }
         }
 
         if(default_ext)
@@ -3643,10 +3640,13 @@ skip_dir:
 
         stat_result = vstat(ret, &file_info);
 
-        // It's actually a dir, oops!
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
         {
-          if(path_navigate(current_dir_name, MAX_PATH, ret_file) < 0)
+          /* Should be unreachable unless someone swapped out a file
+           * for a directory while the file manager wasn't looking,
+           * but this is harmless to check anyway.
+           */
+          if(path_navigate(current_dir_name, MAX_PATH, ret) < 0)
             error("Directory does not exist or permission denied.",
              ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
           ret[0] = '\0';
