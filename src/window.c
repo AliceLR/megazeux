@@ -3571,7 +3571,6 @@ skip_dir:
     {
       case 0:
       case 1:
-      case 4:
       {
         size_t ret_len = strlen(ret);
         boolean ignore_file = false;
@@ -3727,22 +3726,37 @@ skip_dir:
       // Delete file
       case 4:
       {
-        if((vstat(ret, &file_info) >= 0) &&
-         strcmp(ret, PATH_PARENT_DIR) && strcmp(ret, PATH_CURRENT_DIR))
-        {
-          char *confirm_string;
+        char *del_name = (char *)cmalloc(MAX_PATH);
 
-          confirm_string = cmalloc(MAX_PATH);
-          snprintf(confirm_string, MAX_PATH,
-           "Delete %s - are you sure?", ret_file);
+        struct file_list_entry *e =
+         (struct file_list_entry *)file_list[chosen_file];
+
+        path_join(del_name, MAX_PATH, current_dir_name, e->filename);
+
+        if(strcmp(e->filename, PATH_PARENT_DIR) &&
+         strcmp(e->filename, PATH_CURRENT_DIR) &&
+         vstat(del_name, &file_info) >= 0)
+        {
+          char confirm_string[64];
+
+          if(strlen(e->filename) <= 33)
+          {
+            snprintf(confirm_string, sizeof(confirm_string),
+             "Delete %.33s - are you sure?", e->filename);
+          }
+          else
+          {
+            snprintf(confirm_string, sizeof(confirm_string),
+             "Delete %.30s... - are you sure?", e->filename);
+          }
 
           if(!confirm(mzx_world, confirm_string))
-            if(vunlink(ret))
+            if(vunlink(del_name))
               error("File could not be deleted.",
                ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
-
-          free(confirm_string);
         }
+
+        free(del_name);
         break;
       }
 
