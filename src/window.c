@@ -3038,6 +3038,8 @@ static void file_list_get_mzx_world_name(struct file_list_entry *entry)
   // Don't add this file to the cache as there may be a LOT of these.
   vfile *mzx_file = vfopen_unsafe_ext(entry->filename, "rb", V_DONT_CACHE);
   char *world_name = entry->display + MAX_FILE_LIST_DISPLAY_MZX;
+  if(!mzx_file)
+    return;
 
   if(!vfread(world_name, 24, 1, mzx_file))
     strcpy(world_name, "@0~c\x10 name read failed \x11");
@@ -3069,13 +3071,13 @@ static struct file_list_entry *construct_file_list_entry(const char *file_name)
     entry->is_mzx_file = true;
     entry->loaded_world_name = false;
 
-    memset(entry->display, ' ', MAX_FILE_LIST_DISPLAY - 1);
-    entry->display[MAX_FILE_LIST_DISPLAY - 1] = '\0';
-
-    memcpy(entry->display, file_name, file_name_length);
+    // Display the filename in a smaller area and space-pad the world name.
+    snprintf(entry->display, sizeof(entry->display), "%-*.*s%*s",
+     MAX_FILE_LIST_DISPLAY_MZX, MAX_FILE_LIST_DISPLAY_MZX, file_name,
+     MAX_FILE_LIST_DISPLAY - MAX_FILE_LIST_DISPLAY_MZX, " ");
 
     // Display names that are too long with ...
-    if(file_name_length > (MAX_FILE_LIST_DISPLAY_MZX - 1))
+    if(file_name_length >= MAX_FILE_LIST_DISPLAY_MZX)
       memcpy(entry->display + MAX_FILE_LIST_DISPLAY_MZX - 4, "... ", 4);
 
     // TODO it would be nice to be able to delay this on the 3DS but it's
