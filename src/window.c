@@ -3731,10 +3731,9 @@ skip_dir:
         struct file_list_entry *e =
          (struct file_list_entry *)file_list[chosen_file];
 
-        path_join(del_name, MAX_PATH, current_dir_name, e->filename);
-
         if(strcmp(e->filename, PATH_PARENT_DIR) &&
          strcmp(e->filename, PATH_CURRENT_DIR) &&
+         path_join(del_name, MAX_PATH, current_dir_name, e->filename) >= 0 &&
          vstat(del_name, &file_info) >= 0)
         {
           char confirm_string[64];
