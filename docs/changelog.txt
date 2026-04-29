@@ -19,6 +19,8 @@ USERS
 + Added file manager support for listing volumes on Amiga.
 + The file manager now correctly ignores rename/delete when used
   on volumes in the directory list for Wii, PS Vita, and Amiga.
++ Fixed file manager crashes with world filenames over 56 chars.
++ Fixed file manager deleting files with names over 56 chars.
 
 DEVELOPERS
 
