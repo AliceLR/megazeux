@@ -1014,7 +1014,7 @@ static void core_update(core_context *root)
  */
 void core_run(core_context *root)
 {
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
   context *ctx;
   // FIXME: Because not everything can be converted to use the main loop at
   // once, this function needs to be used from places other than main(). So

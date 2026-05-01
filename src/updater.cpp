@@ -842,7 +842,7 @@ static boolean reissue_connection(HTTPHost &http, const char *host_name,
  */
 static boolean __check_for_updates(context *ctx, boolean is_automatic)
 {
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
   int cur_host;
   const char *update_host;
   boolean in_exec_dir = false;
@@ -1308,7 +1308,7 @@ static void updater_init_delete_txt_check()
 
 boolean updater_init(void)
 {
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
   if(!conf->updater_enabled)
     return false;
 

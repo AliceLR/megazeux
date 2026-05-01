@@ -116,7 +116,8 @@ char *skip_whitespace(char *src)
 #ifdef CONFIG_DEBYTECODE
 static
 #endif
-union variable_storage *find_macro_variable(char *name, struct macro_type *m)
+union variable_storage *find_macro_variable(const char *name,
+ const struct macro_type *m)
 {
   int bottom = 0, top = m->num_variables - 1, middle = 0;
   int cmpval = 0;
@@ -539,8 +540,8 @@ static struct ext_macro *process_macro(const char *line_data,
   return macro_dest;
 }
 
-struct ext_macro *find_macro(struct editor_config_info *conf, const char *name,
- int *next)
+static struct ext_macro *_find_macro(const struct editor_config_info *conf,
+ const char *name, int *next)
 {
   int bottom = 0, top = (conf->num_extended_macros) - 1, middle = 0;
   int cmpval = 0;
@@ -571,6 +572,12 @@ struct ext_macro *find_macro(struct editor_config_info *conf, const char *name,
   return NULL;
 }
 
+const struct ext_macro *find_macro(const struct editor_config_info *conf,
+ const char *name, int *next)
+{
+  return _find_macro(conf, name, next);
+}
+
 void add_ext_macro(struct editor_config_info *conf, const char *name,
  const char *line_data, const char *label)
 {
@@ -587,7 +594,7 @@ void add_ext_macro(struct editor_config_info *conf, const char *name,
   }
   else
   {
-    macro_dest = find_macro(conf, name, &next);
+    macro_dest = _find_macro(conf, name, &next);
 
     if(macro_dest)
     {

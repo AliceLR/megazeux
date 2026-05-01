@@ -354,9 +354,9 @@ static void delete_robot_lines(struct robot *cur_robot,
 }
 
 static void macro_default_values(struct robot_editor_context *rstate,
- struct ext_macro *macro_src)
+ const struct ext_macro *macro_src)
 {
-  struct macro_type *current_type;
+  const struct macro_type *current_type;
   int i, i2;
 
   for(i = 0, current_type = macro_src->types;
@@ -739,8 +739,8 @@ static boolean execute_named_macro(struct robot_editor_context *rstate,
 static boolean named_macro_exists(struct robot_editor_context *rstate,
  char *macro_name)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
-  struct ext_macro *macro_src;
+  const struct editor_config_info *editor_conf = get_editor_config();
+  const struct ext_macro *macro_src;
   char *line_pos;
   char *lone_name;
   int next;
@@ -763,7 +763,7 @@ static boolean named_macro_exists(struct robot_editor_context *rstate,
 static boolean update_current_line(struct robot_editor_context *rstate,
  boolean allow_macro_undo_frame)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   char bytecode_buffer[COMMAND_BUFFER_LEN];
   char error_buffer[COMMAND_BUFFER_LEN];
   char new_command_buffer[COMMAND_BUFFER_LEN];
@@ -1125,7 +1125,7 @@ static void insert_string(struct robot_editor_context *rstate, const char *src,
 }
 
 static void output_macro(struct robot_editor_context *rstate,
- struct ext_macro *macro_src)
+ const struct ext_macro *macro_src)
 {
   int num_lines = macro_src->num_lines;
   char line_buffer[COMMAND_BUFFER_LEN];
@@ -1258,10 +1258,10 @@ err_cancel_expansion:
 static boolean execute_named_macro(struct robot_editor_context *rstate,
  char *macro_name)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   char *line_pos, *line_pos_old, *lone_name;
-  struct macro_type *param_type = NULL;
-  struct ext_macro *macro_src;
+  const struct macro_type *param_type = NULL;
+  const struct ext_macro *macro_src;
   char last_char;
   int next;
 
@@ -1733,7 +1733,7 @@ static void export_block(struct robot_editor_context *rstate,
 
 static void import_block(struct robot_editor_context *rstate)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ((context *)rstate)->world;
   const char *txt_ext[] = { ".TXT", NULL, NULL };
   char import_name[MAX_PATH];
@@ -2374,10 +2374,10 @@ static void robo_ed_replace_dialog(struct robot_editor_context *rstate)
 }
 
 static void execute_macro(struct robot_editor_context *rstate,
- struct ext_macro *macro_src)
+ const struct ext_macro *macro_src)
 {
   struct world *mzx_world = ((context *)rstate)->world;
-  struct macro_type *current_type;
+  const struct macro_type *current_type;
   int i, i2, i3;
 
   // First, the dialogue box must be generated. This will have a text
@@ -2707,8 +2707,8 @@ exit_free:
 
 static void execute_numbered_macro(struct robot_editor_context *rstate, int num)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
-  struct ext_macro *macro_src;
+  const struct editor_config_info *editor_conf = get_editor_config();
+  const struct ext_macro *macro_src;
   char macro_name[32];
   int next;
 
@@ -3012,12 +3012,12 @@ static inline int validate_lines(struct robot_editor_context *rstate,
 static void display_robot_line(struct robot_editor_context *rstate,
  struct robot_line *current_rline, int y)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   int i;
   int x = 2;
   int current_color, current_arg;
   boolean color_coding_on = editor_conf->color_coding_on;
-  char *color_codes = editor_conf->color_codes;
+  const char *color_codes = editor_conf->color_codes;
   char temp_char;
   char temp_buffer[COMMAND_BUFFER_LEN];
   char *line_pos = current_rline->line_text;
@@ -3481,7 +3481,7 @@ static void init_robot_lines(struct robot_editor_context *rstate,
   char *newline_pos;
   int line_length;
 #else
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   char text_buffer[COMMAND_BUFFER_LEN], error_buffer[COMMAND_BUFFER_LEN];
   int line_text_length, line_bytecode_length, new_line, arg_count;
   char *current_robot_pos = cur_robot->program_bytecode + 1;
@@ -3586,7 +3586,7 @@ static boolean robot_editor_draw(context *ctx)
 {
   struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
 
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   int intk_color = combine_colors(editor_conf->color_codes[0], bg_color);
   boolean use_mask = get_config()->mask_midchars;
 
@@ -3932,7 +3932,7 @@ static boolean robot_editor_joystick(context *ctx, int *key, int action)
 static boolean robot_editor_key(context *ctx, int *key)
 {
   struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ((context *)rstate)->world;
 
   // Exit event - ignore other input
@@ -4476,7 +4476,7 @@ static boolean robot_editor_key(context *ctx, int *key)
 
         if(!input_window(mzx_world, "Configure macro:", macro_line, 29))
         {
-          struct ext_macro *macro_src;
+          const struct ext_macro *macro_src;
           int next;
 
           macro_src = find_macro(editor_conf, macro_line, &next);
@@ -4575,7 +4575,7 @@ void robot_editor(context *parent, struct robot *cur_robot)
    ccalloc(1, sizeof(struct robot_editor_context));
   struct context_spec spec;
 
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
 
   rstate->cur_robot = cur_robot;
   rstate->current_line = 0;
@@ -4626,7 +4626,7 @@ void robot_editor(context *parent, struct robot *cur_robot)
 
 void init_macros(void)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   memcpy(macros, editor_conf->default_macros, 5 * 64);
 }
 

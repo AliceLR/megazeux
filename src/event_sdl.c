@@ -698,7 +698,7 @@ static void init_gamepad(SDL_Joystick *joystick, int sdl_joystick_id,
 
     if(gamepad)
     {
-      struct config_info *conf = get_config();
+      const struct config_info *conf = get_config();
       char *mapping = NULL;
       gamepads[joystick_index] = gamepad;
 
@@ -1563,7 +1563,7 @@ static boolean process_event(SDL_Event *event)
     {
       // Since gamepad axis mappings can be complicated, use
       // the gamepad events to update the named axis values.
-      struct config_info *conf = get_config();
+      const struct config_info *conf = get_config();
 #if SDL_VERSION_ATLEAST(3,0,0)
       int value = event->gaxis.value;
       int which = event->gaxis.which;

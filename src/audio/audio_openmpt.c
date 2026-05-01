@@ -47,7 +47,7 @@ struct openmpt_stream
 // OpenMPT's resampling option takes interpolation taps instead of an enum.
 static int omp_get_resample_mode(void)
 {
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
 
   switch(conf->module_resample_mode)
   {

@@ -2809,7 +2809,7 @@ static boolean update_slot_prefix(void)
   size_t i;
   size_t pos = 0;
   int token_pos = -1;
-  char *fmt;
+  const char *fmt;
   boolean parse_token = false;
   size_t fmt_len;
   size_t world_len;

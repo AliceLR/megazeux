@@ -543,7 +543,7 @@ static void fix_mod(struct editor_context *editor)
 static void editor_set_current_board(struct editor_context *editor,
  int new_board, boolean is_extram)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ((context *)editor)->world;
   struct board *cur_board;
 
@@ -601,7 +601,7 @@ static void editor_set_current_board(struct editor_context *editor,
 static void move_edit_cursor(struct editor_context *editor,
  int move_x, int move_y)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ((context *)editor)->world;
   struct board *cur_board = mzx_world->current_board;
   struct buffer_info *buffer = &(editor->buffer);
@@ -836,7 +836,7 @@ enum flash_thing_type
 static void flash_thing(struct editor_context *editor,
  enum thing start, enum thing end, int flash_char_a, int flash_char_b)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
 
   // If the same type of flashing is already enabled, toggle it off instead.
   if(editor_conf->editor_show_thing_toggles && editor->flashing &&
@@ -861,7 +861,7 @@ static void flash_thing(struct editor_context *editor,
  */
 static int flash_init(struct editor_context *editor)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   int chr = editor->flash_char_a;
 
   if(editor->flash_timer >= editor->flash_timer_swap)
@@ -1307,7 +1307,7 @@ static void mouse_draw(struct editor_context *editor, int x, int y)
  */
 static boolean editor_idle(context *ctx)
 {
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   struct editor_context *editor = (struct editor_context *)ctx;
   struct world *mzx_world = ctx->world;
 
@@ -3886,7 +3886,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   struct block_info *block = &(editor->block);
   struct context_spec spec;
 
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ((context *)parent)->world;
 
   struct stat stat_res;

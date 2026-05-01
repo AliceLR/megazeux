@@ -552,7 +552,7 @@ struct thing_menu_context
 static void thing_menu_place_callback(context *ctx, context_callback_param *p)
 {
   struct thing_menu_context *thing_menu = (struct thing_menu_context *)ctx;
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ctx->world;
   struct buffer_info *buffer = thing_menu->buffer;
 
@@ -679,7 +679,7 @@ void thing_menu(context *parent, enum thing_menu_id menu_number,
   struct thing_menu_context *thing_menu;
   struct context_spec spec;
 
-  struct editor_config_info *editor_conf = get_editor_config();
+  const struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = parent->world;
   struct board *cur_board = mzx_world->current_board;
 
