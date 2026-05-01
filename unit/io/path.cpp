@@ -1817,6 +1817,34 @@ UNITTEST(path_safety_check)
 
   SECTION(Any)
     do_tests(PATH_SAFE_ANY);
+
+  SECTION(path_safety_strerror)
+  {
+    size_t i;
+    size_t j;
+
+    for(i = 0; i < PATH_SAFE_ANY * 4; i++)
+    {
+      const char *ret = path_safety_strerror(static_cast<enum path_safe_mask>(i));
+
+      if(i == 0)
+      {
+        ASSERTEQ(ret, path_safety_strerror(PATH_SAFE_OK), "");
+        continue;
+      }
+      for(j = 1; j < PATH_SAFE_ANY; j <<= 1)
+      {
+        if(~i & j)
+          continue;
+
+        ASSERTEQ(ret, path_safety_strerror(static_cast<enum path_safe_mask>(j)),
+         "%zx and %zx should get the same error string", i, j);
+        break;
+      }
+      if(j >= PATH_SAFE_ANY)
+        ASSERTCMP(ret, "unknown", "");
+    }
+  }
 }
 
 

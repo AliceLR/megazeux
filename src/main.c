@@ -257,13 +257,7 @@ __libspec int main(int argc, char *argv[])
   // parameters. Interpret the first unparsed parameter
   // as a file to load (overriding startup_file etc.)
   if(argc > 1 && argv != _backup_argv)
-  {
-    path_get_directory_and_filename(
-      conf->startup_path, sizeof(conf->startup_path),
-      conf->startup_file, sizeof(conf->startup_file),
-      argv[1]
-    );
-  }
+    set_config_startup_path_and_file(argv[1]);
 
   if(strlen(conf->startup_path))
   {

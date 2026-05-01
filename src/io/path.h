@@ -141,6 +141,7 @@ UTILS_LIBSPEC ssize_t path_remove_prefix(char *path, size_t buffer_len,
  const char *prefix, size_t prefix_len);
 
 UTILS_LIBSPEC enum path_safe_mask path_safety_check(const char *path, int flags);
+UTILS_LIBSPEC const char *path_safety_strerror(enum path_safe_mask value);
 
 UTILS_LIBSPEC ssize_t path_navigate(char *path, size_t path_len,
  const char *target);

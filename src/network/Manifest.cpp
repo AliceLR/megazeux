@@ -22,8 +22,8 @@
 #include "HTTPHost.hpp"
 #include "Scoped.hpp"
 #include "../util.h"
-#include "../io/fsafeopen.h"
 #include "../io/memfile.h"
+#include "../io/path.h"
 #include "../io/vio.h"
 
 #include <stdint.h>
@@ -132,9 +132,7 @@ boolean ManifestEntry::validate() const
 
 boolean ManifestEntry::validate_filename(const char *filename)
 {
-  if(filename[0] == '/' || filename[0] == '\\' ||
-   strstr(filename, ":/") || strstr(filename, ":\\") ||
-   strstr(filename, "../") || strstr(filename, "..\\"))
+  if(path_safety_check(filename, PATH_SAFE_ANY))
     return false;
 
   return true;

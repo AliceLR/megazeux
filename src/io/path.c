@@ -1125,6 +1125,31 @@ enum path_safe_mask path_safety_check(const char *path, int check_mask)
 }
 
 /**
+ * Get a descriptive error string for a path_safety_check result.
+ *
+ * @param   value   the return value from path_safety_check. If a mask of
+ *                  multiple values is somehow passed here, the lowest value
+ *                  in the set will be used.
+ * @return          a statically allocated constant string describing the error.
+ */
+const char *path_safety_strerror(enum path_safe_mask value)
+{
+  int x = (int)value;
+
+  switch(x & -x)
+  {
+    case PATH_SAFE_OK:            return "no error";
+    case PATH_SAFE_UNIX_ROOT:     return "POSIX/UNC absolute path";
+    case PATH_SAFE_DOS_ROOT:      return "DOS/Amiga absolute path";
+    case PATH_SAFE_UNIX_PARENT:   return "'..' parent directory token";
+    case PATH_SAFE_AMIGA_PARENT:  return "Amiga parent directory token";
+    case PATH_SAFE_DOS_CHARACTER: return "DOS/Windows reserved character";
+    case PATH_SAFE_DOS_DEVICE:    return "DOS/Windows reserved device";
+    default:                      return "unknown";
+  }
+}
+
+/**
  * Internal common implementation for `path_navigate` and `path_navigate_no_check`.
  */
 static ssize_t path_navigate_internal(char *path, size_t path_len, const char *target,

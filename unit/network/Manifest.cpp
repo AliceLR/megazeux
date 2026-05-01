@@ -158,15 +158,38 @@ UNITTEST(ManifestEntry)
       "sdfjsdlkfjdskljfds/sdfjsdlkfjsdlkjfsdkl/sfdjfklsjdflksd",
       "aaaaaaaaaaa"
     };
+    /* Internally, this should be path_safety_check with most/all flags. */
     static const char *invalid[] =
     {
       "..\\lol",
       "../lol",
       "totally/normal/path/../../../../../../../../../bootmgr",
+      "..",
       "C:\\Windows\\System32",
       "C:/Windows/System32",
       "/dev",
       "\\dev",
+      "amigaroot:lol",
+      "amigaparent/////////System/Shell",
+      "no>pe",
+      "also<nope",
+      "not|even",
+      "\"nope\"",
+      "? not a chance",
+      "NO\r\n",
+      "s\tahp",
+      "n\x1f",
+      "com1",
+      "lpt1",
+      "aux",
+      "NUL",
+      "prn",
+      "con",
+      "com9.chr",
+      "lpt2.tar.gz",
+      "com\xb2.html",
+      "com7/default.chr",
+      "awawa\\lpt\xb9",
     };
 
     for(const char *filename : valid)

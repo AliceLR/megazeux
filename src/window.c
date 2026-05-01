@@ -3653,6 +3653,41 @@ skip_dir:
           break;
         }
 
+        // Directory restrictions or DOS/Windows? Filename needs safety checks:
+#if !defined(_WIN32) && !defined(CONFIG_DJGPP)
+        if(allow_dirs != ALLOW_ALL_DIRS)
+#endif
+        {
+          enum path_safe_mask check_result;
+          size_t base_dir_offset = 0;
+
+          if(allow_dirs != ALLOW_ALL_DIRS)
+          {
+            base_dir_offset = strlen(base_dir_name);
+
+            /* This is a duplicate of a later check out of necessity... */
+            if(strncmp(ret, base_dir_name, base_dir_offset))
+            {
+              error("File is outside of allowed base directory.",
+               ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
+              ret[0] = '\0';
+              break;
+            }
+          }
+          else
+            base_dir_offset = strlen(current_dir_name);
+
+          if((check_result = path_safety_check(ret + base_dir_offset,
+           PATH_SAFE_UNIX_PARENT | PATH_SAFE_DOS_CHARACTER | PATH_SAFE_DOS_DEVICE)))
+          {
+            snprintf(file_name, MAX_PATH, "File name failed safety check: %s",
+             path_safety_strerror(check_result));
+            error(file_name, ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
+            ret[0] = '\0';
+            break;
+          }
+        }
+
         // We're creating a new file
         if(allow_new != NO_NEW_FILES)
         {
