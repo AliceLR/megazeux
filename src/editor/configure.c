@@ -107,7 +107,7 @@ static const struct editor_config_info editor_conf_default =
 };
 
 typedef void (* editor_config_function)(struct editor_config_info *conf,
- char *name, char *value, char *extended_data);
+ const char *name, const char *value, const char *extended_data);
 
 struct editor_config_entry
 {
@@ -174,7 +174,7 @@ static const struct config_enum saving_enabled_values[] =
 // 16 invalid line (comment)
 
 static void config_ccode_chars(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -182,7 +182,7 @@ static void config_ccode_chars(struct editor_config_info *conf,
 }
 
 static void config_ccode_colors(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -197,7 +197,7 @@ static void config_ccode_colors(struct editor_config_info *conf,
 }
 
 static void config_ccode_commands(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -205,7 +205,7 @@ static void config_ccode_commands(struct editor_config_info *conf,
 }
 
 static void config_ccode_conditions(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -213,7 +213,7 @@ static void config_ccode_conditions(struct editor_config_info *conf,
 }
 
 static void config_ccode_current_line(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -221,7 +221,7 @@ static void config_ccode_current_line(struct editor_config_info *conf,
 }
 
 static void config_ccode_directions(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -229,7 +229,7 @@ static void config_ccode_directions(struct editor_config_info *conf,
 }
 
 static void config_ccode_equalities(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -237,7 +237,7 @@ static void config_ccode_equalities(struct editor_config_info *conf,
 }
 
 static void config_ccode_extras(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -245,13 +245,13 @@ static void config_ccode_extras(struct editor_config_info *conf,
 }
 
 static void config_ccode_on(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->color_coding_on, value);
 }
 
 static void config_ccode_immediates(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -262,7 +262,7 @@ static void config_ccode_immediates(struct editor_config_info *conf,
 }
 
 static void config_ccode_items(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -270,7 +270,7 @@ static void config_ccode_items(struct editor_config_info *conf,
 }
 
 static void config_ccode_params(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -278,7 +278,7 @@ static void config_ccode_params(struct editor_config_info *conf,
 }
 
 static void config_ccode_strings(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -286,7 +286,7 @@ static void config_ccode_strings(struct editor_config_info *conf,
 }
 
 static void config_ccode_things(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 15))
@@ -294,7 +294,7 @@ static void config_ccode_things(struct editor_config_info *conf,
 }
 
 static void config_default_invalid(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, default_invalid_status_values))
@@ -302,13 +302,13 @@ static void config_default_invalid(struct editor_config_info *conf,
 }
 
 static void config_disassemble_extras(struct editor_config_info *conf,
- char *name, char *value, char *ext_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->disassemble_extras, value);
 }
 
 static void config_disassemble_base(struct editor_config_info *conf,
- char *name, char *value, char *ext_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, disassemble_base_values))
@@ -316,9 +316,9 @@ static void config_disassemble_base(struct editor_config_info *conf,
 }
 
 static void config_macro(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
-  char *macro_name = name + 6;
+  const char *macro_name = name + 6;
 
   if(isdigit((int)macro_name[0]) && !macro_name[1] && !extended_data)
   {
@@ -334,25 +334,25 @@ static void config_macro(struct editor_config_info *conf,
 }
 
 static void board_editor_hide_help(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->board_editor_hide_help, value);
 }
 
 static void robot_editor_hide_help(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->robot_editor_hide_help, value);
 }
 
 static void palette_editor_hide_help(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->palette_editor_hide_help, value);
 }
 
 static void backup_count(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, INT_MAX))
@@ -360,7 +360,7 @@ static void backup_count(struct editor_config_info *conf,
 }
 
 static void backup_interval(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, INT_MAX))
@@ -368,55 +368,55 @@ static void backup_interval(struct editor_config_info *conf,
 }
 
 static void backup_name(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->backup_name, value);
 }
 
 static void backup_ext(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->backup_ext, value);
 }
 
 static void config_editor_space_toggles(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->editor_space_toggles, value);
 }
 
 static void config_editor_enter_splits(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->editor_enter_splits, value);
 }
 
 static void config_editor_load_board_assets(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->editor_load_board_assets, value);
 }
 
 static void config_editor_tab_focus(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->editor_tab_focuses_view, value);
 }
 
 static void config_editor_thing_menu_places(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->editor_thing_menu_places, value);
 }
 
 static void config_editor_show_thing_toggles(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->editor_show_thing_toggles, value);
 }
 
 static void config_editor_show_thing_blink_speed(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, INT_MAX))
@@ -424,7 +424,7 @@ static void config_editor_show_thing_blink_speed(struct editor_config_info *conf
 }
 
 static void config_undo_history_size(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 1000))
@@ -432,7 +432,7 @@ static void config_undo_history_size(struct editor_config_info *conf,
 }
 
 static void config_saved_positions(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   unsigned int pos;
   unsigned int board_num;
@@ -467,7 +467,7 @@ static void config_saved_positions(struct editor_config_info *conf,
 }
 
 static void config_vlayer_positions(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   unsigned int pos;
   unsigned int vlayer_x;
@@ -504,7 +504,7 @@ static void config_vlayer_positions(struct editor_config_info *conf,
 /******************/
 
 static void config_board_width(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 1, 32767))
@@ -518,7 +518,7 @@ static void config_board_width(struct editor_config_info *conf,
 }
 
 static void config_board_height(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 1, 32767))
@@ -532,7 +532,7 @@ static void config_board_height(struct editor_config_info *conf,
 }
 
 static void config_board_viewport_w(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 1, 80))
@@ -544,7 +544,7 @@ static void config_board_viewport_w(struct editor_config_info *conf,
 }
 
 static void config_board_viewport_h(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 1, 25))
@@ -556,7 +556,7 @@ static void config_board_viewport_h(struct editor_config_info *conf,
 }
 
 static void config_board_viewport_x(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 79))
@@ -564,7 +564,7 @@ static void config_board_viewport_x(struct editor_config_info *conf,
 }
 
 static void config_board_viewport_y(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 24))
@@ -572,103 +572,103 @@ static void config_board_viewport_y(struct editor_config_info *conf,
 }
 
 static void config_board_can_shoot(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->can_shoot, value);
 }
 
 static void config_board_can_bomb(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->can_bomb, value);
 }
 
 static void config_board_fire_spaces(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->fire_burns_spaces, value);
 }
 
 static void config_board_fire_fakes(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->fire_burns_fakes, value);
 }
 
 static void config_board_fire_trees(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->fire_burns_trees, value);
 }
 
 static void config_board_fire_brown(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->fire_burns_brown, value);
 }
 
 static void config_board_fire_forever(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->fire_burns_forever, value);
 }
 
 static void config_board_forest(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->forest_to_floor, value);
 }
 
 static void config_board_collect_bombs(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->collect_bombs, value);
 }
 
 static void config_board_dragons_random_move(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->dragons_can_randomly_move, value);
 }
 
 static void config_board_restart(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->restart_if_hurt, value);
 }
 
 static void config_board_reset_on_entry(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->reset_on_entry, value);
 }
 
 static void config_board_reset_on_entry_same(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->reset_on_entry_same_board, value);
 }
 
 static void config_board_locked_ns(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->player_locked_ns, value);
 }
 
 static void config_board_locked_ew(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->player_locked_ew, value);
 }
 
 static void config_board_locked_att(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->player_locked_att, value);
 }
 
 static void config_board_time_limit(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 32767))
@@ -676,19 +676,19 @@ static void config_board_time_limit(struct editor_config_info *conf,
 }
 
 static void config_board_charset(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->charset_path, value);
 }
 
 static void config_board_palette(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->palette_path, value);
 }
 
 static void config_board_explosions(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, explosions_leave_values))
@@ -696,7 +696,7 @@ static void config_board_explosions(struct editor_config_info *conf,
 }
 
 static void config_board_saving(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, saving_enabled_values))
@@ -704,7 +704,7 @@ static void config_board_saving(struct editor_config_info *conf,
 }
 
 static void config_board_overlay(struct editor_config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, overlay_enabled_values))
@@ -785,7 +785,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "vlayer_position!", config_vlayer_positions },
 };
 
-static const struct editor_config_entry *find_editor_option(char *name,
+static const struct editor_config_entry *find_editor_option(const char *name,
  const struct editor_config_entry options[], int num_options)
 {
   int cmpval, top = num_options - 1, middle, bottom = 0;
@@ -809,8 +809,8 @@ static const struct editor_config_entry *find_editor_option(char *name,
   return NULL;
 }
 
-static boolean editor_config_change_option(void *conf, char *name, char *value,
- char *extended_data)
+static boolean editor_config_change_option(void *conf, const char *name,
+ const char *value, const char *extended_data)
 {
   const struct editor_config_entry *current_option = find_editor_option(name,
    editor_config_options, ARRAY_SIZE(editor_config_options));

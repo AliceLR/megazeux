@@ -29,9 +29,9 @@ struct macro_type;
 struct editor_config_info;
 
 void free_macro(struct ext_macro *macro_src);
-void add_ext_macro(struct editor_config_info *conf, char *name,
- char *line_data, char *label);
-struct ext_macro *find_macro(struct editor_config_info *conf, char *name,
+void add_ext_macro(struct editor_config_info *conf, const char *name,
+ const char *line_data, const char *label);
+struct ext_macro *find_macro(struct editor_config_info *conf, const char *name,
  int *next);
 
 #ifndef CONFIG_DEBYTECODE

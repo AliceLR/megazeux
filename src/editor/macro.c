@@ -142,7 +142,8 @@ union variable_storage *find_macro_variable(char *name, struct macro_type *m)
   return NULL;
 }
 
-static struct ext_macro *process_macro(char *line_data, char *name, char *label)
+static struct ext_macro *process_macro(const char *line_data,
+ const char *name, const char *label)
 {
   char *line_position, *line_position_old;
   struct macro_variable *variables;
@@ -538,7 +539,7 @@ static struct ext_macro *process_macro(char *line_data, char *name, char *label)
   return macro_dest;
 }
 
-struct ext_macro *find_macro(struct editor_config_info *conf, char *name,
+struct ext_macro *find_macro(struct editor_config_info *conf, const char *name,
  int *next)
 {
   int bottom = 0, top = (conf->num_extended_macros) - 1, middle = 0;
@@ -570,8 +571,8 @@ struct ext_macro *find_macro(struct editor_config_info *conf, char *name,
   return NULL;
 }
 
-void add_ext_macro(struct editor_config_info *conf, char *name,
- char *line_data, char *label)
+void add_ext_macro(struct editor_config_info *conf, const char *name,
+ const char *line_data, const char *label)
 {
   struct ext_macro *macro_dest;
   struct ext_macro **macro_list;
