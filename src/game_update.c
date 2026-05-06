@@ -864,7 +864,7 @@ boolean draw_world(context *ctx, boolean is_title)
 {
   struct world *mzx_world = ctx->world;
   struct board *cur_board = mzx_world->current_board;
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
   int time_remaining;
   int top_x;
   int top_y;

@@ -851,7 +851,6 @@ err_invalid:
 vfile *validate_legacy_world_file(struct world *mzx_world,
  const char *file, boolean savegame)
 {
-  struct config_info *conf = get_config();
   struct stat stat_result;
   enum val_result res;
   vfile *vf;
@@ -876,7 +875,7 @@ vfile *validate_legacy_world_file(struct world *mzx_world,
 
   if(res == VAL_PROTECTED)
   {
-    if(conf->auto_decrypt_worlds || !has_video_initialized())
+    if(get_config()->auto_decrypt_worlds || !has_video_initialized())
     {
       // Attempt to decrypt to a temporary file.
       vfile *tmp = legacy_decrypt_world_to_temp_file(vf);

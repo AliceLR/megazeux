@@ -424,7 +424,7 @@ static boolean load_savegame_selection(struct game_context *game)
 static boolean game_draw(context *ctx)
 {
   struct game_context *game = (struct game_context *)ctx;
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
   struct world *mzx_world = ctx->world;
 
   // No game state change has happened (yet)
@@ -476,7 +476,7 @@ void play_game(context *ctx, boolean *_fade_in);
 static boolean game_idle(context *ctx)
 {
   struct game_context *game = (struct game_context *)ctx;
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
   struct world *mzx_world = ctx->world;
 
   if(!mzx_world->active)
@@ -627,7 +627,7 @@ static boolean game_joystick(context *ctx, int *key, int action)
 static boolean game_key(context *ctx, int *key)
 {
   struct game_context *game = (struct game_context *)ctx;
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
   struct world *mzx_world = ctx->world;
   struct board *cur_board = mzx_world->current_board;
   char keylbl[] = "KEY?";
@@ -869,7 +869,7 @@ static void game_destroy(context *ctx)
 __editor_maybe_static
 void play_game(context *parent, boolean *_fade_in)
 {
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
   struct game_context *game;
   struct context_spec spec;
 

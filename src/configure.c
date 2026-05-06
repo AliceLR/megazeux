@@ -371,8 +371,8 @@ static const struct config_info user_conf_default =
 #endif /* CONFIG_UPDATER */
 };
 
-typedef void (*config_function)(struct config_info *conf, char *name,
- char *value, char *extended_data);
+typedef void (*config_function)(struct config_info *conf, const char *name,
+ const char *value, const char *extended_data);
 
 struct config_entry
 {
@@ -518,7 +518,7 @@ void register_config(enum config_type type, void *conf, find_change_option handl
 }
 
 __editor_maybe_static
-boolean config_int(int *dest, char *value, int min, int max)
+boolean config_int(int *dest, const char *value, int min, int max)
 {
   int result;
   int n;
@@ -533,8 +533,8 @@ boolean config_int(int *dest, char *value, int min, int max)
   return true;
 }
 
-static boolean config_long_long(long long *dest, char *value, long long min,
- long long max)
+static boolean config_long_long(long long *dest, const char *value,
+ long long min, long long max)
 {
   long long result;
   int n;
@@ -591,42 +591,42 @@ boolean _config_string(char *dest, size_t dest_len, const char *value)
 
 #ifdef CONFIG_NETWORK
 
-static void config_set_network_enabled(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_network_enabled(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->network_enabled, value);
 }
 
-static void config_set_network_address_family(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_network_address_family(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, network_address_family_values))
     conf->network_address_family = result;
 }
 
-static void config_set_socks_host(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_socks_host(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->socks_host, value);
 }
 
-static void config_set_socks_port(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_socks_port(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 65535))
     conf->socks_port = result;
 }
 
-static void config_set_socks_username(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_socks_username(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->socks_username, value);
 }
 
-static void config_set_socks_password(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_socks_password(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->socks_password, value);
 }
@@ -635,8 +635,8 @@ static void config_set_socks_password(struct config_info *conf, char *name,
 
 #ifdef CONFIG_UPDATER
 
-static void config_update_host(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_update_host(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   if(!conf->update_hosts || conf->update_hosts == default_update_hosts)
   {
@@ -654,46 +654,46 @@ static void config_update_host(struct config_info *conf, char *name,
   }
 }
 
-static void config_update_branch_pin(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_update_branch_pin(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->update_branch_pin, value);
 }
 
-static void config_update_auto_check(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_update_auto_check(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, update_auto_check_values))
     conf->update_auto_check = result;
 }
 
-static void config_set_updater_enabled(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_updater_enabled(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->updater_enabled, value);
 }
 
 #endif // CONFIG_UPDATER
 
-static void config_set_audio_buffer(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_audio_buffer(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 1, INT_MAX))
     conf->audio_buffer_samples = result;
 }
 
-static void config_set_audio_channels(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_audio_channels(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 1, 2))
     conf->audio_output_channels = result;
 }
 
-static void config_set_resolution(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_resolution(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int width;
   int height;
@@ -707,70 +707,70 @@ static void config_set_resolution(struct config_info *conf, char *name,
   conf->resolution_height = height;
 }
 
-static void config_set_dialog_cursor_hints(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_dialog_cursor_hints(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, cursor_hint_type_values))
     conf->cursor_hint_mode = result;
 }
 
-static void config_set_fullscreen(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_fullscreen(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->fullscreen, value);
 }
 
-static void config_set_fullscreen_windowed(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_fullscreen_windowed(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->fullscreen_windowed, value);
 }
 
-static void config_set_music(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_music(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->music_on, value);
 }
 
-static void config_set_mod_volume(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_mod_volume(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 10))
     conf->music_volume = result;
 }
 
-static void config_set_mzx_speed(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_mzx_speed(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 1, 16))
     conf->mzx_speed = result;
 }
 
-static void config_set_pc_speaker(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_pc_speaker(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->pc_speaker_on, value);
 }
 
-static void config_set_sam_volume(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_sam_volume(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 10))
     conf->sam_volume = result;
 }
 
-static void config_save_file(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_save_file(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->default_save_name, value);
 }
 
-static void config_startup_file(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_startup_file(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   // If no startup_path has been set, set both startup_path and startup_file
   // from this path. Otherwise, set startup_file and discard the directory
@@ -794,8 +794,8 @@ static void config_startup_file(struct config_info *conf, char *name,
     path_get_filename(conf->startup_file, sizeof(conf->startup_file), value);
 }
 
-static void config_startup_path(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_startup_path(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   struct stat stat_info;
   if(vstat(value, &stat_info) || !S_ISDIR(stat_info.st_mode))
@@ -805,64 +805,64 @@ static void config_startup_path(struct config_info *conf, char *name,
   conf->startup_path[255] = '\0';
 }
 
-static void config_system_mouse(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_system_mouse(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, system_mouse_values))
     conf->system_mouse = result;
 }
 
-static void config_grab_mouse(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_grab_mouse(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->grab_mouse, value);
 }
 
-static void config_disable_screensaver(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_disable_screensaver(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, screensaver_disable_values))
     conf->disable_screensaver = result;
 }
 
-static void config_save_slots(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_save_slots(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->save_slots, value);
 }
 
-static void config_save_slots_name(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_save_slots_name(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->save_slots_name, value);
 }
 
-static void config_save_slots_ext(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_save_slots_ext(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->save_slots_ext, value);
 }
 
-static void config_enable_oversampling(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_enable_oversampling(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   boolean result;
   if(config_boolean(&result, value))
     conf->oversampling_on = result;
 }
 
-static void config_resample_mode(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_resample_mode(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, resample_mode_values))
     conf->resample_mode = result;
 }
 
-static void config_mod_resample_mode(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_mod_resample_mode(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, module_resample_mode_values))
@@ -871,7 +871,7 @@ static void config_mod_resample_mode(struct config_info *conf, char *name,
 
 #define JOY_ENUM "%15[0-9A-Za-z_]"
 
-static boolean joy_num(char **name, unsigned int *first, unsigned int *last)
+static boolean joy_num(const char **name, unsigned int *first, unsigned int *last)
 {
   int next = 0;
   if(!strncasecmp(*name, "joy", 3))
@@ -930,8 +930,8 @@ static boolean joy_hat_value(const char *value, char up[16], char down[16],
   return true;
 }
 
-static void joy_axis_set(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void joy_axis_set(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   unsigned int first, last, axis;
   char min[16], max[16];
@@ -945,8 +945,8 @@ static void joy_axis_set(struct config_info *conf, char *name,
   }
 }
 
-static void joy_button_set(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void joy_button_set(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   unsigned int first, last, button;
 
@@ -958,8 +958,8 @@ static void joy_button_set(struct config_info *conf, char *name,
   }
 }
 
-static void joy_hat_set(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void joy_hat_set(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   unsigned int first, last;
   char up[16], down[16], left[16], right[16];
@@ -973,8 +973,8 @@ static void joy_hat_set(struct config_info *conf, char *name,
   }
 }
 
-static void joy_action_set(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void joy_action_set(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   unsigned int first, last;
 
@@ -986,8 +986,8 @@ static void joy_action_set(struct config_info *conf, char *name,
   }
 }
 
-static void config_set_joy_axis_threshold(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_joy_axis_threshold(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   unsigned int threshold;
   int read = 0;
@@ -1003,8 +1003,8 @@ static void config_set_joy_axis_threshold(struct config_info *conf, char *name,
 #if SDL_VERSION_ATLEAST(2,0,0)
 #define GAMEPAD_ENUM "%15[-+0-9A-Za-z_]"
 
-static void config_gamepad_set(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_gamepad_set(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   char gamepad_sym[16];
   char key[16];
@@ -1028,14 +1028,14 @@ static void config_gamepad_set(struct config_info *conf, char *name,
   gamepad_map_sym(gamepad_sym, key);
 }
 
-static void config_gamepad_add(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_gamepad_add(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   gamepad_add_mapping(value);
 }
 
-static void config_gamepad_enable(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_gamepad_enable(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->allow_gamepad, value);
 }
@@ -1043,26 +1043,26 @@ static void config_gamepad_enable(struct config_info *conf, char *name,
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 #endif // CONFIG_SDL
 
-static void pause_on_unfocus(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void pause_on_unfocus(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->pause_on_unfocus, value);
 }
 
-static void config_set_left_alt_is_altgr(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_left_alt_is_altgr(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->key_left_alt_is_altgr, value);
 }
 
-static void config_set_right_alt_is_altgr(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_right_alt_is_altgr(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->key_right_alt_is_altgr, value);
 }
 
-static void include_config(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void include_config(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   if(current_include_depth < MAX_INCLUDE_DEPTH)
   {
@@ -1083,39 +1083,39 @@ static void include_config(struct config_info *conf, char *name,
     warn("Failed to include '%s' (maximum recursion depth exceeded)\n", name + 7);
 }
 
-static void config_set_pcs_volume(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_pcs_volume(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, 10))
     conf->pc_speaker_volume = result;
 }
 
-static void config_mask_midchars(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_mask_midchars(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   // TODO move to editor config when non-editor code stops relying on it
   config_boolean(&conf->mask_midchars, value);
 }
 
-static void config_set_audio_freq(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_audio_freq(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 1, INT_MAX))
     conf->audio_sample_rate = result;
 }
 
-static void config_force_bpp(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_force_bpp(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, force_bpp_values))
     conf->force_bpp = result;
 }
 
-static void config_window_resolution(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_window_resolution(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int width;
   int height;
@@ -1129,20 +1129,20 @@ static void config_window_resolution(struct config_info *conf, char *name,
   conf->window_height = height;
 }
 
-static void config_set_video_output(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_video_output(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->video_output, value);
 }
 
-static void config_enable_resizing(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_enable_resizing(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->allow_resize, value);
 }
 
 static void config_set_gl_filter_method(struct config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, gl_filter_method_values))
@@ -1150,51 +1150,51 @@ static void config_set_gl_filter_method(struct config_info *conf,
 }
 
 static void config_set_gl_scaling_shader(struct config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->gl_scaling_shader, value);
 }
 
-static void config_gl_vsync(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_gl_vsync(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, gl_vsync_values))
     conf->gl_vsync = result;
 }
 
-static void config_sdl_render_driver(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_sdl_render_driver(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_string(conf->sdl_render_driver, value);
 }
 
-static void config_set_allow_screenshots(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_allow_screenshots(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->allow_screenshots, value);
 }
 
-static void config_startup_editor(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_startup_editor(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->startup_editor, value);
 }
 
-static void config_standalone_mode(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_standalone_mode(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->standalone_mode, value);
 }
 
-static void config_no_titlescreen(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_no_titlescreen(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->no_titlescreen, value);
 }
 
-static void config_set_allow_cheats(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_allow_cheats(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, allow_cheats_values))
@@ -1202,13 +1202,13 @@ static void config_set_allow_cheats(struct config_info *conf, char *name,
 }
 
 static void config_set_auto_decrypt_worlds(struct config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->auto_decrypt_worlds, value);
 }
 
-static void config_set_video_ratio(struct config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_video_ratio(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_enum(&result, value, video_ratio_values))
@@ -1216,7 +1216,7 @@ static void config_set_video_ratio(struct config_info *conf, char *name,
 }
 
 static void config_set_num_buffered_events(struct config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 1, 256))
@@ -1224,7 +1224,7 @@ static void config_set_num_buffered_events(struct config_info *conf,
 }
 
 static void config_max_simultaneous_samples(struct config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, -1, INT_MAX))
@@ -1232,13 +1232,13 @@ static void config_max_simultaneous_samples(struct config_info *conf,
 }
 
 static void config_test_mode(struct config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->test_mode, value);
 }
 
 static void config_test_mode_start_board(struct config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   int result;
   if(config_int(&result, value, 0, MAX_BOARDS - 1))
@@ -1246,19 +1246,19 @@ static void config_test_mode_start_board(struct config_info *conf,
 }
 
 static void config_set_vfs_enable(struct config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->vfs_enable, value);
 }
 
 static void config_set_vfs_enable_auto_cache(struct config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->vfs_enable_auto_cache, value);
 }
 
 static void config_set_vfs_max_cache_size(struct config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   long long result;
   if(config_long_long(&result, value, 0, LLONG_MAX))
@@ -1266,7 +1266,7 @@ static void config_set_vfs_max_cache_size(struct config_info *conf,
 }
 
 static void config_set_vfs_max_cache_file_size(struct config_info *conf,
- char *name, char *value, char *extended_data)
+ const char *name, const char *value, const char *extended_data)
 {
   long long result;
   if(config_long_long(&result, value, 0, LLONG_MAX))
@@ -1370,7 +1370,7 @@ static const struct config_entry config_options[] =
   { "window_resolution", config_window_resolution, false }
 };
 
-static const struct config_entry *find_option(char *name,
+static const struct config_entry *find_option(const char *name,
  const struct config_entry options[], int num_options)
 {
   int cmpval, top = num_options - 1, middle, bottom = 0;
@@ -1394,8 +1394,8 @@ static const struct config_entry *find_option(char *name,
   return NULL;
 }
 
-static boolean config_change_option(void *_conf, char *name,
- char *value, char *extended_data)
+static boolean config_change_option(void *_conf, const char *name,
+ const char *value, const char *extended_data)
 {
   const struct config_entry *current_option = find_option(name,
    config_options, ARRAY_SIZE(config_options));

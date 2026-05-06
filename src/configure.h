@@ -219,15 +219,15 @@ CORE_LIBSPEC void set_config_from_file(enum config_type type,
 CORE_LIBSPEC void set_config_from_command_line(int *argc, char *argv[]);
 CORE_LIBSPEC void free_config(void);
 
-typedef boolean (*find_change_option)(void *conf, char *name, char *value,
- char *extended_data);
+typedef boolean (*find_change_option)(void *conf, const char *name,
+ const char *value, const char *extended_data);
 
 #ifdef CONFIG_EDITOR
 
 CORE_LIBSPEC void register_config(enum config_type type, void *conf,
  find_change_option handler);
 
-CORE_LIBSPEC boolean config_int(int *dest, char *value, int min, int max);
+CORE_LIBSPEC boolean config_int(int *dest, const char *value, int min, int max);
 CORE_LIBSPEC boolean _config_enum(int *dest, const char *value,
  const struct config_enum *allowed, size_t num);
 CORE_LIBSPEC boolean config_boolean(boolean *dest, const char *value);

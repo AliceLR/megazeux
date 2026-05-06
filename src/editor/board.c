@@ -271,7 +271,7 @@ void replace_current_board(struct world *mzx_world, const char *name)
   }
 }
 
-struct board *create_blank_board(struct editor_config_info *conf)
+struct board *create_blank_board(const struct editor_config_info *conf)
 {
   struct board *cur_board = ccalloc(1, sizeof(struct board));
   int layer_size = conf->board_width * conf->board_height;

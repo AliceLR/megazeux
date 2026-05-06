@@ -48,7 +48,7 @@ struct modplug_stream
 
 static void init_modplug_settings(void)
 {
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
   ModPlug_Settings mod_settings;
 
   memset(&mod_settings, 0, sizeof(ModPlug_Settings));

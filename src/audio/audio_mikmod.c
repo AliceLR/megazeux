@@ -104,7 +104,7 @@ static MODULE *mm_load_vfile(vfile *vf, int maxchan)
  */
 static void mm_set_resample_mode(void)
 {
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
   switch(conf->module_resample_mode)
   {
     case RESAMPLE_MODE_NONE:

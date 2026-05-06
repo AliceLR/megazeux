@@ -48,7 +48,7 @@ struct xmp_stream
 
 static int get_xmp_resample_mode(void)
 {
-  struct config_info *conf = get_config();
+  const struct config_info *conf = get_config();
 
   switch(conf->module_resample_mode)
   {
