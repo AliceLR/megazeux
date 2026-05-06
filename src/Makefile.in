@@ -426,7 +426,8 @@ mzx_objs += ${core_obj}/updater.o
 endif
 
 ifeq (${PLATFORM},amiga)
-core_ldflags += -lnet
+#core_ldflags += -lnet
+core_ldflags += -lsocket
 endif
 
 endif

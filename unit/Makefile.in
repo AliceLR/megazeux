@@ -149,6 +149,12 @@ endif
 # System libs need to be last in the search order.
 unit_ldflags += ${ARCH_LIBS}
 
+# Fix compilation, issue closed despite no resolution:
+# https://github.com/AmigaPorts/ppc-morphos-gcc/issues/2
+ifeq (${SUBPLATFORM},morphos-ppc)
+unit_ldflags += -lstdc++ -lpthread
+endif
+
 ifneq (${HAS_CXX_11},1)
 
 unit unittest:

@@ -37,6 +37,7 @@ FILE *mzxerr_h = NULL;
 #ifdef CONFIG_CHECK_ALLOC
 
 #include <stdlib.h>
+#include "../util.h"
 
 static void out_of_memory_check(void *p, const char *file, int line)
 {
@@ -67,6 +68,22 @@ CORE_LIBSPEC void *check_realloc(void *ptr, size_t size, const char *file, int l
   void *result = realloc(ptr, size);
   out_of_memory_check(result, file, line);
   return result;
+}
+
+#endif
+
+/* Stack protector variables for Amiga (copied from util.c) */
+
+#if defined(CONFIG_AMIGA)
+
+__attribute__((used))
+long __stack_chk_guard[8];
+
+__attribute__((used))
+void __stack_chk_fail(void)
+{
+  warn("Stack overflow detected; terminated");
+  exit(0);
 }
 
 #endif

@@ -66,6 +66,10 @@
 #endif
 #endif
 
+#ifdef CONFIG_AMIGA
+#include "platform/amiga/main.h"
+#endif
+
 #ifndef VERSION
 #error Must define VERSION for MegaZeux version string
 #endif
