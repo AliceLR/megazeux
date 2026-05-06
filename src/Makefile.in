@@ -81,6 +81,36 @@ ${core_obj}/%.o: ${core_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
 	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} -c $< -o $@
 
+ifneq (${MSSE2},)
+${core_obj}/render_layer_sse2.o: ${core_src}/render_layer_sse2.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} ${MSSE2} -c $< -o $@
+endif
+
+ifneq (${MAVX},)
+${core_obj}/render_layer_avx.o: ${core_src}/render_layer_avx.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} ${MAVX} -c $< -o $@
+endif
+
+ifneq (${MNEON},)
+${core_obj}/render_layer_neon.o: ${core_src}/render_layer_neon.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} ${MNEON} -c $< -o $@
+endif
+
+ifneq (${MRVV},)
+${core_obj}/render_layer_rvv.o: ${core_src}/render_layer_rvv.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} ${MRVV} -c $< -o $@
+endif
+
+ifneq (${MALTIVEC},)
+${core_obj}/render_layer_altivec.o: ${core_src}/render_layer_altivec.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} ${MALTIVEC} -c $< -o $@
+endif
+
 #
 # Lists mandatory C language sources (mangled to object names) required
 # to build the main binary. Please keep this sorted alphabetically.
@@ -114,6 +144,7 @@ core_cobjs := \
   ${core_obj}/legacy_robot.o      \
   ${core_obj}/legacy_world.o      \
   ${core_obj}/mzm.o               \
+  ${core_obj}/platform_endian.o   \
   ${core_obj}/platform_time.o     \
   ${core_obj}/pngops.o            \
   ${core_obj}/render.o            \
@@ -290,7 +321,14 @@ endif
 # This one tends to take forever for many builds. Prefix it to
 # the list so hopefully it starts sooner during parallel builds.
 ifeq (${render_layer_software},1)
-core_cobjs := ${core_obj}/render_layer.o ${core_cobjs}
+core_cobjs := \
+  ${core_obj}/render_layer.o \
+  ${core_obj}/render_layer_altivec.o \
+  ${core_obj}/render_layer_avx.o \
+  ${core_obj}/render_layer_neon.o \
+  ${core_obj}/render_layer_rvv.o \
+  ${core_obj}/render_layer_sse2.o \
+  ${core_cobjs}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
