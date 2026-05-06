@@ -20,6 +20,6 @@ ARCH_EXE_LDFLAGS = -static
 build: ${build}
 	${RM} ${build}/${mzxrun}.debug
 	${CP} arch/gp2x/pad.config ${build}
-	-@convert -scale 32x32 contrib/icons/quantump.png ${build}/mzxrun.png
+	${CP} contrib/icons/generated/icon_32.png ${build}/mzxrun.png
 
 include arch/zip.inc

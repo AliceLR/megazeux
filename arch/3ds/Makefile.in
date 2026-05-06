@@ -23,7 +23,7 @@ endif
 
 APP_DESCRIPTION = Game creation system
 APP_AUTHOR = MegaZeux Developers
-APP_ICON = arch/3ds/banner/megazeux-icon.png
+APP_ICON = contrib/icons/generated/icon_48.png
 
 EXTRA_LICENSES += ${LICENSE_MPL2} ${LICENSE_NEWLIB}
 
