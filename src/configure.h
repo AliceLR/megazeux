@@ -217,6 +217,7 @@ CORE_LIBSPEC void default_config(void);
 CORE_LIBSPEC void set_config_from_file(enum config_type type,
  const char *conf_file_name);
 CORE_LIBSPEC void set_config_from_command_line(int *argc, char *argv[]);
+CORE_LIBSPEC void set_config_startup_path_and_file(const char *path);
 CORE_LIBSPEC void free_config(void);
 
 typedef boolean (*find_change_option)(void *conf, const char *name,

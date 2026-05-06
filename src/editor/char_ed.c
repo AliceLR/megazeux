@@ -799,28 +799,50 @@ static void draw_mini_buffer(int info_x, int info_y, int current_charset,
   }
 }
 
-static void replace_filenum(char *src, char *dest, int num)
+static boolean replace_filenum(char *dest, size_t dest_sz, const char *src, int num)
 {
-  char *src_ptr = src;
-  char *dest_ptr = dest;
+  char *pos = dest;
+  size_t pos_left = dest_sz;
 
-  while(*src_ptr)
+  while(*src)
   {
-    if(*src_ptr == '#')
+    size_t next = strcspn(src, "#");
+    if(next > 0)
     {
-      sprintf(dest_ptr, "%d", num);
-      dest_ptr += strlen(dest_ptr);
-    }
-    else
-    {
-      *dest_ptr = *src_ptr;
-      dest_ptr++;
+      if(next >= pos_left)
+        return false;
+
+      memcpy(pos, src, next);
+      pos[next] = '\0';
+
+      src += next;
+      pos += next;
+      pos_left -= next;
     }
 
-    src_ptr++;
+    if(*src == '#')
+    {
+      int out = snprintf(pos, pos_left, "%d", num);
+      if((size_t)out >= pos_left)
+        return false;
+
+      pos += out;
+      pos_left -= out;
+      src++;
+    }
   }
+  *pos = '\0';
 
-  *dest_ptr = 0;
+  if(!path_force_ext(dest, dest_sz, ".chr"))
+    return false;
+
+#if defined(_WIN32) || defined(CONFIG_DJGPP)
+  /* Do not attempt to read/write to DOS devices. */
+  if(path_safety_check(dest, PATH_SAFE_DOS_DEVICE))
+    return false;
+#endif
+
+  return true;
 }
 
 static int select_export_mode(struct world *mzx_world, const char *title)
@@ -965,10 +987,8 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
 
     for(i = 0; i < num_files_present; i++, current_file++)
     {
-      replace_filenum(import_string, import_name,
-       current_file);
-
-      path_force_ext(import_name, sizeof(import_name), ".chr");
+      if(!replace_filenum(import_name, sizeof(import_name), import_string, current_file))
+        continue;
 
       if(import_mode)
       {
@@ -1059,10 +1079,8 @@ static void char_export(struct world *mzx_world, int char_offset, int charset,
 
     for(i = 0; i < num_files_present; i++, current_file++)
     {
-      replace_filenum(export_string, export_name,
-       current_file);
-
-      path_force_ext(export_name, sizeof(export_name), ".chr");
+      if(!replace_filenum(export_name, sizeof(export_name), export_string, current_file))
+        continue;
 
       if(export_mode)
       {

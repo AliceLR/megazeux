@@ -30,18 +30,17 @@
  * tested in a cross-platform manner, so store test data for all platforms,
  * and use this selector to get the "native" data.
  */
-#if DIR_SEPARATOR_CHAR == '\\'
-#define PATH_SELECTOR_DOS dos
-#else
-#define PATH_SELECTOR_DOS posixdos
-#endif
-
 #ifdef PATH_AMIGA_STYLE_ROOTS
 #undef amiga
 #define PATH_SELECTOR amiga
 #elif defined(PATH_UNC_ROOTS)
 #define PATH_SELECTOR win32
 #elif defined(PATH_DOS_STYLE_ROOTS)
+#if DIR_SEPARATOR_CHAR == '\\'
+#define PATH_SELECTOR_DOS dos
+#else
+#define PATH_SELECTOR_DOS posixdos
+#endif
 #define PATH_SELECTOR PATH_SELECTOR_DOS
 #else
 #define PATH_SELECTOR posix
@@ -511,6 +510,16 @@ UNITTEST(path_is_absolute)
     }
   }
 
+  SECTION(path_is_absolute_dos)
+  {
+    for(const path_is_abs_data &d : data)
+    {
+      ssize_t len = path_is_absolute_dos(d.path);
+      ASSERTEQ(len, d.posixdos.root_len, "%s", d.path);
+      ASSERTEQ(len, d.dos.root_len, "%s", d.path);
+    }
+  }
+
   SECTION(path_is_root)
   {
     for(const path_is_abs_data &d : data)
@@ -802,8 +811,56 @@ UNITTEST(path_clean)
       { "//?/unc//localhost///duhhr" }
     ),
   };
+  /* TODO: this should be combined into the prior array. */
+  static constexpr const path_clean_data clean_current_tokens[] =
+  {
+    /* path_clean* functions remove redundant POSIX current directory tokens,
+     * but keep non-redundant tokens. Don't do this on Amiga. path_navigate*
+     * is required to resolve parent directory tokens.
+     *
+     * TODO: this is a separate function from the clean functions, so it
+     * currently doesn't clean slashes. Every platform should get the POSIX
+     * results below currently; the other results assume this is part of
+     * a regular clean function.
+     */
+    path_clean_data::all(
+      ".",
+      { "." }
+    ),
+    path_clean_data::amigaroot(
+      "./.",
+      { "." },
+      { "." },
+      { "./." }
+    ),
+    path_clean_data::amigaroot(
+      "../..",
+      { "../.." },
+      { "..\\.." },
+      { "../.." }
+    ),
+    path_clean_data::amigaroot(
+      "./what/././././dafuq/./?/./",
+      { "what/dafuq/?/" },
+      { "what\\dafuq\\?\\" },
+      { "./what/././././dafuq/./?/./" }
+    ),
+    path_clean_data::amigaroot(
+      "a/./mixe/../of/./tokens",
+      { "a/mixe/../of/tokens" },
+      { "a\\mixe\\..\\of\\tokens" },
+      { "a/./mixe/../of/./tokens" }
+    ),
+    path_clean_data::extroot(
+      "fat://././.",
+      { "fat://" },
+      { "fat:/" },
+      { "fat:\\" },
+      { "fat:././." }
+    ),
+  };
   // Data for testing truncation (assume buffer size == 32). This only matters
-  // for path_clean_slashes_copy, which should return false in this case.
+  // for path_clean_copy, which should return false in this case.
   static constexpr const path_clean_data truncate_data[] =
   {
     path_clean_data::posixroot(
@@ -828,7 +885,7 @@ UNITTEST(path_clean)
       snprintf(buffer, MAX_PATH, "%s", d.path);
       buffer[MAX_PATH - 1] = '\0';
 
-      path_clean_slashes(buffer, MAX_PATH);
+      path_clean(buffer, MAX_PATH);
       ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
   }
@@ -837,7 +894,7 @@ UNITTEST(path_clean)
   {
     for(const path_clean_data &d : data)
     {
-      size_t result = path_clean_slashes_copy(buffer, MAX_PATH, d.path);
+      size_t result = path_clean_copy(buffer, MAX_PATH, d.path);
       ASSERTEQ(result, strlen(d.PATH_SELECTOR.result), "%s", d.path);
       ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
     }
@@ -847,9 +904,31 @@ UNITTEST(path_clean)
   {
     for(const path_clean_data &d : truncate_data)
     {
-      size_t result = path_clean_slashes_copy(buffer, 32, d.path);
+      size_t result = path_clean_copy(buffer, 32, d.path);
       ASSERTEQ(result, strlen(d.PATH_SELECTOR.result), "%s", d.path);
       ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
+    }
+  }
+
+  SECTION(path_clean_copy_posixdos)
+  {
+    for(const path_clean_data &d : data)
+    {
+      size_t result = path_clean_copy_posixdos(buffer, MAX_PATH, d.path);
+      ASSERTEQ(result, strlen(d.posixdos.result), "%s", d.path);
+      ASSERTCMP(buffer, d.posixdos.result, "%s", d.path);
+    }
+  }
+
+  SECTION(path_clean_current_tokens)
+  {
+    for(const path_clean_data &d : clean_current_tokens)
+    {
+      snprintf(buffer, MAX_PATH, "%s", d.path);
+      buffer[MAX_PATH - 1] = '\0';
+
+      path_clean_current_tokens(buffer, MAX_PATH);
+      ASSERTCMP(buffer, d.posix.result, "%s", d.path);
     }
   }
 }
@@ -1453,6 +1532,317 @@ UNITTEST(path_remove_prefix)
         ASSERTCMP(buffer, d.PATH_SELECTOR.result, "%s", d.path);
       else
         ASSERTCMP(buffer, d.path, "");
+    }
+  }
+}
+
+
+struct path_safe_output
+{
+  const char *path;
+  int result_mask;
+};
+
+UNITTEST(path_safety_check)
+{
+  static constexpr const struct path_safe_output data[] =
+  {
+    /* Should not be rejected by any of the checks. */
+    { "", 0 },
+    { "a", 0 },
+    { "01", 0 },
+    { "filename.ext", 0 },
+    { "longfilename.longext", 0, },
+    { "longfi~1.lon", 0, },
+    { ".", 0, },
+    { "./duhh", 0, },
+    { "why/./did/./you/./put\\.\\this/./in/./your/./game\\", 0, },
+    { "..wat", 0, },
+    { "samd..wich", 0, },
+    { "awful../", 0, },
+    { "a/..crime/", 0, },
+    { "another../crime", 0, },
+    { "its/allowed..", 0, },
+    { "...", 0, },
+    { "........", 0, },
+    { "con5", 0, },
+    { "auxx", 0, },
+    { "null", 0, },
+    { "hello.lpt5.txt", 0, },
+    { ".aux", 0, },
+    { "hello.prn", 0, },
+    { "com", 0, },
+    { "lpt", 0, },
+    { "com#", 0, },
+    { "lpt$", 0, },
+
+    /* Unix root check */
+    {
+      "/hellow",
+      PATH_SAFE_UNIX_ROOT,
+    },
+    {
+      "\\mealso",
+      PATH_SAFE_UNIX_ROOT,
+    },
+    /* DOS/Amiga root check (reject anything containing ':')
+     * This check is fully overlapped by PATH_SAFE_DOS_CHARACTER */
+    {
+      "C:/dosroot",
+      PATH_SAFE_DOS_ROOT | PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "C:\\WINDOWS\\SYSTEM32\\SVCHOST.EXE",
+      PATH_SAFE_DOS_ROOT | PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "this:too",
+      PATH_SAFE_DOS_ROOT | PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "amiga/can\\do:this",
+      PATH_SAFE_DOS_ROOT | PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      ":also/amiga",
+      PATH_SAFE_DOS_ROOT | PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "/twoofthem:",
+      PATH_SAFE_UNIX_ROOT | PATH_SAFE_DOS_ROOT | PATH_SAFE_DOS_CHARACTER,
+    },
+    /* Unix parent check (".." at start/end or surrounded by slashes) */
+    {
+      "..",
+      PATH_SAFE_UNIX_PARENT,
+    },
+    {
+      "..\\",
+      PATH_SAFE_UNIX_PARENT,
+    },
+    {
+      "loololol/../WINDOWS/SYSTEM32/BONER.DLL",
+      PATH_SAFE_UNIX_PARENT,
+    },
+    {
+      "../lol",
+      PATH_SAFE_UNIX_PARENT,
+    },
+    {
+      "not\\here\\either\\..",
+      PATH_SAFE_UNIX_PARENT,
+    },
+    {
+      "......./..",
+      PATH_SAFE_UNIX_PARENT,
+    },
+    {
+      "/..",
+      PATH_SAFE_UNIX_ROOT | PATH_SAFE_UNIX_PARENT,
+    },
+    {
+      "C:\\..\\a",
+      PATH_SAFE_DOS_ROOT | PATH_SAFE_UNIX_PARENT | PATH_SAFE_DOS_CHARACTER,
+    },
+    /* Amiga parent check (any double-slashes) */
+    {
+      "escape///sandbox//",
+      PATH_SAFE_AMIGA_PARENT
+    },
+    {
+      "\\\\unc\\localhost\\top\\seekrit",
+      PATH_SAFE_UNIX_ROOT | PATH_SAFE_AMIGA_PARENT,
+    },
+    {
+      "\\\\.\\c:\\windows\\system32\\lsass.exe",
+      PATH_SAFE_UNIX_ROOT | PATH_SAFE_DOS_ROOT | PATH_SAFE_AMIGA_PARENT |
+      PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "//?/c:/windows/system32/lsass.exe",
+      PATH_SAFE_UNIX_ROOT | PATH_SAFE_DOS_ROOT | PATH_SAFE_AMIGA_PARENT |
+      PATH_SAFE_DOS_CHARACTER,
+    },
+    /* DOS reserved characters (NTFS/VFAT/exFAT only). */
+    {
+      "\"hewwo\"",
+      PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "a*_path_finder.txt",
+      PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "<duhhh",
+      PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "invalid>",
+      PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "hope no one uses this??",
+      PATH_SAFE_DOS_CHARACTER
+    },
+    {
+      "ugh|hhh",
+      PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "this i guess\r\n",
+      PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "/barf/../o//matiq\x1f",
+      PATH_SAFE_UNIX_ROOT | PATH_SAFE_UNIX_PARENT |
+      PATH_SAFE_AMIGA_PARENT | PATH_SAFE_DOS_CHARACTER,
+    },
+    {
+      "com\x02",
+      PATH_SAFE_DOS_CHARACTER,
+    },
+    /* DOS devices in final tokens. */
+    { "AUX",  PATH_SAFE_DOS_DEVICE, },
+    { "aux",  PATH_SAFE_DOS_DEVICE, },
+    { "cOn",  PATH_SAFE_DOS_DEVICE, },
+    { "nul",  PATH_SAFE_DOS_DEVICE, },
+    { "prn",  PATH_SAFE_DOS_DEVICE, },
+    { "com1", PATH_SAFE_DOS_DEVICE, },
+    { "com2", PATH_SAFE_DOS_DEVICE, },
+    { "com3", PATH_SAFE_DOS_DEVICE, },
+    { "com4", PATH_SAFE_DOS_DEVICE, },
+    { "com5", PATH_SAFE_DOS_DEVICE, },
+    { "com6", PATH_SAFE_DOS_DEVICE, },
+    { "com7", PATH_SAFE_DOS_DEVICE, },
+    { "com8", PATH_SAFE_DOS_DEVICE, },
+    { "com9", PATH_SAFE_DOS_DEVICE, },
+    { "com\xb9", PATH_SAFE_DOS_DEVICE, },
+    { "com\xb2", PATH_SAFE_DOS_DEVICE, },
+    { "com\xb3", PATH_SAFE_DOS_DEVICE, },
+    { "lpt1", PATH_SAFE_DOS_DEVICE, },
+    { "lpt2", PATH_SAFE_DOS_DEVICE, },
+    { "lpt3", PATH_SAFE_DOS_DEVICE, },
+    { "lpt4", PATH_SAFE_DOS_DEVICE, },
+    { "lpt5", PATH_SAFE_DOS_DEVICE, },
+    { "lpt6", PATH_SAFE_DOS_DEVICE, },
+    { "lpt7", PATH_SAFE_DOS_DEVICE, },
+    { "lpt8", PATH_SAFE_DOS_DEVICE, },
+    { "lpt9", PATH_SAFE_DOS_DEVICE, },
+    { "lpt\xb9", PATH_SAFE_DOS_DEVICE, },
+    { "lpt\xb2", PATH_SAFE_DOS_DEVICE, },
+    { "lpt\xb3", PATH_SAFE_DOS_DEVICE, },
+    {
+      "fat://com4",
+      PATH_SAFE_DOS_ROOT | PATH_SAFE_AMIGA_PARENT |
+      PATH_SAFE_DOS_CHARACTER | PATH_SAFE_DOS_DEVICE,
+    },
+    {
+      "/home/awawa/lpt1",
+      PATH_SAFE_UNIX_ROOT | PATH_SAFE_DOS_DEVICE,
+    },
+    {
+      "xxydata/m/con.ogg",
+      PATH_SAFE_DOS_DEVICE,
+    },
+    {
+      "dagamezone\\aux.tar.gz",
+      PATH_SAFE_DOS_DEVICE,
+    },
+    {
+      "lpt7.sdjfsdjfds.sdjgjfdkhdfh.yes.really.txt",
+      PATH_SAFE_DOS_DEVICE,
+    },
+    /* DOS devices in directory tokens.
+     * These only seem to cause issues when accessed as files, but check and
+     * reject them anyway to discourage Linux users from naming directories.
+     */
+    {
+      "prn/some_files",
+      PATH_SAFE_DOS_DEVICE,
+    },
+    {
+      "com2\\yep\\reject\\this",
+      PATH_SAFE_DOS_DEVICE
+    },
+    {
+      "maybe/com1/this/should/fail",
+      PATH_SAFE_DOS_DEVICE,
+    },
+    {
+      "tiresome\\tbh\\nul.sdfjsdkljgfdlgfgm.b.cv.bvc.bkwke..bvc\\hewo.txt",
+      PATH_SAFE_DOS_DEVICE,
+    },
+  };
+
+  const auto &do_tests = [&](int testvals)
+  {
+    enum path_safe_mask result;
+
+    for(const path_safe_output &d : data)
+    {
+      int shared = testvals & d.result_mask;
+      /* Any path that would flag multiple issues should
+       * always return the lowest-order flag. */
+      enum path_safe_mask expected = shared ?
+       static_cast<enum path_safe_mask>(shared & -shared) : PATH_SAFE_OK;
+
+      result = path_safety_check(d.path, testvals);
+      ASSERTEQ(result, expected, "%s: %04xh & %04xh", d.path, (int)result, d.result_mask);
+    }
+  };
+
+  SECTION(UnixRoot)
+    do_tests(PATH_SAFE_UNIX_ROOT);
+
+  SECTION(DosRoot)
+    do_tests(PATH_SAFE_DOS_ROOT);
+
+  SECTION(AnyRoot)
+    do_tests(PATH_SAFE_ANY_ROOT);
+
+  SECTION(UnixParent)
+    do_tests(PATH_SAFE_UNIX_PARENT);
+
+  SECTION(AmigaParent)
+    do_tests(PATH_SAFE_AMIGA_PARENT);
+
+  SECTION(AnyRootParent)
+    do_tests(PATH_SAFE_ANY_ROOT | PATH_SAFE_UNIX_PARENT | PATH_SAFE_AMIGA_PARENT);
+
+  SECTION(DosCharacter)
+    do_tests(PATH_SAFE_DOS_CHARACTER);
+
+  SECTION(DosDevice)
+    do_tests(PATH_SAFE_DOS_DEVICE);
+
+  SECTION(Any)
+    do_tests(PATH_SAFE_ANY);
+
+  SECTION(path_safety_strerror)
+  {
+    size_t i;
+    size_t j;
+
+    for(i = 0; i < PATH_SAFE_ANY * 4; i++)
+    {
+      const char *ret = path_safety_strerror(static_cast<enum path_safe_mask>(i));
+
+      if(i == 0)
+      {
+        ASSERTEQ(ret, path_safety_strerror(PATH_SAFE_OK), "");
+        continue;
+      }
+      for(j = 1; j < PATH_SAFE_ANY; j <<= 1)
+      {
+        if(~i & j)
+          continue;
+
+        ASSERTEQ(ret, path_safety_strerror(static_cast<enum path_safe_mask>(j)),
+         "%zx and %zx should get the same error string", i, j);
+        break;
+      }
+      if(j >= PATH_SAFE_ANY)
+        ASSERTCMP(ret, "unknown", "");
     }
   }
 }

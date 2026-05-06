@@ -543,64 +543,42 @@ static int match(char *path, size_t buffer_len)
  * including "..". Do so here.
  */
 
-static int fsafetest(const char *path, char *newpath, size_t buffer_len)
+static int fsafetest(const char *path, char *newpath, size_t buffer_len,
+ boolean safety_checks)
 {
-  size_t i, pathlen;
+  enum path_safe_mask ret;
 
   // we don't accept it if it's NULL or too short
   if((path == NULL) || (path[0] == 0))
     return -FSAFE_INVALID_ARGUMENT;
 
-  pathlen = path_clean_slashes_copy(newpath, buffer_len, path);
-
-#if (DIR_SEPARATOR_CHAR == '\\')
-  // The slash cleaning function made these Windows slashes but fsafetranslate
-  // should always return Unix slashes!
-  for(i = 0; i < pathlen; i++)
-  {
-    if(newpath[i] == '\\')
-      newpath[i] = '/';
-  }
+  path_clean_copy_posixdos(newpath, buffer_len, path);
+#ifdef CONFIG_AMIGA
+  /* TODO: this should be done in the clean functions, but for compatibility,
+   * right now only do it on the platforms where it is required (Amiga). */
+  path_clean_current_tokens(newpath, buffer_len);
 #endif
 
-  // check root specifiers
-  if(newpath[0] == '/')
-    return -FSAFE_ABSOLUTE_PATH_ERROR;
-
-  // otherwise it's too short to contain anything hazardous
-  if(pathlen == 1)
+  if(!safety_checks)
     return FSAFE_SUCCESS;
 
-  // windows drive letters
-  if(strchr(newpath, ':') != NULL)
+  ret = path_safety_check(newpath, PATH_SAFE_ANY_ROOT | PATH_SAFE_UNIX_PARENT |
+                                   PATH_SAFE_DOS_CHARACTER | PATH_SAFE_DOS_DEVICE);
+
+  if(ret == PATH_SAFE_UNIX_ROOT)
+    return -FSAFE_ABSOLUTE_PATH_ERROR;
+
+  if(ret == PATH_SAFE_DOS_ROOT)
     return -FSAFE_WINDOWS_DRIVE_LETTER_ERROR;
-  /*
-  if(((newpath[0] >= 'A') && (newpath[0] <= 'Z')) ||
-     ((newpath[0] >= 'a') && (newpath[0] <= 'z')))
-  {
-    if(newpath[1] == ':')
-      return -FSAFE_WINDOWS_DRIVE_LETTER_ERROR;
-  }
-  */
 
-  // reject any pathname including /../
-  for(i = 0; i < pathlen; i++)
-  {
-    // not a match for ".."
-    if(strncmp(newpath + i, "..", 2) != 0)
-      continue;
+  if(ret == PATH_SAFE_UNIX_PARENT)
+    return -FSAFE_PARENT_DIRECTORY_ERROR;
 
-    // no need for delimeters -- any .. is invalid
-    if((i == 0) || (pathlen < 4))
-      return -FSAFE_PARENT_DIRECTORY_ERROR;
+  if(ret == PATH_SAFE_DOS_CHARACTER)
+    return -FSAFE_DOS_RESERVED_CHARACTER_ERROR;
 
-    /* Here we just make the assumption that path/name\dir can't happen;
-     * it's a fairly decent assumption because msys doesn't like it, and
-     * linux doesn't even recognise \ as a directory delimeter!
-     */
-    if((newpath[i - 1] == '/')  && (newpath[i + 2] == '/'))
-      return -FSAFE_PARENT_DIRECTORY_ERROR;
-  }
+  if(ret == PATH_SAFE_DOS_DEVICE)
+    return -FSAFE_DOS_DEVICE_NAME_ERROR;
 
   return FSAFE_SUCCESS;
 }
@@ -611,7 +589,7 @@ int fsafetranslate(const char *path, char *newpath, size_t buffer_len)
   int ret;
 
   // try to pass the basic security tests
-  ret = fsafetest(path, newpath, buffer_len);
+  ret = fsafetest(path, newpath, buffer_len, true);
   if(ret == FSAFE_SUCCESS)
   {
     // see if file is already there
@@ -629,7 +607,7 @@ int fsafetranslate(const char *path, char *newpath, size_t buffer_len)
       else
       {
         // Replace the failed match with the original user-supplied path
-        fsafetest(path, newpath, buffer_len);
+        fsafetest(path, newpath, buffer_len, false);
       }
 #else
       // on WIN32 we can't, so fail hard

@@ -44,6 +44,13 @@
 #define MAX_INCLUDE_DEPTH 16
 #define MAX_CONFIG_REGISTERED 2
 
+#if defined(_WIN32) || defined(CONFIG_DJGPP)
+/* Do not hang attempting to include devices like COM1, etc. */
+#define CONF_SAFETY_CHECK_FAILURE(p) path_safety_check((p), PATH_SAFE_DOS_DEVICE)
+#else
+#define CONF_SAFETY_CHECK_FAILURE(p) false
+#endif
+
 // Arch-specific config.
 #ifdef _WIN32
 #define DEFAULT_SDL_RENDER_DRIVER "direct3d"
@@ -766,12 +773,18 @@ static void config_set_sam_volume(struct config_info *conf,
 static void config_save_file(struct config_info *conf,
  const char *name, const char *value, const char *extended_data)
 {
+  if(CONF_SAFETY_CHECK_FAILURE(value))
+    return;
+
   config_string(conf->default_save_name, value);
 }
 
 static void config_startup_file(struct config_info *conf,
  const char *name, const char *value, const char *extended_data)
 {
+  if(CONF_SAFETY_CHECK_FAILURE(value))
+    return;
+
   // If no startup_path has been set, set both startup_path and startup_file
   // from this path. Otherwise, set startup_file and discard the directory
   // portion of the path.
@@ -1429,6 +1442,12 @@ void set_config_from_file(enum config_type type, const char *conf_file_name)
   if(type >= NUM_CONFIG_TYPES)
     return;
 
+  if(CONF_SAFETY_CHECK_FAILURE(conf_file_name))
+  {
+    warn("Refused to load config file '%s'\n", conf_file_name);
+    return;
+  }
+
   conf_file = vfopen_unsafe(conf_file_name, "rb");
   if(!conf_file)
     return;
@@ -1598,6 +1617,24 @@ void set_config_from_command_line(int *argc, char *argv[])
 
     i++;
   }
+}
+
+/* Set both the startup path and startup file from a string (usually argv[1]).
+ * This should be called from the startup directory, as the input path may
+ * be relative.
+ */
+void set_config_startup_path_and_file(const char *path)
+{
+  char path_backup[sizeof(user_conf.startup_path)];
+  memcpy(path_backup, user_conf.startup_path, sizeof(path_backup));
+
+  /* Use the startup_file path splitting logic instead of duplicating it. */
+  user_conf.startup_path[0] = '\0';
+  config_startup_file(&user_conf, "startup_file", path, NULL);
+
+  /* Restore old path if that didn't add one. */
+  if(user_conf.startup_path[0] == '\0')
+    memcpy(user_conf.startup_path, path_backup, sizeof(path_backup));
 }
 
 struct config_info *get_config(void)

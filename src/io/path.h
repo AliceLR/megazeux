@@ -71,6 +71,24 @@ __M_BEGIN_DECLS
 #endif
 #endif /* PATH_PARENT_DIR */
 
+enum path_safe_mask
+{
+  PATH_SAFE_OK            = 0,
+  PATH_SAFE_UNIX_ROOT     = (1 << 0),       /* Path begins with a slash */
+  PATH_SAFE_DOS_ROOT      = (1 << 1),       /* Path contains : anywhere */
+  PATH_SAFE_UNIX_PARENT   = (1 << 2),       /* Path contains a . or .. token */
+  PATH_SAFE_AMIGA_PARENT  = (1 << 3),       /* Path contains adjacent slashes */
+  PATH_SAFE_DOS_CHARACTER = (1 << 4),       /* Path contains reserved char(s):
+                                             * 1-31, or any of "*:<>?| */
+  PATH_SAFE_DOS_DEVICE    = (1 << 5),       /* Path is a reserved DOS/Windows
+                                             * device that can cause hangs. */
+
+  PATH_SAFE_ANY_ROOT      = (PATH_SAFE_UNIX_ROOT | PATH_SAFE_DOS_ROOT),
+  PATH_SAFE_ANY           = (PATH_SAFE_ANY_ROOT | PATH_SAFE_UNIX_PARENT |
+                             PATH_SAFE_AMIGA_PARENT | PATH_SAFE_DOS_CHARACTER |
+                             PATH_SAFE_DOS_DEVICE),
+};
+
 enum path_create_error
 {
   PATH_CREATE_SUCCESS,
@@ -97,6 +115,7 @@ UTILS_LIBSPEC boolean path_force_ext(char *path, size_t buffer_len, const char *
 UTILS_LIBSPEC ssize_t path_get_ext_offset(const char *path);
 
 UTILS_LIBSPEC ssize_t path_is_absolute(const char *path);
+UTILS_LIBSPEC ssize_t path_is_absolute_dos(const char *path);
 UTILS_LIBSPEC boolean path_is_root(const char *path);
 UTILS_LIBSPEC boolean path_has_directory(const char *path);
 UTILS_LIBSPEC ssize_t path_to_directory(char *path, size_t buffer_len);
@@ -110,14 +129,19 @@ UTILS_LIBSPEC boolean path_get_directory_and_filename(char *d_dest, size_t d_len
 UTILS_LIBSPEC ssize_t path_get_parent(char *dest, size_t dest_len,
  const char *path);
 
-UTILS_LIBSPEC size_t path_clean_slashes(char *path, size_t path_len);
-UTILS_LIBSPEC size_t path_clean_slashes_copy(char *dest, size_t dest_len,
+UTILS_LIBSPEC size_t path_clean(char *path, size_t path_len);
+UTILS_LIBSPEC size_t path_clean_copy(char *dest, size_t dest_len, const char *path);
+UTILS_LIBSPEC size_t path_clean_copy_posixdos(char *dest, size_t dest_len,
  const char *path);
+UTILS_LIBSPEC ssize_t path_clean_current_tokens(char *path, size_t path_len);
 UTILS_LIBSPEC ssize_t path_append(char *path, size_t buffer_len, const char *rel);
 UTILS_LIBSPEC ssize_t path_join(char *dest, size_t dest_len, const char *base,
  const char *rel);
 UTILS_LIBSPEC ssize_t path_remove_prefix(char *path, size_t buffer_len,
  const char *prefix, size_t prefix_len);
+
+UTILS_LIBSPEC enum path_safe_mask path_safety_check(const char *path, int flags);
+UTILS_LIBSPEC const char *path_safety_strerror(enum path_safe_mask value);
 
 UTILS_LIBSPEC ssize_t path_navigate(char *path, size_t path_len,
  const char *target);
