@@ -440,6 +440,8 @@ void init_audio(struct config_info *conf)
   audio.max_simultaneous_samples = -1;
   audio.max_simultaneous_samples_config = conf->max_simultaneous_samples;
   audio.pc_speaker_use_hardware = conf->audio_pc_speaker_use_hardware;
+  audio.opl_use_hardware = conf->audio_opl_use_hardware;
+  audio.opl_port = conf->audio_opl_port;
 
   audio_set_music_volume(conf->music_volume);
   audio_set_sound_volume(conf->sam_volume);

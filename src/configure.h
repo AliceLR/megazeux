@@ -150,6 +150,8 @@ struct config_info
   boolean music_on;
   boolean pc_speaker_on;
   boolean audio_pc_speaker_use_hardware;
+  boolean audio_opl_use_hardware;
+  int audio_opl_port;
 
   // Audio options (DOS-only)
   char audio_config_sb[32];

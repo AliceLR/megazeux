@@ -327,6 +327,8 @@ static const struct config_info user_conf_default =
   true,                         // music_on
   true,                         // pc_speaker_on
   false,                        // audio_pc_speaker_use_hardware
+  false,                        // audio_opl_use_hardware
+  0x388,                        // audio_opl_port
 
   // Audio options (DOS-only)
   "",                           // audio_config_sb
@@ -785,6 +787,20 @@ static void config_set_audio_pc_speaker_use_hardware(struct config_info *conf,
  const char *name, const char *value, const char *extended_data)
 {
   config_boolean(&conf->audio_pc_speaker_use_hardware, value);
+}
+
+static void config_set_audio_opl_use_hardware(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
+{
+  config_boolean(&conf->audio_opl_use_hardware, value);
+}
+
+static void config_set_audio_opl_port(struct config_info *conf,
+ const char *name, const char *value, const char *extended_data)
+{
+  int result;
+  if(config_int(&result, value, 0, 65535))
+    conf->audio_opl_port = result;
 }
 
 static void config_set_audio_config_lpt(struct config_info *conf,
@@ -1327,6 +1343,8 @@ static const struct config_entry config_options[] =
   { "audio_config_lpt", config_set_audio_config_lpt, false },
   { "audio_config_sb", config_set_audio_config_sb, false },
   { "audio_driver", config_set_audio_driver, false },
+  { "audio_opl_port", config_set_audio_opl_port, false },
+  { "audio_opl_use_hardware", config_set_audio_opl_use_hardware, false },
   { "audio_output_channels", config_set_audio_channels, false },
   { "audio_pc_speaker_use_hardware", config_set_audio_pc_speaker_use_hardware, false },
   { "audio_sample_rate", config_set_audio_freq, false },
