@@ -176,6 +176,7 @@ struct buffered_status *store_status(void);
 CORE_LIBSPEC boolean update_event_status(void);
 CORE_LIBSPEC boolean update_event_status_delay(void);
 CORE_LIBSPEC void update_event_status_intake(void);
+CORE_LIBSPEC void keyboard_enable_text_entry(boolean enable);
 CORE_LIBSPEC void force_release_all_keys(void);
 CORE_LIBSPEC uint32_t get_key(enum keycode_type type);
 CORE_LIBSPEC uint32_t get_last_key(enum keycode_type type);
@@ -208,6 +209,7 @@ uint32_t convert_internal_unicode(enum keycode key, boolean caps_lock);
 
 // Implemented by "drivers" (SDL, Wii, NDS, 3DS, etc.)
 void platform_init_event(void);
+void platform_enable_text_entry(boolean enable);
 boolean platform_has_screen_keyboard(void);
 boolean platform_show_screen_keyboard(void);
 boolean platform_hide_screen_keyboard(void);

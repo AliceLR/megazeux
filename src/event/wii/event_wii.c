@@ -1113,6 +1113,11 @@ void __warp_mouse(int x, int y)
   // Mouse warping doesn't work too well with the Wiimote
 }
 
+void platform_enable_text_entry(boolean enable)
+{
+  // nop, only relevant to SDL
+}
+
 boolean platform_has_screen_keyboard(void)
 {
   return false;

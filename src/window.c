@@ -1021,6 +1021,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
   do
   {
+    keyboard_enable_text_entry(true);
     cursor_off();
     highlight_element(mzx_world, di, current_element_num);
     update_screen();

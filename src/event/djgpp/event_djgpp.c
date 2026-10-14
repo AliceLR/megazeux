@@ -547,6 +547,11 @@ boolean __peek_exit_input(void)
   return false;
 }
 
+void platform_enable_text_entry(boolean enable)
+{
+  // nop, only relevant to SDL
+}
+
 boolean platform_has_screen_keyboard(void)
 {
   return false;

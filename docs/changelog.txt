@@ -9,8 +9,17 @@ FIXES
 
 GIT - MZX 2.93e
 
+NOTE: gameplay features which rely on text events (key labels,
+the KEY counter for pre-2.80 games) are now based on US keyboard
+layout values rather than the current OS keyboard layout. This
+is due to KDE Plasma enabling by default an IME that breaks key
+detection when text events are enabled.
+
 USERS
 
++ Text values for :KEY# labels and the KEY counter <2.80 are now
+  based on the US layout rather than the OS keyboard layout.
+  This should mostly only affect shifted/symbol keys.
 + DOS: added new LPT DAC and PC speaker pulse width modulation
   audio drivers. See config.txt for more information.
 + DOS: added hardware PC speaker support for PC speaker sound

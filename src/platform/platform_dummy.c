@@ -64,6 +64,11 @@ void platform_init_event(void)
   // stub
 }
 
+void platform_enable_text_entry(boolean enable)
+{
+  // NOP, only relevant to SDL
+}
+
 boolean platform_has_screen_keyboard(void)
 {
   // stub

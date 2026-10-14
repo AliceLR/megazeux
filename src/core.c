@@ -1078,6 +1078,7 @@ void core_run(core_context *root)
 
     // Special- enable joystick gameplay bindings if this is the gameplay ctx.
     joystick_set_game_mode(ctx->internal_data->context_type == CTX_PLAY_GAME);
+    keyboard_enable_text_entry(ctx->internal_data->context_type != CTX_PLAY_GAME);
 
     // FIXME legacy loop hacks; remove when legacy loops are gone
     joystick_set_legacy_loop_hacks(false);

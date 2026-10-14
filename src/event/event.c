@@ -1223,6 +1223,21 @@ boolean set_exit_status(boolean value)
 }
 
 /**
+ * Enable or disable text entry events. When enabled, enable and accept text
+ * input events from the OS (which may break key hold/release detection).
+ * When disabled, ASCII keys should be accepted as text with shifts translated
+ * according to US layout by calling the function convert_internal_unicode.
+ * Only relevant to SDL builds; DOS gets ASCII values from BIOS and everything
+ * else should usually be deriving ASCII via convert_internal_unicode.
+ *
+ * @param enable  if true, enable text entry. If false, disable text entry.
+ */
+void keyboard_enable_text_entry(boolean enable)
+{
+  platform_enable_text_entry(enable);
+}
+
+/**
  * @return true if the screen keyboard is active, otherwise false.
  */
 boolean screen_keyboard_is_active(void)
