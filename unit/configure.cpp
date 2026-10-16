@@ -643,16 +643,6 @@ UNITTEST(Settings)
     TEST_ENUM("audio_pc_speaker_use_hardware", conf->audio_pc_speaker_use_hardware, boolean_data);
   }
 
-  SECTION(audio_opl_use_hardware)
-  {
-    TEST_ENUM("audio_opl_use_hardware", conf->audio_opl_use_hardware, boolean_data);
-  }
-
-  SECTION(audio_opl_port)
-  {
-    TEST_INT("audio_opl_port", conf->audio_opl_port, 0, 65535);
-  }
-
   // Audio options (DOS-only)
   SECTION(audio_driver_config)
   {

@@ -224,8 +224,6 @@ struct audio
   int max_simultaneous_samples;
   int max_simultaneous_samples_config;
   boolean pc_speaker_use_hardware;
-  boolean opl_use_hardware;
-  int opl_port;
 
   struct audio_stream *primary_stream;
   struct audio_stream *pcs_stream;
