@@ -59,9 +59,15 @@ extern struct input_status input;
  * active. Enabling text input also enables an onscreen keyboard in some
  * ports, so it isn't always desired.
  *
- * SDL 1.2 builds will disable this automatically if unicode is detected.
+ * This feature can be enabled one of two ways: first, a fallback is enabled
+ * at startup and is disabled if text events or SDL 1.2 unicode is detected.
+ * Secondly, keyboard_enable_text_entry may be called to manually disable
+ * text events/unicode and force the fallback at all times.
+ *
+ * Text events are always enabled if the screen keyboard is being shown.
  */
 static boolean unicode_fallback;
+static boolean text_entry_enabled;
 
 static boolean numlock_status_initialized;
 static unsigned last_text_window_id;
@@ -1379,8 +1385,8 @@ static boolean process_event(SDL_Event *event)
 
       // Some platforms don't implement SDL_TEXTINPUT (SDL 2.0) or the unicode
       // field (SDL 1.2); until usage of those is detected, fake the text key
-      // using the internal keycode.
-      if(unicode_fallback && KEYCODE_IS_ASCII(ckey))
+      // using the internal keycode. Gameplay also deliberately disables text.
+      if((unicode_fallback || !text_entry_enabled) && KEYCODE_IS_ASCII(ckey))
       {
         boolean caps_lock = !!(SDL_GetModState() & SDL_KMOD_CAPS);
         unicode = convert_internal_unicode(ckey, caps_lock);
@@ -1826,7 +1832,11 @@ void __warp_mouse(int x, int y)
 }
 
 /**
- * Enable text events for the provided window.
+ * Enable or disable text events for the provided window, and, if the screen
+ * keyboard is enabled, display the screen keyboard. Due to KDE Plasma breaking
+ * key hold detection when text is enabled for their IME that is enabled by
+ * default, gameplay needs to be able to turn these OFF.
+ *
  * Prior to SDL3, this was global, so the window ID isn't used.
  */
 void sdl_init_window_text_events(unsigned sdl_window_id)
@@ -1841,13 +1851,15 @@ void sdl_init_window_text_events(unsigned sdl_window_id)
   SDL_StopTextInput(window);
   SDL_SetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD,
    input.showing_screen_keyboard ? "1" : "0");
-  SDL_StartTextInput(window);
+  if(text_entry_enabled || input.showing_screen_keyboard)
+    SDL_StartTextInput(window);
 
 #elif SDL_VERSION_ATLEAST(2,0,0)
   /* Hack: since this version of SDL doesn't support forcibly hiding the
    * screen keyboard, if a screen keyboard is supported, do not enable text
    * events and use the fallback instead. This is required on Android. */
-  if(!SDL_HasScreenKeyboardSupport())
+  if((text_entry_enabled && !SDL_HasScreenKeyboardSupport()) ||
+   input.showing_screen_keyboard)
   {
     SDL_StartTextInput();
   }
@@ -1857,8 +1869,19 @@ void sdl_init_window_text_events(unsigned sdl_window_id)
     unicode_fallback = true;
   }
 #else
-  SDL_EnableUNICODE(1);
+  SDL_EnableUNICODE(text_entry_enabled);
 #endif
+  trace("--EVENT_SDL-- sdl_init_window_text_events %08u text:%d ufb:%d\n",
+   sdl_window_id, text_entry_enabled, unicode_fallback);
+}
+
+void platform_enable_text_entry(boolean enable)
+{
+  if(enable == text_entry_enabled)
+    return;
+
+  text_entry_enabled = enable;
+  sdl_init_window_text_events(last_text_window_id);
 }
 
 boolean platform_has_screen_keyboard(void)
@@ -1935,4 +1958,5 @@ void platform_init_event(void)
    * SDL 1.2 might also need this (Pandora? doesn't generate unicode presses).
    * If it isn't required, real unicode events will turn this off. */
   unicode_fallback = true;
+  text_entry_enabled = false;
 }

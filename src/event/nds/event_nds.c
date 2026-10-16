@@ -73,6 +73,11 @@ enum focus_mode get_allow_focus_changes(void)
   return allow_focus_changes;
 }
 
+void platform_enable_text_entry(boolean enable)
+{
+  // nop, only relevant to SDL
+}
+
 boolean platform_has_screen_keyboard(void)
 {
   return true;

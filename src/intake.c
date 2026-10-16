@@ -139,6 +139,7 @@ int intake(struct world *mzx_world, char *string, int max_len, int display_len,
     else
       cursor_solid(x + currx - scrolledx, y);
 
+    keyboard_enable_text_entry(true);
     update_screen();
     update_event_status_delay();
     key = get_key(keycode_internal_wrt_numlock);
