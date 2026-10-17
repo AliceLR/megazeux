@@ -245,6 +245,9 @@
    .altgr:before {
     content: "E";
    }
+   .key102:before {
+    content: "F";
+   }
    .annotation {
     font-size: .95em;
    }
@@ -352,8 +355,14 @@
     </div></td>
     <td><div class="none">&nbsp;
     </div></td>
-    <td><div class="none">&nbsp;
-    </div></td>
+    <td>
+     <div class="warn key102">
+      &lt;&nbsp;&gt;
+      <b>86</b>
+      <p>60</p>
+      <span class="keyname rhs">key_less</span>
+     </div>
+    </td>
    </tr>
    <tr class="space">
    </tr>
@@ -850,7 +859,7 @@
 
     <td>
      <div class="warn">
-      `
+      `&nbsp;~
       <b>41</b>
       <p>96</p>
       <span class="keyname">key_backquote</span>
@@ -859,7 +868,7 @@
 
     <td>
      <div>
-      1
+      1&nbsp;!
       <b>2</b>
       <p>49</p>
       <span class="keyname">key_1</span>
@@ -868,7 +877,7 @@
 
     <td>
      <div>
-      2
+      2&nbsp;@
       <b>3</b>
       <p>50</p>
       <span class="keyname">key_2</span>
@@ -877,7 +886,7 @@
 
     <td>
      <div>
-      3
+      3&nbsp;#
       <b>4</b>
       <p>51</p>
       <span class="keyname">key_3</span>
@@ -886,7 +895,7 @@
 
     <td>
      <div>
-      4
+      4&nbsp;$
       <b>5</b>
       <p>52</p>
       <span class="keyname">key_4</span>
@@ -895,7 +904,7 @@
 
     <td>
      <div>
-      5
+      5&nbsp;%
       <b>6</b>
       <p>53</p>
       <span class="keyname">key_5</span>
@@ -904,7 +913,7 @@
 
     <td>
      <div>
-      6
+      6&nbsp;^
       <b>7</b>
       <p>54</p>
       <span class="keyname">key_6</span>
@@ -913,7 +922,7 @@
 
     <td>
      <div>
-      7
+      7&nbsp;&amp;
       <b>8</b>
       <p>55</p>
       <span class="keyname">key_7</span>
@@ -922,7 +931,7 @@
 
     <td>
      <div>
-      8
+      8&nbsp;*
       <b>9</b>
       <p>56</p>
       <span class="keyname">key_8</span>
@@ -931,7 +940,7 @@
 
     <td>
      <div>
-      9
+      9&nbsp;(
       <b>10</b>
       <p>57</p>
       <span class="keyname">key_9</span>
@@ -940,7 +949,7 @@
 
     <td>
      <div>
-      0
+      0&nbsp;)
       <b>11</b>
       <p>48</p>
       <span class="keyname">key_0</span>
@@ -949,7 +958,7 @@
 
     <td>
      <div>
-      -
+      -&nbsp;_
       <b>12</b>
       <p>45</p>
       <span class="keyname">key_minus</span>
@@ -958,7 +967,7 @@
 
     <td>
      <div>
-      =
+      =&nbsp;+
       <b>13</b>
       <p>61</p>
       <span class="keyname">key_equals</span>
@@ -1082,7 +1091,7 @@
 
     <td>
      <div>
-      [
+      [&nbsp;{
       <b>26</b>
       <p>91</p>
       <span class="keyname">key_leftbracket</span>
@@ -1091,7 +1100,7 @@
 
     <td>
      <div>
-      ]
+      ]&nbsp;}
       <b>27</b>
       <p>93</p>
       <span class="keyname">key_rightbracket</span>
@@ -1100,7 +1109,7 @@
 
     <td>
      <div class="warn">
-      \
+      \&nbsp;|
       <b>43</b>
       <p>92</p>
       <span class="keyname">key_backslash</span>
@@ -1206,7 +1215,7 @@
 
     <td>
      <div>
-      ;
+      ;&nbsp;:
       <b>39</b>
       <p>59</p>
       <span class="keyname">key_semicolon</span>
@@ -1215,7 +1224,7 @@
 
     <td>
      <div>
-      '
+      '&nbsp;&quot;
       <b>40</b>
       <p>39</p>
       <span class="keyname">key_quote</span>
@@ -1312,7 +1321,7 @@
 
     <td>
      <div>
-      ,
+      ,&nbsp;&lt;
       <b>51</b>
       <p>44</p>
       <span class="keyname">key_comma</span>
@@ -1321,7 +1330,7 @@
 
     <td>
      <div>
-      .
+      .&nbsp;&gt;
       <b>52</b>
       <p>46</p>
       <span class="keyname">key_period</span>
@@ -1330,7 +1339,7 @@
 
     <td>
      <div>
-      /
+      /&nbsp;?
       <b>53</b>
       <p>47</p>
       <span class="keyname">key_slash</span>
@@ -1539,6 +1548,20 @@
      In Wayland and X11, when using keyboard layouts with AltGr (e.g.
      non-English layouts or US International), right alt will instead have the
      internal keycode 313 and the PC XT keycode 56.
+    </td>
+   </tr>
+
+   <tr>
+    <td class="key102">&nbsp;</td>
+    <td class="annotation">
+     This key is not present on US keyboards and should not be relied upon,
+     but is available for in-game rebinding. This key is usually located
+     between Left Shift and Z/Y/W on ISO 105-key keyboards. On some older
+     non-US keyboards, it is located between Left Control and Left Alt or
+     between Left Alt and Space. For SDL ports, this key only works on
+     layouts that map this particular key to the less-than symbol; for example,
+     using the Windows English/UK layout, this key instead acts equivalent to
+     the US backslash key.
     </td>
    </tr>
 
