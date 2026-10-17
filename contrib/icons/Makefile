@@ -67,6 +67,11 @@ icons_pngs = \
 	${icons_android}/mipmap-xhdpi/ic_launcher.png \
 	${icons_android}/mipmap-xxhdpi/ic_launcher.png \
 	${icons_android}/mipmap-xxxhdpi/ic_launcher.png \
+	${icons_android}/mipmap-mdpi/ic_launcher_foreground.png \
+	${icons_android}/mipmap-hdpi/ic_launcher_foreground.png \
+	${icons_android}/mipmap-xhdpi/ic_launcher_foreground.png \
+	${icons_android}/mipmap-xxhdpi/ic_launcher_foreground.png \
+	${icons_android}/mipmap-xxxhdpi/ic_launcher_foreground.png \
 
 #
 # Rebuild raster icons from SVG.
@@ -330,7 +335,7 @@ ${icons_emscripten}/loading.png: ${icon_svg}
 	  -layers merge +repage png24:"$@"
 
 #
-# Android: icons are standard sizes, just copy them into project tree.
+# Android pre-API 26: icons are standard sizes, just copy them into project tree.
 #
 ${icons_android}/mipmap-mdpi/ic_launcher.png: ${icons_gen}/icon_48.png
 	$(if ${V},,@echo "  CP      " $< $@)
@@ -351,3 +356,31 @@ ${icons_android}/mipmap-xxhdpi/ic_launcher.png: ${icons_gen}/icon_144.png
 ${icons_android}/mipmap-xxxhdpi/ic_launcher.png: ${icons_gen}/icon_192.png
 	$(if ${V},,@echo "  CP      " $< $@)
 	${CP} "$<" "$@"
+
+#
+# Android API 26+: need to add custom margins.
+#
+${icons_android}/mipmap-mdpi/ic_launcher_foreground.png: ${icon_svg}
+	$(if ${V},,@echo "  MAGICK  " $@)
+	${MAGICK} -background none -density 25 "$<" \
+	  -gravity center -extent 48x48 png32:"$@"
+
+${icons_android}/mipmap-hdpi/ic_launcher_foreground.png: ${icon_svg}
+	$(if ${V},,@echo "  MAGICK  " $@)
+	${MAGICK} -background none -density 33 "$<" \
+	  -gravity center -extent 72x72 png32:"$@"
+
+${icons_android}/mipmap-xhdpi/ic_launcher_foreground.png: ${icon_svg}
+	$(if ${V},,@echo "  MAGICK  " $@)
+	${MAGICK} -background none -density 45 "$<" \
+	  -gravity center -extent 96x96 png32:"$@"
+
+${icons_android}/mipmap-xxhdpi/ic_launcher_foreground.png: ${icon_svg}
+	$(if ${V},,@echo "  MAGICK  " $@)
+	${MAGICK} -background none -density 69 "$<" \
+	  -gravity center -extent 144x144 png32:"$@"
+
+${icons_android}/mipmap-xxxhdpi/ic_launcher_foreground.png: ${icon_svg}
+	$(if ${V},,@echo "  MAGICK  " $@)
+	${MAGICK} -background none -density 90 "$<" \
+	  -gravity center -extent 192x192 png32:"$@"
