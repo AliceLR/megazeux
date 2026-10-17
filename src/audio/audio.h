@@ -27,14 +27,14 @@
 
 MEGAZEUX_BEGIN_DECLS
 
+struct config_info;
+
 #ifdef CONFIG_AUDIO
 
 #include <stdint.h>
 
 // Default period for .SAM files.
 #define SAM_DEFAULT_PERIOD 428
-
-struct config_info;
 struct audio_stream;
 
 CORE_LIBSPEC void init_audio(struct config_info *conf);

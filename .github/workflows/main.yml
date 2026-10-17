@@ -62,6 +62,14 @@ jobs:
       - name: Install dependencies
         run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2 $MZXDEPS_DEBIAN_MISC
       - uses: actions/checkout@v4
+      - name: Configure (--disable-editor)
+        run: ./config.sh --platform unix-devel --enable-release --disable-editor
+      - name: Build (--disable-editor)
+        run: $MZX_MAKE
+      - name: Run tests (--disable-editor)
+        run: $MZX_MAKE test
+      - name: Distclean (--disable-editor)
+        run: $MZX_MAKE distclean
       - name: Configure (SDL 1.2)
         run: ./config.sh --platform unix-devel --enable-release --enable-sdl1
       - name: Build (SDL 1.2)
@@ -78,6 +86,29 @@ jobs:
       - name: Run tests (EGL/X11)
         run: $MZX_MAKE unit
       - name: Distclean (EGL/X11)
+        run: $MZX_MAKE distclean
+      - name: Configure (debug)
+        run: ./config.sh --platform unix-devel --disable-release --enable-trace --enable-fps
+      - name: Build (debug)
+        run: $MZX_MAKE
+      - name: Run tests (debug)
+        run: $MZX_MAKE test
+      - name: Distclean (debug)
+        run: $MZX_MAKE distclean
+
+  unix-audio:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y --no-install-recommends $MZXDEPS_DEBIAN_SDL2 $MZXDEPS_DEBIAN_MISC
+      - uses: actions/checkout@v4
+      - name: Configure (--disable-audio)
+        run: ./config.sh --platform unix-devel --enable-release --disable-audio
+      - name: Build (--disable-audio)
+        run: $MZX_MAKE
+      - name: Run tests (--disable-audio)
+        run: $MZX_MAKE test
+      - name: Distclean (--disable-audio)
         run: $MZX_MAKE distclean
       - name: Configure (ModPlug)
         run: ./config.sh --platform unix-devel --enable-release --enable-modplug
@@ -102,14 +133,6 @@ jobs:
       - name: Run tests (OpenMPT)
         run: $MZX_MAKE test
       - name: Distclean (OpenMPT)
-        run: $MZX_MAKE distclean
-      - name: Configure (debug)
-        run: ./config.sh --platform unix-devel --disable-release --enable-trace --enable-fps
-      - name: Build (debug)
-        run: $MZX_MAKE
-      - name: Run tests (debug)
-        run: $MZX_MAKE test
-      - name: Distclean (debug)
         run: $MZX_MAKE distclean
 
   darwin-arm64:
