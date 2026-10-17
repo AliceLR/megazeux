@@ -67,9 +67,4 @@ build_dirs   += ${audio_obj}
 core_cobjs   += ${audio_cobjs}
 core_cxxobjs += ${audio_cxxobjs}
 
-else
-# TODO: this needs to be moved out of the audio tree
-ifeq (${BUILD_EDITOR},1)
-core_cobjs   += ${core_obj}/audio/sfx.o
-endif
-endif
+endif # BUILD_AUDIO == 1
