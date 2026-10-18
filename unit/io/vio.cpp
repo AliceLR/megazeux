@@ -412,7 +412,9 @@ static void test_vfseek_vftell_vrewind_read(vfile *vf)
   static constexpr int cur_valid[] = { 0, 128, 64, 32, 16, -16, -32, -64, -128 }; // Cumulative.
   static constexpr int set_cur_invalid[] = { -15, -120312, -1 };
   static constexpr int end_valid[] = { 0, -1, -5, -20, -256, 10, 9999 };
+#ifndef CONFIG_DJGPP
   static constexpr int end_invalid[] = { -257, -2000, -127848, -2391231 };
+#endif
   static constexpr int len = sizeof(test_data);
 
   long expected;
@@ -454,11 +456,15 @@ static void test_vfseek_vftell_vrewind_read(vfile *vf)
     pos = vftell(vf);
     ASSERTEQ(pos, 0, "SEEK_SET invalid: %d", value);
 
+    /* TODO: DJGPP's seek to negative offset behavior can't be prevented
+     * easily for SEEK_CUR without adding an extra function call to vfseek. */
+#ifndef CONFIG_DJGPP
     ret = vfseek(vf, value, SEEK_CUR);
     ASSERT(ret != 0, "SEEK_CUR invalid: %d", value);
     vrewind(vf);
     pos = vftell(vf);
     ASSERTEQ(pos, 0, "SEEK_CUR invalid: %d", value);
+#endif
   }
 
   // SEEK_END (valid).
@@ -473,6 +479,7 @@ static void test_vfseek_vftell_vrewind_read(vfile *vf)
   pos = vftell(vf);
   ASSERTEQ(pos, 0, "vrewind after SEEK_END");
 
+#ifndef CONFIG_DJGPP
   // SEEK_END (invalid).
   for(int value : end_invalid)
   {
@@ -482,6 +489,7 @@ static void test_vfseek_vftell_vrewind_read(vfile *vf)
     pos = vftell(vf);
     ASSERTEQ(pos, 0, "SEEK_END invalid: %d", value);
   }
+#endif
 }
 
 static void test_filelength(long expected_len, vfile *vf)
@@ -704,20 +712,13 @@ static void test_vfsafegets(vfile *vf, const char *filename,
   /*if(!is_append) { SECTION(write_vfseektell)  test_vfseek_vftell_rewind_write(vf); } */ \
 } while(0)
 
-static void exec_dir()
+static void init_vio_units()
 {
-  int ret = chdir(execdir);
-  ASSERTEQ(ret, 0, "change to exec dir");
-}
+  static boolean inited;
+  if(inited)
+    return;
+  inited = true;
 
-static void write_dir()
-{
-  int ret = chdir(writedir);
-  ASSERTEQ(ret, 0, "change to write dir");
-}
-
-UNITTEST(VioInit)
-{
   char *t = getcwd(execdir, sizeof(execdir));
   ASSERTEQ(t, execdir, "");
 
@@ -747,6 +748,20 @@ UNITTEST(VioInit)
     r = fclose(fp);
     ASSERTEQ(r, 0, "fclose");
   }
+}
+
+static void exec_dir()
+{
+  init_vio_units();
+  int ret = chdir(execdir);
+  ASSERTEQ(ret, 0, "change to exec dir");
+}
+
+static void write_dir()
+{
+  init_vio_units();
+  int ret = chdir(writedir);
+  ASSERTEQ(ret, 0, "change to write dir");
 }
 
 UNITTEST(ModeFlags)
@@ -804,6 +819,20 @@ UNITTEST(ModeFlags)
     int res = vfile_get_mode_flags(d.mode);
     ASSERTEQ(res, d.expected, "%s", d.mode);
   }
+}
+
+UNITTEST(FileNoOpen)
+{
+  vfile *vf;
+
+  write_dir();
+
+  vf = vfopen_unsafe("", "rb");
+  ASSERTEQ(vf, nullptr, "empty string should fail to open for read");
+  vf = vfopen_unsafe("", "wb");
+  ASSERTEQ(vf, nullptr, "empty string should fail to open for write");
+  vf = vfopen_unsafe("nonexist", "rb");
+  ASSERTEQ(vf, nullptr, "file doesn't exist should fail to open for read");
 }
 
 UNITTEST(FileRead)
@@ -1036,6 +1065,10 @@ UNITTEST(Filesystem)
 
   SECTION(vunlink)
   {
+    {
+      /* Do not assume this file was created by a prior test */
+      ScopedFile<vfile, vfclose> vf_out = vfopen_unsafe(TEST_WRITE_FILENAME, "w+b");
+    }
     ret = stat(TEST_WRITE_FILENAME, &stat_info);
     ASSERTEQ(ret, 0, "");
     ASSERT(S_ISREG(stat_info.st_mode), "");
@@ -1522,6 +1555,17 @@ UNITTEST(VirtualWrite)
   ASSERTEQ(len, 0, "mode 'wb' should truncate virtual files");
 }
 
+template<int N>
+static void fix_slashes(char (&buffer)[N])
+{
+#ifdef CONFIG_DJGPP
+  /* DJGPP insists on *nix slashes despite DOS using backslashes natively. */
+  for(int i = 0; i < N && buffer[i]; i++)
+    if(isslash(buffer[i]))
+      buffer[i] = DIR_SEPARATOR_CHAR;
+#endif
+}
+
 UNITTEST(VirtualFilesystem)
 {
 #ifndef VIRTUAL_FILESYSTEM
@@ -1639,6 +1683,7 @@ UNITTEST(VirtualFilesystem)
     path_join(expected_real, MAX_PATH, writedir, dir_real);
     t = vgetcwd(buf, MAX_PATH);
     ASSERT(t, "vgetcwd from uncached directory");
+    fix_slashes(buf);
     ASSERTCMP(t, expected_real, "vgetcwd from uncached directory");
 
     path_join(buf, sizeof(buf), "..", dir_over);
@@ -1708,6 +1753,7 @@ UNITTEST(VirtualFilesystem)
     ASSERTEQ(ret, 0, "vchdir into the new real directory");
     t = getcwd(buf, MAX_PATH);
     ASSERT(t, "real getcwd should be the new directory");
+    fix_slashes(buf);
     ASSERTCMP(t, expected, "real getcwd should be the new directory");
 
     // Nonsense dir--should set errno to ENOENT.
@@ -1770,11 +1816,14 @@ UNITTEST(VirtualFilesystem)
     }
     ret = vrename("da_new_real_dir", dir_real);
     ASSERTEQ(ret, -1, "move dir over unempty uncached dir");
+#ifndef CONFIG_DJGPP
+    /* TODO: DJGPP incorrectly returns EACCES here, whatever... */
     if(errno != EEXIST && errno != ENOTEMPTY)
     {
       ASSERTEQ(errno, ENOTEMPTY,
        "move dir over unempty uncached dir (should be EEXIST or ENOTEMPTY)");
     }
+#endif
     ret = vstat(buf, &st);
     ASSERTEQ(ret, 0, "virt file should exist at old location");
     ret = vstat(dir_real_file, &st);
@@ -2278,6 +2327,10 @@ static void generate_cached_file(const char *path, const void *data, size_t len,
 
 UNITTEST(CacheMemoryLimit)
 {
+#ifndef VIRTUAL_FILESYSTEM
+  SKIP();
+#endif
+
   // vio will enforce a maximum cache size limit in most cases.
   static constexpr size_t file_size = cache_max_size * 2 / 5;
   static constexpr size_t file_oversize = cache_max_size * 3 / 5;

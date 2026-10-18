@@ -363,7 +363,7 @@ boolean vio_filesystem_init(size_t max_size, size_t max_file_size,
     goto err;
   }
   code = vfs_chdir(vfs_base, tmp);
-  if(code != VFS_ERR_IS_CACHED)
+  if(code != 0 && code != VFS_ERR_IS_CACHED) /* Will return 0 if at root */
   {
     trace("--VIO-- vio_filesystem_init: failed vfs_chdir with code %u: %s\n",
      code, strerror(vfs_error_to_errno(code)));
@@ -633,6 +633,11 @@ vfile *vfopen_unsafe_ext(const char *filename, const char *mode,
 
   assert(filename && flags);
   flags |= (user_flags & VF_PUBLIC_MASK);
+
+  /* DJGPP, for some reason, permits opening an empty filename.
+   * For Amiga, this string represents the current directory. */
+  if(filename[0] == '\0')
+    return NULL;
 
   vf = (vfile *)calloc(1, sizeof(vfile));
   vf->tmp_chr = EOF;

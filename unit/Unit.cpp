@@ -83,8 +83,17 @@ int main(int argc, char *argv[])
     for(int i = 1; i < argc; i++)
       Unit::unittestrunner::get().set_filter(argv[i]);
 
+  char tmp[512];
+  if(!getcwd(tmp, sizeof(tmp)))
+    Uerr("failed initial getcwd");
+
   std::signal(SIGABRT, sigabrt_handler);
-  return !(Unit::unittestrunner::get().run());
+  boolean ret = Unit::unittestrunner::get().run();
+
+  if(chdir(tmp))
+    Uerr("failed to chdir back to startup dir");
+
+  return !ret;
 }
 
 

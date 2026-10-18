@@ -711,6 +711,14 @@ struct path_clean_data
   {
     return path_clean_data{ p, _posix, _posixdos, _dos, _dos, _amiga };
   }
+
+  constexpr static struct path_clean_data uncroot(const char *p,
+   struct path_clean_result _posix, struct path_clean_result _posixdos,
+   struct path_clean_result _dos, struct path_clean_result _win32,
+   struct path_clean_result _amiga)
+  {
+    return path_clean_data{ p, _posix, _posixdos, _dos, _win32, _amiga };
+  }
 };
 
 UNITTEST(path_clean)
@@ -787,27 +795,35 @@ UNITTEST(path_clean)
       { "\\" }
     ),
     // Windows UNC paths: do not remove duplicate slashes from the prefix.
-    path_clean_data::amigaroot(
+    path_clean_data::uncroot(
       "\\\\.\\C:\\",
       { "/./C:" },
+      { "/./C:" },
+      { "\\.\\C:" },
       { "\\\\.\\C:\\" },
       { "\\\\.\\C:" }
     ),
-    path_clean_data::amigaroot(
+    path_clean_data::uncroot(
       "\\\\?\\C:\\",
       { "/?/C:" },
+      { "/?/C:" },
+      { "\\?\\C:" },
       { "\\\\?\\C:\\" },
       { "\\\\?\\C:" }
     ),
-    path_clean_data::amigaroot(
+    path_clean_data::uncroot(
       "\\\\.\\unc\\\\localhost\\\\\\duhhr",
       { "/./unc/localhost/duhhr" },
+      { "/./unc/localhost/duhhr" },
+      { "\\.\\unc\\localhost\\duhhr" },
       { "\\\\.\\unc\\localhost\\duhhr" },
       { "//./unc//localhost///duhhr" }
     ),
-    path_clean_data::amigaroot(
+    path_clean_data::uncroot(
       "\\\\?\\unc\\\\localhost\\\\\\duhhr",
       { "/?/unc/localhost/duhhr" },
+      { "/?/unc/localhost/duhhr" },
+      { "\\?\\unc\\localhost\\duhhr" },
       { "\\\\?\\unc\\localhost\\duhhr" },
       { "//?/unc//localhost///duhhr" }
     ),
@@ -2090,7 +2106,7 @@ UNITTEST(path_navigate)
       "\\\\.\\C:",
       "Program Files",
       { 19, "/./C:/Program Files" },
-      { -1, nullptr },
+      { 19, "\\.\\C:\\Program Files" },
       { 20, "\\\\.\\C:\\Program Files" },
       { 19, "\\\\.\\C:Program Files" }
     ),
