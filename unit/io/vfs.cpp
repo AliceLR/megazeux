@@ -106,7 +106,7 @@ struct vfs_op_result
 };
 
 static void check_stat(const char *path, const vfs_stat_data &d, struct stat &st,
- time_t create_time = -1, time_t modify_time = -1)
+ time_t create_time = 0, time_t modify_time = 0)
 {
   ASSERTEQ(st.st_dev, VFS_MZX_DEVICE, "%s", path);
   ASSERTEQ(st.st_ino, d.inode, "%s", path);
@@ -121,7 +121,7 @@ static void check_stat(const char *path, const vfs_stat_data &d, struct stat &st
 }
 
 static void do_op_and_stat(vfilesystem *vfs, const vfs_op_result &d,
- time_t create_time = -1, time_t modify_time = -1)
+ time_t create_time = 0, time_t modify_time = 0)
 {
   const char *st_path = d.path;
   char buffer[MAX_PATH];

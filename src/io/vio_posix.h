@@ -185,6 +185,13 @@ static inline boolean platform_rewinddir(struct dir_handle dh)
 
 static inline int platform_fseek(FILE *fp, int64_t offset, int whence)
 {
+#ifdef CONFIG_DJGPP
+  /* DJGPP fseek(o) allows seeks to negative offsets and treats these
+   * as a seek to the end. This can be prevented for SEEK_SET: */
+  if(whence == SEEK_SET && offset < 0)
+    return -1;
+#endif
+
 #if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
   return fseeko(fp, offset, whence);
 #else
@@ -203,14 +210,27 @@ static inline int64_t platform_ftell(FILE *fp)
 #endif
 }
 
-#if defined(__EMSCRIPTEN__)
+#if defined(__EMSCRIPTEN__) || defined(CONFIG_DJGPP)
 
 /**
  * For unknown reasons, Emscripten fstat is much slower than the fallback.
+ * DJGPP fstat may have issues with stale data even when fflush is used.
  */
 static inline int64_t platform_filelength(FILE *fp)
 {
-  return -1;
+  int64_t pos = platform_ftell(fp);
+  int64_t ret;
+  if(pos < 0)
+    return -1;
+
+  if(platform_fseek(fp, 0, SEEK_END) < 0)
+    return -1;
+
+  ret = platform_ftell(fp);
+  if(platform_fseek(fp, pos, SEEK_SET) < 0)
+    return -1;
+
+  return ret;
 }
 
 #else /* fstat */
