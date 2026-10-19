@@ -83,6 +83,8 @@ USERS
 + Fixed WAV smpl chunk end point off-by-one (the loop end value
   stored in the chunk is inclusive).
 + WAV files loaded by the SDL fallback now load the smpl chunk.
++ Fix program and SFX corruption when playing a string or SFX
+  with an unterminated sample name.
 
 DEVELOPERS
 

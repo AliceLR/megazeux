@@ -203,7 +203,7 @@ int audio_get_module_loop_end(void)
   return 0;
 }
 
-static u8 *audio_load_mas_file(char *filename)
+static u8 *audio_load_mas_file(const char *filename)
 {
   u32 mas_size;
   u8 *mas_buffer;
@@ -246,7 +246,7 @@ static u8 *audio_load_mas_file(char *filename)
 
 #define MAXMOD_SAMPLE_FREQ(f) (((f) * 1024 + (1 << 14)) >> 15)
 
-static u8 *audio_load_sam_file(char *filename)
+static u8 *audio_load_sam_file(const char *filename)
 {
   u32 sam_size;
   u32 sam_size_aligned;
@@ -303,7 +303,7 @@ static u8 *audio_load_sam_file(char *filename)
   return mas_buffer;
 }
 
-int audio_play_module(char *filename, boolean safely, int volume)
+int audio_play_module(const char *filename, boolean safely, int volume)
 {
   char mas_filename[MAX_PATH];
   char translated_filename[MAX_PATH];
@@ -375,7 +375,7 @@ void audio_spot_sample(int period, int which)
 
 // Sample playback code
 
-void audio_play_sample(char *filename, boolean safely, int period)
+void audio_play_sample(const char *filename, boolean safely, int period)
 {
   char mas_filename[MAX_PATH];
   char translated_filename[MAX_PATH];

@@ -39,9 +39,9 @@ struct audio_stream;
 
 CORE_LIBSPEC void init_audio(struct config_info *conf);
 CORE_LIBSPEC void quit_audio(void);
-CORE_LIBSPEC int audio_play_module(char *filename, boolean safely, int volume);
+CORE_LIBSPEC int audio_play_module(const char *filename, boolean safely, int volume);
 CORE_LIBSPEC void audio_end_module(void);
-CORE_LIBSPEC void audio_play_sample(char *filename, boolean safely, int period);
+CORE_LIBSPEC void audio_play_sample(const char *filename, boolean safely, int period);
 CORE_LIBSPEC void audio_spot_sample(int period, int which);
 
 CORE_LIBSPEC void audio_set_module_volume(int volume);
@@ -96,10 +96,10 @@ static inline uint32_t audio_get_real_frequency(int period)
 
 static inline void init_audio(struct config_info *conf) {}
 static inline void quit_audio(void) {}
-static inline int audio_play_module(char *filename, boolean safely, int volume)
+static inline int audio_play_module(const char *filename, boolean safely, int volume)
  { return 1; }
 static inline void audio_end_module(void) {}
-static inline void audio_play_sample(char *filename, boolean safely, int period)
+static inline void audio_play_sample(const char *filename, boolean safely, int period)
  {}
 static inline void audio_spot_sample(int period, int which) {}
 

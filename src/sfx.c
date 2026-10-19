@@ -42,15 +42,11 @@
 /**
  * The longest built-in SFX is the ring/potion sound, which is 68+1 chars long.
  *
- * This is also the legacy maximum SFX length. Custom SFX may potentially be
- * longer in the future, and/or SFX beyond the 50 built-in SFX may be possible.
+ * This is also the legacy maximum SFX length. Custom SFX may be longer and
+ * custom SFX beyond the 50 built-in SFX are also supported.
  * Aside from potentially repurposing SFX 49, further built-ins are not likely.
- *
- * FIXME: make const
- * TODO: move the queue into the audio system and move the rest of this back to
- * the main source folder, as it is otherwise game behavior and file format.
  */
-__editor_maybe_static char sfx_strs[NUM_BUILTIN_SFX][LEGACY_SFX_SIZE] =
+__editor_maybe_static const char sfx_strs[NUM_BUILTIN_SFX][LEGACY_SFX_SIZE] =
 {
   "5c-gec-gec", // Gem
   "5c-gec-gec", // Magic Gem
@@ -135,15 +131,13 @@ static void play_note(int note, int octave, int delay)
   audio_sfx_queue_sound(note_freq[note - 1] >> (6 - octave), delay);
 }
 
-void play_sfx(struct world *mzx_world, int sfxn)
+void play_sfx_from_list(const struct sfx_list *sfx_list, int sfxn)
 {
-  // TODO: pass the sfx_list here directly?
-  struct sfx_list *sfx_list = &mzx_world->custom_sfx;
   if(sfx_list->list)
   {
     const struct custom_sfx *sfx = sfx_get(sfx_list, sfxn);
     if(sfx)
-      play_string((char *)sfx->string, 1);
+      play_string(sfx->string, 1);
   }
   else
 
@@ -155,7 +149,7 @@ void play_sfx(struct world *mzx_world, int sfxn)
 
 // sfx_play = 1 to NOT play non-digi unless queue empty
 
-void play_string(char *str, int sfx_play)
+void play_string(const char *str, int sfx_play)
 {
   int t1, oct = 3, note = 1, dur = 18, t2, last_note = -1,
    digi_st = -1, digi_end = -1, digi_played = 0;
@@ -182,7 +176,7 @@ void play_string(char *str, int sfx_play)
   }
 
   // Now, if sfx_play, only play digi
-  for(t1 = 0; (unsigned int)t1 < strlen((char *)str); t1++)
+  for(t1 = 0; (unsigned int)t1 < strlen(str); t1++)
   {
     chr = str[t1];
     if((chr >= 'a') && (chr <= 'z'))
@@ -251,11 +245,13 @@ void play_string(char *str, int sfx_play)
       {
         if(audio_get_music_on())
         {
-          str[digi_end] = 0;
+          char *todo_hack = (char *)str;
+          char tmp = todo_hack[digi_end];
+          todo_hack[digi_end] = '\0';
 
           audio_play_sample(str + digi_st, true, sam_freq[note - 1] >> oct);
 
-          str[digi_end] = close_char;
+          todo_hack[digi_end] = tmp;
           digi_played = 1;
           continue;
         }
@@ -356,11 +352,13 @@ void play_string(char *str, int sfx_play)
   // Pending digital music?
   if((digi_st > 0) && (digi_played == 0))
   {
-    str[digi_end] = 0;
+    char *todo_hack = (char *)str;
+    char tmp = todo_hack[digi_end];
+    todo_hack[digi_end] = '\0';
 
     audio_play_sample(str + digi_st, true, 0);
 
-    str[digi_end] = close_char;
+    todo_hack[digi_end] = tmp;
   }
 }
 
