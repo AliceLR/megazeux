@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 1996 Alexis Janson
+ * Copyright (C) 2024-2026 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -97,27 +98,29 @@ struct sfx_list
   int num_alloc;
 };
 
-// Requires struct custom_sfx, so don't include.
-struct world;
+// world_struct.h requires struct sfx_list, so don't include.
+// play_sfx(const struct world *mzx_world, int sfx)
+#define play_sfx(mzx_world, sfx) \
+ play_sfx_from_list(&((mzx_world)->custom_sfx), (sfx))
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC extern char sfx_strs[NUM_BUILTIN_SFX][LEGACY_SFX_SIZE];
+CORE_LIBSPEC extern const char sfx_strs[NUM_BUILTIN_SFX][LEGACY_SFX_SIZE];
 
 CORE_LIBSPEC size_t sfx_ram_usage(const struct sfx_list *sfx_list);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_AUDIO
 
-void play_sfx(struct world *mzx_world, int sfx);
-void play_string(char *str, int sfx_play);
+void play_sfx_from_list(const struct sfx_list *sfx_list, int sfx);
+void play_string(const char *str, int sfx_play);
 void sfx_clear_queue(void);
 boolean sfx_is_playing(void);
 int sfx_length_left(void);
 
 #else // !CONFIG_AUDIO
 
-static inline void play_sfx(struct world *mzx_world, int sfxn) {}
-static inline void play_string(char *str, int sfx_play) {}
+static inline void play_sfx_from_list(const struct sfx_list *sfx_list, int sfxn) {}
+static inline void play_string(const char *str, int sfx_play) {}
 static inline void sfx_clear_queue(void) {}
 static inline boolean sfx_is_playing(void) { return false; }
 static inline int sfx_length_left(void) { return 0; }

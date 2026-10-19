@@ -185,7 +185,7 @@ struct audio_stream
  * over 65535 (~131 seconds at 500 Hz).
  *
  * The frequency is guaranteed to never actually need anything higher than the
- * table below, so there's no reason for it to be 32-bit.
+ * table in sfx.c, so there's no reason for it to be 32-bit.
  */
 struct audio_sfx_note
 {
