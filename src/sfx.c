@@ -131,31 +131,38 @@ static void play_note(int note, int octave, int delay)
   audio_sfx_queue_sound(note_freq[note - 1] >> (6 - octave), delay);
 }
 
-void play_sfx_from_list(const struct sfx_list *sfx_list, int sfxn)
+void sfx_play_from_list(const struct sfx_list *sfx_list, int sfxn)
 {
-  if(sfx_list->list)
+  if(sfx_list && sfx_list->list)
   {
     const struct custom_sfx *sfx = sfx_get(sfx_list, sfxn);
     if(sfx)
-      play_string(sfx->string, 1);
+      sfx_play_string(sfx->string, true);
   }
   else
 
   if(sfxn >= 0 && sfxn < NUM_BUILTIN_SFX)
   {
-    play_string(sfx_strs[sfxn], 1);
+    sfx_play_string(sfx_strs[sfxn], true);
   }
 }
 
-// sfx_play = 1 to NOT play non-digi unless queue empty
-
-void play_string(const char *str, int sfx_play)
+/**
+ * Play an SFX string via the audio system.
+ *
+ * @param str       SFX string to play.
+ * @param sfx_play  if true, the presence of notes in the audio system's note
+ *                  queue will prevent notes (but not samples) in the string
+ *                  from playing (used for built-in sound effects and by
+ *                  sfx_play_from_list). If false, notes are queued regardless.
+ */
+void sfx_play_string(const char *str, boolean sfx_play)
 {
   int t1, oct = 3, note = 1, dur = 18, t2, last_note = -1,
    digi_st = -1, digi_end = -1, digi_played = 0;
   char chr;
   // Note trans. table from 1-7 (a-z) to 1-12
-  char nn[7] = { 10, 12, 1, 3, 5, 6, 8 };
+  static const char nn[7] = { 10, 12, 1, 3, 5, 6, 8 };
 
   /**
    * There is a bug in the SFX code where every duration is unconditionally
@@ -167,12 +174,12 @@ void play_string(const char *str, int sfx_play)
 
   if(!audio_get_pcs_on())
   {
-    sfx_play = 1; // SFX off
+    sfx_play = true; // SFX off
   }
   else
   {
     if(!audio_sfx_has_queued_sounds())
-      sfx_play = 0;
+      sfx_play = false;
   }
 
   // Now, if sfx_play, only play digi
@@ -245,13 +252,13 @@ void play_string(const char *str, int sfx_play)
       {
         if(audio_get_music_on())
         {
-          char *todo_hack = (char *)str;
-          char tmp = todo_hack[digi_end];
-          todo_hack[digi_end] = '\0';
+          char sample[ROBOT_MAX_TR];
+          int len = CLAMP(digi_end - digi_st, 0, ROBOT_MAX_TR - 1);
+          memcpy(sample, str + digi_st, len);
+          sample[len] = '\0';
 
-          audio_play_sample(str + digi_st, true, sam_freq[note - 1] >> oct);
+          audio_play_sample(sample, true, sam_freq[note - 1] >> oct);
 
-          todo_hack[digi_end] = tmp;
           digi_played = 1;
           continue;
         }
@@ -264,7 +271,7 @@ void play_string(const char *str, int sfx_play)
       }
       else
 
-      if(last_note == note)
+      if(last_note == note) /* TODO: "fixed" mode: also check octave and require dur >= 2 */
       {
         if(dur <= 9)
         {
@@ -325,6 +332,9 @@ void play_string(const char *str, int sfx_play)
       if(str[t1] == 0)
         break;
 
+      /* Note: in the case of &&, this treats the second & as part of the
+       * sample name. & is a valid filename character, so this janky handling
+       * unfortunately has to remain. */
       do
       {
         t1++;
@@ -352,13 +362,12 @@ void play_string(const char *str, int sfx_play)
   // Pending digital music?
   if((digi_st > 0) && (digi_played == 0))
   {
-    char *todo_hack = (char *)str;
-    char tmp = todo_hack[digi_end];
-    todo_hack[digi_end] = '\0';
+    char sample[ROBOT_MAX_TR];
+    int len = CLAMP(digi_end - digi_st, 0, ROBOT_MAX_TR - 1);
+    memcpy(sample, str + digi_st, len);
+    sample[len] = '\0';
 
-    audio_play_sample(str + digi_st, true, 0);
-
-    todo_hack[digi_end] = tmp;
+    audio_play_sample(sample, true, 0);
   }
 }
 

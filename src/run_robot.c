@@ -2745,7 +2745,7 @@ void run_robot(context *ctx, int id, int x, int y)
 
       case ROBOTIC_CMD_PLAY: // Play notes
       {
-        play_string(cmd_ptr + 2, 0);
+        sfx_play_string(cmd_ptr + 2, false);
         break;
       }
 
@@ -2766,7 +2766,7 @@ void run_robot(context *ctx, int id, int x, int y)
           return;
         }
 
-        play_string(cmd_ptr + 2, 0);
+        sfx_play_string(cmd_ptr + 2, false);
 
         break;
       }
@@ -2794,7 +2794,7 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_PLAY_IF_SILENT: // play sfx notes
       {
         if(!sfx_is_playing())
-          play_string(cmd_ptr + 2, 0);
+          sfx_play_string(cmd_ptr + 2, false);
 
         break;
       }
