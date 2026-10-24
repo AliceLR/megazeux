@@ -30,8 +30,9 @@ MEGAZEUX_BEGIN_DECLS
 
 #define AUDIO_SFX_FREQ_REST 1
 
+/* CORE_LIBSPEC for unit tests; should not be used external of audio system. */
+CORE_LIBSPEC boolean audio_sfx_get_next_sound(int *freq, int *duration);
 void audio_sfx_queue_sound(int freq, int duration);
-boolean audio_sfx_get_next_sound(int *freq, int *duration);
 void audio_sfx_clear_queue(void);
 int audio_sfx_get_num_queued_sounds(void);
 boolean audio_sfx_has_queued_sounds(void);

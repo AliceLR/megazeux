@@ -1634,7 +1634,7 @@ static int key_input_box(struct world *mzx_world, struct dialog *di,
   {
     // Play a sfx
     sfx_clear_queue();
-    play_string(src->result, 0);
+    sfx_play_string(src->result, false);
   }
 
   return key;

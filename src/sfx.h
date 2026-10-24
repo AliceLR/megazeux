@@ -101,7 +101,7 @@ struct sfx_list
 // world_struct.h requires struct sfx_list, so don't include.
 // play_sfx(const struct world *mzx_world, int sfx)
 #define play_sfx(mzx_world, sfx) \
- play_sfx_from_list(&((mzx_world)->custom_sfx), (sfx))
+ sfx_play_from_list(&((mzx_world)->custom_sfx), (sfx))
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC extern const char sfx_strs[NUM_BUILTIN_SFX][LEGACY_SFX_SIZE];
@@ -111,16 +111,16 @@ CORE_LIBSPEC size_t sfx_ram_usage(const struct sfx_list *sfx_list);
 
 #ifdef CONFIG_AUDIO
 
-void play_sfx_from_list(const struct sfx_list *sfx_list, int sfx);
-void play_string(const char *str, int sfx_play);
-void sfx_clear_queue(void);
-boolean sfx_is_playing(void);
-int sfx_length_left(void);
+CORE_LIBSPEC void sfx_play_from_list(const struct sfx_list *sfx_list, int sfx);
+CORE_LIBSPEC void sfx_play_string(const char *str, boolean sfx_play);
+CORE_LIBSPEC void sfx_clear_queue(void);
+CORE_LIBSPEC boolean sfx_is_playing(void);
+CORE_LIBSPEC int sfx_length_left(void);
 
 #else // !CONFIG_AUDIO
 
-static inline void play_sfx_from_list(const struct sfx_list *sfx_list, int sfxn) {}
-static inline void play_string(const char *str, int sfx_play) {}
+static inline void sfx_play_from_list(const struct sfx_list *sfx_list, int sfxn) {}
+static inline void sfx_play_string(const char *str, boolean sfx_play) {}
 static inline void sfx_clear_queue(void) {}
 static inline boolean sfx_is_playing(void) { return false; }
 static inline int sfx_length_left(void) { return 0; }
